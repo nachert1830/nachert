@@ -12206,21 +12206,21 @@ const COURSE = [
     ['Пересекаются','Одноимённые проекции пересекаются, и точки пересечения лежат <b>на одной линии связи</b>'],
     ['Параллельны','<b>a′ ∥ b′</b> и <b>a″ ∥ b″</b>'],
     ['Скрещиваются','Проекции пересекаются, но точки пересечения <b>не</b> на одной линии связи']]},
-  {t:'fig', cap:'Слева — пересекающиеся (точки K на одной линии связи), справа — скрещивающиеся', scene:{
+  {t:'fig', cap:'Слева — пересекающиеся: точки пересечения проекций K″ и K′ на одной линии связи. Справа — скрещивающиеся: точки 1″≡2″ и 3′≡4′ на разных линиях связи', scene:{
     w:400,h:200,ox:20,oy:100,items:[
-      {t:'seg',a:[20,-85],b:[150,-20],k:'main',l:'a″',la:'ne'},
-      {t:'seg',a:[20,-20],b:[150,-85],k:'main',l:'b″',la:'ne'},
-      {t:'seg',a:[240,-85],b:[370,-20],k:'main',l:'c″',la:'ne'},
-      {t:'seg',a:[240,-20],b:[370,-85],k:'main',l:'d″',la:'ne'},
+      {t:'seg',a:[20,-85],b:[150,-20],k:'main',l:'a″',la:'e',lat:[150,-20]},
+      {t:'seg',a:[20,-20],b:[150,-85],k:'main',l:'b″',la:'e',lat:[150,-85]},
+      {t:'seg',a:[240,-85],b:[370,-20],k:'main',l:'c″',la:'e',lat:[370,-20]},
+      {t:'seg',a:[240,-20],b:[370,-85],k:'main',l:'d″',la:'e',lat:[370,-85]},
       {t:'axis'},
-      {t:'seg',a:[20,30],b:[150,88],k:'main',l:'b′',la:'ne'},
-      {t:'seg',a:[20,88],b:[150,30],k:'main',l:'a′',la:'ne'},
-      {t:'seg',a:[240,20],b:[370,92],k:'main',l:'d′',la:'ne'},
-      {t:'seg',a:[240,92],b:[370,20],k:'main',l:'c′',la:'ne'},
+      {t:'seg',a:[20,30],b:[150,88],k:'main',l:'b′',la:'e',lat:[150,88]},
+      {t:'seg',a:[20,88],b:[150,30],k:'main',l:'a′',la:'e',lat:[150,30]},
+      {t:'seg',a:[240,25],b:[370,70],k:'main',l:'d′',la:'e',lat:[370,70]},
+      {t:'seg',a:[240,90],b:[370,40],k:'main',l:'c′',la:'e',lat:[370,40]},
       {t:'pt',at:[85,-52],l:'K″',la:'n',k:'res'},{t:'pt',at:[85,59],l:'K′',la:'s',k:'res'},
       {t:'conn',a:[85,-52],b:[85,59]},
-      {t:'pt',at:[305,-52],l:'1″≡2″',la:'n'},{t:'pt',at:[305,56],l:'3′≡4′',la:'s'},
-      {t:'conn',a:[305,-52],b:[305,56]},
+      {t:'pt',at:[305,-52.5],l:'1″≡2″',la:'n'},{t:'pt',at:[328.9,55.8],l:'3′≡4′',la:'s'},
+      {t:'conn',a:[305,-52.5],b:[305,90]},{t:'conn',a:[328.9,-95],b:[328.9,55.8]},
       {t:'txt',at:[85,112],s:'пересекаются',k:'r',anchor:'middle'},
       {t:'txt',at:[305,112],s:'скрещиваются',k:'s',anchor:'middle'}
     ]}},
@@ -17826,13 +17826,13 @@ const steps=[
           pt(fr(Eq),'E″','s','res'), seg(fr(Sp),fr(A1),'res'), pt(fr(A1),'A″','ne','res'),
           conn(fr(A1),pl(A1)), conn(fr(A2),pl(A2)), seg(pl(Sp),pl(A1),'res'), seg(pl(Sp),pl(A2),'res'), pt(pl(A1),'A₁′','n','res'), pt(pl(A2),'A₂′','s','res') ] },
   { t:'Основание: эллипс и вращение',
-    d:'Точки 3″ и 2″ лежат в плоскости оси i, параллельной π₂: 3′ и 2′ — концы малой оси эллипса, в который проецируется основание. Большая ось (вдоль y) равна диаметру основания 2R. Чтобы взять на основании ещё точки, вращаем основание вокруг оси i до положения ∥ π₂: получаем окружность радиуса R с центром O″. Берём на ней точки 4‴…8‴, опускаем их на 3″2″ параллельно i″ — точки 4″…8″ — и находим по глубине их горизонтальные проекции: 4′…8′ (и симметричные им 4₁′…8₁′ с другой стороны i′).',
+    d:'Точки 3″ и 2″ лежат в плоскости оси i, параллельной π₂: 3′ и 2′ — концы малой оси эллипса, в который проецируется основание. Большая ось (вдоль y) равна диаметру основания 2R. Чтобы взять на основании ещё точки, вращаем основание вокруг оси i до положения ∥ π₂: получаем окружность радиуса R с центром O″. Берём на ней точки 4₀…8₀, опускаем их на 3″2″ параллельно i″ — точки 4″…8″ — и находим по глубине их горизонтальные проекции: 4′…8′ (и симметричные им 4₁′…8₁′ с другой стороны i′).',
     why:'При вращении основания вокруг оси точки описывают окружности ⟂ i; расстояние от точки до плоскости оси (её глубина y) сохраняется, поэтому оно переносится на план.',
     add:[ conn(fr(P3),pl(P3)), conn(fr(P2),pl(P2)), pt(pl(P3),'3′','w','aux'), pt(pl(P2),'2′','e','aux'),
           ell(pl(O),R*Math.sin(phi)*U,R*U,0,'res'),
           circ(fr(O),R*U,'aux'),
           ...ths.map(([n,d])=>seg(fr(rot(d*d2r)),fr(Pb(d*d2r)),'auxd')),
-          ...ths.map(([n,d])=>pt(fr(rot(d*d2r)),n+'‴','e','aux')),
+          ...ths.map(([n,d])=>pt(fr(rot(d*d2r)),n+'₀','e','aux')),
           ...ths.map(([n,d])=>pt(fr(Pb(d*d2r)),n+'″',(d<=90?'nw':'se'),'aux')),
           ...ths.map(([n,d])=>conn(fr(Pb(d*d2r)),pl(Pb(d*d2r)))),
           ...ths.map(([n,d])=>pt(pl(Pb(d*d2r)),n+'′','se','aux')), ...ths.map(([n,d])=>pt(pl(Pb(-d*d2r)),n+'₁′','ne','aux')) ] },
@@ -21429,7 +21429,7 @@ function paintViews(){
 FX.loadViews=function(force){
   if(VIEWS!=null){ paintViews(); return; }
   if(force) VIEWS_ASK=false;
-  try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50&&Date.now()-c.t<10*60e3){ VIEWS=c.n; paintViews(); return; } }catch(e){}
+  try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50&&Date.now()-c.t<60e3){ VIEWS=c.n; paintViews(); return; }   /* кэш на минуту — у всех одно и то же свежее число */ }catch(e){}
   if(VIEWS_ASK) return; VIEWS_ASK=true;
   const api='https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews&date1=2024-01-01&date2=today&accuracy=full';
   /* показываем, когда есть чем гордиться: меньше 50 — блок скрыт */
@@ -21437,7 +21437,7 @@ FX.loadViews=function(force){
   /* число просмотров видно всем, независимо от согласия на cookie: этот запрос только читает общую
      статистику счётчика, ничего не отправляет о посетителе и не ставит cookie (credentials:'omit') */
   fetch('views.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>num(j.pageviews||j.views))
-    .catch(()=>fetch(api,{credentials:'omit'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>num(j.totals&&j.totals[0])))
+    .catch(()=>fetch(api,{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>num(j.totals&&j.totals[0])))
     .then(n=>{ VIEWS=n; try{ localStorage.setItem('nch2_views',JSON.stringify({n,t:Date.now()})); }catch(e){} paintViews(); })
     .catch(()=>{});   /* нет данных — до перезагрузки страницы не спрашиваем снова */
 };
@@ -22125,6 +22125,78 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
   route();
   if(window.SEARCH&&SEARCH.warm) SEARCH.warm();
 })();
+
+
+/* ═════ Автопроверка чертежей: правила эпюра → числа ═════
+   Каждый чертёж разбирается на точки (подписи A′, A″, A‴, «1″≡2″») и прямые (подписи a′, a″, h″…),
+   и проверяется по правилам, которые не зависят от задачи:
+   1) A′ и A″ на одной вертикальной линии связи; A″ и A‴ — на одной горизонтальной;
+   2) «1″≡2″» — действительно одна точка;
+   3) если A″ лежит на a″, то A′ лежит на a′ (принадлежность сохраняется);
+   4) взаимное положение двух прямых по проекциям (пересекаются / скрещиваются / параллельны)
+      совпадает с подписью на чертеже.
+   Запуск: в консоли браузера DWG_AUDIT() → список нарушений (пусто — всё верно). */
+window.DWG_AUDIT=function(opts){
+  opts=opts||{}; const TOL=opts.tol||1.2, out=[];
+  const MARK=/(′|″|‴)$/, PN=/^(.+?)(′|″|‴)$/;
+  const d2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  const segDist=(p,a,b)=>{ const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy; if(l<1e-9) return d2(p,a); let t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l; t=Math.max(0,Math.min(1,t)); return d2(p,[a[0]+t*dx,a[1]+t*dy]); };
+  const cross=(a,b,c,d)=>{ const r=[b[0]-a[0],b[1]-a[1]], s=[d[0]-c[0],d[1]-c[1]], den=r[0]*s[1]-r[1]*s[0]; if(Math.abs(den)<1e-9) return null;
+    const t=((c[0]-a[0])*s[1]-(c[1]-a[1])*s[0])/den, u=((c[0]-a[0])*r[1]-(c[1]-a[1])*r[0])/den; if(t<-0.02||t>1.02||u<-0.02||u>1.02) return null; return [a[0]+t*r[0],a[1]+t*r[1]]; };
+  const par=(a,b,c,d)=>{ const r=[b[0]-a[0],b[1]-a[1]], s=[d[0]-c[0],d[1]-c[1]]; return Math.abs(r[0]*s[1]-r[1]*s[0])<=0.02*Math.hypot(...r)*Math.hypot(...s); };
+  function check(name,items){
+    const pts={}, lines={}, texts=[], combo=new Set();
+    (items||[]).forEach(it=>{ if(!it) return;
+      if(it.t==='pt'&&it.at&&it.l){ const parts=String(it.l).replace(/<[^>]+>/g,'').split(/\s*[≡=]\s*/); parts.forEach(n=>{ n=n.trim(); if(MARK.test(n)){ (pts[n]=pts[n]||[]).push(it.at); if(parts.length>1) combo.add(n); } }); }
+      if((it.t==='seg'||it.t==='line')&&it.a&&it.b&&it.l&&/^[a-zа-я][₀-₉0-9]*(′|″|‴)$/.test(it.l)) (lines[it.l]=lines[it.l]||[]).push([it.a,it.b]);
+      if(it.t==='txt'&&it.at&&it.s) texts.push(it); });
+    const uniq=n=>{ const a=pts[n]; if(!a) return null; return a.every(p=>d2(p,a[0])<TOL)?a[0]:'dup'; };
+    /* 1. линии связи */
+    Object.keys(pts).forEach(n=>{ const m=PN.exec(n); if(!m) return; const b=m[1];
+      const p1=uniq(b+'′'), p2=uniq(b+'″'), p3=uniq(b+'‴');
+      if(m[2]==='″'&&p1&&p2&&p1!=='dup'&&p2!=='dup'&&Math.abs(p1[0]-p2[0])>TOL) out.push({name,rule:'линия связи ⊥ x',msg:b+'′ и '+b+'″ не на одной вертикали (Δ='+Math.abs(p1[0]-p2[0]).toFixed(1)+')'});
+      if(m[2]==='‴'&&p2&&p3&&p2!=='dup'&&p3!=='dup'&&Math.abs(p2[1]-p3[1])>TOL) out.push({name,rule:'линия связи ⊥ z',msg:b+'″ и '+b+'‴ не на одной горизонтали (Δ='+Math.abs(p2[1]-p3[1]).toFixed(1)+')'}); });
+    /* 3. принадлежность точки прямой */
+    const onSet=(p,mark)=>Object.keys(lines).filter(l=>l.endsWith(mark)&&lines[l].some(([a,b])=>segDist(p,a,b)<TOL)).map(l=>l.replace(MARK,''));
+    const bases=new Set(Object.keys(pts).map(n=>(PN.exec(n)||[])[1]).filter(Boolean));
+    bases.forEach(b=>{ const p1=uniq(b+'′'), p2=uniq(b+'″'); if(!p1||!p2||p1==='dup'||p2==='dup') return;
+      const L2=onSet(p2,'″'), L1=onSet(p1,'′');
+      if(combo.has(b+'″')) return;                                   /* «O″≡A″»: проекции совпали — законно */
+      if([...bases].some(q=>q!==b&&uniq(q+'″')&&uniq(q+'″')!=='dup'&&d2(uniq(q+'″'),p2)<TOL)) return;   /* проекция совпала с проекцией другой точки (конкурирующие) */
+      L2.forEach(l=>{ if(!lines[l+'′']) return; if(L1.includes(l)) return;
+        if(L1.some(x=>L2.includes(x))) return;                          /* лежит на другой общей прямой (конкурирующие точки) */
+        const L2seg=lines[l+'″'];
+        /* прямая на этой проекции слилась с другой подписанной прямой (две горизонтали на одной высоте) */
+        if(Object.keys(lines).some(r=>r!==l+'″'&&r.endsWith('″')&&lines[r].some(([a,c])=>segDist(p2,a,c)<TOL&&L2seg.some(([u,v])=>par(u,v,a,c)&&segDist(a,u,v)<TOL*3||par(u,v,a,c)&&Math.abs(((v[0]-u[0])*(a[1]-u[1])-(v[1]-u[1])*(a[0]-u[0]))/Math.hypot(v[0]-u[0],v[1]-u[1]))<TOL)))) return;
+        /* ≥2 точек «на» l″ без l′ — это след вспомогательной проецирующей плоскости (f₀γ ≡ l″), а не ошибка */
+        const strays=[...bases].filter(q=>{ const a2=uniq(q+'″'), a1=uniq(q+'′'); return a2&&a1&&a2!=='dup'&&a1!=='dup'&&lines[l+'″'].some(([u,v])=>segDist(a2,u,v)<TOL)&&!lines[l+'′'].some(([u,v])=>segDist(a1,u,v)<TOL); });
+        if(strays.length>=2) return;
+        out.push({name,rule:'принадлежность',msg:b+'″ лежит на '+l+'″, а '+b+'′ не лежит на '+l+'′'}); }); });
+    /* 4. взаимное положение прямых и подпись */
+    const names=[...new Set(Object.keys(lines).map(l=>l.replace(MARK,'')))].filter(n=>lines[n+'′']&&lines[n+'″']);
+    const rel=[];
+    for(let i=0;i<names.length;i++) for(let j=i+1;j<names.length;j++){ const a=names[i], b=names[j];
+      const A2=lines[a+'″'][0], B2=lines[b+'″'][0], A1=lines[a+'′'][0], B1=lines[b+'′'][0];
+      const k2=cross(...A2,...B2), k1=cross(...A1,...B1);
+      let r=null, at=null;
+      if(par(...A2,...B2)&&par(...A1,...B1)) { r='параллельны'; at=[(A2[0][0]+A2[1][0]+B2[0][0]+B2[1][0])/4,0]; }
+      else if(k2&&k1){ r=Math.abs(k2[0]-k1[0])<=TOL?'пересекаются':'скрещиваются'; at=[(k2[0]+k1[0])/2,0]; }
+      if(r) rel.push({a,b,r,x:at[0]}); }
+    texts.forEach(t=>{ const s=String(t.s).toLowerCase(); const claim=/скрещива/.test(s)?'скрещиваются':/пересека/.test(s)?'пересекаются':/параллел/.test(s)?'параллельны':null; if(!claim||!rel.length) return;
+      const near=rel.reduce((m,r)=>Math.abs(r.x-t.at[0])<Math.abs(m.x-t.at[0])?r:m);
+      if(near.r!==claim) out.push({name,rule:'взаимное положение',msg:'подпись «'+t.s+'», а по проекциям '+near.a+' и '+near.b+' '+near.r}); });
+  }
+  /* обход всех чертежей сайта */
+  const parts=t=>(t.parts&&t.parts.length)?t.parts.map(p=>Object.assign({given:t.given||[]},p)):[{given:t.given||[],steps:t.steps||[]}];
+  const task=(name,t)=>{ try{ parts(t).forEach((p,pi)=>{ let acc=(p.given||[]).slice(); check(name+(pi?' п.'+(pi+1):'')+' · дано',acc);
+      (p.steps||[]).forEach((st,k)=>{ acc=acc.concat(st.add||[]); check(name+(pi?' п.'+(pi+1):'')+' · шаг '+(k+1),acc); }); }); }catch(e){ out.push({name,rule:'ошибка',msg:String(e)}); } };
+  try{ (typeof COURSE!=='undefined'?COURSE:[]).forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items); })); }catch(e){}
+  try{ WB3.tasks.forEach(t=>task('Задача №'+t.n,t)); }catch(e){}
+  try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t))); }catch(e){}
+  try{ ['1','2','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}
+  /* одно нарушение показываем один раз (на первом шаге, где оно появилось) */
+  const seen=new Set(); return out.filter(o=>{ const k=o.name.replace(/ · (шаг \d+|дано)$/,'')+'|'+o.rule+'|'+o.msg; if(seen.has(k)) return false; seen.add(k); return true; });
+};
 
 </script>
 </body>
