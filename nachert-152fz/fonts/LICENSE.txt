@@ -1,7 +1,0 @@
-Шрифты в этой папке распространяются по лицензии SIL Open Font License, Version 1.1
-(https://openfontlicense.org). Файлы — подмножества (cyrillic, latin, latin-ext, greek)
-из каталога Google Fonts, без изменений.
-
-Golos Text     — Copyright The Golos Text Project Authors
-Geologica      — Copyright The Geologica Project Authors
-IBM Plex Mono  — Copyright IBM Corp., with Reserved Font Name "Plex"
