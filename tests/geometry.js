@@ -93,7 +93,7 @@ function check(name,items,text,ctx){
      Если K″ лежит на A″B″ и K′ на A′B′ — отношения AK:KB должны совпасть (иначе K ∉ AB).
      Если K″ на A″B″, а K′ мимо A′B′ — нарушение, кроме законных случаев (конкурирующие точки, след
      вспомогательной проецирующей плоскости). */
-  const onDrawn=(mk,A,B,K)=>M.segs.all.some(s=>[A,B,K].every(P=>segDist(P,s.a,s.b)<TOL)) || M.polys.some(pl=>{ const q=pl.p.concat(pl.close?[pl.p[0]]:[]); for(let i=0;i+1<q.length;i++) if([A,B,K].every(P=>segDist(P,q[i],q[i+1])<TOL)) return true; return false; });
+  const onDrawn=(mk,A,B,K)=>M.segs.all.some(s=>s.k!=='thin'&&[A,B,K].every(P=>segDist(P,s.a,s.b)<TOL))   /* тонкие осевые линии — не рёбра */ || M.polys.some(pl=>{ const q=pl.p.concat(pl.close?[pl.p[0]]:[]); for(let i=0;i+1<q.length;i++) if([A,B,K].every(P=>segDist(P,q[i],q[i+1])<TOL)) return true; return false; });
   const named=bases.filter(b=>P3[b]);
   const edgesOf=(K,mk)=>{ const r=[]; const k=uniq(K+mk); if(!k) return r;
     for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++){ const A=named[i],B=named[j]; if(A===K||B===K) continue;
