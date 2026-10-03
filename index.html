@@ -12068,18 +12068,19 @@ const COURSE = [
     ['⊥ π₂ (фронт. проецирующая)','⊥ оси x','<b>точка</b>','на π₁ и π₃'],
     ['⊥ π₃ (проф. проецирующая)','∥ оси x','∥ оси x','на π₁ и π₂']]},
   {t:'rule', h:'Конкурирующие точки', c:'Точки, лежащие на <b>одном проецирующем луче</b>. По ним определяют видимость: на <span class="pi">π₂</span> видна точка с <b>бо́льшей y</b> (она ближе к наблюдателю), на <span class="pi">π₁</span> — точка с <b>бо́льшей z</b> (она выше).'},
-  {t:'fig', cap:'Скрещивающиеся прямые. Точки 1, 2 — фронтально конкурирующие; 3, 4 — горизонтально', scene:{
-    w:320,h:210,ox:20,oy:105,items:[
-      {t:'seg',a:[30,-95],b:[260,-25],k:'main',l:'a″',la:'ne'},
-      {t:'seg',a:[30,-25],b:[260,-95],k:'main',l:'b″',la:'ne'},
+  {t:'fig', cap:'Скрещивающиеся прямые: точки 1″≡2″ и 3′≡4′ лежат на разных линиях связи. 1 и 2 — фронтально конкурирующие: на π₂ видна точка 1 ∈ a, у неё y больше. 3 и 4 — горизонтально конкурирующие: на π₁ видна точка 4 ∈ b, у неё z больше', scene:{
+    w:320,h:220,ox:20,oy:110,items:[
+      {t:'seg',a:[30,-95],b:[260,-25],k:'main',l:'a″',la:'e',lat:[260,-25]},
+      {t:'seg',a:[30,-25],b:[260,-95],k:'main',l:'b″',la:'e',lat:[260,-95]},
       {t:'axis'},
-      {t:'seg',a:[30,30],b:[260,100],k:'main',l:'b′',la:'ne'},
-      {t:'seg',a:[30,100],b:[260,30],k:'main',l:'a′',la:'ne'},
+      {t:'seg',a:[30,105],b:[260,55],k:'main',l:'a′',la:'e',lat:[260,55]},
+      {t:'seg',a:[30,30],b:[260,80],k:'main',l:'b′',la:'e',lat:[260,80]},
+      {t:'conn',a:[145,-60],b:[145,80]},
+      {t:'conn',a:[202.5,-77.5],b:[202.5,67.5]},
       {t:'pt',at:[145,-60],l:'1″≡2″',la:'n',k:'res'},
-      {t:'pt',at:[145,65],l:'3′≡4′',la:'s',k:'res'},
-      {t:'conn',a:[145,-60],b:[145,65]},
-      {t:'txt',at:[300,-60],s:'на π₂ видна та,',k:'s',anchor:'end'},
-      {t:'txt',at:[300,-46],s:'у которой y больше',k:'s',anchor:'end'}
+      {t:'pt',at:[145,80],l:'1′',la:'sw',k:'res'},{t:'pt',at:[145,55],l:'2′',la:'nw',k:'aux'},
+      {t:'pt',at:[202.5,67.5],l:'3′≡4′',la:'s',k:'res'},
+      {t:'pt',at:[202.5,-42.5],l:'3″',la:'se',k:'aux'},{t:'pt',at:[202.5,-77.5],l:'4″',la:'ne',k:'res'}
     ]}},
   {t:'wb', ids:[17]},
   {t:'check', q:[
@@ -22144,7 +22145,7 @@ window.DWG_AUDIT=function(opts){
   const cross=(a,b,c,d)=>{ const r=[b[0]-a[0],b[1]-a[1]], s=[d[0]-c[0],d[1]-c[1]], den=r[0]*s[1]-r[1]*s[0]; if(Math.abs(den)<1e-9) return null;
     const t=((c[0]-a[0])*s[1]-(c[1]-a[1])*s[0])/den, u=((c[0]-a[0])*r[1]-(c[1]-a[1])*r[0])/den; if(t<-0.02||t>1.02||u<-0.02||u>1.02) return null; return [a[0]+t*r[0],a[1]+t*r[1]]; };
   const par=(a,b,c,d)=>{ const r=[b[0]-a[0],b[1]-a[1]], s=[d[0]-c[0],d[1]-c[1]]; return Math.abs(r[0]*s[1]-r[1]*s[0])<=0.02*Math.hypot(...r)*Math.hypot(...s); };
-  function check(name,items){
+  function check(name,items,capText){
     const pts={}, lines={}, texts=[], combo=new Set();
     (items||[]).forEach(it=>{ if(!it) return;
       if(it.t==='pt'&&it.at&&it.l){ const parts=String(it.l).replace(/<[^>]+>/g,'').split(/\s*[≡=]\s*/); parts.forEach(n=>{ n=n.trim(); if(MARK.test(n)){ (pts[n]=pts[n]||[]).push(it.at); if(parts.length>1) combo.add(n); } }); }
@@ -22182,15 +22183,24 @@ window.DWG_AUDIT=function(opts){
       if(par(...A2,...B2)&&par(...A1,...B1)) { r='параллельны'; at=[(A2[0][0]+A2[1][0]+B2[0][0]+B2[1][0])/4,0]; }
       else if(k2&&k1){ r=Math.abs(k2[0]-k1[0])<=TOL?'пересекаются':'скрещиваются'; at=[(k2[0]+k1[0])/2,0]; }
       if(r) rel.push({a,b,r,x:at[0]}); }
+    /* 5. конкурирующие точки «1″≡2″»: прямые, сошедшиеся в этой точке, на другой проекции на той же линии связи должны разойтись */
+    const yAt=(segs,x)=>{ for(const [a,b] of segs){ if(Math.abs(b[0]-a[0])<1e-9) continue; const t=(x-a[0])/(b[0]-a[0]); if(t>=-0.02&&t<=1.02) return a[1]+t*(b[1]-a[1]); } return null; };
+    Object.keys(pts).filter(n=>combo.has(n)).forEach(n=>{ const m=PN.exec(n); if(!m||m[2]==='‴') return; const p=uniq(n); if(!p||p==='dup') return;
+      const other=m[2]==='″'?'′':'″';
+      const thru=Object.keys(lines).filter(l=>l.endsWith(m[2])&&lines[l].some(([a,b])=>segDist(p,a,b)<TOL)).map(l=>l.replace(MARK,'')).filter(l=>lines[l+other]);
+      for(let i=0;i<thru.length;i++) for(let j=i+1;j<thru.length;j++){ const ya=yAt(lines[thru[i]+other],p[0]), yb=yAt(lines[thru[j]+other],p[0]);
+        if(ya!=null&&yb!=null&&Math.abs(ya-yb)<=TOL) out.push({name,rule:'конкурирующие точки',msg:n+' — на этой линии связи '+thru[i]+other+' и '+thru[j]+other+' тоже сходятся: прямые пересекаются, точки не конкурирующие'}); } });
+    if(capText) texts.push({s:capText,at:null});
     texts.forEach(t=>{ const s=String(t.s).toLowerCase(); const claim=/скрещива/.test(s)?'скрещиваются':/пересека/.test(s)?'пересекаются':/параллел/.test(s)?'параллельны':null; if(!claim||!rel.length) return;
-      const near=rel.reduce((m,r)=>Math.abs(r.x-t.at[0])<Math.abs(m.x-t.at[0])?r:m);
+      if(!t.at&&rel.length>1) return;                                  /* подпись к рисунку проверяем, только если пара прямых одна */
+      const near=t.at?rel.reduce((m,r)=>Math.abs(r.x-t.at[0])<Math.abs(m.x-t.at[0])?r:m):rel[0];
       if(near.r!==claim) out.push({name,rule:'взаимное положение',msg:'подпись «'+t.s+'», а по проекциям '+near.a+' и '+near.b+' '+near.r}); });
   }
   /* обход всех чертежей сайта */
   const parts=t=>(t.parts&&t.parts.length)?t.parts.map(p=>Object.assign({given:t.given||[]},p)):[{given:t.given||[],steps:t.steps||[]}];
   const task=(name,t)=>{ try{ parts(t).forEach((p,pi)=>{ let acc=(p.given||[]).slice(); check(name+(pi?' п.'+(pi+1):'')+' · дано',acc);
       (p.steps||[]).forEach((st,k)=>{ acc=acc.concat(st.add||[]); check(name+(pi?' п.'+(pi+1):'')+' · шаг '+(k+1),acc); }); }); }catch(e){ out.push({name,rule:'ошибка',msg:String(e)}); } };
-  try{ (typeof COURSE!=='undefined'?COURSE:[]).forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items); })); }catch(e){}
+  try{ (typeof COURSE!=='undefined'?COURSE:[]).forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap); })); }catch(e){}
   try{ WB3.tasks.forEach(t=>task('Задача №'+t.n,t)); }catch(e){}
   try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t))); }catch(e){}
   try{ ['1','2','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}
