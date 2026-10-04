@@ -3238,7 +3238,7 @@ const PRE={
   one:{t:'Одна точка',p:[['A',60,30,35]],s:[],t3:[]}
 };
 const S={p:[],segs:[],tris:[],sel:[],act:0,yaw:.6,pit:.42,zoom:1,t:0,u:1.3,u3:1.2,play:0,pre:'seg'};
-try{ S.clear=localStorage.getItem('nch2_e3_clear')==='true'; }catch(e){ S.clear=false; }   /* прозрачные плоскости проекций: без заливки и сетки, только контур */
+try{ S.opq=localStorage.getItem('nch2_e3_opq')==='true'; }catch(e){ S.opq=false; }   /* непрозрачные плоскости: видно только то, что не закрыто плоскостями */
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), r1=v=>Math.round(v*10)/10, f1=v=>Math.round(v*10)/10, deg=r=>r*180/Math.PI;
 const f=v=>Math.round(v*10)/10;
 const MONO="'IBM Plex Mono',ui-monospace,Menlo,monospace";
@@ -3347,11 +3347,10 @@ function space(){
       g:range(XR[0],XR[1]).map(x=>[[x,0,ZR[0]],[x,0,ZR[1]]]).concat(range(ZR[0],ZR[1]).map(z=>[[XR[0],0,z],[XR[1],0,z]]))},
     {pl:3,fill:PLC[3].f,bd:PLC[3].b,gc:PLC[3].g,tc:PLC[3].t,c:[[0,YR[0],ZR[0]],[0,YR[1],ZR[0]],[0,YR[1],ZR[1]],[0,YR[0],ZR[1]]],lab:[0,YR[1]-6,ZR[1]-8,'π₃'],
       g:range(YR[0],YR[1]).map(y=>[[0,y,ZR[0]],[0,y,ZR[1]]]).concat(range(ZR[0],ZR[1]).map(z=>[[0,YR[0],z],[0,YR[1],z]]))}];
+  if(S.opq&&!EXP&&T<.02) return s+spaceOpaque(u,cm,pj,panels);
   panels.forEach(p=>{ p.d=p.c.reduce((a,q)=>a+pj(p.pl,q).z,0); });
   panels.sort((a,b)=>a.d-b.d).forEach(p=>{
-    const clr=S.clear&&!EXP;
-    s+=`<polygon points="${p.c.map(q=>{const a=pj(p.pl,q);return f(a.x)+','+f(a.y);}).join(' ')}" fill="${clr?'none':p.fill}" stroke="${p.bd}" stroke-width="${f((clr?1.1:1.5)*u)}"${clr?' stroke-opacity=".7"':''}/>`;
-    if(!clr) p.g.forEach(g=>{ s+=L(p.pl,g[0],g[1],p.gc,.8,null,1); });
+    s+=`<polygon points="${p.c.map(q=>{const a=pj(p.pl,q);return f(a.x)+','+f(a.y);}).join(' ')}" fill="${p.fill}" stroke="${p.bd}" stroke-width="${f(1.5*u)}"/>`;
     const a=pj(p.pl,p.lab); s+=tx(a.x-14*u,a.y,p.lab[3],15*u,p.tc,'font-weight="700"'); });
   // оси
   s+=L(2,[XR[0],0,0],[XR[1],0,0],V('ink'),1.6)+L(2,[0,0,ZR[0]],[0,0,ZR[1]],V('ink'),1.6)+L(1,[0,YR[0],0],[0,YR[1],0],V('ink'),1.6);
@@ -3376,6 +3375,63 @@ function space(){
     [[1,[q.x,q.y,0],'′'],[2,[q.x,0,q.z],'″'],[3,[0,q.y,q.z],'‴']].forEach(([pl,B,m])=>{ const a=pj(pl,B); s+=circ(a.x,a.y,3.2*u,c,V('surf'),1*u)+tx(a.x+6*u,a.y-5*u,q.n+m,11.5*u,c,'font-weight="700"'); });
     const a=pj(2,[q.x,q.y,q.z]); if(1-T>.02){ if(on) s+=circ(a.x,a.y,9*u,'none',c,1.5*u); s+=`<g opacity="${f(1-T)}">`+circ(a.x,a.y,8.5*u,c,'none',0)+circ(a.x,a.y,6.5*u,c,V('surf'),2*u)+tx(a.x+10*u,a.y-10*u,q.n,15*u,c,'font-weight="800"')+'</g>'; } });
   return s;
+}
+
+/* Непрозрачные плоскости. Плоскости проекций z = 0, y = 0, x = 0 делят пространство на октанты — это готовое BSP-дерево:
+   в каждом узле сначала рисуется дальняя от зрителя половина, затем сама плоскость (с тем, что на ней лежит), затем ближняя.
+   Так всё, что за непрозрачной плоскостью, закрывается ею — без расчёта видимости по пикселям. */
+function spaceOpaque(u,cm,pj,panels){
+  const XR=LIM.x,YR=LIM.y,ZR=LIM.z, dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const near=[Math.sign(cm.t[0])||1,Math.sign(cm.t[1])||1,Math.sign(cm.t[2])||1];   /* сторона каждой плоскости, обращённая к зрителю */
+  const sg=(v,i)=>Math.abs(v)<1e-9?near[i]:Math.sign(v);
+  const P2=p=>pj(2,p), pts=a=>a.map(p=>{const q=P2(p);return f(q.x)+','+f(q.y);}).join(' ');
+  const L3=(p,q,st,w,d,op)=>{ const a=P2(p),b=P2(q); return ln(a.x,a.y,b.x,b.y,st,w*u,d,op); };
+  /* слои: oct[«sx,sy,sz»] — объекты в октанте; on1 — на π₁; on2[sz] — на π₂; on3[«sy,sz»] — на π₃ */
+  const oct={}, on1=[], on2={}, on3={}, put=(o,k,v)=>{ (o[k]=o[k]||[]).push(v); };
+  const inOct=(p,v)=>put(oct,[0,1,2].map(i=>sg(p[i],i)).join(','),v);
+  /* отрезок в пространстве режем плоскостями проекций, каждый кусок — в свой октант */
+  const cut=(a,b)=>{ const ts=[0,1]; for(let i=0;i<3;i++){ const d=b[i]-a[i]; if(Math.abs(d)>1e-9){ const t=-a[i]/d; if(t>1e-6&&t<1-1e-6) ts.push(t); } }
+    ts.sort((x,y)=>x-y); const out=[]; for(let k=0;k+1<ts.length;k++){ const p=a.map((v,i)=>v+(b[i]-v)*ts[k]), q=a.map((v,i)=>v+(b[i]-v)*ts[k+1]); out.push([p,q]); } return out; };
+  const seg3=(a,b,st,w,d,op)=>cut(a,b).forEach(([p,q])=>inOct(p.map((v,i)=>(v+q[i])/2),L3(p,q,st,w,d,op)));
+  const segOn=(pl,a,b,st,w,d,op)=>cut(a,b).forEach(([p,q])=>{ const m=p.map((v,i)=>(v+q[i])/2), sv=L3(p,q,st,w,d,op);
+    if(pl===1) on1.push(sv); else if(pl===2) put(on2,sg(m[2],2),sv); else put(on3,sg(m[1],1)+','+sg(m[2],2),sv); });
+  const onPl=(pl,m,sv)=>{ if(pl===1) on1.push(sv); else if(pl===2) put(on2,sg(m[2],2),sv); else put(on3,sg(m[1],1)+','+sg(m[2],2),sv); };
+  /* плоскости: сплошной фон + цветная заливка, π₂ — две половины, π₃ — четыре четверти */
+  const pnl=(pl,c,key)=>{ const P=panels.find(o=>o.pl===pl); const sv=`<polygon points="${pts(c)}" fill="${V('surf')}" stroke="none"/><polygon points="${pts(c)}" fill="${P.fill}" stroke="${P.bd}" stroke-width="${f(1.3*u)}" stroke-linejoin="round"/>`;
+    if(pl===1) on1.unshift(sv); else if(pl===2) (on2[key]=on2[key]||[]).unshift(sv); else (on3[key]=on3[key]||[]).unshift(sv); };
+  pnl(1,[[XR[0],YR[0],0],[XR[1],YR[0],0],[XR[1],YR[1],0],[XR[0],YR[1],0]]);
+  [-1,1].forEach(z=>{ const z0=z>0?0:ZR[0], z1=z>0?ZR[1]:0; if(z1>z0) pnl(2,[[XR[0],0,z0],[XR[1],0,z0],[XR[1],0,z1],[XR[0],0,z1]],z); });
+  [-1,1].forEach(y=>[-1,1].forEach(z=>{ const y0=y>0?0:YR[0], y1=y>0?YR[1]:0, z0=z>0?0:ZR[0], z1=z>0?ZR[1]:0; if(y1>y0&&z1>z0) pnl(3,[[0,y0,z0],[0,y1,z0],[0,y1,z1],[0,y0,z1]],y+','+z); }));
+  panels.forEach(P=>{ const a=P2(P.lab); onPl(P.pl,P.lab,tx(a.x-14*u,a.y,P.lab[3],15*u,P.tc,'font-weight="700"')); });
+  /* оси — по полуосям, на ближней стороне соседних плоскостей */
+  [[[XR[0],0,0],[0,0,0]],[[0,0,0],[XR[1],0,0]],[[0,YR[0],0],[0,0,0]],[[0,0,0],[0,YR[1],0]],[[0,0,ZR[0]],[0,0,0]],[[0,0,0],[0,0,ZR[1]]]].forEach(([a,b])=>{
+    const m=a.map((v,i)=>(v+b[i])/2); if(Math.abs(m[0])+Math.abs(m[1])+Math.abs(m[2])<1e-9) return; inOct(m,L3(a,b,V('ink'),1.6)); });
+  /* точки, их проекции и линии связи */
+  S.p.forEach(q=>{ const c=pc(q.n), A=[q.x,q.y,q.z], A1=[q.x,q.y,0], A2=[q.x,0,q.z], A3=[0,q.y,q.z], Ax=[q.x,0,0], Ay=[0,q.y,0], Az=[0,0,q.z], on=S.sel.includes(q.n);
+    [A1,A2,A3].forEach(B=>seg3(A,B,c,1.4,`${4*u} ${3*u}`,.95));
+    const cl=(pl,p1,p2)=>segOn(pl,p1,p2,c,1.1,`${4*u} ${3*u}`,.7);
+    cl(1,A1,Ax); cl(2,Ax,A2); cl(2,A2,Az); cl(3,Az,A3); cl(1,A1,Ay); cl(3,A3,Ay);
+    [[1,A1,'′'],[2,A2,'″'],[3,A3,'‴']].forEach(([pl,B,m])=>{ const a=P2(B); onPl(pl,B,circ(a.x,a.y,3.2*u,c,V('surf'),1*u)+tx(a.x+6*u,a.y-5*u,q.n+m,11.5*u,c,'font-weight="700"')); });
+    const a=P2(A); inOct(A,(on?circ(a.x,a.y,9*u,'none',c,1.5*u):'')+circ(a.x,a.y,8.5*u,c,'none',0)+circ(a.x,a.y,6.5*u,c,V('surf'),2*u)+tx(a.x+10*u,a.y-10*u,q.n,15*u,c,'font-weight="800"')); });
+  /* отрезки и треугольники */
+  const tri=S.tris.map(t=>t.map(P)).filter(t=>t.every(Boolean)), cen=Q=>[0,1,2].map(i=>Q.reduce((s_,p)=>s_+p[i],0)/Q.length);
+  tri.forEach(Q=>{ const c=pc(Q[0].n), q3=Q.map(o=>[o.x,o.y,o.z]);
+    [[1,Q.map(o=>[o.x,o.y,0])],[2,Q.map(o=>[o.x,0,o.z])],[3,Q.map(o=>[0,o.y,o.z])]].forEach(([pl,R])=>onPl(pl,cen(R),`<polygon points="${pts(R)}" fill="${c}" fill-opacity=".14" stroke="none"/>`));
+    inOct(cen(q3),`<polygon points="${pts(q3)}" fill="${c}" fill-opacity=".2" stroke="${V('ink')}" stroke-width="${f(2*u)}" stroke-linejoin="round"/>`); });
+  const act=S.segs[S.act];
+  if(act&&P(act[0])&&P(act[1])){ const a=P(act[0]),b=P(act[1]), R=[[a.x,a.y,a.z],[b.x,b.y,a.z],[b.x,b.y,b.z]];
+    inOct(cen(R),`<polygon points="${pts(R)}" fill="${V('red')}" fill-opacity=".18" stroke="${V('red')}" stroke-opacity=".8" stroke-width="${f(1.2*u)}"/>`); }
+  S.segs.forEach((g,i)=>{ const a=P(g[0]),b=P(g[1]); if(!a||!b) return; const on_=i===S.act, col=on_?V('ink'):V('ink2');
+    segOn(1,[a.x,a.y,0],[b.x,b.y,0],col,1.8,null,.7); segOn(2,[a.x,0,a.z],[b.x,0,b.z],col,1.8,null,.7); segOn(3,[0,a.y,a.z],[0,b.y,b.z],col,1.8,null,.7);
+    seg3([a.x,a.y,a.z],[b.x,b.y,b.z],col,on_?3.6:2.6,null,1); });
+  /* обход BSP: z (π₁) → y (π₂) → x (π₃) */
+  let o='';
+  const order=i=>[-near[i],near[i]];
+  order(2).forEach((sz,kz)=>{ if(kz===1) o+=on1.join('');
+    order(1).forEach((sy,ky)=>{ if(ky===1) o+=(on2[sz]||[]).join('');
+      order(0).forEach((sx,kx)=>{ if(kx===1) o+=(on3[sy+','+sz]||[]).join(''); o+=(oct[sx+','+sy+','+sz]||[]).join(''); }); }); });
+  const lb=(p,t,dx,dy)=>{const a=P2(p); return tx(a.x+dx*u,a.y+dy*u,t,14*u,V('ink'),'font-style="italic" font-weight="600"');};
+  return o+lb([XR[1],0,0],'x',-4,16)+lb([0,0,ZR[1]],'z',6,4)+lb([0,YR[1],0],'y',6,14)+lb([0,0,0],'O',-14,14);
 }
 
 /* ───── панель фактов ───── */
@@ -3539,7 +3595,7 @@ function html(){
   <div class="e3-grid">
     <div class="lb-card"><div class="lb-cap">Эпюр <span>тяни A′ A″ A‴</span></div><svg id="e3E" viewBox="0 0 ${EW} ${EH}" class="lb-svg e3-svg e3-ep" role="img" aria-label="Эпюр точек в системе Монжа"></svg><div class="e3-octs" id="e3O"></div></div>
     <div class="lb-card e3-ed" id="e3Ed"></div>
-    <div class="lb-card e3-c3"><div class="lb-cap e3-cap3">Пространство <span>крути пальцем · щипок — зум</span><button class="e3-sw" role="switch" aria-checked="${S.clear?'true':'false'}" data-clear="1" title="Плоскости проекций: залитые или прозрачные"><span class="e3-swl">Прозрачные плоскости</span><i aria-hidden="true"></i></button></div><svg id="e3S" viewBox="0 0 ${VW} ${VH}" class="lb-svg e3-svg e3-sp3" role="img" aria-label="Точки в пространстве"></svg>
+    <div class="lb-card e3-c3"><div class="lb-cap e3-cap3">Пространство <span>крути пальцем · щипок — зум</span><button class="e3-sw" role="switch" aria-checked="${S.opq?'true':'false'}" data-opq="1" title="Непрозрачные плоскости закрывают всё, что за ними"><span class="e3-swl">Непрозрачные плоскости</span><i aria-hidden="true"></i></button></div><svg id="e3S" viewBox="0 0 ${VW} ${VH}" class="lb-svg e3-svg e3-sp3" role="img" aria-label="Точки в пространстве"></svg>
       <span class="e3-deg" id="e3Fv" aria-live="off"></span>
       <span class="e3-zm"><button class="e3-zb" data-zoom="1" aria-label="Увеличить">+</button><button class="e3-zb" data-zoom="-1" aria-label="Уменьшить">−</button></span>
       <div class="e3-fold"><button class="btn sm pri e3-pb" id="e3Play"></button><div class="e3-rng"><input type="range" id="e3Fold" min="0" max="1000" value="0" aria-label="Разворот плоскостей: от пространства к эпюру"><div class="e3-rl" aria-hidden="true"><span>пространство</span><span>эпюр</span></div></div></div></div>
@@ -3558,7 +3614,7 @@ function bind(){
     else if(d.sel) select(d.sel); else if(d.del) delPoint(d.del);
     else if(d.seg!=null){ S.act=+d.seg; struct(); } else if(d.segdel!=null){ S.segs.splice(+d.segdel,1); changed(); } else if(d.tridel!=null){ S.tris.splice(+d.tridel,1); changed(); }
     else if(d.zoom){ S.zoom=clamp(S.zoom*(d.zoom>0?1.25:.8),.5,4); redraw({s:1}); saveHash(); }
-    else if(d.clear){ S.clear=!S.clear; t.setAttribute('aria-checked',S.clear?'true':'false'); try{ ST.set('e3_clear',S.clear); }catch(e){} try{ FX.buzz&&FX.buzz('tick'); }catch(e){} redraw({s:1}); }
+    else if(d.opq){ S.opq=!S.opq; t.setAttribute('aria-checked',S.opq?'true':'false'); try{ ST.set('e3_opq',S.opq); }catch(e){} try{ FX.buzz&&FX.buzz('tick'); }catch(e){} redraw({s:1}); }
     else if(t.id==='e3Play') play(); });
   host.addEventListener('input',ev=>{ const e_=ev.target; if(e_.dataset&&(e_.dataset.ed||e_.dataset.edv)){ const v=parseFloat(e_.value); if(isFinite(v)) setC(e_.dataset.ed||e_.dataset.edv,v); if(e_.dataset.ed&&window.FX) FX.buzz(3); } });
   host.addEventListener('change',ev=>{ const e_=ev.target; if(e_.dataset&&e_.dataset.edv){ const q=cur(); if(q) e_.value=q[e_.dataset.edv]; } });
