@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Начерт">
 <meta property="og:site_name" content="Начерт">
-<meta property="og:title" content="Начерт — начертательная геометрия по шагам">
+<meta property="og:title" content="Начертательная геометрия по шагам">
 <meta property="og:description" content="Решённая тетрадь, подготовка к РК, разборы ДЗ и 3D-модель с эпюром. Чертёж растёт построение за построением.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="http://nachert1830.ru/og.jpg">
@@ -21482,7 +21482,7 @@ FX.juicyBtn=function(cls){ const mini=k=>LOGO[k].replace(/width="30" height="30"
   return `<button type="button" class="btn juicy ${cls||''}" data-sharesite><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Поделиться</span><span class="jz" aria-hidden="true">${mini('tg')}${mini('vk')}</span></button>`; };
 FX._jn=0;
 FX.shareMenu=function(o){
-  o=o||{}; const url=o.url||location.href, title=o.title||document.title, text=o.text||('Начерт · '+title);
+  o=o||{}; const url=o.url||location.href, title=(o.title||document.title).replace(/\s*[·—|-]\s*Начерт$/,''), text=o.text||title;   /* имя сайта и так видно в карточке ссылки — в тексте его не повторяем */
   const enc=encodeURIComponent, items=[];
   items.push({g:1,icon:LOGO.tg,label:'Telegram',fn:()=>{ window.open('https://t.me/share/url?url='+enc(url)+'&text='+enc(text),'_blank','noopener'); }});
   items.push({g:1,icon:LOGO.vk,label:'ВКонтакте',fn:()=>{ window.open('https://vk.com/share.php?url='+enc(url)+'&title='+enc(text),'_blank','noopener'); }});
@@ -21583,7 +21583,7 @@ document.addEventListener('input',e=>{ const i=e.target; if(i&&i.closest&&i.clos
 /* ── «Поделиться сайтом» ── */
 const SITE_TITLE='Начерт — начертательная и инженерная графика по шагам';
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-sharesite]'); if(!b) return; e.preventDefault();
-  FX.shareMenu({title:SITE_TITLE,url:location.href.split('#')[0],back:b,text:'Начерт: все задачи по начерту разобраны по шагам'}); });
+  FX.shareMenu({title:SITE_TITLE,url:location.href.split('#')[0],back:b,text:'Вся начертательная геометрия по шагам: тетрадь, РК, ДЗ'}); });
 
 /* ── задача дня: одна и та же у всех в течение суток ── */
 let DAYC=null;
