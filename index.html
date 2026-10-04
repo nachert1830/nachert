@@ -18,7 +18,7 @@
 <meta property="og:title" content="Начертательная геометрия по шагам">
 <meta property="og:description" content="Решённая тетрадь, подготовка к РК, разборы ДЗ и 3D-модель с эпюром. Чертёж растёт построение за построением.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="http://nachert1830.ru/og.jpg">
+<meta property="og:image" content="http://nachert1830.ru/og.jpg?v=2">
 <meta property="og:url" content="https://nachert1830.ru/">
 <link rel="canonical" href="https://nachert1830.ru/">
 <meta property="og:image:width" content="1200">
@@ -21236,7 +21236,7 @@ function render(r){
       default: title=viewHome(v);
     }
   }catch(e){ console.error(e); v.innerHTML='<div class="wrap page"><div class="box warn"><h4>Ошибка</h4>Страница не открылась. <a href="#/">На главную</a></div></div>'; }
-  document.title=(title?title+' · ':'')+'Начерт';
+  document.title=title?title+' · Начерт':'Начерт — начертательная геометрия по шагам';
   /* у каждой страницы должен быть заголовок первого уровня (для экранных читалок и поиска) */
   try{ if(title&&!v.querySelector('h1')){ const h1=document.createElement('h1'); h1.className='sr-only'; h1.textContent=title; v.prepend(h1); } }catch(e){}
   renderHProg();
