@@ -570,6 +570,10 @@ html,body,button,a,.btn,.pl-ctrl,.pl-dot,.chip,.opt,.wbh,.seg button,nav button,
 :root[data-theme="dark"] .tr-btn.good{color:#0e1116}
 .tr-btn:disabled{opacity:.4;cursor:not-allowed}
 .tr-wide{width:100%;margin-top:14px}
+.tr-lim{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.tr-lim span{flex:1 1 100%;font-size:14px;color:var(--mut)}
+.tr-lb{flex:1 1 0;font:inherit;font-weight:600;font-size:15px;min-height:44px;border-radius:10px;cursor:pointer;background:var(--surf);color:var(--ink);border:1px solid var(--line2)}
+.tr-lb.on{background:var(--blue-s);border-color:var(--blue);color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
 .tr-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .tr-pair .tr-btn{width:100%}
 .tr-card{background:var(--surf);border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--shadow);padding:20px 18px;margin:16px 0}
@@ -6242,7 +6246,8 @@ root.TOPICUI={view};
      'qtopic' {тема:[верно,всего]} — копится перехватом ответов теста (см. hookQuiz)
      'trmode' последний режим вкладки */
 (function(){
-const IV=[1,2,4,8,16], EXAM_MIN=45, NTASK=3;
+const IV=[1,2,4,8,16], EXAM_OPT=[20,45], NTASK=3;
+const exMin=()=>{ const v=ST.get('exam_min',20); return EXAM_OPT.includes(v)?v:20; }, limOf=E=>(E&&E.lim)||45;
 const $$=id=>document.getElementById(id);
 const rnd=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -6413,13 +6418,14 @@ function historyBlock(){
 function examStart(){
   const have=tasksAll().length>=NTASK;
   return `<div class="tr-head"><h2>Пробный рубежный контроль</h2>
-    <p class="tr-sub">Собираю ${NTASK} задачи из разных разделов тетради, включаю таймер на ${EXAM_MIN} минут. Решай на бумаге, как на настоящем РК, потом сверяйся с разбором и честно оцени себя.</p>
-    <p class="tr-note">Режим тренировочный: состав задач и время условные, это не нормы кафедры.</p></div>
-    <button class="tr-btn pri tr-wide" data-act="start" ${have?'':'disabled'}>Начать: ${NTASK} задачи, ${EXAM_MIN} минут</button>
+    <p class="tr-sub">Собираю ${NTASK} задачи из разных разделов тетради и включаю таймер. Решай на бумаге, как на настоящем РК, потом сверяйся с разбором и честно оцени себя.</p>
+    <div class="tr-lim" role="radiogroup" aria-label="Время на РК"><span>Сколько даёт твой преподаватель:</span>${EXAM_OPT.map(m=>`<button class="tr-lb${m===exMin()?' on':''}" role="radio" aria-checked="${m===exMin()}" data-act="lim" data-m="${m}">${m} минут</button>`).join('')}</div>
+    <p class="tr-note">Режим тренировочный: состав задач условный, это не нормы кафедры.</p></div>
+    <button class="tr-btn pri tr-wide" data-act="start" ${have?'':'disabled'}>Начать: ${NTASK} задачи, ${exMin()} минут</button>
     ${historyBlock()}`;
 }
 function runView(E){
-  const ms=EXAM_MIN*60000-elapsed(E), over=ms<0, paused=!E.since;
+  const ms=limOf(E)*60000-elapsed(E), over=ms<0, paused=!E.since;
   return `<div class="tr-timer${over?' over':paused?' paused':''}"><div><span class="tr-tl">${over?'Время вышло':paused?'Пауза':'Осталось'}</span><b id="tr-tm">${fmtT(ms)}</b></div>
       <button class="tr-btn" data-act="pause">${paused?'Продолжить':'Пауза'}</button></div>
     ${E.tasks.map((n,i)=>taskCard(n,i,true)).join('')}
@@ -6441,7 +6447,7 @@ function resultView(e){
   return `<div class="tr-res"><div class="tr-big ${e.pct>=70?'g':e.pct>=40?'a':'r'}">${e.pct}%</div>
     <div class="tr-sub">${v}</div>
     <div class="tr-hlist">${e.n.map((n,k)=>`<div><span>№${n}</span><b>${['Не смог','Частично','Решил'][e.r[k]]}</b><i>${cut(WB3.get(n).q,60)}</i></div>`).join('')}</div>
-    <p class="tr-fine">Время: ${e.min} мин. Условное время, результат тренировочный.</p>
+    <p class="tr-fine">Время: ${e.min} мин${e.lim?' из '+e.lim:''}${e.lim&&e.min>e.lim?' — не уложился':''}. Результат тренировочный.</p>
     ${bad.length?`<div class="tr-acts">${bad.map(n=>`<button class="tr-btn" data-act="open" data-n="${n}">Разобрать № ${n} →</button>`).join('')}</div>`:''}
     <div class="tr-pair"><button class="tr-btn ghost" data-act="close">К истории</button><button class="tr-btn pri" data-act="start">Ещё раз</button></div></div>${historyBlock()}`;
 }
@@ -6450,7 +6456,7 @@ function startTick(){
   TM=setInterval(()=>{
     const el=$$('tr-tm'), E=exState();
     if(!el||!E||E.phase==='rate'||MODE!=='exam'||!ROOT||!ROOT.isConnected||ROOT.offsetParent===null){ if(!el) clearInterval(TM); return; }
-    const ms=EXAM_MIN*60000-elapsed(E); el.textContent=fmtT(ms);
+    const ms=limOf(E)*60000-elapsed(E); el.textContent=fmtT(ms);
     const box=el.closest('.tr-timer'); if(box){ const over=ms<0; if(box.classList.contains('over')!==over){ draw(); } }
   },500);
 }
@@ -6517,7 +6523,8 @@ function onClick(ev){
     case 'reveal': session().shown=true; break;
     case 'know': answer(true); break;
     case 'dont': answer(false); break;
-    case 'start': EXRES=null; ST.set('exam',{tasks:pickTasks(),acc:0,since:Date.now(),phase:'run',rate:{}}); break;
+    case 'lim': ST.set('exam_min',+b.dataset.m); break;
+    case 'start': EXRES=null; ST.set('exam',{tasks:pickTasks(),acc:0,since:Date.now(),phase:'run',rate:{},lim:exMin()}); break;
     case 'pause': if(E){ if(E.since){E.acc+=Date.now()-E.since;E.since=null;} else E.since=Date.now(); ST.set('exam',E); } break;
     case 'open': trOpen(+b.dataset.n); return;
     case 'finish': if(E){ if(E.since){E.acc+=Date.now()-E.since;E.since=null;} E.phase='rate'; ST.set('exam',E); } break;
@@ -6526,7 +6533,7 @@ function onClick(ev){
     case 'rate': if(E){ E.rate=E.rate||{}; E.rate[b.dataset.n]=+b.dataset.v; ST.set('exam',E); } break;
     case 'save': if(E){
         const r=E.tasks.map(n=>E.rate[n]), pct=Math.round(r.reduce((x,y)=>x+y,0)/(2*r.length)*100);
-        const e={ts:Date.now(),pct,n:E.tasks.slice(),r,min:Math.max(1,Math.round(elapsed(E)/60000))};
+        const e={ts:Date.now(),pct,n:E.tasks.slice(),r,min:Math.max(1,Math.round(elapsed(E)/60000)),lim:limOf(E)};
         const H=ST.get('exams',[]); H.push(e); ST.set('exams',H.slice(-40)); ST.set('exam',null); EXRES=e; } break;
     case 'close': EXRES=null; break;
     case 'train': { const ts=tasksAll().filter(t=>t.sec===b.dataset.s); if(ts.length) trOpen(firstOpen(ts)); return; }
