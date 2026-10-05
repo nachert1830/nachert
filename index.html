@@ -570,9 +570,14 @@ html,body,button,a,.btn,.pl-ctrl,.pl-dot,.chip,.opt,.wbh,.seg button,nav button,
 :root[data-theme="dark"] .tr-btn.good{color:#0e1116}
 .tr-btn:disabled{opacity:.4;cursor:not-allowed}
 .tr-wide{width:100%;margin-top:14px}
-.tr-lim{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
-.tr-lim span{flex:1 1 100%;font-size:14px;color:var(--mut)}
-.tr-lb{flex:1 1 0;font:inherit;font-weight:600;font-size:15px;min-height:44px;border-radius:10px;cursor:pointer;background:var(--surf);color:var(--ink);border:1px solid var(--line2)}
+.tr-lim{margin-top:14px;padding:14px;border-radius:14px;background:var(--surf);border:1px solid var(--line)}
+.tr-lh{font-weight:700;font-size:15px;color:var(--ink);margin-bottom:10px}.tr-lh span{display:block;font-weight:400;font-size:13.5px;color:var(--mut);margin-top:2px}
+.tr-ls{display:flex;align-items:center;gap:10px}
+.tr-lpm{flex:none;width:52px;height:52px;border-radius:14px;border:1px solid var(--line2);background:var(--surf2);color:var(--ink);font:600 26px/1 var(--sans);cursor:pointer;touch-action:manipulation}
+.tr-lpm:disabled{opacity:.35;cursor:default}
+.tr-lv{flex:1;text-align:center;font-size:16px;color:var(--mut)}.tr-lv b{font:600 36px/1 var(--mono);color:var(--ink);margin-right:4px;font-variant-numeric:tabular-nums}
+.tr-lq{display:flex;gap:6px;margin-top:12px}
+.tr-lb{flex:1 1 0;min-width:0;font:600 14.5px var(--mono);min-height:40px;border-radius:10px;cursor:pointer;background:transparent;color:var(--ink2);border:1px solid var(--line2);padding:0}
 .tr-lb.on{background:var(--blue-s);border-color:var(--blue);color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
 .tr-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .tr-pair .tr-btn{width:100%}
@@ -6246,8 +6251,9 @@ root.TOPICUI={view};
      'qtopic' {тема:[верно,всего]} — копится перехватом ответов теста (см. hookQuiz)
      'trmode' последний режим вкладки */
 (function(){
-const IV=[1,2,4,8,16], EXAM_OPT=[20,45], NTASK=3;
-const exMin=()=>{ const v=ST.get('exam_min',20); return EXAM_OPT.includes(v)?v:20; }, limOf=E=>(E&&E.lim)||45;
+const IV=[1,2,4,8,16], EXAM_OPT=[15,20,30,45,60,90], EXAM_LIM=[5,120], NTASK=3;
+const exMin=()=>{ const v=+ST.get('exam_min',20); return Number.isFinite(v)&&v>=EXAM_LIM[0]&&v<=EXAM_LIM[1]?Math.round(v):20; }, limOf=E=>(E&&E.lim)||45;
+const minW=m=>{ const a=m%10, b=m%100; return (b>=11&&b<=14)?'минут':a===1?'минута':(a>=2&&a<=4)?'минуты':'минут'; };
 const $$=id=>document.getElementById(id);
 const rnd=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -6419,9 +6425,11 @@ function examStart(){
   const have=tasksAll().length>=NTASK;
   return `<div class="tr-head"><h2>Пробный рубежный контроль</h2>
     <p class="tr-sub">Собираю ${NTASK} задачи из разных разделов тетради и включаю таймер. Решай на бумаге, как на настоящем РК, потом сверяйся с разбором и честно оцени себя.</p>
-    <div class="tr-lim" role="radiogroup" aria-label="Время на РК"><span>Сколько даёт твой преподаватель:</span>${EXAM_OPT.map(m=>`<button class="tr-lb${m===exMin()?' on':''}" role="radio" aria-checked="${m===exMin()}" data-act="lim" data-m="${m}">${m} минут</button>`).join('')}</div>
+    <div class="tr-lim"><div class="tr-lh">Время на РК <span>сколько даёт твой преподаватель</span></div>
+      <div class="tr-ls"><button class="tr-lpm" data-act="limd" data-d="-5" aria-label="Меньше на 5 минут"${exMin()<=EXAM_LIM[0]?' disabled':''}>−</button><div class="tr-lv" aria-live="polite"><b>${exMin()}</b> ${minW(exMin())}</div><button class="tr-lpm" data-act="limd" data-d="5" aria-label="Больше на 5 минут"${exMin()>=EXAM_LIM[1]?' disabled':''}>+</button></div>
+      <div class="tr-lq" role="radiogroup" aria-label="Быстрый выбор">${EXAM_OPT.map(m=>`<button class="tr-lb${m===exMin()?' on':''}" role="radio" aria-checked="${m===exMin()}" data-act="lim" data-m="${m}">${m}</button>`).join('')}</div></div>
     <p class="tr-note">Режим тренировочный: состав задач условный, это не нормы кафедры.</p></div>
-    <button class="tr-btn pri tr-wide" data-act="start" ${have?'':'disabled'}>Начать: ${NTASK} задачи, ${exMin()} минут</button>
+    <button class="tr-btn pri tr-wide" data-act="start" ${have?'':'disabled'}>Начать: ${NTASK} задачи, ${exMin()} ${minW(exMin())}</button>
     ${historyBlock()}`;
 }
 function runView(E){
@@ -6524,6 +6532,7 @@ function onClick(ev){
     case 'know': answer(true); break;
     case 'dont': answer(false); break;
     case 'lim': ST.set('exam_min',+b.dataset.m); break;
+    case 'limd': { const v=Math.max(EXAM_LIM[0],Math.min(EXAM_LIM[1],exMin()+ +b.dataset.d)); ST.set('exam_min',v); try{ FX.buzz&&FX.buzz(5); }catch(e){} break; }
     case 'start': EXRES=null; ST.set('exam',{tasks:pickTasks(),acc:0,since:Date.now(),phase:'run',rate:{},lim:exMin()}); break;
     case 'pause': if(E){ if(E.since){E.acc+=Date.now()-E.since;E.since=null;} else E.since=Date.now(); ST.set('exam',E); } break;
     case 'open': trOpen(+b.dataset.n); return;
