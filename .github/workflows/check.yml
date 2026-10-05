@@ -15,7 +15,7 @@ jobs:
           node-version: 20
       - name: Браузер для проверки
         run: |
-          npm install --no-save --no-package-lock playwright@1.47.2
+          npm install --no-save --no-package-lock playwright@1.47.2 acorn@8
           npx playwright install --with-deps chromium
       - name: Чертежи, теория, все страницы и задачи
         run: node tests/run.js

@@ -192,7 +192,7 @@ function check(name,items,text,ctx){
       if(M.axis&&m[1]!=='x'){ const far=Math.abs(d.a[1])>Math.abs(d.b[1])?d.a:d.b; const sg=m[1]==='z'?-far[1]:far[1]; if(Math.abs(v)>0.5&&Math.abs(sg)>1&&Math.sign(sg)!==Math.sign(v)) add('размер','«'+l+'»: знак не совпадает с положением точки'); } }
     else if((m=/^(Δ[xyz])[₀-₉,]*\s*=\s*(\d+(?:[.,]\d+)?)\s*мм/.exec(l))) smp.push({px:len,v:num(m[2]),tol:0.6,what:'«'+l+'»',name});
     else if((m=/^\|?([A-ZА-Я][₀-₉0-9]*[A-ZА-Я][₀-₉0-9]*)\|?\s*([=≈])\s*(\d+(?:[.,]\d+)?)\s*мм/.exec(l))){ const v=num(m[3]), tol=m[2]==='='?0.6:Math.max(1.5,v*0.03);
-      smp.push({px:len,v,tol,what:'«'+l+'»',name});
+      smp.push({px:len,v,tol,eq:m[2]==='='&&!/[.,]/.test(m[3]),what:'«'+l+'»',name});
       const L=line3(M,m[1]); if(L){ const r=nrm(sub(L.q,L.p)); if(Math.abs(r-len)>Math.max(TOL*2,0.02*r)) add('размер','«'+l+'»: отрезок на рисунке '+len.toFixed(1)+' px, а |'+m[1]+'| по проекциям '+r.toFixed(1)+' px'); } } });
   M.angs.forEach(a=>{ const m=/([=≈])\s*(\d+(?:[.,]\d+)?)°/.exec(a.l); if(!m) return; const v=num(m[2]);
     const u=sub(a.p1,a.at), w=sub(a.p2,a.at); const ang=Math.acos(Math.max(-1,Math.min(1,dot(u,w)/nrm(u)/nrm(w))))*180/Math.PI;
@@ -238,7 +238,7 @@ function claims(name,M,text,smp,add){
     /* |AB| = 35 мм в тексте */
     const re5=new RegExp('\\|'+LN+'\\|\\s*([=≈])\\s*(\\d+(?:[.,]\\d+)?)\\s*мм','g');
     while((m=re5.exec(s))){ const L=line3(M,m[1]); if(!L||/[a-z]/.test(m[1][0])) continue; const v=num(m[3]), tol=m[2]==='='?0.6:Math.max(1.5,v*0.03);
-      smp.push({px:nrm(sub(L.q,L.p)),v,tol,what:'«'+m[0]+'» (текст)',name}); }
+      smp.push({px:nrm(sub(L.q,L.p)),v,tol,eq:m[2]==='='&&!/[.,]/.test(m[3]),what:'«'+m[0]+'» (текст)',name}); }
     /* координаты A(25; 10; 30): x отсчитывается влево от начала, y — вниз от оси на π₁, z — вверх на π₂ */
     const re6=/([A-ZА-Я][₀-₉0-9]*)\s*\(\s*([−-]?\d+(?:,\d+)?)\s*;\s*([−-]?\d+(?:,\d+)?)\s*;\s*([−-]?\d+(?:,\d+)?)\s*\)/g;
     while((m=re6.exec(s))){ const P=M.P3[m[1]]; if(!P||!M.axis) continue; const want=[-num(m[2]),num(m[3]),num(m[4])];
@@ -255,12 +255,19 @@ const partsOf=t=>(t.parts&&t.parts.length)?t.parts.map(p=>Object.assign({given:t
 const scale=(name,smp)=>{ const u=[]; const seen=new Set(); smp.forEach(o=>{ const k=o.what+'|'+o.px.toFixed(1); if(seen.has(k)) return; seen.add(k); u.push(o); });
   if(u.length<2) return; const rs=u.map(o=>o.px/o.v).sort((a,b)=>a-b), S=rs[Math.floor(rs.length/2)];
   const ok=u.filter(o=>Math.abs(o.px/S-o.v)<=o.tol).length; if(ok<Math.max(2,u.length/2)) return;   /* нет устойчивого масштаба — не судим */
-  u.forEach(o=>{ if(Math.abs(o.px/S-o.v)>o.tol) out.push({name:o.name,rule:'число',msg:o.what+': при общем масштабе задачи ('+S.toFixed(2)+' px/мм) получается '+(o.px/S).toFixed(1),lvl:'ошибка'}); }); };
+  u.forEach(o=>{ if(Math.abs(o.px/S-o.v)>o.tol) out.push({name:o.name,rule:'число',msg:o.what+': при общем масштабе задачи ('+S.toFixed(2)+' px/мм) получается '+(o.px/S).toFixed(1),lvl:'ошибка'}); });
+  /* точность: «= 35 мм» допустимо, только если величина действительно 35 (до округления 0,1 мм); иначе пишут «≈».
+     Масштаб берём по самим точным числам: у верного «=» отношение px/мм одинаково до 0,3 %. */
+  const ex=u.filter(o=>o.eq); if(ex.length<2) return; const rx=ex.map(o=>o.px/o.v).sort((a,b)=>a-b), Sx=rx[Math.floor(rx.length/2)];
+  if(ex.filter(o=>Math.abs(o.px/Sx-o.v)<=0.12).length<2) return;
+  ex.forEach(o=>{ const t=o.px/Sx; if(Math.abs(t-o.v)>0.12&&Math.abs(t-o.v)<=o.tol) out.push({name:o.name,rule:'точность',msg:o.what+': точное значение '+t.toFixed(2)+' — нужно «≈», а не «=»',lvl:'ошибка'}); }); };
 const task=(name,t)=>{ try{ partsOf(t).forEach((p,pi)=>{ const nm=name+(pi?' п.'+(pi+1):''); let acc=(p.given||[]).slice(), txt=TX(t)+'\n'+TX(p); const samples=[];
     check(nm+' · дано',acc,txt,{samples});
     (p.steps||[]).forEach((st,k)=>{ acc=acc.concat(st.add||[]); check(nm+' · шаг '+(k+1),acc,TX(st),{samples}); });
     scale(nm,samples); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e),lvl:'ошибка'}); } };
 if(opts.items){ const samples=[]; check(opts.name||'проверка',opts.items,opts.text||'',{samples}); scale(opts.name||'проверка',samples); return out; }
+if(opts.modelOf) return model(opts.modelOf);
+if(opts.tasks){ opts.tasks.forEach(t=>task('Задача №'+t.n,t)); return out; }
 try{ COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) { const samples=[]; check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap,{samples}); scale('Урок '+l.id+' · рисунок '+(i+1),samples); } })); }catch(e){ out.push({name:'COURSE',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ WB3.tasks.forEach(t=>task('Задача №'+t.n,t)); }catch(e){ out.push({name:'WB3',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t))); }catch(e){}

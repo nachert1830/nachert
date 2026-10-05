@@ -24,7 +24,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
   const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto(URL); await page.waitForTimeout(1500);
-  for(const f of ['geometry','render','mutate']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+  for(const f of ['geometry','render','mutate','oracle']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
   report('Чертежи (3D-модель)', await page.evaluate(()=>GEOM_CHECK()));
   report('Отрисовка (подписи)', await page.evaluate(()=>RENDER_CHECK()));
   const mut=await page.evaluate(()=>MUTATE_CHECK({n:450,seed:11}));
@@ -32,6 +32,21 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   const ml=mut['линия связи'], ms=mut['подписи местами'];
   if(ml&&ml.поймано/ml.всего<0.95) fail.push('Проверка ослабла: разрыв линии связи ловится в '+Math.round(100*ml.поймано/ml.всего)+'% случаев');
   if(ms&&ms.поймано/ms.всего<0.93) fail.push('Проверка ослабла: перепутанные подписи ловятся в '+Math.round(100*ms.поймано/ms.всего)+'% случаев');
+
+  /* 3б. оракул: ответы задач против условия, записанного геометрически; и проверка самого оракула */
+  report('Оракул (ответы задач)', await page.evaluate(()=>ORACLE_CHECK()));
+  const om=await page.evaluate(()=>ORACLE_MUTATE({per:4,seed:7}));
+  info.push('Сдвиг точки ответа: ловит 3D-проверка '+om.геометрия+' из '+om.всего+', вместе с оракулом '+om.сОракулом+' из '+om.всего+' (задач с оракулом: '+(await page.evaluate(()=>ORACLE_SPECS.length))+')');
+  if(om.сОракулом/om.всего<0.88) fail.push('Оракул ослаб: ловит '+Math.round(100*om.сОракулом/om.всего)+'% сдвигов ответа');
+
+  /* 3в. случайные варианты: каждая задача заново строится на искажённых данных и проходит 3D-проверку и оракул */
+  { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
+    const N=QUICK?10:30, res=await require('./random-run.js').runVariants(vpage,N), list=[]; let deg=0;
+    res.forEach(b=>{ Object.entries(b.bad).forEach(([k,v])=>{ const [n,rule]=k.split('|'); list.push({name:n,rule:'вариант: '+rule,msg:v[0].msg.slice(0,160)+' ('+v.length+' из '+N+')'}); });
+      (b.info||[]).forEach(x=>{ const m=/вырожденных вариантов (\d+)/.exec(x); if(m) deg+=+m[1]; }); });
+    const still=res.reduce((a,b)=>a.concat(b.still||[]),[]);
+    info.push('Случайные варианты: '+N+' на задачу, вырожденных (без решения) отброшено '+deg+'; данные не числами — только на своих данных: '+(still.join(', ')||'нет'));
+    report('Случайные варианты', list); await vpage.close(); }
 
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
