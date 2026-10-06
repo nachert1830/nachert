@@ -48,6 +48,18 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Случайные варианты: '+N+' на задачу, вырожденных (без решения) отброшено '+deg+'; данные не числами — только на своих данных: '+(still.join(', ')||'нет'));
     report('Случайные варианты', list); await vpage.close(); }
 
+  /* 3г. тренажёр: генератор на сайте ищет блоки задач так же, как эталонный разбор (acorn); список допущенных задач
+     совпадает с расчётом; каждый режим работает на каждой задаче */
+  { const gpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await gpage.goto(URL); await gpage.waitForTimeout(1200);
+    const ref=require('./random.js').blocks().map(b=>b.src.trim()), got=await gpage.evaluate(()=>GEN.blocks().map(x=>x.trim()));
+    const diff=ref.filter((b,i)=>b!==got[i]).length+Math.abs(ref.length-got.length);
+    if(diff) fail.push('Тренажёр: разбор кода на сайте расходится с эталоном в '+diff+' блоках');
+    const el=await require('./gen-check.js').genEligibility(gpage,12), cur=await gpage.evaluate(()=>GEN.list());
+    if(JSON.stringify(el.ok)!==JSON.stringify(cur)) fail.push('Тренажёр: список задач для генератора устарел. Вставь в GEN_OK: '+JSON.stringify(el.ok));
+    const gy=await require('./gym.js').gymCheck(gpage,URL,{all:!QUICK});
+    info.push('Тренажёр: блоков задач '+got.length+' (совпадают с эталоном), генератор — задач '+el.ok.length+', «построй сам» — '+gy.info.build+', «найди ошибку» — '+gy.info.bug);
+    report('Тренажёр',gy.bad); await gpage.close(); }
+
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
   report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));
@@ -62,7 +74,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(errs.length>before) bad.push({name:h,rule:'ошибка JS',msg:errs.slice(before).join(' / ').slice(0,200)});
       if(st.w>st.iw+1) bad.push({name:h,rule:'горизонтальная прокрутка',msg:'ширина '+st.w+' при экране '+st.iw});
       if(st.txt<40) bad.push({name:h,rule:'пустая страница',msg:'текста '+st.txt+' символов'});
-      st.links.forEach(l=>{ if(!seen.has(l)) queue.push(l); }); }
+      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)) queue.push(l); }); }   /* варианты тренажёра бесконечны — их проверяет tests/gym.js */
     info.push('Обход: страниц '+n);
     /* разбор каждой задачи до конца: «Дальше» до ответа */
     const tasks=await page.evaluate(()=>WB3.tasks.map(t=>t.n));

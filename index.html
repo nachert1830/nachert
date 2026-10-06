@@ -930,7 +930,8 @@ header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper
 .seg a.on{background:var(--surf);color:var(--ink);box-shadow:0 1px 2px rgba(15,20,32,.12),0 2px 8px -2px rgba(15,20,32,.15)}
 :root[data-theme="dark"] .seg a.on{background:var(--surf2);box-shadow:0 1px 2px rgba(0,0,0,.5)}
 .seg button{min-height:var(--tap)}
-.modeseg{max-width:560px;margin-bottom:var(--s5)}
+.modeseg{max-width:640px;margin-bottom:var(--s5);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.modeseg::-webkit-scrollbar{display:none}.modeseg a{white-space:nowrap;flex:1 0 auto}
 
 .intro{margin:0 0 var(--s4)}
 .intro h1{font-size:clamp(26px,6.4vw,38px);margin-bottom:var(--s2)}
@@ -2218,6 +2219,53 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:759px){.hq-t.wide{flex-wrap:wrap}.hq-t.wide>span:last-child{flex-basis:100%}}
 @media(min-width:760px){.hq{grid-template-columns:repeat(4,1fr)}.hq-t.wide{grid-column:1/-1;padding:16px 20px}}
 /* ── хаб «Подготовка к РК» ── */
+.gy-root{display:grid;gap:14px;margin-top:6px}
+.gy-load{padding:28px;text-align:center;color:var(--mut);font-size:15px}
+.gy-why{font-size:14px;line-height:1.55;color:var(--ink2);background:var(--surf2);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.gy-why b{color:var(--ink)}
+.gy-card{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;align-items:start;padding:18px;border-radius:18px;background:var(--surf);border:1px solid var(--line);position:relative;overflow:hidden}
+.gy-card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--gc,var(--blue))}
+.gy-build{--gc:var(--green)} .gy-bug{--gc:var(--red)}
+.gy-ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--gc,var(--blue)) 14%,transparent);color:var(--gc,var(--blue))}
+.gy-ic svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gy-ct h2{margin:2px 0 4px;font-size:20px}.gy-ct p{margin:0;color:var(--ink2);font-size:14.5px;line-height:1.5}
+.gy-st{margin-top:8px;font:500 12.5px var(--mono);color:var(--mut)}.gy-st b{color:var(--ink)}
+.gy-acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px}
+.gy-pick summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:14px;padding:8px 4px;list-style:none}
+.gy-pick summary::-webkit-details-marker{display:none}
+.gy-pick[open]{flex:1 1 100%}
+.gy-nums{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.gy-nums a{font:600 13px var(--mono);padding:6px 9px;border-radius:9px;border:1px solid var(--line2);color:var(--ink);text-decoration:none;background:var(--surf2)}
+.gy-nums a:hover{border-color:var(--gc,var(--blue));color:var(--gc,var(--blue))}
+.gy-vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 6px 6px 12px;margin:0 0 8px;border-radius:14px;background:var(--surf);border:1px solid var(--line)}
+.gy-vt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
+.gy-vbar .gy-va{flex-wrap:nowrap;flex:none}.gy-vt b{font-size:15px;white-space:nowrap}
+.gy-vb{display:inline-flex;align-items:center;min-height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);font:600 13.5px var(--sans);color:var(--ink);text-decoration:none;white-space:nowrap;background:var(--surf)}
+.gy-vb.pri{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.gy-bs{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+.gy-b{font:600 11.5px var(--mono);padding:3px 8px;border-radius:99px;background:var(--surf2);color:var(--mut)}
+.gy-b.ok{background:var(--green-s);color:var(--green)}
+.gy-va{display:flex;flex-wrap:wrap;gap:8px}.gy-va .btn{min-height:40px;padding:8px 14px;font-size:14px}
+.gy-head .pl-kicker{margin-bottom:4px}
+.gy-q{font-size:18px;line-height:1.4;margin:0 0 6px;font-weight:600}
+.gy-how{margin:0;color:var(--ink2);font-size:14.5px;line-height:1.5}
+.gy-tg{display:flex;flex-wrap:wrap;gap:8px}
+.gy-t{font:700 16px var(--mono);min-width:56px;min-height:44px;border-radius:12px;border:1.5px dashed var(--line2);background:var(--surf);color:var(--ink2);cursor:pointer}
+.gy-t.set{border-style:solid;color:var(--ink)}
+.gy-t.on{border-color:var(--blue);background:var(--blue-s);color:var(--blue);border-style:solid}
+.gy-zoomw{position:relative}
+.gy-sheet{overflow:auto;padding:8px}
+.gy-sheet svg{display:block;height:auto;user-select:none;-webkit-user-select:none}
+.gy-bar{display:flex;align-items:center;justify-content:space-between;gap:10px}.gy-hint{font-size:14px;color:var(--mut)}
+.gy-zb{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink);font:600 22px/1 var(--sans);cursor:pointer;box-shadow:0 4px 12px -6px rgba(0,0,0,.3)}
+.gy-res:empty{display:none}
+.gy-ok,.gy-bad{padding:12px 14px;border-radius:14px;font-size:14.5px;line-height:1.5}
+.gy-ok{background:var(--green-s);color:var(--ink);border:1px solid color-mix(in srgb,var(--green) 40%,transparent)}
+.gy-ok b{color:var(--green)}
+.gy-bad{background:var(--red-s);color:var(--ink);border:1px solid color-mix(in srgb,var(--red) 35%,transparent)}
+.gy-bad b{color:var(--red)} .gy-bad ul{margin:6px 0 0;padding-left:18px}
+.gy-row{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:560px){.gy-card{grid-template-columns:1fr}.gy-ic{width:40px;height:40px}.gy-row .btn,.gy-acts .btn{flex:1 1 auto}.gy-vt .gy-b{font-size:10.5px}}
 .rk-plan{display:grid;gap:10px;margin:var(--s3) 0 0;counter-reset:rk}
 .rk-s{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:transform .2s,border-color .2s}
 .rk-s:hover{border-color:var(--blue);transform:translateY(-2px)}
@@ -2926,6 +2974,7 @@ return { S,F,H,P,mm,len2,v3,G, pt,seg,ln,conn,txt,note,dim,sq,ang,tick,circ,arc,
       }));
     });
   }
+  WB3.snap=snap;   /* генератор вариантов (GEN) доводит линии новых чертежей так же */
   WB3.add=function(t){ try{ snap(t); }catch(e){} this.tasks.push(t); this.tasks.sort((a,b)=>(typeof a.n==='number'&&typeof b.n==='number')?a.n-b.n:0); return t; };
 })();
 
@@ -14750,7 +14799,7 @@ WB3.add({
     ans:'β ≈ '+r(be)+'° (по линии наибольшего наклона BK ⟂ f).' }
   ],
   ans:'α ≈ '+r(al)+'°, β ≈ '+r(be)+'°.',
-  note:'Чертёж увеличен в 1,5 раза; в исходном масштабе Δz<sub>CM</sub> = 14 мм и Δy<sub>BK</sub> ≈ 18 мм. Угол к π₁ иногда обозначают ψ, к π₂ — φ. Построения: h через A, ЛНН CM; f через C, ЛНН BK. По расчёту α ≈ '+r(al)+'°, β ≈ '+r(be)+'°.'
+  note:'Чертёж увеличен в 1,5 раза; в исходном масштабе Δz<sub>CM</sub> ≈ '+r(Math.abs(C[2]-Mh[2])/1.5)+' мм и Δy<sub>BK</sub> ≈ '+r(Math.abs(B[1]-Kf[1])/1.5)+' мм. Угол к π₁ иногда обозначают ψ, к π₂ — φ. Построения: h через A, ЛНН CM; f через C, ЛНН BK. По расчёту α ≈ '+r(al)+'°, β ≈ '+r(be)+'°.'
 });
 })();
 
@@ -15641,7 +15690,7 @@ WB3.add({
             pt(F(C),'C″','nw','res'), pt(H(C),'C′','nw','res'), pt(F(A),'A″','nw','res',{hollow:true}), pt(H(A),'A′','w','res') ] }
   ],
   ans:'A′ находим из условия A ∈ α, где α ⟂ b через B (α задана h и f). |AB| ≈ '+Math.round(AB)+' мм; на b откладываем |BC| = |AB| через натуральную величину произвольного отрезка BD. Задача имеет два решения — C можно отложить по b в обе стороны от B; показано одно.',
-  note:'Ответ: |AB| = 24 мм, |BC| = 24 мм. Натуральная величина AB найдена на π₂, BD — на π₁.'
+  note:'Ответ: |AB| = |BC| ≈ '+Math.round(AB)+' мм. Натуральная величина AB найдена на π₂, BD — на π₁.'
 });
 })();
 
@@ -21215,6 +21264,283 @@ const CHEAT=[
 
 </script>
 <script>
+/* ═════════ GEN: новые варианты задач тетради ═════════
+   Каждая задача на сайте — программа построения в координатах x, y, z. Генератор находит в коде страницы
+   блок задачи, слегка меняет исходные данные (каждое число — по-своему, равные — одинаково, нули и числа
+   из условия не меняются), выполняет построение заново и показывает вариант, только если он прошёл
+   ту же проверку, что и сайт: 3D-модель чертежа (GEOM_CHECK) и проверку ответа (ORACLE_CHECK).
+   Список задач, для которых генератор допустим (GEN_OK), считают тесты (tests/run.js). */
+window.GEN=(function(){
+const GEN_OK=[2,4,6,10,12,13,15,17,18,19,20,21,22,23,24,25,26,27,28,31,32,33,34,36,37,38,41,43,46,47,48,49,50,51,52,53,54,55,56,57,58,59,61,62,63,64,66,67,69,74,75,76,78,79,80,81,82,84,85,86];   /* допуск считают тесты (tests/gen-check.js) */
+let SRC=null, BLK=null;
+function source(){ if(SRC!=null) return SRC; const cnt=x=>x.textContent.split('WB3.add(').length; const sc=[...document.scripts].filter(x=>!x.src).sort((a,b)=>cnt(b)-cnt(a))[0]; SRC=sc?sc.textContent:''; return SRC; }
+/* ── разбор кода: границы операторов верхнего уровня (строки, шаблоны, комментарии, регулярные выражения) ── */
+const isId=c=>c!==undefined&&/[\w$\u0080-￿]/.test(c);
+const KW=/^(return|typeof|case|in|of|delete|void|throw|new|do|else|instanceof|yield|await)$/;
+function skipStr(code,i){ const q=code[i]; let j=i+1; while(j<code.length){ const c=code[j]; if(c==='\\'){ j+=2; continue; } if(c===q) return j+1; if(c==='\n') return j; j++; } return j; }
+function skipRe(code,i){ let j=i+1, cls=false; while(j<code.length){ const c=code[j]; if(c==='\\'){ j+=2; continue; } if(c==='\n') return -1;
+    if(c==='[') cls=true; else if(c===']') cls=false; else if(c==='/'&&!cls){ j++; while(isId(code[j])) j++; return j; } j++; } return -1; }
+function skipTpl(code,i){ let j=i+1; while(j<code.length){ const c=code[j]; if(c==='\\'){ j+=2; continue; } if(c==='`') return j+1;
+    if(c==='$'&&code[j+1]==='{'){ j=walk(code,j+2,true); continue; } j++; } return j; }
+/* walk: обходит код; untilBrace — вернуться за закрывающей «}» выражения ${…}; иначе собирает операторы верхнего уровня */
+function walk(code,i,untilBrace,out){
+  let depth=0, st=-1, kind='', prev='', word='';
+  const reOK=()=>prev===''||/[(,=:[!&|?{};+\-*%<>~^]/.test(prev)||(prev==='w'&&KW.test(word));
+  while(i<code.length){ const c=code[i];
+    if(c===' '||c==='\t'||c==='\n'||c==='\r'){ i++; continue; }
+    if(c==='/'&&code[i+1]==='/'){ const j=code.indexOf('\n',i); i=j<0?code.length:j; continue; }
+    if(c==='/'&&code[i+1]==='*'){ const j=code.indexOf('*/',i+2); i=j<0?code.length:j+2; continue; }
+    if(out&&depth===0&&st<0){ st=i; kind=''; }
+    if(c==='"'||c==="'"){ i=skipStr(code,i); prev='"'; continue; }
+    if(c==='`'){ i=skipTpl(code,i); prev='"'; continue; }
+    if(c==='/'){ if(reOK()){ const j=skipRe(code,i); if(j>0){ i=j; prev='"'; continue; } } i++; prev='/'; continue; }
+    if(isId(c)){ let j=i; while(j<code.length&&isId(code[j])) j++; word=code.slice(i,j); if(out&&depth===0&&i===st) kind=word; prev='w'; i=j; continue; }
+    if(c==='('||c==='['||c==='{'){ if(out&&depth===0&&i===st&&c==='{') kind='{'; depth++; i++; prev=c; continue; }
+    if(c===')'||c===']'||c==='}'){ if(untilBrace&&depth===0&&c==='}') return i+1; depth--; i++; prev=c;
+      if(out&&depth===0&&c==='}'&&(kind==='{'||kind==='function')){ out.push([st,i]); st=-1; } continue; }
+    if(c===';'&&depth===0&&out){ out.push([st,i+1]); st=-1; i++; prev=';'; continue; }
+    prev=c; i++; }
+  if(out&&st>=0) out.push([st,code.length]);
+  return i;
+}
+/* блоки задач: операторы верхнего уровня, в которых вызывается WB3.add */
+function blocks(){ if(BLK) return BLK; const code=source(), sp=[]; walk(code,0,false,sp);
+  BLK=sp.map(([a,b])=>code.slice(a,b)).filter(x=>x.indexOf('WB3.add(')>=0&&!/^(const|let|var)\s+WB3\b/.test(x)); return BLK; }
+function blockOf(n){ const re=new RegExp('\\bn:\\s*'+n+'\\s*,'); return blocks().find(b=>re.test(b))||null; }
+/* ── искажение данных ── */
+function rng(seed){ let x=seed>>>0||1; return ()=>{ x^=x<<13; x>>>=0; x^=x>>17; x^=x<<5; x>>>=0; return x/4294967296; }; }
+function warp(seed,pin){ const r=rng(seed); const s=(r()-.5)*.12, e=.6+r()*1.6, lam=7+r()*9, ph=r()*6.28;
+  return v=>{ if(v===0||(pin&&pin.has(v))) return v; const w=v*(1+s)+e*(Math.sin(v/lam+ph)-Math.sin(ph)); return Math.round(w*100)/100; }; }
+const NUM='(-?\\d+(?:\\.\\d+)?)', MUL='((?:\\s*\\*\\s*[A-Za-z_$][\\w$]*)?)';
+const RE3=new RegExp('\\[\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*\\](?!\\s*\\.)','g');
+const SC=/(\b(?:const|let)\s+|,\s*)([A-Za-z_$][\w$]*)(\s*=\s*)(-?\d+(?:\.\d+)?)(?=\s*[,;\n]|\s*\/[\/*])/g;
+function perturb(src,seed,pin){ const f=warp(seed,pin); let n=0;
+  let s=src.replace(RE3,(m,a,ma,b,mb,c,mc)=>{ n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
+  s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC)$/.test(name)) return m; n++; return pre+name+eq+f(+v); });
+  return {src:s,n}; }
+/* числа из условия задачи (их не трогаем: условие на экране должно совпадать с чертежом) */
+const pinOf=tasks=>{ const p=new Set(); tasks.forEach(t=>String(t.q||'').replace(/<[^>]+>/g,' ').replace(/\d+(?:[.,]\d+)?/g,m=>{ p.add(parseFloat(m.replace(',','.'))); return m; })); return p; };
+/* ── выполнение блока с подменённым WB3: задачи собираются в список, в тетрадь не попадают ── */
+function run(src){
+  const cap=[]; window.__GEN_IN={add(t){ try{ WB3.snap&&WB3.snap(t); }catch(e){} cap.push(t); return t; },get:n=>WB3.get(n),tasks:[]}; window.__GEN_ERR=null;
+  const el=document.createElement('script'); el.textContent='try{(function(WB3){\n'+src+'\n})(window.__GEN_IN);}catch(e){window.__GEN_ERR=String(e&&e.message||e);}';
+  document.head.appendChild(el); el.remove(); const err=window.__GEN_ERR; window.__GEN_IN=null;
+  if(err) throw new Error(err); return cap; }
+/* ── проверка: те же 3D-проверка и оракул, что в тестах (подгружаются по требованию) ── */
+let CHK=null;
+function checkers(){ if(window.GEOM_CHECK&&window.ORACLE_CHECK) return Promise.resolve(true); if(CHK) return CHK;
+  const load=src=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+  CHK=load('tests/geometry.js').then(()=>load('tests/oracle.js')).then(()=>true,()=>{ CHK=null; return false; }); return CHK; }
+const key=o=>String(o.name).replace(/ · (шаг \d+|дано)$/,'')+'|'+o.rule;
+const issues=t=>GEOM_CHECK({tasks:[t]}).concat(ORACLE_CHECK({tasks:[t]})).filter(o=>o.lvl==='ошибка');
+const sig=t=>{ let h=0; const parts=(t.parts&&t.parts.length)?t.parts:[t]; parts.forEach(p=>[].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).forEach(it=>{ if(it&&it.t==='pt'&&it.at) h+=Math.abs(it.at[0])*1.3+Math.abs(it.at[1])*.7; })); return h; };
+const BASE={};
+function verify(orig,t){ const b=BASE[orig.n]||(BASE[orig.n]=new Set(issues(orig).map(key)));
+  const bad=issues(t).filter(o=>!b.has(key(o))); const moved=Math.abs(sig(t)-sig(orig))>1;
+  return {ok:!bad.length&&moved,bad,moved,oracle:window.ORACLE_SPECS&&ORACLE_SPECS.some(k=>k===String(orig.n)||k.indexOf(orig.n+'.')===0)}; }
+/* вариант задачи n: перебираем семена с seed, пока вариант не пройдёт проверку */
+function variant(n,seed,tries){ const orig=WB3.get(n), src=blockOf(n); if(!orig||!src) return null;
+  const pin=pinOf([orig]);
+  for(let k=0;k<(tries||14);k++){ const sd=seed+k; let t=null;
+    try{ t=run(perturb(src,sd,pin).src).find(x=>x.n===n); }catch(e){ continue; }
+    if(!t) continue; const v=verify(orig,t); if(v.ok) return {task:t,seed:sd,check:v}; }
+  return null; }
+const ok=n=>GEN_OK.includes(n);
+return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,variant,issues,ok,list:()=>GEN_OK.slice()};
+})();
+
+/* ═════════ ТРЕНАЖЁР: новые варианты · построй сам · найди ошибку ═════════
+   #/ng/check/gym                 — выбор режима и задачи
+   #/ng/check/gym/var/45-1234     — задача №45 на варианте данных 1234 (разбор по шагам)
+   #/ng/check/gym/build/47-1234   — «Построй сам»: отметь ответ на чертеже, сайт проверит
+   #/ng/check/gym/bug/20-1234     — «Найди ошибку»: в чертеже одна подсаженная ошибка */
+window.GYM=(function(){
+const $q=(r,s)=>r.querySelector(s);
+const rnd=()=>1+Math.floor(Math.random()*899999);
+const parseKey=k=>{ const m=/^(\d+)-(\d+)$/.exec(String(k||'')); return m?{n:+m[1],seed:+m[2]}:null; };
+const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+const cnt=(k,d)=>{ const o=ST.get('gym',{}); if(d){ o[k]=(o[k]||0)+d; ST.set('gym',o); } return o[k]||0; };
+const partsOf=t=>(t.parts&&t.parts.length)?t.parts:[t];
+const allItems=(t,p)=>[].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).filter(Boolean);
+/* задачи для «Построй сам»: одна часть, есть оракул, ответ — 1–3 точки, которых нет в условии */
+function buildTargets(t){ if(!window.ORACLE_POINTS||partsOf(t).length!==1||!ORACLE_SPECS.includes(String(t.n))) return null;
+  const p=partsOf(t)[0], given=new Set((p.given||t.given||[]).filter(i=>i.t==='pt'&&i.l).flatMap(i=>strip(i.l).split(/\s*≡\s*/)));
+  const items=allItems(t,p), at=l=>{ const a=items.filter(i=>i.t==='pt'&&i.l&&strip(i.l).split(/\s*≡\s*/).includes(l)&&i.at).map(i=>i.at);
+    return a.length&&a.every(q=>Math.hypot(q[0]-a[0][0],q[1]-a[0][1])<1)?a[0]:null; };
+  const out=[]; ORACLE_POINTS(String(t.n)).forEach(n=>{ ['′','″'].forEach(m=>{ const l=n+m; if(given.has(l)) return; const q=at(l); if(q) out.push({l,at:q}); }); });
+  return out.length&&out.length<=6?out:null; }
+/* рамка чертежа по всем элементам (как у DRAW.svg), чтобы пересчитывать нажатие в координаты */
+function frame(items){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const P=p=>{ if(p&&isFinite(p[0])&&isFinite(p[1])){ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); } };
+  items.forEach(i=>{ P(i.at); P(i.a); P(i.b); (i.p||[]).forEach(P); if(i.c&&i.r){ P([i.c[0]-i.r,i.c[1]-i.r]); P([i.c[0]+i.r,i.c[1]+i.r]); } });
+  return {ox:-x0+24,oy:-y0+20,w:x1-x0+48,h:y1-y0+40}; }
+function svgOf(items,fr,alt){ return DRAW.svg({items,fit:false,w:fr.w,h:fr.h,ox:fr.ox,oy:fr.oy,pad:10,alt:alt||'чертёж',max:900}); }
+function toItem(svg,fr,ev){ const r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return [(ev.clientX-r.left)*vb.width/r.width-10-fr.ox,(ev.clientY-r.top)*vb.height/r.height-10-fr.oy]; }
+const segDist=(p,a,b,inf)=>{ const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy; let t=l?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l:0; if(!inf) t=Math.max(0,Math.min(1,t)); return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy); };
+const badge=(ok,t)=>`<span class="gy-b${ok?' ok':''}">${ok?'✓':'·'} ${t}</span>`;
+
+/* ── задача: вариант данных (проверенный) или исходная ── */
+function make(n,seed){ const orig=WB3.get(n); if(!orig) return null;
+  if(!seed||!GEN.ok(n)) return {task:orig,seed:0,orig:true};
+  const v=GEN.variant(n,seed); return v?{task:v.task,seed:v.seed,check:v.check}:{task:orig,seed:0,orig:true}; }
+const href=(mode,n,seed)=>H('ng','check','gym',mode,n+'-'+seed);
+function pick(list){ return list[Math.floor(Math.random()*list.length)]; }
+function lists(){ const gen=GEN.list(); const build=gen.filter(n=>{ const t=WB3.get(n); return t&&buildTargets(t); });
+  const bug=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number'&&n>=10); return {gen,build,bug}; }
+
+/* ── главная тренажёра ── */
+function home(v){
+  const L=lists();
+  const card=(mode,icon,title,sub,stat,list)=>`<section class="gy-card gy-${mode}">
+    <div class="gy-ic" aria-hidden="true">${icon}</div>
+    <div class="gy-ct"><h2>${title}</h2><p>${sub}</p>${stat?`<div class="gy-st">${stat}</div>`:''}</div>
+    <div class="gy-acts"><button class="btn pri" data-go="${mode}">Случайная задача</button>
+      <details class="gy-pick"><summary>Выбрать задачу</summary><div class="gy-nums">${list.map(n=>`<a href="${href(mode,n,mode==='bug'?rnd():rnd())}">№${n}</a>`).join('')}</div></details></div></section>`;
+  const I={var:'<svg viewBox="0 0 24 24"><path d="M4 7h11M4 12h7M4 17h11" /><path d="M17 4l3 3-3 3M15 14l3 3-3 3"/></svg>',
+    build:'<svg viewBox="0 0 24 24"><path d="M4 20l6-14 4 9 3-4 3 9z"/><circle cx="17" cy="6" r="2.2"/></svg>',
+    bug:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5M11 8v3.5M11 14h.01"/></svg>'};
+  v.querySelector('#gyRoot').innerHTML=`
+   ${card('var',I.var,'Новый вариант','Та же задача — другие данные. Решай на бумаге, потом сверяйся с разбором по шагам. Задача не повторится.','решено вариантов: <b>'+cnt('var')+'</b>',L.gen)}
+   ${card('build',I.build,'Построй сам','Реши на бумаге и отметь ответ на чертеже — сайт сразу скажет, верно ли и где ошибка.','верных построений: <b>'+cnt('build')+'</b>',L.build)}
+   ${card('bug',I.bug,'Найди ошибку','В правильный чертёж подсажена одна ошибка: разрыв линии связи, перепутанные подписи или неверный размер. Найди и нажми на неё.','найдено ошибок: <b>'+cnt('bug')+'</b>',L.bug)}
+   <div class="gy-why"><b>Почему этому можно верить.</b> Задача на сайте — программа построения в координатах. Новый вариант строится той же программой на изменённых данных и показывается, только если прошёл ту же проверку, что и весь сайт: каждая точка восстановлена в пространстве, проверены линии связи, принадлежность, ∥ и ⊥, числа и, где он есть, ответ — независимым расчётом.</div>`;
+  v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.go; nav(href(m,pick(m==='var'?L.gen:m==='build'?L.build:L.bug),rnd())); }));
+}
+
+/* ── вариант: разбор по шагам ── */
+function variantView(host,n,seed){
+  const r=make(n,seed); if(!r){ host.innerHTML='<div class="box warn">Задача не найдена.</div>'; return; }
+  if(r.seed!==seed&&!r.orig){ try{ history.replaceState(null,'',href('var',n,r.seed)); }catch(e){} }
+  const t=r.task, canBuild=!!buildTargets(t);
+  const chk=r.orig?'исходные данные':'проверен';
+  host.innerHTML=`<div class="gy-vbar"><div class="gy-vt"><b>${r.orig?'Задача №'+n:'Вариант №'+n}</b><span class="gy-b${r.orig?'':' ok'}" title="${r.orig?'':'Вариант построен заново и прошёл ту же 3D-проверку'+(r.check&&r.check.oracle?' и независимый пересчёт ответа':'')+', что весь сайт'}">${r.orig?'':'✓ '}${chk}</span></div>
+     <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}${canBuild?`<a class="gy-vb" href="${href('build',n,r.seed||rnd())}">Построй</a>`:''}</div></div>
+   <div id="plMount"></div>`;
+  document.body.classList.add('inplayer');
+  PLR=PLAYER.mount($q(host,'#plMount'),t,{ backHref:H('ng','check','gym'), backLabel:'К тренажёру', afterText:'Дальше: ещё вариант',
+    posKey:'#/gym/'+n+'-'+r.seed, onLast:()=>{ const k='gv'+n+'-'+r.seed, o=ST.get('gymdone',{}); if(!o[k]){ o[k]=1; ST.set('gymdone',o); cnt('var',1); } },
+    onDone:()=>nav(r.orig?H('ng','check','gym'):href('var',n,rnd())) });
+}
+
+/* ── построй сам ── */
+function buildView(host,n,seed){
+  const r=make(n,seed), t=r&&r.task, T=t&&buildTargets(t); if(!T){ host.innerHTML='<div class="box warn">Для этой задачи режим недоступен. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; return; }
+  if(r.seed!==seed&&!r.orig){ try{ history.replaceState(null,'',href('build',n,r.seed)); }catch(e){} }
+  const p=partsOf(t)[0], given=(p.given||t.given||[]), all=allItems(t,p), fr=frame(all);
+  const tol=Math.max(7,0.03*Math.max(fr.w,fr.h)), S={pos:{},cur:0,checked:false,zoom:1};
+  const lines=given.filter(i=>(i.t==='seg'||i.t==='line')&&i.l&&/^[a-zA-Z][₀-₉0-9]*[αβγδ]?[′″]$|^[hf]₀[αβγδ]$/.test(strip(i.l)));
+  host.innerHTML=`<div class="gy-head"><div class="pl-kicker">${r.orig?'Задача №'+n:'Вариант задачи №'+n} · построй сам</div>
+     <h2 class="gy-q">${t.q||''}</h2>
+     <p class="gy-how">Реши на бумаге (данные варианта — на чертеже). Затем отметь на чертеже ответ: выбери точку внизу и нажми туда, где она должна быть. Точку можно перетаскивать.</p></div>
+   <div class="gy-bar"><div class="gy-tg" role="group" aria-label="Что отметить">${T.map((x,i)=>`<button class="gy-t" data-i="${i}">${x.l}</button>`).join('')}</div><button class="gy-zb" id="gyZoom" aria-label="Увеличить чертёж">＋</button></div>
+   <div class="sheet gy-sheet" id="gySheet"></div>
+   <div class="gy-res" id="gyRes" aria-live="polite"></div>
+   <div class="gy-row"><button class="btn pri" id="gyCheck" disabled>Проверить</button><a class="btn" href="${r.orig?H('ng','tasks',n):href('var',n,r.seed)}">Смотреть разбор</a><a class="btn ghost" href="${href('build',pick(lists().build),rnd())}">Другая задача</a></div>`;
+  const sheet=$q(host,'#gySheet');
+  const draw=()=>{ const extra=[]; T.forEach((x,i)=>{ const q=S.pos[x.l]; if(q) extra.push({t:'pt',at:q,l:x.l,la:'ne',k:S.checked?(S.ok&&S.ok[i]?'grn':'res'):'res'}); });
+    if(S.checked) T.forEach((x,i)=>{ if(!(S.ok&&S.ok[i])) extra.push({t:'pt',at:x.at,l:'',k:'grn',hollow:true}); });
+    sheet.innerHTML=svgOf(given.concat(extra),fr,'Условие и отмеченные точки'); const svg=$q(sheet,'svg'); svg.style.maxWidth='none'; svg.style.width=(S.zoom*100)+'%'; bind(svg); tabs(); };
+  const tabs=()=>{ host.querySelectorAll('.gy-t').forEach((b,i)=>{ b.classList.toggle('on',i===S.cur); b.classList.toggle('set',!!S.pos[T[i].l]); });
+    $q(host,'#gyCheck').disabled=T.some(x=>!S.pos[x.l]); };
+  let drag=null;
+  const bind=svg=>{ svg.style.touchAction='none'; svg.style.cursor='crosshair';
+    svg.addEventListener('pointerdown',ev=>{ const q=toItem(svg,fr,ev); let hit=-1, bd=tol*1.4;
+      /* выбранная точка ещё не поставлена — ставим её; иначе можно ухватить ближайшую уже поставленную */
+      if(!S.pos[T[S.cur].l]) hit=S.cur; else T.forEach((x,i)=>{ const z=S.pos[x.l]; if(z){ const d=Math.hypot(z[0]-q[0],z[1]-q[1]); if(d<bd){ bd=d; hit=i; } } });
+      if(hit<0){ hit=S.cur; } S.cur=hit; drag={i:hit}; svg.setPointerCapture(ev.pointerId); S.pos[T[hit].l]=q; S.checked=false; $q(host,'#gyRes').innerHTML=''; draw(); });
+    svg.addEventListener('pointermove',ev=>{ if(!drag) return; S.pos[T[drag.i].l]=toItem(svg,fr,ev); draw(); });
+    svg.addEventListener('pointerup',()=>{ if(!drag) return; drag=null; const nx=T.findIndex(x=>!S.pos[x.l]); if(nx>=0) S.cur=nx; try{ FX.buzz&&FX.buzz(6); }catch(e){} draw(); }); };
+  host.querySelectorAll('.gy-t').forEach(b=>b.addEventListener('click',()=>{ S.cur=+b.dataset.i; tabs(); }));
+  $q(host,'#gyZoom').addEventListener('click',e=>{ S.zoom=S.zoom===1?2:1; e.currentTarget.textContent=S.zoom===1?'＋':'－'; draw(); });
+  $q(host,'#gyCheck').addEventListener('click',()=>{
+    const msgs=[]; S.ok=T.map(x=>Math.hypot(S.pos[x.l][0]-x.at[0],S.pos[x.l][1]-x.at[1])<=tol);
+    /* подсказки: линия связи, принадлежность заданным прямым */
+    const base=l=>l.slice(0,-1);
+    T.forEach(x=>{ if(x.l.endsWith('′')){ const y=T.find(z=>z.l===base(x.l)+'″'); if(y&&Math.abs(S.pos[x.l][0]-S.pos[y.l][0])>tol*0.6) msgs.push(x.l+' и '+y.l+' должны лежать на одной вертикальной линии связи.'); } });
+    T.forEach((x,i)=>{ if(S.ok[i]) return; lines.forEach(L=>{ const lb=strip(L.l), mk=lb.slice(-1); if(!/[′″]/.test(mk)||mk!==x.l.slice(-1)) return;
+      if(segDist(x.at,L.a,L.b,true)<1.5&&segDist(S.pos[x.l],L.a,L.b,true)>tol*0.7) msgs.push(x.l+' должна лежать на '+lb+'.'); }); });
+    const good=S.ok.every(Boolean); S.checked=true;
+    $q(host,'#gyRes').innerHTML=good?`<div class="gy-ok"><b>Верно!</b> Все точки на своих местах (допуск ≈ 2–3 мм на бумаге).</div>`
+      :`<div class="gy-bad"><b>Пока не так.</b> ${S.ok.map((o,i)=>o?'':T[i].l).filter(Boolean).join(', ')} — далеко от верного положения (зелёные кружки).${msgs.length?'<ul>'+[...new Set(msgs)].map(m=>'<li>'+m+'</li>').join('')+'</ul>':''}</div>`;
+    if(good){ const k='gb'+n+'-'+r.seed, o=ST.get('gymdone',{}); if(!o[k]){ o[k]=1; ST.set('gymdone',o); cnt('build',1); } }
+    try{ FX.buzz&&FX.buzz(good?'ok':12); }catch(e){} draw(); });
+  draw();
+}
+
+/* ── найди ошибку ── */
+function bugMake(t,seed){
+  const R=(function(s){ let x=s>>>0||1; return ()=>{ x^=x<<13; x>>>=0; x^=x>>17; x^=x<<5; x>>>=0; return x/4294967296; }; })(seed*2654435761%4294967295);
+  const parts=partsOf(t), pi=Math.floor(R()*parts.length), p=parts[pi], items=allItems(t,p).map(i=>JSON.parse(JSON.stringify(i)));
+  const base=new Set(GEOM_CHECK({items}).map(o=>o.rule+'|'+o.msg));
+  const caught=it=>GEOM_CHECK({items:it}).some(o=>!base.has(o.rule+'|'+o.msg));
+  const pts=items.filter(i=>i.t==='pt'&&i.l&&i.at&&/^[A-ZА-Я0-9][₀-₉0-9]*[′″]$/.test(strip(i.l)));
+  const pair=l=>{ const m=/^(.+)([′″])$/.exec(strip(l)); return m&&pts.some(o=>strip(o.l)===m[1]+(m[2]==='′'?'″':'′')); };
+  const tries=[];
+  for(let k=0;k<30;k++){ const type=['link','swap','link','swap','num'][Math.floor(R()*5)];
+    const it=items.map(i=>JSON.parse(JSON.stringify(i)));
+    if(type==='link'){ const c=pts.filter(i=>pair(i.l)); if(!c.length) continue; const a=c[Math.floor(R()*c.length)], old=a.at.slice(), d=(R()<.5?-1:1)*(7+R()*7);
+      const mv=q=>q&&Math.abs(q[0]-old[0])<0.01&&Math.abs(q[1]-old[1])<0.01?[q[0]+d,q[1]]:q;
+      it.forEach(i=>{ if(i.at) i.at=mv(i.at); if(i.a) i.a=mv(i.a); if(i.b) i.b=mv(i.b); });
+      if(caught(it)) return {items:it,pi,at:[old[0]+d,old[1]],type,why:strip(a.l)+' сдвинута: '+strip(a.l)+' и '+(strip(a.l).replace(/′$/,'@').replace(/″$/,'′').replace('@','″'))+' должны лежать на одной вертикальной линии связи (⟂ оси x).'}; }
+    if(type==='swap'){ const c=pts; if(c.length<3) continue; const a=c[Math.floor(R()*c.length)], m=strip(a.l).slice(-1), o=c.filter(x=>x!==a&&strip(x.l).slice(-1)===m&&Math.abs(x.at[0]-a.at[0])>10);
+      if(!o.length) continue; const b=o[Math.floor(R()*o.length)];
+      const same=(i,q)=>i.t==='pt'&&i.at&&i.l===q.l&&Math.abs(i.at[0]-q.at[0])<.01&&Math.abs(i.at[1]-q.at[1])<.01;
+      const As=it.filter(i=>same(i,a)), Bs=it.filter(i=>same(i,b)); if(!As.length||!Bs.length) continue; const A=As[0], B=Bs[0];
+      As.forEach(i=>i.l=b.l); Bs.forEach(i=>i.l=a.l);
+      if(caught(it)) return {items:it,pi,at:A.at,at2:B.at,type,why:'Подписи '+strip(a.l)+' и '+strip(b.l)+' перепутаны местами: проверь, какая проекция стоит на одной линии связи с какой.'}; }
+    if(type==='num'){ const c=it.filter(i=>(i.t==='seg'||i.t==='dim')&&i.l&&/\d+(?:[.,]\d+)?\s*мм/.test(i.l)&&i.a&&i.b); if(!c.length) continue; const s=c[Math.floor(R()*c.length)], was=strip(s.l);
+      s.l=s.l.replace(/(\d+(?:[.,]\d+)?)(\s*мм)/,(m,v,u)=>String(Math.round(parseFloat(v.replace(',','.'))+(R()<.5?-1:1)*(4+Math.floor(R()*6))))+u);
+      if(caught(it)) return {items:it,pi,at:s.lat||[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2],type,why:'Размер «'+strip(s.l)+'» не совпадает с чертежом: верно «'+was+'».'}; }
+  }
+  return null; }
+function bugView(host,n,seed){
+  const r=make(n,seed), t=r&&r.task; let B=t&&bugMake(t,seed||1), tries=0;
+  while(!B&&tries<6){ tries++; const m=pick(lists().bug); const rr=make(m,rnd()); if(rr){ B=bugMake(rr.task,seed+tries); if(B){ return nav(href('bug',m,seed+tries)); } } }
+  if(!B){ host.innerHTML='<div class="box warn">Не получилось подготовить задание. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; return; }
+  const fr=frame(B.items), hitR=Math.max(10,0.055*Math.max(fr.w,fr.h)), S={miss:0,found:false,zoom:1};
+  host.innerHTML=`<div class="gy-head"><div class="pl-kicker">${r.orig?'Задача №'+n:'Вариант задачи №'+n} · найди ошибку</div>
+     <h2 class="gy-q">${t.q||''}</h2>
+     <p class="gy-how">Это итоговый чертёж решения, но в нём <b>одна ошибка</b>: разрыв линии связи, перепутанные подписи или неверный размер. Нажми на неё.</p></div>
+   <div class="gy-bar"><span class="gy-hint">Нажми на место ошибки</span><button class="gy-zb" id="gyZoom" aria-label="Увеличить чертёж">＋</button></div>
+   <div class="sheet gy-sheet" id="gySheet"></div>
+   <div class="gy-res" id="gyRes" aria-live="polite"></div>
+   <div class="gy-row"><button class="btn ghost" id="gyShow">Показать ошибку</button><a class="btn pri" href="${href('bug',pick(lists().bug),rnd())}">Следующая</a><a class="btn" href="${r.orig?H('ng','tasks',n):href('var',n,r.seed)}">Разбор задачи</a></div>`;
+  const sheet=$q(host,'#gySheet');
+  const mark=q=>({t:'circ',c:q,r:hitR*0.7,k:'res'});
+  const draw=(extra)=>{ sheet.innerHTML=svgOf(B.items.concat(extra||[]),fr,'Чертёж с ошибкой'); const svg=$q(sheet,'svg'); svg.style.maxWidth='none'; svg.style.width=(S.zoom*100)+'%'; svg.style.cursor='pointer';
+    svg.addEventListener('click',ev=>{ if(S.found) return; const q=toItem(svg,fr,ev); const d=Math.min(Math.hypot(q[0]-B.at[0],q[1]-B.at[1]),B.at2?Math.hypot(q[0]-B.at2[0],q[1]-B.at2[1]):1e9);
+      if(d<=hitR){ S.found=true; if(!S.miss) cnt('bug',1); try{ FX.buzz&&FX.buzz('ok'); }catch(e){} $q(host,'#gyRes').innerHTML=`<div class="gy-ok"><b>Нашёл!</b> ${B.why}</div>`; draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); }
+      else { S.miss++; try{ FX.buzz&&FX.buzz(12); }catch(e){} $q(host,'#gyRes').innerHTML=`<div class="gy-bad"><b>Здесь всё верно.</b> ${S.miss>=2?'Подсказка: проверь '+(B.type==='num'?'числа на чертеже':B.type==='swap'?'подписи точек по линиям связи':'вертикальность линий связи')+'.':'Ищи дальше.'}</div>`; } }); };
+  $q(host,'#gyShow').addEventListener('click',()=>{ S.found=true; $q(host,'#gyRes').innerHTML=`<div class="gy-bad"><b>Ошибка здесь.</b> ${B.why}</div>`; draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); });
+  $q(host,'#gyZoom').addEventListener('click',e=>{ S.zoom=S.zoom===1?2:1; e.currentTarget.textContent=S.zoom===1?'＋':'－'; draw(S.found?[mark(B.at)]:[]); });
+  draw();
+}
+
+/* ── вход: #/ng/check/gym[/mode/N-seed] ── */
+function view(v,mode,keyStr){
+  const k=parseKey(keyStr), title={var:'Новый вариант',build:'Построй сам',bug:'Найди ошибку'}[mode];
+  if(!title||!k){
+    v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','check')],['Тренажёр']],next:null,noBottom:true,body:`
+     <div class="intro"><h1>Тренажёр</h1><p class="lead">Бесконечная практика: новые варианты задач тетради, построение с мгновенной проверкой и охота за ошибками в чертежах.</p></div>
+     <div class="seg modeseg" role="tablist" aria-label="Способ подготовки">${CHECK_MODES.map(m=>`<a role="tab" href="${H('ng','check',m[0])}" class="${m[0]==='gym'?'on':''}" aria-selected="${m[0]==='gym'}">${m[1]}</a>`).join('')}</div>
+     <div id="gyRoot" class="gy-root"><div class="gy-load">Готовлю тренажёр…</div></div>`});
+    GEN.checkers().then(ok=>{ const el=v.querySelector('#gyRoot'); if(!el||!el.isConnected) return; if(!ok){ el.innerHTML='<div class="box warn">Тренажёр не загрузился — проверь интернет и обнови страницу.</div>'; return; } home(v); });
+    return 'Тренажёр · Подготовка к РК';
+  }
+  const crumbs=[['Подготовка к РК',H('ng','check')],['Тренажёр',H('ng','check','gym')],[title+' · №'+k.n]];
+  v.innerHTML=mode==='var'?`<div class="wrap page taskwrap"><div class="ptop">${crumbHTML(crumbs)}</div><div id="gyHost"><div class="gy-load">Строю и проверяю вариант…</div></div></div>`
+    :pageHTML({crumbs,next:null,noBottom:true,body:`<div id="gyHost" class="gy-root"><div class="gy-load">Строю и проверяю вариант…</div></div>`});
+  const hash=location.hash;
+  GEN.checkers().then(ok=>{ const host=v.querySelector('#gyHost'); if(!host||!host.isConnected||location.hash!==hash&&!location.hash.startsWith(H('ng','check','gym',mode,k.n+'-'))) return;
+    if(!ok){ host.innerHTML='<div class="box warn">Проверка не загрузилась — без неё вариант не показываем. Проверь интернет и обнови страницу.</div>'; return; }
+    try{ (mode==='var'?variantView:mode==='build'?buildView:bugView)(host,k.n,k.seed); }catch(e){ console.error(e); host.innerHTML='<div class="box warn">Не получилось построить задание. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; } });
+  return title+' · задача №'+k.n;
+}
+return {view,buildTargets,bugMake,make,lists,frame};
+})();
+
+</script>
+
+<script>
 /* ═════════ РК1 · оболочка приложения ═════════
    Адреса: #/ (главная) · #/ng|ig/<вкладка>/<элемент> · #/kg · #/part · #/epure · #/about · #e3=… (ссылка на сцену эпюра)
    ng:  path[/<урок>|/t<задача>] · tasks[/<задача>] · check[/quiz|tickets[/<ключ>]|train[/<задача>]] · cheat[/sg|th]
@@ -21835,6 +22161,7 @@ function viewNG(v,r){
   if(tab==='path'){ if(r.item==null) return ngPath(v); if(/^t\d+$/.test(r.item)) return openTaskView(v,+r.item.slice(1),'path',r.sub); return ngLesson(v,+r.item); }
   if(tab==='tasks'){ if(r.item==null) return ngTasks(v); return openTaskView(v,+r.item,'tasks',r.sub); }
   if(tab==='check'){
+    if(r.item==='gym') return GYM.view(v,r.sub,r.extra);
     const mode=['quiz','tickets','train'].includes(r.item)?r.item:null;
     if(r.sub!=null&&mode==='tickets') return openTaskView(v,r.sub,'tk',r.extra);
     if(r.sub!=null&&mode==='train') return openTaskView(v,+r.sub,'train',r.extra);
@@ -22051,7 +22378,7 @@ function openTask(key,opt){
 }
 
 /* ── Проверь себя: тест · билеты · тренинг ── */
-const CHECK_MODES=[['tickets','Билеты РК'],['train','Пробный РК'],['quiz','Быстрый тест']];
+const CHECK_MODES=[['tickets','Билеты РК'],['train','Пробный РК'],['gym','Тренажёр'],['quiz','Быстрый тест']];
 /* хаб «Подготовка к РК»: понятный план, а не список режимов */
 /* «Сдать РК с нуля»: план на три вечера; галочки ставятся сами по прогрессу */
 const RK_ZERO=[
@@ -22093,7 +22420,8 @@ function rkHub(v){
     ${step(1,H('ng','check','tickets'),'Реши билеты РК',nt+' '+plural(nt,'задание','задания','заданий')+' из билетов: реши на бумаге, потом сверься с разбором по шагам','с чего начать','hot')}
     ${step(2,H('ng','cheat','th'),'Выучи '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории','короткий ответ на каждый вопрос РК1 и подробное объяснение','')}
     ${step(3,H('ng','check','train'),'Пробный РК на время','задачи из разных разделов тетради и таймер — как на настоящем РК',last?'последний результат: '+last.pct+'%':'')}
-    ${step(4,H('ng','check','quiz'),'Быстрый тест',nq+' '+plural(nq,'вопрос','вопроса','вопросов')+' с выбором ответа — проверить, что не забыл',best?'лучший результат: '+best+'%':'')}
+    ${step(4,H('ng','check','gym'),'Тренажёр без конца','новые варианты задач, построение с мгновенной проверкой и поиск ошибок в чертежах','новое','hot')}
+    ${step(5,H('ng','check','quiz'),'Быстрый тест',nq+' '+plural(nq,'вопрос','вопроса','вопросов')+' с выбором ответа — проверить, что не забыл',best?'лучший результат: '+best+'%':'')}
    </div>
    ${rkZeroHTML()}
    ${rkTypesHTML()}

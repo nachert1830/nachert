@@ -14,7 +14,7 @@ function blocks(){
   const out=[], re=/<script>([\s\S]*?)<\/script>/g; let m;
   while((m=re.exec(SRC))){ const code=m[1], base=SRC.slice(0,m.index+8).split('\n').length;
     let ast; try{ ast=acorn.parse(code,{ecmaVersion:'latest'}); }catch(e){ continue; }
-    ast.body.forEach(st=>{ const src=code.slice(st.start,st.end); if(/WB3\.add\(/.test(src)&&!/^(const|let|var)\s+WB3\b/.test(src)) out.push({line:base+code.slice(0,st.start).split('\n').length-1,src}); }); }
+    ast.body.forEach(st=>{ const src=code.slice(st.start,st.end); if(/WB3\.add\(/.test(src)&&!/^(const|let|var)\s+WB3\b/.test(src)&&!/^window\.GEN=/.test(src)) out.push({line:base+code.slice(0,st.start).split('\n').length-1,src}); }); }
   return out;
 }
 /* детерминированный генератор */
