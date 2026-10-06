@@ -8,6 +8,11 @@ async function gymCheck(page,base,opt){
   const hideBars=()=>page.addStyleTag({content:'.ckn{display:none!important}'}).catch(()=>{});
   await page.evaluate(()=>GEN.checkers());
   const L=await page.evaluate(()=>GYM.lists());
+  /* скрытые функции не видны обычному посетителю; #/me без ключа ведёт на главную */
+  if(await page.evaluate(()=>FLAGS.owner())) bad.push({name:'Режим владельца',rule:'включён у посетителя',msg:''});
+  if(await page.$$eval('.gy-card',a=>a.length)!==2) bad.push({name:'Тренажёр',rule:'посетитель видит скрытую карточку',msg:''});
+  await page.goto(base+'#/me'); await page.waitForTimeout(400);
+  if(await page.evaluate(()=>location.hash)!=='#/') bad.push({name:'Режим владельца',rule:'#/me открылся без ключа',msg:''});
   /* варианты: каждая задача из GEN_OK, два семени */
   const vr=await page.evaluate(list=>{ const out=[]; list.forEach(n=>[11,503].forEach(sd=>{ const v=GEN.variant(n,sd); if(!v) out.push({n,sd}); })); return out; },L.gen);
   vr.forEach(o=>bad.push({name:'Тренажёр · вариант №'+o.n,rule:'вариант не строится',msg:'семя '+o.sd+': ни один из 14 вариантов не прошёл проверку'}));

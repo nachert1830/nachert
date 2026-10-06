@@ -2219,6 +2219,20 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:759px){.hq-t.wide{flex-wrap:wrap}.hq-t.wide>span:last-child{flex-basis:100%}}
 @media(min-width:760px){.hq{grid-template-columns:repeat(4,1fr)}.hq-t.wide{grid-column:1/-1;padding:16px 20px}}
 /* ── хаб «Подготовка к РК» ── */
+.ow-box{padding:16px 18px;border-radius:16px;background:var(--surf);border:1px solid var(--line);margin-bottom:14px}
+.ow-box h2{font-size:18px;margin:0 0 10px}.ow-m{color:var(--mut);font-size:14px;margin:0 0 10px}
+.ow-sw{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;cursor:pointer}
+.ow-sw span{display:grid;gap:2px}.ow-sw small{color:var(--mut);font-size:13px;line-height:1.4}
+.ow-sw input{position:absolute;opacity:0;pointer-events:none}
+.ow-sw i{flex:none;width:46px;height:28px;border-radius:99px;background:var(--line2);position:relative;transition:background .2s}
+.ow-sw i::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.ow-sw input:checked+i{background:var(--green)}.ow-sw input:checked+i::after{transform:translateX(18px)}
+.ow-sw input:focus-visible+i{outline:2px solid var(--blue);outline-offset:2px}
+.ow-kv div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px}.ow-kv span{color:var(--mut)}
+.ow-links{display:flex;flex-wrap:wrap;gap:8px}
+.ow-out{margin-top:12px}.ow-sum{font-weight:600;padding:10px 12px;border-radius:10px}.ow-sum.ok{background:var(--green-s);color:var(--green)}.ow-sum.bad{background:var(--red-s);color:var(--red)}
+.ow-list{font-size:13px;line-height:1.45;padding-left:18px;max-height:360px;overflow:auto}
+body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px;align-self:flex-start}
 .gy-root{display:grid;gap:14px;margin-top:6px}
 .gy-load{padding:28px;text-align:center;color:var(--mut);font-size:15px}
 .gy-why{font-size:14px;line-height:1.55;color:var(--ink2);background:var(--surf2);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
@@ -21349,6 +21363,66 @@ const ok=n=>GEN_OK.includes(n);
 return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,variant,issues,ok,list:()=>GEN_OK.slice()};
 })();
 
+/* ═════════ Режим владельца и скрытые функции ═════════
+   #/me/<ключ> включает режим владельца на этом устройстве (метка в localStorage). В коде хранится только
+   SHA-256 от ключа — сам ключ из кода не узнать. Без режима владельца адрес #/me ведёт на главную, а скрытые
+   функции (FLAGS) выключены у всех. Это не защита данных (их на сайте нет), а способ не показывать
+   незаконченное: код сайта открыт, как у любого сайта. */
+window.FLAGS=(function(){
+const KEY='6d7f183c72efaf3d7b8fb7022cfb3797011bff7c57afeb515571c1f4d0839179';
+const LIST={build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'}};
+function sha256(s){ const K=[],H=[]; let p=2; const isP=n=>{ for(let f=2;f*f<=n;f++) if(n%f===0) return false; return true; };
+  for(let i=0;i<64;p++){ if(isP(p)){ if(i<8) H[i]=(Math.pow(p,1/2)*4294967296)|0; K[i++]=(Math.pow(p,1/3)*4294967296)|0; } }
+  const r=(v,n)=>(v>>>n)|(v<<(32-n)); const b=unescape(encodeURIComponent(s)); const w=[], L=b.length*8;
+  for(let i=0;i<b.length;i++) w[i>>2]|=b.charCodeAt(i)<<((3-i%4)*8); w[L>>5]|=0x80<<(24-L%32); w[((L+64>>9)<<4)+15]=L;
+  const h=H.slice();
+  for(let j=0;j<w.length;j+=16){ const a=h.slice(), W=[];
+    for(let i=0;i<64;i++){ if(i<16) W[i]=w[j+i]|0; else { const x=W[i-15], y=W[i-2]; W[i]=(W[i-16]+(r(x,7)^r(x,18)^(x>>>3))+W[i-7]+(r(y,17)^r(y,19)^(y>>>10)))|0; }
+      const t1=(a[7]+(r(a[4],6)^r(a[4],11)^r(a[4],25))+((a[4]&a[5])^(~a[4]&a[6]))+K[i]+W[i])|0, t2=((r(a[0],2)^r(a[0],13)^r(a[0],22))+((a[0]&a[1])^(a[0]&a[2])^(a[1]&a[2])))|0;
+      a.pop(); a.unshift((t1+t2)|0); a[4]=(a[4]+t1)|0; }
+    for(let i=0;i<8;i++) h[i]=(h[i]+a[i])|0; }
+  return h.map(x=>('00000000'+(x>>>0).toString(16)).slice(-8)).join(''); }
+const get=(k,d)=>{ try{ const v=localStorage.getItem('nch2_'+k); return v===null?d:JSON.parse(v); }catch(e){ return d; } };
+const set=(k,v)=>{ try{ localStorage.setItem('nch2_'+k,JSON.stringify(v)); }catch(e){} };
+const owner=()=>get('owner',false)===true;
+return { LIST, sha256, owner,
+  unlock(key){ if(sha256('nachert-owner:'+String(key||''))!==KEY) return false; set('owner',true); return true; },
+  lock(){ set('owner',false); set('flags',{}); },
+  on(name){ return owner()&&!!get('flags',{})[name]; },
+  toggle(name,v){ const f=get('flags',{}); f[name]=!!v; set('flags',f); } };
+})();
+
+/* панель владельца: #/me */
+window.OWNER=(function(){
+function view(v,r){
+  if(r.tab&&r.tab!=='me'){ const ok=FLAGS.unlock(r.tab); setTimeout(()=>redir(ok?'#/me':'#/'),0); return ok?'Режим владельца':'Начерт'; }
+  if(!FLAGS.owner()){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  const sw=(k,o)=>`<label class="ow-sw"><span><b>${o.t}</b><small>${o.d}</small></span><input type="checkbox" data-flag="${k}"${FLAGS.on(k)?' checked':''}><i aria-hidden="true"></i></label>`;
+  v.innerHTML=pageHTML({crumbs:[['Режим владельца']],next:null,noBottom:true,body:`
+   <div class="intro"><h1>Режим владельца</h1><p class="lead">Видишь только ты, на этом устройстве. Скрытые функции включаются здесь и видны только тебе; остальные видят обычный сайт.</p></div>
+   <section class="ow-box"><h2>Скрытые функции</h2>${Object.entries(FLAGS.LIST).map(([k,o])=>sw(k,o)).join('')}</section>
+   <section class="ow-box"><h2>Проверка сайта в браузере</h2><p class="ow-m">Та же 3D-проверка чертежей и проверка ответов, что в тестах, — прямо на этом устройстве, по всем задачам.</p>
+     <button class="btn pri" id="owRun">Проверить все задачи</button><div id="owOut" class="ow-out"></div></section>
+   <section class="ow-box"><h2>Версия</h2><div class="ow-kv" id="owVer"></div></section>
+   <section class="ow-box"><h2>Ссылки</h2><div class="ow-links">
+     <a class="btn" href="https://metrika.yandex.ru/dashboard?id=113262916" target="_blank" rel="noopener">Яндекс Метрика</a>
+     <a class="btn" href="${H('ng','check','gym')}">Тренажёр</a><a class="btn" href="${H('epure')}">3D-модель</a></div></section>
+   <button class="btn ghost" id="owOff">Выйти из режима владельца</button>`});
+  v.querySelectorAll('[data-flag]').forEach(i=>i.addEventListener('change',()=>{ FLAGS.toggle(i.dataset.flag,i.checked); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
+  v.querySelector('#owOff').addEventListener('click',()=>{ FLAGS.lock(); nav('#/'); });
+  const ver=v.querySelector('#owVer'); ver.innerHTML='<div><span>Файл сайта изменён</span><b>'+document.lastModified+'</b></div><div><span>Задач в тетради</span><b>'+WB3.tasks.length+'</b></div><div><span>Генератор вариантов</span><b>'+GEN.list().length+' задач</b></div>';
+  try{ if(window.caches) caches.keys().then(k=>{ ver.insertAdjacentHTML('beforeend','<div><span>Кэш офлайн-версии</span><b>'+(k.join(', ')||'нет')+'</b></div>'); }); }catch(e){}
+  v.querySelector('#owRun').addEventListener('click',async e=>{ const b=e.currentTarget, out=v.querySelector('#owOut'); b.disabled=true; out.textContent='Проверяю…';
+    if(!(await GEN.checkers())){ out.textContent='Проверка не загрузилась.'; b.disabled=false; return; }
+    setTimeout(()=>{ const t0=performance.now(); const g=GEOM_CHECK().filter(o=>o.lvl==='ошибка'), o=ORACLE_CHECK();
+      const rows=g.concat(o); out.innerHTML=`<div class="ow-sum ${rows.length?'bad':'ok'}">${rows.length?'Замечаний: '+rows.length:'Замечаний нет'} · ${Math.round(performance.now()-t0)} мс · оракул: ${ORACLE_SPECS.length} задач</div>`
+        +(rows.length?'<ul class="ow-list">'+rows.slice(0,60).map(x=>'<li><b>'+x.name+'</b> — '+x.rule+': '+String(x.msg).slice(0,160)+'</li>').join('')+'</ul><p class="ow-m">Часть замечаний 3D-проверки разобрана вручную и ошибкой не является (tests/baseline.json).</p>':'');
+      b.disabled=false; },30); });
+  return 'Режим владельца';
+}
+return {view};
+})();
+
 /* ═════════ ТРЕНАЖЁР: новые варианты · построй сам · найди ошибку ═════════
    #/ng/check/gym                 — выбор режима и задачи
    #/ng/check/gym/var/45-1234     — задача №45 на варианте данных 1234 (разбор по шагам)
@@ -21403,6 +21477,7 @@ function home(v){
     bug:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5M11 8v3.5M11 14h.01"/></svg>'};
   v.querySelector('#gyRoot').innerHTML=`
    ${card('var',I.var,'Новый вариант','Та же задача — другие данные. Решай на бумаге, потом сверяйся с разбором по шагам. Задача не повторится.','решено вариантов: <b>'+cnt('var')+'</b>',L.gen)}
+   ${FLAGS.on('build')?card('build',I.build,'Построй сам','Скрытая функция (видишь только ты). Реши на бумаге и отметь ответ на чертеже — сайт проверит.','верных построений: <b>'+cnt('build')+'</b>',L.build):''}
    ${card('bug',I.bug,'Найди ошибку','В правильный чертёж подсажена одна ошибка: разрыв линии связи, перепутанные подписи или неверный размер. Найди и нажми на неё.','найдено ошибок: <b>'+cnt('bug')+'</b>',L.bug)}
    <div class="gy-why"><b>Почему этому можно верить.</b> Задача на сайте — программа построения в координатах. Новый вариант строится той же программой на изменённых данных и показывается, только если прошёл ту же проверку, что и весь сайт: каждая точка восстановлена в пространстве, проверены линии связи, принадлежность, ∥ и ⊥, числа и, где он есть, ответ — независимым расчётом.</div>`;
   v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.go; nav(href(m,pick(m==='var'?L.gen:m==='build'?L.build:L.bug),rnd())); }));
@@ -21415,7 +21490,7 @@ function variantView(host,n,seed){
   const t=r.task, canBuild=!!buildTargets(t);
   const chk=r.orig?'исходные данные':'проверен';
   host.innerHTML=`<div class="gy-vbar"><div class="gy-vt"><b>${r.orig?'Задача №'+n:'Вариант №'+n}</b><span class="gy-b${r.orig?'':' ok'}" title="${r.orig?'':'Вариант построен заново и прошёл ту же 3D-проверку'+(r.check&&r.check.oracle?' и независимый пересчёт ответа':'')+', что весь сайт'}">${r.orig?'':'✓ '}${chk}</span></div>
-     <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}</div></div>
+     <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}${canBuild&&FLAGS.on('build')?`<a class="gy-vb" href="${href('build',n,r.seed||rnd())}">Построй</a>`:''}</div></div>
    <div id="plMount"></div>`;
   document.body.classList.add('inplayer');
   PLR=PLAYER.mount($q(host,'#plMount'),t,{ backHref:H('ng','check','gym'), backLabel:'К тренажёру', afterText:'Дальше: ещё вариант',
@@ -21519,8 +21594,8 @@ function bugView(host,n,seed){
 
 /* ── вход: #/ng/check/gym[/mode/N-seed] ── */
 function view(v,mode,keyStr){
-  if(mode==='build'&&parseKey(keyStr)){ const k0=parseKey(keyStr); setTimeout(()=>redir(href('var',k0.n,k0.seed)),0); return 'Тренажёр'; }   /* «Построй сам» временно убран */
-  const k=parseKey(keyStr), title={var:'Новый вариант',bug:'Найди ошибку'}[mode];
+  if(mode==='build'&&parseKey(keyStr)&&!FLAGS.on('build')){ const k0=parseKey(keyStr); setTimeout(()=>redir(href('var',k0.n,k0.seed)),0); return 'Тренажёр'; }   /* «Построй сам» временно убран */
+  const k=parseKey(keyStr), title={var:'Новый вариант',bug:'Найди ошибку',build:FLAGS.on('build')?'Построй сам':null}[mode];
   if(!title||!k){
     v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','check')],['Тренажёр']],next:null,noBottom:true,body:`
      <div class="intro"><h1>Тренажёр</h1><p class="lead">Бесконечная практика: новые варианты задач тетради и охота за ошибками в чертежах.</p></div>
@@ -21652,7 +21727,7 @@ function parseHash(h){
   h=h||'';
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
-  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -21692,7 +21767,7 @@ function teardown(){
 function render(r){
   teardown();
   CUR=r; const v=$('view');
-  document.body.dataset.subj=r.s;
+  document.body.dataset.subj=r.s; document.body.classList.toggle('owner',FLAGS.owner());
   { const nk=navKey(r); document.querySelectorAll('.nav a').forEach(a=>{ const on=a.dataset.s===nk; a.classList.toggle('on',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); }
   if(r.tab&&(r.s==='ng'||r.s==='ig')) ST.set('tab_'+r.s,r.tab);
   let title='Начерт';
@@ -21704,6 +21779,7 @@ function render(r){
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
       case 'about': title=viewAbout(v); break;
+      case 'me': title=OWNER.view(v,r); break;
       case 'privacy': title=viewDoc(v,'privacy'); break;
       case 'consent': title=viewDoc(v,'consent'); break;
       case 'topic': title=window.TOPICUI?TOPICUI.view(v,r.tab):viewHome(v); break;
