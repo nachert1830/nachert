@@ -50,6 +50,10 @@ async function gymCheck(page,base,opt){
     if(!ink) bad.push({name:'3D к задачам',rule:'цвет линий не задан (линии невидимы)',msg:''});
     if(n<8||!/^Шаг \d+ из/.test(cap)) bad.push({name:'3D к задачам №47',rule:'окно пустое',msg:cap});
     await page.keyboard.press('Escape'); if(await page.$('.t3d')) bad.push({name:'3D к задачам',rule:'Esc не закрывает',msg:''}); }
+  /* построения шагов видны в 3D: в № 13 (треугольники натуральной величины) и № 51 (замена плоскостей) с каждым шагом элементов больше */
+  const grow=await page.evaluate(()=>[13,51].map(n=>{ const p=PLAYER.partsOf(WB3.get(n))[0], full=PLAYER.scene(p,p.steps.length).items;
+    const c=k=>{ const m=TASK3D.model(PLAYER.scene(p,k).items,full); return m.segs.length+m.flat.length+m.dots.length; }; return [n,c(0),c(p.steps.length)]; }));
+  grow.forEach(([n,a,b])=>{ if(!(b>a+2)) bad.push({name:'3D к задачам №'+n,rule:'построения шагов не видны',msg:a+' → '+b}); });
   info.t3=await page.evaluate(()=>{ let a=0,b=0; WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach(p=>{ b++; if(TASK3D.has(p)) a++; })); return a+' из '+b+' пунктов'; });
   return {bad,info};
 }
