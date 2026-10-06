@@ -2279,6 +2279,57 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .ow-links{display:flex;flex-wrap:wrap;gap:8px}
 .ow-out{margin-top:12px}.ow-sum{font-weight:600;padding:10px 12px;border-radius:10px}.ow-sum.ok{background:var(--green-s);color:var(--green)}.ow-sum.bad{background:var(--red-s);color:var(--red)}
 .ow-list{font-size:13px;line-height:1.45;padding-left:18px;max-height:360px;overflow:auto}
+/* ── ИГ: ДЗ 2 в 3D ── */
+.igx-hero{position:relative;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:10px;margin:var(--s3) 0 var(--s4);padding:26px 24px;border-radius:26px;overflow:hidden;color:#fff;background:radial-gradient(120% 140% at 85% 30%,#3b4b8f 0%,#1c2350 45%,#0d1130 100%);box-shadow:0 30px 60px -30px rgba(20,25,70,.7)}
+.igx-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:22px 22px;mask-image:radial-gradient(80% 90% at 70% 50%,#000,transparent);-webkit-mask-image:radial-gradient(80% 90% at 70% 50%,#000,transparent);pointer-events:none}
+.igx-hero h1{color:#fff;font-size:clamp(30px,6vw,46px);margin:10px 0 8px}.igx-hero .lead{color:rgba(255,255,255,.86);margin:0 0 16px}
+.igx-badge{display:inline-flex;padding:5px 12px;border-radius:99px;background:linear-gradient(135deg,#7c3aed,#2563eb);font:700 12px var(--sans);letter-spacing:.04em}
+.igx-hero-t{position:relative;z-index:1}
+.igx-hero-3d{position:relative;height:300px;border-radius:20px;overflow:hidden;background:radial-gradient(closest-side,rgba(130,150,255,.25),transparent)}
+.igx-hero-3d .ig3-cv{width:100%;height:100%;display:block;mix-blend-mode:normal}
+@media(max-width:700px){.igx-hero{grid-template-columns:1fr;padding:22px 18px}.igx-hero-3d{height:240px;order:-1}}
+.igx-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.igx-card{display:flex;flex-direction:column;gap:6px;padding:18px;border-radius:18px;background:var(--surf);border:1px solid var(--line);color:var(--ink);text-decoration:none;opacity:.7}
+.igx-card.live{opacity:1;border-color:color-mix(in srgb,#7c3aed 45%,var(--line));box-shadow:0 14px 34px -22px rgba(124,58,237,.7)}
+.igx-card b{font-size:18px}.igx-card p{margin:0;color:var(--ink2);font-size:14.5px;line-height:1.5}
+.igx-n{font:700 12px var(--mono);color:#7c3aed;text-transform:uppercase;letter-spacing:.06em}.igx-go{margin-top:auto;font-weight:700;color:#6d28d9}
+.igx-find{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px;padding:12px 14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
+.igx-find label{font-weight:700}.igx-find input{width:90px;min-height:44px;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink);font:700 20px var(--mono);text-align:center}
+.igx-need{margin:0 0 16px;padding:12px 16px;border-radius:16px;background:var(--surf2);border:1px solid var(--line)}
+.igx-need summary{cursor:pointer;font-weight:700}.igx-need ol{margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:14.5px;line-height:1.5;color:var(--ink2)}
+.igx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.igx-v{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 8px 10px;border-radius:16px;background:var(--surf);border:1px solid var(--line);color:var(--ink);text-decoration:none;transition:transform .15s,box-shadow .15s,border-color .15s}
+.igx-v:hover{transform:translateY(-2px);border-color:#7c3aed;box-shadow:0 12px 26px -16px rgba(124,58,237,.6)}
+.igx-img{display:block;width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;background:linear-gradient(110deg,var(--surf2) 30%,var(--surf) 50%,var(--surf2) 70%);background-size:300% 100%;animation:igShim 1.4s linear infinite}
+.igx-img img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}.igx-img img:not([src]){visibility:hidden}
+@keyframes igShim{to{background-position:-150% 0}}
+.igx-v b{font-size:14px}
+.igx-vh{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:var(--s3) 0 10px}.igx-vh h1{margin:0}.igx-nav{display:flex;gap:8px}.igx-nav .btn{min-width:48px}
+.igx-stage{position:relative;height:min(68vh,620px);min-height:380px;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:#eef2f9;box-shadow:0 24px 50px -34px rgba(20,30,80,.55)}
+:root[data-theme=dark] .igx-stage{background:#121726}
+.igx-stage .ig3-cv{display:block;width:100%;height:100%;cursor:grab}.igx-stage.busy .ig3-cv{cursor:grabbing}
+.igx-modes{position:absolute;left:10px;top:10px;display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:4px;max-width:calc(100% - 20px);padding:4px;border-radius:14px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.igx-modes button,.igx-cam button{min-height:36px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--ink2);font:600 13px var(--sans);cursor:pointer;white-space:nowrap}
+.igx-modes button.on{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.igx-cam{position:absolute;right:10px;bottom:10px;display:flex;gap:2px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.igx-cam button:hover{background:var(--surf2)}
+.igx-hint{position:absolute;left:12px;bottom:14px;font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:4px 10px;border-radius:99px;pointer-events:none;transition:opacity .4s}
+.igx-plane{position:absolute;left:50%;transform:translateX(-50%);bottom:62px;display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:14px;background:color-mix(in srgb,var(--surf) 92%,transparent);border:1px solid var(--line);font-size:13px;width:min(420px,calc(100% - 24px))}
+.igx-plane[hidden]{display:none}.igx-plane input{flex:1;accent-color:#6d28d9}.igx-plane b{font:600 12px var(--mono);min-width:64px;text-align:right}
+@media(max-width:560px){.igx-modes button{padding:0 9px;font-size:12.5px}.igx-hint{display:none}.igx-cam{left:10px;right:10px;justify-content:space-between}.igx-cam button{flex:1;padding:0 6px}.igx-plane{bottom:60px}}
+.igx-nogl{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:var(--ink2)}
+.igx-act{display:flex;justify-content:center;margin:16px 0}
+.igx-unfold{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;color:#fff;font:800 16px var(--sans);background:linear-gradient(135deg,#7c3aed,#4f46e5 55%,#2563eb);box-shadow:0 14px 30px -14px rgba(99,62,237,.85);cursor:pointer}
+.igx-unfold:disabled{opacity:.7}
+.igx-sheet{margin:6px 0 18px;padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line);color:#111827;background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px);background-size:18px 18px}
+.igx-sh-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:10px}.igx-sh-h b{font-size:17px}.igx-sh-h span{font-size:13px;color:#64748b}
+.igx-sh-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.igx-sh-f{margin:0;border:1px solid #cbd5e1;border-radius:12px;background:#fff;overflow:hidden;opacity:0;transform:translateY(24px) scale(.94);transition:opacity .5s var(--d),transform .6s cubic-bezier(.2,.8,.2,1.1) var(--d)}
+.igx-sheet.on .igx-sh-f{opacity:1;transform:none}
+.igx-sh-f img{display:block;width:100%;aspect-ratio:1;object-fit:contain}
+.igx-sh-f figcaption{display:grid;gap:1px;padding:8px 10px;border-top:1px solid #e2e8f0;font-size:13px}.igx-sh-f figcaption span{color:#64748b;font-size:12px}
+.igx-sh-tip{display:grid;gap:4px;align-content:center;padding:12px;border-radius:12px;background:#f1f5ff;font-size:13.5px;line-height:1.5;color:#334155}
+.igx-note{font-size:13px;color:var(--mut);text-align:center;margin:0 0 20px}
 /* ── 3D к задаче ── */
 .t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
 @keyframes t3din{from{opacity:0}to{opacity:1}}
@@ -21493,7 +21544,8 @@ window.CHANGES=[
 ];
 window.FLAGS=(function(){
 const KEY='6d7f183c72efaf3d7b8fb7022cfb3797011bff7c57afeb515571c1f4d0839179';
-const LIST={build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'}};
+const LIST={ig:{t:'Инженерная графика: ДЗ 2 в 3D',d:'Новый раздел: 30 вариантов задачи «Построение изображений» — 3D-модели, живые разрезы, развёртка в три вида.'},
+  build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'}};
 function sha256(s){ const K=[],H=[]; let p=2; const isP=n=>{ for(let f=2;f*f<=n;f++) if(n%f===0) return false; return true; };
   for(let i=0;i<64;p++){ if(isP(p)){ if(i<8) H[i]=(Math.pow(p,1/2)*4294967296)|0; K[i++]=(Math.pow(p,1/3)*4294967296)|0; } }
   const r=(v,n)=>(v>>>n)|(v<<(32-n)); const b=unescape(encodeURIComponent(s)); const w=[], L=b.length*8;
@@ -23214,7 +23266,367 @@ function qzBack(){$('qzDone').style.display='none';$('qzSetup').style.display=''
 
 /* ═════════ ИНЖЕНЕРНАЯ ГРАФИКА: скоро ═════════
    Раздел снят на доработку. Сейчас главное — начертательная геометрия. */
-function viewIG(v){
+/* ═════════ IG3: твёрдотельные модели деталей (инженерная графика) ═════════
+   Деталь описана деревом: примитивы (цилиндр, усечённый конус, призма, многогранная призма, горизонтальный цилиндр)
+   и операции (объединение, вычитание, пересечение). Из одного описания строятся:
+   • шейдер WebGL — модель рисуется лучами (ray marching) по функции расстояния: точная форма, гладкие тени, контуры рёбер;
+   • та же функция на JS — по ней точно считается контур сечения любой плоскостью (для разрезов и сечения A–A).
+   Разрезы режут модель вживую; на срезе — штриховка 45°, как на чертеже. Единицы — мм; z вверх, ось детали — z;
+   вид спереди — взгляд вдоль +y (зритель при y < 0), вид сверху — сверху, вид слева — зритель при x < 0. */
+window.IG3=(function(){
+/* ── описание детали: конструкторы ── */
+const P={
+  cyl:(r,z0,z1,o)=>Object.assign({t:'cyl',r,z0,z1,x:0,y:0},o||{}),
+  cone:(r0,r1,z0,z1,o)=>Object.assign({t:'cone',r0,r1,z0,z1,x:0,y:0},o||{}),
+  box:(sx,sy,z0,z1,o)=>Object.assign({t:'box',sx,sy,z0,z1,x:0,y:0,a:0},o||{}),
+  /* правильная призма: n сторон, s — размер «под ключ» (между параллельными гранями; для n нечётного — апофема×2) */
+  ngon:(n,s,z0,z1,o)=>Object.assign({t:'ngon',n,s,z0,z1,x:0,y:0,a:0},o||{}),
+  /* правильная пирамида/усечённая: апофемы s0 внизу, s1 вверху (как ngon) */
+  npyr:(n,s0,s1,z0,z1,o)=>Object.assign({t:'npyr',n,s0,s1,z0,z1,x:0,y:0,a:0},o||{}),
+  /* горизонтальный цилиндр вдоль оси 'x' или 'y' */
+  hcyl:(ax,r,c,u0,u1,o)=>Object.assign({t:'hcyl',ax,r,cx:c[0],cz:c[1],u0,u1},o||{}),
+  /* полупространство: dot(n, p − o) ≤ 0 */
+  hp:(n,o)=>{ const l=Math.hypot(...n); const u=n.map(v=>v/l); return {t:'hp',n:u,c:u[0]*o[0]+u[1]*o[1]+u[2]*o[2]}; },
+  U:(...k)=>({t:'u',k}), S:(a,...k)=>({t:'s',a,k}), I:(...k)=>({t:'i',k}),
+  /* n отверстий диаметра d на окружности D, первое под углом a0 (град от оси +x против часовой) */
+  holes:(n,d,D,z0,z1,a0,step)=>{ const out=[]; for(let i=0;i<n;i++){ const a=((a0||0)+(step||360/n)*i)*Math.PI/180; out.push(P.cyl(d/2,z0,z1,{x:D/2*Math.cos(a),y:D/2*Math.sin(a)})); } return out; }
+};
+/* ── функция расстояния на JS (для сечений) ── */
+const len2=(x,y)=>Math.hypot(x,y);
+function sdCapZ(d2,z,z0,z1){ const h=(z1-z0)/2, dz=Math.abs(z-(z0+z1)/2)-h; const ax=Math.max(d2,0), az=Math.max(dz,0); return Math.min(Math.max(d2,dz),0)+Math.hypot(ax,az); }
+function ngon2(x,y,n,s,a){ const ap=s/2; let m=-1e9; for(let i=0;i<n;i++){ const t=a*Math.PI/180+(i+.5)*2*Math.PI/n; m=Math.max(m,x*Math.cos(t)+y*Math.sin(t)-ap); } return m; }
+function J(nd,x,y,z){
+  switch(nd.t){
+    case 'cyl': return sdCapZ(len2(x-nd.x,y-nd.y)-nd.r,z,nd.z0,nd.z1);
+    case 'cone':{ const t=Math.min(1,Math.max(0,(z-nd.z0)/(nd.z1-nd.z0))), r=nd.r0+(nd.r1-nd.r0)*t, k=Math.cos(Math.atan2(nd.r1-nd.r0,nd.z1-nd.z0)); return sdCapZ((len2(x-nd.x,y-nd.y)-r)*Math.abs(k),z,nd.z0,nd.z1); }
+    case 'box':{ const c=Math.cos(-nd.a*Math.PI/180), s=Math.sin(-nd.a*Math.PI/180), px=(x-nd.x)*c-(y-nd.y)*s, py=(x-nd.x)*s+(y-nd.y)*c;
+      const dx=Math.abs(px)-nd.sx/2, dy=Math.abs(py)-nd.sy/2, d2=Math.min(Math.max(dx,dy),0)+Math.hypot(Math.max(dx,0),Math.max(dy,0)); return sdCapZ(d2,z,nd.z0,nd.z1); }
+    case 'ngon': return sdCapZ(ngon2(x-nd.x,y-nd.y,nd.n,nd.s,nd.a),z,nd.z0,nd.z1);
+    case 'npyr':{ const t=Math.min(1,Math.max(0,(z-nd.z0)/(nd.z1-nd.z0))), s=nd.s0+(nd.s1-nd.s0)*t, k=Math.cos(Math.atan2((nd.s1-nd.s0)/2,nd.z1-nd.z0)); return sdCapZ(ngon2(x-nd.x,y-nd.y,nd.n,s,nd.a)*Math.abs(k),z,nd.z0,nd.z1); }
+    case 'hcyl':{ const u=nd.ax==='x'?x:y, v=nd.ax==='x'?y:x; const d2=Math.hypot(v-(nd.ax==='x'?0:nd.cx),z-nd.cz)-nd.r; const h=(nd.u1-nd.u0)/2, du=Math.abs(u-(nd.u0+nd.u1)/2)-h;
+      return Math.min(Math.max(d2,du),0)+Math.hypot(Math.max(d2,0),Math.max(du,0)); }
+    case 'hp': return nd.n[0]*x+nd.n[1]*y+nd.n[2]*z-nd.c;
+    case 'u': return Math.min(...nd.k.map(c=>J(c,x,y,z)));
+    case 'i': return Math.max(...nd.k.map(c=>J(c,x,y,z)));
+    case 's': return Math.max(J(nd.a,x,y,z),...nd.k.map(c=>-J(c,x,y,z)));
+  }
+  return 1e9;
+}
+/* ── то же на GLSL ── */
+const g=v=>{ const s=(+v).toFixed(4); return +v<0?'('+s+')':s; };
+function G(nd){
+  switch(nd.t){
+    case 'cyl': return `capZ(length(p.xy-vec2(${g(nd.x)},${g(nd.y)}))-${g(nd.r)},p.z,${g(nd.z0)},${g(nd.z1)})`;
+    case 'cone': { const k=Math.abs(Math.cos(Math.atan2(nd.r1-nd.r0,nd.z1-nd.z0))); return `capZ((length(p.xy-vec2(${g(nd.x)},${g(nd.y)}))-mix(${g(nd.r0)},${g(nd.r1)},clamp((p.z-${g(nd.z0)})/${g(nd.z1-nd.z0)},0.,1.)))*${g(k)},p.z,${g(nd.z0)},${g(nd.z1)})`; }
+    case 'box': { const a=-nd.a*Math.PI/180; return `capZ(box2(rot2(p.xy-vec2(${g(nd.x)},${g(nd.y)}),${g(a)}),vec2(${g(nd.sx/2)},${g(nd.sy/2)})),p.z,${g(nd.z0)},${g(nd.z1)})`; }
+    case 'ngon': return `capZ(ngon2(p.xy-vec2(${g(nd.x)},${g(nd.y)}),${nd.n}.,${g(nd.s/2)},${g(nd.a*Math.PI/180)}),p.z,${g(nd.z0)},${g(nd.z1)})`;
+    case 'npyr': { const k=Math.abs(Math.cos(Math.atan2((nd.s1-nd.s0)/2,nd.z1-nd.z0))); return `capZ(ngon2(p.xy-vec2(${g(nd.x)},${g(nd.y)}),${nd.n}.,mix(${g(nd.s0/2)},${g(nd.s1/2)},clamp((p.z-${g(nd.z0)})/${g(nd.z1-nd.z0)},0.,1.)),${g(nd.a*Math.PI/180)})*${g(k)},p.z,${g(nd.z0)},${g(nd.z1)})`; }
+    case 'hcyl': { const u=nd.ax==='x'?'p.x':'p.y', v=nd.ax==='x'?'p.y':'p.x', cv=nd.ax==='x'?0:nd.cx; return `capU(length(vec2(${v}-${g(cv)},p.z-${g(nd.cz)}))-${g(nd.r)},${u},${g(nd.u0)},${g(nd.u1)})`; }
+    case 'hp': return `(dot(p,vec3(${g(nd.n[0])},${g(nd.n[1])},${g(nd.n[2])}))-${g(nd.c)})`;
+    case 'u': return nd.k.map(G).reduce((a,b)=>`min(${a},${b})`);
+    case 'i': return nd.k.map(G).reduce((a,b)=>`max(${a},${b})`);
+    case 's': return [G(nd.a)].concat(nd.k.map(c=>`-(${G(c)})`)).reduce((a,b)=>`max(${a},${b})`);
+  }
+  return '1e9';
+}
+const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+const FS=body=>`precision highp float;
+uniform vec2 uRes; uniform vec3 uEye,uFwd,uRight,uUp; uniform float uScale; uniform int uCut; uniform vec4 uPl; uniform vec3 uBg1,uBg2; uniform float uDark; uniform float uHatch; uniform float uOff; uniform float uFlat;
+vec2 rot2(vec2 p,float a){ float c=cos(a),s=sin(a); return vec2(c*p.x-s*p.y,s*p.x+c*p.y); }
+float capZ(float d2,float z,float z0,float z1){ float h=(z1-z0)*.5; float dz=abs(z-(z0+z1)*.5)-h; return min(max(d2,dz),0.)+length(max(vec2(d2,dz),0.)); }
+float capU(float d2,float u,float u0,float u1){ return capZ(d2,u,u0,u1); }
+float box2(vec2 p,vec2 b){ vec2 d=abs(p)-b; return min(max(d.x,d.y),0.)+length(max(d,0.)); }
+float ngon2(vec2 p,float n,float ap,float a0){ float m=-1e9; for(int i=0;i<12;i++){ if(float(i)>=n) break; float t=a0+(float(i)+.5)*6.2831853/n; m=max(m,dot(p,vec2(cos(t),sin(t)))-ap); } return m; }
+float part(vec3 p){ return ${body}; }
+float cutT(vec3 p){
+  if(uCut==1) return max(-p.x,p.y-uOff);       /* вырез четверти: убрано x > 0, y < 0 (половина вида + половина разреза) */
+  if(uCut==2) return p.y-uOff;                 /* фронтальный разрез: убрано всё перед плоскостью y = uOff */
+  if(uCut==3) return p.x-uOff;                 /* профильный разрез: убрано всё левее плоскости x = uOff */
+  if(uCut==5) return max(p.x-uOff,p.y);        /* вид слева: половина вида + половина профильного разреза */
+  if(uCut==4) return -(dot(uPl.xyz,p)-uPl.w);   /* сечение A–A: убрано то, что перед плоскостью */
+  return 1e9; }
+float map(vec3 p){ float d=part(p); return uCut==0?d:max(d,-cutT(p)); }
+vec3 nrm(vec3 p,float e){ vec2 k=vec2(1.,-1.); return normalize(k.xyy*map(p+k.xyy*e)+k.yyx*map(p+k.yyx*e)+k.yxy*map(p+k.yxy*e)+k.xxx*map(p+k.xxx*e)); }
+void main(){
+  vec2 uv=(gl_FragCoord.xy-.5*uRes)/uRes.y;
+  vec3 ro=uEye+(uRight*uv.x+uUp*uv.y)*uScale, rd=uFwd;
+  vec3 bg=mix(uBg2,uBg1,clamp(gl_FragCoord.y/uRes.y,0.,1.));
+  float t=0., dmin=1e9, tmin=0.; bool hit=false;
+  for(int i=0;i<160;i++){ vec3 p=ro+rd*t; float d=map(p); if(d<dmin){ dmin=d; tmin=t; } if(d<.015){ hit=true; break; } t+=d*.9; if(t>900.) break; }
+  if(!hit){ float px=uScale/uRes.y; float o=1.-smoothstep(px*.6,px*1.8,dmin); gl_FragColor=vec4(mix(bg,vec3(.12,.14,.2)*(1.-uDark)+vec3(.85)*uDark,o*.85),1.); return; }
+  vec3 p=ro+rd*t, n=nrm(p,.02);
+  bool cut=uCut>0 && part(p)<-.03;
+  vec3 L1=normalize(vec3(-.55,-.7,.85)), L2=normalize(vec3(.8,.3,.35));
+  float dif=max(dot(n,L1),0.), dif2=max(dot(n,L2),0.)*.35, amb=.42+.25*n.z;
+  float ao=0.; for(int k=1;k<=4;k++){ float h=float(k)*1.6; ao+=(h-map(p+n*h))/h; } ao=clamp(1.-ao*.18,.45,1.);
+  vec3 base=mix(vec3(.66,.70,.77),vec3(.58,.63,.72),uDark);
+  amb=.30+.18*n.z;
+  float spec=pow(max(dot(reflect(-L1,n),-rd),0.),32.)*.28;
+  float rim=pow(1.-max(dot(n,-rd),0.),3.)*.18;
+  vec3 col=base*(amb+dif*.62+dif2)*ao+spec+rim*vec3(.55,.65,.9);
+  if(cut){
+    /* штриховка 45° в плоскости среза */
+    vec3 nn=normalize(n), t1=abs(nn.z)<.9?normalize(cross(nn,vec3(0.,0.,1.))):vec3(1.,0.,0.), t2=cross(nn,t1);
+    float u=dot(p,(t1+t2)*.7071); float s=uHatch;
+    float w=abs(fract(u/s)-.5)*s; float px=uScale/uRes.y;
+    col=mix(vec3(.97,.97,.99),vec3(.80,.85,.97),uDark*.4);
+    col=mix(mix(vec3(.17,.25,.50),vec3(.36,.5,.95),uDark),col,smoothstep(px*.5,px*1.5,w));
+  }
+  /* рёбра: где нормаль резко меняется */
+  if(uFlat>.5&&!cut) col=vec3(.985,.985,.99)-vec3(.05)*(1.-max(dot(n,-rd),0.));
+  vec3 n2=nrm(p,.9); float edge=smoothstep(.06,.3,1.-dot(n,n2));
+  col=mix(col,vec3(.13,.15,.2),edge*.85);
+  gl_FragColor=vec4(col,1.);
+}`;
+/* ── окно просмотра ── */
+function viewer(canvas,opt){
+  const gl=canvas.getContext('webgl',{antialias:false,preserveDrawingBuffer:!!(opt&&opt.keep)}); if(!gl) return null;
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  let prog=null, U={}, model=null;
+  const S={yaw:-0.62,pit:0.42,zoom:1,cut:0,off:0,pl:[0,0,1,0],tx:0,ty:0,C:[0,0,60],R:80,raf:0,res:1,bg:null};
+  function compile(m){ model=m; const sh=(t,src)=>{ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const pr=gl.createProgram(); gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS(G(m.tree)))); gl.linkProgram(pr);
+    if(!gl.getProgramParameter(pr,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+    if(prog) gl.deleteProgram(prog); prog=pr; gl.useProgram(prog);
+    ['uRes','uEye','uFwd','uRight','uUp','uScale','uCut','uPl','uBg1','uBg2','uDark','uHatch','uOff','uFlat'].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
+    const loc=gl.getAttribLocation(prog,'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    const b=m.box||[[-60,-60,0],[60,60,120]]; S.C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2]; S.R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2; }
+  function draw(scale){ if(!prog) return; const dpr=Math.min(window.devicePixelRatio||1,2)*(scale||1), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
+    if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } gl.viewport(0,0,w,h);
+    const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit);
+    /* камера на сфере вокруг центра детали; fwd — направление взгляда */
+    const F=[sy*cp, cy*cp, -sp];
+    const R=norm(cross(F,[0,0,1])), Up=cross(R,F);
+    const Cc=[S.C[0]+S.tx*R[0]+S.ty*Up[0],S.C[1]+S.tx*R[1]+S.ty*Up[1],S.C[2]+S.tx*R[2]+S.ty*Up[2]];
+    const eye=[Cc[0]-F[0]*400,Cc[1]-F[1]*400,Cc[2]-F[2]*400];
+    gl.uniform2f(U.uRes,w,h); gl.uniform3fv(U.uEye,eye); gl.uniform3fv(U.uFwd,F); gl.uniform3fv(U.uRight,R); gl.uniform3fv(U.uUp,Up);
+    gl.uniform1f(U.uScale,S.R*2.25/S.zoom*Math.max(1,h/w)); gl.uniform1f(U.uFlat,S.flat?1:0); gl.uniform1i(U.uCut,S.cut); gl.uniform4fv(U.uPl,S.pl); gl.uniform1f(U.uOff,S.off||0);
+    const dark=document.documentElement.getAttribute('data-theme')==='dark';
+    const bg=S.bg||(dark?[[.07,.09,.14],[.11,.14,.21]]:[[.98,.985,1],[.89,.915,.96]]);
+    gl.uniform3fv(U.uBg1,bg[0]); gl.uniform3fv(U.uBg2,bg[1]); gl.uniform1f(U.uDark,dark?1:0); gl.uniform1f(U.uHatch,S.hatch||3.2);
+    gl.drawArrays(gl.TRIANGLES,0,3); }
+  return {gl,S,compile,draw,canvas};
+}
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], norm=a=>{ const l=Math.hypot(...a)||1; return a.map(v=>v/l); };
+/* ── контур сечения плоскостью: квадратики (marching squares) по функции расстояния ──
+   плоскость задана точкой O и ортами u, v; возвращает отрезки контура в координатах (u, v), мм */
+function section(tree,O,u,v,box,step){ step=step||0.4; const [u0,u1,v0,v1]=box, nu=Math.ceil((u1-u0)/step), nv=Math.ceil((v1-v0)/step), F=new Float32Array((nu+1)*(nv+1));
+  for(let j=0;j<=nv;j++) for(let i=0;i<=nu;i++){ const a=u0+i*step, b=v0+j*step; F[j*(nu+1)+i]=J(tree,O[0]+u[0]*a+v[0]*b,O[1]+u[1]*a+v[1]*b,O[2]+u[2]*a+v[2]*b); }
+  const segs=[], at=(i,j)=>F[j*(nu+1)+i], X=i=>u0+i*step, Y=j=>v0+j*step;
+  const ip=(i0,j0,i1,j1)=>{ const a=at(i0,j0), b=at(i1,j1), t=a/(a-b); return [X(i0)+(X(i1)-X(i0))*t, Y(j0)+(Y(j1)-Y(j0))*t]; };
+  for(let j=0;j<nv;j++) for(let i=0;i<nu;i++){ const c=(at(i,j)<0?1:0)|(at(i+1,j)<0?2:0)|(at(i+1,j+1)<0?4:0)|(at(i,j+1)<0?8:0); if(c===0||c===15) continue;
+    const e=[()=>ip(i,j,i+1,j),()=>ip(i+1,j,i+1,j+1),()=>ip(i,j+1,i+1,j+1),()=>ip(i,j,i,j+1)];
+    const T={1:[[0,3]],2:[[0,1]],3:[[1,3]],4:[[1,2]],5:[[0,1],[2,3]],6:[[0,2]],7:[[2,3]],8:[[2,3]],9:[[0,2]],10:[[0,3],[1,2]],11:[[1,2]],12:[[1,3]],13:[[0,1]],14:[[0,3]]}[c];
+    T.forEach(([a,b])=>segs.push([e[a](),e[b]()])); }
+  return {segs,inside:(a,b)=>J(tree,O[0]+u[0]*a+v[0]*b,O[1]+u[1]*a+v[1]*b,O[2]+u[2]*a+v[2]*b)<0};
+}
+return {P,J,G,viewer,section};
+})();
+
+/* ═════════ IG_VARS: 30 вариантов задачи 2 «Построение изображений» ═════════
+   Каждая деталь — дерево IG3.P (мм; z вверх; спереди смотрим вдоль +y; сзади — y > 0).
+   tri(r) — правильный треугольник, вписанный в окружность Ø2r, вершиной назад (как на виде сверху: вершиной вверх).
+   hexX(d) — шестиугольник, описанный около Ø d, вершинами влево-вправо (вдоль x).
+   sq45(d) — квадрат, вписанный в Ø d, повёрнутый на 45° (вершинами по осям). sq(a) — квадрат a×a по осям. */
+window.IG_VARS=(function(){
+const {P}=IG3, E=0.6;
+const cyl=P.cyl, cone=P.cone, box=P.box, U=P.U, S=P.S, I=P.I;
+/* конус, продлённый на E за торцы (для вычитания — чтобы не было «плёнок» на торцах) */
+const coneX=(d0,d1,z0,z1,o)=>{ const k=(d1-d0)/2/(z1-z0); return cone(d0/2-k*E,d1/2+k*E,z0-E,z1+E,o); };
+const cylX=(d,z0,z1,o)=>cyl(d/2,z0-E,z1+E,o);
+const tri=(D,z0,z1)=>P.ngon(3,D/2,z0,z1,{a:90});                 /* апофема = R/2 → s = R */
+const triP=(D0,D1,z0,z1)=>{ const k=(D1-D0)/2/(z1-z0); return P.npyr(3,(D0-2*k*E)/2,(D1+2*k*E)/2,z0-E,z1+E,{a:90}); };
+const hexX=(D,z0,z1)=>P.ngon(6,D*Math.cos(Math.PI/6),z0,z1,{a:0});
+const hexP=(D0,D1,z0,z1,ext)=>{ const e=ext===false?0:E, k=(D1-D0)/(z1-z0); const c=Math.cos(Math.PI/6); return P.npyr(6,(D0-k*e)*c,(D1+k*e)*c,z0-e,z1+e,{a:0}); };
+const sq45=(D,z0,z1)=>box(D/Math.SQRT2,D/Math.SQRT2,z0,z1,{a:45});
+const sq45P=(D0,D1,z0,z1)=>{ const k=(D1-D0)/(z1-z0); return P.npyr(4,(D0-k*E)/Math.SQRT2,(D1+k*E)/Math.SQRT2,z0-E,z1+E,{a:0}); };
+const sqP=(a0,a1,z0,z1)=>{ const k=(a1-a0)/(z1-z0); return P.npyr(4,a0-k*E,a1+k*E,z0-E,z1+E,{a:45}); };
+const holes=(n,d,D,z0,z1,a0,step)=>P.holes(n,d,D,z0-E,z1+E,a0,step);
+const H4=(d,D,z0,z1)=>holes(4,d,D,z0,z1,45);
+const flange=(D,h)=>cyl(D/2,0,h);
+const V={};
+/* 1 */ V[1]={tree:S(U(flange(110,20),P.ngon(3,55,20,120,{a:30})), box(120,60,70,121,{y:-30}), coneX(20,45,0,120),
+          ...holes(2,10,90,0,20,60,60), ...holes(2,10,90,0,20,210,120)), box:[[-55,-55,0],[55,55,120]]};
+/* 2 */ V[2]={tree:S(U(I(flange(120,20),box(130,80,-1,21)),cone(35,20,20,120)), cylX(30,70,120), sq45(30,-E,70.01), ...holes(2,10,90,0,20,-30,60), ...holes(2,10,90,0,20,150,60)), box:[[-60,-40,0],[60,40,120]]};
+/* 3 */ (()=>{ const yf=Math.sqrt(40*40-25*25), A=[0,0,65];
+  /* пирамидальная выемка: основание 50×70 в плоскости y = ∓20, вершина в центре детали (0, 0, 65) */
+  const wedge=s=>I(P.hp([.625,-s*.781,0],A),P.hp([-.625,-s*.781,0],A),P.hp([0,-s*.868,-.496],A),P.hp([0,-s*.868,.496],A),P.hp([0,s,0],[0,-s*20,0]));
+  V[3]={tree:S(U(flange(120,20),cyl(40,20,120)),
+    box(60,40,30,100,{y:-(yf+20)}), box(60,40,30,100,{y:yf+20}),
+    box(50,yf-20+2*E,30,100,{y:-(20+yf)/2}), box(50,yf-20+2*E,30,100,{y:(20+yf)/2}),
+    wedge(-1), wedge(1), ...H4(10,100,0,20)), box:[[-60,-60,0],[60,60,120]]}; })();
+/* 4 */ V[4]={tree:S(U(cyl(25,0,25),cyl(55,25,50),I(cone(55,35,50,120),box(120,60,49,121,{y:30}))), sq45(40,-E,120+E), ...holes(2,20,80,25,50,225,90)), box:[[-55,-55,0],[55,55,120]]};
+/* 5 */ V[5]={tree:S(U(flange(110,25),cone(40,30,25,120)), triP(25,50,0,120), ...H4(10,95,0,25)), box:[[-55,-55,0],[55,55,120]]};
+/* 6 */ V[6]={tree:S(U(flange(110,25),cone(35,25,25,120)), P.ngon(6,40*Math.cos(Math.PI/6),-E,120+E,{a:0}), ...H4(10,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
+/* 7 */ V[7]={tree:S(U(flange(120,20),cyl(40,20,120)), tri(40,-E,80.01), triP(40,70,80,120), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
+/* 8 */ V[8]={tree:S(U(flange(110,30),cone(55,35,30,120)), cyl(30,20,80), cylX(40,79.9,90.1), sq45P(40,60,90,120), ...holes(4,12,35,0,20.5,45)), box:[[-55,-55,0],[55,55,120]]};
+/* 9 */ V[9]={tree:S(U(flange(120,20),cone(40,30,20,120)), hexP(35,50,80,120), cyl(25,30,80.01), cylX(20,0,30.01), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
+/* 10 */ V[10]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylX(50,70,120), hexP(36,30,0,70.01), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 11 */ V[11]={tree:S(U(hexP(120,90,0,70,false),cyl(35,70,110)), coneX(25,40,0,60), cylX(40,60,110), ...holes(4,10,55,90,110,45)), box:[[-60,-52,0],[60,52,110]]};
+/* 12 */ V[12]={tree:S(U(cone(55,40,0,60),cyl(40,60,110)), cylX(40,50,110), hexP(70,40,0,50.01), ...holes(4,12,60,95,110,45)), box:[[-55,-55,0],[55,55,110]]};
+/* 13 */ V[13]={tree:S(U(flange(110,20),cyl(35,20,30),hexP(70,110,30,120,false)), cylX(50,70,120), cylX(30,0,70.01), ...H4(10,85,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 14 */ V[14]={tree:S(U(box(120,90,0,30),cyl(30,30,100),cyl(45,100,120)), box(70,100,-1,10), coneX(30,50,0,120), ...H4(10,75,100,120)), box:[[-60,-45,0],[60,45,120]]};
+/* 15 */ V[15]={tree:S(U(flange(110,20),cone(35,55,20,120)), box(20,120,-1,10), cylX(40,0,70.01), P.npyr(4,40,60,70,120+E,{a:0}), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 16 */ (()=>{ const k=(35-22.5)/55, a=Math.atan(k), t=10/Math.cos(a);
+  V[16]={tree:S(U(flange(110,25),cone(35,22.5,25,80),hexX(45,80,105),P.npyr(6,45*Math.cos(Math.PI/6),0.5,105,120,{a:0})),
+    cone(35-t+25*k,22.5-t,-E,80), box(18,12,79,121), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]}; })();
+/* 17 */ V[17]={tree:S(U(box(110,90,0,25),cyl(30,25,100),cyl(45,100,120)), box(20,100,110,121), sq45(40,-E,120+E), ...holes(4,10,75,100,120,30,90)), box:[[-55,-45,0],[55,45,120]]};
+/* 18 */ (()=>{ const yf=32; V[18]={tree:S(cyl(55,0,120), box(120,40,20,70,{y:-(yf+20)}), box(120,40,20,70,{y:yf+20}), cylX(70,90,120), sq45(50,69.9,90.1), cylX(30,0,20.01), ...holes(4,10,90,105,120,45)), box:[[-55,-55,0],[55,55,120]]}; })();
+/* 19 */ V[19]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylX(50,70,120), coneX(35,50,40,70), tri(35,-E,40.01), ...H4(12,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 20 */ V[20]={tree:S(U(flange(110,25),cone(35,0.3,25,120)), P.npyr(6,60*Math.cos(Math.PI/6)+1,0.1,-1,80,{a:0}), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
+/* 21 */ V[21]={tree:S(U(flange(110,20),hexP(60,90,20,120,false)), cylX(25,0,60.01), coneX(25,40,60,120), ...H4(14,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 22 */ V[22]={tree:S(U(flange(110,20),box(65,15,20,120,{y:32.5}),
+    I(U(box(65,40,100,120,{y:20}),cyl(32.5,100,120)),box(65,80,99,121,{y:0}))),
+    cylX(40,0,20.01), cylX(40,100,120), P.hcyl('y',25,[0,60],20,45), ...holes(2,12,90,0,20,225,90)), box:[[-55,-55,0],[55,55,120]]};
+/* 23 */ V[23]={tree:S(U(flange(110,25),cone(35,25,25,120)), box(30,30,49.9,120+E), sqP(60,30,0,50.01), ...holes(2,10,90,0,25,-30,60), ...holes(2,10,90,0,25,150,60)), box:[[-55,-55,0],[55,55,120]]};
+/* 24 */ V[24]={tree:S(U(flange(110,20),cyl(35,20,60),tri(70,60,120)), cylX(20,0,50.01), triP(20,50,50,120), ...H4(12,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 25 */ V[25]={tree:S(U(flange(110,25),cone(35,20,25,120)), hexX(30,79.9,120+E), hexP(50,30,0,80), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
+/* 26 */ V[26]={tree:S(U(flange(110,25),cone(35,25,25,120)), box(30,30,94.9,120+E), sqP(20,30,55,95), box(20,20,-E,55.1), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
+/* 27 */ (()=>{ const yf=Math.sqrt(35*35-25*25); V[27]={tree:S(U(flange(110,20),cyl(35,20,120)), box(30,80,95,121),
+    S(box(80,40,40,80,{y:-(yf+20)}),box(30,100,39,81)), S(box(80,40,40,80,{y:yf+20}),box(30,100,39,81)), ...H4(12,90,0,20)), box:[[-55,-55,0],[55,55,120]]}; })();
+/* 28 */ V[28]={tree:S(U(flange(110,25),cyl(35,25,120)), tri(35,-E,80.01), triP(35,70,80,120), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
+/* 29 */ (()=>{ const yf=32; V[29]={tree:S(cyl(55,0,120), box(120,40,20,70,{y:-(yf+20)}), box(120,40,20,70,{y:yf+20}), sq45P(50,70,90,120), cylX(50,69.9,90.1), cylX(30,0,20.01), ...holes(4,10,90,105,120,45)), box:[[-55,-55,0],[55,55,120]]}; })();
+/* 30 */ V[30]={tree:S(U(flange(110,20),box(65,15,20,120,{y:32.5}),box(65,60,100,120,{y:10})),
+    cyl(20,99,121), box(40,30,99,121,{y:-15}), P.hcyl('y',25,[0,60],20,45), ...holes(2,12,90,0,20,225,90)), box:[[-55,-55,0],[55,55,120]]};
+return V;
+})();
+
+/* ═════════ IGUI: раздел «Инженерная графика» — ДЗ 2 «Построение изображений», 30 вариантов в 3D ═════════
+   #/ig — главная раздела; #/ig/hw2 — все варианты; #/ig/hw2/N — деталь варианта N:
+   вращение, разрезы с подвижной секущей плоскостью, виды и «развернуть в чертёж» (три вида по ЕСКД, построенные из модели). */
+window.IGUI=(function(){
+const N=30, $=(r,s)=>r.querySelector(s);
+const hasGL=(()=>{ try{ const c=document.createElement('canvas'); return !!(c.getContext('webgl')); }catch(e){ return false; } })();
+/* ── миниатюры: один скрытый холст рисует все 30 деталей по очереди ── */
+const THUMB={}, waiters=[]; let thumbV=null, thumbBusy=false;
+function thumbs(cb){ if(cb) waiters.push(cb); if(thumbBusy||!hasGL) return; thumbBusy=true;
+  const c=document.createElement('canvas'); c.style.cssText='position:fixed;left:-9999px;top:0;width:260px;height:260px'; document.body.appendChild(c);
+  thumbV=IG3.viewer(c,{keep:1}); if(!thumbV){ thumbBusy=false; return; }
+  let i=1; const step=()=>{ if(i>N){ c.remove(); thumbV=null; thumbBusy=false; return; }
+    if(!THUMB[i]){ try{ thumbV.compile(IG_VARS[i]); thumbV.S.yaw=-0.62; thumbV.S.pit=0.42; thumbV.S.cut=1; thumbV.S.zoom=1.08; thumbV.S.bg=[[1,1,1],[1,1,1]]; thumbV.draw(1); THUMB[i]=c.toDataURL('image/png'); }catch(e){ THUMB[i]=''; } }
+    waiters.forEach(f=>f(i,THUMB[i])); i++; setTimeout(step,16); };
+  step(); }
+/* ── просмотрщик с жестами ── */
+function mountViewer(host,n,opt){
+  opt=opt||{}; const cv=document.createElement('canvas'); cv.className='ig3-cv'; cv.setAttribute('role','img'); cv.setAttribute('aria-label','Деталь варианта '+n+' в 3D');
+  host.appendChild(cv); const v=IG3.viewer(cv); if(!v) return null; v.compile(IG_VARS[n]);
+  const S=v.S; Object.assign(S,{yaw:-0.62,pit:0.42,zoom:1},opt.state||{});
+  let raf=0, lowT=0, anim=0;
+  const draw=low=>{ if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; v.draw(low?0.55:1); if(low){ clearTimeout(lowT); lowT=setTimeout(()=>v.draw(1),140); } }); };
+  const pts=new Map(); let g=null, vel=0;
+  cv.style.touchAction='none';
+  cv.addEventListener('pointerdown',e=>{ cancelAnimationFrame(anim); try{ cv.setPointerCapture(e.pointerId); }catch(_){} pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1) g={m:'r',x:e.clientX,y:e.clientY,t:performance.now()}; else if(pts.size===2){ const a=[...pts.values()]; g={m:'p',d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}; }
+    host.classList.add('busy'); opt.onTouch&&opt.onTouch(); });
+  cv.addEventListener('pointermove',e=>{ if(!pts.has(e.pointerId)||!g) return; pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(g.m==='p'&&pts.size>=2){ const a=[...pts.values()], d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); if(g.d>10) S.zoom=Math.max(.5,Math.min(5,S.zoom*d/g.d)); g.d=d; draw(true); return; }
+    if(pts.size!==1) return; const dx=e.clientX-g.x, dy=e.clientY-g.y, now=performance.now(); g.x=e.clientX; g.y=e.clientY;
+    S.yaw-=dx*0.009; S.pit=Math.max(-0.2,Math.min(Math.PI/2-1e-3,S.pit+dy*0.009)); vel=0.7*vel+0.3*(-dx*0.009/Math.max(1,now-g.t)); g.t=now; draw(true); opt.onMove&&opt.onMove(); });
+  const up=e=>{ if(!pts.delete(e.pointerId)) return; if(pts.size===0){ host.classList.remove('busy');
+      if(g&&g.m==='r'&&performance.now()-g.t<70&&Math.abs(vel)>0.0004){ let last=performance.now(); const st=now=>{ const dt=Math.min(40,now-last); last=now; S.yaw+=vel*dt; vel*=Math.pow(.93,dt/16); v.draw(.55); if(Math.abs(vel)>0.00006) anim=requestAnimationFrame(st); else v.draw(1); }; anim=requestAnimationFrame(st); }
+      g=null; } };
+  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); S.zoom=Math.max(.5,Math.min(5,S.zoom*Math.exp(-e.deltaY*0.0015))); draw(true); },{passive:false});
+  cv.addEventListener('dblclick',()=>to({yaw:-0.62,pit:0.42,zoom:1}));
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  const to=(T,ms)=>{ cancelAnimationFrame(anim); const A={yaw:S.yaw,pit:S.pit,zoom:S.zoom,off:S.off||0}; let dy=T.yaw-A.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); const t0=performance.now(), D=ms||620;
+    const st=now=>{ const u=Math.min(1,(now-t0)/D), e=ease(u); S.yaw=A.yaw+dy*e; S.pit=A.pit+((T.pit==null?A.pit:T.pit)-A.pit)*e; S.zoom=A.zoom+((T.zoom==null?A.zoom:T.zoom)-A.zoom)*e; if(T.off!=null) S.off=A.off+(T.off-A.off)*e;
+      v.draw(u<1?.6:1); if(u<1) anim=requestAnimationFrame(st); }; anim=requestAnimationFrame(st); };
+  if(window.ResizeObserver){ const ro=new ResizeObserver(()=>draw(false)); ro.observe(cv); v.ro=ro; }
+  draw(false);
+  return {v,S,draw,to,cv};
+}
+/* ── три вида из модели: одинаковый масштаб и центр — виды в проекционной связи ── */
+const VIEWS=[
+  {k:'front',t:'Главный вид',d:'слева — вид, справа — фронтальный разрез',st:{yaw:0,pit:1e-4,cut:1}},
+  {k:'left',t:'Вид слева',d:'слева — вид, справа — профильный разрез',st:{yaw:Math.PI/2,pit:1e-4,cut:5}},
+  {k:'top',t:'Вид сверху',d:'без разреза',st:{yaw:0,pit:Math.PI/2-1e-4,cut:0}}];
+function sheetImages(n,size){ const c=document.createElement('canvas'); c.style.cssText='position:fixed;left:-9999px;top:0;width:'+size+'px;height:'+size+'px'; document.body.appendChild(c);
+  const v=IG3.viewer(c,{keep:1}); const out={}; if(!v){ c.remove(); return out; } v.compile(IG_VARS[n]);
+  VIEWS.forEach(o=>{ Object.assign(v.S,o.st,{zoom:1.02,off:0,bg:[[1,1,1],[1,1,1]],hatch:2.6,flat:1}); v.draw(1); out[o.k]=c.toDataURL('image/png'); });
+  c.remove(); try{ v.gl.getExtension('WEBGL_lose_context').loseContext(); }catch(e){} return out; }
+
+/* ── страницы ── */
+function crumbs(list){ return list; }
+function home(v){
+  v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name]],next:null,noBottom:true,cls:'igx',body:`
+   <section class="igx-hero">
+    <div class="igx-hero-t"><span class="igx-badge">Новое · 3D</span><h1>Инженерная графика</h1>
+     <p class="lead">Домашние задания — в объёме. Деталь крутится в руках, режется плоскостью у тебя на глазах и разворачивается в чертёж по ЕСКД.</p>
+     <div class="igx-hero-a"><a class="btn pri" href="${H('ig','hw2')}">ДЗ 2 · 30 вариантов →</a></div></div>
+    <div class="igx-hero-3d" id="igHero" aria-hidden="true"></div>
+   </section>
+   <div class="igx-cards">
+    <a class="igx-card live" href="${H('ig','hw2')}"><span class="igx-n">ДЗ 2</span><b>Построение изображений</b><p>Виды, разрезы, сечение. Все 30 вариантов — 3D-модели с живым разрезом и развёрткой в три вида.</p><span class="igx-go">Открыть →</span></a>
+    <div class="igx-card"><span class="igx-n">скоро</span><b>Решённая тетрадь</b><p>Задачи рабочей тетради по шагам.</p></div>
+    <div class="igx-card"><span class="igx-n">скоро</span><b>Теория</b><p>Виды, разрезы, сечения, ЕСКД — коротко и с картинками.</p></div>
+   </div>`});
+  const h=$(v,'#igHero'); if(hasGL&&h){ const pick=[15,22,4,18,30,13][Math.floor(Math.random()*6)]; const m=mountViewer(h,pick,{state:{cut:1}});
+    if(m){ let on=true; const spin=()=>{ if(!on||!h.isConnected) return; if(!h.classList.contains('busy')){ m.S.yaw+=0.004; m.v.draw(.7); } requestAnimationFrame(spin); }; requestAnimationFrame(spin); m.cv.addEventListener('pointerdown',()=>{ on=false; }); } }
+  NEXT=null; return SUBJ.ig.name;
+}
+function catalog(v){
+  v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2']],next:null,noBottom:true,cls:'igx',body:`
+   <div class="intro"><h1>ДЗ 2 · Построение изображений</h1><p class="lead">Найди свой вариант — деталь откроется в 3D. Покрути, разрежь, разверни в чертёж и сравни со своим листом.</p></div>
+   <div class="igx-find"><label for="igNum">Мой вариант</label><input id="igNum" inputmode="numeric" maxlength="2" placeholder="1–30" autocomplete="off"><button class="btn pri" id="igGo">Открыть</button></div>
+   <details class="igx-need" open><summary>Что нужно построить на листе А3</summary>
+    <ol><li><b>Главный вид</b> — половина вида и половина фронтального разреза. Деталь симметрична, поэтому разрез ставят справа от оси, граница — штрихпунктирная осевая линия.</li>
+     <li><b>Вид слева</b> — так же: половина вида и половина профильного разреза.</li>
+     <li><b>Вид сверху</b> — по двум данным изображениям.</li>
+     <li><b>Сечение A–A</b> — наклонной плоскостью по стрелкам: строится в натуральную величину, штриховка под 45°.</li>
+     <li>Невидимый контур на половинах-видах не показывают, если он виден в разрезе. Оформление — по ЕСКД: линии, штриховка, обозначения.</li></ol></details>
+   <div class="igx-grid" id="igGrid">${Array.from({length:N},(_,i)=>`<a class="igx-v" href="${H('ig','hw2',i+1)}" data-n="${i+1}"><span class="igx-img"><img alt="" data-n="${i+1}"${THUMB[i+1]?` src="${THUMB[i+1]}"`:''}></span><b>Вариант ${i+1}</b></a>`).join('')}</div>`});
+  const go=()=>{ const n=parseInt($(v,'#igNum').value,10); if(n>=1&&n<=N) nav(H('ig','hw2',n)); else { $(v,'#igNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
+  $(v,'#igGo').addEventListener('click',go); $(v,'#igNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
+  if(hasGL) thumbs((i,src)=>{ const im=v.querySelector('img[data-n="'+i+'"]'); if(im&&src&&!im.src) im.src=src; });
+  NEXT=null; return 'ДЗ 2 · '+SUBJ.ig.name;
+}
+const MODES=[['part','Деталь',{cut:0}],['quarter','Вырез ¼',{cut:1}],['front','Фронтальный разрез',{cut:2}],['side','Профильный разрез',{cut:3}]];
+function variant(v,n){
+  if(!(n>=1&&n<=N)){ setTimeout(()=>redir(H('ig','hw2')),0); return 'ДЗ 2'; }
+  v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2',H('ig','hw2')],['Вариант '+n]],next:null,noBottom:true,cls:'igx',body:`
+   <div class="igx-vh"><h1>Вариант ${n}</h1><div class="igx-nav"><a class="btn" href="${H('ig','hw2',n>1?n-1:N)}" aria-label="Предыдущий вариант">←</a><a class="btn" href="${H('ig','hw2',n<N?n+1:1)}" aria-label="Следующий вариант">→</a></div></div>
+   <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}
+    <div class="igx-modes" role="tablist" aria-label="Режим">${MODES.map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===1?'on':''}" aria-selected="${i===1}">${m[1]}</button>`).join('')}</div>
+    <div class="igx-cam" role="group" aria-label="Вид"><button data-c="iso">3D</button><button data-c="front">Спереди</button><button data-c="top">Сверху</button><button data-c="left">Слева</button></div>
+    <div class="igx-hint">крути · щипок — зум · двойной тап — исходный вид</div>
+    <div class="igx-plane" id="igPlane" hidden><span>Секущая плоскость</span><input type="range" id="igOff" min="-50" max="50" value="0" step="1" aria-label="Положение секущей плоскости"><b id="igOffV">0 мм</b></div>
+   </div>
+   <div class="igx-act"><button class="btn igx-unfold" id="igUnfold"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h7v7H3zM14 4h7v7h-7zM3 15h7v6H3z"/></svg>Развернуть в чертёж</button></div>
+   <section class="igx-sheet" id="igSheet" hidden aria-label="Три вида детали"></section>
+   <p class="igx-note">Модель построена по условию варианта. Виды и разрезы на этой странице сайт строит прямо из модели — сверяй с ними свой чертёж.</p>`});
+  if(!hasGL){ NEXT=null; return 'Вариант '+n+' · ДЗ 2'; }
+  const st=$(v,'#igStage'), M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
+  if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); NEXT=null; return 'Вариант '+n; }
+  const plane=$(v,'#igPlane'), off=$(v,'#igOff'), offV=$(v,'#igOffV');
+  v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=MODES.find(x=>x[0]===b.dataset.m);
+    v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
+    M.S.cut=m[2].cut; M.S.off=0; off.value=0; offV.textContent='0 мм'; plane.hidden=!(m[2].cut===2||m[2].cut===3);
+    const B=IG_VARS[n].box, lim=Math.round(m[2].cut===3?B[1][0]:B[1][1])-2; off.min=-lim; off.max=lim;
+    if(m[2].cut===2) M.to({yaw:-0.35,pit:0.22}); else if(m[2].cut===3) M.to({yaw:Math.PI/2-0.45,pit:0.22}); else M.draw(false);
+    try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
+  off.addEventListener('input',()=>{ M.S.off=+off.value; offV.textContent=(M.S.cut===2?'y = ':'x = ')+off.value+' мм'; M.draw(true); });
+  const CAM={iso:{yaw:-0.62,pit:0.42,zoom:1},front:{yaw:0,pit:1e-4,zoom:1},top:{yaw:0,pit:Math.PI/2-1e-3,zoom:1},left:{yaw:Math.PI/2,pit:1e-4,zoom:1}};
+  v.querySelectorAll('.igx-cam button').forEach(b=>b.addEventListener('click',()=>M.to(CAM[b.dataset.c])));
+  /* развернуть в чертёж: камера облетает деталь, три вида вылетают на лист */
+  $(v,'#igUnfold').addEventListener('click',e=>{ const sh=$(v,'#igSheet'), btn=e.currentTarget; btn.disabled=true;
+    M.to({yaw:0,pit:1e-4,zoom:1},520);
+    setTimeout(()=>{ const im=sheetImages(n,520);
+      sh.innerHTML=`<div class="igx-sh-h"><b>Чертёж из модели</b><span>виды в проекционной связи, масштаб общий</span></div>
+       <div class="igx-sh-g">${VIEWS.map((o,i)=>`<figure class="igx-sh-f f-${o.k}" style="--d:${i*120}ms"><img alt="${o.t}" src="${im[o.k]||''}"><figcaption><b>${o.t}</b><span>${o.d}</span></figcaption></figure>`).join('')}
+        <div class="igx-sh-tip"><b>Как читать</b><span>Заштриховано то, что попало в секущую плоскость. Половина вида и половина разреза разделены осью детали.</span></div></div>`;
+      sh.hidden=false; requestAnimationFrame(()=>sh.classList.add('on')); sh.scrollIntoView({behavior:'smooth',block:'start'}); btn.disabled=false; btn.lastChild.textContent='Обновить чертёж'; },560); });
+  NEXT=null; return 'Вариант '+n+' · ДЗ 2 · '+SUBJ.ig.name;
+}
+function view(v,r){
+  if(r.tab==='hw2') return r.item?variant(v,parseInt(r.item,10)):catalog(v);
+  return home(v);
+}
+return {view,thumbs,mountViewer,sheetImages};
+})();
+
+function viewIG(v,r){
+  if(window.FLAGS&&FLAGS.on('ig')&&window.IGUI) return IGUI.view(v,r||{});
   v.innerHTML=`<div class="wrap page igsoon">
    <div class="igs-hero">
     <span class="igs-badge"><i aria-hidden="true"></i>Скоро</span>
