@@ -2283,6 +2283,9 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
 @keyframes t3din{from{opacity:0}to{opacity:1}}
 body.t3d-open{overflow:hidden}
+.t3d{touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
+html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
+.t3d input[type=range]{touch-action:pan-x}
 .t3d{--t3bg:#ffffff;--t3ink:#111827;--t3ink2:#4b5563}
 :root[data-theme=dark] .t3d{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3d{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}}
@@ -21463,6 +21466,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'1.8',d:'6 октября 2026',items:['3D в Telegram и Safari: пока крутишь модель, страница под ней не двигается и не пружинит.']},
   {v:'1.7',d:'6 октября 2026',items:['3D: плавное вращение с инерцией, зум двумя пальцами и колесом мыши, сдвиг; кнопки «Спереди» и «Сверху» плавно поворачивают модель ровно в фронтальную и горизонтальную проекции; удачный ракурс для каждой задачи; окно на весь экран телефона.','Кнопка «3D» у чертежа стала заметной.']},
   {v:'1.6',d:'6 октября 2026',items:['3D к каждой задаче: кнопка «3D» у чертежа показывает текущий шаг решения в пространстве — точки, отрезки, плоскости проекций π₁ и π₂, линии связи. Модель вращается пальцем, шаги листаются стрелками.']},
   {v:'1.5',d:'6 октября 2026',items:['Кошка-талисман живёт на сайте: в каждом разделе своя — дремлет, выглядывает, думает, машет лапой; следит глазами за пальцем, а если ткнуть — мурлычет.','Кнопка «весь чертёж» появляется, только когда чертёж увеличен.','Исправлена главная на телефонах: плитка «3D-модель и эпюр» больше не растягивается на весь экран.'],
@@ -21570,7 +21574,7 @@ function has(part){ try{ const all=PLAYER.scene(part,(part.steps||[]).length).it
    «Спереди» — ровно фронтальная проекция, «Сверху» — горизонтальная. */
 let S=null;
 const lerp=(a,b,t)=>a+(b-a)*t, ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-function close(){ if(!S) return; cancelAnimationFrame(S.raf); cancelAnimationFrame(S.anim); S.ro&&S.ro.disconnect(); S.el.remove(); document.removeEventListener('keydown',S.key,true); document.body.classList.remove('t3d-open'); S=null; }
+function close(){ if(!S) return; cancelAnimationFrame(S.raf); cancelAnimationFrame(S.anim); S.ro&&S.ro.disconnect(); S.el.remove(); try{ S.unlock&&S.unlock(); }catch(e){} document.removeEventListener('keydown',S.key,true); document.body.classList.remove('t3d-open'); S=null; }
 function open(t,pi,k){
   close(); const parts=PLAYER.partsOf(t), part=parts[pi]||parts[0], n=(part.steps||[]).length;
   const fullItems=PLAYER.scene(part,n).items, full=model(fullItems), cache={};
@@ -21601,8 +21605,20 @@ function open(t,pi,k){
     <div class="t3d-ctl"><button class="t3d-b" data-d="-1" aria-label="Предыдущий шаг">←</button><input type="range" id="t3Step" min="0" max="${n}" value="${Math.min(k,n)}" aria-label="Шаг"><button class="t3d-b" data-d="1" aria-label="Следующий шаг">→</button></div>
     <div class="t3d-leg"><span><i style="background:rgba(59,110,246,.35)"></i>π₂ — фронтальная</span><span><i style="background:rgba(245,158,11,.35)"></i>π₁ — горизонтальная</span><span><i class="ln"></i>линии связи</span></div></div>`;
   document.body.appendChild(el); document.body.classList.add('t3d-open');
+  /* страница под окном замирает: во встроенном браузере Telegram (и в Safari) жесты по модели иначе
+     прокручивают и «пружинят» страницу. Фиксируем body на месте, гасим touchmove и щипок-зум страницы. */
+  const lockY=window.scrollY||0, bs=document.body.style, html=document.documentElement;
+  const lockPrev={pos:bs.position,top:bs.top,w:bs.width,ov:bs.overflow};
+  bs.position='fixed'; bs.top=(-lockY)+'px'; bs.width='100%'; bs.overflow='hidden'; html.classList.add('t3d-lock');
+  const stopMove=e=>{ if(e.target&&e.target.closest&&e.target.closest('input[type=range]')) return; if(e.cancelable) e.preventDefault(); };
+  const stopGest=e=>{ if(e.cancelable) e.preventDefault(); };
+  el.addEventListener('touchmove',stopMove,{passive:false});
+  ['gesturestart','gesturechange','gestureend'].forEach(t=>el.addEventListener(t,stopGest,{passive:false}));
+  let tgSwipe=false; try{ const W=window.Telegram&&Telegram.WebApp; if(W&&W.disableVerticalSwipes&&W.isVerticalSwipesEnabled!==false){ W.disableVerticalSwipes(); tgSwipe=true; } }catch(_){}
+  const unlock=()=>{ bs.position=lockPrev.pos; bs.top=lockPrev.top; bs.width=lockPrev.w; bs.overflow=lockPrev.ov; html.classList.remove('t3d-lock'); window.scrollTo(0,lockY);
+    try{ if(tgSwipe) Telegram.WebApp.enableVerticalSwipes(); }catch(_){} };
   const svg=el.querySelector('#t3Svg'), stage=el.querySelector('.t3d-stage');
-  S={el,part,n,k:Math.min(k,n),V:Object.assign({},HOME),VW:600,VH:460,raf:0,anim:0,t};
+  S={el,part,n,k:Math.min(k,n),V:Object.assign({},HOME),VW:600,VH:460,raf:0,anim:0,t,unlock};
   /* размер холста = размер окна (без полей и искажений) */
   const size=()=>{ const r=stage.getBoundingClientRect(); if(!r.width) return; S.VW=600; S.VH=Math.round(600*Math.max(0.55,Math.min(1.6,r.height/r.width))); svg.setAttribute('viewBox','0 0 '+S.VW+' '+S.VH);
     const sp=span(HOME.yaw,HOME.pit); S.sc=Math.min((S.VW-60)/sp[0],(S.VH-70)/sp[1]); req(); };
