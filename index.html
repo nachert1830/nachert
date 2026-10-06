@@ -21373,6 +21373,9 @@ function buildTargets(t){ if(!window.ORACLE_POINTS||partsOf(t).length!==1||!ORAC
 function frame(items){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const P=p=>{ if(p&&isFinite(p[0])&&isFinite(p[1])){ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); } };
   items.forEach(i=>{ P(i.at); P(i.a); P(i.b); (i.p||[]).forEach(P); if(i.c&&i.r){ P([i.c[0]-i.r,i.c[1]-i.r]); P([i.c[0]+i.r,i.c[1]+i.r]); } });
   return {ox:-x0+24,oy:-y0+20,w:x1-x0+48,h:y1-y0+40}; }
+/* чертёж целиком в экран: по ширине колонки, но не выше ~70 % окна; «＋» увеличивает вдвое (тогда прокрутка) */
+function fit(svg,box,zoom){ const vb=svg.viewBox.baseVal, cw=box.clientWidth-18, maxH=Math.max(260,window.innerHeight*0.6);
+  const w=Math.min(cw,maxH*vb.width/vb.height)*(zoom||1); svg.style.maxWidth='none'; svg.style.width=Math.round(w)+'px'; svg.style.height='auto'; svg.style.margin='0 auto'; }
 function svgOf(items,fr,alt){ return DRAW.svg({items,fit:false,w:fr.w,h:fr.h,ox:fr.ox,oy:fr.oy,pad:10,alt:alt||'чертёж',max:900}); }
 function toItem(svg,fr,ev){ const r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return [(ev.clientX-r.left)*vb.width/r.width-10-fr.ox,(ev.clientY-r.top)*vb.height/r.height-10-fr.oy]; }
 const segDist=(p,a,b,inf)=>{ const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy; let t=l?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l:0; if(!inf) t=Math.max(0,Math.min(1,t)); return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy); };
@@ -21400,7 +21403,6 @@ function home(v){
     bug:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5M11 8v3.5M11 14h.01"/></svg>'};
   v.querySelector('#gyRoot').innerHTML=`
    ${card('var',I.var,'Новый вариант','Та же задача — другие данные. Решай на бумаге, потом сверяйся с разбором по шагам. Задача не повторится.','решено вариантов: <b>'+cnt('var')+'</b>',L.gen)}
-   ${card('build',I.build,'Построй сам','Реши на бумаге и отметь ответ на чертеже — сайт сразу скажет, верно ли и где ошибка.','верных построений: <b>'+cnt('build')+'</b>',L.build)}
    ${card('bug',I.bug,'Найди ошибку','В правильный чертёж подсажена одна ошибка: разрыв линии связи, перепутанные подписи или неверный размер. Найди и нажми на неё.','найдено ошибок: <b>'+cnt('bug')+'</b>',L.bug)}
    <div class="gy-why"><b>Почему этому можно верить.</b> Задача на сайте — программа построения в координатах. Новый вариант строится той же программой на изменённых данных и показывается, только если прошёл ту же проверку, что и весь сайт: каждая точка восстановлена в пространстве, проверены линии связи, принадлежность, ∥ и ⊥, числа и, где он есть, ответ — независимым расчётом.</div>`;
   v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.go; nav(href(m,pick(m==='var'?L.gen:m==='build'?L.build:L.bug),rnd())); }));
@@ -21413,7 +21415,7 @@ function variantView(host,n,seed){
   const t=r.task, canBuild=!!buildTargets(t);
   const chk=r.orig?'исходные данные':'проверен';
   host.innerHTML=`<div class="gy-vbar"><div class="gy-vt"><b>${r.orig?'Задача №'+n:'Вариант №'+n}</b><span class="gy-b${r.orig?'':' ok'}" title="${r.orig?'':'Вариант построен заново и прошёл ту же 3D-проверку'+(r.check&&r.check.oracle?' и независимый пересчёт ответа':'')+', что весь сайт'}">${r.orig?'':'✓ '}${chk}</span></div>
-     <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}${canBuild?`<a class="gy-vb" href="${href('build',n,r.seed||rnd())}">Построй</a>`:''}</div></div>
+     <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}</div></div>
    <div id="plMount"></div>`;
   document.body.classList.add('inplayer');
   PLR=PLAYER.mount($q(host,'#plMount'),t,{ backHref:H('ng','check','gym'), backLabel:'К тренажёру', afterText:'Дальше: ещё вариант',
@@ -21506,7 +21508,7 @@ function bugView(host,n,seed){
    <div class="gy-row"><button class="btn ghost" id="gyShow">Показать ошибку</button><a class="btn pri" href="${href('bug',pick(lists().bug),rnd())}">Следующая</a><a class="btn" href="${r.orig?H('ng','tasks',n):href('var',n,r.seed)}">Разбор задачи</a></div>`;
   const sheet=$q(host,'#gySheet');
   const mark=q=>({t:'circ',c:q,r:hitR*0.7,k:'res'});
-  const draw=(extra)=>{ sheet.innerHTML=svgOf(B.items.concat(extra||[]),fr,'Чертёж с ошибкой'); const svg=$q(sheet,'svg'); svg.style.maxWidth='none'; svg.style.width=(S.zoom*100)+'%'; svg.style.cursor='pointer';
+  const draw=(extra)=>{ sheet.innerHTML=svgOf(B.items.concat(extra||[]),fr,'Чертёж с ошибкой'); const svg=$q(sheet,'svg'); fit(svg,sheet,S.zoom); svg.style.cursor='pointer';
     svg.addEventListener('click',ev=>{ if(S.found) return; const q=toItem(svg,fr,ev); const d=Math.min(Math.hypot(q[0]-B.at[0],q[1]-B.at[1]),B.at2?Math.hypot(q[0]-B.at2[0],q[1]-B.at2[1]):1e9);
       if(d<=hitR){ S.found=true; if(!S.miss) cnt('bug',1); try{ FX.buzz&&FX.buzz('ok'); }catch(e){} $q(host,'#gyRes').innerHTML=`<div class="gy-ok"><b>Нашёл!</b> ${B.why}</div>`; draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); }
       else { S.miss++; try{ FX.buzz&&FX.buzz(12); }catch(e){} $q(host,'#gyRes').innerHTML=`<div class="gy-bad"><b>Здесь всё верно.</b> ${S.miss>=2?'Подсказка: проверь '+(B.type==='num'?'числа на чертеже':B.type==='swap'?'подписи точек по линиям связи':'вертикальность линий связи')+'.':'Ищи дальше.'}</div>`; } }); };
@@ -21517,10 +21519,11 @@ function bugView(host,n,seed){
 
 /* ── вход: #/ng/check/gym[/mode/N-seed] ── */
 function view(v,mode,keyStr){
-  const k=parseKey(keyStr), title={var:'Новый вариант',build:'Построй сам',bug:'Найди ошибку'}[mode];
+  if(mode==='build'&&parseKey(keyStr)){ const k0=parseKey(keyStr); setTimeout(()=>redir(href('var',k0.n,k0.seed)),0); return 'Тренажёр'; }   /* «Построй сам» временно убран */
+  const k=parseKey(keyStr), title={var:'Новый вариант',bug:'Найди ошибку'}[mode];
   if(!title||!k){
     v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','check')],['Тренажёр']],next:null,noBottom:true,body:`
-     <div class="intro"><h1>Тренажёр</h1><p class="lead">Бесконечная практика: новые варианты задач тетради, построение с мгновенной проверкой и охота за ошибками в чертежах.</p></div>
+     <div class="intro"><h1>Тренажёр</h1><p class="lead">Бесконечная практика: новые варианты задач тетради и охота за ошибками в чертежах.</p></div>
      <div class="seg modeseg" role="tablist" aria-label="Способ подготовки">${CHECK_MODES.map(m=>`<a role="tab" href="${H('ng','check',m[0])}" class="${m[0]==='gym'?'on':''}" aria-selected="${m[0]==='gym'}">${m[1]}</a>`).join('')}</div>
      <div id="gyRoot" class="gy-root"><div class="gy-load">Готовлю тренажёр…</div></div>`});
     GEN.checkers().then(ok=>{ const el=v.querySelector('#gyRoot'); if(!el||!el.isConnected) return; if(!ok){ el.innerHTML='<div class="box warn">Тренажёр не загрузился — проверь интернет и обнови страницу.</div>'; return; } home(v); });
@@ -22420,7 +22423,7 @@ function rkHub(v){
     ${step(1,H('ng','check','tickets'),'Реши билеты РК',nt+' '+plural(nt,'задание','задания','заданий')+' из билетов: реши на бумаге, потом сверься с разбором по шагам','с чего начать','hot')}
     ${step(2,H('ng','cheat','th'),'Выучи '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории','короткий ответ на каждый вопрос РК1 и подробное объяснение','')}
     ${step(3,H('ng','check','train'),'Пробный РК на время','задачи из разных разделов тетради и таймер — как на настоящем РК',last?'последний результат: '+last.pct+'%':'')}
-    ${step(4,H('ng','check','gym'),'Тренажёр без конца','новые варианты задач, построение с мгновенной проверкой и поиск ошибок в чертежах','новое','hot')}
+    ${step(4,H('ng','check','gym'),'Тренажёр без конца','новые варианты задач тетради и поиск ошибок в чертежах','новое','hot')}
     ${step(5,H('ng','check','quiz'),'Быстрый тест',nq+' '+plural(nq,'вопрос','вопроса','вопросов')+' с выбором ответа — проверить, что не забыл',best?'лучший результат: '+best+'%':'')}
    </div>
    ${rkZeroHTML()}

@@ -57,7 +57,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     const el=await require('./gen-check.js').genEligibility(gpage,12), cur=await gpage.evaluate(()=>GEN.list());
     if(JSON.stringify(el.ok)!==JSON.stringify(cur)) fail.push('Тренажёр: список задач для генератора устарел. Вставь в GEN_OK: '+JSON.stringify(el.ok));
     const gy=await require('./gym.js').gymCheck(gpage,URL,{all:!QUICK});
-    info.push('Тренажёр: блоков задач '+got.length+' (совпадают с эталоном), генератор — задач '+el.ok.length+', «построй сам» — '+gy.info.build+', «найди ошибку» — '+gy.info.bug);
+    info.push('Тренажёр: блоков задач '+got.length+' (совпадают с эталоном), генератор — задач '+el.ok.length+', «найди ошибку» — '+gy.info.bug);
     report('Тренажёр',gy.bad); await gpage.close(); }
 
   /* 4. теория */
