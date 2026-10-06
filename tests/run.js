@@ -70,9 +70,12 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     while(queue.length&&n<700){ const h=queue.shift(); if(seen.has(h)) continue; seen.add(h); n++;
       const before=errs.length; await page.evaluate(h=>{ location.hash=h; },h); await page.waitForTimeout(60);
       const st=await page.evaluate(()=>({ w:document.documentElement.scrollWidth, iw:window.innerWidth, txt:(document.getElementById('view')||document.body).innerText.length,
+        /* элемент страницы, растянутый на весь экран чужим стилем (так плитка главной однажды получила стиль окна 3D) */
+        huge:[...document.querySelectorAll('#view *')].filter(e=>{ const c=getComputedStyle(e); return c.position==='fixed'&&e.getBoundingClientRect().height>window.innerHeight*0.6; }).map(e=>e.tagName+'.'+String(e.className).slice(0,40)),
         links:[...document.querySelectorAll('a[href^="#/"]')].map(a=>a.getAttribute('href')) }));
       if(errs.length>before) bad.push({name:h,rule:'ошибка JS',msg:errs.slice(before).join(' / ').slice(0,200)});
       if(st.w>st.iw+1) bad.push({name:h,rule:'горизонтальная прокрутка',msg:'ширина '+st.w+' при экране '+st.iw});
+      if(st.huge.length) bad.push({name:h,rule:'элемент на весь экран',msg:st.huge.slice(0,3).join(', ')});
       if(st.txt<40) bad.push({name:h,rule:'пустая страница',msg:'текста '+st.txt+' символов'});
       st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)) queue.push(l); }); }   /* варианты тренажёра бесконечны — их проверяет tests/gym.js */
     info.push('Обход: страниц '+n);

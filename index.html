@@ -118,6 +118,16 @@
 .tr-cat{width:84px;margin:0 auto -4px}.tr-cat .cat{display:block;width:100%;height:auto;animation:catPop .5s cubic-bezier(.34,1.56,.64,1) both}
 :root[data-theme=dark] .cat{filter:drop-shadow(0 0 1.2px rgba(255,255,255,.55))}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .cat{filter:drop-shadow(0 0 1.2px rgba(255,255,255,.55))}}
+.has-perch{position:relative;padding-right:76px}
+.perch{position:absolute;right:0;top:-6px;width:70px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 6px 10px rgba(10,12,30,.16))}
+.perch .cat,.foot-cat .cat{display:block;width:100%;height:auto;animation:catPop .55s cubic-bezier(.34,1.56,.64,1) both}
+.perch.purr .cat,.foot-cat.purr .cat{animation:catPurr .5s ease-in-out 3}
+@keyframes catPurr{0%,100%{transform:rotate(0)}30%{transform:rotate(-4deg) translateY(-2px)}70%{transform:rotate(4deg)}}
+.perch-say{position:absolute;right:0;top:calc(100% + 4px);z-index:5;white-space:nowrap;background:var(--surf);border:1px solid var(--line);border-radius:12px 2px 12px 12px;padding:5px 10px;font:600 12.5px var(--sans);color:var(--ink);box-shadow:0 6px 16px -10px rgba(0,0,0,.4);animation:catPop .3s both}
+#foot .wrap{position:relative}
+.foot-cat{position:absolute;right:16px;top:calc(-1 * var(--s5) - 42px);width:66px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.foot-cat .perch-say{top:auto;bottom:calc(100% + 2px);border-radius:12px 12px 2px 12px}
+@media(max-width:420px){.perch{width:60px}.has-perch{padding-right:64px}}
 .cat-q{animation:catQ 2.4s ease-in-out infinite;transform-origin:108px 14px}
 @keyframes catQ{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-2px) rotate(8deg)}}
 .cat-z{animation:catZ 3s ease-in-out infinite}
@@ -2293,6 +2303,7 @@ body.t3d-open{overflow:hidden}
 .t3d-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}.t3d-leg i.ln{height:0;border-top:1.5px dashed #6b7280;border-radius:0}
 .t3d-lb{font:700 22px var(--sans,system-ui);paint-order:stroke;stroke:var(--t3bg);stroke-width:4px;stroke-linejoin:round}
 .t3d-ax{font:italic 600 20px var(--sans,system-ui);fill:var(--t3dink)}
+.pl-zb.zreset{display:none}.zoomed .pl-zb.zreset{display:grid}
 .pl-zb.t3btn{font-weight:700;letter-spacing:.02em}
 body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px;align-self:flex-start}
 .gy-root{display:grid;gap:14px;margin-top:6px}
@@ -2458,7 +2469,7 @@ body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;backg
 
 <div class="stuck" id="stuck"><div class="wrap"><b>Не нашёл свой вопрос?</b><span>Напиши, что не получается, своими словами</span><button type="button" id="stuckBtn">Спросить →</button></div></div>
 
-<footer id="foot"><div class="wrap">
+<footer id="foot"><div class="wrap"><button type="button" class="foot-cat" id="footCat" aria-label="Кошка-талисман"></button>
  <div class="foot-in">
   <div class="foot-l">
    <span>Независимый учебный проект. Не является официальным сайтом МГТУ им. Н.Э. Баумана.</span>
@@ -3202,7 +3213,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа"><button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb" data-z="reset" aria-label="Показать чертёж целиком" title="Весь чертёж">⌂</button>${window.FLAGS&&FLAGS.on('task3d')&&window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Шаг в пространстве" title="Этот шаг в 3D">3D</button>':''}</div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа"><button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button>${window.FLAGS&&FLAGS.on('task3d')&&window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Шаг в пространстве" title="Этот шаг в 3D">3D</button>':''}</div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -21438,8 +21449,9 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'1.4',d:'6 октября 2026',items:['Учебник, рабочая тетрадь и методические указания в подвале сайта открываются карточкой: выходные данные, что взято на сайт, где найти книгу.','Кошка-помощник: радуется верным ответам, подсказывает при ошибке, ждёт при пустом поиске.','Номер версии и список изменений.'],
+  {v:'1.5',d:'6 октября 2026',items:['Кошка-талисман живёт на сайте: в каждом разделе своя — дремлет, выглядывает, думает, машет лапой; следит глазами за пальцем, а если ткнуть — мурлычет.','Кнопка «весь чертёж» появляется, только когда чертёж увеличен.','Исправлена главная на телефонах: плитка «3D-модель и эпюр» больше не растягивается на весь экран.'],
    hidden:[{flag:'task3d',t:'3D к задачам: любой шаг решения в пространстве, с вращением'}]},
+  {v:'1.4',d:'6 октября 2026',items:['Учебник, рабочая тетрадь и методические указания в подвале сайта открываются карточкой: выходные данные, что взято на сайт, где найти книгу.','Кошка радуется верным ответам в тренажёре и итогам пробного РК.','Номер версии и список изменений.']},
   {v:'1.3',d:'6 октября 2026',items:['Тренажёр: новые варианты задач тетради — каждый проходит ту же проверку, что исходная задача.','«Найди ошибку»: в верный чертёж подсажена одна ошибка — найди её.']},
   {v:'1.2',d:'5 октября 2026',items:['Ответы задач проверяются независимым расчётом и на сотнях случайных вариантов данных.','Уточнены ответы задач 9 и 13 (≈ вместо =).','Пробный РК: любое время от 5 до 120 минут.']},
   {v:'1.1',d:'4 октября 2026',items:['Эпюр точки: типовые случаи с пояснениями, мерки Δy и Δz, конкурирующие точки, аккуратные подписи.','3D-модель: прозрачные или непрозрачные плоскости.','Правки текста решений: задачи 11, 63, 77, 81, 84, 85, 89.']},
@@ -21960,6 +21972,7 @@ function render(r){
   document.title=title?title+' · Начерт':'Начерт — начертательная геометрия по шагам';
   /* у каждой страницы должен быть заголовок первого уровня (для экранных читалок и поиска) */
   try{ if(title&&!v.querySelector('h1')){ const h1=document.createElement('h1'); h1.className='sr-only'; h1.textContent=title; v.prepend(h1); } }catch(e){}
+  try{ catPerch(v,r); }catch(e){}
   renderHProg();
   try{ v.classList.remove('vin'); void v.offsetWidth; v.classList.add('vin'); FX.reveal(v); }catch(e){}
   try{ FX.loadViews(); }catch(e){}
@@ -22190,7 +22203,7 @@ const LOGO={
    sleep — спит (пусто/ничего нет); wave — машет лапой (привет, страница не найдена) */
 function CAT(kind){
   kind=kind||'peek';
-  const closed=kind==='happy'||kind==='wave', sleep=kind==='sleep', oops=kind==='oops', think=kind==='think';
+  const closed=kind==='happy'||kind==='wave'||kind==='purr', sleep=kind==='sleep', oops=kind==='oops', think=kind==='think';
   const Y='#ffd23f';
   let eyes;
   if(closed) eyes=`<path d="M39 42q7-7 14 0M67 42q7-7 14 0" fill="none" stroke="${Y}" stroke-width="3.2" stroke-linecap="round"/>`;
@@ -22200,7 +22213,7 @@ function CAT(kind){
     eyes=`<g class="cat-eyes"><ellipse cx="46" cy="42" rx="7.2" ry="8.4" fill="${Y}"/><ellipse cx="74" cy="42" rx="7.2" ry="8.4" fill="${Y}"/><ellipse class="${think?'':'cat-pu'}" cx="${46+dx}" cy="${42+dy}" rx="2.1" ry="${think?4.6:6.4}" fill="#111118"/><ellipse class="${think?'':'cat-pu'}" cx="${74+dx}" cy="${42+dy}" rx="2.1" ry="${think?4.6:6.4}" fill="#111118"/></g>`; }
   const mouth=oops?'<ellipse cx="60" cy="59" rx="2.6" ry="3" fill="#5b5566"/>':sleep?'<path d="M56.5 57.5q3.5 2 7 0" fill="none" stroke="#5b5566" stroke-width="1.3" stroke-linecap="round"/>'
     :'<path d="M60 56.4q-2.6 3.2-6 2.2M60 56.4q2.6 3.2 6 2.2" fill="none" stroke="#5b5566" stroke-width="1.3" stroke-linecap="round"/>';
-  const paws=kind==='happy'?'':kind==='wave'?'<ellipse cx="35" cy="72" rx="12" ry="7.5"/><g class="cat-paw"><ellipse cx="101" cy="44" rx="7.5" ry="11" transform="rotate(18 101 44)"/></g>':'<ellipse cx="35" cy="72" rx="12" ry="7.5"/><ellipse cx="85" cy="72" rx="12" ry="7.5"/>';
+  const paws=kind==='happy'?'':kind==='wave'?'<ellipse cx="35" cy="72" rx="12" ry="7.5"/><g class="cat-paw"><ellipse cx="104" cy="31" rx="7" ry="10.5" transform="rotate(28 104 31)"/></g>':'<ellipse cx="35" cy="72" rx="12" ry="7.5"/><ellipse cx="85" cy="72" rx="12" ry="7.5"/>';
   const toes=kind==='happy'?'':kind==='wave'?'<path d="M29 70h12" stroke="#2b2b36" stroke-width="1" stroke-linecap="round"/>':'<path d="M29 70h12M79 70h12" stroke="#2b2b36" stroke-width="1" stroke-linecap="round"/>';
   const extra=think?'<g class="cat-q"><circle cx="108" cy="14" r="10" fill="var(--surf,#fff)" stroke="var(--line2,#d6d9e0)" stroke-width="1.4"/><text x="108" y="19" text-anchor="middle" font-size="14" font-weight="800" fill="#2c5fd9" font-family="system-ui,sans-serif">?</text></g>'
     :oops?'<path class="cat-drop" d="M100 22q4 6 0 9q-4-3 0-9z" fill="#5aa9ff"/>'
@@ -22209,13 +22222,34 @@ function CAT(kind){
     <path d="M25 34 31 5.5q1.6-5 5.6-1.6L55 20z"/><path d="M95 34 89 5.5q-1.6-5-5.6-1.6L65 20z"/>
     <ellipse cx="60" cy="44" rx="37" ry="30"/>${paws}</g>
     <path d="M32 9.5 36 25 46 20zM88 9.5 84 25 74 20z" fill="#3b2a3d"/>${eyes}
-    ${kind==='happy'||kind==='wave'?'<ellipse cx="38" cy="51" rx="5" ry="3" fill="#f2a3b6" opacity=".35"/><ellipse cx="82" cy="51" rx="5" ry="3" fill="#f2a3b6" opacity=".35"/>':''}
+    ${kind==='happy'||kind==='wave'||kind==='purr'?'<ellipse cx="38" cy="51" rx="5" ry="3" fill="#f2a3b6" opacity=".35"/><ellipse cx="82" cy="51" rx="5" ry="3" fill="#f2a3b6" opacity=".35"/>':''}
     <path d="M57 53h6l-3 3.4z" fill="#f2a3b6"/>${mouth}
     <g stroke="rgba(255,255,255,.38)" stroke-width="1.1" stroke-linecap="round"><path d="M44 54 26 51M44 57 27 59M76 54 94 51M76 57 93 59"/></g>
     ${toes}${extra}</svg>`;
 }
 /* кошка в блоке: <div class="catbox"> кошка + реплика </div> */
 function CATSAY(kind,html,cls){ return `<div class="catsay ${cls||''}"><span class="catsay-c">${CAT(kind)}</span>${html?`<div class="catsay-b">${html}</div>`:''}</div>`; }
+/* ── кошка на страницах: сидит на заголовке раздела (поза своя у каждого раздела), спит в подвале.
+   Следит глазами за пальцем/курсором; если ткнуть — мурлычет. Только на главных страницах разделов, не в задачах. */
+const CAT_SPOT={'ng/path':'peek','ng/tasks':'sleep','ng/hw':'think','ng/check':'peek','ng/cheat':'think','ig':'peek','ig/path':'peek','kg':'sleep','kg/path':'sleep','about':'wave','topic':'think'};
+function catPerch(v,r){
+  const key=r.s+(r.tab?'/'+r.tab:''), kind=r.item==null?(CAT_SPOT[key]||CAT_SPOT[r.s]):null; if(!kind) return;
+  const intro=v.querySelector('.intro')||v.querySelector('h1:not(.sr-only)'); if(!intro||intro.querySelector('.perch')) return;
+  intro.classList.add('has-perch'); intro.insertAdjacentHTML('afterbegin',`<button type="button" class="perch" data-cat="${kind}" aria-label="Кошка-талисман">${CAT(kind)}</button>`);
+}
+const MEOW=['Мур!','Мяу!','Мрр…','Учись, я посторожу','Ещё задачку?','Линии связи ⟂ оси x'];
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.perch,.foot-cat'); if(!b||b.dataset.busy) return; b.dataset.busy=1;
+  const k=b.dataset.cat||'peek'; b.innerHTML=CAT('purr')+`<span class="perch-say">${MEOW[Math.floor(Math.random()*MEOW.length)]}</span>`; b.classList.add('purr'); try{ FX.buzz&&FX.buzz(6); }catch(_){}
+  setTimeout(()=>{ b.innerHTML=CAT(k); b.classList.remove('purr'); delete b.dataset.busy; },1800); });
+/* глаза следят за пальцем */
+(function(){ let raf=0, X=0, Y=0;
+  const look=()=>{ raf=0; document.querySelectorAll('.perch .cat-pu,.hs-cat .cat-pu').forEach(pu=>{ const svg=pu.ownerSVGElement, r=svg&&svg.getBoundingClientRect(); if(!r||!r.width||r.bottom<0||r.top>innerHeight) return;
+    const k=120/r.width, cx=r.left+(+pu.getAttribute('cx'))/k, cy=r.top+(+pu.getAttribute('cy'))/k, dx=X-cx, dy=Y-cy, d=Math.hypot(dx,dy)||1, m=Math.min(2.4,d/40);
+    pu.style.animation='none'; pu.style.transform=`translate(${(dx/d*m).toFixed(2)}px,${(dy/d*m*0.8).toFixed(2)}px)`; }); };
+  const mv=e=>{ X=e.clientX; Y=e.clientY; if(!raf) raf=requestAnimationFrame(look); };
+  if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){ document.addEventListener('pointermove',mv,{passive:true}); document.addEventListener('pointerdown',mv,{passive:true}); }
+})();
+try{ const fc=document.getElementById('footCat'); if(fc){ fc.innerHTML=CAT('sleep'); fc.dataset.cat='sleep'; } }catch(e){}
 /* «сочная» кнопка «Поделиться»: градиент, блик, значки мессенджеров — видно, куда уйдёт ссылка */
 FX.juicyBtn=function(cls){ const mini=k=>LOGO[k].replace(/width="30" height="30"/,'width="20" height="20"').replace('id="tgG"','id="tgG'+(++FX._jn)+'"').replace('url(#tgG)','url(#tgG'+FX._jn+')');
   return `<button type="button" class="btn juicy ${cls||''}" data-sharesite><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Поделиться</span><span class="jz" aria-hidden="true">${mini('tg')}${mini('vk')}</span></button>`; };
