@@ -2288,13 +2288,13 @@ body.t3d-open{overflow:hidden}
 .t3d-tt{flex:1;min-width:0;display:grid;gap:2px}.t3d-tt b{font-size:16px}
 .t3d-tt span{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .t3d-x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:16px;cursor:pointer}
-.t3d{--t3bg:#ffffff;--t3dink:#111827;--t3dink2:#4b5563}
-:root[data-theme=dark] .t3d{--t3bg:#0e1526;--t3dink:#e8edf7;--t3dink2:#a3adc2}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3d{--t3bg:#0e1526;--t3dink:#e8edf7;--t3dink2:#a3adc2}}
+.t3d{--t3bg:#ffffff;--t3ink:#111827;--t3ink2:#4b5563}
+:root[data-theme=dark] .t3d{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3d{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}}
 .t3d-stage{position:relative;margin:0 12px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--t3bg)}
 .t3d-stage svg{display:block;width:100%;height:auto;max-height:62vh;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .t3d-stage svg:active{cursor:grabbing}
-.t3d-hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:3px 10px;border-radius:99px;pointer-events:none;transition:opacity .3s}
+.t3d-hint{position:absolute;left:10px;bottom:10px;font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:3px 10px;border-radius:99px;pointer-events:none;transition:opacity .3s}
 .t3d-ctl{display:flex;align-items:center;gap:10px;padding:10px 14px}
 .t3d-ctl input{flex:1;accent-color:var(--blue)}
 .t3d-b{flex:none;width:42px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:18px;cursor:pointer}
@@ -2302,7 +2302,7 @@ body.t3d-open{overflow:hidden}
 .t3d-leg span{display:inline-flex;align-items:center;gap:6px}
 .t3d-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}.t3d-leg i.ln{height:0;border-top:1.5px dashed #6b7280;border-radius:0}
 .t3d-lb{font:700 22px var(--sans,system-ui);paint-order:stroke;stroke:var(--t3bg);stroke-width:4px;stroke-linejoin:round}
-.t3d-ax{font:italic 600 20px var(--sans,system-ui);fill:var(--t3dink)}
+.t3d-ax{font:italic 600 20px var(--sans,system-ui);fill:var(--t3ink)}
 .pl-zb.zreset{display:none}.zoomed .pl-zb.zreset{display:grid}
 .pl-zb.t3btn{font-weight:700;letter-spacing:.02em}
 body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px;align-self:flex-start}
@@ -3213,7 +3213,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа"><button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button>${window.FLAGS&&FLAGS.on('task3d')&&window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Шаг в пространстве" title="Этот шаг в 3D">3D</button>':''}</div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа"><button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button>${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Шаг в пространстве" title="Этот шаг в 3D">3D</button>':''}</div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -21449,8 +21449,9 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'1.6',d:'6 октября 2026',items:['3D к каждой задаче: кнопка «3D» у чертежа показывает текущий шаг решения в пространстве — точки, отрезки, плоскости проекций π₁ и π₂, линии связи. Модель вращается пальцем, шаги листаются стрелками.']},
   {v:'1.5',d:'6 октября 2026',items:['Кошка-талисман живёт на сайте: в каждом разделе своя — дремлет, выглядывает, думает, машет лапой; следит глазами за пальцем, а если ткнуть — мурлычет.','Кнопка «весь чертёж» появляется, только когда чертёж увеличен.','Исправлена главная на телефонах: плитка «3D-модель и эпюр» больше не растягивается на весь экран.'],
-   hidden:[{flag:'task3d',t:'3D к задачам: любой шаг решения в пространстве, с вращением'}]},
+},
   {v:'1.4',d:'6 октября 2026',items:['Учебник, рабочая тетрадь и методические указания в подвале сайта открываются карточкой: выходные данные, что взято на сайт, где найти книгу.','Кошка радуется верным ответам в тренажёре и итогам пробного РК.','Номер версии и список изменений.']},
   {v:'1.3',d:'6 октября 2026',items:['Тренажёр: новые варианты задач тетради — каждый проходит ту же проверку, что исходная задача.','«Найди ошибку»: в верный чертёж подсажена одна ошибка — найди её.']},
   {v:'1.2',d:'5 октября 2026',items:['Ответы задач проверяются независимым расчётом и на сотнях случайных вариантов данных.','Уточнены ответы задач 9 и 13 (≈ вместо =).','Пробный РК: любое время от 5 до 120 минут.']},
@@ -21459,8 +21460,7 @@ window.CHANGES=[
 ];
 window.FLAGS=(function(){
 const KEY='6d7f183c72efaf3d7b8fb7022cfb3797011bff7c57afeb515571c1f4d0839179';
-const LIST={task3d:{t:'3D к задачам',d:'Кнопка «3D» у чертежа: шаг решения в пространстве — точки, отрезки, плоскости проекций, вращение пальцем.'},
-  build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'}};
+const LIST={build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'}};
 function sha256(s){ const K=[],H=[]; let p=2; const isP=n=>{ for(let f=2;f*f<=n;f++) if(n%f===0) return false; return true; };
   for(let i=0;i<64;p++){ if(isP(p)){ if(i<8) H[i]=(Math.pow(p,1/2)*4294967296)|0; K[i++]=(Math.pow(p,1/3)*4294967296)|0; } }
   const r=(v,n)=>(v>>>n)|(v<<(32-n)); const b=unescape(encodeURIComponent(s)); const w=[], L=b.length*8;
@@ -21529,15 +21529,22 @@ const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], dot=(a,b)=>a[0]*b[0]+a[1]*b[1]
 const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const COL={main:'var(--t3ink)',thin:'var(--t3ink2)',aux:'#2c5fd9',res:'#c2410c',grn:'#15803d',dim:'#2c5fd9',auxd:'#2c5fd9'};
 /* модель: точки (имя → p), отрезки, многоугольники из элементов сцены */
-function model(items){
-  const pts={}, segs=[], polys=[], seen=new Set();
+/* reg — все элементы части задачи: по ним точка чертежа без 3D-метки узнаётся по совпадению с помеченной проекцией.
+   Узнаём только однозначно: если в этом месте сходятся проекции разных точек (конкурирующие), не угадываем. */
+function registry(items){ const R=new Map(); const put=q=>{ if(!q||!q._3) return; const k=Math.round(q[0]*4)+','+Math.round(q[1]*4), o=R.get(k);
+    if(!o) R.set(k,{p:q._3,pl:q._pl}); else if(o.p&&(o.pl!==q._pl||Math.hypot(...sub(o.p,q._3))>0.3)) R.set(k,{p:null}); };
+  (items||[]).forEach(it=>{ if(!it) return; put(it.at); put(it.a); put(it.b); (it.p||[]).forEach(put); }); return R; }
+function model(items,regItems){
+  const pts={}, segs=[], polys=[], seen=new Set(), R=registry(regItems||items);
+  const T=q=>{ if(!q) return null; if(q._3) return {p:q._3,pl:q._pl}; const o=R.get(Math.round(q[0]*4)+','+Math.round(q[1]*4)); return o&&o.p?o:null; };
   const key=(a,b)=>{ const r=v=>v.map(x=>Math.round(x*4)/4).join(','); const A=r(a),B=r(b); return A<B?A+'|'+B:B+'|'+A; };
   (items||[]).forEach(it=>{ if(!it) return;
     if(it.t==='pt'&&it.at&&it.at._3&&it.l){ strip(it.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)[′″]\)?$/.exec(l.trim()); if(m&&m[1].length<5){ const o=pts[m[1]]; if(!o||it._g==='new') pts[m[1]]={p:it.at._3,k:it.k,g:it._g||'given'}; } }); }
-    if((it.t==='seg'||it.t==='line'||it.t==='vec')&&it.a&&it.b&&it.a._3&&it.b._3&&it.a._pl===it.b._pl){ const a=it.a._3,b=it.b._3; if(Math.hypot(...sub(a,b))<0.3) return;
+    const ta=(it.t==='seg'||it.t==='line'||it.t==='vec')&&T(it.a), tb=ta&&T(it.b);
+    if(ta&&tb&&ta.pl===tb.pl){ const a=ta.p,b=tb.p; if(Math.hypot(...sub(a,b))<0.3) return;
       const k=key(a,b); if(seen.has(k)) { if(it._g==='new'){ const s=segs.find(x=>x.key===k); if(s){ s.g='new'; s.k=it.k||s.k; } } return; } seen.add(k);
       segs.push({a,b,k:it.k||'main',g:it._g||'given',key:k}); }
-    if(it.t==='poly'&&it.p&&it.p.length>2&&it.p.every(q=>q&&q._3)){ const pl=it.p[0]._pl; if(it.p.every(q=>q._pl===pl)) polys.push({p:it.p.map(q=>q._3),k:it.k||'main',g:it._g||'given',fill:it.fill}); }
+    if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)) polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill}); }
   });
   return {pts,segs,polys};
 }
@@ -21547,7 +21554,7 @@ let S=null;
 function close(){ if(!S) return; S.el.remove(); document.removeEventListener('keydown',S.key); document.body.classList.remove('t3d-open'); S=null; }
 function open(t,pi,k){
   close(); const parts=PLAYER.partsOf(t), part=parts[pi]||parts[0], n=(part.steps||[]).length;
-  const full=model(PLAYER.scene(part,n).items);
+  const fullItems=PLAYER.scene(part,n).items, full=model(fullItems);
   /* рамка по всей задаче — чтобы при смене шага сцена не прыгала */
   const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p));
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(0,...all.map(p=>p[i])));
@@ -21561,7 +21568,7 @@ function open(t,pi,k){
   document.body.appendChild(el); document.body.classList.add('t3d-open');
   S={el,part,n,k:Math.min(k,n),yaw:0.62,pit:0.42,C,R,mn,mx,t};
   const svg=el.querySelector('#t3Svg');
-  const draw=()=>{ const items=PLAYER.scene(part,S.k).items, m=model(items);
+  const draw=()=>{ const items=PLAYER.scene(part,S.k).items, m=model(items,fullItems);
     el.querySelector('#t3Cap').textContent=S.k===0?'Дано':'Шаг '+S.k+' из '+n+' · '+((part.steps[S.k-1]||{}).t||'');
     el.querySelector('#t3Step').value=S.k;
     svg.innerHTML=render(m); };
@@ -21570,17 +21577,17 @@ function open(t,pi,k){
     /* вписываем рамку задачи в окно при текущем повороте */
     const cn=[]; for(const a of [S.mn[0],S.mx[0]]) for(const b of [S.mn[1],S.mx[1]]) for(const c of [S.mn[2],S.mx[2]]) cn.push([a,b,c]);
     const us=cn.map(q=>dot(sub(q,S.C),Rv)), vs=cn.map(q=>dot(sub(q,S.C),U));
-    const u0=Math.min(...us),u1=Math.max(...us),v0=Math.min(...vs),v1=Math.max(...vs), sc=Math.min(560/(u1-u0||1),420/(v1-v0||1));
-    const ou=300-sc*(u0+u1)/2, ov=230+sc*(v0+v1)/2;
+    const u0=Math.min(...us),u1=Math.max(...us),v0=Math.min(...vs),v1=Math.max(...vs), sc=Math.min(540/(u1-u0||1),380/(v1-v0||1));
+    const ou=300-sc*(u0+u1)/2, ov=236+sc*(v0+v1)/2;
     const P=p=>{ const d=sub(p,S.C); return [ou+sc*dot(d,Rv),ov-sc*dot(d,U),dot(d,D)]; };
     const f=v=>Math.round(v*10)/10;
     const L=(a,b,col,w,dash,op)=>{ const A=P(a),B=P(b); return `<line x1="${f(A[0])}" y1="${f(A[1])}" x2="${f(B[0])}" y2="${f(B[1])}" stroke="${col}" stroke-width="${w}"${dash?` stroke-dasharray="${dash}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`; };
     const poly=(ps,fill,stroke,op)=>`<polygon points="${ps.map(p=>{ const q=P(p); return f(q[0])+','+f(q[1]); }).join(' ')}" fill="${fill}" fill-opacity="${op}" stroke="${stroke}" stroke-width="1"/>`;
     const [x0,y0,z0]=S.mn, [x1,y1,z1]=S.mx;
-    let back='', mid='', front='';
+    let back='', mid='', front=''; const lbs=[];
     /* плоскости проекций: π₂ (y = 0), π₁ (z = 0) — дальняя рисуется первой */
-    const p2=poly([[x0,0,0],[x1,0,0],[x1,0,z1],[x0,0,z1]],'rgba(59,110,246,1)','rgba(59,110,246,.6)',.10);
-    const p1=poly([[x0,0,0],[x1,0,0],[x1,y1,0],[x0,y1,0]],'rgba(245,158,11,1)','rgba(217,119,6,.6)',.12);
+    const p2=poly([[x0,0,z0],[x1,0,z0],[x1,0,z1],[x0,0,z1]],'rgba(59,110,246,1)','rgba(59,110,246,.6)',.10);
+    const p1=poly([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],'rgba(245,158,11,1)','rgba(217,119,6,.6)',.12);
     back+=(D[1]<0?p2+p1:p1+p2);
     back+=L([x0,0,0],[x1,0,0],'var(--t3ink)',1.6);
     { const q=P([x0,0,0]); back+=`<text x="${f(q[0]-18)}" y="${f(q[1]+6)}" class="t3d-ax">x</text>`; }
@@ -21594,7 +21601,13 @@ function open(t,pi,k){
       mid+=L(p,a1,'#6b7280',1,'3 3',.8)+L(p,a2,'#6b7280',1,'3 3',.8)+L(a1,ax,'#6b7280',.9,'2 3',.6)+L(a2,ax,'#6b7280',.9,'2 3',.6);
       const q1=P(a1), q2=P(a2), q=P(p);
       mid+=`<circle cx="${f(q1[0])}" cy="${f(q1[1])}" r="3.6" fill="#b45309"/><circle cx="${f(q2[0])}" cy="${f(q2[1])}" r="3.6" fill="#1d4ed8"/>`;
-      front+=(o.g==='new'?`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="12" fill="#ffd23f" fill-opacity=".55"/>`:'')+`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="6" fill="${col}" stroke="var(--t3bg)" stroke-width="2"/><text x="${f(q[0]+10)}" y="${f(q[1]-10)}" class="t3d-lb" fill="${col}">${nm}</text>`; });
+      front+=(o.g==='new'?`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="12" fill="#ffd23f" fill-opacity=".55"/>`:'')+`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="6" fill="${col}" stroke="var(--t3bg)" stroke-width="2"/>`;
+      lbs.push({nm,q,col,pr:(o.g==='new'?0:2)+(/^[A-ZА-ЯĀ-ž]/.test(nm)?0:1)}); });
+    /* подписи: сначала новые и буквенные; подпись, которая налезла бы на уже поставленную, пробуем по 4 сторонам, иначе не ставим */
+    const placed=[]; lbs.sort((a,b)=>a.pr-b.pr).forEach(o=>{ const w=13*[...o.nm].length+4, h=20;
+      for(const [dx,dy] of [[10,-10],[10,24],[-10-w,-10],[-10-w,24]]){ const r={x:o.q[0]+dx,y:o.q[1]+dy-h+4,w,h};
+        if(placed.some(z=>r.x<z.x+z.w&&z.x<r.x+r.w&&r.y<z.y+z.h&&z.y<r.y+r.h)) continue;
+        placed.push(r); front+=`<text x="${f(r.x)}" y="${f(o.q[1]+dy)}" class="t3d-lb" fill="${o.col}">${o.nm}</text>`; break; } });
     return `<rect width="600" height="460" fill="var(--t3bg)"/>`+back+mid+front; };
   /* вращение */
   let drag=null;

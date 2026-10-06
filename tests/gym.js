@@ -40,17 +40,17 @@ async function gymCheck(page,base,opt){
     const res=await page.$eval('#gyRes',e=>e.textContent);
     if(!/Нашёл/.test(res)) bad.push({name:'Тренажёр · найди ошибку №'+n,rule:'нажатие на ошибку не засчитано',msg:res.slice(0,140)});
   }
-  /* ── скрытые функции (включаем в режиме владельца на время проверки) ── */
-  await page.evaluate(()=>{ localStorage.setItem('nch2_owner','true'); localStorage.setItem('nch2_flags',JSON.stringify({task3d:true})); });
+  /* 3D к задачам — у любого посетителя */
   /* 3D к задачам: кнопка есть, окно открывается, шаги листаются */
   await page.goto(base+'#/ng/tasks/47'); await page.waitForTimeout(900);
   if(!(await page.$('.pl-zb[data-z="3d"]'))) bad.push({name:'3D к задачам №47',rule:'нет кнопки 3D',msg:''});
   else { await page.click('.pl-zb[data-z="3d"]'); await page.waitForTimeout(200); for(let i=0;i<12;i++) await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(100); const n=await page.$$eval('#t3Svg circle',a=>a.length), cap=await page.$eval('#t3Cap',e=>e.textContent);
+    const ink=await page.evaluate(()=>{ const e=document.querySelector('.t3d'); const v=e&&getComputedStyle(e).getPropertyValue('--t3ink').trim(); return v; });
+    if(!ink) bad.push({name:'3D к задачам',rule:'цвет линий не задан (линии невидимы)',msg:''});
     if(n<8||!/^Шаг \d+ из/.test(cap)) bad.push({name:'3D к задачам №47',rule:'окно пустое',msg:cap});
     await page.keyboard.press('Escape'); if(await page.$('.t3d')) bad.push({name:'3D к задачам',rule:'Esc не закрывает',msg:''}); }
   info.t3=await page.evaluate(()=>{ let a=0,b=0; WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach(p=>{ b++; if(TASK3D.has(p)) a++; })); return a+' из '+b+' пунктов'; });
-  await page.evaluate(()=>{ localStorage.removeItem('nch2_owner'); localStorage.removeItem('nch2_flags'); });
   return {bad,info};
 }
 module.exports={gymCheck};
