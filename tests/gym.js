@@ -49,6 +49,8 @@ async function gymCheck(page,base,opt){
     const ink=await page.evaluate(()=>{ const e=document.querySelector('.t3d'); const v=e&&getComputedStyle(e).getPropertyValue('--t3ink').trim(); return v; });
     if(!ink) bad.push({name:'3D к задачам',rule:'цвет линий не задан (линии невидимы)',msg:''});
     if(n<8||!/^Шаг \d+ из/.test(cap)) bad.push({name:'3D к задачам №47',rule:'окно пустое',msg:cap});
+    { const pos=await page.evaluate(()=>{ const s=document.querySelector('#t3Svg'), r=s.getBoundingClientRect(), vb=s.viewBox.baseVal; const c=s.querySelector('circle[r="6"]'); return c&&[r.left+(+c.getAttribute('cx'))*r.width/vb.width, r.top+(+c.getAttribute('cy'))*r.height/vb.height]; });
+      if(pos){ await page.mouse.click(pos[0],pos[1]); await page.waitForTimeout(150); const t=await page.$eval('#t3Info',e=>e.hidden?'':e.textContent); if(!/Точка/.test(t)) bad.push({name:'3D к задачам №47',rule:'нажатие на точку не показывает, что это',msg:t.slice(0,80)}); } }
     await page.keyboard.press('Escape'); if(await page.$('.t3d')) bad.push({name:'3D к задачам',rule:'Esc не закрывает',msg:''}); }
   /* построения шагов видны в 3D: в № 13 (треугольники натуральной величины) и № 51 (замена плоскостей) с каждым шагом элементов больше */
   const grow=await page.evaluate(()=>[13,51].map(n=>{ const p=PLAYER.partsOf(WB3.get(n))[0], full=PLAYER.scene(p,p.steps.length).items;
