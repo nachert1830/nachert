@@ -1394,7 +1394,7 @@ body.inplayer .pl-paper.zoomed{cursor:grabbing}
 body.inplayer .pl-paper svg.dwg{transition:none;will-change:transform}
 .pl-cap{position:absolute;left:8px;top:8px;max-width:calc(100% - 64px);font:600 11.5px var(--mono);color:#1b2233;background:rgba(255,255,255,.86);border:1px solid #d3d8e4;border-radius:99px;padding:4px 10px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:2}
 :root[data-theme="dark"] .pl-cap{color:#1b2233}
-.pl-zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:3}
+.pl-zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:3;align-items:flex-end}
 .pl-zb{width:38px;height:38px;border-radius:10px;border:1px solid #cbd1de;background:rgba(255,255,255,.92);color:#1b2233;font:600 18px var(--sans);line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;touch-action:manipulation}
 .pl-zb:hover{border-color:var(--blue);color:var(--blue)}
 @media(min-width:900px){
@@ -2280,31 +2280,45 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .ow-out{margin-top:12px}.ow-sum{font-weight:600;padding:10px 12px;border-radius:10px}.ow-sum.ok{background:var(--green-s);color:var(--green)}.ow-sum.bad{background:var(--red-s);color:var(--red)}
 .ow-list{font-size:13px;line-height:1.45;padding-left:18px;max-height:360px;overflow:auto}
 /* ── 3D к задаче ── */
-.t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
+.t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
 @keyframes t3din{from{opacity:0}to{opacity:1}}
 body.t3d-open{overflow:hidden}
-.t3d-box{width:min(760px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--surf);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden}
-.t3d-top{display:flex;align-items:center;gap:10px;padding:12px 14px 8px}
-.t3d-tt{flex:1;min-width:0;display:grid;gap:2px}.t3d-tt b{font-size:16px}
-.t3d-tt span{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t3d-x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:16px;cursor:pointer}
 .t3d{--t3bg:#ffffff;--t3ink:#111827;--t3ink2:#4b5563}
 :root[data-theme=dark] .t3d{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3d{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}}
-.t3d-stage{position:relative;margin:0 12px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--t3bg)}
-.t3d-stage svg{display:block;width:100%;height:auto;max-height:62vh;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.t3d-box{width:min(880px,100%);height:min(calc(100dvh - 20px),900px);display:flex;flex-direction:column;background:var(--surf);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden}
+.t3d-top{display:flex;align-items:center;gap:10px;padding:10px 12px 8px 16px}
+.t3d-tt{flex:1;min-width:0;display:grid;gap:2px}.t3d-tt b{font-size:16px}
+.t3d-tt span{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t3d-x{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:16px;cursor:pointer}
+.t3d-stage{position:relative;flex:1;min-height:0;margin:0 10px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--t3bg)}
+.t3d-stage svg{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .t3d-stage svg:active{cursor:grabbing}
-.t3d-hint{position:absolute;left:10px;bottom:10px;font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:3px 10px;border-radius:99px;pointer-events:none;transition:opacity .3s}
-.t3d-ctl{display:flex;align-items:center;gap:10px;padding:10px 14px}
-.t3d-ctl input{flex:1;accent-color:var(--blue)}
-.t3d-b{flex:none;width:42px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:18px;cursor:pointer}
-.t3d-leg{display:flex;flex-wrap:wrap;gap:6px 14px;padding:0 14px 12px;font-size:12px;color:var(--mut)}
+.t3d-views{position:absolute;left:8px;top:8px;display:flex;padding:3px;gap:2px;border-radius:12px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.t3d-views button{min-height:34px;padding:0 11px;border:0;border-radius:9px;background:none;color:var(--ink2);font:600 13px var(--sans);cursor:pointer}
+.t3d-views button.on{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.t3d-zm{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px}
+.t3d-zm button{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:color-mix(in srgb,var(--surf) 92%,transparent);color:var(--ink);font:600 18px var(--sans);cursor:pointer;box-shadow:0 4px 12px -8px rgba(0,0,0,.4)}
+.t3d-hint{position:absolute;left:8px;bottom:8px;font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:4px 10px;border-radius:99px;pointer-events:none;transition:opacity .3s;max-width:calc(100% - 70px)}
+.t3d-ctl{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.t3d-ctl input{flex:1;accent-color:#6d28d9}
+.t3d-b{flex:none;width:46px;height:40px;border-radius:11px;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:18px;cursor:pointer}
+.t3d-leg{display:flex;flex-wrap:wrap;gap:4px 14px;padding:0 14px 10px;font-size:12px;color:var(--mut)}
 .t3d-leg span{display:inline-flex;align-items:center;gap:6px}
 .t3d-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}.t3d-leg i.ln{height:0;border-top:1.5px dashed #6b7280;border-radius:0}
 .t3d-lb{font:700 22px var(--sans,system-ui);paint-order:stroke;stroke:var(--t3bg);stroke-width:4px;stroke-linejoin:round}
 .t3d-ax{font:italic 600 20px var(--sans,system-ui);fill:var(--t3ink)}
+.t3d-pl{font:700 18px var(--sans,system-ui);opacity:.8}
+@media(max-width:560px){.t3d{padding:0}.t3d-box{height:100dvh;border-radius:0;border:0}.t3d-top{padding-top:calc(10px + env(safe-area-inset-top))}.t3d-leg{padding-bottom:calc(10px + env(safe-area-inset-bottom))}}
 .pl-zb.zreset{display:none}.zoomed .pl-zb.zreset{display:grid}
-.pl-zb.t3btn{font-weight:700;letter-spacing:.02em}
+body .pl-zoom .pl-zb.t3btn{width:auto;height:40px;padding:0 13px 0 11px;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;color:#fff;font:800 14px var(--sans);letter-spacing:.03em;
+  background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 55%,#2563eb 100%);box-shadow:0 8px 20px -8px rgba(99,62,237,.85),inset 0 1px 0 rgba(255,255,255,.35);position:relative;overflow:hidden;animation:t3pop .5s cubic-bezier(.34,1.56,.64,1) both}
+body .pl-zoom .pl-zb.t3btn b{font-weight:800}
+body .pl-zoom .pl-zb.t3btn::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:t3shine 4.5s ease-in-out 1s infinite}
+body .pl-zoom .pl-zb.t3btn:hover{filter:brightness(1.08)}body .pl-zoom .pl-zb.t3btn:active{transform:scale(.96)}
+@keyframes t3shine{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+@keyframes t3pop{from{transform:scale(.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){body .pl-zoom .pl-zb.t3btn,body .pl-zoom .pl-zb.t3btn::after{animation:none}}
 body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px;align-self:flex-start}
 .gy-root{display:grid;gap:14px;margin-top:6px}
 .gy-load{padding:28px;text-align:center;color:var(--mut);font-size:15px}
@@ -3213,7 +3227,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа"><button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button>${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Шаг в пространстве" title="Этот шаг в 3D">3D</button>':''}</div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -21449,6 +21463,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'1.7',d:'6 октября 2026',items:['3D: плавное вращение с инерцией, зум двумя пальцами и колесом мыши, сдвиг; кнопки «Спереди» и «Сверху» плавно поворачивают модель ровно в фронтальную и горизонтальную проекции; удачный ракурс для каждой задачи; окно на весь экран телефона.','Кнопка «3D» у чертежа стала заметной.']},
   {v:'1.6',d:'6 октября 2026',items:['3D к каждой задаче: кнопка «3D» у чертежа показывает текущий шаг решения в пространстве — точки, отрезки, плоскости проекций π₁ и π₂, линии связи. Модель вращается пальцем, шаги листаются стрелками.']},
   {v:'1.5',d:'6 октября 2026',items:['Кошка-талисман живёт на сайте: в каждом разделе своя — дремлет, выглядывает, думает, машет лапой; следит глазами за пальцем, а если ткнуть — мурлычет.','Кнопка «весь чертёж» появляется, только когда чертёж увеличен.','Исправлена главная на телефонах: плитка «3D-модель и эпюр» больше не растягивается на весь экран.'],
 },
@@ -21549,78 +21564,133 @@ function model(items,regItems){
   return {pts,segs,polys};
 }
 function has(part){ try{ const all=PLAYER.scene(part,(part.steps||[]).length).items, m=model(all); return Object.keys(m.pts).length>=2||m.segs.length>=2; }catch(e){ return false; } }
-/* ── окно ── */
+/* ── окно ──
+   Управление: один палец/мышь — вращать (с инерцией); два пальца — зум и сдвиг; колесо — зум к курсору;
+   двойное касание — исходный вид. Кнопки «Объём / Спереди / Сверху» плавно поворачивают модель:
+   «Спереди» — ровно фронтальная проекция, «Сверху» — горизонтальная. */
 let S=null;
-function close(){ if(!S) return; S.el.remove(); document.removeEventListener('keydown',S.key); document.body.classList.remove('t3d-open'); S=null; }
+const lerp=(a,b,t)=>a+(b-a)*t, ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function close(){ if(!S) return; cancelAnimationFrame(S.raf); cancelAnimationFrame(S.anim); S.ro&&S.ro.disconnect(); S.el.remove(); document.removeEventListener('keydown',S.key,true); document.body.classList.remove('t3d-open'); S=null; }
 function open(t,pi,k){
   close(); const parts=PLAYER.partsOf(t), part=parts[pi]||parts[0], n=(part.steps||[]).length;
-  const fullItems=PLAYER.scene(part,n).items, full=model(fullItems);
-  /* рамка по всей задаче — чтобы при смене шага сцена не прыгала */
+  const fullItems=PLAYER.scene(part,n).items, full=model(fullItems), cache={};
+  const M=kk=>cache[kk]||(cache[kk]=model(PLAYER.scene(part,kk).items,fullItems));
+  /* рамка по всей задаче — при смене шага и вращении масштаб не прыгает */
   const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p));
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(0,...all.map(p=>p[i])));
-  const pad=[0,1,2].map(i=>Math.max(6,(mx[i]-mn[i])*0.08)); for(let i=0;i<3;i++){ mn[i]-=pad[i]; mx[i]+=pad[i]; } mn[1]=Math.min(mn[1],0); mn[2]=Math.min(mn[2],0);
-  const C=[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2], R=Math.hypot(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2])/2||50;
-  const el=document.createElement('div'); el.className='t3d'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Задача в пространстве');
+  const pad=[0,1,2].map(i=>Math.max(6,(mx[i]-mn[i])*0.08)); for(let i=0;i<3;i++){ mn[i]-=pad[i]; mx[i]+=pad[i]; }
+  const C=[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];
+  const corners=[]; for(const a of [mn[0],mx[0]]) for(const b of [mn[1],mx[1]]) for(const c of [mn[2],mx[2]]) corners.push([a,b,c]);
+  const basis=(yaw,pit)=>{ const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pit), sp=Math.sin(pit); const Rv=[-cy,sy,0], D=[-sy*cp,-cy*cp,-sp]; return {Rv,D,U:crs(Rv,D)}; };
+  const span=(yaw,pit)=>{ const B=basis(yaw,pit); const us=corners.map(q=>dot(sub(q,C),B.Rv)), vs=corners.map(q=>dot(sub(q,C),B.U)); return [Math.max(...us)-Math.min(...us),Math.max(...vs)-Math.min(...vs)]; };
+  /* ракурс по умолчанию: среди близких к классическому — тот, где точки задачи дальше всего друг от друга (ничего не слипается) */
+  const P3=Object.values(full.pts).map(o=>o.p);
+  let best={yaw:0.62,pit:0.42,s:-1};
+  for(let yaw=0.35;yaw<=0.95;yaw+=0.05) for(const pit of [0.3,0.36,0.42,0.5,0.58]){ const B=basis(yaw,pit), sp=span(yaw,pit), f=1/Math.max(sp[0]/1.3,sp[1]);
+    const q=P3.map(p=>{ const d=sub(p,C); return [dot(d,B.Rv)*f,dot(d,B.U)*f]; }); let m=1;
+    for(let i=0;i<q.length;i++) for(let j=i+1;j<q.length;j++) m=Math.min(m,Math.hypot(q[i][0]-q[j][0],q[i][1]-q[j][1]));
+    const s=Math.min(m,0.06)-0.02*Math.hypot(yaw-0.62,pit-0.42); if(s>best.s) best={yaw,pit,s}; }
+  const HOME={yaw:best.yaw,pit:best.pit,zoom:1,px:0,py:0};
+  const touch=window.matchMedia&&matchMedia('(hover:none)').matches;
+  const el=document.createElement('div'); el.className='t3d'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Задача в пространстве');
   el.innerHTML=`<div class="t3d-box"><div class="t3d-top"><div class="t3d-tt"><b>В пространстве</b><span id="t3Cap"></span></div><button class="t3d-x" aria-label="Закрыть">✕</button></div>
-    <div class="t3d-stage"><svg id="t3Svg" viewBox="0 0 600 460" role="img" aria-label="Пространственная модель шага"></svg><div class="t3d-hint">крути пальцем</div></div>
+    <div class="t3d-stage"><svg id="t3Svg" role="img" aria-label="Пространственная модель шага"></svg>
+      <div class="t3d-views" role="group" aria-label="Вид"><button data-v="home" class="on">Объём</button><button data-v="front">Спереди</button><button data-v="top">Сверху</button></div>
+      <div class="t3d-zm"><button data-z="in" aria-label="Приблизить">＋</button><button data-z="out" aria-label="Отдалить">－</button><button data-z="home" aria-label="Исходный вид">⟲</button></div>
+      <div class="t3d-hint">${touch?'1 палец — крутить · 2 пальца — зум':'тяни — крутить · колесо — зум · Shift — сдвиг'}</div></div>
     <div class="t3d-ctl"><button class="t3d-b" data-d="-1" aria-label="Предыдущий шаг">←</button><input type="range" id="t3Step" min="0" max="${n}" value="${Math.min(k,n)}" aria-label="Шаг"><button class="t3d-b" data-d="1" aria-label="Следующий шаг">→</button></div>
-    <div class="t3d-leg"><span><i style="background:rgba(59,110,246,.35)"></i>π₂ — фронтальная</span><span><i style="background:rgba(245,158,11,.35)"></i>π₁ — горизонтальная</span><span><i class="ln"></i>линии связи и проецирующие лучи</span></div></div>`;
+    <div class="t3d-leg"><span><i style="background:rgba(59,110,246,.35)"></i>π₂ — фронтальная</span><span><i style="background:rgba(245,158,11,.35)"></i>π₁ — горизонтальная</span><span><i class="ln"></i>линии связи</span></div></div>`;
   document.body.appendChild(el); document.body.classList.add('t3d-open');
-  S={el,part,n,k:Math.min(k,n),yaw:0.62,pit:0.42,C,R,mn,mx,t};
-  const svg=el.querySelector('#t3Svg');
-  const draw=()=>{ const items=PLAYER.scene(part,S.k).items, m=model(items,fullItems);
-    el.querySelector('#t3Cap').textContent=S.k===0?'Дано':'Шаг '+S.k+' из '+n+' · '+((part.steps[S.k-1]||{}).t||'');
-    el.querySelector('#t3Step').value=S.k;
-    svg.innerHTML=render(m); };
-  const render=m=>{ const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit);
-    const Rv=[-cy,sy,0], D=[-sy*cp,-cy*cp,-sp], U=crs(Rv,D);
-    /* вписываем рамку задачи в окно при текущем повороте */
-    const cn=[]; for(const a of [S.mn[0],S.mx[0]]) for(const b of [S.mn[1],S.mx[1]]) for(const c of [S.mn[2],S.mx[2]]) cn.push([a,b,c]);
-    const us=cn.map(q=>dot(sub(q,S.C),Rv)), vs=cn.map(q=>dot(sub(q,S.C),U));
-    const u0=Math.min(...us),u1=Math.max(...us),v0=Math.min(...vs),v1=Math.max(...vs), sc=Math.min(540/(u1-u0||1),380/(v1-v0||1));
-    const ou=300-sc*(u0+u1)/2, ov=236+sc*(v0+v1)/2;
-    const P=p=>{ const d=sub(p,S.C); return [ou+sc*dot(d,Rv),ov-sc*dot(d,U),dot(d,D)]; };
+  const svg=el.querySelector('#t3Svg'), stage=el.querySelector('.t3d-stage');
+  S={el,part,n,k:Math.min(k,n),V:Object.assign({},HOME),VW:600,VH:460,raf:0,anim:0,t};
+  /* размер холста = размер окна (без полей и искажений) */
+  const size=()=>{ const r=stage.getBoundingClientRect(); if(!r.width) return; S.VW=600; S.VH=Math.round(600*Math.max(0.55,Math.min(1.6,r.height/r.width))); svg.setAttribute('viewBox','0 0 '+S.VW+' '+S.VH);
+    const sp=span(HOME.yaw,HOME.pit); S.sc=Math.min((S.VW-60)/sp[0],(S.VH-70)/sp[1]); req(); };
+  const req=()=>{ if(!S.raf) S.raf=requestAnimationFrame(()=>{ S.raf=0; draw(); }); };
+  const draw=()=>{ const m=M(S.k);
+    el.querySelector('#t3Cap').textContent=S.k===0?'Дано':'Шаг '+S.k+' из '+n+' · '+strip((part.steps[S.k-1]||{}).t||'');
+    el.querySelector('#t3Step').value=S.k; svg.innerHTML=render(m); };
+  const render=m=>{ const V=S.V, B=basis(V.yaw,V.pit), Rv=B.Rv, U=B.U, D=B.D, sc=S.sc*V.zoom, cx=S.VW/2+V.px, cy=S.VH/2+V.py;
+    const P=p=>{ const d=sub(p,C); return [cx+sc*dot(d,Rv),cy-sc*dot(d,U),dot(d,D)]; };
     const f=v=>Math.round(v*10)/10;
-    const L=(a,b,col,w,dash,op)=>{ const A=P(a),B=P(b); return `<line x1="${f(A[0])}" y1="${f(A[1])}" x2="${f(B[0])}" y2="${f(B[1])}" stroke="${col}" stroke-width="${w}"${dash?` stroke-dasharray="${dash}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`; };
+    const L=(a,b,col,w,dash,op)=>{ const A=P(a),Bq=P(b); return `<line x1="${f(A[0])}" y1="${f(A[1])}" x2="${f(Bq[0])}" y2="${f(Bq[1])}" stroke="${col}" stroke-width="${w}"${dash?` stroke-dasharray="${dash}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`; };
     const poly=(ps,fill,stroke,op)=>`<polygon points="${ps.map(p=>{ const q=P(p); return f(q[0])+','+f(q[1]); }).join(' ')}" fill="${fill}" fill-opacity="${op}" stroke="${stroke}" stroke-width="1"/>`;
-    const [x0,y0,z0]=S.mn, [x1,y1,z1]=S.mx;
+    const [x0,y0,z0]=mn, [x1,y1,z1]=mx;
     let back='', mid='', front=''; const lbs=[];
-    /* плоскости проекций: π₂ (y = 0), π₁ (z = 0) — дальняя рисуется первой */
+    /* плоскости проекций: π₂ (y = 0), π₁ (z = 0); дальняя — первой */
     const p2=poly([[x0,0,z0],[x1,0,z0],[x1,0,z1],[x0,0,z1]],'rgba(59,110,246,1)','rgba(59,110,246,.6)',.10);
     const p1=poly([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],'rgba(245,158,11,1)','rgba(217,119,6,.6)',.12);
     back+=(D[1]<0?p2+p1:p1+p2);
     back+=L([x0,0,0],[x1,0,0],'var(--t3ink)',1.6);
-    { const q=P([x0,0,0]); back+=`<text x="${f(q[0]-18)}" y="${f(q[1]+6)}" class="t3d-ax">x</text>`; }
-    /* проекции отрезков на плоскости (тонко) и сами отрезки */
+    { const q=P([x0,0,0]), q2=P([x1,0,z1]), q1=P([x1,y1,0]);
+      back+=`<text x="${f(q[0]-18)}" y="${f(q[1]+6)}" class="t3d-ax">x</text><text x="${f(q2[0]+6)}" y="${f(q2[1]+16)}" class="t3d-pl" fill="#2c5fd9">π₂</text><text x="${f(q1[0]+6)}" y="${f(q1[1]-6)}" class="t3d-pl" fill="#b45309">π₁</text>`; }
     m.segs.forEach(s=>{ const col=COL[s.k]||COL.main; if(s.k==='aux'||s.k==='thin') return;
       mid+=L([s.a[0],s.a[1],0],[s.b[0],s.b[1],0],col,1.1,null,.45)+L([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]],col,1.1,null,.45); });
     m.polys.forEach(o=>{ const col=COL[o.k]||COL.main; mid+=poly(o.p,col,col,o.g==='new'?.28:.16); });
     m.segs.forEach(s=>{ const col=COL[s.k]||COL.main, nw=s.g==='new'; front+=(nw?L(s.a,s.b,'#ffd23f',7,null,.55):'')+L(s.a,s.b,col,nw?3.2:2.2,s.k==='aux'?'5 4':null); });
-    /* точки: лучи на плоскости, проекции, подпись */
     Object.entries(m.pts).forEach(([nm,o])=>{ const p=o.p, a1=[p[0],p[1],0], a2=[p[0],0,p[2]], ax=[p[0],0,0], col=o.k==='res'?COL.res:o.k==='grn'?COL.grn:'var(--t3ink)';
       mid+=L(p,a1,'#6b7280',1,'3 3',.8)+L(p,a2,'#6b7280',1,'3 3',.8)+L(a1,ax,'#6b7280',.9,'2 3',.6)+L(a2,ax,'#6b7280',.9,'2 3',.6);
       const q1=P(a1), q2=P(a2), q=P(p);
       mid+=`<circle cx="${f(q1[0])}" cy="${f(q1[1])}" r="3.6" fill="#b45309"/><circle cx="${f(q2[0])}" cy="${f(q2[1])}" r="3.6" fill="#1d4ed8"/>`;
       front+=(o.g==='new'?`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="12" fill="#ffd23f" fill-opacity=".55"/>`:'')+`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="6" fill="${col}" stroke="var(--t3bg)" stroke-width="2"/>`;
       lbs.push({nm,q,col,pr:(o.g==='new'?0:2)+(/^[A-ZА-ЯĀ-ž]/.test(nm)?0:1)}); });
-    /* подписи: сначала новые и буквенные; подпись, которая налезла бы на уже поставленную, пробуем по 4 сторонам, иначе не ставим */
+    /* подписи: сначала новые и буквенные; налезающую пробуем по 4 сторонам, иначе не ставим */
     const placed=[]; lbs.sort((a,b)=>a.pr-b.pr).forEach(o=>{ const w=13*[...o.nm].length+4, h=20;
       for(const [dx,dy] of [[10,-10],[10,24],[-10-w,-10],[-10-w,24]]){ const r={x:o.q[0]+dx,y:o.q[1]+dy-h+4,w,h};
         if(placed.some(z=>r.x<z.x+z.w&&z.x<r.x+r.w&&r.y<z.y+z.h&&z.y<r.y+r.h)) continue;
         placed.push(r); front+=`<text x="${f(r.x)}" y="${f(o.q[1]+dy)}" class="t3d-lb" fill="${o.col}">${o.nm}</text>`; break; } });
-    return `<rect width="600" height="460" fill="var(--t3bg)"/>`+back+mid+front; };
-  /* вращение */
-  let drag=null;
-  svg.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY,yaw:S.yaw,pit:S.pit}; svg.setPointerCapture(e.pointerId); el.querySelector('.t3d-hint').style.opacity=0; });
-  svg.addEventListener('pointermove',e=>{ if(!drag) return; S.yaw=drag.yaw+(e.clientX-drag.x)*0.01; S.pit=Math.max(-0.2,Math.min(1.45,drag.pit+(e.clientY-drag.y)*0.01)); draw(); });
-  svg.addEventListener('pointerup',()=>{ drag=null; });
+    return `<rect width="${S.VW}" height="${S.VH}" fill="var(--t3bg)"/>`+back+mid+front; };
+  /* плавный переход к виду */
+  const views={home:()=>HOME,front:()=>({yaw:0,pit:0,zoom:1,px:0,py:0}),top:()=>({yaw:0,pit:Math.PI/2,zoom:1,px:0,py:0})};
+  const mark=v=>el.querySelectorAll('.t3d-views button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  const animTo=(T,v)=>{ cancelAnimationFrame(S.anim); S.vel=0; mark(v||''); const A=Object.assign({},S.V), t0=performance.now();
+    /* поворот по кратчайшему пути */
+    let dy=T.yaw-A.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); const Ty=A.yaw+dy;
+    const step=now=>{ const u=Math.min(1,(now-t0)/480), e=ease(u); S.V={yaw:lerp(A.yaw,Ty,e),pit:lerp(A.pit,T.pit,e),zoom:lerp(A.zoom,T.zoom,e),px:lerp(A.px,T.px,e),py:lerp(A.py,T.py,e)}; draw(); if(u<1) S.anim=requestAnimationFrame(step); };
+    S.anim=requestAnimationFrame(step); };
+  el.querySelectorAll('.t3d-views button').forEach(b=>b.addEventListener('click',()=>{ animTo(views[b.dataset.v](),b.dataset.v); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
+  /* зум к точке экрана (в единицах холста) */
+  const toV=(cx,cy)=>{ const r=svg.getBoundingClientRect(); return [(cx-r.left)*S.VW/r.width,(cy-r.top)*S.VH/r.height]; };
+  const zoomAt=(z,sx,sy)=>{ const V=S.V, nz=Math.max(0.4,Math.min(6,z)), k2=nz/V.zoom, ox=S.VW/2, oy=S.VH/2;
+    V.px=(sx-ox)-(sx-ox-V.px)*k2; V.py=(sy-oy)-(sy-oy-V.py)*k2; V.zoom=nz; req(); };
+  el.querySelectorAll('.t3d-zm button').forEach(b=>b.addEventListener('click',()=>{ const z=b.dataset.z; cancelAnimationFrame(S.anim);
+    if(z==='home'){ animTo(HOME,'home'); return; } zoomAt(S.V.zoom*(z==='in'?1.35:1/1.35),S.VW/2,S.VH/2); }));
+  svg.addEventListener('wheel',e=>{ e.preventDefault(); cancelAnimationFrame(S.anim); const q=toV(e.clientX,e.clientY); zoomAt(S.V.zoom*Math.exp(-e.deltaY*(e.ctrlKey?0.01:0.0016)),q[0],q[1]); },{passive:false});
+  /* жесты */
+  const pts=new Map(); let g=null, lastTap=0;
+  const hideHint=()=>{ const h=el.querySelector('.t3d-hint'); if(h) h.style.opacity=0; };
+  const inertia=()=>{ cancelAnimationFrame(S.anim); let last=performance.now();
+    const step=now=>{ const dt=Math.min(40,now-last); last=now; S.V.yaw+=S.vel*dt; S.vel*=Math.pow(0.92,dt/16); draw(); if(Math.abs(S.vel)>0.00005) S.anim=requestAnimationFrame(step); };
+    S.anim=requestAnimationFrame(step); };
+  svg.addEventListener('pointerdown',e=>{ cancelAnimationFrame(S.anim); try{ svg.setPointerCapture(e.pointerId); }catch(_){} pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); hideHint(); mark('');
+    if(pts.size===1){ const now=performance.now(); if(now-lastTap<300&&e.pointerType!=='mouse'){ animTo(HOME,'home'); lastTap=0; g=null; return; } lastTap=now;
+      g={mode:(e.shiftKey||e.button===1||e.button===2)?'pan':'rot',x:e.clientX,y:e.clientY,t:now,vel:0}; }
+    else if(pts.size===2){ const a=[...pts.values()]; g={mode:'pinch',d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),mx:(a[0].x+a[1].x)/2,my:(a[0].y+a[1].y)/2}; } });
+  svg.addEventListener('pointermove',e=>{ if(!pts.has(e.pointerId)||!g) return; pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); const r=svg.getBoundingClientRect(), k=S.VW/r.width;
+    if(g.mode==='pinch'&&pts.size>=2){ const a=[...pts.values()], d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), mx=(a[0].x+a[1].x)/2, my=(a[0].y+a[1].y)/2;
+      S.V.px+=(mx-g.mx)*k; S.V.py+=(my-g.my)*k; const q=toV(mx,my); if(g.d>10) zoomAt(S.V.zoom*d/g.d,q[0],q[1]); g.d=d; g.mx=mx; g.my=my; req(); return; }
+    if(pts.size!==1) return;
+    const dx=e.clientX-g.x, dy=e.clientY-g.y, now=performance.now(); g.x=e.clientX; g.y=e.clientY;
+    if(g.mode==='pan'){ S.V.px+=dx*k; S.V.py+=dy*k; }
+    else { const v=dx*0.0085; S.V.yaw+=v; S.V.pit=Math.max(-0.35,Math.min(Math.PI/2,S.V.pit+dy*0.0085)); const dt=Math.max(1,now-g.t); g.vel=0.7*g.vel+0.3*(v/dt); g.t=now; }
+    req(); });
+  const up=e=>{ if(!pts.delete(e.pointerId)) return;
+    if(pts.size===1&&g&&g.mode==='pinch'){ const a=[...pts.values()][0]; g={mode:'rot',x:a.x,y:a.y,t:performance.now(),vel:0}; return; }
+    if(pts.size===0&&g&&g.mode==='rot'&&performance.now()-g.t<80&&Math.abs(g.vel)>0.0003){ S.vel=Math.max(-0.02,Math.min(0.02,g.vel)); inertia(); }
+    if(pts.size===0) g=null; };
+  svg.addEventListener('pointerup',up); svg.addEventListener('pointercancel',up);
+  svg.addEventListener('contextmenu',e=>e.preventDefault());
+  svg.addEventListener('dblclick',()=>animTo(HOME,'home'));
   el.querySelector('.t3d-x').addEventListener('click',close);
   el.addEventListener('click',e=>{ if(e.target===el) close(); });
-  el.querySelectorAll('.t3d-b').forEach(b=>b.addEventListener('click',()=>{ S.k=Math.max(0,Math.min(n,S.k+ +b.dataset.d)); draw(); }));
-  el.querySelector('#t3Step').addEventListener('input',e=>{ S.k=+e.target.value; draw(); });
-  S.key=e=>{ if(e.key==='Escape') close(); if(e.key==='ArrowRight'){ S.k=Math.min(n,S.k+1); draw(); } if(e.key==='ArrowLeft'){ S.k=Math.max(0,S.k-1); draw(); } };
-  document.addEventListener('keydown',S.key);
-  draw();
+  const go=d=>{ S.k=Math.max(0,Math.min(n,S.k+d)); req(); };
+  el.querySelectorAll('.t3d-b').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.d)));
+  el.querySelector('#t3Step').addEventListener('input',e=>{ S.k=+e.target.value; req(); });
+  S.key=e=>{ if(/^(Escape|ArrowRight|ArrowLeft|\+|=|-)$/.test(e.key)) e.stopPropagation(); if(e.key==='Escape') close(); else if(e.key==='ArrowRight'){ e.preventDefault(); go(1); } else if(e.key==='ArrowLeft'){ e.preventDefault(); go(-1); }
+    else if(e.key==='+'||e.key==='='){ zoomAt(S.V.zoom*1.25,S.VW/2,S.VH/2); } else if(e.key==='-'){ zoomAt(S.V.zoom/1.25,S.VW/2,S.VH/2); } };
+  document.addEventListener('keydown',S.key,true);
+  if(window.ResizeObserver){ S.ro=new ResizeObserver(size); S.ro.observe(stage); }
+  size(); draw();
 }
 return {model,has,open,close};
 })();
