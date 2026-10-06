@@ -40,6 +40,28 @@ async function gymCheck(page,base,opt){
     const res=await page.$eval('#gyRes',e=>e.textContent);
     if(!/Нашёл/.test(res)) bad.push({name:'Тренажёр · найди ошибку №'+n,rule:'нажатие на ошибку не засчитано',msg:res.slice(0,140)});
   }
+  /* ── скрытые функции (включаем в режиме владельца на время проверки) ── */
+  await page.evaluate(()=>{ localStorage.setItem('nch2_owner','true'); localStorage.setItem('nch2_flags',JSON.stringify({diag:true,task3d:true})); });
+  /* «Где я ошибся?»: по каждой задаче и нескольким вариантам — верное число принимается, каждая типичная ошибка узнаётся своим текстом */
+  const dg=await page.evaluate(seeds=>{ const out={ok:0,bad:[]}; Object.keys(DIAG.SPEC).map(Number).forEach(n=>{ seeds.forEach(sd=>{ const r=GYM.make(n,sd), B=DIAG.build(r.task);
+      if(!B){ if(sd===0||GEN.ok(n)) out.bad.push(n+'/'+sd+': задание не собралось'); return; }
+      B.parts.forEach(P=>P.Q.forEach(q=>{ if(DIAG.judge(q,String(q.v)).st!=='ok') out.bad.push(n+'/'+sd+' '+q.s.sym+': верный ответ не принят');
+        q.w.forEach(w=>{ const j=DIAG.judge(q,String(w.v)); if(j.st!=='known'||j.w.t!==w.t) out.bad.push(n+'/'+sd+' '+q.s.sym+': ошибка '+w.v.toFixed(1)+' не узнана'); }); out.ok++; })); }); }); return out; },opt.all?[0,11,503,777,9001]:[0,11]);
+  dg.bad.forEach(m=>bad.push({name:'Где я ошибся',rule:'диагностика',msg:m})); info.diag=dg.ok+' вопросов';
+  await page.goto(base+'#/ng/check/gym/diag/13-11'); await page.waitForTimeout(900);
+  { const ins=await page.$$('.dg-f input'); if(ins.length!==3) bad.push({name:'Где я ошибся №13',rule:'нет полей ввода',msg:''});
+    else { const v=await page.evaluate(()=>{ const m=/diag\/13-(\d+)/.exec(location.hash); return DIAG.build(GYM.make(13,+m[1]).task).parts[0].Q.map(q=>[q.v,q.w[0].v]); });
+      await ins[0].fill(v[0][1].toFixed(1)); await ins[1].fill(v[1][0].toFixed(1)); await ins[2].fill(v[2][0].toFixed(1)); await page.click('#dgCheck'); await page.waitForTimeout(200);
+      const t=await page.$eval('#gyRes',e=>e.textContent); if(!/горизонтальной проекции/.test(t)||!/верно/.test(t)) bad.push({name:'Где я ошибся №13',rule:'вердикт на странице',msg:t.slice(0,160)}); } }
+  /* 3D к задачам: кнопка есть, окно открывается, шаги листаются */
+  await page.goto(base+'#/ng/tasks/47'); await page.waitForTimeout(900);
+  if(!(await page.$('.pl-zb[data-z="3d"]'))) bad.push({name:'3D к задачам №47',rule:'нет кнопки 3D',msg:''});
+  else { await page.click('.pl-zb[data-z="3d"]'); await page.waitForTimeout(200); for(let i=0;i<12;i++) await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(100); const n=await page.$$eval('#t3Svg circle',a=>a.length), cap=await page.$eval('#t3Cap',e=>e.textContent);
+    if(n<8||!/^Шаг \d+ из/.test(cap)) bad.push({name:'3D к задачам №47',rule:'окно пустое',msg:cap});
+    await page.keyboard.press('Escape'); if(await page.$('.t3')) bad.push({name:'3D к задачам',rule:'Esc не закрывает',msg:''}); }
+  info.t3=await page.evaluate(()=>{ let a=0,b=0; WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach(p=>{ b++; if(TASK3D.has(p)) a++; })); return a+' из '+b+' пунктов'; });
+  await page.evaluate(()=>{ localStorage.removeItem('nch2_owner'); localStorage.removeItem('nch2_flags'); });
   return {bad,info};
 }
 module.exports={gymCheck};
