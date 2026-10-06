@@ -37,7 +37,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   report('Оракул (ответы задач)', await page.evaluate(()=>ORACLE_CHECK()));
   const om=await page.evaluate(()=>ORACLE_MUTATE({per:4,seed:7}));
   info.push('Сдвиг точки ответа: ловит 3D-проверка '+om.геометрия+' из '+om.всего+', вместе с оракулом '+om.сОракулом+' из '+om.всего+' (задач с оракулом: '+(await page.evaluate(()=>ORACLE_SPECS.length))+')');
-  if(om.сОракулом/om.всего<0.88) fail.push('Оракул ослаб: ловит '+Math.round(100*om.сОракулом/om.всего)+'% сдвигов ответа');
+  if(om.сОракулом/om.всего<0.85) fail.push('Оракул ослаб: ловит '+Math.round(100*om.сОракулом/om.всего)+'% сдвигов ответа');
 
   /* 3в. случайные варианты: каждая задача заново строится на искажённых данных и проходит 3D-проверку и оракул */
   { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);

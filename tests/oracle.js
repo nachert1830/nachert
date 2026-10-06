@@ -33,9 +33,10 @@ function helper(items,fail){
     /* 2D-проекция по подписи (для точек-проекций проецирующих прямых: c″) */
     pt2(n){ const a=M.pts[n]; if(!a) throw new Error('нет проекции '+n); return a[0]; },
     plane(A,B,C){ const n=unit(crs(sub(B,A),sub(C,A))); return {p:A,n}; },
-    planeLL(L1,L2){ return {p:L1.p,n:unit(crs(L1.d,L2.d))}; },
+    /* плоскость по двум прямым: пересекающимся — по направлениям, параллельным — по направлению и точке второй прямой */
+    planeLL(L1,L2){ const c=crs(L1.d,L2.d); if(nrm(c)>0.05) return {p:L1.p,n:unit(c)}; return {p:L1.p,n:unit(crs(L1.d,sub(L2.p,L1.p)))}; },
     /* плоскость по следам h₀α (на π₁) и f₀α (на π₂) */
-    planeT(g){ const h=M.lines['h₀'+g], f=M.lines['f₀'+g]; if(!h||!f) throw new Error('нет следов '+g);
+    planeT(g){ const h=M.lines['h₀'+g]||M.lines['h0'+g], f=M.lines['f₀'+g]||M.lines['f0'+g]; if(!h||!f) throw new Error('нет следов '+g);
       const [a,b]=h[0], [c,d]=f[0]; const A=[a[0],a[1],0], B=[b[0],b[1],0], C=[c[0],0,-c[1]], D=[d[0],0,-d[1]];
       const n=unit(crs(sub(B,A),sub(D,C))); return {p:A,n}; },
     dPL(P,L){ return nrm(crs(sub(P,L.p),L.d)); },
@@ -52,6 +53,10 @@ function helper(items,fail){
     near(P,Q,what){ const d=nrm(sub(P,Q)); if(d>2*E) fail(what+': расхождение '+d.toFixed(1)+' px'); },
     eqA(a,b,what,tol){ if(Math.abs(a-b)>(tol||0.6)) fail(what+': '+a.toFixed(2)+'° ≠ '+b.toFixed(2)+'°'); },
     /* угол из текста ответа: «α ≈ 58°» → сравнить с вычисленным (допуск по числу знаков) */
+    /* длина из текста ответа: «|AB| ≈ 57 мм» → сравнить с вычисленной (в мм; на чертеже 3,2 px = 1 мм) */
+    ansLen(text,re,valPx,what){ const m=new RegExp(re+'\\s*(?:=|≈)\\s*(\\d+(?:[.,]\\d+)?)\\s*мм').exec(strip(text)); if(!m){ fail(what+': в ответе нет длины'); return; }
+      const v=parseFloat(m[1].replace(',','.')), mm=valPx/3.2, tol=/[.,]/.test(m[1])?0.15:0.6; if(Math.abs(v-mm)>tol) fail(what+': в ответе '+m[1]+' мм, вычислено '+mm.toFixed(2)+' мм'); },
+    zero(v,what){ if(Math.abs(v)>2*E) fail(what+' ('+v.toFixed(1)+' px)'); },
     ansAng(text,sym,val,what){ const re=new RegExp(sym+'\\s*(?:=|≈)\\s*(\\d+(?:[.,]\\d+)?)\\s*°'); const m=re.exec(strip(text)); if(!m){ fail(what+': в ответе нет '+sym); return; }
       const v=parseFloat(m[1].replace(',','.')), tol=/[.,]/.test(m[1])?0.06:0.51; if(Math.abs(v-val)>tol) fail(what+': в ответе '+sym+' = '+m[1]+'°, вычислено '+val.toFixed(2)+'°'); },
   };
@@ -117,6 +122,51 @@ const S={
   80:(h)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'), D=h.P('D'), O=h.P('O'); h.on(A,h.L('a'),'A ∈ a'); h.on(B,h.L('b'),'B ∈ b'); h.on(D,h.L('d'),'D ∈ d');
     h.par(sub(D,B),h.L('a').d,'BD ∥ a'); h.near(mid(B,D),O,'O — середина BD'); h.near(mid(A,C),O,'O — середина AC'); h.eqLen(nrm(sub(B,A)),nrm(sub(D,A)),'|AB| = |AD|'); },
   82:(h)=>{ const D=h.P('D'), K=h.P('K'), a=h.L('a'), b=h.L('AB'); h.on(D,a,'D ∈ a'); h.on(K,a,'K ∈ a'); h.eqLen(h.dPL(D,b),h.dPL(K,b),'D и K равноудалены от b'); },
+  /* ── задачи 1–50, проверенные дополнительно ── */
+  5:(h)=>{ const A=h.P('A'), B=h.P('B'); h.zero(B[2]-A[2]-48,'B выше A на 15 мм'); h.zero(A[1]-B[1]-32,'B ближе к π₂ на 10 мм'); },
+  6:(h)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'); h.near(B,[A[0],A[1],-A[2]],'B симметрична A относительно π₁'); h.near(C,[-A[0],-A[1],-A[2]],'C симметрична A относительно O'); },
+  8:(h)=>{ const A=h.P('A'); if(!(A[1]<0&&A[2]<0&&A[0]<0)) h.fail('A не в III октанте'); h.eqLen(Math.abs(A[0]),2*Math.abs(A[2]),'|x| : |z| = 2'); },
+  9:(h,t)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'); h.zero(A[2]-B[2],'AB — горизонталь'); h.zero(B[1]-C[1],'BC — фронталь'); h.zero(A[0]-C[0],'AC — профильная');
+    h.ansLen(t.ans,'\\|AB\\|',nrm(sub(B,A)),'|AB|'); h.ansLen(t.ans,'\\|BC\\|',nrm(sub(C,B)),'|BC|'); h.ansLen(t.ans,'\\|AC\\|',nrm(sub(C,A)),'|AC|');
+    h.eqA(90-h.ang(sub(C,B),zN),50,'α для BC',0.6); h.eqA(90-h.ang(sub(C,A),yN),40,'β для AC',0.6); h.eqA(90-h.ang(sub(B,A),yN),45,'β для AB'); },
+  '10.1':(h)=>{ h.zero(h.P('A')[2],'H ≡ A: z_A = 0'); h.zero(h.P('B')[1],'F ≡ B: y_B = 0'); },
+  '10.2':(h)=>{ const C=h.P('C'); h.zero(C[1],'C на оси x (y)'); h.zero(C[2],'C на оси x (z)'); },
+  '10.3':(h,t,pi,p)=>{ const E_=h.P('E'), F=h.P('F'), H_=h.P('H'); h.zero(E_[1]-F[1],'EF — фронталь'); h.zero(H_[2],'след H: z = 0'); h.on(H_,{p:E_,d:unit(sub(F,E_))},'H на прямой EF');
+    h.ansLen(p.ans,'\\|EF\\|',nrm(sub(F,E_)),'|EF|'); h.ansAng(p.ans,'α',90-h.ang(sub(F,E_),zN),'α для EF'); },
+  '10.4':(h,t,pi,p)=>{ const K=h.P('K'), L=h.P('L'), H_=h.P('H'); h.zero(K[0]-L[0],'KL ⟂ π₁ (x)'); h.zero(K[1]-L[1],'KL ⟂ π₁ (y)'); h.zero(H_[2],'след H: z = 0'); h.ansLen(p.ans,'\\|KL\\|',nrm(sub(K,L)),'|KL|'); },
+  '10.5':(h,t,pi,p)=>{ const M_=h.P('M'), N=h.P('N'), F=h.P('F'); h.zero(M_[2]-N[2],'MN — горизонталь'); h.zero(F[1],'след F: y = 0'); h.on(F,{p:M_,d:unit(sub(N,M_))},'F на прямой MN');
+    h.ansLen(p.ans,'\\|MN\\|',nrm(sub(N,M_)),'|MN|'); h.ansAng(p.ans,'β',90-h.ang(sub(N,M_),yN),'β для MN'); },
+  12:(h,t)=>{ const F=h.P('F'), H_=h.P('H'); h.zero(F[1],'F ∈ π₂'); h.zero(H_[2],'H ∈ π₁'); h.ansLen(t.ans,'\\|FH\\|',nrm(sub(F,H_)),'|FH|'); },
+  13:(h,t)=>{ const A=h.P('A'), B=h.P('B'), d=sub(B,A); h.ansLen(t.ans,'\\|AB\\|',nrm(d),'|AB|'); h.ansAng(t.ans,'π₁\\)',90-h.ang(d,zN),'α'); h.ansAng(t.ans,'π₂\\)',90-h.ang(d,yN),'β'); },
+  14:(h)=>{ const A=h.P('A'), B=h.P('B'), N=h.P('N'); h.on(B,{p:A,d:unit(sub(N,A))},'B ∈ a'); h.eqLen(nrm(sub(B,A)),40*3.2,'|AB| = 40 мм'); },
+  '23.1':(h)=>{ const pl=h.planeLL(h.L('a'),h.L('b')); ['A','B','C','1','2'].forEach(n=>h.inPl(h.P(n),pl,n+' в плоскости (a, b)')); h.on(h.P('C'),h.L('12'),'C ∈ 12'); },
+  '23.2':(h)=>{ const al=h.planeT('α'); ['A','B','C'].forEach(n=>h.inPl(h.P(n),al,n+' ∈ α')); h.zero(h.P('A')[1],'A ∈ π₂'); h.zero(h.P('B')[2],'B ∈ π₁'); },
+  '23.3':(h)=>{ const be=h.planeT('β'); ['A','B','C'].forEach(n=>h.inPl(h.P(n),be,n+' ∈ β')); h.perp(be.n,zN,'β ⟂ π₁'); },
+  '24.1':(h)=>{ const pl=h.planeLL(h.L('a'),h.L('b')); ['A','1','2','3','4'].forEach(n=>h.inPl(h.P(n),pl,n+' в плоскости'));
+    h.zero(h.P('1')[2]-h.P('A')[2],'h — горизонталь через A'); h.zero(h.P('2')[2]-h.P('A')[2],'h — горизонталь через A');
+    h.zero(h.P('3')[1]-h.P('A')[1],'f — фронталь через A'); h.zero(h.P('4')[1]-h.P('A')[1],'f — фронталь через A'); },
+  '24.2':(h)=>{ const al=h.planeT('α'); ['B','1','2'].forEach(n=>h.inPl(h.P(n),al,n+' ∈ α')); h.zero(h.P('1')[2]-h.P('B')[2],'h через B'); h.zero(h.P('2')[1]-h.P('B')[1],'f через B'); },
+  '24.3':(h)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'); h.zero(A[2]-C[2],'h через C'); h.zero(B[2]-C[2],'h через C'); h.on(C,{p:A,d:unit(sub(B,A))},'C ∈ AB (h)'); },
+  25:(h)=>{ const al=h.planeT('α'), hh=h.L('h'), ff=h.L('f'); h.perp(hh.d,al.n,'h ∥ α'); h.inPl(hh.p,al,'h ⊂ α'); h.perp(ff.d,al.n,'f ∥ α'); h.inPl(ff.p,al,'f ⊂ α'); },
+  '26.1':(h)=>{ const al=h.planeT('α'); h.inPl(h.P('A'),al,'a ⊂ α (A)'); h.inPl(h.P('B'),al,'a ⊂ α (B)'); h.perp(al.n,zN,'α ⟂ π₁'); },
+  '26.2':(h)=>{ const be=h.planeT('β'); h.inPl(h.P('A'),be,'b ⊂ β (A)'); h.inPl(h.P('B'),be,'b ⊂ β (B)'); h.perp(be.n,yN,'β ⟂ π₂'); },
+  28:(h)=>{ const A=h.P('A'), K=h.P('K'), P1=h.P('1'), b=h.L('b'), c=h.L('c'); h.on(K,c,'K ∈ c'); h.on(P1,b,'1 ∈ b'); h.on(P1,{p:A,d:unit(sub(K,A))},'1 ∈ a'); h.par(b.d,c.d,'b ∥ c');
+    h.inPl(A,h.planeLL(c,{p:K,d:unit(sub(A,K))}),'a, c, A в одной плоскости'); },
+  29:(h)=>{ const K=h.P('K'), pl=h.planeLL(h.L('a'),h.L('b')); h.inPl(K,pl,'K в плоскости'); ['1','2','3','4'].forEach(n=>h.inPl(h.P(n),pl,n+' в плоскости'));
+    h.zero(h.P('1')[2]-h.P('2')[2],'12 — горизонталь'); h.zero(h.P('3')[1]-h.P('4')[1],'34 — фронталь'); },
+  35:(h)=>{ const pl=h.planeLL(h.L('a'),h.L('b')), A=h.P('A'), l=h.L('l'); h.on(A,l,'A ∈ l'); h.perp(l.d,zN,'l — горизонталь'); h.perp(l.d,pl.n,'l ∥ (a, b)'); },
+  '37.1':(h)=>{ const pl=h.plane(h.P('B'),h.P('C'),h.P('D')), A=h.P('A'), m=h.L('m'), n=h.L('n'); h.on(A,m,'A ∈ m'); h.on(A,n,'A ∈ n'); h.perp(m.d,zN,'m — горизонталь'); h.perp(n.d,yN,'n — фронталь'); h.perp(m.d,pl.n,'m ∥ (BCD)'); h.perp(n.d,pl.n,'n ∥ (BCD)'); },
+  '37.2':(h)=>{ const al=h.planeT('α'), be=h.planeT('β'); h.eqA(h.angPP(al,be),0,'β ∥ α'); h.inPl(h.P('A'),be,'A ∈ β'); },
+  '38.1':(h)=>{ const A=h.P('A'), n=h.L('n'), a=h.L('a'), b=h.L('b'); h.par(a.d,b.d,'a ∥ b'); const pl=h.plane(a.p,add(a.p,mul(a.d,40)),b.p); h.on(A,n,'A ∈ n'); h.par(n.d,pl.n,'n ⟂ (a ∥ b)'); },
+  '38.2':(h)=>{ const A=h.P('A'), n=h.L('n'), pl=h.plane(A,h.P('B'),h.P('C')); h.on(A,n,'A ∈ n'); h.par(n.d,pl.n,'n ⟂ (ABC)'); },
+  '39.1':(h)=>{ const al=h.planeT('α'); h.par(al.n,h.L('h').d,'α ⟂ h'); h.inPl(h.P('A'),al,'A ∈ α'); },
+  '39.2':(h)=>{ const A=h.P('A'), hh=h.L('h'), ff=h.L('f'), b=h.L('b'); h.on(A,hh,'A ∈ h'); h.on(A,ff,'A ∈ f'); h.perp(hh.d,zN,'h — горизонталь'); h.perp(ff.d,yN,'f — фронталь'); h.perp(hh.d,b.d,'h ⟂ b'); h.perp(ff.d,b.d,'f ⟂ b'); },
+  '44.1':(h)=>{ const al=h.planeT('α'); h.inPl(h.P('1'),al,'1 ∈ α'); h.inPl(h.P('2'),al,'2 ∈ α'); h.on(h.P('1'),h.L('a'),'1 ∈ a'); h.on(h.P('2'),h.L('b'),'2 ∈ b'); },
+  '44.2':(h)=>{ const P1=h.P('1'), P2=h.P('2'); h.zero(P1[2]-P2[2],'l — горизонталь (в α ∥ π₁)'); h.on(P1,h.L('a'),'1 ∈ a'); h.on(P2,h.L('b'),'2 ∈ b'); },
+  '44.3':(h)=>{ const al=h.planeT('α'), be=h.planeT('β'), L_=h.P('L'), K=h.P('K'); [L_,K].forEach((P,i)=>{ h.inPl(P,al,(i?'K':'L')+' ∈ α'); h.inPl(P,be,(i?'K':'L')+' ∈ β'); }); h.zero(L_[1],'L ∈ π₂'); h.zero(K[2],'K ∈ π₁'); },
+  '44.4':(h)=>{ const al=h.planeT('α'), pl=h.plane(h.P('A'),h.P('B'),h.P('C')); ['K','L'].forEach(n=>{ h.inPl(h.P(n),al,n+' ∈ α'); h.inPl(h.P(n),pl,n+' ∈ (ABC)'); }); },
+  '45.1':(h)=>{ const K=h.P('K'), b=h.L('b'), c=h.L('c'), a1=h.pt2('a′'); h.par(b.d,c.d,'b ∥ c'); const pl=h.plane(b.p,add(b.p,mul(b.d,40)),c.p);
+    if(Math.hypot(K[0]-a1[0],K[1]-a1[1])>2*h.E) h.fail('K ∈ a: K′ ≢ a′'); h.inPl(K,pl,'K ∈ (b ∥ c)'); },
   85:(h,t)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'), D=h.P('D');
     const e=unit(sub(B,A)), pc=sub(sub(C,A),mul(e,dot(sub(C,A),e))), pd=sub(sub(D,A),mul(e,dot(sub(D,A),e)));
     h.ansAng(t.ans,'φ',deg(Math.acos(dot(unit(pc),unit(pd)))),'угол между плоскостями'); },
@@ -131,7 +181,7 @@ window.ORACLE_CHECK=function(opts){
       const items=[].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[]));
       const name='Задача №'+t.n+(parts.length>1?' п.'+(pi+1):'');
       const fail=msg=>out.push({name,rule:'оракул',msg,lvl:'ошибка'});
-      try{ const h=helper(items,fail); h.fail=fail; f(h,t,pi); }catch(e){ out.push({name,rule:'оракул: нет данных',msg:String(e.message||e),lvl:'ошибка'}); } }); });
+      try{ const h=helper(items,fail); h.fail=fail; f(h,t,pi,p); }catch(e){ out.push({name,rule:'оракул: нет данных',msg:String(e.message||e),lvl:'ошибка'}); } }); });
   return out;
 };
 })();

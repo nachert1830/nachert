@@ -42,7 +42,7 @@ async function runVariants(page,seeds){
       return out; },variants);
     /* задачи с числовым условием (fixed): числа задаёт условие, на вариантах проверяется только геометрия */
     const FIX=new Set((r[0].fixed||[]).map(n=>'Задача №'+n)), NUMR=/^(число|угол|координаты|точность|размер)/;
-    r.forEach(v=>{ v.iss=v.iss.filter(o=>!(FIX.has(o.n.replace(/ п\.\d+$/,''))&&NUMR.test(o.rule))); v.nums=(v.nums||[]).filter(o=>!FIX.has('Задача №'+o.key.split('|')[0])); });
+    r.forEach(v=>{ v.iss=v.iss.filter(o=>!(FIX.has(o.n.replace(/ п\.\d+$/,''))&&(NUMR.test(o.rule)||o.rule==='оракул')));   /* числа условия проверяет оракул на исходных данных */ v.nums=(v.nums||[]).filter(o=>!FIX.has('Задача №'+o.key.split('|')[0])); });
     const base=new Set(r[0].iss.map(o=>o.n+'|'+o.rule));
     const tasks=r[0].tasks;
     /* вариант, на котором построение невозможно (у задачи нет решения), — не ошибка, если таких единицы */

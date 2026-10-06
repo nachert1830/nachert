@@ -49,13 +49,26 @@ async function gymCheck(page,base,opt){
     const ink=await page.evaluate(()=>{ const e=document.querySelector('.t3d'); const v=e&&getComputedStyle(e).getPropertyValue('--t3ink').trim(); return v; });
     if(!ink) bad.push({name:'3D к задачам',rule:'цвет линий не задан (линии невидимы)',msg:''});
     if(n<8||!/^Шаг \d+ из/.test(cap)) bad.push({name:'3D к задачам №47',rule:'окно пустое',msg:cap});
-    { const pos=await page.evaluate(()=>{ const s=document.querySelector('#t3Svg'), r=s.getBoundingClientRect(), vb=s.viewBox.baseVal; const c=s.querySelector('circle[r="6"]'); return c&&[r.left+(+c.getAttribute('cx'))*r.width/vb.width, r.top+(+c.getAttribute('cy'))*r.height/vb.height]; });
+    { const pos=await page.evaluate(()=>{ const s=document.querySelector('#t3Svg'), r=s.getBoundingClientRect(), vb=s.viewBox.baseVal; const c=s.querySelector('circle[r="5.6"]'); return c&&[r.left+(+c.getAttribute('cx'))*r.width/vb.width, r.top+(+c.getAttribute('cy'))*r.height/vb.height]; });
       if(pos){ await page.mouse.click(pos[0],pos[1]); await page.waitForTimeout(150); const t=await page.$eval('#t3Info',e=>e.hidden?'':e.textContent); if(!/Точка/.test(t)) bad.push({name:'3D к задачам №47',rule:'нажатие на точку не показывает, что это',msg:t.slice(0,80)}); } }
     await page.keyboard.press('Escape'); if(await page.$('.t3d')) bad.push({name:'3D к задачам',rule:'Esc не закрывает',msg:''}); }
   /* построения шагов видны в 3D: в № 13 (треугольники натуральной величины) и № 51 (замена плоскостей) с каждым шагом элементов больше */
   const grow=await page.evaluate(()=>[13,51].map(n=>{ const p=PLAYER.partsOf(WB3.get(n))[0], full=PLAYER.scene(p,p.steps.length).items;
     const c=k=>{ const m=TASK3D.model(PLAYER.scene(p,k).items,full); return m.segs.length+m.flat.length+m.dots.length; }; return [n,c(0),c(p.steps.length)]; }));
   grow.forEach(([n,a,b])=>{ if(!(b>a+2)) bad.push({name:'3D к задачам №'+n,rule:'построения шагов не видны',msg:a+' → '+b}); });
+  /* 3D-модель совпадает с чертежом: каждая точка в пространстве проецируется ровно в свои проекции, у концов отрезков есть обе проекции */
+  const cons=await page.evaluate(()=>{ const s=x=>String(x||'').replace(/<\/?[a-z][^>]*>/gi,''); const out=[];
+    WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach((pt,pi)=>{ const n=(pt.steps||[]).length, full=PLAYER.scene(pt,n).items;
+      const CS=new Set(); full.forEach(i=>[i.at,i.a,i.b].concat(i.p||[]).forEach(q=>{ if(q) CS.add(Math.round(q[0])+','+Math.round(q[1])); }));
+      const has=(x,y)=>{ for(const dx of [-1,0,1]) for(const dy of [-1,0,1]) if(CS.has((Math.round(x)+dx)+','+(Math.round(y)+dy))) return true; return false; };
+      for(let k=0;k<=n;k++){ const it=PLAYER.scene(pt,k).items, m=TASK3D.model(it,full), P={};
+        it.forEach(i=>{ if(i.t==='pt'&&i.at&&i.l) s(i.l).split(/\s*≡\s*/).forEach(l=>{ const mm=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)([′″])\)?$/.exec(l.trim()); if(mm) (P[mm[1]]=P[mm[1]]||{})[mm[2]]=i.at; }); });
+        Object.entries(m.pts).forEach(([nm,o])=>{ const q=o.p, pr=P[nm]||{};
+          if(pr['″']&&Math.hypot(pr['″'][0]+q[0]*3.2,pr['″'][1]+q[2]*3.2)>1) out.push('№'+t.n+' шаг '+k+': '+nm+' не совпадает с '+nm+'″');
+          if(pr['′']&&Math.hypot(pr['′'][0]+q[0]*3.2,pr['′'][1]-q[1]*3.2)>1) out.push('№'+t.n+' шаг '+k+': '+nm+' не совпадает с '+nm+'′'); });
+        m.segs.forEach(sg=>[sg.a,sg.b].forEach(q=>{ if(Math.abs(q[2])>0.05&&Math.abs(q[1])>0.05&&(!has(-q[0]*3.2,-q[2]*3.2)||!has(-q[0]*3.2,q[1]*3.2))) out.push('№'+t.n+' шаг '+k+': у отрезка нет проекции'); })); } }));
+    return [...new Set(out)]; });
+  cons.slice(0,10).forEach(m=>bad.push({name:'3D к задачам',rule:'модель расходится с чертежом',msg:m}));
   info.t3=await page.evaluate(()=>{ let a=0,b=0; WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach(p=>{ b++; if(TASK3D.has(p)) a++; })); return a+' из '+b+' пунктов'; });
   return {bad,info};
 }
