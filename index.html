@@ -130,6 +130,7 @@
 .catsay{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin:6px 0}
 .catsay-c{flex:none;width:72px;margin:0 0 -6px 14px;position:relative;z-index:1}.catsay-c .cat{display:block;width:100%;height:auto;animation:catPop .5s cubic-bezier(.34,1.56,.64,1) both}
 .catsay-b{position:relative;align-self:stretch;min-width:0;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:12px 16px;font-size:14.5px;line-height:1.5;color:var(--ink)}
+.cs-ok .catsay-b{border-color:color-mix(in srgb,var(--green) 45%,transparent);background:var(--green-s)}
 .catsay.c{flex-direction:column;align-items:center;text-align:center}.catsay.c .catsay-c{width:96px}.catsay.c .catsay-b{border-radius:14px}
 @media (prefers-reduced-motion:reduce){.cat-eyes,.cat-pu,.pl-cat .cat,.cat-q,.cat-z,.cat-paw,.cat-drop,.catsay-c .cat{animation:none}}
 
@@ -2269,29 +2270,29 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .ow-out{margin-top:12px}.ow-sum{font-weight:600;padding:10px 12px;border-radius:10px}.ow-sum.ok{background:var(--green-s);color:var(--green)}.ow-sum.bad{background:var(--red-s);color:var(--red)}
 .ow-list{font-size:13px;line-height:1.45;padding-left:18px;max-height:360px;overflow:auto}
 /* ── 3D к задаче ── */
-.t3{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3in .18s ease}
-@keyframes t3in{from{opacity:0}to{opacity:1}}
-body.t3-open{overflow:hidden}
-.t3-box{width:min(760px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--surf);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden}
-.t3-top{display:flex;align-items:center;gap:10px;padding:12px 14px 8px}
-.t3-tt{flex:1;min-width:0;display:grid;gap:2px}.t3-tt b{font-size:16px}
-.t3-tt span{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t3-x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:16px;cursor:pointer}
-.t3{--t3bg:#ffffff;--t3ink:#111827;--t3ink2:#4b5563}
-:root[data-theme=dark] .t3{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3{--t3bg:#0e1526;--t3ink:#e8edf7;--t3ink2:#a3adc2}}
-.t3-stage{position:relative;margin:0 12px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--t3bg)}
-.t3-stage svg{display:block;width:100%;height:auto;max-height:62vh;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
-.t3-stage svg:active{cursor:grabbing}
-.t3-hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:3px 10px;border-radius:99px;pointer-events:none;transition:opacity .3s}
-.t3-ctl{display:flex;align-items:center;gap:10px;padding:10px 14px}
-.t3-ctl input{flex:1;accent-color:var(--blue)}
-.t3-b{flex:none;width:42px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:18px;cursor:pointer}
-.t3-leg{display:flex;flex-wrap:wrap;gap:6px 14px;padding:0 14px 12px;font-size:12px;color:var(--mut)}
-.t3-leg span{display:inline-flex;align-items:center;gap:6px}
-.t3-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}.t3-leg i.ln{height:0;border-top:1.5px dashed #6b7280;border-radius:0}
-.t3-lb{font:700 22px var(--sans,system-ui);paint-order:stroke;stroke:var(--t3bg);stroke-width:4px;stroke-linejoin:round}
-.t3-ax{font:italic 600 20px var(--sans,system-ui);fill:var(--t3ink)}
+.t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
+@keyframes t3din{from{opacity:0}to{opacity:1}}
+body.t3d-open{overflow:hidden}
+.t3d-box{width:min(760px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--surf);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden}
+.t3d-top{display:flex;align-items:center;gap:10px;padding:12px 14px 8px}
+.t3d-tt{flex:1;min-width:0;display:grid;gap:2px}.t3d-tt b{font-size:16px}
+.t3d-tt span{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t3d-x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:16px;cursor:pointer}
+.t3d{--t3bg:#ffffff;--t3dink:#111827;--t3dink2:#4b5563}
+:root[data-theme=dark] .t3d{--t3bg:#0e1526;--t3dink:#e8edf7;--t3dink2:#a3adc2}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3d{--t3bg:#0e1526;--t3dink:#e8edf7;--t3dink2:#a3adc2}}
+.t3d-stage{position:relative;margin:0 12px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--t3bg)}
+.t3d-stage svg{display:block;width:100%;height:auto;max-height:62vh;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.t3d-stage svg:active{cursor:grabbing}
+.t3d-hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:3px 10px;border-radius:99px;pointer-events:none;transition:opacity .3s}
+.t3d-ctl{display:flex;align-items:center;gap:10px;padding:10px 14px}
+.t3d-ctl input{flex:1;accent-color:var(--blue)}
+.t3d-b{flex:none;width:42px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-size:18px;cursor:pointer}
+.t3d-leg{display:flex;flex-wrap:wrap;gap:6px 14px;padding:0 14px 12px;font-size:12px;color:var(--mut)}
+.t3d-leg span{display:inline-flex;align-items:center;gap:6px}
+.t3d-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}.t3d-leg i.ln{height:0;border-top:1.5px dashed #6b7280;border-radius:0}
+.t3d-lb{font:700 22px var(--sans,system-ui);paint-order:stroke;stroke:var(--t3bg);stroke-width:4px;stroke-linejoin:round}
+.t3d-ax{font:italic 600 20px var(--sans,system-ui);fill:var(--t3dink)}
 .pl-zb.t3btn{font-weight:700;letter-spacing:.02em}
 body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px;align-self:flex-start}
 .gy-root{display:grid;gap:14px;margin-top:6px}
@@ -2340,31 +2341,6 @@ body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;backg
 .gy-bad{background:var(--red-s);color:var(--ink);border:1px solid color-mix(in srgb,var(--red) 35%,transparent)}
 .gy-bad b{color:var(--red)} .gy-bad ul{margin:6px 0 0;padding-left:18px}
 .gy-row{display:flex;flex-wrap:wrap;gap:10px}
-.gy-diag{--gc:#7c3aed}
-.dg-data{overflow-x:auto;margin:4px 0 10px}
-.dg-t{border-collapse:separate;border-spacing:0;font:500 15px var(--mono);background:var(--surf);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:220px}
-.dg-t th,.dg-t td{padding:8px 14px;text-align:right;border-bottom:1px solid var(--line)}
-.dg-t tr:last-child>*{border-bottom:0}
-.dg-t thead th{font:600 12px var(--sans);color:var(--mut);background:var(--surf2);text-transform:none}
-.dg-t tbody th{text-align:left;font-weight:700;color:var(--ink)}
-.dg-t .dg-l td{text-align:left;font-size:13.5px;color:var(--ink2)}
-.dg-part{margin:6px 0 4px}.dg-h{font-size:16px;margin:10px 0 6px}
-.dg-in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 8px 14px;margin:6px 0;border-radius:14px;background:var(--surf);border:1.5px solid var(--line);max-width:460px}
-.dg-in.ok{border-color:var(--green);background:var(--green-s)}.dg-in.bad{border-color:var(--red);background:var(--red-s)}
-.dg-sym{font-weight:600;font-size:15px}
-.dg-f{display:flex;align-items:center;gap:6px;flex:none}
-.dg-f input{width:96px;min-height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--surf);color:var(--ink);font:600 18px var(--mono);text-align:center;padding:0 8px}
-.dg-f input:focus{outline:2px solid var(--blue);outline-offset:1px}
-.dg-f i{font-style:normal;color:var(--mut);font-size:14px;min-width:24px}
-.dg-note{font-size:12.5px;color:var(--mut);margin:4px 0 0}
-.dg-list{margin:6px 0 0;padding-left:0;list-style:none;display:grid;gap:6px}
-.dg-list li{padding-left:22px;position:relative}
-.dg-list li::before{position:absolute;left:0;top:0;font-weight:800}
-.dg-ok::before{content:"✓";color:var(--green)}.dg-kn::before{content:"✗";color:var(--red)}.dg-un::before{content:"?";color:var(--amber,#d97706)}.dg-e::before{content:"·";color:var(--mut)}
-.dg-show{margin-top:10px;min-height:38px;padding:6px 14px;font-size:14px}
-.dg-ans{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:14.5px}
-.dg-win .catsay-b{border-color:color-mix(in srgb,var(--green) 45%,transparent);background:var(--green-s)}
-.dg-more{margin-top:4px}
 @media(max-width:560px){.gy-card{grid-template-columns:1fr}.gy-ic{width:40px;height:40px}.gy-row .btn,.gy-acts .btn{flex:1 1 auto}.gy-vt .gy-b{font-size:10.5px}}
 .rk-plan{display:grid;gap:10px;margin:var(--s3) 0 0;counter-reset:rk}
 .rk-s{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:transform .2s,border-color .2s}
@@ -21463,7 +21439,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
   {v:'1.4',d:'6 октября 2026',items:['Учебник, рабочая тетрадь и методические указания в подвале сайта открываются карточкой: выходные данные, что взято на сайт, где найти книгу.','Кошка-помощник: радуется верным ответам, подсказывает при ошибке, ждёт при пустом поиске.','Номер версии и список изменений.'],
-   hidden:[{flag:'task3d',t:'3D к задачам: любой шаг решения в пространстве, с вращением'},{flag:'diag',t:'«Где я ошибся?»: ввести ответ к варианту — сайт назовёт типичную ошибку'}]},
+   hidden:[{flag:'task3d',t:'3D к задачам: любой шаг решения в пространстве, с вращением'}]},
   {v:'1.3',d:'6 октября 2026',items:['Тренажёр: новые варианты задач тетради — каждый проходит ту же проверку, что исходная задача.','«Найди ошибку»: в верный чертёж подсажена одна ошибка — найди её.']},
   {v:'1.2',d:'5 октября 2026',items:['Ответы задач проверяются независимым расчётом и на сотнях случайных вариантов данных.','Уточнены ответы задач 9 и 13 (≈ вместо =).','Пробный РК: любое время от 5 до 120 минут.']},
   {v:'1.1',d:'4 октября 2026',items:['Эпюр точки: типовые случаи с пояснениями, мерки Δy и Δz, конкурирующие точки, аккуратные подписи.','3D-модель: прозрачные или непрозрачные плоскости.','Правки текста решений: задачи 11, 63, 77, 81, 84, 85, 89.']},
@@ -21472,7 +21448,6 @@ window.CHANGES=[
 window.FLAGS=(function(){
 const KEY='6d7f183c72efaf3d7b8fb7022cfb3797011bff7c57afeb515571c1f4d0839179';
 const LIST={task3d:{t:'3D к задачам',d:'Кнопка «3D» у чертежа: шаг решения в пространстве — точки, отрезки, плоскости проекций, вращение пальцем.'},
-  diag:{t:'«Где я ошибся?»',d:'В тренажёре: ввести свой ответ к варианту — сайт скажет, верно ли, и узнает типичную ошибку.'},
   build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'}};
 function sha256(s){ const K=[],H=[]; let p=2; const isP=n=>{ for(let f=2;f*f<=n;f++) if(n%f===0) return false; return true; };
   for(let i=0;i<64;p++){ if(isP(p)){ if(i<8) H[i]=(Math.pow(p,1/2)*4294967296)|0; K[i++]=(Math.pow(p,1/3)*4294967296)|0; } }
@@ -21557,7 +21532,7 @@ function model(items){
 function has(part){ try{ const all=PLAYER.scene(part,(part.steps||[]).length).items, m=model(all); return Object.keys(m.pts).length>=2||m.segs.length>=2; }catch(e){ return false; } }
 /* ── окно ── */
 let S=null;
-function close(){ if(!S) return; S.el.remove(); document.removeEventListener('keydown',S.key); document.body.classList.remove('t3-open'); S=null; }
+function close(){ if(!S) return; S.el.remove(); document.removeEventListener('keydown',S.key); document.body.classList.remove('t3d-open'); S=null; }
 function open(t,pi,k){
   close(); const parts=PLAYER.partsOf(t), part=parts[pi]||parts[0], n=(part.steps||[]).length;
   const full=model(PLAYER.scene(part,n).items);
@@ -21566,12 +21541,12 @@ function open(t,pi,k){
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(0,...all.map(p=>p[i])));
   const pad=[0,1,2].map(i=>Math.max(6,(mx[i]-mn[i])*0.08)); for(let i=0;i<3;i++){ mn[i]-=pad[i]; mx[i]+=pad[i]; } mn[1]=Math.min(mn[1],0); mn[2]=Math.min(mn[2],0);
   const C=[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2], R=Math.hypot(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2])/2||50;
-  const el=document.createElement('div'); el.className='t3'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Задача в пространстве');
-  el.innerHTML=`<div class="t3-box"><div class="t3-top"><div class="t3-tt"><b>В пространстве</b><span id="t3Cap"></span></div><button class="t3-x" aria-label="Закрыть">✕</button></div>
-    <div class="t3-stage"><svg id="t3Svg" viewBox="0 0 600 460" role="img" aria-label="Пространственная модель шага"></svg><div class="t3-hint">крути пальцем</div></div>
-    <div class="t3-ctl"><button class="t3-b" data-d="-1" aria-label="Предыдущий шаг">←</button><input type="range" id="t3Step" min="0" max="${n}" value="${Math.min(k,n)}" aria-label="Шаг"><button class="t3-b" data-d="1" aria-label="Следующий шаг">→</button></div>
-    <div class="t3-leg"><span><i style="background:rgba(59,110,246,.35)"></i>π₂ — фронтальная</span><span><i style="background:rgba(245,158,11,.35)"></i>π₁ — горизонтальная</span><span><i class="ln"></i>линии связи и проецирующие лучи</span></div></div>`;
-  document.body.appendChild(el); document.body.classList.add('t3-open');
+  const el=document.createElement('div'); el.className='t3d'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Задача в пространстве');
+  el.innerHTML=`<div class="t3d-box"><div class="t3d-top"><div class="t3d-tt"><b>В пространстве</b><span id="t3Cap"></span></div><button class="t3d-x" aria-label="Закрыть">✕</button></div>
+    <div class="t3d-stage"><svg id="t3Svg" viewBox="0 0 600 460" role="img" aria-label="Пространственная модель шага"></svg><div class="t3d-hint">крути пальцем</div></div>
+    <div class="t3d-ctl"><button class="t3d-b" data-d="-1" aria-label="Предыдущий шаг">←</button><input type="range" id="t3Step" min="0" max="${n}" value="${Math.min(k,n)}" aria-label="Шаг"><button class="t3d-b" data-d="1" aria-label="Следующий шаг">→</button></div>
+    <div class="t3d-leg"><span><i style="background:rgba(59,110,246,.35)"></i>π₂ — фронтальная</span><span><i style="background:rgba(245,158,11,.35)"></i>π₁ — горизонтальная</span><span><i class="ln"></i>линии связи и проецирующие лучи</span></div></div>`;
+  document.body.appendChild(el); document.body.classList.add('t3d-open');
   S={el,part,n,k:Math.min(k,n),yaw:0.62,pit:0.42,C,R,mn,mx,t};
   const svg=el.querySelector('#t3Svg');
   const draw=()=>{ const items=PLAYER.scene(part,S.k).items, m=model(items);
@@ -21596,7 +21571,7 @@ function open(t,pi,k){
     const p1=poly([[x0,0,0],[x1,0,0],[x1,y1,0],[x0,y1,0]],'rgba(245,158,11,1)','rgba(217,119,6,.6)',.12);
     back+=(D[1]<0?p2+p1:p1+p2);
     back+=L([x0,0,0],[x1,0,0],'var(--t3ink)',1.6);
-    { const q=P([x0,0,0]); back+=`<text x="${f(q[0]-18)}" y="${f(q[1]+6)}" class="t3-ax">x</text>`; }
+    { const q=P([x0,0,0]); back+=`<text x="${f(q[0]-18)}" y="${f(q[1]+6)}" class="t3d-ax">x</text>`; }
     /* проекции отрезков на плоскости (тонко) и сами отрезки */
     m.segs.forEach(s=>{ const col=COL[s.k]||COL.main; if(s.k==='aux'||s.k==='thin') return;
       mid+=L([s.a[0],s.a[1],0],[s.b[0],s.b[1],0],col,1.1,null,.45)+L([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]],col,1.1,null,.45); });
@@ -21607,170 +21582,22 @@ function open(t,pi,k){
       mid+=L(p,a1,'#6b7280',1,'3 3',.8)+L(p,a2,'#6b7280',1,'3 3',.8)+L(a1,ax,'#6b7280',.9,'2 3',.6)+L(a2,ax,'#6b7280',.9,'2 3',.6);
       const q1=P(a1), q2=P(a2), q=P(p);
       mid+=`<circle cx="${f(q1[0])}" cy="${f(q1[1])}" r="3.6" fill="#b45309"/><circle cx="${f(q2[0])}" cy="${f(q2[1])}" r="3.6" fill="#1d4ed8"/>`;
-      front+=(o.g==='new'?`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="12" fill="#ffd23f" fill-opacity=".55"/>`:'')+`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="6" fill="${col}" stroke="var(--t3bg)" stroke-width="2"/><text x="${f(q[0]+10)}" y="${f(q[1]-10)}" class="t3-lb" fill="${col}">${nm}</text>`; });
+      front+=(o.g==='new'?`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="12" fill="#ffd23f" fill-opacity=".55"/>`:'')+`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="6" fill="${col}" stroke="var(--t3bg)" stroke-width="2"/><text x="${f(q[0]+10)}" y="${f(q[1]-10)}" class="t3d-lb" fill="${col}">${nm}</text>`; });
     return `<rect width="600" height="460" fill="var(--t3bg)"/>`+back+mid+front; };
   /* вращение */
   let drag=null;
-  svg.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY,yaw:S.yaw,pit:S.pit}; svg.setPointerCapture(e.pointerId); el.querySelector('.t3-hint').style.opacity=0; });
+  svg.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY,yaw:S.yaw,pit:S.pit}; svg.setPointerCapture(e.pointerId); el.querySelector('.t3d-hint').style.opacity=0; });
   svg.addEventListener('pointermove',e=>{ if(!drag) return; S.yaw=drag.yaw+(e.clientX-drag.x)*0.01; S.pit=Math.max(-0.2,Math.min(1.45,drag.pit+(e.clientY-drag.y)*0.01)); draw(); });
   svg.addEventListener('pointerup',()=>{ drag=null; });
-  el.querySelector('.t3-x').addEventListener('click',close);
+  el.querySelector('.t3d-x').addEventListener('click',close);
   el.addEventListener('click',e=>{ if(e.target===el) close(); });
-  el.querySelectorAll('.t3-b').forEach(b=>b.addEventListener('click',()=>{ S.k=Math.max(0,Math.min(n,S.k+ +b.dataset.d)); draw(); }));
+  el.querySelectorAll('.t3d-b').forEach(b=>b.addEventListener('click',()=>{ S.k=Math.max(0,Math.min(n,S.k+ +b.dataset.d)); draw(); }));
   el.querySelector('#t3Step').addEventListener('input',e=>{ S.k=+e.target.value; draw(); });
   S.key=e=>{ if(e.key==='Escape') close(); if(e.key==='ArrowRight'){ S.k=Math.min(n,S.k+1); draw(); } if(e.key==='ArrowLeft'){ S.k=Math.max(0,S.k-1); draw(); } };
   document.addEventListener('keydown',S.key);
   draw();
 }
 return {model,has,open,close};
-})();
-/* ═════════ DIAG: «Где я ошибся?» ═════════
-   Студент решает вариант на бумаге по координатам и вводит число. Сайт считает верный ответ по тем же
-   координатам (формулой в пространстве) и все типичные неверные ответы: длина проекции вместо отрезка,
-   перепутанные катеты, угол с другой плоскостью и т.п. Если число студента совпало с одним из них —
-   называет ошибку. */
-window.DIAG=(function(){
-const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
-const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
-const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], nrm=a=>Math.hypot(a[0],a[1],a[2]), unit=a=>mul(a,1/nrm(a));
-const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-const deg=r=>r*180/Math.PI, ang=(u,v)=>deg(Math.acos(Math.max(-1,Math.min(1,dot(unit(u),unit(v)))))), acute=a=>a>90?180-a:a;
-const at=(a,b)=>deg(Math.atan2(Math.abs(a),Math.abs(b)));
-const a2=(u,v)=>{ const c=(u[0]*v[0]+u[1]*v[1])/(Math.hypot(u[0],u[1])*Math.hypot(v[0],v[1])); return deg(Math.acos(Math.max(-1,Math.min(1,c)))); };
-/* q — что ищем; re — где число в ответе тетради (для масштаба) */
-const num='\\s*[≈=]\\s*(\\d+(?:[.,]\\d+)?)';
-const SPEC={
-  12:[{q:'len',P:'F',Q:'H',sym:'|FH|',u:'мм',re:'\\|FH\\|'+num}],
-  13:[{q:'len',P:'A',Q:'B',sym:'|AB|',u:'мм',re:'\\|AB\\|'+num},{q:'a1',P:'A',Q:'B',sym:'α',u:'°',re:'α[^;≈=]*'+num},{q:'a2',P:'A',Q:'B',sym:'β',u:'°',re:'β[^;≈=]*'+num}],
-  30:[{pi:0,q:'pa1',pl:['A','B','C'],sym:'α',u:'°',re:'α'+num},{pi:1,q:'pa2',pl:['A','B','C'],sym:'β',u:'°',re:'β'+num}],
-  47:[{q:'dPL',P:'A',L:'a',sym:'расстояние от A до a',u:'мм',re:'\\|AK\\|'+num}],
-  50:[{q:'eqd',L:'a',P:'A',Q:'B',sym:'|CA| = |CB|',u:'мм',re:'\\|CB\\|'+num}],
-  51:[{q:'len',P:'A',Q:'B',sym:'|AB|',u:'мм',re:'\\|AB\\|'+num}],
-  53:[{q:'dLL',L:'AB',M:'CD',sym:'расстояние между AB и CD',u:'мм',re:'\\|C₅K₅\\|'+num}],
-  55:[{q:'dPPl',P:'A',pl:['B','C','D'],sym:'расстояние от A до BCD',u:'мм',re:'\\|A₄K₄\\|'+num}],
-  57:[{q:'dih',P:'A',Q:'B',C:'C',D:'D',sym:'угол между ABC и ABD',u:'°',re:'α'+num}],
-  58:[{q:'len',P:'A',Q:'B',sym:'|AB|',u:'мм',re:'\\|AB\\|'+num},{q:'a1',P:'A',Q:'B',sym:'α',u:'°',re:'α'+num}],
-  63:[{q:'angLL',L:'a',M:'b',sym:'угол между a и b',u:'°',re:'φ'+num}],
-  64:[{q:'dPL',P:'A',L:'b',sym:'расстояние от A до b',u:'мм',re:'b̄′:'+num}],
-  85:[{q:'dih',P:'A',Q:'B',C:'C',D:'D',sym:'угол между ABC и ABD',u:'°',re:'φ'+num}]
-};
-/* ── геометрия задачи из чертежа: точки и прямые с их 3D-координатами (F/H помнят точку) ── */
-function geo(items){
-  const P={}, L={};
-  (items||[]).forEach(it=>{ if(!it) return;
-    if(it.t==='pt'&&it.at&&it.at._3&&it.l) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9][₀-₉0-9]*)[′″]\)?$/.exec(l.trim()); if(m&&!P[m[1]]) P[m[1]]=it.at._3; });
-    if((it.t==='seg'||it.t==='line')&&it.l&&it.a&&it.b&&it.a._3&&it.b._3) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^([a-z][₀-₉0-9]*)[′″]$/.exec(l.trim());
-      if(m&&!L[m[1]]&&nrm(sub(it.a._3,it.b._3))>1) L[m[1]]=[it.a._3,it.b._3]; });
-  });
-  return {P,L};
-}
-const lineOf=(g,n)=>{ if(/^[A-ZА-Я]{2}$/.test(n)){ const a=g.P[n[0]], b=g.P[n[1]]; return a&&b?[a,b]:null; } return g.L[n]||null; };
-/* ── варианты ответа: верный и типичные ошибки ── */
-function lenCat(P,Q,nm,o){ const d=sub(Q,P), h=Math.hypot(d[0],d[1]), f=Math.hypot(d[0],d[2]), dy=Math.abs(d[1]), dz=Math.abs(d[2]);
-  const a=nm[0], b=nm[1], H=a+'′'+b+'′', F=a+'″'+b+'″';
-  return [ {v:h,t:`Это длина горизонтальной проекции |${H}|. Проекция короче отрезка — нужна натуральная величина: прямоугольный треугольник с катетами |${H}| и Δz.`},
-    {v:f,t:`Это длина фронтальной проекции |${F}|. Нужна натуральная величина: катеты |${F}| и Δy.`},
-    {v:Math.hypot(h,dy),t:`Перепутан катет. К горизонтальной проекции |${H}| добавляют Δz — разность высот, а взята Δy.`},
-    {v:Math.hypot(f,dz),t:`Перепутан катет. К фронтальной проекции |${F}| добавляют Δy — разность глубин, а взята Δz.`},
-    {v:h+dz,t:`Катеты сложены. Натуральная величина — гипотенуза: √(|${H}|² + Δz²).`},
-    {v:f+dy,t:`Катеты сложены. Натуральная величина — гипотенуза: √(|${F}|² + Δy²).`},
-    {v:dz,t:'Это только Δz — разность высот концов. Это один катет, нужна гипотенуза.'},
-    {v:dy,t:'Это только Δy — разность глубин концов. Это один катет, нужна гипотенуза.'} ].concat(o||[]); }
-function a1Cat(P,Q,nm){ const d=sub(Q,P), h=Math.hypot(d[0],d[1]), f=Math.hypot(d[0],d[2]); const H=nm[0]+'′'+nm[1]+'′', F=nm[0]+'″'+nm[1]+'″';
-  return {v:at(d[2],h),w:[ {v:at(d[1],f),t:'Это угол β — с фронтальной плоскостью π₂. Угол α с π₁ строят на горизонтальной проекции: катеты |'+H+'| и Δz.'},
-    {v:90-at(d[2],h),t:'Взят угол против другого катета (90° − α). α лежит напротив катета Δz.'},
-    {v:at(d[2],d[0]),t:'Это угол фронтальной проекции '+F+' с осью x. Он равен α, только если отрезок — фронталь.'},
-    {v:at(d[1],h),t:'В треугольнике на |'+H+'| вторым катетом взята Δy. Для угла α нужна Δz.'} ]}; }
-function a2Cat(P,Q,nm){ const d=sub(Q,P), h=Math.hypot(d[0],d[1]), f=Math.hypot(d[0],d[2]); const H=nm[0]+'′'+nm[1]+'′', F=nm[0]+'″'+nm[1]+'″';
-  return {v:at(d[1],f),w:[ {v:at(d[2],h),t:'Это угол α — с горизонтальной плоскостью π₁. Угол β с π₂ строят на фронтальной проекции: катеты |'+F+'| и Δy.'},
-    {v:90-at(d[1],f),t:'Взят угол против другого катета (90° − β). β лежит напротив катета Δy.'},
-    {v:at(d[1],d[0]),t:'Это угол горизонтальной проекции '+H+' с осью x. Он равен β, только если отрезок — горизонталь.'},
-    {v:at(d[2],f),t:'В треугольнике на |'+F+'| вторым катетом взята Δz. Для угла β нужна Δy.'} ]}; }
-const foot=(P,A,B)=>{ const d=unit(sub(B,A)); return add(A,mul(d,dot(sub(P,A),d))); };
-const d2=(P,A,B,i)=>{ const p=[P[0],P[i]], a=[A[0],A[i]], b=[B[0],B[i]], dx=b[0]-a[0], dy=b[1]-a[1]; return Math.abs(dx*(p[1]-a[1])-dy*(p[0]-a[0]))/Math.hypot(dx,dy); };
-function solve(s,g){
-  if(s.q==='len'){ const P=g.P[s.P], Q=g.P[s.Q]; if(!P||!Q) return null; return {v:nrm(sub(Q,P)),w:lenCat(P,Q,s.P+s.Q)}; }
-  if(s.q==='a1'||s.q==='a2'){ const P=g.P[s.P], Q=g.P[s.Q]; if(!P||!Q) return null; return (s.q==='a1'?a1Cat:a2Cat)(P,Q,s.P+s.Q); }
-  if(s.q==='dPL'){ const P=g.P[s.P], l=lineOf(g,s.L); if(!P||!l) return null; const K=foot(P,l[0],l[1]);
-    return {v:nrm(sub(K,P)),w:lenCat(P,K,s.P+'K',[ {v:d2(P,l[0],l[1],2),t:'Перпендикуляр опущен прямо на фронтальной проекции '+s.L+'″. Прямой угол проецируется без искажения, только если прямая параллельна плоскости проекций. Сначала сделай прямую линией уровня (или проведи плоскость ⟂ прямой).'},
-      {v:d2(P,l[0],l[1],1),t:'Перпендикуляр опущен прямо на горизонтальной проекции '+s.L+'′. Прямой угол проецируется без искажения, только если прямая параллельна плоскости проекций.'},
-      {v:Math.min(nrm(sub(P,l[0])),nrm(sub(P,l[1]))),t:'Это расстояние до точки прямой, а не до самой прямой. Нужен перпендикуляр.'} ]).map(x=>x.t.startsWith('Перепутан')||x.t.startsWith('Катеты')||x.t.startsWith('Это только')?Object.assign(x,{t:x.t.replace(/^/,'Перпендикуляр '+s.P+'K найден верно, но длина посчитана неверно. ')}):x)}; }
-  if(s.q==='eqd'){ const l=lineOf(g,s.L), A=g.P[s.P], B=g.P[s.Q]; if(!l||!A||!B) return null; const p=l[0], d=sub(l[1],l[0]);
-    /* |p+td−A|² = |p+td−B|² — линейно по t */
-    const den=2*dot(d,sub(B,A)); if(Math.abs(den)<1e-9) return null; const t=(dot(sub(p,B),sub(p,B))-dot(sub(p,A),sub(p,A)))/den, C=add(p,mul(d,t));
-    return {v:nrm(sub(C,A)),w:lenCat(C,A,'CA',[{v:nrm(sub(B,A))/2,t:'Это половина |AB|. Искомая точка C лежит на прямой a, а не на отрезке AB.'}])}; }
-  if(s.q==='dLL'){ const l=lineOf(g,s.L), m=lineOf(g,s.M); if(!l||!m) return null; const u=sub(l[1],l[0]), v=sub(m[1],m[0]), n=crs(u,v); if(nrm(n)<1e-9) return null;
-    const w=sub(m[0],l[0]), d=Math.abs(dot(w,unit(n)));
-    /* концы общего перпендикуляра */
-    const a=dot(u,u), b=dot(u,v), c=dot(v,v), e=dot(u,w), f=dot(v,w), D=a*c-b*b, t1=(e*c-b*f)/D, t2=(e*b-a*f)/D, K=add(l[0],mul(u,t1)), E=add(m[0],mul(v,t2));
-    return {v:d,w:lenCat(K,E,'KE',[{v:Math.min(nrm(sub(m[0],l[0])),nrm(sub(m[1],l[0])),nrm(sub(m[0],l[1])),nrm(sub(m[1],l[1]))),t:'Это расстояние между концами отрезков. Нужен общий перпендикуляр к обеим прямым.'}])}; }
-  if(s.q==='dPPl'){ const P=g.P[s.P], A=g.P[s.pl[0]], B=g.P[s.pl[1]], C=g.P[s.pl[2]]; if(!P||!A||!B||!C) return null; const n=unit(crs(sub(B,A),sub(C,A))), K=sub(P,mul(n,dot(sub(P,A),n)));
-    return {v:nrm(sub(K,P)),w:lenCat(P,K,s.P+'K',[{v:Math.min(...[A,B,C].map(X=>nrm(sub(X,P)))),t:'Это расстояние до вершины треугольника, а не до плоскости. Нужен перпендикуляр к плоскости.'}])}; }
-  if(s.q==='dih'){ const A=g.P[s.P], B=g.P[s.Q], C=g.P[s.C], D=g.P[s.D]; if(!A||!B||!C||!D) return null; const e=unit(sub(B,A));
-    const pc=sub(sub(C,A),mul(e,dot(sub(C,A),e))), pd=sub(sub(D,A),mul(e,dot(sub(D,A),e))), phi=ang(pc,pd);
-    const pr=(X,i)=>[X[0],X[i]], a2d=(O,X,Y,i)=>a2([pr(X,i)[0]-pr(O,i)[0],pr(X,i)[1]-pr(O,i)[1]],[pr(Y,i)[0]-pr(O,i)[0],pr(Y,i)[1]-pr(O,i)[1]]);
-    return {v:phi,w:[ {v:180-phi,t:'Это смежный угол (180° − φ). Двугранный угол — между перпендикулярами к ребру AB, проведёнными в каждой грани к одной точке ребра.'},
-      {v:ang(sub(C,A),sub(D,A)),t:'Это угол CAD между рёбрами. Он равен двугранному, только если AC и AD перпендикулярны ребру AB. Нужно сделать ребро AB проецирующим.'},
-      {v:ang(sub(C,B),sub(D,B)),t:'Это угол CBD между рёбрами. Он равен двугранному, только если BC и BD перпендикулярны ребру AB. Нужно сделать ребро AB проецирующим.'},
-      {v:a2d(B,C,D,2),t:'Это угол C″B″D″ на фронтальной проекции. Он равен двугранному, только когда ребро AB ⟂ π₂ (проецируется в точку).'},
-      {v:a2d(A,C,D,1),t:'Это угол C′A′D′ на горизонтальной проекции. Он равен двугранному, только когда ребро AB ⟂ π₁.'},
-      {v:a2d(A,C,D,2),t:'Это угол C″A″D″ на фронтальной проекции. Он равен двугранному, только когда ребро AB ⟂ π₂.'} ]}; }
-  if(s.q==='angLL'){ const l=lineOf(g,s.L), m=lineOf(g,s.M); if(!l||!m) return null; const u=sub(l[1],l[0]), v=sub(m[1],m[0]), phi=acute(ang(u,v));
-    return {v:phi,w:[ {v:180-phi,t:'Это тупой угол (180° − φ). Углом между прямыми называют острый.'},
-      {v:acute(a2([u[0],u[2]],[v[0],v[2]])),t:'Это угол между фронтальными проекциями '+s.L+'″ и '+s.M+'″. Угол проецируется без искажения, только если обе прямые параллельны π₂.'},
-      {v:acute(a2([u[0],u[1]],[v[0],v[1]])),t:'Это угол между горизонтальными проекциями '+s.L+'′ и '+s.M+'′. Угол проецируется без искажения, только если обе прямые параллельны π₁.'},
-      {v:90-phi,t:'Это 90° − φ — угол с перпендикуляром к прямой, а не с самой прямой.'} ]}; }
-  if(s.q==='pa1'||s.q==='pa2'){ const A=g.P[s.pl[0]], B=g.P[s.pl[1]], C=g.P[s.pl[2]]; if(!A||!B||!C) return null; const n=unit(crs(sub(B,A),sub(C,A)));
-    const al=acute(ang(n,[0,0,1])), be=acute(ang(n,[0,1,0]));
-    /* линия ската к π₁: в плоскости, ⟂ горизонтали; к π₂ — ⟂ фронтали */
-    const s1=crs(n,crs(n,[0,0,1])), s2=crs(n,crs(n,[0,1,0]));
-    if(s.q==='pa1') return {v:al,w:[ {v:be,t:'Это угол β — с плоскостью π₂ (его дают линия ската ⟂ фронтали). Для угла с π₁ нужна линия ската ⟂ горизонтали.'},
-      {v:90-al,t:'Это 90° − α: угол линии ската с вертикалью, а не с плоскостью π₁.'},
-      {v:at(s1[2],s1[0]),t:'Это угол фронтальной проекции линии ската с осью x. Сначала найди натуральную величину линии ската (катеты: её горизонтальная проекция и Δz).'} ]};
-    return {v:be,w:[ {v:al,t:'Это угол α — с плоскостью π₁ (его дают линия ската ⟂ горизонтали). Для угла с π₂ нужна линия ската ⟂ фронтали.'},
-      {v:90-be,t:'Это 90° − β: угол линии ската с перпендикуляром к π₂, а не с самой плоскостью.'},
-      {v:at(s2[1],s2[0]),t:'Это угол горизонтальной проекции линии ската с осью x. Сначала найди натуральную величину линии ската (катеты: её фронтальная проекция и Δy).'} ]}; }
-  return null;
-}
-const tolOf=(u,v)=>u==='°'?2:Math.max(1.5,0.03*Math.abs(v));
-const fmt=(v,u)=>{ const r=u==='°'?Math.round(v*2)/2:Math.round(v*2)/2; return String(r).replace('.',','); };
-/* ── задание: координаты (мм, округлены до 1 мм), верные ответы и ошибки по этим координатам ── */
-function build(t){ const S=SPEC[t.n]; if(!S) return null; const parts=PLAYER.partsOf(t), out={parts:[]};
-  for(let pi=0;pi<parts.length;pi++){ const sp=S.filter(s=>(s.pi||0)===pi); if(!sp.length) continue; const part=parts[pi];
-    const g0=geo(PLAYER.scene(part,0).items), gN=geo(PLAYER.scene(part,(part.steps||[]).length).items);
-    /* масштаб: число в ответе тетради / то же по чертежу (для угловых задач масштаб не важен) */
-    const ansT=strip((part.ans||'')+' '+(t.ans||'')); let k=null;
-    for(const s of sp){ if(s.u!=='мм') continue; const m=new RegExp(s.re).exec(ansT), r=solve(s,g0); if(m&&r){ k=parseFloat(m[1].replace(',','.'))/r.v; break; } }
-    if(k==null){ const all=Object.values(g0.P).concat(...Object.values(g0.L)); const ext=Math.max(1,...all.map(p=>Math.max(Math.abs(p[0]),Math.abs(p[1]),Math.abs(p[2])))); k=ext>200?60/ext:1; }
-    if(Math.abs(k-1)<0.04) k=1;
-    /* исходные данные — только то, что нужно формулам: точки из спецификации и прямые */
-    const need=new Set(), needL=new Set();
-    sp.forEach(s=>{ [s.P,s.Q,s.C,s.D].concat(s.pl||[]).forEach(x=>x&&need.add(x)); [s.L,s.M].forEach(x=>{ if(!x) return; if(/^[A-ZА-Я]{2}$/.test(x)){ need.add(x[0]); need.add(x[1]); } else needL.add(x); }); });
-    const R=p=>p.map(v=>Math.round(v*k)), g={P:{},L:{}}, data=[];
-    for(const n of need){ const p=g0.P[n]; if(!p) return null; g.P[n]=R(p); }
-    for(const n of needL){ const l=g0.L[n]; if(!l) return null; g.L[n]=[R(l[0]),R(l[1])]; }
-    /* x отсчитываем от самой правой точки — чтобы числа были небольшими и ≥ 0 */
-    const xs=[].concat(Object.values(g.P),...Object.values(g.L)).map(p=>p[0]), x0=Math.min(...xs);
-    Object.values(g.P).forEach(p=>p[0]-=x0); Object.values(g.L).forEach(l=>l.forEach(p=>p[0]-=x0));
-    /* в 3D-модели x растёт влево, как в тетради */
-    const Q=[], res=[];
-    for(const s of sp){ const r=solve(s,g); if(!r||!isFinite(r.v)) return null;
-      /* сверка с числом из ответа тетради: формула и построение сайта должны давать одно */
-      const m=new RegExp(s.re).exec(ansT); if(m){ const want=parseFloat(m[1].replace(',','.'))*(s.u==='мм'?1:1), got=s.u==='мм'?solve(s,g0).v*k:solve(s,g0).v; if(Math.abs(want-got)>tolOf(s.u,want)*0.8) return null; }
-      const tol=tolOf(s.u,r.v);
-      const w=r.w.filter(x=>isFinite(x.v)&&x.v>0.5&&Math.abs(x.v-r.v)>1.5*tol).filter((x,i,a)=>a.findIndex(y=>Math.abs(y.v-x.v)<tol*0.6)===i);
-      Q.push({s,v:r.v,tol,w}); }
-    out.parts.push({pi,Q,g,l:part.l||'',ans:ansT});
-  }
-  return out.parts.length?out:null;
-}
-function has(n){ return !!SPEC[n]; }
-function judge(q,raw){ const m=/-?\d+(?:[.,]\d+)?/.exec(String(raw||'')); if(!m) return {st:'empty'}; const x=parseFloat(m[0].replace(',','.'));
-  if(Math.abs(x-q.v)<=q.tol) return {st:'ok',x};
-  let best=null; q.w.forEach(w=>{ const d=Math.abs(x-w.v); if(d<=tolOf(q.s.u,w.v)&&(!best||d<best.d)) best={d,w}; });
-  if(best) return {st:'known',x,w:best.w};
-  return {st:'unknown',x,far:Math.abs(x-q.v)/q.v}; }
-return {SPEC,build,has,judge,fmt,solve,geo};
 })();
 window.GYM=(function(){
 const $q=(r,s)=>r.querySelector(s);
@@ -21818,15 +21645,13 @@ function home(v){
       <details class="gy-pick"><summary>Выбрать задачу</summary><div class="gy-nums">${list.map(n=>`<a href="${href(mode,n,mode==='bug'?rnd():rnd())}">№${n}</a>`).join('')}</div></details></div></section>`;
   const I={var:'<svg viewBox="0 0 24 24"><path d="M4 7h11M4 12h7M4 17h11" /><path d="M17 4l3 3-3 3M15 14l3 3-3 3"/></svg>',
     build:'<svg viewBox="0 0 24 24"><path d="M4 20l6-14 4 9 3-4 3 9z"/><circle cx="17" cy="6" r="2.2"/></svg>',
-    diag:'<svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-5 4z"/><path d="M10 9.5a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.2M12 14.2h.01"/></svg>',
     bug:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5M11 8v3.5M11 14h.01"/></svg>'};
   v.querySelector('#gyRoot').innerHTML=`
    ${card('var',I.var,'Новый вариант','Та же задача — другие данные. Решай на бумаге, потом сверяйся с разбором по шагам. Задача не повторится.','решено вариантов: <b>'+cnt('var')+'</b>',L.gen)}
    ${FLAGS.on('build')?card('build',I.build,'Построй сам','Скрытая функция (видишь только ты). Реши на бумаге и отметь ответ на чертеже — сайт проверит.','верных построений: <b>'+cnt('build')+'</b>',L.build):''}
-   ${FLAGS.on('diag')&&window.DIAG?card('diag',I.diag,'Где я ошибся?','Скрытая функция. Реши вариант по координатам и впиши ответ. Если неверно — сайт назовёт типичную ошибку.','верных ответов: <b>'+cnt('diag')+'</b>',dlist()):''}
    ${card('bug',I.bug,'Найди ошибку','В правильный чертёж подсажена одна ошибка: разрыв линии связи, перепутанные подписи или неверный размер. Найди и нажми на неё.','найдено ошибок: <b>'+cnt('bug')+'</b>',L.bug)}
    <div class="gy-why"><b>Почему этому можно верить.</b> Задача на сайте — программа построения в координатах. Новый вариант строится той же программой на изменённых данных и показывается, только если прошёл ту же проверку, что и весь сайт: каждая точка восстановлена в пространстве, проверены линии связи, принадлежность, ∥ и ⊥, числа и, где он есть, ответ — независимым расчётом.</div>`;
-  v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.go; nav(href(m,pick(m==='var'?L.gen:m==='build'?L.build:m==='diag'?dlist():L.bug),rnd())); }));
+  v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.go; nav(href(m,pick(m==='var'?L.gen:m==='build'?L.build:L.bug),rnd())); }));
 }
 
 /* ── вариант: разбор по шагам ── */
@@ -21836,7 +21661,7 @@ function variantView(host,n,seed){
   const t=r.task, canBuild=!!buildTargets(t);
   const chk=r.orig?'исходные данные':'проверен';
   host.innerHTML=`<div class="gy-vbar"><div class="gy-vt"><b>${r.orig?'Задача №'+n:'Вариант №'+n}</b><span class="gy-b${r.orig?'':' ok'}" title="${r.orig?'':'Вариант построен заново и прошёл ту же 3D-проверку'+(r.check&&r.check.oracle?' и независимый пересчёт ответа':'')+', что весь сайт'}">${r.orig?'':'✓ '}${chk}</span></div>
-     <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}${canBuild&&FLAGS.on('build')?`<a class="gy-vb" href="${href('build',n,r.seed||rnd())}">Построй</a>`:''}${FLAGS.on('diag')&&window.DIAG&&DIAG.has(n)&&(r.seed||n===30)?`<a class="gy-vb" href="${href('diag',n,r.seed||rnd())}">Мой ответ</a>`:''}</div></div>
+     <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}${canBuild&&FLAGS.on('build')?`<a class="gy-vb" href="${href('build',n,r.seed||rnd())}">Построй</a>`:''}</div></div>
    <div id="plMount"></div>`;
   document.body.classList.add('inplayer');
   PLR=PLAYER.mount($q(host,'#plMount'),t,{ backHref:H('ng','check','gym'), backLabel:'К тренажёру', afterText:'Дальше: ещё вариант',
@@ -21931,62 +21756,17 @@ function bugView(host,n,seed){
   const mark=q=>({t:'circ',c:q,r:hitR*0.7,k:'res'});
   const draw=(extra)=>{ sheet.innerHTML=svgOf(B.items.concat(extra||[]),fr,'Чертёж с ошибкой'); const svg=$q(sheet,'svg'); fit(svg,sheet,S.zoom); svg.style.cursor='pointer';
     svg.addEventListener('click',ev=>{ if(S.found) return; const q=toItem(svg,fr,ev); const d=Math.min(Math.hypot(q[0]-B.at[0],q[1]-B.at[1]),B.at2?Math.hypot(q[0]-B.at2[0],q[1]-B.at2[1]):1e9);
-      if(d<=hitR){ S.found=true; if(!S.miss) cnt('bug',1); try{ FX.buzz&&FX.buzz('ok'); }catch(e){} $q(host,'#gyRes').innerHTML=CATSAY('happy',`<b>Нашёл!</b> ${B.why}`,'dg-win'); draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); }
+      if(d<=hitR){ S.found=true; if(!S.miss) cnt('bug',1); try{ FX.buzz&&FX.buzz('ok'); }catch(e){} $q(host,'#gyRes').innerHTML=CATSAY('happy',`<b>Нашёл!</b> ${B.why}`,'cs-ok'); draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); }
       else { S.miss++; try{ FX.buzz&&FX.buzz(12); }catch(e){} $q(host,'#gyRes').innerHTML=`<div class="gy-bad"><b>Здесь всё верно.</b> ${S.miss>=2?'Подсказка: проверь '+(B.type==='num'?'числа на чертеже':B.type==='swap'?'подписи точек по линиям связи':'вертикальность линий связи')+'.':'Ищи дальше.'}</div>`; } }); };
   $q(host,'#gyShow').addEventListener('click',()=>{ S.found=true; $q(host,'#gyRes').innerHTML=CATSAY('oops',`<b>Ошибка здесь.</b> ${B.why}`); draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); });
   $q(host,'#gyZoom').addEventListener('click',e=>{ S.zoom=S.zoom===1?2:1; e.currentTarget.textContent=S.zoom===1?'＋':'－'; draw(S.found?[mark(B.at)]:[]); });
   draw();
 }
 
-/* ── где я ошибся: решить по координатам, ввести число ── */
-const dlist=()=>Object.keys(DIAG.SPEC).map(Number).filter(n=>GEN.ok(n)||n===30);
-function diagView(host,n,seed){
-  let r=make(n,seed), B=r&&DIAG.build(r.task);
-  for(let i=0;!B&&r&&!r.orig&&i<5;i++){ r=make(n,rnd()); B=r&&DIAG.build(r.task); }
-  if(!B&&r){ r={task:WB3.get(n),seed:0,orig:true}; B=DIAG.build(r.task); }
-  if(!B){ host.innerHTML='<div class="box warn">Для этой задачи режим недоступен. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; return; }
-  if(r.seed!==seed){ try{ history.replaceState(null,'',href('diag',n,r.seed)); }catch(e){} }
-  const t=r.task, parts=PLAYER.partsOf(t), c=v=>String(v).replace('-','−');
-  const tbl=g=>{ const P=Object.entries(g.P), L=Object.entries(g.L);
-    return `<div class="dg-data"><table class="dg-t"><thead><tr><th></th><th>x</th><th>y</th><th>z</th></tr></thead><tbody>
-      ${P.map(([k,p])=>`<tr><th>${k}</th><td>${c(p[0])}</td><td>${c(p[1])}</td><td>${c(p[2])}</td></tr>`).join('')}
-      ${L.map(([k,l])=>`<tr class="dg-l"><th>${k}</th><td colspan="3">прямая через (${l[0].map(c).join('; ')}) и (${l[1].map(c).join('; ')})</td></tr>`).join('')}</tbody></table></div>`; };
-  const same=B.parts.length>1&&JSON.stringify(B.parts[0].g)===JSON.stringify(B.parts[1].g);
-  host.innerHTML=`<div class="gy-head"><div class="pl-kicker">${r.orig?'Задача №'+n:'Вариант задачи №'+n} · где я ошибся?</div>
-     <h2 class="gy-q">${t.q||''}</h2>
-     <p class="gy-how">Построй на бумаге по координатам (мм) и впиши, что получилось. Если ответ неверный, сайт подскажет, какую ошибку обычно делают при таком числе.</p></div>
-   ${same?tbl(B.parts[0].g):''}
-   ${B.parts.map((P,j)=>`<section class="dg-part">${parts.length>1?`<h3 class="dg-h">${strip(parts[P.pi].l||('Пункт '+(P.pi+1)))}</h3>`:''}${same?'':tbl(P.g)}
-     ${P.Q.map((q,i)=>`<label class="dg-in"><span class="dg-sym">${q.s.sym}</span><span class="dg-f"><input inputmode="decimal" autocomplete="off" data-q="${j}:${i}" placeholder="?" aria-label="${q.s.sym}, ${q.s.u==='°'?'градусы':'миллиметры'}"><i>${q.s.u}</i></span></label>`).join('')}</section>`).join('')}
-   <p class="dg-note">x — вдоль оси влево, y — к нам, z — вверх. Допуск: ±${'1,5'} мм (или 3 %) и ±2°.</p>
-   <div class="gy-row"><button class="btn pri" id="dgCheck">Проверить</button><a class="btn" href="${r.orig?H('ng','tasks',n):href('var',n,r.seed)}">Разбор по шагам</a></div>
-   <div class="gy-res" id="gyRes" aria-live="polite"></div>
-   <div class="gy-row dg-more"><a class="btn ghost" href="${href('diag',n,rnd())}">Новые числа</a><a class="btn ghost" href="${href('diag',pick(dlist()),rnd())}">Другая задача</a></div>`;
-  const ins=[...host.querySelectorAll('.dg-f input')];
-  ins.forEach((el,i)=>el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if(ins[i+1]&&!ins[i+1].value) ins[i+1].focus(); else $q(host,'#dgCheck').click(); } }));
-  let shown=false;
-  const check=()=>{ const res=[]; ins.forEach(el=>{ const [j,i]=el.dataset.q.split(':').map(Number), q=B.parts[j].Q[i]; res.push({el,q,r:DIAG.judge(q,el.value)}); });
-    if(res.every(x=>x.r.st==='empty')){ ins[0].focus(); return; }
-    res.forEach(x=>{ x.el.closest('.dg-in').classList.toggle('ok',x.r.st==='ok'); x.el.closest('.dg-in').classList.toggle('bad',x.r.st==='known'||x.r.st==='unknown'); });
-    const all=res.every(x=>x.r.st==='ok'), anyKnown=res.some(x=>x.r.st==='known');
-    const line=x=>{ const v=String(x.r.x).replace('.',','), u=x.q.s.u, nm=x.q.s.sym;
-      if(x.r.st==='empty') return `<li class="dg-e"><b>${nm}</b> — не введено.</li>`;
-      if(x.r.st==='ok') return `<li class="dg-ok"><b>${nm} = ${v}${u==='°'?'°':' '+u}</b> — верно.</li>`;
-      if(x.r.st==='known') return `<li class="dg-kn"><b>${nm} = ${v}${u==='°'?'°':' '+u}</b>. ${x.r.w.t}</li>`;
-      return `<li class="dg-un"><b>${nm} = ${v}${u==='°'?'°':' '+u}</b>. ${x.r.far<0.12?'Близко, но вне допуска. Проверь точность построения и измерения.':'Ни с верным ответом, ни с типичными ошибками не совпадает. Проверь данные и вычисления, сверься с разбором.'}</li>`; };
-    const say=all?'Всё верно! Так держать.':anyKnown?'Нашла, где ошибка:':'Хм, не сходится:';
-    $q(host,'#gyRes').innerHTML=CATSAY(all?'happy':anyKnown?'oops':'think',`<b>${say}</b><ul class="dg-list">${res.map(line).join('')}</ul>${all?'':`<button class="btn ghost dg-show" id="dgShow">${shown?'Скрыть ответ':'Показать ответ'}</button><div id="dgAns"></div>`}`,all?'dg-win':'');
-    const sh=$q(host,'#dgShow'); if(sh) sh.addEventListener('click',()=>{ shown=!shown; paint(); sh.textContent=shown?'Скрыть ответ':'Показать ответ'; });
-    const paint=()=>{ const a=$q(host,'#dgAns'); if(a) a.innerHTML=shown?`<div class="dg-ans">${B.parts.map(P=>P.Q.map(q=>`<span>${q.s.sym} ≈ <b>${DIAG.fmt(q.v,q.s.u)}${q.s.u==='°'?'°':' '+q.s.u}</b></span>`).join('')).join('')}</div>`:''; }; paint();
-    if(all){ const k='gd'+n+'-'+r.seed, o=ST.get('gymdone',{}); if(!o[k]){ o[k]=1; ST.set('gymdone',o); cnt('diag',1); } }
-    try{ FX.buzz&&FX.buzz(all?'ok':12); }catch(e){} };
-  $q(host,'#dgCheck').addEventListener('click',check);
-}
-
 /* ── вход: #/ng/check/gym[/mode/N-seed] ── */
 function view(v,mode,keyStr){
   if(mode==='build'&&parseKey(keyStr)&&!FLAGS.on('build')){ const k0=parseKey(keyStr); setTimeout(()=>redir(href('var',k0.n,k0.seed)),0); return 'Тренажёр'; }   /* «Построй сам» временно убран */
-  const k=parseKey(keyStr), title={var:'Новый вариант',bug:'Найди ошибку',build:FLAGS.on('build')?'Построй сам':null,diag:FLAGS.on('diag')&&window.DIAG?'Где я ошибся?':null}[mode];
+  const k=parseKey(keyStr), title={var:'Новый вариант',bug:'Найди ошибку',build:FLAGS.on('build')?'Построй сам':null}[mode];
   if(!title||!k){
     v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','check')],['Тренажёр']],next:null,noBottom:true,body:`
      <div class="intro"><h1>Тренажёр</h1><p class="lead">Бесконечная практика: новые варианты задач тетради и охота за ошибками в чертежах.</p></div>
@@ -22001,7 +21781,7 @@ function view(v,mode,keyStr){
   const hash=location.hash;
   GEN.checkers().then(ok=>{ const host=v.querySelector('#gyHost'); if(!host||!host.isConnected||location.hash!==hash&&!location.hash.startsWith(H('ng','check','gym',mode,k.n+'-'))) return;
     if(!ok){ host.innerHTML='<div class="box warn">Проверка не загрузилась — без неё вариант не показываем. Проверь интернет и обнови страницу.</div>'; return; }
-    try{ (mode==='var'?variantView:mode==='build'?buildView:mode==='diag'?diagView:bugView)(host,k.n,k.seed); }catch(e){ console.error(e); host.innerHTML='<div class="box warn">Не получилось построить задание. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; } });
+    try{ (mode==='var'?variantView:mode==='build'?buildView:bugView)(host,k.n,k.seed); }catch(e){ console.error(e); host.innerHTML='<div class="box warn">Не получилось построить задание. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; } });
   return title+' · задача №'+k.n;
 }
 return {view,buildTargets,bugMake,make,lists,frame};
