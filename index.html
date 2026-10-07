@@ -186,6 +186,14 @@ body.inplayer .ckn{display:none}
 .hday-m{font-size:13px;color:var(--mut)}
 .hday-b{display:flex;gap:8px;margin-top:4px}.hday-b .btn.pri{flex:1}
 .hday-sh{min-width:48px;font-size:18px}
+.hday-chips{display:flex;flex-wrap:wrap;gap:6px}.hday-chips a{font:600 12px var(--sans);padding:5px 9px;border-radius:99px;background:var(--surf2);color:var(--ink2);text-decoration:none;border:1px solid var(--line)}.hday-chips a:hover{border-color:#c2410c;color:#c2410c}
+.dy-head,.dy-tabs{padding:0 12px}.dy-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:4px 0 6px}.dy-ht{min-width:0}.dy-cs{position:relative;flex:none}.dy-cs summary{cursor:pointer;list-style:none;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surf);font:600 13px var(--sans)}.dy-cs summary::-webkit-details-marker{display:none}.dy-csb{position:absolute;right:0;top:calc(100% + 6px);z-index:40;width:min(520px,88vw);padding:12px 14px;border-radius:16px;background:var(--surf);border:1px solid var(--line);box-shadow:0 20px 40px -20px rgba(0,0,0,.4);font-size:14px;line-height:1.5}.dy-k{font:700 12px var(--mono);letter-spacing:1px;text-transform:uppercase;color:#c2410c}.dy-head h1{font-size:clamp(20px,4vw,28px);margin:2px 0 0}
+.dy-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 8px;padding-bottom:2px}
+.dy-tabs a{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surf);color:var(--ink2);text-decoration:none;font:600 13px var(--sans);white-space:nowrap}
+.dy-tabs a b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--surf2);font-size:11px}
+.dy-tabs a.on{border-color:#c2410c;color:#9a3412;background:color-mix(in srgb,#c2410c 8%,var(--surf))}.dy-tabs a.on b{background:#c2410c;color:#fff}
+.dy-sum{padding:10px 14px;border-radius:14px;background:var(--surf);border:1px solid var(--line);font-size:14.5px;line-height:1.5;color:var(--ink2)}.dy-sum b{color:var(--ink)}
+.dy-tab{margin:18px 0}.dy-tab h2{font-size:19px}.dy-note{font-size:14px;color:var(--ink2)}
 @media(min-width:760px){.hday{grid-template-columns:1.1fr 1fr}.hday-pic{border-bottom:0;border-right:1px solid var(--line);max-height:none}.hday-pic::after{display:none}.hday-t{justify-content:center;padding:22px 24px}.hday h2{font-size:20px}}
 @media(hover:hover){.hday{transition:transform .25s var(--spring),box-shadow .25s}.hday:hover{transform:translateY(-3px)}}
 .e3-share{margin-left:2px}
@@ -3779,7 +3787,7 @@ function facts(){
     <div class="e3-num"><div><b>α ≈ ${fd(c.al)}°</b><span>наклон к π₁: tg α = |Δz| / |${a.n}′${b.n}′| = ${fd(Math.abs(c.dz))} / ${fd(c.l1)}</span></div>
     <div><b>β ≈ ${fd(c.be)}°</b><span>наклон к π₂: tg β = |Δy| / |${a.n}″${b.n}″| = ${fd(Math.abs(c.dy))} / ${fd(c.l2)}</span></div>
     <div><b>γ ≈ ${fd(c.ga)}°</b><span>наклон к π₃: tg γ = |Δx| / |${a.n}‴${b.n}‴| = ${fd(Math.abs(c.dx))} / ${fd(c.l3)}</span></div></div>
-    <p class="lb-vt">Δx = ${fd(c.dx)}, Δy = ${fd(c.dy)}, Δz = ${fd(c.dz)}. На эпюре красный катет на π₁ равен |Δz|, зелёный на π₂ равен |Δy|; гипотенуза каждого треугольника — натуральная величина |${n}|, а угол у вершины ${a.n}′ (${a.n}″) — α (β). Проекции: |${a.n}′${b.n}′| = ${fd(c.l1)}, |${a.n}″${b.n}″| = ${fd(c.l2)}, |${a.n}‴${b.n}‴| = ${fd(c.l3)}.</p></div>`;
+    </div>`;
   } else h+=`<div class="lb-verdict"><div class="lb-vh"><i></i>Натуральная величина отрезка</div><p class="lb-vt">Нажми на две точки (на эпюре, в 3D или по букве в таблице) и кнопку «Отрезок». Здесь появятся длина |AB| и углы α, β, γ, а на эпюре — прямоугольный треугольник, по которому их находят.</p></div>`;
   S.tris.forEach(t=>{ const Q=t.map(P); if(Q.some(v=>!v)) return; const ab=calc(Q[0],Q[1]),bc=calc(Q[1],Q[2]),ca=calc(Q[2],Q[0]);
     const u=[Q[1].x-Q[0].x,Q[1].y-Q[0].y,Q[1].z-Q[0].z], w=[Q[2].x-Q[0].x,Q[2].y-Q[0].y,Q[2].z-Q[0].z], cr=[u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]], A=Math.hypot(...cr)/2;
@@ -21616,6 +21624,161 @@ return {view};
    Каждая точка чертежа, построенная через проекции F/H, помнит свою точку в пространстве (_3).
    Отсюда без ручного моделирования собирается 3D-сцена шага: точки с проекциями и линиями связи,
    отрезки и их проекции на π₁ и π₂, плоскости проекций. Сцену можно вращать пальцем. */
+/* ═════════ DAYTOPIC: тема дня — преобразование плоскости через горизонталь и фронталь ═════════
+   Один треугольник ABC общего положения, семь способов. Каждый шаг вычисляется: новые проекции — по расстояниям
+   из пространства, поворот — по радиусу вращения; ответ (угол, натуральная величина) сверяется с 3D. */
+window.DAYTOPIC=(function(){
+const {F,H,S,G,v3,pt,seg,ln,conn,sq,ang,arc,poly,axis,txt}=L;
+const A=[66,10,12], B=[40,34,44], C=[12,14,24];
+const nrm=v3.normal(A,B,C), deg=v=>Math.round(v*10)/10;
+const alpha=Math.acos(Math.abs(v3.unit(nrm)[2]))*180/Math.PI, beta=Math.acos(Math.abs(v3.unit(nrm)[1]))*180/Math.PI;
+/* горизонталь h через A: точка 1 ∈ BC с z = zA; фронталь f через A: точка 2 ∈ BC с y = yA */
+const P1=v3.lerp(B,C,(A[2]-B[2])/(C[2]-B[2])), P2=v3.lerp(B,C,(A[1]-B[1])/(C[1]-B[1]));
+const tri=(fn,k,l)=>[poly([fn(A),fn(B),fn(C)],k||'main',true), pt(fn(A),'A'+l,'sw'), pt(fn(B),'B'+l,'n'), pt(fn(C),'C'+l,'se')];
+const GIVEN=()=>[axis(), ...tri(F,'main','″'), ...tri(H,'main','′'), conn(F(A),H(A)), conn(F(B),H(B)), conn(F(C),H(C))];
+const hItems=()=>[seg(F(A),F(P1),'grn','h″',[6,-6,'start']), pt(F(P1),'1″','ne','grn'), conn(F(P1),H(P1)), pt(H(P1),'1′','se','grn'), seg(H(A),H(P1),'grn','h′',[6,12,'start'])];
+const fItems=()=>[seg(H(A),H(P2),'grn','f′',[6,12,'start']), pt(H(P2),'2′','se','grn'), conn(H(P2),F(P2)), pt(F(P2),'2″','ne','grn'), seg(F(A),F(P2),'grn','f″',[6,-6,'start'])];
+/* новая ось: прямая через o с направлением d; проекция точки: основание перпендикуляра + отступ k вдоль нормали n */
+const proj=(p2,o,d,n,k)=>{ const f=G.foot(p2,o,G.add(o,d)); return [f, G.add(f,G.mul(n,k))]; };
+const axSpan=(o,d,ps)=>{ const ts=ps.filter(Boolean).map(q=>(q[0]-o[0])*d[0]+(q[1]-o[1])*d[1]); return [G.add(o,G.mul(d,Math.min(...ts)-24)),G.add(o,G.mul(d,Math.max(...ts)+24))]; };
+const far2=ps=>{ let best=[ps[0],ps[1]],bd=-1; ps.forEach(a=>ps.forEach(b=>{ const d=G.dist(a,b); if(d>bd){ bd=d; best=[a,b]; } })); return best; };
+const unit2=v=>{ const l=Math.hypot(v[0],v[1])||1; return [v[0]/l,v[1]/l]; };
+const P=[];
+/* ── 1. замена π₂ → π₄ ⟂ h ── */
+{ const d=unit2([-(H(P1)[1]-H(A)[1]),H(P1)[0]-H(A)[0]]);           /* ⟂ h′ */
+  const c=[(H(A)[0]+H(B)[0]+H(C)[0])/3,(H(A)[1]+H(B)[1]+H(C)[1])/3], hd=unit2(G.sub(H(P1),H(A)));
+  const o=G.add(c,G.mul(hd,-95)), n=G.mul(hd,-1);                   /* ось ниже-левее треугольника, отступ — в сторону от него */
+  const pr=p=>proj(H(p),o,d,n,p[2]*S); const a=pr(A), b=pr(B), cc=pr(C);
+  const ax=axSpan(o,d,[a[0],b[0],cc[0],G.cross(a[1],cc[1],o,G.add(o,d))]);
+  const ang4=Math.abs(Math.atan2(cc[1][1]-a[1][1],cc[1][0]-a[1][0])-Math.atan2(d[1],d[0]))*180/Math.PI, al=Math.min(ang4%180,180-ang4%180);
+  P.push({id:'zam-h',l:'Замена π₂ → π₄ ⟂ h',short:'Замена плоскостей по горизонтали',
+    q:'Сделать плоскость ABC проецирующей заменой фронтальной плоскости проекций и найти угол α её наклона к π₁.',
+    ans:'Плоскость стала ⟂ π₄: A₄, B₄, C₄ на одной прямой. Угол этой прямой с осью x₁₄ — угол наклона к π₁: α ≈ '+deg(alpha)+'°.',
+    given:GIVEN(), steps:[
+      {t:'Горизонталь h',d:'Через A проводим h″ ∥ x до B″C″ — точка 1″. По линии связи находим 1′ на B′C′. Прямая A′1′ — h′.',why:'Горизонталь — единственная прямая плоскости, которая на π₁ не искажается. Плоскость станет проецирующей, если смотреть точно вдоль h.',add:hItems()},
+      {t:'Новая ось x₁₄ ⟂ h′',d:'Проводим x₁₄ перпендикулярно h′ в свободном месте. Новая плоскость π₄ ⟂ π₁ и ⟂ h — горизонталь проецируется на неё в точку.',why:'Прямая, перпендикулярная плоскости проекций, проецируется в точку; все её точки совпадают — плоскость проецируется в прямую.',add:[seg(ax[0],ax[1],'aux','x₁₄',[6,-6,'start'])]},
+      {t:'Новые линии связи',d:'Из A′, B′, C′ проводим линии связи ⟂ x₁₄.',why:'В новой системе π₁/π₄ линии связи перпендикулярны новой оси.',add:[conn(H(A),a[1]),conn(H(B),b[1]),conn(H(C),cc[1])]},
+      {t:'Высоты переносим с π₂',d:'От x₁₄ откладываем расстояния, равные высотам точек — расстояниям от A″, B″, C″ до оси x: получаем A₄, B₄, C₄.',why:'π₁ не меняли — значит, не меняется и высота z каждой точки над π₁.',add:[pt(a[1],'A₄','e','res'),pt(b[1],'B₄','e','res'),pt(cc[1],'C₄','e','res')]},
+      {t:'Проекция — прямая; угол α',d:'A₄, B₄, C₄ легли на одну прямую — плоскость ⟂ π₄. Угол между этой прямой и x₁₄ равен углу наклона плоскости к π₁: α ≈ '+deg(al)+'°.',why:'Для проецирующей плоскости угол её «следа» с осью равен углу с другой плоскостью проекций.',add:[ln(...far2([a[1],b[1],cc[1]]),'res',null,null,18,18), ang(G.cross(a[1],cc[1],ax[0],ax[1]),ax[1],cc[1],'α','res',30)]}
+    ],check:Math.abs(al-alpha)}); }
+/* ── 2. замена π₁ → π₄ ⟂ f ── */
+{ const d=unit2([-(F(P2)[1]-F(A)[1]),F(P2)[0]-F(A)[0]]);
+  const c=[(F(A)[0]+F(B)[0]+F(C)[0])/3,(F(A)[1]+F(B)[1]+F(C)[1])/3], fd=unit2(G.sub(F(P2),F(A)));
+  const o=G.add(c,G.mul(fd,-95)), n=G.mul(fd,-1);
+  const pr=p=>proj(F(p),o,d,n,p[1]*S); const a=pr(A), b=pr(B), cc=pr(C);
+  const ax=axSpan(o,d,[a[0],b[0],cc[0],G.cross(a[1],cc[1],o,G.add(o,d))]);
+  const an=Math.abs(Math.atan2(cc[1][1]-a[1][1],cc[1][0]-a[1][0])-Math.atan2(d[1],d[0]))*180/Math.PI, be=Math.min(an%180,180-an%180);
+  P.push({id:'zam-f',l:'Замена π₁ → π₄ ⟂ f',short:'Замена плоскостей по фронтали',
+    q:'Сделать плоскость ABC проецирующей заменой горизонтальной плоскости проекций и найти угол β её наклона к π₂.',
+    ans:'A₄, B₄, C₄ на одной прямой; её угол с осью x₂₄ — угол наклона к π₂: β ≈ '+deg(beta)+'°.',
+    given:GIVEN(), steps:[
+      {t:'Фронталь f',d:'Через A′ проводим f′ ∥ x до B′C′ — точка 2′. По линии связи — 2″ на B″C″. Прямая A″2″ — f″.',why:'Фронталь не искажается на π₂ — вдоль неё плоскость можно «увидеть с ребра».',add:fItems()},
+      {t:'Новая ось x₂₄ ⟂ f″',d:'Проводим x₂₄ перпендикулярно f″. Плоскость π₄ ⟂ π₂ и ⟂ f.',why:'Фронталь проецируется на π₄ в точку — вся плоскость в прямую.',add:[seg(ax[0],ax[1],'aux','x₂₄',[6,-6,'start'])]},
+      {t:'Линии связи и глубины',d:'Из A″, B″, C″ — линии связи ⟂ x₂₄; на них от оси откладываем глубины y точек (расстояния A′, B′, C′ до x).',why:'π₂ сохранена — глубина каждой точки (расстояние до π₂) не меняется.',add:[conn(F(A),a[1]),conn(F(B),b[1]),conn(F(C),cc[1]),pt(a[1],'A₄','e','res'),pt(b[1],'B₄','e','res'),pt(cc[1],'C₄','e','res')]},
+      {t:'Угол β',d:'Точки на одной прямой — плоскость ⟂ π₄. Угол прямой с осью x₂₄: β ≈ '+deg(be)+'°.',why:'Угол между проецирующей плоскостью и π₂ виден на π₄ как угол с новой осью.',add:[ln(...far2([a[1],b[1],cc[1]]),'res',null,null,18,18), ang(G.cross(a[1],cc[1],ax[0],ax[1]),ax[1],cc[1],'β','res',30)]}
+    ],check:Math.abs(be-beta)}); }
+/* ── 3. две замены: натуральная величина ── */
+{ const d=unit2([-(H(P1)[1]-H(A)[1]),H(P1)[0]-H(A)[0]]), hd=unit2(G.sub(H(P1),H(A)));
+  const c=[(H(A)[0]+H(B)[0]+H(C)[0])/3,(H(A)[1]+H(B)[1]+H(C)[1])/3], o=G.add(c,G.mul(hd,-95)), n=G.mul(hd,-1);
+  const pr=p=>proj(H(p),o,d,n,p[2]*S)[1]; const a4=pr(A), b4=pr(B), c4=pr(C);
+  const ax=[G.add(o,G.mul(d,-70)),G.add(o,G.mul(d,70))];
+  const d5=unit2(G.sub(c4,a4)); let n5=[-d5[1],d5[0]]; const mid4=G.lerp(a4,c4,.5);
+  if((H(A)[0]-mid4[0])*n5[0]+(H(A)[1]-mid4[1])*n5[1]>0) n5=G.mul(n5,-1);
+  const o5=G.add(mid4,G.mul(n5,32));
+  const dist14=p=>G.dist(H(p),G.foot(H(p),o,G.add(o,d)));
+  const pr5=p=>proj(p===A?a4:p===B?b4:c4,o5,d5,n5,dist14(p))[1]; const a5=pr5(A), b5=pr5(B), c5=pr5(C);
+  const ab=G.dist(a5,b5)/S, ab3=v3.dist(A,B);
+  const ax5=[G.add(o5,G.mul(d5,-80)),G.add(o5,G.mul(d5,80))];
+  P.push({id:'zam-2',l:'Две замены: истинный вид',short:'Натуральная величина двумя заменами',
+    q:'Найти натуральную величину треугольника ABC двумя заменами плоскостей проекций.',
+    ans:'Треугольник A₅B₅C₅ — натуральная величина: |AB| ≈ '+Math.round(ab3)+' мм, |BC| ≈ '+Math.round(v3.dist(B,C))+' мм, |CA| ≈ '+Math.round(v3.dist(C,A))+' мм.',
+    given:GIVEN(), steps:[
+      {t:'Первая замена: по горизонтали',d:'Как в способе 1: h, ось x₁₄ ⟂ h′, высоты с π₂ — плоскость проецируется на π₄ в прямую A₄B₄C₄.',why:'Сначала плоскость надо сделать проецирующей — иначе её не поставить параллельно новой плоскости проекций одной заменой.',add:[...hItems(),seg(ax[0],ax[1],'aux','x₁₄',[6,-6,'start']),conn(H(A),a4),conn(H(B),b4),conn(H(C),c4),pt(a4,'A₄','e','aux'),pt(b4,'B₄','e','aux'),pt(c4,'C₄','e','aux'),ln(...far2([a4,b4,c4]),'aux',null,null,14,14)]},
+      {t:'Вторая ось x₄₅ ∥ A₄C₄',d:'Новую ось проводим параллельно прямой A₄B₄C₄. Плоскость π₅ ∥ треугольнику.',why:'Фигура в плоскости, параллельной плоскости проекций, проецируется без искажения.',add:[seg(ax5[0],ax5[1],'aux','x₄₅',[6,-6,'start'])]},
+      {t:'Расстояния с π₁',d:'Из A₄, B₄, C₄ — линии связи ⟂ x₄₅; на них от оси откладываем расстояния от A′, B′, C′ до оси x₁₄.',why:'Теперь сохраняется π₄, и переносятся расстояния от «старой» оси x₁₄.',add:[conn(a4,a5),conn(b4,b5),conn(c4,c5),pt(a5,'A₅','n','res'),pt(b5,'B₅','n','res'),pt(c5,'C₅','n','res')]},
+      {t:'Истинный вид',d:'Треугольник A₅B₅C₅ — натуральная величина ABC: |AB| ≈ '+Math.round(ab)+' мм.',why:'π₅ ∥ ABC.',add:[poly([a5,b5,c5],'res',true)]}
+    ],check:Math.abs(ab-ab3)}); }
+/* ── 4. вращение вокруг горизонтально-проецирующей оси через C ── */
+{ const c1=H(C), hdir=G.sub(H(P1),H(A)); const cur=Math.atan2(-hdir[1],hdir[0])*180/Math.PI, th=90-cur;   /* h′ → вертикально */
+  const R=p=>G.rot(H(p),c1,th); const a1=R(A), b1=R(B), p1=R(P1);
+  const a2=[a1[0],F(A)[1]], b2=[b1[0],F(B)[1]], c2=F(C), p12=[p1[0],F(P1)[1]];
+  const al=Math.abs(Math.atan2(-(b2[1]-a2[1]),b2[0]-a2[0])*180/Math.PI)%180, alv=Math.min(al,180-al);
+  const r1=G.dist(c1,H(A)), r2=G.dist(c1,H(B));
+  const sa=Math.atan2(-(H(A)[1]-c1[1]),H(A)[0]-c1[0])*180/Math.PI, sb=Math.atan2(-(H(B)[1]-c1[1]),H(B)[0]-c1[0])*180/Math.PI;
+  P.push({id:'rot-i',l:'Вращение вокруг оси i ⟂ π₁',short:'Вращение вокруг проецирующей оси',
+    q:'Вращением вокруг горизонтально-проецирующей оси, проходящей через C, сделать плоскость ABC фронтально-проецирующей и найти α.',
+    ans:'После поворота Ā″, B̄″, C″ на одной прямой — плоскость ⟂ π₂; угол прямой с осью x: α ≈ '+deg(alpha)+'°.',
+    given:GIVEN(), steps:[
+      {t:'Горизонталь h и ось i',d:'Строим h (A1). Ось i ⟂ π₁ берём через C: i′ ≡ C′, i″ — вертикаль через C″.',why:'Точка на оси не движется — построений меньше.',add:[...hItems(), pt(c1,'i′','sw','aux')]},
+      {t:'Условие: h′ ⟂ x',d:'Поворачиваем горизонтальную проекцию вокруг i′ так, чтобы h′ стала перпендикулярна оси x. Угол поворота ≈ '+deg(Math.abs(th))+'°.',why:'Горизонталь станет ⟂ π₂ — значит, плоскость фронтально-проецирующая.',add:[seg(p1,a1,'aux','h̄′',[6,12,'start'])]},
+      {t:'Новые горизонтальные проекции',d:'Каждая точка движется по дуге с центром i′: A′ → Ā′, B′ → B̄′. Форма A′B′C′ не меняется — её просто поворачивают.',why:'При вращении вокруг оси ⟂ π₁ горизонтальная проекция фигуры поворачивается без искажения.',add:[arc(c1,r1,Math.min(sa,sa+th),Math.max(sa,sa+th),'auxd'),arc(c1,r2,Math.min(sb,sb+th),Math.max(sb,sb+th),'auxd'),poly([a1,b1,c1],'aux',true),pt(a1,'Ā′','sw','res'),pt(b1,'B̄′','se','res')]},
+      {t:'Фронтальные: высоты не меняются',d:'Ā″ и B̄″ — на линиях связи из Ā′, B̄′, на прежних высотах (через A″, B″ проводим прямые ∥ x).',why:'Точки движутся в горизонтальных плоскостях: z постоянна.',add:[conn(a1,a2),conn(b1,b2),seg(F(A),a2,'auxd'),seg(F(B),b2,'auxd'),pt(a2,'Ā″','nw','res'),pt(b2,'B̄″','n','res')]},
+      {t:'Плоскость в прямую; угол α',d:'Ā″, B̄″, C″ на одной прямой. Её угол с осью x — α ≈ '+deg(alv)+'°.',why:'Фронтально-проецирующая плоскость: угол её фронтальной проекции с x равен углу наклона к π₁.',add:[ln(...far2([a2,b2,c2]),'res',null,null,16,16)]}
+    ],check:Math.abs(alv-alpha)}); }
+/* ── 5. плоскопараллельное перемещение ── */
+{ const hdir=G.sub(H(P1),H(A)), cur=Math.atan2(-hdir[1],hdir[0])*180/Math.PI, th=90-cur, sh=[150,10];
+  const M=p=>G.add(G.rot(H(p),H(A),th),sh); const a1=M(A), b1=M(B), c1=M(C);
+  const a2=[a1[0],F(A)[1]], b2=[b1[0],F(B)[1]], c2=[c1[0],F(C)[1]];
+  const al=Math.abs(Math.atan2(-(c2[1]-a2[1]),c2[0]-a2[0])*180/Math.PI)%180, alv=Math.min(al,180-al);
+  P.push({id:'move',l:'Плоскопараллельное перемещение',short:'Перемещение без оси',
+    q:'Плоскопараллельным перемещением поставить плоскость ABC во фронтально-проецирующее положение и найти α.',
+    ans:'Ā″B̄″C̄″ — отрезок; угол с осью x: α ≈ '+deg(alpha)+'°.',
+    given:GIVEN(), steps:[
+      {t:'Горизонталь h',d:'Строим h через A.',why:'Положение задаём через h: она должна встать ⟂ π₂.',add:hItems()},
+      {t:'Переносим горизонтальную проекцию',d:'В свободном месте копируем треугольник A′B′C′ (циркулем по трём сторонам), повернув так, чтобы h̄′ ⟂ x.',why:'При перемещении параллельно π₁ проекция на π₁ не меняет формы — меняется только положение.',add:[poly([a1,b1,c1],'aux',true),pt(a1,'Ā′','sw','res'),pt(b1,'B̄′','se','res'),pt(c1,'C̄′','s','res')]},
+      {t:'Высоты сохраняются',d:'Из Ā′, B̄′, C̄′ — линии связи; высоты берём на прямых ∥ x через A″, B″, C″.',why:'Каждая точка движется в своей горизонтальной плоскости.',add:[conn(a1,a2),conn(b1,b2),conn(c1,c2),seg(F(A),a2,'auxd'),seg(F(B),b2,'auxd'),seg(F(C),c2,'auxd'),pt(a2,'Ā″','nw','res'),pt(b2,'B̄″','n','res'),pt(c2,'C̄″','ne','res')]},
+      {t:'Угол α',d:'Ā″B̄″C̄″ — прямая; её угол с x: α ≈ '+deg(alv)+'°.',why:'То же, что вращение, только ось не нужна.',add:[ln(...far2([a2,b2,c2]),'res',null,null,16,16)]}
+    ],check:Math.abs(alv-alpha)}); }
+/* ── 6. вращение вокруг горизонтали: истинный вид ── */
+{ const h1=H(A), h2=H(P1), lift=p=>{ const O=G.foot(H(p),h1,h2), dz=(p[2]-A[2])*S, r=Math.hypot(G.dist(H(p),O),dz), u=unit2(G.sub(H(p),O)); return {O,r,dz,bar:G.add(O,G.mul(u,r))}; };
+  const b=lift(B), c=lift(C), bb2=[b.bar[0],F(A)[1]], cb2=[c.bar[0],F(A)[1]];
+  const ab=G.dist(h1,b.bar)/S;
+  const triB0=G.perp(H(B),b.O,H(B),b.dz);
+  P.push({id:'rot-h',l:'Вращение вокруг горизонтали',short:'Вращение вокруг горизонтали',
+    q:'Найти натуральную величину треугольника ABC вращением вокруг горизонтали.',
+    ans:'Ā′B̄′C̄′ — истинный вид (плоскость повёрнута до положения ∥ π₁): |AB| ≈ '+Math.round(v3.dist(A,B))+' мм, |BC| ≈ '+Math.round(v3.dist(B,C))+' мм, |CA| ≈ '+Math.round(v3.dist(C,A))+' мм.',
+    given:GIVEN(), steps:[
+      {t:'Ось — горизонталь h',d:'Строим h через A. Это ось вращения: точки A и 1 лежат на ней и не двигаются.',why:'Повернём плоскость вокруг h до положения ∥ π₁ — тогда на π₁ увидим истинный вид.',add:hItems()},
+      {t:'Плоскость вращения B',d:'Точка B движется по окружности в плоскости ⟂ h: на π₁ — прямая через B′ ⟂ h′. O′ — центр вращения на h′.',why:'Плоскость вращения ⟂ оси; ось ∥ π₁, значит, плоскость горизонтально-проецирующая.',add:[ln(H(B),b.O,'auxd',null,null,10,60),pt(b.O,'O′','nw','aux'),sq(b.O,h1,H(B),'aux')]},
+      {t:'Радиус вращения R',d:'R — натуральная величина отрезка OB. Строим прямоугольный треугольник: катет O′B′ и катет Δz = z_B − z_A. Гипотенуза — R.',why:'Отрезок общего положения: длина — способом прямоугольного треугольника.',add:[seg(H(B),triB0,'aux'),seg(b.O,triB0,'res','R',[6,0,'start'])]},
+      {t:'B̄′ и C̄′',d:'Откладываем R от O′ по прямой вращения — точка B̄′. Так же находим C̄′ (или проводим B̄′1′ до пересечения с прямой вращения C).',why:'После поворота B лежит на уровне оси — плоскость ∥ π₁.',add:[pt(b.bar,'B̄′','e','res'),pt(c.bar,'C̄′','s','res'),ln(H(C),c.O,'auxd',null,null,10,40),seg(H(P1),c.bar,'auxd')]},
+      {t:'Истинный вид',d:'Треугольник A′B̄′C̄′ — натуральная величина: |AB| ≈ '+Math.round(ab)+' мм.',why:'Плоскость ∥ π₁ проецируется на π₁ без искажения.',add:[poly([h1,b.bar,c.bar],'res',true),seg(F(A),cb2,'auxd'),pt(bb2,'B̄″','n','aux'),pt(cb2,'C̄″','n','aux')]}
+    ],check:Math.abs(ab-v3.dist(A,B))}); }
+/* ── 7. вращение вокруг фронтали ── */
+{ const f1=F(A), f2=F(P2), lift=p=>{ const O=G.foot(F(p),f1,f2), dy=(p[1]-A[1])*S, r=Math.hypot(G.dist(F(p),O),dy), u=unit2(G.sub(F(p),O)); return {O,r,dy,bar:G.add(O,G.mul(u,r))}; };
+  const b=lift(B), c=lift(C); const ab=G.dist(f1,b.bar)/S; const triB0=G.perp(F(B),b.O,F(B),b.dy);
+  P.push({id:'rot-f',l:'Вращение вокруг фронтали',short:'Вращение вокруг фронтали',
+    q:'Найти натуральную величину треугольника ABC вращением вокруг фронтали.',
+    ans:'A″B̄″C̄″ — истинный вид (плоскость ∥ π₂).',
+    given:GIVEN(), steps:[
+      {t:'Ось — фронталь f',d:'Строим f через A. Точки A и 2 лежат на оси.',why:'Повернём плоскость вокруг f до положения ∥ π₂.',add:fItems()},
+      {t:'Плоскость вращения B',d:'На π₂ — прямая через B″ ⟂ f″; центр вращения O″ на f″.',why:'Ось ∥ π₂ — плоскость вращения фронтально-проецирующая.',add:[ln(F(B),b.O,'auxd',null,null,10,60),pt(b.O,'O″','nw','aux'),sq(b.O,f1,F(B),'aux')]},
+      {t:'Радиус R',d:'Катеты O″B″ и Δy = y_B − y_A; гипотенуза — R.',why:'Натуральная величина OB.',add:[seg(F(B),triB0,'aux'),seg(b.O,triB0,'res','R',[6,0,'start'])]},
+      {t:'B̄″, C̄″ и истинный вид',d:'Откладываем R — B̄″; так же C̄″. Треугольник A″B̄″C̄″ — натуральная величина: |AB| ≈ '+Math.round(ab)+' мм.',why:'Плоскость ∥ π₂.',add:[pt(b.bar,'B̄″','e','res'),pt(c.bar,'C̄″','n','res'),ln(F(C),c.O,'auxd',null,null,10,40),poly([f1,b.bar,c.bar],'res',true)]}
+    ],check:Math.abs(ab-v3.dist(A,B))}); }
+return {parts:P,alpha,beta};
+})();
+
+/* страница темы дня: #/ng/day[/k] */
+function viewDay(v,r){
+  const T=DAYTOPIC, k=Math.max(0,Math.min(T.parts.length-1,parseInt(r.item,10)||0)), pt=T.parts[k];
+  const t={n:'Тема',q:pt.q,ans:pt.ans,given:pt.given,steps:pt.steps};
+  v.innerHTML=`<div class="wrap page taskwrap"><div class="ptop">${crumbHTML([['Начертательная геометрия',H('ng','path')],['Тема дня']])}</div>
+   <div class="dy-head"><div class="dy-ht"><span class="dy-k">Тема дня · способ ${k+1} из ${T.parts.length}</span><h1>Преобразование плоскости через h и f</h1></div>
+    <details class="dy-cs"><summary>Шпаргалка</summary><div class="dy-csb"><p>Ключ к любому способу — горизонталь h и фронталь f: смотришь вдоль h — плоскость видна прямой и угол α; вдоль f — угол β.</p>
+     <table class="igx-t"><tr><th>Способ</th><th>Через что</th><th>Что даёт</th></tr>
+     <tr><td>Замена π₂ → π₄</td><td>x₁₄ ⟂ h′</td><td>проецирующая, α</td></tr><tr><td>Замена π₁ → π₄</td><td>x₂₄ ⟂ f″</td><td>проецирующая, β</td></tr>
+     <tr><td>Две замены</td><td>потом x₄₅ ∥ прямой-проекции</td><td>натуральная величина</td></tr><tr><td>Вращение вокруг i ⟂ π₁</td><td>h′ поворачиваем ⟂ x</td><td>проецирующая, α</td></tr>
+     <tr><td>Перемещение</td><td>копия проекции, h′ ⟂ x</td><td>то же без оси</td></tr><tr><td>Вращение вокруг h</td><td>радиус — прямоугольным треугольником</td><td>натуральная величина на π₁</td></tr>
+     <tr><td>Вращение вокруг f</td><td>то же на π₂</td><td>натуральная величина на π₂</td></tr></table>
+     <p>Задачи тетради: <a href="${H('ng','tasks',51)}">№ 51–57</a> — замена, <a href="${H('ng','tasks',58)}">№ 58–67</a> — вращение.</p></div></details></div>
+    <div class="dy-tabs" role="tablist">${T.parts.map((p,i)=>`<a role="tab" href="${H('ng','day',i)}" class="${i===k?'on':''}" aria-selected="${i===k}"><b>${i+1}</b>${p.short}</a>`).join('')}</div>
+   <div id="plMount"></div></div>`;
+  document.body.classList.add('inplayer');
+  PLR=PLAYER.mount(v.querySelector('#plMount'),t,{backHref:H('ng','path'),backLabel:'К курсу',afterText:k<T.parts.length-1?'Дальше: способ '+(k+2):'К шпаргалке',posKey:'#/day/'+k,
+    onDone:()=>nav(k<T.parts.length-1?H('ng','day',k+1):H('ng','day',0))});
+  NEXT=null; return 'Тема дня: '+pt.l;
+}
 window.TASK3D=(function(){
 const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'');
 const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -22705,23 +22868,19 @@ document.addEventListener('click',e=>{ const b=e.target.closest('[data-sharesite
 let DAYC=null;
 function taskOfDay(){
   const d=new Date(), k=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
-  if(DAYC&&DAYC.k===k) return DAYC;
-  /* только чертежи «в ширину» и с несколькими шагами: в карточке они читаются и красиво строятся */
-  const pool=[]; WB3.tasks.forEach(t=>{ if(typeof t.n!=='number'||!t.rk1||!t.given||t.given.length<=6||(t.parts&&t.parts.length>1)) return;
-    try{ const P=PLAYER.partsOf(t)[0], n=(P.steps||[]).length; if(n<3||P._fig) return;
-      const svg=DRAW.svg(PLAYER.scene(P,n)), m=/viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg); if(m&&+m[1]>=+m[2]*1.1) pool.push({t,P,n}); }catch(e){} });
-  if(!pool.length) return null;
-  const pick=pool[(k*37)%pool.length]; DAYC={k,t:pick.t,P:pick.P,n:pick.n}; return DAYC; }
+  if(DAYC&&DAYC.k===k) return DAYC; if(!window.DAYTOPIC) return null;
+  const i=k%DAYTOPIC.parts.length, p=DAYTOPIC.parts[i]; DAYC={k,i,t:{n:'день'},P:p,n:p.steps.length}; return DAYC; }
 function dayFrame(D,s){ return DRAW.svg(PLAYER.scene(D.P,s)); }
 function dayCardHTML(){
   const D=taskOfDay(); if(!D) return '';
-  const t=D.t, n=D.n, st=taskState(t.n);
+  const T=DAYTOPIC;
   return `<section class="hday" aria-labelledby="hdayH" data-day>
-    <a class="hday-pic" href="${H('ng','tasks',t.n)}" aria-label="Открыть разбор задачи ${t.n}">${dayFrame(D,0)}<span class="hday-cap" aria-hidden="true">Дано</span><span class="hday-live" aria-hidden="true"><i></i>строится по шагам</span></a>
-    <div class="hday-t"><span class="hday-k">Задача дня · №${t.n}</span>
-      <h2 id="hdayH">${short(t.q,120)}</h2>
-      <div class="hday-m">${n} ${plural(n,'шаг','шага','шагов')} построения · ${st===2?'решено сам ✓':st===1?'разобрано ✓':'реши до завтра'}</div>
-      <div class="hday-b"><a class="btn pri" href="${H('ng','tasks',t.n)}">Разобрать →</a><button type="button" class="btn ghost hday-sh" data-sharetask="${t.n}" aria-label="Поделиться задачей дня">↗</button></div></div>
+    <a class="hday-pic" href="${H('ng','day',D.i)}" aria-label="Открыть тему дня">${dayFrame(D,0)}<span class="hday-cap" aria-hidden="true">Дано</span><span class="hday-live" aria-hidden="true"><i></i>строится по шагам</span></a>
+    <div class="hday-t"><span class="hday-k">Тема дня</span>
+      <h2 id="hdayH">Преобразование плоскости через горизонталь и фронталь</h2>
+      <div class="hday-m">${T.parts.length} способов на одном треугольнике: замена плоскостей, вращение, перемещение</div>
+      <div class="hday-chips">${T.parts.map((p,i)=>`<a href="${H('ng','day',i)}">${p.short}</a>`).join('')}</div>
+      <div class="hday-b"><a class="btn pri" href="${H('ng','day',D.i)}">Разобрать →</a></div></div>
   </section>`; }
 /* «живая» демонстрация: чертёж задачи дня строится сам, пока карточка на экране */
 function dayPlay(){
@@ -22800,6 +22959,7 @@ function viewHome(v){
 /* ═════════ НАЧЕРТАТЕЛЬНАЯ ГЕОМЕТРИЯ ═════════ */
 let LID=null, CURT=null, PLR=null;
 function viewNG(v,r){
+  if(r.tab==='day') return viewDay(v,r);
   const tab=['path','tasks','hw','check','cheat'].includes(r.tab)?r.tab:null;
   if(!tab) return viewNG(v,{s:'ng',tab:'tasks'});
   if(tab==='hw') return hwView(v,r);

@@ -83,7 +83,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     const tasks=await page.evaluate(()=>WB3.tasks.map(t=>t.n));
     for(const t of tasks){ const before=errs.length; await page.evaluate(n=>{ location.hash='#/ng/path/t'+n; },t); await page.waitForTimeout(80);
       for(let k=0;k<40;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(60); }
-      const done=await page.$('.pl-done');
+      let done=await page.$('.pl-done'); if(!done){ for(let k=0;k<40;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(200); } done=await page.waitForSelector('.pl-done',{timeout:2000}).catch(()=>null); }   /* медленный кадр — повторяем не спеша */
       if(errs.length>before) bad.push({name:'Задача №'+t,rule:'ошибка JS в разборе',msg:errs.slice(before).join(' / ').slice(0,200)});
       if(!done) bad.push({name:'Задача №'+t,rule:'разбор не доходит до ответа',msg:'нет кнопки «Готово»'}); }
     info.push('Задач пройдено до ответа: '+tasks.length);
