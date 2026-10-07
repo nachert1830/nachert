@@ -2348,7 +2348,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-sh-tip{display:grid;gap:4px;align-content:center;padding:12px;border-radius:12px;background:#f1f5ff;font-size:13.5px;line-height:1.5;color:#334155}
 .igx-task{display:grid;gap:12px;margin:0 0 14px;padding:14px;border-radius:20px;background:var(--surf);border:1px solid var(--line)}
 .igx-k{font:700 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#7c3aed}.igx-task-t p{margin:4px 0 0;font-size:15.5px;line-height:1.55;color:var(--ink)}
-.igx-given .igx-dwg svg{min-width:0;max-width:520px;margin:0 auto}.igx-given-l{padding:30px;text-align:center;color:var(--mut);font-size:14px}
+.igx-given .igx-dwg svg{min-width:0;max-width:520px;margin:0 auto}.igx-orig img{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}.igx-given-l{padding:30px;text-align:center;color:var(--mut);font-size:14px}
 @media(min-width:860px){.igx-task{grid-template-columns:1fr 1.1fr;align-items:start}}
 .igx-reveal{display:flex;justify-content:center;margin:6px 0 18px}.igx-reveal[hidden]{display:none}
 .igx-sol-btn{display:grid;gap:2px;justify-items:center;min-width:min(420px,100%);padding:14px 26px;border:0;border-radius:18px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7c3aed,#4f46e5 55%,#2563eb);box-shadow:0 16px 34px -16px rgba(99,62,237,.9)}
@@ -23818,6 +23818,9 @@ const L=[
  {n:8,fig:68,page:41,title:'Пятигранная призма',q:'Достроить вид сверху, построить вид слева, выполнить фронтальный, горизонтальный и профильный разрезы. K — сквозное отверстие.',
   why:'Правильная пятигранная призма стоит ребром к нам, по её оси — сквозное цилиндрическое отверстие. Штриховые линии на виде спереди — задние рёбра призмы и образующие отверстия. Прямоугольное отверстие K идёт насквозь: его грани режут призму по прямым, а цилиндрическое отверстие — по образующим (вертикальные грани) и дугам окружностей (горизонтальные).',
   tree:S(P.ngon(5,97.08,0,134,{a:-90}), P.cyl(39.5,-1,135), thru(42.6,41.7,101.4)), box:[[-57.1,-60,0],[57.1,48.6,134]]},
+ {n:9,fig:69,page:42,title:'Полый шар',q:'Построить вид сверху и вид слева, выполнить фронтальный, горизонтальный и профильный разрезы. K — сквозное отверстие.',
+  why:'Шар с внутренней сферической полостью (штриховая окружность — её контур, он невидим). Призматическое отверстие K проходит насквозь через обе стенки; цилиндрическое отверстие Ø идёт вдоль оси x из полости наружу. Любая плоскость режет обе сферы по окружностям: на горизонтальном и профильном разрезах — два концентрических кольца, а грани K и цилиндр отверстия вырезают из них прямые и дуги.',
+  tree:S({t:'sph',r:60}, {t:'sph',r:42.5}, P.box(24,400,-16.6,22.7,{x:-12}), P.hcyl('x',16,[0,0],0,70)), box:[[-60,-60,-60],[60,60,60]]},
  {n:10,fig:70,page:43,title:'Конус с призмой',q:'Достроить вид сверху, построить вид слева, выполнить разрезы. K — сквозное отверстие.',
   why:'Усечённый конус, на его верхнем срезе — четырёхгранная призма, повёрнутая ребром к нам (рёбра лежат на окружности среза). Нижние боковые грани отверстия K проходят через вершину конуса и поэтому режут его по прямым — образующим (тонкие линии на рисунке тетради). Нижняя грань режет конус по окружности, вертикальные грани верхней части — призму по прямым.',
   tree:S(U(P.I(P.cone(60,0.3,0,127.6),P.hp([0,0,1],[0,0,49.4])), P.box(52,52,45,129.4,{a:45})),
@@ -23831,15 +23834,6 @@ return L;
 window.IGUI=(function(){
 const N=30, $=(r,s)=>r.querySelector(s);
 const hasGL=(()=>{ try{ const c=document.createElement('canvas'); return !!(c.getContext('webgl')); }catch(e){ return false; } })();
-/* ── миниатюры: один скрытый холст рисует все 30 деталей по очереди ── */
-const THUMB={}, waiters=[]; let thumbV=null, thumbBusy=false;
-function thumbs(cb){ if(cb) waiters.push(cb); if(thumbBusy||!hasGL) return; thumbBusy=true;
-  const c=document.createElement('canvas'); c.style.cssText='position:fixed;left:-9999px;top:0;width:260px;height:260px'; document.body.appendChild(c);
-  thumbV=IG3.viewer(c,{keep:1}); if(!thumbV){ thumbBusy=false; return; }
-  let i=1; const step=()=>{ if(i>N){ c.remove(); thumbV=null; thumbBusy=false; return; }
-    if(!THUMB[i]){ try{ const d=IG3.drawing(IG_VARS[i],'front0',300); THUMB[i]=d?d.url:''; }catch(e){ THUMB[i]=''; } }   /* на карточке — задание (главный вид), а не решение */
-    waiters.forEach(f=>f(i,THUMB[i])); i++; setTimeout(step,16); };
-  step(); }
 /* ── просмотрщик с жестами ── */
 function mountViewer(host,n,opt){
   opt=opt||{}; const cv=document.createElement('canvas'); cv.className='ig3-cv'; cv.setAttribute('role','img'); cv.setAttribute('aria-label','Деталь в 3D');
@@ -23971,7 +23965,7 @@ function home(v){
 }
 function catalog(v){
   v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2']],next:null,noBottom:true,cls:'igx',body:`
-   <div class="intro"><h1>ДЗ 2 · Построение изображений</h1><p class="lead">Найди свой вариант: на карточке — главный вид из задания. Внутри — условие, а по кнопке — решение: деталь в 3D, разрезы и готовый чертёж.</p></div>
+   <div class="intro"><h1>ДЗ 2 · Построение изображений</h1><p class="lead">Найди свой вариант: на карточке — чертёж из задания. Внутри — условие, а по кнопке — решение: деталь в 3D, разрезы и готовый чертёж.</p></div>
    ${myVar()?`<a class="igx-mine" href="${H('ig','hw2',myVar())}"><span>★ Мой вариант</span><b>${myVar()}</b><i>Открыть →</i></a>`:''}
    <div class="igx-find"><label for="igNum">Мой вариант</label><input id="igNum" inputmode="numeric" maxlength="2" placeholder="1–30" autocomplete="off"><button class="btn pri" id="igGo">Открыть</button></div>
    <details class="igx-need"${window.innerWidth>700?' open':''}><summary>Что нужно построить на листе А3</summary>
@@ -23980,10 +23974,9 @@ function catalog(v){
      <li><b>Вид сверху</b> — по двум данным изображениям.</li>
      <li><b>Сечение A–A</b> — наклонной плоскостью по стрелкам: строится в натуральную величину, штриховка под 45°.</li>
      <li>Невидимый контур на половинах-видах не показывают, если он виден в разрезе. Оформление — по ЕСКД: линии, штриховка, обозначения.</li></ol></details>
-   <div class="igx-grid" id="igGrid">${Array.from({length:N},(_,i)=>`<a class="igx-v" href="${H('ig','hw2',i+1)}" data-n="${i+1}"><span class="igx-img"><img alt="" data-n="${i+1}"${THUMB[i+1]?` src="${THUMB[i+1]}"`:''}></span><b>Вариант ${i+1}</b></a>`).join('')}</div>`});
+   <div class="igx-grid" id="igGrid">${Array.from({length:N},(_,i)=>`<a class="igx-v" href="${H('ig','hw2',i+1)}" data-n="${i+1}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="ig/v${String(i+1).padStart(2,'0')}.jpg"></span><b>Вариант ${i+1}</b></a>`).join('')}</div>`});
   const go=()=>{ const n=parseInt($(v,'#igNum').value,10); if(n>=1&&n<=N) nav(H('ig','hw2',n)); else { $(v,'#igNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
   $(v,'#igGo').addEventListener('click',go); $(v,'#igNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
-  if(hasGL) thumbs((i,src)=>{ const im=v.querySelector('img[data-n="'+i+'"]'); if(im&&src&&!im.src) im.src=src; });
   NEXT=null; return 'ДЗ 2 · '+SUBJ.ig.name;
 }
 const MODES=[['part','Деталь',{cut:0}],['quarter','Вырез ¼',{cut:1}],['front','Фронтальный разрез',{cut:2}],['side','Профильный разрез',{cut:3}]];
@@ -23993,6 +23986,7 @@ function variant(v,n){
   const mine=myVar()===n;
   return partPage(v,{model:IG_VARS[n],star:`<button class="igx-star${mine?' on':''}" id="igStar" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Это мой вариант'}</button>`,crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2',H('ig','hw2')],['Вариант '+n]],title:'Вариант '+n,
     prev:H('ig','hw2',n>1?n-1:N),next:H('ig','hw2',n<N?n+1:1),docTitle:'Вариант '+n+' · ДЗ 2 · '+SUBJ.ig.name,
+    img:'ig/v'+String(n).padStart(2,'0')+'.jpg',
     q:'По двум данным изображениям — главному виду и виду сверху — построить вид слева. На главном виде и виде слева соединить половину вида с половиной разреза. Построить сечение A–A наклонной плоскостью.',fig:'ДЗ 2, вариант '+n,
     note:'Модель построена по условию варианта. Виды и разрезы сайт строит прямо из модели — сверяй с ними свой чертёж.'});
 }
@@ -24001,7 +23995,7 @@ function partPage(v,o){
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
    <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}<div class="igx-nav"><a class="btn" href="${o.prev}" aria-label="Предыдущее">←</a><a class="btn" href="${o.next}" aria-label="Следующее">→</a></div></div>
    <section class="igx-task"><div class="igx-task-t"><span class="igx-k">Задание${o.fig?' · '+o.fig:''}</span><p>${o.q||''}</p></div>
-    <div class="igx-given" id="igGiven"><div class="igx-given-l">Строю данные изображения…</div></div></section>
+    <div class="igx-given" id="igGiven">${o.img?`<div class="igx-dwg igx-orig"><img src="${o.img}" alt="Чертёж задания: главный вид и вид сверху" decoding="async"></div>`:'<div class="igx-given-l">Строю данные изображения…</div>'}</div></section>
    <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать решение</span><small>3D-модель, разрезы и готовый чертёж</small></button></div>
    <div id="igSol" hidden>
    <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}
@@ -24016,7 +24010,7 @@ function partPage(v,o){
   const st0=$(v,'#igStar'); if(st0) st0.addEventListener('click',()=>{ const on=!st0.classList.contains('on'); try{ if(on) localStorage.setItem('nch2_igvar',String(parseInt(o.title.replace(/\D/g,''),10))); else localStorage.removeItem('nch2_igvar'); }catch(e){}
     st0.classList.toggle('on',on); st0.setAttribute('aria-pressed',on); st0.textContent=on?'★ Мой вариант':'☆ Это мой вариант'; try{ FX.buzz&&FX.buzz(6); FX.note&&FX.note(on?'Запомнил: открою его сразу':'Вариант откреплён'); }catch(e){} });
   /* данные изображения задания — строятся из модели (главный вид и вид сверху, без разрезов) */
-  setTimeout(()=>{ const g=$(v,'#igGiven'); if(!g||!g.isConnected) return; let svg=''; try{ svg=hasGL?sheetSVG(n,'','','','given'):''; }catch(e){ console.error(e); }
+  if(!o.img) setTimeout(()=>{ const g=$(v,'#igGiven'); if(!g||!g.isConnected) return; let svg=''; try{ svg=hasGL?sheetSVG(n,'','','','given'):''; }catch(e){ console.error(e); }
     g.innerHTML=svg?`<div class="igx-dwg">${svg}</div>`:'<div class="igx-given-l">Изображения не построились на этом устройстве.</div>'; },30);
   const KEY='igsol:'+location.hash, show=()=>{ $(v,'#igSol').hidden=false; $(v,'.igx-reveal').hidden=true; try{ sessionStorage.setItem(KEY,'1'); }catch(e){} startSol(); };
   $(v,'#igShow').addEventListener('click',()=>{ show(); setTimeout(()=>{ const st=$(v,'#igStage'); st&&st.scrollIntoView({behavior:'smooth',block:'start'}); },60); });
@@ -24128,7 +24122,7 @@ function view(v,r){
   if(r.tab==='theory') return theory(v,r.item);
   return home(v);
 }
-return {view,thumbs,mountViewer,sheetImages};
+return {view,mountViewer,sheetImages};
 })();
 
 function viewIG(v,r){
