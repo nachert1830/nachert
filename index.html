@@ -2338,7 +2338,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-sh-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin-bottom:10px}
 .igx-sh-sw{display:flex;padding:3px;border-radius:12px;background:#eef2f8;gap:2px}.igx-sh-sw button{border:0;background:none;padding:7px 12px;border-radius:9px;font:600 13px var(--sans);color:#475569;cursor:pointer}.igx-sh-sw button.on{background:#fff;color:#111;box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}
 .igx-dwg{overflow:auto;border-radius:10px;background:#fff}.igx-dwg svg{display:block;width:100%;min-width:640px;height:auto}
-.igs-dim{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
+.igs-dim{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-let{font:italic 30px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
 .igx-sh-cap{font-size:13px;color:#475569;margin:8px 2px 0;line-height:1.5}.igx-sh-h b{font-size:17px}.igx-sh-h span{font-size:13px;color:#64748b}
 .igx-sh-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .igx-sh-f{margin:0;border:1px solid #cbd5e1;border-radius:12px;background:#fff;overflow:hidden;opacity:0;transform:translateY(24px) scale(.94);transition:opacity .5s var(--d),transform .6s cubic-bezier(.2,.8,.2,1.1) var(--d)}
@@ -23575,6 +23575,7 @@ float cutT(vec3 p){
   if(uCut==3) return p.x-uOff;                 /* профильный разрез: убрано всё левее плоскости x = uOff */
   if(uCut==5) return max(p.x-uOff,p.y);        /* вид слева: половина вида + половина профильного разреза */
   if(uCut==4) return -(dot(uPl.xyz,p)-uPl.w);   /* сечение A–A: убрано то, что перед плоскостью */
+  if(uCut==6) return uOff-p.z;                 /* горизонтальный разрез: убрано всё выше плоскости z = uOff */
   return 1e9; }
 float map(vec3 p){ float d=part(p); return uCut==0?d:max(d,-cutT(p)); }
 vec3 nrm(vec3 p,float e){ vec2 k=vec2(1.,-1.); return normalize(k.xyy*map(p+k.xyy*e)+k.yyx*map(p+k.yyx*e)+k.yxy*map(p+k.yxy*e)+k.xxx*map(p+k.xxx*e)); }
@@ -23669,11 +23670,11 @@ float edgeAt(sampler2D t,vec2 p,out vec2 gdir){ vec4 c=at(t,p); float e=0.; gdir
   return e; }
 void main(){ vec2 p=gl_FragCoord.xy; vec2 g1,g2; vec4 c=at(uA,p); float e=edgeAt(uA,p,g1);
   vec3 col=vec3(1.);
-  if(c.a>.51){ float s=uHs; float w=abs(fract((p.x+p.y)/s)-.5)*s; col=mix(vec3(.12),col,smoothstep(.55,1.35,w)); }
+  if(c.a>.51){ float s=uHs; float w=abs(fract((p.x-p.y)/s)-.5)*s; col=mix(vec3(.12),col,smoothstep(.55,1.35,w)); }
   if(uHasB>.5&&p.x<uHalf-1.5&&e<.5){ float e2=edgeAt(uB,p,g2); if(e2>.5){ vec2 dir=normalize(vec2(-g2.y,g2.x)+1e-5); float u=dot(p,dir)/(uW*7.); if(fract(u)<.62) col=vec3(.12); } }
   if(e>.5) col=vec3(.07);
   gl_FragColor=vec4(col,1.); }`;
-function drawing(model,view,size){
+function drawing(model,view,size,off){
   const W=size||1000, cv=document.createElement('canvas'); cv.width=W; cv.height=W;
   const gl=cv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true}); if(!gl) return null;
   const sh=(t,src)=>{ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
@@ -23682,7 +23683,7 @@ function drawing(model,view,size){
   const P1=prog(FS(G(model.tree))), P2=prog(ES);
   const bind=pr=>{ gl.useProgram(pr); const l=gl.getAttribLocation(pr,'a'); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); };
   const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2;
-  const V={front:{yaw:0,pit:1e-4,cut:1,hid:2},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0}}[view];
+  const V={front:{yaw:0,pit:1e-4,cut:1,hid:2},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}}[view];
   const cy=Math.cos(V.yaw), sy=Math.sin(V.yaw), cp=Math.cos(V.pit), sp=Math.sin(V.pit), F=[sy*cp,cy*cp,-sp], Rr=norm(cross(F,[0,0,1])), Up=cross(Rr,F), eye=[C[0]-F[0]*400,C[1]-F[1]*400,C[2]-F[2]*400], scale=R*1.62;
   const pass=(cut,off)=>{ const tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,W,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
     [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.NEAREST)); [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));
@@ -23691,7 +23692,7 @@ function drawing(model,view,size){
     gl.uniform2f(u('uRes'),W,W); gl.uniform3fv(u('uEye'),eye); gl.uniform3fv(u('uFwd'),F); gl.uniform3fv(u('uRight'),Rr); gl.uniform3fv(u('uUp'),Up); gl.uniform1f(u('uScale'),scale);
     gl.uniform3fv(u('uBmin'),[b[0][0]-3,b[0][1]-3,b[0][2]-3]); gl.uniform3fv(u('uBmax'),[b[1][0]+3,b[1][1]+3,b[1][2]+3]); gl.uniform1i(u('uCut'),cut); gl.uniform1f(u('uOff'),off||0); gl.uniform4fv(u('uPl'),[0,0,1,0]); gl.uniform3fv(u('uBg1'),[1,1,1]); gl.uniform3fv(u('uBg2'),[1,1,1]); gl.uniform1f(u('uDark'),0); gl.uniform1f(u('uHatch'),3); gl.uniform1f(u('uFlat'),0); gl.uniform1f(u('uEnc'),1);
     gl.drawArrays(gl.TRIANGLES,0,3); gl.bindFramebuffer(gl.FRAMEBUFFER,null); return tex; };
-  const tA=pass(V.cut,0), tB=V.hid?pass(V.hid,0):tA;
+  const tA=pass(V.cut,off||0), tB=V.hid?pass(V.hid,0):tA;
   bind(P2); const u=k=>gl.getUniformLocation(P2,k); gl.viewport(0,0,W,W);
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tA); gl.uniform1i(u('uA'),0);
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,tB); gl.uniform1i(u('uB'),1);
@@ -23732,7 +23733,7 @@ const V={};
 /* 2 */ V[2]={tree:S(U(I(flange(120,20),box(130,80,-1,21)),cone(35,20,20,120)), cylX(30,70,120), sq45(30,-E,70.01), ...holes(2,10,90,0,20,-30,60), ...holes(2,10,90,0,20,150,60)), box:[[-60,-40,0],[60,40,120]]};
 /* 3 */ (()=>{ const yf=Math.sqrt(40*40-25*25), A=[0,0,65];
   /* пирамидальная выемка: основание 50×70 в плоскости y = ∓20, вершина в центре детали (0, 0, 65) */
-  const wedge=s=>I(P.hp([.625,-s*.781,0],A),P.hp([-.625,-s*.781,0],A),P.hp([0,-s*.868,-.496],A),P.hp([0,-s*.868,.496],A),P.hp([0,s,0],[0,-s*20,0]));
+  const wedge=s=>I(P.hp([.625,-s*.781,0],A),P.hp([-.625,-s*.781,0],A),P.hp([0,-s*.868,-.496],A),P.hp([0,-s*.868,.496],A),P.hp([0,s,0],[0,s*20,0]));
   V[3]={tree:S(U(flange(120,20),cyl(40,20,120)),
     box(60,40,30,100,{y:-(yf+20)}), box(60,40,30,100,{y:yf+20}),
     box(50,yf-20+2*E,30,100,{y:-(20+yf)/2}), box(50,yf-20+2*E,30,100,{y:(20+yf)/2}),
@@ -23770,6 +23771,18 @@ const V={};
 /* 29 */ (()=>{ const yf=Math.sqrt(55*55-45*45);   /* лыски: хорда 90 на Ø110 */ V[29]={tree:S(cyl(55,0,120), box(120,40,20,70,{y:-(yf+20)}), box(120,40,20,70,{y:yf+20}), sq45P(50,70,90,120), cylX(50,69.9,90.1), cylX(30,0,20.01), ...holes(4,10,90,105,120,45)), box:[[-55,-55,0],[55,55,120]]}; })();
 /* 30 */ V[30]={tree:S(U(flange(110,20),box(65,15,20,120,{y:32.5}),box(65,60,100,120,{y:10})),
     cyl(20,99,121), box(40,30,99,121,{y:-15}), P.hcyl('y',25,[0,60],20,45), ...holes(2,12,90,0,20,225,90)), box:[[-55,-55,0],[55,55,120]]};
+/* наклонная секущая плоскость A–A по заданию: след на главном виде — внутренние концы штрихов [x, z], мм.
+   Смотрим по стрелкам — перпендикулярно следу, сверху-слева; сечение строится в натуральную величину.
+   Положение следа выверено так, чтобы отверстия фланца попадали в сечение так же, как в эталонном решении. */
+const SEC={1:[[-60.2,-19.4],[72.4,100.7]],2:[[-69.4,-6.6],[37.5,83.9]],3:[[-49.5,-13.1],[76.8,104.7]],4:[[-62.6,19.7],[53.1,103.7]],5:[[-60.5,-15.9],[48.2,104.6]],
+  6:[[-61.9,-8.9],[38.7,109.3]],7:[[-68.5,-8.2],[59.6,99.7]],8:[[-45.3,-21.9],[76.8,107.8]],9:[[-65.9,-4.6],[80.1,79.9]],10:[[-58.3,-15.2],[54.7,82]],
+  11:[[-67.1,-6.2],[51.5,106.7]],12:[[-65.8,7.4],[67.6,105.4]],13:[[-54.9,-5.1],[79.1,102.3]],14:[[-67.5,50.3],[47.6,120.1]],15:[[-55,-5.5],[56.9,111.4]],
+  16:[[-59.8,-4.7],[31.7,101]],17:[[-66.4,44.1],[63.6,136.8]],18:[[-71.2,59.6],[60.3,127.4]],19:[[-59.1,-5.5],[55,129.1]],20:[[-54.8,-10],[44.9,83.9]],
+  21:[[-49.8,-5.4],[55.4,109.7]],22:[[-63.5,-12.8],[90,77.4]],23:[[-63,-9.9],[38.8,85.7]],24:[[-66.3,-9.1],[92.7,107.1]],25:[[-67.8,-15],[83.3,114.9]],
+  26:[[-67.6,-15.2],[90.1,115.9]],27:[[-62.7,-10.6],[41,60.1]],28:[[-60.3,-21],[47.8,88.3]],29:[[-63.7,62.8],[63.5,122.8]],30:[[-59.6,-10],[54.4,65.2]]};
+for(const n in SEC) V[n].sec={L:'А',p:SEC[n]};
+/* в варианте 3 буква А занята горизонтальным разрезом через окно (вместо вида сверху), наклонное сечение — Б–Б */
+V[3].sec.L='Б'; V[3].hz={L:'А',z:65};
 return V;
 })();
 
@@ -23797,7 +23810,18 @@ const L=[
   tree:null, box:[[-71,-71,-71],[71,71,71]]},
  {n:6,fig:66,page:39,title:'Цилиндр с окном',q:'Построить вид слева, выполнить горизонтальный, фронтальный и профильный разрезы (материал детали — сталь).',
   why:'Сквозное прямоугольное окно, над ним — вертикальное цилиндрическое отверстие, под ним — шестигранное. Разрез A–A проходит через окно: на нём видна шестигранная полость и круглое отверстие.',
-  tree:S(P.cyl(58,0,136), thru(76,48,120), P.cyl(11,119,137), P.ngon(6,36,-1,49,{a:-30})), box:[[-58,-58,0],[58,58,136]]}
+  tree:S(P.cyl(58,0,136), thru(76,48,120), P.cyl(11,119,137), P.ngon(6,36,-1,49,{a:-30})), box:[[-58,-58,0],[58,58,136]]},
+ {n:7,fig:67,page:40,title:'Шар с призмой',q:'Достроить вид сверху, построить вид слева, выполнить разрезы. K — сквозное отверстие.',
+  why:'Шар срезан горизонтальной плоскостью, на срезе стоит четырёхгранная призма, повёрнутая ребром к нам: её вертикальные рёбра лежат на окружности среза. Отверстие K — пятиугольное, сквозное. Вертикальные грани отверстия режут шар по окружностям (на виде слева — дуги), нижняя грань — по окружности, видимой сверху, наклонные грани «крыши» режут призму по прямым.',
+  tree:S(U(P.I({t:'sph',r:60},P.hp([0,0,1],[0,0,36.5])), P.box(67.3,67.3,30,82,{a:45})),
+    P.I(thru(42,-25.6,65), P.hp([-27.9,0,21],[-21,0,36.5]), P.hp([27.9,0,21],[21,0,36.5]))), box:[[-60,-60,-60],[60,60,82]]},
+ {n:8,fig:68,page:41,title:'Пятигранная призма',q:'Достроить вид сверху, построить вид слева, выполнить фронтальный, горизонтальный и профильный разрезы. K — сквозное отверстие.',
+  why:'Правильная пятигранная призма стоит ребром к нам, по её оси — сквозное цилиндрическое отверстие. Штриховые линии на виде спереди — задние рёбра призмы и образующие отверстия. Прямоугольное отверстие K идёт насквозь: его грани режут призму по прямым, а цилиндрическое отверстие — по образующим (вертикальные грани) и дугам окружностей (горизонтальные).',
+  tree:S(P.ngon(5,97.08,0,134,{a:-90}), P.cyl(39.5,-1,135), thru(42.6,41.7,101.4)), box:[[-57.1,-60,0],[57.1,48.6,134]]},
+ {n:10,fig:70,page:43,title:'Конус с призмой',q:'Достроить вид сверху, построить вид слева, выполнить разрезы. K — сквозное отверстие.',
+  why:'Усечённый конус, на его верхнем срезе — четырёхгранная призма, повёрнутая ребром к нам (рёбра лежат на окружности среза). Нижние боковые грани отверстия K проходят через вершину конуса и поэтому режут его по прямым — образующим (тонкие линии на рисунке тетради). Нижняя грань режет конус по окружности, вертикальные грани верхней части — призму по прямым.',
+  tree:S(U(P.I(P.cone(60,0.3,0,127.6),P.hp([0,0,1],[0,0,49.4])), P.box(52,52,45,129.4,{a:45})),
+    thru(42,49,118.3), P.I(thru(80,21.4,49.6), P.hp([1,0,0.2685],[21,0,49.4]), P.hp([-1,0,0.2685],[-21,0,49.4]))), box:[[-60,-60,0],[60,60,129.4]]}
 ];
 /* шар: точная функция расстояния в обоих движках через узел 'sph' */
 L[4].tree=S({t:'sph',r:71}, thru(65,-20,30.5), P.cyl(23.5,-80,80));
@@ -23856,38 +23880,75 @@ function sheetImages(n,size){ const VV=VIEWS.concat([{k:'iso',st:{yaw:-0.62,pit:
   VV.forEach(o=>{ Object.assign(v.S,o.st,{zoom:1.02,off:0,bg:[[1,1,1],[1,1,1]],hatch:2.6,flat:o.k==='iso'?0:1}); v.draw(1); out[o.k]=c.toDataURL('image/png'); });
   c.remove(); try{ v.gl.getExtension('WEBGL_lose_context').loseContext(); }catch(e){} return out; }
 
-/* ── лист чертежа: три вида в проекционной связи + оси + габариты + основная надпись ── */
-/* ── лист чертежа: виды в проекционной связи, оси, габариты, основная надпись; mode 'given' — только данные изображения задания ── */
+/* ── сечение наклонной плоскостью: контур по модели, штриховка 45°; u — вдоль следа, v — глубина y ──
+   на листе фигура лежит так, как её видно по стрелкам: след идёт под тем же углом, задняя сторона (y > 0) — к главному виду */
+function secFig(model,sec,K){
+  const [[x1,z1],[x2,z2]]=sec.p, th=Math.atan2(z2-z1,x2-x1), c=Math.cos(th), s=Math.sin(th), L=Math.hypot(x2-x1,z2-z1), b=model.box;
+  const R=IG3.section(model.tree,[x1,0,z1],[c,0,s],[0,1,0],[0,L,b[0][1]-2,b[1][1]+2],0.3), segs=R.segs;
+  const key=p=>p[0].toFixed(3)+','+p[1].toFixed(3), adj=new Map();
+  segs.forEach((g,i)=>g.forEach(p=>{ const k=key(p); if(!adj.has(k)) adj.set(k,[]); adj.get(k).push(i); }));
+  const used=new Uint8Array(segs.length), loops=[];
+  for(let i=0;i<segs.length;i++){ if(used[i]) continue; used[i]=1; const pts=[segs[i][0],segs[i][1]]; let cur=segs[i][1];
+    for(;;){ const nx=(adj.get(key(cur))||[]).find(j=>!used[j]); if(nx==null) break; used[nx]=1; const g=segs[nx]; cur=key(g[0])===key(cur)?g[1]:g[0]; pts.push(cur); }
+    let ar=0; for(let q=1;q<pts.length;q++) ar+=pts[q-1][0]*pts[q][1]-pts[q][0]*pts[q-1][1];
+    if(pts.length>4&&Math.abs(ar)>4) loops.push(pts); }   /* крошки площадью < 2 мм² — шум сетки, не контур */
+  const M=p=>[(p[0]*c-p[1]*s)*K,(-p[0]*s-p[1]*c)*K]; let x0=1e9,y0=1e9,x9=-1e9,y9=-1e9;
+  const d=loops.map(l=>l.map((p,i)=>{ const q=M(p); x0=Math.min(x0,q[0]); x9=Math.max(x9,q[0]); y0=Math.min(y0,q[1]); y9=Math.max(y9,q[1]); return (i?'L':'M')+q[0].toFixed(1)+','+q[1].toFixed(1); }).join('')+'Z').join('');
+  return {d,box:[x0,y0,x9,y9],th};
+}
+/* ── лист чертежа: виды в проекционной связи, оси, габариты, сечение, основная надпись; mode 'given' — только данные изображения задания ── */
 function sheetSVG(model,title,sub,task,mode){
-  const given=mode==='given', W=900;
+  const given=mode==='given', W=900, hz=!given&&model.hz;
   const D=given?{front:IG3.drawing(model,'front0',W),top:IG3.drawing(model,'top',W)}:{front:IG3.drawing(model,'front',W),left:IG3.drawing(model,'left',W),top:IG3.drawing(model,'top',W)}; if(!D.front) return '';
-  const S=480, X0=30, Y0=20, k=S/W, b=model.box, TOPY=Y0+S-30;
-  const PW=given?S+2*X0:2*S+2*X0, PH=TOPY+S+(given?10:20);
+  if(hz) D.cut=IG3.drawing(model,'topcut',W,hz.z);
+  const S=480, Y0=20, k=S/W, b=model.box, TOPY=Y0+S-30, C3=model.sec?360:0, hid='igH'+Math.random().toString(36).slice(2,7);
+  /* обозначение плоскости слева может выйти за поле — тогда виды сдвигаются вправо */
+  const X0=model.sec?(()=>{ const [[x1,z1s],[x2,z2s]]=model.sec.p, a=D.front.px([x1,0,z1s]), c=D.front.px([x2,0,z2s]), m=D.front.px([10,0,0])[0]-D.front.px([0,0,0])[0], l=Math.hypot(c[0]-a[0],c[1]-a[1]);
+    const left=a[0]*k-(12*Math.abs(c[0]-a[0])/l+13*Math.abs(c[1]-a[1])/l)*m/10*k-22; return Math.max(30,30-left); })():30;
   const z0=b[0][2], z1=b[1][2], r=Math.max(b[1][0],-b[0][0]), J=IG3.J, zt=z0+1;
   const round=[0,20,45,70,90].every(a=>{ const t=a*Math.PI/180; return J(model.tree,0.97*r*Math.cos(t),0.97*r*Math.sin(t),zt)<0&&J(model.tree,1.04*r*Math.cos(t),1.04*r*Math.sin(t),zt)>0; });
   const P=(d,q,ox,oy)=>{ const v=d.px(q); return [ox+v[0]*k,oy+v[1]*k]; };
+  const K=P(D.front,[10,0,0],X0,Y0)[0]-P(D.front,[0,0,0],X0,Y0)[0], Km=K/10;   /* единиц листа на 1 мм */
   const f=v=>Math.round(v*10)/10, ln=(a,c,col,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${col||'#111'}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
   const AX='14 3 2 3'; let o='';
-  o+=`<image href="${D.front.url}" x="${X0}" y="${Y0}" width="${S}" height="${S}"/><image href="${D.top.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"/>`;
+  const tc=P(D.top,[0,0,z1],X0,TOPY), e=P(D.top,[r+7,0,z1],X0,TOPY)[0]-tc[0];
+  o+=`<image href="${D.front.url}" x="${X0}" y="${Y0}" width="${S}" height="${S}"/>`;
+  /* горизонтальный разрез на месте вида сверху: сзади (вверху) — половина вида, спереди (внизу) — половина разреза */
+  o+=hz&&D.cut?`<defs><clipPath id="${hid}a"><rect x="${X0}" y="${TOPY}" width="${S}" height="${f(tc[1]-TOPY)}"/></clipPath><clipPath id="${hid}b"><rect x="${X0}" y="${f(tc[1])}" width="${S}" height="${f(TOPY+S-tc[1])}"/></clipPath></defs>`
+    +`<image href="${D.top.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}a)"/><image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}b)"/>`
+    :`<image href="${D.top.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"/>`;
   if(D.left) o+=`<image href="${D.left.url}" x="${X0+S}" y="${Y0}" width="${S}" height="${S}"/>`;
   const fa=P(D.front,[0,0,z0-7],X0,Y0), fb=P(D.front,[0,0,z1+7],X0,Y0); o+=ln(fa,fb,'#111',AX,.8);
   if(D.left){ const la=P(D.left,[0,0,z0-7],X0+S,Y0), lb=P(D.left,[0,0,z1+7],X0+S,Y0); o+=ln(la,lb,'#111',AX,.8); }
-  const tc=P(D.top,[0,0,z1],X0,TOPY), e=P(D.top,[r+7,0,z1],X0,TOPY)[0]-tc[0];
   o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);
   const arr=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*9-dy*2.6)},${f(dy*9+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="#111"/>`;
-  const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+26;
+  const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+(hz?22*Km+16:26);   /* при горизонтальном разрезе размер — за его штрихом */
   o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.6)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.6)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.6)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
     +`<text x="${f(hx-5)}" y="${f((hb[1]+ht[1])/2)}" transform="rotate(-90 ${f(hx-5)} ${f((hb[1]+ht[1])/2)})" class="igs-dim" text-anchor="middle">${Math.round(z1-z0)}</text>`;
   const wl=P(D.front,[-r,0,z0],X0,Y0), wr=P(D.front,[r,0,z0],X0,Y0), wy=wl[1]+24;
   o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.6)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.6)+ln([wl[0],wy],[wr[0],wy],'#111',null,.6)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
     +`<text x="${f((wl[0]+wr[0])/2+(wr[0]-wl[0])*.22)}" y="${f(wy-5)}" class="igs-dim" text-anchor="middle">${round?'Ø':''}${Math.round(2*r)}</text>`;
+  /* обозначение секущей плоскости (ГОСТ 2.305): разомкнутая линия — два штриха за контуром, стрелки по направлению взгляда, буквы у стрелок */
+  const mark=(Q,ex,ey,dx,dy,L)=>{ const O=[Q[0]+ex*12*Km,Q[1]+ey*12*Km], T=[O[0]-ex*3*Km,O[1]-ey*3*Km], A=[T[0]-dx*10*Km,T[1]-dy*10*Km];
+    return ln(Q,O,'#111',null,3.2)+ln(A,T,'#111',null,.8)+arr(T,-dx,-dy)+`<text x="${f(A[0]-dx*9-ex*2)}" y="${f(A[1]-dy*9+11)}" class="igs-let" text-anchor="middle">${L}</text>`; };
+  if(model.sec){ const [[x1,z1s],[x2,z2s]]=model.sec.p, Q1=P(D.front,[x1,0,z1s],X0,Y0), Q2=P(D.front,[x2,0,z2s],X0,Y0), l=Math.hypot(Q2[0]-Q1[0],Q2[1]-Q1[1]), ex=(Q2[0]-Q1[0])/l, ey=(Q2[1]-Q1[1])/l, dx=-ey, dy=ex;
+    const L=given?'А':model.sec.L; o+=mark(Q1,-ex,-ey,dx,dy,L)+mark(Q2,ex,ey,dx,dy,L); }
+  if(hz){ const y=P(D.front,[0,0,hz.z],X0,Y0)[1], xl=P(D.front,[-r-5,0,0],X0,Y0)[0], xr=P(D.front,[r+5,0,0],X0,Y0)[0];
+    o+=mark([xl,y],-1,0,0,1,hz.L)+mark([xr,y],1,0,0,1,hz.L)+`<text x="${f(tc[0])}" y="${f(tc[1]-r*Km-30)}" class="igs-let" text-anchor="middle">${hz.L}–${hz.L}</text>`; }
+  let PW=S+2*X0, PH=TOPY+S+10;
   if(!given){
-    /* правый нижний угол: аксонометрия с вырезом и основная надпись — без пустот */
-    const iso=sheetImages(model,420).iso||'', cx=X0+S, cy=TOPY, tbH=96, tbW=S-20, tbX=PW-X0-tbW, tbY=PH-tbH-14;
-    o+=`<image href="${iso}" x="${cx+S*.12}" y="${cy-10}" width="${S*.76}" height="${S*.76}"/>`;
-    o+=`<g><rect x="${tbX}" y="${tbY}" width="${tbW}" height="${tbH}" fill="#fff" stroke="#111" stroke-width="1.6"/><line x1="${tbX}" y1="${tbY+tbH/2}" x2="${tbX+tbW}" y2="${tbY+tbH/2}" stroke="#111"/><line x1="${tbX+tbW*.58}" y1="${tbY+tbH/2}" x2="${tbX+tbW*.58}" y2="${tbY+tbH}" stroke="#111"/>
-      <text x="${tbX+tbW/2}" y="${tbY+tbH/2-15}" text-anchor="middle" class="igs-tbt">${sub||''}</text><text x="${tbX+tbW*.29}" y="${tbY+tbH-16}" text-anchor="middle" class="igs-tbt">${title}</text><text x="${tbX+tbW*.79}" y="${tbY+tbH-16}" text-anchor="middle" class="igs-tbt">${task||''}</text></g>`; }
-  return `<svg class="igs-sheet${given?' given':''}" viewBox="0 0 ${PW} ${PH}" role="img" aria-label="${given?'Данные изображения: главный вид и вид сверху':'Чертёж: главный вид, вид слева, вид сверху'}"><rect x="3" y="3" width="${PW-6}" height="${PH-6}" fill="#fff" stroke="#111" stroke-width="${given?1:2}"/>${o}</svg>`;
+    PW=2*S+C3+2*X0; PH=TOPY+S+20;
+    if(model.sec){ const F=secFig(model,model.sec,Km), [bx0,by0,bx9,by9]=F.box, cx=X0+S+S/2-(bx0+bx9)/2, ty=TOPY+40, cy=ty+20-by0;
+      PH=Math.max(PH,cy+by9+30);
+      o+=`<defs><pattern id="${hid}" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#111" stroke-width=".8"/></pattern></defs>`
+        +`<text x="${f(X0+S+S/2)}" y="${f(ty)}" class="igs-let" text-anchor="middle">${model.sec.L}–${model.sec.L}</text>`
+        +`<path transform="translate(${f(cx)} ${f(cy)})" d="${F.d}" fill="url(#${hid})" fill-rule="evenodd" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/>`; }
+    /* справа: аксонометрия с вырезом и основная надпись */
+    const iso=sheetImages(model,420).iso||'', tbH=96, tbW=C3?C3-10:S-20, tbX=PW-X0-tbW, tbY=PH-tbH-14;
+    o+=C3?`<image href="${iso}" x="${2*S+X0+10}" y="${Y0+40}" width="${C3-20}" height="${C3-20}"/>`:`<image href="${iso}" x="${X0+S+S*.12}" y="${TOPY-10}" width="${S*.76}" height="${S*.76}"/>`;   /* без сечения — аксонометрия в нижнем ряду */
+    o+=`<g><rect x="${tbX}" y="${tbY}" width="${tbW}" height="${tbH}" fill="#fff" stroke="#111" stroke-width="1.6"/><line x1="${tbX}" y1="${tbY+tbH/2}" x2="${tbX+tbW}" y2="${tbY+tbH/2}" stroke="#111"/><line x1="${tbX+tbW*.56}" y1="${tbY+tbH/2}" x2="${tbX+tbW*.56}" y2="${tbY+tbH}" stroke="#111"/>
+      <text x="${tbX+tbW/2}" y="${tbY+tbH/2-15}" text-anchor="middle" class="igs-tbt">${sub||''}</text><text x="${tbX+tbW*.28}" y="${tbY+tbH-16}" text-anchor="middle" class="igs-tbt">${title}</text><text x="${tbX+tbW*.78}" y="${tbY+tbH-16}" text-anchor="middle" class="igs-tbt">${task||''}</text></g>`; }
+  return `<svg class="igs-sheet${given?' given':''}" viewBox="0 0 ${f(PW)} ${f(PH)}" role="img" aria-label="${given?'Данные изображения: главный вид и вид сверху':'Чертёж: главный вид, вид слева, вид сверху'+(model.sec?', сечение':'')}"><rect x="3" y="3" width="${f(PW-6)}" height="${f(PH-6)}" fill="#fff" stroke="#111" stroke-width="${given?1:2}"/>${o}</svg>`;
 }
 /* ── страницы ── */
 function crumbs(list){ return list; }
@@ -23944,7 +24005,7 @@ function partPage(v,o){
    <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать решение</span><small>3D-модель, разрезы и готовый чертёж</small></button></div>
    <div id="igSol" hidden>
    <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}
-    <div class="igx-modes" role="tablist" aria-label="Режим">${MODES.map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===1?'on':''}" aria-selected="${i===1}">${m[1]}</button>`).join('')}</div>
+    <div class="igx-modes" role="tablist" aria-label="Режим">${MODES.concat(n.sec?[['sec','Сечение '+n.sec.L+'–'+n.sec.L,{cut:4}]]:[]).map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===1?'on':''}" aria-selected="${i===1}">${m[1]}</button>`).join('')}</div>
     <div class="igx-cam" role="group" aria-label="Вид"><button data-c="iso">3D</button><button data-c="front">Спереди</button><button data-c="top">Сверху</button><button data-c="left">Слева</button></div>
     <div class="igx-hint">крути · щипок — зум · двойной тап — исходный вид</div>
     <div class="igx-plane" id="igPlane" hidden><span>Секущая плоскость</span><input type="range" id="igOff" min="-50" max="50" value="0" step="1" aria-label="Положение секущей плоскости"><b id="igOffV">0 мм</b></div>
@@ -23965,11 +24026,14 @@ function partPage(v,o){
   const st=$(v,'#igStage'), M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
   if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
   const plane=$(v,'#igPlane'), off=$(v,'#igOff'), offV=$(v,'#igOffV');
-  v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=MODES.find(x=>x[0]===b.dataset.m);
+  const MS=MODES.concat(n.sec?[['sec','',{cut:4}]]:[]);
+  /* плоскость A–A: нормаль смотрит на наблюдателя (вверх-влево на главном виде) — та часть и убирается */
+  const SP=n.sec?(()=>{ const [[x1,z1],[x2,z2]]=n.sec.p, t=Math.atan2(z2-z1,x2-x1), nx=-Math.sin(t), nz=Math.cos(t); return {pl:[nx,0,nz,nx*x1+nz*z1],t}; })():null;
+  v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=MS.find(x=>x[0]===b.dataset.m);
     v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
     M.S.cut=m[2].cut; M.S.off=0; off.value=0; offV.textContent='0 мм'; plane.hidden=!(m[2].cut===2||m[2].cut===3);
     const B=n.box, lim=Math.round(m[2].cut===3?B[1][0]:B[1][1])-2; off.min=-lim; off.max=lim;
-    if(m[2].cut===2) M.to({yaw:-0.35,pit:0.22}); else if(m[2].cut===3) M.to({yaw:Math.PI/2-0.45,pit:0.22}); else M.draw(false);
+    if(m[2].cut===4){ M.S.pl=SP.pl; M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12}); } else if(m[2].cut===2) M.to({yaw:-0.35,pit:0.22}); else if(m[2].cut===3) M.to({yaw:Math.PI/2-0.45,pit:0.22}); else M.draw(false);
     try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
   off.addEventListener('input',()=>{ M.S.off=+off.value; offV.textContent=(M.S.cut===2?'y = ':'x = ')+off.value+' мм'; M.draw(true); });
   const CAM={iso:{yaw:-0.62,pit:0.42,zoom:1},front:{yaw:0,pit:1e-4,zoom:1},top:{yaw:0,pit:Math.PI/2-1e-3,zoom:1},left:{yaw:Math.PI/2,pit:1e-4,zoom:1}};
@@ -23980,7 +24044,7 @@ function partPage(v,o){
     setTimeout(()=>{ let svg=''; try{ svg=sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'); }catch(e){ console.error(e); }
       const im=sheetImages(n,520);
       sh.innerHTML=`<div class="igx-sh-h"><b>Чертёж из модели</b><div class="igx-sh-sw" role="tablist"><button class="on" data-sw="dwg">Чертёж</button><button data-sw="ren">Объёмные виды</button></div></div>
-       <div class="igx-sh-p" data-p="dwg"><div class="igx-dwg">${svg}</div><p class="igx-sh-cap">Главный вид и вид слева — половина вида и половина разреза; штриховкой показано то, что попало в секущую плоскость; штрихами — невидимый контур. Всё построено из 3D-модели.</p></div>
+       <div class="igx-sh-p" data-p="dwg"><div class="igx-dwg">${svg}</div><p class="igx-sh-cap">Главный вид и вид слева — половина вида и половина разреза. ${n.sec?`Сечение ${n.sec.L}–${n.sec.L} — фигура в наклонной плоскости в натуральную величину, расположена по направлению стрелок. `:''}${n.hz?`${n.hz.L}–${n.hz.L} — горизонтальный разрез на месте вида сверху. `:''}Штриховкой показано то, что попало в секущую плоскость, штрихами — невидимый контур. Всё построено из 3D-модели.</p></div>
        <div class="igx-sh-p" data-p="ren" hidden><div class="igx-sh-g">${VIEWS.map((v,i)=>`<figure class="igx-sh-f f-${v.k}" style="--d:${i*120}ms"><img alt="${v.t}" src="${im[v.k]||''}"><figcaption><b>${v.t}</b><span>${v.d}</span></figcaption></figure>`).join('')}</div></div>`;
       sh.querySelectorAll('[data-sw]').forEach(b=>b.addEventListener('click',()=>{ sh.querySelectorAll('[data-sw]').forEach(x=>x.classList.toggle('on',x===b)); sh.querySelectorAll('[data-p]').forEach(x=>x.hidden=x.dataset.p!==b.dataset.sw); }));
       sh.hidden=false; requestAnimationFrame(()=>sh.classList.add('on')); sh.scrollIntoView({behavior:'smooth',block:'start'}); btn.disabled=false; btn.lastChild.textContent='Обновить чертёж'; },560); });
@@ -23993,7 +24057,7 @@ function wbList(v){
   v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['Тетрадь']],next:null,noBottom:true,cls:'igx',body:`
    <div class="intro"><h1>Рабочая тетрадь · раздел 5</h1><p class="lead">«Изображение геометрических фигур с построением линий пересечения проецирующими плоскостями». Найди задание по номеру рисунка — на карточке то, что дано в тетради. Решение откроется внутри.</p></div>
    <div class="igx-wbl">${IG_WB.map(t=>`<a class="igx-wbc" href="${H('ig','wb',t.n)}"><span class="igx-wbn"><b>Рис. ${t.fig}</b><i>стр. ${t.page}</i></span><span class="igx-wbi"><img alt="" data-w="${t.n}"></span><span class="igx-wbt"><b>${t.n}. ${t.title}</b><small>${t.q}</small></span></a>`).join('')}</div>
-   <p class="igx-note">Задания 7–10 (рис. 67–70) — следующие.</p>`});
+`});
   if(hasGL){ let i=0; const step=()=>{ if(i>=IG_WB.length||!v.isConnected) return; const t=IG_WB[i++];
       try{ const d=IG3.drawing(t,'front0',360); const im=v.querySelector('img[data-w="'+t.n+'"]'); if(im&&d) im.src=d.url; }catch(e){}
       setTimeout(step,20); }; setTimeout(step,30); }
