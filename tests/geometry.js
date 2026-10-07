@@ -35,7 +35,7 @@ function model(items){
       parts.forEach(n=>{ n=n.trim(); if(MARK.test(n)){ (pts[n]=pts[n]||[]).push(it.at); if(parts.length>1) combo.add(n); } }); }
     if((it.t==='seg'||it.t==='line'||it.t==='vec')&&it.a&&it.b){
       const l=strip(it.l||'').trim();
-      if(/^[a-zа-яα-ω][₀-₉0-9]*[αβγδ]?(′|″|‴)$/.test(l)||/^[hf]₀[αβγδ]$/.test(l)) (lines[l]=lines[l]||[]).push([it.a,it.b]);
+      if(it.t!=='vec'&&(/^[a-zа-яα-ω][₀-₉0-9]*[αβγδ]?(′|″|‴)$/.test(l)||/^[hf]₀[αβγδ]$/.test(l))) (lines[l]=lines[l]||[]).push([it.a,it.b]);
       segs.all=(segs.all||[]); segs.all.push({a:it.a,b:it.b,k:it.k||'main',l,it});
       if(/^\|?[A-ZА-Я]/.test(l)||/^Δ|^[xyz]\s*=/.test(l)) dims.push({a:it.a,b:it.b,l,it}); }
     if(it.t==='dim'&&it.a&&it.b&&it.l) dims.push({a:it.a,b:it.b,l:strip(it.l),it});
@@ -86,6 +86,17 @@ function check(name,items,text,ctx){
   /* 1б. одна и та же подпись дважды — на экране раскладка подписей разведёт их, и имя появится два раза */
   const lab={}; (items||[]).forEach(it=>{ if(it&&it.t==='pt'&&it.l){ const l=strip(it.l).trim(); if(l) (lab[l]=lab[l]||[]).push(it.at); } });
   Object.keys(lab).forEach(l=>{ if(lab[l].length>1&&MARK.test(l)&&!lab[l].every(p=>d2(p,lab[l][0])<0.5)) add('двойная подпись','«'+l+'» стоит в '+lab[l].length+' разных местах — одна точка не может иметь две проекции на одной плоскости'); });
+  /* 1в. прямая доведена до своих точек: если подписанная точка того же поля (′/″) лежит на продолжении
+     нарисованной именованной прямой (h″, f′, a″…), прямая обрывается раньше — чертёж не достроен */
+  Object.keys(M.lines).forEach(l=>{ const mk=(MARK.exec(l)||[])[1]; if(!mk) return;
+    M.lines[l].forEach(([a,b])=>{ const L=d2(a,b); if(L<8) return;
+      Object.keys(pts).forEach(n=>{ if(!n.endsWith(mk)) return; const q=uniq(n); if(!q) return;
+        if(lineDist(q,a,b)>0.6) return;
+        /* точка должна лежать на прямой в пространстве: вторая проекция — на второй проекции прямой (иначе совпадение на одном поле) */
+        const om=mk==='″'?'′':'″', ol=l.slice(0,-1)+om, oq=uniq(n.slice(0,-1)+om);
+        if(oq&&M.lines[ol]&&!M.lines[ol].some(([c,d])=>lineDist(oq,c,d)<0.8)) return;
+        const t=segT(q,a,b), over=t<0?-t*L:t>1?(t-1)*L:0;
+        if(over>2&&over<L*1.5&&!M.segs.all.some(s=>lineDist(s.a,a,b)<0.6&&lineDist(s.b,a,b)<0.6&&segDist(q,s.a,s.b)<0.6)) add('прямая не достроена','прямая '+l+' обрывается, не доходя до точки '+n+' (не хватает '+over.toFixed(1)+')'); }); }); });
   /* 2. «1″≡2″» — действительно одна точка */
   Object.keys(pts).forEach(n=>{ if(combo.has(n)&&!uniq(n)) add('совпадение','«'+n+'» подписана как совпадающая, но стоит в разных местах'); });
   /* 3. принадлежность и простое отношение.
@@ -261,7 +272,7 @@ const scale=(name,smp)=>{ const u=[]; const seen=new Set(); smp.forEach(o=>{ con
   const ex=u.filter(o=>o.eq); if(ex.length<2) return; const rx=ex.map(o=>o.px/o.v).sort((a,b)=>a-b), Sx=rx[Math.floor(rx.length/2)];
   if(ex.filter(o=>Math.abs(o.px/Sx-o.v)<=0.12).length<2) return;
   ex.forEach(o=>{ const t=o.px/Sx; if(Math.abs(t-o.v)>0.12&&Math.abs(t-o.v)<=o.tol) out.push({name:o.name,rule:'точность',msg:o.what+': точное значение '+t.toFixed(2)+' — нужно «≈», а не «=»',lvl:'ошибка'}); }); };
-const task=(name,t)=>{ try{ partsOf(t).forEach((p,pi)=>{ const nm=name+(pi?' п.'+(pi+1):''); let acc=(p.given||[]).slice(), txt=TX(t)+'\n'+TX(p); const samples=[];
+const task=(name,t)=>{ try{ partsOf(t).forEach((p,pi)=>{ try{ window.LINEFIX&&LINEFIX(p); window.DMARK&&DMARK(p); }catch(e){} const nm=name+(pi?' п.'+(pi+1):''); let acc=(p.given||[]).slice(), txt=TX(t)+'\n'+TX(p); const samples=[];
     check(nm+' · дано',acc,txt,{samples});
     (p.steps||[]).forEach((st,k)=>{ acc=acc.concat(st.add||[]); check(nm+' · шаг '+(k+1),acc,TX(st),{samples}); });
     scale(nm,samples); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e),lvl:'ошибка'}); } };

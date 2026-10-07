@@ -2223,6 +2223,15 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hig-b{flex:none;padding:5px 10px;border-radius:99px;background:linear-gradient(135deg,#f08a00,#ffb020);color:#2a1700;font:800 11px var(--mono);letter-spacing:1px;text-transform:uppercase}
 .hig-t{display:flex;flex-direction:column;min-width:0;flex:1}.hig-t b{font:700 16px var(--disp)}.hig-t small{font-size:13px;color:var(--mut)}
 .hig i{font-style:normal;font-weight:700;color:var(--mut)}
+.hnew{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin:var(--s4) 0}
+.hnew-c{position:relative;display:flex;flex-direction:column;gap:6px;padding:18px 18px 16px;border-radius:20px;text-decoration:none;color:#fff;overflow:hidden;transition:transform .2s;box-shadow:0 14px 30px -18px rgba(40,30,120,.7)}
+.hnew-ig{background:linear-gradient(135deg,#3a2bd8 0%,#7a3df0 55%,#c13dd0 100%)}
+.hnew-3d{background:linear-gradient(135deg,#0f6b5c 0%,#1593a0 60%,#2f7be0 100%)}
+.hnew-c b{font:800 21px/1.15 var(--disp)}.hnew-c span:not(.hnew-b){font-size:14px;line-height:1.45;opacity:.92}
+.hnew-c i{margin-top:auto;padding-top:6px;font-style:normal;font-weight:800;font-size:14px}
+.hnew-b{align-self:flex-start;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.2);font:800 11px var(--mono);letter-spacing:1px;text-transform:uppercase}
+@media(hover:hover){.hnew-c:hover{transform:translateY(-2px)}}
+@media(max-width:640px){.hnew{grid-template-columns:1fr}}
 @media(hover:hover){.hig:hover{transform:translateX(3px)}}
 /* меню: пометка «скоро» */
 .nv .soon{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;background:linear-gradient(135deg,#f08a00,#ffb020);color:#2a1700;font:800 9.5px/1.5 var(--mono);letter-spacing:.6px;text-transform:uppercase;vertical-align:2px}
@@ -2411,11 +2420,11 @@ html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
 .t3d-leg{display:flex;flex-wrap:wrap;gap:4px 14px;padding:0 14px 10px;font-size:12px;color:var(--mut)}
 .t3d-leg span{display:inline-flex;align-items:center;gap:6px}
 .t3d-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}.t3d-leg i.ln{height:0;border-top:1.5px dashed #6b7280;border-radius:0}
-.t3d-lb{font:italic 600 19px 'Times New Roman','Liberation Serif','Noto Serif',Georgia,serif;letter-spacing:.01em}
+.t3d-lb{font:italic 600 15px 'Times New Roman','Liberation Serif','Noto Serif',Georgia,serif;letter-spacing:.01em;paint-order:stroke;stroke:var(--t3bg);stroke-width:3.2px;stroke-linejoin:round}
 .t3d-chip{fill:var(--t3bg);fill-opacity:.93;stroke-opacity:.5;stroke-width:1.1}
-.t3d-lb.sm{font-size:15px}
-.t3d-ax{font:italic 600 21px 'Times New Roman','Liberation Serif',Georgia,serif;fill:var(--t3ink)}
-.t3d-pl{font:italic 600 22px 'Times New Roman','Liberation Serif',Georgia,serif;opacity:.85}
+.t3d-lb.sm{font-size:13px}
+.t3d-ax{font:italic 600 17px 'Times New Roman','Liberation Serif',Georgia,serif;fill:var(--t3ink)}
+.t3d-pl{font:italic 600 17px 'Times New Roman','Liberation Serif',Georgia,serif;opacity:.85}
 @media(max-width:560px){.t3d{padding:0}.t3d-box{height:100dvh;border-radius:0;border:0}.t3d-top{padding-top:calc(10px + env(safe-area-inset-top))}.t3d-leg{padding-bottom:calc(10px + env(safe-area-inset-bottom))}}
 .pl-zb.zreset{display:none}.zoomed .pl-zb.zreset{display:grid}
 body .pl-zoom .pl-zb.t3btn{width:auto;height:40px;padding:0 13px 0 11px;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;color:#fff;font:800 14px var(--sans);letter-spacing:.03em;
@@ -2649,7 +2658,7 @@ function measure(items){
       case 'axis': hasAxis=true; break;
       case 'axis3': hasAxis=true; has3=true; add([0,0],30,30); break;
       case 'zaxis': case 'k45': break;
-      case 'pt': add(it.at,it.l?14+String(it.l).length*3:5,13); break;
+      case 'pt': add(it.at,it.l?14+String(it.l).length*3:5,it.l?22:6); break;   /* подпись над/под точкой не должна обрезаться */
       case 'txt': add(it.at,String(it.s).length*3.6+8,11); break;
       case 'note': add(it.at,String(it.s).length*3.2+14,14); break;
       case 'circ': add([it.c[0]-it.r,it.c[1]-it.r]); add([it.c[0]+it.r,it.c[1]+it.r]);
@@ -2863,6 +2872,8 @@ ang(it,ctx){ const v=ctx.T(it.at), r=it.r||20;
   const P2=[v[0]+Math.cos(a2)*r, v[1]+Math.sin(a2)*r];
   let d=a2-a1; while(d<-Math.PI)d+=2*Math.PI; while(d>Math.PI)d-=2*Math.PI;
   const col=it.k==='aux'?PAL.aux:it.k==='grn'?PAL.grn:PAL.res;
+  /* обе стороны угла видны всегда: если стороны нет на чертеже (горизонталь от вершины), тонкий луч чуть дальше дуги */
+  if(!ctx.halo){ const L=r+14; [a1,a2].forEach(a=>ctx.out.push(el('line',{x1:N(v[0]),y1:N(v[1]),x2:N(v[0]+Math.cos(a)*L),y2:N(v[1]+Math.sin(a)*L),stroke:col,'stroke-width':W.thin,'stroke-linecap':'round'}))); }
   path(ctx,`M${N(P1[0])},${N(P1[1])} A${r},${r} 0 0 ${d>0?1:0} ${N(P2[0])},${N(P2[1])}`,col,null,W.aux);
   if(it.l && !ctx.halo){ const am=a1+d/2, R=r+12;
     ctx.out.push(el('text',{x:N(v[0]+Math.cos(am)*R),y:N(v[1]+Math.sin(am)*R+4),
@@ -3131,6 +3142,10 @@ function poly3(ps,k,o){ o=o||{}; const out=[]; const only=o.only||(o.pi3?'123':'
    на горизонтальной проекции: катет A′B′, второй катет Δz, угол α к π₁.
    a,b — 3D; side = +1/-1 (в какую сторону откладывать Δz); names {A:'A',B:'B'}
    возвращает {items, nv (мм), alpha (°), B0 (точка вершины)} */
+/* отметка разности координат: на другой проекции — выносная от нижней/верхней точки и размер Δ; на треугольнике — тот же размер на катете */
+function dMark(P,Q,B,B0,l){ if(Math.abs(P[1]-Q[1])<2) return [];
+  const x=Q[0]+(Q[0]>=P[0]?12:-12);
+  return [ {t:'ext',a:P,b:[x,P[1]]}, {t:'ext',a:Q,b:[x,Q[1]]}, dim([x,P[1]],[x,Q[1]],l,'aux',Q[0]>=P[0]?'e':'w'), dim(B,B0,l,'aux','auto') ]; }
 function nvOnH(a,b,o){ o=o||{}; const A=H(a),B=H(b), dz=(b[2]-a[2])*S, side=o.side||1;
   const B0=G.perp(B,A,B,Math.abs(dz)*side);
   const nv=v3.dist(a,b), al=Math.atan2(Math.abs(b[2]-a[2]),Math.hypot(b[0]-a[0],b[1]-a[1]))*180/Math.PI;
@@ -3140,7 +3155,9 @@ function nvOnH(a,b,o){ o=o||{}; const A=H(a),B=H(b), dz=(b[2]-a[2])*S, side=o.si
     pt(B0,nb+'₀',o.la||'e','aux'),
     seg(A,B0,'res','|'+(o.A||'A')+nb+'| '+(Math.abs(nv-Math.round(nv))<0.05?'=':'≈')+' '+Math.round(nv)+' мм',o.lla||'nw'),
     sq(B,A,B0,'aux'),
-    ang(A,B,B0,'α','res',o.r||22)
+    ang(A,B,B0,'α','res',o.r||22),
+    /* откуда взят второй катет: Δz снята с фронтальной проекции (items[5…]) */
+    ...dMark(F(a),F(b),B,B0,'Δz')
   ]}; }
 /* то же на фронтальной проекции: катет A″B″, второй катет Δy, угол β к π₂ */
 function nvOnF(a,b,o){ o=o||{}; const A=F(a),B=F(b), dy=(b[1]-a[1])*S, side=o.side||1;
@@ -3152,7 +3169,8 @@ function nvOnF(a,b,o){ o=o||{}; const A=F(a),B=F(b), dy=(b[1]-a[1])*S, side=o.si
     pt(B0,nb+'₀',o.la||'e','aux'),
     seg(A,B0,'res','|'+(o.A||'A')+nb+'| '+(Math.abs(nv-Math.round(nv))<0.05?'=':'≈')+' '+Math.round(nv)+' мм',o.lla||'nw'),
     sq(B,A,B0,'aux'),
-    ang(A,B,B0,'β','res',o.r||22)
+    ang(A,B,B0,'β','res',o.r||22),
+    ...dMark(H(a),H(b),B,B0,'Δy')
   ]}; }
 
 /* ---- таблица HTML ---- */
@@ -3199,15 +3217,68 @@ return { S,F,H,P,mm,len2,v3,G, pt,seg,ln,conn,txt,note,dim,sq,ang,tick,circ,arc,
 const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const PLAYER = (function(){
 
+/* заметка к задаче — только по делу: частая ошибка, несколько решений, оговорка к условию. Масштаб, «пропорции приблизительные», повтор ответа — убираем */
+const NOTE_SKIP=/увеличен|уменьшен|масштаб|пропорци|произвольн|погрешност|^Размеры на чертеже|^Координаты|^Ход:|^Построения:|По расчёту|Ответ:|Проверка вторым|^Для различия|обозначают|введена для|взят[аоы]? по точкам|чтобы (её|их) точки не|на ответ (это )?не влияет|практически не влияет|^Размеры|условн|вычислен|расчёт|^Контроль|^Пункты обозначены|^Задание того же типа|^Положение точек|рассчитан|выбраны так|не запрашивал|расписаны подробно|по правилам кафедры|для наглядности|приближённо|в пределах чертежа|не рассматривается|^Решение единственное|^Всё проверено|^Показаны|^Принцип:|^Опорные факты|^Ключевая точка|^Ключ:|^Правило:|^Метод:|иногда называют|кафедр|^Построение:|^Ход решения|^Замечание|^Условие выпуклости|очень близко|^Точки A на|^Положение D|проведена горизонтально|^Прямая a —|обозначена h|не разделены|построено \d+ образующих|^Фронталь проведена|^Натуральный вид построен|^Новая плоскость|^Видимость рёбер показана|^Плоскость [αβ] задана|^Кривые \(|в п\.$|^Точки 1–6|^Геометрическое место|^В чертеже 1|^Натуральная величина AB|^Точка N — конец|^а\) Даны|^а\) Фронталь можно|^б\) можно|^б\) b — нормаль|^В г\) посредники|обратным переносом|^Задача разобрана|^Точка K на|^В в\) показаны|^В в\) прямая|^В б\) ось|^Точки A″, C″, B″|^Отрезок BC можно|^У сферы:|посчитан/i;
+window.noteShort=noteShort;
+function noteShort(h){ if(!h) return ''; const parts=String(h).split(/(?<=[.!?])\s+(?=[А-ЯЁA-Z(«а-в]\)?)/).filter(x=>x.trim()&&!NOTE_SKIP.test(x.replace(/<[^>]+>/g,'').trim()));
+  const err=parts.filter(x=>/Частая ошибка|Не путайте/.test(x)), rest=parts.filter(x=>!/Частая ошибка|Не путайте/.test(x));
+  return (err.length?err.concat(rest.slice(0,err.length>1?0:1)):rest.slice(0,1)).slice(0,2).join(' '); }
 function partsOf(t){
   if(t.parts&&t.parts.length) return t.parts.map((p,i)=>Object.assign({given:t.given||[],l:p.l||String.fromCharCode(1072+i)+')'},p));
   return [{given:t.given||[],steps:t.steps||[],ans:t.ans,q:null,l:'',_fig:t._fig}];
 }
 function tag(items,g){ return (items||[]).map(it=>Object.assign({},it,{_g:g})); }
+/* прямые достроены до конца: именованная прямая (h″, f′, a″…) продлевается до каждой своей точки —
+   точка того же поля лежит на её продолжении, а вторая проекция точки — на второй проекции прямой */
+const LINEFIX_DONE=new WeakSet();
+window.LINEFIX=function(part){
+  const st=part.steps||[]; if(LINEFIX_DONE.has(st)) return; LINEFIX_DONE.add(st);
+  const all=(part.given||[]).concat(...st.map(s=>s.add||[])).filter(Boolean);
+  const RX=/^[a-zα-ω][₀-₉0-9]*[αβγδ]?(′|″)$/, strip=x=>String(x==null?'':x).replace(/<[^>]+>/g,'').trim();
+  const pts={}; all.forEach(it=>{ if(it.t==='pt'&&it.at&&it.l) strip(it.l).split(/\s*[≡=]\s*/).forEach(n=>{ if(/(′|″)$/.test(n)) (pts[n]=pts[n]||[]).push(it.at); }); });
+  const one=n=>{ const a=pts[n]; return a&&a.every(p=>Math.hypot(p[0]-a[0][0],p[1]-a[0][1])<1.25)?a[0]:null; };
+  const lines={}; all.forEach(it=>{ if(it.t==='seg'&&it.a&&it.b){ const l=strip(it.l); if(RX.test(l)) (lines[l]=lines[l]||[]).push(it); } });
+  const T=(q,a,b)=>{ const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy; return L<1e-9?0:((q[0]-a[0])*dx+(q[1]-a[1])*dy)/L; };
+  const D=(q,a,b)=>{ const t=T(q,a,b); return Math.hypot(q[0]-a[0]-t*(b[0]-a[0]),q[1]-a[1]-t*(b[1]-a[1])); };
+  Object.keys(lines).forEach(l=>{ const mk=l.slice(-1), om=mk==='″'?'′':'″', other=lines[l.slice(0,-1)+om];
+    lines[l].forEach(sg=>{ const a=sg.a, b=sg.b, L=Math.hypot(b[0]-a[0],b[1]-a[1]); if(L<8) return; let t0=0, t1=1;
+      Object.keys(pts).forEach(n=>{ if(!n.endsWith(mk)) return; const q=one(n); if(!q||D(q,a,b)>0.6) return;
+        const oq=one(n.slice(0,-1)+om); if(oq&&other&&!other.some(o=>D(oq,o.a,o.b)<0.8)) return;
+        const t=T(q,a,b), over=t<0?-t*L:t>1?(t-1)*L:0; if(over<=2||over>=L*1.5) return;
+        const m=6/L; if(t<0) t0=Math.min(t0,t-m); else t1=Math.max(t1,t+m); });
+      if(t0<0||t1>1){ sg.a=[a[0]+t0*(b[0]-a[0]),a[1]+t0*(b[1]-a[1])]; sg.b=[a[0]+t1*(b[0]-a[0]),a[1]+t1*(b[1]-a[1])]; } }); });
+};
+/* способ прямоугольного треугольника: второй катет X–X₀ — разность координат. Где на чертеже это не отмечено,
+   подписываем катет (Δy или Δz) и показываем ту же разность на другой проекции — выносные и размер */
+const DMARK_DONE=new WeakSet();
+window.DMARK=function(part){
+  const st=part.steps||[]; if(DMARK_DONE.has(st)) return; DMARK_DONE.add(st);
+  const strip=x=>String(x==null?'':x).replace(/<[^>]+>/g,'').trim(), near=(p,q)=>p&&q&&Math.hypot(p[0]-q[0],p[1]-q[1])<1.25;
+  const pos={}; const reg=it=>{ if(it&&it.t==='pt'&&it.at&&it.l) strip(it.l).split(/\s*[≡=]\s*/).forEach(n=>{ if(!pos[n]) pos[n]=it.at; }); };
+  (part.given||[]).forEach(reg); st.forEach(s=>(s.add||[]).forEach(reg));
+  const has=[]; (part.given||[]).forEach(it=>has.push(it));
+  st.forEach(s=>{ const add=s.add||[]; add.forEach(it=>has.push(it));
+    add.forEach(it=>{ if(!it||it.t!=='pt'||!/₀$/.test(strip(it.l))) return; const X=strip(it.l).slice(0,-1), X0=it.at;
+      for(const [mk,om,dl] of [['″','′','Δy'],['′','″','Δz']]){ const P=pos[X+mk]; if(!P) continue;
+        const cat=has.find(q=>q&&q.t==='seg'&&((near(q.a,P)&&near(q.b,X0))||(near(q.b,P)&&near(q.a,X0)))); if(!cat) continue; if(!has.concat(st.flatMap(z=>z.add||[])).some(q=>q&&q.t==='sq'&&near(q.at||q.v||q.a,P))) continue;   /* катет — только при знаке прямого угла */
+        if(has.some(q=>q&&(q.t==='dim'||q.t==='tick')&&((near(q.a,P)&&near(q.b,X0))||(near(q.b,P)&&near(q.a,X0))))) break;
+        /* вторая вершина: гипотенуза из X₀ к проекции Y того же поля */
+        const hyp=has.find(q=>q&&q.t==='seg'&&q!==cat&&(near(q.a,X0)||near(q.b,X0)));
+        const Yp=hyp&&(near(hyp.a,X0)?hyp.b:hyp.a), Y=Yp&&Object.keys(pos).find(n=>n.endsWith(mk)&&near(pos[n],Yp));
+        const Xo=pos[X+om], Yo=Y&&pos[Y.slice(0,-1)+om];
+        const D3=(a,b,l,la)=>({t:'dim',a,b,l,k:'aux',la}); if(!/Δ/.test(strip(cat.l))) add.push(D3(P,X0,dl,'auto'));
+        if(Xo&&Yo&&Math.abs(Xo[1]-Yo[1])>=2){ const x=Xo[0]+(Xo[0]>=Yo[0]?12:-12);
+          if(!has.some(q=>q&&q.t==='dim'&&/Δ/.test(strip(q.l))&&Math.abs(q.a[0]-q.b[0])<0.5&&Math.abs(Math.abs(q.a[1]-q.b[1])-Math.abs(Xo[1]-Yo[1]))<1.5)) add.push({t:'ext',a:Yo,b:[x,Yo[1]]},{t:'ext',a:Xo,b:[x,Xo[1]]},D3([x,Yo[1]],[x,Xo[1]],dl,Xo[0]>=Yo[0]?'e':'w')); }
+        break; } }); });
+};
 function scene(part,k){
+  try{ LINEFIX(part); DMARK(part); }catch(e){}
   const given=part.given||[], st=part.steps||[];
   let items=tag(given,'given');
   for(let i=0;i<k;i++) items=items.concat(tag(st[i].add, i===k-1?'new':'old'));
+  /* одна прямая — одна подпись: если ту же прямую позже обвели с той же подписью, ранняя подпись снимается */
+  const lineOn=(u,v)=>{ const dx=u.b[0]-u.a[0], dy=u.b[1]-u.a[1], L=Math.hypot(dx,dy)||1, d=p=>Math.abs((p[0]-u.a[0])*dy-(p[1]-u.a[1])*dx)/L; return d(v.a)<1&&d(v.b)<1; };
+  items.forEach((it,i)=>{ if(it.t!=='seg'||!it.l||!it.a) return; if(items.some((o,j)=>j>i&&o.t==='seg'&&o.l===it.l&&o.a&&lineOn(it,o))) it.l=undefined; });
   let all=given.slice(); st.forEach(s=>{ all=all.concat(s.add||[]); });
   return {items, fitTo:all, alt:'Чертёж: шаг '+k};
 }
@@ -3278,7 +3349,7 @@ function mount(root,t,opt){
     if(k===0){
       card=`<div class="pl-kicker">Дано</div>
         <div class="pl-title">${S.mode==='try'?'Попробуй решить сам':'Разбираем условие'}</div>
-        <div class="pl-text">${p.intro||t.intro||(S.mode==='try'?'Перерисуй чертёж в тетрадь и попробуй построить решение. Застрял — жми «Дальше»: откроется название следующего шага как подсказка.':'Посмотри на исходный чертёж: что задано и что нужно найти. Дальше — '+n+' '+plural(n,'шаг','шага','шагов')+' построения.')}</div>${t.note&&pi===0?`<div class="pl-note"><b>Заметка</b>${t.note}</div>`:''}`;
+        <div class="pl-text">${p.intro||t.intro||(S.mode==='try'?'Перерисуй чертёж в тетрадь и попробуй построить решение. Застрял — жми «Дальше»: откроется название следующего шага как подсказка.':'Посмотри на исходный чертёж: что задано и что нужно найти. Дальше — '+n+' '+plural(n,'шаг','шага','шагов')+' построения.')}</div>${noteShort(t.note)&&pi===0?`<div class="pl-note"><b>Заметка</b>${noteShort(t.note)}</div>`:''}`;
     } else if(tryHid){
       card=`<div class="pl-kicker">Шаг ${k} из ${n} · подсказка</div>
         <div class="pl-title">${st.t||''}</div>
@@ -5988,7 +6059,7 @@ function taskSegs(t,segs){
   if(t.given) segs.push(seg('Дано',flat(t.given)));
   (t.steps||[]).forEach((s,i)=>segs.push(seg('Шаг '+(i+1)+' · '+flat(s.t),flat(s.t)+'. '+flat(s.d)+'. '+flat(s.why))));
   if(t.ans) segs.push(seg('Ответ',flat(t.ans)));
-  if(t.note) segs.push(seg('Заметка',flat(t.note)));
+  if(noteShort(t.note)) segs.push(seg('Заметка',flat(noteShort(t.note))));
 }
 function buildDocs(){
   const docs=[]; const T=(root.TAGS&&root.TAGS.map)||{};
@@ -6248,7 +6319,7 @@ function resultsHTML(r){
     const nr=nearest(r.q,4);
     return `<div class="sr-none">${typeof CAT==='function'?'<span class="sr-cat">'+CAT('think')+'</span>':''}<div class="sr-nt"><b>Ничего не нашли по «${esc(r.q)}»</b><span>Попробуй описать иначе: назови предмет (прямая, плоскость, вид, разрез) и что с ним делать (найти, построить, понять).</span></div>
     ${nr.length?`<h3 class="sr-gh"><b>Ближайшие темы</b></h3><div class="sr-list">${nr.map((x,i)=>rowHTML(x.d,new Set(),i,false)).join('')}</div>`:''}
-    <div class="sr-acts"><a class="btn" href="${Hh('about')}" data-sr-author>Предложить тему</a><span class="sr-hint">Подскажи, чего тут не хватает: добавим.</span></div></div>`;
+    <div class="sr-acts"><a class="btn" href="${Hh('about')}" data-sr-author>Предложить тему</a><span class="sr-hint">Подскажи, чего тут не хватает.</span></div></div>`;
   }
   const gs=group(r); let idx=0; const best=r.items[0].d.key;
   return (r.fixed?`<p class="sr-fix">Раскладка: показаны результаты для «<b>${esc(r.fixed)}</b>»</p>`:'')+
@@ -6838,10 +6909,10 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
   <h1 style="margin-bottom:10px">Начертательная геометрия, которую видно</h1>
   <p class="lead" style="margin-bottom:24px">Учебный тренажёр для первокурсников. Идея простая: к каждому построению не «формула», а чертёж, который растёт по шагам, и комментарий, зачем этот шаг.</p>
   <div class="ab-stats">${stat(tasks,[['задача','задачи','задач'],'рабочей тетради с разбором'])}${stat(st,[['пошаговое построение','пошаговых построения','пошаговых построений'],'с комментариями'])}${stat(tk,[['задание','задания','заданий'],'в 2 билетах'])}${stat(les,[['урок','урока','уроков'],'теории'])}${stat(th,[['вопрос','вопроса','вопросов'],'РК1 с ответами'])}${stat((window.LABS||[]).length,[['интерактивная лаборатория','интерактивные лаборатории','интерактивных лабораторий'],''])}</div>
-  <div class="ab-acc"><b>Точность — наш стандарт</b><p>Каждое построение на сайте проверено расчётом, теория сверена с учебником МГТУ. Нашёл неточность — напиши, разберём и исправим быстро: поправки принимаются и ценятся. Абсолютной непогрешимости не обещает ни один учебник, и мы тоже. Последнее слово по требованиям и оформлению — за твоим преподавателем.</p></div>
+  <div class="ab-acc"><b>Точность — наш стандарт</b><p>Каждое построение на сайте проверено расчётом, теория сверена с учебником МГТУ. Заметил неточность — напиши. Требования к оформлению задаёт твой преподаватель.</p></div>
   <div class="box tip ab-au" style="margin-bottom:16px"><h4>Автор</h4><p style="margin:0 0 12px">Создатель проекта — <b>Андрей Матханов</b>.</p><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">${FX.juicyBtn('sm')}${window.FX&&FX.viewsHTML?FX.viewsHTML():''}</div></div>
   <div class="ab-grid">
-   <div class="box rule"><h4>Что внутри</h4><ul class="ab-ul"><li><b>Начертательная геометрия</b> — Путь (уроки по порядку, к урокам встроены интерактивные лабы), Задачи (вся рабочая тетрадь с поиском и фильтрами, разбор по шагам или «решаю сам»), Проверь себя (тест, билеты РК, тренинг с повторением) и Шпаргалка.</li><li><b>Инженерная графика</b> — скоро: разборы ДЗ, решённая тетрадь и сюрприз.</li><li><b>3D-модель и эпюр</b> — двигаешь точки и видишь чертёж и пространство; сцену можно отправить ссылкой.</li></ul></div>
+   <div class="box rule"><h4>Что внутри</h4><ul class="ab-ul"><li><b>Начертательная геометрия</b> — Путь (уроки по порядку, к урокам встроены интерактивные лабы), Задачи (вся рабочая тетрадь с поиском и фильтрами, разбор по шагам или «решаю сам»), Проверь себя (тест, билеты РК, тренинг с повторением) и Шпаргалка.</li>${IGON()?'<li><b>Инженерная графика</b> — ДЗ 2: 30 вариантов в 3D с разрезами, сечением А–А и чертежом из модели; рабочая тетрадь — тела с отверстиями; теория по ЕСКД.</li>':''}<li><b>3D-модель и эпюр</b> — двигаешь точки и видишь чертёж и пространство; сцену можно отправить ссылкой.</li></ul></div>
    <div class="box tip"><h4>Как это работает</h4><ul class="ab-ul"><li>Чертежи — векторные и рисуются кодом, поэтому чёткие на любом экране и в печати.</li><li>Лаборатории и 3D-модель — собственный движок на SVG и Canvas, без сторонних библиотек; всё работает на телефоне.</li><li>Прогресс хранится в браузере, вход и регистрация не нужны.</li><li>Все решения, чертежи и пояснения подготовлены для этого сайта и проверены вычислением; там, где размеры в условии не заданы, чертёж схематичный — это отмечено на карточке задачи.</li><li>Обезличенная статистика посещений (Яндекс Метрика) включается только с вашего согласия: просмотры страниц и тип устройства, без имён и входа.</li></ul></div>
    <div class="box warn"><h4>Честно о границах</h4><ul class="ab-ul"><li><b>Начерт</b> — независимый учебный проект, не официальный сайт кафедры или университета.</li><li>Сайт не заменяет лекции и рабочую тетрадь кафедры, а помогает разобрать решение шаг за шагом.</li><li>Методику и терминологию нужно сверять с преподавателем; замечания принимаются.</li><li>Задачи 51–89 не привязаны к конкретному РК: набор рубежного контроля определяет кафедра.</li></ul></div>
    <div class="box rule"><h4>Дорожная карта</h4><ul class="ab-ul"><li>Больше лабораторий: следы плоскости, пересечение прямой с плоскостью, замена плоскостей проекций.</li><li>3D-тела для задач на поверхности.</li><li>Разбор домашних заданий и билетов РК полностью, с объяснением каждого шага.</li></ul></div>
@@ -13730,7 +13801,7 @@ const onY0 = (p,q)=>v3.lerp(p,q,p[1]/(p[1]-q[1]));
       { t:'Прямоугольный треугольник',
         d:'Длину FH ищем способом прямоугольного треугольника на π₁. Катет — горизонтальная проекция F′H′. Второй катет — разность высот концов Δz = z<sub>F</sub> − z<sub>H</sub> = '+Ft[2]+' мм: откладываем его из H′ перпендикулярно F′H′, получаем H₀.',
         why:'Натуральная величина отрезка — гипотенуза треугольника, один катет которого — проекция отрезка, другой — разность расстояний концов до этой плоскости проекций (вопрос 11).',
-        add:[ nv.items[0], nv.items[1], nv.items[3], tick(H(Ht),nv.B0,1,'aux'), tick([F(Ft)[0]-14,0],[F(Ft)[0]-14,F(Ft)[1]],1,'aux') ] },
+        add:[ nv.items[0], nv.items[1], nv.items[3], ...nv.items.slice(5), tick(H(Ht),nv.B0,1,'aux'), tick([F(Ft)[0]-14,0],[F(Ft)[0]-14,F(Ft)[1]],1,'aux') ] },
       { t:'Длина FH',
         d:'Гипотенуза F′H₀ — натуральная величина отрезка между следами: |FH| ≈ '+R(nvl)+' мм. Угол при F′ — угол наклона прямой к π₁: α ≈ '+R(nv.alpha)+'°.',
         why:'Угол между гипотенузой и проекцией равен углу наклона отрезка к плоскости проекций (вопрос 11).',
@@ -14974,7 +15045,7 @@ WB3.add({
       { t:'Прямоугольный треугольник на π₁',
         d:'Из C′ перпендикулярно C′M′ откладываем разность высот Δz = z<sub>M</sub> − z<sub>C</sub> = '+r(Mh[2]-C[2])+' мм (берём с π₂; в масштабе тетради 14 мм) — точка C₀. Гипотенуза M′C₀ — натуральная величина CM.',
         why:'Правило прямоугольного треугольника: катеты — проекция отрезка и разность расстояний его концов до π₁ (вопрос 11).',
-        add:[ ...nv1.items.slice(0,4) ] },
+        add:[ ...nv1.items.slice(0,4), ...nv1.items.slice(5) ] },
       { t:'Угол α',
         d:'Угол между M′C′ и M′C₀ — угол наклона ЛНН, а значит и всей плоскости, к π₁: α ≈ '+r(al)+'°.',
         why:'Угол наклона плоскости к π₁ равен углу наклона её ЛНН к π₁ (вопрос 22).',
@@ -15004,7 +15075,7 @@ WB3.add({
       { t:'Прямоугольный треугольник на π₂',
         d:'Из B″ перпендикулярно B″K″ откладываем разность глубин Δy = y<sub>B</sub> − y<sub>K</sub> = '+r(B[1]-Kf[1])+' мм (берём с π₁; в масштабе тетради 18 мм) — точка B₀. Гипотенуза K″B₀ — натуральная величина BK.',
         why:'Правило прямоугольного треугольника на π₂: второй катет — разность расстояний концов отрезка до π₂ (вопрос 11).',
-        add:[ ...nv2.items.slice(0,4) ] },
+        add:[ ...nv2.items.slice(0,4), ...nv2.items.slice(5) ] },
       { t:'Угол β',
         d:'Угол между K″B″ и K″B₀ — угол наклона ЛНН, а значит и плоскости ABC, к π₂: β ≈ '+r(be)+'°.',
         why:'Угол наклона плоскости к π₂ равен углу наклона её ЛНН к π₂ (вопрос 22).',
@@ -15057,7 +15128,7 @@ WB3.add({
     { t:'Натуральная величина AB',
       d:'AB — прямая общего положения. На π₁ строим прямоугольный треугольник: катет A′B′, второй катет A′A₀ = Δz = z<sub>A</sub> − z<sub>B</sub> (берём с π₂). Гипотенуза B′A₀ = |AB| ≈ '+r(ab)+' мм.',
       why:'Способ прямоугольного треугольника (вопрос 11).',
-      add:[ ...nv.items.slice(0,4) ] },
+      add:[ ...nv.items.slice(0,4), ...nv.items.slice(5) ] },
     { t:'Откладываем |AB| от B″',
       d:'На прямой B″A″ (она ⟂ b″) откладываем от B″ отрезок B″A* = |AB|. Треугольник A*B″C″ будет треугольником ABC в натуральную величину, «повёрнутым» вокруг b до положения, параллельного π₂.',
       why:'Катет AB ⟂ b; при повороте плоскости треугольника вокруг фронтали b до положения ∥ π₂ точка A перейдёт на перпендикуляр к b″ через B″ на расстояние |AB|.',
@@ -20723,7 +20794,7 @@ const hDir=v3.sub(Two,One), fDir=v3.sub(Four,Three);
 eq(hDir[2],0,'h ∥ π₁'); eq(fDir[1],0,'f ∥ π₂');
 eq(v3.dot(n,hDir),0,'h ⊂ α'); eq(v3.dot(n,fDir),0,'f ⊂ α');
 /* отрезки h и f — немного за точками пересечения */
-const ext=(p,q,e0,e1)=>[G.along(p,q,p,-e0),G.along(q,p,q,-e1)];
+const ext=(p,q,e0,e1)=>[G.along(p,q,p,e0),G.along(q,p,q,e1)];
 const hF=ext(F(One),F(Two),14,14), hH=ext(H(One),H(Two),14,14);
 const fF=ext(F(Three),F(Four),14,14), fH=ext(H(Three),H(Four),14,14);
 
@@ -20744,7 +20815,7 @@ tk2.push({
     { t:'h″ через C″ параллельно оси x',
       d:'У горизонтали все точки на одной высоте, поэтому её фронтальная проекция параллельна оси x. Проводим через C″ прямую h″ ∥ x. Она пересекает a″ в точке 1″ и b″ в точке 2″.',
       why:'Горизонталь h ∥ π₁ ⇒ z всех её точек одинаковы ⇒ h″ ∥ x.',
-      add:[ seg(...hF,'aux','h″',[-6,-4,'end'],{lat:hF[0]}), pt(F(One),'1″','ne','aux'), pt(F(Two),'2″','nw','aux') ] },
+      add:[ seg(...hF,'aux','h″',[6,-4,'start'],{lat:hF[1]}), pt(F(One),'1″','ne','aux'), pt(F(Two),'2″','nw','aux') ] },
     { t:'Точки 1′ и 2′',
       d:'Из 1″ и 2″ проводим линии связи вниз: 1′ ∈ a′, 2′ ∈ b′.',
       why:'1 ∈ a ⇒ 1′ ∈ a′ на одной линии связи с 1″; так же 2 ∈ b ⇒ 2′ ∈ b′.',
@@ -20765,7 +20836,7 @@ tk2.push({
     { t:'Результат',
       d:'Горизонталь h(h″, h′) и фронталь f(f″, f′) плоскости построены, обе проходят через C. Проверьте признаки: h″ ∥ x, f′ ∥ x, а сами прямые пересекают a и b.',
       why:'Горизонталь и фронталь плоскости — её линии уровня; через каждую точку плоскости проходит ровно одна горизонталь и одна фронталь.',
-      add:[ seg(...hF,'res','h″',[-6,-4,'end'],{lat:hF[0]}), seg(...hH,'res','h′',[-6,10,'end'],{lat:hH[0]}),
+      add:[ seg(...hF,'res','h″',[6,-4,'start'],{lat:hF[1]}), seg(...hH,'res','h′',[-6,10,'end'],{lat:hH[0]}),
             seg(...fF,'res','f″',[-6,-4,'end'],{lat:fF[0]}), seg(...fH,'res','f′',[-6,10,'end'],{lat:fH[0]}),
             pt(F(C),'C″','ne','res'), pt(Ch,'C′','se','res') ] }
   ],
@@ -20775,7 +20846,7 @@ tk2.push({
 
 /* ---------- Типовая задача РК: плоская фигура ABCD (несколько пунктов на одном чертеже) ---------- */
 (function(){
-const {F,H,seg,pt,conn,ln,axis,poly,tick,sq,ang,v3,G,S,nvOnF,nvOnH} = L;
+const {F,H,seg,pt,conn,ln,axis,poly,tick,sq,ang,dim,v3,G,S,nvOnF,nvOnH} = L;
 const k=3.0, OX=640, AX=571;
 const P3=(px,vF,vH)=>[(OX-px)/k,(vH-AX)/k,(AX-vF)/k];
 const A=P3(370,315,620), B=P3(212,549,830), C=P3(602,478,702);
@@ -20819,7 +20890,7 @@ const Kf=F(K);
 const base=[ axis(),
   seg(F(A),F(B),'main'), seg(F(A),F(C),'main'), seg(H(A),H(B),'main'), seg(H(A),H(C),'main'),
   pt(F(A),'A″','n','main',{hollow:true}), pt(F(B),'B″','w','main',{hollow:true}), pt(F(C),'C″','e','main',{hollow:true}), pt(F(D),'D″','s','main',{hollow:true}),
-  pt(H(A),'A′','n','main',{hollow:true}), pt(H(B),'B′','w','main',{hollow:true}), pt(H(C),'C′','e','main',{hollow:true}) ];
+  pt(H(A),'A′','s','main',{hollow:true}), pt(H(B),'B′','w','main',{hollow:true}), pt(H(C),'C′','e','main',{hollow:true}) ];
 const full=[ ...base, seg(F(B),F(D),'main'), seg(F(D),F(C),'main'), seg(H(B),Dh,'main'), seg(Dh,H(C),'main'),
   conn(F(A),H(A)), conn(F(B),H(B)), conn(F(C),H(C)), conn(F(D),Dh), pt(Dh,'D′','s','main') ];
 const r=x=>Math.round(x*10)/10, rd=x=>Math.round(x);
@@ -20875,15 +20946,15 @@ tk3.push({
         { t:'Треугольник на фронтальной проекции',
           d:'Угол к π₂ (β) ищем на фронтальной проекции: катет — A″C″, второй катет — разность удалений от π₂: Δy = |y<sub>C</sub> − y<sub>A</sub>| ≈ '+rd(Math.abs(C[1]-A[1]))+' мм (берём с горизонтальной проекции). Из C″ восставляем перпендикуляр к A″C″ длиной Δy — точка C₀.',
           why:'Способ прямоугольного треугольника: для угла с π₂ катет-проекция — фронтальная, второй катет — Δy.',
-          add:nvC.items.slice(0,2) },
+          add:[...nvC.items.slice(0,2),...nvC.items.slice(5)] },
         { t:'Натуральная величина и угол β',
           d:'Гипотенуза A″C₀ — натуральная величина |AC| ≈ '+rd(AC)+' мм. Угол между гипотенузой и катетом A″C″ — искомый β ≈ '+r(beta)+'°.',
           why:'Гипотенуза равна отрезку в пространстве, угол при проекции — угол наклона к соответствующей плоскости.',
-          add:nvC.items.slice(2) },
+          add:nvC.items.slice(2,5) },
         { t:'Откладываем 50 мм на натуральной величине',
           d:'На гипотенузе A″C₀ от A″ откладываем 50 мм — точка E₀. Из E₀ проводим прямую, параллельную C₀C″, до A″C″ — это E″.',
           why:'На проекции длина искажена, а на гипотенузе — нет. Параллельный перенос сохраняет отношение AE : AC.',
-          add:[ pt(E0,'E₀','w','aux'), seg(E0,Ef,'aux'), pt(Ef,'E″','s','res') ] },
+          add:[ pt(E0,'E₀','w','aux'), dim(F(A),E0,'50','res','w'), seg(E0,Ef,'aux'), pt(Ef,'E″','s','res') ] },
         { t:'E′ по линии связи',
           d:'Из E″ проводим линию связи до A′C′ — получаем E′. Отрезок AE = 50 мм построен на обеих проекциях.',
           why:'E ∈ AC ⇒ E′ ∈ A′C′ на одной линии связи с E″.',
@@ -20903,11 +20974,11 @@ tk3.push({
         { t:'Треугольник на A′K′',
           d:'Второй катет — разность высот: Δz = z<sub>A</sub> − z<sub>K</sub> ≈ '+rd(A[2]-K[2])+' мм (с фронтальной проекции). Из A′ откладываем его перпендикулярно A′K′.',
           why:'Угол плоскости с π₁ равен углу её ЛНН с π₁ — находим его способом прямоугольного треугольника.',
-          add:nvA.items.slice(0,2) },
+          add:[...nvA.items.slice(0,2),...nvA.items.slice(5)] },
         { t:'Угол α',
           d:'Угол между гипотенузой и катетом K′A′ — искомый угол наклона плоскости к π₁: α ≈ '+r(alphaPl)+'°.',
           why:'Угол между плоскостями — угол между перпендикулярами к линии их пересечения; ЛНН и её проекция и есть такие прямые.',
-          add:nvA.items.slice(2) }
+          add:nvA.items.slice(2,5) }
       ],
       ans:'α ≈ '+r(alphaPl)+'° — угол ЛНН AK (A′K′ ⟂ h′) с π₁, найден треугольником на A′K′ со вторым катетом Δz.' }
   ],
@@ -21570,6 +21641,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'3.0',d:'8 октября 2026',rel:'ig',items:['Инженерная графика открыта. ДЗ 2 «Построение изображений» — все 30 вариантов: исходный чертёж задания, деталь в 3D, живые разрезы, сечение А–А наклонной плоскостью и классический чертёж из модели — главный вид и вид слева с разрезами, вид сверху, сечение в натуральную величину. Отметь «мой вариант» — сайт откроет его сразу.','Рабочая тетрадь по ИГ: десять тел с отверстиями (рис. 61–70) — задание, 3D и разрезы. Теория по ЕСКД: форматы, линии, виды, разрезы, сечения, штриховка.','3D-модель решения — у 80 задач тетради по начертательной геометрии.']},
   {v:'2.3',d:'7 октября 2026',items:['Тема дня: у каждого способа — анимация. Видно, как чертёж поворачивается вокруг оси, как «раскрывается» вторая замена, как плоскость ложится вокруг горизонтали и фронтали. Можно остановить ползунком на любом моменте.']},
   {v:'2.2',d:'7 октября 2026',items:['Тема дня вместо задачи дня: преобразование плоскости через горизонталь и фронталь — семь способов на одном треугольнике (замена плоскостей, две замены, вращение вокруг проецирующей оси, перемещение, вращение вокруг горизонтали и фронтали). Каждый ответ сверен с расчётом в пространстве.','Лаборатория отрезка: убрана лишняя подпись под углами.'],
    hidden:[{flag:'ig',t:'Инженерная графика: ДЗ 2 (30 вариантов) — 3D, живые разрезы и классический чертёж из модели; тетрадь — тела с отверстиями; теория по ЕСКД; «мой вариант»'}]},
@@ -21612,6 +21684,8 @@ return { LIST, sha256, owner,
   toggle(name,v){ const f=get('flags',{}); f[name]=!!v; set('flags',f); } };
 })();
 
+/* инженерная графика открыта (пока — только в режиме владельца, переключатель «ig») */
+window.IGON=()=>!!(window.FLAGS&&FLAGS.on('ig'));
 /* панель владельца: #/me */
 window.OWNER=(function(){
 function view(v,r){
@@ -22017,7 +22091,7 @@ function open(t,pi,k){
     /* слои: скрытое старое/новое, видимое старое/новое */
     const Lr={ho:'',hn:'',vo:'',vn:''}; const put=(isNew,isHid,svg)=>{ Lr[(isHid?'h':'v')+(isNew?'n':'o')]+=svg; };
     const ln=(a,b,o)=>{ const A=P(a),Bq=P(b); return `<line x1="${f(A[0])}" y1="${f(A[1])}" x2="${f(Bq[0])}" y2="${f(Bq[1])}" stroke="${o.c}" stroke-width="${o.w}"${o.d?` stroke-dasharray="${o.d}"`:''}${o.o!=null?` stroke-opacity="${o.o}"`:''} stroke-linecap="round"/>`; };
-    const seg3=(a,b,o,isNew)=>pieces(a,b).forEach(([p,q])=>put(isNew,hid(mid3(p,q)),(o.halo?ln(p,q,{c:'var(--t3bg)',w:o.w+3.5}):'')+(o.glow?ln(p,q,{c:'#fde047',w:o.w+6,o:.7}):'')+ln(p,q,o)));
+    const seg3=(a,b,o,isNew)=>pieces(a,b).forEach(([p,q])=>put(isNew,hid(mid3(p,q)),(o.halo?ln(p,q,{c:'var(--t3bg)',w:o.w+2.2}):'')+ln(p,q,o)));
     const polyS=(ps,fill,op,stroke)=>`<polygon points="${ps.map(p=>{ const q=P(p); return f(q[0])+','+f(q[1]); }).join(' ')}" fill="${fill}" fill-opacity="${op}"${stroke?` stroke="${stroke}" stroke-width="1.2" stroke-linejoin="round"`:' stroke="none"'}/>`;
     const plS=(l,o)=>`<polyline points="${l.map(p=>{ const q=P(p); return f(q[0])+','+f(q[1]); }).join(' ')}" fill="none" stroke="${o.c}" stroke-width="${o.w}"${o.o!=null?` stroke-opacity="${o.o}"`:''}${o.d?` stroke-dasharray="${o.d}"`:''} stroke-linejoin="round" stroke-linecap="round"/>`;
     const C1='#c2410c', C2='#1d4ed8', CR='#64748b';
@@ -22029,36 +22103,36 @@ function open(t,pi,k){
     if(m.prof) planes+=polyS([[0,y0,z0],[0,y1,z0],[0,y1,z1],[0,y0,z1]],'url(#t3g3)',1,'rgba(22,163,74,.5)');
     /* ось x со стрелкой */
     { const a=P([x1,0,0]), b=P([x0,0,0]), dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1, ux=dx/l, uy=dy/l;
-      planes+=`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="var(--t3ink)" stroke-width="1.8" stroke-linecap="round"/>`
+      planes+=`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="var(--t3ink)" stroke-width="1.3" stroke-linecap="round"/>`
         +`<path d="M${f(b[0]+ux*9)},${f(b[1]+uy*9)} L${f(b[0]-uy*4.5)},${f(b[1]+ux*4.5)} L${f(b[0]+uy*4.5)},${f(b[1]-ux*4.5)}Z" fill="var(--t3ink)"/>`
-        +`<text x="${f(b[0]+ux*16)}" y="${f(b[1]+uy*16+6)}" class="t3d-ax" text-anchor="middle">x</text>`; }
+        +`<text x="${f(b[0]+ux*16)}" y="${f(b[1]+uy*16+6)}" class="t3d-ax" text-anchor="middle">x</text>`; S._axr={x:b[0]+ux*16-10,y:b[1]+uy*16-12,w:20,h:22}; }
     { const q2=P([x0,0,z1]), q1=P([x0,y1,0]);
       planes+=`<text x="${f(q2[0]+8)}" y="${f(q2[1]+22)}" class="t3d-pl" fill="#2563eb">π<tspan font-size="70%" dy="4">2</tspan></text><text x="${f(q1[0]+8)}" y="${f(q1[1]-8)}" class="t3d-pl" fill="#c2410c">π<tspan font-size="70%" dy="4">1</tspan></text>`;
       if(m.prof){ const q3=P([0,y1,z1]); planes+=`<text x="${f(q3[0]+8)}" y="${f(q3[1]+22)}" class="t3d-pl" fill="#15803d">π<tspan font-size="70%" dy="4">3</tspan></text>`; } }
     const hits=[]; let sel=''; const lbs=[];
     /* проекции отрезков на плоскости — тонко */
     m.segs.forEach(s=>{ const col=COL[s.k]||COL.main; if(s.k==='aux'||s.k==='thin') return; const nw=s.g==='new';
-      put(nw,hid(mid3([s.a[0],s.a[1],0],[s.b[0],s.b[1],0])),ln([s.a[0],s.a[1],0],[s.b[0],s.b[1],0],{c:col,w:1.3,o:.5}));
-      put(nw,hid(mid3([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]])),ln([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]],{c:col,w:1.3,o:.5})); });
+      put(nw,hid(mid3([s.a[0],s.a[1],0],[s.b[0],s.b[1],0])),ln([s.a[0],s.a[1],0],[s.b[0],s.b[1],0],{c:col,w:1,o:.45}));
+      put(nw,hid(mid3([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]])),ln([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]],{c:col,w:1,o:.45})); });
     /* грани */
     m.polys.forEach(o=>{ const col=COL[o.k]||COL.main, c=o.p.reduce((s,p)=>[s[0]+p[0]/o.p.length,s[1]+p[1]/o.p.length,s[2]+p[2]/o.p.length],[0,0,0]); put(o.g==='new',hid(c),polyS(o.p,col,o.g==='new'?.3:.18,col)); });
     /* построения на плоскостях проекций (как на эпюре) */
     m.flat.forEach(o=>{ const col=COL[o.k]||COL.main, nw=o.g==='new'; o.ls.forEach(l=>{ for(let i=0;i<l.length-1;i++){ const a=l[i], b=l[i+1], h=hid(mid3(a,b));
-      put(nw,h,(nw?ln(a,b,{c:'#fde047',w:6,o:.65}):'')+ln(a,b,{c:col,w:nw?2:1.4,o:nw?1:.75})); } }); });
+      put(nw,h,ln(a,b,{c:col,w:nw?1.6:1.1,o:nw?1:.7})); } }); });
     m.dots.forEach(d=>{ const isP=d.k==='grn3', col=isP?'#15803d':d.k==='res'?COL.res:d.k==='grn'?COL.grn:COL[d.k]||'var(--t3ink)', q=P(d.p), nw=d.g==='new', h=hid(d.p);
       if(d.base&&m.pts[d.base]) seg3(m.pts[d.base].p,d.p,{c:'#16a34a',w:1.1,d:'4 4',o:.75},nw);
-      put(nw,h,`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="${nw?4.4:3.6}" fill="var(--t3bg)" stroke="${col}" stroke-width="2"/>`);
+      put(nw,h,`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="${nw?3.2:2.8}" fill="var(--t3bg)" stroke="${col}" stroke-width="1.5"/>`);
       if(d.nm){ lbs.push({nm:d.nm,q,col,g:d.g,pr:nw?1:4,sm:1,hid:h}); hits.push({kind:'dot',nm:d.nm,q,col}); } });
     /* отрезки в пространстве */
-    m.segs.forEach(s=>{ const col=COL[s.k]||COL.main, nw=s.g==='new'; seg3(s.a,s.b,{c:col,w:nw?3:2.4,d:s.k==='aux'?'6 5':null,halo:true,glow:nw},nw); });
+    m.segs.forEach(s=>{ const col=COL[s.k]||COL.main, nw=s.g==='new'; seg3(s.a,s.b,{c:col,w:nw?2:1.6,d:s.k==='aux'?'5 4':null,halo:true},nw); });
     /* точки: лучи на плоскости, проекции (пустые кружки — как на эпюре), сама точка */
     Object.entries(m.pts).forEach(([nm,o])=>{ const p=o.p, a1=[p[0],p[1],0], a2=[p[0],0,p[2]], ax=[p[0],0,0], nw=o.g==='new';
       const col=o.k==='res'?COL.res:o.k==='grn'?COL.grn:'var(--t3ink)';
-      seg3(p,a1,{c:CR,w:1.1,d:'4 4',o:.8},nw); seg3(p,a2,{c:CR,w:1.1,d:'4 4',o:.8},nw); seg3(a1,ax,{c:CR,w:1,d:'2 4',o:.55},nw); seg3(a2,ax,{c:CR,w:1,d:'2 4',o:.55},nw);
+      seg3(p,a1,{c:CR,w:.8,d:'3 3',o:.75},nw); seg3(p,a2,{c:CR,w:.8,d:'3 3',o:.75},nw); seg3(a1,ax,{c:CR,w:.7,d:'2 3',o:.5},nw); seg3(a2,ax,{c:CR,w:.7,d:'2 3',o:.5},nw);
       const q1=P(a1), q2=P(a2), q=P(p), h=hid(p);
-      put(nw,hid(a1),`<circle cx="${f(q1[0])}" cy="${f(q1[1])}" r="3.6" fill="var(--t3bg)" stroke="${C1}" stroke-width="1.9"/>`);
-      put(nw,hid(a2),`<circle cx="${f(q2[0])}" cy="${f(q2[1])}" r="3.6" fill="var(--t3bg)" stroke="${C2}" stroke-width="1.9"/>`);
-      put(nw,h,(nw?`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="12" fill="#fde047" fill-opacity=".6"/>`:'')+`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="5.6" fill="${col}" stroke="var(--t3bg)" stroke-width="2.2"/>`);
+      put(nw,hid(a1),`<circle cx="${f(q1[0])}" cy="${f(q1[1])}" r="2.7" fill="var(--t3bg)" stroke="${C1}" stroke-width="1.4"/>`);
+      put(nw,hid(a2),`<circle cx="${f(q2[0])}" cy="${f(q2[1])}" r="2.7" fill="var(--t3bg)" stroke="${C2}" stroke-width="1.4"/>`);
+      put(nw,h,`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="${nw?4.2:3.6}" fill="${col}" stroke="var(--t3bg)" stroke-width="1.5"/>`);
       lbs.push({nm,q,col,g:o.g,hid:h,pr:(nw?0:2)+(/^[A-ZА-ЯĀ-ž]/.test(nm)?0:1)}); hits.push({kind:'pt',nm,q,q1,q2,col});
       if(S.sel&&S.sel.kind==='pt'&&S.sel.nm===nm){ const ring=(c,r,cl)=>`<circle cx="${f(c[0])}" cy="${f(c[1])}" r="${r}" fill="none" stroke="${cl}" stroke-width="2.6"/>`;
         sel+=ln(p,a1,{c:'#7c3aed',w:2,d:'6 4'})+ln(p,a2,{c:'#7c3aed',w:2,d:'6 4'})+ring(q,13,'#7c3aed')+ring(q1,8.5,C1)+ring(q2,8.5,C2);
@@ -22067,14 +22141,14 @@ function open(t,pi,k){
     S.hits=hits;
     /* подписи — плашки, курсив с засечками, как в учебнике; налезающие пробуем по 4 сторонам */
     const focus=S.focus&&S.k>0, fadeOld=focus?.5:1;
-    let labels=''; const placed=[];
+    let labels=''; const placed=S._axr?[S._axr]:[];
     lbs.sort((a,b)=>a.pr-b.pr).forEach(o=>{ const isSel=(S.sel&&S.sel.nm===o.nm)||o.force;
       if(!S.allLbl&&!isSel&&o.g!=='new'&&!/^[A-ZА-ЯĀ-ž]/.test(o.nm)) return;
-      const fs=o.sm?15:19, w=Math.round([...o.nm].reduce((s,ch)=>s+(/[′″‴₀-₉]/.test(ch)?.38:/[0-9]/.test(ch)?.55:.62),0)*fs+12), h=fs+8;
-      for(const [dx,dy] of [[8,-8-h],[8,8],[-8-w,-8-h],[-8-w,8]]){ const r={x:o.q[0]+dx,y:o.q[1]+dy,w,h};
+      const fs=o.sm?13:15, w=Math.round([...o.nm].reduce((s,ch)=>s+(/[′″‴₀-₉]/.test(ch)?.38:/[0-9]/.test(ch)?.55:.62),0)*fs+4), h=fs+2;
+      for(const [dx,dy] of [[5,-5-h],[5,5],[-5-w,-5-h],[-5-w,5],[-w/2,-9-h],[-w/2,9]]){ const r={x:o.q[0]+dx,y:o.q[1]+dy,w,h};
         if(!isSel&&placed.some(z=>r.x<z.x+z.w&&z.x<r.x+r.w&&r.y<z.y+z.h&&z.y<r.y+r.h)) continue;
         placed.push(r); const dim=(focus&&o.g!=='new'&&!isSel)||o.hid;
-        labels+=`<g${dim?' opacity=".55"':''}><rect x="${f(r.x)}" y="${f(r.y)}" width="${w}" height="${h}" rx="6" class="t3d-chip" stroke="${isSel?'#7c3aed':o.col}"/>`
+        labels+=`<g${dim?' opacity=".55"':''}>`
           +`<text x="${f(r.x+w/2)}" y="${f(r.y+h/2+fs*0.34)}" text-anchor="middle" class="t3d-lb${o.sm?' sm':''}" fill="${isSel&&!o.force?'#7c3aed':o.col}">${escH(o.nm)}</text></g>`; break; } });
     const defs=`<defs><linearGradient id="t3g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".16"/><stop offset="1" stop-color="#3b82f6" stop-opacity=".06"/></linearGradient>`
       +`<linearGradient id="t3g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f59e0b" stop-opacity=".07"/><stop offset="1" stop-color="#f59e0b" stop-opacity=".18"/></linearGradient>`
@@ -22390,7 +22464,8 @@ function navKey(r){ if(r.s==='ng') return {tasks:'nb',check:'rk',hw:'hw',path:'t
   return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
 const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
 function buildNav(){
-  const h=NAVS.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv${n.soon?' nv-soon':''}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n.id]}</svg><span class="nl">${n.name}${n.soon?'<i class="soon">скоро</i>':''}</span><span class="ns">${n.short}</span></a>`).join('');
+  const soon=n=>n.soon&&!(n.id==='ig'&&IGON());
+  const h=NAVS.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv${soon(n)?' nv-soon':''}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n.id]}</svg><span class="nl">${n.name}${soon(n)?'<i class="soon">скоро</i>':''}</span><span class="ns">${n.short}</span></a>`).join('');
   $('navTop').innerHTML=h;
   /* телефон: Тетрадь · РК · [Главная] · ДЗ · Теория — главная всегда под большим пальцем, по центру */
   const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n.id]}</svg><span class="ns">${n.short}</span></a>`; };
@@ -22822,7 +22897,7 @@ FX.qrSheet=function(url,title,back){
     items:[{icon:LOGO.link,label:'Скопировать ссылку',sub:url.replace(/^https?:\/\//,'').slice(0,60),c:'#5d6577',fn:()=>{ FX.copy(url); }}]});
 };
 /* список версий; owner=true — со скрытыми функциями «на проверке» */
-function changesHTML(owner){ return (window.CHANGES||[]).map(c=>`<div class="ch-v"><div class="ch-h"><b>${c.v}</b><span>${c.d}</span></div><ul>${c.items.map(x=>'<li>'+x+'</li>').join('')}</ul>${owner&&c.hidden?c.hidden.map(h=>`<div class="ch-hid"><em>на проверке${FLAGS.on(h.flag)?' · включено':''}</em>${h.t}</div>`).join(''):''}</div>`).join(''); }
+function changesHTML(owner){ return (window.CHANGES||[]).filter(c=>!c.rel||FLAGS.on(c.rel)).map(c=>`<div class="ch-v"><div class="ch-h"><b>${c.v}</b><span>${c.d}</span></div><ul>${c.items.map(x=>'<li>'+x+'</li>').join('')}</ul>${owner&&c.hidden?c.hidden.map(h=>`<div class="ch-hid"><em>на проверке${FLAGS.on(h.flag)?' · включено':''}</em>${h.t}</div>`).join(''):''}</div>`).join(''); }
 /* ── книги-источники: карточка по нажатию (файлы книг на сайте не размещаем — только где найти) ── */
 const BOOKS={
   tb:{k:'Учебник',t:'Начертательная геометрия',a:'Жирных Б.Г., Серёгин В.И., Шарикян Ю.Э.',p:'М.: Изд-во МГТУ им. Н.Э. Баумана, 2015',c:'#2c5fd9',
@@ -22843,7 +22918,7 @@ FX.book=function(id,back){ const b=BOOKS[id]; if(!b) return;
       {icon:BKI.lib,label:'Библиотека МГТУ им. Н.Э. Баумана',sub:'library.bmstu.ru — электронный каталог',c:'#2c5fd9',fn:()=>{ window.open('https://library.bmstu.ru/','_blank','noopener'); }},
       {icon:BKI.find,label:'Найти в интернете',sub:'поиск по названию и авторам',c:'#0e7490',fn:()=>{ window.open('https://yandex.ru/search/?text='+q,'_blank','noopener'); }},
       {icon:BKI.cite,label:'Скопировать для списка литературы',sub:cite.slice(0,60)+'…',c:'#5d6577',fn:()=>{ FX.copy(cite,'Скопировано — вставь в список литературы'); }}]}); };
-try{ const fv=document.getElementById('footVer'); if(fv&&window.CHANGES) fv.textContent='Версия '+CHANGES[0].v+' · что нового'; }catch(e){}
+try{ const fv=document.getElementById('footVer'); if(fv&&window.CHANGES) fv.textContent='Версия '+CHANGES.filter(c=>!c.rel||FLAGS.on(c.rel))[0].v+' · что нового'; }catch(e){}
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-book]'); if(!b) return; e.preventDefault(); FX.book(b.dataset.book,b); });
 /* чертёж (svg.dwg) → PNG: белый лист, подпись задачи и адрес сайта внизу */
 FX.svgPng=function(svg,cap,sub){
@@ -22995,6 +23070,10 @@ function viewHome(v){
     <p class="hs-sub">Напиши как думаешь — найдём разбор за секунды</p>
     <div class="hs-box"><span class="hs-cat">${CAT('peek')}</span><div id="hsMount"></div></div>
    </section>
+   ${IGON()?`<section class="hnew" aria-label="Новое на сайте">
+    <a class="hnew-c hnew-ig" href="${H('ig')}"><span class="hnew-b">Новое</span><b>Инженерная графика</b><span>ДЗ 2 — все 30 вариантов: деталь в 3D, живые разрезы, сечение А–А и готовый чертёж. Тетрадь — тела с отверстиями. Теория по ЕСКД.</span><i>Открыть →</i></a>
+    <a class="hnew-c hnew-3d" href="${H('ng','tasks')}"><span class="hnew-b">Готово</span><b>3D к задачам тетради</b><span>80 задач по начертательной геометрии — с 3D: кнопка «3D» у чертежа показывает шаг решения в пространстве. Крути пальцем, листай шаги.</span><i>К задачам →</i></a>
+   </section>`:''}
    <div class="hpop hpop-top"><div class="hpop-t"><b>Скинь одногруппникам</b><span>Вместе к РК проще — в один тап</span></div>${FX.viewsHTML()}${FX.juicyBtn('hpop-sh')}</div>
    ${tnumHTML('home')}
    <nav class="hq" aria-label="Главные разделы">
@@ -23007,7 +23086,7 @@ function viewHome(v){
    ${dayCardHTML()}
    <h2 class="rowh hrow-h">Чаще всего ищут</h2>
    <div class="row hrow" role="list">${[['visibility','Видимость: что видно, а что нет'],['true-length','Натуральная величина отрезка'],['plane-traces','Следы плоскости'],['point-epure','Как строить точки на эпюре'],['line-plane-meet','Точка пересечения прямой и плоскости'],['perp-theorem','Теорема о прямом угле']].filter(x=>!window.TOPICS||TOPICS.get(x[0])).map((x,i)=>`<a role="listitem" class="rc c${i%4}" href="${H('topic',x[0])}"><em>ТЕМА</em><b>${x[1]}</b><i>Разобрать →</i></a>`).join('')}</div>
-   <a class="hig\" href="${H('ig')}"><span class="hig-b">скоро</span><span class="hig-t"><b>Инженерная графика</b><small>Разборы ДЗ, решённая тетрадь и сюрприз</small></span><i aria-hidden="true">→</i></a>
+   ${IGON()?'':`<a class="hig" href="${H('ig')}"><span class="hig-b">скоро</span><span class="hig-t"><b>Инженерная графика</b><small>Новый раздел</small></span><i aria-hidden="true">→</i></a>`}
   </div>`;
   NEXT=null;
   try{ dayPlay(); }catch(e){}
@@ -23744,9 +23823,9 @@ const V={};
 /* 7 */ V[7]={tree:S(U(flange(120,20),cyl(40,20,120)), tri(40,-E,80.01), triP(40,70,80,120), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
 /* 8 */ V[8]={tree:S(U(flange(110,30),cone(55,35,30,120)), cyl(30,20,80), cylX(40,79.9,90.1), sq45P(40,60,90,120), ...holes(4,12,35,0,20.5,45)), box:[[-55,-55,0],[55,55,120]]};
 /* 9 */ V[9]={tree:S(U(flange(120,20),cone(40,30,20,120)), hexP(35,50,80,120), cyl(25,30,80.01), cylX(20,0,30.01), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
-/* 10 */ V[10]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylX(50,70,120), hexP(36,30,0,70.01), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
-/* 11 */ V[11]={tree:S(U(hexP(120,90,0,70,false),cyl(35,70,110)), coneX(25,40,0,60), cylX(40,60,110), ...holes(4,10,55,90,110,45)), box:[[-60,-52,0],[60,52,110]]};
-/* 12 */ V[12]={tree:S(U(cone(55,40,0,60),cyl(40,60,110)), cylX(40,50,110), hexP(70,40,0,50.01), ...holes(4,12,60,95,110,45)), box:[[-55,-55,0],[55,55,110]]};
+/* 10 */ V[10]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylX(50,70,120), hexP(30,50,0,70.01), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};   /* шестигранник Ø30 внизу → Ø50 у дна расточки */
+/* 11 */ V[11]={tree:S(U(hexP(120,90,0,70,false),cyl(35,70,120)), coneX(25,40,0,70), cylX(40,69.9,120), ...holes(4,10,55,100,120,45)), box:[[-60,-52,0],[60,52,120]]};
+/* 12 */ V[12]={tree:S(U(cone(55,40,0,70),cyl(40,70,120)), cylX(40,60,120), hexP(70,40,0,60.01), ...holes(4,12,60,105,120,45)), box:[[-55,-55,0],[55,55,120]]};
 /* 13 */ V[13]={tree:S(U(flange(110,20),cyl(35,20,30),hexP(70,110,30,120,false)), cylX(50,70,120), cylX(30,0,70.01), ...H4(10,85,0,20)), box:[[-55,-55,0],[55,55,120]]};
 /* 14 */ V[14]={tree:S(U(box(120,90,0,30),cyl(30,30,100),cyl(45,100,120)), box(70,100,-1,10), coneX(30,50,0,120), ...H4(10,75,100,120)), box:[[-60,-45,0],[60,45,120]]};
 /* 15 */ V[15]={tree:S(U(flange(110,20),cone(35,55,20,120)), box(20,120,-1,10), cylX(40,0,70.01), P.npyr(4,40,60,70,120+E,{a:0}), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
@@ -23988,7 +24067,7 @@ function variant(v,n){
     prev:H('ig','hw2',n>1?n-1:N),next:H('ig','hw2',n<N?n+1:1),docTitle:'Вариант '+n+' · ДЗ 2 · '+SUBJ.ig.name,
     img:'ig/v'+String(n).padStart(2,'0')+'.jpg',
     q:'По двум данным изображениям — главному виду и виду сверху — построить вид слева. На главном виде и виде слева соединить половину вида с половиной разреза. Построить сечение A–A наклонной плоскостью.',fig:'ДЗ 2, вариант '+n,
-    note:'Модель построена по условию варианта. Виды и разрезы сайт строит прямо из модели — сверяй с ними свой чертёж.'});
+    note:''});
 }
 function partPage(v,o){
   const n=o.model;
@@ -24006,7 +24085,7 @@ function partPage(v,o){
    </div>
    <div class="igx-act"><button class="btn igx-unfold" id="igUnfold"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h7v7H3zM14 4h7v7h-7zM3 15h7v6H3z"/></svg>Развернуть в чертёж</button></div>
    <section class="igx-sheet" id="igSheet" hidden aria-label="Три вида детали"></section>
-   ${o.bottom||''}<p class="igx-note">${o.note||''}</p></div>`});
+   ${o.bottom||''}${o.note?`<p class="igx-note">${o.note}</p>`:''}</div>`});
   const st0=$(v,'#igStar'); if(st0) st0.addEventListener('click',()=>{ const on=!st0.classList.contains('on'); try{ if(on) localStorage.setItem('nch2_igvar',String(parseInt(o.title.replace(/\D/g,''),10))); else localStorage.removeItem('nch2_igvar'); }catch(e){}
     st0.classList.toggle('on',on); st0.setAttribute('aria-pressed',on); st0.textContent=on?'★ Мой вариант':'☆ Это мой вариант'; try{ FX.buzz&&FX.buzz(6); FX.note&&FX.note(on?'Запомнил: открою его сразу':'Вариант откреплён'); }catch(e){} });
   /* данные изображения задания — строятся из модели (главный вид и вид сверху, без разрезов) */
@@ -24038,7 +24117,7 @@ function partPage(v,o){
     setTimeout(()=>{ let svg=''; try{ svg=sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'); }catch(e){ console.error(e); }
       const im=sheetImages(n,520);
       sh.innerHTML=`<div class="igx-sh-h"><b>Чертёж из модели</b><div class="igx-sh-sw" role="tablist"><button class="on" data-sw="dwg">Чертёж</button><button data-sw="ren">Объёмные виды</button></div></div>
-       <div class="igx-sh-p" data-p="dwg"><div class="igx-dwg">${svg}</div><p class="igx-sh-cap">Главный вид и вид слева — половина вида и половина разреза. ${n.sec?`Сечение ${n.sec.L}–${n.sec.L} — фигура в наклонной плоскости в натуральную величину, расположена по направлению стрелок. `:''}${n.hz?`${n.hz.L}–${n.hz.L} — горизонтальный разрез на месте вида сверху. `:''}Штриховкой показано то, что попало в секущую плоскость, штрихами — невидимый контур. Всё построено из 3D-модели.</p></div>
+       <div class="igx-sh-p" data-p="dwg"><div class="igx-dwg">${svg}</div><p class="igx-sh-cap">Главный вид и вид слева — половина вида и половина разреза. ${n.sec?`Сечение ${n.sec.L}–${n.sec.L} — фигура в наклонной плоскости в натуральную величину, расположена по направлению стрелок. `:''}${n.hz?`${n.hz.L}–${n.hz.L} — горизонтальный разрез на месте вида сверху. `:''}</p></div>
        <div class="igx-sh-p" data-p="ren" hidden><div class="igx-sh-g">${VIEWS.map((v,i)=>`<figure class="igx-sh-f f-${v.k}" style="--d:${i*120}ms"><img alt="${v.t}" src="${im[v.k]||''}"><figcaption><b>${v.t}</b><span>${v.d}</span></figcaption></figure>`).join('')}</div></div>`;
       sh.querySelectorAll('[data-sw]').forEach(b=>b.addEventListener('click',()=>{ sh.querySelectorAll('[data-sw]').forEach(x=>x.classList.toggle('on',x===b)); sh.querySelectorAll('[data-p]').forEach(x=>x.hidden=x.dataset.p!==b.dataset.sw); }));
       sh.hidden=false; requestAnimationFrame(()=>sh.classList.add('on')); sh.scrollIntoView({behavior:'smooth',block:'start'}); btn.disabled=false; btn.lastChild.textContent='Обновить чертёж'; },560); });
@@ -24065,7 +24144,7 @@ function wbItem(v,n){
     tb:{name:'Задание '+t.n,sub:t.title,task:'Тетрадь, р. 5'},
     q:t.q, fig:'рис. '+t.fig+', стр. '+t.page,
     bottom:`<div class="igx-why"><b>Как получается ответ.</b> ${t.why}</div>`,
-    note:'Размеры в тетради не заданы — пропорции взяты с рисунка. Линии пересечения на видах сайт строит прямо из модели.'});
+    note:''});
 }
 const TH=[
  {id:'eskd',t:'ЕСКД',b:`<p><b>ЕСКД</b> — Единая система конструкторской документации: комплекс государственных стандартов с общими правилами разработки, оформления и обращения чертежей и других конструкторских документов. Стандарты разбиты на 10 классификационных групп (0–9).</p>
