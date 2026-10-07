@@ -2341,6 +2341,19 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:560px){.igx-modes button{padding:0 9px;font-size:12.5px}.igx-hint{display:none}.igx-cam{left:10px;right:10px;justify-content:space-between}.igx-cam button{flex:1;padding:0 6px}.igx-plane{bottom:60px}}
 .igx-nogl{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:var(--ink2)}
 .igx-act{display:flex;justify-content:center;margin:16px 0}
+.igb{margin:6px 0 22px;padding:14px;border-radius:20px;background:var(--surf);border:1px solid var(--line)}
+.igb-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px}.igb-h b{font:700 17px var(--disp)}
+.igb-all{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);cursor:pointer}
+.igb-pic{border-radius:12px;background:#fff}.igb-pic svg{min-width:0!important}
+.igs-k{font:italic 600 13px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:3px}
+.igb-nums{display:flex;gap:8px;flex-wrap:wrap;margin:12px 2px}
+.igb-nums button{width:40px;height:40px;border-radius:50%;border:0;background:var(--surf2);color:var(--ink2);font:700 15px var(--sans);cursor:pointer}
+.igb-nums button.done{background:color-mix(in srgb,#0e7490 18%,var(--surf));color:#0e7490}.igb-nums button.on{background:#0e7490;color:#fff}
+.igb-ctl{display:flex;align-items:center;gap:12px}.igb-t{flex:1;min-width:0}.igb-t small{font:700 12px var(--mono);color:var(--mut)}.igb-t b{display:block;font:700 16px var(--disp);margin:2px 0}
+.igb-t p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink2)}.igb-bar{display:block;height:5px;border-radius:9px;background:var(--surf2);overflow:hidden}.igb-bar span{display:block;height:100%;background:#0e7490;transition:width .3s}
+.igb-b{flex:none;width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font:700 26px var(--sans);cursor:pointer}.igb-b.pri{background:#0e7490;color:#fff;border:0}
+.igx-h2{font:700 18px var(--disp);margin:8px 2px 10px}
+@media(max-width:640px){.igb{padding:10px}.igb-pic{overflow-x:auto}.igb-pic svg{min-width:640px!important}.igb-nums{flex-wrap:nowrap;overflow-x:auto;gap:6px}.igb-nums button{flex:none;width:34px;height:34px;font-size:14px}.igb-h{flex-wrap:wrap}.igb-b{width:44px;height:44px}}
 .igx-unfold{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;color:#fff;font:800 16px var(--sans);background:linear-gradient(135deg,#7c3aed,#4f46e5 55%,#2563eb);box-shadow:0 14px 30px -14px rgba(99,62,237,.85);cursor:pointer}
 .igx-unfold:disabled{opacity:.7}
 .igx-sheet{margin:6px 0 18px;padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line);color:#111827;background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px);background-size:18px 18px}
@@ -23763,7 +23776,7 @@ function drawing(model,view,size,off){
   const P1=prog(FS(G(model.tree))), P2=prog(ES);
   const bind=pr=>{ gl.useProgram(pr); const l=gl.getAttribLocation(pr,'a'); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); };
   const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2;
-  const V={front:{yaw:0,pit:1e-4,cut:1,hid:2},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}}[view];
+  const V={front:{yaw:0,pit:1e-4,cut:1,hid:2},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left0:{yaw:Math.PI/2,pit:1e-4,cut:0,hid:3,full:1},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}}[view];
   const cy=Math.cos(V.yaw), sy=Math.sin(V.yaw), cp=Math.cos(V.pit), sp=Math.sin(V.pit), F=[sy*cp,cy*cp,-sp], Rr=norm(cross(F,[0,0,1])), Up=cross(Rr,F), eye=[C[0]-F[0]*400,C[1]-F[1]*400,C[2]-F[2]*400], scale=R*1.62;
   const pass=(cut,off)=>{ const tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,W,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
     [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.NEAREST)); [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));
@@ -24070,6 +24083,84 @@ function variant(v,n){
     q:'По двум данным изображениям — главному виду и виду сверху — построить вид слева. На главном виде и виде слева соединить половину вида с половиной разреза. Построить сечение A–A наклонной плоскостью.',fig:'ДЗ 2, вариант '+n,
     note:''});
 }
+/* ── построение по шагам: как на бумаге — главный вид и вид сверху даны, вид слева строится по линиям связи ──
+   Все виды в одном масштабе и с общим центром (IG3.drawing), поэтому линии связи точно горизонтальны/вертикальны,
+   а постоянная прямая — ровно 45°. Характерные точки берутся из модели: уровни z примитивов и
+   наибольшая глубина |y| сплошного тела на каждом уровне (поиск по функции расстояния IG3.J). */
+function keyPts(model){
+  const b=model.box, J=IG3.J, T=model.tree, zs=new Set([b[0][2],b[1][2]]);
+  (function w(n){ if(!n) return; if(n.z0!=null&&n.z1!=null){ [n.z0,n.z1].forEach(z=>{ if(z>b[0][2]+0.3&&z<b[1][2]-0.3) zs.add(Math.round(z*2)/2); }); } (n.k||[]).forEach(w); if(n.a) w(n.a); })(T);
+  /* крайняя точка тела по глубине на высоте z: sgn = −1 — ближайшая к нам (y min), +1 — дальняя; возвращает y и x */
+  const Y=(z,sgn)=>{ for(let t=0;t<=b[1][1]-b[0][1]+2;t+=0.25){ const y=sgn<0?b[0][1]-1+t:b[1][1]+1-t; let best=null;
+      for(let x=b[0][0];x<=b[1][0];x+=0.5){ if(J(T,x,y,z)<0&&(best==null||Math.abs(x)<Math.abs(best))) best=x; } if(best!=null) return {y:Math.round(y*4)/4,x:best}; } return null; };
+  const lv=[...zs].sort((p,q)=>p-q), out=[];
+  lv.forEach(z=>{ [z>b[0][2]+0.1?z-0.35:null, z<b[1][2]-0.1?z+0.35:null].forEach(zz=>{ if(zz==null) return; [-1,1].forEach(sg=>{ const q=Y(zz,sg); if(!q) return;
+      if(!out.some(p=>Math.abs(p.z-z)<0.6&&Math.abs(p.y-q.y)<0.8)) out.push({z,y:q.y,x:q.x}); }); }); });
+  return out.slice(0,14);
+}
+function stepsSVG(model,k){
+  const W=900, S=420, k0=S/W, X0=20, Y0=16, TOPY=Y0+S-20, PW=2*S+2*X0, PH=TOPY+S+6;
+  const D=stepsSVG.cache&&stepsSVG.cache.m===model?stepsSVG.cache.D:null;
+  const d=D||{front0:IG3.drawing(model,'front0',W),top:IG3.drawing(model,'top',W),left0:IG3.drawing(model,'left0',W),front:IG3.drawing(model,'front',W),left:IG3.drawing(model,'left',W)};
+  stepsSVG.cache={m:model,D:d}; if(!d.front0) return '';
+  const P=(v,q,ox,oy)=>{ const t=d[v].px(q); return [ox+t[0]*k0,oy+t[1]*k0]; }, f=v=>Math.round(v*10)/10;
+  const FR=q=>P('front0',q,X0,Y0), TP=q=>P('top',q,X0,TOPY), LF=q=>P('left0',q,X0+S,Y0);
+  const L=(a,c,cl,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${cl}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
+  const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="3" fill="${cl}"/>`, lab=(q,t,cl,dx,dy)=>`<text x="${f(q[0]+(dx||6))}" y="${f(q[1]+(dy||-5))}" class="igs-k" fill="${cl}">${t}</text>`;
+  const AC='#0e7490', HL='#c2410c', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2];
+  const pts=keyPts(model), cL=LF([0,0,0])[0], cT=TP([0,0,z1])[1];
+  let o='';
+  const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
+  o+=img(k>=6?'front':'front0',X0,Y0)+img('top',X0,TOPY);
+  if(k>=5) o+=img(k>=6?'left':'left0',X0+S,Y0);
+  /* оси симметрии */
+  const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
+  const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0]; o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
+  if(k>=2){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,k>=5?'#111':AC,AX,.8);
+    /* постоянная прямая: x − cL = y − cT */
+    const yA=TOPY+8, yB=TOPY+S-8; if(k<7) o+=L([cL+(yA-cT),yA],[cL+(yB-cT),yB],AC,null,1.1); }
+  const fade=k>=5?' opacity=".3"':'';
+  /* одна и та же точка тела P(x, −y, z) на трёх видах: P″ — на главном, P′ — на виде сверху, P‴ — на виде слева */
+  if(k>=3&&k<7){ let g=''; pts.forEach((p,i)=>{ const B=LF([0,p.y,p.z]), Af=FR([p.x,p.y,p.z]);
+      g+=L(Af,[B[0]+10,B[1]],AC,'4 3',.8)+(k<5?dot(Af,AC)+lab(Af,(i+1)+'″',AC,4,-4):''); });
+    o+=`<g${fade}>${g}</g>`; }
+  if(k>=4&&k<7){ let g=''; pts.forEach((p,i)=>{ const T=TP([p.x,p.y,z1]), M=[cL+(T[1]-cT),T[1]], Lp=LF([0,p.y,p.z]);
+      g+=L(T,M,AC,'4 3',.8)+L(M,[Lp[0],Lp[1]],AC,'4 3',.8)+(k<5?dot(T,AC)+lab(T,(i+1)+'′',AC,4,12)+dot(Lp,HL)+lab(Lp,(i+1)+'‴',HL):''); });
+    o+=`<g${fade}>${g}</g>`; }
+  if(k>=7&&model.sec){ const [[x1,za],[x2,zb]]=model.sec.p, Q1=FR([x1,0,za]), Q2=FR([x2,0,zb]); o+=L(Q1,Q2,HL,'10 3 2 3',1.4);
+    const Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10, F=secFig(model,model.sec,Km*0.8), [bx0,by0,bx9,by9]=F.box, cx=X0+S+S*0.62-(bx0+bx9)/2, cy=TOPY+S*0.55-(by0+by9)/2;
+    o+=`<defs><pattern id="igStH" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#111" stroke-width=".7"/></pattern></defs>`
+      +`<text x="${f(cx+(bx0+bx9)/2)}" y="${f(cy+by0-12)}" class="igs-let" text-anchor="middle" style="font-size:24px">${model.sec.L}–${model.sec.L}</text><path transform="translate(${f(cx)} ${f(cy)})" d="${F.d}" fill="url(#igStH)" fill-rule="evenodd" stroke="#111" stroke-width="1.5"/>`; }
+  return `<svg class="igs-sheet igs-steps" viewBox="0 0 ${PW} ${f(PH)}" role="img" aria-label="Построение по шагам, шаг ${k}"><rect x="2" y="2" width="${PW-4}" height="${f(PH-4)}" fill="#fff" stroke="#111" stroke-width="1"/>${o}</svg>`;
+}
+const BUILD=[
+ ['Дано','Главный вид и вид сверху — из задания. Вид слева строим справа от главного вида, на одной высоте с ним.'],
+ ['Оси и постоянная прямая','Проводим ось симметрии вида слева и постоянную прямую под 45° — через неё глубины переносятся с вида сверху на вид слева.'],
+ ['Высоты — с главного вида','Каждую характерную точку очерка (1″, 2″, …) переносим на вид слева горизонтальной линией связи: высота точки на всех видах одна.'],
+ ['Глубины — с вида сверху','С вида сверху берём глубину точки (1′, 2′, …): горизонталь до постоянной прямой, затем вертикаль вверх. Пересечение с линией высоты — точка 1‴ вида слева.'],
+ ['Контур вида слева','Соединяем точки — получаем внешний контур. Отверстия и полости, которые не видны снаружи, показаны штрихом.'],
+ ['Разрезы','Деталь симметрична, поэтому на главном виде и виде слева соединяем половину вида с половиной разреза. Граница — ось. В секущей плоскости — штриховка 45°.'],
+ ['Сечение А–А','Наклонная плоскость задана следом на главном виде. Точки контура переносим перпендикулярно следу — фигура строится в натуральную величину, со штриховкой.'],
+ ['Готовый лист','Все изображения на листе в проекционной связи, с осями, размерами и основной надписью.']];
+function buildBlock(host,model,o){
+  const N=BUILD.length-(model.sec?0:1); let k=1, all=false;
+  host.innerHTML=`<div class="igb-h"><b>Построение по шагам</b><label class="igb-all"><input type="checkbox" id="igbAll"> весь чертёж сразу</label></div>
+   <div class="igb-pic igx-dwg" id="igbPic"></div>
+   <div class="igb-nums" role="tablist">${Array.from({length:N},(_,i)=>`<button data-k="${i+1}" aria-label="Шаг ${i+1}">${i+1}</button>`).join('')}</div>
+   <div class="igb-ctl"><button class="igb-b" id="igbPrev" aria-label="Назад">‹</button><div class="igb-t"><small id="igbN"></small><b id="igbTt"></b><p id="igbD"></p><i class="igb-bar"><span id="igbBar"></span></i></div><button class="igb-b pri" id="igbNext" aria-label="Дальше">›</button></div>`;
+  const pic=host.querySelector('#igbPic');
+  const show=()=>{ const kk=all?N:k, idx=model.sec||kk<7?kk:kk+1, last=kk===N;
+    let svg=''; try{ svg=last?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,model.sec||kk<7?kk:kk); }catch(e){ console.error(e); }
+    pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
+    const st=BUILD[last?BUILD.length-1:kk-1]; host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[0]; host.querySelector('#igbD').textContent=st[1];
+    host.querySelector('#igbBar').style.width=(kk/N*100)+'%';
+    host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); }); };
+  host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ all=false; host.querySelector('#igbAll').checked=false; k=+b.dataset.k; show(); }));
+  host.querySelector('#igbPrev').addEventListener('click',()=>{ all=false; host.querySelector('#igbAll').checked=false; k=Math.max(1,k-1); show(); });
+  host.querySelector('#igbNext').addEventListener('click',()=>{ all=false; host.querySelector('#igbAll').checked=false; k=Math.min(N,k+1); show(); });
+  host.querySelector('#igbAll').addEventListener('change',e=>{ all=e.target.checked; show(); });
+  show();
+}
 function partPage(v,o){
   const n=o.model;
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
@@ -24078,6 +24169,8 @@ function partPage(v,o){
     <div class="igx-given" id="igGiven">${o.img?`<div class="igx-dwg igx-orig"><img src="${o.img}" alt="Чертёж задания: главный вид и вид сверху" decoding="async"></div>`:'<div class="igx-given-l">Строю данные изображения…</div>'}</div></section>
    <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать решение</span><small>3D-модель, разрезы и готовый чертёж</small></button></div>
    <div id="igSol" hidden>
+   <section class="igb" id="igBuild" aria-label="Построение по шагам"></section>
+   <h2 class="igx-h2">Деталь в 3D</h2>
    <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}
     <div class="igx-modes" role="tablist" aria-label="Режим">${MODES.concat(n.sec?[['sec','Сечение '+n.sec.L+'–'+n.sec.L,{cut:4}]]:[]).map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===1?'on':''}" aria-selected="${i===1}">${m[1]}</button>`).join('')}</div>
     <div class="igx-cam" role="group" aria-label="Вид"><button data-c="iso">3D</button><button data-c="front">Спереди</button><button data-c="top">Сверху</button><button data-c="left">Слева</button></div>
@@ -24097,6 +24190,7 @@ function partPage(v,o){
   let started=false;
   function startSol(){ if(started) return; started=true;
   if(!hasGL){ return; }
+  try{ buildBlock($(v,'#igBuild'),n,o); }catch(e){ console.error(e); }
   const st=$(v,'#igStage'), M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
   if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
   const plane=$(v,'#igPlane'), off=$(v,'#igOff'), offV=$(v,'#igOffV');
