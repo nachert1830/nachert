@@ -2330,7 +2330,11 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-unfold{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;color:#fff;font:800 16px var(--sans);background:linear-gradient(135deg,#7c3aed,#4f46e5 55%,#2563eb);box-shadow:0 14px 30px -14px rgba(99,62,237,.85);cursor:pointer}
 .igx-unfold:disabled{opacity:.7}
 .igx-sheet{margin:6px 0 18px;padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line);color:#111827;background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px);background-size:18px 18px}
-.igx-sh-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:10px}.igx-sh-h b{font-size:17px}.igx-sh-h span{font-size:13px;color:#64748b}
+.igx-sh-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin-bottom:10px}
+.igx-sh-sw{display:flex;padding:3px;border-radius:12px;background:#eef2f8;gap:2px}.igx-sh-sw button{border:0;background:none;padding:7px 12px;border-radius:9px;font:600 13px var(--sans);color:#475569;cursor:pointer}.igx-sh-sw button.on{background:#fff;color:#111;box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}
+.igx-dwg{overflow:auto;border-radius:10px;background:#fff}.igx-dwg svg{display:block;width:100%;min-width:640px;height:auto}
+.igs-dim{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
+.igx-sh-cap{font-size:13px;color:#475569;margin:8px 2px 0;line-height:1.5}.igx-sh-h b{font-size:17px}.igx-sh-h span{font-size:13px;color:#64748b}
 .igx-sh-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .igx-sh-f{margin:0;border:1px solid #cbd5e1;border-radius:12px;background:#fff;overflow:hidden;opacity:0;transform:translateY(24px) scale(.94);transition:opacity .5s var(--d),transform .6s cubic-bezier(.2,.8,.2,1.1) var(--d)}
 .igx-sheet.on .igx-sh-f{opacity:1;transform:none}
@@ -2345,6 +2349,9 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-th{padding:16px 18px;margin:0 0 12px;border-radius:18px;background:var(--surf);border:1px solid var(--line);font-size:15px;line-height:1.6;color:var(--ink2)}
 .igx-th h2{font-size:20px;margin:0 0 8px;color:var(--ink)}.igx-th b{color:var(--ink)}.igx-th p{margin:0 0 10px}.igx-th ul{margin:0;padding-left:20px;display:grid;gap:4px}
 .igx-t{width:100%;border-collapse:collapse;margin:6px 0 12px;font-size:14px}.igx-t th,.igx-t td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.igx-t th{color:var(--mut);font-weight:600;background:var(--surf2)}
+.igx-star{border:1px solid var(--line);background:var(--surf);color:var(--ink2);border-radius:99px;padding:8px 14px;font:600 13px var(--sans);cursor:pointer;margin-right:auto;margin-left:12px}.igx-star.on{border-color:#d97706;color:#b45309;background:color-mix(in srgb,#f59e0b 12%,var(--surf))}
+.igx-mine{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:12px 16px;border-radius:16px;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#2563eb);box-shadow:0 14px 28px -18px rgba(99,62,237,.9)}.igx-mine b{font:800 26px var(--mono)}.igx-mine i{font-style:normal;margin-left:auto;font-weight:700}
+.igx-hero-a{display:flex;flex-wrap:wrap;gap:8px}.igx-hero-mine{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
 .igx-note{font-size:13px;color:var(--mut);text-align:center;margin:0 0 20px}
 /* ── 3D к задаче ── */
 .t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
@@ -21544,6 +21551,8 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'2.2',d:'7 октября 2026',items:['Тема дня вместо задачи дня: преобразование плоскости через горизонталь и фронталь — семь способов на одном треугольнике (замена плоскостей, две замены, вращение вокруг проецирующей оси, перемещение, вращение вокруг горизонтали и фронтали). Каждый ответ сверен с расчётом в пространстве.','Лаборатория отрезка: убрана лишняя подпись под углами.'],
+   hidden:[{flag:'ig',t:'Инженерная графика: ДЗ 2 (30 вариантов) — 3D, живые разрезы и классический чертёж из модели; тетрадь — тела с отверстиями; теория по ЕСКД; «мой вариант»'}]},
   {v:'2.1',d:'6 октября 2026',items:['Новый вид 3D: подписи как в учебнике, проекции — пустые кружки, как на эпюре; то, что за плоскостью проекций, видно сквозь неё.','3D-модель строится по проекциям на чертеже и проверяется: каждая точка в пространстве ровно проецируется в свои проекции.','Задачи 1–50: добавлена независимая проверка ответов ещё для 23 задач.','Тренажёр: задача 6 больше не даёт «новых вариантов» (все её данные заданы условием); в задачах 5, 6, 8 и 24 связи между данными прописаны явно.']},
   {v:'2.0',d:'6 октября 2026',items:['3D: нажми на точку — видно, что это за точка, на каком шаге построена, где её проекции; кнопка «К шагу».','«Фокус на шаге»: всё прежнее бледнеет, новое на шаге — ярко. Номерные подписи старых точек скрыты, их включает кнопка «Все подписи».']},
   {v:'1.9',d:'6 октября 2026',items:['3D показывает все построения шаг за шагом: треугольники натуральной величины, дуги вращения, новые оси, вспомогательные точки — на своих плоскостях проекций, как на эпюре.','В задачах с профильной проекцией появилась плоскость π₃ с точками A‴.']},
@@ -23501,7 +23510,7 @@ function G(nd){
 }
 const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
 const FS=body=>`precision highp float;
-uniform vec2 uRes; uniform vec3 uEye,uFwd,uRight,uUp; uniform float uScale; uniform int uCut; uniform vec4 uPl; uniform vec3 uBg1,uBg2; uniform float uDark; uniform float uHatch; uniform float uOff; uniform float uFlat;
+uniform vec2 uRes; uniform vec3 uEye,uFwd,uRight,uUp; uniform float uScale; uniform int uCut; uniform vec4 uPl; uniform vec3 uBg1,uBg2; uniform float uDark; uniform float uHatch; uniform float uOff; uniform float uFlat; uniform float uEnc; uniform vec3 uBmin,uBmax;
 vec2 rot2(vec2 p,float a){ float c=cos(a),s=sin(a); return vec2(c*p.x-s*p.y,s*p.x+c*p.y); }
 float capZ(float d2,float z,float z0,float z1){ float h=(z1-z0)*.5; float dz=abs(z-(z0+z1)*.5)-h; return min(max(d2,dz),0.)+length(max(vec2(d2,dz),0.)); }
 float capU(float d2,float u,float u0,float u1){ return capZ(d2,u,u0,u1); }
@@ -23521,11 +23530,16 @@ void main(){
   vec2 uv=(gl_FragCoord.xy-.5*uRes)/uRes.y;
   vec3 ro=uEye+(uRight*uv.x+uUp*uv.y)*uScale, rd=uFwd;
   vec3 bg=mix(uBg2,uBg1,clamp(gl_FragCoord.y/uRes.y,0.,1.));
-  float t=0., dmin=1e9, tmin=0.; bool hit=false;
-  for(int i=0;i<160;i++){ vec3 p=ro+rd*t; float d=map(p); if(d<dmin){ dmin=d; tmin=t; } if(d<.015){ hit=true; break; } t+=d*.9; if(t>900.) break; }
+  vec3 iv=1./(rd+vec3(1e-6)), ta=(uBmin-ro)*iv, tb=(uBmax-ro)*iv, tn=min(ta,tb), tx=max(ta,tb);
+  float t0=max(max(tn.x,tn.y),tn.z), t1=min(min(tx.x,tx.y),tx.z);
+  if(t1<t0||t1<0.){ if(uEnc>.5){ gl_FragColor=vec4(0.); return; } gl_FragColor=vec4(bg,1.); return; }
+  float t=max(t0,0.), dmin=1e9, tmin=0.; bool hit=false;
+  for(int i=0;i<160;i++){ vec3 p=ro+rd*t; float d=map(p); if(d<dmin){ dmin=d; tmin=t; } if(d<.015){ hit=true; break; } t+=d*.9; if(t>t1+.5) break; }
+  if(uEnc>.5&&!hit){ gl_FragColor=vec4(0.); return; }
   if(!hit){ float px=uScale/uRes.y; float o=1.-smoothstep(px*.6,px*1.8,dmin); gl_FragColor=vec4(mix(bg,vec3(.12,.14,.2)*(1.-uDark)+vec3(.85)*uDark,o*.85),1.); return; }
   vec3 p=ro+rd*t, n=nrm(p,.02);
   bool cut=uCut>0 && part(p)<-.03;
+  if(uEnc>.5){ float dn=clamp((t-400.+uScale*1.2)/(uScale*2.4),0.,1.); gl_FragColor=vec4(n*.5+.5,(cut?.52:.02)+dn*.47); return; }
   vec3 L1=normalize(vec3(-.55,-.7,.85)), L2=normalize(vec3(.8,.3,.35));
   float dif=max(dot(n,L1),0.), dif2=max(dot(n,L2),0.)*.35, amb=.42+.25*n.z;
   float ao=0.; for(int k=1;k<=4;k++){ float h=float(k)*1.6; ao+=(h-map(p+n*h))/h; } ao=clamp(1.-ao*.18,.45,1.);
@@ -23558,10 +23572,10 @@ function viewer(canvas,opt){
     const pr=gl.createProgram(); gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS(G(m.tree)))); gl.linkProgram(pr);
     if(!gl.getProgramParameter(pr,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
     if(prog) gl.deleteProgram(prog); prog=pr; gl.useProgram(prog);
-    ['uRes','uEye','uFwd','uRight','uUp','uScale','uCut','uPl','uBg1','uBg2','uDark','uHatch','uOff','uFlat'].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
+    ['uRes','uEye','uFwd','uRight','uUp','uScale','uCut','uPl','uBg1','uBg2','uDark','uHatch','uOff','uFlat','uEnc','uBmin','uBmax'].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
     const loc=gl.getAttribLocation(prog,'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-    const b=m.box||[[-60,-60,0],[60,60,120]]; S.C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2]; S.R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2; }
-  function draw(scale){ if(!prog) return; const dpr=Math.min(window.devicePixelRatio||1,2)*(scale||1), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
+    const b=m.box||[[-60,-60,0],[60,60,120]]; S.bmin=[b[0][0]-3,b[0][1]-3,b[0][2]-3]; S.bmax=[b[1][0]+3,b[1][1]+3,b[1][2]+3]; S.C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2]; S.R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2; }
+  function draw(scale){ if(!prog) return; const dpr=Math.min(window.devicePixelRatio||1,1.6)*(scale||1), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
     if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } gl.viewport(0,0,w,h);
     const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit);
     /* камера на сфере вокруг центра детали; fwd — направление взгляда */
@@ -23570,7 +23584,7 @@ function viewer(canvas,opt){
     const Cc=[S.C[0]+S.tx*R[0]+S.ty*Up[0],S.C[1]+S.tx*R[1]+S.ty*Up[1],S.C[2]+S.tx*R[2]+S.ty*Up[2]];
     const eye=[Cc[0]-F[0]*400,Cc[1]-F[1]*400,Cc[2]-F[2]*400];
     gl.uniform2f(U.uRes,w,h); gl.uniform3fv(U.uEye,eye); gl.uniform3fv(U.uFwd,F); gl.uniform3fv(U.uRight,R); gl.uniform3fv(U.uUp,Up);
-    gl.uniform1f(U.uScale,S.R*2.25/S.zoom*Math.max(1,h/w)); gl.uniform1f(U.uFlat,S.flat?1:0); gl.uniform1i(U.uCut,S.cut); gl.uniform4fv(U.uPl,S.pl); gl.uniform1f(U.uOff,S.off||0);
+    gl.uniform3fv(U.uBmin,S.bmin); gl.uniform3fv(U.uBmax,S.bmax); gl.uniform1f(U.uScale,S.R*2.25/S.zoom*Math.max(1,h/w)); gl.uniform1f(U.uFlat,S.flat?1:0); gl.uniform1i(U.uCut,S.cut); gl.uniform4fv(U.uPl,S.pl); gl.uniform1f(U.uOff,S.off||0);
     const dark=document.documentElement.getAttribute('data-theme')==='dark';
     const bg=S.bg||(dark?[[.07,.09,.14],[.11,.14,.21]]:[[.98,.985,1],[.89,.915,.96]]);
     gl.uniform3fv(U.uBg1,bg[0]); gl.uniform3fv(U.uBg2,bg[1]); gl.uniform1f(U.uDark,dark?1:0); gl.uniform1f(U.uHatch,S.hatch||3.2);
@@ -23590,7 +23604,53 @@ function section(tree,O,u,v,box,step){ step=step||0.4; const [u0,u1,v0,v1]=box, 
     T.forEach(([a,b])=>segs.push([e[a](),e[b]()])); }
   return {segs,inside:(a,b)=>J(tree,O[0]+u[0]*a+v[0]*b,O[1]+u[1]*a+v[1]*b,O[2]+u[2]*a+v[2]*b)<0};
 }
-return {P,J,G,viewer,section};
+/* ── классический чертёж из модели: линии видимого контура, штриховка разреза, невидимый контур штрихами ──
+   проход 1 — рендер в текстуру: нормаль (rgb) и глубина + признак среза (a); проход 2 — поиск рёбер по соседям */
+const ES=`precision highp float; uniform sampler2D uA,uB; uniform vec2 uRes; uniform float uHalf,uHasB,uW,uHs;
+vec4 at(sampler2D t,vec2 p){ return texture2D(t,p/uRes); }
+float edgeAt(sampler2D t,vec2 p,out vec2 gdir){ vec4 c=at(t,p); float e=0.; gdir=vec2(0.);
+  for(int i=0;i<4;i++){ vec2 o=i==0?vec2(uW,0.):i==1?vec2(-uW,0.):i==2?vec2(0.,uW):vec2(0.,-uW); vec4 q=at(t,p+o);
+    bool m1=c.a>.01, m2=q.a>.01; float d=0.;
+    if(m1!=m2) d=1.; else if(m1){ vec3 n1=c.rgb*2.-1., n2=q.rgb*2.-1.; float dz=abs(mod(c.a,.5)-mod(q.a,.5));
+      if(dot(n1,n2)<.93||dz>.035||(c.a>.51)!=(q.a>.51)) d=1.; }
+    if(d>e){ e=d; } gdir+=o*d; }
+  return e; }
+void main(){ vec2 p=gl_FragCoord.xy; vec2 g1,g2; vec4 c=at(uA,p); float e=edgeAt(uA,p,g1);
+  vec3 col=vec3(1.);
+  if(c.a>.51){ float s=uHs; float w=abs(fract((p.x+p.y)/s)-.5)*s; col=mix(vec3(.12),col,smoothstep(.55,1.35,w)); }
+  if(uHasB>.5&&p.x<uHalf-1.5&&e<.5){ float e2=edgeAt(uB,p,g2); if(e2>.5){ vec2 dir=normalize(vec2(-g2.y,g2.x)+1e-5); float u=dot(p,dir)/(uW*7.); if(fract(u)<.62) col=vec3(.12); } }
+  if(e>.5) col=vec3(.07);
+  gl_FragColor=vec4(col,1.); }`;
+function drawing(model,view,size){
+  const W=size||1000, cv=document.createElement('canvas'); cv.width=W; cv.height=W;
+  const gl=cv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true}); if(!gl) return null;
+  const sh=(t,src)=>{ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const prog=(fs)=>{ const pr=gl.createProgram(); gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(pr); return pr; };
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const P1=prog(FS(G(model.tree))), P2=prog(ES);
+  const bind=pr=>{ gl.useProgram(pr); const l=gl.getAttribLocation(pr,'a'); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); };
+  const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2;
+  const V={front:{yaw:0,pit:1e-4,cut:1,hid:2},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0}}[view];
+  const cy=Math.cos(V.yaw), sy=Math.sin(V.yaw), cp=Math.cos(V.pit), sp=Math.sin(V.pit), F=[sy*cp,cy*cp,-sp], Rr=norm(cross(F,[0,0,1])), Up=cross(Rr,F), eye=[C[0]-F[0]*400,C[1]-F[1]*400,C[2]-F[2]*400], scale=R*1.62;
+  const pass=(cut,off)=>{ const tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,W,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.NEAREST)); [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));
+    const fb=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0); gl.viewport(0,0,W,W);
+    bind(P1); const u=k=>gl.getUniformLocation(P1,k);
+    gl.uniform2f(u('uRes'),W,W); gl.uniform3fv(u('uEye'),eye); gl.uniform3fv(u('uFwd'),F); gl.uniform3fv(u('uRight'),Rr); gl.uniform3fv(u('uUp'),Up); gl.uniform1f(u('uScale'),scale);
+    gl.uniform3fv(u('uBmin'),[b[0][0]-3,b[0][1]-3,b[0][2]-3]); gl.uniform3fv(u('uBmax'),[b[1][0]+3,b[1][1]+3,b[1][2]+3]); gl.uniform1i(u('uCut'),cut); gl.uniform1f(u('uOff'),off||0); gl.uniform4fv(u('uPl'),[0,0,1,0]); gl.uniform3fv(u('uBg1'),[1,1,1]); gl.uniform3fv(u('uBg2'),[1,1,1]); gl.uniform1f(u('uDark'),0); gl.uniform1f(u('uHatch'),3); gl.uniform1f(u('uFlat'),0); gl.uniform1f(u('uEnc'),1);
+    gl.drawArrays(gl.TRIANGLES,0,3); gl.bindFramebuffer(gl.FRAMEBUFFER,null); return tex; };
+  const tA=pass(V.cut,0), tB=V.hid?pass(V.hid,0):tA;
+  bind(P2); const u=k=>gl.getUniformLocation(P2,k); gl.viewport(0,0,W,W);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tA); gl.uniform1i(u('uA'),0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,tB); gl.uniform1i(u('uB'),1);
+  gl.uniform2f(u('uRes'),W,W); gl.uniform1f(u('uHalf'),W/2); gl.uniform1f(u('uHasB'),V.hid?1:0); gl.uniform1f(u('uW'),Math.max(1.5,W/420)); gl.uniform1f(u('uHs'),W/70);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  const url=cv.toDataURL('image/png'); try{ gl.getExtension('WEBGL_lose_context').loseContext(); }catch(e){}
+  /* мир → пиксель картинки (для осей и размеров поверх) */
+  const px=q=>{ const d=[q[0]-C[0],q[1]-C[1],q[2]-C[2]]; return [W/2+(d[0]*Rr[0]+d[1]*Rr[1]+d[2]*Rr[2])/scale*W, W/2-(d[0]*Up[0]+d[1]*Up[1]+d[2]*Up[2])/scale*W]; };
+  return {url,W,px,box:b};
+}
+return {P,J,G,viewer,section,drawing};
 })();
 
 /* ═════════ IG_VARS: 30 вариантов задачи 2 «Построение изображений» ═════════
@@ -23739,11 +23799,43 @@ const VIEWS=[
   {k:'front',t:'Главный вид',d:'слева — вид, справа — фронтальный разрез',st:{yaw:0,pit:1e-4,cut:1}},
   {k:'left',t:'Вид слева',d:'слева — вид, справа — профильный разрез',st:{yaw:Math.PI/2,pit:1e-4,cut:5}},
   {k:'top',t:'Вид сверху',d:'без разреза',st:{yaw:0,pit:Math.PI/2-1e-4,cut:0}}];
-function sheetImages(n,size){ const c=document.createElement('canvas'); c.style.cssText='position:fixed;left:-9999px;top:0;width:'+size+'px;height:'+size+'px'; document.body.appendChild(c);
+function sheetImages(n,size){ const VV=VIEWS.concat([{k:'iso',st:{yaw:-0.62,pit:0.42,cut:1}}]); const c=document.createElement('canvas'); c.style.cssText='position:fixed;left:-9999px;top:0;width:'+size+'px;height:'+size+'px'; document.body.appendChild(c);
   const v=IG3.viewer(c,{keep:1}); const out={}; if(!v){ c.remove(); return out; } v.compile(typeof n==='object'?n:IG_VARS[n]);
-  VIEWS.forEach(o=>{ Object.assign(v.S,o.st,{zoom:1.02,off:0,bg:[[1,1,1],[1,1,1]],hatch:2.6,flat:1}); v.draw(1); out[o.k]=c.toDataURL('image/png'); });
+  VV.forEach(o=>{ Object.assign(v.S,o.st,{zoom:1.02,off:0,bg:[[1,1,1],[1,1,1]],hatch:2.6,flat:o.k==='iso'?0:1}); v.draw(1); out[o.k]=c.toDataURL('image/png'); });
   c.remove(); try{ v.gl.getExtension('WEBGL_lose_context').loseContext(); }catch(e){} return out; }
 
+/* ── лист чертежа: три вида в проекционной связи + оси + габариты + основная надпись ── */
+function sheetSVG(model,title,sub,task){
+  const W=900, D={front:IG3.drawing(model,'front',W),left:IG3.drawing(model,'left',W),top:IG3.drawing(model,'top',W)}; if(!D.front) return '';
+  const iso=sheetImages(model,420).iso||'';
+  const S=470, X0=40, Y0=30, k=S/W, b=model.box;
+  const z0=b[0][2], z1=b[1][2], r=Math.max(b[1][0],-b[0][0]), J=IG3.J, zt=z0+1;
+  const round=[0,20,45,70,90].every(a=>{ const t=a*Math.PI/180; return J(model.tree,0.97*r*Math.cos(t),0.97*r*Math.sin(t),zt)<0&&J(model.tree,1.04*r*Math.cos(t),1.04*r*Math.sin(t),zt)>0; });
+  const P=(d,q,ox,oy)=>{ const v=d.px(q); return [ox+v[0]*k,oy+v[1]*k]; };
+  const f=v=>Math.round(v*10)/10, ln=(a,b,c,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="${c||'#111'}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
+  const AX='14 3 2 3';
+  let o='';
+  o+=`<image href="${D.front.url}" x="${X0}" y="${Y0}" width="${S}" height="${S}"/><image href="${D.left.url}" x="${X0+S}" y="${Y0}" width="${S}" height="${S}"/><image href="${D.top.url}" x="${X0}" y="${Y0+S-40}" width="${S}" height="${S}"/>`;
+  /* оси */
+  const fa=P(D.front,[0,0,z0-7],X0,Y0), fb=P(D.front,[0,0,z1+7],X0,Y0); o+=ln(fa,fb,'#111',AX,.8);
+  const la=P(D.left,[0,0,z0-7],X0+S,Y0), lb=P(D.left,[0,0,z1+7],X0+S,Y0); o+=ln(la,lb,'#111',AX,.8);
+  const tc=P(D.top,[0,0,z1],X0,Y0+S-40), e=(r+8)*k*W/(b[1][0]-b[0][0]+1e-9)*0+ (P(D.top,[r+7,0,z1],X0,Y0+S-40)[0]-tc[0]);
+  o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);
+  /* габариты: высота справа от главного вида, ширина под ним */
+  const arr=(p,dx,dy)=>`<path d="M${f(p[0])},${f(p[1])} l${f(dx*9-dy*2.6)},${f(dy*9+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="#111"/>`;
+  const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+26;
+  o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.6)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.6)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.6)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
+    +`<text x="${f(hx-5)}" y="${f((hb[1]+ht[1])/2)}" transform="rotate(-90 ${f(hx-5)} ${f((hb[1]+ht[1])/2)})" class="igs-dim" text-anchor="middle">${Math.round(z1-z0)}</text>`;
+  const wl=P(D.front,[-r,0,z0],X0,Y0), wr=P(D.front,[r,0,z0],X0,Y0), wy=wl[1]+24;
+  o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.6)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.6)+ln([wl[0],wy],[wr[0],wy],'#111',null,.6)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
+    +`<text x="${f((wl[0]+wr[0])/2+(wr[0]-wl[0])*.22)}" y="${f(wy-5)}" class="igs-dim" text-anchor="middle">${round?'Ø':''}${Math.round(2*r)}</text>`;
+  /* 3D и основная надпись */
+  const BX=X0+S+10, BY=Y0+S-10;
+  o+=`<image href="${iso}" x="${BX+40}" y="${BY-20}" width="330" height="330"/>`;
+  o+=`<g class="igs-tb"><rect x="1010" y="${Y0+2*S-150}" width="430" height="110" fill="#fff" stroke="#111" stroke-width="1.6"/><line x1="1010" y1="${Y0+2*S-95}" x2="1440" y2="${Y0+2*S-95}" stroke="#111"/><line x1="1270" y1="${Y0+2*S-95}" x2="1270" y2="${Y0+2*S-40}" stroke="#111"/>
+    <text x="1225" y="${Y0+2*S-114}" text-anchor="middle" class="igs-tbt">${sub||''}</text><text x="1140" y="${Y0+2*S-60}" text-anchor="middle" class="igs-tbt">${title}</text><text x="1355" y="${Y0+2*S-60}" text-anchor="middle" class="igs-tbt">${task||""}</text></g>`;
+  return `<svg class="igs-sheet" viewBox="0 0 1480 ${Y0+2*S}" role="img" aria-label="Чертёж: главный вид, вид слева, вид сверху"><rect x="4" y="4" width="1472" height="${Y0+2*S-8}" fill="#fff" stroke="#111" stroke-width="1"/><rect x="24" y="12" width="1444" height="${Y0+2*S-24}" fill="none" stroke="#111" stroke-width="2"/>${o}</svg>`;
+}
 /* ── страницы ── */
 function crumbs(list){ return list; }
 function home(v){
@@ -23751,7 +23843,7 @@ function home(v){
    <section class="igx-hero">
     <div class="igx-hero-t"><span class="igx-badge">Новое · 3D</span><h1>Инженерная графика</h1>
      <p class="lead">Домашние задания — в объёме. Деталь крутится в руках, режется плоскостью у тебя на глазах и разворачивается в чертёж по ЕСКД.</p>
-     <div class="igx-hero-a"><a class="btn pri" href="${H('ig','hw2')}">ДЗ 2 · 30 вариантов →</a></div></div>
+     <div class="igx-hero-a"><a class="btn pri" href="${H('ig','hw2')}">ДЗ 2 · 30 вариантов →</a>${myVar()?`<a class="btn igx-hero-mine" href="${H('ig','hw2',myVar())}">★ Мой вариант ${myVar()}</a>`:''}</div></div>
     <div class="igx-hero-3d" id="igHero" aria-hidden="true"></div>
    </section>
    <div class="igx-cards">
@@ -23766,6 +23858,7 @@ function home(v){
 function catalog(v){
   v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2']],next:null,noBottom:true,cls:'igx',body:`
    <div class="intro"><h1>ДЗ 2 · Построение изображений</h1><p class="lead">Найди свой вариант — деталь откроется в 3D. Покрути, разрежь, разверни в чертёж и сравни со своим листом.</p></div>
+   ${myVar()?`<a class="igx-mine" href="${H('ig','hw2',myVar())}"><span>★ Мой вариант</span><b>${myVar()}</b><i>Открыть →</i></a>`:''}
    <div class="igx-find"><label for="igNum">Мой вариант</label><input id="igNum" inputmode="numeric" maxlength="2" placeholder="1–30" autocomplete="off"><button class="btn pri" id="igGo">Открыть</button></div>
    <details class="igx-need" open><summary>Что нужно построить на листе А3</summary>
     <ol><li><b>Главный вид</b> — половина вида и половина фронтального разреза. Деталь симметрична, поэтому разрез ставят справа от оси, граница — штрихпунктирная осевая линия.</li>
@@ -23780,16 +23873,18 @@ function catalog(v){
   NEXT=null; return 'ДЗ 2 · '+SUBJ.ig.name;
 }
 const MODES=[['part','Деталь',{cut:0}],['quarter','Вырез ¼',{cut:1}],['front','Фронтальный разрез',{cut:2}],['side','Профильный разрез',{cut:3}]];
+const myVar=()=>{ try{ return +localStorage.getItem('nch2_igvar')||0; }catch(e){ return 0; } };
 function variant(v,n){
   if(!(n>=1&&n<=N)){ setTimeout(()=>redir(H('ig','hw2')),0); return 'ДЗ 2'; }
-  return partPage(v,{model:IG_VARS[n],crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2',H('ig','hw2')],['Вариант '+n]],title:'Вариант '+n,
+  const mine=myVar()===n;
+  return partPage(v,{model:IG_VARS[n],star:`<button class="igx-star${mine?' on':''}" id="igStar" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Это мой вариант'}</button>`,crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2',H('ig','hw2')],['Вариант '+n]],title:'Вариант '+n,
     prev:H('ig','hw2',n>1?n-1:N),next:H('ig','hw2',n<N?n+1:1),docTitle:'Вариант '+n+' · ДЗ 2 · '+SUBJ.ig.name,
     note:'Модель построена по условию варианта. Виды и разрезы на этой странице сайт строит прямо из модели — сверяй с ними свой чертёж.'});
 }
 function partPage(v,o){
   const n=o.model;
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
-   <div class="igx-vh"><h1>${o.title}</h1><div class="igx-nav"><a class="btn" href="${o.prev}" aria-label="Предыдущее">←</a><a class="btn" href="${o.next}" aria-label="Следующее">→</a></div></div>${o.top||''}
+   <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}<div class="igx-nav"><a class="btn" href="${o.prev}" aria-label="Предыдущее">←</a><a class="btn" href="${o.next}" aria-label="Следующее">→</a></div></div>${o.top||''}
    <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}
     <div class="igx-modes" role="tablist" aria-label="Режим">${MODES.map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===1?'on':''}" aria-selected="${i===1}">${m[1]}</button>`).join('')}</div>
     <div class="igx-cam" role="group" aria-label="Вид"><button data-c="iso">3D</button><button data-c="front">Спереди</button><button data-c="top">Сверху</button><button data-c="left">Слева</button></div>
@@ -23799,6 +23894,8 @@ function partPage(v,o){
    <div class="igx-act"><button class="btn igx-unfold" id="igUnfold"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h7v7H3zM14 4h7v7h-7zM3 15h7v6H3z"/></svg>Развернуть в чертёж</button></div>
    <section class="igx-sheet" id="igSheet" hidden aria-label="Три вида детали"></section>
    ${o.bottom||''}<p class="igx-note">${o.note||''}</p>`});
+  const st0=$(v,'#igStar'); if(st0) st0.addEventListener('click',()=>{ const on=!st0.classList.contains('on'); try{ if(on) localStorage.setItem('nch2_igvar',String(parseInt(o.title.replace(/\D/g,''),10))); else localStorage.removeItem('nch2_igvar'); }catch(e){}
+    st0.classList.toggle('on',on); st0.setAttribute('aria-pressed',on); st0.textContent=on?'★ Мой вариант':'☆ Это мой вариант'; try{ FX.buzz&&FX.buzz(6); FX.note&&FX.note(on?'Запомнил: открою его сразу':'Вариант откреплён'); }catch(e){} });
   if(!hasGL){ NEXT=null; return o.docTitle; }
   const st=$(v,'#igStage'), M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
   if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); NEXT=null; return o.docTitle; }
@@ -23815,10 +23912,12 @@ function partPage(v,o){
   /* развернуть в чертёж: камера облетает деталь, три вида вылетают на лист */
   $(v,'#igUnfold').addEventListener('click',e=>{ const sh=$(v,'#igSheet'), btn=e.currentTarget; btn.disabled=true;
     M.to({yaw:0,pit:1e-4,zoom:1},520);
-    setTimeout(()=>{ const im=sheetImages(n,520);
-      sh.innerHTML=`<div class="igx-sh-h"><b>Чертёж из модели</b><span>виды в проекционной связи, масштаб общий</span></div>
-       <div class="igx-sh-g">${VIEWS.map((o,i)=>`<figure class="igx-sh-f f-${o.k}" style="--d:${i*120}ms"><img alt="${o.t}" src="${im[o.k]||''}"><figcaption><b>${o.t}</b><span>${o.d}</span></figcaption></figure>`).join('')}
-        <div class="igx-sh-tip"><b>Как читать</b><span>Заштриховано то, что попало в секущую плоскость. Половина вида и половина разреза разделены осью детали.</span></div></div>`;
+    setTimeout(()=>{ let svg=''; try{ svg=sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'); }catch(e){ console.error(e); }
+      const im=sheetImages(n,520);
+      sh.innerHTML=`<div class="igx-sh-h"><b>Чертёж из модели</b><div class="igx-sh-sw" role="tablist"><button class="on" data-sw="dwg">Чертёж</button><button data-sw="ren">Объёмные виды</button></div></div>
+       <div class="igx-sh-p" data-p="dwg"><div class="igx-dwg">${svg}</div><p class="igx-sh-cap">Главный вид и вид слева — половина вида и половина разреза; штриховкой показано то, что попало в секущую плоскость; штрихами — невидимый контур. Всё построено из 3D-модели.</p></div>
+       <div class="igx-sh-p" data-p="ren" hidden><div class="igx-sh-g">${VIEWS.map((v,i)=>`<figure class="igx-sh-f f-${v.k}" style="--d:${i*120}ms"><img alt="${v.t}" src="${im[v.k]||''}"><figcaption><b>${v.t}</b><span>${v.d}</span></figcaption></figure>`).join('')}</div></div>`;
+      sh.querySelectorAll('[data-sw]').forEach(b=>b.addEventListener('click',()=>{ sh.querySelectorAll('[data-sw]').forEach(x=>x.classList.toggle('on',x===b)); sh.querySelectorAll('[data-p]').forEach(x=>x.hidden=x.dataset.p!==b.dataset.sw); }));
       sh.hidden=false; requestAnimationFrame(()=>sh.classList.add('on')); sh.scrollIntoView({behavior:'smooth',block:'start'}); btn.disabled=false; btn.lastChild.textContent='Обновить чертёж'; },560); });
   NEXT=null; return o.docTitle;
 }
@@ -23839,6 +23938,7 @@ function wbItem(v,n){
   const t=IG_WB[i], L=IG_WB.length;
   return partPage(v,{model:t,crumbs:[[SUBJ.ig.name,H('ig')],['Тетрадь',H('ig','wb')],['Задание '+t.n]],title:'Задание '+t.n+'. '+t.title,
     prev:H('ig','wb',IG_WB[(i-1+L)%L].n),next:H('ig','wb',IG_WB[(i+1)%L].n),docTitle:'Задание '+t.n+' · Тетрадь · '+SUBJ.ig.name,
+    tb:{name:'Задание '+t.n,sub:t.title,task:'Тетрадь, р. 5'},
     top:`<div class="igx-q"><b>Условие.</b> ${t.q}</div>`,
     bottom:`<div class="igx-why"><b>Как получается ответ.</b> ${t.why}</div>`,
     note:'Размеры в тетради не заданы — пропорции взяты с рисунка. Линии пересечения на видах сайт строит прямо из модели.'});
