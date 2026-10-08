@@ -3284,6 +3284,16 @@ window.LINEFIX=function(part){
         const t=T(q,a,b), over=t<0?-t*L:t>1?(t-1)*L:0; if(over<=2||over>=L*1.5) return;
         const m=6/L; if(t<0) t0=Math.min(t0,t-m); else t1=Math.max(t1,t+m); });
       if(t0<0||t1>1){ sg.a=[a[0]+t0*(b[0]-a[0]),a[1]+t0*(b[1]-a[1])]; sg.b=[a[0]+t1*(b[0]-a[0]),a[1]+t1*(b[1]-a[1])]; } }); });
+  /* данная прямая: обе проекции — один и тот же участок (концы на общих линиях связи); прямая бесконечна, поэтому
+     короткую проекцию продлеваем до диапазона x другой — но не через ось x (за ось не выходим) */
+  const G0=(part.given||[]).filter(it=>it&&it.t==='seg'&&it.a&&it.b&&RX.test(strip(it.l)));
+  G0.forEach(s2=>{ const l=strip(s2.l); if(!l.endsWith('″')) return; const s1=G0.find(o=>strip(o.l)===l.slice(0,-1)+'′'); if(!s1) return;
+    if(G0.filter(o=>strip(o.l)===l).length!==1||G0.filter(o=>strip(o.l)===strip(s1.l)).length!==1) return;
+    if(Math.abs(s2.b[0]-s2.a[0])<4||Math.abs(s1.b[0]-s1.a[0])<4) return;
+    const lo=Math.min(s2.a[0],s2.b[0],s1.a[0],s1.b[0]), hi=Math.max(s2.a[0],s2.b[0],s1.a[0],s1.b[0]);
+    [s2,s1].forEach(sg=>{ const a=sg.a, b=sg.b, at=x=>[x,a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0])], sgn=Math.sign((a[1]+b[1])/2);
+      const P=[at(lo),at(hi)].map((q,i)=>Math.sign(q[1])===sgn&&Math.abs(q[1])>14?q:null);   /* у оси не обрываем: конец на оси читается как след прямой */
+      const L=a[0]<b[0]?[a,b]:[b,a]; sg.a=P[0]||L[0]; sg.b=P[1]||L[1]; }); });
 };
 /* способ прямоугольного треугольника: второй катет X–X₀ — разность координат. Где на чертеже это не отмечено,
    подписываем катет (Δy или Δz) и показываем ту же разность на другой проекции — выносные и размер */
