@@ -195,7 +195,10 @@ body.inplayer .ckn{display:none}
 .dy-sum{padding:10px 14px;border-radius:14px;background:var(--surf);border:1px solid var(--line);font-size:14.5px;line-height:1.5;color:var(--ink2)}.dy-sum b{color:var(--ink)}
 .dy-anim{margin:0 12px 12px;padding:12px;border-radius:18px;background:var(--surf);border:1px solid var(--line)}
 .dy-ah{display:grid;gap:2px;margin-bottom:6px}.dy-ah b{font-size:15px}.dy-ah span{font-size:13.5px;color:var(--ink2);line-height:1.45}
-.dy-av{background:#fbfcff;border-radius:12px;border:1px solid var(--line)}.dy-av svg{display:block;width:100%;height:auto;max-height:min(62vh,520px)}
+.dy-av{background:#fbfcff;border-radius:12px;border:1px solid var(--line)}.dy-av.d3on{touch-action:none;cursor:grab}
+.dy-mode{display:inline-flex;gap:4px;padding:3px;border-radius:99px;background:var(--surf2);margin-bottom:6px;justify-self:start}.dy-mode button{border:0;background:none;padding:6px 12px;border-radius:99px;font:700 13px var(--sans);color:var(--ink2);cursor:pointer}.dy-mode button.on{background:#7c3aed;color:#fff}
+.d3{display:block;width:100%;height:auto}.d3-lb{font:italic 600 15px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fbfcff;stroke-width:3px}.d3-pl{font:italic 600 17px 'Times New Roman','Liberation Serif',Georgia,serif}.d3-ax{font:italic 600 16px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
+#dyCap{min-height:3em}.dy-av svg{display:block;width:100%;height:auto;max-height:min(62vh,520px)}
 .dy-ac{display:flex;align-items:center;gap:10px;margin-top:8px}.dy-ac input{flex:1;accent-color:#c2410c}.dy-ac b{font:600 12px var(--mono);min-width:40px;text-align:right;color:var(--mut)}
 .dy-play{width:42px;height:38px;border-radius:11px;border:0;background:#c2410c;color:#fff;font-size:14px;cursor:pointer}
 .dy-tab{margin:18px 0}.dy-tab h2{font-size:19px}.dy-note{font-size:14px;color:var(--ink2)}
@@ -21667,6 +21670,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
   {v:'3.0',d:'8 октября 2026',rel:'ig',items:['Инженерная графика открыта. ДЗ 2 «Построение изображений» — все 30 вариантов: исходный чертёж задания, деталь в 3D, живые разрезы, сечение А–А наклонной плоскостью и классический чертёж из модели — главный вид и вид слева с разрезами, вид сверху, сечение в натуральную величину. Отметь «мой вариант» — сайт откроет его сразу.','Рабочая тетрадь по ИГ: десять тел с отверстиями (рис. 61–70) — задание, 3D и разрезы. Теория по ЕСКД: форматы, линии, виды, разрезы, сечения, штриховка.','3D-модель решения — у 80 задач тетради по начертательной геометрии.']},
+  {v:'2.7',d:'8 октября 2026',items:['Тема дня: каждый способ преобразования теперь можно смотреть в пространстве — треугольник, плоскости проекций π₁ и π₂, новая плоскость π₄ (π₅), ось вращения. Камера сама поворачивается туда, откуда видна суть способа; под анимацией — подпись, что происходит сейчас. Модель можно крутить пальцем; переключатель «На чертеже» возвращает эпюр.']},
   {v:'2.6',d:'8 октября 2026',items:['Задачи, которые можно посмотреть в 3D, отмечены значком «3D» в списке тетради. На главной — карточка «Задачи тетради — в 3D».']},
   {v:'2.5',d:'8 октября 2026',items:['Подготовка к РК: новая типовая задача — плоский четырёхугольник ABDC, две стороны которого — отрезки линий уровня. Четыре пункта по шагам: D′, деление отрезка, угол прямой с π₁ и отрезок заданной длины, угол плоскости с π₂.','Найденные углы закрашены и подписаны значением — видно, между какими прямыми они измеряются. Основные построения стали толще.','Подписи у краёв чертежа больше не обрезаются.']},
   {v:'2.4',d:'8 октября 2026',items:['Чертежи: прямые доведены до всех своих точек, у каждого угла видны обе стороны, подписи не обрезаются по краю.','Способ прямоугольного треугольника: второй катет подписан Δy или Δz, а та же разность показана размером на другой проекции.','3D к задачам: тонкие линии и аккуратные подписи — построение читается сразу.','Заметки к задачам стали короче: только частые ошибки и важные оговорки.']},
@@ -21910,6 +21914,112 @@ const P=[];
 return {parts:P,alpha,beta};
 })();
 
+/* ═════════ DAY3D: тема дня в пространстве — каждый способ показан на модели: плоскости проекций, треугольник, его проекции ═════════
+   Координаты как на эпюре: x — влево, y — к нам (от π₂), z — вверх. Камера ортогональная. */
+window.DAY3D=(function(){
+const A=[66,10,12], B=[40,34,44], C=[12,14,24];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const len=a=>Math.hypot(a[0],a[1],a[2]), unit=a=>mul(a,1/(len(a)||1)), lerp=(a,b,t)=>add(a,mul(sub(b,a),t));
+const P1=lerp(B,C,(A[2]-B[2])/(C[2]-B[2])), P2=lerp(B,C,(A[1]-B[1])/(C[1]-B[1]));      /* h: A–1 (z = zA), f: A–2 (y = yA) */
+const NRM=unit(crs(sub(B,A),sub(C,A)));
+const ease=x=>x<=0?0:x>=1?1:x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2, seg01=(t,a,b)=>ease((t-a)/(b-a));
+/* поворот точки X вокруг оси (O, k) на угол φ (Родриг) */
+const rotA=(X,O,k,phi)=>{ const r=sub(X,O), c=Math.cos(phi), s=Math.sin(phi); return add(O,add(add(mul(r,c),mul(crs(k,r),s)),mul(k,dot(k,r)*(1-c)))); };
+/* угол, на который надо повернуть точку X вокруг прямой уровня (Ax→Q), чтобы она легла на уровень оси (li: 2 — z, 1 — y) */
+const levelAng=(Ax,Q,li,X)=>{ const k=unit(sub(Q,Ax)), O=add(Ax,mul(k,dot(sub(X,Ax),k))), r=sub(X,O), R=len(r), h=r.slice(); h[li]=0; const rt=mul(unit(h),R);
+  return Math.atan2(dot(crs(r,rt),k),dot(r,rt)); };
+/* камера: E — направление на зрителя; R вправо, U вверх (x на экране влево) */
+const camOf=(yaw,pit)=>{ const E=[-Math.sin(yaw)*Math.cos(pit),Math.cos(yaw)*Math.cos(pit),Math.sin(pit)]; let R=crs([0,0,1],E); if(len(R)<1e-6) R=[-1,0,0]; R=unit(R); return {E,R,U:crs(E,R)}; };
+const camAlong=(v,ref)=>{ let d=unit(v); if(dot(d,ref)<0) d=mul(d,-1); const pit=Math.asin(Math.max(-.999,Math.min(.999,d[2]))); const yaw=Math.atan2(-d[0],d[1]); return {yaw,pit}; };
+const angLerp=(a,b,t)=>{ let d=b-a; d=Math.atan2(Math.sin(d),Math.cos(d)); return a+d*t; };
+const HOME={yaw:-0.4,pit:0.28};   /* треугольник виден развёрнуто, обе плоскости проекций — в перспективе угла */
+/* сцена способа k в момент t: что нарисовать и куда смотреть */
+function scene(id,t){
+  const S={pts:[],lines:[],polys:[],labels:[],cam:HOME,cap:''};
+  const tri=(a,b,c,k,lab)=>{ S.polys.push({p:[a,b,c],k}); if(lab) [[a,'A'],[b,'B'],[c,'C']].forEach(([p,n])=>S.labels.push({p,t:n+lab,k})); };
+  const projT=(a,b,c,k)=>{ const h=p=>[p[0],p[1],0], f=p=>[p[0],0,p[2]];
+    S.polys.push({p:[h(a),h(b),h(c)],k:k||'p1'}); S.polys.push({p:[f(a),f(b),f(c)],k:k||'p2'});
+    [a,b,c].forEach(p=>{ S.lines.push({a:p,b:h(p),k:'conn'}); S.lines.push({a:p,b:f(p),k:'conn'}); }); };
+  const hLine=(a,q)=>S.lines.push({a,b:q,k:'h',l:'h'}), fLine=(a,q)=>S.lines.push({a,b:q,k:'f',l:'f'});
+  if(id==='zam-h'||id==='zam-f'||id==='zam-2'){
+    const isF=id==='zam-f', dirv=isF?unit(sub(P2,A)):unit([P1[0]-A[0],P1[1]-A[1],0]);
+    const nrm=dirv, base=isF?[0,1,0]:[0,0,1], w=unit(crs(base,nrm));
+    const s0=Math.min(...[A,B,C].map(p=>dot(p,nrm)))-18;
+    const ws=[A,B,C].map(p=>dot(p,w)), w0=Math.min(...ws)-14, w1=Math.max(...ws)+14, H=58;
+    const o=add(mul(nrm,s0-dot([0,0,0],nrm)),[0,0,0]);
+    /* опорная точка следа: проекция начала координат на плоскость π₄, сдвинутая в плоскость π₁ (или π₂) */
+    const O4=isF?[nrm[0]*s0,0,nrm[2]*s0]:[nrm[0]*s0,nrm[1]*s0,0];
+    const a=seg01(t,0,.3);                                        /* плоскость поднимается из π₁ (π₂) вокруг своего следа */
+    const vdir=add(mul(nrm,-Math.cos(a*Math.PI/2)),mul(base,Math.sin(a*Math.PI/2)));
+    const Q=(u,v)=>add(add(O4,mul(w,u)),mul(vdir,v));
+    tri(A,B,C,'tri','');
+    S.labels.push({p:A,t:'A',k:'tri'},{p:B,t:'B',k:'tri'},{p:C,t:'C',k:'tri'});
+    isF?fLine(A,P2):hLine(A,P1);
+    S.polys.push({p:[Q(w0,0),Q(w1,0),Q(w1,H),Q(w0,H)],k:'p4'}); S.labels.push({p:Q(w1,H),t:'π₄',k:'p4'});
+    const pr=p=>sub(p,mul(nrm,dot(p,nrm)-s0));
+    const b=seg01(t,.32,.55);
+    if(b>0){ [A,B,C].forEach(p=>S.lines.push({a:p,b:lerp(p,pr(p),b),k:'conn4'})); if(b>=1){ S.lines.push({a:pr(A),b:pr(B),k:'res'}); S.lines.push({a:pr(B),b:pr(C),k:'res'}); S.lines.push({a:pr(A),b:pr(C),k:'res'}); } }
+    const look=camAlong(isF?unit(sub(P2,A)):dirv,camOf(HOME.yaw,HOME.pit).E);
+    if(id!=='zam-2'){ const c=seg01(t,.6,.92); S.cam={yaw:angLerp(HOME.yaw,look.yaw,c),pit:HOME.pit+(look.pit-HOME.pit)*c};
+      S.cap=t<.32?'Ставим новую плоскость π₄ перпендикулярно '+(isF?'фронтали f':'горизонтали h')+' — она поднимается из '+(isF?'π₂':'π₁')+'.':t<.58?'Проецируем точки A, B, C на π₄ — лучами вдоль '+(isF?'f':'h')+'.':'Смотрим вдоль '+(isF?'f':'h')+': '+(isF?'f':'h')+' видна точкой, а вся плоскость — прямой. Её наклон к оси — угол '+(isF?'β с π₂':'α с π₁')+'.';
+    } else {
+      /* вторая замена: π₅ ∥ треугольнику, ⟂ π₄ */
+      const c=seg01(t,.55,.75), d5=Math.max(...[A,B,C].map(p=>dot(p,NRM)))+16, n5=NRM;
+      const u5=unit(crs(n5,nrm)), v5=crs(n5,u5), ctr=mul(add(add(A,B),C),1/3), base5=add(sub(ctr,mul(n5,dot(ctr,n5))),mul(n5,d5));
+      if(c>0){ const Rr=46*c; S.polys.push({p:[add(base5,add(mul(u5,-Rr),mul(v5,-Rr))),add(base5,add(mul(u5,Rr),mul(v5,-Rr))),add(base5,add(mul(u5,Rr),mul(v5,Rr))),add(base5,add(mul(u5,-Rr),mul(v5,Rr)))],k:'p5'}); S.labels.push({p:add(base5,add(mul(u5,Rr),mul(v5,Rr))),t:'π₅',k:'p5'}); }
+      const e=seg01(t,.72,.85), q5=p=>add(p,mul(n5,d5-dot(p,n5)));
+      if(e>0){ [A,B,C].forEach(p=>S.lines.push({a:p,b:lerp(p,q5(p),e),k:'conn4'})); if(e>=1) S.polys.push({p:[q5(A),q5(B),q5(C)],k:'true'}); }
+      const g=seg01(t,.82,1), look5=camAlong(n5,camOf(HOME.yaw,HOME.pit).E), l1=seg01(t,.5,.62);
+      const y1=angLerp(HOME.yaw,look.yaw,l1), p1=HOME.pit+(look.pit-HOME.pit)*l1;
+      S.cam={yaw:angLerp(y1,look5.yaw,g),pit:p1+(look5.pit-p1)*g};
+      S.cap=t<.55?'Первая замена: π₄ ⟂ h — плоскость треугольника видна прямой.':t<.82?'Вторая замена: π₅ ставим параллельно треугольнику (⟂ π₄) и проецируем на неё точки.':'Смотрим перпендикулярно π₅: треугольник в натуральную величину.';
+    }
+    return S; }
+  /* вращение/перемещение: треугольник движется в пространстве, проекции на π₁ и π₂ меняются вместе с ним */
+  let M=p=>p, cap='', axis=null, trail=null;
+  if(id==='rot-i'||id==='move'){
+    const hd=[P1[0]-A[0],P1[1]-A[1],0], cur=Math.atan2(hd[1],hd[0]); let tgt=Math.PI/2; let d=tgt-cur; d=Math.atan2(Math.sin(d),Math.cos(d)); if(Math.abs(d)>Math.PI/2) d+=d>0?-Math.PI:Math.PI;
+    const ctr=id==='rot-i'?C:A, sh=id==='move'?[-30,4,0]:[0,0,0], k=ease(t);
+    M=p=>add(rotA(p,[ctr[0],ctr[1],0],[0,0,1],d*k),mul(sh,k));
+    if(id==='rot-i') axis={a:[C[0],C[1],0],b:[C[0],C[1],60],l:'i'};
+    cap=id==='rot-i'?'Треугольник поворачивается вокруг вертикальной оси i: высоты точек не меняются, h разворачивается ⟂ π₂ — и на π₂ треугольник становится отрезком.':'Треугольник едет параллельно π₁ и разворачивается так, чтобы h встала ⟂ π₂: высоты не меняются — на π₂ получается отрезок.';
+  } else if(id==='rot-h'||id==='rot-f'){
+    const Q=id==='rot-h'?P1:P2, li=id==='rot-h'?2:1, k=unit(sub(Q,A)), phB=levelAng(A,Q,li,B), e=ease(t);
+    M=p=>rotA(p,A,k,phB*e); axis={a:lerp(A,Q,-0.6),b:lerp(A,Q,1.6),l:id==='rot-h'?'h':'f'}; trail=[B,C];
+    cap=id==='rot-h'?'Плоскость поворачивается вокруг горизонтали h, как дверь на петлях: B и C идут по окружностям, пока треугольник не ляжет ∥ π₁ — на π₁ он в натуральную величину.':'Плоскость поворачивается вокруг фронтали f, пока не встанет ∥ π₂: на π₂ треугольник в натуральную величину.';
+  }
+  const a=M(A), b=M(B), c=M(C);
+  if(t>0.02){ S.polys.push({p:[A,B,C],k:'ghost'}); }
+  tri(a,b,c,'tri',''); S.labels.push({p:a,t:'A',k:'tri'},{p:b,t:'B',k:'tri'},{p:c,t:'C',k:'tri'});
+  projT(a,b,c);
+  if(axis){ S.lines.push({a:axis.a,b:axis.b,k:'axis',l:axis.l}); }
+  if(trail){ trail.forEach(X=>{ const pts=[]; for(let i=0;i<=24;i++) pts.push(M===null?X:(()=>{ const Q=id==='rot-h'?P1:P2, li=id==='rot-h'?2:1, k=unit(sub(Q,A)); return rotA(X,A,k,levelAng(A,Q,li,B)*ease(t)*i/24); })()); for(let i=0;i<24;i++) S.lines.push({a:pts[i],b:pts[i+1],k:'arc'}); }); }
+  S.cap=cap; return S;
+}
+const COL={tri:'#2c5fd9',ghost:'#94a3b8',p1:'#c2410c',p2:'#1d4ed8',p4:'#15803d',p5:'#7c3aed',true:'#7c3aed',res:'#c2410c',h:'#15803d',f:'#15803d',axis:'#111827',conn:'#94a3b8',conn4:'#15803d',arc:'#c2410c'};
+function svg(id,t,user){
+  const S=scene(id,t), cam=camOf(S.cam.yaw+(user?user.dy:0),Math.max(-1.2,Math.min(1.45,S.cam.pit+(user?user.dp:0)))), W=640, Hh=420, k=4.3*(user&&user.z||1), c0=[38,22,22];
+  const P=p=>{ const d=sub(p,c0); return [W/2+dot(d,cam.R)*k, Hh/2-dot(d,cam.U)*k, dot(d,cam.E)]; }, f=v=>Math.round(v*10)/10;
+  const items=[];
+  /* плоскости проекций π₁ (z = 0) и π₂ (y = 0) */
+  const X0=-6, X1=84, Y1=56, Z1=60;
+  const plane=(ps,fill,st,lab)=>{ const q=ps.map(P); items.push({z:Math.min(...q.map(x=>x[2]))-1000,s:`<polygon points="${q.map(x=>f(x[0])+','+f(x[1])).join(' ')}" fill="${fill}" fill-opacity=".09" stroke="${st}" stroke-opacity=".55" stroke-width="1"/>`+(lab?`<text x="${f(q[2][0]+6)}" y="${f(q[2][1]+4)}" class="d3-pl" fill="${st}">${lab}</text>`:'')}); };
+  plane([[X1,0,0],[X0,0,0],[X0,0,Z1],[X1,0,Z1]],'#3b82f6','#1d4ed8','π₂');
+  plane([[X1,0,0],[X0,0,0],[X0,Y1,0],[X1,Y1,0]],'#f59e0b','#c2410c','π₁');
+  { const a=P([X1+4,0,0]), b=P([X0-2,0,0]); items.push({z:-900,s:`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#111" stroke-width="1.2"/><text x="${f(a[0]+(a[0]>b[0]?6:-14))}" y="${f(a[1]+4)}" class="d3-ax">x</text>`}); }
+  S.polys.forEach(o=>{ const q=o.p.map(P), cl=COL[o.k]||'#334155', op=o.k==='ghost'?.06:o.k==='p4'||o.k==='p5'?.12:o.k==='tri'?.28:o.k==='true'?.3:.16;
+    items.push({z:o.k==='p4'||o.k==='p5'?-800:q.reduce((s,x)=>s+x[2],0)/q.length,s:`<polygon points="${q.map(x=>f(x[0])+','+f(x[1])).join(' ')}" fill="${cl}" fill-opacity="${op}" stroke="${cl}" stroke-width="${o.k==='tri'||o.k==='true'?2:1.3}"${o.k==='ghost'?' stroke-dasharray="4 3"':''} stroke-linejoin="round"/>`}); });
+  S.lines.forEach(o=>{ const a=P(o.a), b=P(o.b), cl=COL[o.k]||'#334155', dash=o.k==='conn'?'3 3':o.k==='conn4'?'4 3':o.k==='axis'?'12 3 2 3':'';
+    items.push({z:(a[2]+b[2])/2+(o.k==='h'||o.k==='f'||o.k==='axis'?5:0),s:`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="${cl}" stroke-width="${o.k==='conn'?.9:o.k==='res'?2.4:o.k==='h'||o.k==='f'?2.2:1.3}"${dash?` stroke-dasharray="${dash}"`:''} stroke-linecap="round"/>`+(o.l?`<text x="${f(b[0]+5)}" y="${f(b[1]-5)}" class="d3-lb" fill="${cl}">${o.l}</text>`:'')}); });
+  S.labels.forEach(o=>{ const q=P(o.p); if(o.k==='p4'||o.k==='p5') { items.push({z:900,s:`<text x="${f(q[0]+4)}" y="${f(q[1]-4)}" class="d3-pl" fill="${COL[o.k]}">${o.t}</text>`}); return; }
+    items.push({z:1000,s:`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="3" fill="${COL[o.k]||'#111'}"/><text x="${f(q[0]+6)}" y="${f(q[1]-6)}" class="d3-lb" fill="#0f172a">${o.t}</text>`}); });
+  items.sort((a,b)=>a.z-b.z);
+  return {svg:`<svg viewBox="0 0 ${W} ${Hh}" class="d3" role="img" aria-label="Способ в пространстве">${items.map(x=>x.s).join('')}</svg>`,cap:S.cap};
+}
+return {svg};
+})();
+
 /* страница темы дня: #/ng/day[/k] */
 function viewDay(v,r){
   const T=DAYTOPIC, k=Math.max(0,Math.min(T.parts.length-1,parseInt(r.item,10)||0)), pt=T.parts[k];
@@ -21924,13 +22034,23 @@ function viewDay(v,r){
      <tr><td>Вращение вокруг f</td><td>то же на π₂</td><td>натуральная величина на π₂</td></tr></table>
      <p>Задачи тетради: <a href="${H('ng','tasks',51)}">№ 51–57</a> — замена, <a href="${H('ng','tasks',58)}">№ 58–67</a> — вращение.</p></div></details></div>
     <div class="dy-tabs" role="tablist">${T.parts.map((p,i)=>`<a role="tab" href="${H('ng','day',i)}" class="${i===k?'on':''}" aria-selected="${i===k}"><b>${i+1}</b>${p.short}</a>`).join('')}</div>
-   ${pt.anim?`<section class="dy-anim"><div class="dy-ah"><b>Как это движется</b><span>${pt.anim.cap}</span></div><div class="dy-av" id="dyAv"></div>
+   ${pt.anim?`<section class="dy-anim"><div class="dy-ah"><div class="dy-mode" role="tablist"><button data-m="3d" class="on">В пространстве</button><button data-m="2d">На чертеже</button></div><span id="dyCap">${pt.anim.cap}</span></div><div class="dy-av" id="dyAv"></div>
      <div class="dy-ac"><button class="dy-play" id="dyPlay" aria-label="Пауза">❚❚</button><input type="range" id="dyT" min="0" max="1000" value="0" aria-label="Положение"><b id="dyPct">0%</b></div></section>`:''}
    <div id="plMount"></div></div>`;
   try{ const on=v.querySelector('.dy-tabs a.on'); on&&on.scrollIntoView({block:'nearest',inline:'center'}); }catch(e){}
   if(pt.anim){ const av=v.querySelector('#dyAv'), rg=v.querySelector('#dyT'), pc=v.querySelector('#dyPct'), pb=v.querySelector('#dyPlay');
     const all=[].concat(pt.given,...pt.steps.map(x=>x.add||[]),pt.anim.fn(0),pt.anim.fn(1),pt.anim.fn(.5)), fr=GYM.frame(all);
-    const draw=t=>{ av.innerHTML=DRAW.svg({items:pt.given.concat(pt.anim.fn(t)),fit:false,w:fr.w,h:fr.h,ox:fr.ox,oy:fr.oy,pad:10,alt:'Анимация способа',max:2000}); rg.value=Math.round(t*1000); pc.textContent=Math.round(t*100)+'%'; };
+    let mode='3d', T0=0; const user={dy:0,dp:0,z:1}, capEl=v.querySelector('#dyCap');
+    const draw=t=>{ T0=t; if(mode==='3d'){ const r=DAY3D.svg(pt.id,t,user); av.innerHTML=r.svg; if(r.cap) capEl.textContent=r.cap; }
+      else { av.innerHTML=DRAW.svg({items:pt.given.concat(pt.anim.fn(t)),fit:false,w:fr.w,h:fr.h,ox:fr.ox,oy:fr.oy,pad:10,alt:'Анимация способа',max:2000}); capEl.textContent=pt.anim.cap; }
+      rg.value=Math.round(t*1000); pc.textContent=Math.round(t*100)+'%'; };
+    v.querySelectorAll('.dy-mode button').forEach(b=>b.addEventListener('click',()=>{ mode=b.dataset.m; v.querySelectorAll('.dy-mode button').forEach(x=>x.classList.toggle('on',x===b)); av.classList.toggle('d3on',mode==='3d'); draw(T0); }));
+    av.classList.add('d3on');
+    /* 3D: тяни — повернуть, двойной тап — вернуть вид */
+    let drag=null; av.addEventListener('pointerdown',e=>{ if(mode!=='3d') return; drag={x:e.clientX,y:e.clientY}; try{ av.setPointerCapture(e.pointerId); }catch(_){} });
+    av.addEventListener('pointermove',e=>{ if(!drag) return; user.dy-=(e.clientX-drag.x)*0.01; user.dp+=(e.clientY-drag.y)*0.01; drag={x:e.clientX,y:e.clientY}; if(!play) draw(T0); });
+    const end=()=>{ drag=null; }; av.addEventListener('pointerup',end); av.addEventListener('pointercancel',end);
+    av.addEventListener('dblclick',()=>{ user.dy=0; user.dp=0; draw(T0); });
     let play=!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches), t=0, dir=1, last=0, hold=0;
     const loop=now=>{ if(!av.isConnected) return; if(play){ const dt=last?Math.min(50,now-last):16; if(hold>0) hold-=dt; else { t+=dir*dt/2600; if(t>=1){ t=1; dir=-1; hold=1400; } if(t<=0){ t=0; dir=1; hold=900; } draw(ease(t)); } } last=now; requestAnimationFrame(loop); };
     const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
