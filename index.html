@@ -23827,23 +23827,13 @@ function G(nd){
 }
 const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
 const FS=body=>`precision highp float;
-uniform vec2 uRes; uniform vec3 uEye,uFwd,uRight,uUp; uniform float uScale; uniform int uCut; uniform vec4 uPl; uniform vec3 uBg1,uBg2; uniform float uDark; uniform float uHatch; uniform float uOff; uniform float uFlat; uniform float uEnc; uniform vec3 uBmin,uBmax; uniform float uPj; uniform float uPeel; uniform float uClear; uniform sampler2D uT1,uT2,uT3; uniform vec3 uPa,uPb,uCt; uniform float uSc;
+uniform vec2 uRes; uniform vec3 uEye,uFwd,uRight,uUp; uniform float uScale; uniform int uCut; uniform vec4 uPl; uniform vec3 uBg1,uBg2; uniform float uDark; uniform float uHatch; uniform float uOff; uniform float uFlat; uniform vec3 uBmin,uBmax; uniform float uClear;
 vec2 rot2(vec2 p,float a){ float c=cos(a),s=sin(a); return vec2(c*p.x-s*p.y,s*p.x+c*p.y); }
 float capZ(float d2,float z,float z0,float z1){ float h=(z1-z0)*.5; float dz=abs(z-(z0+z1)*.5)-h; return min(max(d2,dz),0.)+length(max(vec2(d2,dz),0.)); }
 float capU(float d2,float u,float u0,float u1){ return capZ(d2,u,u0,u1); }
 float box2(vec2 p,vec2 b){ vec2 d=abs(p)-b; return min(max(d.x,d.y),0.)+length(max(d,0.)); }
 float ngon2(vec2 p,float n,float ap,float a0){ float m=-1e9; for(int i=0;i<12;i++){ if(float(i)>=n) break; float t=a0+(float(i)+.5)*6.2831853/n; m=max(m,dot(p,vec2(cos(t),sin(t)))-ap); } return m; }
 float part(vec3 p){ return ${body}; }
-/* плоскости проекций П₂ (y = uPb.y), П₃ (x = uPb.x), П₁ (z = uPa.z) с чертежами из модели; видны только с лицевой стороны */
-vec3 plc(sampler2D T,vec2 uv,vec3 tint,vec2 e){ float ink=0.; if(uv.x>0.&&uv.x<1.&&uv.y>0.&&uv.y<1.) ink=1.-texture2D(T,uv).r;
-  vec3 base=mix(vec3(.965,.975,1.),vec3(.11,.14,.21),uDark); base=mix(base,tint,.10+uDark*.14);
-  float fr=1.-smoothstep(0.,.9,min(e.x,e.y)); base=mix(base,tint,fr*.7);
-  return mix(base,mix(vec3(.08,.10,.16),vec3(.86,.9,1.),uDark),clamp(ink*1.3,0.,1.)); }
-vec4 planes(vec3 ro,vec3 rd){ float tp=1e9; vec3 c=vec3(0.); bool h=false;
-  if(rd.y>1e-4){ float t=(uPb.y-ro.y)/rd.y; vec3 q=ro+rd*t; if(t>0.&&t<tp&&q.x>=uPa.x&&q.x<=uPb.x&&q.z>=uPa.z&&q.z<=uPb.z){ tp=t; h=true; c=plc(uT1,vec2(.5+(q.x-uCt.x)/uSc,.5-(q.z-uCt.z)/uSc),vec3(.23,.42,.9),vec2(min(q.x-uPa.x,uPb.x-q.x),min(q.z-uPa.z,uPb.z-q.z))); } }
-  if(rd.x>1e-4){ float t=(uPb.x-ro.x)/rd.x; vec3 q=ro+rd*t; if(t>0.&&t<tp&&q.y>=uPa.y&&q.y<=uPb.y&&q.z>=uPa.z&&q.z<=uPb.z){ tp=t; h=true; c=plc(uT2,vec2(.5-(q.y-uCt.y)/uSc,.5-(q.z-uCt.z)/uSc),vec3(.13,.62,.42),vec2(min(q.y-uPa.y,uPb.y-q.y),min(q.z-uPa.z,uPb.z-q.z))); } }
-  if(rd.z<-1e-4){ float t=(uPa.z-ro.z)/rd.z; vec3 q=ro+rd*t; if(t>0.&&t<tp&&q.x>=uPa.x&&q.x<=uPb.x&&q.y>=uPa.y&&q.y<=uPb.y){ tp=t; h=true; c=plc(uT3,vec2(.5+(q.x-uCt.x)/uSc,.5-(q.y-uCt.y)/uSc),vec3(.92,.55,.15),vec2(min(q.x-uPa.x,uPb.x-q.x),min(q.y-uPa.y,uPb.y-q.y))); } }
-  return vec4(c,h?1.:0.); }
 float cutT(vec3 p){
   if(uCut==1) return max(uPl.w-p.x,p.y-uOff);       /* вырез четверти: убрано x > 0, y < 0 (половина вида + половина разреза) */
   if(uCut==2) return p.y-uOff;                 /* фронтальный разрез: убрано всё перед плоскостью y = uOff */
@@ -23860,20 +23850,12 @@ void main(){
   vec3 bg=mix(uBg2,uBg1,clamp(gl_FragCoord.y/uRes.y,0.,1.));
   vec3 iv=1./(rd+vec3(1e-6)), ta=(uBmin-ro)*iv, tb=(uBmax-ro)*iv, tn=min(ta,tb), tx=max(ta,tb);
   float t0=max(max(tn.x,tn.y),tn.z), t1=min(min(tx.x,tx.y),tx.z);
-  vec4 pc=uPj>.5&&uEnc<.5?planes(ro,rd):vec4(0.); if(pc.a>.5) bg=pc.rgb;
-  if(t1<t0||t1<0.){ if(uEnc>.5||uClear>.5){ gl_FragColor=vec4(0.); return; } gl_FragColor=vec4(bg,1.); return; }
+  if(t1<t0||t1<0.){ if(uClear>.5){ gl_FragColor=vec4(0.); return; } gl_FragColor=vec4(bg,1.); return; }
   float t=max(t0,0.), dmin=1e9, tmin=0.; bool hit=false;
   for(int i=0;i<160;i++){ vec3 p=ro+rd*t; float d=map(p); if(d<dmin){ dmin=d; tmin=t; } if(d<.015){ hit=true; break; } t+=d*.9; if(t>t1+.5) break; }
-  if(uEnc>.5&&!hit){ gl_FragColor=vec4(0.); return; }
   if(!hit){ gl_FragColor=uClear>.5?vec4(0.):vec4(bg,1.); return; }
-  /* невидимый контур: проходим сквозь материал до следующей поверхности (полость, отверстие) — её рёбра и есть штриховые линии */
-  if(uPeel>.5&&uEnc>.5){ float tt=t+.05; bool ex=false;
-    for(int i=0;i<140;i++){ float d=map(ro+rd*tt); if(d>.01){ ex=true; break; } tt+=max(-d,.08); if(tt>t1+.5) break; }
-    bool h2=false; if(ex){ tt+=.3; for(int i=0;i<160;i++){ float d=map(ro+rd*tt); if(d<.015){ h2=true; break; } tt+=d*.9; if(tt>t1+.5) break; } }
-    if(!h2){ gl_FragColor=vec4(0.); return; } t=tt; }
   vec3 p=ro+rd*t, n=nrm(p,.02);
   bool cut=uCut>0 && part(p)<-.03;
-  if(uEnc>.5){ float dn=clamp((t-400.+uScale*1.2)/(uScale*2.4),0.,1.); gl_FragColor=vec4(n*.5+.5,(cut?.52:.02)+dn*.47); return; }
   vec3 L1=normalize(vec3(-.55,-.7,.85)), L2=normalize(vec3(.8,.3,.35));
   float dif=max(dot(n,L1),0.), dif2=max(dot(n,L2),0.)*.35, amb=.42+.25*n.z;
   float ao=0.; for(int k=1;k<=4;k++){ float h=float(k)*1.6; ao+=(h-map(p+n*h))/h; } ao=clamp(1.-ao*.18,.45,1.);
@@ -23908,7 +23890,7 @@ function viewer(canvas,opt){
     const pr=gl.createProgram(); gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS(G(m.tree)))); gl.linkProgram(pr);
     if(!gl.getProgramParameter(pr,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
     if(prog) gl.deleteProgram(prog); prog=pr; gl.useProgram(prog);
-    ['uRes','uEye','uFwd','uRight','uUp','uScale','uCut','uPl','uBg1','uBg2','uDark','uHatch','uOff','uFlat','uEnc','uBmin','uBmax','uPj','uT1','uT2','uT3','uPa','uPb','uCt','uSc','uClear'].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
+    ['uRes','uEye','uFwd','uRight','uUp','uScale','uCut','uPl','uBg1','uBg2','uDark','uHatch','uOff','uFlat','uBmin','uBmax','uClear'].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
     const loc=gl.getAttribLocation(prog,'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
     const b=m.box||[[-60,-60,0],[60,60,120]]; S.bmin=[b[0][0]-3,b[0][1]-3,b[0][2]-3]; S.bmax=[b[1][0]+3,b[1][1]+3,b[1][2]+3]; S.C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2]; S.R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2; }
   function draw(scale){ if(!prog) return; const dpr=Math.min(window.devicePixelRatio||1,1.6)*(scale||1)*(S.res||1), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
@@ -23924,80 +23906,239 @@ function viewer(canvas,opt){
     const dark=document.documentElement.getAttribute('data-theme')==='dark';
     const bg=S.bg||(dark?[[.07,.09,.14],[.11,.14,.21]]:[[.98,.985,1],[.89,.915,.96]]);
     gl.uniform3fv(U.uBg1,bg[0]); gl.uniform3fv(U.uBg2,bg[1]); gl.uniform1f(U.uDark,dark?1:0); gl.uniform1f(U.uHatch,S.hatch||3.2);
-    gl.uniform1f(U.uPj,S.proj&&S.tex?1:0); gl.uniform1f(U.uClear,S.clear?1:0);
-    if(S.proj&&S.tex){ S.tex.forEach((t,i)=>{ gl.activeTexture(gl.TEXTURE0+i); gl.bindTexture(gl.TEXTURE_2D,t); }); gl.uniform1i(U.uT1,0); gl.uniform1i(U.uT2,1); gl.uniform1i(U.uT3,2);
-      gl.uniform3fv(U.uPa,S.pa); gl.uniform3fv(U.uPb,S.pb); gl.uniform3fv(U.uCt,S.ct); gl.uniform1f(U.uSc,S.sc); }
+    gl.uniform1f(U.uClear,S.clear?1:0);
     gl.drawArrays(gl.TRIANGLES,0,3); }
-  /* плоскости проекций: на каждой — чертёж того же вида из модели (общий центр и масштаб с IG3.drawing) */
-  function setProj(urls,done){ const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2, g=R*.7;
-    S.ct=C; S.sc=R*1.62; S.pa=[C[0]-R*.81,C[1]-R*.81,b[0][2]-g]; S.pb=[b[1][0]+g,b[1][1]+g,C[2]+R*.81];
-    let left=urls.length; const tex=urls.map(u=>{ const t=gl.createTexture(), im=new Image(); im.onload=()=>{ gl.bindTexture(gl.TEXTURE_2D,t); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
-        gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);   /* 1024² — степень двойки: мипмапы дают чистые тонкие линии без ряби */ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-        if(--left===0){ S.tex=tex; done&&done(); } }; im.src=u; return t; }); }
-  return {gl,S,compile,draw,canvas,setProj};
+  return {gl,S,compile,draw,canvas};
 }
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], norm=a=>{ const l=Math.hypot(...a)||1; return a.map(v=>v/l); };
 /* ── контур сечения плоскостью: квадратики (marching squares) по функции расстояния ──
    плоскость задана точкой O и ортами u, v; возвращает отрезки контура в координатах (u, v), мм */
-function section(tree,O,u,v,box,step){ step=step||0.4; const [u0,u1,v0,v1]=box, nu=Math.ceil((u1-u0)/step), nv=Math.ceil((v1-v0)/step), F=new Float32Array((nu+1)*(nv+1));
-  for(let j=0;j<=nv;j++) for(let i=0;i<=nu;i++){ const a=u0+i*step, b=v0+j*step; F[j*(nu+1)+i]=J(tree,O[0]+u[0]*a+v[0]*b,O[1]+u[1]*a+v[1]*b,O[2]+u[2]*a+v[2]*b); }
+function section(tree,O,u,v,box,step){ step=step||0.4; const J=jc(tree), [u0,u1,v0,v1]=box, nu=Math.ceil((u1-u0)/step), nv=Math.ceil((v1-v0)/step), F=new Float32Array((nu+1)*(nv+1));
+  for(let j=0;j<=nv;j++) for(let i=0;i<=nu;i++){ const a=u0+i*step, b=v0+j*step; F[j*(nu+1)+i]=J(O[0]+u[0]*a+v[0]*b,O[1]+u[1]*a+v[1]*b,O[2]+u[2]*a+v[2]*b); }
   const segs=[], at=(i,j)=>F[j*(nu+1)+i], X=i=>u0+i*step, Y=j=>v0+j*step;
   const ip=(i0,j0,i1,j1)=>{ const a=at(i0,j0), b=at(i1,j1), t=a/(a-b); return [X(i0)+(X(i1)-X(i0))*t, Y(j0)+(Y(j1)-Y(j0))*t]; };
   for(let j=0;j<nv;j++) for(let i=0;i<nu;i++){ const c=(at(i,j)<0?1:0)|(at(i+1,j)<0?2:0)|(at(i+1,j+1)<0?4:0)|(at(i,j+1)<0?8:0); if(c===0||c===15) continue;
     const e=[()=>ip(i,j,i+1,j),()=>ip(i+1,j,i+1,j+1),()=>ip(i,j+1,i+1,j+1),()=>ip(i,j,i,j+1)];
     const T={1:[[0,3]],2:[[0,1]],3:[[1,3]],4:[[1,2]],5:[[0,1],[2,3]],6:[[0,2]],7:[[2,3]],8:[[2,3]],9:[[0,2]],10:[[0,3],[1,2]],11:[[1,2]],12:[[1,3]],13:[[0,1]],14:[[0,3]]}[c];
     T.forEach(([a,b])=>segs.push([e[a](),e[b]()])); }
-  return {segs,inside:(a,b)=>J(tree,O[0]+u[0]*a+v[0]*b,O[1]+u[1]*a+v[1]*b,O[2]+u[2]*a+v[2]*b)<0};
+  return {segs,inside:(a,b)=>J(O[0]+u[0]*a+v[0]*b,O[1]+u[1]*a+v[1]*b,O[2]+u[2]*a+v[2]*b)<0};
 }
-/* ── классический чертёж из модели: линии видимого контура, штриховка разреза, невидимый контур штрихами ──
-   проход 1 — рендер в текстуру: нормаль (rgb) и глубина + признак среза (a); проход 2 — поиск рёбер по соседям */
-const ES=`precision highp float; uniform sampler2D uA,uB; uniform vec2 uRes; uniform float uHalf,uHasB,uW,uHs,uBx;
-vec4 at(sampler2D t,vec2 p){ return texture2D(t,p/uRes); }
-float edgeAt(sampler2D t,vec2 p,out vec2 gdir){ vec4 c=at(t,p); float e=0.; gdir=vec2(0.);
-  for(int i=0;i<4;i++){ vec2 o=i==0?vec2(uW,0.):i==1?vec2(-uW,0.):i==2?vec2(0.,uW):vec2(0.,-uW); vec4 q=at(t,p+o);
-    bool m1=c.a>.01, m2=q.a>.01; float d=0.;
-    if(m1!=m2) d=1.; else if(m1){ vec3 n1=c.rgb*2.-1., n2=q.rgb*2.-1.; float dz=abs(mod(c.a,.5)-mod(q.a,.5));
-      if(dot(n1,n2)<.93||dz>.035||(c.a>.51)!=(q.a>.51)) d=1.; }
-    if(d>e){ e=d; } gdir+=o*d; }
-  return e; }
-void main(){ vec2 p=gl_FragCoord.xy; vec2 g1,g2; vec4 c=at(uA,p); float e=edgeAt(uA,p,g1);
-  if(abs(p.x-uBx)<uW*1.6&&abs(g1.x)>abs(g1.y)+.01) e=0.;   /* граница вида и разреза — ось или волнистая линия, не сплошная */
-  vec3 col=vec3(1.);
-  if(c.a>.51){ float s=uHs; float w=abs(fract((p.x-p.y)/s)-.5)*s; col=mix(vec3(.12),col,smoothstep(.55,1.35,w)); }
-  if(uHasB>.5&&p.x<uHalf-1.5&&e<.5){ float e2=edgeAt(uB,p,g2); if(e2>.5){ vec2 dir=normalize(vec2(-g2.y,g2.x)+1e-5); float u=dot(p,dir)/(uW*7.); if(fract(u)<.62) col=vec3(.12); } }
-  if(e>.5) col=vec3(.07);
-  gl_FragColor=vec4(col,1.); }`;
-function drawing(model,view,size,off,bnd){
-  const W=size||1000, cv=document.createElement('canvas'); cv.width=W; cv.height=W;
-  const gl=cv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true}); if(!gl) return null;
-  const sh=(t,src)=>{ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
-  const prog=(fs)=>{ const pr=gl.createProgram(); gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(pr); return pr; };
-  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-  const P1=prog(FS(G(model.tree))), P2=prog(ES);
-  const bind=pr=>{ gl.useProgram(pr); const l=gl.getAttribLocation(pr,'a'); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); };
-  const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2;
-  const V={front:{yaw:0,pit:1e-4,cut:1,hid:2},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left0:{yaw:Math.PI/2,pit:1e-4,cut:0,hid:3,full:1},frontF:{yaw:0,pit:1e-4,cut:2},leftF:{yaw:Math.PI/2,pit:1e-4,cut:3},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}}[view];
-  const cy=Math.cos(V.yaw), sy=Math.sin(V.yaw), cp=Math.cos(V.pit), sp=Math.sin(V.pit), F=[sy*cp,cy*cp,-sp], Rr=norm(cross(F,[0,0,1])), Up=cross(Rr,F), eye=[C[0]-F[0]*400,C[1]-F[1]*400,C[2]-F[2]*400], scale=R*1.62;
-  const pass=(cut,off,peel)=>{ const tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,W,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-    [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.NEAREST)); [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));
-    const fb=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0); gl.viewport(0,0,W,W); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,null);   /* текстура-цель не должна быть подключена к шейдеру (петля обратной связи) */
-    bind(P1); const u=k=>gl.getUniformLocation(P1,k);
-    gl.uniform2f(u('uRes'),W,W); gl.uniform3fv(u('uEye'),eye); gl.uniform3fv(u('uFwd'),F); gl.uniform3fv(u('uRight'),Rr); gl.uniform3fv(u('uUp'),Up); gl.uniform1f(u('uScale'),scale);
-    gl.uniform3fv(u('uBmin'),[b[0][0]-3,b[0][1]-3,b[0][2]-3]); gl.uniform3fv(u('uBmax'),[b[1][0]+3,b[1][1]+3,b[1][2]+3]); gl.uniform1i(u('uCut'),cut); gl.uniform1f(u('uOff'),off||0); gl.uniform4fv(u('uPl'),[0,0,1,bnd||0]); gl.uniform3fv(u('uBg1'),[1,1,1]); gl.uniform3fv(u('uBg2'),[1,1,1]); gl.uniform1f(u('uDark'),0); gl.uniform1f(u('uHatch'),3); gl.uniform1f(u('uFlat'),0); gl.uniform1f(u('uEnc'),1); gl.uniform1f(u('uPeel'),peel?1:0);
-    gl.drawArrays(gl.TRIANGLES,0,3); gl.bindFramebuffer(gl.FRAMEBUFFER,null); return tex; };
-  const tA=pass(V.cut,off||0), tB=V.hid?pass(0,0,true):tA;
-  const px0=q=>{ const d=[q[0]-C[0],q[1]-C[1],q[2]-C[2]]; return W/2+(d[0]*Rr[0]+d[1]*Rr[1]+d[2]*Rr[2])/scale*W; };
-  const bx=V.cut===1?px0([bnd||0,0,C[2]]):V.cut===5?px0([0,bnd||0,C[2]]):-1e4;
-  bind(P2); const u=k=>gl.getUniformLocation(P2,k); gl.viewport(0,0,W,W);
-  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tA); gl.uniform1i(u('uA'),0);
-  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,tB); gl.uniform1i(u('uB'),1);
-  gl.uniform2f(u('uRes'),W,W); gl.uniform1f(u('uHalf'),V.full?W*2:(bx>-1e3?bx:W/2)); gl.uniform1f(u('uBx'),bx); gl.uniform1f(u('uHasB'),V.hid?1:0); gl.uniform1f(u('uW'),Math.max(1.5,W/420)); gl.uniform1f(u('uHs'),W/70);
-  gl.drawArrays(gl.TRIANGLES,0,3);
-  const url=cv.toDataURL('image/png'); try{ gl.getExtension('WEBGL_lose_context').loseContext(); }catch(e){}
-  /* мир → пиксель картинки (для осей и размеров поверх) */
-  const px=q=>{ const d=[q[0]-C[0],q[1]-C[1],q[2]-C[2]]; return [W/2+(d[0]*Rr[0]+d[1]*Rr[1]+d[2]*Rr[2])/scale*W, W/2-(d[0]*Up[0]+d[1]*Up[1]+d[2]*Up[2])/scale*W]; };
-  return {url,W,px,box:b};
+/* ── чертёж по точной геометрии: рёбра — пересечения поверхностей примитивов, очерк — где поверхность уходит от взгляда;
+   видимость — лучом к наблюдателю. Всё в мм, линии — вектор (никакой растровой обработки). ── */
+const sq=v=>v*v;
+function capz(d2,z,z0,z1){ const h=(z1-z0)/2, dz=Math.abs(z-(z0+z1)/2)-h; return Math.min(Math.max(d2,dz),0)+Math.sqrt(sq(Math.max(d2,0))+sq(Math.max(dz,0))); }
+function ngT(n,a){ const c=[],s=[]; for(let i=0;i<n;i++){ const t=a*Math.PI/180+(i+.5)*2*Math.PI/n; c.push(Math.cos(t)); s.push(Math.sin(t)); } return [c,s]; }
+function ngF(T,x,y){ let m=-1e9; const c=T[0],s=T[1]; for(let i=0;i<c.length;i++){ const v=x*c[i]+y*s[i]; if(v>m) m=v; } return m; }
+/* функция расстояния, собранная в замыкания (та же, что J, только быстрее) */
+function JC(nd){
+  switch(nd.t){
+    case 'cyl':{ const cx=nd.x,cy=nd.y,r=nd.r,z0=nd.z0,z1=nd.z1; return (x,y,z)=>capz(Math.sqrt(sq(x-cx)+sq(y-cy))-r,z,z0,z1); }
+    case 'cone':{ const cx=nd.x,cy=nd.y,r0=nd.r0,r1=nd.r1,z0=nd.z0,z1=nd.z1,k=Math.abs(Math.cos(Math.atan2(r1-r0,z1-z0)));
+      return (x,y,z)=>{ const t=Math.min(1,Math.max(0,(z-z0)/(z1-z0))); return capz((Math.sqrt(sq(x-cx)+sq(y-cy))-(r0+(r1-r0)*t))*k,z,z0,z1); }; }
+    case 'box':{ const c=Math.cos(-nd.a*Math.PI/180), s=Math.sin(-nd.a*Math.PI/180), cx=nd.x,cy=nd.y,hx=nd.sx/2,hy=nd.sy/2,z0=nd.z0,z1=nd.z1;
+      return (x,y,z)=>{ const px=(x-cx)*c-(y-cy)*s, py=(x-cx)*s+(y-cy)*c, dx=Math.abs(px)-hx, dy=Math.abs(py)-hy; return capz(Math.min(Math.max(dx,dy),0)+Math.sqrt(sq(Math.max(dx,0))+sq(Math.max(dy,0))),z,z0,z1); }; }
+    case 'ngon':{ const T=ngT(nd.n,nd.a), cx=nd.x,cy=nd.y,ap=nd.s/2,z0=nd.z0,z1=nd.z1; return (x,y,z)=>capz(ngF(T,x-cx,y-cy)-ap,z,z0,z1); }
+    case 'npyr':{ const T=ngT(nd.n,nd.a), cx=nd.x,cy=nd.y,s0=nd.s0,s1=nd.s1,z0=nd.z0,z1=nd.z1,k=Math.abs(Math.cos(Math.atan2((s1-s0)/2,z1-z0)));
+      return (x,y,z)=>{ const t=Math.min(1,Math.max(0,(z-z0)/(z1-z0))); return capz((ngF(T,x-cx,y-cy)-(s0+(s1-s0)*t)/2)*k,z,z0,z1); }; }
+    case 'hcyl':{ const X=nd.ax==='x', cv=X?0:nd.cx, cz=nd.cz, r=nd.r, m=(nd.u0+nd.u1)/2, h=(nd.u1-nd.u0)/2;
+      return (x,y,z)=>{ const u=X?x:y, v=X?y:x, d2=Math.sqrt(sq(v-cv)+sq(z-cz))-r, du=Math.abs(u-m)-h; return Math.min(Math.max(d2,du),0)+Math.sqrt(sq(Math.max(d2,0))+sq(Math.max(du,0))); }; }
+    case 'hp':{ const a=nd.n[0],b=nd.n[1],c=nd.n[2],d=nd.c; return (x,y,z)=>a*x+b*y+c*z-d; }
+    case 'sph':{ const cx=nd.x||0,cy=nd.y||0,cz=nd.z||0,r=nd.r; return (x,y,z)=>Math.sqrt(sq(x-cx)+sq(y-cy)+sq(z-cz))-r; }
+    case 'u':{ const f=nd.k.map(JC), n=f.length; return (x,y,z)=>{ let m=f[0](x,y,z); for(let i=1;i<n;i++){ const v=f[i](x,y,z); if(v<m) m=v; } return m; }; }
+    case 'i':{ const f=nd.k.map(JC), n=f.length; return (x,y,z)=>{ let m=f[0](x,y,z); for(let i=1;i<n;i++){ const v=f[i](x,y,z); if(v>m) m=v; } return m; }; }
+    case 's':{ const a=JC(nd.a), f=nd.k.map(JC), n=f.length; return (x,y,z)=>{ let m=a(x,y,z); for(let i=0;i<n;i++){ const v=-f[i](x,y,z); if(v>m) m=v; } return m; }; }
+  }
+  return ()=>1e9;
 }
+const jc=t=>t._jc||(Object.defineProperty(t,'_jc',{value:JC(t)}),t._jc);
+/* ── поверхности примитивов: плоскость pl (n·p = c), конус/цилиндр вдоль z (zc), цилиндр вдоль x/y (hc), шар (sp) ── */
+const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+function primBox(nd,MB){
+  const R=(r,cx,cy,z0,z1)=>[[cx-r,cy-r,z0],[cx+r,cy+r,z1]];
+  switch(nd.t){
+    case 'cyl': return R(nd.r,nd.x,nd.y,nd.z0,nd.z1);
+    case 'cone': return R(Math.max(nd.r0,nd.r1),nd.x,nd.y,nd.z0,nd.z1);
+    case 'box': return R(Math.hypot(nd.sx,nd.sy)/2,nd.x,nd.y,nd.z0,nd.z1);
+    case 'ngon': return R(nd.s/2/Math.cos(Math.PI/nd.n),nd.x,nd.y,nd.z0,nd.z1);
+    case 'npyr': return R(Math.max(nd.s0,nd.s1)/2/Math.cos(Math.PI/nd.n),nd.x,nd.y,nd.z0,nd.z1);
+    case 'hcyl': return nd.ax==='x'?[[nd.u0,-nd.r,nd.cz-nd.r],[nd.u1,nd.r,nd.cz+nd.r]]:[[nd.cx-nd.r,nd.u0,nd.cz-nd.r],[nd.cx+nd.r,nd.u1,nd.cz+nd.r]];
+    case 'sph': { const c=[nd.x||0,nd.y||0,nd.z||0]; return [c.map(v=>v-nd.r),c.map(v=>v+nd.r)]; }
+  }
+  return MB;
+}
+function surfsOf(nd){
+  const L=[], pl=(n,c)=>{ const l=Math.hypot(n[0],n[1],n[2]); L.push({t:'pl',n:n.map(v=>v/l),c:c/l}); }, caps=()=>{ pl([0,0,1],nd.z0); pl([0,0,1],nd.z1); };
+  switch(nd.t){
+    case 'cyl': L.push({t:'zc',cx:nd.x,cy:nd.y,r0:nd.r,k:0,z0:nd.z0,t0:nd.z0,t1:nd.z1}); caps(); break;
+    case 'cone': L.push({t:'zc',cx:nd.x,cy:nd.y,r0:nd.r0,k:(nd.r1-nd.r0)/(nd.z1-nd.z0),z0:nd.z0,t0:nd.z0,t1:nd.z1}); caps(); break;
+    case 'box':{ const A=-nd.a*Math.PI/180, c=Math.cos(A), s=Math.sin(A), o=[nd.x,nd.y,0], nx=[c,-s,0], ny=[s,c,0];
+      pl(nx,dot3(nx,o)+nd.sx/2); pl(nx,dot3(nx,o)-nd.sx/2); pl(ny,dot3(ny,o)+nd.sy/2); pl(ny,dot3(ny,o)-nd.sy/2); caps(); break; }
+    case 'ngon':{ const T=ngT(nd.n,nd.a); for(let i=0;i<nd.n;i++){ const n=[T[0][i],T[1][i],0]; pl(n,n[0]*nd.x+n[1]*nd.y+nd.s/2); } caps(); break; }
+    case 'npyr':{ const T=ngT(nd.n,nd.a), ds=(nd.s1-nd.s0)/(nd.z1-nd.z0)/2; for(let i=0;i<nd.n;i++){ const c=T[0][i], s=T[1][i]; pl([c,s,-ds],c*nd.x+s*nd.y+nd.s0/2-ds*nd.z0); } caps(); break; }
+    case 'hcyl': L.push({t:'hc',ax:nd.ax,cv:nd.ax==='x'?0:nd.cx,cz:nd.cz,r:nd.r,t0:nd.u0,t1:nd.u1}); pl(nd.ax==='x'?[1,0,0]:[0,1,0],nd.u0); pl(nd.ax==='x'?[1,0,0]:[0,1,0],nd.u1); break;
+    case 'hp': pl(nd.n,nd.c); break;
+    case 'sph': L.push({t:'sp',c:[nd.x||0,nd.y||0,nd.z||0],r:nd.r,t0:-Math.PI/2,t1:Math.PI/2}); break;
+  }
+  return L;
+}
+function SF(s,x,y,z){ switch(s.t){
+  case 'pl': return s.n[0]*x+s.n[1]*y+s.n[2]*z-s.c;
+  case 'zc': return Math.sqrt(sq(x-s.cx)+sq(y-s.cy))-(s.r0+s.k*(z-s.z0));
+  case 'hc': return s.ax==='x'?Math.sqrt(sq(y-s.cv)+sq(z-s.cz))-s.r:Math.sqrt(sq(x-s.cv)+sq(z-s.cz))-s.r;
+  case 'sp': return Math.sqrt(sq(x-s.c[0])+sq(y-s.c[1])+sq(z-s.c[2]))-s.r; } }
+function SP(s,u,t){ const cu=Math.cos(u), su=Math.sin(u); switch(s.t){
+  case 'zc': { const r=s.r0+s.k*(t-s.z0); return [s.cx+r*cu,s.cy+r*su,t]; }
+  case 'hc': return s.ax==='x'?[t,s.cv+s.r*cu,s.cz+s.r*su]:[s.cv+s.r*cu,t,s.cz+s.r*su];
+  case 'sp': { const ct=Math.cos(t); return [s.c[0]+s.r*ct*cu,s.c[1]+s.r*ct*su,s.c[2]+s.r*Math.sin(t)]; } } }
+function SN(s,u,t){ const cu=Math.cos(u), su=Math.sin(u); switch(s.t){
+  case 'zc': { const l=Math.sqrt(1+s.k*s.k); return [cu/l,su/l,-s.k/l]; }
+  case 'hc': return s.ax==='x'?[0,cu,su]:[cu,0,su];
+  case 'sp': { const ct=Math.cos(t); return [ct*cu,ct*su,Math.sin(t)]; } } }
+function grad(s,p){ if(s.t==='pl') return s.n; const h=1e-5, g=[0,1,2].map(i=>{ const a=p.slice(), b=p.slice(); a[i]+=h; b[i]-=h; return (SF(s,...a)-SF(s,...b))/(2*h); }), l=Math.hypot(...g)||1; return g.map(v=>v/l); }
+const rmax=s=>s.t==='zc'?Math.max(Math.abs(s.r0+s.k*(s.t0-s.z0)),Math.abs(s.r0+s.k*(s.t1-s.z0)),0.5):s.r;
+/* корни f на [a, b]: n шагов, затем деление пополам */
+function roots(f,a,b,n,per){ const out=[], z=v=>Math.abs(v)<1e-9?0:v; let x0=a, f0=z(f(a)), all0=f0===0;
+  for(let i=1;i<=n;i++){ const x1=a+(b-a)*i/n, f1=z(f(x1)); if(f1!==0) all0=false;
+    if(f0===0) out.push(x0);
+    else if(f0*f1<0){ let lo=x0, hi=x1, flo=f0; for(let k=0;k<52;k++){ const m=(lo+hi)/2, fm=f(m); if(fm===0){ lo=hi=m; break; } if((fm<0)===(flo<0)){ lo=m; flo=fm; } else hi=m; } out.push((lo+hi)/2); }
+    x0=x1; f0=f1; }
+  if(!per&&f0===0) out.push(x0);
+  return all0?[]:out; }
+const H=0.4;   /* шаг вдоль кривой, мм */
+/* кривая на параметрической поверхности A, где g(u,t) = 0: строки по u (решаем по t) и строки по t (решаем по u) */
+function traceOn(A,g,tlo,thi,emit,chk){
+  if(thi-tlo<1e-6) return; const R=rmax(A), Nu=Math.min(2400,Math.max(90,Math.ceil(2*Math.PI*R/H))), sph=A.t==='sp', Nt=Math.max(1,Math.ceil((thi-tlo)*(sph?R:1)/H));   /* у шара t — широта: шаг в мм по дуге */
+  const ct=Math.max(2,Math.ceil((thi-tlo)/(sph?0.03:1))), cu=Math.min(720,Math.max(48,Math.ceil(2*Math.PI*R/1)));
+  const rowsU=[]; for(let i=0;i<Nu;i++){ const u=i*2*Math.PI/Nu; rowsU.push(roots(t=>g(u,t),tlo,thi,ct).map(t=>SP(A,u,t))); }
+  link(rowsU,true,emit,chk);
+  const rowsT=[]; for(let j=0;j<=Nt;j++){ const t=tlo+(thi-tlo)*j/Nt; rowsT.push(roots(u=>g(u,t),0,2*Math.PI,cu,true).map(u=>SP(A,u,t))); }
+  link(rowsT,false,emit,chk); }
+function link(rows,cyc,emit,chk){ const n=rows.length, LM=3;
+  for(let i=0;i<(cyc?n:n-1);i++){ const a=rows[i], b=rows[(i+1)%n]; if(!a.length||!b.length) continue; const pairs=new Set();
+    const near=(p,L)=>{ let bi=-1, bd=LM; L.forEach((q,j)=>{ const d=Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]); if(d<bd){ bd=d; bi=j; } }); return bi; };
+    a.forEach((p,ia)=>{ const j=near(p,b); if(j>=0) pairs.add(ia+','+j); }); b.forEach((q,ib)=>{ const j=near(q,a); if(j>=0) pairs.add(j+','+ib); });
+    pairs.forEach(k=>{ const [ia,ib]=k.split(',').map(Number), p=a[ia], q=b[ib], m=[(p[0]+q[0])/2,(p[1]+q[1])/2,(p[2]+q[2])/2]; if(chk(m)) emit(p,q); }); } }
+/* пересечение двух плоскостей — прямая, обрезанная по коробке */
+function lineOf(A,B,box,emit){ const n1=A.n, n2=B.n, d=[n1[1]*n2[2]-n1[2]*n2[1],n1[2]*n2[0]-n1[0]*n2[2],n1[0]*n2[1]-n1[1]*n2[0]], dd=dot3(d,d); if(dd<1e-10) return;
+  const c1=A.c, c2=B.c, a=[n2[1]*d[2]-n2[2]*d[1],n2[2]*d[0]-n2[0]*d[2],n2[0]*d[1]-n2[1]*d[0]], b=[d[1]*n1[2]-d[2]*n1[1],d[2]*n1[0]-d[0]*n1[2],d[0]*n1[1]-d[1]*n1[0]];
+  const p0=[0,1,2].map(i=>(c1*a[i]+c2*b[i])/dd), l=Math.sqrt(dd), u=d.map(v=>v/l); let s0=-1e9, s1=1e9;
+  for(let i=0;i<3;i++){ if(Math.abs(u[i])<1e-12){ if(p0[i]<box[0][i]||p0[i]>box[1][i]) return; continue; } let ta=(box[0][i]-p0[i])/u[i], tb=(box[1][i]-p0[i])/u[i]; if(ta>tb) [ta,tb]=[tb,ta]; s0=Math.max(s0,ta); s1=Math.min(s1,tb); }
+  if(s1-s0<1e-6) return; const N=Math.max(1,Math.ceil((s1-s0)/H)); let prev=null;
+  for(let i=0;i<=N;i++){ const s=s0+(s1-s0)*i/N, p=[p0[0]+u[0]*s,p0[1]+u[1]*s,p0[2]+u[2]*s]; if(prev) emit(prev,p); prev=p; } }
+const boxI=(a,b)=>[[0,1,2].map(i=>Math.max(a[0][i],b[0][i])),[0,1,2].map(i=>Math.min(a[1][i],b[1][i]))], boxOk=b=>b[0][0]<=b[1][0]&&b[0][1]<=b[1][1]&&b[0][2]<=b[1][2];
+const grow=(b,e)=>[b[0].map(v=>v-e),b[1].map(v=>v+e)];
+/* t-диапазон параметрической поверхности внутри коробки */
+function tRange(A,bx){ if(A.t==='zc') return [Math.max(A.t0,bx[0][2]),Math.min(A.t1,bx[1][2])]; if(A.t==='hc'){ const i=A.ax==='x'?0:1; return [Math.max(A.t0,bx[0][i]),Math.min(A.t1,bx[1][i])]; } return [A.t0,A.t1]; }
+/* все кривые пересечения пары поверхностей (точки лежат на обеих) */
+function pairCurves(A,B,bx,emit){
+  const tol=0.02, chk=m=>Math.abs(SF(A,...m))<tol&&Math.abs(SF(B,...m))<tol;
+  if(A.t==='pl'&&B.t==='pl') return lineOf(A,B,bx,emit);
+  const one=(P,Q)=>{ const [lo,hi]=tRange(P,bx); traceOn(P,(u,t)=>{ const p=SP(P,u,t); return SF(Q,p[0],p[1],p[2]); },lo,hi,(p,q)=>{ if(inB(p,bx)&&inB(q,bx)) emit(p,q); },chk); };
+  if(A.t!=='pl') one(A,B); if(B.t!=='pl') one(B,A); }
+const inB=(p,b)=>p[0]>=b[0][0]-1e-6&&p[0]<=b[1][0]+1e-6&&p[1]>=b[0][1]-1e-6&&p[1]<=b[1][1]+1e-6&&p[2]>=b[0][2]-1e-6&&p[2]<=b[1][2]+1e-6;
+/* рёбра модели (от вида не зависят): кэш на модели */
+function edges3(model){ if(model._e3) return model._e3;
+  const MB=grow(model.box,1.5), PR=[]; (function w(n){ if(n.k){ if(n.a) w(n.a); n.k.forEach(w); } else PR.push(n); })(model.tree);
+  const SS=[]; PR.forEach(nd=>{ const J=JC(nd), bb=boxI(grow(primBox(nd,MB),0.01),MB); surfsOf(nd).forEach(s=>{ s.J=J; s.bb=bb; SS.push(s); }); });
+  const segs=[];
+  for(let i=0;i<SS.length;i++) for(let j=i+1;j<SS.length;j++){ const A=SS[i], B=SS[j], bx=boxI(A.bb,B.bb); if(!boxOk(bx)) continue;
+    pairCurves(A,B,bx,(p,q)=>{ if(Math.abs(A.J(...p))<2e-3&&Math.abs(B.J(...p))<2e-3||Math.abs(A.J(...q))<2e-3&&Math.abs(B.J(...q))<2e-3) segs.push({p,q,A,B}); }); }
+  return model._e3={segs,SS,MB}; }
+const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+/* контуры области f < 0 на прямоугольнике (квадратики), петли в координатах (u, v) */
+function msLoops(f,u0,u1,v0,v1,st){ const nu=Math.ceil((u1-u0)/st), nv=Math.ceil((v1-v0)/st), F=new Float64Array((nu+1)*(nv+1));
+  for(let j=0;j<=nv;j++) for(let i=0;i<=nu;i++) F[j*(nu+1)+i]=f(u0+i*st,v0+j*st);
+  const at=(i,j)=>F[j*(nu+1)+i], segs=[], ip=(i0,j0,i1,j1)=>{ const a=at(i0,j0), b=at(i1,j1), t=a/(a-b); return [u0+(i0+(i1-i0)*t)*st, v0+(j0+(j1-j0)*t)*st]; };
+  for(let j=0;j<nv;j++) for(let i=0;i<nu;i++){ const c=(at(i,j)<0?1:0)|(at(i+1,j)<0?2:0)|(at(i+1,j+1)<0?4:0)|(at(i,j+1)<0?8:0); if(c===0||c===15) continue;
+    const e=[()=>ip(i,j,i+1,j),()=>ip(i+1,j,i+1,j+1),()=>ip(i,j+1,i+1,j+1),()=>ip(i,j,i,j+1)];
+    ({1:[[0,3]],2:[[0,1]],3:[[1,3]],4:[[1,2]],5:[[0,1],[2,3]],6:[[0,2]],7:[[2,3]],8:[[2,3]],9:[[0,2]],10:[[0,3],[1,2]],11:[[1,2]],12:[[1,3]],13:[[0,1]],14:[[0,3]]})[c].forEach(([a,b])=>segs.push([e[a](),e[b]()])); }
+  const key=p=>p[0].toFixed(5)+','+p[1].toFixed(5), adj=new Map(); segs.forEach((g,i)=>g.forEach(p=>{ const k=key(p); if(!adj.has(k)) adj.set(k,[]); adj.get(k).push(i); }));
+  const used=new Uint8Array(segs.length), loops=[];
+  for(let i=0;i<segs.length;i++){ if(used[i]) continue; used[i]=1; const pts=[segs[i][0],segs[i][1]]; let cur=segs[i][1];
+    for(;;){ const nx=(adj.get(key(cur))||[]).find(j=>!used[j]); if(nx==null) break; used[nx]=1; const g=segs[nx]; cur=key(g[0])===key(cur)?g[1]:g[0]; pts.push(cur); }
+    let ar=0; for(let q=1;q<pts.length;q++) ar+=pts[q-1][0]*pts[q][1]-pts[q][0]*pts[q-1][1]; if(pts.length>4&&Math.abs(ar)>2*st*st*4) loops.push(pts); }
+  return loops; }
+/* отрезки → цепочки (концы сшиваются с допуском), упрощение Дугласа — Пекера */
+function chains(S,tol){ const G=new Map(), cell=2, k=(x,y)=>Math.floor(x/cell)+','+Math.floor(y/cell);
+  S.forEach((s,i)=>[0,1].forEach(e=>{ const p=e?s.b:s.a, kk=k(p[0],p[1]); if(!G.has(kk)) G.set(kk,[]); G.get(kk).push([i,e]); }));
+  const used=new Uint8Array(S.length), out=[];
+  const next=(p,dir,excl)=>{ let best=null, bs=-2; const cx=Math.floor(p[0]/cell), cy=Math.floor(p[1]/cell);
+    for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) (G.get((cx+dx)+','+(cy+dy))||[]).forEach(([i,e])=>{ if(used[i]||i===excl) return; const s=S[i], q=e?s.b:s.a, o=e?s.a:s.b;
+      if(Math.hypot(q[0]-p[0],q[1]-p[1])>tol) return; const l=Math.hypot(o[0]-q[0],o[1]-q[1])||1, c=dir?((o[0]-q[0])*dir[0]+(o[1]-q[1])*dir[1])/l:0; if(c>bs){ bs=c; best=[i,e]; } });
+    return best&&(dir?bs>0.5:true)?best:null; };
+  for(let i=0;i<S.length;i++){ if(used[i]) continue; used[i]=1; let L=[S[i].a,S[i].b];
+    for(let side=0;side<2;side++){ for(;;){ const p=L[L.length-1], q=L[L.length-2], l=Math.hypot(p[0]-q[0],p[1]-q[1])||1, n=next(p,[(p[0]-q[0])/l,(p[1]-q[1])/l],i); if(!n) break; used[n[0]]=1; const s=S[n[0]]; L.push(n[1]?s.a:s.b); } L.reverse(); }
+    const xs=L.map(p=>p[0]), ys=L.map(p=>p[1]); if(Math.hypot(Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys))<6) continue;   /* вершина конуса (срез Ø0,6) — точка, не линия */
+    out.push(dp(L,0.06)); }
+  return out; }
+function dp(L,e){ if(L.length<3) return L; const keep=new Uint8Array(L.length); keep[0]=keep[L.length-1]=1; const st=[[0,L.length-1]];
+  while(st.length){ const [a,b]=st.pop(); const A=L[a], B=L[b], dx=B[0]-A[0], dy=B[1]-A[1], l=Math.hypot(dx,dy); let mi=-1, md=e;
+    for(let i=a+1;i<b;i++){ const d=l<1e-6?Math.hypot(L[i][0]-A[0],L[i][1]-A[1]):Math.abs((L[i][0]-A[0])*dy-(L[i][1]-A[1])*dx)/l; if(d>md){ md=d; mi=i; } } if(mi>=0){ keep[mi]=1; st.push([a,mi],[mi,b]); } }
+  return L.filter((_,i)=>keep[i]); }
+/* убрать повторы: отрезок, лежащий на уже принятом (видимый поверх невидимого), не рисуем */
+function dedupe(S){ const G=new Map(), cell=3, acc=[], tol=0.35;
+  const add=s=>{ const x0=Math.floor(Math.min(s.a[0],s.b[0])/cell), x1=Math.floor(Math.max(s.a[0],s.b[0])/cell), y0=Math.floor(Math.min(s.a[1],s.b[1])/cell), y1=Math.floor(Math.max(s.a[1],s.b[1])/cell);
+    for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ const k=x+','+y; if(!G.has(k)) G.set(k,[]); G.get(k).push(s); } };
+  const cov=(p,dir,h)=>{ const k=Math.floor(p[0]/cell)+','+Math.floor(p[1]/cell); return (G.get(k)||[]).some(s=>{ if(!h&&s.h) return false; const dx=s.b[0]-s.a[0], dy=s.b[1]-s.a[1], l=Math.hypot(dx,dy)||1e-9;
+    if(Math.abs(dx*dir[1]-dy*dir[0])/l>0.25) return false; const t=((p[0]-s.a[0])*dx+(p[1]-s.a[1])*dy)/(l*l); if(t<-0.02||t>1.02) return false; return Math.abs((p[0]-s.a[0])*dy-(p[1]-s.a[1])*dx)/l<tol; }); };
+  const out=[]; S.sort((a,b)=>(a.h-b.h)); S.forEach(s=>{ const dx=s.b[0]-s.a[0], dy=s.b[1]-s.a[1], l=Math.hypot(dx,dy); if(l<1e-4) return; const dir=[dx/l,dy/l];
+    if([0.15,0.5,0.85].every(t=>cov([s.a[0]+dx*t,s.a[1]+dy*t],dir,s.h))) return; add(s); out.push(s); });
+  return out; }
+const VIEW={front:{yaw:0,pit:1e-4,cut:1,hid:2},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left0:{yaw:Math.PI/2,pit:1e-4,cut:0,hid:3,full:1},frontF:{yaw:0,pit:1e-4,cut:2},leftF:{yaw:Math.PI/2,pit:1e-4,cut:3},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}};
+/* вид модели: {svg, url, px} — px переводит точку (мм) в координаты картинки W×W */
+function drawing(model,view,W,off,bnd){
+  W=W||1000; off=off||0; bnd=bnd||0; const key=[view,W,off,bnd].join('|'), memo=model._dw||(Object.defineProperty(model,'_dw',{value:new Map()}),model._dw);
+  if(!memo.has(key)) memo.set(key,draw1(model,view,W,off,bnd)); return memo.get(key); }
+function draw1(model,view,W,off,bnd){ const V=VIEW[view], E3=edges3(model), J=jc(model.tree), b=model.box;
+  const C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2, scale=R*1.62;
+  const cy=Math.cos(V.yaw), sy=Math.sin(V.yaw), cp=Math.cos(V.pit), sp=Math.sin(V.pit), F=[sy*cp,cy*cp,-sp], Rr=(()=>{ const r=crs(F,[0,0,1]), l=Math.hypot(...r); return r.map(v=>v/l); })(), Up=crs(Rr,F);
+  const px=q=>{ const d=[q[0]-C[0],q[1]-C[1],q[2]-C[2]]; return [W/2+dot3(d,Rr)/scale*W, W/2-dot3(d,Up)/scale*W]; };
+  /* разрез: убранная часть и секущие плоскости (одна из них — граница вида и разреза, её рёбра не рисуем) */
+  const cut=V.cut, CT={1:p=>Math.max(bnd-p[0],p[1]-off),2:p=>p[1]-off,3:p=>p[0]-off,5:p=>Math.max(p[0]-off,p[1]-bnd),6:p=>off-p[2]}[cut];
+  const Jv=CT?(x,y,z)=>Math.max(J(x,y,z),-CT([x,y,z])):J;
+  const pl=(n,c,face)=>({t:'pl',n,c,J:()=>0,bb:E3.MB,face});
+  const CP={1:[pl([1,0,0],bnd,0),pl([0,1,0],off,1)],2:[pl([0,1,0],off,1)],3:[pl([1,0,0],off,1)],5:[pl([1,0,0],off,1),pl([0,1,0],bnd,0)],6:[pl([0,0,1],off,1)]}[cut]||[];
+  const SG=E3.segs.slice();
+  CP.filter(c=>c.face).forEach(c=>E3.SS.forEach(B=>{ const bx=boxI(B.bb,E3.MB); if(!boxOk(bx)) return; pairCurves(c,B,bx,(p,q)=>{ if(Math.abs(B.J(...p))<2e-3||Math.abs(B.J(...q))<2e-3) SG.push({p,q,A:c,B}); }); }));
+  /* очерк: поверхность касается луча зрения */
+  E3.SS.forEach(A=>{ if(A.t==='pl') return; const [lo,hi]=tRange(A,A.bb); traceOn(A,(u,t)=>dot3(SN(A,u,t),F),lo,hi,(p,q)=>{ if(Math.abs(A.J(...p))<2e-3||Math.abs(A.J(...q))<2e-3) SG.push({p,q,A,B:null}); },m=>Math.abs(SF(A,...m))<0.02); });
+  /* точка на ребре: на границе тела и к ней подходят обе поверхности (излом); на очерке — поверхность и есть граница */
+  const side=(q,n,d)=>(Jv(q[0]+n[0]*d,q[1]+n[1]*d,q[2]+n[2]*d)<0)!==(Jv(q[0]-n[0]*d,q[1]-n[1]*d,q[2]-n[2]*d)<0);
+  const valid=(p,A,B)=>{ if(Math.abs(Jv(p[0],p[1],p[2]))>0.01) return false;
+    if(!B){ const n=grad(A,p); return side(p,n,0.02); }
+    const na=grad(A,p), nb=grad(B,p), T=crs(na,nb), tl=Math.hypot(...T); if(tl<0.03) return false; const t=T.map(v=>v/tl), ra=crs(t,na), rb=crs(t,nb), e=0.06, d=0.015;
+    const on=(r,n,s)=>side([p[0]+r[0]*e*s,p[1]+r[1]*e*s,p[2]+r[2]*e*s],n,d);
+    return (on(ra,na,1)||on(ra,na,-1))&&(on(rb,nb,1)||on(rb,nb,-1)); };
+  /* луч к наблюдателю: внутри материала — точка закрыта. На общей грани двух тел (фланец и конус на одном уровне) функция равна нулю,
+     поэтому там смотрим по обе стороны луча: материал с обеих сторон — значит, внутри */
+  const MB=grow(E3.MB,2), O1=Rr.map(v=>v*0.01), O2=Up.map(v=>v*0.01), inMat=(q,v)=>{ if(v<-0.004) return true; if(v>0.004) return false;
+    return [O1,O2].some(o=>Jv(q[0]+o[0],q[1]+o[1],q[2]+o[2])<0&&Jv(q[0]-o[0],q[1]-o[1],q[2]-o[2])<0); };
+  const seen=p=>{ let s=0.03; for(let i=0;i<6000;i++){ const q=[p[0]-F[0]*s,p[1]-F[1]*s,p[2]-F[2]*s]; if(!inB(q,MB)) return true; const v=Jv(q[0],q[1],q[2]); if(inMat(q,v)) return false; s+=Math.max(v,0.15); } return true; };
+  const px0=q=>W/2+dot3([q[0]-C[0],q[1]-C[1],q[2]-C[2]],Rr)/scale*W, bx=cut===1?px0([bnd,0,C[2]]):cut===5?px0([0,bnd,C[2]]):-1e4, half=V.full?W*2:(bx>-1e3?bx:W/2);
+  const st=(p,A,B)=>{ if(!valid(p,A,B)) return 0; if(seen(p)) return 1; return V.hid&&px(p)[0]<half-1.5?2:0; };
+  const S2=[], tok={};   /* состояние точки считаем один раз за вызов */
+  SG.forEach(g=>{ if(g.A.face===0||g.B&&g.B.face===0) return; const sp=g.p._v===tok?g.p._s:(g.p._v=tok,g.p._s=st(g.p,g.A,g.B)), sq_=g.q._v===tok?g.q._s:(g.q._v=tok,g.q._s=st(g.q,g.A,g.B));
+    const put=(a,c,s)=>{ if(s) S2.push({a:px(a),b:px(c),h:s===2}); };
+    if(sp===sq_){ put(g.p,g.q,sp); return; }
+    let lo=0, hi=1; const at=t=>[g.p[0]+(g.q[0]-g.p[0])*t,g.p[1]+(g.q[1]-g.p[1])*t,g.p[2]+(g.q[2]-g.p[2])*t];
+    for(let k=0;k<7;k++){ const m=(lo+hi)/2; if(st(at(m),g.A,g.B)===sp) lo=m; else hi=m; } const m=at((lo+hi)/2); put(g.p,m,sp); put(m,g.q,sq_); });
+  const SD=dedupe(S2), f2=v=>v.toFixed(2), path=L=>L.map((p,i)=>(i?'L':'M')+f2(p[0])+' '+f2(p[1])).join('');
+  const vis=chains(SD.filter(s=>!s.h),0.45).map(path).join(''), hid=chains(SD.filter(s=>s.h),0.45).map(path).join('');
+  /* штриховка сечения на секущей плоскости */
+  let hat='';
+  const fc=CP.find(c=>c.face);
+  if(fc){ const n=fc.n, ax=n[0]?0:n[1]?1:2, ua=ax===2?0:ax===0?1:0, va=ax===2?1:2, lo=[b[0][0]-1,b[0][1]-1,b[0][2]-1], hi=[b[1][0]+1,b[1][1]+1,b[1][2]+1];
+    const lim=cut===1?q=>bnd-q[0]:cut===5?q=>q[1]-bnd:()=>-1e9;   /* сечение — только в убранной части */
+    const P3=(u,v)=>{ const q=[0,0,0]; q[ax]=fc.c; q[ua]=u; q[va]=v; return q; };
+    /* штрихуем только разрезанный материал: он есть по обе стороны плоскости (грань детали, лежащая в плоскости, — не сечение) */
+    const e=n.map(v=>v*0.01), loops=msLoops((u,v)=>{ const q=P3(u,v); return Math.max(J(q[0]+e[0],q[1]+e[1],q[2]+e[2]),J(q[0]-e[0],q[1]-e[1],q[2]-e[2]),lim(q)); },lo[ua],hi[ua],lo[va],hi[va],0.2);
+    hat=loops.map(L=>L.map((p,i)=>{ const q=px(P3(p[0],p[1])); return (i?'L':'M')+f2(q[0])+' '+f2(q[1]); }).join('')+'Z').join(''); }
+  const sw=W/250, hs=W/70;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${W}" viewBox="0 0 ${W} ${W}">`
+    +(hat?`<defs><pattern id="h" patternUnits="userSpaceOnUse" width="${f2(hs)}" height="${f2(hs)}" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${f2(hs)}" stroke="#111" stroke-width="${f2(sw*0.32)}"/></pattern></defs><path d="${hat}" fill="url(#h)" fill-rule="evenodd"/>`:'')
+    +(hid?`<path d="${hid}" fill="none" stroke="#111" stroke-width="${f2(sw*0.45)}" stroke-dasharray="${f2(W/62)} ${f2(W/170)}" stroke-linecap="butt"/>`:'')
+    +`<path d="${vis}" fill="none" stroke="#111" stroke-width="${f2(sw)}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return {svg,W,px,box:b,url:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}; }
 return {P,J,G,viewer,section,drawing};
 })();
 
@@ -24012,6 +24153,9 @@ const cyl=P.cyl, cone=P.cone, box=P.box, U=P.U, S=P.S, I=P.I;
 /* конус, продлённый на E за торцы (для вычитания — чтобы не было «плёнок» на торцах) */
 const coneX=(d0,d1,z0,z1,o)=>{ const k=(d1-d0)/2/(z1-z0); return cone(d0/2-k*E,d1/2+k*E,z0-E,z1+E,o); };
 const cylX=(d,z0,z1,o)=>cyl(d/2,z0-E,z1+E,o);
+/* отверстие, у которого наружу выходит только один торец: другой — уступ внутри детали, его высота точная */
+const cylT=(d,z0,z1)=>cyl(d/2,z0,z1+E), cylB=(d,z0,z1)=>cyl(d/2,z0-E,z1);
+const coneB=(d0,d1,z0,z1)=>{ const k=(d1-d0)/2/(z1-z0); return cone(d0/2-k*E,d1/2,z0-E,z1); };
 const tri=(D,z0,z1)=>P.ngon(3,D/2,z0,z1,{a:90});                 /* апофема = R/2 → s = R */
 const triP=(D0,D1,z0,z1)=>{ const k=(D1-D0)/2/(z1-z0); return P.npyr(3,(D0-2*k*E)/2,(D1+2*k*E)/2,z0-E,z1+E,{a:90}); };
 const hexX=(D,z0,z1)=>P.ngon(6,D*Math.cos(Math.PI/6),z0,z1,{a:0});
@@ -24025,45 +24169,45 @@ const flange=(D,h)=>cyl(D/2,0,h);
 const V={};
 /* 1 */ V[1]={tree:S(U(flange(110,20),P.ngon(3,55,20,120,{a:30})), box(120,60,70,121,{y:-30}), coneX(20,45,0,120),
           ...holes(2,10,90,0,20,60,60), ...holes(2,10,90,0,20,210,120)), box:[[-55,-55,0],[55,55,120]]};
-/* 2 */ V[2]={tree:S(U(I(flange(120,20),box(130,80,-1,21)),cone(35,20,20,120)), cylX(30,70,120), sq45(30,-E,70.01), ...holes(2,10,90,0,20,-30,60), ...holes(2,10,90,0,20,150,60)), box:[[-60,-40,0],[60,40,120]]};
+/* 2 */ V[2]={tree:S(U(I(flange(120,20),box(130,80,-1,21)),cone(35,20,20,120)), cylT(30,70,120), sq45(30,-E,70.01), ...holes(2,10,90,0,20,-30,60), ...holes(2,10,90,0,20,150,60)), box:[[-60,-40,0],[60,40,120]]};
 /* 3 */ (()=>{ const yf=Math.sqrt(40*40-25*25), A=[0,0,65];
   /* пирамидальная выемка: основание 50×70 в плоскости y = ∓20, вершина в центре детали (0, 0, 65) */
   const wedge=s=>I(P.hp([.625,-s*.781,0],A),P.hp([-.625,-s*.781,0],A),P.hp([0,-s*.868,-.496],A),P.hp([0,-s*.868,.496],A),P.hp([0,s,0],[0,s*20,0]));
   V[3]={tree:S(U(flange(120,20),cyl(40,20,120)),
     box(60,40,30,100,{y:-(yf+20)}), box(60,40,30,100,{y:yf+20}),
-    box(50,yf-20+2*E,30,100,{y:-(20+yf)/2}), box(50,yf-20+2*E,30,100,{y:(20+yf)/2}),
+    box(50,yf-20+E+0.01,30,100,{y:-(yf+E+19.99)/2}), box(50,yf-20+E+0.01,30,100,{y:(yf+E+19.99)/2}),   /* перемычка — точно до основания выемки */
     wedge(-1), wedge(1), ...H4(10,100,0,20)), box:[[-60,-60,0],[60,60,120]]}; })();
 /* 4 */ V[4]={tree:S(U(cyl(25,0,25),cyl(55,25,50),I(cone(55,35,50,120),box(120,60,49,121,{y:30}))), sq45(40,-E,120+E), ...holes(2,20,80,25,50,225,90)), box:[[-55,-55,0],[55,55,120]]};
 /* 5 */ V[5]={tree:S(U(flange(110,25),cone(40,30,25,120)), triP(25,50,0,120), ...H4(10,95,0,25)), box:[[-55,-55,0],[55,55,120]]};
 /* 6 */ V[6]={tree:S(U(flange(110,25),cone(35,25,25,120)), P.ngon(6,40*Math.cos(Math.PI/6),-E,120+E,{a:0}), ...H4(10,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
 /* 7 */ V[7]={tree:S(U(flange(120,20),cyl(40,20,120)), tri(40,-E,80.01), triP(40,70,80,120), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
-/* 8 */ V[8]={tree:S(U(flange(110,30),cone(55,35,30,120)), cyl(30,20,80), cylX(40,79.9,90.1), sq45P(40,60,90,120), ...holes(4,12,35,0,20.5,45)), box:[[-55,-55,0],[55,55,120]]};
+/* 8 */ V[8]={tree:S(U(flange(110,30),cone(55,35,30,120)), cyl(30,20,80), cyl(20,80-E,90), sq45P(40,60,90,120), ...holes(4,12,35,0,20.5,45)), box:[[-55,-55,0],[55,55,120]]};
 /* 9 */ V[9]={tree:S(U(flange(120,20),cone(40,30,20,120)), hexP(35,50,80,120), cyl(25,30,80.01), cylX(20,0,30.01), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
-/* 10 */ V[10]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylX(50,70,120), hexP(30,50,0,70.01), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};   /* шестигранник Ø30 внизу → Ø50 у дна расточки */
-/* 11 */ V[11]={tree:S(U(hexP(120,90,0,70,false),cyl(35,70,120)), coneX(25,40,0,70), cylX(40,69.9,120), ...holes(4,10,55,100,120,45)), box:[[-60,-52,0],[60,52,120]]};
+/* 10 */ V[10]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylT(50,70,120), P.npyr(6,(30-20/70*E)*Math.cos(Math.PI/6),(50+20/70*0.01)*Math.cos(Math.PI/6),-E,70.01,{a:0}), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};   /* шестигранник Ø30 внизу → Ø50 у дна расточки */
+/* 11 */ V[11]={tree:S(U(hexP(120,90,0,70,false),cyl(35,70,120)), coneB(25,40,0,70), cylT(40,69.99,120), ...holes(4,10,55,100,120,45)), box:[[-60,-52,0],[60,52,120]]};
 /* 12 */ V[12]={tree:S(U(cone(55,40,0,70),cyl(40,70,120)), cylX(40,60,120), hexP(70,40,0,60.01), ...holes(4,12,60,105,120,45)), box:[[-55,-55,0],[55,55,120]]};
-/* 13 */ V[13]={tree:S(U(flange(110,20),cyl(35,20,30),hexP(70,110,30,120,false)), cylX(50,70,120), cylX(30,0,70.01), ...H4(10,85,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 13 */ V[13]={tree:S(U(flange(110,20),cyl(35,20,30),hexP(70,110,30,120,false)), cylT(50,70,120), cylX(30,0,70.01), ...H4(10,85,0,20)), box:[[-55,-55,0],[55,55,120]]};
 /* 14 */ V[14]={tree:S(U(box(120,90,0,30),cyl(30,30,100),cyl(45,100,120)), box(70,100,-1,10), coneX(30,50,0,120), ...H4(10,75,100,120)), box:[[-60,-45,0],[60,45,120]]};
 /* 15 */ V[15]={tree:S(U(flange(110,20),cone(35,55,20,120)), box(20,120,-1,10), cylX(40,0,70.01), P.npyr(4,40,60,70,120+E,{a:0}), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
 /* 16 */ (()=>{ const rt=45/2*Math.cos(Math.PI/6), k=(35-rt)/65, t=10*Math.sqrt(1+k*k);   /* конус z 25…90, стенка 10 по нормали; полость до z = 80 */
   V[16]={tree:S(U(flange(110,25),cone(35,rt,25,90),hexX(45,90,105),P.npyr(6,45*Math.cos(Math.PI/6),0.5,105,120,{a:0})),
     cone(35-t+25*k,35-t-55*k,-E,80), box(18,12,79,121), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]}; })();
 /* 17 */ V[17]={tree:S(U(box(110,90,0,25),cyl(30,25,100),cyl(45,100,120)), box(20,100,110,121), sq45(40,-E,120+E), ...holes(4,10,75,100,120,30,90)), box:[[-55,-45,0],[55,45,120]]};
-/* 18 */ (()=>{ const yf=Math.sqrt(55*55-45*45);   /* лыски: хорда 90 на Ø110 */ V[18]={tree:S(cyl(55,0,120), box(120,40,20,70,{y:-(yf+20)}), box(120,40,20,70,{y:yf+20}), cylX(70,90,120), sq45(50,69.9,90.1), cylX(30,0,20.01), ...holes(4,10,90,105,120,45)), box:[[-55,-55,0],[55,55,120]]}; })();
-/* 19 */ V[19]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylX(50,70,120), coneX(35,50,40,70), tri(35,-E,40.01), ...H4(12,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 18 */ (()=>{ const yf=Math.sqrt(55*55-45*45);   /* лыски: хорда 90 на Ø110 */ V[18]={tree:S(cyl(55,0,120), box(120,40,20,70,{y:-(yf+20)}), box(120,40,20,70,{y:yf+20}), cylT(70,90,120), sq45(50,70,90+E), cylB(30,0,20), ...holes(4,10,90,105,120,45)), box:[[-55,-55,0],[55,55,120]]}; })();
+/* 19 */ V[19]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylT(50,69.99,120), cone(17.5,25,40,70), tri(35,-E,40.01), ...H4(12,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
 /* 20 */ V[20]={tree:S(U(flange(110,25),cone(35,0.3,25,120)), P.npyr(6,60*Math.cos(Math.PI/6)+1,0.1,-1,80,{a:0}), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
 /* 21 */ V[21]={tree:S(U(flange(110,20),hexP(60,90,20,120,false)), cylX(25,0,60.01), coneX(25,40,60,120), ...H4(14,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
 /* 22 */ V[22]={tree:S(U(flange(110,20),box(65,15,20,120,{y:32.5}),
     I(U(box(65,40,100,120,{y:20}),cyl(32.5,100,120)),box(65,80,99,121,{y:0}))),
     cylX(40,0,20.01), cylX(40,100,120), P.hcyl('y',25,[0,60],20,45), ...holes(2,12,90,0,20,225,90)), box:[[-55,-55,0],[55,55,120]]};
 /* 23 */ V[23]={tree:S(U(flange(110,25),cone(35,25,25,120)), box(30,30,49.9,120+E), sqP(60,30,0,50.01), ...holes(2,10,90,0,25,-30,60), ...holes(2,10,90,0,25,150,60)), box:[[-55,-55,0],[55,55,120]]};
-/* 24 */ V[24]={tree:S(U(flange(110,20),cyl(35,20,60),tri(70,60,120)), cylX(20,0,50.01), triP(20,50,50,120), ...H4(12,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
+/* 24 */ V[24]={tree:S(U(flange(110,20),cyl(35,20,60),tri(70,60,120)), cylB(20,0,50), triP(20,50,50,120), ...H4(12,90,0,20)), box:[[-55,-55,0],[55,55,120]]};
 /* 25 */ V[25]={tree:S(U(flange(110,25),cone(35,20,25,120)), hexX(30,79.9,120+E), hexP(50,30,0,80), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
-/* 26 */ V[26]={tree:S(U(flange(110,25),cone(35,25,25,120)), box(30,30,94.9,120+E), sqP(20,30,55,95), box(20,20,-E,55.1), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
+/* 26 */ V[26]={tree:S(U(flange(110,25),cone(35,25,25,120)), box(30,30,94.99,120+E), P.npyr(4,20,30,55,95,{a:45}), box(20,20,-E,55.1), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
 /* 27 */ (()=>{ const yf=Math.sqrt(35*35-25*25); V[27]={tree:S(U(flange(110,25),cyl(35,25,120)), box(30,80,95,121),
     box(80,40,40,80,{y:-(yf+20)}), box(80,40,40,80,{y:yf+20}), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]}; })();   /* лыски по всей ширине: хорда 50 на Ø70, z 40…80 */
 /* 28 */ V[28]={tree:S(U(flange(110,25),cyl(35,25,120)), tri(35,-E,80.01), triP(35,70,80,120), ...H4(12,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
-/* 29 */ (()=>{ const yf=Math.sqrt(55*55-45*45);   /* лыски: хорда 90 на Ø110 */ V[29]={tree:S(cyl(55,0,120), box(120,40,20,70,{y:-(yf+20)}), box(120,40,20,70,{y:yf+20}), sq45P(50,70,90,120), cylX(50,69.9,90.1), cylX(30,0,20.01), ...holes(4,10,90,105,120,45)), box:[[-55,-55,0],[55,55,120]]}; })();
+/* 29 */ (()=>{ const yf=Math.sqrt(55*55-45*45);   /* лыски: хорда 90 на Ø110 */ V[29]={tree:S(cyl(55,0,120), box(120,40,20,70,{y:-(yf+20)}), box(120,40,20,70,{y:yf+20}), sq45P(50,70,90,120), cyl(25,70,90), cylB(30,0,20), ...holes(4,10,90,105,120,45)), box:[[-55,-55,0],[55,55,120]]}; })();
 /* 30 */ V[30]={tree:S(U(flange(110,20),box(65,15,20,120,{y:32.5}),box(65,60,100,120,{y:10})),
     cyl(20,99,121), box(40,30,99,121,{y:-15}), P.hcyl('y',25,[0,60],20,45), ...holes(2,12,90,0,20,225,90)), box:[[-55,-55,0],[55,55,120]]};
 /* наклонная секущая плоскость A–A по заданию: след на главном виде — внутренние концы штрихов [x, z], мм.
@@ -24096,7 +24240,7 @@ const L=[
   tree:S(P.cyl(65,0,140), thru(65,42,118)), box:[[-65,-65,0],[65,65,140]]},
  {n:3,fig:63,page:36,title:'Пирамида',q:'Достроить вид сверху, построить вид слева, выполнить горизонтальный и профильный разрезы пирамиды. K — сквозное отверстие.',
   why:'Треугольная пирамида. Горизонтальные грани отверстия дают в сечении треугольники, подобные основанию; вертикальные режут грани по прямым. Точки находят на рёбрах и по вспомогательным горизонталям.',
-  tree:S(P.npyr(3,69.3,0.4,0,155,{a:60}), thru(34,28,87,{x:6})), box:[[-60,-60,0],[60,60,155]]},
+  tree:S(P.npyr(3,69.3,0.4,0,155,{a:60}), thru(34,28,87,{x:6})), box:[[-69.3,-60,0],[69.3,60,155]]},
  {n:4,fig:64,page:37,title:'Конус',q:'Достроить вид сверху, построить вид слева, выполнить горизонтальный и профильный разрезы конуса. K — сквозное отверстие.',
   why:'Горизонтальные грани отверстия режут конус по окружностям, наклонные — по гиперболам (плоскость параллельна оси). Точки строят по параллелям: радиус параллели снимают на виде спереди.',
   tree:S(P.cone(60,0.3,0,134), P.I(P.box(80,400,24,67),P.hp([1,0,5.5/43],[23.5,0,67]),P.hp([-1,0,5.5/43],[-23.5,0,67]))), box:[[-60,-60,0],[60,60,134]]},
@@ -24173,7 +24317,7 @@ function sheetImages(n,size){ const VV=VIEWS.concat([{k:'iso',st:{yaw:-0.62,pit:
    на листе фигура лежит так, как её видно по стрелкам: след идёт под тем же углом, задняя сторона (y > 0) — к главному виду */
 function secFig(model,sec,K){
   const [[x1,z1],[x2,z2]]=sec.p, th=Math.atan2(z2-z1,x2-x1), c=Math.cos(th), s=Math.sin(th), L=Math.hypot(x2-x1,z2-z1), b=model.box;
-  const R=IG3.section(model.tree,[x1,0,z1],[c,0,s],[0,1,0],[0,L,b[0][1]-2,b[1][1]+2],0.3), segs=R.segs;
+  const R=IG3.section(model.tree,[x1,0,z1],[c,0,s],[0,1,0],[0,L,b[0][1]-2,b[1][1]+2],0.12), segs=R.segs;
   const key=p=>p[0].toFixed(3)+','+p[1].toFixed(3), adj=new Map();
   segs.forEach((g,i)=>g.forEach(p=>{ const k=key(p); if(!adj.has(k)) adj.set(k,[]); adj.get(k).push(i); }));
   const used=new Uint8Array(segs.length), loops=[];
@@ -24185,6 +24329,14 @@ function secFig(model,sec,K){
   const d=loops.map(l=>l.map((p,i)=>{ const q=M(p); x0=Math.min(x0,q[0]); x9=Math.max(x9,q[0]); y0=Math.min(y0,q[1]); y9=Math.max(y9,q[1]); return (i?'L':'M')+q[0].toFixed(1)+','+q[1].toFixed(1); }).join('')+'Z').join('');
   return {d,box:[x0,y0,x9,y9],th};
 }
+/* обозначение секущей плоскости (ГОСТ 2.305): разомкнутая линия — два штриха за контуром, стрелки по направлению взгляда, буквы у стрелок.
+   Q1, Q2 — концы следа на листе, Km — единиц листа на 1 мм */
+function secMark(Q1,Q2,Km,L,col){ col=col||'#111'; const f=v=>Math.round(v*10)/10, l=Math.hypot(Q2[0]-Q1[0],Q2[1]-Q1[1]), ex=(Q2[0]-Q1[0])/l, ey=(Q2[1]-Q1[1])/l, dx=-ey, dy=ex;
+  const ln=(a,c,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${col}" stroke-width="${w}"/>`;
+  const arr=(q,ax,ay)=>`<path d="M${f(q[0])},${f(q[1])} l${f(ax*9-ay*2.6)},${f(ay*9+ax*2.6)} l${f(ay*5.2)},${f(-ax*5.2)}Z" fill="${col}"/>`;
+  const one=(Q,sx,sy)=>{ const O=[Q[0]+sx*12*Km,Q[1]+sy*12*Km], T=[O[0]-sx*3*Km,O[1]-sy*3*Km], A=[T[0]-dx*10*Km,T[1]-dy*10*Km];
+    return ln(Q,O,3.2)+ln(A,T,.8)+arr(T,-dx,-dy)+`<text x="${f(A[0]-dx*9-sx*2)}" y="${f(A[1]-dy*9+11)}" class="igs-let" text-anchor="middle" fill="${col}">${L}</text>`; };
+  return one(Q1,-ex,-ey)+one(Q2,ex,ey); }
 /* ── лист чертежа: виды в проекционной связи, оси, габариты, сечение, основная надпись; mode 'given' — только данные изображения задания ── */
 function sheetSVG(model,title,sub,task,mode){
   const given=mode==='given', W=900, hz=!given&&model.hz;
@@ -24194,7 +24346,7 @@ function sheetSVG(model,title,sub,task,mode){
   /* обозначение плоскости слева может выйти за поле — тогда виды сдвигаются вправо */
   const X0=model.sec?(()=>{ const [[x1,z1s],[x2,z2s]]=model.sec.p, a=D.front.px([x1,0,z1s]), c=D.front.px([x2,0,z2s]), m=D.front.px([10,0,0])[0]-D.front.px([0,0,0])[0], l=Math.hypot(c[0]-a[0],c[1]-a[1]);
     const left=a[0]*k-(12*Math.abs(c[0]-a[0])/l+13*Math.abs(c[1]-a[1])/l)*m/10*k-22; return Math.max(30,30-left); })():30;
-  const z0=b[0][2], z1=b[1][2], r=Math.max(b[1][0],-b[0][0]), J=IG3.J, zt=z0+1;
+  const z0=b[0][2], z1=b[1][2], r=Math.max(b[1][0],-b[0][0]), J=IG3.J, zt=J(model.tree,0.97*r,0,z0+1)<0?z0+1:(z0+z1)/2;   /* габарит по ширине — у основания, у шара — по экватору */
   const round=[0,20,45,70,90].every(a=>{ const t=a*Math.PI/180; return J(model.tree,0.97*r*Math.cos(t),0.97*r*Math.sin(t),zt)<0&&J(model.tree,1.04*r*Math.cos(t),1.04*r*Math.sin(t),zt)>0; });
   const P=(d,q,ox,oy)=>{ const v=d.px(q); return [ox+v[0]*k,oy+v[1]*k]; };
   const K=P(D.front,[10,0,0],X0,Y0)[0]-P(D.front,[0,0,0],X0,Y0)[0], Km=K/10;   /* единиц листа на 1 мм */
@@ -24219,13 +24371,9 @@ function sheetSVG(model,title,sub,task,mode){
   const wl=P(D.front,[-r,0,z0],X0,Y0), wr=P(D.front,[r,0,z0],X0,Y0), wy=wl[1]+24;
   o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.6)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.6)+ln([wl[0],wy],[wr[0],wy],'#111',null,.6)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
     +`<text x="${f((wl[0]+wr[0])/2+(wr[0]-wl[0])*.22)}" y="${f(wy-5)}" class="igs-dim" text-anchor="middle">${round?'Ø':''}${Math.round(2*r)}</text>`;
-  /* обозначение секущей плоскости (ГОСТ 2.305): разомкнутая линия — два штриха за контуром, стрелки по направлению взгляда, буквы у стрелок */
-  const mark=(Q,ex,ey,dx,dy,L)=>{ const O=[Q[0]+ex*12*Km,Q[1]+ey*12*Km], T=[O[0]-ex*3*Km,O[1]-ey*3*Km], A=[T[0]-dx*10*Km,T[1]-dy*10*Km];
-    return ln(Q,O,'#111',null,3.2)+ln(A,T,'#111',null,.8)+arr(T,-dx,-dy)+`<text x="${f(A[0]-dx*9-ex*2)}" y="${f(A[1]-dy*9+11)}" class="igs-let" text-anchor="middle">${L}</text>`; };
-  if(model.sec){ const [[x1,z1s],[x2,z2s]]=model.sec.p, Q1=P(D.front,[x1,0,z1s],X0,Y0), Q2=P(D.front,[x2,0,z2s],X0,Y0), l=Math.hypot(Q2[0]-Q1[0],Q2[1]-Q1[1]), ex=(Q2[0]-Q1[0])/l, ey=(Q2[1]-Q1[1])/l, dx=-ey, dy=ex;
-    const L=given?'А':model.sec.L; o+=mark(Q1,-ex,-ey,dx,dy,L)+mark(Q2,ex,ey,dx,dy,L); }
+  if(model.sec){ const [[x1,z1s],[x2,z2s]]=model.sec.p; o+=secMark(P(D.front,[x1,0,z1s],X0,Y0),P(D.front,[x2,0,z2s],X0,Y0),Km,given?'А':model.sec.L); }
   if(hz){ const y=P(D.front,[0,0,hz.z],X0,Y0)[1], xl=P(D.front,[-r-5,0,0],X0,Y0)[0], xr=P(D.front,[r+5,0,0],X0,Y0)[0];
-    o+=mark([xl,y],-1,0,0,1,hz.L)+mark([xr,y],1,0,0,1,hz.L)+`<text x="${f(tc[0])}" y="${f(tc[1]-r*Km-30)}" class="igs-let" text-anchor="middle">${hz.L}–${hz.L}</text>`; }
+    o+=secMark([xl,y],[xr,y],Km,hz.L)+`<text x="${f(tc[0])}" y="${f(tc[1]-r*Km-30)}" class="igs-let" text-anchor="middle">${hz.L}–${hz.L}</text>`; }
   let PW=S+2*X0, PH=TOPY+S+10;
   if(!given){
     PW=2*S+C3+2*X0; PH=TOPY+S+20;
@@ -24276,7 +24424,6 @@ function catalog(v){
   $(v,'#igGo').addEventListener('click',go); $(v,'#igNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
   NEXT=null; return 'ДЗ 2 · '+SUBJ.ig.name;
 }
-const MODES=[['proj','П₁ П₂ П₃',{cut:0,proj:1}],['part','Деталь',{cut:0}],['quarter','Вырез ¼',{cut:1}],['front','Фронтальный разрез',{cut:2}],['side','Профильный разрез',{cut:3}]];
 const myVar=()=>{ try{ return +localStorage.getItem('nch2_igvar')||0; }catch(e){ return 0; } };
 function variant(v,n){
   if(!(n>=1&&n<=N)){ setTimeout(()=>redir(H('ig','hw2')),0); return 'ДЗ 2'; }
@@ -24343,6 +24490,8 @@ function stepsSVG(model,k){
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
   o+=img(k>=6?'front':'front0',X0,Y0)+img('top',X0,TOPY);
   if(k>=5) o+=img(k>=6?'left':'left0',X0+S,Y0);
+  /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
+  if(k>=6){ const sp=igSpec(model); if(sp.xb) o+=wavy(P('front',[sp.xb,0,z0+0.5],X0,Y0),P('front',[sp.xb,0,z1-0.5],X0,Y0)); if(sp.yb) o+=wavy(P('left',[0,sp.yb,z0+0.5],X0+S,Y0),P('left',[0,sp.yb,z1-0.5],X0+S,Y0)); }
   /* оси симметрии */
   const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
   const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0]; o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
@@ -24360,8 +24509,8 @@ function stepsSVG(model,k){
       const ox=T[0]-16-i*11, D0=[ox,cT], D1=[ox,T[1]];
       g+=(k<5?L([T[0]-3,T[1]],[ox-4,T[1]],AC,null,.6)+L([T[0]-3,cT],[ox-4,cT],AC,null,.6)+L(D0,D1,AC,null,1.2)+tick(D0,D1):'')+L(L0,Lp,AC,null,1.2)+(k<5?tick(L0,Lp)+dot(T,'#111')+lab(T,(i+1)+'′','#111',4,12)+dot(Lp,HL)+lab(Lp,(i+1)+'‴',HL):''); });
     o+=`<g${fade}>${g}</g>`; }
-  if(k>=7&&model.sec){ const [[x1,za],[x2,zb]]=model.sec.p, Q1=FR([x1,0,za]), Q2=FR([x2,0,zb]); o+=L(Q1,Q2,HL,'10 3 2 3',1.4);
-    const Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10, F=secFig(model,model.sec,Km*0.8), [bx0,by0,bx9,by9]=F.box, cx=X0+S+S*0.62-(bx0+bx9)/2, cy=TOPY+S*0.55-(by0+by9)/2;
+  if(k>=7&&model.sec){ const [[x1,za],[x2,zb]]=model.sec.p, Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10; o+=secMark(FR([x1,0,za]),FR([x2,0,zb]),Km,model.sec.L,HL);
+    const F=secFig(model,model.sec,Km*0.8), [bx0,by0,bx9,by9]=F.box, cx=X0+S+S*0.62-(bx0+bx9)/2, cy=TOPY+S*0.55-(by0+by9)/2;
     o+=`<defs><pattern id="igStH" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#111" stroke-width=".7"/></pattern></defs>`
       +`<text x="${f(cx+(bx0+bx9)/2)}" y="${f(cy+by0-12)}" class="igs-let" text-anchor="middle" style="font-size:24px">${model.sec.L}–${model.sec.L}</text><path transform="translate(${f(cx)} ${f(cy)})" d="${F.d}" fill="url(#igStH)" fill-rule="evenodd" stroke="#111" stroke-width="1.5"/>`; }
   return `<svg class="igs-sheet igs-steps" viewBox="0 0 ${PW} ${f(PH)}" role="img" aria-label="Построение по шагам, шаг ${k}"><rect x="2" y="2" width="${PW-4}" height="${f(PH-4)}" fill="#fff" stroke="#111" stroke-width="1"/>${o}</svg>`;
@@ -24497,8 +24646,7 @@ function partPage(v,o){
   const KEY='igsol:'+location.hash, show=()=>{ $(v,'#igSol').hidden=false; $(v,'.igx-reveal').hidden=true; try{ sessionStorage.setItem(KEY,'1'); }catch(e){} startSol(); };
   $(v,'#igShow').addEventListener('click',()=>{ show(); setTimeout(()=>{ const t=$(v,'.igx-tabs'); t&&t.scrollIntoView({behavior:'smooth',block:'start'}); },60); });
   const CAP={cut:'Четверть детали вырезана — видно, что внутри. Штриховка — там, где прошла секущая плоскость.',part:'Деталь целиком.',
-    sec:'Наклонная плоскость А–А срезала деталь. Заштрихованная фигура — то самое сечение, которое строится на листе.',
-    proj:'Деталь в углу плоскостей проекций. На каждой плоскости — её изображение: П₂ — главный вид, П₃ — вид слева, П₁ — вид сверху.'};
+    sec:'Наклонная плоскость А–А срезала деталь. Заштрихованная фигура — то самое сечение, которое строится на листе.'};
   let started=false, M=null, sheetDone=false, unfDone=false, stepsDone=false;
   function tab(t){ v.querySelectorAll('.igx-tabs button').forEach(b=>{ const on=b.dataset.t===t; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
     v.querySelectorAll('#igSol [data-p]').forEach(x=>x.hidden=x.dataset.p!==t);
@@ -24515,9 +24663,8 @@ function partPage(v,o){
     const SP=n.sec?(()=>{ const [[x1,z1],[x2,z2]]=n.sec.p, t=Math.atan2(z2-z1,x2-x1), nx=-Math.sin(t), nz=Math.cos(t); return {pl:[nx,0,nz,nx*x1+nz*z1],t}; })():null;
     v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.m;
       v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
-      M.S.proj=m==='proj'; M.S.res=1; M.S.cut={cut:1,part:0,sec:4,proj:0}[m]; M.S.pl=m==='sec'?SP.pl:[0,0,1,0]; $(v,'#igMcap').textContent=CAP[m];
-      if(m==='proj'){ M.to({yaw:0.72,pit:0.5,zoom:0.62}); if(!M.S.tex&&!M.S.texLoading){ M.S.texLoading=1; setTimeout(()=>{ try{ const u=['front','left','top'].map(x=>IG3.drawing(n,x,1024).url); M.v.setProj(u,()=>M.draw(false)); }catch(e){ console.error(e); } },30); } }
-      else if(m==='sec') M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12,zoom:1});
+      M.S.res=1; M.S.cut={cut:1,part:0,sec:4}[m]; M.S.pl=m==='sec'?SP.pl:[0,0,1,0]; $(v,'#igMcap').textContent=CAP[m];
+      if(m==='sec') M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12,zoom:1});
       else M.to({yaw:-0.62,pit:0.42,zoom:1});
       try{ FX.buzz&&FX.buzz(6); }catch(e){} })); }
   function startSol(){ if(started) return; started=true; let t0='3d'; try{ t0=sessionStorage.getItem(KEY+':t')||'3d'; }catch(e){} tab(t0); }
