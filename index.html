@@ -2346,17 +2346,13 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:560px){.igx-modes button{padding:0 9px;font-size:12.5px}.igx-hint{display:none}.igx-cam{left:10px;right:10px;justify-content:space-between}.igx-cam button{flex:1;padding:0 6px}.igx-plane{bottom:60px}}
 .igx-nogl{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:var(--ink2)}
 .igx-act{display:flex;justify-content:center;margin:16px 0}
-.igb{margin:6px 0 22px;padding:14px;border-radius:20px;background:var(--surf);border:1px solid var(--line)}
-.igb-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px}.igb-h b{font:700 17px var(--disp)}
-.igb-all{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);cursor:pointer}
-.igb-pic{border-radius:12px;background:#fff}.igb-pic svg{min-width:0!important}
-.igs-k{font:italic 600 21px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:3px}
-.igb-nums{display:flex;gap:8px;flex-wrap:wrap;margin:12px 2px}
-.igb-nums button{width:40px;height:40px;border-radius:50%;border:0;background:var(--surf2);color:var(--ink2);font:700 15px var(--sans);cursor:pointer}
-.igb-nums button.done{background:color-mix(in srgb,#0e7490 18%,var(--surf));color:#0e7490}.igb-nums button.on{background:#0e7490;color:#fff}
-.igb-ctl{display:flex;align-items:center;gap:12px}.igb-t{flex:1;min-width:0}.igb-t small{font:700 12px var(--mono);color:var(--mut)}.igb-t b{display:block;font:700 16px var(--disp);margin:2px 0}
-.igb-t p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink2)}.igb-bar{display:block;height:5px;border-radius:9px;background:var(--surf2);overflow:hidden}.igb-bar span{display:block;height:100%;background:#0e7490;transition:width .3s}
-.igb-b{flex:none;width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font:700 26px var(--sans);cursor:pointer}.igb-b.pri{background:#0e7490;color:#fff;border:0}
+.igb{margin:0 0 18px;padding:10px;border-radius:18px;background:var(--surf);border:1px solid var(--line)}
+.igb-pic{border-radius:12px;background:#fff;overflow:hidden;touch-action:pinch-zoom}.igb-pic svg{display:block;width:100%;height:auto;max-height:calc(100svh - 300px);margin:0 auto}
+.igb-ctl{display:flex;align-items:center;gap:10px;margin:0 0 8px}.igb-t{flex:1;min-width:0}.igb-t small{display:block;font:700 12px var(--mono);color:var(--mut)}.igb-t b{display:block;font:700 16px/1.25 var(--disp)}
+.igb-b{flex:none;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font:700 24px var(--sans);cursor:pointer}.igb-b.pri{background:#1d4ed8;color:#fff;border:0}
+.igb-nums{display:flex;gap:6px;margin:0 2px 8px}.igb-nums button{flex:1;height:6px;padding:0;border:0;border-radius:9px;background:var(--surf2);cursor:pointer;position:relative}.igb-nums button::before{content:"";position:absolute;inset:-10px 0}
+.igb-nums button.done{background:color-mix(in srgb,#1d4ed8 45%,var(--surf))}.igb-nums button.on{background:#1d4ed8}
+.igb-d{margin:8px 2px 0;font-size:14px;line-height:1.5;color:var(--ink2)}
 .igx-h2{font:700 18px var(--disp);margin:8px 2px 10px}
 .igx-back{display:inline-flex;align-items:center;gap:6px;margin:var(--s3) 0 0;min-height:44px;padding:0 16px 0 10px;border-radius:99px;background:var(--surf);border:1px solid var(--line);color:var(--ink);font:700 15px var(--sans);text-decoration:none}
 .igx-tabs{position:sticky;top:calc(var(--hh,60px) + 6px);z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:4px 0 12px;padding:4px;border-radius:16px;background:color-mix(in srgb,var(--surf) 94%,transparent);border:1px solid var(--line);backdrop-filter:blur(8px);box-shadow:0 8px 20px -14px rgba(20,30,80,.5)}
@@ -2364,11 +2360,10 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 #igSol .igx-modes{position:static;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;max-width:none;margin:0 0 8px;padding:0;background:none;border:0;box-shadow:none;backdrop-filter:none}
 #igSol .igx-modes button{min-height:40px;padding:0 6px;font-size:13px!important;border:1px solid var(--line);border-radius:99px;background:var(--surf);color:var(--ink);font:600 14px var(--sans)}#igSol .igx-modes button.on{background:#0f172a;border-color:#0f172a;color:#fff}
 .igx-mcap{margin:8px 2px 0;font-size:14px;line-height:1.5;color:var(--ink2)}
-#igSol .igx-stage{height:min(62vh,560px);min-height:340px}
+#igSol .igx-stage{height:min(62vh,560px);min-height:340px}@media(max-width:640px){#igSol .igx-stage{height:auto;aspect-ratio:1/1;min-height:0}}
 .igx-sheetbox svg{min-width:0}
 .igx-pj{position:absolute;left:8px;top:56px;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);font-size:12.5px;color:var(--ink2);pointer-events:none}.igx-pj[hidden]{display:none}
 .igx-pj span{display:flex;align-items:center;gap:7px}.igx-pj i{width:10px;height:10px;border-radius:3px}
-@media(max-width:640px){.igb{padding:10px}.igb-pic{overflow-x:auto}.igb-nums{flex-wrap:nowrap;overflow-x:auto;gap:6px}.igb-nums button{flex:none;width:34px;height:34px;font-size:14px}.igb-h{flex-wrap:wrap}.igb-b{width:44px;height:44px}}
 .igx-unfold{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;color:#fff;font:800 16px var(--sans);background:linear-gradient(135deg,#7c3aed,#4f46e5 55%,#2563eb);box-shadow:0 14px 30px -14px rgba(99,62,237,.85);cursor:pointer}
 .igx-unfold:disabled{opacity:.7}
 .igx-sheet{margin:6px 0 18px;padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line);color:#111827;background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px);background-size:18px 18px}
@@ -23928,7 +23923,7 @@ function viewer(canvas,opt){
   function setProj(urls,done){ const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2, g=R*.7;
     S.ct=C; S.sc=R*1.62; S.pa=[C[0]-R*.81,C[1]-R*.81,b[0][2]-g]; S.pb=[b[1][0]+g,b[1][1]+g,C[2]+R*.81];
     let left=urls.length; const tex=urls.map(u=>{ const t=gl.createTexture(), im=new Image(); im.onload=()=>{ gl.bindTexture(gl.TEXTURE_2D,t); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
-        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+        gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);   /* 1024² — степень двойки: мипмапы дают чистые тонкие линии без ряби */ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
         if(--left===0){ S.tex=tex; done&&done(); } }; im.src=u; return t; }); }
   return {gl,S,compile,draw,canvas,setProj};
 }
@@ -24328,7 +24323,7 @@ function stepsSVG(model,k){
   const P=(v,q,ox,oy)=>{ const t=d[v].px(q); return [ox+t[0]*k0,oy+t[1]*k0]; }, f=v=>Math.round(v*10)/10;
   const FR=q=>P('front0',q,X0,Y0), TP=q=>P('top',q,X0,TOPY), LF=q=>P('left0',q,X0+S,Y0);
   const L=(a,c,cl,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${cl}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
-  const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="4.5" fill="${cl}"/>`, lab=(q,t,cl,dx,dy)=>`<text x="${f(q[0]+(dx||7)*1.5)}" y="${f(q[1]+(dy||-5)*1.6)}" class="igs-k" fill="${cl}">${t}</text>`;
+  const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="4.5" fill="${cl}"/>`, LB=[], lab=(q,t,cl,dx,dy)=>LB.some(z=>Math.hypot(z[0]-q[0],z[1]-q[1])<14)?'':(LB.push(q),0)||`<text x="${f(q[0]+(dx||7)*1.5)}" y="${f(q[1]+(dy||-5)*1.6)}" class="igs-k" fill="${cl}">${t}</text>`;
   const AC='#2563eb', HL='#c2410c', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2];
   const pts=keyPts(model), cL=LF([0,0,0])[0], cT=TP([0,0,z1])[1];
   let o='';
@@ -24366,16 +24361,17 @@ const BUILD=[
  ['Готовый лист','Все изображения на листе в проекционной связи, с осями, размерами и основной надписью.']];
 function buildBlock(host,model,o){
   const N=BUILD.length-(model.sec?0:1); let k=1, all=false;
+  /* компактно, всё на одном экране телефона: сверху навигация и название шага, ниже чертёж, под ним — пояснение */
   host.innerHTML=`
-   <div class="igb-pic igx-dwg" id="igbPic"></div>
-   <div class="igb-nums" role="tablist">${Array.from({length:N},(_,i)=>`<button data-k="${i+1}" aria-label="Шаг ${i+1}">${i+1}</button>`).join('')}</div>
-   <div class="igb-ctl"><button class="igb-b" id="igbPrev" aria-label="Назад">‹</button><div class="igb-t"><small id="igbN"></small><b id="igbTt"></b><p id="igbD"></p><i class="igb-bar"><span id="igbBar"></span></i></div><button class="igb-b pri" id="igbNext" aria-label="Дальше">›</button></div>`;
+   <div class="igb-ctl"><button class="igb-b" id="igbPrev" aria-label="Назад">‹</button><div class="igb-t"><small id="igbN"></small><b id="igbTt"></b></div><button class="igb-b pri" id="igbNext" aria-label="Дальше">›</button></div>
+   <div class="igb-nums" role="tablist">${Array.from({length:N},(_,i)=>`<button data-k="${i+1}" aria-label="Шаг ${i+1}"></button>`).join('')}</div>
+   <div class="igb-pic" id="igbPic"></div>
+   <p class="igb-d" id="igbD"></p>`;
   const pic=host.querySelector('#igbPic');
   const show=()=>{ const kk=all?N:k, idx=model.sec||kk<7?kk:kk+1, last=kk===N;
     let svg=''; try{ svg=last?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,model.sec||kk<7?kk:kk); }catch(e){ console.error(e); }
     pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
     const st=BUILD[last?BUILD.length-1:kk-1]; host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[0]; host.querySelector('#igbD').textContent=st[1];
-    host.querySelector('#igbBar').style.width=(kk/N*100)+'%';
     host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); }); };
   host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ k=+b.dataset.k; show(); }));
   host.querySelector('#igbPrev').addEventListener('click',()=>{ k=Math.max(1,k-1); show(); });
@@ -24425,8 +24421,8 @@ function partPage(v,o){
     const SP=n.sec?(()=>{ const [[x1,z1],[x2,z2]]=n.sec.p, t=Math.atan2(z2-z1,x2-x1), nx=-Math.sin(t), nz=Math.cos(t); return {pl:[nx,0,nz,nx*x1+nz*z1],t}; })():null;
     v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.m;
       v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
-      M.S.proj=m==='proj'; M.S.res=m==='proj'?0.7:1; M.S.cut={cut:1,part:0,sec:4,proj:0}[m]; M.S.pl=m==='sec'?SP.pl:[0,0,1,0]; $(v,'#igMcap').textContent=CAP[m];
-      if(m==='proj'){ M.to({yaw:0.72,pit:0.5,zoom:0.56}); if(!M.S.tex&&!M.S.texLoading){ M.S.texLoading=1; setTimeout(()=>{ try{ const u=['front','left','top'].map(x=>IG3.drawing(n,x,640).url); M.v.setProj(u,()=>M.draw(false)); }catch(e){ console.error(e); } },30); } }
+      M.S.proj=m==='proj'; M.S.res=1; M.S.cut={cut:1,part:0,sec:4,proj:0}[m]; M.S.pl=m==='sec'?SP.pl:[0,0,1,0]; $(v,'#igMcap').textContent=CAP[m];
+      if(m==='proj'){ M.to({yaw:0.72,pit:0.5,zoom:0.62}); if(!M.S.tex&&!M.S.texLoading){ M.S.texLoading=1; setTimeout(()=>{ try{ const u=['front','left','top'].map(x=>IG3.drawing(n,x,1024).url); M.v.setProj(u,()=>M.draw(false)); }catch(e){ console.error(e); } },30); } }
       else if(m==='sec') M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12,zoom:1});
       else M.to({yaw:-0.62,pit:0.42,zoom:1});
       try{ FX.buzz&&FX.buzz(6); }catch(e){} })); }
