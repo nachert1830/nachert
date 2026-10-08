@@ -379,8 +379,8 @@ table.t th{text-align:left;padding:9px 12px;font-size:11px;text-transform:upperc
   color:var(--mut);border-bottom:1px solid var(--line2);font-weight:600;font-family:var(--mono);white-space:nowrap}
 table.t td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 table.t tr:last-child td{border-bottom:none}
-.fx{font-family:var(--mono);font-size:13.2px;background:var(--surf2);padding:1px 6px;border-radius:5px;
-  border:1px solid var(--line);white-space:nowrap}
+.fx{max-width:100%;overflow-wrap:anywhere;font-family:var(--mono);font-size:13.2px;background:var(--surf2);padding:1px 6px;border-radius:5px;
+  border:1px solid var(--line);white-space:normal}
 .pi{font-family:var(--mono);color:var(--red)}
 
 /* проверка */
@@ -2351,6 +2351,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-modes button.on{background:linear-gradient(135deg,#2f5f9e,#3f74b8);color:#fff}
 .igx-cam{position:absolute;right:10px;bottom:10px;display:flex;gap:2px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .igx-cam button:hover{background:var(--surf2)}
+.igx-sp{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}.igx-spb{position:absolute;right:10px;top:10px;z-index:3;min-height:34px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:color-mix(in srgb,var(--surf) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--ink2);font:600 13px var(--sans);cursor:pointer}.igx-spb.on{background:#9b2335;border-color:#9b2335;color:#fff}
 .igx-hint{position:absolute;left:12px;bottom:14px;font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:4px 10px;border-radius:99px;pointer-events:none;transition:opacity .4s}
 .igx-plane{position:absolute;left:50%;transform:translateX(-50%);bottom:62px;display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:14px;background:color-mix(in srgb,var(--surf) 92%,transparent);border:1px solid var(--line);font-size:13px;width:min(420px,calc(100% - 24px))}
 .igx-plane[hidden]{display:none}.igx-plane input{flex:1;accent-color:#2f5f9e}.igx-plane b{font:600 12px var(--mono);min-width:64px;text-align:right}
@@ -2415,7 +2416,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-th-nav a.on,.igx-th-nav a:hover{border-color:#3f74b8;color:#2f5f9e}
 .igx-th{padding:16px 18px;margin:0 0 12px;border-radius:18px;background:var(--surf);border:1px solid var(--line);font-size:15px;line-height:1.6;color:var(--ink2)}
 .igx-th h2{font-size:20px;margin:0 0 8px;color:var(--ink)}.igx-th b{color:var(--ink)}.igx-th p{margin:0 0 10px}.igx-th ul{margin:0;padding-left:20px;display:grid;gap:4px}
-.igx-t{width:100%;border-collapse:collapse;margin:6px 0 12px;font-size:14px}.igx-t th,.igx-t td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.igx-t th{color:var(--mut);font-weight:600;background:var(--surf2)}
+.igx-t{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;margin:6px 0 12px;font-size:14px}.igx-t th,.igx-t td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.igx-t th{color:var(--mut);font-weight:600;background:var(--surf2)}
 .igx-star{border:1px solid var(--line);background:var(--surf);color:var(--ink2);border-radius:99px;padding:8px 14px;font:600 13px var(--sans);cursor:pointer;margin-right:auto;margin-left:12px}.igx-star{white-space:nowrap}@media(max-width:560px){.igx-vh{flex-wrap:wrap}.igx-vh h1{font-size:30px}.igx-star{padding:6px 10px;font-size:12px;margin-left:8px}}
 .igx-star.on{border-color:#d97706;color:#b45309;background:color-mix(in srgb,#f59e0b 12%,var(--surf))}
 .igx-mine{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:12px 16px;border-radius:16px;text-decoration:none;color:#fff;background:linear-gradient(135deg,#2f5f9e,#3f74b8);box-shadow:0 14px 28px -18px rgba(99,62,237,.9)}.igx-mine b{font:800 26px var(--mono)}.igx-mine i{font-style:normal;margin-left:auto;font-weight:700}
@@ -3505,8 +3506,8 @@ function mount(root,t,opt){
     const svg=root.querySelector('.pl-paper svg'); if(!svg) return;
     svg.querySelectorAll('[stroke="#ffd23f"]').forEach((e,i)=>{
       const t=e.tagName;
-      if(t==='line'||t==='path'||t==='polyline'){ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset .55s cubic-bezier(.3,.7,.2,1) '+(i*40)+'ms'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }
-      else { e.style.transformBox='fill-box'; e.style.transformOrigin='center'; e.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:420,delay:i*40,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}); }
+      if(t==='line'||t==='path'||t==='polyline'){ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset 1.15s cubic-bezier(.3,.7,.2,1) '+(i*110)+'ms'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }
+      else { e.style.transformBox='fill-box'; e.style.transformOrigin='center'; e.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:800,delay:i*110,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}); }
     });
   }
   function helpHTML(st,k,p){
@@ -4096,7 +4097,7 @@ function exportPNG(asBlob){
     g.strokeStyle='#cdd2dd'; g.strokeRect(M,M+20,EW,EH); g.strokeRect(M*2+EW,M+20+(EH-VH)/2,VW,VH);
     c.toBlob(bl=>{ if(!bl) return rej(); if(asBlob) return res(bl); const a_=document.createElement('a'); a_.href=URL.createObjectURL(bl); a_.download='epure3d.png'; document.body.appendChild(a_); a_.click(); setTimeout(()=>{a_.remove();URL.revokeObjectURL(a_.href);},1500); msg('PNG сохранён'); res(bl); },'image/png'); })).catch(e=>{ msg('Не удалось собрать PNG'); if(asBlob) throw e; });
 }
-function play(){ if(S.play){ S.play=0; struct(); return; } const from=S.t>=.999?1:S.t, to=from>=.999?0:1, dur=Math.max(400,Math.abs(to-from)*2600), t0=performance.now(); S.play=1;
+function play(){ if(S.play){ S.play=0; struct(); return; } const from=S.t>=.999?1:S.t, to=from>=.999?0:1, dur=Math.max(700,Math.abs(to-from)*5200), t0=performance.now(); S.play=1;
   const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
   let lastF=0; const step=now=>{ if(!S.play||!host||!host.isConnected){ S.play=0; return; } lastF=now; let k=rm?1:Math.min(1,(now-t0)/dur); const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; S.t=from+(to-from)*e;
     q$('#e3Fold').value=Math.round(S.t*1000); q$('#e3Fv').textContent=fvT(); redraw({s:1});
@@ -21702,7 +21703,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'3.1',d:'8 октября 2026',items:['Два предмета — два раздела: «Начерт» и «Инж. графика» (бета) переключаются в шапке, у каждого своё нижнее меню; на главной они разделены.','3D в палитре сайта: оливковая деталь, бордовая штриховка, песочные плоскости. Новая анимация перехода от 3D к эпюру: лучи проецирования, поочерёдный разворот плоскостей с подсветкой осей.','Задачи тетради № 51–67 (замена плоскостей и вращение): кнопка «▶ Способ» — анимация способа в пространстве.','Telegram и Safari: при вращении детали страница не сдвигается; уведомление о cookie стало компактнее; шапка помещается на узких экранах.']},
+  {v:'3.1',d:'8 октября 2026',items:['Два предмета — два раздела: «Начерт» и «Инж. графика» (бета) переключаются в шапке, у каждого своё нижнее меню; на главной они разделены.','3D в палитре сайта: оливковая деталь, бордовая штриховка, песочные плоскости. Новая анимация перехода от 3D к эпюру: лучи проецирования, поочерёдный разворот плоскостей с подсветкой осей.','Задачи тетради № 51–67 (замена плоскостей и вращение): кнопка «▶ Способ» — анимация способа в пространстве.','Развёртка: в конце чертёж без осей, как на листе; анимации решения замедлены. В 3D деталь показана вместе с точкой A, её проекциями и лучами к плоскостям (кнопка «Точка A»).','Telegram и Safari: при вращении детали страница не сдвигается; уведомление о cookie стало компактнее; шапка помещается на узких экранах.']},
   {v:'3.0',d:'8 октября 2026',rel:'ig',items:['Инженерная графика открыта. ДЗ 2 «Построение изображений» — все 30 вариантов: исходный чертёж задания, деталь в 3D, живые разрезы, сечение А–А наклонной плоскостью и классический чертёж из модели — главный вид и вид слева с разрезами, вид сверху, сечение в натуральную величину. Отметь «мой вариант» — сайт откроет его сразу.','Рабочая тетрадь по ИГ: десять тел с отверстиями (рис. 61–70) — задание, 3D и разрезы. Теория по ЕСКД: форматы, линии, виды, разрезы, сечения, штриховка.','3D-модель решения — у 80 задач тетради по начертательной геометрии.']},
   {v:'2.8',d:'8 октября 2026',items:['Чертежи в спокойной палитре: плоскости проекций — бежевые, построения — синие, искомое — тёмно-красное. Меньше ярких цветов, чертёж читается легче.']},
   {v:'2.7',d:'8 октября 2026',items:['Тема дня: каждый способ преобразования теперь можно смотреть в пространстве — треугольник, плоскости проекций π₁ и π₂, новая плоскость π₄ (π₅), ось вращения. Камера сама поворачивается туда, откуда видна суть способа; под анимацией — подпись, что происходит сейчас. Модель можно крутить пальцем; переключатель «На чертеже» возвращает эпюр.','В пространстве подписаны проекции точек (A′, A″, A₄, A₅), найденный угол α или β показан дугой со значением, итог — «натуральная величина» или «отрезок на π₂»; под моделью — легенда цветов.','Во вращениях и перемещении выделена плоскость, на которую проецируются точки, и лучи проецирования к ней.']},
@@ -22105,7 +22106,7 @@ function viewDay(v,r){
     const end=()=>{ drag=null; }; av.addEventListener('pointerup',end); av.addEventListener('pointercancel',end);
     av.addEventListener('dblclick',()=>{ user.dy=0; user.dp=0; draw(T0); });
     let play=!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches), t=0, dir=1, last=0, hold=0;
-    const loop=now=>{ if(!av.isConnected) return; if(play){ const dt=last?Math.min(50,now-last):16; if(hold>0) hold-=dt; else { t+=dir*dt/2600; if(t>=1){ t=1; dir=-1; hold=1400; } if(t<=0){ t=0; dir=1; hold=900; } draw(ease(t)); } } last=now; requestAnimationFrame(loop); };
+    const loop=now=>{ if(!av.isConnected) return; if(play){ const dt=last?Math.min(50,now-last):16; if(hold>0) hold-=dt; else { t+=dir*dt/5600; if(t>=1){ t=1; dir=-1; hold=2200; } if(t<=0){ t=0; dir=1; hold=1400; } draw(ease(t)); } } last=now; requestAnimationFrame(loop); };
     const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
     pb.addEventListener('click',()=>{ play=!play; pb.textContent=play?'❚❚':'▶'; pb.setAttribute('aria-label',play?'Пауза':'Играть'); });
     rg.addEventListener('input',()=>{ play=false; pb.textContent='▶'; t=rg.value/1000; draw(t); });
@@ -22460,7 +22461,7 @@ function open(t){
   const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
   let tt=0, dir=1, hold=0, last=0, play=!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
   const draw=u=>{ const r=DAY3D.svg(pt.id,u,user); av.innerHTML=r.svg; if(r.cap) cap.textContent=r.cap; rg.value=Math.round(u*1000); };
-  const loop=now=>{ if(!el) return; if(play){ const dt=last?Math.min(50,now-last):16; if(hold>0) hold-=dt; else { tt+=dir*dt/3200; if(tt>=1){ tt=1; dir=-1; hold=1500; } if(tt<=0){ tt=0; dir=1; hold=900; } draw(ease(tt)); } } last=now; raf=requestAnimationFrame(loop); };
+  const loop=now=>{ if(!el) return; if(play){ const dt=last?Math.min(50,now-last):16; if(hold>0) hold-=dt; else { tt+=dir*dt/6800; if(tt>=1){ tt=1; dir=-1; hold=2400; } if(tt<=0){ tt=0; dir=1; hold=1400; } draw(ease(tt)); } } last=now; raf=requestAnimationFrame(loop); };
   let drag=null; av.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY}; try{ av.setPointerCapture(e.pointerId); }catch(_){} });
   av.addEventListener('pointermove',e=>{ if(!drag) return; user.dy-=(e.clientX-drag.x)*.01; user.dp+=(e.clientY-drag.y)*.01; drag={x:e.clientX,y:e.clientY}; if(!play) draw(ease(tt)); });
   const end=()=>{ drag=null; }; av.addEventListener('pointerup',end); av.addEventListener('pointercancel',end);
@@ -23284,7 +23285,7 @@ function dayPlay(){
   const pic=card.querySelector('.hday-pic'), cap=card.querySelector('.hday-cap');
   const show=()=>{ const old=pic.querySelector('svg'); const tmp=document.createElement('div'); tmp.innerHTML=dayFrame(D,s); const nw=tmp.firstElementChild;
     if(old&&nw){ old.replaceWith(nw); } cap.textContent=s?('Шаг '+s+' из '+D.n+(D.P.steps[s-1]&&D.P.steps[s-1].t?' · '+D.P.steps[s-1].t:'')):'Дано';
-    nw&&nw.querySelectorAll('[stroke="#ffd23f"]').forEach(e=>{ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset .7s ease'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }); };
+    nw&&nw.querySelectorAll('[stroke="#ffd23f"]').forEach(e=>{ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset 1.3s ease'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }); };
   const loop=()=>{ if(!card.isConnected){ clearTimeout(tm); return; } if(vis){ s=s>=D.n?0:s+1; show(); } tm=setTimeout(loop,s>=D.n?3200:1700); };
   if('IntersectionObserver' in window){ const io=new IntersectionObserver(es=>{ vis=es[0].isIntersecting; },{threshold:.35}); io.observe(card); }
   tm=setTimeout(loop,1400);
@@ -24403,7 +24404,7 @@ function mountViewer(host,n,opt){
   cv.addEventListener('wheel',e=>{ e.preventDefault(); S.zoom=Math.max(.5,Math.min(5,S.zoom*Math.exp(-e.deltaY*0.0015))); draw(true); },{passive:false});
   cv.addEventListener('dblclick',()=>to(opt.home||{yaw:-0.62,pit:0.42,zoom:1}));
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-  const to=(T,ms)=>{ cancelAnimationFrame(anim); const A={yaw:S.yaw,pit:S.pit,zoom:S.zoom,off:S.off||0}; let dy=T.yaw-A.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); const t0=performance.now(), D=ms||620;
+  const to=(T,ms)=>{ cancelAnimationFrame(anim); const A={yaw:S.yaw,pit:S.pit,zoom:S.zoom,off:S.off||0}; let dy=T.yaw-A.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); const t0=performance.now(), D=ms||1150;
     const st=now=>{ const u=Math.min(1,(now-t0)/D), e=ease(u); S.yaw=A.yaw+dy*e; S.pit=A.pit+((T.pit==null?A.pit:T.pit)-A.pit)*e; S.zoom=A.zoom+((T.zoom==null?A.zoom:T.zoom)-A.zoom)*e; if(T.off!=null) S.off=A.off+(T.off-A.off)*e;
       v.draw(u<1?.6:1); if(u<1) anim=requestAnimationFrame(st); }; anim=requestAnimationFrame(st); };
   if(window.ResizeObserver){ const ro=new ResizeObserver(()=>draw(false)); ro.observe(cv); v.ro=ro; }
@@ -24682,7 +24683,7 @@ function mountUnfold(host,model){
   const IMG={}; ['front0','left0','top'].forEach(k=>{ try{ IMG[k]=IG3.drawing(model,k,1100).url; }catch(e){ IMG[k]=''; } });
   /* точка A — передняя верхняя точка очерка */
   const kp=keyPts(model).filter(p=>p.y<0).sort((p,q)=>q.z-p.z||p.y-q.y), A=kp.length?[kp[0].x,kp[0].y,kp[0].z]:[C[0],b[0][1],b[1][2]];
-  let T=0, fi1=0, fi3=0, fade=0, cam0=null, proj=0, shown=0, ray=1, link=0;
+  let T=0, axo=1, fi1=0, fi3=0, fade=0, cam0=null, proj=0, shown=0, ray=1, link=0;
   const m1=(p,f)=>{ const d=Y-p[1]; return [p[0],Y-d*Math.cos(f),Z0-d*Math.sin(f)]; };
   const m3=(p,f)=>{ const d=Y-p[1]; return [X+d*Math.sin(f),Y-d*Math.cos(f),p[2]]; };
   const cam=()=>{ const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit), F=[sy*cp,cy*cp,-sp];
@@ -24690,8 +24691,8 @@ function mountUnfold(host,model){
     const w=st.clientWidth, h=st.clientHeight, us=S.R*2.25/S.zoom*Math.max(1,h/w), Cc=[C[0]+(S.tx||0)*R[0]+(S.ty||0)*U[0],C[1]+(S.tx||0)*R[1]+(S.ty||0)*U[1],C[2]+(S.tx||0)*R[2]+(S.ty||0)*U[2]];
     return {w,h,P:p=>{ const d=[p[0]-Cc[0],p[1]-Cc[1],p[2]-Cc[2]]; return [w/2+(d[0]*R[0]+d[1]*R[1]+d[2]*R[2])/us*h, h/2-(d[0]*U[0]+d[1]*U[1]+d[2]*U[2])/us*h]; }}; };
   const f=v=>Math.round(v*10)/10;
-  function over(){ const {w,h,P}=cam(); [B,Fr].forEach(x=>x.setAttribute('viewBox',`0 0 ${w} ${h}`));
-    const poly=(ps,cl,op)=>`<polygon points="${ps.map(P).map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="${cl}" fill-opacity="${op}" stroke="#8a7442" stroke-opacity=".7" stroke-width="1"/>`;
+  function over(){ if(!st.clientWidth||!st.clientHeight) return; const {w,h,P}=cam(); [B,Fr].forEach(x=>x.setAttribute('viewBox',`0 0 ${w} ${h}`));
+    const poly=(ps,cl,op)=>`<polygon points="${ps.map(P).map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="${cl}" fill-opacity="${f(op*(.3+.7*axo))}" stroke="#8a7442" stroke-opacity="${f(.7*axo)}" stroke-width="1"/>`;
     const img=(url,O,Uv,Vv)=>{ const o=P(O), u=P(Uv), v=P(Vv); return url&&shown>0.005?`<image href="${url}" opacity="${f(shown)}" width="1" height="1" preserveAspectRatio="none" style="mix-blend-mode:multiply" transform="matrix(${f(u[0]-o[0])} ${f(u[1]-o[1])} ${f(v[0]-o[0])} ${f(v[1]-o[1])} ${f(o[0])} ${f(o[1])})"/>`:''; };
     const ln=(a,c,cl,wd,dash,op)=>{ const p=P(a), q=P(c); return `<line x1="${f(p[0])}" y1="${f(p[1])}" x2="${f(q[0])}" y2="${f(q[1])}" stroke="${cl}" stroke-width="${wd}"${dash?` stroke-dasharray="${dash}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`; };
     const tx=(p,t,cl,dx,dy,cls)=>{ const q=P(p); return `<text x="${f(q[0]+(dx||0))}" y="${f(q[1]+(dy||0))}" class="${cls||'igu-l'}" fill="${cl}">${t}</text>`; };
@@ -24703,8 +24704,9 @@ function mountUnfold(host,model){
     o+=img(IMG.left0,m3([X,C[1]+sc/2,C[2]+sc/2],fi3),m3([X,C[1]-sc/2,C[2]+sc/2],fi3),m3([X,C[1]+sc/2,C[2]-sc/2],fi3));
     o+=img(IMG.top,m1([C[0]-sc/2,C[1]+sc/2,Z0],fi1),m1([C[0]+sc/2,C[1]+sc/2,Z0],fi1),m1([C[0]-sc/2,C[1]-sc/2,Z0],fi1));
     /* оси: x (П₁/П₂), z (П₂/П₃), y на П₁ и на П₃ */
-    const O=[X,Y,Z0], mv1=fi1>.01&&fi1<1.56, mv3=fi3>.01&&fi3<1.56; o+=ln([xa,Y,Z0],O,mv1?'#9b2335':'#111',mv1?2.4:1.1)+ln(O,[X,Y,zt],mv3?'#9b2335':'#111',mv3?2.4:1.1)+ln(O,m1([X,ya,Z0],fi1),'#111',1.1)+ln(O,m3([X,ya,Z0],fi3),'#111',1.1);
-    o+=tx([xa,Y,Z0],'x','#111',-12,4,'igu-ax')+tx([X,Y,zt],'z','#111',-4,-6,'igu-ax')+tx(m1([X,ya,Z0],fi1),'y','#111',6,10,'igu-ax')+tx(m3([X,ya,Z0],fi3),'y','#111',6,14,'igu-ax')+tx(O,'O','#111',5,15,'igu-ax');
+    let ax=''; const O=[X,Y,Z0], mv1=fi1>.01&&fi1<1.56, mv3=fi3>.01&&fi3<1.56; ax+=ln([xa,Y,Z0],O,mv1?'#9b2335':'#111',mv1?2.4:1.1)+ln(O,[X,Y,zt],mv3?'#9b2335':'#111',mv3?2.4:1.1)+ln(O,m1([X,ya,Z0],fi1),'#111',1.1)+ln(O,m3([X,ya,Z0],fi3),'#111',1.1);
+    ax+=tx([xa,Y,Z0],'x','#111',-12,4,'igu-ax')+tx([X,Y,zt],'z','#111',-4,-6,'igu-ax')+tx(m1([X,ya,Z0],fi1),'y','#111',6,10,'igu-ax')+tx(m3([X,ya,Z0],fi3),'y','#111',6,14,'igu-ax')+tx(O,'O','#111',5,15,'igu-ax');
+    if(axo>.01) o+=`<g opacity="${f(axo)}">${ax}</g>`;
     o+=tx(P2[0],'П₂','#7a6440',6,-8,'igu-pl')+tx(P3[0],'П₃','#7a6440',-26,-8,'igu-pl')+tx(P1[0],'П₁','#7a6440',6,-8,'igu-pl');
     B.innerHTML=o;
     /* точка A, её проекции и лучи */
@@ -24722,10 +24724,10 @@ function mountUnfold(host,model){
   const CAP=['Деталь стоит в углу трёх плоскостей проекций: П₂ — сзади, П₁ — снизу, П₃ — справа. Берём точку A.',
     'Проецируем: лучи из A перпендикулярны плоскостям. На П₂ получается главный вид, на П₃ — вид слева, на П₁ — вид сверху.','Убираем деталь — на плоскостях остались только её изображения.',
     'Разворачиваем: сначала П₁ поворачиваем вниз вокруг оси x, затем П₃ — вправо вокруг оси z. Оси поворота выделены красным.',
-    'Получился чертёж: вид сверху под главным видом, вид слева справа от него. A″ и A′ — на одной вертикали, A″ и A‴ — на одной горизонтали; глубина y точки A одинакова на виде сверху и на виде слева.'];
+    'Получился чертёж без осей, как на листе: вид сверху под главным видом, вид слева справа от него. A″ и A′ — на одной вертикали, A″ и A‴ — на одной горизонтали; глубина y точки A одинакова на виде сверху и на виде слева.'];
   const cap=host.querySelector('#iguCap'), rg=host.querySelector('#iguT'), pb=host.querySelector('#iguPlay');
   const ease=x=>x<=0?0:x>=1?1:x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2, win=(t,a,b)=>ease((t-a)/(b-a));
-  function setT(t){ T=t; proj=win(t,.04,.2); shown=win(t,.1,.22); fade=win(t,.24,.38); ray=1-win(t,.3,.4); link=Math.max(0,(t-.76)/.1);
+  function setT(t){ T=t; proj=win(t,.04,.2); shown=win(t,.1,.22); fade=win(t,.24,.38); ray=1-win(t,.3,.4); link=Math.max(0,(t-.76)/.1); axo=1-win(t,.82,.94);
     fi1=win(t,.4,.68)*Math.PI/2; fi3=win(t,.48,.76)*Math.PI/2; M.cv.style.opacity=String(1-fade);
     const k=win(t,.36,.9);
     if(k>0){ if(!cam0) cam0={yaw:S.yaw,pit:S.pit,zoom:S.zoom,tx:S.tx||0,ty:S.ty||0};
@@ -24736,7 +24738,7 @@ function mountUnfold(host,model){
     else if(cam0){ Object.assign(S,cam0); cam0=null; }
     const ph=t<.04?0:t<.3?1:t<.42?2:t<.8?3:4; host.querySelectorAll('.igu-ph button').forEach(x=>x.classList.toggle('on',+x.dataset.i===ph)); cap.textContent=CAP[ph];
     rg.value=Math.round(t*1000); M.v.draw(fade>.5?0.6:1.25); }
-  let anim=0; const go=(to,ms)=>{ cancelAnimationFrame(anim); const t0=T, s0=performance.now(), D=ms||Math.max(500,Math.abs(to-t0)*9000);
+  let anim=0; const go=(to,ms)=>{ cancelAnimationFrame(anim); const t0=T, s0=performance.now(), D=ms||Math.max(800,Math.abs(to-t0)*17000);
     const stp=now=>{ const u=Math.min(1,(now-s0)/D); setT(t0+(to-t0)*u); if(u<1) anim=requestAnimationFrame(stp); else pb.textContent=T>=1?'↺':'▶'; }; pb.textContent='❚❚'; anim=requestAnimationFrame(stp); };
   pb.addEventListener('click',()=>{ if(pb.textContent==='❚❚'){ cancelAnimationFrame(anim); pb.textContent='▶'; return; } go(T>=1?0:1); });
   host.querySelectorAll('.igu-ph button').forEach(x=>x.addEventListener('click',()=>go([0,.21,.4,.8,1][+x.dataset.i])));
@@ -24758,7 +24760,7 @@ function partPage(v,o){
     <section data-p="unf" id="igUnf" hidden></section>
     <section data-p="3d">
      <div class="igx-modes" role="tablist" aria-label="Режим">${[['cut','Разрез'],['part','Деталь']].concat(n.sec?[['sec','Сечение '+n.sec.L+'–'+n.sec.L]]:[]).map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===0?'on':''}" aria-selected="${i===0}">${m[1]}</button>`).join('')}</div>
-     <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}<div class="igx-hint">тяни — вращать · двумя пальцами — зум</div></div>
+     <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}<button type="button" class="igx-spb on" id="igSpBtn" aria-pressed="true" title="Точка A в пространстве и её проекции">Точка A</button><div class="igx-hint">тяни — вращать · двумя пальцами — зум</div></div>
      <p class="igx-mcap" id="igMcap"></p>
     </section>
     <section data-p="sheet" hidden><div class="igx-dwg igx-sheetbox" id="igSheetBox"></div><p class="igx-mcap" id="igSheetCap"></p></section>
@@ -24780,10 +24782,37 @@ function partPage(v,o){
     $(v,'#igSheetBox').innerHTML=svg||'<div class="igx-given-l">Лист не построился на этом устройстве.</div>';
     const sp=igSpec(n), tt={half:'половина вида и половина разреза',view:'вид без разреза, с невидимым контуром',full:'полный разрез'};
     $(v,'#igSheetCap').textContent='Главный вид — '+tt[sp.F]+'; вид слева — '+tt[sp.L]+'.'+(n.sec?' Сечение '+n.sec.L+'–'+n.sec.L+' — в натуральную величину, по направлению стрелок.':'')+(n.hz?' '+n.hz.L+'–'+n.hz.L+' — горизонтальный разрез на месте вида сверху.':''); }
+
+  /* точка в пространстве поверх 3D: A, три её проекции и лучи к плоскостям проекций (плоскости — еле заметные) */
+  function spaceOverlay(st,M,model){
+    const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg'); svg.setAttribute('class','igx-sp'); svg.setAttribute('aria-hidden','true'); st.appendChild(svg);
+    const b=model.box, S=M.S, C=S.C, g=S.R*0.22, X=b[1][0]+g, Y=b[1][1]+g, Z0=b[0][2]-g, xa=b[0][0]-g, ya=b[0][1]-g, zt=b[1][2]+g;
+    const kp=keyPts(model).filter(p=>p.y<0).sort((p,q)=>q.z-p.z||p.y-q.y), A=kp.length?[kp[0].x,kp[0].y,kp[0].z]:[C[0],b[0][1],b[1][2]];
+    const A2=[A[0],Y,A[2]], A1=[A[0],A[1],Z0], A3=[X,A[1],A[2]];
+    let on=true; const f=v=>Math.round(v*10)/10;
+    function cam(){ const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit), F=[sy*cp,cy*cp,-sp];
+      let R=[F[1],-F[0],0]; const l=Math.hypot(R[0],R[1])||1; R=[R[0]/l,R[1]/l,0]; const U=[R[1]*F[2]-R[2]*F[1],R[2]*F[0]-R[0]*F[2],R[0]*F[1]-R[1]*F[0]];
+      const w=st.clientWidth, h=st.clientHeight, us=S.R*2.25/S.zoom*Math.max(1,h/w), tx=S.tx||0, ty=S.ty||0, Cc=[C[0]+tx*R[0]+ty*U[0],C[1]+tx*R[1]+ty*U[1],C[2]+tx*R[2]+ty*U[2]];
+      return {w,h,P:p=>{ const d=[p[0]-Cc[0],p[1]-Cc[1],p[2]-Cc[2]]; return [w/2+(d[0]*R[0]+d[1]*R[1]+d[2]*R[2])/us*h, h/2-(d[0]*U[0]+d[1]*U[1]+d[2]*U[2])/us*h]; }}; }
+    function paint(){ if(!on||!st.clientWidth||!st.clientHeight){ svg.innerHTML=''; return; } const {w,h,P}=cam(); svg.setAttribute('viewBox','0 0 '+w+' '+h);
+      const poly=ps=>`<polygon points="${ps.map(P).map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="#cdb67f" fill-opacity=".10" stroke="#8a7442" stroke-opacity=".28" stroke-width="1"/>`;
+      const ln=(a,c,cl,wd,dash)=>{ const p=P(a), q=P(c); return `<line x1="${f(p[0])}" y1="${f(p[1])}" x2="${f(q[0])}" y2="${f(q[1])}" stroke="${cl}" stroke-width="${wd}"${dash?` stroke-dasharray="${dash}"`:''} stroke-linecap="round"/>`; };
+      const dot=(p,cl,hol)=>{ const q=P(p); return `<circle cx="${f(q[0])}" cy="${f(q[1])}" r="${hol?3:4}" fill="${hol?'#fff':cl}" stroke="${cl}" stroke-width="1.6"/>`; };
+      const tx=(p,t,dx,dy)=>{ const q=P(p); return `<text x="${f(q[0]+dx)}" y="${f(q[1]+dy)}" class="igu-pt" fill="#9b2335">${t}</text>`; };
+      let o=poly([[xa,Y,Z0],[X,Y,Z0],[X,Y,zt],[xa,Y,zt]])+poly([[xa,ya,Z0],[X,ya,Z0],[X,Y,Z0],[xa,Y,Z0]])+poly([[X,ya,Z0],[X,Y,Z0],[X,Y,zt],[X,ya,zt]]);
+      o+=ln(A,A2,'#4f86c6',1.2,'5 4')+ln(A,A1,'#4f86c6',1.2,'5 4')+ln(A,A3,'#4f86c6',1.2,'5 4');
+      o+=dot(A2,'#9b2335',1)+dot(A1,'#9b2335',1)+dot(A3,'#9b2335',1)+dot(A,'#9b2335')+tx(A,'A',7,-6)+tx(A2,'A″',6,-6)+tx(A1,'A′',6,14)+tx(A3,'A‴',6,-6);
+      svg.innerHTML=o; }
+    const od=M.v.draw; M.v.draw=sc=>{ od(sc); paint(); };
+    if(window.ResizeObserver) new ResizeObserver(paint).observe(st);
+    paint();
+    return {set(v){ on=v; paint(); },get on(){ return on; }};
+  }
   function start3d(){ if(M||!hasGL) return; const st=$(v,'#igStage');
     M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
     if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
     $(v,'#igMcap').textContent=CAP.cut;
+    try{ const sp=spaceOverlay(st,M,n), tb=$(v,'#igSpBtn'); if(tb) tb.addEventListener('click',()=>{ const on=!sp.on; sp.set(on); tb.setAttribute('aria-pressed',on); tb.classList.toggle('on',on); }); }catch(e){ console.error(e); }
     const SP=n.sec?(()=>{ const [[x1,z1],[x2,z2]]=n.sec.p, t=Math.atan2(z2-z1,x2-x1), nx=-Math.sin(t), nz=Math.cos(t); return {pl:[nx,0,nz,nx*x1+nz*z1],t}; })():null;
     v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.m;
       v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
