@@ -1026,6 +1026,7 @@ a.btn{text-decoration:none}
 .it{min-height:var(--tap);height:auto;display:inline-flex;align-items:center;text-decoration:none;cursor:pointer;padding:0 14px;color:var(--ink)}
 a.it.s1{color:var(--blue-ink)}
 .tile{text-decoration:none;min-height:96px}
+.tile b .t3b{display:inline-block;margin-left:7px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font:800 10px/1.2 var(--mono);letter-spacing:.04em;vertical-align:3px}
 .tile .tst{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--blue-ink);margin-top:auto}
 .tile.s2 .tst{color:var(--green)}
 .tile.off{min-height:96px}
@@ -2226,7 +2227,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hnew{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin:var(--s4) 0}
 .hnew-c{position:relative;display:flex;flex-direction:column;gap:6px;padding:18px 18px 16px;border-radius:20px;text-decoration:none;color:#fff;overflow:hidden;transition:transform .2s;box-shadow:0 14px 30px -18px rgba(40,30,120,.7)}
 .hnew-ig{background:linear-gradient(135deg,#3a2bd8 0%,#7a3df0 55%,#c13dd0 100%)}
-.hnew-3d{background:linear-gradient(135deg,#0f6b5c 0%,#1593a0 60%,#2f7be0 100%)}
+.hnew.one{grid-template-columns:1fr}.hnew-3d{background:linear-gradient(135deg,#0f6b5c 0%,#1593a0 60%,#2f7be0 100%)}
 .hnew-c b{font:800 21px/1.15 var(--disp)}.hnew-c span:not(.hnew-b){font-size:14px;line-height:1.45;opacity:.92}
 .hnew-c i{margin-top:auto;padding-top:6px;font-style:normal;font-weight:800;font-size:14px}
 .hnew-b{align-self:flex-start;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.2);font:800 11px var(--mono);letter-spacing:1px;text-transform:uppercase}
@@ -3243,6 +3244,8 @@ window.noteShort=noteShort;
 function noteShort(h){ if(!h) return ''; const parts=String(h).split(/(?<=[.!?])\s+(?=[А-ЯЁA-Z(«а-в]\)?)/).filter(x=>x.trim()&&!NOTE_SKIP.test(x.replace(/<[^>]+>/g,'').trim()));
   const err=parts.filter(x=>/Частая ошибка|Не путайте/.test(x)), rest=parts.filter(x=>!/Частая ошибка|Не путайте/.test(x));
   return (err.length?err.concat(rest.slice(0,err.length>1?0:1)):rest.slice(0,1)).slice(0,2).join(' '); }
+/* у задачи есть 3D (кнопка «3D» у чертежа хотя бы в одном пункте) */
+const H3D={}; window.has3D=has3D; function has3D(t){ const k=t.n||t.key; if(k in H3D) return H3D[k]; let r=false; try{ r=!!(window.TASK3D&&partsOf(t).some(p=>TASK3D.has(p))); }catch(e){} return H3D[k]=r; }
 function partsOf(t){
   if(t.parts&&t.parts.length) return t.parts.map((p,i)=>Object.assign({given:t.given||[],l:p.l||String.fromCharCode(1072+i)+')'},p));
   return [{given:t.given||[],steps:t.steps||[],ans:t.ans,q:null,l:'',_fig:t._fig}];
@@ -21662,6 +21665,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
   {v:'3.0',d:'8 октября 2026',rel:'ig',items:['Инженерная графика открыта. ДЗ 2 «Построение изображений» — все 30 вариантов: исходный чертёж задания, деталь в 3D, живые разрезы, сечение А–А наклонной плоскостью и классический чертёж из модели — главный вид и вид слева с разрезами, вид сверху, сечение в натуральную величину. Отметь «мой вариант» — сайт откроет его сразу.','Рабочая тетрадь по ИГ: десять тел с отверстиями (рис. 61–70) — задание, 3D и разрезы. Теория по ЕСКД: форматы, линии, виды, разрезы, сечения, штриховка.','3D-модель решения — у 80 задач тетради по начертательной геометрии.']},
+  {v:'2.6',d:'8 октября 2026',items:['Задачи, которые можно посмотреть в 3D, отмечены значком «3D» в списке тетради. На главной — карточка «Задачи тетради — в 3D».']},
   {v:'2.5',d:'8 октября 2026',items:['Подготовка к РК: новая типовая задача — плоский четырёхугольник ABDC, две стороны которого — отрезки линий уровня. Четыре пункта по шагам: D′, деление отрезка, угол прямой с π₁ и отрезок заданной длины, угол плоскости с π₂.','Найденные углы закрашены и подписаны значением — видно, между какими прямыми они измеряются. Основные построения стали толще.','Подписи у краёв чертежа больше не обрезаются.']},
   {v:'2.4',d:'8 октября 2026',items:['Чертежи: прямые доведены до всех своих точек, у каждого угла видны обе стороны, подписи не обрезаются по краю.','Способ прямоугольного треугольника: второй катет подписан Δy или Δz, а та же разность показана размером на другой проекции.','3D к задачам: тонкие линии и аккуратные подписи — построение читается сразу.','Заметки к задачам стали короче: только частые ошибки и важные оговорки.']},
   {v:'2.3',d:'7 октября 2026',items:['Тема дня: у каждого способа — анимация. Видно, как чертёж поворачивается вокруг оси, как «раскрывается» вторая замена, как плоскость ложится вокруг горизонтали и фронтали. Можно остановить ползунком на любом моменте.']},
@@ -23092,10 +23096,10 @@ function viewHome(v){
     <p class="hs-sub">Напиши как думаешь — найдём разбор за секунды</p>
     <div class="hs-box"><span class="hs-cat">${CAT('peek')}</span><div id="hsMount"></div></div>
    </section>
-   ${IGON()?`<section class="hnew" aria-label="Новое на сайте">
-    <a class="hnew-c hnew-ig" href="${H('ig')}"><span class="hnew-b">Новое</span><b>Инженерная графика</b><span>ДЗ 2 — все 30 вариантов: деталь в 3D, живые разрезы, сечение А–А и готовый чертёж. Тетрадь — тела с отверстиями. Теория по ЕСКД.</span><i>Открыть →</i></a>
-    <a class="hnew-c hnew-3d" href="${H('ng','tasks')}"><span class="hnew-b">Готово</span><b>3D к задачам тетради</b><span>80 задач по начертательной геометрии — с 3D: кнопка «3D» у чертежа показывает шаг решения в пространстве. Крути пальцем, листай шаги.</span><i>К задачам →</i></a>
-   </section>`:''}
+   <section class="hnew${IGON()?'':' one'}" aria-label="Новое на сайте">
+${IGON()?`<a class="hnew-c hnew-ig" href="${H('ig')}"><span class="hnew-b">Новое</span><b>Инженерная графика</b><span>ДЗ 2 — все 30 вариантов: деталь в 3D, живые разрезы, сечение А–А и готовый чертёж. Тетрадь — тела с отверстиями. Теория по ЕСКД.</span><i>Открыть →</i></a>`:''}
+    <a class="hnew-c hnew-3d" href="${H('ng','tasks')}"><span class="hnew-b">Новое</span><b>Задачи тетради — в 3D</b><span>Нажми «3D» у чертежа — увидишь шаг решения в пространстве: точки, прямые и плоскости проекций. Крути пальцем, листай шаги. Задачи с 3D отмечены значком.</span><i>К задачам →</i></a>
+   </section>
    <div class="hpop hpop-top"><div class="hpop-t"><b>Скинь одногруппникам</b><span>Вместе к РК проще — в один тап</span></div>${FX.viewsHTML()}${FX.juicyBtn('hpop-sh')}</div>
    ${tnumHTML('home')}
    <nav class="hq" aria-label="Главные разделы">
@@ -23269,7 +23273,7 @@ function renderNB(){
       if(t){
         if(nbFilter==='new'&&st) continue; if(nbFilter==='1'&&st!==1) continue; if(nbFilter==='2'&&st!==2) continue;
         if(q&&!(t.q+' '+(t.ans||'')).toLowerCase().includes(q)) continue;
-        cells+=`<a class="tile s${st}" href="${H('ng','tasks',n)}"><b>${n}</b><span>${short(t.q,64)}</span>${st?`<em class="tst">${st===2?'Решено сам':'Разобрано'}</em>`:''}</a>`; cnt++;
+        cells+=`<a class="tile s${st}" href="${H('ng','tasks',n)}"><b>${n}${window.has3D&&has3D(t)?'<i class="t3b" title="Можно посмотреть в 3D">3D</i>':''}</b><span>${short(t.q,64)}</span>${st?`<em class="tst">${st===2?'Решено сам':'Разобрано'}</em>`:''}</a>`; cnt++;
       } else if(!q&&nbFilter==='all'){ cells+=`<div class="tile off"><b>${n}</b><span>скоро</span></div>`; cnt++; }
     }
     if(cnt) html+=`<div class="grp">${s[0]} <i>${have}/${s[2]-s[1]+1}</i></div><div class="tiles">${cells}</div>`;
