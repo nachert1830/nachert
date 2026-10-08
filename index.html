@@ -157,7 +157,7 @@
 .ckn{position:fixed;left:12px;right:12px;bottom:calc(var(--tabh,64px) + 12px + env(safe-area-inset-bottom));z-index:90;display:flex;align-items:center;gap:12px;max-width:560px;margin:0 auto;padding:12px 12px 12px 16px;border-radius:16px;background:color-mix(in srgb,var(--surf) 96%,transparent);border:1px solid var(--line);box-shadow:0 16px 40px -18px rgba(8,11,18,.45);backdrop-filter:blur(10px);font-size:13px;line-height:1.45;color:var(--ink2);animation:cknIn .35s cubic-bezier(.2,.7,.2,1)}
 .ckn a{color:var(--blue);font-weight:600}.ckn button[data-ck="n"]{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}.ckn button{flex:none;min-height:40px;padding:0 16px;border-radius:12px;border:0;background:var(--ink);color:var(--surf);font:700 13.5px var(--sans);cursor:pointer}
 @media(min-width:1080px){.ckn{bottom:20px}}
-@media(max-width:560px){.ckn{flex-wrap:wrap;gap:10px}.ckn span{flex:1 1 100%}.ckn button{flex:1 1 0}}
+@media(max-width:560px){.ckn{flex-wrap:wrap;gap:8px;padding:10px 12px;bottom:calc(var(--tabh,64px) + 6px + env(safe-area-inset-bottom));font-size:12.5px}.ckn span{flex:1 1 100%}.ckn button{flex:1 1 0;min-height:36px;font-size:13px}}
 @keyframes cknIn{from{transform:translateY(16px);opacity:0}}
 body.inplayer .ckn{display:none}
 
@@ -2213,10 +2213,9 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hq-t b{font:700 18px/1.15 var(--disp);margin-top:auto}
 .hq-t>span:last-child{font-size:13px;opacity:.9;line-height:1.3}
 .hq-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.18);backdrop-filter:blur(4px)}
-.hq-t.t1{background:linear-gradient(145deg,#e0432f,#ff8a3d);box-shadow:0 16px 34px -18px rgba(224,67,47,.8)}
-.hq-t.t2{background:linear-gradient(145deg,#2340c8,#5b46f0);box-shadow:0 16px 34px -18px rgba(35,64,200,.8)}
-.hq-t.t3{background:linear-gradient(145deg,#0f8f78,#2cc3a0);box-shadow:0 16px 34px -18px rgba(15,143,120,.8)}
-.hq-t.t4{background:linear-gradient(145deg,#7c3aed,#c05bf0);box-shadow:0 16px 34px -18px rgba(124,58,237,.8)}
+.hq-t.t1{background:linear-gradient(145deg,#8e1f32,#b8503f);box-shadow:0 16px 34px -18px rgba(142,31,50,.75)}
+.hq-t.t2{background:linear-gradient(145deg,#2340c8,#3f74b8);box-shadow:0 16px 34px -18px rgba(35,64,200,.7)}
+.hq-t.t3{background:linear-gradient(145deg,#2f6b4a,#4f8f6a);box-shadow:0 16px 34px -18px rgba(47,107,74,.75)}
 .hq-t:active{transform:scale(.97)}
 @media(hover:hover){.hq-t:hover{transform:translateY(-4px)}}
 @media(min-width:760px){.hq{grid-template-columns:repeat(4,1fr);gap:14px}.hq-t{min-height:170px;padding:20px}.hq-t b{font-size:20px}}
@@ -2230,7 +2229,19 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hig i{font-style:normal;font-weight:700;color:var(--mut)}
 .hnew{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin:var(--s4) 0}
 .hnew-c{position:relative;display:flex;flex-direction:column;gap:6px;padding:18px 18px 16px;border-radius:20px;text-decoration:none;color:#fff;overflow:hidden;transition:transform .2s;box-shadow:0 14px 30px -18px rgba(40,30,120,.7)}
-.hnew-ig{background:linear-gradient(135deg,#3a2bd8 0%,#7a3df0 55%,#c13dd0 100%)}
+.subj{display:flex;flex:none;gap:2px;padding:3px;border-radius:12px;background:var(--surf2);border:1px solid var(--line)}
+.subj a{display:flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:9px;color:var(--ink2);font:600 13.5px var(--sans);text-decoration:none;white-space:nowrap}
+.subj a.on{background:var(--acc);color:var(--on-acc);box-shadow:0 2px 6px -2px color-mix(in srgb,var(--acc) 60%,transparent)}
+.subj a i{font:700 9px var(--mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;border-radius:99px;background:color-mix(in srgb,#cdb67f 60%,var(--surf));color:#5b4a1e}
+.subj a.on i{background:rgba(255,255,255,.22);color:#fff}
+@media(max-width:480px){.subj a{padding:0 9px;font-size:13px}.subj a i{display:none}.brand .bw{display:none}}
+@media(max-width:400px){.hin{gap:6px;padding:0 10px}.hright{gap:4px}.icb{width:38px;height:38px}.subj{padding:2px}.subj a{padding:0 8px;font-size:12.5px;min-height:34px}}
+@media(max-width:339px){#shareBtn{display:none}}
+.hnew-s{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 14px}.hnew-s span{font:700 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.hnew-s a{font:600 12.5px var(--sans);padding:6px 11px;border-radius:99px;background:var(--surf2);border:1px solid var(--line);color:var(--ink2);text-decoration:none}
+.hsub{display:flex;align-items:center;gap:8px;margin:22px 0 10px;font:700 18px var(--disp)}.hbeta{font:700 10px var(--mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:color-mix(in srgb,#cdb67f 60%,var(--surf));color:#5b4a1e}
+.hq-t.ig{background:linear-gradient(145deg,#243b6b,#2f5f9e);box-shadow:0 16px 34px -20px rgba(36,59,107,.8)}
+.hq-ig{grid-template-columns:repeat(3,1fr)}@media(max-width:640px){.hq-ig{grid-template-columns:1fr 1fr}.hq-ig .hq-t:last-child{grid-column:1/-1}}
 .hnew.one{grid-template-columns:1fr}.hnew-3d{background:linear-gradient(135deg,#0f6b5c 0%,#1593a0 60%,#2f7be0 100%)}
 .hnew-c b{font:800 21px/1.15 var(--disp)}.hnew-c span:not(.hnew-b){font-size:14px;line-height:1.45;opacity:.92}
 .hnew-c i{margin-top:auto;padding-top:6px;font-style:normal;font-weight:800;font-size:14px}
@@ -2286,8 +2297,8 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .tnum .btn{height:50px;padding:0 18px;flex:none;border-radius:14px}
 .tnum.big{margin:0 0 var(--s4)}
 /* ── главная: плитки ── */
-.hq-t.t5{background:linear-gradient(145deg,#7c3aed,#c05bf0);box-shadow:0 16px 34px -18px rgba(124,58,237,.8)}
-.hq-t.t4{background:linear-gradient(145deg,#0e7490,#22b8cf);box-shadow:0 16px 34px -18px rgba(14,116,144,.8)}
+.hq-t.t5{background:linear-gradient(145deg,#7a6434,#a88f50);box-shadow:0 16px 34px -18px rgba(122,100,52,.75)}
+.hq-t.t4{background:linear-gradient(145deg,#2f5f9e,#4f86c6);box-shadow:0 16px 34px -18px rgba(47,95,158,.75)}
 .hq-t.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:14px}
 .hq-t.wide b{margin:0}.hq-t.wide>span:last-child{flex:1}
 @media(max-width:759px){.hq-t.wide{flex-wrap:wrap}.hq-t.wide>span:last-child{flex-basis:100%}}
@@ -2433,6 +2444,7 @@ html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
 .t3d-views button.on{background:linear-gradient(135deg,#2f5f9e,#3f74b8);color:#fff}
 .t3d-zm{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px}
 .t3d-zm button{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:color-mix(in srgb,var(--surf) 92%,transparent);color:var(--ink);font:600 18px var(--sans);cursor:pointer;box-shadow:0 4px 12px -8px rgba(0,0,0,.4)}
+.ma .t3d-stage.ma-st{flex:1;display:block}.ma-av{position:absolute;inset:0;touch-action:none;cursor:grab}.ma-av svg{display:block;width:100%;height:100%}.ma-cap{margin:8px 14px 0;font-size:14px;line-height:1.45;color:var(--ink2);min-height:3em}.ma-note{margin:4px 14px 12px;font-size:12.5px;color:var(--mut)}.ma-note a{color:var(--blue-ink,#2340c8)}
 .t3d-hint{position:absolute;left:8px;bottom:8px;font-size:12px;color:var(--mut);background:var(--surf);border:1px solid var(--line);padding:4px 10px;border-radius:99px;pointer-events:none;transition:opacity .3s;max-width:calc(100% - 70px)}
 .t3d-ctl{display:flex;align-items:center;gap:10px;padding:6px 12px 8px}
 .t3d-info{display:flex;align-items:center;gap:8px;margin:8px 10px 0;padding:8px 8px 8px 12px;border-radius:12px;background:color-mix(in srgb,#3f74b8 9%,var(--surf));border:1px solid color-mix(in srgb,#3f74b8 35%,transparent);animation:t3din .15s}
@@ -2619,6 +2631,7 @@ body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;backg
    <svg class="logo" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#2340c8"/><circle cx="12.5" cy="16" r="6.5" fill="#fff"/><circle cx="19.5" cy="16" r="6.5" fill="none" stroke="#ffb020" stroke-width="3"/></svg>
    <span class="bw"><b>Начерт</b><i>по шагам</i></span>
   </a>
+  <div class="subj" id="subjBar" role="tablist" aria-label="Предмет"></div>
   <nav class="nav nav-top" id="navTop" aria-label="Разделы"></nav>
   <div class="hright">
    <a class="hprog" id="hprog" href="#/" title="Общий прогресс"></a>
@@ -3453,7 +3466,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper">${last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${S.pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:''}${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -3551,7 +3564,7 @@ function mount(root,t,opt){
     paper.addEventListener('pointerup',up); paper.addEventListener('pointercancel',e=>{P.delete(e.pointerId);});
     paper.addEventListener('dblclick',e=>{ if(e.target.closest('.pl-zoom')) return; at(Z.s>1.2?1:2.6,e.clientX,e.clientY); });
     paper.querySelectorAll('.pl-zb').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const z=b.dataset.z, r=paper.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
-      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); }));
+      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); else if(z==='meth'&&window.METHANIM) METHANIM.open(t); }));
   }
   function key(e){
     if(e.key==='Escape'&&S.full){ S.full=false; S.ftext=false; S.z.s=1; S.z.x=0; S.z.y=0; render(); return; }
@@ -7037,7 +7050,7 @@ window.PANES.consent={title:'Согласие на обработку персо
   function banner(){
     if(document.querySelector('.ckn')) return;
     const d=document.createElement('div'); d.className='ckn'; d.setAttribute('role','region'); d.setAttribute('aria-label','Cookie');
-    d.innerHTML='<span>Можно мы будем собирать обезличенную статистику посещений (Яндекс Метрика, cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
+    d.innerHTML='<span>Собирать обезличенную статистику посещений (Яндекс Метрика, cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
     d.addEventListener('click',e=>{ const b=e.target.closest('[data-ck]'); if(!b) return; window.CONSENT.set(b.dataset.ck); d.remove(); });
     document.body.appendChild(d);
   }
@@ -21689,6 +21702,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'3.1',d:'8 октября 2026',items:['Два предмета — два раздела: «Начерт» и «Инж. графика» (бета) переключаются в шапке, у каждого своё нижнее меню; на главной они разделены.','3D в палитре сайта: оливковая деталь, бордовая штриховка, песочные плоскости. Новая анимация перехода от 3D к эпюру: лучи проецирования, поочерёдный разворот плоскостей с подсветкой осей.','Задачи тетради № 51–67 (замена плоскостей и вращение): кнопка «▶ Способ» — анимация способа в пространстве.','Telegram и Safari: при вращении детали страница не сдвигается; уведомление о cookie стало компактнее; шапка помещается на узких экранах.']},
   {v:'3.0',d:'8 октября 2026',rel:'ig',items:['Инженерная графика открыта. ДЗ 2 «Построение изображений» — все 30 вариантов: исходный чертёж задания, деталь в 3D, живые разрезы, сечение А–А наклонной плоскостью и классический чертёж из модели — главный вид и вид слева с разрезами, вид сверху, сечение в натуральную величину. Отметь «мой вариант» — сайт откроет его сразу.','Рабочая тетрадь по ИГ: десять тел с отверстиями (рис. 61–70) — задание, 3D и разрезы. Теория по ЕСКД: форматы, линии, виды, разрезы, сечения, штриховка.','3D-модель решения — у 80 задач тетради по начертательной геометрии.']},
   {v:'2.8',d:'8 октября 2026',items:['Чертежи в спокойной палитре: плоскости проекций — бежевые, построения — синие, искомое — тёмно-красное. Меньше ярких цветов, чертёж читается легче.']},
   {v:'2.7',d:'8 октября 2026',items:['Тема дня: каждый способ преобразования теперь можно смотреть в пространстве — треугольник, плоскости проекций π₁ и π₂, новая плоскость π₄ (π₅), ось вращения. Камера сама поворачивается туда, откуда видна суть способа; под анимацией — подпись, что происходит сейчас. Модель можно крутить пальцем; переключатель «На чертеже» возвращает эпюр.','В пространстве подписаны проекции точек (A′, A″, A₄, A₅), найденный угол α или β показан дугой со значением, итог — «натуральная величина» или «отрезок на π₂»; под моделью — легенда цветов.','Во вращениях и перемещении выделена плоскость, на которую проецируются точки, и лучи проецирования к ней.']},
@@ -21738,7 +21752,7 @@ return { LIST, sha256, owner,
 })();
 
 /* инженерная графика открыта (пока — только в режиме владельца, переключатель «ig») */
-window.IGON=()=>!!(window.FLAGS&&FLAGS.on('ig'));
+window.IGON=()=>true;   /* инженерная графика открыта для всех (бета) */
 /* панель владельца: #/me */
 window.OWNER=(function(){
 function view(v,r){
@@ -22415,6 +22429,50 @@ function open(t,pi,k){
 }
 return {model,has,open,close};
 })();
+
+/* ── анимация способа к задачам тетради: № 51–67 (замена плоскостей, вращение). Тот же сценарий, что в «Теме дня»,
+   на общем примере способа; решение и шаги задачи не меняются. ── */
+window.METHANIM=(function(){
+const OF={51:'zam-2',52:'zam-2',53:'zam-2',54:'zam-2',55:'zam-h',56:'zam-2',57:'zam-h',58:'rot-i',59:'rot-i',60:'rot-i',61:'rot-i',62:'rot-h',63:'rot-f',64:'rot-h',65:'rot-f',66:'rot-h',67:'rot-h'};
+const has=t=>!!(t&&OF[t.n]&&window.DAYTOPIC&&window.DAY3D);
+const idx=t=>{ const id=OF[t.n]; return Math.max(0,DAYTOPIC.parts.findIndex(x=>x.id===id)); };
+let el=null, raf=0, unlock=null;
+function close(){ cancelAnimationFrame(raf); if(el){ el.remove(); el=null; } if(unlock){ unlock(); unlock=null; } document.removeEventListener('keydown',onKey); }
+function onKey(e){ if(e.key==='Escape') close(); }
+function open(t){
+  if(!has(t)) return; close();
+  const k=idx(t), pt=DAYTOPIC.parts[k], user={dy:0,dp:0,z:1};
+  el=document.createElement('div'); el.className='t3d ma'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Способ в пространстве');
+  el.innerHTML=`<div class="t3d-box"><div class="t3d-top"><div class="t3d-tt"><b>Способ в пространстве</b><span>${pt.l}</span></div><button class="t3d-x" aria-label="Закрыть">✕</button></div>
+   <div class="t3d-stage ma-st"><div class="ma-av" id="maAv"></div><div class="t3d-hint">тяни — крутить · двойной тап — вернуть вид</div></div>
+   <p class="ma-cap" id="maCap"></p>
+   <div class="t3d-ctl"><button class="t3d-b" id="maPlay" aria-label="Пауза">❚❚</button><input type="range" id="maT" min="0" max="1000" value="0" aria-label="Положение"></div>
+   <p class="ma-note">Общий пример способа на треугольнике ABC; в задаче № ${t.n} те же действия, но с её данными. Решение — по шагам на чертеже. <a href="${H('ng','day',k)}">Тема дня: разбор способа</a></p></div>`;
+  document.body.appendChild(el);
+  const lockY=window.scrollY||0, bs=document.body.style, html=document.documentElement, prev={pos:bs.position,top:bs.top,w:bs.width,ov:bs.overflow};
+  bs.position='fixed'; bs.top=(-lockY)+'px'; bs.width='100%'; bs.overflow='hidden'; html.classList.add('t3d-lock');
+  const stop=e=>{ if(e.target&&e.target.closest&&e.target.closest('input[type=range]')) return; if(e.cancelable) e.preventDefault(); };
+  el.addEventListener('touchmove',stop,{passive:false}); ['gesturestart','gesturechange','gestureend'].forEach(n=>el.addEventListener(n,e=>{ if(e.cancelable) e.preventDefault(); },{passive:false}));
+  let tg=false; try{ const W=window.Telegram&&Telegram.WebApp; if(W&&W.disableVerticalSwipes&&W.isVerticalSwipesEnabled!==false){ W.disableVerticalSwipes(); tg=true; } }catch(_){}
+  unlock=()=>{ bs.position=prev.pos; bs.top=prev.top; bs.width=prev.w; bs.overflow=prev.ov; html.classList.remove('t3d-lock'); window.scrollTo(0,lockY); try{ if(tg) Telegram.WebApp.enableVerticalSwipes(); }catch(_){} };
+  document.addEventListener('keydown',onKey);
+  const av=el.querySelector('#maAv'), cap=el.querySelector('#maCap'), rg=el.querySelector('#maT'), pb=el.querySelector('#maPlay');
+  const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+  let tt=0, dir=1, hold=0, last=0, play=!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
+  const draw=u=>{ const r=DAY3D.svg(pt.id,u,user); av.innerHTML=r.svg; if(r.cap) cap.textContent=r.cap; rg.value=Math.round(u*1000); };
+  const loop=now=>{ if(!el) return; if(play){ const dt=last?Math.min(50,now-last):16; if(hold>0) hold-=dt; else { tt+=dir*dt/3200; if(tt>=1){ tt=1; dir=-1; hold=1500; } if(tt<=0){ tt=0; dir=1; hold=900; } draw(ease(tt)); } } last=now; raf=requestAnimationFrame(loop); };
+  let drag=null; av.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY}; try{ av.setPointerCapture(e.pointerId); }catch(_){} });
+  av.addEventListener('pointermove',e=>{ if(!drag) return; user.dy-=(e.clientX-drag.x)*.01; user.dp+=(e.clientY-drag.y)*.01; drag={x:e.clientX,y:e.clientY}; if(!play) draw(ease(tt)); });
+  const end=()=>{ drag=null; }; av.addEventListener('pointerup',end); av.addEventListener('pointercancel',end);
+  av.addEventListener('dblclick',()=>{ user.dy=0; user.dp=0; if(!play) draw(ease(tt)); });
+  pb.addEventListener('click',()=>{ play=!play; pb.textContent=play?'❚❚':'▶'; pb.setAttribute('aria-label',play?'Пауза':'Играть'); });
+  rg.addEventListener('input',()=>{ play=false; pb.textContent='▶'; tt=rg.value/1000; draw(tt); });
+  el.querySelector('.t3d-x').addEventListener('click',close); el.addEventListener('click',e=>{ if(e.target===el) close(); });
+  el.querySelector('a').addEventListener('click',close);
+  draw(play?0:1); raf=requestAnimationFrame(loop);
+}
+return {has,open,close};
+})();
 window.GYM=(function(){
 const $q=(r,s)=>r.querySelector(s);
 const rnd=()=>1+Math.floor(Math.random()*899999);
@@ -22646,18 +22704,30 @@ const NAVS=[
   {id:'th',name:'Теория',short:'Теория',h:'#/ng/path'},
   {id:'ep',name:'3D-модель',short:'3D',h:'#/epure'},
   {id:'ig',name:'Инж. графика',short:'ИГ',h:'#/ig',soon:true}];
-function navKey(r){ if(r.s==='ng') return {tasks:'nb',check:'rk',hw:'hw',path:'th',cheat:'th'}[r.tab]||'nb';
+const NAV_IG=[{id:'ihw',ic:'hw',name:'Домашние задания',short:'ДЗ',h:'#/ig/hw2'},{id:'iwb',ic:'nb',name:'Рабочая тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
+const subjOf=r=>(r&&(r.s==='ig'||r.s==='part'))&&IGON()?'ig':'ng'; let NAVSUBJ=null;
+function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {hw2:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
+  if(r.s==='ng') return {tasks:'nb',check:'rk',hw:'hw',path:'th',cheat:'th'}[r.tab]||'nb';
   if(!r.s||r.s==='home') return 'home';
   return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
 const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
-function buildNav(){
-  const soon=n=>n.soon&&!(n.id==='ig'&&IGON());
-  const h=NAVS.filter(n=>n.id!=='ig'||IGON()).map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv${soon(n)?' nv-soon':''}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n.id]}</svg><span class="nl">${n.name}${soon(n)?'<i class="soon">скоро</i>':''}</span><span class="ns">${n.short}</span></a>`).join('');
-  $('navTop').innerHTML=h;
-  /* телефон: Тетрадь · РК · [Главная] · ДЗ · Теория — главная всегда под большим пальцем, по центру */
-  const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n.id]}</svg><span class="ns">${n.short}</span></a>`; };
-  const home=`<a href="#/" data-s="home" class="nv nv-home" aria-label="Главная"><span class="nvh-b"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6h-6v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span><span class="ns">Главная</span></a>`;
-  $('navBot').innerHTML=one('nb')+one('rk')+home+one('hw')+one('th');
+function buildNav(sj){
+  sj=sj||subjOf(parseHash(location.hash)); NAVSUBJ=sj;
+  const svg=(ic,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
+  const homeB=(href,s)=>`<a href="${href}" data-s="${s}" class="nv nv-home" aria-label="Главная"><span class="nvh-b"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6h-6v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span><span class="ns">Главная</span></a>`;
+  if(sj==='ig'){
+    $('navTop').innerHTML=`<a href="#/ig" data-s="ihome" class="nv"><span class="nl">Обзор</span><span class="ns">Обзор</span></a>`+NAV_IG.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv"><span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
+    const one=n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.ic)}<span class="ns">${n.short}</span></a>`;
+    $('navBot').innerHTML=one(NAV_IG[0])+homeB('#/ig','ihome')+one(NAV_IG[1])+one(NAV_IG[2]);
+  } else {
+    const NG=NAVS.filter(n=>n.id!=='ig');
+    $('navTop').innerHTML=NG.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
+    const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="ns">${n.short}</span></a>`; };
+    $('navBot').innerHTML=one('nb')+one('rk')+homeB('#/','home')+one('hw')+one('th');
+  }
+  /* предмет: Начерт и инженерная графика — два отдельных раздела; переключатель виден, пока ИГ открыта */
+  const bar=$('subjBar'); if(bar){ if(IGON()){ bar.hidden=false;
+    bar.innerHTML=`<a href="#/ng/tasks" role="tab" data-sj="ng" class="${sj==='ng'?'on':''}" aria-selected="${sj==='ng'}" title="Начертательная геометрия">Начерт</a><a href="#/ig" role="tab" data-sj="ig" class="${sj==='ig'?'on':''}" aria-selected="${sj==='ig'}" title="Инженерная графика (бета)">Инж. графика<i>бета</i></a>`; } else { bar.hidden=true; bar.innerHTML=''; } }
 }
 
 /* ───────── маршрут курса: урок → его задачи → следующий урок ───────── */
@@ -22756,7 +22826,8 @@ function render(r){
   teardown();
   CUR=r; const v=$('view');
   document.body.dataset.subj=r.s; document.body.classList.toggle('owner',FLAGS.owner());
-  { const nk=navKey(r); document.querySelectorAll('.nav a').forEach(a=>{ const on=a.dataset.s===nk; a.classList.toggle('on',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); }
+  { const sj=subjOf(r); if(sj!==NAVSUBJ) buildNav(sj); const bar=$('subjBar'); if(bar&&!bar.hidden) bar.querySelectorAll('a').forEach(a=>{ const on=a.dataset.sj===sj; a.classList.toggle('on',on); a.setAttribute('aria-selected',on); });
+    const nk=navKey(r); document.querySelectorAll('.nav a').forEach(a=>{ const on=a.dataset.s===nk; a.classList.toggle('on',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); }
   if(r.tab&&(r.s==='ng'||r.s==='ig')) ST.set('tab_'+r.s,r.tab);
   let title='Начерт';
   try{
@@ -23257,20 +23328,24 @@ function viewHome(v){
     <p class="hs-sub">Напиши как думаешь — найдём разбор за секунды</p>
     <div class="hs-box"><span class="hs-cat">${CAT('peek')}</span><div id="hsMount"></div></div>
    </section>
-   <section class="hnew${IGON()?'':' one'}" aria-label="Новое на сайте">
-${IGON()?`<a class="hnew-c hnew-ig" href="${H('ig')}"><span class="hnew-b">Новое</span><b>Инженерная графика</b><span>ДЗ 2 — все 30 вариантов: деталь в 3D, живые разрезы, сечение А–А и готовый чертёж. Тетрадь — тела с отверстиями. Теория по ЕСКД.</span><i>Открыть →</i></a>`:''}
-    <a class="hnew-c hnew-3d" href="${H('ng','tasks')}"><span class="hnew-b">Новое</span><b>Задачи тетради — в 3D</b><span>Нажми «3D» у чертежа — увидишь шаг решения в пространстве: точки, прямые и плоскости проекций. Крути пальцем, листай шаги. Задачи с 3D отмечены значком.</span><i>К задачам →</i></a>
-   </section>
-   <div class="hpop hpop-top"><div class="hpop-t"><b>Скинь одногруппникам</b><span>Вместе к РК проще — в один тап</span></div>${FX.viewsHTML()}${FX.juicyBtn('hpop-sh')}</div>
+   <section class="hnew-s" aria-label="Новое на сайте"><span>Новое</span><a href="${H('ig')}">Инженерная графика — ДЗ 2, все 30 вариантов в 3D</a><a href="${H('ng','tasks')}">Задачи тетради — в 3D и с анимацией способов</a></section>
    ${tnumHTML('home')}
-   <nav class="hq" aria-label="Главные разделы">
+   <h2 class="hsub"><span>Начертательная геометрия</span></h2>
+   <nav class="hq" aria-label="Начертательная геометрия">
     <a class="hq-t t2" href="${H('ng','tasks')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.nb}</svg></span><b>Решённая тетрадь</b><span>${nT} задач с решением по шагам</span></a>
     <a class="hq-t t1" href="${H('ng','check')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.rk}</svg></span><b>Подготовка к РК</b><span>билеты, вопросы теории, пробный РК</span></a>
     <a class="hq-t t4" href="${H('ng','hw')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.hw}</svg></span><b>Как решать ДЗ</b><span>ДЗ №1–5: методика и разобранный пример</span></a>
     <a class="hq-t t5" href="${H('ng','path')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.th}</svg></span><b>Теория</b><span>${COURSE.length} уроков, шпаргалка, 22 вопроса РК1</span></a>
     <a class="hq-t t3 wide" href="${H('epure')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.ep}</svg></span><b>3D-модель и эпюр</b><span>двигай точки в пространстве — чертёж строится сам</span></a>
    </nav>
+      <h2 class="hsub"><span>Инженерная графика</span><i class="hbeta">бета</i></h2>
+   <nav class="hq hq-ig" aria-label="Инженерная графика">
+    <a class="hq-t ig" href="${H('ig','hw2')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.hw}</svg></span><b>ДЗ 2 в 3D</b><span>30 вариантов: деталь, разрезы, лист</span></a>
+    <a class="hq-t ig" href="${H('ig','wb')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.nb}</svg></span><b>Рабочая тетрадь</b><span>тела со сквозными отверстиями</span></a>
+    <a class="hq-t ig" href="${H('ig','theory')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.th}</svg></span><b>Теория ЕСКД</b><span>виды, разрезы, сечения, штриховка</span></a>
+   </nav>
    ${dayCardHTML()}
+   <div class="hpop"><div class="hpop-t"><b>Скинь одногруппникам</b><span>Вместе к РК проще — в один тап</span></div>${FX.viewsHTML()}${FX.juicyBtn('hpop-sh')}</div>
    <h2 class="rowh hrow-h">Чаще всего ищут</h2>
    <div class="row hrow" role="list">${[['visibility','Видимость: что видно, а что нет'],['true-length','Натуральная величина отрезка'],['plane-traces','Следы плоскости'],['point-epure','Как строить точки на эпюре'],['line-plane-meet','Точка пересечения прямой и плоскости'],['perp-theorem','Теорема о прямом угле']].filter(x=>!window.TOPICS||TOPICS.get(x[0])).map((x,i)=>`<a role="listitem" class="rc c${i%4}" href="${H('topic',x[0])}"><em>ТЕМА</em><b>${x[1]}</b><i>Разобрать →</i></a>`).join('')}</div>
   </div>`;
@@ -24436,7 +24511,7 @@ function home(v){
     <a class="igx-card live" href="${H('ig','wb')}"><span class="igx-n">Тетрадь</span><b>Тела с отверстиями</b><p>Призма, цилиндр, пирамида, конус, шар — в 3D: разрезы и виды строятся из модели.</p><span class="igx-go">Открыть →</span></a>
     <a class="igx-card live" href="${H('ig','theory')}"><span class="igx-n">Теория</span><b>ЕСКД, виды, разрезы</b><p>Форматы, линии, шрифты, размеры, виды, разрезы, сечения, штриховка — коротко, по стандартам.</p><span class="igx-go">Открыть →</span></a>
    </div>`});
-  const h=$(v,'#igHero'); if(hasGL&&h){ const pick=[15,22,4,18,30,13][Math.floor(Math.random()*6)]; const m=mountViewer(h,pick,{state:{cut:1}});
+  const h=$(v,'#igHero'); if(hasGL&&h){ const pick=[15,22,4,18,30,13][Math.floor(Math.random()*6)]; const m=mountViewer(h,pick,{state:{cut:1,res:1.5}});
     if(m){ let on=true; const spin=()=>{ if(!on||!h.isConnected) return; if(!h.classList.contains('busy')){ m.S.yaw+=0.004; m.v.draw(.7); } requestAnimationFrame(spin); }; requestAnimationFrame(spin); m.cv.addEventListener('pointerdown',()=>{ on=false; }); } }
   NEXT=null; return SUBJ.ig.name;
 }
@@ -24800,7 +24875,7 @@ return {view,mountViewer,sheetImages,keyPts};
 })();
 
 function viewIG(v,r){
-  if(window.FLAGS&&FLAGS.on('ig')&&window.IGUI) return IGUI.view(v,r||{});
+  if(window.IGUI) return IGUI.view(v,r||{});
   setTimeout(()=>redir('#/'),0); return 'Начерт';   /* раздел ещё не открыт — для всех, кроме владельца, его нет */
   v.innerHTML=`<div class="wrap page igsoon">
    <div class="igs-hero">
