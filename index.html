@@ -2349,7 +2349,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igb-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px}.igb-h b{font:700 17px var(--disp)}
 .igb-all{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);cursor:pointer}
 .igb-pic{border-radius:12px;background:#fff}.igb-pic svg{min-width:0!important}
-.igs-k{font:italic 600 13px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:3px}
+.igs-k{font:italic 600 21px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:3px}
 .igb-nums{display:flex;gap:8px;flex-wrap:wrap;margin:12px 2px}
 .igb-nums button{width:40px;height:40px;border-radius:50%;border:0;background:var(--surf2);color:var(--ink2);font:700 15px var(--sans);cursor:pointer}
 .igb-nums button.done{background:color-mix(in srgb,#0e7490 18%,var(--surf));color:#0e7490}.igb-nums button.on{background:#0e7490;color:#fff}
@@ -2357,15 +2357,23 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igb-t p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink2)}.igb-bar{display:block;height:5px;border-radius:9px;background:var(--surf2);overflow:hidden}.igb-bar span{display:block;height:100%;background:#0e7490;transition:width .3s}
 .igb-b{flex:none;width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font:700 26px var(--sans);cursor:pointer}.igb-b.pri{background:#0e7490;color:#fff;border:0}
 .igx-h2{font:700 18px var(--disp);margin:8px 2px 10px}
+.igx-back{display:inline-flex;align-items:center;gap:6px;margin:var(--s3) 0 0;min-height:44px;padding:0 16px 0 10px;border-radius:99px;background:var(--surf);border:1px solid var(--line);color:var(--ink);font:700 15px var(--sans);text-decoration:none}
+.igx-tabs{position:sticky;top:calc(var(--hh,60px) + 6px);z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:4px 0 12px;padding:4px;border-radius:16px;background:color-mix(in srgb,var(--surf) 94%,transparent);border:1px solid var(--line);backdrop-filter:blur(8px);box-shadow:0 8px 20px -14px rgba(20,30,80,.5)}
+.igx-tabs button{min-height:44px;border:0;border-radius:12px;background:none;color:var(--ink2);font:700 15px var(--sans);cursor:pointer}.igx-tabs button.on{background:#1d4ed8;color:#fff}
+#igSol .igx-modes{position:static;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;max-width:none;margin:0 0 8px;padding:0;background:none;border:0;box-shadow:none;backdrop-filter:none}
+#igSol .igx-modes button{min-height:40px;padding:0 6px;font-size:13px!important;border:1px solid var(--line);border-radius:99px;background:var(--surf);color:var(--ink);font:600 14px var(--sans)}#igSol .igx-modes button.on{background:#0f172a;border-color:#0f172a;color:#fff}
+.igx-mcap{margin:8px 2px 0;font-size:14px;line-height:1.5;color:var(--ink2)}
+#igSol .igx-stage{height:min(62vh,560px);min-height:340px}
+.igx-sheetbox svg{min-width:0}
 .igx-pj{position:absolute;left:8px;top:56px;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);font-size:12.5px;color:var(--ink2);pointer-events:none}.igx-pj[hidden]{display:none}
 .igx-pj span{display:flex;align-items:center;gap:7px}.igx-pj i{width:10px;height:10px;border-radius:3px}
-@media(max-width:640px){.igb{padding:10px}.igb-pic{overflow-x:auto}.igb-pic svg{min-width:640px!important}.igb-nums{flex-wrap:nowrap;overflow-x:auto;gap:6px}.igb-nums button{flex:none;width:34px;height:34px;font-size:14px}.igb-h{flex-wrap:wrap}.igb-b{width:44px;height:44px}}
+@media(max-width:640px){.igb{padding:10px}.igb-pic{overflow-x:auto}.igb-nums{flex-wrap:nowrap;overflow-x:auto;gap:6px}.igb-nums button{flex:none;width:34px;height:34px;font-size:14px}.igb-h{flex-wrap:wrap}.igb-b{width:44px;height:44px}}
 .igx-unfold{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;color:#fff;font:800 16px var(--sans);background:linear-gradient(135deg,#7c3aed,#4f46e5 55%,#2563eb);box-shadow:0 14px 30px -14px rgba(99,62,237,.85);cursor:pointer}
 .igx-unfold:disabled{opacity:.7}
 .igx-sheet{margin:6px 0 18px;padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line);color:#111827;background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px);background-size:18px 18px}
 .igx-sh-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin-bottom:10px}
 .igx-sh-sw{display:flex;padding:3px;border-radius:12px;background:#eef2f8;gap:2px}.igx-sh-sw button{border:0;background:none;padding:7px 12px;border-radius:9px;font:600 13px var(--sans);color:#475569;cursor:pointer}.igx-sh-sw button.on{background:#fff;color:#111;box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}
-.igx-dwg{overflow:auto;border-radius:10px;background:#fff}.igx-dwg svg{display:block;width:100%;min-width:640px;height:auto}
+.igx-dwg{overflow:auto;border-radius:10px;background:#fff}.igx-dwg svg{display:block;width:100%;height:auto}
 .igs-dim{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-let{font:italic 30px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
 .igx-sh-cap{font-size:13px;color:#475569;margin:8px 2px 0;line-height:1.5}.igx-sh-h b{font-size:17px}.igx-sh-h span{font-size:13px;color:#64748b}
 .igx-sh-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -23873,7 +23881,7 @@ function viewer(canvas,opt){
     ['uRes','uEye','uFwd','uRight','uUp','uScale','uCut','uPl','uBg1','uBg2','uDark','uHatch','uOff','uFlat','uEnc','uBmin','uBmax','uPj','uT1','uT2','uT3','uPa','uPb','uCt','uSc'].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
     const loc=gl.getAttribLocation(prog,'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
     const b=m.box||[[-60,-60,0],[60,60,120]]; S.bmin=[b[0][0]-3,b[0][1]-3,b[0][2]-3]; S.bmax=[b[1][0]+3,b[1][1]+3,b[1][2]+3]; S.C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2]; S.R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2; }
-  function draw(scale){ if(!prog) return; const dpr=Math.min(window.devicePixelRatio||1,1.6)*(scale||1), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
+  function draw(scale){ if(!prog) return; const dpr=Math.min(window.devicePixelRatio||1,1.6)*(scale||1)*(S.res||1), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
     if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } gl.viewport(0,0,w,h);
     const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit);
     /* камера на сфере вокруг центра детали; fwd — направление взгляда */
@@ -23891,7 +23899,7 @@ function viewer(canvas,opt){
       gl.uniform3fv(U.uPa,S.pa); gl.uniform3fv(U.uPb,S.pb); gl.uniform3fv(U.uCt,S.ct); gl.uniform1f(U.uSc,S.sc); }
     gl.drawArrays(gl.TRIANGLES,0,3); }
   /* плоскости проекций: на каждой — чертёж того же вида из модели (общий центр и масштаб с IG3.drawing) */
-  function setProj(urls,done){ const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2, g=R*.32;
+  function setProj(urls,done){ const b=model.box, C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2], R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2, g=R*.7;
     S.ct=C; S.sc=R*1.62; S.pa=[C[0]-R*.81,C[1]-R*.81,b[0][2]-g]; S.pb=[b[1][0]+g,b[1][1]+g,C[2]+R*.81];
     let left=urls.length; const tex=urls.map(u=>{ const t=gl.createTexture(), im=new Image(); im.onload=()=>{ gl.bindTexture(gl.TEXTURE_2D,t); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
         gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -24243,8 +24251,8 @@ const myVar=()=>{ try{ return +localStorage.getItem('nch2_igvar')||0; }catch(e){
 function variant(v,n){
   if(!(n>=1&&n<=N)){ setTimeout(()=>redir(H('ig','hw2')),0); return 'ДЗ 2'; }
   const mine=myVar()===n;
-  return partPage(v,{model:IG_VARS[n],star:`<button class="igx-star${mine?' on':''}" id="igStar" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Это мой вариант'}</button>`,crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2',H('ig','hw2')],['Вариант '+n]],title:'Вариант '+n,
-    prev:H('ig','hw2',n>1?n-1:N),next:H('ig','hw2',n<N?n+1:1),docTitle:'Вариант '+n+' · ДЗ 2 · '+SUBJ.ig.name,
+  return partPage(v,{model:IG_VARS[n],star:`<button class="igx-star${mine?' on':''}" id="igStar" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Мой вариант'}</button>`,crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2',H('ig','hw2')],['Вариант '+n]],title:'Вариант '+n,
+    back:[H('ig','hw2'),'Все варианты'],docTitle:'Вариант '+n+' · ДЗ 2 · '+SUBJ.ig.name,
     img:'ig/v'+String(n).padStart(2,'0')+'.jpg',
     q:'По двум данным изображениям — главному виду и виду сверху — построить вид слева. Выполнить необходимые разрезы: на симметричных изображениях — половина вида и половина разреза. Построить сечение A–A наклонной плоскостью.',fig:'ДЗ 2, вариант '+n,
     note:''});
@@ -24294,8 +24302,8 @@ function stepsSVG(model,k){
   const P=(v,q,ox,oy)=>{ const t=d[v].px(q); return [ox+t[0]*k0,oy+t[1]*k0]; }, f=v=>Math.round(v*10)/10;
   const FR=q=>P('front0',q,X0,Y0), TP=q=>P('top',q,X0,TOPY), LF=q=>P('left0',q,X0+S,Y0);
   const L=(a,c,cl,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${cl}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
-  const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="3" fill="${cl}"/>`, lab=(q,t,cl,dx,dy)=>`<text x="${f(q[0]+(dx||6))}" y="${f(q[1]+(dy||-5))}" class="igs-k" fill="${cl}">${t}</text>`;
-  const AC='#0e7490', HL='#c2410c', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2];
+  const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="4.5" fill="${cl}"/>`, lab=(q,t,cl,dx,dy)=>`<text x="${f(q[0]+(dx||7)*1.5)}" y="${f(q[1]+(dy||-5)*1.6)}" class="igs-k" fill="${cl}">${t}</text>`;
+  const AC='#2563eb', HL='#c2410c', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2];
   const pts=keyPts(model), cL=LF([0,0,0])[0], cT=TP([0,0,z1])[1];
   let o='';
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
@@ -24332,7 +24340,7 @@ const BUILD=[
  ['Готовый лист','Все изображения на листе в проекционной связи, с осями, размерами и основной надписью.']];
 function buildBlock(host,model,o){
   const N=BUILD.length-(model.sec?0:1); let k=1, all=false;
-  host.innerHTML=`<div class="igb-h"><b>Построение по шагам</b><label class="igb-all"><input type="checkbox" id="igbAll"> весь чертёж сразу</label></div>
+  host.innerHTML=`
    <div class="igb-pic igx-dwg" id="igbPic"></div>
    <div class="igb-nums" role="tablist">${Array.from({length:N},(_,i)=>`<button data-k="${i+1}" aria-label="Шаг ${i+1}">${i+1}</button>`).join('')}</div>
    <div class="igb-ctl"><button class="igb-b" id="igbPrev" aria-label="Назад">‹</button><div class="igb-t"><small id="igbN"></small><b id="igbTt"></b><p id="igbD"></p><i class="igb-bar"><span id="igbBar"></span></i></div><button class="igb-b pri" id="igbNext" aria-label="Дальше">›</button></div>`;
@@ -24343,71 +24351,61 @@ function buildBlock(host,model,o){
     const st=BUILD[last?BUILD.length-1:kk-1]; host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[0]; host.querySelector('#igbD').textContent=st[1];
     host.querySelector('#igbBar').style.width=(kk/N*100)+'%';
     host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); }); };
-  host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ all=false; host.querySelector('#igbAll').checked=false; k=+b.dataset.k; show(); }));
-  host.querySelector('#igbPrev').addEventListener('click',()=>{ all=false; host.querySelector('#igbAll').checked=false; k=Math.max(1,k-1); show(); });
-  host.querySelector('#igbNext').addEventListener('click',()=>{ all=false; host.querySelector('#igbAll').checked=false; k=Math.min(N,k+1); show(); });
-  host.querySelector('#igbAll').addEventListener('change',e=>{ all=e.target.checked; show(); });
+  host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ k=+b.dataset.k; show(); }));
+  host.querySelector('#igbPrev').addEventListener('click',()=>{ k=Math.max(1,k-1); show(); });
+  host.querySelector('#igbNext').addEventListener('click',()=>{ k=Math.min(N,k+1); show(); });
   show();
 }
 function partPage(v,o){
   const n=o.model;
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
-   <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}<div class="igx-nav"><a class="btn" href="${o.prev}" aria-label="Предыдущее">←</a><a class="btn" href="${o.next}" aria-label="Следующее">→</a></div></div>
+   <a class="igx-back" href="${o.back[0]}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>${o.back[1]}</a>
+   <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}</div>
    <section class="igx-task"><div class="igx-task-t"><span class="igx-k">Задание${o.fig?' · '+o.fig:''}</span><p>${o.q||''}</p></div>
-    <div class="igx-given" id="igGiven">${o.img?`<div class="igx-dwg igx-orig"><img src="${o.img}" alt="Чертёж задания: главный вид и вид сверху" decoding="async"></div>`:'<div class="igx-given-l">Строю данные изображения…</div>'}</div></section>
-   <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать решение</span><small>3D-модель, разрезы и готовый чертёж</small></button></div>
+    <div class="igx-given" id="igGiven">${o.img?`<div class="igx-dwg igx-orig"><img src="${o.img}" alt="Чертёж задания" decoding="async"></div>`:'<div class="igx-given-l">Строю данные изображения…</div>'}</div></section>
+   <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать решение</span><small>по шагам, в 3D и готовый лист</small></button></div>
    <div id="igSol" hidden>
-   <section class="igb" id="igBuild" aria-label="Построение по шагам"></section>
-   <h2 class="igx-h2">Деталь в 3D</h2>
-   <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}
-    <div class="igx-modes" role="tablist" aria-label="Режим">${MODES.concat(n.sec?[['sec','Сечение '+n.sec.L+'–'+n.sec.L,{cut:4}]]:[]).map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===2?'on':''}" aria-selected="${i===2}">${m[1]}</button>`).join('')}</div>
-    <div class="igx-cam" role="group" aria-label="Вид"><button data-c="iso">3D</button><button data-c="front">Спереди</button><button data-c="top">Сверху</button><button data-c="left">Слева</button></div>
-    <div class="igx-hint">крути · щипок — зум · двойной тап — исходный вид</div>
-    <div class="igx-pj" id="igPj" hidden><span><i style="background:#3b6be6"></i>П₂ — главный вид</span><span><i style="background:#21a06b"></i>П₃ — вид слева</span><span><i style="background:#eb8c26"></i>П₁ — вид сверху</span></div>
-    <div class="igx-plane" id="igPlane" hidden><span>Секущая плоскость</span><input type="range" id="igOff" min="-50" max="50" value="0" step="1" aria-label="Положение секущей плоскости"><b id="igOffV">0 мм</b></div>
-   </div>
-   <div class="igx-act"><button class="btn igx-unfold" id="igUnfold"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h7v7H3zM14 4h7v7h-7zM3 15h7v6H3z"/></svg>Развернуть в чертёж</button></div>
-   <section class="igx-sheet" id="igSheet" hidden aria-label="Три вида детали"></section>
-   ${o.bottom||''}${o.note?`<p class="igx-note">${o.note}</p>`:''}</div>`});
+    <div class="igx-tabs" role="tablist"><button role="tab" data-t="steps" class="on" aria-selected="true">По шагам</button><button role="tab" data-t="3d" aria-selected="false">3D</button><button role="tab" data-t="sheet" aria-selected="false">Лист</button></div>
+    <section class="igb" data-p="steps" id="igBuild" aria-label="Построение по шагам"></section>
+    <section data-p="3d" hidden>
+     <div class="igx-modes" role="tablist" aria-label="Режим">${[['cut','Разрез'],['part','Деталь']].concat(n.sec?[['sec','Сечение '+n.sec.L+'–'+n.sec.L]]:[]).concat([['proj','Проекции']]).map((m,i)=>`<button role="tab" data-m="${m[0]}" class="${i===0?'on':''}" aria-selected="${i===0}">${m[1]}</button>`).join('')}</div>
+     <div class="igx-stage" id="igStage">${hasGL?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно. Попробуй Chrome или Safari.</div>'}<div class="igx-hint">тяни — вращать · двумя пальцами — зум</div></div>
+     <p class="igx-mcap" id="igMcap"></p>
+    </section>
+    <section data-p="sheet" hidden><div class="igx-dwg igx-sheetbox" id="igSheetBox"></div><p class="igx-mcap" id="igSheetCap"></p></section>
+    ${o.bottom||''}</div>`});
   const st0=$(v,'#igStar'); if(st0) st0.addEventListener('click',()=>{ const on=!st0.classList.contains('on'); try{ if(on) localStorage.setItem('nch2_igvar',String(parseInt(o.title.replace(/\D/g,''),10))); else localStorage.removeItem('nch2_igvar'); }catch(e){}
-    st0.classList.toggle('on',on); st0.setAttribute('aria-pressed',on); st0.textContent=on?'★ Мой вариант':'☆ Это мой вариант'; try{ FX.buzz&&FX.buzz(6); FX.note&&FX.note(on?'Запомнил: открою его сразу':'Вариант откреплён'); }catch(e){} });
-  /* данные изображения задания — строятся из модели (главный вид и вид сверху, без разрезов) */
+    st0.classList.toggle('on',on); st0.setAttribute('aria-pressed',on); st0.textContent=on?'★ Мой вариант':'☆ Мой вариант'; try{ FX.buzz&&FX.buzz(6); }catch(e){} });
   if(!o.img) setTimeout(()=>{ const g=$(v,'#igGiven'); if(!g||!g.isConnected) return; let svg=''; try{ svg=hasGL?sheetSVG(n,'','','','given'):''; }catch(e){ console.error(e); }
     g.innerHTML=svg?`<div class="igx-dwg">${svg}</div>`:'<div class="igx-given-l">Изображения не построились на этом устройстве.</div>'; },30);
   const KEY='igsol:'+location.hash, show=()=>{ $(v,'#igSol').hidden=false; $(v,'.igx-reveal').hidden=true; try{ sessionStorage.setItem(KEY,'1'); }catch(e){} startSol(); };
-  $(v,'#igShow').addEventListener('click',()=>{ show(); setTimeout(()=>{ const st=$(v,'#igStage'); st&&st.scrollIntoView({behavior:'smooth',block:'start'}); },60); });
-  let started=false;
-  function startSol(){ if(started) return; started=true;
-  if(!hasGL){ return; }
-  try{ buildBlock($(v,'#igBuild'),n,o); }catch(e){ console.error(e); }
-  const st=$(v,'#igStage'), M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
-  if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
-  const plane=$(v,'#igPlane'), off=$(v,'#igOff'), offV=$(v,'#igOffV');
-  const MS=MODES.concat(n.sec?[['sec','',{cut:4}]]:[]);
-  /* плоскость A–A: нормаль смотрит на наблюдателя (вверх-влево на главном виде) — та часть и убирается */
-  const SP=n.sec?(()=>{ const [[x1,z1],[x2,z2]]=n.sec.p, t=Math.atan2(z2-z1,x2-x1), nx=-Math.sin(t), nz=Math.cos(t); return {pl:[nx,0,nz,nx*x1+nz*z1],t}; })():null;
-  v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=MS.find(x=>x[0]===b.dataset.m);
-    v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
-    M.S.cut=m[2].cut; M.S.proj=!!m[2].proj; M.S.off=0; if(m[2].cut!==4) M.S.pl=[0,0,1,0]; off.value=0; $(v,'#igPj').hidden=!m[2].proj;
-    if(m[2].proj){ M.S.yaw=Math.atan2(Math.sin(M.S.yaw),Math.cos(M.S.yaw)); M.to({yaw:0.72,pit:0.5,zoom:0.66}); if(!M.S.tex&&!M.S.texLoading){ M.S.texLoading=1; setTimeout(()=>{ try{ const W=760, u=['front','left','top'].map(v=>IG3.drawing(n,v,W).url); M.v.setProj(u,()=>M.draw(false)); }catch(e){ console.error(e); } },30); } }
-    else if(M.S.zoom<0.8) M.S.zoom=1; offV.textContent='0 мм'; plane.hidden=!(m[2].cut===2||m[2].cut===3);
-    const B=n.box, lim=Math.round(m[2].cut===3?B[1][0]:B[1][1])-2; off.min=-lim; off.max=lim;
-    if(m[2].cut===4){ M.S.pl=SP.pl; M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12}); } else if(m[2].cut===2) M.to({yaw:-0.35,pit:0.22}); else if(m[2].cut===3) M.to({yaw:Math.PI/2-0.45,pit:0.22}); else M.draw(false);
-    try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
-  off.addEventListener('input',()=>{ M.S.off=+off.value; offV.textContent=(M.S.cut===2?'y = ':'x = ')+off.value+' мм'; M.draw(true); });
-  const CAM={iso:{yaw:-0.62,pit:0.42,zoom:1},front:{yaw:0,pit:1e-4,zoom:1},top:{yaw:0,pit:Math.PI/2-1e-3,zoom:1},left:{yaw:Math.PI/2,pit:1e-4,zoom:1}};
-  v.querySelectorAll('.igx-cam button').forEach(b=>b.addEventListener('click',()=>M.to(CAM[b.dataset.c])));
-  /* развернуть в чертёж: камера облетает деталь, три вида вылетают на лист */
-  $(v,'#igUnfold').addEventListener('click',e=>{ const sh=$(v,'#igSheet'), btn=e.currentTarget; btn.disabled=true;
-    M.to({yaw:0,pit:1e-4,zoom:1},520);
-    setTimeout(()=>{ let svg=''; try{ svg=sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'); }catch(e){ console.error(e); }
-      const im=sheetImages(n,520);
-      sh.innerHTML=`<div class="igx-sh-h"><b>Чертёж из модели</b><div class="igx-sh-sw" role="tablist"><button class="on" data-sw="dwg">Чертёж</button><button data-sw="ren">Объёмные виды</button></div></div>
-       <div class="igx-sh-p" data-p="dwg"><div class="igx-dwg">${svg}</div><p class="igx-sh-cap">${(()=>{ const sp=igSpec(n), t={half:'половина вида и половина разреза',view:'вид без разреза, с невидимым контуром',full:'полный разрез'}; return 'Главный вид — '+t[sp.F]+'; вид слева — '+t[sp.L]+'. '+(sp.xb||sp.yb?'Ребро на оси симметрии — граница вида и разреза волнистой линией. ':''); })()}${n.sec?`Сечение ${n.sec.L}–${n.sec.L} — фигура в наклонной плоскости в натуральную величину, расположена по направлению стрелок. `:''}${n.hz?`${n.hz.L}–${n.hz.L} — горизонтальный разрез на месте вида сверху. `:''}</p></div>
-       <div class="igx-sh-p" data-p="ren" hidden><div class="igx-sh-g">${VIEWS.map((v,i)=>`<figure class="igx-sh-f f-${v.k}" style="--d:${i*120}ms"><img alt="${v.t}" src="${im[v.k]||''}"><figcaption><b>${v.t}</b><span>${v.d}</span></figcaption></figure>`).join('')}</div></div>`;
-      sh.querySelectorAll('[data-sw]').forEach(b=>b.addEventListener('click',()=>{ sh.querySelectorAll('[data-sw]').forEach(x=>x.classList.toggle('on',x===b)); sh.querySelectorAll('[data-p]').forEach(x=>x.hidden=x.dataset.p!==b.dataset.sw); }));
-      sh.hidden=false; requestAnimationFrame(()=>sh.classList.add('on')); sh.scrollIntoView({behavior:'smooth',block:'start'}); btn.disabled=false; btn.lastChild.textContent='Обновить чертёж'; },560); });
-  }
+  $(v,'#igShow').addEventListener('click',()=>{ show(); setTimeout(()=>{ const t=$(v,'.igx-tabs'); t&&t.scrollIntoView({behavior:'smooth',block:'start'}); },60); });
+  const CAP={cut:'Четверть детали вырезана — видно, что внутри. Штриховка — там, где прошла секущая плоскость.',part:'Деталь целиком.',
+    sec:'Наклонная плоскость А–А срезала деталь. Заштрихованная фигура — то самое сечение, которое строится на листе.',
+    proj:'Деталь в углу плоскостей проекций. На каждой плоскости — её изображение: П₂ — главный вид, П₃ — вид слева, П₁ — вид сверху.'};
+  let started=false, M=null, sheetDone=false;
+  function tab(t){ v.querySelectorAll('.igx-tabs button').forEach(b=>{ const on=b.dataset.t===t; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
+    v.querySelectorAll('#igSol [data-p]').forEach(x=>x.hidden=x.dataset.p!==t);
+    if(t==='3d') start3d(); if(t==='sheet') startSheet(); try{ sessionStorage.setItem(KEY+':t',t); }catch(e){} }
+  v.querySelectorAll('.igx-tabs button').forEach(b=>b.addEventListener('click',()=>{ tab(b.dataset.t); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
+  function startSheet(){ if(sheetDone) return; sheetDone=true; let svg=''; try{ svg=sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'); }catch(e){ console.error(e); }
+    $(v,'#igSheetBox').innerHTML=svg||'<div class="igx-given-l">Лист не построился на этом устройстве.</div>';
+    const sp=igSpec(n), tt={half:'половина вида и половина разреза',view:'вид без разреза, с невидимым контуром',full:'полный разрез'};
+    $(v,'#igSheetCap').textContent='Главный вид — '+tt[sp.F]+'; вид слева — '+tt[sp.L]+'.'+(n.sec?' Сечение '+n.sec.L+'–'+n.sec.L+' — в натуральную величину, по направлению стрелок.':'')+(n.hz?' '+n.hz.L+'–'+n.hz.L+' — горизонтальный разрез на месте вида сверху.':''); }
+  function start3d(){ if(M||!hasGL) return; const st=$(v,'#igStage');
+    M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
+    if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
+    $(v,'#igMcap').textContent=CAP.cut;
+    const SP=n.sec?(()=>{ const [[x1,z1],[x2,z2]]=n.sec.p, t=Math.atan2(z2-z1,x2-x1), nx=-Math.sin(t), nz=Math.cos(t); return {pl:[nx,0,nz,nx*x1+nz*z1],t}; })():null;
+    v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.m;
+      v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
+      M.S.proj=m==='proj'; M.S.res=m==='proj'?0.7:1; M.S.cut={cut:1,part:0,sec:4,proj:0}[m]; M.S.pl=m==='sec'?SP.pl:[0,0,1,0]; $(v,'#igMcap').textContent=CAP[m];
+      if(m==='proj'){ M.to({yaw:0.72,pit:0.5,zoom:0.56}); if(!M.S.tex&&!M.S.texLoading){ M.S.texLoading=1; setTimeout(()=>{ try{ const u=['front','left','top'].map(x=>IG3.drawing(n,x,640).url); M.v.setProj(u,()=>M.draw(false)); }catch(e){ console.error(e); } },30); } }
+      else if(m==='sec') M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12,zoom:1});
+      else M.to({yaw:-0.62,pit:0.42,zoom:1});
+      try{ FX.buzz&&FX.buzz(6); }catch(e){} })); }
+  function startSol(){ if(started) return; started=true; try{ buildBlock($(v,'#igBuild'),n,o); }catch(e){ console.error(e); }
+    let t0='steps'; try{ t0=sessionStorage.getItem(KEY+':t')||'steps'; }catch(e){} if(t0!=='steps') tab(t0); }
   try{ if(sessionStorage.getItem(KEY)) show(); }catch(e){}
   NEXT=null; return o.docTitle;
 }
@@ -24426,7 +24424,7 @@ function wbItem(v,n){
   const i=IG_WB.findIndex(t=>t.n===n); if(i<0){ setTimeout(()=>redir(H('ig','wb')),0); return 'Тетрадь'; }
   const t=IG_WB[i], L=IG_WB.length;
   return partPage(v,{model:t,crumbs:[[SUBJ.ig.name,H('ig')],['Тетрадь',H('ig','wb')],['Задание '+t.n]],title:'Задание '+t.n+'. '+t.title,
-    prev:H('ig','wb',IG_WB[(i-1+L)%L].n),next:H('ig','wb',IG_WB[(i+1)%L].n),docTitle:'Задание '+t.n+' · Тетрадь · '+SUBJ.ig.name,
+    back:[H('ig','wb'),'Все задания'],docTitle:'Задание '+t.n+' · Тетрадь · '+SUBJ.ig.name,
     tb:{name:'Задание '+t.n,sub:t.title,task:'Тетрадь, р. 5'},
     q:t.q, fig:'рис. '+t.fig+', стр. '+t.page,
     bottom:`<div class="igx-why"><b>Как получается ответ.</b> ${t.why}</div>`,
