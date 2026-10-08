@@ -1,5 +1,5 @@
 /* Офлайн: сайт — один файл. Сначала сеть (чтобы обновления приходили), при отсутствии сети — копия из кэша. */
-const C='nachert-v56';
+const C='nachert-v57';
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./index.html','./manifest.webmanifest','./icon-192.png'])).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch',e=>{
