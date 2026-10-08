@@ -24039,7 +24039,7 @@ const inB=(p,b)=>p[0]>=b[0][0]-1e-6&&p[0]<=b[1][0]+1e-6&&p[1]>=b[0][1]-1e-6&&p[1
 /* рёбра модели (от вида не зависят): кэш на модели */
 function edges3(model){ if(model._e3) return model._e3;
   const MB=grow(model.box,1.5), PR=[]; (function w(n){ if(n.k){ if(n.a) w(n.a); n.k.forEach(w); } else PR.push(n); })(model.tree);
-  const SS=[]; PR.forEach(nd=>{ const J=JC(nd), bb=boxI(grow(primBox(nd,MB),0.01),MB); surfsOf(nd).forEach(s=>{ s.J=J; s.bb=bb; SS.push(s); }); });
+  const SS=[]; PR.forEach(nd=>{ const J=JC(nd), bb=boxI(grow(primBox(nd,MB),0.01),MB); surfsOf(nd).forEach(s=>{ s.J=J; s.bb=bb; s.pr=nd; SS.push(s); }); });
   const segs=[];
   for(let i=0;i<SS.length;i++) for(let j=i+1;j<SS.length;j++){ const A=SS[i], B=SS[j], bx=boxI(A.bb,B.bb); if(!boxOk(bx)) continue;
     pairCurves(A,B,bx,(p,q)=>{ if(Math.abs(A.J(...p))<2e-3&&Math.abs(B.J(...p))<2e-3||Math.abs(A.J(...q))<2e-3&&Math.abs(B.J(...q))<2e-3) segs.push({p,q,A,B}); }); }
@@ -24081,9 +24081,33 @@ function dedupe(S){ const G=new Map(), cell=3, acc=[], tol=0.35;
     for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ const k=x+','+y; if(!G.has(k)) G.set(k,[]); G.get(k).push(s); } };
   const cov=(p,dir,h)=>{ const k=Math.floor(p[0]/cell)+','+Math.floor(p[1]/cell); return (G.get(k)||[]).some(s=>{ if(!h&&s.h) return false; const dx=s.b[0]-s.a[0], dy=s.b[1]-s.a[1], l=Math.hypot(dx,dy)||1e-9;
     if(Math.abs(dx*dir[1]-dy*dir[0])/l>0.25) return false; const t=((p[0]-s.a[0])*dx+(p[1]-s.a[1])*dy)/(l*l); if(t<-0.02||t>1.02) return false; return Math.abs((p[0]-s.a[0])*dy-(p[1]-s.a[1])*dx)/l<tol; }); };
-  const out=[]; S.sort((a,b)=>(a.h-b.h)); S.forEach(s=>{ const dx=s.b[0]-s.a[0], dy=s.b[1]-s.a[1], l=Math.hypot(dx,dy); if(l<1e-4) return; const dir=[dx/l,dy/l];
+  const out=[]; S.sort((a,b)=>a.h-b.h); S.forEach(s=>{ const dx=s.b[0]-s.a[0], dy=s.b[1]-s.a[1], l=Math.hypot(dx,dy); if(l<1e-4) return; const dir=[dx/l,dy/l];
     if([0.15,0.5,0.85].every(t=>cov([s.a[0]+dx*t,s.a[1]+dy*t],dir,s.h))) return; add(s); out.push(s); });
   return out; }
+/* элементы детали в порядке построения: сначала тела, потом отверстия и вырезы; одинаковые отверстия на окружности — один элемент */
+function features(model){ if(model._ft) return model._ft; let F=[];
+  const prims=nd=>{ const o=[]; (function w(n){ if(n.k){ if(n.a) w(n.a); n.k.forEach(w); } else o.push(n); })(nd); return o; };
+  (function walk(n,sub){ if(n.t==='s'&&!sub){ walk(n.a,false); n.k.forEach(c=>walk(c,true)); return; } if(n.t==='u'&&!sub){ n.k.forEach(c=>walk(c,false)); return; } F.push({kind:sub?'sub':'add',nd:n,nds:[n],prims:prims(n),n:1}); })(model.tree,false);
+  F=F.filter(f=>f.kind==='add').concat(F.filter(f=>f.kind==='sub'));
+  const b=model.box, d=v=>String(Math.round(v*10)/10).replace('.',','), cnt={3:'трёхгранн',4:'четырёхгранн',5:'пятигранн',6:'шестигранн'}, up=t=>t[0].toUpperCase()+t.slice(1);
+  const nm=f=>{ const p=f.nd;
+    if(f.kind==='add') switch(p.t){ case 'cyl': return 'Цилиндр Ø'+d(2*p.r); case 'cone': return Math.min(p.r0,p.r1)<1?'Конус':'Усечённый конус'; case 'box': return 'Параллелепипед';
+      case 'ngon': return up(cnt[p.n]+'ая призма'); case 'npyr': return up((Math.min(p.s0,p.s1)<1?'':'усечённая ')+(cnt[p.n]||'')+'ая пирамида'); case 'sph': return 'Шар Ø'+d(2*p.r); case 'hcyl': return 'Цилиндр Ø'+d(2*p.r);
+      default: return nm({kind:'add',nd:f.prims[0]})+' со срезами'; }
+    switch(p.t){ case 'cyl': return f.n>1?'Отверстия Ø'+d(2*p.r)+' ('+f.n+' шт.)':'Отверстие Ø'+d(2*p.r); case 'cone': return 'Коническое отверстие';
+      case 'ngon': return p.n===4?'Квадратное отверстие':up(cnt[p.n]+'ое отверстие'); case 'npyr': return 'Пирамидальное отверстие'; case 'hcyl': return 'Поперечное отверстие Ø'+d(2*p.r); case 'sph': return 'Сферическая полость';
+      case 'box': { const t=p.a*Math.PI/180, hx=(Math.abs(Math.cos(t))*p.sx+Math.abs(Math.sin(t))*p.sy)/2, hy=(Math.abs(Math.sin(t))*p.sx+Math.abs(Math.cos(t))*p.sy)/2, B=[[p.x-hx,p.y-hy,p.z0],[p.x+hx,p.y+hy,p.z1]], out=i=>[B[0][i]<b[0][i]-0.3,B[1][i]>b[1][i]+0.3], X=out(0), Y=out(1), Z=out(2), thr=X[0]&&X[1]&&!Y[0]&&!Y[1]||Y[0]&&Y[1]&&!X[0]&&!X[1];
+        if(thr&&(Z[0]||Z[1])) return 'Паз'; if(thr) return 'Сквозное прямоугольное отверстие'; if(X[0]||X[1]||Y[0]||Y[1]||Z[0]||Z[1]) return 'Вырез'; return Math.abs(p.sx-p.sy)<1e-6?'Квадратное отверстие':'Прямоугольное отверстие'; } }
+    return f.prims.some(q=>q.t==='box'&&/Сквозное|Паз/.test(nm({kind:'sub',nd:q})))?'Сквозное отверстие':'Выемка'; };
+  F.forEach(f=>f.name=nm(f));
+  const G=[]; F.forEach(f=>{ const q=G[G.length-1]; if(q&&q.kind==='sub'&&f.kind==='sub'&&q.name0===f.name){ q.prims.push(...f.prims); q.nds.push(f.nd); q.n++; q.name=f.nd.t==='cyl'?'Отверстия Ø'+d(2*f.nd.r)+' ('+q.n+' шт.)':f.name+' ('+q.n+' шт.)'; } else { f.name0=f.name; G.push(f); } });
+  G.forEach((f,i)=>{ f.i=i; });
+  Object.defineProperty(model,'_ft',{value:G}); return G; }
+/* деталь «на шаге i»: тела и отверстия с 0-го по i-й элемент */
+function partial(model,i){ const FT=features(model), A=[], Sb=[]; FT.slice(0,i+1).forEach(f=>(f.kind==='add'?A:Sb).push(...f.nds));
+  const t=A.length>1?{t:'u',k:A}:A[0]; return {tree:Sb.length?{t:'s',a:t,k:Sb}:t,box:model.box}; }
+/* линии → пути SVG: сплошные и штриховые */
+function paths(L){ const f2=v=>v.toFixed(2), path=Q=>Q.map((p,i)=>(i?'L':'M')+f2(p[0])+' '+f2(p[1])).join(''); return {v:chains(L.filter(s=>!s.h),0.45).map(path).join(''),h:chains(L.filter(s=>s.h),0.45).map(path).join('')}; }
 const VIEW={front:{yaw:0,pit:1e-4,cut:1,hid:2},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left0:{yaw:Math.PI/2,pit:1e-4,cut:0,hid:3,full:1},frontF:{yaw:0,pit:1e-4,cut:2},leftF:{yaw:Math.PI/2,pit:1e-4,cut:3},left:{yaw:Math.PI/2,pit:1e-4,cut:5,hid:3},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}};
 /* вид модели: {svg, url, px} — px переводит точку (мм) в координаты картинки W×W */
 function drawing(model,view,W,off,bnd){
@@ -24118,11 +24142,11 @@ function draw1(model,view,W,off,bnd){ const V=VIEW[view], E3=edges3(model), J=jc
   const st=(p,A,B)=>{ if(!valid(p,A,B)) return 0; if(seen(p)) return 1; return V.hid&&px(p)[0]<half-1.5?2:0; };
   const S2=[], tok={};   /* состояние точки считаем один раз за вызов */
   SG.forEach(g=>{ if(g.A.face===0||g.B&&g.B.face===0) return; const sp=g.p._v===tok?g.p._s:(g.p._v=tok,g.p._s=st(g.p,g.A,g.B)), sq_=g.q._v===tok?g.q._s:(g.q._v=tok,g.q._s=st(g.q,g.A,g.B));
-    const put=(a,c,s)=>{ if(s) S2.push({a:px(a),b:px(c),h:s===2}); };
+    const put=(a,c,s)=>{ if(s) S2.push({a:px(a),b:px(c),h:s===2,a3:a,b3:c}); };
     if(sp===sq_){ put(g.p,g.q,sp); return; }
     let lo=0, hi=1; const at=t=>[g.p[0]+(g.q[0]-g.p[0])*t,g.p[1]+(g.q[1]-g.p[1])*t,g.p[2]+(g.q[2]-g.p[2])*t];
     for(let k=0;k<7;k++){ const m=(lo+hi)/2; if(st(at(m),g.A,g.B)===sp) lo=m; else hi=m; } const m=at((lo+hi)/2); put(g.p,m,sp); put(m,g.q,sq_); });
-  const SD=dedupe(S2), f2=v=>v.toFixed(2), path=L=>L.map((p,i)=>(i?'L':'M')+f2(p[0])+' '+f2(p[1])).join('');
+  const SD=dedupe(S2.slice()), f2=v=>v.toFixed(2), path=L=>L.map((p,i)=>(i?'L':'M')+f2(p[0])+' '+f2(p[1])).join('');
   const vis=chains(SD.filter(s=>!s.h),0.45).map(path).join(''), hid=chains(SD.filter(s=>s.h),0.45).map(path).join('');
   /* штриховка сечения на секущей плоскости */
   let hat='';
@@ -24138,8 +24162,8 @@ function draw1(model,view,W,off,bnd){ const V=VIEW[view], E3=edges3(model), J=jc
     +(hat?`<defs><pattern id="h" patternUnits="userSpaceOnUse" width="${f2(hs)}" height="${f2(hs)}" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${f2(hs)}" stroke="#111" stroke-width="${f2(sw*0.32)}"/></pattern></defs><path d="${hat}" fill="url(#h)" fill-rule="evenodd"/>`:'')
     +(hid?`<path d="${hid}" fill="none" stroke="#111" stroke-width="${f2(sw*0.45)}" stroke-dasharray="${f2(W/62)} ${f2(W/170)}" stroke-linecap="butt"/>`:'')
     +`<path d="${vis}" fill="none" stroke="#111" stroke-width="${f2(sw)}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  return {svg,W,px,box:b,url:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}; }
-return {P,J,G,viewer,section,drawing};
+  return {svg,W,px,box:b,url:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),lines:SD,sw}; }
+return {P,J,G,viewer,section,drawing,features,partial,paths};
 })();
 
 /* ═════════ IG_VARS: 30 вариантов задачи 2 «Построение изображений» ═════════
@@ -24456,10 +24480,8 @@ function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(
 function wavy(Pa,Pb){ const dx=Pb[0]-Pa[0], dy=Pb[1]-Pa[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, n=Math.max(4,Math.round(L/16)); let d=`M${Pa[0].toFixed(1)},${Pa[1].toFixed(1)}`;
   for(let i=1;i<=n;i++){ const t=i/n, m=(i-.5)/n, a=(i%2?3.2:-3.2); d+=` Q${(Pa[0]+dx*m-uy*a).toFixed(1)},${(Pa[1]+dy*m+ux*a).toFixed(1)} ${(Pa[0]+dx*t).toFixed(1)},${(Pa[1]+dy*t).toFixed(1)}`; }
   return `<path d="${d}" fill="none" stroke="#111" stroke-width="1"/>`; }
-/* ── построение по шагам: как на бумаге — главный вид и вид сверху даны, вид слева строится по линиям связи ──
-   Все виды в одном масштабе и с общим центром (IG3.drawing), поэтому линии связи точно горизонтальны/вертикальны,
-   а постоянная прямая — ровно 45°. Характерные точки берутся из модели: уровни z примитивов и
-   наибольшая глубина |y| сплошного тела на каждом уровне (поиск по функции расстояния IG3.J). */
+/* ── характерные точки очерка (для развёртки): уровни z примитивов и наибольшая глубина |y| тела на каждом уровне.
+   Все виды в одном масштабе и с общим центром (IG3.drawing), поэтому линии связи точно горизонтальны и вертикальны. */
 function keyPts(model){
   const b=model.box, J=IG3.J, T=model.tree, zs=new Set([b[0][2],b[1][2]]);
   (function w(n){ if(!n) return; if(n.z0!=null&&n.z1!=null){ [n.z0,n.z1].forEach(z=>{ if(z>b[0][2]+0.3&&z<b[1][2]-0.3) zs.add(Math.round(z*2)/2); }); } (n.k||[]).forEach(w); if(n.a) w(n.a); })(T);
@@ -24471,61 +24493,78 @@ function keyPts(model){
       if(!out.some(p=>Math.abs(p.z-z)<0.6&&Math.abs(p.y-q.y)<0.8)) out.push({z,y:q.y,x:q.x}); }); }); });
   return out;
 }
-function stepsSVG(model,k){
-  const W=900, S=420, k0=S/W, X0=20, Y0=16, TOPY=Y0+S-20, PW=2*S+2*X0, PH=TOPY+S+6;
-  const D=stepsSVG.cache&&stepsSVG.cache.m===model?stepsSVG.cache.D:null;
-  const d=D||{front0:IG3.drawing(model,'front0',W),top:IG3.drawing(model,'top',W),left0:IG3.drawing(model,'left0',W),front:IG3.drawing(model,igSpec(model).fk,W,0,igSpec(model).xb),left:IG3.drawing(model,igSpec(model).lk,W,0,igSpec(model).yb)};
-  stepsSVG.cache={m:model,D:d}; if(!d.front0) return '';
+/* ── шаги построения: вид слева строим по элементам детали — сначала тела, потом отверстия и вырезы ── */
+/* линии вида слева на шаге i: детали «на этот момент»; новые — те, которых не было на прошлом шаге */
+function stepLines(model,i){ const c=model._sl||(Object.defineProperty(model,'_sl',{value:{}}),model._sl); if(c[i]) return c[i];
+  const pm=j=>c['m'+j]||(c['m'+j]=IG3.drawing(IG3.partial(model,j),'left0',900).lines), cur=pm(i), prev=i>0?pm(i-1):[];
+  const G=new Map(), K=(x,y)=>Math.floor(x/3)+','+Math.floor(y/3); prev.forEach(s=>[s.a,s.b,[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2]].forEach(p=>{ const k=K(p[0],p[1]); if(!G.has(k)) G.set(k,[]); G.get(k).push(s); }));
+  const was=s=>[0.25,0.5,0.75].every(t=>{ const p=[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t]; for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) for(const q of G.get((Math.floor(p[0]/3)+dx)+','+(Math.floor(p[1]/3)+dy))||[]){
+      if(q.h!==s.h) continue; const ux=q.b[0]-q.a[0], uy=q.b[1]-q.a[1], l=Math.hypot(ux,uy)||1e-9, u=((p[0]-q.a[0])*ux+(p[1]-q.a[1])*uy)/(l*l); if(u>-0.02&&u<1.02&&Math.abs((p[0]-q.a[0])*uy-(p[1]-q.a[1])*ux)/l<0.5) return true; } return false; });
+  const nw=cur.filter(s=>!was(s)), old=cur.filter(s=>was(s));
+  return c[i]={old:IG3.paths(old),cur:IG3.paths(nw),segs:nw}; }
+function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано','Главный вид и вид сверху — из задания. Вид слева строим справа от главного вида, на одной высоте с ним.'],
+   ['axis','Ось симметрии вида слева','Сначала проводим ось симметрии вида слева — от неё будем откладывать глубины. Высоты общие с главным видом.']];
+  let first=true;
+  FT.forEach((f,i)=>{ const u=stepLines(model,i); if(!u.segs.length) return;   /* элемент не добавляет линий на виде слева — шаг не нужен */
+    const hid=u.segs.every(q=>q.h), vis=u.segs.every(q=>!q.h);
+    const how=first?'Высоту каждой точки (1″, 2″, …) переносим с главного вида горизонтальной линией связи. Глубину — расстояние от оси до точки на виде сверху (1′, 2′, …) — откладываем от оси вида слева. Получаем 1‴, 2‴, … и соединяем.'
+      :'Точки — так же: высота с главного вида, глубина с вида сверху от оси.';
+    out.push(['feat',f.name,how+(hid?' Элемент внутри детали — его линии невидимы, проводим штриховой.':vis?'':' Видимые части — сплошной линией, невидимые — штриховой.'),i]); first=false; });
+  out.push(['cut','Разрезы','Внутреннюю форму показываем разрезами. Симметричное изображение — половина вида и половина разреза, граница по оси (если на ось попадает ребро — волнистой линией). Несимметричная деталь — полный разрез. В секущей плоскости — штриховка 45°.']);
+  if(model.sec) out.push(['sec','Сечение '+model.sec.L+'–'+model.sec.L,'Наклонная плоскость задана следом на главном виде. Точки контура переносим перпендикулярно следу — фигура строится в натуральную величину, со штриховкой.']);
+  out.push(['sheet','Готовый лист','Все изображения на листе в проекционной связи, с осями, размерами и основной надписью.']);
+  return out; }
+/* характерные точки элемента на виде слева: верхний и нижний уровни и излом между ними; на каждом уровне — ближайшая к нам точка контура */
+function featPts(segs){ const P=[]; segs.forEach(q=>{ P.push(q.a3,q.b3); }); if(!P.length) return [];
+  const zs=P.map(p=>p[2]), lo=Math.min(...zs), hi=Math.max(...zs), lv=new Set([hi,lo].map(z=>Math.round(z*10)/10));
+  segs.forEach(q=>{ if(Math.abs(q.a3[2]-q.b3[2])<1e-6) lv.add(Math.round(q.a3[2]*10)/10); });
+  let L=[...lv].sort((a,b)=>b-a); if(L.length>3) L=[L[0],L[Math.floor(L.length/2)],L[L.length-1]];
+  /* на уровне — ближайшая к нам точка; если сзади глубина другая (элемент несимметричен) — и задняя */
+  const out=[], put=p=>{ if(!out.some(q=>Math.abs(q[1]-p[1])<0.5&&Math.abs(q[2]-p[2])<0.5)) out.push(p); };
+  L.forEach(z=>{ const c=P.filter(p=>Math.abs(p[2]-z)<0.06); if(!c.length) return; c.sort((a,b)=>a[1]-b[1]); const fr=c[0], bk=c[c.length-1];
+    if(fr[1]<-0.05) put(fr); if(bk[1]>0.05&&(fr[1]>-0.05||Math.abs(bk[1]+fr[1])>0.5)) put(bk); });
+  return out.slice(0,4); }
+function stepsSVG(model,st,steps){
+  const W=900, S=420, k0=S/W, X0=20, Y0=16, TOPY=Y0+S-20, PW=2*S+2*X0, PH=TOPY+S+6, kind=st[0], sp=igSpec(model);
+  const d={front0:IG3.drawing(model,'front0',W),top:IG3.drawing(model,'top',W),left0:IG3.drawing(model,'left0',W),front:IG3.drawing(model,sp.fk,W,0,sp.xb),left:IG3.drawing(model,sp.lk,W,0,sp.yb)}; if(!d.front0) return '';
   const P=(v,q,ox,oy)=>{ const t=d[v].px(q); return [ox+t[0]*k0,oy+t[1]*k0]; }, f=v=>Math.round(v*10)/10;
   const FR=q=>P('front0',q,X0,Y0), TP=q=>P('top',q,X0,TOPY), LF=q=>P('left0',q,X0+S,Y0);
   const L=(a,c,cl,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${cl}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
-  const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="4.5" fill="${cl}"/>`, LB=[], lab=(q,t,cl,dx,dy)=>LB.some(z=>Math.hypot(z[0]-q[0],z[1]-q[1])<14)?'':(LB.push(q),0)||`<text x="${f(q[0]+(dx||7)*1.5)}" y="${f(q[1]+(dy||-5)*1.6)}" class="igs-k" fill="${cl}">${t}</text>`;
-  const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2];
-  /* только передние точки очерка (деталь симметрична — задние повторяют их), не больше шести — чертёж не перегружаем */
-  const pts=(()=>{ const a=keyPts(model).filter(p=>p.y<0).sort((p,q)=>p.z-q.z||q.y-p.y);
-    /* вершины очерка: точку на прямом участке (на одной прямой с соседями) не нумеруем */
-    const v=a.filter((p,i)=>{ if(i===0||i===a.length-1) return true; const q=a[i-1], r=a[i+1]; return Math.abs((p.y-q.y)*(r.z-q.z)-(r.y-q.y)*(p.z-q.z))>0.5*Math.hypot(r.y-q.y,r.z-q.z); });
-    return v.slice(0,7); })(), cL=LF([0,0,0])[0], cT=TP([0,0,z1])[1];
+  const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="3.6" fill="${cl}"/>`, LB=[], lab=(q,t,cl,dx,dy)=>{ let x=q[0]+dx, y=q[1]+dy; while(LB.some(z=>Math.abs(z[0]-x)<24&&Math.abs(z[1]-y)<14)) y+=14; LB.push([x,y]); return `<text x="${f(x)}" y="${f(y)}" class="igs-k" fill="${cl}">${t}</text>`; };
+  const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2], cut=kind==='cut'||kind==='sec';
   let o='';
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
-  o+=img(k>=6?'front':'front0',X0,Y0)+img('top',X0,TOPY);
-  if(k>=5) o+=img(k>=6?'left':'left0',X0+S,Y0);
-  /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
-  if(k>=6){ const sp=igSpec(model); if(sp.xb) o+=wavy(P('front',[sp.xb,0,z0+0.5],X0,Y0),P('front',[sp.xb,0,z1-0.5],X0,Y0)); if(sp.yb) o+=wavy(P('left',[0,sp.yb,z0+0.5],X0+S,Y0),P('left',[0,sp.yb,z1-0.5],X0+S,Y0)); }
+  o+=img(cut?'front':'front0',X0,Y0)+img('top',X0,TOPY);
+  if(cut){ o+=img('left',X0+S,Y0);
+    /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
+    if(sp.xb) o+=wavy(P('front',[sp.xb,0,z0+0.5],X0,Y0),P('front',[sp.xb,0,z1-0.5],X0,Y0)); if(sp.yb) o+=wavy(P('left',[0,sp.yb,z0+0.5],X0+S,Y0),P('left',[0,sp.yb,z1-0.5],X0+S,Y0)); }
+  /* вид слева по элементам: построенные раньше — чёрным, текущий — цветом */
+  let view='';
+  if(kind==='feat'){ const u=stepLines(model,st[3]), sw=d.left0.sw, g=(pp,cl)=>(pp.h?`<path d="${pp.h}" fill="none" stroke="${cl}" stroke-width="${f(sw*(cl==='#111'?0.45:0.65))}" stroke-dasharray="${f(W/62)} ${f(W/170)}"/>`:'')+(pp.v?`<path d="${pp.v}" fill="none" stroke="${cl}" stroke-width="${f(sw)}" stroke-linecap="round" stroke-linejoin="round"/>`:'');
+    view=`<g transform="translate(${X0+S} ${Y0}) scale(${k0})">${g(u.old,'#111')}${g(u.cur,HL)}</g>`; }
   /* оси симметрии */
   const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
   const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0]; o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
-  /* безосный способ: базы — оси симметрии; глубины откладываем от оси, постоянная прямая не нужна */
-  if(k>=2){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,k>=5?'#111':AC,AX,k>=5?.7:1); }
-  const fade=k>=5?' opacity=".3"':'';
-  /* одна и та же точка тела P(x, −y, z) на трёх видах: P″ — на главном, P′ — на виде сверху, P‴ — на виде слева */
-  const tick=(a,c)=>{ const dx=c[0]-a[0], dy=c[1]-a[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*5, ny=dx/l*5; return [a,c].map(q=>L([q[0]-nx,q[1]-ny],[q[0]+nx,q[1]+ny],AC,null,1)).join(''); };
-  if(k>=3&&k<7){ let g=''; pts.forEach((p,i)=>{ const Af=FR([p.x,p.y,p.z]), Lx=LF([0,p.y,p.z]);
-      g+=L(Af,[Math.max(Lx[0],cL)+14,Af[1]],AC,null,.7)+(k<5?dot(Af,'#111')+lab(Af,(i+1)+'″','#111',4,-4):''); });
-    o+=`<g${fade}>${g}</g>`; }
-  /* глубина точки: от оси симметрии вида сверху до точки — то же расстояние от оси вида слева по линии высоты */
-  if(k>=4&&k<7){ let g=''; pts.forEach((p,i)=>{ const T=TP([p.x,p.y,z1]), Lp=LF([0,p.y,p.z]), L0=[cL,Lp[1]];
-      /* на виде сверху расстояние показываем размерной линией левее оси — иначе она легла бы на саму ось */
-      const ox=T[0]-16-i*11, D0=[ox,cT], D1=[ox,T[1]];
-      g+=(k<5?L([T[0]-3,T[1]],[ox-4,T[1]],AC,null,.6)+L([T[0]-3,cT],[ox-4,cT],AC,null,.6)+L(D0,D1,AC,null,1.2)+tick(D0,D1):'')+L(L0,Lp,AC,null,1.2)+(k<5?tick(L0,Lp)+dot(T,'#111')+lab(T,(i+1)+'′','#111',4,12)+dot(Lp,HL)+lab(Lp,(i+1)+'‴',HL):''); });
-    o+=`<g${fade}>${g}</g>`; }
-  if(k>=7&&model.sec){ const [[x1,za],[x2,zb]]=model.sec.p, Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10; o+=secMark(FR([x1,0,za]),FR([x2,0,zb]),Km,model.sec.L,HL);
+  if(kind!=='given'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
+  /* точки текущего элемента: P″ на главном виде, P′ на виде сверху, P‴ на виде слева.
+     Высота — горизонтальной линией связи; глубина |y| — от оси вида сверху до P′, тот же отрезок — от оси вида слева до P‴ (засечки — равные отрезки) */
+  if(kind==='feat'){ const pts=featPts(stepLines(model,st[3]).segs); let n0=0; steps.slice(0,steps.indexOf(st)).forEach(q=>{ if(q[0]==='feat') n0+=featPts(stepLines(model,q[3]).segs).length; });
+    const tick=(a,c)=>{ const dx=c[0]-a[0], dy=c[1]-a[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*4, ny=dx/l*4; return [a,c].map(q=>L([q[0]-nx,q[1]-ny],[q[0]+nx,q[1]+ny],AC,null,1.2)).join(''); };
+    let g='', t='';
+    pts.forEach((p,i)=>{ const n=n0+i+1, A2=FR(p), A1=TP(p), A3=LF(p), T0=TP([p[0],0,p[2]]), L0=LF([0,0,p[2]]);
+      g+=L(A2,A3,AC,null,.8);
+      if(Math.abs(p[1])>0.3) g+=L(T0,A1,AC,null,1.8)+L(L0,A3,AC,null,1.8)+tick(T0,A1)+tick(L0,A3);
+      t+=dot(A2,'#111')+dot(A1,'#111')+dot(A3,HL)+lab(A2,n+'″','#111',5,-6)+lab(A1,n+'′','#111',6,14)+lab(A3,n+'‴',HL,6,-6); });
+    o+=g+view+t; view=''; }   /* построения под линиями вида, точки и подписи — поверх */
+  o+=view;
+  if(kind==='sec'){ const [[x1,za],[x2,zb]]=model.sec.p, Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10; o+=secMark(P('front',[x1,0,za],X0,Y0),P('front',[x2,0,zb],X0,Y0),Km,model.sec.L,HL);
     const F=secFig(model,model.sec,Km*0.8), [bx0,by0,bx9,by9]=F.box, cx=X0+S+S*0.62-(bx0+bx9)/2, cy=TOPY+S*0.55-(by0+by9)/2;
     o+=`<defs><pattern id="igStH" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#111" stroke-width=".7"/></pattern></defs>`
       +`<text x="${f(cx+(bx0+bx9)/2)}" y="${f(cy+by0-12)}" class="igs-let" text-anchor="middle" style="font-size:24px">${model.sec.L}–${model.sec.L}</text><path transform="translate(${f(cx)} ${f(cy)})" d="${F.d}" fill="url(#igStH)" fill-rule="evenodd" stroke="#111" stroke-width="1.5"/>`; }
-  return `<svg class="igs-sheet igs-steps" viewBox="0 0 ${PW} ${f(PH)}" role="img" aria-label="Построение по шагам, шаг ${k}"><rect x="2" y="2" width="${PW-4}" height="${f(PH-4)}" fill="#fff" stroke="#111" stroke-width="1"/>${o}</svg>`;
+  return `<svg class="igs-sheet igs-steps" viewBox="0 0 ${PW} ${f(PH)}" role="img" aria-label="Построение по шагам: ${st[1]}"><rect x="2" y="2" width="${PW-4}" height="${f(PH-4)}" fill="#fff" stroke="#111" stroke-width="1"/>${o}</svg>`;
 }
-const BUILD=[
- ['Дано','Главный вид и вид сверху — из задания. Вид слева строим справа от главного вида, на одной высоте с ним.'],
- ['Ось симметрии вида слева','Вид слева строим справа от главного вида. Сначала проводим его ось симметрии — от неё будем откладывать глубины.'],
- ['Высоты — с главного вида','Каждую характерную точку очерка (1″, 2″, …) переносим на вид слева горизонтальной линией связи: высота точки на всех видах одна.'],
- ['Глубины — от оси симметрии','На виде сверху измеряем расстояние от оси симметрии до точки (1′, 2′, …) и откладываем его от оси вида слева на линии высоты — получаем 1‴, 2‴, … Засечки отмечают равные отрезки.'],
- ['Контур вида слева','Соединяем точки — получаем внешний контур. Отверстия и полости, которые не видны снаружи, показаны штрихом.'],
- ['Разрезы','Внутреннюю форму показываем разрезами. Симметричное изображение — половина вида и половина разреза, граница по оси (если на ось попадает ребро — волнистой линией). Несимметричная деталь — полный разрез. В секущей плоскости — штриховка 45°.'],
- ['Сечение А–А','Наклонная плоскость задана следом на главном виде. Точки контура переносим перпендикулярно следу — фигура строится в натуральную величину, со штриховкой.'],
- ['Готовый лист','Все изображения на листе в проекционной связи, с осями, размерами и основной надписью.']];
 function buildBlock(host,model,o){
-  const N=BUILD.length-(model.sec?0:1); let k=1, all=false;
+  const ST=buildSteps(model), N=ST.length; let k=1;
   /* компактно, всё на одном экране телефона: сверху навигация и название шага, ниже чертёж, под ним — пояснение */
   host.innerHTML=`
    <div class="igb-ctl"><button class="igb-b" id="igbPrev" aria-label="Назад">‹</button><div class="igb-t"><small id="igbN"></small><b id="igbTt"></b></div><button class="igb-b pri" id="igbNext" aria-label="Дальше">›</button></div>
@@ -24533,10 +24572,10 @@ function buildBlock(host,model,o){
    <div class="igb-pic" id="igbPic"></div>
    <p class="igb-d" id="igbD"></p>`;
   const pic=host.querySelector('#igbPic');
-  const show=()=>{ const kk=all?N:k, idx=model.sec||kk<7?kk:kk+1, last=kk===N;
-    let svg=''; try{ svg=last?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,model.sec||kk<7?kk:kk); }catch(e){ console.error(e); }
+  const show=()=>{ const kk=k, st=ST[kk-1];
+    let svg=''; try{ svg=st[0]==='sheet'?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,st,ST); }catch(e){ console.error(e); }
     pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
-    const st=BUILD[last?BUILD.length-1:kk-1]; host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[0]; host.querySelector('#igbD').textContent=st[1];
+    host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[1]; host.querySelector('#igbD').textContent=st[2];
     host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); }); };
   host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ k=+b.dataset.k; show(); }));
   host.querySelector('#igbPrev').addEventListener('click',()=>{ k=Math.max(1,k-1); show(); });
