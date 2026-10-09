@@ -218,8 +218,8 @@ body.inplayer .ckn{display:none}
   --ink:#0f1420; --ink2:#3b4354; --mut:#5d6577; --mut2:#8b93a5;
   --line:#e3e6ed; --line2:#cdd2dd;
   --blue:#2340c8; --blue-s:#eaeeff; --acc:#2340c8; --acc-h:#1a33ab; --on-acc:#fff;
-  --red:#b93a10; --red-s:#fdeee7;
-  --green:#0d7a3e;--green-s:#e8f6ee;
+  --red:#9b2335; --red-s:#f8e9ec;
+  --green:#3a7a55;--green-s:#edf5f0;
   --amber:#a15a05;
   --r:12px; --r2:18px;
   --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
@@ -239,7 +239,7 @@ body.inplayer .ckn{display:none}
   --ink:#eaeef6; --ink2:#bcc4d4; --mut:#98a1b4; --mut2:#6c7589;
   --line:#222a38; --line2:#323c4f;
   --blue:#8ba7ff; --blue-s:#16203a; --acc:#4463ea; --acc-h:#5573f2; --on-acc:#fff;
-  --red:#f59268;  --red-s:#2a1a14;
+  --red:#e8798a;  --red-s:#2a1419;
   --green:#5fd191;--green-s:#122519;
   --amber:#e6ac52;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
@@ -23345,8 +23345,8 @@ function viewHome(v){
     <a class="hq-t ig" href="${H('ig','wb')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.nb}</svg></span><b>Рабочая тетрадь</b><span>тела со сквозными отверстиями</span></a>
     <a class="hq-t ig" href="${H('ig','theory')}"><span class="hq-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC.th}</svg></span><b>Теория ЕСКД</b><span>виды, разрезы, сечения, штриховка</span></a>
    </nav>
-   ${dayCardHTML()}
    <div class="hpop"><div class="hpop-t"><b>Скинь одногруппникам</b><span>Вместе к РК проще — в один тап</span></div>${FX.viewsHTML()}${FX.juicyBtn('hpop-sh')}</div>
+   ${dayCardHTML()}
    <h2 class="rowh hrow-h">Чаще всего ищут</h2>
    <div class="row hrow" role="list">${[['visibility','Видимость: что видно, а что нет'],['true-length','Натуральная величина отрезка'],['plane-traces','Следы плоскости'],['point-epure','Как строить точки на эпюре'],['line-plane-meet','Точка пересечения прямой и плоскости'],['perp-theorem','Теорема о прямом угле']].filter(x=>!window.TOPICS||TOPICS.get(x[0])).map((x,i)=>`<a role="listitem" class="rc c${i%4}" href="${H('topic',x[0])}"><em>ТЕМА</em><b>${x[1]}</b><i>Разобрать →</i></a>`).join('')}</div>
   </div>`;
