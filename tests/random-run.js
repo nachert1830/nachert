@@ -67,7 +67,7 @@ async function runVariants(page,seeds){
   }
   return res;
 }
-module.exports={runVariants};
+module.exports={runVariants,isolate};
 if(require.main===module)(async()=>{
   const srv=await serve(), URL='http://127.0.0.1:'+srv.address().port+'/';
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
