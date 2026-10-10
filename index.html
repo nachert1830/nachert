@@ -2477,7 +2477,7 @@ body .pl-zoom .pl-zb.t3btn:hover{filter:brightness(1.08)}body .pl-zoom .pl-zb.t3
 @keyframes t3shine{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
 @keyframes t3pop{from{transform:scale(.6);opacity:0}}
 @media (prefers-reduced-motion:reduce){body .pl-zoom .pl-zb.t3btn,body .pl-zoom .pl-zb.t3btn::after{animation:none}}
-body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px;align-self:flex-start}
+body.owner .brand{position:relative}body.owner .brand::after{content:"";position:absolute;right:-12px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--green)}
 .gy-root{display:grid;gap:14px;margin-top:6px}
 .gy-load{padding:28px;text-align:center;color:var(--mut);font-size:15px}
 .gy-why{font-size:14px;line-height:1.55;color:var(--ink2);background:var(--surf2);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
@@ -6998,7 +6998,7 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
 const SITE_URL='https://nachert1830.ru', DOC_DATE='3 октября 2026 г.';
 const mail=()=>CONTACT?`<a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:'e-mail оператора';
 const blk=(h,t)=>`<div><h4>${h}</h4>${t.replace(/<ul class="ab-ul">/g,'<ul class="ab-ul" style="margin:6px 0;font-size:14px;line-height:1.55;color:var(--ink2)">')}</div>`;
-const DATA_LIST='<ul class="ab-ul"><li>файлы cookie и идентификаторы, которые ставит Яндекс Метрика;</li><li>IP-адрес;</li><li>сведения о браузере и устройстве: тип и модель устройства, операционная система, браузер, разрешение и язык экрана;</li><li>просмотренные страницы, адрес перехода на сайт, дата и время посещения;</li><li>действия на сайте: клики (включая карту кликов), прокрутка, переходы по ссылкам.</li></ul>';
+const DATA_LIST='<ul class="ab-ul"><li>файлы cookie и идентификаторы, которые ставит Яндекс Метрика;</li><li>IP-адрес;</li><li>сведения о браузере и устройстве: тип и модель устройства, операционная система, браузер, разрешение и язык экрана;</li><li>просмотренные страницы, адрес перехода на сайт, дата и время посещения;</li><li>действия на сайте: клики (включая карту кликов), прокрутка, переходы по ссылкам;</li><li>учебные события без идентификаторов — когда решение задачи не получилось: номер задачи, номер шага и тип ошибки (например, «метод» или «линия связи»). Тексты ответов, варианты данных и прогресс не отправляются.</li></ul>';
 window.PANES.privacy={title:'Политика обработки персональных данных',render(root){
   root.innerHTML=`<div class="eyebrow">Документ</div>
   <h1 style="margin-bottom:10px">Политика обработки персональных данных</h1>
@@ -21703,6 +21703,8 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'3.2',d:'10 октября 2026',items:['Политика обработки данных: точный список учебных событий, которые при вашем согласии уходят в Яндекс Метрику, — номер задачи, шаг и тип ошибки, без текстов ответов.'],
+   hidden:[{flag:'mastery',t:'Мастерство: 22 навыка с уровнями 0–4 вместо «пройдено шагов», карта курса с туманом, тетрадь мастера, перенос прогресса кодом, QR и файлом'},{flag:'review',t:'«Занятие на 10 минут»: забег из 4–6 задач вперемешку по модели повторения (интервалы ≈ 1 → 3 → 8 → 18 → 38 дней), «С чего начать?» с уверенностью, затухающие шаги, вызов друга по ссылке'},{flag:'feed',t:'Лента микрозадач: блоки по 5 карточек одной темы, пауза-итог после каждых 10, перерыв после 30'},{flag:'quests',t:'Серия дней с заморозками, серия недель, 15 достижений, неожиданные находки, недельная сводка'}]},
   {v:'3.1',d:'8 октября 2026',items:['Два предмета — два раздела: «Начерт» и «Инж. графика» (бета) переключаются в шапке, у каждого своё нижнее меню; на главной они разделены.','3D в палитре сайта: оливковая деталь, бордовая штриховка, песочные плоскости. Новая анимация перехода от 3D к эпюру: лучи проецирования, поочерёдный разворот плоскостей с подсветкой осей.','Задачи тетради № 51–67 (замена плоскостей и вращение): кнопка «▶ Способ» — анимация способа в пространстве.','Развёртка: в конце чертёж без осей, как на листе; анимации решения замедлены. В 3D деталь показана вместе с точкой A, её проекциями и лучами к плоскостям (кнопка «Точка A»).','Telegram и Safari: при вращении детали страница не сдвигается; уведомление о cookie стало компактнее; шапка помещается на узких экранах.']},
   {v:'3.0',d:'8 октября 2026',rel:'ig',items:['Инженерная графика открыта. ДЗ 2 «Построение изображений» — все 30 вариантов: исходный чертёж задания, деталь в 3D, живые разрезы, сечение А–А наклонной плоскостью и классический чертёж из модели — главный вид и вид слева с разрезами, вид сверху, сечение в натуральную величину. Отметь «мой вариант» — сайт откроет его сразу.','Рабочая тетрадь по ИГ: десять тел с отверстиями (рис. 61–70) — задание, 3D и разрезы. Теория по ЕСКД: форматы, линии, виды, разрезы, сечения, штриховка.','3D-модель решения — у 80 задач тетради по начертательной геометрии.']},
   {v:'2.8',d:'8 октября 2026',items:['Чертежи в спокойной палитре: плоскости проекций — бежевые, построения — синие, искомое — тёмно-красное. Меньше ярких цветов, чертёж читается легче.']},
@@ -21730,7 +21732,11 @@ window.CHANGES=[
 window.FLAGS=(function(){
 const KEY='6d7f183c72efaf3d7b8fb7022cfb3797011bff7c57afeb515571c1f4d0839179';
 const LIST={ig:{t:'Инженерная графика: ДЗ 2 в 3D',d:'Новый раздел: 30 вариантов задачи «Построение изображений» — 3D-модели, живые разрезы, развёртка в три вида.'},
-  build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'}};
+  build:{t:'Тренажёр: «Построй сам»',d:'Отметить ответ на чертеже — сайт проверит. Неточно на телефоне, ждёт переделки на инструменты построения.'},
+  mastery:{t:'Мастерство: навыки и карта курса',d:'22 навыка с уровнями 0–4, кольцо мастерства на главной и в шапке, карта курса (#/map), тетрадь мастера (#/collection), перенос прогресса кодом и файлом (#/sync).'},
+  review:{t:'Занятие на 10 минут',d:'Забег #/run: повторение в срок, задачи «на грани» и новый навык вперемешку; «С чего начать?» с уверенностью, затухающие шаги, «Найди ошибку». Повторение #/review, вызов друга по ссылке.'},
+  feed:{t:'Лента микрозадач',d:'#/feed: «Какой метод?», «Что дальше?», «Верно или нет?», «Где ошибка?» — блоки по 5 карточек одной темы, пауза-итог после каждых 10.'},
+  quests:{t:'Серия, достижения, неделя',d:'Серия дней с двумя заморозками и вехами, серия недель, 15 достижений за полезное поведение, неожиданные находки в конце забега, недельная сводка #/week.'}};
 function sha256(s){ const K=[],H=[]; let p=2; const isP=n=>{ for(let f=2;f*f<=n;f++) if(n%f===0) return false; return true; };
   for(let i=0;i<64;p++){ if(isP(p)){ if(i<8) H[i]=(Math.pow(p,1/2)*4294967296)|0; K[i++]=(Math.pow(p,1/3)*4294967296)|0; } }
   const r=(v,n)=>(v>>>n)|(v<<(32-n)); const b=unescape(encodeURIComponent(s)); const w=[], L=b.length*8;
@@ -21763,6 +21769,7 @@ function view(v,r){
   v.innerHTML=pageHTML({crumbs:[['Режим владельца']],next:null,noBottom:true,body:`
    <div class="intro">${CATSAY('wave','','')}<h1>Режим владельца</h1><p class="lead">Видишь только ты, на этом устройстве. Скрытые функции включаются здесь и видны только тебе; остальные видят обычный сайт.</p></div>
    <section class="ow-box"><h2>Скрытые функции</h2>${Object.entries(FLAGS.LIST).map(([k,o])=>sw(k,o)).join('')}</section>
+   ${window.MS&&FLAGS.on('mastery')?MS.ownerHTML():''}
    <section class="ow-box"><h2>Проверка сайта в браузере</h2><p class="ow-m">Та же 3D-проверка чертежей и проверка ответов, что в тестах, — прямо на этом устройстве, по всем задачам.</p>
      <button class="btn pri" id="owRun">Проверить все задачи</button><div id="owOut" class="ow-out"></div></section>
    <section class="ow-box"><h2>Версия</h2><div class="ow-kv" id="owVer"></div></section>
@@ -22664,6 +22671,144 @@ return {view,buildTargets,bugMake,make,lists,frame};
 
 </script>
 
+<style id="ms-css">
+/* ═════════ Мастерство (за флагами владельца). Цвета — только роли docs/color-policy.md:
+   действие — синий, «верно» — зелёный #3a7a55, ошибка/результат — бордо #9b2335, туман — нейтральная штриховка ═════════ */
+:root{--ms-ok:#3a7a55;--ms-res:#9b2335}
+:root[data-theme="dark"]{--ms-ok:color-mix(in srgb,#3a7a55 55%,#fff);--ms-res:color-mix(in srgb,#9b2335 50%,#fff)}
+.ms-row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.ms-row .btn{flex:1 1 auto}
+.ms-two .btn{flex:1 1 0;min-width:0}
+.ms-note{font-size:14px;color:var(--mut);line-height:1.5}
+.ms-h2{font-size:18px;margin:24px 0 8px}
+.ms-ul{margin:0;padding-left:20px;line-height:1.7}
+/* главная */
+.ms-home{display:grid;gap:12px;margin:0 0 18px}
+.ms-cta{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:18px;background:var(--acc);color:var(--on-acc);text-decoration:none;box-shadow:0 10px 26px -14px color-mix(in srgb,var(--acc) 80%,transparent)}
+.ms-cta:hover{background:var(--acc-h)}
+.ms-cta-i{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.18);font-size:20px}
+.ms-cta b{display:block;font:800 19px var(--disp)}.ms-cta small{display:block;font-size:13.5px;opacity:.9;line-height:1.4}
+.ms-back{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--surf);color:var(--ink);text-decoration:none}
+.ms-back .cat{width:64px;height:auto;flex:none}.ms-back b{display:block}.ms-back small{color:var(--ink2);font-size:13.5px}
+.ms-sum{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--surf)}
+.ms-sum .ring{flex:none}.ms-sum b{display:block;font-size:15px;line-height:1.35}.ms-sum span{font-size:13.5px;color:var(--mut)}
+.ms-strk{margin:0;font-size:14px;color:var(--ink2)}
+.ms-links{display:flex;flex-wrap:wrap;gap:8px}
+.ms-links a{padding:7px 12px;border-radius:99px;border:1px solid var(--line2);background:var(--surf);font:600 13.5px var(--sans);color:var(--ink)}
+.ms-links a:hover{border-color:var(--blue);color:var(--blue)}
+/* кольцо уровня: 0 серый контур · 1 синий контур · 2 заливка 40 % · 3 заливка · 4 заливка и зелёная ✓ */
+.ms-ring .ms-rb{fill:none;stroke:var(--line2);stroke-width:9}
+.ms-ring .ms-rf{fill:none;stroke:var(--blue);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .4s var(--ease)}
+.ms-ring.l0 .ms-rf{stroke:none}
+.ms-ring.l2 .ms-rb{fill:color-mix(in srgb,var(--blue) 40%,transparent)}
+.ms-ring.l3 .ms-rb,.ms-ring.l4 .ms-rb{fill:var(--blue)}
+.ms-ring .ms-rt{font:800 30px var(--sans);fill:var(--mut)}
+.ms-ring.l3 .ms-rt{fill:#fff}
+.ms-ring .ms-rk{fill:none;stroke:#fff;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.ms-ring.l4 .ms-rf{stroke:var(--ms-ok)}
+@media(prefers-reduced-motion:reduce){.ms-ring .ms-rf{transition:none}}
+/* забег */
+.ms-run{max-width:760px;margin:0 auto}
+.ms-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ms-list li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surf)}
+.ms-list b{display:block;font-size:15px;line-height:1.35}.ms-list small{color:var(--mut);font-size:13px}
+.ms-dot{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--line2)}
+.ms-dot.l1{border-color:var(--blue)}.ms-dot.l2{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 40%,transparent)}.ms-dot.l3,.ms-dot.l4{border-color:var(--blue);background:var(--blue)}
+.ms-go{width:100%}
+.ms-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.ms-k{font:600 12.5px var(--mono);letter-spacing:.3px;color:var(--mut);text-transform:uppercase;min-width:0;overflow-wrap:anywhere}
+.ms-dots{display:flex;gap:5px}.ms-dots i{width:22px;height:5px;border-radius:3px;background:var(--line2)}.ms-dots i.d{background:var(--blue)}.ms-dots i.c{background:color-mix(in srgb,var(--blue) 45%,transparent)}
+.ms-q{font-size:20px;margin:4px 0 6px}
+.ms-cond{font-size:15.5px;line-height:1.55;color:var(--ink2);overflow-wrap:anywhere}
+details.ms-cond summary{cursor:pointer;list-style:none}details.ms-cond summary span{color:var(--blue);font-weight:600;white-space:nowrap}details.ms-cond[open] summary{display:none}
+.ms-sheet{position:sticky;top:calc(var(--hh) + 4px);z-index:2;margin:12px 0;padding:6px;border-radius:14px;background:var(--sheet);border:1px solid var(--line);overflow:auto}
+.ms-sheet svg{display:block;width:100%;height:auto;max-height:36vh;margin:0 auto}
+.ms-stage{display:grid;gap:4px}
+.ms-mode{font-size:14px;color:var(--ink2);padding:10px 12px;border-radius:12px;background:var(--surf2)}.ms-mode b{display:block;color:var(--ink)}
+.ms-ch{margin:10px 0 4px}
+.ms-chk{font:700 16px var(--disp);margin-bottom:4px}
+.ms-sub{margin:0 0 8px;font-size:13.5px;color:var(--mut)}
+.ms-opts{display:grid;gap:8px}
+.ms-opt{text-align:left;font:500 15px/1.4 var(--sans);padding:12px 14px;border-radius:12px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);cursor:pointer;min-height:44px;overflow-wrap:anywhere}
+.ms-opt:hover:not(:disabled){border-color:var(--blue)}
+.ms-opt.sel{border-color:var(--blue);box-shadow:var(--ring)}
+.ms-opt.ok{border-color:var(--ms-ok);background:color-mix(in srgb,var(--ms-ok) 10%,var(--surf))}
+.ms-opt.ok::before{content:'✓ ';color:var(--ms-ok);font-weight:800}
+.ms-opt.no{border-color:var(--ms-res);border-style:dashed}
+.ms-opt.no::before{content:'✕ ';color:var(--ms-res);font-weight:800}
+.ms-opt:disabled{cursor:default;opacity:1}
+.ms-conf .btn{flex:1 1 0;min-width:0;white-space:normal}
+.ms-fb{margin:8px 0;padding:10px 12px;border-radius:12px;font-size:14.5px;line-height:1.5}
+.ms-fb.ok{background:color-mix(in srgb,var(--ms-ok) 10%,var(--surf));border:1px solid color-mix(in srgb,var(--ms-ok) 45%,transparent)}
+.ms-fb.ok>span{color:var(--ms-ok);font-weight:800}
+.ms-fb.no{border:1.5px dashed var(--ms-res);background:var(--surf)}
+.ms-fbc{margin:8px 0}
+.ms-st{margin:8px 0;padding:10px 12px;border-left:3px solid var(--blue);background:var(--surf);border-radius:0 12px 12px 0;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere}
+.ms-st span{display:block;font:600 11.5px var(--mono);color:var(--mut);text-transform:uppercase}.ms-st b{display:block}
+.ms-all summary{cursor:pointer;font-weight:700;padding:8px 0}
+.ms-ans{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surf)}
+.ms-ans b{color:var(--ms-res)}
+.ms-k2{font-weight:700;margin:12px 0 0}
+.btn.ms-ok{border-color:var(--ms-ok);color:var(--ms-ok)}
+.ms-soft{margin:8px 0;font-size:14px;color:var(--ink2)}
+.ms-vs{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surf);margin:0 0 12px}
+.ms-vs .cat{width:56px;height:auto;flex:none}.ms-vs b{display:block}.ms-vs span{font-size:14px;color:var(--ink2)}
+/* итоги */
+.ms-grown{display:grid;gap:8px;margin:6px 0 14px}
+.ms-gr{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surf)}
+.ms-gr b{display:block;font-size:15px;line-height:1.35}.ms-gr small{color:var(--mut);font-size:13px}.ms-gr em{font-style:normal;color:var(--blue);font-weight:700}
+.ms-find{display:grid;gap:2px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);border-left:4px solid var(--blue);background:var(--surf);margin:10px 0}
+.ms-fk{font:600 11.5px var(--mono);text-transform:uppercase;color:var(--mut)}.ms-find span{font-size:14.5px;color:var(--ink2);line-height:1.5}
+.ms-cat{margin:12px 0}
+.ms-mile{position:fixed;inset:0;z-index:400;display:grid;place-items:center;padding:16px;background:rgba(8,11,18,.45)}
+.ms-mile-p{display:grid;justify-items:center;gap:8px;max-width:340px;width:100%;padding:22px 18px;border-radius:22px;background:var(--surf);text-align:center;animation:msIn .4s var(--ease)}
+.ms-mile-p .cat{width:110px;height:auto}.ms-mile-p b{font:800 22px var(--disp)}.ms-mile-p span{font-size:14.5px;color:var(--ink2)}.ms-mile-p .btn{width:100%}
+@keyframes msIn{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.ms-mile-p{animation:none}}
+/* лента */
+.ms-feed{height:calc(100dvh - var(--hh) - var(--tabh) - env(safe-area-inset-bottom));overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;overscroll-behavior:contain;outline:none}
+.fd-card,.fd-pause{box-sizing:border-box;min-height:100%;scroll-snap-align:start;scroll-snap-stop:always;padding:18px 16px 24px;max-width:720px;margin:0 auto;display:flex;flex-direction:column;justify-content:center;gap:6px;border-bottom:1px solid var(--line)}
+.fd-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fd-k{font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.4px;color:var(--blue)}.fd-s{font-size:12.5px;color:var(--mut);min-width:0;overflow-wrap:anywhere}
+.fd-q{font-size:16px;line-height:1.5;overflow-wrap:anywhere}
+.fd-sheet{margin:6px 0;padding:4px;border-radius:12px;background:var(--sheet);border:1px solid var(--line);overflow:hidden}
+.fd-sheet svg{display:block;width:100%;height:auto;max-height:38vh;margin:0 auto}
+.fd-more{display:inline-block;margin-top:4px;font-size:14px;font-weight:600}
+.fd-pt{font-size:22px;margin:4px 0}.fd-g{margin:0;color:var(--ink2)}
+.fd-tf .btn{flex:1 1 0}
+/* карта */
+.ms-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:12px 0;font-size:13px;color:var(--ink2)}.ms-leg span{display:inline-flex;align-items:center;gap:6px}
+.ms-reg{margin:16px 0;padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--surf)}
+.ms-reg h2{font-size:17px;margin:0 0 10px}
+.ms-reg.f0{background:repeating-linear-gradient(135deg,var(--surf) 0 9px,var(--surf2) 9px 11px)}
+.ms-reg.f1{background:linear-gradient(var(--surf),var(--surf)) padding-box}
+.ms-skg{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}
+.ms-sk{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surf);color:var(--ink);text-decoration:none;min-width:0}
+.ms-sk:hover{border-color:var(--blue)}
+.ms-sk.l0{border-style:dashed;color:var(--ink2)}
+.ms-sk b{display:block;font-size:14px;line-height:1.35}.ms-sk small{color:var(--mut);font-size:12.5px}.ms-sk>span:last-child{min-width:0}
+.ms-skr{flex:none;display:flex}
+/* тетрадь мастера */
+.ms-cst{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 12px;font-size:14px;color:var(--ink2)}.ms-cst b{color:var(--ink);font-size:18px}
+.ms-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px}
+.ms-cd{display:grid;place-items:center;gap:0;padding:10px 4px;border-radius:12px;border:1.5px dashed var(--line2);background:var(--surf);color:var(--mut);text-decoration:none;text-align:center;min-width:0}
+.ms-cd b{font:800 18px var(--disp)}.ms-cd small{font-size:10.5px;line-height:1.2}
+.ms-cd.s1{border-style:solid;border-color:var(--blue);color:var(--ink)}
+.ms-cd.s2{border-style:solid;border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--surf));color:var(--ink)}
+.ms-cd.s3{border:2.5px solid var(--ms-ok);background:color-mix(in srgb,var(--blue) 14%,var(--surf));color:var(--ink)}
+.ms-cd.s3 small{color:var(--ms-ok);font-weight:700}
+/* неделя и перенос */
+.ms-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.ms-kpi>div{padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surf)}.ms-kpi b{display:block;font:800 26px var(--disp);color:var(--blue)}.ms-kpi span{font-size:13px;color:var(--ink2)}
+.ms-ach{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:8px}
+.ms-a{padding:10px 12px;border-radius:12px;border:1px dashed var(--line2);color:var(--mut)}.ms-a b{display:block;font-size:14.5px}.ms-a span{font-size:13px}
+.ms-a.on{border-style:solid;border-color:var(--ms-ok);color:var(--ink)}.ms-a.on b{color:var(--ms-ok)}
+.ms-box{margin:14px 0;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--surf)}.ms-box h2{font-size:17px;margin:0 0 8px}
+.ms-lbl{display:block;font-size:13.5px;color:var(--ink2);margin:10px 0 4px}
+.ms-ta,.ms-sel{width:100%;max-width:100%;box-sizing:border-box;font:13px var(--mono);padding:10px;border-radius:10px;border:1px solid var(--line2);background:var(--paper);color:var(--ink);word-break:break-all}
+.ms-sel{font:15px var(--sans)}
+.ms-qr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13.5px;color:var(--ink2)}.ms-qr svg{max-width:100%;height:auto;border-radius:8px}
+</style><!--/ms-css-->
 <script>
 /* ═════════ РК1 · оболочка приложения ═════════
    Адреса: #/ (главная) · #/ng|ig/<вкладка>/<элемент> · #/kg · #/part · #/epure · #/about · #e3=… (ссылка на сцену эпюра)
@@ -22749,7 +22894,7 @@ function progressNG(){ const it=routeItems(); const d=it.filter(itemDone).length
 function progressIG(){ const L=(window.IG?IG.lessons():[]), B=(window.IG?IG.labs():[]);
   const d=L.filter(l=>IG.lessonDone(l.id)).length+B.filter(b=>IG.labDone(b.n)).length, n=L.length+B.length;
   return {d,n,pc:n?Math.round(d/n*100):0}; }
-function renderHProg(){ const a=progressNG(), b=progressIG(), n=a.n+b.n, d=a.d+b.d, pc=n?Math.round(d/n*100):0;
+function renderHProg(){ try{ if(window.MS&&MS.hprog()) return; }catch(e){} const a=progressNG(), b=progressIG(), n=a.n+b.n, d=a.d+b.d, pc=n?Math.round(d/n*100):0;
   $('hprog').innerHTML=`<span>${pc}%</span><div class="hbar"><i style="width:${pc}%"></i></div>`;
   $('hprog').title='Общий прогресс: '+d+' из '+n+' шагов'; }
 
@@ -22786,7 +22931,7 @@ function parseHash(h){
   h=h||'';
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
-  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','run','review','feed','map','collection','week','duel','sync'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -22843,6 +22988,7 @@ function render(r){
       case 'privacy': title=viewDoc(v,'privacy'); break;
       case 'consent': title=viewDoc(v,'consent'); break;
       case 'topic': title=window.TOPICUI?TOPICUI.view(v,r.tab):viewHome(v); break;
+      case 'run': case 'review': case 'feed': case 'map': case 'collection': case 'week': case 'duel': case 'sync': title=MS.view(v,r); break;
       default: title=viewHome(v);
     }
   }catch(e){ console.error(e); v.innerHTML='<div class="wrap page"><div class="box warn"><h4>Ошибка</h4>Страница не открылась. <a href="#/">На главную</a></div></div>'; }
@@ -23108,7 +23254,8 @@ function CAT(kind){
 function CATSAY(kind,html,cls){ return `<div class="catsay ${cls||''}"><span class="catsay-c">${CAT(kind)}</span>${html?`<div class="catsay-b">${html}</div>`:''}</div>`; }
 /* ── кошка на страницах: сидит на заголовке раздела (поза своя у каждого раздела), спит в подвале.
    Следит глазами за пальцем/курсором; если ткнуть — мурлычет. Только на главных страницах разделов, не в задачах. */
-const CAT_SPOT={'ng/path':'peek','ng/tasks':'sleep','ng/hw':'think','ng/check':'peek','ng/cheat':'think','ig':'peek','ig/path':'peek','kg':'sleep','kg/path':'sleep','about':'wave','topic':'think'};
+const CAT_SPOT={'ng/path':'peek','ng/tasks':'sleep','ng/hw':'think','ng/check':'peek','ng/cheat':'think','ig':'peek','ig/path':'peek','kg':'sleep','kg/path':'sleep','about':'wave','topic':'think',
+  run:'think',review:'sleep',feed:'peek',map:'peek',collection:'happy',week:'happy',duel:'think',sync:'wave'};
 function catPerch(v,r){
   const key=r.s+(r.tab?'/'+r.tab:''), kind=r.item==null?(CAT_SPOT[key]||CAT_SPOT[r.s]):null; if(!kind) return;
   const intro=v.querySelector('.intro')||v.querySelector('h1:not(.sr-only)'); if(!intro||intro.querySelector('.perch')) return;
@@ -23322,8 +23469,9 @@ function viewHome(v){
     ? {k:'Вы остановились',t:tg.label,p:stepNote+(tg.sub||''),href:tg.href,btn:'Вернуться к задаче'}
     : {k:'Начать',t:'Урок 1. '+l1.title,p:'Короткая теория, потом задачи. Чертёж растёт по шагам, к каждому шагу комментарий.',href:H('ng','path',l1.id),btn:'Начать: урок 1'};
   const nT=WB3.tasks.length;
+  let msH=''; try{ msH=window.MS?MS.homeHTML():''; }catch(e){ console.error(e); }
   v.innerHTML=`<div class="wrap page home h2 h3">
-   ${tg?`<a class="hresume" href="${attr(rh.href)}"><span class="hr-ic" aria-hidden="true">▶</span><span class="hr-t"><small>${rh.k}</small><b>${attr(short(rh.t,140))}</b>${rh.p?`<em>${attr(short(rh.p,160))}</em>`:''}</span><span class="hr-b">Вернуться →</span></a>`:''}
+   ${msH}${tg?`<a class="hresume" href="${attr(rh.href)}"><span class="hr-ic" aria-hidden="true">▶</span><span class="hr-t"><small>${rh.k}</small><b>${attr(short(rh.t,140))}</b>${rh.p?`<em>${attr(short(rh.p,160))}</em>`:''}</span><span class="hr-b">Вернуться →</span></a>`:''}
    <section class="hsearch" id="hsearch" aria-label="Поиск по сайту">
     <h1 class="hs-h">Что не получается?</h1>
     <p class="hs-sub">Напиши как думаешь — найдём разбор за секунды</p>
@@ -24984,6 +25132,579 @@ function viewDoc(v,id){
   try{ COURSE.forEach(l=>(l.blocks||[]).forEach(b=>{ if(b.t==='check') b.q.forEach(mix); })); }catch(e){}
   try{ if(window.IG) IG.lessons().forEach(l=>(l.blocks||[]).forEach(b=>{ if(b.t==='check') b.q.forEach(mix); })); }catch(e){}
 })();
+
+
+/* ▼ мастерство (MS) ▼ */
+/* ═════════ МАСТЕРСТВО: навыки, попытки, интервальное повторение, забег, лента ═════════
+   Этап 1 ТЗ «Начерт как игра в мастерство» (docs/mastery.md). Всё — за флагами владельца (#/me):
+     mastery — навыки и уровни 0–4, кольцо мастерства, карта курса, тетрадь мастера, перенос прогресса
+     review  — «Занятие на 10 минут»: забег #/run/<сид>, повторение #/review, вызов друга #/duel/<сид>/<результат>
+     feed    — лента микрозадач #/feed
+     quests  — серия дней с заморозками, серия недель, достижения, неделя #/week, неожиданные находки
+   Хранилище — только ST (ключи nch2_att, attAgg, srs, streak, feed, ach, runs, prefs, msmig).
+   Правило: награда — за самостоятельное решение и рост, никогда — за время на сайте. */
+window.MS=(function(){
+'use strict';
+/* ── навыки: задачи тетради разложены по навыкам (каждая задача — ровно в одном), topic — урок COURSE ── */
+const PARTS=['Точка','Прямая','Плоскость','Плоские фигуры','Прямая и плоскость','Преобразование чертежа','Поверхности','Повышенная трудность'];
+const SKILLS=[
+ {id:'pt',   p:0,topic:1, t:'Точка на эпюре: координаты и четверти',  tasks:[1,2,5,6,7,8],        m:'Линия связи ⟂ оси x, координаты y и z — от оси'},
+ {id:'pt3',  p:0,topic:2, t:'Профильная проекция точки',              tasks:[3,4],                m:'Глубину y перенести на π₃ от оси z'},
+ {id:'lpos', p:1,topic:3, t:'Прямые уровня и проецирующие прямые',    tasks:[9,10],               m:'Сравнить проекции с осью x: какая ∥ x, какая выродилась в точку'},
+ {id:'trace',p:1,topic:6, t:'Следы прямой',                           tasks:[11,12],              m:'Продлить проекцию прямой до оси x — там проекция следа'},
+ {id:'tl',   p:1,topic:5, t:'Натуральная величина отрезка',           tasks:[13,14,15,16],        m:'Прямоугольный треугольник: проекция и разность Δz (Δy)'},
+ {id:'mut',  p:1,topic:7, t:'Взаимное положение прямых',              tasks:[17,18,19,20,21],     m:'Проверить, лежат ли точки пересечения проекций на одной линии связи'},
+ {id:'rt',   p:1,topic:8, t:'Проецирование прямого угла',             tasks:[22],                 m:'Прямой угол — в натуральную величину на плоскость, которой ∥ сторона'},
+ {id:'plpos',p:2,topic:9, t:'Положение плоскости и её следы',         tasks:[23,24,25,26],        m:'Найти, на какую плоскость проекций плоскость вырождается в прямую'},
+ {id:'hf',   p:2,topic:10,t:'Горизонталь и фронталь плоскости',       tasks:[27,28,29,30],        m:'Провести в плоскости горизонталь (h″ ∥ x) или фронталь (f′ ∥ x)'},
+ {id:'fig',  p:3,topic:13,t:'Плоские фигуры',                         tasks:[31,32,33,34],        m:'Достроить фигуру через прямые уровня и натуральные величины'},
+ {id:'par',  p:4,topic:11,t:'Параллельность прямой и плоскостей',     tasks:[35,36,37,41,49],     m:'Взять в плоскости прямую, параллельную искомой'},
+ {id:'perp', p:4,topic:11,t:'Перпендикуляр к плоскости',              tasks:[38,39,42,43],        m:'n′ ⟂ h′, n″ ⟂ f″ — через горизонталь и фронталь плоскости'},
+ {id:'meet', p:4,topic:14,t:'Пересечения и видимость',                tasks:[40,44,45,46],        m:'Заключить прямую в проецирующую плоскость-посредник'},
+ {id:'dist', p:4,topic:11,t:'Расстояния: до прямой, между прямыми',   tasks:[47,48,50],           m:'Перпендикуляр и его натуральная величина'},
+ {id:'repl', p:5,topic:0, t:'Замена плоскостей проекций',             tasks:[51,52,53,54,55,56,57],m:'Новая ось x₁ параллельно проекции или перпендикулярно ей'},
+ {id:'rot',  p:5,topic:0, t:'Вращение вокруг проецирующей оси',       tasks:[58,59,60,61],        m:'Точки идут по окружностям в плоскостях ⟂ оси вращения'},
+ {id:'rotl', p:5,topic:0, t:'Вращение вокруг линии уровня',           tasks:[62,63,64,65,66,67],  m:'Ось — горизонталь или фронталь, радиус вращения — по треугольнику'},
+ {id:'surfpt',p:6,topic:0,t:'Точка и линия на поверхности',           tasks:[68,69,70],           m:'Провести через точку простую линию поверхности: образующую или параллель'},
+ {id:'sect', p:6,topic:0, t:'Сечения и пересечение поверхностей',     tasks:[71,72,73,74,89],     m:'Вспомогательные секущие плоскости (сферы) и их общие точки'},
+ {id:'lsurf',p:6,topic:0, t:'Пересечение линии с поверхностью',       tasks:[75,76,77],           m:'Заключить линию в плоскость-посредник и построить сечение'},
+ {id:'tan',  p:6,topic:0, t:'Касательная плоскость и нормаль',        tasks:[78,86,88],           m:'Две касательные к линиям поверхности, проходящим через точку'},
+ {id:'hard', p:7,topic:0, t:'Задачи повышенной трудности',            tasks:[79,80,81,82,83,84,85,87],m:'Разложить на известные задачи: план из двух-трёх шагов'}];
+const SK={}; SKILLS.forEach((s,i)=>{ s.i=i; SK[s.id]=s; });
+const skillOf=n=>SKILLS.find(s=>s.tasks.includes(+n))||null;
+const LVL=['Не начато','Знаком','Получается','Умею','Освоено'];
+const RANKS=[[0,'Чертёжник'],[6,'Конструктор'],[12,'Инженер-геометр'],[18,'Мастер эпюра']];
+/* модель повторения (раздел 3.4). Коэффициенты — стартовые: при сплошь верных ответах в срок интервалы ≈ 1 → 3 → 8 → 18 → 38 дней */
+const K={S0:1,D0:5,GROW:16.7,DAMP:0.2,HINT:1.2,FAIL:0.3,RET:0.9};
+const STRONG=['faded','solve','bug','var','review','boss','build'];   /* «решено сам» в полном смысле: без показанных шагов */
+
+/* ── время и случайность ── */
+const today=()=>MS._day!=null?MS._day:Math.floor((Date.now()-new Date().getTimezoneOffset()*6e4)/864e5);
+function prng(seed){ let a=(seed>>>0)||1; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+function hash(s){ let h=2166136261; for(const c of String(s)){ h^=c.charCodeAt(0); h=Math.imul(h,16777619)>>>0; } return h; }
+const pick=(a,r)=>a[Math.floor(r()*a.length)];
+function shuffle(a,r){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();
+const on=f=>FLAGS.on(f);
+const anyOn=()=>['mastery','review','feed','quests'].some(on);
+const rm=()=>window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ── попытки (раздел 3.3) ── */
+const ATT_MAX=2000;
+const atts=()=>ST.get('att',[]);
+function fold(list){ const g=ST.get('attAgg',{}); list.forEach(o=>{ const x=g[o.s]||(g[o.s]={n:0,ok:0,hints:0,ms:0}); x.n++; x.ok+=o.ok?1:0; x.hints+=o.hints||0; x.ms+=o.ms||0; }); ST.set('attAgg',g); }
+const isSelf=a=>!!a.ok&&!a.hints;
+
+/* ── интервальное повторение ── */
+function retention(){ const r=+((ST.get('prefs',{})||{}).ret); return r>=0.8&&r<=0.95?r:K.RET; }
+const blank=()=>({lvl:0,S:K.S0,D:K.D0,last:null,due:null});
+function card(id){ const c=ST.get('srs',{})[id]; return c?Object.assign(blank(),c):blank(); }
+function recall(c,d){ if(c.last==null) return 1; return Math.pow(1+Math.max(0,d-c.last)/(9*c.S),-1); }
+function interval(S,ret){ ret=ret||retention(); return Math.max(1,Math.round(9*S*(1/ret-1))); }
+/* шаг модели: новое состояние навыка после попытки a. hist — прежние попытки по навыку (для уровня 3) */
+function step(c,a,hist){ c=Object.assign({},c); const d=a.d, first=c.last==null, same=!first&&d===c.last, R=recall(c,d), wasDue=c.due!=null&&d>=c.due;
+  if(isSelf(a)){ if(!first&&!same) c.S=c.S*(1+K.GROW*(11-c.D)/10*Math.pow(c.S,-K.DAMP)*(1-R+0.1)); }
+  else if(a.ok){ if(!first&&!same) c.S=c.S*K.HINT; }
+  else { c.S=Math.max(1,c.S*K.FAIL); c.D=Math.min(10,c.D+1); if(a.conf===1) c.S=1; }
+  c.S=Math.round(c.S*1000)/1000;
+  /* уровень: 1 — знаком; 2 — решил сам; 3 — решил сам дважды, одна — новый вариант; 4 — подтверждено через ≥3 дня */
+  let L=Math.max(c.lvl,1); c.drop=false;
+  if(isSelf(a)) L=Math.max(L,2);
+  if(isSelf(a)&&STRONG.includes(a.mode)){
+    const self=hist.concat([a]).filter(x=>isSelf(x)&&STRONG.includes(x.mode)), keys=new Set(self.map(x=>x.task+'-'+x.seed));
+    const sk=SK[a.s], needVar=sk&&sk.tasks.some(n=>window.GEN&&GEN.ok(n));
+    if(L<3&&keys.size>=2&&(!needVar||self.some(x=>x.seed>0))){ L=3; c.l3=d; }
+    else if(L===3&&c.l3!=null&&d-c.l3>=3) L=4;
+    if(a.mode==='boss') L=4;
+  }
+  if(!a.ok&&c.lvl>=2&&wasDue){ L=Math.max(1,c.lvl-1); c.drop=true; if(L<3) delete c.l3; }
+  c.lvl=L; c.last=d; c.due=L>=2?d+interval(c.S):null;
+  return c; }
+/* уровень с учётом тетради: «решено сам» в тетради — не ниже 2, прочитанный урок или разбор — не ниже 1 */
+function baseLevel(id){ const s=SK[id]; if(!s) return 0; let b=0;
+  s.tasks.forEach(n=>{ const v=taskState(n); if(v>=2) b=Math.max(b,2); else if(v>=1) b=Math.max(b,1); });
+  if(s.topic&&lessonDone(s.topic)) b=Math.max(b,1); return b; }
+function level(id){ return Math.max(card(id).lvl||0,baseLevel(id)); }
+function dueOf(id){ const c=card(id); return level(id)>=2?(c.due!=null?c.due:today()):null; }
+function rate(id,n){ const L=atts().filter(a=>a.s===id).slice(-(n||6)); return L.length?L.filter(a=>a.ok&&!a.hints).length/L.length:null; }
+/* миграция: стартовые уровни из тетради, чтобы никто не начинал с нуля */
+function migrate(force){ if(!force&&ST.get('msmig',0)) return; const all=ST.get('srs',{}), d=today();
+  SKILLS.forEach(s=>{ const b=baseLevel(s.id); if(!b) return; const c=Object.assign(blank(),all[s.id]||{}); if(c.lvl>=b) return;
+    c.lvl=b; if(b>=2){ c.last=d-1; c.due=d; } all[s.id]=c; });
+  ST.set('srs',all); ST.set('msmig',1); }
+
+/* ── серия дней и недель (раздел 5.2) ── */
+const MILES=[3,7,14,30,100];
+function streak(){ return Object.assign({days:0,last:null,freezes:0,best:0,ad:[],miles:[]},ST.get('streak',{})); }
+/* день засчитан, если решена сама хотя бы одна задача или карточка ленты */
+function streakOn(d){ const s=streak(); let mile=null; if(s.last===d) return {s,mile};
+  if(s.last==null||d-s.last<1) s.days=1;
+  else { const miss=d-s.last-1; if(miss===0) s.days++; else if(miss<=s.freezes){ s.freezes-=miss; s.days++; } else s.days=1; }
+  if(s.days>0&&s.days%7===0&&s.freezes<2) s.freezes++;
+  s.last=d; s.best=Math.max(s.best,s.days); s.ad=(s.ad||[]).filter(x=>x>d-120); s.ad.push(d);
+  if(MILES.includes(s.days)&&!s.miles.includes(s.days)){ s.miles.push(s.days); mile=s.days; }
+  ST.set('streak',s); return {s,mile}; }
+/* текущая серия (без записи): прервана, если пропусков больше, чем заморозок */
+function streakNow(d){ const s=streak(); d=d==null?today():d; if(s.last==null) return 0; const miss=d-s.last-1; return miss<=s.freezes?s.days:0; }
+const weekOf=d=>Math.floor((d+3)/7);   /* недели с понедельника (день 0 эпохи — четверг) */
+function weeksStreak(d){ d=d==null?today():d; const ad=new Set(streak().ad||[]), cnt=w=>{ let n=0; for(let k=0;k<7;k++) if(ad.has(w*7-3+k)) n++; return n; };
+  let w=weekOf(d), n=0; if(cnt(w)<3) w--; while(cnt(w)>=3){ n++; w--; } return n; }
+
+/* ── достижения (≤15, за полезное поведение; часть скрыта до получения) ── */
+const ACH=[
+ {id:'first',t:'Первый сам',d:'Решить задачу сам, без подсказок',f:c=>c.self>=1},
+ {id:'nohint20',t:'Своими руками',d:'20 задач без подсказок',f:c=>c.self>=20},
+ {id:'bug10',t:'Зоркий глаз',d:'Найти 10 подсаженных ошибок',f:c=>c.bugs>=10},
+ {id:'calib5',t:'Знаю, что знаю',d:'Уверенно и верно — 5 раз подряд',f:c=>c.calibRun>=5},
+ {id:'method10',t:'Вижу метод',d:'10 раз подряд верно узнать метод',f:c=>c.methodRun>=10},
+ {id:'skill3',t:'Умею',d:'Первый навык на уровне «Умею»',f:c=>c.l3>=1},
+ {id:'skill4',t:'Освоено',d:'Первый навык подтверждён повторением',f:c=>c.l4>=1},
+ {id:'part',t:'Раздел пройден',d:'Все навыки раздела — «Умею» или выше',f:c=>c.parts>=1},
+ {id:'ontime10',t:'Вовремя',d:'10 повторений в срок, верно',f:c=>c.ontime>=10},
+ {id:'week3',t:'Ритм',d:'Три дня занятий за одну неделю',f:c=>c.weekMax>=3},
+ {id:'mix5',t:'Разносторонний',d:'Забег из 5 разных навыков без подсказок',f:c=>c.mixRun,hid:1},
+ {id:'comeback',t:'Работа над ошибкой',d:'Решить сам навык, в котором ошибся неделю назад',f:c=>c.comeback,hid:1},
+ {id:'month',t:'Долгая память',d:'Вернуться к теме через месяц и решить',f:c=>c.month,hid:1},
+ {id:'humble',t:'Честно',d:'Сказать «не уверен», ошибиться — и потом решить верно',f:c=>c.humble,hid:1},
+ {id:'variety',t:'Весь курс',d:'Решить сам хотя бы по задаче в каждом разделе',f:c=>c.partsTried>=PARTS.length,hid:1}];
+function achCtx(){ const L=atts(), c={self:0,bugs:0,calibRun:0,methodRun:0,l3:0,l4:0,parts:0,ontime:0,weekMax:0,mixRun:false,comeback:false,month:false,humble:false,partsTried:0};
+  let cr=0, mr=0; const lastBy={}, tried=new Set(), failDay={}, unsure=new Set();
+  L.forEach(a=>{ if(isSelf(a)&&a.mode!=='feed'){ c.self++; const s=SK[a.s]; if(s) tried.add(s.p); }
+    if(a.mode==='bug'&&a.ok) c.bugs++;
+    if(a.conf===1&&a.ok){ cr++; c.calibRun=Math.max(c.calibRun,cr); } else if(a.conf===1) cr=0;
+    if(a.meth===1){ mr++; c.methodRun=Math.max(c.methodRun,mr); } else if(a.meth===0) mr=0;
+    if(a.ontime&&a.ok) c.ontime++;
+    if(isSelf(a)&&failDay[a.s]!=null&&a.d-failDay[a.s]>=5&&a.d-failDay[a.s]<=9) c.comeback=true;
+    if(isSelf(a)&&lastBy[a.s]!=null&&a.d-lastBy[a.s]>=30) c.month=true;
+    if(a.ok&&unsure.has(a.s)) c.humble=true; if(!a.ok&&a.conf===0) unsure.add(a.s);
+    if(!a.ok) failDay[a.s]=a.d; lastBy[a.s]=a.d; });
+  c.partsTried=tried.size;
+  SKILLS.forEach(s=>{ const l=level(s.id); if(l>=3) c.l3++; if(l>=4) c.l4++; });
+  PARTS.forEach((p,i)=>{ const ss=SKILLS.filter(s=>s.p===i); if(ss.length&&ss.every(s=>level(s.id)>=3)) c.parts++; });
+  const ad=streak().ad||[], wk={}; ad.forEach(d=>{ const w=weekOf(d); wk[w]=(wk[w]||0)+1; }); c.weekMax=Math.max(0,...Object.values(wk));
+  (ST.get('runs',[])||[]).forEach(r=>{ if(r.res&&r.res.mix5) c.mixRun=true; });
+  return c; }
+function achCheck(){ const got=ST.get('ach',{}), c=achCtx(), d=today(), fresh=[];
+  ACH.forEach(a=>{ if(!got[a.id]&&a.f(c)){ got[a.id]=d; fresh.push(a); } }); if(fresh.length) ST.set('ach',got); return fresh; }
+
+/* ── запись попытки: попытка → модель → серия → достижения → (при согласии) обезличенное событие ── */
+let PENDING=[];   /* новые достижения — показываем в конце забега или на паузе ленты, не сразу */
+function record(a){
+  const d=today(); a=Object.assign({seed:0,hints:0,conf:null,ms:0},a,{d}); a.ok=!!a.ok;
+  const c0=card(a.s), lv0=level(a.s); a.ontime=c0.due!=null&&d>=c0.due&&d-c0.due<=2?1:0;
+  const L=atts(), hist=L.filter(x=>x.s===a.s);
+  const c1=step(Object.assign({},c0,{lvl:Math.max(c0.lvl,baseLevel(a.s))}),a,hist);
+  const all=ST.get('srs',{}); all[a.s]=c1; ST.set('srs',all);
+  const keep=Object.assign({},a); delete keep.cat; delete keep.step; L.push(keep);
+  if(L.length>ATT_MAX) fold(L.splice(0,L.length-ATT_MAX)); ST.set('att',L);
+  let mile=null; if(isSelf(a)){ try{ FX.touch(); }catch(e){} mile=streakOn(d).mile; }
+  if(!a.ok&&a.task){ try{ if(window.TRACK) TRACK('step_fail',{task:+a.task||0,step:+a.step||0,cat:String(a.cat||a.mode).slice(0,16)}); }catch(e){} }
+  const fresh=achCheck(); PENDING=PENDING.concat(fresh);
+  return {before:lv0,after:level(a.s),drop:c1.drop,mile,ach:fresh}; }
+
+/* ── сводки ── */
+function summary(){ const d=today(); let sum=0, n4=0, n3=0, due=0;
+  SKILLS.forEach(s=>{ const l=level(s.id); sum+=l; if(l>=4) n4++; if(l>=3) n3++; const u=dueOf(s.id); if(u!=null&&u<=d) due++; });
+  return {avg:sum/SKILLS.length, pc:Math.round(sum/SKILLS.length/4*100), n4, n3, due, n:SKILLS.length}; }
+function rankOf(n3){ let r=RANKS[0]; RANKS.forEach(x=>{ if(n3>=x[0]) r=x; }); return {i:RANKS.indexOf(r),t:r[1],next:RANKS[RANKS.indexOf(r)+1]||null}; }
+function lastActive(){ const L=atts(); return L.length?L[L.length-1].d:null; }
+
+/* ═════════ ЗАБЕГ (#/run/<сид>) ═════════
+   Сид — это сам состав: номера задач через точку и случайное число после дефиса («12.47.5.63-k3f9»).
+   Один сид — один и тот же забег у любого человека: так им можно поделиться. Просто число («#/run/1234»)
+   собирает смешанный забег из всего курса. */
+function planSkills(o){ o=o||{}; const d=today(), r=prng(o.rnd||1), lv=id=>level(id);
+  const due=SKILLS.filter(s=>{ const u=dueOf(s.id); return u!=null&&u<=d; }).sort((a,b)=>dueOf(a.id)-dueOf(b.id));
+  const edge=SKILLS.filter(s=>{ const l=lv(s.id); return l>=1&&l<=2&&!due.includes(s); }).sort((a,b)=>lv(b.id)-lv(a.id)||a.i-b.i);
+  const fresh=SKILLS.filter(s=>lv(s.id)===0&&(s.i===0||lv(SKILLS[s.i-1].id)>=2));
+  const out=[]; const add=s=>{ if(s&&!out.includes(s)) out.push(s); };
+  if(o.short){ due.slice(0,3).forEach(add); SKILLS.filter(s=>lv(s.id)>=1).sort((a,b)=>(card(a.id).last||0)-(card(b.id).last||0)).forEach(s=>{ if(out.length<3) add(s); });
+    if(!out.length) add(SKILLS[0]); return out; }
+  due.slice(0,2).forEach(add); edge.slice(0,2).forEach(add); if(fresh.length) add(fresh[0]);
+  const rest=[...due.slice(2),...edge.slice(2),...SKILLS.filter(s=>lv(s.id)>=3).sort((a,b)=>(card(a.id).last||0)-(card(b.id).last||0)),...SKILLS.filter(s=>lv(s.id)===0)];
+  for(const s of rest){ if(out.length>=4) break; add(s); }
+  return out.slice(0,6).concat(out.length<4?shuffle(SKILLS,r).filter(s=>!out.includes(s)).slice(0,4-out.length):[]); }
+function taskFor(s,r){ const d=today(), seen=new Set(atts().filter(a=>a.d>d-3).map(a=>+a.task));
+  let c=s.tasks.filter(n=>WB3.get(n)); if(level(s.id)>=3&&window.GEN){ const g=c.filter(n=>GEN.ok(n)); if(g.length) c=g; }
+  const fresh=c.filter(n=>!seen.has(n)); return pick(fresh.length?fresh:c,r); }
+/* чередование: соседние задачи — из разных навыков (и по возможности разделов) */
+function interleave(list,r){ let a=shuffle(list,r); for(let k=0;k<6;k++){ let ok=true;
+  for(let i=1;i<a.length;i++){ const sa=skillOf(a[i-1]), sb=skillOf(a[i]); if(sa&&sb&&(sa.id===sb.id||(sa.p===sb.p&&a.length>3))){ ok=false; const j=(i+1+Math.floor(r()*a.length))%a.length; [a[i],a[j]]=[a[j],a[i]]; } }
+  if(ok) break; } return a; }
+const encode=(ns,rnd)=>ns.join('.')+'-'+(rnd>>>0).toString(36);
+function newRun(o){ o=o||{}; const rnd=o.rnd||(1+Math.floor(Math.random()*2e9)), r=prng(rnd);
+  const ns=o.skills?o.skills.map(s=>taskFor(s,r)):planSkills({rnd,short:o.short}).map(s=>taskFor(s,r));
+  return encode(interleave([...new Set(ns)],r),rnd); }
+function decode(code){ code=String(code||''); let m=/^([\d.]+)-([0-9a-z]+)$/.exec(code);
+  if(m){ const ns=m[1].split('.').map(Number).filter(n=>n>=1&&WB3.get(n)).slice(0,8); return {ns,rnd:parseInt(m[2],36)>>>0||1}; }
+  if(/^\d{1,12}$/.test(code)){ const rnd=+code>>>0||1, r=prng(rnd); const ss=shuffle(SKILLS.slice(0,17),r).slice(0,5); return {ns:interleave(ss.map(s=>pick(s.tasks.filter(n=>WB3.get(n)),r)),r),rnd}; }
+  return {ns:[],rnd:1}; }
+
+/* ── данные задач: часть, шаги, чертёж, варианты вопросов ── */
+const GENERIC=/^(ответ|итог|проверка|дано|результат|вывод|как читать|замечание|запись)/i;
+function partOf(t){ const P=PLAYER.partsOf(t); return P[0]; }
+function drawing(part,k){ try{ return part._fig?part._fig(k):DRAW.svg(PLAYER.scene(part,k)); }catch(e){ return ''; } }
+let TITLES=null;
+function titles(){ if(TITLES) return TITLES; TITLES=[]; WB3.tasks.forEach(t=>{ const s=skillOf(t.n); if(!s) return; PLAYER.partsOf(t).forEach(p=>(p.steps||[]).forEach(st=>{ const x=strip(st.t); if(x&&x.length<70&&!GENERIC.test(x)) TITLES.push({x,s:s.id}); })); }); return TITLES; }
+function stepChoices(part,k,sid,r){ const st=part.steps[k], ok=strip(st&&st.t); if(!ok||GENERIC.test(ok)||ok.length>=70) return null;
+  const mine=new Set((part.steps||[]).map(x=>strip(x.t)));
+  const pool=titles().filter(o=>o.s!==sid&&!mine.has(o.x)); if(pool.length<2) return null;
+  const a=pick(pool,r); let b=pick(pool,r), g=0; while(b.x===a.x&&g++<20) b=pick(pool,r);
+  return {opts:shuffle([ok,a.x,b.x],r),ok}; }
+function methodChoices(s,r){ const near=SKILLS.filter(x=>x!==s&&Math.abs(x.p-s.p)<=1), far=SKILLS.filter(x=>x!==s);
+  const a=pick(near.length>=2?near:far,r); let b=pick(near.length>=3?near:far,r), g=0; while((b===a||b===s)&&g++<30) b=pick(far,r);
+  return {opts:shuffle([s.m,a.m,b.m],r),ok:s.m}; }
+function variantOf(n,seed){ try{ if(seed&&window.GEN&&GEN.ok(n)&&window.GEOM_CHECK){ const v=GYM.make(n,seed); if(v&&v.task) return v; } }catch(e){} return {task:WB3.get(n),seed:0,orig:true}; }
+const MODES={guided:'Разбор с вопросами',faded:'Последний шаг — твой',solve:'Реши сам',bug:'Найди ошибку'};
+function modeFor(s,n,r,canBug){ const l=level(s.id), rt=rate(s.id), steps=(partOf(WB3.get(n)).steps||[]).length;
+  if(steps<2) return 'solve';
+  if(l<=1||(rt!=null&&rt<0.7&&atts().filter(a=>a.s===s.id).length>=3)) return 'guided';
+  if(l===2) return 'faded';
+  return canBug&&n>=10&&r()<0.5?'bug':'solve'; }
+
+/* ── экран забега ── */
+let RUN=null;
+function viewRun(v,r){
+  if(!on('review')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  migrate();
+  if(!r.tab){ const c=newRun(); setTimeout(()=>redir(H('run',c)),0); return 'Занятие'; }
+  const dec=decode(r.tab); if(!dec.ns.length){ v.innerHTML=pageHTML({crumbs:[['Занятие']],body:`<div class="box warn"><h4>Забег не найден</h4>Ссылка повреждена. <a href="${H('run')}">Собрать новый забег</a></div>`}); return 'Занятие'; }
+  if(/^s\.\w+$/.test(r.tab)&&SK[r.tab.slice(2)]){ const s=SK[r.tab.slice(2)]; setTimeout(()=>redir(H('run',newRun({skills:[s,s]}))),0); return 'Занятие'; }
+  if(!RUN||RUN.code!==r.tab||RUN.done){ RUN={code:r.tab,rnd:dec.rnd,ns:dec.ns,i:-1,res:[],vs:ST.get('duelvs',null)}; if(RUN.vs&&RUN.vs.code!==r.tab) RUN.vs=null; }
+  v.innerHTML=pageHTML({crumbs:[['Занятие']],next:null,noBottom:true,cls:'ms-page',body:`<div id="msRun" class="ms-run"><div class="gy-load">${CATSAY('think','Готовлю задачи…','c')}</div></div>`});
+  const host=v.querySelector('#msRun');
+  GEN.checkers().then(ok=>{ if(!host.isConnected) return; RUN.chk=!!ok; RUN.i<0?runIntro(host):runTask(host); });
+  return 'Занятие на 10 минут'; }
+function runIntro(host){ const sr=document.querySelector('#view > h1.sr-only'); if(sr) sr.remove(); const R=RUN, mins=Math.max(5,Math.round(R.ns.length*2.2));
+  host.innerHTML=`<div class="intro"><h1>Занятие на ${mins} минут</h1><p class="lead">${R.ns.length} ${plural(R.ns.length,'задача','задачи','задач')} вперемешку — так тренируется главное умение РК: узнать, какой метод нужен.</p></div>
+   ${R.vs?`<div class="ms-vs">${CAT('think')}<div><b>Вызов${R.vs.nick?' от '+attr(R.vs.nick):''}</b><span>${R.vs.n} задач · ${fmtT(R.vs.ms)} · ${R.vs.hints} ${plural(R.vs.hints,'подсказка','подсказки','подсказок')} · верно ${R.vs.ok}</span></div></div>`:''}
+   <ol class="ms-list">${R.ns.map(n=>{ const s=skillOf(n); return `<li><span class="ms-dot l${level(s.id)}" aria-hidden="true"></span><span><b>${attr(s.t)}</b><small>Задача №${n} · ${LVL[level(s.id)].toLowerCase()}</small></span></li>`; }).join('')}</ol>
+   <p class="ms-note">Подсказка доступна всегда — это не штраф, она просто меньше двигает навык. Ошибка не отнимает прогресс.</p>
+   <div class="ms-row"><button class="btn pri lg ms-go" id="msGo">▶ Начать</button></div>`;
+  host.querySelector('#msGo').onclick=()=>{ RUN.i=0; RUN.t0=Date.now(); runTask(host); }; }
+function runTask(host){ const R=RUN; if(R.i>=R.ns.length) return runEnd(host);
+  const n=R.ns[R.i], s=skillOf(n), r=prng(R.rnd+R.i*7919), mode=modeFor(s,n,r,R.chk), seed=(mode==='solve'||mode==='bug')&&R.chk?1+((R.rnd+R.i*104729)%899999):0;
+  const V=mode==='solve'||mode==='bug'?variantOf(n,seed):{task:WB3.get(n),seed:0}, t=V.task, part=partOf(t);
+  const A={s:s.id,task:n,seed:V.seed||0,mode,hints:0,ok:true,conf:null,t0:Date.now()};
+  const dots=R.ns.map((x,i)=>`<i class="${i<R.i?'d':i===R.i?'c':''}"></i>`).join('');
+  host.innerHTML=`<div class="ms-head"><span class="ms-k">Задача ${R.i+1} из ${R.ns.length} · ${attr(s.t)}</span><span class="ms-dots" aria-hidden="true">${dots}</span></div>
+   <h2 class="ms-q">${V.seed?'Вариант задачи №'+n:'Задача №'+n}${part.l?' '+part.l:''}</h2>${condHTML((t.q||'')+(part.q?'<br>'+part.q:''))}
+   <div class="sheet ms-sheet" id="msSheet">${mode==='bug'?'':drawing(part,0)}</div>
+   <div id="msStage" class="ms-stage" aria-live="polite"></div>`;
+  const stage=host.querySelector('#msStage'), sheet=host.querySelector('#msSheet');
+  /* 1. узнать метод — с уверенностью: две кнопки «Ответить: уверен / не уверен» */
+  const M=methodChoices(s,r);
+  choice(stage,{k:'С чего начать решение?',sub:'Выбери метод, затем ответь с уверенностью — уверенная ошибка вернётся к тебе раньше.',opts:M.opts,ok:M.ok,conf:true,
+    done:(right,conf)=>{ A.conf=conf; A.meth=right?1:0; if(!right){ A.ok=false; A.cat='method'; }
+      stage.insertAdjacentHTML('beforeend',fb(right,right?'Да, это главный ход в задачах этого навыка.':`Метод здесь: <b>${attr(s.m)}</b>.`));
+      next(stage,'Решать →',()=>solve()); }});
+  const finish=()=>{ A.ms=Date.now()-A.t0; delete A.t0; const res=record(A); R.res[R.i]={n,s:s.id,ok:A.ok,hints:A.hints,ms:A.ms,mode,before:res.before,after:res.after,drop:res.drop,mile:res.mile};
+    if(res.mile&&on('quests')) mileShow(res.mile); };
+  const toNext=()=>{ R.i++; runTask(host); window.scrollTo(0,0); };
+  function solve(){ stage.innerHTML=`<div class="ms-mode"><b>${MODES[mode]}</b>${mode==='guided'?'Перед каждым ключевым шагом — вопрос «что дальше?».':mode==='faded'?'Первые шаги показаны, последний строишь ты.':mode==='bug'?'В итоговом чертеже одна подсаженная ошибка. Нажми на неё.':'Реши на бумаге, затем сравни с решением.'}</div>`;
+    ({guided:guided,faded:faded,solve:selfSolve,bug:bugHunt})[mode](); }
+  /* разбор по шагам: на выбранных шагах — «что дальше?» */
+  function stepper(ask,then){ const st=part.steps||[]; let k=0;
+    const stepHTML=i=>`<div class="ms-st"><span>Шаг ${i} из ${st.length}</span><b>${st[i-1].t||''}</b><div>${st[i-1].d||''}</div></div>`;
+    const go=()=>{ if(k>=st.length) return then();
+      const box=document.createElement('div'); box.className='ms-step'; stage.appendChild(box);
+      const reveal=()=>{ k++; sheet.innerHTML=drawing(part,k); box.insertAdjacentHTML('beforeend',stepHTML(k)); if(k>=st.length) return then(); next(box,'Дальше →',go); };
+      const C=ask(k)?stepChoices(part,k,s.id,r):null;
+      if(C) choice(box,{k:'Что строим дальше? (шаг '+(k+1)+')',opts:C.opts,ok:C.ok,done:right=>{ if(!right){ A.hints++; A.cat=A.cat||'step'; A.step=A.step||k+1; if(mode==='faded') A.ok=false; }
+        box.insertAdjacentHTML('beforeend',fb(right,right?'Верно.':'Так строят многие. Смотри, что здесь на самом деле:')); reveal(); }});
+      else reveal(); };
+    go(); }
+  function guided(){ const L=(part.steps||[]).length, want=new Set([0,Math.floor(L/2),L-1]); stepper(k=>want.has(k),()=>{ finish(); endTask(); }); }
+  function faded(){ const L=(part.steps||[]).length, rt=rate(s.id), hide=rt!=null&&rt>0.85&&L>=4?2:1; stepper(k=>k>=L-hide,()=>{ finish(); endTask(); }); }
+  function selfSolve(){ const st=part.steps||[]; let hk=0;
+    const box=document.createElement('div'); box.className='ms-self'; stage.appendChild(box);
+    box.innerHTML=`<div class="ms-row"><button class="btn" id="msHint">Подсказка: следующий шаг</button><button class="btn pri" id="msShow">Готово — показать решение</button></div><div id="msHints"></div>`;
+    box.querySelector('#msHint').onclick=()=>{ if(hk>=st.length) return; A.hints++; box.querySelector('#msHints').insertAdjacentHTML('beforeend',`<div class="ms-st"><span>Шаг ${hk+1}</span><b>${st[hk].t||''}</b></div>`); hk++; };
+    box.querySelector('#msShow').onclick=()=>{ sheet.innerHTML=drawing(part,st.length);
+      box.innerHTML=`<details class="ms-all"><summary>Решение по шагам</summary>${st.map((x,i)=>`<div class="ms-st"><span>Шаг ${i+1}</span><b>${x.t||''}</b><div>${x.d||''}</div></div>`).join('')}</details>${part.ans||t.ans?`<div class="ms-ans"><b>Ответ.</b> ${part.ans||t.ans}</div>`:''}
+        <p class="ms-k2">Сравни со своим решением на бумаге. Совпало?</p><div class="ms-row"><button class="btn ms-ok" data-v="1">✓ Совпало</button><button class="btn" data-v="0">Не совпало</button></div>`;
+      box.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ const right=b.dataset.v==='1'; if(!right){ A.ok=false; A.cat=A.cat||'self'; }
+        box.querySelectorAll('[data-v]').forEach(x=>x.disabled=true); box.insertAdjacentHTML('beforeend',fb(right,right?(A.hints?'Решено с подсказкой — тоже рост.':'Решено сам. Это и есть мастерство.'):'Так бывает у многих. Посмотри шаг, где пути разошлись, — эта задача вернётся с новыми данными.'));
+        finish(); endTask(); }); }; }
+  function bugHunt(){ let B=null; try{ B=GYM.bugMake(t,V.seed||seed||1); }catch(e){}
+    if(!B){ return selfSolve(); }
+    const fr=GYM.frame(B.items), hitR=Math.max(10,0.055*Math.max(fr.w,fr.h)); let miss=0, found=false;
+    const mark=q=>({t:'circ',c:q,r:hitR*0.7,k:'res',dash:true});
+    const draw=extra=>{ sheet.innerHTML=DRAW.svg({items:B.items.concat(extra||[]),fit:false,w:fr.w,h:fr.h,ox:fr.ox,oy:fr.oy,pad:10,alt:'Чертёж с ошибкой',max:900}); const svg=sheet.querySelector('svg'); if(!svg) return; svg.style.cursor='pointer';
+      svg.addEventListener('click',ev=>{ if(found) return; const rc=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal, q=[(ev.clientX-rc.left)*vb.width/rc.width-10-fr.ox,(ev.clientY-rc.top)*vb.height/rc.height-10-fr.oy];
+        const dd=Math.min(Math.hypot(q[0]-B.at[0],q[1]-B.at[1]),B.at2?Math.hypot(q[0]-B.at2[0],q[1]-B.at2[1]):1e9);
+        if(dd<=hitR){ found=true; A.hints+=miss; draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); res.innerHTML=fb(true,'<b>Нашёл.</b> '+B.why); finish(); endTask(); }
+        else { miss++; res.innerHTML=`<div class="ms-fb no">Здесь всё верно. ${miss>=2?'Подсказка: проверь '+(B.type==='num'?'числа на чертеже':B.type==='swap'?'подписи точек по линиям связи':'вертикальность линий связи')+'.':'Ищи дальше.'}</div>`; } }); };
+    const res=document.createElement('div'); stage.appendChild(res);
+    const giv=document.createElement('div'); giv.className='ms-row'; giv.innerHTML='<button class="btn">Показать ошибку</button>'; stage.appendChild(giv);
+    giv.firstChild.onclick=()=>{ if(found) return; found=true; A.ok=false; A.cat='bug_'+B.type; draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); res.innerHTML=CATSAY('oops','<b>Ошибка здесь.</b> '+B.why+' Так ошибаются многие — эта задача вернётся с новыми данными.'); giv.remove(); finish(); endTask(); };
+    draw(); }
+  function endTask(){ const last=R.i>=R.ns.length-1, x=R.res[R.i];
+    if(x&&x.drop) stage.insertAdjacentHTML('beforeend',`<div class="ms-soft">Навык «${attr(s.t)}» ослаб — повторим его в ближайшие дни.</div>`);
+    next(stage,last?'К итогам →':'Следующая задача →',toNext); }
+}
+/* длинное условие — коротко, целиком по нажатию: чертёж и вопрос остаются на экране телефона */
+function condHTML(q){ const txt=strip(q); return txt.length>240?`<details class="ms-cond"><summary>${attr(short(q,170))} <span>Условие целиком</span></summary>${q}</details>`:`<div class="ms-cond">${q}</div>`; }
+function fmtT(ms){ const s=Math.round((ms||0)/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+/* вопрос с вариантами. conf: вместо одной кнопки — «Ответить: уверен» и «Ответить: не уверен» */
+function choice(box,o){ const id='c'+Math.random().toString(36).slice(2,8); let sel=-1;
+  const el=document.createElement('div'); el.className='ms-ch'; el.innerHTML=`<div class="ms-chk">${o.k}</div>${o.sub?`<p class="ms-sub">${o.sub}</p>`:''}<div class="ms-opts" role="radiogroup" aria-label="${attr(strip(o.k))}">${o.opts.map((x,i)=>`<button type="button" role="radio" aria-checked="false" class="ms-opt" data-i="${i}">${attr(x)}</button>`).join('')}</div>
+    ${o.conf?`<div class="ms-row ms-conf"><button class="btn pri" data-c="1" disabled>Ответить: уверен</button><button class="btn pri" data-c="0" disabled>Ответить: не уверен</button></div>`:''}`;
+  box.appendChild(el);
+  const end=(i,conf)=>{ el.querySelectorAll('button').forEach(b=>b.disabled=true); const right=o.opts[i]===o.ok;
+    el.querySelectorAll('.ms-opt').forEach((b,j)=>{ if(o.opts[j]===o.ok) b.classList.add('ok'); else if(j===i) b.classList.add('no'); });
+    try{ FX.buzz&&FX.buzz(right?'success':'error'); }catch(e){} o.done(right,conf); };
+  el.querySelectorAll('.ms-opt').forEach(b=>b.onclick=()=>{ sel=+b.dataset.i; if(!o.conf) return end(sel,null);
+    el.querySelectorAll('.ms-opt').forEach(x=>{ const on1=x===b; x.classList.toggle('sel',on1); x.setAttribute('aria-checked',on1); }); el.querySelectorAll('[data-c]').forEach(x=>x.disabled=false); });
+  el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ if(sel>=0) end(sel,+b.dataset.c); });
+  return el; }
+const fb=(ok,html)=>ok?`<div class="ms-fb ok"><span aria-hidden="true">✓</span> ${html}</div>`:CATSAY('oops',html,'ms-fbc');
+function next(box,label,fn){ const d=document.createElement('div'); d.className='ms-row'; d.innerHTML=`<button class="btn pri">${label}</button>`; box.appendChild(d); d.firstChild.onclick=()=>{ d.remove(); fn(); }; try{ d.firstChild.focus({preventScroll:true}); }catch(e){} }
+
+/* ── итоги забега (раздел 4.3) ── */
+function runEnd(host){ const R=RUN; if(!R.done){ R.done=true; R.ms=Date.now()-(R.t0||Date.now());
+    const res={ms:R.res.reduce((a,x)=>a+(x?x.ms:0),0),hints:R.res.reduce((a,x)=>a+(x?x.hints:0),0),ok:R.res.map(x=>x&&x.ok?1:0),mix5:new Set(R.res.map(x=>x&&x.s)).size>=5&&R.res.every(x=>x&&x.ok&&!x.hints)};
+    const runs=ST.get('runs',[]); runs.push({seed:R.code,d:today(),res}); ST.set('runs',runs.slice(-30)); R.sum=res; PENDING=PENDING.concat(achCheck()); }
+  const S=R.sum, d=today(), todayRuns=ST.get('runs',[]).filter(x=>x.d===d).length;
+  const grown={}; R.res.forEach(x=>{ if(!x) return; const g=grown[x.s]||(grown[x.s]={b:x.before,a:x.after}); g.a=x.after; g.b=Math.min(g.b,x.before); });
+  const rings=Object.entries(grown).map(([id,g])=>`<div class="ms-gr"><span class="ms-rg" data-b="${g.b}" data-a="${g.a}">${lvlRing(rm()?g.a:g.b,44)}</span><span><b>${attr(SK[id].t)}</b><small>${g.a>g.b?LVL[g.b]+' → <em>'+LVL[g.a]+'</em>':LVL[g.a]}</small></span></div>`).join('');
+  const find=on('quests')?surprise(R):'';
+  const okN=S.ok.filter(Boolean).length;
+  const vs=R.vs?`<div class="ms-vs"><div><b>Вызов${R.vs.nick?' от '+attr(R.vs.nick):''}</b><span>Он: ${fmtT(R.vs.ms)}, подсказок ${R.vs.hints}, верно ${R.vs.ok}. Ты: ${fmtT(S.ms)}, подсказок ${S.hints}, верно ${okN}.</span></div></div>`:'';
+  { const sr=document.querySelector('#view > h1.sr-only'); if(sr) sr.remove(); }
+  host.innerHTML=`<div class="intro"><h1>Забег пройден</h1><p class="lead">Верно ${okN} из ${S.ok.length} · ${fmtT(S.ms)} · ${S.hints} ${plural(S.hints,'подсказка','подсказки','подсказок')}</p></div>
+   ${vs}<section class="ms-grown" aria-label="Навыки">${rings}</section>${find}
+   ${todayRuns>=3?CATSAY('sleep','Сегодня уже '+todayRuns+' '+plural(todayRuns,'забег','забега','забегов')+'. Сделай перерыв — память закрепляется в паузах.','ms-cat'):CATSAY('happy','Мозг закрепляет во сне. Возвращайся завтра — повторение будет ждать.','ms-cat')}
+   <div class="ms-row ms-two"><a class="btn" href="${H('run')}">Ещё забег</a><a class="btn" href="#/">Хватит на сегодня</a></div>
+   <div class="ms-row"><button class="btn ghost sm" id="msDuel">Вызвать друга на этот забег</button></div>`;
+  if(!rm()) requestAnimationFrame(()=>requestAnimationFrame(()=>host.querySelectorAll('.ms-rg').forEach(e=>{ e.innerHTML=lvlRing(+e.dataset.a,44); })));
+  host.querySelector('#msDuel').onclick=e=>{ const nick=((ST.get('prefs',{})||{}).nick||'').slice(0,16);
+    const url=location.href.split('#')[0]+H('duel',R.code,duelEnc({ms:S.ms,hints:S.hints,ok:S.ok,nick}));
+    FX.shareMenu({title:'Вызов: забег по начертательной геометрии',url,back:e.currentTarget,text:'Пройди тот же забег — кто точнее?'}); };
+  ST.set('duelvs',null); }
+/* кольцо уровня 0–4: контур → синий контур → заливка 40 % → заливка → заливка и ✓ */
+function lvlRing(l,size){ const R=40,C=2*Math.PI*R, z=size||40;
+  return `<svg class="ms-ring l${l}" viewBox="0 0 96 96" width="${z}" height="${z}" role="img" aria-label="${LVL[l]}"><circle cx="48" cy="48" r="${R}" class="ms-rb"/><circle cx="48" cy="48" r="${R}" class="ms-rf" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-l/4)}" transform="rotate(-90 48 48)"/>${l>=4?'<path d="M33 49l10 10 20-22" class="ms-rk"/>':`<text x="48" y="57" text-anchor="middle" class="ms-rt">${l}</text>`}</svg>`; }
+/* неожиданная находка: не анонсируется, только полезное — факт, «призрак» прошлой попытки, достижение */
+function surprise(R){ const r=prng(R.rnd^0x5bd1e995), opts=[];
+  if(PENDING.length){ const a=PENDING.shift(); opts.push(`<b>Достижение: ${attr(a.t)}</b><span>${attr(a.d)}</span>`); }
+  const L=atts(); R.res.forEach(x=>{ if(!x||!x.ok) return; const prev=L.filter(a=>+a.task===x.n&&a.ok&&a.ms>0).slice(0,-1); if(prev.length){ const best=Math.min(...prev.map(a=>a.ms)); if(x.ms<best) opts.push(`<b>Призрак: задача №${x.n}</b><span>было ${fmtT(best)} → стало ${fmtT(x.ms)}</span>`); } });
+  const parts=new Set(R.res.filter(Boolean).map(x=>PARTS[SK[x.s].p]));
+  const qz=(typeof QUIZ!=='undefined'?QUIZ:[]).filter(q=>parts.has(q.t)||(q.t==='Перпендикулярность'&&parts.has('Прямая и плоскость')));
+  if(qz.length){ const q=pick(qz,r); opts.push(`<b>Кстати</b><span>${q.e}</span>`); }
+  if(!opts.length) return '';
+  return `<section class="ms-find" aria-label="Находка"><span class="ms-fk">Находка</span>${opts[Math.floor(r()*Math.min(opts.length,2))]}</section>`; }
+/* экран вехи серии: в цветах политики, анимация ≤ 400 мс */
+function mileShow(n){ try{ const w=document.createElement('div'); w.className='ms-mile'; w.setAttribute('role','dialog'); w.setAttribute('aria-label','Серия '+n+' дней');
+  w.innerHTML=`<div class="ms-mile-p">${CAT('happy')}<b>${n} ${plural(n,'день','дня','дней')} подряд</b><span>Ритм важнее рывков: так навыки держатся месяцами.</span><button class="btn pri">Дальше</button></div>`;
+  document.body.appendChild(w); w.querySelector('button').onclick=()=>w.remove(); }catch(e){} }
+
+/* ── вызов друга: результат хранится только в ссылке ── */
+function duelEnc(o){ return [Math.round(o.ms/1000).toString(36),o.hints|0,o.ok.join('')||'0'].concat(o.nick?[String(o.nick).replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,16)]:[]).join('.'); }
+function duelDec(s){ const p=String(s||'').split('.'); if(p.length<3||!/^[0-9a-z]+$/.test(p[0])||!/^[01]+$/.test(p[2])) return null;
+  return {ms:parseInt(p[0],36)*1000,hints:+p[1]||0,okb:p[2],ok:(p[2].match(/1/g)||[]).length,n:p[2].length,nick:(p[3]||'').replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,16)}; }
+function viewDuel(v,r){ if(!on('review')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  const d=duelDec(r.item), dec=decode(r.tab);
+  if(!d||!dec.ns.length){ v.innerHTML=pageHTML({crumbs:[['Вызов']],body:`<div class="box warn"><h4>Ссылка-вызов повреждена</h4><a href="${H('run')}">Собрать свой забег</a></div>`}); return 'Вызов'; }
+  v.innerHTML=pageHTML({crumbs:[['Вызов']],next:null,noBottom:true,cls:'ms-page',body:`<div class="intro"><h1>Тебя вызвали</h1><p class="lead">${d.nick?attr(d.nick)+': ':''}${d.n} ${plural(d.n,'задача','задачи','задач')}, ${fmtT(d.ms)}, ${d.hints} ${plural(d.hints,'подсказка','подсказки','подсказок')}, верно ${d.ok}. Сможешь точнее?</p></div>
+   ${CATSAY('think','Соревнуемся с результатом, а не с человеком: имени и данных в ссылке нет — только время, подсказки и верные ответы.','ms-cat')}
+   <div class="ms-row"><button class="btn pri lg" id="msAcc">▶ Принять вызов</button></div>`});
+  v.querySelector('#msAcc').onclick=()=>{ ST.set('duelvs',Object.assign({code:r.tab},d)); RUN=null; nav(H('run',r.tab)); };
+  return 'Вызов'; }
+
+/* ── повторение: только то, что пора повторить; после перерыва — короткий забег без «просрочек» ── */
+function viewReview(v){ if(!on('review')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  migrate(); const d=today(), due=SKILLS.filter(s=>{ const u=dueOf(s.id); return u!=null&&u<=d; }), la=lastActive(), back=la!=null&&d-la>=7;
+  if(due.length||back){ const c=back?newRun({short:true}):newRun({skills:due.slice(0,6)}); setTimeout(()=>redir(H('run',c)),0); return 'Повторение'; }
+  const nx=SKILLS.map(s=>dueOf(s.id)).filter(x=>x!=null).sort((a,b)=>a-b)[0];
+  v.innerHTML=pageHTML({crumbs:[['Повторение']],next:null,noBottom:true,body:`<div class="intro"><h1>Повторение</h1></div>${CATSAY('sleep',nx!=null?'Сейчас повторять нечего. Следующее повторение — через '+(nx-d)+' '+plural(nx-d,'день','дня','дней')+'.':'Повторять пока нечего: сначала реши пару задач сам.','ms-cat')}<div class="ms-row"><a class="btn pri" href="${H('run')}">▶ Занятие на 10 минут</a></div>`});
+  return 'Повторение'; }
+
+/* ═════════ ЛЕНТА (#/feed) ═════════
+   Вертикальная лента микрозадач. Блоки по 5 карточек одного навыка (меньше переключений), после каждых 10 — пауза-итог,
+   дальше лента идёт только по нажатию «Ещё 10». Следующий навык подбирает модель мастерства, а не удержание. */
+const FEED_TYPES=['method','next','tf','next','bug'];
+function quizFor(s){ const P=PARTS[s.p], m={'Точка':['Точка'],'Прямая':['Прямая','Перпендикулярность'],'Плоскость':['Плоскость','Обозначения'],'Плоские фигуры':['Плоскость'],'Прямая и плоскость':['Плоскость','Перпендикулярность','Задачи']}[P]||['Свойства','Задачи'];
+  return (typeof QUIZ!=='undefined'?QUIZ:[]).filter(q=>m.includes(q.t)); }
+function feedSkill(r,bi){ const d=today();
+  const due=SKILLS.filter(s=>{ const u=dueOf(s.id); return u!=null&&u<=d; });
+  const edge=SKILLS.filter(s=>{ const l=level(s.id), rt=rate(s.id); return l>=1&&l<=3&&(rt==null||rt<=0.85); });
+  const fresh=SKILLS.filter(s=>level(s.id)===0);
+  if(fresh.length&&(r()<1/8||(!due.length&&!edge.length))) return fresh[0];
+  const pool=due.length?due:edge.length?edge:SKILLS; return pool[(bi+Math.floor(r()*pool.length))%pool.length]; }
+/* план ленты: 10 карточек (два блока по 5) и пауза. start — номер первой карточки */
+function feedBatch(rnd,start,chk){ const out=[], r=prng(rnd+start*31);
+  for(let b=0;b<2;b++){ const s=feedSkill(r,start/5+b);
+    for(let k=0;k<5;k++){ let type=FEED_TYPES[k]; if(type==='bug'&&!chk) type='method'; if(type==='tf'&&!quizFor(s).length) type='next';
+      const ns=s.tasks.filter(n=>WB3.get(n)), n=pick(type==='bug'?(ns.filter(x=>x>=10).length?ns.filter(x=>x>=10):ns):ns,r);
+      out.push({k:'card',s:s.id,type:(type==='bug'&&n<10)?'method':type,n,r:Math.floor(r()*1e9)}); } }
+  out.push({k:'pause',at:start+10}); return out; }
+function feedPlan(rnd,count,chk){ const out=[]; for(let i=0;i<count;i+=10) out.push(...feedBatch(rnd,i,chk)); return out; }
+let FEED=null;
+function viewFeed(v){ if(!on('feed')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  migrate(); const st=ST.get('feed',{}); FEED={rnd:1+Math.floor(Math.random()*2e9),n:0,ok:0,before:{},log:[],sess:st.d===today()?(st.n||0):0};
+  v.innerHTML=`<div class="ms-feed" id="msFeed" tabindex="-1" aria-label="Лента микрозадач"><div class="gy-load">${CATSAY('think','Собираю ленту…','c')}</div></div>`;
+  const box=v.querySelector('#msFeed');
+  GEN.checkers().then(ok=>{ if(!box.isConnected) return; FEED.chk=!!ok; box.innerHTML=''; feedMore(box); });
+  return 'Лента'; }
+function feedMore(box){ const items=feedBatch(FEED.rnd,FEED.n,FEED.chk);
+  items.forEach(it=>{ const el=document.createElement('section'); el.className=it.k==='pause'?'fd-pause':'fd-card'; box.appendChild(el); if(it.k==='pause') feedPause(el,box,it); else feedCard(el,it); }); }
+function feedCard(el,it){ const s=SK[it.s], r=prng(it.r), t=WB3.get(it.n), part=partOf(t), A={s:s.id,task:it.n,seed:0,mode:'feed',hints:0,ok:true,ms:0};
+  FEED.n++; if(!(s.id in FEED.before)) FEED.before[s.id]=level(s.id);
+  const head=(k)=>`<div class="fd-h"><span class="fd-k">${k}</span><span class="fd-s">${attr(s.t)}</span></div>`;
+  const more=`<a class="fd-more" href="${H('ng','tasks',it.n)}">Подробнее: задача №${it.n} →</a>`;
+  const done=(right,extra,cat)=>{ A.ok=right; if(!right) A.cat=cat; record(A); FEED.log.push({s:s.id,ok:right}); if(right) FEED.ok++;
+    el.querySelector('.fd-res').innerHTML=(right?`<div class="ms-fb ok"><span aria-hidden="true">✓</span> ${extra}</div>`:`<div class="ms-fb no">${extra}</div>`)+more; };
+  if(it.type==='method'){ const M=methodChoices(s,r); el.innerHTML=head('Какой метод?')+`<div class="fd-q">${short(t.q,220)}</div><div class="fd-body"></div><div class="fd-res" aria-live="polite"></div>`;
+    choice(el.querySelector('.fd-body'),{k:'С чего начать?',opts:M.opts,ok:M.ok,done:right=>{ A.meth=right?1:0; done(right,right?'Верно: '+attr(s.m)+'.':'Здесь нужен другой ход: <b>'+attr(s.m)+'</b>.','method'); }}); return; }
+  if(it.type==='tf'){ const q=pick(quizFor(s),r), truth=r()<0.5, o=truth?q.o[q.c]:pick(q.o.filter((x,i)=>i!==q.c),r);
+    el.innerHTML=head('Верно или нет?')+`<div class="fd-q">${q.q} — <b>${o}</b></div><div class="ms-row fd-tf"><button class="btn" data-v="1">Верно</button><button class="btn" data-v="0">Неверно</button></div><div class="fd-res" aria-live="polite"></div>`;
+    el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ el.querySelectorAll('[data-v]').forEach(x=>x.disabled=true); const right=(b.dataset.v==='1')===truth; done(right,(right?'':'Нет. ')+q.e,'theory'); }); return; }
+  if(it.type==='bug'){ let B=null; try{ B=GYM.bugMake(t,1+(it.r%89999)); }catch(e){}
+    if(B){ const fr=GYM.frame(B.items), hitR=Math.max(10,0.055*Math.max(fr.w,fr.h)); let miss=0, fin=false;
+      el.innerHTML=head('Где ошибка?')+`<div class="fd-q">В чертеже задачи №${it.n} одна ошибка. Нажми на неё.</div><div class="sheet fd-sheet">${DRAW.svg({items:B.items,fit:false,w:fr.w,h:fr.h,ox:fr.ox,oy:fr.oy,pad:10,alt:'Чертёж с ошибкой',max:900})}</div><div class="fd-res" aria-live="polite"></div>`;
+      const svg=el.querySelector('svg'); if(svg) svg.addEventListener('click',ev=>{ if(fin) return; const rc=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal, q=[(ev.clientX-rc.left)*vb.width/rc.width-10-fr.ox,(ev.clientY-rc.top)*vb.height/rc.height-10-fr.oy];
+        const dd=Math.min(Math.hypot(q[0]-B.at[0],q[1]-B.at[1]),B.at2?Math.hypot(q[0]-B.at2[0],q[1]-B.at2[1]):1e9);
+        if(dd<=hitR||miss>=2){ fin=true; A.hints=miss; const right=dd<=hitR; done(right,(right?'Нашёл. ':'Ошибка была здесь. ')+B.why,'bug_'+B.type);
+          const sh=el.querySelector('.fd-sheet'); sh.innerHTML=DRAW.svg({items:B.items.concat([{t:'circ',c:B.at,r:hitR*0.7,k:'res'}]),fit:false,w:fr.w,h:fr.h,ox:fr.ox,oy:fr.oy,pad:10,alt:'Ошибка отмечена',max:900}); }
+        else { miss++; el.querySelector('.fd-res').innerHTML='<div class="ms-fb no">Здесь всё верно. Ещё попытка.</div>'; } });
+      return; }
+    it.type='next'; }
+  /* «что строим дальше?» — чертёж на шаге k, три варианта шага k+1 */
+  const L=(part.steps||[]).length; let C=null, k=0; for(let g=0;g<6&&!C;g++){ k=Math.min(L-1,1+Math.floor(r()*Math.max(1,L-1))); C=L>=2?stepChoices(part,k,s.id,r):null; }
+  if(!C){ const M=methodChoices(s,r); el.innerHTML=head('Какой метод?')+`<div class="fd-q">${short(t.q,220)}</div><div class="fd-body"></div><div class="fd-res" aria-live="polite"></div>`;
+    choice(el.querySelector('.fd-body'),{k:'С чего начать?',opts:M.opts,ok:M.ok,done:right=>{ A.meth=right?1:0; done(right,right?'Верно.':'Здесь: <b>'+attr(s.m)+'</b>.','method'); }}); return; }
+  el.innerHTML=head('Что строим дальше?')+`<div class="fd-q">Задача №${it.n}. Сделано шагов: ${k} из ${L}.</div><div class="sheet fd-sheet">${drawing(part,k)}</div><div class="fd-body"></div><div class="fd-res" aria-live="polite"></div>`;
+  choice(el.querySelector('.fd-body'),{k:'Следующий шаг',opts:C.opts,ok:C.ok,done:right=>{ const st=part.steps[k]; done(right,(right?'Верно. ':'Дальше было: <b>'+attr(C.ok)+'</b>. ')+short(st.d||'',160),'step');
+    const sh=el.querySelector('.fd-sheet'); sh.innerHTML=drawing(part,k+1); }}); }
+function feedPause(el,box,it){ FEED.sess+=10; ST.set('feed',{d:today(),n:FEED.sess});
+  const tired=FEED.sess>=30;
+  el.innerHTML=`<div class="fd-h"><span class="fd-k">Пауза</span><span class="fd-s">${it.at} ${plural(it.at,'карточка','карточки','карточек')}</span></div><div class="fd-sum"></div>
+    ${tired?CATSAY('sleep','Уже '+FEED.sess+' карточек подряд. Сделай перерыв — лента подождёт.','ms-cat'):''}
+    <div class="ms-row ms-two"><button class="btn" data-more>${tired?'Продолжить всё равно':'Ещё 10'}</button><a class="btn" href="#/">Хватит</a></div>`;
+  /* итог считается, когда до паузы долистали: по ответам на последние 10 карточек */
+  const fill=()=>{ if(el.dataset.f) return; el.dataset.f=1; const last=FEED.log.slice(-10), ok=last.filter(x=>x.ok).length;
+    const grown=Object.keys(FEED.before).filter(id=>level(id)>FEED.before[id]);
+    const find=on('quests')&&PENDING.length?(a=>`<div class="ms-find"><span class="ms-fk">Находка</span><b>Достижение: ${attr(a.t)}</b><span>${attr(a.d)}</span></div>`)(PENDING.shift()):'';
+    el.querySelector('.fd-sum').innerHTML=`<h2 class="fd-pt">Итог: верно ${ok} из ${last.length}</h2>${grown.length?`<p class="fd-g">Подрос навык: ${grown.map(id=>'<b>'+attr(SK[id].t)+'</b>').join(', ')}</p>`:'<p class="fd-g">Навыки растут от самостоятельных ответов — каждый верный здесь считается.</p>'}${find}`; };
+  if('IntersectionObserver' in window){ const io=new IntersectionObserver(es=>{ if(es.some(x=>x.isIntersecting)){ fill(); io.disconnect(); } },{threshold:.3}); io.observe(el); } else fill();
+  el.querySelector('[data-more]').onclick=e=>{ fill(); e.currentTarget.disabled=true; feedMore(box); const nx=el.nextElementSibling; if(nx) nx.scrollIntoView({behavior:rm()?'auto':'smooth',block:'start'}); }; }
+/* стрелки и PageUp/PageDown на компьютере — по одной карточке */
+document.addEventListener('keydown',e=>{ const f=document.getElementById('msFeed'); if(!f||!f.isConnected) return; const tg=e.target&&e.target.tagName; if(tg==='INPUT'||tg==='TEXTAREA') return;
+  const d={ArrowDown:1,PageDown:1,ArrowUp:-1,PageUp:-1}[e.key]; if(!d) return; e.preventDefault(); f.scrollBy({top:d*f.clientHeight,behavior:rm()?'auto':'smooth'}); });
+
+/* ═════════ КАРТА, ТЕТРАДЬ МАСТЕРА, НЕДЕЛЯ, ПЕРЕНОС ═════════ */
+function headerRing(){ const S=summary(); return `<div class="ms-sum">${ringSVG(S.pc,64)}<div><b>Освоено ${S.n4} ${plural(S.n4,'навык','навыка','навыков')} из ${S.n}${S.due?' · '+S.due+' пора повторить':''}</b><span>Умею — ${S.n3}. Ранг: ${rankOf(S.n3).t}</span></div></div>`; }
+function viewMap(v){ if(!on('mastery')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  migrate(); const d=today();
+  const body=PARTS.map((p,pi)=>{ const ss=SKILLS.filter(s=>s.p===pi); const avg=ss.reduce((a,s)=>a+level(s.id),0)/ss.length;
+    return `<section class="ms-reg f${avg<0.5?0:avg<2?1:2}"><h2>${p}</h2><div class="ms-skg">${ss.map(s=>{ const l=level(s.id), u=dueOf(s.id);
+      return `<a class="ms-sk l${l}" href="${H('run','s.'+s.id)}"><span class="ms-skr">${lvlRing(l,40)}</span><span><b>${attr(s.t)}</b><small>${LVL[l]}${u!=null&&u<=d?' · пора повторить':''} · ${s.tasks.length} ${plural(s.tasks.length,'задача','задачи','задач')}</small></span></a>`; }).join('')}</div></section>`; }).join('');
+  v.innerHTML=pageHTML({crumbs:[['Карта курса']],next:null,noBottom:true,cls:'ms-page',body:`<div class="intro"><h1>Карта курса</h1><p class="lead">Регионы открыты все — порядок не навязываем. Туман рассеивается, когда навыки растут: контур → заливка → ✓.</p></div>
+   ${headerRing()}
+   <div class="ms-leg" aria-label="Обозначения">${[0,1,2,3,4].map(l=>`<span>${lvlRing(l,22)} ${LVL[l]}</span>`).join('')}</div>${body}
+   <p class="ms-note">Нажми на навык — соберётся короткий забег по нему.</p><div class="ms-row"><a class="btn" href="${H('collection')}">Тетрадь мастера</a>${on('quests')?`<a class="btn" href="${H('week')}">Неделя</a>`:''}<a class="btn" href="${H('sync')}">Перенос прогресса</a></div>`});
+  return 'Карта курса'; }
+/* карточка задачи: 0 нет · 1 разобрана · 2 решена сам · 3 освоена (решена сам повторно через ≥3 дня, по возможности — на новом варианте) */
+function taskMastery(n){ const L=atts().filter(a=>+a.task===n), self=L.filter(a=>isSelf(a)&&a.mode!=='feed');
+  const ts=taskState(n); let st=Math.max(ts>=2?2:ts>=1?1:0,L.length?1:0); if(self.length) st=Math.max(st,2);
+  if(self.length>=2){ const f=self[0].d, later=self.filter(a=>a.d-f>=3&&(a.seed>0||!(window.GEN&&GEN.ok(n)))); if(later.length) st=3; }
+  return st; }
+function viewCollection(v){ if(!on('mastery')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  migrate(); const ns=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number'); const st=ns.map(n=>[n,taskMastery(n)]);
+  const cnt=k=>st.filter(x=>x[1]>=k).length; let rank=0;
+  const NAMES=['не начата','разобрана','решена сам','освоена'];
+  v.innerHTML=pageHTML({crumbs:[['Тетрадь мастера']],next:null,noBottom:true,cls:'ms-page',body:`<div class="intro"><h1>Тетрадь мастера</h1><p class="lead">${ns.length} задач — как карточки. Разобрать — первый шаг; освоить — решить самому повторно, через несколько дней и на новых данных.</p></div>
+   <div class="ms-cst"><span><b>${cnt(1)}</b> разобрано</span><span><b>${cnt(2)}</b> решено сам</span><span><b>${cnt(3)}</b> освоено</span></div>
+   <div class="ms-cards">${st.map(([n,k])=>`<a class="ms-cd s${k}" href="${H('ng','tasks',n)}" title="Задача №${n}: ${NAMES[k]}"><b>${n}</b><small>${k===3?'★ '+(++rank):NAMES[k]}</small></a>`).join('')}</div>`});
+  return 'Тетрадь мастера'; }
+function weekData(){ const d=today(), L=atts().filter(a=>a.d>d-7), self=L.filter(a=>isSelf(a)&&a.mode!=='feed');
+  const ms=L.reduce((a,x)=>a+Math.min(x.ms||0,15*60e3),0), skills=[...new Set(L.filter(a=>a.ok).map(a=>a.s))];
+  const recs=[]; const byTask={}; atts().forEach(a=>{ if(!a.ok||!a.ms||a.mode==='feed') return; (byTask[a.task]=byTask[a.task]||[]).push(a); });
+  Object.entries(byTask).forEach(([n,a])=>{ const last=a[a.length-1]; if(last.d>d-7&&a.length>1){ const prev=Math.min(...a.slice(0,-1).map(x=>x.ms)); if(last.ms<prev) recs.push({n,was:prev,now:last.ms}); } });
+  const due=SKILLS.filter(s=>{ const u=dueOf(s.id); return u!=null&&u<=d+2; });
+  return {self:self.length,n:L.length,ms,skills,recs,due,str:streakNow(d),wks:weeksStreak(d),fr:streak().freezes}; }
+function viewWeek(v){ if(!on('quests')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  migrate(); const W=weekData(), goalMin=30, mins=Math.round(W.ms/6e4), got=ST.get('ach',{});
+  v.innerHTML=pageHTML({crumbs:[['Неделя']],next:null,noBottom:true,cls:'ms-page',body:`<div class="intro"><h1>Неделя</h1><p class="lead">Сводка за 7 дней. Цель недели — около 30 минут и два окрепших навыка.</p></div>
+   <div class="ms-kpi"><div><b>${W.self}</b><span>решено сам</span></div><div><b>${W.skills.length}</b><span>${plural(W.skills.length,'навык','навыка','навыков')} в работе</span></div><div><b>${mins}</b><span>минут из ${goalMin}</span></div><div><b>${W.str}</b><span>${plural(W.str,'день','дня','дней')} подряд · заморозок ${W.fr}</span></div></div>
+   ${W.str===0&&W.wks>0?`<p class="ms-note">Серия недель: ${W.wks} — неделя засчитана, если занимался 3 дня и больше.</p>`:''}
+   ${W.recs.length?`<h2 class="ms-h2">Личные рекорды</h2><ul class="ms-ul">${W.recs.slice(0,5).map(x=>`<li>Задача №${x.n}: ${fmtT(x.was)} → <b>${fmtT(x.now)}</b></li>`).join('')}</ul>`:''}
+   <h2 class="ms-h2">Пора повторить</h2>${W.due.length?`<ul class="ms-ul">${W.due.map(s=>`<li>${attr(s.t)}</li>`).join('')}</ul><div class="ms-row"><a class="btn pri" href="${H('review')}">Повторить</a></div>`:'<p class="ms-note">Ничего не горит.</p>'}
+   <h2 class="ms-h2">Достижения</h2><div class="ms-ach">${ACH.map(a=>{ const g=got[a.id]!=null; return (a.hid&&!g)?`<div class="ms-a"><b>???</b><span>Скрытое достижение</span></div>`:`<div class="ms-a${g?' on':''}"><b>${g?'✓ ':''}${attr(a.t)}</b><span>${attr(a.d)}</span></div>`; }).join('')}</div>
+   <div class="ms-row"><button class="btn" id="msWkPic">Сохранить картинкой</button></div>`});
+  v.querySelector('#msWkPic').onclick=e=>{ const host=document.createElement('div'); host.style.cssText='position:fixed;left:-9999px;top:0'; host.innerHTML=weekCard(W,mins); document.body.appendChild(host);
+    const svg=host.querySelector('svg'); FX.shareMenu({title:'Моя неделя на Начерте',url:location.href.split('#')[0],back:e.currentTarget,file:'nachert-nedelya.png',png:()=>FX.svgPng(svg,'Неделя на Начерте',W.self+' решено сам')}); setTimeout(()=>host.remove(),60000); };
+  return 'Неделя'; }
+/* карточка для соцсетей — без личных данных: числа недели и ранг */
+function weekCard(W,mins){ const S=summary(), rk=rankOf(S.n3).t;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 250" width="480" height="250"><rect width="480" height="250" rx="22" fill="#f4f5f8"/><text x="28" y="50" font-family="system-ui,sans-serif" font-size="22" font-weight="800" fill="#0f1420">Неделя на «Начерте»</text>
+   <text x="28" y="78" font-family="system-ui,sans-serif" font-size="15" fill="#3b4354">Ранг: ${rk} · освоено навыков: ${S.n4} из ${S.n}</text>
+   ${[[W.self,'решено сам'],[W.skills.length,'навыков в работе'],[mins,'минут']].map((x,i)=>`<text x="${28+i*150}" y="150" font-family="system-ui,sans-serif" font-size="40" font-weight="800" fill="#2340c8">${x[0]}</text><text x="${28+i*150}" y="176" font-family="system-ui,sans-serif" font-size="14" fill="#3b4354">${x[1]}</text>`).join('')}
+   <text x="28" y="222" font-family="system-ui,sans-serif" font-size="13" fill="#5d6577">nachert — начертательная геометрия по шагам</text></svg>`; }
+
+/* ── перенос прогресса: код (deflate + base64url) и файл. Ни сервера, ни e-mail ── */
+const SYNC_KEYS=['wb3','done','srs','attAgg','att','ach','streak','runs','msmig','prefs'];
+function snapshot(full){ const o={v:1}; SYNC_KEYS.forEach(k=>{ const x=ST.get(k,null); if(x!=null) o[k]=x; }); if(!full&&o.att) o.att=o.att.slice(-150); return o; }
+const b64u=bytes=>{ let s=''; for(let i=0;i<bytes.length;i+=0x8000) s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const ub64=s=>{ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; };
+async function pipe(bytes,T){ const st=new Blob([bytes]).stream().pipeThrough(new T('deflate')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+async function exportCode(full){ const raw=new TextEncoder().encode(JSON.stringify(snapshot(full)));
+  if(typeof CompressionStream!=='undefined'){ try{ return 'z'+b64u(await pipe(raw,CompressionStream)); }catch(e){} } return 'j'+b64u(raw); }
+async function decodeCode(code){ code=String(code||'').trim().replace(/\s+/g,''); const m=/^#?\/?sync\/(.+)$/.exec(code.split('#').pop()); if(m) code=m[1];
+  const kind=code[0], body=ub64(code.slice(1)); const bytes=kind==='z'?await pipe(body,DecompressionStream):body; const o=JSON.parse(new TextDecoder().decode(bytes)); if(!o||o.v!==1) throw new Error('формат'); return o; }
+function applySnap(o){ SYNC_KEYS.forEach(k=>{ if(k in o) ST.set(k,o[k]); }); }
+async function importCode(code){ const o=await decodeCode(code); applySnap(o); return o; }
+function viewSync(v,r){ if(!on('mastery')){ setTimeout(()=>redir('#/'),0); return 'Начерт'; }
+  const pre=r.tab||'', prefs=ST.get('prefs',{})||{};
+  v.innerHTML=pageHTML({crumbs:[['Перенос прогресса']],next:null,noBottom:true,cls:'ms-page',body:`<div class="intro"><h1>Перенос прогресса</h1><p class="lead">Прогресс живёт только в этом браузере. Чтобы продолжить на другом устройстве — перенеси его кодом или файлом. Сервера, регистрации и e-mail нет.</p></div>
+   <section class="ms-box"><h2>Отсюда</h2><div class="ms-row"><button class="btn pri" id="msExp">Показать код</button><button class="btn" id="msFile">Скачать файл .nachert.json</button></div><div id="msCode"></div></section>
+   <section class="ms-box"><h2>Сюда</h2><label class="ms-lbl" for="msIn">Вставь код с другого устройства</label><textarea id="msIn" class="ms-ta" rows="3" spellcheck="false">${attr(pre)}</textarea>
+     <div class="ms-row"><button class="btn pri" id="msImp">Перенести сюда</button><label class="btn" for="msFin">Загрузить файл</label><input type="file" id="msFin" accept=".json,application/json" hidden></div><div id="msImpRes" aria-live="polite"></div></section>
+   <section class="ms-box"><h2>Настройки занятий</h2>
+     <label class="ms-lbl" for="msRet">Целевая доля запоминания</label><select id="msRet" class="ms-sel">${[0.8,0.85,0.9,0.95].map(x=>`<option value="${x}"${retention()===x?' selected':''}>${Math.round(x*100)}% — ${x<0.9?'реже повторения':x>0.9?'чаще повторения':'рекомендуем'}</option>`).join('')}</select>
+     <label class="ms-lbl" for="msNick">Ник для вызовов (по желанию, до 16 символов, хранится только в ссылке)</label><input id="msNick" class="ms-sel" maxlength="16" value="${attr(prefs.nick||'')}"></section>`});
+  const $$=s=>v.querySelector(s), out=$$('#msImpRes');
+  $$('#msExp').onclick=async()=>{ const c=await exportCode(false), url=location.href.split('#')[0]+'#/sync/'+c, qr=QR.svg(url,220);
+    $$('#msCode').innerHTML=`<textarea class="ms-ta" rows="3" readonly>${attr(c)}</textarea><div class="ms-row"><button class="btn" id="msCopy">Скопировать код</button></div>${qr?`<div class="ms-qr">${qr}<span>Отсканируй камерой другого устройства</span></div>`:'<p class="ms-note">Код длинный для QR — скопируй его или перенеси файлом.</p>'}`;
+    $$('#msCopy').onclick=()=>FX.copy(c,'Код скопирован'); };
+  $$('#msFile').onclick=()=>FX.saveBlob(new Blob([JSON.stringify(snapshot(true))],{type:'application/json'}),'progress.nachert.json');
+  const done=()=>{ out.innerHTML=`<div class="ms-fb ok"><span aria-hidden="true">✓</span> Прогресс перенесён.</div>`; try{ renderHProg(); }catch(e){} };
+  $$('#msImp').onclick=async()=>{ const c=$$('#msIn').value; if(!c.trim()) return; if(!confirm('Заменить прогресс на этом устройстве прогрессом из кода?')) return;
+    try{ await importCode(c); done(); }catch(e){ out.innerHTML='<div class="ms-fb no">Код не читается — проверь, что он скопирован целиком.</div>'; } };
+  $$('#msFin').onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; f.text().then(txt=>{ const o=JSON.parse(txt); if(!o||o.v!==1) throw 0; if(!confirm('Заменить прогресс на этом устройстве прогрессом из файла?')) return; applySnap(o); done(); }).catch(()=>{ out.innerHTML='<div class="ms-fb no">Файл не подходит.</div>'; }); };
+  $$('#msRet').onchange=e=>{ const p=ST.get('prefs',{})||{}; p.ret=+e.target.value; ST.set('prefs',p); };
+  $$('#msNick').onchange=e=>{ const p=ST.get('prefs',{})||{}; p.nick=String(e.target.value).replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,16); ST.set('prefs',p); };
+  return 'Перенос прогресса'; }
+
+/* ── главная: «Занятие на 10 минут», возвращение после перерыва, кольцо мастерства ── */
+function homeHTML(){ if(!anyOn()) return ''; migrate(); let h='';
+  const d=today(), la=lastActive(), back=la!=null&&d-la>=7;
+  if(on('review')){ if(back) h+=`<a class="ms-back" href="${H('review')}">${CAT('wave')}<span><b>С возвращением!</b><small>Без упрёков: короткое повторение на 5 минут — и всё вспомнится.</small></span></a>`;
+    const S=summary(); h+=`<a class="ms-cta" href="${H('run')}"><span class="ms-cta-i" aria-hidden="true">▶</span><span><b>Занятие на 10 минут</b><small>${S.due?S.due+' '+plural(S.due,'навык','навыка','навыков')+' пора повторить · ':''}задачи вперемешку, по твоему уровню</small></span></a>`; }
+  const links=[on('mastery')&&[H('map'),'Карта курса'],on('feed')&&[H('feed'),'Лента'],on('mastery')&&[H('collection'),'Тетрадь мастера'],on('quests')&&[H('week'),'Неделя']].filter(Boolean);
+  if(on('mastery')) h+=headerRing();
+  if(on('quests')){ const n=streakNow(d), s=streak(); if(n||s.best) h+=`<p class="ms-strk">${n?'Серия: '+n+' '+plural(n,'день','дня','дней')+' подряд':'Серия недель: '+weeksStreak(d)}${s.freezes?' · заморозок в запасе: '+s.freezes:''}</p>`; }
+  if(links.length) h+=`<nav class="ms-links" aria-label="Мастерство">${links.map(x=>`<a href="${x[0]}">${x[1]}</a>`).join('')}</nav>`;
+  return `<section class="ms-home" aria-label="Занятия">${h}</section>`; }
+function hprog(){ if(!on('mastery')) return false; const S=summary(), el=$('hprog'); if(!el) return false;
+  el.innerHTML=`<span>${S.pc}%</span><div class="hbar"><i style="width:${S.pc}%"></i></div>`;
+  const a=progressNG(); el.title='Мастерство: освоено '+S.n4+' из '+S.n+' навыков. Пройдено шагов: '+a.d+' из '+a.n+' ('+a.pc+'%)'; return true; }
+
+/* ── владельцу: метрики методики (раздел 13), считаются в браузере ── */
+function ownerHTML(){ const L=atts(); if(!L.length) return '<section class="ow-box"><h2>Мастерство: метрики</h2><p class="ow-m">Попыток пока нет.</p></section>';
+  const rev=L.filter(a=>a.ontime), r7=L.filter((a,i)=>{ const p=L.slice(0,i).reverse().find(b=>b.s===a.s); return p&&a.d-p.d>=7; }), r30=r7.filter((a,i)=>{ const p=L.slice(0,L.indexOf(a)).reverse().find(b=>b.s===a.s); return p&&a.d-p.d>=30; });
+  const pc=(x,n)=>n?Math.round(100*x/n)+'%':'—', d=today(), wk=k=>L.filter(a=>a.d>d-7*(k+1)&&a.d<=d-7*k&&a.mode!=='feed');
+  const rows=[0,1,2,3].map(k=>{ const w=wk(k); return `<div><span>${k?k+' нед. назад':'эта неделя'}</span><b>без подсказок ${pc(w.filter(isSelf).length,w.length)} · уверенных ошибок ${pc(w.filter(a=>a.conf===1&&!a.ok).length,w.length)}</b></div>`; }).join('');
+  return `<section class="ow-box"><h2>Мастерство: метрики</h2><div class="ow-kv"><div><span>Повторения в срок — верно</span><b>${pc(rev.filter(a=>a.ok).length,rev.length)} (${rev.length})</b></div><div><span>Через 7+ дней — верно</span><b>${pc(r7.filter(a=>a.ok).length,r7.length)}</b></div><div><span>Через 30+ дней — верно</span><b>${pc(r30.filter(a=>a.ok).length,r30.length)}</b></div><div><span>Серия недель</span><b>${weeksStreak(d)}</b></div>${rows}</div><p class="ow-m">Если вовлечённость растёт, а верных отложенных повторений нет — механика вредная и убирается.</p></section>`; }
+
+/* ── роутер ── */
+const ROUTES={run:viewRun,review:viewReview,feed:viewFeed,map:viewMap,collection:viewCollection,week:viewWeek,duel:viewDuel,sync:viewSync};
+function view(v,r){ return ROUTES[r.s](v,r); }
+return {SKILLS,PARTS,ACH,K,ROUTES,view,today,prng,skillOf,level,card,step,recall,interval,record,migrate,summary,rankOf,streak,streakOn,streakNow,weeksStreak,
+  planSkills,newRun,decode,feedPlan,feedBatch,exportCode,importCode,decodeCode,snapshot,duelEnc,duelDec,homeHTML,hprog,ownerHTML,taskMastery,lvlRing,_day:null};
+})();
+/* ▲ мастерство (MS) ▲ */
 
 /* ───────── init ───────── */
 /* сохраняем только явный выбор пользователя, иначе следуем за системной темой */

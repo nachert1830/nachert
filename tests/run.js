@@ -60,6 +60,9 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Тренажёр: блоков задач '+got.length+' (совпадают с эталоном), генератор — задач '+el.ok.length+', «найди ошибку» — '+gy.info.bug+', 3D к задачам — '+gy.info.t3);
     report('Тренажёр',gy.bad); await gpage.close(); }
 
+  /* 3д. мастерство (этап 1 ТЗ, за флагами владельца): модель повторения, забег, лента, серия, перенос, приватность */
+  { const m=await require('./mastery.js').masteryCheck(browser,URL); m.info.forEach(x=>info.push(x)); report('Мастерство',m.bad); }
+
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
   report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));
