@@ -39,6 +39,27 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   info.push('Сдвиг точки ответа: ловит 3D-проверка '+om.геометрия+' из '+om.всего+', вместе с оракулом '+om.сОракулом+' из '+om.всего+' (задач с оракулом: '+(await page.evaluate(()=>ORACLE_SPECS.length))+')');
   if(om.сОракулом/om.всего<0.85) fail.push('Оракул ослаб: ловит '+Math.round(100*om.сОракулом/om.всего)+'% сдвигов ответа');
 
+  /* 3б′. трассировка происхождения (O4 «по построению»): каждая точка и линия — с того поля, которое указывает подпись */
+  { const ppage=await browser.newPage(); await ppage.goto(URL); await ppage.waitForTimeout(1200);
+    const {issues,stats}=await require('./provenance-run.js').runProvenance(ppage);
+    info.push('Происхождение: прослежено точек '+stats.traced+' из '+stats.pts+', отрезков '+stats.segTraced+' из '+stats.segs);
+    report('Происхождение точек',issues); await ppage.close(); }
+
+  /* 3б″. сертификаты (tests/certified): два исполнения протокола совпадают по шагам, ответ = решение условия,
+     опубликованный чертёж и число в ответе = доказанная модель */
+  { const cpage=await browser.newPage(); await cpage.goto(URL); await cpage.waitForTimeout(1200);
+    const certs=await require('./certified/run.js').runCertificates(cpage,{variants:QUICK?50:200});
+    certs.forEach(c=>{ if(!c.ok) Object.entries(c.O).filter(([k,o])=>!o.ok).forEach(([k,o])=>fail.push('Сертификат №'+c.n+' · '+k+': '+o.detail)); });
+    info.push('Сертификаты: выдано '+certs.filter(c=>c.ok).length+' из '+certs.length+' (№'+certs.map(c=>c.n).join(', №')+')'); await cpage.close(); }
+
+  /* 3б‴. проверка проверки на мутациях КОДА задач (O8): порог для подмены поля и для задач с сертификатом */
+  if(!QUICK){ const apage=await browser.newPage(); await apage.goto(URL); await apage.waitForTimeout(1200);
+    const ad=await require('./adequacy.js').runAdequacy(apage,{per:2,seed:5}), fh=ad.by['F↔H'], ct=ad.cby['всего'];
+    info.push('Мутации кода: поймано '+ad.by['всего'].all+' из '+ad.by['всего'].n+(fh?'; подмена поля F↔H — '+fh.all+' из '+fh.n:'')+(ct?'; в задачах с сертификатом — '+ct.cert+' из '+ct.n:''));
+    if(fh&&fh.all/fh.n<0.75) fail.push('Проверка ослабла: подмена поля F↔H ловится в '+Math.round(100*fh.all/fh.n)+'% случаев');
+    if(ct&&ct.cert/ct.n<0.85) fail.push('Сертификаты ослабли: в задачах с сертификатом ловится '+Math.round(100*ct.cert/ct.n)+'% мутаций');
+    await apage.close(); }
+
   /* 3в. случайные варианты: каждая задача заново строится на искажённых данных и проходит 3D-проверку и оракул */
   { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
     const N=QUICK?10:30, res=await require('./random-run.js').runVariants(vpage,N), list=[]; let deg=0;

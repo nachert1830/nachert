@@ -199,13 +199,15 @@ window.ORACLE_MUTATE=function(opts){
       const ans=new Set(window.ORACLE_POINTS(window.ORACLE_SPECS.includes(t.n+'.'+(pi+1))?t.n+'.'+(pi+1):String(t.n)));
       const cand=[...new Set(items.filter(i=>i&&i.t==='pt'&&i.l&&/^[A-ZА-Я0-9][₀-₉0-9]*′$/.test(i.l)&&!given.has(i.l)).map(i=>i.l.slice(0,-1)))]
         .filter(n=>ans.has(n)).filter(n=>items.some(i=>i&&i.t==='pt'&&i.l===n+'″'));
-      const one={tasks:[Object.assign({},t,{parts:null,given:items,steps:[]})]};
+      /* мутант подставляется в СВОЮ часть задачи: у многочастных задач (№ 10, 23, 24, 45…) оракул части 2 — не оракул части 1 */
+      const asTask=X=>({tasks:[(t.parts&&t.parts.length)?Object.assign({},t,{parts:parts.map((q,qi)=>qi===pi?Object.assign({},q,{given:X,steps:[]}):q)}):Object.assign({},t,{parts:null,given:X,steps:[]})]});
+      const one=asTask(items);
       const g0=new Set(GEOM_CHECK({items}).map(key)), o0=new Set(ORACLE_CHECK(one).map(key));
       for(let k=0;k<(opts.per||4)&&cand.length;k++){ const n=cand[Math.floor(rnd()*cand.length)], dx=(rnd()<.5?-1:1)*(3+rnd()*6), dy=(rnd()<.5?-1:1)*(3+rnd()*6);
         const it2=items.map(i=>{ if(!i||i.t!=='pt'||!i.at) return i; if(i.l===n+'′') return Object.assign({},i,{at:[i.at[0]+dx,i.at[1]+dy]}); if(i.l===n+'″') return Object.assign({},i,{at:[i.at[0]+dx,i.at[1]]}); return i; });
         res.всего++;
         const g=GEOM_CHECK({items:it2}).map(key).some(x=>!g0.has(x));
-        const o=ORACLE_CHECK({tasks:[Object.assign({},t,{parts:null,given:it2,steps:[]})]}).map(key).some(x=>!o0.has(x));
+        const o=ORACLE_CHECK(asTask(it2)).map(key).some(x=>!o0.has(x));
         if(g) res.геометрия++; if(g||o) res.сОракулом++; else if(res.пропуски.length<10) res.пропуски.push('№'+t.n+(parts.length>1?'.'+(pi+1):'')+' '+n); } }); });
   return res;
 };
