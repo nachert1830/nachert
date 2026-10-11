@@ -3,8 +3,12 @@
    Ядро 3D находит K прямо как a ∩ α, α ⟂ a через A. Эпюр идёт способом сайта: горизонталь и фронталь α,
    посредник γ ⊃ a, линия 1–2, точка K′, линия связи — K″. Сверка на каждом шаге доказывает, что этот способ
    приводит именно к основанию перпендикуляра. */
-const {q,V}=require('./exact.js');
-const {K3,K2,PR}=require('./kernels.js');
+(function(){
+/* работает и в Node (require), и на странице сайта (глобальный CERT) */
+const need=n=>(typeof module!=='undefined'&&module.exports&&typeof require==='function')?require('./'+n+'.js'):self.CERT[n];
+const put=(n,v)=>{ if(typeof module!=='undefined'&&module.exports) module.exports=v; else { self.CERT=self.CERT||{}; self.CERT[n]=v; if(v&&v.n) (self.CERT.tasks=self.CERT.tasks||{})[v.n]=v; } };
+const {q,V}=need('exact');
+const {K3,K2,PR}=need('kernels');
 
 /* условие — два независимых ввода (строки, как в тетради). В прототипе второй ввод набран отдельно мной;
    в работе его делает второй человек по скану тетради */
@@ -20,6 +24,14 @@ const task={
   n:47, title:'Расстояние от точки A до прямой a',
   k:'4.16',                                    /* L.S = 3,2 ед./мм × увеличение 1,3 */
   entries:[entry1,entry2], gamma,
+  /* условие с чертежа: A — по A″ и A′; прямая a — две её точки, z с a″ и y с a′ на одной линии связи */
+  fromSite(S,k){ const Q=x=>q(x), A2=S.points['A″'].map(Q), A1=S.points['A′'].map(Q);
+    const A=[A2[0].neg().div(k),A1[1].div(k),A2[1].neg().div(k)];
+    const l2=S.lines['a″'].map(p=>p.map(Q)), l1=S.lines['a′'].map(p=>p.map(Q));
+    const at=(L,u)=>L[0][1].add(L[1][1].sub(L[0][1]).mul(u.sub(L[0][0]).div(L[1][0].sub(L[0][0]))));
+    const P=u=>[u.neg().div(k),at(l1,u).div(k),at(l2,u).neg().div(k)];
+    const P1=P(l2[0][0]), P2=P(l2[1][0]);
+    return {A,aP:x=>{ x=q(x); return V.add(P1,V.mul(V.sub(P2,P1),x.sub(P1[0]).div(P2[0].sub(P1[0])))); }}; },
   given3(M,G){ M.A=G.A; M.a=K3.line(G.aP(0),G.aP(1)); },
   given2(E,G,k){ E['A″']=PR[2](G.A,k); E['A′']=PR[1](G.A,k);
     E['a″']=K2.line(PR[2](G.aP(0),k),PR[2](G.aP(1),k)); E['a′']=K2.line(PR[1](G.aP(0),k),PR[1](G.aP(1),k)); },
@@ -85,4 +97,5 @@ const task={
     {what:'в тексте ответа число на 1 мм меньше доказанного', site:S=>{ S.ans=S.ans.replace(/(\|AK\|\s*≈\s*)(\d+)/,(m,a,b)=>a+(+b-1)); }},
   ],
 };
-module.exports=task;
+put('t47',task);
+})();

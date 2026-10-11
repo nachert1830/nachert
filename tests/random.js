@@ -20,16 +20,18 @@ function blocks(){
 /* детерминированный генератор */
 function rng(seed){ let x=seed>>>0||1; return ()=>{ x^=x<<13; x>>>=0; x^=x>>17; x^=x<<5; x>>>=0; return x/4294967296; }; }
 /* монотонное искажение числа: v → v(1+s) + e(sin(v/λ+φ) − sin φ); 0 → 0, равные — равны */
-function warp(seed){ const r=rng(seed); const s=(r()-.5)*.12, e=.6+r()*1.6, lam=7+r()*9, ph=r()*6.28;
-  return v=>{ if(v===0) return 0; const w=v*(1+s)+e*(Math.sin(v/lam+ph)-Math.sin(ph)); return Math.round(w*100)/100; }; }
+function warp(seed,pin){ const r=rng(seed); const s=(r()-.5)*.12, e=.6+r()*1.6, lam=7+r()*9, ph=r()*6.28;
+  return v=>{ if(v===0) return 0; if(pin&&(pin.has(v)||pin.has(-v))) return v; const w=v*(1+s)+e*(Math.sin(v/lam+ph)-Math.sin(ph)); return Math.round(w*100)/100; }; }
 const NUM='(-?\\d+(?:\\.\\d+)?)', MUL='((?:\\s*\\*\\s*[A-Za-z_$][\\w$]*)?)';
 /* тройки координат: [x,y,z] и [x*s,y*s,z*s] */
 const RE=new RegExp('\\[\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*\\](?!\\s*\\.)','g');
 /* отдельные числа-данные: const X=67.8, kf=0.84, … (в объявлениях) */
 const SC=/(\b(?:const|let)\s+|,\s*)([A-Za-z_$][\w$]*)(\s*=\s*)(-?\d+(?:\.\d+)?)(?=\s*[,;\n]|\s*\/[\/*])/g;
-function perturb(src,seed){ const f=warp(seed); let n=0;
+/* числа из условия (q:'…') не меняются — так же делает генератор на сайте (GEN.pinOf): условие на экране совпадает с чертежом */
+function pinOf(src){ const p=new Set(); src.replace(/\bq:\s*'((?:[^'\\]|\\.)*)'/g,(m,q)=>{ q.replace(/<[^>]+>/g,' ').replace(/\d+(?:[.,]\d+)?/g,x=>{ p.add(parseFloat(x.replace(',','.'))); return x; }); return m; }); return p; }
+function perturb(src,seed){ const f=warp(seed,pinOf(src)); let n=0;
   let s=src.replace(RE,(m,a,ma,b,mb,c,mc)=>{ n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
-  s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC)$/.test(name)) return m;   /* масштаб чертежа — не данные задачи */ n++; return pre+name+eq+f(+v); });
+  s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) return m;   /* масштаб и число шагов разбиения (N=400 в видимости № 46, n=16 у волнистой линии) — не данные задачи */   /* масштаб чертежа — не данные задачи */ n++; return pre+name+eq+f(+v); });
   return {src:s,n}; }
 
 module.exports={blocks,perturb,warp};

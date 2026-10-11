@@ -3,7 +3,7 @@
    node tests/certified/run.js --faults   — то же + показ: какие подсаженные ошибки какое обязательство ловит */
 const fs=require('fs'), path=require('path');
 const {certify}=require('./certify.js');
-const TASKS=[require('./t47.js'),require('./t46.js')];
+const TASKS=require('./list.js').map(n=>require('./'+n+'.js'));
 
 /* опубликованный чертёж и ответ — со страницы (то, что видит студент) */
 async function siteData(page,n){ return page.evaluate(n=>{

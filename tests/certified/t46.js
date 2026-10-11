@@ -4,8 +4,12 @@
    конкурирующим точкам 3/7 (π₂) и 8/9 (π₁). Решатель условия перебирает ВСЕ шесть сторон и находит, какие из них
    протыкают другой треугольник, — так проверяется и полнота («посредник через BC не нужен»).
    Отдельно: каждый видимый/штриховой участок опубликованного чертежа сверяется с точной видимостью. */
-const {q,V}=require('./exact.js');
-const {K3,K2,PR}=require('./kernels.js');
+(function(){
+/* работает и в Node (require), и на странице сайта (глобальный CERT) */
+const need=n=>(typeof module!=='undefined'&&module.exports&&typeof require==='function')?require('./'+n+'.js'):self.CERT[n];
+const put=(n,v)=>{ if(typeof module!=='undefined'&&module.exports) module.exports=v; else { self.CERT=self.CERT||{}; self.CERT[n]=v; if(v&&v.n) (self.CERT.tasks=self.CERT.tasks||{})[v.n]=v; } };
+const {q,V}=need('exact');
+const {K3,K2,PR}=need('kernels');
 
 const entry1={A:['60.5','46.3','25.2'],B:['37.5','5.8','54.1'],C:['7.5','27.5','7.5'],D:['12.7','34.8','35.5'],E:['25.2','52.3','58.2'],F:['55.6','11.0','10.5']};
 const entry2={A:['60.5','46.3','25.2'],B:['37.5','5.8','54.1'],C:['7.5','27.5','7.5'],D:['12.7','34.8','35.5'],E:['25.2','52.3','58.2'],F:['55.6','11.0','10.5']};
@@ -28,6 +32,7 @@ function hiddenBy(X,O,pl){ const k=q(1); const pr=p=>PR[pl](p,k); if(!inside2(pr
 const task={
   n:46, title:'Пересечение треугольников ABC и DEF, видимость', k:'3.52',
   entries:[entry1,entry2], gamma,
+  fromSite(S,k){ const G={}; NAMES.forEach(n=>{ const f=S.points[n+'″'].map(x=>q(x)), h=S.points[n+'′'].map(x=>q(x)); G[n]=[f[0].neg().div(k),h[1].div(k),f[1].neg().div(k)]; }); return G; },
   given3(M,G){ NAMES.forEach(n=>M[n]=G[n]); M.ABC=K3.plane3(G.A,G.B,G.C); },
   given2(E,G,k){ NAMES.forEach(n=>{ E[n+'″']=PR[2](G[n],k); E[n+'′']=PR[1](G[n],k); }); },
   steps:[
@@ -118,4 +123,5 @@ const task={
     {what:'на опубликованном π₁ один видимый участок нарисован штрихом', site:S=>{ const s=S.segs.slice().reverse().find(x=>x.k==='main'); if(s) s.k='hid'; }},
   ],
 };
-module.exports=task;
+put('t46',task);
+})();

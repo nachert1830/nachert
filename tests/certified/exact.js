@@ -2,6 +2,10 @@
    Все построения начертательной геометрии с прямыми и плоскостями (пересечение, параллель, перпендикуляр,
    основание перпендикуляра, линия связи) — рациональные операции. Поэтому в дробях «равно» значит «равно»:
    никаких допусков, ни ложных тревог, ни пропусков меньше допуска. Длины сравниваются в квадратах. */
+(function(){
+/* работает и в Node (require), и на странице сайта (глобальный CERT) */
+const need=n=>(typeof module!=='undefined'&&module.exports&&typeof require==='function')?require('./'+n+'.js'):self.CERT[n];
+const put=(n,v)=>{ if(typeof module!=='undefined'&&module.exports) module.exports=v; else { self.CERT=self.CERT||{}; self.CERT[n]=v; if(v&&v.n) (self.CERT.tasks=self.CERT.tasks||{})[v.n]=v; } };
 const gcd=(a,b)=>{ a=a<0n?-a:a; b=b<0n?-b:b; while(b){ [a,b]=[b,a%b]; } return a; };
 class Q{
   constructor(n,d=1n){ if(d===0n) throw new Error('деление на ноль'); if(d<0n){ n=-n; d=-d; } const g=gcd(n,d)||1n; this.n=n/g; this.d=d/g; }
@@ -49,4 +53,5 @@ function roundSqrt(v){ if(v.sign()<0) throw new Error('√ отрицатель�
   const ok=N=>{ const lo=q((2n*N-1n)*(2n*N-1n)), hi=q((2n*N+1n)*(2n*N+1n)), v4=v.mul(4); return (N===0n||lo.cmp(v4)<=0)&&v4.cmp(hi)<0; };
   for(const c of [N,N-1n,N+1n]) if(c>=0n&&ok(c)) return Number(c);
   throw new Error('округление √ не найдено'); }
-module.exports={Q,q,V,roundSqrt};
+put('exact',{Q,q,V,roundSqrt});
+})();

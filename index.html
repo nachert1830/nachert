@@ -13243,7 +13243,7 @@ const A=[144,20,25], B=[120,-20,-15], C=[96,-10,25], D=[72,10,-25], E=[48,0,15],
 const row = 106;   // строка подписей результата под чертежом
 const res = (p,s) => txt([F(p)[0],row],s,'res',{anchor:'middle'});
 WB3.add({
-  n:1, sec:'s1', rk1:true, src:'стр. 4', conf:'approx',
+  n:1, sec:'s1', rk1:true, src:'стр. 4', conf:'approx', fixed:true,
   q:'Определить расположение заданных точек относительно плоскостей проекций. Данные (четверть пространства, плоскость или ось проекций и координаты точек) занести в таблицу.',
   data: table(['Точка','Расположение','y','z'], ['A','B','C','D','E','F','G'].map(n=>[n,'','',''])),
   intro:'Даны две проекции (фронтальная ″ и горизонтальная ′) семи точек. Для каждой определим знаки координат y и z — они и задают четверть пространства.',
@@ -13340,7 +13340,7 @@ WB3.add({
 const A=[25,15,10], B=[35,-20,30], C=[-30,-15,-25], D=[45,25,-35], E=[15,15,0], Fp=[0,20,0];
 const q3 = (n,p,l2,l1,l3) => point(n,p,{pi3:true,link13:true,l2,l1,l3});
 WB3.add({
-  n:3, sec:'s1', rk1:true, src:'стр. 5', conf:'exact',
+  n:3, sec:'s1', rk1:true, src:'стр. 5', conf:'exact', fixed:true,
   q:'Построить три проекции точек <i>A</i>, <i>B</i>, <i>C</i>, <i>D</i>, <i>E</i> и <i>F</i> по координатам, заданным в таблице. Определить положение точек в пространстве относительно плоскостей проекций и записать в таблицу номер октанта, плоскость или ось проекций.',
   data: table(['Точка','x','y','z','Расположение'],[['A',25,15,10,''],['B',35,'−20',30,''],['C','−30','−15','−25',''],['D',45,25,'−35',''],['E',15,15,0,''],['F',0,20,0,'']]),
   intro:'Три плоскости проекций делят пространство на 8 октантов. Строим проекции по координатам: x — от O влево, y — вниз на π₁ и вправо на π₃, z — вверх. Отрицательные значения откладываем в противоположную сторону.',
@@ -13512,7 +13512,7 @@ const A=[30,22,20];
 const K=[A[1]*S, A[1]*S];            // точка на постоянной прямой
 const top=-100, bot=100;
 WB3.add({
-  n:7, sec:'s1', rk1:true, src:'стр. 6', conf:'approx',
+  n:7, sec:'s1', rk1:true, src:'стр. 6', conf:'approx', fixed:true,
   q:'Найти положение оси проекций <i>x</i>.',
   intro:'Даны три проекции точки A и вертикальная ось z (она же ось y для π₁). Ось x — горизонтальная прямая, но на какой высоте? Её положение однозначно задаёт координата y: A′ отстоит от оси x на столько же, на сколько A‴ отстоит от оси z.',
   given:[ seg([0,top],[0,bot],'main'), txt([0,top],'z',null,{dx:6,dy:10}), txt([0,bot],'y',null,{dx:6,dy:-2}),
@@ -19208,7 +19208,7 @@ const KB=rootsB.map(aCurve);
 const curveA=[]; for(let i=0;i<=40;i++) curveA.push(aCurve(i/40));
 const pb={ l:'б)', q:'Построить проекции точек пересечения кривой a с прямым круговым цилиндром (ось ⟂ π₁).',
   given:[ axis(), fs([bc[0]+Rb,0],[bc[0]+Rb,hb],'main'), fs([bc[0]-Rb,0],[bc[0]-Rb,hb],'main'), fs([bc[0]-Rb,hb],[bc[0]+Rb,hb],'main'), fs([bc[0]+Rb,0],[bc[0]-Rb,0],'main'),
-          circ(H([bc[0],bc[1],0]),Rb*S,'main'), curve(curveA.map(F),'main','a″'), curve(curveA.map(H),'main','a′') ],
+          circ(H([bc[0],bc[1],0]),Rb*S,'main'), curve(curveA.map(F),'main',{l:'a″'}), curve(curveA.map(H),'main',{l:'a′'}) ],
   steps:[
     { t:'Цилиндр — проецирующий',
       d:'Боковая поверхность цилиндра ⟂ π₁ проецируется на π₁ в окружность. Значит, все точки, принадлежащие цилиндру, имеют горизонтальные проекции на этой окружности — точки K′, L′ ищем там, где a′ пересекает окружность.',
@@ -19227,7 +19227,7 @@ const pb={ l:'б)', q:'Построить проекции точек перес
 
 /* ---- в) сфера и горизонтальная прямая a ---- */
 const O=[45,40,32], Rs=29, za=49.5, dz=za-O[2];
-const off=7.8, u=[-0.72,-0.694,0], nrm=[0.694,-0.72,0];
+const off=7.8, u=v3.unit([-0.72,-0.694,0]), nrm=[-u[1],u[0],0];   /* единичное направление a′ и перпендикуляр к нему — выводятся, а не набираются: на вариантах они остаются единичными и перпендикулярными */
 const P0=[O[0]-off*nrm[0]*(-1)*(-1),O[1]-off*nrm[1]*(-1)*(-1),za];
 const P00=v3.add([O[0],O[1],za],v3.mul(nrm,-off));
 const rm=Math.sqrt(Rs*Rs-dz*dz), dist=off;
@@ -21657,13 +21657,13 @@ function blockOf(n){ const re=new RegExp('\\bn:\\s*'+n+'\\s*,'); return blocks()
 /* ── искажение данных ── */
 function rng(seed){ let x=seed>>>0||1; return ()=>{ x^=x<<13; x>>>=0; x^=x>>17; x^=x<<5; x>>>=0; return x/4294967296; }; }
 function warp(seed,pin){ const r=rng(seed); const s=(r()-.5)*.12, e=.6+r()*1.6, lam=7+r()*9, ph=r()*6.28;
-  return v=>{ if(v===0||(pin&&pin.has(v))) return v; const w=v*(1+s)+e*(Math.sin(v/lam+ph)-Math.sin(ph)); return Math.round(w*100)/100; }; }
+  return v=>{ if(v===0||(pin&&(pin.has(v)||pin.has(-v)))) return v;   /* число из условия — и со знаком «−» (за π₂ на 15 мм → y = −15) */ const w=v*(1+s)+e*(Math.sin(v/lam+ph)-Math.sin(ph)); return Math.round(w*100)/100; }; }
 const NUM='(-?\\d+(?:\\.\\d+)?)', MUL='((?:\\s*\\*\\s*[A-Za-z_$][\\w$]*)?)';
 const RE3=new RegExp('\\[\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*\\](?!\\s*\\.)','g');
 const SC=/(\b(?:const|let)\s+|,\s*)([A-Za-z_$][\w$]*)(\s*=\s*)(-?\d+(?:\.\d+)?)(?=\s*[,;\n]|\s*\/[\/*])/g;
 function perturb(src,seed,pin){ const f=warp(seed,pin); let n=0;
   let s=src.replace(RE3,(m,a,ma,b,mb,c,mc)=>{ n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
-  s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC)$/.test(name)) return m; n++; return pre+name+eq+f(+v); });
+  s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) return m;   /* масштаб и число шагов разбиения (N=400 в видимости № 46, n=16 у волнистой линии) — не данные задачи */ n++; return pre+name+eq+f(+v); });
   return {src:s,n}; }
 /* числа из условия задачи (их не трогаем: условие на экране должно совпадать с чертежом) */
 const pinOf=tasks=>{ const p=new Set(); tasks.forEach(t=>String(t.q||'').replace(/<[^>]+>/g,' ').replace(/\d+(?:[.,]\d+)?/g,m=>{ p.add(parseFloat(m.replace(',','.'))); return m; })); return p; };
@@ -21675,16 +21675,33 @@ function run(src){
   if(err) throw new Error(err); return cap; }
 /* ── проверка: те же 3D-проверка и оракул, что в тестах (подгружаются по требованию) ── */
 let CHK=null;
-function checkers(){ if(window.GEOM_CHECK&&window.ORACLE_CHECK) return Promise.resolve(true); if(CHK) return CHK;
-  const load=src=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
-  CHK=load('tests/geometry.js').then(()=>load('tests/oracle.js')).then(()=>true,()=>{ CHK=null; return false; }); return CHK; }
+/* + трассировка происхождения (tests/provenance.js) и сертификаты (tests/certified): у задач с сертификатом
+   вариант проверяется точно — два исполнения протокола, условие, решатель, видимость, число в ответе */
+const ready=()=>!!(window.GEOM_CHECK&&window.ORACLE_CHECK&&window.PROV_CHECK&&window.CERT&&CERT.certify&&CERT.list&&CERT.list.every(x=>CERT[x]));
+function checkers(){ if(ready()) return Promise.resolve(true); if(CHK) return CHK;
+  const load=src=>new Promise((res,rej)=>{ if(src==='tests/geometry.js'&&window.GEOM_CHECK||src==='tests/oracle.js'&&window.ORACLE_CHECK) return res(); const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+  const C='tests/certified/';
+  CHK=['tests/geometry.js','tests/oracle.js','tests/provenance.js',C+'exact.js',C+'kernels.js',C+'certify.js',C+'list.js'].reduce((p,f)=>p.then(()=>load(f)),Promise.resolve())
+    .then(()=>CERT.list.reduce((p,f)=>p.then(()=>load(C+f+'.js')),Promise.resolve()))
+    .then(()=>{ PROV_INSTRUMENT(); return ready(); },()=>{ CHK=null; return false; }); return CHK; }
 const key=o=>String(o.name).replace(/ · (шаг \d+|дано)$/,'')+'|'+o.rule;
-const issues=t=>GEOM_CHECK({tasks:[t]}).concat(ORACLE_CHECK({tasks:[t]})).filter(o=>o.lvl==='ошибка');
+/* опубликованный чертёж задачи — то, что видит студент: подписи, подписанные прямые, все отрезки, ответ */
+function siteOf(t){ const p=(t.parts&&t.parts.length)?t.parts[0]:t, strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').trim(), points={}, lines={}, segs=[];
+  [].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).filter(Boolean).forEach(it=>{
+    if(it.t==='pt'&&it.at&&it.l) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ if(!points[l]) points[l]=it.at.slice(); });
+    if((it.t==='seg'||it.t==='line')&&it.a&&it.b&&it.l){ const l=strip(it.l); (lines[l]=lines[l]||[]).push(it.a.slice(),it.b.slice()); }
+    if(it.t==='seg'&&it.a&&it.b) segs.push({a:it.a.slice(),b:it.b.slice(),k:it.k||'main'}); });
+  return {points,lines,segs,ans:strip(t.ans)}; }
+function certOf(t){ const T=window.CERT&&CERT.tasks&&CERT.tasks[t.n]; if(!T) return null;
+  try{ return CERT.certify.certify(T,{site:siteOf(t),fromSite:true,variants:0}); }catch(e){ return {ok:false,O:{O1:{ok:false,detail:String(e&&e.message||e)}}}; } }
+/* трассировка — первой: GEOM_CHECK «доводит» линии и снимает с точек пометки поля */
+const issues=t=>PROV_CHECK({tasks:[t]}).concat(GEOM_CHECK({tasks:[t]}),ORACLE_CHECK({tasks:[t]})).filter(o=>o.lvl==='ошибка');
 const sig=t=>{ let h=0; const parts=(t.parts&&t.parts.length)?t.parts:[t]; parts.forEach(p=>[].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).forEach(it=>{ if(it&&it.t==='pt'&&it.at) h+=Math.abs(it.at[0])*1.3+Math.abs(it.at[1])*.7; })); return h; };
 const BASE={};
 function verify(orig,t){ const b=BASE[orig.n]||(BASE[orig.n]=new Set(issues(orig).map(key)));
   const bad=issues(t).filter(o=>!b.has(key(o))); const moved=Math.abs(sig(t)-sig(orig))>1;
-  return {ok:!bad.length&&moved,bad,moved,oracle:window.ORACLE_SPECS&&ORACLE_SPECS.some(k=>k===String(orig.n)||k.indexOf(orig.n+'.')===0)}; }
+  const cert=certOf(t); if(cert&&!cert.ok) Object.entries(cert.O).filter(([k,o])=>!o.ok).forEach(([k,o])=>bad.push({name:'№'+orig.n,rule:'сертификат '+k,msg:o.detail,lvl:'ошибка'}));
+  return {ok:!bad.length&&moved,bad,moved,cert:!!(cert&&cert.ok),oracle:window.ORACLE_SPECS&&ORACLE_SPECS.some(k=>k===String(orig.n)||k.indexOf(orig.n+'.')===0)}; }
 /* вариант задачи n: перебираем семена с seed, пока вариант не пройдёт проверку */
 function variant(n,seed,tries){ const orig=WB3.get(n), src=blockOf(n); if(!orig||!src) return null;
   const pin=pinOf([orig]);
@@ -21693,7 +21710,7 @@ function variant(n,seed,tries){ const orig=WB3.get(n), src=blockOf(n); if(!orig|
     if(!t) continue; const v=verify(orig,t); if(v.ok) return {task:t,seed:sd,check:v}; }
   return null; }
 const ok=n=>GEN_OK.includes(n);
-return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,variant,issues,ok,list:()=>GEN_OK.slice()};
+return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,variant,issues,siteOf,certOf,ok,list:()=>GEN_OK.slice()};
 })();
 
 /* ═════════ Режим владельца и скрытые функции ═════════
@@ -21778,7 +21795,9 @@ function view(v,r){
   v.querySelector('#owRun').addEventListener('click',async e=>{ const b=e.currentTarget, out=v.querySelector('#owOut'); b.disabled=true; out.textContent='Проверяю…';
     if(!(await GEN.checkers())){ out.textContent='Проверка не загрузилась.'; b.disabled=false; return; }
     setTimeout(()=>{ const t0=performance.now(); const g=GEOM_CHECK().filter(o=>o.lvl==='ошибка'), o=ORACLE_CHECK();
-      const rows=g.concat(o); out.innerHTML=`<div class="ow-sum ${rows.length?'bad':'ok'}">${rows.length?'Замечаний: '+rows.length:'Замечаний нет'} · ${Math.round(performance.now()-t0)} мс · оракул: ${ORACLE_SPECS.length} задач</div>`
+      const pv=PROV_CHECK(), ce=[]; Object.values(CERT.tasks||{}).forEach(T=>{ const c=CERT.certify.certify(T,{site:GEN.siteOf(WB3.get(T.n)),variants:20});
+        Object.entries(c.O).filter(([k,x])=>!x.ok).forEach(([k,x])=>ce.push({name:'Задача №'+T.n,rule:'сертификат '+k,msg:x.detail})); });
+      const rows=pv.concat(g,o,ce); out.innerHTML=`<div class="ow-sum ${rows.length?'bad':'ok'}">${rows.length?'Замечаний: '+rows.length:'Замечаний нет'} · ${Math.round(performance.now()-t0)} мс · оракул: ${ORACLE_SPECS.length} задач · сертификатов: ${Object.keys(CERT.tasks||{}).length}</div>`
         +(rows.length?'<ul class="ow-list">'+rows.slice(0,60).map(x=>'<li><b>'+x.name+'</b> — '+x.rule+': '+String(x.msg).slice(0,160)+'</li>').join('')+'</ul><p class="ow-m">Часть замечаний 3D-проверки разобрана вручную и ошибкой не является (tests/baseline.json).</p>':'');
       b.disabled=false; },30); });
   return 'Режим владельца';
@@ -22535,7 +22554,7 @@ function variantView(host,n,seed){
   if(r.seed!==seed&&!r.orig){ try{ history.replaceState(null,'',href('var',n,r.seed)); }catch(e){} }
   const t=r.task, canBuild=!!buildTargets(t);
   const chk=r.orig?'исходные данные':'проверен';
-  host.innerHTML=`<div class="gy-vbar"><div class="gy-vt"><b>${r.orig?'Задача №'+n:'Вариант №'+n}</b><span class="gy-b${r.orig?'':' ok'}" title="${r.orig?'':'Вариант построен заново и прошёл ту же 3D-проверку'+(r.check&&r.check.oracle?' и независимый пересчёт ответа':'')+', что весь сайт'}">${r.orig?'':'✓ '}${chk}</span></div>
+  host.innerHTML=`<div class="gy-vbar"><div class="gy-vt"><b>${r.orig?'Задача №'+n:'Вариант №'+n}</b><span class="gy-b${r.orig?'':' ok'}" title="${r.orig?'':'Вариант построен заново и прошёл ту же 3D-проверку'+(r.check&&r.check.oracle?' и независимый пересчёт ответа':'')+', что весь сайт'+(r.check&&r.check.cert?'; решение доказано точным расчётом (сертификат)':'')}">${r.orig?'':'✓ '}${chk}</span></div>
      <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}${canBuild&&FLAGS.on('build')?`<a class="gy-vb" href="${href('build',n,r.seed||rnd())}">Построй</a>`:''}</div></div>
    <div id="plMount"></div>`;
   document.body.classList.add('inplayer');

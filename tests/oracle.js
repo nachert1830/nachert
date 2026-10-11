@@ -32,6 +32,39 @@ function helper(items,fail){
       throw new Error('нет прямой '+t); },
     /* 2D-проекция по подписи (для точек-проекций проецирующих прямых: c″) */
     pt2(n){ const a=M.pts[n]; if(!a) throw new Error('нет проекции '+n); return a[0]; },
+    /* точка чертежа по любой подписи, в том числе без штриха (A₄, 1₄, Ā″) и в составной «A₅ ≡ B₅» */
+    lab(n){ const it=items.find(i=>i&&i.t==='pt'&&i.at&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').split(/\s*[≡=]\s*/).map(x=>x.trim()).includes(n)); if(!it) throw new Error('нет точки '+n); return it.at; },
+    /* отрезок по подписи (точно или по началу подписи: «H.B.» найдёт «H.B. = 20 мм») */
+    segL(l){ const it=items.find(i=>i&&(i.t==='seg'||i.t==='line')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').trim().startsWith(l)); if(!it) throw new Error('нет отрезка '+l); return [it.a,it.b]; },
+    /* прямая в пространстве по двум подписанным проекциям-отрезкам (для подписей вида h″β, h′β) */
+    lineFrom(l2,l1){ const [a2,b2]=H.segL(l2), [a1,b1]=H.segL(l1); const at=x=>{ const t2=(x-a2[0])/(b2[0]-a2[0]), t1=(x-a1[0])/(b1[0]-a1[0]); return [x,a1[1]+t1*(b1[1]-a1[1]),-(a2[1]+t2*(b2[1]-a2[1]))]; };
+      const x0=Math.max(Math.min(a2[0],b2[0]),Math.min(a1[0],b1[0])); const p=at(x0), q=at(x0+20); return {p,d:unit(sub(q,p))}; },
+    /* строки таблицы ответа: [[ячейка, …], …] */
+    table(html){ return [...String(html||'').matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(r=>[...r[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map(c=>c[1].replace(/<[^>]+>/g,'').trim())); },
+    /* окружности чертежа: центр, радиус, поле (по пометке F/H, иначе по знаку v) */
+    circs(){ return items.filter(i=>i&&i.t==='circ'&&i.c).map(i=>({c:i.c,r:i.r,k:i.k||'main',pl:i.c._pl||(i.c[1]<0?2:1)})); },
+    circAt(c,pl){ const all=H.circs().filter(o=>(!pl||o.pl===pl)&&H.d2(o.c,c)<2*E), m=all.filter(o=>o.k==='main'), cs=m.length?m:all.filter(o=>o.k==='res'); if(!cs.length) throw new Error('нет окружности в '+c.map(v=>v.toFixed(0))); return cs.sort((x,y)=>y.r-x.r)[0]; },
+    /* кривая (curve/poly) по подписи */
+    curveL(l){ const it=items.find(i=>i&&(i.t==='curve'||i.t==='poly')&&Array.isArray(i.p)&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').trim()===l); if(!it) throw new Error('нет кривой '+l); return it.p; },
+    /* касательная плоскость: прямые h, t (и f) проходят через A и лежат в одной плоскости; h — горизонталь, f — фронталь */
+    tangent(A,what){ const hh=H.L('h'), tt=H.L('t'); H.on(A,hh,'A ∈ h'); H.on(A,tt,'A ∈ t'); H.perp(hh.d,zN,'h — горизонталь'); const n=unit(crs(hh.d,tt.d));
+      let ff=null; try{ ff=H.L('f'); }catch(e){} if(ff){ H.on(A,ff,'A ∈ f'); H.perp(ff.d,n,'f в касательной плоскости'); H.perp(ff.d,yN,'f — фронталь'); }
+      let nn=null; try{ nn=H.vecL('n″','n′'); }catch(e){} if(nn) H.par(nn.d,n,'нормаль n ⟂ касательной плоскости'); return {p:A,n}; },
+    /* прямая по подписанным векторам/отрезкам двух проекций */
+    vecL(l2,l1){ const g=l=>{ const it=items.find(i=>i&&(i.t==='vec'||i.t==='seg'||i.t==='line')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').trim()===l); if(!it) throw new Error('нет '+l); return [it.a,it.b]; };
+      const [a2,b2]=g(l2), [a1,b1]=g(l1); const at=x=>{ const t2=(x-a2[0])/(b2[0]-a2[0]), t1=(x-a1[0])/(b1[0]-a1[0]); return [x,a1[1]+t1*(b1[1]-a1[1]),-(a2[1]+t2*(b2[1]-a2[1]))]; };
+      const x0=a2[0], p=at(x0), q=at(x0+(b2[0]-a2[0])); return {p,d:unit(sub(q,p))}; },
+    /* пересечения прямой со сферой (для полноты ответа) */
+    lineSphere(L,O,R){ const w=sub(L.p,O), B=dot(w,L.d), C=dot(w,w)-R*R, D=B*B-C; if(D<0) return []; const s=Math.sqrt(D); return [-B-s,-B+s].map(t=>add(L.p,mul(L.d,t))); },
+    num(s){ return parseFloat(String(s).replace('−','-').replace('+','').replace(',','.')); },
+    d2(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]); },
+    /* взаимное положение прямых в пространстве */
+    rel(L1,L2){ const c=crs(L1.d,L2.d); if(nrm(c)<0.01) return nrm(crs(sub(L2.p,L1.p),L1.d))<2*E?'совпадают':'параллельны';
+      return Math.abs(dot(sub(L2.p,L1.p),c))/nrm(c)<2*E?'пересекаются':'скрещиваются'; },
+    /* числа ответа в мм должны давать один масштаб px/мм с длинами чертежа: [[px, мм, «≈»?], …] */
+    scaleOK(pairs,what){ /* «≈ 48 мм» значит 47,5 ≤ |AB|/k < 48,5: масштаб k существует, если интервалы для всех чисел пересекаются */
+      let lo=0, hi=Infinity; pairs.forEach(([px,mm,ap])=>{ const w=ap?0.5:0.06; lo=Math.max(lo,px/(mm+w)); hi=Math.min(hi,mm>w?px/(mm-w):Infinity); });
+      if(lo>hi*(1+1e-3)) fail(what+': нет одного масштаба, при котором все числа ('+pairs.map(p=>p[1]).join(', ')+' мм) верны'); },
     plane(A,B,C){ const n=unit(crs(sub(B,A),sub(C,A))); return {p:A,n}; },
     /* плоскость по двум прямым: пересекающимся — по направлениям, параллельным — по направлению и точке второй прямой */
     planeLL(L1,L2){ const c=crs(L1.d,L2.d); if(nrm(c)>0.05) return {p:L1.p,n:unit(c)}; return {p:L1.p,n:unit(crs(L1.d,sub(L2.p,L1.p)))}; },
@@ -63,6 +96,25 @@ function helper(items,fail){
   return H;
 }
 const yN=[0,1,0], zN=[0,0,1];
+/* таблица ответа (№ 1–3): координаты в мм и словесное положение — против чертежа */
+const WHERE=[[/^I четверть/,c=>c.y>0&&c.z>0],[/^II четверть/,c=>c.y<0&&c.z>0],[/^III четверть/,c=>c.y<0&&c.z<0],[/^IV четверть/,c=>c.y>0&&c.z<0],
+  [/π₂/,c=>c.y===0],[/π₁/,c=>c.z===0],[/ось x/,c=>c.y===0&&c.z===0],[/ось y/,c=>c.x===0&&c.z===0],
+  [/^I октант/,c=>c.x>0&&c.y>0&&c.z>0],[/^II октант/,c=>c.x>0&&c.y<0&&c.z>0],[/^III октант/,c=>c.x>0&&c.y<0&&c.z<0],[/^IV октант/,c=>c.x>0&&c.y>0&&c.z<0],
+  [/^V октант/,c=>c.x<0&&c.y>0&&c.z>0],[/^VI октант/,c=>c.x<0&&c.y<0&&c.z>0],[/^VII октант/,c=>c.x<0&&c.y<0&&c.z<0],[/^VIII октант/,c=>c.x<0&&c.y>0&&c.z<0]];
+function tableCheck(h,t,col){ h.table(t.ans).slice(1).forEach(r=>{ const n=r[0]; if(!h.has(n)){ h.fail('нет точки '+n); return; } const P=h.P(n), mm=v=>Math.round(v/3.2*10)/10;
+  const c={x:-mm(P[0]),y:mm(P[1]),z:mm(P[2])}; const sg=v=>Math.abs(v)<0.3?0:v; const cs={x:sg(c.x),y:sg(c.y),z:sg(c.z)};
+  ['x','y','z'].forEach(k=>{ if(col[k]==null) return; const w=h.num(r[col[k]]); if(Math.abs(c[k]-w)>0.3) h.fail(n+': '+k+' в ответе '+r[col[k]]+', на чертеже '+c[k]); });
+  const w=r[col.where]||'', rule=WHERE.find(([re])=>re.test(w)); if(rule&&!rule[1](cs)) h.fail(n+': «'+w+'» не соответствует координатам ('+cs.x+'; '+cs.y+'; '+cs.z+')'); }); }
+/* № 17: что сказано в ответе — против положения прямых в пространстве */
+function relCheck(h,p,L1,L2){ const r=h.rel(L1,L2), a=strip(p.ans); const said=/скрещива/.test(a)?'скрещиваются':/пересека|∩/.test(a)?'пересекаются':/∥|параллельн/.test(a)?'параллельны':'?';   /* «скрещиваются» — первым: «профильные проекции не параллельны» не про сами прямые */
+  if(said!==r) h.fail('в ответе «'+said+'», а по чертежу прямые '+r); }
+/* сфера: центр O, радиус — окружность вокруг O′; K, L — на a и на сфере; других пересечений нет */
+function sphereLine(h){ const O=h.P('O'), R=h.circAt(h.pt2('O′'),1).r, a=h.L('a'), KL=['K','L'].map(n=>h.P(n));
+  KL.forEach((X,i)=>{ h.on(X,a,'KL'[i]+' ∈ a'); h.eqLen(nrm(sub(X,O)),R,'KL'[i]+' на сфере'); });
+  h.lineSphere(a,O,R).forEach(X=>{ if(!KL.some(Y=>nrm(sub(X,Y))<3*h.E)) h.fail('пропущена точка пересечения a со сферой'); }); }
+/* угол φ из ответа (берётся число после «≈»: «φ = 90° − δ ≈ 36.4°») */
+function angPhi(h,p,val){ const m=/φ[^≈]*≈\s*(\d+(?:[.,]\d+)?)\s*°/.exec(strip(p.ans)); if(!m){ h.fail('в ответе нет угла φ'); return; }
+  const v=parseFloat(m[1].replace(',','.')), tol=/[.,]/.test(m[1])?0.06:0.51; if(Math.abs(v-val)>tol) h.fail('в ответе φ ≈ '+m[1]+'°, вычислено '+val.toFixed(2)+'°'); }
 const S={
   11:(h)=>{ const F=h.P('F'), H_=h.P('H'), A=h.P('A'), a=h.L('a'); h.on(F,a,'F ∈ a'); h.on(H_,a,'H ∈ a');
     if(Math.abs(F[1])>2*h.E) h.fail('F в π₂: y_F ≠ 0'); if(Math.abs(H_[2])>2*h.E) h.fail('H в π₁: z_H ≠ 0');
@@ -167,6 +219,119 @@ const S={
   '44.4':(h)=>{ const al=h.planeT('α'), pl=h.plane(h.P('A'),h.P('B'),h.P('C')); ['K','L'].forEach(n=>{ h.inPl(h.P(n),al,n+' ∈ α'); h.inPl(h.P(n),pl,n+' ∈ (ABC)'); }); },
   '45.1':(h)=>{ const K=h.P('K'), b=h.L('b'), c=h.L('c'), a1=h.pt2('a′'); h.par(b.d,c.d,'b ∥ c'); const pl=h.plane(b.p,add(b.p,mul(b.d,40)),c.p);
     if(Math.hypot(K[0]-a1[0],K[1]-a1[1])>2*h.E) h.fail('K ∈ a: K′ ≢ a′'); h.inPl(K,pl,'K ∈ (b ∥ c)'); },
+  /* ── задачи, у которых не было проверки ответа (добавлено вместе с сертификатами) ── */
+  /* № 1–3: таблица ответа против чертежа: координаты и словесное расположение */
+  1:(h,t)=>tableCheck(h,t,{y:2,z:3,where:1}),
+  2:(h,t)=>{ tableCheck(h,t,{y:1,z:2,where:3});
+    /* условие словами: «над/под горизонтальной … на расстоянии N мм», «за/перед фронтальной … N мм», «на фронтальной … на N мм выше», «на оси x» */
+    String(t.q).replace(/<[^>]+>/g,'').split('•').slice(1).forEach(b=>{ const m=/точка\s+([A-Z])/.exec(b); if(!m) return; const P=h.P(m[1]), want={};
+      let r; if((r=/над горизонтальной[^;]*?(\d+)\s*мм/.exec(b))) want.z=+r[1]; if((r=/под горизонтальной[^;]*?(\d+)\s*мм/.exec(b))) want.z=-r[1];
+      if((r=/за фронтальной[^;]*?расстоянии\s*(\d+)\s*мм/.exec(b))) want.y=-r[1]; if((r=/перед фронтальной[^;]*?расстоянии\s*(\d+)\s*мм/.exec(b))) want.y=+r[1];
+      if(/на фронтальной плоскости/.test(b)){ want.y=0; if((r=/на\s*(\d+)\s*мм\s*выше/.exec(b))) want.z=+r[1]; }
+      if(/на оси проекций x|на оси x/.test(b)){ want.y=0; want.z=0; }
+      Object.entries(want).forEach(([c,v])=>{ const got=P[c==='y'?1:2]/3.2; if(Math.abs(got-v)>0.3) h.fail(m[1]+': по условию '+c+' = '+v+' мм, на чертеже '+got.toFixed(1)); }); }); },
+  3:(h,t)=>tableCheck(h,t,{x:1,y:2,z:3,where:4}),
+  /* № 4: какие точки выше/ниже, перед/за, слева/справа, на плоскостях и осях — по чертежу */
+  4:(h,t)=>{ const pts='ABCDEF'.split('').filter(n=>h.has(n)), c=n=>{ const P=h.P(n); return {x:-P[0],y:P[1],z:P[2]}; }, z0=v=>Math.abs(v)<2*h.E;
+    const rule=[[/выше плоскости π₁/,n=>c(n).z>2*h.E],[/ниже плоскости π₁/,n=>c(n).z<-2*h.E],[/перед плоскостью π₂/,n=>c(n).y>2*h.E],[/за плоскостью π₂/,n=>c(n).y<-2*h.E],
+      [/слева от плоскости π₃/,n=>c(n).x>2*h.E],[/справа от плоскости π₃/,n=>c(n).x<-2*h.E],[/на плоскостях проекций/,n=>[c(n).x,c(n).y,c(n).z].filter(z0).length===1],[/на осях/,n=>[c(n).x,c(n).y,c(n).z].filter(z0).length===2]];
+    h.table(t.ans).slice(1).forEach(([w,list])=>{ const r=rule.find(([re])=>re.test(w)); if(!r) return; const said=new Set((list.match(/[A-F](?![a-zа-я])/g)||[])), truth=new Set(pts.filter(r[1]));
+      if([...said].join()!==[...truth].sort().join()&&[...truth].some(n=>!said.has(n))||[...said].some(n=>!truth.has(n))) h.fail('«'+w+'»: в ответе '+[...said].join(', ')+', по чертежу '+[...truth].join(', ')); }); },
+  /* № 7: найденная ось x даёт A(30; 22; 20) */
+  7:(h,t)=>{ const m=/A\(\s*(\d+)\s*;\s*(\d+)\s*;\s*(\d+)\s*\)/.exec(strip(t.ans)); if(!m){ h.fail('в ответе нет координат A'); return; } const P=h.P('A');
+    [[-P[0],m[1],'x'],[P[1],m[2],'y'],[P[2],m[3],'z']].forEach(([v,w,c])=>{ if(Math.abs(v/3.2-w)>0.6) h.fail('A: '+c+' в ответе '+w+', по чертежу '+(v/3.2).toFixed(1)); }); },
+  /* № 17: заявленное взаимное положение прямых — против положения в пространстве */
+  '17.1':(h,t,pi,p)=>relCheck(h,p,h.L('a'),h.L('b')),
+  '17.2':(h,t,pi,p)=>{ const K2=h.pt2('K″'), c2=h.segL('c″'), d2=h.segL('d″'); const on=(P,[a,b])=>Math.abs((P[0]-a[0])*(b[1]-a[1])-(P[1]-a[1])*(b[0]-a[0]))/h.d2(a,b);
+    if(on(K2,c2)>2*h.E||on(K2,d2)>2*h.E) h.fail('K″ не на пересечении c″ и d″');
+    const u=sub(c2[1],c2[0]), w=sub(d2[1],d2[0]); if(Math.abs(u[0]*w[1]-u[1]*w[0])/(nrm(u)*nrm(w))<0.01) h.fail('c″ ∥ d″ — тогда прямые не пересекаются');
+    if(!/пересека/.test(strip(p.ans))) h.fail('в ответе не сказано, что прямые пересекаются'); },
+  '17.3':(h,t,pi,p)=>relCheck(h,p,h.L('e'),h.L('f')),
+  '17.4':(h,t,pi,p)=>{ const k1=h.pt2('k′'), k=[k1[0],k1[1],0], l=h.L('l'); const kL={p:k,d:[0,0,1]}; relCheck(h,p,kL,l); h.perp(kL.d,l.d,'k ⟂ l'); },
+  '17.5':(h,t,pi,p)=>relCheck(h,p,h.L('AB'),h.L('CD')),
+  /* № 51: натуральная величина A₄B₄ = |AB|; на π₅ отрезок — точка */
+  51:(h)=>{ const A=h.P('A'), B=h.P('B'); h.eqLen(h.d2(h.lab('A₄'),h.lab('B₄')),nrm(sub(B,A)),'|A₄B₄| = |AB|'); if(h.d2(h.lab('A₅'),h.lab('B₅'))>2*h.E) h.fail('A₅ и B₅ не совпадают'); },
+  /* № 54: точки сечения — на рёбрах призмы и в α; натуральный вид 1₄…6₄ конгруэнтен сечению */
+  54:(h)=>{ const al=h.planeT('α'), N=['1','2','3','4','5','6'], P=N.map(n=>h.P(n));
+    P.forEach((X,i)=>h.inPl(X,al,N[i]+' ∈ α'));
+    const hex=(h.M.polys.find(pl=>pl.p.length===6&&pl.p.every(q=>q[1]>0))||{}).p; if(!hex) h.fail('нет основания призмы на π₁');
+    else N.forEach(n=>{ const q=h.pt2(n+'′'); if(!hex.some(v=>h.d2(v,q)<2*h.E)) h.fail(n+'′ не в вершине основания: точка не на ребре призмы'); });
+    N.forEach((n,i)=>[1,2,3].forEach(j=>{ const m=N[(i+j)%6]; h.eqLen(h.d2(h.lab(n+'₄'),h.lab(m+'₄')),nrm(sub(h.P(m),h.P(n))),'|'+n+'₄'+m+'₄| = |'+n+m+'|'); })); },
+  /* № 59: поворот вокруг i ⟂ π₂: y не меняется, радиус на π₂ тот же, Ā ∈ α; угол φ в ответе */
+  59:(h,t)=>{ const A=h.P('A'), Ab=h.P('Ā'), i2=h.pt2('i″'); h.zero(Ab[1]-A[1],'при повороте вокруг i ⟂ π₂ глубина y не меняется');
+    const a2=h.pt2('A″'), b2=h.pt2('Ā″'); h.eqLen(h.d2(b2,i2),h.d2(a2,i2),'радиус вращения'); h.inPl(Ab,h.planeT('α'),'Ā ∈ α');
+    const u=sub(a2,i2), w=sub(b2,i2); h.ansAng(t.ans,'φ',deg(Math.acos(dot(u,w)/nrm(u)/nrm(w))),'угол поворота'); },
+  /* № 60: поворот вокруг i ⟂ π₂ через B до положения ∥ π₁; истинный вид на π₁ */
+  60:(h,t)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'), Ab=h.P('Ā'), Cb=h.P('C̄'), b2=h.pt2('B″');
+    h.zero(Ab[1]-A[1],'y(Ā) = y(A)'); h.zero(Cb[1]-C[1],'y(C̄) = y(C)'); h.eqLen(h.d2(h.pt2('Ā″'),b2),h.d2(h.pt2('A″'),b2),'радиус для A'); h.eqLen(h.d2(h.pt2('C̄″'),b2),h.d2(h.pt2('C″'),b2),'радиус для C');
+    h.zero(Ab[2]-B[2],'Ā на уровне B (плоскость ∥ π₁)'); h.zero(Cb[2]-B[2],'C̄ на уровне B');
+    const ab=h.d2(h.pt2('Ā′'),h.pt2('B′')), bc=h.d2(h.pt2('B′'),h.pt2('C̄′')), ca=h.d2(h.pt2('C̄′'),h.pt2('Ā′'));
+    h.eqLen(ab,nrm(sub(B,A)),'|Ā′B′| = |AB|'); h.eqLen(bc,nrm(sub(C,B)),'|B′C̄′| = |BC|'); h.eqLen(ca,nrm(sub(A,C)),'|C̄′Ā′| = |CA|');
+    const n=k=>{ const m=new RegExp('\\|'+k+'\\|\\s*≈\\s*(\\d+)').exec(strip(t.ans)); return m?+m[1]:null; };
+    if(n('AB')&&n('BC')&&n('CA')) h.scaleOK([[ab,n('AB'),1],[bc,n('BC'),1],[ca,n('CA'),1]],'длины сторон в ответе'); },
+  /* № 64: расстояние на чертеже = расстояние от A до b в пространстве */
+  64:(h)=>{ const A=h.P('A'), b=h.L('b'); const [p,q]=h.segL('H.B.'); h.eqLen(h.d2(p,q),h.dPL(A,b),'натуральная величина расстояния');
+    const [o1,o2]=h.segL('|OK|'); h.scaleOK([[h.d2(p,q),20,1],[h.d2(o1,o2),16,1]],'числа на чертеже'); },
+  /* № 66: угол прямой a с плоскостью β */
+  '66.1':(h,t,pi,p)=>angPhi(h,p,90-h.ang(h.L('a').d,h.planeT('β').n)),
+  '66.2':(h,t,pi,p)=>angPhi(h,p,90-h.ang(h.L('a').d,h.planeT('β').n)),
+  /* № 67: угол между плоскостями α (следы) и β (h, f) */
+  67:(h,t)=>{ const al=h.planeT('α'), hb=h.lineFrom('h″β','h′β'), fb=h.lineFrom('f″β','f′β'); const nb=unit(crs(hb.d,fb.d));
+    const a=h.ang(al.n,nb); const m=/острый угол[^≈]*≈\s*(\d+(?:[.,]\d+)?)\s*°/.exec(strip(t.ans)); if(!m){ h.fail('в ответе нет острого угла'); return; }
+    if(Math.abs(parseFloat(m[1].replace(',','.'))-a)>0.06) h.fail('острый угол в ответе '+m[1]+'°, вычислено '+a.toFixed(2)+'°'); },
+  /* № 75 а: конус (основание на π₁, вершина S над центром), прямая a ⟂ π₁ */
+  '75.1':(h)=>{ const Sx=h.P('S'), K=h.P('K'), c=h.circAt(h.pt2('S′'),1), r=h.d2(h.pt2('K′'),h.pt2('S′'));
+    h.eqLen(r,c.r*(1-K[2]/Sx[2]),'K на конусе: радиус параллели = R·(1 − z/h)'); if(h.d2(h.pt2('K′'),h.pt2('a′'))>2*h.E) h.fail('K ∉ a');
+    const M2=h.lab('M″'); if(Math.abs(M2[1])>2*h.E||Math.abs(M2[0]-h.pt2('a′')[0])>2*h.E) h.fail('M — точка a на основании: M″ на оси x под a′'); },
+  /* № 75 б: цилиндр ⟂ π₁ — точки на окружности и на кривой a; найдены все пересечения */
+  '75.2':(h)=>{ const c=h.circs().filter(o=>o.pl===1&&o.k==='main').sort((x,y)=>y.r-x.r)[0]; const names=['K','L','M'].filter(n=>h.has(n));
+    names.forEach(n=>h.eqLen(h.d2(h.pt2(n+'′'),c.c),c.r,n+' на цилиндре'));
+    const a1=h.curveL('a′'); for(let i=0;i+1<a1.length;i++){ const f=t=>h.d2([a1[i][0]+(a1[i+1][0]-a1[i][0])*t,a1[i][1]+(a1[i+1][1]-a1[i][1])*t],c.c)-c.r;
+      if(f(0)*f(1)<0){ let lo=0,hi=1; for(let j=0;j<40;j++){ const m=(lo+hi)/2; if(f(lo)*f(m)<=0) hi=m; else lo=m; } const X=[a1[i][0]+(a1[i+1][0]-a1[i][0])*lo,a1[i][1]+(a1[i+1][1]-a1[i][1])*lo];
+        if(!names.some(n=>h.d2(h.pt2(n+'′'),X)<3*h.E)) h.fail('пропущена точка пересечения a′ с окружностью в ('+X.map(v=>v.toFixed(0)).join('; ')+')'); } } },
+  /* № 75 в, 76: сфера — K, L на прямой и на сфере; других пересечений нет */
+  '75.3':(h)=>sphereLine(h),
+  '76.1':(h)=>sphereLine(h),
+  '76.2':(h)=>sphereLine(h),
+  /* № 77 б: конус S + основание на π₁; K1, K2 на a и на конусе */
+  '77.2':(h)=>{ const Sx=h.P('S'), a=h.L('a'), c=h.circs().filter(o=>o.pl===1&&o.k==='main').sort((x,y)=>y.r-x.r)[0];
+    ['K1','K2'].forEach(n=>{ const X=h.P(n); h.on(X,a,n+' ∈ a'); const t=Sx[2]/(Sx[2]-X[2]), P=add(Sx,mul(sub(X,Sx),t)); h.eqLen(h.d2([P[0],P[1]],c.c),c.r,n+' на конусе (образующая S'+n+' доходит до окружности основания)'); }); },
+  /* № 78: касательная плоскость и нормаль */
+  '78.1':(h)=>{ const A=h.P('A'), O=h.P('O'), c=h.circAt(h.pt2('O′'),1); h.eqLen(nrm(sub(A,O)),c.r,'A на сфере'); const tp=h.tangent(A); h.par(tp.n,sub(A,O),'касательная плоскость ⟂ OA'); },
+  '78.2':(h)=>{ const A=h.P('A'), tp=h.tangent(A);
+    const gens=h.M.segs.all.filter(s=>s.k==='main'&&s.a[1]<=1&&s.b[1]<=1&&Math.abs(s.a[0]-s.b[0])>5&&Math.abs(s.a[1]-s.b[1])>20).map(s=>unit([s.b[0]-s.a[0],0,-(s.b[1]-s.a[1])]));
+    if(!gens.length){ h.fail('не найден очерк цилиндра на π₂'); return; } h.perp(tp.n,gens[0],'касательная плоскость содержит образующую'); },
+  '78.3':(h)=>{ const A=h.P('A'), tp=h.tangent(A); h.inPl(h.P('S'),tp,'касательная плоскость конуса проходит через вершину S'); },
+  '78.4':(h)=>{ const A=h.P('A'), T=h.P('T'), tp=h.tangent(A), n={p:A,d:tp.n}; const ax={p:T,d:zN};
+    if(h.rel(n,ax)!=='пересекаются') h.fail('нормаль тора не пересекает ось вращения'); },
+  /* № 81: прямые через A пересекают b и наклонены к α (y = const) под 45°; найдены оба решения */
+  81:(h)=>{ const A=h.P('A'), b=h.L('b'), sols=[];
+    /* 2 и 4 — точки на l = β ∩ α; решения — прямые A2 и A4: они пересекают b и наклонены к α под 45° */
+    const lines=['2','4'].map(n=>({p:A,d:unit(sub(h.P(n),A)),n})); lines.forEach(L=>{ if(h.rel(L,b)!=='пересекаются') h.fail('A'+L.n+' не пересекает b'); h.eqA(90-h.ang(L.d,yN),45,'угол A'+L.n+' с α'); });
+    const f=t=>{ const d=sub(add(b.p,mul(b.d,t)),A); return d[1]*d[1]-d[0]*d[0]-d[2]*d[2]; }; let pv=f(-400);
+    for(let t=-400;t<=400;t+=0.5){ const v=f(t+0.5); if(pv*v<0){ let lo=t,hi=t+0.5; for(let j=0;j<50;j++){ const m=(lo+hi)/2; if(f(lo)*f(m)<=0) hi=m; else lo=m; } sols.push(add(b.p,mul(b.d,lo))); } pv=v; }
+    sols.forEach(X=>{ if(!lines.some(L=>h.dPL(X,L)<3*h.E)) h.fail('пропущено решение: прямая через A и точку b ('+X.map(v=>v.toFixed(0)).join('; ')+')'); }); },
+  /* № 83: B — ближайшая к A точка тора: AB проходит через центр трубки, |AB| совпадает с подписью */
+  83:(h)=>{ const A=h.P('A'), B=h.P('B'), A1=h.P('A₁'), B1=h.P('B₁');
+    const X0=(A1[0]**2-A[0]**2-A[1]**2)/(2*(A1[0]-A[0])); const rho=P=>Math.hypot(P[0]-X0,P[1]);
+    h.zero(rho(B)-Math.abs(B1[0]-X0),'B₁ — поворот B вокруг оси тора'); h.zero(B[2]-B1[2],'B и B₁ на одной высоте'); h.zero(A1[1],'A₁ в плоскости главного меридиана'); h.zero(B1[1],'B₁ в плоскости главного меридиана');
+    const C2=h.lab('C₁″'), a2=h.pt2('A₁″'), b2=h.pt2('B₁″'); if(Math.abs((b2[0]-C2[0])*(a2[1]-C2[1])-(b2[1]-C2[1])*(a2[0]-C2[0]))/h.d2(a2,C2)>2*h.E) h.fail('A₁, B₁ и центр трубки C₁ не на одной прямой — AB не нормаль');
+    const [p,q]=h.segL('|AB|'); h.eqLen(h.d2(p,q),nrm(sub(B,A)),'отрезок |AB| на чертеже = |AB|'); },
+  /* № 84: сфера с центром O касается конуса в точке A */
+  84:(h)=>{ const O=h.P('O'), A=h.P('A'), c=h.circs().filter(o=>o.pl===1&&o.k==='main').sort((x,y)=>y.r-x.r)[0];
+    const tri=h.M.polys.find(pl=>pl.p.length===3&&pl.p.every(q=>q[1]<=2*h.E)); if(!tri){ h.fail('нет очерка конуса'); return; } const apex=tri.p.reduce((m,q)=>q[1]<m[1]?q:m), H0=-apex[1];
+    h.eqLen(h.d2(h.pt2('A′'),c.c),c.r*(1-A[2]/H0),'A на конусе');
+    const u=sub(h.pt2('A′'),c.c), w=sub(h.pt2('O′'),c.c); if(Math.abs(u[0]*w[1]-u[1]*w[0])/(nrm(u)*nrm(w)+1e-9)>0.01) h.fail('A не в меридиане точки O');
+    const Sx=[c.c[0],c.c[1],H0]; h.perp(sub(A,O),sub(A,Sx),'OA ⟂ образующей SA (касание)');
+    const cs=h.circAt(h.pt2('O′'),1); h.eqLen(cs.r,nrm(sub(A,O)),'радиус сферы = |OA|'); const [p,q]=h.segL('R'); h.eqLen(h.d2(p,q),nrm(sub(A,O)),'отрезок R = |OA|'); },
+  /* № 87: центр окружности радиуса 15 мм в α, касательной к обоим следам */
+  87:(h)=>{ const O=h.P('O'), al=h.planeT('α'); h.inPl(O,al,'O ∈ α'); const [a,b]=h.segL('h₀α'), [c,d]=h.segL('f₀α');
+    const hL={p:[a[0],a[1],0],d:unit([b[0]-a[0],b[1]-a[1],0])}, fL={p:[c[0],0,-c[1]],d:unit([d[0]-c[0],0,-(d[1]-c[1])])};
+    h.eqLen(h.dPL(O,hL),15*3.2,'расстояние до h₀α = 15 мм'); h.eqLen(h.dPL(O,fL),15*3.2,'расстояние до f₀α = 15 мм'); },
+  /* № 88: плоскость (S, A, B) касается конуса и параллельна a; второе решение A₂ тоже касательное */
+  88:(h)=>{ const Sx=h.P('S'), A=h.P('A'), B=h.P('B'), a=h.L('a'), c=h.circAt(h.pt2('C′'),1); const pl=h.plane(Sx,A,B);
+    h.perp(pl.n,a.d,'плоскость ∥ a'); h.zero(A[2],'A на основании'); h.eqLen(h.d2(h.pt2('A′'),c.c),c.r,'A′ на окружности основания');
+    [['A′',h.pt2('A′')],['A₂′',h.lab('A₂′')]].forEach(([n,X])=>{ const u=sub(X,c.c), w=sub(X,h.pt2('B′')); if(Math.abs(u[0]*w[0]+u[1]*w[1])/(nrm(u)*nrm(w))>0.01) h.fail('B′'+n+' не касается окружности основания в '+n); h.eqLen(h.d2(X,c.c),c.r,n+' на окружности'); }); },
   85:(h,t)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'), D=h.P('D');
     const e=unit(sub(B,A)), pc=sub(sub(C,A),mul(e,dot(sub(C,A),e))), pd=sub(sub(D,A),mul(e,dot(sub(D,A),e)));
     h.ansAng(t.ans,'φ',deg(Math.acos(dot(unit(pc),unit(pd)))),'угол между плоскостями'); },

@@ -2,7 +2,11 @@
    Ядро 3D (скульптор) — объекты в пространстве. Ядро 2D (чертёжник) — только то, что делается на эпюре
    линейкой и циркулем; третьей координаты у него нет. Общего у ядер только арифметика дробей.
    Соглашения сайта: x — влево, y — к зрителю, z — вверх; на чертеже A″ = (−x·k, −z·k), A′ = (−x·k, y·k). */
-const {q,V}=require('./exact.js');
+(function(){
+/* работает и в Node (require), и на странице сайта (глобальный CERT) */
+const need=n=>(typeof module!=='undefined'&&module.exports&&typeof require==='function')?require('./'+n+'.js'):self.CERT[n];
+const put=(n,v)=>{ if(typeof module!=='undefined'&&module.exports) module.exports=v; else { self.CERT=self.CERT||{}; self.CERT[n]=v; if(v&&v.n) (self.CERT.tasks=self.CERT.tasks||{})[v.n]=v; } };
+const {q,V}=need('exact');
 const Z=[q(0),q(1),q(0)], UP=[q(0),q(0),q(1)];
 
 const K3={
@@ -53,4 +57,5 @@ const PR={
   dir2:(d,k)=>[d[0].neg().mul(k),d[2].neg().mul(k)],
   dir1:(d,k)=>[d[0].neg().mul(k),d[1].mul(k)],
 };
-module.exports={K3,K2,PR};
+put('kernels',{K3,K2,PR});
+})();

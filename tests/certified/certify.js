@@ -2,8 +2,12 @@
    certify(task, {site}) → {n, ok, O:{O1…O9: {ok, detail}}}
    task — протокол задачи (см. t47.js): данные Γ (два независимых ввода), шаги с двумя исполнениями,
    условие Σ с решателем, ответ. site — то, что реально опубликовано (точки, прямые, текст ответа). */
-const {q,V,roundSqrt}=require('./exact.js');
-const {K3,K2,PR}=require('./kernels.js');
+(function(){
+/* работает и в Node (require), и на странице сайта (глобальный CERT) */
+const need=n=>(typeof module!=='undefined'&&module.exports&&typeof require==='function')?require('./'+n+'.js'):self.CERT[n];
+const put=(n,v)=>{ if(typeof module!=='undefined'&&module.exports) module.exports=v; else { self.CERT=self.CERT||{}; self.CERT[n]=v; if(v&&v.n) (self.CERT.tasks=self.CERT.tasks||{})[v.n]=v; } };
+const {q,V,roundSqrt}=need('exact');
+const {K3,K2,PR}=need('kernels');
 const SIN2_MIN=Math.sin(8*Math.PI/180)**2;     /* O6: пересечение на бумаге под углом острее 8° неточно */
 
 function sameQ(a,b){ if(Array.isArray(a)) return Array.isArray(b)&&V.eq(a,b); return a.eq(b); }
@@ -36,10 +40,13 @@ function execute(task,G){
 function certify(task,opts){
   opts=opts||{}; const O={};
   /* O9 — два независимых ввода условия совпадают */
-  const [e1,e2]=task.entries;
-  O.O9={ok:deepEqQ(e1,e2),detail:deepEqQ(e1,e2)?'два ввода условия совпали':'вводы условия расходятся: '+diffEntries(e1,e2)};
-  const G=task.gamma(e1);
-  const run=execute(task,G);
+  let G;
+  if(opts.fromSite){ /* вариант тренажёра: условие читается с его же чертежа (точно, из записанных чисел) */
+    G=task.fromSite(opts.site,q(task.k)); O.O9={ok:true,detail:'условие варианта прочитано с его чертежа'}; }
+  else { const [e1,e2]=task.entries;
+    O.O9={ok:deepEqQ(e1,e2),detail:deepEqQ(e1,e2)?'два ввода условия совпали':'вводы условия расходятся: '+diffEntries(e1,e2)};
+    G=task.gamma(e1); }
+  let run; try{ run=execute(task,G); }catch(e){ return {n:task.n,ok:false,O:Object.assign(O,{O1:{ok:false,detail:'протокол не выполнился: '+e.message}})}; }
   /* O1 — коммутативность по шагам */
   const bad=run.steps.filter(s=>!s.ok);
   O.O1={ok:!bad.length,detail:bad.length?bad.map(s=>'шаг «'+s.title+'»: '+s.msg.join('; ')).join(' | '):run.steps.length+' шагов: проекции 3D совпали с эпюром точно'};
@@ -77,7 +84,7 @@ function certify(task,opts){
       O.O5={ok:!!m&&+m[1]===N,detail:m?(+m[1]===N?task.answer.name+' ≈ '+N+' мм — доказано (√ округлено точно)':'в ответе '+m[1]+' мм, доказанное значение '+N+' мм'):'в тексте ответа нет '+task.answer.name}; }
     catch(e){ O.O5={ok:false,detail:e.message}; } }
   /* O7 — метод верен на любых допустимых данных, а не только на этих */
-  if(task.randomGamma){ let ok=0, tot=0, fail=''; let seed=opts.seed||12345; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);
+  if(task.randomGamma&&opts.variants!==0){ let ok=0, tot=0, fail=''; let seed=opts.seed||12345; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);
     for(let i=0;i<(opts.variants||200);i++){ const g=task.randomGamma(rnd); tot++;
       try{ const r=execute(task,g), s=task.spec.solve(g); const good=r.steps.every(x=>x.ok)&&task.spec.holds(r.M,g).every(x=>x[1])&&Object.keys(s).every(nm=>sameQ(r.M[nm],s[nm]));
         if(good) ok++; else if(!fail) fail=(r.steps.find(x=>!x.ok)||{}).title||'условие'; }
@@ -88,4 +95,5 @@ function certify(task,opts){
 }
 function diffEntries(a,b,path){ path=path||''; if(Array.isArray(a)||(a&&typeof a==='object')){ for(const k of Object.keys(a)){ const r=diffEntries(a[k],b&&b[k],path+(Array.isArray(a)?'['+k+']':'.'+k)); if(r) return r; } return ''; }
   return q(a).eq(q(b))?'':path.replace(/^\./,'')+': '+a+' и '+b; }
-module.exports={certify,execute};
+put('certify',{certify,execute});
+})();
