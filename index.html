@@ -2967,6 +2967,58 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 .v7-hero .sr-it.v7-n .sr-tag{background:var(--acc);color:#fff}
 .v7-hero .sr-it.v7-n .sr-w{color:var(--red);font-weight:700}
 @media(max-width:520px){.v7-pop a:nth-child(n+6){display:none}}
+
+/* ═════ v8 · «куда нажать»: подсветка главного действия ═════
+   .hl — пульсирующая красная рамка вокруг одного главного действия экрана (3 раза, потом тихая рамка).
+   .gd — полоса «что делать здесь»: шаги раздела, первый — «начни здесь». */
+.hl{position:relative}
+.hl::after{content:"";position:absolute;inset:-5px;border-radius:inherit;border:2px solid var(--red);pointer-events:none;opacity:0;animation:hlRing 1.6s ease-out .5s 3 both}
+@keyframes hlRing{0%{opacity:0;transform:scale(.98)}25%{opacity:1}100%{opacity:0;transform:scale(1.04)}}
+.hl.tnum,.v8-pick.hl,.tg-c.hl,.rk-s.hl{box-shadow:0 0 0 2px color-mix(in srgb,var(--red) 55%,transparent),var(--shadow2)!important}
+.hs-box.hl{border-radius:18px}.hs-box.hl::after{display:none}
+.hs-box.hl .sr-form{box-shadow:0 0 0 3px var(--red),0 14px 30px -14px rgba(5,12,40,.7)!important}
+.v8-start{position:absolute;right:10px;top:-30px;z-index:2;padding:4px 10px;border-radius:99px;background:var(--red);color:#fff;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;animation:v8Bob 1.4s ease-in-out infinite}
+@keyframes v8Bob{50%{transform:translateY(-3px)}}
+.v7-hero .hs-box{position:relative}
+@media(prefers-reduced-motion:reduce){.hl::after,.v8-start,.pl-coach{animation:none}}
+.gd{list-style:none;margin:0 0 var(--s4);padding:12px;display:grid;gap:6px;border-radius:16px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow)}
+.gd-h{font:700 11.5px var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--acc);padding:0 4px 2px}
+.gd li:not(.gd-h){display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;font-size:14.5px;line-height:1.35;color:var(--ink2)}
+.gd li b{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--blue-s);color:var(--acc);font:700 13px var(--mono)}
+.gd li span{flex:1;min-width:0}
+.gd li.on{background:var(--red-s);color:var(--ink);font-weight:600}
+.gd li.on b{background:var(--red);color:#fff}
+.gd li i{flex:none;font:700 10px var(--mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;color:var(--red)}
+@media(min-width:760px){.gd{grid-template-columns:auto repeat(3,1fr);align-items:center}.gd-h{padding:0 8px 0 4px}}
+/* быстрые кнопки в карточках главной */
+.v8-q{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-6px 16px 16px 76px}
+.v8-q span{font:600 12.5px var(--sans);color:var(--mut);margin-right:2px}
+.v8-q a{display:inline-flex;align-items:center;min-height:36px;padding:0 13px;border-radius:99px;background:var(--blue-s);color:var(--acc);font:700 13.5px var(--sans);text-decoration:none;border:1px solid color-mix(in srgb,var(--acc) 22%,transparent)}
+.v8-q a:hover{background:var(--acc);color:#fff}
+@media(max-width:420px){.v8-q{margin-left:16px}}
+@media(min-width:760px){.v8-q{margin:-4px 16px 16px}}
+/* «Когда РК?» и «Какое у тебя ДЗ?» */
+.v8-when,.v8-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 var(--s4);padding:12px 14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
+.v8-when b,.v8-pick b{flex:1 0 100%;font:700 16px var(--disp);color:var(--ink)}
+.v8-when button{min-height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink);font:700 14px var(--sans);cursor:pointer}
+.v8-when button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.v8-when button:hover{border-color:var(--acc)}
+.v8-pick a{display:grid;place-items:center;min-width:58px;min-height:48px;padding:0 12px;border-radius:14px;background:var(--acc);color:#fff;font:700 17px var(--disp);text-decoration:none;box-shadow:0 8px 16px -10px rgba(31,71,184,.8)}
+.v8-pick a:hover{background:var(--navy)}
+.flash{animation:v8Flash 1.2s ease-out}
+@keyframes v8Flash{0%{box-shadow:0 0 0 4px var(--red)}100%{box-shadow:0 0 0 0 transparent}}
+/* плеер: подсказка у кнопки «Начать» */
+.pl-ctrl-in{position:relative}
+.pl-coach{position:absolute;right:var(--s4);bottom:calc(100% + 10px);z-index:5;padding:8px 12px;border-radius:12px;background:var(--red);color:#fff;font:700 13px var(--sans);box-shadow:0 10px 22px -10px rgba(208,52,43,.9);animation:v8Bob 1.4s ease-in-out infinite;pointer-events:none;white-space:nowrap}
+.pl-coach::after{content:"";position:absolute;right:28px;top:100%;border:7px solid transparent;border-top-color:var(--red)}
+/* поиск: лучший ответ выделен */
+.sr-it.best{border:2px solid var(--acc)!important;background:var(--blue-s)!important}
+.sr-star{color:#fff!important;background:var(--red);padding:2px 8px;border-radius:99px}
+/* «Дальше» внизу страницы — заметная полоса */
+.nextbar,:root[data-theme=dark] .nextbar{background:linear-gradient(140deg,var(--navy),var(--navy2))!important;border:0!important;color:#fff;box-shadow:0 18px 36px -22px rgba(19,35,90,.9)}
+.nextbar .nx-k{color:#ff8a7e!important}.nextbar b{color:#fff}.nextbar small{color:rgba(255,255,255,.78)!important}
+.nextbar .btn.pri{background:var(--red)!important;border-color:var(--red)!important;box-shadow:0 8px 18px -8px rgba(208,52,43,.9)!important}
+.ptop-next{background:var(--red)!important;border-color:var(--red)!important}
 </style>
 </head>
 <body>
@@ -3792,6 +3844,7 @@ function mount(root,t,opt){
     const tabs = parts.length>1? `<div class="pl-parts" role="group" aria-label="Пункты задачи">${parts.map((q,i)=>`<button class="pl-part${i===S.pi?' on':''}" data-p="${i}">${q.l}</button>`).join('')}</div>`:'';
     const last = k===n && !tryHid;
     const mainCls = last? (S.pi<parts.length-1? 'pl-nextpart':'pl-done') : 'pl-next';
+    const coachOn=()=>{ try{ return (window.ST?ST.get('coach',0):0)<3; }catch(e){ return false; } };
     const mainTxt = k===0? 'Начать →' : last? (S.pi<parts.length-1? 'Дальше: пункт '+parts[S.pi+1].l+' →' : 'Готово ✓') : (k===n-1? 'К ответу →' : 'Дальше →');
     const segs = Array.from({length:n+1},(_,i)=>`<i class="${i<k?'d':i===k?'c':''}${i===n?' ans':''}"></i>`).join('');
     const stepTxt = k===0? 'Дано' : last? 'Ответ · шаг '+k+' из '+n : 'Шаг '+k+' из '+n;
@@ -3818,7 +3871,7 @@ function mount(root,t,opt){
         <div class="pl-ctrl"><div class="pl-ctrl-in">
           ${k===0&&S.pi===0&&opt.prev?`<button class="btn ghost pl-prev pl-prevt" aria-label="Предыдущая: ${escH(opt.prev.label)}">← <span>${escH(opt.prev.short||opt.prev.label)}</span></button>`:`<button class="btn ghost pl-prev" ${k===0&&S.pi===0?'disabled':''} aria-label="Назад">← <span>Назад</span></button>`}
           <div class="pl-dots">${dots}</div>
-          <button class="btn pri pl-main ${mainCls}">${mainTxt}</button>
+          ${k===0&&coachOn()?'<span class="pl-coach" aria-hidden="true">Жми — решение пойдёт по шагам</span>':''}<button class="btn pri pl-main ${mainCls}${k===0||last?' hl':''}">${mainTxt}</button>
         </div></div>
       </div>`;
     bind(); zoomBind(); posSet(); try{ glowNew(); FX.touch(); }catch(e){} document.body.classList.toggle('plfull',S.full);
@@ -3866,6 +3919,7 @@ function mount(root,t,opt){
   function bind(){
     const q=s=>root.querySelector(s);
     q('.pl-prev')&&q('.pl-prev').addEventListener('click',()=>{ if(q('.pl-prevt')){ if(opt.onPrev) opt.onPrev(); return; } if(S.k===0&&S.pi>0){ S.pi--; S.k=(part().steps||[]).length; render(); return; } go(S.k-1); });
+    q('.pl-next')&&S.k===0&&q('.pl-next').addEventListener('click',()=>{ try{ if(window.ST) ST.set('coach',ST.get('coach',0)+1); }catch(e){} });
     q('.pl-next')&&q('.pl-next').addEventListener('click',()=>{ if(hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; render(); } else go(S.k+1); });
     q('.pl-stuckbtn')&&q('.pl-stuckbtn').addEventListener('click',()=>{ S.help=!S.help; if(S.help){ try{ const m=ST.get('stuck',{}); m[posKey]=(m[posKey]||0)+1; ST.set('stuck',m); }catch(e){} } render(); });
     q('.hl-back')&&q('.hl-back').addEventListener('click',()=>go(S.k-1));
@@ -6736,7 +6790,7 @@ function resultsHTML(r){
 }
 function rowHTML(d,hits,i,best,hid){
   const c=hits.size?snippet(d,hits):snippet(d,new Set());
-  return `<a class="sr-it${best?' best':''}${hid?' sr-x':''}" href="${esc(d.href)}" role="option" id="sro${i}" data-key="${esc(d.key)}"><span class="sr-tag">${esc(d.label)}</span>${best?'<span class="sr-star">начни отсюда</span>':''}
+  return `<a class="sr-it${best?' best':''}${hid?' sr-x':''}" href="${esc(d.href)}" role="option" id="sro${i}" data-key="${esc(d.key)}"><span class="sr-tag">${esc(d.label)}</span>${best?'<span class="sr-star">лучший ответ</span>':''}
    <b class="sr-t">${titleHTML(d,hits)}</b>${c?`<span class="sr-c">${c}</span>`:''}<span class="sr-w">${esc(d.where)} →</span></a>`;
 }
 function emptyHTML(){
@@ -22071,6 +22125,8 @@ window.CHANGES=[
     'Главная снова начинается с поиска: синий блок «Найди решение своей задачи» — номер задачи, тема или вопрос своими словами; ответы прямо в нём. Номер («47», «№ 47») сразу даёт задачу первой строкой.',
     'Под поиском — «Продолжить, где остановился» и «Или выбери, что нужно»: тетрадь (с полем номера и красной кнопкой «Открыть решение»), ДЗ, РК, теория; подсказка в три шага.',
     'Теория: следующий урок помечен «начни здесь» / «следующий урок».',
+    'Куда нажать — видно везде: красная рамка вокруг главного действия экрана, полоса «что делать здесь» в разделах, «начни здесь» у первого шага; в поиске — «лучший ответ».',
+    'Быстрые кнопки: на главной — номер своего ДЗ, билеты, теория РК1, уроки; в «ДЗ» — «Какое у тебя ДЗ?»; в «РК» — «Когда РК?»; в задаче — подсказка у кнопки «Начать».',
     '3D к задачам — тонко, как в учебнике: тонкие линии, маленькие точки, светло-синие проецирующие лучи, красное искомое.']},
   {v:'3.2',d:'11 октября 2026',items:['Новый вид сайта: спокойная бумага, тушь и один акцент. Главная ведёт по четырём вопросам — задача из тетради, ДЗ, РК, тема; всё остальное ниже, в «Ещё».',
     'Меню в порядке задач студента: Тетрадь · ДЗ · РК · Теория. 3D-модель — в «Теории» и в «Ещё» на главной.',
@@ -23686,6 +23742,13 @@ document.addEventListener('click',e=>{ const b=e.target.closest('[data-sharetask
 /* без вибрации на каждую кнопку: отклик только там, где он что-то значит (шаг, выбор, успех, ошибка) */
 document.addEventListener('click',e=>{ const t=e.target.closest('.pl-mode,.pl-part,.hw-pills a,.e3-chip,.chip[data-pre],.fxs-a'); if(t) FX.buzz('tick'); },true);
 
+/* ───────── «куда нажать»: полоса шагов раздела; первый шаг подсвечен ───────── */
+/* подпись ДЗ на кнопке: «№4а» на телефоне читается как «№46» — пишем варианты явно */
+function hwLabel(n){ n=String(n); return n==='4a'?'№4 · вар. 1–15':n==='4b'?'№4 · вар. 16–30':'№'+n; }
+function guideHTML(title,steps){ return `<ol class="gd" aria-label="${attr(title)}"><li class="gd-h">${title}</li>${steps.map((x,i)=>`<li class="${i?'':'on'}"><b>${i+1}</b><span>${x}</span>${i?'':'<i>начни здесь</i>'}</li>`).join('')}</ol>`; }
+/* кнопки, которые плавно прокручивают к блоку страницы (в адресе — маршрут, поэтому якоря не годятся) */
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-scroll]'); if(!b) return; e.preventDefault(); const el=document.querySelector(b.dataset.scroll); if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } });
+
 /* ───────── ГЛАВНАЯ ───────── */
 function resumeTarget(){
   const L=ST.get('last',null); let tgt=null;
@@ -23708,23 +23771,26 @@ function viewHome(v){
   const nth=(typeof ALL_THEORY!=='undefined'?ALL_THEORY.filter(t=>t.id<=22).length:22);
   const ic=k=>`<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
   const door=(k,href,title,sub,extra,cls)=>`<li class="v5-d${cls?' '+cls:''}"><a class="v5-da" href="${href}"><span class="v5-ic">${ic(k)}</span><span class="v5-t"><b>${title}</b><small>${sub}</small></span><i class="v5-go" aria-hidden="true">→</i></a>${extra||''}</li>`;
+  const quick=(lbl,list)=>`<div class="v8-q"><span>${lbl}</span>${list.map(x=>`<a href="${x[1]}">${x[0]}</a>`).join('')}</div>`;
+  const hwList=(window.NGHW?NGHW.list():[]).map(d=>[hwLabel(d.n),H('ng','hw',d.n)]);
+  const firstUse=!ST.get('srused',0);
   const more=(href,title,sub,tag)=>`<a class="v5-m" href="${href}"><span><b>${title}${tag?` <i class="v5-tag">${tag}</i>`:''}</b><small>${sub}</small></span><i aria-hidden="true">→</i></a>`;
   const pop=[['visibility','Видимость'],['true-length','Натуральная величина'],['plane-traces','Следы плоскости'],['line-plane-meet','Прямая и плоскость'],['replace-planes','Замена плоскостей'],['perp-theorem','Прямой угол']].filter(x=>!window.TOPICS||TOPICS.get(x[0]));
   v.innerHTML=`<div class="wrap page home v5h">
    <section class="hsearch v7-hero" id="hsearch" aria-labelledby="v7H">
     <h1 id="v7H">Найди решение своей задачи</h1>
     <p class="v7-sub">Номер задачи из тетради, тема или вопрос своими словами</p>
-    <div class="hs-box"><div id="hsMount"></div></div>
+    <div class="hs-box${firstUse?' hl':''}">${firstUse?'<span class="v8-start" aria-hidden="true">Начни здесь ↓</span>':''}<div id="hsMount"></div></div>
     <div class="v7-pop"><span>Часто ищут:</span>${pop.map(x=>`<a href="${H('topic',x[0])}">${x[1]}</a>`).join('')}</div>
    </section>
    ${tg?`<a class="v5-res" href="${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
-   <h2 class="v7-or">Или выбери, что нужно</h2>
+   <h2 class="v7-or">Или выбери, что тебе нужно</h2>
    <ol class="v5-doors" aria-label="Что нужно">
     ${door('nb',H('ng','tasks'),'Решённая тетрадь'+(tg?'':'<i class="v5-tag">начни здесь</i>'),'Все '+nT+' задач: чертёж строится по шагам, к каждому шагу — пояснение. Знаешь номер — впиши:',
       `<form class="v5-num" data-tnum novalidate><label for="tn_home" class="sr-only">Номер задачи</label><span aria-hidden="true">№</span><input id="tn_home" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="1–${mx}"><button type="submit" class="btn red">Открыть решение</button></form>`,'main')}
-    ${door('hw',H('ng','hw'),'Как решать ДЗ','ДЗ №1–'+nHW+': что требуется, порядок решения и разобранный пример')}
-    ${door('rk',H('ng','check'),'Подготовка к РК','билеты с разбором, '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории, пробный РК на время')}
-    ${door('th',H('ng','path'),'Теория',nL+' коротких уроков с картинками и разборы по типам задач')}
+    ${door('hw',H('ng','hw'),'Сделать ДЗ','Порядок решения и разобранный пример к каждому ДЗ',hwList.length?quick('Твоё ДЗ:',hwList):'')}
+    ${door('rk',H('ng','check'),'Подготовиться к РК','Билеты с разбором, '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории, пробный РК',quick('Сразу:',[['Билеты',H('ng','check','tickets')],['Теория РК1',H('ng','cheat','th')],['Пробный РК',H('ng','check','train')]]))}
+    ${door('th',H('ng','path'),'Понять тему',nL+' коротких уроков с картинками и разборы по типам задач',quick('Сразу:',[['Уроки',H('ng','path')],['Шпаргалка',H('ng','cheat')],['3D-модель',H('epure')]]))}
    </ol>
    <ol class="v6-how" aria-label="Как пользоваться"><li><b>1</b>Найди задачу или тему</li><li><b>2</b>Жми «Дальше» — чертёж растёт по шагам</li><li><b>3</b>«Решаю сам» — проверь себя</li></ol>
    <section class="v5-more" aria-labelledby="v5M">
@@ -23746,6 +23812,7 @@ function viewHome(v){
       a.innerHTML=`<span class="sr-tag">Задача из тетради</span><span class="sr-t">№${+m[1]} — ${attr(short(t.q,140))}</span><span class="sr-w">Открыть решение по шагам →</span>`;
       res.prepend(a); };
     api.input.addEventListener('input',numFirst);
+    api.input.addEventListener('input',()=>{ if(api.val()){ try{ ST.set('srused',1); }catch(e){} const b=document.querySelector('.v7-hero .hs-box.hl'); if(b){ b.classList.remove('hl'); const t=b.querySelector('.v8-start'); if(t) t.remove(); } } },{once:false});
     const kq=POP?SEARCH.keep():''; if(kq){ api.run(kq); numFirst(); } }
   return '';
 }
@@ -23777,7 +23844,7 @@ function ngPath(v){
   COURSE.forEach(l=>{
     if(l.part!==part){ if(part) html+='</div>'; part=l.part; html+=`<h2 class="tg-h">${part}</h2><div class="thg">`; }
     const ts=tasksOf(l.id), ld=lessonDone(l.id), nx=!ld&&!nextL; if(nx) nextL=l.id;
-    html+=`<a class="tg-c${ld?' done':''}${nx?' next':''}" href="${H('ng','path',l.id)}">${nx?`<span class="tg-nx">${COURSE.some(x=>lessonDone(x.id))?'следующий урок':'начни здесь'}</span>`:''}
+    html+=`<a class="tg-c${ld?' done':''}${nx?' next hl':''}" href="${H('ng','path',l.id)}">${nx?`<span class="tg-nx">${COURSE.some(x=>lessonDone(x.id))?'следующий урок':'начни здесь'}</span>`:''}
       <span class="tg-n">${ld?'✓':String(l.id).padStart(2,'0')}</span>
       <b>${l.title}</b><span class="tg-g">${l.goal}</span>
       <span class="tg-m">${l.min} мин${ts.length?' · '+ts.length+' '+plural(ts.length,'задача','задачи','задач'):''}${l.key?' · <i>ключевая тема</i>':''}</span></a>`;
@@ -23791,6 +23858,7 @@ function ngPath(v){
    <div class="intro">
     <h1>Теория</h1>
     <p class="lead">Короткие уроки с картинками — по порядку курса. Ниже — разбор по типам задач: как решать и где ошибаются.</p>
+    ${guideHTML('Как разобраться',['Открой отмеченный урок или найди тему поиском','Прочитай урок — 10–15 минут','Реши задачи к уроку — они в конце'])}
     <div class="thq"><a href="${H('ng','cheat')}"><b>Шпаргалка</b><span>формулы и правила на одной странице</span></a><a href="${H('ng','cheat','th')}"><b>22 вопроса РК1</b><span>ответы на теорию к рубежному</span></a></div>
    </div>
    ${html}
@@ -23858,8 +23926,11 @@ function hwView(v,r){
   if(!W){ v.innerHTML=pageHTML({crumbs:NGC(['ДЗ']),tabs:['ng','hw'],next:null,body:'<div class="box warn"><h4>ДЗ</h4>Раздел не загрузился. Обнови страницу.</div>'}); return 'Как решать ДЗ'; }
   const crumbs=d?NGC(['ДЗ',H('ng','hw')],['ДЗ '+d.num]):NGC(['ДЗ']);
   const player=!!(d&&ex&&d.task);
+  const pick=d?'':`${guideHTML('Как сделать ДЗ',['Выбери номер своего ДЗ','«Разбор примера» — полное решение похожего варианта','«Методика» — как решать свой вариант'])}
+   <div class="v8-pick hl"><b>Какое у тебя ДЗ?</b>${W.list().map(x=>`<a href="${H('ng','hw',x.n)}">${hwLabel(x.n)}</a>`).join('')}</div>`;
   v.innerHTML=pageHTML({crumbs,tabs:['ng','hw'],next:null,noBottom:true,cls:player?'taskwrap hwwrap':'hwwrap',body:'<div id="hwRoot"></div>'});
   W.render($('hwRoot'),d?d.n:null,player?'ex':'');
+  if(pick){ const r=$('hwRoot'), i=r.querySelector('.intro'); if(i) i.insertAdjacentHTML('afterend',pick); else r.insertAdjacentHTML('afterbegin',pick); }
   if(d) setLast({s:'ng',kind:'hw',id:d.n,href:H('ng','hw',d.n,player?'ex':''),label:'ДЗ '+d.num+'. '+d.title,sub:SUBJ.ng.name+' · ДЗ'});
   return d?'ДЗ '+d.num+' — как решать':'Как решать ДЗ';
 }
@@ -23877,7 +23948,8 @@ function ngTasks(v){
   v.innerHTML=pageHTML({crumbs:[['Тетрадь']],next:null,noBottom:true,body:`
    <div class="intro"><h1>Решённая тетрадь</h1>
     <p class="lead">Все задачи рабочей тетради с решением по шагам: чертёж строится на глазах, к каждому шагу — пояснение.</p></div>
-   ${tnumHTML('big')}
+   ${guideHTML('Как найти решение',['Впиши номер своей задачи','Жми «Дальше» — решение идёт по шагам','«Решаю сам» — проверь, что понял'])}
+   ${tnumHTML('big hl')}
    <div class="resume2"><div class="rs-t"><div class="rs-k">${done?'Продолжить':'Начать'}</div><b>${next.label}</b>${next.sub?`<small>${next.sub}</small>`:''}</div>
     <div class="rs-p"><div class="pbar"><i style="width:${all.length?Math.round(done/all.length*100):0}%"></i></div><span>${done} из ${all.length} разобрано</span></div>
     <button class="btn pri lg" data-next>${done?'Продолжить':'Начать'} →</button></div>
@@ -24020,8 +24092,9 @@ function rkHub(v){
   const step=(n,href,title,sub,meta,cls)=>`<a class="rk-s ${cls||''}" href="${href}"><span class="rk-n">${n}</span><span class="rk-t"><b>${title}</b><small>${sub}</small>${meta?`<em>${meta}</em>`:''}</span><i aria-hidden="true">→</i></a>`;
   v.innerHTML=pageHTML({crumbs:[['Подготовка к РК']],next:null,noBottom:true,body:`
    <div class="intro"><h1>Подготовка к РК</h1><p class="lead">Рубежный контроль по начертательной геометрии: задачи по билетам и вопросы теории. Иди по шагам сверху вниз.</p></div>
+   <div class="v8-when"><b>Когда РК?</b><button type="button" class="on" data-scroll=".rk-plan">Через неделю и больше</button><button type="button" data-scroll="#rkzH">Через 1–3 дня</button></div>
    <div class="rk-plan">
-    ${step(1,H('ng','check','tickets'),'Реши билеты РК',nt+' '+plural(nt,'задание','задания','заданий')+' из билетов: реши на бумаге, потом сверься с разбором по шагам','с чего начать','hot')}
+    ${step(1,H('ng','check','tickets'),'Реши билеты РК',nt+' '+plural(nt,'задание','задания','заданий')+' из билетов: реши на бумаге, потом сверься с разбором по шагам','начни здесь','hot hl')}
     ${step(2,H('ng','cheat','th'),'Выучи '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории','короткий ответ на каждый вопрос РК1 и подробное объяснение','')}
     ${step(3,H('ng','check','train'),'Пробный РК на время','задачи из разных разделов тетради и таймер — как на настоящем РК',last?'последний результат: '+last.pct+'%':'')}
     ${step(4,H('ng','check','gym'),'Тренажёр без конца','новые варианты задач тетради и поиск ошибок в чертежах','новое','hot')}
