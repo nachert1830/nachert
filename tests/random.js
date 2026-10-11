@@ -30,7 +30,8 @@ const SC=/(\b(?:const|let)\s+|,\s*)([A-Za-z_$][\w$]*)(\s*=\s*)(-?\d+(?:\.\d+)?)(
 /* числа из условия (q:'…') не меняются — так же делает генератор на сайте (GEN.pinOf): условие на экране совпадает с чертежом */
 function pinOf(src){ const p=new Set(); src.replace(/\bq:\s*'((?:[^'\\]|\\.)*)'/g,(m,q)=>{ q.replace(/<[^>]+>/g,' ').replace(/\d+(?:[.,]\d+)?/g,x=>{ p.add(parseFloat(x.replace(',','.'))); return x; }); return m; }); return p; }
 function perturb(src,seed){ const f=warp(seed,pinOf(src)); let n=0;
-  let s=src.replace(RE,(m,a,ma,b,mb,c,mc)=>{ n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
+  const basis=(a,b,c,ma,mb,mc)=>!ma&&!mb&&!mc&&[+a,+b,+c].filter(v=>v===0).length===2&&[+a,+b,+c].some(v=>Math.abs(v)===1);   /* как на сайте: оси-направления не данные */
+  let s=src.replace(RE,(m,a,ma,b,mb,c,mc)=>{ if(basis(a,b,c,ma,mb,mc)) return m; n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
   s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) return m;   /* масштаб и число шагов разбиения (N=400 в видимости № 46, n=16 у волнистой линии) — не данные задачи */   /* масштаб чертежа — не данные задачи */ n++; return pre+name+eq+f(+v); });
   return {src:s,n}; }
 

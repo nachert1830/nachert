@@ -18161,7 +18161,7 @@ const pa=(()=>{
 /* ===== б) тор с осью ⟂ π₂ ===== */
 const pb=(()=>{
   const fT=(x,z)=>[-x*U,-z*U], pT=(x,y)=>[-x*U,y*U], F3t=p=>fT(p[0],p[2]), H3t=p=>pT(p[0],p[1]);
-  const Rc=21, r=15.5, Rin=Rc-r, Rout=Rc+r, zp=5.5, rAB=33;
+  const Rc=21, r=15.5, Rin=Rc-r, Rout=Rc+r, zp=Rin, rAB=33;   /* плоскость z = zp касается внутреннего экватора: узел D сечения — только при zp = Rc − r */
   const yOf=rho=>Math.sqrt(Math.max(0,r*r-(rho-Rc)**2));
   const A=[0,yOf(rAB),rAB], B=[-Math.sqrt(rAB*rAB-zp*zp),yOf(rAB),zp], D=[0,0,zp], E=[0,r,Rc], C=[-Math.sqrt(Rc*Rc-zp*zp),r,zp];
   const aux=[-11.2,-15.4,-24.7].map(x=>[x,yOf(Math.hypot(x,zp)),zp]);       // P, K, S
@@ -18591,11 +18591,11 @@ const xOnA=z=>V2[0]+(V2[1]-z)*(V2b[0]-V2[0])/V2[1];
 const xOn310=z=>T3[0]+(T3[1]-z)*(T10[0]-T3[0])/(T3[1]-T10[1]);
 const zsA=[58,44,30,16,0], zsG=[47.5,40,32,24,15];
 const cutF=[fs(V2c,V2,'main'),fs(V2,V2b,'main'),fs(T3,T4,'main'),fs(T3,T10,'main'),fs(T4,T10,'main')];
-const bodyF=[fs([cx,80],V2c,'main'),fs(V2b,[cx-R,0],'main'),fs([cx,80],[cx-R,0],'main')];
+const bodyF=[fs([cx,h],V2c,'main'),fs(V2b,[cx-R,0],'main'),fs([cx,h],[cx-R,0],'main')];
 const nums=(arr,start)=>arr.map((z,i)=>String(start+i));
 const nmA=['2','5','6','7','8'], nmG=['3','9','11','12','10'];   // имена точек
 const pa={ l:'а)', q:'Достроить проекции конуса, усечённого проецирующими плоскостями.',
-  given:[ axis(), ...bodyF, ...cutF, circ(H([cx,cy,0]),R*S,'thin'), pt(H([cx,cy,0]),'S′','ne'), pt(F([cx,0,80]),'S″','n'),
+  given:[ axis(), ...bodyF, ...cutF, circ(H([cx,cy,0]),R*S,'thin'), pt(H([cx,cy,0]),'S′','ne'), pt(F([cx,0,h]),'S″','n'),
           fp('2',V2[0],V2[1],'nw'), fp('3',T3[0],T3[1],'sw'), fp('4',T4[0],T4[1],'ne'), fp('10',T10[0],T10[1],'se') ],
   steps:[
     { t:'Какие плоскости режут конус',
@@ -21662,7 +21662,9 @@ const NUM='(-?\\d+(?:\\.\\d+)?)', MUL='((?:\\s*\\*\\s*[A-Za-z_$][\\w$]*)?)';
 const RE3=new RegExp('\\[\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*\\](?!\\s*\\.)','g');
 const SC=/(\b(?:const|let)\s+|,\s*)([A-Za-z_$][\w$]*)(\s*=\s*)(-?\d+(?:\.\d+)?)(?=\s*[,;\n]|\s*\/[\/*])/g;
 function perturb(src,seed,pin){ const f=warp(seed,pin); let n=0;
-  let s=src.replace(RE3,(m,a,ma,b,mb,c,mc)=>{ n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
+  /* единичные векторы осей ([0,1,0], [0,0,−1]…) — направления, а не данные: искажённые, они делают «горизонталь» негоризонтальной, а конус и тор — некруговыми */
+  const basis=(a,b,c,ma,mb,mc)=>!ma&&!mb&&!mc&&[+a,+b,+c].filter(v=>v===0).length===2&&[+a,+b,+c].some(v=>Math.abs(v)===1);
+  let s=src.replace(RE3,(m,a,ma,b,mb,c,mc)=>{ if(basis(a,b,c,ma,mb,mc)) return m; n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
   s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) return m;   /* масштаб и число шагов разбиения (N=400 в видимости № 46, n=16 у волнистой линии) — не данные задачи */ n++; return pre+name+eq+f(+v); });
   return {src:s,n}; }
 /* числа из условия задачи (их не трогаем: условие на экране должно совпадать с чертежом) */
