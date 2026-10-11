@@ -3027,19 +3027,13 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 /* счётчик просмотров — зелёная «живая» точка */
 .vc-dot{background:#2fd47a!important;box-shadow:0 0 0 0 rgba(47,212,122,.6)!important;animation:vcLive 2s ease-out infinite}
 @keyframes vcLive{0%{box-shadow:0 0 0 0 rgba(47,212,122,.6)}70%,100%{box-shadow:0 0 0 7px rgba(47,212,122,0)}}
-/* поделиться — сразу под поиском, яркая красная кнопка */
-.v9-share{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;margin:0 0 var(--s4);padding:14px 16px;border-radius:20px;background:linear-gradient(135deg,#fff 0%,#fff3f2 100%);border:1.5px solid color-mix(in srgb,var(--red) 35%,var(--line));box-shadow:0 14px 30px -20px rgba(208,52,43,.7)}
-:root[data-theme=dark] .v9-share{background:linear-gradient(135deg,var(--surf),#2a1530)}
-.v9-st{flex:1 1 220px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0}
-.v9-st b{flex:1 0 100%;font:800 17px/1.25 var(--disp);color:var(--ink)}
-.v9-st span{flex:1 0 100%;font-size:13.5px;color:var(--ink2)}
-.v9-st .vc{margin-top:4px;padding:5px 12px 5px 10px;border-radius:99px;gap:8px}.v9-st .vc-n{font-size:15px}.v9-st .vc-l{font-size:12px}
-.v9-sb{flex:1 1 200px;position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 22px;border:0;border-radius:16px;cursor:pointer;
-  background:linear-gradient(135deg,#ff4d3d 0%,#d0342b 55%,#b0201a 100%);color:#fff;font:800 16.5px var(--sans);letter-spacing:.1px;box-shadow:0 14px 26px -12px rgba(208,52,43,.95),inset 0 1px 0 rgba(255,255,255,.3);animation:v9Nudge 4s ease-in-out 1.5s infinite}
-.v9-sb::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);transform:translateX(-120%);animation:jzShine 3.2s ease-in-out infinite 1s}
-.v9-sb:hover{filter:brightness(1.06)}.v9-sb:active{transform:scale(.97)}
-@keyframes v9Nudge{0%,88%,100%{transform:none}91%{transform:rotate(-1.5deg) scale(1.03)}94%{transform:rotate(1.5deg) scale(1.03)}97%{transform:scale(1.02)}}
-@media(prefers-reduced-motion:reduce){.v9-sb,.v9-sb::after,.vc-dot{animation:none}}
+/* поделиться — сразу под поиском, спокойная строка */
+.v9-share{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 var(--s4);padding:10px 12px 10px 16px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
+.v9-t{flex:1 1 180px;font:600 14.5px/1.35 var(--sans);color:var(--ink2)}
+.v9-share .vc{padding:4px 11px 4px 9px;border-radius:99px;gap:7px}.v9-share .vc-n{font-size:14px}.v9-share .vc-l{font-size:10.5px}
+.v9-sb{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border:0;border-radius:12px;cursor:pointer;background:var(--red);color:#fff;font:700 14.5px var(--sans)}
+.v9-sb:hover{filter:brightness(1.07)}.v9-sb:active{transform:scale(.97)}
+@media(prefers-reduced-motion:reduce){.vc-dot{animation:none}}
 /* РК: типы задач билета */
 .rk9{margin:0 0 var(--s5)}
 .rk9-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -22180,7 +22174,7 @@ window.CHANGES=[
     'Куда нажать — видно везде: красная рамка вокруг главного действия экрана, полоса «что делать здесь» в разделах, «начни здесь» у первого шага; в поиске — «лучший ответ».',
     'Быстрые кнопки: на главной — номер своего ДЗ, билеты, теория РК1, уроки; в «ДЗ» — «Какое у тебя ДЗ?»; в «РК» — «Когда РК?»; в задаче — подсказка у кнопки «Начать».',
     'РК: страница построена вокруг того, что будет на РК — 6 типов задач билета; у каждого «Решить пример из билета» и «Новые числа» (та же задача с другими данными), теория и похожие задачи. Ниже — «Все билеты целиком», «Пробный РК на время», теория РК1, план на три вечера. Тренажёр, «Найди ошибку» и быстрый тест убраны из меню.',
-    'Главная: «Скинуть в чат группы» — сразу под поиском, яркой красной кнопкой; у счётчика просмотров — зелёная точка. Логотип — ярко-синий.',
+    'Главная: «Поделиться» — скромной строкой сразу под поиском; у счётчика просмотров — зелёная точка. Логотип — ярко-синий.',
     '3D к задачам — тонко, как в учебнике: тонкие линии, маленькие точки, светло-синие проецирующие лучи, красное искомое.']},
   {v:'3.2',d:'11 октября 2026',items:['Новый вид сайта: спокойная бумага, тушь и один акцент. Главная ведёт по четырём вопросам — задача из тетради, ДЗ, РК, тема; всё остальное ниже, в «Ещё».',
     'Меню в порядке задач студента: Тетрадь · ДЗ · РК · Теория. 3D-модель — в «Теории» и в «Ещё» на главной.',
@@ -23837,7 +23831,7 @@ function viewHome(v){
     <div class="hs-box${firstUse?' hl':''}">${firstUse?'<span class="v8-start" aria-hidden="true">Начни здесь ↓</span>':''}<div id="hsMount"></div></div>
     <div class="v7-pop"><span>Часто ищут:</span>${pop.map(x=>`<a href="${H('topic',x[0])}">${x[1]}</a>`).join('')}</div>
    </section>
-   <div class="v9-share"><div class="v9-st"><b>Спаси одногруппника от пересдачи</b><span>Скинь сайт в чат группы — разборы всех задач в одном месте</span>${FX.viewsHTML()}</div><button type="button" class="v9-sb" data-sharesite><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></svg>Скинуть в чат группы</button></div>
+   <div class="v9-share"><span class="v9-t">Сайт пригодился? Поделись с группой</span>${FX.viewsHTML()}<button type="button" class="v9-sb" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></svg>Поделиться</button></div>
    ${tg?`<a class="v5-res" href=""${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
    <h2 class="v7-or">Или выбери, что тебе нужно</h2>
    <ol class="v5-doors" aria-label="Что нужно">
