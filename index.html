@@ -27,7 +27,7 @@
 <meta property="og:locale" content="ru_RU">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%2313235a%22/%3E%3Ccircle cx=%2212.5%22 cy=%2216%22 r=%226.5%22 fill=%22%23fff%22/%3E%3Ccircle cx=%2219.5%22 cy=%2216%22 r=%226.5%22 fill=%22none%22 stroke=%22%23d0342b%22 stroke-width=%223%22/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%232552e0%22/%3E%3Ccircle cx=%2212.5%22 cy=%2216%22 r=%226.5%22 fill=%22%23fff%22/%3E%3Ccircle cx=%2219.5%22 cy=%2216%22 r=%226.5%22 fill=%22none%22 stroke=%22%23d0342b%22 stroke-width=%223%22/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 /* шрифты лежат рядом с сайтом (папка fonts/, лицензия SIL OFL 1.1) */
@@ -3019,6 +3019,58 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 .nextbar .nx-k{color:#ff8a7e!important}.nextbar b{color:#fff}.nextbar small{color:rgba(255,255,255,.78)!important}
 .nextbar .btn.pri{background:var(--red)!important;border-color:var(--red)!important;box-shadow:0 8px 18px -8px rgba(208,52,43,.9)!important}
 .ptop-next{background:var(--red)!important;border-color:var(--red)!important}
+
+/* ═════ v9 ═════ */
+/* логотип: ярко-синий, белый круг, красное кольцо */
+.brand .logo rect,:root[data-theme=dark] .brand .logo rect{fill:#2552e0}
+.brand .logo{box-shadow:0 6px 14px -8px rgba(37,82,224,.9);border-radius:9px}
+/* счётчик просмотров — зелёная «живая» точка */
+.vc-dot{background:#2fd47a!important;box-shadow:0 0 0 0 rgba(47,212,122,.6)!important;animation:vcLive 2s ease-out infinite}
+@keyframes vcLive{0%{box-shadow:0 0 0 0 rgba(47,212,122,.6)}70%,100%{box-shadow:0 0 0 7px rgba(47,212,122,0)}}
+/* поделиться — сразу под поиском, яркая красная кнопка */
+.v9-share{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;margin:0 0 var(--s4);padding:14px 16px;border-radius:20px;background:linear-gradient(135deg,#fff 0%,#fff3f2 100%);border:1.5px solid color-mix(in srgb,var(--red) 35%,var(--line));box-shadow:0 14px 30px -20px rgba(208,52,43,.7)}
+:root[data-theme=dark] .v9-share{background:linear-gradient(135deg,var(--surf),#2a1530)}
+.v9-st{flex:1 1 220px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0}
+.v9-st b{flex:1 0 100%;font:800 17px/1.25 var(--disp);color:var(--ink)}
+.v9-st span{flex:1 0 100%;font-size:13.5px;color:var(--ink2)}
+.v9-st .vc{margin-top:4px;padding:5px 12px 5px 10px;border-radius:99px;gap:8px}.v9-st .vc-n{font-size:15px}.v9-st .vc-l{font-size:12px}
+.v9-sb{flex:1 1 200px;position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 22px;border:0;border-radius:16px;cursor:pointer;
+  background:linear-gradient(135deg,#ff4d3d 0%,#d0342b 55%,#b0201a 100%);color:#fff;font:800 16.5px var(--sans);letter-spacing:.1px;box-shadow:0 14px 26px -12px rgba(208,52,43,.95),inset 0 1px 0 rgba(255,255,255,.3);animation:v9Nudge 4s ease-in-out 1.5s infinite}
+.v9-sb::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);transform:translateX(-120%);animation:jzShine 3.2s ease-in-out infinite 1s}
+.v9-sb:hover{filter:brightness(1.06)}.v9-sb:active{transform:scale(.97)}
+@keyframes v9Nudge{0%,88%,100%{transform:none}91%{transform:rotate(-1.5deg) scale(1.03)}94%{transform:rotate(1.5deg) scale(1.03)}97%{transform:scale(1.02)}}
+@media(prefers-reduced-motion:reduce){.v9-sb,.v9-sb::after,.vc-dot{animation:none}}
+/* РК: типы задач билета */
+.rk9{margin:0 0 var(--s5)}
+.rk9-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.rk9 h2{margin:0;font:700 21px/1.2 var(--disp)}
+.rk9-pc{font:600 13px var(--mono);color:var(--mut)}.rk9-pc b{color:var(--green);font-size:16px}
+.rk9-bar{height:6px;border-radius:9px;background:var(--line);margin:10px 0 14px;overflow:hidden}.rk9-bar i{display:block;height:100%;background:var(--green);border-radius:9px}
+.rk9-l{display:grid;gap:10px}@media(min-width:900px){.rk9-l{grid-template-columns:1fr 1fr}}
+.rk9-c{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:18px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow)}
+.rk9-c.hl{box-shadow:0 0 0 2px color-mix(in srgb,var(--red) 55%,transparent),var(--shadow2)}
+.rk9-c.ok{border-color:color-mix(in srgb,var(--green) 40%,var(--line))}
+.rk9-h{display:flex;gap:12px;align-items:flex-start}
+.rk9-n{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--navy);color:#fff;font:700 15px var(--disp)}
+.rk9-c.ok .rk9-n{background:var(--green)}
+.rk9-c.hl .rk9-n{background:var(--red)}
+.rk9-start{margin-left:auto;flex:none;align-self:center;padding:2px 8px;border-radius:99px;background:var(--red);color:#fff;font:700 10px/1.5 var(--mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase}
+.rk9-h b{font:700 16.5px/1.3 var(--disp);color:var(--ink);padding-top:5px}
+.rk9-b{display:flex;flex-wrap:wrap;gap:8px}
+.rk9-go{flex:1 1 200px;min-height:48px;font-size:15px;font-weight:700}
+.rk9-c:not(.ok) .rk9-go:not(.red){background:var(--acc)!important;color:#fff!important;border-color:var(--acc)!important}
+.rk9-c.ok .rk9-go{background:var(--surf)!important;color:var(--green)!important;border-color:color-mix(in srgb,var(--green) 45%,var(--line))!important;box-shadow:none!important}
+.rk9-v{min-height:48px;color:var(--acc);border-color:color-mix(in srgb,var(--acc) 35%,var(--line));font-weight:700}
+.rk9-l2,.rk9-l{font-size:13.5px}
+.rk9-c .rk9-l{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--mut)}.rk9-c .rk9-l a{color:var(--acc);font-weight:600;text-decoration:none}
+.rk9-all{display:grid;gap:10px;margin:0 0 var(--s5)}
+.rk9-all h2{margin:0 0 2px;font:700 21px/1.2 var(--disp)}
+@media(min-width:900px){.rk9-all{grid-template-columns:repeat(3,1fr)}.rk9-all h2{grid-column:1/-1}}
+.rk9-big{display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(140deg,var(--navy),var(--navy2));box-shadow:0 18px 36px -22px rgba(19,35,90,.85)}
+.rk9-big b{font:800 19px/1.2 var(--disp)}.rk9-big span{font-size:14px;line-height:1.45;color:rgba(255,255,255,.82)}
+.rk9-big i{margin-top:8px;align-self:flex-start;font-style:normal;font:700 14px var(--sans);padding:9px 14px;border-radius:12px;background:var(--red);color:#fff}
+.rk9-big.alt{background:linear-gradient(140deg,#2552e0,#1f47b8)}.rk9-big.alt i{background:#fff;color:var(--acc)}
+.rk9-big.th{background:var(--surf);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}.rk9-big.th span{color:var(--mut)}.rk9-big.th i{background:var(--blue-s);color:var(--acc)}
 </style>
 </head>
 <body>
@@ -3026,7 +3078,7 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 <header id="hdr">
  <div class="hin">
   <a class="brand" href="#/" aria-label="Начерт — на главную">
-   <svg class="logo" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#13235a"/><circle cx="12.5" cy="16" r="6.5" fill="#fff"/><circle cx="19.5" cy="16" r="6.5" fill="none" stroke="#d0342b" stroke-width="3"/></svg>
+   <svg class="logo" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#2552e0"/><circle cx="12.5" cy="16" r="6.5" fill="#fff"/><circle cx="19.5" cy="16" r="6.5" fill="none" stroke="#d0342b" stroke-width="3"/></svg>
    <span class="bw"><b>Начерт</b><i>по шагам</i></span>
   </a>
   <div class="subj" id="subjBar" role="tablist" aria-label="Предмет"></div>
@@ -22127,6 +22179,8 @@ window.CHANGES=[
     'Теория: следующий урок помечен «начни здесь» / «следующий урок».',
     'Куда нажать — видно везде: красная рамка вокруг главного действия экрана, полоса «что делать здесь» в разделах, «начни здесь» у первого шага; в поиске — «лучший ответ».',
     'Быстрые кнопки: на главной — номер своего ДЗ, билеты, теория РК1, уроки; в «ДЗ» — «Какое у тебя ДЗ?»; в «РК» — «Когда РК?»; в задаче — подсказка у кнопки «Начать».',
+    'РК: страница построена вокруг того, что будет на РК — 6 типов задач билета; у каждого «Решить пример из билета» и «Новые числа» (та же задача с другими данными), теория и похожие задачи. Ниже — «Все билеты целиком», «Пробный РК на время», теория РК1, план на три вечера. Тренажёр, «Найди ошибку» и быстрый тест убраны из меню.',
+    'Главная: «Скинуть в чат группы» — сразу под поиском, яркой красной кнопкой; у счётчика просмотров — зелёная точка. Логотип — ярко-синий.',
     '3D к задачам — тонко, как в учебнике: тонкие линии, маленькие точки, светло-синие проецирующие лучи, красное искомое.']},
   {v:'3.2',d:'11 октября 2026',items:['Новый вид сайта: спокойная бумага, тушь и один акцент. Главная ведёт по четырём вопросам — задача из тетради, ДЗ, РК, тема; всё остальное ниже, в «Ещё».',
     'Меню в порядке задач студента: Тетрадь · ДЗ · РК · Теория. 3D-модель — в «Теории» и в «Ещё» на главной.',
@@ -22981,9 +23035,9 @@ function variantView(host,n,seed){
      <div class="gy-va">${r.orig?'':`<a class="gy-vb pri" href="${href('var',n,rnd())}">↻ Ещё</a>`}${canBuild&&FLAGS.on('build')?`<a class="gy-vb" href="${href('build',n,r.seed||rnd())}">Построй</a>`:''}</div></div>
    <div id="plMount"></div>`;
   document.body.classList.add('inplayer');
-  PLR=PLAYER.mount($q(host,'#plMount'),t,{ backHref:H('ng','check','gym'), backLabel:'К тренажёру', afterText:'Дальше: ещё вариант',
+  PLR=PLAYER.mount($q(host,'#plMount'),t,{ backHref:H('ng','check'), backLabel:'К РК', afterText:'Дальше: ещё вариант',
     posKey:'#/gym/'+n+'-'+r.seed, onLast:()=>{ const k='gv'+n+'-'+r.seed, o=ST.get('gymdone',{}); if(!o[k]){ o[k]=1; ST.set('gymdone',o); cnt('var',1); } },
-    onDone:()=>nav(r.orig?H('ng','check','gym'):href('var',n,rnd())) });
+    onDone:()=>nav(r.orig?H('ng','check'):href('var',n,rnd())) });
 }
 
 /* ── построй сам ── */
@@ -23087,12 +23141,12 @@ function view(v,mode,keyStr){
   if(!title||!k){
     v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','check')],['Тренажёр']],next:null,noBottom:true,body:`
      <div class="intro"><h1>Тренажёр</h1><p class="lead">Бесконечная практика: новые варианты задач тетради и охота за ошибками в чертежах.</p></div>
-     <div class="seg modeseg" role="tablist" aria-label="Способ подготовки">${CHECK_MODES.map(m=>`<a role="tab" href="${H('ng','check',m[0])}" class="${m[0]==='gym'?'on':''}" aria-selected="${m[0]==='gym'}">${m[1]}</a>`).join('')}</div>
+     <div class="seg modeseg" role="tablist" aria-label="Способ подготовки">${CHECK_MODES.filter(m=>!m[2]||m[0]===mode).map(m=>`<a role="tab" href="${H('ng','check',m[0])}" class="${m[0]==='gym'?'on':''}" aria-selected="${m[0]==='gym'}">${m[1]}</a>`).join('')}</div>
      <div id="gyRoot" class="gy-root"><div class="gy-load">${CATSAY('think','Готовлю тренажёр…','c')}</div></div>`});
     GEN.checkers().then(ok=>{ const el=v.querySelector('#gyRoot'); if(!el||!el.isConnected) return; if(!ok){ el.innerHTML='<div class="box warn">Тренажёр не загрузился — проверь интернет и обнови страницу.</div>'; return; } home(v); });
     return 'Тренажёр · Подготовка к РК';
   }
-  const crumbs=[['Подготовка к РК',H('ng','check')],['Тренажёр',H('ng','check','gym')],[title+' · №'+k.n]];
+  const crumbs=mode==='var'?[['Подготовка к РК',H('ng','check')],['Новые числа · №'+k.n]]:[['Подготовка к РК',H('ng','check')],['Тренажёр',H('ng','check','gym')],[title+' · №'+k.n]];
   v.innerHTML=mode==='var'?`<div class="wrap page taskwrap"><div class="ptop">${crumbHTML(crumbs)}</div><div id="gyHost"><div class="gy-load">Строю и проверяю вариант…</div></div></div>`
     :pageHTML({crumbs,next:null,noBottom:true,body:`<div id="gyHost" class="gy-root"><div class="gy-load">Строю и проверяю вариант…</div></div>`});
   const hash=location.hash;
@@ -23783,7 +23837,8 @@ function viewHome(v){
     <div class="hs-box${firstUse?' hl':''}">${firstUse?'<span class="v8-start" aria-hidden="true">Начни здесь ↓</span>':''}<div id="hsMount"></div></div>
     <div class="v7-pop"><span>Часто ищут:</span>${pop.map(x=>`<a href="${H('topic',x[0])}">${x[1]}</a>`).join('')}</div>
    </section>
-   ${tg?`<a class="v5-res" href="${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
+   <div class="v9-share"><div class="v9-st"><b>Спаси одногруппника от пересдачи</b><span>Скинь сайт в чат группы — разборы всех задач в одном месте</span>${FX.viewsHTML()}</div><button type="button" class="v9-sb" data-sharesite><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></svg>Скинуть в чат группы</button></div>
+   ${tg?`<a class="v5-res" href=""${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
    <h2 class="v7-or">Или выбери, что тебе нужно</h2>
    <ol class="v5-doors" aria-label="Что нужно">
     ${door('nb',H('ng','tasks'),'Решённая тетрадь'+(tg?'':'<i class="v5-tag">начни здесь</i>'),'Все '+nT+' задач: чертёж строится по шагам, к каждому шагу — пояснение. Знаешь номер — впиши:',
@@ -23798,11 +23853,10 @@ function viewHome(v){
     <div class="v5-ml">
      ${more(H('epure'),'3D-модель и эпюр','двигай точку в пространстве — чертёж строится сам')}
      ${more(H('ng','day'),'Тема дня','один треугольник — семь способов преобразования')}
-     ${more(H('ng','check','gym'),'Тренажёр','новые варианты задач тетради и поиск ошибок')}
+     ${more(H('ng','cheat'),'Шпаргалка','формулы и правила на одной странице')}
      ${more(H('ig'),'Инженерная графика','ДЗ 2 в 3D, рабочая тетрадь, теория ЕСКД','бета')}
     </div>
    </section>
-   <div class="v5-share"><span>Пригодится одногруппникам?</span>${FX.viewsHTML()}<button type="button" class="btn sm pri" data-sharesite>Поделиться сайтом</button></div>
   </div>`;
   NEXT=null;
   if(window.SEARCH){ const hs=$('hsearch'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:hs,keep:true,noAuto:true,ph:'Номер задачи, тема или вопрос…'});
@@ -24054,7 +24108,7 @@ function openTask(key,opt){
 }
 
 /* ── Проверь себя: тест · билеты · тренинг ── */
-const CHECK_MODES=[['tickets','Билеты РК'],['train','Пробный РК'],['gym','Тренажёр'],['quiz','Быстрый тест']];
+const CHECK_MODES=[['tickets','Билеты РК'],['train','Пробный РК'],['gym','Тренажёр',1],['quiz','Быстрый тест',1]];   /* третий элемент — не показывать во вкладках */
 /* хаб «Подготовка к РК»: понятный план, а не список режимов */
 /* «Сдать РК с нуля»: план на три вечера; галочки ставятся сами по прогрессу */
 const RK_ZERO=[
@@ -24086,22 +24140,28 @@ function rkTypesHTML(){
         <a href="${H('ng','check','tickets',x.ex)}">🎯 Пример из билета</a>
         ${ts.length?`<span class="rkt-ts">📘 В тетради: ${ts.map(n=>`<a href="${H('ng','tasks',n)}">№${n}</a>`).join(' ')}</span>`:''}</div></div>`; }).join('')}</div></section>`; }
 function rkHub(v){
-  const T=typeof TK3!=='undefined'?TK3:[], nt=T.reduce((a,x)=>a+x.tasks.length,0), nq=(typeof QUIZ!=='undefined'?QUIZ.length:0);
+  const T=typeof TK3!=='undefined'?TK3:[], nt=T.reduce((a,x)=>a+x.tasks.length,0);
   const nth=(typeof ALL_THEORY!=='undefined'?ALL_THEORY.filter(t=>t.id<=22).length:22);
-  const best=ST.get('qbest',0), ex=ST.get('exams',[]), last=ex[ex.length-1];
-  const step=(n,href,title,sub,meta,cls)=>`<a class="rk-s ${cls||''}" href="${href}"><span class="rk-n">${n}</span><span class="rk-t"><b>${title}</b><small>${sub}</small>${meta?`<em>${meta}</em>`:''}</span><i aria-hidden="true">→</i></a>`;
+  const ex=ST.get('exams',[]), last=ex[ex.length-1];
+  const gen=(window.GEN&&GEN.list?GEN.list():[]).map(Number), seed=()=>1+Math.floor(Math.random()*899999);
+  const done=RK_TYPES.filter(x=>taskState(x.ex)>0).length;
+  const first=RK_TYPES.findIndex(y=>!taskState(y.ex));
+  const cards=RK_TYPES.map((x,i)=>{ const l=COURSE.find(c=>c.id===x.lesson), ts=x.tasks.filter(n=>WB3.get(n)), vn=x.tasks.find(n=>gen.includes(n)), st=taskState(x.ex);
+    return `<div class="rk9-c${st?' ok':''}${i===first?' hl':''}"><div class="rk9-h"><span class="rk9-n">${st?'✓':i+1}</span><b>${x.t}</b>${i===first?'<i class="rk9-start">начни здесь</i>':''}</div>
+      <div class="rk9-b"><a class="btn ${st?'':i===first?'red':'pri'} rk9-go" href="${H('ng','check','tickets',x.ex)}">${st?'Решить ещё раз':'Решить пример из билета'} →</a>${vn?`<a class="btn rk9-v" href="${H('ng','check','gym','var',vn+'-'+seed())}">Новые числа</a>`:''}</div>
+      <div class="rk9-l">${l?`<a href="${H('ng','path',l.id)}">Теория: ${l.title}</a>`:''}${ts.length?`<span>Похожие в тетради: ${ts.map(n=>`<a href="${H('ng','tasks',n)}">№${n}</a>`).join(' ')}</span>`:''}</div></div>`; }).join('');
   v.innerHTML=pageHTML({crumbs:[['Подготовка к РК']],next:null,noBottom:true,body:`
-   <div class="intro"><h1>Подготовка к РК</h1><p class="lead">Рубежный контроль по начертательной геометрии: задачи по билетам и вопросы теории. Иди по шагам сверху вниз.</p></div>
-   <div class="v8-when"><b>Когда РК?</b><button type="button" class="on" data-scroll=".rk-plan">Через неделю и больше</button><button type="button" data-scroll="#rkzH">Через 1–3 дня</button></div>
-   <div class="rk-plan">
-    ${step(1,H('ng','check','tickets'),'Реши билеты РК',nt+' '+plural(nt,'задание','задания','заданий')+' из билетов: реши на бумаге, потом сверься с разбором по шагам','начни здесь','hot hl')}
-    ${step(2,H('ng','cheat','th'),'Выучи '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории','короткий ответ на каждый вопрос РК1 и подробное объяснение','')}
-    ${step(3,H('ng','check','train'),'Пробный РК на время','задачи из разных разделов тетради и таймер — как на настоящем РК',last?'последний результат: '+last.pct+'%':'')}
-    ${step(4,H('ng','check','gym'),'Тренажёр без конца','новые варианты задач тетради и поиск ошибок в чертежах','новое','hot')}
-    ${step(5,H('ng','check','quiz'),'Быстрый тест',nq+' '+plural(nq,'вопрос','вопроса','вопросов')+' с выбором ответа — проверить, что не забыл',best?'лучший результат: '+best+'%':'')}
-   </div>
+   <div class="intro"><h1>Подготовка к РК</h1><p class="lead">На РК1 — задачи по билетам. Все они одного из ${RK_TYPES.length} типов ниже. Реши пример каждого типа — и ты готов к любому билету.</p></div>
+   <div class="v8-when"><b>Когда РК?</b><button type="button" class="on" data-scroll="#rk9T">Через неделю и больше</button><button type="button" data-scroll="#rkzH">Через 1–3 дня</button></div>
+   <section class="rk9" aria-labelledby="rk9T"><div class="rk9-top"><h2 id="rk9T">Что будет на РК: ${RK_TYPES.length} типов задач</h2><span class="rk9-pc"><b>${done}</b> из ${RK_TYPES.length} решено</span></div>
+    <div class="rk9-bar"><i style="width:${Math.round(done/RK_TYPES.length*100)}%"></i></div>
+    <div class="rk9-l">${cards}</div></section>
+   <section class="rk9-all" aria-labelledby="rk9A"><h2 id="rk9A">Проверь себя как на РК</h2>
+    <a class="rk9-big" href="${H('ng','check','tickets')}"><b>Все билеты целиком</b><span>${nt} ${plural(nt,'задание','задания','заданий')} из билетов: реши на бумаге, потом сверься с разбором по шагам</span><i>Открыть билеты →</i></a>
+    <a class="rk9-big alt" href="${H('ng','check','train')}"><b>Пробный РК на время</b><span>Задачи из разных разделов и таймер — как на настоящем РК${last?' · прошлый результат: '+last.pct+'%':''}</span><i>Начать пробный РК →</i></a>
+    <a class="rk9-big th" href="${H('ng','cheat','th')}"><b>Теория РК1: ${nth} ${plural(nth,'вопрос','вопроса','вопросов')}</b><span>Короткий ответ на каждый вопрос и подробное объяснение</span><i>Читать ответы →</i></a>
+   </section>
    ${rkZeroHTML()}
-   ${rkTypesHTML()}
    <div class="rk-help"><b>Не получается задача?</b><span>Найди её в <a href="${H('ng','tasks')}">решённой тетради</a> или спроси в поиске своими словами.</span></div>`});
   return 'Подготовка к РК';
 }
@@ -24114,7 +24174,7 @@ function ngCheck(v,mode){
     train:'Пробный РК: задачи из разных разделов и таймер. Есть карточки для повторения и карта слабых мест.'}[mode];
   v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','check')],[CHECK_MODES[i][1]]],next:null,noBottom:true,body:`
    <div class="intro"><h1>${CHECK_MODES[i][1]}</h1><p class="lead">${intro}</p></div>
-   <div class="seg modeseg" role="tablist" aria-label="Способ подготовки">${CHECK_MODES.map(m=>`<a role="tab" href="${H('ng','check',m[0])}" class="${m[0]===mode?'on':''}"${m[0]===mode?' aria-selected="true"':' aria-selected="false"'}>${m[1]}</a>`).join('')}</div>
+   <div class="seg modeseg" role="tablist" aria-label="Способ подготовки">${CHECK_MODES.filter(m=>!m[2]||m[0]===mode).map(m=>`<a role="tab" href="${H('ng','check',m[0])}" class="${m[0]===mode?'on':''}"${m[0]===mode?' aria-selected="true"':' aria-selected="false"'}>${m[1]}</a>`).join('')}</div>
    ${mode==='quiz'?'<div id="qzSetup"></div><div id="qzRun" style="display:none"></div><div id="qzDone" style="display:none"></div>':mode==='tickets'?'<div id="tkList"></div>':'<div id="trRoot" class="trroot"></div>'}`});
   if(mode==='quiz') renderQZ();
   else if(mode==='tickets') renderTK();
