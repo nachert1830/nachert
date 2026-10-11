@@ -2913,6 +2913,60 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 .t3d-zm button{width:36px!important;height:36px!important;border-radius:10px!important;font-size:16px!important;box-shadow:none!important}
 .t3d-opts{gap:6px!important}.t3d-opts button{min-height:34px!important;padding:0 12px!important;font-size:13px!important}
 @media(max-width:560px){.t3d-zm button[data-z="in"],.t3d-zm button[data-z="out"]{display:none}.t3d-leg{font-size:11.5px}}
+
+/* ── главная: синий блок поиска — главное на экране ── */
+.v7-hero{position:relative;margin:0 0 var(--s4)!important;padding:26px 18px 20px!important;border-radius:26px;color:#fff;overflow:hidden;isolation:isolate;
+  background:linear-gradient(155deg,#2a4fd6 0%,#1f47b8 45%,#18307f 100%);box-shadow:0 26px 50px -28px rgba(19,35,90,.9)}
+.v7-hero::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%);mask-image:linear-gradient(180deg,#000,transparent 85%)}
+.v7-hero::after{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#13235a 0 40%,#fff 40% 60%,var(--red) 60% 100%)}
+:root[data-theme=dark] .v7-hero{background:linear-gradient(155deg,#3155dc 0%,#2343b4 50%,#16245c 100%)}
+.v7-hero h1{margin:4px 0 6px;font:700 clamp(28px,8vw,46px)/1.06 var(--disp);letter-spacing:-.03em;color:#fff;max-width:14ch}
+.v7-sub{margin:0 0 16px;font-size:clamp(15px,4vw,18px);line-height:1.45;color:rgba(255,255,255,.86)}
+.v7-hero .sr-form{background:transparent!important;border:0!important;box-shadow:0 14px 30px -14px rgba(5,12,40,.7)!important;border-radius:18px!important}
+.v7-hero .sr-in{min-height:60px!important;border-radius:18px!important;border:0!important;background:#fff!important;color:#0d1530!important;font-size:17.5px!important}
+.v7-hero .sr-in::placeholder{color:#8a94ad}
+.v7-hero .sr-ic{color:#1f47b8!important}
+.v7-hero .sr-clr{color:#5c6783!important}
+/* пустая строка: подсказки — светлые «таблетки» на синем */
+.v7-hero:not(.has-q) .sr-gh{color:#fff;margin:16px 0 8px}
+.v7-hero:not(.has-q) .sr-gh span{display:none}
+@media(max-width:700px){.v7-hero:not(.has-q) .sr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-18px;padding-right:18px}}
+.v7-hero:not(.has-q) .sr-chips::-webkit-scrollbar{display:none}
+.v7-hero:not(.has-q) .sr-chip{flex:none;background:rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.28)!important;color:#fff!important}
+.v7-hero:not(.has-q) .sr-chip:hover{background:rgba(255,255,255,.24)!important}
+.v7-hero:not(.has-q) .sr-chip:nth-child(n+7){display:none}
+.v7-hero:not(.has-q) .sr-rh{color:rgba(255,255,255,.75)}.v7-hero .sr-rclr{color:rgba(255,255,255,.75)}
+.v7-hero:not(.has-q) .sr-rc{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25)}
+.v7-hero:not(.has-q) .sr-rcq,.v7-hero:not(.has-q) .sr-rcx{color:#fff}
+/* результаты — белая панель внутри синего блока */
+.v7-hero.has-q .sr-res{margin-top:12px;padding:14px;border-radius:22px;background:var(--surf);color:var(--ink);box-shadow:0 16px 36px -20px rgba(5,12,40,.7)}
+.v7-hero.has-q .sr-gh{margin-top:4px}
+.v7-hero.has-q .v7-pop{display:none}
+.v7-pop{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;font-size:14px;color:rgba(255,255,255,.85)}
+.v7-pop a{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:99px;background:rgba(255,255,255,.95);color:#1f47b8;font-weight:700;font-size:14px;text-decoration:none}
+.v7-pop a:hover{background:#fff;color:var(--red)}
+.v7-or{margin:var(--s5) 0 10px;font:700 12.5px var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--mut)}
+.v5h .v5-res{margin:0}
+@media(min-width:760px){.v7-hero{padding:40px 40px 32px!important}.v7-hero .hs-box,.v7-hero .sr-res{max-width:760px}.v7-hero h1{max-width:none}}
+
+/* под синим блоком главный вход — белая карточка: синий значок, красная кнопка */
+.v5-d.main{background:var(--surf)!important;border:1.5px solid color-mix(in srgb,var(--acc) 35%,var(--line))!important;box-shadow:var(--shadow2)!important}
+.v5-d.main::after{display:none}
+.v5-d.main .v5-da{color:var(--ink)!important;padding-top:16px}
+.v5-d.main .v5-ic{background:var(--acc)!important;color:#fff!important}
+.v5-d.main .v5-t small{color:var(--mut)!important}
+.v5-d.main .v5-go{background:var(--blue-s)!important;color:var(--acc)!important}
+.v5-d.main:hover .v5-go{background:var(--acc)!important;color:#fff!important}
+.v5-num>span{color:var(--acc)!important}
+.v5-num input{background:var(--surf2)!important;color:var(--ink)!important;border:1px solid var(--line2)!important}
+.v5-num input:focus{border-color:var(--acc)!important;box-shadow:var(--ring)!important}
+@media(min-width:760px){.v5-d.main .v5-t b{font-size:22px!important}.v5-d.main .v5-da{padding:16px!important}.v5-num{margin:0 16px 16px 76px!important}}
+
+.v7-hero:not(.has-q) .sr-gh b{color:#fff}
+.v7-hero .sr-it.v7-n{border:1.5px solid var(--acc);background:var(--blue-s);margin-bottom:10px}
+.v7-hero .sr-it.v7-n .sr-tag{background:var(--acc);color:#fff}
+.v7-hero .sr-it.v7-n .sr-w{color:var(--red);font-weight:700}
+@media(max-width:520px){.v7-pop a:nth-child(n+6){display:none}}
 </style>
 </head>
 <body>
@@ -22014,7 +22068,8 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
   {v:'3.3',d:'11 октября 2026',items:['Цвета: белый, синий и красный. Синее — то, что нажимать; красное — «начни здесь» и самое важное; главный вход экрана — тёмно-синяя карточка.',
-    'Главная: «Задача из тетради» — большая карточка с полем для номера и красной кнопкой «Открыть решение»; под ней ДЗ, РК и теория; подсказка в три шага, как пользоваться сайтом.',
+    'Главная снова начинается с поиска: синий блок «Найди решение своей задачи» — номер задачи, тема или вопрос своими словами; ответы прямо в нём. Номер («47», «№ 47») сразу даёт задачу первой строкой.',
+    'Под поиском — «Продолжить, где остановился» и «Или выбери, что нужно»: тетрадь (с полем номера и красной кнопкой «Открыть решение»), ДЗ, РК, теория; подсказка в три шага.',
     'Теория: следующий урок помечен «начни здесь» / «следующий урок».',
     '3D к задачам — тонко, как в учебнике: тонкие линии, маленькие точки, светло-синие проецирующие лучи, красное искомое.']},
   {v:'3.2',d:'11 октября 2026',items:['Новый вид сайта: спокойная бумага, тушь и один акцент. Главная ведёт по четырём вопросам — задача из тетради, ДЗ, РК, тема; всё остальное ниже, в «Ещё».',
@@ -23651,29 +23706,27 @@ function viewHome(v){
   const nT=WB3.tasks.length, mx=Math.max(...WB3.tasks.map(t=>+t.n||0));
   const nHW=(window.NGHW&&new Set(NGHW.list().map(d=>parseInt(d.n,10))).size)||5, nL=COURSE.length;
   const nth=(typeof ALL_THEORY!=='undefined'?ALL_THEORY.filter(t=>t.id<=22).length:22);
-  const ic=k=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
-  const door=(n,k,href,title,sub,extra,cls)=>`<li class="v5-d${cls?' '+cls:''}"><a class="v5-da" href="${href}"><span class="v5-n">${n}</span><span class="v5-ic">${ic(k)}</span><span class="v5-t"><b>${title}</b><small>${sub}</small></span><i class="v5-go" aria-hidden="true">→</i></a>${extra||''}</li>`;
+  const ic=k=>`<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+  const door=(k,href,title,sub,extra,cls)=>`<li class="v5-d${cls?' '+cls:''}"><a class="v5-da" href="${href}"><span class="v5-ic">${ic(k)}</span><span class="v5-t"><b>${title}</b><small>${sub}</small></span><i class="v5-go" aria-hidden="true">→</i></a>${extra||''}</li>`;
   const more=(href,title,sub,tag)=>`<a class="v5-m" href="${href}"><span><b>${title}${tag?` <i class="v5-tag">${tag}</i>`:''}</b><small>${sub}</small></span><i aria-hidden="true">→</i></a>`;
+  const pop=[['visibility','Видимость'],['true-length','Натуральная величина'],['plane-traces','Следы плоскости'],['line-plane-meet','Прямая и плоскость'],['replace-planes','Замена плоскостей'],['perp-theorem','Прямой угол']].filter(x=>!window.TOPICS||TOPICS.get(x[0]));
   v.innerHTML=`<div class="wrap page home v5h">
-   ${tg?`<a class="v5-res" href="${attr(tg.href)}"><span class="v5-res-k">Продолжить</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
-   <section class="v5-hero" aria-labelledby="v5H">
-    <p class="v5-kick">Начертательная геометрия · по шагам</p>
-    <h1 id="v5H">Решения и объяснения по&nbsp;<em>начерту</em></h1>
-    <p class="v5-lead">Тетрадь, ДЗ и РК разобраны по шагам — понятно не только что, но и почему. Выбери, с чем пришёл.</p>
-   </section>
-   <ol class="v5-doors" aria-label="Что нужно">
-    ${door('01','nb',H('ng','tasks'),'Задача из тетради'+(tg?'':'<i class="v5-tag">начни здесь</i>'),'Впиши номер — откроется решение по шагам. Все '+nT+' задач с пояснениями.',
-      `<form class="v5-num" data-tnum novalidate><label for="tn_home" class="sr-only">Номер задачи</label><span aria-hidden="true">№</span><input id="tn_home" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="1–${mx}"><button type="submit" class="btn red">Открыть решение</button></form>`,'main')}
-    ${door('02','hw',H('ng','hw'),'Домашнее задание','ДЗ №1–'+nHW+': что требуется, порядок решения и разобранный пример')}
-    ${door('03','rk',H('ng','check'),'Подготовка к РК','билеты с разбором, '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории, пробный РК на время')}
-    ${door('04','th',H('ng','path'),'Разобраться в теме',nL+' коротких уроков с картинками, шпаргалка')}
-   </ol>
-   <ol class="v6-how" aria-label="Как пользоваться"><li><b>1</b>Открой задачу или тему</li><li><b>2</b>Жми «Дальше» — чертёж растёт по шагам</li><li><b>3</b>«Решаю сам» — проверь себя</li></ol>
-   <section class="hsearch v5-s" id="hsearch" aria-labelledby="v5S">
-    <h2 id="v5S" class="v5-h2">Не знаешь, где искать?</h2>
-    <p class="hs-sub">Опиши задачу или вопрос своими словами — найдём разбор.</p>
+   <section class="hsearch v7-hero" id="hsearch" aria-labelledby="v7H">
+    <h1 id="v7H">Найди решение своей задачи</h1>
+    <p class="v7-sub">Номер задачи из тетради, тема или вопрос своими словами</p>
     <div class="hs-box"><div id="hsMount"></div></div>
+    <div class="v7-pop"><span>Часто ищут:</span>${pop.map(x=>`<a href="${H('topic',x[0])}">${x[1]}</a>`).join('')}</div>
    </section>
+   ${tg?`<a class="v5-res" href="${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
+   <h2 class="v7-or">Или выбери, что нужно</h2>
+   <ol class="v5-doors" aria-label="Что нужно">
+    ${door('nb',H('ng','tasks'),'Решённая тетрадь'+(tg?'':'<i class="v5-tag">начни здесь</i>'),'Все '+nT+' задач: чертёж строится по шагам, к каждому шагу — пояснение. Знаешь номер — впиши:',
+      `<form class="v5-num" data-tnum novalidate><label for="tn_home" class="sr-only">Номер задачи</label><span aria-hidden="true">№</span><input id="tn_home" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="1–${mx}"><button type="submit" class="btn red">Открыть решение</button></form>`,'main')}
+    ${door('hw',H('ng','hw'),'Как решать ДЗ','ДЗ №1–'+nHW+': что требуется, порядок решения и разобранный пример')}
+    ${door('rk',H('ng','check'),'Подготовка к РК','билеты с разбором, '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории, пробный РК на время')}
+    ${door('th',H('ng','path'),'Теория',nL+' коротких уроков с картинками и разборы по типам задач')}
+   </ol>
+   <ol class="v6-how" aria-label="Как пользоваться"><li><b>1</b>Найди задачу или тему</li><li><b>2</b>Жми «Дальше» — чертёж растёт по шагам</li><li><b>3</b>«Решаю сам» — проверь себя</li></ol>
    <section class="v5-more" aria-labelledby="v5M">
     <h2 id="v5M" class="v5-h2">Ещё</h2>
     <div class="v5-ml">
@@ -23686,8 +23739,14 @@ function viewHome(v){
    <div class="v5-share"><span>Пригодится одногруппникам?</span>${FX.viewsHTML()}<button type="button" class="btn sm pri" data-sharesite>Поделиться сайтом</button></div>
   </div>`;
   NEXT=null;
-  if(window.SEARCH){ const hs=$('hsearch'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:hs,keep:true,noAuto:true});
-    const kq=POP?SEARCH.keep():''; if(kq) api.run(kq); }
+  if(window.SEARCH){ const hs=$('hsearch'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:hs,keep:true,noAuto:true,ph:'Номер задачи, тема или вопрос…'});
+    /* номер задачи — первым ответом: «47», «№ 47», «задача 47» */
+    const numFirst=()=>{ const m=/^\s*(?:задач[аиу]?\s*)?№?\s*(\d{1,2})\s*$/i.exec(api.val()||''), t=m&&WB3.get(+m[1]), res=$('srHres'); if(!t||!res) return;
+      const a=document.createElement('a'); a.className='sr-it v7-n'; a.id='srHnum'; a.href=H('ng','tasks',+m[1]); a.setAttribute('role','option');
+      a.innerHTML=`<span class="sr-tag">Задача из тетради</span><span class="sr-t">№${+m[1]} — ${attr(short(t.q,140))}</span><span class="sr-w">Открыть решение по шагам →</span>`;
+      res.prepend(a); };
+    api.input.addEventListener('input',numFirst);
+    const kq=POP?SEARCH.keep():''; if(kq){ api.run(kq); numFirst(); } }
   return '';
 }
 
