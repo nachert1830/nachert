@@ -1,0 +1,28 @@
+name: Счётчик просмотров
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  views:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Яндекс Метрика + Google Analytics → views.json
+        env:
+          YM_TOKEN: ${{ secrets.YM_TOKEN }}
+          GA_PROPERTY: ${{ secrets.GA_PROPERTY }}
+          GA_SA_JSON: ${{ secrets.GA_SA_JSON }}
+        run: node .github/scripts/views.js
+      - name: Сохранить, если изменилось
+        run: |
+          git diff --quiet views.json && exit 0
+          git config user.name "views-bot"
+          git config user.email "views-bot@users.noreply.github.com"
+          git add views.json && git commit -m "Счётчик просмотров" && git push

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Начерт — начертательная геометрия по шагам</title>
 <meta name="description" content="Начертательная геометрия по шагам: решённая тетрадь (89 задач), подготовка к РК, разборы ДЗ №1–5 и интерактивная 3D-модель с эпюром. Чертёж растёт построение за построением.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com; connect-src 'self' https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* тема до первой отрисовки, чтобы не было вспышки светлой */try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
@@ -7491,10 +7491,10 @@ window.PANES.privacy={title:'Политика обработки персона�
   <p class="lead" style="margin-bottom:24px">Как сайт «Начерт» (${SITE_URL}) обрабатывает данные посетителей. Действует в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
   <section class="ab-legal" style="margin-top:0;padding-top:0;border-top:0"><div class="ab-lg" style="grid-template-columns:1fr">
    ${blk('1. Оператор',`<p>Автор сайта «Начерт», физическое лицо. Сайт: ${SITE_URL}.${CONTACT?'<br>Для обращений: '+mail()+'.':''}</p>`)}
-   ${blk('2. Какие данные обрабатываются',`<p>Только если вы нажали «Согласен» в уведомлении о cookie, через сервис Яндекс Метрика обрабатываются:</p>${DATA_LIST}`)}
+   ${blk('2. Какие данные обрабатываются',`<p>Только если вы нажали «Согласен» в уведомлении о cookie, через сервис Яндекс Метрика${window.GA_ID?' и сервис Google Analytics (Google LLC, США)':''} обрабатываются:</p>${DATA_LIST}`)}
    ${blk('3. Цель',`<p>Обезличенная статистика посещаемости: сколько людей заходит, какие страницы полезны, где интерфейс неудобен. Статистика нужна только для улучшения сайта. Посетителей не идентифицируют, рекламу не показывают.</p>`)}
    ${blk('4. Правовое основание',`<p>Ваше согласие на обработку персональных данных (п. 1 ч. 1 ст. 6 152-ФЗ). Текст согласия — <a href="#/consent">на отдельной странице</a>. Без согласия Яндекс Метрика не загружается и данные не собираются.</p>`)}
-   ${blk('5. Кому передаются данные',`<p>ООО «Яндекс» (сервис Яндекс Метрика) — он собирает и хранит статистику по поручению оператора. Данные хранятся на серверах в Российской Федерации. Трансграничная передача не осуществляется. Другим лицам данные не передаются.</p>`)}
+   ${blk('5. Кому передаются данные',`<p>ООО «Яндекс» (сервис Яндекс Метрика) — он собирает и хранит статистику по поручению оператора. Данные хранятся на серверах в Российской Федерации.${window.GA_ID?' Google Analytics (Google LLC, США) — собирает статистику по поручению оператора; данные передаются на серверы Google за пределами Российской Федерации (трансграничная передача).':' Трансграничная передача не осуществляется.'} Другим лицам данные не передаются.</p>`)}
    ${blk('6. Что не собирается',`<p>Сайт не запрашивает имя, e-mail или телефон, регистрации нет. Прогресс, тема оформления и история поиска хранятся только в вашем браузере (localStorage) и никуда не отправляются.</p>`)}
    ${blk('7. Срок обработки',`<p>До отзыва согласия. После отзыва Яндекс Метрика на сайте больше не загружается, а по запросу оператор прекращает обработку уже собранных данных.</p>`)}
    ${blk('8. Ваши права',`<p>По ст. 14 152-ФЗ вы вправе:</p><ul class="ab-ul"><li>узнать, какие ваши данные обрабатываются, с какой целью и кому передаются;</li><li>потребовать уточнить, заблокировать или прекратить обработку данных;</li><li>отозвать согласие — ссылкой <a href="#/about/legal" data-ckreset>«Изменить решение о cookie»</a> на сайте${CONTACT?' или письмом на '+mail():''}.</li></ul><p>Ответ на обращение — в течение 10 рабочих дней.</p>`)}
@@ -7511,7 +7511,7 @@ window.PANES.consent={title:'Согласие на обработку персо
    ${blk('Какие данные',DATA_LIST)}
    ${blk('Цель',`<p>Сбор обезличенной статистики посещаемости сайта для его улучшения.</p>`)}
    ${blk('Действия с данными',`<p>Сбор, запись, хранение, систематизация, использование, передача (предоставление) ООО «Яндекс», обезличивание, удаление — с использованием средств автоматизации.</p>`)}
-   ${blk('Получатель',`<p>ООО «Яндекс» (сервис Яндекс Метрика), обрабатывает данные по поручению оператора. Данные хранятся в Российской Федерации, трансграничной передачи нет.</p>`)}
+   ${blk('Получатель',`<p>ООО «Яндекс» (сервис Яндекс Метрика), обрабатывает данные по поручению оператора. Данные хранятся в Российской Федерации${window.GA_ID?'. Google Analytics (Google LLC, США) — по поручению оператора, с трансграничной передачей на серверы Google':', трансграничной передачи нет'}.</p>`)}
    ${blk('Срок и отзыв',`<p>Согласие действует до его отзыва. Отозвать его можно в любой момент: ссылкой <a href="#/about/legal" data-ckreset>«Изменить решение о cookie»</a> на сайте${CONTACT?' или письмом на '+mail():''}. После отзыва Яндекс Метрика не загружается.</p>`)}
   </div></section>
   <p class="ab-src">Подробнее — в <a href="#/privacy">Политике обработки персональных данных</a>. Редакция от ${DOC_DATE}</p>`;
@@ -7520,24 +7520,28 @@ window.PANES.consent={title:'Согласие на обработку персо
 
 /* Яндекс Метрика — только после согласия посетителя (уведомление о cookie).
    Выбор хранится в localStorage (nch2_ck: 'y' — согласен, 'n' — отказ). Без согласия внешние скрипты не загружаются. */
+/* Google Analytics 4: впиши ID потока (G-XXXXXXXXXX) — счётчик подключится так же, только после согласия. Пусто — выключен. */
+window.GA_ID='G-CFL121Z3MD';
 (function(){
-  const YM=113262916, KEY='nch2_ck';
+  const YM=113262916, KEY='nch2_ck', GA=window.GA_ID;
   const get=()=>{ try{ return localStorage.getItem(KEY); }catch(e){ return null; } };
   const put=v=>{ try{ if(v==null) localStorage.removeItem(KEY); else localStorage.setItem(KEY,v); }catch(e){} };
   let on=false;
-  window.TRACK=function(name,params){ try{ if(on&&window.ym) ym(YM,'reachGoal',name,params); }catch(e){} };
+  window.TRACK=function(name,params){ try{ if(on&&window.ym) ym(YM,'reachGoal',name,params); if(on&&GA&&window.gtag) gtag('event',name,params||{}); }catch(e){} };
   function load(){
     if(on) return; on=true;
     window.ym=window.ym||function(){ (window.ym.a=window.ym.a||[]).push(arguments); }; window.ym.l=+new Date();
     const sc=document.createElement('script'); sc.async=true; sc.src='https://mc.yandex.ru/metrika/tag.js?id='+YM;
     sc.onload=()=>{ ym(YM,'init',{clickmap:true,trackLinks:true,accurateTrackBounce:true,defer:true}); ym(YM,'hit',location.href); };
     document.head.appendChild(sc);
-    window.addEventListener('hashchange',()=>{ try{ ym(YM,'hit',location.href); }catch(e){} });
+    if(GA){ window.dataLayer=window.dataLayer||[]; window.gtag=function(){ dataLayer.push(arguments); }; gtag('js',new Date()); gtag('config',GA,{page_location:location.href});
+      const g=document.createElement('script'); g.async=true; g.src='https://www.googletagmanager.com/gtag/js?id='+GA; document.head.appendChild(g); }
+    window.addEventListener('hashchange',()=>{ try{ ym(YM,'hit',location.href); }catch(e){} try{ if(GA&&window.gtag) gtag('event','page_view',{page_location:location.href,page_title:document.title}); }catch(e){} });
   }
   function banner(){
     if(document.querySelector('.ckn')) return;
     const d=document.createElement('div'); d.className='ckn'; d.setAttribute('role','region'); d.setAttribute('aria-label','Cookie');
-    d.innerHTML='<span>Собирать обезличенную статистику посещений (Яндекс Метрика, cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
+    d.innerHTML='<span>Собирать обезличенную статистику посещений ('+(GA?'Яндекс Метрика и Google Analytics':'Яндекс Метрика')+', cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
     d.addEventListener('click',e=>{ const b=e.target.closest('[data-ck]'); if(!b) return; window.CONSENT.set(b.dataset.ck); d.remove(); });
     document.body.appendChild(d);
   }
@@ -22208,6 +22212,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.0',d:'13 октября 2026',items:['ДЗ 2: у всех 30 вариантов — чистовик и черновик как на образце. Размеры из задания на своих местах, основная надпись по форме 1; наклонное сечение А–А — на черновике, с линиями связи и номерами точек.','ДЗ 2, «По шагам»: сечение А–А строится точка за точкой у каждого варианта — след и ось сечения, точки группами, обводка и штриховка.','Вкладки 3D, «Развёртка», «По шагам» и «Лист» открываются сразу: чертежи считаются заранее, пока читаешь условие.','Обучение (вариант 5): одна буква на листе — А, как в задании; уточнены формулировки шагов.']},
   {v:'3.9',d:'13 октября 2026',items:['ДЗ 2, вариант 5: на листе — чистовик и черновик как на образце; размеры из задания, основная надпись по форме 1.','Обозначения сечений и разрезов: буква — у стрелки с внешней стороны, как в задании.','Сечение А–А: контур и отверстия — замкнутые линии, в том числе там, где отверстие касается края.','Шаг «Дано» — как в задании: след А, оси отверстий, центровая окружность.']},
   {v:'3.8',d:'12 октября 2026',items:['ДЗ 2: след наклонной плоскости А–А у всех 30 вариантов проведён точно по заданию — через оба штриха разомкнутой линии и через характерную точку детали, если линия через неё проходит (в варианте 5 — по касательной к отверстиям Ø10).','ДЗ 2: детали вариантов 11, 12, 16, 17, 18, 27, 28, 29 исправлены по чертежу задания: уступы, глухие резьбовые отверстия с конусом от сверла, сквозные окна, положение граней и отверстий.','На листе — оси отверстий и центровая окружность; профильный разрез обозначается, если деталь несимметрична слева направо; в варианте 3 сечение — А–А, как в задании.','Тетрадь: на виде сверху дан только контур тела, как в задании; на листе — те разрезы, которые просит задание (горизонтальный — на месте вида сверху).','Обучение: совпавшие проекции точек подписаны через ≡ (3″≡4″), у каждой точки свой цвет линий связи и окружности; подписи не налезают на линии; чертёж не прыгает при листании.','Инженерная графика: главная — три входа: ДЗ № 2 с полем «номер варианта», Тетрадь, Учиться; теория — строкой ниже.']},
   {v:'3.7',d:'12 октября 2026',items:['Обучение ИГ: каждый шаг — «Делаем: 1, 2, 3» и «Почему так»; на чертеже подписаны виды, след, ось сечения, высоты и глубины; под чертежом — что значит каждый цвет. Новый шаг «Одна точка сечения от начала до конца» — четыре действия, помеченные ①–④ прямо на чертеже, и та же точка на 3D.']},
@@ -25488,7 +25493,9 @@ function stepsSVG(model,st,steps){
   return `<svg class="igs-sheet igs-steps" viewBox="0 0 ${PW} ${f(PH)}" role="img" aria-label="Построение по шагам: ${st[1]}"><rect x="2" y="2" width="${PW-4}" height="${f(PH-4)}" fill="#fff" stroke="#111" stroke-width="1"/>${o}</svg>`;
 }
 function buildBlock(host,model,o){
-  const ST=buildSteps(model), N=ST.length; let k=1;
+  /* вариант ДЗ: сечение А–А — по точкам (IGS.secSteps), готовый лист — чистовик как на образце */
+  const nv=+(Object.keys(window.IG_VARS||{}).find(q=>IG_VARS[q]===model)||0), hw=nv&&window.IGS;
+  const ST=hw?buildSteps(model).flatMap(s=>s[0]==='sec'?IGS.secSteps(nv).map(q=>['secp',q.t,q.d,q.st]):[s]):buildSteps(model), N=ST.length; let k=1;
   /* компактно, всё на одном экране телефона: сверху навигация и название шага, ниже чертёж, под ним — пояснение */
   host.innerHTML=`
    <div class="igb-ctl"><button class="igb-b" id="igbPrev" aria-label="Назад">‹</button><div class="igb-t"><small id="igbN"></small><b id="igbTt"></b></div><button class="igb-b pri" id="igbNext" aria-label="Дальше">›</button></div>
@@ -25497,7 +25504,7 @@ function buildBlock(host,model,o){
    <p class="igb-d" id="igbD"></p>`;
   const pic=host.querySelector('#igbPic');
   const show=()=>{ const kk=k, st=ST[kk-1];
-    let svg=''; try{ svg=st[0]==='sheet'?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,st,ST); }catch(e){ console.error(e); }
+    let svg=''; try{ svg=st[0]==='secp'?IGS.secFrame(nv,st[3]):st[0]==='sheet'&&hw?IGS.sheet(nv,'clean'):st[0]==='sheet'?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,st,ST); }catch(e){ console.error(e); }
     pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
     host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[1]; host.querySelector('#igbD').textContent=st[2];
     host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); }); };
@@ -26363,7 +26370,43 @@ function checkDims(n){ const C=ctx(n), md=C.md, sp=C.sp, bad=[], list=(C.G.d||[]
     else if(t==='lead'){ if(!(d[6]&&d[6].free)&&!near(V,d[2])) bad.push({name:nm(d),rule:'стрелка выноски не на линии чертежа',msg:JSON.stringify(d[2])}); } });
   return bad; }
 function checkAll(){ const out=[]; for(let n=1;n<=30;n++) if(window.IG_DIMS&&IG_DIMS[n]) try{ out.push(...checkDims(n)); }catch(e){ out.push({name:'Вариант '+n,rule:'ошибка проверки',msg:String(e).slice(0,120)}); } return out; }
-return {sheet,secGeo:n=>secGeo(ctx(n)),ctx,dimsSVG,checkDims,checkAll};
+/* IGS:secsteps */
+/* ── пошаговое построение сечения для любого варианта: след и ось → точки группами → обводка и штриховка ──
+   Кадр — главный вид, вид сверху и место сечения; масштаб общий для всех шагов (чертёж не прыгает). */
+const RES='#c9302c', SOFT='#9aa3b5', PTC=[['#2f6fd6','#a9c4f2'],['#0f9d8a','#98dccf'],['#8b4fd1','#cdb4f0'],['#d17a12','#f2c99a']];
+function secSteps(n){ const C=ctx(n), SG=secGeo(C); if(!SG) return []; const P=secPoints(C,SG), L=[];
+  const gs=[]; for(let i=0;i<P.length;){ const g=[P[i]]; i++; while(i<P.length&&(Math.abs(P[i].u-g[g.length-1].u)<0.5||(g.length<3&&!(g.length>=2&&P.length-i<=1)))) g.push(P[i++]); gs.push(g); }
+  const twins=g=>{ const t=[]; g.forEach(p=>{ const s=g.filter(q=>Math.abs(q.u-p.u)<0.5); if(s.length>1&&s[0]===p) t.push(s.map(q=>q.n+'″').join('≡')); }); return t; };
+  L.push({t:'След и ось сечения',d:'Плоскость А–А перпендикулярна фронтальной плоскости, поэтому на главном виде она стоит ребром — это прямая, след плоскости (красный штрихпунктир). Все точки сечения лежат на следе. Сечение строим по стрелкам: ось сечения проводим параллельно следу, а точки переносим на неё перпендикулярно следу — так фигура получается в натуральную величину.',st:{k:'trace'}});
+  gs.forEach((g,i)=>{ const a=g[0].n, b=g[g.length-1].n, tw=twins(g);
+    L.push({t:'Точки '+(a===b?a:a+'–'+b),d:(i===0?'Точку берём там, где след пересекает линию главного вида: край, ребро, образующую. Из n″ опускаем вертикальную линию связи на вид сверху до той же поверхности — получаем n′. Расстояние от горизонтальной оси вида сверху до n′ — глубина точки; тот же отрезок откладываем от оси сечения по перпендикуляру к следу — получаем n₁. Если точка поверхности есть и спереди, и сзади на той же глубине (поверхность симметрична относительно плоскости, проходящей через ось), в сечении это две точки — откладываем в обе стороны от оси.'
+      :'Так же: n″ на следе → вертикальная линия связи → n′ на виде сверху → глубина от горизонтальной оси → n₁ от оси сечения.')+(tw.length?' Проекции '+tw.join(', ')+' на главном виде совпали (знак ≡): на виде сверху и в сечении это разные точки.':''),st:{k:'pts',from:a,to:b}}); });
+  L.push({t:'Обводка и штриховка',d:'Соединяем точки по порядку обхода контура: по плоским граням — прямыми, по поверхностям вращения — плавными кривыми. Контур сечения — сплошной толстой линией, внутри — штриховка '+IGUI.hatchDeg(SG.th)+'°'+(IGUI.hatchDeg(SG.th)!==45?' (под 45° штрихи шли бы почти вдоль оси сечения — поэтому другой угол)':'')+'. Отверстия не штрихуют. Над сечением — «А–А».',st:{k:'fin'}});
+  return L; }
+function secFrame(n,st){ REC={s:[],d:[]}; try{ return frameBody(n,st); } finally{ REC=null; } }
+function frameBody(n,st){ const C=ctx(n), {md,sp,FR,TP,DR}=C, SG=secGeo(C), P=secPoints(C,SG), {SC,X,Z}=SG; let o='', c='', t='', pts=[];
+  o+=img(C,DR(sp.fk,0,sp.xb),0,0)+img(C,DR('top'),0,k*C.TY); if(sp.xb) o+=IGUI.wavy(FR(sp.xb,C.z0+0.5),FR(sp.xb,C.z1-0.5));
+  o+=ln(FR(0,C.z0-5),FR(0,C.z1+5),INK,.8,AX)+ln(TP(C.x0-5,0),TP(C.x1+5,0),INK,.8,AX)+ln(TP(0,C.y0-5),TP(0,C.y1+5),INK,.8,AX);
+  const tr=st.k==='trace'; o+=IGUI.secMark(FR(SG.xa,SG.za),FR(SG.xb,SG.zb),k,'А',tr?RES:INK)+ln(FR(SG.X(-6),SG.Z(-6)),FR(SG.X(SG.L+6),SG.Z(SG.L+6)),tr?RES:INK,tr?1.3:.6,AX);
+  let ua=1e9,ub=-1e9; SG.S.all.forEach(lp=>lp.forEach(q=>{ ua=Math.min(ua,q[0]); ub=Math.max(ub,q[0]); }));
+  o+=ln(SC(ua-6,0),SC(ub+6,0),tr?RES:INK,tr?1.3:.8,AX);
+  if(tr) [ua,ub].forEach(u=>{ c+=ln(FR(X(u),Z(u)),SC(u,0),AUX,1,'5 4'); });
+  const lab=labeler(), upto=st.k==='fin'?1e9:st.k==='pts'?st.to:0, from=st.k==='pts'?st.from:1e9;
+  P.forEach(p=>{ if(p.n>upto) return; const cur=p.n>=from, x=X(p.u), F=FR(x,Z(p.u)), ym=Math.min(...p.ys), [hc,hl]=cur?PTC[(p.n-from)%PTC.length]:[SOFT,'#dfe3ea'];
+    if(cur){ c+=ln(F,SC(p.u,Math.min(ym,0)),hl,1.1)+ln(F,TP(x,Math.min(...p.ys,0)),hl,1.1);
+      const yr=ym; if(Math.abs(yr)>0.5){ const tk=(a,b)=>{ const dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*5, ny=dx/l*5; return [a,b].map(q=>ln([q[0]-nx,q[1]-ny],[q[0]+nx,q[1]+ny],hc,1.3)).join(''); };
+        c+=ln(TP(x,0),TP(x,yr),hc,2.2)+tk(TP(x,0),TP(x,yr))+ln(SC(p.u,0),SC(p.u,yr),hc,2.2)+tk(SC(p.u,0),SC(p.u,yr)); } }
+    c+=dot(F,cur?RES:SOFT); p.ys.forEach(y=>{ c+=dot(SC(p.u,y),cur?RES:SOFT,2.6)+(cur?dot(TP(x,y),RES,2.4):''); });
+    if(cur){ const same=P.filter(q=>Math.abs(q.u-p.u)<0.5&&q.n>=from&&q.n<=upto); if(same[0]===p) t+=lab(F,same.map(q=>q.n+'″').join('≡'),RES,-18,-5); t+=lab(TP(x,ym),p.n+'′',RES,6,13); }
+    t+=lab(SC(p.u,Math.min(...p.ys)),p.n+'₁',cur?RES:SOFT,6,13); });
+  const all=SG.S.all, sb=bbox(all.flatMap(lp=>lp.map(q=>SC(q[0],q[1]))),0);
+  if(st.k==='fin'){ const hid='igsFH'+n; o+=`<defs>${hatch(hid,IGUI.hatchDeg(SG.th))}</defs><path d="${pathOf(all,q=>SC(q[0],q[1]))}" fill="url(#${hid})" fill-rule="evenodd" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>`+txt([(sb[0]+sb[2])/2,sb[1]-14],'А–А','igs-let','middle'); }
+  t+=lab.flush(o+c+t);
+  /* кадр — один на все шаги сечения: вид, вид сверху, место фигуры, штрихи следа */
+  pts.push(FR(C.x0-30,C.z1+20),FR(C.x1+10,C.z0),TP(C.x0-30,C.y0-14),TP(C.x1+30,C.y1+14),[sb[0]-30,sb[1]-50],[sb[2]+40,sb[3]+30],FR(SG.X(-20),SG.Z(-20)),FR(SG.X(SG.L+20),SG.Z(SG.L+20)),[FR(SG.X(-20),SG.Z(-20))[0]-40,FR(SG.X(-20),SG.Z(-20))[1]+10],[FR(SG.X(SG.L+20),SG.Z(SG.L+20))[0]+10,FR(SG.X(SG.L+20),SG.Z(SG.L+20))[1]-40]);
+  const B=bbox(pts,16);
+  return `<svg class="igs-sheet igl-sv" viewBox="${f(B[0])} ${f(B[1])} ${f(B[2]-B[0])} ${f(B[3]-B[1])}" role="img" aria-label="Сечение по шагам, вариант ${n}"><rect x="${f(B[0])}" y="${f(B[1])}" width="${f(B[2]-B[0])}" height="${f(B[3]-B[1])}" fill="#fff"/>${o}${c}${t}</svg>`; }
+return {sheet,secGeo:n=>secGeo(ctx(n)),ctx,dimsSVG,checkDims,checkAll,secSteps,secFrame};
 })();
 
 
