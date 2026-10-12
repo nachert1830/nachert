@@ -25740,7 +25740,7 @@ function mountUnfold(host,model){
   const IMG={}; ['front0','left0','top'].forEach(k=>{ try{ IMG[k]=IG3.drawing(model,k,900).url;   /* тот же размер, что у листа и шагов: чертёж считается один раз (вектор — размер не влияет на вид) */ }catch(e){ IMG[k]=''; } });
   /* точка A — передняя верхняя точка очерка */
   const kp=keyPts(model).filter(p=>p.y<0).sort((p,q)=>q.z-p.z||p.y-q.y), A=kp.length?[kp[0].x,kp[0].y,kp[0].z]:[C[0],b[0][1],b[1][2]];
-  let T=0, axo=1, fi1=0, fi3=0, fade=0, cam0=null, proj=0, shown=0, ray=1, link=0;
+  let T=0, axo=1, fi1=0, fi3=0, fade=0, cam0=null, proj=0, shown=0, ray=1, link=0, dr=0;   /* dr — переход к чертежу «как на листе» */
   const m1=(p,f)=>{ const d=Y-p[1]; return [p[0],Y-d*Math.cos(f),Z0-d*Math.sin(f)]; };
   const m3=(p,f)=>{ const d=Y-p[1]; return [X+d*Math.sin(f),Y-d*Math.cos(f),p[2]]; };
   const cam=()=>{ const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit), F=[sy*cp,cy*cp,-sp];
@@ -25764,7 +25764,19 @@ function mountUnfold(host,model){
     let ax=''; const O=[X,Y,Z0], mv1=fi1>.01&&fi1<1.56, mv3=fi3>.01&&fi3<1.56; ax+=ln([xa,Y,Z0],O,mv1?'#9b2335':'#111',mv1?2.4:1.1)+ln(O,[X,Y,zt],mv3?'#9b2335':'#111',mv3?2.4:1.1)+ln(O,m1([X,ya,Z0],fi1),'#111',1.1)+ln(O,m3([X,ya,Z0],fi3),'#111',1.1);
     ax+=tx([xa,Y,Z0],'x','#111',-12,4,'igu-ax')+tx([X,Y,zt],'z','#111',-4,-6,'igu-ax')+tx(m1([X,ya,Z0],fi1),'y','#111',6,10,'igu-ax')+tx(m3([X,ya,Z0],fi3),'y','#111',6,14,'igu-ax')+tx(O,'O','#111',5,15,'igu-ax');
     if(axo>.01) o+=`<g opacity="${f(axo)}">${ax}</g>`;
-    o+=tx(P2[0],'П₂','#7a6440',6,-8,'igu-pl')+tx(P3[0],'П₃','#7a6440',-26,-8,'igu-pl')+tx(P1[0],'П₁','#7a6440',6,-8,'igu-pl');
+    if(axo>.01) o+=`<g opacity="${f(axo)}">`+tx(P2[0],'П₂','#7a6440',6,-8,'igu-pl')+tx(P3[0],'П₃','#7a6440',-26,-8,'igu-pl')+tx(P1[0],'П₁','#7a6440',6,-8,'igu-pl')+'</g>';
+    /* на листе вместо осей проекций — осевые и центровые линии (ГОСТ 2.303), как на чертеже ДЗ */
+    if(dr>.01){ const z0=b[0][2], z1=b[1][2], r=Math.max(b[1][0],-b[0][0]), e=r+7, AX='10 3 2 3';
+      const cl=(a,c)=>ln(a,c,'#111',.7,AX), t1=(x,y)=>m1([x,y,Z0],fi1);
+      let a=cl([0,Y,z0-7],[0,Y,z1+7])+cl(m3([X,0,z0-7],fi3),m3([X,0,z1+7],fi3))+cl(t1(-e,0),t1(e,0))+cl(t1(0,-e),t1(0,e));
+      const done={c:{},x:{},y:{}};
+      holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), ux=h.x/R, uy=h.y/R, d=h.r+3;
+        if(!done.c[R.toFixed(1)]){ done.c[R.toFixed(1)]=1; const n=72, pts=[]; for(let i=0;i<=n;i++){ const t=i/n*2*Math.PI; pts.push(P(t1(R*Math.cos(t),R*Math.sin(t)))); }
+          a+=`<polyline points="${pts.map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="none" stroke="#111" stroke-width=".7" stroke-dasharray="${AX}"/>`; }
+        a+=cl(t1(h.x-ux*d,h.y-uy*d),t1(h.x+ux*d,h.y+uy*d))+cl(t1(h.x+uy*d,h.y-ux*d),t1(h.x-uy*d,h.y+ux*d));
+        const kx=h.x.toFixed(1); if(!done.x[kx]){ done.x[kx]=1; a+=cl([h.x,Y,h.z0-4],[h.x,Y,h.z1+4]); }
+        const ky=h.y.toFixed(1); if(!done.y[ky]){ done.y[ky]=1; a+=cl(m3([X,h.y,h.z0-4],fi3),m3([X,h.y,h.z1+4],fi3)); } });
+      o+=`<g opacity="${f(dr)}">${a}</g>`; }
     B.innerHTML=o;
     /* точка A, её проекции и лучи */
     const A2=[A[0],Y,A[2]], A3=m3([X,A[1],A[2]],fi3), A1=m1([A[0],A[1],Z0],fi1);
@@ -25772,19 +25784,19 @@ function mountUnfold(host,model){
     let q='';
     if(ray>0){ const op=ray, L=(a,c)=>[a[0]+(c[0]-a[0])*proj,a[1]+(c[1]-a[1])*proj,a[2]+(c[2]-a[2])*proj]; q+=`<g opacity="${f(op)}">`+ln(A,L(A,A2),'#4f86c6',1.4,'5 4')+ln(A,L(A,[X,A[1],A[2]]),'#4f86c6',1.4,'5 4')+ln(A,L(A,[A[0],A[1],Z0]),'#4f86c6',1.4,'5 4')+`<circle cx="${f(P(A)[0])}" cy="${f(P(A)[1])}" r="4" fill="#9b2335"/>`+tx(A,'A','#9b2335',7,-6,'igu-pt')+'</g>'; }
     /* связь через оси, без постоянной прямой и дуги: A″A′ — вертикаль, A″A‴ — горизонталь; глубина y одинакова на П₁ (от оси x) и на П₃ (от оси z) — отмечена засечками */
-    if(link>0){ const op=Math.min(1,link), y1=[A[0],Y,Z0], y3=[X,Y,A[2]];
+    if(link>0&&dr<.99){ const op=Math.min(1,link)*(1-dr), y1=[A[0],Y,Z0], y3=[X,Y,A[2]];
       const tk=(a,c)=>{ const p=P(a), r=P(c), dx=r[0]-p[0], dy=r[1]-p[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*5, ny=dx/l*5; return [p,r].map(z=>`<line x1="${f(z[0]-nx)}" y1="${f(z[1]-ny)}" x2="${f(z[0]+nx)}" y2="${f(z[1]+ny)}" stroke="#4f86c6" stroke-width="1.2"/>`).join(''); };
       q+=`<g opacity="${f(op)}">`+ln(A2,A1,'#9dbbe0',.9)+ln(A2,A3,'#9dbbe0',.9)+ln(y1,A1,'#4f86c6',1.8)+ln(y3,A3,'#4f86c6',1.8)+tk(y1,A1)+tk(y3,A3)+tx(m1([A[0],(Y+A[1])/2,Z0],fi1),'y','#2f5f9e',-14,4,'igu-pt')+tx([X+(Y-A[1])/2,Y,A[2]],'y','#2f5f9e',-4,-8,'igu-pt')+'</g>'; }
-    const dop=Math.max(0,(proj-.8)/.2); if(dop>0) q+=`<g opacity="${f(dop)}">`+dot(A2,'#9b2335')+dot(A1,'#9b2335')+dot(A3,'#9b2335')+tx(A2,'A″','#9b2335',6,-6,'igu-pt')+tx(A1,'A′','#9b2335',6,14,'igu-pt')+tx(A3,'A‴','#9b2335',6,-6,'igu-pt')+'</g>';
+    const dop=Math.max(0,(proj-.8)/.2)*(1-dr); if(dop>0.01) q+=`<g opacity="${f(dop)}">`+dot(A2,'#9b2335')+dot(A1,'#9b2335')+dot(A3,'#9b2335')+tx(A2,'A″','#9b2335',6,-6,'igu-pt')+tx(A1,'A′','#9b2335',6,14,'igu-pt')+tx(A3,'A‴','#9b2335',6,-6,'igu-pt')+'</g>';
     Fr.innerHTML=q; }
   const od=M.v.draw; M.v.draw=sc2=>{ if(fade<0.99) od(sc2); over(); };
   const CAP=['Деталь стоит в углу трёх плоскостей проекций: П₂ — сзади, П₁ — снизу, П₃ — справа. Берём точку A.',
     'Проецируем: лучи из A перпендикулярны плоскостям. На П₂ получается главный вид, на П₃ — вид слева, на П₁ — вид сверху.','Убираем деталь — на плоскостях остались только её изображения.',
-    'Разворачиваем: сначала П₁ поворачиваем вниз вокруг оси x, затем П₃ — вправо вокруг оси z. Оси поворота выделены красным.',
-    'Получился чертёж без осей, как на листе: вид сверху под главным видом, вид слева справа от него. A″ и A′ — на одной вертикали, A″ и A‴ — на одной горизонтали; глубина y точки A одинакова на виде сверху и на виде слева.'];
+    'Разворачиваем: П₁ — вниз вокруг оси x, П₃ — вправо вокруг оси z (оси поворота выделены красным). A″ и A′ встали на одну вертикаль, A″ и A‴ — на одну горизонталь; глубина y точки A одинакова на виде сверху и на виде слева.',
+    'Чертёж, как на листе: вид сверху — под главным видом, вид слева — справа от него. Осей проекций, плоскостей и точки A на листе нет — только виды и осевые линии (штрихпунктир).'];
   const cap=host.querySelector('#iguCap'), rg=host.querySelector('#iguT'), pb=host.querySelector('#iguPlay');
   const ease=x=>x<=0?0:x>=1?1:x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2, win=(t,a,b)=>ease((t-a)/(b-a));
-  function setT(t){ T=t; proj=win(t,.04,.2); shown=win(t,.1,.22); fade=win(t,.24,.38); ray=1-win(t,.3,.4); link=Math.max(0,(t-.76)/.1); axo=1-win(t,.82,.94);
+  function setT(t){ T=t; proj=win(t,.04,.2); shown=win(t,.1,.22); fade=win(t,.24,.38); ray=1-win(t,.3,.4); link=win(t,.7,.78); axo=1-win(t,.84,.95); dr=win(t,.86,.98);
     fi1=win(t,.4,.68)*Math.PI/2; fi3=win(t,.48,.76)*Math.PI/2; M.cv.style.opacity=String(1-fade);
     const k=win(t,.36,.9);
     if(k>0){ if(!cam0) cam0={yaw:S.yaw,pit:S.pit,zoom:S.zoom,tx:S.tx||0,ty:S.ty||0};
@@ -25793,7 +25805,7 @@ function mountUnfold(host,model){
       let dy=0-cam0.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy));
       S.yaw=cam0.yaw+dy*k; S.pit=cam0.pit*(1-k)+1e-4*k; S.zoom=cam0.zoom+(zf-cam0.zoom)*k; S.tx=cam0.tx+(cx-C[0]-cam0.tx)*k; S.ty=cam0.ty+(cz-C[2]-cam0.ty)*k; }
     else if(cam0){ Object.assign(S,cam0); cam0=null; }
-    const ph=t<.04?0:t<.3?1:t<.42?2:t<.8?3:4; host.querySelectorAll('.igu-ph button').forEach(x=>x.classList.toggle('on',+x.dataset.i===ph)); cap.textContent=CAP[ph];
+    const ph=t<.04?0:t<.3?1:t<.42?2:t<.83?3:4; host.querySelectorAll('.igu-ph button').forEach(x=>x.classList.toggle('on',+x.dataset.i===ph)); cap.textContent=CAP[ph];
     rg.value=Math.round(t*1000); M.v.draw(fade>.5?0.6:1.25); }
   let anim=0; const go=(to,ms)=>{ cancelAnimationFrame(anim); const t0=T, s0=performance.now(), D=ms||Math.max(800,Math.abs(to-t0)*17000);
     const stp=now=>{ const u=Math.min(1,(now-s0)/D); setT(t0+(to-t0)*u); if(u<1) anim=requestAnimationFrame(stp); else pb.textContent=T>=1?'↺':'▶'; }; pb.textContent='❚❚'; anim=requestAnimationFrame(stp); };
