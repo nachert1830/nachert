@@ -81,6 +81,9 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Тренажёр: блоков задач '+got.length+' (совпадают с контрольным разбором), генератор — задач '+el.ok.length+', «найди ошибку» — '+gy.info.bug+', 3D к задачам — '+gy.info.t3);
     report('Тренажёр',gy.bad); await gpage.close(); }
 
+  /* 3в. ДЗ 2 по ИГ: размеры на листах — числа равны расстояниям по модели, выносные линии упираются в контур */
+  report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
+
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
   report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));
@@ -102,7 +105,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Обход: страниц '+n);
     /* разбор каждой задачи до конца: «Дальше» до ответа */
     const tasks=await page.evaluate(()=>WB3.tasks.map(t=>t.n));
-    for(const t of tasks){ const before=errs.length; await page.evaluate(n=>{ location.hash='#/ng/path/t'+n; },t); await page.waitForTimeout(80);
+    for(const t of tasks){ const before=errs.length; await page.evaluate(n=>{ location.hash='#/ng/path/t'+n; },t); await page.waitForSelector('.pl-next,.pl-nextpart,.pl-done',{timeout:3000}).catch(()=>{});   /* первый разбор после обхода страниц иногда рисуется дольше 80 мс */
       for(let k=0;k<40;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(60); }
       let done=await page.$('.pl-done'); if(!done){ for(let k=0;k<40;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(200); } done=await page.waitForSelector('.pl-done',{timeout:2000}).catch(()=>null); }   /* медленный кадр — повторяем не спеша */
       if(errs.length>before) bad.push({name:'Задача №'+t,rule:'ошибка JS в разборе',msg:errs.slice(before).join(' / ').slice(0,200)});
