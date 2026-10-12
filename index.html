@@ -23761,30 +23761,35 @@ FX.note=function(m){ try{ let n=document.getElementById('fxNote'); if(!n){ n=doc
 const METRIKA_ID=113262916;
 let VIEWS=null, VIEWS_ASK=false;
 FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}" data-views ${VIEWS==null?'hidden':''} title="Просмотры по данным Яндекс.Метрики"><span class="vc-dot" aria-hidden="true"></span><b class="vc-n">${VIEWS==null?'':VIEWS.toLocaleString('ru-RU')}</b><span class="vc-l">${VIEWS==null?'просмотров':plural(VIEWS,'просмотр','просмотра','просмотров')}</span></div>`; };
-function paintViews(){
+function paintViews(from){
   if(VIEWS==null) return;
   document.querySelectorAll('[data-views]').forEach(el=>{
     const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; l.textContent=plural(VIEWS,'просмотр','просмотра','просмотров');
-    if(el.dataset.done||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)){ b.textContent=VIEWS.toLocaleString('ru-RU'); el.dataset.done=1; return; }
-    el.dataset.done=1; const t0=performance.now(), D=1400, N=VIEWS;
-    const step=now=>{ const k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,4); b.textContent=Math.round(N*e).toLocaleString('ru-RU'); if(k<1) requestAnimationFrame(step); else el.classList.add('pop'); };
+    const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches, N=VIEWS, A=el.dataset.done?(from==null?N:from):0;
+    if(reduce||A===N){ b.textContent=N.toLocaleString('ru-RU'); el.dataset.done=1; return; }
+    el.dataset.done=1; const t0=performance.now(), D=A?900:1400;
+    const step=now=>{ const k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,4); b.textContent=Math.round(A+(N-A)*e).toLocaleString('ru-RU'); if(k<1) requestAnimationFrame(step); else el.classList.add('pop'); };
     requestAnimationFrame(step); });
 }
-FX.loadViews=function(force){
-  if(VIEWS!=null){ paintViews(); return; }
-  if(force) VIEWS_ASK=false;
-  try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50&&Date.now()-c.t<60e3){ VIEWS=c.n; paintViews(); return; }   /* кэш на минуту — у всех одно и то же свежее число */ }catch(e){}
-  if(VIEWS_ASK) return; VIEWS_ASK=true;
+/* число просмотров = Яндекс Метрика (вживую, из API счётчика) + Google Analytics (views.json: его раз в 3 часа пишет GitHub, .github/workflows/views.yml).
+   Если Метрика не ответила — берём сумму из views.json. Видно всем, независимо от согласия на cookie: запрос только читает общую
+   статистику счётчика, ничего не отправляет о посетителе и не ставит cookie (credentials:'omit'). */
+function fetchViews(){
   const api='https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews&date1=2024-01-01&date2=today&accuracy=full';
-  /* показываем, когда есть чем гордиться: меньше 50 — блок скрыт */
-  const num=x=>{ x=Math.round(+x); return x>=50?x:Promise.reject(); };
-  /* число просмотров видно всем, независимо от согласия на cookie: этот запрос только читает общую
-     статистику счётчика, ничего не отправляет о посетителе и не ставит cookie (credentials:'omit') */
-  fetch('views.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>num(j.pageviews||j.views))
-    .catch(()=>fetch(api,{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>num(j.totals&&j.totals[0])))
-    .then(n=>{ VIEWS=n; try{ localStorage.setItem('nch2_views',JSON.stringify({n,t:Date.now()})); }catch(e){} paintViews(); })
-    .catch(()=>{});   /* нет данных — до перезагрузки страницы не спрашиваем снова */
+  const file=fetch('views.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const ym=fetch(api,{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>Math.round(+(j.totals&&j.totals[0]))).catch(()=>null);
+  return Promise.all([file,ym]).then(([f,y])=>{ const parts=f.parts||{}, n=y!=null&&y>0?y+(+parts.google||0):Math.round(+(f.pageviews||f.views||0));
+    return n>=50?n:Promise.reject(); });   /* меньше 50 — блок скрыт */ }
+FX.loadViews=function(force){
+  if(VIEWS!=null&&!force){ paintViews(); return; }
+  if(VIEWS==null){ try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50&&Date.now()-c.t<60e3){ VIEWS=c.n; paintViews(); return; } }catch(e){} }   /* кэш на минуту */
+  if(VIEWS_ASK) return; VIEWS_ASK=true;
+  const old=VIEWS;
+  fetchViews().then(n=>{ VIEWS=Math.max(n,old||0); try{ localStorage.setItem('nch2_views',JSON.stringify({n:VIEWS,t:Date.now()})); }catch(e){} paintViews(old); })
+    .catch(()=>{}).then(()=>{ VIEWS_ASK=false; });
 };
+/* пока страница открыта и на экране — число обновляется само, раз в 2 минуты */
+setInterval(()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views]')) FX.loadViews(true); }catch(e){} },120e3);
 
 /* ── «Задача №…» — самый частый сценарий: студент знает номер задачи из тетради ── */
 function tnumHTML(cls){ const all=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number'), mx=Math.max(...all);
