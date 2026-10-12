@@ -22318,7 +22318,13 @@ function view(v,r){
   v.querySelector('#owOff').addEventListener('click',()=>{ FLAGS.lock(); nav('#/'); });
   const vw=v.querySelector('#owViews'), vrun=()=>{ const ck=(()=>{ try{ return localStorage.getItem('nch2_ck'); }catch(e){ return null; } })(), row=(a,b)=>'<div><span>'+a+'</span><b>'+b+'</b></div>';
     vw.innerHTML=row('Твоё согласие на cookie',ck==='y'?'да — твои заходы считаются':ck==='n'?'нет — твои заходы НЕ считаются':'не выбрано — не считаются')+row('Метрика на этой странице',window.ym?'загружена':'не загружена')+row('Google Analytics',window.gtag?'загружен':'не загружен')+row('Ответ Метрики','…');
-    window.VIEWS_PROBE&&VIEWS_PROBE().then(r=>{ vw.lastElementChild.innerHTML='<span>Ответ Метрики</span><b>'+r+'</b>'; }); };
+    window.VIEWS_PROBE&&VIEWS_PROBE().then(r=>{ vw.lastElementChild.innerHTML='<span>Ответ Метрики</span><b>'+r+'</b>'; });
+    if(window.GC_CODE){ vw.insertAdjacentHTML('beforeend',row('Ответ GoatCounter','…')); const cell=vw.lastElementChild;
+      fetch('https://'+GC_CODE+'.goatcounter.com/counter/TOTAL.json',{credentials:'omit',cache:'no-store'})
+        .then(r=>r.ok?r.json().then(j=>'посетителей '+j.count+' · '+new Date().toLocaleTimeString('ru-RU')):'ошибка '+r.status+(r.status===403||r.status===404?' — в настройках GoatCounter не включено «Allow adding visitor counts on your website»':''))
+        .catch(e=>'нет ответа — в настройках GoatCounter не включено «Allow adding visitor counts on your website» ('+(e&&e.message||e)+')')
+        .then(t=>{ cell.innerHTML='<span>Ответ GoatCounter</span><b>'+t+'</b>'; }); }
+    if(window.FX&&FX.loadViews) FX.loadViews(true); };
   vrun(); v.querySelector('#owVwRe').addEventListener('click',vrun);
   const ver=v.querySelector('#owVer'); ver.innerHTML='<div><span>Файл сайта изменён</span><b>'+document.lastModified+'</b></div><div><span>Задач в тетради</span><b>'+WB3.tasks.length+'</b></div><div><span>Генератор вариантов</span><b>'+GEN.list().length+' задач</b></div>';
   try{ if(window.caches) caches.keys().then(k=>{ ver.insertAdjacentHTML('beforeend','<div><span>Кэш офлайн-версии</span><b>'+(k.join(', ')||'нет')+'</b></div>'); }); }catch(e){}
