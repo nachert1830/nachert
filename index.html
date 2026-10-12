@@ -2380,6 +2380,14 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-nogl{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:var(--ink2)}
 .igx-act{display:flex;justify-content:center;margin:16px 0}
 .igb{margin:0 0 18px;padding:10px;border-radius:18px;background:var(--surf);border:1px solid var(--line)}
+.ig-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:180px;height:100%;padding:24px;color:var(--mut);font:600 14px var(--sans);text-align:center}
+.ig-load-r{position:relative;width:46px;height:46px}
+.ig-load-r i{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:var(--acc);animation:igSpin 1.1s cubic-bezier(.5,.15,.5,.85) infinite;will-change:transform}
+.ig-load-r i:nth-child(2){inset:7px;border-top-color:color-mix(in srgb,var(--acc) 60%,#9aa3b5);animation-duration:1.6s;animation-direction:reverse}
+.ig-load-r i:nth-child(3){inset:15px;border-top-color:#9aa3b5;animation-duration:.9s}
+@keyframes igSpin{to{transform:rotate(360deg)}}
+.ig-load.over{position:absolute;inset:0;z-index:4;min-height:0;background:color-mix(in srgb,var(--surf) 78%,transparent);backdrop-filter:blur(2px);border-radius:inherit}
+@media (prefers-reduced-motion:reduce){.ig-load-r i{animation-duration:3s}}
 .igfs-open{position:absolute;right:8px;top:8px;z-index:3;width:40px;height:40px;display:grid;place-items:center;border:1px solid #d5d9e2;border-radius:12px;background:rgba(255,255,255,.92);color:#15161a;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .igfs-open:hover{background:#fff}
 html.igfs-on,html.igfs-on body{overflow:hidden}
@@ -24601,7 +24609,7 @@ function featLines(model){ if(model._fl) return model._fl; const E3=edges3(model
     else if(a!==b){ let lo=0, hi=1; const at=t=>[g.p[0]+(g.q[0]-g.p[0])*t,g.p[1]+(g.q[1]-g.p[1])*t,g.p[2]+(g.q[2]-g.p[2])*t];
       for(let k=0;k<8;k++){ const m=(lo+hi)/2; if(ok(at(m),g.A,g.B)===a) lo=m; else hi=m; } const m=at((lo+hi)/2); if(a) out.push(g.p,m); else out.push(m,g.q); } });
   Object.defineProperty(model,'_fl',{value:out}); return out; }
-function silLines(model,F){ const E3=edges3(model), J=jc(model.tree), out=[], st=0.7;
+function silLines(model,F){ const E3=surfs3(model), J=jc(model.tree), out=[], st=0.7;
   const take=(P,N)=>{ let prev=null; for(let i=0;i<P.length;i++){ const p=P[i], ok=Math.abs(J(p[0],p[1],p[2]))<0.03&&sideJ(J,p,N[i],0.04); if(ok&&prev) out.push(prev,p); prev=ok?p:null; } };
   E3.SS.forEach(A=>{ if(A.t==='pl') return; const [lo,hi]=tRange(A,A.bb);
     if(A.t==='sp'){ const h=Math.abs(F[2])<0.9?[0,0,1]:[1,0,0], e1=crs(F,h), l1=Math.hypot(...e1), u=e1.map(v=>v/l1), w=crs(F,u), n=Math.max(64,Math.ceil(2*Math.PI*A.r/st)), P=[], N=[];
@@ -24667,6 +24675,19 @@ void main(){ vec4 a=uM*vec4(aA,1.), b=uM*vec4(aB,1.); vec2 d=(b.xy-a.xy)*uRes; f
   bf:'precision highp float;varying float vY;uniform vec3 uB1,uB2;void main(){gl_FragColor=vec4(mix(uB2,uB1,clamp(vY,0.,1.)),1.);}'};
 function lineBuf(L){ const n=L.length/2, a=new Float32Array(n*6*8); let o=0; const T=[[0,-1],[1,-1],[1,1],[0,-1],[1,1],[0,1]];
   for(let s=0;s<n;s++){ const A=L[2*s], B=L[2*s+1]; for(const t of T){ a[o++]=A[0]; a[o++]=A[1]; a[o++]=A[2]; a[o++]=B[0]; a[o++]=B[1]; a[o++]=B[2]; a[o++]=t[0]; a[o++]=t[1]; } } return a; }
+/* геометрия крышек среза для набора плоскостей H (убранная область = пересечение полупространств n·p > w), сетка st мм */
+const capKey=H=>H.map(h=>h.map(v=>v.toFixed(4)).join(',')).join(';');
+function capGet(model,key,st){ const M=model._cap; return M&&M.get(key+'|'+st)||null; }
+function capPut(model,key,st,g){ const M=model._cap||(Object.defineProperty(model,'_cap',{value:new Map()}),model._cap); if(M.size>60) M.delete(M.keys().next().value); M.set(key+'|'+st,g); return g; }
+function capsGeom(model,H,st){ const key=capKey(H), had=capGet(model,key,st); if(had) return had;
+  const J=jc(model.tree), b=model.box, tri=[], seg=[], parts=[];
+  H.forEach((h,i)=>{ const n=[h[0],h[1],h[2]], O=n.map(v=>v*h[3]), ax=n.map(Math.abs);
+    const U=ax[1]>0.9?[1,0,0]:ax[0]>0.9?[0,1,0]:ax[2]>0.9?[1,0,0]:(()=>{ const c=[n[2],0,-n[0]], l=Math.hypot(...c)||1; return c.map(v=>v/l); })(), V=crs(n,U);
+    const oth=H.filter((_,j)=>j!==i), f=(u,v)=>{ const x=O[0]+U[0]*u+V[0]*v, y=O[1]+U[1]*u+V[1]*v, z=O[2]+U[2]*u+V[2]*v; let d=J(x,y,z); oth.forEach(g=>{ d=Math.max(d,g[3]-(g[0]*x+g[1]*y+g[2]*z)); }); return d; };
+    let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9; for(let c=0;c<8;c++){ const q=[b[c&1][0],b[(c>>1)&1][1],b[(c>>2)&1][2]].map((v,k)=>v-O[k]); const u=dot3(q,U), v=dot3(q,V); u0=Math.min(u0,u); u1=Math.max(u1,u); v0=Math.min(v0,v); v1=Math.max(v1,v); }
+    const R=capOf(f,O,U,V,u0-1,u1+1,v0-1,v1+1,st); parts.push({s:tri.length,n:R.tri.length,U,V}); R.tri.forEach(p=>tri.push(p)); R.seg.forEach(p=>seg.push(p)); });
+  const ta=new Float32Array(tri.length*3); tri.forEach((p,k)=>{ ta[3*k]=p[0]; ta[3*k+1]=p[1]; ta[3*k+2]=p[2]; });
+  return capPut(model,key,st,{ta,seg,parts}); }
 function viewer(canvas,opt){
   const gl=canvas.getContext('webgl',{antialias:true,preserveDrawingBuffer:!!(opt&&opt.keep)}); if(!gl) return null;
   const sh=(t,src)=>{ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
@@ -24684,21 +24705,22 @@ function viewer(canvas,opt){
     S.C=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,(b[0][2]+b[1][2])/2]; S.R=Math.hypot(b[1][0]-b[0][0],b[1][1]-b[0][1],b[1][2]-b[0][2])/2;
     M=meshOf(m);
     [mB,nB,fB].forEach(x=>x&&gl.deleteBuffer(x)); mB=buf(M.pos); nB=buf(M.nrm);
-    let fl=[]; try{ fl=featLines(m); }catch(e){ console.error(e); } fB=buf(lineBuf(fl)); fN=fl.length*3; sKey=''; cKey=''; }
+    let fl=[]; try{ fl=featLines(m); }catch(e){ console.error(e); } fB=buf(lineBuf(fl)); fN=fl.length*3; sKey=''; cObj=null; cWant=''; }
   /* убранная область = пересечение полупространств n·p > w */
   function HS(){ const o=S.off||0, p=S.pl||[0,0,1,0];
     switch(S.cut){ case 1: return [[1,0,0,p[3]],[0,-1,0,-o]]; case 2: return [[0,-1,0,-o]]; case 3: return [[-1,0,0,-o]]; case 4: return [[p[0],p[1],p[2],p[3]]];
       case 5: return [[-1,0,0,-o],[0,-1,0,-p[3]]]; case 6: return [[0,0,1,o]]; case 7: return [[p[0],p[1],p[2],p[3]]]; } return []; }
-  function caps(H){ const key=S.cut+'|'+H.map(h=>h.map(v=>v.toFixed(4)).join(',')).join(';'); if(key===cKey) return; cKey=key;
-    const J=jc(model.tree), b=model.box, tri=[], seg=[], parts=[];
-    H.forEach((h,i)=>{ const n=[h[0],h[1],h[2]], O=n.map(v=>v*h[3]), ax=n.map(Math.abs);
-      const U=ax[1]>0.9?[1,0,0]:ax[0]>0.9?[0,1,0]:ax[2]>0.9?[1,0,0]:(()=>{ const c=[n[2],0,-n[0]], l=Math.hypot(...c)||1; return c.map(v=>v/l); })(), V=crs(n,U);
-      const oth=H.filter((_,j)=>j!==i), f=(u,v)=>{ const x=O[0]+U[0]*u+V[0]*v, y=O[1]+U[1]*u+V[1]*v, z=O[2]+U[2]*u+V[2]*v; let d=J(x,y,z); oth.forEach(g=>{ d=Math.max(d,g[3]-(g[0]*x+g[1]*y+g[2]*z)); }); return d; };
-      let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9; for(let c=0;c<8;c++){ const q=[b[c&1][0],b[(c>>1)&1][1],b[(c>>2)&1][2]].map((v,k)=>v-O[k]); const u=dot3(q,U), v=dot3(q,V); u0=Math.min(u0,u); u1=Math.max(u1,u); v0=Math.min(v0,v); v1=Math.max(v1,v); }
-      const R=capOf(f,O,U,V,u0-1,u1+1,v0-1,v1+1,0.3); parts.push({s:tri.length,n:R.tri.length,U,V}); R.tri.forEach(p=>tri.push(p)); R.seg.forEach(p=>seg.push(p)); });
-    [cT,cS].forEach(x=>x&&gl.deleteBuffer(x)); const ta=new Float32Array(tri.length*3); tri.forEach((p,k)=>{ ta[3*k]=p[0]; ta[3*k+1]=p[1]; ta[3*k+2]=p[2]; });
-    cT=buf(ta); cTN=tri.length; cS=buf(lineBuf(seg)); cSN=seg.length*3; cap=parts; }
-  function draw(){ if(!M) return; const dpr=Math.min(window.devicePixelRatio||1,2), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
+  /* крышки срезов: пока плоскость движется (q < 1) — грубая сетка 1,5 мм (быстро), в покое — точная 0,3 мм;
+     точную для деталей ДЗ считает фоновый поток, а до её прихода видна грубая — без подвисаний */
+  let cObj=null, cWant='';
+  function useCaps(g){ if(g===cObj) return; cObj=g; [cT,cS].forEach(x=>x&&gl.deleteBuffer(x)); cT=buf(g.ta); cTN=g.ta.length/3; cS=buf(lineBuf(g.seg)); cSN=g.seg.length*3; cap=g.parts; }
+  function caps(H,q){ const key=capKey(H); const full=capGet(model,key,0.3); if(full){ useCaps(full); return; }
+    if(opt&&opt.keep){ useCaps(capsGeom(model,H,0.3)); return; }   /* снимок вида в картинку — сразу точно */
+    useCaps(capsGeom(model,H,1.5));
+    if(q<1||cWant===key) return; cWant=key;
+    const n=window.IG_VARS?Object.keys(IG_VARS).find(k=>IG_VARS[k]===model):null, again=()=>{ if(cWant===key){ cWant=''; requestAnimationFrame(()=>draw()); } };
+    if(n&&window.IGW&&IGW.ok()) IGW.caps(+n,H).then(again); else (window.requestIdleCallback||setTimeout)(()=>{ capsGeom(model,H,0.3); again(); }); }
+  function draw(q){ if(!M) return; const dpr=Math.min(window.devicePixelRatio||1,2), w=Math.max(2,Math.round(canvas.clientWidth*dpr)), h=Math.max(2,Math.round(canvas.clientHeight*dpr));
     if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } gl.viewport(0,0,w,h);
     const cy=Math.cos(S.yaw), sy=Math.sin(S.yaw), cp=Math.cos(S.pit), sp=Math.sin(S.pit), F=[sy*cp,cy*cp,-sp], R=norm(cross(F,[0,0,1])), Up=cross(R,F);
     const Cc=[S.C[0]+S.tx*R[0]+S.ty*Up[0],S.C[1]+S.tx*R[1]+S.ty*Up[1],S.C[2]+S.tx*R[2]+S.ty*Up[2]], us=S.R*2.25/S.zoom*Math.max(1,h/w), sx=2*h/(us*w), syy=2/us, D=S.R*2.5;
@@ -24710,7 +24732,7 @@ function viewer(canvas,opt){
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
     if(S.cut!==7){ gl.useProgram(PM.p); gl.uniformMatrix4fv(PM.U.uM,false,MM); gl.uniform3fv(PM.U.uF,F); gl.uniform1f(PM.U.uDark,dark?1:0); gl.uniform1f(PM.U.uFlat,S.flat?1:0); gl.uniform1f(PM.U.uMetal,S.metal?1:0); cutU(PM);
       gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1,2); const a=attr(PM.p,'aP',mB,3), b=attr(PM.p,'aN',nB,3); gl.drawArrays(gl.TRIANGLES,0,M.count); off([a,b]); gl.disable(gl.POLYGON_OFFSET_FILL); }
-    if(H.length){ caps(H); if(cTN){ gl.useProgram(PC.p); gl.uniformMatrix4fv(PC.U.uM,false,MM); gl.uniform1f(PC.U.uHs,S.hatch||3.2); gl.uniform1f(PC.U.uPx,us/h); gl.uniform1f(PC.U.uDark,dark?1:0); gl.uniform4fv(PC.U.uTint,S.tint||[0,0,0,0]);
+    if(H.length){ caps(H,q==null?1:q); if(cTN){ gl.useProgram(PC.p); gl.uniformMatrix4fv(PC.U.uM,false,MM); gl.uniform1f(PC.U.uHs,S.hatch||3.2); gl.uniform1f(PC.U.uPx,us/h); gl.uniform1f(PC.U.uDark,dark?1:0); gl.uniform4fv(PC.U.uTint,S.tint||[0,0,0,0]);
       const a=attr(PC.p,'aP',cT,3); cap.forEach(c=>{ if(!c.n) return; gl.uniform3fv(PC.U.uU,c.U); gl.uniform3fv(PC.U.uV,c.V); gl.drawArrays(gl.TRIANGLES,c.s,c.n); }); off([a]); } }
     /* линии */
     const k=F.map(v=>v.toFixed(3)).join(','); if(k!==sKey){ sKey=k; let L=[]; try{ L=silLines(model,F); }catch(e){} if(sB) gl.deleteBuffer(sB); sB=buf(lineBuf(L)); sN=L.length*3; }
@@ -24846,9 +24868,13 @@ function pairCurves(A,B,bx,emit){
   if(A.t!=='pl') one(A,B); if(B.t!=='pl') one(B,A); }
 const inB=(p,b)=>p[0]>=b[0][0]-1e-6&&p[0]<=b[1][0]+1e-6&&p[1]>=b[0][1]-1e-6&&p[1]<=b[1][1]+1e-6&&p[2]>=b[0][2]-1e-6&&p[2]<=b[1][2]+1e-6;
 /* рёбра модели (от вида не зависят): кэш на модели */
-function edges3(model){ if(model._e3) return model._e3;
+/* поверхности примитивов — дёшево; их хватает для очерка в 3D (silLines). Рёбра (пересечения поверхностей) — дорого, считаются в edges3 */
+function surfs3(model){ if(model._e3) return model._e3; if(model._s3) return model._s3;
   const MB=grow(model.box,1.5), PR=[]; (function w(n){ if(n.k){ if(n.a) w(n.a); n.k.forEach(w); } else PR.push(n); })(model.tree);
   const SS=[]; PR.forEach(nd=>{ const J=JC(nd), bb=boxI(grow(primBox(nd,MB),0.01),MB); surfsOf(nd).forEach(s=>{ s.J=J; s.bb=bb; s.pr=nd; SS.push(s); }); });
+  return model._s3={SS,MB}; }
+function edges3(model){ if(model._e3) return model._e3;
+  const {SS,MB}=surfs3(model);
   const segs=[];
   for(let i=0;i<SS.length;i++) for(let j=i+1;j<SS.length;j++){ const A=SS[i], B=SS[j], bx=boxI(A.bb,B.bb); if(!boxOk(bx)) continue;
     pairCurves(A,B,bx,(p,q)=>{ if(Math.abs(A.J(...p))<2e-3&&Math.abs(B.J(...p))<2e-3||Math.abs(A.J(...q))<2e-3&&Math.abs(B.J(...q))<2e-3) segs.push({p,q,A,B}); }); }
@@ -25028,7 +25054,7 @@ function adoptX(model,kind,val,key){ if(kind==='mesh'){ if(!model._mesh) Object.
   else if(kind==='fl'){ if(!model._fl) Object.defineProperty(model,'_fl',{value:val}); }
   else if(kind==='kp'){ if(!model._kp) Object.defineProperty(model,'_kp',{value:val}); }
   else if(kind==='ss'){ const t=model.tree, M=t._ss||(Object.defineProperty(t,'_ss',{value:new Map()}),t._ss); if(!M.has(key)) M.set(key,val); } }
-return {P,J,viewer,section,secShape,ssKey,drawing,hasDrawing,adopt,adoptX,meshOf,featLines,keyPts,features,partial,paths};
+return {P,J,viewer,capsGeom,capKey,capPut,section,secShape,ssKey,drawing,hasDrawing,adopt,adoptX,meshOf,featLines,keyPts,features,partial,paths};
 })();
 
 /* ═════════ IG_VARS: 30 вариантов задачи 2 «Построение изображений» ═════════
@@ -25136,6 +25162,7 @@ onmessage=e=>{ const m=e.data; try{ const md=IG_VARS[m.n];
   else if(m.op==='mesh'){ const me=IG3.meshOf(md); postMessage({id:m.id,v:{pos:me.pos,nrm:me.nrm,count:me.count}}); }
   else if(m.op==='fl'){ postMessage({id:m.id,v:IG3.featLines(md)}); }
   else if(m.op==='kp'){ postMessage({id:m.id,v:IG3.keyPts(md)}); }
+  else if(m.op==='caps'){ const g=IG3.capsGeom(md,m.H,0.3); postMessage({id:m.id,v:g}); }
   else if(m.op==='ss'){ const a=m.a; postMessage({id:m.id,v:IG3.secShape(md.tree,a[0],a[1],a[2],a[3],a[4])}); }
 }catch(err){ postMessage({id:m.id,err:String(err)}); } };`;
     w=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));
@@ -25153,7 +25180,11 @@ async function partLines(n,j){ const md=IG_VARS[n]; if(!md) return; const c=md._
 async function x(n,kind,a){ const md=IG_VARS[n]; if(!md) return; const key=kind==='ss'?IG3.ssKey(...a):'';
   if(kind==='mesh'&&md._mesh||kind==='fl'&&md._fl||kind==='kp'&&md._kp||kind==='ss'&&md.tree._ss&&md.tree._ss.has(key)) return;
   const r=await ask({op:kind,n,a}); if(r&&r.v) IG3.adoptX(md,kind,r.v,key); }
-return {drawing,partLines,x,ok:()=>init()}; })();
+/* точные крышки среза (3D) для плоскостей H — в кэш модели */
+const capQ={};
+function caps(n,H){ const md=IG_VARS[n], key=IG3.capKey(H); if(!md) return Promise.resolve(); const k=n+'|'+key; if(capQ[k]) return capQ[k];
+  return capQ[k]=ask({op:'caps',n,H}).then(r=>{ delete capQ[k]; if(r&&r.v) IG3.capPut(md,key,0.3,r.v); else IG3.capsGeom(md,H,0.3); }); }
+return {drawing,partLines,x,caps,ok:()=>init()}; })();
 /* IG_DIMS:begin */
 /* ═════════ размеры ДЗ 2 по вариантам: числа — из задания, расположение — как на образце ═════════
    Наружные высоты — слева от главного вида; общая высота — слева от вида слева; внутренние глубины — справа от вида слева
@@ -25519,8 +25550,8 @@ function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(
   sp.fk={half:'front',view:'front0',full:'frontF'}[sp.F]; sp.lk={half:'left',view:'left0',full:'leftF'}[sp.L];
   return model._spec=sp; }
 /* симметрия детали в целом относительно плоскости y = 0 ('y') или x = 0 ('x'): сетка точек и их зеркала (одинаково при каждом открытии) */
-function asym(model,ax){ const key='_as'+ax; if(model[key]!=null) return model[key]; const b=model.box, J=IG3.J, T=model.tree, N=28; let bad=0;
-  for(let i=0;i<N;i++) for(let j=0;j<N;j++) for(let q=0;q<N;q++){ const x=b[0][0]+(b[1][0]-b[0][0])*(i+.37)/N, y=b[0][1]+(b[1][1]-b[0][1])*(j+.61)/N, z=b[0][2]+(b[1][2]-b[0][2])*(q+.43)/N;
+function asym(model,ax){ const key='_as'+ax; if(model[key]!=null) return model[key]; const b=model.box, J=IG3.J, T=model.tree, N=20; let bad=0;
+  for(let i=0;i<N&&bad<=3;i++) for(let j=0;j<N;j++) for(let q=0;q<N;q++){ const x=b[0][0]+(b[1][0]-b[0][0])*(i+.37)/N, y=b[0][1]+(b[1][1]-b[0][1])*(j+.61)/N, z=b[0][2]+(b[1][2]-b[0][2])*(q+.43)/N;
     if((J(T,x,y,z)<0)!==(ax==='y'?J(T,x,-y,z)<0:J(T,-x,y,z)<0)) bad++; }
   Object.defineProperty(model,key,{value:bad>3}); return model[key]; }
 /* обозначения (ГОСТ 2.305, п. 6.4–6.7): разрез не обозначают, только если его плоскость — плоскость симметрии детали в целом
@@ -25637,11 +25668,11 @@ function buildBlock(host,model,o){
      готовые шаги храним, следующий считаем заранее, пока читают текущий */
   const R=Math.max(0.96,hw&&IGS.frameRatio?IGS.frameRatio(nv)||0:0); pic.style.aspectRatio='1 / '+R.toFixed(3);
   const C={}, get=kk=>{ if(C[kk]!=null) return C[kk]; const st=ST[kk-1]; let svg=''; try{ svg=st[0]==='secp'?IGS.secFrame(nv,st[3]):st[0]==='sheet'&&hw?IGS.sheet(nv,'clean'):st[0]==='sheet'?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,st,ST); }catch(e){ console.error(e); } return C[kk]=svg; };
-  const ahead=()=>{ const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:700}):setTimeout(f,120); idle(()=>{ if(!host.isConnected) return; for(const j of [k+1,k+2]) if(j<=N&&C[j]==null){ get(j); return ahead(); } }); };
+  const ahead=()=>IGQ.quiet(()=>{ if(!host.isConnected) return; for(const j of [k+1,k+2]) if(j<=N&&C[j]==null){ get(j); return ahead(); } });   /* только пока ничего не нажимают */
+  let shN=0; const put=(svg)=>{ pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>'; pic.appendChild(fsb); };
   const fsb=IGFS.btn(pic,{svg:()=>get(k),label:()=>'Шаг '+k+' из '+N+'. '+ST[k-1][1],prev:()=>{ k=Math.max(1,k-1); show(); },next:()=>{ k=Math.min(N,k+1); show(); },atStart:()=>k===1,atEnd:()=>k===N});
   const show=()=>{ const kk=k, st=ST[kk-1];
-    const svg=get(kk);
-    pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>'; pic.appendChild(fsb);
+    const my=++shN; if(C[kk]!=null) put(C[kk]); else { pic.innerHTML=IGQ.load(); IGQ.paint(()=>{ if(my===shN&&host.isConnected) put(get(kk)); }); }
     host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[1]; host.querySelector('#igbD').textContent=st[2];
     host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); });
     host.querySelector('#igbPrev').disabled=kk===1; host.querySelector('#igbNext').disabled=kk===N; ahead(); };
@@ -25731,19 +25762,21 @@ function mountUnfold(host,model){
   setTimeout(()=>setT(0),60);
 }
 function prewarm(v,n,o){ const sp=igSpec(n), nv=parseInt(String(o.title).replace(/\D/g,''),10), hw=window.IG_VARS&&IG_VARS[nv]===n, bg=hw&&window.IGW&&IGW.ok();
-  /* виды и шаги вида слева — в фоновом потоке (если он есть): страница не подвисает, пока их считаем */
-  const D=(k,b)=>()=>bg?IGW.drawing(nv,k,900,0,b||0):IG3.drawing(n,k,900,0,b||0);
-  /* сначала то, что откроют первым: 3D (сетка и рёбра), затем виды, шаги, сечения и листы */
-  const Q=bg?[()=>IGW.x(nv,'mesh'),()=>IGW.x(nv,'fl')]:[];
-  Q.push(D('front0'),D('top'),D(sp.fk,sp.xb),D(sp.lk,sp.yb),D('left0'),bg?()=>IGW.x(nv,'kp'):()=>keyPts(n));
-  try{ IG3.features(n).forEach((f,i)=>Q.push(bg?()=>IGW.partLines(nv,i):()=>stepLines(n,i))); }catch(e){}
-  if(bg&&window.IGS) try{ Object.values(IGS.shArgs(nv)).forEach(a=>Q.push(()=>IGW.x(nv,'ss',a))); }catch(e){}
-  if(hw&&nv!==5&&window.IGS) Q.push(()=>IGS.secSteps(nv));   /* шаги сечения: геометрия сечения считается здесь, вкладка «По шагам» откроется сразу */
-  if(hw) Q.push(()=>nv===5&&window.IGL?IGL.sheet('clean'):IGS.sheet(nv,'clean'),()=>nv===5&&window.IGL?IGL.sheet('draft'):IGS.sheet(nv,'draft'));
-  const el=v.firstElementChild||v;   /* v — общий контейнер всех страниц: ушли на другую — считать перестаём */
-  const next=()=>window.requestIdleCallback?requestIdleCallback(run,{timeout:500}):setTimeout(run,60);
-  const run=()=>{ if(!el.isConnected||!Q.length) return; const f=Q.shift(); let r; try{ r=f(); }catch(e){} if(r&&r.then) r.then(next,next); else next(); };
-  setTimeout(next,400); }
+  const el=v.firstElementChild||v, alive=()=>el.isConnected;   /* v — общий контейнер всех страниц: ушли на другую — считать перестаём */
+  /* фоновый поток: сначала то, что откроют первым, — 3D (сетка и рёбра), затем виды, шаги вида слева, фигуры сечений.
+     Главный поток он не занимает — страница отвечает на касания всё это время */
+  const views=[['front0'],['top'],[sp.fk,sp.xb],[sp.lk,sp.yb],['left0']];
+  if(bg) (async()=>{ const W=[()=>IGW.x(nv,'mesh'),()=>IGW.x(nv,'fl')].concat(views.map(a=>()=>IGW.drawing(nv,a[0],900,0,a[1]||0)),[()=>IGW.x(nv,'kp')]);
+      try{ IG3.features(n).forEach((f,i)=>W.push(()=>IGW.partLines(nv,i))); }catch(e){}
+      try{ Object.values(IGS.shArgs(nv)).forEach(a=>W.push(()=>IGW.x(nv,'ss',a))); }catch(e){}
+      for(const f of W){ if(!alive()) return; try{ await f(); }catch(e){} } main(); })();
+  else setTimeout(main,400);
+  /* на главном потоке — только когда пользователь ничего не делает (IGQ.quiet), по одному куску; черновик — по запросу, с анимацией загрузки */
+  function main(){ const M=bg?[]:views.map(a=>()=>IG3.drawing(n,a[0],900,0,a[1]||0)).concat([()=>keyPts(n)]);
+    if(!bg) try{ IG3.features(n).forEach((f,i)=>M.push(()=>stepLines(n,i))); }catch(e){}
+    if(hw&&nv!==5&&window.IGS) M.push(()=>IGS.secSteps(nv));
+    if(hw) M.push(()=>nv===5&&window.IGL?IGL.sheet('clean'):IGS.sheet(nv,'clean'));
+    const run=()=>{ if(!alive()||!M.length) return; try{ M.shift()(); }catch(e){} IGQ.quiet(run); }; IGQ.quiet(run); } }
 function partPage(v,o){
   const n=o.model;
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
@@ -25776,10 +25809,10 @@ function partPage(v,o){
   function tab(t){ v.querySelectorAll('.igx-tabs button').forEach(b=>{ const on=b.dataset.t===t; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
     v.querySelectorAll('#igSol [data-p]').forEach(x=>x.hidden=x.dataset.p!==t);
     /* вкладка открывается сразу; если её чертежи ещё не готовы — «Строю…», и считаем после отрисовки кадра */
-    const later=(host,f)=>{ if(host&&!host.innerHTML.trim()) host.innerHTML='<div class="igx-given-l igx-busy">Строю чертёж…</div>'; requestAnimationFrame(()=>setTimeout(()=>{ try{ if(host) host.innerHTML=''; f(); }catch(e){ console.error(e); } },0)); };
+    const later=(host,f)=>{ if(host&&!host.innerHTML.trim()) host.innerHTML=IGQ.load(); IGQ.paint(()=>{ try{ if(host) host.innerHTML=''; f(); }catch(e){ console.error(e); } }); };
     if(t==='3d') start3d(); if(t==='sheet') startSheet(); if(t==='unf'&&!unfDone){ unfDone=true; later($(v,'#igUnf'),()=>mountUnfold($(v,'#igUnf'),n)); } if(t==='steps'&&!stepsDone){ stepsDone=true; later($(v,'#igBuild'),()=>buildBlock($(v,'#igBuild'),n,o)); } try{ sessionStorage.setItem(KEY+':t',t); }catch(e){} }
   v.querySelectorAll('.igx-tabs button').forEach(b=>b.addEventListener('click',()=>{ tab(b.dataset.t); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
-  function startSheet(){ if(sheetDone) return; sheetDone=true; const bx=$(v,'#igSheetBox'); if(!bx.innerHTML.trim()) bx.innerHTML='<div class="igx-given-l igx-busy">Строю чертёж…</div>'; requestAnimationFrame(()=>setTimeout(sheetNow,0)); }
+  function startSheet(){ if(sheetDone) return; sheetDone=true; const bx=$(v,'#igSheetBox'); if(!bx.innerHTML.trim()) bx.innerHTML=IGQ.load('Строю лист…'); IGQ.paint(sheetNow); }
   function sheetNow(){
     /* чистовик и черновик — как на образце; вариант 5 разобран в «Обучении» по шагам — тот же лист */
     const nv=parseInt(String(o.title).replace(/\D/g,''),10), box=$(v,'#igSheetBox'), sp=igSpec(n), tt={half:'половина вида и половина разреза',view:'вид, невидимый контур — штриховыми',full:'полный разрез'};
@@ -25788,7 +25821,10 @@ function partPage(v,o){
       draft:'Черновик. Те же изображения и сечение '+secL(n)+'–'+secL(n)+' в натуральную величину: оно стоит по направлению стрелок, точки переносятся перпендикулярно следу. Точка n″ на следе → n′ на виде сверху (линия связи) → n₁ в сечении (глубина та же, что на виде сверху).'};
     const hw=window.IG_VARS&&IG_VARS[nv]===n, make=m=>{ try{ return hw&&nv===5&&window.IGL?IGL.sheet(m):hw&&window.IGS?IGS.sheet(nv,m):m==='clean'?sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):''; }catch(e){ console.error(e); return ''; } };
     let cur='clean'; const fsb=IGFS.btn(box,{svg:()=>make(cur),label:()=>(cur==='draft'?'Черновик':'Чистовик')+' · вариант '+nv});
-    const pick=m=>{ cur=m; const s2=make(m); box.innerHTML=s2||'<div class="igx-given-l">Лист не построился на этом устройстве.</div>'; if(s2) box.appendChild(fsb);
+    const pick=m=>{ cur=m; v.querySelectorAll('#igSheetSw button').forEach(x=>{ const on=x.dataset.s===m; x.classList.toggle('on',on); x.setAttribute('aria-selected',on); }); $(v,'#igSheetCap').textContent=CAP[m]; const ready=hw&&(nv===5?!!(IGL.sheet.m&&IGL.sheet.m[m]):IGS.ready&&IGS.ready(nv,m));
+      if(!ready&&hw){ box.innerHTML=IGQ.load(m==='draft'?'Строю черновик…':'Строю лист…'); const my=++pickN; IGQ.paint(()=>{ if(my===pickN&&box.isConnected) pick2(m); }); }
+      else pick2(m); };
+    let pickN=0; const pick2=m=>{ const s2=make(m); box.innerHTML=s2||'<div class="igx-given-l">Лист не построился на этом устройстве.</div>'; if(s2) box.appendChild(fsb);
       v.querySelectorAll('#igSheetSw button').forEach(x=>{ const on=x.dataset.s===m; x.classList.toggle('on',on); x.setAttribute('aria-selected',on); }); $(v,'#igSheetCap').textContent=CAP[m]; };
     if(!hw){ pick('clean'); $(v,'#igSheetCap').textContent=CAP.clean.replace(/ Размеры — из задания\./,''); return; }
     box.insertAdjacentHTML('beforebegin','<div class="igx-modes" id="igSheetSw" role="tablist" aria-label="Лист"><button role="tab" data-s="clean">Чистовик</button><button role="tab" data-s="draft">Черновик</button></div>');
@@ -25822,14 +25858,20 @@ function partPage(v,o){
     paint();
     return {set(v){ on=v; paint(); },get on(){ return on; }};
   }
-  function start3d(){ if(M||!hasGL) return; const st=$(v,'#igStage');
+  /* 3D: пока сетка и рёбра считаются (в фоновом потоке) и строится первый кадр — на месте 3D анимация загрузки */
+  let s3=false;
+  function start3d(){ if(M||s3||!hasGL) return; s3=true; const st=$(v,'#igStage'), nv=window.IG_VARS?+Object.keys(IG_VARS).find(q=>IG_VARS[q]===n)||0:0;
+    st.insertAdjacentHTML('beforeend',IGQ.load('Собираю 3D…').replace('class="ig-load"','class="ig-load over" id="ig3dLoad"'));
+    const go=()=>IGQ.paint(()=>{ if(!st.isConnected) return; mount3dNow(st); try{ M&&M.v.draw(); }catch(e){} const L=$(v,'#ig3dLoad'); if(L) L.remove(); });   /* первый кадр (с очерком) — пока видна загрузка */
+    if(nv&&window.IGW&&IGW.ok()&&!(n._mesh&&n._fl)) Promise.all([IGW.x(nv,'mesh'),IGW.x(nv,'fl')]).then(go); else go(); }
+  function mount3dNow(st){
     M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
     if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
     $(v,'#igMcap').textContent=CAP.cut;
     try{ const sp=spaceOverlay(st,M,n), tb=$(v,'#igSpBtn'); if(tb) tb.addEventListener('click',()=>{ const on=!sp.on; sp.set(on); tb.setAttribute('aria-pressed',on); tb.classList.toggle('on',on); }); }catch(e){ console.error(e); }
     const SP=n.sec?(()=>{ const [[x1,z1],[x2,z2]]=n.sec.p, t=Math.atan2(z2-z1,x2-x1), nx=-Math.sin(t), nz=Math.cos(t); return {pl:[nx,0,nz,nx*x1+nz*z1],t}; })():null;
-    v.querySelectorAll('.igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.m;
-      v.querySelectorAll('.igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
+    v.querySelectorAll('section[data-p="3d"] .igx-modes button').forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.m;
+      v.querySelectorAll('section[data-p="3d"] .igx-modes button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-selected',x===b); });
       M.S.res=1; M.S.cut={cut:1,part:0,sec:4}[m]; M.S.pl=m==='sec'?SP.pl:[0,0,1,0]; $(v,'#igMcap').textContent=CAP[m];
       if(m==='sec') M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12,zoom:1});
       else M.to({yaw:-0.62,pit:0.42,zoom:1});
@@ -25930,11 +25972,29 @@ return {view,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,asym,w
 const IG_FONT={'igl-k':"italic 600 21px 'Times New Roman','Liberation Serif',Georgia,serif",'igs-dim':"italic 22px 'Times New Roman','Liberation Serif',Georgia,serif",'igs-let':"italic 30px 'Times New Roman','Liberation Serif',Georgia,serif"};
 function igTextW(t,cls){ const c=igTextW.c||(igTextW.c=(()=>{ try{ return document.createElement('canvas').getContext('2d'); }catch(e){ return null; } })()), fs=parseFloat((IG_FONT[cls]||IG_FONT['igs-dim']).match(/(\d+)px/)[1]);
   if(!c) return [...String(t)].length*fs*0.55; c.font=IG_FONT[cls]||IG_FONT['igs-dim']; return Math.max(c.measureText(String(t)).width,[...String(t)].length*fs*0.45); }
+/* сетка отрезков листа: для рамки подписи — только отрезки из её клеток (подписи черновика расставляются в разы быстрее) */
+function igGrid(S){ const C=40, M=new Map(); S.forEach(g=>{ const x0=Math.floor(Math.min(g[0],g[2])/C), x1=Math.floor(Math.max(g[0],g[2])/C), y0=Math.floor(Math.min(g[1],g[3])/C), y1=Math.floor(Math.max(g[1],g[3])/C);
+    if((x1-x0+1)*(y1-y0+1)>400){ (M.get('*')||M.set('*',[]).get('*')).push(g); return; }
+    for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ const k=x+','+y; (M.get(k)||M.set(k,[]).get(k)).push(g); } });
+  let stamp=0; const seen=new Map();
+  return b=>{ stamp++; const o=[]; const add=L=>{ if(L) for(const g of L) if(seen.get(g)!==stamp){ seen.set(g,stamp); o.push(g); } };
+    add(M.get('*')); for(let x=Math.floor(b[0]/C);x<=Math.floor(b[2]/C);x++) for(let y=Math.floor(b[1]/C);y<=Math.floor(b[3]/C);y++) add(M.get(x+','+y)); return o; }; }
 function igTextBoxes(svg){ const out=[];
   (svg||'').replace(/<text x="([-\d.]+)" y="([-\d.]+)"([^>]*)>([^<]*)<\/text>/g,(m,x,y,a,tx)=>{ const cls=(/class="([^"]+)"/.exec(a)||[])[1]||'', fs=/igs-let/.test(cls)?30:/igl-k/.test(cls)?21:22, w=igTextW(tx,/igs-let|igl-k/.exec(cls)?/igs-let|igl-k/.exec(cls)[0]:'igs-dim'), X=+x, Y=+y, an=/middle/.test(a)?w/2:/end/.test(a)?w:0;
     const loc=[[-an-2,-fs*0.8],[w-an+2,-fs*0.8],[w-an+2,fs*0.25],[-an-2,fs*0.25]], r=/rotate\(([-\d.]+)/.exec(a), t=r?+r[1]*Math.PI/180:0, c=Math.cos(t), s=Math.sin(t);
     const P=loc.map(([u,v])=>[X+u*c-v*s,Y+u*s+v*c]); out.push([Math.min(...P.map(p=>p[0])),Math.min(...P.map(p=>p[1])),Math.max(...P.map(p=>p[0])),Math.max(...P.map(p=>p[1]))]); return m; });
   return out; }
+/* ═════════ IGQ: тяжёлое — только когда пользователь ничего не делает; пока считаем на виду — анимация загрузки ═════════
+   quiet(fn) — запустить в свободное время, не раньше чем через 0,9 с после последнего касания, прокрутки, колеса, клавиши.
+   paint(fn) — сначала дать браузеру нарисовать «загрузку», потом считать (крутилка анимируется отдельно от расчёта).
+   load(t) — разметка индикатора загрузки. */
+window.IGQ=(function(){ let last=0; const mark=e=>{ if(e.type==='pointermove'&&e.pointerType==='mouse'&&!e.buttons) return; last=performance.now(); };
+  ['pointerdown','pointermove','wheel','touchstart','touchmove','keydown','scroll'].forEach(t=>addEventListener(t,mark,{passive:true,capture:true}));
+  const Q=900, quiet=fn=>{ const go=()=>{ const q=performance.now()-last; if(q<Q){ setTimeout(go,Q-q+60); return; }
+      if(window.requestIdleCallback) requestIdleCallback(()=>{ if(performance.now()-last<Q) go(); else fn(); }); else setTimeout(()=>{ if(performance.now()-last<Q) go(); else fn(); },40); }; go(); };
+  const paint=fn=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(fn,0)));
+  const load=t=>`<div class="ig-load" role="status"><span class="ig-load-r" aria-hidden="true"><i></i><i></i><i></i></span><span class="ig-load-t">${t||'Строю чертёж…'}</span></div>`;
+  return {quiet,paint,load,busy:()=>performance.now()-last<Q}; })();
 /* ═════════ IGFS: чертёж на весь экран (телефон): щипок и колесо — масштаб, тянуть — сдвиг, двойной тап — приблизить/обратно.
    Для шагов — кнопки ‹ › и стрелки клавиатуры: листаешь, не выходя из полного экрана (масштаб сохраняется — кадр у шагов общий) ═════════ */
 window.IGFS=(function(){
@@ -26036,7 +26096,7 @@ function labeler(){ const Q=[];
   const fn=(q,t,col,dx,dy)=>{ Q.push({q,t,col,dx,dy}); return ''; };
   /* размещение: 16 мест вокруг точки; штраф — пересечение с линиями и точками, наложение на подписи, удалённость */
   fn.boxes=[];
-  fn.flush=(prev)=>{ const OB=REC||{s:[],d:[]}, put=[], out=[];
+  fn.flush=(prev)=>{ const OB=REC||{s:[],d:[]}, put=[], out=[], GI=igGrid(OB.s);
     /* надписи, уже стоящие на листе (размеры, буквы, подписи видов), — тоже заняты */
     igTextBoxes(prev).forEach(b=>put.push(b));
     const wOf=t=>igTextW(t,'igl-k')+3;
@@ -26050,7 +26110,7 @@ function labeler(){ const Q=[];
         let p=ci?6+Math.hypot(ox+w/2,oy-h/2+4)*0.35:0;
         put.forEach(o=>{ if(b[0]<o[2]+3&&b[2]>o[0]-3&&b[1]<o[3]+2&&b[3]>o[1]-2) p+=2000; });
         OB.d.forEach(d=>{ if(d[0]>b[0]-3&&d[0]<b[2]+3&&d[1]>b[1]-3&&d[1]<b[3]+3) p+=600; });
-        for(const g of OB.s){ if(hitSeg(b,g)) p+=40; if(p>=bs) break; }
+        for(const g of GI(b)){ if(hitSeg(b,g)) p+=40; if(p>=bs) break; }
         if(p<bs){ bs=p; best=[x,y,b]; } });
       put.push(best[2]); fn.boxes.push(best[2]); out.push(`<text x="${f(best[0])}" y="${f(best[1])}" class="igl-k" fill="${L.col}">${L.t}</text>`); });
     return out.join(''); };
@@ -26124,7 +26184,8 @@ function stepSVG0(i){ const st=ST[i]; if(st.fin) return sheet(st.fin); const vb=
   const fr=stepSVG.fr||(stepSVG.fr={}); if(!fr[g]){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; ST.forEach((_,j)=>{ if(grp(j)!==g) return; const [a,b,w,h]=vb(stepRaw(j)); x0=Math.min(x0,a); y0=Math.min(y0,b); x1=Math.max(x1,a+w); y1=Math.max(y1,b+h); }); fr[g]=[x0,y0,x1-x0,y1-y0].map(f); }
   const B=fr[g], r=stepRaw(i), [a,b,w,h]=vb(r), V=B.join(' ');
   return r.replace('viewBox="'+[a,b,w,h].join(' ')+'"','viewBox="'+V+'"').replace(`<rect x="${a}" y="${b}" width="${w}" height="${h}" fill="#fff"/>`,`<rect x="${B[0]}" y="${B[1]}" width="${B[2]}" height="${B[3]}" fill="#fff"/>`); }
-function stepRaw(i){ REC={s:[],d:[]}; try{ return stepBody(i); } finally{ REC=null; } }
+const RAW={};   /* кадр шага до общей рамки: его можно посчитать заранее по одному — тогда рамка группы считается мгновенно */
+function stepRaw(i){ if(RAW[i]) return RAW[i]; REC={s:[],d:[]}; try{ return RAW[i]=stepBody(i); } finally{ REC=null; } }
 /* у каждой точки шага — свой оттенок: линии связи (светлый), окружность-параллель, радиус и глубина (насыщенный) */
 const PTC=[['#2f6fd6','#a9c4f2'],['#0f9d8a','#98dccf'],['#8b4fd1','#cdb4f0'],['#d17a12','#f2c99a'],['#c2357a','#efb1cf']];
 function stepBody(i){ const st=ST[i]; const md=MD(), sp=IGUI.igSpec(md), Ly=layout(), {T,FR,TP,LF,SC}=Ly, G=SG(), lab=labeler();
@@ -26279,7 +26340,9 @@ function mount3d(v){ const st=$(v,'#iglSt'), md=MD(), T=TR(), xb=IGUI.igSpec(md)
     Object.assign(M.S,{part:{cut:0},fa:{cut:1,off:0,pl:[0,0,0,xb]},pr:{cut:3,off:0},pl:{cut:0},sec:{cut:4,pl:T.pl(0)},sec7:{cut:7,pl:T.pl(0)}}[m]); M.S.tint=m==='sec'||m==='sec7'?PINK:null;   /* сечение подкрашено, как на черновике */
     if(move!==false) M.to(VIEW[m]); else M.draw(); ov&&ov.paint(); };
   /* сетку и рёбра 3D считаем в фоновом потоке — страница не замирает */
-  if(GL()) lazy(st,()=>{ if(window.IGW&&IGW.ok()&&!md._mesh){ Promise.all([IGW.x(VN,'mesh'),IGW.x(VN,'fl')]).then(()=>{ if(st.isConnected) mount(); }); return; } mount(); });
+  if(GL()) lazy(st,()=>{ st.insertAdjacentHTML('beforeend',IGQ.load('Собираю 3D…').replace('class="ig-load"','class="ig-load over"'));
+    const go=()=>IGQ.paint(()=>{ if(!st.isConnected) return; mount(); try{ M&&M.v.draw(); }catch(e){} const L=st.querySelector('.ig-load'); if(L) L.remove(); });
+    if(window.IGW&&IGW.ok()&&!(md._mesh&&md._fl)) Promise.all([IGW.x(VN,'mesh'),IGW.x(VN,'fl')]).then(go); else go(); });
   function mount(){ M=IGUI.mountViewer(st,md,{state:Object.assign({cut:0},VIEW.part),home:VIEW.part,onTouch:()=>{ const h=$(st,'.igx-hint'); if(h) h.style.opacity=0; }});
     if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
     ov=planeOverlay(st,M,()=>mode==='pl'?{fill:.16}:mode==='sec'?{fill:0,pts:ptsOf()}:mode==='sec7'?{fill:null,pts:ptsOf()}:null); set(mode,true,grp); }
@@ -26320,8 +26383,9 @@ function page(v){
   const D3=mount3d(v); let i=0; const fsb=IGFS.btn($(v,'#iglPic'),{svg:()=>stepSVG(i),label:()=>'Шаг '+(i+1)+' из '+ST.length+'. '+ST[i].t,prev:()=>{ i=Math.max(0,i-1); show(); },next:()=>{ i=Math.min(ST.length-1,i+1); show(); },atStart:()=>i===0,atEnd:()=>i===ST.length-1}); try{ i=Math.max(0,Math.min(ST.length-1,+sessionStorage.getItem('igl_step')||0)); }catch(e){}
   /* виды детали считаем в фоновом потоке; пока считаются — текст шага уже есть, на месте чертежа «Строю чертёж…» */
   let ready=!(window.IGW&&IGW.ok()); const pic0=$(v,'#iglPic');   /* v — общий контейнер страниц; ушли со страницы — этого элемента уже нет */
-  const show=(move)=>{ const s=ST[i]; let svg=''; if(ready) try{ svg=stepSVG(i); }catch(e){ console.error(e); }
-    $(v,'#iglPic').innerHTML=!ready?'<div class="igx-given-l igx-busy">Строю чертёж…</div>':svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>'; if(ready) $(v,'#iglPic').appendChild(fsb);
+  let shN=0; const putPic=()=>{ let svg=''; try{ svg=stepSVG(i); }catch(e){ console.error(e); } $(v,'#iglPic').innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>'; $(v,'#iglPic').appendChild(fsb); };
+  const show=(move)=>{ const s=ST[i], my=++shN;
+    if(!ready) $(v,'#iglPic').innerHTML=IGQ.load(); else if(stepSVG.m&&stepSVG.m[i]) putPic(); else { $(v,'#iglPic').innerHTML=IGQ.load(); IGQ.paint(()=>{ if(my===shN&&pic0.isConnected) putPic(); }); }
     $(v,'#iglN').textContent='Шаг '+(i+1)+' из '+ST.length; $(v,'#iglT').textContent=s.t; $(v,'#iglD').innerHTML=`<b class="igl-h">Делаем</b><ol>${s.act.map(x=>`<li>${x}</li>`).join('')}</ol><b class="igl-h">Почему так</b><p>${s.why}</p>`; $(v,'#iglG').textContent=s.g||''; $(v,'#iglG').hidden=!s.g;
     $$(v,'.igb-nums button').forEach(b=>{ const j=+b.dataset.k; b.classList.toggle('on',j===i); b.classList.toggle('done',j<i); });
     $(v,'#iglSteps [data-a="-1"]').disabled=i===0; $(v,'#iglSteps [data-a="1"]').disabled=i===ST.length-1;
@@ -26332,9 +26396,10 @@ function page(v){
   if(!ready) (async()=>{ const md=MD(), sp=IGUI.igSpec(md);
     for(const a of [['front0'],['top'],['left0'],[sp.fk,0,sp.xb],[sp.lk,0,sp.yb]]) await IGW.drawing(VN,a[0],W,a[1]||0,a[2]||0);
     for(let j=0;j<IG3.features(md).length;j++) await IGW.partLines(VN,j);
+    { const T=TR(), b=md.box; await IGW.x(VN,'ss',[[T.x1,0,T.z1],[T.c,0,T.s],[0,1,0],[-4,T.L+20,b[0][1]-2,b[1][1]+2],0.15]); }   /* контур сечения А–А — те же аргументы, что в secLoops */
     ready=true; if(!pic0.isConnected) return; show(false);
     /* остальные шаги — заранее, по одному в свободное время: «Дальше» потом листает сразу */
-    let j=0; const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:1500}):setTimeout(f,200), pre=()=>{ if(!pic0.isConnected||j>=ST.length) return; try{ stepSVG(j++); }catch(e){} idle(pre); }; idle(pre); })();
+    let j=0; const pre=()=>{ if(!pic0.isConnected||j>=2*ST.length) return; try{ j<ST.length?(ST[j].fin?0:stepRaw(j)):(ST[j-ST.length].fin?0:stepSVG(j-ST.length));   /* листы (черновик, чистовик) — по запросу, с загрузкой */ }catch(e){} j++; IGQ.quiet(pre); }; IGQ.quiet(pre); })();   /* сначала кадры по одному, потом готовые шаги */
   lazy($(v,'#iglUnf'),()=>{ try{ IGUI.mountUnfold($(v,'#iglUnf'),MD()); }catch(e){ console.error(e); } });
   NEXT=null; return 'Виды, разрезы и сечения · '+SUBJ.ig.name; }
 return {view:v=>page(v),ST,stepSVG,sheet,stampK};
@@ -26365,7 +26430,7 @@ const hatch=(id,deg)=>`<pattern id="${id}" patternUnits="userSpaceOnUse" width="
 
 /* ── подписи: место без наложений (как в обучении) ── */
 function labeler(){ const Q=[]; const fn=(q,t,col,dx,dy)=>{ Q.push({q,t,col,dx,dy}); return ''; }; fn.boxes=[];
-  fn.flush=(prev)=>{ const OB=REC||{s:[],d:[]}, put=[], out=[];
+  fn.flush=(prev)=>{ const OB=REC||{s:[],d:[]}, put=[], out=[], GI=igGrid(OB.s);
     igTextBoxes(prev).forEach(b=>put.push(b));
     const wOf=t=>igTextW(t,'igl-k')+3;
     const hitSeg=(b,g)=>{ const [x1,y1,x2,y2]=g; if(Math.max(x1,x2)<b[0]||Math.min(x1,x2)>b[2]||Math.max(y1,y2)<b[1]||Math.min(y1,y2)>b[3]) return false;
@@ -26378,7 +26443,7 @@ function labeler(){ const Q=[]; const fn=(q,t,col,dx,dy)=>{ Q.push({q,t,col,dx,d
         let p=ci?6+Math.hypot(ox+w/2,oy-h/2+4)*0.35:0;
         put.forEach(o=>{ if(b[0]<o[2]+3&&b[2]>o[0]-3&&b[1]<o[3]+2&&b[3]>o[1]-2) p+=2000; });
         OB.d.forEach(d=>{ if(d[0]>b[0]-3&&d[0]<b[2]+3&&d[1]>b[1]-3&&d[1]<b[3]+3) p+=600; });
-        for(const g of OB.s){ if(hitSeg(b,g)) p+=40; if(p>=bs) break; }
+        for(const g of GI(b)){ if(hitSeg(b,g)) p+=40; if(p>=bs) break; }
         if(p<bs){ bs=p; best=[x,y,b]; } });
       put.push(best[2]); fn.boxes.push(best[2]); out.push(`<text x="${f(best[0])}" y="${f(best[1])}" class="igl-k" fill="${L.col}">${L.t}</text>`); });
     return out.join(''); };
@@ -26654,7 +26719,7 @@ function frameBody(n,st){ const C=ctx(n), {md,sp,FR,TP,DR}=C, SG=secGeo(C), P=se
   const B=frameBox(C,SG);
   /* (рамка кадра — frameBox: одна на все шаги сечения) */
   return `<svg class="igs-sheet igl-sv" viewBox="${f(B[0])} ${f(B[1])} ${f(B[2]-B[0])} ${f(B[3]-B[1])}" role="img" aria-label="Сечение по шагам, вариант ${n}"><rect x="${f(B[0])}" y="${f(B[1])}" width="${f(B[2]-B[0])}" height="${f(B[3]-B[1])}" fill="#fff"/>${o}${c}${t}</svg>`; }
-return {shArgs:n=>shArgs(ctx(n)),frameRatio:n=>{ const C=ctx(n), SG=secGeo(C); if(!SG) return 0; const B=frameBox(C,SG); return (B[3]-B[1])/(B[2]-B[0]); },sheet,secGeo:n=>secGeo(ctx(n)),ctx,dimsSVG,checkDims,checkAll,secSteps,secFrame};
+return {ready:(n,m)=>!!MEMO[n+'|'+m],shArgs:n=>shArgs(ctx(n)),frameRatio:n=>{ const C=ctx(n), SG=secGeo(C); if(!SG) return 0; const B=frameBox(C,SG); return (B[3]-B[1])/(B[2]-B[0]); },sheet,secGeo:n=>secGeo(ctx(n)),ctx,dimsSVG,checkDims,checkAll,secSteps,secFrame};
 })();
 
 
