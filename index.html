@@ -3072,6 +3072,13 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 .v9-share{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 var(--s4);padding:10px 12px 10px 16px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
 .v9-t{flex:1 1 180px;font:600 14.5px/1.35 var(--sans);color:var(--ink2)}
 .v9-share .vc{padding:4px 11px 4px 9px;border-radius:99px;gap:7px}.v9-share .vc-n{font-size:14px}.v9-share .vc-l{font-size:10.5px}
+/* счётчик просмотров: одна форма везде — высота как у кнопки рядом, крупное число, подпись обычным текстом */
+.vc{display:inline-flex!important;align-items:center;gap:8px!important;height:42px;padding:0 16px 0 13px!important;border-radius:12px!important}
+.vc-dot{width:8px!important;height:8px!important}
+.vc-n{font:800 18px/1 var(--disp)!important;letter-spacing:-.2px!important;font-variant-numeric:tabular-nums}
+.vc-l{font:600 14px/1 var(--sans)!important;letter-spacing:0!important;text-transform:none!important;color:rgba(255,255,255,.78)!important}
+#foot .vc{height:34px;padding:0 13px 0 11px!important;border-radius:10px!important}#foot .vc-n{font-size:15px!important}#foot .vc-l{font-size:13px!important}
+@media(max-width:440px){.v9-share .vc{padding:0 11px 0 10px!important;gap:6px!important}.v9-share .vc-n{font-size:16px!important}.v9-share .vc-l{font-size:12.5px!important}.v9-share .v9-sb{padding:0 12px;gap:6px}}
 .v9-sb{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border:0;border-radius:12px;cursor:pointer;background:var(--red);color:#fff;font:700 14.5px var(--sans)}
 .v9-sb:hover{filter:brightness(1.07)}.v9-sb:active{transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){.vc-dot{animation:none}}
@@ -22295,6 +22302,7 @@ function view(v,r){
    <section class="ow-box"><h2>Скрытые функции</h2>${Object.entries(FLAGS.LIST).map(([k,o])=>sw(k,o)).join('')}</section>
    <section class="ow-box"><h2>Проверка сайта в браузере</h2><p class="ow-m">Та же 3D-проверка чертежей и проверка ответов, что в тестах, — прямо на этом устройстве, по всем задачам.</p>
      <button class="btn pri" id="owRun">Проверить все задачи</button><div id="owOut" class="ow-out"></div></section>
+   <section class="ow-box"><h2>Счётчик просмотров</h2><div class="ow-kv" id="owViews"><div><span>Проверяю…</span><b></b></div></div><p class="ow-m">Число на сайте — из статистики Яндекс Метрики (плюс Google из views.json). Метрика считает только посетителей, нажавших «Согласен» в уведомлении о cookie; твои заходы считаются, только если и ты нажал «Согласен».</p><button class="btn" id="owVwRe">Обновить</button></section>
    <section class="ow-box"><h2>Версия</h2><div class="ow-kv" id="owVer"></div></section>
    <section class="ow-box"><h2>Версии и что на проверке</h2><p class="ow-m">Пункты «на проверке» видны только тебе. Включи функцию выше — проверь — скажи «выкатываем».</p>${changesHTML(true)}</section>
    <section class="ow-box"><h2>Ссылки</h2><div class="ow-links">
@@ -22303,6 +22311,10 @@ function view(v,r){
    <button class="btn ghost" id="owOff">Выйти из режима владельца</button>`});
   v.querySelectorAll('[data-flag]').forEach(i=>i.addEventListener('change',()=>{ FLAGS.toggle(i.dataset.flag,i.checked); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
   v.querySelector('#owOff').addEventListener('click',()=>{ FLAGS.lock(); nav('#/'); });
+  const vw=v.querySelector('#owViews'), vrun=()=>{ const ck=(()=>{ try{ return localStorage.getItem('nch2_ck'); }catch(e){ return null; } })(), row=(a,b)=>'<div><span>'+a+'</span><b>'+b+'</b></div>';
+    vw.innerHTML=row('Твоё согласие на cookie',ck==='y'?'да — твои заходы считаются':ck==='n'?'нет — твои заходы НЕ считаются':'не выбрано — не считаются')+row('Метрика на этой странице',window.ym?'загружена':'не загружена')+row('Google Analytics',window.gtag?'загружен':'не загружен')+row('Ответ Метрики','…');
+    window.VIEWS_PROBE&&VIEWS_PROBE().then(r=>{ vw.lastElementChild.innerHTML='<span>Ответ Метрики</span><b>'+r+'</b>'; }); };
+  vrun(); v.querySelector('#owVwRe').addEventListener('click',vrun);
   const ver=v.querySelector('#owVer'); ver.innerHTML='<div><span>Файл сайта изменён</span><b>'+document.lastModified+'</b></div><div><span>Задач в тетради</span><b>'+WB3.tasks.length+'</b></div><div><span>Генератор вариантов</span><b>'+GEN.list().length+' задач</b></div>';
   try{ if(window.caches) caches.keys().then(k=>{ ver.insertAdjacentHTML('beforeend','<div><span>Кэш офлайн-версии</span><b>'+(k.join(', ')||'нет')+'</b></div>'); }); }catch(e){}
   v.querySelector('#owRun').addEventListener('click',async e=>{ const b=e.currentTarget, out=v.querySelector('#owOut'); b.disabled=true; out.textContent='Проверяю…';
@@ -23780,6 +23792,10 @@ function fetchViews(){
   const ym=fetch(api,{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>Math.round(+(j.totals&&j.totals[0]))).catch(()=>null);
   return Promise.all([file,ym]).then(([f,y])=>{ const parts=f.parts||{}, n=y!=null&&y>0?y+(+parts.google||0):Math.round(+(f.pageviews||f.views||0));
     return n>=50?n:Promise.reject(); });   /* меньше 50 — блок скрыт */ }
+/* для режима владельца: что сейчас отвечает Метрика */
+window.VIEWS_PROBE=()=>fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews,ym:s:visits&date1=2024-01-01&date2=today&accuracy=full',{credentials:'omit',cache:'no-store'})
+  .then(r=>r.ok?r.json().then(j=>'просмотров '+Math.round(j.totals[0])+', визитов '+Math.round(j.totals[1])+' · '+new Date().toLocaleTimeString('ru-RU')):'ошибка '+r.status+(r.status===403?' — статистика счётчика закрыта':''))
+  .catch(e=>'нет ответа: '+(e&&e.message||e));
 FX.loadViews=function(force){
   if(VIEWS!=null&&!force){ paintViews(); return; }
   if(VIEWS==null){ try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50&&Date.now()-c.t<60e3){ VIEWS=c.n; paintViews(); return; } }catch(e){} }   /* кэш на минуту */
