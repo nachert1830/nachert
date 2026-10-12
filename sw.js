@@ -1,6 +1,6 @@
 /* Офлайн: сайт — один файл. Сначала сеть (чтобы обновления приходили), при отсутствии сети — копия из кэша. */
-const C='nachert-v89';
-self.addEventListener('install',e=>{ e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./index.html','./manifest.webmanifest','./icon-192.png'])).then(()=>self.skipWaiting())); });
+const C='nachert-v90';
+self.addEventListener('install',e=>{ e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./index.html','./manifest.webmanifest','./icon-192.png','./apple-touch-icon.png'])).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch',e=>{
   const r=e.request; if(r.method!=='GET'||new URL(r.url).origin!==location.origin) return;

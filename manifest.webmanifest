@@ -1,1 +1,33 @@
-{"name":"Начерт","short_name":"Начерт","description":"Начертательная геометрия по шагам: решённая тетрадь, подготовка к РК, ДЗ и 3D-модель с эпюром","lang":"ru","start_url":"./","scope":"./","display":"standalone","background_color":"#2552e0","theme_color":"#2552e0","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"}]}
+{
+  "id": "./",
+  "name": "Начерт — начертательная геометрия по шагам",
+  "short_name": "Начерт",
+  "description": "Решённая тетрадь, подготовка к РК, разборы ДЗ и 3D-модель с эпюром. Чертёж строится шаг за шагом.",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#2552e0",
+  "theme_color": "#2552e0",
+  "categories": ["education"],
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Решённая тетрадь", "short_name": "Тетрадь", "description": "Все задачи рабочей тетради по шагам", "url": "./#/ng/tasks", "icons": [{"src": "app/sc-tasks.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Домашние задания", "short_name": "ДЗ", "description": "Порядок решения и разобранный пример к каждому ДЗ", "url": "./#/ng/hw", "icons": [{"src": "app/sc-hw.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Подготовка к РК", "short_name": "РК", "description": "Билеты с разбором, теория, пробный РК", "url": "./#/ng/check", "icons": [{"src": "app/sc-rk.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Уроки и теория", "short_name": "Теория", "description": "Короткие уроки с картинками", "url": "./#/ng/path", "icons": [{"src": "app/sc-path.png", "sizes": "192x192", "type": "image/png"}]}
+  ],
+  "screenshots": [
+    {"src": "app/shot-home.jpg", "sizes": "720x1466", "type": "image/jpeg", "form_factor": "narrow", "label": "Найди решение своей задачи: по номеру, теме или вопросу"},
+    {"src": "app/shot-task.jpg", "sizes": "720x1466", "type": "image/jpeg", "form_factor": "narrow", "label": "Чертёж строится по шагам, к каждому шагу — пояснение"},
+    {"src": "app/shot-epure.jpg", "sizes": "720x1466", "type": "image/jpeg", "form_factor": "narrow", "label": "3D-модель и эпюр: двигай точку — чертёж строится сам"}
+  ]
+}

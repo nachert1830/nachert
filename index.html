@@ -28,7 +28,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%232552e0%22/%3E%3Ccircle cx=%2212.5%22 cy=%2216%22 r=%226.5%22 fill=%22%23fff%22/%3E%3Ccircle cx=%2219.5%22 cy=%2216%22 r=%226.5%22 fill=%22none%22 stroke=%22%23d0342b%22 stroke-width=%223%22/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
 /* шрифты лежат рядом с сайтом (папка fonts/, лицензия SIL OFL 1.1) */
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
@@ -90,6 +90,38 @@
 .fxnote.on{opacity:1;transform:translate(-50%,0)}
 :root[data-theme=dark] .fxnote{background:#efeee9;color:var(--paper)}
 @media(min-width:1080px){.fxnote{bottom:28px}}
+/* ── «На главный экран»: шторка с шагами и карточка на главной ── */
+.ai-ic{flex:none;width:58px;height:58px;border-radius:14px;background:#2552e0 url(apple-touch-icon.png) center/cover no-repeat;box-shadow:0 10px 22px -10px rgba(37,82,224,.75),inset 0 0 0 1px rgba(255,255,255,.14)}
+.ai-hero{display:flex;align-items:center;gap:14px;padding:2px 6px 14px}
+.ai-hero>div>b{display:block;font:700 19px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
+.ai-hero>div>span{display:block;margin-top:4px;font-size:13.5px;line-height:1.4;color:var(--mut)}
+.ai-tg .ai-ic{position:relative}
+.ai-tg .ai-ic::after{content:'';position:absolute;right:-6px;bottom:-6px;width:24px;height:24px;border-radius:50%;border:2.5px solid var(--surf);background:#27a6e5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M5.3 11.6 17.2 7c.6-.2 1 .1.9.9l-2 9.5c-.2.7-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.3-.2-.1-.4-.4-.2l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-1z'/%3E%3C/svg%3E") center/18px no-repeat}
+.ai-steps{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px;counter-reset:ai}
+.ai-steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:start;padding:12px 14px 12px 12px;border-radius:16px;background:var(--surf2)}
+.ai-steps li::before{counter-increment:ai;content:counter(ai);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;font:700 14px/1 var(--disp)}
+.ai-steps p{margin:3px 0 0;font-size:15.5px;font-weight:600;line-height:1.5;color:var(--ink)}
+.ai-steps small{display:block;margin-top:5px;font-size:13px;line-height:1.5;color:var(--mut)}
+.ai-k{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;margin:0 1px;min-height:26px;vertical-align:middle;border-radius:8px;background:var(--surf);border:1px solid var(--line2);box-shadow:0 1px 0 var(--line2);color:var(--blue);font:600 13.5px/1.2 var(--sans);white-space:nowrap}
+.ai-k span{color:var(--ink)}
+.ai-steps small .ai-k{min-height:22px;padding:0 6px;font-size:12.5px}.ai-steps small .ai-k svg{width:15px;height:15px}
+.ai-tip{margin:2px 6px 10px;font-size:13px;line-height:1.5;color:var(--ink2)}
+.ai-qr{padding-top:0}
+.ai-card{position:relative;display:flex;align-items:flex-start;gap:13px;margin:0 0 var(--s4);padding:14px 38px 14px 14px;border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--blue) 9%,var(--surf)),var(--surf) 70%);border:1px solid color-mix(in srgb,var(--blue) 22%,var(--line));transition:opacity .25s,transform .25s}
+.ai-card.out{opacity:0;transform:scale(.97)}
+.ai-card .ai-ic{width:48px;height:48px;border-radius:12px}
+.ai-ct{flex:1;min-width:0}
+.ai-ct>div>b{display:block;font:700 15.5px/1.25 var(--disp);color:var(--ink)}
+.ai-ct>div>span{display:block;margin-top:3px;font-size:12.5px;line-height:1.4;color:var(--mut)}
+.ai-cb{display:inline-flex;align-items:center;gap:7px;margin-top:10px;min-height:40px;padding:0 16px;border:0;border-radius:12px;background:var(--blue);color:#fff;font:700 14px var(--sans);cursor:pointer;box-shadow:0 8px 18px -10px var(--blue)}
+.ai-cb:hover{filter:brightness(1.08)}.ai-cb:active{transform:scale(.96)}
+.ai-cx{position:absolute;top:6px;right:6px;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--mut2);cursor:pointer}
+.ai-cx:hover{background:var(--surf2);color:var(--ink)}
+:root[data-theme=dark] .ai-steps li{background:var(--surf2)}
+:root[data-theme=dark] .ai-k{background:var(--surf3);border-color:var(--line2);box-shadow:none;color:#8fb0ff}
+:root[data-theme=dark] .ai-cb,:root[data-theme=dark] .ai-steps li::before{background:#3b6cf0}
+@media(min-width:700px){.ai-card{align-items:center}.ai-ct{display:flex;align-items:center;gap:16px}.ai-ct>div{flex:1}.ai-cb{margin-top:0}}
+
 /* ── главная: популярность и «поделиться» ── */
 .hpop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin:0 0 var(--s4);padding:12px 14px;border-radius:18px;background:linear-gradient(120deg,color-mix(in srgb,var(--blue) 10%,var(--surf)),var(--surf));border:1px solid var(--line)}
 .hpop-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 220px}
@@ -22224,6 +22256,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.1',d:'13 октября 2026',items:['Начерт можно добавить на главный экран телефона и открывать как приложение: значок, запуск в один тап, на весь экран. Кнопка — на главной и в меню «Поделиться», инструкция подстраивается под телефон и браузер. Из Telegram сначала подскажет открыть сайт в Safari или браузере — и продолжит там.','Ссылка «Продолжить, где остановился» на главной снова открывает нужную задачу.']},
   {v:'4.0',d:'13 октября 2026',items:['ДЗ 2: у всех 30 вариантов — чистовик и черновик как на образце. Размеры из задания на своих местах, основная надпись по форме 1; наклонное сечение А–А — на черновике, с линиями связи и номерами точек.','ДЗ 2, «По шагам»: сечение А–А строится точка за точкой у каждого варианта — след и ось сечения, точки группами, обводка и штриховка.','Вкладки 3D, «Развёртка», «По шагам» и «Лист» открываются сразу: чертежи считаются заранее, пока читаешь условие.','Обучение (вариант 5): одна буква на листе — А, как в задании; уточнены формулировки шагов.']},
   {v:'3.9',d:'13 октября 2026',items:['ДЗ 2, вариант 5: на листе — чистовик и черновик как на образце; размеры из задания, основная надпись по форме 1.','Обозначения сечений и разрезов: буква — у стрелки с внешней стороны, как в задании.','Сечение А–А: контур и отверстия — замкнутые линии, в том числе там, где отверстие касается края.','Шаг «Дано» — как в задании: след А, оси отверстий, центровая окружность.']},
   {v:'3.8',d:'12 октября 2026',items:['ДЗ 2: след наклонной плоскости А–А у всех 30 вариантов проведён точно по заданию — через оба штриха разомкнутой линии и через характерную точку детали, если линия через неё проходит (в варианте 5 — по касательной к отверстиям Ø10).','ДЗ 2: детали вариантов 11, 12, 16, 17, 18, 27, 28, 29 исправлены по чертежу задания: уступы, глухие резьбовые отверстия с конусом от сверла, сквозные окна, положение граней и отверстий.','На листе — оси отверстий и центровая окружность; профильный разрез обозначается, если деталь несимметрична слева направо; в варианте 3 сечение — А–А, как в задании.','Тетрадь: на виде сверху дан только контур тела, как в задании; на листе — те разрезы, которые просит задание (горизонтальный — на месте вида сверху).','Обучение: совпавшие проекции точек подписаны через ≡ (3″≡4″), у каждой точки свой цвет линий связи и окружности; подписи не налезают на линии; чертёж не прыгает при листании.','Инженерная графика: главная — три входа: ДЗ № 2 с полем «номер варианта», Тетрадь, Учиться; теория — строкой ниже.']},
@@ -23504,8 +23537,8 @@ FX._statsOld=function(){
 FX.sheet=function(o){
   try{ const old=document.getElementById('fxSheet'); if(old) old.remove();
     const w=document.createElement('div'); w.id='fxSheet'; w.className='fxs'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); w.setAttribute('aria-label',o.title||'Меню');
-    w.innerHTML=`<div class="fxs-bg" data-x></div><div class="fxs-p"><div class="fxs-grab" aria-hidden="true"></div>${o.head||''}${o.body||''}${o.items.some(it=>it.g)?`<div class="fxs-g" style="--n:${Math.max(3,o.items.filter(it=>it.g).length)}">${o.items.map((it,i)=>it.g?`<button type="button" class="fxs-a" data-i="${i}"><span class="fxs-ai" aria-hidden="true">${it.icon}</span><span>${it.label}</span></button>`:'').join('')}</div>`:''}<div class="fxs-l">${o.items.map((it,i)=>it.g?'':`<button type="button" class="fxs-i" data-i="${i}"><span class="fxs-ic" style="--ic:${it.c||'var(--blue)'}" aria-hidden="true">${it.icon}</span><span class="fxs-t"><b>${it.label}</b>${it.sub?`<small>${it.sub}</small>`:''}</span></button>`).join('')}</div><button type="button" class="fxs-cancel" data-x>Отмена</button></div>`;
-    const close=()=>{ w.classList.remove('on'); document.removeEventListener('keydown',kd); setTimeout(()=>w.remove(),260); try{ if(o.back&&o.back.focus) o.back.focus({preventScroll:true}); }catch(e){} };
+    w.innerHTML=`<div class="fxs-bg" data-x></div><div class="fxs-p"><div class="fxs-grab" aria-hidden="true"></div>${o.head||''}${o.body||''}${o.items.some(it=>it.g)?`<div class="fxs-g" style="--n:${Math.max(3,o.items.filter(it=>it.g).length)}">${o.items.map((it,i)=>it.g?`<button type="button" class="fxs-a" data-i="${i}"><span class="fxs-ai" aria-hidden="true">${it.icon}</span><span>${it.label}</span></button>`:'').join('')}</div>`:''}<div class="fxs-l">${o.items.map((it,i)=>it.g?'':`<button type="button" class="fxs-i" data-i="${i}"><span class="fxs-ic" style="--ic:${it.c||'var(--blue)'}" aria-hidden="true">${it.icon}</span><span class="fxs-t"><b>${it.label}</b>${it.sub?`<small>${it.sub}</small>`:''}</span></button>`).join('')}</div><button type="button" class="fxs-cancel" data-x>${o.cancel||'Отмена'}</button></div>`;
+    const close=()=>{ w.classList.remove('on'); document.removeEventListener('keydown',kd); setTimeout(()=>w.remove(),260); try{ if(o.back&&o.back.focus) o.back.focus({preventScroll:true}); }catch(e){} try{ if(o.onClose) o.onClose(); }catch(e){} };
     const kd=e=>{ if(e.key==='Escape') close(); };
     w.addEventListener('click',e=>{ if(e.target.closest('[data-x]')){ close(); return; } const b=e.target.closest('[data-i]'); if(!b) return; const it=o.items[+b.dataset.i]; FX.buzz(8); const keep=it.fn(b); if(keep!==true) close(); });
     /* свайп вниз закрывает */
@@ -23711,6 +23744,7 @@ FX.shareMenu=function(o){
       let f=null; try{ f=new File([bl],name,{type:'image/png'}); }catch(e){}
       if(f&&navigator.canShare&&navigator.canShare({files:[f]})) return navigator.share({files:[f],title:text,text:url}).catch(()=>{});
       FX.saveBlob(bl,name); FX.note('Картинка сохранена'); }).catch(()=>FX.note('Не удалось собрать картинку')); }});
+  { const it=window.A2HS&&A2HS.shareItem(o.back); if(it) items.push(it); }
   const head=o.preview?`<div class="fxs-h fxs-hp"><div class="fxs-pv">${o.preview}</div><div><b>${escH(o.heading||'Поделиться')}</b><span>${attr(short(title,90))}</span>${o.note?`<em>${escH(o.note)}</em>`:''}</div></div>`
     :`<div class="fxs-h"><b>${escH(o.heading||'Поделиться')}</b><span>${attr(short(title,80))}</span>${o.note?`<em>${escH(o.note)}</em>`:''}</div>`;
   return FX.sheet({title:o.heading||'Поделиться',back:o.back,items,head});
@@ -23721,6 +23755,146 @@ FX.qrSheet=function(url,title,back){
     body:`<div class="fxs-qr">${QR.svg(url,260)}</div>`,
     items:[{icon:LOGO.link,label:'Скопировать ссылку',sub:url.replace(/^https?:\/\//,'').slice(0,60),c:'#5d6577',fn:()=>{ FX.copy(url); }}]});
 };
+/* ── «На главный экран»: сайт как приложение — значок, запуск в один тап, на весь экран ──
+   Где открыт сайт, решает, что показать:
+   · уже запущен с главного экрана — ничего не предлагаем;
+   · Chrome/Edge/Яндекс на Android и компьютере — системное окно «Установить» (beforeinstallprompt) по одной кнопке;
+   · Safari и другие браузеры iPhone — три шага через «Поделиться → На экран „Домой“»;
+   · встроенный браузер Telegram (на нём сидит большинство) — добавить отсюда нельзя: сначала «Открыть в Safari / в браузере».
+     Перед этим адрес меняется на #/install — браузер откроет ту же страницу и сразу покажет следующий шаг;
+   · другие встроенные браузеры (VK, Instagram…) — так же, через «Открыть в браузере»;
+   · компьютер без установки — QR-код: навёл телефон — и продолжил там.
+   Telegram распознаём по мосту TelegramWebviewProxy: его встраивают в страницу и iOS-, и Android-версия Telegram. */
+const A2HS=(function(){
+  let BIP=null;
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); BIP=e; paint(); });   /* своя кнопка вместо системной плашки */
+  window.addEventListener('appinstalled',()=>{ BIP=null; ST.set('a2hs_done',1); paint(); try{ FX.note('Готово! Начерт — на главном экране'); }catch(e){} });
+  const ua=navigator.userAgent||'';
+  function env(){
+    const ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    const android=/Android/i.test(ua);
+    const standalone=!!(navigator.standalone||(window.matchMedia&&['standalone','fullscreen','minimal-ui','window-controls-overlay'].some(m=>matchMedia('(display-mode: '+m+')').matches)));
+    const tg=typeof window.TelegramWebviewProxy!=='undefined'||typeof window.TelegramWebviewProxyProto!=='undefined'||/Telegram/i.test(ua);
+    /* другие приложения со своим браузером: в Android у них в UA метка «; wv)», в iPhone нет «Safari/» (у Chrome/Firefox/Edge — свои метки) */
+    const inapp=!tg&&(/FBAN|FBAV|Instagram|VKAndroidApp|VKClient|vkclient|com\.vkontakte|MicroMessenger|OKApp|\bLine\//.test(ua)||(android&&/; wv\)/.test(ua))||(ios&&!/Safari\/|CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS/.test(ua)));
+    const mobile=ios||android||(window.matchMedia&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<820);
+    const macSafari=!ios&&/Macintosh/.test(ua)&&/Version\/(1[7-9]|[2-9]\d)/.test(ua)&&/Safari\//.test(ua)&&!/Chrome|Chromium|Edg|Firefox|YaBrowser|OPR/.test(ua);
+    return {ios,android,standalone,tg,inapp,mobile,macSafari,bip:!!BIP};
+  }
+  /* значки кнопок такими, какими их видно на экране */
+  const sv=(d,extra)=>`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra||''}>${d}</svg>`;
+  const G={
+    share:sv('<path d="M12 14.5V3"/><path d="m7.5 7 4.5-4.5L16.5 7"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16"/>'),
+    plus:sv('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>'),
+    dotsH:sv('<circle cx="5.5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor" stroke="none"/>'),
+    dotsV:sv('<circle cx="12" cy="5.5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="18.5" r="1.6" fill="currentColor" stroke="none"/>'),
+    compass:sv('<circle cx="12" cy="12" r="9"/><path d="m15.8 8.2-2.2 5.4-5.4 2.2 2.2-5.4z"/><circle cx="12" cy="12" r=".9" fill="currentColor" stroke="none"/>'),
+    burger:sv('<path d="M4.5 7h15M4.5 12h15M4.5 17h15"/>'),
+    phone:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12 8.5v6M9 11.5h6"/><path d="M10.5 18.5h3"/></svg>'
+  };
+  const K=(g,t)=>`<span class="ai-k">${g?G[g]:''}${t?`<span>${t}</span>`:''}</span>`;
+  const step=(main,more)=>`<li><div><p>${main}</p>${more?`<small>${more}</small>`:''}</div></li>`;
+  const hero=(t,s,cls)=>`<div class="ai-hero ${cls||''}"><span class="ai-ic" aria-hidden="true"></span><div><b>${t}</b><span>${s}</span></div></div>`;
+  const installURL=()=>location.href.split('#')[0]+'#/install';
+  function content(e){
+    const W=e.ios?'Safari':'браузере';
+    if(e.tg) return {
+      head:hero(e.ios?'Сначала откроем в Safari':'Сначала откроем в браузере','Telegram не умеет добавлять сайты на главный экран — это делает '+(e.ios?'Safari':'браузер телефона')+'. Займёт полминуты.','ai-tg'),
+      steps:e.ios?[
+        step(`Нажми ${K('compass')} в правом нижнем углу`,`Это кнопка «Открыть в Safari». Не видно нижней панели — чуть прокрути страницу вверх. Или: ${K('dotsH')} вверху справа → «Открыть в Safari».`),
+        step('В Safari сразу появится подсказка, что нажать дальше','Ещё три нажатия — и Начерт на экране «Домой».')
+      ]:[
+        step(`Нажми ${K('dotsV')} в правом верхнем углу`,'Это меню встроенного браузера Telegram.'),
+        step('Выбери «Открыть в…»','Сайт откроется в браузере телефона — Chrome, Яндекс или другом.'),
+        step('В браузере сразу появится подсказка, что нажать дальше','Ещё пара нажатий — и Начерт на главном экране.')
+      ],
+      copy:'Не получается? Скопируй ссылку и вставь её в адресную строку '+(e.ios?'Safari':'браузера')+'.'
+    };
+    if(e.inapp) return {
+      head:hero(e.ios?'Сначала откроем в Safari':'Сначала откроем в браузере','Сайт открыт внутри приложения — отсюда на главный экран не добавить.'),
+      steps:[
+        step(`Нажми ${K(e.ios?'dotsH':'dotsV')} или ${K('compass')} в углу экрана`,'Обычно вверху справа или внизу.'),
+        step(`Выбери «Открыть в ${e.ios?'Safari':'браузере'}»`,'Там сразу появится подсказка, что нажать дальше.')
+      ],
+      copy:'Нет такого пункта? Скопируй ссылку и вставь её в '+W+'.'
+    };
+    if(e.ios) return {
+      head:hero('Начерт на экране «Домой»','Значок рядом с приложениями: открывается в один тап, на весь экран, без вкладок и поиска ссылки в чатах.'),
+      steps:[
+        step(`Нажми ${K('share','Поделиться')}`,`Нет такой кнопки? Нажми ${K('dotsH')} рядом с адресной строкой, а там — «Поделиться».`),
+        step(`Пролистай вниз и выбери ${K('plus','На экран «Домой»')}`,'Он ниже ряда с контактами и приложениями.'),
+        step('Нажми «Добавить» вверху справа','Переключатель «Открыть как веб-приложение», если он есть, оставь включённым.')
+      ],
+      tip:'Нет пункта «На экран „Домой“»? Пролистай список до конца. Если нет и там — сайт открыт внутри другого приложения: открой его в Safari и повтори.'
+    };
+    if(e.android) return {
+      head:hero('Начерт на главном экране','Значок рядом с приложениями: открывается в один тап, на весь экран, без вкладок и поиска ссылки в чатах.'),
+      steps:[
+        step(`Нажми ${K('dotsV')} в правом верхнем углу браузера`,`В Samsung Internet — ${K('burger')} внизу справа.`),
+        step('Выбери «Установить приложение» или «Добавить на главный экран»','В других браузерах пункт может называться «Добавить ярлык» или «Добавить страницу на» → «Главный экран».'),
+        step('Подтверди: «Установить» или «Добавить»','Значок появится на главном экране, иногда — сначала в списке всех приложений.')
+      ],
+      tip:'Нет такого пункта в меню? Значит, сайт открыт внутри другого приложения — выбери «Открыть в Chrome» или «Открыть в браузере» и повтори.'
+    };
+    if(e.macSafari) return {
+      head:hero('Начерт в Dock','Отдельное окно без вкладок — как обычное приложение на Mac.'),
+      steps:[ step('В строке меню выбери «Файл» → «Добавить в Dock»'), step('Нажми «Добавить»','Значок Начерта появится в Dock и в Launchpad.') ]
+    };
+    return {
+      head:hero('Начерт на телефоне','Удобнее всего — значком на главном экране телефона. Наведи камеру на код: Начерт откроется и подскажет, что нажать.'),
+      qr:true
+    };
+  }
+  let SH=null;
+  function open(o){
+    o=o||{}; const e=env();
+    if(e.standalone){ FX.note('Начерт уже открыт как приложение'); return; }
+    const c=content(e), items=[];
+    if(e.bip&&!e.tg&&!e.inapp){
+      /* браузер умеет ставить сам — одна большая кнопка */
+      items.push({icon:G.phone,label:e.mobile?'Установить на главный экран':'Установить на компьютер',sub:'Откроется окно — нажми «Установить»',c:'#2552e0',fn:()=>{ prompt(); }});
+      SH=FX.sheet({title:'На главный экран',back:o.back,cancel:'Не сейчас',head:hero(e.mobile?'Начерт на главном экране':'Начерт как приложение',e.mobile?'Значок рядом с приложениями: открывается в один тап, на весь экран, без вкладок и поиска ссылки в чатах.':'Отдельное окно без вкладок, значок на панели задач и в меню «Пуск».'),items,onClose:done});
+      return;
+    }
+    if(c.copy||c.qr) items.push({icon:LOGO.link,label:'Скопировать ссылку',sub:installURL().replace(/^https?:\/\//,''),c:'#5d6577',fn:()=>{ FX.copy(installURL(),'Ссылка скопирована — вставь её в '+(e.ios?'Safari':'браузер')); return true; }});
+    /* в Telegram и других приложениях адрес с #/install унесётся в браузер — там подсказка продолжится сама */
+    let restore=null;
+    if((e.tg||e.inapp)&&!/^#\/install\b/.test(location.hash)){ restore=location.hash||'#/'; try{ history.replaceState(history.state,'','#/install'); }catch(_){} }
+    const body=(c.steps?`<ol class="ai-steps">${c.steps.join('')}</ol>`:'')
+      +(c.qr?`<div class="fxs-qr ai-qr">${QR.svg(installURL(),220)}</div>`:'')
+      +(c.tip?`<p class="ai-tip">${c.tip}</p>`:'')+(c.copy?`<p class="ai-tip">${c.copy}</p>`:'');
+    SH=FX.sheet({title:'На главный экран',back:o.back,cancel:'Понятно',head:c.head,body,items,onClose:()=>{ if(restore!=null){ try{ history.replaceState(history.state,'',restore); }catch(_){} } done(); }});
+  }
+  /* адрес #/install отслужил своё — возвращаем главную, чтобы «Поделиться» не уносило его дальше */
+  function done(){ SH=null; if(/^#\/install\b/.test(location.hash)){ try{ history.replaceState(history.state,'','#/'); if(typeof CURH!=='undefined') CURH='#/'; }catch(_){} } }
+  function prompt(){
+    if(!BIP){ open(); return; }
+    const ev=BIP; BIP=null;
+    try{ ev.prompt(); ev.userChoice.then(r=>{ if(r&&r.outcome==='accepted'){ ST.set('a2hs_done',1); } paint(); }).catch(()=>{}); }catch(_){ open(); }
+    if(SH){ try{ SH.close(); }catch(_){} }
+  }
+  /* карточка на главной: только на телефоне, если ещё не установлено и не скрыто (скрытая вернётся через 2 недели) */
+  function showCard(){ const e=env(); if(e.standalone||ST.get('a2hs_done',0)) return false;
+    const h=+ST.get('a2hs_hide',0); if(h&&Date.now()-h<14*864e5) return false;
+    return e.mobile||e.bip; }
+  function cardHTML(){
+    if(!showCard()) return '';
+    const e=env();
+    return `<div class="ai-card" data-a2hs-card><span class="ai-ic" aria-hidden="true"></span><div class="ai-ct"><div><b>${e.ios?'Начерт на экране «Домой»':'Начерт на главном экране'}</b><span>Открывай в один тап, как приложение — без поиска ссылки в чатах</span></div><button type="button" class="ai-cb" data-a2hs>${G.plus}<span>${e.bip&&!e.tg?'Установить':'Добавить'}</span></button></div><button type="button" class="ai-cx" data-a2hs-hide aria-label="Скрыть">${sv('<path d="M6 6l12 12M18 6 6 18"/>')}</button></div>`;
+  }
+  function paint(){ document.querySelectorAll('[data-a2hs-card]').forEach(c=>{ if(!showCard()){ c.remove(); return; } const b=c.querySelector('[data-a2hs] span'); if(b) b.textContent=BIP&&!env().tg?'Установить':'Добавить'; }); }
+  document.addEventListener('click',ev=>{
+    const x=ev.target.closest&&ev.target.closest('[data-a2hs-hide]');
+    if(x){ ST.set('a2hs_hide',Date.now()); const c=x.closest('[data-a2hs-card]'); if(c){ c.classList.add('out'); setTimeout(()=>c.remove(),260); } FX.note('Скрыли. Добавить можно в меню «Поделиться»'); return; }
+    const b=ev.target.closest&&ev.target.closest('[data-a2hs]'); if(!b) return; ev.preventDefault(); FX.buzz(8);
+    const e=env(); if(e.bip&&!e.tg&&!e.inapp) prompt(); else open({back:b});
+  });
+  /* пункт для меню «Поделиться» */
+  function shareItem(back){ const e=env(); if(e.standalone) return null;
+    return {icon:G.phone,label:e.mobile||e.bip?'На главный экран':'На главный экран телефона',sub:'Открывать в один тап, как приложение',c:'#2552e0',fn:()=>{ setTimeout(()=>open({back}),220); }}; }
+  return {env,open,cardHTML,shareItem,prompt};
+})();
+window.A2HS=A2HS;
 /* список версий; owner=true — со скрытыми функциями «на проверке» */
 function changesHTML(owner){ return (window.CHANGES||[]).filter(c=>!c.rel||FLAGS.on(c.rel)).map(c=>`<div class="ch-v"><div class="ch-h"><b>${c.v}</b><span>${c.d}</span></div><ul>${c.items.map(x=>'<li>'+x+'</li>').join('')}</ul>${owner&&c.hidden?c.hidden.map(h=>`<div class="ch-hid"><em>на проверке${FLAGS.on(h.flag)?' · включено':''}</em>${h.t}</div>`).join(''):''}</div>`).join(''); }
 /* ── книги-источники: карточка по нажатию (файлы книг на сайте не размещаем — только где найти) ── */
@@ -23918,7 +24092,8 @@ function viewHome(v){
     <div class="v7-pop"><span>Часто ищут:</span>${pop.map(x=>`<a href="${H('topic',x[0])}">${x[1]}</a>`).join('')}</div>
    </section>
    <div class="v9-share"><span class="v9-t">Сайт пригодился? Поделись с группой</span>${FX.viewsHTML()}<button type="button" class="v9-sb" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></svg>Поделиться</button></div>
-   ${tg?`<a class="v5-res" href=""${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
+   ${A2HS.cardHTML()}
+   ${tg?`<a class="v5-res" href="${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
    <h2 class="v7-or">Или выбери, что тебе нужно</h2>
    <ol class="v5-doors" aria-label="Что нужно">
     ${door('nb',H('ng','tasks'),'Решённая тетрадь'+(tg?'':'<i class="v5-tag">начни здесь</i>'),'Все '+nT+' задач: чертёж строится по шагам, к каждому шагу — пояснение. Знаешь номер — впиши:',
@@ -23948,6 +24123,7 @@ function viewHome(v){
     api.input.addEventListener('input',numFirst);
     api.input.addEventListener('input',()=>{ if(api.val()){ try{ ST.set('srused',1); }catch(e){} const b=document.querySelector('.v7-hero .hs-box.hl'); if(b){ b.classList.remove('hl'); const t=b.querySelector('.v8-start'); if(t) t.remove(); } } },{once:false});
     const kq=POP?SEARCH.keep():''; if(kq){ api.run(kq); numFirst(); } }
+  if(/^#\/install\b/.test(location.hash)) setTimeout(()=>{ if(/^#\/install\b/.test(location.hash)&&!document.getElementById('fxSheet')) A2HS.open(); },450);
   return '';
 }
 
@@ -26529,7 +26705,9 @@ function viewDoc(v,id){
 
 /* ───────── init ───────── */
 /* сохраняем только явный выбор пользователя, иначе следуем за системной темой */
-function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.set('theme',t);}
+function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.set('theme',t);
+  /* строка состояния телефона (и окна приложения с главного экрана) — в цвет шапки */
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute('content',t==='dark'?'#0a0f22':'#f3f5fa'));}
 (function(){
   const th=ST.get('theme',null), mq=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)');
   if(th==='light'||th==='dark') applyTheme(th);
