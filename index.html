@@ -2398,6 +2398,18 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-stage{position:relative;height:min(68vh,620px);min-height:380px;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:#eef2f9;box-shadow:0 24px 50px -34px rgba(20,30,80,.55)}
 :root[data-theme=dark] .igx-stage{background:var(--surf)}
 .igx-stage .ig3-cv{display:block;width:100%;height:100%;cursor:grab}.igx-stage.busy .ig3-cv{cursor:grabbing}
+/* панель загрузки вкладок ИГ: закрывает деталь/чертёж, пока они считаются. Крутилка — transform (идёт, даже когда браузер занят расчётом) */
+.igx-ldh{position:relative}.igx-ldh:not(.igx-stage){min-height:300px}
+.igx-ld{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:color-mix(in srgb,var(--surf) 92%,transparent);border-radius:inherit;transition:opacity .25s}
+.igx-ld.out{opacity:0;pointer-events:none}
+.igx-ld.soft{opacity:0;animation:igxIn .2s ease .15s forwards}@keyframes igxIn{to{opacity:1}}
+.igx-ld-c{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:280px;text-align:center}
+.igx-ld-c b{font:700 16px var(--disp);color:var(--ink)}.igx-ld-c small{font-size:13px;line-height:1.4;color:var(--mut)}
+.igx-ld-sp{width:38px;height:38px;margin-bottom:4px;border-radius:50%;border:4px solid color-mix(in srgb,var(--acc,#2a5aa6) 22%,transparent);border-top-color:var(--acc,#2a5aa6);will-change:transform;animation:igxSpin .8s linear infinite}
+@keyframes igxSpin{to{transform:rotate(360deg)}}
+.igx-ld-bar{width:180px;height:6px;margin-top:6px;border-radius:9px;background:var(--line);overflow:hidden}
+.igx-ld-bar i{display:block;height:100%;background:var(--acc,#2a5aa6);border-radius:9px;transform:scaleX(.04);transform-origin:left;transition:transform .3s}
+@media (prefers-reduced-motion:reduce){.igx-ld-sp{animation-duration:2.4s}}
 .igx-modes{position:absolute;left:10px;top:10px;display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:4px;max-width:calc(100% - 20px);padding:4px;border-radius:14px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .igx-modes button,.igx-cam button{min-height:36px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--ink2);font:600 13px var(--sans);cursor:pointer;white-space:nowrap}
 .igx-modes button.on{background:linear-gradient(135deg,#2a5aa6,#3567b5);color:#fff}
@@ -25149,7 +25161,9 @@ function secShape(tree,O,U,V,box,step){
     let ar=0; for(let q=1;q<pts.length;q++) ar+=pts[q-1][0]*pts[q][1]-pts[q][0]*pts[q-1][1];
     if(pts.length>4&&Math.abs(ar)>4) loops.push(pts); }   /* крошки площадью < 2 мм² — шум сетки, не контур */
   return {loops,holes:keep.map(E=>E.map(e=>e.q)),all:loops.concat(keep.map(E=>E.map(e=>e.q)))}; }
-return {P,J,viewer,section,secShape,drawing,features,partial,paths};
+/* сетка детали и рёбра — заранее, отдельными кусками (просмотрщик потом берёт готовое из кэша модели) */
+function prep(m,k){ if(k!=='lines'){ if(!m._mesh) Object.defineProperty(m,'_mesh',{value:CSG.mesh(m.tree),configurable:true}); } else { try{ featLines(m); }catch(e){} } }
+return {P,J,viewer,section,secShape,drawing,features,partial,paths,prep};
 })();
 
 /* ═════════ IG_VARS: 30 вариантов задачи 2 «Построение изображений» ═════════
@@ -25726,11 +25740,18 @@ function buildBlock(host,model,o){
    <div class="igb-pic" id="igbPic"></div>
    <p class="igb-d" id="igbD"></p>`;
   const pic=host.querySelector('#igbPic');
+  /* линии шага считаются при первом показе: заголовок меняется сразу, картинка — следующим кадром.
+     Пока считается, на картинке крутилка (появляется с задержкой — на быстрых шагах её не видно) */
+  let busy=false;
   const show=()=>{ const kk=k, st=ST[kk-1];
-    let svg=''; try{ svg=st[0]==='secp'?IGS.secFrame(nv,st[3]):st[0]==='sheet'&&hw?IGS.sheet(nv,'clean'):st[0]==='sheet'?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,st,ST); }catch(e){ console.error(e); }
-    pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
     host.querySelector('#igbN').textContent='Шаг '+kk+' из '+N; host.querySelector('#igbTt').textContent=st[1]; host.querySelector('#igbD').textContent=st[2];
-    host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); }); };
+    host.querySelectorAll('.igb-nums button').forEach(b=>{ const n=+b.dataset.k; b.classList.toggle('on',n===kk); b.classList.toggle('done',n<kk); });
+    if(busy) return; busy=true; pic.classList.add('igx-ldh');
+    pic.insertAdjacentHTML('beforeend','<div class="igx-ld soft" role="status"><div class="igx-ld-c"><span class="igx-ld-sp" aria-hidden="true"></span><b>Строю шаг…</b></div></div>');
+    frame().then(()=>{ busy=false; pic.classList.remove('igx-ldh'); if(!pic.isConnected) return; paint(k); }); };
+  const paint=kk=>{ const st=ST[kk-1];
+    let svg=''; try{ svg=st[0]==='secp'?IGS.secFrame(nv,st[3]):st[0]==='sheet'&&hw?IGS.sheet(nv,'clean'):st[0]==='sheet'?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,st,ST); }catch(e){ console.error(e); }
+    pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>'; };
   host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ k=+b.dataset.k; show(); }));
   host.querySelector('#igbPrev').addEventListener('click',()=>{ k=Math.max(1,k-1); show(); });
   host.querySelector('#igbNext').addEventListener('click',()=>{ k=Math.min(N,k+1); show(); });
@@ -25828,13 +25849,23 @@ function mountUnfold(host,model){
   if(window.ResizeObserver) new ResizeObserver(()=>over()).observe(st);
   setTimeout(()=>setT(0),60);
 }
-function prewarm(v,n,o){ const sp=igSpec(n), nv=parseInt(String(o.title).replace(/\D/g,''),10), hw=window.IG_VARS&&IG_VARS[nv]===n, D=(k,b)=>()=>IG3.drawing(n,k,900,0,b||0);
-  const Q=[D('front0'),D('top'),D(sp.fk,sp.xb),D(sp.lk,sp.yb),D('left0'),()=>keyPts(n)];
-  try{ IG3.features(n).forEach((f,i)=>Q.push(()=>stepLines(n,i))); }catch(e){}
-  if(hw) Q.push(()=>nv===5&&window.IGL?IGL.sheet('clean'):IGS.sheet(nv,'clean'),()=>nv===5&&window.IGL?IGL.sheet('draft'):IGS.sheet(nv,'draft'));
-  const next=()=>window.requestIdleCallback?requestIdleCallback(run,{timeout:500}):setTimeout(run,60);
-  const run=()=>{ if(!v.isConnected||!Q.length) return; const f=Q.shift(); try{ f(); }catch(e){} next(); };
-  setTimeout(next,400); }
+/* очередь расчётов решения: чертежи видов, шаги, лист. В фоне не считаем — каждый кусок занимает браузер на полсекунды
+   и больше (на телефоне — секунды): кнопки не нажимаются, деталь в 3D дёргается. Вкладка достраивает нужное сама,
+   под панелью загрузки — need(). */
+function solQueue(v,n,o){ const sp=igSpec(n), nv=parseInt(String(o.title).replace(/\D/g,''),10), hw=window.IG_VARS&&IG_VARS[nv]===n, D=(k,b)=>['dw',()=>IG3.drawing(n,k,900,0,b||0)];
+  const Q=[D('front0'),D('top'),D(sp.fk,sp.xb),D(sp.lk,sp.yb),D('left0'),['kp',()=>keyPts(n)]];
+  try{ IG3.features(n).forEach((f,i)=>Q.push(['st',()=>stepLines(n,i)])); }catch(e){}
+  if(hw) Q.push(['sh',()=>nv===5&&window.IGL?IGL.sheet('clean'):IGS.sheet(nv,'clean')],['sh',()=>nv===5&&window.IGL?IGL.sheet('draft'):IGS.sheet(nv,'draft')]);
+  return {left:gs=>Q.filter(q=>gs.includes(q[0])).length,
+    /* достроить нужное по кускам; между кусками браузер успевает перерисовать панель загрузки */
+    async need(gs,step,alive){ for(const q of Q.filter(q=>gs.includes(q[0]))){ await frame(); if(alive&&!alive()) return; const k=Q.indexOf(q); if(k<0) continue; Q.splice(k,1); try{ q[1](); }catch(e){} step&&step(); } }}; }
+const frame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+/* панель загрузки поверх вкладки: пока считается, деталь и чертёж не трогаем — крутилка и полоска показывают, что идёт работа */
+function loading(host,title,sub){ const el=document.createElement('div'); el.className='igx-ld'; el.setAttribute('role','status');
+  el.innerHTML=`<div class="igx-ld-c"><span class="igx-ld-sp" aria-hidden="true"></span><b>${title}</b><small>${sub||'Подожди пару секунд — откроется само'}</small><span class="igx-ld-bar" aria-hidden="true"><i></i></span></div>`;
+  host.classList.add('igx-ldh'); host.appendChild(el); const bar=el.querySelector('i');
+  return {p(k,N){ bar.style.transform='scaleX('+Math.max(.04,Math.min(1,k/N)).toFixed(3)+')'; },
+    done(){ host.classList.remove('igx-ldh'); el.classList.add('out'); setTimeout(()=>el.remove(),260); }}; }
 function partPage(v,o){
   const n=o.model;
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
@@ -25866,11 +25897,13 @@ function partPage(v,o){
   let started=false, M=null, sheetDone=false, unfDone=false, stepsDone=false;
   function tab(t){ v.querySelectorAll('.igx-tabs button').forEach(b=>{ const on=b.dataset.t===t; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
     v.querySelectorAll('#igSol [data-p]').forEach(x=>x.hidden=x.dataset.p!==t);
-    /* вкладка открывается сразу; если её чертежи ещё не готовы — «Строю…», и считаем после отрисовки кадра */
-    const later=(host,f)=>{ if(host&&!host.innerHTML.trim()) host.innerHTML='<div class="igx-given-l igx-busy">Строю чертёж…</div>'; requestAnimationFrame(()=>setTimeout(()=>{ try{ if(host) host.innerHTML=''; f(); }catch(e){ console.error(e); } },0)); };
-    if(t==='3d') start3d(); if(t==='sheet') startSheet(); if(t==='unf'&&!unfDone){ unfDone=true; later($(v,'#igUnf'),()=>mountUnfold($(v,'#igUnf'),n)); } if(t==='steps'&&!stepsDone){ stepsDone=true; later($(v,'#igBuild'),()=>buildBlock($(v,'#igBuild'),n,o)); } try{ sessionStorage.setItem(KEY+':t',t); }catch(e){} }
+    if(t==='3d') start3d(); if(t==='sheet') startSheet(); if(t==='unf'&&!unfDone){ unfDone=true; later($(v,'#igUnf'),'Готовлю развёртку',['dw'],()=>mountUnfold($(v,'#igUnf'),n)); } if(t==='steps'&&!stepsDone){ stepsDone=true; later($(v,'#igBuild'),'Готовлю построение по шагам',['dw','st'],()=>buildBlock($(v,'#igBuild'),n,o)); } try{ sessionStorage.setItem(KEY+':t',t); }catch(e){} }
   v.querySelectorAll('.igx-tabs button').forEach(b=>b.addEventListener('click',()=>{ tab(b.dataset.t); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
-  function startSheet(){ if(sheetDone) return; sheetDone=true; const bx=$(v,'#igSheetBox'); if(!bx.innerHTML.trim()) bx.innerHTML='<div class="igx-given-l igx-busy">Строю чертёж…</div>'; requestAnimationFrame(()=>setTimeout(sheetNow,0)); }
+  /* вкладка открывается сразу; чего не хватает — достраиваем под панелью загрузки, по кускам, потом собираем вкладку */
+  function later(host,title,gs,f){ const L=loading(host,title,'Считаю чертежи видов — на телефоне это может занять до полминуты. Откроется само'), N=PW.left(gs)+1; let k=0; L.p(0,N);
+    const alive=()=>host.isConnected;   /* ушли со страницы, пока считалось, — дальше не строим */
+    PW.need(gs,()=>L.p(++k,N),alive).then(frame).then(()=>{ if(!alive()) return; try{ f(); }catch(e){ console.error(e); } L.p(N,N); return frame(); }).then(()=>L.done()); }
+  function startSheet(){ if(sheetDone) return; sheetDone=true; later($(v,'#igSheetBox').parentNode,'Готовлю лист',['dw','sh'],sheetNow); }
   function sheetNow(){
     /* чистовик и черновик — как на образце; вариант 5 разобран в «Обучении» по шагам — тот же лист */
     const nv=parseInt(String(o.title).replace(/\D/g,''),10), box=$(v,'#igSheetBox'), sp=igSpec(n), tt={half:'половина вида и половина разреза',view:'вид, невидимый контур — штриховыми',full:'полный разрез'};
@@ -25883,8 +25916,7 @@ function partPage(v,o){
     box.insertAdjacentHTML('beforebegin','<div class="igx-modes" id="igSheetSw" role="tablist" aria-label="Лист"><button role="tab" data-s="clean">Чистовик</button><button role="tab" data-s="draft">Черновик</button></div>');
     v.querySelectorAll('#igSheetSw button').forEach(x=>x.addEventListener('click',()=>{ pick(x.dataset.s); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
     pick('clean'); }
-  /* заранее, пока читают условие: чертежи видов, шаги, лист — в свободное время браузера, по одному куску. Вкладки потом открываются сразу */
-  prewarm(v,n,o);
+  const PW=solQueue(v,n,o);
 
   /* точка в пространстве поверх 3D: A, три её проекции и лучи к плоскостям проекций (плоскости — еле заметные) */
   function spaceOverlay(st,M,model){
@@ -25911,7 +25943,13 @@ function partPage(v,o){
     paint();
     return {set(v){ on=v; paint(); },get on(){ return on; }};
   }
-  function start3d(){ if(M||!hasGL) return; const st=$(v,'#igStage');
+  let m3=false;
+  function start3d(){ if(m3||!hasGL) return; m3=true; const st=$(v,'#igStage'), L=loading(st,'Собираю 3D-модель'); L.p(0,3);
+    const go=f=>()=>{ if(!st.isConnected) return Promise.reject(0); try{ f(); }catch(e){ console.error(e); } return frame(); };   /* ушли со страницы — дальше не строим */
+    frame().then(go(()=>{ IG3.prep(n); L.p(1,3); })).then(go(()=>{ IG3.prep(n,'lines'); L.p(2,3); }))
+      .then(go(()=>mount3d(st)))   /* первый кадр с разрезом — тоже под панелью */
+      .then(()=>{ L.p(3,3); return frame(); }).then(()=>L.done(),()=>{}); }
+  function mount3d(st){
     M=mountViewer(st,n,{state:{cut:1},onTouch:()=>{ const h=$(v,'.igx-hint'); if(h) h.style.opacity=0; }});
     if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
     $(v,'#igMcap').textContent=CAP.cut;
