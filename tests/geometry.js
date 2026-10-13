@@ -158,10 +158,12 @@ function check(name,items,text,ctx){
   /* треугольники/многоугольники плоскостей по подписанным вершинам */
   const polysByMark=mk=>{ const r=[];
     M.polys.forEach(pl=>{ if(!/^(main|hid)$/.test(pl.k)) return; const vs=pl.p.map(q=>named.find(b=>uniq(b+mk)&&d2(uniq(b+mk),q)<TOL)); if(vs.every(Boolean)&&new Set(vs).size>=3) r.push(vs); });
-    /* треугольники из отрезков: A″B″, B″C″, C″A″ нарисованы */
-    const has=(A,B)=>M.segs.all.some(s=>/^(main|hid)$/.test(s.k)&&(d2(s.a,uniq(A+mk))<TOL&&d2(s.b,uniq(B+mk))<TOL)||(d2(s.b,uniq(A+mk))<TOL&&d2(s.a,uniq(B+mk))<TOL));
+    /* треугольники из отрезков: A″B″, B″C″, C″A″ нарисованы. Линией результата — тоже, если вершины — точки самого тела (буква без индекса:
+       грани построенной пирамиды закрывают); повёрнутые и перенесённые B₀, C₁ — построение, а не тело, ничего не закрывают */
+    const has=(A,B,res)=>M.segs.all.some(s=>(res?/^(main|hid|res|resd)$/:/^(main|hid)$/).test(s.k)&&(d2(s.a,uniq(A+mk))<TOL&&d2(s.b,uniq(B+mk))<TOL)||(d2(s.b,uniq(A+mk))<TOL&&d2(s.a,uniq(B+mk))<TOL));
     for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++) for(let k=j+1;k<named.length;k++){ const A=named[i],B=named[j],C=named[k];
-      if([A,B,C].every(X=>uniq(X+mk))&&has(A,B)&&has(B,C)&&has(C,A)) r.push([A,B,C]); }
+      const res=[A,B,C].every(X=>/^[A-ZА-Я]$/.test(X));
+      if([A,B,C].every(X=>uniq(X+mk))&&has(A,B,res)&&has(B,C,res)&&has(C,A,res)) r.push([A,B,C]); }
     return r; };
   const inTri=(p,a,b,c,m)=>{ const s=(u,v,w)=>(v[0]-u[0])*(w[1]-u[1])-(v[1]-u[1])*(w[0]-u[0]); const d1=s(a,b,p),d2_=s(b,c,p),d3=s(c,a,p), ar=Math.abs(s(a,b,c));
     if(ar<1) return false; const mn=Math.min(d1,d2_,d3), mx=Math.max(d1,d2_,d3); const marg=m*Math.max(d2(a,b),d2(b,c),d2(c,a));
@@ -175,23 +177,30 @@ function check(name,items,text,ctx){
       const host=[]; for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++){ const A=named[i],B=named[j], a=uniq(A+mk), b=uniq(B+mk); if(!a||!b||d2(a,b)<6) continue;
         if(lineDist(s.a,a,b)<TOL&&lineDist(s.b,a,b)<TOL) host.push([A,B]); }
       if(!host.length) return; const [A,B]=host[0];
-      const mid=[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2], t=segT(mid,uniq(A+mk),uniq(B+mk));
-      const PA=P3[A], PB=P3[B], X=PA.map((v,i)=>v+t*(PB[i]-v));
-      let cover=false, front=false, edgeOf=false;
-      planes.forEach(([a,b,c])=>{ if([A,B].every(v=>[a,b,c].includes(v))) { edgeOf=true; return; }
-        /* прямая лежит в этой плоскости — не закрывает сама себя */
-        const n=crs(sub(P3[b],P3[a]),sub(P3[c],P3[a])), nn=nrm(n); if(nn<1e-6) return;
-        if(Math.abs(dot(sub(PA,P3[a]),n))/nn<TOL*1.5&&Math.abs(dot(sub(PB,P3[a]),n))/nn<TOL*1.5) { edgeOf=true; return; }
-        if(!inTri(mid,uniq(a+mk),uniq(b+mk),uniq(c+mk),0.02)) return;
-        cover=true;
-        /* глубина плоскости в этой точке проекции */
-        const ax=mk==='″'?1:2;                                             /* неизвестная координата: y для π₂, z для π₁ */
-        if(Math.abs(n[ax])<1e-9) return;
-        const P=X.slice(); P[ax]=P3[a][ax]-(n[0]*(X[0]-P3[a][0])+n[ax===1?2:1]*(X[ax===1?2:1]-P3[a][ax===1?2:1]))/n[ax];
-        if(depth(P)>depth(X)+TOL) front=true; });
+      const PA=P3[A], PB=P3[B];
+      /* закрыта ли точка отрезка (u — доля длины) плоскостью ближе к наблюдателю */
+      const probe=u=>{ const q=[s.a[0]+(s.b[0]-s.a[0])*u,s.a[1]+(s.b[1]-s.a[1])*u], t=segT(q,uniq(A+mk),uniq(B+mk)), X=PA.map((v,i)=>v+t*(PB[i]-v));
+        let cover=false, front=false, edgeOf=false;
+        planes.forEach(([a,b,c])=>{ if([A,B].every(v=>[a,b,c].includes(v))) { edgeOf=true; return; }
+          /* прямая лежит в этой плоскости — не закрывает сама себя */
+          const n=crs(sub(P3[b],P3[a]),sub(P3[c],P3[a])), nn=nrm(n); if(nn<1e-6) return;
+          if(Math.abs(dot(sub(PA,P3[a]),n))/nn<TOL*1.5&&Math.abs(dot(sub(PB,P3[a]),n))/nn<TOL*1.5) { edgeOf=true; return; }
+          if(!inTri(q,uniq(a+mk),uniq(b+mk),uniq(c+mk),0.02)) return;
+          cover=true;
+          /* глубина плоскости в этой точке проекции */
+          const ax=mk==='″'?1:2;                                             /* неизвестная координата: y для π₂, z для π₁ */
+          if(Math.abs(n[ax])<1e-9) return;
+          const P=X.slice(); P[ax]=P3[a][ax]-(n[0]*(X[0]-P3[a][0])+n[ax===1?2:1]*(X[ax===1?2:1]-P3[a][ax===1?2:1]))/n[ax];
+          if(depth(P)>depth(X)+TOL) front=true; });
+        return {q,cover,front,edgeOf}; };
+      /* стёрто «ластиком» (вид paper) — этот участок линии на чертеже не виден */
+      const erased=q=>M.segs.all.some(e=>e.k==='paper'&&lineDist(q,e.a,e.b)<TOL&&(()=>{ const tt=segT(q,e.a,e.b); return tt>-0.02&&tt<1.02; })());
+      const {cover,front,edgeOf}=probe(.5);
       if(edgeOf&&!cover) return;
       if(dashed&&!front) add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана штрихом, но в этом месте её ничто не закрывает');
-      if(!dashed&&front&&s.k==='main') add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана видимой, но здесь её закрывает плоскость','проверить'); }); });
+      /* сплошная — проверяем по всей длине: часть прямой может уйти за грань (середина при этом видна) */
+      const frontAny=s.k==='main'&&[.15,.3,.5,.7,.85].some(u=>{ const o=u===.5?{q:probe(.5).q,front}:probe(u); return o.front&&!erased(o.q); });
+      if(!dashed&&frontAny) add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана видимой, но здесь её закрывает плоскость','проверить'); }); });
   /* 6. размеры на чертеже.
      Масштаб у задач разный (крупные чертежи увеличены), поэтому мм проверяются так:
        а) без масштаба — длина отрезка с подписью |AB| совпадает с длиной AB по 3D-модели;
