@@ -81,6 +81,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Тренажёр: блоков задач '+got.length+' (совпадают с контрольным разбором), генератор — задач '+el.ok.length+', «найди ошибку» — '+gy.info.bug+', 3D к задачам — '+gy.info.t3);
     report('Тренажёр',gy.bad); await gpage.close(); }
 
+  /* 3г′. РК2: банк заданий, генераторы «Вижу» с независимой проверкой ответа, модель готовности, проход всех режимов */
+  { const rpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+    report('РК2', await require('./rk2.js').rk2Check(rpage,URL)); await rpage.close(); }
+
   /* 3в. ДЗ 2 по ИГ: размеры на листах — числа равны расстояниям по модели, выносные линии упираются в контур */
   report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
 
