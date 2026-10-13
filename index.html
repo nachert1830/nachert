@@ -3124,15 +3124,27 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 @media(max-width:440px){.v9-share .vc{padding:0 11px 0 10px!important;gap:6px!important}.v9-share .vc-n{font-size:16px!important}.v9-share .vc-l{font-size:12.5px!important}.v9-share .v9-sb{padding:0 12px;gap:6px}}
 .v9-sb{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border:0;border-radius:12px;cursor:pointer;background:var(--red);color:#fff;font:700 14.5px var(--sans)}
 .v9-sb:hover{filter:brightness(1.07)}.v9-sb:active{transform:scale(.97)}
-/* панель «Поделись»: раскладка выбирается по ширине экрана, а не по содержимому — ширина числа и шрифт её не меняют.
-   Узкий телефон (до 400 px): текст, под ним счётчик и кнопка во всю ширину — каждый своей строкой (вдвоём в ряд они шире панели,
-   панель вылезала за экран и браузер перемасштабировал всю страницу). 400–719 px: счётчик и кнопка в один ряд. От 720 px — всё в одну строку.
-   overflow:hidden — страховка: что бы ни случилось внутри, страница шире экрана не станет */
-.v9-share{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;overflow:hidden}
+/* ── триколор: сине-бело-красная полоска — фирменная деталь (как в шапке главной). На светлом фоне белая часть — светло-серая, иначе её не видно ── */
+:root{--tri-w:#dce2ee;--tri:linear-gradient(90deg,#13235a 0 40%,var(--tri-w) 40% 60%,var(--red) 60% 100%)}
+:root[data-theme="dark"]{--tri-w:#ffffff}
+header#hdr::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--tri);pointer-events:none}
+#foot{position:relative}#foot::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--tri)}
+.intro h1::after,.igh-top h1::after{content:"";display:block;width:64px;height:4px;margin-top:10px;border-radius:2px;background:var(--tri)}
+/* ── панель «Поделись»: карточка с полоской; раскладка — по ширине экрана, а не по содержимому (ширина числа и шрифт её не двигают).
+   До 360 px — всё столбиком; 360–719 — текст, под ним счётчик и кнопка поровну; от 720 — в один ряд. overflow:hidden — страница шире экрана не станет ── */
+.v9-share{position:relative;display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:12px;padding:18px 16px 16px!important;border-radius:20px!important;overflow:hidden;box-shadow:0 14px 34px -26px rgba(19,35,90,.55)}
+.v9-share::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--tri)}
 .v9-share>*{min-width:0}
-.v9-share .vc,.v9-share .v9-sb{justify-self:stretch;justify-content:center}
-@media(min-width:400px){.v9-share{grid-template-columns:auto minmax(0,1fr)}.v9-share .v9-t{grid-column:1/-1}.v9-share .vc{justify-self:start}.v9-share .v9-sb{justify-self:end}}
-@media(min-width:720px){.v9-share{grid-template-columns:minmax(0,1fr) auto auto}.v9-share .v9-t{grid-column:auto}.v9-share .v9-sb{justify-self:auto}}
+.v9-tx{display:flex;flex-direction:column;gap:3px}
+.v9-h{font:800 18px/1.2 var(--disp);color:var(--ink)}
+.v9-s{font:500 13.5px/1.4 var(--sans);color:var(--mut)}
+.v9-share .vc{display:grid!important;grid-template-columns:auto auto;justify-content:start;align-content:center;column-gap:8px!important;row-gap:2px;height:auto!important;min-height:56px;padding:8px 16px!important;border-radius:14px!important}
+.v9-share .vc-dot{align-self:center}
+.v9-share .vc-n{font-size:20px!important;text-align:left}
+.v9-share .vc-l{grid-column:2;font-size:12px!important;line-height:1.1!important}
+.v9-share .v9-sb{justify-content:center;min-height:56px;border-radius:14px;font-size:15px}
+@media(min-width:360px){.v9-share{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.v9-tx{grid-column:1/-1}}
+@media(min-width:720px){.v9-share{grid-template-columns:minmax(0,1fr) auto auto;align-items:center;padding:20px 20px 18px!important}.v9-tx{grid-column:auto}.v9-share .v9-sb{padding:0 22px}}
 /* заготовка до первого ответа: та же капсула, вместо числа — бледная полоска */
 .vc.wait .vc-n{display:inline-block;width:2.6em;height:.8em;border-radius:6px;background:rgba(255,255,255,.18)!important}.vc.wait .vc-dot::after{animation:none}
 .vc-n{text-align:right}
@@ -7026,7 +7038,12 @@ function group(r){
 /* ───────── UI ───────── */
 const LI='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 const FALLBACK=['не понимаю, что такое след плоскости','как найти натуральную величину отрезка','не вижу, что видно, а что скрыто','как построить линию пересечения плоскостей','чем разрез отличается от сечения','как проставлять размеры на чертеже','как построить третий вид','что такое резьба и как её чертить'];
-function symptoms(){ const l=(root.SYMPTOMS&&SYMPTOMS.list)||[]; return l.length?l.map(s=>s.text):FALLBACK; }
+/* темы, которые сейчас проходят, — первыми (порядок как в FOCUS), остальные — как были */
+const FOCUS=['rotation','replace-planes','visibility'];
+function symptoms(){ const l=(root.SYMPTOMS&&SYMPTOMS.list)||[]; if(!l.length) return FALLBACK;
+  /* по очереди: вращение, замена, видимость, снова вращение… — чтобы в первых чипах были все три темы */
+  const g=FOCUS.map(t=>l.filter(x=>x.topic===t)), out=[]; for(let k=0;g.some(a=>a[k]);k++) g.forEach(a=>{ if(a[k]) out.push(a[k]); });
+  return out.concat(l.filter(x=>!FOCUS.includes(x.topic))).map(x=>x.text); }
 function recent(){ const r=ST_('srch_recent',[]); return Array.isArray(r)?r:[]; }
 function saveRecent(q){ q=(q||'').trim(); if(q.length<3) return; let r=recent().filter(x=>x!==q); r.unshift(q); SS_('srch_recent',r.slice(0,6)); }
 const SHOW=3;
@@ -7059,7 +7076,7 @@ function emptyHTML(){
 
 
 /* самонабирающиеся примеры запросов в пустой строке */
-const TYPE_EX=['как понять, видна точка или нет','не понимаю, что такое след плоскости','как найти натуральную величину отрезка','как построить вид слева по двум видам','что штриховать на разрезе','как найти точку пересечения прямой с плоскостью','как обозначается резьба М12','чем болт отличается от шпильки','как построить линию пересечения поверхностей','зачем нужна замена плоскостей проекций'];
+const TYPE_EX=['как повернуть плоскость вокруг оси','как понять, видна точка или нет','где провести новую ось при замене плоскостей','как вращением найти натуральную величину треугольника','какая из конкурирующих точек видна','не понимаю, что такое след плоскости','как найти натуральную величину отрезка','как построить вид слева по двум видам','что штриховать на разрезе','как найти точку пересечения прямой с плоскостью','как обозначается резьба М12','чем болт отличается от шпильки','как построить линию пересечения поверхностей','зачем нужна замена плоскостей проекций'];
 function typer(inp){
   const base=inp.getAttribute('placeholder')||'';
   if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches){ inp.placeholder=TYPE_EX[0]; return; }
@@ -12920,6 +12937,11 @@ SYMPTOMS.load([
   "topic": "visibility"
  },
  {
+  "id": "sym-vis-point",
+  "text": "не понимаю, какая из двух точек видна",
+  "topic": "visibility"
+ },
+ {
   "id": "s10",
   "text": "не понимаю, почему линия невидима",
   "topic": "visibility"
@@ -12990,8 +13012,28 @@ SYMPTOMS.load([
   "topic": "replace-planes"
  },
  {
+  "id": "sym-replace-axis",
+  "text": "не понимаю, где провести новую ось при замене плоскостей",
+  "topic": "replace-planes"
+ },
+ {
+  "id": "sym-replace-proj",
+  "text": "не понимаю, как перевести плоскость в проецирующее положение",
+  "topic": "replace-planes"
+ },
+ {
   "id": "s24",
   "text": "не понимаю вращение вокруг прямой",
+  "topic": "rotation"
+ },
+ {
+  "id": "sym-rot-point",
+  "text": "не понимаю, как повернуть точку вокруг оси",
+  "topic": "rotation"
+ },
+ {
+  "id": "sym-rot-plane",
+  "text": "не понимаю, как повернуть плоскость до положения, параллельного π₁",
   "topic": "rotation"
  },
  {
@@ -13084,7 +13126,7 @@ TAGS.load({
  "topic:line-traces":{kw:["где прямая пересекает пи один","где прямая пересекает пи два","точка пересечения прямой с плоскостью проекций","горизонтальный след","фронтальный след","как найти след прямой","следы прямой по проекциям"],sym:["не понимаю, что такое след прямой"]},
  "topic:point-on-line":{kw:["разделить отрезок в отношении","деление отрезка на проекциях","точка делит отрезок","теорема Фалеса на эпюре","точка принадлежит прямой","как поставить точку на прямой"],sym:["не понимаю, как разделить отрезок в заданном отношении"]},
  "topic:line-mutual":{kw:["пересекаются ли прямые","скрещивающиеся прямые","параллельные прямые на эпюре","как определить параллельны ли прямые","как проверить пересекаются ли прямые","точка пересечения двух прямых"],sym:["не понимаю, как отличить пересекающиеся прямые от скрещивающихся"]},
- "topic:visibility":{kw:["как определить видимость","что видно а что нет","конкурирующие точки","невидимая линия","штриховая линия на эпюре","видимость при пересечении","какая точка выше","какая точка ближе к наблюдателю"],sym:["не понимаю, как определить видимость"]},
+ "topic:visibility":{kw:["как понять, видна точка или нет","видна ли точка","видимость точки","какая точка видна","как определить видимость","что видно а что нет","конкурирующие точки","невидимая линия","штриховая линия на эпюре","видимость при пересечении","какая точка выше","какая точка ближе к наблюдателю"],sym:["не понимаю, как определить видимость"]},
  "topic:perp-theorem":{kw:["теорема о проецировании прямого угла","перпендикулярные прямые на эпюре","прямой угол проецируется без искажения","перпендикуляр к фронтали и горизонтали"],sym:["не понимаю теорему о прямом угле"]},
  "topic:plane-position":{kw:["как задать плоскость","плоскость общего положения","проецирующая плоскость","фронтально проецирующая плоскость","плоскость уровня","положение плоскости","способы задания плоскости"],sym:["не понимаю, как определить положение плоскости"]},
  "topic:plane-traces":{kw:["где плоскость пересекает пи один","где плоскость пересекает пи два","следы плоскости по трём точкам","как построить следы плоскости","след плоскости","горизонтальный след плоскости","фронтальный след плоскости","плоскость по следам","точка схода следов"],sym:["не понимаю, как найти следы плоскости"]},
@@ -22387,6 +22429,11 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.3',d:'13 октября 2026',items:['Главная: подсказки поиска — про то, что сейчас проходят: вращение вокруг оси, замена плоскостей проекций, видимость точки.',
+    'Панель «Поделись»: новое оформление; на узких телефонах ничего не прыгает и не вылезает за экран.',
+    'Сине-бело-красная полоска — под шапкой, под заголовками страниц и в подвале.',
+    'ДЗ №2 (НГ): разбор примера исправлен — гипотенуза треугольника на шаге 4, видимость ребра AB и прямой EF на шаге 7.',
+    'Инженерная графика: 3D и «По шагам» открываются с панелью загрузки вместо зависаний.']},
   {v:'4.2',d:'13 октября 2026',items:['Новый раздел «Тренировка дня»: план на 10–15 минут — реши по памяти задачи, которые уже разбирал, повтори карточки теории и пройди «Узнай тип задачи». Вход — на главной, в «Подготовке к РК» и через поиск.',
     'Повторение задач: разобранная задача через день возвращается «реши сам», дальше — через 3, 7, 16 и 35 дней. Когда — решает твоя честная оценка в конце: «решил сам», «с подсказками» или «не смог».',
     '«Узнай тип задачи»: 8 задач тетради вперемешку — определи тему, не решая. После ответа — с чего начать и ссылка «решить самому».',
@@ -24383,7 +24430,7 @@ function viewHome(v){
   const hwList=(window.NGHW?NGHW.list():[]).map(d=>[hwLabel(d.n),H('ng','hw',d.n)]);
   const firstUse=!ST.get('srused',0);
   const more=(href,title,sub,tag)=>`<a class="v5-m" href="${href}"><span><b>${title}${tag?` <i class="v5-tag">${tag}</i>`:''}</b><small>${sub}</small></span><i aria-hidden="true">→</i></a>`;
-  const pop=[['visibility','Видимость'],['true-length','Натуральная величина'],['plane-traces','Следы плоскости'],['line-plane-meet','Прямая и плоскость'],['replace-planes','Замена плоскостей'],['perp-theorem','Прямой угол']].filter(x=>!window.TOPICS||TOPICS.get(x[0]));
+  const pop=[['rotation','Вращение вокруг оси'],['replace-planes','Замена плоскостей'],['visibility','Видимость точки'],['true-length','Натуральная величина'],['line-plane-meet','Прямая и плоскость'],['perp-theorem','Прямой угол']]   /* сначала — темы, которые сейчас проходят: преобразования чертежа и видимость */.filter(x=>!window.TOPICS||TOPICS.get(x[0]));
   v.innerHTML=`<div class="wrap page home v5h">
    <section class="hsearch v7-hero" id="hsearch" aria-labelledby="v7H">
     <h1 id="v7H">Найди решение своей задачи</h1>
@@ -24391,7 +24438,7 @@ function viewHome(v){
     <div class="hs-box${firstUse?' hl':''}">${firstUse?'<span class="v8-start" aria-hidden="true">Начни здесь ↓</span>':''}<div id="hsMount"></div></div>
     <div class="v7-pop"><span>Часто ищут:</span>${pop.map(x=>`<a href="${H('topic',x[0])}">${x[1]}</a>`).join('')}</div>
    </section>
-   <div class="v9-share"><span class="v9-t">Сайт пригодился? Поделись с группой</span>${FX.viewsHTML()}<button type="button" class="v9-sb" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></svg>Поделиться</button></div>
+   <section class="v9-share" aria-label="Поделиться сайтом"><div class="v9-tx"><b class="v9-h">Сайт пригодился?</b><span class="v9-s">Скинь ссылку в чат группы — однокурсникам тоже пригодится</span></div>${FX.viewsHTML()}<button type="button" class="v9-sb" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></svg>Поделиться</button></section>
    ${A2HS.cardHTML()}
    ${tg?`<a class="v5-res" href="${attr(tg.href)}"><span class="v5-res-k">Продолжить, где остановился</span><b>${attr(short(tg.label,90))}</b><small>${attr(short(stepNote+(tg.sub||''),110))}</small><i aria-hidden="true">→</i></a>`:''}
    <h2 class="v7-or">Или выбери, что тебе нужно</h2>
