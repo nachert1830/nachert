@@ -22434,7 +22434,8 @@ window.CHANGES=[
     'Сине-бело-красная полоска — под шапкой, под заголовками страниц и в подвале.',
     'ДЗ №2 (НГ): разбор примера исправлен — гипотенуза треугольника на шаге 4, видимость ребра AB и прямой EF на шаге 7.',
     'Инженерная графика: 3D и «По шагам» открываются с панелью загрузки вместо зависаний.',
-    'Инженерная графика, 3D-разрезы: срез сплошной детали — одна заштрихованная область, без лишней линии там, где конус стоит на фланце.']},
+    'Инженерная графика, 3D-разрезы: срез сплошной детали — одна заштрихованная область, без лишней линии там, где конус стоит на фланце.',
+    'Задачи НГ, окно «В пространстве»: заданные и построенные прямые (a, b, искомая d, горизонталь и фронталь плоскости, перпендикуляр, повёрнутый отрезок) теперь видны в пространстве, а не только их проекции на плоскостях — в 42 задачах. Вспомогательные построения остаются на плоскостях.']},
   {v:'4.2',d:'13 октября 2026',items:['Новый раздел «Тренировка дня»: план на 10–15 минут — реши по памяти задачи, которые уже разбирал, повтори карточки теории и пройди «Узнай тип задачи». Вход — на главной, в «Подготовке к РК» и через поиск.',
     'Повторение задач: разобранная задача через день возвращается «реши сам», дальше — через 3, 7, 16 и 35 дней. Когда — решает твоя честная оценка в конце: «решил сам», «с подсказками» или «не смог».',
     '«Узнай тип задачи»: 8 задач тетради вперемешку — определи тему, не решая. После ответа — с чего начать и ссылка «решить самому».',
@@ -22934,9 +22935,37 @@ const arcP=it=>{ const n=Math.max(8,Math.ceil(Math.abs(it.a2-it.a1)/4)), o=[]; f
 const ellP=it=>{ const r=(it.rot||0)*Math.PI/180, cr=Math.cos(r), sr=Math.sin(r), o=[]; for(let i=0;i<=48;i++){ const a=i/48*2*Math.PI, x=Math.cos(a)*it.rx, y=Math.sin(a)*it.ry; o.push([it.c[0]+x*cr-y*sr,it.c[1]+x*sr+y*cr]); } return o; };
 const extendP=(a,b,e0,e1)=>{ const dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1, ux=dx/l, uy=dy/l; return [[a[0]-ux*e0,a[1]-uy*e0],[b[0]+ux*e1,b[1]+uy*e1]]; };
 const isProf=l=>/‴/.test(strip(l));
+/* Заданная или искомая прямая/отрезок, построенные на эпюре по точкам, посчитанным на чертеже: у концов нет 3D-меток,
+   и раньше в 3D лежали только их проекции на плоскостях. Вспомогательные (синие) не восстанавливаем — не захламлять. Восстанавливаем объект в пространстве так же, как студент: пара линий результата —
+   на π₂ и на π₁ — это проекции одного объекта, если у них одно имя (d″ и d′, A″K″ и A′K′) или их концы — одни и те же
+   подписанные точки (A″B″ и A′B′). Тогда точка с абсциссой X: y — с горизонтальной проекции, z — с фронтальной.
+   Совпадение концов по линиям связи без имён — не довод: очерки конуса на π₂ и π₁ — разные образующие.
+   Вспомогательное без пары (треугольник натуральной величины, следы, новая плоскость проекций) остаётся на плоскостях. */
+function pairUp(cand,segs,seen,key,prof,ctx,nameAt){
+  if(!cand.length||!(ctx||prof)) return;
+  const reg=q=>prof&&q[0]>0.01?3:(q[1]>0.01?1:2);
+  const Fs=cand.filter(c=>reg(c.a)===2&&reg(c.b)===2), Hs=cand.filter(c=>reg(c.a)===1&&reg(c.b)===1);
+  if(!Fs.length||!Hs.length) return;
+  const fam=k=>k==='hid'?'main':k.replace(/d$/,''), base=l=>l.replace(/[″′]/g,''), at=(c,X)=>{ const t=(X-c.a[0])/(c.b[0]-c.a[0]); return c.a[1]+(c.b[1]-c.a[1])*t; };
+  const used=new Set();
+  Fs.forEach(f=>{ if(Math.abs(f.b[0]-f.a[0])<1) return;   /* вертикальная проекция — по ней одной точку не восстановить */
+    let best=null, bd=1e9;
+    Hs.forEach(h=>{ if(used.has(h)||fam(h.k)!==fam(f.k)||Math.abs(h.b[0]-h.a[0])<1) return;
+      const named=f.l&&h.l&&/″/.test(f.l)&&/′/.test(h.l)&&base(f.l)===base(h.l);
+      /* без имён — концы обоих отрезков — проекции одних и тех же подписанных точек */
+      const ends=(c,mk)=>[nameAt(c.a,mk),nameAt(c.b,mk)], ef=ends(f,'″'), eh=ends(h,'′');
+      const linked=!named&&ef[0]&&ef[1]&&ef[0]!==ef[1]&&((ef[0]===eh[0]&&ef[1]===eh[1])||(ef[0]===eh[1]&&ef[1]===eh[0]));
+      if(!named&&!linked) return; const sc=named?0:1; if(sc<bd){ bd=sc; best=h; } });
+    if(!best) return;
+    const lo=Math.max(Math.min(f.a[0],f.b[0]),Math.min(best.a[0],best.b[0])), hi=Math.min(Math.max(f.a[0],f.b[0]),Math.max(best.a[0],best.b[0]));
+    if(hi-lo<2) return;
+    const P=X=>[-X/SC,at(best,X)/SC,-at(f,X)/SC], a=P(lo), b=P(hi), k=key(a,b);
+    used.add(best); if(seen.has(k)) return; seen.add(k);
+    segs.push({a,b,k:fam(f.k),g:(f.g==='new'||best.g==='new')?'new':f.g,key:k,rec:(f.l||best.l||'·')}); });
+}
 function model(items,regItems){
   const RI=regItems||items, prof=RI.some(i=>i&&(i.t==='axis3'||(i.t==='pt'&&i.l&&isProf(i.l))));
-  const CS=coordSet(RI), pts={}, segs=[], polys=[], flat=[], dots=[], seen=new Set(), R=registry(RI,CS), ctx=prof?null:liftCtx(RI);
+  const CS=coordSet(RI), pts={}, segs=[], polys=[], flat=[], dots=[], seen=new Set(), R=registry(RI,CS), ctx=prof?null:liftCtx(RI), cand=[];
   /* точка в пространстве — по двум её проекциям на чертеже (как строит студент): x — по линии связи, y — из ′, z — из ″ */
   const PJ={}; const collect=(arr,into)=>arr.forEach(i=>{ if(i&&i.t==='pt'&&i.at&&i.l) strip(i.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)([′″])\)?$/.exec(l.trim()); if(m&&m[1].length<5){ const o=into[m[1]]=into[m[1]]||{}; if(!o[m[2]]) o[m[2]]=i.at; } }); });
   collect(items||[],PJ); const PJF={}; collect(RI,PJF);
@@ -22979,7 +23008,9 @@ function model(items,regItems){
         const k=key(a,b); if(seen.has(k)) { if(it._g==='new'){ const s=segs.find(x=>x.key===k); if(s){ s.g='new'; s.k=it.k||s.k; } } return; } seen.add(k);
         segs.push({a,b,k:it.k||'main',g:it._g||'given',key:k}); return; }
       if(it.t==='conn'&&ta&&tb) return;   /* линия связи между проекциями одной точки — в 3D уже есть проецирующие лучи */
-      F(it,it.t==='line'?extendP(it.a,it.b,it.e0===undefined?14:it.e0,it.e1===undefined?14:it.e1):[it.a,it.b]); return; }
+      const pth=it.t==='line'?extendP(it.a,it.b,it.e0===undefined?14:it.e0,it.e1===undefined?14:it.e1):[it.a,it.b];
+      if((it.t==='seg'||it.t==='line')&&/^(main|hid|res|resd|grn|grnd)$/.test(it.k||'main')) cand.push({a:pth[0],b:pth[1],k:it.k||'main',g:it._g||'given',l:strip(it.l||'').trim()});
+      F(it,pth); return; }
     if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)){ polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill}); return; }
       F(it,it.p,it.close!==false); return; }
     if(it.t==='curve'&&it.p) F(it,it.p,false);
@@ -22987,6 +23018,9 @@ function model(items,regItems){
     else if(it.t==='circ'&&it.c&&it.r) F(it,arcP({c:it.c,r:it.r,a1:0,a2:360}),false);
     else if(it.t==='ell'&&it.c) F(it,ellP(it),false);
   });
+  /* подписанная точка, чья проекция (″ или ′) стоит в этом месте чертежа */
+  const nameAt=(q,mk)=>{ for(const src of [PJ,PJF]) for(const nm in src){ const o=src[nm][mk]; if(o&&Math.hypot(o[0]-q[0],o[1]-q[1])<1) return nm; } return null; };
+  pairUp(cand,segs,seen,key,prof,ctx,nameAt);
   return {pts,segs,polys,flat,dots,prof};
 }
 function has(part){ try{ const all=PLAYER.scene(part,(part.steps||[]).length).items, m=model(all); return Object.keys(m.pts).length>=2||m.segs.length>=2; }catch(e){ return false; } }

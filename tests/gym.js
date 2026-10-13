@@ -60,7 +60,12 @@ async function gymCheck(page,base,opt){
   const cons=await page.evaluate(()=>{ const s=x=>String(x||'').replace(/<\/?[a-z][^>]*>/gi,''); const out=[];
     WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach((pt,pi)=>{ const n=(pt.steps||[]).length, full=PLAYER.scene(pt,n).items;
       const CS=new Set(); full.forEach(i=>[i.at,i.a,i.b].concat(i.p||[]).forEach(q=>{ if(q) CS.add(Math.round(q[0])+','+Math.round(q[1])); }));
-      const has=(x,y)=>{ for(const dx of [-1,0,1]) for(const dy of [-1,0,1]) if(CS.has((Math.round(x)+dx)+','+(Math.round(y)+dy))) return true; return false; };
+      /* проекция конца — в отмеченной точке чертежа или на начерченной линии (прямая в 3D восстановлена по двум её проекциям:
+         её концы — концы общего участка, и одна из проекций конца лежит на линии, а не в её конце) */
+      const L=full.filter(i=>(i.t==='seg'||i.t==='line')&&i.a&&i.b&&i.k!=='paper');
+      const onLine=(x,y)=>L.some(i=>{ const dx=i.b[0]-i.a[0], dy=i.b[1]-i.a[1], l2=dx*dx+dy*dy; if(l2<1) return false; const t=((x-i.a[0])*dx+(y-i.a[1])*dy)/l2;
+        if(t<-0.02||t>1.02) return false; return Math.hypot(i.a[0]+dx*t-x,i.a[1]+dy*t-y)<1.2; });
+      const has=(x,y)=>{ for(const dx of [-1,0,1]) for(const dy of [-1,0,1]) if(CS.has((Math.round(x)+dx)+','+(Math.round(y)+dy))) return true; return onLine(x,y); };
       for(let k=0;k<=n;k++){ const it=PLAYER.scene(pt,k).items, m=TASK3D.model(it,full), P={};
         it.forEach(i=>{ if(i.t==='pt'&&i.at&&i.l) s(i.l).split(/\s*≡\s*/).forEach(l=>{ const mm=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)([′″])\)?$/.exec(l.trim()); if(mm) (P[mm[1]]=P[mm[1]]||{})[mm[2]]=i.at; }); });
         Object.entries(m.pts).forEach(([nm,o])=>{ const q=o.p, pr=P[nm]||{};
