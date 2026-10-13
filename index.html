@@ -22435,7 +22435,8 @@ window.CHANGES=[
     'ДЗ №2 (НГ): разбор примера исправлен — гипотенуза треугольника на шаге 4, видимость ребра AB и прямой EF на шаге 7.',
     'Инженерная графика: 3D и «По шагам» открываются с панелью загрузки вместо зависаний.',
     'Инженерная графика, 3D-разрезы: срез сплошной детали — одна заштрихованная область, без лишней линии там, где конус стоит на фланце.',
-    'Задачи НГ, окно «В пространстве»: заданные и построенные прямые (a, b, искомая d, горизонталь и фронталь плоскости, перпендикуляр, повёрнутый отрезок) теперь видны в пространстве, а не только их проекции на плоскостях — в 42 задачах. Вспомогательные построения остаются на плоскостях.']},
+    'Задачи НГ, окно «В пространстве»: заданные и построенные прямые (a, b, искомая d, горизонталь и фронталь плоскости, перпендикуляр, повёрнутый отрезок) теперь видны в пространстве, а не только их проекции на плоскостях — в 42 задачах. Вспомогательные построения остаются на плоскостях.',
+    'Инженерная графика, «Как из 3D получаются виды»: толщины линий по ГОСТ 2.303 — контур детали самый толстый, невидимый контур — штрихом потоньше, оси проекций, рамки плоскостей и линии связи — тонкие (раньше оси были толще контура).']},
   {v:'4.2',d:'13 октября 2026',items:['Новый раздел «Тренировка дня»: план на 10–15 минут — реши по памяти задачи, которые уже разбирал, повтори карточки теории и пройди «Узнай тип задачи». Вход — на главной, в «Подготовке к РК» и через поиск.',
     'Повторение задач: разобранная задача через день возвращается «реши сам», дальше — через 3, 7, 16 и 35 дней. Когда — решает твоя честная оценка в конце: «решил сам», «с подсказками» или «не смог».',
     '«Узнай тип задачи»: 8 задач тетради вперемешку — определи тему, не решая. После ответа — с чего начать и ссылка «решить самому».',
@@ -26136,7 +26137,12 @@ function mountUnfold(host,model){
   st.appendChild(Fr);
   const b=model.box, S=M.S, C=S.C, Rr=S.R, sc=Rr*1.62, g=Rr*0.32;
   const X=b[1][0]+g, Y=b[1][1]+g, Z0=b[0][2]-g, xa=C[0]-sc/2, ya=C[1]-sc/2, zt=C[2]+sc/2;
-  const IMG={}; ['front0','left0','top'].forEach(k=>{ try{ IMG[k]=IG3.drawing(model,k,900).url;   /* тот же размер, что у листа и шагов: чертёж считается один раз (вектор — размер не влияет на вид) */ }catch(e){ IMG[k]=''; } });
+  /* толщины по ГОСТ 2.303: контур детали — самая толстая линия (s), невидимый контур — s/2, оси проекций, линии связи,
+     рамки плоскостей — тонкие (≈ s/2,5). Вид — картинка листа (900 px), в рамке она уменьшена в ~4 раза, и её контур
+     становился тоньше осей x, y, z. Поэтому линии вида утолщаем (в готовом SVG — пересчитывать чертёж не нужно);
+     на узком экране вид уменьшен сильнее — утолщаем больше */
+  const THK=2*Math.min(1.7,Math.max(1,630/(st.clientWidth||630))), thick=d=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(d.svg.replace(/stroke-width="([\d.]+)"/g,(m,v)=>'stroke-width="'+(+v*THK).toFixed(2)+'"'));
+  const IMG={}; ['front0','left0','top'].forEach(k=>{ try{ IMG[k]=thick(IG3.drawing(model,k,900));   /* тот же размер, что у листа и шагов: чертёж считается один раз (вектор — размер не влияет на вид) */ }catch(e){ IMG[k]=''; } });
   /* точка A — передняя верхняя точка очерка */
   const kp=keyPts(model).filter(p=>p.y<0).sort((p,q)=>q.z-p.z||p.y-q.y), A=kp.length?[kp[0].x,kp[0].y,kp[0].z]:[C[0],b[0][1],b[1][2]];
   let T=0, axo=1, fi1=0, fi3=0, fade=0, cam0=null, proj=0, shown=0, ray=1, link=0, dr=0;   /* dr — переход к чертежу «как на листе» */
@@ -26148,7 +26154,7 @@ function mountUnfold(host,model){
     return {w,h,P:p=>{ const d=[p[0]-Cc[0],p[1]-Cc[1],p[2]-Cc[2]]; return [w/2+(d[0]*R[0]+d[1]*R[1]+d[2]*R[2])/us*h, h/2-(d[0]*U[0]+d[1]*U[1]+d[2]*U[2])/us*h]; }}; };
   const f=v=>Math.round(v*10)/10;
   function over(){ if(!st.clientWidth||!st.clientHeight) return; const {w,h,P}=cam(); [B,Fr].forEach(x=>x.setAttribute('viewBox',`0 0 ${w} ${h}`));
-    const poly=(ps,cl,op)=>`<polygon points="${ps.map(P).map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="${cl}" fill-opacity="${f(op*(.3+.7*axo))}" stroke="#8a7442" stroke-opacity="${f(.7*axo)}" stroke-width="1"/>`;
+    const poly=(ps,cl,op)=>`<polygon points="${ps.map(P).map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="${cl}" fill-opacity="${f(op*(.3+.7*axo))}" stroke="#8a7442" stroke-opacity="${f(.7*axo)}" stroke-width=".7"/>`;
     const img=(url,O,Uv,Vv)=>{ const o=P(O), u=P(Uv), v=P(Vv); return url&&shown>0.005?`<image href="${url}" opacity="${f(shown)}" width="1" height="1" preserveAspectRatio="none" style="mix-blend-mode:multiply" transform="matrix(${f(u[0]-o[0])} ${f(u[1]-o[1])} ${f(v[0]-o[0])} ${f(v[1]-o[1])} ${f(o[0])} ${f(o[1])})"/>`:''; };
     const ln=(a,c,cl,wd,dash,op)=>{ const p=P(a), q=P(c); return `<line x1="${f(p[0])}" y1="${f(p[1])}" x2="${f(q[0])}" y2="${f(q[1])}" stroke="${cl}" stroke-width="${wd}"${dash?` stroke-dasharray="${dash}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`; };
     const tx=(p,t,cl,dx,dy,cls)=>{ const q=P(p); return `<text x="${f(q[0]+(dx||0))}" y="${f(q[1]+(dy||0))}" class="${cls||'igu-l'}" fill="${cl}">${t}</text>`; };
@@ -26160,7 +26166,7 @@ function mountUnfold(host,model){
     o+=img(IMG.left0,m3([X,C[1]+sc/2,C[2]+sc/2],fi3),m3([X,C[1]-sc/2,C[2]+sc/2],fi3),m3([X,C[1]+sc/2,C[2]-sc/2],fi3));
     o+=img(IMG.top,m1([C[0]-sc/2,C[1]+sc/2,Z0],fi1),m1([C[0]+sc/2,C[1]+sc/2,Z0],fi1),m1([C[0]-sc/2,C[1]-sc/2,Z0],fi1));
     /* оси: x (П₁/П₂), z (П₂/П₃), y на П₁ и на П₃ */
-    let ax=''; const O=[X,Y,Z0], mv1=fi1>.01&&fi1<1.56, mv3=fi3>.01&&fi3<1.56; ax+=ln([xa,Y,Z0],O,mv1?'#9b2335':'#111',mv1?2.4:1.1)+ln(O,[X,Y,zt],mv3?'#9b2335':'#111',mv3?2.4:1.1)+ln(O,m1([X,ya,Z0],fi1),'#111',1.1)+ln(O,m3([X,ya,Z0],fi3),'#111',1.1);
+    let ax=''; const O=[X,Y,Z0], mv1=fi1>.01&&fi1<1.56, mv3=fi3>.01&&fi3<1.56; ax+=ln([xa,Y,Z0],O,mv1?'#9b2335':'#111',mv1?2.4:.7)+ln(O,[X,Y,zt],mv3?'#9b2335':'#111',mv3?2.4:.7)+ln(O,m1([X,ya,Z0],fi1),'#111',.7)+ln(O,m3([X,ya,Z0],fi3),'#111',.7);
     ax+=tx([xa,Y,Z0],'x','#111',-12,4,'igu-ax')+tx([X,Y,zt],'z','#111',-4,-6,'igu-ax')+tx(m1([X,ya,Z0],fi1),'y','#111',6,10,'igu-ax')+tx(m3([X,ya,Z0],fi3),'y','#111',6,14,'igu-ax')+tx(O,'O','#111',5,15,'igu-ax');
     if(axo>.01) o+=`<g opacity="${f(axo)}">${ax}</g>`;
     if(axo>.01) o+=`<g opacity="${f(axo)}">`+tx(P2[0],'П₂','#7a6440',6,-8,'igu-pl')+tx(P3[0],'П₃','#7a6440',-26,-8,'igu-pl')+tx(P1[0],'П₁','#7a6440',6,-8,'igu-pl')+'</g>';
@@ -26181,11 +26187,11 @@ function mountUnfold(host,model){
     const A2=[A[0],Y,A[2]], A3=m3([X,A[1],A[2]],fi3), A1=m1([A[0],A[1],Z0],fi1);
     
     let q='';
-    if(ray>0){ const op=ray, L=(a,c)=>[a[0]+(c[0]-a[0])*proj,a[1]+(c[1]-a[1])*proj,a[2]+(c[2]-a[2])*proj]; q+=`<g opacity="${f(op)}">`+ln(A,L(A,A2),'#4f86c6',1.4,'5 4')+ln(A,L(A,[X,A[1],A[2]]),'#4f86c6',1.4,'5 4')+ln(A,L(A,[A[0],A[1],Z0]),'#4f86c6',1.4,'5 4')+`<circle cx="${f(P(A)[0])}" cy="${f(P(A)[1])}" r="4" fill="#9b2335"/>`+tx(A,'A','#9b2335',7,-6,'igu-pt')+'</g>'; }
+    if(ray>0){ const op=ray, L=(a,c)=>[a[0]+(c[0]-a[0])*proj,a[1]+(c[1]-a[1])*proj,a[2]+(c[2]-a[2])*proj]; q+=`<g opacity="${f(op)}">`+ln(A,L(A,A2),'#4f86c6',1,'5 4')+ln(A,L(A,[X,A[1],A[2]]),'#4f86c6',1,'5 4')+ln(A,L(A,[A[0],A[1],Z0]),'#4f86c6',1,'5 4')+`<circle cx="${f(P(A)[0])}" cy="${f(P(A)[1])}" r="4" fill="#9b2335"/>`+tx(A,'A','#9b2335',7,-6,'igu-pt')+'</g>'; }
     /* связь через оси, без постоянной прямой и дуги: A″A′ — вертикаль, A″A‴ — горизонталь; глубина y одинакова на П₁ (от оси x) и на П₃ (от оси z) — отмечена засечками */
     if(link>0&&dr<.99){ const op=Math.min(1,link)*(1-dr), y1=[A[0],Y,Z0], y3=[X,Y,A[2]];
       const tk=(a,c)=>{ const p=P(a), r=P(c), dx=r[0]-p[0], dy=r[1]-p[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*5, ny=dx/l*5; return [p,r].map(z=>`<line x1="${f(z[0]-nx)}" y1="${f(z[1]-ny)}" x2="${f(z[0]+nx)}" y2="${f(z[1]+ny)}" stroke="#4f86c6" stroke-width="1.2"/>`).join(''); };
-      q+=`<g opacity="${f(op)}">`+ln(A2,A1,'#9dbbe0',.9)+ln(A2,A3,'#9dbbe0',.9)+ln(y1,A1,'#4f86c6',1.8)+ln(y3,A3,'#4f86c6',1.8)+tk(y1,A1)+tk(y3,A3)+tx(m1([A[0],(Y+A[1])/2,Z0],fi1),'y','#2f5f9e',-14,4,'igu-pt')+tx([X+(Y-A[1])/2,Y,A[2]],'y','#2f5f9e',-4,-8,'igu-pt')+'</g>'; }
+      q+=`<g opacity="${f(op)}">`+ln(A2,A1,'#9dbbe0',.7)+ln(A2,A3,'#9dbbe0',.7)+ln(y1,A1,'#4f86c6',1.8)+ln(y3,A3,'#4f86c6',1.8)+tk(y1,A1)+tk(y3,A3)+tx(m1([A[0],(Y+A[1])/2,Z0],fi1),'y','#2f5f9e',-14,4,'igu-pt')+tx([X+(Y-A[1])/2,Y,A[2]],'y','#2f5f9e',-4,-8,'igu-pt')+'</g>'; }
     const dop=Math.max(0,(proj-.8)/.2)*(1-dr); if(dop>0.01) q+=`<g opacity="${f(dop)}">`+dot(A2,'#9b2335')+dot(A1,'#9b2335')+dot(A3,'#9b2335')+tx(A2,'A″','#9b2335',6,-6,'igu-pt')+tx(A1,'A′','#9b2335',6,14,'igu-pt')+tx(A3,'A‴','#9b2335',6,-6,'igu-pt')+'</g>';
     Fr.innerHTML=q; }
   const od=M.v.draw; M.v.draw=sc2=>{ if(fade<0.99) od(sc2); over(); };
