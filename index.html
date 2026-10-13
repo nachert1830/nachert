@@ -3098,8 +3098,7 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 .brand .logo rect,:root[data-theme=dark] .brand .logo rect{fill:#2552e0}
 .brand .logo{box-shadow:0 6px 14px -8px rgba(37,82,224,.9);border-radius:9px}
 /* счётчик просмотров — зелёная «живая» точка */
-.vc-dot{background:#2fd47a!important;box-shadow:0 0 0 0 rgba(47,212,122,.6)!important;animation:vcLive 2s ease-out infinite}
-@keyframes vcLive{0%{box-shadow:0 0 0 0 rgba(47,212,122,.6)}70%,100%{box-shadow:0 0 0 7px rgba(47,212,122,0)}}
+.vc-dot{background:#2fd47a!important;box-shadow:none!important}.vc-dot::after{border-color:#2fd47a!important}
 /* поделиться — сразу под поиском, спокойная строка */
 .v9-share{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 var(--s4);padding:10px 12px 10px 16px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
 .v9-t{flex:1 1 180px;font:600 14.5px/1.35 var(--sans);color:var(--ink2)}
@@ -3113,7 +3112,9 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 @media(max-width:440px){.v9-share .vc{padding:0 11px 0 10px!important;gap:6px!important}.v9-share .vc-n{font-size:16px!important}.v9-share .vc-l{font-size:12.5px!important}.v9-share .v9-sb{padding:0 12px;gap:6px}}
 .v9-sb{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border:0;border-radius:12px;cursor:pointer;background:var(--red);color:#fff;font:700 14.5px var(--sans)}
 .v9-sb:hover{filter:brightness(1.07)}.v9-sb:active{transform:scale(.97)}
-@media(prefers-reduced-motion:reduce){.vc-dot{animation:none}}
+/* заготовка до первого ответа: та же капсула, вместо числа — бледная полоска */
+.vc.wait .vc-n{display:inline-block;width:2.6em;height:.8em;border-radius:6px;background:rgba(255,255,255,.18)!important}.vc.wait .vc-dot::after{animation:none}
+.vc-n{text-align:right}
 /* РК: типы задач билета */
 .rk9{margin:0 0 var(--s5)}
 .rk9-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -23957,17 +23958,30 @@ FX.note=function(m){ try{ let n=document.getElementById('fxNote'); if(!n){ n=doc
    Источник 2: API отчётов Метрики (работает, когда у счётчика открыт публичный доступ к статистике).
    Нет данных — блок не показываем: цифры не выдумываем. */
 const METRIKA_ID=113262916;
-let VIEWS=null, VIEWS_ASK=false;
-FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}" data-views ${VIEWS==null?'hidden':''} title="Просмотры по данным Яндекс.Метрики"><span class="vc-dot" aria-hidden="true"></span><b class="vc-n">${VIEWS==null?'':VIEWS.toLocaleString('ru-RU')}</b><span class="vc-l">${VIEWS==null?'просмотров':plural(VIEWS,'просмотр','просмотра','просмотров')}</span></div>`; };
+/* последнее известное число берём из кэша сразу (даже старое): блок рисуется с цифрой с первого кадра и не прыгает,
+   а свежее значение подтягивается в фоне. VIEWS_LIVE — в этой вкладке уже спросили сервер. */
+let VIEWS=null, VIEWS_ASK=false, VIEWS_LIVE=false;
+try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50){ VIEWS=c.n; VIEWS_LIVE=Date.now()-c.t<60e3; } }catch(e){}
+/* до первого ответа (самый первый заход) — пустая заготовка того же размера, а не display:none: место под блок занято сразу */
+FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wait':''}" data-views ${VIEWS==null?'':'data-done="1"'} title="Просмотры по данным Яндекс.Метрики"><span class="vc-dot" aria-hidden="true"></span><b class="vc-n">${VIEWS==null?'':VIEWS.toLocaleString('ru-RU')}</b><span class="vc-l">${VIEWS==null?'просмотров':plural(VIEWS,'просмотр','просмотра','просмотров')}</span></div>`; };
 function paintViews(from){
-  if(VIEWS==null) return;
-  document.querySelectorAll('[data-views]').forEach(el=>{
-    const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; l.textContent=plural(VIEWS,'просмотр','просмотра','просмотров');
-    const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches, N=VIEWS, A=el.dataset.done?(from==null?N:from):0;
-    if(reduce||A===N){ b.textContent=N.toLocaleString('ru-RU'); el.dataset.done=1; return; }
-    el.dataset.done=1; const t0=performance.now(), D=A?900:1400;
-    const step=now=>{ const k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,4); b.textContent=Math.round(A+(N-A)*e).toLocaleString('ru-RU'); if(k<1) requestAnimationFrame(step); else el.classList.add('pop'); };
-    requestAnimationFrame(step); });
+  const els=document.querySelectorAll('[data-views]');
+  if(VIEWS==null){ els.forEach(el=>{ el.hidden=true; }); return; }   /* данных нет — заготовку убираем */
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches, N=VIEWS, txt=N.toLocaleString('ru-RU'), run=[];
+  els.forEach(el=>{
+    const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'), A=el.dataset.done?(from==null?N:from):0;
+    el.hidden=false; el.classList.remove('wait'); el.dataset.done=1; l.textContent=plural(N,'просмотр','просмотра','просмотров');
+    /* ширину числа фиксируем по итоговому значению: пока цифры бегут, блок и соседи не двигаются */
+    b.style.minWidth=''; b.textContent=txt; const w=b.getBoundingClientRect().width; if(w) b.style.minWidth=Math.ceil(w)+'px';
+    const r=el.getBoundingClientRect(), seen=r.width>0&&r.bottom>0&&r.top<innerHeight;   /* за экраном не анимируем */
+    if(!reduce&&A!==N&&seen) run.push({b,el,A}); });
+  if(!run.length) return;
+  const t0=performance.now(), D=run.some(o=>o.A)?900:1400;
+  const step=now=>{ const k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,4);
+    run.forEach(o=>{ o.b.textContent=Math.round(o.A+(N-o.A)*e).toLocaleString('ru-RU'); if(k===1) o.el.classList.add('pop'); });
+    if(k<1) requestAnimationFrame(step); };
+  run.forEach(o=>{ o.b.textContent=o.A.toLocaleString('ru-RU'); });
+  requestAnimationFrame(step);
 }
 /* число просмотров = Яндекс Метрика (вживую, из API счётчика) + GoatCounter (вживую) + Google Analytics (views.json: его раз в 3 часа пишет GitHub, .github/workflows/views.yml).
    Если Метрика не ответила — берём сумму из views.json. Видно всем, независимо от согласия на cookie: запрос только читает общую
@@ -23984,12 +23998,11 @@ window.VIEWS_PROBE=()=>fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+
   .then(r=>r.ok?r.json().then(j=>'просмотров '+Math.round(j.totals[0])+', визитов '+Math.round(j.totals[1])+' · '+new Date().toLocaleTimeString('ru-RU')):'ошибка '+r.status+(r.status===403?' — статистика счётчика закрыта':''))
   .catch(e=>'нет ответа: '+(e&&e.message||e));
 FX.loadViews=function(force){
-  if(VIEWS!=null&&!force){ paintViews(); return; }
-  if(VIEWS==null){ try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50&&Date.now()-c.t<60e3){ VIEWS=c.n; paintViews(); return; } }catch(e){} }   /* кэш на минуту */
-  if(VIEWS_ASK) return; VIEWS_ASK=true;
+  if(VIEWS!=null) paintViews();   /* новые блоки (после перехода) — сразу с числом, без пробежки с нуля */
+  if((VIEWS_LIVE&&!force)||VIEWS_ASK) return; VIEWS_ASK=true;   /* сервер спрашиваем раз в вкладку (кэш свежее минуты — не спрашиваем) и по таймеру */
   const old=VIEWS;
-  fetchViews().then(n=>{ VIEWS=Math.max(n,old||0); try{ localStorage.setItem('nch2_views',JSON.stringify({n:VIEWS,t:Date.now()})); }catch(e){} paintViews(old); })
-    .catch(()=>{}).then(()=>{ VIEWS_ASK=false; });
+  fetchViews().then(n=>{ VIEWS=Math.max(n,old||0); VIEWS_LIVE=true; try{ localStorage.setItem('nch2_views',JSON.stringify({n:VIEWS,t:Date.now()})); }catch(e){} if(VIEWS!==old) paintViews(old); })
+    .catch(()=>{ if(VIEWS==null) paintViews(); }).then(()=>{ VIEWS_ASK=false; });
 };
 /* пока страница открыта и на экране — число обновляется само, раз в 2 минуты */
 setInterval(()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views]')) FX.loadViews(true); }catch(e){} },120e3);
