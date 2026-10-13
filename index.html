@@ -3124,10 +3124,15 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 @media(max-width:440px){.v9-share .vc{padding:0 11px 0 10px!important;gap:6px!important}.v9-share .vc-n{font-size:16px!important}.v9-share .vc-l{font-size:12.5px!important}.v9-share .v9-sb{padding:0 12px;gap:6px}}
 .v9-sb{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border:0;border-radius:12px;cursor:pointer;background:var(--red);color:#fff;font:700 14.5px var(--sans)}
 .v9-sb:hover{filter:brightness(1.07)}.v9-sb:active{transform:scale(.97)}
-/* панель «Поделись»: жёсткая сетка — текст всегда своей строкой, счётчик и кнопка под ним. Ширина числа и шрифт больше не перекладывают строки */
-.v9-share{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px}
-.v9-share .v9-t{grid-column:1/-1}.v9-share .v9-sb{justify-self:end}
-@media(min-width:720px){.v9-share{grid-template-columns:1fr auto auto}.v9-share .v9-t{grid-column:auto}.v9-share .v9-sb{justify-self:auto}}
+/* панель «Поделись»: раскладка выбирается по ширине экрана, а не по содержимому — ширина числа и шрифт её не меняют.
+   Узкий телефон (до 400 px): текст, под ним счётчик и кнопка во всю ширину — каждый своей строкой (вдвоём в ряд они шире панели,
+   панель вылезала за экран и браузер перемасштабировал всю страницу). 400–719 px: счётчик и кнопка в один ряд. От 720 px — всё в одну строку.
+   overflow:hidden — страховка: что бы ни случилось внутри, страница шире экрана не станет */
+.v9-share{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;overflow:hidden}
+.v9-share>*{min-width:0}
+.v9-share .vc,.v9-share .v9-sb{justify-self:stretch;justify-content:center}
+@media(min-width:400px){.v9-share{grid-template-columns:auto minmax(0,1fr)}.v9-share .v9-t{grid-column:1/-1}.v9-share .vc{justify-self:start}.v9-share .v9-sb{justify-self:end}}
+@media(min-width:720px){.v9-share{grid-template-columns:minmax(0,1fr) auto auto}.v9-share .v9-t{grid-column:auto}.v9-share .v9-sb{justify-self:auto}}
 /* заготовка до первого ответа: та же капсула, вместо числа — бледная полоска */
 .vc.wait .vc-n{display:inline-block;width:2.6em;height:.8em;border-radius:6px;background:rgba(255,255,255,.18)!important}.vc.wait .vc-dot::after{animation:none}
 .vc-n{text-align:right}
