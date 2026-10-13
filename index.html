@@ -3345,7 +3345,8 @@ const K = { main:[PAL.ink,null,W.main], thin:[PAL.thin,null,W.thin],
   aux:[PAL.aux,null,W.aux], auxd:[PAL.aux,'5 3',W.aux], res:[PAL.res,null,W.res],
   resd:[PAL.res,'5 3',W.res], grn:[PAL.grn,null,W.res], grnd:[PAL.grn,'5 3',W.res],
   ghost:[PAL.ghost,null,W.main], dash:[PAL.ink,'6 3',W.thin], hid:[PAL.ink,'5 3',W.main*0.8],
-  axis:[PAL.ink,'14 3 2 3',W.thin], conn:[PAL.conn,'7 2.5 1.5 2.5',W.conn] };
+  axis:[PAL.ink,'14 3 2 3',W.thin], conn:[PAL.conn,'7 2.5 1.5 2.5',W.conn],
+  paper:['#ffffff',null,W.main+1.8] };   /* «ластик»: закрывает линию условия, которая на ответе оказалась невидимой */
 const LC = { res:'r', resd:'r', aux:'a', auxd:'a', grn:'g', grnd:'g' };
 function kk(k){ return K[k||'main']||K.main; }
 
@@ -5412,6 +5413,15 @@ function edgeItems(verts,edges,k,only){
   return out;
 }
 
+/* стороны основания из условия нарисованы сплошными; если на ответе ребро невидимо — сначала стираем линию условия
+   («ластик» цвета бумаги, концы чуть короче — точки в вершинах остаются), потом поверх ляжет штриховая */
+function hideGiven(verts,edges,base){
+  const cut=(a,b)=>{ const d=U(sub2(b,a)), e=3.5; return [add2(a,mul2(d,e)),sub2(b,mul2(d,e))]; }, out=[];
+  edges.filter(e=>base.includes(e.a)&&base.includes(e.b)).forEach(e=>{ const a=verts[e.a], b=verts[e.b];
+    if(!e.visF){ const q=cut(F(a),F(b)); out.push(seg(q[0],q[1],'paper')); }
+    if(!e.visH){ const q=cut(H(a),H(b)); out.push(seg(q[0],q[1],'paper')); } });
+  return out;
+}
 /* ---- подсказки-лесенка: намёк → принцип → шаг → полный разбор ---- */
 function ladder(o){
   const blk=(cls,ttl,body,open)=>body?`<details class="hw-l ${cls}"${open?' open':''}><summary>${ttl}</summary><div>${body}</div></details>`:'';
@@ -5557,7 +5567,7 @@ HW.tasks[2] = (function(){
   const c=HW.calc[2], {A,B,C,E,Pf,S,p1,p2,T0,T,X}=c;
   const V={S,A,B,C};
   const edges=polyVis(V,[['A','B','C'],['S','A','B'],['S','B','C'],['S','C','A']]);
-  const nvT=nvOnH(A,T0,{A:'A',B:'T₀',side:-1,r:0,la:'s'}); nvT.items=nvT.items.filter(it=>it.t!=='ang'&&!(it.t==='seg'&&it.l));
+  const nvT=nvOnH(A,T0,{A:'A',B:'M',side:-1,r:0,la:'s'}); nvT.items=nvT.items.filter(it=>it.t!=='ang'); nvT.items.forEach(it=>{ if(it.t==='seg'&&it.l) it.l=null; });   /* гипотенуза A′M₀ нужна: на ней откладываем 80 мм */
   const Ah=H(A), T0h=H(T0), B0=nvT.B0;
   const k80=c.Hh/c.L0, T9=add2(Ah,mul2(sub2(B0,Ah),k80));      // точка на гипотенузе на расстоянии 80 мм
   const Th=H(T), Tf=F(T), Xh=H(X), Xf=F(X);
@@ -5580,14 +5590,14 @@ HW.tasks[2] = (function(){
    STEP('Перпендикуляр n к плоскости ABC в точке A',{
      hint:'Вспомни теорему о прямом угле: перпендикуляр к плоскости виден перпендикулярным к её горизонтали и фронтали.',
      principle:'Прямая ⟂ плоскости ⇔ n′ ⟂ h′ и n″ ⟂ f″ (урок 11).',
-     step:`Через A проводим n′ ⟂ h′ и n″ ⟂ f″. Длину пока берём любой: отметим точку T₀ (пусть |AT₀| = ${c.L0} мм — её настоящую длину найдём дальше).`,
+     step:`Через A проводим n′ ⟂ h′ и n″ ⟂ f″. Отмечаем на перпендикуляре произвольную точку M. Её проекции искажены, поэтому сколько |AM| в натуре — пока неизвестно: найдём на следующем шаге.`,
      full:`Единичная нормаль n₀ = (${f2(c.nu[0])}; ${f2(c.nu[1])}; ${f2(c.nu[2])}). Проверка: n₀·h = ${f2(c.nOrth[0])}, n₀·f = ${f2(c.nOrth[1])} (≈ 0).`},
-     [ ...point('T₀',T0,{k:'aux'}), ...seg3(A,T0,'aux'), sq(F(A),F(T0),F(p2),'aux') ]),
+     [ ...point('M',T0,{k:'aux'}), ...seg3(A,T0,'aux'), sq(F(A),F(T0),F(p2),'aux') ]),
    STEP('Откладываем на перпендикуляре 80 мм',{
      hint:'Проекции отрезка искажены. Как отложить на нём настоящие 80 мм?',
      principle:'Длину на прямой общего положения откладывают по натуральной величине — из прямоугольного треугольника (урок 5), затем переносят обратно по подобию.',
-     step:`Строим треугольник для AT₀ на π₁ (катеты A′T₀′ и Δz). На гипотенузе откладываем 80 мм от A′ → T*. Из T* опускаем перпендикуляр на A′T₀′ → T′, затем T″ по линии связи на n″.`,
-     full:`|AT₀| = ${c.L0} мм, коэффициент подобия 80/${c.L0} = ${f2(k80)}. T(${fmt(T[0])}; ${fmt(T[1])}; ${fmt(T[2])}).`},
+     step:`Строим прямоугольный треугольник на A′M′: второй катет M′M₀ ⟂ A′M′, равный Δz (разность высот A и M — с фронтальной проекции). Гипотенуза A′M₀ — натуральная величина AM. На гипотенузе (здесь — на её продолжении) откладываем 80 мм от A′ → T*. Из T* опускаем перпендикуляр на прямую A′M′ → T′, затем T″ по линии связи на n″.`,
+     full:`|A′M₀| = |AM| = ${c.L0} мм — меньше 80, поэтому T* и T′ лежат за M₀ и M′. Коэффициент подобия 80/${c.L0} = ${f2(k80)}. T(${fmt(T[0])}; ${fmt(T[1])}; ${fmt(T[2])}).`},
      [ ...nvT.items, pt(T9,'T*','s','res'), seg(B0,T9,'aux'), seg(T9,Th,'aux'), ...point('T',T,{k:'res'}), seg(Ah,Th,'aux'), seg(F(A),Tf,'aux') ]),
    STEP('Плоскость α ∥ ABC через T: горизонталь и точка X',{
      hint:'Параллельная плоскость содержит прямые, параллельные h и f. Начни с горизонтали через T.',
@@ -5606,7 +5616,7 @@ HW.tasks[2] = (function(){
      principle:'Ребро невидимо на проекции, если оно принадлежит только граням, отвёрнутым от наблюдателя (выпуклый многогранник): спереди смотрим вдоль −y, сверху — вдоль −z (урок 4, конкурирующие точки).',
      step:'Проводим SA, SB, SC. Видимость находим по граням: ребро видно, если хотя бы одна из двух его граней «смотрит» на наблюдателя.',
      full:`SA = ${fmt(c.SA)}, SB = ${fmt(c.SB)}, SC = ${fmt(c.SC)}; AB = ${fmt(c.AB)}, BC = ${fmt(c.BC)}, CA = ${fmt(c.CA)} мм.`},
-     [ ...edgeItems(V,edges,'res') ]),
+     [ ...hideGiven(V,edges,'ABC'), ...edgeItems(V,edges,'res') ]),
    STEP('Проверка',{
      hint:'Убедись, что расстояние от S до плоскости действительно 80.',
      principle:'Расстояние от точки до плоскости = длина перпендикуляра; считается по нормали плоскости независимым способом.',
@@ -6374,7 +6384,7 @@ HW.docs['2']={ id:'2', num:'№2', title:'Пирамида, призма, куб
   algo:[
    {t:'Горизонталь и фронталь основания',d:'В плоскости ABC строим горизонталь h и фронталь f (по точкам на сторонах).'},
    {t:'Перпендикуляр к плоскости',d:'n′ ⟂ h′ и n″ ⟂ f″ через вершину основания.'},
-   {t:'Откладываем высоту',d:'Возьми произвольную точку T₀ на перпендикуляре, найди натуральную величину AT₀ прямоугольным треугольником и отложи на гипотенузе нужные 80 мм; вернись на проекции по подобию.'},
+   {t:'Откладываем высоту',d:'Возьми произвольную точку M на перпендикуляре, найди натуральную величину AM прямоугольным треугольником и отложи на гипотенузе нужные 80 мм; вернись на проекции по подобию.'},
    {t:'Плоскость α на расстоянии высоты',d:'Через T проводи прямые, параллельные h и f: плоскость α ∥ ABC, и все её точки удалены на нужное расстояние.'},
    {t:'S = EF ∩ α',d:'Вспомогательная проецирующая (или уровня) плоскость через EF: находим прямую, по которой она пересекает α, и её пересечение с EF — вершина S.'},
    {t:'Рёбра и видимость',d:'Соединить, видимость — по граням (выпуклое тело) или по конкурирующим точкам.'} ],
@@ -22810,6 +22820,7 @@ function model(items,regItems){
       else if(!T(it.at)){ let p3=null; if(ctx){ const ls=liftPath(ctx,[it.at,it.at]); if(ls.length) p3=ls[0][0]; } else { const pl=planeOf({},[it.at]); if(pl===1||pl===2) p3=fixed([it.at],pl)[0][0]; }
         if(p3) dots.push({p:p3,nm:strip(it.l).trim(),k:it.k,g:it._g||'given'}); }
       return; }
+    if(it.k==='paper') return;   /* «ластик» — только для листа: в пространстве нечего стирать */
     if(it.t==='seg'||it.t==='line'||it.t==='vec'||it.t==='conn'||it.t==='dim'){ if(!it.a||!it.b) return;
       const ta=T(it.a), tb=ta&&T(it.b);
       if(ta&&tb&&ta.pl===tb.pl&&it.t!=='conn'&&it.t!=='dim'){ const a=ta.p,b=tb.p; if(Math.hypot(...sub(a,b))<0.3) return;
@@ -26352,7 +26363,7 @@ function mount3d(v){ const st=$(v,'#iglSt'), md=MD(), T=TR(), xb=IGUI.igSpec(md)
     ov=planeOverlay(st,M,()=>mode==='pl'?{fill:.16}:mode==='sec'?{fill:0,pts:ptsOf()}:mode==='sec7'?{fill:null,pts:ptsOf()}:null); set(mode,true,grp); });
   $$(v,'#iglModes button').forEach(b=>b.addEventListener('click',()=>{ set(b.dataset.m); buzz(); }));
   set(mode,false); return {set}; }
-function lazy(el,fn){ if(!el) return; if(!('IntersectionObserver' in window)){ fn(); return; } const io=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting)){ io.disconnect(); fn(); } },{rootMargin:'200px'}); io.observe(el); }
+function lazy(el,fn){ if(!el) return; if(!('IntersectionObserver' in window)){ fn(); return; } const io=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting)){ io.disconnect(); if(el.isConnected) fn(); } },{rootMargin:'200px'}); io.observe(el); }   /* ушли со страницы до срабатывания — не запускаем */
 
 /* ═════════ страница ═════════ */
 const RULES=[
