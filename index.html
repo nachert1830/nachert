@@ -3167,6 +3167,92 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 .rk9-big i{margin-top:8px;align-self:flex-start;font-style:normal;font:700 14px var(--sans);padding:9px 14px;border-radius:12px;background:var(--red);color:#fff}
 .rk9-big.alt{background:linear-gradient(140deg,#2552e0,#1f47b8)}.rk9-big.alt i{background:#fff;color:var(--acc)}
 .rk9-big.th{background:var(--surf);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}.rk9-big.th span{color:var(--mut)}.rk9-big.th i{background:var(--blue-s);color:var(--acc)}
+/* ═════ Учиться самому: тренировка дня, «Узнай тип задачи», самооценка в плеере ═════ */
+/* вход на главной: белая карточка во всю ширину под дверями */
+.lr-home{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 14px;margin-top:10px;padding:16px;border-radius:20px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink);text-decoration:none;transition:transform .2s var(--ease),border-color .2s,box-shadow .2s}
+.lr-home:hover{transform:translateY(-2px);border-color:var(--acc);box-shadow:var(--shadow2)}
+.lr-home .v5-t{display:flex;flex-direction:column;gap:3px;min-width:0}.lr-home .v5-t b{font:700 18px/1.2 var(--disp)}.lr-home .v5-t small{font-size:13.5px;line-height:1.45;color:var(--mut)}
+.lr-home:hover .v5-go{background:var(--acc);color:#fff}
+/* план на сегодня — главный блок экрана */
+.lr-today{position:relative;margin:var(--s4,20px) 0 0;padding:20px 16px 10px;border-radius:20px;background:linear-gradient(145deg,var(--navy),var(--navy2));color:#fff;overflow:hidden;box-shadow:0 22px 44px -24px rgba(19,35,90,.85)}
+.lr-today::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,#3b63e6 0 40%,#fff 40% 60%,var(--red) 60% 100%)}
+.lr-th{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px}
+.lr-th h2{margin:0;color:#fff;font:800 21px/1.2 var(--disp)}.lr-th span{font:500 12.5px var(--mono);color:rgba(255,255,255,.7);white-space:nowrap}
+.lr-l{list-style:none;margin:0;padding:0}
+.lr-i{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start;padding:14px 0;border-top:1px solid rgba(255,255,255,.12)}
+.lr-i:first-child{border-top:0}
+.lr-n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);font:700 14px var(--disp);color:#fff;margin-top:1px}
+.lr-i.now .lr-n{background:var(--red)}.lr-i.done .lr-n{background:#fff;color:var(--green)}
+.lr-t{display:flex;flex-direction:column;gap:3px;min-width:0}.lr-t b{font:700 16.5px/1.3 var(--disp)}.lr-t small{font-size:13.5px;line-height:1.45;color:rgba(255,255,255,.78)}
+.lr-i.done .lr-t b{color:rgba(255,255,255,.82)}
+.lr-t .v5-tag{vertical-align:2px}
+.lr-go{grid-column:2;justify-self:start;margin-top:8px;display:inline-flex;align-items:center;min-height:42px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font:700 14.5px var(--sans);text-decoration:none;transition:background .15s}
+.lr-go:hover{background:rgba(255,255,255,.24)}
+.lr-i.now .lr-go{background:var(--red)}.lr-i.now .lr-go:hover{filter:brightness(1.08)}
+.lr-i.done .lr-go{background:transparent;border:1px solid rgba(255,255,255,.3)}
+/* очередь повторения */
+.lr-q,.lr-m{margin-top:var(--s6,32px)}
+.lr-q h2,.lr-m h2{font:800 21px/1.2 var(--disp);margin:0 0 10px}
+.lr-bk{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.lr-bk div{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:14px;background:var(--surf);border:1px solid var(--line)}
+.lr-bk b{font:800 22px/1 var(--disp);color:var(--ink)}.lr-bk span{margin-top:4px;font-size:12px;color:var(--mut)}
+.lr-bk div:first-child b{color:var(--red)}
+.lr-ql{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lr-ql a{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"n t d" "n t l";gap:2px 12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--surf);border:1px solid var(--line);color:var(--ink);text-decoration:none}
+.lr-ql a:hover{border-color:var(--acc)}
+.lr-qn{grid-area:n;font:700 14px var(--disp);color:var(--acc);min-width:44px}
+.lr-qt{grid-area:t;font-size:13.5px;line-height:1.4;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lr-qd{grid-area:d;justify-self:end;font:600 12px var(--mono);color:var(--mut);white-space:nowrap}.lr-qd.due{color:var(--red)}
+.lr-lad{grid-area:l;justify-self:end;display:flex;gap:3px}.lr-lad i{width:9px;height:4px;border-radius:2px;background:var(--line2)}.lr-lad i.on{background:var(--green)}
+.lr-fine{font-size:13px;color:var(--mut);line-height:1.5;margin:10px 0 0}
+/* почему так учиться */
+.lr-sub{color:var(--ink2);font-size:15px;line-height:1.55;margin:0 0 14px;max-width:640px}
+.lr-mg{display:grid;gap:10px}
+@media(min-width:760px){.lr-mg{grid-template-columns:repeat(2,1fr)}.lr-mg .lr-mc:last-child{grid-column:1/-1}}
+.lr-mc{position:relative;padding:16px 16px 14px 60px;border-radius:18px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow)}
+.lr-mn{position:absolute;left:16px;top:16px;display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--blue-s);color:var(--acc);font:800 15px var(--disp)}
+.lr-mc h3{margin:3px 0 6px;font:700 16.5px/1.3 var(--disp)}.lr-mc p{margin:0;font-size:14px;line-height:1.55;color:var(--ink2)}
+.lr-mw{margin-top:10px;font-size:13px;color:var(--ink2)}.lr-mw b{color:var(--acc);font-weight:700}
+.lr-ms{margin-top:6px;font:500 11.5px var(--mono);color:var(--mut2)}
+/* «Узнай тип задачи» */
+.lk-top{display:flex;justify-content:space-between;align-items:baseline;margin:var(--s4,20px) 0 8px;font:500 12.5px var(--mono);color:var(--mut)}.lk-sc b{color:var(--green)}
+.lk-bar{margin-bottom:14px}
+.lk-card{padding:18px 16px;border-radius:20px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow)}
+.lk-ask{font:700 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+.lk-q{font-size:16.5px;line-height:1.5;color:var(--ink);margin-bottom:12px}
+.lk-sheet{margin:0 0 14px}.lk-sheet svg{display:block;max-height:32vh;width:100%;margin:0 auto}
+.lk-opts{display:grid;gap:8px}.lk-opts .opt{width:100%;text-align:left;font:inherit;font-size:15px;color:var(--ink);background:var(--surf);margin:0;cursor:pointer}
+.lk-opts .opt:not(:disabled):hover{border-color:var(--acc)}
+.lk-opts .opt:disabled{opacity:1}.lk-opts .opt.lk:not(.ok):not(.no){opacity:.55}
+.lk-exp{margin-top:14px;padding:14px 15px;border-radius:14px;font-size:14.5px;line-height:1.55;border:1px solid var(--line);background:var(--surf2)}
+.lk-exp.ok{border-color:color-mix(in srgb,var(--green) 40%,var(--line));background:var(--green-s)}.lk-exp.ok>b{color:var(--green)}
+.lk-exp.no>b{color:var(--red)}
+.lk-key{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--surf);border:1px solid var(--line)}
+.lk-key span{display:block;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--acc);margin-bottom:3px}
+.lk-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.lk-links a{display:inline-flex;align-items:center;min-height:38px;padding:0 13px;border-radius:99px;background:var(--blue-s);color:var(--acc);font:700 13.5px var(--sans);text-decoration:none}
+.lk-links a:hover{background:var(--acc);color:#fff}
+.lk-next{margin-top:14px;width:100%}
+.lk-res{margin-top:var(--s4,20px);padding:22px 16px;border-radius:20px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow);text-align:center}
+.lk-cat{display:flex;justify-content:center;margin-bottom:4px}.lk-cat svg{width:72px;height:auto}
+.lk-big{font:800 40px/1.1 var(--disp)}.lk-big.g{color:var(--green)}.lk-big.a{color:var(--amber)}.lk-big.r{color:var(--red)}
+.lk-res>p{max-width:460px;margin:8px auto 0;color:var(--ink2);line-height:1.55}
+.lk-mix{margin-top:18px;text-align:left}.lk-mix h3{font:700 16px var(--disp);margin:0 0 8px}
+.lk-mi{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-left:3px solid var(--red);background:var(--surf2);border-radius:0 10px 10px 0;margin-bottom:8px;font-size:13.5px;color:var(--ink2)}
+.lk-mi a{font-weight:700;color:var(--acc);text-decoration:none}
+.lk-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+/* плеер: лесенка подсказок и самооценка */
+.pl-tryb{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pl-rep{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--blue-s);color:var(--ink);font-size:14px;line-height:1.5;text-align:left}
+.pl-rep a{color:var(--acc);font-weight:700}
+.pl-rep-i{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-weight:700}
+.pl-rep.ask{flex-direction:column;gap:4px;background:var(--surf);border:1.5px solid color-mix(in srgb,var(--acc) 35%,var(--line))}
+.pl-rep.ask b{font:700 16px var(--disp)}.pl-rep.ask>span{color:var(--mut);font-size:13.5px}
+.pl-rates{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;margin-top:8px}
+.pl-rate{min-height:44px;padding:4px 6px;line-height:1.2;border-radius:12px;border:1px solid var(--line2);background:var(--surf);color:var(--ink);font:700 13.5px var(--sans);cursor:pointer}
+.pl-rate.v2{border-color:var(--green);color:var(--green)}.pl-rate.v0{color:var(--red)}
+.pl-rate:hover{background:var(--surf2)}
+@media(max-width:380px){.lr-bk span{font-size:11px}.pl-rate{font-size:12.5px}}
 </style>
 </head>
 <body>
@@ -3930,11 +4016,11 @@ function allStepsHTML(t){
 function mount(root,t,opt){
   opt=opt||{};
   const parts=partsOf(t);
-  const S={pi:0,k:0,mode:opt.mode||'watch',shown:{},h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:false};
+  const S={pi:0,k:0,mode:opt.mode||'watch',shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:false};
   const PK='plpos', posKey=opt.posKey||location.hash.replace(/\/(?:p\d+)?s\d+$/,'');
   const posGet=()=>{ try{ return (JSON.parse(localStorage.getItem(PK)||'{}')||{})[posKey]; }catch(e){ return null; } };
   const posSet=()=>{ try{ const o=JSON.parse(localStorage.getItem(PK)||'{}')||{}; const ks=Object.keys(o); if(ks.length>60) delete o[ks[0]]; o[posKey]={pi:S.pi,k:S.k,t:Date.now()}; localStorage.setItem(PK,JSON.stringify(o)); }catch(e){} };
-  { const r=posGet(); if(r&&parts[r.pi]&&r.k>0&&r.k<(parts[r.pi].steps||[]).length){ S.pi=r.pi; S.k=r.k; } }
+  if(!opt.noResume){ const r=posGet(); if(r&&parts[r.pi]&&r.k>0&&r.k<(parts[r.pi].steps||[]).length){ S.pi=r.pi; S.k=r.k; } }
   /* ссылка на конкретный шаг: …/s3 или …/p2s3 (пункт 2, шаг 3) */
   if(opt.start==='end'){ S.pi=parts.length-1; S.k=(parts[S.pi].steps||[]).length; }
   { const m=/^(?:p(\d+))?s(\d+)$/.exec(opt.start||''); if(m){ const pi=m[1]?+m[1]-1:0; if(parts[pi]){ S.pi=pi; S.k=Math.min(+m[2],(parts[pi].steps||[]).length); } } }
@@ -3957,12 +4043,13 @@ function mount(root,t,opt){
     if(k===0){
       card=`<div class="pl-kicker">Дано</div>
         <div class="pl-title">${S.mode==='try'?'Попробуй решить сам':'Разбираем условие'}</div>
-        <div class="pl-text">${p.intro||t.intro||(S.mode==='try'?'Перерисуй чертёж в тетрадь и попробуй построить решение. Застрял — жми «Дальше»: откроется название следующего шага как подсказка.':'Посмотри на исходный чертёж: что задано и что нужно найти. Дальше — '+n+' '+plural(n,'шаг','шага','шагов')+' построения.')}</div>${noteShort(t.note)&&pi===0?`<div class="pl-note"><b>Заметка</b>${noteShort(t.note)}</div>`:''}`;
+        <div class="pl-text">${p.intro||t.intro||(S.mode==='try'?'Перерисуй чертёж в тетрадь и строй решение сам. На каждом шаге сначала подумай, что делать; не выходит — возьми подсказку, потом сверься с построением.':'Посмотри на исходный чертёж: что задано и что нужно найти. Дальше — '+n+' '+plural(n,'шаг','шага','шагов')+' построения.')}</div>${noteShort(t.note)&&pi===0?`<div class="pl-note"><b>Заметка</b>${noteShort(t.note)}</div>`:''}`;
     } else if(tryHid){
-      card=`<div class="pl-kicker">Шаг ${k} из ${n} · подсказка</div>
-        <div class="pl-title">${st.t||''}</div>
-        <div class="pl-text muted">Попробуй сделать этот шаг сам, потом сверься.</div>
-        <button class="btn pl-reveal">Показать построение</button>`;
+      const hon=!!S.hint[pi+':'+k];   /* лесенка: сначала думаешь сам → подсказка (что делать) → построение */
+      card=`<div class="pl-kicker">Шаг ${k} из ${n} · твой ход</div>
+        <div class="pl-title">${hon?(st.t||''):'Что сделать на этом шаге?'}</div>
+        <div class="pl-text muted">${hon?'Это подсказка: что делаем. Дострой шаг на бумаге, потом сверься.':'Подумай и сделай шаг на бумаге сам. Не выходит — возьми подсказку.'}</div>
+        <div class="pl-tryb">${hon?'':'<button class="btn ghost pl-hint" type="button">Подсказка</button>'}<button class="btn pl-reveal" type="button">Показать построение</button></div>`;
     } else {
       card=`<div class="pl-kicker">Шаг ${k} из ${n}</div>
         <div class="pl-title">${st.t||''}</div>
@@ -3984,7 +4071,7 @@ function mount(root,t,opt){
     const y=window.scrollY, ae=document.activeElement; let fk=null;
     if(ae&&root.contains(ae)){
       const c=ae.classList;
-      fk=c.contains('pl-main')?'.pl-main':c.contains('pl-prev')?'.pl-prev':c.contains('pl-reveal')?'.pl-reveal':c.contains('pl-dot')?'.pl-dot[data-k="'+ae.dataset.k+'"]':c.contains('pl-part')?'.pl-part[data-p="'+ae.dataset.p+'"]':c.contains('pl-mode')?'.pl-mode[data-m="'+ae.dataset.m+'"]':null;
+      fk=c.contains('pl-main')?'.pl-main':c.contains('pl-prev')?'.pl-prev':c.contains('pl-reveal')||c.contains('pl-hint')?'.pl-reveal':c.contains('pl-dot')?'.pl-dot[data-k="'+ae.dataset.k+'"]':c.contains('pl-part')?'.pl-part[data-p="'+ae.dataset.p+'"]':c.contains('pl-mode')?'.pl-mode[data-m="'+ae.dataset.m+'"]':null;
     }
     const p=part(), n=N(), k=S.k;
     const tryHid=hidden(k);
@@ -4036,7 +4123,7 @@ function mount(root,t,opt){
     try{ if(window.FX) FX.buzz('success'); }catch(e){} setTimeout(()=>{ const b=root.querySelector('.pl-nextt'); if(b){ b.disabled=false; b.classList.remove('wait'); } },900);
     const tl=(/^\d/.test(String(t.n))?'Задача №':'')+t.n;
     return `<div class="pl-donev"><div class="pl-cat">${typeof CAT==='function'?CAT('happy'):''}<span class="pl-ok" aria-hidden="true">✓</span></div><div class="pl-dk">Конец разбора</div><h2>${escH(tl)} разобрана</h2><div class="pl-win" hidden></div>
-      <div class="pl-ans"><div class="pl-kicker">Ответ</div>${p.ans||''}</div>
+      <div class="pl-ans"><div class="pl-kicker">Ответ</div>${p.ans||''}</div>${opt.rep?repHTML():''}
       <div class="pl-donebtns">
         ${opt.afterText&&opt.onDone?`<button class="btn pri pl-nextt wait" disabled>${opt.afterText.replace(/^Дальше:\s*/,'Следующая: ')} →</button>`:''}
         <button class="btn pl-redo">↺ Повторить с начала</button>
@@ -4046,6 +4133,15 @@ function mount(root,t,opt){
       ${rel.length?`<div class="pl-rel"><b>Похожее</b>${rel.map(r=>`<a href="${r.href}">${r.label}</a>`).join('')}</div>`:''}</div>`;
   }
 
+  /* самооценка в конце «Решаю сам» и когда задача вернётся на повтор (интервальное повторение, модуль LEARN) */
+  function repHTML(){
+    if(!opt.rep) return '';
+    if(S.mode==='try'&&S.rated==null){ const nh=Object.keys(S.hint).length;
+      return `<div class="pl-rep ask"><b>Как получилось?</b><span>Честно: от ответа зависит, когда задача вернётся на повтор.${nh?' Подсказок взято: '+nh+'.':''}</span>
+        <div class="pl-rates">${[[2,'Решил сам'],[1,'С подсказкой'],[0,'Не смог']].map(([v,l])=>`<button type="button" class="pl-rate v${v}" data-v="${v}">${l}</button>`).join('')}</div></div>`; }
+    let info=''; try{ info=opt.rep.info(); }catch(e){}
+    return info?`<div class="pl-rep"><span class="pl-rep-i" aria-hidden="true">↻</span><span>${info}</span></div>`:'';
+  }
   let lastK=-1;
   function glowNew(){
     const fwd=S.k>lastK&&lastK>=0; lastK=S.k; if(!fwd) return;
@@ -4074,16 +4170,18 @@ function mount(root,t,opt){
     q('.hl-back')&&q('.hl-back').addEventListener('click',()=>go(S.k-1));
     q('.hl-find')&&q('.hl-find').addEventListener('click',()=>{ const st=part().steps[S.k-1]||{}; if(window.SEARCH) SEARCH.open(st.t||''); });
     q('.pl-reveal')&&q('.pl-reveal').addEventListener('click',()=>{S.shown[S.pi+':'+S.k]=1;render();});
+    q('.pl-hint')&&q('.pl-hint').addEventListener('click',()=>{S.hint[S.pi+':'+S.k]=1;render();});
+    root.querySelectorAll('.pl-rate[data-v]').forEach(b=>b.addEventListener('click',()=>{ S.rated=+b.dataset.v; try{ opt.rep.rate(S.rated,{hints:Object.keys(S.hint).length}); FX.buzz(S.rated===2?'success':8); }catch(e){} const w=root.querySelector('.pl-rep'); if(w) w.outerHTML=repHTML(); }));
     q('.pl-nextpart')&&q('.pl-nextpart').addEventListener('click',()=>{S.pi++;S.k=0;S.z={s:1,x:0,y:0};render();});
     q('.pl-done')&&q('.pl-done').addEventListener('click',()=>{ S.done=true; S.z={s:1,x:0,y:0}; render(); });
     q('.pl-nextt')&&q('.pl-nextt').addEventListener('click',()=>{ if(opt.onDone) opt.onDone(S.mode); });
-    q('.pl-redo')&&q('.pl-redo').addEventListener('click',()=>{ S.done=false; S.pi=0; S.k=0; S.z={s:1,x:0,y:0}; render(); });
+    q('.pl-redo')&&q('.pl-redo').addEventListener('click',()=>{ S.done=false; S.pi=0; S.k=0; S.shown={}; S.hint={}; S.rated=null; S.z={s:1,x:0,y:0}; render(); });
     q('.pl-sh')&&q('.pl-sh').addEventListener('click',e=>shareNow(e.currentTarget));
     q('.pl-share')&&q('.pl-share').addEventListener('click',e=>shareNow(e.currentTarget));
     q('.pl-peek')&&q('.pl-peek').addEventListener('click',()=>{ S.peek=!S.peek; render(); });
     root.querySelectorAll('.pl-dot').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.k)));
     root.querySelectorAll('.pl-part').forEach(b=>b.addEventListener('click',()=>{S.pi=+b.dataset.p;S.k=0;S.z={s:1,x:0,y:0};render();}));
-    root.querySelectorAll('.pl-mode[data-m]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.m;S.shown={};render(); if(opt.onMode) opt.onMode(S.mode);}));
+    root.querySelectorAll('.pl-mode[data-m]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.m;S.shown={};S.hint={};S.rated=null;render(); if(opt.onMode) opt.onMode(S.mode);}));
     const cd=q('.pl-cond'); if(cd){ const tg=()=>{ S.cond=!S.cond; q('.pl').classList.toggle('cond-open',S.cond); cd.setAttribute('aria-expanded',S.cond?'true':'false'); };
       cd.addEventListener('click',tg); cd.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tg(); } }); }
     const pr=q('.pl-pres'); if(pr) pr.addEventListener('click',()=>{ document.body.classList.toggle('present'); if(document.body.classList.contains('present')&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); else if(document.fullscreenElement) document.exitFullscreen(); });
@@ -6723,7 +6821,9 @@ function buildDocs(){
   [['epure','3D-модель и эпюр: двигай точки в пространстве и смотри чертёж','v',Hh('epure'),'3D-модель и эпюр','Двигай точки в пространстве и на чертеже, смотри проекции, линии связи, координаты.',['3д эпюр','эпюр онлайн','интерактив']],
    ['train','Пробный РК: карточки и экзамен','c',Hh('ng','check','train'),'Подготовка к РК · Пробный РК','Карточки с интервальным повторением, режим экзамен, карта слабых мест.',['карточки','повторить','экзамен']],
    ['quiz','Тест на время по начертательной геометрии','c',Hh('ng','check','quiz'),'Подготовка к РК · Быстрый тест','Короткий тест на время; ошибки разбираются.',['тест онлайн','проверить себя']],
-   ['tickets','Билеты РК1 с разбором','c',Hh('ng','check','tickets'),'Подготовка к РК · Билеты','Билеты РК1 с пошаговым разбором.',['билеты','экзамен','рк']]
+   ['tickets','Билеты РК1 с разбором','c',Hh('ng','check','tickets'),'Подготовка к РК · Билеты','Билеты РК1 с пошаговым разбором.',['билеты','экзамен','рк']],
+   ['learn','Тренировка дня: повторение задач, карточки, типы задач вперемешку','c',Hh('ng','learn'),'Учиться самому · Тренировка дня','Разобранные задачи возвращаются через 1, 3, 7, 16, 35 дней — реши по памяти и оцени себя. Почему так учиться: вспоминать, повторять с перерывами, перемешивать.',['как учиться','как запомнить','повторение','тренировка','самостоятельно','методика','как готовиться']],
+   ['kind','Узнай тип задачи — какой способ применить','c',Hh('ng','learn','kind'),'Учиться самому · Узнай тип задачи','Задачи из тетради вперемешку: определи тему и способ, не решая до конца.',['какой способ','с чего начать','тип задачи','не знаю как начать','какой метод']]
   ].forEach(a=>add({key:'tool:'+a[0],type:'tool',grp:a[2],label:'Инструмент',title:a[1],segs:[seg('',a[5])],kw:a[6],href:a[3],where:a[4]}));
   /* темы */
   const topicKw=id=>{ const kw=[],sym=[]; Object.keys(T).forEach(k=>{ const e=T[k]; if(e&&e.topic===id){ (e.kw||[]).forEach(x=>kw.push(x)); (e.sym||[]).forEach(x=>sym.push(x)); } }); ((root.SYMPTOMS&&SYMPTOMS.list)||[]).forEach(x=>{ if(x.topic===id) sym.push(x.text); }); return {kw:kw.slice(0,60),sym:sym.slice(0,30)}; };
@@ -7504,7 +7604,7 @@ function onClick(ev){
 }
 
 window.PANES=window.PANES||{};
-window.PANES.train={title:'Тренинг',order:6,at:4,render(root){
+window.PANES.train={title:'Тренинг',order:6,at:4,mode(m){ MODE=m; ST.set('trmode',m); },render(root){
   ROOT=root; root.onclick=onClick;
   if(!MODE){ MODE=ST.get('trmode','cards'); if(!['cards','exam','weak'].includes(MODE)) MODE='cards'; }
   draw();
@@ -22288,6 +22388,11 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.2',d:'13 октября 2026',items:['Новый раздел «Тренировка дня»: план на 10–15 минут — реши по памяти задачи, которые уже разбирал, повтори карточки теории и пройди «Узнай тип задачи». Вход — на главной, в «Подготовке к РК» и через поиск.',
+    'Повторение задач: разобранная задача через день возвращается «реши сам», дальше — через 3, 7, 16 и 35 дней. Когда — решает твоя честная оценка в конце: «решил сам», «с подсказками» или «не смог».',
+    '«Узнай тип задачи»: 8 задач тетради вперемешку — определи тему, не решая. После ответа — с чего начать и ссылка «решить самому».',
+    '«Решаю сам»: на каждом шаге сначала думаешь сам, потом «Подсказка» (что делать) и только потом построение.',
+    'На странице тренировки — почему так учиться: пять приёмов из исследований памяти и обучения.']},
   {v:'4.1',d:'13 октября 2026',items:['Начерт можно добавить на главный экран телефона и открывать как приложение: значок, запуск в один тап, на весь экран. Кнопка — на главной и в меню «Поделиться», инструкция подстраивается под телефон и браузер. Из Telegram сначала подскажет открыть сайт в Safari или браузере — и продолжит там.','Ссылка «Продолжить, где остановился» на главной снова открывает нужную задачу.','ИГ, «Как из 3D получаются виды»: на этапе «Чертёж» — как на листе: только виды и осевые линии, без осей проекций, плоскостей и точки A.']},
   {v:'4.0',d:'13 октября 2026',items:['ДЗ 2: у всех 30 вариантов — чистовик и черновик как на образце. Размеры из задания на своих местах, основная надпись по форме 1; наклонное сечение А–А — на черновике, с линиями связи и номерами точек.','ДЗ 2, «По шагам»: сечение А–А строится точка за точкой у каждого варианта — след и ось сечения, точки группами, обводка и штриховка.','Вкладки 3D, «Развёртка», «По шагам» и «Лист» открываются сразу: чертежи считаются заранее, пока читаешь условие.','Обучение (вариант 5): одна буква на листе — А, как в задании; уточнены формулировки шагов.']},
   {v:'3.9',d:'13 октября 2026',items:['ДЗ 2, вариант 5: на листе — чистовик и черновик как на образце; размеры из задания, основная надпись по форме 1.','Обозначения сечений и разрезов: буква — у стрелки с внешней стороны, как в задании.','Сечение А–А: контур и отверстия — замкнутые линии, в том числе там, где отверстие касается края.','Шаг «Дано» — как в задании: след А, оси отверстий, центровая окружность.']},
@@ -23293,6 +23398,166 @@ function view(v,mode,keyStr){
 return {view,buildTargets,bugMake,make,lists,frame};
 })();
 
+/* ═════════ УЧИТЬСЯ САМОМУ: тренировка дня · повторение задач · «Узнай тип задачи» ═════════
+   Методика (подробно — docs/learning-methods.md):
+   • вспоминать, а не перечитывать (retrieval practice) — задачу решаешь по памяти, разбор только для сверки;
+   • повторять с интервалами (spacing) — разобранная задача возвращается через 1, 3, 7, 16, 35 дней;
+   • перемешивать типы (interleaving) — в «Узнай тип» подряд не бывает двух задач одной темы;
+   • честная самооценка — «сам / с подсказками / не смог» решает, когда задача вернётся.
+   Состояние — только ST (localStorage):
+     'rep'   {ключ задачи:{b:ступень 0..4, d:день повтора, s:день первого разбора, l:день последней попытки, n:попыток, r:оценка 0..2}}
+     'kindt' {тема:[верно,всего]}   'kindday' {d:день, ok, n} — «Узнай тип» сегодня */
+window.LEARN=(function(){
+const IV=[1,3,7,16,35], PER_DAY=3, NQ=8;
+const day=()=>Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/864e5);
+const dstr=d=>{ const x=new Date(d*864e5); return String(x.getUTCDate()).padStart(2,'0')+'.'+String(x.getUTCMonth()+1).padStart(2,'0'); };
+const when=d=>{ const k=d-day(); return k<=0?'сегодня':k===1?'завтра':k===2?'послезавтра':'через '+k+' '+plural(k,'день','дня','дней')+' ('+dstr(d)+')'; };
+const shuffle=a=>{ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+/* ── повторение задач ── */
+const all=()=>ST.get('rep',{});
+const isNum=k=>/^\d+$/.test(String(k));
+function href(k,tryIt){ return isNum(k)?H('ng','tasks',+k,tryIt?'try':''):H('ng','check','tickets',k,tryIt?'try':''); }
+function label(k){ return isNum(k)?'Задача №'+k:'Задание из билета'; }
+function seen(key){ const k=String(key), m=all(); if(m[k]||!taskByKey(key)) return; const t=day(); m[k]={b:0,d:t+1,s:t,l:t,n:0}; ST.set('rep',m); }
+function rate(key,v){ const k=String(key), m=all(), t=day(), o=m[k]||{b:0,s:t,n:0,fresh:1};
+  if(v===2) o.b=o.fresh?1:Math.min(o.b+1,IV.length-1), o.d=t+IV[o.b];
+  else if(v===1) o.d=t+Math.max(2,Math.round(IV[o.b]/2));
+  else { o.b=0; o.d=t+1; }
+  delete o.fresh; o.l=t; o.n=(o.n||0)+1; o.r=v; m[k]=o; ST.set('rep',m); }
+function infoText(key){ const o=all()[String(key)]; if(!o) return '';
+  if(o.n&&o.l===day()) return `${['Не страшно — задача','Хорошо. Задача','Отлично! Задача'][o.r]} вернётся на повтор <b>${when(o.d)}</b> — в <a href="${H('ng','learn')}">тренировке дня</a>.`;
+  if(!o.n) return `Задача вернётся <b>${when(o.d)}</b> в <a href="${H('ng','learn')}">тренировке дня</a>: реши её сам, не подглядывая в разбор. Так она запомнится до РК.`;
+  return `Следующий повтор — <b>${when(o.d)}</b>.`; }
+function repFor(key){ return {rate:v=>rate(key,v),info:()=>infoText(key)}; }
+function queue(){ const m=all(), t=day();
+  return Object.keys(m).filter(k=>taskByKey(isNum(k)?+k:k)).map(k=>Object.assign({k},m[k])).sort((a,b)=>a.d-b.d||a.s-b.s).map(o=>Object.assign(o,{due:o.d<=t})); }
+function dueList(){ return queue().filter(o=>o.due); }
+function doneToday(){ const t=day(); return queue().filter(o=>o.n&&o.l===t).length; }
+
+/* ── карточки теории (ящики Лейтнера из «Пробного РК») ── */
+function cardsDue(){ const th=(typeof THEORY!=='undefined'?THEORY:[]), L=ST.get('leit',{}), t=day();
+  return th.filter(c=>!L[c.id]||L[c.id].d<=t).length; }
+
+/* ── «Узнай тип задачи»: тема каждой задачи — из тегов поиска ── */
+/* темы, которые пересекаются по смыслу (задачу одной легко честно отнести к другой) — друг другу не бывают неверными вариантами */
+const NEAR={'true-length':'metric replace-planes rotation inclination line-positions','metric':'replace-planes rotation perpendicular true-length inclination flat-figures',
+  'replace-planes':'rotation metric true-length','rotation':'replace-planes metric true-length','inclination':'true-length metric plane-inplane',
+  'flat-figures':'plane-inplane parallel perp-theorem point-on-line metric plane-position','plane-inplane':'flat-figures plane-position plane-traces inclination',
+  'plane-position':'plane-traces plane-inplane flat-figures','plane-traces':'plane-position plane-inplane line-traces',
+  'perp-theorem':'perpendicular flat-figures line-mutual','perpendicular':'perp-theorem metric','parallel':'flat-figures line-mutual',
+  'line-plane-meet':'visibility planes-meet','planes-meet':'line-plane-meet visibility','visibility':'line-plane-meet planes-meet line-mutual',
+  'line-mutual':'visibility perp-theorem parallel','point-epure':'line-positions point-on-line','line-positions':'point-epure true-length line-traces',
+  'point-on-line':'point-epure flat-figures','line-traces':'plane-traces line-positions',
+  'surfaces':'sections-surfaces surfaces-meet','sections-surfaces':'surfaces surfaces-meet','surfaces-meet':'surfaces sections-surfaces'};
+const near=(a,b)=>a===b||(NEAR[a]||'').split(' ').includes(b)||(NEAR[b]||'').split(' ').includes(a);
+function topicOf(n){ const e=(window.TAGS&&TAGS.map||{})['ng-task:'+n]; return e&&e.topic&&TOPICS.get(e.topic)?e.topic:null; }
+function pool(){ const by={}; WB3.tasks.forEach(t=>{ if(typeof t.n!=='number') return; const tp=topicOf(t.n); if(tp) (by[tp]=by[tp]||[]).push(t.n); }); return by; }
+function makeQuiz(){
+  const by=pool(), st=ST.get('kindt',{}), tops=TOPICS.list.map(t=>t.id).filter(id=>by[id]);
+  /* сначала темы, где ошибался чаще, но с перемешиванием; одна тема — одна задача: типы идут вперемешку */
+  const acc=id=>{ const a=st[id]; return a&&a[1]?a[0]/a[1]:.5; };
+  const pick=tops.map(id=>({id,w:acc(id)+Math.random()*.9})).sort((a,b)=>a.w-b.w).slice(0,NQ).map(x=>x.id);
+  return shuffle(pick).map(id=>{ const n=by[id][Math.floor(Math.random()*by[id].length)], idx=tops.indexOf(id);
+    const alt=shuffle(tops.filter(o=>!near(o,id))).map(o=>({o,w:Math.abs(tops.indexOf(o)-idx)+Math.random()*5})).sort((a,b)=>a.w-b.w);
+    const opts=[id]; for(const a of alt){ if(opts.length>=4) break; if(!opts.some(x=>near(x,a.o))) opts.push(a.o); }
+    return {n,id,opts:shuffle(opts),pick:null}; });
+}
+let KQ=null;
+function givenOf(t){ const p=(t.parts&&t.parts.length)?t.parts[0]:t; return (p.given&&p.given.length?p.given:t.given)||[]; }
+function kindQuestion(v){
+  const Q=KQ.q[KQ.i], t=WB3.get(Q.n), tp=TOPICS.get(Q.id), ans=Q.pick!=null, ok=Q.pick===Q.id;
+  let fig=''; try{ const g=givenOf(t); if(g.length) fig=`<div class="sheet lk-sheet">${DRAW.svg({items:g,alt:'Условие задачи'})}</div>`; }catch(e){}
+  const build=(tp.build||[])[0]||'';
+  return `<div class="lk-top"><span class="lk-k">Задача ${KQ.i+1} из ${KQ.q.length}</span><span class="lk-sc">верно: <b>${KQ.q.filter(x=>x.pick===x.id).length}</b></span></div>
+    <div class="pbar lk-bar"><i style="width:${(KQ.i+(ans?1:0))/KQ.q.length*100}%"></i></div>
+    <section class="lk-card" aria-live="polite">
+      <div class="lk-ask">Какой это тип задачи?</div>
+      <div class="lk-q">${t.q}</div>${fig}
+      <div class="lk-opts" role="group" aria-label="Варианты ответа">${Q.opts.map((o,i)=>{ const c=ans?(o===Q.id?' ok':o===Q.pick?' no':'')+' lk':''; return `<button type="button" class="opt${c}" data-o="${o}"${ans?' disabled':''}><span class="lt">${'АБВГ'[i]}</span><span>${TOPICS.get(o).title}</span></button>`; }).join('')}</div>
+      ${ans?`<div class="lk-exp ${ok?'ok':'no'}"><b>${ok?'Верно.':'Не то.'}</b> Это задача №${Q.n} — тема «${tp.title}». ${tp.why||''}
+        ${build?`<div class="lk-key"><span>С чего начать</span>${build}</div>`:''}
+        <div class="lk-links"><a href="${H('ng','tasks',Q.n,'try')}">Решить №${Q.n} самому →</a><a href="${H('topic',Q.id)}">Тема целиком</a></div></div>
+        <button type="button" class="btn pri lg lk-next" data-kn>${KQ.i<KQ.q.length-1?'Следующая задача →':'Итог →'}</button>`:''}
+    </section>`;
+}
+function kindResult(){
+  const q=KQ.q, ok=q.filter(x=>x.pick===x.id).length, bad=q.filter(x=>x.pick!==x.id), pc=Math.round(ok/q.length*100);
+  const say=pc>=88?'Ты различаешь типы задач — значит, на РК поймёшь, с чего начинать.':pc>=60?'Неплохо. Перепутанные пары ниже — разберись, чем они отличаются: это и есть умение выбрать способ.':'Типы пока путаются — это нормально в начале. Именно так это и тренируют: вперемешку, по 8 задач в день.';
+  return `<section class="lk-res">${typeof CAT==='function'?`<div class="lk-cat">${CAT(pc>=60?'happy':'think')}</div>`:''}
+    <div class="lk-big ${pc>=75?'g':pc>=50?'a':'r'}">${ok} из ${q.length}</div><p>${say}</p>
+    ${bad.length?`<div class="lk-mix"><h3>Что перепутал</h3>${bad.map(x=>`<div class="lk-mi"><span>№${x.n}: выбрал «${TOPICS.get(x.pick).title}», а это</span><a href="${H('topic',x.id)}">${TOPICS.get(x.id).title} →</a></div>`).join('')}</div>`:''}
+    <div class="lk-acts"><button type="button" class="btn pri lg" data-kagain>Ещё 8 задач</button><a class="btn lg" href="${H('ng','learn')}">К тренировке дня</a></div></section>`;
+}
+function kindView(v){
+  if(!KQ||KQ.fin===true&&KQ.shown) KQ={q:makeQuiz(),i:0};
+  v.innerHTML=pageHTML({crumbs:[['Тренировка дня',H('ng','learn')],['Узнай тип задачи']],next:null,noBottom:true,cls:'lk-page',body:`
+    <div class="intro"><h1>Узнай тип задачи</h1><p class="lead">На РК никто не подскажет, какой способ нужен. Здесь задачи из тетради идут вперемешку — определи тему, не решая до конца.</p></div>
+    <div id="lkRoot"></div>`});
+  const root=$('lkRoot');
+  const draw=()=>{ root.innerHTML=KQ.fin?kindResult():kindQuestion(v); if(KQ.fin) KQ.shown=true; };
+  root.addEventListener('click',e=>{
+    const o=e.target.closest('[data-o]'), Q=KQ.q[KQ.i];
+    if(o&&Q&&Q.pick==null){ Q.pick=o.dataset.o; const good=Q.pick===Q.id; try{ FX.buzz(good?'success':'error'); }catch(_){}
+      const st=ST.get('kindt',{}), a=st[Q.id]||[0,0]; a[1]++; if(good) a[0]++; st[Q.id]=a; ST.set('kindt',st);
+      draw(); const ex=root.querySelector('.lk-exp'); if(ex&&ex.getBoundingClientRect().top>innerHeight*.7) ex.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    if(e.target.closest('[data-kn]')){ if(KQ.i<KQ.q.length-1){ KQ.i++; } else { KQ.fin=true; const ok=KQ.q.filter(x=>x.pick===x.id).length; ST.set('kindday',{d:day(),ok,n:KQ.q.length}); try{ FX.touch(); }catch(_){} }
+      draw(); window.scrollTo({top:0,behavior:'instant'}); return; }
+    if(e.target.closest('[data-kagain]')){ KQ={q:makeQuiz(),i:0}; draw(); window.scrollTo({top:0,behavior:'instant'}); }
+  });
+  draw();
+  return 'Узнай тип задачи';
+}
+
+/* ── тренировка дня ── */
+const METHODS=[
+  ['Вспоминай, а не перечитывай','Попытка достать решение из памяти укрепляет его сильнее, чем ещё один просмотр того же разбора. Поэтому сначала решаешь сам — разбор только для сверки.','«Решаю сам» в каждой задаче, карточки теории','Roediger, Karpicke, 2006; Dunlosky и др., 2013'],
+  ['Повторяй с перерывами','Задача, решённая через 1, 3, 7 и 16 дней, держится в памяти месяцами. Пять раз подряд за вечер — до утра. Сайт сам помнит, что и когда повторить.','очередь повторения выше','Cepeda и др., 2008'],
+  ['Перемешивай типы задач','Подряд одного типа решать легко: способ уже известен. На РК его надо выбрать самому — этому учат задачи вперемешку.','«Узнай тип задачи»','Rohrer, Taylor, 2007; Rohrer и др., 2015'],
+  ['Сначала подумай, потом подсказка','Шаг, который додумал сам — пусть с подсказкой, — запоминается лучше увиденного готовым. Подсказка идёт лесенкой: что делать → как построить.','«Решаю сам»: «Подсказка» и «Показать построение»','Slamecka, Graf, 1978; Renkl, Atkinson, 2003'],
+  ['Оценивай себя честно','Знакомый чертёж создаёт иллюзию «я понял». Честное «сам / с подсказками / не смог» показывает настоящий уровень — и решает, когда задача вернётся.','оценка в конце «Решаю сам»','Dunlosky, Rawson, 2012']];
+function hubView(v){
+  const t=day(), due=dueList(), q=queue(), cd=cardsDue(), kd=ST.get('kindday',null), kDone=kd&&kd.d===t, solved=doneToday();
+  const first=due[0];
+  const items=[
+    {k:'rep',done:!due.length&&solved>0,empty:!q.length,
+      t:due.length?'Реши по памяти: '+Math.min(due.length,PER_DAY)+' '+plural(Math.min(due.length,PER_DAY),'задача','задачи','задач'):solved?'Задачи на сегодня решены':'Реши по памяти',
+      s:due.length?'Ты их уже разбирал. Теперь — без разбора, на бумаге; застрял — подсказка.'+(due.length>PER_DAY?' Ещё '+(due.length-PER_DAY)+' подождут до завтра.':''):q.length?'Следующая задача вернётся '+when(q[0].d)+'.':'Разбери любую задачу в тетради — на следующий день она появится здесь.',
+      a:first?{h:href(first.k,true),l:'Решить'}:q.length?null:{h:H('ng','tasks'),l:'В тетрадь'}},
+    {k:'cards',done:!cd,t:cd?'Карточки теории: '+cd:'Карточки на сегодня пройдены',s:cd?'Вспомни ответ, потом открой. Знал — карточка вернётся позже, не знал — завтра.':'Новые придут по расписанию.',a:cd?{h:H('ng','check','train'),l:'Повторить',cards:1}:null},
+    {k:'kind',done:kDone,t:kDone?'Узнай тип: '+kd.ok+' из '+kd.n:'Узнай тип задачи',s:kDone?'Можно ещё раз — задачи каждый раз другие.':NQ+' задач из тетради вперемешку: определи тему, не решая.',a:{h:H('ng','learn','kind'),l:kDone?'Ещё раз':'Начать'}}];
+  const firstOpen=items.findIndex(x=>!x.done&&x.a);
+  const allDone=items.every(x=>x.done||!x.a);
+  const row=(x,i)=>`<li class="lr-i${x.done?' done':''}${i===firstOpen?' now':''}"><span class="lr-n" aria-hidden="true">${x.done?'✓':i+1}</span>
+    <span class="lr-t"><b>${x.t}${i===firstOpen?'<i class="v5-tag">начни здесь</i>':''}</b><small>${x.s}</small></span>
+    ${x.a?`<a class="lr-go" href="${x.a.h}"${x.a.cards?' data-cards':''}>${x.a.l} →</a>`:''}</li>`;
+  /* очередь: когда что вернётся */
+  const bucket=[['Сегодня',o=>o.d<=t],['Завтра',o=>o.d===t+1],['За неделю',o=>o.d>t+1&&o.d<=t+7],['Позже',o=>o.d>t+7]].map(([l,f])=>[l,q.filter(f).length]);
+  const ladder=o=>`<span class="lr-lad" title="Ступень ${o.b+1} из ${IV.length}: следующий интервал — ${IV[o.b]} ${plural(IV[o.b],'день','дня','дней')}" aria-label="Ступень ${o.b+1} из ${IV.length}">${IV.map((_,j)=>`<i class="${j<=o.b&&o.n?'on':''}"></i>`).join('')}</span>`;
+  const qHTML=q.length?`<section class="lr-q" aria-labelledby="lrQ"><h2 id="lrQ">Очередь повторения</h2>
+     <div class="lr-bk">${bucket.map(b=>`<div><b>${b[1]}</b><span>${b[0]}</span></div>`).join('')}</div>
+     <ul class="lr-ql">${q.slice(0,8).map(o=>{ const tk=taskByKey(isNum(o.k)?+o.k:o.k); return `<li><a href="${href(o.k,true)}"><span class="lr-qn">${isNum(o.k)?'№'+o.k:'Билет'}</span><span class="lr-qt">${short(tk.q,70)}</span><span class="lr-qd${o.due?' due':''}">${o.due?'сегодня':when(o.d).replace(/ \(.+\)$/,'')}</span>${ladder(o)}</a></li>`; }).join('')}</ul>
+     ${q.length>8?`<p class="lr-fine">И ещё ${q.length-8} ${plural(q.length-8,'задача','задачи','задач')} в очереди.</p>`:''}
+     <p class="lr-fine">Пять ступеней: 1 → 3 → 7 → 16 → 35 дней. «Решил сам» — задача поднимается на ступень, «не смог» — возвращается завтра.</p></section>`:'';
+  v.innerHTML=pageHTML({crumbs:[['Теория',H('ng','path')],['Тренировка дня']],next:null,noBottom:true,cls:'lr-page',body:`
+    <div class="intro"><h1>Тренировка дня</h1><p class="lead">Чтобы на РК решать самому, а не узнавать знакомый чертёж. 10–15 минут в день — сайт сам подбирает, что повторить сегодня.</p></div>
+    <section class="lr-today" aria-labelledby="lrT"><div class="lr-th"><h2 id="lrT">${allDone?'На сегодня всё ✓':'План на сегодня'}</h2><span>${allDone?'приходи завтра':'≈ '+(Math.min(due.length,PER_DAY)*4+(cd?Math.min(cd,10):0)+(kDone?0:4)||5)+' мин'}</span></div>
+      <ol class="lr-l">${items.map(row).join('')}</ol></section>
+    ${qHTML}
+    <section class="lr-m" aria-labelledby="lrM"><h2 id="lrM">Почему так учиться</h2>
+      <p class="lr-sub">Пять приёмов с самой сильной доказательной базой в исследованиях памяти и обучения. Каждый уже встроен в сайт.</p>
+      <div class="lr-mg">${METHODS.map((m,i)=>`<article class="lr-mc"><span class="lr-mn">${i+1}</span><h3>${m[0]}</h3><p>${m[1]}</p><div class="lr-mw"><b>На сайте:</b> ${m[2]}</div><div class="lr-ms">${m[3]}</div></article>`).join('')}</div>
+      <p class="lr-fine">Что не работает, хотя кажется полезным: перечитывать разбор, выделять маркером, решать десять одинаковых задач подряд. Это даёт чувство «понял», но не умение решить на РК.</p></section>`});
+  v.querySelectorAll('[data-cards]').forEach(a=>a.addEventListener('click',()=>{ try{ PANES.train.mode('cards'); }catch(e){} }));
+  return 'Тренировка дня';
+}
+function view(v,item){ return item==='kind'?kindView(v):hubView(v); }
+/* короткая строка для главной и РК: что ждёт сегодня */
+function todayLine(){ const d=Math.min(dueList().length,PER_DAY), c=cardsDue(), p=[];
+  if(d) p.push(d+' '+plural(d,'задача','задачи','задач')+' на повтор'); if(c) p.push(c+' '+plural(c,'карточка','карточки','карточек')); return p.join(' · '); }
+return {view,seen,rate,repFor,queue,dueList,todayLine,makeQuiz,IV};
+})();
+
 </script>
 
 <script>
@@ -23321,6 +23586,7 @@ const IC={
   th:'<path d="M4 20V4l16 16z"/><path d="M8.5 15.5v-3.2l3.2 3.2z"/>',
   ep:'<path d="M3 13h18"/><path d="M9 6.5v13" stroke-dasharray="1.6 2.6"/><circle cx="9" cy="4.8" r="1.7"/><circle cx="9" cy="20.2" r="1.7"/>',
   ig:'<path d="M3.5 20.5 4.5 16 16.5 4a2.1 2.1 0 0 1 3 3L7.5 19z"/><path d="m14 6.5 3 3"/>',
+  tr:'<path d="M20 11.5A8 8 0 0 0 6.3 6.3L4 8.5"/><path d="M4 3.8v4.7h4.7"/><path d="M4 12.5a8 8 0 0 0 13.7 5.2l2.3-2.2"/><path d="M20 20.2v-4.7h-4.7"/><path d="m9.3 12.2 1.9 1.9 3.6-3.8"/>',
   lr:'<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/><path d="M5 14.5 19 9.5" stroke-dasharray="2 2"/>'
 };
 const SUBJ={
@@ -23340,7 +23606,7 @@ const NAVS=[
 const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ № 2',short:'ДЗ 2',h:'#/ig/hw2'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
 const subjOf=r=>(r&&(r.s==='ig'||r.s==='part'))&&IGON()?'ig':'ng'; let NAVSUBJ=null;
 function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {learn:'ilr',hw2:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
-  if(r.s==='ng') return {tasks:'nb',check:'rk',hw:'hw',path:'th',cheat:'th'}[r.tab]||'nb';
+  if(r.s==='ng') return {tasks:'nb',check:'rk',hw:'hw',path:'th',cheat:'th',learn:'th'}[r.tab]||'nb';
   if(!r.s||r.s==='home') return 'home';
   return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
 const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
@@ -24137,6 +24403,7 @@ function viewHome(v){
     ${door('rk',H('ng','check'),'Подготовиться к РК','Билеты с разбором, '+nth+' '+plural(nth,'вопрос','вопроса','вопросов')+' теории, пробный РК',quick('Сразу:',[['Билеты',H('ng','check','tickets')],['Теория РК1',H('ng','cheat','th')],['Пробный РК',H('ng','check','train')]]))}
     ${door('th',H('ng','path'),'Понять тему',nL+' коротких уроков с картинками и разборы по типам задач',quick('Сразу:',[['Уроки',H('ng','path')],['Шпаргалка',H('ng','cheat')],['3D-модель',H('epure')]]))}
    </ol>
+   ${(()=>{ const tl=window.LEARN?LEARN.todayLine():''; return `<a class="lr-home" href="${H('ng','learn')}"><span class="v5-ic">${ic('tr')}</span><span class="v5-t"><b>Тренировка дня</b><small>${tl?'Сегодня: '+tl:'10 минут в день: реши по памяти, повтори теорию, узнай тип задачи — чтобы на РК решать самому'}</small></span><i class="v5-go" aria-hidden="true">→</i></a>`; })()}
    <ol class="v6-how" aria-label="Как пользоваться"><li><b>1</b>Найди задачу или тему</li><li><b>2</b>Жми «Дальше» — чертёж растёт по шагам</li><li><b>3</b>«Решаю сам» — проверь себя</li></ol>
    <section class="v5-more" aria-labelledby="v5M">
     <h2 id="v5M" class="v5-h2">Ещё</h2>
@@ -24166,8 +24433,9 @@ function viewHome(v){
 let LID=null, CURT=null, PLR=null;
 function viewNG(v,r){
   if(r.tab==='day') return viewDay(v,r);
-  const tab=['path','tasks','hw','check','cheat'].includes(r.tab)?r.tab:null;
+  const tab=['path','tasks','hw','check','cheat','learn'].includes(r.tab)?r.tab:null;
   if(!tab) return viewNG(v,{s:'ng',tab:'tasks'});
+  if(tab==='learn') return LEARN.view(v,r.item);
   if(tab==='hw') return hwView(v,r);
   if(tab==='path'){ if(r.item==null) return ngPath(v); if(/^t\d+$/.test(r.item)) return openTaskView(v,+r.item.slice(1),'path',r.sub); return ngLesson(v,+r.item); }
   if(tab==='tasks'){ if(r.item==null) return ngTasks(v); return openTaskView(v,+r.item,'tasks',r.sub); }
@@ -24343,6 +24611,7 @@ let PL_END=null;   /* «← №11» с первого шага открывае�
 function openTaskView(v,key,ctx,start){
   const endKey=PL_END; PL_END=null;
   const t=taskByKey(key); if(!t){ redir(H('ng','tasks')); return ''; }
+  const tryNow=start==='try'; if(tryNow) start=null;   /* …/try — «реши по памяти»: сразу «Решаю сам», с первого шага */
   CURT=key;
   const isTk=ctx==='tk';
   let crumbs, after=null, afterText='', prev=null;
@@ -24376,9 +24645,10 @@ function openTaskView(v,key,ctx,start){
   const back = ctx==='path'?{href:H('ng','path'),label:'К теории'}: ctx==='tk'?{href:H('ng','check','tickets'),label:'К билетам'}: ctx==='tasks'?{href:H('ng','tasks'),label:'К тетради'}: {href:H('ng','check','train'),label:'К пробному РК'};
   PLR=PLAYER.mount($('plMount'),t,{
     backHref:back.href, backLabel:back.label, related:relatedFor(key), start:(endKey===String(key)?'end':start), prev,
+    mode:tryNow?'try':undefined, noResume:tryNow, rep:window.LEARN?LEARN.repFor(key):null,
     onPrev:()=>{ if(!prev) return; PL_END=prev.task; nav(prev.href); },
     afterText,
-    onLast:(mode)=>{ const m=ST.get('wb3',{}); const val=mode==='try'?2:1; if((m[key]||0)<val){ m[key]=val; ST.set('wb3',m); renderHProg(); } },
+    onLast:(mode)=>{ const m=ST.get('wb3',{}); const val=mode==='try'?2:1; if((m[key]||0)<val){ m[key]=val; ST.set('wb3',m); renderHProg(); } if(window.LEARN) LEARN.seen(key); },
     onDone:()=>{ nav(after.href); }
   });
   return isTk?'Билеты РК':tno+' — решение по шагам';
@@ -24451,6 +24721,7 @@ function rkHub(v){
     <a class="rk9-big" href="${H('ng','check','tickets')}"><b>Все билеты целиком</b><span>${nt} ${plural(nt,'задание','задания','заданий')} из билетов: реши на бумаге, потом сверься с разбором по шагам</span><i>Открыть билеты →</i></a>
     <a class="rk9-big alt" href="${H('ng','check','train')}"><b>Пробный РК на время</b><span>Задачи из разных разделов и таймер — как на настоящем РК${last?' · прошлый результат: '+last.pct+'%':''}</span><i>Начать пробный РК →</i></a>
     <a class="rk9-big th" href="${H('ng','cheat','th')}"><b>Теория РК1: ${nth} ${plural(nth,'вопрос','вопроса','вопросов')}</b><span>Короткий ответ на каждый вопрос и подробное объяснение</span><i>Читать ответы →</i></a>
+    <a class="rk9-big th" href="${H('ng','learn')}"><b>Тренировка дня</b><span>${(window.LEARN&&LEARN.todayLine())?'Сегодня: '+LEARN.todayLine()+'. ':''}Разобранные задачи возвращаются «реши по памяти» через 1, 3, 7, 16 дней; типы задач — вперемешку</span><i>Тренироваться →</i></a>
    </section>
    ${rkZeroHTML()}
    <div class="rk-help"><b>Не получается задача?</b><span>Найди её в <a href="${H('ng','tasks')}">решённой тетради</a> или спроси в поиске своими словами.</span></div>`});
