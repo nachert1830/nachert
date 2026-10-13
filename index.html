@@ -6706,7 +6706,7 @@ const INTENT=[
  ['check',/(тест|провер|билет|экзамен|рк|зачет|контрольн|вопросы к)/,['ng-quiz','ng-ticket','ig-rk','tool']]
 ];
 const GRP=[['u','Понять','объяснение простыми словами'],['e','Пример','разобрано по шагам'],['v','Посмотреть','интерактив и 3D'],['c','Проверить','вопросы и билеты']];
-const KIND_PRIOR={topic:1.25,'ng-lesson':1,'ig-lesson':1,'ng-theory':.95,'ig-rk':.95,'ng-cheat':.9,'ig-ref':.9,'ng-task':.92,'ng-ticket':.85,'ig-task':.92,'ng-hw':.92,'ig-hw':.92,'ig-lab':.9,part:1,tool:.95,'ng-quiz':.8};
+const KIND_PRIOR={topic:1.25,'ng-lesson':1,'ig-lesson':1,'ig-theory':1.25,'ng-theory':.95,'ig-rk':.95,'ng-cheat':.9,'ig-ref':.9,'ng-task':.92,'ng-ticket':.85,'ig-task':.92,'ng-hw':.92,'ig-hw':1,'ig-lab':.9,part:1,tool:.95,'ng-quiz':.8};
 
 /* ───────── синонимы/сленг: группы фраз (вес замены). разрез ≠ сечение: связь лишь слабая ───────── */
 const SYN_RAW=[
@@ -6801,7 +6801,7 @@ function buildDocs(){
     add({key:'ng-lesson:'+l.id,type:'ng-lesson',grp:'u',label:'Урок '+l.id,title:l.title,kw:[l.part],segs,err:errs.join(' '),href:Hh('ng','path',l.id),where:'Теория · урок '+l.id}); });
   /* НГ: задачи (все шаги) */
   ((g(()=>WB3.tasks))||[]).forEach(t=>{ const segs=[]; taskSegs(t,segs);
-    add({key:'ng-task:'+t.n,type:'ng-task',grp:'e',label:'Задача №'+t.n,title:stripHTML(t.q),kw:[t.sec,t.conf].filter(x=>typeof x==='string'),segs,href:Hh('ng','tasks',t.n),where:'Тетрадь · №'+t.n+' — решение по шагам'}); });
+    add({key:'ng-task:'+t.n,type:'ng-task',grp:'e',label:'Задача №'+t.n,title:stripHTML(t.q),kw:[t.sec,t.conf].filter(x=>typeof x==='string').concat([String(t.n),'задача '+t.n,'задача №'+t.n,'№'+t.n]),segs,href:Hh('ng','tasks',t.n),where:'Тетрадь · №'+t.n+' — решение по шагам'}); });
   /* НГ: билеты */
   ((g(()=>TK3))||[]).forEach(tk=>(tk.tasks||[]).forEach(t=>{ const segs=[]; taskSegs(t,segs);
     add({key:'ng-ticket:'+t.key,type:'ng-ticket',grp:'e',label:tk.title+' · '+(t.idx||''),title:stripHTML(t.q),kw:[tk.title,'билет кафедры'],segs,href:Hh('ng','check','tickets',t.key),where:'Подготовка к РК · '+tk.title+', задание '+(t.idx||'')}); }));
@@ -6824,6 +6824,26 @@ function buildDocs(){
     (g(()=>IG.labs())||[]).forEach(l=>{ const segs=[seg('Цель',flat(l.goal)),seg('Инструменты',flat(l.tools))]; (l.steps||[]).forEach((s,i)=>segs.push(seg('Шаг '+(i+1),flat(s)))); if(l.check) segs.push(seg('Проверка',flat(l.check)));
       add({key:'ig-lab:'+l.n,type:'ig-lab',grp:'e',label:'Лаб №'+l.n,title:l.title,kw:['компас','построить в компас'],segs,err:flat(l.mistakes),href:Hh('ig','parts',l.n),where:S('ig')+' · Детали · лабораторная '+l.n}); });
     (g(()=>IG.ref)||[]).forEach((r,i)=>add({key:'ig-ref:'+i,type:'ig-ref',grp:'u',label:'Справка',title:r[0],segs:[seg('',flat(r[1]))],href:Hh('ig','cheat'),where:S('ig')+' · Шпаргалка'}));
+  }
+  /* ИГ — текущий раздел: теория ЕСКД, ДЗ № 2 по вариантам, рабочая тетрадь, «Учиться». Раньше в поиск попадал только
+     старый модуль ИГ (его на сайте нет) — по запросам об инженерной графике находилась начертательная геометрия */
+  { const chunks=t=>{ const out=[]; let cur=''; String(t).replace(/([.!?:;])\s+/g,'$1\n').split('\n').forEach(x=>{ if((cur+' '+x).length>320&&cur){ out.push(seg('',cur)); cur=x; } else cur=cur?cur+' '+x:x; }); if(cur) out.push(seg('',cur)); return out; };
+    const KW=['инженерная графика','черчение','ескд','гост'];
+    (g(()=>IGUI.TH)||[]).forEach(t=>add({key:'ig-th:'+t.id,type:'ig-theory',grp:'u',label:'Теория ЕСКД',title:t.t,kw:KW.concat([t.t]),segs:chunks(stripHTML(t.b)),
+      href:Hh('ig','theory',t.id),where:S('ig')+' · Теория ЕСКД · '+t.t}));
+    const VR=g(()=>window.IG_VARS);
+    if(VR){ const how='Главный вид — половина вида и половина фронтального разреза; вид слева — половина вида и половина профильного разреза; вид сверху; наклонное сечение А–А. В каждом варианте — условие, деталь в 3D с разрезами, построение по шагам и готовый лист (чистовик и черновик).';
+      add({key:'ig-hw2',type:'ig-hw',grp:'e',label:'ДЗ № 2',title:'ДЗ № 2 «Построение изображений» — все 30 вариантов с решением',kw:['дз 2','дз №2','домашнее задание 2','построение изображений','мой вариант','варианты','лист а3'],segs:[seg('',how)],
+        href:Hh('ig','hw2'),where:S('ig')+' · ДЗ № 2'});
+      Object.keys(VR).map(Number).filter(n=>n>0).sort((a,b)=>a-b).forEach(n=>add({key:'ig-hw2:'+n,type:'ig-hw',grp:'e',label:'ДЗ № 2 · вариант '+n,
+        title:'ДЗ № 2, вариант '+n+' — построение изображений',kw:['вариант '+n,'вариант №'+n,'дз 2 вариант '+n,'вариант '+n+' дз 2','дз №2 вариант '+n,'дз 2','построение изображений','разрез','сечение'],segs:[seg('',how)],
+        href:Hh('ig','hw2',n),where:S('ig')+' · ДЗ № 2 · вариант '+n})); }
+    (g(()=>window.IG_WB)||[]).forEach(t=>add({key:'ig-wb:'+t.n,type:'ig-task',grp:'e',label:'Рабочая тетрадь · рис. '+t.fig,title:t.n+'. '+t.title+' — рис. '+t.fig+', стр. '+t.page,
+      kw:['рабочая тетрадь','рис '+t.fig,'рисунок '+t.fig,'тела с отверстиями','сквозное отверстие','вид слева','разрезы',t.title],segs:[seg('Задание',stripHTML(t.q)),seg('',stripHTML(t.why||''))],
+      href:Hh('ig','wb',t.n),where:S('ig')+' · Рабочая тетрадь · раздел 5'}));
+    const ST3=g(()=>IGL.ST); if(ST3&&ST3.length) add({key:'ig-learn',type:'ig-lesson',grp:'u',label:'Учиться',title:'Виды, разрезы и сечения по шагам: как из детали получается чертёж',
+      kw:['как построить вид слева','вид слева по двум видам','как построить разрез','как построить сечение','половина вида половина разреза','с чего начать дз 2','проекционная связь'],
+      segs:ST3.map((x,i)=>seg('Шаг '+(i+1)+' · '+stripHTML(x.t),stripHTML([].concat(x.act||[]).join('. ')+'. '+(x.why||'')))),href:Hh('ig','learn'),where:S('ig')+' · Учиться'});
   }
   /* детали */
   (root.PART_DEFS||[]).slice().sort((a,b)=>a.n-b.n).forEach(d=>{ const segs=[seg('Чему учит',flat(d.teaches))]; (d.ops||[]).forEach((o,i)=>segs.push(seg('Операция '+(i+1)+' · '+flat(o.name),flat(o.name)+'. '+flat(o.hint)+'. '+flat(o.komp))));
@@ -6949,13 +6969,16 @@ function search(q0){
       const sc=x.w*idf(x.t)*(tfw*2.2/(tfw+1.2)); if(!c[si]||c[si].sc<sc) c[si]={sc,tf,t:x.t}; }); }));
     const qstr=' '+slots.map(s=>s.m[0].t).join(' ')+' ';
     const phr=slots.length>1?' '+v.toks.map(t=>t.s).join(' ')+' ':null;
+    /* та же фраза без глаголов задания («как построить линию пересечения плоскостей» → «линия пересечения плоскостей») */
+    const core=v.toks.filter(t=>!/^(постро|найт|наход|определ|провест|провод|начерт|изобраз|сдела|получ)/.test(t.s)), phr2=core.length>1&&core.length<v.toks.length?' '+core.map(t=>t.s).join(' ')+' ':null;
     cand.forEach((c,di)=>{
       let s=0,mi=0,inT=0,symk=0; const hs=[];
       c.forEach((x,si)=>{ if(!x) return; s+=x.sc; mi+=slots[si].idf; if(x.tf[0]) inT++; if(x.tf[1]||x.tf[2]) symk++; hs.push(x.t); });
       const cov=mi/totI; if(slots.length>=3&&cov<.4) return; if(slots.length===2&&cov<.3) return;
       s*=.3+.7*Math.pow(cov,1.2);
       const d=DOCS[di];
-      if(phr){ if(d.tstr[0].includes(phr)) s*=1.7; else if(d.tstr[1].includes(phr)||d.tstr[2].includes(phr)) s*=1.6; else if(d.tstr[3].includes(phr)) s*=1.25; }
+      if(phr){ if(d.tstr[0].includes(phr)) s*=1.7; else if(d.tstr[1].includes(phr)||d.tstr[2].includes(phr)) s*=1.6; else if(d.tstr[3].includes(phr)) s*=1.25;
+        else if(phr2){ if(d.tstr[0].includes(phr2)) s*=1.7; else if(d.tstr[1].includes(phr2)||d.tstr[2].includes(phr2)) s*=1.6; else if(d.tstr[3].includes(phr2)) s*=1.25; } }
       s*=1+.5*inT/slots.length; if(symk) s*=1.12;
       if(slots.length===1&&d.tnorm===' '+slots[0].m[0].t+' ') s*=1.4;
       s*=v.w;
@@ -6968,13 +6991,16 @@ function search(q0){
     if(intent.names.includes('why')&&d.err) s*=1.06;
     /* точное совпадение запроса с живой формулировкой («что такое фронталь») — это ровно тот вопрос, который задают */
     if(!d.kwn){ d.kwn=new Set((d.kw||[]).concat(d.sym||[]).map(norm2)); }
-    if(d.kwn.has(n)) s*=2.2;
-    res.push({d,s}); });
+    const ex=d.kwn.has(n); if(ex) s*=2.2;
+    res.push({d,s,ex}); });
   res.sort((a,b)=>b.s-a.s);
   /* голосование тем: документы топа «голосуют» за свою тему; уверенный победитель выводит карточку темы на первое место */
-  if(res.length>2){ const vote=new Map(), tid=d=>d.type==='topic'?d.key.slice(6):d.topic;
-    res.slice(0,14).forEach((r,i)=>{ const t=tid(r.d); if(t) vote.set(t,(vote.get(t)||0)+r.s/(1+.14*i)); });
-    const vs=[...vote.entries()].sort((x,y)=>y[1]-x[1]);
+  /* точное попадание в формулировку (вариант 7, рис. 63) — сильнее голосования: тему наверх не выдвигаем */
+  if(res.length>2&&!res[0].ex){ const vote=new Map(), tid=d=>d.type==='topic'?d.key.slice(6):d.topic;
+    /* документы без темы (инженерная графика, справка) тоже голосуют — «ни за какую тему»: иначе тема НГ выигрывала
+       голосование, даже когда наверху стоял точный ответ из ИГ */
+    res.slice(0,14).forEach((r,i)=>{ const t=tid(r.d)||'·'; vote.set(t,(vote.get(t)||0)+r.s/(1+.14*i)); });
+    const vs=[...vote.entries()].sort((x,y)=>y[1]-x[1]); if(vs.length&&vs[0][0]==='·') vs.length=0;
     if(vs.length&&(vs.length===1||vs[0][1]>=1.35*vs[1][1])){ const win=vs[0][0], total=[...vote.values()].reduce((x,y)=>x+y,0);
       if(vs[0][1]>=.45*total){ let card=res.find(r=>r.d.key==='topic:'+win);
         if(!card){ const di=DOCS.findIndex(d=>d.key==='topic:'+win); if(di>=0){ card={d:DOCS[di],s:0}; res.push(card); } }
@@ -7056,9 +7082,12 @@ function resultsHTML(r){
     ${nr.length?`<h3 class="sr-gh"><b>Ближайшие темы</b></h3><div class="sr-list">${nr.map((x,i)=>rowHTML(x.d,new Set(),i,false)).join('')}</div>`:''}
     <div class="sr-acts"><a class="btn" href="${Hh('about')}" data-sr-author>Предложить тему</a><span class="sr-hint">Подскажи, чего тут не хватает.</span></div></div>`;
   }
-  const gs=group(r); let idx=0; const best=r.items[0].d.key;
-  return (r.fixed?`<p class="sr-fix">Раскладка: показаны результаты для «<b>${esc(r.fixed)}</b>»</p>`:'')+
-  gs.map(g=>{ const meta=GRP.find(x=>x[0]===g.k); const more=g.items.length-SHOW;
+  const gs=group(r); let idx=0; const best=r.items[0].d.key, bm=GRP.find(x=>x[0]===r.items[0].d.grp);
+  /* лучший ответ — всегда первым, какой бы ни был предмет и тип (задача, теория, пример); группы ниже — без него */
+  const top=`<section class="sr-g sr-top" data-g="best"><h3 class="sr-gh"><b>Лучший ответ</b><span>${bm?bm[1].toLowerCase()+' · '+bm[2]:''}</span></h3><div class="sr-list">${rowHTML(r.items[0].d,hits,idx++,true,false)}</div></section>`;
+  gs.forEach(g=>{ g.items=g.items.filter(it=>it.d.key!==best); });
+  return (r.fixed?`<p class="sr-fix">Раскладка: показаны результаты для «<b>${esc(r.fixed)}</b>»</p>`:'')+top+
+  gs.filter(g=>g.items.length).map(g=>{ const meta=GRP.find(x=>x[0]===g.k); const more=g.items.length-SHOW;
     return `<section class="sr-g" data-g="${g.k}"><h3 class="sr-gh"><b>${meta[1]}</b><span>${meta[2]}</span></h3><div class="sr-list">${g.items.map((it,i)=>{ const h=rowHTML(it.d,hits,idx++,it.d.key===best,i>=SHOW); return h; }).join('')}</div>
     ${more>0?`<button type="button" class="sr-more" data-more>Ещё ${more} →</button>`:''}</section>`; }).join('');
 }
@@ -22436,6 +22465,7 @@ window.CHANGES=[
     'Инженерная графика: 3D и «По шагам» открываются с панелью загрузки вместо зависаний.',
     'Инженерная графика, 3D-разрезы: срез сплошной детали — одна заштрихованная область, без лишней линии там, где конус стоит на фланце.',
     'Задачи НГ, окно «В пространстве»: заданные и построенные прямые (a, b, искомая d, горизонталь и фронталь плоскости, перпендикуляр, повёрнутый отрезок) теперь видны в пространстве, а не только их проекции на плоскостях — в 42 задачах. Вспомогательные построения остаются на плоскостях.',
+    'Поиск: лучший ответ — всегда первым, отдельной строкой, какой бы ни был предмет (задача, теория, пример). В поиск добавлена инженерная графика: теория ЕСКД, ДЗ № 2 и каждый вариант, рабочая тетрадь, «Учиться». Номер задачи («46») ведёт на саму задачу.',
     'Инженерная графика, «Как из 3D получаются виды»: толщины линий по ГОСТ 2.303 — контур детали самый толстый, невидимый контур — штрихом потоньше, оси проекций, рамки плоскостей и линии связи — тонкие (раньше оси были толще контура).']},
   {v:'4.2',d:'13 октября 2026',items:['Новый раздел «Тренировка дня»: план на 10–15 минут — реши по памяти задачи, которые уже разбирал, повтори карточки теории и пройди «Узнай тип задачи». Вход — на главной, в «Подготовке к РК» и через поиск.',
     'Повторение задач: разобранная задача через день возвращается «реши сам», дальше — через 3, 7, 16 и 35 дней. Когда — решает твоя честная оценка в конце: «решил сам», «с подсказками» или «не смог».',
@@ -26413,7 +26443,7 @@ function view(v,r){
   if(r.tab==='learn'&&window.IGL) return IGL.view(v,r.item);
   return home(v);
 }
-return {view,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,secRot,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given')};
+return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,secRot,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given')};
 })();
 
 /* ═════════ IGL: обучение — виды, разрезы и сечения на одной детали (ДЗ 2, вариант 5) ═════════
