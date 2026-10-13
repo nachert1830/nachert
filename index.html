@@ -3124,6 +3124,10 @@ body .pl-zoom .pl-zb.t3btn::after{display:none!important}
 @media(max-width:440px){.v9-share .vc{padding:0 11px 0 10px!important;gap:6px!important}.v9-share .vc-n{font-size:16px!important}.v9-share .vc-l{font-size:12.5px!important}.v9-share .v9-sb{padding:0 12px;gap:6px}}
 .v9-sb{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border:0;border-radius:12px;cursor:pointer;background:var(--red);color:#fff;font:700 14.5px var(--sans)}
 .v9-sb:hover{filter:brightness(1.07)}.v9-sb:active{transform:scale(.97)}
+/* панель «Поделись»: жёсткая сетка — текст всегда своей строкой, счётчик и кнопка под ним. Ширина числа и шрифт больше не перекладывают строки */
+.v9-share{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px}
+.v9-share .v9-t{grid-column:1/-1}.v9-share .v9-sb{justify-self:end}
+@media(min-width:720px){.v9-share{grid-template-columns:1fr auto auto}.v9-share .v9-t{grid-column:auto}.v9-share .v9-sb{justify-self:auto}}
 /* заготовка до первого ответа: та же капсула, вместо числа — бледная полоска */
 .vc.wait .vc-n{display:inline-block;width:2.6em;height:.8em;border-radius:6px;background:rgba(255,255,255,.18)!important}.vc.wait .vc-dot::after{animation:none}
 .vc-n{text-align:right}
@@ -23976,24 +23980,13 @@ let VIEWS=null, VIEWS_ASK=false, VIEWS_LIVE=false;
 try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50){ VIEWS=c.n; VIEWS_LIVE=Date.now()-c.t<60e3; } }catch(e){}
 /* до первого ответа (самый первый заход) — пустая заготовка того же размера, а не display:none: место под блок занято сразу */
 FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wait':''}" data-views ${VIEWS==null?'':'data-done="1"'} title="Просмотры по данным Яндекс.Метрики"><span class="vc-dot" aria-hidden="true"></span><b class="vc-n">${VIEWS==null?'':VIEWS.toLocaleString('ru-RU')}</b><span class="vc-l">${VIEWS==null?'просмотров':plural(VIEWS,'просмотр','просмотра','просмотров')}</span></div>`; };
-function paintViews(from){
+function paintViews(){
   const els=document.querySelectorAll('[data-views]');
   if(VIEWS==null){ els.forEach(el=>{ el.hidden=true; }); return; }   /* данных нет — заготовку убираем */
-  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches, N=VIEWS, txt=N.toLocaleString('ru-RU'), run=[];
-  els.forEach(el=>{
-    const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'), A=el.dataset.done?(from==null?N:from):0;
-    el.hidden=false; el.classList.remove('wait'); el.dataset.done=1; l.textContent=plural(N,'просмотр','просмотра','просмотров');
-    /* ширину числа фиксируем по итоговому значению: пока цифры бегут, блок и соседи не двигаются */
-    b.style.minWidth=''; b.textContent=txt; const w=b.getBoundingClientRect().width; if(w) b.style.minWidth=Math.ceil(w)+'px';
-    const r=el.getBoundingClientRect(), seen=r.width>0&&r.bottom>0&&r.top<innerHeight;   /* за экраном не анимируем */
-    if(!reduce&&A!==N&&seen) run.push({b,el,A}); });
-  if(!run.length) return;
-  const t0=performance.now(), D=run.some(o=>o.A)?900:1400;
-  const step=now=>{ const k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,4);
-    run.forEach(o=>{ o.b.textContent=Math.round(o.A+(N-o.A)*e).toLocaleString('ru-RU'); if(k===1) o.el.classList.add('pop'); });
-    if(k<1) requestAnimationFrame(step); };
-  run.forEach(o=>{ o.b.textContent=o.A.toLocaleString('ru-RU'); });
-  requestAnimationFrame(step);
+  /* число ставим сразу, без «бегущих» цифр: панель рядом не дёргается */
+  const txt=VIEWS.toLocaleString('ru-RU'), lab=plural(VIEWS,'просмотр','просмотра','просмотров');
+  els.forEach(el=>{ const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; el.classList.remove('wait'); el.dataset.done=1;
+    if(b.textContent!==txt) b.textContent=txt; if(l.textContent!==lab) l.textContent=lab; });
 }
 /* число просмотров = Яндекс Метрика (вживую, из API счётчика) + GoatCounter (вживую) + Google Analytics (views.json: его раз в 3 часа пишет GitHub, .github/workflows/views.yml).
    Если Метрика не ответила — берём сумму из views.json. Видно всем, независимо от согласия на cookie: запрос только читает общую
@@ -24013,7 +24006,7 @@ FX.loadViews=function(force){
   if(VIEWS!=null) paintViews();   /* новые блоки (после перехода) — сразу с числом, без пробежки с нуля */
   if((VIEWS_LIVE&&!force)||VIEWS_ASK) return; VIEWS_ASK=true;   /* сервер спрашиваем раз в вкладку (кэш свежее минуты — не спрашиваем) и по таймеру */
   const old=VIEWS;
-  fetchViews().then(n=>{ VIEWS=Math.max(n,old||0); VIEWS_LIVE=true; try{ localStorage.setItem('nch2_views',JSON.stringify({n:VIEWS,t:Date.now()})); }catch(e){} if(VIEWS!==old) paintViews(old); })
+  fetchViews().then(n=>{ VIEWS=Math.max(n,old||0); VIEWS_LIVE=true; try{ localStorage.setItem('nch2_views',JSON.stringify({n:VIEWS,t:Date.now()})); }catch(e){} if(VIEWS!==old) paintViews(); })
     .catch(()=>{ if(VIEWS==null) paintViews(); }).then(()=>{ VIEWS_ASK=false; });
 };
 /* пока страница открыта и на экране — число обновляется само, раз в 2 минуты */
