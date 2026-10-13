@@ -10,6 +10,7 @@
 async function rk2Check(page,URL){
   const bad=[], add=(name,rule,msg)=>bad.push({name,rule,msg:String(msg).slice(0,200)});
   const errs=[]; const onErr=e=>errs.push(String(e)); page.on('pageerror',onErr);
+  await page.emulateMedia({reducedMotion:'reduce'});   /* анимации «куда нажать» бесконечные — для нажатий в тесте их выключаем, как у пользователей с этой настройкой */
   await page.goto(URL+'#/'); await page.waitForTimeout(800);
   const r=await page.evaluate(()=>{ const out=[], A=(n,r,m)=>out.push([n,r,m]);
     const {MODS,Q,ITEMS,GENS}=RK2;
@@ -66,6 +67,10 @@ async function rk2Check(page,URL){
     const Dm=base(); let prev=RK2.readiness(Dm).val||0; ITEMS.slice(0,25).forEach(i=>{ Dm.items[i.id]=[[t,1,2]]; const v=RK2.readiness(Dm).val; if(v<prev) A('готовность','монотонность','верный ответ снизил готовность: '+prev+' → '+v); prev=v; });
     const Dold=full(); Object.values(Dold.items).forEach(a=>a.forEach(x=>x[0]-=200)); Object.values(Dold.rep).forEach(o=>o.l-=200); Dold.mock[0].d-=10; const Ro=RK2.readiness(Dold).val;
     if(!(Ro<Rf.val&&Ro>=55)) A('готовность','забывание','через 200 дней '+Ro+' (ожидалось ниже 100 и не ниже 55)');
+    /* просмотр разбора и «не смог» баллов не дают */
+    const Dv=base(); MODS.forEach(m=>m.tasks.concat(m.ticket?[m.ticket]:[]).forEach(k=>{ Dv.wb3[k]=1; Dv.rep[String(k)]={b:0,l:t,n:1,r:0}; })); Dv.items['g:rep']=[];
+    const Rv=RK2.readiness(Dv); if(Rv.val!==0) A('готовность','ни за что','просмотр разборов и «не смог» дали '+Rv.val);
+    const Dg=base(); ITEMS.forEach(i=>Dg.items[i.id]=[[t,1,1]]); const Rg=RK2.readiness(Dg); if(Rg.val>15) A('готовность','наугад','всё «наугад» дало '+Rg.val);
     if(!RK2.readiness(Object.assign(base(),{fac:'sec'})).na) A('готовность','поток','для потока с другим РК2 должно быть «нет»');
     return out; });
   r.forEach(x=>add(x[0],x[1],x[2]));
