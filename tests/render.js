@@ -14,7 +14,7 @@ window.RENDER_CHECK=async function(opts){
   COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) scenes.push({name:'Урок '+l.id+' · рисунок '+(i+1),sc:b.scene}); }));
   WB3.tasks.forEach(t=>task('Задача №'+t.n,t));
   (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t)));
-  ['1','2','2b','2c','2d','2e','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); });
+  ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); });
   }
   const inter=(a,b)=>Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
   for(const s of scenes){

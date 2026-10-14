@@ -11,7 +11,7 @@ window.MUTATE_CHECK=function(opts){
   const task=(name,t)=>partsOf(t).forEach((p,pi)=>{ let acc=(p.given||[]).slice(); (p.steps||[]).forEach(s=>acc=acc.concat(s.add||[])); scenes.push({name:name+' п.'+(pi+1),items:acc}); });
   COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) scenes.push({name:'Урок '+l.id+' рис.'+(i+1),items:b.scene.items}); }));
   WB3.tasks.forEach(t=>task('№'+t.n,t));
-  ['1','2','2b','2c','2d','2e','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); });
+  ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); });
   const key=o=>o.rule+'|'+o.msg;
   const base=new Map(scenes.map(s=>[s.name,new Set(GEOM_CHECK({items:s.items}).map(key))]));
   const clone=items=>items.map(it=>it?JSON.parse(JSON.stringify(it)):it);

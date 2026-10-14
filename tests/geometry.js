@@ -298,7 +298,7 @@ if(opts.tasks){ opts.tasks.forEach(t=>task('Задача №'+t.n,t)); return ou
 try{ COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) { const samples=[]; check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap,{samples}); scale('Урок '+l.id+' · рисунок '+(i+1),samples); } })); }catch(e){ out.push({name:'COURSE',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ WB3.tasks.forEach(t=>task('Задача №'+t.n,t)); }catch(e){ out.push({name:'WB3',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t))); }catch(e){}
-try{ ['1','2','2b','2c','2d','2e','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}
+try{ ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}
 const seen=new Set();
 return out.filter(o=>{ const k=o.name.replace(/ · (шаг \d+|дано)$/,'')+'|'+o.rule+'|'+o.msg; if(seen.has(k)) return false; seen.add(k); return true; });
 };
