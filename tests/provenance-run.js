@@ -16,7 +16,7 @@ async function runProvenance(page){
     out.push(...r); }
   out.push(...await page.evaluate(()=>{ const r=[];
     try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>r.push(...PROV_CHECK({tasks:tk.tasks.map(t=>Object.assign({},t,{n:t.idx||t.key})),prefix:tk.title+' · '}))); }catch(e){}
-    try{ ['1','2','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) r.push(...PROV_CHECK({tasks:[Object.assign({},d.task,{n:id})],prefix:'ДЗ '})); }); }catch(e){}
+    try{ ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) r.push(...PROV_CHECK({tasks:[Object.assign({},d.task,{n:id})],prefix:'ДЗ '})); }); }catch(e){}
     return r; }));
   const stats=await page.evaluate(()=>PROV_STATS);
   return {issues:out,stats};
