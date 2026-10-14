@@ -159,11 +159,18 @@ function check(name,items,text,ctx){
   const polysByMark=mk=>{ const r=[];
     M.polys.forEach(pl=>{ if(!/^(main|hid)$/.test(pl.k)) return; const vs=pl.p.map(q=>named.find(b=>uniq(b+mk)&&d2(uniq(b+mk),q)<TOL)); if(vs.every(Boolean)&&new Set(vs).size>=3) r.push(vs); });
     /* треугольники из отрезков: A″B″, B″C″, C″A″ нарисованы. Линией результата — тоже, если вершины — точки самого тела (буква без индекса:
-       грани построенной пирамиды закрывают); повёрнутые и перенесённые B₀, C₁ — построение, а не тело, ничего не закрывают */
+       грани построенной пирамиды закрывают); повёрнутые и перенесённые B₀, C₁ — построение, а не тело, ничего не закрывают.
+       Исключение — многогранник, у которого есть и A, и A₁ (призма, куб): если вершины X₁ соединены с X линией результата (боковые рёбра),
+       A₁, B₁… — вершины тела */
     const has=(A,B,res)=>M.segs.all.some(s=>(res?/^(main|hid|res|resd)$/:/^(main|hid)$/).test(s.k)&&(d2(s.a,uniq(A+mk))<TOL&&d2(s.b,uniq(B+mk))<TOL)||(d2(s.b,uniq(A+mk))<TOL&&d2(s.a,uniq(B+mk))<TOL));
+    const bodyIdx=X=>{ const m=/^([A-ZА-Я])₁$/.exec(X); return !!m&&!!uniq(m[1]+mk)&&has(m[1],X,true)&&named.filter(Y=>/^[A-ZА-Я]₁$/.test(Y)&&has(Y[0],Y,true)).length>=3; };
     for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++) for(let k=j+1;k<named.length;k++){ const A=named[i],B=named[j],C=named[k];
-      const res=[A,B,C].every(X=>/^[A-ZА-Я]$/.test(X));
+      const res=[A,B,C].every(X=>/^[A-ZА-Я]$/.test(X)||bodyIdx(X));
       if([A,B,C].every(X=>uniq(X+mk))&&has(A,B,res)&&has(B,C,res)&&has(C,A,res)) r.push([A,B,C]); }
+    /* боковые грани призмы/куба XYY₁X₁ — четырёхугольники из рёбер тела: их диагонали не рисуют, берём два треугольника */
+    const ix=named.filter(bodyIdx);
+    for(let i=0;i<ix.length;i++) for(let j=i+1;j<ix.length;j++){ const X1=ix[i], Y1=ix[j], X=X1[0], Y=Y1[0];
+      if(has(X,Y,true)&&has(X1,Y1,true)) r.push([X,Y,Y1],[X,Y1,X1]); }
     return r; };
   const inTri=(p,a,b,c,m)=>{ const s=(u,v,w)=>(v[0]-u[0])*(w[1]-u[1])-(v[1]-u[1])*(w[0]-u[0]); const d1=s(a,b,p),d2_=s(b,c,p),d3=s(c,a,p), ar=Math.abs(s(a,b,c));
     if(ar<1) return false; const mn=Math.min(d1,d2_,d3), mx=Math.max(d1,d2_,d3); const marg=m*Math.max(d2(a,b),d2(b,c),d2(c,a));
@@ -291,7 +298,7 @@ if(opts.tasks){ opts.tasks.forEach(t=>task('Задача №'+t.n,t)); return ou
 try{ COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) { const samples=[]; check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap,{samples}); scale('Урок '+l.id+' · рисунок '+(i+1),samples); } })); }catch(e){ out.push({name:'COURSE',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ WB3.tasks.forEach(t=>task('Задача №'+t.n,t)); }catch(e){ out.push({name:'WB3',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t))); }catch(e){}
-try{ ['1','2','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}
+try{ ['1','2','2b','2c','2d','2e','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}
 const seen=new Set();
 return out.filter(o=>{ const k=o.name.replace(/ · (шаг \d+|дано)$/,'')+'|'+o.rule+'|'+o.msg; if(seen.has(k)) return false; seen.add(k); return true; });
 };
