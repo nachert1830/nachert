@@ -4171,7 +4171,15 @@ return { S,F,H,P,mm,len2,v3,G, pt,seg,ln,conn,txt,note,dim,sq,ang,tick,circ,arc,
     });
   }
   WB3.snap=snap;   /* генератор вариантов (GEN) доводит линии новых чертежей так же */
-  WB3.add=function(t){ try{ snap(t); }catch(e){} this.tasks.push(t); this.tasks.sort((a,b)=>(typeof a.n==='number'&&typeof b.n==='number')?a.n-b.n:0); return t; };
+  /* десятичный знак в русском тексте — запятая (24,6 мм; 59,4°), как во всём остальном сайте и в стандартах ЕСКД.
+     Числа в задачах считаются через toFixed (с точкой) — здесь, при добавлении задачи, точка меняется на запятую
+     в тексте и подписях чертежа; HTML-теги и их атрибуты не трогаются */
+  const DEC=s=>typeof s!=='string'?s:s.split(/(<\/?[A-Za-z][^<>]*>)/).map((x,i)=>i%2?x:x.replace(/(^|[^\d.,A-Za-zА-Яа-яЁё])(\d+)\.(\d+)(?![\d.]|,\d)/g,'$1$2,$3')).join('');
+  const ruDec=t=>{ ['q','intro','note','ans'].forEach(k=>{ if(t[k]) t[k]=DEC(t[k]); });
+    [t,...(t.parts||[])].forEach(p=>{ ['q','intro','note','ans','t'].forEach(k=>{ if(p[k]) p[k]=DEC(p[k]); });
+      [].concat(p.given||[],...(p.steps||[]).map(st=>{ ['t','d','why','tbl'].forEach(k=>{ if(st[k]) st[k]=DEC(st[k]); }); return st.add||[]; })).forEach(it=>{ if(it&&typeof it.l==='string') it.l=DEC(it.l); }); }); };
+  WB3.ruDec=ruDec;
+  WB3.add=function(t){ try{ ruDec(t); }catch(e){} try{ snap(t); }catch(e){} this.tasks.push(t); this.tasks.sort((a,b)=>(typeof a.n==='number'&&typeof b.n==='number')?a.n-b.n:0); return t; };
 })();
 
 /* ============================================================
@@ -4299,6 +4307,8 @@ function allStepsHTML(t){
 function mount(root,t,opt){
   opt=opt||{};
   const parts=partsOf(t);
+  /* обезличенная статистика режимов (docs/ANALYTICS.md): уходит, только если посетитель согласился на cookie (TRACK) */
+  const track=ev=>{ try{ window.TRACK&&TRACK(ev,{mode:S.mode,task:String(t.n),src:location.hash.replace(/^#\/?/,'').split('/').slice(0,2).join('/')}); }catch(e){} };
   const S={pi:0,k:0,mode:opt.mode||'watch',shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:false};
   const PK='plpos', posKey=opt.posKey||location.hash.replace(/\/(?:p\d+)?s\d+$/,'');
   const posGet=()=>{ try{ return (JSON.parse(localStorage.getItem(PK)||'{}')||{})[posKey]; }catch(e){ return null; } };
@@ -4456,7 +4466,7 @@ function mount(root,t,opt){
     q('.pl-hint')&&q('.pl-hint').addEventListener('click',()=>{S.hint[S.pi+':'+S.k]=1;render();});
     root.querySelectorAll('.pl-rate[data-v]').forEach(b=>b.addEventListener('click',()=>{ S.rated=+b.dataset.v; try{ opt.rep.rate(S.rated,{hints:Object.keys(S.hint).length}); FX.buzz(S.rated===2?'success':8); }catch(e){} const w=root.querySelector('.pl-rep'); if(w) w.outerHTML=repHTML(); }));
     q('.pl-nextpart')&&q('.pl-nextpart').addEventListener('click',()=>{S.pi++;S.k=0;S.z={s:1,x:0,y:0};render();});
-    q('.pl-done')&&q('.pl-done').addEventListener('click',()=>{ S.done=true; S.z={s:1,x:0,y:0}; render(); });
+    q('.pl-done')&&q('.pl-done').addEventListener('click',()=>{ if(!S.done) track('task_done'); S.done=true; S.z={s:1,x:0,y:0}; render(); });
     q('.pl-nextt')&&q('.pl-nextt').addEventListener('click',()=>{ if(opt.onDone) opt.onDone(S.mode); });
     q('.pl-redo')&&q('.pl-redo').addEventListener('click',()=>{ S.done=false; S.pi=0; S.k=0; S.shown={}; S.hint={}; S.rated=null; S.z={s:1,x:0,y:0}; render(); });
     q('.pl-sh')&&q('.pl-sh').addEventListener('click',e=>shareNow(e.currentTarget));
@@ -4464,7 +4474,7 @@ function mount(root,t,opt){
     q('.pl-peek')&&q('.pl-peek').addEventListener('click',()=>{ S.peek=!S.peek; render(); });
     root.querySelectorAll('.pl-dot').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.k)));
     root.querySelectorAll('.pl-part').forEach(b=>b.addEventListener('click',()=>{S.pi=+b.dataset.p;S.k=0;S.z={s:1,x:0,y:0};render();}));
-    root.querySelectorAll('.pl-mode[data-m]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.m;S.shown={};S.hint={};S.rated=null;S.saw3d=0;render(); if(opt.onMode) opt.onMode(S.mode);}));
+    root.querySelectorAll('.pl-mode[data-m]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.m;S.shown={};S.hint={};S.rated=null;S.saw3d=0;render(); track('task_mode'); if(opt.onMode) opt.onMode(S.mode);}));
     const cd=q('.pl-cond'); if(cd){ const tg=()=>{ S.cond=!S.cond; q('.pl').classList.toggle('cond-open',S.cond); cd.setAttribute('aria-expanded',S.cond?'true':'false'); };
       cd.addEventListener('click',tg); cd.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tg(); } }); }
     const pr=q('.pl-pres'); if(pr) pr.addEventListener('click',()=>{ document.body.classList.toggle('present'); if(document.body.classList.contains('present')&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); else if(document.fullscreenElement) document.exitFullscreen(); });
@@ -4522,6 +4532,7 @@ function mount(root,t,opt){
   if(window.ResizeObserver){ ro=new ResizeObserver(()=>{ const w=root.clientWidth; if(w&&w!==lastW){ const first=!lastW; lastW=w; if(!first){ S.h=0; measure(); } } }); ro.observe(root); }
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ if(document.body.contains(root)) measure(); });
   render();
+  track('task_open');
   return {go,state:S,destroy};
 }
 function plural(n,a,b,c){ const m=n%10,h=n%100; return (m===1&&h!==11)?a:(m>=2&&m<=4&&(h<12||h>14))?b:c; }
@@ -7153,8 +7164,10 @@ function textOf(d){
   let task=HW.tasks[d.taskKey]; if(task){ const parts=task.parts||[task]; const t2=parts.map(p=>(p.steps||[]).map(s=>s.t+' '+strip(s.tbl)).join(' ')).join(' '); return strip(t+' '+t2); }
   return strip(t);
 }
+const DECD=new WeakSet();
 function docFull(id){ id=norm(id); const d=HW.docs[id]; if(!d) return null;
   const task=d.taskKey?HW.tasks[d.taskKey]:null;
+  if(task&&!DECD.has(task)){ DECD.add(task); try{ WB3.ruDec(task); }catch(e){} }   /* десятичная запятая — как в задачах тетради */
   return Object.assign({n:id,title:'ДЗ '+d.num+'. '+d.title,kw:(KW[id]||[]).join('; '),body:textOf(d),task,steps:stepsOf(task)},d); }
 
 const stW=n=>{ const m=n%100, k=n%10; return (m>=11&&m<=14)?'шагов':k===1?'шаг':(k>=2&&k<=4)?'шага':'шагов'; };
@@ -8212,7 +8225,8 @@ function onClick(ev){
     case 'save': if(E){
         const r=E.tasks.map(n=>E.rate[n]), pct=Math.round(r.reduce((x,y)=>x+y,0)/(2*r.length)*100);
         const e={ts:Date.now(),pct,n:E.tasks.slice(),r,min:Math.max(1,Math.round(elapsed(E)/60000)),lim:limOf(E)};
-        const H=ST.get('exams',[]); H.push(e); ST.set('exams',H.slice(-40)); ST.set('exam',null); EXRES=e; } break;
+        const H=ST.get('exams',[]); H.push(e); ST.set('exams',H.slice(-40)); ST.set('exam',null); EXRES=e;
+        try{ TRACK('check_exam',{pct:e.pct,min:e.min}); }catch(e2){} } break;
     case 'close': EXRES=null; break;
     case 'train': { const ts=tasksAll().filter(t=>t.sec===b.dataset.s); if(ts.length) trOpen(firstOpen(ts)); return; }
   }
@@ -8272,7 +8286,7 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
 const SITE_URL='https://nachert1830.ru', DOC_DATE='3 октября 2026 г.';
 const mail=()=>CONTACT?`<a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:'e-mail оператора';
 const blk=(h,t)=>`<div><h4>${h}</h4>${t.replace(/<ul class="ab-ul">/g,'<ul class="ab-ul" style="margin:6px 0;font-size:14px;line-height:1.55;color:var(--ink2)">')}</div>`;
-const DATA_LIST='<ul class="ab-ul"><li>файлы cookie и идентификаторы, которые ставит Яндекс Метрика;</li><li>IP-адрес;</li><li>сведения о браузере и устройстве: тип и модель устройства, операционная система, браузер, разрешение и язык экрана;</li><li>просмотренные страницы, адрес перехода на сайт, дата и время посещения;</li><li>действия на сайте: клики (включая карту кликов), прокрутка, переходы по ссылкам.</li></ul>';
+const DATA_LIST='<ul class="ab-ul"><li>файлы cookie и идентификаторы, которые ставит Яндекс Метрика;</li><li>IP-адрес;</li><li>сведения о браузере и устройстве: тип и модель устройства, операционная система, браузер, разрешение и язык экрана;</li><li>просмотренные страницы, адрес перехода на сайт, дата и время посещения;</li><li>действия на сайте: клики (включая карту кликов), прокрутка, переходы по ссылкам;</li><li>события учебных режимов: открыта задача, выбран режим («Смотрю», «Решаю сам»), разбор пройден до ответа, вариант тренажёра открыт и решён, ответ в тесте верный или нет, итог пробного РК в процентах — без имени и без текста ответов.</li></ul>';
 window.PANES.privacy={title:'Политика обработки персональных данных',render(root){
   root.innerHTML=`<div class="eyebrow">Документ</div>
   <h1 style="margin-bottom:10px">Политика обработки персональных данных</h1>
@@ -8280,7 +8294,7 @@ window.PANES.privacy={title:'Политика обработки персона�
   <section class="ab-legal" style="margin-top:0;padding-top:0;border-top:0"><div class="ab-lg" style="grid-template-columns:1fr">
    ${blk('1. Оператор',`<p>Автор сайта «Начерт», физическое лицо. Сайт: ${SITE_URL}.${CONTACT?'<br>Для обращений: '+mail()+'.':''}</p>`)}
    ${blk('2. Какие данные обрабатываются',`<p>Только если вы нажали «Согласен» в уведомлении о cookie, через сервис Яндекс Метрика${window.GA_ID?', сервис Google Analytics (Google LLC, США)':''}${window.GC_CODE?' и сервис GoatCounter (без cookie, IP-адрес не сохраняется)':''} обрабатываются:</p>${DATA_LIST}`)}
-   ${blk('3. Цель',`<p>Обезличенная статистика посещаемости: сколько людей заходит, какие страницы полезны, где интерфейс неудобен. Статистика нужна только для улучшения сайта. Посетителей не идентифицируют, рекламу не показывают.</p>`)}
+   ${blk('3. Цель',`<p>Обезличенная статистика посещаемости и использования учебных режимов: сколько людей заходит, какие страницы и режимы полезны, доходят ли до ответа, где интерфейс неудобен. Статистика нужна только для улучшения сайта. Посетителей не идентифицируют, рекламу не показывают.</p>`)}
    ${blk('4. Правовое основание',`<p>Ваше согласие на обработку персональных данных (п. 1 ч. 1 ст. 6 152-ФЗ). Текст согласия — <a href="#/consent">на отдельной странице</a>. Без согласия Яндекс Метрика не загружается и данные не собираются.</p>`)}
    ${blk('5. Кому передаются данные',`<p>ООО «Яндекс» (сервис Яндекс Метрика) — он собирает и хранит статистику по поручению оператора. Данные хранятся на серверах в Российской Федерации.${window.GA_ID?' Google Analytics (Google LLC, США) — собирает статистику по поручению оператора; данные передаются на серверы Google за пределами Российской Федерации (трансграничная передача).':' Трансграничная передача не осуществляется.'}${window.GC_CODE?' GoatCounter — считает просмотры страниц по поручению оператора; серверы за пределами Российской Федерации (трансграничная передача).':''} Другим лицам данные не передаются.</p>`)}
    ${blk('6. Что не собирается',`<p>Сайт не запрашивает имя, e-mail или телефон, регистрации нет. Прогресс, тема оформления и история поиска хранятся только в вашем браузере (localStorage) и никуда не отправляются.</p>`)}
@@ -8297,7 +8311,7 @@ window.PANES.consent={title:'Согласие на обработку персо
   <section class="ab-legal" style="margin-top:0;padding-top:0;border-top:0"><div class="ab-lg" style="grid-template-columns:1fr">
    ${blk('Оператор',`<p>Автор сайта «Начерт» (${SITE_URL}), физическое лицо.${CONTACT?' Для обращений: '+mail()+'.':''}</p>`)}
    ${blk('Какие данные',DATA_LIST)}
-   ${blk('Цель',`<p>Сбор обезличенной статистики посещаемости сайта для его улучшения.</p>`)}
+   ${blk('Цель',`<p>Сбор обезличенной статистики посещаемости сайта и использования учебных режимов для его улучшения.</p>`)}
    ${blk('Действия с данными',`<p>Сбор, запись, хранение, систематизация, использование, передача (предоставление) ООО «Яндекс», обезличивание, удаление — с использованием средств автоматизации.</p>`)}
    ${blk('Получатель',`<p>ООО «Яндекс» (сервис Яндекс Метрика), обрабатывает данные по поручению оператора. Данные хранятся в Российской Федерации${window.GA_ID?'. Google Analytics (Google LLC, США) — по поручению оператора, с трансграничной передачей на серверы Google':', трансграничной передачи нет'}${window.GC_CODE?'. GoatCounter — по поручению оператора, с трансграничной передачей':''}.</p>`)}
    ${blk('Срок и отзыв',`<p>Согласие действует до его отзыва. Отозвать его можно в любой момент: ссылкой <a href="#/about/legal" data-ckreset>«Изменить решение о cookie»</a> на сайте${CONTACT?' или письмом на '+mail():''}. После отзыва Яндекс Метрика не загружается.</p>`)}
@@ -8334,7 +8348,7 @@ window.GC_CODE='jjjj';
   function banner(){
     if(document.querySelector('.ckn')) return;
     const d=document.createElement('div'); d.className='ckn'; d.setAttribute('role','region'); d.setAttribute('aria-label','Cookie');
-    d.innerHTML='<span>Собирать обезличенную статистику посещений ('+[ 'Яндекс Метрика', GA&&'Google Analytics', GC&&'GoatCounter' ].filter(Boolean).join(', ').replace(/, ([^,]*)$/,' и $1')+', cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
+    d.innerHTML='<span>Собирать обезличенную статистику посещений и учебных режимов ('+[ 'Яндекс Метрика', GA&&'Google Analytics', GC&&'GoatCounter' ].filter(Boolean).join(', ').replace(/, ([^,]*)$/,' и $1')+', cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
     d.addEventListener('click',e=>{ const b=e.target.closest('[data-ck]'); if(!b) return; window.CONSENT.set(b.dataset.ck); d.remove(); });
     document.body.appendChild(d);
   }
@@ -18970,7 +18984,7 @@ WB3.add({
       why:'Плоскость, перпендикулярная горизонтали, имеет горизонтальный след, перпендикулярный h′ (вопрос 19: теорема о прямом угле).',
       add:[ seg(alp[0],alp[1],'aux','αвр',[6,4,'start'],{lat:alp[1]}), sq(Oh,Ah,h2,'aux'), pt(Oh,'O′','ne','aux'), conn(Oh,[Oh[0],F(P1)[1]]), pt([Oh[0],F(P1)[1]],'O″','n','aux') ] },
     { t:'Радиус вращения |AO|',
-      d:'Отрезок AO — радиус вращения точки A. Он не параллелен π₁ (A выше горизонтали), поэтому находим его натуральную величину: катет A′O′, второй катет — разность высот A и h. Гипотенуза — R<sub>вр</sub> ≈ '+Math.round(tri.nv)+' мм.',
+      d:'Отрезок AO — радиус вращения точки A. Он не параллелен π₁ (A выше горизонтали), поэтому находим его натуральную величину: катет A′O′, второй катет — разность высот A и h. Гипотенуза — R<sub>вр</sub> = '+tri.items[2].l+'.',
       why:'Натуральная величина отрезка — гипотенуза прямоугольного треугольника (вопрос 11).',
       add:[ ...tri.items ] },
     { t:'Поворот A в положение Ā′',
@@ -19037,7 +19051,7 @@ WB3.add({
       why:'Плоскость, перпендикулярная фронтали, имеет фронтальный след, перпендикулярный f″ (вопрос 19: теорема о прямом угле).',
       add:[ seg(alp[0],alp[1],'aux','αвр',[6,-4,'start'],{lat:alp[1]}), sq(Of,Af,F(P2),'aux'), pt(Of,'O″','sw','aux'), conn(Of,H(O3)), pt(H(O3),'O′','ne','aux') ] },
     { t:'Радиус вращения |AO|',
-      d:'AO не параллелен π₂ (A глубже фронтали), поэтому строим его натуральную величину на π₂: катет A″O″, второй катет — разность глубин Δy точек A и O (берём с π₁). Гипотенуза — R<sub>вр</sub> ≈ '+Math.round(tri.nv)+' мм.',
+      d:'AO не параллелен π₂ (A глубже фронтали), поэтому строим его натуральную величину на π₂: катет A″O″, второй катет — разность глубин Δy точек A и O (берём с π₁). Гипотенуза — R<sub>вр</sub> = '+tri.items[2].l+'.',
       why:'Натуральная величина отрезка — гипотенуза треугольника, катеты которого — проекция и разность расстояний концов до плоскости проекций (вопрос 11).',
       add:[ seg(H(O3),Ah,'aux','Δy',[6,10,'start']), ...tri.items ] },
     { t:'Поворот A в положение Ā″',
@@ -19086,7 +19100,7 @@ WB3.add({
       why:'Плоскость, перпендикулярная горизонтали, имеет горизонтальный след, перпендикулярный h′ (вопрос 19).',
       add:[ seg(alp[0],alp[1],'aux','αвр',[6,4,'start'],{lat:alp[1]}), sq(Oh,Kh,h1,'aux'), pt(Oh,'O′','nw','aux'), conn(Oh,F(O3)), pt(F(O3),'O″','n','aux') ] },
     { t:'Радиус вращения |KO|',
-      d:'KO не параллелен π₁ (K выше горизонтали), поэтому строим его натуральную величину: катет K′O′, второй катет — разность высот Δz точек K и O. Гипотенуза — R<sub>вр</sub> ≈ '+Math.round(tri.nv)+' мм.',
+      d:'KO не параллелен π₁ (K выше горизонтали), поэтому строим его натуральную величину: катет K′O′, второй катет — разность высот Δz точек K и O. Гипотенуза — R<sub>вр</sub> = '+tri.items[2].l+'.',
       why:'Натуральная величина отрезка — гипотенуза прямоугольного треугольника (вопрос 11).',
       add:[ seg(F(K),F(O3),'aux','Δz',[-6,0,'end']), ...tri.items ] },
     { t:'Поворот K в положение K̄′',
@@ -19098,11 +19112,11 @@ WB3.add({
       why:'Две точки определяют прямую; точка 1 на оси не движется.',
       add:[ LN(h1,Kb,'res','b̄′',[6,10,'start'],20,20,null) ] },
     { t:'Перпендикуляр из A′ на b̄′',
-      d:'Из A′ опускаем перпендикуляр на b̄′ (прямой угол в натуральную величину). Его длина — искомое расстояние от A до b: ≈ '+Math.round(dist)+' мм.',
+      d:'Из A′ опускаем перпендикуляр на b̄′ (прямой угол в натуральную величину). Его длина d — искомое расстояние от A до b: d '+(Math.abs(dist-Math.round(dist))<0.05?'=':'≈')+' '+Math.round(dist)+' мм.',
       why:'Расстояние от точки до прямой — длина перпендикуляра; в плоскости, параллельной π₁, он проецируется без искажения (вопрос 18).',
-      add:[ seg(Ah,Fo,'res','H.B. = '+Math.round(dist)+' мм',[-6,10,'end']), sq(Fo,Ah,h1,'res'), pt(Ah,'A′','sw','res') ] }
+      add:[ seg(Ah,Fo,'res','d '+(Math.abs(dist-Math.round(dist))<0.05?'=':'≈')+' '+Math.round(dist)+' мм',[-6,10,'end']), sq(Fo,Ah,h1,'res'), pt(Ah,'A′','sw','res') ] }
   ],
-  ans:'Расстояние от точки A до прямой b равно длине перпендикуляра из A′ на b̄′: ≈ '+Math.round(dist)+' мм.',
+  ans:'Расстояние от точки A до прямой b равно длине перпендикуляра из A′ на b̄′: d '+(Math.abs(dist-Math.round(dist))<0.05?'=':'≈')+' '+Math.round(dist)+' мм.',
   note:'Размеры условные. Проверено вычислением по 3D-координатам: расстояние от A до b = '+deg(chk)+' мм.'
 });
 })();
@@ -19162,11 +19176,11 @@ WB3.add({
       add:[ seg(alA[0],alA[1],'aux','αвр1',[6,-4,'start'],{lat:alA[1]}), seg(alB[0],alB[1],'aux','αвр2',[6,-4,'start'],{lat:alB[1]}),
             sq(F(iA.Q),F(A),F(P1),'aux'), sq(F(iB.Q),F(B),F(P1),'aux'), pt(F(iA.Q),'O₁″','ne','aux'), pt(F(iB.Q),'O₂″','se','aux') ] },
     { t:'Радиус вращения A и поворот',
-      d:'Радиус AO₁ не параллелен π₂ — находим его натуральную величину: катет A″O₁″, второй катет — разность глубин Δy точек A и O₁ (с π₁). Отложив R<sub>вр1</sub> ≈ '+Math.round(triA.nv)+' мм от O₁ по плоскости вращения, получаем Ā″.',
+      d:'Радиус AO₁ не параллелен π₂ — находим его натуральную величину: катет A″O₁″, второй катет — разность глубин Δy точек A и O₁ (с π₁). Отложив R<sub>вр1</sub> = '+triA.items[2].l+' от O₁ по плоскости вращения, получаем Ā″.',
       why:'Натуральная величина отрезка — гипотенуза прямоугольного треугольника (вопрос 11). После поворота радиус параллелен π₂ и виден без искажения.',
       add:[ ...triA.items, arc(F(iA.Q),G.dist(F(iA.Q),triA.B0),...angs(F(iA.Q),[triA.B0,Ab]),'aux'), pt(Ab,'Ā″','ne','res') ] },
     { t:'Радиус вращения B и поворот',
-      d:'Так же для B: треугольник из катета B″O₂″ и разности глубин, гипотенуза R<sub>вр2</sub> ≈ '+Math.round(triB.nv)+' мм. Откладываем её от O₂ и получаем B̄″. Направление поворота для A и B одно и то же (плоскость ABC поворачивается целиком).',
+      d:'Так же для B: треугольник из катета B″O₂″ и разности глубин, гипотенуза R<sub>вр2</sub> = '+triB.items[2].l+'. Откладываем её от O₂ и получаем B̄″. Направление поворота для A и B одно и то же (плоскость ABC поворачивается целиком).',
       why:'При вращении плоскости вокруг её линии f все точки поворачиваются на один угол.',
       add:[ ...triB.items, arc(F(iB.Q),G.dist(F(iB.Q),triB.B0),...angs(F(iB.Q),[triB.B0,Bb]),'aux'), pt(Bb,'B̄″','se','res') ] },
     { t:'Треугольник в натуральную величину',
@@ -19232,7 +19246,7 @@ const pa=(()=>{ const sc=2.2, {F,H}=mk(sc);
         why:'Угол между прямой и плоскостью — угол между прямой и её проекцией на плоскость.',
         add:[ seg(Ah,Kh,'auxd'), seg(Nh,Kh,'auxd') ] },
       { t:'Радиус вращения |NK|',
-        d:'K вращается в плоскости ⟂ n; она проходит через N, так как NK ⟂ n. Значит, центр вращения O ≡ N. Радиус NK найдём треугольником: катет N′K′ (он лежит на h₀β) и разность высот Δz точек N и K. Гипотенуза R<sub>вр</sub> ≈ '+Math.round(tri.nv)+' мм.',
+        d:'K вращается в плоскости ⟂ n; она проходит через N, так как NK ⟂ n. Значит, центр вращения O ≡ N. Радиус NK найдём треугольником: катет N′K′ (он лежит на h₀β) и разность высот Δz точек N и K. Гипотенуза R<sub>вр</sub> = '+tri.items[2].l+'.',
         why:'NK лежит в β, а n ⟂ β, значит n ⟂ NK. Натуральная величина отрезка — гипотенуза прямоугольного треугольника (вопрос 11).',
         add:[ seg(F(N),F(K),'aux','Δz',[-6,0,'end']), ...tri.items ] },
       { t:'Поворот K в положение K̄′',
@@ -19291,7 +19305,7 @@ const pb=(()=>{ const sc=4, {F,H}=mk(sc);
         why:'Плоскость, перпендикулярная фронтали, имеет фронтальный след ⟂ f″ (вопрос 19).',
         add:[ seg(alp[0],alp[1],'aux','αвр',[6,-4,'start'],{lat:alp[1]}), sq(Of,Af,F(P2),'aux'), pt(Of,'O″','sw','aux'), conn(Of,H(O3)), pt(H(O3),'O′','ne','aux') ] },
       { t:'Радиус вращения |AO|',
-        d:'Строим натуральную величину AO на π₂: катет A″O″ и разность глубин Δy точек A и O (с π₁). Гипотенуза — R<sub>вр</sub> ≈ '+Math.round(tri.nv)+' мм.',
+        d:'Строим натуральную величину AO на π₂: катет A″O″ и разность глубин Δy точек A и O (с π₁). Гипотенуза — R<sub>вр</sub> = '+tri.items[2].l+'.',
         why:'Натуральная величина отрезка — гипотенуза прямоугольного треугольника (вопрос 11).',
         add:[ seg(H(O3),Ah,'aux','Δy',[6,10,'start']), ...tri.items ] },
       { t:'Поворот A в положение Ā″',
@@ -19368,7 +19382,7 @@ WB3.add({
       why:'Плоскость, перпендикулярная горизонтали, имеет горизонтальный след ⟂ h′ (вопрос 19).',
       add:[ seg(alp[0],alp[1],'aux','αвр',[6,4,'start'],{lat:alp[1]}), sq(Oh,Ah,h2,'aux'), pt(Oh,'O′','ne','aux'), conn(Oh,F(O3)), pt(F(O3),'O″','n','aux') ] },
     { t:'Радиус вращения |AO|',
-      d:'Строим натуральную величину AO на π₁: катет A′O′ и разность высот Δz точек A и O (с π₂). Гипотенуза — R<sub>вр</sub> ≈ '+Math.round(tri.nv)+' мм.',
+      d:'Строим натуральную величину AO на π₁: катет A′O′ и разность высот Δz точек A и O (с π₂). Гипотенуза — R<sub>вр</sub> = '+tri.items[2].l+'.',
       why:'Натуральная величина отрезка — гипотенуза прямоугольного треугольника (вопрос 11).',
       add:[ seg(F(A),F(O3),'aux','Δz',[-6,0,'end']), ...tri.items ] },
     { t:'Поворот A и угол δ',
@@ -19687,7 +19701,7 @@ const pc=(()=>{
   /* M */
   const iM=11, fM=0.5, Mp=gen(iM,fM);
   /* K */
-  const iK=4.8, Kp=gen(iK,(6-iK)/3), zK=24;
+  const iK=4.8, Kp=gen(iK,(6-iK)/3), zK=pp/2;   /* K″ задана на высоте p/2: у образующей i в доле (6−i)/3 высота как раз 6·p/12 */
   const spiral=dens(i=>{ const q=gen(i,(6-i)/3); return pl(q.u,q.y); },3,6,60);
   const given=[ axis(), seg(fr(0,-2),fr(0,dz*15+2),'thin','i″',[6,0,'start']),
     circ(pl(0,0),R*U,'main'), pt(pl(0,0),'B′≡i′','ne','main'), pt(pl(uA(0),yA(0)),'A′','w','main'),
@@ -20790,12 +20804,16 @@ const d1a=[v3.add(d1o,v3.mul(u1,-8)),v3.add(d1o,v3.mul(u1,98))], d2a=(()=>{ cons
 // точки X_i = пересечение образующих с плоскостью β (β ⟂ π₁ через a): горизонтальные проекции — g′ ∩ a′
 const Xs=gsel.map(t=>{ const [Aa,Bb]=genOK(t); const c=G.cross(H(Aa),H(Bb),H(Xin),H(v3.add(Xin,wa))); if(!c) return null; const dH=[H(Bb)[0]-H(Aa)[0],H(Bb)[1]-H(Aa)[1]]; const l=Math.abs(dH[0])>Math.abs(dH[1])?(c[0]-H(Aa)[0])/dH[0]:(c[1]-H(Aa)[1])/dH[1]; if(l<-0.01||l>1.01) return null; return {t,p:v3.lerp(Aa,Bb,l),c}; }).filter(Boolean);
 const curveX=Xs.length>2?curve(Xs.map(o=>F(o.p)),'res'):null;
+/* плоскость параллелизма α — следами (в условии она задана, без неё образующие не построить): через точку оси x справа от чертежа */
+const Xal=[1,0,0], dhA=(()=>{ const d=v3.unit(v3.cross(nal,[0,0,1])); return d[1]<0?v3.mul(d,-1):d; })(), dfA=(()=>{ const d=v3.unit(v3.cross(nal,[0,1,0])); return d[2]<0?v3.mul(d,-1):d; })();
+const h0A=[Xal,v3.add(Xal,v3.mul(dhA,26))], f0A=[Xal,v3.add(Xal,v3.mul(dfA,26))];
 const pc={ l:'в)', q:'Построить проекции точек пересечения прямой a с поверхностью гиперболического параболоида (косой плоскостью), заданной направляющими d₁ и d₂ и плоскостью параллелизма α.',
   given:[ axis(), seg(F(d1a[0]),F(d1a[1]),'main','d₁″',[-4,-4,'end']), seg(H(d1a[0]),H(d1a[1]),'main','d₁′',[-4,10,'end']), seg(F(d2a[0]),F(d2a[1]),'main','d₂″',[4,-4,'start']), seg(H(d2a[0]),H(d2a[1]),'main','d₂′',[4,10,'start']),
-          seg(F(Ap0),F(Ap1),'main','a″',[4,-4,'start']), seg(H(Ap0),H(Ap1),'main','a′',[4,10,'start']) ],
+          seg(F(Ap0),F(Ap1),'main','a″',[4,-4,'start']), seg(H(Ap0),H(Ap1),'main','a′',[4,10,'start']),
+          seg(H(h0A[0]),H(h0A[1]),'main','h₀α',[4,10,'start']), seg(F(f0A[0]),F(f0A[1]),'main','f₀α',[4,-4,'start']), pt(F(Xal),'Xα','ne',null,{hollow:true}) ],
   steps:[
     { t:'Как задана косая плоскость',
-      d:'Поверхность образуют прямые-образующие, пересекающие обе направляющие d₁ и d₂ и параллельные плоскости параллелизма α. Разбиваем d₁ на равные части (точки 1, 2, 3, …) и на d₂ находим соответствующие точки так, чтобы образующая была параллельна α.',
+      d:'Поверхность образуют прямые-образующие, пересекающие обе направляющие d₁ и d₂ и параллельные плоскости параллелизма α (задана следами h₀α, f₀α). Разбиваем d₁ на равные части (точки 1, 2, 3, …). Через каждую точку проводим плоскость, параллельную α (её следы параллельны h₀α и f₀α), и находим её пересечение с d₂ — второй конец образующей.',
       why:'Косая плоскость (гиперболический параболоид) — линейчатая поверхность: через каждую точку d₁ проходит единственная образующая, параллельная α.',
       add:gsel.map(t=>{ const [Aa,Bb]=genOK(t); return seg(F(Aa),F(Bb),'aux'); }) },
     { t:'Образующие на π₁',
@@ -20821,7 +20839,7 @@ WB3.add({
   n:77, sec:'s9', src:'стр. 28', conf:'approx',
   q:'Построить проекции точек пересечения прямой <i>a</i> с заданными поверхностями: а) с поверхностью тора, применив способ вращения вокруг проецирующей прямой; б) с конической поверхностью (без построения лекальных кривых); в) с поверхностью гиперболического параболоида (косой плоскостью), заданной направляющими d₁ и d₂ и плоскостью параллелизма α.',
   parts:[pa,pb,pc],
-  note:'Размеры условные; построения выполнены точно для принятых данных. В в) плоскость параллелизма α задана нормалью, построено 13 образующих.'
+  note:'Размеры условные; построения выполнены точно для принятых данных. В в) плоскость параллелизма α задана следами h₀α, f₀α; построено 13 образующих.'
 });
 })();
 /* ---------- № 78 ---------- */
@@ -20958,7 +20976,7 @@ const hL=[v3.add(A,v3.mul(hdir,-30)),v3.add(A,v3.mul(hdir,30))], fL=[v3.add(A,v3
 /* горизонтальный след фронтали f: f пересекает π₁ при z = 0 */
 const tF=-A[2]/fdir[2]; const Ef=v3.add(A,v3.mul(fdir,tF));                 // E — след f на π₁
 const h0=[v3.add(Ef,v3.mul(hdir,-40)),v3.add(Ef,v3.mul(hdir,40))];
-const One=v3.add(A,v3.mul(dv,40));
+const A1L=40, One=v3.add(A,v3.mul(dv,A1L));   // вспомогательная точка 1 на b: |A1| — выбор, генератор вариантов меняет его как данные
 const nvAD=L.nvOnH(A,D,{side:1,B:'D'});
 const nv1=L.nvOnH(A,One,{side:1,B:'1'});
 const A1=H(A), O1h=nv1.B0;
@@ -20990,11 +21008,11 @@ WB3.add({
       why:'Точка на оси x имеет y = 0 и z = 0; принадлежит плоскости α, только если лежит на её следе h₀α.',
       add:[ pt(F(D),'D″≡D′','ne','res'), ...seg3(A,D,'res') ] },
     { t:'Длина стороны |AD|',
-      d:'Натуральную величину AD находим способом прямоугольного треугольника на π₁: катет A′D′, второй катет — высота z<sub>A</sub>. Получаем |AD| = '+Math.round(AD)+' мм.',
+      d:'Натуральную величину AD находим способом прямоугольного треугольника на π₁: катет A′D′, второй катет — высота z<sub>A</sub>. Получаем '+nvAD.items[2].l+'.',
       why:'Натуральная величина отрезка общего положения — гипотенуза треугольника, катеты которого — проекция и разность высот (вопрос 11).',
       add:[ ...nvAD.items ] },
     { t:'Длина |AB| = |AD| на прямой b',
-      d:'Берём на b произвольную точку 1 и строим натуральную величину A1 тем же способом (треугольник A′1′1₀). На гипотенузе A′1₀ откладываем от A′ отрезок |AD| — получаем B₀. Проводим B₀B′ ∥ 1₀1′ до пересечения с b′ — это B′.',
+      d:'Берём на b вспомогательную точку 1 (здесь — на расстоянии '+A1L+' мм от A) и строим натуральную величину A1 тем же способом (треугольник A′1′1₀): '+nv1.items[2].l+'. На гипотенузе A′1₀ откладываем от A′ отрезок |AD| — получаем B₀. Проводим B₀B′ ∥ 1₀1′ до пересечения с b′ — это B′.',
       why:'Параллельные прямые отсекают на сторонах угла пропорциональные отрезки (теорема Фалеса): A′B′ : A′1′ = |AB| : |A1| (вопрос 12).',
       add:[ pt(F(One),'1″','ne','aux'), pt(H(One),'1′','se','aux'), conn(F(One),H(One)), ...nv1.items, pt(Bo,'B₀','se','grn'), seg(Bo,H(B),'aux'), pt(H(B),'B′','se','aux'), conn(H(B),F(B)), pt(F(B),'B″','ne','aux') ] },
     { t:'Вершина C и квадрат',
@@ -21285,7 +21303,7 @@ WB3.add({
     { t:'Натуральная величина AB',
       d:'AB — прямая общего положения. На π₁ строим прямоугольный треугольник: катет A′B′, второй катет A′A₀ ⟂ A′B′ равен разности высот Δz = |z_A − z_B| = '+dz.toFixed(1)+' мм. Гипотенуза B′A₀ = |AB|.',
       why:'Натуральная величина отрезка — гипотенуза треугольника с катетами: проекция отрезка и разность высот концов (вопрос 11). Проверка: A₁B₁ ∥ π₂, поэтому |A₁″B₁″| даёт то же значение.',
-      add:[ seg(H(A),A0,'aux'), sq(H(A),H(B),A0,'aux'), pt(A0,'A₀','e','aux'), seg(H(B),A0,'res','|AB| = '+dist.toFixed(1)+' мм','auto2') ] }
+      add:[ seg(H(A),A0,'aux'), sq(H(A),H(B),A0,'aux'), pt(A0,'A₀','e','aux'), seg(H(B),A0,'res','|AB| ≈ '+dist.toFixed(1)+' мм','auto2') ] }
   ],
   ans:'Расстояние от A до тора |AB| ≈ '+dist.toFixed(0)+' мм ('+dist.toFixed(1)+'). B — основание нормали из A к поверхности тора.',
   note:'Размеры условные (R = 26, r = 18 мм, положение A). Ход: вращение в меридиан, B₁″ на окружности, треугольник на π₁; ответ — длина |AB|.'
@@ -22582,12 +22600,14 @@ tk4.push({
   note:'Размеры условные. Второе решение — повернуть точку 2 в другую сторону от h′: треугольник получится тот же. Частая ошибка — откладывать радиус O′2′ без треугольника: он искажён, нужна его натуральная величина.'
 });
 })();
-return [
+const OUT=[
  { title:'Билет ИУ1, ИУ2', who:'ИУ1 (специалисты), ИУ2', kind:'Пример билета с сайта кафедры', foot:'', tasks:tk1 },
  { title:'Билет ИУ1Б–МТ9Б', who:'ИУ1Б, ИУ3Б, ИУ5Б, ИУ6Б, РК6Б, МТ9Б', kind:'Пример билета с сайта кафедры', foot:'', tasks:tk2 },
  { title:'Типовые задачи РК', who:'остальные факультеты', kind:'Собственные задачи того же типа', foot:'', tasks:tk3 },
  { title:'Билет РК2', who:'все факультеты, кроме ИУ1–ИУ6, РК6, МТ9, БМТ1', kind:'По образцу билета кафедры, 1 семестр', foot:'', tasks:tk4, rk:2 }
 ];
+OUT.forEach(tk=>tk.tasks.forEach(t=>{ try{ WB3.ruDec(t); }catch(e){} }));   /* десятичная запятая — как в задачах тетради */
+return OUT;
 })();
 
 /* ============================================================
@@ -23207,7 +23227,7 @@ function perturb(src,seed,pin){ const f=warp(seed,pin); let n=0;
 const pinOf=tasks=>{ const p=new Set(); tasks.forEach(t=>String(t.q||'').replace(/<[^>]+>/g,' ').replace(/\d+(?:[.,]\d+)?/g,m=>{ p.add(parseFloat(m.replace(',','.'))); return m; })); return p; };
 /* ── выполнение блока с подменённым WB3: задачи собираются в список, в тетрадь не попадают ── */
 function run(src){
-  const cap=[]; window.__GEN_IN={add(t){ try{ WB3.snap&&WB3.snap(t); }catch(e){} cap.push(t); return t; },get:n=>WB3.get(n),tasks:[]}; window.__GEN_ERR=null;
+  const cap=[]; window.__GEN_IN={add(t){ try{ WB3.ruDec&&WB3.ruDec(t); }catch(e){} try{ WB3.snap&&WB3.snap(t); }catch(e){} cap.push(t); return t; },get:n=>WB3.get(n),tasks:[]}; window.__GEN_ERR=null;
   const el=document.createElement('script'); el.textContent='try{(function(WB3){\n'+src+'\n})(window.__GEN_IN);}catch(e){window.__GEN_ERR=String(e&&e.message||e);}';
   document.head.appendChild(el); el.remove(); const err=window.__GEN_ERR; window.__GEN_IN=null;
   if(err) throw new Error(err); return cap; }
@@ -23258,6 +23278,11 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.11',d:'15 октября 2026',items:['Рабочая тетрадь, № 77 в: на чертеже показана плоскость параллелизма α (следы h₀α, f₀α) — без неё образующие косой плоскости было не построить; в шаге — как ею пользоваться.',
+    'Рабочая тетрадь, № 68 в: точка K строится на высоте p/2 для любого шага p (раньше — фиксированное число, верное только для исходных данных); в «Новом варианте» теперь тоже верно.',
+    'Числа: десятичная запятая везде (24,6 мм, 59,4°); одна величина — одно имя на чертеже и в тексте (R<sub>вр</sub> = |OA|, расстояние d в № 64), «=» — только у точного значения.',
+    'Проверка сайта стала строже: число на чертеже сверяется с текстом задачи, штриховая линия — только там, где её что-то закрывает, ответ проверяется по условию в 125 из 130 пунктов, листы ИГ — сторона волнистой линии по ГОСТ 2.305.',
+    'Статистика: если ты согласился на cookie, сайт отмечает, какими режимами пользуются (Смотрю, Решаю сам, Новый вариант, Найди ошибку, Проверь себя) — без имени и без ответов. Это нужно, чтобы понять, что действительно помогает готовиться.']},
   {v:'4.10',d:'14 октября 2026',items:['ИГ: «Нормоконтроль» — тренажёр, где ты проверяешь лист как нормоконтролёр. В готовый чистовик ДЗ 2 подсажено одно нарушение ГОСТ (проекционная связь, тип и толщина линий, штриховка, размеры, буквы разрезов, основная надпись) — найди его. После ответа — что нарушено, пункт ГОСТ, как правильно и верный лист рядом.',
     'ИГ: «Читаю чертёж» на вкладке «Лист» — нажми на любую линию, и она подсветится на главном виде, виде сверху и виде слева. Рядом — что это: ребро, очерк или контур разреза, и словами начерта — проецирующая прямая видна точкой, горизонталь — в натуральную величину на виде сверху.',
     'Все листы ИГ проходят автоматический нормоконтроль: ГОСТ 2.301–2.307 и 2.104 по готовому чертежу и сверка каждого вида с 3D-моделью лучами — лишние и пропущенные линии, видимость, штриховка. Исправлено найденное: тонкие линии и штриховка тоньше s/3, основная надпись толще основной линии, центровые окружности пересекали оси промежутками, оси выходили за контур на 8–9 мм, размерные числа на осях и выносных (варианты 1, 6, 9, 14, 15, 17, 20, 22, 25, 27, 30, урок), размерные линии в 8 мм от контура (10, 12, 13, 19).']},
@@ -24218,7 +24243,7 @@ function variantView(host,n,seed){
    <div id="plMount"></div>`;
   document.body.classList.add('inplayer');
   PLR=PLAYER.mount($q(host,'#plMount'),t,{ backHref:H('ng','check'), backLabel:'К РК', afterText:'Дальше: ещё вариант',
-    posKey:'#/gym/'+n+'-'+r.seed, onLast:()=>{ const k='gv'+n+'-'+r.seed, o=ST.get('gymdone',{}); if(!o[k]){ o[k]=1; ST.set('gymdone',o); cnt('var',1); } },
+    posKey:'#/gym/'+n+'-'+r.seed, onLast:()=>{ const k='gv'+n+'-'+r.seed, o=ST.get('gymdone',{}); if(!o[k]){ o[k]=1; ST.set('gymdone',o); cnt('var',1); try{ TRACK('gym_done',{mode:'var',task:String(n),ok:1}); }catch(e){} } },
     onDone:()=>nav(r.orig?H('ng','check'):href('var',n,rnd())) });
 }
 
@@ -24262,6 +24287,7 @@ function buildView(host,n,seed){
     const good=S.ok.every(Boolean); S.checked=true;
     $q(host,'#gyRes').innerHTML=good?`<div class="gy-ok"><b>Верно!</b> Все точки на своих местах (допуск ≈ 2–3 мм на бумаге).</div>`
       :`<div class="gy-bad"><b>Пока не так.</b> ${S.ok.map((o,i)=>o?'':T[i].l).filter(Boolean).join(', ')} — далеко от верного положения (зелёные кружки).${msgs.length?'<ul>'+[...new Set(msgs)].map(m=>'<li>'+m+'</li>').join('')+'</ul>':''}</div>`;
+    try{ TRACK('gym_done',{mode:'build',task:String(n),ok:good?1:0}); }catch(e){}
     if(good){ const k='gb'+n+'-'+r.seed, o=ST.get('gymdone',{}); if(!o[k]){ o[k]=1; ST.set('gymdone',o); cnt('build',1); } }
     try{ FX.buzz&&FX.buzz(good?'ok':12); }catch(e){} draw(); });
   draw();
@@ -24309,7 +24335,7 @@ function bugView(host,n,seed){
   const mark=q=>({t:'circ',c:q,r:hitR*0.7,k:'res'});
   const draw=(extra)=>{ sheet.innerHTML=svgOf(B.items.concat(extra||[]),fr,'Чертёж с ошибкой'); const svg=$q(sheet,'svg'); fit(svg,sheet,S.zoom); svg.style.cursor='pointer';
     svg.addEventListener('click',ev=>{ if(S.found) return; const q=toItem(svg,fr,ev); const d=Math.min(Math.hypot(q[0]-B.at[0],q[1]-B.at[1]),B.at2?Math.hypot(q[0]-B.at2[0],q[1]-B.at2[1]):1e9);
-      if(d<=hitR){ S.found=true; if(!S.miss) cnt('bug',1); try{ FX.buzz&&FX.buzz('ok'); }catch(e){} $q(host,'#gyRes').innerHTML=CATSAY('happy',`<b>Нашёл!</b> ${B.why}`,'cs-ok'); draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); }
+      if(d<=hitR){ S.found=true; if(!S.miss) cnt('bug',1); try{ TRACK('gym_done',{mode:'bug',task:String(n),ok:S.miss?0:1,miss:S.miss}); }catch(e){} try{ FX.buzz&&FX.buzz('ok'); }catch(e){} $q(host,'#gyRes').innerHTML=CATSAY('happy',`<b>Нашёл!</b> ${B.why}`,'cs-ok'); draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); }
       else { S.miss++; try{ FX.buzz&&FX.buzz(12); }catch(e){} $q(host,'#gyRes').innerHTML=`<div class="gy-bad"><b>Здесь всё верно.</b> ${S.miss>=2?'Подсказка: проверь '+(B.type==='num'?'числа на чертеже':B.type==='swap'?'подписи точек по линиям связи':'вертикальность линий связи')+'.':'Ищи дальше.'}</div>`; } }); };
   $q(host,'#gyShow').addEventListener('click',()=>{ S.found=true; $q(host,'#gyRes').innerHTML=CATSAY('oops',`<b>Ошибка здесь.</b> ${B.why}`); draw([mark(B.at)].concat(B.at2?[mark(B.at2)]:[])); });
   $q(host,'#gyZoom').addEventListener('click',e=>{ S.zoom=S.zoom===1?2:1; e.currentTarget.textContent=S.zoom===1?'＋':'－'; draw(S.found?[mark(B.at)]:[]); });
@@ -24334,7 +24360,7 @@ function view(v,mode,keyStr){
   const hash=location.hash;
   GEN.checkers().then(ok=>{ const host=v.querySelector('#gyHost'); if(!host||!host.isConnected||location.hash!==hash&&!location.hash.startsWith(H('ng','check','gym',mode,k.n+'-'))) return;
     if(!ok){ host.innerHTML='<div class="box warn">Проверка не загрузилась — без неё вариант не показываем. Проверь интернет и обнови страницу.</div>'; return; }
-    try{ (mode==='var'?variantView:mode==='build'?buildView:bugView)(host,k.n,k.seed); }catch(e){ console.error(e); host.innerHTML='<div class="box warn">Не получилось построить задание. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; } });
+    try{ (mode==='var'?variantView:mode==='build'?buildView:bugView)(host,k.n,k.seed); try{ TRACK('gym_open',{mode,task:String(k.n)}); }catch(e){} }catch(e){ console.error(e); host.innerHTML='<div class="box warn">Не получилось построить задание. <a href="'+H('ng','check','gym')+'">К тренажёру</a></div>'; } });
   return title+' · задача №'+k.n;
 }
 return {view,buildTargets,bugMake,make,lists,frame};
@@ -27004,6 +27030,7 @@ function bindLessonInteractions(){
         cq.querySelectorAll('.opt').forEach(o=>{ o.classList.add('lk');
           const k=+o.dataset.k; if(k===q.c)o.classList.add('ok'); else if(o===op)o.classList.add('no'); });
         cq.querySelector('.exp').innerHTML=`<div class="expl"><b>${+op.dataset.k===q.c?'Верно.':'Мимо.'}</b> ${q.e}</div>`;
+        try{ TRACK('check_answer',{where:'lesson',lesson:String(l.id),ok:+op.dataset.k===q.c?1:0}); }catch(e){}
       });
     });
   });
@@ -27077,6 +27104,7 @@ function qzAns(i){
   $('qo').querySelectorAll('.opt').forEach(e=>{const k=+e.dataset.k;e.classList.add('lk');
     if(k===q.c)e.classList.add('ok');else if(k===i)e.classList.add('no');});
   if(i===q.c)Qs++;else Qw.push({q,g:i});
+  try{ TRACK('check_answer',{where:'quiz',ok:i===q.c?1:0}); }catch(e){}
   $('qe').innerHTML=`<div class="expl"><b>${i===q.c?'Верно.':(i<0?'Время вышло.':'Мимо.')}</b> ${q.e}</div>`;
   const b=$('qnx');b.style.display='';b.textContent=Qi===QQ.length-1?'Результат →':'Дальше →';
 }
@@ -29354,7 +29382,7 @@ function frameBody(n,st){ const C=ctx(n), {md,sp,FR,TP,DR}=C, SG=secGeo(C), P=se
   pts.push(FR(C.x0-30,C.z1+20),FR(C.x1+10,C.z0),TP(C.x0-30,C.y0-14),TP(C.x1+30,C.y1+14),[sb[0]-30,sb[1]-50],[sb[2]+40,sb[3]+30],FR(SG.X(-20),SG.Z(-20)),FR(SG.X(SG.L+20),SG.Z(SG.L+20)),[FR(SG.X(-20),SG.Z(-20))[0]-40,FR(SG.X(-20),SG.Z(-20))[1]+10],[FR(SG.X(SG.L+20),SG.Z(SG.L+20))[0]+10,FR(SG.X(SG.L+20),SG.Z(SG.L+20))[1]-40]);
   const B=bbox(pts,16);
   return `<svg class="igs-sheet igl-sv" viewBox="${f(B[0])} ${f(B[1])} ${f(B[2]-B[0])} ${f(B[3]-B[1])}" role="img" aria-label="Сечение по шагам, вариант ${n}"><rect x="${f(B[0])}" y="${f(B[1])}" width="${f(B[2]-B[0])}" height="${f(B[3]-B[1])}" fill="#fff"/>${o}${c}${t}</svg>`; }
-return {sheet,fmtSheet,textPts,secGeo:n=>secGeo(ctx(n)),secPoints:n=>{ const C=ctx(n); return secPoints(C,secGeo(C)); },ctx,dimsSVG,checkDims,checkAll,secSteps,secFrame};
+return {sheet,forget:()=>{ for(const k in MEMO) delete MEMO[k]; } /* для проверок: построить листы заново после изменения модели */,fmtSheet,textPts,secGeo:n=>secGeo(ctx(n)),secPoints:n=>{ const C=ctx(n); return secPoints(C,secGeo(C)); },ctx,dimsSVG,checkDims,checkAll,secSteps,secFrame};
 })();
 
 

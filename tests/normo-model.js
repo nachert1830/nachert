@@ -114,7 +114,35 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
         const pd=name==='front'?p[1]-pl:name==='left'?p[0]-pl:pl-p[2];   /* < 0 — перед плоскостью (со стороны наблюдателя) */
         let hs=-1e9; if(side==='right') hs=ub-u; else if(side==='left') hs=u-ub; else if(side==='down') hs=v-ub; else if(side==='up') hs=ub-v;
         return Math.max(pd,hs); };
-      stats[name]={half,plane:Math.round(pl*10)/10,ub:ub!=null?Math.round(ub*10)/10:null}; }
+      stats[name]={half,plane:Math.round(pl*10)/10,ub:ub!=null?Math.round(ub*10)/10:null};
+      /* ребро детали на оси симметрии (ГОСТ 2.305): если оно совпало с осью, вид от разреза отделяют волнистой линией, а не осью
+         (ребро слилось бы со штрихпунктиром). Ищем по модели, независимо от листа: по обе стороны оси (±0,6 мм) — первая поверхность
+         на целой детали (наружное ребро) и на детали, разрезанной плоскостью целиком (внутреннее); излом нормали или скачок глубины
+         на 3 мм подряд — ребро. Граница уже волнистая — это проверяет нормоконтроль по листу (ребро по оси нарисовано) */
+      if(half!=='full'&&axC!=null){ const ua=vert?toU(axC):toV(axC);   /* ось симметрии в мм модели (граница может быть и волнистой) */
+        const pdF=p=>name==='front'?p[1]-pl:name==='left'?p[0]-pl:pl-p[2], Fo=p=>J(p[0],p[1],p[2]), Fc=p=>Math.max(J(p[0],p[1],p[2]),-pdF(p));
+        const first=(f,u,v)=>{ let t=t0, tp=t0; for(let i=0;i<6000&&t<t1;i++){ const d=f(V.ray(u,v,t));
+            if(d<0){ let a=tp, c=t; for(let s=0;s<18;s++){ const m=(a+c)/2; if(f(V.ray(u,v,m))<0) c=m; else a=m; }
+              const p=V.ray(u,v,c), h=0.01, gx=f([p[0]+h,p[1],p[2]])-f([p[0]-h,p[1],p[2]]), gy=f([p[0],p[1]+h,p[2]])-f([p[0],p[1]-h,p[2]]), gz=f([p[0],p[1],p[2]+h])-f([p[0],p[1],p[2]-h]), l=Math.hypot(gx,gy,gz)||1;
+              return {t:c,n:[gx/l,gy/l,gz/l]}; }
+            tp=t; t+=Math.max(Math.abs(d),0.02); } return null; };
+        /* где по оси идёт ребро (наружное или внутреннее): мм вдоль оси через 0,5; куски длиной от 3 мм */
+        const lo2=vert?v0:u0, hi2=vert?v1:u1, E=[];
+        /* излом — грани по обе стороны оси: нормаль на 0,6 и на 1,2 мм от оси одна и та же (у вершины конуса, где радиус меньше
+           миллиметра, нормаль поворачивается плавно — это не ребро, ср. docs/gost-ig.md, вар. 20) */
+        const at2=(f,d,s)=>vert?first(f,ua+d,s):first(f,s,ua+d), dt=(a,b)=>a.n[0]*b.n[0]+a.n[1]*b.n[1]+a.n[2]*b.n[2];
+        for(let s=lo2+0.25;s<hi2;s+=0.5){ if([Fo,Fc].some(f=>{ const A=at2(f,-0.6,s), B=at2(f,0.6,s); if(!A||!B) return false;
+            if(Math.abs(A.t-B.t)>0.8) return true; if(dt(A,B)>=0.9) return false;
+            const A2=at2(f,-1.2,s), B2=at2(f,1.2,s); if(C.opt.debugAx) C.opt.debugAx.push([name,s,dt(A,B),A2&&dt(A,A2),B2&&dt(B,B2),A2&&A2.t-A.t,B2&&B2.t-B.t].map(v=>typeof v==='number'?Math.round(v*1000)/1000:v));
+            return !!A2&&!!B2&&dt(A,A2)>0.995&&dt(B,B2)>0.995; })) E.push(s); }
+        const runs=[]; E.forEach((s,i)=>{ if(i&&s-E[i-1]<0.75) runs[runs.length-1].push(s); else runs.push([s]); });
+        const long=runs.filter(r=>r.length*0.5>=3), at=vert?[axC,(w.b[1]+w.b[3])/2]:[(w.b[0]+w.b[2])/2,axC];
+        if(long.length&&!wav.length) add('модель','ребро на оси — граница волнистой линией (ГОСТ 2.305)',nm+': с осью симметрии совпадает ребро детали ('+long.reduce((a,r)=>a+r.length*0.5,0)+' мм), а граница вида и разреза — сама ось: нужна волнистая линия, смещённая так, чтобы ребро было видно',at);
+        else if(long.length){ /* граница волнистая — ребро нарисовано сплошной основной по оси на всей своей длине */
+          const onAx=S.filter(q=>q.it.kind==='thick'&&!q.it.curve&&(vert?Math.abs(q.a[0]-axC)<0.3*k&&Math.abs(q.b[0]-axC)<0.3*k:Math.abs(q.a[1]-axC)<0.3*k&&Math.abs(q.b[1]-axC)<0.3*k));
+          const drawn=s=>{ const Y=vert?toS(ua,s)[1]:toS(s,ua)[0]; return onAx.some(q=>{ const a=vert?q.a[1]:q.a[0], b=vert?q.b[1]:q.b[0]; return Y>=Math.min(a,b)-0.6*k&&Y<=Math.max(a,b)+0.6*k; }); };
+          let worst=0; long.forEach(r=>{ let m=0; r.forEach(s=>{ m=drawn(s)?0:m+1; worst=Math.max(worst,m); }); });
+          if(worst*0.5>=3) add('модель','ребро на оси видно (ГОСТ 2.305)',nm+': ребро детали на оси симметрии не нарисовано на '+worst*0.5+' мм — волнистая линия смещена не в ту сторону',at); } } }
     /* ── лучи по сетке ── */
     const needHid=S.some(q=>q.it.kind==='dash');
     const R=new Array((nu+1)*(nv+1)), id=(i,j)=>i*(nv+1)+j;

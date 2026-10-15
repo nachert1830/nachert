@@ -9,7 +9,7 @@ async function genEligibility(page,N){
   N=N||12;
   return page.evaluate(async N=>{
     await GEN.checkers();
-    const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,' ').replace(/&[a-z]+;/g,' ');
+    const strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,' ').replace(/&[a-z]+;/g,' ');
     const texts=t=>{ const a=[t.intro,t.ans,t.note]; const parts=(t.parts&&t.parts.length)?t.parts:[t];
       parts.forEach(p=>{ if(p!==t) a.push(p.q,p.ans); (p.steps||[]).forEach(s=>a.push(s.t,s.d,s.why)); }); return a.map(strip).join(' ¦ '); };
     const REF=/(вопрос\S*|задач\S*|стр\.|№|рис\.|пункт\S*|п\.)\s*(\d+\s*(,|и)\s*)*$/i;

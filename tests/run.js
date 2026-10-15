@@ -32,6 +32,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   const ml=mut['линия связи'], ms=mut['подписи местами'];
   if(ml&&ml.поймано/ml.всего<0.95) fail.push('Проверка ослабла: разрыв линии связи ловится в '+Math.round(100*ml.поймано/ml.всего)+'% случаев');
   if(ms&&ms.поймано/ms.всего<0.93) fail.push('Проверка ослабла: перепутанные подписи ловятся в '+Math.round(100*ms.поймано/ms.всего)+'% случаев');
+  /* числа на чертежах — полным перебором (каждое «N мм» → N−3, N+3, N+6, N+9): сверка с текстом задачи и с общим масштабом */
+  const msz=await page.evaluate(()=>MUTATE_SIZES());
+  info.push('Числа на чертежах (перебор): поймано '+msz.поймано+' из '+msz.всего+(msz.пропуски.length?' — пропуски: '+msz.пропуски.slice(0,5).join('; '):''));
+  if(msz.поймано/msz.всего<0.95) fail.push('Проверка ослабла: неверное число на чертеже ловится в '+Math.round(100*msz.поймано/msz.всего)+'% случаев');
 
   /* 3б. оракул: ответы задач против условия, записанного геометрически; и проверка самого оракула */
   report('Оракул (ответы задач)', await page.evaluate(()=>ORACLE_CHECK()));
@@ -100,9 +104,24 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     Object.entries(mu).forEach(([t,x])=>{ if(!x.всего) fail.push('Тренажёр «Нормоконтроль»: нарушение «'+t+'» не подсаживается ни в один лист');
       else if(x.поймано<x.всего) fail.push('Нормоконтроль не ловит «'+t+'»: '+x.поймано+' из '+x.всего+' — '+x.пример);
       if(x.лишнее) fail.push('Нормоконтроль: подсадка «'+t+'» даёт лишние замечания — '+x.пример); });
+    if(!QUICK){ const wm=await require('./normo-mutate.js').wavyMutations(npage);
+      info.push('Сторона волнистой линии (ГОСТ 2.305): поймано '+wm.поймано+' из '+wm.всего+' подсаженных ошибок'+(wm.review.length?'; для проверки человеком: '+wm.review.join('; '):''));
+      if(wm.поймано<wm.всего) fail.push('Нормоконтроль не ловит сторону волнистой линии: '+wm.пропуски.join(', ')); }
     report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(npage,URL));
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(npage,URL));
     await npage.close(); }
+
+  /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
+     согласился на cookie. Здесь TRACK подменяется записью в список: открыть задачу, сменить режим, дойти до ответа */
+  { const apage=await browser.newPage({viewport:{width:390,height:844}}); await apage.goto(URL+'#/ng/tasks/12'); await apage.waitForTimeout(1200);
+    await apage.evaluate(()=>{ window.__EV=[]; window.TRACK=(n,p)=>__EV.push(n+':'+(p&&p.mode||'')+':'+(p&&p.task||'')); location.hash='#/ng/path/t12'; });
+    await apage.waitForSelector('.pl-mode[data-m="try"]',{timeout:5000}).catch(()=>{});
+    await apage.click('.pl-mode[data-m="try"]').catch(()=>{}); await apage.click('.pl-mode[data-m="watch"]').catch(()=>{});
+    for(let k=0;k<40;k++){ const b=await apage.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await apage.waitForTimeout(60); }
+    await apage.click('.pl-done').catch(()=>{}); await apage.waitForTimeout(200);
+    const ev=await apage.evaluate(()=>window.__EV);
+    ['task_open:watch:12','task_mode:try:12','task_done:watch:12'].forEach(e=>{ if(!ev.includes(e)) fail.push('Статистика режимов: нет события '+e+' (пришло: '+ev.join(', ')+')'); });
+    info.push('Статистика режимов: '+ev.length+' событий на один разбор ('+[...new Set(ev.map(e=>e.split(':')[0]))].join(', ')+')'); await apage.close(); }
 
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));

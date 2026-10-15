@@ -8,12 +8,16 @@ window.MUTATE_CHECK=function(opts){
   /* финальные чертежи всех задач и рисунки уроков */
   const scenes=[];
   const partsOf=t=>(t.parts&&t.parts.length)?t.parts.map(p=>Object.assign({given:t.given||[]},p)):[{given:t.given||[],steps:t.steps||[]}];
-  const task=(name,t)=>partsOf(t).forEach((p,pi)=>{ let acc=(p.given||[]).slice(); (p.steps||[]).forEach(s=>acc=acc.concat(s.add||[])); scenes.push({name:name+' п.'+(pi+1),items:acc}); });
-  COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) scenes.push({name:'Урок '+l.id+' рис.'+(i+1),items:b.scene.items}); }));
+  /* текст задачи (условие, шаги, ответ) идёт в проверку вместе с чертежом — так же, как в GEOM_CHECK() по всему сайту:
+     число на рисунке сверяется с той же величиной в тексте и с общим масштабом задачи */
+  const TX=o=>[o&&o.q,o&&o.t,o&&o.d,o&&o.why,o&&o.intro,o&&o.note,o&&o.ans,o&&o.tbl,o&&o.c,o&&o.cap].filter(x=>typeof x==='string').join('\n');
+  const task=(name,t)=>partsOf(t).forEach((p,pi)=>{ let acc=(p.given||[]).slice(); (p.steps||[]).forEach(s=>acc=acc.concat(s.add||[]));
+    scenes.push({name:name+' п.'+(pi+1),items:acc,text:opts.noText?'':[TX(t),TX(p),...(p.steps||[]).map(TX)].join('\n')}); });
+  COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) scenes.push({name:'Урок '+l.id+' рис.'+(i+1),items:b.scene.items,text:opts.noText?'':b.cap||''}); }));
   WB3.tasks.forEach(t=>task('№'+t.n,t));
   ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); });
   const key=o=>o.rule+'|'+o.msg;
-  const base=new Map(scenes.map(s=>[s.name,new Set(GEOM_CHECK({items:s.items}).map(key))]));
+  const base=new Map(scenes.map(s=>[s.name,new Set(GEOM_CHECK({items:s.items,text:s.text}).map(key))]));
   const clone=items=>items.map(it=>it?JSON.parse(JSON.stringify(it)):it);
   const res={};
   const MUT={
@@ -32,7 +36,30 @@ window.MUTATE_CHECK=function(opts){
   const names=Object.keys(MUT); const N=opts.n||300;
   for(let k=0;k<N;k++){ const s=pick(scenes), type=names[k%names.length]; const items=clone(s.items||[]); const what=MUT[type](items); if(what==null) continue;
     const r=res[type]||(res[type]={всего:0,поймано:0,пропуски:[]}); r.всего++;
-    const now=GEOM_CHECK({items}).map(key).filter(x=>!base.get(s.name).has(x));
+    const now=GEOM_CHECK({items,text:s.text}).map(key).filter(x=>!base.get(s.name).has(x));
     if(now.length) r.поймано++; else if(r.пропуски.length<8) r.пропуски.push(s.name+': '+what); }
+  return res;
+};
+/* Полный перебор по числам на чертежах: каждое «N мм» на рисунке (отрезок, размер) по очереди меняется на N−3, N+3, N+6, N+9.
+   Выборка MUTATE_CHECK по «размеру» мала (чисел на сайте несколько десятков), поэтому доля пойманных считается здесь.
+   MUTATE_SIZES({noText}) → {всего, поймано, пропуски:[…]} */
+window.MUTATE_SIZES=function(opts){
+  opts=opts||{}; const scenes=[];
+  const partsOf=t=>(t.parts&&t.parts.length)?t.parts.map(p=>Object.assign({given:t.given||[]},p)):[{given:t.given||[],steps:t.steps||[]}];
+  const TX=o=>[o&&o.q,o&&o.t,o&&o.d,o&&o.why,o&&o.intro,o&&o.note,o&&o.ans,o&&o.tbl,o&&o.c,o&&o.cap].filter(x=>typeof x==='string').join('\n');
+  const task=(name,t)=>partsOf(t).forEach((p,pi)=>{ let acc=(p.given||[]).slice(); (p.steps||[]).forEach(s=>acc=acc.concat(s.add||[]));
+    scenes.push({name:name+' п.'+(pi+1),items:acc,text:opts.noText?'':[TX(t),TX(p),...(p.steps||[]).map(TX)].join('\n')}); });
+  COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) scenes.push({name:'Урок '+l.id+' рис.'+(i+1),items:b.scene.items,text:opts.noText?'':b.cap||''}); }));
+  WB3.tasks.forEach(t=>task('№'+t.n,t));
+  ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); });
+  const key=o=>o.rule+'|'+o.msg, RE=/(\d+(?:[.,]\d+)?)(\s*мм)/, res={всего:0,поймано:0,пропуски:[]};
+  scenes.forEach(s=>{ const idx=(s.items||[]).map((it,i)=>it&&(it.t==='seg'||it.t==='dim')&&it.l&&RE.test(it.l)?i:-1).filter(i=>i>=0); if(!idx.length) return;
+    const base=new Set(GEOM_CHECK({items:s.items,text:s.text}).map(key)), done=new Set();
+    idx.forEach(i=>{ const l0=s.items[i].l; if(done.has(l0)) return; done.add(l0); const v=parseFloat(RE.exec(l0)[1].replace(',','.'));
+      [-3,3,6,9].forEach(d=>{ if(v+d<=0) return; const items=s.items.map(it=>it?Object.assign({},it):it);
+        /* одно и то же число на рисунке могут подписывать два элемента — меняем все одинаковые подписи */
+        items.forEach(it=>{ if(it&&it.l===l0) it.l=l0.replace(RE,(m,x,u)=>String(Math.round((v+d)*10)/10).replace('.',',')+u); });
+        res.всего++; const now=GEOM_CHECK({items,text:s.text}).map(key).filter(x=>!base.has(x));
+        if(now.length) res.поймано++; else res.пропуски.push(s.name+': '+l0+' → '+(d>0?'+':'')+d); }); }); });
   return res;
 };

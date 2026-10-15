@@ -48,35 +48,40 @@ async function runAdequacy(page,opts){
     const keep=WB3.tasks.slice(), old=new Set(keep); let added=[], err=null; window.__RVERR=[];
     try{ (0,eval)(src); added=WB3.tasks.filter(t=>!old.has(t)); }catch(e){ err=String(e&&e.message||e); }
     const res=[];
-    if(!err) added.forEach(t=>{ const parts=(t.parts&&t.parts.length)?t.parts:[t]; const vis=[];
-      parts.forEach((p,pi)=>{ [].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).forEach(it=>{ if(!it) return;
+    if(!err) added.forEach(t=>{ const parts=(t.parts&&t.parts.length)?t.parts:[t]; const vis=[], geo=[], giv=[];
+      parts.forEach((p,pi)=>{ const G0=new Set(p.given||t.given||[]); [].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).forEach(it=>{ if(!it) return;
           const r=a=>Array.isArray(a)&&a.length===2?Math.round(a[0]*2)+','+Math.round(a[1]*2):'';
+          /* geo — то же без длин отрезков: прямая отрезка (направление и положение), а не его концы; giv — только «дано» */
+          let g; if(it.a&&it.b){ const dx=it.b[0]-it.a[0], dy=it.b[1]-it.a[1], L=Math.hypot(dx,dy)||1; let an=Math.atan2(dy,dx); if(an<0) an+=Math.PI; if(an>=Math.PI-1e-9) an=0;
+              g='s'+pi+'|'+it.t+'|'+(it.k||'')+'|'+(it.l||'')+'|'+Math.round(an*180/Math.PI*5)+'|'+Math.round((-dy*it.a[0]+dx*it.a[1])/L*2); }
+          else g=it.t==='pt'?'p'+pi+'|'+it.l+'|'+r(it.at):it.p?'q'+pi+'|'+it.t+'|'+(it.k||'')+'|'+it.p.map(r).join(';'):it.c?'c'+pi+'|'+it.t+'|'+(it.k||'')+'|'+r(it.c)+'|'+Math.round((it.r||0)*2):'o'+pi+'|'+it.t+'|'+JSON.stringify(it).length;
+          geo.push(g); if(G0.has(it)) giv.push(it.a&&it.b?'s|'+(it.k||'')+'|'+r(it.a)+'|'+r(it.b):g);
           if(it.t==='pt') vis.push('p'+pi+'|'+it.l+'|'+r(it.at));
           else if(it.a&&it.b) vis.push('s'+pi+'|'+it.t+'|'+(it.k||'')+'|'+(it.l||'')+'|'+r(it.a)+'|'+r(it.b));
           else if(it.p) vis.push('q'+pi+'|'+it.t+'|'+(it.k||'')+'|'+it.p.map(r).join(';'));
           else if(it.c) vis.push('c'+pi+'|'+it.t+'|'+(it.k||'')+'|'+r(it.c)+'|'+Math.round((it.r||0)*2)); });
-        (p.steps||[]).forEach(s=>vis.push('t|'+s.t+'|'+s.d+'|'+s.why)); vis.push('a|'+p.ans); });
-      vis.push('A|'+t.ans+'|'+t.note+'|'+t.intro);
+        (p.steps||[]).forEach(s=>{ vis.push('t|'+s.t+'|'+s.d+'|'+s.why); geo.push('t|'+s.t+'|'+s.d+'|'+s.why); }); vis.push('a|'+p.ans); geo.push('a|'+p.ans); });
+      vis.push('A|'+t.ans+'|'+t.note+'|'+t.intro); geo.push('A|'+t.ans+'|'+t.note+'|'+t.intro);
       const k=o=>o.name.replace(/ · (шаг \d+|дано)$/,'')+'|'+o.rule;
       /* трассировка — первой: GEOM_CHECK «доводит» линии (LINEFIX) и заменяет координаты копиями без пометок */
       let old=[], prov=[]; try{ prov=PROV_CHECK({tasks:[t]}).map(k); }catch(e){ prov=['сбой']; }
       try{ old=GEOM_CHECK({tasks:[t]}).concat(ORACLE_CHECK({tasks:[t]})).map(k); }catch(e){ old=['сбой']; }
-      let site=null; if((window.__CERT_N||[]).includes(t.n)){ const p=parts[0], strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').trim(), points={}, lines={}, segs=[];
+      let site=null; if((window.__CERT_N||[]).includes(t.n)){ const p=parts[0], strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim(), points={}, lines={}, segs=[];
         [].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).filter(Boolean).forEach(it=>{
           if(it.t==='pt'&&it.at&&it.l) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ if(!points[l]) points[l]=it.at.slice(); });
           if((it.t==='seg'||it.t==='line')&&it.a&&it.b&&it.l){ const l=strip(it.l); (lines[l]=lines[l]||[]).push(it.a.slice(),it.b.slice()); }
           if(it.t==='seg'&&it.a&&it.b) segs.push({a:it.a.slice(),b:it.b.slice(),k:it.k||'main'}); });
         site={points,lines,segs,ans:strip(t.ans)}; }
-      res.push({n:t.n,vis:vis.join('\n'),old,prov,site}); });
+      res.push({n:t.n,vis:vis.join('\n'),geo:geo.sort().join('\n'),giv:giv.sort().join('\n'),old,prov,site}); });
     WB3.tasks.length=0; keep.forEach(t=>WB3.tasks.push(t));
     return {err,res}; },src);
-  const by={}, survivors=[]; let total=0, equiv=0, crashed=0;
+  const by={}, survivors=[], kinds={}; let total=0, equiv=0, crashed=0;
   const bump=(k,a,b)=>{ const o=by[k]=by[k]||{n:0,old:0,all:0}; o.n++; if(a) o.old++; if(a||b) o.all++; };
   const cby={}, csurv=[]; const cbump=(k,a,b,c)=>{ const o=cby[k]=cby[k]||{n:0,old:0,all:0,cert:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||c) o.cert++; };
   for(const b of R.blocks().filter(b=>!opts.only||opts.only.some(n=>new RegExp('n:'+n+'\\b').test(b.src)))){
     const src0=isolate(b.src), base=await run(src0); if(base.err) continue;
     const B={}; base.res.forEach(r=>B[r.n]=r);
-    const all=sites(src0,rnd), ops=[...new Set(all.map(s=>s.op))];
+    const all=sites(src0,rnd), ops=[...new Set(all.map(s=>s.op))], DATA=R.dataSpans(src0);
     for(const op of ops){ const pool=all.filter(s=>s.op===op);
       for(let k=0;k<PER&&pool.length;k++){ const S=pool.splice(Math.floor(rnd()*pool.length),1)[0];
         const m=await run(src0.slice(0,S.start)+S.to+src0.slice(S.end)); total++;
@@ -87,8 +92,14 @@ async function runAdequacy(page,opts){
           bump(op,a,p); bump('всего',a,p);
           if(CERT[r.n]&&b0.site&&certOk(r.n,b0.site)){ const c=certOk(r.n,r.site)===false; cbump(op,a,p,c); cbump('всего',a,p,c);
             if(!a&&!p&&!c) csurv.push({task:'№'+r.n,op,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }
-          if(!a&&!p&&survivors.length<1000) survivors.push({task:'№'+r.n,op,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }); } } }
-  return {by,cby,csurv,survivors,total,equiv,crashed};
+          /* разбор выжившего: «данные» — опечатка в числе, которое генератор вариантов меняет как исходные данные (та же программа
+             на других данных; на 30 случайных наборах данных задача проходит проверку — tests/random-run.js); «условие» — изменился
+             чертёж «дано», а число не из данных генератора (неясно: нужна сверка с тетрадью); «оформление» — все точки, прямые, тексты
+             те же, другие только длины отрезков (эквивалентный); «пропуск» — изменилось построение, а проверка молчит */
+          const cls=op==='число'&&DATA.some(([s0,e0])=>S.start>=s0&&S.end<=e0)?'данные':r.giv!==b0.giv?'условие':r.geo===b0.geo?'оформление':'пропуск';
+          if(!a&&!p){ const o=kinds[op]=kinds[op]||{}; o[cls]=(o[cls]||0)+1; const t=kinds['всего']=kinds['всего']||{}; t[cls]=(t[cls]||0)+1; }
+          if(!a&&!p&&survivors.length<1000) survivors.push({task:'№'+r.n,op,cls,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }); } } }
+  return {by,cby,csurv,survivors,kinds,total,equiv,crashed};
 }
 module.exports={runAdequacy,sites};
 
@@ -106,6 +117,9 @@ if(require.main===module)(async()=>{
   console.log('Мутантов '+r.total+': не выполнились '+r.crashed+', эквивалентных (ничего не изменилось) '+r.equiv);
   console.log('вид        | ловила прежняя проверка | с трассировкой');
   Object.entries(r.by).sort((a,b)=>a[0]==='всего'?1:b[0]==='всего'?-1:0).forEach(([k,v])=>console.log(k.padEnd(10)+' | '+pc(v.old,v.n).padEnd(23)+' | '+pc(v.all,v.n)));
+  console.log('\nВыжившие (не пойманы) по разбору: данные — другие исходные данные той же программы; условие — изменился «дано» (неясно);');
+  console.log('оформление — другие только длины отрезков (эквивалентный); пропуск — изменилось построение');
+  Object.entries(r.kinds).sort((a,b)=>a[0]==='всего'?1:b[0]==='всего'?-1:0).forEach(([k,v])=>console.log(k.padEnd(10)+' | '+['данные','условие','оформление','пропуск'].map(c=>c+' '+(v[c]||0)).join(' | ')));
   if(Object.keys(r.cby).length){ console.log('\nЗадачи с сертификатом (№'+require('./certified/run.js').TASKS.map(T=>T.n).join(', №')+'):');
     console.log('вид        | прежняя проверка        | + трассировка           | + сертификат');
     Object.entries(r.cby).sort((a,b)=>a[0]==='всего'?1:b[0]==='всего'?-1:0).forEach(([k,v])=>console.log(k.padEnd(10)+' | '+pc(v.old,v.n).padEnd(23)+' | '+pc(v.all,v.n).padEnd(23)+' | '+pc(v.cert,v.n))); }
