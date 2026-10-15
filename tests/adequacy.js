@@ -61,7 +61,7 @@ async function runAdequacy(page,opts){
       /* трассировка — первой: GEOM_CHECK «доводит» линии (LINEFIX) и заменяет координаты копиями без пометок */
       let old=[], prov=[]; try{ prov=PROV_CHECK({tasks:[t]}).map(k); }catch(e){ prov=['сбой']; }
       try{ old=GEOM_CHECK({tasks:[t]}).concat(ORACLE_CHECK({tasks:[t]})).map(k); }catch(e){ old=['сбой']; }
-      let site=null; if((window.__CERT_N||[]).includes(t.n)){ const p=parts[0], strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').trim(), points={}, lines={}, segs=[];
+      let site=null; if((window.__CERT_N||[]).includes(t.n)){ const p=parts[0], strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim(), points={}, lines={}, segs=[];
         [].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).filter(Boolean).forEach(it=>{
           if(it.t==='pt'&&it.at&&it.l) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ if(!points[l]) points[l]=it.at.slice(); });
           if((it.t==='seg'||it.t==='line')&&it.a&&it.b&&it.l){ const l=strip(it.l); (lines[l]=lines[l]||[]).push(it.a.slice(),it.b.slice()); }

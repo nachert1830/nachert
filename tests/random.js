@@ -28,7 +28,7 @@ const RE=new RegExp('\\[\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\
 /* отдельные числа-данные: const X=67.8, kf=0.84, … (в объявлениях) */
 const SC=/(\b(?:const|let)\s+|,\s*)([A-Za-z_$][\w$]*)(\s*=\s*)(-?\d+(?:\.\d+)?)(?=\s*[,;\n]|\s*\/[\/*])/g;
 /* числа из условия (q:'…') не меняются — так же делает генератор на сайте (GEN.pinOf): условие на экране совпадает с чертежом */
-function pinOf(src){ const p=new Set(); src.replace(/\bq:\s*'((?:[^'\\]|\\.)*)'/g,(m,q)=>{ q.replace(/<[^>]+>/g,' ').replace(/\d+(?:[.,]\d+)?/g,x=>{ p.add(parseFloat(x.replace(',','.'))); return x; }); return m; }); return p; }
+function pinOf(src){ const p=new Set(); src.replace(/\bq:\s*'((?:[^'\\]|\\.)*)'/g,(m,q)=>{ q.replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,' ').replace(/\d+(?:[.,]\d+)?/g,x=>{ p.add(parseFloat(x.replace(',','.'))); return x; }); return m; }); return p; }
 function perturb(src,seed){ const f=warp(seed,pinOf(src)); let n=0;
   const basis=(a,b,c,ma,mb,mc)=>!ma&&!mb&&!mc&&[+a,+b,+c].filter(v=>v===0).length===2&&[+a,+b,+c].some(v=>Math.abs(v)===1);   /* как на сайте: оси-направления не данные */
   let s=src.replace(RE,(m,a,ma,b,mb,c,mc)=>{ if(basis(a,b,c,ma,mb,mc)) return m; n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });

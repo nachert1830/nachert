@@ -12,7 +12,7 @@ window.GEOM_CHECK=function(opts){
 opts=opts||{};
 const TOL=1.25, out=[];
 const MARK=/(′|″|‴)$/, PN=/^(.+?)(′|″|‴)$/;
-const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/g,' ');
+const strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/g,' ');
 const d2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 const sub=(a,b)=>a.map((v,i)=>v-b[i]), dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0), nrm=a=>Math.hypot(...a);
 const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -288,14 +288,39 @@ const scale=(name,smp)=>{ const u=[]; const seen=new Set(); smp.forEach(o=>{ con
   const ex=u.filter(o=>o.eq); if(ex.length<2) return; const rx=ex.map(o=>o.px/o.v).sort((a,b)=>a-b), Sx=rx[Math.floor(rx.length/2)];
   if(ex.filter(o=>Math.abs(o.px/Sx-o.v)<=0.12).length<2) return;
   ex.forEach(o=>{ const t=o.px/Sx; if(Math.abs(t-o.v)>0.12&&Math.abs(t-o.v)<=o.tol) out.push({name:o.name,rule:'точность',msg:o.what+': точное значение '+t.toFixed(2)+' — нужно «≈», а не «=»',lvl:'ошибка'}); }); };
+/* число на чертеже = та же величина в тексте задачи (условие, шаги, ответ): «|KS| = 35 мм» на рисунке и «|KS| ≈ 35 мм» в ответе.
+   Ключ — имя величины (|AB|, Δz, H, R₁); между ключом и числом в тексте допускается цепочка равенств без запятых
+   («|AB| = |A′B′| ≈ 35 мм», «Δy = yA − yB = 32 мм»; запятая с пробелом цепочку обрывает). Число без имени («40 мм») должно встречаться в тексте как «40 мм».
+   Нет той же величины в тексте — не судим. Допуск: 0,05 мм, если оба «=»; 1 мм, если где-то «≈» (округление). */
+const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const agree=(name,items,text)=>{ const T=strip(text).replace(/\s+/g,' '), NUMRE='(\\d+(?:[.,]\\d+)?)\\s*мм(?![а-яa-z])';
+  const vals=key=>{ const res=[], head=key[0]==='|'?esc(key):'(?<![A-Za-zА-Яа-яЁёΔ₀-₉0-9|])'+esc(key)+'(?![A-Za-zА-Яа-яЁё₀-₉0-9′″‴|])';
+    const re=new RegExp(head+'((?:\\s*=\\s*[^=≈;:!?\\n]{1,45}?){0,3}?)\\s*([=≈])\\s*'+NUMRE,'g'); let m;
+    while((m=re.exec(T))){ if(/мм|,\s|\s(и|или|а|но)\s/.test(m[1])) continue; res.push({rel:m[2],v:num(m[3]),s:m[0]}); } return res; };
+  const any=[]; { const re=new RegExp('(?<![\\d.,])'+NUMRE,'g'); let m; while((m=re.exec(T))) any.push(num(m[1])); }
+  const seen=new Set();
+  (items||[]).forEach(it=>{ if(!it||!it.l||!/^(seg|dim|line|vec|txt)$/.test(it.t)) return; const l=strip(it.l).replace(/\s+/g,' ').trim(); if(seen.has(l)) return; seen.add(l); let m;
+    if((m=/^(\|[^|]{2,12}\||Δ[xyz][₀-₉A-Za-zА-Я]*|[A-ZА-Я][₀-₉0-9]*|R[а-яa-z₀-₉0-9]*|[a-z])\s*([=≈])\s*(\d+(?:[.,]\d+)?)\s*мм$/.exec(l))){
+      const v=num(m[3]), V=vals(m[1]); if(!V.length) return;
+      if(!V.some(o=>Math.abs(o.v-v)<=(o.rel==='≈'||m[2]==='≈'?1:0.05)))
+        out.push({name,rule:'число на чертеже и в тексте',msg:'на чертеже «'+l+'», а в тексте «'+V.map(o=>o.s).slice(0,2).join('», «')+'»',lvl:'ошибка'}); }
+    else if((m=/^(\d+(?:[.,]\d+)?)\s*мм$/.exec(l))){ const v=num(m[1]); if(any.length&&!any.some(x=>Math.abs(x-v)<=0.05))
+        out.push({name,rule:'число на чертеже и в тексте',msg:'на чертеже «'+l+'», в тексте такого числа нет',lvl:'ошибка'}); } }); };
+/* десятичный знак в русском тексте и на чертеже — запятая: «24,6 мм», а не «24.6 мм» */
+const DECRE=/(^|[^\d.,A-Za-zА-Яа-яЁё])(\d+\.\d+)(?![\d.]|,\d)/;
+const decimal=(name,items,text)=>{ const bad=[], sp=s=>String(s).replace(/<\/?[A-Za-z][^<>]*>/g,' ');   /* тег — пробел: «√3.</div>…3 · Шаг» не должно склеиться в «√3.3» */
+  [sp(text),...(items||[]).filter(it=>it&&typeof it.l==='string').map(it=>sp(it.l))].forEach(s=>{ const m=DECRE.exec(s); if(m) bad.push(m[2]); });
+  if(bad.length) out.push({name,rule:'десятичная запятая',msg:'число с точкой: '+[...new Set(bad)].slice(0,4).join(', '),lvl:'ошибка'}); };
 const task=(name,t)=>{ try{ partsOf(t).forEach((p,pi)=>{ try{ window.LINEFIX&&LINEFIX(p); window.DMARK&&DMARK(p); }catch(e){} const nm=name+(pi?' п.'+(pi+1):''); let acc=(p.given||[]).slice(), txt=TX(t)+'\n'+TX(p); const samples=[];
     check(nm+' · дано',acc,txt,{samples});
     (p.steps||[]).forEach((st,k)=>{ acc=acc.concat(st.add||[]); check(nm+' · шаг '+(k+1),acc,TX(st),{samples}); });
-    scale(nm,samples); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e),lvl:'ошибка'}); } };
-if(opts.items){ const samples=[]; check(opts.name||'проверка',opts.items,opts.text||'',{samples}); scale(opts.name||'проверка',samples); return out; }
+    scale(nm,samples);
+    const TA=o=>[TX(o),o&&o.ans,o&&o.tbl].filter(x=>typeof x==='string').join('\n');   /* ответ и таблица шага (разборы ДЗ) — тоже текст задачи */
+    const all=[TA(t),TA(p),...(p.steps||[]).map(TA)].join('\n'); agree(nm,acc,all); decimal(nm,acc,all); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e),lvl:'ошибка'}); } };
+if(opts.items){ const samples=[]; check(opts.name||'проверка',opts.items,opts.text||'',{samples}); scale(opts.name||'проверка',samples); agree(opts.name||'проверка',opts.items,opts.text||''); return out; }
 if(opts.modelOf) return model(opts.modelOf);
 if(opts.tasks){ opts.tasks.forEach(t=>task('Задача №'+t.n,t)); return out; }
-try{ COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) { const samples=[]; check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap,{samples}); scale('Урок '+l.id+' · рисунок '+(i+1),samples); } })); }catch(e){ out.push({name:'COURSE',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
+try{ COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) { const samples=[]; check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap,{samples}); scale('Урок '+l.id+' · рисунок '+(i+1),samples); agree('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap||''); decimal('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap||''); } })); }catch(e){ out.push({name:'COURSE',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ WB3.tasks.forEach(t=>task('Задача №'+t.n,t)); }catch(e){ out.push({name:'WB3',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t))); }catch(e){}
 try{ ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}

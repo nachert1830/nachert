@@ -11,7 +11,7 @@ const sub=(a,b)=>a.map((v,i)=>v-b[i]), add=(a,b)=>a.map((v,i)=>v+b[i]), mul=(a,k
 const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0), nrm=a=>Math.hypot(...a), unit=a=>mul(a,1/nrm(a));
 const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const deg=r=>r*180/Math.PI, mid=(a,b)=>mul(add(a,b),.5);
-const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'');
+const strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'');
 
 /* помощник для одной сцены (итоговый чертёж части задачи) */
 function helper(items,fail){
@@ -33,25 +33,25 @@ function helper(items,fail){
     /* 2D-проекция по подписи (для точек-проекций проецирующих прямых: c″) */
     pt2(n){ const a=M.pts[n]; if(!a) throw new Error('нет проекции '+n); return a[0]; },
     /* точка чертежа по любой подписи, в том числе без штриха (A₄, 1₄, Ā″) и в составной «A₅ ≡ B₅» */
-    lab(n){ const it=items.find(i=>i&&i.t==='pt'&&i.at&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').split(/\s*[≡=]\s*/).map(x=>x.trim()).includes(n)); if(!it) throw new Error('нет точки '+n); return it.at; },
-    /* отрезок по подписи (точно или по началу подписи: «H.B.» найдёт «H.B. = 20 мм») */
-    segL(l){ const it=items.find(i=>i&&(i.t==='seg'||i.t==='line')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').trim().startsWith(l)); if(!it) throw new Error('нет отрезка '+l); return [it.a,it.b]; },
+    lab(n){ const it=items.find(i=>i&&i.t==='pt'&&i.at&&String(i.l==null?'':i.l).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').split(/\s*[≡=]\s*/).map(x=>x.trim()).includes(n)); if(!it) throw new Error('нет точки '+n); return it.at; },
+    /* отрезок по подписи (точно или по началу подписи: «d » найдёт «d ≈ 20 мм») */
+    segL(l){ const it=items.find(i=>i&&(i.t==='seg'||i.t==='line')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim().startsWith(l)); if(!it) throw new Error('нет отрезка '+l); return [it.a,it.b]; },
     /* прямая в пространстве по двум подписанным проекциям-отрезкам (для подписей вида h″β, h′β) */
     lineFrom(l2,l1){ const [a2,b2]=H.segL(l2), [a1,b1]=H.segL(l1); const at=x=>{ const t2=(x-a2[0])/(b2[0]-a2[0]), t1=(x-a1[0])/(b1[0]-a1[0]); return [x,a1[1]+t1*(b1[1]-a1[1]),-(a2[1]+t2*(b2[1]-a2[1]))]; };
       const x0=Math.max(Math.min(a2[0],b2[0]),Math.min(a1[0],b1[0])); const p=at(x0), q=at(x0+20); return {p,d:unit(sub(q,p))}; },
     /* строки таблицы ответа: [[ячейка, …], …] */
-    table(html){ return [...String(html||'').matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(r=>[...r[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map(c=>c[1].replace(/<[^>]+>/g,'').trim())); },
+    table(html){ return [...String(html||'').matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(r=>[...r[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map(c=>c[1].replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim())); },
     /* окружности чертежа: центр, радиус, поле (по пометке F/H, иначе по знаку v) */
     circs(){ return items.filter(i=>i&&i.t==='circ'&&i.c).map(i=>({c:i.c,r:i.r,k:i.k||'main',pl:i.c._pl||(i.c[1]<0?2:1)})); },
     circAt(c,pl){ const all=H.circs().filter(o=>(!pl||o.pl===pl)&&H.d2(o.c,c)<2*E), m=all.filter(o=>o.k==='main'), cs=m.length?m:all; if(!cs.length) throw new Error('нет окружности в '+c.map(v=>v.toFixed(0))); return cs.sort((x,y)=>y.r-x.r)[0]; },
     /* кривая (curve/poly) по подписи */
-    curveL(l){ const it=items.find(i=>i&&(i.t==='curve'||i.t==='poly')&&Array.isArray(i.p)&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').trim()===l); if(!it) throw new Error('нет кривой '+l); return it.p; },
+    curveL(l){ const it=items.find(i=>i&&(i.t==='curve'||i.t==='poly')&&Array.isArray(i.p)&&String(i.l==null?'':i.l).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim()===l); if(!it) throw new Error('нет кривой '+l); return it.p; },
     /* касательная плоскость: прямые h, t (и f) проходят через A и лежат в одной плоскости; h — горизонталь, f — фронталь */
     tangent(A,what){ const hh=H.L('h'), tt=H.L('t'); H.on(A,hh,'A ∈ h'); H.on(A,tt,'A ∈ t'); H.perp(hh.d,zN,'h — горизонталь'); const n=unit(crs(hh.d,tt.d));
       let ff=null; try{ ff=H.L('f'); }catch(e){} if(ff){ H.on(A,ff,'A ∈ f'); H.perp(ff.d,n,'f в касательной плоскости'); H.perp(ff.d,yN,'f — фронталь'); }
       let nn=null; try{ nn=H.vecL('n″','n′'); }catch(e){} if(nn) H.par(nn.d,n,'нормаль n ⟂ касательной плоскости'); return {p:A,n}; },
     /* прямая по подписанным векторам/отрезкам двух проекций */
-    vecL(l2,l1){ const g=l=>{ const it=items.find(i=>i&&(i.t==='vec'||i.t==='seg'||i.t==='line')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<[^>]+>/g,'').trim()===l); if(!it) throw new Error('нет '+l); return [it.a,it.b]; };
+    vecL(l2,l1){ const g=l=>{ const it=items.find(i=>i&&(i.t==='vec'||i.t==='seg'||i.t==='line')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim()===l); if(!it) throw new Error('нет '+l); return [it.a,it.b]; };
       const [a2,b2]=g(l2), [a1,b1]=g(l1); const at=x=>{ const t2=(x-a2[0])/(b2[0]-a2[0]), t1=(x-a1[0])/(b1[0]-a1[0]); return [x,a1[1]+t1*(b1[1]-a1[1]),-(a2[1]+t2*(b2[1]-a2[1]))]; };
       const x0=a2[0], p=at(x0), q=at(x0+(b2[0]-a2[0])); return {p,d:unit(sub(q,p))}; },
     /* пересечения прямой со сферой (для полноты ответа) */
@@ -253,7 +253,7 @@ const S={
   1:(h,t)=>tableCheck(h,t,{y:2,z:3,where:1}),
   2:(h,t)=>{ tableCheck(h,t,{y:1,z:2,where:3});
     /* условие словами: «над/под горизонтальной … на расстоянии N мм», «за/перед фронтальной … N мм», «на фронтальной … на N мм выше», «на оси x» */
-    String(t.q).replace(/<[^>]+>/g,'').split('•').slice(1).forEach(b=>{ const m=/точка\s+([A-Z])/.exec(b); if(!m) return; const P=h.P(m[1]), want={};
+    String(t.q).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').split('•').slice(1).forEach(b=>{ const m=/точка\s+([A-Z])/.exec(b); if(!m) return; const P=h.P(m[1]), want={};
       let r; if((r=/над горизонтальной[^;]*?(\d+)\s*мм/.exec(b))) want.z=+r[1]; if((r=/под горизонтальной[^;]*?(\d+)\s*мм/.exec(b))) want.z=-r[1];
       if((r=/за фронтальной[^;]*?расстоянии\s*(\d+)\s*мм/.exec(b))) want.y=-r[1]; if((r=/перед фронтальной[^;]*?расстоянии\s*(\d+)\s*мм/.exec(b))) want.y=+r[1];
       if(/на фронтальной плоскости/.test(b)){ want.y=0; if((r=/на\s*(\d+)\s*мм\s*выше/.exec(b))) want.z=+r[1]; }
@@ -299,7 +299,7 @@ const S={
     const n=k=>{ const m=new RegExp('\\|'+k+'\\|\\s*≈\\s*(\\d+)').exec(strip(t.ans)); return m?+m[1]:null; };
     if(n('AB')&&n('BC')&&n('CA')) h.scaleOK([[ab,n('AB'),1],[bc,n('BC'),1],[ca,n('CA'),1]],'длины сторон в ответе'); },
   /* № 64: расстояние на чертеже = расстояние от A до b в пространстве */
-  64:(h)=>{ const A=h.P('A'), b=h.L('b'); const [p,q]=h.segL('H.B.'); h.eqLen(h.d2(p,q),h.dPL(A,b),'натуральная величина расстояния');
+  64:(h)=>{ const A=h.P('A'), b=h.L('b'); const [p,q]=h.segL('d '); h.eqLen(h.d2(p,q),h.dPL(A,b),'натуральная величина расстояния');
     const [o1,o2]=h.segL('|OK|'); h.scaleOK([[h.d2(p,q),20,1],[h.d2(o1,o2),16,1]],'числа на чертеже'); },
   /* № 66: угол прямой a с плоскостью β */
   '66.1':(h,t,pi,p)=>angPhi(h,p,90-h.ang(h.L('a').d,h.planeT('β').n)),
