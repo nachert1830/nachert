@@ -34,8 +34,10 @@ async function nkUi(page,URL){ const bad=[], add=(n,r,m)=>bad.push({name:'Нор
   return bad; }
 /* «Читаю чертёж» на листе варианта: нажатие на линию подсвечивает её на всех трёх видах и объясняет, что это */
 async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Читаю чертёж',rule:r,msg:m});
-  await page.goto(URL+'#/ig/hw2/8'); await page.waitForTimeout(800); await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200);
-  await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{});
+  /* сразу на вкладке «Лист», как страница восстанавливает последнюю вкладку: 3D не запускается (в CI WebGL программный, и лист ждал за ним) */
+  await page.evaluate(()=>{ try{ sessionStorage.setItem('igsol:#/ig/hw2/8','1'); sessionStorage.setItem('igsol:#/ig/hw2/8:t','sheet'); }catch(e){} });
+  await page.goto(URL+'#/ig/hw2/8'); await page.waitForTimeout(800);
+  if(!await page.$('#igSheetBox:not([hidden])')){ await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200); await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{}); }
   /* панель загрузки — только у самого листа: вкладка 3D могла ещё считаться (в CI WebGL программный и медленный) */
   const ok=await page.waitForFunction(()=>{ const b=document.querySelector('#igSheetBox'); return b&&b.querySelector('svg')&&!b.parentNode.querySelector('.igx-ld'); },null,{timeout:240000}).catch(()=>null);
   if(!ok){ const st=await page.evaluate(()=>({box:!!document.querySelector('#igSheetBox'),svg:!!document.querySelector('#igSheetBox svg'),ld:[...document.querySelectorAll('.igx-ld')].map(e=>e.innerText.slice(0,40)).join(' / '),hash:location.hash})).catch(()=>({}));
