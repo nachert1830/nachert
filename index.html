@@ -19701,7 +19701,7 @@ const pc=(()=>{
   /* M */
   const iM=11, fM=0.5, Mp=gen(iM,fM);
   /* K */
-  const iK=4.8, Kp=gen(iK,(6-iK)/3), zK=24;
+  const iK=4.8, Kp=gen(iK,(6-iK)/3), zK=pp/2;   /* K″ задана на высоте p/2: у образующей i в доле (6−i)/3 высота как раз 6·p/12 */
   const spiral=dens(i=>{ const q=gen(i,(6-i)/3); return pl(q.u,q.y); },3,6,60);
   const given=[ axis(), seg(fr(0,-2),fr(0,dz*15+2),'thin','i″',[6,0,'start']),
     circ(pl(0,0),R*U,'main'), pt(pl(0,0),'B′≡i′','ne','main'), pt(pl(uA(0),yA(0)),'A′','w','main'),

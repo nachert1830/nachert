@@ -438,9 +438,12 @@ const S={
     const Ks=['K1','K2','K3'].filter(k=>h.has(k)).map(k=>h.P(k));
     Ks.forEach((K,i)=>{ h.on(K,a,'K'+(i+1)+' ∈ a'); const r=res(K); if(!(Math.abs(r.v)<=2*h.E)) h.fail('K'+(i+1)+' не на поверхности: до образующей '+(isFinite(r.v)?Math.abs(r.v).toFixed(1):'—')+' px');
       else if(r.lam<-0.02||r.lam>1.02) h.fail('K'+(i+1)+' на продолжении образующей, вне отсека между d₁ и d₂'); });
-    const [s0,s1]=h.segL('a″'), tOf=x=>(x-a.p[0])/a.d[0], t0=tOf(Math.min(s0[0],s1[0])), t1=tOf(Math.max(s0[0],s1[0])), N=600; let roots=0, prev=null;
-    for(let i=0;i<=N;i++){ const r=res(add(a.p,mul(a.d,t0+(t1-t0)*i/N))); if(prev&&isFinite(r.v)&&isFinite(prev.v)&&Math.sign(r.v)!==Math.sign(prev.v)&&(r.lam+prev.lam)/2>=0&&(r.lam+prev.lam)/2<=1) roots++; prev=r; }
-    if(roots!==Ks.length) h.fail('a пересекает отсек поверхности в '+roots+' точк., а на чертеже найдено '+Ks.length); },
+    /* отсек — то, что на чертеже: точка на нарисованном отрезке a, концы образующей — на нарисованных отрезках d₁ и d₂ */
+    const ext=l=>{ const [p,q]=h.segL(l); return [Math.min(p[0],q[0]),Math.max(p[0],q[0])]; }, E1=ext('d₁″'), E2=ext('d₂″'), inX=(P,E)=>P[0]>=E[0]-h.E&&P[0]<=E[1]+h.E;
+    const [s0,s1]=h.segL('a″'), tOf=x=>(x-a.p[0])/a.d[0], t0=tOf(Math.min(s0[0],s1[0])), t1=tOf(Math.max(s0[0],s1[0])), N=600; let prev=null; const roots=[];
+    for(let i=0;i<=N;i++){ const X=add(a.p,mul(a.d,t0+(t1-t0)*i/N)), r=res(X); r.X=X;
+      if(prev&&isFinite(r.v)&&isFinite(prev.v)&&Math.sign(r.v)!==Math.sign(prev.v)&&(r.lam+prev.lam)/2>=0&&(r.lam+prev.lam)/2<=1){ const A=meet(d1,X), B=meet(d2,X); if(inX(A,E1)&&inX(B,E2)&&!roots.some(Y=>nrm(sub(X,Y))<2*h.E)) roots.push(X); } prev=r; }   /* знак у корня может дрогнуть дважды — это один корень */
+    if(roots.length!==Ks.length) h.fail('a пересекает отсек поверхности (между нарисованными d₁ и d₂) в '+roots.length+' точк. (x = '+roots.map(X=>X[0].toFixed(0)).join(', ')+'), а на чертеже найдено '+Ks.length); },
   /* без проверки ответа остаются 73 в, 74 б, 74 в, 89 б, 89 в: параметры их поверхностей (косой конус, плоскость
      параллелизма, эллиптический цилиндр) на чертеже не подписаны — им нужен протокол сертифицированного эпюра */
   85:(h,t)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'), D=h.P('D');
