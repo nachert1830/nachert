@@ -1,2 +1,6 @@
 Шрифты Geologica, Golos Text и IBM Plex Mono распространяются по лицензии
 SIL Open Font License 1.1: https://openfontlicense.org
+
+Шрифт Liberation Serif Italic (fonts/liberation-serif-italic.woff2 — подмножество: латиница, кириллица, знаки чертежа)
+распространяется по лицензии SIL Open Font License 1.1. Copyright (c) 2012 Red Hat, Inc. Liberation is a trademark of Red Hat, Inc.
+Используется для надписей на листах инженерной графики: метрически совпадает с Times New Roman.

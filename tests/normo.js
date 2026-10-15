@@ -101,7 +101,8 @@ function flatten(svgStr){
         P={pitch:w*sc,lw:lw*sc,ang:R(((Math.atan2(-dm[1],dm[0])*180/Math.PI)%180+180)%180,1)}; } }
       fills.push({el,tag,view,clip,polys,fill,pat:P,M}); } });
   svg.querySelectorAll('text').forEach(el=>{ const s=el.textContent.trim(); if(!s) return; const cs=getComputedStyle(el), M=toRoot(el), sc=Math.sqrt(Math.abs(M.a*M.d-M.b*M.c));
-    CV.font=`${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; const m=CV.measureText(s), cap=CV.measureText('Н').actualBoundingBoxAscent;
+    CV.font=`${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; const m=CV.measureText(s);
+    const cap=CV.measureText('Н').actualBoundingBoxAscent;   /* высота шрифта по ГОСТ 2.304 — высота прописных, по шрифту, которым надпись нарисована */
     const x=+el.getAttribute('x')||0, y=+el.getAttribute('y')||0, an=cs.textAnchor, w=m.width, x0=an==='middle'?x-w/2:an==='end'?x-w:x;
     const L=x0+(m.actualBoundingBoxLeft<0?-m.actualBoundingBoxLeft:-m.actualBoundingBoxLeft), Rr=x0+m.actualBoundingBoxRight, T=y-m.actualBoundingBoxAscent, B=y+m.actualBoundingBoxDescent;
     const box=[[L,T],[Rr,T],[Rr,B],[L,B]].map(p=>mul(M,p)), rot=Math.atan2(M.b,M.a)*180/Math.PI;

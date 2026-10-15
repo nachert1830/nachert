@@ -37,11 +37,12 @@ async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Чит
   await page.goto(URL+'#/ig/hw2/8'); await page.waitForTimeout(800); await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200);
   await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{});
   const ok=await page.waitForFunction(()=>document.querySelector('#igSheetBox svg')&&!document.querySelector('.igx-ld'),null,{timeout:120000}).catch(()=>null); if(!ok){ add('лист не построился',''); return bad; }
+  if(!await page.waitForSelector('#igRd',{timeout:15000}).catch(()=>null)){ add('нет кнопки «Читаю чертёж»',''); return bad; }
   await page.click('#igRd'); await page.waitForTimeout(150);
   for(const dir of ['front','top','left']){ const r=await page.evaluate(dir=>{ const svg=document.querySelector('#igSheetBox svg'), VV=IGREAD.viewsOf(svg,IG_VARS[8]), V=VV.find(V=>V.dir===dir); if(!V) return {err:'нет вида'};
       const s=V.L.filter(s=>!s.l.h).sort((a,b)=>Math.hypot(b.b[0]-b.a[0],b.b[1]-b.a[1])-Math.hypot(a.b[0]-a.a[0],a.b[1]-a.a[1]))[2], q=new DOMPoint((s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2).matrixTransform(svg.getScreenCTM());
       document.querySelector('#igSheetBox').dispatchEvent(new MouseEvent('click',{clientX:q.x,clientY:q.y,bubbles:true}));
       const g=svg.querySelector('.rd-ov'); return {n:g?g.children.length:0,cap:document.querySelector('#igRdCap').innerText}; },dir);
-    if(r.err) add(dir,r.err); else { if(r.n<2) add(dir+': нет подсветки на других видах','элементов '+r.n); if(!/вид сверху:|главный вид:/.test(r.cap)) add(dir+': нет объяснения',r.cap.slice(0,60)); } }
+    if(r.err) add(dir,r.err); else { if(r.n<2) add(dir+': нет подсветки на других видах','элементов '+r.n+', подпись: '+r.cap.slice(0,120)); if(!/вид сверху:|главный вид:/.test(r.cap)) add(dir+': нет объяснения','элементов '+r.n+', подпись: '+r.cap.slice(0,120)); } }
   return bad; }
 module.exports={runMutations,nkUi,readUi,FAM};

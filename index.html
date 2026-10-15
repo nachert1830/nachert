@@ -31,6 +31,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
 /* шрифты лежат рядом с сайтом (папка fonts/, лицензия SIL OFL 1.1) */
+@font-face{font-family:'NchSerif';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/liberation-serif-italic.woff2) format('woff2')}   /* чертёжный шрифт листов ИГ: Liberation Serif (метрика Times New Roman, SIL OFL) — лист одинаков на всех устройствах */
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-greek.woff2) format('woff2');unicode-range:U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF}
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
@@ -2455,7 +2456,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-sh-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin-bottom:10px}
 .igx-sh-sw{display:flex;padding:3px;border-radius:12px;background:#efeee9;gap:2px}.igx-sh-sw button{border:0;background:none;padding:7px 12px;border-radius:9px;font:600 13px var(--sans);color:#5f5d58;cursor:pointer}.igx-sh-sw button.on{background:#fff;color:#111;box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}
 .igx-dwg{overflow:auto;border-radius:10px;background:#fff}.igx-dwg svg{display:block;width:100%;height:auto}
-.igs-dim{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-let{font:italic 30px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
+.igs-dim{font:italic 22px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-let{font:italic 30px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
 .igx-sh-cap{font-size:13px;color:#5f5d58;margin:8px 2px 0;line-height:1.5}.igx-sh-h b{font-size:17px}.igx-sh-h span{font-size:13px;color:#6a6863}
 .igx-sh-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .igx-sh-f{margin:0;border:1px solid #cbd5e1;border-radius:12px;background:#fff;overflow:hidden;opacity:0;transform:translateY(24px) scale(.94);transition:opacity .5s var(--d),transform .6s cubic-bezier(.2,.8,.2,1.1) var(--d)}
@@ -2506,11 +2507,11 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igl-why ol{margin:4px 0 10px;padding-left:22px;display:grid;gap:5px}.igl-h{display:block;font:700 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--red)!important}
 .igl-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 2px 0;font-size:12.5px;color:var(--mut)}.igl-leg span{display:inline-flex;align-items:center;gap:6px}.igl-leg i{display:inline-block;width:18px;height:0;border-top:2px solid}
 .igl-leg i.r{border-color:#c9302c}.igl-leg i.c{border-color:#9dbbe0}.igl-leg i.b{border-top-width:3px;border-color:#3567b5}.igl-leg i.g{border-top:3px dotted #9aa3b5}
-.igl-cap{font:italic 16px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#7d8596}.igl-call{font:700 22px var(--sans);fill:#c9302c;paint-order:stroke;stroke:#fff;stroke-width:4px}
+.igl-cap{font:italic 16px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#7d8596}.igl-call{font:700 22px var(--sans);fill:#c9302c;paint-order:stroke;stroke:#fff;stroke-width:4px}
 .igl-gost{display:inline-block;padding:1px 7px;border-radius:6px;background:var(--surf2);color:var(--mut);font:600 12px var(--mono)}.igl-gost:empty{display:none}
 .igl-rules{display:grid;gap:8px;margin:0 0 20px}.igl-rules summary{cursor:pointer}.igl-rules details p{margin:8px 0 0}
 .igl-k{font:italic 600 21px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:4px}
-.igl-tbt{font:italic 17px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igl-tbs{font:italic 11.4px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
+.igl-tbt{font:italic 17px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igl-tbs{font:italic 11.6px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
 .igl-home{border-color:color-mix(in srgb,var(--red) 45%,var(--line))!important}.igl-home .igx-n{color:var(--red)}
 /* ── 3D к задаче ── */
 .t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
@@ -28883,7 +28884,7 @@ function stampK(x1,y1,k,nv,sc){ const W=185*k, Hh=55*k, x0=x1-W, y0=y1-Hh, X=v=>
   o+=L(65,15,185,15,2.1)+L(65,40,185,40,2.1)+L(135,15,135,55,2.1)+L(135,20,185,20,2.1)+L(135,35,185,35,2.1)+L(150,15,150,35,2.1)+L(167,15,167,35,2.1)+L(140,20,140,35,.8)+L(145,20,145,35,.8)+L(155,35,155,40,.8);
   /* заполнение — как на образце: «Подпись», «Дата»; Разраб., Пров., Утв.; масштаб и число листов не проставлены */
   [['Подпись',40.6],['Дата',55.6]].forEach(([t,x])=>o+=T(x,29,t));
-  [['Разраб.',34],['Пров.',39],['Утв.',54]].forEach(([t,y])=>{ o+=T(.6,y,t); }); o+=T(17.6,34,'Фамилия И. О.')+T(136.5,19,'Лит.')+T(151.5,19,'Масса')+T(168,19,'Масштаб')+T(137,39,'Лист')+T(156,39,'Листов');
+  [['Разраб.',34],['Пров.',39],['Утв.',54]].forEach(([t,y])=>{ o+=T(.6,y,t); }); o+=T(17.6,34,'Фамилия И. О.')+T(136.5,19,'Лит.')+T(151.5,19,'Масса')+T(167.5,19,'Масштаб')+T(137,39,'Лист')+T(156,39,'Листов');
   o+=T(125,10,'Инженерная графика','igl-tbt','middle')+T(100,25,'Построение','igl-tbt','middle')+T(100,31.5,'изображений','igl-tbt','middle')+T(100,50,'Вариант № '+nv,'igl-tbt','middle')+T(160,46,'МГТУ им. Н. Э. Баумана','igl-tbs','middle')+T(160,51.5,'Группа ______','igl-tbs','middle');
   if(sc) o+=T(176,30,sc,'igl-tbt','middle')+T(173,39,'1');   /* масштаб (графа 6) и число листов (графа 8; номер листа у однолистового документа не ставят — ГОСТ 2.104) */
   return o; }

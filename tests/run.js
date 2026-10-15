@@ -135,6 +135,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   }
   await browser.close(); srv.close();
   console.log(info.join('\n'));
-  if(fail.length){ console.log('\nНОВЫЕ ОШИБКИ ('+fail.length+'):\n- '+fail.join('\n- ')); process.exit(1); }
+  /* длинный список одного раздела — первые 25 строк и число остальных: лог CI обрезается, и иначе не видно других разделов */
+  if(fail.length){ const by={}; fail.forEach(f=>{ const g=f.split(' · ')[0]; (by[g]=by[g]||[]).push(f); });
+    console.log('\nНОВЫЕ ОШИБКИ ('+fail.length+'):'); Object.values(by).forEach(L=>{ console.log('- '+L.slice(0,25).join('\n- ')+(L.length>25?'\n  …и ещё '+(L.length-25)+' в этом разделе':'')); }); process.exit(1); }
   console.log('\nОшибок нет.'); process.exit(0);
 })().catch(e=>{ console.error(e); process.exit(2); });

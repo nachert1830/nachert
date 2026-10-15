@@ -5,7 +5,9 @@
 const fs=require('fs'), path=require('path');
 const SRC=['normo.js','normo-model.js'].map(f=>path.join(__dirname,f)).filter(f=>fs.existsSync(f)).map(f=>fs.readFileSync(f,'utf8'));
 
-async function inject(page){ if(await page.evaluate(()=>!!window.NORMO)) return; for(const s of SRC) await page.addScriptTag({content:s}); }
+async function inject(page){ /* чертёжный шрифт должен быть загружен: canvas меряет надписи им, а не запасным */
+  await page.evaluate(()=>document.fonts&&document.fonts.load("italic 22px NchSerif","Ø120 Б–Б").catch(()=>{}));
+  if(await page.evaluate(()=>!!window.NORMO)) return; for(const s of SRC) await page.addScriptTag({content:s}); }
 
 /* все листы: [имя, функция в странице, модель] */
 async function runNormo(page,o){ o=o||{}; await inject(page);
