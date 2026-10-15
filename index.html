@@ -31,6 +31,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
 /* шрифты лежат рядом с сайтом (папка fonts/, лицензия SIL OFL 1.1) */
+@font-face{font-family:'NchGost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/osifont.woff2) format('woff2')}   /* чертёжный шрифт листов: osifont — ISO 3098 тип B (= ГОСТ 2.304 тип Б), наклон 75° даёт font-style:italic; LGPL 3 с исключением для шрифтов */
 @font-face{font-family:'NchSerif';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/liberation-serif-italic.woff2) format('woff2')}   /* чертёжный шрифт листов ИГ: Liberation Serif (метрика Times New Roman, SIL OFL) — лист одинаков на всех устройствах */
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-greek.woff2) format('woff2');unicode-range:U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF}
@@ -230,7 +231,7 @@ body.inplayer .ckn{display:none}
 .dy-ah{display:grid;gap:2px;margin-bottom:6px}.dy-ah b{font-size:15px}.dy-ah span{font-size:13.5px;color:var(--ink2);line-height:1.45}
 .dy-av{background:#ffffff;border-radius:12px;border:1px solid var(--line)}.dy-av.d3on{touch-action:none;cursor:grab}
 .dy-mode{display:inline-flex;gap:4px;padding:3px;border-radius:99px;background:var(--surf2);margin-bottom:6px;justify-self:start}.dy-mode button{border:0;background:none;padding:6px 12px;border-radius:99px;font:700 13px var(--sans);color:var(--ink2);cursor:pointer}.dy-mode button.on{background:var(--ink);color:var(--paper)}
-.d3{display:block;width:100%;height:auto}.d3-lb{font:italic 600 15px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#ffffff;stroke-width:3px}.d3-pl{font:italic 600 17px 'Times New Roman','Liberation Serif',Georgia,serif}.d3-ax{font:italic 600 16px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.d3-sm{font:italic 600 12px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#ffffff;stroke-width:3px}.d3-ang{font:italic 700 19px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#ffffff;stroke-width:4px}.d3-note{font:700 13px var(--sans);paint-order:stroke;stroke:#ffffff;stroke-width:4px}
+.d3{display:block;width:100%;height:auto}.d3-lb{font:italic 600 15px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#ffffff;stroke-width:3px}.d3-pl{font:italic 600 17px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif}.d3-ax{font:italic 600 16px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.d3-sm{font:italic 600 12px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#ffffff;stroke-width:3px}.d3-ang{font:italic 700 19px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#ffffff;stroke-width:4px}.d3-note{font:700 13px var(--sans);paint-order:stroke;stroke:#ffffff;stroke-width:4px}
 .dy-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin:8px 2px 0;font-size:12.5px;color:var(--ink2)}.dy-leg span{display:inline-flex;align-items:center;gap:5px}.dy-leg i{width:12px;height:12px;border-radius:3px}
 #dyCap{min-height:3em}.dy-av svg{display:block;width:100%;height:auto;max-height:min(62vh,520px)}
 .dy-ac{display:flex;align-items:center;gap:10px;margin-top:8px}.dy-ac input{flex:1;accent-color:#cf3a1d}.dy-ac b{font:600 12px var(--mono);min-width:40px;text-align:right;color:var(--mut)}
@@ -399,7 +400,7 @@ figure{margin:24px 0}
   box-shadow:0 1px 1px rgba(15,20,32,.05),0 10px 26px -14px rgba(15,20,32,.3)}
 :root[data-theme="dark"] .sheet{border-color:var(--line2);box-shadow:0 0 0 1px rgba(255,255,255,.04),0 14px 34px -12px rgba(0,0,0,.8)}
 svg.dwg{display:block;width:100%;height:auto;margin:0 auto}
-svg.dwg text.lbl{font-family:'IBM Plex Mono',monospace;font-size:11.5px;fill:#15161a;font-weight:500}
+svg.dwg text.lbl{font-family:'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;font-style:italic;font-size:12.5px;fill:#15161a;font-weight:400}   /* обозначения на чертеже — шрифтом ГОСТ 2.304 (тип Б) */
 svg.dwg text.lbl{paint-order:stroke fill;stroke:var(--sheet,#fff);stroke-width:3.2px;stroke-linejoin:round}
 svg.dwg text.lbl.a{fill:#2a5aa6}
 svg.dwg text.lbl.r{fill:#b02a26}
@@ -2432,7 +2433,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igb-b{flex:none;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font:700 24px var(--sans);cursor:pointer}.igb-b.pri{background:var(--acc);color:#fff;border:0}
 .igb-nums{display:flex;gap:6px;margin:0 2px 8px}.igb-nums button{flex:1;height:6px;padding:0;border:0;border-radius:9px;background:var(--surf2);cursor:pointer;position:relative}.igb-nums button::before{content:"";position:absolute;inset:-10px 0}
 .igb-nums button.done{background:color-mix(in srgb,var(--acc) 45%,var(--surf))}.igb-nums button.on{background:var(--acc)}
-.igs-k{font:italic 600 24px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:4px}
+.igs-k{font:italic 400 24px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:4px}
 .igb-d{margin:8px 2px 0;font-size:14px;line-height:1.5;color:var(--ink2)}
 .igx-h2{font:700 18px var(--disp);margin:8px 2px 10px}
 .igx-back{display:inline-flex;align-items:center;gap:6px;margin:var(--s3) 0 0;min-height:44px;padding:0 16px 0 10px;border-radius:99px;background:var(--surf);border:1px solid var(--line);color:var(--ink);font:700 15px var(--sans);text-decoration:none}
@@ -2445,7 +2446,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-sheetbox svg{min-width:0}
 .igu-st{position:relative;aspect-ratio:1/1;max-height:70vh;margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#f7f9fd}
 .igu-st .ig3-cv{position:absolute;inset:0;width:100%;height:100%;z-index:1;transition:opacity .2s}.igu-back,.igu-front{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.igu-back{z-index:0}.igu-front{z-index:2}
-.igu-l,.igu-pt{font:italic 600 15px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:3px}.igu-ax{font:italic 600 14px 'Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igu-pl{font:italic 600 16px 'Times New Roman','Liberation Serif',Georgia,serif}
+.igu-l,.igu-pt{font:italic 400 15px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:3px}.igu-ax{font:italic 400 14px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igu-pl{font:italic 400 16px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif}
 .igu-ph{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0 0}.igu-ph button{min-height:38px;padding:0 4px;border:1px solid var(--line);border-radius:10px;background:var(--surf);color:var(--ink2);font:600 12.5px var(--sans);cursor:pointer}.igu-ph button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .igu-ctl{display:flex;align-items:center;gap:10px;margin:8px 2px 0}.igu-ctl input{flex:1;accent-color:var(--acc)}.igu-play{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--acc);color:#fff;font:700 16px var(--sans);cursor:pointer}
 .igx-pj{position:absolute;left:8px;top:56px;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);font-size:12.5px;color:var(--ink2);pointer-events:none}.igx-pj[hidden]{display:none}
@@ -2456,7 +2457,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-sh-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin-bottom:10px}
 .igx-sh-sw{display:flex;padding:3px;border-radius:12px;background:#efeee9;gap:2px}.igx-sh-sw button{border:0;background:none;padding:7px 12px;border-radius:9px;font:600 13px var(--sans);color:#5f5d58;cursor:pointer}.igx-sh-sw button.on{background:#fff;color:#111;box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}
 .igx-dwg{overflow:auto;border-radius:10px;background:#fff}.igx-dwg svg{display:block;width:100%;height:auto}
-.igs-dim{font:italic 22px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-let{font:italic 30px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
+.igs-dim{font:italic 20px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-let{font:italic 28px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igs-tbt{font:italic 22px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
 .igx-sh-cap{font-size:13px;color:#5f5d58;margin:8px 2px 0;line-height:1.5}.igx-sh-h b{font-size:17px}.igx-sh-h span{font-size:13px;color:#6a6863}
 .igx-sh-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .igx-sh-f{margin:0;border:1px solid #cbd5e1;border-radius:12px;background:#fff;overflow:hidden;opacity:0;transform:translateY(24px) scale(.94);transition:opacity .5s var(--d),transform .6s cubic-bezier(.2,.8,.2,1.1) var(--d)}
@@ -2507,11 +2508,11 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igl-why ol{margin:4px 0 10px;padding-left:22px;display:grid;gap:5px}.igl-h{display:block;font:700 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--red)!important}
 .igl-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 2px 0;font-size:12.5px;color:var(--mut)}.igl-leg span{display:inline-flex;align-items:center;gap:6px}.igl-leg i{display:inline-block;width:18px;height:0;border-top:2px solid}
 .igl-leg i.r{border-color:#c9302c}.igl-leg i.c{border-color:#9dbbe0}.igl-leg i.b{border-top-width:3px;border-color:#3567b5}.igl-leg i.g{border-top:3px dotted #9aa3b5}
-.igl-cap{font:italic 16px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#7d8596}.igl-call{font:700 22px var(--sans);fill:#c9302c;paint-order:stroke;stroke:#fff;stroke-width:4px}
+.igl-cap{font:italic 16px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#7d8596}.igl-call{font:700 22px var(--sans);fill:#c9302c;paint-order:stroke;stroke:#fff;stroke-width:4px}
 .igl-gost{display:inline-block;padding:1px 7px;border-radius:6px;background:var(--surf2);color:var(--mut);font:600 12px var(--mono)}.igl-gost:empty{display:none}
 .igl-rules{display:grid;gap:8px;margin:0 0 20px}.igl-rules summary{cursor:pointer}.igl-rules details p{margin:8px 0 0}
-.igl-k{font:italic 600 21px 'Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:4px}
-.igl-tbt{font:italic 17px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igl-tbs{font:italic 11.6px 'NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
+.igl-k{font:italic 400 21px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;paint-order:stroke;stroke:#fff;stroke-width:4px}
+.igl-tbt{font:italic 17px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}.igl-tbs{font:italic 11.6px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:#111}
 .igl-home{border-color:color-mix(in srgb,var(--red) 45%,var(--line))!important}.igl-home .igx-n{color:var(--red)}
 /* ── 3D к задаче ── */
 .t3d{position:fixed;inset:0;z-index:300;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:t3din .18s ease}
@@ -2553,11 +2554,11 @@ html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
 .t3d-leg{display:flex;flex-wrap:wrap;gap:4px 14px;padding:0 14px 10px;font-size:12px;color:var(--mut)}
 .t3d-leg span{display:inline-flex;align-items:center;gap:6px}
 .t3d-leg i{display:inline-block;width:14px;height:10px;border-radius:3px}.t3d-leg i.ln{height:0;border-top:1.5px dashed #6b7280;border-radius:0}
-.t3d-lb{font:italic 600 15px 'Times New Roman','Liberation Serif','Noto Serif',Georgia,serif;letter-spacing:.01em;paint-order:stroke;stroke:var(--t3bg);stroke-width:3.2px;stroke-linejoin:round}
+.t3d-lb{font:italic 600 15px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;letter-spacing:.01em;paint-order:stroke;stroke:var(--t3bg);stroke-width:3.2px;stroke-linejoin:round}
 .t3d-chip{fill:var(--t3bg);fill-opacity:.93;stroke-opacity:.5;stroke-width:1.1}
 .t3d-lb.sm{font-size:13px}
-.t3d-ax{font:italic 600 17px 'Times New Roman','Liberation Serif',Georgia,serif;fill:var(--t3ink)}
-.t3d-pl{font:italic 600 17px 'Times New Roman','Liberation Serif',Georgia,serif;opacity:.85}
+.t3d-ax{font:italic 600 17px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;fill:var(--t3ink)}
+.t3d-pl{font:italic 600 17px 'NchGost','NchSerif','Times New Roman','Liberation Serif',Georgia,serif;opacity:.85}
 @media(max-width:560px){.t3d{padding:0}.t3d-box{height:100dvh;border-radius:0;border:0}.t3d-top{padding-top:calc(10px + env(safe-area-inset-top))}.t3d-leg{padding-bottom:calc(10px + env(safe-area-inset-bottom))}}
 .pl-zb.zreset{display:none}.zoomed .pl-zb.zreset{display:grid}
 body .pl-zoom .pl-zb.t3btn{width:auto;height:40px;padding:0 13px 0 11px;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;color:#fff;font:800 14px var(--sans);letter-spacing:.03em;
@@ -4673,7 +4674,7 @@ function fp(pl,p,t){ t=t==null?S.t:t; const a=t*Math.PI/2,c=Math.cos(a),s=Math.s
 const EW=780,EH=640,X0=470,Y0=320,K=4;
 const ex=x=>X0-x*K, ey1=y=>Y0+y*K, ey2=z=>Y0-z*K, e3x=y=>X0+y*K;
 const ln=(x1,y1,x2,y2,st,w,d,op)=>`<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" stroke="${st}" stroke-width="${f(w)}"${d?` stroke-dasharray="${d}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`;
-const tx=(x,y,s,sz,fill,ex_)=>`<text x="${f(x)}" y="${f(y)}" font-family="${MONO}" font-size="${f(sz)}" fill="${fill}"${ex_?' '+ex_:''}>${s}</text>`;
+const tx=(x,y,s,sz,fill,ex_)=>`<text x="${f(x)}" y="${f(y)}" font-family="'NchGost','NchSerif','Times New Roman',serif" font-style="italic" font-size="${f(sz)}" fill="${fill}"${ex_?' '+ex_:''}>${s}</text>`;
 const circ=(x,y,r,fill,st,w)=>`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${fill}"${st?` stroke="${st}" stroke-width="${f(w||1)}"`:''}/>`;
 function arcP(cx,cy,a1,a2,r,st,w){ let d=((a2-a1+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI; const x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1),x2=cx+r*Math.cos(a1+d),y2=cy+r*Math.sin(a1+d);
   return {s:`<path d="M${f(x1)} ${f(y1)}A${f(r)} ${f(r)} 0 0 ${d>0?1:0} ${f(x2)} ${f(y2)}" fill="none" stroke="${st}" stroke-width="${f(w)}"/>`,mid:a1+d/2}; }
@@ -5468,7 +5469,7 @@ function angles(pl){ return {a1:angTo(pl.n,2),a2:angTo(pl.n,1),a3:angTo(pl.n,0)}
 /* ── рисование ── */
 const MONO="'IBM Plex Mono',ui-monospace,Menlo,monospace";
 const ln=(x1,y1,x2,y2,st,w,d,op)=>`<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" stroke="${st}" stroke-width="${f(w)}"${d?` stroke-dasharray="${d}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`;
-const tx=(x,y,s,sz,fill,ex_)=>`<text x="${f(x)}" y="${f(y)}" font-family="${MONO}" font-size="${f(sz)}" font-weight="600" fill="${fill}"${ex_?' '+ex_:''}>${s}</text>`;
+const tx=(x,y,s,sz,fill,ex_)=>`<text x="${f(x)}" y="${f(y)}" font-family="'NchGost','NchSerif','Times New Roman',serif" font-style="italic" font-size="${f(sz)}" fill="${fill}"${ex_?' '+ex_:''}>${s}</text>`;
 const dotc=(x,y,r,fill,st,w)=>`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${fill}"${st?` stroke="${st}" stroke-width="${f(w||1)}"`:''}/>`;
 const CL={a:'var(--blue)',b:'var(--amber)',ok:'var(--green)',bad:'var(--red)'};
 function handleList(){ const H=[];
@@ -5633,7 +5634,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), f=v=>Math.round(v*10)/10, deg=r=
 const S={mode:'h',A:[75,12,48],B:[28,52,14],p0:[ex(100),ey1(3)],p1:[ex(8),ey1(30)],step:5,u:1.3};
 const MONO="'IBM Plex Mono',ui-monospace,Menlo,monospace";
 const ln=(x1,y1,x2,y2,st,w,d,op)=>`<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" stroke="${st}" stroke-width="${f(w)}"${d?` stroke-dasharray="${d}"`:''}${op!=null?` stroke-opacity="${op}"`:''} stroke-linecap="round"/>`;
-const tx=(x,y,s,sz,fill,e)=>`<text x="${f(x)}" y="${f(y)}" font-family="${MONO}" font-size="${f(sz)}" font-weight="600" fill="${fill}"${e?' '+e:''}>${s}</text>`;
+const tx=(x,y,s,sz,fill,e)=>`<text x="${f(x)}" y="${f(y)}" font-family="'NchGost','NchSerif','Times New Roman',serif" font-style="italic" font-size="${f(sz)}" fill="${fill}"${e?' '+e:''}>${s}</text>`;
 const dc=(x,y,r,fill,st,w)=>`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${fill}"${st?` stroke="${st}" stroke-width="${f(w||1)}"`:''}/>`;
 let host=null;
 
@@ -23258,6 +23259,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.13',d:'15 октября 2026',items:['Все надписи на чертежах — размерные числа, буквы разрезов, основная надпись, обозначения точек на эпюрах — теперь чертёжным шрифтом по ГОСТ 2.304 (тип Б, наклон 75°), как на листах кафедры, а не обычным типографским.','Размерные линии на листах тетради — не ближе 10 мм к контуру (ГОСТ 2.307).']},
   {v:'4.12',d:'15 октября 2026',items:['ИГ, ДЗ 2: размеры на листах всех 30 вариантов нанесены как в задании — те же размеры на тех же видах и местах: наклон выносок и линий диаметров, сторона полки, стрелки (в том числе на дальней стороне отверстия и снаружи окружности), «Ø10 / 4 отв.» над и под полкой или в строку, размер угла — на той же дуге и с той же стороны. Размеры, которые в задании стоят по невидимому контуру на половине вида, остались на виде слева, по разрезу.']},
   {v:'4.11',d:'15 октября 2026',items:['Начертательная геометрия: теория приведена к терминологии учебника Жирных Б.Г., Серёгина В.И., Шарикяна Ю.Э. (МГТУ им. Н.Э. Баумана, 2015). Уроки, вопросы РК1 и РК2, темы, шпаргалка, тесты, словарь терминов, разборы ДЗ и обоснования шагов в тетради переписаны точными формулировками со ссылками на параграфы: «проецирующая прямая» (а не «луч»), «точка пересечения прямой с плоскостью», «натуральная величина», «линия наибольшего наклона» (линия ската — только к π₁), полная теорема о частном случае проецирования прямого угла.',
     'Исправлены ошибки по существу: «через две параллельные прямые проходит много плоскостей» и «две параллельные прямые не задают плоскость» (РК2); неверные ссылки на уроки в разборах ДЗ; определение новой плоскости проекций в лаборатории замены плоскостей; углы плоскостей уровня (0° к параллельной плоскости проекций, 90° к двум другим).']},
@@ -27835,7 +27837,7 @@ D[16]={d:[['F','v',[-55,0],[-55,25],-67.7,'25'],['F','h',[-55,0],[55,0],-16,'Ø1
 D[17]={d:[['F','v',[-55,0],[-55,25],-70.8,'25'],['F','v',[-45,100],[-45,120],-71.7,'20'],['F','v',[-10,110],[-45,120],-60,'10'],['F','h',[-10,120],[10,120],130,'20'],['F','h',[-45,120],[45,120],140,'Ø90',{tx:10}],
   ['F','v',[55,0],[45,120],78.3,'120'],
   dia(75,230.3,31.8,1),hd(4,10,75,30,185.4,22.6,1,0,{arr:'fn',out:1,t:14.3}),dia(60,20.3,35.8),dia(40,159.8,50.1,1,{},1),['T','ang',[0,0],72,150,180,'30°',{e:[37.5,55],rot:1,tr:5.5}],['T','h',[-55,-45],[55,-45],-58.3,'110'],['T','v',[55,-45],[55,45],95.8,'90']]};   /* как в задании, вар. 17 */
-D[18]={d:[['F','v',[45,0],[45,20],71,'20'],['F','v',[45,20],[45,70],71,'50'],['F','h',[-45,45],[45,45],35.8,'90',{tx:8.7}],['F','h',[-55,0],[55,0],-15,'Ø110'],['F','v',[50,105],[50,120],64.7,'15'],
+D[18]={d:[['F','v',[45,0],[45,20],71,'20'],['F','v',[45,20],[45,70],71,'50'],['F','h',[-45,45],[45,45],35.8,'90',{tx:8.7}],['F','h',[-55,0],[55,0],-15,'Ø110'],['F','v',[50,105],[50,120],65,'15'],
   ['F','v',[55,0],[55,120],85.3,'120'],['L','v',[-35,90],[-35,120],-67,'30'],   /* дно отверстия видно только в разрезе — 30 на виде слева */
   ang(68.5,135,180,'45°',45,55,{rot:1,tr:4}),hd(4,10,90,45,203.8,19.5,1,0,{arr:'fn',out:1,t:18.4}),dia(50,22.1,38,1),dia(70,62.2,31),dia(90,159.3,21,1,{},1),dia(30,124.5,55.7,0,{},1)]};   /* как в задании, вар. 18 */
 D[19]={d:[['F','v',[55,0],[55,20],71.7,'20'],['F','h',[-35,20],[35,20],-14.7,'Ø70',{tx:8}],['F','h',[-55,0],[55,0],-25.5,'Ø110'],['F','h',[-30,120],[30,120],139,'Ø60'],['F','h1',[25,120],130,'Ø50'],
@@ -28045,10 +28047,10 @@ function sheetSVG(model,title,sub,task,mode){
     const FL=holeAxesFL(model); FL.F.forEach(h=>{ o+=ln(P(D.front,[h.x,0,h.z0-4],X0,Y0),P(D.front,[h.x,0,h.z1+4],X0,Y0),'#111',AX,.7); });
     if(D.left) FL.L.forEach(h=>{ o+=ln(P(D.left,[0,h.y,h.z0-4],X0+S,Y0),P(D.left,[0,h.y,h.z1+4],X0+S,Y0),'#111',AX,.7); }); }
   const arr=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*9-dy*2.6)},${f(dy*9+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="#111"/>`;
-  const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+(hz?22*Km+16:26);   /* при горизонтальном разрезе размер — за его штрихом */
+  const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+(hz?22*Km+16:Math.max(26,10.5*Km));   /* при горизонтальном разрезе размер — за его штрихом */
   o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.7)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.7)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.7)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
     +`<text x="${f(hx-5)}" y="${f((hb[1]+ht[1])/2)}" transform="rotate(-90 ${f(hx-5)} ${f((hb[1]+ht[1])/2)})" class="igs-dim" text-anchor="middle">${Math.round(z1-z0)}</text>`;
-  const wl=P(D.front,[-r,0,zw],X0,Y0), wr=P(D.front,[r,0,zw],X0,Y0), wy=P(D.front,[0,0,z0],X0,Y0)[1]+24;
+  const wl=P(D.front,[-r,0,zw],X0,Y0), wr=P(D.front,[r,0,zw],X0,Y0), wy=P(D.front,[0,0,z0],X0,Y0)[1]+Math.max(24,10.5*Km);   /* размерная линия — не ближе 10 мм к контуру (ГОСТ 2.307) */
   o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.7)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.7)+ln([wl[0],wy],[wr[0],wy],'#111',null,.7)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
     +`<text x="${f((wl[0]+wr[0])/2+(wr[0]-wl[0])*.22)}" y="${f(wy-5)}" class="igs-dim" text-anchor="middle">${round?'Ø':''}${Math.round(2*r)}</text>`;
   if(model.sec){ const [[x1,z1s],[x2,z2s]]=model.sec.p; o+=secMark(P(D.front,[x1,0,z1s],X0,Y0),P(D.front,[x2,0,z2s],X0,Y0),Km,given?'А':secL(model)); }
@@ -28888,7 +28890,7 @@ function stampK(x1,y1,k,nv,sc){ const W=185*k, Hh=55*k, x0=x1-W, y0=y1-Hh, X=v=>
   o+=L(65,15,185,15,2.1)+L(65,40,185,40,2.1)+L(135,15,135,55,2.1)+L(135,20,185,20,2.1)+L(135,35,185,35,2.1)+L(150,15,150,35,2.1)+L(167,15,167,35,2.1)+L(140,20,140,35,.8)+L(145,20,145,35,.8)+L(155,35,155,40,.8);
   /* заполнение — как на образце: «Подпись», «Дата»; Разраб., Пров., Утв.; масштаб и число листов не проставлены */
   [['Подпись',40.6],['Дата',55.6]].forEach(([t,x])=>o+=T(x,29,t));
-  [['Разраб.',34],['Пров.',39],['Утв.',54]].forEach(([t,y])=>{ o+=T(.6,y,t); }); o+=T(17.6,34,'Фамилия И. О.')+T(136.5,19,'Лит.')+T(151.5,19,'Масса')+T(167.5,19,'Масштаб')+T(137,39,'Лист')+T(156,39,'Листов');
+  [['Разраб.',34],['Пров.',39],['Утв.',54]].forEach(([t,y])=>{ o+=T(.6,y,t); }); o+=T(17.6,34,'Фамилия И.О.')+T(136.5,19,'Лит.')+T(151.5,19,'Масса')+T(167.5,19,'Масштаб')+T(137,39,'Лист')+T(156,39,'Листов');
   o+=T(125,10,'Инженерная графика','igl-tbt','middle')+T(100,25,'Построение','igl-tbt','middle')+T(100,31.5,'изображений','igl-tbt','middle')+T(100,50,'Вариант № '+nv,'igl-tbt','middle')+T(160,46,'МГТУ им. Н. Э. Баумана','igl-tbs','middle')+T(160,51.5,'Группа ______','igl-tbs','middle');
   if(sc) o+=T(176,30,sc,'igl-tbt','middle')+T(173,39,'1');   /* масштаб (графа 6) и число листов (графа 8; номер листа у однолистового документа не ставят — ГОСТ 2.104) */
   return o; }
@@ -29063,7 +29065,7 @@ function labeler(){ const Q=[]; const fn=(q,t,col,dx,dy)=>{ Q.push({q,t,col,dx,d
    ['ang', c, r, a0, a1, текст, {e:[r0,r0]}] — угол между лучами a0 и a1 (град, против часовой от +x), дуга радиуса r; e — откуда начинать выносные */
 function dimsSVG(list,M){ let o=''; const W1=.8;
   const ar=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*12-dy*2.6)},${f(dy*12+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="${INK}"/>`;
-  const tw=t=>[...String(t)].reduce((a,c)=>a+(/[0-9.,]/.test(c)?11:/[ ]/.test(c)?6:13),0);
+  const tw=t=>[...String(t)].reduce((a,c)=>a+(/[0-9]/.test(c)?10:/[.,]/.test(c)?4:/[ ]/.test(c)?9:/[Ø□]/.test(c)?13:10),0);   /* ширина надписи шрифтом ГОСТ 2.304, 20 px */
   (list||[]).forEach(d=>{ const V=d[0], m=M[V], t=d[1];
     if(t==='h'){ const [,,A,B,at,tx,op]=d, a=m(A), b=m(B), y=m([A[0],at])[1], s=y<a[1]?-1:1, x1=Math.min(a[0],b[0]), x2=Math.max(a[0],b[0]);
       if(Math.abs(a[1]-y)>1) o+=ln(a,[a[0],y+s*6],INK,W1); if(Math.abs(b[1]-y)>1) o+=ln(b,[b[0],y+s*6],INK,W1);
