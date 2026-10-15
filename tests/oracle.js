@@ -410,7 +410,38 @@ const S={
   '89.1':(h)=>{ const cn=vCone(h,{}), N=['1','2','3','4','5','6','7','8','9','12','13']; N.forEach(n=>cn.on(h.P(n),n+' на конусе'));
     const tri=h.M.polys.find(pl=>pl.p.length===3&&pl.close&&pl.p.every(q=>q[1]<=1)); if(!tri){ h.fail('нет фронтальной проекции призмы'); return; }
     N.forEach(n=>{ const q=h.pt2(n+'″'); const on=[[0,1],[1,2],[2,0]].some(([i,j])=>{ const a=tri.p[i], b=tri.p[j]; return Math.abs((b[0]-a[0])*(q[1]-a[1])-(b[1]-a[1])*(q[0]-a[0]))/h.d2(a,b)<2*h.E; }); if(!on) h.fail(n+'″ не на грани призмы'); }); },
-  /* без проверки ответа остаются 68 в (геликоид), 73 в, 74 б, 74 в, 77 в, 89 б, 89 в: параметры их поверхностей (косой конус, плоскость
+  /* № 68 в: косой закрытый геликоид. Всё — с чертежа: ось i (i″ — вертикаль, i′ ≡ B′), образующая AB (B на оси), шаг — отрезок «p».
+     Точка поверхности на расстоянии r от оси — точка образующей, повёрнутой на φ и поднятой на p·φ/2π:
+     z = z_AB(r) + s·p·(φ − φ_A)/2π (по модулю p). Направление винта s — по точкам A₁…A₁₁ (каждая — поворот A на 30°·k и подъём);
+     «правый» — против часовой стрелки при взгляде сверху с подъёмом вверх (на плане y вниз — к нам: угол atan2(y, x) убывает). */
+  '68.3':(h,t,pi,p)=>{ const A=h.P('A'), B=h.P('B'), [p1,p2]=h.segL('p'), P=Math.abs(p1[1]-p2[1]), [i1,i2]=h.segL('i″');
+    if(Math.abs(i1[0]-i2[0])>h.E||Math.abs(i1[0]-B[0])>2*h.E) h.fail('ось i″ — не вертикаль через B″');
+    const R=Math.hypot(A[0]-B[0],A[1]-B[1]), phi=X=>Math.atan2(X[1]-B[1],X[0]-B[0]), rr=X=>Math.hypot(X[0]-B[0],X[1]-B[1]);
+    const zg=r=>A[2]+(B[2]-A[2])*(1-r/R), wrap=a=>{ while(a>Math.PI) a-=2*Math.PI; while(a<=-Math.PI) a+=2*Math.PI; return a; };
+    /* развёрнутый угол A_k от A: по шагам A_{k−1} → A_k */
+    const sb=k=>String(k).split('').map(c=>'₀₁₂₃₄₅₆₇₈₉'[c]).join(''), ang={0:0}; let prev=h.lab('A′'), acc=0, s=0;
+    for(let k=1;k<=11;k++){ const q=h.lab('A'+sb(k)+'′'); acc+=wrap(Math.atan2(q[1]-B[1],q[0]-B[0])-Math.atan2(prev[1]-B[1],prev[0]-B[0])); ang[k]=acc; prev=q; }
+    [2,4,6,8,10].forEach(k=>{ const q2=h.lab('A'+sb(k)+'″'), dz=-q2[1]-A[2]; if(!s) s=Math.sign(dz*ang[k]);
+      h.eqLen(Math.abs(dz),Math.abs(P*ang[k]/(2*Math.PI)),'A'+k+' на винтовой линии: подъём = p·угол/360°');
+      if(Math.sign(dz*ang[k])!==s) h.fail('A'+k+': направление винта не совпадает с A₂'); });
+    const hand=/Правый/i.test(p.q||t.q||'')?-1:/Левый/i.test(p.q||t.q||'')?1:0; if(hand&&s!==hand) h.fail('по точкам A_k винт '+(s<0?'правый':'левый')+', а в условии — '+(hand<0?'правый':'левый'));
+    ['M','K'].forEach(n=>{ const X=h.P(n), r=rr(X); if(r>R+2*h.E){ h.fail(n+' дальше от оси, чем A: вне геликоида'); return; }
+      let d=(X[2]-zg(r)-s*P*wrap(phi(X)-phi(A))/(2*Math.PI))%P; d=(d+P)%P; if(Math.min(d,P-d)>2*h.E) h.fail(n+' не на геликоиде: высота расходится на '+Math.min(d,P-d).toFixed(1)+' px'); }); },
+  /* № 77 в: гиперболический параболоид — направляющие d₁, d₂ и плоскость параллелизма α (следы h₀α, f₀α), всё с чертежа.
+     X на поверхности, если плоскость через X, параллельная α, пересекает d₁ и d₂ в точках A, B, лежащих с X на одной прямой
+     (образующей), и X — между A и B (поверхность — отсек между направляющими). Полнота: вдоль отрезка a на чертеже ищутся
+     все такие точки (смена знака невязки) — их столько же, сколько точек K на чертеже */
+  '77.3':(h)=>{ const al=h.planeT('α'), d1=h.L('d₁'), d2=h.L('d₂'), a=h.L('a'), n=al.n;
+    const meet=(L,X)=>{ const den=dot(L.d,n); return Math.abs(den)<1e-9?null:add(L.p,mul(L.d,dot(sub(X,L.p),n)/den)); };
+    const res=X=>{ const A=meet(d1,X), B=meet(d2,X); if(!A||!B) return {v:NaN}; const u=sub(B,A), l=nrm(u); if(l<1e-6) return {v:NaN};
+      return {v:dot(crs(u,sub(X,A)),n)/l, lam:dot(sub(X,A),u)/(l*l)}; };
+    const Ks=['K1','K2','K3'].filter(k=>h.has(k)).map(k=>h.P(k));
+    Ks.forEach((K,i)=>{ h.on(K,a,'K'+(i+1)+' ∈ a'); const r=res(K); if(!(Math.abs(r.v)<=2*h.E)) h.fail('K'+(i+1)+' не на поверхности: до образующей '+(isFinite(r.v)?Math.abs(r.v).toFixed(1):'—')+' px');
+      else if(r.lam<-0.02||r.lam>1.02) h.fail('K'+(i+1)+' на продолжении образующей, вне отсека между d₁ и d₂'); });
+    const [s0,s1]=h.segL('a″'), tOf=x=>(x-a.p[0])/a.d[0], t0=tOf(Math.min(s0[0],s1[0])), t1=tOf(Math.max(s0[0],s1[0])), N=600; let roots=0, prev=null;
+    for(let i=0;i<=N;i++){ const r=res(add(a.p,mul(a.d,t0+(t1-t0)*i/N))); if(prev&&isFinite(r.v)&&isFinite(prev.v)&&Math.sign(r.v)!==Math.sign(prev.v)&&(r.lam+prev.lam)/2>=0&&(r.lam+prev.lam)/2<=1) roots++; prev=r; }
+    if(roots!==Ks.length) h.fail('a пересекает отсек поверхности в '+roots+' точк., а на чертеже найдено '+Ks.length); },
+  /* без проверки ответа остаются 73 в, 74 б, 74 в, 89 б, 89 в: параметры их поверхностей (косой конус, плоскость
      параллелизма, эллиптический цилиндр) на чертеже не подписаны — им нужен протокол сертифицированного эпюра */
   85:(h,t)=>{ const A=h.P('A'), B=h.P('B'), C=h.P('C'), D=h.P('D');
     const e=unit(sub(B,A)), pc=sub(sub(C,A),mul(e,dot(sub(C,A),e))), pd=sub(sub(D,A),mul(e,dot(sub(D,A),e)));
