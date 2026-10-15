@@ -88,6 +88,22 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   /* 3в. ДЗ 2 по ИГ: размеры на листах — числа равны расстояниям по модели, выносные линии упираются в контур */
   report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
 
+  /* 3д. нормоконтроль листов ИГ (tests/normo.js, normo-model.js): ГОСТ 2.301–2.307 и 2.104 по готовому SVG листа и сверка
+     каждого вида с 3D-моделью лучами. Проверка проверки (normo-mutate.js): нарушения тренажёра «Нормоконтроль» подсаживаются
+     в настоящие листы и должны ловиться там, где тренажёр их показывает, — без лишних замечаний */
+  { const npage=await browser.newPage(); await npage.goto(URL); await npage.waitForTimeout(1200);
+    const nr=await require('./normo-run.js').runNormo(npage,{nomodel:QUICK});
+    info.push('Нормоконтроль ИГ: листов '+nr.stat.sheets+(QUICK?' (без сверки с моделью)':', виды сверены с 3D-моделью')+', '+Math.round(nr.stat.ms/1000)+' с');
+    report('ИГ: нормоконтроль листов',nr.issues.map(i=>({name:i.name,rule:i.rule,msg:i.msg})));
+    const mu=await require('./normo-mutate.js').runMutations(npage,{per:QUICK?1:2}), tot=Object.values(mu).reduce((a,x)=>[a[0]+x.поймано,a[1]+x.всего,a[2]+x.лишнее],[0,0,0]);
+    info.push('Нормоконтроль, проверка проверки: поймано '+tot[0]+' из '+tot[1]+' подсаженных нарушений ('+Object.keys(mu).length+' типов тренажёра), лишних замечаний — '+tot[2]);
+    Object.entries(mu).forEach(([t,x])=>{ if(!x.всего) fail.push('Тренажёр «Нормоконтроль»: нарушение «'+t+'» не подсаживается ни в один лист');
+      else if(x.поймано<x.всего) fail.push('Нормоконтроль не ловит «'+t+'»: '+x.поймано+' из '+x.всего+' — '+x.пример);
+      if(x.лишнее) fail.push('Нормоконтроль: подсадка «'+t+'» даёт лишние замечания — '+x.пример); });
+    report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(npage,URL));
+    report('Читаю чертёж',await require('./normo-mutate.js').readUi(npage,URL));
+    await npage.close(); }
+
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
   report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));
@@ -105,7 +121,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(st.w>st.iw+1) bad.push({name:h,rule:'горизонтальная прокрутка',msg:'ширина '+st.w+' при экране '+st.iw});
       if(st.huge.length) bad.push({name:h,rule:'элемент на весь экран',msg:st.huge.slice(0,3).join(', ')});
       if(st.txt<40) bad.push({name:h,rule:'пустая страница',msg:'текста '+st.txt+' символов'});
-      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)) queue.push(l); }); }   /* варианты тренажёра бесконечны — их проверяет tests/gym.js */
+      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)) queue.push(l); }); }   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js */
     info.push('Обход: страниц '+n);
     /* разбор каждой задачи до конца: «Дальше» до ответа */
     const tasks=await page.evaluate(()=>WB3.tasks.map(t=>t.n));
@@ -119,6 +135,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   }
   await browser.close(); srv.close();
   console.log(info.join('\n'));
-  if(fail.length){ console.log('\nНОВЫЕ ОШИБКИ ('+fail.length+'):\n- '+fail.join('\n- ')); process.exit(1); }
+  /* длинный список одного раздела — первые 25 строк и число остальных: лог CI обрезается, и иначе не видно других разделов */
+  if(fail.length){ const by={}; fail.forEach(f=>{ const g=f.split(' · ')[0]; (by[g]=by[g]||[]).push(f); });
+    console.log('\nНОВЫЕ ОШИБКИ ('+fail.length+'):'); Object.values(by).forEach(L=>{ console.log('- '+L.slice(0,25).join('\n- ')+(L.length>25?'\n  …и ещё '+(L.length-25)+' в этом разделе':'')); }); process.exit(1); }
   console.log('\nОшибок нет.'); process.exit(0);
 })().catch(e=>{ console.error(e); process.exit(2); });
