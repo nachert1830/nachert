@@ -104,6 +104,9 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     Object.entries(mu).forEach(([t,x])=>{ if(!x.всего) fail.push('Тренажёр «Нормоконтроль»: нарушение «'+t+'» не подсаживается ни в один лист');
       else if(x.поймано<x.всего) fail.push('Нормоконтроль не ловит «'+t+'»: '+x.поймано+' из '+x.всего+' — '+x.пример);
       if(x.лишнее) fail.push('Нормоконтроль: подсадка «'+t+'» даёт лишние замечания — '+x.пример); });
+    if(!QUICK){ const wm=await require('./normo-mutate.js').wavyMutations(npage);
+      info.push('Сторона волнистой линии (ГОСТ 2.305): поймано '+wm.поймано+' из '+wm.всего+' подсаженных ошибок'+(wm.review.length?'; для проверки человеком: '+wm.review.join('; '):''));
+      if(wm.поймано<wm.всего) fail.push('Нормоконтроль не ловит сторону волнистой линии: '+wm.пропуски.join(', ')); }
     report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(npage,URL));
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(npage,URL));
     await npage.close(); }

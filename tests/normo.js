@@ -274,7 +274,27 @@ function run(F,opt){
     if(wi===2&&half==='up'&&hy) add('2.305','половина разреза — снизу от оси','на '+name+' разрез сверху от оси',[cx,box.ay-5*k]);
     /* на половине вида невидимый контур не проводят */
     if(half){ const hid=segAll.filter(q=>w.ids.includes(q.it.view)&&q.it.kind==='dash'), side=q=>{ const m=[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]; return wi<2?(half==='right'?m[0]<box.ax-0.5*k:m[0]>box.ax+0.5*k):(half==='down'?m[1]<box.ay-0.5*k:m[1]>box.ay+0.5*k); };
-      const bad=hid.filter(side); const len=bad.reduce((a,q)=>a+dist(q.a,q.b),0); if(len>3*k) add('2.305','на половине вида — без невидимого контура','на '+name+' штриховые линии на половине вида ('+mm(len)+' мм)',bad[0].a); } });
+      const bad=hid.filter(side); const len=bad.reduce((a,q)=>a+dist(q.a,q.b),0); if(len>3*k) add('2.305','на половине вида — без невидимого контура','на '+name+' штриховые линии на половине вида ('+mm(len)+' мм)',bad[0].a); }
+    /* ребро на оси симметрии (ГОСТ 2.305, соединение половины вида и половины разреза): если с осью совпадает ребро, вид от разреза
+       отделяют сплошной волнистой линией, смещённой так, чтобы ребро было видно (внутреннее — в разрезе, наружное — на виде).
+       По листу: граница волнистая → по оси идёт сплошная основная (ребро нарисовано; если волнистая не с той стороны, ребро
+       оказывается на половине вида без невидимого контура или в срезанной части — и пропадает); ребро по оси есть → граница
+       волнистая, а не ось (иначе ребро сливается со штрихпунктиром). u — координата поперёк оси, v — вдоль */
+    if(half&&(wi<2?vx:hy)){ const U=p=>wi<2?p[0]:p[1], V=p=>wi<2?p[1]:p[0], ax0=wi<2?box.ax:box.ay, lo=wi<2?w.b[1]:w.b[0], hi=wi<2?w.b[3]:w.b[2];
+      const cand=items.filter(it=>it.curve&&it.kind==='thin'&&(w.ids.includes(it.view)||it.view<0)&&it.polys.length);
+      /* волнистая этого изображения: узкая поперёк оси, длинная вдоль, рядом с осью и большей частью в пределах изображения */
+      const wav=cand.filter(it=>{ const P=[].concat(...it.polys), us=P.map(U), vs=P.map(V), v0=Math.min(...vs), v1=Math.max(...vs);
+        return Math.max(...us)-Math.min(...us)<12*k&&v1-v0>8*k&&Math.abs((Math.max(...us)+Math.min(...us))/2-ax0)<15*k&&Math.min(v1,hi)-Math.max(v0,lo)>0.7*(v1-v0); });
+      /* для проверки человеком (не ошибка): волнистая выходит за контур изображения — где кончается материал на её линии */
+      wav.forEach(it=>{ const P=[].concat(...it.polys), um=P.reduce((s,p)=>s+U(p),0)/P.length, vs=P.map(V);
+        const cut=segAll.filter(q=>w.ids.includes(q.it.view)&&q.it.kind==='thick'&&(U(q.a)-um)*(U(q.b)-um)<=0&&Math.abs(U(q.b)-U(q.a))>0.05*k).map(q=>{ const t=(um-U(q.a))/(U(q.b)-U(q.a)); return V(q.a)+t*(V(q.b)-V(q.a)); });
+        if(cut.length>=2){ const out=Math.max(Math.min(...cut)-Math.min(...vs),Math.max(...vs)-Math.max(...cut)); if(out>1.5*k) (F.review=F.review||[]).push({gost:'2.305',rule:'волнистая граница в пределах контура',msg:'на '+name+' волнистая линия выходит за контур изображения на '+mm(out)+' мм',at:P[0]}); } });
+      const onAx=segAll.filter(q=>w.ids.includes(q.it.view)&&q.it.kind==='thick'&&Math.abs(U(q.a)-ax0)<0.3*k&&Math.abs(U(q.b)-ax0)<0.3*k&&Math.abs(V(q.b)-V(q.a))>1*k);
+      const axLen=(v0,v1)=>onAx.reduce((s,q)=>s+Math.max(0,Math.min(Math.max(V(q.a),V(q.b)),v1)-Math.max(Math.min(V(q.a),V(q.b)),v0)),0);
+      wav.forEach(it=>{ const P=[].concat(...it.polys), vs=P.map(V), um=P.reduce((s,p)=>s+U(p),0)/P.length, v0=Math.min(...vs), v1=Math.max(...vs);
+        if(Math.abs(um-ax0)<1*k) add('2.305','волнистая граница смещена от оси','на '+name+' волнистая линия лежит на оси симметрии — её смещают так, чтобы ребро на оси было видно',P[0]);
+        else if(axLen(v0,v1)<Math.min(3*k,0.2*(v1-v0))) add('2.305','ребро на оси видно','на '+name+' граница вида и разреза — волнистая линия, а сплошного ребра по оси нет: волнистая смещена не в ту сторону или ребро не нарисовано',P[Math.floor(P.length/2)]); });
+      if(!wav.length&&axLen(lo,hi)>=3*k) add('2.305','ребро на оси — граница волнистой линией','на '+name+' по оси симметрии идёт ребро ('+mm(axLen(lo,hi))+' мм), а граница вида и разреза — сама ось: ребро сливается с осью',wi<2?[ax0,(lo+hi)/2]:[(lo+hi)/2,ax0]); } });
 
   /* ── ГОСТ 2.306: штриховка ── */
   if(hatch.length){ const P0=hatch[0].pat; hatch.forEach(f=>{ const p=f.pat;
@@ -362,7 +382,7 @@ function run(F,opt){
 
   /* ── сверка с 3D-моделью ── */
   if(opt.model&&window.NORMO_MODEL) NORMO_MODEL(F,opt.model,{k,FV,LV,TV,segAll,items,fills,hatch,add,opt,axLines:chains,marks,labs});
-  return {k,fmt:F.fmt,views:F.views,s:R(s,2),model:F.modelStats,dbg:F.dbg,issues}; }
+  return {k,fmt:F.fmt,views:F.views,s:R(s,2),model:F.modelStats,review:F.review||[],issues}; }
 
 window.NORMO={check,flatten};
 })();

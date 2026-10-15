@@ -29373,7 +29373,7 @@ function frameBody(n,st){ const C=ctx(n), {md,sp,FR,TP,DR}=C, SG=secGeo(C), P=se
   pts.push(FR(C.x0-30,C.z1+20),FR(C.x1+10,C.z0),TP(C.x0-30,C.y0-14),TP(C.x1+30,C.y1+14),[sb[0]-30,sb[1]-50],[sb[2]+40,sb[3]+30],FR(SG.X(-20),SG.Z(-20)),FR(SG.X(SG.L+20),SG.Z(SG.L+20)),[FR(SG.X(-20),SG.Z(-20))[0]-40,FR(SG.X(-20),SG.Z(-20))[1]+10],[FR(SG.X(SG.L+20),SG.Z(SG.L+20))[0]+10,FR(SG.X(SG.L+20),SG.Z(SG.L+20))[1]-40]);
   const B=bbox(pts,16);
   return `<svg class="igs-sheet igl-sv" viewBox="${f(B[0])} ${f(B[1])} ${f(B[2]-B[0])} ${f(B[3]-B[1])}" role="img" aria-label="Сечение по шагам, вариант ${n}"><rect x="${f(B[0])}" y="${f(B[1])}" width="${f(B[2]-B[0])}" height="${f(B[3]-B[1])}" fill="#fff"/>${o}${c}${t}</svg>`; }
-return {sheet,fmtSheet,textPts,secGeo:n=>secGeo(ctx(n)),secPoints:n=>{ const C=ctx(n); return secPoints(C,secGeo(C)); },ctx,dimsSVG,checkDims,checkAll,secSteps,secFrame};
+return {sheet,forget:()=>{ for(const k in MEMO) delete MEMO[k]; } /* для проверок: построить листы заново после изменения модели */,fmtSheet,textPts,secGeo:n=>secGeo(ctx(n)),secPoints:n=>{ const C=ctx(n); return secPoints(C,secGeo(C)); },ctx,dimsSVG,checkDims,checkAll,secSteps,secFrame};
 })();
 
 
