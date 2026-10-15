@@ -3,7 +3,7 @@
      • большинство вариантов проходит 3D-проверку и оракул (иначе задача слишком чувствительна к данным);
      • числа в тексте решения меняются вместе с данными. Число, которое не меняется, хотя чертёж изменился, —
        набрано руками и на варианте было бы неверным. Исключения: числа из условия, ссылки «вопрос 11», «стр. 7»,
-       «задача 45», «№ 3», и 0, 1, 2, 3, 4, 90, 180, 360.
+       «задача 45», «№ 3», «§15.2», и 0, 1, 2, 3, 4, 90, 180, 360.
    Возвращает {ok:[n…], why:{n: причина}} — список ok должен совпадать с GEN_OK в index.html. */
 async function genEligibility(page,N){
   N=N||12;
@@ -12,7 +12,7 @@ async function genEligibility(page,N){
     const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,' ').replace(/&[a-z]+;/g,' ');
     const texts=t=>{ const a=[t.intro,t.ans,t.note]; const parts=(t.parts&&t.parts.length)?t.parts:[t];
       parts.forEach(p=>{ if(p!==t) a.push(p.q,p.ans); (p.steps||[]).forEach(s=>a.push(s.t,s.d,s.why)); }); return a.map(strip).join(' ¦ '); };
-    const REF=/(вопрос\S*|задач\S*|стр\.|№|рис\.|пункт\S*|п\.)\s*(\d+\s*(,|и)\s*)*$/i;
+    const REF=/(вопрос\S*|задач\S*|стр\.|№|§|гл\.|рис\.|пункт\S*|п\.)\s*(\d+\s*(,|и)\s*)*$/i;
     const nums=s=>{ const out=[]; s.replace(/\d+(?:[.,]\d+)?/g,(m,off)=>{ const before=s.slice(Math.max(0,off-14),off), after=s.slice(off+m.length,off+m.length+12);
         if(/[₀-₉]$/.test(before)||/[A-Za-zА-Яа-я]$/.test(before)||/^[′″‴₀-₉]/.test(after)) return m;   /* часть имени: A1, x₁₄, 1′ */
         const v=parseFloat(m.replace(',','.')), meas=/^\s*(мм|°|%)/.test(after);
