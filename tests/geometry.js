@@ -208,6 +208,61 @@ function check(name,items,text,ctx){
       /* сплошная — проверяем по всей длине: часть прямой может уйти за грань (середина при этом видна) */
       const frontAny=s.k==='main'&&[.15,.3,.5,.7,.85].some(u=>{ const o=u===.5?{q:probe(.5).q,front}:probe(u); return o.front&&!erased(o.q); });
       if(!dashed&&frontAny) add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана видимой, но здесь её закрывает плоскость','проверить'); }); });
+  /* 5б. штриховой (невидимой) линии неоткуда взяться, если закрывать нечем: на чертеже нет ни плоскости или грани
+     (многоугольник, треугольник из подписанных вершин), ни поверхности (окружность, дуга, эллипс, кривая очерка).
+     Штрих другого смысла (второе решение, вспомогательное продолжение — resd, grnd, auxd) здесь не судится. */
+  /* плоскость, заданная полосой с обрывом (волнистая кривая), и треугольник из отрезков без подписей вершин — тоже закрывают */
+  const triSeg=(()=>{ const S=M.segs.all.filter(s=>!/^(aux|auxd|conn|paper)$/.test(s.k)&&d2(s.a,s.b)>3).slice(0,240), near=(p,q)=>d2(p,q)<TOL;
+    for(let i=0;i<S.length;i++) for(let j=i+1;j<S.length;j++){ const e=[[S[i].a,S[i].b],[S[j].a,S[j].b]]; let c=null, u=null, v=null;
+      for(const p of e[0]) for(const q of e[1]) if(near(p,q)){ c=p; u=e[0].find(x=>x!==p); v=e[1].find(x=>x!==q); }
+      if(c&&d2(u,v)>3&&S.some((s,k)=>k!==i&&k!==j&&((near(s.a,u)&&near(s.b,v))||(near(s.a,v)&&near(s.b,u))))) return true; }
+    return false; })();
+  if(!triSeg&&!M.polys.length&&!polysByMark('″').length&&!polysByMark('′').length&&!(items||[]).some(it=>it&&/^(circ|arc|ell|curve|hatch)$/.test(it.t)&&(it.t==='curve'||!/^(aux|auxd|thin)$/.test(it.k||''))))
+    M.segs.all.forEach(s=>{ if(s.k==='hid'&&d2(s.a,s.b)>3) add('видимость',(s.l?s.l+' — ':'')+'штриховая (невидимая) линия, но на чертеже нет плоскостей и поверхностей, которые могли бы её закрыть'); });
+  /* 5в. то же по месту: невидимая линия должна лежать под какой-то фигурой на этой проекции — внутри треугольника из отрезков,
+     многоугольника, окружности или эллипса (собственная сторона фигуры — на её границе, не внутри). Не перекрыта ничем — закрыть её
+     нечем: сторона единственной грани, контур тела по краю, данная прямая вне фигур. Если на чертеже есть кривые поверхностей
+     и дуги (полоса с обрывом, тор, очерки; ломаная больше чем из 8 точек — это кривая) — не судим: их области по рисунку не восстановить. */
+  else if(!(items||[]).some(it=>it&&(it.t==='curve'||it.t==='hatch'||(it.t==='poly'&&it.p&&it.p.length>8)||(it.t==='arc'&&!/^(aux|auxd|thin)$/.test(it.k||''))))&&!Object.keys(M.lines).some(l=>/^[hfp]₀/.test(l))){   /* плоскость следами — полуплоскость, не судим */
+    const regs=[], solid=k=>!/^(aux|auxd|conn|paper|dash|axis)$/.test(k||'main');
+    /* грани из отрезков: циклы из 3 и 4 отрезков (треугольник, четырёхугольник — грань призмы, куба); отрезки, разбитые точками
+       видимости на куски, склеиваются: вершины графа — концы, ребро — отрезок или цепочка соосных кусков */
+    { const S=M.segs.all.filter(s=>solid(s.k)&&d2(s.a,s.b)>1).slice(0,300), V=[], vid=p=>{ let i=V.findIndex(q=>d2(p,q)<TOL); if(i<0){ V.push(p); i=V.length-1; } return i; };
+      const E=new Map(), add2=(i,j)=>{ if(i===j) return; (E.get(i)||E.set(i,new Set()).get(i)).add(j); (E.get(j)||E.set(j,new Set()).get(j)).add(i); };
+      S.forEach(s=>add2(vid(s.a),vid(s.b)));
+      /* соосные куски: a–m и m–b на одной прямой → ребро a–b */
+      for(let m=0;m<V.length;m++){ const nb=[...(E.get(m)||[])]; for(let x=0;x<nb.length;x++) for(let y=x+1;y<nb.length;y++){ const A=V[nb[x]], B=V[nb[y]];
+        if(lineDist(V[m],A,B)<TOL*0.6&&segT(V[m],A,B)>0&&segT(V[m],A,B)<1) add2(nb[x],nb[y]); } }
+      const nbr=i=>[...(E.get(i)||[])], area=P=>Math.abs(P.reduce((s,p,i)=>s+p[0]*P[(i+1)%P.length][1]-P[(i+1)%P.length][0]*p[1],0))/2;
+      for(let i=0;i<V.length;i++) nbr(i).forEach(j=>{ if(j<=i) return; nbr(j).forEach(k=>{ if(k<=i||k===j) return;
+        if(E.get(k).has(i)){ const P=[V[i],V[j],V[k]]; if(area(P)>20) regs.push({poly:P}); }
+        nbr(k).forEach(l=>{ if(l<=i||l===j||!E.get(l).has(i)) return; const P=[V[i],V[j],V[k],V[l]]; if(area(P)>20) regs.push({poly:P}); }); }); }); }
+    (items||[]).forEach(it=>{ if(!it||!solid(it.k)) return; if(it.t==='poly'&&it.p&&it.p.length>=3) regs.push({poly:it.p,it});
+      if((it.t==='circ'||it.t==='ell')&&it.c&&it.r) regs.push({c:it.c,r:it.r,rx:it.rx,ry:it.ry,it}); });
+    const inPoly=(q,P)=>{ let c=false; for(let i=0,j=P.length-1;i<P.length;j=i++){ if((P[i][1]>q[1])!==(P[j][1]>q[1])&&q[0]<(P[j][0]-P[i][0])*(q[1]-P[i][1])/(P[j][1]-P[i][1])+P[i][0]) c=!c; } return c; };
+    const edgeD=(q,P)=>Math.min(...P.map((p,i)=>segDist(q,p,P[(i+1)%P.length])));
+    const under=(q,self)=>regs.some(R=>R.it!==self&&(R.poly?inPoly(q,R.poly)&&edgeD(q,R.poly)>TOL:d2(q,R.c)<(R.r||Math.max(R.rx||0,R.ry||0))-TOL));
+    const judge=(a,b,self,what)=>{ if(d2(a,b)<=3) return; if(![.3,.5,.7].some(u=>under([a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u],self)))
+      add('видимость',what+' показана штрихом, но в этом месте проекции её не перекрывает ни одна фигура — закрыть её нечем'); };
+    M.segs.all.forEach(s=>{ if(s.k==='hid') judge(s.a,s.b,s.it,(s.l||'линия')); });
+    (items||[]).forEach(it=>{ if(it&&it.t==='poly'&&it.k==='hid'&&it.p) it.p.forEach((p,i)=>{ if(i<it.p.length-1||it.close) judge(p,it.p[(i+1)%it.p.length],it,'сторона многоугольника'); }); }); }
+  /* 5г. точка без подписи на чертеже — это отмеченное пересечение или точка на линии: она лежит хотя бы на одной линии
+     (отрезке, прямой, окружности, дуге, ломаной). Точка «в пустоте» — построена не на той проекции или не там. */
+  { const onAny=q=>(items||[]).some(it=>{ if(!it) return false;
+      if((it.t==='seg'||it.t==='line'||it.t==='conn'||it.t==='vec')&&it.a&&it.b) return (it.t==='line'?lineDist(q,it.a,it.b):segDist(q,it.a,it.b))<TOL*1.5;
+      if((it.t==='circ'||it.t==='arc')&&it.c&&it.r) return Math.abs(d2(q,it.c)-it.r)<TOL*1.5;
+      if((it.t==='poly'||it.t==='curve')&&it.p) return it.p.some((p,i)=>i>0&&segDist(q,it.p[i-1],p)<TOL*1.5)||(it.close&&segDist(q,it.p[it.p.length-1],it.p[0])<TOL*1.5);
+      if(it.t==='axis') return Math.abs(q[1])<TOL*1.5;
+      return false; });
+    (items||[]).forEach(it=>{ if(it&&it.t==='pt'&&it.at&&!strip(it.l||'').trim()&&!onAny(it.at)) add('точка без подписи','отмеченная точка ('+it.at.map(v=>v.toFixed(0)).join(', ')+') не лежит ни на одной линии чертежа'); }); }
+  /* 5д. размерная линия привязана к чертежу: каждый её конец лежит на линии (оси, отрезке) или напротив точки чертежа —
+     точка на перпендикуляре к размеру через конец (выносная линия). Размер, сдвинутый мимо того, что он измеряет, — ошибка. */
+  { const P=[]; (items||[]).forEach(it=>{ if(!it) return; if(it.t==='pt'&&it.at) P.push(it.at); if(it.a&&it.b&&it.t!=='dim'){ P.push(it.a,it.b); } if(it.c) P.push(it.c); if(it.p) it.p.forEach(p=>P.push(p)); });
+    if(M.axis) P.push([0,0]);   /* начало координат O — от него отсчитывается x */
+    const onLine=q=>(items||[]).some(it=>it&&it.t!=='dim'&&it.a&&it.b&&(it.t==='line'?lineDist(q,it.a,it.b):segDist(q,it.a,it.b))<TOL)||(M.axis&&Math.abs(q[1])<TOL);
+    (items||[]).forEach(it=>{ if(!it||it.t!=='dim'||!it.a||!it.b||d2(it.a,it.b)<3) return; const L=d2(it.a,it.b), u=[(it.b[0]-it.a[0])/L,(it.b[1]-it.a[1])/L];
+      [it.a,it.b].forEach(e=>{ if(onLine(e)) return; if(P.some(p=>Math.abs((p[0]-e[0])*u[0]+(p[1]-e[1])*u[1])<TOL&&d2(p,e)>0.5)) return;
+        add('размер','конец размерной линии «'+strip(it.l||'')+'» ('+e.map(v=>v.toFixed(0)).join(', ')+') не напротив ни одной точки и не на линии чертежа'); }); }); }
   /* 6. размеры на чертеже.
      Масштаб у задач разный (крупные чертежи увеличены), поэтому мм проверяются так:
        а) без масштаба — длина отрезка с подписью |AB| совпадает с длиной AB по 3D-модели;

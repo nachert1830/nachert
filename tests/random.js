@@ -35,4 +35,16 @@ function perturb(src,seed){ const f=warp(seed,pinOf(src)); let n=0;
   s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) return m;   /* масштаб и число шагов разбиения (N=400 в видимости № 46, n=16 у волнистой линии) — не данные задачи */   /* масштаб чертежа — не данные задачи */ n++; return pre+name+eq+f(+v); });
   return {src:s,n}; }
 
-module.exports={blocks,perturb,warp};
+/* где в исходнике стоят числа-данные, которые меняет perturb: [начало, конец) каждого числа.
+   Нужно для разбора мутантов (adequacy.js): опечатка в таком числе — это другие исходные данные той же программы */
+function dataSpans(src){ const pin=pinOf(src), out=[], keep=v=>v!==0&&!(pin.has(v)||pin.has(-v));
+  const basis=(a,b,c,ma,mb,mc)=>!ma&&!mb&&!mc&&[+a,+b,+c].filter(v=>v===0).length===2&&[+a,+b,+c].some(v=>Math.abs(v)===1);
+  let m; const re=new RegExp(RE.source,'g');
+  while((m=re.exec(src))){ const [a,ma,b,mb,c,mc]=m.slice(1); if(basis(a,b,c,ma,mb,mc)) continue; let at=m.index;
+    [a,b,c].forEach(v=>{ const i=src.indexOf(v,at); at=i+v.length; if(keep(+v)) out.push([i,i+v.length]); }); }
+  const sc=new RegExp(SC.source,'g');
+  while((m=sc.exec(src))){ const [,pre,name,eq,v]=m; if(/for\s*\(\s*(let|const|var)?\s*$/.test(src.slice(Math.max(0,m.index-12),m.index)+pre)) continue;
+    if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) continue; const i=m.index+pre.length+name.length+eq.length; if(keep(+v)) out.push([i,i+v.length]); }
+  return out; }
+
+module.exports={blocks,perturb,warp,dataSpans};
