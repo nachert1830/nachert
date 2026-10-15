@@ -43,7 +43,10 @@ function model(items){
     if(it.t==='ang'&&it.at&&it.p1&&it.p2&&it.l) angs.push({at:it.at,p1:it.p1,p2:it.p2,l:strip(it.l)});
     if(it.t==='txt'&&it.at&&it.s) texts.push({s:strip(it.s),at:it.at}); });
   segs.all=segs.all||[];
-  const uniq=n=>{ const a=pts[n]; if(!a) return null; return a.every(p=>d2(p,a[0])<TOL)?a[0]:null; };
+  /* одна подпись — одна точка: все вхождения попарно в допуске; положение — их центр (не первое вхождение: вердикт не должен
+     зависеть от порядка элементов на чертеже) */
+  const UQ={}, uniq=n=>{ if(n in UQ) return UQ[n]; const a=pts[n]; if(!a) return UQ[n]=null; if(!a.every(p=>a.every(q=>d2(p,q)<TOL))) return UQ[n]=null;
+    return UQ[n]=[a.reduce((s,p)=>s+p[0],0)/a.length,a.reduce((s,p)=>s+p[1],0)/a.length]; };
   const bases=[...new Set(Object.keys(pts).map(n=>(PN.exec(n)||[])[1]).filter(Boolean))];
   /* 3D-точки: x = абсцисса, y = A′ под осью, z = A″ над осью (в единицах рисунка) */
   const P3={};
@@ -157,12 +160,18 @@ function check(name,items,text,ctx){
   M.polys.filter(pl=>pl.close&&pl.p.length===3).forEach(pl=>{ });
   /* треугольники/многоугольники плоскостей по подписанным вершинам */
   const polysByMark=mk=>{ const r=[];
-    M.polys.forEach(pl=>{ if(!/^(main|hid)$/.test(pl.k)) return; const vs=pl.p.map(q=>named.find(b=>uniq(b+mk)&&d2(uniq(b+mk),q)<TOL)); if(vs.every(Boolean)&&new Set(vs).size>=3) r.push(vs); });
+    /* вершина многоугольника — любая подписанная точка в этом месте проекции (при A″ ≡ 1″ — обе: какая из них вершина, по рисунку
+       не узнать); берутся все сочетания, не больше 16 — вердикт не зависит от порядка элементов на чертеже */
+    M.polys.forEach(pl=>{ if(!/^(main|hid)$/.test(pl.k)) return; const C=pl.p.map(q=>named.filter(b=>uniq(b+mk)&&d2(uniq(b+mk),q)<TOL).sort());
+      if(!C.every(c=>c.length)||C.reduce((n,c)=>n*c.length,1)>16) return;
+      let combos=[[]]; C.forEach(c=>{ combos=[].concat(...combos.map(v=>c.map(b=>v.concat([b])))); }); combos.forEach(vs=>{ if(new Set(vs).size>=3) r.push(vs); }); });
     /* треугольники из отрезков: A″B″, B″C″, C″A″ нарисованы. Линией результата — тоже, если вершины — точки самого тела (буква без индекса:
        грани построенной пирамиды закрывают); повёрнутые и перенесённые B₀, C₁ — построение, а не тело, ничего не закрывают.
        Исключение — многогранник, у которого есть и A, и A₁ (призма, куб): если вершины X₁ соединены с X линией результата (боковые рёбра),
        A₁, B₁… — вершины тела */
-    const has=(A,B,res)=>M.segs.all.some(s=>(res?/^(main|hid|res|resd)$/:/^(main|hid)$/).test(s.k)&&(d2(s.a,uniq(A+mk))<TOL&&d2(s.b,uniq(B+mk))<TOL)||(d2(s.b,uniq(A+mk))<TOL&&d2(s.a,uniq(B+mk))<TOL));
+    /* сторона A–B нарисована (в любую сторону). Тонкая — контур данной фигуры (её видимость показывают потом отрезками результата).
+       Скобки вокруг двух направлений: раньше тип линии проверялся только у A→B, и признание треугольника плоскостью зависело от порядка вершин */
+    const has=(A,B,res)=>M.segs.all.some(s=>(res?/^(main|hid|thin|res|resd)$/:/^(main|hid|thin)$/).test(s.k)&&((d2(s.a,uniq(A+mk))<TOL&&d2(s.b,uniq(B+mk))<TOL)||(d2(s.b,uniq(A+mk))<TOL&&d2(s.a,uniq(B+mk))<TOL)));
     const bodyIdx=X=>{ const m=/^([A-ZА-Я])₁$/.exec(X); return !!m&&!!uniq(m[1]+mk)&&has(m[1],X,true)&&named.filter(Y=>/^[A-ZА-Я]₁$/.test(Y)&&has(Y[0],Y,true)).length>=3; };
     for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++) for(let k=j+1;k<named.length;k++){ const A=named[i],B=named[j],C=named[k];
       const res=[A,B,C].every(X=>/^[A-ZА-Я]$/.test(X)||bodyIdx(X));
@@ -183,7 +192,11 @@ function check(name,items,text,ctx){
       /* отрезок должен лежать на прямой KL через подписанные точки — тогда известна его глубина */
       const host=[]; for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++){ const A=named[i],B=named[j], a=uniq(A+mk), b=uniq(B+mk); if(!a||!b||d2(a,b)<6) continue;
         if(lineDist(s.a,a,b)<TOL&&lineDist(s.b,a,b)<TOL) host.push([A,B]); }
-      if(!host.length) return; const [A,B]=host[0];
+      if(!host.length) return;
+      /* отрезок может лежать на проекции нескольких прямых (конкурирующие точки: 1″ ≡ D″) с разной глубиной; какая из них — по
+         рисунку не узнать. Замечание — только если оно верно для каждой из них; порядок элементов на чертеже на вердикт не влияет */
+      host.sort((p,q)=>(p[0]+p[1]).localeCompare(q[0]+q[1]));
+      const V=host.map(([A,B])=>{
       const PA=P3[A], PB=P3[B];
       /* закрыта ли точка отрезка (u — доля длины) плоскостью ближе к наблюдателю */
       const probe=u=>{ const q=[s.a[0]+(s.b[0]-s.a[0])*u,s.a[1]+(s.b[1]-s.a[1])*u], t=segT(q,uniq(A+mk),uniq(B+mk)), X=PA.map((v,i)=>v+t*(PB[i]-v));
@@ -203,11 +216,13 @@ function check(name,items,text,ctx){
       /* стёрто «ластиком» (вид paper) — этот участок линии на чертеже не виден */
       const erased=q=>M.segs.all.some(e=>e.k==='paper'&&lineDist(q,e.a,e.b)<TOL&&(()=>{ const tt=segT(q,e.a,e.b); return tt>-0.02&&tt<1.02; })());
       const {cover,front,edgeOf}=probe(.5);
-      if(edgeOf&&!cover) return;
-      if(dashed&&!front) add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана штрихом, но в этом месте её ничто не закрывает');
+      if(edgeOf&&!cover) return null;
       /* сплошная — проверяем по всей длине: часть прямой может уйти за грань (середина при этом видна) */
       const frontAny=s.k==='main'&&[.15,.3,.5,.7,.85].some(u=>{ const o=u===.5?{q:probe(.5).q,front}:probe(u); return o.front&&!erased(o.q); });
-      if(!dashed&&frontAny) add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана видимой, но здесь её закрывает плоскость','проверить'); }); });
+      return {AB:A+B,front,frontAny}; }).filter(Boolean);
+      if(!V.length) return;
+      if(dashed&&V.every(v=>!v.front)) add('видимость',V[0].AB+' на '+(mk==='″'?'π₂':'π₁')+' показана штрихом, но в этом месте её ничто не закрывает');
+      if(!dashed&&V.every(v=>v.frontAny)) add('видимость',V[0].AB+' на '+(mk==='″'?'π₂':'π₁')+' показана видимой, но здесь её закрывает плоскость','проверить'); }); });
   /* 5б. штриховой (невидимой) линии неоткуда взяться, если закрывать нечем: на чертеже нет ни плоскости или грани
      (многоугольник, треугольник из подписанных вершин), ни поверхности (окружность, дуга, эллипс, кривая очерка).
      Штрих другого смысла (второе решение, вспомогательное продолжение — resd, grnd, auxd) здесь не судится. */
