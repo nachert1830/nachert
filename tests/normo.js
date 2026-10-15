@@ -317,7 +317,10 @@ function run(F,opt){
     if(tips.length) dims.push({q,u,tips,L}); });
   /* выносные линии выходят за размерную на 1…5 мм */
   dims.forEach(d=>{ if(Math.abs(d.u[0])>1e-3&&Math.abs(d.u[1])>1e-3) return;   /* выноска (наклонная, со стрелкой на окружности) — не размерная линия с выносными */
-    d.tips.forEach(a=>{ const ext=thinS.find(q=>q!==d.q&&segDist(a.tip,q.a,q.b)<0.15*k&&(()=>{ const L=dist(q.a,q.b), v=[(q.b[0]-q.a[0])/L,(q.b[1]-q.a[1])/L]; return Math.abs(v[0]*d.u[0]+v[1]*d.u[1])<0.05; })());
+    d.tips.forEach(a=>{ /* выносную линию могут делить два размера (общая выносная, как в задании) — берём ту, что кончается ближе всего к этой размерной */
+      const cand=thinS.filter(q=>q!==d.q&&segDist(a.tip,q.a,q.b)<0.15*k&&(()=>{ const L=dist(q.a,q.b), v=[(q.b[0]-q.a[0])/L,(q.b[1]-q.a[1])/L]; return Math.abs(v[0]*d.u[0]+v[1]*d.u[1])<0.05; })());
+      const bey=q=>Math.min(...[q.a,q.b].map(p=>{ const v=[p[0]-a.tip[0],p[1]-a.tip[1]]; return Math.abs(v[0]*d.u[1]-v[1]*d.u[0]); }));
+      const ext=cand.sort((x,y)=>bey(x)-bey(y))[0];
       if(!ext) return; const over=Math.max(...[ext.a,ext.b].map(p=>{ const v=[p[0]-a.tip[0],p[1]-a.tip[1]]; return Math.abs(v[0]*d.u[1]-v[1]*d.u[0]); })), side=[ext.a,ext.b].map(p=>{ const v=[p[0]-a.tip[0],p[1]-a.tip[1]]; return v[0]*d.u[1]-v[1]*d.u[0]; });
       const beyond=Math.min(Math.abs(side[0]),Math.abs(side[1])); if(Math.sign(side[0])!==Math.sign(side[1])&&beyond>0.05*k&&(beyond<1*k-0.05*k||beyond>5*k+0.05*k)) add('2.307','выносная за размерную на 1…5 мм','выходит на '+mm(beyond)+' мм',a.tip); }); });
   /* размерная линия — не ближе 10 мм к параллельной линии контура (снаружи изображения) и 7 мм к параллельной размерной */
