@@ -52,6 +52,8 @@ function sampleCurve(el,d){ /* кривая (волнистая, дуга): по
   return d.split(/(?=[Mm])/).filter(s=>s.trim()).map(s=>{ const p=document.createElementNS(NS,'path'); p.setAttribute('d',s); el.parentNode.appendChild(p);
     const L=p.getTotalLength(), n=Math.max(2,Math.ceil(L/0.7)), o=[]; for(let i=0;i<=n;i++){ const q=p.getPointAtLength(L*i/n); o.push([q.x,q.y]); } p.remove(); return o; }); }
 const mul=(M,p)=>[M.a*p[0]+M.c*p[1]+M.e,M.b*p[0]+M.d*p[1]+M.f];
+/* точка для isPointInFill: старые Chromium (129 в CI) принимают только SVGPoint, не DOMPoint */
+const svgPt=(el,x,y)=>{ const q=el.ownerSVGElement.createSVGPoint(); q.x=x; q.y=y; return q; };
 function flatten(svgStr){
   const host=document.createElement('div'); host.style.cssText='position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;width:10px;height:10px;overflow:hidden';
   host.innerHTML=svgStr; document.body.appendChild(host); const svg=host.querySelector('svg');
@@ -256,7 +258,7 @@ function run(F,opt){
   const fillArea=(f,box,axis)=>{ /* доля заштрихованного слева/справа (сверху/снизу) от оси — по точкам сетки */
     const n=40; let a=0,b=0; for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const p=[box[0]+(box[2]-box[0])*(i+.5)/n,box[1]+(box[3]-box[1])*(j+.5)/n];
       if(!f.clip.every(r=>p[0]>=r[0]&&p[0]<=r[2]&&p[1]>=r[1]&&p[1]<=r[3])) continue;
-      const inv=f.M, det=inv.a*inv.d-inv.b*inv.c, x=p[0]-inv.e, y=p[1]-inv.f, lp=new DOMPoint((inv.d*x-inv.c*y)/det,(-inv.b*x+inv.a*y)/det);
+      const inv=f.M, det=inv.a*inv.d-inv.b*inv.c, x=p[0]-inv.e, y=p[1]-inv.f, lp=svgPt(f.el,(inv.d*x-inv.c*y)/det,(-inv.b*x+inv.a*y)/det);
       if(f.el.isPointInFill(lp)) (axis==='v'?p[0]:p[1])<(axis==='v'?box.ax:box.ay)?a++:b++; } return [a,b]; };
   const axLines=chains;   /* оси — целиком, из всех кусков */
   [FV,LV,TV].forEach((w,wi)=>{ if(!w) return; const H=hatchOf(w); if(!H.length) return; const cx=(w.b[0]+w.b[2])/2, cy=(w.b[1]+w.b[3])/2;
@@ -294,7 +296,7 @@ function run(F,opt){
   const G=grid(segAll.filter(q=>!(opt.draft&&q.it.kind!=='thick'&&!/^(#111|#15161a|rgb\(17, 17, 17\)|rgb\(21, 22, 26\))$/i.test(q.it.col))),5*k);
   nums.forEach(t=>{ const P=shrink(t.box,0.15*k), c=t.c, r=Math.max(...P.map(p=>dist(p,c)));
     const hit=G.near(c,r).find(q=>segPoly(q.a,q.b,P)); if(hit) add('2.307','размерное число не пересекают линиями','«'+t.s+'» пересекает '+({thick:'контур',thin:'тонкая линия',dash:'штриховая',axis:'осевая'}[hit.it.kind]||'линия'),c);
-    const hf=hatch.find(f=>P.concat([c]).some(p=>{ if(!f.clip.every(r2=>p[0]>=r2[0]&&p[0]<=r2[2]&&p[1]>=r2[1]&&p[1]<=r2[3])) return false; const M=f.M, det=M.a*M.d-M.b*M.c, x=p[0]-M.e, y=p[1]-M.f; return f.el.isPointInFill(new DOMPoint((M.d*x-M.c*y)/det,(-M.b*x+M.a*y)/det)); }));
+    const hf=hatch.find(f=>P.concat([c]).some(p=>{ if(!f.clip.every(r2=>p[0]>=r2[0]&&p[0]<=r2[2]&&p[1]>=r2[1]&&p[1]<=r2[3])) return false; const M=f.M, det=M.a*M.d-M.b*M.c, x=p[0]-M.e, y=p[1]-M.f; return f.el.isPointInFill(svgPt(f.el,(M.d*x-M.c*y)/det,(-M.b*x+M.a*y)/det)); }));
     if(hf) add('2.306','размерное число на штриховке','«'+t.s+'» стоит на заштрихованном разрезе — штриховку у числа прерывают, лучше вынести число',c); });
   for(let i=0;i<texts.length;i++) for(let j=i+1;j<texts.length;j++){ const A=texts[i], B=texts[j]; if(dist(A.c,B.c)>60*k) continue; if(polyX(shrink(A.box,0.1*k),shrink(B.box,0.1*k))) add('2.307','надписи не налезают','«'+A.s+'» и «'+B.s+'»',A.c); }
   /* стрелки одного размера */

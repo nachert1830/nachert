@@ -36,7 +36,7 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
   const one=(name,w,mapOnly)=>{ if(!w) return; let tq=performance.now(); const V=VIEW[name], nm={front:'главный вид',left:'вид слева',top:'вид сверху'}[name];
     /* ── разрез по листу: штриховка этого изображения ── */
     const H=hatch.filter(f=>w.ids.includes(f.view)); const S=segsV(w);
-    const inFill=(f,p)=>{ if(!f.clip.every(r=>p[0]>=r[0]&&p[0]<=r[2]&&p[1]>=r[1]&&p[1]<=r[3])) return false; const M=f.M, det=M.a*M.d-M.b*M.c, x=p[0]-M.e, y=p[1]-M.f; return f.el.isPointInFill(new DOMPoint((M.d*x-M.c*y)/det,(-M.b*x+M.a*y)/det)); };
+    const inFill=(f,p)=>{ if(!f.clip.every(r=>p[0]>=r[0]&&p[0]<=r[2]&&p[1]>=r[1]&&p[1]<=r[3])) return false; const M=f.M, det=M.a*M.d-M.b*M.c, x=p[0]-M.e, y=p[1]-M.f; const q=f.el.ownerSVGElement.createSVGPoint(); q.x=(M.d*x-M.c*y)/det; q.y=(-M.b*x+M.a*y)/det; return f.el.isPointInFill(q); };
     /* штриховка этого изображения — растром 0,25 мм (isPointInFill в каждой точке медленный) */
     const hatched=(()=>{ if(!H.length) return ()=>false; const q=0.25*k, X0=w.b[0]-3*k, Y0=w.b[1]-3*k, cw=Math.ceil((w.b[2]-w.b[0]+6*k)/q), ch=Math.ceil((w.b[3]-w.b[1]+6*k)/q);
       const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const cx=cv.getContext('2d',{willReadFrequently:true});
