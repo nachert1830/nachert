@@ -36,7 +36,10 @@ async function nkUi(page,URL){ const bad=[], add=(n,r,m)=>bad.push({name:'Нор
 async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Читаю чертёж',rule:r,msg:m});
   await page.goto(URL+'#/ig/hw2/8'); await page.waitForTimeout(800); await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200);
   await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{});
-  const ok=await page.waitForFunction(()=>document.querySelector('#igSheetBox svg')&&!document.querySelector('.igx-ld'),null,{timeout:120000}).catch(()=>null); if(!ok){ add('лист не построился',''); return bad; }
+  /* панель загрузки — только у самого листа: вкладка 3D могла ещё считаться (в CI WebGL программный и медленный) */
+  const ok=await page.waitForFunction(()=>{ const b=document.querySelector('#igSheetBox'); return b&&b.querySelector('svg')&&!b.parentNode.querySelector('.igx-ld'); },null,{timeout:240000}).catch(()=>null);
+  if(!ok){ const st=await page.evaluate(()=>({box:!!document.querySelector('#igSheetBox'),svg:!!document.querySelector('#igSheetBox svg'),ld:[...document.querySelectorAll('.igx-ld')].map(e=>e.innerText.slice(0,40)).join(' / '),hash:location.hash})).catch(()=>({}));
+    add('лист не построился',JSON.stringify(st)); return bad; }
   if(!await page.waitForSelector('#igRd',{timeout:15000}).catch(()=>null)){ add('нет кнопки «Читаю чертёж»',''); return bad; }
   await page.click('#igRd'); await page.waitForTimeout(150);
   for(const dir of ['front','top','left']){ const r=await page.evaluate(dir=>{ const svg=document.querySelector('#igSheetBox svg'), VV=IGREAD.viewsOf(svg,IG_VARS[8]), V=VV.find(V=>V.dir===dir); if(!V) return {err:'нет вида'};
