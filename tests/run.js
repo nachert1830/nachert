@@ -108,6 +108,18 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(npage,URL));
     await npage.close(); }
 
+  /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
+     согласился на cookie. Здесь TRACK подменяется записью в список: открыть задачу, сменить режим, дойти до ответа */
+  { const apage=await browser.newPage({viewport:{width:390,height:844}}); await apage.goto(URL+'#/ng/tasks/12'); await apage.waitForTimeout(1200);
+    await apage.evaluate(()=>{ window.__EV=[]; window.TRACK=(n,p)=>__EV.push(n+':'+(p&&p.mode||'')+':'+(p&&p.task||'')); location.hash='#/ng/path/t12'; });
+    await apage.waitForSelector('.pl-mode[data-m="try"]',{timeout:5000}).catch(()=>{});
+    await apage.click('.pl-mode[data-m="try"]').catch(()=>{}); await apage.click('.pl-mode[data-m="watch"]').catch(()=>{});
+    for(let k=0;k<40;k++){ const b=await apage.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await apage.waitForTimeout(60); }
+    await apage.click('.pl-done').catch(()=>{}); await apage.waitForTimeout(200);
+    const ev=await apage.evaluate(()=>window.__EV);
+    ['task_open:watch:12','task_mode:try:12','task_done:watch:12'].forEach(e=>{ if(!ev.includes(e)) fail.push('Статистика режимов: нет события '+e+' (пришло: '+ev.join(', ')+')'); });
+    info.push('Статистика режимов: '+ev.length+' событий на один разбор ('+[...new Set(ev.map(e=>e.split(':')[0]))].join(', ')+')'); await apage.close(); }
+
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
   report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));
