@@ -180,6 +180,13 @@ function check(name,items,text,ctx){
     const ix=named.filter(bodyIdx);
     for(let i=0;i<ix.length;i++) for(let j=i+1;j<ix.length;j++){ const X1=ix[i], Y1=ix[j], X=X1[0], Y=Y1[0];
       if(has(X,Y,true)&&has(X1,Y1,true)) r.push([X,Y,Y1],[X,Y1,X1]); }
+    /* основания куба/призмы с четырьмя вершинами (ABCD, A₁B₁C₁D₁): четыре ребра нарисованы, диагоналей нет; вершины — в одной плоскости */
+    const bv=named.filter(X=>/^[A-ZА-Я]$/.test(X)&&uniq(X+'₁'+mk)&&has(X,X+'₁',true)).flatMap(X=>[X,X+'₁']).filter(X=>uniq(X+mk));
+    const flat=(a,b,c,d)=>{ const n=crs(sub(P3[b],P3[a]),sub(P3[c],P3[a])), nn=nrm(n); return nn>1e-6&&Math.abs(dot(sub(P3[d],P3[a]),n))/nn<TOL; };
+    if(ix.length>=3) for(let i=0;i<bv.length;i++) for(let j=0;j<bv.length;j++) for(let k=0;k<bv.length;k++) for(let l=0;l<bv.length;l++){
+      const P=bv[i],Q=bv[j],R=bv[k],T=bv[l]; if(new Set([P,Q,R,T]).size<4||P>Q||P>R||P>T||Q>T) continue;              /* каждый цикл — один раз */
+      if(![P,Q,R,T].every(X=>P3[X])||!(has(P,Q,true)&&has(Q,R,true)&&has(R,T,true)&&has(T,P,true))||has(P,R,true)||has(Q,T,true)) continue;
+      if(flat(P,Q,R,T)) r.push([P,Q,R],[P,R,T]); }
     return r; };
   const inTri=(p,a,b,c,m)=>{ const s=(u,v,w)=>(v[0]-u[0])*(w[1]-u[1])-(v[1]-u[1])*(w[0]-u[0]); const d1=s(a,b,p),d2_=s(b,c,p),d3=s(c,a,p), ar=Math.abs(s(a,b,c));
     if(ar<1) return false; const mn=Math.min(d1,d2_,d3), mx=Math.max(d1,d2_,d3); const marg=m*Math.max(d2(a,b),d2(b,c),d2(c,a));
