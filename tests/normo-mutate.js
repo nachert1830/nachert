@@ -59,8 +59,8 @@ async function wavyMutations(page){ await require('./normo-run.js').inject(page)
     for(let n=1;n<=30;n++){ const M=window.IG_VARS&&IG_VARS[n]; if(!M) continue; const sp=IGUI.igSpec(M);
       (NORMO.check(IGS.sheet(n,'clean'),{}).review||[]).forEach(x=>res.review.push('вар. '+n+': '+x.msg));
       ['xb','yb'].filter(k=>sp[k]).forEach(key=>{ const keep=sp[key];
-        ['flip','axis'].forEach(mut=>{ sp[key]=mut==='flip'?-keep:0; IGS.forget(); let r; try{ r=NORMO.check(IGS.sheet(n,'clean'),{model:M,spec:sp}); }catch(e){ r={issues:[]}; }
-          sp[key]=keep; IGS.forget(); res.всего++;
+        ['flip','axis'].forEach(mut=>{ sp[key]=mut==='flip'?-keep:0; IGS.forget(n); let r; try{ r=NORMO.check(IGS.sheet(n,'clean'),{model:M,spec:sp}); }catch(e){ r={issues:[]}; }
+          sp[key]=keep; IGS.forget(n); res.всего++;
           if(r.issues.some(i=>/ребро на оси|волнистая граница/.test(i.rule))) res.поймано++; else res.пропуски.push('вар. '+n+' '+key+' '+mut); }); }); }
     return res; }); }
 module.exports={runMutations,nkUi,readUi,wavyMutations,FAM};
