@@ -8398,7 +8398,7 @@ window.GC_OK_CODE='';
     if(!code||get()==='n') return;
     try{ if(window.FLAGS&&FLAGS.owner()) return; if(localStorage.getItem('skipgc')==='t') return; }catch(e){}
     if(navigator.webdriver||!/^https?:$/.test(location.protocol)||/^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(location.hostname)||document.visibilityState==='prerender') return;
-    const q={p:location.hash.replace(/^#/,'')||'/', t:document.title, r:document.referrer, s:[screen.width,screen.height,devicePixelRatio||1].join(','), rnd:Math.random().toString(36).slice(2,9)};
+    const q={p:location.hash.replace(/^#/,'')||'/', r:document.referrer, t:document.title, e:false, s:screen.width, b:0, q:location.search, rnd:Math.random().toString(36).slice(2,7)};   /* те же поля, что у count.js */
     const url='https://'+code+'.goatcounter.com/count?'+Object.entries(q).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
     try{ if(navigator.sendBeacon&&navigator.sendBeacon(url)) return; }catch(e){}
     const i=new Image(); i.src=url; }
@@ -26526,7 +26526,8 @@ function paintViews(){
    max(Метрика, GoatCounter согласившихся) + (GoatCounter всех − GoatCounter согласившихся).
    Видно всем, независимо от согласия на cookie: запросы только читают общие числа счётчиков, ничего не отправляют о посетителе
    и не ставят cookie (credentials:'omit'). */
-window.GC_COUNT=c=>c?fetch('https://'+c+'.goatcounter.com/counter/TOTAL.json',{credentials:'omit',cache:'no-store'})
+/* ?start= — без него GoatCounter отдаёт число из кэша до 4 часов; с датой раньше запуска счётчика число то же, но свежее */
+window.GC_COUNT=c=>c?fetch('https://'+c+'.goatcounter.com/counter/TOTAL.json?start=2026-01-01',{credentials:'omit',cache:'no-store'})
   .then(r=>r.ok?r.json():Promise.reject(r.status)).then(j=>{ const t=String(j.count==null?'':j.count).replace(/\D/g,''); if(!t) throw 'нет числа'; return +t; }):Promise.reject('выключен');
 function fetchViews(){
   const today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);   /* день по Москве, как у Метрики */
