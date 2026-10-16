@@ -21,7 +21,9 @@ async function runMutations(page,o){ o=o||{}; await require('./normo-run.js').in
 /* тренажёр на странице: лист строится, нажатие в цель засчитывается, мимо — нет; после ответа — объяснение и верный лист */
 async function nkUi(page,URL){ const bad=[], add=(n,r,m)=>bad.push({name:'Нормоконтроль '+n,rule:r,msg:m});
   for(const key of ['8-11','3-5']){ await page.goto(URL+'#/ig/nk/'+key); await page.waitForTimeout(400);
-    const ok=await page.waitForFunction(()=>{ const s=document.querySelector('#nkSheet svg'); return s&&!document.querySelector('#nkSheet .igx-ld'); },null,{timeout:90000}).catch(()=>null); if(!ok){ add(key,'лист не построился','нет листа за 90 с'); continue; }
+    let ok=false; for(const until=Date.now()+90000; Date.now()<until; ){   /* опрос сам: waitForFunction в CI обрывался ошибкой раньше срока */
+      ok=await page.evaluate(()=>{ const s=document.querySelector('#nkSheet svg'); return !!(s&&!document.querySelector('#nkSheet .igx-ld:not(.out)')); }).catch(()=>false); if(ok) break; await page.waitForTimeout(250); }
+    if(!ok){ add(key,'лист не построился','нет листа за 90 с'); continue; }
     const t=await page.evaluate(()=>{ const m=/^(\d+)-(\d+)$/.exec(location.hash.split('/').pop()); const P=IGNK.make(+m[1],+m[2]); const s=document.querySelector('#nkSheet svg'), M=s.getScreenCTM(), b=P.targets[0];
       const scr=(x,y)=>{ const p=new DOMPoint(x,y).matrixTransform(M); return [p.x,p.y]; }; const vb=s.viewBox.baseVal;
       /* мимо: угол листа далеко от всех целей */ const far=[vb.x+vb.width*0.02,vb.y+vb.height*0.02], tg=[(b[0]+b[2])/2,(b[1]+b[3])/2];
@@ -34,14 +36,25 @@ async function nkUi(page,URL){ const bad=[], add=(n,r,m)=>bad.push({name:'Нор
   return bad; }
 /* «Читаю чертёж» на листе варианта: нажатие на линию подсвечивает её на всех трёх видах и объясняет, что это */
 async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Читаю чертёж',rule:r,msg:m});
+  const log=[], t0=Date.now(), onc=m=>{ if(m.type()==='error'||m.type()==='warning') log.push(Math.round((Date.now()-t0)/1000)+'с '+m.type()+': '+m.text().slice(0,160)); }, one=e=>log.push('pageerror: '+String(e).slice(0,160));
+  page.on('console',onc); page.on('pageerror',one);
   /* сразу на вкладке «Лист», как страница восстанавливает последнюю вкладку: 3D не запускается (в CI WebGL программный, и лист ждал за ним) */
   await page.evaluate(()=>{ try{ sessionStorage.setItem('igsol:#/ig/hw2/8','1'); sessionStorage.setItem('igsol:#/ig/hw2/8:t','sheet'); }catch(e){} });
   await page.goto(URL+'#/ig/hw2/8'); await page.waitForTimeout(800);
   if(!await page.$('#igSheetBox:not([hidden])')){ await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200); await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{}); }
   /* панель загрузки — только у самого листа: вкладка 3D могла ещё считаться (в CI WebGL программный и медленный) */
-  const ok=await page.waitForFunction(()=>{ const b=document.querySelector('#igSheetBox'); return b&&b.querySelector('svg')&&!b.parentNode.querySelector('.igx-ld'); },null,{timeout:240000}).catch(()=>null);
-  if(!ok){ const st=await page.evaluate(()=>({box:!!document.querySelector('#igSheetBox'),svg:!!document.querySelector('#igSheetBox svg'),ld:[...document.querySelectorAll('.igx-ld')].map(e=>e.innerText.slice(0,40)).join(' / '),hash:location.hash})).catch(()=>({}));
-    add('лист не построился',JSON.stringify(st)); return bad; }
+  /* опрос сам, а не waitForFunction: в CI он обрывался ошибкой через несколько секунд, и тест считал, что листа нет (прогоны 150–157);
+     уходящая панель загрузки (.out) — уже убрана */
+  let ok=false, lastErr=''; for(const until=Date.now()+240000; Date.now()<until; ){
+    ok=await page.evaluate(()=>{ const b=document.querySelector('#igSheetBox'); return !!(b&&b.querySelector('svg')&&!b.parentNode.querySelector('.igx-ld:not(.out)')); }).catch(e=>{ lastErr=String(e).slice(0,120); return false; });
+    if(ok) break; await page.waitForTimeout(250); }
+  if(!ok&&lastErr) log.push('ожидание: '+lastErr);
+  if(!ok){ const st=await page.evaluate(()=>{ const b=document.querySelector('#igSheetBox'), ld=[...document.querySelectorAll('.igx-ld')];
+      return {box:!!b,boxHidden:b&&b.hidden,svg:b&&b.querySelector('svg')?b.querySelector('svg').getAttribute('viewBox'):null,boxLen:b?b.innerHTML.length:0,
+        ld:ld.map(e=>e.innerText.slice(0,40)+' · полоска '+((e.querySelector('i')||{}).style||{}).transform+(e.classList.contains('out')?' · out':'')).join(' / '),
+        tab:[...document.querySelectorAll('.igx-tabs button.on')].map(x=>x.dataset.t).join(','),vis:document.visibilityState,hash:location.hash}; }).catch(e=>({err:String(e)}));
+    add('лист не построился',JSON.stringify(st)+' · '+Math.round((Date.now()-t0)/1000)+' с · консоль: '+(log.slice(0,6).join(' | ')||'пусто')); page.off('console',onc); page.off('pageerror',one); return bad; }
+  page.off('console',onc); page.off('pageerror',one);
   if(!await page.waitForSelector('#igRd',{timeout:15000}).catch(()=>null)){ add('нет кнопки «Читаю чертёж»',''); return bad; }
   await page.click('#igRd'); await page.waitForTimeout(150);
   for(const dir of ['front','top','left']){ const r=await page.evaluate(dir=>{ const svg=document.querySelector('#igSheetBox svg'), VV=IGREAD.viewsOf(svg,IG_VARS[8]), V=VV.find(V=>V.dir===dir); if(!V) return {err:'нет вида'};
