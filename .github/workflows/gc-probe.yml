@@ -1,0 +1,37 @@
+name: Проверка GoatCounter (временная)
+on:
+  push:
+    branches: [claude/gc-probe]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: count.js и TOTAL.json
+        run: |
+          echo "=== count.js (формат запроса)"; curl -sS https://gc.zgo.at/count.js | grep -n "p:\|r:\|t:\|e:\|s:\|b:\|q:\|sendBeacon\|rnd\|urlencode\|endpoint\|filter\|is_bot" | head -60
+          for i in 1 2; do echo "=== TOTAL.json #$i"; curl -sS -D - https://jjjj.goatcounter.com/counter/TOTAL.json; echo; sleep 20; done
+          echo "=== тестовый запрос как бот (b=150, в статистику не идёт)"
+          curl -sS -o /dev/null -w '%{http_code}\n' -X POST "https://jjjj.goatcounter.com/count?p=%2F__probe&t=probe&r=&s=1%2C1%2C1&b=150&rnd=x1"
+      - name: живой сайт в браузере
+        run: |
+          npm install --no-save --no-package-lock playwright@1.47.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+          cat > probe.js <<'JS'
+          const {chromium}=require('playwright');
+          (async()=>{ const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:390,height:800}});
+            await ctx.addInitScript(()=>{ Object.defineProperty(Navigator.prototype,'webdriver',{get:()=>false}); });
+            await ctx.route(/goatcounter\.com\/count/,r=>{ console.log('ОТМЕТКА (перехвачена, не отправлена):',r.request().method(),r.request().url()); r.abort(); });
+            const p=await ctx.newPage();
+            p.on('console',m=>{ if(/Content Security|goatcounter|Refused/i.test(m.text())) console.log('консоль:',m.text()); });
+            p.on('pageerror',e=>console.log('ошибка JS:',e.message));
+            p.on('response',r=>{ if(/goatcounter|metrika|views\.json/.test(r.url())) console.log('ответ',r.status(),r.url()); });
+            p.on('requestfailed',r=>{ if(/goatcounter|metrika/.test(r.url())&&!/\/count\?/.test(r.url())) console.log('не прошёл',r.url(),r.failure()&&r.failure().errorText); });
+            await p.goto('https://nachert1830.ru/',{waitUntil:'load'}); await p.waitForTimeout(3000);
+            console.log('GC_CODE на сайте:',await p.evaluate(()=>window.GC_CODE+' / ok='+window.GC_OK_CODE+' / GA='+window.GA_ID));
+            console.log('новая версия:',await p.evaluate(()=>typeof window.GC_COUNT));
+            await p.evaluate(()=>location.hash='#/ng/tasks'); await p.waitForTimeout(2000);
+            await p.evaluate(()=>location.hash='#/about'); await p.waitForTimeout(4000);
+            console.log('счётчик на странице:',await p.evaluate(()=>{ const e=document.querySelector('[data-views]'); return e?(e.hidden?'скрыт':e.innerText.replace(/\s+/g,' ')):'нет'; }));
+            await b.close(); })();
+          JS
+          node probe.js
