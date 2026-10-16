@@ -107,9 +107,13 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     if(!QUICK){ const wm=await require('./normo-mutate.js').wavyMutations(npage);
       info.push('Сторона волнистой линии (ГОСТ 2.305): поймано '+wm.поймано+' из '+wm.всего+' подсаженных ошибок'+(wm.review.length?'; для проверки человеком: '+wm.review.join('; '):''));
       if(wm.поймано<wm.всего) fail.push('Нормоконтроль не ловит сторону волнистой линии: '+wm.пропуски.join(', ')); }
-    report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(npage,URL));
-    report('Читаю чертёж',await require('./normo-mutate.js').readUi(npage,URL));
-    await npage.close(); }
+    await npage.close();
+    /* нажатия — на свежей вкладке на переднем плане: в той, где считался нормоконтроль всех листов, переход по # страницу
+       не перезагружает, и на медленном раннере CI лист не успевал построиться */
+    const upage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await upage.bringToFront(); await upage.goto(URL); await upage.waitForTimeout(1200);
+    report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(upage,URL));
+    report('Читаю чертёж',await require('./normo-mutate.js').readUi(upage,URL));
+    await upage.close(); }
 
   /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
      согласился на cookie. Здесь TRACK подменяется записью в список: открыть задачу, сменить режим, дойти до ответа */
