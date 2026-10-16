@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Начерт — начертательная геометрия по шагам</title>
 <meta name="description" content="Начертательная геометрия по шагам: решённая тетрадь (89 задач), подготовка к РК, разборы ДЗ №1–5 и интерактивная 3D-модель с эпюром. Чертёж растёт построение за построением.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com https://gc.zgo.at; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://jjjj.goatcounter.com; connect-src 'self' https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://jjjj.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://*.goatcounter.com; connect-src 'self' https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* тема до первой отрисовки, чтобы не было вспышки светлой */try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
@@ -8312,7 +8312,7 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
     <div><h4>Что взято из учебных изданий</h4><p>Условия задач рабочей тетради, формулировки домашних заданий и вопросов рубежного контроля, теория и методика — по учебным изданиям МГТУ (список ниже). Они приводятся в учебных целях со ссылкой на источник (ст. 1274 ГК РФ).</p></div>
     <div><h4>Что сделано для сайта</h4><p>Решения, пошаговые построения, чертежи, пояснения, интерактивные модели, оформление и программный код подготовлены для этого сайта. Разборы домашних заданий показывают метод построения.</p></div>
     <div><h4>Правообладателям</h4><p>Если вы считаете, что какой-то материал размещён неправомерно, напишите${CONTACT?` — <a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:' автору проекта'}: материал будет исправлен или удалён.</p></div>
-    <div><h4>Данные и cookie</h4><p>Регистрации нет. Прогресс, тема и история поиска хранятся только в вашем браузере (localStorage) и никуда не отправляются. Яндекс Метрика (обезличенная статистика посещений) подключается только после вашего согласия в уведомлении о cookie: она применяет cookie и получает данные о просмотрах страниц, устройстве и браузере. Без согласия сайт не загружает сторонних скриптов; шрифты и все материалы загружаются с этого же сайта. <a href="#/about/legal" data-ckreset>Изменить решение о cookie</a>.</p></div>
+    <div><h4>Данные и cookie</h4><p>Регистрации нет. Прогресс, тема и история поиска хранятся только в вашем браузере (localStorage) и никуда не отправляются. Яндекс Метрика (обезличенная статистика посещений) подключается только после вашего согласия в уведомлении о cookie: она применяет cookie и получает данные о просмотрах страниц, устройстве и браузере. Без согласия сайт не загружает сторонних скриптов; шрифты и все материалы загружаются с этого же сайта.${window.GC_CODE?' Просмотры страниц без cookie считает GoatCounter: IP-адрес он не сохраняет, посетителя не узнаёт; если нажать «Нет», не считает и он.':''} <a href="#/about/legal" data-ckreset>Изменить решение о cookie</a>.</p></div>
     <div><h4>Персональные данные</h4><p><a href="#/privacy">Политика обработки персональных данных</a> · <a href="#/consent">Согласие на обработку персональных данных</a>. Отозвать согласие можно в любой момент — ссылкой «Изменить решение о cookie»${CONTACT?` или письмом на <a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:''}.</p></div>
     <div><h4>Ответственность</h4><p>Материалы — учебные: они объясняют метод и показывают ход построения. Работу, которую сдаёт студент, он выполняет самостоятельно и отвечает за неё сам. Требования к оформлению определяет преподаватель.</p></div>
    </div>
@@ -8322,9 +8322,11 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
   if(location.hash==='#/about/legal'||location.hash==='#/about/changes') setTimeout(()=>{ const el=document.getElementById(location.hash.slice(8)); if(el) el.scrollIntoView({block:'start'}); },60);
 }};
 /* Политика обработки персональных данных и согласие (152-ФЗ). Данные оператора — здесь и в CONTACT выше. */
-const SITE_URL='https://nachert1830.ru', DOC_DATE='3 октября 2026 г.';
+const SITE_URL='https://nachert1830.ru', DOC_DATE='16 октября 2026 г.';
 const mail=()=>CONTACT?`<a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:'e-mail оператора';
 const blk=(h,t)=>`<div><h4>${h}</h4>${t.replace(/<ul class="ab-ul">/g,'<ul class="ab-ul" style="margin:6px 0;font-size:14px;line-height:1.55;color:var(--ink2)">')}</div>`;
+/* GoatCounter считает без согласия (см. window.GC_CODE): что именно он получает и почему это не персональные данные */
+const GC_NOTE=window.GC_CODE?'<p>Если вы не нажали «Нет», сайт также отправляет в сервис GoatCounter обезличенную отметку о просмотре страницы: адрес и заголовок страницы сайта, адрес, с которого вы перешли на сайт, размер экрана, а также — как при любом запросе в интернете — IP-адрес и сведения о браузере. GoatCounter не ставит cookie и не сохраняет IP-адрес: из него и сведений о браузере вычисляется обезличенная метка визита (чтобы одно посещение не считалось дважды), которая удаляется в течение суток. Сохраняются только общие числа: сколько раз открывали страницы, страна, тип браузера и устройства. Определить по ним посетителя нельзя, поэтому персональными данными они не являются.</p>':'';
 const DATA_LIST='<ul class="ab-ul"><li>файлы cookie и идентификаторы, которые ставит Яндекс Метрика;</li><li>IP-адрес;</li><li>сведения о браузере и устройстве: тип и модель устройства, операционная система, браузер, разрешение и язык экрана;</li><li>просмотренные страницы, адрес перехода на сайт, дата и время посещения;</li><li>действия на сайте: клики (включая карту кликов), прокрутка, переходы по ссылкам;</li><li>события учебных режимов: открыта задача, выбран режим («Смотрю», «Решаю сам»), разбор пройден до ответа, вариант тренажёра открыт и решён, ответ в тесте верный или нет, итог пробного РК в процентах — без имени и без текста ответов.</li></ul>';
 window.PANES.privacy={title:'Политика обработки персональных данных',render(root){
   root.innerHTML=`<div class="eyebrow">Документ</div>
@@ -8332,14 +8334,14 @@ window.PANES.privacy={title:'Политика обработки персона�
   <p class="lead" style="margin-bottom:24px">Как сайт «Начерт» (${SITE_URL}) обрабатывает данные посетителей. Действует в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
   <section class="ab-legal" style="margin-top:0;padding-top:0;border-top:0"><div class="ab-lg" style="grid-template-columns:1fr">
    ${blk('1. Оператор',`<p>Автор сайта «Начерт», физическое лицо. Сайт: ${SITE_URL}.${CONTACT?'<br>Для обращений: '+mail()+'.':''}</p>`)}
-   ${blk('2. Какие данные обрабатываются',`<p>Только если вы нажали «Согласен» в уведомлении о cookie, через сервис Яндекс Метрика${window.GA_ID?', сервис Google Analytics (Google LLC, США)':''}${window.GC_CODE?' и сервис GoatCounter (без cookie, IP-адрес не сохраняется)':''} обрабатываются:</p>${DATA_LIST}`)}
+   ${blk('2. Какие данные обрабатываются',`<p>Только если вы нажали «Согласен» в уведомлении о cookie, через сервис Яндекс Метрика${window.GA_ID?' и сервис Google Analytics (Google LLC, США)':''} обрабатываются:</p>${DATA_LIST}${GC_NOTE}`)}
    ${blk('3. Цель',`<p>Обезличенная статистика посещаемости и использования учебных режимов: сколько людей заходит, какие страницы и режимы полезны, доходят ли до ответа, где интерфейс неудобен. Статистика нужна только для улучшения сайта. Посетителей не идентифицируют, рекламу не показывают.</p>`)}
-   ${blk('4. Правовое основание',`<p>Ваше согласие на обработку персональных данных (п. 1 ч. 1 ст. 6 152-ФЗ). Текст согласия — <a href="#/consent">на отдельной странице</a>. Без согласия Яндекс Метрика не загружается и данные не собираются.</p>`)}
-   ${blk('5. Кому передаются данные',`<p>ООО «Яндекс» (сервис Яндекс Метрика) — он собирает и хранит статистику по поручению оператора. Данные хранятся на серверах в Российской Федерации.${window.GA_ID?' Google Analytics (Google LLC, США) — собирает статистику по поручению оператора; данные передаются на серверы Google за пределами Российской Федерации (трансграничная передача).':' Трансграничная передача не осуществляется.'}${window.GC_CODE?' GoatCounter — считает просмотры страниц по поручению оператора; серверы за пределами Российской Федерации (трансграничная передача).':''} Другим лицам данные не передаются.</p>`)}
+   ${blk('4. Правовое основание',`<p>Ваше согласие на обработку персональных данных (п. 1 ч. 1 ст. 6 152-ФЗ). Текст согласия — <a href="#/consent">на отдельной странице</a>. Без согласия Яндекс Метрика не загружается и данные не собираются.${window.GC_CODE?' Для отметок GoatCounter (п. 2) согласие не требуется — это обезличенные сведения; отказаться от них можно кнопкой «Нет» в уведомлении о cookie.':''}</p>`)}
+   ${blk('5. Кому передаются данные',`<p>ООО «Яндекс» (сервис Яндекс Метрика) — он собирает и хранит статистику по поручению оператора. Данные хранятся на серверах в Российской Федерации.${window.GA_ID?' Google Analytics (Google LLC, США) — собирает статистику по поручению оператора; данные передаются на серверы Google за пределами Российской Федерации (трансграничная передача).':' Трансграничная передача не осуществляется.'}${window.GC_CODE?' Сервис GoatCounter (серверы за пределами Российской Федерации) получает только обезличенные отметки о просмотрах из п. 2; IP-адрес он не сохраняет.':''} Другим лицам данные не передаются.</p>`)}
    ${blk('6. Что не собирается',`<p>Сайт не запрашивает имя, e-mail или телефон, регистрации нет. Прогресс, тема оформления и история поиска хранятся только в вашем браузере (localStorage) и никуда не отправляются.</p>`)}
    ${blk('7. Срок обработки',`<p>До отзыва согласия. После отзыва Яндекс Метрика на сайте больше не загружается, а по запросу оператор прекращает обработку уже собранных данных.</p>`)}
    ${blk('8. Ваши права',`<p>По ст. 14 152-ФЗ вы вправе:</p><ul class="ab-ul"><li>узнать, какие ваши данные обрабатываются, с какой целью и кому передаются;</li><li>потребовать уточнить, заблокировать или прекратить обработку данных;</li><li>отозвать согласие — ссылкой <a href="#/about/legal" data-ckreset>«Изменить решение о cookie»</a> на сайте${CONTACT?' или письмом на '+mail():''}.</li></ul><p>Ответ на обращение — в течение 10 рабочих дней.</p>`)}
-   ${blk('9. Защита данных',`<p>Сам сайт не принимает и не хранит данных посетителей; статистика передаётся из браузера напрямую в Яндекс Метрику по защищённому протоколу HTTPS. До вашего согласия сайт не загружает сторонних скриптов и не ставит cookie; шрифты и материалы загружаются с этого же сайта. Единственный внешний запрос — получение общего числа просмотров сайта из открытой статистики Яндекс Метрики (api-metrika.yandex.net): он выполняется без cookie и не передаёт данных о ваших действиях на сайте.</p>`)}
+   ${blk('9. Защита данных',`<p>Сам сайт не принимает и не хранит данных посетителей; статистика передаётся из браузера напрямую в Яндекс Метрику по защищённому протоколу HTTPS. До вашего согласия сайт не загружает сторонних скриптов и не ставит cookie; шрифты и материалы загружаются с этого же сайта. Без согласия внешние запросы такие: ${window.GC_CODE?'обезличенная отметка о просмотре в GoatCounter (п. 2; после «Нет» не отправляется) и ':''}получение общего числа просмотров сайта из открытой статистики Яндекс Метрики${window.GC_CODE?' и GoatCounter':''} — без cookie и без данных о ваших действиях на сайте.</p>`)}
    ${blk('10. Изменения политики',`<p>Новая редакция публикуется на этой странице. Редакция от ${DOC_DATE}</p>`)}
   </div></section>`;
 }};
@@ -8352,7 +8354,7 @@ window.PANES.consent={title:'Согласие на обработку персо
    ${blk('Какие данные',DATA_LIST)}
    ${blk('Цель',`<p>Сбор обезличенной статистики посещаемости сайта и использования учебных режимов для его улучшения.</p>`)}
    ${blk('Действия с данными',`<p>Сбор, запись, хранение, систематизация, использование, передача (предоставление) ООО «Яндекс», обезличивание, удаление — с использованием средств автоматизации.</p>`)}
-   ${blk('Получатель',`<p>ООО «Яндекс» (сервис Яндекс Метрика), обрабатывает данные по поручению оператора. Данные хранятся в Российской Федерации${window.GA_ID?'. Google Analytics (Google LLC, США) — по поручению оператора, с трансграничной передачей на серверы Google':', трансграничной передачи нет'}${window.GC_CODE?'. GoatCounter — по поручению оператора, с трансграничной передачей':''}.</p>`)}
+   ${blk('Получатель',`<p>ООО «Яндекс» (сервис Яндекс Метрика), обрабатывает данные по поручению оператора. Данные хранятся в Российской Федерации${window.GA_ID?'. Google Analytics (Google LLC, США) — по поручению оператора, с трансграничной передачей на серверы Google':', трансграничной передачи нет'}.</p>`)}
    ${blk('Срок и отзыв',`<p>Согласие действует до его отзыва. Отозвать его можно в любой момент: ссылкой <a href="#/about/legal" data-ckreset>«Изменить решение о cookie»</a> на сайте${CONTACT?' или письмом на '+mail():''}. После отзыва Яндекс Метрика не загружается.</p>`)}
   </div></section>
   <p class="ab-src">Подробнее — в <a href="#/privacy">Политике обработки персональных данных</a>. Редакция от ${DOC_DATE}</p>`;
@@ -8361,12 +8363,20 @@ window.PANES.consent={title:'Согласие на обработку персо
 
 /* Яндекс Метрика — только после согласия посетителя (уведомление о cookie).
    Выбор хранится в localStorage (nch2_ck: 'y' — согласен, 'n' — отказ). Без согласия внешние скрипты не загружаются. */
-/* Google Analytics 4: впиши ID потока (G-XXXXXXXXXX) — счётчик подключится так же, только после согласия. Пусто — выключен. */
-window.GA_ID='G-CFL121Z3MD';
-/* GoatCounter: счётчик без cookie; число просмотров с него сайт читает напрямую (/counter/TOTAL.json). Пусто — выключен. */
+/* Google Analytics 4: впиши ID потока (G-XXXXXXXXXX) — счётчик подключится так же, только после согласия. Пусто — выключен.
+   Выключен: Google хранит данные за рубежом, а с 01.07.2025 сбор персональных данных граждан РФ — только в базах на территории РФ
+   (ч. 5 ст. 18 152-ФЗ), согласие от этого не освобождает. Был 'G-CFL121Z3MD'. */
+window.GA_ID='';
+/* GoatCounter — счётчик без cookie и без идентификаторов: IP не сохраняет, визит отличает по обезличенной метке, которая стирается
+   в течение суток. Поэтому считает всех, кроме нажавших «Нет», и без согласия: получает только сам запрос, как любой сервер.
+   GC_CODE    — сайт для всех: полная картина страниц и число посетителей без согласия;
+   GC_OK_CODE — второй сайт в том же аккаунте, только для нажавших «Согласен»: подстраховка Метрики, когда Яндекс сбоит.
+   Как они складываются без двойного счёта — .github/scripts/views.js. Пусто — выключен. В обоих сайтах GoatCounter
+   включи «Allow adding visitor counts on your website» (Settings): число сайт и GitHub читают из /counter/TOTAL.json. */
 window.GC_CODE='jjjj';
+window.GC_OK_CODE='';
 (function(){
-  const YM=113262916, KEY='nch2_ck', GA=window.GA_ID, GC=window.GC_CODE;
+  const YM=113262916, KEY='nch2_ck', GA=window.GA_ID, GC=window.GC_CODE, GCOK=window.GC_OK_CODE;
   const get=()=>{ try{ return localStorage.getItem(KEY); }catch(e){ return null; } };
   const put=v=>{ try{ if(v==null) localStorage.removeItem(KEY); else localStorage.setItem(KEY,v); }catch(e){} };
   let on=false;
@@ -8379,21 +8389,31 @@ window.GC_CODE='jjjj';
     document.head.appendChild(sc);
     if(GA){ window.dataLayer=window.dataLayer||[]; window.gtag=function(){ dataLayer.push(arguments); }; gtag('js',new Date()); gtag('config',GA,{page_location:location.href});
       const g=document.createElement('script'); g.async=true; g.src='https://www.googletagmanager.com/gtag/js?id='+GA; document.head.appendChild(g); }
-    if(GC){ const gp=()=>location.hash.replace(/^#/,'')||'/';   /* сайт одностраничный: страница — это путь после # */
-      window.goatcounter={path:gp}; const c=document.createElement('script'); c.async=true; c.src='https://gc.zgo.at/count.js'; c.dataset.goatcounter='https://'+GC+'.goatcounter.com/count'; document.head.appendChild(c);
-      window.addEventListener('hashchange',()=>{ try{ if(window.goatcounter&&goatcounter.count) goatcounter.count({path:gp()}); }catch(e){} }); }
     window.addEventListener('hashchange',()=>{ try{ ym(YM,'hit',location.href); }catch(e){} try{ if(GA&&window.gtag) gtag('event','page_view',{page_location:location.href,page_title:document.title}); }catch(e){} });
   }
+  /* GoatCounter: запрос-«пиксель» /count, как у их count.js (без внешнего скрипта). Не считаем: «Нет», владельца сайта,
+     автотесты (navigator.webdriver), локальный запуск и страницу, открытую в фоне заранее (prerender). */
+  function gcHit(code){
+    if(!code||get()==='n') return;
+    try{ if(window.FLAGS&&FLAGS.owner()) return; if(localStorage.getItem('skipgc')==='t') return; }catch(e){}
+    if(navigator.webdriver||!/^https?:$/.test(location.protocol)||/^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(location.hostname)||document.visibilityState==='prerender') return;
+    const q={p:location.hash.replace(/^#/,'')||'/', t:document.title, r:document.referrer, s:[screen.width,screen.height,devicePixelRatio||1].join(','), rnd:Math.random().toString(36).slice(2,9)};
+    const url='https://'+code+'.goatcounter.com/count?'+Object.entries(q).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+    try{ if(navigator.sendBeacon&&navigator.sendBeacon(url)) return; }catch(e){}
+    const i=new Image(); i.src=url; }
+  /* сайт одностраничный: страница — путь после #. Заголовок страница ставит после отрисовки — отметку шлём чуть позже */
+  const gcPage=()=>setTimeout(()=>{ gcHit(GC); if(on) gcHit(GCOK); },400);
+  if(GC||GCOK){ window.addEventListener('hashchange',gcPage); if(document.readyState==='complete') gcPage(); else window.addEventListener('load',gcPage,{once:true}); }
   function banner(){
     if(document.querySelector('.ckn')) return;
     const d=document.createElement('div'); d.className='ckn'; d.setAttribute('role','region'); d.setAttribute('aria-label','Cookie');
-    d.innerHTML='<span>Собирать обезличенную статистику посещений и учебных режимов ('+[ 'Яндекс Метрика', GA&&'Google Analytics', GC&&'GoatCounter' ].filter(Boolean).join(', ').replace(/, ([^,]*)$/,' и $1')+', cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
+    d.innerHTML='<span>Собирать обезличенную статистику посещений и учебных режимов ('+[ 'Яндекс Метрика', GA&&'Google Analytics' ].filter(Boolean).join(', ').replace(/, ([^,]*)$/,' и $1')+', cookie)? <a href="#/consent">Согласие</a> · <a href="#/privacy">Политика</a></span><button type="button" data-ck="n">Нет</button><button type="button" data-ck="y">Согласен</button>';
     d.addEventListener('click',e=>{ const b=e.target.closest('[data-ck]'); if(!b) return; window.CONSENT.set(b.dataset.ck); d.remove(); });
     document.body.appendChild(d);
   }
   window.CONSENT={
     ok:()=>get()==='y',
-    set(v){ put(v); if(v==='y'){ load(); try{ if(window.FX&&FX.loadViews) FX.loadViews(true); }catch(e){} } },
+    set(v){ put(v); if(v==='y'){ load(); gcHit(GCOK); /* страница, где нажали «Согласен», — уже и для сайта согласившихся */ try{ if(window.FX&&FX.loadViews) FX.loadViews(true); }catch(e){} } },
     reset(){ const was=get(); put(null); if(was==='y') location.reload(); else banner(); }
   };
   document.addEventListener('click',e=>{ if(e.target.closest('[data-ckreset]')){ e.preventDefault(); window.CONSENT.reset(); } });
@@ -23451,7 +23471,7 @@ function view(v,r){
    <section class="ow-box"><h2>Скрытые функции</h2>${Object.entries(FLAGS.LIST).map(([k,o])=>sw(k,o)).join('')}</section>
    <section class="ow-box"><h2>Проверка сайта в браузере</h2><p class="ow-m">Та же 3D-проверка чертежей и проверка ответов, что в тестах, — прямо на этом устройстве, по всем задачам.</p>
      <button class="btn pri" id="owRun">Проверить все задачи</button><div id="owOut" class="ow-out"></div></section>
-   <section class="ow-box"><h2>Счётчик просмотров</h2><div class="ow-kv" id="owViews"><div><span>Проверяю…</span><b></b></div></div><p class="ow-m">Число на сайте — из статистики Яндекс Метрики (плюс Google из views.json). Метрика считает только посетителей, нажавших «Согласен» в уведомлении о cookie; твои заходы считаются, только если и ты нажал «Согласен».</p><button class="btn" id="owVwRe">Обновить</button></section>
+   <section class="ow-box"><h2>Счётчик просмотров</h2><div class="ow-kv" id="owViews"><div><span>Проверяю…</span><b></b></div></div><p class="ow-m">Число на сайте — по дням: бо́льшее из Метрики и GoatCounter согласившихся (одни и те же люди: Яндекс сбоит — выручает GoatCounter) плюс GoatCounter тех, кто не нажимал «Согласен» (их Метрика не видит). Двойного счёта нет; GoatCounter считает визит на страницу, а не каждое обновление, поэтому число не больше настоящего. Расчёт — .github/scripts/views.js, раз в 3 часа. Твои заходы в режиме владельца GoatCounter не считает.</p><button class="btn" id="owVwRe">Обновить</button></section>
    <section class="ow-box"><h2>Версия</h2><div class="ow-kv" id="owVer"></div></section>
    <section class="ow-box"><h2>Версии и что на проверке</h2><p class="ow-m">Пункты «на проверке» видны только тебе. Включи функцию выше — проверь — скажи «выкатываем».</p>${changesHTML(true)}</section>
    <section class="ow-box"><h2>Ссылки</h2><div class="ow-links">
@@ -23461,13 +23481,12 @@ function view(v,r){
   v.querySelectorAll('[data-flag]').forEach(i=>i.addEventListener('change',()=>{ FLAGS.toggle(i.dataset.flag,i.checked); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
   v.querySelector('#owOff').addEventListener('click',()=>{ FLAGS.lock(); nav('#/'); });
   const vw=v.querySelector('#owViews'), vrun=()=>{ const ck=(()=>{ try{ return localStorage.getItem('nch2_ck'); }catch(e){ return null; } })(), row=(a,b)=>'<div><span>'+a+'</span><b>'+b+'</b></div>';
-    vw.innerHTML=row('Твоё согласие на cookie',ck==='y'?'да — твои заходы считаются':ck==='n'?'нет — твои заходы НЕ считаются':'не выбрано — не считаются')+row('Метрика на этой странице',window.ym?'загружена':'не загружена')+row('Google Analytics',window.gtag?'загружен':'не загружен')+row('Ответ Метрики','…');
-    window.VIEWS_PROBE&&VIEWS_PROBE().then(r=>{ vw.lastElementChild.innerHTML='<span>Ответ Метрики</span><b>'+r+'</b>'; });
-    if(window.GC_CODE){ vw.insertAdjacentHTML('beforeend',row('Ответ GoatCounter','…')); const cell=vw.lastElementChild;
-      fetch('https://'+GC_CODE+'.goatcounter.com/counter/TOTAL.json',{credentials:'omit',cache:'no-store'})
-        .then(r=>r.ok?r.json().then(j=>'посетителей '+j.count+' · '+new Date().toLocaleTimeString('ru-RU')):'ошибка '+r.status+(r.status===403||r.status===404?' — в настройках GoatCounter не включено «Allow adding visitor counts on your website»':''))
-        .catch(e=>'нет ответа — в настройках GoatCounter не включено «Allow adding visitor counts on your website» ('+(e&&e.message||e)+')')
-        .then(t=>{ cell.innerHTML='<span>Ответ GoatCounter</span><b>'+t+'</b>'; }); }
+    vw.innerHTML=row('Твоё согласие на cookie',ck==='y'?'да — Метрика считает твои заходы':ck==='n'?'нет — тебя не считает никто':'не выбрано — Метрика не считает')+row('Метрика на этой странице',window.ym?'загружена':'не загружена')+row('Google Analytics',window.gtag?'загружен':'не загружен')+row('Ответ Метрики','…');
+    const ymCell=vw.lastElementChild; window.VIEWS_PROBE&&VIEWS_PROBE().then(r=>{ ymCell.innerHTML='<span>Ответ Метрики</span><b>'+r+'</b>'; });
+    [['GoatCounter, все',window.GC_CODE],['GoatCounter, согласившиеся',window.GC_OK_CODE]].forEach(([name,c])=>{ vw.insertAdjacentHTML('beforeend',row(name,c?'…':'не заведён (GC_OK_CODE в index.html)')); if(!c) return; const cell=vw.lastElementChild;
+      GC_COUNT(c).then(n=>c+': визитов '+n.toLocaleString('ru-RU')+' · '+new Date().toLocaleTimeString('ru-RU'),e=>c+': '+(typeof e==='number'?'ошибка '+e:'нет ответа')+' — в настройках GoatCounter включи «Allow adding visitor counts on your website»')
+        .then(t=>{ cell.innerHTML='<span>'+name+'</span><b>'+t+'</b>'; }); });
+    fetch('views.json',{cache:'no-store'}).then(r=>r.json()).then(f=>{ const t=(f.days||{})[f.day]; vw.insertAdjacentHTML('beforeend',row('views.json',(f.pageviews||0).toLocaleString('ru-RU')+(t?' · за '+f.day+': Метрика '+(t.ym==null?'—':t.ym)+', GoatCounter согл. '+t.c+', без согласия '+t.r:''))); }).catch(()=>{});
     if(window.FX&&FX.loadViews) FX.loadViews(true); };
   vrun(); v.querySelector('#owVwRe').addEventListener('click',vrun);
   const ver=v.querySelector('#owVer'); ver.innerHTML='<div><span>Файл сайта изменён</span><b>'+document.lastModified+'</b></div><div><span>Задач в тетради</span><b>'+WB3.tasks.length+'</b></div><div><span>Генератор вариантов</span><b>'+GEN.list().length+' задач</b></div>';
@@ -26492,7 +26511,7 @@ const METRIKA_ID=113262916;
 let VIEWS=null, VIEWS_ASK=false, VIEWS_LIVE=false;
 try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50){ VIEWS=c.n; VIEWS_LIVE=Date.now()-c.t<60e3; } }catch(e){}
 /* до первого ответа (самый первый заход) — пустая заготовка того же размера, а не display:none: место под блок занято сразу */
-FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wait':''}" data-views ${VIEWS==null?'':'data-done="1"'} title="Просмотры по данным Яндекс.Метрики"><span class="vc-dot" aria-hidden="true"></span><b class="vc-n">${VIEWS==null?'':VIEWS.toLocaleString('ru-RU')}</b><span class="vc-l">${VIEWS==null?'просмотров':plural(VIEWS,'просмотр','просмотра','просмотров')}</span></div>`; };
+FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wait':''}" data-views ${VIEWS==null?'':'data-done="1"'} title="Просмотры: Яндекс Метрика и GoatCounter, без двойного счёта"><span class="vc-dot" aria-hidden="true"></span><b class="vc-n">${VIEWS==null?'':VIEWS.toLocaleString('ru-RU')}</b><span class="vc-l">${VIEWS==null?'просмотров':plural(VIEWS,'просмотр','просмотра','просмотров')}</span></div>`; };
 function paintViews(){
   const els=document.querySelectorAll('[data-views]');
   if(VIEWS==null){ els.forEach(el=>{ el.hidden=true; }); return; }   /* данных нет — заготовку убираем */
@@ -26501,16 +26520,28 @@ function paintViews(){
   els.forEach(el=>{ const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; el.classList.remove('wait'); el.dataset.done=1;
     if(b.textContent!==txt) b.textContent=txt; if(l.textContent!==lab) l.textContent=lab; });
 }
-/* число просмотров = Яндекс Метрика (вживую, из API счётчика) + GoatCounter (вживую) + Google Analytics (views.json: его раз в 3 часа пишет GitHub, .github/workflows/views.yml).
-   Если Метрика не ответила — берём сумму из views.json. Видно всем, независимо от согласия на cookie: запрос только читает общую
-   статистику счётчика, ничего не отправляет о посетителе и не ставит cookie (credentials:'omit'). */
+/* число просмотров: views.json (его раз в 3 часа считает GitHub по дням, правило и почему оно честное — .github/scripts/views.js)
+   + то, что набежало с тех пор: сегодняшний день пересчитывается вживую тем же правилом —
+   max(Метрика, GoatCounter согласившихся) + (GoatCounter всех − GoatCounter согласившихся).
+   Видно всем, независимо от согласия на cookie: запросы только читают общие числа счётчиков, ничего не отправляют о посетителе
+   и не ставят cookie (credentials:'omit'). */
+window.GC_COUNT=c=>c?fetch('https://'+c+'.goatcounter.com/counter/TOTAL.json',{credentials:'omit',cache:'no-store'})
+  .then(r=>r.ok?r.json():Promise.reject(r.status)).then(j=>{ const t=String(j.count==null?'':j.count).replace(/\D/g,''); if(!t) throw 'нет числа'; return +t; }):Promise.reject('выключен');
 function fetchViews(){
-  const api='https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews&date1=2024-01-01&date2=today&accuracy=full';
+  const today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);   /* день по Москве, как у Метрики */
   const file=fetch('views.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const ym=fetch(api,{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>Math.round(+(j.totals&&j.totals[0]))).catch(()=>null);
-  const gc=window.GC_CODE?fetch('https://'+GC_CODE+'.goatcounter.com/counter/TOTAL.json',{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>+String(j.count||0).replace(/\D/g,'')||0).catch(()=>0):Promise.resolve(0);
-  return Promise.all([file,ym,gc]).then(([f,y,g])=>{ const parts=f.parts||{}, n=(y!=null&&y>0?y+(+parts.google||0):Math.round(+(f.pageviews||f.views||0)))+g;
-    return n>=50?n:Promise.reject(); });   /* меньше 50 — блок скрыт */ }
+  const ym=fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews&date1=today&date2=today&accuracy=full',{credentials:'omit',cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject()).then(j=>{ const n=Math.round(+(j.totals&&j.totals[0])); return Number.isFinite(n)?n:null; }).catch(()=>null);
+  const gc=c=>GC_COUNT(c).catch(()=>null);
+  return Promise.all([file,ym,gc(window.GC_CODE),gc(window.GC_OK_CODE)]).then(([f,y,all,ok])=>{
+    let n=Math.round(+(f.pageviews||0));
+    if(f.base&&f.day){ const v=x=>Math.max(x.ym||0,x.c||0)+(x.r||0), same=f.day===today, p=f.gc||{};
+      const t=Object.assign({ym:null,c:0,r:0},same?(f.days||{})[today]:null), was=same?v(t):0;
+      const dAll=all!=null&&p.all!=null&&all>=p.all?all-p.all:0, okOn=ok!=null&&p.ok!=null&&ok>=p.ok;
+      if(okOn){ const dOk=ok-p.ok; t.c+=dOk; t.r+=Math.max(0,dAll-dOk); } else t.c+=dAll;
+      if(y!=null) t.ym=Math.max(t.ym||0,y);
+      n+=v(t)-was; }
+    return n>=50?n:Promise.reject(); }); }
 /* для режима владельца: что сейчас отвечает Метрика */
 window.VIEWS_PROBE=()=>fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews,ym:s:visits&date1=2024-01-01&date2=today&accuracy=full',{credentials:'omit',cache:'no-store'})
   .then(r=>r.ok?r.json().then(j=>'просмотров '+Math.round(j.totals[0])+', визитов '+Math.round(j.totals[1])+' · '+new Date().toLocaleTimeString('ru-RU')):'ошибка '+r.status+(r.status===403?' — статистика счётчика закрыта':''))

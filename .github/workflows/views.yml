@@ -14,11 +14,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Яндекс Метрика + Google Analytics → views.json
+      - name: Яндекс Метрика + GoatCounter → views.json
         env:
           YM_TOKEN: ${{ secrets.YM_TOKEN }}
-          GA_PROPERTY: ${{ secrets.GA_PROPERTY }}
-          GA_SA_JSON: ${{ secrets.GA_SA_JSON }}
         run: node .github/scripts/views.js
       - name: Сохранить, если изменилось
         run: |
