@@ -104,14 +104,16 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     Object.entries(mu).forEach(([t,x])=>{ if(!x.всего) fail.push('Тренажёр «Нормоконтроль»: нарушение «'+t+'» не подсаживается ни в один лист');
       else if(x.поймано<x.всего) fail.push('Нормоконтроль не ловит «'+t+'»: '+x.поймано+' из '+x.всего+' — '+x.пример);
       if(x.лишнее) fail.push('Нормоконтроль: подсадка «'+t+'» даёт лишние замечания — '+x.пример); });
+    /* «Нормоконтроль» — здесь, пока листы в кэше после нормоконтроля всех листов: на медленном раннере CI с холодного кэша
+       лист не успевал построиться за 90 с */
+    report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(npage,URL));
     if(!QUICK){ const wm=await require('./normo-mutate.js').wavyMutations(npage);
       info.push('Сторона волнистой линии (ГОСТ 2.305): поймано '+wm.поймано+' из '+wm.всего+' подсаженных ошибок'+(wm.review.length?'; для проверки человеком: '+wm.review.join('; '):''));
       if(wm.поймано<wm.всего) fail.push('Нормоконтроль не ловит сторону волнистой линии: '+wm.пропуски.join(', ')); }
     await npage.close();
-    /* нажатия — на свежей вкладке на переднем плане: в той, где считался нормоконтроль всех листов, переход по # страницу
-       не перезагружает, и на медленном раннере CI лист не успевал построиться */
+    /* «Читаю чертёж» — на свежей вкладке на переднем плане: в той, где считался нормоконтроль, переход по # страницу
+       не перезагружает, и на раннере CI лист варианта 8 не успевал построиться (падало и до этой правки) */
     const upage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await upage.bringToFront(); await upage.goto(URL); await upage.waitForTimeout(1200);
-    report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(upage,URL));
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(upage,URL));
     await upage.close(); }
 
