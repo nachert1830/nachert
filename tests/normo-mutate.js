@@ -34,14 +34,20 @@ async function nkUi(page,URL){ const bad=[], add=(n,r,m)=>bad.push({name:'Нор
   return bad; }
 /* «Читаю чертёж» на листе варианта: нажатие на линию подсвечивает её на всех трёх видах и объясняет, что это */
 async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Читаю чертёж',rule:r,msg:m});
+  const log=[], t0=Date.now(), onc=m=>{ if(m.type()==='error'||m.type()==='warning') log.push(Math.round((Date.now()-t0)/1000)+'с '+m.type()+': '+m.text().slice(0,160)); }, one=e=>log.push('pageerror: '+String(e).slice(0,160));
+  page.on('console',onc); page.on('pageerror',one);
   /* сразу на вкладке «Лист», как страница восстанавливает последнюю вкладку: 3D не запускается (в CI WebGL программный, и лист ждал за ним) */
   await page.evaluate(()=>{ try{ sessionStorage.setItem('igsol:#/ig/hw2/8','1'); sessionStorage.setItem('igsol:#/ig/hw2/8:t','sheet'); }catch(e){} });
   await page.goto(URL+'#/ig/hw2/8'); await page.waitForTimeout(800);
   if(!await page.$('#igSheetBox:not([hidden])')){ await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200); await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{}); }
   /* панель загрузки — только у самого листа: вкладка 3D могла ещё считаться (в CI WebGL программный и медленный) */
   const ok=await page.waitForFunction(()=>{ const b=document.querySelector('#igSheetBox'); return b&&b.querySelector('svg')&&!b.parentNode.querySelector('.igx-ld'); },null,{timeout:240000}).catch(()=>null);
-  if(!ok){ const st=await page.evaluate(()=>({box:!!document.querySelector('#igSheetBox'),svg:!!document.querySelector('#igSheetBox svg'),ld:[...document.querySelectorAll('.igx-ld')].map(e=>e.innerText.slice(0,40)).join(' / '),hash:location.hash})).catch(()=>({}));
-    add('лист не построился',JSON.stringify(st)); return bad; }
+  if(!ok){ const st=await page.evaluate(()=>{ const b=document.querySelector('#igSheetBox'), ld=[...document.querySelectorAll('.igx-ld')];
+      return {box:!!b,boxHidden:b&&b.hidden,svg:b&&b.querySelector('svg')?b.querySelector('svg').getAttribute('viewBox'):null,boxLen:b?b.innerHTML.length:0,
+        ld:ld.map(e=>e.innerText.slice(0,40)+' · полоска '+((e.querySelector('i')||{}).style||{}).transform+(e.classList.contains('out')?' · out':'')).join(' / '),
+        tab:[...document.querySelectorAll('.igx-tabs button.on')].map(x=>x.dataset.t).join(','),vis:document.visibilityState,hash:location.hash}; }).catch(e=>({err:String(e)}));
+    add('лист не построился',JSON.stringify(st)+' · '+Math.round((Date.now()-t0)/1000)+' с · консоль: '+(log.slice(0,6).join(' | ')||'пусто')); page.off('console',onc); page.off('pageerror',one); return bad; }
+  page.off('console',onc); page.off('pageerror',one);
   if(!await page.waitForSelector('#igRd',{timeout:15000}).catch(()=>null)){ add('нет кнопки «Читаю чертёж»',''); return bad; }
   await page.click('#igRd'); await page.waitForTimeout(150);
   for(const dir of ['front','top','left']){ const r=await page.evaluate(dir=>{ const svg=document.querySelector('#igSheetBox svg'), VV=IGREAD.viewsOf(svg,IG_VARS[8]), V=VV.find(V=>V.dir===dir); if(!V) return {err:'нет вида'};
