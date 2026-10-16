@@ -28513,7 +28513,9 @@ function solQueue(v,n,o){ const sp=igSpec(n), nv=parseInt(String(o.title).replac
   return {left:gs=>Q.filter(q=>gs.includes(q[0])).length,
     /* достроить нужное по кускам; между кусками браузер успевает перерисовать панель загрузки */
     async need(gs,step,alive){ for(const q of Q.filter(q=>gs.includes(q[0]))){ await frame(); if(alive&&!alive()) return; const k=Q.indexOf(q); if(k<0) continue; Q.splice(k,1); try{ q[1](); }catch(e){} step&&step(); } }}; }
-const frame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+/* следующий кус работы — после кадра (панель загрузки успевает перерисоваться) или через 100 мс, что раньше: в фоновой вкладке
+   requestAnimationFrame не вызывается, и без запасного таймера лист не достраивался, пока вкладку не открыть снова */
+const frame=()=>new Promise(r=>{ let done=false; const go=()=>{ if(done) return; done=true; setTimeout(r,0); }; requestAnimationFrame(go); setTimeout(go,100); });
 /* панель загрузки поверх вкладки: пока считается, деталь и чертёж не трогаем — крутилка и полоска показывают, что идёт работа */
 function loading(host,title,sub){ const el=document.createElement('div'); el.className='igx-ld'; el.setAttribute('role','status');
   el.innerHTML=`<div class="igx-ld-c"><span class="igx-ld-sp" aria-hidden="true"></span><b>${title}</b><small>${sub||'Подожди пару секунд — откроется само'}</small><span class="igx-ld-bar" aria-hidden="true"><i></i></span></div>`;
