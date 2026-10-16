@@ -23,9 +23,10 @@ const RULES=[
    bad:[/n″\s*[⊥⟂]\s*(h′|h₀|h″)/, /n′\s*[⊥⟂]\s*(f″|f₀|f′)/]},
   /* проецирующие плоскости и плоскости уровня */
   {f:'Горизонтально проецирующая плоскость ⊥ π₁ и вырождается на π₁',
-   bad:[/горизонтально[- ]проецирующ[а-яё]*[^.;]{0,40}[⊥⟂]\s*π₂/i, /горизонтально[- ]проецирующ[а-яё]*[^.;•]{0,60}вырожда[а-яё]*[^.;•]{0,30}на\s+π₂/i]},
+   /* в исходнике фраза не переходит через кавычку: соседняя строка тернарного оператора — уже другой текст */
+   bad:[/горизонтально[- ]проецирующ[а-яё]*[^.;'`]{0,40}[⊥⟂]\s*π₂/i, /горизонтально[- ]проецирующ[а-яё]*[^.;•]{0,60}вырожда[а-яё]*[^.;•]{0,30}на\s+π₂/i]},
   {f:'Фронтально проецирующая плоскость ⊥ π₂ и вырождается на π₂',
-   bad:[/фронтально[- ]проецирующ[а-яё]*[^.;]{0,40}[⊥⟂]\s*π₁/i, /фронтально[- ]проецирующ[а-яё]*[^.;•]{0,60}вырожда[а-яё]*[^.;•]{0,30}на\s+π₁/i]},
+   bad:[/фронтально[- ]проецирующ[а-яё]*[^.;'`]{0,40}[⊥⟂]\s*π₁/i, /фронтально[- ]проецирующ[а-яё]*[^.;•]{0,60}вырожда[а-яё]*[^.;•]{0,30}на\s+π₁/i]},
   {f:'Горизонтальная плоскость (уровня) ∥ π₁, фронтальная ∥ π₂',
    bad:[/горизонтальн[а-яё]* плоскост[а-яё]*[^.;]{0,25}∥\s*π₂/i, /фронтальн[а-яё]* плоскост[а-яё]*[^.;]{0,25}∥\s*π₁/i]},
   /* координаты */
@@ -33,7 +34,8 @@ const RULES=[
    bad:[/\by\b\s*[—–-]?\s*(это\s+)?(расстояни|удалени)[а-яё]*\s+(точки\s+)?(от|до)\s+π₁/i, /\bz\b\s*[—–-]?\s*(это\s+)?(расстояни|удалени)[а-яё]*\s+(точки\s+)?(от|до)\s+π₂/i,
         /\bx\b\s*[—–-]?\s*(это\s+)?(расстояни|удалени)[а-яё]*\s+(точки\s+)?(от|до)\s+π[12]/i, /высот[а-я]*\s*\(?\s*y\b/i, /глубин[а-я]*\s*\(?\s*z\b/i]},
   {f:'Четверти: I (y>0, z>0), II (y<0, z>0), III (y<0, z<0), IV (y>0, z<0)',
-   bad:[/\bII\s+четверт[^.;]{0,50}(y\s*>\s*0|z\s*<\s*0)/, /\bIII\s+четверт[^.;]{0,50}(y\s*>\s*0|z\s*>\s*0)/, /\bIV\s+четверт[^.;]{0,50}(y\s*<\s*0|z\s*>\s*0)/, /\bI\s+четверт[^.;]{0,50}(y\s*<\s*0|z\s*<\s*0)/]},
+   /* знаки относятся к ближайшей названной четверти: «с I четвертью: это III четверть (y < 0, z < 0)» — про III, не про I */
+   bad:[/\bII\s+четверт[а-яё]*(?:(?!четверт)[^.;]){0,50}(y\s*>\s*0|z\s*<\s*0)/, /\bIII\s+четверт[а-яё]*(?:(?!четверт)[^.;]){0,50}(y\s*>\s*0|z\s*>\s*0)/, /\bIV\s+четверт[а-яё]*(?:(?!четверт)[^.;]){0,50}(y\s*<\s*0|z\s*>\s*0)/, /\bI\s+четверт[а-яё]*(?:(?!четверт)[^.;]){0,50}(y\s*<\s*0|z\s*<\s*0)/]},
   /* следы прямой */
   {f:'Горизонтальный след H: z = 0, H″ на оси x; фронтальный F: y = 0, F′ на оси x',
    bad:[/\bH[ₐ-ₜa-z]?′\s*(лежит\s+|находится\s+)?(на|∈)\s+(оси\s+)?x/, /\bF[ₐ-ₜa-z]?″\s*(лежит\s+|находится\s+)?(на|∈)\s+(оси\s+)?x/]},
@@ -96,15 +98,15 @@ const RULES=[
    bad:[/размерн[а-яё]*\s+лини[а-яё]*[^.;]{0,40}(не\s+ближе|не\s+менее|минимум)\s+(5|6|7)\s*мм\s+от\s+(линии\s+)?контур/i]},
 ];
 /* текст: убираем теги и шаблонные вставки, режем на предложения */
-const text=src.replace(/<[^>]+>/g,'').replace(/'\s*\+\s*[^+']{1,80}\s*\+\s*'/g,' … ');
+const text=src.replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').replace(/'\s*\+\s*[^+']{1,80}\s*\+\s*'/g,' … ');
 const lines=text.split('\n');
 const out=[];
 /* вопросы тестов: верный вариант (c) не должен совпадать с шаблоном ошибки; неверные варианты — это нормально */
 const QZ=/\{\s*q:\s*'((?:[^'\\]|\\.)*)'\s*,\s*o:\s*\[((?:\s*'(?:[^'\\]|\\.)*'\s*,?)+)\]\s*,\s*c:\s*(\d+)/g;
-let qm, quizzes=0; while((qm=QZ.exec(src))){ quizzes++; const opts=[...qm[2].matchAll(/'((?:[^'\\]|\\.)*)'/g)].map(m=>m[1].replace(/<[^>]+>/g,'')), c=+qm[3];
+let qm, quizzes=0; while((qm=QZ.exec(src))){ quizzes++; const opts=[...qm[2].matchAll(/'((?:[^'\\]|\\.)*)'/g)].map(m=>m[1].replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'')), c=+qm[3];
   const line=src.slice(0,qm.index).split('\n').length;
   if(c>=opts.length) out.push({line,fact:'индекс верного ответа',text:qm[1]+' → c='+c+' при '+opts.length+' вариантах'});
-  else RULES.forEach(r=>r.bad.forEach(re=>{ if(re.test(opts[c])) out.push({line,fact:r.f,text:'тест «'+qm[1].replace(/<[^>]+>/g,'')+'»: верным отмечен «'+opts[c]+'»'}); })); }
+  else RULES.forEach(r=>r.bad.forEach(re=>{ if(re.test(opts[c])) out.push({line,fact:r.f,text:'тест «'+qm[1].replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'')+'»: верным отмечен «'+opts[c]+'»'}); })); }
 lines.forEach((ln,i)=>{ ln.split(/(?<=[.;!?])\s+/).forEach(s=>{
   if(/\b(неверно|ошибк|неправильно|частая ошибка|не путай|путают|не так)\b/i.test(s)) return;
   if(/\bo:\s*\[|=>|\*\/|\/\*/.test(s)) return;                                              /* варианты тестов проверены выше; код и комментарии к коду */   /* разбор типовой ошибки — это не ошибка */

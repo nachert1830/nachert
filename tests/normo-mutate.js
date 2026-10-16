@@ -50,4 +50,17 @@ async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Чит
       const g=svg.querySelector('.rd-ov'); return {n:g?g.children.length:0,cap:document.querySelector('#igRdCap').innerText}; },dir);
     if(r.err) add(dir,r.err); else { if(r.n<2) add(dir+': нет подсветки на других видах','элементов '+r.n+', подпись: '+r.cap.slice(0,120)); if(!/вид сверху:|главный вид:/.test(r.cap)) add(dir+': нет объяснения','элементов '+r.n+', подпись: '+r.cap.slice(0,120)); } }
   return bad; }
-module.exports={runMutations,nkUi,readUi,FAM};
+/* Сторона волнистой линии (ГОСТ 2.305): если с осью симметрии совпадает ребро, вид от разреза отделяют волнистой линией,
+   смещённой так, чтобы ребро было видно. В каждый лист, где граница волнистая, подсаживаются две ошибки генератора:
+   волнистая смещена в другую сторону (flip) и граница — сама ось (axis). Обе должны ловиться нормоконтролем со сверкой
+   с моделью; заодно — список мест «для проверки человеком» (волнистая выходит за контур изображения). */
+async function wavyMutations(page){ await require('./normo-run.js').inject(page);
+  return page.evaluate(()=>{ const res={всего:0,поймано:0,пропуски:[],review:[]};
+    for(let n=1;n<=30;n++){ const M=window.IG_VARS&&IG_VARS[n]; if(!M) continue; const sp=IGUI.igSpec(M);
+      (NORMO.check(IGS.sheet(n,'clean'),{}).review||[]).forEach(x=>res.review.push('вар. '+n+': '+x.msg));
+      ['xb','yb'].filter(k=>sp[k]).forEach(key=>{ const keep=sp[key];
+        ['flip','axis'].forEach(mut=>{ sp[key]=mut==='flip'?-keep:0; IGS.forget(); let r; try{ r=NORMO.check(IGS.sheet(n,'clean'),{model:M,spec:sp}); }catch(e){ r={issues:[]}; }
+          sp[key]=keep; IGS.forget(); res.всего++;
+          if(r.issues.some(i=>/ребро на оси|волнистая граница/.test(i.rule))) res.поймано++; else res.пропуски.push('вар. '+n+' '+key+' '+mut); }); }); }
+    return res; }); }
+module.exports={runMutations,nkUi,readUi,wavyMutations,FAM};

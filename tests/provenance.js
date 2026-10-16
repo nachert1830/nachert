@@ -13,7 +13,7 @@
    PROV_CHECK({tasks}) → [{name, rule, msg, lvl}]; PROV_STATS — доля прослеживаемых точек и отрезков. */
 (function(){
 const MARK=/(′|″|‴)$/, PN={'′':1,'″':2}, PLN={1:'горизонтальной',2:'фронтальной'};
-const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();
+const strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').replace(/&nbsp;/g,' ').trim();
 const is2=a=>Array.isArray(a)&&a.length===2&&typeof a[0]==='number'&&isFinite(a[0])&&isFinite(a[1]);
 const key=a=>Math.round(a[0]*20)+','+Math.round(a[1]*20);
 const d3=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);

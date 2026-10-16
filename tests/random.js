@@ -28,11 +28,23 @@ const RE=new RegExp('\\[\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\\s*,\\s*'+NUM+MUL+'\
 /* отдельные числа-данные: const X=67.8, kf=0.84, … (в объявлениях) */
 const SC=/(\b(?:const|let)\s+|,\s*)([A-Za-z_$][\w$]*)(\s*=\s*)(-?\d+(?:\.\d+)?)(?=\s*[,;\n]|\s*\/[\/*])/g;
 /* числа из условия (q:'…') не меняются — так же делает генератор на сайте (GEN.pinOf): условие на экране совпадает с чертежом */
-function pinOf(src){ const p=new Set(); src.replace(/\bq:\s*'((?:[^'\\]|\\.)*)'/g,(m,q)=>{ q.replace(/<[^>]+>/g,' ').replace(/\d+(?:[.,]\d+)?/g,x=>{ p.add(parseFloat(x.replace(',','.'))); return x; }); return m; }); return p; }
+function pinOf(src){ const p=new Set(); src.replace(/\bq:\s*'((?:[^'\\]|\\.)*)'/g,(m,q)=>{ q.replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,' ').replace(/\d+(?:[.,]\d+)?/g,x=>{ p.add(parseFloat(x.replace(',','.'))); return x; }); return m; }); return p; }
 function perturb(src,seed){ const f=warp(seed,pinOf(src)); let n=0;
   const basis=(a,b,c,ma,mb,mc)=>!ma&&!mb&&!mc&&[+a,+b,+c].filter(v=>v===0).length===2&&[+a,+b,+c].some(v=>Math.abs(v)===1);   /* как на сайте: оси-направления не данные */
   let s=src.replace(RE,(m,a,ma,b,mb,c,mc)=>{ if(basis(a,b,c,ma,mb,mc)) return m; n++; return '['+[[a,ma],[b,mb],[c,mc]].map(([v,k])=>f(+v)+(k||'')).join(',')+']'; });
   s=s.replace(SC,(m,pre,name,eq,v,off,all)=>{ if(/for\s*\(\s*(let|const|var)?\s*$/.test(all.slice(Math.max(0,off-12),off)+pre)) return m; if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) return m;   /* масштаб и число шагов разбиения (N=400 в видимости № 46, n=16 у волнистой линии) — не данные задачи */   /* масштаб чертежа — не данные задачи */ n++; return pre+name+eq+f(+v); });
   return {src:s,n}; }
 
-module.exports={blocks,perturb,warp};
+/* где в исходнике стоят числа-данные, которые меняет perturb: [начало, конец) каждого числа.
+   Нужно для разбора мутантов (adequacy.js): опечатка в таком числе — это другие исходные данные той же программы */
+function dataSpans(src){ const pin=pinOf(src), out=[], keep=v=>v!==0&&!(pin.has(v)||pin.has(-v));
+  const basis=(a,b,c,ma,mb,mc)=>!ma&&!mb&&!mc&&[+a,+b,+c].filter(v=>v===0).length===2&&[+a,+b,+c].some(v=>Math.abs(v)===1);
+  let m; const re=new RegExp(RE.source,'g');
+  while((m=re.exec(src))){ const [a,ma,b,mb,c,mc]=m.slice(1); if(basis(a,b,c,ma,mb,mc)) continue; let at=m.index;
+    [a,b,c].forEach(v=>{ const i=src.indexOf(v,at); at=i+v.length; if(keep(+v)) out.push([i,i+v.length]); }); }
+  const sc=new RegExp(SC.source,'g');
+  while((m=sc.exec(src))){ const [,pre,name,eq,v]=m; if(/for\s*\(\s*(let|const|var)?\s*$/.test(src.slice(Math.max(0,m.index-12),m.index)+pre)) continue;
+    if(/^(s|sc|K|scale|SC|n|N|NN|steps|count)$/.test(name)) continue; const i=m.index+pre.length+name.length+eq.length; if(keep(+v)) out.push([i,i+v.length]); }
+  return out; }
+
+module.exports={blocks,perturb,warp,dataSpans};

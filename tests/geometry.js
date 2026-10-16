@@ -12,7 +12,7 @@ window.GEOM_CHECK=function(opts){
 opts=opts||{};
 const TOL=1.25, out=[];
 const MARK=/(′|″|‴)$/, PN=/^(.+?)(′|″|‴)$/;
-const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/g,' ');
+const strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/g,' ');
 const d2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 const sub=(a,b)=>a.map((v,i)=>v-b[i]), dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0), nrm=a=>Math.hypot(...a);
 const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -43,7 +43,10 @@ function model(items){
     if(it.t==='ang'&&it.at&&it.p1&&it.p2&&it.l) angs.push({at:it.at,p1:it.p1,p2:it.p2,l:strip(it.l)});
     if(it.t==='txt'&&it.at&&it.s) texts.push({s:strip(it.s),at:it.at}); });
   segs.all=segs.all||[];
-  const uniq=n=>{ const a=pts[n]; if(!a) return null; return a.every(p=>d2(p,a[0])<TOL)?a[0]:null; };
+  /* одна подпись — одна точка: все вхождения попарно в допуске; положение — их центр (не первое вхождение: вердикт не должен
+     зависеть от порядка элементов на чертеже) */
+  const UQ={}, uniq=n=>{ if(n in UQ) return UQ[n]; const a=pts[n]; if(!a) return UQ[n]=null; if(!a.every(p=>a.every(q=>d2(p,q)<TOL))) return UQ[n]=null;
+    return UQ[n]=[a.reduce((s,p)=>s+p[0],0)/a.length,a.reduce((s,p)=>s+p[1],0)/a.length]; };
   const bases=[...new Set(Object.keys(pts).map(n=>(PN.exec(n)||[])[1]).filter(Boolean))];
   /* 3D-точки: x = абсцисса, y = A′ под осью, z = A″ над осью (в единицах рисунка) */
   const P3={};
@@ -157,12 +160,18 @@ function check(name,items,text,ctx){
   M.polys.filter(pl=>pl.close&&pl.p.length===3).forEach(pl=>{ });
   /* треугольники/многоугольники плоскостей по подписанным вершинам */
   const polysByMark=mk=>{ const r=[];
-    M.polys.forEach(pl=>{ if(!/^(main|hid)$/.test(pl.k)) return; const vs=pl.p.map(q=>named.find(b=>uniq(b+mk)&&d2(uniq(b+mk),q)<TOL)); if(vs.every(Boolean)&&new Set(vs).size>=3) r.push(vs); });
+    /* вершина многоугольника — любая подписанная точка в этом месте проекции (при A″ ≡ 1″ — обе: какая из них вершина, по рисунку
+       не узнать); берутся все сочетания, не больше 16 — вердикт не зависит от порядка элементов на чертеже */
+    M.polys.forEach(pl=>{ if(!/^(main|hid)$/.test(pl.k)) return; const C=pl.p.map(q=>named.filter(b=>uniq(b+mk)&&d2(uniq(b+mk),q)<TOL).sort());
+      if(!C.every(c=>c.length)||C.reduce((n,c)=>n*c.length,1)>16) return;
+      let combos=[[]]; C.forEach(c=>{ combos=[].concat(...combos.map(v=>c.map(b=>v.concat([b])))); }); combos.forEach(vs=>{ if(new Set(vs).size>=3) r.push(vs); }); });
     /* треугольники из отрезков: A″B″, B″C″, C″A″ нарисованы. Линией результата — тоже, если вершины — точки самого тела (буква без индекса:
        грани построенной пирамиды закрывают); повёрнутые и перенесённые B₀, C₁ — построение, а не тело, ничего не закрывают.
        Исключение — многогранник, у которого есть и A, и A₁ (призма, куб): если вершины X₁ соединены с X линией результата (боковые рёбра),
        A₁, B₁… — вершины тела */
-    const has=(A,B,res)=>M.segs.all.some(s=>(res?/^(main|hid|res|resd)$/:/^(main|hid)$/).test(s.k)&&(d2(s.a,uniq(A+mk))<TOL&&d2(s.b,uniq(B+mk))<TOL)||(d2(s.b,uniq(A+mk))<TOL&&d2(s.a,uniq(B+mk))<TOL));
+    /* сторона A–B нарисована (в любую сторону). Тонкая — контур данной фигуры (её видимость показывают потом отрезками результата).
+       Скобки вокруг двух направлений: раньше тип линии проверялся только у A→B, и признание треугольника плоскостью зависело от порядка вершин */
+    const has=(A,B,res)=>M.segs.all.some(s=>(res?/^(main|hid|thin|res|resd)$/:/^(main|hid|thin)$/).test(s.k)&&((d2(s.a,uniq(A+mk))<TOL&&d2(s.b,uniq(B+mk))<TOL)||(d2(s.b,uniq(A+mk))<TOL&&d2(s.a,uniq(B+mk))<TOL)));
     const bodyIdx=X=>{ const m=/^([A-ZА-Я])₁$/.exec(X); return !!m&&!!uniq(m[1]+mk)&&has(m[1],X,true)&&named.filter(Y=>/^[A-ZА-Я]₁$/.test(Y)&&has(Y[0],Y,true)).length>=3; };
     for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++) for(let k=j+1;k<named.length;k++){ const A=named[i],B=named[j],C=named[k];
       const res=[A,B,C].every(X=>/^[A-ZА-Я]$/.test(X)||bodyIdx(X));
@@ -183,7 +192,11 @@ function check(name,items,text,ctx){
       /* отрезок должен лежать на прямой KL через подписанные точки — тогда известна его глубина */
       const host=[]; for(let i=0;i<named.length;i++) for(let j=i+1;j<named.length;j++){ const A=named[i],B=named[j], a=uniq(A+mk), b=uniq(B+mk); if(!a||!b||d2(a,b)<6) continue;
         if(lineDist(s.a,a,b)<TOL&&lineDist(s.b,a,b)<TOL) host.push([A,B]); }
-      if(!host.length) return; const [A,B]=host[0];
+      if(!host.length) return;
+      /* отрезок может лежать на проекции нескольких прямых (конкурирующие точки: 1″ ≡ D″) с разной глубиной; какая из них — по
+         рисунку не узнать. Замечание — только если оно верно для каждой из них; порядок элементов на чертеже на вердикт не влияет */
+      host.sort((p,q)=>(p[0]+p[1]).localeCompare(q[0]+q[1]));
+      const V=host.map(([A,B])=>{
       const PA=P3[A], PB=P3[B];
       /* закрыта ли точка отрезка (u — доля длины) плоскостью ближе к наблюдателю */
       const probe=u=>{ const q=[s.a[0]+(s.b[0]-s.a[0])*u,s.a[1]+(s.b[1]-s.a[1])*u], t=segT(q,uniq(A+mk),uniq(B+mk)), X=PA.map((v,i)=>v+t*(PB[i]-v));
@@ -203,11 +216,68 @@ function check(name,items,text,ctx){
       /* стёрто «ластиком» (вид paper) — этот участок линии на чертеже не виден */
       const erased=q=>M.segs.all.some(e=>e.k==='paper'&&lineDist(q,e.a,e.b)<TOL&&(()=>{ const tt=segT(q,e.a,e.b); return tt>-0.02&&tt<1.02; })());
       const {cover,front,edgeOf}=probe(.5);
-      if(edgeOf&&!cover) return;
-      if(dashed&&!front) add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана штрихом, но в этом месте её ничто не закрывает');
+      if(edgeOf&&!cover) return null;
       /* сплошная — проверяем по всей длине: часть прямой может уйти за грань (середина при этом видна) */
       const frontAny=s.k==='main'&&[.15,.3,.5,.7,.85].some(u=>{ const o=u===.5?{q:probe(.5).q,front}:probe(u); return o.front&&!erased(o.q); });
-      if(!dashed&&frontAny) add('видимость',A+B+' на '+(mk==='″'?'π₂':'π₁')+' показана видимой, но здесь её закрывает плоскость','проверить'); }); });
+      return {AB:A+B,front,frontAny}; }).filter(Boolean);
+      if(!V.length) return;
+      if(dashed&&V.every(v=>!v.front)) add('видимость',V[0].AB+' на '+(mk==='″'?'π₂':'π₁')+' показана штрихом, но в этом месте её ничто не закрывает');
+      if(!dashed&&V.every(v=>v.frontAny)) add('видимость',V[0].AB+' на '+(mk==='″'?'π₂':'π₁')+' показана видимой, но здесь её закрывает плоскость','проверить'); }); });
+  /* 5б. штриховой (невидимой) линии неоткуда взяться, если закрывать нечем: на чертеже нет ни плоскости или грани
+     (многоугольник, треугольник из подписанных вершин), ни поверхности (окружность, дуга, эллипс, кривая очерка).
+     Штрих другого смысла (второе решение, вспомогательное продолжение — resd, grnd, auxd) здесь не судится. */
+  /* плоскость, заданная полосой с обрывом (волнистая кривая), и треугольник из отрезков без подписей вершин — тоже закрывают */
+  const triSeg=(()=>{ const S=M.segs.all.filter(s=>!/^(aux|auxd|conn|paper)$/.test(s.k)&&d2(s.a,s.b)>3).slice(0,240), near=(p,q)=>d2(p,q)<TOL;
+    for(let i=0;i<S.length;i++) for(let j=i+1;j<S.length;j++){ const e=[[S[i].a,S[i].b],[S[j].a,S[j].b]]; let c=null, u=null, v=null;
+      for(const p of e[0]) for(const q of e[1]) if(near(p,q)){ c=p; u=e[0].find(x=>x!==p); v=e[1].find(x=>x!==q); }
+      if(c&&d2(u,v)>3&&S.some((s,k)=>k!==i&&k!==j&&((near(s.a,u)&&near(s.b,v))||(near(s.a,v)&&near(s.b,u))))) return true; }
+    return false; })();
+  if(!triSeg&&!M.polys.length&&!polysByMark('″').length&&!polysByMark('′').length&&!(items||[]).some(it=>it&&/^(circ|arc|ell|curve|hatch)$/.test(it.t)&&(it.t==='curve'||!/^(aux|auxd|thin)$/.test(it.k||''))))
+    M.segs.all.forEach(s=>{ if(s.k==='hid'&&d2(s.a,s.b)>3) add('видимость',(s.l?s.l+' — ':'')+'штриховая (невидимая) линия, но на чертеже нет плоскостей и поверхностей, которые могли бы её закрыть'); });
+  /* 5в. то же по месту: невидимая линия должна лежать под какой-то фигурой на этой проекции — внутри треугольника из отрезков,
+     многоугольника, окружности или эллипса (собственная сторона фигуры — на её границе, не внутри). Не перекрыта ничем — закрыть её
+     нечем: сторона единственной грани, контур тела по краю, данная прямая вне фигур. Если на чертеже есть кривые поверхностей
+     и дуги (полоса с обрывом, тор, очерки; ломаная больше чем из 8 точек — это кривая) — не судим: их области по рисунку не восстановить. */
+  else if(!(items||[]).some(it=>it&&(it.t==='curve'||it.t==='hatch'||(it.t==='poly'&&it.p&&it.p.length>8)||(it.t==='arc'&&!/^(aux|auxd|thin)$/.test(it.k||''))))&&!Object.keys(M.lines).some(l=>/^[hfp]₀/.test(l))){   /* плоскость следами — полуплоскость, не судим */
+    const regs=[], solid=k=>!/^(aux|auxd|conn|paper|dash|axis)$/.test(k||'main');
+    /* грани из отрезков: циклы из 3 и 4 отрезков (треугольник, четырёхугольник — грань призмы, куба); отрезки, разбитые точками
+       видимости на куски, склеиваются: вершины графа — концы, ребро — отрезок или цепочка соосных кусков */
+    { const S=M.segs.all.filter(s=>solid(s.k)&&d2(s.a,s.b)>1).slice(0,300), V=[], vid=p=>{ let i=V.findIndex(q=>d2(p,q)<TOL); if(i<0){ V.push(p); i=V.length-1; } return i; };
+      const E=new Map(), add2=(i,j)=>{ if(i===j) return; (E.get(i)||E.set(i,new Set()).get(i)).add(j); (E.get(j)||E.set(j,new Set()).get(j)).add(i); };
+      S.forEach(s=>add2(vid(s.a),vid(s.b)));
+      /* соосные куски: a–m и m–b на одной прямой → ребро a–b */
+      for(let m=0;m<V.length;m++){ const nb=[...(E.get(m)||[])]; for(let x=0;x<nb.length;x++) for(let y=x+1;y<nb.length;y++){ const A=V[nb[x]], B=V[nb[y]];
+        if(lineDist(V[m],A,B)<TOL*0.6&&segT(V[m],A,B)>0&&segT(V[m],A,B)<1) add2(nb[x],nb[y]); } }
+      const nbr=i=>[...(E.get(i)||[])], area=P=>Math.abs(P.reduce((s,p,i)=>s+p[0]*P[(i+1)%P.length][1]-P[(i+1)%P.length][0]*p[1],0))/2;
+      for(let i=0;i<V.length;i++) nbr(i).forEach(j=>{ if(j<=i) return; nbr(j).forEach(k=>{ if(k<=i||k===j) return;
+        if(E.get(k).has(i)){ const P=[V[i],V[j],V[k]]; if(area(P)>20) regs.push({poly:P}); }
+        nbr(k).forEach(l=>{ if(l<=i||l===j||!E.get(l).has(i)) return; const P=[V[i],V[j],V[k],V[l]]; if(area(P)>20) regs.push({poly:P}); }); }); }); }
+    (items||[]).forEach(it=>{ if(!it||!solid(it.k)) return; if(it.t==='poly'&&it.p&&it.p.length>=3) regs.push({poly:it.p,it});
+      if((it.t==='circ'||it.t==='ell')&&it.c&&it.r) regs.push({c:it.c,r:it.r,rx:it.rx,ry:it.ry,it}); });
+    const inPoly=(q,P)=>{ let c=false; for(let i=0,j=P.length-1;i<P.length;j=i++){ if((P[i][1]>q[1])!==(P[j][1]>q[1])&&q[0]<(P[j][0]-P[i][0])*(q[1]-P[i][1])/(P[j][1]-P[i][1])+P[i][0]) c=!c; } return c; };
+    const edgeD=(q,P)=>Math.min(...P.map((p,i)=>segDist(q,p,P[(i+1)%P.length])));
+    const under=(q,self)=>regs.some(R=>R.it!==self&&(R.poly?inPoly(q,R.poly)&&edgeD(q,R.poly)>TOL:d2(q,R.c)<(R.r||Math.max(R.rx||0,R.ry||0))-TOL));
+    const judge=(a,b,self,what)=>{ if(d2(a,b)<=3) return; if(![.3,.5,.7].some(u=>under([a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u],self)))
+      add('видимость',what+' показана штрихом, но в этом месте проекции её не перекрывает ни одна фигура — закрыть её нечем'); };
+    M.segs.all.forEach(s=>{ if(s.k==='hid') judge(s.a,s.b,s.it,(s.l||'линия')); });
+    (items||[]).forEach(it=>{ if(it&&it.t==='poly'&&it.k==='hid'&&it.p) it.p.forEach((p,i)=>{ if(i<it.p.length-1||it.close) judge(p,it.p[(i+1)%it.p.length],it,'сторона многоугольника'); }); }); }
+  /* 5г. точка без подписи на чертеже — это отмеченное пересечение или точка на линии: она лежит хотя бы на одной линии
+     (отрезке, прямой, окружности, дуге, ломаной). Точка «в пустоте» — построена не на той проекции или не там. */
+  { const onAny=q=>(items||[]).some(it=>{ if(!it) return false;
+      if((it.t==='seg'||it.t==='line'||it.t==='conn'||it.t==='vec')&&it.a&&it.b) return (it.t==='line'?lineDist(q,it.a,it.b):segDist(q,it.a,it.b))<TOL*1.5;
+      if((it.t==='circ'||it.t==='arc')&&it.c&&it.r) return Math.abs(d2(q,it.c)-it.r)<TOL*1.5;
+      if((it.t==='poly'||it.t==='curve')&&it.p) return it.p.some((p,i)=>i>0&&segDist(q,it.p[i-1],p)<TOL*1.5)||(it.close&&segDist(q,it.p[it.p.length-1],it.p[0])<TOL*1.5);
+      if(it.t==='axis') return Math.abs(q[1])<TOL*1.5;
+      return false; });
+    (items||[]).forEach(it=>{ if(it&&it.t==='pt'&&it.at&&!strip(it.l||'').trim()&&!onAny(it.at)) add('точка без подписи','отмеченная точка ('+it.at.map(v=>v.toFixed(0)).join(', ')+') не лежит ни на одной линии чертежа'); }); }
+  /* 5д. размерная линия привязана к чертежу: каждый её конец лежит на линии (оси, отрезке) или напротив точки чертежа —
+     точка на перпендикуляре к размеру через конец (выносная линия). Размер, сдвинутый мимо того, что он измеряет, — ошибка. */
+  { const P=[]; (items||[]).forEach(it=>{ if(!it) return; if(it.t==='pt'&&it.at) P.push(it.at); if(it.a&&it.b&&it.t!=='dim'){ P.push(it.a,it.b); } if(it.c) P.push(it.c); if(it.p) it.p.forEach(p=>P.push(p)); });
+    if(M.axis) P.push([0,0]);   /* начало координат O — от него отсчитывается x */
+    const onLine=q=>(items||[]).some(it=>it&&it.t!=='dim'&&it.a&&it.b&&(it.t==='line'?lineDist(q,it.a,it.b):segDist(q,it.a,it.b))<TOL)||(M.axis&&Math.abs(q[1])<TOL);
+    (items||[]).forEach(it=>{ if(!it||it.t!=='dim'||!it.a||!it.b||d2(it.a,it.b)<3) return; const L=d2(it.a,it.b), u=[(it.b[0]-it.a[0])/L,(it.b[1]-it.a[1])/L];
+      [it.a,it.b].forEach(e=>{ if(onLine(e)) return; if(P.some(p=>Math.abs((p[0]-e[0])*u[0]+(p[1]-e[1])*u[1])<TOL&&d2(p,e)>0.5)) return;
+        add('размер','конец размерной линии «'+strip(it.l||'')+'» ('+e.map(v=>v.toFixed(0)).join(', ')+') не напротив ни одной точки и не на линии чертежа'); }); }); }
   /* 6. размеры на чертеже.
      Масштаб у задач разный (крупные чертежи увеличены), поэтому мм проверяются так:
        а) без масштаба — длина отрезка с подписью |AB| совпадает с длиной AB по 3D-модели;
@@ -288,14 +358,39 @@ const scale=(name,smp)=>{ const u=[]; const seen=new Set(); smp.forEach(o=>{ con
   const ex=u.filter(o=>o.eq); if(ex.length<2) return; const rx=ex.map(o=>o.px/o.v).sort((a,b)=>a-b), Sx=rx[Math.floor(rx.length/2)];
   if(ex.filter(o=>Math.abs(o.px/Sx-o.v)<=0.12).length<2) return;
   ex.forEach(o=>{ const t=o.px/Sx; if(Math.abs(t-o.v)>0.12&&Math.abs(t-o.v)<=o.tol) out.push({name:o.name,rule:'точность',msg:o.what+': точное значение '+t.toFixed(2)+' — нужно «≈», а не «=»',lvl:'ошибка'}); }); };
+/* число на чертеже = та же величина в тексте задачи (условие, шаги, ответ): «|KS| = 35 мм» на рисунке и «|KS| ≈ 35 мм» в ответе.
+   Ключ — имя величины (|AB|, Δz, H, R₁); между ключом и числом в тексте допускается цепочка равенств без запятых
+   («|AB| = |A′B′| ≈ 35 мм», «Δy = yA − yB = 32 мм»; запятая с пробелом цепочку обрывает). Число без имени («40 мм») должно встречаться в тексте как «40 мм».
+   Нет той же величины в тексте — не судим. Допуск: 0,05 мм, если оба «=»; 1 мм, если где-то «≈» (округление). */
+const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const agree=(name,items,text)=>{ const T=strip(text).replace(/\s+/g,' '), NUMRE='(\\d+(?:[.,]\\d+)?)\\s*мм(?![а-яa-z])';
+  const vals=key=>{ const res=[], head=key[0]==='|'?esc(key):'(?<![A-Za-zА-Яа-яЁёΔ₀-₉0-9|])'+esc(key)+'(?![A-Za-zА-Яа-яЁё₀-₉0-9′″‴|])';
+    const re=new RegExp(head+'((?:\\s*=\\s*[^=≈;:!?\\n]{1,45}?){0,3}?)\\s*([=≈])\\s*'+NUMRE,'g'); let m;
+    while((m=re.exec(T))){ if(/мм|,\s|\s(и|или|а|но)\s/.test(m[1])) continue; res.push({rel:m[2],v:num(m[3]),s:m[0]}); } return res; };
+  const any=[]; { const re=new RegExp('(?<![\\d.,])'+NUMRE,'g'); let m; while((m=re.exec(T))) any.push(num(m[1])); }
+  const seen=new Set();
+  (items||[]).forEach(it=>{ if(!it||!it.l||!/^(seg|dim|line|vec|txt)$/.test(it.t)) return; const l=strip(it.l).replace(/\s+/g,' ').trim(); if(seen.has(l)) return; seen.add(l); let m;
+    if((m=/^(\|[^|]{2,12}\||Δ[xyz][₀-₉A-Za-zА-Я]*|[A-ZА-Я][₀-₉0-9]*|R[а-яa-z₀-₉0-9]*|[a-z])\s*([=≈])\s*(\d+(?:[.,]\d+)?)\s*мм$/.exec(l))){
+      const v=num(m[3]), V=vals(m[1]); if(!V.length) return;
+      if(!V.some(o=>Math.abs(o.v-v)<=(o.rel==='≈'||m[2]==='≈'?1:0.05)))
+        out.push({name,rule:'число на чертеже и в тексте',msg:'на чертеже «'+l+'», а в тексте «'+V.map(o=>o.s).slice(0,2).join('», «')+'»',lvl:'ошибка'}); }
+    else if((m=/^(\d+(?:[.,]\d+)?)\s*мм$/.exec(l))){ const v=num(m[1]); if(any.length&&!any.some(x=>Math.abs(x-v)<=0.05))
+        out.push({name,rule:'число на чертеже и в тексте',msg:'на чертеже «'+l+'», в тексте такого числа нет',lvl:'ошибка'}); } }); };
+/* десятичный знак в русском тексте и на чертеже — запятая: «24,6 мм», а не «24.6 мм» */
+const DECRE=/(^|[^\d.,A-Za-zА-Яа-яЁё])(\d+\.\d+)(?![\d.]|,\d)/;
+const decimal=(name,items,text)=>{ const bad=[], sp=s=>String(s).replace(/<\/?[A-Za-z][^<>]*>/g,' ');   /* тег — пробел: «√3.</div>…3 · Шаг» не должно склеиться в «√3.3» */
+  [sp(text),...(items||[]).filter(it=>it&&typeof it.l==='string').map(it=>sp(it.l))].forEach(s=>{ const m=DECRE.exec(s); if(m) bad.push(m[2]); });
+  if(bad.length) out.push({name,rule:'десятичная запятая',msg:'число с точкой: '+[...new Set(bad)].slice(0,4).join(', '),lvl:'ошибка'}); };
 const task=(name,t)=>{ try{ partsOf(t).forEach((p,pi)=>{ try{ window.LINEFIX&&LINEFIX(p); window.DMARK&&DMARK(p); }catch(e){} const nm=name+(pi?' п.'+(pi+1):''); let acc=(p.given||[]).slice(), txt=TX(t)+'\n'+TX(p); const samples=[];
     check(nm+' · дано',acc,txt,{samples});
     (p.steps||[]).forEach((st,k)=>{ acc=acc.concat(st.add||[]); check(nm+' · шаг '+(k+1),acc,TX(st),{samples}); });
-    scale(nm,samples); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e),lvl:'ошибка'}); } };
-if(opts.items){ const samples=[]; check(opts.name||'проверка',opts.items,opts.text||'',{samples}); scale(opts.name||'проверка',samples); return out; }
+    scale(nm,samples);
+    const TA=o=>[TX(o),o&&o.ans,o&&o.tbl].filter(x=>typeof x==='string').join('\n');   /* ответ и таблица шага (разборы ДЗ) — тоже текст задачи */
+    const all=[TA(t),TA(p),...(p.steps||[]).map(TA)].join('\n'); agree(nm,acc,all); decimal(nm,acc,all); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e),lvl:'ошибка'}); } };
+if(opts.items){ const samples=[]; check(opts.name||'проверка',opts.items,opts.text||'',{samples}); scale(opts.name||'проверка',samples); agree(opts.name||'проверка',opts.items,opts.text||''); return out; }
 if(opts.modelOf) return model(opts.modelOf);
 if(opts.tasks){ opts.tasks.forEach(t=>task('Задача №'+t.n,t)); return out; }
-try{ COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) { const samples=[]; check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap,{samples}); scale('Урок '+l.id+' · рисунок '+(i+1),samples); } })); }catch(e){ out.push({name:'COURSE',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
+try{ COURSE.forEach(l=>(l.blocks||[]).forEach((b,i)=>{ if(b.t==='fig'&&b.scene) { const samples=[]; check('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap,{samples}); scale('Урок '+l.id+' · рисунок '+(i+1),samples); agree('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap||''); decimal('Урок '+l.id+' · рисунок '+(i+1),b.scene.items,b.cap||''); } })); }catch(e){ out.push({name:'COURSE',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ WB3.tasks.forEach(t=>task('Задача №'+t.n,t)); }catch(e){ out.push({name:'WB3',rule:'сбой проверки',msg:String(e),lvl:'ошибка'}); }
 try{ (typeof TK3!=='undefined'?TK3:[]).forEach(tk=>tk.tasks.forEach(t=>task(tk.title+' · '+(t.idx||t.key),t))); }catch(e){}
 try{ ['1','2','2b','2c','3','4a','4b','5'].forEach(id=>{ const d=window.NGHW&&NGHW.get(id); if(d&&d.task) task('ДЗ '+id,d.task); }); }catch(e){}

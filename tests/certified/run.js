@@ -9,7 +9,7 @@ const TASKS=require('./list.js').map(n=>require('./'+n+'.js'));
 async function siteData(page,n){ return page.evaluate(n=>{
   const t=WB3.get(n), parts=(t.parts&&t.parts.length)?t.parts:[t], p=parts[0];
   const items=[].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).filter(Boolean);
-  const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').trim();
+  const strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim();
   const points={}, lines={}, segs=[];
   items.forEach(it=>{ if(it.t==='pt'&&it.at&&it.l) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ if(!points[l]) points[l]=it.at.slice(); });
     if((it.t==='seg'||it.t==='line')&&it.a&&it.b&&it.l){ const l=strip(it.l); (lines[l]=lines[l]||[]).push(it.a.slice(),it.b.slice()); }
