@@ -82,7 +82,7 @@ function decodePNG(buf){ const zlib=require('zlib'); let p=8, w, h, bd, ct; cons
   return out; }
 
 /* генератор случайных чисел с seed (тот же, что в tests/: Парк — Миллер) и нормальное распределение */
-function rng(seed){ let s=(seed>>>0)%2147483647||1; const u=()=>((s=(s*16807)%2147483647)/2147483647);
+function rng(seed){ let s=(seed>>>0)%2147483647||1; const u=()=>((s=(s*16807)%2147483647)/2147483647); for(let i=0;i<5;i++) u();   /* разгон: соседние seed не дают соседних первых чисел */
   u.n=(m,sd)=>{ const a=u()||1e-12, b=u(); return (m||0)+(sd==null?1:sd)*Math.sqrt(-2*Math.log(a))*Math.cos(2*Math.PI*b); };
   u.r=(lo,hi)=>lo+(hi-lo)*u(); u.pick=a=>a[Math.floor(u()*a.length)]; return u; }
 

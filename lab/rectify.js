@@ -74,7 +74,10 @@ function findFrame(ink,M,SH){ const fr=SH.frame, C=[[fr[0],fr[1]],[fr[2],fr[1]],
   for(let k=0;k<4;k++){ const a=C[k], b=C[(k+1)%4], d=v2.unit(v2.sub(b,a)), n=[-d[1],d[0]], L=v2.dist(a,b), pts=[];
     for(let t=0.06;t<=0.94;t+=0.015){ const c=v2.add(a,v2.mul(d,L*t)); let best=0, bs=null;
       const prof=[]; for(let s=-7;s<=7;s+=0.1){ const P=H.apply(M,v2.add(c,v2.mul(n,s))), v=sample(ink,P[0]-0.5,P[1]-0.5); prof.push([s,v==null?0:v]); if(v!=null&&v>best){ best=v; bs=s; } }
-      if(bs==null||best<=0.25) continue; let sw=0, ss=0; prof.forEach(([s,v])=>{ if(Math.abs(s-bs)<=0.7&&v>best*0.3){ sw+=v-best*0.3; ss+=(v-best*0.3)*s; } });
+      if(bs==null||best<=0.25) continue;
+      /* линия рамки — тонкая тёмная полоса с бумагой по обе стороны (край страницы на тёмном столе — не рамка) */
+      const side=sg=>{ const P=H.apply(M,v2.add(c,v2.mul(n,bs+sg*1.3))), v=sample(ink,P[0]-0.5,P[1]-0.5); return v==null?1:v; };
+      if(side(1)>0.5*best||side(-1)>0.5*best) continue; let sw=0, ss=0; prof.forEach(([s,v])=>{ if(Math.abs(s-bs)<=0.7&&v>best*0.3){ sw+=v-best*0.3; ss+=(v-best*0.3)*s; } });
       pts.push(H.apply(M,v2.add(c,v2.mul(n,sw?ss/sw:bs)))); }
     const l=fitLine(pts); if(!l||l.n<20) return null; sides.push(l); }
   const Q=[3,0,1,2].map((j,k)=>meet(sides[j],sides[k])); if(Q.some(q=>!q)) return null;
@@ -83,7 +86,7 @@ function findFrame(ink,M,SH){ const fr=SH.frame, C=[[fr[0],fr[1]],[fr[2],fr[1]],
 /* ── 3. «дано»: шаблон — точки вдоль напечатанных линий и по кружкам ── */
 function templatePts(SH){ const out=[];
   SH.given().forEach(it=>{ if(it.t==='seg'||it.t==='conn'){ const a=toPage(SH,it.a), b=toPage(SH,it.b), L=v2.dist(a,b), n=Math.ceil(L/0.6);
-      for(let i=0;i<=n;i++){ const t=i/n, p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]; if(it.t==='conn'&&((L*t)%5.2)>4) continue; out.push({p,w:it.t==='conn'?0.5:1,role:it.role}); } }
+      for(let i=0;i<=n;i++){ const t=i/n, p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]; if(it.t==='conn'&&((L*t)%5.2)>4) continue; out.push({p,w:it.t==='conn'?0.5:1,role:it.role,thin:it.t==='conn'||it.k==='thin'}); } }
     if(it.t==='pt'){ const c=toPage(SH,it.at); for(let i=0;i<16;i++){ const a=i/16*2*Math.PI; out.push({p:[c[0]+0.75*Math.cos(a),c[1]+0.75*Math.sin(a)],w:1.5,role:it.role}); } } });
   return out; }
 /* карта расстояний до «печатной» тёмности (двухпроходная, 8-связная) в мм; обрезана на cap */
@@ -156,25 +159,29 @@ function rectify(img,o){ o=o||{}; const SH=SHEETS[o.n||47], pg=SH&&SH.page; if(!
   if(!cand.length) return {ok:false,reason:'лист на фото не похож на страницу задачи (пропорции) — снимите страницу целиком, сверху'};
   /* рамка симметрична: верх/низ решает «дано» (у перевёрнутого листа шаблон не совпадёт) */
   const tpl=templatePts(SH), xs=tpl.map(t=>t.p[0]), ys=tpl.map(t=>t.p[1]), box=[Math.min(...xs)-4,Math.min(...ys)-4,Math.max(...xs)+4,Math.max(...ys)+4];
-  let best=null, sawFrame=false;
-  for(const c of cand){ const fr=findFrame(ink,c.M,SH); if(!fr) continue; sawFrame=true; const M1=H.fit(fr.src,fr.quad);
-    const sh=shiftSearch(ink,M1,tpl,box,25); if(!best||sh.score<best.sh.score) best={M:M1,sh,r:c.r,fr}; }
-  if(!best) return {ok:false,reason:sawFrame?'не нашёл напечатанное условие':'не нашёл рамку листа: проверьте, что вся страница в кадре и в фокусе'};
-  /* масштаб съёмки: пикселей на мм в центре чертежа */
-  const c=toPage(SH,[(SH.roi[0]+SH.roi[2])/2,(SH.roi[1]+SH.roi[3])/2]), px=v2.dist(H.apply(best.M,c),H.apply(best.M,[c[0]+1,c[1]]));
-  if(px<3) return {ok:false,reason:'лист снят слишком мелко ('+px.toFixed(1)+' px на мм) — подойдите ближе'};
-  /* «дано»: сдвиг найден, теперь 8 параметров */
-  const sh=best.sh, Tsh=[1,0,sh.shift[0],0,1,sh.shift[1],0,0,1], M2=H.norm(H.mul(best.M,Tsh));
-  const cc=[(box[0]+box[2])/2,(box[1]+box[3])/2], rf0=refine(ink,M2,tpl,box,cc,30);
-  /* сдвиг «дано» относительно рамки (раскладка тетради) — к шаблону; общая подгонка рамка + «дано» */
-  const s0=sh.shift.map((v,i)=>v+(H.apply(H.inv(best.M),H.apply(rf0.M,cc))[i]-cc[i]-v)), Ts=[1,0,s0[0],0,1,s0[1],0,0,1];
   const fpts=[], F=[[fr0[0],fr0[1]],[fr0[2],fr0[1]],[fr0[2],fr0[3]],[fr0[0],fr0[3]]];
   for(let k=0;k<4;k++){ const a=F[k], b=F[(k+1)%4], L=v2.dist(a,b); for(let t=4;t<L-4;t+=1) fpts.push({p:[a[0]+(b[0]-a[0])*t/L,a[1]+(b[1]-a[1])*t/L],w:1}); }
-  const gpts=tpl.map(t=>({p:[t.p[0]+s0[0],t.p[1]+s0[1]],w:2*t.w}));
-  const inkB=IMG.blur(ink,1), rr=refineRidge(inkB,best.M,fpts.concat(gpts),F,25), rf={M:H.norm(H.mul(rr.M,Ts))};
-  /* качество: доля точек «дано» на печатной линии — тёмность ≥ половины типичной тёмности рамки (той же краски) */
-  const frameInk=fpts.map(t=>sample(inkB,...H.apply(rr.M,t.p).map(v=>v-0.5))||0).sort((a,b)=>a-b), ref=frameInk[Math.floor(frameInk.length/2)];
-  const onG=gpts.filter(t=>t.w>=1).map(t=>(sample(inkB,...H.apply(rr.M,t.p).map(v=>v-0.5))||0)>=0.45*ref), q2={on:onG.filter(Boolean).length/onG.length,ref};
+  const inkB=IMG.blur(ink,1);
+  /* каждый кандидат — до конца: рамка → сдвиг «дано» → общая подгонка → доля точек «дано» на печатной линии */
+  let best=null, sawFrame=false;
+  for(const c of cand){ const fr=findFrame(ink,c.M,SH); if(o.dbg) o.dbg.push(c.as+' r'+c.r+' asp '+c.asp.toFixed(3)+' рамка '+!!fr); if(!fr) continue; sawFrame=true; const M1=H.fit(fr.src,fr.quad);
+    const sh=shiftSearch(ink,M1,tpl,box,25), Tsh=[1,0,sh.shift[0],0,1,sh.shift[1],0,0,1], M2=H.norm(H.mul(M1,Tsh));
+    const cc=[(box[0]+box[2])/2,(box[1]+box[3])/2], rf0=refine(ink,M2,tpl,box,cc,30);
+    /* сдвиг «дано» относительно рамки (раскладка тетради) — к шаблону; общая подгонка рамка + «дано» */
+    const s0=sh.shift.map((v,i)=>v+(H.apply(H.inv(M1),H.apply(rf0.M,cc))[i]-cc[i]-v)), Ts=[1,0,s0[0],0,1,s0[1],0,0,1];
+    const gpts=tpl.map(t=>({p:[t.p[0]+s0[0],t.p[1]+s0[1]],w:2*t.w,thin:t.thin}));
+    const rr=refineRidge(inkB,M1,fpts.concat(gpts),F,25), Mf=H.norm(H.mul(rr.M,Ts));
+    /* качество: доля точек «дано» на печатной линии — тёмность ≥ половины типичной тёмности рамки (той же краски) */
+    const frameInk=fpts.map(t=>sample(inkB,...H.apply(rr.M,t.p).map(v=>v-0.5))||0).sort((a,b)=>a-b), ref=frameInk[Math.floor(frameInk.length/2)];
+    /* тонкая печать (ось, линия связи) после расфокуса бледнее толстой рамки — для неё порог ниже */
+    const onG=gpts.filter(t=>t.w>=1).map(t=>(sample(inkB,...H.apply(rr.M,t.p).map(v=>v-0.5))||0)>=(t.thin?0.25:0.45)*ref), q={on:onG.filter(Boolean).length/onG.length,ref};
+    if(o.dbg) o.dbg.push('  сдвиг '+sh.shift+' score '+sh.score.toFixed(3)+' качество '+q.on.toFixed(3));
+    if(!best||q.on>best.q.on+0.02||(Math.abs(q.on-best.q.on)<=0.02&&sh.score<best.sh.score)) best={M:M1,Mf,sh:{shift:s0,score:sh.score},q,r:c.r,fr}; }
+  if(!best) return {ok:false,reason:sawFrame?'не нашёл напечатанное условие':'не нашёл рамку листа: проверьте, что вся страница в кадре и в фокусе'};
+  /* масштаб съёмки: пикселей на мм в центре чертежа */
+  const c=toPage(SH,[(SH.roi[0]+SH.roi[2])/2,(SH.roi[1]+SH.roi[3])/2]), px=v2.dist(H.apply(best.Mf,c),H.apply(best.Mf,[c[0]+1,c[1]]));
+  if(px<(o.minPx||3)) return {ok:false,reason:'лист снят слишком мелко ('+(px*3/(o.minPx||3)).toFixed(1)+' px на мм) — подойдите ближе'};
+  const sh=best.sh, rf={M:best.Mf}, q2=best.q;
   if(q2.on<0.8) return {ok:false,reason:'напечатанное условие совпало плохо ('+Math.round(q2.on*100)+' % точек) — это задача №'+SH.n+'? Переснимите без бликов и теней',H:rf.M,quality:q2};
   return {ok:true,H:rf.M,Hi:H.inv(rf.M),page:P,frame:best,shift:sh.shift,quality:q2,pxPerMm:px,ink,sheet:SH}; }
 function frameQuality(ink,M,SH){ const fr=SH.frame; let s=0, n=0; for(let t=0;t<=1;t+=0.01){ [[fr[0]+(fr[2]-fr[0])*t,fr[1]],[fr[0]+(fr[2]-fr[0])*t,fr[3]],[fr[0],fr[1]+(fr[3]-fr[1])*t],[fr[2],fr[1]+(fr[3]-fr[1])*t]].forEach(p=>{ const P=H.apply(M,p), v=sample(ink,P[0]-0.5,P[1]-0.5); if(v!=null){ s+=v; n++; } }); } return n?s/n:0; }

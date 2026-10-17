@@ -28,7 +28,7 @@ function separation(t){ if(t.cls==='ok'||t.cls==='unknown') return Infinity; con
   const E1=cp.exec(C47.program(t.kid,t.nvid),g).E, E0=cp.exec(C47.program(okK,okNV),g).E;
   let m=0; ['K′','K″','A₀','K₀','1′','2′','1″','2″'].forEach(n=>{ if(E1[n]&&E0[n]) m=Math.max(m,v2.dist(E1[n],E0[n])); }); return m; }
 
-function rectErr(res,t){ const M=res.rect&&res.rect.H; if(!M) return null; const Mi=IMG.H.inv(M), SH=SHEETS[t.n];
+function rectErr(res,t){ const M=res.rect&&res.rect.ok&&res.rect.H; if(!M) return null; const Mi=IMG.H.inv(M), SH=SHEETS[t.n];
   const pts=SH.given().filter(i=>i.t==='pt').map(i=>i.at).concat(SH.given().filter(i=>i.t==='seg').flatMap(i=>[i.a,i.b]));
   return Math.max(...pts.map(p=>{ const P=toPage(SH,p), px=IMG.H.apply(t.H,P), back=IMG.H.apply(Mi,px); return v2.dist(back,P); })); }
 function pointErr(res,t){ const f=res.verdict&&res.verdict.points; if(!f) return null; let m=null;
@@ -40,11 +40,11 @@ const p95=a=>{ if(!a.length) return '—'; const s=a.slice().sort((x,y)=>x-y); r
 
 function tally(rows){ const r={n:rows.length,read:0,right:0,falseV:0,refuse:0,equiv:0,unk:0,rect:[],pts:[],ms:0,fv:[]};
   rows.forEach(x=>{ r.ms+=x.ms; if(x.rect!=null) r.rect.push(x.rect); if(x.pts!=null) r.pts.push(x.pts);
-    if(x.status!=='verdict'){ r.refuse++; return; } r.read++;
-    if(x.got===x.cls) r.right++; else if(x.got==='ok'&&x.equiv) r.equiv++; else if(x.got==='unknown'&&x.cls!=='unknown') r.unk++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+', вердикт '+x.got); } });
+    if(x.status!=='verdict'){ if(x.unknown) r.unk++; else r.refuse++; return; } r.read++;
+    if(x.got===x.cls) r.right++; else if(x.got==='ok'&&x.equiv) r.equiv++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), вердикт '+x.got); } });
   return r; }
 function row(name,r){ return '| '+name+' | '+r.n+' | '+r.read+' ('+pct(r.read,r.n)+') | '+med(r.rect)+' / '+p95(r.rect)+' | '+med(r.pts)+' | '+r.right+' ('+pct(r.right,r.read)+') | **'+r.falseV+'** | '+r.unk+' | '+r.refuse+' | '+r.equiv+' |'; }
-const HEAD='| Набор | Листов | Прочитано | Выпрямление, мм (медиана / 95 %) | K′, K″, мм | Верный диагноз | Ложные вердикты | «Не узнаю построение» | Отказы | Неразличимо |\n|---|---|---|---|---|---|---|---|---|---|';
+const HEAD='| Набор | Листов | Вердикт вынесен | Выпрямление, мм (медиана / 95 %) | K′, K″, мм | Верный диагноз | Ложные вердикты | Отказ «не узнаю построение» | Другие отказы | «Верно» при неразличимой ошибке |\n|---|---|---|---|---|---|---|---|---|---|';
 
 (async()=>{ const t0=Date.now(), rows=[], keep=A.keep;
   if(keep) fs.mkdirSync(keep,{recursive:true});
@@ -53,7 +53,7 @@ const HEAD='| Набор | Листов | Прочитано | Выпрямле�
     if(keep) fs.writeFileSync(path.join(keep,lv+'-'+i+'-'+t.cls+'.png'),IMG.encodePNG(s.img));
     let res; try{ res=scan(s.img,{n:47}); }catch(e){ res={status:'refuse',reason:'сбой: '+e.message,ms:0}; }
     const sep=separation(t);
-    rows.push({id:lv+'#'+i,level:lv,cls:t.cls,kid:t.kid,nvid:t.nvid,equiv:sep<1,sep,status:res.status,got:res.verdict&&res.verdict.cls,reason:res.reason,ms:res.ms||0,rect:rectErr(res,t),pts:pointErr(res,t)});
+    rows.push({id:lv+'#'+i,level:lv,cls:t.cls,kid:t.kid,nvid:t.nvid,equiv:sep<1,sep,status:res.status,got:res.verdict&&res.verdict.cls,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0,rect:rectErr(res,t),pts:pointErr(res,t)});
     process.stderr.write('\r'+rows.length+' листов…'); } });
   process.stderr.write('\n');
   /* реальные фото владельца */
@@ -62,13 +62,13 @@ const HEAD='| Набор | Листов | Прочитано | Выпрямле�
     const truth=JSON.parse(fs.readFileSync(tf,'utf8'));
     Object.entries(truth).forEach(([f,cls])=>{ const file=path.join(dir,f); if(!/\.png$/i.test(f)||!fs.existsSync(file)){ real.push({id:d+'/'+f,cls,status:'refuse',reason:'формат не поддержан в Node (нужен PNG)',ms:0}); return; }
       let res; try{ res=scan(IMG.decodePNG(fs.readFileSync(file)),{n:+d}); }catch(e){ res={status:'refuse',reason:'сбой: '+e.message}; }
-      real.push({id:d+'/'+f,cls,status:res.status,got:res.verdict&&res.verdict.cls,reason:res.reason,ms:res.ms||0}); }); });
+      real.push({id:d+'/'+f,cls,status:res.status,got:res.verdict&&res.verdict.cls,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0}); }); });
   const out=['## Сканер № 47 — замер ('+new Date().toISOString().slice(0,10)+', node lab/eval.js'+(process.argv.slice(2).length?' '+process.argv.slice(2).join(' '):'')+')','',HEAD];
   LEVELS.forEach(lv=>out.push(row('синтетика · '+lv,tally(rows.filter(r=>r.level===lv)))));
   const all=tally(rows); out.push(row('**синтетика · всё**',all)); out.push(row('реальные фото',tally(real)));
-  out.push('','По видам листов (синтетика, все уровни):','','| Правда | Листов | Прочитано | Верно | Ложные | Отказы |','|---|---|---|---|---|---|');
-  [...new Set(rows.map(r=>r.cls))].sort().forEach(c=>{ const t=tally(rows.filter(r=>r.cls===c)); out.push('| '+c+' | '+t.n+' | '+t.read+' | '+t.right+' | '+t.falseV+' | '+t.refuse+' |'); });
-  const reasons={}; rows.filter(r=>r.status!=='verdict').forEach(r=>{ const k=String(r.reason).replace(/[\d.,]+/g,'#'); reasons[k]=(reasons[k]||0)+1; });
+  out.push('','По видам листов (синтетика, все уровни):','','| Правда | Листов | Вердикт | Верно | Ложные | «Не узнаю» | Другие отказы |','|---|---|---|---|---|---|---|');
+  [...new Set(rows.map(r=>r.cls))].sort().forEach(c=>{ const t=tally(rows.filter(r=>r.cls===c)); out.push('| '+c+' | '+t.n+' | '+t.read+' | '+t.right+' | '+t.falseV+' | '+t.unk+' | '+t.refuse+' |'); });
+  const reasons={}; rows.filter(r=>r.status!=='verdict').forEach(r=>{ if(A.why) console.error(r.id+' '+r.cls+' ('+r.kid+', '+r.nvid+'): '+r.reason+(r.extraInfo&&r.extraInfo.length?' | лучшая '+r.bestH+' лишние: '+r.extraInfo.join('; '):'')); const k=String(r.reason).replace(/[\d.,]+/g,'#'); reasons[k]=(reasons[k]||0)+1; });
   out.push('','Причины отказов:',''); Object.entries(reasons).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>out.push('- '+v+' × '+k));
   if(all.fv.length){ out.push('','ЛОЖНЫЕ ВЕРДИКТЫ:',''); all.fv.forEach(x=>out.push('- '+x)); }
   if(!real.length) out.push('','Реальных фото пока нет (lab/photos/<№>/ с truth.json).');

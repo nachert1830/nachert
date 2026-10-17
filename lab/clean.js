@@ -1,6 +1,6 @@
 /* ═══════════ Очистка: свет, тени, клетка, текстура бумаги ═══════════
-   «Тёмность» пикселя считается по самому светлому каналу V = max(R, G, B): карандаш и печать темнят все три канала,
-   а синяя клетка, красная ручка преподавателя, жёлтая бумага — только часть, и V их почти не видит.
+   «Тёмность» пикселя — наименьшая из тёмностей трёх каналов (у каждого свой фон): карандаш и печать темнят все три
+   канала, а синяя клетка, красная ручка преподавателя, жёлтая бумага — только часть, и в наименьшей их почти нет.
    Фон (бумага при данном свете, с тенью и виньеткой) — максимум по блокам, сглаженный: линии тонкие и в максимум
    не попадают. ink = (фон − V) / фон, 0…1 — не зависит от яркости освещения и мягкой тени.
    warp — та же карта в мм листа по гомографии (лист → фото), с нужным числом пикселей на мм. */
@@ -23,9 +23,12 @@ function background(V,B){ B=B||16; const bw=Math.ceil(V.w/B), bh=Math.ceil(V.h/B
     const x0=Math.floor(fx), y0=Math.floor(fy), ax=fx-x0, ay=fy-y0, i=y0*bw+x0;
     bg.a[y*V.w+x]=(s.a[i]*(1-ax)+s.a[i+1]*ax)*(1-ay)+(s.a[i+bw]*(1-ax)+s.a[i+bw+1]*ax)*ay; }
   return bg; }
-function ink(im){ const V=value(im), bg=background(V,16), o=gray(V.w,V.h);
-  for(let i=0;i<V.a.length;i++){ const b=Math.max(0.05,bg.a[i]); o.a[i]=Math.max(0,Math.min(1,(b-V.a[i])/b)); }
-  return {ink:o,V,bg}; }
+/* тёмность по каждому каналу отдельно (свой фон у каждого), затем наименьшая: графит и печать темнят все три
+   канала одинаково, синяя клетка — почти только красный, красная ручка — зелёный и синий */
+function ink(im){ const n=im.width*im.height, d=im.data, V=value(im), o=gray(im.width,im.height); o.a.fill(1);
+  for(let c=0;c<3;c++){ const C=gray(im.width,im.height); for(let i=0;i<n;i++) C.a[i]=d[4*i+c]/255;
+    const bg=background(C,16); for(let i=0;i<n;i++){ const b=Math.max(0.05,bg.a[i]), v=Math.max(0,Math.min(1,(b-C.a[i])/b)); if(v<o.a[i]) o.a[i]=v; } }
+  return {ink:o,V}; }
 /* карта в мм: box = [x0, y0, x1, y1] (мм страницы), ppm — пикселей на мм; M — лист → фото (px) */
 function warp(map,M,box,ppm){ const w=Math.round((box[2]-box[0])*ppm), h=Math.round((box[3]-box[1])*ppm), o=gray(w,h);
   for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const p=H.apply(M,[box[0]+(x+0.5)/ppm,box[1]+(y+0.5)/ppm]), v=sample(map,p[0]-0.5,p[1]-0.5); o.a[y*w+x]=v==null?0:v; }

@@ -5,6 +5,8 @@
      2. лист: напечатанное «дано» и рамка — чёрной краской; построения — карандашом (толщина, нажим, зерно,
         лёгкое дрожание), стёртые линии — бледные следы; бумага белая или в клетку;
      3. съёмка: перспектива (лист под углом), поворот, фон стола, неравномерный свет, тень, расфокус, шум.
+      Размер фото — по уровню: easy 3000×2250 (≈ 13 px/мм листа), normal 2400×1800 (≈ 9), hard 1600×1200 (≈ 5,
+      где тонкие линии уже на пределе: честный отказ здесь — правильный ответ).
    synth({n, kid, nvid, seed, level}) → {img (RGBA), truth: {cls, H (мм страницы → px фото), scene (мм чертежа), …}}
    node lab/synth.js --kid=front --nv=ok:1A+ --seed=3 [--level=hard] [--out=файл.png] — один лист в PNG. */
 (function(){
@@ -16,9 +18,9 @@ const {v2,L2}=core('model'), cp=core('cp');
 const IMG=lab('img'), {H,rng,gray,rgba,blur}=IMG, font=lab('font'), {SHEETS,toPage}=lab('sheets');
 
 const LEVELS={
-  easy:{hand:[0.5,0.8],tilt:[0,0.04],rot:3,blur:[0.3,0.7],noise:[1,2],light:[0,0.1],shadow:0,erased:[0,1],grid:0,dark:[0.55,0.8],fill:[0.85,0.92]},
-  normal:{hand:[0.7,1.4],tilt:[0.01,0.08],rot:8,blur:[0.4,1.1],noise:[1.5,4],light:[0.05,0.25],shadow:0.5,erased:[0,3],grid:0.25,dark:[0.4,0.75],fill:[0.72,0.92]},
-  hard:{hand:[1.2,2.0],tilt:[0.04,0.13],rot:14,blur:[0.8,1.6],noise:[3,7],light:[0.15,0.4],shadow:0.8,erased:[1,4],grid:0.4,dark:[0.3,0.6],fill:[0.62,0.85]},
+  easy:{size:[3000,2250],hand:[0.5,0.8],tilt:[0,0.04],rot:3,blur:[0.3,0.7],noise:[1,2],light:[0,0.1],shadow:0,erased:[0,1],grid:0,dark:[0.55,0.8],fill:[0.85,0.92]},
+  normal:{size:[2400,1800],hand:[0.7,1.4],tilt:[0.01,0.08],rot:8,blur:[0.4,1.1],noise:[1.5,4],light:[0.05,0.25],shadow:0.5,erased:[0,3],grid:0.25,dark:[0.4,0.75],fill:[0.72,0.92]},
+  hard:{size:[1600,1200],hand:[1.2,2.0],tilt:[0.04,0.13],rot:14,blur:[0.8,1.6],noise:[3,7],light:[0.15,0.4],shadow:0.8,erased:[1,4],grid:0.4,dark:[0.3,0.6],fill:[0.62,0.85]},
 };
 
 /* ── 1. рука студента: исполнение программы с шумом ── */
@@ -41,7 +43,7 @@ function hand(prog,given,R,lv){ const k=R.r(...lv.hand), deg=Math.PI/180;
   return {E,miss,items,hand:k}; }
 
 /* ── 2. лист: растр страницы, тёмность 0…1 двух красок (печать, карандаш) ── */
-const PX=8;                                                        /* растр страницы: пикселей на мм */
+const PX=10;                                                       /* растр страницы: пикселей на мм */
 function Sheet(w,h){ this.w=Math.round(w*PX); this.h=Math.round(h*PX); this.pr=new Float32Array(this.w*this.h); this.pe=new Float32Array(this.w*this.h); this.tmp=new Float32Array(this.w*this.h); this.touched=[]; }
 /* штрих — ломаная (мм страницы): ширина w, тёмность dk; o.wob — дрожание поперёк, o.dash — [штрих, промежуток] мм,
    o.grain — зерно графита, o.press — неравномерный нажим */
@@ -143,7 +145,7 @@ function synth(o){ o=o||{}; const n=o.n||47, R=rng(o.seed||1), lv=LEVELS[o.level
     if(placed.some(p=>v2.dist(p,at)<size*1.1)) return; placed.push(at);
     const w=sheet.text(l.s,P(at),size,Math.min(0.95,pen.dk*1.1),R.r(0.22,0.35),{rot:R.n(0,0.08),shear:R.n(0.12,0.1),jit:0.02,grain:true},R);
     l.box=[at[0],at[1]-size,at[0]+w,at[1]+size*0.3]; l.size=size; });
-  const size=o.size||(R()<0.5?[1200,1600]:[1600,1200]);
+  const sz=o.size||lv.size, size=R()<0.5?[sz[1],sz[0]]:sz.slice();
   const cam=camera(sheet,page,R,lv,size);
   const scene={units:'mm',items:SH.given().concat(st.items).map(it=>Object.assign({},it))};
   return {img:cam.im,truth:{n,kid:o.kid||'front',nvid:o.nvid||'ok:1A+',cls:/^u-/.test(o.kid||'')?'unknown':C.cls(o.kid||'front',o.nvid||'ok:1A+'),H:cam.M,O:SH.O,scene,E:st.E,labels,hand:st.hand,pen,params:Object.assign(cam.params,{level:o.level||'normal',erased:nE,grid:!!sheet.gridAt})}}; }
