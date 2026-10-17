@@ -8375,7 +8375,7 @@ window.GA_ID='';
    Как они складываются без двойного счёта — .github/scripts/views.js. Пусто — выключен. В обоих сайтах GoatCounter
    включи «Allow adding visitor counts on your website» (Settings): число сайт и GitHub читают из /counter/TOTAL.json. */
 window.GC_CODE='jjjj';
-window.GC_OK_CODE='';
+window.GC_OK_CODE='jjjjok';   /* создай в GoatCounter второй сайт с этим кодом; пока его нет — счёт по запасной схеме */
 (function(){
   const YM=113262916, KEY='nch2_ck', GA=window.GA_ID, GC=window.GC_CODE, GCOK=window.GC_OK_CODE;
   const get=()=>{ try{ return localStorage.getItem(KEY); }catch(e){ return null; } };
@@ -26508,9 +26508,11 @@ FX.note=function(m){ try{ let n=document.getElementById('fxNote'); if(!n){ n=doc
    Нет данных — блок не показываем: цифры не выдумываем. */
 const METRIKA_ID=113262916;
 /* последнее известное число берём из кэша сразу (даже старое): блок рисуется с цифрой с первого кадра и не прыгает,
-   а свежее значение подтягивается в фоне. VIEWS_LIVE — в этой вкладке уже спросили сервер. */
-let VIEWS=null, VIEWS_ASK=false, VIEWS_LIVE=false;
-try{ const c=JSON.parse(localStorage.getItem('nch2_views')||'null'); if(c&&c.n>=50){ VIEWS=c.n; VIEWS_LIVE=Date.now()-c.t<60e3; } }catch(e){}
+   а свежее значение подтягивается в фоне. VIEWS_LIVE — в этой вкладке уже спросили сервер.
+   Кэш — под новым ключом: старый nch2_views хранил число прежней схемы (Метрика + GoatCounter вдвое) и держал его «максимумом».
+   Свежий ответ сервера всегда заменяет число из кэша; не уменьшаться число может только внутри одной открытой вкладки. */
+let VIEWS=null, VIEWS_ASK=false, VIEWS_LIVE=false, VIEWS_FRESH=false, VIEWS_AT=0;
+try{ localStorage.removeItem('nch2_views'); const c=JSON.parse(localStorage.getItem('nch2_vw')||'null'); if(c&&c.n>=50){ VIEWS=c.n; VIEWS_LIVE=Date.now()-c.t<60e3; } }catch(e){}
 /* до первого ответа (самый первый заход) — пустая заготовка того же размера, а не display:none: место под блок занято сразу */
 FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wait':''}" data-views ${VIEWS==null?'':'data-done="1"'} title="Просмотры: Яндекс Метрика и GoatCounter, без двойного счёта"><span class="vc-dot" aria-hidden="true"></span><b class="vc-n">${VIEWS==null?'':VIEWS.toLocaleString('ru-RU')}</b><span class="vc-l">${VIEWS==null?'просмотров':plural(VIEWS,'просмотр','просмотра','просмотров')}</span></div>`; };
 function paintViews(){
@@ -26550,13 +26552,16 @@ window.VIEWS_PROBE=()=>fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+
   .catch(e=>'нет ответа: '+(e&&e.message||e));
 FX.loadViews=function(force){
   if(VIEWS!=null) paintViews();   /* новые блоки (после перехода) — сразу с числом, без пробежки с нуля */
-  if((VIEWS_LIVE&&!force)||VIEWS_ASK) return; VIEWS_ASK=true;   /* сервер спрашиваем раз в вкладку (кэш свежее минуты — не спрашиваем) и по таймеру */
+  if((VIEWS_LIVE&&!force)||VIEWS_ASK||Date.now()-VIEWS_AT<15e3) return; VIEWS_ASK=true; VIEWS_AT=Date.now();   /* не чаще раза в 15 с */
   const old=VIEWS;
-  fetchViews().then(n=>{ VIEWS=Math.max(n,old||0); VIEWS_LIVE=true; try{ localStorage.setItem('nch2_views',JSON.stringify({n:VIEWS,t:Date.now()})); }catch(e){} if(VIEWS!==old) paintViews(); })
+  fetchViews().then(n=>{ VIEWS=VIEWS_FRESH?Math.max(n,old||0):n; VIEWS_FRESH=VIEWS_LIVE=true; try{ localStorage.setItem('nch2_vw',JSON.stringify({n:VIEWS,t:Date.now()})); }catch(e){} if(VIEWS!==old) paintViews(); })
     .catch(()=>{ if(VIEWS==null) paintViews(); }).then(()=>{ VIEWS_ASK=false; });
 };
-/* пока страница открыта и на экране — число обновляется само, раз в 2 минуты */
-setInterval(()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views]')) FX.loadViews(true); }catch(e){} },120e3);
+/* пока страница на экране — число обновляется само, раз в минуту; и сразу, когда к ней вернулись: приложение с рабочего стола
+   и вкладка в фоне не перезагружаются, а таймеры в фоне браузер замораживает — без этого там стояло старое число */
+const viewsTick=()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views]')) FX.loadViews(true); }catch(e){} };
+setInterval(viewsTick,60e3);
+document.addEventListener('visibilitychange',viewsTick); window.addEventListener('pageshow',viewsTick); window.addEventListener('focus',viewsTick); window.addEventListener('online',viewsTick);
 
 /* ── «Задача №…» — самый частый сценарий: студент знает номер задачи из тетради ── */
 function tnumHTML(cls){ const all=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number'), mx=Math.max(...all);

@@ -35,7 +35,7 @@ async function ymDays(from,to){ const id=process.env.YM_ID||'113262916', h=proce
   (j.data||[]).forEach(row=>{ o[row.dimensions[0].name]=Math.round(+row.metrics[0]); }); return o; }
 async function gcTotal(c){ if(!c) return null;
   const r=await fetch('https://'+c+'.goatcounter.com/counter/TOTAL.json?start=2026-01-01',{headers:{'Cache-Control':'no-cache'}});
-  if(!r.ok) throw new Error('GoatCounter '+c+': '+r.status+(r.status===403||r.status===404?' (в настройках сайта не включено «Allow adding visitor counts on your website»)':''));
+  if(!r.ok) throw new Error('GoatCounter '+c+': '+r.status+(r.status>=400&&r.status<500?' (сайта с таким кодом нет или в его настройках не включено «Allow adding visitor counts on your website»)':''));
   const n=+String((await r.json()).count||'').replace(/\D/g,''); if(!Number.isFinite(n)) throw new Error('GoatCounter '+c+': нет числа'); return n; }
 const tryGet=async(f,...a)=>{ try{ return await f(...a); }catch(e){ console.log(String(e.message||e)); return undefined; } };
 
