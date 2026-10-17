@@ -7,12 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: что отдаёт nachert.ru
+      - name: свободны ли коды
         run: |
-          curl -sS -D - -o /tmp/p.html https://nachert.ru/ | head -20
-          wc -c /tmp/p.html; grep -o '<title>[^<]*' /tmp/p.html | head -2
-          grep -oE "ym\([0-9]+|metrika/tag.js\?id=[0-9]+|watch\.js|Ya\.Metrika2?\(\{id:[0-9]+|counter[0-9]+|id:\s*[0-9]{6,}|goatcounter|GC_CODE[^;]*|views\.json|manifest[^\"']*|tilda|wix|generator\"[^>]*" /tmp/p.html | sort | uniq -c | head -30
-          curl -sS https://nachert.ru/manifest.webmanifest | head -c 300; echo
-          curl -sS -o /dev/null -w 'sw.js %{http_code}\n' https://nachert.ru/sw.js
-          curl -sS -o /dev/null -w 'views.json %{http_code}\n' https://nachert.ru/views.json
-          echo "=== nachert1830.ru по http"; curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' http://nachert1830.ru/
+          for c in jjjj jjjjok nachertok nachert1830ok; do printf '%-15s ' $c; curl -sS -o /tmp/b -w '%{http_code} ' "https://$c.goatcounter.com/counter/TOTAL.json?start=2026-01-01"; head -c 120 /tmp/b | tr -d '\n'; echo; done
