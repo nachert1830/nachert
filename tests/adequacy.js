@@ -38,7 +38,7 @@ function sites(src,rnd){
 
 async function runAdequacy(page,opts){
   opts=opts||{}; const PER=opts.per||4; let seed=opts.seed||5; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);
-  for(const f of ['geometry','oracle','provenance']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+  for(const f of ['geometry','oracle','provenance','euclid','arith']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
   await page.evaluate(()=>PROV_INSTRUMENT());
   /* задачи с сертификатом (tests/certified): опубликованный чертёж каждого мутанта сверяется с доказанной моделью */
   const {certify}=require('./certified/certify.js'), CERT={}; require('./certified/run.js').TASKS.forEach(T=>CERT[T.n]=T);
@@ -66,17 +66,19 @@ async function runAdequacy(page,opts){
       /* трассировка — первой: GEOM_CHECK «доводит» линии (LINEFIX) и заменяет координаты копиями без пометок */
       let old=[], prov=[]; try{ prov=PROV_CHECK({tasks:[t]}).map(k); }catch(e){ prov=['сбой']; }
       try{ old=GEOM_CHECK({tasks:[t]}).concat(ORACLE_CHECK({tasks:[t]})).map(k); }catch(e){ old=['сбой']; }
+      /* «Евклид» и арифметика текста — для задач, которые «Евклид» уже проверяет */
+      let euc=[]; try{ if(!EUCLID_TODO.includes(t.n)) euc=EUCLID_CHECK({tasks:[t]}).concat(ARITH_CHECK({tasks:[t]})).map(o=>k(o)+'|'+o.msg); }catch(e){ euc=['сбой']; }
       let site=null; if((window.__CERT_N||[]).includes(t.n)){ const p=parts[0], strip=s=>String(s==null?'':s).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim(), points={}, lines={}, segs=[];
         [].concat(p.given||t.given||[],...(p.steps||[]).map(s=>s.add||[])).filter(Boolean).forEach(it=>{
           if(it.t==='pt'&&it.at&&it.l) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ if(!points[l]) points[l]=it.at.slice(); });
           if((it.t==='seg'||it.t==='line')&&it.a&&it.b&&it.l){ const l=strip(it.l); (lines[l]=lines[l]||[]).push(it.a.slice(),it.b.slice()); }
           if(it.t==='seg'&&it.a&&it.b) segs.push({a:it.a.slice(),b:it.b.slice(),k:it.k||'main'}); });
         site={points,lines,segs,ans:strip(t.ans)}; }
-      res.push({n:t.n,vis:vis.join('\n'),geo:geo.sort().join('\n'),giv:giv.sort().join('\n'),old,prov,site}); });
+      res.push({n:t.n,vis:vis.join('\n'),geo:geo.sort().join('\n'),giv:giv.sort().join('\n'),old,prov,euc,site}); });
     WB3.tasks.length=0; keep.forEach(t=>WB3.tasks.push(t));
     return {err,res}; },src);
   const by={}, survivors=[], kinds={}; let total=0, equiv=0, crashed=0;
-  const bump=(k,a,b)=>{ const o=by[k]=by[k]||{n:0,old:0,all:0}; o.n++; if(a) o.old++; if(a||b) o.all++; };
+  const bump=(k,a,b,e)=>{ const o=by[k]=by[k]||{n:0,old:0,all:0,euc:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||e) o.euc++; };
   const cby={}, csurv=[]; const cbump=(k,a,b,c)=>{ const o=cby[k]=cby[k]||{n:0,old:0,all:0,cert:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||c) o.cert++; };
   for(const b of R.blocks().filter(b=>!opts.only||opts.only.some(n=>new RegExp('n:'+n+'\\b').test(b.src)))){
     const src0=isolate(b.src), base=await run(src0); if(base.err) continue;
@@ -88,8 +90,8 @@ async function runAdequacy(page,opts){
         if(m.err){ crashed++; continue; }   /* блок перестал выполняться — это видно сразу (сайт не построит задачу) */
         m.res.forEach(r=>{ const b0=B[r.n]; if(!b0) return; if(r.vis===b0.vis){ equiv++; return; }
           const o0=new Set(b0.old), p0=new Set(b0.prov);
-          const a=r.old.some(x=>!o0.has(x)), p=r.prov.some(x=>!p0.has(x));
-          bump(op,a,p); bump('всего',a,p);
+          const e0=new Set(b0.euc), a=r.old.some(x=>!o0.has(x)), p=r.prov.some(x=>!p0.has(x)), eu=r.euc.some(x=>!e0.has(x));
+          bump(op,a,p,eu); bump('всего',a,p,eu);
           if(CERT[r.n]&&b0.site&&certOk(r.n,b0.site)){ const c=certOk(r.n,r.site)===false; cbump(op,a,p,c); cbump('всего',a,p,c);
             if(!a&&!p&&!c) csurv.push({task:'№'+r.n,op,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }
           /* разбор выжившего: «данные» — опечатка в числе, которое генератор вариантов меняет как исходные данные (та же программа
@@ -97,8 +99,8 @@ async function runAdequacy(page,opts){
              чертёж «дано», а число не из данных генератора (неясно: нужна сверка с тетрадью); «оформление» — все точки, прямые, тексты
              те же, другие только длины отрезков (эквивалентный); «пропуск» — изменилось построение, а проверка молчит */
           const cls=op==='число'&&DATA.some(([s0,e0])=>S.start>=s0&&S.end<=e0)?'данные':r.giv!==b0.giv?'условие':r.geo===b0.geo?'оформление':'пропуск';
-          if(!a&&!p){ const o=kinds[op]=kinds[op]||{}; o[cls]=(o[cls]||0)+1; const t=kinds['всего']=kinds['всего']||{}; t[cls]=(t[cls]||0)+1; }
-          if(!a&&!p&&survivors.length<1000) survivors.push({task:'№'+r.n,op,cls,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }); } } }
+          if(!a&&!p&&!eu){ const o=kinds[op]=kinds[op]||{}; o[cls]=(o[cls]||0)+1; const t=kinds['всего']=kinds['всего']||{}; t[cls]=(t[cls]||0)+1; }
+          if(!a&&!p&&!eu&&survivors.length<1000) survivors.push({task:'№'+r.n,op,cls,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }); } } }
   return {by,cby,csurv,survivors,kinds,total,equiv,crashed};
 }
 module.exports={runAdequacy,sites};
@@ -115,8 +117,8 @@ if(require.main===module)(async()=>{
   const r=await runAdequacy(page,{per:+(arg('per')||4),seed:+(arg('seed')||5),only:arg('only')?arg('only').split(',').map(Number):null});
   const pc=(a,n)=>a+'/'+n+' ('+Math.round(100*a/Math.max(1,n))+'%)';
   console.log('Мутантов '+r.total+': не выполнились '+r.crashed+', эквивалентных (ничего не изменилось) '+r.equiv);
-  console.log('вид        | ловила прежняя проверка | с трассировкой');
-  Object.entries(r.by).sort((a,b)=>a[0]==='всего'?1:b[0]==='всего'?-1:0).forEach(([k,v])=>console.log(k.padEnd(10)+' | '+pc(v.old,v.n).padEnd(23)+' | '+pc(v.all,v.n)));
+  console.log('вид        | ловила прежняя проверка | с трассировкой          | + «Евклид» и арифметика');
+  Object.entries(r.by).sort((a,b)=>a[0]==='всего'?1:b[0]==='всего'?-1:0).forEach(([k,v])=>console.log(k.padEnd(10)+' | '+pc(v.old,v.n).padEnd(23)+' | '+pc(v.all,v.n).padEnd(23)+' | '+pc(v.euc,v.n)));
   console.log('\nВыжившие (не пойманы) по разбору: данные — другие исходные данные той же программы; условие — изменился «дано» (неясно);');
   console.log('оформление — другие только длины отрезков (эквивалентный); пропуск — изменилось построение');
   Object.entries(r.kinds).sort((a,b)=>a[0]==='всего'?1:b[0]==='всего'?-1:0).forEach(([k,v])=>console.log(k.padEnd(10)+' | '+['данные','условие','оформление','пропуск'].map(c=>c+' '+(v[c]||0)).join(' | ')));

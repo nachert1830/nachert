@@ -6,6 +6,8 @@
 const http=require('http'), fs=require('fs'), path=require('path');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const ROOT=path.join(__dirname,'..'), QUICK=process.argv.includes('--quick');
+/* --json=файл — все замеры одной записью (для тезисов и отчётов: каждое число — с коммитом, на котором оно получено) */
+const JSONOUT=(process.argv.find(a=>a.startsWith('--json='))||'').slice(7), M={};
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.webmanifest':'application/manifest+json','.txt':'text/plain'};
 const baseline=JSON.parse(fs.readFileSync(path.join(__dirname,'baseline.json'),'utf8')).accepted.map(a=>a.key);
 
@@ -28,20 +30,37 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   report('Чертежи (3D-модель)', await page.evaluate(()=>GEOM_CHECK()));
   report('Отрисовка (подписи)', await page.evaluate(()=>RENDER_CHECK()));
   const mut=await page.evaluate(()=>MUTATE_CHECK({n:450,seed:11}));
-  Object.entries(mut).forEach(([k,v])=>info.push('Мутации «'+k+'»: поймано '+v.поймано+' из '+v.всего));
+  Object.entries(mut).forEach(([k,v])=>info.push('Мутации «'+k+'»: поймано '+v.поймано+' из '+v.всего)); M.mutate=mut;
   const ml=mut['линия связи'], ms=mut['подписи местами'];
   if(ml&&ml.поймано/ml.всего<0.95) fail.push('Проверка ослабла: разрыв линии связи ловится в '+Math.round(100*ml.поймано/ml.всего)+'% случаев');
   if(ms&&ms.поймано/ms.всего<0.93) fail.push('Проверка ослабла: перепутанные подписи ловятся в '+Math.round(100*ms.поймано/ms.всего)+'% случаев');
   /* числа на чертежах — полным перебором (каждое «N мм» → N−3, N+3, N+6, N+9): сверка с текстом задачи и с общим масштабом */
   const msz=await page.evaluate(()=>MUTATE_SIZES());
-  info.push('Числа на чертежах (перебор): поймано '+msz.поймано+' из '+msz.всего+(msz.пропуски.length?' — пропуски: '+msz.пропуски.slice(0,5).join('; '):''));
+  M.sizes={caught:msz.поймано,total:msz.всего}; info.push('Числа на чертежах (перебор): поймано '+msz.поймано+' из '+msz.всего+(msz.пропуски.length?' — пропуски: '+msz.пропуски.slice(0,5).join('; '):''));
   if(msz.поймано/msz.всего<0.95) fail.push('Проверка ослабла: неверное число на чертеже ловится в '+Math.round(100*msz.поймано/msz.всего)+'% случаев');
 
   /* 3б. оракул: ответы задач против условия, записанного геометрически; и проверка самого оракула */
   report('Оракул (ответы задач)', await page.evaluate(()=>ORACLE_CHECK()));
   const om=await page.evaluate(()=>ORACLE_MUTATE({per:4,seed:7}));
-  info.push('Сдвиг точки ответа: ловит 3D-проверка '+om.геометрия+' из '+om.всего+', вместе с оракулом '+om.сОракулом+' из '+om.всего+' (задач с оракулом: '+(await page.evaluate(()=>ORACLE_SPECS.length))+')');
+  M.answer={geom:om.геометрия,oracle:om.сОракулом,total:om.всего}; info.push('Сдвиг точки ответа: ловит 3D-проверка '+om.геометрия+' из '+om.всего+', вместе с оракулом '+om.сОракулом+' из '+om.всего+' (задач с оракулом: '+(await page.evaluate(()=>ORACLE_SPECS.length))+')');
   if(om.сОракулом/om.всего<0.85) fail.push('Оракул ослаб: ловит '+Math.round(100*om.сОракулом/om.всего)+'% сдвигов ответа');
+
+  /* 3б+. «Евклид»: каждый элемент чертежа выводится из предыдущих линейкой и циркулем (tests/euclid.js);
+     ДЗ-оракул: разборы ДЗ №2 и №3 проверены числами по условию (tests/dz.js); арифметика в текстах (tests/arith.js) */
+  for(const f of ['euclid','arith','dz']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+  report('Построимость («Евклид»)', await page.evaluate(()=>EUCLID_CHECK()));
+  info.push('«Евклид»: проверено задач '+(await page.evaluate(()=>WB3.tasks.filter(t=>!EUCLID_TODO.includes(t.n)).length))+' из 89 и ДЗ №2 (2а–2в), №3; кривые поверхности — в работе: №'+(await page.evaluate(()=>EUCLID_TODO.join(', №'))));
+  report('Арифметика в тексте', await page.evaluate(()=>ARITH_CHECK()));
+  report('ДЗ-оракул (ДЗ №2, №3)', await page.evaluate(()=>DZ_CHECK()));
+  { const dpage=await browser.newPage(); await dpage.goto(URL); await dpage.waitForTimeout(1200);
+    for(const f of ['geometry','euclid','arith','dz']) await dpage.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+    const DR=require('./dz-run.js'), N=QUICK?10:40, v=await DR.runDzVariants(dpage,N);
+    M.dzVar={n:N,checked:v.checked,skipped:v.skipped,bad:Object.keys(v.bad).length}; info.push('ДЗ №2 и №3 на случайных вариантах: '+N+' × 4 разбора, проверено '+v.checked+', вырожденных отброшено '+v.skipped);
+    Object.entries(v.bad).forEach(([k,list])=>fail.push('ДЗ, случайные варианты · '+k+': '+list.length+' вар. — '+list[0]));
+    if(!QUICK){ const m=await DR.runDzMutations(dpage,{per:12}), t=m.by['всего']||{n:0,geo:0,all:0};
+      M.dzMut=m; info.push('ДЗ, мутации кода: 3D-проверка ловит '+t.geo+' из '+t.n+', с ДЗ-оракулом, «Евклидом» и арифметикой — '+t.all+' из '+t.n);
+      if(t.n&&t.all/t.n<0.85) fail.push('Проверка ДЗ ослабла: мутации кода ДЗ ловятся в '+Math.round(100*t.all/t.n)+'% случаев'); }
+    await dpage.close(); }
 
   /* 3б′. трассировка происхождения (O4 «по построению»): каждая точка и линия — с того поля, которое указывает подпись */
   { const ppage=await browser.newPage(); await ppage.goto(URL); await ppage.waitForTimeout(1200);
@@ -59,7 +78,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   /* 3б‴. проверка проверки на мутациях КОДА задач (O8): порог для подмены поля и для задач с сертификатом */
   if(!QUICK){ const apage=await browser.newPage(); await apage.goto(URL); await apage.waitForTimeout(1200);
     const ad=await require('./adequacy.js').runAdequacy(apage,{per:2,seed:5}), fh=ad.by['F↔H'], ct=ad.cby['всего'];
-    info.push('Мутации кода: поймано '+ad.by['всего'].all+' из '+ad.by['всего'].n+(fh?'; подмена поля F↔H — '+fh.all+' из '+fh.n:'')+(ct?'; в задачах с сертификатом — '+ct.cert+' из '+ct.n:''));
+    M.code={by:ad.by,kinds:ad.kinds,total:ad.total,equiv:ad.equiv,crashed:ad.crashed,cert:ad.cby}; info.push('Мутации кода: поймано '+ad.by['всего'].all+' из '+ad.by['всего'].n+', с «Евклидом» и арифметикой — '+ad.by['всего'].euc+(fh?'; подмена поля F↔H — '+fh.all+' из '+fh.n:'')+(ct?'; в задачах с сертификатом — '+ct.cert+' из '+ct.n:''));
     if(fh&&fh.all/fh.n<0.75) fail.push('Проверка ослабла: подмена поля F↔H ловится в '+Math.round(100*fh.all/fh.n)+'% случаев');
     if(ct&&ct.cert/ct.n<0.85) fail.push('Сертификаты ослабли: в задачах с сертификатом ловится '+Math.round(100*ct.cert/ct.n)+'% мутаций');
     await apage.close(); }
@@ -158,6 +177,13 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Задач пройдено до ответа: '+tasks.length);
     report('Сайт',bad);
   }
+  if(JSONOUT){ const P=await browser.newPage(); await P.goto(URL); await P.waitForTimeout(1200);
+    for(const f of ['geometry','oracle','euclid']) await P.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+    M.site=await P.evaluate(()=>{ let st=0, why=0, parts=0; WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach(p=>{ parts++; (p.steps||[]).forEach(s=>{ st++; if(s.why&&String(s.why).replace(/<[^>]+>/g,'').trim()) why++; }); }));
+      return {tasks:WB3.tasks.length,parts,steps:st,why,approx:WB3.tasks.filter(t=>t.conf==='approx').length,euclidTasks:WB3.tasks.filter(t=>!EUCLID_TODO.includes(t.n)).length,oracleParts:(window.ORACLE_SPECS||[]).length}; });
+    await P.close();
+    let commit=process.env.GITHUB_SHA||''; try{ if(!commit) commit=require('child_process').execSync('git rev-parse HEAD',{cwd:ROOT}).toString().trim(); }catch(e){}
+    fs.writeFileSync(JSONOUT,JSON.stringify({commit,date:new Date().toISOString(),quick:QUICK,info,fail,M},null,1)); }
   await browser.close(); srv.close();
   console.log(info.join('\n'));
   /* длинный список одного раздела — первые 25 строк и число остальных: лог CI обрезается, и иначе не видно других разделов */
