@@ -1,7 +1,7 @@
 name: Счётчик просмотров
 on:
   schedule:
-    - cron: '17 */3 * * *'
+    - cron: '7 21 * * *'   # раз в сутки, 00:07 по Москве: день закрыт, в истории — один коммит в день
   workflow_dispatch:
 permissions:
   contents: write
