@@ -1,0 +1,28 @@
+# Спецификация Yandex API Gateway для club.nachert1830.ru (см. club/DEPLOY.md, шаг 6).
+# Вся страница клуба и /api/* обслуживаются одной функцией — заголовки безопасности (CSP, HSTS, cookie) везде одни.
+# Перед загрузкой подставьте ${FUNCTION_ID} (функция nachert-club-api) и ${SA_ID} (сервисный аккаунт с ролью functions.functionInvoker).
+openapi: 3.0.0
+info:
+  title: nachert-club
+  version: 1.0.0
+paths:
+  /:
+    get:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: ${FUNCTION_ID}
+        service_account_id: ${SA_ID}
+        payload_format_version: '1.0'
+  /{path+}:
+    x-yc-apigateway-any-method:
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: ${FUNCTION_ID}
+        service_account_id: ${SA_ID}
+        payload_format_version: '1.0'
