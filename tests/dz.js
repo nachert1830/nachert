@@ -120,6 +120,16 @@ function checkTask(id,task,out){
     (text+' '+ans).replace(/\|([A-ZА-Я][₀-₉]*)([A-ZА-Я][₀-₉]*)\| = (\d+(?:,\d+)?) мм/g,(m,a,b,v)=>{ let d=null;
       if(P[a]&&P[b]) d=d2(P[a],P[b])/S; else if(R(a)&&R(b)) d=dist(R(a),R(b)); else if(data[a]&&data[b]) d=dist(data[a],data[b]);
       if(d!=null) ck(Math.abs(num(v)-d)<0.0501,'число в тексте','«|'+a+b+'| = '+v+' мм», по чертежу '+r1(d).toString().replace('.',',')); return m; });
+    /* координаты элементов — числа; дуга окружности (ломаная на одной окружности) начинается и кончается в построенных точках */
+    { const pts=Object.values(P), items=PLAYER.scene(part,(part.steps||[]).length).items;
+      items.forEach(it=>{ const cs=[it.at,it.a,it.b,...(it.t==='poly'?it.p||[]:[])].filter(Boolean);
+        if(cs.some(q=>!Number.isFinite(q[0])||!Number.isFinite(q[1]))) ck(false,'чертёж','у элемента «'+it.t+(it.l?' '+strip(it.l):'')+'» координата не число'); });
+      items.filter(it=>it.t==='poly'&&!it.close&&(it.p||[]).length>=8&&it.p.every(q=>Number.isFinite(q[0])&&Number.isFinite(q[1]))).forEach(it=>{
+        const a=it.p[0], m=it.p[it.p.length>>1], b=it.p[it.p.length-1], D=2*(a[0]*(m[1]-b[1])+m[0]*(b[1]-a[1])+b[0]*(a[1]-m[1])); if(Math.abs(D)<1e-6) return;
+        const sq=q=>q[0]*q[0]+q[1]*q[1], o=[(sq(a)*(m[1]-b[1])+sq(m)*(b[1]-a[1])+sq(b)*(a[1]-m[1]))/D,(sq(a)*(b[0]-m[0])+sq(m)*(a[0]-b[0])+sq(b)*(m[0]-a[0]))/D], r=d2(o,a);
+        if(!it.p.every(q=>Math.abs(d2(o,q)-r)<1e-3*Math.max(1,r))) return;
+        const at=q=>pts.some(x=>d2(x,q)<TOL*S);
+        ck(at(a)&&at(b),'дуга','дуга радиуса '+r1(r/S).toString().replace('.',',')+' мм не '+(at(a)?'кончается':'начинается')+' в построенной точке'); }); }
     /* штриховая — только невидимое: рёбра тела и данные прямые; у точки не бывает «штрихового» вида */
     { const items=PLAYER.scene(part,(part.steps||[]).length).items;
       items.forEach(it=>{ if((it.t==='pt'||it.t==='sq'||it.t==='ang')&&/d$/.test(it.k||'')) ck(false,'вид линии',(it.t==='pt'?'точка '+strip(it.l):it.t==='sq'?'знак прямого угла':'знак угла')+' нарисован(а) как штриховая ('+it.k+')'); });
@@ -229,6 +239,7 @@ function checkTask(id,task,out){
         ck(Math.abs(dot(sub(Bh,O),hdir))/d2(Bh,O)/len(hdir)<1e-6,'вращение','след плоскости вращения B не ⟂ A′D′');
         ck(offLine2(B0,O,Bh)<TOL*S,'вращение','B₁′ не на следе плоскости вращения');
         const Rr=Math.hypot(d2(O,Bh),(B[2]-A[2])*S); ck(Math.abs(d2(O,B0)-Rr)<TOL*S,'вращение','|O₁′B₁′| ≠ R = √(|O₁′B′|² + Δz²)');
+        if(P['B̄']) ck(Math.abs(d2(P['B̄'],Bh)-Math.abs(B[2]-A[2])*S)<TOL*S&&Math.abs(dot(sub(P['B̄'],Bh),sub(Bh,O)))/d2(P['B̄'],Bh)/d2(Bh,O)<1e-6,'вращение','катет B′B̄ — не Δz = |z_B − z_A| ⟂ O₁′B′');
         ck(Math.abs(P['B₁″'][1]-P['A″'][1])<TOL*S&&Math.abs(P['C₁″'][1]-P['A″'][1])<TOL*S,'вращение','B₁″, C₁″ не на уровне оси вращения');
         ck(offLine2(C0,B0,Dh)<TOL*S,'вращение','C₁′ не на прямой B₁′D′');
         ck(Math.abs(dot(sub(C0,P['C′']),hdir))/Math.max(1e-9,d2(C0,P['C′']))/len(hdir)<1e-6,'вращение','C₁′ не на следе плоскости вращения C');
@@ -241,6 +252,7 @@ function checkTask(id,task,out){
         const Ah=P['A′'], Th=P['T′'], O=P['O₃′'], Sh=P['S′'], S0=P['S₁′'];
         ck(offLine2(O,Ah,Th)<TOL*S&&Math.abs(dot(sub(Sh,O),sub(Th,Ah)))/d2(Sh,O)/d2(Th,Ah)<1e-6,'вращение','O₃′ — не центр вращения S вокруг A′T′');
         ck(offLine2(S0,O,Sh)<TOL*S,'вращение','S₁′ не на следе плоскости вращения');
+        if(P['S̄']) ck(Math.abs(d2(P['S̄'],Sh)-Math.abs(Sv[2]-A[2])*S)<TOL*S&&Math.abs(dot(sub(P['S̄'],Sh),sub(Sh,O)))/d2(P['S̄'],Sh)/d2(Sh,O)<1e-6,'вращение','катет S′S̄ — не Δz = |z_S − z_A| ⟂ O₃′S′');
         ck(Math.abs(d2(Ah,S0)/S-dist(A,Sv))<TOL&&Math.abs(d2(Th,S0)/S-dist(T,Sv))<TOL,'вращение','треугольник A′S₁′T′ — не истинный вид AST');
         const phi=deg(Math.asin(Hn/dist(Sv,A))), psi=angle(sub(A,Sv),sub(T,Sv));
         ck(Math.abs(phi-(90-psi))<TOLD,'ответ','φ ≠ 90° − ψ');
