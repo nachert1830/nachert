@@ -120,7 +120,24 @@ function extract(img,rect,o){ o=o||{}; const SH=SHEETS[o.n||47], roi=SH.roi, box
   /* сцена: мм чертежа */
   const dr=p=>[p[0]-SH.O[0],p[1]-SH.O[1]];
   const scene={units:'mm',items:SH.given().map(it=>Object.assign({},it)).concat(segs.map(s=>({t:'seg',a:dr(s.a),b:dr(s.b),k:s.k,σ:+s.σ.toFixed(3),conf:+s.conf.toFixed(3),src:'hand',w:+s.weight.toFixed(4)})))};
-  return {ok:true,segs:segs.map(s=>Object.assign({},s,{a:dr(s.a),b:dr(s.b)})),scene,map:{g,box,mask,tR,C}}; }
+  return {ok:true,segs:segs.map(s=>Object.assign({},s,{a:dr(s.a),b:dr(s.b)})),scene,map:{g,box,mask,tR,C,R,nx,ny,tLow:Math.max(0.006,med+4*mad),O:SH.O}}; }
+/* проверка предсказанной линии прямо по карте гребней (для бледных линий, которых нет среди отрезков):
+   вдоль отрезка a→b (мм чертежа) через 0,5 мм ищем поперёк (±1,2 мм) максимум гребня нужного направления;
+   доля мест, где гребень выше слабого порога, и МНК-прямая по найденным серединам */
+function probe(map,a,b){ const {R,nx,ny,mask,box,O}=map, w=map.g.w, h=map.g.h, P=p=>[(p[0]+O[0]-box[0])*PPM,(p[1]+O[1]-box[1])*PPM];
+  const A=P(a), B=P(b), L=Math.hypot(B[0]-A[0],B[1]-A[1]); if(L<2*PPM) return null; const u=[(B[0]-A[0])/L,(B[1]-A[1])/L], n=[-u[1],u[0]];
+  let tot=0; const hits=[];
+  for(let t=0;t<=L;t+=0.5*PPM){ const c=[A[0]+u[0]*t,A[1]+u[1]*t], ci=Math.floor(c[1])*w+Math.floor(c[0]); if(c[0]<1||c[1]<1||c[0]>=w-1||c[1]>=h-1) continue; if(mask[ci]) continue; tot++;
+    let best=0, bq=0; for(let q=-1.2*PPM;q<=1.2*PPM;q+=0.5){ const x=Math.round(c[0]+n[0]*q), y=Math.round(c[1]+n[1]*q); if(x<0||y<0||x>=w||y>=h) continue; const i=y*w+x;
+      if(Math.abs(nx[i]*n[0]+ny[i]*n[1])<0.9) continue; if(R[i]>best){ best=R[i]; bq=q; } }
+    if(best>=map.tLow) hits.push([t,bq]); }
+  if(tot<4) return null; const frac=hits.length/tot; if(hits.length<4) return {frac,line:null};
+  /* прямая offset(t) = α + β t по найденным (с отбрасыванием выбросов) */
+  let H=hits; for(let it=0;it<2;it++){ const m=H.length, st=H.reduce((s,x)=>s+x[0],0)/m, sq=H.reduce((s,x)=>s+x[1],0)/m; let num=0, den=0; H.forEach(x=>{ num+=(x[0]-st)*(x[1]-sq); den+=(x[0]-st)**2; });
+    const be=den?num/den:0, al=sq-be*st; const r=H.map(x=>Math.abs(x[1]-al-be*x[0])); H=H.filter((x,i)=>r[i]<=Math.max(1,2.5*r.slice().sort((p,q)=>p-q)[Math.floor(r.length/2)])); if(it===1){
+      const mm=(t,q)=>{ const x=A[0]+u[0]*t+n[0]*q, y=A[1]+u[1]*t+n[1]*q; return [box[0]+x/PPM-O[0],box[1]+y/PPM-O[1]]; };
+      return {frac:H.length/tot,line:{a:mm(0,al),b:mm(L,al+be*L)},n:H.length}; } }
+  return {frac,line:null}; }
 
 function bil(a,w,h,x,y){ const x0=Math.floor(x), y0=Math.floor(y); if(x0<0||y0<0||x0>=w-1||y0>=h-1) return 0; const fx=x-x0, fy=y-y0, i=y0*w+x0; return (a[i]*(1-fx)+a[i+1]*fx)*(1-fy)+(a[i+w]*(1-fx)+a[i+w+1]*fx)*fy; }
 /* МНК-прямая n·p = rho по точкам с весом r */
@@ -132,5 +149,5 @@ function twoMeans(v){ if(v.length<4) return null; let a=Math.min(...v), b=Math.m
   for(let it=0;it<30;it++){ const m=(a+b)/2, A=v.filter(x=>x<=m), B=v.filter(x=>x>m); if(!A.length||!B.length) return null; a=A.reduce((s,x)=>s+x,0)/A.length; b=B.reduce((s,x)=>s+x,0)/B.length; }
   return b-a>0.45?(a+b)/2:null; }
 
-put('lines',{extract,ridges,printMask,PPM});
+put('lines',{extract,ridges,printMask,probe,PPM});
 })();

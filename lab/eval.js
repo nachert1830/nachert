@@ -43,13 +43,19 @@ const pct=(a,b)=>b?Math.round(100*a/b)+' %':'—';
 const med=a=>{ if(!a.length) return '—'; const s=a.slice().sort((x,y)=>x-y); return s[Math.floor(s.length/2)].toFixed(2); };
 const p95=a=>{ if(!a.length) return '—'; const s=a.slice().sort((x,y)=>x-y); return s[Math.min(s.length-1,Math.floor(s.length*0.95))].toFixed(2); };
 
-function tally(rows){ const r={n:rows.length,read:0,right:0,falseV:0,refuse:0,equiv:0,unk:0,rect:[],pts:[],ms:0,fv:[]};
+/* класс части K: верно / код ошибки K / unknown */
+const kPart=c=>{ if(!c) return null; if(c==='unknown') return 'unknown'; const k=c.split('+').find(x=>C47.KOPT[x]); return k||'ok'; };
+function tally(rows){ const r={n:rows.length,read:0,right:0,falseV:0,refuse:0,equiv:0,unk:0,part:0,partRight:0,rect:[],pts:[],ms:0,fv:[]};
   rows.forEach(x=>{ r.ms+=x.ms; if(x.rect!=null) r.rect.push(x.rect); if(x.pts!=null) r.pts.push(x.pts);
-    if(x.status!=='verdict'){ if(x.unknown) r.unk++; else r.refuse++; return; } r.read++;
-    if(x.got===x.cls) r.right++; else if(x.got==='ok'&&x.equiv||x.as&&x.got===x.as) r.equiv++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), вердикт '+x.got); } });
+    if(x.status!=='verdict'){ if(x.unknown) r.unk++; else r.refuse++; return; }
+    /* частичный вердикт (только K): верен, если часть K совпала с правдой; иначе — ложный */
+    if(/\+nv\?$/.test(x.got||'')){ r.part++; const g=x.got.replace(/\+nv\?$/,''), t=kPart(x.as||x.cls); if(g===t) r.partRight++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), частичный вердикт '+x.got); } return; }
+    r.read++;
+    /* «верно с оговоркой»: правда — ошибка, неотличимая на этих данных, и вердикт сам её называет */
+    if(x.got===x.cls) r.right++; else if(x.got==='ok'&&x.equiv&&(x.twins||[]).includes(x.cls)||x.as&&x.got===x.as) r.equiv++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), вердикт '+x.got); } });
   return r; }
-function row(name,r){ return '| '+name+' | '+r.n+' | '+r.read+' ('+pct(r.read,r.n)+') | '+med(r.rect)+' / '+p95(r.rect)+' | '+med(r.pts)+' | '+r.right+' ('+pct(r.right,r.read)+') | **'+r.falseV+'** | '+r.unk+' | '+r.refuse+' | '+r.equiv+' |'; }
-const HEAD='| Набор | Листов | Вердикт вынесен | Выпрямление, мм (медиана / 95 %) | K′, K″, мм | Верный диагноз | Ложные вердикты | Отказ «не узнаю построение» | Другие отказы | Неразличимо на этих данных |\n|---|---|---|---|---|---|---|---|---|---|';
+function row(name,r){ return '| '+name+' | '+r.n+' | '+r.read+' ('+pct(r.read,r.n)+') | '+r.part+' (верно '+r.partRight+') | '+med(r.rect)+' / '+p95(r.rect)+' | '+med(r.pts)+' | '+(r.right+r.equiv)+' ('+pct(r.right+r.equiv,r.read)+'; с оговоркой '+r.equiv+') | **'+r.falseV+'** | '+r.unk+' | '+r.refuse+' |'; }
+const HEAD='| Набор | Листов | Вердикт вынесен | Частичный вердикт (только K) | Выпрямление, мм (медиана / 95 %) | K′, K″, мм | Верный диагноз | Ложные вердикты | Отказ «не узнаю построение» | Другие отказы |\n|---|---|---|---|---|---|---|---|---|---|';
 
 (async()=>{ const t0=Date.now(), rows=[], keep=A.keep;
   if(keep) fs.mkdirSync(keep,{recursive:true});
@@ -58,7 +64,7 @@ const HEAD='| Набор | Листов | Вердикт вынесен | Вып
     if(keep) fs.writeFileSync(path.join(keep,lv+'-'+i+'-'+t.cls+'.png'),IMG.encodePNG(s.img));
     let res; try{ res=scan(s.img,{n:47}); }catch(e){ res={status:'refuse',reason:'сбой: '+e.message,ms:0}; }
     const sep=separation(t);
-    rows.push({id:lv+'#'+i,level:lv,cls:t.cls,as:unknownAs(t),kid:t.kid,nvid:t.nvid,equiv:sep<1,sep,status:res.status,got:res.verdict&&res.verdict.cls,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0,rect:rectErr(res,t),pts:pointErr(res,t)});
+    rows.push({id:lv+'#'+i,level:lv,cls:t.cls,as:unknownAs(t),kid:t.kid,nvid:t.nvid,equiv:sep<1,sep,status:res.status,got:res.verdict&&res.verdict.cls,twins:res.verdict&&res.verdict.twins,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0,rect:rectErr(res,t),pts:pointErr(res,t)});
     process.stderr.write('\r'+rows.length+' листов…'); } });
   process.stderr.write('\n');
   /* реальные фото владельца */
@@ -67,7 +73,7 @@ const HEAD='| Набор | Листов | Вердикт вынесен | Вып
     const truth=JSON.parse(fs.readFileSync(tf,'utf8'));
     Object.entries(truth).forEach(([f,cls])=>{ const file=path.join(dir,f); if(!/\.png$/i.test(f)||!fs.existsSync(file)){ real.push({id:d+'/'+f,cls,status:'refuse',reason:'формат не поддержан в Node (нужен PNG)',ms:0}); return; }
       let res; try{ res=scan(IMG.decodePNG(fs.readFileSync(file)),{n:+d}); }catch(e){ res={status:'refuse',reason:'сбой: '+e.message}; }
-      real.push({id:d+'/'+f,cls,status:res.status,got:res.verdict&&res.verdict.cls,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0}); }); });
+      real.push({id:d+'/'+f,cls,status:res.status,got:res.verdict&&res.verdict.cls,twins:res.verdict&&res.verdict.twins,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0}); }); });
   const out=['## Сканер № 47 — замер ('+new Date().toISOString().slice(0,10)+', node lab/eval.js'+(process.argv.slice(2).length?' '+process.argv.slice(2).join(' '):'')+')','',HEAD];
   LEVELS.forEach(lv=>out.push(row('синтетика · '+lv,tally(rows.filter(r=>r.level===lv)))));
   const all=tally(rows); out.push(row('**синтетика · всё**',all)); out.push(row('реальные фото',tally(real)));

@@ -15,10 +15,10 @@ console.log('отрезков: '+ln.segs.length+' (сильных '+it.segs.leng
 it.segs.forEach((g,i)=>console.log('  #'+i+' '+g.a.map(v=>v.toFixed(1))+' → '+g.b.map(v=>v.toFixed(1))+' '+g.len.toFixed(1)+' мм '+g.k+' rel '+g.rel.toFixed(2)+' w '+g.weight.toFixed(3)));
 console.log('гипотезы:'); it.fits.forEach(f=>console.log('  '+f.cls.padEnd(16)+f.kid.padEnd(9)+f.nvid.padEnd(9)+' ll '+f.ll+' нет: '+f.miss.join(',')+' лишних '+f.extra));
 const C47=C, given=C47.given(SHEETS[47].G());
-const best=IT.fitProgram(C47.program(it.fits[0].kid,it.fits[0].nvid),given,it.segs,it.vis);
+const best=IT.fitProgram(C47.program(it.fits[0].kid,it.fits[0].nvid),given,it.segs,it.vis,it.probeLine);
 console.log('шаги лучшей:'); best.steps.forEach(x=>console.log('  '+x.id.padEnd(6)+(x.c==null?'—':x.c.toFixed(2)+' #'+(best.roles[x.id]||[x.seg]).join(',#'))));
 console.log('не объяснены: '+it.segs.map((g,i)=>i).filter(i=>!Object.values(best.roles).some(v=>Array.isArray(v)&&v.includes(i))).join(', '));
-if(A.truthfit){ const tf=IT.fitProgram(C47.program(t.kid.startsWith('u-')?'front':t.kid,t.nvid),given,it.segs,it.vis); console.log('правда как гипотеза: ll '+tf.ll.toFixed(2)+' нет: '+tf.missReq.join(',')+' лишних '+tf.extra.length); tf.steps.forEach(x=>console.log('  '+x.id.padEnd(6)+(x.c==null?'—':x.c.toFixed(2)+' #'+x.seg))); }
+if(A.truthfit){ const tf=IT.fitProgram(C47.program(t.kid.startsWith('u-')?'front':t.kid,t.nvid),given,it.segs,it.vis,it.probeLine); console.log('правда как гипотеза: ll '+tf.ll.toFixed(2)+' нет: '+tf.missReq.join(',')+' лишних '+tf.extra.length); tf.steps.forEach(x=>console.log('  '+x.id.padEnd(6)+(x.c==null?'—':x.c.toFixed(2)+' #'+x.seg))); }
 console.log('итог: '+(it.ok?'ВЕРДИКТ '+it.verdict.cls+' — '+it.verdict.title:'отказ: '+it.reason));
 if(A.png){ const g=ln.map.g, box=ln.map.box, O=t.O, im=IMG.rgba(g.w,g.h); for(let i=0;i<g.w*g.h;i++){ const v=255*(1-Math.min(1,g.a[i]*1.5)); im.data[4*i]=im.data[4*i+1]=im.data[4*i+2]=v; im.data[4*i+3]=255; }
   const line=(a,b,col,off)=>{ const P=p=>[(p[0]+O[0]-box[0])*8,(p[1]+O[1]-box[1])*8+off]; const A_=P(a),B=P(b),n=Math.ceil(Math.hypot(B[0]-A_[0],B[1]-A_[1])); for(let k=0;k<=n;k++){ const x=Math.round(A_[0]+(B[0]-A_[0])*k/n), y=Math.round(A_[1]+(B[1]-A_[1])*k/n); if(x<0||y<0||x>=g.w||y>=g.h) continue; const i=y*g.w+x; im.data[4*i]=col[0]; im.data[4*i+1]=col[1]; im.data[4*i+2]=col[2]; } };
