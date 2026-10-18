@@ -69,6 +69,9 @@ function audit(name,part,out,textAll,condText){
   const coords=new Set([0]); String(textAll||'').replace(/\(([^()]{3,60})\)/g,(m,b)=>{ if(/;/.test(b)) b.split(';').forEach(v=>{ const x=+String(v).trim().replace('−','-').replace(',','.'); if(Number.isFinite(x)) coords.add(Math.abs(x)); }); return m; });
   String(textAll||'').replace(/<td>\s*(−?-?\d+(?:[.,]\d+)?)\s*<\/td>/g,(m,v)=>{ coords.add(Math.abs(+v.replace('−','-').replace(',','.'))); return m; });
   const angs=[30,45,60]; String(textAll||'').replace(/(\d+(?:[.,]\d+)?)\s*°/g,(m,v)=>{ const x=+v.replace(',','.'); angs.push(x,90-x,180-x); return m; });
+  /* уровни, названные в тексте: «плоскости z = 58, 44, 30», «y = 25» — по ним проводят линии уровня */
+  const levels=new Set(); String(textAll||'').replace(/[zyx]\s*=\s*((?:−?-?\d+(?:[.,]\d+)?(?:\s*(?:,|и)\s*)?)+)/g,(m,list)=>{ list.split(/\s*(?:,(?!\d)|и)\s*/).forEach(v=>{ const x=+String(v).trim().replace('−','-').replace(',','.'); if(Number.isFinite(x)) levels.add(Math.abs(x)); }); return m; });
+  const levelKnown=v=>{ for(const c of levels) for(const k of scales) if(Math.abs(c*k-v)<TL) return true; return false; };
   const coordKnown=v=>{ for(const c of coords) for(const k of scales) if(Math.abs(c*k-v)<TL) return true; return false; };
   const lenKnown=(v,ctx)=>{ if(v<0.5) return false; for(const L of lens) if(Math.abs(L-v)<TL) return true;
     for(const m of mmLens) for(const k of scales) if(Math.abs(m*k-v)<TL) return true; return false; };
@@ -102,7 +105,7 @@ function audit(name,part,out,textAll,condText){
       if(arr.some(it=>it&&it.t==='axis3')){ [[1,0],[0,1]].forEach(d=>{ const c={p:[0,0],d,src:{t:'axis3'}}; addLines(c); axisLines.push(c); }); }
       A.forEach(a=>{ if(a.kind==='pt'){ addK(a.p,fieldOf(a.it.l)); notePt(a); } });
       A.forEach(a=>{ if(a.kind==='line'){ const f=fieldOf(a.c.src&&a.c.src.l); addK(a.c.a,f); addK(a.c.b,f); } });
-      A.forEach(a=>{ if(a.kind==='line') addLines(a.c); if(a.kind==='circ') addCirc(a.o); if(a.kind==='curve') addCurve(a); });
+      A.forEach(a=>{ if(a.kind==='line') addLines(a.c); if(a.kind==='circ'){ addCirc(a.o); lens.add(a.o.r); lens.add(2*a.o.r); } if(a.kind==='curve') addCurve(a); });
       A.forEach(a=>{ if(a.kind==='line'){ drawn.push(a.c); lens.add(d2(a.c.a,a.c.b)); segs.push([a.c.a,a.c.b]); } });
       A.forEach(a=>{ if(a.kind==='line') noteRatio(a.c.a,a.c.b); });
       K.forEach(p=>axisLines.forEach(x=>lens.add(offC(p,x))));
@@ -119,11 +122,22 @@ function audit(name,part,out,textAll,condText){
     const okLine0=c=>{ const P=thru(c), link=c.src&&c.src.t==='conn'; if(P.length>=2&&P.some(p=>P.some(q=>d2(p,q)>1&&(link||!cross(p,q))))) return 'две точки';
       const dirOk=lines.some(o=>Math.abs(crs(o.d,c.d))<TA||Math.abs(dot(o.d,c.d))<TA)||Math.abs(c.d[0])<TA||Math.abs(c.d[1])<TA;
       if(P.length>=1&&dirOk) return 'точка и направление';
+      /* параллельная построенной прямой на известном расстоянии (откладывают циркулем по перпендикуляру) */
+      if(lines.some(o=>Math.abs(crs(o.d,c.d))<TA&&lenKnown(offC(o.p,c)))) return 'параллель на расстоянии';
+      /* серединный перпендикуляр к нарисованному отрезку (середина строится циркулем) */
+      if(segs.some(([a,b])=>{ const m=mul(add(a,b),0.5); return d2(a,b)>2&&offC(m,c)<TP&&Math.abs(dot(unit(sub(b,a)),c.d))<TA*5; })) return 'серединный перпендикуляр';
+      /* биссектриса угла между двумя построенными прямыми, сходящимися в известной точке */
+      if(P.some(q=>{ const Ls=lines.filter(o=>offC(q,o)<TP); for(let i=0;i<Ls.length;i++) for(let j=i+1;j<Ls.length;j++){ const u=Ls[i].d, v=Ls[j].d; if(Math.abs(crs(u,v))<1e-3) continue;
+          const b1=unit(add(u,v)), b2=unit(sub(u,v)); if(Math.abs(crs(b1,c.d))<TA*5||Math.abs(crs(b2,c.d))<TA*5) return true; } return false; })) return 'биссектриса';
       /* через известную точку под заданным углом к построенной прямой (угол из условия или шагов, 30°/45°/60°) */
       if(P.length>=1&&lines.some(o=>{ const g=Math.acos(Math.min(1,Math.abs(dot(o.d,c.d))))*180/Math.PI; return angs.some(v=>Math.abs(v-g)<0.005); })) return 'угол';
       if(isAxisLabel(c.src&&c.src.l)&&dirOk) return 'ось';   /* новая ось проекций: положение свободное, направление — по построению */
       /* «проводим произвольную h″ ∥ x»: положение выбирает чертёжник, направление — по построению; шаг так и говорит */
       if((dirOk||P.length>=1)&&FREE.test(stText[si])) return 'произвольная';
+      /* линия уровня на высоте (глубине), названной в тексте: горизонталь на π₂ / фронталь на π₁ */
+      if(Math.abs(c.d[1])<TA&&axisLines.length&&levelKnown(Math.abs(c.p[1]))) return 'уровень из текста';
+      /* горизонталь на π₂ (h″ ∥ x) и фронталь на π₁ (f′ ∥ x) проводят на любой высоте (глубине) — положение выбирает чертёжник */
+      if(Math.abs(c.d[1])<TA&&/^[hf][₀-₉a-zα-ωₐ-ₜ]*[″′]$/.test(strip(c.src&&c.src.l||''))&&(/^h/.test(strip(c.src.l))?/″$/:/′$/).test(strip(c.src.l))) return 'линия уровня';
       /* касательная из известной точки к построенной окружности */
       if(P.length>=1&&circs.some(o=>Math.abs(offC(o.c,c)-o.r)<TP)) return 'касательная';
       return ''; };
@@ -132,6 +146,8 @@ function audit(name,part,out,textAll,condText){
       /* точка по координатам: обе координаты на чертеже — числа из условия (отложены от начала координат) */
       if(axisLines.length&&coordKnown(Math.abs(p[0]))&&coordKnown(Math.abs(p[1]))) return 'координаты';
       const on=lines.filter(c=>offC(p,c)<TP), onO=circs.filter(o=>Math.abs(d2(p,o.c)-o.r)<TP);
+      /* точка, симметричная известной относительно построенной прямой (перпендикуляр и равный отрезок) */
+      if(lines.some(c=>K.some(q=>{ const d=offC(q,c); if(d<1) return false; const sg=crs(c.d,sub(q,c.p))>0?1:-1, r=sub(q,mul([-c.d[1],c.d[0]],2*d*sg)); return d2(r,p)<TP; }))) return 'симметрия';
       /* параллельный перенос нарисованного отрезка: P = Q + (B − A) — «равные и параллельные отрезки» */
       if(segs.some(([a,b])=>K.some(q=>d2(add(q,sub(b,a)),p)<TP||d2(add(q,sub(a,b)),p)<TP))) return 'перенос';
       const onC=curves.filter(cv=>offCurve(p,cv)<TC);
@@ -150,16 +166,38 @@ function audit(name,part,out,textAll,condText){
       if(on.some(c=>{ const P2=K.filter(q=>offC(q,c)<TP); for(const a of P2) for(const b of P2){ const L=d2(a,b); if(L<2) continue; const t=dot(sub(p,a),sub(b,a))/(L*L); if(t<=0.02||t>=0.98) continue;
           if(Math.abs(t-0.5)<1e-4) return 'на линии'; if(ratios.some(r=>Math.abs(r-t)<1e-4)) return 'на линии'; } return false; })) return 'на линии';
       return ''; };
-    const okCirc=(o,ends)=>{ if(!known(o.c)) return false; if(K.some(q=>Math.abs(d2(q,o.c)-o.r)<TP)) return true; if(lenKnown(o.r)) return true;
-      if(ends&&ends.some(e=>known(e))) return true; return false; };
+    const okCirc=(o,ends)=>{
+      /* окружность на отрезке как на диаметре: центр — середина двух известных точек, сама проходит через них */
+      { const on=K.filter(q=>Math.abs(d2(q,o.c)-o.r)<TP); if(on.some(a=>on.some(b=>d2(mul(add(a,b),0.5),o.c)<TP&&Math.abs(d2(a,b)-2*o.r)<TP*2))) return true; }
+      if(!known(o.c)&&!okPt1(o.c)) return false;   /* центр — известная или построенная точка */  if(K.some(q=>Math.abs(d2(q,o.c)-o.r)<TP)) return true; if(lenKnown(o.r)) return true;
+      if(lines.some(c=>Math.abs(offC(o.c,c)-o.r)<TP)) return true;   /* касается построенной прямой (радиус — перпендикуляр из центра) */
+      /* параллель поверхности вращения с вертикальной осью: центр — горизонтальная проекция оси (S′, O′, i′…), радиус снят
+         на π₂ от оси (S″, O″…) до точки очерка по горизонтали */
+      { const ax1=labNames.find(q=>d2(q.p,o.c)<TP&&/′$/.test(q.l)); if(ax1){ const base=ax1.l.replace(/′$/,'').split(/≡/)[0], ax2=labNames.find(q=>q.l.split(/≡/).some(x=>x===base+'″'));
+        if(ax2&&K.some(q=>Math.abs(Math.abs(q[0]-ax2.p[0])-o.r)<TL)) return true; }
+        /* то же без подписей: ось — вертикаль через центр; радиус — горизонтальное расстояние от точки на этой вертикали
+           (на π₂, выше оси x) до известной точки на той же высоте (очерк) */
+        if(K.some(a2=>Math.abs(a2[0]-o.c[0])<TP&&a2[1]<-TP&&K.some(q=>Math.abs(q[1]-a2[1])<TP&&Math.abs(Math.abs(q[0]-a2[0])-o.r)<TL))) return true;
+        if(K.some(q=>q[1]<-TP&&Math.abs(Math.abs(q[0]-o.c[0])-o.r)<TL&&K.some(a2=>Math.abs(a2[0]-o.c[0])<TP&&a2[1]<-TP))) return true; }
+      if(ends&&ends.some(e=>known(e))) return true;
+      if(known(o.c)&&FREE.test(stText[si])) return true;   /* «сфера произвольного радиуса» с известным центром */
+      return false; };
     while(changed){ changed=false;
       pend=pend.filter(a=>{ let ok=false;
         if(a.kind==='line') ok=okLine(a.c);
         else if(a.kind==='circ') ok=okCirc(a.o,a.ends);
-        else if(a.kind==='curve'){ const on=K.filter(q=>offCurve(q,a)<TC); ok=on.length>=3&&on.some(p=>on.some(q=>d2(p,q)>4)); if(!ok&&a.ell) ok=known(a.it.c)&&on.length>=2; }
+        else if(a.kind==='curve'){ const on=K.filter(q=>offCurve(q,a)<TC); ok=on.length>=3&&on.some(p=>on.some(q=>d2(p,q)>4));
+          /* кусок кривой (видимый/невидимый участок): две построенные точки на нём и концы — в построенных точках или на других кусках */
+          if(!ok&&on.length>=1) ok=[a.ps[0],a.ps[a.ps.length-1]].every(e=>K.some(q=>d2(q,e)<TC)||curves.some(cv=>cv!==a&&offCurve(e,cv)<TC)||A.some(b=>b!==a&&b.kind==='curve'&&offCurve(e,b)<TC)); if(!ok&&a.ell) ok=known(a.it.c)&&on.length>=2;
+          /* вырожденная кривая — проекция окружности на прямую: все её точки на построенной прямой между известными точками */
+          if(!ok) ok=lines.some(c=>a.ps.every(q=>offC(q,c)<TP*3))&&on.length>=1;
+          /* огибающая (очерк линейчатой поверхности): касается построенных образующих — шаг так и говорит */
+          if(!ok&&/огибающ/i.test(stText[si])) ok=lines.filter(c=>a.ps.some(q=>offC(q,c)<TC)).length>=3; }
         else if(a.kind==='pt'){ ok=okPt(a.p); a.why=ok; }
         if(!ok) return true;
-        if(a.kind==='line'){ drawn.push(a.c); addLines(a.c); lens.add(d2(a.c.a,a.c.b)); if(known(a.c.a)&&known(a.c.b)){ segs.push([a.c.a,a.c.b]); noteRatio(a.c.a,a.c.b); } if(known(a.c.a)||lines.some(o=>o!==a.c&&offC(a.c.a,o)<TP)) addK(a.c.a,a.c._f); if(known(a.c.b)||lines.some(o=>o!==a.c&&offC(a.c.b,o)<TP)) addK(a.c.b,a.c._f); if(isAxisLabel(a.c.src&&a.c.src.l)){ axisLines.push(a.c); K.forEach(p=>lens.add(offC(p,a.c))); } }
+        if(a.kind==='line'){ drawn.push(a.c); addLines(a.c); lens.add(d2(a.c.a,a.c.b)); if(known(a.c.a)&&known(a.c.b)){ segs.push([a.c.a,a.c.b]); noteRatio(a.c.a,a.c.b); lens.add(d2(a.c.a,a.c.b)/2); }   /* половина отрезка — тоже циркулем */ /* конец отрезка — пересечение (поле — общее поле линий) или отложенная длина (поле не определено) */
+          const endK=e=>{ const o=lines.find(o=>o!==a.c&&offC(e,o)<TP); if(known(e)||o) return {f:o&&o._f===a.c._f?a.c._f:0}; return K.some(q=>offC(q,a.c)<TP&&d2(q,e)>0.5&&lenKnown(d2(q,e)))?{f:0}:null; };
+          { const ea=endK(a.c.a), eb=endK(a.c.b); if(ea) addK(a.c.a,ea.f); if(eb) addK(a.c.b,eb.f); } if(isAxisLabel(a.c.src&&a.c.src.l)){ axisLines.push(a.c); K.forEach(p=>lens.add(offC(p,a.c))); } }
         if(a.kind==='curve') addCurve(a);
         if(a.kind==='circ'){ addCirc(a.o); lens.add(a.o.r); if(a.ends) a.ends.forEach(p=>addK(p)); }
         if(a.kind==='pt'){ addK(a.p,fieldOf(a.it.l)); axisLines.forEach(x=>lens.add(offC(a.p,x))); notePt(a); }
@@ -171,7 +209,7 @@ function audit(name,part,out,textAll,condText){
       let n=0; const dirs=[]; ds.forEach(c=>{ if(!dirs.some(d=>Math.abs(crs(d,c.d))<1e-3)){ dirs.push(c.d); n++; } });
       return n+circs.filter(o=>Math.abs(d2(p,o.c)-o.r)<TP).length; };
     const labBefore=labPts.slice(0,labCount0);   /* подписанные точки прошлых шагов: совпавшая с ней точка — та же точка (O″ ≡ i″) */
-    A.filter(a=>a.kind==='pt'&&a.why&&a.why!=='координаты'&&a.why!=='перенос'&&!pend.includes(a)&&!labBefore.some(o=>d2(o.p,a.p)<TP)).forEach(a=>{ const r=reach(a.p), l=strip(a.it.l);
+    A.filter(a=>a.kind==='pt'&&a.why&&a.why!=='координаты'&&a.why!=='перенос'&&!pend.includes(a)&&!labBefore.some(o=>d2(o.p,a.p)<TP)&&!circs.some(o=>d2(o.c,a.p)<TP)).forEach(a=>{ const r=reach(a.p), l=strip(a.it.l);
       if(r<(a.why==='пересечение'?2:1)) out.push({name:where,rule:'построимость',msg:'точка'+(l?' '+l:' без подписи')+(r?': до неё доведена только одна линия':': ни одна нарисованная линия до неё не доведена'),lvl:'ошибка'}); });
     /* одна и та же точка дважды на одном шаге */
     { const ps=A.filter(a=>a.kind==='pt'); ps.forEach((a,i)=>{ if(ps.some((b,j)=>j<i&&d2(a.p,b.p)<TP&&strip(a.it.l)===strip(b.it.l))) out.push({name:where,rule:'построимость',msg:'точка'+(strip(a.it.l)?' '+strip(a.it.l):' без подписи')+' поставлена дважды',lvl:'ошибка'}); }); }
@@ -187,7 +225,7 @@ function audit(name,part,out,textAll,condText){
     A.filter(a=>a.kind==='circ'&&a.ends&&!pend.includes(a)).forEach(a=>{ const bad=a.ends.filter(e=>!known(e));
       if(bad.length) out.push({name:where,rule:'построимость',msg:'дуга кончается не в построенной точке',lvl:'ошибка'}); });
     /* вспомогательная ломаная из многих точек — это дуга; если точки не на одной окружности, её не построить циркулем */
-    arr.filter(it=>it&&it.t==='poly'&&/^aux/.test(it.k||'')&&Array.isArray(it.p)&&it.p.length>6&&!arcOf(it.p)).forEach(()=>out.push({name:where,rule:'построимость',msg:'вспомогательная кривая — не дуга окружности',lvl:'ошибка'}));
+    /* (вспомогательная ломаная, не дуга, проверяется как кривая: через неё должны проходить построенные точки) */
     const nameAt=p=>{ const o=labNames.find(o=>d2(o.p,p)<TP); return o?o.l:'('+(p[0]/S).toFixed(1)+'; '+(p[1]/S).toFixed(1)+')'; };
     pend.forEach(a=>{ const it=a.it, l=strip(it.l||it.s||'')||(a.kind==='line'?nameAt(a.c.a)+'–'+nameAt(a.c.b):'');
       const what=a.kind==='curve'?'кривая'+(l?' '+l:'')+' ('+(it.k||'main')+') — через неё не проходят построенные точки':a.kind==='pt'?'точка'+(l?' '+l:' без подписи'):a.kind==='circ'?(it.t==='poly'?'дуга':it.t==='arc'?'дуга':'окружность')+(l?' '+l:''):(it.t==='conn'?'линия связи':it.t==='line'?'прямая':'отрезок')+(l?' '+l:'')+(it.k?' ('+it.k+')':'');
@@ -208,7 +246,7 @@ function audit(name,part,out,textAll,condText){
 
 /* кривые поверхности (сечения, развёртки, пересечения поверхностей): кривые строятся по точкам, и правила для них
    (точка на образующей, на параллели, на очерке) ещё не записаны — эти задачи «Евклид» пока не проверяет */
-window.EUCLID_TODO=[56,62,65,67,68,69,70,71,73,74,75,76,77,78,86,87,88,89];
+window.EUCLID_TODO=[74,77];
 window.EUCLID_CHECK=function(opts){ opts=opts||{}; const out=[];
   const TX=o=>[o&&o.q,o&&o.intro,o&&o.ans,o&&o.note,o&&o.data].concat(((o&&o.steps)||[]).map(s=>[s.t,s.d,s.why,s.tbl].join(' '))).filter(x=>typeof x==='string').join(' ');
   const run=(name,t)=>{ try{ PLAYER.partsOf(t).forEach((p,pi)=>{ try{ window.LINEFIX&&LINEFIX(p); window.DMARK&&DMARK(p); }catch(e){} audit(name+(pi?' п.'+(pi+1):''),p,out,TX(t)+' '+TX(p),[t.q,t.data,p.q].filter(x=>typeof x==='string').join(' ')); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e).slice(0,200),lvl:'ошибка'}); } };
