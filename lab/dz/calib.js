@@ -83,9 +83,11 @@ function givenErrors(dig,cal,id,data){ const D=dmap(dig.map), base=cal.cover, hy
   const refit=dd=>{ const S=samples(id,dd).S; let r=fit(D,S,cal.T,2,10); r=fit(D,S,r.x,6,20); return {cv:coverOf(D,S,r.x,0.6),T:r.x}; };
   const top=hyp.slice(0,6).map(h=>{ let best=null; for(let d=h.d-3;d<=h.d+3;d+=0.5){ if(Math.abs(d)<2) continue; const r=refit(pert(h.k,h.c,d)); if(!best||r.cv>best.cv) best=Object.assign({d},r); }
     return {k:h.k,c:'xyz'[h.c],d:best.d,cv:best.cv,T:best.T,val:data[h.k][h.c]+best.d,was:data[h.k][h.c]}; });
-  top.sort((a,b)=>b.cv-a.cv); const h=top[0], other=top.find(x=>x.k!==h.k);
+  top.sort((a,b)=>b.cv-a.cv); const h=top[0], other=top.find(x=>x.k!==h.k), sameK=top.find(x=>x!==h&&x.k===h.k);
   const ok=h.cv>=0.92&&h.cv-base>=0.06&&(!other||h.cv-other.cv>=0.04);
-  return {base,best:h,second:other,ok}; }
+  /* та же точка, другая координата — почти так же хорошо (точка сдвинута вдоль своего отрезка): координату не называем */
+  const coordSure=!sameK||h.cv-sameK.cv>=0.03;
+  return {base,best:h,second:other,ok,coordSure}; }
 /* какой вариант начерчен: калибровка всех вариантов ДЗ, лучший и запас до второго */
 function whichVariant(dig,loc,dz,o){ o=o||{}; const out=[];
   for(let n=1;n<=30;n++){ const g=VAR.get(dz,n), c=calibrate(dig,loc,g.id,g.data); out.push({n,id:g.id,cover:c.ok?c.cover:0}); }

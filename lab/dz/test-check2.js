@@ -11,7 +11,7 @@ for(const n of NS) for(const err of ['ok'].concat(VS.ERRS[V.get(2,n).id],VS.COMM
   const s=VS.sheet({dz:2,n,err,seed,level:LV,turn:(n+k)%4}); if(!s) continue; const t=s.truth, t0=Date.now();
   const R=CK.checkSheet(s.img,{dz:2,n}), verdict=R.verdict, why=R.why;
   /* верный вердикт с неверной причиной — тоже ложный: проверяем, что причина названа та */
-  const W=why.join(' '), diag={h:/высота/,apex:/равнобедрен/,D:/\|AD\|/,link:/линии связи/,vis:null,given:t.wrongPt?new RegExp('точки '+t.wrongPt.split(' ')[0]+' координата '+t.wrongPt.split(' ')[1]):/точк/}[err];
+  const W=why.join(' '), diag={h:/высота/,apex:/равнобедрен/,D:/\|AD\|/,link:/линии связи/,vis:null,given:t.wrongPt?new RegExp('точки '+t.wrongPt.split(' ')[0]+' координата '+t.wrongPt.split(' ')[1]+'|точка '+t.wrongPt.split(' ')[0]+' нанесена не по данным варианта \\(сдвиг'):/точк/}[err];   /* координата может быть не названа (неоднозначна) — тогда достаточно точки */
   const diagOk=verdict!=='ошибка'||(err==='vis'?W.includes('ребро '+t.flipped):!diag||diag.test(W));
   const exp=t.expect, ok=verdict===exp&&diagOk, sure=SURE.has(verdict);
   /* ложный: уверенный вердикт, не совпавший с ожидаемым */

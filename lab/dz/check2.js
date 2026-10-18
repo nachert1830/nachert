@@ -42,19 +42,32 @@ function disp(id,data,a,b){ const A=M.solid(id,a,data), B=M.solid(id,b,data); le
   Object.keys(A.V).forEach(k=>{ if(data[k]) return; const P=A.V[k], Q=B.V[k]; m=Math.max(m,Math.hypot(...v3.sub(M.Fp(P).concat(0),M.Fp(Q).concat(0))),Math.hypot(...v3.sub(M.Hp(P).concat(0),M.Hp(Q).concat(0)))); }); return m; }
 const projSpeed=d=>Math.max(Math.hypot(d[0],d[2]),Math.hypot(d[0],d[1]));
 /* тип линии вдоль ребра: разрывы штриховой. Профиль тёмности (карта ink, 8 px/мм) вдоль ребра через 0,1 мм — максимум
-   поперёк ±0,9 мм (рука уводит линию от модели до 0,5–0,8 мм); разрыв — участок ≥ 0,8 мм, где тёмность ниже трети типичной на линии. Штриховая даёт 1–2,5
+   поперёк ±0,4 мм вдоль следа настоящей линии; разрыв — участок ≥ 0,8 мм, где тёмность ниже трети типичной на линии. Штриховая даёт 1–2,5
    разрыва на 10 мм (штрих 2–8, промежуток 1–2 мм), сплошная — 0. Места у других линий модели (пересечения) не берём.
    → {gaps (на 10 мм), len (мм учтено)} или null */
 function dashes(map,T,a,b,others){ const g=map.g, ppm=g.ppm||8, L=Math.hypot(b[0]-a[0],b[1]-a[1]); if(L<12) return null;
   const dS=(p,q,r)=>{ const dx=r[0]-q[0], dy=r[1]-q[1], l2=dx*dx+dy*dy||1e-9, t=Math.max(0,Math.min(1,((p[0]-q[0])*dx+(p[1]-q[1])*dy)/l2)); return Math.hypot(p[0]-q[0]-t*dx,p[1]-q[1]-t*dy); };
   const u=[(b[0]-a[0])/L,(b[1]-a[1])/L], nn=[-u[1],u[0]], pr=[];
+  const ink=(p,q)=>{ const P=C.apply(T,[p[0]+nn[0]*q,p[1]+nn[1]*q]), x=Math.round((P[0]-map.box[0])*ppm-0.5), y=Math.round((P[1]-map.box[1])*ppm-0.5); return x>=0&&y>=0&&x<g.w&&y<g.h?g.a[y*g.w+x]:0; };
+  /* где идёт настоящая линия: по кускам 3 мм — сдвиг поперёк (±2 мм от модели) с наибольшей суммой тёмности
+     (рука уводит линию от модели на 0,5–1,5 мм; профиль снимаем вдоль найденного следа, ±0,4 мм) */
+  const off=[]; for(let s0=0.1*L;s0<0.9*L;s0+=3){ let bq=0, bv=-1; for(let q=-2;q<=2;q+=0.1){ let sum=0; for(let s=s0;s<Math.min(s0+3,0.9*L);s+=0.25) sum+=ink([a[0]+u[0]*s,a[1]+u[1]*s],q); if(sum>bv){ bv=sum; bq=q; } } off.push(bq); }
   for(let s=0.1*L;s<=0.9*L;s+=0.1){ const p=[a[0]+u[0]*s,a[1]+u[1]*s]; if(others.some(([q,r])=>dS(p,q,r)<1.2)){ pr.push(null); continue; } let m=0;
-    for(let q=-0.9;q<=0.9;q+=0.1){ const P=C.apply(T,[p[0]+nn[0]*q,p[1]+nn[1]*q]), x=Math.round((P[0]-map.box[0])*ppm-0.5), y=Math.round((P[1]-map.box[1])*ppm-0.5); if(x>=0&&y>=0&&x<g.w&&y<g.h&&g.a[y*g.w+x]>m) m=g.a[y*g.w+x]; }
+    const o0=off[Math.min(off.length-1,Math.floor((s-0.1*L)/3))]; for(let q=o0-0.4;q<=o0+0.4;q+=0.1){ const v=ink(p,q); if(v>m) m=v; }
     pr.push(m); }
   const vals=pr.filter(v=>v!=null).sort((x,y)=>x-y); if(vals.length<100) return null; const on=vals[Math.floor(vals.length*0.75)], th=on/3;
   if(on<0.05) return null;
-  let gaps=0, run=0, used=0; pr.forEach(v=>{ if(v==null){ run=0; return; } used++; if(v<th){ run++; if(run===8) gaps++; } else run=0; });
-  return {gaps:gaps/(used*0.1)*10,len:used*0.1}; }
+  /* разрывы и их места; «провалы» — участки ≥ 0,4 мм ниже половины типичной тёмности (у сплошной их нет) */
+  let gaps=0, run=0, used=0, dips=0, drun=0; const where=[], dwhere=[]; pr.forEach((v,i)=>{ if(v==null){ run=0; drun=0; return; } used++;
+    if(v<th){ run++; if(run===8){ gaps++; where.push(i/pr.length); } } else run=0;
+    if(v<on/2){ drun++; if(drun===4){ dips++; dwhere.push(i/pr.length); } } else drun=0; });
+  const bins=new Set(dwhere.map(t=>Math.min(4,Math.floor(t*5)))).size;
+  return {gaps:gaps/(used*0.1)*10,n:gaps,bins,dips,len:used*0.1}; }
+/* тип линии. Промежутки штриховой у руки бывают и короче 0,8 мм — поэтому главный признак — «провалы» (≥ 0,4 мм ниже
+   половины тёмности линии): у штриховой их ≥ 5 и ≥ 0,12 на мм, по всей длине (≥ 3 пятых ребра); у сплошной — ни
+   одного разрыва и не больше 0,07 провала на мм (зерно карандаша). Между — не берусь. Пороги — по замеру на листах
+   lab/dz/vsynth.js: видимые ≤ 0,064 провала на мм, невидимые ≥ 0,14 (кроме коротких рёбер с 2–3 штрихами). */
+const lineType=ds=>!ds?'?':ds.dips>=5&&ds.dips/ds.len>=0.12&&ds.bins>=3?'hid':ds.n===0&&ds.dips<=Math.max(1,0.07*ds.len)?'vis':'?';
 /* семейства решений по задаче. Высота и ребро меньше 15–20 мм не ищутся: верх тела тогда ложится на основание
    и «покрывается» линиями условия — вырожденный ответ */
 function family(id,data,r){
@@ -94,7 +107,10 @@ function check2(dig,loc,cal,id,data){ const why=[], D=C.dmap(dig.map), T=cal.T, 
     return {verdict:'ответ не найден',why:['не нашёл на листе тела ответа: лучшее положение объясняет '+Math.round(weak.c*100)+' % длины его рёбер (нужно ≥ 60 %). Если ответ начерчен — переснимите ближе или обведите рёбра'],steps,found}; }
   /* 2а: S″ и S′ — на одной линии связи? */
   if(id==='2'){ const d=v3.sub(data.F,data.E), F=found.t_f, Hh=found.t_h;
-    if(F.c>=0.6&&Hh.c>=0.6){ const du=Math.abs(F.t-Hh.t)*Math.abs(d[0]); if(du>=BAD&&F.c-F.away>=0.2&&Hh.c-Hh.away>=0.2) return {verdict:'ошибка',why:['S″ и S′ не на одной линии связи: расходятся на '+f1(du)+' мм по оси x'],steps,found}; } }
+    if(F.c>=0.6&&Hh.c>=0.6){ const du=Math.abs(F.t-Hh.t)*Math.abs(d[0]);
+      /* по отдельности каждая проекция объясняется полностью, а общим t (одна точка S) — заметно хуже */
+      const joint=steps[0].c, split=F.c>=0.85&&Hh.c>=0.85&&joint<=Math.min(F.c,Hh.c)-0.15;
+      if(du>=BAD&&((F.c-F.away>=0.2&&Hh.c-Hh.away>=0.2)||split)) return {verdict:'ошибка',why:['S″ и S′ не на одной линии связи: расходятся на '+f1(du)+' мм по оси x'],steps,found}; } }
   const sharp=steps.every(s=>s.c-s.away>=0.2);
   const dMain=disp(id,data,cur,MAIN(id,r)), others=r.sol.filter(s=>s!==MAIN(id,r)), dAlt=Math.min(...others.map(s=>disp(id,data,cur,s)));
   /* верного тела на листе нет? Считаем только там, где его рёбра дальше 1,2 мм от рёбер студента и заданного
@@ -115,12 +131,17 @@ function check2(dig,loc,cal,id,data){ const why=[], D=C.dmap(dig.map), T=cal.T, 
   if(verdict==='верно'||verdict==='другое решение'){ const S=M.solid(id,cur,data), all=answerSegs(id,data,cur).concat(M.given(id,data).segs.map(s=>[s.a,s.b]));
     S.edges.forEach(e=>{ [['f',M.Fp,'″'],['h',M.Hp,'′']].forEach(([pr,P,mk])=>{ if(e[pr]==='?') return; const a=P(S.V[e.a]), b=P(S.V[e.b]);
       const oth=all.filter(s=>!(Math.hypot(s[0][0]-a[0],s[0][1]-a[1])<1e-6&&Math.hypot(s[1][0]-b[0],s[1][1]-b[1])<1e-6)&&!(Math.hypot(s[0][0]-b[0],s[0][1]-b[1])<1e-6&&Math.hypot(s[1][0]-a[0],s[1][1]-a[1])<1e-6)).map(s=>[s[0],s[1]]);
-      const ds=dashes(dig.map,T,a,b,oth); if(ds==null) return; const got=ds.gaps<=0.15?'vis':ds.gaps>=0.6?'hid':'?';
-      edges.push({e:e.a+e.b+mk,want:e[pr],fill:ds.gaps,got}); }); });
+      const ds=dashes(dig.map,T,a,b,oth); let got=lineType(ds);
+      /* ребро на линии условия (AD на AK у куба): тип не измерить — видимое закрыто сплошной линией условия, а
+         невидимое не отличить; видимое считаем выполненным, невидимое — непрочитанным */
+      if(!ds){ const g=M.given(id,data).segs.filter(q=>q.pr===pr), on=g.some(q=>{ const L=Math.hypot(q.b[0]-q.a[0],q.b[1]-q.a[1]), d=p=>Math.abs((p[0]-q.a[0])*(q.b[1]-q.a[1])-(p[1]-q.a[1])*(q.b[0]-q.a[0]))/L; return d(a)<1&&d(b)<1; });
+        got=on&&e[pr]==='vis'?'vis':'?'; }
+      edges.push({e:e.a+e.b+mk,want:e[pr],fill:ds?ds.gaps:null,got,onGiven:!ds&&got==='?'}); }); });
     const badV=edges.filter(x=>x.got!=='?'&&x.got!==x.want), unk=edges.filter(x=>x.got==='?');
     if(badV.length){ if(verdict==='верно') verdict='ошибка'; why.push(...badV.map(x=>'ребро '+x.e+' должно быть '+(x.want==='vis'?'сплошным (видимым)':'штриховым (невидимым)'))); }
     /* «верно» — только если прочитан тип линии каждого ребра: непрочитанное могло быть неверным */
-    else if(unk.length&&verdict==='верно'){ verdict='не могу утверждать'; why.push('тело построено верно, но не прочитал тип линии (сплошная / штриховая) у рёбер '+unk.map(x=>x.e).join(', ')+' — проверьте их сами или переснимите'); } }
+    else if(unk.length&&verdict==='верно'){ verdict='не могу утверждать'; const og=unk.filter(x=>x.onGiven), rd=unk.filter(x=>!x.onGiven);
+      why.push('тело построено верно'+(rd.length?'; не прочитал тип линии (сплошная / штриховая) у рёбер '+rd.map(x=>x.e).join(', ')+' — проверьте их сами или переснимите':'')+(og.length?'; ребро '+og.map(x=>x.e).join(', ')+' лежит на прямой условия — сплошное оно или штриховое, по фото не различить: проверьте сами':'')); } }
   return {verdict,why,steps,found,dMain,dAlt,covMain,cStud,cMain,edges,cur}; }
-put('dzCheck2',{check2,family,segCover,cover,dashes});
+put('dzCheck2',{check2,family,segCover,cover,dashes,lineType});
 })();
