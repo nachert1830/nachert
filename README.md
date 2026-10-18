@@ -9,5 +9,6 @@
 
 Сайт — один файл `index.html`, работает без сборки, установки и регистрации (почему так и как устроен — `docs/ARCHITECTURE.md`).
 
-Цифры надёжности проверки с привязкой к версии кода — `docs/THESIS.md` (сырые данные — `docs/thesis.json`, тезисы — `docs/Матханов_Тезисы_v2.docx`).
+Цифры надёжности проверки с привязкой к версии кода — `docs/THESIS.md` (сырые данные — `docs/thesis.json`).
+
 Шрифты (Golos Text, Geologica, IBM Plex Mono) лежат в папке `fonts/`, лицензия SIL Open Font License 1.1.
