@@ -42,8 +42,10 @@ function findPage(V){ const f=4, w=Math.floor(V.w/f), h=Math.floor(V.h/f), s=gra
 
 /* внутренность рамки: самая большая область без «чернил», не касающаяся края кадра (рамка — замкнутая тёмная
    граница; тени и свет на карте ink уже убраны) */
-function findInner(ink){ const f=4, w=Math.floor(ink.w/f), h=Math.floor(ink.h/f), m=new Uint8Array(w*h);
-  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ let mx=0; for(let j=0;j<f;j++) for(let i=0;i<f;i++){ const v=ink.a[(y*f+j)*ink.w+x*f+i]; if(v>mx) mx=v; } m[y*w+x]=mx>0.3?1:0; }
+function findInner(ink,o){ o=o||{}; const f=4, w=Math.floor(ink.w/f), h=Math.floor(ink.h/f), m0=new Uint8Array(w*h), th=o.th||0.3;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ let mx=0; for(let j=0;j<f;j++) for(let i=0;i<f;i++){ const v=ink.a[(y*f+j)*ink.w+x*f+i]; if(v>mx) mx=v; } m0[y*w+x]=mx>th?1:0; }
+  /* o.close: рамка карандашом бывает с просветами — «чернила» расширяются на клетку, просветы закрываются */
+  let m=m0; if(o.close){ m=new Uint8Array(w*h); for(let y=0;y<h;y++) for(let x=0;x<w;x++){ let v=0; for(let j=-1;j<=1&&!v;j++) for(let i=-1;i<=1;i++){ const xx=x+i, yy=y+j; if(xx>=0&&yy>=0&&xx<w&&yy<h&&m0[yy*w+xx]){ v=1; break; } } m[y*w+x]=v; } }
   const lab0=new Int32Array(w*h).fill(-1); let best=null;
   for(let i=0;i<w*h;i++){ if(lab0[i]>=0||m[i]) continue; const st=[i], pts=[]; lab0[i]=i; let n=0, edge=false;
     while(st.length){ const j=st.pop(), x=j%w, y=(j/w)|0; n++; pts.push([x,y]); if(x===0||y===0||x===w-1||y===h-1) edge=true;
@@ -70,14 +72,15 @@ function fitLine(pts){ if(pts.length<3) return null; for(let it=0;it<3;it++){ co
 const meet=(A,B)=>{ const den=v2.cross(A.d,B.d); if(Math.abs(den)<1e-9) return null; const t=v2.cross(v2.sub(B.p,A.p),B.d)/den; return v2.add(A.p,v2.mul(A.d,t)); };
 
 /* ── 2. рамка: в мм листа ищем тёмную линию поперёк каждой стороны ── */
-function findFrame(ink,M,SH){ const fr=SH.frame, C=[[fr[0],fr[1]],[fr[2],fr[1]],[fr[2],fr[3]],[fr[0],fr[3]]], sides=[];
+function findFrame(ink,M,SH,th){ th=th||0.25; const W=7, fr=SH.frame, C=[[fr[0],fr[1]],[fr[2],fr[1]],[fr[2],fr[3]],[fr[0],fr[3]]], sides=[];
   for(let k=0;k<4;k++){ const a=C[k], b=C[(k+1)%4], d=v2.unit(v2.sub(b,a)), n=[-d[1],d[0]], L=v2.dist(a,b), pts=[];
     for(let t=0.06;t<=0.94;t+=0.015){ const c=v2.add(a,v2.mul(d,L*t)); let best=0, bs=null;
-      const prof=[]; for(let s=-7;s<=7;s+=0.1){ const P=H.apply(M,v2.add(c,v2.mul(n,s))), v=sample(ink,P[0]-0.5,P[1]-0.5); prof.push([s,v==null?0:v]); if(v!=null&&v>best){ best=v; bs=s; } }
-      if(bs==null||best<=0.25) continue;
-      /* линия рамки — тонкая тёмная полоса с бумагой по обе стороны (край страницы на тёмном столе — не рамка) */
-      const side=sg=>{ const P=H.apply(M,v2.add(c,v2.mul(n,bs+sg*1.3))), v=sample(ink,P[0]-0.5,P[1]-0.5); return v==null?1:v; };
-      if(side(1)>0.5*best||side(-1)>0.5*best) continue; let sw=0, ss=0; prof.forEach(([s,v])=>{ if(Math.abs(s-bs)<=0.7&&v>best*0.3){ sw+=v-best*0.3; ss+=(v-best*0.3)*s; } });
+      const prof=[]; for(let s=-W;s<=W;s+=0.1){ const P=H.apply(M,v2.add(c,v2.mul(n,s))), v=sample(ink,P[0]-0.5,P[1]-0.5); prof.push([s,v==null?1:v]); }
+      /* линия рамки — тонкая тёмная полоса с бумагой по обе стороны (край страницы на тёмном столе — не рамка):
+         из местных максимумов профиля берём самый тёмный, у которого в 1,3 мм по обе стороны — бумага */
+      const at=s=>{ const i=Math.round((s+W)/0.1); return i<0||i>=prof.length?1:prof[i][1]; };
+      for(let i=1;i<prof.length-1;i++){ const [s,v]=prof[i]; if(v<=th||v<prof[i-1][1]||v<prof[i+1][1]) continue; if(at(s+1.3)>0.5*v||at(s-1.3)>0.5*v) continue; if(v>best){ best=v; bs=s; } }
+      if(bs==null) continue; let sw=0, ss=0; prof.forEach(([s,v])=>{ if(Math.abs(s-bs)<=0.7&&v>best*0.3){ sw+=v-best*0.3; ss+=(v-best*0.3)*s; } });
       pts.push(H.apply(M,v2.add(c,v2.mul(n,sw?ss/sw:bs)))); }
     const l=fitLine(pts); if(!l||l.n<20) return null; sides.push(l); }
   const Q=[3,0,1,2].map((j,k)=>meet(sides[j],sides[k])); if(Q.some(q=>!q)) return null;
@@ -186,5 +189,5 @@ function rectify(img,o){ o=o||{}; const SH=SHEETS[o.n||47], pg=SH&&SH.page; if(!
   return {ok:true,H:rf.M,Hi:H.inv(rf.M),page:P,frame:best,shift:sh.shift,quality:q2,pxPerMm:px,ink,sheet:SH}; }
 function frameQuality(ink,M,SH){ const fr=SH.frame; let s=0, n=0; for(let t=0;t<=1;t+=0.01){ [[fr[0]+(fr[2]-fr[0])*t,fr[1]],[fr[0]+(fr[2]-fr[0])*t,fr[3]],[fr[0],fr[1]+(fr[3]-fr[1])*t],[fr[2],fr[1]+(fr[3]-fr[1])*t]].forEach(p=>{ const P=H.apply(M,p), v=sample(ink,P[0]-0.5,P[1]-0.5); if(v!=null){ s+=v; n++; } }); } return n?s/n:0; }
 
-put('rectify',{rectify,findPage,templatePts,distMap,refine,fitLine});
+put('rectify',{rectify,findPage,findInner,findFrame,refineRidge,templatePts,distMap,refine,fitLine});
 })();

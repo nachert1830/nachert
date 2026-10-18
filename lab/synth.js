@@ -44,10 +44,10 @@ function hand(prog,given,R,lv){ const k=R.r(...lv.hand), deg=Math.PI/180;
 
 /* ── 2. лист: растр страницы, тёмность 0…1 двух красок (печать, карандаш) ── */
 const PX=10;                                                       /* растр страницы: пикселей на мм */
-function Sheet(w,h){ this.w=Math.round(w*PX); this.h=Math.round(h*PX); this.pr=new Float32Array(this.w*this.h); this.pe=new Float32Array(this.w*this.h); this.tmp=new Float32Array(this.w*this.h); this.touched=[]; }
+function Sheet(w,h,px){ this.px=px||PX; this.w=Math.round(w*this.px); this.h=Math.round(h*this.px); this.pr=new Float32Array(this.w*this.h); this.pe=new Float32Array(this.w*this.h); this.tmp=new Float32Array(this.w*this.h); this.touched=[]; }
 /* штрих — ломаная (мм страницы): ширина w, тёмность dk; o.wob — дрожание поперёк, o.dash — [штрих, промежуток] мм,
    o.grain — зерно графита, o.press — неравномерный нажим */
-Sheet.prototype.stroke=function(pts,w,dk,o,R){ o=o||{}; const L=this.layer==='print'?this.pr:this.pe, T=this.tmp, tc=[];
+Sheet.prototype.stroke=function(pts,w,dk,o,R){ o=o||{}; const PXs=this.px, L=this.layer==='print'?this.pr:this.pe, T=this.tmp, tc=[];
   /* дрожание: дробим ломаную через 2 мм и сдвигаем поперёк гладким шумом */
   let P=[]; if(o.wob){ const ph=[R()*6.3,R()*6.3], f=[R.r(0.15,0.4),R.r(0.6,1.3)];
     let acc=0; for(let i=0;i<pts.length-1;i++){ const a=pts[i], b=pts[i+1], l=v2.dist(a,b), n=Math.max(1,Math.ceil(l/2)), nn=v2.perp(v2.unit(v2.sub(b,a)));
@@ -55,10 +55,10 @@ Sheet.prototype.stroke=function(pts,w,dk,o,R){ o=o||{}; const L=this.layer==='pr
     P.push(pts[pts.length-1]); } else P=pts;
   const press=o.press?[R.r(0.75,1),R.r(0.75,1),R()*6.3,R.r(0.02,0.08)]:null;
   let s0=0; for(let i=0;i<P.length-1;i++){ const a=P[i], b=P[i+1], d=v2.sub(b,a), l2=v2.dot(d,d), l=Math.sqrt(l2)||1e-9, r=w/2+0.15;
-    const x0=Math.max(0,Math.floor((Math.min(a[0],b[0])-r)*PX)), x1=Math.min(this.w-1,Math.ceil((Math.max(a[0],b[0])+r)*PX));
-    const y0=Math.max(0,Math.floor((Math.min(a[1],b[1])-r)*PX)), y1=Math.min(this.h-1,Math.ceil((Math.max(a[1],b[1])+r)*PX));
-    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const p=[(x+0.5)/PX,(y+0.5)/PX], t=Math.max(0,Math.min(1,v2.dot(v2.sub(p,a),d)/l2)), q=v2.add(a,v2.mul(d,t)), dist=v2.dist(p,q);
-      let c=Math.max(0,Math.min(1,(w/2-dist)*PX+0.5)); if(c<=0) continue;
+    const x0=Math.max(0,Math.floor((Math.min(a[0],b[0])-r)*PXs)), x1=Math.min(this.w-1,Math.ceil((Math.max(a[0],b[0])+r)*PXs));
+    const y0=Math.max(0,Math.floor((Math.min(a[1],b[1])-r)*PXs)), y1=Math.min(this.h-1,Math.ceil((Math.max(a[1],b[1])+r)*PXs));
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const p=[(x+0.5)/PXs,(y+0.5)/PXs], t=Math.max(0,Math.min(1,v2.dot(v2.sub(p,a),d)/l2)), q=v2.add(a,v2.mul(d,t)), dist=v2.dist(p,q);
+      let c=Math.max(0,Math.min(1,(w/2-dist)*PXs+0.5)); if(c<=0) continue;
       const s=s0+t*l; if(o.dash){ const per=o.dash[0]+o.dash[1], ph=(s+o.dash[2])%per; if(ph>o.dash[0]) continue; }
       if(press) c*=press[0]+(press[1]-press[0])*(0.5+0.5*Math.sin(s*press[3]+press[2]));
       const i2=y*this.w+x; if(T[i2]===0) tc.push(i2); if(c>T[i2]) T[i2]=c; }
@@ -86,7 +86,7 @@ function camera(sheet,page,R,lv,size){ const [W,Hh]=size;
   const S=(L,x,y)=>{ const x0=Math.floor(x), y0=Math.floor(y); if(x0<0||y0<0||x0>=sheet.w-1||y0>=sheet.h-1) return 0; const fx=x-x0, fy=y-y0, i=y0*sheet.w+x0;
     return (L[i]*(1-fx)+L[i+1]*fx)*(1-fy)+(L[i+sheet.w]*(1-fx)+L[i+sheet.w+1]*fx)*fy; };
   for(let y=0;y<Hh;y++) for(let x=0;x<W;x++){ const p=H.apply(Mi,[x+0.5,y+0.5]), i=y*W+x;
-    let col; if(p[0]>=0&&p[1]>=0&&p[0]<=page.w&&p[1]<=page.h){ const sx=p[0]*PX-0.5, sy=p[1]*PX-0.5, pr=S(sheet.pr,sx,sy), pe=S(sheet.pe,sx,sy), gr=sheet.gridAt?S(sheet.grid,sx,sy):0;
+    let col; if(p[0]>=0&&p[1]>=0&&p[0]<=page.w&&p[1]<=page.h){ const sx=p[0]*sheet.px-0.5, sy=p[1]*sheet.px-0.5, pr=S(sheet.pr,sx,sy), pe=S(sheet.pe,sx,sy), gr=sheet.gridAt?S(sheet.grid,sx,sy):0;
         col=[0,1,2].map(j=>paper[j]*(1-0.93*pr)*(1-pe*graphite[j])*(1-gr*[0.35,0.18,0.02][j])); }
     else { const n=((Math.sin(x*0.05+tex*9)*Math.sin(y*0.031+tex*5)+1)*0.04); col=bg.map(v=>v*(0.92+n)); }
     const ux=(x-W/2)/W, uy=(y-Hh/2)/Hh; let L=base*(1+gx*ux+gy*uy)*(1-vig*(ux*ux+uy*uy)*2);
@@ -161,7 +161,7 @@ function synth(o){ o=o||{}; const n=o.n||47, R=rng(o.seed||1), lv=LEVELS[o.level
   const scene={units:'mm',items:SH.given().concat(st.items).map(it=>Object.assign({},it))};
   return {img:cam.im,truth:{n,vis,kid:o.kid||'front',nvid:o.nvid||'ok:1A+',cls:/^u-/.test(o.kid||'')?'unknown':C.cls(o.kid||(n===46?'ok':'front'),o.nvid||(n===46?'ok':'ok:1A+')),H:cam.M,O:SH.O,scene,E:st.E,labels,hand:st.hand,pen,params:Object.assign(cam.params,{level:o.level||'normal',erased:nE,grid:!!sheet.gridAt})}}; }
 
-put('synth',{synth,LEVELS,PX});
+put('synth',{synth,LEVELS,PX,Sheet,camera});
 
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
   const t0=Date.now(), r=synth({n:+(a.n||47),kid:a.kid,nvid:a.nv,seed:+(a.seed||1),level:a.level}); require('fs').writeFileSync(a.out||'synth.png',IMG.encodePNG(r.img));

@@ -46,7 +46,7 @@ function printText(SH){ const out=[]; SH.given().forEach(it=>{ if(it.t!=='txt') 
     lay.strokes.forEach(pl=>pl.forEach(p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); })); out.push([x0-0.6,y0-0.6,x1+0.6,y1+0.6]); }); return out; }
 const dSeg=(p,a,b)=>{ const dx=b[0]-a[0], dy=b[1]-a[1], L=dx*dx+dy*dy||1e-9, t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L)); return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy); };
 
-function extract(img,rect,o){ o=o||{}; const SH=SHEETS[o.n||47], roi=SH.roi, box=[toPage(SH,[roi[0],roi[1]])[0],toPage(SH,[roi[0],roi[1]])[1],toPage(SH,[roi[2],roi[3]])[0],toPage(SH,[roi[2],roi[3]])[1]];
+function extract(img,rect,o){ o=o||{}; const SH=o.sheet||SHEETS[o.n||47], roi=SH.roi, box=[toPage(SH,[roi[0],roi[1]])[0],toPage(SH,[roi[0],roi[1]])[1],toPage(SH,[roi[2],roi[3]])[0],toPage(SH,[roi[2],roi[3]])[1]];
   /* карта тёмности по полному фото — только в прямоугольнике, который покрывает область построения */
   let ink=rect.ink, M=rect.H; if(!ink){ const cs=[[box[0],box[1]],[box[2],box[1]],[box[2],box[3]],[box[0],box[3]]].map(p=>IMG.H.apply(rect.H,p));
     const x0=Math.max(0,Math.floor(Math.min(...cs.map(p=>p[0]))-20)), y0=Math.max(0,Math.floor(Math.min(...cs.map(p=>p[1]))-20)), x1=Math.min(img.width,Math.ceil(Math.max(...cs.map(p=>p[0]))+20)), y1=Math.min(img.height,Math.ceil(Math.max(...cs.map(p=>p[1]))+20));
