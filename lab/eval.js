@@ -21,6 +21,11 @@ function plan(kind,R){ const nvOk=R.pick(OKNV), side=nvOk.slice(3);
   if(kind==='unknown') return {kid:R.pick(['u-hrot','u-Kshift']),nvid:nvOk};
   if(kind.startsWith('nv-')) return {kid:R.pick(['front','horiz']),nvid:kind==='nv-none'?'none':kind.slice(3)+':'+side};
   return {kid:kind,nvid:nvOk}; }
+/* «неизвестное построение», которое случайно совпало с ошибкой библиотеки: K′ и K″ студента в 1,5 мм от K′, K″
+   этой ошибки (с тем же треугольником) — чертёж и есть эта ошибка; такой лист считается «неразличимо» */
+function unknownAs(t){ if(t.cls!=='unknown') return null; const g=C47.given(SHEETS[47].G());
+  for(const kid of Object.keys(C47.KOPT)){ const E=cp.exec(C47.program(kid,t.nvid),g).E; if(E['K′']&&E['K″']&&t.E['K′']&&t.E['K″']&&v2.dist(E['K′'],t.E['K′'])<1.5&&v2.dist(E['K″'],t.E['K″'])<1.5) return C47.cls(kid,t.nvid); }
+  return null; }
 /* неотличимость: чертёж ошибки против того же построения без ошибки, наибольший сдвиг общих точек */
 function separation(t){ if(t.cls==='ok'||t.cls==='unknown') return Infinity; const G=SHEETS[47].G(), g=C47.given(G);
   const okK=C47.KOPT[t.kid].ok?t.kid:'front', okNV=C47.NVOPT[t.nvid].ok?t.nvid:(t.nvid==='none'?null:'ok:'+t.nvid.split(':')[1]);
@@ -41,10 +46,10 @@ const p95=a=>{ if(!a.length) return '—'; const s=a.slice().sort((x,y)=>x-y); r
 function tally(rows){ const r={n:rows.length,read:0,right:0,falseV:0,refuse:0,equiv:0,unk:0,rect:[],pts:[],ms:0,fv:[]};
   rows.forEach(x=>{ r.ms+=x.ms; if(x.rect!=null) r.rect.push(x.rect); if(x.pts!=null) r.pts.push(x.pts);
     if(x.status!=='verdict'){ if(x.unknown) r.unk++; else r.refuse++; return; } r.read++;
-    if(x.got===x.cls) r.right++; else if(x.got==='ok'&&x.equiv) r.equiv++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), вердикт '+x.got); } });
+    if(x.got===x.cls) r.right++; else if(x.got==='ok'&&x.equiv||x.as&&x.got===x.as) r.equiv++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), вердикт '+x.got); } });
   return r; }
 function row(name,r){ return '| '+name+' | '+r.n+' | '+r.read+' ('+pct(r.read,r.n)+') | '+med(r.rect)+' / '+p95(r.rect)+' | '+med(r.pts)+' | '+r.right+' ('+pct(r.right,r.read)+') | **'+r.falseV+'** | '+r.unk+' | '+r.refuse+' | '+r.equiv+' |'; }
-const HEAD='| Набор | Листов | Вердикт вынесен | Выпрямление, мм (медиана / 95 %) | K′, K″, мм | Верный диагноз | Ложные вердикты | Отказ «не узнаю построение» | Другие отказы | «Верно» при неразличимой ошибке |\n|---|---|---|---|---|---|---|---|---|---|';
+const HEAD='| Набор | Листов | Вердикт вынесен | Выпрямление, мм (медиана / 95 %) | K′, K″, мм | Верный диагноз | Ложные вердикты | Отказ «не узнаю построение» | Другие отказы | Неразличимо на этих данных |\n|---|---|---|---|---|---|---|---|---|---|';
 
 (async()=>{ const t0=Date.now(), rows=[], keep=A.keep;
   if(keep) fs.mkdirSync(keep,{recursive:true});
@@ -53,7 +58,7 @@ const HEAD='| Набор | Листов | Вердикт вынесен | Вып
     if(keep) fs.writeFileSync(path.join(keep,lv+'-'+i+'-'+t.cls+'.png'),IMG.encodePNG(s.img));
     let res; try{ res=scan(s.img,{n:47}); }catch(e){ res={status:'refuse',reason:'сбой: '+e.message,ms:0}; }
     const sep=separation(t);
-    rows.push({id:lv+'#'+i,level:lv,cls:t.cls,kid:t.kid,nvid:t.nvid,equiv:sep<1,sep,status:res.status,got:res.verdict&&res.verdict.cls,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0,rect:rectErr(res,t),pts:pointErr(res,t)});
+    rows.push({id:lv+'#'+i,level:lv,cls:t.cls,as:unknownAs(t),kid:t.kid,nvid:t.nvid,equiv:sep<1,sep,status:res.status,got:res.verdict&&res.verdict.cls,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0,rect:rectErr(res,t),pts:pointErr(res,t)});
     process.stderr.write('\r'+rows.length+' листов…'); } });
   process.stderr.write('\n');
   /* реальные фото владельца */

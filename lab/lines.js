@@ -36,11 +36,14 @@ function printMask(SH,box,w,h){ const m=new Uint8Array(w*h), P=p=>[(p[0]-box[0])
     const dx=B[0]-A[0], dy=B[1]-A[1], L2=dx*dx+dy*dy||1e-9; for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const t=Math.max(0,Math.min(1,((x+0.5-A[0])*dx+(y+0.5-A[1])*dy)/L2)), ex=x+0.5-A[0]-t*dx, ey=y+0.5-A[1]-t*dy; if(ex*ex+ey*ey<=R*R) m[y*w+x]=1; } };
   /* печатные подписи не маскируем: линия студента часто идёт прямо по букве (катет мимо «A′»); их штрихи короткие,
      а найденный отрезок, целиком лежащий на печатной букве, помечается print и не считается «лишним» */
-  SH.given().forEach(it=>{ if(it.t==='seg'||it.t==='conn') segMask(toPage(SH,it.a),toPage(SH,it.b),0.35);
+  /* печатная линия — с запасом 0,8 мм за концы (торец, и подпись часто продолжает её направление) */
+  const ext=(a,b,e)=>{ const L=Math.hypot(b[0]-a[0],b[1]-a[1])||1, u=[(b[0]-a[0])/L,(b[1]-a[1])/L]; return [[a[0]-u[0]*e,a[1]-u[1]*e],[b[0]+u[0]*e,b[1]+u[1]*e]]; };
+  SH.given().forEach(it=>{ if(it.t==='seg'||it.t==='conn'){ const [a,b]=ext(toPage(SH,it.a),toPage(SH,it.b),it.t==='seg'?0.8:0); segMask(a,b,0.35); }
     if(it.t==='pt') segMask(toPage(SH,it.at),toPage(SH,it.at),1.1); });
   return m; }
-/* штрихи печатных подписей (мм страницы) */
-function printText(SH){ const out=[]; SH.given().forEach(it=>{ if(it.t!=='txt') return; font.layout(it.s,toPage(SH,it.at),it.size).strokes.forEach(pl=>{ for(let i=0;i<pl.length-1;i++) out.push([pl[i],pl[i+1]]); }); }); return out; }
+/* рамки печатных подписей (мм страницы), с полем 0,6 мм */
+function printText(SH){ const out=[]; SH.given().forEach(it=>{ if(it.t!=='txt') return; const P=toPage(SH,it.at), lay=font.layout(it.s,P,it.size); let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    lay.strokes.forEach(pl=>pl.forEach(p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); })); out.push([x0-0.6,y0-0.6,x1+0.6,y1+0.6]); }); return out; }
 const dSeg=(p,a,b)=>{ const dx=b[0]-a[0], dy=b[1]-a[1], L=dx*dx+dy*dy||1e-9, t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L)); return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy); };
 
 function extract(img,rect,o){ o=o||{}; const SH=SHEETS[o.n||47], roi=SH.roi, box=[toPage(SH,[roi[0],roi[1]])[0],toPage(SH,[roi[0],roi[1]])[1],toPage(SH,[roi[2],roi[3]])[0],toPage(SH,[roi[2],roi[3]])[1]];
@@ -50,7 +53,10 @@ function extract(img,rect,o){ o=o||{}; const SH=SHEETS[o.n||47], roi=SH.roi, box
     const cr=IMG.rgba(x1-x0,y1-y0); for(let y=y0;y<y1;y++) cr.data.set(img.data.subarray((y*img.width+x0)*4,(y*img.width+x1)*4),((y-y0)*(x1-x0))*4);
     ink=CL.ink(cr).ink; M=IMG.H.norm(IMG.H.mul([1,0,-x0,0,1,-y0,0,0,1],rect.H)); }
   const g=CL.warp(ink,M,box,PPM), {w,h}=g, n=w*h, mask=printMask(SH,box,w,h);
-  const {R,nx,ny}=ridges(g,1.5);
+  /* два масштаба: тонкие линии — σ 1,5 px (0,19 мм), толстые основные — σ 3 px: на мелком масштабе у толстой линии
+     два гребня по краям (двойник), на крупном — один посередине; берём масштаб с большим откликом */
+  const r1=ridges(g,1.5), r2=ridges(g,3), R=r1.R, nx=r1.nx, ny=r1.ny;
+  for(let i=0;i<n;i++) if(r2.R[i]>R[i]){ R[i]=r2.R[i]; nx[i]=r2.nx[i]; ny[i]=r2.ny[i]; }
   /* шум: распределение R на бумаге */
   const smp=[]; for(let i=0;i<n;i+=11) if(!mask[i]) smp.push(R[i]); smp.sort((a,b)=>a-b);
   const med=smp[Math.floor(smp.length/2)], mad=smp.map(v=>Math.abs(v-med)).sort((a,b)=>a-b)[Math.floor(smp.length/2)]*1.4826;
@@ -94,10 +100,23 @@ function extract(img,rect,o){ o=o||{}; const SH=SHEETS[o.n||47], roi=SH.roi, box
       const mm=p=>[box[0]+p[0]/PPM,box[1]+p[1]/PPM];
       segs.push({a:mm(A),b:mm(B),len,n:r.length,str:r.reduce((s,c)=>s+c.r,0)/r.length,dark:vmax,weight:Math.max(1e-4,wsum),fill:cov/(K+1),sd}); }); }
   if(!segs.length) return {ok:false,reason:'на листе не нашлось построений (пусто или слишком бледно) — переснимите при хорошем свете'};
+  /* двойники: параллельные (< 2°), перекрываются вдоль и разнесены поперёк < 0,6 мм — одна линия */
+  for(let changed=true;changed;){ changed=false;
+    for(let i=0;i<segs.length&&!changed;i++) for(let j=i+1;j<segs.length&&!changed;j++){ const A=segs[i], B=segs[j];
+      const da=[A.b[0]-A.a[0],A.b[1]-A.a[1]], db=[B.b[0]-B.a[0],B.b[1]-B.a[1]], la=Math.hypot(...da), lb=Math.hypot(...db), c=Math.abs(da[0]*db[0]+da[1]*db[1])/(la*lb);
+      if(c<Math.cos(2*Math.PI/180)) continue; const u=[da[0]/la,da[1]/la], nn=[-u[1],u[0]];
+      const off=Math.max(Math.abs((B.a[0]-A.a[0])*nn[0]+(B.a[1]-A.a[1])*nn[1]),Math.abs((B.b[0]-A.a[0])*nn[0]+(B.b[1]-A.a[1])*nn[1]))*PPM;
+      if(off>0.6*PPM) continue; const tB=[(B.a[0]-A.a[0])*u[0]+(B.a[1]-A.a[1])*u[1],(B.b[0]-A.a[0])*u[0]+(B.b[1]-A.a[1])*u[1]].sort((x,y)=>x-y);
+      if(tB[1]<-0.5||tB[0]>la+0.5) continue;
+      const lo=Math.min(0,tB[0]), hi=Math.max(la,tB[1]), K=A.dark>=B.dark?A:B, mid=[(A.a[0]+B.a[0]+A.b[0]+B.b[0])/4,(A.a[1]+B.a[1]+A.b[1]+B.b[1])/4];
+      const t0=(mid[0]-A.a[0])*u[0]+(mid[1]-A.a[1])*u[1], base=[mid[0]-u[0]*t0,mid[1]-u[1]*t0];
+      segs[i]=Object.assign({},K,{a:[base[0]+u[0]*lo,base[1]+u[1]*lo],b:[base[0]+u[0]*hi,base[1]+u[1]*hi],len:(hi-lo),weight:Math.max(A.weight,B.weight),dark:Math.max(A.dark,B.dark)}); segs.splice(j,1); changed=true; } }
   /* тип: основная — тяжёлые (вес); штриховая — заполненность < 0,8 при регулярных разрывах (здесь — по заполненности) */
   const ws=segs.map(s=>s.weight).sort((a,b)=>a-b), split=twoMeans(ws.map(Math.log));
   segs.forEach(s=>{ s.k=s.fill<0.75?'hid':(split&&Math.log(s.weight)>split?'main':'thin'); s.conf=Math.min(1,s.str/(3*tR))*Math.min(1,s.len/10); s.σ=Math.max(0.1,s.sd); });
-  const pt=printText(SH); segs.forEach(s=>{ s.print=s.len<=5&&[s.a,s.b,[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2]].every(p=>pt.some(([a,b])=>dSeg(p,a,b)<0.6)); });
+  /* отрезок почти целиком (≥ 80 %) в рамке печатной подписи — штрихи букв, не построение */
+  const pt=printText(SH), mmP=p=>[box[0]+p[0]/PPM,box[1]+p[1]/PPM];
+  segs.forEach(s=>{ let k=0; for(let i=0;i<=10;i++){ const p=[s.a[0]+(s.b[0]-s.a[0])*i/10,s.a[1]+(s.b[1]-s.a[1])*i/10]; if(pt.some(b=>p[0]>=b[0]&&p[0]<=b[2]&&p[1]>=b[1]&&p[1]<=b[3])) k++; } s.print=k>=8; });
   /* сцена: мм чертежа */
   const dr=p=>[p[0]-SH.O[0],p[1]-SH.O[1]];
   const scene={units:'mm',items:SH.given().map(it=>Object.assign({},it)).concat(segs.map(s=>({t:'seg',a:dr(s.a),b:dr(s.b),k:s.k,σ:+s.σ.toFixed(3),conf:+s.conf.toFixed(3),src:'hand',w:+s.weight.toFixed(4)})))};
