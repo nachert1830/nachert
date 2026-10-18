@@ -1,234 +1,208 @@
-# Клуб Начерта — развёртывание (что владелец делает руками)
+# Как запустить клуб в интернете — по шагам, без опыта
 
-Код в репозитории готов и проверен на локальной эмуляции (`node server/dev.js`). Ниже — всё, что нужно сделать
-руками, чтобы клуб заработал на `club.nachert1830.ru`. Секретов в репозитории нет и быть не должно: все ключи живут
-в Yandex Lockbox и попадают в функцию как переменные окружения.
+Займёт около часа, из них полчаса — регистрация и установка программ. Почти всё делает один скрипт; руками —
+только то, что нельзя сделать за вас: завести аккаунты, создать бота и нажать пару кнопок.
 
-Основной сайт `nachert1830.ru` при этом не меняется.
-
-> Порядок важен: сначала облако и база (шаги 1–4), потом бот и почта (5–6), потом домен (7–8), в конце — проверка (9).
+Если на каком-то шаге появилась ошибка или непонятное слово — скопируйте текст и пришлите Claude.
 
 ---
 
-## 0. Что понадобится
+## Сначала — что вообще происходит
 
-- Аккаунт Telegram владельца — для бота и для входа админом.
-- Доступ к DNS домена `nachert1830.ru` (там, где сейчас настроена запись для GitHub Pages).
-- Аккаунт в Yandex Cloud с платёжным аккаунтом (для клуба на десятки тестировщиков расходы — в пределах бесплатных
-  лимитов Cloud Functions, API Gateway и YDB serverless; Postbox тарифицируется за письма).
-- Локально: `yc` (Yandex Cloud CLI), `aws` (AWS CLI — им создаются таблицы YDB через совместимый с DynamoDB API), `zip`, `curl`.
+**Клуб** — это программа. Чтобы её могли открыть другие люди, она должна работать на компьютере, который всегда
+включён и подключён к интернету. Такой компьютер называют **сервером**.
 
-## 1. Каталог и сервисные аккаунты
+**Yandex Cloud** («Яндекс Облако») — сервис, где можно арендовать такие мощности у Яндекса. Выбран потому, что данные
+лежат в России — этого требует закон о персональных данных (152-ФЗ).
 
-```sh
-yc init                                   # войти, выбрать облако
-yc resource-manager folder create --name nachert-club
-yc config set folder-name nachert-club
+Мы не арендуем целый сервер. Код клуба загружается в облако как **функция**: она запускается, только когда кто-то
+открывает клуб, а платите вы за число запусков. Для десятков тестировщиков это укладывается в бесплатные лимиты
+(точные лимиты — на странице тарифов Yandex Cloud).
 
-# аккаунт, от имени которого работают функции (база, секреты)
-yc iam service-account create --name club-fn
-# аккаунт, от имени которого API Gateway вызывает функцию
-yc iam service-account create --name club-gw
-# аккаунт для отправки писем (Postbox)
-yc iam service-account create --name club-mail
+Что скрипт создаст в облаке:
 
-FOLDER=$(yc config get folder-id)
-for r in ydb.editor lockbox.payloadViewer; do
-  yc resource-manager folder add-access-binding $FOLDER --role $r --service-account-name club-fn; done
-yc resource-manager folder add-access-binding $FOLDER --role functions.functionInvoker --service-account-name club-gw
-yc resource-manager folder add-access-binding $FOLDER --role postbox.sender --service-account-name club-mail
-```
-
-Статические ключи (они нужны для подписи запросов к YDB Document API и Postbox; **не сохраняйте их в файлы проекта**):
-
-```sh
-yc iam access-key create --service-account-name club-fn     # → YDB_KEY_ID (key_id) и YDB_SECRET (secret)
-yc iam access-key create --service-account-name club-mail   # → POSTBOX_KEY_ID и POSTBOX_SECRET
-```
-
-## 2. База YDB (serverless, регион ru-central1 — данные в России)
-
-```sh
-yc ydb database create --name club --serverless
-yc ydb database get club --format json | grep document_api_endpoint
-# → https://docapi.serverless.yandexcloud.net/ru-central1/b1g…/etn…   это YDB_DOCAPI_ENDPOINT
-```
-
-Таблицы создаются один раз. Настройте AWS CLI ключом `club-fn` (только в своём терминале):
-
-```sh
-export AWS_ACCESS_KEY_ID=<key_id club-fn> AWS_SECRET_ACCESS_KEY=<secret club-fn> AWS_DEFAULT_REGION=ru-central1
-EP=<YDB_DOCAPI_ENDPOINT>
-for t in users identities invites sessions magic progress feedback config ratelimit tgseen remsent; do
-  aws dynamodb create-table --endpoint $EP --table-name club_$t \
-    --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH; done
-aws dynamodb create-table --endpoint $EP --table-name club_loginlog \
-  --attribute-definitions AttributeName=h,AttributeType=S AttributeName=r,AttributeType=S \
-  --key-schema AttributeName=h,KeyType=HASH AttributeName=r,KeyType=RANGE
-aws dynamodb list-tables --endpoint $EP     # 12 таблиц club_*
-```
-
-Резервные копии: в консоли YDB → база `club` → «Резервные копии» — включите ежедневные с хранением 30 дней
-(срок указан в политике обработки ПД; если выберете другой — поправьте документ).
-
-## 3. Секрет в Lockbox
-
-Сгенерируйте случайные значения:
-
-```sh
-openssl rand -base64 48   # → SECRET_KEY (ключ отпечатков почты; не меняйте после запуска — иначе почтовые входы «потеряются»)
-openssl rand -hex 32      # → TG_WEBHOOK_SECRET
-```
-
-Создайте секрет `club-secrets` (консоль → Lockbox → «Создать секрет») с ключами:
-
-| Ключ | Откуда |
+| Слово | Что это простыми словами |
 |---|---|
-| `SECRET_KEY` | `openssl rand -base64 48` |
-| `TG_BOT_TOKEN` | шаг 5 (BotFather) |
-| `TG_WEBHOOK_SECRET` | `openssl rand -hex 32` |
-| `YDB_KEY_ID`, `YDB_SECRET` | ключ `club-fn` из шага 1 |
-| `POSTBOX_KEY_ID`, `POSTBOX_SECRET` | ключ `club-mail` из шага 1 |
+| **Каталог** | Папка в облаке, где лежит всё, что относится к клубу. Удалите её — удалится весь клуб |
+| **Функция** | Код клуба, который запускается по запросу. Их две: одна показывает сайт и отвечает на нажатия, вторая каждые 15 минут рассылает напоминания |
+| **База данных (YDB)** | Где хранятся аккаунты и прогресс. «Serverless» — платишь за запросы, а не за включённый сервер |
+| **Таблица** | Часть базы для одного вида записей: пользователи, приглашения, сессии и т. п. Их 12 |
+| **Секрет (Lockbox)** | Сейф для паролей и ключей. Код берёт ключи оттуда, поэтому их нет ни в репозитории, ни у вас на диске |
+| **Сервисный аккаунт** | «Робот-пользователь» облака с минимальными правами. Функция работает от его имени: ей можно читать базу и сейф, и больше ничего |
+| **Шлюз (API Gateway)** | Входная дверь: даёт клубу адрес в интернете (`https://….apigw.yandexcloud.net`) с замком HTTPS и передаёт запросы функции |
+| **Таймер** | Будильник, который каждые 15 минут запускает функцию напоминаний |
+| **Вебхук** | Договорённость с Telegram: «когда боту пишут, присылай это сюда». Нужен, чтобы работали кнопка «Пауза» и команды бота |
 
-## 4. Функции
+Ещё несколько слов, которые встретятся:
 
-Пакет — папки `server/` и `club/` (функция отдаёт и страницу клуба, и API). Из корня репозитория:
+- **Терминал** — окно, куда вводят команды текстом. Windows: «Пуск» → наберите «PowerShell» → откройте.
+  macOS: Программы → Утилиты → «Терминал». Команду вставляете и нажимаете Enter.
+- **Бот** — аккаунт в Telegram, которым управляет программа. Через него работают вход и напоминания.
+- **Токен бота** — пароль бота. Кто его знает, тот управляет ботом. Никому не отправляйте, в том числе Claude.
+- **Telegram id** — ваш номер в Telegram (просто число). По нему клуб узнаёт владельца.
+- **Домен** — адрес сайта, например `nachert1830.ru`. **DNS** — «телефонная книга» интернета: записи вида «такой адрес →
+  такой сервер». Понадобится только если захотите адрес `club.nachert1830.ru` (это необязательно, см. «Потом»).
 
-```sh
-node club/tools/build-core.js --check       # ядро задач совпадает с index.html (иначе: node club/tools/build-core.js)
-rm -f club.zip && zip -r club.zip server club -x 'server/.data/*' 'server/test/*' 'club/tests/*' 'club/tools/*' '*.md'
+---
+
+## Шаг 1. Скачать код клуба
+
+1. Откройте https://github.com/nachert1830/nachert.
+2. Слева сверху, где написано `main`, выберите ветку `claude/modest-babbage-ozfp1h`.
+3. Зелёная кнопка **Code** → **Download ZIP**.
+4. Распакуйте архив, например на рабочий стол. Получится папка `nachert-claude-modest-babbage-ozfp1h`.
+
+## Шаг 2. Установить Node.js
+
+Node.js — программа, которая запускает код на JavaScript; на нём написан клуб и скрипт развёртывания.
+
+1. https://nodejs.org → скачайте версию **LTS** → установите, во всех окнах — «Далее».
+2. Откройте терминал и введите `node -v`. Должно появиться что-то вроде `v22.11.0`.
+
+## Шаг 3. Аккаунт в Yandex Cloud
+
+1. Откройте https://console.yandex.cloud и войдите с Яндекс ID (обычный аккаунт Яндекса).
+2. Облако попросит создать **платёжный аккаунт**: выберите «Физическое лицо», привяжите банковскую карту. Новым
+   пользователям обычно дают стартовый грант. Без платёжного аккаунта функции не создаются.
+3. Облако (`cloud-…`) появится само. Больше в консоли ничего делать не нужно.
+
+## Шаг 4. Установить программу yc и войти
+
+**yc** — программа Яндекса, через которую скрипт управляет облаком от вашего имени.
+
+Windows (PowerShell):
 ```
-
-Создайте две функции и версии (среда `nodejs22`; `SECRET_ID` — id секрета `club-secrets`):
-
-```sh
-yc serverless function create --name nachert-club-api
-yc serverless function create --name nachert-club-remind
-
-ENV="ORIGIN=https://club.nachert1830.ru,TG_BOT_NAME=<имя_бота_без_@>,ADMIN_TG_IDS=<ваш_telegram_id>,MAIL_FROM=Клуб Начерта <club@nachert1830.ru>,YDB_DOCAPI_ENDPOINT=<endpoint>,MAIN_URL=https://nachert1830.ru"
-SECRETS="--secret id=$SECRET_ID,key=SECRET_KEY,environment-variable=SECRET_KEY \
- --secret id=$SECRET_ID,key=TG_BOT_TOKEN,environment-variable=TG_BOT_TOKEN \
- --secret id=$SECRET_ID,key=TG_WEBHOOK_SECRET,environment-variable=TG_WEBHOOK_SECRET \
- --secret id=$SECRET_ID,key=YDB_KEY_ID,environment-variable=YDB_KEY_ID \
- --secret id=$SECRET_ID,key=YDB_SECRET,environment-variable=YDB_SECRET \
- --secret id=$SECRET_ID,key=POSTBOX_KEY_ID,environment-variable=POSTBOX_KEY_ID \
- --secret id=$SECRET_ID,key=POSTBOX_SECRET,environment-variable=POSTBOX_SECRET"
-
-yc serverless function version create --function-name nachert-club-api --runtime nodejs22 \
-  --entrypoint server/index.handler --memory 256m --execution-timeout 10s \
-  --service-account-id $(yc iam service-account get club-fn --format json | jq -r .id) \
-  --source-path club.zip --environment "$ENV" $SECRETS
-
-yc serverless function version create --function-name nachert-club-remind --runtime nodejs22 \
-  --entrypoint server/index.remind --memory 256m --execution-timeout 120s \
-  --service-account-id $(yc iam service-account get club-fn --format json | jq -r .id) \
-  --source-path club.zip --environment "$ENV" $SECRETS
-
-# напоминания и уборка — каждые 15 минут
-yc serverless trigger create timer --name club-remind --cron-expression '0/15 * ? * * *' \
-  --invoke-function-name nachert-club-remind \
-  --invoke-function-service-account-id $(yc iam service-account get club-gw --format json | jq -r .id)
+iex (New-Object System.Net.WebClient).DownloadString('https://storage.yandexcloud.net/yandexcloud-yc/install.ps1')
 ```
+macOS или Linux (Терминал):
+```
+curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+```
+Если установщик спросит, добавить ли yc в PATH, ответьте `Y`. Затем **закройте терминал и откройте заново**.
 
-Переменные окружения (полный список — `server/lib/config.js`):
+Теперь вход:
+```
+yc init
+```
+1. Программа предложит открыть ссылку в браузере. Откройте её, разрешите доступ и вставьте показанный код обратно в терминал.
+2. «Please choose cloud» — выберите своё облако (введите номер и Enter).
+3. «Please choose folder» — выберите **Create a new folder** и назовите `nachert-club`.
+4. «Do you want to configure a default Compute zone?» — `Y`, затем `ru-central1-a`.
 
-| Переменная | Значение |
-|---|---|
-| `ORIGIN` | `https://club.nachert1830.ru` — без него функция не стартует (проверка Origin, cookie `__Host-`, HSTS) |
-| `ADMIN_TG_IDS` | ваш числовой Telegram id (узнать: бот @userinfobot). Через запятую — несколько владельцев. Владелец входит без приглашения и сразу админ |
-| `ADMIN_EMAILS` | необязательно: почта владельца, если хотите входить и по почте |
-| `TG_BOT_NAME` | имя бота без `@` (для ссылки «Открыть бота») |
-| `MAIL_FROM` | адрес отправителя, подтверждённый в Postbox (шаг 6) |
-| `CLUB_WEEK1` | необязательно: понедельник недели 1; можно задать позже в админ-панели («Семестр») |
-| `TG_AUTH_MAX_AGE` | необязательно: сколько секунд действительны данные входа Telegram (по умолчанию 600) |
+## Шаг 5. Бот и ваш Telegram id
 
-Функция без обязательных переменных не запускается и пишет в лог, чего не хватает (так задумано: лучше отказ, чем вход
-без проверки подписи).
+1. В Telegram найдите **@BotFather** (с синей галочкой) → нажмите «Старт» → отправьте `/newbot`.
+2. Имя бота: `Клуб Начерта`.
+3. Username бота — латиницей, на конце обязательно `bot`, например `nachert_club_bot`. Если занято — придумайте другой.
+4. BotFather пришлёт **токен** — строку вида `1234567890:AAH…`. Скопируйте её, она понадобится на шаге 6.
+5. Найдите бота **@userinfobot** → «Старт». Он ответит вашим **Id** — числом. Его тоже запомните.
 
-## 5. Бот в @BotFather
+## Шаг 6. Запустить скрипт
 
-1. `/newbot` → имя «Клуб Начерта», username, например `nachert_club_bot`. Токен → в Lockbox (`TG_BOT_TOKEN`), создайте
-   новую версию функций (шаг 4), чтобы они его подхватили.
-2. `/setdomain` → выбрать бота → `club.nachert1830.ru`. Без этого окно входа Telegram не откроется.
-3. `/setcommands` →
+1. В терминале перейдите в папку с кодом. Наберите `cd ` (с пробелом), перетащите папку из шага 1 в окно терминала,
+   нажмите Enter.
+2. Введите:
    ```
-   pause - Поставить напоминания на паузу
-   resume - Снять с паузы
-   stop - Выключить напоминания
+   node server/tools/deploy.js
    ```
-4. `/setdescription` — «Бот закрытого клуба Начерта: вход и напоминания для приглашённых тестировщиков».
-5. Подключите вебхук (после шага 8, когда домен работает):
-   ```sh
-   curl -s "https://api.telegram.org/bot<TG_BOT_TOKEN>/setWebhook" \
-     -d url=https://club.nachert1830.ru/api/tg/webhook \
-     -d secret_token=<TG_WEBHOOK_SECRET> \
-     -d 'allowed_updates=["message","callback_query","my_chat_member"]'
-   curl -s "https://api.telegram.org/bot<TG_BOT_TOKEN>/getWebhookInfo"     # url и pending_update_count: 0
-   ```
+3. Скрипт спросит **токен бота** — вставьте его. Символы будут показываться звёздочками, так и задумано.
+4. Затем спросит **ваш Telegram id** — введите число.
+5. Подождите 3–5 минут. Скрипт пишет, что делает; дольше всего создаётся база.
+6. В конце появится рамка «Готово» с адресом вида `d5d….apigw.yandexcloud.net`. Это адрес вашего клуба.
 
-Вход: клуб вызывает `Telegram.Login.auth` с `request_access: write` — Telegram сам спросит у студента разрешение
-писать ему от имени бота. Если студент отказал, при включении напоминаний клуб попросит открыть бота и нажать «Старт».
+Скрипт можно запускать сколько угодно раз: что уже создано, он не трогает, а код обновляет. Так же обновляется клуб
+после правок — просто запустите его снова.
 
-## 6. Почта (Yandex Cloud Postbox)
+## Шаг 7. Разрешить боту вход на этом адресе
 
-1. Консоль → Postbox → «Создать адрес»: домен `nachert1830.ru` (или поддомен `mail.nachert1830.ru`).
-2. Добавьте в DNS записи, которые покажет Postbox (DKIM — TXT/CNAME), дождитесь статуса «Подтверждён».
-3. Рекомендуется SPF/DMARC: TXT `v=spf1 include:_spf.yandex.net ~all` (сверьте со справкой Postbox) и
-   `_dmarc` TXT `v=DMARC1; p=none`.
-4. `MAIL_FROM` — адрес на этом домене, например `Клуб Начерта <club@nachert1830.ru>`.
+Telegram показывает окно входа только на сайтах, которые вы указали у бота.
 
-Пока Postbox не настроен, можно запуститься только с Telegram: не задавайте `MAIL_FROM`, и форма «по почте» не покажется.
+1. **@BotFather** → `/setdomain` → выберите своего бота.
+2. Отправьте адрес из рамки **без** `https://`, например `d5dabc123.apigw.yandexcloud.net`.
 
-## 7. API Gateway
+## Шаг 8. Войти и пригласить тестировщиков
 
-```sh
-sed -e "s/\${FUNCTION_ID}/$(yc serverless function get nachert-club-api --format json | jq -r .id)/" \
-    -e "s/\${SA_ID}/$(yc iam service-account get club-gw --format json | jq -r .id)/" server/apigw.yaml > /tmp/club-gw.yaml
-yc serverless api-gateway create --name nachert-club --spec /tmp/club-gw.yaml
-yc serverless api-gateway get nachert-club     # domain: d5d….apigw.yandexcloud.net — откройте, должна быть страница входа
-```
+1. Откройте адрес из рамки → «Войти через Telegram» → подтвердите в Telegram.
+2. Отметьте две обязательные галочки (соглашение и согласие) → вы в клубе как **владелец (админ)**.
+3. «Ещё» → «Админ-панель» → вкладка **«Семестр»**: проверьте дату понедельника первой учебной недели
+   (по умолчанию 31.08.2026). От неё считаются все недели календаря.
+4. Вкладка **«Приглашения»**: впишите, для кого (например, «Аня, ИУ5») → «Создать приглашение» → скопируйте ссылку и
+   отправьте этому человеку лично. Ссылка показывается один раз и срабатывает один раз.
 
-Ограничение частоты на уровне шлюза (дополнительно к лимитам в коде) — консоль API Gateway → «Ограничение скорости»,
-например 20 запросов в секунду.
+Готово: клуб работает.
 
-## 8. Домен club.nachert1830.ru
+---
 
-1. Certificate Manager → «Добавить сертификат» → Let's Encrypt → домен `club.nachert1830.ru`, проверка DNS.
-   Добавьте в DNS CNAME `_acme-challenge.club` → значение из консоли, дождитесь «Выпущен».
-2. API Gateway `nachert-club` → «Домены» → подключить `club.nachert1830.ru` с этим сертификатом.
-3. DNS: CNAME `club` → `<domain шлюза>.apigw.yandexcloud.net`.
-4. Запись для GitHub Pages основного сайта не трогайте.
+## Потом (необязательно)
 
-## 9. Первый запуск и проверка
+### Свой адрес club.nachert1830.ru
 
-1. Откройте `https://club.nachert1830.ru` → «Войти через Telegram» под своим аккаунтом (id из `ADMIN_TG_IDS`) →
-   примите документы → вы админ.
-2. «Ещё» → «Админ-панель» → «Семестр»: проверьте **понедельник недели 1** (по умолчанию 2026-08-31) по расписанию МГТУ.
-3. Проверьте таблицу недель ДЗ/РК/М в «Календаре» — она взята из вашего задания (`club/lib/calendar.js`, `TABLE`).
-4. «Приглашения» → создайте приглашение себе на второй аккаунт или почту, пройдите регистрацию как тестировщик.
-5. «Настройки» → включите напоминания → в Telegram придёт подтверждение.
-6. Проверьте заголовки: `curl -sI https://club.nachert1830.ru/ | grep -i -E 'content-security|strict-transport|x-frame'`.
-7. Проверьте журнал функций (консоль → Cloud Functions → «Логи»): нет ошибок `YDB …`.
+Сейчас у клуба адрес `….apigw.yandexcloud.net` — он работает и защищён. Если хочется красивый:
 
-## 10. Юридическое (до приглашения первых тестировщиков)
+1. Узнайте, где куплен домен `nachert1830.ru` (reg.ru, nic.ru и т. п.): там есть раздел «DNS-записи» или «Управление зоной».
+2. Консоль Yandex Cloud → каталог `nachert-club` → **Certificate Manager** → «Добавить сертификат» → «Let's Encrypt» →
+   домен `club.nachert1830.ru` → тип проверки «DNS».
+   Консоль покажет запись `CNAME` с именем `_acme-challenge.club` и значением. Добавьте её в DNS у регистратора.
+   Через 10–60 минут статус станет «Выпущен».
+3. **API Gateway** → `nachert-club` → «Домены» → «Подключить» → `club.nachert1830.ru` и этот сертификат.
+4. У регистратора добавьте запись `CNAME`: имя `club`, значение — адрес из рамки (`d5d….apigw.yandexcloud.net`).
+   Запись для основного сайта (GitHub Pages) не трогайте.
+5. Запустите `node server/tools/deploy.js --domain=club.nachert1830.ru`, затем в @BotFather `/setdomain` →
+   `club.nachert1830.ru`.
 
-- Отдать юристу `club/legal/terms.html`, `privacy.html`, `consent.html` (помечены «ЧЕРНОВИК — проверить юристом»),
-  заполнить реквизиты оператора, снять пометки.
-- Уведомление Роскомнадзора об обработке ПД (ст. 22 152-ФЗ) — если юрист не найдёт исключения; отдельно —
-  о трансграничной передаче (напоминания идут через Telegram Bot API, серверы Telegram за рубежом).
-- После правок документов поменять `DOCS_VERSION` в `server/lib/app.js` — новые участники будут принимать новую версию.
+### Вход по почте
 
-## Обновление
+Сейчас вход только через Telegram, поэтому форма «по почте» скрыта. Чтобы включить вход по почте, нужно подтвердить
+домен в Yandex Cloud Postbox (несколько DNS-записей). Когда понадобится — попросите Claude, он добавит это в скрипт.
 
-```sh
-node --test server/test/*.test.js club/tests/*.test.js   # всё зелёное
-zip … (шаг 4) && yc serverless function version create … (обе функции)
-```
+### Если токен бота утёк
 
-Откат — «Версии» функции → сделать предыдущую версию `$latest`.
+@BotFather → `/revoke` → выберите бота → получите новый токен → `node server/tools/deploy.js --new-token`.
 
-## Что не входит в развёртывание
+### Удалить клуб полностью
 
-- Модуль сканера по фото (`lab/` сканера в этом репозитории нет) — в клубе заглушка с интерфейсом `scan(фото, задача)`.
-- Слияние ветки с `main` не требуется и не нужно: GitHub Pages основного сайта опубликовал бы папки `club/` и `server/`
-  как статические файлы (секретов там нет, но и пользы тоже).
+Консоль Yandex Cloud → каталог `nachert-club` → «Удалить». Удалятся все данные участников. По правилам клуба
+участников нужно предупредить за 14 дней.
+
+---
+
+## Документы и закон (коротко)
+
+Соглашение, политика и согласие лежат в `club/legal/` — это итоговые версии. Реквизиты: «Андрей Матханов, физическое
+лицо», связь — через форму «Обращение к владельцу» в клубе. Если поменяете тексты, увеличьте `DOCS_VERSION` в
+`server/lib/app.js` — новые участники будут принимать новую версию.
+
+Что закон требует от вас как от оператора персональных данных (по 152-ФЗ):
+
+1. **Отвечать на обращения в течение 10 рабочих дней.** Они приходят в «Админ-панель» → «Отзывы» с пометкой «Обращение к
+   владельцу»; там же кнопка «Ответить».
+2. **Уведомление Роскомнадзора о трансграничной передаче** (ст. 12). Напоминания уходят через серверы Telegram за рубежом,
+   поэтому закон требует до запуска напоминаний подать бесплатное онлайн-уведомление: https://pd.rkn.gov.ru → вход через
+   Госуслуги → «Уведомление о намерении осуществлять трансграничную передачу». Получатель — Telegram Messenger Inc.,
+   цель — «напоминания участникам по их просьбе», данные — Telegram id и текст напоминания. Если подавать не хотите —
+   выключите напоминания: «Админ-панель» → «Функции» → «Напоминания в Telegram» → «Выкл». Тогда передачи за рубеж нет.
+3. **Общее уведомление об обработке ПД** (ст. 22), по-видимому, не нужно: данные получены для исполнения соглашения с самим
+   участником и третьим лицам без его согласия не передаются (п. 2 ч. 2 ст. 22).
+
+Это прочтение закона Claude, а не заключение юриста.
+
+---
+
+## Что делает скрипт (для любопытных)
+
+`server/tools/deploy.js` по порядку:
+
+1. Проверяет yc и бота (спрашивает у Telegram имя бота по токену).
+2. Создаёт сервисные аккаунты `club-fn` (функции: база и сейф) и `club-gw` (шлюз и таймер: запуск функций).
+3. Создаёт базу `club` (YDB serverless, регион ru-central1) и ждёт её запуска.
+4. Создаёт ключ доступа к базе и кладёт его, токен бота и два случайных секрета (ключ отпечатков почты и секрет вебхука)
+   в сейф `club-secrets`. На экран и на диск они не выводятся.
+5. Создаёт 12 таблиц.
+6. Создаёт функции `nachert-club-api` и `nachert-club-remind` и шлюз `nachert-club` по `server/apigw.yaml`.
+7. Собирает архив из папок `server/` и `club/` (без тестов и документации) и загружает его как новую версию обеих функций
+   с настройками (адрес клуба, имя бота, ваш Telegram id, адрес базы) и ключами из сейфа.
+8. Ставит таймер на каждые 15 минут, подключает вебхук бота и команды `/pause`, `/resume`, `/stop`.
+9. Проверяет, что клуб отвечает, и печатает адрес.
+
+Скрипт проверен на поддельном облаке (логика команд, сборка архива, запуск функции из архива), но не на настоящем
+Yandex Cloud. Если на настоящем что-то не пройдёт, скрипт остановится с текстом ошибки — пришлите его Claude.

@@ -16,7 +16,7 @@ const CAL=require('../../club/lib/calendar.js');
 const REM=require('../../club/lib/reminder.js');
 const SRS=require('../../club/lib/srs.js');
 
-const DOCS_VERSION='2026-10-draft1';
+const DOCS_VERSION='2026-10-18';
 const SESSION_DAYS=30, IDLE_DAYS=14, MAGIC_MIN=15, LOG_DAYS=90, MAX_BODY=300*1024;
 const DAY=864e5;
 const EMAIL_RE=/^[^\s@<>()",;:\\]{1,64}@[a-z0-9.-]{1,190}\.[a-z]{2,24}$/i;
@@ -182,6 +182,8 @@ function createApp(o){
 
   A['GET /api/me/logins']=async(req,S)=>{ const l=await store.query('loginlog',S.user.id,{desc:true,limit:50}); return H.json(200,{logins:l.map(x=>({ts:x.ts,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip,ua:x.ua}))}); };
 
+  A['GET /api/me/requests']=async(req,S)=>{ const l=await store.scan('feedback',x=>x.userId===S.user.id&&x.feature==='privacy');
+    return H.json(200,{requests:l.sort((a,b)=>b.ts-a.ts).map(f=>({ts:f.ts,text:f.text,reply:f.reply||null,replyAt:f.replyAt||null}))}); };
   A['GET /api/me/export']=async(req,S)=>{ await limit('export',S.user.id,10,3600); const u=S.user;
     const [ids,prog,ses,logs,fb]=await Promise.all([store.scan('identities',x=>x.userId===u.id),store.get('progress',u.id),store.scan('sessions',x=>x.userId===u.id),
       store.query('loginlog',u.id),store.scan('feedback',x=>x.userId===u.id)]);
@@ -190,14 +192,14 @@ function createApp(o){
       identities:ids.map(i=>({type:i.type,key:i.id.startsWith('em:')?'e-mail (хранится только HMAC-отпечаток): '+i.id.slice(3):i.id,createdAt:i.createdAt})),
       progress:prog?{data:prog.data,updatedAt:prog.updatedAt}:null,
       sessions:ses.map(s=>({createdAt:s.createdAt,lastSeen:s.lastSeen,expiresAt:s.expiresAt,ua:s.ua,current:s.id===S.h})),
-      loginLog:logs.map(x=>({ts:x.ts,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip,ua:x.ua})),feedback:fb.map(f=>({ts:f.ts,feature:f.feature,mood:f.mood,text:f.text}))};
+      loginLog:logs.map(x=>({ts:x.ts,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip,ua:x.ua})),feedback:fb.map(f=>({ts:f.ts,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null}))};
     return H.json(200,out,{'Content-Disposition':'attachment; filename="nachert-club-my-data.json"'}); };
 
   A['POST /api/me/delete']=async(req,S)=>{ const b=body(req); if(b.confirm!=='УДАЛИТЬ') fail(400,'Подтвердите удаление словом УДАЛИТЬ.');
     await removeUser(S.user.id); log.log&&log.log('аккаунт удалён',S.user.id); return {resp:H.json(200,{ok:true}),cookie:clearCookie()}; };
 
   A['POST /api/feedback']=async(req,S)=>{ const b=body(req); await limit('fb',S.user.id,20,3600);
-    const feature=FEAT.ids.includes(b.feature)?b.feature:'general', mood=['good','unclear','bad'].includes(b.mood)?b.mood:null, text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000);
+    const feature=FEAT.ids.includes(b.feature)||b.feature==='privacy'?b.feature:'general', mood=['good','unclear','bad'].includes(b.mood)?b.mood:null, text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000);
     if(!text&&!mood) fail(400,'Напишите пару слов или выберите оценку.');
     const t=now(); await store.put('feedback',{id:new Date(t).toISOString()+'#'+C.token(4),userId:S.user.id,name:S.user.name,feature,mood,text,ts:t,ver:String(b.ver||'').slice(0,20)});
     return H.json(200,{ok:true}); };
@@ -209,7 +211,7 @@ function createApp(o){
     return H.json(200,{invites:inv.sort((a,b)=>b.createdAt-a.createdAt).map(i=>({h:i.id,label:i.label,role:i.role||'member',createdAt:i.createdAt,expiresAt:i.expiresAt,usedAt:i.usedAt||null,usedBy:i.usedBy||null,revokedAt:i.revokedAt||null})),
       users:us.sort((a,b)=>a.createdAt-b.createdAt).map(u=>({id:u.id,name:u.name,role:u.role,methods:methods[u.id]||[],createdAt:u.createdAt,lastLogin:u.lastLogin||null,blocked:!!u.blocked,reminders:!!(u.reminders&&u.reminders.enabled),photos:!!(u.consent&&u.consent.photos)})),
       flags:fl,modes:FEAT.MODES,features:FEAT.FEATURES,settings:st,
-      feedback:fb.sort((a,b)=>b.ts-a.ts).slice(0,300).map(f=>({ts:f.ts,name:f.name,feature:f.feature,mood:f.mood,text:f.text})),
+      feedback:fb.sort((a,b)=>b.ts-a.ts).slice(0,300).map(f=>({id:f.id,ts:f.ts,name:f.name,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null,replyAt:f.replyAt||null})),
       logins:lg.sort((a,b)=>b.ts-a.ts).slice(0,200).map(x=>({ts:x.ts,user:x.h==='anon'?null:x.h,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip}))}); };
   D['POST /api/admin/invites']=async(req,S)=>{ const b=body(req), days=Math.max(1,Math.min(60,+b.days||14)), code=C.token(16), t=now(), h=C.sha256(code);
     const inv={id:h,label:cleanName(b.label)||'без подписи',role:b.role==='admin'?'admin':'member',createdAt:t,expiresAt:t+days*DAY,createdBy:S.user.id};
@@ -224,6 +226,12 @@ function createApp(o){
     if(u.id===S.user.id) fail(409,'Нельзя заблокировать себя.'); await store.update('users',u.id,{blocked:b.blocked===true});
     if(b.blocked===true){ const all=await store.scan('sessions',x=>x.userId===u.id); for(const s of all) await store.del('sessions',s.id); }
     return H.json(200,{ok:true}); };
+  /* ответ на обращение: виден участнику в клубе и уходит в Telegram, если он привязан */
+  D['POST /api/admin/reply']=async(req)=>{ const b=body(req), text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000); if(!text) fail(400,'Пустой ответ.');
+    const f=await store.get('feedback',String(b.id||'')); if(!f||f.feature!=='privacy') fail(404,'Нет такого обращения.');
+    await store.update('feedback',f.id,{reply:text,replyAt:now()}); const u=await store.get('users',f.userId); let tg=false;
+    if(u&&u.tgId){ const r=await o.bot.send(u.tgId,'Ответ владельца клуба Начерта на ваше обращение:\n\n'+text); tg=!!(r&&r.ok); }
+    return H.json(200,{ok:true,telegram:tg}); };
   D['POST /api/admin/flags']=async(req)=>{ const b=body(req), cur=await flagsRaw();
     Object.keys(b.flags||{}).forEach(k=>{ if(FEAT.ids.includes(k)&&FEAT.MODES.includes(b.flags[k])) cur[k]=b.flags[k]; });
     await store.put('config',{id:'flags',values:cur}); return H.json(200,{flags:cur}); };
