@@ -49,6 +49,18 @@ ok(R3.K&&M.v3.dist(R3.K.P,tr.K)<1e-9,'K по проекциям'); ok(R3.A&&M.v3
 console.log('  элементов: '+sc.items.length+' (напечатано '+pr.length+'), K = ('+R3.K.P.map(v=>v.toFixed(2)).join('; ')+'), |AK| = '+tr.AK.toFixed(2)+' мм');
 const site=S.toSite(sc,4.16); ok(Math.abs(site.items.find(i=>i.l==='K′').at[0]-E['K′'][0]*4.16)<1e-9,'перевод в единицы сайта');
 
+console.log('4. № 46: программа и видимость против сертификата core/t46.js');
+{ const T46=require('./t46.js'), C6=require('./cp46.js'), G6=T46.gamma(T46.entries[0]), g6=C6.given(G6), R6=execute(Object.assign({},T46,{k:'1'}),G6);
+  const {E}=cp.exec(C6.program('ok','ok'),g6); let w6=0; ['1″','2″','1′','2′','3″','4″','3′','4′','5′','5″','6′','6″'].forEach(n=>{ const d=M.v2.dist(E[n],V.num(R6.E[n])); w6=Math.max(w6,d); ok(d<1e-9,'№46 '+n+': '+d); });
+  ok(C6.judge(E,G6).d56<1e-9,'№46 ответ');
+  const segsOf=pat=>Object.entries(pat).flatMap(([k,seq])=>{ const a=k.slice(0,1)+k.slice(-1), b=k.slice(1,2)+k.slice(-1); return seq.map(([t0,t1,kk])=>({a:M.v2.lerp(g6[a],g6[b],t0),b:M.v2.lerp(g6[a],g6[b],t1),k:kk})); });
+  const au=v=>T46.audit(R6.M,{segs:segsOf(C6.pattern(G6,v))},q(1)).out;
+  ok(!au('ok').length,'№46 узор видимости не прошёл аудит сертификата: '+au('ok').slice(0,2).join('; '));
+  Object.keys(C6.VOPT).filter(v=>v!=='ok').forEach(v=>ok(au(v).length>0,'№46 '+v+': аудит не заметил'));
+  ['5-EF','12-swap'].forEach(pid=>{ const r=cp.exec(C6.program(pid,'ok'),g6).E; ok(C6.judge(r,G6).d56>0.5,'№46 '+pid+': ответ верный'); });
+  console.log('  точки 1–6 совпали с сертификатом (до '+w6.toExponential(1)+' мм); узор видимости прошёл аудит t46 ('+segsOf(C6.pattern(G6,'ok')).length+' участков), '+
+    'ошибки видимости аудит ловит: '+Object.keys(C6.VOPT).filter(v=>v!=='ok').map(v=>v+' '+au(v).length).join(', ')+'; ошибки точек: '+['5-EF','12-swap'].map(pid=>pid+' — сдвиг '+C6.judge(cp.exec(C6.program(pid,'ok'),g6).E,G6).d56.toFixed(1)+' мм').join(', ')); }
+
 (async()=>{
   if(process.argv.includes('--browser')){ console.log('4. Переходники tests/certified на странице');
     const fs=require('fs'), http=require('http'); let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
@@ -58,7 +70,19 @@ const site=S.toSite(sc,4.16); ok(Math.abs(site.items.find(i=>i.l==='K′').at[0]
     const br=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}), pg=await br.newPage();
     const errs=[]; pg.on('pageerror',e=>errs.push(String(e)));
     await pg.goto('http://127.0.0.1:'+srv.address().port+'/'); await pg.waitForTimeout(800);
-    const r=await pg.evaluate(async()=>{ const load=src=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    const r=await pg.evaluateconsole.log('4. № 46: программа и видимость против сертификата core/t46.js');
+{ const T46=require('./t46.js'), C6=require('./cp46.js'), G6=T46.gamma(T46.entries[0]), g6=C6.given(G6), R6=execute(Object.assign({},T46,{k:'1'}),G6);
+  const {E}=cp.exec(C6.program('ok','ok'),g6); let w6=0; ['1″','2″','1′','2′','3″','4″','3′','4′','5′','5″','6′','6″'].forEach(n=>{ const d=M.v2.dist(E[n],V.num(R6.E[n])); w6=Math.max(w6,d); ok(d<1e-9,'№46 '+n+': '+d); });
+  ok(C6.judge(E,G6).d56<1e-9,'№46 ответ');
+  const segsOf=pat=>Object.entries(pat).flatMap(([k,seq])=>{ const a=k.slice(0,1)+k.slice(-1), b=k.slice(1,2)+k.slice(-1); return seq.map(([t0,t1,kk])=>({a:M.v2.lerp(g6[a],g6[b],t0),b:M.v2.lerp(g6[a],g6[b],t1),k:kk})); });
+  const au=v=>T46.audit(R6.M,{segs:segsOf(C6.pattern(G6,v))},q(1)).out;
+  ok(!au('ok').length,'№46 узор видимости не прошёл аудит сертификата: '+au('ok').slice(0,2).join('; '));
+  Object.keys(C6.VOPT).filter(v=>v!=='ok').forEach(v=>ok(au(v).length>0,'№46 '+v+': аудит не заметил'));
+  ['5-EF','12-swap'].forEach(pid=>{ const r=cp.exec(C6.program(pid,'ok'),g6).E; ok(C6.judge(r,G6).d56>0.5,'№46 '+pid+': ответ верный'); });
+  console.log('  точки 1–6 совпали с сертификатом (до '+w6.toExponential(1)+' мм); узор видимости прошёл аудит t46 ('+segsOf(C6.pattern(G6,'ok')).length+' участков), '+
+    'ошибки видимости аудит ловит: '+Object.keys(C6.VOPT).filter(v=>v!=='ok').map(v=>v+' '+au(v).length).join(', ')+'; ошибки точек: '+['5-EF','12-swap'].map(pid=>pid+' — сдвиг '+C6.judge(cp.exec(C6.program(pid,'ok'),g6).E,G6).d56.toFixed(1)+' мм').join(', ')); }
+
+(async()=>{ const load=src=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
       const C='tests/certified/'; for(const f of ['exact','kernels','certify','list']) await load(C+f+'.js'); for(const f of CERT.list) await load(C+f+'.js');
       if(!window.CERT) return ['нет CERT'];
       return Object.values(CERT.tasks).map(T=>{ const c=CERT.certify.certify(T,{variants:5}); return T.n+':'+c.ok; }); });

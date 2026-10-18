@@ -99,7 +99,12 @@ function camera(sheet,page,R,lv,size){ const [W,Hh]=size;
 
 /* «неизвестное построение» — ошибка, которой нет в библиотеке сканера (проверка честного отказа):
    u-hrot — h′ под произвольным углом к a′ (12…35° от перпендикуляра); u-Kshift — K′ взята на a′ наугад (4…10 мм от верной) */
-function unknown(C,kid,nvid,given,R){ const {edit}=cp, base=C.program('front',nvid);
+function unknown(C,kid,nvid,given,R){ const {edit}=cp, base=C.program(C.POPT?'ok':'front',nvid);
+  /* № 46: u-5shift — 5′ взята на D′F′ наугад (3…8 мм от верной); u-vpiece — видимость одного участка перепутана */
+  if(kid==='u-5shift'){ const s=(R()<0.5?-1:1)*R.r(3,8); let q=edit.replace(base,'5′',{id:'5c'}); q.steps.find(x=>x.id==='5c').draw=null;
+    q=edit.insertAfter(q,'5c',[{id:'5s',op:'shiftU',args:['5c',s]},{id:'l5s',op:'link',args:['5s']},{id:'5′',op:'meet',args:['l5s','DF′'],draw:{}}]);
+    q.steps.find(x=>x.id==='m12').draw.span=['1′','2′','5c']; return q; }
+  if(kid==='u-vpiece') return base;
   if(kid==='u-hrot'){ const a=(R()<0.5?-1:1)*R.r(12,35)*Math.PI/180; given.aRot={p:given['a′'].p,d:v2.rot(given['a′'].d,a)};
     return edit.replace(base,'h′',{args:['aRot','A′']}); }
   if(kid==='u-Kshift'){ const s=(R()<0.5?-1:1)*R.r(4,10); let q=edit.replace(base,'K′',{id:'Kc'}); q.steps.find(x=>x.id==='Kc').draw=null;
@@ -109,8 +114,12 @@ function unknown(C,kid,nvid,given,R){ const {edit}=cp, base=C.program('front',nv
 
 /* ── всё вместе ── */
 function synth(o){ o=o||{}; const n=o.n||47, R=rng(o.seed||1), lv=LEVELS[o.level||'normal'], SH=SHEETS[n];
-  const C=core('cp'+n), G=SH.G(), given=C.given(G), prog=/^u-/.test(o.kid||'')?unknown(C,o.kid,o.nvid,given,rng((o.seed||1)*7+3)):C.program(o.kid||'front',o.nvid||'ok:1A+');
+  const C=core('cp'+n), G=SH.G(), given=C.given(G), prog=/^u-/.test(o.kid||'')?unknown(C,o.kid,o.nvid,given,rng((o.seed||1)*7+3)):C.program(o.kid||(n===46?'ok':'front'),o.nvid||(n===46?'ok':'ok:1A+'));
   const st=hand(prog,given,R,lv), page=SH.page, sheet=new Sheet(page.w,page.h);
+  /* № 46: обводка сторон по узору видимости (основная / штриховая), стыки — с дрожью руки */
+  let vis=null; if(C.pattern){ vis=C.pattern(G,o.nvid||'ok');
+    if(o.kid==='u-vpiece'){ const ks=Object.keys(vis).filter(k=>vis[k].length>1), k=ks[Math.floor(R()*ks.length)], i=Math.floor(R()*vis[k].length); vis[k][i][2]=vis[k][i][2]==='main'?'hid':'main'; }
+    Object.entries(vis).forEach(([k,seq])=>{ const a=k[0]+k[2], b=k[1]+k[2]; seq.forEach(pc=>{ const L=v2.dist(given[a],given[b]); pc.p=[pc[0]===0?0:pc[0]+R.n(0,0.5*st.hand)/L,pc[1]===1?1:pc[1]+R.n(0,0.5*st.hand)/L].map(t=>Math.max(0,Math.min(1,t))); pc.A=v2.lerp(given[a],given[b],pc.p[0]); pc.B=v2.lerp(given[a],given[b],pc.p[1]); }); }); }
   /* зерно графита */
   const g0=gray(sheet.w,sheet.h); for(let i=0;i<g0.a.length;i++) g0.a[i]=R(); const g1=blur(g0,0.8); sheet.grain=new Float32Array(sheet.w*sheet.h);
   for(let i=0;i<g1.a.length;i++) sheet.grain[i]=Math.max(0.35,Math.min(1,0.7+(g1.a[i]-0.5)*3.2));
@@ -122,7 +131,7 @@ function synth(o){ o=o||{}; const n=o.n||47, R=rng(o.seed||1), lv=LEVELS[o.level
   sheet.layer='print'; const fr=SH.frame;
   sheet.stroke([[fr[0],fr[1]],[fr[2],fr[1]],[fr[2],fr[3]],[fr[0],fr[3]],[fr[0],fr[1]]],0.6,1,{},R);
   const words=['A','B','C','D','E','F','K','h','f','a','x']; let tx=16;
-  sheet.text('47.',[tx,24],3.2,1,0.35,{},R); tx+=10; while(tx<126){ const wl=1+Math.floor(R()*4); let s=''; for(let i=0;i<wl;i++) s+=R.pick(words); tx+=sheet.text(s,[tx,24],2.6,0.9,0.3,{},R)+2.2; }
+  sheet.text(n+'.',[tx,24],3.2,1,0.35,{},R); tx+=10; while(tx<126){ const wl=1+Math.floor(R()*4); let s=''; for(let i=0;i<wl;i++) s+=R.pick(words); tx+=sheet.text(s,[tx,24],2.6,0.9,0.3,{},R)+2.2; }
   const g0p=SH.given(); g0p.forEach(it=>{ if(it.t==='seg') sheet.stroke([P(it.a),P(it.b)],it.k==='main'?0.45:0.25,1,{},R);
     if(it.t==='conn') sheet.stroke([P(it.a),P(it.b)],0.18,0.9,{dash:[4,1.2,0]},R);
     if(it.t==='pt'){ sheet.circle(P(it.at),0.75,0.25,1,{},R); } });
@@ -131,6 +140,8 @@ function synth(o){ o=o||{}; const n=o.n||47, R=rng(o.seed||1), lv=LEVELS[o.level
   sheet.layer='pencil'; const pen={dk:R.r(...lv.dark),thin:R.r(0.22,0.38),main:R.r(0.45,0.75)}, roi=SH.roi;
   const nE=Math.round(R.r(lv.erased[0],lv.erased[1]+0.99)-0.49); for(let i=0;i<nE;i++){ const a=[R.r(roi[0],roi[2]),R.r(roi[1],roi[3])], b=v2.add(a,v2.mul(v2.rot([1,0],R()*6.3),R.r(10,45)));
     sheet.stroke([P(a),P(b)],R.r(0.5,1.2),R.r(0.05,0.12),{grain:true},R); }
+  if(vis) Object.values(vis).forEach(seq=>seq.forEach(pc=>{ const off=v2.mul(v2.perp(v2.unit(v2.sub(pc.B,pc.A))),R.n(0,0.08)); if(v2.dist(pc.A,pc.B)<0.8) return;
+    sheet.stroke([P(v2.add(pc.A,off)),P(v2.add(pc.B,off))],pc[2]==='main'?pen.main:pen.main*0.8,Math.min(0.95,pen.dk*(pc[2]==='main'?1.15:1)),{wob:R.r(0.02,0.06),grain:true,press:true,dash:pc[2]==='hid'?[R.r(3,5),R.r(1.2,2),R()*4]:null},R); }));
   const labels=[];
   st.items.forEach(it=>{ if(it.t==='seg'){ const k=it.k; const w=k==='main'?pen.main:k==='conn'?pen.thin*0.8:pen.thin, dk=pen.dk*(k==='main'?1.15:k==='conn'?0.75:0.9);
       sheet.stroke([P(it.a),P(it.b)],w,Math.min(0.95,dk),{wob:R.r(0.02,0.07),grain:true,press:true,dash:k==='hid'?[R.r(3,5),R.r(1,1.8),R()*4]:null},R);
@@ -148,11 +159,11 @@ function synth(o){ o=o||{}; const n=o.n||47, R=rng(o.seed||1), lv=LEVELS[o.level
   const sz=o.size||lv.size, size=R()<0.5?[sz[1],sz[0]]:sz.slice();
   const cam=camera(sheet,page,R,lv,size);
   const scene={units:'mm',items:SH.given().concat(st.items).map(it=>Object.assign({},it))};
-  return {img:cam.im,truth:{n,kid:o.kid||'front',nvid:o.nvid||'ok:1A+',cls:/^u-/.test(o.kid||'')?'unknown':C.cls(o.kid||'front',o.nvid||'ok:1A+'),H:cam.M,O:SH.O,scene,E:st.E,labels,hand:st.hand,pen,params:Object.assign(cam.params,{level:o.level||'normal',erased:nE,grid:!!sheet.gridAt})}}; }
+  return {img:cam.im,truth:{n,vis,kid:o.kid||'front',nvid:o.nvid||'ok:1A+',cls:/^u-/.test(o.kid||'')?'unknown':C.cls(o.kid||(n===46?'ok':'front'),o.nvid||(n===46?'ok':'ok:1A+')),H:cam.M,O:SH.O,scene,E:st.E,labels,hand:st.hand,pen,params:Object.assign(cam.params,{level:o.level||'normal',erased:nE,grid:!!sheet.gridAt})}}; }
 
 put('synth',{synth,LEVELS,PX});
 
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
-  const t0=Date.now(), r=synth({kid:a.kid,nvid:a.nv,seed:+(a.seed||1),level:a.level}); require('fs').writeFileSync(a.out||'synth.png',IMG.encodePNG(r.img));
+  const t0=Date.now(), r=synth({n:+(a.n||47),kid:a.kid,nvid:a.nv,seed:+(a.seed||1),level:a.level}); require('fs').writeFileSync(a.out||'synth.png',IMG.encodePNG(r.img));
   console.log('лист: '+r.truth.cls+' ('+r.truth.kid+', '+r.truth.nvid+'), '+(Date.now()-t0)+' мс, '+JSON.stringify(r.truth.params)); }
 })();

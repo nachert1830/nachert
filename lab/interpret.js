@@ -130,6 +130,7 @@ function separation(C,given,h1,h2){ const E1=cp.exec(C.program(h1.kid,h1.nvid),g
   return any?m:99; }
 
 function interpret(ln,lb,o){ o=o||{}; const n=o.n||47, SH=SHEETS[n], C=core('cp'+n), G=SH.G(), given=C.given(G);
+  if(C.pattern) return interpret46(ln,lb,o,SH,C,G,given);
   /* относительная тёмность: бледные следы (стёртое) объясняют меньше и штрафуют меньше */
   const segs=ln.segs.map(s=>Object.assign({},s)); const dk=segs.filter(s=>s.len>15).map(s=>s.dark).sort((a,b)=>a-b), ref=dk.length?dk[Math.floor(dk.length/2)]:0.3;
   segs.forEach(s=>s.rel=s.dark/ref);
@@ -208,6 +209,56 @@ function sceneOf(SH,ln,f,segs){ const role={}; Object.entries(f.roles).forEach((
   const items=SH.given().map(it=>Object.assign({},it)).concat(segs.map((s,i)=>({t:'seg',a:s.a,b:s.b,k:s.k,σ:+s.σ.toFixed(3),conf:+s.conf.toFixed(3),src:'hand',role:role[i]||null})));
   ['K′','K″','1′','2′','1″','2″','A₀','K₀'].forEach(n=>{ const p=f.E[n]; if(Array.isArray(p)&&p.length===2) items.push({t:'pt',at:p,l:n,σ:HAND.pt,conf:0.8,src:'hand',role:n}); });
   return {units:'mm',items}; }
+
+/* ═══ № 46: точки 5, 6 (программа) и видимость (узор обводки) решаются независимо ═══ */
+function free46(C){ const {edit}=cp; let q=edit.optional(C.program('ok','ok'),['1″','2″','l1','1′','l2','2′','m12']);
+  q=edit.remove(q,['5′','56′']); q=edit.insertAfter(q,'6″',[{id:'56′',op:'rayTo',args:['6′','DF′'],draw:{k:'main',span:['6′','5′']}},{id:'5′',op:'meet',args:['56′','DF′'],draw:{}}]);
+  /* порядок: 5″ строится от 5′ — переносим шаги l5, 5″ после 5′ */
+  const st=q.steps, mv=['l5','5″','56″'].map(id=>st.find(x=>x.id===id)).filter(Boolean); q.steps=st.filter(x=>!mv.includes(x)).concat(mv); return q; }
+function sep46(C,given,a,b){ const E1=cp.exec(C.program(a,'ok'),given).E, E2=cp.exec(C.program(b,'ok'),given).E; let m=0; ['5′','5″','6′','6″','1′','2′','3′','4′'].forEach(k=>{ if(E1[k]&&E2[k]) m=Math.max(m,v2.dist(E1[k],E2[k])); }); return m; }
+function interpret46(ln,lb,o,SH,C,G,given){ const VS=lab('visibility');
+  const segs=ln.segs.map(s=>Object.assign({},s)); const dk=segs.filter(s=>s.len>15).map(s=>s.dark).sort((a,b)=>a-b), ref=dk.length?dk[Math.floor(dk.length/2)]:0.3;
+  segs.forEach(s=>s.rel=s.dark/ref); const strong=segs.filter(s=>s.rel>=0.45);
+  const mp=ln.map, O=SH.O, vis=(a,b)=>{ const L=v2.dist(a,b), n=Math.max(1,Math.ceil(L/0.25)); let k=0;
+    for(let i=0;i<=n;i++){ const p=v2.lerp(a,b,i/n), x=Math.floor((p[0]+O[0]-mp.box[0])*8), y=Math.floor((p[1]+O[1]-mp.box[1])*8); if(x<0||y<0||x>=mp.g.w||y>=mp.g.h) continue; if(!mp.mask[y*mp.g.w+x]) k++; } return k/(n+1)*L; };
+  const probeLine=(st,Lp,sp)=>lab('lines').probe(ln.map,L2.at(Lp,sp[0]+10),L2.at(Lp,sp[1]-10));
+  const LB=lb?lab('labels'):null, NAMES=['1″','2″','1′','2′','3″','4″','3′','4′','5″','5′','6″','6′'];
+  const fits=Object.keys(C.POPT).map(pid=>{ const f=Object.assign({pid},fitProgram(C.program(pid,'ok'),given,strong,vis,probeLine)); if(LB){ const ag=LB.agreement(lb,f.E,NAMES); f.ll+=ag.ll; } return f; }).sort((a,b)=>b.ll-a.ll);
+  const obs=VS.read(ln,G,C,strong), pats=Object.keys(C.VOPT).map(v=>({v,pat:C.pattern(G,v)})), all=pats.map(x=>x.pat);
+  const vs=pats.map(x=>Object.assign({v:x.v},VS.score(obs,x.pat,all))).sort((a,b)=>b.ll-a.ll);
+  const res={ok:false,vis,probeLine,fits:fits.map(f=>({cls:f.pid,kid:f.pid,nvid:'',ll:+f.ll.toFixed(2),miss:f.missReq,extra:f.extra.length})),vfits:vs.map(x=>({v:x.v,ll:+x.ll.toFixed(1),mean:+(-2*x.ll/Math.max(1,x.n)).toFixed(2)})),segs:strong,obs};
+  /* P: как у № 47 — объясняет всё, соперник хуже на МАРЖУ, каждый шаг в 3σ, «5 где угодно» не лучше */
+  const bp=fits[0]; let P=null, whyP='';
+  if(bp.missReq.length||bp.extra.length) whyP='не узнаю построение точек 5, 6 ('+(bp.missReq.length?'не найдено: '+bp.missReq.join(', '):'лишние линии: '+bp.extra.length)+')';
+  else { const rv=fits.find(f=>f!==bp&&!f.missReq.length&&!f.extra.length&&sep46(C,given,bp.pid,f.pid)>=SEP), worst=bp.steps.filter(x=>x.c!=null).reduce((m,x)=>Math.max(m,x.c),0);
+    const fr=(()=>{ try{ return fitProgram(free46(C),given,strong,vis,probeLine); }catch(e){ return null; } })();
+    if(rv&&bp.ll-rv.ll<MARGIN) whyP='не уверен: точки 5, 6 похожи и на «'+C.POPT[bp.pid].what+'», и на «'+C.POPT[rv.pid].what+'»';
+    else if(worst>FIT_MAX) whyP='построение точек 5, 6 расходится с известными способами больше, чем допускает точность руки';
+    else if(fr&&!fr.missReq.length&&!fr.extra.length&&fr.ll>bp.ll) whyP='не узнаю построение: точка 5 стоит не там, где её дают известные способы';
+    else P=bp; }
+  /* V: средняя невязка участков ≤ 4 и соперник хуже на МАРЖУ; обводки почти нет — читать нечего */
+  const bv=vs[0], rvV=vs[1], meanV=-2*bv.ll/Math.max(1,bv.n); let V=null, whyV='';
+  if(obs.contrast<0.15) whyV='стороны не обведены (или обводка не видна) — видимость прочитать нельзя';
+  else if(meanV>4||bv.worst>20||bv.dis>0) whyV='обводка сторон не совпадает ни с одним известным вариантом видимости'+(bv.worst>20||bv.dis>0?' (участок обведён не так, как в ближайшем варианте)':'');
+  else if(rvV&&bv.ll-rvV.ll<MARGIN) whyV='не уверен в видимости: «'+C.VOPT[bv.v].what+'» или «'+C.VOPT[rvV.v].what+'»';
+  else V=bv;
+  res.extraInfo=bp.extra.map(i=>{ const g=strong[i]; return g.a.map(v=>v.toFixed(1))+'→'+g.b.map(v=>v.toFixed(1))+' '+g.len.toFixed(1)+'мм'; }); res.bestH=bp.pid+'/'+bv.v;
+  if(!P&&!V){ res.reason=whyP+'; '+whyV; res.unknown=/не узнаю/.test(whyP); return res; }
+  if(!P){ res.reason=whyP+(V?' (видимость: '+C.VOPT[V.v].what+')':''); res.unknown=/не узнаю/.test(whyP); return res; }
+  const v=verdict46(C,P,V,G,given,obs,whyV); res.ok=true; res.partial=!V; res.verdict=v; res.marks=v.marks; res.scene=sceneOf(SH,ln,P,strong); return res; }
+function verdict46(C,f,V,G,given,obs,whyV){ const Pp=C.POPT[f.pid], Vv=V?C.VOPT[V.v]:null, parts=[], E=f.E, marks=[];
+  if(!Pp.ok) parts.push({what:Pp.what,why:Pp.why}); if(Vv&&!Vv.ok) parts.push({what:Vv.what,why:Vv.why});
+  (Pp.mark||[]).forEach(id=>{ if(Array.isArray(E[id])) marks.push({at:E[id],id,kind:'bad'}); });
+  if(!Pp.ok){ const okE=cp.exec(C.program('ok','ok'),given).E; ['5′','5″','6′','6″'].forEach(n=>marks.push({at:okE[n],id:n,kind:'should'})); }
+  /* отметки видимости: участки, где узор студента отличается от верного */
+  if(V&&!Vv.ok){ const pv=C.pattern(G,V.v), po=C.pattern(G,'ok'), g=C.given(G); Object.keys(po).forEach(k=>{ const a=g[k[0]+k[2]], b=g[k[1]+k[2]];
+    po[k].forEach(([t0,t1,kk])=>{ const m=(t0+t1)/2, kv=(pv[k].find(x=>m>=x[0]&&m<=x[1])||[])[2]; if(kv&&kv!==kk) marks.push({at:v2.lerp(a,b,m),id:k,kind:'bad'}); }); }); }
+  const cls=(Pp.ok?'':f.pid)+(V?(Vv.ok?'':(Pp.ok?'':'+')+V.v):(Pp.ok?'ok':'')+'+v?');
+  const tr=C.truth(G), K5=E['5″']&&E['5′']?point3(E['5″'],E['5′']):null, K6=E['6″']&&E['6′']?point3(E['6″'],E['6′']):null;
+  const scene3d={tri:[['A','B','C'],['D','E','F']].map(T=>T.map(n=>tr.P[n])),p5:K5&&K5.P,p6:K6&&K6.P,t5:tr['5'],t6:tr['6']};
+  const okAll=Pp.ok&&V&&Vv.ok;
+  return {cls:cls||'ok',partial:!V,ok:okAll,title:okAll?'Верно':(parts.length?parts.map(p=>p.what).join('; '):'Точки 5, 6 построены верно')+(V?'':'. Видимость: '+whyV),parts,
+    note:'Точки: '+Pp.what+(V?'; видимость: '+Vv.what:''),points:{'5′':E['5′'],'5″':E['5″'],'6′':E['6′'],'6″':E['6″']},twins:[],marks,scene3d}; }
 
 put('interpret',{interpret,fitProgram,separation,HAND});
 })();

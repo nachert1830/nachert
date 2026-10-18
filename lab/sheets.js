@@ -16,6 +16,11 @@ const SHEETS={
     roi:[-75,-55,20,80],
     given:()=>{ const T=need('t47'), C=need('cp47'); return C.printed(T.gamma(T.entries[0])); },
     G:()=>{ const T=need('t47'); return T.gamma(T.entries[0]); } },
+  46:{ n:46, page:{w:148,h:210}, frame:[10,10,138,200], O:[110,110],
+    title:'46. Построить линию пересечения треугольников ABC и DEF, определить видимость.',
+    roi:[-78,-66,10,62],
+    given:()=>{ const T=need('t46'), C=need('cp46'); return C.printed(T.gamma(T.entries[0])); },
+    G:()=>{ const T=need('t46'); return T.gamma(T.entries[0]); } },
 };
 const toPage=(sh,p)=>[sh.O[0]+p[0],sh.O[1]+p[1]];
 const toDraw=(sh,p)=>[p[0]-sh.O[0],p[1]-sh.O[1]];

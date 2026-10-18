@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Сканер эпюра</title>
+<meta name="description" content="Фото рукописного эпюра → выпрямленный лист, линии, подписи, вердикт и 3D. Лаборатория, не для посетителей сайта.">
+<style>
+:root{ --bg:#f6f5f1; --card:#fff; --ink:#1b1e24; --mute:#5f6670; --line:#d9d6ce; --blue:#2f6fb5; --red:#b3261e; --green:#2e7d4f; --amber:#a86800; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#15171b; --card:#1e2127; --ink:#e8e6e1; --mute:#a4a9b1; --line:#353a42; --blue:#7fb0ea; --red:#f08a80; --green:#7fcf9c; --amber:#e6b35a; } }
+:root[data-theme="dark"]{ --bg:#15171b; --card:#1e2127; --ink:#e8e6e1; --mute:#a4a9b1; --line:#353a42; --blue:#7fb0ea; --red:#f08a80; --green:#7fcf9c; --amber:#e6b35a; }
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+main{ max-width:880px; margin:0 auto; padding:16px; }
+h1{ font-size:22px; margin:4px 0 2px; } .sub{ color:var(--mute); font-size:14px; margin:0 0 14px; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:0 0 14px; }
+.row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+select{ max-width:100%; } pre{ overflow-wrap:anywhere; } code{ overflow-wrap:anywhere; }
+button,select,label.btn{ font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:10px; padding:10px 14px; cursor:pointer; }
+button.primary,label.btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+input[type=file]{ display:none; }
+.stages{ list-style:none; padding:0; margin:8px 0 0; font-size:14px; }
+.stages li{ padding:4px 0; color:var(--mute); } .stages li.ok{ color:var(--green); } .stages li.bad{ color:var(--red); } .stages li.run{ color:var(--amber); }
+canvas,svg.scene{ width:100%; height:auto; display:block; border-radius:8px; background:#fff; }
+.verdict{ font-size:18px; font-weight:600; } .verdict.ok{ color:var(--green); } .verdict.bad{ color:var(--red); } .verdict.ref{ color:var(--amber); }
+.why{ margin:6px 0 0; } .mute{ color:var(--mute); font-size:14px; }
+details summary{ cursor:pointer; color:var(--mute); }
+.grid2{ display:grid; grid-template-columns:1fr; gap:14px; } @media (min-width:760px){ .grid2{ grid-template-columns:1fr 1fr; } }
+.tag{ display:inline-block; font-size:12px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--mute); }
+</style>
+</head>
+<body>
+<main>
+<h1>Сканер эпюра</h1>
+<p class="sub">Сфотографируйте лист с задачей целиком — сканер выпрямит его, найдёт линии и подписи, сверит с верным решением и известными ошибками и покажет 3D. Не уверен — откажет: «переснимите». Всё считается в телефоне, фото никуда не отправляется.</p>
+
+<div class="card">
+  <div class="row">
+    <select id="task"><option value="47">№ 47 — расстояние от точки до прямой</option><option value="46">№ 46 — пересечение треугольников</option></select>
+    <label class="btn primary">Сфотографировать<input id="file" type="file" accept="image/*" capture="environment"></label>
+    <label class="btn">Выбрать фото<input id="file2" type="file" accept="image/*"></label>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <span class="mute">Нет листа под рукой?</span>
+    <select id="demo"></select><button id="demoBtn">Синтетический лист</button>
+  </div>
+  <ul class="stages" id="stages"></ul>
+</div>
+
+<div class="card" id="vcard" hidden>
+  <div class="verdict" id="vtitle"></div>
+  <div class="why" id="vwhy"></div>
+  <div class="mute" id="vnote" style="margin-top:6px"></div>
+</div>
+
+<div class="grid2">
+  <div class="card"><div class="mute">Фото и отметки</div><canvas id="cPhoto"></canvas></div>
+  <div class="card"><div class="mute">Выпрямленный лист: найденные линии и подписи</div><canvas id="cRect"></canvas>
+    <div class="mute" style="margin-top:6px"><span style="color:#b3261e">■</span> основная · <span style="color:#d17a00">■</span> тонкая · <span style="color:#7a3fbf">■</span> штриховая · <span style="color:#2f6fb5">■</span> не объяснена · рамки — подписи</div></div>
+</div>
+<div class="grid2">
+  <div class="card"><div class="mute">Цифровой чертёж (мм листа)</div><div id="scene"></div></div>
+  <div class="card"><div class="mute">3D — потяните, чтобы повернуть</div><canvas id="c3d" width="600" height="480"></canvas></div>
+</div>
+<div class="card"><details><summary>Подробности (гипотезы и этапы)</summary><pre id="dbg" style="white-space:pre-wrap;font-size:12px"></pre></details></div>
+<p class="mute">Лаборатория: <code>lab/</code>, ядро — <code>core/</code>. Замер — <code>node lab/eval.js</code>, отчёт — <code>lab/REPORT-scanner.md</code>.</p>
+</main>
+
+<!-- ядро и сканер: те же файлы, что в тестах Node -->
+<script src="../core/exact.js"></script><script src="../core/kernels.js"></script>
+<script src="../core/t47.js"></script><script src="../core/t46.js"></script>
+<script src="../core/model.js"></script><script src="../core/scene.js"></script><script src="../core/cp.js"></script>
+<script src="../core/cp47.js"></script><script src="../core/cp46.js"></script>
+<script src="img.js"></script><script src="font.js"></script><script src="sheets.js"></script><script src="clean.js"></script>
+<script src="rectify.js"></script><script src="lines.js"></script><script src="labels.js"></script><script src="visibility.js"></script>
+<script src="interpret.js"></script><script src="scan.js"></script><script src="synth.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id), L=self.LAB, CO=self.CORE, IMG=L.img;
+const DEMOS={47:[['front','ok:1A+','верное решение'],['horiz','ok:2K+','верное, другой способ'],['foot1','ok:1A+','ошибка: K′ — перпендикуляр на π₁'],['h-par','ok:1A+','ошибка: h′ ∥ a′'],['12-swap','ok:2A-','ошибка: 1′ и 2′ перепутаны'],['front','abs:1A+','ошибка: катет — вся координата'],['front','none','ошибка: нет натуральной величины']],
+  46:[['ok','ok','верное решение'],['5-EF','ok','ошибка: 5′ не на D′F′'],['ok','v2-inv','ошибка: видимость на π₂'],['ok','v-none','ошибка: нет штриховых'],['12-swap','ok','ошибка: 1′ и 2′ перепутаны']]};
+const fillDemo=()=>{ $('demo').innerHTML=DEMOS[$('task').value].map((d,i)=>'<option value="'+i+'">'+d[2]+'</option>').join(''); };
+$('task').onchange=fillDemo; fillDemo();
+const stages=$('stages'); const st=(id,txt,cls)=>{ let li=$('st-'+id); if(!li){ li=document.createElement('li'); li.id='st-'+id; stages.appendChild(li); } li.textContent=txt; li.className=cls||''; };
+const tick=()=>new Promise(r=>setTimeout(r,30));
+
+/* фото → ImageData (длинная сторона ≤ 3000 px: телефон даёт 12 Мп, этого с запасом) */
+function toImageData(img){ const k=Math.min(1,3000/Math.max(img.naturalWidth,img.naturalHeight)), w=Math.round(img.naturalWidth*k), h=Math.round(img.naturalHeight*k);
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.drawImage(img,0,0,w,h); return g.getImageData(0,0,w,h); }
+function loadFile(f){ const url=URL.createObjectURL(f), im=new Image(); im.onload=()=>{ const d=toImageData(im); URL.revokeObjectURL(url); run(d,+$('task').value,null); }; im.src=url; }
+$('file').onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]); $('file2').onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]);
+$('demoBtn').onclick=async()=>{ const n=+$('task').value, d=DEMOS[n][+$('demo').value]; stages.innerHTML=''; st('syn','Рисую синтетический лист…','run'); await tick();
+  const s=L.synth.synth({n,kid:d[0],nvid:d[1],seed:1+Math.floor(Math.random()*1e6),level:'normal'}); st('syn','Синтетический лист: '+d[2]+' (правда известна: '+s.truth.cls+')','ok'); run(s.img,n,s.truth,true); };
+
+async function run(img,n,truth,keep){ if(!keep) stages.innerHTML=''; $('vcard').hidden=true; $('scene').innerHTML=''; $('dbg').textContent='';
+  drawPhoto(img,null,null); const t0=performance.now();
+  st('rect','Выпрямление: ищу рамку листа и напечатанное «дано»…','run'); await tick();
+  const rect=L.scan.rectifyFull(img,n); if(!rect.ok) return refuse('rect','Выпрямление: '+rect.reason,rect,img);
+  st('rect','Выпрямление: '+rect.pxPerMm.toFixed(1)+' px/мм, «дано» совпало на '+Math.round(rect.quality.on*100)+' %','ok');
+  drawPhoto(img,rect,null);
+  st('lines','Линии: гребни, Хаф, тип…','run'); await tick();
+  const ln=L.lines.extract(img,rect,{n}); if(!ln.ok) return refuse('lines','Линии: '+ln.reason,rect,img);
+  st('lines','Линии: найдено отрезков '+ln.segs.length,'ok');
+  st('lab','Подписи…','run'); await tick();
+  const lb=L.labels.attach(ln,rect,{n}); st('lab','Подписи: пятен '+lb.blobs.length+', прочитано (p > 0,5) '+lb.blobs.filter(b=>b.best&&b.best.p>0.5).length+' — '+lb.reader,'ok');
+  st('int','Интерпретация: сверяю с верными способами и ошибками…','run'); await tick();
+  const it=L.interpret.interpret(ln,lb,{n});
+  drawRect(img,rect,ln,lb,it,n);
+  $('dbg').textContent=JSON.stringify({время_мс:Math.round(performance.now()-t0),правда:truth&&truth.cls,гипотезы:it.fits&&it.fits.slice(0,6),видимость:it.vfits&&it.vfits.slice(0,3),причина:it.reason||null},null,1);
+  if(!it.ok){ st('int','Интерпретация: '+it.reason,'bad'); showVerdict(null,it.reason,truth); return; }
+  st('int','Интерпретация: '+(it.partial?'частичный вердикт':'вердикт'),'ok');
+  showVerdict(it.verdict,null,truth); drawPhoto(img,rect,it); drawScene(it.scene,it.marks); draw3d(n,it.verdict.scene3d); }
+function refuse(id,msg,rect,img){ st(id,msg,'bad'); showVerdict(null,msg,null); if(rect&&rect.ok) drawPhoto(img,rect,null); }
+function showVerdict(v,reason,truth){ $('vcard').hidden=false; const t=$('vtitle'), w=$('vwhy'), nt=$('vnote');
+  if(!v){ t.className='verdict ref'; t.textContent='Не могу прочитать уверенно'; w.textContent=reason; nt.textContent=truth?'Правда синтетического листа: '+truth.cls:''; return; }
+  t.className='verdict '+(v.ok?'ok':'bad'); t.textContent=v.title; w.innerHTML=(v.parts||[]).map(p=>p.why?'<p class="why"><b>Почему:</b> '+esc(p.why)+'</p>':'').join('');
+  nt.textContent=(v.note||'')+(truth?' · правда синтетического листа: '+truth.cls:''); }
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* фото: уменьшенная копия, контур «дано» по найденной гомографии, отметки ошибки */
+function drawPhoto(img,rect,it){ const c=$('cPhoto'), k=Math.min(1,900/img.width); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+  const g=c.getContext('2d'), tmp=document.createElement('canvas'); tmp.width=img.width; tmp.height=img.height; tmp.getContext('2d').putImageData(img instanceof ImageData?img:new ImageData(img.data,img.width,img.height),0,0); g.drawImage(tmp,0,0,c.width,c.height);
+  if(!rect||!rect.H) return; const SH=L.sheets.SHEETS[rect.sheet?rect.sheet.n:+$('task').value], P=p=>{ const q=IMG.H.apply(rect.H,L.sheets.toPage(SH,p)); return [q[0]*k,q[1]*k]; };
+  g.lineWidth=2; g.strokeStyle='rgba(46,125,79,.85)'; SH.given().forEach(itm=>{ if(itm.t!=='seg') return; const a=P(itm.a), b=P(itm.b); g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke(); });
+  const fr=SH.frame, F=[[fr[0],fr[1]],[fr[2],fr[1]],[fr[2],fr[3]],[fr[0],fr[3]]].map(p=>{ const q=IMG.H.apply(rect.H,p); return [q[0]*k,q[1]*k]; });
+  g.strokeStyle='rgba(47,111,181,.7)'; g.beginPath(); F.forEach((p,i)=>i?g.lineTo(...p):g.moveTo(...p)); g.closePath(); g.stroke();
+  (it&&it.marks||[]).forEach(m=>{ if(!m.at) return; const p=P(m.at); g.lineWidth=3; g.strokeStyle=m.kind==='should'?'rgba(46,125,79,.95)':'rgba(179,38,30,.95)'; g.beginPath(); g.arc(p[0],p[1],m.kind==='should'?7:11,0,7); g.stroke(); }); }
+/* выпрямленный лист: фото, пересчитанное в мм области построения, поверх — отрезки и подписи */
+function drawRect(img,rect,ln,lb,it,n){ const SH=L.sheets.SHEETS[n], box=ln.map.box, ppm=6, w=Math.round((box[2]-box[0])*ppm), h=Math.round((box[3]-box[1])*ppm), c=$('cRect'); c.width=w; c.height=h;
+  const g=c.getContext('2d'), out=g.createImageData(w,h), d=img.data;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const p=IMG.H.apply(rect.H,[box[0]+(x+0.5)/ppm,box[1]+(y+0.5)/ppm]), X=Math.round(p[0]), Y=Math.round(p[1]), o=(y*w+x)*4;
+    if(X<0||Y<0||X>=img.width||Y>=img.height){ out.data[o+3]=255; continue; } const i=(Y*img.width+X)*4; out.data[o]=d[i]; out.data[o+1]=d[i+1]; out.data[o+2]=d[i+2]; out.data[o+3]=255; }
+  g.putImageData(out,0,0); const P=p=>[(p[0]+SH.O[0]-box[0])*ppm,(p[1]+SH.O[1]-box[1])*ppm];
+  const roles=it&&it.scene?it.scene.items.filter(x=>x.t==='seg'&&x.src==='hand'):null;
+  (it&&it.segs||ln.segs).forEach((s,i)=>{ const role=roles&&roles[i]?roles[i].role:null; g.lineWidth=2; g.strokeStyle=!it||!it.ok||role?(s.k==='main'?'#b3261e':s.k==='hid'?'#7a3fbf':'#d17a00'):'#2f6fb5';
+    const a=P(s.a), b=P(s.b); g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke(); if(role){ g.fillStyle='#14181f'; g.font='12px system-ui'; g.fillText(role,(a[0]+b[0])/2+3,(a[1]+b[1])/2-3); } });
+  lb.blobs.forEach(b=>{ const a=P([b.box[0],b.box[1]]), e=P([b.box[2],b.box[3]]); g.strokeStyle='rgba(46,125,79,.8)'; g.lineWidth=1; g.strokeRect(a[0],a[1],e[0]-a[0],e[1]-a[1]);
+    if(b.best&&b.best.p>0.3){ g.fillStyle='#2e7d4f'; g.font='bold 12px system-ui'; g.fillText(b.best.text,e[0]+2,a[1]+10); } });
+  (it&&it.marks||[]).forEach(m=>{ if(!m.at) return; const p=P(m.at); g.lineWidth=3; g.strokeStyle=m.kind==='should'?'#2e7d4f':'#b3261e'; g.beginPath(); g.arc(p[0],p[1],m.kind==='should'?6:10,0,7); g.stroke(); }); }
+function drawScene(sc,marks){ if(!sc) return; const items=sc.items.concat((marks||[]).filter(m=>m.at&&m.kind!=='should').map(m=>({t:'mark',at:m.at,r:2.5})));
+  $('scene').innerHTML=CO.scene.svg({units:'mm',items},{scale:4}).replace('<svg ','<svg class="scene" '); }
+
+/* 3D: ортогональная проекция с поворотом; плоскости π₁ (горизонтальная) и π₂ (фронтальная) — сетка */
+let V3=null, ang=[-0.6,0.45];
+function draw3d(n,s3){ V3={n,s3}; render3d(); }
+function render3d(){ if(!V3) return; const c=$('c3d'), g=c.getContext('2d'), W=c.width, H=c.height, s3=V3.s3; g.clearRect(0,0,W,H); g.fillStyle=getComputedStyle(document.body).backgroundColor; g.fillRect(0,0,W,H);
+  /* мир: x влево, y к зрителю, z вверх → экран */
+  const [a,b]=ang, S=4.2, cx=W/2, cy=H*0.62;
+  const pr=p=>{ const X=-p[0]+30, Y=p[1]-25, Z=p[2]-25; const x1=X*Math.cos(a)+Y*Math.sin(a), y1=-X*Math.sin(a)*Math.sin(b)+Y*Math.cos(a)*Math.sin(b)+Z*Math.cos(b); return [cx+x1*S,cy-y1*S]; };
+  const ln=(p,q,col,w,dash)=>{ const A=pr(p), B=pr(q); g.strokeStyle=col; g.lineWidth=w||1.5; g.setLineDash(dash||[]); g.beginPath(); g.moveTo(...A); g.lineTo(...B); g.stroke(); g.setLineDash([]); };
+  const dot=(p,col,lab)=>{ const A=pr(p); g.fillStyle=col; g.beginPath(); g.arc(A[0],A[1],4,0,7); g.fill(); if(lab){ g.font='13px system-ui'; g.fillText(lab,A[0]+6,A[1]-6); } };
+  const grid='rgba(127,127,127,.35)'; for(let t=0;t<=70;t+=10){ ln([t,0,0],[t,60,0],grid,1); ln([t,0,0],[t,0,60],grid,1); } for(let t=0;t<=60;t+=10){ ln([0,t,0],[70,t,0],grid,1); ln([0,0,t],[70,0,t],grid,1); }
+  g.fillStyle='rgba(127,127,127,.9)'; g.font='12px system-ui'; const t1=pr([68,55,0]), t2=pr([68,0,57]); g.fillText('π₁',t1[0],t1[1]); g.fillText('π₂',t2[0],t2[1]);
+  const red='#b3261e', grn='#2e7d4f', ink=getComputedStyle(document.body).color;
+  if(V3.n===47){ ln(s3.a[0],s3.a[1],ink,2); dot(s3.A,ink,'A'); if(s3.K){ ln(s3.A,s3.K,red,3); dot(s3.K,red,'K'); } if(s3.Ktrue&&(!s3.K||Math.hypot(...s3.K.map((v,i)=>v-s3.Ktrue[i]))>0.8)){ ln(s3.A,s3.Ktrue,grn,2,[6,4]); dot(s3.Ktrue,grn,'K верная'); } }
+  else { s3.tri.forEach((T,j)=>{ const col=j?'#2f6fb5':ink; [[0,1],[1,2],[2,0]].forEach(([i,k])=>ln(T[i],T[k],col,2)); T.forEach((p,i)=>dot(p,col,(j?'DEF':'ABC')[i])); });
+    if(s3.p5&&s3.p6) ln(s3.p5,s3.p6,red,3.5); if(s3.p5) dot(s3.p5,red,'5'); if(s3.p6) dot(s3.p6,red,'6'); ln(s3.t5,s3.t6,grn,1.5,[6,4]); } }
+(function(){ const c=$('c3d'); let drag=null; const pos=e=>{ const t=e.touches?e.touches[0]:e; return [t.clientX,t.clientY]; };
+  const down=e=>{ drag=pos(e); }, move=e=>{ if(!drag) return; const p=pos(e); ang[0]+=(p[0]-drag[0])*0.01; ang[1]=Math.max(-1.4,Math.min(1.4,ang[1]+(p[1]-drag[1])*0.01)); drag=p; render3d(); e.preventDefault(); }, up=()=>{ drag=null; };
+  c.addEventListener('mousedown',down); c.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+  c.addEventListener('touchstart',down,{passive:true}); c.addEventListener('touchmove',move,{passive:false}); c.addEventListener('touchend',up); })();
+})();
+</script>
+</body>
+</html>
