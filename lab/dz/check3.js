@@ -61,8 +61,35 @@ function replaceHyps(D,T,data,lines,from){ const out=[];
    bad  — уверенно: ≥ 2 ребра сходятся в одном сдвинутом месте (≥ 0,9, |δ| ≥ 3 мм), а на месте их нет (≤ 0,35);
    иначе — неясно (точку не подтверждаем и в ошибке не обвиняем), с подсказкой, куда сходятся линии. */
 const covRaw=(D,T,a,b)=>{ const L=v2.len(v2.sub(b,a)), n=Math.max(2,Math.round(L/0.25)); let k=0; for(let i=0;i<=n;i++){ const p=v2.add(a,v2.mul(v2.sub(b,a),i/n)); if(C.at(D,C.apply(T,p))<=0.6) k++; } return k/(n+1); };
-function pointEvidence(D,T,P,others,nu,from){ const inc=others.filter(o=>{ const d=v2.sub(o,P); return v2.len(d)>8&&angDeg(d,nu)>=20; });
-  const at=Q=>inc.map(o=>covOne(D,T,Q,o)||0), mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+/* положение точки — измерением: ребро из соседней точки o к P начерчено прямой (из кусков оцифровки — их рвут
+   пересечения), и её дальний конец — там, где студент поставил точку. Конец должен лежать на прямой сдвига точки
+   (через P вдоль nu); угол ребра к nu ≥ 20°, иначе положение неточно. → [{d}] — сдвиг δ вдоль nu по каждому соседу */
+let SEGS=null;
+function measurePoint(P,others,nu){ const out=[]; if(!SEGS) return out;
+  others.forEach(o=>{ const dir=v2.sub(P,o), L=v2.len(dir); if(L<10||angDeg(dir,nu)<20) return; const ds=[];
+    /* куски одной прямой из o: отрезки под углом ≤ 25° к o→P, чья прямая проходит в 1,2 мм от o; группы по направлению */
+    const cand=SEGS.filter(q=>{ const e=v2.sub(q.b,q.a); if(v2.len(e)<3||angDeg(e,dir)>25) return false; const Lq=M3.line(q.a,e); return Math.abs(M3.sdist(o,Lq,v2.perp(Lq.e)))<=1.2; });
+    const groups=[]; cand.forEach(q=>{ const e=v2.unit(v2.sub(q.b,q.a)), g=groups.find(G=>angDeg(G.e,e)<2.5); if(g) g.q.push(q); else groups.push({e,q:[q]}); });
+    groups.forEach(G=>{ let e=G.e; if(v2.dot(e,dir)<0) e=v2.mul(e,-1);
+      /* отрезки как промежутки вдоль e от o; цепочка от o (начало ≤ 3 мм) без разрывов > 3 мм — её дальний конец */
+      const iv=G.q.map(q=>[v2.dot(v2.sub(q.a,o),e),v2.dot(v2.sub(q.b,o),e)].sort((x,y)=>x-y)).sort((x,y)=>x[0]-y[0]);
+      let end=null; iv.forEach(([t0,t1])=>{ if(end==null){ if(t0<=3&&t1>0) end=t1; } else if(t0<=end+3) end=Math.max(end,t1); });
+      if(end==null||end<8) return; const Q=v2.add(o,v2.mul(e,end)), d=v2.dot(v2.sub(Q,P),nu), off=Math.abs(v2.dot(v2.sub(Q,P),v2.perp(nu)));
+      /* конец цепочки — на прямой сдвига точки (≤ 2,5 мм) и не дальше 12 мм вдоль неё */
+      if(off<=2.5&&Math.abs(d)<=12) ds.push(d); });
+    if(ds.length){ ds.sort((a,b)=>a-b); out.push({d:ds[ds.length>>1],n:ds.length}); } });
+  return out; }
+function pointEvidence(D,T,P,others,nu,from){
+  /* сначала — измерение по отрезкам листа */
+  const ms=measurePoint(P,others,nu);
+  if(ms.length){ const ds=ms.map(m=>m.d).sort((a,b)=>a-b), med=ds[ds.length>>1], agree=ds.filter(d=>Math.abs(d-med)<=1.5).length;
+    if(Math.abs(med)<=TOL&&agree===ds.length) return {st:'ok',d:med,n:ds.length,measured:true};
+    if(Math.abs(med)>=BAD&&agree>=2) return {st:'bad',d:med,n:ds.length,measured:true};
+    if(Math.abs(med)>=2) return {st:'?',d:med,n:ds.length,measured:true}; } const inc=others.filter(o=>{ const d=v2.sub(o,P); return v2.len(d)>8&&angDeg(d,nu)>=20; });
+  /* о положении точки говорит участок линии у самой точки: дальний конец линии держится за другую точку, сдвиг
+     виден у ближнего (берём ближние 40 % ребра, не больше 15 мм, без 1 мм у самой точки) */
+  const near1=(Q,o)=>{ const d=v2.sub(o,Q), L=v2.len(d), k=Math.min(0.4,15/L), u=v2.unit(d); return covRaw(D,T,v2.add(Q,v2.mul(u,1)),v2.add(Q,v2.mul(d,k))); };
+  const at=Q=>inc.map(o=>near1(Q,o)), mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
   /* «на месте» — в пределах допуска ±1,5 мм (рука, ось, начерченная с дрожью, — студент меряет от неё) */
   let near={c:-1,each:null}, best={d:0,c:-1,each:null};
   for(let d=-12;d<=12;d+=0.25){ const e=at(v2.add(P,v2.mul(nu,d))), c=mean(e); if(Math.abs(d)<=TOL&&c>near.c) near={d,c,each:e}; if(c>best.c) best={d,c,each:e}; }
@@ -82,15 +109,26 @@ function axisLines(dig,cal,data){ const segs=drawSegs(dig,cal), g=M.given('3',da
   segs.filter(s=>s.len>=25).forEach(s=>{ if(Math.abs(s.a[1])<1.2&&Math.abs(s.b[1])<1.2) return; if(onGiven(s)) return; const L=M3.line(s.a,v2.sub(s.b,s.a));
     if(out.some(q=>angDeg(q.e,L.e)<1&&Math.abs(M3.sdist(s.a,q,v2.perp(q.e)))<1)) return; L.t0=0; L.t1=v2.len(v2.sub(s.b,s.a)); out.push(L); });
   return out; }
-function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve('3',data), d=M3.dirs(data), why=[], parts={};
+/* уровень c прямой вращения — только по самой начерченной оси (середина площадки наибольшего покрытия): проверяемые
+   элементы (стороны A₀B₀C₀, прямые из S₀) в подгонку уровня не входят — иначе ошибка радиуса «растворилась» бы
+   в другом уровне (угол φ от уровня не зависит, а положения — зависят) */
+function pinLevel(D,T,make,c0,half){ let pts=[], mx=-1; for(let c=c0-3;c<=c0+3+1e-9;c+=0.05){ const t=make(c); if(!t) continue; const ax=t.axis, v=covOne(D,T,v2.add(ax.p,v2.mul(ax.e,-half)),v2.add(ax.p,v2.mul(ax.e,half)))||0; pts.push([c,v]); if(v>mx) mx=v; }
+  const top=pts.filter(p=>p[1]>=mx-0.02).map(p=>p[0]); return top.length?top.reduce((a,b)=>a+b,0)/top.length:c0; }
+function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve('3',data), d=M3.dirs(data), why=[], parts={}; SEGS=drawSegs(dig,cal);
   const lines=axisLines(dig,cal,data);
   /* а), б) первый шаг: все гипотезы замены, по направлению оси — к своей части */
   const H1=replaceHyps(D,T,data,lines,null);
   const dirA=h=>angDeg(h.L.e,v2.perp(h.base==='h'?d.hH:d.fF)), dirB=h=>angDeg(h.L.e,h.base==='h'?d.ABh:d.ABf);
-  const hA=H1.filter(h=>dirA(h)<15&&dirA(h)<=dirB(h))[0], hB=H1.filter(h=>dirB(h)<15&&dirB(h)<dirA(h))[0];
+  /* к части — по направлению; из гипотез части берём верно направленную (≤ 3°), если она объясняет лист не хуже
+     70 % лучшей: «ось не та» — только когда верной оси на листе нет */
+  const pick=(L,dir)=>{ if(!L.length) return null; const good=L.filter(h=>dir(h)<=3); return good.length&&good[0].score>=0.7*L[0].score?good[0]:L[0]; };
+  const LA=H1.filter(h=>dirA(h)<15&&dirA(h)<=dirB(h)), LB=H1.filter(h=>dirB(h)<15&&dirB(h)<dirA(h)), hA=pick(LA,dirA), hB=pick(LB,dirB);
+  /* уверенно «ось не та»: гипотеза объясняет лист почти полностью, а верно направленной нет вовсе */
+  const sureWrong=(h,L,dir)=>h.score>=0.9&&h.cc>=0.85&&h.fig>=0.7&&!L.some(x=>dir(x)<=3&&x.score>=0.6);
   /* а) высота */
   parts.a=(()=>{ if(!hA) return {st:'не найдено',why:['не нашёл замены плоскостей с осью ⟂ '+'h′ (или ⟂ f″) — построения высоты']};
     const s=hA.s, dv=dirA(hA), nm='x'+(hA.base==='h'?'₁₄':'₂₄'), lvl=hA.base==='h'?'горизонтали h′':'фронтали f″', out={st:'верно',why:[],H:r.H,base:hA.base};
+    if(dv>=ANG_BAD&&!sureWrong(hA,LA,dirA)) return {st:'не могу утверждать',why:['не нашёл оси '+nm+' ⟂ '+lvl+'; похожая прямая отклонена на '+f1(dv)+'° — проверьте построение (а)']};
     if(dv>=ANG_BAD) return {st:'ошибка',why:['ось '+nm+' не перпендикулярна '+lvl+' (отклонение '+f1(dv)+'°): основание ABC на π₄ не проецируется в прямую — высоту так не найти']};
     if(dv>TOL) out.st='не могу утверждать', out.why.push('ось '+nm+' ⟂ '+lvl+' с отклонением '+f1(dv)+'° — на грани допуска');
     /* каждая точка на π₄: отложено ли нужное расстояние (z — от h′, y — от f″) */
@@ -98,30 +136,40 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
        при любой ошибке студента в одной из них */
     const cp=checkPoints(D,T,s.P,s.nu,k=>k==='S'?['A','B','C']:['S'],null,k=>hA.base==='h'?Hp(data[k]):Fp(data[k]));
     cp.bad.forEach(ps=>{ const k=ps.k; out.st='ошибка'; out.why.push('для '+k+'₄ отложено ≈ '+f1((hA.base==='h'?data[k][2]:data[k][1])+ps.d)+' мм вместо '+(hA.base==='h'?'z = '+data[k][2]:'y = '+data[k][1])+' мм'); });
-    if(out.st!=='ошибка'&&cp.unk.length){ out.st='не могу утверждать'; out.why.push('не подтвердил положение '+cp.unk.map(x=>x.k+'₄'+(x.d!=null?' (линии сходятся в ≈ '+f1(Math.abs(x.d))+' мм от нужного места — проверьте отложенное расстояние)':'')).join(', ')); }
-    /* высота: перпендикуляр из S₄ на прямую A₄B₄C₄ */
+    /* вердикт — по тому, от чего зависит ответ: прямая A₄B₄C₄ (основание ребром), S₄ и высота S₄K₄ ⟂ этой прямой.
+       Отдельные A₄, B₄, C₄ — лишь подсказки: ошибка в одной из них без влияния на прямую ответа не портит */
     const ps=[s.P.A,s.P.B,s.P.C]; let far=[0,1]; for(let i=0;i<3;i++) for(let j=i+1;j<3;j++) if(v2.len(v2.sub(ps[i],ps[j]))>v2.len(v2.sub(ps[far[0]],ps[far[1]]))) far=[i,j];
-    const E=M3.line(ps[far[0]],v2.sub(ps[far[1]],ps[far[0]])), K=M3.foot(s.P.S,E), ch=covOne(D,T,s.P.S,K);
-    if(out.st==='верно'&&(ch==null||ch<0.6)){ out.st='не могу утверждать'; out.why.push('не нашёл отрезка высоты S₄K₄ ⟂ A₄B₄C₄'); }
-    if(out.st==='верно') out.why.push('высота H = '+f1(r.H)+' мм (S₄K₄ на π₄, ось '+nm+' ⟂ '+lvl+')');
+    const E=M3.line(ps[far[0]],v2.sub(ps[far[1]],ps[far[0]])), K=M3.foot(s.P.S,E), ch=covOne(D,T,s.P.S,K), ce=covOne(D,T,ps[far[0]],ps[far[1]]), sEv=cp.all.find(x=>x.k==='S');
+    if(out.st!=='ошибка'){
+      if(ce==null||ce<0.75){ out.st='не могу утверждать'; out.why.push('не нашёл прямой A₄B₄C₄ (основание ребром) там, где она должна быть'+(cp.unk.length?' — проверьте '+cp.unk.map(x=>x.k+'₄').join(', '):'')); }
+      else if(sEv.st!=='ok'){ out.st='не могу утверждать'; out.why.push('не подтвердил положение S₄'+(sEv.d!=null?' (≈ '+f1(Math.abs(sEv.d))+' мм от нужного — проверьте отложенное расстояние)':'')); }
+      else if(ch==null||ch<0.6){ out.st='не могу утверждать'; out.why.push('не нашёл отрезка высоты S₄K₄ ⟂ A₄B₄C₄'); }
+      /* ответ на месте, но линии какой-то точки сходятся в другом месте — на листе расхождение: «верно» не говорим */
+      /* признак сдвига (линии у точки сходятся в другом месте) — «верно» не говорим; точку, о которой лист ничего
+         не говорит (её рёбра идут вдоль сдвига), не подтверждаем, но и не обвиняем — на высоту она не влияет */
+      else if(cp.unk.some(x=>x.d!=null)){ out.st='не могу утверждать'; out.why.push('высота построена, но линии у '+cp.unk.filter(x=>x.d!=null).map(x=>x.k+'₄ сходятся в ≈ '+f1(Math.abs(x.d))+' мм от нужного места').join(', ')+' — проверьте отложенные расстояния'); }
+      else if(cp.unk.length) out.note='не проверил положение '+cp.unk.map(x=>x.k+'₄').join(', ')+' (по листу не видно: линии из них идут вдоль линии связи); на высоту оно не влияет'; }
+    if(out.st==='верно') out.why.push('высота H = '+f1(r.H)+' мм (S₄K₄ на π₄, ось '+nm+' ⟂ '+lvl+')'+(out.note?'; '+out.note:''));
     return out; })();
   /* б) двугранный угол: второй шаг от проекций на π₄ */
   parts.b=(()=>{ if(!hB) return {st:'не найдено',why:['не нашёл первой замены с осью ∥ A′B′ (или A″B″) — построения двугранного угла']};
     const dv1=dirB(hB), s1=hB.s, nm1='x'+(hB.base==='h'?'₁₄':'₂₄'), out={st:'верно',why:[],dih:r.dih};
+    if(dv1>=ANG_BAD&&!sureWrong(hB,LB,dirB)) return {st:'не могу утверждать',why:['не нашёл оси '+nm1+' ∥ '+(hB.base==='h'?'A′B′':'A″B″')+'; похожая прямая отклонена на '+f1(dv1)+'° — проверьте построение (б)']};
     if(dv1>=ANG_BAD) return {st:'ошибка',why:['ось '+nm1+' не параллельна '+(hB.base==='h'?'A′B′':'A″B″')+' (отклонение '+f1(dv1)+'°): ребро AB на π₄ не в натуральную величину']};
     const cp1=checkPoints(D,T,s1.P,s1.nu,k=>NM.filter(o=>o!==k),null,k=>hB.base==='h'?Hp(data[k]):Fp(data[k]));
     cp1.bad.forEach(ps=>{ out.st='ошибка'; out.why.push('для '+ps.k+'₄ отложено расстояние с ошибкой ≈ '+f1(ps.d)+' мм'); });
-    if(out.st!=='ошибка'&&cp1.unk.length){ out.st='не могу утверждать'; out.why.push('не подтвердил положение '+cp1.unk.map(x=>x.k+'₄'+(x.d!=null?' (≈ '+f1(Math.abs(x.d))+' мм от нужного)':'')).join(', ')+' на π₄'); }
     /* второй шаг — от начерченных A₄…S₄ */
     const s1a=Object.assign({},s1,{P:anchor(D,T,s1.P,Object.fromEntries(NM.map(k=>[k,hB.base==='h'?Hp(data[k]):Fp(data[k])])))});
     const H2=replaceHyps(D,T,data,lines.filter(L=>Math.abs(M3.sdist(L.p,hB.L,v2.perp(hB.L.e)))>1||angDeg(L.e,hB.L.e)>1),{base:hB.base,s:s1a}).map(h=>Object.assign(h,{fig:bestK(D,T,[[h.s.P.A,h.s.P.C],[h.s.P.A,h.s.P.S],[h.s.P.B,h.s.P.C],[h.s.P.B,h.s.P.S]],2)})).map(h=>Object.assign(h,{score:0.6*h.cc+0.4*h.fig})).sort((a,b)=>b.score-a.score);
-    const ab=v2.unit(v2.sub(s1a.P.B,s1a.P.A)), h2=H2.filter(h=>angDeg(h.L.e,v2.perp(ab))<15)[0];
+    const ab=v2.unit(v2.sub(s1a.P.B,s1a.P.A)), dir2=h=>angDeg(h.L.e,v2.perp(ab)), L2=H2.filter(h=>dir2(h)<15), h2=pick(L2,dir2);
     if(!h2) return Object.assign(out,{st:out.st==='ошибка'?'ошибка':'не найдено',why:out.why.concat(['не нашёл второй замены (ось ⟂ A₄B₄)'])});
     const dv2=angDeg(h2.L.e,v2.perp(ab));
+    if(dv2>=ANG_BAD&&!sureWrong(h2,L2,dir2)) return {st:'не могу утверждать',why:out.why.concat(['не нашёл оси x₄₅ ⟂ A₄B₄; похожая прямая отклонена на '+f1(dv2)+'°'])};
     if(dv2>=ANG_BAD) return {st:'ошибка',why:out.why.concat(['ось x₄₅ не перпендикулярна A₄B₄ (отклонение '+f1(dv2)+'°): ребро AB на π₅ не в точку, угол между гранями так не виден'])};
     if(dv2>TOL&&out.st==='верно') out.st='не могу утверждать', out.why.push('x₄₅ ⟂ A₄B₄ с отклонением '+f1(dv2)+'° — на грани допуска');
     const P5=h2.s.P, cA=covOne(D,T,P5.A,P5.C), cS=covOne(D,T,P5.A,P5.S);
-    if(out.st==='верно'&&(cA==null||cS==null||cA<0.6||cS<0.6)){ out.st='не могу утверждать'; out.why.push('не нашёл следов граней A₅C₅ и A₅S₅ на π₅'); }
+    if(out.st==='верно'&&(cA==null||cS==null||cA<0.75||cS<0.75)){ out.st='не могу утверждать'; out.why.push('не нашёл следов граней A₅C₅ и A₅S₅ на π₅ там, где они должны быть'+(cp1.unk.length?' — проверьте '+cp1.unk.map(x=>x.k+'₄').join(', ')+' на π₄':'')); }
+    if(out.st==='верно'&&cp1.unk.some(x=>x.d!=null)){ out.st='не могу утверждать'; out.why.push('угол построен, но на π₄ линии у '+cp1.unk.filter(x=>x.d!=null).map(x=>x.k+'₄ сходятся в ≈ '+f1(Math.abs(x.d))+' мм от нужного места').join(', ')); }
     if(out.st==='верно') out.why.push('двугранный угол при AB = '+f1(r.dih)+'° (на π₅ между A₅C₅ и A₅S₅)');
     return out; })();
   /* в) истинный вид ABC вращением вокруг прямой уровня */
@@ -129,26 +177,46 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     for(const form of ['h','f']) for(const same of [true,false]){ const L=form==='h'?zs:ys, lo=Math.min(...L)-10, hi=Math.max(...L)+10;
       for(let c=lo;c<=hi;c+=0.25){ const t=M3.rotate(data,form,c,same); if(!t) continue; const P=t.P, pr=form==='h'?Hp:Fp;
         const tri=cov(D,T,[[P.A,P.B],[P.B,P.C],[P.C,P.A]]), paths=['A','B','C'].map(k=>[pr(data[k]),P[k]]).filter(([a,b])=>v2.len(v2.sub(a,b))>8), pc=paths.length?cov(D,T,paths):0;
-        const sc=0.7*tri+0.3*pc; if(!best||sc>best.sc) best={sc,tri,pc,form,c,same,t}; } }
+        /* начерченная ось вращения держит уровень c: без неё ошибку радиуса «объяснил» бы другой уровень */
+        const ax=t.axis, axc=covOne(D,T,v2.add(ax.p,v2.mul(ax.e,-40)),v2.add(ax.p,v2.mul(ax.e,40)))||0;
+        const sc=0.5*tri+0.2*pc+0.3*axc; if(!best||sc>best.sc) best={sc,tri,pc,axc,form,c,same,t}; } }
     if(!best||best.tri<0.6) return {st:'не найдено',why:['не нашёл истинного вида ABC (треугольника, повёрнутого вокруг прямой уровня)']};
+    { const c1=pinLevel(D,T,c=>M3.rotate(data,best.form,c,best.same),best.c,40), t1=M3.rotate(data,best.form,c1,best.same); if(t1){ best.c=c1; best.t=t1; best.axc=covOne(D,T,v2.add(t1.axis.p,v2.mul(t1.axis.e,-40)),v2.add(t1.axis.p,v2.mul(t1.axis.e,40)))||0; } }
     const out={st:'верно',why:[],form:best.form,c:best.c,P:best.t.P}, P=best.t.P, pr=best.form==='h'?Hp:Fp;
     ['A','B','C'].forEach(k=>{ const path=v2.sub(P[k],pr(data[k])); if(v2.len(path)<8) return; const ev=pointEvidence(D,T,P[k],['A','B','C'].filter(o=>o!==k).map(o=>P[o]),v2.unit(path),pr(data[k]));
       if(ev.st==='bad'){ out.st='ошибка'; out.why.push('радиус вращения точки '+k+' взят неверно: '+k+'₀ сдвинута на '+f1(ev.d)+' мм по пути вращения — истинный вид искажён'); }
-      else if(ev.st==='?'&&out.st!=='ошибка'){ out.st='не могу утверждать'; out.why.push('не подтвердил положение '+k+'₀'+(ev.d!=null?' (≈ '+f1(Math.abs(ev.d))+' мм от нужного — проверьте радиус вращения)':'')); } });
-    if(out.st==='верно'&&best.tri<0.75){ out.st='не могу утверждать'; out.why.push('треугольник истинного вида читается неуверенно'); }
+      else if(ev.st==='?') out.hint=(out.hint||[]).concat([k+'₀'+(ev.d!=null?' (≈ '+f1(Math.abs(ev.d))+' мм от нужного)':'')]); });
+    if(best.axc<0.7&&out.st==='верно'){ out.st='не могу утверждать'; out.why.push('не нашёл оси вращения ('+(best.form==='h'?'горизонтали':'фронтали')+') там, где она должна быть'); }
+    /* повёрнутые вершины должны быть подтверждены (сдвиг вдоль стороны её укорачивает, но не уводит с места) */
+    const unconf=['A','B','C'].filter(k=>{ const path=v2.sub(P[k],pr(data[k])); if(v2.len(path)<8) return false; return pointEvidence(D,T,P[k],['A','B','C'].filter(o=>o!==k).map(o=>P[o]),v2.unit(path),pr(data[k])).st!=='ok'; });
+    if(out.st==='верно'&&unconf.length){ out.st='не могу утверждать'; out.why.push('не подтвердил положение '+unconf.map(k=>k+'₀').join(', ')+' (радиус вращения)'); }
+    /* вердикт — по сторонам истинного вида: каждая на месте */
+    const sides=[['A','B'],['B','C'],['C','A']].map(([a,b])=>covOne(D,T,P[a],P[b])||0);
+    if(out.st==='верно'&&!sides.some(c=>c<0.75)&&out.hint&&out.hint.some(h=>/≈/.test(h))){ out.st='не могу утверждать'; out.why.push('стороны на месте, но линии у '+out.hint.filter(h=>/≈/.test(h)).join(', ')+' сходятся не там — проверьте радиусы вращения'); }
+    if(out.st!=='ошибка'&&sides.some(c=>c<0.75)){ out.st='не могу утверждать'; out.why.push('стороны истинного вида A₀B₀C₀ не там, где должны быть'+(out.hint?' — проверьте радиусы вращения: '+out.hint.join(', '):'')); }
     if(out.st==='верно') out.why.push('истинный вид: AB = '+f1(r.AB)+', BC = '+f1(r.BC)+', CA = '+f1(r.CA)+' мм (вращение вокруг '+(best.form==='h'?'горизонтали':'фронтали')+')');
     return out; })();
   /* г) угол SA с основанием */
   parts.d=(()=>{ let best=null; const zs=[data.S[2],data.A[2]], lo=Math.min(...zs)-15, hi=Math.max(...zs)+15;
     for(const same of [true,false]) for(let c=lo;c<=hi;c+=0.25){ const t=M3.sigma(data,c,same); if(!t) continue;
-      const main=cov(D,T,[[t.S0,t.A0],[t.S0,t.Y0]]), path=v2.len(v2.sub(Hp(data.S),t.S0))>8?covOne(D,T,Hp(data.S),t.S0)||0:0, sc=0.75*main+0.25*path;
-      if(!best||sc>best.sc) best={sc,main,c,same,t}; }
+      const main=cov(D,T,[[t.S0,t.A0],[t.S0,t.Y0]]), path=v2.len(v2.sub(Hp(data.S),t.S0))>8?covOne(D,T,Hp(data.S),t.S0)||0:0;
+      /* ось вращения (горизонталь Σ) и путь A, если A при этом уровне сдвигается: уровень c держится начерченным */
+      const axc=covOne(D,T,v2.add(t.axis.p,v2.mul(t.axis.e,-30)),v2.add(t.axis.p,v2.mul(t.axis.e,30)))||0, aMove=v2.len(v2.sub(t.A0,Hp(data.A))), aPath=aMove>2?(aMove>5?covOne(D,T,Hp(data.A),t.A0)||0:0):1;
+      const sc=0.5*main+0.15*path+0.2*axc+0.15*aPath;
+      if(!best||sc>best.sc) best={sc,main,axc,aPath,c,same,t}; }
     if(!best||best.main<0.6) return {st:'не найдено',why:['не нашёл поворота плоскости (SA, n): прямых S₀A₀ и S₀n₀']};
+    { const c1=pinLevel(D,T,c=>M3.sigma(data,c,best.same),best.c,30), t1=M3.sigma(data,c1,best.same); if(t1){ best.c=c1; best.t=t1; best.axc=covOne(D,T,v2.add(t1.axis.p,v2.mul(t1.axis.e,-30)),v2.add(t1.axis.p,v2.mul(t1.axis.e,30)))||0;
+      const aMove=v2.len(v2.sub(t1.A0,Hp(data.A))); best.aPath=aMove>2?(aMove>5?covOne(D,T,Hp(data.A),t1.A0)||0:0):1; } }
     const out={st:'верно',why:[],phi:r.phi,t:best.t}, t=best.t, path=v2.sub(t.S0,M3.foot(t.S0,t.axis));
     if(v2.len(path)>8){ const ev=pointEvidence(D,T,t.S0,[t.A0,t.Y0],v2.unit(path),Hp(data.S));
       if(ev.st==='bad'){ out.st='ошибка'; out.why.push('радиус вращения S взят неверно: S₀ сдвинута на '+f1(ev.d)+' мм — угол φ искажён'); }
-      else if(ev.st==='?'){ out.st='не могу утверждать'; out.why.push('не подтвердил положение S₀'+(ev.d!=null?' (≈ '+f1(Math.abs(ev.d))+' мм от нужного — проверьте радиус вращения S)':'')); } }
-    if(out.st==='верно'&&best.main<0.75){ out.st='не могу утверждать'; out.why.push('прямые S₀A₀, S₀n₀ читаются неуверенно'); }
+      else if(ev.st==='?') out.hint='S₀'+(ev.d!=null?' (≈ '+f1(Math.abs(ev.d))+' мм от нужного — проверьте радиус вращения S)':''); }
+    const l1=covOne(D,T,t.S0,t.A0)||0, l2=covOne(D,T,t.S0,t.Y0)||0;
+    if(out.st==='верно'&&(best.axc<0.7||best.aPath<0.7)){ out.st='не могу утверждать'; out.why.push('не нашёл оси вращения (горизонтали плоскости SA, n) там, где она должна быть при этом повороте'); }
+    /* S₀ должна быть подтверждена сама: сдвиг вдоль S₀A₀ укорачивает прямую, но она остаётся «на месте», а угол ψ меняется */
+    if(out.st==='верно'&&v2.len(path)>8&&!(out.hint==null&&pointEvidence(D,T,t.S0,[t.A0,t.Y0],v2.unit(path),Hp(data.S)).st==='ok')){ out.st='не могу утверждать'; out.why.push('не подтвердил положение S₀ (радиус вращения S)'+(out.hint?': '+out.hint:'')); }
+    if(out.st==='верно'&&l1>=0.75&&l2>=0.75&&out.hint&&/≈/.test(out.hint)){ out.st='не могу утверждать'; out.why.push('прямые на месте, но у '+out.hint); }
+    if(out.st!=='ошибка'&&(l1<0.75||l2<0.75)){ out.st='не могу утверждать'; out.why.push('прямые S₀A₀ и S₀n₀ не там, где должны быть'+(out.hint?' — '+out.hint:'')); }
     if(out.st==='верно') out.why.push('угол SA с основанием φ = '+f1(r.phi)+'° (ψ = '+f1(90-r.phi)+'°, φ = 90° − ψ)');
     return out; })();
   /* линии найденных построений — для чтения видимости заданной пирамиды (их надо обходить: построение может лечь
@@ -163,21 +231,29 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
   S.edges.forEach(e=>[['f',Fp,'″'],['h',Hp,'′']].forEach(([pr,P,mk])=>{ if(e[pr]==='?') return; const a=P(S.V[e.a]), b=P(S.V[e.b]), Le=M3.line(a,v2.sub(b,a)), len=v2.len(v2.sub(b,a)), nrm=v2.perp(Le.e);
     /* линии листа вдоль ребра, выходящие за его концы (ось, прямая уровня по ребру) — штрихи под ними не видны */
     const along=dsg.filter(q=>angDeg(v2.sub(q.b,q.a),Le.e)<2&&Math.abs(M3.sdist(q.a,Le,nrm))<0.8&&Math.abs(M3.sdist(q.b,Le,nrm))<0.8);
-    if(along.some(q=>{ const t=[v2.dot(v2.sub(q.a,a),Le.e),v2.dot(v2.sub(q.b,a),Le.e)].sort((x,y)=>x-y); return t[1]>0&&t[0]<len&&(t[0]<-4||t[1]>len+4); })){ vis.push({e:e.a+e.b+mk,want:e[pr],got:'?'}); return; }
+    if(along.some(q=>{ const t=[v2.dot(v2.sub(q.a,a),Le.e),v2.dot(v2.sub(q.b,a),Le.e)].sort((x,y)=>x-y); return t[1]>0&&t[0]<len&&(t[0]<-4||t[1]>len+4); })){ vis.push({e:e.a+e.b+mk,want:e[pr],got:'?',r:'вдоль ребра — линия длиннее его'}); return; }
     /* рядом с ребром — другая почти параллельная линия (до 3 мм, угол < 6°), не совпадающая с ним: штрихи могли
        закрыться ею (повёрнутый треугольник, ось, прямая уровня) — тип линии не читаем */
+    /* близость — по самому ребру: в 9 точках ребра расстояние до отрезка листа; рядом (≤ 2,5 мм) на ≥ 30 % длины,
+       но не само ребро (своя линия от руки отходит от модели до ~1 мм: другая — в среднем дальше 1 мм или под углом > 3°) */
+    const dSegP=(p,q)=>{ const d=v2.sub(q.b,q.a), l2=v2.dot(d,d)||1e-9, t=Math.max(0,Math.min(1,v2.dot(v2.sub(p,q.a),d)/l2)); return v2.len(v2.sub(p,v2.add(q.a,v2.mul(d,t)))); };
     const nearPar=dsg.some(q=>{ if(v2.len(v2.sub(q.b,q.a))<8) return false; const an=angDeg(v2.sub(q.b,q.a),Le.e); if(an>=6) return false;
-      const t=[v2.dot(v2.sub(q.a,a),Le.e),v2.dot(v2.sub(q.b,a),Le.e)]; if(Math.max(...t)<0||Math.min(...t)>len) return false;
-      const d1=Math.abs(M3.sdist(q.a,Le,nrm)), d2=Math.abs(M3.sdist(q.b,Le,nrm)); return Math.max(d1,d2)<=3&&(an>2||Math.max(d1,d2)>1.2); });
-    if(nearPar){ vis.push({e:e.a+e.b+mk,want:e[pr],got:'?'}); return; }
+      const ds=[]; for(let i=1;i<=9;i++) ds.push(dSegP(v2.add(a,v2.mul(Le.e,len*i/10)),q)); const close=ds.filter(x=>x<=2.5);
+      if(close.length<3) return false; const mean=close.reduce((x,y)=>x+y,0)/close.length; return an>3||mean>1.0; });
+    if(nearPar){ vis.push({e:e.a+e.b+mk,want:e[pr],got:'?',r:'рядом почти параллельная линия'}); return; }
     const cross=dsg.filter(q=>angDeg(v2.sub(q.b,q.a),Le.e)>=2).map(q=>[q.a,q.b]);
     const ds=K2.dashes(dig.map,T,a,b,allSegs.filter(q=>!(v2.len(v2.sub(q[0],a))<1e-6&&v2.len(v2.sub(q[1],b))<1e-6)&&!(v2.len(v2.sub(q[0],b))<1e-6&&v2.len(v2.sub(q[1],a))<1e-6)).concat(cross,pred.filter(q=>v2.len(v2.sub(q[1],q[0]))>1)));
-    vis.push({e:e.a+e.b+mk,want:e[pr],got:K2.lineType(ds)}); }));
+    vis.push({e:e.a+e.b+mk,want:e[pr],got:K2.lineType(ds),on:ds?ds.on:null,r:ds?'провалов '+ds.dips+' на '+Math.round(ds.len)+' мм, разрывов '+ds.n:'не измерить'}); }));
+  /* вес линии (как в ДЗ №2): сплошная, но тонкая — не «видимое ребро», а непрочитанное */
+  const onV=vis.filter(x=>x.got==='vis'&&x.on!=null).map(x=>x.on).sort((p,q)=>p-q), mainOn=onV.length?onV[onV.length>>1]:null;
+  if(mainOn) vis.forEach(x=>{ if(x.got==='vis'&&x.on!=null&&x.on<0.75*mainOn){ x.got='?'; x.r='сплошная, но тонкая'; } });
   const badV=vis.filter(x=>x.got!=='?'&&x.got!==x.want), unkV=vis.filter(x=>x.got==='?');
-  parts.vis={st:badV.length?'ошибка':unkV.length?'не могу утверждать':'верно',why:badV.map(x=>'ребро '+x.e+' заданной пирамиды должно быть '+(x.want==='vis'?'сплошным (видимым)':'штриховым (невидимым)')).concat(unkV.length?['не прочитал тип линии рёбер '+unkV.map(x=>x.e).join(', ')]:[])};
+  parts.vis={st:badV.length?'ошибка':unkV.length?'не могу утверждать':'верно',why:badV.map(x=>'ребро '+x.e+' заданной пирамиды должно быть '+(x.want==='vis'?'сплошным (видимым)':'штриховым (невидимым)')).concat(unkV.length?['не прочитал тип линии рёбер '+unkV.map(x=>x.e+' ('+x.r+')').join(', ')]:[])};
   const NAMES={a:'а) высота',b:'б) угол SAB — ABC',c:'в) истинный вид ABC',d:'г) угол SA с основанием',vis:'видимость пирамиды'};
-  const sts=Object.values(parts).map(p=>p.st);
-  const verdict=sts.includes('ошибка')?'ошибка':sts.every(s=>s==='верно')?'верно':'не могу утверждать';
+  /* ответы — части а)–г); видимость заданной пирамиды — часть условия: не прочитанная, она не мешает сказать, что
+     ответы верны («ответы верны» вместо «верно» — с перечнем непроверенных рёбер) */
+  const sts=Object.values(parts).map(p=>p.st), ans=['a','b','c','d'].map(k=>parts[k].st);
+  const verdict=sts.includes('ошибка')?'ошибка':sts.every(s=>s==='верно')?'верно':ans.every(s=>s==='верно')&&parts.vis.st==='не могу утверждать'?'ответы верны':'не могу утверждать';
   Object.entries(parts).forEach(([k,p])=>{ if(verdict==='ошибка'&&p.st!=='ошибка') return; p.why.forEach(w=>why.push(NAMES[k]+': '+w)); if(!p.why.length&&p.st!=='верно') why.push(NAMES[k]+': '+p.st); });
   return {verdict,why,parts,hyps:{a:hA&&{base:hA.base,score:hA.score},b:hB&&{base:hB.base,score:hB.score}}}; }
 put('dzCheck3',{check3,axisLines,replaceHyps,pointEvidence});

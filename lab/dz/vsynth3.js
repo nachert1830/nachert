@@ -29,7 +29,9 @@ function partA(g,ch,err,R){ const d=M3.dirs(g), base=ch.base, P0=base==='h'?Hp(g
   if(err==='a_dir') it.push(seg(s.P.A,s.P.B,'main'),seg(s.P.B,s.P.C,'main'),seg(s.P.C,s.P.A,'main')); else it.push(seg(...ext(ps[far[0]],ps[far[1]],4),'main'));
   ['A','B','C'].forEach(k=>it.push(seg(s.P.S,s.P[k],'main'))); it.push(seg(s.P.S,K,'res'),pt(K,'K₄'));
   it.push(seg(ax[0],ax[1],'thin',{axis:'x'+(base==='h'?'1':'2')+'4'}));
-  return {items:it,box:bbox(ps.concat([s.P.S,ax[0],ax[1]])),info:{base,L,side:ch.side,P:s.P,wrong}}; }
+  /* влияет ли ошибка на ответ: неверная точка — один из концов прямой A₄B₄C₄ (иначе прямая и высота верны) */
+  const affects=!!wrong&&far.map(i=>['A','B','C'][i]).includes(wrong);
+  return {items:it,box:bbox(ps.concat([s.P.S,ax[0],ax[1]])),info:{base,L,side:ch.side,P:s.P,wrong,affects}}; }
 /* б) две замены: x ∥ A′B′ (A″B″), затем x ⟂ A₄B₄ */
 function partB(g,ch,err){ const d=M3.dirs(g), base=ch.base, P0=base==='h'?Hp(g.A):Fp(g.A), e1=base==='h'?d.ABh:d.ABf, L1=M3.line(v2.add(P0,v2.mul(v2.perp(e1),ch.off)),e1), s1=M3.first(g,base,L1,ch.side);
   const ab=v2.unit(v2.sub(s1.P.B,s1.P.A)); let e2=v2.perp(ab); if(err==='b_dir') e2=v2.unit([e2[0]*Math.cos(0.14)-e2[1]*Math.sin(0.14),e2[0]*Math.sin(0.14)+e2[1]*Math.cos(0.14)]);
@@ -43,7 +45,7 @@ function partB(g,ch,err){ const d=M3.dirs(g), base=ch.base, P0=base==='h'?Hp(g.A
   return {items:it,box:bbox(Object.values(s1.P).concat(Object.values(s2.P),[a1[0],a1[1],a2[0],a2[1]])),info:{base,L1,L2,P4:s1.P,P5:s2.P}}; }
 /* в) вращение вокруг прямой уровня до ∥ π₁ (π₂) */
 function partC(g,ch,err,R){ const t=M3.rotate(g,ch.form,ch.c,ch.same); if(!t) return null; const P=Object.assign({},t.P), proj=ch.form==='h'?Hp:Fp, it=[];
-  let wrong=null; if(err==='c_R'){ const cand=['A','B','C'].filter(k=>v2.len(v2.sub(P[k],proj(g[k])))>8); if(cand.length){ wrong=cand[Math.floor(R()*cand.length)]; const u=v2.unit(v2.sub(P[wrong],proj(g[wrong]))); P[wrong]=v2.sub(P[wrong],v2.mul(u,6)); } }
+  let wrong=null; if(err==='c_R'){ const cand=['A','B','C'].filter(k=>v2.len(v2.sub(P[k],proj(g[k])))>8); if(!cand.length) return null; if(cand.length){ wrong=cand[Math.floor(R()*cand.length)]; const u=v2.unit(v2.sub(P[wrong],proj(g[wrong]))); P[wrong]=v2.sub(P[wrong],v2.mul(u,6)); } }
   ['A','B','C'].forEach(k=>{ if(v2.len(v2.sub(P[k],proj(g[k])))>1) it.push(seg(proj(g[k]),P[k],'thin')); it.push(pt(P[k],k+'₀')); });
   it.push(seg(P.A,P.B,'res'),seg(P.B,P.C,'res'),seg(P.C,P.A,'res'));
   const ax=t.axis, a=ext(v2.add(ax.p,v2.mul(ax.e,-70)),v2.add(ax.p,v2.mul(ax.e,70)),0); it.push(seg(a[0],a[1],'thin',{axis:ch.form}));

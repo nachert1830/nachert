@@ -32,10 +32,18 @@ function checkSheet(img,o){ o=o||{}; const dz=+o.dz||2, n=+o.n, g=V.get(dz,n); i
     if(bad.length&&cal.cover>=0.6) return Object.assign(res,{verdict:'ошибка',why:bad.map(gmsg).concat(['дальше построение идёт от неверно нанесённых данных']),stage:'условие'});
     return Object.assign(res,{verdict:'не могу прочитать',why:['условие варианта '+n+' на листе не узнаётся ('+Math.round((cal.cover||0)*100)+' % на линиях): проверьте номер варианта или переснимите'],stage:'вариант',variants:w.slice(0,3)}); }
   if(bad.length) return Object.assign(res,{verdict:'ошибка',why:bad.map(gmsg).concat(['дальше построение идёт от неверно нанесённых данных']),stage:'условие'});
-  if(dz===3){ const a3=L('check3').check3(dig,loc,cal,g.data); return Object.assign(res,{verdict:a3.verdict,why:a3.why,stage:'ответ',ans:a3}); }
+  if(dz===3){ const a3=L('check3').check3(dig,loc,cal,g.data);
+    /* как в ДЗ №2: ошибка в построении — только при чисто нанесённом условии */
+    if(a3.verdict==='ошибка'&&ge&&(ge.base<0.95||ge.best.cv-ge.base>=0.03)) return Object.assign(res,{verdict:'не могу утверждать',why:a3.why.concat(['но условие на листе нанесено неточно ('+Math.round(ge.base*100)+' % на линиях; похоже на смещение точки '+ge.best.k+') — проверьте данные варианта']),stage:'ответ',ans:a3});
+    return Object.assign(res,{verdict:a3.verdict,why:a3.why,stage:'ответ',ans:a3}); }
   const ans=L('check2').check2(dig,loc,cal,g.id,g.data);
   /* «ошибка в ответе» — только если условие нанесено чисто: иначе ошибка может идти от неточно нанесённой точки */
   if(ans.verdict==='ошибка'&&ge&&(ge.base<0.95||ge.best.cv-ge.base>=0.03)) return Object.assign(res,{verdict:'не могу утверждать',why:ans.why.concat(['но условие на листе нанесено неточно ('+Math.round(ge.base*100)+' % на линиях; похоже на смещение точки '+ge.best.k+') — проверьте данные варианта']),stage:'ответ',ans});
   return Object.assign(res,{verdict:ans.verdict,why:ans.why,stage:'ответ',ans}); }
 put('dzCheck',{checkSheet,pointMsg});
+/* node lab/dz/check.js фото.png --dz=2 --n=8 — вердикт по настоящему фото (фото студентов — только в lab/private/) */
+if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(3).map(x=>x.replace(/^--/,'').split('='))), IMG=require('../img.js');
+  const img=IMG.decodePNG(require('fs').readFileSync(process.argv[2])), t0=Date.now(), r=checkSheet(img,{dz:+(a.dz||2),n:+(a.n||1)});
+  console.log('ДЗ №'+(a.dz||2)+', вариант '+(a.n||1)+': '+r.verdict.toUpperCase()+' ('+(Date.now()-t0)+' мс)'); r.why.forEach(w=>console.log('  — '+w));
+  if(r.cal&&r.cal.ok) console.log('  условие варианта на линиях листа: '+Math.round(r.cal.cover*100)+' %, СКО '+r.cal.rms.toFixed(2)+' мм'); }
 })();

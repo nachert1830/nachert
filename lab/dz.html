@@ -89,7 +89,7 @@ function run(img){ const dz=+$('dz').value, n=+$('n').value; $('vcard').hidden=t
   worker.onmessage=e=>{ const r=e.data; if(r.error){ stage('Сбой: '+r.error); return; } stage('Готово за '+(r.ms/1000).toFixed(1)+' с'+(r.pxPerMm?' · '+f1(r.pxPerMm)+' px/мм':'')+(r.cover!=null?' · условие на линиях '+Math.round(r.cover*100)+' %':''));
     show(r,dz,n); drawPhoto(img,r); drawDraw(img,r,dz,n); $('dbg').textContent=JSON.stringify({вердикт:r.verdict,этап:r.stage,причины:r.why,части:r.parts||null,калибровка:r.T||null,СКО_мм:r.rms||null,рёбра:r.edges||null,варианты:r.variants||null},null,1); };
   worker.postMessage({img:{width:img.width,height:img.height,data:img.data},dz,n}); }
-const CLS={'верно':'ok','ошибка':'bad','другое решение':'ok','не тот вариант':'bad'};
+const CLS={'верно':'ok','ответы верны':'ok','ошибка':'bad','другое решение':'ok','не тот вариант':'bad'};
 const PN={a:'а) высота',b:'б) угол SAB — ABC',c:'в) истинный вид ABC',d:'г) угол SA с основанием',vis:'видимость пирамиды'};
 function show(r){ $('vcard').hidden=false; const t=$('vtitle'); t.className='verdict '+(CLS[r.verdict]||'ref'); t.textContent=r.verdict[0].toUpperCase()+r.verdict.slice(1);
   $('vwhy').innerHTML=(r.why||[]).map(w=>'<li>'+esc(w)+'</li>').join('');
