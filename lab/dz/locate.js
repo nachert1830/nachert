@@ -46,6 +46,12 @@ function locate(img,o){ o=o||{}; const small=IMG.downscale(img,2100), f=small.sc
   const dk0=[]; for(let i=0;i<ink.a.length;i+=13) if(ink.a[i]>0.06) dk0.push(ink.a[i]); dk0.sort((a,b)=>a-b); const thI=Math.max(0.1,Math.min(0.3,(dk0[Math.floor(dk0.length*0.9)]||0.3)*0.5));
   const quads=[]; [{th:thI,close:true},{th:thI}].forEach(op=>{ const I=RF.findInner(ink,op); if(I) quads.push({q:I.quad,as:'frame'},{q:I.quad,as:'page'}); });   /* внутренность может оказаться и всей страницей (рамка бледная) */ const P=RF.findPage(V); if(P&&P.fill>0.85) quads.push({q:P.quad,as:'page'},{q:P.quad,as:'frame'});
   const HQ=frameHough(ink,thI); if(HQ) quads.unshift({q:HQ,as:'frame'});
+  /* граница тени остаётся на карте тёмности тонкой линией и делит внутренность рамки надвое: добавляем объединения
+     пар найденных четырёхугольников (крайние точки по диагоналям). Лишний кандидат безопасен — дальше его проверят
+     рамка (все четыре стороны) и штамп */
+  const qs=quads.filter(Q=>Q.as==='frame').map(Q=>Q.q), ext=pts=>{ const by=f=>pts.reduce((b,p)=>f(p)>f(b)?p:b); return [by(p=>-p[0]-p[1]),by(p=>p[0]-p[1]),by(p=>p[0]+p[1]),by(p=>-p[0]+p[1])]; };
+  for(let i=0;i<qs.length;i++) for(let j=i+1;j<qs.length;j++){ const U=ext(qs[i].concat(qs[j])); quads.push({q:U,as:'frame'},{q:U,as:'page'}); }
+  if(o.quads) o.quads.push(...quads);
   if(!quads.length) return {ok:false,reason:'не нашёл лист на фото: снимите лист целиком, на тёмном фоне'};
   const cand=[];
   quads.forEach(Q=>{ const q=Q.q, c0=[q.reduce((s,p)=>s+p[0],0)/4,q.reduce((s,p)=>s+p[1],0)/4], ord=q.slice().sort((a,b)=>Math.atan2(a[1]-c0[1],a[0]-c0[0])-Math.atan2(b[1]-c0[1],b[0]-c0[0]));

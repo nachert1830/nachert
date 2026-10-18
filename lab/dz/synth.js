@@ -3,7 +3,8 @@
    и (не всегда) ось z/y, чертёж — итоговая сцена разбора с сайта (lab/dz/examples.json) с дрожью руки, подписи
    почерком. Начало O ставится в разные места поля. Съёмка — как в lab/synth.js, плюс поворот телефона на
    0/90/180/270° (лист лежит книжно, а снимок может быть повёрнут).
-   dzSynth({id:'2'|'2b'|'2c'|'3', seed, level, turn}) → {img, truth:{H (стр. мм → px), O, turn, axis, zAxis, zLine, items}}
+   dzSynth({id:'2'|'2b'|'2c'|'3', seed, level, turn} | {items, …}) → {img, truth:{H (стр. мм → px), O, turn, axis, zAxis, zLine, items}}
+   items — своя сцена (мм от O) вместо примера сайта: листы вариантов с ошибками (lab/dz/vsynth.js).
    node lab/dz/synth.js --id=2 --seed=1 --turn=1 --out=файл.png */
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
@@ -21,7 +22,7 @@ function turn(im,k){ k=((k%4)+4)%4; if(!k) return {im,M:[1,0,0,0,1,0,0,0,1]}; co
   const M=k===1?[0,-1,Hh,1,0,0,0,0,1]:k===2?[-1,0,W,0,-1,Hh,0,0,1]:[0,1,0,-1,0,W,0,0,1];
   return {im:o,M}; }
 
-function dzSynth(o){ o=o||{}; const id=o.id||'2', R=rng(o.seed||1), lv=S.LEVELS[o.level||'normal'], ex=EX[id], page=DS.A3;
+function dzSynth(o){ o=o||{}; const id=o.id||'2', R=rng(o.seed||1), lv=S.LEVELS[o.level||'normal'], ex=o.items?{items:o.items}:EX[id], page=DS.A3;
   const sheet=new S.Sheet(page.w,page.h,6);
   const g0=gray(sheet.w,sheet.h); for(let i=0;i<g0.a.length;i++) g0.a[i]=R(); const g1=blur(g0,0.8); sheet.grain=new Float32Array(sheet.w*sheet.h);
   for(let i=0;i<g1.a.length;i++) sheet.grain[i]=Math.max(0.35,Math.min(1,0.7+(g1.a[i]-0.5)*3.2));
