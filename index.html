@@ -26737,20 +26737,26 @@ function paintViews(){
 /* ?start= — без него GoatCounter отдаёт число из кэша до 4 часов; с датой раньше запуска счётчика число то же, но свежее */
 window.GC_COUNT=c=>c?fetch('https://'+c+'.goatcounter.com/counter/TOTAL.json?start=2026-01-01',{credentials:'omit',cache:'no-store'})
   .then(r=>r.ok?r.json():Promise.reject(r.status)).then(j=>{ const t=String(j.count==null?'':j.count).replace(/\D/g,''); if(!t) throw 'нет числа'; return +t; }):Promise.reject('выключен');
+/* Метрика — по дням с дня выгрузки views.json: после полуночи, пока GitHub не пересчитал файл, вчерашний день тоже растёт.
+   Прирост GoatCounter с последней выгрузки — в сегодня; если файл ещё вчерашний (ночь до пересчёта), прирост — почти весь
+   вчерашний день, и он идёт во вчера, как его запишет и GitHub (правило — .github/scripts/views.js) */
 function fetchViews(){
   const today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);   /* день по Москве, как у Метрики */
+  const yest=new Date(Date.now()+3*3600e3-864e5).toISOString().slice(0,10);
   const file=fetch('views.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const ym=fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews&date1=today&date2=today&accuracy=full',{credentials:'omit',cache:'no-store'})
-    .then(r=>r.ok?r.json():Promise.reject()).then(j=>{ const n=Math.round(+(j.totals&&j.totals[0])); return Number.isFinite(n)?n:null; }).catch(()=>null);
   const gc=c=>GC_COUNT(c).catch(()=>null);
-  return Promise.all([file,ym,gc(window.GC_CODE),gc(window.GC_OK_CODE)]).then(([f,y,all,ok])=>{
+  return file.then(f=>{ const from=f.day&&f.day<today&&f.day>=yest?f.day:today;
+    const ym=fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews&dimensions=ym:s:date&date1='+from+'&date2='+today+'&accuracy=full',{credentials:'omit',cache:'no-store'})
+      .then(r=>r.ok?r.json():Promise.reject()).then(j=>{ const o={}; (j.data||[]).forEach(row=>{ const n=Math.round(+row.metrics[0]); if(Number.isFinite(n)) o[row.dimensions[0].name]=n; }); return o; }).catch(()=>({}));
+    return Promise.all([f,ym,gc(window.GC_CODE),gc(window.GC_OK_CODE)]); }).then(([f,y,all,ok])=>{
     let n=Math.round(+(f.pageviews||0));
-    if(f.base&&f.day){ const v=x=>Math.max(x.ym||0,x.c||0)+(x.r||0), same=f.day===today, p=f.gc||{};
-      const t=Object.assign({ym:null,c:0,r:0},same?(f.days||{})[today]:null), was=same?v(t):0;
+    if(f.base&&f.day){ const v=x=>Math.max(x.ym||0,x.c||0)+(x.r||0), p=f.gc||{}, days={};
+      const cell=d=>days[d]=days[d]||Object.assign({ym:null,c:0,r:0},(f.days||{})[d]);
+      Object.entries(y).forEach(([d,k])=>{ if(d>f.base.upto){ const t=cell(d); t.ym=Math.max(t.ym||0,k); } });
       const dAll=all!=null&&p.all!=null&&all>=p.all?all-p.all:0, okOn=ok!=null&&p.ok!=null&&ok>=p.ok;
-      if(okOn){ const dOk=ok-p.ok; t.c+=dOk; t.r+=Math.max(0,dAll-dOk); } else t.c+=dAll;
-      if(y!=null) t.ym=Math.max(t.ym||0,y);
-      n+=v(t)-was; }
+      if(dAll||okOn){ const t=cell(f.day<today&&f.day>=yest?f.day:today);
+        if(okOn){ const dOk=ok-p.ok; t.c+=dOk; t.r+=Math.max(0,dAll-dOk); } else t.c+=dAll; }
+      Object.entries(days).forEach(([d,t])=>{ n+=v(t)-v(Object.assign({ym:null,c:0,r:0},(f.days||{})[d])); }); }
     return n>=50?n:Promise.reject(); }); }
 /* для режима владельца: что сейчас отвечает Метрика */
 window.VIEWS_PROBE=()=>fetch('https://api-metrika.yandex.net/stat/v1/data?ids='+METRIKA_ID+'&metrics=ym:s:pageviews,ym:s:visits&date1=2024-01-01&date2=today&accuracy=full',{credentials:'omit',cache:'no-store'})
