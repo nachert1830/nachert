@@ -54,7 +54,17 @@ function sheet(o){ const dz=o.dz||2, n=o.n, err=o.err||'ok', R=IMG.rng((o.seed||
   const expect=err==='ok'?'верно':err==='other'?'другое решение':err==='variant'?'не тот вариант':err==='none'?'ответ не найден':'ошибка';
   s.truth=Object.assign(s.truth,{dz,n:claimed,drawn,id,err,expect,wrongPt,flipped,data,sol});
   return s; }
-put('dzVsynth',{sheet,ERRS,COMMON,main,alt});
+/* лист 2а с построением (lab/dz/prog2a.js): заданное + вспомогательные линии решения + пирамида из той S, что вышла;
+   ошибка — на одном шаге построения (n_dir, len, proj, beta, pick), дальше студент строит честно от неверного */
+const PROG_ERRS=['ok','n_dir','len','proj','beta','pick'];
+function progSheet(o){ const n=o.n, err=o.err||'ok', g=V.get(2,n); if(g.id!=='2') return null; const data=g.data, P=require('./prog2a.js'), b=P.build(data,{err,pickSign:o.pickSign});
+  if(!b) return null; let items=M.items('2',data,{S:b.S}).concat(b.items);
+  let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9; items.forEach(it=>['at','a','b'].forEach(f=>{ if(it[f]){ u0=Math.min(u0,it[f][0]); u1=Math.max(u1,it[f][0]); v0=Math.min(v0,it[f][1]); v1=Math.max(v1,it[f][1]); } }));
+  if(u1-u0>272-40||v1-v0>355-30) return null;
+  const s=dzSynth({items,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0});
+  const dh=Math.abs(b.steps.Sh-80), expect=dh>=3?'ошибка':dh<=1.5?'верно':'?';
+  s.truth=Object.assign(s.truth,{dz:2,n,id:'2',err,expect,data,sol:{S:b.S},prog:b.steps}); return s; }
+put('dzVsynth',{sheet,ERRS,COMMON,main,alt,progSheet,PROG_ERRS});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
   const s=sheet({dz:2,n:+(a.n||8),err:a.err||'ok',seed:+(a.seed||1),turn:a.turn!=null?+a.turn:0}); require('fs').writeFileSync(a.out||'v.png',IMG.encodePNG(s.img));
   console.log('ДЗ2 в'+s.truth.n+' (начерчен '+s.truth.drawn+'), ошибка '+s.truth.err+', ждём «'+s.truth.expect+'»'+(s.truth.wrongPt?', неверно: '+s.truth.wrongPt:'')+(s.truth.flipped?', видимость: '+s.truth.flipped:'')); }

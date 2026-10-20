@@ -129,7 +129,10 @@ function check2(dig,loc,cal,id,data){ const why=[], D=C.dmap(dig.map), T=cal.T, 
   let verdict; const cond=fam.cond(cur), worst=cond.reduce((m,c)=>c.dev>m.dev?c:m,{dev:0,msg:''});
   if(worst.dev<=TOL){ if(dMain<=dAlt) verdict='верно'; else { verdict='другое решение'; why.push(id==='2'?'это второе решение: S по другую сторону основания, на продолжении EF':'тело построено в другую сторону от основания — тоже решение, но в варианте обычно берут другое'); } }
   else if(worst.dev>=BAD&&sharp&&covMain!=null&&covMain<0.4&&cStud-cMain>=0.2){ verdict='ошибка'; why.push(...cond.filter(c=>c.dev>TOL).map(c=>c.msg)); }
-  else { verdict='не могу утверждать'; why.push(worst.msg+' — отклонение '+f1(worst.dev)+(id==='2c'&&/угол/.test(worst.msg)?'°':' мм')+': на грани допуска или линии читаются неоднозначно'); }
+  else { verdict='не могу утверждать'; const u=id==='2c'&&/угол/.test(worst.msg)?'°':' мм';
+    /* почему не утверждаем — конкретно: пограничное отклонение, нечёткий пик положения, линии верного ответа на листе */
+    const r2=worst.dev<BAD?'на грани допуска':!sharp?'но положение ответа по линиям листа определяется неоднозначно (рядом другие линии, например построения) — проверьте сами':covMain!=null&&covMain>=0.4?'но на листе есть и линии верного ответа ('+Math.round(covMain*100)+' % его рёбер) — какое тело ответ, не различить':'но тело ответа читается неуверенно';
+    why.push(worst.msg+' — отклонение '+f1(worst.dev)+u+': '+r2); }
   /* видимость рёбер — только для верного (или второго) решения */
   const edges=[];
   if(verdict==='верно'||verdict==='другое решение'){ const S=M.solid(id,cur,data), all=answerSegs(id,data,cur).concat(M.given(id,data).segs.map(s=>[s.a,s.b]));

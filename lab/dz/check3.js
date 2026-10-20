@@ -20,10 +20,7 @@ const C=isNode?require('./calib.js'):self.LAB.dzCalib, K2=isNode?require('./chec
 const {v2,Fp,Hp}=M3, NM=M3.NAMES, TOL=1.5, BAD=3, ANG_BAD=5;   /* направление оси: ошибка — с 5° (по фото угол оси известен до ~1°) */
 const f1=x=>(Math.round(x*10)/10).toString().replace('.',',');
 const angDeg=(e,f)=>{ const c=Math.abs(v2.dot(v2.unit(e),v2.unit(f))); return Math.acos(Math.min(1,c))*180/Math.PI; };
-/* отрезки чертежа (мм от O) из оцифровки: страница → чертёж обратным к T */
-function drawSegs(dig,cal){ const T=cal.T, a=1+T[2], b=T[3], c=T[4], d=1+T[5], det=a*d-b*c, O=dig.O||[0,0];
-  const inv=p=>{ const x=p[0]+O[0]-T[0], y=p[1]+O[1]-T[1]; return [(d*x-b*y)/det,(-c*x+a*y)/det]; };
-  return dig.segs.map(s=>({a:inv(s.a),b:inv(s.b),len:s.len,k:s.k})); }
+const drawSegs=(dig,cal)=>C.drawSegs(dig,cal);
 const cov=(D,T,segs)=>K2.cover(D,T,segs);
 /* покрытие с допуском tol (тонкие длинные линии связи: направление от руки гуляет — 1 мм) */
 function covT(D,T,segs,tol){ let k=0, n=0; segs.forEach(([a,b])=>{ const L=v2.len(v2.sub(b,a)); if(L<5) return; for(let s=2;s<=L-2;s+=0.5){ const p=v2.add(a,v2.mul(v2.sub(b,a),s/L)); n++; if(C.at(D,C.apply(T,p))<=tol) k++; } }); return n?k/n:0; }

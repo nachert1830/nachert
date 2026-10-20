@@ -26,7 +26,7 @@ input[type=file]{ display:none; }
 canvas{ width:100%; height:auto; display:block; border-radius:8px; background:#fff; }
 .verdict{ font-size:19px; font-weight:600; } .verdict.ok{ color:var(--green); } .verdict.bad{ color:var(--red); } .verdict.ref{ color:var(--amber); }
 .why{ margin:6px 0 0; padding-left:18px; } .mute{ color:var(--mute); font-size:14px; }
-.parts{ margin-top:8px; font-size:15px; } .parts div{ padding:3px 0; } .st-ok{ color:var(--green); } .st-bad{ color:var(--red); } .st-ref{ color:var(--amber); }
+.steps{ font-size:14px; } .steps div{ padding:2px 0; } .parts{ margin-top:8px; font-size:15px; } .parts div{ padding:3px 0; } .st-ok{ color:var(--green); } .st-bad{ color:var(--red); } .st-ref{ color:var(--amber); }
 .grid2{ display:grid; grid-template-columns:1fr; gap:14px; } @media (min-width:760px){ .grid2{ grid-template-columns:1fr 1fr; } }
 details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap; font-size:12px; overflow-wrap:anywhere; }
 </style>
@@ -55,6 +55,7 @@ details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap;
   <div class="verdict" id="vtitle"></div>
   <ul class="why" id="vwhy"></ul>
   <div class="parts" id="vparts"></div>
+  <div class="steps" id="vsteps"></div>
   <div class="mute" id="vnote" style="margin-top:6px"></div>
 </div>
 
@@ -62,6 +63,7 @@ details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap;
   <div class="card"><div class="mute">Фото: рамка, оси, найденное</div><canvas id="cPhoto"></canvas></div>
   <div class="card"><div class="mute">Чертёж из рамки: линии листа (серые); <span style="color:#2e7d4f">■</span> верный ответ, <span style="color:#b3261e">■</span> найденный у вас</div><canvas id="cDraw"></canvas></div>
 </div>
+<div class="card" id="exCard" hidden><div class="mute">Разбор по шагам: ваши линии, точки построения и верный ответ (масштаб — мм чертежа)</div><div id="exSvg" style="overflow:auto"></div></div>
 <div class="card"><details><summary>Подробности</summary><pre id="dbg"></pre></details></div>
 <p class="mute">Лаборатория: <code>lab/dz/</code>, ядро — <code>core/dz.js</code>, варианты — <code>core/dz-variants.js</code>. Замеры — <code>node lab/dz/test-check2.js</code>, <code>node lab/dz/test-check3.js</code>; отчёт — <code>lab/dz/REPORT.md</code>.</p>
 </main>
@@ -94,6 +96,8 @@ const PN={a:'а) высота',b:'б) угол SAB — ABC',c:'в) истинн�
 function show(r){ $('vcard').hidden=false; const t=$('vtitle'); t.className='verdict '+(CLS[r.verdict]||'ref'); t.textContent=r.verdict[0].toUpperCase()+r.verdict.slice(1);
   $('vwhy').innerHTML=(r.why||[]).map(w=>'<li>'+esc(w)+'</li>').join('');
   $('vparts').innerHTML=r.parts?Object.entries(r.parts).map(([k,p])=>'<div class="st-'+(p.st==='верно'?'ok':p.st==='ошибка'?'bad':'ref')+'">'+PN[k]+': '+esc(p.st)+'</div>').join(''):'';
+  $('vsteps').innerHTML=r.ex?'<div class="mute" style="margin-top:6px">Шаги построения:</div>'+r.ex.steps.map((s,i)=>'<div class="st-'+(s.status==='ok'?'ok':s.status==='bad'?'bad':'ref')+'">'+(s.status==='ok'?'✓':s.status==='bad'?'✗':'?')+' '+(i+1)+'. '+esc(s.name)+' — '+esc(s.msg)+'</div>').join(''):'';
+  $('exCard').hidden=!r.svg; $('exSvg').innerHTML=r.svg?r.svg.replace(/width="\d+" height="\d+"/,'width="100%"'):'';
   $('vnote').textContent=r.verdict==='верно'?'Проверено: положение ответа по условию задачи (допуск 1,5 мм / 1,5°) и тип линий рёбер.':r.verdict==='ошибка'?'Числа — по вашему чертежу, в мм листа.':'Сканер не уверен — проверьте сами или переснимите (ровный свет, лист целиком, ближе).'; }
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 /* мм чертежа → мм листа (калибровка T) → px фото (гомография H) */

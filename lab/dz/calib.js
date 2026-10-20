@@ -92,5 +92,9 @@ function givenErrors(dig,cal,id,data){ const D=dmap(dig.map), base=cal.cover, hy
 function whichVariant(dig,loc,dz,o){ o=o||{}; const out=[];
   for(let n=1;n<=30;n++){ const g=VAR.get(dz,n), c=calibrate(dig,loc,g.id,g.data); out.push({n,id:g.id,cover:c.ok?c.cover:0}); }
   out.sort((a,b)=>b.cover-a.cover); return out; }
-put('dzCalib',{calibrate,whichVariant,givenErrors,apply,dmap,at,CAP});
+/* отрезки листа в мм чертежа (от O): страница → чертёж обратным к T */
+function drawSegs(dig,cal){ const T=cal.T, a=1+T[2], b=T[3], c=T[4], d=1+T[5], det=a*d-b*c, O=dig.O||[0,0];
+  const inv=p=>{ const x=p[0]+O[0]-T[0], y=p[1]+O[1]-T[1]; return [(d*x-b*y)/det,(-c*x+a*y)/det]; };
+  return dig.segs.map(s=>({a:inv(s.a),b:inv(s.b),len:s.len,k:s.k})); }
+put('dzCalib',{calibrate,whichVariant,givenErrors,apply,dmap,at,CAP,drawSegs});
 })();

@@ -7,7 +7,7 @@
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
-const L=n=>isNode?require('./'+n+'.js'):self.LAB[{locate:'dzLocate',digitize:'dzDigitize',calib:'dzCalib',check2:'dzCheck2',check3:'dzCheck3'}[n]];
+const L=n=>isNode?require('./'+n+'.js'):self.LAB[{locate:'dzLocate',digitize:'dzDigitize',calib:'dzCalib',check2:'dzCheck2',check3:'dzCheck3',explain2:'dzExplain2'}[n]];
 const V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const f1=x=>(Math.round(x*10)/10).toString().replace('.',',');
 const COORD={f:['x','z'],h:['x','y']};
@@ -39,6 +39,14 @@ function checkSheet(img,o){ o=o||{}; const dz=+o.dz||2, n=+o.n, g=V.get(dz,n); i
   const ans=L('check2').check2(dig,loc,cal,g.id,g.data);
   /* «ошибка в ответе» — только если условие нанесено чисто: иначе ошибка может идти от неточно нанесённой точки */
   if(ans.verdict==='ошибка'&&ge&&(ge.base<0.95||ge.best.cv-ge.base>=0.03)) return Object.assign(res,{verdict:'не могу утверждать',why:ans.why.concat(['но условие на листе нанесено неточно ('+Math.round(ge.base*100)+' % на линиях; похоже на смещение точки '+ge.best.k+') — проверьте данные варианта']),stage:'ответ',ans});
+  /* ошибка в ответе 2а — где она в построении: первый неверный шаг (explain2.js; только измеренное, иначе молчим) */
+  if((ans.verdict==='ошибка'||ans.verdict==='верно')&&g.id==='2'&&ans.cur){ const ex=L('explain2').explain2(C.drawSegs(dig,cal),g.data,ans.cur), i=ex.first?ex.steps.indexOf(ex.first):-1, why=ans.why.slice();
+    if(ans.verdict==='ошибка'&&ex.first){ const before=ex.steps.slice(0,i), ok=before.map((s,k)=>s.status==='ok'?k+1:0).filter(Boolean), unsure=before.map((s,k)=>s.status!=='ok'?k+1:0).filter(Boolean);
+      const lst=a=>a.length>1?'шаги '+a.join(', '):'шаг '+a[0];
+      why.push('где ошибка: шаг '+(i+1)+' «'+ex.first.name+'» — '+ex.first.msg+(before.length?' ('+[ok.length?lst(ok)+' — верно':'',unsure.length?lst(unsure)+' — на границе точности':''].filter(Boolean).join('; ')+')':'')); }
+    /* ответ в допуске, а шаг построения измеренно неверен (например, n не ⟂ ABC на 6°, а высота вышла 79,6) — замечание, вердикт тот же */
+    if(ans.verdict==='верно') ex.steps.filter(s=>s.status==='bad').forEach(s=>why.push('замечание к построению: шаг '+(ex.steps.indexOf(s)+1)+' «'+s.name+'» — '+s.msg+'; ответ всё же в допуске'));
+    return Object.assign(res,{verdict:ans.verdict,why,stage:'ответ',ans,ex}); }
   return Object.assign(res,{verdict:ans.verdict,why:ans.why,stage:'ответ',ans}); }
 put('dzCheck',{checkSheet,pointMsg});
 /* node lab/dz/check.js фото.png --dz=2 --n=8 — вердикт по настоящему фото (фото студентов — только в lab/private/) */
