@@ -17,14 +17,19 @@ const NAMES={fn:'club-fn',gw:'club-gw',db:'club',secret:'club-secrets',api:'nach
 const TABLES=['users','identities','invites','sessions','magic','progress','feedback','config','ratelimit','tgseen','remsent'];
 
 const say=s=>console.log(s), step=s=>console.log('\n▶ '+s);
-function yc(args,o){ o=o||{};
-  try{ const out=execFileSync(YC,args.concat(o.json===false?[]:['--format','json']),{encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024});
-    return o.json===false?out.trim():(out.trim()?JSON.parse(out):{}); }
-  catch(e){ if(o.soft) return null; const msg=String(e.stderr||e.message).trim();
-    throw new Error('Команда yc '+args.filter(a=>!/^\[\{/.test(a)).join(' ')+' не выполнилась:\n'+msg); } }
+/* сеть до облака бывает нестабильной (VPN, Wi-Fi общежития): при сетевой ошибке — до 3 попыток с паузой */
+const NET_RE=/DeadlineExceeded|deadline exceeded|connection refused|connection reset|no such host|i\/o timeout|Unavailable|handshake|EOF/i;
+function yc(args,o){ o=o||{}; let last='';
+  for(let attempt=1;attempt<=3;attempt++){
+    try{ const out=execFileSync(YC,args.concat(o.json===false?[]:['--format','json']),{encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024,timeout:180000});
+      return o.json===false?out.trim():(out.trim()?JSON.parse(out):{}); }
+    catch(e){ if(o.soft) return null; last=String(e.stderr||e.message).trim();
+      if(!NET_RE.test(last)||attempt===3) break;
+      say('  нет ответа от облака, пробую ещё раз ('+(attempt+1)+' из 3)…'); execFileSync(process.execPath,['-e','setTimeout(()=>{},8000)']); } }
+  throw new Error('Команда yc '+args.filter(a=>!/^\[\{/.test(a)).join(' ')+' не выполнилась:\n'+last); }
 /* «нет такого ресурса» → null; любая другая ошибка (сеть, права) — остановка с понятным текстом, а не попытка создать заново */
 function get(args){ try{ return yc(args); }catch(e){ if(/not found|NotFound/i.test(e.message)) return null; throw e; } }
-const NET=/DeadlineExceeded|deadline exceeded|connection refused|no such host|i\/o timeout|Unavailable|handshake/i;
+const NET=NET_RE;
 function ask(q,hidden){ return new Promise(res=>{ const rl=readline.createInterface({input:process.stdin,output:process.stdout});
   if(hidden){ rl._writeToOutput=s=>{ if(s.includes(q)) rl.output.write(s); else rl.output.write('*'); }; }
   rl.question(q,a=>{ rl.close(); if(hidden) process.stdout.write('\n'); res(a.trim()); }); }); }
@@ -68,7 +73,7 @@ async function main(){
   catch(e){ if(NET.test(e.message)) throw new Error('Программа yc не может связаться с Yandex Cloud (нет ответа от серверов облака).\n'+
       'Обычно мешает VPN или прокси: выключите VPN, закройте программы-обходчики блокировок и запустите скрипт снова.\n'+
       'Если не помогло — антивирус с «проверкой HTTPS» (Kaspersky, ESET) или сеть общежития/вуза: попробуйте раздать интернет с телефона.\n'+
-      'Проверка связи: команда  yc resource-manager folder list  должна вывести таблицу с каталогом nachert-club.');
+      'Проверка связи: команда  yc resource-manager folder list  должна вывести таблицу с вашим каталогом.\n\nТекст ошибки yc:\n'+e.message.split('\n').slice(1).filter(l=>!/x-(request|client-trace)-id|trace file|cloud support/i.test(l)).join('\n').trim());
     throw e; }
 
   /* токен бота и Telegram id владельца */
