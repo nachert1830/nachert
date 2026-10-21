@@ -136,28 +136,32 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(upage,URL));
     await upage.close(); }
 
-  /* 3ж. «Научись защищать точки» (#/ig/points): каждая точка разбора лежит на поверхности детали варианта 5, подпись в тексте шага —
-     со скобками ровно тогда, когда проекция невидима (видимость — лучом по модели), чертёж каждого шага строится.
-     Тренажёр нажатиями: верные места засчитываются, место с перепутанными передом и задом — нет */
+  /* 3ж. «Научись защищать точки» (#/ig/points): каждая точка разбора лежит на поверхности детали варианта 5 (точка в штриховке — в материале, в секущей плоскости), видимость, под которую
+     написан текст шага (exp: главный вид, вид сверху, вид слева), совпадает с видимостью по модели на изображениях листа (луч к глазу,
+     разрезы — как на листе), чертёж каждого шага строится. Тренажёр нажатиями: верное место и верная отметка засчитываются;
+     перепутанные перёд и зад или не та отметка (выколотая точка ↔ крестик) — нет */
   { const tp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const te=[]; tp.on('pageerror',e=>te.push(String(e)));
     await tp.goto(URL+'#/ig/points'); await tp.waitForTimeout(1500);
     const out=await tp.evaluate(()=>{ const bad=[], J=IG3.jc(IG_VARS[5].tree), M={F:'″',T:'′',L:'‴'};
-      IGL.PEX().forEach(E=>{ const name='точка '+E.n, j=J(...E.p); if(Math.abs(j)>0.05) bad.push({name,rule:'точка на поверхности',msg:'J = '+j.toFixed(3)});
+      IGL.PEX().forEach(E=>{ const name='точка '+E.n, j=J(...E.p); if(E.cutp?!(j<-0.05&&Math.abs(E.p[E.cutp==='L'?0:1])<1e-9):Math.abs(j)>0.05) bad.push({name,rule:E.cutp?'точка в штриховке: в материале, в секущей плоскости':'точка на поверхности',msg:'J = '+j.toFixed(3)});
+        IGL.ptSVG(E,0); const got=['F','T','L'].map(v=>E.vis[v]).join('');
+        if(got!==E.exp) bad.push({name,rule:'видимость в тексте = видимость по модели',msg:'текст: '+E.exp+', модель: '+got+' (v — видна, h — закрыта, r — убрана разрезом)'});
         E.s.forEach((s,i)=>{ const tx=(s.act.join(' ')+' '+s.why).replace(/<[^>]+>/g,'');
-          Object.entries(M).forEach(([v,m])=>{ const re=new RegExp('(\\(?)'+E.n+m+'(\\)?)','g'); let r; while((r=re.exec(tx))){ const br=!!(r[1]&&r[2]);
-            if(br===E.vis[v]) bad.push({name,rule:'скобки — невидимая проекция',msg:'шаг '+(i+1)+': '+r[0]+(E.vis[v]?' видна':' невидима')}); } });
+          if(new RegExp('\\('+E.n+'[″′‴]\\)').test(tx)) bad.push({name,rule:'видимость — отметкой, не скобками',msg:'шаг '+(i+1)});
           try{ const sv=IGL.ptSVG(E,i); if(!/<svg/.test(sv)||sv.indexOf(E.n+'')<0) bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+' пустой'}); }catch(e){ bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+': '+e}); } }); });
       return bad; });
-    let ok=0, rej=0, n=0;
-    for(let t=0;t<16;t++){ await tp.click('#igpTrNext'); await tp.evaluate(()=>document.getElementById('igpTrPic').scrollIntoView({block:'center'}));
+    const cnt={ok:0,n:0,mir:0,sym:0};
+    for(let t=0;t<18;t++){ const mode=t%3; await tp.click('#igpTrNext'); await tp.evaluate(()=>document.getElementById('igpTrPic').scrollIntoView({block:'center'}));
       const w=await tp.evaluate(mir=>{ const E=document.getElementById('igpTr').igpTask(), k=3, p=E.p, P={F:q=>[k*q[0],-k*q[2]],T:q=>[k*q[0],k*(84-q[1])],L:q=>[k*(168-q[1]),-k*q[2]]}, m=document.querySelector('#igpTrPic svg').getScreenCTM();
-        return {y:p[1],t:E.sf.t+', дана '+E.v,pts:['F','T','L'].filter(v=>v!==E.v).map(v=>{ const a=P[v](mir&&v!=='F'?[p[0],-p[1],p[2]]:p); return [m.a*a[0]+m.e,m.d*a[1]+m.f]; })}; },t%2===1);
+        return {y:p[1],t:E.sf.t+', дана '+E.v,vis:E.vis,views:['F','T','L'].filter(v=>v!==E.v),pts:['F','T','L'].filter(v=>v!==E.v).map(v=>{ const a=P[v](mir&&v!=='F'?[p[0],-p[1],p[2]]:p); return [m.a*a[0]+m.e,m.d*a[1]+m.f]; })}; },mode===1);
       for(const [x,y] of w.pts) await tp.mouse.click(x,y);
+      for(let j=0;j<2;j++){ const v=w.views[j], right=w.vis[v]==='v'?'v':'h', s=mode===2&&j===0?(right==='v'?'h':'v'):right; await tp.click(`#igpTrVis button[data-vw="${v}"][data-s="${s}"]`); }
       await tp.click('#igpTrGo'); const res=await tp.evaluate(()=>document.getElementById('igpTrRes').textContent), yes=/Защищено/.test(res);
-      if(t%2===0){ n++; if(yes) ok++; else out.push({name:'тренажёр',rule:'верный ответ засчитан',msg:w.t+' — '+res.slice(0,120)}); }
-      else if(Math.abs(w.y)>=1){ if(!yes) rej++; else out.push({name:'тренажёр',rule:'перёд и зад перепутаны — не засчитано',msg:w.t+' — '+res.slice(0,120)}); } }
+      if(mode===0){ cnt.n++; if(yes) cnt.ok++; else out.push({name:'тренажёр',rule:'верный ответ засчитан',msg:w.t+' — '+res.slice(0,140)}); }
+      else if(mode===1){ if(Math.abs(w.y)>=1){ if(!yes) cnt.mir++; else out.push({name:'тренажёр',rule:'перёд и зад перепутаны — не засчитано',msg:w.t+' — '+res.slice(0,140)}); } }
+      else { if(!yes) cnt.sym++; else out.push({name:'тренажёр',rule:'не та отметка видимости — не засчитано',msg:w.t+' — '+res.slice(0,140)}); } }
     te.forEach(e=>out.push({name:'#/ig/points',rule:'ошибка JS',msg:e.slice(0,200)}));
-    info.push('Защита точек: '+out.length+' замечаний; тренажёр — верных засчитано '+ok+' из '+n+', перепутанных перёд/зад отклонено '+rej);
+    info.push('Защита точек: '+out.length+' замечаний; тренажёр — верных засчитано '+cnt.ok+' из '+cnt.n+', перепутанных перёд/зад отклонено '+cnt.mir+', неверных отметок отклонено '+cnt.sym);
     report('ИГ: защита точек',out); await tp.close(); }
 
   /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
