@@ -136,6 +136,30 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(upage,URL));
     await upage.close(); }
 
+  /* 3ж. «Научись защищать точки» (#/ig/points): каждая точка разбора лежит на поверхности детали варианта 5, подпись в тексте шага —
+     со скобками ровно тогда, когда проекция невидима (видимость — лучом по модели), чертёж каждого шага строится.
+     Тренажёр нажатиями: верные места засчитываются, место с перепутанными передом и задом — нет */
+  { const tp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const te=[]; tp.on('pageerror',e=>te.push(String(e)));
+    await tp.goto(URL+'#/ig/points'); await tp.waitForTimeout(1500);
+    const out=await tp.evaluate(()=>{ const bad=[], J=IG3.jc(IG_VARS[5].tree), M={F:'″',T:'′',L:'‴'};
+      IGL.PEX().forEach(E=>{ const name='точка '+E.n, j=J(...E.p); if(Math.abs(j)>0.05) bad.push({name,rule:'точка на поверхности',msg:'J = '+j.toFixed(3)});
+        E.s.forEach((s,i)=>{ const tx=(s.act.join(' ')+' '+s.why).replace(/<[^>]+>/g,'');
+          Object.entries(M).forEach(([v,m])=>{ const re=new RegExp('(\\(?)'+E.n+m+'(\\)?)','g'); let r; while((r=re.exec(tx))){ const br=!!(r[1]&&r[2]);
+            if(br===E.vis[v]) bad.push({name,rule:'скобки — невидимая проекция',msg:'шаг '+(i+1)+': '+r[0]+(E.vis[v]?' видна':' невидима')}); } });
+          try{ const sv=IGL.ptSVG(E,i); if(!/<svg/.test(sv)||sv.indexOf(E.n+'')<0) bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+' пустой'}); }catch(e){ bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+': '+e}); } }); });
+      return bad; });
+    let ok=0, rej=0, n=0;
+    for(let t=0;t<16;t++){ await tp.click('#igpTrNext'); await tp.evaluate(()=>document.getElementById('igpTrPic').scrollIntoView({block:'center'}));
+      const w=await tp.evaluate(mir=>{ const E=document.getElementById('igpTr').igpTask(), k=3, p=E.p, P={F:q=>[k*q[0],-k*q[2]],T:q=>[k*q[0],k*(84-q[1])],L:q=>[k*(168-q[1]),-k*q[2]]}, m=document.querySelector('#igpTrPic svg').getScreenCTM();
+        return {y:p[1],t:E.sf.t+', дана '+E.v,pts:['F','T','L'].filter(v=>v!==E.v).map(v=>{ const a=P[v](mir&&v!=='F'?[p[0],-p[1],p[2]]:p); return [m.a*a[0]+m.e,m.d*a[1]+m.f]; })}; },t%2===1);
+      for(const [x,y] of w.pts) await tp.mouse.click(x,y);
+      await tp.click('#igpTrGo'); const res=await tp.evaluate(()=>document.getElementById('igpTrRes').textContent), yes=/Защищено/.test(res);
+      if(t%2===0){ n++; if(yes) ok++; else out.push({name:'тренажёр',rule:'верный ответ засчитан',msg:w.t+' — '+res.slice(0,120)}); }
+      else if(Math.abs(w.y)>=1){ if(!yes) rej++; else out.push({name:'тренажёр',rule:'перёд и зад перепутаны — не засчитано',msg:w.t+' — '+res.slice(0,120)}); } }
+    te.forEach(e=>out.push({name:'#/ig/points',rule:'ошибка JS',msg:e.slice(0,200)}));
+    info.push('Защита точек: '+out.length+' замечаний; тренажёр — верных засчитано '+ok+' из '+n+', перепутанных перёд/зад отклонено '+rej);
+    report('ИГ: защита точек',out); await tp.close(); }
+
   /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
      согласился на cookie. Здесь TRACK подменяется записью в список: открыть задачу, сменить режим, дойти до ответа */
   { const apage=await browser.newPage({viewport:{width:390,height:844}}); await apage.goto(URL+'#/ng/tasks/12'); await apage.waitForTimeout(1200);
