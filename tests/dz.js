@@ -13,7 +13,7 @@
    вариантах — пересобранный блок ДЗ). */
 (function(){
 const SC=()=>L.S;                                      /* единиц чертежа на мм */
-const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();
+const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();
 const num=s=>+String(s).replace('−','-').replace(',','.');
 const sub=(a,b)=>a.map((v,i)=>v-b[i]), add=(a,b)=>a.map((v,i)=>v+b[i]), mul=(a,k)=>a.map(v=>v*k);
 const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0), len=a=>Math.sqrt(dot(a,a)), dist=(a,b)=>len(sub(a,b));
@@ -214,12 +214,30 @@ function checkTask(id,task,out){
         /* расстояние со знаком: «+» — по другую сторону оси от старой проекции (точка над плоскостью), «−» — по ту же */
         const sg=p=>Math.sign((p[0]-axis.a[0])*(axis.b[1]-axis.a[1])-(p[1]-axis.a[1])*(axis.b[0]-axis.a[0])), sd=axis.d(X1)*(sg(X1)===sg(X0)?-1:1);
         ck(Math.abs(sd-keep)<TOL*S,'замена плоскостей',lab+': до новой оси '+(sd/S).toFixed(2)+' мм, должно быть '+(keep/S).toFixed(2)+' мм (сохраняемая координата)'); };
-      if(/высота/.test(pl)){ const x14=ax('x₁₄'); if(!ck(!!x14,'замена плоскостей','нет оси x₁₄')) return;
-        const Dd=R('D'); ck(Dd&&Math.abs(Dd[2]-A[2])<TOL&&offLine3(Dd,B,C)<TOL,'метод','D — не точка BC на уровне A (AD — не горизонталь)');
-        ck(Math.abs(dot([x14.u[0],x14.u[1]],sub(P['D′'],P['A′']))/d2(P['D′'],P['A′']))<1e-6,'замена плоскостей','x₁₄ не перпендикулярна A′D′');
-        ['A','B','C','S'].forEach(n=>xfer(P[n+'′'],P[n+'₄'],x14,(n==='S'?Sv:data[n])[2]*S,n+'₄'));
+      /* 0) проекции и видимость: каждое ребро — лучом к наблюдателю; точки конкурирующих пар — на своих рёбрах (гранях) */
+      if(/видимост/.test(pl)){ visCheck({S:Sv,A,B,C},[['A','B','C'],['S','A','B'],['S','B','C'],['S','C','A']]);
+        ['1','2','3','4'].forEach(n=>{ const p=R(n); if(!p) return; const onE=[[A,B],[B,C],[C,A],[Sv,A],[Sv,B],[Sv,C]].some(([u,w])=>offLine3(p,u,w)<TOL), onF=[[A,B,C],[Sv,A,B],[Sv,B,C],[Sv,C,A]].some(([u,v,w])=>planeDist(p,u,v,w)<TOL);
+          ck(onE||onF,'метод','конкурирующая точка '+n+' не на ребре и не в грани пирамиды'); });
+        /* текст: «z_S = 50 > z_4 = 17,3» — числа = координаты, знак верен; «рёбра SA, SB на π₁ видны / невидимы» — как по лучу */
+        const pnt=n=>({S:Sv,A,B,C})[n]||R(n);
+        text.replace(/([yz])([A-Z0-9]) = (−?-?\d+(?:,\d+)?) ([<>]) \1([A-Z0-9]) = (−?-?\d+(?:,\d+)?)/g,(m,c,p1,v1,op,p2,v2)=>{ const i=c==='y'?1:2, a1=pnt(p1), a2=pnt(p2);
+          if(a1) ck(Math.abs(a1[i]-num(v1))<0.0501,'число в тексте','«'+m+'»: '+c+' точки '+p1+' по чертежу '+r1(a1[i]));
+          if(a2) ck(Math.abs(a2[i]-num(v2))<0.0501,'число в тексте','«'+m+'»: '+c+' точки '+p2+' по чертежу '+r1(a2[i]));
+          ck(op==='>'?num(v1)>num(v2):num(v1)<num(v2),'видимость','«'+m+'» — неверное сравнение'); return m; });
+        const FS=[['A','B','C'],['S','A','B'],['S','B','C'],['S','C','A']].map(f=>f.map(n=>({S:Sv,A,B,C})[n]));
+        text.replace(/рёбра ([A-Z]{2}(?:, [A-Z]{2})*) на π([₁₂]) (видны|невидимы)/g,(m,list,v,w)=>{ list.split(', ').forEach(e=>{ const P1=({S:Sv,A,B,C})[e[0]], P2=({S:Sv,A,B,C})[e[1]], X=mul(add(P1,P2),0.5);
+          const hid=hiddenAt(X,FS,v==='₂'?2:1,f=>f.includes(P1)&&f.includes(P2)); ck(hid===(w==='невидимы'),'видимость','в тексте «'+e+' на π'+v+' '+w+'», а по лучу ребро '+(hid?'закрыто':'видно')); }); return m; }); }
+      /* а) высота: замена π₁ → π₄ ⟂ фронтали BE основания (x₂₄ ⟂ f″, сохраняется y); возврат основания высоты H на π₂, π₁ */
+      if(/высота/.test(pl)){ const x24=ax('x₂₄'); if(!ck(!!x24,'замена плоскостей','нет оси x₂₄')) return;
+        const Ee=R('E'); ck(Ee&&Math.abs(Ee[1]-B[1])<TOL&&offLine3(Ee,A,C)<TOL,'метод','E — не точка AC на глубине B (BE — не фронталь)');
+        ck(Math.abs(dot([x24.u[0],x24.u[1]],sub(P['E″'],P['B″'])))/d2(P['E″'],P['B″'])<1e-6,'замена плоскостей','x₂₄ не перпендикулярна f″ = B″E″');
+        ['A','B','C','S'].forEach(n=>xfer(P[n+'″'],P[n+'₄'],x24,(n==='S'?Sv:data[n])[1]*S,n+'₄'));
         ck(offLine2(P['C₄'],P['A₄'],P['B₄'])<TOL*S,'замена плоскостей','A₄, B₄, C₄ не на одной прямой — плоскость не стала проецирующей');
         const Hd=offLine2(P['S₄'],P['A₄'],P['B₄'])/S; ck(Math.abs(Hd-Hn)<TOL,'ответ','высота на π₄ '+Hd.toFixed(3)+' мм, расстояние S до ABC '+Hn.toFixed(3));
+        if(need('H')){ const Hp=R('H'), w=dot(sub(Sv,A),nA)/dot(nA,nA), foot=sub(Sv,mul(nA,w));
+          ck(dist(Hp,foot)<TOL,'ответ','H — не основание перпендикуляра из S к ABC: до него '+dist(Hp,foot).toFixed(3)+' мм');
+          xfer(P['H″'],P['H₄'],x24,Hp[1]*S,'H₄');
+          ck(Math.abs(x24.u[0]*(P['H″'][1]-P['S″'][1])-x24.u[1]*(P['H″'][0]-P['S″'][0]))/d2(P['H″'],P['S″'])<1e-6,'метод','S″H″ не параллельна x₂₄ (SH ∥ π₄)'); }
         valIn(ans,/H = (\d+(?:,\d+)?) мм/,Hn,'высота H',' мм'); valIn(text,/H = (\d+(?:,\d+)?) мм/,Hn,'высота H в шаге',' мм'); }
       if(/угол SAB/.test(pl)){ const x14=ax('x₁₄'), x45=ax('x₄₅'); if(!ck(!!x14&&!!x45,'замена плоскостей','нет осей x₁₄, x₄₅')) return;
         ck(Math.abs(x14.u[0]*(P['B′'][1]-P['A′'][1])-x14.u[1]*(P['B′'][0]-P['A′'][0]))/d2(P['A′'],P['B′'])<1e-6,'замена плоскостей','x₁₄ не параллельна A′B′');
