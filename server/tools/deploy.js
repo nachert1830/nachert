@@ -80,7 +80,14 @@ async function main(){
   token=token||payload.TG_BOT_TOKEN;
   if(!/^\d{5,12}:[A-Za-z0-9_-]{30,}$/.test(token||'')) throw new Error('Это не похоже на токен бота. Он выглядит так: 1234567890:AAH…');
   step('Проверяю бота');
-  const me=await telegram(token,'getMe'); say('  бот: @'+me.username);
+  /* Telegram с этого компьютера может не открываться (без VPN), а облако — не открываться с VPN. Компьютеру Telegram не обязателен:
+     вебхук и команды бота настроит сам клуб из облака (server/lib/app.js → ensureBot) */
+  let me=null; try{ me=await telegram(token,'getMe'); say('  бот: @'+me.username); }
+  catch(e){ if(/Unauthorized|Not Found/i.test(e.message)) throw new Error('Telegram не принял токен — проверьте, что скопировали его целиком из @BotFather.');
+    say('  Telegram с этого компьютера не открывается — это нормально, бота настроит сам клуб из облака.');
+    let u=arg('bot')||await ask('Username бота (как в @BotFather, например nachert_club_bot): ');
+    u=u.replace(/^@/,'').trim(); if(!/^[A-Za-z][A-Za-z0-9_]{3,30}bot$/i.test(u)) throw new Error('Username бота — латиница, на конце «bot», например nachert_club_bot.');
+    me={username:u}; }
   if(!owner){ owner=process.env.CLUB_OWNER_TG||await ask('Ваш Telegram id (число; узнать — написать боту @userinfobot): '); }
   if(!/^\d{3,16}$/.test(owner)) throw new Error('Telegram id — это число, например 123456789.');
 
@@ -135,6 +142,8 @@ async function main(){
   for(const [k,entry,timeout] of [['api','server/index.handler','10s'],['remind','server/index.remind','120s']]){
     yc(['serverless','function','version','create','--function-id',fn[k].id,'--runtime','nodejs22','--entrypoint',entry,'--memory','256m','--execution-timeout',timeout,
       '--service-account-id',sa.fn.id,'--source-path',zf,'--environment',env].concat(secrets)); say('  '+NAMES[k]+': новая версия'); }
+  /* сразу запустить функцию напоминаний: она подключает вебхук бота из облака, если с компьютера не получилось */
+  try{ yc(['serverless','function','invoke','--id',fn.remind.id],{json:false}); }catch(e){}
   fs.unlinkSync(zf);
 
   step('Таймер напоминаний (каждые 15 минут)');
@@ -143,9 +152,10 @@ async function main(){
   say('  готово');
 
   step('Бот: вебхук и команды');
-  await telegram(token,'setWebhook',{url:origin+'/api/tg/webhook',secret_token:payload.TG_WEBHOOK_SECRET,allowed_updates:['message','callback_query','my_chat_member'],drop_pending_updates:true});
+  try{ await telegram(token,'setWebhook',{url:origin+'/api/tg/webhook',secret_token:payload.TG_WEBHOOK_SECRET,allowed_updates:['message','callback_query','my_chat_member'],drop_pending_updates:true});
   await telegram(token,'setMyCommands',{commands:[{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'stop',description:'Выключить напоминания'}]});
-  say('  готово');
+  say('  готово'); }
+  catch(e){ say('  с этого компьютера не получилось — клуб сделает это сам в течение 15 минут'); }
 
   step('Проверяю, что клуб отвечает');
   let ok=false; for(let i=0;i<10&&!ok;i++){ try{ const r=await fetch(origin+'/api/config'); ok=r.ok; }catch(e){} if(!ok) await sleep(3000); }

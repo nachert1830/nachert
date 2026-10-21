@@ -262,7 +262,16 @@ function createApp(o){
     else if(text==='/stop'){ await setR({enabled:false}); await o.bot.send(from.id,'Напоминания выключены. Включить снова — в клубе, раздел «Настройки».'); } }
 
   /* ── напоминания: запускается таймером каждые 15 минут ── */
+  /* бот настраивается из облака: компьютер владельца может не видеть Telegram без VPN. Вебхук и команды — если ещё не те */
+  async function ensureBot(){ if(!cfg.botToken||!cfg.webhookSecret||cfg.dev) return null;
+    const url=cfg.origin+'/api/tg/webhook', info=await o.bot.api('getWebhookInfo',{}).catch(()=>null);
+    if(info&&info.ok&&info.result&&info.result.url===url) return 'ok';
+    const r=await o.bot.api('setWebhook',{url,secret_token:cfg.webhookSecret,allowed_updates:['message','callback_query','my_chat_member']}).catch(e=>({ok:false,description:e.message}));
+    await o.bot.api('setMyCommands',{commands:[{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'stop',description:'Выключить напоминания'}]}).catch(()=>{});
+    if(!r||!r.ok) log.error('вебхук бота не подключён',r&&r.description); return r&&r.ok?'set':'fail'; }
+
   async function remind(at){ const t=at||now(), out={sent:0,skipped:{}};
+    try{ out.bot=await ensureBot(); }catch(e){ log.error('бот',e&&e.message); }
     const fl=await flagsRaw(), st=await settings();
     const users=await store.scan('users',u=>u.reminders&&u.reminders.enabled&&u.tgId&&!u.blocked);
     for(const u of users){ if(!FEAT.effective(fl,u.role).reminders){ out.skipped['функция выключена']=(out.skipped['функция выключена']||0)+1; continue; }
@@ -306,6 +315,6 @@ function createApp(o){
     return finish(res,cookie); }
   function finish(res,cookie){ res.headers=Object.assign(H.securityHeaders(cfg,false),res.headers||{}); if(cookie) res.multiValueHeaders={'Set-Cookie':[cookie]}; return res; }
 
-  return {handle,remind,maintain,onUpdate,DOCS_VERSION,_emailKey:emailKey};
+  return {handle,remind,maintain,onUpdate,ensureBot,DOCS_VERSION,_emailKey:emailKey};
 }
 module.exports={createApp,maskIp,DOCS_VERSION};

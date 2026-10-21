@@ -171,3 +171,10 @@ test('скрипт развёртывания: архив функции — п�
   assert.ok(!names.some(n=>/(^|\/)(test|tests|tools|\.data)\/|\.md$/.test(n)),'лишнее не попадает в пакет');
   const z=zip(files); assert.equal(z.readUInt32LE(0),0x04034b50); assert.equal(z.readUInt32LE(z.length-22),0x06054b50); assert.equal(z.readUInt16LE(z.length-12),files.length);
 });
+
+test('бот настраивается из облака: вебхук с секретом и команды при запуске напоминаний',async()=>{
+  const c=club({secure:true}); await c.app.remind();
+  const wh=c.outbox.find(x=>x.method==='setWebhook'); assert.ok(wh,'вебхук подключён');
+  assert.equal(wh.body.url,'https://club.nachert1830.ru/api/tg/webhook'); assert.equal(wh.body.secret_token,'hook-secret');
+  assert.ok(c.outbox.some(x=>x.method==='setMyCommands'));
+});
