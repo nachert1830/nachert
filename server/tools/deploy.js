@@ -22,7 +22,9 @@ function yc(args,o){ o=o||{};
     return o.json===false?out.trim():(out.trim()?JSON.parse(out):{}); }
   catch(e){ if(o.soft) return null; const msg=String(e.stderr||e.message).trim();
     throw new Error('Команда yc '+args.filter(a=>!/^\[\{/.test(a)).join(' ')+' не выполнилась:\n'+msg); } }
-const get=(args)=>yc(args,{soft:true});
+/* «нет такого ресурса» → null; любая другая ошибка (сеть, права) — остановка с понятным текстом, а не попытка создать заново */
+function get(args){ try{ return yc(args); }catch(e){ if(/not found|NotFound/i.test(e.message)) return null; throw e; } }
+const NET=/DeadlineExceeded|deadline exceeded|connection refused|no such host|i\/o timeout|Unavailable|handshake/i;
 function ask(q,hidden){ return new Promise(res=>{ const rl=readline.createInterface({input:process.stdin,output:process.stdout});
   if(hidden){ rl._writeToOutput=s=>{ if(s.includes(q)) rl.output.write(s); else rl.output.write('*'); }; }
   rl.question(q,a=>{ rl.close(); if(hidden) process.stdout.write('\n'); res(a.trim()); }); }); }
@@ -62,6 +64,12 @@ async function main(){
   const folder=yc(['config','get','folder-id'],{json:false});
   if(!/^[a-z0-9]{20}$/.test(folder)) throw new Error('Не выбран каталог. Выполните «yc init» и выберите облако и каталог.');
   say('  каталог: '+folder);
+  try{ yc(['resource-manager','folder','get',folder]); }
+  catch(e){ if(NET.test(e.message)) throw new Error('Программа yc не может связаться с Yandex Cloud (нет ответа от серверов облака).\n'+
+      'Обычно мешает VPN или прокси: выключите VPN, закройте программы-обходчики блокировок и запустите скрипт снова.\n'+
+      'Если не помогло — антивирус с «проверкой HTTPS» (Kaspersky, ESET) или сеть общежития/вуза: попробуйте раздать интернет с телефона.\n'+
+      'Проверка связи: команда  yc resource-manager folder list  должна вывести таблицу с каталогом nachert-club.');
+    throw e; }
 
   /* токен бота и Telegram id владельца */
   let token=arg('token'), owner=arg('owner');
@@ -79,7 +87,7 @@ async function main(){
   step('Сервисные аккаунты и права');
   const sa={}; for(const k of ['fn','gw']){ sa[k]=get(['iam','service-account','get','--name',NAMES[k]])||yc(['iam','service-account','create','--name',NAMES[k]]); say('  '+NAMES[k]+': '+sa[k].id); }
   for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['gw','functions.functionInvoker']])
-    yc(['resource-manager','folder','add-access-binding',folder,'--role',role,'--subject','serviceAccount:'+sa[k].id],{soft:true});
+    try{ yc(['resource-manager','folder','add-access-binding',folder,'--role',role,'--subject','serviceAccount:'+sa[k].id]); }catch(e){ if(!/already/i.test(e.message)) throw e; }
 
   step('База данных YDB (serverless, Россия)');
   let db=get(['ydb','database','get','--name',NAMES.db]);
