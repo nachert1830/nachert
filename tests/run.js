@@ -164,6 +164,33 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Защита точек: '+out.length+' замечаний; тренажёр — верных засчитано '+cnt.ok+' из '+cnt.n+', перепутанных перёд/зад отклонено '+cnt.mir+', неверных отметок отклонено '+cnt.sym);
     report('ИГ: защита точек',out); await tp.close(); }
 
+  /* 3з. ДЗ №3, «Сверь свой лист»: таблица 30 вариантов задания. Ответы пересчитываются здесь независимо (нормаль, проекция на ребро AB,
+     угол ребра с плоскостью), выбор варианта подставляет его данные и показывает те же числа; варианты-«зеркала» дают равные ответы;
+     ответы варианта, вписанные как свои, проходят проверку */
+  { const hp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const he=[]; hp.on('pageerror',e=>he.push(String(e)));
+    await hp.goto(URL+'#/ng/hw/3'); await hp.waitForTimeout(1500);
+    const out=await hp.evaluate(async()=>{ const bad=[], S=HWCHECK.SPEC['3'], V=S.vars, sub=(a,b)=>a.map((v,i)=>v-b[i]), dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], ln=a=>Math.sqrt(dt(a,a)), D=r=>r*180/Math.PI;
+      const keys=Object.keys(V); if(keys.length!==30) bad.push({name:'ДЗ №3',rule:'30 вариантов',msg:'в таблице '+keys.length});
+      const fmt=x=>String(Math.round(x*10)/10).replace('.',',');
+      for(const n of keys){ const [A,B,C,Sv]=V[n], N=cr(sub(B,A),sub(C,A)), H=Math.abs(dt(sub(Sv,A),N))/ln(N);
+        /* двугранный угол при AB — между перпендикулярами к ребру, опущенными из C и из S (полуплоскости граней) */
+        const u=sub(B,A), e=u.map(v=>v/ln(u)), q=p=>{ const w=sub(p,A), t=dt(w,e); return sub(w,e.map(v=>v*t)); }, qc=q(C), qs=q(Sv), dih=D(Math.acos(dt(qc,qs)/ln(qc)/ln(qs))), phi=D(Math.asin(H/ln(sub(Sv,A))));
+        const R=S.ans({A,B,C,S:Sv}); [['H',H],['dih',dih],['phi',phi],['AB',ln(sub(B,A))],['BC',ln(sub(C,B))],['CA',ln(sub(A,C))]].forEach(([k,x])=>{ if(Math.abs(R[k]-x)>0.05) bad.push({name:'ДЗ №3, вариант '+n,rule:'ответ '+k,msg:'на сайте '+R[k].toFixed(2)+', пересчёт '+x.toFixed(2)}); });
+        if(H<5) bad.push({name:'ДЗ №3, вариант '+n,rule:'пирамида не вырождена',msg:'H = '+H.toFixed(1)});
+        document.querySelector(`.hc-vb[data-vn="${n}"]`).click(); await new Promise(r=>setTimeout(r,20));
+        const vals=['A','B','C','S'].flatMap(m=>[0,1,2].map(c=>+document.querySelector(`.hc-in[data-k="d:${m}:${c}"]`).value)), want=[A,B,C,Sv].flat();
+        if(vals.join()!==want.join()) bad.push({name:'ДЗ №3, вариант '+n,rule:'данные подставлены',msg:vals.join(',')});
+        const tx=document.getElementById('hcAns').textContent; if(!tx.includes('H = '+fmt(H)+' мм')||!tx.includes(fmt(dih)+'°')||!tx.includes('φ = '+fmt(phi)+'°')) bad.push({name:'ДЗ №3, вариант '+n,rule:'ответы показаны',msg:tx.replace(/\s+/g,' ').slice(0,160)}); }
+      /* свои числа = ответы варианта 17 → «Все условия выполнены» */
+      document.querySelector('.hc-vb[data-vn="17"]').click(); const R=S.ans({A:V[17][0],B:V[17][1],C:V[17][2],S:V[17][3]});
+      ['H','dih','AB','BC','CA','phi'].forEach(k=>{ document.querySelector(`.hc-in[data-k="v:${k}"]`).value=fmt(R[k]); }); document.querySelector('.hc-go').click(); await new Promise(r=>setTimeout(r,30));
+      if(!/Все условия выполнены/.test(document.getElementById('hcRes').textContent)) bad.push({name:'ДЗ №3, вариант 17',rule:'ответы варианта проходят проверку',msg:document.getElementById('hcRes').textContent.slice(0,160)});
+      document.querySelector('.hc-clr').click(); try{ localStorage.removeItem('nch2_hwvar_3'); }catch(e){}
+      return bad; });
+    he.forEach(e=>out.push({name:'#/ng/hw/3',rule:'ошибка JS',msg:e.slice(0,200)}));
+    info.push('ДЗ №3, таблица вариантов: '+out.length+' замечаний (30 вариантов: данные, ответы, проверка своих чисел)');
+    report('ДЗ №3: варианты и ответы',out); await hp.close(); }
+
   /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
      согласился на cookie. Здесь TRACK подменяется записью в список: открыть задачу, сменить режим, дойти до ответа */
   { const apage=await browser.newPage({viewport:{width:390,height:844}}); await apage.goto(URL+'#/ng/tasks/12'); await apage.waitForTimeout(1200);

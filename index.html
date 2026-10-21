@@ -1767,6 +1767,16 @@ html.ovs-open,html.ovs-open body{overflow:hidden}
 .hc-ic{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff}
 .hc-it.ok .hc-ic{background:var(--green)}.hc-it.no .hc-ic{background:var(--red)}.hc-it.no{border-color:color-mix(in srgb,var(--red) 40%,transparent)}
 .hc-warn{padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--amber) 14%,var(--surf));color:var(--ink)}
+.hc-var{margin:0 0 12px;padding:12px;border-radius:14px;background:var(--surf);border:1px solid var(--line)}
+.hc-vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.hc-vb{height:42px;border-radius:10px;border:1px solid var(--line2);background:var(--surf2);color:var(--ink);font:700 15px var(--mono);cursor:pointer}.hc-vb.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.hc-ans{margin-top:12px}.hc-ans:empty{display:none}.hc-ah{font:700 15px var(--sans);margin:0 0 8px}
+.hc-ag{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:8px}
+.hc-ag>div{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--green) 9%,var(--surf));border:1px solid color-mix(in srgb,var(--green) 30%,var(--line))}
+.hc-ag small{display:block;font-size:12.5px;color:var(--mut)}.hc-ag b{display:block;margin-top:2px;font:700 16px var(--mono);color:var(--ink)}.hc-ag i{display:block;margin-top:3px;font-style:normal;font-size:12.5px;color:var(--ink2)}
+.hc-am{margin:8px 0 0;font-size:12.5px;color:var(--mut)}
+.hc-all{margin-top:12px}.hc-all summary{cursor:pointer;font-weight:700;padding:6px 0}
+.hc-tw{overflow-x:auto;margin-top:6px;border:1px solid var(--line);border-radius:12px;background:var(--surf)}.hc-tw table{width:100%;min-width:480px;border-collapse:collapse;font:500 13px var(--mono)}.hc-tw th,.hc-tw td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.hc-tw th:first-child,.hc-tw td:first-child{text-align:left}.hc-tw thead th{color:var(--mut);font-weight:700}.hc-tw tbody tr:last-child td{border-bottom:0}
 .hc-foot{margin:10px 0 0;font-size:12px;color:var(--mut)}
 .hw-sec h2{font-family:var(--disp);font-size:20px;margin:0 0 var(--s2)}
 .hw-sec p,.hw-sec li{line-height:1.65}
@@ -2553,6 +2563,10 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igp-m45{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 2px 8px;font-size:13px;color:var(--mut)}.igp-m45 .btn{min-height:36px;padding:0 12px;font-size:13px}
 .igp-m45 .btn.on,.igp-vrow .btn.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .igp-vis{display:grid;gap:6px;margin:10px 2px 0}.igp-vis:empty{display:none}.igp-vrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.igp-vrow b{min-width:36px;font:italic 600 19px 'Times New Roman','Liberation Serif',Georgia,serif}.igp-vrow .btn{min-height:42px;padding:0 14px}.igp-vrow .btn:disabled{opacity:.4;pointer-events:none}
+.igx-nk-l{margin:18px 2px 6px;font-size:13.5px;color:var(--mut)}.igx-nk-l a{color:var(--mut)}
+.igp-pl{display:grid;gap:14px;margin:0 0 24px}@media(min-width:980px){.igp-pl{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:start}}
+.igp-plt p{margin:0 0 10px;font-size:15px;line-height:1.6;color:var(--ink2)}.igp-plt p b{color:var(--ink)}
+.igp-xyz{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 12px}.igp-xyz>div{padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surf);font-size:12.5px;line-height:1.35;color:var(--mut)}.igp-xyz b{display:block;font:italic 600 21px 'Times New Roman','Liberation Serif',Georgia,serif;color:#9b2335}.igp-xyz small{display:block;margin-top:3px;font-size:13px;color:var(--ink)}
 .igh-nk.igh-pts{background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 10%,var(--surf)),var(--surf))}
 .igl-home{border-color:color-mix(in srgb,var(--red) 45%,var(--line))!important}.igl-home .igx-n{color:var(--red)}
 /* ── 3D к задаче ── */
@@ -5842,7 +5856,13 @@ const plane=(a,b,c)=>{ const n=crs(sub(b,a),sub(c,a)), l=len(n); return {a,n:n.m
 const sdist=(p,P)=>dot(sub(p,P.a),P.n);
 const f1=x=>String(Math.round(x*10)/10).replace('.',',').replace('-','−');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-/* описание: данные варианта (точки), числа условия, что измерено на листе (точки или величины) */
+/* ДЗ №3: таблица вариантов задания — A, B, C, S (x, y, z, мм), 30 вариантов (переписана с листа задания).
+   Выбрал номер — данные подставляются сами, ответы на все четыре вопроса считаются сразу по координатам */
+const V3={1:[[80,10,20],[0,30,30],[50,40,10],[30,50,50]],2:[[0,10,20],[80,30,30],[30,40,10],[50,50,50]],3:[[80,20,10],[0,30,30],[50,10,40],[30,50,50]],4:[[0,20,10],[80,30,30],[30,10,40],[50,50,50]],5:[[80,20,0],[0,30,30],[60,0,50],[40,50,35]],6:[[0,20,0],[80,30,30],[20,0,50],[40,50,35]],7:[[80,0,20],[0,30,30],[60,50,0],[40,35,50]],8:[[0,0,20],[80,30,30],[20,50,0],[40,35,50]],9:[[70,0,10],[0,10,0],[50,40,30],[40,20,50]],10:[[70,10,0],[0,0,10],[50,30,40],[40,50,20]],11:[[0,0,10],[70,10,0],[20,40,30],[30,20,50]],12:[[0,10,0],[70,0,10],[20,30,40],[30,50,20]],13:[[70,10,20],[0,15,10],[50,40,30],[30,20,50]],14:[[0,20,10],[70,10,15],[20,30,40],[40,50,20]],15:[[0,10,20],[70,15,10],[20,40,30],[40,20,50]],16:[[70,20,10],[0,10,15],[50,30,40],[30,50,20]],17:[[80,30,20],[0,10,10],[30,0,50],[40,40,30]],18:[[0,20,30],[80,10,10],[50,50,0],[40,30,40]],19:[[80,20,30],[0,10,10],[30,50,0],[40,30,40]],20:[[0,30,20],[80,10,10],[50,0,50],[40,40,30]],21:[[50,10,40],[0,30,30],[70,50,0],[20,60,60]],22:[[20,50,0],[70,40,20],[0,10,40],[50,70,50]],23:[[20,0,50],[70,20,40],[0,40,10],[50,50,70]],24:[[50,40,10],[0,30,30],[70,0,50],[20,60,60]],25:[[55,10,40],[0,20,40],[70,40,10],[20,50,70]],26:[[45,10,40],[0,35,30],[65,50,0],[25,60,60]],27:[[20,40,10],[65,30,35],[0,0,50],[40,60,60]],28:[[20,10,40],[65,35,30],[0,50,0],[40,60,60]],29:[[45,40,10],[0,30,35],[65,0,50],[25,60,60]],30:[[55,40,10],[0,40,20],[70,10,40],[20,70,50]]};
+const ans3=G=>{ const H=Math.abs(sdist(G.S,plane(G.A,G.B,G.C))), ab=sub(G.B,G.A), pr=p=>{ const w=sub(p,G.A); return sub(w,ab.map(v=>v*dot(w,ab)/dot(ab,ab))); };
+  return {H,dih:ang(pr(G.C),pr(G.S)),phi:deg(Math.asin(Math.min(1,H/dist(G.S,G.A)))),SA:dist(G.S,G.A),AB:dist(G.A,G.B),BC:dist(G.B,G.C),CA:dist(G.C,G.A),
+    aA:ang(sub(G.B,G.A),sub(G.C,G.A)),aB:ang(sub(G.A,G.B),sub(G.C,G.B)),aC:ang(sub(G.A,G.C),sub(G.B,G.C))}; };
+/* описание: данные варианта (точки), числа условия, что измерено на листе (точки или величины); vars — таблица вариантов задания, ans — ответы по данным */
 const SPEC={
  '2':{data:['A','B','C','E','F'], par:[['h','Высота пирамиды по условию',80,'мм']], pts:['S'], opt:['N'],
    ex:()=>{ const c=NGHW._HW.calc[2]; return {A:c.A,B:c.B,C:c.C,E:c.E,F:c.Pf,S:c.S,N:c.T,h:c.Hh}; },
@@ -5873,10 +5893,9 @@ const SPEC={
      const h=sub(A1,A), p1=Math.abs(90-ang(h,sub(B,A))), p2=Math.abs(90-ang(h,sub(D,A))); out.push({ok:p1<=TD&&p2<=TD,t:'AA₁ ⟂ грани ABCD',v:'отклонение '+f1(Math.max(p1,p2))+'°',hint:'n′ ⟂ h′, n″ ⟂ f″ — прямые уровня грани ABCD.'});
      out.push({ok:Math.abs(len(h)-a)<=T,t:'|AA₁| = a',v:'|AA₁| = '+f1(len(h))+' мм, a = '+f1(a)+' мм',hint:'a откладывают на натуральной величине вспомогательного отрезка AM.'});
      return out; } },
- '3':{data:['A','B','C','S'], par:[], vals:[['H','1) высота пирамиды','мм'],['dih','2) угол между гранью SAB и основанием','°'],['AB','3) истинный вид: сторона AB','мм'],['BC','3) истинный вид: сторона BC','мм'],['CA','3) истинный вид: сторона CA','мм'],['phi','4) угол ребра SA с основанием','°']],
+ '3':{data:['A','B','C','S'], par:[], vars:V3, ans:ans3, vals:[['H','1) высота пирамиды','мм'],['dih','2) угол между гранью SAB и основанием','°'],['AB','3) истинный вид: сторона AB','мм'],['BC','3) истинный вид: сторона BC','мм'],['CA','3) истинный вид: сторона CA','мм'],['phi','4) угол ребра SA с основанием','°']],
    ex:()=>{ const c=NGHW._HW.calc[3]; return {A:c.A,B:c.B,C:c.C,S:c.Sv,H:c.H,dih:c.dih,AB:c.AB,BC:c.BC,CA:c.CA,phi:c.phi}; },
-   check(G,P,M){ const out=[], Pl=plane(G.A,G.B,G.C), H=Math.abs(sdist(G.S,Pl));
-     const ab=sub(G.B,G.A), pr=p=>{ const w=sub(p,G.A); return sub(w,ab.map(v=>v*dot(w,ab)/dot(ab,ab))); }, dih=ang(pr(G.C),pr(G.S)), phi=deg(Math.asin(Math.min(1,H/dist(G.S,G.A))));
+   check(G,P,M){ const out=[], {H,dih,phi}=ans3(G);
      const one=(k,val,tol,t,hint,alt)=>{ if(M[k]==null) return; const d=Math.abs(M[k]-val), ok=d<=tol, sup=alt!=null&&Math.abs(M[k]-alt)<=tol;
        out.push({ok,t,v:ok?'в пределах '+f1(tol)+(k==='dih'||k==='phi'?'°':' мм'):sup?'это смежный угол (180° − искомый)':'отличается больше чем на '+f1(tol)+(k==='dih'||k==='phi'?'°':' мм'),hint:sup?'Двугранный угол при ребре AB — между полуплоскостями граней SAB и ABC: на π₅ это угол между отрезками A₅C₅ и A₅S₅, а не его дополнение до 180°.':hint}); };
      one('H',H,T,'1) Высота пирамиды','Ось x₁₄ ⟂ горизонтали основания (A′D′), на π₄ откладываются z точек; высота — перпендикуляр из S₄ на прямую A₄B₄C₄.');
@@ -5891,17 +5910,31 @@ const load=id=>{ try{ return JSON.parse(localStorage.getItem(KEY(id))||'null')||
 const save=(id,o)=>{ try{ localStorage.setItem(KEY(id),JSON.stringify(o)); }catch(e){} };
 const inp=(name,val,lab)=>`<input class="hc-in" inputmode="decimal" autocomplete="off" data-k="${esc(name)}" aria-label="${esc(lab)}" value="${val==null?'':esc(String(val).replace('.',','))}">`;
 const row=(nm,kind,o)=>`<div class="hc-row"><b class="hc-n">${esc(nm)}</b>${['x','y','z'].map((c,i)=>inp(kind+':'+nm+':'+i,o[kind+':'+nm+':'+i],nm+', '+c+', мм')).join('')}</div>`;
-function html(id){ const S=SPEC[id]; if(!S) return ''; const o=load(id);
+const KV=id=>'nch2_hwvar_'+id;
+const loadVar=id=>{ try{ return +localStorage.getItem(KV(id))||0; }catch(e){ return 0; } };
+const gOf=(S,n)=>{ const G={}; S.data.forEach((nm,j)=>{ G[nm]=S.vars[n][j]; }); return G; };
+function ansHTML(S,n){ const R=S.ans(gOf(S,n)), d=v=>f1(v)+'°';
+  return `<div class="hc-ah">Ответы варианта ${n}</div><div class="hc-ag">
+   <div><small>1) Высота пирамиды</small><b>H = ${f1(R.H)} мм</b></div>
+   <div><small>2) Угол между гранью SAB и основанием</small><b>${d(R.dih)}</b></div>
+   <div><small>3) Истинный вид основания ABC</small><b>AB = ${f1(R.AB)} мм<br>BC = ${f1(R.BC)} мм<br>CA = ${f1(R.CA)} мм</b><i>углы треугольника: A — ${d(R.aA)}, B — ${d(R.aB)}, C — ${d(R.aC)}</i></div>
+   <div><small>4) Угол ребра SA с основанием</small><b>φ = ${d(R.phi)}</b><i>|SA| = ${f1(R.SA)} мм</i></div></div>
+   <p class="hc-am">Посчитано по координатам точек варианта. На листе 1:1 допустимо отличие до ${f1(T)} мм и ${f1(TD)}°.</p>`; }
+function allHTML(S){ return `<details class="hc-all"><summary>Ответы всех ${Object.keys(S.vars).length} вариантов</summary><div class="hc-tw"><table><thead><tr><th>№</th><th>H, мм</th><th>SAB–ABC</th><th>AB</th><th>BC</th><th>CA</th><th>φ (SA)</th></tr></thead><tbody>${Object.keys(S.vars).map(n=>{ const R=S.ans(gOf(S,n));
+  return `<tr><td>${n}</td><td>${f1(R.H)}</td><td>${f1(R.dih)}°</td><td>${f1(R.AB)}</td><td>${f1(R.BC)}</td><td>${f1(R.CA)}</td><td>${f1(R.phi)}°</td></tr>`; }).join('')}</tbody></table></div></details>`; }
+function html(id){ const S=SPEC[id]; if(!S) return ''; const o=load(id), vn=S.vars?loadVar(id):0;
   return `<section class="hw-sec hc" id="hcBox" aria-labelledby="hcH"><div class="hc-kick">Числа против чертежа</div><h2 id="hcH">Сверь свой лист</h2>
-   <p class="hc-lead">Построил свой вариант? Введи данные из таблицы задания и то, что измерил линейкой на своём листе. Сайт проверит каждое условие задачи по отдельности и подскажет, на каком шаге ошибка. <b>Правильный ответ он не покажет</b> — свой вариант ты строишь сам.</p>
+   ${S.vars?`<p class="hc-lead">Выбери номер своего варианта — данные из таблицы задания подставятся сами, а <b>ответы посчитаны сразу</b>: сравни их со своим листом. Хочешь знать, где ошибка, — впиши свои числа справа и нажми «Проверить»: сайт подскажет, на каком шаге она обычно бывает.</p>
+   <div class="hc-var"><div class="hc-h">Мой вариант <span>данные — из таблицы задания</span></div><div class="hc-vg">${Object.keys(S.vars).map(n=>`<button type="button" class="hc-vb${+n===vn?' on':''}" data-vn="${n}" aria-pressed="${+n===vn}">${n}</button>`).join('')}</div><div class="hc-ans" id="hcAns">${vn?ansHTML(S,vn):''}</div></div>`
+   :`<p class="hc-lead">Построил свой вариант? Введи данные из таблицы задания и то, что измерил линейкой на своём листе. Сайт проверит каждое условие задачи по отдельности и подскажет, на каком шаге ошибка. <b>Правильный ответ он не покажет</b> — свой вариант ты строишь сам.</p>`}
    <div class="hc-grid"><div class="hc-blk"><div class="hc-h">Данные варианта, мм <span>x · y · z</span></div>${S.data.map(n=>row(n,'d',o)).join('')}
      ${S.par.map(([k,l,def,u])=>`<label class="hc-par"><span>${esc(l)}, ${u}</span>${inp('p:'+k,o['p:'+k]!=null?o['p:'+k]:def,l)}</label>`).join('')}</div>
     <div class="hc-blk"><div class="hc-h">С твоего листа${S.pts?', мм <span>x · y · z</span>':''}</div>
      ${(S.pts||[]).map(n=>row(n,'m',o)).join('')}${(S.opt||[]).map(n=>`<div class="hc-opt">${row(n,'m',o)}<small>необязательно — проверит промежуточный шаг</small></div>`).join('')}
      ${(S.vals||[]).map(([k,l,u])=>`<label class="hc-par"><span>${esc(l)}, ${u}</span>${inp('v:'+k,o['v:'+k],l)}</label>`).join('')}
      <p class="hc-how">${S.pts?'Как мерить: x — вдоль оси от начала координат, y — от оси до горизонтальной проекции (′), z — от оси до фронтальной (″).':'Числа — те, что получились на твоём листе.'}</p></div></div>
-   <div class="hc-btns"><button type="button" class="btn pri hc-go">Проверить</button><button type="button" class="btn ghost hc-ex">Показать на нашем примере</button><button type="button" class="btn ghost hc-clr">Очистить</button></div>
-   <div class="hc-res" id="hcRes" aria-live="polite"></div>
+   <div class="hc-btns"><button type="button" class="btn pri hc-go">Проверить</button>${S.vars?'':'<button type="button" class="btn ghost hc-ex">Показать на нашем примере</button>'}<button type="button" class="btn ghost hc-clr">Очистить</button></div>
+   <div class="hc-res" id="hcRes" aria-live="polite"></div>${S.vars?allHTML(S):''}
    <p class="hc-foot">Допуск — ${f1(T)} мм и ${f1(TD)}°: лист чертят в масштабе 1:1 карандашом. Проверка считает по твоим числам; никакие данные никуда не отправляются.</p></section>`; }
 function bind(root,id){ const S=SPEC[id], box=root.querySelector('#hcBox'); if(!S||!box) return;
   const num=v=>{ const t=String(v==null?'':v).trim().replace(',','.').replace('−','-'); return t===''?null:+t; };
@@ -5922,12 +5955,18 @@ function bind(root,id){ const S=SPEC[id], box=root.querySelector('#hcBox'); if(!
       L.map(x=>`<div class="hc-it ${x.ok?'ok':'no'}"><span class="hc-ic" aria-hidden="true">${x.ok?'✓':'✗'}</span><div><b>${esc(x.t)}</b><small>${esc(x.v)}</small>${!x.ok&&x.hint?`<p>${esc(x.hint)}</p>`:''}</div></div>`).join('');
     try{ window.TRACK&&TRACK('hw_check',{task:String(id),ok:bad?0:1,n:L.length}); }catch(e){} };
   box.querySelector('.hc-go').addEventListener('click',run);
-  box.querySelector('.hc-ex').addEventListener('click',()=>{ const e=S.ex(); box.querySelectorAll('.hc-in').forEach(i=>{ const [kind,n,c]=i.dataset.k.split(':');
+  /* выбор варианта: данные — из таблицы задания, ответы — сразу; если свои числа уже вписаны — сразу и проверка */
+  if(S.vars){ const pick=n=>{ if(!S.vars[n]) return; S.data.forEach((nm,j)=>S.vars[n][j].forEach((v,c)=>{ const i=box.querySelector(`.hc-in[data-k="d:${nm}:${c}"]`); if(i) i.value=String(v); }));
+      try{ localStorage.setItem(KV(id),String(n)); }catch(e){} save(id,read());
+      box.querySelectorAll('.hc-vb').forEach(b=>{ const on=+b.dataset.vn===n; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); box.querySelector('#hcAns').innerHTML=ansHTML(S,n);
+      const o=read(); if((S.vals||[]).some(([k])=>num(o['v:'+k])!=null)) run(); else res.innerHTML=''; };
+    box.querySelectorAll('.hc-vb').forEach(b=>b.addEventListener('click',()=>pick(+b.dataset.vn))); const v0=loadVar(id); if(v0) pick(v0); }
+  const exb=box.querySelector('.hc-ex'); if(exb) exb.addEventListener('click',()=>{ const e=S.ex(); box.querySelectorAll('.hc-in').forEach(i=>{ const [kind,n,c]=i.dataset.k.split(':');
       let v=kind==='p'||kind==='v'?e[n]:e[n]&&e[n][+c]; if(v!=null) i.value=String(Math.round(v*10)/10).replace('.',','); }); run(); });
   box.querySelector('.hc-clr').addEventListener('click',()=>{ box.querySelectorAll('.hc-in').forEach(i=>{ if(!/^p:/.test(i.dataset.k)) i.value=''; }); save(id,{}); res.innerHTML=''; });
   box.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.classList.contains('hc-in')){ e.preventDefault(); run(); } });
 }
-return {has,html,bind,SPEC};
+return {has,html,bind,SPEC,ans3};
 })();
 
 /* ДЗ №1–5: методика и разобранные примеры. */
@@ -23554,7 +23593,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'4.15',d:'21 октября 2026',items:['«Научись защищать точки» — как на защите: видимая проекция — выколотая точка, невидимая — крестик (закрыта материалом или попала в часть, убранную разрезом). Чертёж — лист варианта 5 с половиной разреза на главном виде и профильным разрезом слева; новые точки — на задней стенке полости (срез на высоте точки — треугольник), на ребре полости и в штриховке сечения. В 3D деталь разрезана так же, как изображение, на котором строим, а от точки к глазу идёт луч: зелёный — точка видна, красный — упёрся в материал. Как отмерять глубину: измерителем от осей, линейкой или через постоянную прямую под 45° (переключатель на чертеже). В тренажёре теперь отмечаешь и видимость.']},
+  {v:'4.15',d:'21 октября 2026',items:['«Научись защищать точки» — как на защите: видимая проекция — выколотая точка, невидимая — крестик (закрыта материалом или попала в часть, убранную разрезом). Чертёж — лист варианта 5 с половиной разреза на главном виде и профильным разрезом слева; новые точки — на задней стенке полости (срез на высоте точки — треугольник), на ребре полости и в штриховке сечения. В 3D деталь разрезана так же, как изображение, на котором строим, а от точки к глазу идёт луч: зелёный — точка видна, красный — упёрся в материал. Как отмерять глубину: измерителем от осей, линейкой или через постоянную прямую под 45° (переключатель на чертеже). В тренажёре теперь отмечаешь и видимость.','«Научись защищать точки» начинается с плоскостей проекций: деталь в углу П₁, П₂, П₃, от выбранной точки — проецирующие лучи на каждую плоскость, затем плоскости разворачиваются в лист. Видно, какие две координаты знает каждая проекция и почему глубину отмеряют от осей.','ДЗ №3 (пирамида SABC), «Сверь свой лист»: выбираешь номер варианта — данные из таблицы задания (все 30 вариантов) подставляются сами, а ответы на все четыре вопроса посчитаны сразу: высота, угол между гранью SAB и основанием, истинный вид ABC (стороны и углы), угол ребра SA с основанием. Внизу — таблица ответов всех вариантов. Свои числа с листа по-прежнему можно проверить — сайт подскажет, на каком шаге ошибка.','Инженерная графика: тренажёр «Нормоконтроль» убран с главной страницы раздела — ссылка на него в конце теории ЕСКД.']},
   {v:'4.14',d:'21 октября 2026',items:['Инженерная графика: «Научись защищать точки» — как найти две недостающие проекции точки на чертеже, к защите ДЗ № 2. Три линии связи, четыре вопроса к любой точке и шесть точек на детали варианта 5 по шагам — фланец, его грань, конус (способ параллелей, в том числе от вида сверху), грань и ребро отверстия-пирамиды; у каждой — 3D, видимость и скобки. Таблица «где поверхность становится линией», частые ошибки на защите и тренажёр: точка ставится случайно, проекции находишь нажатием на чертеже.']},
   {v:'4.13',d:'17 октября 2026',items:['«Сверь свой лист» — на страницах ДЗ №2 (2а, 2б, 2в) и №3. Вводишь данные своего варианта и то, что измерил линейкой на своём листе, — сайт проверяет каждое условие задачи по отдельности (S на EF, высота 80 мм, AB = AC, AB ⟂ AK, угол, истинный вид…) и подсказывает, на каком шаге обычно ошибаются. Правильный ответ не показывается: свой вариант ты строишь сам.','Новая проверка чертежей «Евклид»: каждый элемент чертежа должен выводиться из уже построенных действиями линейки и циркуля — пересечение, линия связи, перпендикуляр, перенос циркулем. Проверено 87 задач из 89, включая кривые поверхности (сфера, конус, цилиндр, тор: очерк, параллели, точки на поверхности), и разборы ДЗ №2–3; в работе — № 74 и № 77. Найдено и исправлено: знак прямого угла в № 43 стоял не на линиях, которые он отмечает; в № 15 и № 34 отметка Δy (Δz) ссылалась на точку следующего шага.','ДЗ №2 и №3 проверены числами (ДЗ-оракул) на нашем примере и на 100 случайных вариантах: в ДЗ №3 г) текст «Δz = 50 − 20 = 30 мм» был записан для одного варианта — теперь считается по данным; в ДЗ №2а ответ «на отрезке EF» и второе решение S₂ — по факту варианта.','Разбор задачи: отметка «Финальный чертёж» больше не закрывает чертёж — она над текстом шага. На телефоне текст шага получает место по длине: короткий шаг отдаёт его чертежу, длинный — показывает пояснение и «почему» целиком; если текст длиннее экрана — снизу подсказка «дальше ↓».','3D к задачам: модель вписана в окно по самой задаче — в 1,5–2 раза крупнее; тоньше линии, меньше точки, насыщеннее цвета. На телефоне эпюр — врезкой в углу (нажми — крупно), модель занимает всё окно.','№ 54: расстояния на новой плоскости названы точно — координаты y (а не Δy).']},
   {v:'4.12',d:'16 октября 2026',items:['ДЗ №2 (НГ) сверено с методическими указаниями (Камзолов, Покровская, Добровольская, задача 6 «Построение пространственных фигур»): разборы 2а–2в идут по их схеме — анализ (каждое условие — геометрическое место точек), план решения, построения, исследование, доказательство. Обозначения как в методичке: α — плоскость основания, μ — плоскость симметрии, n — перпендикуляр, D — произвольная точка на нём, N — конец отрезка заданной длины, β ∥ α, l — линия пересечения.','ДЗ №2: точку пересечения прямой EF с плоскостью ищем, как в методичке, через горизонтально-проецирующий посредник γ (h₀γ ≡ E′F′) — l″ по точкам 1″, 2″. Видимость рёбер — по конкурирующим точкам (5″ ≡ 6″, 7′ ≡ 8′) с подписями на чертеже. Вопросы к защите — из методички.','ДЗ №2а (пирамида): в примере прямая EF теперь общего положения, как в вариантах задания. Вершина S строится полностью: через N — плоскость β ∥ ABC (h<sub>β</sub>, f<sub>β</sub>), EF заключаем в γ ⟂ π₁, 3′ = E′F′ ∩ h′<sub>β</sub>, 4′ = E′F′ ∩ f′<sub>β</sub>, ℓ″ = 3″4″, S″ = ℓ″ ∩ E″F″. Пояснено: AN — вспомогательный перпендикуляр, а не высота пирамиды. Прямая пересечения подписана ℓ, чтобы не путать с точкой 1.']},
@@ -28424,7 +28463,6 @@ function home(v){
     <a class="igh-c igh-learn" href="${H('ig','learn')}"><span class="igh-k">Учиться с нуля</span><b>Виды, разрезы, сечения</b><p>Один вариант от условия до чистовика: что строим, почему так и какой пункт ГОСТ.</p><span class="igh-a">Начать →</span></a>
    </div>
    <a class="igh-nk igh-pts" href="${H('ig','points')}"><span class="igh-k">Защита ДЗ 2 · вариант 5</span><b>Научись защищать точки</b><p>Как найти проекции точки на чертеже: преподаватель ставит точку на одном изображении — ты находишь две другие и отмечаешь видимость: выколотая точка или крестик. Виды и разрезы, точки внутри полости, 3D и тренажёр.</p><span class="igh-a">Начать →</span></a>
-   <a class="igh-nk" href="${H('ig','nk')}"><span class="igh-k">Тренажёр · проверь себя как нормоконтролёр</span><b>Найди нарушение ГОСТ на листе</b><p>В готовый чистовик подсажено одно нарушение: линия, штриховка, размер, буква разреза, проекционная связь. Найдёшь — научишься проверять и свой лист.</p><span class="igh-a">Начать →</span></a>
    <a class="igh-th" href="${H('ig','theory')}"><b>Теория ЕСКД</b><span>форматы, линии, шрифты, размеры, виды, разрезы, сечения, штриховка</span><i>→</i></a>`});
   const go=()=>{ const n=parseInt($(v,'#ighNum').value,10); if(n>=1&&n<=N) nav(H('ig','hw2',n)); else { $(v,'#ighNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
   $(v,'#ighGo').addEventListener('click',go); $(v,'#ighNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
@@ -28688,7 +28726,7 @@ function buildBlock(host,model,o){
    Деталь рисует WebGL (прозрачный фон), всё остальное — вектор поверх и под ней, в той же ортогональной камере.
    Изображения на плоскостях — виды из модели; плоскость остаётся плоской при повороте, поэтому её картинка
    переносится аффинным преобразованием точно. */
-function mountUnfold(host,model){
+function mountUnfold(host,model,opt){ opt=opt||{};   /* opt.pt = {p:[x,y,z], n:'A'} — своя точка (по умолчанию — передняя верхняя точка очерка) */
   host.innerHTML=`<div class="igu-st" id="iguSt"><svg class="igu-back" id="iguB"></svg><svg class="igu-front" id="iguF"></svg></div>
    <div class="igu-ph" role="tablist">${['Деталь','Проекции','Без детали','Развернули','Чертёж'].map((t,i)=>`<button data-i="${i}" class="${i?'':'on'}">${t}</button>`).join('')}</div>
    <div class="igu-ctl"><button class="igu-play" id="iguPlay" aria-label="Показать">▶</button><input type="range" id="iguT" min="0" max="1000" value="0" aria-label="Ход развёртки"></div>
@@ -28705,7 +28743,7 @@ function mountUnfold(host,model){
   const THK=2*Math.min(1.7,Math.max(1,630/(st.clientWidth||630))), thick=d=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(d.svg.replace(/stroke-width="([\d.]+)"/g,(m,v)=>'stroke-width="'+(+v*THK).toFixed(2)+'"'));
   const IMG={}; ['front0','left0','top'].forEach(k=>{ try{ IMG[k]=thick(IG3.drawing(model,k,900));   /* тот же размер, что у листа и шагов: чертёж считается один раз (вектор — размер не влияет на вид) */ }catch(e){ IMG[k]=''; } });
   /* точка A — передняя верхняя точка очерка */
-  const kp=keyPts(model).filter(p=>p.y<0).sort((p,q)=>q.z-p.z||p.y-q.y), A=kp.length?[kp[0].x,kp[0].y,kp[0].z]:[C[0],b[0][1],b[1][2]];
+  const kp=opt.pt?[]:keyPts(model).filter(p=>p.y<0).sort((p,q)=>q.z-p.z||p.y-q.y); let A=opt.pt?opt.pt.p:kp.length?[kp[0].x,kp[0].y,kp[0].z]:[C[0],b[0][1],b[1][2]], NM=opt.pt?opt.pt.n:'A';
   let T=0, axo=1, fi1=0, fi3=0, fade=0, cam0=null, proj=0, shown=0, ray=1, link=0, dr=0;   /* dr — переход к чертежу «как на листе» */
   const m1=(p,f)=>{ const d=Y-p[1]; return [p[0],Y-d*Math.cos(f),Z0-d*Math.sin(f)]; };
   const m3=(p,f)=>{ const d=Y-p[1]; return [X+d*Math.sin(f),Y-d*Math.cos(f),p[2]]; };
@@ -28748,18 +28786,18 @@ function mountUnfold(host,model){
     const A2=[A[0],Y,A[2]], A3=m3([X,A[1],A[2]],fi3), A1=m1([A[0],A[1],Z0],fi1);
     
     let q='';
-    if(ray>0){ const op=ray, L=(a,c)=>[a[0]+(c[0]-a[0])*proj,a[1]+(c[1]-a[1])*proj,a[2]+(c[2]-a[2])*proj]; q+=`<g opacity="${f(op)}">`+ln(A,L(A,A2),'#4f86c6',1,'5 4')+ln(A,L(A,[X,A[1],A[2]]),'#4f86c6',1,'5 4')+ln(A,L(A,[A[0],A[1],Z0]),'#4f86c6',1,'5 4')+`<circle cx="${f(P(A)[0])}" cy="${f(P(A)[1])}" r="4" fill="#9b2335"/>`+tx(A,'A','#9b2335',7,-6,'igu-pt')+'</g>'; }
+    if(ray>0){ const op=ray, L=(a,c)=>[a[0]+(c[0]-a[0])*proj,a[1]+(c[1]-a[1])*proj,a[2]+(c[2]-a[2])*proj]; q+=`<g opacity="${f(op)}">`+ln(A,L(A,A2),'#4f86c6',1,'5 4')+ln(A,L(A,[X,A[1],A[2]]),'#4f86c6',1,'5 4')+ln(A,L(A,[A[0],A[1],Z0]),'#4f86c6',1,'5 4')+`<circle cx="${f(P(A)[0])}" cy="${f(P(A)[1])}" r="4" fill="#9b2335"/>`+tx(A,NM,'#9b2335',7,-6,'igu-pt')+'</g>'; }
     /* связь через оси, без постоянной прямой и дуги: A″A′ — вертикаль, A″A‴ — горизонталь; глубина y одинакова на П₁ (от оси x) и на П₃ (от оси z) — отмечена засечками */
     if(link>0&&dr<.99){ const op=Math.min(1,link)*(1-dr), y1=[A[0],Y,Z0], y3=[X,Y,A[2]];
       const tk=(a,c)=>{ const p=P(a), r=P(c), dx=r[0]-p[0], dy=r[1]-p[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*5, ny=dx/l*5; return [p,r].map(z=>`<line x1="${f(z[0]-nx)}" y1="${f(z[1]-ny)}" x2="${f(z[0]+nx)}" y2="${f(z[1]+ny)}" stroke="#4f86c6" stroke-width="1.2"/>`).join(''); };
       q+=`<g opacity="${f(op)}">`+ln(A2,A1,'#9dbbe0',.7)+ln(A2,A3,'#9dbbe0',.7)+ln(y1,A1,'#4f86c6',1.8)+ln(y3,A3,'#4f86c6',1.8)+tk(y1,A1)+tk(y3,A3)+tx(m1([A[0],(Y+A[1])/2,Z0],fi1),'y','#2f5f9e',-14,4,'igu-pt')+tx([X+(Y-A[1])/2,Y,A[2]],'y','#2f5f9e',-4,-8,'igu-pt')+'</g>'; }
-    const dop=Math.max(0,(proj-.8)/.2)*(1-dr); if(dop>0.01) q+=`<g opacity="${f(dop)}">`+dot(A2,'#9b2335')+dot(A1,'#9b2335')+dot(A3,'#9b2335')+tx(A2,'A″','#9b2335',6,-6,'igu-pt')+tx(A1,'A′','#9b2335',6,14,'igu-pt')+tx(A3,'A‴','#9b2335',6,-6,'igu-pt')+'</g>';
+    const dop=Math.max(0,(proj-.8)/.2)*(1-dr); if(dop>0.01) q+=`<g opacity="${f(dop)}">`+dot(A2,'#9b2335')+dot(A1,'#9b2335')+dot(A3,'#9b2335')+tx(A2,NM+'″','#9b2335',6,-6,'igu-pt')+tx(A1,NM+'′','#9b2335',6,14,'igu-pt')+tx(A3,NM+'‴','#9b2335',6,-6,'igu-pt')+'</g>';
     Fr.innerHTML=q; }
   const od=M.v.draw; M.v.draw=sc2=>{ if(fade<0.99) od(sc2); over(); };
-  const CAP=['Деталь стоит в углу трёх плоскостей проекций: П₂ — сзади, П₁ — снизу, П₃ — справа. Берём точку A.',
-    'Проецируем: лучи из A перпендикулярны плоскостям. На П₂ получается главный вид, на П₃ — вид слева, на П₁ — вид сверху.','Убираем деталь — на плоскостях остались только её изображения.',
-    'Разворачиваем: П₁ — вниз вокруг оси x, П₃ — вправо вокруг оси z (оси поворота выделены красным). A″ и A′ встали на одну вертикаль, A″ и A‴ — на одну горизонталь; глубина y точки A одинакова на виде сверху и на виде слева.',
-    'Чертёж, как на листе: вид сверху — под главным видом, вид слева — справа от него. Осей проекций, плоскостей и точки A на листе нет — только виды и осевые линии (штрихпунктир).'];
+  const CAPf=()=>{ const a=NM; return ['Деталь стоит в углу трёх плоскостей проекций: П₂ — сзади, П₁ — снизу, П₃ — справа. Берём точку '+a+'.',
+    'Проецируем: лучи из '+a+' перпендикулярны плоскостям. На П₂ получается главный вид, на П₃ — вид слева, на П₁ — вид сверху. Каждая проекция помнит две координаты из трёх: '+a+'″ — x и z, '+a+'′ — x и y, '+a+'‴ — y и z.','Убираем деталь — на плоскостях остались только её изображения.',
+    'Разворачиваем: П₁ — вниз вокруг оси x, П₃ — вправо вокруг оси z (оси поворота выделены красным). '+a+'″ и '+a+'′ встали на одну вертикаль (общая x), '+a+'″ и '+a+'‴ — на одну горизонталь (общая z); глубина y одинакова на виде сверху и на виде слева — её и отмеряют.',
+    'Чертёж, как на листе: вид сверху — под главным видом, вид слева — справа от него. Осей проекций, плоскостей и точки '+a+' на листе нет — только виды и осевые линии (штрихпунктир).']; };
   const cap=host.querySelector('#iguCap'), rg=host.querySelector('#iguT'), pb=host.querySelector('#iguPlay');
   const ease=x=>x<=0?0:x>=1?1:x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2, win=(t,a,b)=>ease((t-a)/(b-a));
   function setT(t){ T=t; proj=win(t,.04,.2); shown=win(t,.1,.22); fade=win(t,.24,.38); ray=1-win(t,.3,.4); link=win(t,.7,.78); axo=1-win(t,.84,.95); dr=win(t,.86,.98);
@@ -28771,7 +28809,7 @@ function mountUnfold(host,model){
       let dy=0-cam0.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy));
       S.yaw=cam0.yaw+dy*k; S.pit=cam0.pit*(1-k)+1e-4*k; S.zoom=cam0.zoom+(zf-cam0.zoom)*k; S.tx=cam0.tx+(cx-C[0]-cam0.tx)*k; S.ty=cam0.ty+(cz-C[2]-cam0.ty)*k; }
     else if(cam0){ Object.assign(S,cam0); cam0=null; }
-    const ph=t<.04?0:t<.3?1:t<.42?2:t<.83?3:4; host.querySelectorAll('.igu-ph button').forEach(x=>x.classList.toggle('on',+x.dataset.i===ph)); cap.textContent=CAP[ph];
+    const ph=t<.04?0:t<.3?1:t<.42?2:t<.83?3:4; host.querySelectorAll('.igu-ph button').forEach(x=>x.classList.toggle('on',+x.dataset.i===ph)); cap.textContent=CAPf()[ph];
     rg.value=Math.round(t*1000); M.v.draw(fade>.5?0.6:1.25); }
   let anim=0; const go=(to,ms)=>{ cancelAnimationFrame(anim); const t0=T, s0=performance.now(), D=ms||Math.max(800,Math.abs(to-t0)*17000);
     const stp=now=>{ const u=Math.min(1,(now-s0)/D); setT(t0+(to-t0)*u); if(u<1) anim=requestAnimationFrame(stp); else pb.textContent=T>=1?'↺':'▶'; }; pb.textContent='❚❚'; anim=requestAnimationFrame(stp); };
@@ -28780,6 +28818,7 @@ function mountUnfold(host,model){
   rg.addEventListener('input',()=>{ cancelAnimationFrame(anim); pb.textContent='▶'; setT(rg.value/1000); });
   if(window.ResizeObserver) new ResizeObserver(()=>over()).observe(st);
   setTimeout(()=>setT(0),60);
+  return {setPt(p,n){ A=p; NM=n; setT(T); },go};
 }
 /* очередь расчётов решения: чертежи видов, шаги, лист. В фоне не считаем — каждый кусок занимает браузер на полсекунды
    и больше (на телефоне — секунды): кнопки не нажимаются, деталь в 3D дёргается. Вкладка достраивает нужное сама,
@@ -28971,7 +29010,8 @@ function theory(v,id){
   v.innerHTML=pageHTML({crumbs:cur?[[SUBJ.ig.name,H('ig')],['Теория',H('ig','theory')],[cur.t]]:[[SUBJ.ig.name,H('ig')],['Теория']],next:null,noBottom:true,cls:'igx',body:`
    <div class="intro"><h1>${cur?cur.t:'Теория'}</h1>${cur?'':'<p class="lead">Всё, что нужно для ДЗ и РК по оформлению и изображениям — коротко, по стандартам ЕСКД.</p>'}</div>
    <nav class="igx-th-nav" aria-label="Темы">${TH.map(x=>`<a href="${H('ig','theory',x.id)}" class="${cur&&cur.id===x.id?'on':''}">${x.t}</a>`).join('')}</nav>
-   ${cur?`<article class="igx-th">${cur.b}</article>`:`<div class="igx-th-list">${TH.map(x=>`<section class="igx-th" id="th-${x.id}"><h2>${x.t}</h2>${x.b}</section>`).join('')}</div>`}`});
+   ${cur?`<article class="igx-th">${cur.b}</article>`:`<div class="igx-th-list">${TH.map(x=>`<section class="igx-th" id="th-${x.id}"><h2>${x.t}</h2>${x.b}</section>`).join('')}</div>`}
+   ${cur?'':`<p class="igx-nk-l">Проверить себя на оформлении: <a href="${H('ig','nk')}">тренажёр «Нормоконтроль» — найди нарушение ГОСТ на готовом листе</a>.</p>`}`});
   NEXT=null; return (cur?cur.t+' · ':'')+'Теория · '+SUBJ.ig.name;
 }
 function view(v,r){
@@ -29546,7 +29586,17 @@ function pointsPage(v){
     ['Отверстия Ø10 во фланце','прямые','<b>окружности Ø10</b>','прямые','сначала вид сверху: точка на окружности, как у фланца']];
   v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['Учиться',H('ig','learn')],['Защита: проекции точки']],next:null,noBottom:true,cls:'igx igl igp',body:`
    <div class="igl-head"><span class="igx-k">Защита ДЗ 2 «Построение изображений» · вариант 5</span><h1>Научись защищать точки</h1>
-    <p class="lead">Как найти проекции точки на чертеже. На защите преподаватель ставит точку на одном изображении листа — на виде или на разрезе, в том числе внутри полости, — ты находишь две другие, отмечаешь, видны ли они, и объясняешь почему. Ниже — как отмечать, как отмерять и как представить точку, семь точек на листе варианта 5 по шагам и тренажёр.</p></div>
+    <p class="lead">Как найти проекции точки на чертеже. На защите преподаватель ставит точку на одном изображении листа — на виде или на разрезе, в том числе внутри полости, — ты находишь две другие, отмечаешь, видны ли они, и объясняешь почему. Ниже — откуда берутся проекции, как их отмечать и отмерять, семь точек на листе варианта 5 по шагам и тренажёр.</p></div>
+   <h2 class="igx-h2">Сначала — плоскости проекций</h2>
+   <section class="igp-pl">
+    <div class="igp-plw"><div class="igl-modes igp-tabs" role="tablist" aria-label="Точка">${tabs}</div><div class="igp-unf" id="igpUnf">${GL()?'':'<div class="igx-nogl">Браузер не поддерживает WebGL — 3D недоступно.</div>'}</div></div>
+    <div class="igp-plt">
+     <p>Чертёж — это деталь, поставленная в угол из трёх плоскостей: <b>П₂</b> — фронтальная, за деталью; <b>П₁</b> — горизонтальная, под ней; <b>П₃</b> — профильная, справа. Из точки на каждую плоскость падает перпендикуляр — проецирующий луч. Где он упал, там и проекция.</p>
+     <div class="igp-xyz"><div><b>A″</b>на П₂ · главный вид<small>знает x и z — нет глубины</small></div><div><b>A′</b>на П₁ · вид сверху<small>знает x и y — нет высоты</small></div><div><b>A‴</b>на П₃ · вид слева<small>знает y и z — нет x</small></div></div>
+     <p>Поэтому по одной проекции точку не найти: одной координаты не хватает — её подсказывает поверхность, на которой точка лежит. А по двум проекциям третья находится всегда: вторая знает то, чего нет у первой.</p>
+     <p>Нажми ▶: П₁ откинется вниз, П₃ — вправо, и плоскости лягут в лист. Вертикаль от ″ к ′ — это общая x, горизонталь от ″ к ‴ — общая z, а глубина y на П₁ и на П₃ одна и та же: поэтому её отмеряют от осей. Выбери точку — лучи и развёртка покажут именно её.</p>
+    </div>
+   </section>
    <h2 class="igx-h2">Как отмечают проекции</h2>
    <div class="igp-rules">
     <div class="igp-rule"><span class="igp-ax">${mk('v')} выколотая точка</span><b>Точку видно</b><p>Луч от точки к глазу идёт по воздуху: перед точкой нет материала.</p></div>
@@ -29615,7 +29665,7 @@ function pointsPage(v){
    </div>
    <a class="igx-xl igx-xl-go" href="${H('ig','learn')}"><b>Весь лист по шагам:</b> вид слева, разрезы и сечение А–А варианта 5 →</a>
    <a class="igx-xl" href="${H('ig','hw2',VN)}"><b>Вариант 5</b> — условие, 3D и готовый лист →</a>`});
-  const X=pex(); let e=0, i=0, m45=false;
+  const X=pex(); let e=0, i=0, m45=false, U=null;
   try{ const s=JSON.parse(sessionStorage.getItem('igp_at')||'[0,0]'); e=Math.max(0,Math.min(X.length-1,+s[0]||0)); i=Math.max(0,Math.min(X[e].s.length-1,+s[1]||0)); m45=!!s[2]; }catch(_){}
   /* 3D: деталь разрезана как изображение шага, от точки — луч к глазу */
   const st=$(v,'#igpSt'); let M=null, ov=null;
@@ -29625,19 +29675,21 @@ function pointsPage(v){
   if(GL()) lazy(st,()=>{ M=IGUI.mountViewer(st,MD(),{state:Object.assign({cut:0},X[e].cam),home:X[e].cam,onTouch:()=>{ const h=$(st,'.igx-hint'); if(h) h.style.opacity=0; }});
     if(!M){ st.insertAdjacentHTML('afterbegin','<div class="igx-nogl">Не удалось запустить 3D на этом устройстве.</div>'); return; }
     ov=ptOverlay(st,M,()=>({E:X[e],im:im()})); cam(); });
-  const show=()=>{ const E=X[e], s=E.s[i]; let svg=''; try{ svg=ptSVG(E,i,{m45}); }catch(err){ console.error(err); }
+  /* плоскости проекций и развёртка — для выбранной точки */
+  if(GL()) lazy($(v,'#igpUnf'),()=>{ try{ U=IGUI.mountUnfold($(v,'#igpUnf'),MD(),{pt:{p:X[e].p,n:X[e].n}})||null; }catch(err){ console.error(err); } });
+  const show=()=>{ const E=X[e], s=E.s[i]; let svg=''; U&&U.setPt(E.p,E.n); try{ svg=ptSVG(E,i,{m45}); }catch(err){ console.error(err); }
     $(v,'#igpPic').innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
     $(v,'#igpN').textContent=`Точка ${E.n} · шаг ${i+1} из ${E.s.length}`; $(v,'#igpT').textContent=s.t;
     $(v,'#igpD').innerHTML=`<b class="igl-h">Делаем</b><ol>${s.act.map(x=>`<li>${x}</li>`).join('')}</ol><b class="igl-h">Почему так</b><p>${s.why}</p>`;
     $(v,'#igpNums').innerHTML=E.s.map((x,j)=>`<button data-k="${j}" title="${x.t}" aria-label="Шаг ${j+1}. ${x.t}" class="${j===i?'on':j<i?'done':''}"></button>`).join('');
-    $$(v,'#igpEx button').forEach(b=>{ const on=+b.dataset.e===e; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
+    $$(v,'.igp-tabs button[data-e]').forEach(b=>{ const on=+b.dataset.e===e; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
     $$(v,'[data-m45]').forEach(b=>b.classList.toggle('on',(b.dataset.m45==='1')===m45));
     const last=i===E.s.length-1; $(v,'#igpSteps [data-a="-1"]').disabled=e===0&&i===0; const nb=$(v,'#igpSteps [data-a="1"]'); nb.disabled=last&&e===X.length-1; nb.textContent=last&&e<X.length-1?'Точка '+X[e+1].n+' →':'Дальше →';
     try{ sessionStorage.setItem('igp_at',JSON.stringify([e,i,m45?1:0])); }catch(_){} };
   $$(v,'#igpSteps [data-a]').forEach(b=>b.addEventListener('click',()=>{ const d=+b.dataset.a, E=X[e];
     if(d>0&&i===E.s.length-1&&e<X.length-1){ e++; i=0; } else if(d<0&&i===0&&e>0){ e--; i=X[e].s.length-1; } else i=Math.max(0,Math.min(E.s.length-1,i+d)); show(); cam(); buzz(); }));
   $(v,'#igpNums').addEventListener('click',ev=>{ const b=ev.target.closest('button[data-k]'); if(!b) return; i=+b.dataset.k; show(); cam(); });
-  $$(v,'#igpEx button').forEach(b=>b.addEventListener('click',()=>{ e=+b.dataset.e; i=0; show(); cam(); buzz(); }));
+  $$(v,'.igp-tabs button[data-e]').forEach(b=>b.addEventListener('click',()=>{ e=+b.dataset.e; i=0; show(); cam(); buzz(); }));
   $$(v,'[data-m45]').forEach(b=>b.addEventListener('click',()=>{ m45=b.dataset.m45==='1'; show(); buzz(); }));
   cam(false); show(); trainer(v);
   NEXT=null; return 'Научись защищать точки · '+SUBJ.ig.name; }
