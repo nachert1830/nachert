@@ -85,8 +85,13 @@ async function main(){
   let me=null; try{ me=await telegram(token,'getMe'); say('  бот: @'+me.username); }
   catch(e){ if(/Unauthorized|Not Found/i.test(e.message)) throw new Error('Telegram не принял токен — проверьте, что скопировали его целиком из @BotFather.');
     say('  Telegram с этого компьютера не открывается — это нормально, бота настроит сам клуб из облака.');
-    let u=arg('bot')||await ask('Username бота (как в @BotFather, например nachert_club_bot): ');
-    u=u.replace(/^@/,'').trim(); if(!/^[A-Za-z][A-Za-z0-9_]{3,30}bot$/i.test(u)) throw new Error('Username бота — латиница, на конце «bot», например nachert_club_bot.');
+    /* принимаем «@имя», «t.me/имя», «https://t.me/имя»; при ошибке спрашиваем ещё раз */
+    const clean=x=>String(x||'').trim().replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i,'').replace(/^@/,'').replace(/[\s\/]+$/,'');
+    const okName=x=>/^[A-Za-z][A-Za-z0-9_]{3,30}bot$/i.test(x);
+    let u=clean(arg('bot'));
+    for(let i=0;!okName(u)&&i<3;i++){ if(u||i) say('  «'+u+'» — не похоже на username бота. Он латиницей и кончается на «bot»; точный — в @BotFather → /mybots.');
+      u=clean(await ask('Username бота (как в @BotFather → /mybots, например nachert_club_bot): ')); }
+    if(!okName(u)) throw new Error('Не получилось прочитать username бота. Запустите так:  node server/tools/deploy.js --bot=имя_бота');
     me={username:u}; }
   if(!owner){ owner=process.env.CLUB_OWNER_TG||await ask('Ваш Telegram id (число; узнать — написать боту @userinfobot): '); }
   if(!/^\d{3,16}$/.test(owner)) throw new Error('Telegram id — это число, например 123456789.');
