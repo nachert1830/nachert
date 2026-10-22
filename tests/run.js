@@ -146,7 +146,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       IGL.PEX().forEach(E=>{ const name='точка '+E.n, j=J(...E.p); if(E.cutp?!(j<-0.05&&Math.abs(E.p[E.cutp==='L'?0:1])<1e-9):Math.abs(j)>0.05) bad.push({name,rule:E.cutp?'точка в штриховке: в материале, в секущей плоскости':'точка на поверхности',msg:'J = '+j.toFixed(3)});
         IGL.ptSVG(E,0); const got=['F','T','L'].map(v=>E.vis[v]).join('');
         if(got!==E.exp) bad.push({name,rule:'видимость в тексте = видимость по модели',msg:'текст: '+E.exp+', модель: '+got+' (v — видна, h — закрыта, r — убрана разрезом)'});
-        E.s.forEach((s,i)=>{ const tx=(s.act.join(' ')+' '+s.why).replace(/<[^>]+>/g,'');
+        E.s.forEach((s,i)=>{ const tx=(s.act.join(' ')+' '+(s.why||'')).replace(/<[^>]+>/g,'');
           if(new RegExp('\\('+E.n+'[″′‴]\\)').test(tx)) bad.push({name,rule:'видимость — отметкой, не скобками',msg:'шаг '+(i+1)});
           try{ const sv=IGL.ptSVG(E,i); if(!/<svg/.test(sv)||sv.indexOf(E.n+'')<0) bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+' пустой'}); }catch(e){ bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+': '+e}); } }); });
       return bad; });
