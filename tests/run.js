@@ -138,7 +138,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
 
   /* 3ж. «Научись защищать точки» (#/ig/points): каждая точка разбора лежит на поверхности детали варианта 5 (точка в штриховке — в материале, в секущей плоскости), видимость, под которую
      написан текст шага (exp: главный вид, вид сверху, вид слева), совпадает с видимостью по модели на изображениях листа (луч к глазу,
-     разрезы — как на листе), чертёж каждого шага строится. Тренажёр нажатиями: верное место и верная отметка засчитываются;
+     разрезы — как на листе), и сверена с эталонным лучом (шаг 0,01 мм, любой материал — крестик); чертёж каждого шага строится. Тренажёр нажатиями: верное место и верная отметка засчитываются;
      перепутанные перёд и зад или не та отметка (выколотая точка ↔ крестик) — нет */
   { const tp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const te=[]; tp.on('pageerror',e=>te.push(String(e)));
     await tp.goto(URL+'#/ig/points'); await tp.waitForTimeout(1500);
@@ -149,6 +149,12 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
         E.s.forEach((s,i)=>{ const tx=(s.act.join(' ')+' '+(s.why||'')).replace(/<[^>]+>/g,'');
           if(new RegExp('\\('+E.n+'[″′‴]\\)').test(tx)) bad.push({name,rule:'видимость — отметкой, не скобками',msg:'шаг '+(i+1)});
           try{ const sv=IGL.ptSVG(E,i); if(!/<svg/.test(sv)||sv.indexOf(E.n+'')<0) bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+' пустой'}); }catch(e){ bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+': '+e}); } }); });
+      /* видимость — сверка с эталонным лучом: шаг 0,01 мм, любой материал на пути к глазу — крестик (точки разбора и 300 случайных точек тренажёра) */
+      const {stOn,imJ,PSF,PVD}=IGL.ptVis, ref=(p,n,v)=>{ const d=PVD[v], q=p.map((c,i)=>c+n[i]*.06); for(let s=0.01;s<200;s+=0.01) if(imJ(v,[q[0]+d[0]*s,q[1]+d[1]*s,q[2]+d[2]*s])<-1e-4) return 'h'; return 'v'; };
+      const vchk=(p,n,tag)=>['F','T','L'].forEach(v=>{ const a=stOn(p,n,v); if(a!=='r'&&a!==ref(p,n,v)) bad.push({name:tag,rule:'видимость = эталонный луч',msg:v+' '+p.map(x=>x.toFixed(2)).join(', ')+': на сайте '+a}); });
+      IGL.PEX().forEach(E=>vchk(E.p,E.nr,'точка '+E.n)); for(let i=0;i<300;i++){ const s=PSF[i%PSF.length], G=s.g(Math.random); if(!s.ok||s.ok(G.p)) vchk(G.p,G.n,'тренажёр: '+s.t); }
+      /* у самого очерка конуса: на долю градуса за очерком точка уже за материалом — крестик, на долю градуса перед ним — видна */
+      const rC=z=>40-(z-25)*10/95; [40,70,100].forEach(z=>[0.5,1,2,4].forEach(dg=>[1,-1].forEach(sg=>{ const r=rC(z), a=Math.PI-sg*dg*Math.PI/180, c=Math.cos(a), sn=Math.sin(a); vchk([r*c,r*sn,z],[c,sn,0.1],'конус у очерка'); }))); 
       return bad; });
     const cnt={ok:0,n:0,mir:0,sym:0};
     for(let t=0;t<18;t++){ const mode=t%3; await tp.click('#igpTrNext'); await tp.evaluate(()=>document.getElementById('igpTrPic').scrollIntoView({block:'center'}));
