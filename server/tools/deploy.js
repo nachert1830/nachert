@@ -14,7 +14,7 @@ const ROOT=path.join(__dirname,'..','..');
 const arg=k=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.slice(a.indexOf('=')+1):true):null; };
 const YC=process.env.YC_BIN||'yc';
 const NAMES={fn:'club-fn',gw:'club-gw',db:'club',secret:'club-secrets',api:'nachert-club-api',remind:'nachert-club-remind',gateway:'nachert-club',trigger:'club-remind'};
-const TABLES=['users','identities','invites','sessions','magic','progress','feedback','config','ratelimit','tgseen','remsent'];
+const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent'];
 
 const say=s=>console.log(s), step=s=>console.log('\n▶ '+s);
 /* сеть до облака бывает нестабильной (VPN, Wi-Fi общежития): при сетевой ошибке — до 3 попыток с паузой */
@@ -115,7 +115,6 @@ async function main(){
 
   step('Секреты в Lockbox');
   if(!payload.YDB_KEY_ID){ const k=yc(['iam','access-key','create','--service-account-id',sa.fn.id,'--description','club: YDB Document API']); payload.YDB_KEY_ID=k.access_key.key_id; payload.YDB_SECRET=k.secret; }
-  payload.SECRET_KEY=payload.SECRET_KEY||crypto.randomBytes(48).toString('base64');
   payload.TG_WEBHOOK_SECRET=payload.TG_WEBHOOK_SECRET||crypto.randomBytes(32).toString('hex');
   const changed=payload.TG_BOT_TOKEN!==token; payload.TG_BOT_TOKEN=token;
   const entries=JSON.stringify(Object.keys(payload).sort().map(k=>({key:k,text_value:payload[k]})));
@@ -148,7 +147,7 @@ async function main(){
   const files=packageFiles(), z=zip(files), zf=path.join(os.tmpdir(),'club-'+Date.now()+'.zip'); fs.writeFileSync(zf,z);
   say('  пакет: '+files.length+' файлов, '+Math.round(z.length/1024)+' КБ');
   const env=['ORIGIN='+origin,'TG_BOT_NAME='+me.username,'ADMIN_TG_IDS='+owner,'YDB_DOCAPI_ENDPOINT='+endpoint,'MAIN_URL=https://nachert1830.ru'].join(',');
-  const secrets=[]; ['SECRET_KEY','TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET'].forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
+  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET'].forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','10s'],['remind','server/index.remind','120s']]){
     yc(['serverless','function','version','create','--function-id',fn[k].id,'--runtime','nodejs22','--entrypoint',entry,'--memory','256m','--execution-timeout',timeout,
       '--service-account-id',sa.fn.id,'--source-path',zf,'--environment',env].concat(secrets)); say('  '+NAMES[k]+': новая версия'); }
@@ -172,10 +171,8 @@ async function main(){
   say(ok?'  клуб работает':'  пока не отвечает — подождите минуту и откройте адрес ниже');
 
   say('\n════════════════════════════════════════════');
-  say('Готово. Осталось одно действие в Telegram:');
-  say('  @BotFather → /setdomain → выберите @'+me.username+' → отправьте: '+domain);
-  say('\nПотом откройте: '+origin);
-  say('и войдите через Telegram — вы владелец (админ).');
+  say('Готово. Откройте: '+origin);
+  say('«Войти через Telegram» → в чате с @'+me.username+' нажмите «Старт» и «Войти» — вы владелец (админ).');
   say('════════════════════════════════════════════');
 }
 if(require.main===module) main().catch(e=>{ console.error('\n✖ '+e.message+'\n\nЕсли непонятно, что делать, — пришлите этот текст Claude.'); process.exit(1); });

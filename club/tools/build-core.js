@@ -10,7 +10,7 @@
 const http=require('http'), fs=require('fs'), path=require('path'), crypto=require('crypto');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const ROOT=path.join(__dirname,'..','..'), CORE=path.join(__dirname,'..','core'), CHECK=process.argv.includes('--check');
-const FONTS=['golos-text-cyrillic','golos-text-latin','geologica-cyrillic','geologica-latin','liberation-serif-italic'];
+const FONTS=['golos-text-cyrillic','golos-text-latin','geologica-cyrillic','geologica-latin','ibm-plex-mono-cyrillic-500','ibm-plex-mono-latin-500','liberation-serif-italic'];
 const SAMPLES=[['ig-v5-clean',5,null],['ig-v8-thin',8,'thin'],['ig-v12-numline',12,'numline']];
 
 function serve(){ return new Promise(res=>{ const s=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const p=path.join(ROOT,f);

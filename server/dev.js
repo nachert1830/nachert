@@ -1,19 +1,18 @@
 /* Локальная эмуляция клуба: node server/dev.js  →  http://localhost:8787
-   Без аккаунтов и ключей: Telegram и почта эмулируются, база — файл server/.data/dev-db.json (или память с --memory).
+   Без аккаунтов и ключей: бот эмулируется, база — файл server/.data/dev-db.json (или память с --memory).
    Тот же обработчик, что в облаке (lib/app.js), плюс служебные адреса /dev/* — их в облаке нет:
-     /dev/tg-sign?id=…&first_name=…  — подписанные «данные Telegram» для кнопки «Войти (эмуляция Telegram)»
-     /dev/outbox                     — письма со ссылками и сообщения бота
+     POST /dev/bot-login {token, id, first_name, deny} — «нажать Старт и Войти» в боте за участника (как пришло бы на вебхук)
+     /dev/outbox                     — сообщения бота
      POST /dev/remind                — прогнать напоминания сейчас;  POST /dev/invite — новое приглашение
      POST /dev/clock {offsetMs}      — сдвиг часов сервера (только с --test)
    Ключи: --port=8787  --memory  --fresh (стереть файл базы)  --test  --quiet
-   Владелец в эмуляции — Telegram id 1000001 (ADMIN_TG_IDS), письма на owner@example.com — тоже владелец. */
+   Владелец в эмуляции — Telegram id 1000001 (ADMIN_TG_IDS). */
 'use strict';
 const http=require('http'), fs=require('fs'), path=require('path'), crypto=require('crypto');
 const {createApp}=require('./lib/app');
 const {fromEvent}=require('./lib/http');
 const {memoryStore}=require('./lib/store/memory');
-const {signLogin,botClient}=require('./lib/telegram');
-const {mailer}=require('./lib/mail');
+const {botClient}=require('./lib/telegram');
 const C=require('./lib/crypto');
 
 const arg=(k,d)=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.split('=')[1]:true):d; };
@@ -23,15 +22,14 @@ if(process.env.NODE_ENV==='production'){ console.error('dev.js — только 
 if(arg('fresh')&&fs.existsSync(DBF)) fs.unlinkSync(DBF);
 
 const BOT_TOKEN='1000000:DEV-local-emulation-not-a-secret';
-let secret='dev-secret-'+crypto.randomBytes(16).toString('hex');
-if(!MEM){ fs.mkdirSync(DATA,{recursive:true}); const sf=path.join(DATA,'dev-secret'); if(fs.existsSync(sf)) secret=fs.readFileSync(sf,'utf8'); else fs.writeFileSync(sf,secret); }
+if(!MEM) fs.mkdirSync(DATA,{recursive:true});
 const origin='http://localhost:'+PORT;
-const cfg={dev:true,origin,secure:false,secret,botToken:BOT_TOKEN,botName:'nachert_club_dev_bot',webhookSecret:'dev-webhook-secret',tgMaxAge:600,
-  adminTg:['1000001'],adminEmails:['owner@example.com'],mainUrl:process.env.MAIN_URL||'https://nachert1830.ru',week1:process.env.CLUB_WEEK1||''};
+const cfg={dev:true,origin,secure:false,botToken:BOT_TOKEN,botName:'nachert_club_dev_bot',webhookSecret:'dev-webhook-secret',
+  adminTg:['1000001'],mainUrl:process.env.MAIN_URL||'https://nachert1830.ru',week1:process.env.CLUB_WEEK1||''};
 const outbox=[]; let offset=0;
 const log=QUIET?{log(){},error:(...a)=>console.error(...a)}:console;
 const store=memoryStore(MEM?null:DBF);
-const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,mail:mailer({dev:true,outbox,log}),bot:botClient({dev:true,outbox})});
+const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox})});
 
 async function newInvite(label,days){ const code=C.token(16), t=Date.now()+offset;
   await store.put('invites',{id:C.sha256(code),label:label||'эмуляция',role:'member',createdAt:t,expiresAt:t+(days||14)*864e5,createdBy:'dev'});
@@ -45,9 +43,11 @@ const srv=http.createServer(async(q,r)=>{
     const u=new URL(q.url,origin), body=await readBody(q);
     if(q.headers.host!=='localhost:'+PORT){ r.writeHead(302,{Location:origin+u.pathname+u.search}); return r.end(); }
     if(u.pathname.startsWith('/dev/')){
-      if(u.pathname==='/dev/tg-sign'){ const id=String(u.searchParams.get('id')||'1000002').replace(/\D/g,'').slice(0,12)||'1000002';
-        const d={id,first_name:String(u.searchParams.get('first_name')||'Тестировщик').slice(0,40),auth_date:String(Math.floor((Date.now()+offset)/1000)+(+u.searchParams.get('age')||0)*-1)};
-        if(u.searchParams.get('username')) d.username=u.searchParams.get('username'); d.hash=signLogin(d,BOT_TOKEN); return send(r,200,d); }
+      if(u.pathname==='/dev/bot-login'&&q.method==='POST'){ let b={}; try{ b=JSON.parse(body||'{}'); }catch(e){}
+        const id=String(b.id||'1000002').replace(/\D/g,'').slice(0,12)||'1000002', from={id:+id,first_name:String(b.first_name||'Тестировщик').slice(0,40)};
+        await app.onUpdate({message:{from,chat:{id:+id},text:'/start l_'+String(b.token||'')}});
+        await app.onUpdate({callback_query:{id:'dev',from,data:(b.deny?'no:':'ok:')+app._loginId(String(b.token||''))}});
+        return send(r,200,{ok:true}); }
       if(u.pathname==='/dev/outbox') return send(r,200,{mail:outbox.filter(x=>x.to!=='telegram'),telegram:outbox.filter(x=>x.to==='telegram')});
       if(u.pathname==='/dev/remind'&&q.method==='POST') return send(r,200,await app.remind());
       if(u.pathname==='/dev/invite'&&q.method==='POST'){ let b={}; try{ b=JSON.parse(body||'{}'); }catch(e){} return send(r,200,await newInvite(b.label,b.days)); }
@@ -68,9 +68,9 @@ const srv=http.createServer(async(q,r)=>{
 srv.listen(PORT,'127.0.0.1',async()=>{
   if(!QUIET){ const inv=await newInvite('приглашение из консоли');
     console.log('\n  Клуб Начерта (локальная эмуляция): '+origin+'\n'+
-      '  Владелец: кнопка «Войти (эмуляция Telegram)» с id 1000001 — или почта owner@example.com\n'+
+      '  Владелец: «Войти через Telegram» → в окне эмуляции бота id 1000001\n'+
       '  Приглашение для тестировщика: '+inv.link+'\n'+
-      '  Письма и сообщения бота: '+origin+'/dev/outbox\n'+
+      '  Сообщения бота: '+origin+'/dev/outbox\n'+
       '  База: '+(MEM?'в памяти':DBF)+'\n'); }
   if(!TEST) setInterval(()=>app.remind().catch(e=>console.error('напоминания',e)),60e3).unref();
   if(process.send) process.send({ready:true,port:PORT});

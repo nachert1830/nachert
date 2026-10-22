@@ -1,66 +1,64 @@
-/* Вход и регистрация: Telegram (подпись, свежесть, повтор), ссылка на почту (повтор, просрочка), только по приглашению. */
+/* Вход через бота и регистрация: только по приглашению; подтвердить может только тот, кто нажал «Старт»;
+   вебхук без секрета не принимается; 10 минут; один раз; токен — только хешем. */
 'use strict';
 const test=require('node:test'), assert=require('node:assert/strict');
 const {club}=require('./helpers');
-const {verifyLogin,signLogin}=require('../lib/telegram');
 
-test('Telegram: настоящая подпись принимается, поддельная — нет',()=>{
-  const now=Date.parse('2026-10-17T10:00:00Z'), d={id:'42',first_name:'Аня',username:'anya',auth_date:String(now/1000-30)}; d.hash=signLogin(d,'1:T');
-  assert.equal(verifyLogin(d,'1:T',now).ok,true);
-  assert.equal(verifyLogin(Object.assign({},d,{hash:'0'.repeat(64)}),'1:T',now).reason,'подпись не сходится');
-  assert.equal(verifyLogin(Object.assign({},d,{id:'43'}),'1:T',now).reason,'подпись не сходится','подменённый id');
-  assert.equal(verifyLogin(d,'1:OTHER',now).reason,'подпись не сходится','подпись другого бота');
-  const {hash,...noHash}=d; assert.equal(verifyLogin(noHash,'1:T',now).ok,false);
-  const old={id:'42',first_name:'Аня',auth_date:String(now/1000-3600)}; old.hash=signLogin(old,'1:T'); assert.equal(verifyLogin(old,'1:T',now,600).reason,'данные входа устарели');
-  const fut={id:'42',first_name:'Аня',auth_date:String(now/1000+600)}; fut.hash=signLogin(fut,'1:T'); assert.equal(verifyLogin(fut,'1:T',now).reason,'auth_date из будущего');
-  assert.equal(verifyLogin(d,'',now).ok,false,'без токена бота вход закрыт');
-});
-
-test('без приглашения — отказ (Telegram и почта)',async()=>{
+test('без приглашения — отказ',async()=>{
   const c=club();
-  const r=await c.call('POST','/api/auth/telegram',{auth:c.tg(555,'Чужой'),consent:c.consent});
-  assert.equal(r.status,403); assert.equal(r.data.needInvite,true);
-  assert.equal((await c.call('GET','/api/me')).status,401);
-  const e=await c.call('POST','/api/auth/email/start',{email:'stranger@example.com',consent:c.consent});
-  assert.equal(e.status,200,'ответ одинаковый — по нему нельзя узнать, есть ли адрес'); assert.equal(c.outbox.filter(x=>x.to==='stranger@example.com').length,0,'письмо не отправлено');
-  const fake=await c.call('POST','/api/auth/telegram',{auth:c.tg(556,'Чужой'),invite:'A'.repeat(22),consent:c.consent});
-  assert.equal(fake.status,403); assert.match(fake.data.error,/не найдено/);
+  const r=await c.login(555,'Чужой'); assert.equal(r.status,403); assert.equal(r.data.needInvite,true);
+  assert.equal((await c.call('GET','/api/me',undefined,{as:'u555'})).status,401);
+  const fake=await c.call('POST','/api/auth/bot/start',{invite:'A'.repeat(22),consent:c.consent}); assert.equal(fake.status,403); assert.match(fake.data.error,/не найдено/);
 });
 
-test('Telegram: поддельная подпись, устаревшие данные и повтор отклоняются; приглашение одноразовое',async()=>{
+test('вход через бота: приглашение одноразовое, участник потом входит без него, данных — минимум',async()=>{
   const c=club(); assert.equal((await c.owner()).status,200);
   const code=await c.invite();
-  const forged=c.tg(600,'Поддельный'); forged.first_name='Подмена';
-  assert.equal((await c.call('POST','/api/auth/telegram',{auth:forged,invite:code,consent:c.consent},{as:'x'})).status,401);
-  assert.equal((await c.call('POST','/api/auth/telegram',{auth:c.tg(600,'Старый',{token:'1:OTHER'}),invite:code,consent:c.consent},{as:'x'})).status,401,'подпись чужого бота');
-  assert.equal((await c.call('POST','/api/auth/telegram',{auth:c.tg(600,'Старый',{age:3600}),invite:code,consent:c.consent},{as:'x'})).status,401,'auth_date старше 10 минут');
-  const noConsent=await c.call('POST','/api/auth/telegram',{auth:c.tg(600,'Аня'),invite:code},{as:'x'}); assert.equal(noConsent.status,400); assert.equal(noConsent.data.needConsent,true);
-  const ok=c.tg(600,'Аня'), r=await c.call('POST','/api/auth/telegram',{auth:ok,invite:code,consent:c.consent},{as:'a'});
-  assert.equal(r.status,200); assert.equal(r.data.isNew,true); assert.equal(r.data.user.role,'member'); assert.equal(r.data.user.name,'Аня');
-  const replay=await c.call('POST','/api/auth/telegram',{auth:ok,invite:code,consent:c.consent},{as:'b'}); assert.equal(replay.status,401); assert.match(replay.data.error,/уже использованы/);
-  const second=await c.call('POST','/api/auth/telegram',{auth:c.tg(601,'Боб'),invite:code,consent:c.consent},{as:'b'}); assert.equal(second.status,403); assert.match(second.data.error,/уже использовано/);
-  c.clock.t+=1000; const again=await c.call('POST','/api/auth/telegram',{auth:c.tg(600,'Аня')},{as:'c'}); assert.equal(again.status,200,'участник входит без приглашения'); assert.equal(again.data.isNew,false);
-  const u=await c.store.get('users',r.data.user.id); assert.equal(u.tgId,'600'); assert.equal(u.username,undefined,'username не хранится'); assert.equal(u.consent.photos,false);
+  const noConsent=await c.login(600,'Аня',{invite:code,consent:null}); assert.equal(noConsent.status,400); assert.equal(noConsent.data.needConsent,true);
+  const r=await c.login(600,'Аня',{invite:code}); assert.equal(r.status,200); assert.equal(r.data.isNew,true); assert.equal(r.data.user.role,'member'); assert.equal(r.data.user.name,'Аня');
+  assert.equal((await c.login(601,'Боб',{invite:code})).status,403,'приглашение уже использовано');
+  const again=await c.login(600,'Аня'); assert.equal(again.status,200); assert.equal(again.data.isNew,false);
+  const u=await c.store.get('users',r.data.user.id);
+  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','id','invite','lastLogin','method','name','reminders','role','tgId']);
+  assert.equal(u.tgId,'600'); assert.equal(u.reminders.canWrite,true,'нажал «Старт» — бот может писать');
+  const logs=await c.store.scan('loginlog'); assert.ok(logs.every(x=>!('ua' in x)),'строка браузера не хранится');
 });
 
-test('почта: ссылка на 15 минут, один раз; токен хранится только хешем; адрес не хранится',async()=>{
+test('чужое подтверждение, «Это не я», просрочка и повтор отклоняются; токен в базе только хешем',async()=>{
   const c=club(); await c.owner(); const code=await c.invite();
-  const s=await c.call('POST','/api/auth/email/start',{email:'Student@Example.com ',name:'Маша',invite:code,consent:c.consent},{as:'x'}); assert.equal(s.status,200);
-  const mail=c.outbox.find(x=>x.to==='student@example.com'); assert.ok(mail,'письмо ушло'); const tok=/#\/magic\/([A-Za-z0-9_-]+)/.exec(mail.text)[1];
-  const dump=JSON.stringify(c.store._dump()); assert.ok(!dump.includes(tok),'токен в базе не лежит'); assert.ok(!/student@example\.com/i.test(dump),'адрес в базе не лежит');
-  const v=await c.call('POST','/api/auth/email/verify',{token:tok},{as:'m'}); assert.equal(v.status,200); assert.equal(v.data.user.name,'Маша'); assert.equal(v.data.user.method,'email');
-  const replay=await c.call('POST','/api/auth/email/verify',{token:tok},{as:'z'}); assert.equal(replay.status,400); assert.match(replay.data.error,/уже использована/);
-  await c.call('POST','/api/auth/email/start',{email:'student@example.com'},{as:'y'});
-  const tok2=/#\/magic\/([A-Za-z0-9_-]+)/.exec(c.outbox.filter(x=>x.to==='student@example.com').at(-1).text)[1];
-  c.clock.t+=16*60e3; const exp=await c.call('POST','/api/auth/email/verify',{token:tok2},{as:'y'}); assert.equal(exp.status,400); assert.match(exp.data.error,/устарела/);
-  assert.equal((await c.call('POST','/api/auth/email/verify',{token:'x'.repeat(43)},{as:'y'})).status,400,'выдуманная ссылка');
+  const s=await c.call('POST','/api/auth/bot/start',{invite:code,consent:c.consent},{as:'victim'}); const tok=s.data.token;
+  assert.match(s.data.link,/^https:\/\/t\.me\/club_bot\?start=l_[A-Za-z0-9_-]{32}$/);
+  assert.ok(!JSON.stringify(c.store._dump()).includes(tok),'токен входа в базе не лежит');
+  assert.equal((await c.call('POST','/api/auth/bot/poll',{token:tok},{as:'victim'})).data.status,'pending');
+  await c.startBot(tok,700,'Аня');
+  assert.equal((await c.call('POST','/api/auth/bot/poll',{token:tok},{as:'victim'})).data.status,'asked');
+  await c.press(tok,701,'ok');   /* кнопку нажимает другой человек — не засчитывается */
+  assert.equal((await c.call('POST','/api/auth/bot/poll',{token:tok},{as:'victim'})).data.status,'asked');
+  await c.startBot(tok,701,'Злоумышленник');   /* второй «Старт» по той же ссылке не перехватывает вход */
+  await c.press(tok,701,'ok'); assert.equal((await c.call('POST','/api/auth/bot/poll',{token:tok},{as:'victim'})).data.status,'asked');
+  await c.press(tok,700,'no');
+  const d=await c.call('POST','/api/auth/bot/poll',{token:tok},{as:'victim'}); assert.equal(d.status,403); assert.equal(d.data.denied,true);
+  const s2=await c.call('POST','/api/auth/bot/start',{invite:code,consent:c.consent},{as:'v2'}); await c.startBot(s2.data.token,700,'Аня'); await c.press(s2.data.token,700,'ok');
+  const ok=await c.call('POST','/api/auth/bot/poll',{token:s2.data.token},{as:'v2'}); assert.equal(ok.status,200);
+  const rep=await c.call('POST','/api/auth/bot/poll',{token:s2.data.token},{as:'v3'}); assert.equal(rep.status,410,'второй раз этим входом не войти');
+  const s3=await c.call('POST','/api/auth/bot/start',{},{as:'late'}); c.clock.t+=11*60e3; await c.startBot(s3.data.token,700,'Аня');
+  assert.ok(c.outbox.some(x=>x.body&&/устарела/.test(x.body.text||'')),'бот говорит, что ссылка устарела');
+  assert.equal((await c.call('POST','/api/auth/bot/poll',{token:s3.data.token},{as:'late'})).status,410);
+  assert.equal((await c.call('POST','/api/auth/bot/poll',{token:'x'.repeat(32)},{as:'late'})).status,410,'выдуманный токен');
 });
 
-test('почта: владелец без приглашения; согласие спрашивается, не тратя ссылку',async()=>{
-  const c=club(); await c.call('POST','/api/auth/email/start',{email:'owner@example.com'},{as:'o'});
-  const tok=/#\/magic\/([A-Za-z0-9_-]+)/.exec(c.outbox.at(-1).text)[1];
-  const a=await c.call('POST','/api/auth/email/verify',{token:tok},{as:'o'}); assert.equal(a.status,400); assert.equal(a.data.needConsent,true);
-  const b=await c.call('POST','/api/auth/email/verify',{token:tok,consent:c.consent},{as:'o'}); assert.equal(b.status,200); assert.equal(b.data.user.role,'admin');
+test('вебхук без секрета не принимается — подделать «Старт» и «Войти» нельзя',async()=>{
+  const c=club(); await c.owner(); const code=await c.invite();
+  const s=await c.call('POST','/api/auth/bot/start',{invite:code,consent:c.consent},{as:'x'});
+  for(const h of [{},{'x-telegram-bot-api-secret-token':'wrong'}]){
+    const r=await c.call('POST','/api/tg/webhook',JSON.stringify({message:{from:{id:1000001},text:'/start l_'+s.data.token}}),{headers:h,as:'evil'}); assert.equal(r.status,403); }
+  assert.equal((await c.call('POST','/api/auth/bot/poll',{token:s.data.token},{as:'x'})).data.status,'pending');
+});
+
+test('владелец входит без приглашения; согласие спрашивается, не тратя подтверждённый вход',async()=>{
+  const c=club(); const s=await c.call('POST','/api/auth/bot/start',{},{as:'o'}); await c.startBot(s.data.token,1000001,'Андрей'); await c.press(s.data.token,1000001,'ok');
+  const a=await c.call('POST','/api/auth/bot/poll',{token:s.data.token},{as:'o'}); assert.equal(a.status,400); assert.equal(a.data.needConsent,true);
+  const b=await c.call('POST','/api/auth/bot/poll',{token:s.data.token,consent:c.consent},{as:'o'}); assert.equal(b.status,200); assert.equal(b.data.user.role,'admin');
 });
 
 test('сессия: cookie HttpOnly, Secure, SameSite=Lax, __Host-; выход гасит сессию',async()=>{
@@ -70,7 +68,7 @@ test('сессия: cookie HttpOnly, Secure, SameSite=Lax, __Host-; выход �
   assert.equal((await c.call('GET','/api/me',undefined,{as:'owner'})).status,200);
   const cookie=c.jar.owner.cookie; await c.call('POST','/api/auth/logout',{},{as:'owner'});
   c.jar.owner={cookie,csrf:''}; assert.equal((await c.call('GET','/api/me',undefined,{as:'owner'})).status,401,'старая cookie не работает');
-  c.clock.t+=1000; const r2=await c.owner(); assert.equal(r2.status,200);
+  assert.equal((await c.owner()).status,200);
   c.clock.t+=31*864e5; assert.equal((await c.call('GET','/api/me',undefined,{as:'owner'})).status,401,'сессия живёт не больше 30 дней');
 });
 
@@ -79,23 +77,21 @@ test('CSRF и чужой сайт: без токена, с чужим Origin и�
   assert.equal((await c.call('POST','/api/me/profile',{name:'Х'},{as:'owner',csrf:false})).status,403);
   assert.equal((await c.call('POST','/api/me/profile',{name:'Х'},{as:'owner',headers:{origin:'https://evil.example'}})).status,403);
   assert.equal((await c.call('POST','/api/me/profile',{name:'Х'},{as:'owner',headers:{'sec-fetch-site':'cross-site'}})).status,403);
-  assert.equal((await c.call('POST','/api/auth/telegram',{auth:c.tg(1000001,'В')},{as:'z',headers:{origin:'https://evil.example'}})).status,403,'вход с чужого сайта');
+  assert.equal((await c.call('POST','/api/auth/bot/start',{},{as:'z',headers:{origin:'https://evil.example'}})).status,403,'начать вход с чужого сайта');
   assert.equal((await c.call('POST','/api/me/profile','name=x',{as:'owner',headers:{'content-type':'application/x-www-form-urlencoded'}})).status,415,'форма с чужого сайта');
   assert.equal((await c.call('POST','/api/me/profile',{name:'Андрей'},{as:'owner'})).status,200);
 });
 
 test('лимит запросов на вход',async()=>{
   const c=club(); let last;
-  for(let i=0;i<21;i++) last=await c.call('POST','/api/auth/telegram',{auth:{id:'1',hash:'0'.repeat(64),auth_date:'1'}},{ip:'10.9.9.9'});
+  for(let i=0;i<21;i++) last=await c.call('POST','/api/auth/bot/start',{},{ip:'10.9.9.9'});
   assert.equal(last.status,429); assert.ok(+last.headers['Retry-After']>0);
-  assert.equal((await c.call('POST','/api/auth/telegram',{auth:{id:'1',hash:'0'.repeat(64),auth_date:'1'}},{ip:'10.8.0.1'})).status,401,'другой адрес — свой лимит');
-  for(let i=0;i<3;i++) await c.call('POST','/api/auth/email/start',{email:'a@b.ru'},{ip:'10.7.0.'+i});
-  assert.equal((await c.call('POST','/api/auth/email/start',{email:'a@b.ru'},{ip:'10.6.0.1'})).status,429,'не больше 3 писем на адрес за 15 минут');
+  assert.equal((await c.call('POST','/api/auth/bot/start',{},{ip:'10.8.0.1'})).status,200,'другой адрес — свой лимит');
 });
 
 test('журнал входов: успехи и отказы, IP усечён',async()=>{
-  const c=club(); await c.owner(); await c.call('POST','/api/auth/telegram',{auth:c.tg(9,'Х')},{ip:'192.168.44.55'});
+  const c=club(); await c.owner(); await c.login(9,'Х',{who:'x'});
   const all=await c.store.scan('loginlog'); assert.ok(all.some(x=>x.ok&&x.method==='telegram'));
-  const bad=all.find(x=>!x.ok); assert.equal(bad.ip,'192.168.44.0'); assert.match(bad.reason,/приглашени/);
-  const mine=await c.call('GET','/api/me/logins',undefined,{as:'owner'}); assert.equal(mine.data.logins.length,1);
+  const bad=all.find(x=>!x.ok); assert.equal(bad.ip,'10.1.2.0'); assert.match(bad.reason,/приглашени/);
+  assert.equal((await c.call('GET','/api/me/logins',undefined,{as:'owner'})).data.logins.length,1);
 });

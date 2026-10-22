@@ -16,15 +16,15 @@ test('админ: приглашения, роли, блокировка; уча
   assert.ok(!JSON.stringify(ov.data).includes(inv.data.code),'код приглашения в списке не показывается');
   const h=ov.data.invites.find(i=>i.label==='Аня').h;
   assert.equal((await c.call('POST','/api/admin/invites/revoke',{h},{as:'owner'})).status,200);
-  const r=await c.call('POST','/api/auth/telegram',{auth:c.tg(701,'Аня'),invite:inv.data.code,consent:c.consent},{as:'a'}); assert.equal(r.status,403); assert.match(r.data.error,/отозвано/);
+  const r=await c.login(701,'Аня',{invite:inv.data.code,who:'a'}); assert.equal(r.status,403); assert.match(r.data.error,/отозвано/);
   const late=await c.call('POST','/api/admin/invites',{label:'Поздно',days:1},{as:'owner'}); c.clock.t+=2*864e5;
-  assert.match((await c.call('POST','/api/auth/telegram',{auth:c.tg(702,'Б'),invite:late.data.code,consent:c.consent},{as:'b'})).data.error,/Срок/);
+  assert.match((await c.login(702,'Б',{invite:late.data.code,who:'b'})).data.error,/Срок/);
   const mid=ov.data.users.find(u=>u.role==='member').id;
   assert.equal((await c.call('POST','/api/admin/users/role',{id:mid,role:'admin'},{as:'owner'})).status,200);
   assert.equal((await c.call('GET','/api/admin/overview',undefined,{as:'m'})).status,200,'новый админ видит панель');
   assert.equal((await c.call('POST','/api/admin/users/block',{id:mid,blocked:true},{as:'owner'})).status,200);
   assert.equal((await c.call('GET','/api/me',undefined,{as:'m'})).status,401,'заблокированный выброшен');
-  assert.equal((await c.call('POST','/api/auth/telegram',{auth:c.tg(700,'Участник')},{as:'m2'})).status,403);
+  assert.equal((await c.login(700,'Участник',{who:'m2'})).status,403);
   const me=(await c.call('GET','/api/me',undefined,{as:'owner'})).data.user.id;
   assert.equal((await c.call('POST','/api/admin/users/role',{id:me,role:'member'},{as:'owner'})).status,409,'единственный админ не снимает с себя роль');
 });
@@ -46,7 +46,7 @@ test('синхронизация: первый вход переносит ло�
   assert.equal((await c.call('GET','/api/progress',undefined,{as:'phone'})).data.empty,true);
   const local={data:{nch2_rep:JSON.stringify({52:{b:1,d:20380,s:20370,l:20377,n:1,r:2}}),nch2_wb3:JSON.stringify({52:2}),nch2_ck:'"y"'},mt:{nch2_rep:1,nch2_wb3:1}};
   const p=await c.call('PUT','/api/progress',local,{as:'phone'}); assert.equal(p.status,200); assert.equal(p.data.rev,1); assert.ok(!('nch2_ck' in p.data.data),'ключи устройства не уходят');
-  c.clock.t+=1000; await c.call('POST','/api/auth/telegram',{auth:c.tg(720,'Участник')},{as:'laptop'});
+  await c.login(720,'Участник',{who:'laptop'});
   const g=await c.call('GET','/api/progress',undefined,{as:'laptop'}); assert.equal(JSON.parse(g.data.data.nch2_rep)[52].b,1);
   const lap={data:{nch2_rep:JSON.stringify({52:{b:2,d:20390,s:20370,l:20383,n:2,r:2},9:{b:0,d:20384,s:20383,l:20383,n:1,r:0}})},mt:{nch2_rep:5}};
   await c.call('PUT','/api/progress',lap,{as:'laptop'});
@@ -70,7 +70,7 @@ test('мои данные: выгрузка всего и удаление ак�
   const dump=JSON.stringify(c.store._dump()); assert.ok(!dump.includes(id+'"')||!(await c.store.get('users',id)),'');
   assert.equal(await c.store.get('users',id),null); assert.equal(await c.store.get('progress',id),null); assert.equal(await c.store.get('identities','tg:730'),null);
   assert.equal((await c.store.scan('feedback',x=>x.userId===id)).length,0); assert.equal((await c.store.query('loginlog',id)).length,0);
-  assert.equal((await c.call('POST','/api/auth/telegram',{auth:c.tg(730,'Снова')},{as:'u2'})).status,403,'после удаления — снова только по приглашению');
+  assert.equal((await c.login(730,'Снова',{who:'u2'})).status,403,'после удаления — снова только по приглашению');
 });
 
 test('отзывы: на функцию, видны админу',async()=>{
@@ -86,11 +86,8 @@ test('отзывы: на функцию, видны админу',async()=>{
   const fb=(await c.call('GET','/api/admin/overview',undefined,{as:'owner'})).data.feedback.filter(f=>f.feature!=='privacy'); assert.equal(fb[0].feature,'training'); assert.equal(fb[0].text,'<b>не понял</b>','хранится как текст; экранирование — при выводе');
 });
 
-test('напоминания: нужен Telegram и согласие бота; раз в день во время студента, с паузой из бота',async()=>{
+test('напоминания: бот должен мочь писать; раз в день во время студента, с паузой из бота',async()=>{
   const c=club(); await c.owner();
-  const code=await c.invite(); await c.call('POST','/api/auth/email/start',{email:'e@x.ru',invite:code,consent:c.consent},{as:'e'});
-  const tok=/#\/magic\/([A-Za-z0-9_-]+)/.exec(c.outbox.at(-1).text)[1]; await c.call('POST','/api/auth/email/verify',{token:tok},{as:'e'});
-  assert.equal((await c.call('POST','/api/me/reminders',{enabled:true},{as:'e'})).data.needTelegram,true);
   await c.member(403,'blocked');
   const nb=await c.call('POST','/api/me/reminders',{enabled:true},{as:'blocked'}); assert.equal(nb.status,409); assert.equal(nb.data.needStart,true,'бот не может писать — просим нажать «Старт»');
   await c.member(750,'u');
@@ -106,7 +103,7 @@ test('напоминания: нужен Telegram и согласие бота; 
   c.clock.t+=15*60e3; await c.app.remind(); assert.equal(msgs().length,1,'не чаще раза в день');
   await c.call('POST','/api/tg/webhook',JSON.stringify({callback_query:{id:'q1',from:{id:750},data:'pause'}}),{headers:{'x-telegram-bot-api-secret-token':'hook-secret'}});
   c.clock.t=Date.parse('2026-10-31T16:05:00Z'); await c.app.remind(); assert.equal(msgs().length,1,'пауза из бота работает');
-  await c.call('POST','/api/auth/telegram',{auth:c.tg(750,'Участник')},{as:'u'});   /* прошло больше 14 дней без входа — сессия истекла, входим снова */
+  await c.login(750,'Участник',{who:'u'});   /* прошло больше 14 дней без входа — сессия истекла, входим снова */
   assert.equal((await c.call('GET','/api/me',undefined,{as:'u'})).data.reminders.paused,true);
   await c.call('POST','/api/me/reminders',{paused:false},{as:'u'});
   c.clock.t=Date.parse('2026-10-31T20:00:00Z'); await c.app.remind(); assert.equal(msgs().length,1,'23:00 — тихие часы и окно прошло');
@@ -119,7 +116,7 @@ test('напоминания: нужен Telegram и согласие бота; 
 
 test('статика: CSP и заголовки безопасности, только разрешённые файлы',async()=>{
   const c=club({secure:true});
-  const r=await c.call('GET','/'); assert.equal(r.status,200); assert.match(r.headers['Content-Security-Policy'],/frame-ancestors 'none'/); assert.match(r.headers['Content-Security-Policy'],/script-src 'self' https:\/\/telegram\.org/);
+  const r=await c.call('GET','/'); assert.equal(r.status,200); assert.match(r.headers['Content-Security-Policy'],/frame-ancestors 'none'/); assert.match(r.headers['Content-Security-Policy'],/script-src 'self'; /);
   assert.doesNotMatch(r.headers['Content-Security-Policy'],/unsafe-inline|unsafe-eval/);
   assert.equal(r.headers['X-Frame-Options'],'DENY'); assert.match(r.headers['Strict-Transport-Security'],/max-age/);
   for(const p of ['/../server/lib/app.js','/tools/build-core.js','/tests/lib.test.js','/README.md','/DEPLOY.md','/lib/../../server/index.js','/core/samples/index.json']) assert.equal((await c.call('GET',p)).status,404,p);
@@ -135,10 +132,10 @@ test('событие Yandex Cloud Functions → запрос (payload 1.0 и 0.1
 
 test('боевые настройки: без обязательных переменных функция не стартует',()=>{
   assert.throws(()=>fromEnv({}),/ORIGIN/);
-  assert.throws(()=>fromEnv({ORIGIN:'http://club.nachert1830.ru',SECRET_KEY:'x'.repeat(40)}),/ORIGIN/);
-  const ok=fromEnv({ORIGIN:'https://club.nachert1830.ru',SECRET_KEY:'x'.repeat(40),YDB_DOCAPI_ENDPOINT:'https://docapi.example',YDB_KEY_ID:'k',YDB_SECRET:'s',TG_BOT_TOKEN:'1:x',TG_WEBHOOK_SECRET:'w',ADMIN_TG_IDS:'1, 2'});
+  assert.throws(()=>fromEnv({ORIGIN:'http://club.nachert1830.ru'}),/ORIGIN/);
+  const ok=fromEnv({ORIGIN:'https://club.nachert1830.ru',YDB_DOCAPI_ENDPOINT:'https://docapi.example',YDB_KEY_ID:'k',YDB_SECRET:'s',TG_BOT_TOKEN:'1:x',TG_BOT_NAME:'b_bot',TG_WEBHOOK_SECRET:'w',ADMIN_TG_IDS:'1, 2'});
   assert.equal(ok.secure,true); assert.deepEqual(ok.adminTg,['1','2']);
-  assert.throws(()=>fromEnv({ORIGIN:'https://club.nachert1830.ru',SECRET_KEY:'x'.repeat(40),YDB_DOCAPI_ENDPOINT:'e',YDB_KEY_ID:'k',YDB_SECRET:'s',TG_BOT_TOKEN:'1:x'}),/TG_WEBHOOK_SECRET/);
+  assert.throws(()=>fromEnv({ORIGIN:'https://club.nachert1830.ru',YDB_DOCAPI_ENDPOINT:'e',YDB_KEY_ID:'k',YDB_SECRET:'s',TG_BOT_TOKEN:'1:x',TG_BOT_NAME:'b_bot'}),/TG_WEBHOOK_SECRET/);
 });
 
 test('SigV4: тестовый вектор AWS (get-vanilla)',()=>{
