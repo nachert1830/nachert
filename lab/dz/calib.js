@@ -50,11 +50,18 @@ function coarse(D,S,o0,ranges){ const sub=S.filter((q,i)=>i%3===0); let best=nul
 function calibrate(dig,loc,id,data,o){ o=o||{}; const D=dmap(dig.map), {pts,segs,S}=samples(id,data);
   /* начало: найденное O; иначе — ось x (v = 0) и сдвиг вдоль неё по всему полю */
   let o0, ranges;
-  if(loc.O){ o0=loc.O; ranges={u:[-8,8],v:[-4,4]}; }
+  if(o.range){ o0=[0,0]; ranges={u:[o.range[0],o.range[2]],v:[o.range[1],o.range[3]]}; }   /* лист в клетку: O ищется по всему полю */
+  else if(loc.O){ o0=loc.O; ranges={u:[-8,8],v:[-4,4]}; }
   else { if(!loc.axis) return {ok:false,reason:'нет оси x — не к чему привязать чертёж'};
     const [A,B]=loc.axis, yAt=x=>A[1]+(B[1]-A[1])*(x-A[0])/((B[0]-A[0])||1); o0=[0,yAt(200)]; ranges={u:[25,292],v:[-4,4]}; }
-  const c0=coarse(D,S,o0,ranges); if(!c0) return {ok:false,reason:'калибровка не сошлась'};
-  let r=fit(D,S,c0.x,2,15); r=fit(D,S,r.x,6,30);
+  let c0=coarse(D,S,o0,ranges); if(!c0) return {ok:false,reason:'калибровка не сошлась'};
+  /* кандидаты O (лист в клетку: пересечения длинных горизонталей и вертикалей — оси эпюра). Начало эпюра на
+     пересечении осей — сильная подсказка: если такой кандидат объясняет фигуру почти так же (−0,06), берём его.
+     Нужна там, где часть фигуры не начерчена (рёбра S только точками) и построения дают случайное покрытие */
+  if(o.cands&&o.cands.length){ const sub=S.filter((q,i)=>i%3===0); let bc=null;
+    o.cands.forEach(cn=>{ let b=null; for(let dv=-2;dv<=2;dv+=0.5) for(let du=-2;du<=2;du+=0.5){ const x=[cn[0]+du,cn[1]+dv,0,0,0,0], c=coverOf(D,sub,x,1.2); if(!b||c>b.c) b={c,x}; } if(!bc||b.c>bc.c) bc=b; });
+    if(bc&&bc.c>=c0.c-0.06) c0=Object.assign(bc,{fromAxes:true}); }
+  let r=fit(D,S,c0.x,2,15); r=fit(D,S,r.x,o.np||6,30);   /* лист в клетку: масштаб и направления известны по сетке — только сдвиг (np = 2) */
   const cover=coverOf(D,S,r.x,0.6), cover1=coverOf(D,S,r.x,1.0);
   /* каждая точка условия: сдвиг её «звезды» (своя подгонка сдвига по участкам фигуры у точки) */
   const per=pts.map(p=>{ const near=S.filter(q=>q.pr===p.pr&&segs.some(s=>s.n===q.seg&&((Math.hypot(s.a[0]-p.at[0],s.a[1]-p.at[1])<1e-6&&q.da>=3&&q.da<=15)||(Math.hypot(s.b[0]-p.at[0],s.b[1]-p.at[1])<1e-6&&q.db>=3&&q.db<=15))));
@@ -66,7 +73,7 @@ function calibrate(dig,loc,id,data,o){ o=o||{}; const D=dmap(dig.map), {pts,segs
     const rl=fit(D,near,x0,2,15), sh=[rl.x[0]-r.x[0],rl.x[1]-r.x[1]];
     return {l:p.l,n:p.n,pr:p.pr,shift:Math.hypot(sh[0],sh[1]),dir:sh,cover:coverOf(D,near,rl.x,0.6),cover0}; });
   const rms=Math.sqrt(r.f);
-  return {ok:true,T:r.x,cover,cover1,rms,pts:per,O:apply(r.x,[0,0]),n:S.length}; }
+  return {ok:true,T:r.x,cover,cover1,rms,pts:per,O:apply(r.x,[0,0]),n:S.length,fromAxes:!!c0.fromAxes}; }
 /* ошибка в нанесении условия — проверка гипотез «точка P, координата c нанесена с ошибкой δ» по всей фигуре условия:
    δ ∈ [−15, 15] мм через 0,5; покрытие фигуры (с перерисованными отрезками этой точки) при той же калибровке T.
    Шесть сильнейших гипотез проверяются с новой калибровкой (неверная точка могла перекосить T). Лучшая принимается,

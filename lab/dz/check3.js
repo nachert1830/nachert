@@ -62,6 +62,18 @@ const covRaw=(D,T,a,b)=>{ const L=v2.len(v2.sub(b,a)), n=Math.max(2,Math.round(L
    пересечения), и её дальний конец — там, где студент поставил точку. Конец должен лежать на прямой сдвига точки
    (через P вдоль nu); угол ребра к nu ≥ 20°, иначе положение неточно. → [{d}] — сдвиг δ вдоль nu по каждому соседу */
 let SEGS=null;
+/* начерченная прямая около предсказанной a→b (мм чертежа): отрезки листа ±8°, ≤ 4 мм поперёк; самая длинная
+   коллинеарная группа, покрывающая ≥ 50 % пролёта; МНК по ней. Чтобы мерить то, что студент на самом деле начертил */
+function drawnLine(a,b){ if(!SEGS) return null; const L=v2.len(v2.sub(b,a)); if(L<6) return null; const e=v2.unit(v2.sub(b,a)), n=v2.perp(e);
+  const c=SEGS.filter(q=>{ const qd=v2.sub(q.b,q.a); if(v2.len(qd)<3||angDeg(qd,e)>8) return false; const da=v2.dot(v2.sub(q.a,a),n), db=v2.dot(v2.sub(q.b,a),n); if(Math.max(Math.abs(da),Math.abs(db))>4) return false;
+    const ta=v2.dot(v2.sub(q.a,a),e), tb=v2.dot(v2.sub(q.b,a),e); return Math.min(Math.max(ta,tb),L+2)-Math.max(Math.min(ta,tb),-2)>=0.5*Math.abs(tb-ta); });
+  const G=[]; c.sort((p,q)=>v2.len(v2.sub(q.b,q.a))-v2.len(v2.sub(p.b,p.a))).forEach(q=>{ const qe=v2.unit(v2.sub(q.b,q.a)), qn=v2.perp(qe); const g=G.find(g=>angDeg(g.e,qe)<3&&Math.abs(v2.dot(v2.sub(q.a,g.p),g.n))<0.8&&Math.abs(v2.dot(v2.sub(q.b,g.p),g.n))<0.8); if(g) g.ss.push(q); else G.push({p:q.a,e:qe,n:qn,ss:[q]}); });
+  const span=g=>{ const iv=g.ss.map(q=>[v2.dot(v2.sub(q.a,a),e),v2.dot(v2.sub(q.b,a),e)].sort((x,y)=>x-y)).map(([x,y])=>[Math.max(0,x),Math.min(L,y)]).filter(([x,y])=>y>x).sort((p,q)=>p[0]-q[0]); let t=0,cx=-1e9,cy=-1e9; iv.forEach(([x,y])=>{ if(x>cy){ if(cy>cx) t+=cy-cx; cx=x; cy=y; } else cy=Math.max(cy,y); }); if(cy>cx) t+=cy-cx; return t/L; };
+  const best=G.map(g=>Object.assign(g,{sp:span(g)})).filter(g=>g.sp>=0.5).sort((p,q)=>q.sp-p.sp)[0]; if(!best) return null;
+  const P=[]; best.ss.forEach(q=>{ const l=v2.len(v2.sub(q.b,q.a)), qe=v2.unit(v2.sub(q.b,q.a)); for(let k=0;k<=l;k+=0.5) P.push(v2.add(q.a,v2.mul(qe,k))); });
+  const m=P.reduce((s,p)=>v2.add(s,v2.mul(p,1/P.length)),[0,0]); let xx=0,xy=0,yy=0; P.forEach(p=>{ const d=v2.sub(p,m); xx+=d[0]*d[0]; xy+=d[0]*d[1]; yy+=d[1]*d[1]; }); const an=0.5*Math.atan2(2*xy,xx-yy);
+  let de=[Math.cos(an),Math.sin(an)]; if(v2.dot(de,e)<0) de=v2.mul(de,-1); return {p:m,e:de,sp:best.sp}; }
+const meet2=(L1,L2)=>{ const d=L1.e[0]*L2.e[1]-L1.e[1]*L2.e[0]; if(Math.abs(d)<1e-9) return null; const w=v2.sub(L2.p,L1.p), t=(w[0]*L2.e[1]-w[1]*L2.e[0])/d; return v2.add(L1.p,v2.mul(L1.e,t)); };
 function measurePoint(P,others,nu){ const out=[]; if(!SEGS) return out;
   others.forEach(o=>{ const dir=v2.sub(P,o), L=v2.len(dir); if(L<10||angDeg(dir,nu)<20) return; const ds=[];
     /* куски одной прямой из o: отрезки под углом ≤ 25° к o→P, чья прямая проходит в 1,2 мм от o; группы по направлению */
@@ -147,6 +159,10 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
       else if(cp.unk.some(x=>x.d!=null)){ out.st='не могу утверждать'; out.why.push('высота построена, но линии у '+cp.unk.filter(x=>x.d!=null).map(x=>x.k+'₄ сходятся в ≈ '+f1(Math.abs(x.d))+' мм от нужного места').join(', ')+' — проверьте отложенные расстояния'); }
       else if(cp.unk.length) out.note='не проверил положение '+cp.unk.map(x=>x.k+'₄').join(', ')+' (по листу не видно: линии из них идут вдоль линии связи); на высоту оно не влияет'; }
     if(out.st==='верно') out.why.push('высота H = '+f1(r.H)+' мм (S₄K₄ на π₄, ось '+nm+' ⟂ '+lvl+')'+(out.note?'; '+out.note:''));
+    /* что начерчено: расстояние от начерченной S₄ до начерченной прямой A₄B₄C₄; S₄ — где сходятся начерченные рёбра из неё */
+    { const base=drawnLine(ps[far[0]],ps[far[1]]), edges=['A','B','C'].map(k=>drawnLine(s.P.S,s.P[k])).filter(Boolean);
+      let S4=null; if(edges.length>=2){ const pts=[]; for(let i=0;i<edges.length;i++) for(let j=i+1;j<edges.length;j++) if(angDeg(edges[i].e,edges[j].e)>=10){ const q=meet2(edges[i],edges[j]); if(q&&v2.len(v2.sub(q,s.P.S))<8) pts.push(q); } if(pts.length) S4=v2.mul(pts.reduce((m,p)=>v2.add(m,p),[0,0]),1/pts.length); }
+      if(base&&S4){ out.measured=Math.abs(v2.dot(v2.sub(S4,base.p),v2.perp(base.e))); out.mWhy='на чертеже (π₄) расстояние от S₄ до прямой A₄B₄C₄ = '+f1(out.measured)+' мм'; } }
     return out; })();
   /* б) двугранный угол: второй шаг от проекций на π₄ */
   parts.b=(()=>{ if(!hB) return {st:'не найдено',why:['не нашёл первой замены с осью ∥ A′B′ (или A″B″) — построения двугранного угла']};
@@ -168,10 +184,12 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     if(out.st==='верно'&&(cA==null||cS==null||cA<0.75||cS<0.75)){ out.st='не могу утверждать'; out.why.push('не нашёл следов граней A₅C₅ и A₅S₅ на π₅ там, где они должны быть'+(cp1.unk.length?' — проверьте '+cp1.unk.map(x=>x.k+'₄').join(', ')+' на π₄':'')); }
     if(out.st==='верно'&&cp1.unk.some(x=>x.d!=null)){ out.st='не могу утверждать'; out.why.push('угол построен, но на π₄ линии у '+cp1.unk.filter(x=>x.d!=null).map(x=>x.k+'₄ сходятся в ≈ '+f1(Math.abs(x.d))+' мм от нужного места').join(', ')); }
     if(out.st==='верно') out.why.push('двугранный угол при AB = '+f1(r.dih)+'° (на π₅ между A₅C₅ и A₅S₅)');
+    /* что начерчено: угол между начерченными A₅C₅ и A₅S₅ (направления от A₅) */
+    { const l1=drawnLine(P5.A,P5.C), l2=drawnLine(P5.A,P5.S); if(l1&&l2){ const c=Math.max(-1,Math.min(1,v2.dot(l1.e,l2.e))); out.measured=Math.acos(c)*180/Math.PI; out.mWhy='на чертеже (π₅) угол между A₅C₅ и A₅S₅ = '+f1(out.measured)+'°'; } }
     return out; })();
   /* в) истинный вид ABC вращением вокруг прямой уровня */
   parts.c=(()=>{ let best=null; const zs=['A','B','C'].map(k=>data[k][2]), ys=['A','B','C'].map(k=>data[k][1]);
-    for(const form of ['h','f']) for(const same of [true,false]){ const L=form==='h'?zs:ys, lo=Math.min(...L)-10, hi=Math.max(...L)+10;
+    for(const form of ['h','f']) for(const same of [true,false]){ const L=form==='h'?zs:ys, lo=Math.min(...L)-30, hi=Math.max(...L)+30;
       for(let c=lo;c<=hi;c+=0.25){ const t=M3.rotate(data,form,c,same); if(!t) continue; const P=t.P, pr=form==='h'?Hp:Fp;
         const tri=cov(D,T,[[P.A,P.B],[P.B,P.C],[P.C,P.A]]), paths=['A','B','C'].map(k=>[pr(data[k]),P[k]]).filter(([a,b])=>v2.len(v2.sub(a,b))>8), pc=paths.length?cov(D,T,paths):0;
         /* начерченная ось вращения держит уровень c: без неё ошибку радиуса «объяснил» бы другой уровень */
@@ -194,7 +212,8 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     if(out.st==='верно') out.why.push('истинный вид: AB = '+f1(r.AB)+', BC = '+f1(r.BC)+', CA = '+f1(r.CA)+' мм (вращение вокруг '+(best.form==='h'?'горизонтали':'фронтали')+')');
     return out; })();
   /* г) угол SA с основанием */
-  parts.d=(()=>{ let best=null; const zs=[data.S[2],data.A[2]], lo=Math.min(...zs)-15, hi=Math.max(...zs)+15;
+  /* уровень прямой вращения — любой: студенты берут и выше S (h₁ над пирамидой), поэтому окно широкое */
+  parts.d=(()=>{ let best=null; const zs=[data.S[2],data.A[2]], lo=Math.min(...zs)-30, hi=Math.max(...zs)+40;
     for(const same of [true,false]) for(let c=lo;c<=hi;c+=0.25){ const t=M3.sigma(data,c,same); if(!t) continue;
       const main=cov(D,T,[[t.S0,t.A0],[t.S0,t.Y0]]), path=v2.len(v2.sub(Hp(data.S),t.S0))>8?covOne(D,T,Hp(data.S),t.S0)||0:0;
       /* ось вращения (горизонталь Σ) и путь A, если A при этом уровне сдвигается: уровень c держится начерченным */
@@ -215,6 +234,7 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     if(out.st==='верно'&&l1>=0.75&&l2>=0.75&&out.hint&&/≈/.test(out.hint)){ out.st='не могу утверждать'; out.why.push('прямые на месте, но у '+out.hint); }
     if(out.st!=='ошибка'&&(l1<0.75||l2<0.75)){ out.st='не могу утверждать'; out.why.push('прямые S₀A₀ и S₀n₀ не там, где должны быть'+(out.hint?' — '+out.hint:'')); }
     if(out.st==='верно') out.why.push('угол SA с основанием φ = '+f1(r.phi)+'° (ψ = '+f1(90-r.phi)+'°, φ = 90° − ψ)');
+    { const l1=drawnLine(t.S0,t.A0), l2=drawnLine(t.S0,t.Y0); if(l1&&l2){ const psi=angDeg(l1.e,l2.e); out.measured=90-psi; out.mWhy='на чертеже угол между S₀A₀ и S₀n₀ ψ = '+f1(psi)+'°, значит φ = 90° − ψ = '+f1(out.measured)+'°'; } }
     return out; })();
   /* линии найденных построений — для чтения видимости заданной пирамиды (их надо обходить: построение может лечь
      прямо на ребро — например, повёрнутый A₀B₀ почти на A″B″) */
@@ -228,7 +248,7 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
   S.edges.forEach(e=>[['f',Fp,'″'],['h',Hp,'′']].forEach(([pr,P,mk])=>{ if(e[pr]==='?') return; const a=P(S.V[e.a]), b=P(S.V[e.b]), Le=M3.line(a,v2.sub(b,a)), len=v2.len(v2.sub(b,a)), nrm=v2.perp(Le.e);
     /* линии листа вдоль ребра, выходящие за его концы (ось, прямая уровня по ребру) — штрихи под ними не видны */
     const along=dsg.filter(q=>angDeg(v2.sub(q.b,q.a),Le.e)<2&&Math.abs(M3.sdist(q.a,Le,nrm))<0.8&&Math.abs(M3.sdist(q.b,Le,nrm))<0.8);
-    if(along.some(q=>{ const t=[v2.dot(v2.sub(q.a,a),Le.e),v2.dot(v2.sub(q.b,a),Le.e)].sort((x,y)=>x-y); return t[1]>0&&t[0]<len&&(t[0]<-4||t[1]>len+4); })){ vis.push({e:e.a+e.b+mk,want:e[pr],got:'?',r:'вдоль ребра — линия длиннее его'}); return; }
+    if(along.some(q=>{ const t=[v2.dot(v2.sub(q.a,a),Le.e),v2.dot(v2.sub(q.b,a),Le.e)].sort((x,y)=>x-y); return t[1]>0&&t[0]<len&&(t[0]<-4||t[1]>len+4); })){ vis.push({e:e.a+mk+e.b+mk,want:e[pr],got:'?',r:'вдоль ребра — линия длиннее его'}); return; }
     /* рядом с ребром — другая почти параллельная линия (до 3 мм, угол < 6°), не совпадающая с ним: штрихи могли
        закрыться ею (повёрнутый треугольник, ось, прямая уровня) — тип линии не читаем */
     /* близость — по самому ребру: в 9 точках ребра расстояние до отрезка листа; рядом (≤ 2,5 мм) на ≥ 30 % длины,
@@ -237,10 +257,15 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     const nearPar=dsg.some(q=>{ if(v2.len(v2.sub(q.b,q.a))<8) return false; const an=angDeg(v2.sub(q.b,q.a),Le.e); if(an>=6) return false;
       const ds=[]; for(let i=1;i<=9;i++) ds.push(dSegP(v2.add(a,v2.mul(Le.e,len*i/10)),q)); const close=ds.filter(x=>x<=2.5);
       if(close.length<3) return false; const mean=close.reduce((x,y)=>x+y,0)/close.length; return an>3||mean>1.0; });
-    if(nearPar){ vis.push({e:e.a+e.b+mk,want:e[pr],got:'?',r:'рядом почти параллельная линия'}); return; }
+    if(nearPar){ vis.push({e:e.a+mk+e.b+mk,want:e[pr],got:'?',r:'рядом почти параллельная линия'}); return; }
+    /* ребро вообще начерчено? Отрезки листа вдоль него (≤ 0,8 мм, < 3°) — хотя бы на половину длины (штриховая — тоже
+       отрезки). Не начерчено (на листе в клетку часть заданного студент только отмечает точками) — тип не судим:
+       иначе случайные пересечения построений читаются как «штрихи» */
+    const onE=dsg.filter(q=>angDeg(v2.sub(q.b,q.a),Le.e)<3&&Math.abs(M3.sdist(q.a,Le,nrm))<0.8&&Math.abs(M3.sdist(q.b,Le,nrm))<0.8).reduce((m,q)=>{ const t=[v2.dot(v2.sub(q.a,a),Le.e),v2.dot(v2.sub(q.b,a),Le.e)].sort((x,y)=>x-y); return m+Math.max(0,Math.min(len,t[1])-Math.max(0,t[0])); },0);
+    if(onE<0.5*len){ vis.push({e:e.a+mk+e.b+mk,want:e[pr],got:'?',r:'ребро не начерчено'}); return; }
     const cross=dsg.filter(q=>angDeg(v2.sub(q.b,q.a),Le.e)>=2).map(q=>[q.a,q.b]);
     const ds=K2.dashes(dig.map,T,a,b,allSegs.filter(q=>!(v2.len(v2.sub(q[0],a))<1e-6&&v2.len(v2.sub(q[1],b))<1e-6)&&!(v2.len(v2.sub(q[0],b))<1e-6&&v2.len(v2.sub(q[1],a))<1e-6)).concat(cross,pred.filter(q=>v2.len(v2.sub(q[1],q[0]))>1)));
-    vis.push({e:e.a+e.b+mk,want:e[pr],got:K2.lineType(ds),on:ds?ds.on:null,r:ds?'провалов '+ds.dips+' на '+Math.round(ds.len)+' мм, разрывов '+ds.n:'не измерить'}); }));
+    vis.push({e:e.a+mk+e.b+mk,want:e[pr],got:K2.lineType(ds),on:ds?ds.on:null,r:ds?'провалов '+ds.dips+' на '+Math.round(ds.len)+' мм, разрывов '+ds.n:'не измерить'}); }));
   /* вес линии (как в ДЗ №2): сплошная, но тонкая — не «видимое ребро», а непрочитанное */
   const onV=vis.filter(x=>x.got==='vis'&&x.on!=null).map(x=>x.on).sort((p,q)=>p-q), mainOn=onV.length?onV[onV.length>>1]:null;
   if(mainOn) vis.forEach(x=>{ if(x.got==='vis'&&x.on!=null&&x.on<0.75*mainOn){ x.got='?'; x.r='сплошная, но тонкая'; } });

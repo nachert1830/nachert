@@ -68,7 +68,7 @@ function sheet(o){ const n=o.n, err=o.err||'ok', R=IMG.rng((o.seed||1)*104729+n*
   const r=DZ.solve('3',data); if(!r.ok) return null;
   let items=M.items('3',data,{}).filter(it=>it.t!=='seg'), S=M.solid('3',null,data), flipped=null;
   const edges=S.edges.map(e=>[['f',Fp],['h',Hp]].map(([pr,P])=>({t:'seg',a:P(S.V[e.a]),b:P(S.V[e.b]),k:e[pr]==='hid'?'hid':'main',edge:e.a+e.b,pr}))).flat();
-  if(err==='vis'){ const c=edges.filter(x=>x.k==='main'||x.k==='hid'), x=c[Math.floor(R()*c.length)]; x.k=x.k==='hid'?'main':'hid'; flipped=x.edge+(x.pr==='f'?'″':'′'); }
+  if(err==='vis'){ const c=edges.filter(x=>x.k==='main'||x.k==='hid'), x=c[Math.floor(R()*c.length)]; x.k=x.k==='hid'?'main':'hid'; { const mk=x.pr==='f'?'″':'′'; flipped=x.edge[0]+mk+x.edge.slice(1)+mk; } }
   items=items.concat(edges);
   const gbox=bbox(items.filter(it=>it.at).map(it=>it.at)); const parts={}, boxes=[gbox]; let ok=true;
   /* построения: случайные выборы, без наложения рамок построений и в пределах поля (≈ 260 × 340 мм вокруг O) */

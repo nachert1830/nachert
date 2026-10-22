@@ -40,6 +40,14 @@ details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap;
   <div class="row">
     <select id="dz"><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select>
     <span>вариант</span><input id="n" type="number" min="1" max="30" value="8" inputmode="numeric">
+    <select id="paper"><option value="a3">А3 с рамкой</option><option value="grid">лист в клетку</option></select>
+    <select id="part" title="какая часть ДЗ №3 на фото"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select>
+  </div>
+  <div class="row" id="ansRow" style="margin-top:8px" hidden>
+    <span class="mute">Ваши ответы (если есть):</span>
+    <span>H =</span><input id="aH" type="number" step="0.1" inputmode="decimal"><span>мм</span>
+    <span>∠SAB–ABC =</span><input id="aD" type="number" step="0.1" inputmode="decimal"><span>°</span>
+    <span>∠SA–ABC =</span><input id="aP" type="number" step="0.1" inputmode="decimal"><span>°</span>
   </div>
   <div class="mute" id="task" style="margin-top:8px"></div>
   <div class="data" id="data"></div>
@@ -78,7 +86,7 @@ function showVariant(){ const dz=+$('dz').value, n=Math.max(1,Math.min(30,+$('n'
   if(!g){ $('data').innerHTML=''; return; } $('task').textContent=CO.dz.TASKS[g.id].name+': '+CO.dz.TASKS[g.id].text;
   const ks=Object.keys(g.data); $('data').innerHTML='<table><tr><th></th>'+ks.map(k=>'<th>'+k+'</th>').join('')+'</tr>'+['x','y','z'].map((c,i)=>'<tr><th>'+c+'</th>'+ks.map(k=>'<td>'+g.data[k][i]+'</td>').join('')+'</tr>').join('')+'</table>'; }
 const gate=()=>{ const on=$('ok').checked; ['b1','b2'].forEach(b=>$(b).classList.toggle('off',!on)); };
-$('dz').onchange=showVariant; $('n').oninput=showVariant; $('ok').onchange=gate; showVariant();
+$('dz').onchange=()=>{ showVariant(); $('ansRow').hidden=$('dz').value!=='3'; }; $('n').oninput=showVariant; $('ok').onchange=gate; showVariant(); $('ansRow').hidden=$('dz').value!=='3';
 const stage=t=>{ $('stages').innerHTML='<li>'+t+'</li>'; };
 /* фото → ImageData (длинная сторона ≤ 3000 px) */
 function toImageData(img){ const k=Math.min(1,3000/Math.max(img.naturalWidth,img.naturalHeight)), w=Math.round(img.naturalWidth*k), h=Math.round(img.naturalHeight*k);
@@ -90,8 +98,9 @@ function run(img){ const dz=+$('dz').value, n=+$('n').value; $('vcard').hidden=t
   if(worker) worker.terminate(); worker=new Worker('dz/worker.js');
   worker.onmessage=e=>{ const r=e.data; if(r.error){ stage('Сбой: '+r.error); return; } stage('Готово за '+(r.ms/1000).toFixed(1)+' с'+(r.pxPerMm?' · '+f1(r.pxPerMm)+' px/мм':'')+(r.cover!=null?' · условие на линиях '+Math.round(r.cover*100)+' %':''));
     show(r,dz,n); drawPhoto(img,r); drawDraw(img,r,dz,n); $('dbg').textContent=JSON.stringify({вердикт:r.verdict,этап:r.stage,причины:r.why,части:r.parts||null,калибровка:r.T||null,СКО_мм:r.rms||null,рёбра:r.edges||null,варианты:r.variants||null},null,1); };
-  worker.postMessage({img:{width:img.width,height:img.height,data:img.data},dz,n}); }
-const CLS={'верно':'ok','ответы верны':'ok','ошибка':'bad','другое решение':'ok','не тот вариант':'bad'};
+  const num=id=>{ const v=$(id).value; return v===''?null:+v; };
+  worker.postMessage({img:{width:img.width,height:img.height,data:img.data},dz,n,paper:$('paper').value,part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
+const CLS={'верно':'ok','ответы верны':'ok','ошибка':'bad','ошибка в данных':'bad','данные нанесены верно':'ok','другое решение':'ok','не тот вариант':'bad'};
 const PN={a:'а) высота',b:'б) угол SAB — ABC',c:'в) истинный вид ABC',d:'г) угол SA с основанием',vis:'видимость пирамиды'};
 function show(r){ $('vcard').hidden=false; const t=$('vtitle'); t.className='verdict '+(CLS[r.verdict]||'ref'); t.textContent=r.verdict[0].toUpperCase()+r.verdict.slice(1);
   $('vwhy').innerHTML=(r.why||[]).map(w=>'<li>'+esc(w)+'</li>').join('');
