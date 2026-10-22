@@ -21,19 +21,21 @@ const dev=async(p,body)=>{ const r=await fetch(URL+p,{method:body?'POST':'GET',h
 async function phone(opt){ const ctx=await browser.newContext(Object.assign({},PHONE,opt||{})); const page=await ctx.newPage(); page.errs=[];
   page.on('pageerror',e=>page.errs.push(String(e))); page.on('console',m=>{ if(/Content Security Policy|Refused to/.test(m.text())) page.errs.push(m.text()); }); return {ctx,page}; }
 /* вход через эмуляцию Telegram; consent — отметить документы (в форме приглашения или в окне первого входа) */
-/* вход через бота: «Войти через Telegram» → в эмуляции бота «Старт» и «Войти» за участника.
-   consent — отметить документы на странице приглашения; firstNoInvite — владелец впервые: согласие в окне */
+/* вход через бота: «Войти через Telegram» → блок эмуляции: «Старт» у бота за участника → ссылка из кнопки бота
+   открывается здесь же → «Войти как …?» (новому участнику — отметки документов) → «Войти». o.noConfirm — остановиться на ссылке */
 async function botLogin(page,id,name,o){ o=o||{};
-  if(o.consent){ await page.check('#cTerms'); await page.check('#cPd'); }
   await page.click('button[data-act="botLogin"]'); await page.waitForSelector('#dvId');
   await page.fill('#dvId',String(id)); await page.fill('#dvName',name||'Тест'); await page.click('button[data-act="devBot"]');
-  if(o.firstNoInvite){ await page.waitForSelector('#caGo'); await page.check('#sheet #cTerms'); await page.check('#sheet #cPd'); await page.click('#caGo'); } }
-async function join(page,id,name){ const inv=await dev('/dev/invite',{label:'e2e'}); await page.goto(inv.link); await page.waitForSelector('#cTerms'); await botLogin(page,id,name,{consent:true}); await page.waitForSelector('text=Привет'); }
+  if(o.expectFail) return;
+  await page.waitForSelector('button[data-act="redeem"]'); if(o.noConfirm) return;
+  if(await page.$('#cTerms')){ await page.check('#cTerms'); await page.check('#cPd'); }
+  await page.click('button[data-act="redeem"]'); }
+async function join(page,id,name){ const inv=await dev('/dev/invite',{label:'e2e'}); await page.goto(inv.link); await page.waitForSelector('text=Вас пригласили в клуб'); await botLogin(page,id,name); await page.waitForSelector('text=Привет'); }
 const noHScroll=page=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);
 
 test('без приглашения — отказ',async()=>{
   const {ctx,page}=await phone(); await page.goto(URL+'/'); await page.waitForSelector('text=Клуб Начерта');
-  await botLogin(page,5551,'Чужой'); await page.waitForSelector('#authMsg .note.bad');
+  await botLogin(page,5551,'Чужой',{expectFail:true}); await page.waitForSelector('#authMsg .note.bad');
   assert.match(await page.textContent('#authMsg'),/приглашени/);
   assert.equal(await page.isHidden('#tabs'),true,'кабинет не открылся');
   const r=await page.evaluate(()=>fetch('/api/me').then(r=>r.status)); assert.equal(r,401);
@@ -44,9 +46,11 @@ test('приглашение → вход через Telegram → все раз�
   const {ctx,page}=await phone(); const inv=await dev('/dev/invite',{label:'e2e'});
   await page.goto(inv.link); await page.waitForSelector('text=Вас пригласили в клуб');
   assert.equal(await page.evaluate(()=>location.hash),'#/join','код приглашения убран из адресной строки');
-  await page.click('button[data-act="botLogin"]');
+  await botLogin(page,2001,'Аня',{noConfirm:true}); await page.waitForSelector('text=Войти как Аня?');
+  assert.equal(await page.evaluate(()=>location.hash),'#/','ссылка на вход убрана из адресной строки');
+  await page.click('button[data-act="redeem"]');
   await page.waitForSelector('#authMsg .note.bad'); assert.match(await page.textContent('#authMsg'),/соглашение/,'без согласия — нельзя');
-  await botLogin(page,2001,'Аня',{consent:true}); await page.waitForSelector('text=Привет, Аня');
+  await page.check('#cTerms'); await page.check('#cPd'); await page.click('button[data-act="redeem"]'); await page.waitForSelector('text=Привет, Аня');
   for(const r of ['','calendar','event/ng-rk-2','event/ikg-dz-2','event/ng-rk-2/diag','event/ng-rk-2/mock','train','skills','check','settings','more','about']){
     await page.goto(URL+'/#/'+r); await page.waitForTimeout(250);
     assert.ok(await noHScroll(page),'горизонтальная прокрутка: #/'+r);
@@ -60,18 +64,21 @@ test('приглашение → вход через Telegram → все раз�
   assert.deepEqual(page.errs,[]); await ctx.close();
 });
 
-test('вход через бота: «Это не я» и просрочка отклоняются, на компьютере — без окон Telegram',async()=>{
+test('вход через бота на компьютере: ссылка на бота, «Войти как …?», просрочка и повтор ссылки отклоняются',async()=>{
   const {ctx,page}=await phone({viewport:{width:1366,height:900},isMobile:false,hasTouch:false}); await page.goto(URL+'/');
   await page.click('button[data-act="botLogin"]'); await page.waitForSelector('#openBot');
-  assert.match(await page.getAttribute('#openBot','href'),/^https:\/\/t\.me\/nachert_club_dev_bot\?start=l_[A-Za-z0-9_-]{32}$/,'ссылка на бота, а не окно Telegram на сайте');
-  const tok=(await page.getAttribute('#openBot','href')).split('l_')[1];
-  await dev('/dev/bot-login',{token:tok,id:1000001,deny:true});
-  await page.waitForSelector('#authMsg .note.bad'); assert.match(await page.textContent('#authMsg'),/отклон/);
-  await page.click('button[data-act="botLogin"]'); await page.waitForSelector('#openBot');
-  await dev('/dev/clock',{offsetMs:11*60e3}); await page.waitForSelector('#authMsg .note.bad',{timeout:10000}); assert.match(await page.textContent('#authMsg'),/вышло|использован/);
+  assert.equal(await page.getAttribute('#openBot','href'),'https://t.me/nachert_club_dev_bot?start=login','ссылка на бота, без окон Telegram на сайте');
+  const own=await dev('/dev/bot-login',{id:1000001,first_name:'Владелец',start:'login'}); assert.match(own.link,/#\/tg\/[A-Za-z0-9_-]{32}$/);
+  await page.goto(own.link); await page.waitForSelector('text=Войти как Владелец?');
+  await page.click('button[data-act="notMe"]'); await page.waitForSelector('button[data-act="botLogin"]');
+  assert.equal((await page.evaluate(()=>fetch('/api/me').then(r=>r.status))),401,'«Это не я» — не вошли');
+  const late=await dev('/dev/bot-login',{id:1000001,first_name:'Владелец',start:'login'}); await dev('/dev/clock',{offsetMs:11*60e3});
+  await page.goto(late.link); await page.waitForSelector('text=Ссылка не сработала'); assert.match(await page.textContent('#view'),/устарела/);
   await dev('/dev/clock',{offsetMs:0});
-  assert.ok(await page.isVisible('.tabs')===false||await page.isHidden('#tabs'),'не вошли');
-  assert.deepEqual(page.errs,[]); await ctx.close();
+  const p2=await dev('/dev/bot-login',{id:1000001,first_name:'Владелец',start:'login'}); await page.goto(p2.link); await page.waitForSelector('button[data-act="redeem"]');
+  await page.check('#cTerms'); await page.check('#cPd'); await page.click('button[data-act="redeem"]'); await page.waitForSelector('text=Привет, Владелец');
+  const other=await phone(); await other.page.goto(p2.link); await other.page.waitForSelector('text=Ссылка не сработала'); assert.match(await other.page.textContent('#view'),/использована/,'ссылка одноразовая'); await other.ctx.close();
+  assert.ok(await noHScroll(page)); assert.deepEqual(page.errs,[]); await ctx.close();
 });
 
 test('синхронизация: прогресс с устройства — в аккаунт при первом входе, второе устройство его получает, офлайн',async()=>{
@@ -135,7 +142,7 @@ test('календарь и обратный план на фиксирован�
 });
 
 test('админ: приглашение, отзыв приглашения, флаги, отзывы тестировщиков',async()=>{
-  const {ctx,page}=await phone(); await page.goto(URL+'/'); await botLogin(page,1000001,'Владелец',{firstNoInvite:true}); await page.waitForSelector('text=Привет, Владелец');
+  const {ctx,page}=await phone(); await page.goto(URL+'/'); await botLogin(page,1000001,'Владелец'); await page.waitForSelector('text=Привет, Владелец');
   await page.click('[data-feature="calendar"] button[data-act="fb"]'); await page.click('#fbMood button[data-m="good"]'); await page.fill('#fbT','Календарь понятный'); await page.click('#fbGo'); await page.waitForSelector('text=Спасибо');
   await page.goto(URL+'/#/admin'); await page.waitForSelector('#invForm');
   await page.fill('#invL','Петя, ИУ7'); await page.click('#invForm button[type=submit]'); await page.waitForSelector('#invLink');
@@ -180,6 +187,6 @@ test('выход и удаление аккаунта стирают данны�
   await page.goto(URL+'/#/settings'); await page.click('button[data-act="delete"]'); await page.fill('#delC','УДАЛИТЬ'); await page.click('#delGo');
   await page.waitForSelector('text=Клуб Начерта');
   assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>/^nch2_(rep|club_(ev|cal|done|ii))/.test(k)).length),0);
-  await botLogin(page,7001,'Удаляюсь'); await page.waitForSelector('#authMsg .note.bad'); assert.match(await page.textContent('#authMsg'),/приглашени/);
+  await botLogin(page,7001,'Удаляюсь',{expectFail:true}); await page.waitForSelector('#authMsg .note.bad'); assert.match(await page.textContent('#authMsg'),/приглашени/);
   assert.deepEqual(page.errs,[]); await ctx.close();
 });

@@ -1,7 +1,7 @@
 /* Локальная эмуляция клуба: node server/dev.js  →  http://localhost:8787
    Без аккаунтов и ключей: бот эмулируется, база — файл server/.data/dev-db.json (или память с --memory).
    Тот же обработчик, что в облаке (lib/app.js), плюс служебные адреса /dev/* — их в облаке нет:
-     POST /dev/bot-login {token, id, first_name, deny} — «нажать Старт и Войти» в боте за участника (как пришло бы на вебхук)
+     POST /dev/bot-login {id, first_name, start} — «нажать Старт» у бота за участника; ответ — ссылка из кнопки «Войти в клуб»
      /dev/outbox                     — сообщения бота
      POST /dev/remind                — прогнать напоминания сейчас;  POST /dev/invite — новое приглашение
      POST /dev/clock {offsetMs}      — сдвиг часов сервера (только с --test)
@@ -44,10 +44,11 @@ const srv=http.createServer(async(q,r)=>{
     if(q.headers.host!=='localhost:'+PORT){ r.writeHead(302,{Location:origin+u.pathname+u.search}); return r.end(); }
     if(u.pathname.startsWith('/dev/')){
       if(u.pathname==='/dev/bot-login'&&q.method==='POST'){ let b={}; try{ b=JSON.parse(body||'{}'); }catch(e){}
+        /* как будто участник нажал «Старт» у бота: start=<param>; в ответ — ссылка из кнопки «Войти в клуб» (или текст отказа) */
         const id=String(b.id||'1000002').replace(/\D/g,'').slice(0,12)||'1000002', from={id:+id,first_name:String(b.first_name||'Тестировщик').slice(0,40)};
-        await app.onUpdate({message:{from,chat:{id:+id},text:'/start l_'+String(b.token||'')}});
-        await app.onUpdate({callback_query:{id:'dev',from,data:(b.deny?'no:':'ok:')+app._loginId(String(b.token||''))}});
-        return send(r,200,{ok:true}); }
+        const n=outbox.length; await app.onUpdate({message:{from,chat:{id:+id},text:'/start '+String(b.start||'login').slice(0,64)}});
+        const m=outbox.slice(n).reverse().find(x=>x.body&&String(x.body.chat_id)===id), k=m&&m.body.reply_markup&&m.body.reply_markup.inline_keyboard;
+        return send(r,200,{link:k?k[0][0].url:null,text:m?m.body.text:''}); }
       if(u.pathname==='/dev/outbox') return send(r,200,{mail:outbox.filter(x=>x.to!=='telegram'),telegram:outbox.filter(x=>x.to==='telegram')});
       if(u.pathname==='/dev/remind'&&q.method==='POST') return send(r,200,await app.remind());
       if(u.pathname==='/dev/invite'&&q.method==='POST'){ let b={}; try{ b=JSON.parse(body||'{}'); }catch(e){} return send(r,200,await newInvite(b.label,b.days)); }
@@ -68,7 +69,7 @@ const srv=http.createServer(async(q,r)=>{
 srv.listen(PORT,'127.0.0.1',async()=>{
   if(!QUIET){ const inv=await newInvite('приглашение из консоли');
     console.log('\n  Клуб Начерта (локальная эмуляция): '+origin+'\n'+
-      '  Владелец: «Войти через Telegram» → в окне эмуляции бота id 1000001\n'+
+      '  Владелец: «Войти через Telegram» → блок «Эмуляция бота», id 1000001\n'+
       '  Приглашение для тестировщика: '+inv.link+'\n'+
       '  Сообщения бота: '+origin+'/dev/outbox\n'+
       '  База: '+(MEM?'в памяти':DBF)+'\n'); }

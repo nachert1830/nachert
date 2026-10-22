@@ -2,8 +2,8 @@
    createApp({cfg, store, clock, bot, log}) → {handle(req), remind(now), maintain(now)}.
    Безопасность (подробно — club/README.md, раздел «Безопасность»):
    • регистрация только по одноразовому приглашению (или владелец из ADMIN_TG_IDS);
-   • вход через бота: сайт получает одноразовый токен (в базе — только SHA-256), участник открывает бота, нажимает «Старт»
-     и «Войти»; сервер узнаёт Telegram id из обновления, пришедшего на вебхук с секретом, а не от браузера. 10 минут, один раз;
+   • вход через бота: участник нажимает «Старт» у бота, бот присылает в ЕГО чат кнопку с одноразовой ссылкой (10 минут, один раз,
+     в базе — только SHA-256); входит тот браузер, где ссылку открыли. Telegram id — только из обновления на вебхук с секретом;
    • сессия — cookie HttpOnly, Secure, SameSite=Lax; в базе только SHA-256; CSRF — Origin + токен в заголовке X-CSRF-Token;
    • лимиты запросов, журнал входов (IP усечён), выгрузка и удаление своих данных. */
 'use strict';
@@ -97,34 +97,32 @@ function createApp(o){
   R['GET /api/invite/check']=async(req)=>{ await limit('inv',maskIp(req.ip),30,600); const st=await inviteState(inviteHash(req.query.code)); return H.json(200,{valid:st.ok,why:st.ok?'':st.why}); };
 
   /* ── вход через бота ──
-     1) сайт: POST /api/auth/bot/start → одноразовый токен и ссылка t.me/<бот>?start=l_<токен>;
-     2) участник в Telegram нажимает «Старт», бот спрашивает «Войти в клуб?» с кнопками «Войти» / «Это не я»;
-     3) сайт опрашивает POST /api/auth/bot/poll; после «Войти» — сессия.
-     Telegram id берётся только из обновления, пришедшего на вебхук с секретом. В базе — SHA-256 токена; 10 минут; один раз.
-     Кнопку «Войти» может нажать только тот, кто нажал «Старт»: чужая пересланная ссылка не даёт входа без его подтверждения. */
+     1) сайт ведёт на t.me/<бот>?start=login (или start=i_<код приглашения>);
+     2) «Старт» приходит на вебхук (с секретом) — сервер знает Telegram id и присылает в этот чат кнопку «Войти в клуб»
+        со ссылкой <клуб>/#/tg/<токен>: токен — 192 бита, в базе только SHA-256, 10 минут, один раз;
+     3) по ссылке страница показывает «Войти как <имя>?» и после нажатия получает сессию.
+     Ключ идёт из Telegram в браузер, который выбрал сам участник: присланная кем-то ссылка на бота ничего не даёт присылающему. */
   const loginId=tok=>C.sha256('login:'+tok).slice(0,40);
-  let botReady=false;
-  R['POST /api/auth/bot/start']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),20,600);
-    if(!cfg.botName||!cfg.botToken) fail(503,'Вход через бота ещё не настроен.');
-    const inv=inviteHash(b.invite); if(b.invite){ const st=await inviteState(inv); if(!st.ok) fail(403,st.why,{needInvite:true}); }
-    if(!botReady&&!cfg.dev){ try{ botReady=(await ensureBot())!=='fail'; }catch(e){ log.error('бот',e&&e.message); } }
-    const tok=C.token(24), t=now();
-    await store.put('botlogin',{id:loginId(tok),status:'pending',invite:inv,consent:consentOk(b.consent)?{terms:true,pd:true,photos:!!b.consent.photos}:null,exp:t+LOGIN_MIN*60e3,createdAt:t});
-    return H.json(200,{token:tok,link:'https://t.me/'+cfg.botName+'?start=l_'+tok,app:'tg://resolve?domain='+cfg.botName+'&start=l_'+tok,bot:cfg.botName,ttl:LOGIN_MIN*60e3}); };
+  async function botLoginLink(from,param){ const t=now(), key='tg:'+from.id;
+    const member=await store.get('identities',key), code=/^i_[A-Za-z0-9_-]{16,62}$/.test(param||'')?param.slice(2):null, inv=code?inviteHash(code):null;
+    if(!member&&!isBootstrap(key)){ const st=await inviteState(inv);
+      if(!st.ok){ await o.bot.send(from.id,'Это бот закрытого клуба Начерта. '+(code?st.why:'Вход — по личной ссылке-приглашению.')); return; } }
+    const tok=C.token(24), name=cleanName(from.first_name)||'Участник';
+    await store.put('botlogin',{id:loginId(tok),tg:String(from.id),name,invite:member?null:inv,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
+    await o.bot.send(from.id,'Вход в клуб Начерта.\n\nНажмите кнопку — откроется клуб, и вы войдёте. Ссылка действует '+LOGIN_MIN+' минут и срабатывает один раз. Не пересылайте её: по ней можно войти в ваш аккаунт.',
+      {reply_markup:{inline_keyboard:[[{text:'Войти в клуб',url:cfg.origin+'/#/tg/'+tok}]]}}); }
 
-  R['POST /api/auth/bot/poll']=async(req)=>{ const b=body(req); await limit('poll',maskIp(req.ip),600,600);
-    const tok=String(b.token||''); if(!/^[A-Za-z0-9_-]{30,40}$/.test(tok)) fail(400,'Вход не найден. Нажмите «Войти через Telegram» ещё раз.');
+  /* шаг 3: confirm=false — только узнать имя («Войти как …?»), confirm=true — войти */
+  R['POST /api/auth/bot/redeem']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),30,600);
+    const tok=String(b.token||''); if(!/^[A-Za-z0-9_-]{30,40}$/.test(tok)) fail(400,'Ссылка для входа неверная. Нажмите «Старт» у бота ещё раз.');
     const id=loginId(tok), r=await store.get('botlogin',id), t=now();
-    if(!r||r.exp<t) fail(410,'Время на вход вышло. Нажмите «Войти через Telegram» ещё раз.',{expired:true});
-    if(r.status==='denied') fail(403,'Вход отклонён в Telegram.',{denied:true});
-    if(r.status==='used') fail(410,'Этот вход уже использован. Нажмите «Войти через Telegram» ещё раз.',{expired:true});
-    if(r.status!=='confirmed') return H.json(200,{status:r.status==='asked'?'asked':'pending'});
-    /* новый участник без отметок (например, владелец со страницы входа) — спросить согласие, не тратя подтверждённый вход */
-    const key='tg:'+r.tg, consent=r.consent||(consentOk(b.consent)?{terms:true,pd:true,photos:!!b.consent.photos}:null);
-    if(!consent&&!(await store.get('identities',key))){
-      if(!isBootstrap(key)){ const st=await inviteState(r.invite); if(!st.ok){ await store.update('botlogin',id,{status:'used'}); await logLogin(req,null,'telegram',false,'без приглашения: '+st.why); fail(403,st.why,{needInvite:true}); } }
-      fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true}); }
-    if(!(await store.update('botlogin',id,{status:'used',usedAt:t},{ifEq:{status:'confirmed'}}))) fail(410,'Этот вход уже использован.',{expired:true});
+    if(!r||r.exp<t){ await logLogin(req,null,'telegram',false,'ссылка устарела'); fail(410,'Ссылка для входа устарела. Нажмите «Старт» у бота ещё раз — придёт новая.',{expired:true}); }
+    if(r.used){ await logLogin(req,null,'telegram',false,'повтор ссылки'); fail(410,'Эта ссылка уже использована. Нажмите «Старт» у бота ещё раз — придёт новая.',{expired:true}); }
+    const key='tg:'+r.tg, member=!!(await store.get('identities',key));
+    if(!b.confirm) return H.json(200,{name:r.name,member});
+    const consent=consentOk(b.consent)?{terms:true,pd:true,photos:!!b.consent.photos}:null;
+    if(!member&&!consent) fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true});
+    if(!(await store.update('botlogin',id,{used:true,usedAt:t},{ifEq:{used:false}}))) fail(410,'Эта ссылка уже использована.',{expired:true});
     return enter(req,{key,method:'telegram',name:r.name,tgId:r.tg,invite:r.invite,consent}); };
 
   R['POST /api/tg/webhook']=async(req)=>{ if(!cfg.webhookSecret||!C.safeEqual(req.headers['x-telegram-bot-api-secret-token']||'',cfg.webhookSecret)) fail(403,'нет');
@@ -237,31 +235,15 @@ function createApp(o){
     const ident=await store.get('identities','tg:'+from.id), user=ident?await store.get('users',ident.userId):null;
     const setR=async patch=>{ if(user) await store.update('users',user.id,{reminders:Object.assign({},user.reminders||{},patch)}); };
     if(mcm){ const st=mcm.new_chat_member&&mcm.new_chat_member.status; if(st==='kicked') await setR({canWrite:false}); if(st==='member') await setR({canWrite:true}); return; }
-    if(cb&&/^(ok|no):[0-9a-f]{40}$/.test(cb.data||'')){ await loginAnswer(cb,from); return; }
     if(cb){ if(user&&cb.data==='pause'){ await setR({paused:true}); await o.bot.api('answerCallbackQuery',{callback_query_id:cb.id,text:'Напоминания на паузе. Вернуть — /resume или в клубе.'}); }
       else await o.bot.api('answerCallbackQuery',{callback_query_id:cb.id}); return; }
     const parts=String((msg&&msg.text)||'').trim().split(/\s+/), text=parts[0].replace(/@.*$/,'');
-    if(text==='/start'&&/^l_[A-Za-z0-9_-]{30,40}$/.test(parts[1]||'')){ await loginAsk(parts[1].slice(2),from); return; }
-    if(!user){ if(text==='/start') await o.bot.send(from.id,'Это бот закрытого клуба Начерта. Вход — по личному приглашению: '+cfg.origin); return; }
-    if(text==='/start'){ await setR({canWrite:true}); await o.bot.send(from.id,'Готово: бот может присылать напоминания. Время и тихие часы — в клубе, раздел «Настройки». /pause — пауза, /stop — выключить.'); }
+    if((text==='/start'&&parts[1])||text==='/login'){ await setR({canWrite:true}); await botLoginLink(from,parts[1]); return; }
+    if(!user){ if(text==='/start') await botLoginLink(from,null); return; }
+    if(text==='/start'){ await setR({canWrite:true}); await botLoginLink(from,null); }
     else if(text==='/pause'){ await setR({paused:true}); await o.bot.send(from.id,'Напоминания на паузе. Вернуть — /resume.'); }
     else if(text==='/resume'){ await setR({paused:false,canWrite:true}); await o.bot.send(from.id,'Напоминания снова включены.'); }
     else if(text==='/stop'){ await setR({enabled:false}); await o.bot.send(from.id,'Напоминания выключены. Включить снова — в клубе, раздел «Настройки».'); } }
-
-  /* вход: «Старт» по ссылке с сайта → вопрос с кнопками; ответить может только тот, кто нажал «Старт» */
-  async function loginAsk(tok,from){ const id=loginId(tok), r=await store.get('botlogin',id), t=now();
-    if(!r||r.exp<t||r.status!=='pending'){ await o.bot.send(from.id,'Эта ссылка для входа устарела. Нажмите «Войти через Telegram» на сайте клуба ещё раз.'); return; }
-    const name=cleanName([from.first_name].filter(Boolean).join(' '))||'Участник';
-    if(!(await store.update('botlogin',id,{status:'asked',tg:String(from.id),name},{ifEq:{status:'pending'}}))) return;
-    await o.bot.send(from.id,'Вход в клуб Начерта.\n\nЕсли это вы только что нажали «Войти через Telegram» на сайте — нажмите «Войти». Если нет — «Это не я». Никому не пересылайте это сообщение.',
-      {reply_markup:{inline_keyboard:[[{text:'Войти',callback_data:'ok:'+id}],[{text:'Это не я',callback_data:'no:'+id}]]}}); }
-  async function loginAnswer(cb,from){ const [act,id]=cb.data.split(':'), r=await store.get('botlogin',id), t=now();
-    let text='Вход устарел — начните на сайте заново.';
-    if(r&&r.exp>=t&&r.status==='asked'&&r.tg===String(from.id)){
-      if(act==='ok'&&await store.update('botlogin',id,{status:'confirmed',confirmedAt:t},{ifEq:{status:'asked'}})) text='Готово — вернитесь на сайт клуба.';
-      else if(act==='no'&&await store.update('botlogin',id,{status:'denied'},{ifEq:{status:'asked'}})) text='Вход отклонён. Если это были не вы — ничего делать не нужно.'; }
-    await o.bot.api('answerCallbackQuery',{callback_query_id:cb.id,text});
-    if(cb.message&&cb.message.chat) await o.bot.api('editMessageText',{chat_id:cb.message.chat.id,message_id:cb.message.message_id,text}).catch(()=>{}); }
 
   /* ── напоминания: запускается таймером каждые 15 минут ── */
   /* бот настраивается из облака: компьютер владельца может не видеть Telegram без VPN. Вебхук и команды — если ещё не те */
@@ -269,7 +251,7 @@ function createApp(o){
     const url=cfg.origin+'/api/tg/webhook', info=await o.bot.api('getWebhookInfo',{}).catch(()=>null);
     if(info&&info.ok&&info.result&&info.result.url===url) return 'ok';
     const r=await o.bot.api('setWebhook',{url,secret_token:cfg.webhookSecret,allowed_updates:['message','callback_query','my_chat_member']}).catch(e=>({ok:false,description:e.message}));
-    await o.bot.api('setMyCommands',{commands:[{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'stop',description:'Выключить напоминания'}]}).catch(()=>{});
+    await o.bot.api('setMyCommands',{commands:[{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'login',description:'Войти в клуб'},{command:'stop',description:'Выключить напоминания'}]}).catch(()=>{});
     if(!r||!r.ok) log.error('вебхук бота не подключён',r&&r.description); return r&&r.ok?'set':'fail'; }
 
   async function remind(at){ const t=at||now(), out={sent:0,skipped:{}};

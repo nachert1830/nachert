@@ -122,10 +122,10 @@ function skillEvents(){ const ev=LS.get(K.ev,[]), rep=LS.get(K.rep,{}), club=new
 const estimate=()=>BKT.estimate(skillEvents());
 
 /* ── вход через бота ──
-   1) «Войти через Telegram» → сервер даёт одноразовую ссылку на бота; 2) в Telegram — «Старт», затем «Войти»;
-   3) страница раз в 2 секунды спрашивает сервер, подтверждён ли вход. Никаких окон Telegram на сайте, номер телефона не нужен. */
-let LOGIN=null;
-async function afterLogin(r){ LOGIN=null; ME=Object.assign({},ME||{},{csrf:r.csrf}); const local=SYNC.readLocal(localStorage), had=Object.keys(local.data).length;
+   1) «Войти через Telegram» → ссылка на бота (t.me/<бот>?start=login или start=i_<код приглашения>);
+   2) в Telegram «Старт» → бот присылает в ваш чат кнопку «Войти в клуб» с одноразовой ссылкой;
+   3) по ссылке открывается клуб: «Войти как <имя>?» → вход в этом браузере. Окон Telegram на сайте нет, номер телефона не нужен. */
+async function afterLogin(r){ ME=Object.assign({},ME||{},{csrf:r.csrf}); const local=SYNC.readLocal(localStorage), had=Object.keys(local.data).length;
   await loadMe(); const ok=await syncNow();
   try{ sessionStorage.removeItem('club_invite'); }catch(e){}
   if(r.isNew&&had&&ok) toast('Прогресс с этого устройства перенесён в аккаунт'); else if(r.isNew) toast('Добро пожаловать в клуб!');
@@ -139,40 +139,25 @@ function consentBlock(){ return `<div class="consent">
 </div>`; }
 const consentVal=root=>({terms:!!($('#cTerms',root)||{}).checked,pd:!!($('#cPd',root)||{}).checked,photos:!!($('#cPhotos',root)||{}).checked});
 const getInvite=()=>{ try{ return sessionStorage.getItem('club_invite')||undefined; }catch(e){ return undefined; } };
+const botStart=()=>{ const c=getInvite(); return c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)?'i_'+c:'login'; };
 function authIdle(){ return `<button class="btn white lg" type="button" data-act="botLogin"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button><div id="authMsg" aria-live="polite"></div>`; }
-async function botLogin(needConsent){
-  const box=$('#auth'), msg=$('#authMsg'); let consent;
-  if(needConsent){ consent=consentVal(); if(!(consent.terms&&consent.pd)){ msg.innerHTML='<p class="note bad">Отметьте соглашение и согласие на обработку данных.</p>'; return; } }
-  let s; try{ s=await api('POST','/api/auth/bot/start',{invite:getInvite(),consent}); }
-  catch(e){ msg.innerHTML=`<p class="note bad">${esc(e.message)}</p>`; return; }
-  /* срок — от часов этого устройства: часы телефона могут расходиться с сервером */
-  const me={token:s.token,exp:Date.now()+(s.ttl||600e3),consent:null}; LOGIN=me;
-  box.innerHTML=`<div class="wait"><ol><li class="on" id="w1"><span>Откройте бота <b>@${esc(s.bot)}</b> в Telegram</span></li><li id="w2"><span>Нажмите «Старт»</span></li><li id="w3"><span>В сообщении бота нажмите «Войти»</span></li></ol>
-    <div class="row"><a class="btn white lg" href="${esc(s.link)}" target="_blank" rel="noopener noreferrer" id="openBot"><span class="tgmark">${ic('tg')}</span>Открыть бота</a><button class="btn ghost" type="button" data-act="loginCancel">Отмена</button></div>
-    <div class="status"><span class="spin" aria-hidden="true"></span><span id="wst">Ждём подтверждения в Telegram…</span></div>
-    <p class="lnk">Telegram на телефоне? Откройте там ссылку: <span id="wlink">${esc(s.link)}</span> <button class="btn sm ghost" type="button" data-act="copy" data-t="#wlink">Скопировать</button></p>
-    ${CFG.devBot?`<div class="devbox"><b>Эмуляция бота</b> (только локально): нажать «Старт» и «Войти» за участника.<div class="grid2 reg"><input id="dvId" type="text" inputmode="numeric" value="1000002" aria-label="Telegram id"><input id="dvName" type="text" value="Тестировщик" aria-label="Имя"></div><div class="row reg"><button class="btn sm white" type="button" data-act="devBot">В боте: «Старт» и «Войти»</button></div><small>1000001 — владелец клуба.</small></div>`:''}
-    </div><div id="authMsg" aria-live="polite"></div>`;
-  pollLogin(me); }
-async function pollLogin(me){
-  while(LOGIN===me){
-    if(Date.now()>me.exp+5000){ loginFail('Время на вход вышло. Нажмите «Войти через Telegram» ещё раз.'); return; }
-    try{ const r=await api('POST','/api/auth/bot/poll',{token:me.token,consent:me.consent||undefined});
-      if(LOGIN!==me) return;
-      if(r.csrf){ $$('.wait li').forEach(l=>l.className='ok'); await afterLogin(r); return; }
-      const st=$('#wst'); if(r.status==='asked'){ ['w1','w2'].forEach(i=>{ const l=$('#'+i); if(l) l.className='ok'; }); const l3=$('#w3'); if(l3) l3.className='on'; if(st) st.textContent='Осталось нажать «Войти» в сообщении бота'; } }
-    catch(e){ if(LOGIN!==me) return;
-      if(e.data&&e.data.needConsent){ askConsent(me); return; }
-      if(!e.offline){ loginFail(e.message+(e.data&&e.data.needInvite?' Новых участников клуб принимает только по ссылке-приглашению.':'')); return; } }
-    await new Promise(r=>setTimeout(r,2000)); } }
-function loginFail(text){ LOGIN=null; const box=$('#auth'); if(!box) return; box.innerHTML=authIdle(); $('#authMsg').innerHTML=`<p class="note bad">${esc(text)}</p>`; }
-/* владелец или участник без отметок входит со страницы входа — согласие спрашивается, подтверждённый вход не тратится */
-function askConsent(me){ openSheet(`<h2>Первый вход</h2><p class="mut">Перед созданием аккаунта отметьте документы.</p>${consentBlock()}<div id="caMsg"></div><div class="row"><button class="btn pri grow" id="caGo" type="button">Продолжить</button><button class="btn" data-close type="button">Отмена</button></div>`,
-  bg=>{ $('#caGo',bg).addEventListener('click',()=>{ const c=consentVal(bg); if(!(c.terms&&c.pd)){ $('#caMsg',bg).innerHTML='<p class="note bad">Отметьте соглашение и согласие.</p>'; return; }
-    me.consent=c; closeSheet(); pollLogin(me); }); }); }
+function botSteps(){ const bot=CFG.botName||'', link='https://t.me/'+bot+'?start='+botStart();
+  return `<div class="wait"><ol><li class="on"><span>Откройте бота <b>@${esc(bot)}</b> в Telegram</span></li><li><span>Нажмите «Старт»</span></li><li><span>Бот пришлёт кнопку <b>«Войти в клуб»</b> — нажмите её, и вы войдёте</span></li></ol>
+    <div class="row"><a class="btn white lg" href="${esc(link)}" target="_blank" rel="noopener noreferrer" id="openBot"><span class="tgmark">${ic('tg')}</span>Открыть бота</a><button class="btn ghost" type="button" data-act="loginCancel">Назад</button></div>
+    <p class="lnk">Telegram на телефоне? Откройте ссылку там: <span id="wlink">${esc(link)}</span> <button class="btn sm ghost" type="button" data-act="copy" data-t="#wlink">Скопировать</button></p>
+    ${CFG.devBot?`<div class="devbox"><b>Эмуляция бота</b> (только локально): нажать «Старт» за участника и открыть ссылку из ответа.<div class="grid2 reg"><input id="dvId" type="text" inputmode="numeric" value="1000002" aria-label="Telegram id"><input id="dvName" type="text" value="Тестировщик" aria-label="Имя"></div><div class="row reg"><button class="btn sm white" type="button" data-act="devBot">В боте: «Старт»</button></div><small>1000001 — владелец клуба.</small></div>`:''}
+    </div><div id="authMsg" aria-live="polite"></div>`; }
+/* шаг 3: ссылка из бота — «Войти как …?»; новому участнику — отметки документов */
+let LANDING=null;
+async function landingView(tok){ LANDING=tok; render('<p class="mut">Проверяю ссылку…</p>','Вход');
+  let r; try{ r=await api('POST','/api/auth/bot/redeem',{token:tok}); }
+  catch(e){ LANDING=null; render(`<section class="hero"><span class="pill red">Ссылка не сработала</span><h1>Клуб Начерта</h1><p>${esc(e.message)}</p><div class="auth" id="auth">${authIdle()}</div></section>`,'Вход'); return; }
+  render(`<section class="hero"><span class="pill">Вход через Telegram</span><h1>Войти как ${esc(r.name)}?</h1>
+    <p>${r.member?'Вы вошли в Telegram-бот клуба. Нажмите «Войти», чтобы открыть кабинет в этом браузере.':'Первый вход: отметьте документы и нажмите «Войти» — аккаунт создастся. Берём минимум: Telegram id и имя, плюс ваш прогресс. Данные — в России.'}</p>
+    <div class="auth" id="auth">${r.member?'':`<div class="reg">${consentBlock()}</div>`}<div class="row reg"><button class="btn white lg" type="button" data-act="redeem" data-new="${r.member?'':'1'}">Войти</button><button class="btn ghost" type="button" data-act="notMe">Это не я</button></div><div id="authMsg" aria-live="polite"></div></div></section>`,'Вход'); }
 const FEATS=[['cal','','Календарь сдач','ДЗ, РК и закрытие модулей ИКГ и начерта — по неделям вашей группы'],['plan','red','Обратный план','От дня РК назад: диагностика, слабые темы, пробный РК'],
   ['train','green','Тренировка дня','15–20 минут: повтор по интервалам и задача вперемешку'],['skills','amber','Карта навыков','Что уже освоено и какие задачи решить дальше']];
-function loginView(){ LOGIN=null; render(`<section class="hero"><span class="pill">Закрытое тестирование</span><h1>Клуб Начерта</h1>
+function loginView(){ render(`<section class="hero"><span class="pill">Закрытое тестирование</span><h1>Клуб Начерта</h1>
   <p>Личный кабинет студента: сроки ДЗ и РК, план подготовки и тренировка — на задачах тетради с <a href="${esc(mainUrl())}" rel="noopener">nachert1830.ru</a>.</p>
   <div class="auth" id="auth">${authIdle()}</div><p class="mut">Новых участников клуб принимает только по личной ссылке-приглашению.</p></section>
   <div class="feats">${FEATS.map(([i,t,b,p])=>`<div class="feat"><span class="ico ${t}">${ic(i)}</span><b>${b}</b><p>${p}</p></div>`).join('')}</div>
@@ -183,7 +168,7 @@ async function inviteView(){ const code=getInvite(); let st={valid:false,why:'Н
   if(!st.valid){ render(`<section class="hero"><span class="pill red">Приглашение не подходит</span><h1>Клуб Начерта</h1><p>${esc(st.why)} Если вы уже участник — войдите как обычно.</p><div class="auth" id="auth">${authIdle()}</div></section>`,'Приглашение'); try{ sessionStorage.removeItem('club_invite'); }catch(e){} return; }
   render(`<section class="hero"><span class="pill">Личное приглашение</span><h1>Вас пригласили в клуб</h1>
     <p>Клуб — закрытое тестирование нового кабинета Начерта. Берём минимум: Telegram id и имя, плюс ваш прогресс. Данные — в России.</p>
-    <div class="auth" id="auth"><div class="reg">${consentBlock()}</div><div class="row reg"><button class="btn white lg" type="button" data-act="botLogin" data-need="1"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button></div><div id="authMsg" aria-live="polite"></div></div></section>
+    <div class="auth" id="auth">${authIdle()}</div></section>
   <div class="feats">${FEATS.map(([i,t,b,p])=>`<div class="feat"><span class="ico ${t}">${ic(i)}</span><b>${b}</b><p>${p}</p></div>`).join('')}</div>`,'Приглашение'); }
 
 /* ── «Сегодня» ── */
@@ -472,9 +457,14 @@ function feedback(f){ const name=f==='general'?'клуб в целом':(FEAT.FE
 const ACT={
   fb:el=>feedback(el.dataset.f),
   onboardOff:()=>{ LS.device('nch2_club_onboard'); todayView(); },
-  botLogin:el=>botLogin(!!el.dataset.need),
-  loginCancel:()=>{ LOGIN=null; const box=$('#auth'); if(box) box.innerHTML=authIdle(); },
-  devBot:async()=>{ if(!LOGIN) return; await fetch('/dev/bot-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:LOGIN.token,id:$('#dvId').value,first_name:$('#dvName').value})}); },
+  botLogin:()=>{ const box=$('#auth'); if(box) box.innerHTML=botSteps(); },
+  notMe:()=>{ LANDING=null; toast('Вход отменён'); loginView(); },
+  loginCancel:()=>{ const box=$('#auth'); if(box) box.innerHTML=authIdle(); },
+  devBot:async()=>{ const r=await (await fetch('/dev/bot-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:$('#dvId').value,first_name:$('#dvName').value,start:botStart()})})).json();
+    if(r.link) location.href=r.link; else $('#authMsg').innerHTML=`<p class="note bad">Бот ответил: ${esc(r.text)}</p>`; },
+  redeem:async el=>{ const msg=$('#authMsg'), c=consentVal(); if(el.dataset.new&&!(c.terms&&c.pd)){ msg.innerHTML='<p class="note bad">Отметьте соглашение и согласие на обработку данных.</p>'; return; }
+    try{ const r=await api('POST','/api/auth/bot/redeem',{token:LANDING,confirm:true,consent:el.dataset.new?c:undefined}); LANDING=null; await afterLogin(r); }
+    catch(e){ msg.innerHTML=`<p class="note bad">${esc(e.message)}${e.data&&e.data.needInvite?' Новых участников клуб принимает только по ссылке-приглашению.':''}</p>`; } },
   qmore:el=>{ const q=$('.q',el.closest('.task')); q.classList.toggle('open'); el.textContent=q.classList.contains('open')?'Свернуть':'Условие целиком'; },
   rate:el=>{ const t=el.closest('.task'), v=+el.dataset.v; if(v===2) saveRating(t,2,[],[]); else { $$('.rate .btn',t).forEach(b=>b.classList.toggle('on',b===el)); errorPicker(t,v); } },
   rateSave:el=>{ const t=el.closest('.task'); saveRating(t,+el.dataset.v,$$('.errs [data-e].on',t).map(b=>b.dataset.e),$$('.errs [data-sym].on',t).map(b=>b.dataset.sym)); },
@@ -546,7 +536,8 @@ function tabs(){ const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(loca
   $$('a',t).forEach(a=>{ a.hidden=!!a.dataset.f&&!flag(a.dataset.f); a.classList.toggle('on',a.dataset.r===r||(r==='event'&&a.dataset.r==='calendar')||(['check','settings','admin','about'].includes(r)&&a.dataset.r==='more')); }); }
 function route(){ closeSheet(); const h=location.hash.replace(/^#\/?/,''), p=h.split('/');
   if(p[0]==='invite'&&p[1]){ try{ sessionStorage.setItem('club_invite',p[1]); }catch(e){} history.replaceState(null,'','#/join'); return route(); }
-  if(!ME){ if(LOGIN&&$('#auth')) return; if(p[0]==='join'||getInvite()) return inviteView(); return loginView(); }
+  if(p[0]==='tg'&&p[1]){ const tok=p[1]; history.replaceState(null,'','#/'); if(!ME) return landingView(tok); }
+  if(!ME){ if(LANDING&&$('#auth')) return; if(p[0]==='join'||getInvite()) return inviteView(); return loginView(); }
   if(!CORE){ render('<p class="mut">Загружаю задачи…</p>'); return; }
   view().focus({preventScroll:true}); scrollTo(0,0);
   switch(p[0]){

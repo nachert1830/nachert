@@ -1,5 +1,5 @@
 /* Тестовый клуб: тот же createApp, хранилище в памяти, управляемые часы, бот — в outbox.
-   Вход через бота: start (сайт) → «Старт» и «Войти» в боте (обновления, как на вебхук) → poll (сайт). */
+   Вход через бота: «Старт» (обновление на вебхук) → ссылка из кнопки бота → redeem (браузер). */
 'use strict';
 const {createApp}=require('../lib/app');
 const {memoryStore}=require('../lib/store/memory');
@@ -22,16 +22,17 @@ function club(opt){ opt=opt||{};
     return {status:res.statusCode,data,headers:res.headers,setCookie:sc&&sc[0],raw:res}; }
   /* обновления Telegram так, как они приходят на вебхук (с секретом) */
   const hook=u=>call('POST','/api/tg/webhook',JSON.stringify(u),{headers:{'x-telegram-bot-api-secret-token':'hook-secret'},as:'telegram'});
-  const startBot=(tok,id,name)=>hook({message:{from:{id:+id,first_name:name||'Тест'},chat:{id:+id},text:'/start l_'+tok}});
-  const press=(tok,id,act)=>hook({callback_query:{id:'cb'+Math.random(),from:{id:+id},message:{chat:{id:+id},message_id:1},data:(act||'ok')+':'+app._loginId(tok)}});
-  /* полный вход: o.invite, o.consent (по умолчанию — согласие дано), o.who — чья cookie */
+  /* «Старт» у бота → ссылка из кнопки «Войти в клуб», отправленной в чат этого id (или null, если бот отказал) */
+  async function startBot(id,name,param){ const n=outbox.length; await hook({message:{from:{id:+id,first_name:name||'Тест'},chat:{id:+id},text:'/start'+(param?' '+param:'')}});
+    const m=outbox.slice(n).reverse().find(x=>x.body&&String(x.body.chat_id)===String(id)), k=m&&m.body.reply_markup&&m.body.reply_markup.inline_keyboard;
+    const url=k&&k[0][0].url; return {url,token:url?url.split('#/tg/')[1]:null,text:m&&m.body.text}; }
+  /* полный вход: o.invite — код приглашения, o.consent (по умолчанию — согласие дано), o.who — чья cookie */
   async function login(id,name,o){ o=o||{}; const consent=o.consent===undefined?CONSENT:o.consent;
-    const s=await call('POST','/api/auth/bot/start',{invite:o.invite,consent},{as:o.who||'u'+id}); if(s.status!==200) return s;
-    await startBot(s.data.token,id,name); await press(s.data.token,id,'ok');
-    return call('POST','/api/auth/bot/poll',{token:s.data.token,consent:o.pollConsent},{as:o.who||'u'+id}); }
+    const b=await startBot(id,name,o.invite?'i_'+o.invite:'login'); if(!b.token) return {status:403,data:{needInvite:true,error:b.text}};
+    return call('POST','/api/auth/bot/redeem',{token:b.token,confirm:true,consent},{as:o.who||'u'+id}); }
   async function invite(asWho){ const r=await call('POST','/api/admin/invites',{label:'тест',days:7},{as:asWho||'owner'}); return r.data.code; }
   async function owner(){ return login(1000001,'Владелец',{who:'owner'}); }
   async function member(id,who){ const code=await invite(); return login(id,'Участник',{invite:code,who:who||'m'+id}); }
-  return {app,cfg,store,clock,outbox,call,hook,startBot,press,login,consent:CONSENT,invite,owner,member,jar}; }
+  return {app,cfg,store,clock,outbox,call,hook,startBot,login,consent:CONSENT,invite,owner,member,jar}; }
 const CONSENT={terms:true,pd:true,photos:false};
 module.exports={club};
