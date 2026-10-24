@@ -26263,7 +26263,7 @@ function route(){
      Только при переходе в другой раздел/материал — шаги внутри задачи не анимируем. */
   const key=x=>{ const q=parseHash(x||'#/'); return [q.s,q.tab,q.item].join('/'); };
   const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); }catch(e){ go(); } }
+  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); vt.ready.catch(()=>{});   /* переход пропущен (следующий начался раньше) — не ошибка */ }catch(e){ go(); } }
   else go();
   ST.set('route',h);
 }
@@ -29752,14 +29752,25 @@ function labeler(){ const Q=[]; const fn=(q,t,col,dx,dy)=>{ Q.push({q,t,col,dx,d
    ['lead', p, q, текст, сторона] — выноска: стрелка в точке p, излом в q, полка в сторону ±1;
    ['dia', c, D, угол, вылет, текст, сторона] — диаметр окружности через центр: стрелка на окружности под углом, полка за противоположной стороной;
    ['ang', c, r, a0, a1, текст, {e:[r0,r0]}] — угол между лучами a0 и a1 (град, против часовой от +x), дуга радиуса r; e — откуда начинать выносные */
+/* отрезок g = [x1, y1, x2, y2] задевает прямоугольник b = [x0, y0, x1, y1] */
+function segBox(g,b){ const [x1,y1,x2,y2]=g; if(Math.max(x1,x2)<b[0]||Math.min(x1,x2)>b[2]||Math.max(y1,y2)<b[1]||Math.min(y1,y2)>b[3]) return false;
+  const inB=(x,y)=>x>=b[0]&&x<=b[2]&&y>=b[1]&&y<=b[3]; if(inB(x1,y1)||inB(x2,y2)) return true;
+  const cr=(ax,ay,bx,by)=>{ const d=(x2-x1)*(by-ay)-(y2-y1)*(bx-ax); if(Math.abs(d)<1e-9) return false; const u=((ax-x1)*(by-ay)-(ay-y1)*(bx-ax))/d, v=((ax-x1)*(y2-y1)-(ay-y1)*(x2-x1))/d; return u>=0&&u<=1&&v>=0&&v<=1; };
+  return cr(b[0],b[1],b[2],b[1])||cr(b[2],b[1],b[2],b[3])||cr(b[2],b[3],b[0],b[3])||cr(b[0],b[3],b[0],b[1]); }
 function dimsSVG(list,M){ let o=''; const W1=.8;
   const ar=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*12-dy*2.6)},${f(dy*12+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="${INK}"/>`;
   const tw=t=>[...String(t)].reduce((a,c)=>a+(/[0-9.,]/.test(c)?11:/[ ]/.test(c)?6:13),0);
   (list||[]).forEach(d=>{ const V=d[0], m=M[V], t=d[1];
     if(t==='h'){ const [,,A,B,at,tx,op]=d, a=m(A), b=m(B), y=m([A[0],at])[1], s=y<a[1]?-1:1, x1=Math.min(a[0],b[0]), x2=Math.max(a[0],b[0]);
       if(Math.abs(a[1]-y)>1) o+=ln(a,[a[0],y+s*6],INK,W1); if(Math.abs(b[1]-y)>1) o+=ln(b,[b[0],y+s*6],INK,W1);
-      const short=x2-x1<tw(tx)+30, cx=op&&op.tx!=null?m([op.tx,at])[0]:(x1+x2)/2;
-      if(!short){ o+=ln([x1,y],[x2,y],INK,W1)+ar([x1,y],1,0)+ar([x2,y],-1,0)+txt([cx,y-6],tx,'igs-dim','middle'); }
+      const short=x2-x1<tw(tx)+30; let cx=op&&op.tx!=null?m([op.tx,at])[0]:(x1+x2)/2, outX=0; const w2=tw(tx)/2+2;
+      /* размерное число не пересекают линии (ГОСТ 2.307): если пересекает (невидимый контур на половине вида и т. п.) — ближайшее свободное место на размерной линии */
+      if(!short&&REC){ const hit=c0=>{ const b=[c0-w2,y-6-17,c0+w2,y-6+4]; return REC.s.concat(REC.h).some(g=>segBox(g,b)); };
+        if(hit(cx)){ let best=null; for(let d=3;d<x2-x1;d+=3) for(const c0 of [cx-d,cx+d]){ if(best==null&&c0-w2>x1+14&&c0+w2<x2-14&&!hit(c0)) best=c0; }
+          /* внутри места нет — число на продолжении размерной линии за стрелкой, с той стороны, где свободно */
+          if(best==null) [[x1-10-w2,-1],[x2+10+w2,1]].some(([c0,sd])=>!hit(c0)&&(best=c0,outX=sd));
+          if(best!=null) cx=best; } }
+      if(!short){ o+=ln([outX<0?cx-w2:x1,y],[outX>0?cx+w2:x2,y],INK,W1)+ar([x1,y],1,0)+ar([x2,y],-1,0)+txt([cx,y-6],tx,'igs-dim','middle'); }
       else { o+=ln([x1-22,y],[x2+22,y],INK,W1)+ar([x1,y],-1,0)+ar([x2,y],1,0)+(op&&op.tl?txt([x1-26,y-6],tx,'igs-dim','end'):txt([x2+26,y-6],tx,'igs-dim','start')); } }   /* короткий размер: стрелки снаружи, число за стрелкой (tl — слева) */
     else if(t==='h1'){ /* половина вида и половина разреза: размерная линия с одной стрелкой, за ось на 3 мм (ГОСТ 2.307, п. 4.5) */
       const [,,A,at,tx,op]=d, a=m(A), y=m([A[0],at])[1], s=y<a[1]?-1:1, ax=m([0,at])[0], dirx=a[0]>ax?-1:1, e=ax+dirx*3*k;
@@ -29818,7 +29829,7 @@ function ctx(n){ const md=IG_VARS[n], sp=IGUI.igSpec(md), b=md.box, x0=b[0][0], 
   const DR=(view,off,bnd)=>IG3.drawing(md,view,W,off||0,bnd||0);
   return {n,md,sp,b,x0,x1,y0,y1,z0,z1,G,TY,GX,FR,TP,LF,DR}; }
 function img(C,d,OX,OY){ const m=(()=>{ const q=C.DR('front0'); return (q.px([10,0,0])[0]-q.px([0,0,0])[0])/10; })(), o=d.px([0,0,0]), sc=k/m, tx=OX-o[0]*sc, ty=OY-o[1]*sc;
-  if(REC) (d.lines||[]).forEach(L=>{ if(!L.h) REC.s.push([tx+L.a[0]*sc,ty+L.a[1]*sc,tx+L.b[0]*sc,ty+L.b[1]*sc]); });
+  if(REC) (d.lines||[]).forEach(L=>(L.h?REC.h:REC.s).push([tx+L.a[0]*sc,ty+L.a[1]*sc,tx+L.b[0]*sc,ty+L.b[1]*sc]));
   return `<image href="${d.url}" width="${W}" height="${W}" transform="translate(${f(tx)} ${f(ty)}) scale(${sc.toFixed(5)})"/>`; }
 /* след наклонной плоскости и сечение в проекционной связи: ось сечения ∥ следу, точки переносятся перпендикулярно следу */
 function secGeo(C){ const md=C.md; if(!md.sec) return null; const [[xa,za],[xb,zb]]=md.sec.p, th=Math.atan2(zb-za,xb-xa), c=Math.cos(th), s=Math.sin(th), L=Math.hypot(xb-xa,zb-za);
@@ -29904,7 +29915,7 @@ function fmtSheet(pts,n){ const C0=bbox(pts,0); const FM=[['А3',420,297],['А2'
     fr:`<rect x="0" y="0" width="${f(W3)}" height="${f(H3)}" fill="#fff" stroke="${INK}" stroke-width=".7"/><rect x="${f(20*k)}" y="${f(5*k)}" width="${f(W3-25*k)}" height="${f(H3-10*k)}" fill="none" stroke="${INK}" stroke-width="2.1"/>`
       +IGL.stampK(W3-5*k,H3-5*k,k,n,'1:1')+`<text x="${f(W3-5*k)}" y="${f(H3-1.4*k)}" class="igl-tbs" text-anchor="end">Формат ${fm[0]}</text>`}; }
 const MEMO={};
-function sheet(n,mode){ const key=n+'|'+mode; if(MEMO[key]) return MEMO[key]; REC={s:[],d:[]}; try{ return MEMO[key]=body(n,mode); } finally{ REC=null; } }
+function sheet(n,mode){ const key=n+'|'+mode; if(MEMO[key]) return MEMO[key]; REC={s:[],d:[],h:[]}; try{ return MEMO[key]=body(n,mode); } finally{ REC=null; } }
 function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}=C, LT=IGUI.letters(md), hz=md.hz;
   let o='', col='', c='', t='', pts=[];
   /* изображения */
@@ -30021,7 +30032,7 @@ function secSteps(n){ const C=ctx(n), SG=secGeo(C); if(!SG) return []; const P=s
       +(tw.length?' Проекции '+tw.join(', ')+' на главном виде совпали (знак ≡): на виде сверху и в сечении это разные точки.':''),st:{k:'pts',from:a,to:b}}); });
   L.push({t:'Обводка и штриховка',d:'Соединяем точки по порядку обхода контура: по плоским граням — прямыми, по поверхностям вращения — плавными кривыми. Контур сечения — сплошной толстой линией, внутри — штриховка '+IGUI.hatchDeg(SG.th)+'°'+(IGUI.hatchDeg(SG.th)!==45?' (под 45° штрихи шли бы почти вдоль оси сечения — поэтому другой угол)':'')+'. Отверстия не штрихуют. Над сечением — «А–А».',st:{k:'fin'}});
   return L; }
-function secFrame(n,st){ REC={s:[],d:[]}; try{ return frameBody(n,st); } finally{ REC=null; } }
+function secFrame(n,st){ REC={s:[],d:[],h:[]}; try{ return frameBody(n,st); } finally{ REC=null; } }
 function frameBody(n,st){ const C=ctx(n), {md,sp,FR,TP,DR}=C, SG=secGeo(C), P=secPoints(C,SG), {SC,X,Z}=SG; let o='', c='', t='', pts=[];
   /* главный вид на кадрах построения — с невидимым контуром: след пересекает и внутренние поверхности (отверстия, полости, рёбра) */
   o+=img(C,DR('front0'),0,0)+img(C,DR('top'),0,k*C.TY);
