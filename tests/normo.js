@@ -147,7 +147,8 @@ function run(F,opt){
   const segAll=[]; items.forEach(it=>segsOf(it).forEach(s=>segAll.push(s)));
   /* типы линий по виду */
   const sMain=(()=>{ const ws=items.filter(it=>!it.dash&&it.view>=0).map(it=>it.sw); if(!ws.length) return null; ws.sort((a,b)=>b-a); return ws[0]; })();
-  const kind=it=>{ if(it.dash){ const d=it.dash; return d.length>=4&&d.length%4===0&&d[0]>d[2]*2?'axis':'dash'; } if(!k) return 'solid'; return it.sw/k>=0.45?'thick':'thin'; };
+  /* толстая — от самой толстой сплошной линии видов (контура): тонкие по ГОСТ не толще s/2, а s бывает и 0,5 мм — порог в мм не годится */
+  const kind=it=>{ if(it.dash){ const d=it.dash; return d.length>=4&&d.length%4===0&&d[0]>d[2]*2?'axis':'dash'; } if(!k) return 'solid'; return sMain?(it.sw>=0.7*sMain?'thick':'thin'):(it.sw/k>=0.45?'thick':'thin'); };
   items.forEach(it=>{ it.kind=kind(it); });
   const arrows=fills.filter(f=>f.tag==='path'&&!f.pat&&f.polys.length===1&&f.polys[0].length<=5&&(()=>{ const P=f.polys[0]; let A=0; for(let i=1;i<P.length;i++) A+=P[i-1][0]*P[i][1]-P[i][0]*P[i-1][1]; A=Math.abs(A)/2; return k&&A/k/k<6&&A>0; })())
     .map(f=>{ const P=f.polys[0].slice(0,3), e=[dist(P[0],P[1]),dist(P[1],P[2]),dist(P[2],P[0])], i=e.indexOf(Math.min(...e)), base=[P[(i)%3],P[(i+1)%3]], tip=P[(i+2)%3], mid=[(base[0][0]+base[1][0])/2,(base[0][1]+base[1][1])/2];
@@ -198,7 +199,7 @@ function run(F,opt){
     if(V.length>1){ const mx=Math.max(...V.map(it=>it.sw)); V.forEach(it=>{ if(it.sw<mx*0.8) add(GS('line.same'),'одна толщина основной линии','видимый контур одного изображения '+R(it.sw/k,2)+' мм, других — '+R(mx/k,2)+' мм',it.polys[0][0]); }); } }
   openL.forEach(it=>{ const w=it.sw/k, P=it.polys[0], L=dist(P[0],P[1])/k; if(w>rg('line.open.w',s)[1]+0.01) add(GS('line.open.w'),'разомкнутая линия','толщина '+R(w,2)+' мм больше '+T('line.open.w').split('…')[1]+' = '+R(rg('line.open.w',s)[1],2),P[0]); if(!E.ok('line.open.st',L,s,0.1)) add(GS('line.open.st'),'разомкнутая линия','штрих '+R(L,1)+' мм вне '+T('line.open.st'),P[0]); });
   const KN={thin:'тонкая',dash:'штриховая',axis:'штрихпунктирная'}, KW={thin:'line.thin.w',dash:'line.dash.w',axis:'line.axis.w'};
-  drawn.filter(it=>it.kind!=='thick').forEach(it=>{ const w=it.sw/k, P=it.polys[0], id=KW[it.kind]||'line.thin.w'; if(!E.ok(id,w,s,0.012)) add(G(id),'тонкие линии',(KN[it.kind]||'тонкая')+' '+R(w,3)+' мм вне '+T(id)+' = '+rg(id,s).map(v=>R(v,2)).join('…'),P[0]); });
+  drawn.filter(it=>it.kind!=='thick').forEach(it=>{ const w=it.sw/k, P=it.polys[0], id=KW[it.kind]||'line.thin.w'; if(!E.ok(id,w,s,0.012)) add(GS(id),'тонкие линии',(KN[it.kind]||'тонкая')+' '+R(w,3)+' мм вне '+T(id)+' = '+rg(id,s).map(v=>R(v,2)).join('…'),P[0]); });
   fills.filter(f=>f.pat).forEach(f=>{ const w=f.pat.lw/k; if(!E.ok('line.thin.w',w,s,0.012)) add(GS('line.thin.w'),'тонкие линии','штриховка '+R(w,3)+' мм вне '+T('line.thin.w'),f.polys[0][0]); });
   /* одна толщина у линий одного типа на всём листе (ГОСТ 2.303): сплошные тонкие (с волнистой и штриховкой), штриховые, штрихпунктирные */
   if(!opt.draft){ const grp={thin:[],dash:[],axis:[]}; drawn.forEach(it=>{ if(grp[it.kind]) grp[it.kind].push({w:it.sw/k,at:it.polys[0][0]}); }); fills.filter(f=>f.pat).forEach(f=>grp.thin.push({w:f.pat.lw/k,at:f.polys[0][0],h:1}));
@@ -399,9 +400,20 @@ function run(F,opt){
   [...new Set(marks.map(m=>m.L).filter(Boolean))].forEach(L=>{ if(!labs.some(t=>t.s[0]===L)) add(GS('cut.label'),'обозначение разреза','штрихи с буквой «'+L+'», а надписи «'+L+'–'+L+'» над изображением нет',marks.find(m=>m.L===L).c); });
   { const used=labs.map(t=>t.s[0]); const dup=used.filter((L,i)=>used.indexOf(L)!==i); dup.forEach(L=>add(GS('let.order'),'буквы не повторяются','«'+L+'–'+L+'» дважды',labs.find(t=>t.s[0]===L).c)); }
 
+  /* ── ГОСТ-покрытие: каждый элемент листа выведен из профиля ESKD — толщина и штрихи линии, шаг штриховки, кегль надписи, стрелка.
+     Элемент, который не сходится ни с одним типом профиля, нарисован «магическим числом» в обход реестра ГОСТ ── */
+  const cov={n:0,ok:0,by:{},stray:[]};
+  const put=(m,at,what)=>{ const c=E.classify(m); cov.n++; if(c.ok){ cov.ok++; cov.by[c.type]=(cov.by[c.type]||0)+1; return; }
+    cov.stray.push(what); add('ESKD','элемент не выведен из профиля ГОСТ',what+(c.type?' («'+E.TYPES[c.type].n+'»)':'')+': '+c.why.join('; '),at); };
+  drawn.forEach(it=>put({kind:'stroke',w:it.sw/k,dash:it.dash&&it.dash.map(v=>v/k),curve:it.curve},it.polys[0][0],it.tag==='rect'?'рамка':'линия'));
+  fills.filter(f=>f.pat).forEach(f=>put({kind:'hatch',w:f.pat.lw/k,pitch:f.pat.pitch/k},f.polys[0][0],'штриховка'));
+  texts.filter(t=>!opt.draft||/igs-|igl-tb/.test(t.cls)).forEach(t=>put({kind:'text',cls:t.cls,h:t.cap/k},t.c,'«'+t.s+'»'));
+  /* стрелка размера или стрелка взгляда у разомкнутой — по длине: стрелка размера бывает и рядом с линией разреза */
+  AR.forEach(a=>{ const L=a.len/k; put({kind:Math.abs(L-E.PR.open.arrow)<Math.abs(L-E.PR.dim.arrow)?'cutArrow':'arrow',len:L},a.tip,'стрелка'); });
+
   /* ── сверка с 3D-моделью ── */
   if(opt.model&&window.NORMO_MODEL) NORMO_MODEL(F,opt.model,{k,FV,LV,TV,segAll,items,fills,hatch,add,opt,axLines:chains,marks,labs});
-  return {k,fmt:F.fmt,views:F.views,s:R(s,2),model:F.modelStats,review:F.review||[],issues}; }
+  return {k,fmt:F.fmt,views:F.views,s:R(s,2),model:F.modelStats,review:F.review||[],cover:{n:cov.n,ok:cov.ok,by:cov.by},issues}; }
 
 window.NORMO={check,flatten};
 })();

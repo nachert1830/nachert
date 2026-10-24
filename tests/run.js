@@ -119,6 +119,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   { const npage=await browser.newPage(); await npage.goto(URL); await npage.waitForTimeout(1200);
     const nr=await require('./normo-run.js').runNormo(npage,{nomodel:QUICK});
     info.push('Нормоконтроль ИГ: листов '+nr.stat.sheets+(QUICK?' (без сверки с моделью)':', виды сверены с 3D-моделью')+', '+Math.round(nr.stat.ms/1000)+' с');
+    { const C=nr.stat.cover; info.push('ГОСТ-покрытие листов: элементов '+C.n+', выведено из профиля ESKD '+C.ok+' ('+(C.n?Math.round(1000*C.ok/C.n)/10:0)+' %)'); }
+    /* «Сломай ГОСТ»: что песочница называет нарушением, ловит нормоконтроль на перерисованном листе; сдвиг внутри нормы — тишина у обоих */
+    { const sb=await require('./normo-run.js').runSandbox(npage,{vars:QUICK?[8]:[8,15,22]}); info.push('Песочница «Сломай ГОСТ»: за нормой — нормоконтроль поймал '+sb.caught+' из '+sb.nb+', в норме — без замечаний '+sb.good+' из '+sb.ng+'; «магическое число» вместо профиля — ГОСТ-покрытие поймало '+sb.magic+' из '+sb.nm);
+      sb.fail.forEach(m=>fail.push('Песочница «Сломай ГОСТ»: '+m)); }
     report('ИГ: нормоконтроль листов',nr.issues.map(i=>({name:i.name,rule:i.rule,msg:i.msg})));
     const mu=await require('./normo-mutate.js').runMutations(npage,{per:QUICK?1:2}), tot=Object.values(mu).reduce((a,x)=>[a[0]+x.поймано,a[1]+x.всего,a[2]+x.лишнее],[0,0,0]);
     info.push('Нормоконтроль, проверка проверки: поймано '+tot[0]+' из '+tot[1]+' подсаженных нарушений ('+Object.keys(mu).length+' типов тренажёра), лишних замечаний — '+tot[2]);
@@ -136,6 +140,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
        не перезагружает, и на раннере CI лист варианта 8 не успевал построиться (падало и до этой правки) */
     const upage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await upage.bringToFront(); await upage.goto(URL); await upage.waitForTimeout(1200);
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(upage,URL));
+    { const g=await require('./normo-run.js').gostUi(upage,URL); info.push('ГОСТ-рентген: тип элемента узнан на '+g.types+' нажатиях'); report('ГОСТ-рентген',g.bad); }
     await upage.close(); }
 
   /* 3ж. «Научись защищать точки» (#/ig/points): каждая точка разбора лежит на поверхности детали варианта 5 (точка в штриховке — в материале, в секущей плоскости), видимость, под которую

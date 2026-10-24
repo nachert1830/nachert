@@ -2519,6 +2519,32 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igx-th{padding:16px 18px;margin:0 0 12px;border-radius:18px;background:var(--surf);border:1px solid var(--line);font-size:15px;line-height:1.6;color:var(--ink2)}
 .igx-th h2{font-size:20px;margin:0 0 8px;color:var(--ink)}.igx-th b{color:var(--ink)}.igx-th p{margin:0 0 10px}.igx-th ul{margin:0;padding-left:20px;display:grid;gap:4px}
 .igx-t{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;margin:6px 0 12px;font-size:14px}.igx-t th,.igx-t td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.igx-t th{color:var(--mut);font-weight:600;background:var(--surf2)}
+.gx .gx-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 10px}.gx-mode button{min-height:44px}
+.gx-var{display:inline-flex;align-items:center;gap:6px;font:600 14px var(--sans);color:var(--mut)}.gx-var select{min-height:40px;padding:4px 8px;border-radius:10px;border:1px solid var(--line2);background:var(--surf);color:var(--ink);font:600 15px var(--sans)}
+.gx-cov{margin:0 0 10px;padding:10px 14px;border-radius:12px;background:var(--surf2);font-size:14.5px;line-height:1.45}.gx-cg{color:var(--green)}.gx-cb{color:var(--red)}
+.gx-main{display:grid;gap:12px}@media(min-width:980px){.gx-main{grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);align-items:start}.gx-side{position:sticky;top:calc(var(--hh,60px) + 10px)}}
+.gx-sheet{cursor:crosshair}@media(max-width:979px){.gx-sheet.gx-brk{position:sticky;top:calc(var(--hh,60px) + 4px);z-index:3;max-height:44svh;box-shadow:0 10px 24px -12px rgba(0,0,0,.45)}}   /* «Сломай ГОСТ» на телефоне: лист над ползунками, эффект виден сразу */.gx-sheet .gx-on{stroke:#e8590c!important;filter:drop-shadow(0 0 1.6px #e8590c)}.gx-sheet text.gx-on,.gx-sheet path.gx-on[fill^="url"]{fill:#e8590c!important}.gx-sheet .gx-sm{stroke:#2f6fd6!important}.gx-sheet text.gx-sm{fill:#2f6fd6!important}
+.gx-sheet .gx-bad{stroke:#d0342b!important}.gx-sheet text.gx-bad{fill:#d0342b!important}.gx-sheet path.gx-bad[fill^="url"]{filter:drop-shadow(0 0 1.2px #d0342b) drop-shadow(0 0 1.2px #d0342b)}.gx-sheet path.gx-bad:not([stroke]):not([fill^="url"]){fill:#d0342b!important}
+.gx-hint{margin:0;padding:12px 14px;border-radius:12px;border:1px dashed var(--line2);color:var(--mut);font-size:14.5px}
+.gx-card{padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow)}.gx-card.bad{border-color:var(--red)}
+.gx-ch{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}.gx-ch b{font:700 17px var(--disp)}.gx-tx{font:italic 15px 'NchSerif','Times New Roman',serif;color:var(--ink2)}.gx-same{margin-left:auto;font:600 12px var(--mono);color:#2f6fd6}
+.gx-use{margin:6px 0 10px;color:var(--ink2);font-size:14px}.gx-gs{display:grid;gap:10px}
+.gx-g{display:grid;grid-template-columns:minmax(82px,auto) 1fr;gap:4px 10px;align-items:center}.gx-gl{font:600 13px var(--sans);color:var(--mut)}.gx-gv{grid-column:1/-1;font:700 15px var(--mono)}.gx-gv em{font:400 12.5px var(--sans);color:var(--mut);margin-left:6px}
+.gx-gt{position:relative;height:10px;border-radius:99px;background:var(--surf2);border:1px solid var(--line)}.gx-gt i{position:absolute;top:-1px;bottom:-1px;border-radius:99px;background:rgba(19,128,78,.32);border:1px solid var(--green)}.gx-gt b{position:absolute;top:-5px;width:4px;height:18px;margin-left:-2px;border-radius:2px;background:var(--ink)}
+.gx-g.bad .gx-gt b{background:var(--red)}.gx-g.bad .gx-gv{color:var(--red)}
+.gx-ser{display:flex;gap:4px;flex-wrap:wrap}.gx-ser i{font:600 12px var(--mono);font-style:normal;padding:2px 6px;border-radius:6px;background:var(--surf2);color:var(--mut)}.gx-ser i.on{background:var(--green);color:#fff}.gx-ser i.near{background:var(--red);color:#fff}
+.gx-why{margin:8px 0 0;color:var(--red);font-size:14px}.gx-norms{margin-top:12px}.gx-norms summary{cursor:pointer;font:600 14px var(--sans);min-height:32px}.gx-norms ul{margin:6px 0 0;padding-left:18px;display:grid;gap:8px;font-size:13.5px}
+.gx-norms q{display:block;margin-top:3px;color:var(--ink2);font-style:italic}.gx-norms q::before,.gx-norms q::after{content:'«'}.gx-norms q::after{content:'»'}.gx-norms small{display:block;color:var(--mut)}
+.gx-st{display:inline-block;padding:0 6px;border-radius:6px;font:600 11.5px/1.7 var(--sans)}.gx-st.ok{background:var(--green);color:#fff}.gx-st.web{background:rgba(47,111,214,.15);color:#2f6fd6}.gx-st.mem{background:rgba(232,89,12,.14);color:#c4500b}.gx-st.mu{background:var(--surf2);color:var(--mut)}
+.gx-knobs{display:grid;gap:12px;margin:0 0 12px;padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}.gx-k{display:grid;gap:4px}.gx-kt{display:flex;justify-content:space-between;gap:8px;font:600 14px var(--sans)}.gx-kt b{font:700 14px var(--mono)}
+.gx-knobs[hidden]{display:none}.gx-kr{position:relative;display:block;height:30px}.gx-kr::before{content:'';position:absolute;left:0;right:0;top:14px;height:2px;background:var(--line2)}
+.gx-kr input{-webkit-appearance:none;appearance:none;position:absolute;inset:0;width:100%;height:30px;margin:0;background:transparent;z-index:1}
+.gx-kr input::-webkit-slider-runnable-track{height:30px;background:transparent}.gx-kr input::-moz-range-track{height:30px;background:transparent}
+.gx-kr input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:4px;border-radius:50%;background:var(--acc);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.gx-kr input::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--acc);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}.gx-z{position:absolute;top:11px;height:8px;border-radius:99px;background:rgba(19,128,78,.35);border:1px solid var(--green)}.gx-tick{position:absolute;top:8px;width:2px;height:14px;margin-left:-1px;background:var(--green);opacity:.7}
+.gx-kn{font-size:12.5px;color:var(--mut)}.gx-viol{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:rgba(208,52,43,.08);border:1px solid var(--red);font-size:14px}.gx-viol ul{margin:6px 0 10px;padding-left:18px}.gx-okb{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:rgba(19,128,78,.08);border:1px solid var(--green);font-size:14px}
+.gx-pass{margin:16px 0 8px}.gx-pass summary{cursor:pointer;font:600 15px var(--sans);min-height:40px}
+.igh-gx{display:block;margin:12px 0;padding:16px 18px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(135deg,#123a7a,#2f6fd6 60%,#e8590c);box-shadow:var(--shadow)}.igh-gx .igh-k{color:rgba(255,255,255,.8)}.igh-gx b{display:block;font:700 19px var(--disp);margin:4px 0}.igh-gx p{margin:0;color:rgba(255,255,255,.88)}
 .igx-cite{display:inline-block;padding:0 6px;border-radius:6px;background:var(--surf2);color:var(--mut);font:600 12px/1.6 var(--mono);white-space:nowrap}   /* где сказано: «ГОСТ 2.303-68, п. 11» — из реестра ESKD */
 .igx-star{border:1px solid var(--line);background:var(--surf);color:var(--ink2);border-radius:99px;padding:8px 14px;font:600 13px var(--sans);cursor:pointer;margin-right:auto;margin-left:12px}.igx-star{white-space:nowrap}@media(max-width:560px){.igx-vh{flex-wrap:wrap}.igx-vh h1{font-size:30px}.igx-star{padding:6px 10px;font-size:12px;margin-left:8px}}
 .igx-star.on{border-color:var(--acc);color:#b45309;background:color-mix(in srgb,#f59e0b 12%,var(--surf))}
@@ -2642,7 +2668,7 @@ body.owner .brand::after{content:"";width:8px;height:8px;border-radius:50%;backg
 .rd-b.on{background:#e8590c;border-color:#e8590c;color:#fff}.rd-hint{font-size:13px;color:var(--mut)}
 .rd-cap:empty{display:none}.rd-cap{flex-basis:100%;min-height:7.2em;box-sizing:border-box;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#e8590c 9%,var(--surf));border:1px solid color-mix(in srgb,#e8590c 30%,transparent);font-size:14px;line-height:1.5;color:var(--ink)}
 .rd-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px}.rd-leg i{font:600 12px var(--mono);font-style:normal;color:var(--ink2)}
-.rd-on svg{cursor:pointer}
+.rd-on svg{cursor:pointer}.rd-gx{margin-left:auto;align-self:center;font:600 14px var(--sans);color:var(--acc);text-decoration:none;padding:8px 4px}
 
 .nk .nk-sheet,.nk-sheet{overflow:auto;max-height:calc(100svh - 230px);border-radius:12px;background:#fff;border:1px solid var(--line);-webkit-overflow-scrolling:touch}
 .nk-sheet svg{display:block;user-select:none;-webkit-user-select:none}
@@ -3749,7 +3775,7 @@ const PR={
  w:{main:1,thin:0.38,wavy:0.38,dash:0.45,axis:0.38,open:1.3},
  dash:{st:2.5,gp:1.1},
  axis:{st:9,gp:4,dot:0.5,ext:4},   /* st — желательный штрих (под длину линии подбирается в 5…30); gp — весь промежуток с точкой посередине */
- open:{st:12},
+ open:{st:12,arrow:3,arrowW:1.73},   /* стрелка направления взгляда у разомкнутой линии */
  hatch:{pitch:7/3,ang:45},
  font:{dim:3.5,let:7,tb:3.5,tbs:2.5,capEm:0.66},   /* capEm — высота прописной «Н» чертёжного шрифта в долях кегля (NchSerif, курсив) */
  dim:{contour:10,par:8,over:2,arrow:4,arrowW:1.73},
@@ -3780,27 +3806,80 @@ const ax=k=>({d0:PR.axis.st*k,lo:N['line.axis.st'].v[0]*k,hi:N['line.axis.st'].v
 /* таблица типов линий для теории — из LINES, числа — те же, что проверяет нормоконтроль */
 const lineRows=()=>LINES.map(L=>'<tr><td>'+L.n+'</td><td>'+(L.w[0]===L.w[1]?frac(L.w[0]):frac(L.w[0])+'…'+frac(L.w[1]))+'</td><td>'+L.use
   +(L.st?' (штрихи '+num(L.st[0])+'…'+num(L.st[1])+(L.gp?', промежутки '+num(L.gp[0])+'…'+num(L.gp[1]):'')+' мм)':'')+'</td></tr>').join('');
-/* самопроверка профиля: каждое значение — внутри нормы. Возвращает список расхождений (пусто — профиль по ГОСТ) */
-function audit(){ const bad=[], chk=(what,id,x,s)=>{ if(!ok(id,x,s,1e-9)) bad.push(what+' = '+num(x)+' вне '+t(id)+' ('+cite(id)+')'); };
+/* самопроверка профиля: каждое значение — внутри нормы. auditX() — расхождения списком {id — норма, what, x, msg}; audit() — тексты.
+   Пусто — профиль по ГОСТ. Песочница «Сломай ГОСТ» зовёт их под временным профилем (ESKD.with) */
+function auditX(){ const bad=[], add=(id,what,x,msg)=>bad.push({id,what,x,msg}), chk=(what,id,x,s)=>{ if(!ok(id,x,s,1e-9)) add(id,what,x,what+' = '+num(x)+' вне '+t(id)+' ('+cite(id)+')'); };
   chk('s','line.s',PR.s);
   ['thin','wavy','dash','axis'].forEach(k=>chk('толщина «'+k+'»','line.'+k+'.w',PR.s*PR.w[k]));
   chk('толщина разомкнутой','line.open.w',PR.s*PR.w.open); chk('штрих разомкнутой','line.open.st',PR.open.st);
   chk('штрих штриховой','line.dash.st',PR.dash.st); chk('промежуток штриховой','line.dash.gp',PR.dash.gp);
   chk('штрих осевой','line.axis.st',PR.axis.st); chk('промежуток осевой (с точкой)','line.axis.gp',PR.axis.gp); chk('выход оси за контур','axis.ext',PR.axis.ext);
   chk('шаг штриховки','hatch.pitch',PR.hatch.pitch);
-  [['размерные числа',PR.font.dim],['буквы разрезов',PR.font.let],['основная надпись',PR.font.tb],['основная надпись, мелкий',PR.font.tbs]].forEach(([n,h])=>{ if(!inSeries(h,1e-9)) bad.push(n+': шрифт '+num(h)+' мм не из ряда '+t('font.h')+' ('+cite('font.h')+')'); if(h<N['font.min'].v) bad.push(n+': шрифт '+num(h)+' мм меньше '+t('font.min')); });
+  [['размерные числа','dim',PR.font.dim],['буквы разрезов','let',PR.font.let],['основная надпись','tb',PR.font.tb],['основная надпись, мелкий','tbs',PR.font.tbs]].forEach(([n,ty,h])=>{
+    if(!inSeries(h,1e-9)) add('font.h',n,h,n+': шрифт '+num(h)+' мм не из ряда '+t('font.h')+' ('+cite('font.h')+')'); if(h<N['font.min'].v) add('font.min',n,h,n+': шрифт '+num(h)+' мм меньше '+t('font.min')+' ('+cite('font.min')+')'); });
   chk('размерные числа','font.dim',PR.font.dim);
-  const q=PR.font.let/PR.font.dim; if(q<1.7||q>2.4) bad.push('буквы / размерные числа = '+num(q)+', а нужно ≈ 2 ('+cite('font.let')+')');
-  if(PR.dim.contour<N['dim.contour'].v) bad.push('размерная линия от контура '+PR.dim.contour+' < '+t('dim.contour'));
-  if(PR.dim.par<N['dim.par'].v) bad.push('между параллельными размерными '+PR.dim.par+' < '+t('dim.par'));
+  const q=PR.font.let/PR.font.dim; if(q<1.7||q>2.4) add('font.let','буквы / размерные числа',q,'буквы / размерные числа = '+num(Math.round(q*100)/100)+', а нужно ≈ 2 ('+cite('font.let')+')');
+  if(PR.dim.contour<N['dim.contour'].v) add('dim.contour','размерная линия от контура',PR.dim.contour,'размерная линия от контура '+PR.dim.contour+' < '+t('dim.contour'));
+  if(PR.dim.par<N['dim.par'].v) add('dim.par','между параллельными размерными',PR.dim.par,'между параллельными размерными '+PR.dim.par+' < '+t('dim.par'));
   chk('выход выносной','dim.ext',PR.dim.over); chk('длина стрелки','dim.arrowLen',PR.dim.arrow);
-  if(PR.frame.l!==N.frame.v.l||PR.frame.o!==N.frame.v.o) bad.push('рамка '+PR.frame.l+'/'+PR.frame.o);
-  if(PR.tb[0]!==N.tb.v[0]||PR.tb[1]!==N.tb.v[1]) bad.push('основная надпись '+PR.tb.join('×'));
+  if(PR.frame.l!==N.frame.v.l||PR.frame.o!==N.frame.v.o) add('frame','рамка',PR.frame.l,'рамка '+PR.frame.l+'/'+PR.frame.o);
+  if(PR.tb[0]!==N.tb.v[0]||PR.tb[1]!==N.tb.v[1]) add('tb','основная надпись',PR.tb[0],'основная надпись '+PR.tb.join('×'));
   return bad; }
+const audit=()=>auditX().map(o=>o.msg);
+/* ── профиль как пульт: временные значения («Сломай ГОСТ», проверка песочницы). over — {'axis.gp':6.5, 's':1}.
+   sig() — подпись профиля: кэши листов и видов держат свою копию на каждый профиль ── */
+const getP=path=>path.split('.').reduce((o,k)=>o[k],PR);
+const setP=(path,v)=>{ const k=path.split('.'); let o=PR; for(let i=0;i<k.length-1;i++) o=o[k[i]]; o[k[k.length-1]]=v; };
+const BASE=JSON.parse(JSON.stringify(PR)), BSIG=JSON.stringify(PR), sig=()=>JSON.stringify(PR), isBase=()=>sig()===BSIG;   /* isBase — профиль по умолчанию: только его листы кэшируются надолго */
+const LS=[], on=f=>{ LS.push(f); f(); }, fire=()=>LS.forEach(f=>f());   /* генераторы держат производные величины (толщины в ед. листа) — пересчёт по смене профиля */
+function withPR(over,fn){ const old={}; Object.keys(over||{}).forEach(p=>{ old[p]=getP(p); setP(p,over[p]); }); fire(); try{ return fn(); } finally{ Object.keys(old).forEach(p=>setP(p,old[p])); fire(); } }
+/* кегль надписей листа — в самой разметке (style), из профиля: лист несёт свои шрифты с собой, куда бы его ни вставили */
+const FCLS={'igs-dim':'dim','igs-let':'let','igs-tbt':'tb','igl-tbt':'tb','igl-tbs':'tbs'};
+const fonts=(svg,k)=>String(svg).replace(/class="(igs-dim|igs-let|igs-tbt|igl-tbt|igl-tbs)"/g,(m,c)=>m+' style="font-size:'+px(PR.font[FCLS[c]],k)+'px"');
+/* ── типы элементов листа: какие нормы их задают. Элемент → тип → нормы → пункты ГОСТ ── */
+const TYPES={
+ main:{n:'Сплошная толстая основная',ids:['line.s','line.same'],line:'main'},
+ open:{n:'Разомкнутая (линия сечения)',ids:['line.open.w','line.open.st','cut.mark','line.s'],line:'open'},
+ thin:{n:'Сплошная тонкая',ids:['line.thin.w','line.same','line.s'],line:'thin'},
+ wavy:{n:'Сплошная волнистая',ids:['line.wavy.w','cut.edge','line.s'],line:'wavy'},
+ dash:{n:'Штриховая',ids:['line.dash.w','line.dash.st','line.dash.gp','line.s'],line:'dash'},
+ axis:{n:'Штрихпунктирная тонкая',ids:['line.axis.w','line.axis.st','line.axis.gp','axis.cross','axis.ext','axis.small','line.s'],line:'axis'},
+ hatch:{n:'Штриховка разреза',ids:['hatch.ang','hatch.pitch','hatch.same','line.thin.w','line.s'],line:'thin'},
+ arrow:{n:'Стрелка размера',ids:['dim.arrow','dim.arrowLen']},
+ cutArrow:{n:'Стрелка направления взгляда',ids:['cut.mark']},
+ dim:{n:'Размерное число',ids:['font.h','font.dim','dim.cross','font.min']},
+ let:{n:'Буквенное обозначение',ids:['font.h','font.let','cut.letter','let.ban','font.dim']},
+ tb:{n:'Надпись в основной надписи',ids:['font.h','font.min','tb']},
+ tbs:{n:'Надпись в основной надписи (мелкая)',ids:['font.h','font.min','tb']}};
+/* что должно быть у элемента этого типа по текущему профилю (мм) */
+function expect(type){ const s=PR.s, W=k=>s*PR.w[k];
+  return {main:{w:s},open:{w:W('open')},thin:{w:W('thin')},wavy:{w:W('wavy')},dash:{w:W('dash'),st:PR.dash.st,gp:PR.dash.gp},
+   axis:{w:W('axis'),gp:PR.axis.gp,dot:PR.axis.dot,st:N['line.axis.st'].v},hatch:{w:W('thin'),pitch:PR.hatch.pitch},
+   arrow:{len:PR.dim.arrow},cutArrow:{len:PR.open.arrow},dim:{h:PR.font.dim},let:{h:PR.font.let},tb:{h:PR.font.tb},tbs:{h:PR.font.tbs}}[type]; }
+/* классификатор: измеренный элемент листа (мм) → {type, ok — выведен из профиля, why — что не сходится}.
+   m: {kind:'stroke', w, dash:[…], curve} | {kind:'hatch', w, pitch} | {kind:'text', cls, h} | {kind:'arrow'|'cutArrow', len} */
+function classify(m){ const near=(a,b,e)=>Math.abs(a-b)<=(e==null?0.012:e), res=(type,bad)=>({type,ok:!bad.length,why:bad});
+  if(m.kind==='text'){ const c=m.cls||'', type=/igs-let/.test(c)?'let':/igs-dim/.test(c)?'dim':/tbs/.test(c)?'tbs':/tbt/.test(c)?'tb':null; if(!type) return {type:null,ok:false,why:['надпись без класса профиля']};
+    const e=expect(type); return res(type,near(m.h,e.h,0.06)?[]:['высота '+num(Math.round(m.h*100)/100)+' мм, по профилю '+num(e.h)]); }
+  if(m.kind==='arrow'||m.kind==='cutArrow'){ const e=expect(m.kind); return res(m.kind,near(m.len,e.len,0.08)?[]:['длина '+num(Math.round(m.len*100)/100)+' мм, по профилю '+num(e.len)]); }
+  if(m.kind==='hatch'){ const e=expect('hatch'), b=[]; if(!near(m.w,e.w)) b.push('толщина '+num(Math.round(m.w*1000)/1000)+' мм, по профилю '+num(Math.round(e.w*1000)/1000)); if(!near(m.pitch,e.pitch,0.04)) b.push('шаг '+num(Math.round(m.pitch*100)/100)+' мм, по профилю '+num(Math.round(e.pitch*100)/100)); return res('hatch',b); }
+  const d=m.dash&&m.dash.length?m.dash:null;
+  if(d&&d.length%4===0&&d[0]>d[2]*2){ const e=expect('axis'), b=[], gp=d[1]+d[2]+d[3];
+    if(!near(m.w,e.w)) b.push('толщина '+num(Math.round(m.w*1000)/1000)+' мм, по профилю '+num(Math.round(e.w*1000)/1000));
+    if(!near(gp,e.gp,0.03)) b.push('промежуток '+num(Math.round(gp*100)/100)+' мм, по профилю '+num(e.gp));
+    if(d[0]<e.st[0]-0.03||d[0]>e.st[1]+0.03) b.push('штрих '+num(Math.round(d[0]*100)/100)+' мм вне '+t('line.axis.st'));
+    return res('axis',b); }
+  if(d){ const e=expect('dash'), b=[]; if(!near(m.w,e.w)) b.push('толщина '+num(Math.round(m.w*1000)/1000)+' мм, по профилю '+num(Math.round(e.w*1000)/1000));
+    if(!near(d[0],e.st,0.03)||!near(d[1],e.gp,0.03)) b.push('штрих '+num(Math.round(d[0]*100)/100)+' / '+num(Math.round(d[1]*100)/100)+' мм, по профилю '+num(e.st)+' / '+num(e.gp)); return res('dash',b); }
+  for(const type of ['main','open']) if(near(m.w,expect(type).w,0.015)) return res(type,[]);
+  if(near(m.w,expect(m.curve?'wavy':'thin').w)) return res(m.curve?'wavy':'thin',[]);
+  return {type:null,ok:false,why:['толщина '+num(Math.round(m.w*1000)/1000)+' мм — ни одной линии профиля']}; }
+/* типы элементов, которых касается норма (подсветка нарушений в песочнице) */
+const typesOf=id=>Object.keys(TYPES).filter(ty=>TYPES[ty].ids.includes(id));
 /* шрифты листа — из профиля (CSS-классы листов ИГ; k = 3 единицы на 1 мм) */
 const css=k=>'.igs-dim{font-size:'+px(PR.font.dim,k)+'px}.igs-let{font-size:'+px(PR.font.let,k)+'px}.igs-tbt,.igl-tbt{font-size:'+px(PR.font.tb,k)+'px}.igl-tbs{font-size:'+px(PR.font.tbs,k)+'px}';
 if(typeof document!=='undefined'&&document.head){ const st=document.createElement('style'); st.id='eskd-css'; st.textContent=css(3); document.head.appendChild(st); }
-return {DOC,LINES,N,PR,t,cite,g,r,ok,inSeries,w,dash,px,ax,lineRows,audit,css,num};
+return {DOC,LINES,N,PR,BASE,TYPES,t,cite,g,r,ok,inSeries,w,dash,px,ax,lineRows,audit,auditX,css,num,sig,isBase,with:withPR,get:getP,on,fonts,expect,classify,typesOf};
 })();
 /* ============================================================
    DRAW — векторный движок чертежей (SVG), v3
@@ -23788,6 +23867,9 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.17',d:'24 октября 2026',items:['Инженерная графика: «ГОСТ-рентген» — нажми на любую линию, надпись или стрелку листа ДЗ 2 и увидишь, что на ней измерено, где это значение в допуске, какой пункт ГОСТ его задал и насколько он сверен с текстом стандарта. Все линии того же типа подсвечиваются — они одной толщины.',
+    '«Сломай ГОСТ»: ползунки двигают нормы, лист перерисовывается из них вживую, а нарушения загораются красным прямо на чертеже — вместе с пунктом стандарта.',
+    'Проверка сайта: каждый элемент каждого листа ИГ выведен из реестра ГОСТ (ГОСТ-покрытие 100 %), а то, что «Сломай ГОСТ» называет нарушением, ловит и настоящий нормоконтроль.']},
   {v:'4.16',d:'24 октября 2026',items:['Инженерная графика: листы строятся из ГОСТ. Толщины и штрихи линий, размеры шрифта, отступы размеров берутся из одного реестра норм ЕСКД — у каждой нормы стандарт и пункт; по нему же работают нормоконтроль и теория.',
     'Исправлено по ГОСТ: промежуток осевой линии — 4 мм (было 6,5 при норме 3…5), шрифты — из ряда ГОСТ 2.304 (размерные числа 3,5, буквы разрезов 7 — вдвое крупнее чисел по ГОСТ 2.316), одна толщина у линий одного типа, основная надпись — по ГОСТ Р 2.104-2023.',
     'Правила, которых нет в тексте ГОСТ (например, «ось выходит за контур на 2…5 мм»), подписаны как правила методических указаний; знак ∠ — уклон, а не угол.']},
@@ -28218,13 +28300,16 @@ function draw1(model,view,W,off,bnd){ const V=VIEW[view], E3=edges3(model), J=jc
     const e=n.map(v=>v*0.01), loops=msLoops((u,v)=>{ const q=P3(u,v); return Math.max(J(q[0]+e[0],q[1]+e[1],q[2]+e[2]),J(q[0]-e[0],q[1]-e[1],q[2]-e[2]),lim(q)); },lo[ua],hi[ua],lo[va],hi[va],0.2);
     hat=loops.map(L=>L.map((p,i)=>{ const q=px(P3(p[0],p[1])); return (i?'L':'M')+f2(q[0])+' '+f2(q[1]); }).join('')+'Z').join(''); }
   /* толщины, штрихи и шаг штриховки — в мм листа, из профиля ESKD (ГОСТ 2.303, 2.306): основная s, тонкие и штриховая — доли s.
-     Так у всех вариантов одинаково, какого бы размера ни была деталь */
-  const mm=W/scale, sw=ESKD.w('main',mm), hs=ESKD.PR.hatch.pitch*mm;
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${W}" viewBox="0 0 ${W} ${W}">`
+     Так у всех вариантов одинаково, какого бы размера ни была деталь. Геометрия вида считается один раз, а оформление — под текущий
+     профиль (svg, url, sw — свойства): песочница «Сломай ГОСТ» меняет профиль, и вид перерисовывается без пересчёта рёбер */
+  const mm=W/scale, ST={};
+  const style=()=>{ const g=ESKD.sig(); if(ST.g===g) return ST; const sw=ESKD.w('main',mm), hs=ESKD.PR.hatch.pitch*mm;
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${W}" viewBox="0 0 ${W} ${W}">`
     +(hat?`<defs><pattern id="h" patternUnits="userSpaceOnUse" width="${f2(hs)}" height="${f2(hs)}" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${f2(hs)}" stroke="#111" stroke-width="${f2(ESKD.w('thin',mm))}"/></pattern></defs><path d="${hat}" fill="url(#h)" fill-rule="evenodd"/>`:'')
     +(hid?`<path d="${hid}" fill="none" stroke="#111" stroke-width="${f2(ESKD.w('dash',mm))}" stroke-dasharray="${ESKD.dash(mm)}" stroke-linecap="butt"/>`:'')
     +`<path d="${vis}" fill="none" stroke="#111" stroke-width="${f2(sw)}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  return {svg,W,px,box:b,url:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),lines:SD,sw,mm}; }
+    return Object.assign(ST,{g,svg,sw,url:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}); };
+  return {get svg(){ return style().svg; },get url(){ return style().url; },get sw(){ return style().sw; },W,px,box:b,lines:SD,mm}; }
 /* ── контур сечения плоскостью O + a·U + b·V (U, V — орты): петли в координатах (a, b).
    Вертикальные отверстия, которые плоскость пересекает целиком (эллипс лежит внутри материала, в том числе касается края),
    строятся отдельно — точной замкнутой кривой; внешний контур считается по детали без них. Так контур и отверстие
@@ -28571,7 +28656,7 @@ function secFig(model,sec,K){
    Q1, Q2 — концы следа на листе, Km — единиц листа на 1 мм */
 function secMark(Q1,Q2,Km,L,col){ col=col||'#111'; const f=v=>Math.round(v*10)/10, l=Math.hypot(Q2[0]-Q1[0],Q2[1]-Q1[1]), ex=(Q2[0]-Q1[0])/l, ey=(Q2[1]-Q1[1])/l, dx=-ey, dy=ex;
   const ln=(a,c,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${col}" stroke-width="${w}"/>`;
-  const arr=(q,ax,ay)=>`<path d="M${f(q[0])},${f(q[1])} l${f(ax*9-ay*2.6)},${f(ay*9+ax*2.6)} l${f(ay*5.2)},${f(-ax*5.2)}Z" fill="${col}"/>`;
+  const AL=ESKD.PR.open.arrow*Km, AH=ESKD.PR.open.arrowW/2*Km, arr=(q,ax,ay)=>`<path d="M${f(q[0])},${f(q[1])} l${f(ax*AL-ay*AH)},${f(ay*AL+ax*AH)} l${f(ay*2*AH)},${f(-ax*2*AH)}Z" fill="${col}"/>`;   /* стрелка взгляда — из профиля */
   const st=ESKD.PR.open.st, one=(Q,sx,sy)=>{ const O=[Q[0]+sx*st*Km,Q[1]+sy*st*Km], T=[O[0]-sx*3*Km,O[1]-sy*3*Km], A=[T[0]-dx*10*Km,T[1]-dy*10*Km];   /* штрих разомкнутой — из профиля (8…20 мм) */
     /* буква — у стрелки с внешней стороны (за концом штриха), как в задании и по ГОСТ 2.305, п. 6.4 */
     const M=[A[0]+(T[0]-A[0])*.35+sx*(4*Km+8),A[1]+(T[1]-A[1])*.35+sy*(4*Km+8)];
@@ -28661,6 +28746,7 @@ function home(v){
     <a class="igh-c" href="${H('ig','wb')}"><span class="igh-k">Раздел 5 · тела с отверстиями</span><b>Рабочая тетрадь</b><p>${IG_WB.length} заданий: призма, цилиндр, пирамида, конус, шар. Найди по номеру рисунка.</p><span class="igh-a">Открыть тетрадь →</span></a>
     <a class="igh-c igh-learn" href="${H('ig','learn')}"><span class="igh-k">Учиться с нуля</span><b>Виды, разрезы, сечения</b><p>Один вариант от условия до чистовика: что строим, почему так и какой пункт ГОСТ.</p><span class="igh-a">Начать →</span></a>
    </div>
+   <a class="igh-gx" href="${H('ig','gost')}"><span class="igh-k">Новое · ГОСТ-рентген</span><b>Лист, собранный из ГОСТ</b><p>Нажми на любую линию листа — увидишь пункт ГОСТ, который её задал. Или сломай ГОСТ ползунком и посмотри, что загорится красным.</p></a>
    <a class="igh-th" href="${H('ig','theory')}"><b>Теория ЕСКД</b><span>форматы, линии, шрифты, размеры, виды, разрезы, сечения, штриховка</span><i>→</i></a>`});
   const go=()=>{ const n=parseInt($(v,'#ighNum').value,10); if(n>=1&&n<=N) nav(H('ig','hw2',n)); else { $(v,'#ighNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
   $(v,'#ighGo').addEventListener('click',go); $(v,'#ighNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
@@ -29084,6 +29170,7 @@ function partPage(v,o){
     /* «Читаю чертёж»: нажатая линия подсвечивается на всех видах (IGREAD) */
     const rdw=document.createElement('div'); rdw.className='rd-bar'; rdw.innerHTML='<button class="rd-b" id="igRd" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5a2 2 0 0 1 4 0v5"/><path d="M13 10V8a2 2 0 0 1 4 0v4"/><path d="M17 12a2 2 0 0 1 4 0v3a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.4L4 15a2 2 0 0 1 3.4-2L9 15"/></svg>Читаю чертёж</button><span class="rd-hint">нажми на линию — увидишь её на всех видах</span><div class="rd-cap" id="igRdCap" aria-live="polite"></div>';
     box.parentNode.insertBefore(rdw,box); const RD=window.IGREAD?IGREAD.attach(box,n,$(v,'#igRdCap')):null;
+    if(hw&&window.IGX) rdw.insertAdjacentHTML('beforeend',`<a class="rd-gx" href="${H('ig','gost',nv)}">ГОСТ-рентген листа →</a>`);   /* каждая линия листа — с пунктом ГОСТ */
     $(v,'#igRd').addEventListener('click',e=>{ const on=e.currentTarget.getAttribute('aria-pressed')!=='true'; e.currentTarget.setAttribute('aria-pressed',on); e.currentTarget.classList.toggle('on',on); RD&&RD.set(on); try{ TRACK&&TRACK('ig_read',{on:on?1:0}); }catch(e2){} });
     const pick=m=>{ const s2=make(m); box.innerHTML=s2||'<div class="igx-given-l">Лист не построился на этом устройстве.</div>'; RD&&RD.refresh();
       v.querySelectorAll('#igSheetSw button').forEach(x=>{ const on=x.dataset.s===m; x.classList.toggle('on',on); x.setAttribute('aria-selected',on); }); $(v,'#igSheetCap').textContent=CAP[m]; };
@@ -29177,6 +29264,7 @@ const TH=[
    <table class="igx-t"><tr><th>Линия</th><th>Толщина</th><th>Для чего</th></tr>${E.lineRows()}</table>
    <p>Промежуток штрихпунктирной — весь разрыв между штрихами, точка — посередине. Штрихпунктирные пересекаются и заканчиваются штрихами, а не точками ${Ec('axis.cross')}. Если диаметр окружности (или размер другой фигуры) на изображении меньше ${Et('axis.small')}, центровые штрихпунктирные заменяют сплошными тонкими ${Ec('axis.small')}.</p>
    <p>Осевые выходят за контур изображения на ${Et('axis.ext')} — так требуют учебные листы; числа в ГОСТ 2.303 нет.</p>
+   <p class="igx-nk-l">Каждую линию листа можно нажать и увидеть её норму — <a href="${H('ig','gost')}">ГОСТ-рентген →</a></p>
    <p>На листах этого сайта: s = ${E.num(E.PR.s)} мм, тонкие — ${E.num(Math.round(E.PR.s*E.PR.w.thin*100)/100)} мм, штриховая — ${E.num(Math.round(E.PR.s*E.PR.w.dash*100)/100)} мм (штрих ${E.num(E.PR.dash.st)}, промежуток ${E.num(E.PR.dash.gp)} мм), осевая — промежуток ${E.num(E.PR.axis.gp)} мм.</p>`},
  {id:'font',t:'Шрифты',b:`<p>Шрифт — ГОСТ 2.304. Размер шрифта h — высота прописных букв в мм, только из ряда: ${Et('font.h')} (1,8 не рекомендуется и допускается только для типа Б) ${Ec('font.h')}. Строчные буквы — на шаг меньше (примерно 0,7h).</p>
    <p>Два типа: <b>А</b> (толщина линии h/14) и <b>Б</b> (h/10). Шрифт бывает с наклоном 75° к основанию строки и без наклона. На учебных чертежах — тип Б с наклоном, размерные числа — ${Et('font.dim')}.</p>
@@ -29217,6 +29305,7 @@ function view(v,r){
   if(r.tab==='learn'&&window.IGL) return IGL.view(v,r.item);
   if(r.tab==='points'&&window.IGL) return IGL.points(v);
   if(r.tab==='nk'&&window.IGNK) return IGNK.view(v,r.item);
+  if(r.tab==='gost'&&window.IGX) return IGX.view(v,r.item);
   return home(v);
 }
 return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,holeAxesFL,axDash,axCircle,axLine,secRot,loading,frame,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given')};
@@ -29236,7 +29325,7 @@ const buzz=()=>{ try{ FX.buzz&&FX.buzz(6); }catch(e){} };
 const GL=()=>IGUI.hasGL;
 const INK='#15161a', AUX='#3567b5', CONN='#9dbbe0', RES='#c9302c', SOFT='#9aa3b5';
 /* оформление листа — из профиля ГОСТ (ESKD.PR), как на листах вариантов (IGS) */
-const SW=ESKD.w('main',k), TW=ESKD.w('thin',k), AW=ESKD.w('axis',k), OV=ESKD.PR.dim.over*k, AL=ESKD.PR.dim.arrow*k, AH=ESKD.PR.dim.arrowW/2*k, HP=f(ESKD.PR.hatch.pitch*k);
+let SW,TW,AW,OV,AL,AH,HP; ESKD.on(()=>{ SW=ESKD.w('main',k); TW=ESKD.w('thin',k); AW=ESKD.w('axis',k); OV=ESKD.PR.dim.over*k; AL=ESKD.PR.dim.arrow*k; AH=ESKD.PR.dim.arrowW/2*k; HP=f(ESKD.PR.hatch.pitch*k); });
 /* ── след наклонной плоскости: концы штрихов на главном виде (x, z), орт вдоль следа t = (c, s), взгляд по стрелкам d = (s, −c) ── */
 function TR(){ const [[x1,z1],[x2,z2]]=MD().sec.p, th=Math.atan2(z2-z1,x2-x1), c=Math.cos(th), s=Math.sin(th);
   return {x1,z1,x2,z2,th,c,s,L:Math.hypot(x2-x1,z2-z1),X:u=>x1+c*u,Z:u=>z1+s*u,uX:x=>(x-x1)/c,uZ:z=>(z-z1)/s,
@@ -29473,7 +29562,7 @@ function stampK(x1,y1,k,nv,sc){ const SW=ESKD.w('main',k), TW=ESKD.w('thin',k), 
   if(sc) o+=T(176,30,sc,'igl-tbt','middle')+T(173,39,'1');   /* масштаб (графа 6) и число листов (графа 8; номер листа у однолистового документа не ставят — ГОСТ Р 2.104) */
   return o; }
 /* лист: черновик (лист предварительной проработки — построения, точки, цвет) и чистовик */
-function sheet(mode){ const M=sheet.m||(sheet.m={}); if(M[mode]) return M[mode]; REC={s:[],d:[]}; try{ return M[mode]=sheetBody(mode); } finally{ REC=null; } }
+function sheet(mode){ const M=sheet.m||(sheet.m={}), key=mode+'|'+ESKD.sig(); if(M[key]) return M[key]; REC={s:[],d:[]}; try{ const o=ESKD.fonts(sheetBody(mode),k); if(ESKD.isBase()) M[key]=o; return o; } finally{ REC=null; } }   /* кэш — на каждый профиль ГОСТ */
 function sheetBody(mode){ const draft=mode==='draft', md=MD(), sp=IGUI.igSpec(md), Ly=layout(), {T,FR,TP,LF,SC}=Ly, G=SG();
   let col='', o=img(DR(sp.fk,0,sp.xb),0,0)+img(DR(sp.lk,0,sp.yb),k*Ly.GX,0)+img(DR('top'),0,k*Ly.TY), c='', t='', pts=[];
   if(draft){ /* цвет: разрезы и сечение — розовым, фланец на виде сверху — жёлтым */
@@ -29868,7 +29957,7 @@ return {view:v=>page(v),points:v=>pointsPage(v),PEX:()=>pex(),ptSVG,ptVis:{stOn,
 window.IGS=(function(){
 const f=v=>Math.round(v*10)/10, k=3, W=900;
 /* оформление — из профиля ГОСТ (ESKD.PR): толщины основной, тонкой, осевой; выход оси за контур; выносные и стрелки размеров */
-const SW=ESKD.w('main',k), TW=ESKD.w('thin',k), AW=ESKD.w('axis',k), EXT=ESKD.PR.axis.ext, OV=ESKD.PR.dim.over*k, AL=ESKD.PR.dim.arrow*k, AH=ESKD.PR.dim.arrowW/2*k;
+let SW,TW,AW,EXT,OV,AL,AH,HP; ESKD.on(()=>{ SW=ESKD.w('main',k); TW=ESKD.w('thin',k); AW=ESKD.w('axis',k); EXT=ESKD.PR.axis.ext; OV=ESKD.PR.dim.over*k; AL=ESKD.PR.dim.arrow*k; AH=ESKD.PR.dim.arrowW/2*k; HP=f(ESKD.PR.hatch.pitch*k); });
 const INK='#15161a', AUX='#3567b5', CONN='#9dbbe0', PK='#f2a7ab', YL='#f3e27a', AX='14 3 2 3';
 let REC=null;
 const ln=(a,b,col,w,dash)=>{ if(dash===AX) dash=IGUI.axDash(Math.hypot(b[0]-a[0],b[1]-a[1]),k);   /* осевые — по ГОСТ 2.303, под длину линии */
@@ -29879,7 +29968,7 @@ function bbox(pts,pad){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; pts.forEach(p=>{ x0=M
 /* петли фигуры в плоскости O + a·U + b·V (по модели) */
 function loopsOn(md,O,U,V,box){ return IG3.secShape(md.tree,O,U,V,box,0.3).all; }
 const pathOf=(L,map)=>L.map(lp=>lp.map((q,i)=>{ const p=map(q); return (i?'L':'M')+f(p[0])+' '+f(p[1]); }).join('')+'Z').join('');
-const HP=f(ESKD.PR.hatch.pitch*k), hatch=(id,deg)=>`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${HP}" height="${HP}" patternTransform="rotate(${90-deg})"><line x1="0" y1="0" x2="0" y2="${HP}" stroke="${INK}" stroke-width="${TW}"/></pattern>`;   /* штриховка (ГОСТ 2.306): шаг и толщина — из профиля */
+const hatch=(id,deg)=>`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${HP}" height="${HP}" patternTransform="rotate(${90-deg})"><line x1="0" y1="0" x2="0" y2="${HP}" stroke="${INK}" stroke-width="${TW}"/></pattern>`;   /* штриховка (ГОСТ 2.306): шаг и толщина — из профиля */
 
 /* ── подписи: место без наложений (как в обучении) ── */
 function labeler(){ const Q=[]; const fn=(q,t,col,dx,dy)=>{ Q.push({q,t,col,dx,dy}); return ''; }; fn.boxes=[];
@@ -30060,7 +30149,7 @@ function fmtSheet(pts,n){ const C0=bbox(pts,0); const FM=[['А3',420,297],['А2'
     fr:`<rect x="0" y="0" width="${f(W3)}" height="${f(H3)}" fill="#fff" stroke="${INK}" stroke-width="${TW}"/><rect x="${f(20*k)}" y="${f(5*k)}" width="${f(W3-25*k)}" height="${f(H3-10*k)}" fill="none" stroke="${INK}" stroke-width="${SW}"/>`
       +IGL.stampK(W3-5*k,H3-5*k,k,n,'1:1')+`<text x="${f(W3-5*k)}" y="${f(H3-1.4*k)}" class="igl-tbs" text-anchor="end">Формат ${fm[0]}</text>`}; }
 const MEMO={};
-function sheet(n,mode){ const key=n+'|'+mode; if(MEMO[key]) return MEMO[key]; REC={s:[],d:[]}; try{ return MEMO[key]=body(n,mode); } finally{ REC=null; } }
+function sheet(n,mode){ const key=n+'|'+mode+'|'+ESKD.sig(); if(MEMO[key]) return MEMO[key]; REC={s:[],d:[]}; try{ const o=ESKD.fonts(body(n,mode),k); if(ESKD.isBase()) MEMO[key]=o; return o; } finally{ REC=null; } }   /* кэш — на каждый профиль ГОСТ */
 function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}=C, LT=IGUI.letters(md), hz=md.hz;
   let o='', col='', c='', t='', pts=[];
   /* изображения */
@@ -30362,6 +30451,162 @@ function play(v,box,n,P){ const S={miss:0,done:false,zoom:window.innerWidth<700?
   draw(); }
 function view(v,item){ const m=/^(\d+)-(\d+)$/.exec(item||''); if(m&&+m[1]>=1&&+m[1]<=30&&window.IG_VARS&&IG_VARS[+m[1]]) return round(v,+m[1],+m[2]); return start(v); }
 return {view,make,TYPES};
+})();
+
+/* ═════════ IGX: «ГОСТ-рентген» — лист, который объясняет себя, и «Сломай ГОСТ» ═════════
+   Лист ДЗ 2 собран из реестра норм ESKD: у каждой линии, надписи и стрелки есть тип (основная, тонкая, штриховая, осевая …),
+   а у типа — нормы с пунктом ГОСТ. Здесь это видно руками:
+     рентген   — нажми на элемент: что это, что на нём измерено (с самого листа, не из кода), где это значение в допуске нормы,
+                 какой пункт его задал, дословная цитата и насколько она сверена; все элементы того же типа подсвечиваются —
+                 они одной толщины (ГОСТ 2.303, п. 2). Сверху — ГОСТ-покрытие: сколько элементов листа выведено из профиля.
+     сломай    — ползунки двигают профиль листа (ESKD.with): лист перерисовывается из нового профиля, нормы, из которых он вышел,
+                 загораются красным вместе со всеми элементами, которые они задают. Что песочница называет нарушением,
+                 ловит и настоящий нормоконтроль (tests/run.js сверяет их на перерисованных листах).
+   Адрес: #/ig/gost — вариант по умолчанию (свой или 8), #/ig/gost/<вариант>. */
+window.IGX=(function(){
+const NS='http://www.w3.org/2000/svg', k=3, E=ESKD, $=(r,s)=>r.querySelector(s);
+const n2=(v,d)=>String(Math.round(v*Math.pow(10,d==null?2:d))/Math.pow(10,d==null?2:d)).replace('.',',');
+const myVar=()=>{ try{ const v=+localStorage.getItem('nch2_igvar'); return v>=1&&v<=30?v:0; }catch(e){ return 0; } };
+const VER={text:['сверено с текстом ГОСТ','ok'],web:['подтверждено источниками','web'],mem:['по памяти — ждёт сверки с текстом','mem']};
+/* ползунки «Сломай ГОСТ»: путь в профиле, подпись, границы ползунка, норма, во что пересчитать для показа */
+const KNOBS=[
+ {p:'s',t:'Основная линия s',min:0.2,max:2,step:0.05,id:'line.s'},
+ {p:'w.thin',also:['w.wavy','w.axis'],t:'Тонкие линии',min:0.15,max:1,step:0.01,id:'line.thin.w',rel:1},   /* все тонкие типы разом: у них одна норма s/3…s/2 */
+ {p:'dash.st',t:'Штриховая: штрих',min:0.5,max:12,step:0.1,id:'line.dash.st'},
+ {p:'dash.gp',t:'Штриховая: промежуток',min:0.3,max:4,step:0.1,id:'line.dash.gp'},
+ {p:'axis.gp',t:'Осевая: промежуток с точкой',min:1.5,max:10,step:0.1,id:'line.axis.gp'},
+ {p:'axis.ext',t:'Ось выходит за контур',min:0,max:12,step:0.5,id:'axis.ext'},
+ {p:'hatch.pitch',t:'Шаг штриховки',min:0.6,max:14,step:0.1,id:'hatch.pitch'},
+ {p:'font.dim',t:'Шрифт размерных чисел',min:1.5,max:8,step:0.1,id:'font.dim',ser:1},
+ {p:'font.let',t:'Шрифт букв разрезов',min:2,max:14,step:0.1,id:'font.let',ser:1}];
+
+/* ── лист: виды (вложенные рисунки) разворачиваются в общие группы — тогда каждую линию вида можно нажать и измерить ── */
+function inline(svg){ let vi=0;
+  svg.querySelectorAll('image').forEach(im=>{ const m=/^data:image\/svg\+xml(?:;charset=utf-8)?,(.*)$/.exec(im.getAttribute('href')||''); if(!m) return;
+    const ns=new DOMParser().parseFromString(decodeURIComponent(m[1]),'image/svg+xml').documentElement;
+    const v=(ns.getAttribute('viewBox')||('0 0 '+ns.getAttribute('width')+' '+ns.getAttribute('height'))).split(/[ ,]+/).map(Number);
+    const w=+im.getAttribute('width'), h=+im.getAttribute('height'), x=+(im.getAttribute('x')||0), y=+(im.getAttribute('y')||0), s=Math.min(w/v[2],h/v[3]);
+    const g=document.createElementNS(NS,'g'), pre='gx'+(vi++)+'_';
+    g.setAttribute('transform',(im.getAttribute('transform')||'')+` translate(${x+(w-v[2]*s)/2-v[0]*s} ${y+(h-v[3]*s)/2-v[1]*s}) scale(${s})`);
+    ns.querySelectorAll('[id]').forEach(e=>{ e.id=pre+e.id; });
+    ns.querySelectorAll('*').forEach(e=>['fill','stroke'].forEach(a=>{ const q=e.getAttribute(a); if(q&&/url\(#/.test(q)) e.setAttribute(a,q.replace(/url\(#([^)]+)\)/,'url(#'+pre+'$1)')); }));
+    [...ns.childNodes].forEach(c=>g.appendChild(document.importNode(c,true))); im.replaceWith(g); }); }
+/* высота прописной — как в нормоконтроле: canvas на кегле 100 px (на мелком кегле он округляет до пикселя) */
+const CV=document.createElement('canvas').getContext('2d');
+const capOf=cs=>{ CV.font=`${cs.fontStyle} ${cs.fontWeight} 100px ${cs.fontFamily}`; return CV.measureText('Н').actualBoundingBoxAscent/100*parseFloat(cs.fontSize); };
+/* измерить элемент листа (мм) → вход классификатора ESKD.classify */
+function measure(svg,el){ const R=svg.getScreenCTM().inverse().multiply(el.getScreenCTM()), sc=Math.sqrt(Math.abs(R.a*R.d-R.b*R.c))/k, cs=getComputedStyle(el), tag=el.tagName.toLowerCase();
+  if(tag==='text') return {kind:'text',cls:el.getAttribute('class')||'',h:capOf(cs)*sc,s:el.textContent.trim()};
+  const fill=el.getAttribute('fill')||'', pat=/url\(#([^)]+)\)/.exec(fill);
+  if(pat){ const pe=svg.querySelector('#'+CSS.escape(pat[1])); if(!pe) return null; const ln=pe.querySelector('line'), rot=/rotate\(([-\d.]+)/.exec(pe.getAttribute('patternTransform')||'');
+    const a=((rot?+rot[1]:0)%180+180)%180, ang=Math.round(((90-a)%180+180)%180);
+    return {kind:'hatch',w:parseFloat(ln.getAttribute('stroke-width'))*sc,pitch:+pe.getAttribute('width')*sc,ang:Math.min(ang,180-ang)}; }
+  const sw=parseFloat(cs.strokeWidth)||0, st=cs.stroke;
+  if(st&&st!=='none'&&sw>0){ const da=cs.strokeDasharray&&cs.strokeDasharray!=='none'?cs.strokeDasharray.split(/[ ,]+/).map(parseFloat).filter(v=>!isNaN(v)):null, d=el.getAttribute('d')||'';
+    let len=0; if(tag==='line') len=Math.hypot(el.x2.baseVal.value-el.x1.baseVal.value,el.y2.baseVal.value-el.y1.baseVal.value)*sc;
+    return {kind:'stroke',w:sw*sc,dash:da&&da.length?(da.length%2?da.concat(da):da).map(v=>v*sc):null,curve:tag==='path'&&/[QqCcAa]/.test(d)||tag==='circle',len,tag}; }
+  if(tag==='path'&&fill&&fill!=='none'&&!/^#fff/i.test(fill)){ /* стрелка: треугольник; длина — от острия до середины основания */
+    const n=(el.getAttribute('d').match(/-?\d*\.?\d+/g)||[]).map(Number); if(n.length<6) return null; const rel=/l/.test(el.getAttribute('d'));
+    const P=[[n[0],n[1]]]; P.push(rel?[P[0][0]+n[2],P[0][1]+n[3]]:[n[2],n[3]]); P.push(rel?[P[1][0]+n[4],P[1][1]+n[5]]:[n[4],n[5]]);
+    const e=[0,1,2].map(i=>Math.hypot(P[i][0]-P[(i+1)%3][0],P[i][1]-P[(i+1)%3][1])), i=e.indexOf(Math.min(...e)), b=[P[i],P[(i+1)%3]], tip=P[(i+2)%3];
+    const len=Math.hypot(tip[0]-(b[0][0]+b[1][0])/2,tip[1]-(b[0][1]+b[1][1])/2)*sc;
+    return {kind:Math.abs(len-E.PR.open.arrow)<Math.abs(len-E.PR.dim.arrow)?'cutArrow':'arrow',len}; }
+  return null; }
+/* все элементы листа: измерить, классифицировать под текущим профилем; к тонким — широкая прозрачная «ручка», чтобы попасть пальцем */
+function scan(svg){ const items=[];
+  svg.querySelectorAll('line,path,rect,circle,polyline,polygon,ellipse,text').forEach(el=>{ if(el.closest('defs,pattern,clipPath,mask')||el.classList.contains('gx-h')) return;
+    let m=null; try{ m=measure(svg,el); }catch(e){} if(!m) return; const c=E.classify(m), it={el,m,type:c.type,ok:c.ok,why:c.why}; items.push(it); el.__gx=it;
+    if(m.kind==='stroke'){ const h=el.cloneNode(false); h.removeAttribute('stroke-dasharray'); h.removeAttribute('class'); h.setAttribute('class','gx-h'); h.setAttribute('stroke','transparent'); h.setAttribute('fill','none');
+      h.setAttribute('stroke-width','16'); h.setAttribute('vector-effect','non-scaling-stroke'); h.setAttribute('pointer-events','stroke'); h.__gx=it; el.after(h); } });
+  return items; }
+
+/* ── карточка элемента: измерено на листе → шкала нормы → пункт, цитата, статус сверки ── */
+function gauge(label,v,lo,hi,u,note){ const a=Math.min(lo,v), b=Math.max(hi,v), L=Math.max(0,a-(b-a)*0.35-0.0001), H=b+(b-a)*0.35+0.0001, X=x=>Math.max(0,Math.min(100,(x-L)/(H-L)*100)), ok=v>=lo-1e-6&&v<=hi+1e-6;
+  return `<div class="gx-g${ok?'':' bad'}"><span class="gx-gl">${label}</span><div class="gx-gt" aria-hidden="true"><i style="left:${X(lo)}%;width:${Math.max(1.5,X(hi)-X(lo))}%"></i><b style="left:${X(v)}%"></b></div><span class="gx-gv">${n2(v)} ${u||'мм'} <em>${note||'норма '+n2(lo)+'…'+n2(hi)}</em></span></div>`; }
+function series(label,h,extra){ const S=E.N['font.h'].v, near=S.reduce((a,x)=>Math.abs(x-h)<Math.abs(a-h)?x:a,S[0]), ok=E.inSeries(h);
+  return `<div class="gx-g${ok?'':' bad'}"><span class="gx-gl">${label}</span><div class="gx-ser" aria-hidden="true">${S.slice(0,7).map(x=>`<i class="${Math.abs(x-near)<1e-9?(ok?'on':'near'):''}">${n2(x,1)}</i>`).join('')}</div><span class="gx-gv">${n2(h)} мм <em>${ok?'из ряда ГОСТ 2.304':'не из ряда: ближайший '+n2(near,1)}${extra||''}</em></span></div>`; }
+function normRow(id){ const o=E.N[id], mu=o.d==='МУ', vv=mu?['методические указания кафедры, не ГОСТ','mu']:VER[o.ver];
+  return `<li><span class="igx-cite">${E.cite(id)}</span>${o.v!=null&&E.t(id)?` <b>${E.t(id)}</b>`:''} <span class="gx-st ${vv[1]}">${vv[0]}</span><q>${o.q}</q>${o.note?`<small>${o.note}</small>`:''}</li>`; }
+function card(it,ctx){ const T=E.TYPES[it.type], m=it.m, s=E.PR.s, L=T&&T.line?E.LINES.find(x=>x.id===T.line):null; let g='';
+  if(!T) return `<div class="gx-card bad"><b>Элемент не выведен из профиля ГОСТ</b><p>${(it.why||[]).join('; ')}</p></div>`;
+  const W=id=>E.r(id,s);
+  if(m.kind==='stroke'||m.kind==='hatch'){ const wid=it.type==='main'?'line.s':it.type==='open'?'line.open.w':it.type==='hatch'?'line.thin.w':'line.'+it.type+'.w', r=W(wid);
+    g+=gauge('толщина',m.w,r[0],r[1],'мм',it.type==='main'?'норма '+E.t('line.s'):'норма '+E.t(wid)+' = '+n2(r[0])+'…'+n2(r[1]));
+    if(it.type==='dash'&&m.dash){ g+=gauge('штрих',m.dash[0],...W('line.dash.st'))+gauge('промежуток',m.dash[1],...W('line.dash.gp')); }
+    if(it.type==='axis'&&m.dash){ const d=m.dash; g+=gauge('штрих',d[0],...W('line.axis.st'),'мм','норма '+E.t('line.axis.st')+' — под длину линии')+gauge('промежуток с точкой',d[1]+d[2]+d[3],...W('line.axis.gp')); }
+    if(it.type==='open'&&m.len) g+=gauge('штрих',m.len,...W('line.open.st'));
+    if(it.type==='hatch'){ g+=gauge('шаг',m.pitch,...W('hatch.pitch'))+`<div class="gx-g"><span class="gx-gl">наклон</span><span class="gx-gv">${m.ang}° <em>норма ${E.t('hatch.ang')}, если совпадает с контуром или осью — ${E.N['hatch.alt'].v.join('° или ')}°</em></span></div>`; } }
+  if(m.kind==='text'){ g+=series('высота прописных',m.h);
+    if(it.type==='dim') g+=gauge('размерное число',m.h,...W('font.dim'),'мм','методические указания: '+E.t('font.dim'));
+    if(it.type==='let'&&ctx.dimH) g+=gauge('буква / размерное число',m.h/ctx.dimH,1.6,2.5,'раза','ГОСТ 2.316: ≈ 2 ('+n2(m.h)+' / '+n2(ctx.dimH)+' мм)'); }
+  if(m.kind==='arrow') g+=gauge('длина стрелки',m.len,...W('dim.arrowLen'),'мм','методические указания: '+E.t('dim.arrowLen'));
+  if(m.kind==='cutArrow') g+=`<div class="gx-g"><span class="gx-gl">длина</span><span class="gx-gv">${n2(m.len)} мм <em>профиль листа</em></span></div>`;
+  const same=ctx.items.filter(x=>x.type===it.type).length;
+  return `<div class="gx-card${it.ok?'':' bad'}"><div class="gx-ch"><b>${T.n}</b>${m.s?` <span class="gx-tx">«${m.s}»</span>`:''}<span class="gx-same">таких на листе: ${same}</span></div>
+    ${L?`<p class="gx-use">${L.use[0].toUpperCase()+L.use.slice(1)}.</p>`:''}
+    <div class="gx-gs">${g}</div>${it.ok?'':`<p class="gx-why">Не по профилю: ${it.why.join('; ')}</p>`}
+    <details class="gx-norms"${window.innerWidth>700?' open':''}><summary>Откуда это: ${T.ids.length} ${T.ids.length<5?'нормы':'норм'}</summary><ul>${T.ids.map(normRow).join('')}</ul></details></div>`; }
+
+/* ── страница ── */
+function view(v,item){ const n=(+item>=1&&+item<=30)?+item:(myVar()||8), S={mode:'x',over:{},items:[],sel:null,zoom:window.innerWidth<700?2:1,busy:0};
+  v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['ГОСТ-рентген']],next:null,noBottom:true,cls:'igx gx',body:`
+   <div class="intro"><span class="igx-badge">ГОСТ-рентген</span><h1>Лист, собранный из ГОСТ</h1>
+    <p class="lead">Каждая линия, надпись и стрелка этого листа выведена из пункта стандарта — сайт рисует не «на глаз», а из реестра норм. <b>Нажми на любой элемент</b>: увидишь, что на нём измерено, где это в допуске и какой пункт ГОСТ его задал. А в режиме «Сломай ГОСТ» двигай нормы — лист перерисуется, нарушения загорятся красным.</p></div>
+   <div class="gx-bar"><div class="seg gx-mode" role="tablist"><button data-m="x" class="on" role="tab">Рентген</button><button data-m="b" role="tab">Сломай ГОСТ</button></div>
+    <label class="gx-var">Вариант <select id="gxVar" aria-label="Вариант">${Array.from({length:30},(_,i)=>`<option value="${i+1}"${i+1===n?' selected':''}>${i+1}</option>`).join('')}</select></label>
+    <button class="gy-zb" id="gxZoom" aria-label="Увеличить лист">＋</button></div>
+   <div class="gx-cov" id="gxCov" aria-live="polite"></div>
+   <div class="gx-main"><div class="nk-sheet gx-sheet" id="gxSheet"></div>
+    <aside class="gx-side"><div id="gxKnobs" class="gx-knobs" hidden></div><div id="gxViol" aria-live="polite"></div><div id="gxOut" class="gx-out" aria-live="polite"></div></aside></div>
+   <details class="gx-pass" id="gxPass"><summary>Паспорт листа: типы элементов и их нормы</summary><div id="gxPassB"></div></details>
+   <p class="igx-nk-l">Почему так сделано и что ещё не сверено с текстом стандартов — <a href="${H('ig','theory','eskd')}">теория ЕСКД</a>. Найти нарушение самому — <a href="${H('ig','nk')}">тренажёр «Нормоконтроль»</a>.</p>`});
+  const box=$(v,'#gxSheet'), out=$(v,'#gxOut'), vi=$(v,'#gxViol'), cov=$(v,'#gxCov'), kn=$(v,'#gxKnobs');
+  const L=IGUI.loading(box,'Собираю лист из ГОСТ','Считаю виды детали — на телефоне это может занять до полминуты');
+  const md=IG_VARS[n], sp=IGUI.igSpec(md), Q=[()=>IG3.drawing(md,sp.fk,900,0,sp.xb),()=>IG3.drawing(md,sp.lk,900,0,sp.yb),()=>IG3.drawing(md,md.hz?'topNH':'top',900)].concat(md.hz?[()=>IG3.drawing(md,'topcut',900,md.hz.z)]:[]);
+  const alive=()=>box.isConnected;
+  const hint=()=>`<p class="gx-hint">${S.mode==='x'?'Нажми на линию, надпись или стрелку листа.':'Нажми на элемент листа — увидишь, где он вышел из нормы.'}</p>`;
+  /* перерисовать лист под текущим профилем (базовым или «сломанным») и пересчитать всё, что на нём видно */
+  function render(){ const keep=[box.scrollLeft,box.scrollTop];
+    const svgS=E.with(S.over,()=>IGS.sheet(n,'clean')); box.innerHTML=svgS; const svg=box.querySelector('svg'); if(!svg) return;
+    svg.style.width=(100*S.zoom)+'%'; svg.style.height='auto'; svg.style.display='block'; inline(svg);
+    S.items=E.with(S.over,()=>scan(svg)); const nums=S.items.filter(x=>x.type==='dim').map(x=>x.m.h).sort((a,b)=>a-b); S.dimH=nums.length?nums[nums.length>>1]:0;
+    box.scrollLeft=keep[0]; box.scrollTop=keep[1];
+    const bad=E.with(S.over,()=>E.auditX()), badT=new Set(); bad.forEach(o=>E.typesOf(o.id).forEach(t=>badT.add(t)));
+    S.items.forEach(it=>{ if(badT.has(it.type)) it.el.classList.add('gx-bad'); });
+    const nBad=S.items.filter(it=>badT.has(it.type)).length, nOk=S.items.filter(it=>it.ok).length, by={}; S.items.forEach(it=>{ by[it.type]=(by[it.type]||0)+1; });
+    cov.innerHTML=bad.length?`<b class="gx-cb">${nBad} из ${S.items.length} элементов листа нарушают ГОСТ</b> — норм нарушено: ${bad.length}`
+      :`<b class="gx-cg">${nOk} из ${S.items.length}</b> элементов листа выведены из ГОСТ${nOk===S.items.length?' — <b>100 %</b>':''}: у каждого есть пункт стандарта`;
+    $(v,'#gxPassB').innerHTML=`<table class="igx-t"><tr><th>Элемент</th><th>На листе</th><th>Нормы</th></tr>${Object.keys(E.TYPES).filter(t=>by[t]).map(t=>`<tr><td>${E.TYPES[t].n}</td><td>${by[t]}</td><td>${E.TYPES[t].ids.map(id=>`<span class="igx-cite">${E.cite(id)}</span>`).join(' ')}</td></tr>`).join('')}</table>`;
+    S.sel=null; out.innerHTML=hint();
+    vi.innerHTML=S.mode!=='b'?'':bad.length?`<div class="gx-viol"><b>Нарушено:</b><ul>${bad.map(o=>`<li>${o.msg}</li>`).join('')}</ul><button class="btn" id="gxReset">Вернуть по ГОСТ</button></div>`
+      :`<div class="gx-okb"><b>Лист по ГОСТ.</b> Сдвинь любой ползунок за зелёную зону — нарушение загорится на листе.</div>`;
+    const rs=$(v,'#gxReset'); if(rs) rs.addEventListener('click',()=>{ S.over={}; knobs(); render(); }); }
+  /* нажатие: всё под пальцем, предпочтение — надписи и стрелки, потом тонкие линии, потом контур и штриховка */
+  const PRI={dim:9,let:9,tb:8,tbs:8,arrow:7,cutArrow:7,axis:6,dash:6,thin:5,wavy:5,open:5,main:4,hatch:2};
+  box.addEventListener('click',ev=>{ const svg=box.querySelector('svg'); if(!svg) return;
+    const hit=[...new Set(document.elementsFromPoint(ev.clientX,ev.clientY).map(e=>e.__gx).filter(Boolean))].sort((a,b)=>(PRI[b.type]||1)-(PRI[a.type]||1))[0];
+    svg.querySelectorAll('.gx-on,.gx-sm').forEach(e=>e.classList.remove('gx-on','gx-sm'));
+    if(!hit){ S.sel=null; out.innerHTML=hint(); return; }
+    S.sel=hit; S.items.forEach(x=>{ if(x.type===hit.type&&x!==hit) x.el.classList.add('gx-sm'); }); hit.el.classList.add('gx-on');
+    out.innerHTML=card(hit,{items:S.items,dimH:S.dimH}); try{ FX.buzz&&FX.buzz(6); }catch(e){} try{ TRACK&&TRACK('ig_gost',{t:hit.type}); }catch(e){} });
+  /* ползунки: зелёная зона — норма, метки — ряд шрифтов */
+  function knobs(){ kn.innerHTML=KNOBS.map((K,i)=>{ const val=S.over[K.p]!=null?S.over[K.p]:E.get(K.p), s=S.over.s!=null?S.over.s:E.PR.s;
+      const r=K.rel?E.N[K.id].v:E.r(K.id), X=x=>Math.max(0,Math.min(100,(x-K.min)/(K.max-K.min)*100));
+      const zone=K.ser?E.N['font.h'].v.filter(x=>x>=K.min&&x<=K.max).map(x=>`<i class="gx-tick" style="left:${X(x)}%"></i>`).join('')+(K.id==='font.dim'?`<i class="gx-z" style="left:${X(r[0])}%;width:${X(r[1])-X(r[0])}%"></i>`:'')
+        :`<i class="gx-z" style="left:${X(r[0])}%;width:${X(r[1])-X(r[0])}%"></i>`;
+      const show=K.rel?n2(val)+'s = '+n2(val*s)+' мм':n2(val,K.ser?1:2)+' мм';
+      return `<label class="gx-k"><span class="gx-kt">${K.t} <b id="gxV${i}">${show}</b></span><span class="gx-kr">${zone}<input type="range" min="${K.min}" max="${K.max}" step="${K.step}" value="${val}" data-i="${i}" aria-label="${K.t}"></span><span class="gx-kn">${K.ser?(K.id==='font.dim'?'ряд ГОСТ 2.304, учебные листы — '+E.t('font.dim'):'ряд ГОСТ 2.304, ≈ 2 × размерные числа (ГОСТ 2.316)'):'норма '+E.t(K.id)} · <span class="igx-cite">${E.cite(K.id)}</span></span></label>`; }).join('');
+    kn.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{ const K=KNOBS[+inp.dataset.i]; [K.p].concat(K.also||[]).forEach(p=>{ S.over[p]=+inp.value; });
+      const s=S.over.s!=null?S.over.s:E.PR.s, val=+inp.value; $(kn,'#gxV'+inp.dataset.i).textContent=K.rel?n2(val)+'s = '+n2(val*s)+' мм':n2(val,K.ser?1:2)+' мм';
+      if(S.busy) return; S.busy=requestAnimationFrame(()=>{ S.busy=0; render(); }); })); }
+  v.querySelectorAll('.gx-mode button').forEach(b=>b.addEventListener('click',()=>{ S.mode=b.dataset.m; v.querySelectorAll('.gx-mode button').forEach(x=>x.classList.toggle('on',x===b));
+    kn.hidden=S.mode!=='b'; box.classList.toggle('gx-brk',S.mode==='b'); if(S.mode==='b') knobs(); else S.over={}; render(); }));
+  $(v,'#gxVar').addEventListener('change',e=>nav(H('ig','gost',e.target.value)));
+  $(v,'#gxZoom').addEventListener('click',e=>{ S.zoom=S.zoom===1?2:S.zoom===2?3:1; e.currentTarget.textContent=S.zoom===3?'－':'＋'; const s=box.querySelector('svg'); if(s) s.style.width=(100*S.zoom)+'%'; });
+  (async()=>{ for(let i=0;i<Q.length;i++){ await IGUI.frame(); if(!alive()) return; try{ Q[i](); }catch(e){ console.error(e); } L.p(i+1,Q.length+1); }
+    await IGUI.frame(); if(!alive()) return; L.done(); try{ render(); }catch(e){ console.error(e); box.innerHTML='<div class="box warn">Не получилось собрать лист этого варианта.</div>'; } })();
+  NEXT=null; return 'ГОСТ-рентген · '+SUBJ.ig.name; }
+return {view,inline,scan,measure,KNOBS};
 })();
 
 /* ═════════ IGREAD: «Читаю чертёж» — нажми на линию, она подсветится на всех видах ═════════
