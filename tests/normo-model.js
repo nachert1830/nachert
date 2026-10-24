@@ -60,9 +60,12 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
       const lab=labs.find(t=>t.c[0]>w.b[0]-5*k&&t.c[0]<w.b[2]+5*k&&t.c[1]<w.b[1]&&t.c[1]>w.b[1]-40*k);
       if(lab){ const M=marks.filter(m=>m.L===lab.s[0]); if(M.length>=2) plane={marks:M}; }
       if(name==='top'&&!lab) plane=null; }
-    /* ── модель вида: с условностью для отверстий фланца, если вид с разрезом ── */
-    const model=H.length&&name!=='top'?IG3.conv(model0,name==='front'?'y':'x'):model0, J=IG3.jc(model.tree), b=model.box;
-    const leaves=[]; (function wk(n){ if(!n) return; if(n.t==='u'||n.t==='i'){ n.k.forEach(wk); return; } if(n.t==='s'){ wk(n.a); n.k.forEach(wk); return; } leaves.push(IG3.jc(n)); })(model.tree);
+    /* ── модель вида: с условностью для отверстий фланца, если вид с разрезом; у половины вида и половины разреза условность —
+       только в разрезе, на половине вида отверстия на своих местах (их невидимый контур — штриховыми) ── */
+    const model=H.length&&name!=='top'?IG3.conv(model0,name==='front'?'y':'x'):model0, Jc=IG3.jc(model.tree), J0=IG3.jc(model0.tree), b=model.box;
+    let onView=null;   /* точка (мм модели) на половине вида — задаётся, когда известна граница */
+    const J=(x,y,z)=>onView&&onView([x,y,z])?J0(x,y,z):Jc(x,y,z);
+    const leaves=[]; [model.tree].concat(model!==model0?[model0.tree]:[]).forEach(T=>(function wk(n){ if(!n) return; if(n.t==='u'||n.t==='i'){ n.k.forEach(wk); return; } if(n.t==='s'){ wk(n.a); n.k.forEach(wk); return; } leaves.push(IG3.jc(n)); })(T));
     /* ── перевод мм ↔ лист: масштаб 1:1, сдвиг — по габариту изображения на листе и деталь лучами ── */
     const [u0,u1]=V.uR(b), [v0,v1]=V.vR(b), t0=V.lo(b)-1, t1=V.hi(b)+1;
     /* удалённая часть разреза (в мм модели) — после того как известны сдвиги; пока считаем без разреза, чтобы найти габарит */
@@ -114,6 +117,7 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
         const pd=name==='front'?p[1]-pl:name==='left'?p[0]-pl:pl-p[2];   /* < 0 — перед плоскостью (со стороны наблюдателя) */
         let hs=-1e9; if(side==='right') hs=ub-u; else if(side==='left') hs=u-ub; else if(side==='down') hs=v-ub; else if(side==='up') hs=ub-v;
         return Math.max(pd,hs); };
+      if(side){ const uv=p=>side==='right'||side==='left'?(name==='left'?-p[1]:p[0]):p[1]; onView=side==='right'||side==='up'?p=>uv(p)<ub:p=>uv(p)>ub; }
       stats[name]={half,plane:Math.round(pl*10)/10,ub:ub!=null?Math.round(ub*10)/10:null};
       /* ребро детали на оси симметрии (ГОСТ 2.305): если оно совпало с осью, вид от разреза отделяют волнистой линией, а не осью
          (ребро слилось бы со штрихпунктиром). Ищем по модели, независимо от листа: по обе стороны оси (±0,6 мм) — первая поверхность
@@ -144,7 +148,7 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
           let worst=0; long.forEach(r=>{ let m=0; r.forEach(s=>{ m=drawn(s)?0:m+1; worst=Math.max(worst,m); }); });
           if(worst*0.5>=3) add('модель','ребро на оси видно (ГОСТ 2.305)',nm+': ребро детали на оси симметрии не нарисовано на '+worst*0.5+' мм — волнистая линия смещена не в ту сторону',at); } } }
     /* ── лучи по сетке ── */
-    const needHid=S.some(q=>q.it.kind==='dash');
+    const needHid=S.some(q=>q.it.kind==='dash')||!!(H.length&&half&&half!=='full');   /* половина вида: невидимый контур обязателен */
     const R=new Array((nu+1)*(nv+1)), id=(i,j)=>i*(nv+1)+j;
     const own=p=>{ let bi=-1, bv=Infinity; for(let i=0;i<leaves.length;i++){ const v=Math.abs(leaves[i](p[0],p[1],p[2])); if(v<bv){ bv=v; bi=i; } } if(cutSD){ const c=Math.abs(cutSD(p)); if(c<bv&&c<0.02) bi=-2; } return bi; };
     const nrm=p=>{ const h=0.01, gx=Jv([p[0]+h,p[1],p[2]])-Jv([p[0]-h,p[1],p[2]]), gy=Jv([p[0],p[1]+h,p[2]])-Jv([p[0],p[1]-h,p[2]]), gz=Jv([p[0],p[1],p[2]+h])-Jv([p[0],p[1],p[2]-h]), l=Math.hypot(gx,gy,gz)||1; return [gx/l,gy/l,gz/l]; };
@@ -178,8 +182,10 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
     const inBox=p=>{ const u=toU(p[0]), v=toV(p[1]); return u>u0-2&&u<u1+2&&v>v0-2&&v<v1+2; };
     report(samp(thick).filter(p=>inBox(p)&&VP.dist(p)>TOL*k&&!(bnd!=null&&half&&half!=='full'&&Math.abs((vert?p[0]:p[1])-bnd)<1*k)),'нет лишних линий','линия, которой на детали нет');
     /* штриховые: только на невидимых рёбрах */
-    if(dash.length){ report(samp(dash).filter(p=>inBox(p)&&HP.dist(p)>TOL*k&&VP.dist(p)>TOL*k),'невидимый контур — по рёбрам детали','штриховая линия, а невидимого ребра здесь нет');
-      const hv=hid.filter(m=>GD.dist(m)>TOL*k&&GT.dist(m)>TOL*k&&VP.dist(m)>TOL*k&&!(half&&half!=='full'&&H.length));
+    if(needHid){ report(samp(dash).filter(p=>inBox(p)&&HP.dist(p)>TOL*k&&VP.dist(p)>TOL*k),'невидимый контур — по рёбрам детали','штриховая линия, а невидимого ребра здесь нет');
+      /* на половине вида невидимый контур — полностью; на разрезе (и у границы вида и разреза) — не требуем */
+      const inView=m=>bnd!=null&&(half==='right'?m[0]<bnd-1*k:half==='left'?m[0]>bnd+1*k:half==='down'?m[1]<bnd-1*k:half==='up'?m[1]>bnd+1*k:false);
+      const hv=hid.filter(m=>GD.dist(m)>TOL*k&&GT.dist(m)>TOL*k&&VP.dist(m)>TOL*k&&!(half&&H.length&&!inView(m)));
       report(hv,'невидимый контур — полностью','невидимое ребро не показано штриховой'); }
     /* ── штриховка = сечение: первый луч упёрся в секущую плоскость ── */
     tm('cmp',tq); tq=performance.now();
