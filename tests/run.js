@@ -19,6 +19,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   const srv=await serve(), URL='http://127.0.0.1:'+srv.address().port+'/';
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
   const fail=[], info=[];
+  /* 0. реестр норм ЕСКД (window.ESKD): целостность, профиль листа внутри норм, числа ЕСКД в тексте сайта, сверка с текстами ГОСТ в docs/gost */
+  { const r=require('./eskd.js').check(); r.info.forEach(s=>info.push(s)); r.fail.forEach(s=>fail.push(s)); }
   const key=o=>[o.name,o.rule,o.msg].join(' | ');
   const report=(title,list)=>{ const fresh=list.filter(o=>!baseline.includes(key(o))); info.push(title+': '+list.length+' замечаний, новых '+fresh.length); fresh.forEach(o=>fail.push(title+' · '+key(o))); };
 
