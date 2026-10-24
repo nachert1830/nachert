@@ -46,9 +46,8 @@ const srv=http.createServer(async(q,r)=>{
       if(u.pathname==='/dev/bot-login'&&q.method==='POST'){ let b={}; try{ b=JSON.parse(body||'{}'); }catch(e){}
         /* как будто участник нажал «Старт» у бота: start=<param>; в ответ — ссылка из кнопки «Войти в клуб» (или текст отказа) */
         const id=String(b.id||'1000002').replace(/\D/g,'').slice(0,12)||'1000002', from={id:+id,first_name:String(b.first_name||'Тестировщик').slice(0,40)};
-        const n=outbox.length; await app.onUpdate({message:{from,chat:{id:+id},text:'/start '+String(b.start||'login').slice(0,64)}});
-        const m=outbox.slice(n).reverse().find(x=>x.body&&String(x.body.chat_id)===id), k=m&&m.body.reply_markup&&m.body.reply_markup.inline_keyboard;
-        return send(r,200,{link:k?k[0][0].url:null,text:m?m.body.text:''}); }
+        const act=await app.onUpdate({message:{from,chat:{id:+id},text:'/start '+String(b.start||'login').slice(0,64)}})||{}; if(act.method) outbox.push({to:'telegram',method:act.method,body:act,at:Date.now()});
+        const k=act.reply_markup&&act.reply_markup.inline_keyboard; return send(r,200,{link:k?k[0][0].url:null,text:act.text||''}); }
       if(u.pathname==='/dev/outbox') return send(r,200,{mail:outbox.filter(x=>x.to!=='telegram'),telegram:outbox.filter(x=>x.to==='telegram')});
       if(u.pathname==='/dev/remind'&&q.method==='POST') return send(r,200,await app.remind());
       if(u.pathname==='/dev/invite'&&q.method==='POST'){ let b={}; try{ b=JSON.parse(body||'{}'); }catch(e){} return send(r,200,await newInvite(b.label,b.days)); }

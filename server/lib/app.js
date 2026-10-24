@@ -103,14 +103,16 @@ function createApp(o){
      3) по ссылке страница показывает «Войти как <имя>?» и после нажатия получает сессию.
      Ключ идёт из Telegram в браузер, который выбрал сам участник: присланная кем-то ссылка на бота ничего не даёт присылающему. */
   const loginId=tok=>C.sha256('login:'+tok).slice(0,40);
+  /* ответ на «Старт» отдаётся прямо в ответе вебхуку (Telegram сам выполнит sendMessage): облаку не нужно ходить в api.telegram.org */
   async function botLoginLink(from,param){ const t=now(), key='tg:'+from.id;
     const member=await store.get('identities',key), code=/^i_[A-Za-z0-9_-]{16,62}$/.test(param||'')?param.slice(2):null, inv=code?inviteHash(code):null;
     if(!member&&!isBootstrap(key)){ const st=await inviteState(inv);
-      if(!st.ok){ await o.bot.send(from.id,'Это бот закрытого клуба Начерта. '+(code?st.why:'Вход — по личной ссылке-приглашению.')); return; } }
+      if(!st.ok) return say(from.id,'Это бот закрытого клуба Начерта. '+(code?st.why:'Вход — по личной ссылке-приглашению.')); }
     const tok=C.token(24), name=cleanName(from.first_name)||'Участник';
     await store.put('botlogin',{id:loginId(tok),tg:String(from.id),name,invite:member?null:inv,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
-    await o.bot.send(from.id,'Вход в клуб Начерта.\n\nНажмите кнопку — откроется клуб, и вы войдёте. Ссылка действует '+LOGIN_MIN+' минут и срабатывает один раз. Не пересылайте её: по ней можно войти в ваш аккаунт.',
+    return say(from.id,'Вход в клуб Начерта.\n\nНажмите кнопку — откроется клуб, и вы войдёте. Ссылка действует '+LOGIN_MIN+' минут и срабатывает один раз. Не пересылайте её: по ней можно войти в ваш аккаунт.',
       {reply_markup:{inline_keyboard:[[{text:'Войти в клуб',url:cfg.origin+'/#/tg/'+tok}]]}}); }
+  const say=(chat,text,extra)=>Object.assign({method:'sendMessage',chat_id:chat,text,disable_web_page_preview:true},extra||{});
 
   /* шаг 3: confirm=false — только узнать имя («Войти как …?»), confirm=true — войти */
   R['POST /api/auth/bot/redeem']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),30,600);
@@ -126,7 +128,7 @@ function createApp(o){
     return enter(req,{key,method:'telegram',name:r.name,tgId:r.tg,invite:r.invite,consent}); };
 
   R['POST /api/tg/webhook']=async(req)=>{ if(!cfg.webhookSecret||!C.safeEqual(req.headers['x-telegram-bot-api-secret-token']||'',cfg.webhookSecret)) fail(403,'нет');
-    let u={}; try{ u=JSON.parse(req.body||'{}'); }catch(e){} await onUpdate(u); return H.json(200,{ok:true}); };
+    let u={}; try{ u=JSON.parse(req.body||'{}'); }catch(e){} const act=await onUpdate(u); return H.json(200,act||{ok:true}); };
 
   /* — с сессией — */
   const A={};
@@ -230,20 +232,22 @@ function createApp(o){
     await store.del('progress',id); await store.del('users',id); }
 
   /* ── бот: /start, /pause, /resume, /stop и кнопка «Пауза» ── */
+  /* ответ на обновление возвращается действием {method, …} — Telegram выполнит его сам, из ответа на вебхук */
   async function onUpdate(u){ const msg=u.message, cb=u.callback_query, mcm=u.my_chat_member;
-    const from=(msg&&msg.from)||(cb&&cb.from)||(mcm&&mcm.from); if(!from||!/^\d+$/.test(String(from.id))) return;
+    const from=(msg&&msg.from)||(cb&&cb.from)||(mcm&&mcm.from); if(!from||!/^\d+$/.test(String(from.id))) return null;
     const ident=await store.get('identities','tg:'+from.id), user=ident?await store.get('users',ident.userId):null;
     const setR=async patch=>{ if(user) await store.update('users',user.id,{reminders:Object.assign({},user.reminders||{},patch)}); };
-    if(mcm){ const st=mcm.new_chat_member&&mcm.new_chat_member.status; if(st==='kicked') await setR({canWrite:false}); if(st==='member') await setR({canWrite:true}); return; }
-    if(cb){ if(user&&cb.data==='pause'){ await setR({paused:true}); await o.bot.api('answerCallbackQuery',{callback_query_id:cb.id,text:'Напоминания на паузе. Вернуть — /resume или в клубе.'}); }
-      else await o.bot.api('answerCallbackQuery',{callback_query_id:cb.id}); return; }
+    if(mcm){ const st=mcm.new_chat_member&&mcm.new_chat_member.status; if(st==='kicked') await setR({canWrite:false}); if(st==='member') await setR({canWrite:true}); return null; }
+    if(cb){ if(user&&cb.data==='pause'){ await setR({paused:true}); return {method:'answerCallbackQuery',callback_query_id:cb.id,text:'Напоминания на паузе. Вернуть — /resume или в клубе.'}; }
+      return {method:'answerCallbackQuery',callback_query_id:cb.id}; }
     const parts=String((msg&&msg.text)||'').trim().split(/\s+/), text=parts[0].replace(/@.*$/,'');
-    if((text==='/start'&&parts[1])||text==='/login'){ await setR({canWrite:true}); await botLoginLink(from,parts[1]); return; }
-    if(!user){ if(text==='/start') await botLoginLink(from,null); return; }
-    if(text==='/start'){ await setR({canWrite:true}); await botLoginLink(from,null); }
-    else if(text==='/pause'){ await setR({paused:true}); await o.bot.send(from.id,'Напоминания на паузе. Вернуть — /resume.'); }
-    else if(text==='/resume'){ await setR({paused:false,canWrite:true}); await o.bot.send(from.id,'Напоминания снова включены.'); }
-    else if(text==='/stop'){ await setR({enabled:false}); await o.bot.send(from.id,'Напоминания выключены. Включить снова — в клубе, раздел «Настройки».'); } }
+    if((text==='/start'&&parts[1])||text==='/login'){ await setR({canWrite:true}); return botLoginLink(from,parts[1]); }
+    if(!user) return text==='/start'?botLoginLink(from,null):null;
+    if(text==='/start'){ await setR({canWrite:true}); return botLoginLink(from,null); }
+    if(text==='/pause'){ await setR({paused:true}); return say(from.id,'Напоминания на паузе. Вернуть — /resume.'); }
+    if(text==='/resume'){ await setR({paused:false,canWrite:true}); return say(from.id,'Напоминания снова включены.'); }
+    if(text==='/stop'){ await setR({enabled:false}); return say(from.id,'Напоминания выключены. Включить снова — в клубе, раздел «Настройки».'); }
+    return null; }
 
   /* ── напоминания: запускается таймером каждые 15 минут ── */
   /* бот настраивается из облака: компьютер владельца может не видеть Telegram без VPN. Вебхук и команды — если ещё не те */
@@ -252,7 +256,7 @@ function createApp(o){
     if(info&&info.ok&&info.result&&info.result.url===url) return 'ok';
     const r=await o.bot.api('setWebhook',{url,secret_token:cfg.webhookSecret,allowed_updates:['message','callback_query','my_chat_member']}).catch(e=>({ok:false,description:e.message}));
     await o.bot.api('setMyCommands',{commands:[{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'login',description:'Войти в клуб'},{command:'stop',description:'Выключить напоминания'}]}).catch(()=>{});
-    if(!r||!r.ok) log.error('вебхук бота не подключён',r&&r.description); return r&&r.ok?'set':'fail'; }
+    if(!r||!r.ok) log.error('вебхук бота не подключён',r&&r.description); return r&&r.ok?'set':'fail: '+String((r&&r.description)||'нет ответа').slice(0,200); }
 
   async function remind(at){ const t=at||now(), out={sent:0,skipped:{}};
     try{ out.bot=await ensureBot(); }catch(e){ log.error('бот',e&&e.message); }

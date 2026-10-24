@@ -23,9 +23,10 @@ function club(opt){ opt=opt||{};
   /* обновления Telegram так, как они приходят на вебхук (с секретом) */
   const hook=u=>call('POST','/api/tg/webhook',JSON.stringify(u),{headers:{'x-telegram-bot-api-secret-token':'hook-secret'},as:'telegram'});
   /* «Старт» у бота → ссылка из кнопки «Войти в клуб», отправленной в чат этого id (или null, если бот отказал) */
-  async function startBot(id,name,param){ const n=outbox.length; await hook({message:{from:{id:+id,first_name:name||'Тест'},chat:{id:+id},text:'/start'+(param?' '+param:'')}});
-    const m=outbox.slice(n).reverse().find(x=>x.body&&String(x.body.chat_id)===String(id)), k=m&&m.body.reply_markup&&m.body.reply_markup.inline_keyboard;
-    const url=k&&k[0][0].url; return {url,token:url?url.split('#/tg/')[1]:null,text:m&&m.body.text}; }
+  /* ответ бота приходит в ответе вебхуку: {method:'sendMessage', chat_id, text, reply_markup} */
+  async function startBot(id,name,param){ const r=await hook({message:{from:{id:+id,first_name:name||'Тест'},chat:{id:+id},text:'/start'+(param?' '+param:'')}});
+    const m=r.data||{}, k=m.reply_markup&&m.reply_markup.inline_keyboard, url=k&&k[0][0].url;
+    return {url,token:url?url.split('#/tg/')[1]:null,text:m.text,chat:m.chat_id,method:m.method}; }
   /* полный вход: o.invite — код приглашения, o.consent (по умолчанию — согласие дано), o.who — чья cookie */
   async function login(id,name,o){ o=o||{}; const consent=o.consent===undefined?CONSENT:o.consent;
     const b=await startBot(id,name,o.invite?'i_'+o.invite:'login'); if(!b.token) return {status:403,data:{needInvite:true,error:b.text}};
