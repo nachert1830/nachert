@@ -19,7 +19,7 @@ test('вход через бота: приглашение одноразово�
   assert.equal((await c.login(601,'Боб',{invite:code})).status,403,'приглашение уже использовано');
   const again=await c.login(600,'Аня'); assert.equal(again.status,200); assert.equal(again.data.isNew,false);
   const u=await c.store.get('users',r.data.user.id);
-  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','id','invite','lastLogin','method','name','reminders','role','tgId']);
+  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','id','invite','lastLogin','method','name','reminders','role','tgId','ya']);
   assert.equal(u.tgId,'600'); assert.equal(u.reminders.canWrite,true,'нажал «Старт» — бот может писать');
   const logs=await c.store.scan('loginlog'); assert.ok(logs.every(x=>!('ua' in x)),'строка браузера не хранится');
 });
@@ -30,7 +30,7 @@ test('ссылку на вход получает только чат нажав
   assert.match(b.url,/^http:\/\/localhost:8787\/#\/tg\/[A-Za-z0-9_-]{32}$/);
   assert.ok(c.outbox.slice(n).every(x=>!x.body||String(x.body.chat_id)==='700'),'ссылка ушла только в чат нажавшего');
   assert.ok(!JSON.stringify(c.store._dump()).includes(b.token),'токен входа в базе не лежит');
-  const peek=await c.call('POST','/api/auth/bot/redeem',{token:b.token},{as:'x'}); assert.deepEqual(peek.data,{name:'Аня',member:true});
+  const peek=await c.call('POST','/api/auth/bot/redeem',{token:b.token},{as:'x'}); assert.deepEqual(peek.data,{name:'Аня',member:true,method:'telegram'});
   assert.equal((await c.call('GET','/api/me',undefined,{as:'x'})).status,401,'без нажатия «Войти» сессии нет');
   assert.equal((await c.call('POST','/api/auth/bot/redeem',{token:b.token,confirm:true},{as:'x'})).status,200);
   assert.equal((await c.call('POST','/api/auth/bot/redeem',{token:b.token,confirm:true},{as:'y'})).status,410,'второй раз этой ссылкой не войти');
@@ -58,7 +58,7 @@ test('вебхук без секрета не принимается — под�
 
 test('владелец входит без приглашения; без отметок документов аккаунт не создаётся, ссылка не тратится',async()=>{
   const c=club(); const b=await c.startBot(1000001,'Андрей','login'); assert.ok(b.token);
-  assert.deepEqual((await c.call('POST','/api/auth/bot/redeem',{token:b.token},{as:'o'})).data,{name:'Андрей',member:false});
+  assert.deepEqual((await c.call('POST','/api/auth/bot/redeem',{token:b.token},{as:'o'})).data,{name:'Андрей',member:false,method:'telegram'});
   const a=await c.call('POST','/api/auth/bot/redeem',{token:b.token,confirm:true},{as:'o'}); assert.equal(a.status,400); assert.equal(a.data.needConsent,true);
   const ok=await c.call('POST','/api/auth/bot/redeem',{token:b.token,confirm:true,consent:c.consent},{as:'o'}); assert.equal(ok.status,200); assert.equal(ok.data.user.role,'admin');
 });

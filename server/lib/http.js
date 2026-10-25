@@ -35,6 +35,8 @@ const PUBLIC=/^\/(index\.html|app\.css|app\.js|theme\.js|sw\.js|manifest\.webman
 const cache=new Map();
 function staticFile(p,req,cfg){
   if(p==='/'||/^\/(invite|magic)\//.test(p)) p='/index.html';
+  /* config.js: со страницы на адресе функции API — свой же сайт; на nachert1830.ru лежит файл с адресом функции */
+  if(p==='/config.js') return {statusCode:200,headers:Object.assign({'Content-Type':TYPES['.js'],'Cache-Control':'no-cache'},securityHeaders(cfg,false)),body:"window.CLUB_API='';\n"};
   if(!PUBLIC.test(p)) return null;
   const f=path.join(CLUB,p); if(!f.startsWith(CLUB+path.sep)) return null;
   let c=cache.get(f); if(!c||cfg.dev){ if(!fs.existsSync(f)) return null; const b=fs.readFileSync(f); c={b,etag:'"'+crypto.createHash('sha1').update(b).digest('base64url').slice(0,16)+'"'}; cache.set(f,c); }

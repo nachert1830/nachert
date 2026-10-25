@@ -7,8 +7,22 @@ const {botClient}=require('../lib/telegram');
 function club(opt){ opt=opt||{};
   const clock={t:Date.parse('2026-10-17T10:00:00Z')}, outbox=[], store=memoryStore(null);
   const cfg=Object.assign({dev:false,origin:opt.secure?'https://club.nachert1830.ru':'http://localhost:8787',secure:!!opt.secure,botToken:'777000:TEST-token',botName:'club_bot',
-    webhookSecret:'hook-secret',adminTg:['1000001'],mainUrl:'https://nachert1830.ru',week1:''},opt.cfg||{});
-  const app=createApp({cfg,store,clock:()=>clock.t,log:{log(){},error:(...a)=>process.env.DEBUG&&console.error(...a)},bot:botClient({dev:true,outbox})});
+    webhookSecret:'hook-secret',adminTg:['1000001'],mainUrl:'https://nachert1830.ru',week1:'',
+    yandex:{clientId:'ya-client',secret:'ya-secret'},adminYa:['owner.ya'],fronts:undefined,frontUrl:undefined},opt.cfg||{});
+  cfg.fronts=cfg.fronts||[cfg.origin,'https://nachert1830.ru'];
+  /* поддельный Яндекс ID: код → профиль; записывает, что у него спрашивали */
+  const ya={codes:{},calls:[],down:false};
+  async function yaFetch(url,o){ o=o||{}; ya.calls.push({url,body:o.body,auth:o.headers&&o.headers.Authorization});
+    if(ya.down) throw new Error('нет сети');
+    const res=(st,j)=>({ok:st<300,status:st,json:async()=>j});
+    if(url==='https://oauth.yandex.ru/token'){ const b=new URLSearchParams(o.body);
+      if(b.get('client_secret')!=='ya-secret'||!ya.codes[b.get('code')]) return res(400,{error:'invalid_grant'});
+      const c=b.get('code'); return res(200,{access_token:'AT-'+c,token_type:'bearer'}); }
+    if(url.startsWith('https://login.yandex.ru/info')){ const c=String(o.headers.Authorization||'').replace('OAuth AT-',''); const p=ya.codes[c];
+      return p?res(200,Object.assign({client_id:'ya-client'},p)):res(401,{}); }
+    if(url==='https://oauth.yandex.ru/revoke_token') return res(200,{status:'ok'});
+    return res(404,{}); }
+  const app=createApp({cfg,store,clock:()=>clock.t,log:{log(){},error:(...a)=>process.env.DEBUG&&console.error(...a)},bot:botClient({dev:true,outbox}),fetch:yaFetch});
   const jar={};
   async function call(method,path,body,o){ o=o||{}; const who=o.as||'default', c=jar[who]||(jar[who]={cookie:'',csrf:''});
     const headers=Object.assign({'content-type':'application/json',origin:cfg.origin,'user-agent':'test'},o.headers||{});
@@ -31,9 +45,22 @@ function club(opt){ opt=opt||{};
   async function login(id,name,o){ o=o||{}; const consent=o.consent===undefined?CONSENT:o.consent;
     const b=await startBot(id,name,o.invite?'i_'+o.invite:'login'); if(!b.token) return {status:403,data:{needInvite:true,error:b.text}};
     return call('POST','/api/auth/bot/redeem',{token:b.token,confirm:true,consent},{as:o.who||'u'+id}); }
+  /* вход через Яндекс ID так, как его проходит браузер: start → (Яндекс) → callback → страница #/ya/<токен>/<s> → redeem */
+  async function yandex(profile,o){ o=o||{}; const s=o.s||'clientstate-1234567890', ret=o.ret||cfg.origin+'/';
+    const q=new URLSearchParams({ret,s}); if(o.invite) q.set('invite',o.invite); if(o.link) q.set('link',o.link);
+    const st=await call('GET','/api/auth/yandex/start?'+q.toString(),undefined,{as:'browser'}); const loc=st.raw.headers&&st.raw.headers.Location;
+    if(st.status!==302||!loc) return {step:'start',status:st.status,data:st.data};
+    if(!loc.startsWith('https://oauth.yandex.ru/authorize?')) return {step:'start',location:loc};
+    const state=new URL(loc).searchParams.get('state'), code='C'+Math.random().toString(36).slice(2); ya.codes[code]=profile;
+    const cb=await call('GET','/api/auth/yandex/callback?'+new URLSearchParams(o.deny?{error:'access_denied',state}:{code,state}).toString(),undefined,{as:'browser'});
+    const to=cb.raw.headers.Location, m=/#\/ya\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)$/.exec(to||'');
+    if(!m) return {step:'callback',location:to,authorize:loc};
+    if(o.noRedeem) return {step:'landing',token:m[1],cs:m[2],location:to,authorize:loc};
+    const r=await call('POST','/api/auth/bot/redeem',{token:m[1],confirm:true,consent:o.consent===undefined?CONSENT:o.consent},{as:o.who||'ya'+profile.id});
+    return Object.assign(r,{token:m[1],cs:m[2],location:to,authorize:loc}); }
   async function invite(asWho){ const r=await call('POST','/api/admin/invites',{label:'тест',days:7},{as:asWho||'owner'}); return r.data.code; }
   async function owner(){ return login(1000001,'Владелец',{who:'owner'}); }
   async function member(id,who){ const code=await invite(); return login(id,'Участник',{invite:code,who:who||'m'+id}); }
-  return {app,cfg,store,clock,outbox,call,hook,startBot,login,consent:CONSENT,invite,owner,member,jar}; }
+  return {app,cfg,store,clock,outbox,call,hook,startBot,login,consent:CONSENT,invite,owner,member,jar,ya,yandex}; }
 const CONSENT={terms:true,pd:true,photos:false};
 module.exports={club};

@@ -10,6 +10,12 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const view=()=>$('#view');
 const K={cal:'nch2_club_cal',done:'nch2_club_done',ii:'nch2_club_ii',ev:'nch2_club_ev',rep:'nch2_rep',train:'nch2_club_train',diag:'nch2_club_diag',mock:'nch2_club_mock',me:'nch2_club_me',seen:'nch2_club_seen'};
 let CFG=null, ME=null, CORE=null, OFFLINE=false;
+/* API: на nachert1830.ru/club/ — адрес функции в Yandex Cloud из config.js; со страницы на адресе функции — свой же сайт ('').
+   Вход хранится токеном в localStorage и уходит заголовком Authorization (cookie на другой сайт браузеры не отправляют). */
+const API=String(window.CLUB_API||'').replace(/\/$/,''), ON_MAIN=!!API;
+const TOK={ get(){ try{ return localStorage.getItem('club_tok')||''; }catch(e){ return ''; } }, set(v){ try{ if(v) localStorage.setItem('club_tok',v); else localStorage.removeItem('club_tok'); }catch(e){} } };
+/* адрес этой страницы для возврата после Яндекс ID: https://nachert1830.ru/club/ или https://<функция>/ */
+const pageUrl=()=>location.origin+location.pathname.replace(/index\.html$/,'');
 
 /* ── хранилище: любое изменение помечает ключ временем (для слияния) и ставит синхронизацию в очередь ── */
 const J=s=>{ try{ return JSON.parse(s); }catch(e){ return null; } };
@@ -21,11 +27,12 @@ const LS={
 
 /* ── сеть ── */
 async function api(method,path,body){
-  const h={'Accept':'application/json'}; if(body!==undefined) h['Content-Type']='application/json'; if(ME&&ME.csrf&&method!=='GET') h['X-CSRF-Token']=ME.csrf;
-  let r; try{ r=await fetch(path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body),credentials:'same-origin',cache:'no-store'}); }
+  const h={'Accept':'application/json'}, tok=TOK.get(); if(body!==undefined) h['Content-Type']='application/json';
+  if(tok) h['Authorization']='Bearer '+tok; else if(ME&&ME.csrf&&method!=='GET') h['X-CSRF-Token']=ME.csrf;
+  let r; try{ r=await fetch(API+path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body),credentials:API?'omit':'same-origin',cache:'no-store'}); }
   catch(e){ const err=new Error('Нет сети'); err.offline=true; throw err; }
   let data={}; try{ data=await r.json(); }catch(e){}
-  if(!r.ok){ const err=new Error(data.error||('Ошибка '+r.status)); err.status=r.status; err.data=data; if(r.status===401&&data.login&&ME){ ME=null; route(); } throw err; }
+  if(!r.ok){ const err=new Error(data.error||('Ошибка '+r.status)); err.status=r.status; err.data=data; if(r.status===401&&data.login){ TOK.set(''); if(ME){ ME=null; route(); } } throw err; }
   return data; }
 
 /* ── синхронизация ── */
@@ -121,11 +128,11 @@ function skillEvents(){ const ev=LS.get(K.ev,[]), rep=LS.get(K.rep,{}), club=new
   return BKT.merge(ev,fromRep); }
 const estimate=()=>BKT.estimate(skillEvents());
 
-/* ── вход через бота ──
-   1) «Войти через Telegram» → ссылка на бота (t.me/<бот>?start=login или start=i_<код приглашения>);
-   2) в Telegram «Старт» → бот присылает в ваш чат кнопку «Войти в клуб» с одноразовой ссылкой;
-   3) по ссылке открывается клуб: «Войти как <имя>?» → вход в этом браузере. Окон Telegram на сайте нет, номер телефона не нужен. */
-async function afterLogin(r){ ME=Object.assign({},ME||{},{csrf:r.csrf}); const local=SYNC.readLocal(localStorage), had=Object.keys(local.data).length;
+/* ── вход: Яндекс ID или бот в Telegram ──
+   Яндекс ID: кнопка → oauth.yandex.ru → сервер → обратно на #/ya/<одноразовый вход>/<s>; s сверяется с sessionStorage этой вкладки.
+   Telegram: «Войти через Telegram» → бот (t.me/<бот>?start=login или i_<код приглашения>) → «Старт» → бот присылает кнопку «Войти в клуб».
+   Дальше одинаково: «Войти как <имя>?» → вход в этом браузере. */
+async function afterLogin(r){ if(r.session) TOK.set(r.session); ME=Object.assign({},ME||{},{csrf:r.csrf}); const local=SYNC.readLocal(localStorage), had=Object.keys(local.data).length;
   await loadMe(); const ok=await syncNow();
   try{ sessionStorage.removeItem('club_invite'); }catch(e){}
   if(r.isNew&&had&&ok) toast('Прогресс с этого устройства перенесён в аккаунт'); else if(r.isNew) toast('Добро пожаловать в клуб!');
@@ -134,13 +141,19 @@ async function afterLogin(r){ ME=Object.assign({},ME||{},{csrf:r.csrf}); const l
 async function loadMe(){ const m=await api('GET','/api/me'); ME=m; const c=Object.assign({},m); delete c.csrf; LS.device(K.me,c); return m; }
 function consentBlock(){ return `<div class="consent">
   <label class="chk"><input type="checkbox" id="cTerms"><span>Принимаю <a href="legal/terms.html" target="_blank" rel="noopener">пользовательское соглашение</a> и <a href="legal/privacy.html" target="_blank" rel="noopener">политику обработки персональных данных</a></span></label>
-  <label class="chk"><input type="checkbox" id="cPd"><span>Даю <a href="legal/consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a><small>Берём только Telegram id и имя</small></span></label>
+  <label class="chk"><input type="checkbox" id="cPd"><span>Даю <a href="legal/consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a><small>Берём только id (Telegram или Яндекс ID) и имя</small></span></label>
   <label class="chk"><input type="checkbox" id="cPhotos"><span>Разрешаю использовать мои фото чертежей для улучшения проверки<small>Необязательно, можно изменить в настройках</small></span></label>
 </div>`; }
 const consentVal=root=>({terms:!!($('#cTerms',root)||{}).checked,pd:!!($('#cPd',root)||{}).checked,photos:!!($('#cPhotos',root)||{}).checked});
 const getInvite=()=>{ try{ return sessionStorage.getItem('club_invite')||undefined; }catch(e){ return undefined; } };
 const botStart=()=>{ const c=getInvite(); return c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)?'i_'+c:'login'; };
-function authIdle(){ return `<button class="btn white lg" type="button" data-act="botLogin"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button><div id="authMsg" aria-live="polite"></div>`; }
+function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName;
+  return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="botLogin"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}</div><div id="authMsg" aria-live="polite"></div>`; }
+const OOPS={state:'Вход устарел или начат в другой вкладке. Нажмите кнопку входа ещё раз.',denied:'Вы отменили вход в Яндексе.',fail:'Яндекс ID сейчас не ответил. Попробуйте ещё раз через минуту.',
+  noinvite:'Этот аккаунт ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',invite:'Приглашение не подходит: оно использовано, отозвано или устарело.',
+  link:'Ссылка для привязки устарела. Нажмите «Привязать» в настройках ещё раз.',taken:'Этот Яндекс ID уже привязан к другому аккаунту клуба.'};
+function yaState(){ const a=new Uint8Array(18); crypto.getRandomValues(a); const s=btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  try{ sessionStorage.setItem('club_ya_s',s); }catch(e){} return s; }
 function botSteps(){ const bot=CFG.botName||'', link='https://t.me/'+bot+'?start='+botStart();
   return `<div class="wait"><ol><li class="on"><span>Откройте бота <b>@${esc(bot)}</b> в Telegram</span></li><li><span>Нажмите «Старт»</span></li><li><span>Бот пришлёт кнопку <b>«Войти в клуб»</b> — нажмите её, и вы войдёте</span></li></ol>
     <div class="row"><a class="btn white lg" href="${esc(link)}" target="_blank" rel="noopener noreferrer" id="openBot"><span class="tgmark">${ic('tg')}</span>Открыть бота</a><button class="btn ghost" type="button" data-act="loginCancel">Назад</button></div>
@@ -152,12 +165,13 @@ let LANDING=null;
 async function landingView(tok){ LANDING=tok; render('<p class="mut">Проверяю ссылку…</p>','Вход');
   let r; try{ r=await api('POST','/api/auth/bot/redeem',{token:tok}); }
   catch(e){ LANDING=null; render(`<section class="hero"><span class="pill red">Ссылка не сработала</span><h1>Клуб Начерта</h1><p>${esc(e.message)}</p><div class="auth" id="auth">${authIdle()}</div></section>`,'Вход'); return; }
-  render(`<section class="hero"><span class="pill">Вход по одноразовой ссылке</span><h1>Войти как ${esc(r.name)}?</h1>
-    <p>${r.member?'Ссылка подтверждена. Нажмите «Войти», чтобы открыть кабинет в этом браузере.':'Первый вход: отметьте документы и нажмите «Войти» — аккаунт создастся. Берём минимум: Telegram id и имя, плюс ваш прогресс. Данные — в России.'}</p>
+  const via=r.method==='yandex'?'Яндекс ID':'Telegram';
+  render(`<section class="hero"><span class="pill">Вход через ${via}</span><h1>Войти как ${esc(r.name)}?</h1>
+    <p>${r.member?'Нажмите «Войти», чтобы открыть кабинет в этом браузере.':'Первый вход: отметьте документы и нажмите «Войти» — аккаунт создастся. Берём минимум: id в '+via+' и имя, плюс ваш прогресс. Данные — в России.'}</p>
     <div class="auth" id="auth">${r.member?'':`<div class="reg">${consentBlock()}</div>`}<div class="row reg"><button class="btn white lg" type="button" data-act="redeem" data-new="${r.member?'':'1'}">Войти</button><button class="btn ghost" type="button" data-act="notMe">Это не я</button></div><div id="authMsg" aria-live="polite"></div></div></section>`,'Вход'); }
 const FEATS=[['cal','','Календарь сдач','ДЗ, РК и закрытие модулей ИКГ и начерта — по неделям вашей группы'],['plan','red','Обратный план','От дня РК назад: диагностика, слабые темы, пробный РК'],
   ['train','green','Тренировка дня','15–20 минут: повтор по интервалам и задача вперемешку'],['skills','amber','Карта навыков','Что уже освоено и какие задачи решить дальше']];
-function loginView(){ render(`<section class="hero"><span class="pill">Закрытое тестирование</span><h1>Клуб Начерта</h1>
+function loginView(err){ render(`<section class="hero"><span class="pill${err?' red':''}">${err?'Не получилось войти':'Закрытое тестирование'}</span><h1>Клуб Начерта</h1>${err?`<p class="note bad">${esc(err)}</p>`:''}
   <p>Личный кабинет студента: сроки ДЗ и РК, план подготовки и тренировка — на задачах тетради с <a href="${esc(mainUrl())}" rel="noopener">nachert1830.ru</a>.</p>
   <div class="auth" id="auth">${authIdle()}</div><p class="mut">Новых участников клуб принимает только по личной ссылке-приглашению.</p></section>
   <div class="feats">${FEATS.map(([i,t,b,p])=>`<div class="feat"><span class="ico ${t}">${ic(i)}</span><b>${b}</b><p>${p}</p></div>`).join('')}</div>
@@ -167,7 +181,7 @@ async function inviteView(){ const code=getInvite(); let st={valid:false,why:'Н
   try{ st=await api('GET','/api/invite/check?code='+encodeURIComponent(code||'')); }catch(e){ st={valid:false,why:e.message}; }
   if(!st.valid){ render(`<section class="hero"><span class="pill red">Приглашение не подходит</span><h1>Клуб Начерта</h1><p>${esc(st.why)} Если вы уже участник — войдите как обычно.</p><div class="auth" id="auth">${authIdle()}</div></section>`,'Приглашение'); try{ sessionStorage.removeItem('club_invite'); }catch(e){} return; }
   render(`<section class="hero"><span class="pill">Личное приглашение</span><h1>Вас пригласили в клуб</h1>
-    <p>Клуб — закрытое тестирование нового кабинета Начерта. Берём минимум: Telegram id и имя, плюс ваш прогресс. Данные — в России.</p>
+    <p>Клуб — закрытое тестирование нового кабинета Начерта. Войдите через Яндекс ID или Telegram — берём минимум: id и имя, плюс ваш прогресс. Данные — в России.</p>
     <div class="auth" id="auth">${authIdle()}</div></section>
   <div class="feats">${FEATS.map(([i,t,b,p])=>`<div class="feat"><span class="ico ${t}">${ic(i)}</span><b>${b}</b><p>${p}</p></div>`).join('')}</div>`,'Приглашение'); }
 
@@ -384,7 +398,7 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
   const tzs=[...new Set([r.tz,tz,'Europe/Moscow','Europe/Kaliningrad','Europe/Samara','Asia/Yekaterinburg','Asia/Omsk','Asia/Novosibirsk','Asia/Krasnoyarsk','Asia/Irkutsk','Asia/Vladivostok'].filter(Boolean))];
   render(`${pageHead('Настройки','',['#/more','Ещё'])}
   <div class="grid"><div class="col">
-    <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Профиль<small>${u.role==='admin'?'админ':'участник'} · вход через Telegram</small></h2></div>
+    <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Профиль<small>${u.role==='admin'?'админ':'участник'}</small></h2></div>
       <label class="f" for="pName">Имя</label><div class="row"><input id="pName" class="grow" type="text" maxlength="60" value="${esc(u.name)}"><button class="btn" type="button" data-act="saveName">Сохранить</button></div>
       <label class="chk reg"><input type="checkbox" data-chg="photos"${u.photos?' checked':''}><span>Разрешаю использовать мои фото чертежей для улучшения проверки<small>Необязательно; сейчас фото никуда не отправляются</small></span></label></section>
     ${flag('reminders')?card('reminders','Напоминания в Telegram',`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
@@ -400,9 +414,12 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
       <input id="impF" type="file" accept="application/json,.json"><div class="row reg"><button class="btn" type="button" data-act="import">Перенести</button></div>`,'',{icon:'train',tone:'green'}):''}
   </div><div class="col">
     <section class="card"><div class="ch"><span class="ico green">${ic('data')}</span><h2>Мои данные<small>хранятся в России, Yandex Cloud</small></h2></div>
-      <div class="kv"><div><span>Telegram id и имя</span><span>для входа</span></div><div><span>Прогресс и планы</span><span>для кабинета</span></div><div><span>Журнал входов</span><span>90 дней</span></div></div>
+      <div class="kv"><div><span>id в Яндекс ID / Telegram и имя</span><span>для входа</span></div><div><span>Прогресс и планы</span><span>для кабинета</span></div><div><span>Журнал входов</span><span>90 дней</span></div></div>
       <div class="row reg"><button class="btn" type="button" data-act="export">Скачать мои данные</button><button class="btn" type="button" data-act="fb" data-f="privacy">Обращение к владельцу</button><button class="btn ghost" type="button" data-act="requests">Мои обращения</button></div><div id="reqOut"></div>
       <p class="mut reg"><a href="legal/terms.html">Соглашение</a> · <a href="legal/privacy.html">Политика ПД</a> · <a href="legal/consent.html">Согласие</a></p></section>
+    <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Способы входа<small>можно оба — аккаунт один</small></h2></div>
+      <div class="kv"><div><span>Яндекс ID</span><span>${u.yandex?'привязан':CFG&&CFG.yandex?'<button class="btn sm" type="button" data-act="linkYa">Привязать</button>':'—'}</span></div>
+      <div><span>Telegram</span><span>${u.telegram?'привязан':CFG&&CFG.botName?'<button class="btn sm" type="button" data-act="linkTg">Привязать</button>':'—'}</span></div></div><div id="linkOut"></div></section>
     <section class="card"><div class="ch"><span class="ico">${ic('shield')}</span><h2>Безопасность</h2></div><div class="row"><button class="btn" type="button" data-act="logins">Журнал входов</button><button class="btn" type="button" data-act="logoutAll">Выйти на всех устройствах</button></div><div id="logOut"></div></section>
     <section class="card"><div class="row"><button class="btn grow" type="button" data-act="logout">${ic('logout')}Выйти</button><button class="btn dan" type="button" data-act="delete">Удалить аккаунт</button></div></section>
   </div></div>`,'Настройки'); }
@@ -458,9 +475,16 @@ const ACT={
   fb:el=>feedback(el.dataset.f),
   onboardOff:()=>{ LS.device('nch2_club_onboard'); todayView(); },
   botLogin:()=>{ const box=$('#auth'); if(box) box.innerHTML=botSteps(); },
+  yaLogin:()=>{ const q=new URLSearchParams({ret:pageUrl(),s:yaState()}), c=getInvite(); if(c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)) q.set('invite',c);
+    location.href=(API||location.origin)+'/api/auth/yandex/start?'+q.toString(); },
+  linkYa:async()=>{ try{ const r=await api('POST','/api/me/link',{to:'yandex',ret:pageUrl(),s:yaState()}); location.href=r.url; }catch(e){ toast(e.message); } },
+  linkTg:async()=>{ try{ const r=await api('POST','/api/me/link',{to:'telegram'}); const box=$('#linkOut');
+      if(box) box.innerHTML=`<p class="note">Откройте бота и нажмите «Старт», затем — кнопку «Привязать к клубу» в ответе бота. <a class="btn sm" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Открыть бота</a> <button class="btn sm ghost" type="button" data-act="linkCheck">Готово, проверить</button></p>`; }
+    catch(e){ toast(e.message); } },
+  linkCheck:async()=>{ try{ await loadMe(); settingsView(); toast(ME.user.telegram?'Telegram привязан':'Пока не привязан — нажмите «Старт» у бота'); }catch(e){ toast(e.message); } },
   notMe:()=>{ LANDING=null; toast('Вход отменён'); loginView(); },
   loginCancel:()=>{ const box=$('#auth'); if(box) box.innerHTML=authIdle(); },
-  devBot:async()=>{ const r=await (await fetch('/dev/bot-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:$('#dvId').value,first_name:$('#dvName').value,start:botStart()})})).json();
+  devBot:async()=>{ const r=await (await fetch(API+'/dev/bot-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:$('#dvId').value,first_name:$('#dvName').value,start:botStart()})})).json();
     if(r.link) location.href=r.link; else $('#authMsg').innerHTML=`<p class="note bad">Бот ответил: ${esc(r.text)}</p>`; },
   redeem:async el=>{ const msg=$('#authMsg'), c=consentVal(); if(el.dataset.new&&!(c.terms&&c.pd)){ msg.innerHTML='<p class="note bad">Отметьте соглашение и согласие на обработку данных.</p>'; return; }
     try{ const r=await api('POST','/api/auth/bot/redeem',{token:LANDING,confirm:true,consent:el.dataset.new?c:undefined}); LANDING=null; await afterLogin(r); }
@@ -500,7 +524,7 @@ const ACT={
   logoutAll:async()=>{ if(!confirm('Выйти на всех устройствах, включая это?')) return; await syncNow(); try{ await api('POST','/api/auth/logout-all',{}); }catch(e){} wipeLocal(); ME=null; route(); },
   logout:async()=>{ if(isDirty()&&!(await syncNow())&&!confirm('Есть несохранённый прогресс, а сети нет. Выйти и потерять его на этом устройстве?')) return;
     try{ await api('POST','/api/auth/logout',{}); }catch(e){} wipeLocal(); ME=null; location.hash='#/'; route(); },
-  export:async()=>{ try{ const r=await fetch('/api/me/export',{credentials:'same-origin'}); if(!r.ok) throw new Error('Не получилось'); const b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
+  export:async()=>{ try{ const tok=TOK.get(); const r=await fetch(API+'/api/me/export',tok?{headers:{Authorization:'Bearer '+tok},credentials:'omit'}:{credentials:'same-origin'}); if(!r.ok) throw new Error('Не получилось'); const b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
     a.href=u; a.download='nachert-club-my-data.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(u); a.remove(); },1500); }catch(e){ toast(e.message); } },
   delete:()=>openSheet(`<h2>Удалить аккаунт</h2><p>Удалятся имя, Telegram id, прогресс в аккаунте, настройки, отзывы и журнал входов. Это нельзя отменить. Перед удалением можно <button class="btn sm" type="button" data-act="export">скачать свои данные</button>.</p>
     <label class="f" for="delC">Введите слово УДАЛИТЬ</label><input id="delC" type="text" autocomplete="off"><div class="row reg"><button class="btn dan grow" id="delGo" type="button">Удалить навсегда</button><button class="btn" data-close type="button">Отмена</button></div>`,
@@ -529,7 +553,8 @@ document.addEventListener('click',e=>{ const el=e.target.closest('[data-act]'); 
 document.addEventListener('change',e=>{ const el=e.target.closest('[data-chg]'); if(el&&CHG[el.dataset.chg]) CHG[el.dataset.chg](el,e); });
 $('#theme').addEventListener('click',()=>{ const t=document.documentElement.dataset.theme==='dark'?'light':'dark'; document.documentElement.dataset.theme=t; LS.device('nch2_theme',t); });
 
-function wipeLocal(){ try{ const ks=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(SYNC.syncable(k)||/^nch2_club_/.test(k)) ks.push(k); } ks.forEach(k=>localStorage.removeItem(k)); }catch(e){} }
+/* выход: стираем вход и данные клуба; на nachert1830.ru прогресс nch2_* общий с сайтом (он был и до клуба) — его не трогаем */
+function wipeLocal(){ TOK.set(''); try{ const ks=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if((SYNC.syncable(k)&&!ON_MAIN)||/^nch2_club_/.test(k)) ks.push(k); } ks.forEach(k=>localStorage.removeItem(k)); }catch(e){} }
 
 /* ── маршруты ── */
 function tabs(){ const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(location.hash.replace(/^#\/?/,'').split('/')[0])||'';
@@ -537,6 +562,17 @@ function tabs(){ const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(loca
 function route(){ closeSheet(); const h=location.hash.replace(/^#\/?/,''), p=h.split('/');
   if(p[0]==='invite'&&p[1]){ try{ sessionStorage.setItem('club_invite',p[1]); }catch(e){} history.replaceState(null,'','#/join'); return route(); }
   if(p[0]==='tg'&&p[1]){ const tok=p[1]; history.replaceState(null,'','#/'); if(!ME) return landingView(tok); }
+  if(p[0]==='ya'&&p[1]){ const tok=p[1], cs=p[2]; let mine=''; try{ mine=sessionStorage.getItem('club_ya_s')||''; sessionStorage.removeItem('club_ya_s'); }catch(e){}
+    history.replaceState(null,'','#/'); if(!ME) return mine&&cs===mine?landingView(tok):loginView(OOPS.state); }
+  if(p[0]==='oops'){ history.replaceState(null,'','#/'); if(!ME) return loginView(OOPS[p[1]]||'Не получилось войти.'); toast(OOPS[p[1]]||'Не получилось'); }
+  /* привязка второго способа входа: подтверждает только этот браузер с тем же аккаунтом (сервер сверяет сессию) */
+  if(p[0]==='link'&&p[1]){ const tok=p[1], cs=p[2]; let mine=''; if(cs){ try{ mine=sessionStorage.getItem('club_ya_s')||''; sessionStorage.removeItem('club_ya_s'); }catch(e){} }
+    history.replaceState(null,'','#/settings');
+    if(cs&&cs!==mine){ if(!ME) return loginView(OOPS.state); toast(OOPS.state); return settingsView(); }
+    if(!ME) return loginView('Чтобы привязать вход, сначала войдите в клуб в этом браузере, затем откройте ссылку снова.');
+    api('POST','/api/me/link/confirm',{token:tok}).then(r=>{ ME.user=r.user; settingsView(); toast(r.linked==='yandex'?'Яндекс ID привязан':'Telegram привязан'); })
+      .catch(e=>{ settingsView(); const b=$('#linkOut'); if(b) b.innerHTML=`<p class="note bad">${esc(e.message)}</p>`; else toast(e.message); });
+    return settingsView(); }
   if(!ME){ if(LANDING&&$('#auth')) return; if(p[0]==='join'||getInvite()) return inviteView(); return loginView(); }
   if(!CORE){ render('<p class="mut">Загружаю задачи…</p>'); return; }
   view().focus({preventScroll:true}); scrollTo(0,0);
