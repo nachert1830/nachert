@@ -633,6 +633,8 @@ addEventListener('hashchange',route);
 
 async function boot(){
   try{ CFG=await api('GET','/api/config'); LS.device('nch2_club_cfg',CFG); }catch(e){ CFG=LS.get('nch2_club_cfg',null); }
+  /* главный адрес клуба — страница на сайте (nachert1830.ru/club/): со старого адреса облака переходим туда, вместе с #… */
+  try{ const f=CFG&&CFG.frontUrl&&new URL(CFG.frontUrl); if(f&&f.origin!==location.origin){ location.replace(f.href.split('#')[0]+location.hash); return; } }catch(e){}
   if(!CFG){ render('<section class="card"><h2>Нет связи</h2><p>Клуб открывается впервые и без сети не может загрузиться. Подключитесь к интернету.</p></section>'); return; }
   try{ await loadMe(); OFFLINE=false; }
   catch(e){ if(e.offline){ const c=LS.get(K.me,null); if(c){ ME=c; OFFLINE=true; } } else ME=null; }

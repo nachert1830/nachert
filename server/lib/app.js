@@ -105,7 +105,7 @@ function createApp(o){
   /* ── обработчики ── */
   const R={};
   R['GET /api/config']=async()=>{ const s=await settings(); return H.json(200,{botId:(cfg.botToken.split(':')[0])||null,botName:cfg.botName||null,
-    yandex:!!cfg.yandex.clientId,email:!!(o.mail&&o.mail.enabled),devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
+    frontUrl:cfg.frontUrl,yandex:!!cfg.yandex.clientId,email:!!(o.mail&&o.mail.enabled),devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
 
   R['GET /api/invite/check']=async(req)=>{ await limit('inv',maskIp(req.ip),30,600); const st=await inviteState(inviteHash(req.query.code)); return H.json(200,{valid:st.ok,why:st.ok?'':st.why}); };
 
