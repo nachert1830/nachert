@@ -147,11 +147,12 @@ function consentBlock(){ return `<div class="consent">
 const consentVal=root=>({terms:!!($('#cTerms',root)||{}).checked,pd:!!($('#cPd',root)||{}).checked,photos:!!($('#cPhotos',root)||{}).checked});
 const getInvite=()=>{ try{ return sessionStorage.getItem('club_invite')||undefined; }catch(e){ return undefined; } };
 const botStart=()=>{ const c=getInvite(); return c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)?'i_'+c:'login'; };
-/* официальный вход Telegram — только на сайте, заданном у @BotFather (/setdomain); в остальных местах — через бота клуба */
+/* официальный вход Telegram — только на сайте, заданном у @BotFather (/setdomain); в остальных местах — через бота клуба.
+   Бот на сайте не предлагаем: серверы Telegram и Yandex Cloud сейчас не видят друг друга, а официальному входу эта связь не нужна */
 const tgOfficial=()=>!!(CFG&&CFG.tgLogin&&CFG.botId&&CFG.tgLogin.origins.includes(location.origin));
 function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName, off=tgOfficial();
   return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}</div>
-  ${tg&&off?`<p class="alt">Telegram не открывается? <button class="lnkbtn" type="button" data-act="botLogin">Войти через бота клуба</button></p>`:''}<div id="authMsg" aria-live="polite"></div>`; }
+<div id="authMsg" aria-live="polite"></div>`; }
 const OOPS={state:'Вход устарел или начат в другой вкладке. Нажмите кнопку входа ещё раз.',denied:'Вы отменили вход в Яндексе.',fail:'Яндекс ID сейчас не ответил. Попробуйте ещё раз через минуту.',
   noinvite:'Этот аккаунт ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',invite:'Приглашение не подходит: оно использовано, отозвано или устарело.',
   link:'Ссылка для привязки устарела. Нажмите «Привязать» в настройках ещё раз.',taken:'Этот Яндекс ID уже привязан к другому аккаунту клуба.'};

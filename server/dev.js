@@ -31,7 +31,8 @@ const cfg={dev:true,origin,secure:false,botToken:BOT_TOKEN,botName:'nachert_club
   adminTg:['1000001'],mainUrl:process.env.MAIN_URL||'https://nachert1830.ru',week1:process.env.CLUB_WEEK1||'',
   yandex:{clientId:'dev-client',secret:'dev-secret',authUrl:origin+'/dev/ya/authorize',tokenUrl:origin+'/dev/ya/token',infoUrl:origin+'/dev/ya/info',revokeUrl:origin+'/dev/ya/revoke'},
   adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/club/':origin+'/',
-  tgLogin:{url:origin+'/dev/tg/auth',origins:site?[origin,site]:[origin]}};
+  /* как в облаке: официальный вход Telegram — только на «сайте» (у @BotFather один домен), на адресе функции — бот */
+  tgLogin:{url:origin+'/dev/tg/auth',origins:site?[site]:[]}};
 const yaCodes=new Map();
 const page=(r,html)=>{ r.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'"}); r.end(html); };
 const escH=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);

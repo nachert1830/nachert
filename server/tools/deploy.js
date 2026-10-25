@@ -43,7 +43,8 @@ const CI=!!process.env.GITHUB_ACTIONS, E=k=>String(process.env[k]||'').trim();
 /* в GitHub Actions спрашивать некого: нет значения — понятная ошибка со списком, что добавить в секреты */
 const need=(what,how)=>{ throw new Error(what+' не задан. '+how); };
 const SITE_FRONT='https://nachert1830.ru/club/', SITE_ORIGIN='https://nachert1830.ru';
-async function siteHasClub(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store'}); return r.ok&&/CLUB_API/.test(await r.text()); }catch(e){ return false; } }
+async function siteProbe(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store',signal:AbortSignal.timeout(10000)}); const t=await r.text(); return r.ok&&/CLUB_API/.test(t)?'страница на сайте отвечает':'страница на сайте: HTTP '+r.status; }
+  catch(e){ return 'страница на сайте не открылась с этого сервера: '+String(e&&e.cause&&e.cause.code||e&&e.message||e); } }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
 function currentEnv(){ const v=get(['serverless','function','version','get-by-tag','--function-name',NAMES.api,'--tag','$latest']); return (v&&v.environment)||{}; }
 
@@ -183,8 +184,9 @@ async function main(){
   const files=packageFiles(), z=zip(files), zf=path.join(os.tmpdir(),'club-'+Date.now()+'.zip'); fs.writeFileSync(zf,z);
   say('  пакет: '+files.length+' файлов, '+Math.round(z.length/1024)+' КБ');
   /* куда ведут ссылки входа: страница на nachert1830.ru, если она уже опубликована, иначе — адрес функции */
-  let front=E('FRONT_URL'); if(!front){ front=(await siteHasClub())?SITE_FRONT:origin+'/'; }
-  say('  страница клуба: '+front);
+  /* страница клуба опубликована вместе с сайтом (папка club/ в main) — ссылки входа и приглашений ведут туда */
+  const front=E('FRONT_URL')||SITE_FRONT;
+  say('  страница клуба: '+front+' ('+(await siteProbe())+')');
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN,FRONT_URL:front,
     YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru'};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
@@ -202,10 +204,21 @@ async function main(){
   say('  готово');
 
   step('Бот: вебхук и команды');
+  /* что Telegram видел до этого: куда шлёт, сколько ждёт доставки, последняя ошибка доставки (без токена и секрета) */
+  const hook=origin+'/api/tg/webhook';
+  try{ const w=await telegram(token,'getWebhookInfo',{}); const ago=w.last_error_date?Math.round((Date.now()/1000-w.last_error_date)/60)+' мин назад':'';
+    say('  до настройки: вебхук '+(w.url===hook?'на клуб':w.url?'на другой адрес':'не задан')+', ждут доставки: '+(w.pending_update_count||0)+
+      ', последняя ошибка: '+(w.last_error_message?w.last_error_message+' ('+ago+')':'нет')); }catch(e){}
   try{ await telegram(token,'setWebhook',{url:origin+'/api/tg/webhook',secret_token:payload.TG_WEBHOOK_SECRET,allowed_updates:['message','callback_query','my_chat_member'],drop_pending_updates:true});
   await telegram(token,'setMyCommands',{commands:[{command:'login',description:'Войти в клуб'},{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'stop',description:'Выключить напоминания'}]});
   say('  готово'); }
   catch(e){ say('  с этого компьютера не получилось — клуб сделает это сам в течение 15 минут'); }
+  /* самопроверка: «Старт» от несуществующего участника так, как его шлёт Telegram (с секретом) — клуб должен ответить отказом */
+  try{ const r=await fetch(hook,{method:'POST',headers:{'content-type':'application/json','x-telegram-bot-api-secret-token':payload.TG_WEBHOOK_SECRET},
+      body:JSON.stringify({update_id:1,message:{message_id:1,date:Math.floor(Date.now()/1000),from:{id:1,is_bot:false,first_name:'Проверка'},chat:{id:1,type:'private'},text:'/start'}})});
+    const j=await r.json().catch(()=>({})); say('  самопроверка вебхука: HTTP '+r.status+(j.method?', ответ бота: '+j.method+' «'+String(j.text||'').slice(0,40)+'…»':', ответа бота нет'));
+    const bad=await fetch(hook,{method:'POST',headers:{'content-type':'application/json'},body:'{}'}); say('  без секрета: HTTP '+bad.status+(bad.status===403?' (правильно — отказ)':' (ОШИБКА: должен быть отказ)')); }
+  catch(e){ say('  самопроверка вебхука не удалась: '+e.message); }
 
   step('Проверяю, что клуб отвечает');
   let ok=false; for(let i=0;i<10&&!ok;i++){ try{ const r=await fetch(origin+'/api/config'); ok=r.ok; }catch(e){} if(!ok) await sleep(3000); }
