@@ -1,7 +1,8 @@
 /* Настройки из переменных окружения (в Yandex Cloud — переменные функции и секреты Lockbox; список — club/DEPLOY.md).
    Боевой режим без обязательных настроек не запускается: лучше отказ, чем вход без проверки подписи. */
 'use strict';
-const list=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
+/* списки — через запятую или пробел (в переменных функции Yandex Cloud запятая разделяет сами переменные) */
+const list=s=>String(s||'').split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
 function fromEnv(env){ env=env||process.env;
   const cfg={
     dev:false,
@@ -20,7 +21,7 @@ function fromEnv(env){ env=env||process.env;
     fronts:list(env.FRONT_ORIGINS),
     frontUrl:env.FRONT_URL||'',
     /* официальный вход Telegram работает только на сайте, указанном у @BotFather (/setdomain) */
-    tgLogin:{url:'https://oauth.telegram.org/auth',origins:list(env.TG_LOGIN_ORIGINS||'https://nachert1830.ru')}
+    tgLogin:{url:'https://oauth.telegram.org/auth',origins:list(env.TG_LOGIN_ORIGINS||'https://nachert1830.ru,http://nachert1830.ru')}
   };
   cfg.secure=/^https:\/\//.test(cfg.origin);
   cfg.fronts=[cfg.origin].concat(cfg.fronts.map(x=>x.replace(/\/$/,''))).filter((x,i,a)=>x&&a.indexOf(x)===i);
@@ -31,7 +32,8 @@ function fromEnv(env){ env=env||process.env;
   if(!cfg.botToken||!cfg.botName) miss.push('TG_BOT_TOKEN и TG_BOT_NAME — вход через бота');
   if(!cfg.webhookSecret) miss.push('TG_WEBHOOK_SECRET');
   if(cfg.yandex.clientId&&!cfg.yandex.secret) miss.push('YANDEX_CLIENT_SECRET');
-  if(cfg.fronts.some(x=>!/^https:\/\/[a-z0-9.-]+(:\d+)?$/.test(x))) miss.push('FRONT_ORIGINS (https://сайт без пути)');
+  /* http:// — только пока у сайта на GitHub Pages нет сертификата для своего домена */
+  if(cfg.fronts.some(x=>!/^https?:\/\/[a-z0-9.-]+(:\d+)?$/.test(x))) miss.push('FRONT_ORIGINS (адрес сайта без пути)');
   if(!cfg.fronts.some(f=>cfg.frontUrl.startsWith(f+'/'))) miss.push('FRONT_URL (адрес на одном из FRONT_ORIGINS)');
   if(miss.length) throw new Error('Не заданы настройки: '+miss.join(', '));
   return cfg; }
