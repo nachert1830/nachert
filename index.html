@@ -26502,7 +26502,7 @@ function route(){
      Только при переходе в другой раздел/материал — шаги внутри задачи не анимируем. */
   const key=x=>{ const q=parseHash(x||'#/'); return [q.s,q.tab,q.item].join('/'); };
   const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); }catch(e){ go(); } }
+  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); vt.ready.catch(()=>{}); }catch(e){ go(); } }   /* переход пропущен (быстрый следующий переход) — ready отклоняется AbortError; это не ошибка */
   else go();
   ST.set('route',h);
 }
