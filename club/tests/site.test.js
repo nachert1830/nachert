@@ -31,7 +31,7 @@ async function yandex(page,id,name,login,o){ o=o||{};
 
 test('сайт + Яндекс ID: владелец, приглашение тестировщику, вход тестировщика с компьютера; ни ошибок CSP, ни CORS',async()=>{
   const {ctx,page}=await open('pc'); await page.goto(CLUB); await page.waitForSelector('button[data-act="yaLogin"]');
-  assert.ok(await page.$('button[data-act="botLogin"]'),'и Telegram тоже');
+  assert.ok(await page.$('button[data-act="tgLogin"]'),'и Telegram тоже');
   await yandex(page,5000001,'Андрей','owner'); await page.waitForSelector('text=Привет, Андрей');
   assert.match(await page.evaluate(()=>localStorage.getItem('club_tok')||''),/^[A-Za-z0-9_-]{40,}$/,'вход — токеном в localStorage сайта');
   assert.deepEqual(await ctx.cookies(API),[],'cookie на адрес API не ставится');
@@ -53,12 +53,12 @@ test('сайт + Яндекс ID: владелец, приглашение те�
   assert.deepEqual(s.page.errs,[]); await s.ctx.close();
 });
 
-test('сайт + Telegram: вход через бота, привязка Яндекс ID, прогресс общий с сайтом и в аккаунте, выход его не стирает',async()=>{
+test('сайт + Telegram: официальный вход, привязка Яндекс ID, прогресс общий с сайтом и в аккаунте, выход его не стирает',async()=>{
   const inv=await dev('/dev/invite',{label:'site'}); assert.ok(inv.link.startsWith(CLUB));
   const {ctx,page}=await open('phone'); await page.goto(SITE+'/club/'); await page.evaluate(()=>localStorage.setItem('nch2_rep',JSON.stringify({'1.1':{n:1,lvl:2,due:'2026-10-20'}})));
   await page.goto(inv.link); await page.waitForSelector('text=Вас пригласили в клуб');
-  await page.click('button[data-act="botLogin"]'); await page.waitForSelector('#dvId'); await page.fill('#dvId','6001'); await page.fill('#dvName','Боб');
-  await page.click('button[data-act="devBot"]'); await page.waitForSelector('text=Войти как Боб?'); await page.check('#cTerms'); await page.check('#cPd');
+  await page.click('button[data-act="tgLogin"]'); await page.waitForSelector('#tgAllow'); await page.fill('input[name=id]','6001'); await page.fill('input[name=first_name]','Боб');
+  await page.click('#tgAllow'); await page.waitForSelector('text=Войти как Боб?'); await page.check('#cTerms'); await page.check('#cPd');
   await page.click('button[data-act="redeem"]'); await page.waitForSelector('text=Привет, Боб');
   await page.waitForFunction(()=>document.querySelector('#net')&&/сохранено/.test(document.querySelector('#net').textContent),null,{timeout:8000});
   await page.goto(CLUB+'#/settings'); await page.click('button[data-act="linkYa"]'); await page.waitForSelector('#yaAllow');
@@ -73,9 +73,9 @@ test('сайт + Telegram: вход через бота, привязка Янд
   assert.deepEqual(b.page.errs,[]); await b.ctx.close();
 });
 
-test('сайт + официальный вход Telegram: кнопка ведёт на «oauth.telegram.org», подтверждение → «Войти как …?»; запасной путь — бот',async()=>{
+test('сайт + официальный вход Telegram: кнопка ведёт на «oauth.telegram.org», подтверждение → «Войти как …?»',async()=>{
   const inv=await dev('/dev/invite',{label:'tg'}); const {ctx,page}=await open('phone'); await page.goto(inv.link); await page.waitForSelector('text=Вас пригласили в клуб');
-  assert.ok(await page.$('.alt button[data-act="botLogin"]'),'есть запасной вход через бота');
+  assert.equal(await page.$('button[data-act="botLogin"]'),null,'на сайте Telegram — только официальный вход');
   await page.click('button[data-act="tgLogin"]'); await page.waitForSelector('#tgAllow'); assert.ok(page.url().startsWith(API+'/dev/tg/auth?'));
   await page.fill('input[name=id]','7007'); await page.fill('input[name=first_name]','Вера'); await page.click('#tgAllow');
   await page.waitForSelector('text=Войти как Вера?'); assert.equal(await page.evaluate(()=>location.hash),'#/','данные Telegram убраны из адресной строки');

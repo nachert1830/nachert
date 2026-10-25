@@ -43,7 +43,8 @@ const CI=!!process.env.GITHUB_ACTIONS, E=k=>String(process.env[k]||'').trim();
 /* в GitHub Actions спрашивать некого: нет значения — понятная ошибка со списком, что добавить в секреты */
 const need=(what,how)=>{ throw new Error(what+' не задан. '+how); };
 const SITE_FRONT='https://nachert1830.ru/club/', SITE_ORIGIN='https://nachert1830.ru';
-async function siteHasClub(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store'}); return r.ok&&/CLUB_API/.test(await r.text()); }catch(e){ return false; } }
+async function siteProbe(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store',signal:AbortSignal.timeout(10000)}); const t=await r.text(); return r.ok&&/CLUB_API/.test(t)?'страница на сайте отвечает':'страница на сайте: HTTP '+r.status; }
+  catch(e){ return 'страница на сайте не открылась с этого сервера: '+String(e&&e.cause&&e.cause.code||e&&e.message||e); } }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
 function currentEnv(){ const v=get(['serverless','function','version','get-by-tag','--function-name',NAMES.api,'--tag','$latest']); return (v&&v.environment)||{}; }
 
@@ -183,8 +184,9 @@ async function main(){
   const files=packageFiles(), z=zip(files), zf=path.join(os.tmpdir(),'club-'+Date.now()+'.zip'); fs.writeFileSync(zf,z);
   say('  пакет: '+files.length+' файлов, '+Math.round(z.length/1024)+' КБ');
   /* куда ведут ссылки входа: страница на nachert1830.ru, если она уже опубликована, иначе — адрес функции */
-  let front=E('FRONT_URL'); if(!front){ front=(await siteHasClub())?SITE_FRONT:origin+'/'; }
-  say('  страница клуба: '+front);
+  /* страница клуба опубликована вместе с сайтом (папка club/ в main) — ссылки входа и приглашений ведут туда */
+  const front=E('FRONT_URL')||SITE_FRONT;
+  say('  страница клуба: '+front+' ('+(await siteProbe())+')');
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN,FRONT_URL:front,
     YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru'};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
