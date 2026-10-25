@@ -43,8 +43,9 @@ const CI=!!process.env.GITHUB_ACTIONS, E=k=>String(process.env[k]||'').trim();
 /* в GitHub Actions спрашивать некого: нет значения — понятная ошибка со списком, что добавить в секреты */
 const need=(what,how)=>{ throw new Error(what+' не задан. '+how); };
 const SITE_FRONT='https://nachert1830.ru/club/', SITE_ORIGIN='https://nachert1830.ru';
-async function siteProbe(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store',signal:AbortSignal.timeout(10000)}); const t=await r.text(); return r.ok&&/CLUB_API/.test(t)?'страница на сайте отвечает':'страница на сайте: HTTP '+r.status; }
-  catch(e){ return 'страница на сайте не открылась с этого сервера: '+String(e&&e.cause&&e.cause.code||e&&e.message||e); } }
+/* https у сайта на GitHub Pages бывает без сертификата для своего домена — тогда ссылки входа ведут на http:// */
+async function siteProbe(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store',signal:AbortSignal.timeout(10000)}); const t=await r.text(); return {ok:r.ok&&/CLUB_API/.test(t),text:r.ok?'страница на сайте отвечает по https':'страница на сайте: HTTP '+r.status}; }
+  catch(e){ return {ok:false,text:'https у сайта не работает: '+String(e&&e.cause&&e.cause.code||e&&e.message||e)}; } }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
 function currentEnv(){ const v=get(['serverless','function','version','get-by-tag','--function-name',NAMES.api,'--tag','$latest']); return (v&&v.environment)||{}; }
 
@@ -185,9 +186,10 @@ async function main(){
   say('  пакет: '+files.length+' файлов, '+Math.round(z.length/1024)+' КБ');
   /* куда ведут ссылки входа: страница на nachert1830.ru, если она уже опубликована, иначе — адрес функции */
   /* страница клуба опубликована вместе с сайтом (папка club/ в main) — ссылки входа и приглашений ведут туда */
-  const front=E('FRONT_URL')||SITE_FRONT;
-  say('  страница клуба: '+front+' ('+(await siteProbe())+')');
-  const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN,FRONT_URL:front,
+  const probe=await siteProbe(), front=E('FRONT_URL')||(probe.ok?SITE_FRONT:SITE_FRONT.replace('https://','http://'));
+  say('  страница клуба: '+front+' ('+probe.text+')');
+  if(!probe.ok) say('::warning::У nachert1830.ru не работает HTTPS (нет сертификата для домена). GitHub → Settings → Pages → Custom domain → Enforce HTTPS (DEPLOY.md). Пока ссылки ведут на http://');
+  const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN+' http://nachert1830.ru',FRONT_URL:front,
     YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
     MAIL_FROM:E('MAIL_FROM')||prev.MAIL_FROM||''};

@@ -66,6 +66,13 @@ jobs:
           git add club/config.js club/index.html
           git commit -m "Клуб: адрес API для страницы на сайте"
           git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Сайт nachert1830.ru — DNS, сертификат, страница клуба (для диагностики)
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "DNS A:"; getent ahostsv4 nachert1830.ru | awk '{print $1}' | sort -u
+          echo "Сертификат https://nachert1830.ru:"; echo | timeout 15 openssl s_client -connect nachert1830.ru:443 -servername nachert1830.ru 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName 2>/dev/null || echo "  не получить"
+          for u in https://nachert1830.ru/ https://nachert1830.ru/club/ https://nachert1830.ru/club/app.js http://nachert1830.ru/club/; do echo "$u → $(curl -s -o /dev/null -m 15 -w '%{http_code} %{redirect_url} %{errormsg}' "$u")"; done
       - name: Убрать ключ
         if: always()
         run: rm -f "$RUNNER_TEMP/yc-key.json"
