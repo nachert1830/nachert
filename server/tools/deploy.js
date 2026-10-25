@@ -104,7 +104,6 @@ async function postboxSetup(payload){ let k=null, from='';
   try{ k=yc(['iam','access-key','create','--service-account-id',E('YC_SA_ID'),'--description','club deploy: Postbox (временный, удаляется сразу)']);
     const cred={accessKeyId:k.access_key.key_id,secretAccessKey:k.secret};
     let g=null; for(let i=0;i<8;i++){ g=await pbCall(cred,'GET','/v2/email/identities/'+MAIL_DOMAIN); if(g.status!==403&&g.status!==401) break; await sleep(4000); }
-    const put=async d=>pbCall(cred,'PUT','/v2/email/identities/'+MAIL_DOMAIN+'/dkim/signing',{SigningAttributesOrigin:'EXTERNAL',SigningAttributes:{DomainSigningSelector:d.sel,DomainSigningPrivateKey:d.priv}});
     const keep=d=>{ payload.POSTBOX_DKIM_SELECTOR=d.sel; payload.POSTBOX_DKIM_PRIVATE=d.priv; payload.POSTBOX_DKIM_PUBLIC=d.pub; };
     if(g.status===404){ const d=newDkim('nachert');
       const c=await pbCall(cred,'POST','/v2/email/identities',{EmailIdentity:MAIL_DOMAIN,DkimSigningAttributes:{DomainSigningSelector:d.sel,DomainSigningPrivateKey:d.priv}});
@@ -113,11 +112,9 @@ async function postboxSetup(payload){ let k=null, from='';
     if(!g.ok) throw new Error('Postbox ответил '+g.status+' '+g.t.slice(0,300));
     let dk=(g.j.DkimAttributes&&g.j.DkimAttributes.Status)||'?';
     if(g.j.VerifiedForSendingStatus===true){ from='noreply@'+MAIL_DOMAIN; say('  домен подтверждён — вход по почте включён (отправитель '+from+')'); return from; }
-    /* ключ первой версии скрипта не сохранялся — выпускаем новый (новое имя записи), дальше он хранится в сейфе */
-    if(!payload.POSTBOX_DKIM_PRIVATE){ const d=newDkim('nachert'); const r=await put(d); if(!r.ok) throw new Error('сменить ключ DKIM не получилось: '+r.status+' '+r.t.slice(0,300));
-      keep(d); dk='PENDING'; say('  выпущен новый ключ подписи писем — нужна новая TXT-запись (старую club._domainkey можно удалить):'); say2(d.sel,d.pub); return ''; }
     const sel=payload.POSTBOX_DKIM_SELECTOR||DKIM_SEL, seen=await txtHas(sel+'._domainkey.'+MAIL_DOMAIN,payload.POSTBOX_DKIM_PUBLIC.slice(-40));
-    if(dk==='FAILED'&&seen){ const r=await put({sel,priv:payload.POSTBOX_DKIM_PRIVATE}); say(r.ok?'  запись в DNS видна — проверка домена в Postbox запущена заново, подтверждение обычно за минуты':'  перезапуск проверки не удался: '+r.status+' '+r.t.slice(0,200)); }
+    /* перепроверка DKIM в Postbox — тот же запрос без ключа (так велит сам Postbox) */
+    if(dk==='FAILED'&&seen){ const r=await pbCall(cred,'PUT','/v2/email/identities/'+MAIL_DOMAIN+'/dkim/signing',{SigningAttributesOrigin:'EXTERNAL'}); say(r.ok?'  запись в DNS видна — проверка домена в Postbox запущена заново, подтверждение обычно за минуты':'  перезапуск проверки не удался: '+r.status+' '+r.t.slice(0,200)); }
     else say('  домен ждёт подтверждения (DKIM: '+dk+(seen?', запись в DNS видна':', записи в DNS пока не видно')+'). TXT-запись у регистратора:');
     if(!seen) say2(sel,payload.POSTBOX_DKIM_PUBLIC); }
   catch(e){ say('  Postbox: '+e.message); }
