@@ -149,7 +149,7 @@ const getInvite=()=>{ try{ return sessionStorage.getItem('club_invite')||undefin
 const botStart=()=>{ const c=getInvite(); return c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)?'i_'+c:'login'; };
 /* официальный вход Telegram — только на сайте, заданном у @BotFather (/setdomain); в остальных местах — через бота клуба.
    Бот на сайте не предлагаем: серверы Telegram и Yandex Cloud сейчас не видят друг друга, а официальному входу эта связь не нужна */
-const tgOfficial=()=>!!(CFG&&CFG.tgLogin&&CFG.botId&&CFG.tgLogin.origins.includes(location.origin));
+const tgOfficial=()=>!!(CFG&&CFG.tgLogin&&CFG.botId&&CFG.tgLogin.origins.some(o=>{ try{ return new URL(o).hostname.replace(/^www\./,'')===location.hostname.replace(/^www\./,''); }catch(e){ return false; } }));
 function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName, off=tgOfficial(), em=CFG&&CFG.email;
   return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}${em?`<button class="btn ghost lg" type="button" data-act="mailLogin"><span class="mailmark" aria-hidden="true">@</span>Войти по почте</button>`:''}</div>
 <div id="authMsg" aria-live="polite"></div>`; }

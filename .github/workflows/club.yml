@@ -34,7 +34,9 @@ jobs:
           YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
           YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID || 'b1gm1vb5prlop8thuobf' }}
         run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i "$HOME/yc" -n >/dev/null
+          # установка yc иногда виснет на скачивании — ограничение по времени и до 3 попыток
+          for i in 1 2 3; do timeout 120 bash -c 'curl -sSL --max-time 100 https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i "$HOME/yc" -n >/dev/null' && break; echo "yc не скачался, попытка $((i+1))"; sleep 5; done
+          test -x "$HOME/yc/bin/yc" || { echo "::error::Не удалось скачать программу yc — перезапустите развёртывание (Re-run)"; exit 1; }
           echo "$HOME/yc/bin" >> "$GITHUB_PATH"
           printf '%s' "$YC_SA_KEY" > "$RUNNER_TEMP/yc-key.json"
           SA=$(node -e "try{const k=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));if(!k.service_account_id||!k.private_key)throw 0;console.log(k.service_account_id)}catch(e){process.exit(1)}" "$RUNNER_TEMP/yc-key.json") \
