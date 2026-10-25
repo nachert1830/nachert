@@ -13,7 +13,10 @@
 
    GoatCounter отдаёт только накопленное число (/counter/TOTAL.json, открыто без ключа; без ?start= — из кэша до 4 часов,
    поэтому спрашиваем с ?start= до запуска счётчика: число то же, но свежее), поэтому прирост между запусками
-   записывается в день запуска (по Москве). Метрика пересчитывается по дням за последние KEEP дней — она дописывает
+   записывается в день середины промежутка между ними (по Москве; время прошлого запуска — gc.at). Ночной запуск
+   (00:07 по Москве, GitHub задерживает его до ~02:00) собирает прирост за прошедшие сутки — он относится ко вчера.
+   Раньше он шёл в день запуска: вчерашние посетители GoatCounter стояли в «сегодня» и с утра закрывали в max()
+   растущую Метрику — число на сайте полдня не двигалось (≈ 20 000 на 19.10), а вчерашние посетители считались дважды. Метрика пересчитывается по дням за последние KEEP дней — она дописывает
    запоздавшие данные в свой день; более старые дни сворачиваются в base.
    Коды GoatCounter берутся из index.html (window.GC_CODE, window.GC_OK_CODE) — одно место настройки.
    Переменные окружения (секреты репозитория, необязательные):
@@ -57,10 +60,11 @@ const tryGet=async(f,...a)=>{ try{ return await f(...a); }catch(e){ console.log(
 
   /* прирост GoatCounter с прошлого запуска. Общий сайт не ответил — метки не трогаем, прирост попадёт в следующий запуск.
      Сайт согласившихся не ответил — его метку сбрасываем, а прирост общего сайта идёт как оценка согласившихся (в max, не в сумму). */
-  if(all!=null){ const p=s.gc||{}, dAll=p.all!=null&&all>=p.all?all-p.all:0, okOn=ok!=null&&p.ok!=null&&ok>=p.ok;
-    if(dAll||okOn){ const t=day(today);
+  if(all!=null){ const p=s.gc||{}, dAll=p.all!=null&&all>=p.all?all-p.all:0, okOn=ok!=null&&p.ok!=null&&ok>=p.ok, now=Date.now();
+    const at=Date.parse(p.at||''), mid=Number.isFinite(at)&&at<now?msk((at+now)/2):today;
+    if(dAll||okOn){ const t=day(mid>s.base.upto?mid:today);
       if(okOn){ const dOk=ok-p.ok; t.c+=dOk; t.r+=Math.max(0,dAll-dOk); } else t.c+=dAll; }
-    s.gc={all,ok:ok==null?null:ok}; }
+    s.gc={all,ok:ok==null?null:ok,at:new Date(now).toISOString()}; }
 
   /* дни старше KEEP — окончательные, сворачиваем */
   const edge=addDay(today,-KEEP);
