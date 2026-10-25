@@ -2,6 +2,7 @@
    Без аккаунтов и ключей: бот эмулируется, база — файл server/.data/dev-db.json (или память с --memory).
    Тот же обработчик, что в облаке (lib/app.js), плюс служебные адреса /dev/* — их в облаке нет:
      POST /dev/bot-login {id, first_name, start} — «нажать Старт» у бота за участника; ответ — ссылка из кнопки «Войти в клуб»
+     POST /dev/owner-login           — ссылка входа владельца, как от «node server/tools/login.js»
      /dev/outbox                     — сообщения бота
      POST /dev/remind                — прогнать напоминания сейчас;  POST /dev/invite — новое приглашение
      POST /dev/clock {offsetMs}      — сдвиг часов сервера (только с --test)
@@ -43,6 +44,7 @@ const srv=http.createServer(async(q,r)=>{
     const u=new URL(q.url,origin), body=await readBody(q);
     if(q.headers.host!=='localhost:'+PORT){ r.writeHead(302,{Location:origin+u.pathname+u.search}); return r.end(); }
     if(u.pathname.startsWith('/dev/')){
+      if(u.pathname==='/dev/owner-login'&&q.method==='POST') return send(r,200,await app.ownerLink());
       if(u.pathname==='/dev/bot-login'&&q.method==='POST'){ let b={}; try{ b=JSON.parse(body||'{}'); }catch(e){}
         /* как будто участник нажал «Старт» у бота: start=<param>; в ответ — ссылка из кнопки «Войти в клуб» (или текст отказа) */
         const id=String(b.id||'1000002').replace(/\D/g,'').slice(0,12)||'1000002', from={id:+id,first_name:String(b.first_name||'Тестировщик').slice(0,40)};

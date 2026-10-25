@@ -152,8 +152,8 @@ let LANDING=null;
 async function landingView(tok){ LANDING=tok; render('<p class="mut">Проверяю ссылку…</p>','Вход');
   let r; try{ r=await api('POST','/api/auth/bot/redeem',{token:tok}); }
   catch(e){ LANDING=null; render(`<section class="hero"><span class="pill red">Ссылка не сработала</span><h1>Клуб Начерта</h1><p>${esc(e.message)}</p><div class="auth" id="auth">${authIdle()}</div></section>`,'Вход'); return; }
-  render(`<section class="hero"><span class="pill">Вход через Telegram</span><h1>Войти как ${esc(r.name)}?</h1>
-    <p>${r.member?'Вы вошли в Telegram-бот клуба. Нажмите «Войти», чтобы открыть кабинет в этом браузере.':'Первый вход: отметьте документы и нажмите «Войти» — аккаунт создастся. Берём минимум: Telegram id и имя, плюс ваш прогресс. Данные — в России.'}</p>
+  render(`<section class="hero"><span class="pill">Вход по одноразовой ссылке</span><h1>Войти как ${esc(r.name)}?</h1>
+    <p>${r.member?'Ссылка подтверждена. Нажмите «Войти», чтобы открыть кабинет в этом браузере.':'Первый вход: отметьте документы и нажмите «Войти» — аккаунт создастся. Берём минимум: Telegram id и имя, плюс ваш прогресс. Данные — в России.'}</p>
     <div class="auth" id="auth">${r.member?'':`<div class="reg">${consentBlock()}</div>`}<div class="row reg"><button class="btn white lg" type="button" data-act="redeem" data-new="${r.member?'':'1'}">Войти</button><button class="btn ghost" type="button" data-act="notMe">Это не я</button></div><div id="authMsg" aria-live="polite"></div></div></section>`,'Вход'); }
 const FEATS=[['cal','','Календарь сдач','ДЗ, РК и закрытие модулей ИКГ и начерта — по неделям вашей группы'],['plan','red','Обратный план','От дня РК назад: диагностика, слабые темы, пробный РК'],
   ['train','green','Тренировка дня','15–20 минут: повтор по интервалам и задача вперемешку'],['skills','amber','Карта навыков','Что уже освоено и какие задачи решить дальше']];

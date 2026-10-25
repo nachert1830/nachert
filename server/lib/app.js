@@ -112,6 +112,13 @@ function createApp(o){
     await store.put('botlogin',{id:loginId(tok),tg:String(from.id),name,invite:member?null:inv,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
     return say(from.id,'Вход в клуб Начерта.\n\nНажмите кнопку — откроется клуб, и вы войдёте. Ссылка действует '+LOGIN_MIN+' минут и срабатывает один раз. Не пересылайте её: по ней можно войти в ваш аккаунт.',
       {reply_markup:{inline_keyboard:[[{text:'Войти в клуб',url:cfg.origin+'/#/tg/'+tok}]]}}); }
+  /* вход владельца без Telegram: ссылку выдаёт сама функция при прямом вызове из yc (server/tools/login.js).
+     Вызвать функцию напрямую может только тот, у кого есть права в облаке, — шлюз передаёт ей лишь HTTP-запросы. */
+  async function ownerLink(){ const owner=cfg.adminTg[0]; if(!owner) throw new Error('ADMIN_TG_IDS не задан');
+    const ex=await store.get('identities','tg:'+owner), u=ex&&await store.get('users',ex.userId);
+    const tok=C.token(24), t=now(), min=30;
+    await store.put('botlogin',{id:loginId(tok),tg:owner,name:(u&&u.name)||'Владелец',invite:null,exp:t+min*60e3,used:false,createdAt:t,via:'owner'});
+    return {link:cfg.origin+'/#/tg/'+tok,minutes:min}; }
   const say=(chat,text,extra)=>Object.assign({method:'sendMessage',chat_id:chat,text,disable_web_page_preview:true},extra||{});
 
   /* шаг 3: confirm=false — только узнать имя («Войти как …?»), confirm=true — войти */
@@ -303,6 +310,6 @@ function createApp(o){
     return finish(res,cookie); }
   function finish(res,cookie){ res.headers=Object.assign(H.securityHeaders(cfg,false),res.headers||{}); if(cookie) res.multiValueHeaders={'Set-Cookie':[cookie]}; return res; }
 
-  return {handle,remind,maintain,onUpdate,ensureBot,DOCS_VERSION,_loginId:loginId};
+  return {handle,remind,maintain,onUpdate,ensureBot,ownerLink,DOCS_VERSION,_loginId:loginId};
 }
 module.exports={createApp,maskIp,DOCS_VERSION};

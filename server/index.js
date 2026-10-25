@@ -10,5 +10,8 @@ const {botClient}=require('./lib/telegram');
 let app=null;
 function get(){ if(app) return app; const cfg=fromEnv(process.env);
   app=createApp({cfg,store:ydbStore(cfg.ydb),bot:botClient({token:cfg.botToken})}); return app; }
-exports.handler=async(event)=>{ const req=fromEvent(event); if(req.method==='HEAD') req.method='GET'; return get().handle(req); };
+/* прямой вызов «yc serverless function invoke … --data {"club":"owner-login"}» → одноразовая ссылка входа владельца.
+   Запросы через шлюз всегда приходят с httpMethod, поэтому из интернета сюда не попасть. */
+exports.handler=async(event)=>{ if(event&&!event.httpMethod&&event.club==='owner-login') return get().ownerLink();
+  const req=fromEvent(event); if(req.method==='HEAD') req.method='GET'; return get().handle(req); };
 exports.remind=async()=>{ const r=await get().remind(); console.log('напоминания',JSON.stringify(r)); return {statusCode:200,body:JSON.stringify(r)}; };

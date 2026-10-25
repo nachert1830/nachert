@@ -63,6 +63,9 @@ async function docapi(endpoint,cred,op,body){ const b=JSON.stringify(body);
 async function telegram(token,method,body){ const r=await fetch('https://api.telegram.org/bot'+token+'/'+method,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body||{})});
   const j=await r.json().catch(()=>({})); if(!j.ok) throw new Error('Telegram '+method+': '+(j.description||r.status)); return j.result; }
 
+/* одноразовая ссылка входа владельца: функция выдаёт её только при прямом вызове из yc (нужны права в облаке) */
+function ownerLink(fnId){ try{ const out=yc(['serverless','function','invoke',fnId?'--id':'--name',fnId||NAMES.api,'--data',JSON.stringify({club:'owner-login'})],{json:false});
+  const m=out.match(/https:\/\/[^\s"]+\/#\/tg\/[A-Za-z0-9_-]{30,40}/); return m?m[0]:null; }catch(e){ return null; } }
 async function main(){
   say('Развёртывание клуба Начерта в Yandex Cloud.\nВсё создаётся в каталоге, выбранном в «yc init». Повторный запуск безопасен.');
   step('Проверяю программу yc');
@@ -171,9 +174,12 @@ async function main(){
   say(ok?'  клуб работает':'  пока не отвечает — подождите минуту и откройте адрес ниже');
 
   say('\n════════════════════════════════════════════');
-  say('Готово. Откройте: '+origin);
-  say('«Войти через Telegram» → в чате с @'+me.username+' «Старт» → кнопка «Войти в клуб» — вы владелец (админ).');
+  say('Готово. Адрес клуба: '+origin);
+  const link=ownerLink(fn.api.id);
+  say(link?'\nВаша ссылка для входа (владелец, админ). Действует 30 минут и срабатывает один раз — никому не пересылайте:\n\n  '+link+'\n':
+    '\nСсылку для входа выдаст команда:  node server/tools/login.js');
+  say('Новая ссылка в любой момент:  node server/tools/login.js');
   say('════════════════════════════════════════════');
 }
 if(require.main===module) main().catch(e=>{ console.error('\n✖ '+e.message+'\n\nЕсли непонятно, что делать, — пришлите этот текст Claude.'); process.exit(1); });
-module.exports={zip,crc32,packageFiles};
+module.exports={zip,crc32,packageFiles,ownerLink};

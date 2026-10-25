@@ -97,3 +97,19 @@ test('журнал входов: успехи и отказы, IP усечён',
   const bad=all.find(x=>!x.ok); assert.equal(bad.ip,'192.168.44.0'); assert.match(bad.reason,/устарела/);
   assert.equal((await c.call('GET','/api/me/logins',undefined,{as:'owner'})).data.logins.length,1);
 });
+
+test('вход владельца без Telegram: ссылку выдаёт только прямой вызов функции, не шлюз; один раз, 30 минут',async()=>{
+  const c=club();
+  const o=await c.app.ownerLink(); assert.match(o.link,/^http:\/\/localhost:8787\/#\/tg\/[A-Za-z0-9_-]{32}$/); assert.equal(o.minutes,30);
+  const token=o.link.split('#/tg/')[1];
+  const peek=await c.call('POST','/api/auth/bot/redeem',{token},{as:'owner'}); assert.equal(peek.status,200); assert.equal(peek.data.member,false);
+  const r=await c.call('POST','/api/auth/bot/redeem',{token,confirm:true,consent:c.consent},{as:'owner'}); assert.equal(r.status,200); assert.equal(r.data.user.role,'admin');
+  assert.equal((await c.call('POST','/api/auth/bot/redeem',{token,confirm:true},{as:'x'})).status,410,'второй раз не срабатывает');
+  const o2=await c.app.ownerLink(); c.clock.t+=31*60e3;
+  assert.equal((await c.call('POST','/api/auth/bot/redeem',{token:o2.link.split('#/tg/')[1],confirm:true},{as:'y'})).status,410,'через 30 минут устарела');
+  const fresh=await c.app.ownerLink(); const again=await c.call('POST','/api/auth/bot/redeem',{token:fresh.link.split('#/tg/')[1],confirm:true},{as:'z'});
+  assert.equal(again.status,200); assert.equal(again.data.user.name,'Владелец'); assert.equal(again.data.isNew,false);
+  /* index.handler: событие шлюза всегда с httpMethod — даже с полем club ссылку не получить */
+  const idx=require('fs').readFileSync(require('path').join(__dirname,'..','index.js'),'utf8');
+  assert.match(idx,/!event\.httpMethod&&event\.club==='owner-login'/);
+});
