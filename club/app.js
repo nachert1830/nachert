@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 const CAL=ClubCalendar, PL=ClubPlan, SRS=ClubSRS, BKT=ClubBKT, SYNC=ClubSync, REM=ClubReminder, SCAN=ClubScanner, FEAT=ClubFeatures;
-const VER='club-1.2';
+const VER='club-1.3';
 const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const view=()=>$('#view');
@@ -150,8 +150,8 @@ const botStart=()=>{ const c=getInvite(); return c&&/^[A-Za-z0-9_-]{16,62}$/.tes
 /* официальный вход Telegram — только на сайте, заданном у @BotFather (/setdomain); в остальных местах — через бота клуба.
    Бот на сайте не предлагаем: серверы Telegram и Yandex Cloud сейчас не видят друг друга, а официальному входу эта связь не нужна */
 const tgOfficial=()=>!!(CFG&&CFG.tgLogin&&CFG.botId&&CFG.tgLogin.origins.includes(location.origin));
-function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName, off=tgOfficial();
-  return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}</div>
+function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName, off=tgOfficial(), em=CFG&&CFG.email;
+  return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}${em?`<button class="btn ghost lg" type="button" data-act="mailLogin"><span class="mailmark" aria-hidden="true">@</span>Войти по почте</button>`:''}</div>
 <div id="authMsg" aria-live="polite"></div>`; }
 const OOPS={state:'Вход устарел или начат в другой вкладке. Нажмите кнопку входа ещё раз.',denied:'Вы отменили вход в Яндексе.',fail:'Яндекс ID сейчас не ответил. Попробуйте ещё раз через минуту.',
   noinvite:'Этот аккаунт ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',invite:'Приглашение не подходит: оно использовано, отозвано или устарело.',
@@ -169,9 +169,9 @@ let LANDING=null;
 async function landingView(tok){ LANDING=tok; render('<p class="mut">Проверяю ссылку…</p>','Вход');
   let r; try{ r=await api('POST','/api/auth/bot/redeem',{token:tok}); }
   catch(e){ LANDING=null; render(`<section class="hero"><span class="pill red">Ссылка не сработала</span><h1>Клуб Начерта</h1><p>${esc(e.message)}</p><div class="auth" id="auth">${authIdle()}</div></section>`,'Вход'); return; }
-  const via=r.method==='yandex'?'Яндекс ID':'Telegram';
-  render(`<section class="hero"><span class="pill">Вход через ${via}</span><h1>Войти как ${esc(r.name)}?</h1>
-    <p>${r.member?'Нажмите «Войти», чтобы открыть кабинет в этом браузере.':'Первый вход: отметьте документы и нажмите «Войти» — аккаунт создастся. Берём минимум: id в '+via+' и имя, плюс ваш прогресс. Данные — в России.'}</p>
+  const via=r.method==='yandex'?'Яндекс ID':r.method==='email'?'почту':'Telegram';
+  render(`<section class="hero"><span class="pill">Вход через ${via}</span><h1>${r.label?'Войти — '+esc(r.label)+'?':'Войти как '+esc(r.name)+'?'}</h1>
+    <p>${r.member?'Нажмите «Войти», чтобы открыть кабинет в этом браузере.':'Первый вход: отметьте документы и нажмите «Войти» — аккаунт создастся. Берём минимум: '+(r.method==='email'?'хеш адреса почты (сам адрес не храним)':'id в '+via+' и имя')+', плюс ваш прогресс. Данные — в России.'}</p>
     <div class="auth" id="auth">${r.member?'':`<div class="reg">${consentBlock()}</div>`}<div class="row reg"><button class="btn white lg" type="button" data-act="redeem" data-new="${r.member?'':'1'}">Войти</button><button class="btn ghost" type="button" data-act="notMe">Это не я</button></div><div id="authMsg" aria-live="polite"></div></div></section>`,'Вход'); }
 const FEATS=[['cal','','Календарь сдач','ДЗ, РК и закрытие модулей ИКГ и начерта — по неделям вашей группы'],['plan','red','Обратный план','От дня РК назад: диагностика, слабые темы, пробный РК'],
   ['train','green','Тренировка дня','15–20 минут: повтор по интервалам и задача вперемешку'],['skills','amber','Карта навыков','Что уже освоено и какие задачи решить дальше']];
@@ -198,6 +198,7 @@ function todayView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),we
   render(`<section class="hero"><div class="hero-row"><div><span class="pill">${esc(wkText)} · ${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span><h1>Привет, ${esc(ME.user.name)}</h1>
       <p>${next?'Ближайшее — '+esc(next.title)+', '+esc(CAL.human(next.date))+'.':'Событий в таблице больше нет.'} ${steps.length?'По плану сегодня — '+steps.length+' '+plural(steps.length,'шаг','шага','шагов')+'.':''}</p></div>
     ${next?`<div class="count"><b>${next.inDays}</b><span>${plural(next.inDays,'день','дня','дней')} до ${esc(next.short)} · ${esc(next.subjTitle)}</span></div>`:''}</div></section>
+  ${flag('scanner')?`<a class="cta-check" href="#/check"><span class="ico">${ic('scan')}</span><span><b>Проверить чертёж по фото</b><small>ДЗ №2–3 и задачи тетради — вердикт и где ошибка</small></span>${ic('arrow')}</a>`:''}
   ${onboard?`<section class="card tri"><div class="ch"><span class="ico">${ic('info')}</span><h2>С чего начать</h2><button class="fb" data-act="onboardOff" type="button">Скрыть</button></div><ol class="lead"><li>Укажите <a href="#/calendar">день занятий</a> по каждому предмету — от него считаются даты.</li><li>Есть прогресс на nachert1830.ru? Перенесите его: <a href="#/settings">Настройки → Перенести прогресс</a>.</li><li>Включите <a href="#/settings">напоминания</a> в Telegram, если удобно.</li></ol></section>`:''}
   <div class="grid"><div class="col">
     ${flag('training')?card('training','Тренировка дня',`<p class="lead">${tr.items.length?(tr.left?'Осталось '+tr.left+' из '+tr.items.length+' · ≈ '+tr.minutes+' мин':'На сегодня всё сделано'):'Повторять пока нечего — начните с карты навыков.'}</p>${tr.items.length&&tr.left?`<div class="bar"><i data-w="${(tr.items.length-tr.left)/tr.items.length*100}"></i></div>`:''}<div class="row reg"><a class="btn cta lg" href="#/train">${tr.left?'Начать тренировку':'Открыть'} ${ic('arrow')}</a></div>`,'',{icon:'train',tone:'green',sub:'повтор по интервалам + задача вперемешку'}):''}
@@ -355,23 +356,32 @@ function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics
   </div></div>`,'Карта навыков'); }
 
 /* ── проверка: фото и нормоконтроль ── */
-function checkView(){
-  render(`${pageHead('Проверка','Сверить своё решение и лист до сдачи.',['#/more','Ещё'])}
+/* ── проверка чертежа — главный раздел ──
+   Сканер (ветка лаборатории: lab/scan.html — задачи № 46, № 47; lab/dz.html — лист ДЗ №2–3) лежит рядом с клубом на сайте
+   (/lab/) и открывается внутри кабинета. Фото обрабатывается на устройстве и никуда не отправляется. Правило сканера:
+   ложный вердикт хуже отказа — «не уверен» он говорит прямо. */
+const LAB=[
+  {id:'dz',src:'lab/dz.html',icon:'sheet',tone:'',t:'ДЗ №2–3 по начерту',s:'фото листа целиком',p:'Сфотографируйте лист — сканер найдёт рамку и эпюр, сверит построение с условием вашего варианта и проверит ответ.'},
+  {id:'task',src:'lab/scan.html',icon:'scan',tone:'green',t:'Задачи тетради № 46 и № 47',s:'фото решения',p:'Вердикт «верно» или где ошибка — с отметками прямо на фото, выпрямленный лист и 3D-модель решения. Есть синтетический лист, чтобы попробовать без бумаги.'}];
+const labBase=()=>/\/club\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/club\/(index\.html)?$/,''):null;
+function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
+  if(L&&base){ render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(base+L.src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
+      <iframe class="labf" src="${esc(base+L.src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
+  render(`<section class="hero"><span class="pill">Главная функция · бета</span><h1>Проверка чертежа по фото</h1>
+    <p>Решили на бумаге — сфотографируйте. Сканер прочитает лист, сверит построение с верным решением и скажет, где ошибка. Если не уверен — так и скажет: ложный «верно» хуже честного «не знаю».</p></section>
+  <div class="tools">${LAB.map(x=>`<a class="tool" href="${base?'#/check/'+x.id:'#/check'}" ${base?'':'aria-disabled="true"'}><span class="ico ${x.tone}">${ic(x.icon)}</span><span class="tt"><b>${esc(x.t)}</b><small>${esc(x.s)}</small><span>${esc(x.p)}</span></span>${ic('arrow')}</a>`).join('')}</div>
+  ${base?'':`<p class="note warn">Сканер открывается на странице клуба на сайте: <a href="https://nachert1830.ru/club/#/check">nachert1830.ru/club/</a>.</p>`}
   <div class="grid"><div class="col">
-    ${flag('normo')?card('normo','Предпроверка листа ДЗ ИКГ',`<p>Загрузите лист в формате SVG (экспорт из САПР) — нормоконтроль основного сайта проверит формат, рамку, основную надпись, линии, шрифт, виды и разрезы, штриховку и размеры.</p>
+    ${flag('normo')?card('normo','Предпроверка листа ИКГ по ГОСТ',`<p>Есть лист в САПР? Загрузите SVG — нормоконтроль проверит формат, рамку, основную надпись, линии, шрифт, виды и разрезы, штриховку и размеры.</p>
       <label class="f" for="nkF">Лист SVG</label><label class="file"><input id="nkF" type="file" accept=".svg,image/svg+xml"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
       <div class="row reg"><button class="btn pri" type="button" data-act="normo">Проверить мой лист</button></div>
       <p class="mut reg">Или образцы ДЗ 2:</p><div class="samples"><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v5-clean">верный лист</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v8-thin">ошибка в линиях</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v12-numline">ошибка в размерах</button></div>
       <div id="nkOut" aria-live="polite"></div>`,
-      'привычка нормоконтролёра — пройти лист по списку правил до сдачи — переносится на свой лист и снимает «слепоту автора» (Metcalfe, 2017). Это предпроверка: она не заменяет преподавателя. Результат своего листа попадает в карту навыков ИКГ.',{icon:'sheet',tone:'amber',sub:'ГОСТ 2.301–2.307, 2.104'}):''}
+      'привычка нормоконтролёра — пройти лист по списку правил до сдачи — переносится на свой лист и снимает «слепоту автора». Это предпроверка, а не оценка преподавателя.',{icon:'sheet',tone:'amber',sub:'ГОСТ 2.301–2.307, 2.104'}):''}
   </div><div class="col">
-    ${flag('scanner')?card('scanner','Проверь решение по фото',`<p class="note warn">Сканер ещё не подключён: сейчас здесь заглушка, которая честно отвечает «не знаю». Фото обрабатывается на устройстве и никуда не отправляется.</p>
-      <label class="f" for="scN">Номер задачи</label><input id="scN" type="number" min="1" max="89" inputmode="numeric" placeholder="например, 52">
-      <label class="f" for="scF">Фото решения</label><label class="file"><input id="scF" type="file" accept="image/*" capture="environment"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
-      <div class="row reg"><button class="btn pri" type="button" data-act="scan">Проверить</button></div><div id="scOut" aria-live="polite"></div>`,
-      'быстрая обратная связь сразу после попытки полезнее отложенной (Hattie, Timperley, 2007). Подключение: <code>scan(фото, задача) → вердикт</code>, lib/scanner.js.',{icon:'scan'}):''}
-  </div></div>
-  ${!flag('scanner')&&!flag('normo')?'<p class="empty">Раздел сейчас выключен.</p>':''}`,'Проверка'); }
+    ${card('scanner','Как снимать, чтобы сканер понял',`<ol class="lead"><li>Лист целиком в кадре, рамка видна со всех сторон.</li><li>Ровный свет без бликов и резкой тени; телефон параллельно листу.</li><li>Линии обведены как на сдачу: основные — толще, построения — тонко.</li><li>Если сканер ответил «не уверен» — переснимите ближе или при другом свете.</li></ol>`,
+      'сразу после попытки обратная связь полезнее отложенной; поэтому проверка — до сдачи, пока ещё можно исправить.',{icon:'info'})}
+  </div></div>`,'Проверка'); }
 
 /* SVG пользователя — без скриптов, обработчиков, внешних ссылок; style="…" переводится в атрибуты (CSP не пускает встроенные стили) */
 const PRES=new Set(['stroke','stroke-width','stroke-dasharray','stroke-dashoffset','stroke-linecap','stroke-linejoin','stroke-opacity','fill','fill-opacity','fill-rule','opacity','font-size','font-family','font-style','font-weight','text-anchor','dominant-baseline','visibility','display','vector-effect','letter-spacing']);
@@ -434,7 +444,7 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
 /* ── «Ещё» ── */
 function moreView(){ const m=(href,icn,tone,t,s,extl)=>`<a href="${esc(href)}"${extl?' target="_blank" rel="noopener noreferrer"':''}><span class="ico ${tone}">${ic(icn)}</span><span>${t}<small>${s}</small></span>${ic(extl?'ext':'arrow')}</a>`;
   render(`${pageHead('Ещё')}<nav class="menu" aria-label="Разделы">
-  ${flag('scanner')||flag('normo')?m('#/check','sheet','amber','Проверка','предпроверка листа ИКГ · решение по фото'):''}
+  ${flag('calendar')?m('#/calendar','cal','','Календарь сдач','ДЗ, РК и закрытие модулей по неделям'):''}
   ${m('#/settings','user','','Настройки','профиль, напоминания, прогресс, мои данные')}
   ${ME.user.role==='admin'?m('#/admin','admin','red','Админ-панель','приглашения, участники, функции, отзывы'):''}
   ${m(mainUrl(),'book','green','Основной сайт','тетрадь, разборы, тренажёры',true)}
@@ -451,10 +461,10 @@ async function adminView(){ if(ME.user.role!=='admin'){ render('<p class="note b
   const dt=ms=>ms?new Date(ms).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
   const names={}; D.users.forEach(u=>{ names[u.id]=u.name; });
   const tabs=[['invites','Приглашения'],['users','Участники · '+D.users.length],['flags','Функции'],['feedback','Отзывы · '+D.feedback.length],['logins','Входы'],['settings','Семестр']];
-  const st=i=>i.revokedAt?'<span class="st-badge bad">отозвано</span>':i.usedAt?'<span class="st-badge ok">'+esc(names[i.usedBy]||'использовано')+'</span>':i.expiresAt<Date.now()?'<span class="st-badge">истекло</span>':'<span class="st-badge">до '+dt(i.expiresAt)+'</span>';
+  const st=i=>i.revokedAt?'<span class="st-badge bad">отозвано</span>':i.multi?'<span class="st-badge'+(i.uses>=i.maxUses?'':' ok')+'">публичная · '+i.uses+' из '+i.maxUses+'</span>':i.usedAt?'<span class="st-badge ok">'+esc(names[i.usedBy]||'использовано')+'</span>':i.expiresAt<Date.now()?'<span class="st-badge">истекло</span>':'<span class="st-badge">до '+dt(i.expiresAt)+'</span>';
   const body={
     invites:`<form id="invForm"><div class="grid2"><div><label class="f" for="invL">Для кого</label><input id="invL" type="text" maxlength="60" placeholder="Аня, ИУ5"></div><div><label class="f" for="invD">Действует, дней</label><input id="invD" type="number" min="1" max="60" value="14"></div></div>
-      <label class="chk reg"><input id="invA" type="checkbox"><span>Роль «админ»</span></label><div class="row reg"><button class="btn cta" type="submit">${ic('plus')}Создать приглашение</button></div></form><div id="invOut"></div>
+      <label class="chk reg"><input id="invM" type="checkbox"><span>Публичная ссылка — одна на многих<small>Для друзей и группы: по ней зарегистрируются до 50 человек. Отозвать можно в любой момент.</small></span></label><label class="chk reg"><input id="invA" type="checkbox"><span>Роль «админ»<small>только для личной ссылки</small></span></label><div class="row reg"><button class="btn cta" type="submit">${ic('plus')}Создать приглашение</button></div></form><div id="invOut"></div>
       <div class="reg">${D.invites.map(i=>`<div class="urow"><div><b>${esc(i.label)}</b>${i.role==='admin'?' · админ':''}<small>${dt(i.createdAt)}</small></div><div class="row">${st(i)}${!i.usedAt&&!i.revokedAt?`<button class="btn sm dan" type="button" data-act="revoke" data-h="${i.h}">Отозвать</button>`:''}</div></div>`).join('')||'<p class="mut">Приглашений пока нет.</p>'}</div>`,
     users:D.users.map(u=>`<div class="urow"><div><b>${esc(u.name)}</b>${u.blocked?' <span class="st-badge bad">доступ закрыт</span>':''}<small>с ${dt(u.createdAt)} · вход ${dt(u.lastLogin)}${u.reminders?' · напоминания':''}${u.photos?' · фото: да':''}</small></div>
       <div class="row"><select data-chg="role" data-id="${u.id}" aria-label="Роль"><option value="member"${u.role==='member'?' selected':''}>участник</option><option value="admin"${u.role==='admin'?' selected':''}>админ</option></select>${u.id!==ME.user.id?`<button class="btn sm${u.blocked?'':' dan'}" type="button" data-act="block" data-id="${u.id}" data-b="${u.blocked?0:1}">${u.blocked?'Вернуть':'Закрыть'}</button>`:''}</div></div>`).join(''),
@@ -465,7 +475,7 @@ async function adminView(){ if(ME.user.role!=='admin'){ render('<p class="note b
   render(`${pageHead('Админ-панель','',['#/more','Ещё'])}<div class="seg wrap" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-act="atab" data-t="${k}" class="${ADMIN_TAB===k?'on':''}">${l}</button>`).join('')}</div>
     <section class="card reg">${body[ADMIN_TAB]}</section>`,'Админ-панель');
   const f=$('#invForm'); if(f) f.addEventListener('submit',async e=>{ e.preventDefault();
-    try{ const r=await api('POST','/api/admin/invites',{label:$('#invL').value,days:+$('#invD').value,role:$('#invA').checked?'admin':'member'});
+    try{ const r=await api('POST','/api/admin/invites',{label:$('#invL').value,days:+$('#invD').value,role:$('#invA').checked?'admin':'member',multi:$('#invM').checked,uses:50});
       await adminView(); $('#invOut').innerHTML=`<div class="note ok reg"><b>Приглашение создано.</b> Ссылка показывается один раз — скопируйте и отправьте лично:<span class="code" id="invLink">${esc(r.link)}</span><button class="btn sm pri" type="button" data-act="copy" data-t="#invLink">Скопировать</button></div>`; }
     catch(err){ toast(err.message); } }); }
 
@@ -482,6 +492,20 @@ const ACT={
   fb:el=>feedback(el.dataset.f),
   onboardOff:()=>{ LS.device('nch2_club_onboard'); todayView(); },
   botLogin:()=>{ const box=$('#auth'); if(box) box.innerHTML=botSteps(); },
+  mailLogin:()=>{ const box=$('#auth'); if(!box) return; box.innerHTML=`<form class="mailf" id="mailF"><label class="f" for="emA">Почта</label>
+      <div class="row"><input id="emA" class="grow" type="email" inputmode="email" autocomplete="email" required placeholder="you@example.ru"><button class="btn white" type="submit">Получить код</button></div>
+      <p class="alt">Пришлём код из 6 цифр. Адрес не сохраняем — только его хеш, чтобы узнать вас в следующий раз.</p></form>
+      <div class="row reg"><button class="btn ghost sm" type="button" data-act="loginCancel">Назад</button></div><div id="authMsg" aria-live="polite"></div>`;
+    $('#emA').focus();
+    $('#mailF').addEventListener('submit',async e=>{ e.preventDefault(); const email=$('#emA').value.trim(), msg=$('#authMsg');
+      try{ const r=await api('POST','/api/auth/email/start',{email,invite:getInvite()});
+        box.innerHTML=`<form class="mailf" id="codeF"><label class="f" for="emC">Код из письма на ${esc(r.to)}</label>
+          <div class="row"><input id="emC" class="grow code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="••••••"><button class="btn white" type="submit">Войти</button></div>
+          <p class="alt">Код действует ${r.minutes} минут. Письма нет? Проверьте «Спам».</p></form><div class="row reg"><button class="btn ghost sm" type="button" data-act="mailLogin">Другая почта</button></div><div id="authMsg" aria-live="polite"></div>`;
+        $('#emC').focus();
+        $('#codeF').addEventListener('submit',async ev=>{ ev.preventDefault(); try{ const v=await api('POST','/api/auth/email/verify',{email,code:$('#emC').value}); landingView(v.token); }
+          catch(x){ $('#authMsg').innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }); }
+      catch(x){ msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }); },
   tgLogin:()=>{ const q=new URLSearchParams({bot_id:CFG.botId,origin:location.origin,request_access:'write',return_to:pageUrl()}); location.href=CFG.tgLogin.url+'?'+q.toString(); },
   yaLogin:()=>{ const q=new URLSearchParams({ret:pageUrl(),s:yaState()}), c=getInvite(); if(c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)) q.set('invite',c);
     location.href=(API||location.origin)+'/api/auth/yandex/start?'+q.toString(); },
@@ -599,7 +623,7 @@ function route(){ closeSheet(); const m=/^#tgAuthResult=([A-Za-z0-9+/=_%-]*)/.ex
     case 'event': return eventView(p[1],p[2]);
     case 'train': return flag('training')?trainView():todayView();
     case 'skills': return flag('skills')?skillsView():todayView();
-    case 'check': return checkView();
+    case 'check': return checkView(p[1]);
     case 'settings': return settingsView();
     case 'more': return moreView();
     case 'about': return aboutView();

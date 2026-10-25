@@ -53,6 +53,7 @@ jobs:
           YANDEX_CLIENT_ID: ${{ secrets.YANDEX_CLIENT_ID }}
           YANDEX_CLIENT_SECRET: ${{ secrets.YANDEX_CLIENT_SECRET }}
           FRONT_URL: ${{ vars.CLUB_FRONT_URL }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
         run: node server/tools/deploy.js --write-front
       - name: Адрес API — в страницу клуба на сайте
         if: steps.ready.outputs.ok == 'yes'

@@ -66,7 +66,8 @@ function createApp(o){
     const inv=await store.get('invites',h), t=now();
     if(!inv) return {ok:false,why:'Приглашение не найдено. Проверьте ссылку.'};
     if(inv.revokedAt) return {ok:false,why:'Приглашение отозвано.'};
-    if(inv.usedAt) return {ok:false,why:'Приглашение уже использовано.'};
+    if(inv.multi){ if((inv.uses||0)>=inv.maxUses) return {ok:false,why:'По этой ссылке уже зарегистрировались все, кого приглашали.'}; }
+    else if(inv.usedAt) return {ok:false,why:'Приглашение уже использовано.'};
     if(inv.expiresAt<t) return {ok:false,why:'Срок приглашения истёк.'};
     return {ok:true,inv}; }
   const inviteHash=code=>typeof code==='string'&&/^[A-Za-z0-9_-]{16,64}$/.test(code)?C.sha256(code):null;
@@ -81,7 +82,10 @@ function createApp(o){
       let st=null; if(!boot){ st=await inviteState(invite); if(!st.ok){ await logLogin(req,null,method,false,'без приглашения: '+st.why); fail(403,st.why,{needInvite:true}); } }
       if(!consentOk(consent)){ await logLogin(req,null,method,false,'нет согласия'); fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true}); }
       const t=now(), id=C.id('u_');
-      if(st){ const claimed=await store.update('invites',invite,{usedAt:t,usedBy:id},{ifEq:{usedAt:null,revokedAt:null}}); if(!claimed) fail(403,'Приглашение уже использовано.',{needInvite:true}); }
+      if(st&&st.inv.multi){ let ok=false; for(let i=0;i<5&&!ok;i++){ const cur=await store.get('invites',invite); if(!cur||cur.revokedAt||(cur.uses||0)>=cur.maxUses) break;
+          ok=!!(await store.update('invites',invite,{uses:(cur.uses||0)+1,lastUsedAt:t},{ifEq:{uses:cur.uses||0}})); }
+        if(!ok) fail(403,'По этой ссылке уже зарегистрировались все, кого приглашали.',{needInvite:true}); }
+      else if(st){ const claimed=await store.update('invites',invite,{usedAt:t,usedBy:id},{ifEq:{usedAt:null,revokedAt:null}}); if(!claimed) fail(403,'Приглашение уже использовано.',{needInvite:true}); }
       user={id,name:cleanName(name)||'Участник',role:boot?'admin':(st&&st.inv.role==='admin'?'admin':'member'),method,createdAt:t,
         tgId:tgId||null,ya:key.startsWith('ya:'),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
       if(!(await store.put('identities',{id:key,userId:id,type:method,createdAt:t},{ifNotExists:true}))) fail(409,'Этот вход уже привязан к другому участнику.');
@@ -101,7 +105,7 @@ function createApp(o){
   /* ── обработчики ── */
   const R={};
   R['GET /api/config']=async()=>{ const s=await settings(); return H.json(200,{botId:(cfg.botToken.split(':')[0])||null,botName:cfg.botName||null,
-    yandex:!!cfg.yandex.clientId,devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
+    yandex:!!cfg.yandex.clientId,email:!!(o.mail&&o.mail.enabled),devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
 
   R['GET /api/invite/check']=async(req)=>{ await limit('inv',maskIp(req.ip),30,600); const st=await inviteState(inviteHash(req.query.code)); return H.json(200,{valid:st.ok,why:st.ok?'':st.why}); };
 
@@ -137,7 +141,7 @@ function createApp(o){
     if(!r||r.exp<t||r.kind){ await logLogin(req,null,'telegram',false,'ссылка устарела'); fail(410,'Ссылка для входа устарела. Нажмите «Старт» у бота ещё раз — придёт новая.',{expired:true}); }
     if(r.used){ await logLogin(req,null,'telegram',false,'повтор ссылки'); fail(410,'Эта ссылка уже использована. Нажмите «Старт» у бота ещё раз — придёт новая.',{expired:true}); }
     const key=r.key||'tg:'+r.tg, method=r.method||'telegram', member=!!(await store.get('identities',key));
-    if(!b.confirm) return H.json(200,{name:r.name,member,method});
+    if(!b.confirm) return H.json(200,Object.assign({name:r.name,member,method},r.label?{label:r.label}:{}));
     const consent=consentOk(b.consent)?{terms:true,pd:true,photos:!!b.consent.photos}:null;
     if(!member&&!consent) fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true});
     if(!(await store.update('botlogin',id,{used:true,usedAt:t},{ifEq:{used:false}}))) fail(410,'Эта ссылка уже использована.',{expired:true});
@@ -166,6 +170,36 @@ function createApp(o){
     if(!member&&!isBootstrap(key)){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'telegram',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Этот Telegram ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',{needInvite:true}); } }
     const tok=C.token(24);
     await store.put('botlogin',{id:loginId(tok),key,method:'telegram',name:v.name,invite:inv,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
+    return H.json(200,{token:tok}); };
+
+  /* ── вход по почте: код из 6 цифр на 10 минут, 5 попыток ──
+     Адрес почты не хранится: в базе только SHA-256 от него (ключ входа em:<хеш>) и хеш кода. Писать участнику потом нечем — и не нужно. */
+  const mailer=o.mail||{enabled:false};
+  const normEmail=e=>String(e||'').trim().toLowerCase();
+  const okEmail=e=>e.length<=254&&/^[^\s@<>()",;:]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(e);
+  const emKey=e=>'em:'+C.sha256('email:'+e).slice(0,40), emRec=e=>C.sha256('emcode:'+e).slice(0,40);
+  const maskEmail=e=>{ const [u,d]=e.split('@'); return (u.length<=2?u[0]+'•':u.slice(0,2)+'•••')+'@'+d; };
+  R['POST /api/auth/email/start']=async(req)=>{ const b=body(req), e=normEmail(b.email);
+    if(!mailer.enabled) fail(404,'Вход по почте пока не настроен.');
+    if(!okEmail(e)) fail(400,'Проверьте адрес почты.');
+    await limit('emip',maskIp(req.ip),10,600); await limit('emaddr',C.sha256(e).slice(0,24),5,3600);
+    const key=emKey(e), member=!!(await store.get('identities',key)), inv=member?null:inviteHash(b.invite);
+    if(!member){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'email',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Этой почты ещё нет в клубе. Новых участников клуб принимает только по ссылке-приглашению.',{needInvite:true}); } }
+    const code=String(require('crypto').randomInt(0,1e6)).padStart(6,'0'), t=now();
+    await store.put('botlogin',{id:emRec(e),kind:'emcode',code:C.sha256(code+':'+e),invite:inv,tries:0,exp:t+LOGIN_MIN*60e3,createdAt:t});
+    const r=await mailer.send({to:e,subject:'Код входа в клуб Начерта: '+code,text:'Ваш код входа в клуб Начерта: '+code+'\n\nВведите его на странице клуба. Код действует '+LOGIN_MIN+' минут и срабатывает один раз.\nЕсли вы не входили в клуб — просто удалите это письмо.'});
+    if(!r||!r.ok){ log.error('почта',r&&r.error); fail(502,'Не получилось отправить письмо. Попробуйте ещё раз через минуту.'); }
+    return H.json(200,{ok:true,to:maskEmail(e),minutes:LOGIN_MIN}); };
+  R['POST /api/auth/email/verify']=async(req)=>{ const b=body(req), e=normEmail(b.email), code=String(b.code||'').replace(/\D/g,''), t=now();
+    await limit('emver',maskIp(req.ip),30,600);
+    const r=okEmail(e)?await store.get('botlogin',emRec(e)):null;
+    if(!r||r.kind!=='emcode'||r.exp<t) fail(410,'Код устарел. Запросите новый.',{expired:true});
+    if(r.tries>=5) fail(429,'Слишком много попыток. Запросите новый код.',{expired:true});
+    if(!(await store.update('botlogin',r.id,{tries:r.tries+1},{ifEq:{tries:r.tries}}))) fail(409,'Попробуйте ещё раз.');
+    if(code.length!==6||!C.safeEqual(C.sha256(code+':'+e),r.code)){ await logLogin(req,null,'email',false,'неверный код'); fail(400,'Код не подошёл. Осталось попыток: '+(4-r.tries)+'.'); }
+    await store.del('botlogin',r.id);
+    const tok=C.token(24);
+    await store.put('botlogin',{id:loginId(tok),key:emKey(e),method:'email',name:'Участник',label:maskEmail(e),invite:r.invite||null,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
     return H.json(200,{token:tok}); };
 
   R['POST /api/tg/webhook']=async(req)=>{ if(!cfg.webhookSecret||!C.safeEqual(req.headers['x-telegram-bot-api-secret-token']||'',cfg.webhookSecret)) fail(403,'нет');
@@ -324,16 +358,19 @@ function createApp(o){
   const D={};
   D['GET /api/admin/overview']=async()=>{ const [inv,us,fl,st,fb,lg]=await Promise.all([store.scan('invites'),store.scan('users'),flagsRaw(),settings(),store.scan('feedback'),store.scan('loginlog')]);
     const ids=await store.scan('identities'); const methods={}; ids.forEach(i=>{ (methods[i.userId]=methods[i.userId]||[]).push(i.type); });
-    return H.json(200,{invites:inv.sort((a,b)=>b.createdAt-a.createdAt).map(i=>({h:i.id,label:i.label,role:i.role||'member',createdAt:i.createdAt,expiresAt:i.expiresAt,usedAt:i.usedAt||null,usedBy:i.usedBy||null,revokedAt:i.revokedAt||null})),
+    return H.json(200,{invites:inv.sort((a,b)=>b.createdAt-a.createdAt).map(i=>({h:i.id,label:i.label,role:i.role||'member',multi:!!i.multi,uses:i.uses||0,maxUses:i.maxUses||1,createdAt:i.createdAt,expiresAt:i.expiresAt,usedAt:i.usedAt||null,usedBy:i.usedBy||null,revokedAt:i.revokedAt||null})),
       users:us.sort((a,b)=>a.createdAt-b.createdAt).map(u=>({id:u.id,name:u.name,role:u.role,methods:methods[u.id]||[],createdAt:u.createdAt,lastLogin:u.lastLogin||null,blocked:!!u.blocked,reminders:!!(u.reminders&&u.reminders.enabled),photos:!!(u.consent&&u.consent.photos)})),
       flags:fl,modes:FEAT.MODES,features:FEAT.FEATURES,settings:st,
       feedback:fb.sort((a,b)=>b.ts-a.ts).slice(0,300).map(f=>({id:f.id,ts:f.ts,name:f.name,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null,replyAt:f.replyAt||null})),
       logins:lg.sort((a,b)=>b.ts-a.ts).slice(0,200).map(x=>({ts:x.ts,user:x.h==='anon'?null:x.h,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip}))}); };
   D['POST /api/admin/invites']=async(req,S)=>{ const b=body(req), days=Math.max(1,Math.min(60,+b.days||14)), code=C.token(16), t=now(), h=C.sha256(code);
     const inv={id:h,label:cleanName(b.label)||'без подписи',role:b.role==='admin'?'admin':'member',createdAt:t,expiresAt:t+days*DAY,createdBy:S.user.id};
-    await store.put('invites',inv); return H.json(200,{code,link:cfg.frontUrl+'#/invite/'+code,invite:{h,label:inv.label,expiresAt:inv.expiresAt,role:inv.role}}); };
+    /* публичная ссылка: одна на многих (друзья, группа) — до maxUses регистраций, роль всегда «участник» */
+    if(b.multi===true){ inv.multi=true; inv.maxUses=Math.max(2,Math.min(500,+b.uses||50)); inv.uses=0; inv.role='member'; }
+    await store.put('invites',inv); return H.json(200,{code,link:cfg.frontUrl+'#/invite/'+code,invite:{h,label:inv.label,expiresAt:inv.expiresAt,role:inv.role,multi:!!inv.multi,maxUses:inv.maxUses||1}}); };
   D['POST /api/admin/invites/revoke']=async(req)=>{ const b=body(req); if(!/^[0-9a-f]{64}$/.test(b.h||'')) fail(400,'Нет приглашения.');
-    const r=await store.update('invites',b.h,{revokedAt:now()},{ifEq:{usedAt:null}}); if(!r) fail(409,'Приглашение уже использовано или не найдено.'); return H.json(200,{ok:true}); };
+    const cur=await store.get('invites',b.h); const r=cur&&(cur.multi?await store.update('invites',b.h,{revokedAt:now()}):await store.update('invites',b.h,{revokedAt:now()},{ifEq:{usedAt:null}}));
+    if(!r) fail(409,'Приглашение уже использовано или не найдено.'); return H.json(200,{ok:true}); };
   D['POST /api/admin/users/role']=async(req,S)=>{ const b=body(req); if(!['admin','member'].includes(b.role)) fail(400,'Роль: admin или member.');
     const u=await store.get('users',String(b.id||'')); if(!u) fail(404,'Нет участника.');
     if(u.id===S.user.id&&b.role!=='admin'){ const admins=await store.scan('users',x=>x.role==='admin'&&!x.blocked); if(admins.length<2) fail(409,'Нельзя снять с себя роль единственного админа.'); }

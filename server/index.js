@@ -7,9 +7,11 @@ const {createApp}=require('./lib/app');
 const {fromEvent}=require('./lib/http');
 const {ydbStore}=require('./lib/store/ydb');
 const {botClient}=require('./lib/telegram');
+const {postbox}=require('./lib/mail');
 let app=null;
 function get(){ if(app) return app; const cfg=fromEnv(process.env);
-  app=createApp({cfg,store:ydbStore(cfg.ydb),bot:botClient({token:cfg.botToken})}); return app; }
+  app=createApp({cfg,store:ydbStore(cfg.ydb),bot:botClient({token:cfg.botToken}),
+    mail:postbox({from:process.env.MAIL_FROM||'',accessKeyId:cfg.ydb.accessKeyId,secretAccessKey:cfg.ydb.secretAccessKey})}); return app; }
 /* прямой вызов «yc serverless function invoke … --data {"club":"owner-login"}» → одноразовая ссылка входа владельца.
    Запросы через шлюз всегда приходят с httpMethod, поэтому из интернета сюда не попасть. */
 exports.handler=async(event)=>{ if(event&&!event.httpMethod&&event.club==='owner-login') return get().ownerLink();

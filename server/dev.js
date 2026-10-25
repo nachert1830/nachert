@@ -16,6 +16,7 @@ const {createApp}=require('./lib/app');
 const {fromEvent}=require('./lib/http');
 const {memoryStore}=require('./lib/store/memory');
 const {botClient}=require('./lib/telegram');
+const {devMail}=require('./lib/mail');
 const C=require('./lib/crypto');
 
 const arg=(k,d)=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.split('=')[1]:true):d; };
@@ -39,7 +40,7 @@ const escH=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const outbox=[]; let offset=0;
 const log=QUIET?{log(){},error:(...a)=>console.error(...a)}:console;
 const store=memoryStore(MEM?null:DBF);
-const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox})});
+const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox}),mail:devMail(outbox)});
 
 async function newInvite(label,days){ const code=C.token(16), t=Date.now()+offset;
   await store.put('invites',{id:C.sha256(code),label:label||'эмуляция',role:'member',createdAt:t,expiresAt:t+(days||14)*864e5,createdBy:'dev'});
@@ -109,7 +110,7 @@ const srv=http.createServer(async(q,r)=>{
 /* «сайт» как GitHub Pages: /club/* — файлы клуба; config.js указывает на API на другом адресе, в CSP — тот же адрес */
 const ROOT=path.join(__dirname,'..'), TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.woff2':'font/woff2','.webmanifest':'application/manifest+json'};
 const siteSrv=SITE?http.createServer((q,r)=>{ let p=decodeURIComponent(new URL(q.url,'http://x').pathname); if(p==='/club') { r.writeHead(301,{Location:'/club/'}); return r.end(); }
-  if(p.endsWith('/')) p+='index.html'; if(!p.startsWith('/club/')||p.includes('..')){ r.writeHead(404); return r.end('нет'); }
+  if(p.endsWith('/')) p+='index.html'; if(!/^\/(club|lab|core)\//.test(p)||p.includes('..')){ r.writeHead(404); return r.end('нет'); }
   if(p==='/club/config.js'){ r.writeHead(200,{'Content-Type':TYPES['.js']}); return r.end("window.CLUB_API='"+origin+"';\n"); }
   const f=path.join(ROOT,p); if(!fs.existsSync(f)||!fs.statSync(f).isFile()){ r.writeHead(404); return r.end('нет'); }
   let b=fs.readFileSync(f); if(p==='/club/index.html') b=Buffer.from(b.toString('utf8').replace(/connect-src [^;]*;/,"connect-src 'self' "+origin+";"));

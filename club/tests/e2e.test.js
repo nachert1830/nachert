@@ -156,7 +156,7 @@ test('админ: приглашение, отзыв приглашения, ф�
   assert.ok(await noHScroll(page)); assert.deepEqual(page.errs,[]); await ctx.close();
 });
 
-test('проверка: предпроверка листа ИКГ по ГОСТ и заглушка сканера; вредный SVG обезврежен',async()=>{
+test('проверка: предпроверка листа ИКГ по ГОСТ, сканер — только на сайте; вредный SVG обезврежен',async()=>{
   const {ctx,page}=await phone(); await join(page,5001,'Лист');
   await page.goto(URL+'/#/check'); await page.click('button[data-s="ig-v5-clean"]'); await page.waitForSelector('#nkOut .note.ok',{timeout:30000});
   assert.match(await page.textContent('#nkOut'),/замечаний нет/);
@@ -168,8 +168,8 @@ test('проверка: предпроверка листа ИКГ по ГОСТ
   const clean=await page.evaluate(()=>CLUB.sanitizeSvg('<svg xmlns="http://www.w3.org/2000/svg"><script>x</script><rect onclick="y" style="stroke-width:2;background:url(javascript:z)"/><image href="https://evil/x.png"/></svg>'));
   assert.doesNotMatch(clean,/script|onclick|javascript|https:\/\/evil/); assert.match(clean,/stroke-width="2"/);
   assert.equal(alerted,false,'скрипты из SVG не выполнились');
-  await page.fill('#scN','52'); await page.setInputFiles('#scF',{name:'p.jpg',mimeType:'image/jpeg',buffer:Buffer.from([0xff,0xd8,0xff,0xd9])});
-  await page.click('button[data-act="scan"]'); await page.waitForSelector('#scOut .note'); assert.match(await page.textContent('#scOut'),/Не знаю/);
+  /* на адресе функции сканера нет — он лежит рядом с клубом на сайте (/lab/): карточки неактивны, подсказка ведёт на сайт */
+  assert.equal(await page.getAttribute('a.tool[href="#/check"]','aria-disabled'),'true'); assert.match(await page.textContent('#view'),/nachert1830\.ru\/club/);
   assert.deepEqual(page.errs.filter(e=>!/evil|x\.png|ERR_/.test(e)),[]); await ctx.close();
 });
 
