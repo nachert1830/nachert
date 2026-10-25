@@ -28,7 +28,7 @@ if(arg('fresh')&&fs.existsSync(DBF)) fs.unlinkSync(DBF);
 const BOT_TOKEN='1000000:DEV-local-emulation-not-a-secret';
 if(!MEM) fs.mkdirSync(DATA,{recursive:true});
 const origin='http://localhost:'+PORT, site=SITE?'http://localhost:'+SITE:null;
-const cfg={dev:true,origin,secure:false,botToken:BOT_TOKEN,botName:'nachert_club_dev_bot',webhookSecret:'dev-webhook-secret',
+const cfg={dev:true,openSignup:!arg('invites'),origin,secure:false,botToken:BOT_TOKEN,botName:'nachert_club_dev_bot',webhookSecret:'dev-webhook-secret',
   adminTg:['1000001'],mainUrl:process.env.MAIN_URL||'https://nachert1830.ru',week1:process.env.CLUB_WEEK1||'',
   yandex:{clientId:'dev-client',secret:'dev-secret',authUrl:origin+'/dev/ya/authorize',tokenUrl:origin+'/dev/ya/token',infoUrl:origin+'/dev/ya/info',revokeUrl:origin+'/dev/ya/revoke'},
   adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/club/':origin+'/',

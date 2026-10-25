@@ -62,7 +62,9 @@ function createApp(o){
   const clearCookie=()=>H.cookie(cookieName,'',{secure:cfg.secure,maxAge:0});
 
   /* ── приглашения ── */
-  async function inviteState(h){ if(!h) return {ok:false,why:'Клуб закрытый: для регистрации нужно приглашение.'};
+  /* открытая регистрация (по умолчанию): приглашения не нужны — первый вход по почте или через Яндекс ID создаёт аккаунт */
+  async function inviteState(h){ if(cfg.openSignup) return {ok:true,open:true};
+    if(!h) return {ok:false,why:'Клуб закрытый: для регистрации нужно приглашение.'};
     const inv=await store.get('invites',h), t=now();
     if(!inv) return {ok:false,why:'Приглашение не найдено. Проверьте ссылку.'};
     if(inv.revokedAt) return {ok:false,why:'Приглашение отозвано.'};
@@ -82,11 +84,11 @@ function createApp(o){
       let st=null; if(!boot){ st=await inviteState(invite); if(!st.ok){ await logLogin(req,null,method,false,'без приглашения: '+st.why); fail(403,st.why,{needInvite:true}); } }
       if(!consentOk(consent)){ await logLogin(req,null,method,false,'нет согласия'); fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true}); }
       const t=now(), id=C.id('u_');
-      if(st&&st.inv.multi){ let ok=false; for(let i=0;i<5&&!ok;i++){ const cur=await store.get('invites',invite); if(!cur||cur.revokedAt||(cur.uses||0)>=cur.maxUses) break;
+      if(st&&st.inv&&st.inv.multi){ let ok=false; for(let i=0;i<5&&!ok;i++){ const cur=await store.get('invites',invite); if(!cur||cur.revokedAt||(cur.uses||0)>=cur.maxUses) break;
           ok=!!(await store.update('invites',invite,{uses:(cur.uses||0)+1,lastUsedAt:t},{ifEq:{uses:cur.uses||0}})); }
         if(!ok) fail(403,'По этой ссылке уже зарегистрировались все, кого приглашали.',{needInvite:true}); }
-      else if(st){ const claimed=await store.update('invites',invite,{usedAt:t,usedBy:id},{ifEq:{usedAt:null,revokedAt:null}}); if(!claimed) fail(403,'Приглашение уже использовано.',{needInvite:true}); }
-      user={id,name:cleanName(name)||'Участник',role:boot?'admin':(st&&st.inv.role==='admin'?'admin':'member'),method,createdAt:t,
+      else if(st&&st.inv){ const claimed=await store.update('invites',invite,{usedAt:t,usedBy:id},{ifEq:{usedAt:null,revokedAt:null}}); if(!claimed) fail(403,'Приглашение уже использовано.',{needInvite:true}); }
+      user={id,name:cleanName(name)||'Участник',role:boot?'admin':(st&&st.inv&&st.inv.role==='admin'?'admin':'member'),method,createdAt:t,
         tgId:tgId||null,ya:key.startsWith('ya:'),em:key.startsWith('em:'),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
       if(!(await store.put('identities',{id:key,userId:id,type:method,createdAt:t},{ifNotExists:true}))) fail(409,'Этот вход уже привязан к другому участнику.');
       await store.put('users',user); isNew=true; }
@@ -105,7 +107,7 @@ function createApp(o){
   /* ── обработчики ── */
   const R={};
   R['GET /api/config']=async()=>{ const s=await settings(); return H.json(200,{botId:(cfg.botToken.split(':')[0])||null,botName:cfg.botName||null,
-    frontUrl:cfg.frontUrl,telegram:!!(cfg.dev||cfg.tgLoginOn),yandex:!!cfg.yandex.clientId,email:!!(o.mail&&o.mail.enabled),devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
+    frontUrl:cfg.frontUrl,telegram:!!(cfg.dev||cfg.tgLoginOn),openSignup:!!cfg.openSignup,yandex:!!cfg.yandex.clientId,email:!!(o.mail&&o.mail.enabled),devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
 
   R['GET /api/invite/check']=async(req)=>{ await limit('inv',maskIp(req.ip),30,600); const st=await inviteState(inviteHash(req.query.code)); return H.json(200,{valid:st.ok,why:st.ok?'':st.why}); };
 
@@ -142,10 +144,11 @@ function createApp(o){
     if(r.used){ await logLogin(req,null,'telegram',false,'повтор ссылки'); fail(410,'Эта ссылка уже использована. Нажмите «Старт» у бота ещё раз — придёт новая.',{expired:true}); }
     const key=r.key||'tg:'+r.tg, method=r.method||'telegram', member=!!(await store.get('identities',key));
     if(!b.confirm) return H.json(200,Object.assign({name:r.name,member,method},r.label?{label:r.label}:{}));
+    const nm=cleanName(b.name);
     const consent=consentOk(b.consent)?{terms:true,pd:true,photos:!!b.consent.photos}:null;
     if(!member&&!consent) fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true});
     if(!(await store.update('botlogin',id,{used:true,usedAt:t},{ifEq:{used:false}}))) fail(410,'Эта ссылка уже использована.',{expired:true});
-    return enter(req,{key,method,name:r.name,tgId:key.startsWith('tg:')?key.slice(3):null,invite:r.invite,consent,boot:r.boot}); };
+    return enter(req,{key,method,name:nm||r.name,tgId:key.startsWith('tg:')?key.slice(3):null,invite:r.invite,consent,boot:r.boot}); };
 
   /* ── официальный вход Telegram (oauth.telegram.org) ──
      Страница уходит на oauth.telegram.org/auth?bot_id=…&origin=…&return_to=<страница>; человек подтверждает вход в приложении

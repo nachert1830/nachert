@@ -3,7 +3,7 @@
 const test=require('node:test'), assert=require('node:assert/strict');
 const {club}=require('./helpers');
 const {createApp}=require('../lib/app');
-function withMail(){ const c=club(), sent=[]; const app=createApp({cfg:c.cfg,store:c.store,clock:()=>c.clock.t,log:{log(){},error(){}},bot:{send:async()=>({ok:true}),api:async()=>({ok:true})},mail:{enabled:true,send:async m=>{ sent.push(m); return {ok:true}; }}});
+function withMail(opt){ const c=club(opt), sent=[]; const app=createApp({cfg:c.cfg,store:c.store,clock:()=>c.clock.t,log:{log(){},error(){}},bot:{send:async()=>({ok:true}),api:async()=>({ok:true})},mail:{enabled:true,send:async m=>{ sent.push(m); return {ok:true}; }}});
   c.app.handle=app.handle; c.sent=sent; c.code=()=>/(\d{6})/.exec(sent[sent.length-1].subject)[1]; return c; }
 
 test('почта: по приглашению — код, «Войти — an•••@…?», регистрация; адрес почты нигде не хранится',async()=>{
@@ -42,4 +42,15 @@ test('публичная ссылка: много регистраций до л
   assert.equal((await c.call('POST','/api/admin/invites/revoke',{h:r2.data.invite.h},{as:'owner'})).status,200);
   assert.equal((await c.login(602,'Б',{invite:r2.data.code})).status,403,'отозвана');
   const ov=await c.call('GET','/api/admin/overview',undefined,{as:'owner'}); const i=ov.data.invites.find(x=>x.label==='друзья'); assert.equal(i.uses,3); assert.equal(i.maxUses,3);
+});
+
+test('открытая регистрация: почта и Яндекс ID без приглашения, имя — с экрана «Добро пожаловать»',async()=>{
+  const c=withMail({cfg:{openSignup:true}});
+  assert.equal((await c.call('POST','/api/auth/email/start',{email:'new@ex.ru'},{as:'n'})).status,200);
+  const v=await c.call('POST','/api/auth/email/verify',{email:'new@ex.ru',code:c.code()},{as:'n'});
+  const peek=await c.call('POST','/api/auth/bot/redeem',{token:v.data.token},{as:'n'}); assert.equal(peek.data.member,false);
+  const r=await c.call('POST','/api/auth/bot/redeem',{token:v.data.token,confirm:true,name:'Новый <b>Человек</b>',consent:c.consent},{as:'n'});
+  assert.equal(r.status,200); assert.equal(r.data.user.name,'Новый bЧеловек/b','имя с экрана, без разметки'); assert.equal(r.data.user.role,'member');
+  const c2=club({cfg:{openSignup:true}}); const y=await c2.yandex({id:'8001',first_name:'Ян'}); assert.equal(y.status,200); assert.equal(y.data.isNew,true);
+  const cfg=(await c.call('GET','/api/config')).data; assert.equal(cfg.openSignup,true);
 });
