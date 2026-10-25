@@ -212,7 +212,11 @@ async function main(){
     say('  до настройки: вебхук '+(w.url===hook?'на клуб':w.url?'на другой адрес':'не задан')+', ждут доставки: '+(w.pending_update_count||0)+
       ', последняя ошибка: '+(w.last_error_message?w.last_error_message+' ('+ago+')':'нет')); }catch(e){}
   try{ await telegram(token,'setWebhook',{url:origin+'/api/tg/webhook',secret_token:payload.TG_WEBHOOK_SECRET,allowed_updates:['message','callback_query','my_chat_member'],drop_pending_updates:true});
-  await telegram(token,'setMyCommands',{commands:[{command:'login',description:'Войти в клуб'},{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'stop',description:'Выключить напоминания'}]});
+  /* серверы Telegram не достают до Yandex Cloud — бот не отвечает. Описание бота показывает сам Telegram, без нашего сервера:
+     пусть человек сразу видит, что писать сюда не нужно, а вход — на сайте (официальный вход Telegram) */
+  await telegram(token,'deleteMyCommands',{});
+  await telegram(token,'setMyDescription',{description:'Это бот клуба Начерта. Писать ему не нужно — он не отвечает.\n\nВход в клуб — на странице клуба кнопкой «Войти через Telegram»: подтверждение придёт от официального аккаунта Telegram.'});
+  await telegram(token,'setMyShortDescription',{short_description:'Писать сюда не нужно. Вход в клуб — на сайте, кнопкой «Войти через Telegram».'});
   say('  готово'); }
   catch(e){ say('  с этого компьютера не получилось — клуб сделает это сам в течение 15 минут'); }
   /* самопроверка: «Старт» от несуществующего участника так, как его шлёт Telegram (с секретом) — клуб должен ответить отказом */
