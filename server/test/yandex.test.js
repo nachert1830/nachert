@@ -13,7 +13,7 @@ test('Яндекс ID: без приглашения — отказ, по при
   const r=await c.yandex(ANYA,{invite:code}); assert.equal(r.status,200); assert.equal(r.data.isNew,true); assert.equal(r.data.user.name,'Аня'); assert.equal(r.data.user.yandex,true);
   assert.match(r.data.session,/^[A-Za-z0-9_-]{40,}$/,'токен сессии — в ответе, для страницы на nachert1830.ru');
   const u=await c.store.get('users',r.data.user.id);
-  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','id','invite','lastLogin','method','name','reminders','role','tgId','ya']);
+  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','em','id','invite','lastLogin','method','name','reminders','role','tgId','ya']);
   assert.equal(u.method,'yandex'); assert.equal(u.tgId,null); assert.ok(!JSON.stringify(u).includes('anya.ya')&&!JSON.stringify(u).includes('Иванова'),'логин и фамилия не хранятся');
   assert.ok(await c.store.get('identities','ya:2001'));
   assert.ok(c.ya.calls.some(x=>x.url==='https://oauth.yandex.ru/revoke_token'),'токен Яндекса отозван сразу');

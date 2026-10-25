@@ -1,0 +1,19 @@
+name: Проверка DNS сайта (HTTPS на GitHub Pages)
+# Что видит мир по nachert1830.ru: записи A/AAAA/CAA/NS, www, сертификат. Запуск — пуш этого файла или вручную.
+on:
+  push:
+    paths: ['.github/workflows/dns-check.yml']
+  workflow_dispatch:
+permissions: {}
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Записи DNS
+        run: |
+          for t in A AAAA CAA NS; do echo "== $t nachert1830.ru"; dig +short $t nachert1830.ru @1.1.1.1; done
+          for t in A AAAA CNAME; do echo "== $t www.nachert1830.ru"; dig +short $t www.nachert1830.ru @1.1.1.1; done
+          echo "== DNSSEC (DS)"; dig +short DS nachert1830.ru @1.1.1.1
+          echo "== ответ на AAAA подробно"; dig AAAA nachert1830.ru @8.8.8.8 +noall +answer +authority
+          echo "== сертификат"; echo | timeout 15 openssl s_client -connect nachert1830.ru:443 -servername nachert1830.ru 2>/dev/null | openssl x509 -noout -subject 2>/dev/null

@@ -85,6 +85,33 @@ function writeFront(origin){ const cf=path.join(ROOT,'club','config.js'), ix=pat
   const c=fs.readFileSync(cf,'utf8').replace(/window\.CLUB_API='[^']*'/,"window.CLUB_API='"+origin+"'");
   const h=fs.readFileSync(ix,'utf8').replace(/connect-src 'self'[^;]*;/,"connect-src 'self' "+origin+";");
   fs.writeFileSync(cf,c); fs.writeFileSync(ix,h); say('  адрес API для страницы на сайте: '+origin); }
+/* Yandex Postbox (API как у Amazon SES v2): запросы подписываются SigV4 статическим ключом */
+const MAIL_DOMAIN='nachert1830.ru', DKIM_SEL='club';
+async function pbCall(cred,method,pathq,body){ const url='https://postbox.cloud.yandex.net'+pathq, b=body?JSON.stringify(body):'';
+  const s=sign({method,url,headers:body?{'content-type':'application/json'}:{},body:b},Object.assign({region:'ru-central1',service:'ses'},cred));
+  const r=await fetch(url,{method,headers:s.headers,body:body?b:undefined,signal:AbortSignal.timeout(20000)}); const t=await r.text(); let j={}; try{ j=JSON.parse(t); }catch(e){}
+  return {status:r.status,ok:r.ok,j,t}; }
+/* домен для писем: при первом запуске — создать в Postbox с ключом DKIM (ключ генерируется здесь, закрытая часть уходит
+   только в Postbox), открытая часть — в сейф, чтобы печатать DNS-запись, пока домен не подтверждён. Подтверждён — вход по почте включается */
+async function postboxSetup(payload){ let k=null, from='';
+  try{ k=yc(['iam','access-key','create','--service-account-id',E('YC_SA_ID'),'--description','club deploy: Postbox (временный, удаляется сразу)']);
+    const cred={accessKeyId:k.access_key.key_id,secretAccessKey:k.secret};
+    let g=null; for(let i=0;i<8;i++){ g=await pbCall(cred,'GET','/v2/email/identities/'+MAIL_DOMAIN); if(g.status!==403&&g.status!==401) break; await sleep(4000); }
+    if(g.status===404){ const kp=crypto.generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{type:'spki',format:'der'},privateKeyEncoding:{type:'pkcs8',format:'der'}});
+      const c=await pbCall(cred,'POST','/v2/email/identities',{EmailIdentity:MAIL_DOMAIN,DkimSigningAttributes:{DomainSigningSelector:DKIM_SEL,DomainSigningPrivateKey:kp.privateKey.toString('base64')}});
+      if(!c.ok) throw new Error('создать домен не получилось: '+c.status+' '+c.t.slice(0,300));
+      payload.POSTBOX_DKIM_PUBLIC=kp.publicKey.toString('base64'); say('  домен '+MAIL_DOMAIN+' добавлен в Postbox');
+      g=await pbCall(cred,'GET','/v2/email/identities/'+MAIL_DOMAIN); }
+    if(!g.ok) throw new Error('Postbox ответил '+g.status+' '+g.t.slice(0,300));
+    const dk=(g.j.DkimAttributes&&g.j.DkimAttributes.Status)||'?';
+    if(g.j.VerifiedForSendingStatus===true){ from='noreply@'+MAIL_DOMAIN; say('  домен подтверждён — вход по почте включён (отправитель '+from+')'); }
+    else{ say('  домен ждёт подтверждения (DKIM: '+dk+'). Нужна TXT-запись у регистратора домена:');
+      if(payload.POSTBOX_DKIM_PUBLIC){ say('    имя (поддомен): '+DKIM_SEL+'._domainkey'); say('    тип: TXT'); say('    значение: v=DKIM1; k=rsa; p='+payload.POSTBOX_DKIM_PUBLIC); }
+      else say('    (ключ создан не этим скриптом — значение записи смотрите в консоли Postbox)'); } }
+  catch(e){ say('  Postbox: '+e.message); }
+  finally{ if(k) try{ yc(['iam','access-key','delete','--id',k.access_key.id],{json:false}); }catch(e){ say('  временный ключ не удалился: '+e.message.split('\n')[0]); } }
+  return from; }
+
 async function main(){
   say('Развёртывание клуба Начерта в Yandex Cloud.\nВсё создаётся в каталоге, выбранном в «yc init». Повторный запуск безопасен.');
   step('Проверяю программу yc');
@@ -148,13 +175,20 @@ async function main(){
   if(db.status!=='RUNNING') throw new Error('База не запустилась: статус '+db.status);
   const endpoint=db.document_api_endpoint; say('  готово');
 
+  step('Почта (Yandex Postbox)');
+  const payloadBefore=JSON.stringify(payload);
+  let mailFrom=E('MAIL_FROM')||'';
+  if(CI&&E('YC_SA_ID')&&!mailFrom) mailFrom=await postboxSetup(payload);
+  if(!mailFrom&&!CI) mailFrom=prev.MAIL_FROM||'';
+  if(!mailFrom) say('  вход по почте пока выключен');
+
   step('Секреты в Lockbox');
   if(!payload.YDB_KEY_ID){ const k=yc(['iam','access-key','create','--service-account-id',sa.fn.id,'--description','club: YDB Document API']); payload.YDB_KEY_ID=k.access_key.key_id; payload.YDB_SECRET=k.secret; }
   payload.TG_WEBHOOK_SECRET=payload.TG_WEBHOOK_SECRET||crypto.randomBytes(32).toString('hex');
   const before=JSON.stringify(payload); payload.TG_BOT_TOKEN=token;
   if(E('YANDEX_CLIENT_SECRET')) payload.YANDEX_CLIENT_SECRET=E('YANDEX_CLIENT_SECRET');
   if(yaId&&!payload.YANDEX_CLIENT_SECRET) need('YANDEX_CLIENT_SECRET','Добавьте секрет YANDEX_CLIENT_SECRET (Client secret приложения на oauth.yandex.ru) в GitHub.');
-  const changed=JSON.stringify(payload)!==before;
+  const changed=JSON.stringify(payload)!==before||JSON.stringify(payload)!==payloadBefore;
   const entries=JSON.stringify(Object.keys(payload).sort().map(k=>({key:k,text_value:payload[k]})));
   let secretId=sec&&sec.id;
   if(!secretId) secretId=yc(['lockbox','secret','create','--name',NAMES.secret,'--description','Клуб Начерта','--payload',entries]).id;
@@ -192,7 +226,7 @@ async function main(){
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN+' http://nachert1830.ru',FRONT_URL:front,
     YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
-    MAIL_FROM:E('MAIL_FROM')||prev.MAIL_FROM||''};
+    MAIL_FROM:mailFrom};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
   const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','10s'],['remind','server/index.remind','120s']]){

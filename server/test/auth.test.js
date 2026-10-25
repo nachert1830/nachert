@@ -19,7 +19,7 @@ test('вход через бота: приглашение одноразово�
   assert.equal((await c.login(601,'Боб',{invite:code})).status,403,'приглашение уже использовано');
   const again=await c.login(600,'Аня'); assert.equal(again.status,200); assert.equal(again.data.isNew,false);
   const u=await c.store.get('users',r.data.user.id);
-  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','id','invite','lastLogin','method','name','reminders','role','tgId','ya']);
+  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','em','id','invite','lastLogin','method','name','reminders','role','tgId','ya']);
   assert.equal(u.tgId,'600'); assert.equal(u.reminders.canWrite,true,'нажал «Старт» — бот может писать');
   const logs=await c.store.scan('loginlog'); assert.ok(logs.every(x=>!('ua' in x)),'строка браузера не хранится');
 });

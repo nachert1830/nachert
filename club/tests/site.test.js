@@ -91,8 +91,8 @@ test('сайт: проверка чертежа — первая вкладка,
   await owner.page.goto(CLUB+'#/admin'); await owner.page.waitForSelector('#invL'); await owner.page.fill('#invL','друзья'); await owner.page.check('#invM');
   await owner.page.click('#invOut >> xpath=preceding-sibling::form//button[@type="submit"]'); const L=(await (await owner.page.waitForSelector('#invLink')).textContent()).trim();
   await owner.page.waitForSelector('text=публичная · 0 из 50'); await owner.ctx.close();
-  for(const [i,mail] of [[1,'friend1@ex.ru'],[2,'friend2@ex.ru']]){ const f=await open(i===1?'phone':'pc'); await f.page.goto(L); await f.page.waitForSelector('button[data-act="mailLogin"]');
-    await f.page.click('button[data-act="mailLogin"]'); await f.page.fill('#emA',mail); await f.page.click('#mailF button[type=submit]'); await f.page.waitForSelector('#emC');
+  for(const [i,mail] of [[1,'friend1@ex.ru'],[2,'friend2@ex.ru']]){ const f=await open(i===1?'phone':'pc'); await f.page.goto(L); await f.page.waitForSelector('#mailF #emA');
+    await f.page.fill('#emA',mail); await f.page.click('#mailF button[type=submit]'); await f.page.waitForSelector('#emC');
     const box=await dev('/dev/outbox'); const m=box.mail.filter(x=>x.to===mail).pop(); const code=/(\d{6})/.exec(m.subject)[1];
     await f.page.fill('#emC',code); await f.page.click('#codeF button[type=submit]'); await f.page.waitForSelector('text=Вход через почту');
     await f.page.check('#cTerms'); await f.page.check('#cPd'); await f.page.click('button[data-act="redeem"]'); await f.page.waitForSelector('text=Привет');
