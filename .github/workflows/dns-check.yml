@@ -16,5 +16,8 @@ jobs:
           for t in A AAAA CNAME; do echo "== $t www.nachert1830.ru"; dig +short $t www.nachert1830.ru @1.1.1.1; done
           echo "== DNSSEC (DS)"; dig +short DS nachert1830.ru @1.1.1.1
           echo "== DKIM для Postbox: TXT club._domainkey.nachert1830.ru"; for ns in 1.1.1.1 8.8.8.8 ns1.reg.ru; do echo "-- $ns"; dig +short TXT club._domainkey.nachert1830.ru @$ns; done
+          echo "== если имя вписали целиком (частая ошибка)"; dig +short TXT club._domainkey.nachert1830.ru.nachert1830.ru @ns1.reg.ru
+          echo "== все TXT у корня"; dig +short TXT nachert1830.ru @ns1.reg.ru
+          echo "== серийный номер зоны у reg.ru (меняется, когда зона опубликована)"; dig +short SOA nachert1830.ru @ns1.reg.ru
           echo "== ответ на AAAA подробно"; dig AAAA nachert1830.ru @8.8.8.8 +noall +answer +authority
           echo "== сертификат"; echo | timeout 15 openssl s_client -connect nachert1830.ru:443 -servername nachert1830.ru 2>/dev/null | openssl x509 -noout -subject 2>/dev/null
