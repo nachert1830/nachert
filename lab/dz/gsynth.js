@@ -4,7 +4,7 @@
    заданная пирамида варианта — с ошибкой нанесения или без; построение г) (вращение вокруг h₁ плоскости (SA, n)) —
    верное или с ошибкой шага: p3h — 3′ взята на h′ вместо продолжения S′A′; rad — радиус вращения S на 5 мм больше.
    Съёмка — как у всех синтетических листов (lab/synth.js: перспектива, свет, тень, шум).
-   sheet({n, err:'ok'|'given'|'p3h'|'rad', seed, level, noS}) → {img, truth:{data, drawn, wrong, O, phi, steps}} */
+   sheet({n, err:'ok'|'given'|'p3h'|'rad', seed, level, noS, shots, glare}) → {img, imgs (серия при shots > 1), truth:{data, drawn, wrong, O, phi, steps}} */
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
@@ -63,7 +63,9 @@ function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6
   items.conn.forEach(c=>line(J(c.a),J(c.b),pen.thin*0.8,pen.dk*0.6));
   if(pr){ pr.segs.forEach(s=>line(J(s.a),J(s.b),pen.thin,pen.dk*0.85)); pr.pts.forEach(([l,p])=>{ sh.circle(J(p),R.r(0.5,0.8),pen.thin,pen.dk,{grain:true},R); }); }
   const sz=o.size||[1500,2000], cam=S.camera(sh,page,R,lv,sz);
-  return {img:cam.im,truth:{n,err,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,params:cam.params}}; }
+  /* серия: тот же лист, ещё o.shots − 1 съёмок — другой наклон, свет, блик (как телефон в руке); свой поток случайностей */
+  const shots=o.shots>1?[cam].concat(Array.from({length:o.shots-1},(_,k)=>S.camera(sh,page,rng((o.seed||1)*7919+n*131+k*17+1),lv,sz,{glare:o.glare==null?0.5:o.glare}))):null;
+  return {img:cam.im,imgs:shots&&shots.map(c=>c.im),truth:{n,err,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,params:cam.params,shots:shots&&shots.map(c=>Object.assign({H:c.M},c.params))}}; }
 put('dzGsynth',{sheet,prog3d});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), s=sheet({n:+(a.n||7),err:a.err||'ok',seed:+(a.seed||1)});
   if(!s){ console.log('лист не построился'); process.exit(1); } require('fs').writeFileSync(a.out||'g.png',IMG.encodePNG(s.img)); console.log(JSON.stringify(s.truth,(k,v)=>k==='H'?undefined:typeof v==='number'?+v.toFixed(2):v)); }

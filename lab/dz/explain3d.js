@@ -42,7 +42,10 @@ function explain3d(segs,data,o){ o=o||{}; const {A,B,C,S}=data, n=v3.unit(v3.cro
   const SF=Fp(S), AF=Fp(A), SH=Hp(S), AH=Hp(A), eSA_F=v2.unit(v2.sub(SF,AF)), eSA_H=v2.unit(v2.sub(SH,AH));
   /* ── 1. h₁″: горизонталь π₂, пересекающая n″ (из S″) и продолжение A″S″; обе прямые — начерченные студентом
      (через S″ ±1 мм, направление ±6° от нужного): дальше всё от них, а их отклонение от нужного — тоже шаг ── */
-  const ML=merged(segs);
+  /* оси эпюра — не линии построения: точка построения может случайно лечь на ось (3′ при x₃ ≈ 0), и длинная ось
+     тогда «проходит через неё» — её брали за S̄′3′, и S̄′ садилась на ось */
+  const onAxis=m=>{ const e=dirOf(m); return ang(e,[0,1])<=1.5&&Math.abs((m.a[0]+m.b[0])/2)<0.8||ang(e,[1,0])<=1.5&&Math.abs((m.a[1]+m.b[1])/2)<0.8; };
+  const ML=merged(segs).filter(m=>!onAxis(m));
   const lineThru=(P,e,maxA)=>ML.filter(s=>lenOf(s)>=10&&ang(dirOf(s),e)<=maxA&&Math.abs(v2.cr(v2.sub(P,s.a),dirOf(s)))<=1.5).sort((p,q)=>lenOf(q)-lenOf(p))[0];
   const nLine=lineThru(SF,nF,6), saLine=lineThru(SF,eSA_F,3), enF=nLine?(v2.dot(dirOf(nLine),nF)<0?v2.mul(dirOf(nLine),-1):dirOf(nLine)):nF, eSA=saLine?(v2.dot(dirOf(saLine),eSA_F)<0?v2.mul(dirOf(saLine),-1):dirOf(saLine)):eSA_F;
   const H1=[]; ML.forEach(s=>{ if(lenOf(s)<15||ang(dirOf(s),[1,0])>1.5) return; const v=(s.a[1]+s.b[1])/2; if(v>-1) return;
@@ -50,7 +53,9 @@ function explain3d(segs,data,o){ o=o||{}; const {A,B,C,S}=data, n=v3.unit(v3.cro
     const p3=meet(SF,eSA,[0,v],[1,0]), p4=meet(SF,enF,[0,v],[1,0]); if(!p3||!p4) return; const u0=Math.min(s.a[0],s.b[0])-4, u1=Math.max(s.a[0],s.b[0])+4; if(p3[0]<u0||p3[0]>u1||p4[0]<u0||p4[0]>u1) return;
     const sup=supportT(segs,SF,p3,1.2)+supportT(segs,SF,p4,1.2); if(sup<1.2) return; H1.push({v,c:-v,p3,p4,sup,s}); });
   H1.sort((a,b)=>b.sup-a.sup); const h1=H1[0];
-  if(!h1||H1[1]&&H1[1].sup>=0.9*h1.sup&&Math.abs(H1[1].c-h1.c)>1.5){ steps.push({k:'h1f',name:'горизонталь h₁″ плоскости (SA, n)',status:'?',msg:h1?'несколько горизонталей подходят — какую строили, не различить':'не нашёл h₁″ ∥ x, пересекающей n″ и продолжение A″S″'}); return {steps,first:null,pts}; }
+  /* вторая горизонталь с почти той же опорой — дальше 0,8 мм (merged уже слил куски одной линии): какую строили, не
+     различить. Было 1,5 мм — и остаток сетки на z = 70 в 1,4 мм от настоящей h₁″ (71,4) проходил за неё */
+  if(!h1||H1[1]&&H1[1].sup>=0.9*h1.sup&&Math.abs(H1[1].c-h1.c)>0.8){ steps.push({k:'h1f',name:'горизонталь h₁″ плоскости (SA, n)',status:'?',msg:h1?'несколько горизонталей подходят — какую строили, не различить':'не нашёл h₁″ ∥ x, пересекающей n″ и продолжение A″S″'}); return {steps,first:null,pts}; }
   const dn=ang(enF,nF), sN=nLine?st(dn,TOL,BAD):'?';
   steps.push({k:'h1f',name:'n″ ⟂ f″ и горизонталь h₁″ плоскости (SA, n)',status:sN==='bad'?'bad':'ok',msg:(nLine?(sN==='ok'?'n″ ⟂ f″ (отклонение '+f1(dn)+'°)':'n″ отклонена от ⟂ f″ на '+f1(dn)+'°'+(sN==='bad'?' — перпендикуляр к ABC построен неверно':'')):'n″ по листу не найдена, беру расчётную')+'; h₁″ ∥ x на высоте z = '+f1(h1.c)+' мм; 3″ = A″S″ ∩ h₁″, 4″ = n″ ∩ h₁″',val:{c:h1.c,dn}}); pts.p3F=h1.p3; pts.p4F=h1.p4;
   /* ── 2. 3′ и 4′: по линиям связи; где их взял студент — где его h₁′ пересекает линии связи ── */
@@ -83,7 +88,11 @@ function explain3d(segs,data,o){ o=o||{}; const {A,B,C,S}=data, n=v3.unit(v3.cro
   let msg=[];
   if(s3==='ok') msg.push('3′ на продолжении S′A′'); else { const nm=s3==='bad'?named(hh.q3):null; msg.push('3′ взята в '+f1(d3)+' мм от прямой S′A′'+(nm?' — на пересечении линии связи с '+nm+', а нужно с продолжением S′A′':'')); }
   if(s4==='ok') msg.push('4′ на n′'); else { const nm=s4==='bad'?named(hh.q4):null; msg.push('4′ взята в '+f1(d4)+' мм от n′'+(nm?' — на '+nm:'')); }
-  const s34=s3==='bad'||s4==='bad'?'bad':s3==='?'||s4==='?'?'?':'ok';
+  let s34=s3==='bad'||s4==='bad'?'bad':s3==='?'||s4==='?'?'?':'ok';
+  /* «неверно» — только если найденная прямая и правда ось студента: от S′ к ней проведён перпендикуляр (радиус
+     вращения, хоть наполовину). Чужая прямая через обе линии связи (ребро вида сверху) его не имеет — тогда «?» */
+  if(s34==='bad'){ const e0=v2.unit(v2.sub(hh.q4,hh.q3)), n0=[-e0[1],e0[0]], O0=v2.sub(SH,v2.mul(n0,v2.dot(v2.sub(SH,hh.q3),n0)));
+    if(v2.dist(SH,O0)>=3&&supportT(segs,SH,O0,1.2)<0.5){ s34='?'; msg=['прямая через линии связи найдена, но перпендикуляра к ней из S′ нет — она ли ось вращения, не ясно']; } }
   steps.push({k:'p3',name:'точки 3′ и 4′ (по линиям связи)',status:s34,msg:msg.join('; '),val:{d3,d4}});
   /* ── 3. вращение: радиус для ЕГО оси h₁′ (через его 3′ и 4′) ── */
   const ax={p:hh.q3,e:v2.unit(v2.sub(hh.q4,hh.q3))}, nax=[-ax.e[1],ax.e[0]], Os=v2.sub(SH,v2.mul(nax,v2.dot(v2.sub(SH,ax.p),nax))), r1=v2.dist(SH,Os), R=Math.hypot(r1,h1.c-S[2]);

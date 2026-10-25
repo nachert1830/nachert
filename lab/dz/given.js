@@ -83,8 +83,17 @@ function measureGiven(dig,cal,id,data,o){ o=o||{}; const g=M.given(id,data), T=c
   /* по одному: вершины — заново из текущих рёбер; худшее ребро с невязкой > 0,8 мм — прочь; повтор */
   const recompute=()=>{ g.pts.forEach(q=>{ const inc=g.segs.filter(s=>s.pr===q.pr&&s.n.includes(q.n)).map(s=>lines[s.n+s.pr]).filter(Boolean); const strong=inc.filter(L=>inc.some(K=>K!==L&&ang(K.e,L.e)>=15));
       if(strong.length>=2){ const m=meetAll(strong); if(m&&v2.dist(m.p,P0[q.l])<=10) P[q.l]=m.p; } }); };
+  /* проверка «без себя»: если у вершины есть ещё ≥ 2 прямые (≥ 15° между ними), вершина считается БЕЗ проверяемой
+     прямой — иначе проверка круговая (вершину нашли по этой же прямой). Так ловится линия построения, подменившая
+     ребро: горизонталь через B″ под 4° к A″B″ давала «A″» на пересечении с A″C″ в 5 мм от настоящей */
+  const vertexWithout=(X,pr,L)=>{ const q=g.pts.find(t=>t.l===X); if(!q) return null; const inc=g.segs.filter(s=>s.pr===pr&&s.n.includes(q.n)).map(s=>lines[s.n+s.pr]).filter(M2=>M2&&M2!==L);
+    /* без проверяемой прямой точка должна быть устойчивой: две другие прямые — под ≥ 25° (иначе пересечение ползёт
+       вдоль биссектрисы на миллиметры, и честное ребро выглядит «далёким»); допуск — с учётом угла */
+    const strong=inc.filter(M2=>inc.some(K=>K!==M2&&ang(K.e,M2.e)>=25)); if(strong.length<2) return null; const m=meetAll(strong); if(!m||v2.dist(m.p,P0[X])>10) return null;
+    let amin=90; strong.forEach(a=>strong.forEach(b=>{ if(a!==b) amin=Math.min(amin,ang(a.e,b.e)); })); return {p:m.p,tol:0.8+0.25/Math.sin(amin*Math.PI/180)}; };
   for(let it=0;it<12;it++){ recompute(); let worst=null;
-    Object.entries(lines).forEach(([k,L])=>{ const s=L.s, A=P[pl(s.n[0],s.pr)], B=P[pl(s.n[1],s.pr)], r=Math.max(Math.abs(v2.dot(v2.sub(A,L.p),L.n)),Math.abs(v2.dot(v2.sub(B,L.p),L.n))); if(r>0.8&&(!worst||r>worst.r)) worst={k,r}; });
+    Object.entries(lines).forEach(([k,L])=>{ const s=L.s, a=pl(s.n[0],s.pr), b=pl(s.n[1],s.pr), wa=vertexWithout(a,s.pr,L), wb=vertexWithout(b,s.pr,L);
+      const ex=(W,X)=>{ const pt=W?W.p:P[X], tol=W?W.tol:0.8; return Math.abs(v2.dot(v2.sub(pt,L.p),L.n))-tol; }, r=Math.max(ex(wa,a),ex(wb,b)); if(r>0&&(!worst||r>worst.r)) worst={k,r}; });
     if(!worst) break; delete lines[worst.k]; }
   recompute();
   /* итог по каждой проекции: откуда положение */
@@ -121,14 +130,24 @@ function measureGiven(dig,cal,id,data,o){ o=o||{}; const g=M.given(id,data), T=c
   const O=[Ou,Ov], Osrc=[Ouax!=null?'ось z/y':'по точкам',Ovax!=null?'ось x':'по точкам'];
   /* данные как начерчены */
   const drawn={}, diff=[], link=[], sig={};
-  Object.keys(data).forEach(n=>{ const f=out[n+'″'], h=out[n+'′'], F=f&&f.src!=='не найдена'?f.p:null, Hh=h&&h.src!=='не найдена'?h.p:null;
-    const x=F&&Hh?O[0]-(F[0]+Hh[0])/2:F?O[0]-F[0]:Hh?O[0]-Hh[0]:null, z=F?O[1]-F[1]:null, y=Hh?Hh[1]-O[1]:null;
+  /* вершина из двух прямых не имеет внутренней проверки (третья прямая через ту же точку) — σ вдвое больше; если её
+     x расходится с другой проекцией, измеренной по ≥ 3 прямым, больше чем на 3σ — она ненадёжна (прямая построения
+     подменила ребро): о ней ничего не утверждаем, x — по надёжной проекции */
+  const sgOf=m=>m?m.src==='рёбра'?(m.n>=3?0.25:0.5):m.src.startsWith('узел')?(m.amb?1.5:1.0):1.0:null, weak=new Set();
+  Object.keys(data).forEach(n=>{ const f=out[n+'″'], h=out[n+'′']; if(!f||!h||f.src==='не найдена'||h.src==='не найдена') return;
+    const du=Math.abs(f.p[0]-h.p[0]), sF=sgOf(f), sH=sgOf(h), strong=m=>m.src==='рёбра'&&m.n>=3; if(du<=Math.max(1.5,3*Math.hypot(sF,sH))) return;
+    if(strong(h)&&!strong(f)){ weak.add(n+'″'); f.unreliable=true; } else if(strong(f)&&!strong(h)){ weak.add(n+'′'); h.unreliable=true; }
+    /* обе без проверки и расходятся — какая верна, неизвестно: обе ненадёжны */
+    else if(!strong(f)&&!strong(h)){ weak.add(n+'″'); weak.add(n+'′'); f.unreliable=h.unreliable=true; } });
+  Object.keys(data).forEach(n=>{ const f=out[n+'″'], h=out[n+'′'], F=f&&f.src!=='не найдена'?f.p:null, Hh=h&&h.src!=='не найдена'?h.p:null, wF=weak.has(n+'″'), wH=weak.has(n+'′');
+    const both=wF&&wH, Fx=wF&&Hh&&!both?null:F, Hx=wH&&F&&!both?null:Hh;
+    const x=Fx&&Hx?O[0]-(Fx[0]+Hx[0])/2:Fx?O[0]-Fx[0]:Hx?O[0]-Hx[0]:null, z=F?O[1]-F[1]:null, y=Hh?Hh[1]-O[1]:null;
     drawn[n]=[x,y,z];
-    /* погрешность измерения координаты (мм): пересечение рёбер — 0,25; узел линий — 0,6 (неоднозначный — 1,2); метка-кружок — 0,8 */
-    /* узел линий — 1,0 (узел построений — косвенная мера: «нанесено неточно» по нему — только с 3 мм), неоднозначный — 1,5 */
-    const sg=m=>m?m.src==='рёбра'?0.25:m.src.startsWith('узел')?(m.amb?1.5:1.0):1.0:null, sF=sg(f&&F?f:null), sH=sg(h&&Hh?h:null);
-    const sx=F&&Hh?Math.hypot(sF,sH)/2:F?sF:Hh?sH:null; sig[n]=[sx,sH,sF];
-    if(F&&Hh) link.push({n,du:F[0]-Hh[0],sg:Math.hypot(sF,sH),sure:Math.abs(F[0]-Hh[0])>=Math.max(1.5,3*Math.hypot(sF,sH))});
+    /* погрешность координаты (мм): пересечение ≥ 3 рёбер — 0,25, двух — 0,5; узел линий — 1,0 (косвенная мера),
+       неоднозначный — 1,5; метка-кружок — 1,0; ненадёжная проекция (расходится с надёжной) — 3 */
+    const sF=F?(wF?3:sgOf(f)):null, sH=Hh?(wH?3:sgOf(h)):null, sFx=Fx?sF:null, sHx=Hx?sH:null;
+    const sx=Fx&&Hx?Math.hypot(sFx,sHx)/2:Fx?sFx:Hx?sHx:null; sig[n]=[sx,sH,sF];
+    if(F&&Hh) link.push({n,du:F[0]-Hh[0],sg:Math.hypot(sF,sH),sure:!wF&&!wH&&Math.abs(F[0]-Hh[0])>=Math.max(1.5,3*Math.hypot(sF,sH))});
     ['x','y','z'].forEach((c,i)=>{ const v=[x,y,z][i]; if(v==null) return; const d=v-data[n][i], sgm=sig[n][i]; diff.push({n,c,drawn:v,was:data[n][i],d,sg:sgm,sure:Math.abs(d)>=Math.max(1.5,3*sgm)}); }); });   /* «неточно» — с 1,5 мм: точность руки по клетке ~0,5 мм, замера — 0,1–0,3 */
   /* общий сдвиг по одной координате у ≥ 3 точек (в пределах ±0,6 мм друг от друга) — это перенос всего чертежа
      относительно оси (или ось найдена не там): на ответы не влияет, ошибкой нанесения не считается — вычитаем */

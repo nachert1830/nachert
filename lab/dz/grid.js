@@ -61,6 +61,9 @@ function snap(r,c,e,win,L){ const nn=[-e[1],e[0]], prof=[]; let bi=0;
   const srt=prof.slice().sort((p,q)=>p-q), med=srt[srt.length>>1];
   return {d:-win+bi*0.5+off,v:b,contrast:b-med}; }
 
+/* решение n × n (Гаусс с выбором) */
+function solveN(A,b){ const n=b.length, M=Array.from({length:n},(_,i)=>Array.from(A[i]).concat([b[i]])); for(let c=0;c<n;c++){ let p=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r; if(Math.abs(M[p][c])<1e-12) return null; [M[c],M[p]]=[M[p],M[c]];
+    for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]/M[c][c]; for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; } } return M.map((r,i)=>r[n]/r[i]); }
 function findGrid(img,o){ o=o||{}; const cell=o.cell||5, dbg=[], W=img.width, Hh=img.height;
   const {r}=lineMap(img), D=directions(r); if(!D) return {ok:false,reason:'на снимке не видно сетки клеток',dbg};
   dbg.push('семейства: '+D.t1.toFixed(1)+'° и '+D.t2.toFixed(1)+'°, шаг ≈ '+D.s1+' и '+D.s2+' px');
@@ -81,14 +84,23 @@ function findGrid(img,o){ o=o||{}; const cell=o.cell||5, dbg=[], W=img.width, Hh
     const e=ax?D.e2:D.e1; let v=null; if(A&&B) v=[B.p[0]-A.p[0],B.p[1]-A.p[1]]; else if(A&&C) v=[A.p[0]-C.p[0],A.p[1]-C.p[1]]; if(!v) return e; const l=Math.hypot(...v); return [v[0]/l,v[1]/l]; };
   const queue=[[1,0],[-1,0],[0,1],[0,-1]], seen=new Set([key(0,0)]); queue.forEach(q=>seen.add(key(...q)));
   const miss=new Map();
-  while(queue.length){ const [i,j]=queue.shift(), c=pred(i,j); if(!c) continue; if(c[0]<L||c[1]<L||c[0]>W-L||c[1]>Hh-L) continue;
+  /* защита от схлопывания: предсказание по соседям может стянуть шаг к нулю — тогда новые номера ложатся почти в
+     одну точку, и рост не кончается. Узел не принимается, если ближе 0,5 шага уже стоит другой узел или до
+     соседа меньше 0,6 / больше 1,6 шага; и общий предел — площадь кадра в клетках с запасом */
+  const hs=0.5*sp, hash=new Map(), hk=(x,y)=>Math.floor(x/hs)+','+Math.floor(y/hs), cap=Math.ceil(W*Hh/(sp*sp)*1.5)+100;
+  const crowded=(p,i,j)=>{ const gx=Math.floor(p[0]/hs), gy=Math.floor(p[1]/hs); for(let a=-1;a<=1;a++) for(let b=-1;b<=1;b++){ const L2=hash.get((gx+a)+','+(gy+b)); if(L2&&L2.some(q=>(q.i!==i||q.j!==j)&&Math.hypot(q.p[0]-p[0],q.p[1]-p[1])<0.5*sp)) return true; } return false; };
+  const addH=q=>{ const k=hk(q.p[0],q.p[1]); (hash.get(k)||hash.set(k,[]).get(k)).push(q); }; addH(N.get(key(0,0)));
+  const stepOk=(p,i,j)=>[[1,0],[-1,0],[0,1],[0,-1]].every(([di,dj])=>{ const q=N.get(key(i+di,j+dj)); if(!q) return true; const d=Math.hypot(q.p[0]-p[0],q.p[1]-p[1]); return d>=0.6*sp&&d<=1.6*sp; });
+  let qi=0;
+  while(qi<queue.length&&N.size<cap){ const [i,j]=queue[qi++], c=pred(i,j); if(!c) continue; if(c[0]<L||c[1]<L||c[0]>W-L||c[1]>Hh-L) continue;
     const e1=locDir(i,j,0), e2=locDir(i,j,1), a=snap(r,c,e1,0.22*sp,L), b=snap(r,c,e2,0.22*sp,L);
     const tv=typical.slice().sort((p,q)=>p-q)[typical.length>>1];
     /* линия сетки: ровный и заметный пик в обоих семействах (≥ 30 % типичного узла) */
     if(a&&b&&a.contrast+b.contrast>=0.3*tv&&a.contrast>0.1*tv&&b.contrast>0.1*tv){ const n1=[-e1[1],e1[0]], n2=[-e2[1],e2[0]];
       /* пересечение двух найденных линий: c + n1·a.d — на линии семейства 1, c + n2·b.d — на линии семейства 2 */
       const P1=[c[0]+n1[0]*a.d,c[1]+n1[1]*a.d], P2=[c[0]+n2[0]*b.d,c[1]+n2[1]*b.d], dd=e1[0]*e2[1]-e1[1]*e2[0], w2=[P2[0]-P1[0],P2[1]-P1[1]], t=(w2[0]*e2[1]-w2[1]*e2[0])/dd;
-      const p=[P1[0]+e1[0]*t,P1[1]+e1[1]*t]; N.set(key(i,j),{i,j,p,v:a.contrast+b.contrast}); if(typical.length<400) typical.push(a.contrast+b.contrast);
+      const p=[P1[0]+e1[0]*t,P1[1]+e1[1]*t]; if(crowded(p,i,j)||!stepOk(p,i,j)){ miss.set(key(i,j),1); continue; }
+      const q={i,j,p,v:a.contrast+b.contrast}; N.set(key(i,j),q); addH(q); if(typical.length<400) typical.push(a.contrast+b.contrast);
       [[1,0],[-1,0],[0,1],[0,-1]].forEach(([di,dj])=>{ const k=key(i+di,j+dj); if(!seen.has(k)){ seen.add(k); queue.push([i+di,j+dj]); } }); }
     else { /* пропуск: соседей не добавляем — рост обходит дыру с других сторон (под линией чертежа узел часто есть) */ miss.set(key(i,j),1); } }
   if(N.size<40) return {ok:false,reason:'сетка клеток не читается (узлов '+N.size+')',dbg};
@@ -99,16 +111,74 @@ function findGrid(img,o){ o=o||{}; const cell=o.cell||5, dbg=[], W=img.width, Hh
     if(!ps.length) return; const m=[ps.reduce((s,p)=>s+p[0],0)/ps.length,ps.reduce((s,p)=>s+p[1],0)/ps.length], e=Math.hypot(q.p[0]-m[0],q.p[1]-m[1]);
     if(e>1.5) bad.push(key(q.i,q.j)); else { rms+=e*e; nr++; } });
   bad.forEach(k=>N.delete(k)); rms=Math.sqrt(rms/Math.max(1,nr));
+  /* связные области узлов: соседи по номеру — в пикселях на шаг сетки (0,6–1,5 шага) и вдоль своего семейства. Рост обходит дыру (блик,
+     залитая штриховкой область) с двух сторон и может сойтись со сдвигом номера на клетку: на шве узлы выпадают по
+     гладкости, и области разделяются. Каждую область, кроме главной, сверяем с главной при сдвигах номера −2…+2
+     (локальная гомография по ближайшим узлам главной): сходится один сдвиг (≤ 0,2 шага, второй — ≥ 0,5) —
+     перенумеровываем, данные не теряем; иначе — область убираем */
+  { const comp=new Map(), sizes=[]; let nc=0;
+    N.forEach((q,k)=>{ if(comp.has(k)) return; const st=[q]; comp.set(k,nc); let n=0;
+      while(st.length){ const a=st.pop(); n++; [[1,0],[-1,0],[0,1],[0,-1]].forEach(([di,dj])=>{ const kb=key(a.i+di,a.j+dj), b=N.get(kb); if(!b||comp.has(kb)) return;
+        /* шаг по номеру — вдоль своего семейства: на шве сдвинутой области сосед по номеру стоит по диагонали
+           (√2 шага — по длине проходит), поперёк семейства он уходит на целый шаг */
+        const v=[b.p[0]-a.p[0],b.p[1]-a.p[1]], d=Math.hypot(...v), e=di?D.e1:D.e2, across=Math.abs(v[0]*e[1]-v[1]*e[0]);
+        if(d<0.6*sp||d>1.5*sp||across>0.35*sp) return; comp.set(kb,nc); st.push(b); }); }
+      sizes.push(n); nc++; });
+    if(nc>1){ if(o.trace) dbg.push('размеры областей: '+sizes.slice().sort((a,b)=>b-a).slice(0,8).join(', ')); const main=sizes.indexOf(Math.max(...sizes)), ref=[...N.values()].filter(q=>comp.get(key(q.i,q.j))===main); let moved=0, dropped=0;
+      for(let c=0;c<nc;c++){ if(c===main) continue; const C=[...N.values()].filter(q=>comp.get(key(q.i,q.j))===c), drop=()=>{ C.forEach(q=>N.delete(key(q.i,q.j))); dropped+=C.length; };
+        if(C.length<4){ drop(); continue; }
+        const cx=C.reduce((m,q)=>m+q.p[0],0)/C.length, cy=C.reduce((m,q)=>m+q.p[1],0)/C.length;
+        const nb=ref.map(q=>({q,d:(q.p[0]-cx)**2+(q.p[1]-cy)**2})).sort((a,b)=>a.d-b.d).slice(0,60).map(x=>x.q), Hl=nb.length>=8?H.fit(nb.map(q=>[q.i*cell,q.j*cell]),nb.map(q=>q.p)):null;
+        if(!Hl){ drop(); continue; }
+        const sc=[]; for(let di=-2;di<=2;di++) for(let dj=-2;dj<=2;dj++){ const r=C.map(q=>{ const p=H.apply(Hl,[(q.i+di)*cell,(q.j+dj)*cell]); return Math.hypot(p[0]-q.p[0],p[1]-q.p[1])/sp; }).sort((a,b)=>a-b); sc.push({di,dj,r:r[r.length>>1]}); }
+        sc.sort((a,b)=>a.r-b.r); const b=sc[0]; if(o.trace) dbg.push('область '+c+': '+C.length+' узлов, лучший сдвиг '+b.di+','+b.dj+' — '+b.r.toFixed(2)+' шага, второй '+sc[1].r.toFixed(2));
+        if(!(b.r<=0.2&&sc[1].r>=0.5)){ drop(); continue; }
+        if(b.di||b.dj){ if(C.some(q=>{ const k2=key(q.i+b.di,q.j+b.dj); return N.has(k2)&&comp.get(k2)!==c; })){ drop(); continue; }
+          C.forEach(q=>N.delete(key(q.i,q.j))); C.forEach(q=>{ q.i+=b.di; q.j+=b.dj; N.set(key(q.i,q.j),q); }); moved+=C.length; } }
+      if(moved||dropped) dbg.push('области сетки: '+nc+'; перенумеровано '+moved+' узлов (рост сошёлся со сдвигом на клетку), убрано '+dropped); } }
   /* сбой номера (рост «перескочил» на соседнюю линию — целая область сдвинута на клетку): лист гнётся плавно, на
      доли клетки, а сбой — ровно на клетку. Устойчивая гомография по всем узлам (итерации с отбросом > 0,3 клетки):
      узлы дальше 0,3 клетки от неё — сбой, их нет */
-  let slip=0; { let keep=[...N.values()], Hr=null;
-    for(let it=0;it<5;it++){ Hr=H.fit(keep.map(q=>[q.i*cell,q.j*cell]),keep.map(q=>q.p)); if(!Hr) break; const res=q=>{ const p=H.apply(Hr,[q.i*cell,q.j*cell]); return Math.hypot(p[0]-q.p[0],p[1]-q.p[1]); };
-      const all=[...N.values()], lim=Math.max(0.3*sp,4*Math.sqrt(keep.reduce((m,q)=>m+res(q)**2,0)/keep.length)); keep=all.filter(q=>res(q)<=Math.min(lim,0.3*sp)); }
-    /* отбрасываем, только если согласное большинство (иначе сбой — не «меньшинство», а сама сетка не та) */
-    if(Hr&&keep.length>=Math.max(40,0.6*N.size)){ const ks=new Set(keep.map(q=>key(q.i,q.j))); [...N.keys()].forEach(k=>{ if(!ks.has(k)){ N.delete(k); slip++; } }); }
-    else if(Hr) return {ok:false,reason:'сетка клеток читается неоднозначно (номера линий не сходятся) — переснимите ровнее',dbg}; }
+  /* сбой номера: рост может «сползти» на клетку постепенно — через засвеченную полосу, где каждый шаг почти верен,
+     а в сумме набегает целая клетка (локальные проверки этого не видят). Модель сетки — гомография + квадратичная
+     поправка на изгиб листа (номер узла → px). Как RANSAC: кандидаты — модели по компактным блокам узлов (3 × 3 по
+     номерам), лучший — с наибольшим числом согласных (≤ 0,35 шага); затем уточнение по согласным, три прохода
+     (≤ 0,3 → 0,2 → 0,15 шага: изгиб берёт поправка, честный узел ложится в сотые доли шага). Несогласные: сходятся при сдвиге номера ровно на клетку (один сдвиг из −2…+2) — перенумеровываем, иначе
+     убираем. Согласных меньше 60 % — сетка не та: отказ */
+  let slip=0, renum=0; { const nodes=[...N.values()], uv=q=>[q.i*cell,q.j*cell];
+    const fitM=Q=>{ const Hm=H.fit(Q.map(uv),Q.map(q=>q.p)); if(!Hm) return null; const r=Q.map(q=>{ const p=H.apply(Hm,uv(q)); return [q.p[0]-p[0],q.p[1]-p[1]]; });
+      /* квадратичная поправка по нормированным номерам: 6 коэффициентов на ось, МНК */
+      const ii=Q.map(q=>q.i), jj=Q.map(q=>q.j), ci=(Math.min(...ii)+Math.max(...ii))/2, cj=(Math.min(...jj)+Math.max(...jj))/2, si=Math.max(1,(Math.max(...ii)-Math.min(...ii))/2), sj=Math.max(1,(Math.max(...jj)-Math.min(...jj))/2);
+      const bas=q=>{ const x=(q.i-ci)/si, y=(q.j-cj)/sj; return [1,x,y,x*x,x*y,y*y]; }; let cx=null, cy=null;
+      if(Q.length>=40){ const A=Array.from({length:6},()=>new Float64Array(6)), bx=new Float64Array(6), by=new Float64Array(6);
+        Q.forEach((q,k)=>{ const b=bas(q); for(let a=0;a<6;a++){ bx[a]+=b[a]*r[k][0]; by[a]+=b[a]*r[k][1]; for(let c=0;c<6;c++) A[a][c]+=b[a]*b[c]; } });
+        for(let a=0;a<6;a++) A[a][a]+=1e-6; cx=solveN(A,bx); cy=solveN(A,by); }
+      return q=>{ const p=H.apply(Hm,uv(q)); if(!cx||!cy) return p; const b=bas(q); let dx=0, dy=0; for(let a=0;a<6;a++){ dx+=cx[a]*b[a]; dy+=cy[a]*b[a]; } return [p[0]+dx,p[1]+dy]; }; };
+    const res=(m,q,di,dj)=>{ const p=m({i:q.i+(di||0),j:q.j+(dj||0)}); return Math.hypot(p[0]-q.p[0],p[1]-q.p[1])/sp; };
+    const is=nodes.map(q=>q.i), js=nodes.map(q=>q.j), I0=Math.min(...is), I1=Math.max(...is), J0=Math.min(...js), J1=Math.max(...js);
+    let best=null;
+    for(let bi=0;bi<3;bi++) for(let bj=0;bj<3;bj++){ const B=nodes.filter(q=>q.i>=I0+(I1-I0)*bi/3&&q.i<=I0+(I1-I0)*(bi+1)/3&&q.j>=J0+(J1-J0)*bj/3&&q.j<=J0+(J1-J0)*(bj+1)/3);
+      if(B.length<30) continue; const Hb=H.fit(B.map(uv),B.map(q=>q.p)); if(!Hb) continue; const m=q=>H.apply(Hb,uv(q)); const inl=nodes.filter(q=>res(m,q)<=0.35);
+      if(!best||inl.length>best.length) best=inl; }
+    if(best&&best.length>=12){ let inl=best, m=null;
+      for(const lim of [0.3,0.2,0.15]){ m=fitM(inl); if(!m) break; inl=nodes.filter(q=>res(m,q)<=lim); }
+      if(o.trace&&m){ const rr=nodes.map(q=>res(m,q)).sort((a,b)=>a-b), out=rr.filter(r=>r>0.15); dbg.push('невязки модели сетки (шагов): медиана '+rr[rr.length>>1].toFixed(3)+', 95 % '+rr[Math.floor(rr.length*0.95)].toFixed(3)+'; вне 0,15: '+out.length+' — '+[0.2,0.3,0.5,0.8].map(t=>'>'+t+': '+out.filter(r=>r>t).length).join(', ')); }
+      /* 0,15–0,5 шага от модели — изгиб листа сильнее квадратичного (край настоящего листа) ИЛИ узел, прилипший к
+         карандашной линии. Различает сосед: изгиб плавный — локальная гомография по 20 ближайшим согласным узлам
+         объясняет узел (≤ 0,12 шага); прилипший расходится и с ними */
+      if(m){ const ks0=new Set(inl.map(q=>key(q.i,q.j)));
+        nodes.forEach(q=>{ if(ks0.has(key(q.i,q.j))) return; const r=res(m,q); if(r>0.5) return;
+          const nb=inl.map(x=>({x,d:(x.i-q.i)**2+(x.j-q.j)**2})).sort((a,b)=>a.d-b.d).slice(0,20).map(z=>z.x), Hl=nb.length>=8?H.fit(nb.map(uv),nb.map(x=>x.p)):null;
+          if(Hl){ const p=H.apply(Hl,uv(q)); if(Math.hypot(p[0]-q.p[0],p[1]-q.p[1])/sp<=0.12) inl.push(q); } }); }
+      if(m&&inl.length>=Math.max(40,0.6*nodes.length)){ const ks=new Set(inl.map(q=>key(q.i,q.j)));
+        nodes.forEach(q=>{ const k=key(q.i,q.j); if(ks.has(k)) return; N.delete(k);
+          const sh=[]; for(let di=-2;di<=2;di++) for(let dj=-2;dj<=2;dj++) if(di||dj){ const r=res(m,q,di,dj); if(r<=0.15) sh.push([di,dj]); }
+          const k2=sh.length===1?key(q.i+sh[0][0],q.j+sh[0][1]):null; if(k2&&!N.has(k2)&&!ks.has(k2)){ q.i+=sh[0][0]; q.j+=sh[0][1]; N.set(k2,q); renum++; } else slip++; }); }
+      else if(m) return {ok:false,reason:'сетка клеток читается неоднозначно (номера линий не сходятся) — переснимите ровнее',dbg}; } }
+  if(renum) dbg.push('перенумеровано '+renum+' узлов (рост сполз на клетку, номер восстановлен)');
   if(slip) dbg.push('сбой номера у '+slip+' узлов (сдвиг на клетку) — убраны');
+  /* после чистки узлов могло почти не остаться — по горстке узлов карту листа не строим */
+  if(N.size<40) return {ok:false,reason:'сетка клеток читается ненадёжно (после проверки осталось '+N.size+' узлов)',dbg};
   const all=[...N.values()], is=all.map(q=>q.i), js=all.map(q=>q.j), i0=Math.min(...is), i1=Math.max(...is), j0=Math.min(...js), j1=Math.max(...js);
   /* глобальная гомография — для мест без узлов и как проверка */
   const Hg=H.fit(all.map(q=>[q.i*cell,q.j*cell]),all.map(q=>q.p)); if(!Hg) return {ok:false,reason:'гомография по сетке не сошлась',dbg};

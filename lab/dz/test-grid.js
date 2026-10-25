@@ -2,7 +2,7 @@
    Синтетические фото (lab/dz/gsynth.js): ДЗ №3 на клетчатом листе — заданное с ошибкой нанесения или без,
    построение г) верное или с ошибкой шага. Правда известна для каждой координаты и каждого шага.
    ЛОЖНОЕ: «нанесено неточно» про координату, которая нанесена верно (ошибка < 0,5 мм), или с замером дальше 1 мм от
-   правды; «все точки точно» при ошибке ≥ 2,5 мм; шаг г) «неверно» при отклонении < 1,5 или «верно» при ≥ 3;
+   правды; «все точки точно» или вердикт «данные нанесены верно» при ошибке ≥ 2,5 мм; шаг г) «неверно» при отклонении < 1,5 или «верно» при ≥ 3;
    угол φ по чертежу дальше max(1,5°, 2σ замера) от правды. «Не нашёл» / «?» ложным не считается. */
 const IMG=require('../img.js'), GS=require('./gridsheet.js'), G=require('./gsynth.js');
 const A=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), PER=+(A.per||1), LV=A.level||'normal';
@@ -18,6 +18,7 @@ for(const n of NS) for(const err of ['ok','given','p3h','rad']) for(let k=0;k<PE
   r.given.diff.forEach(d=>{ if(!d.sure){ const i='xyz'.indexOf(d.c); errs.push(Math.abs(d.drawn-D[d.n][i])); } });
   const wrongBig=tr.wrong&&Math.abs(tr.wrong.d)>=2.5, found=tr.wrong&&claims.some(d=>d.n===tr.wrong.k&&d.c===tr.wrong.c);
   if(wrongBig&&!claims.length&&r.why.some(w=>/все точки условия нанесены точно/.test(w))){ fl++; falses.push(tag+': «все точки точно», а '+tr.wrong.k+' '+tr.wrong.c+' сдвинута на '+tr.wrong.d.toFixed(1)); }
+  if(wrongBig&&r.verdict==='данные нанесены верно'){ fl++; falses.push(tag+': вердикт «данные нанесены верно», а '+tr.wrong.k+' '+tr.wrong.c+' сдвинута на '+tr.wrong.d.toFixed(1)); }
   const td=t('данные '+(err==='given'?'с ошибкой':'верные')); td.n++; td.false+=fl; if(err==='given'){ if(found) td.ok++; else td.q++; } else if(!claims.length) td.ok++; else td.q++;
   /* г) по шагам */
   const ex=r.ex3d, pr=tr.prog;

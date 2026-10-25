@@ -69,7 +69,9 @@ Sheet.prototype.text=function(str,at,size,dk,w,o,R){ const lay=font.layout(str,a
 Sheet.prototype.circle=function(c,r,w,dk,o,R){ const P=[]; for(let i=0;i<=20;i++){ const a=i/20*2*Math.PI; P.push([c[0]+r*Math.cos(a),c[1]+r*Math.sin(a)]); } this.stroke(P,w,dk,o,R); };
 
 /* ── 3. камера: гомография страница → фото, свет, тень, расфокус, шум ── */
-function camera(sheet,page,R,lv,size){ const [W,Hh]=size;
+/* opt.glare (0…1): вероятность блика — пятно, где свет отражается от графита и бумаги и линии бледнеют (лампа над листом);
+   только по явному запросу: остальные тесты идут на прежних случайных потоках */
+function camera(sheet,page,R,lv,size,opt){ const [W,Hh]=size; opt=opt||{};
   const rot=R.n(0,lv.rot/2)*Math.PI/180, fill=R.r(...lv.fill), sc=Math.min(W/page.w,Hh/page.h)*fill;
   const c=[W/2+R.n(0,W*0.03),Hh/2+R.n(0,Hh*0.03)], corners=[[0,0],[page.w,0],[page.w,page.h],[0,page.h]];
   const tilt=R.r(...lv.tilt), dir=R()*2*Math.PI, dst=corners.map(p=>{ const q=v2.rot([(p[0]-page.w/2)*sc,(p[1]-page.h/2)*sc],rot);
@@ -82,6 +84,7 @@ function camera(sheet,page,R,lv,size){ const [W,Hh]=size;
   const gx=R.n(0,lv.light[1]), gy=R.n(0,lv.light[1]), base=R.r(0.8,1.02), vig=R.r(0,lv.light[1]);
   const sh=R()<lv.shadow?{p:[R.r(0,W),R.r(0,Hh)],n:v2.rot([1,0],R()*6.3),k:R.r(0.5,0.8),soft:R.r(15,70)}:null;
   const cast=[1+R.n(0,0.03),1+R.n(0,0.02),1+R.n(0,0.04)], graphite=[0.9,0.92,1.0];
+  const gl=opt.glare&&R()<opt.glare?{p:[R.r(0.15,0.85)*W,R.r(0.15,0.85)*Hh],s:R.r(0.06,0.16)*Math.min(W,Hh),k:R.r(0.5,0.85)}:null;
   const im=rgba(W,Hh), d=im.data, ch=[gray(W,Hh),gray(W,Hh),gray(W,Hh)], tex=R();
   const S=(L,x,y)=>{ const x0=Math.floor(x), y0=Math.floor(y); if(x0<0||y0<0||x0>=sheet.w-1||y0>=sheet.h-1) return 0; const fx=x-x0, fy=y-y0, i=y0*sheet.w+x0;
     return (L[i]*(1-fx)+L[i+1]*fx)*(1-fy)+(L[i+sheet.w]*(1-fx)+L[i+sheet.w+1]*fx)*fy; };
@@ -91,11 +94,12 @@ function camera(sheet,page,R,lv,size){ const [W,Hh]=size;
     else { const n=((Math.sin(x*0.05+tex*9)*Math.sin(y*0.031+tex*5)+1)*0.04); col=bg.map(v=>v*(0.92+n)); }
     const ux=(x-W/2)/W, uy=(y-Hh/2)/Hh; let L=base*(1+gx*ux+gy*uy)*(1-vig*(ux*ux+uy*uy)*2);
     if(sh){ const s=v2.dot(v2.sub([x,y],sh.p),sh.n); L*=1-(1-sh.k)/(1+Math.exp(-s/sh.soft*4)); }
+    if(gl){ const r2=((x-gl.p[0])**2+(y-gl.p[1])**2)/(2*gl.s*gl.s); if(r2<9){ const q=gl.k*Math.exp(-r2); for(let j=0;j<3;j++) ch[j].a[i]=(col[j]*L*cast[j])*(1-q)+q*1.05; continue; } }
     for(let j=0;j<3;j++) ch[j].a[i]=col[j]*L*cast[j]; }
   const bl=R.r(...lv.blur), nz=R.r(...lv.noise)/255;
   for(let j=0;j<3;j++){ const b=blur(ch[j],bl); for(let i=0;i<W*Hh;i++) d[4*i+j]=Math.max(0,Math.min(255,(b.a[i]+R.n(0,nz))*255)); }
   for(let i=0;i<W*Hh;i++) d[4*i+3]=255;
-  return {im,M,params:{rot:rot*180/Math.PI,fill,tilt,blur:bl,noise:nz*255,shadow:!!sh,light:[gx,gy,base,vig]}}; }
+  return {im,M,params:{rot:rot*180/Math.PI,fill,tilt,blur:bl,noise:nz*255,shadow:!!sh,glare:gl,light:[gx,gy,base,vig]}}; }
 
 /* «неизвестное построение» — ошибка, которой нет в библиотеке сканера (проверка честного отказа):
    u-hrot — h′ под произвольным углом к a′ (12…35° от перпендикуляра); u-Kshift — K′ взята на a′ наугад (4…10 мм от верной) */

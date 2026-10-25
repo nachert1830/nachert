@@ -33,5 +33,17 @@ function svg(o){ const {segs,data,ex}=o, all=segs.flatMap(s=>[s.a,s.b]); const P
   if(ex.first){ y+=2; tx('Первая ошибка — шаг '+(ex.steps.indexOf(ex.first)+1)+'. Дальше всё построено',3.4,COL.stud,true); tx('честно от неё — поэтому и угол другой.',3.4,COL.stud,true); }
   y+=4; [[COL.good,'верное построение для вашей пирамиды'],[COL.stud,'что взято у вас'],['#888','линии листа']].forEach(([c,l])=>{ out.push('<rect x="'+n1(x0)+'" y="'+n1(y-2.4)+'" width="5" height="2.4" fill="'+c+'"/>'); out.push('<text x="'+n1(x0+7)+'" y="'+n1(y)+'" font-size="3" fill="#333">'+esc(l)+'</text>'); y+=4; });
   out.push('</svg>'); return out.join('\n'); }
-put('dzReport3d',{svg});
+/* то же, что рисует svg, — примитивами в мм чертежа (для разбора поверх фото: страница переводит их в пиксели снимка)
+   prims({data, truth, ex, claims, drawnPts}) → [{t:'line'|'dot', a, b | p, col:'good'|'stud', label, dash, g:'ex'|'data:A'}];
+   claims — уверенные «нанесено неточно» (given.js): у точки — где начерчена (stud) и где должна быть (good) */
+function prims(o){ const {data,ex}=o, P=(ex&&ex.pts)||{}, out=[]; let G='ex'; const L=(a,b,col,dash,label)=>out.push({t:'line',a,b,col,dash:!!dash,label,g:G}), D=(p,col,label)=>out.push({t:'dot',p,col,label,g:G});
+  const st1=ex&&ex.steps&&ex.steps.find(s=>s.k==='h1f'); if(st1&&st1.val&&data){ const c=st1.val.c, t=M3.sigma(data,c,true), t2=M3.sigma(data,c,false);
+    if(t&&t2){ const ref=P.Sbar||t.S0, tt=Math.hypot(t.S0[0]-ref[0],t.S0[1]-ref[1])<=Math.hypot(t2.S0[0]-ref[0],t2.S0[1]-ref[1])?t:t2;
+      L(tt.X0,tt.Y0,'good',true); L(tt.S0,tt.X0,'good'); L(tt.S0,tt.Y0,'good'); D(tt.X0,'good','3′ верная'); D(tt.S0,'good','S̄₀ верная'); } }
+  if(P.q3&&P.q4){ L(P.q3,P.q4,'stud'); D(P.q3,'stud','3′ у вас'); }
+  if(P.Sbar){ D(P.Sbar,'stud','S̄′ у вас'); if(P.q3) L(P.Sbar,P.q3,'stud'); if(P.q4) L(P.Sbar,P.q4,'stud'); }
+  (o.claims||[]).forEach(d=>{ const V=data&&o.truth?o.truth[d.n]:null; if(!V) return; const want={'″':[-V[0],-V[2]],'′':[-V[0],V[1]]}; G='data:'+d.n;
+    ['″','′'].forEach(pr=>{ if(d.c==='y'&&pr==='″'||d.c==='z'&&pr==='′') return; const at=o.drawnPts&&o.drawnPts[d.n+pr]; if(!at) return; D(at,'stud',d.n+pr+' у вас'); D(want[pr],'good',d.n+pr+' по варианту'); L(at,want[pr],'stud',true); }); });
+  return out; }
+put('dzReport3d',{svg,prims});
 })();

@@ -54,6 +54,10 @@ function calibrate(dig,loc,id,data,o){ o=o||{}; const D=dmap(dig.map), {pts,segs
   else if(loc.O){ o0=loc.O; ranges={u:[-8,8],v:[-4,4]}; }
   else { if(!loc.axis) return {ok:false,reason:'нет оси x — не к чему привязать чертёж'};
     const [A,B]=loc.axis, yAt=x=>A[1]+(B[1]-A[1])*(x-A[0])/((B[0]-A[0])||1); o0=[0,yAt(200)]; ranges={u:[25,292],v:[-4,4]}; }
+  /* быстро (узнать вариант среди 30): только кандидаты O на осях, короткое уточнение, без звёзд точек */
+  if(o.quick&&o.cands&&o.cands.length){ const sub=S.filter((q,i)=>i%3===0); let bc=null;
+    o.cands.forEach(cn=>{ for(let dv=-2;dv<=2;dv+=1) for(let du=-2;du<=2;du+=1){ const x=[cn[0]+du,cn[1]+dv,0,0,0,0], c=coverOf(D,sub,x,1.2); if(!bc||c>bc.c) bc={c,x}; } });
+    const r=fit(D,S,bc.x,2,10); return {ok:true,quick:true,T:r.x,cover:coverOf(D,S,r.x,0.6)}; }
   let c0=coarse(D,S,o0,ranges); if(!c0) return {ok:false,reason:'калибровка не сошлась'};
   /* кандидаты O (лист в клетку: пересечения длинных горизонталей и вертикалей — оси эпюра). Начало эпюра на
      пересечении осей — сильная подсказка: если такой кандидат объясняет фигуру почти так же (−0,06), берём его.

@@ -5,7 +5,7 @@
    начерченных данных → построения частей (check3.js) по начерченным данным.
    Так разделяются две разные ошибки: «нанёс данные неточно» (числа отличаются от варианта, а построение верно для
    своего чертежа) и «ошибся в способе» (построение не сходится даже со своими точками).
-   checkGridPhoto(img, {dz, n, answers:{H, dih, phi}}) → {ok, verdict, why[], grid, cal, given, ref, mine, parts}
+   checkGridPhoto(img, {dz, n (0 — узнать по чертежу), answers:{H, dih, phi}}) → {ok, verdict, why[], n, grid, cal, given, ref, mine, parts}
    node lab/dz/gridsheet.js фото.png --dz=3 --n=7 [--part=a|b|c|d] [--H=28 --dih=81 --phi=25] */
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
@@ -22,27 +22,42 @@ function axesCands(segs){ const len=s=>Math.hypot(s.b[0]-s.a[0],s.b[1]-s.a[1]), 
   const hor=merge(segs.filter(s=>len(s)>=8&&(dir(s)<=1||dir(s)>=179)),1).filter(g=>g.L>=50&&g.ink>=0.5*g.L).sort((a,b)=>b.ink-a.ink).slice(0,10);
   const ver=merge(segs.filter(s=>len(s)>=8&&Math.abs(dir(s)-90)<=1.5),0).filter(g=>g.L>=40&&g.ink>=0.5*g.L).sort((a,b)=>b.ink-a.ink).slice(0,10);
   const out=[]; hor.forEach(h=>ver.forEach(v=>out.push([v.c,h.c]))); return out; }
-function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, n=+o.n, gv=V.get(dz,n), t0=Date.now(), why=[];
+function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(), why=[]; let n=+o.n||0, gv=auto?null:V.get(dz,n);
   /* какая часть задачи на этом фото (студент часто снимает каждую отдельно): указана — или по введённому ответу */
   const A0=o.answers||{}, given1=['H','dih','phi'].filter(k=>A0[k]!=null&&!isNaN(A0[k])), part=o.part||(given1.length===1?{H:'a',dih:'b',phi:'d'}[given1[0]]:null);
-  if(!gv) return {ok:false,verdict:'не могу проверить',why:['нет варианта '+n+' ДЗ №'+dz]};
+  if(!auto&&!gv) return {ok:false,verdict:'не могу проверить',why:['нет варианта '+n+' ДЗ №'+dz]};
   const G=L('grid'), g=G.findGrid(img); if(!g.ok) return {ok:false,verdict:'не могу прочитать',why:[g.reason+' — снимите лист целиком, сверху, при ровном свете'],grid:g};
   const sc=G.rectify(img,g,{ppm:8}), er=G.eraseGrid(sc), box=sc.box;
   const ex=LN.extract(er.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300}); if(!ex.ok) return {ok:false,verdict:'не могу прочитать',why:[ex.reason],grid:g};
-  const dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map}, C=L('calib');
-  const cal=C.calibrate(dig,{},gv.id,gv.data,{range:box,np:2,cands:axesCands(ex.segs)});
+  const dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map}, C=L('calib'), cands=axesCands(ex.segs);
+  /* вариант не указан — узнаём по чертежу: условие каждого из 30 вариантов прикладываем к линиям листа. Узнан, если
+     лучший ложится на линии (≥ 80 %: настоящий даёт 90–100 %) и с запасом (≥ 15 пунктов) над вторым; иначе — просим
+     указать номер. Было 60 %: быстрая оценка недооценила настоящий вариант, и чужой с 64 % прошёл за «узнанный» */
+  let vars=null;
+  if(auto){ vars=[]; for(let k=1;k<=30;k++){ const gk=V.get(dz,k); if(!gk) continue; const ck=C.calibrate(dig,{},gk.id,gk.data,{range:box,np:2,cands,quick:cands.length>0}); vars.push({n:k,cover:ck.ok?ck.cover:0}); }
+    /* точно — три лучших по быстрой оценке (у быстрой O только на осях: вариант с недочерченной осью она недооценит) */
+    vars.sort((a,b)=>b.cover-a.cover); vars.slice(0,3).forEach(v=>{ const gk=V.get(dz,v.n), ck=C.calibrate(dig,{},gk.id,gk.data,{range:box,np:2,cands}); v.cover=ck.ok?ck.cover:0; v.cal=ck; });
+    vars.sort((a,b)=>(b.cal?1:0)-(a.cal?1:0)||b.cover-a.cover); const b=vars[0], b2=vars[1]||{cover:0};
+    if(!b||b.cover<0.8||b.cover-b2.cover<0.15) return {ok:false,verdict:'не могу прочитать',why:['вариант по чертежу не узнаётся однозначно'+(b?' (похожи: '+vars.slice(0,3).map(v=>v.n+' — '+Math.round(v.cover*100)+' %').join(', ')+')':'')+' — укажите номер варианта'],variants:vars.slice(0,5).map(v=>({n:v.n,cover:v.cover})),grid:g,dig,scan:sc};
+    n=b.n; gv=V.get(dz,n); why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(b.cover*100)+' %; ближайший другой — '+b2.n+': '+Math.round(b2.cover*100)+' %)'); }
+  const cal=vars?vars[0].cal:C.calibrate(dig,{},gv.id,gv.data,{range:box,np:2,cands});
   if(!cal.ok||cal.cover<0.45) return {ok:false,verdict:'не могу прочитать',why:['условие варианта '+n+' на листе не узнаётся ('+Math.round((cal.cover||0)*100)+' % фигуры на линиях) — проверьте номер варианта'],grid:g,cal,dig,scan:sc};
   /* заданное как начерчено */
   const mg=L('given').measureGiven(dig,cal,gv.id,gv.data), miss=Object.entries(mg.pts).filter(([l,p])=>p.src==='не найдена').map(([l])=>l);
   const drawnOk=Object.values(mg.drawn).every(p=>p.every(v=>v!=null));
-  const res={ok:true,dz,n,id:gv.id,data:gv.data,grid:{nodes:g.found,rms:g.rms,hres:g.hres,ppm0:g.ppm0,dbg:g.dbg},scan:sc,erased:er,dig,cal,given:mg,ms:0};
+  const res={ok:true,dz,n,id:gv.id,data:gv.data,grid:{nodes:g.found,cell:g.cell,rms:g.rms,hres:g.hres,ppm0:g.ppm0,dbg:g.dbg},scan:sc,erased:er,dig,cal,given:mg,ms:0};
+  /* карта мм листа → px снимка (для разбора поверх фото) — не перечисляется: результат остаётся «данными» */
+  Object.defineProperty(res,'_grid',{value:g,enumerable:false});
   const ref=DZ.solve(gv.id,gv.data); res.ref=ref;
   why.push('условие варианта '+n+' на линиях: '+Math.round(cal.cover*100)+' %; сетка: '+g.found+' узлов, лист выпрямлен с точностью '+f1(g.rms/g.ppm0*10)+' сотых мм');
   /* «нанесено неточно» — отклонение ≥ 1,5 мм и ≥ 3σ замера этой точки (метку-кружок меряем грубее) */
   const big=mg.diff.filter(d=>d.sure);
   if(miss.length&&!(miss.every(l=>l[0]==='S'))) why.push('не нашёл на листе: '+miss.join(', '));
   if(big.length) why.push('данные нанесены неточно: '+big.map(d=>d.n+' '+d.c+' = '+f1(d.drawn)+' вместо '+d.was).join(', '));
-  else if(drawnOk) why.push('все точки условия нанесены точно (каждая координата — в пределах 1,5 мм)');
+  /* «точно» — только если это видно: отклонение < 1,5 мм И замер не грубее ± 1 мм (иначе 0,8 мм при ± 2 мм —
+     не «точно», а «не знаю») */
+  else if(drawnOk&&mg.diff.every(d=>Math.abs(d.d)<1.5&&d.sg<=1)) why.push('все точки условия нанесены точно (каждая координата — в пределах 1,5 мм)');
+  else if(drawnOk){ const un=mg.diff.filter(d=>Math.abs(d.d)>=1.5||d.sg>1); why.push('нанесение точек не подтверждаю: '+un.map(d=>d.n+' '+d.c+(Math.abs(d.d)>=1.5?' отклоняется на '+f1(Math.abs(d.d))+' мм при точности замера ± '+f1(d.sg)+' мм':' — замер грубый (± '+f1(d.sg)+' мм)')).join(', ')+' — переснимите ближе'); }
   const shs=Object.entries(mg.shift||{}).filter(([c,v])=>Math.abs(v)>=1.5); if(shs.length) why.push('весь чертёж сдвинут относительно '+shs.map(([c,v])=>(c==='x'?'оси z/y':'оси x')+' на '+f1(Math.abs(v))+' мм по '+c).join(' и ')+' — это перенос, на ответы не влияет');
   const badLink=mg.link.filter(l=>l.sure); if(badLink.length) why.push('линии связи: '+badLink.map(l=>l.n+'″ и '+l.n+'′ разошлись на '+f1(Math.abs(l.du))+' мм по x').join(', '));
   /* на снимке части в) пирамида может быть без S: построения ABC проверяем по начерченным A, B, C (S — из варианта, в в) не нужна) */
@@ -85,7 +100,13 @@ function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, n=+o.n, gv=V.get(dz,
       x.msg+='; '+w; why.push(w); }); }
   /* итог: «ошибка» — только по измеренному (данные ≥ 1 мм от варианта или ответ вне допуска для обоих эталонов) */
   const ans=res.answers||[], ansBad=ans.some(a=>a.st==='построение'||a.st==='неверно'), ansData=ans.some(a=>a.st==='данные');
-  res.verdict=miss.length>2&&!ans.length?'не могу утверждать':ansBad?'ошибка':ansData||big.length?'ошибка в данных':ans.length?'верно':'данные нанесены верно';
+  const dataClean=mg.diff.length>0&&mg.diff.every(d=>Math.abs(d.d)<1.5&&d.sg<=1)&&(drawnOk||miss.every(l=>l[0]==='S'));
+  /* первая ошибка в шагах г) — уже «ошибка», даже без записанного ответа (шаг неверен по линиям листа) */
+  const stepBad=!!(res.ex3d&&res.ex3d.first&&res.ex3d.steps[0]&&res.ex3d.steps[0].status==='ok');
+  /* показанная часть проверена по начерченным данным и верна (в) — истинный вид) — это «верно», даже если нанесение
+     точек замером не подтверждено: построение сходится со своими же точками */
+  const PSH=part?[part]:Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено'), partOk=PSH.length>0&&PSH.every(k=>res.parts&&res.parts[k]&&res.parts[k].st==='верно');
+  res.verdict=miss.length>2&&!ans.length&&!partOk?'не могу утверждать':ansBad||stepBad?'ошибка':ansData||big.length?'ошибка в данных':ans.length?'верно':dataClean?'данные нанесены верно':partOk?'верно':'не могу утверждать';
   /* части, которых на фото нет, не показываем: на снимке одной части чужие «похожие» линии — не ответ */
   if(part&&res.parts) res.shown=[part]; else if(res.parts) res.shown=Object.keys(res.parts).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено');
   /* видимость рёбер на листе в клетку — замечание (на экзаменационных листах её часто не требуют) */
