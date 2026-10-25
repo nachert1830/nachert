@@ -20,6 +20,8 @@ function fromEnv(env){ env=env||process.env;
     /* сайты, с которых открывают клуб (nachert1830.ru/club/), и куда ведут ссылки входа */
     fronts:list(env.FRONT_ORIGINS),
     frontUrl:env.FRONT_URL||'',
+    /* вход через Telegram на странице клуба: TG_LOGIN=on (по умолчанию выключен — вход по почте и Яндекс ID) */
+    tgLoginOn:env.TG_LOGIN==='on',
     /* официальный вход Telegram работает только на сайте, указанном у @BotFather (/setdomain) */
     tgLogin:{url:'https://oauth.telegram.org/auth',origins:list(env.TG_LOGIN_ORIGINS||'https://nachert1830.ru,http://nachert1830.ru')}
   };

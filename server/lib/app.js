@@ -87,12 +87,12 @@ function createApp(o){
         if(!ok) fail(403,'По этой ссылке уже зарегистрировались все, кого приглашали.',{needInvite:true}); }
       else if(st){ const claimed=await store.update('invites',invite,{usedAt:t,usedBy:id},{ifEq:{usedAt:null,revokedAt:null}}); if(!claimed) fail(403,'Приглашение уже использовано.',{needInvite:true}); }
       user={id,name:cleanName(name)||'Участник',role:boot?'admin':(st&&st.inv.role==='admin'?'admin':'member'),method,createdAt:t,
-        tgId:tgId||null,ya:key.startsWith('ya:'),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
+        tgId:tgId||null,ya:key.startsWith('ya:'),em:key.startsWith('em:'),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
       if(!(await store.put('identities',{id:key,userId:id,type:method,createdAt:t},{ifNotExists:true}))) fail(409,'Этот вход уже привязан к другому участнику.');
       await store.put('users',user); isNew=true; }
     const ses=await newSession(req,user); await store.update('users',user.id,{lastLogin:now()}); await logLogin(req,user.id,method,true,isNew?'регистрация':'');
     return {resp:H.json(200,{ok:true,isNew,user:publicUser(user),csrf:ses.csrf,session:ses.tok}),cookie:ses.cookie}; }
-  const publicUser=u=>({id:u.id,name:u.name,role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos)});
+  const publicUser=u=>({id:u.id,name:u.name,role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,email:!!u.em,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos)});
 
   /* ── проверки запроса ── */
   /* запрос — со страницы клуба: с адреса функции (тот же сайт) или с nachert1830.ru (список FRONT_ORIGINS, ответы с CORS) */
@@ -105,7 +105,7 @@ function createApp(o){
   /* ── обработчики ── */
   const R={};
   R['GET /api/config']=async()=>{ const s=await settings(); return H.json(200,{botId:(cfg.botToken.split(':')[0])||null,botName:cfg.botName||null,
-    frontUrl:cfg.frontUrl,yandex:!!cfg.yandex.clientId,email:!!(o.mail&&o.mail.enabled),devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
+    frontUrl:cfg.frontUrl,telegram:!!(cfg.dev||cfg.tgLoginOn),yandex:!!cfg.yandex.clientId,email:!!(o.mail&&o.mail.enabled),devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
 
   R['GET /api/invite/check']=async(req)=>{ await limit('inv',maskIp(req.ip),30,600); const st=await inviteState(inviteHash(req.query.code)); return H.json(200,{valid:st.ok,why:st.ok?'':st.why}); };
 
@@ -318,7 +318,25 @@ function createApp(o){
     if(b.to==='yandex'){ if(S.user.ya) fail(409,'Яндекс ID уже привязан.'); if(!cfg.yandex.clientId) fail(404,'Вход через Яндекс ID не настроен.');
       if(!okRet(b.ret)||!/^[A-Za-z0-9_-]{16,64}$/.test(b.s||'')) fail(400,'Неверный адрес возврата.');
       return H.json(200,{url:cfg.origin+'/api/auth/yandex/start?'+new URLSearchParams({link:await linkCode(S,'yandex'),ret:b.ret,s:b.s}).toString()}); }
-    fail(400,'Что привязать: telegram или yandex.'); };
+    if(b.to==='email'){ const e=normEmail(b.email); if(!mailer.enabled) fail(404,'Вход по почте пока не настроен.'); if(!okEmail(e)) fail(400,'Проверьте адрес почты.');
+      await limit('link',S.user.id,10,3600); const ex=await store.get('identities',emKey(e)); if(ex&&ex.userId!==S.user.id) fail(409,'Эта почта уже привязана к другому аккаунту клуба.');
+      const code=String(require('crypto').randomInt(0,1e6)).padStart(6,'0'), t=now();
+      await store.put('botlogin',{id:C.sha256('emlink:'+S.user.id+':'+e).slice(0,40),kind:'emlink',code:C.sha256(code+':'+e),tries:0,exp:t+LOGIN_MIN*60e3,createdAt:t});
+      const r=await mailer.send({to:e,subject:'Код для привязки почты к клубу Начерта: '+code,text:'Код для привязки этой почты к аккаунту клуба Начерта: '+code+'\n\nКод действует '+LOGIN_MIN+' минут. Если вы ничего не привязывали — просто удалите письмо.'});
+      if(!r||!r.ok) fail(502,'Не получилось отправить письмо. Попробуйте ещё раз через минуту.');
+      return H.json(200,{to:maskEmail(e),minutes:LOGIN_MIN}); }
+    fail(400,'Что привязать: telegram, yandex или email.'); };
+  A['POST /api/me/link/email']=async(req,S)=>{ const b=body(req), e=normEmail(b.email), code=String(b.code||'').replace(/\D/g,''), t=now();
+    const id=C.sha256('emlink:'+S.user.id+':'+e).slice(0,40), r=okEmail(e)?await store.get('botlogin',id):null;
+    if(!r||r.kind!=='emlink'||r.exp<t) fail(410,'Код устарел. Запросите новый.');
+    if(r.tries>=5) fail(429,'Слишком много попыток. Запросите новый код.');
+    await store.update('botlogin',id,{tries:r.tries+1});
+    if(code.length!==6||!C.safeEqual(C.sha256(code+':'+e),r.code)) fail(400,'Код не подошёл.');
+    await store.del('botlogin',id);
+    const ex=await store.get('identities',emKey(e)); if(ex&&ex.userId!==S.user.id) fail(409,'Эта почта уже привязана к другому аккаунту клуба.');
+    if(!ex) await store.put('identities',{id:emKey(e),userId:S.user.id,type:'email',createdAt:t},{ifNotExists:true});
+    const u=await store.update('users',S.user.id,{em:true}); await logLogin(req,S.user.id,'email',true,'привязка почты');
+    return H.json(200,{user:publicUser(u)}); };
   A['POST /api/me/link/confirm']=async(req,S)=>{ const b=body(req), tok=String(b.token||''), t=now();
     const r=/^[A-Za-z0-9_-]{30,40}$/.test(tok)?await store.get('botlogin',okId(tok)):null;
     if(!r||r.kind!=='linkok'||r.used||r.exp<t) fail(410,'Ссылка для привязки устарела. Нажмите «Привязать» в настройках ещё раз.');

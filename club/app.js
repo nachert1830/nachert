@@ -150,9 +150,37 @@ const botStart=()=>{ const c=getInvite(); return c&&/^[A-Za-z0-9_-]{16,62}$/.tes
 /* официальный вход Telegram — только на сайте, заданном у @BotFather (/setdomain); в остальных местах — через бота клуба.
    Бот на сайте не предлагаем: серверы Telegram и Yandex Cloud сейчас не видят друг друга, а официальному входу эта связь не нужна */
 const tgOfficial=()=>!!(CFG&&CFG.tgLogin&&CFG.botId&&CFG.tgLogin.origins.some(o=>{ try{ return new URL(o).hostname.replace(/^www\./,'')===location.hostname.replace(/^www\./,''); }catch(e){ return false; } }));
-function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName, off=tgOfficial(), em=CFG&&CFG.email;
-  return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}${em?`<button class="btn ghost lg" type="button" data-act="mailLogin"><span class="mailmark" aria-hidden="true">@</span>Войти по почте</button>`:''}</div>
-<div id="authMsg" aria-live="polite"></div>`; }
+/* вход как на обычных сайтах: почта (код из письма) и Яндекс ID. Telegram — только если включён на сервере (CFG.telegram) */
+function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.telegram&&CFG.botName, off=tgOfficial(), em=CFG&&CFG.email;
+  return `${em?`<form class="mailf" id="mailF" novalidate><label class="f" for="emA">Почта</label>
+      <div class="mrow"><input id="emA" type="email" inputmode="email" autocomplete="email" required placeholder="you@example.ru"><button class="btn white lg" type="submit">Получить код</button></div>
+      <p class="alt">Пришлём код из 6 цифр — пароль не нужен.</p></form>`:''}
+    ${em&&(ya||tg)?'<div class="or"><span>или</span></div>':''}
+    <div class="row">${ya?`<button class="btn ${em?'ghost':'white'} lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ghost lg" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}</div>
+    <div id="authMsg" aria-live="polite"></div>`; }
+/* шаг 2 входа по почте: код из письма → одноразовый вход → «Войти — an•••@…?» */
+async function mailStart(email){ const box=$('#auth'), msg=$('#authMsg'); if(!box) return;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ msg.innerHTML='<p class="note bad">Проверьте адрес почты.</p>'; return; }
+  const b=$('#mailF button[type=submit]'); if(b){ b.disabled=true; b.textContent='Отправляю…'; }
+  try{ const r=await api('POST','/api/auth/email/start',{email,invite:getInvite()});
+    box.innerHTML=`<form class="mailf" id="codeF" data-email="${esc(email)}" novalidate><label class="f" for="emC">Код из письма на ${esc(r.to)}</label>
+      <div class="mrow"><input id="emC" class="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"><button class="btn white lg" type="submit">Войти</button></div>
+      <p class="alt">Код действует ${r.minutes} минут. Письма нет? Проверьте «Спам» или <button class="lnkbtn" type="button" data-act="mailResend">отправьте ещё раз</button>.</p></form>
+      <div class="row reg"><button class="btn ghost sm" type="button" data-act="loginCancel">Другая почта</button></div><div id="authMsg" aria-live="polite"></div>`;
+    $('#emC').focus(); }
+  catch(x){ if(b){ b.disabled=false; b.textContent='Получить код'; } msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }
+document.addEventListener('submit',async e=>{ const f=e.target;
+  if(f.id==='lmF'){ e.preventDefault(); const email=$('#lmA').value.trim();
+    try{ const r=await api('POST','/api/me/link',{to:'email',email}); $('#linkOut').innerHTML=`<form class="mailf reg" id="lcF" data-email="${esc(email)}" novalidate><label class="f" for="lcC">Код из письма на ${esc(r.to)}</label><div class="mrow"><input id="lcC" class="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"><button class="btn pri" type="submit">Привязать</button></div></form><div id="lmMsg" aria-live="polite"></div>`; $('#lcC').focus(); }
+    catch(x){ $('#lmMsg').innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } return; }
+  if(f.id==='lcF'){ e.preventDefault();
+    try{ const r=await api('POST','/api/me/link/email',{email:f.dataset.email,code:$('#lcC').value}); ME.user=r.user; settingsView(); toast('Почта привязана'); }
+    catch(x){ $('#lmMsg').innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } return; }
+  if(f.id==='mailF'){ e.preventDefault(); return mailStart($('#emA').value.trim()); }
+  if(f.id==='codeF'){ e.preventDefault(); const code=$('#emC').value.replace(/\D/g,''), msg=$('#authMsg');
+    if(code.length!==6){ msg.innerHTML='<p class="note bad">Код — 6 цифр из письма.</p>'; return; }
+    try{ const v=await api('POST','/api/auth/email/verify',{email:f.dataset.email,code}); landingView(v.token); }
+    catch(x){ msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } } });
 const OOPS={state:'Вход устарел или начат в другой вкладке. Нажмите кнопку входа ещё раз.',denied:'Вы отменили вход в Яндексе.',fail:'Яндекс ID сейчас не ответил. Попробуйте ещё раз через минуту.',
   noinvite:'Этот аккаунт ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',invite:'Приглашение не подходит: оно использовано, отозвано или устарело.',
   link:'Ссылка для привязки устарела. Нажмите «Привязать» в настройках ещё раз.',taken:'Этот Яндекс ID уже привязан к другому аккаунту клуба.'};
@@ -417,7 +445,7 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
     <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Профиль<small>${u.role==='admin'?'админ':'участник'}</small></h2></div>
       <label class="f" for="pName">Имя</label><div class="row"><input id="pName" class="grow" type="text" maxlength="60" value="${esc(u.name)}"><button class="btn" type="button" data-act="saveName">Сохранить</button></div>
       <label class="chk reg"><input type="checkbox" data-chg="photos"${u.photos?' checked':''}><span>Разрешаю использовать мои фото чертежей для улучшения проверки<small>Необязательно; сейчас фото никуда не отправляются</small></span></label></section>
-    ${flag('reminders')?card('reminders','Напоминания в Telegram',!u.telegram?`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
+    ${flag('reminders')&&CFG&&CFG.telegram?card('reminders','Напоминания в Telegram',!u.telegram?`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
       <p class="note">Напоминания приходят в Telegram. Сначала привяжите его ниже, в «Способах входа», — и здесь появятся настройки.</p>`:`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
       <label class="chk"><input type="checkbox" id="rOn"${r.enabled?' checked':''}><span>Присылать напоминания</span></label>
       <div class="grid2"><div><label class="f" for="rTime">Время</label><input id="rTime" type="time" value="${esc(r.time)}"></div><div><label class="f" for="rTz">Часовой пояс</label><select id="rTz">${tzs.map(z=>`<option${z===r.tz?' selected':''}>${esc(z)}</option>`).join('')}</select></div>
@@ -434,9 +462,10 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
       <div class="kv"><div><span>id в Яндекс ID / Telegram и имя</span><span>для входа</span></div><div><span>Прогресс и планы</span><span>для кабинета</span></div><div><span>Журнал входов</span><span>90 дней</span></div></div>
       <div class="row reg"><button class="btn" type="button" data-act="export">Скачать мои данные</button><button class="btn" type="button" data-act="fb" data-f="privacy">Обращение к владельцу</button><button class="btn ghost" type="button" data-act="requests">Мои обращения</button></div><div id="reqOut"></div>
       <p class="mut reg"><a href="legal/terms.html">Соглашение</a> · <a href="legal/privacy.html">Политика ПД</a> · <a href="legal/consent.html">Согласие</a></p></section>
-    <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Способы входа<small>можно оба — аккаунт один</small></h2></div>
+    <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Способы входа<small>аккаунт один, способы можно добавлять</small></h2></div>
       <div class="kv"><div><span>Яндекс ID</span><span>${u.yandex?'привязан':CFG&&CFG.yandex?'<button class="btn sm" type="button" data-act="linkYa">Привязать</button>':'—'}</span></div>
-      <div><span>Telegram</span><span>${u.telegram?'привязан':CFG&&CFG.botName?'<button class="btn sm" type="button" data-act="linkTg">Привязать</button>':'—'}</span></div></div><div id="linkOut"></div></section>
+      <div><span>Почта</span><span>${u.email?'привязана':CFG&&CFG.email?'<button class="btn sm" type="button" data-act="linkMail">Привязать</button>':'—'}</span></div>
+      <div><span>Telegram</span><span>${u.telegram?'привязан':CFG&&CFG.telegram&&CFG.botName?'<button class="btn sm" type="button" data-act="linkTg">Привязать</button>':'—'}</span></div></div><div id="linkOut"></div></section>
     <section class="card"><div class="ch"><span class="ico">${ic('shield')}</span><h2>Безопасность</h2></div><div class="row"><button class="btn" type="button" data-act="logins">Журнал входов</button><button class="btn" type="button" data-act="logoutAll">Выйти на всех устройствах</button></div><div id="logOut"></div></section>
     <section class="card"><div class="row"><button class="btn grow" type="button" data-act="logout">${ic('logout')}Выйти</button><button class="btn dan" type="button" data-act="delete">Удалить аккаунт</button></div></section>
   </div></div>`,'Настройки'); }
@@ -492,23 +521,11 @@ const ACT={
   fb:el=>feedback(el.dataset.f),
   onboardOff:()=>{ LS.device('nch2_club_onboard'); todayView(); },
   botLogin:()=>{ const box=$('#auth'); if(box) box.innerHTML=botSteps(); },
-  mailLogin:()=>{ const box=$('#auth'); if(!box) return; box.innerHTML=`<form class="mailf" id="mailF"><label class="f" for="emA">Почта</label>
-      <div class="row"><input id="emA" class="grow" type="email" inputmode="email" autocomplete="email" required placeholder="you@example.ru"><button class="btn white" type="submit">Получить код</button></div>
-      <p class="alt">Пришлём код из 6 цифр. Адрес не сохраняем — только его хеш, чтобы узнать вас в следующий раз.</p></form>
-      <div class="row reg"><button class="btn ghost sm" type="button" data-act="loginCancel">Назад</button></div><div id="authMsg" aria-live="polite"></div>`;
-    $('#emA').focus();
-    $('#mailF').addEventListener('submit',async e=>{ e.preventDefault(); const email=$('#emA').value.trim(), msg=$('#authMsg');
-      try{ const r=await api('POST','/api/auth/email/start',{email,invite:getInvite()});
-        box.innerHTML=`<form class="mailf" id="codeF"><label class="f" for="emC">Код из письма на ${esc(r.to)}</label>
-          <div class="row"><input id="emC" class="grow code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="••••••"><button class="btn white" type="submit">Войти</button></div>
-          <p class="alt">Код действует ${r.minutes} минут. Письма нет? Проверьте «Спам».</p></form><div class="row reg"><button class="btn ghost sm" type="button" data-act="mailLogin">Другая почта</button></div><div id="authMsg" aria-live="polite"></div>`;
-        $('#emC').focus();
-        $('#codeF').addEventListener('submit',async ev=>{ ev.preventDefault(); try{ const v=await api('POST','/api/auth/email/verify',{email,code:$('#emC').value}); landingView(v.token); }
-          catch(x){ $('#authMsg').innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }); }
-      catch(x){ msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }); },
+  mailResend:()=>{ const f=$('#codeF'); if(f){ const em=f.dataset.email; $('#auth').innerHTML=authIdle(); $('#emA').value=em; mailStart(em); } },
   tgLogin:()=>{ const q=new URLSearchParams({bot_id:CFG.botId,origin:location.origin,request_access:'write',return_to:pageUrl()}); location.href=CFG.tgLogin.url+'?'+q.toString(); },
   yaLogin:()=>{ const q=new URLSearchParams({ret:pageUrl(),s:yaState()}), c=getInvite(); if(c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)) q.set('invite',c);
     location.href=(API||location.origin)+'/api/auth/yandex/start?'+q.toString(); },
+  linkMail:()=>{ const box=$('#linkOut'); if(!box) return; box.innerHTML=`<form class="mailf reg" id="lmF" novalidate><label class="f" for="lmA">Почта</label><div class="mrow"><input id="lmA" type="email" inputmode="email" autocomplete="email" placeholder="you@example.ru"><button class="btn pri" type="submit">Получить код</button></div></form><div id="lmMsg" aria-live="polite"></div>`; $('#lmA').focus(); },
   linkYa:async()=>{ try{ const r=await api('POST','/api/me/link',{to:'yandex',ret:pageUrl(),s:yaState()}); location.href=r.url; }catch(e){ toast(e.message); } },
   linkTg:async()=>{ try{ const r=await api('POST','/api/me/link',{to:'telegram'}); const box=$('#linkOut');
       if(box) box.innerHTML=`<p class="note">Откройте бота и нажмите «Старт», затем — кнопку «Привязать к клубу» в ответе бота. <a class="btn sm" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Открыть бота</a> <button class="btn sm ghost" type="button" data-act="linkCheck">Готово, проверить</button></p>`; }
