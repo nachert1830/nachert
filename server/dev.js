@@ -30,7 +30,8 @@ const origin='http://localhost:'+PORT, site=SITE?'http://localhost:'+SITE:null;
 const cfg={dev:true,origin,secure:false,botToken:BOT_TOKEN,botName:'nachert_club_dev_bot',webhookSecret:'dev-webhook-secret',
   adminTg:['1000001'],mainUrl:process.env.MAIN_URL||'https://nachert1830.ru',week1:process.env.CLUB_WEEK1||'',
   yandex:{clientId:'dev-client',secret:'dev-secret',authUrl:origin+'/dev/ya/authorize',tokenUrl:origin+'/dev/ya/token',infoUrl:origin+'/dev/ya/info',revokeUrl:origin+'/dev/ya/revoke'},
-  adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/club/':origin+'/'};
+  adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/club/':origin+'/',
+  tgLogin:{url:origin+'/dev/tg/auth',origins:site?[origin,site]:[origin]}};
 const yaCodes=new Map();
 const page=(r,html)=>{ r.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'"}); r.end(html); };
 const escH=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
@@ -60,6 +61,18 @@ const srv=http.createServer(async(q,r)=>{
 <form action="/dev/ya/approve" method="get"><input type="hidden" name="state" value="${escH(p.get('state')||'')}">
 <p><label>Yandex id<br><input name="id" value="5000002"></label></p><p><label>Имя<br><input name="first_name" value="Тестировщик"></label></p>
 <p><label>Логин (owner — владелец)<br><input name="login" value="tester"></label></p><p><button id="yaAllow">Разрешить</button> <button name="deny" value="1" id="yaDeny">Отказать</button></p></form>`); }
+      /* поддельный oauth.telegram.org: форма → данные с подписью HMAC(SHA-256(токен бота)) → return_to#tgAuthResult=… */
+      if(u.pathname==='/dev/tg/auth'){ const p=u.searchParams, ret=p.get('return_to')||'';
+        if(p.get('bot_id')!==BOT_TOKEN.split(':')[0]||!cfg.tgLogin.origins.includes(p.get('origin'))||!ret.startsWith(p.get('origin')+'/')) return send(r,400,{error:'Bot domain invalid'});
+        return page(r,`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Telegram (эмуляция)</title>
+<body style="font:16px system-ui;max-width:420px;margin:40px auto;padding:0 16px"><h1 style="font-size:22px">Telegram — эмуляция</h1><p>Вход на сайт ${escH(p.get('origin'))} — подтверждение в приложении Telegram.</p>
+<form action="/dev/tg/approve" method="get"><input type="hidden" name="return_to" value="${escH(ret)}"><input type="hidden" name="origin" value="${escH(p.get('origin'))}">
+<p><label>Telegram id<br><input name="id" value="1000002"></label></p><p><label>Имя<br><input name="first_name" value="Тестировщик"></label></p><p><button id="tgAllow">Подтвердить</button></p></form>`); }
+      if(u.pathname==='/dev/tg/approve'){ const p=u.searchParams, ret=p.get('return_to')||'';
+        if(!cfg.tgLogin.origins.includes(p.get('origin'))||!ret.startsWith(p.get('origin')+'/')) return send(r,400,{error:'bad return_to'});
+        const d={id:+(String(p.get('id')||'1000002').replace(/\D/g,'').slice(0,12)||1000002),first_name:p.get('first_name')||'Тестировщик',username:'dev_user',auth_date:Math.floor((Date.now()+offset)/1000)};
+        const dcs=Object.keys(d).sort().map(k=>k+'='+d[k]).join('\n'); d.hash=crypto.createHmac('sha256',crypto.createHash('sha256').update(BOT_TOKEN).digest()).update(dcs).digest('hex');
+        r.writeHead(302,{Location:ret.split('#')[0]+'#tgAuthResult='+Buffer.from(JSON.stringify(d)).toString('base64').replace(/=+$/,'')}); return r.end(); }
       if(u.pathname==='/dev/ya/approve'){ const p=u.searchParams, back=new URL(origin+'/api/auth/yandex/callback'); back.searchParams.set('state',p.get('state')||'');
         if(p.get('deny')) back.searchParams.set('error','access_denied');
         else { const code='dev'+C.token(8); yaCodes.set(code,{id:String(p.get('id')||'5000002').replace(/\D/g,'').slice(0,18)||'5000002',first_name:p.get('first_name')||'Тестировщик',login:p.get('login')||'tester'}); back.searchParams.set('code',code); }

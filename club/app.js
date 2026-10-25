@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 const CAL=ClubCalendar, PL=ClubPlan, SRS=ClubSRS, BKT=ClubBKT, SYNC=ClubSync, REM=ClubReminder, SCAN=ClubScanner, FEAT=ClubFeatures;
-const VER='club-1.1';
+const VER='club-1.2';
 const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const view=()=>$('#view');
@@ -50,7 +50,7 @@ async function syncNow(){
   catch(e){ syncErr=e.offline?'':e.message; return false; }
   finally{ syncing=false; netState(); if(localVer!==v){ clearTimeout(syncTimer); syncTimer=setTimeout(syncNow,1500); } } }
 function netState(){ const n=$('#net'); if(!n) return; const off=!navigator.onLine||OFFLINE;
-  n.className='net'+(off||syncErr?' off':''); n.textContent=!ME?'':off?'офлайн · сохранится позже':syncErr?'не сохранено':syncing?'сохраняю…':isDirty()?'есть несохранённое':lastSync?'сохранено':''; n.title=syncErr||''; }
+  n.className='net'+(off||syncErr?' off':''); n.textContent=!ME?'':off?'офлайн · сохранится позже':syncErr?'не сохранено':syncing||(isDirty()&&ME.flags&&ME.flags.sync)?'сохраняю…':isDirty()?'есть несохранённое':lastSync?'сохранено':''; n.title=syncErr||''; }
 addEventListener('online',()=>{ if(OFFLINE) boot(); else syncNow(); netState(); });
 addEventListener('offline',netState);
 setInterval(()=>{ if(isDirty()) syncNow(); },60e3);
@@ -147,8 +147,11 @@ function consentBlock(){ return `<div class="consent">
 const consentVal=root=>({terms:!!($('#cTerms',root)||{}).checked,pd:!!($('#cPd',root)||{}).checked,photos:!!($('#cPhotos',root)||{}).checked});
 const getInvite=()=>{ try{ return sessionStorage.getItem('club_invite')||undefined; }catch(e){ return undefined; } };
 const botStart=()=>{ const c=getInvite(); return c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)?'i_'+c:'login'; };
-function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName;
-  return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="botLogin"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}</div><div id="authMsg" aria-live="polite"></div>`; }
+/* официальный вход Telegram — только на сайте, заданном у @BotFather (/setdomain); в остальных местах — через бота клуба */
+const tgOfficial=()=>!!(CFG&&CFG.tgLogin&&CFG.botId&&CFG.tgLogin.origins.includes(location.origin));
+function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.botName, off=tgOfficial();
+  return `<div class="row">${ya?`<button class="btn white lg" type="button" data-act="yaLogin"><span class="yamark" aria-hidden="true">Я</span>Войти с Яндекс ID</button>`:''}${tg?`<button class="btn ${ya?'ghost':'white'} lg" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}</div>
+  ${tg&&off?`<p class="alt">Telegram не открывается? <button class="lnkbtn" type="button" data-act="botLogin">Войти через бота клуба</button></p>`:''}<div id="authMsg" aria-live="polite"></div>`; }
 const OOPS={state:'Вход устарел или начат в другой вкладке. Нажмите кнопку входа ещё раз.',denied:'Вы отменили вход в Яндексе.',fail:'Яндекс ID сейчас не ответил. Попробуйте ещё раз через минуту.',
   noinvite:'Этот аккаунт ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',invite:'Приглашение не подходит: оно использовано, отозвано или устарело.',
   link:'Ссылка для привязки устарела. Нажмите «Привязать» в настройках ещё раз.',taken:'Этот Яндекс ID уже привязан к другому аккаунту клуба.'};
@@ -176,18 +179,20 @@ function loginView(err){ render(`<section class="hero"><span class="pill${err?' 
   <div class="auth" id="auth">${authIdle()}</div><p class="mut">Новых участников клуб принимает только по личной ссылке-приглашению.</p></section>
   <div class="feats">${FEATS.map(([i,t,b,p])=>`<div class="feat"><span class="ico ${t}">${ic(i)}</span><b>${b}</b><p>${p}</p></div>`).join('')}</div>
   <p class="foot"><a href="legal/terms.html">Соглашение</a> · <a href="legal/privacy.html">Персональные данные</a> · <a href="legal/consent.html">Согласие</a></p>`,'Вход'); }
-async function inviteView(){ const code=getInvite(); let st={valid:false,why:'Нет приглашения.'};
+async function inviteView(err){ const code=getInvite(); let st={valid:false,why:'Нет приглашения.'};
   render('<p class="mut">Проверяю приглашение…</p>','Приглашение');
   try{ st=await api('GET','/api/invite/check?code='+encodeURIComponent(code||'')); }catch(e){ st={valid:false,why:e.message}; }
   if(!st.valid){ render(`<section class="hero"><span class="pill red">Приглашение не подходит</span><h1>Клуб Начерта</h1><p>${esc(st.why)} Если вы уже участник — войдите как обычно.</p><div class="auth" id="auth">${authIdle()}</div></section>`,'Приглашение'); try{ sessionStorage.removeItem('club_invite'); }catch(e){} return; }
   render(`<section class="hero"><span class="pill">Личное приглашение</span><h1>Вас пригласили в клуб</h1>
-    <p>Клуб — закрытое тестирование нового кабинета Начерта. Войдите через Яндекс ID или Telegram — берём минимум: id и имя, плюс ваш прогресс. Данные — в России.</p>
+    <p>Клуб — закрытое тестирование нового кабинета Начерта. Войдите через Яндекс ID или Telegram — берём минимум: id и имя, плюс ваш прогресс. Данные — в России.</p>${err?`<p class="note bad">${esc(err)}</p>`:''}
     <div class="auth" id="auth">${authIdle()}</div></section>
   <div class="feats">${FEATS.map(([i,t,b,p])=>`<div class="feat"><span class="ico ${t}">${ic(i)}</span><b>${b}</b><p>${p}</p></div>`).join('')}</div>`,'Приглашение'); }
 
 /* ── «Сегодня» ── */
 function todayView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),week1(),t,5), wk=CAL.weekOf(week1(),t), done=doneMap();
-  const steps=PL.todaySteps(events(),t,done,21), tr=trainingToday(), onboard=LS.get('nch2_club_onboard',0), next=evs[0], p=dparts(t);
+  /* по одному текущему шагу на событие и не больше трёх: длинный список «на сегодня» пугает и не делается */
+  const allSteps=PL.todaySteps(events(),t,done,21), seen=new Set(), steps=allSteps.filter(s=>{ if(s.event) return true; if(seen.has(s.ev.id)) return false; seen.add(s.ev.id); return true; }).slice(0,3), more=allSteps.length-steps.length;
+  const tr=trainingToday(), onboard=LS.get('nch2_club_onboard',0), next=evs[0], p=dparts(t);
   const wkText=wk>=1&&wk<=17?wk+'-я неделя':wk<1?'до семестра':'семестр закончился';
   render(`<section class="hero"><div class="hero-row"><div><span class="pill">${esc(wkText)} · ${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span><h1>Привет, ${esc(ME.user.name)}</h1>
       <p>${next?'Ближайшее — '+esc(next.title)+', '+esc(CAL.human(next.date))+'.':'Событий в таблице больше нет.'} ${steps.length?'По плану сегодня — '+steps.length+' '+plural(steps.length,'шаг','шага','шагов')+'.':''}</p></div>
@@ -195,7 +200,7 @@ function todayView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),we
   ${onboard?`<section class="card tri"><div class="ch"><span class="ico">${ic('info')}</span><h2>С чего начать</h2><button class="fb" data-act="onboardOff" type="button">Скрыть</button></div><ol class="lead"><li>Укажите <a href="#/calendar">день занятий</a> по каждому предмету — от него считаются даты.</li><li>Есть прогресс на nachert1830.ru? Перенесите его: <a href="#/settings">Настройки → Перенести прогресс</a>.</li><li>Включите <a href="#/settings">напоминания</a> в Telegram, если удобно.</li></ol></section>`:''}
   <div class="grid"><div class="col">
     ${flag('training')?card('training','Тренировка дня',`<p class="lead">${tr.items.length?(tr.left?'Осталось '+tr.left+' из '+tr.items.length+' · ≈ '+tr.minutes+' мин':'На сегодня всё сделано'):'Повторять пока нечего — начните с карты навыков.'}</p>${tr.items.length&&tr.left?`<div class="bar"><i data-w="${(tr.items.length-tr.left)/tr.items.length*100}"></i></div>`:''}<div class="row reg"><a class="btn cta lg" href="#/train">${tr.left?'Начать тренировку':'Открыть'} ${ic('arrow')}</a></div>`,'',{icon:'train',tone:'green',sub:'повтор по интервалам + задача вперемешку'}):''}
-    ${flag('plan')?card('plan','По плану сегодня',steps.length?`<ol class="todo">${steps.map(s=>`<li class="${s.done?'done':''}"><span class="dot">${s.event?'◆':ic('target')}</span><div class="st"><b>${esc(s.ev.short+' '+s.ev.subjTitle)} · ${esc(s.title)}</b><small>${s.min?'≈ '+s.min+' мин':''}</small><div class="what">${esc(s.what)}</div><a href="#/event/${s.ev.id}">К плану →</a></div></li>`).join('')}</ol>`:'<p>На сегодня по обратному плану ничего. Хороший день для тренировки.</p>','',{navy:true,icon:'plan'}):''}
+    ${flag('plan')?card('plan','По плану сегодня',steps.length?`<ol class="todo">${steps.map(s=>`<li class="${s.done?'done':''}"><span class="dot">${s.event?'◆':ic('target')}</span><div class="st"><b>${esc(s.ev.short+' '+s.ev.subjTitle)} · ${esc(s.title)}</b><small>${s.min?'≈ '+s.min+' мин':''}</small><div class="what">${esc(s.what)}</div><a href="#/event/${s.ev.id}">К плану →</a></div></li>`).join('')}</ol>${more>0?`<p class="mut reg">Ещё ${more} ${plural(more,'шаг','шага','шагов')} — в плане каждого события. Сначала эти.</p>`:''}`:'<p>На сегодня по обратному плану ничего. Хороший день для тренировки.</p>','',{navy:true,icon:'plan'}):''}
   </div><div class="col">
     ${flag('calendar')?card('calendar','Ближайшее',evs.length?`<div class="evl">${evs.map(e=>evRow(e,td)).join('')}</div><div class="row reg"><a class="btn ghost sm" href="#/calendar">Весь календарь ${ic('arrow')}</a></div>`:'<p class="mut">В таблице больше нет событий.</p>','',{icon:'cal'}):''}
   </div></div>`,'Сегодня'); }
@@ -216,7 +221,7 @@ function calendarView(){ const s=CAL.normSettings(calSet()), t=dayNum(), wkNow=C
 /* ── событие и обратный план ── */
 function stepLi(s,i){ const range=s.from&&s.to&&s.from!==s.to?esc(CAL.human(s.from))+' – '+esc(CAL.human(s.to)):esc(CAL.human(s.date));
   const cls=[s.when==='today'?'today':'',s.done?'done':'',s.event?'ev-day':'',s.buffer?'buf':''].join(' ');
-  const dot=s.event?'◆':s.buffer||(s.days&&!s.key)?'·':`${s.done?ic('check'):`<span class="nn">${i+1}</span>`}<input type="checkbox" data-chg="step" data-k="${esc(s.key)}"${s.done?' checked':''} aria-label="Отметить сделанным: ${esc(s.title)}" title="Отметить сделанным">`;
+  const dot=s.event?'◆':s.buffer?'·':(s.days&&!s.key)?`<span class="nn">${i+1}</span>`:`${s.done?ic('check'):`<span class="nn">${i+1}</span>`}<input type="checkbox" data-chg="step" data-k="${esc(s.key)}"${s.done?' checked':''} aria-label="Отметить сделанным: ${esc(s.title)}" title="Отметить сделанным">`;
   return `<li class="${cls}"><span class="dot">${dot}</span><div class="st"><b>${esc(s.title)}</b><small>${range}${s.min?' · ≈ '+s.min+' мин'+(s.days?' в день':''):''}${s.squeezed?' · сжато':''}${s.when==='today'?' · сегодня':''}</small><div class="what">${esc(s.what)}</div>${stepAction(s)}</div></li>`; }
 /* ежедневные шаги «вперемешку» — одной строкой с диапазоном дат; отметка — за сегодняшний день */
 function groupMix(steps){ const out=[]; let g=null;
@@ -336,12 +341,12 @@ function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics
   const all=[...new Set([].concat(CORE.rkTopics[1]||[],CORE.rkTopics[2]||[],CORE.rkTopics[3]||[]))];
   const cnt={master:0,mid:0,low:0}; all.forEach(s=>{ const o=est[s]; if(!o||!o.n) return; const lv=BKT.level(BKT.mastery(est,s),o.n).id; if(lv==='master') cnt.master++; else if(lv==='low') cnt.low++; else cnt.mid++; });
   const row=s=>{ const o=est[s]||{}, p=BKT.mastery(est,s), lv=BKT.level(p,o.n);
-    return `<div class="sk"><div class="h"><b>${esc(topicTitle(s))}</b><span class="lv ${lv.id}">${esc(lv.t)}</span></div><div class="bar"><i class="${lv.id}" data-w="${Math.max(3,Math.round(p*100))}"></i></div><small>${o.n?'освоено на '+Math.round(p*100)+' % · наблюдений: '+o.n:'данных пока нет'}</small></div>`; };
+    return `<div class="sk"><div class="h"><b>${esc(topicTitle(s))}</b><span class="lv ${lv.id}">${esc(lv.t)}</span></div><div class="bar${o.n?'':' none'}"><i class="${lv.id}" data-w="${o.n?Math.max(3,Math.round(p*100)):0}"></i></div><small>${o.n?'освоено на '+Math.round(p*100)+' % · наблюдений: '+o.n:'данных пока нет'}</small></div>`; };
   const seen=new Set();
   render(`<section class="hero"><span class="pill">Карта навыков · ${all.length} тем начерта</span><h1>Что уже получается</h1><p>Оценка обновляется после каждой самооценки в тренировке и диагностике.</p>
     <div class="stats reg"><div class="stat"><b>${cnt.master}</b><span>освоено</span></div><div class="stat"><b>${cnt.mid}</b><span>в процессе</span></div><div class="stat"><b>${cnt.low}</b><span>слабые места</span></div></div></section>
   <div class="grid"><div class="col">
-    ${card('skills','Что тренировать',rec.length?`<ul class="rec">${rec.map(r=>`<li><b>${esc(topicTitle(r.skill))}</b> <span class="lv ${BKT.level(r.p,r.n).id}">${Math.round(r.p*100)} %</span><div class="row">${r.tasks.map(n=>ext(mainUrl('#/ng/tasks/'+n+'/try'),'№'+n)).join('')||'<small>Все задачи темы уже в повторении.</small>'}${r.tasks.length?`<button class="btn sm pri" type="button" data-act="addTrain" data-n="${r.tasks.join(',')}">${ic('plus')}В тренировку</button>`:''}</div></li>`).join('')}</ul>`:'<p class="mut">Все навыки освоены — повторяйте по интервалам.</p>',
+    ${card('skills','Что тренировать',rec.length?`<ul class="rec">${rec.map(r=>`<li><b>${esc(topicTitle(r.skill))}</b> <span class="lv ${BKT.level(r.p,r.n).id}">${r.n?Math.round(r.p*100)+' %':'ещё не решали'}</span><div class="row">${r.tasks.map(n=>ext(mainUrl('#/ng/tasks/'+n+'/try'),'№'+n)).join('')||'<small>Все задачи темы уже в повторении.</small>'}${r.tasks.length?`<button class="btn sm pri" type="button" data-act="addTrain" data-n="${r.tasks.join(',')}">${ic('plus')}В тренировку</button>`:''}</div></li>`).join('')}</ul>`:'<p class="mut">Все навыки освоены — повторяйте по интервалам.</p>',
       'каждая самооценка — наблюдение. Оценка — Bayesian Knowledge Tracing (Corbett, Anderson, 1995): вероятность «навык освоен» обновляется по формуле Байеса с учётом промаха (знал, но ошибся, 10 %) и угадывания (20 %); освоено — от 95 %. «С подсказкой» считается ошибкой, описка — нет. Отмеченные ошибки снижают оценку своего навыка, а не только темы задачи.',{icon:'target',tone:'red',sub:f.length?'сначала темы ближайшего РК':'самые слабые темы'})}
     <section class="card"><div class="ch"><span class="ico amber">${ic('sheet')}</span><h2>ИКГ · лист по ГОСТ<small>из предпроверки листов и диагностики</small></h2></div>${BKT.IKG_SKILLS.filter(s=>s.id!=='ikg-model'||est[s.id]).map(s=>row(s.id)).join('')}</section>
   </div><div class="col">
@@ -353,7 +358,7 @@ function checkView(){
   render(`${pageHead('Проверка','Сверить своё решение и лист до сдачи.',['#/more','Ещё'])}
   <div class="grid"><div class="col">
     ${flag('normo')?card('normo','Предпроверка листа ДЗ ИКГ',`<p>Загрузите лист в формате SVG (экспорт из САПР) — нормоконтроль основного сайта проверит формат, рамку, основную надпись, линии, шрифт, виды и разрезы, штриховку и размеры.</p>
-      <label class="f" for="nkF">Лист SVG</label><input id="nkF" type="file" accept=".svg,image/svg+xml">
+      <label class="f" for="nkF">Лист SVG</label><label class="file"><input id="nkF" type="file" accept=".svg,image/svg+xml"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
       <div class="row reg"><button class="btn pri" type="button" data-act="normo">Проверить мой лист</button></div>
       <p class="mut reg">Или образцы ДЗ 2:</p><div class="samples"><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v5-clean">верный лист</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v8-thin">ошибка в линиях</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v12-numline">ошибка в размерах</button></div>
       <div id="nkOut" aria-live="polite"></div>`,
@@ -361,7 +366,7 @@ function checkView(){
   </div><div class="col">
     ${flag('scanner')?card('scanner','Проверь решение по фото',`<p class="note warn">Сканер ещё не подключён: сейчас здесь заглушка, которая честно отвечает «не знаю». Фото обрабатывается на устройстве и никуда не отправляется.</p>
       <label class="f" for="scN">Номер задачи</label><input id="scN" type="number" min="1" max="89" inputmode="numeric" placeholder="например, 52">
-      <label class="f" for="scF">Фото решения</label><input id="scF" type="file" accept="image/*" capture="environment">
+      <label class="f" for="scF">Фото решения</label><label class="file"><input id="scF" type="file" accept="image/*" capture="environment"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
       <div class="row reg"><button class="btn pri" type="button" data-act="scan">Проверить</button></div><div id="scOut" aria-live="polite"></div>`,
       'быстрая обратная связь сразу после попытки полезнее отложенной (Hattie, Timperley, 2007). Подключение: <code>scan(фото, задача) → вердикт</code>, lib/scanner.js.',{icon:'scan'}):''}
   </div></div>
@@ -401,7 +406,8 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
     <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Профиль<small>${u.role==='admin'?'админ':'участник'}</small></h2></div>
       <label class="f" for="pName">Имя</label><div class="row"><input id="pName" class="grow" type="text" maxlength="60" value="${esc(u.name)}"><button class="btn" type="button" data-act="saveName">Сохранить</button></div>
       <label class="chk reg"><input type="checkbox" data-chg="photos"${u.photos?' checked':''}><span>Разрешаю использовать мои фото чертежей для улучшения проверки<small>Необязательно; сейчас фото никуда не отправляются</small></span></label></section>
-    ${flag('reminders')?card('reminders','Напоминания в Telegram',`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
+    ${flag('reminders')?card('reminders','Напоминания в Telegram',!u.telegram?`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
+      <p class="note">Напоминания приходят в Telegram. Сначала привяжите его ниже, в «Способах входа», — и здесь появятся настройки.</p>`:`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
       <label class="chk"><input type="checkbox" id="rOn"${r.enabled?' checked':''}><span>Присылать напоминания</span></label>
       <div class="grid2"><div><label class="f" for="rTime">Время</label><input id="rTime" type="time" value="${esc(r.time)}"></div><div><label class="f" for="rTz">Часовой пояс</label><select id="rTz">${tzs.map(z=>`<option${z===r.tz?' selected':''}>${esc(z)}</option>`).join('')}</select></div>
       <div><label class="f" for="rQf">Тихие часы с</label><input id="rQf" type="time" value="${esc(r.quietFrom)}"></div><div><label class="f" for="rQt">до</label><input id="rQt" type="time" value="${esc(r.quietTo)}"></div></div>
@@ -411,7 +417,7 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
     ${flag('sync')?card('sync','Прогресс',`<p class="mut">Хранится на устройстве (работает без сети) и в аккаунте.${lastSync?' Сохранено в '+new Date(lastSync).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'.':''}</p>
       <div class="row"><button class="btn" type="button" data-act="syncNow">Сохранить сейчас</button></div>
       <h3 class="reg">Перенести прогресс с nachert1830.ru</h3><p class="mut">На сайте: «Тренировка дня» → внизу «Сохранить в файл». Здесь выберите этот файл:</p>
-      <input id="impF" type="file" accept="application/json,.json"><div class="row reg"><button class="btn" type="button" data-act="import">Перенести</button></div>`,'',{icon:'train',tone:'green'}):''}
+      <label class="file"><input id="impF" type="file" accept="application/json,.json"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label><div class="row reg"><button class="btn" type="button" data-act="import">Перенести</button></div>`,'',{icon:'train',tone:'green'}):''}
   </div><div class="col">
     <section class="card"><div class="ch"><span class="ico green">${ic('data')}</span><h2>Мои данные<small>хранятся в России, Yandex Cloud</small></h2></div>
       <div class="kv"><div><span>id в Яндекс ID / Telegram и имя</span><span>для входа</span></div><div><span>Прогресс и планы</span><span>для кабинета</span></div><div><span>Журнал входов</span><span>90 дней</span></div></div>
@@ -455,7 +461,7 @@ async function adminView(){ if(ME.user.role!=='admin'){ render('<p class="note b
     feedback:D.feedback.length?`<ul class="list">${D.feedback.map(f=>`<li><b>${esc(f.feature==='privacy'?'Обращение к владельцу':(D.features.find(x=>x.id===f.feature)||{t:'Общее'}).t)}</b> ${f.mood?'<span class="lv">'+({good:'полезно',unclear:'непонятно',bad:'мешает'})[f.mood]+'</span>':''}<p>${esc(f.text)}</p><small>${esc(f.name)} · ${dt(f.ts)}</small>${f.feature==='privacy'?(f.reply?`<p class="note ok reg">Ответ (${dt(f.replyAt)}): ${esc(f.reply)}</p>`:`<div class="row reg"><button class="btn sm pri" type="button" data-act="reply" data-id="${esc(f.id)}">Ответить</button></div>`):''}</li>`).join('')}</ul>`:'<p class="empty">Отзывов пока нет.</p>',
     logins:D.logins.map(l=>`<div class="urow"><div><b>${esc(l.user?names[l.user]||'удалён':'—')}</b><small>${dt(l.ts)} · ${esc(l.ip)}${l.reason?' · '+esc(l.reason):''}</small></div><span class="st-badge ${l.ok?'ok':'bad'}">${l.ok?'вход':'отказ'}</span></div>`).join('')||'<p class="mut">Пусто.</p>',
     settings:`<label class="f" for="w1">Понедельник недели 1</label><div class="row"><input id="w1" class="grow" type="date" value="${esc(D.settings.week1)}"><button class="btn pri" type="button" data-act="saveWeek1">Сохранить</button></div><p class="mut">По умолчанию 31.08.2026 — сверьте с расписанием МГТУ. От этой даты считаются все недели календаря.</p>`};
-  render(`${pageHead('Админ-панель','',['#/more','Ещё'])}<div class="seg" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-act="atab" data-t="${k}" class="${ADMIN_TAB===k?'on':''}">${l}</button>`).join('')}</div>
+  render(`${pageHead('Админ-панель','',['#/more','Ещё'])}<div class="seg wrap" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-act="atab" data-t="${k}" class="${ADMIN_TAB===k?'on':''}">${l}</button>`).join('')}</div>
     <section class="card reg">${body[ADMIN_TAB]}</section>`,'Админ-панель');
   const f=$('#invForm'); if(f) f.addEventListener('submit',async e=>{ e.preventDefault();
     try{ const r=await api('POST','/api/admin/invites',{label:$('#invL').value,days:+$('#invD').value,role:$('#invA').checked?'admin':'member'});
@@ -475,6 +481,7 @@ const ACT={
   fb:el=>feedback(el.dataset.f),
   onboardOff:()=>{ LS.device('nch2_club_onboard'); todayView(); },
   botLogin:()=>{ const box=$('#auth'); if(box) box.innerHTML=botSteps(); },
+  tgLogin:()=>{ const q=new URLSearchParams({bot_id:CFG.botId,origin:location.origin,request_access:'write',return_to:pageUrl()}); location.href=CFG.tgLogin.url+'?'+q.toString(); },
   yaLogin:()=>{ const q=new URLSearchParams({ret:pageUrl(),s:yaState()}), c=getInvite(); if(c&&/^[A-Za-z0-9_-]{16,62}$/.test(c)) q.set('invite',c);
     location.href=(API||location.origin)+'/api/auth/yandex/start?'+q.toString(); },
   linkYa:async()=>{ try{ const r=await api('POST','/api/me/link',{to:'yandex',ret:pageUrl(),s:yaState()}); location.href=r.url; }catch(e){ toast(e.message); } },
@@ -550,7 +557,8 @@ const CHG={
   role:async el=>{ try{ await api('POST','/api/admin/users/role',{id:el.dataset.id,role:el.value}); toast('Роль изменена'); }catch(e){ toast(e.message); adminView(); } }
 };
 document.addEventListener('click',e=>{ const el=e.target.closest('[data-act]'); if(el&&ACT[el.dataset.act]){ e.preventDefault(); ACT[el.dataset.act](el,e); } });
-document.addEventListener('change',e=>{ const el=e.target.closest('[data-chg]'); if(el&&CHG[el.dataset.chg]) CHG[el.dataset.chg](el,e); });
+document.addEventListener('change',e=>{ const f=e.target.closest('.file input[type=file]'); if(f){ const n=f.parentNode.querySelector('.fn'); if(n) n.textContent=f.files&&f.files[0]?f.files[0].name:'файл не выбран'; }
+  const el=e.target.closest('[data-chg]'); if(el&&CHG[el.dataset.chg]) CHG[el.dataset.chg](el,e); });
 $('#theme').addEventListener('click',()=>{ const t=document.documentElement.dataset.theme==='dark'?'light':'dark'; document.documentElement.dataset.theme=t; LS.device('nch2_theme',t); });
 
 /* выход: стираем вход и данные клуба; на nachert1830.ru прогресс nch2_* общий с сайтом (он был и до клуба) — его не трогаем */
@@ -559,7 +567,15 @@ function wipeLocal(){ TOK.set(''); try{ const ks=[]; for(let i=0;i<localStorage.
 /* ── маршруты ── */
 function tabs(){ const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(location.hash.replace(/^#\/?/,'').split('/')[0])||'';
   $$('a',t).forEach(a=>{ a.hidden=!!a.dataset.f&&!flag(a.dataset.f); a.classList.toggle('on',a.dataset.r===r||(r==='event'&&a.dataset.r==='calendar')||(['check','settings','admin','about'].includes(r)&&a.dataset.r==='more')); }); }
-function route(){ closeSheet(); const h=location.hash.replace(/^#\/?/,''), p=h.split('/');
+/* возврат с oauth.telegram.org: #tgAuthResult=<base64 JSON, подписанный Telegram> → сервер проверяет подпись → «Войти как …?» */
+async function tgReturn(raw){ history.replaceState(null,'','#/'); let data=null;
+  try{ data=JSON.parse(decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((raw.length+3)%4))))); }catch(e){}
+  if(!data||raw==='false') return loginView('Вход через Telegram отменён.');
+  render('<p class="mut">Проверяю подтверждение Telegram…</p>','Вход');
+  try{ const r=await api('POST','/api/auth/telegram',{data,invite:getInvite()}); return landingView(r.token); }
+  catch(e){ return getInvite()?inviteView(e.message):loginView(e.message); } }
+function route(){ closeSheet(); const m=/^#tgAuthResult=([A-Za-z0-9+/=_%-]*)/.exec(location.hash); if(m){ if(!ME) return tgReturn(decodeURIComponent(m[1])); history.replaceState(null,'','#/'); }
+  const h=location.hash.replace(/^#\/?/,''), p=h.split('/');
   if(p[0]==='invite'&&p[1]){ try{ sessionStorage.setItem('club_invite',p[1]); }catch(e){} history.replaceState(null,'','#/join'); return route(); }
   if(p[0]==='tg'&&p[1]){ const tok=p[1]; history.replaceState(null,'','#/'); if(!ME) return landingView(tok); }
   if(p[0]==='ya'&&p[1]){ const tok=p[1], cs=p[2]; let mine=''; try{ mine=sessionStorage.getItem('club_ya_s')||''; sessionStorage.removeItem('club_ya_s'); }catch(e){}

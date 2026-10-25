@@ -101,7 +101,7 @@ function createApp(o){
   /* ── обработчики ── */
   const R={};
   R['GET /api/config']=async()=>{ const s=await settings(); return H.json(200,{botId:(cfg.botToken.split(':')[0])||null,botName:cfg.botName||null,
-    yandex:!!cfg.yandex.clientId,devBot:!!cfg.dev,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
+    yandex:!!cfg.yandex.clientId,devBot:!!cfg.dev,tgLogin:cfg.botToken&&cfg.tgLogin&&cfg.tgLogin.origins.length?cfg.tgLogin:null,mainUrl:cfg.mainUrl,week1:s.week1,docs:DOCS_VERSION,features:FEAT.FEATURES.map(f=>({id:f.id,t:f.t}))}); };
 
   R['GET /api/invite/check']=async(req)=>{ await limit('inv',maskIp(req.ip),30,600); const st=await inviteState(inviteHash(req.query.code)); return H.json(200,{valid:st.ok,why:st.ok?'':st.why}); };
 
@@ -142,6 +142,31 @@ function createApp(o){
     if(!member&&!consent) fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true});
     if(!(await store.update('botlogin',id,{used:true,usedAt:t},{ifEq:{used:false}}))) fail(410,'Эта ссылка уже использована.',{expired:true});
     return enter(req,{key,method,name:r.name,tgId:key.startsWith('tg:')?key.slice(3):null,invite:r.invite,consent,boot:r.boot}); };
+
+  /* ── официальный вход Telegram (oauth.telegram.org) ──
+     Страница уходит на oauth.telegram.org/auth?bot_id=…&origin=…&return_to=<страница>; человек подтверждает вход в приложении
+     Telegram (сообщение приходит от самого Telegram, не от нашего бота) и возвращается на <страница>#tgAuthResult=<данные>.
+     Данные подписаны Telegram: HMAC-SHA256 с ключом SHA-256(токен бота) — проверяем подпись без запросов в Telegram.
+     Свежесть — 10 минут, каждая подпись — один раз; дальше тот же экран «Войти как …?». Домен сайта задаётся у @BotFather (/setdomain). */
+  const tgSecret=()=>require('crypto').createHash('sha256').update(cfg.botToken).digest();
+  function tgVerify(d){ if(!d||typeof d!=='object'||Array.isArray(d)) return null;
+    const keys=Object.keys(d).filter(k=>k!=='hash'); if(keys.length>12||!/^[0-9a-f]{64}$/.test(String(d.hash||''))) return null;
+    if(keys.some(k=>!/^[a-z_]{1,20}$/.test(k)||!['string','number'].includes(typeof d[k])||String(d[k]).length>300)) return null;
+    const dcs=keys.sort().map(k=>k+'='+d[k]).join('\n');
+    if(!C.safeEqual(C.hmac(tgSecret(),dcs),String(d.hash))) return null;
+    if(!/^\d{1,16}$/.test(String(d.id))||!/^\d{9,11}$/.test(String(d.auth_date))) return null;
+    return {id:String(d.id),name:cleanName(d.first_name)||'Участник',at:+d.auth_date*1000,hash:String(d.hash)}; }
+  R['POST /api/auth/telegram']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),30,600);
+    if(!cfg.botToken) fail(404,'Вход через Telegram не настроен.');
+    const v=tgVerify(b.data), t=now();
+    if(!v){ await logLogin(req,null,'telegram',false,'подпись Telegram не сошлась'); fail(400,'Telegram не подтвердил вход. Попробуйте ещё раз.'); }
+    if(v.at<t-LOGIN_MIN*60e3||v.at>t+60e3){ await logLogin(req,null,'telegram',false,'подтверждение устарело'); fail(410,'Подтверждение Telegram устарело. Нажмите «Войти через Telegram» ещё раз.',{expired:true}); }
+    if(!(await store.put('botlogin',{id:C.sha256('tgauth:'+v.hash).slice(0,40),kind:'tgauth',exp:t+DAY,createdAt:t},{ifNotExists:true}))) fail(410,'Это подтверждение уже использовано. Нажмите «Войти через Telegram» ещё раз.',{expired:true});
+    const key='tg:'+v.id, member=!!(await store.get('identities',key)), inv=member?null:inviteHash(b.invite);
+    if(!member&&!isBootstrap(key)){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'telegram',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Этот Telegram ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',{needInvite:true}); } }
+    const tok=C.token(24);
+    await store.put('botlogin',{id:loginId(tok),key,method:'telegram',name:v.name,invite:inv,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
+    return H.json(200,{token:tok}); };
 
   R['POST /api/tg/webhook']=async(req)=>{ if(!cfg.webhookSecret||!C.safeEqual(req.headers['x-telegram-bot-api-secret-token']||'',cfg.webhookSecret)) fail(403,'нет');
     let u={}; try{ u=JSON.parse(req.body||'{}'); }catch(e){} const act=await onUpdate(u); return H.json(200,act||{ok:true}); };

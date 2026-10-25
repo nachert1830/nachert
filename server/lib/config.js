@@ -18,7 +18,9 @@ function fromEnv(env){ env=env||process.env;
     adminYa:list(env.ADMIN_YA_LOGINS).map(x=>x.toLowerCase()),
     /* сайты, с которых открывают клуб (nachert1830.ru/club/), и куда ведут ссылки входа */
     fronts:list(env.FRONT_ORIGINS),
-    frontUrl:env.FRONT_URL||''
+    frontUrl:env.FRONT_URL||'',
+    /* официальный вход Telegram работает только на сайте, указанном у @BotFather (/setdomain) */
+    tgLogin:{url:'https://oauth.telegram.org/auth',origins:list(env.TG_LOGIN_ORIGINS||'https://nachert1830.ru')}
   };
   cfg.secure=/^https:\/\//.test(cfg.origin);
   cfg.fronts=[cfg.origin].concat(cfg.fronts.map(x=>x.replace(/\/$/,''))).filter((x,i,a)=>x&&a.indexOf(x)===i);

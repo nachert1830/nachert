@@ -356,3 +356,17 @@ li.today .st small{color:#d0342b}
 .empty{text-align:center;padding:18px 8px;color:var(--mut)}
 .empty svg{width:34px;height:34px;color:var(--mut2);margin-bottom:6px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ── доработки 25.10: пустая полоска без данных, вкладки в две строки, выбор файла, кнопки оценки в одну строку, запасной вход ── */
+.bar.none{background:repeating-linear-gradient(135deg,var(--surf2) 0 6px,transparent 6px 12px);border:1px dashed var(--line2)}
+.seg.wrap{display:flex;flex-wrap:wrap;overflow:visible}
+.seg.wrap button{flex:1 1 auto}
+.file{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer;margin-top:4px}
+.file input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.file input:focus-visible+.btn{outline:3px solid var(--blue2);outline-offset:2px}
+.file .fn{color:var(--ink2);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.rate .btn{white-space:nowrap;font-size:clamp(12px,3.3vw,14px);padding:0 4px}
+.hero .alt{margin:12px 0 0;font-size:14px;color:rgba(255,255,255,.82)}
+.lnkbtn{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.hero .lnkbtn{color:#fff;font-weight:600}
+.grid2>.chk+.chk{margin-top:0}
