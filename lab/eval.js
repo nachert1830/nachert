@@ -1,0 +1,105 @@
+/* ═══════════ Замер сканера: node lab/eval.js ═══════════
+   Синтетика (lab/synth.js): для каждой задачи (№ 47, № 46) и каждого уровня съёмки (easy, normal, hard) — набор
+   листов с известной правдой: верные решения разными способами, каждая ошибка библиотеки и «неизвестное построение»
+   (ошибка, которой в библиотеке нет). Реальные фото: lab/photos/<№>/*.png + truth.json ({"файл.png": "ok" | "foot1" | …}).
+   Таблица: вердикт вынесен, частичный вердикт (одна часть задачи), точность выпрямления (мм), верный диагноз,
+   ЛОЖНЫЕ ВЕРДИКТЫ, честные отказы.
+   Ложный вердикт — вердикт, не совпавший с правдой (в том числе «верно» при ошибке и любой вердикт на неизвестной
+   ошибке); частичный — ложный, если неверна названная часть. «С оговоркой»: правда — ошибка, неотличимая на этих
+   данных (чертежи расходятся < 1 мм), а вердикт «верно» сам её называет; или «неизвестное» построение случайно
+   совпало с ошибкой библиотеки, и вердикт назвал её.
+   --tasks=47,46 --per=3 (листов каждого вида на уровень) --levels=easy,normal --only=foot1 --json=файл --keep=папка
+   --why — причины отказов по листам (в stderr). */
+const fs=require('fs'), path=require('path');
+const {synth}=require('./synth.js'), {scan}=require('./scan.js'), IMG=require('./img.js'), {SHEETS,toPage}=require('./sheets.js');
+const cp=require('../core/cp.js'), C47=require('../core/cp47.js'), C46=require('../core/cp46.js'), {v2}=require('../core/model.js');
+const A=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
+const PER=+(A.per||3), LEVELS=(A.levels||'easy,normal,hard').split(','), ONLY=A.only?A.only.split(','):null, TASKS=(A.tasks||'47,46').split(',').map(Number);
+
+/* ── задачи: виды листов, план, правда по частям, неразличимость ── */
+const OKNV=Object.keys(C47.NVOPT).filter(k=>C47.NVOPT[k].ok);
+const T={
+  47:{ C:C47,
+    /* верное решение — 4 вида на 1 вид каждой ошибки, чтобы «верно» было частым, как в жизни */
+    KINDS:['ok','ok','ok','ok','h-par','f-hpar','foot1','foot2','12-swap','nv-same','nv-abs','nv-none','unknown'],
+    plan(kind,R){ const nvOk=R.pick(OKNV), side=nvOk.slice(3);
+      if(kind==='ok') return {kid:R.pick(['front','horiz']),nvid:nvOk};
+      if(kind==='unknown') return {kid:R.pick(['u-hrot','u-Kshift']),nvid:nvOk};
+      if(kind.startsWith('nv-')) return {kid:R.pick(['front','horiz']),nvid:kind==='nv-none'?'none':kind.slice(3)+':'+side};
+      return {kid:kind,nvid:nvOk}; },
+    /* часть K правды: верно / код ошибки / unknown */
+    partOf:t=>t.cls==='unknown'?'unknown':(C47.KOPT[t.kid].ok?'ok':t.kid),
+    /* неизвестное, совпавшее с ошибкой библиотеки: K′ и K″ студента в 1,5 мм от K′, K″ этой ошибки */
+    as(t){ if(t.cls!=='unknown') return null; const g=C47.given(SHEETS[47].G());
+      for(const kid of Object.keys(C47.KOPT)){ const E=cp.exec(C47.program(kid,t.nvid),g).E; if(E['K′']&&E['K″']&&t.E['K′']&&t.E['K″']&&v2.dist(E['K′'],t.E['K′'])<1.5&&v2.dist(E['K″'],t.E['K″'])<1.5) return C47.cls(kid,t.nvid); }
+      return null; },
+    /* неотличимость: чертёж ошибки против того же построения без ошибки, наибольший сдвиг общих точек */
+    sep(t){ if(t.cls==='ok'||t.cls==='unknown') return Infinity; const g=C47.given(SHEETS[47].G());
+      const okK=C47.KOPT[t.kid].ok?t.kid:'front', okNV=C47.NVOPT[t.nvid].ok?t.nvid:(t.nvid==='none'?null:'ok:'+t.nvid.split(':')[1]); if(!okNV) return Infinity;
+      const E1=cp.exec(C47.program(t.kid,t.nvid),g).E, E0=cp.exec(C47.program(okK,okNV),g).E; let m=0;
+      ['K′','K″','A₀','K₀','1′','2′','1″','2″'].forEach(n=>{ if(E1[n]&&E0[n]) m=Math.max(m,v2.dist(E1[n],E0[n])); }); return m; },
+    pts:['K′','K″'] },
+  46:{ C:C46,
+    KINDS:['ok','ok','ok','ok','5-EF','12-swap','v2-inv','v1-inv','v-both','v-none','unknown'],
+    plan(kind,R){ if(kind==='ok') return {kid:'ok',nvid:'ok'}; if(kind==='unknown') return {kid:R.pick(['u-5shift','u-vpiece']),nvid:'ok'};
+      if(C46.POPT[kind]) return {kid:kind,nvid:'ok'}; return {kid:'ok',nvid:kind}; },
+    partOf:t=>t.kid==='u-5shift'?'unknown':(t.kid==='u-vpiece'||C46.POPT[t.kid].ok?'ok':t.kid),
+    /* один перепутанный участок может совпасть с узором ошибки библиотеки (если на проекции один участок перекрытия) */
+    as(t){ if(t.kid!=='u-vpiece') return null; const G=SHEETS[46].G(), same=(a,b)=>Object.keys(a).every(k=>a[k].length===b[k].length&&a[k].every((x,i)=>x[2]===b[k][i][2]));
+      for(const v of Object.keys(C46.VOPT)) if(same(C46.pattern(G,v),t.vis)) return C46.cls('ok',v); return null; },
+    sep:()=>Infinity, pts:['5′','5″'] },
+};
+
+function rectErr(res,t){ const M=res.rect&&res.rect.ok&&res.rect.H; if(!M) return null; const Mi=IMG.H.inv(M), SH=SHEETS[t.n];
+  const pts=SH.given().filter(i=>i.t==='pt').map(i=>i.at).concat(SH.given().filter(i=>i.t==='seg').flatMap(i=>[i.a,i.b]));
+  return Math.max(...pts.map(p=>{ const P=toPage(SH,p), px=IMG.H.apply(t.H,P), back=IMG.H.apply(Mi,px); return v2.dist(back,P); })); }
+function pointErr(res,t,names){ const f=res.verdict&&res.verdict.points; if(!f) return null; let m=null;
+  names.forEach(n=>{ if(f[n]&&t.E[n]){ const d=v2.dist(f[n],t.E[n]); m=m==null?d:Math.max(m,d); } }); return m; }
+
+const pct=(a,b)=>b?Math.round(100*a/b)+' %':'—';
+const med=a=>{ if(!a.length) return '—'; const s=a.slice().sort((x,y)=>x-y); return s[Math.floor(s.length/2)].toFixed(2); };
+const p95=a=>{ if(!a.length) return '—'; const s=a.slice().sort((x,y)=>x-y); return s[Math.min(s.length-1,Math.floor(s.length*0.95))].toFixed(2); };
+
+function tally(rows){ const r={n:rows.length,read:0,right:0,falseV:0,refuse:0,equiv:0,unk:0,part:0,partRight:0,rect:[],pts:[],ms:0,fv:[]};
+  rows.forEach(x=>{ r.ms+=x.ms; if(x.rect!=null) r.rect.push(x.rect); if(x.pts!=null) r.pts.push(x.pts);
+    if(x.status!=='verdict'){ if(x.unknown) r.unk++; else r.refuse++; return; }
+    /* частичный вердикт (одна часть): верен, если эта часть совпала с правдой; иначе — ложный */
+    if(/\+(nv|v)\?$/.test(x.got||'')){ r.part++; const g=x.got.replace(/\+(nv|v)\?$/,''); if(g===x.part) r.partRight++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), частичный вердикт '+x.got); } return; }
+    r.read++;
+    if(x.got===x.cls) r.right++; else if(x.got==='ok'&&x.equiv&&(x.twins||[]).includes(x.cls)||x.as&&x.got===x.as) r.equiv++; else { r.falseV++; r.fv.push(x.id+': правда '+x.cls+' ('+x.kid+', '+x.nvid+'), вердикт '+x.got); } });
+  return r; }
+function row(name,r){ return '| '+name+' | '+r.n+' | '+r.read+' ('+pct(r.read,r.n)+') | '+r.part+' (верно '+r.partRight+') | '+med(r.rect)+' / '+p95(r.rect)+' | '+med(r.pts)+' | '+(r.right+r.equiv)+' ('+pct(r.right+r.equiv,r.read)+'; с оговоркой '+r.equiv+') | **'+r.falseV+'** | '+r.unk+' | '+r.refuse+' |'; }
+const HEAD='| Набор | Листов | Вердикт вынесен | Частичный вердикт | Выпрямление, мм (медиана / 95 %) | Точки ответа, мм | Верный диагноз | Ложные вердикты | Отказ «не узнаю построение» | Другие отказы |\n|---|---|---|---|---|---|---|---|---|---|';
+
+(()=>{ const t0=Date.now(), rows=[], keep=A.keep;
+  if(keep) fs.mkdirSync(keep,{recursive:true});
+  TASKS.forEach(n=>{ const TK=T[n]; LEVELS.forEach((lv,li)=>{ for(let i=0;i<PER*TK.KINDS.length;i++){ const kind=TK.KINDS[i%TK.KINDS.length]; if(ONLY&&!ONLY.includes(kind)) continue;
+    /* seed № 47 — как в прежних замерах; № 46 — свой диапазон */
+    const seed=(n===47?0:500000)+10007*(li+1)+i, R=IMG.rng(seed*31+7), p=TK.plan(kind,R), s=synth(Object.assign({n,seed,level:lv},p)), t=s.truth;
+    if(keep) fs.writeFileSync(path.join(keep,n+'-'+lv+'-'+i+'-'+t.cls+'.png'),IMG.encodePNG(s.img));
+    let res; try{ res=scan(s.img,{n}); }catch(e){ res={status:'refuse',reason:'сбой: '+e.message,ms:0}; }
+    const as=TK.as(t);
+    rows.push({id:n+'·'+lv+'#'+i,n,level:lv,cls:t.cls,as,part:as?as.split('+').find(x=>TK.C.KOPT[x])||'ok':TK.partOf(t),kid:t.kid,nvid:t.nvid,equiv:TK.sep(t)<1,status:res.status,got:res.verdict&&res.verdict.cls,twins:res.verdict&&res.verdict.twins,unknown:!!res.unknown,reason:res.reason,extraInfo:res.extraInfo,bestH:res.bestH,ms:res.ms||0,rect:rectErr(res,t),pts:pointErr(res,t,TK.pts)});
+    process.stderr.write('\r'+rows.length+' листов…'); } }); });
+  process.stderr.write('\n');
+  /* реальные фото владельца */
+  const real=[], PH=path.join(__dirname,'photos');
+  if(fs.existsSync(PH)) fs.readdirSync(PH).filter(d=>/^\d+$/.test(d)).forEach(d=>{ const dir=path.join(PH,d), tf=path.join(dir,'truth.json'); if(!fs.existsSync(tf)) return;
+    const truth=JSON.parse(fs.readFileSync(tf,'utf8'));
+    Object.entries(truth).forEach(([f,cls])=>{ const file=path.join(dir,f); if(!/\.png$/i.test(f)||!fs.existsSync(file)){ real.push({id:d+'/'+f,cls,status:'refuse',reason:'формат не поддержан в Node (нужен PNG)',ms:0}); return; }
+      let res; try{ res=scan(IMG.decodePNG(fs.readFileSync(file)),{n:+d}); }catch(e){ res={status:'refuse',reason:'сбой: '+e.message}; }
+      real.push({id:d+'/'+f,cls,part:cls.split('+').find(x=>(T[+d]||T[47]).C.KOPT[x])||'ok',status:res.status,got:res.verdict&&res.verdict.cls,twins:res.verdict&&res.verdict.twins,unknown:!!res.unknown,reason:res.reason,ms:res.ms||0}); }); });
+  const out=['## Сканер — замер ('+new Date().toISOString().slice(0,10)+', node lab/eval.js'+(process.argv.slice(2).length?' '+process.argv.slice(2).join(' '):'')+')','',HEAD];
+  TASKS.forEach(n=>{ LEVELS.forEach(lv=>out.push(row('№ '+n+' · '+lv,tally(rows.filter(r=>r.n===n&&r.level===lv))))); out.push(row('**№ '+n+' · всё**',tally(rows.filter(r=>r.n===n)))); });
+  const all=tally(rows); out.push(row('**синтетика · всё**',all)); out.push(row('реальные фото',tally(real)));
+  out.push('','Частичный вердикт — про одну часть задачи (№ 47: точка K; № 46: точки 5, 6), другая часть не прочитана уверенно.');
+  out.push('','По видам листов (синтетика, все уровни):','','| Задача | Правда | Листов | Вердикт | Верно (с оговоркой) | Частичный (верно) | Ложные | «Не узнаю» | Другие отказы |','|---|---|---|---|---|---|---|---|---|');
+  TASKS.forEach(n=>[...new Set(rows.filter(r=>r.n===n).map(r=>r.cls))].sort().forEach(c=>{ const t=tally(rows.filter(r=>r.n===n&&r.cls===c)); out.push('| '+n+' | '+c+' | '+t.n+' | '+t.read+' | '+(t.right+t.equiv)+' ('+t.equiv+') | '+t.part+' ('+t.partRight+') | '+t.falseV+' | '+t.unk+' | '+t.refuse+' |'); }));
+  const reasons={}; rows.filter(r=>r.status!=='verdict').forEach(r=>{ if(A.why) console.error(r.id+' '+r.cls+' ('+r.kid+', '+r.nvid+'): '+r.reason+(r.extraInfo&&r.extraInfo.length?' | лучшая '+r.bestH+' лишние: '+r.extraInfo.join('; '):'')); const k=String(r.reason).replace(/[\d.,]+/g,'#'); reasons[k]=(reasons[k]||0)+1; });
+  out.push('','Причины отказов:',''); Object.entries(reasons).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>out.push('- '+v+' × '+k));
+  if(all.fv.length){ out.push('','ЛОЖНЫЕ ВЕРДИКТЫ:',''); all.fv.forEach(x=>out.push('- '+x)); }
+  if(!real.length) out.push('','Реальных фото пока нет (lab/photos/<№>/ с truth.json).');
+  out.push('','Время: '+((Date.now()-t0)/1000).toFixed(0)+' с, сканер — '+(all.ms/Math.max(1,all.n)/1000).toFixed(2)+' с на лист.');
+  console.log(out.join('\n'));
+  if(A.json) fs.writeFileSync(A.json,JSON.stringify({rows,real,summary:all},null,1));
+})();

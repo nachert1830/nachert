@@ -137,7 +137,7 @@ async function main(){
 
   step('Сервисные аккаунты и права');
   const sa={}; for(const k of ['fn','gw']){ sa[k]=get(['iam','service-account','get','--name',NAMES[k]])||yc(['iam','service-account','create','--name',NAMES[k]]); say('  '+NAMES[k]+': '+sa[k].id); }
-  for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['gw','functions.functionInvoker']])
+  for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['fn','postbox.sender'],['gw','functions.functionInvoker']])
     try{ yc(['resource-manager','folder','add-access-binding',folder,'--role',role,'--subject','serviceAccount:'+sa[k].id]); }catch(e){ if(!/already/i.test(e.message)) throw e; }
 
   step('База данных YDB (serverless, Россия)');
@@ -188,7 +188,9 @@ async function main(){
   const front=E('FRONT_URL')||SITE_FRONT;
   say('  страница клуба: '+front+' ('+(await siteProbe())+')');
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN,FRONT_URL:front,
-    YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru'};
+    YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',
+    /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
+    MAIL_FROM:E('MAIL_FROM')||prev.MAIL_FROM||''};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
   const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','10s'],['remind','server/index.remind','120s']]){

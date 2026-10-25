@@ -370,3 +370,29 @@ li.today .st small{color:#d0342b}
 .lnkbtn{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .hero .lnkbtn{color:#fff;font-weight:600}
 .grid2>.chk+.chk{margin-top:0}
+
+/* ── проверка чертежа: главный раздел ── */
+.cta-check{display:flex;align-items:center;gap:14px;margin:0 0 16px;padding:16px 18px;border-radius:18px;background:linear-gradient(135deg,#d0342b,#ef5a3c);color:#fff;text-decoration:none;box-shadow:0 10px 24px -12px rgba(208,52,43,.7)}
+.cta-check .ico{background:rgba(255,255,255,.18);color:#fff;flex:none}
+.cta-check b{display:block;font:700 17px/1.25 var(--disp)}.cta-check small{display:block;opacity:.9;font-size:13.5px;margin-top:2px}
+.cta-check>svg{margin-left:auto;flex:none;width:20px;height:20px;stroke:#fff}
+.cta-check:hover{filter:brightness(1.05)}
+.tools{display:grid;gap:12px;margin:0 0 18px}
+@media (min-width:900px){.tools{grid-template-columns:1fr 1fr}}
+.tool{display:flex;align-items:flex-start;gap:14px;padding:18px;border-radius:18px;background:var(--surf);border:1px solid var(--line);text-decoration:none;color:var(--ink);box-shadow:var(--sh);transition:transform .15s,border-color .15s}
+.tool:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--blue2) 40%,var(--line))}
+.tool[aria-disabled="true"]{opacity:.55;pointer-events:none}
+.tool .ico{flex:none}.tool .tt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tool b{font:700 17px/1.25 var(--disp)}.tool small{color:var(--ink2);font:600 11px/1.3 var(--mono,monospace);text-transform:uppercase;letter-spacing:.06em}
+.tool .tt>span{color:var(--ink2);font-size:14.5px;line-height:1.45;margin-top:4px}
+.tool>svg{margin-left:auto;flex:none;width:20px;height:20px;stroke:var(--ink2);align-self:center}
+.labbar{display:flex;align-items:center;gap:12px;margin:-4px 0 10px;flex-wrap:wrap}
+.labbar .back{display:inline-flex;align-items:center;gap:6px;color:var(--ink2);text-decoration:none;font-weight:600;font-size:14px}
+.labbar .back svg{width:16px;height:16px}
+.labbar b{font:700 17px/1.2 var(--disp);flex:1;min-width:0}
+.labf{display:block;width:100%;height:calc(100dvh - 190px);min-height:520px;border:1px solid var(--line);border-radius:16px;background:var(--surf)}
+@media (min-width:900px){.labf{height:calc(100dvh - 150px)}}
+.hero .mailmark{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;flex:none;font:700 14px/1 'Geologica',sans-serif}
+.mailf input{min-height:48px}.mailf input.code{letter-spacing:.4em;font:600 20px var(--mono,monospace);text-align:center;max-width:220px}
+.hero .mailf .f{color:rgba(255,255,255,.9)}
+.tool,.tool:hover,.tool *,.cta-check,.cta-check:hover,.cta-check *{text-decoration:none}

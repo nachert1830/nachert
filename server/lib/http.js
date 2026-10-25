@@ -24,7 +24,7 @@ function securityHeaders(cfg,isHtml){ const h={
   if(isHtml) h['Content-Security-Policy']=CSP;
   return h; }
 const CSP=["default-src 'none'","script-src 'self'","style-src 'self'","img-src 'self' data: blob:","font-src 'self'","connect-src 'self'",
-  "form-action 'self'","base-uri 'none'","frame-ancestors 'none'","manifest-src 'self'","worker-src 'self'","object-src 'none'"].join('; ');
+  "form-action 'self'","base-uri 'none'","frame-ancestors 'none'","manifest-src 'self'","worker-src 'self'","frame-src 'self'","object-src 'none'"].join('; ');
 
 function json(status,obj,extra){ return {statusCode:status,headers:Object.assign({'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'},extra||{}),body:JSON.stringify(obj)}; }
 function cookie(name,value,o){ const p=[name+'='+encodeURIComponent(value),'Path=/','HttpOnly','SameSite=Lax']; if(o.secure) p.push('Secure'); if(o.maxAge!=null) p.push('Max-Age='+o.maxAge); return p.join('; '); }
