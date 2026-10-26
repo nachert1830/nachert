@@ -75,7 +75,13 @@ function explain3d(segs,data,o){ o=o||{}; const {A,B,C,S}=data, n=v3.unit(v3.cro
   /* выбор h₁′: прямая, проходящая через ОБЕ верные точки (3′ на S′A′, 4′ на n′), — построение верно, она и есть;
      иначе — по линиям связи и длине, а если подходят разные прямые — «?» (неверный выбор дал бы ложную ошибку) */
   H1h.forEach(c=>{ c.both=Math.abs(c.q3[1]-E3[1])<=1.5&&Math.abs(c.q4[1]-E4[1])<=1.5; });
-  H1h.sort((a,b)=>(b.both-a.both)||b.r-a.r||b.L-a.L); const hh=H1h[0];
+  /* ось вращения — прямая, к которой от S′ проведён перпендикуляр (радиус вращения, хоть наполовину). Без этого
+     «проходит через обе верные точки» ловило чужую прямую: луч S̄′–4′ случайно прошёл в 1,5 мм от верной 3′ */
+  H1h.forEach(c=>{ const e0=v2.unit(v2.sub(c.q4,c.q3)), n0=[-e0[1],e0[0]], O0=v2.sub(SH,v2.mul(n0,v2.dot(v2.sub(SH,c.q3),n0))); c.perp=v2.dist(SH,O0)<3?1:supportT(segs,SH,O0,1.2); });
+  const H1p=H1h.filter(c=>c.perp>=0.5);
+  if(H1h.length&&!H1p.length){ steps.push({k:'p3',name:'точки 3′ и 4′ (по линиям связи)',status:'?',msg:'прямые через линии связи есть, но ни к одной нет перпендикуляра из S′ — какая из них ось вращения, не ясно'}); return {steps,first:firstBad(steps),pts}; }
+  H1h.length=0; H1p.forEach(c=>H1h.push(c));
+  H1h.sort((a,b)=>(b.both-a.both)||b.r-a.r||b.L-a.L); const hh=H1h[0]; if(o.trace) pts.h1cands=H1h.map(c=>({a:c.s.a,b:c.s.b,k:c.s.k,q3:c.q3,q4:c.q4,r:c.r,L:c.L,both:c.both}));
   const rivals=hh&&!hh.both?H1h.slice(1).filter(c=>c.r===hh.r&&(Math.abs(c.q3[1]-hh.q3[1])>1.5||Math.abs(c.q4[1]-hh.q4[1])>1.5)):[];
   if(!hh||rivals.length){ steps.push({k:'p3',name:'точки 3′ и 4′ (по линиям связи)',status:'?',msg:hh?'несколько прямых подходят на роль h₁′ — какую строили, не различить':'не нашёл h₁′, пересекающей линии связи из 3″ и 4″'}); return {steps,first:firstBad(steps),pts}; }
   /* погрешность «где должна быть» 3′ и 4′: от точности S′ и A′ на листе (given.js, σ координат) */
@@ -89,10 +95,6 @@ function explain3d(segs,data,o){ o=o||{}; const {A,B,C,S}=data, n=v3.unit(v3.cro
   if(s3==='ok') msg.push('3′ на продолжении S′A′'); else { const nm=s3==='bad'?named(hh.q3):null; msg.push('3′ взята в '+f1(d3)+' мм от прямой S′A′'+(nm?' — на пересечении линии связи с '+nm+', а нужно с продолжением S′A′':'')); }
   if(s4==='ok') msg.push('4′ на n′'); else { const nm=s4==='bad'?named(hh.q4):null; msg.push('4′ взята в '+f1(d4)+' мм от n′'+(nm?' — на '+nm:'')); }
   let s34=s3==='bad'||s4==='bad'?'bad':s3==='?'||s4==='?'?'?':'ok';
-  /* «неверно» — только если найденная прямая и правда ось студента: от S′ к ней проведён перпендикуляр (радиус
-     вращения, хоть наполовину). Чужая прямая через обе линии связи (ребро вида сверху) его не имеет — тогда «?» */
-  if(s34==='bad'){ const e0=v2.unit(v2.sub(hh.q4,hh.q3)), n0=[-e0[1],e0[0]], O0=v2.sub(SH,v2.mul(n0,v2.dot(v2.sub(SH,hh.q3),n0)));
-    if(v2.dist(SH,O0)>=3&&supportT(segs,SH,O0,1.2)<0.5){ s34='?'; msg=['прямая через линии связи найдена, но перпендикуляра к ней из S′ нет — она ли ось вращения, не ясно']; } }
   steps.push({k:'p3',name:'точки 3′ и 4′ (по линиям связи)',status:s34,msg:msg.join('; '),val:{d3,d4}});
   /* ── 3. вращение: радиус для ЕГО оси h₁′ (через его 3′ и 4′) ── */
   const ax={p:hh.q3,e:v2.unit(v2.sub(hh.q4,hh.q3))}, nax=[-ax.e[1],ax.e[0]], Os=v2.sub(SH,v2.mul(nax,v2.dot(v2.sub(SH,ax.p),nax))), r1=v2.dist(SH,Os), R=Math.hypot(r1,h1.c-S[2]);

@@ -41,7 +41,7 @@ details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap;
   <div class="row">
     <select id="dz"><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select>
     <span>вариант</span><input id="n" type="number" min="1" max="30" value="8" inputmode="numeric">
-    <select id="paper"><option value="a3">А3 с рамкой</option><option value="grid">лист в клетку</option></select>
+    <select id="paper"><option value="a3">А3 с рамкой</option><option value="grid">лист в клетку</option><option value="plain">чистый лист (без рамки и клеток)</option></select>
     <select id="part" title="какая часть ДЗ №3 на фото"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select>
   </div>
   <div class="row" id="ansRow" style="margin-top:8px" hidden>
@@ -87,6 +87,8 @@ function showVariant(){ const dz=+$('dz').value, n=Math.max(1,Math.min(30,+$('n'
   if(!g){ $('data').innerHTML=''; return; } $('task').textContent=CO.dz.TASKS[g.id].name+': '+CO.dz.TASKS[g.id].text;
   const ks=Object.keys(g.data); $('data').innerHTML='<table><tr><th></th>'+ks.map(k=>'<th>'+k+'</th>').join('')+'</tr>'+['x','y','z'].map((c,i)=>'<tr><th>'+c+'</th>'+ks.map(k=>'<td>'+g.data[k][i]+'</td>').join('')+'</tr>').join('')+'</table>'; }
 const gate=()=>{ const on=$('ok').checked; ['b1','b2'].forEach(b=>$(b).classList.toggle('off',!on)); };
+/* вариант из адреса (?n=7 — кабинет передаёт вариант из профиля) */
+{ const qn=+new URLSearchParams(location.search).get('n'); if(qn>=1&&qn<=30) $('n').value=qn; }
 $('dz').onchange=()=>{ showVariant(); $('ansRow').hidden=$('dz').value!=='3'; }; $('n').oninput=showVariant; $('ok').onchange=gate; showVariant(); $('ansRow').hidden=$('dz').value!=='3';
 const stage=t=>{ $('stages').innerHTML='<li>'+t+'</li>'; };
 /* фото → ImageData (длинная сторона ≤ 3000 px) */

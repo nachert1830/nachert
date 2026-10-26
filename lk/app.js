@@ -463,16 +463,19 @@ function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics
    (/lab/) и открывается внутри кабинета. Фото обрабатывается на устройстве и никуда не отправляется. Правило сканера:
    ложный вердикт хуже отказа — «не уверен» он говорит прямо. */
 const LAB=[
-  {id:'dz',src:'lab/dz.html',icon:'sheet',tone:'',t:'ДЗ № 2–3 по начерту',s:'фото листа целиком — построение и ответ',p:'Сфотографируйте лист — сканер найдёт рамку и эпюр, сверит построение с условием вашего варианта и проверит ответ.'},
+  {id:'cam',src:'lab/cam.html',icon:'scan',tone:'',var:true,t:'ДЗ № 3 — камерой',s:'2–5 кадров, кадры голосуют; лист в клетку или чистый лист',p:'Наведите камеру на лист — она сама снимет несколько кадров с разных углов. Вывод звучит, только если его подтверждают несколько кадров; разбор — прямо на фото.'},
+  {id:'dz',src:'lab/dz.html',icon:'sheet',tone:'',var:true,t:'ДЗ № 2–3 по начерту',s:'одно фото: лист А3 с рамкой, в клетку или чистый',p:'Сфотографируйте лист — сканер найдёт рамку, сетку или края листа, сверит построение с условием вашего варианта и проверит ответ.'},
   {id:'task',src:'lab/scan.html',icon:'scan',tone:'green',t:'Задачи тетради № 46 и 47',s:'фото решения — вердикт и отметки на фото',p:'Вердикт «верно» или где ошибка — с отметками прямо на фото, выпрямленный лист и 3D-модель решения. Есть синтетический лист, чтобы попробовать без бумаги.'}];
 const labBase=()=>/\/lk\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/lk\/(index\.html)?$/,''):null;
+/* вариант из профиля — сканеру сразу (?n=…): студенту не нужно вводить номер; нет варианта — сканер узнаёт его по чертежу */
+const labSrc=L=>L.src+(L.var&&myVariant()?'?n='+myVariant():'');
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
-  if(L&&base){ track('check',{k:tool}); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(base+L.src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
-      <iframe class="labf" src="${esc(base+L.src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
+  if(L&&base){ track('check',{k:tool}); const src=base+labSrc(L); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
+      <iframe class="labf" src="${esc(src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
   render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте. Сканер сверит построение с верным решением и покажет, где ошибка. Фото не покидает телефон.')}
   <div class="tools">${LAB.map(x=>`<a class="tool" href="${base?'#/check/'+x.id:'#/check'}" ${base?'':'aria-disabled="true"'}><span class="ico ${x.tone}">${ic(x.icon)}</span><span class="tt"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span>${ic('arrow')}</a>`).join('')}</div>
   ${base?'':`<p class="note warn">Сканер работает на странице кабинета на сайте: <a href="https://nachert1830.ru/lk/#/check">nachert1830.ru</a>.</p>`}
-  <details class="card fold"><summary><span class="ico">${ic('info')}</span><b>Как снимать, чтобы сканер понял</b></summary><ol class="lead"><li>Лист целиком в кадре, рамка видна со всех сторон.</li><li>Ровный свет без бликов; телефон параллельно листу.</li><li>Линии обведены как на сдачу.</li><li>«Не уверен» — переснимите ближе или при другом свете.</li></ol></details>
+  <details class="card fold"><summary><span class="ico">${ic('info')}</span><b>Как снимать, чтобы сканер понял</b></summary><ol class="lead"><li>Лист целиком в кадре. Подойдёт А3 с рамкой, лист в клетку или чистый лист без рамки — чистый кладите на тёмный стол.</li><li>Ровный свет без бликов; телефон параллельно листу. Камера сама подскажет, что не так.</li><li>Линии обведены как на сдачу.</li><li>«Не уверен» — переснимите ближе или при другом свете.</li></ol></details>
   ${flag('normo')?`<details class="card fold" data-feature="normo"><summary><span class="ico amber">${ic('sheet')}</span><b>Лист ИКГ из САПР — проверка по ГОСТ</b></summary>
       <p class="mut">Загрузите SVG: формат, рамка, основная надпись, линии, шрифт, виды и разрезы, штриховка, размеры.</p>
       <label class="file"><input id="nkF" type="file" accept=".svg,image/svg+xml"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>

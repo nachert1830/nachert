@@ -4,7 +4,7 @@
    заданная пирамида варианта — с ошибкой нанесения или без; построение г) (вращение вокруг h₁ плоскости (SA, n)) —
    верное или с ошибкой шага: p3h — 3′ взята на h′ вместо продолжения S′A′; rad — радиус вращения S на 5 мм больше.
    Съёмка — как у всех синтетических листов (lab/synth.js: перспектива, свет, тень, шум).
-   sheet({n, err:'ok'|'given'|'p3h'|'rad', seed, level, noS, shots, glare}) → {img, imgs (серия при shots > 1), truth:{data, drawn, wrong, O, phi, steps}} */
+   sheet({n, err:'ok'|'given'|'p3h'|'rad', seed, level, noS, shots, glare, plain, page:'A4'|'A3'}) → {img, imgs (серия при shots > 1), truth:{data, drawn, wrong, O, phi, steps}} */
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
@@ -35,7 +35,9 @@ function prog3d(D,err,R){ const {A,B,C,S:Sp}=D, n=v3.unit(v3.cross(v3.sub(B,A),v
   const ang=(e,f)=>Math.acos(Math.min(1,Math.abs(v2.dot(v2.unit(e),v2.unit(f)))))*180/Math.PI, psi=ang(v2.sub(q3,Sb),v2.sub(q4,Sb));
   return {segs,pts:[['3″',p3],['4″',p4],['3′',q3],['4′',q4],['S̄′',Sb],['O′',Os]],truth:{c,d3:Math.abs(q3[1]-E3[1]),dR:Rr-R0,R:Rr,R0,psi,phi:90-psi}}; }
 
-function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6151+n), lv=S.LEVELS[o.level||'normal'], g=V.get(3,n), data=g.data, page={w:200,h:260};
+function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6151+n), lv=S.LEVELS[o.level||'normal'], g=V.get(3,n), data=g.data;
+  /* чистый лист (o.plain): без сетки, А4 или А3 книжный, O — где угодно (не в узле клетки) */
+  const plain=!!o.plain, pg=plain?(o.page||'A4'):null, page=plain?(pg==='A3'?{w:297,h:420}:{w:210,h:297}):{w:200,h:260};
   /* начерченные данные: ошибка нанесения — одна координата одной точки на 2,5–4 мм */
   const D=JSON.parse(JSON.stringify(data)); let wrong=null;
   if(err==='given'){ const ks=Object.keys(D), k=ks[Math.floor(R()*ks.length)], cI=Math.floor(R()*3), d=(R()<0.5?-1:1)*R.r(2.5,4); D[k][cI]+=d; wrong={k,c:'xyz'[cI],d}; }
@@ -44,12 +46,12 @@ function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6
   for(let i=0;i<g1.a.length;i++) sh.grain[i]=Math.max(0.35,Math.min(1,0.7+(g1.a[i]-0.5)*3.2));
   /* сетка печатью */
   sh.layer='print'; const ph=[R()*5,R()*5], gdk=R.r(0.3,0.6), gw=R.r(0.15,0.22);
-  for(let u=ph[0];u<page.w;u+=5) sh.stroke([[u,0],[u,page.h]],gw,gdk,{},R); for(let v=ph[1];v<page.h;v+=5) sh.stroke([[0,v],[page.w,v]],gw,gdk,{},R);
+  if(!plain){ for(let u=ph[0];u<page.w;u+=5) sh.stroke([[u,0],[u,page.h]],gw,gdk,{},R); for(let v=ph[1];v<page.h;v+=5) sh.stroke([[0,v],[page.w,v]],gw,gdk,{},R); }
   /* O — в узле сетки так, чтобы чертёж влез */
   const items=M.given('3',D), all=items.segs.flatMap(s=>[s.a,s.b]).concat(pr?pr.segs.flatMap(s=>[s.a,s.b]):[]);
   const u0=Math.min(...all.map(p=>p[0])), u1=Math.max(...all.map(p=>p[0]),0), v0=Math.min(...all.map(p=>p[1])), v1=Math.max(...all.map(p=>p[1]));
   if(u1-u0>page.w-30||v1-v0>page.h-30) return null;
-  const Ox=ph[0]+5*Math.round((R.r(15-u0,page.w-15-u1)-ph[0])/5), Oy=ph[1]+5*Math.round((R.r(15-v0,page.h-15-v1)-ph[1])/5), O=[Ox,Oy], P=p=>[O[0]+p[0],O[1]+p[1]];
+  const Ox=plain?R.r(15-u0,page.w-15-u1):ph[0]+5*Math.round((R.r(15-u0,page.w-15-u1)-ph[0])/5), Oy=plain?R.r(15-v0,page.h-15-v1):ph[1]+5*Math.round((R.r(15-v0,page.h-15-v1)-ph[1])/5), O=[Ox,Oy], P=p=>[O[0]+p[0],O[1]+p[1]];
   sh.layer='pencil'; const pen={dk:R.r(...lv.dark),thin:R.r(0.22,0.36),main:R.r(0.45,0.7)}, k=R.r(...lv.hand);
   const jit=new Map(), J=p=>{ const key=p[0].toFixed(2)+','+p[1].toFixed(2); if(!jit.has(key)) jit.set(key,[R.n(0,0.15*k),R.n(0,0.15*k)]); return v2.add(P(p),jit.get(key)); };
   const line=(a,b,w,dk)=>sh.stroke([a,b],w,Math.min(0.95,dk),{wob:R.r(0.02,0.05),grain:true,press:true},R);
@@ -62,10 +64,11 @@ function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6
   /* линии связи заданных точек — тонко */
   items.conn.forEach(c=>line(J(c.a),J(c.b),pen.thin*0.8,pen.dk*0.6));
   if(pr){ pr.segs.forEach(s=>line(J(s.a),J(s.b),pen.thin,pen.dk*0.85)); pr.pts.forEach(([l,p])=>{ sh.circle(J(p),R.r(0.5,0.8),pen.thin,pen.dk,{grain:true},R); }); }
-  const sz=o.size||[1500,2000], cam=S.camera(sh,page,R,lv,sz);
+  /* разрешение: лист в клетку — 1500 × 2000; чистый А4 — 1800 × 2400, А3 — 2400 × 3200 (≈ 6–7 px/мм, как телефон) */
+  const sz=o.size||(plain?(pg==='A3'?[2400,3200]:[1800,2400]):[1500,2000]), cam=S.camera(sh,page,R,lv,sz);
   /* серия: тот же лист, ещё o.shots − 1 съёмок — другой наклон, свет, блик (как телефон в руке); свой поток случайностей */
   const shots=o.shots>1?[cam].concat(Array.from({length:o.shots-1},(_,k)=>S.camera(sh,page,rng((o.seed||1)*7919+n*131+k*17+1),lv,sz,{glare:o.glare==null?0.5:o.glare}))):null;
-  return {img:cam.im,imgs:shots&&shots.map(c=>c.im),truth:{n,err,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,params:cam.params,shots:shots&&shots.map(c=>Object.assign({H:c.M},c.params))}}; }
+  return {img:cam.im,imgs:shots&&shots.map(c=>c.im),truth:{n,err,plain,page:pg,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,params:cam.params,shots:shots&&shots.map(c=>Object.assign({H:c.M},c.params))}}; }
 put('dzGsynth',{sheet,prog3d});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), s=sheet({n:+(a.n||7),err:a.err||'ok',seed:+(a.seed||1)});
   if(!s){ console.log('лист не построился'); process.exit(1); } require('fs').writeFileSync(a.out||'g.png',IMG.encodePNG(s.img)); console.log(JSON.stringify(s.truth,(k,v)=>k==='H'?undefined:typeof v==='number'?+v.toFixed(2):v)); }

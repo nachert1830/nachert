@@ -1,14 +1,15 @@
-/* Тест листа в клетку: node lab/dz/test-grid.js [--ns=1,...,30] [--per=1] [--level=normal]
+/* Тест листа в клетку: node lab/dz/test-grid.js [--ns=1,...,30] [--per=1] [--level=normal] [--plain]
+   --plain — чистый лист без рамки и клеток (нечётные варианты — А4, чётные — А3): опора — края бумаги и условие.
    Синтетические фото (lab/dz/gsynth.js): ДЗ №3 на клетчатом листе — заданное с ошибкой нанесения или без,
    построение г) верное или с ошибкой шага. Правда известна для каждой координаты и каждого шага.
    ЛОЖНОЕ: «нанесено неточно» про координату, которая нанесена верно (ошибка < 0,5 мм), или с замером дальше 1 мм от
    правды; «все точки точно» или вердикт «данные нанесены верно» при ошибке ≥ 2,5 мм; шаг г) «неверно» при отклонении < 1,5 или «верно» при ≥ 3;
    угол φ по чертежу дальше max(1,5°, 2σ замера) от правды. «Не нашёл» / «?» ложным не считается. */
 const IMG=require('../img.js'), GS=require('./gridsheet.js'), G=require('./gsynth.js');
-const A=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), PER=+(A.per||1), LV=A.level||'normal';
+const A=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), PER=+(A.per||1), LV=A.level||'normal', PLAIN='plain' in A;
 const NS=A.ns?A.ns.split(',').map(Number):Array.from({length:30},(_,i)=>i+1);
 const T={}, falses=[], errs=[]; const t=k=>T[k]=T[k]||{n:0,ok:0,bad:0,q:0,false:0};
-for(const n of NS) for(const err of ['ok','given','p3h','rad']) for(let k=0;k<PER;k++){ const seed=300+k*41+n, s=G.sheet({n,err,seed,level:LV}); if(!s) continue; const tr=s.truth, t0=Date.now();
+for(const n of NS) for(const err of ['ok','given','p3h','rad']) for(let k=0;k<PER;k++){ const seed=300+k*41+n, s=G.sheet({n,err,seed,level:LV,plain:PLAIN,page:n%2?'A4':'A3'}); if(!s) continue; const tr=s.truth, t0=Date.now();
   const r=GS.checkGridPhoto(s.img,{dz:3,n}), tag='в'+n+' '+err;
   if(!r.ok){ t('не прочитан').n++; console.log(tag,'не прочитан:',r.why.join('; ').slice(0,120)); continue; }
   /* данные */
@@ -26,6 +27,6 @@ for(const n of NS) for(const err of ['ok','given','p3h','rad']) for(let k=0;k<PE
       if(st.status==='bad'&&tv<1.5||st.status==='ok'&&tv>=3){ q.false++; falses.push(tag+': шаг '+st.k+' «'+st.status+'» ('+st.msg+'), правда '+tv.toFixed(1)); } });
     const ps=ex.steps.find(q=>q.k==='psi'), q=t('г) угол φ по чертежу'); q.n++; if(ps){ const d=Math.abs(ps.val.phi-pr.phi); if(d<=Math.max(1.5,2*(ps.val.spsi||0))) q.ok++; else { q.false++; falses.push(tag+': φ по чертежу '+ps.val.phi.toFixed(1)+', правда '+pr.phi.toFixed(1)); } } else q.q++; }
   console.log(tag.padEnd(12),r.verdict.padEnd(18),'заявлено:',claims.map(d=>d.n+d.c+(d.d>0?'+':'')+d.d.toFixed(1)).join(' ')||'—','| правда:',tr.wrong?tr.wrong.k+tr.wrong.c+(tr.wrong.d>0?'+':'')+tr.wrong.d.toFixed(1):'—',ex&&ex.steps.length?'| г): '+ex.steps.map(q=>q.k+':'+q.status).join(' '):'',(Date.now()-t0)+' мс'); }
-console.log('\nИТОГО ('+LV+'):'); let F=0; Object.entries(T).sort().forEach(([k,v])=>{ F+=v.false; console.log('  '+k.padEnd(28)+' n '+v.n+'  верно '+v.ok+(v.bad?'  неверно '+v.bad:'')+'  ?/не найдено '+v.q+'  ЛОЖНЫХ '+v.false); });
+console.log('\nИТОГО ('+LV+(PLAIN?', чистый лист':'')+'):'); let F=0; Object.entries(T).sort().forEach(([k,v])=>{ F+=v.false; console.log('  '+k.padEnd(28)+' n '+v.n+'  верно '+v.ok+(v.bad?'  неверно '+v.bad:'')+'  ?/не найдено '+v.q+'  ЛОЖНЫХ '+v.false); });
 errs.sort((a,b)=>a-b); if(errs.length) console.log('замер координат точек условия: медиана '+errs[errs.length>>1].toFixed(2)+' мм, 90 % — '+errs[Math.floor(errs.length*0.9)].toFixed(2)+' мм, худший '+errs[errs.length-1].toFixed(2)+' мм ('+errs.length+' координат)');
 console.log('ложных утверждений: '+F); falses.forEach(x=>console.log('  ЛОЖНО: '+x));

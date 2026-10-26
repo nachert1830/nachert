@@ -22,6 +22,13 @@ const CAP=2;
 /* карта расстояний до линий (мм) по карте гребней оцифровки; кэш на объекте карты */
 function dmap(map){ if(map._D) return map._D; const g=map.g, w=g.w, h=g.h, a=new Float32Array(w*h), th=map.tR*0.6;
   for(let i=0;i<w*h;i++) a[i]=map.R[i]>=th?1:0;
+  /* шум в тени (лист без сетки, тёмный угол) — россыпь одиночных пятнышек: при плотности 3 % до ближайшего везде
+     < 1 мм, и любая фигура в тени «ложится на линии». Линия — связная цепочка: куски меньше 1,25 мм убираем */
+  { const lab=new Int32Array(w*h).fill(-1), st=[], minPx=Math.round(1.25*(g.ppm||8));
+    for(let i=0;i<w*h;i++){ if(!a[i]||lab[i]>=0) continue; const comp=[]; st.push(i); lab[i]=i;
+      while(st.length){ const j=st.pop(); comp.push(j); const x=j%w, y=(j/w)|0;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ if(!dx&&!dy) continue; const xx=x+dx, yy=y+dy; if(xx<0||yy<0||xx>=w||yy>=h) continue; const q=yy*w+xx; if(a[q]&&lab[q]<0){ lab[q]=i; st.push(q); } } }
+      if(comp.length<minPx) comp.forEach(j=>{ a[j]=0; }); } }
   map._D=RF.distMap({a,w,h,ppm:g.ppm||8,box:map.box},0.5,CAP); return map._D; }
 const at=(D,p)=>{ const v=IMG.sample(D,(p[0]-D.box[0])*D.ppm-0.5,(p[1]-D.box[1])*D.ppm-0.5); return v==null?CAP:v; };
 /* точки фигуры условия через 0,5 мм (мм чертежа), с меткой проекции и отрезка */
@@ -47,7 +54,9 @@ function fit(D,S,x0,np,iters){ let x=x0.slice(), f=cost(D,S,x), lam=1e-2; const 
 function coarse(D,S,o0,ranges){ const sub=S.filter((q,i)=>i%3===0); let best=null;
   for(let dv=ranges.v[0];dv<=ranges.v[1];dv+=1) for(let du=ranges.u[0];du<=ranges.u[1];du+=1){ const x=[o0[0]+du,o0[1]+dv,0,0,0,0], c=coverOf(D,sub,x,1.2); if(!best||c>best.c) best={c,x}; }
   return best; }
-function calibrate(dig,loc,id,data,o){ o=o||{}; const D=dmap(dig.map), {pts,segs,S}=samples(id,data);
+function calibrate(dig,loc,id,data,o){ o=o||{}; const D=dmap(dig.map), sm=samples(id,data), {pts,segs}=sm;
+  /* o.exclude — без отрезков этой точки (проверка «не одна ли точка тянет подгонку») */
+  const S=o.exclude?sm.S.filter(q=>!q.seg.includes(o.exclude)):sm.S;
   /* начало: найденное O; иначе — ось x (v = 0) и сдвиг вдоль неё по всему полю */
   let o0, ranges;
   if(o.range){ o0=[0,0]; ranges={u:[o.range[0],o.range[2]],v:[o.range[1],o.range[3]]}; }   /* лист в клетку: O ищется по всему полю */
