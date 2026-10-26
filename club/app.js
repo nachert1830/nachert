@@ -56,9 +56,18 @@ addEventListener('offline',netState);
 setInterval(()=>{ if(isDirty()) syncNow(); },60e3);
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&isDirty()) syncNow(); });
 
+/* ── что делаю: короткие события и «я сейчас здесь» — для живого пульта владельца (без содержимого решений и фото) ── */
+let ACTQ=[], actTimer=null, lastBeat=0;
+const curView=()=>(location.hash.replace(/^#\/?/,'').split('/')[0].replace(/[^a-z]/g,'').slice(0,12))||'today';
+function track(type,d){ ACTQ.push({type,t:Date.now(),d:d||{}}); if(ACTQ.length>40) ACTQ=ACTQ.slice(-40); clearTimeout(actTimer); actTimer=setTimeout(beat,1200); }
+async function beat(away){ if(!ME||OFFLINE||!navigator.onLine) return; const ev=ACTQ.splice(0,20); lastBeat=Date.now();
+  try{ await api('POST','/api/act',{ev,view:curView(),away:away===true}); }catch(e){ if(!e.status) ACTQ=ev.concat(ACTQ); } }
+setInterval(()=>{ if(document.visibilityState==='visible'&&Date.now()-lastBeat>40e3) beat(); },15e3);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') beat(true); else beat(); });
+
 /* ── общее ── */
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); }
-function paint(root){ $$('[data-w]',root).forEach(el=>{ el.style.width=Math.max(0,Math.min(100,+el.dataset.w))+'%'; }); }
+function paint(root){ $$('[data-w]',root).forEach(el=>{ el.style.width=Math.max(0,Math.min(100,+el.dataset.w))+'%'; }); $$('[data-h]',root).forEach(el=>{ el.style.height=Math.max(2,Math.min(100,+el.dataset.h))+'%'; }); }
 function render(html,title){ const v=view(); v.innerHTML=html; paint(v); if(title) document.title=title+' · Кабинет Начерта'; tabs(); netState(); }
 function openSheet(html,onBind){ closeSheet(); const bg=document.createElement('div'); bg.className='sheet-bg'; bg.id='sheet';
   bg.innerHTML='<div class="sheet-p" role="dialog" aria-modal="true">'+html+'</div>'; document.body.appendChild(bg);
@@ -67,7 +76,15 @@ function closeSheet(){ const s=$('#sheet'); if(s) s.remove(); }
 addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
 const today=()=>CAL.browserToday(), dayNum=()=>CAL.toDay(today());
 const week1=()=>(ME&&ME.week1)||(CFG&&CFG.week1)||CAL.DEFAULT_WEEK1;
-const calSet=()=>LS.get(K.cal,{});
+/* справочник групп (data/groups.json): день занятия по каждому предмету и точные даты — по группе студента */
+let GROUPS={groups:{}};
+const myGroup=()=>(ME&&ME.user&&ME.user.group)||'';
+const groupSched=()=>(GROUPS.groups||{})[myGroup()]||null;
+const okGroup=g=>/^[А-ЯЁA-Z]{1,6}\d{0,2}-\d{1,3}[А-ЯЁA-Z]{0,2}$/.test(g);
+const normGroup=g=>{ let x=String(g||'').toUpperCase().trim().replace(/[–—]/g,'-'); if(!x.includes('-')) x=x.replace(/[\s_]+/,'-'); return x.replace(/[\s_]+/g,''); };
+const calSet=()=>{ const s=LS.get(K.cal,{}), g=groupSched(); if(!g) return s;
+  const cd=Object.assign({},s.classDay); ['ikg','ng'].forEach(k=>{ if(g[k]&&g[k].day) cd[k]=g[k].day; });
+  return Object.assign({},s,{classDay:cd,dates:Object.assign({},g.dates||{},s.dates||{})}); };
 const events=()=>CAL.events(calSet(),week1());
 const doneMap=()=>{ const m=LS.get(K.done,{}), o={}; Object.keys(m).forEach(k=>{ if(m[k]&&m[k].v) o[k]=true; }); return o; };
 function setDone(key,v){ const m=LS.get(K.done,{}); m[key]={v:!!v,t:Date.now()}; LS.set(K.done,m); }
@@ -188,6 +205,8 @@ document.addEventListener('submit',async e=>{ const f=e.target;
     const b=$('#codeF button[type=submit]'); b.disabled=true;
     try{ const v=await api('POST','/api/auth/email/verify',{email:f.dataset.email,code}); return landingView(v.token); }
     catch(x){ b.disabled=false; msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }
+  if(f.id==='grpF'){ e.preventDefault(); const g=normGroup($('#grpI').value); if(!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-11Б'); return; }
+    try{ const r=await api('POST','/api/me/profile',{group:g}); ME.user=r.user; LS.device(K.me,Object.assign({},ME,{csrf:undefined})); todayView(); toast('Группа сохранена'); }catch(x){ toast(x.message); } return; }
   /* привязка почты в настройках: адрес → код из письма */
   if(f.id==='lmF'){ e.preventDefault(); const email=$('#lmA').value.trim();
     try{ const r=await api('POST','/api/me/link',{to:'email',email}); $('#linkOut').innerHTML=`<form class="af reg" id="lcF" data-email="${esc(email)}" novalidate><label class="f" for="lcC">Код из письма на ${esc(r.to)}</label><input id="lcC" class="inp code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"><button class="btn pri" type="submit">Привязать</button></form><div id="lmMsg" aria-live="polite"></div>`; $('#lcC').focus(); }
@@ -195,10 +214,11 @@ document.addEventListener('submit',async e=>{ const f=e.target;
   if(f.id==='lcF'){ e.preventDefault();
     try{ const r=await api('POST','/api/me/link/email',{email:f.dataset.email,code:$('#lcC').value}); ME.user=r.user; settingsView(); toast('Почта привязана'); }
     catch(x){ $('#lmMsg').innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } return; }
-  if(f.id==='onbF'){ e.preventDefault(); const msg=$('#authMsg'), terms=$('#cTerms').checked, pd=$('#cPd').checked;
+  if(f.id==='onbF'){ e.preventDefault(); const msg=$('#authMsg'), terms=$('#cTerms').checked, pd=$('#cPd').checked, grp=normGroup($('#onG').value);
+    if(!okGroup(grp)){ msg.innerHTML='<p class="note bad">Укажите группу как в расписании, например ИУ5-11Б — по ней считаются даты.</p>'; $('#onG').focus(); return; }
     if(!terms||!pd){ msg.innerHTML='<p class="note bad">Отметьте обе галочки — без них аккаунт создать нельзя.</p>'; return; }
     const b=$('#onbF button[type=submit]'); b.disabled=true;
-    try{ const r=await api('POST','/api/auth/bot/redeem',{token:LANDING,confirm:true,name:$('#onN').value.trim(),consent:{terms,pd,photos:false}}); LANDING=null; await afterLogin(r); }
+    try{ const r=await api('POST','/api/auth/bot/redeem',{token:LANDING,confirm:true,name:$('#onN').value.trim(),group:grp,consent:{terms,pd,photos:false}}); LANDING=null; await afterLogin(r); }
     catch(x){ b.disabled=false; msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } } });
 function botSteps(){ const bot=CFG.botName||'', link='https://t.me/'+bot+'?start='+botStart();
   return `<div class="wait"><ol><li class="on"><span>Откройте бота <b>@${esc(bot)}</b> в Telegram</span></li><li><span>Нажмите «Старт»</span></li><li><span>Бот пришлёт кнопку <b>«Войти в клуб»</b> — нажмите её</span></li></ol>
@@ -214,12 +234,22 @@ async function landingView(tok){ LANDING=tok; authShell('<p class="mut">Вход
   const name=r.method==='email'?'':r.name;
   authShell(`<form class="af" id="onbF" novalidate><label class="f" for="onN">Как вас зовут</label>
       <input id="onN" class="inp" type="text" maxlength="60" autocomplete="given-name" placeholder="Имя" value="${esc(name&&name!=='Участник'?name:'')}">
+      <label class="f" for="onG">Учебная группа</label>
+      <input id="onG" class="inp" type="text" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="Например, ИУ5-11Б" list="grpList">${grpList()}
       <label class="chk"><input type="checkbox" id="cTerms"><span>Принимаю <a href="legal/terms.html" target="_blank" rel="noopener">пользовательское соглашение</a> и <a href="legal/privacy.html" target="_blank" rel="noopener">политику обработки данных</a></span></label>
       <label class="chk"><input type="checkbox" id="cPd"><span>Даю <a href="legal/consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a><small>${r.method==='email'?'Храним только хеш почты, без самого адреса':'Храним только id и имя'} — и ваш прогресс. Данные в России.</small></span></label>
       <button class="btn pri full" type="submit">Создать аккаунт</button></form><div id="authMsg" aria-live="polite"></div>`,
     {title:'Добро пожаловать!',sub:r.label?'Аккаунт для '+esc(r.label)+' ещё не создан — осталось одно действие.':'Осталось одно действие — и вы в кабинете.',back:'notMe',noLegal:true,side:false}); }
 async function inviteView(err){ return loginView(err); }
+const grpList=()=>`<datalist id="grpList">${Object.keys(GROUPS.groups||{}).sort().map(g=>`<option value="${esc(g)}">`).join('')}</datalist>`;
 
+/* темы к ближайшему событию — по таблице сдач: начерт — темы модуля (РК n), ИКГ — требования к листу по ГОСТ */
+function eventTopics(e){ if(!CORE) return []; if(e.subj==='ng') return (CORE.rkTopics[e.n]||[]).map(id=>({id,t:topicTitle(id)}));
+  return (BKT.IKG_SKILLS||[]).map(x=>({id:x.id,t:x.title})); }
+function topicsCard(e){ const tp=eventTopics(e); if(!tp.length) return '';
+  return card('plan','Темы к '+esc(e.short)+' · '+esc(e.subjTitle),`<p class="mut">${esc(e.kindFull)} — ${esc(CAL.human(e.date))}. Что нужно уметь:</p>
+    <div class="tchips">${tp.map(x=>`<a class="tchip" href="#/skills">${esc(x.t)}</a>`).join('')}</div>
+    <div class="row reg"><a class="btn sm" href="#/event/${e.id}">План подготовки ${ic('arrow')}</a>${e.subj==='ng'?`<a class="btn sm ghost" href="#/train">Тренировка по этим темам</a>`:`<a class="btn sm ghost" href="#/check">Проверить лист</a>`}</div>`,'',{icon:'plan',tone:'amber'}); }
 /* ── «Сегодня» ── */
 function todayView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),week1(),t,5), wk=CAL.weekOf(week1(),t), done=doneMap();
   /* по одному текущему шагу на событие и не больше трёх: длинный список «на сегодня» пугает и не делается */
@@ -230,6 +260,9 @@ function todayView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),we
       <p>${next?'Ближайшее — '+esc(next.title)+', '+esc(CAL.human(next.date))+'.':'Событий в таблице больше нет.'} ${steps.length?'По плану сегодня — '+steps.length+' '+plural(steps.length,'шаг','шага','шагов')+'.':''}</p></div>
     ${next?`<div class="count"><b>${next.inDays}</b><span>${plural(next.inDays,'день','дня','дней')} до ${esc(next.short)} · ${esc(next.subjTitle)}</span></div>`:''}</div></section>
   ${flag('scanner')?`<a class="cta-check" href="#/check"><span class="ico">${ic('scan')}</span><span><b>Проверить чертёж по фото</b><small>ДЗ №2–3 и задачи тетради — вердикт и где ошибка</small></span>${ic('arrow')}</a>`:''}
+  ${myGroup()?'':`<section class="card grpask"><div class="ch"><span class="ico red">${ic('user')}</span><h2>Укажите группу<small>по ней кабинет считает точные даты ДЗ, РК и модулей</small></h2></div>
+    <form class="af" id="grpF" novalidate><div class="row"><input id="grpI" class="inp grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" placeholder="Например, ИУ5-11Б">${grpList()}<button class="btn pri" type="submit">Сохранить</button></div></form></section>`}
+  ${next?topicsCard(next):''}
   ${onboard?`<section class="card tri"><div class="ch"><span class="ico">${ic('info')}</span><h2>С чего начать</h2><button class="fb" data-act="onboardOff" type="button">Скрыть</button></div><ol class="lead"><li>Укажите <a href="#/calendar">день занятий</a> по каждому предмету — от него считаются даты.</li><li>Есть прогресс на nachert1830.ru? Перенесите его: <a href="#/settings">Настройки → Перенести прогресс</a>.</li>${CFG&&CFG.telegram?'<li>Включите <a href="#/settings">напоминания</a> в Telegram, если удобно.</li>':'<li>Сфотографируйте лист ДЗ — <a href="#/check">проверка по фото</a> покажет, где ошибка.</li>'}</ol></section>`:''}
   <div class="grid"><div class="col">
     ${flag('training')?card('training','Тренировка дня',`<p class="lead">${tr.items.length?(tr.left?'Осталось '+tr.left+' из '+tr.items.length+' · ≈ '+tr.minutes+' мин':'На сегодня всё сделано'):'Повторять пока нечего — начните с карты навыков.'}</p>${tr.items.length&&tr.left?`<div class="bar"><i data-w="${(tr.items.length-tr.left)/tr.items.length*100}"></i></div>`:''}<div class="row reg"><a class="btn cta lg" href="#/train">${tr.left?'Начать тренировку':'Открыть'} ${ic('arrow')}</a></div>`,'',{icon:'train',tone:'green',sub:'повтор по интервалам + задача вперемешку'}):''}
@@ -245,7 +278,8 @@ function calendarView(){ const s=CAL.normSettings(calSet()), t=dayNum(), wkNow=C
     <div class="es">${w.events.map(e=>`<a class="chip${CAL.toDay(e.date)<t?' past':''}" href="#/event/${e.id}">${tagOf(e)}${esc(e.subjTitle)}${e.custom?' · '+esc(CAL.human(e.date)):''}</a>`).join('')||'<small>—</small>'}</div></div>`).join('');
   render(`${pageHead('Календарь сдач','Неделя в таблице — неделя крайнего срока. РК пишется один раз и только на своей неделе; М — закрытие модуля.')}
   <div class="grid"><div class="col">
-    ${card('calendar','Моя группа',`<div class="grid2">${['ikg','ng'].map(k=>`<div><label class="f" for="cd-${k}">Занятие по ${k==='ikg'?'ИКГ':'начерту'}</label><select id="cd-${k}" data-chg="classDay" data-s="${k}">${wd.map(([d,n])=>`<option value="${d}"${s.classDay[k]===d?' selected':''}>${n}</option>`).join('')}</select></div>`).join('')}</div>
+    ${groupSched()?card('calendar','Группа '+esc(myGroup()),`<p>Даты посчитаны по расписанию группы: занятие по ИКГ — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ikg&&groupSched().ikg.day||0]||'—')}, по начерту — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ng&&groupSched().ng.day||0]||'—')}.</p><p class="mut">Не та группа? <a href="#/settings">Изменить в настройках</a>.</p>`,'',{icon:'user'}):''}
+    ${groupSched()?'':card('calendar','Моя группа',`${myGroup()?`<p class="mut">Расписания группы ${esc(myGroup())} пока нет в кабинете — укажите день занятий сами.</p>`:''}<div class="grid2">${['ikg','ng'].map(k=>`<div><label class="f" for="cd-${k}">Занятие по ${k==='ikg'?'ИКГ':'начерту'}</label><select id="cd-${k}" data-chg="classDay" data-s="${k}">${wd.map(([d,n])=>`<option value="${d}"${s.classDay[k]===d?' selected':''}>${n}</option>`).join('')}</select></div>`).join('')}</div>
       <label class="f">Предметы</label><div class="grid2">${['ikg','ng'].map(k=>`<label class="chk"><input type="checkbox" data-chg="subj" data-s="${k}"${s.subjects.includes(k)?' checked':''}><span>${k==='ikg'?'ИКГ':'Начерт'}</span></label>`).join('')}</div>
       <p class="mut">От дня занятия считаются даты событий; точную дату РК можно поставить в самом событии. Неделя 1 начинается ${esc(CAL.human(week1()))}.</p>`,
       'срок, привязанный к конкретному дню, планируется точнее, чем «где-то на неделе», — а запас до него защищает от ошибки планирования (Buehler и др., 1994).',{icon:'user'})}
@@ -295,7 +329,7 @@ function eventView(id,sub){ const e=events().find(x=>x.id===id); if(!e){ render(
       'конкретный план «когда — где — что» заметно повышает шанс, что дело будет сделано (implementation intentions, Gollwitzer, Sheeran, 2006: метаанализ 94 исследований, d ≈ 0,65).',{icon:'target',tone:'red'}):''}
   </div></div>`,e.title);
   const f=$('#iiForm'); if(f) f.addEventListener('submit',ev=>{ ev.preventDefault(); const m=LS.get(K.ii,{}); m[e.id]={when:$('#iiW').value.trim(),where:$('#iiP').value.trim(),what:$('#iiT').value.trim(),t:Date.now()};
-    if(!m[e.id].what){ toast('Напишите, что именно будете делать'); return; } LS.set(K.ii,m); toast('План сохранён'); eventView(e.id); }); }
+    if(!m[e.id].what){ toast('Напишите, что именно будете делать'); return; } LS.set(K.ii,m); track('plan',{e:e.id}); toast('План сохранён'); eventView(e.id); }); }
 
 /* диагностика к РК: по одной задаче на тему (начерт) или самооценка навыков листа (ИКГ) */
 function diagItems(e){ const st=LS.get(K.diag,{}); if(st[e.id]&&st[e.id].items) return st[e.id];
@@ -344,7 +378,7 @@ function errorPicker(el,v){ const t=taskBy(el.dataset.n), sym=(CORE.symptoms||[]
   const old=$('.errs',el); if(old) old.remove(); el.appendChild(box);
   box.addEventListener('click',e=>{ const b=e.target.closest('[data-e],[data-sym]'); if(b) b.classList.toggle('on'); }); }
 function saveRating(el,v,errors,symptoms){ const n=+el.dataset.n, ctx=el.dataset.ctx, t=taskBy(n), d=dayNum(), now=Date.now();
-  let rep=LS.get(K.rep,{}); rep=SRS.rate(rep,n,v,d); LS.set(K.rep,rep);
+  let rep=LS.get(K.rep,{}); rep=SRS.rate(rep,n,v,d); LS.set(K.rep,rep); track('task',{n,v,ctx:ctx.split(':')[0].slice(0,8)});
   const evs=BKT.fromRating({id:'c'+now.toString(36)+n,t:now,task:n,topic:t.topic,rating:v,errors,symptoms:(CORE.symptoms||[]).filter(s=>symptoms.includes(s.id)),src:ctx.split(':')[0]});
   LS.set(K.ev,BKT.merge(LS.get(K.ev,[]),evs));
   if(ctx==='train'){ const tr=LS.get(K.train,{}); if(tr.day===d){ tr.res=tr.res||{}; tr.res[n]=v; LS.set(K.train,tr); } trainView(); }
@@ -396,7 +430,7 @@ const LAB=[
   {id:'task',src:'lab/scan.html',icon:'scan',tone:'green',t:'Задачи тетради № 46 и № 47',s:'фото решения',p:'Вердикт «верно» или где ошибка — с отметками прямо на фото, выпрямленный лист и 3D-модель решения. Есть синтетический лист, чтобы попробовать без бумаги.'}];
 const labBase=()=>/\/club\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/club\/(index\.html)?$/,''):null;
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
-  if(L&&base){ render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(base+L.src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
+  if(L&&base){ track('check',{k:tool}); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(base+L.src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
       <iframe class="labf" src="${esc(base+L.src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
   render(`<section class="hero"><span class="pill">Главная функция · бета</span><h1>Проверка чертежа по фото</h1>
     <p>Решили на бумаге — сфотографируйте. Сканер прочитает лист, сверит построение с верным решением и скажет, где ошибка. Если не уверен — так и скажет: ложный «верно» хуже честного «не знаю».</p></section>
@@ -437,6 +471,7 @@ async function runNormo(svgText,own,label){ const out=$('#nkOut'); out.innerHTML
     out.innerHTML=`<p class="note ${r.issues.length?'warn':'ok'} reg">${esc(label)}: ${r.issues.length?'замечаний — '+r.issues.length:'замечаний нет'}${r.fmt?' · формат '+esc(r.fmt):''}</p>
       <div class="sheetbox"><img src="${url}" alt="Проверенный лист">${v?`<svg class="ov" viewBox="${v.join(' ')}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${r.issues.filter(i=>i.at).map((i,j)=>`<circle cx="${v[0]+i.at[0]*r.k}" cy="${v[1]+i.at[1]*r.k}" r="${6*r.k}" fill="none" stroke="#d0342b" stroke-width="${1.2*r.k}"/><text x="${v[0]+i.at[0]*r.k+7*r.k}" y="${v[1]+i.at[1]*r.k-5*r.k}" fill="#d0342b" font-size="${5*r.k}" font-family="sans-serif">${j+1}</text>`).join('')}</svg>`:''}</div>
       ${Object.keys(by).map(g=>`<h3 class="reg">ГОСТ ${esc(g)}</h3><ul>${by[g].map(i=>`<li><b>${esc(i.rule)}</b> — ${esc(i.msg)}</li>`).join('')}</ul>`).join('')}`;
+    track('scan',{k:'normo',iss:r.issues.length,own:!!own});
     if(own){ LS.set(K.ev,BKT.merge(LS.get(K.ev,[]),BKT.fromNormo({id:'n'+Date.now().toString(36),t:Date.now(),issues:r.issues}))); out.insertAdjacentHTML('beforeend','<p class="mut">Результат учтён в <a href="#/skills">карте навыков ИКГ</a>.</p>'); } }
   catch(e){ out.innerHTML=`<p class="note bad reg">Не получилось проверить: ${esc(e.message)}</p>`; } }
 
@@ -446,6 +481,8 @@ function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>
   render(`${pageHead('Настройки','',['#/more','Ещё'])}
   <div class="grid"><div class="col">
     <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Профиль<small>${u.role==='admin'?'админ':'участник'}</small></h2></div>
+      <label class="f" for="pGroup">Учебная группа</label><div class="row"><input id="pGroup" class="grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" value="${esc(u.group||'')}" placeholder="ИУ5-11Б">${grpList()}<button class="btn" type="button" data-act="saveGroup">Сохранить</button></div>
+      <p class="mut">${groupSched()?'Расписание группы есть — даты ДЗ, РК и модулей посчитаны по нему.':u.group?'Расписания этой группы пока нет — день занятий можно указать в календаре.':'По группе считаются даты сдач.'}</p>
       <label class="f" for="pName">Имя</label><div class="row"><input id="pName" class="grow" type="text" maxlength="60" value="${esc(u.name)}"><button class="btn" type="button" data-act="saveName">Сохранить</button></div>
       <label class="chk reg"><input type="checkbox" data-chg="photos"${u.photos?' checked':''}><span>Разрешаю использовать мои фото чертежей для улучшения проверки<small>Необязательно; сейчас фото никуда не отправляются</small></span></label></section>
     ${flag('reminders')&&CFG&&CFG.telegram?card('reminders','Напоминания в Telegram',!u.telegram?`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
@@ -478,7 +515,7 @@ function moreView(){ const m=(href,icn,tone,t,s,extl)=>`<a href="${esc(href)}"${
   render(`${pageHead('Ещё')}<nav class="menu" aria-label="Разделы">
   ${flag('calendar')?m('#/calendar','cal','','Календарь сдач','ДЗ, РК и закрытие модулей по неделям'):''}
   ${m('#/settings','user','','Настройки','профиль, напоминания, прогресс, мои данные')}
-  ${ME.user.role==='admin'?m('#/admin','admin','red','Админ-панель','приглашения, участники, функции, отзывы'):''}
+  ${ME.user.role==='admin'?m('#/boss','target','green','Пульт','живая картина: кто в кабинете, что делает, где спотыкается')+m('#/admin','admin','red','Админ-панель','статистика, участники, функции, отзывы'):''}
   ${m(mainUrl(),'book','green','Основной сайт','тетрадь, разборы, тренажёры',true)}
   ${m('#/about','info','','О клубе','что это и как оставить отзыв')}</nav>
   <div class="row reg"><button class="btn wide" type="button" data-act="fb" data-f="general">${ic('fb')}Общий отзыв о клубе</button></div>`,'Ещё'); }
@@ -486,19 +523,32 @@ function aboutView(){ render(`${pageHead('О клубе','',['#/more','Ещё'])
   <p>Методика — интервальное повторение, перемешивание задач, проверка себя и «Решаю сам»; в каждой функции под чертой «Почему так».</p><p class="mut">Версия ${VER}. Не официальный сервис МГТУ.</p></section>`,'О клубе'); }
 
 /* ── админ-панель ── */
-let ADMIN_TAB='users';
+let ADMIN_TAB='stats';
 async function adminView(){ if(ME.user.role!=='admin'){ render('<p class="note bad">Только для админа.</p>'); return; }
   render('<p class="mut">Загружаю…</p>','Админ-панель'); let D;
   try{ D=await api('GET','/api/admin/overview'); }catch(e){ render(`<p class="note bad">${esc(e.message)}</p>`); return; }
   const dt=ms=>ms?new Date(ms).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
   const names={}; D.users.forEach(u=>{ names[u.id]=u.name; });
-  const tabs=[['users','Участники · '+D.users.length],['flags','Функции'],['feedback','Отзывы · '+D.feedback.length],['logins','Входы'],['settings','Семестр']];
+  const tabs=[['stats','Статистика'],['users','Участники · '+D.users.length],['flags','Функции'],['feedback','Отзывы · '+D.feedback.length],['logins','Входы'],['settings','Семестр']];
   const st=i=>i.revokedAt?'<span class="st-badge bad">отозвано</span>':i.multi?'<span class="st-badge'+(i.uses>=i.maxUses?'':' ok')+'">публичная · '+i.uses+' из '+i.maxUses+'</span>':i.usedAt?'<span class="st-badge ok">'+esc(names[i.usedBy]||'использовано')+'</span>':i.expiresAt<Date.now()?'<span class="st-badge">истекло</span>':'<span class="st-badge">до '+dt(i.expiresAt)+'</span>';
+  /* учёт: сколько всего, кто пришёл недавно, кто активен, разбивка по группам и способам входа */
+  const now=Date.now(), DAYMS=864e5, act=u=>(u.lastSeen||u.lastLogin||0)>now-7*DAYMS, byG={};
+  D.users.forEach(u=>{ const g=u.group||'— без группы'; const x=byG[g]||(byG[g]={n:0,a:0,w:0}); x.n++; if(act(u)) x.a++; if(u.createdAt>now-7*DAYMS) x.w++; });
+  const groupsSorted=Object.keys(byG).sort((a,b)=>byG[b].n-byG[a].n||a.localeCompare(b));
+  const viaN=m=>D.users.filter(u=>(u.methods||[]).includes(m)).length;
+  const reg7=D.users.filter(u=>u.createdAt>now-7*DAYMS).length, act7=D.users.filter(act).length, act1=D.users.filter(u=>(u.lastSeen||u.lastLogin||0)>now-DAYMS).length;
+  const days=[...Array(14)].map((_,i)=>{ const d=new Date(now-(13-i)*DAYMS); const k=d.toISOString().slice(0,10); return {k,lab:d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0'),n:D.users.filter(u=>new Date(u.createdAt).toISOString().slice(0,10)===k).length}; });
+  const maxD=Math.max(1,...days.map(d=>d.n));
   const body={
+    stats:`<div class="kpis"><div><b>${D.users.length}</b><span>всего</span></div><div><b>${reg7}</b><span>новых за 7 дней</span></div><div><b>${act7}</b><span>заходили за 7 дней</span></div><div><b>${act1}</b><span>сегодня и вчера</span></div></div>
+      <h3 class="reg">Регистрации за 14 дней</h3><div class="bars">${days.map(d=>`<div class="bc" title="${d.lab}: ${d.n}"><i data-h="${Math.round(d.n/maxD*100)}"></i><small>${d.lab.split('.')[0]}</small></div>`).join('')}</div>
+      <h3 class="reg">По группам</h3><div class="tbl"><table><thead><tr><th>Группа</th><th>Всего</th><th>Активны 7 дн.</th><th>Новые 7 дн.</th></tr></thead><tbody>${groupsSorted.map(g=>`<tr><td>${esc(g)}</td><td>${byG[g].n}</td><td>${byG[g].a}</td><td>${byG[g].w}</td></tr>`).join('')||'<tr><td colspan="4">Пока никого</td></tr>'}</tbody></table></div>
+      <p class="mut reg">Способ входа: почта — ${viaN('email')}, Яндекс ID — ${viaN('yandex')}${viaN('telegram')?', Telegram — '+viaN('telegram'):''}.</p>
+      <div class="row reg"><button class="btn" type="button" data-act="usersCsv">Скачать список участников (CSV для Excel)</button></div>`,
     invites:`<form id="invForm"><div class="grid2"><div><label class="f" for="invL">Для кого</label><input id="invL" type="text" maxlength="60" placeholder="Аня, ИУ5"></div><div><label class="f" for="invD">Действует, дней</label><input id="invD" type="number" min="1" max="60" value="14"></div></div>
       <label class="chk reg"><input id="invM" type="checkbox"><span>Публичная ссылка — одна на многих<small>Для друзей и группы: по ней зарегистрируются до 50 человек. Отозвать можно в любой момент.</small></span></label><label class="chk reg"><input id="invA" type="checkbox"><span>Роль «админ»<small>только для личной ссылки</small></span></label><div class="row reg"><button class="btn cta" type="submit">${ic('plus')}Создать приглашение</button></div></form><div id="invOut"></div>
       <div class="reg">${D.invites.map(i=>`<div class="urow"><div><b>${esc(i.label)}</b>${i.role==='admin'?' · админ':''}<small>${dt(i.createdAt)}</small></div><div class="row">${st(i)}${!i.usedAt&&!i.revokedAt?`<button class="btn sm dan" type="button" data-act="revoke" data-h="${i.h}">Отозвать</button>`:''}</div></div>`).join('')||'<p class="mut">Приглашений пока нет.</p>'}</div>`,
-    users:D.users.map(u=>`<div class="urow"><div><b>${esc(u.name)}</b>${u.blocked?' <span class="st-badge bad">доступ закрыт</span>':''}<small>с ${dt(u.createdAt)} · вход ${dt(u.lastLogin)}${u.reminders?' · напоминания':''}${u.photos?' · фото: да':''}</small></div>
+    users:D.users.map(u=>`<div class="urow"><div><b>${esc(u.name)}</b>${u.group?` <span class="st-badge">${esc(u.group)}</span>`:''}${u.blocked?' <span class="st-badge bad">доступ закрыт</span>':''}<small>с ${dt(u.createdAt)} · вход ${dt(u.lastLogin)}${u.reminders?' · напоминания':''}${u.photos?' · фото: да':''}</small></div>
       <div class="row"><select data-chg="role" data-id="${u.id}" aria-label="Роль"><option value="member"${u.role==='member'?' selected':''}>участник</option><option value="admin"${u.role==='admin'?' selected':''}>админ</option></select>${u.id!==ME.user.id?`<button class="btn sm${u.blocked?'':' dan'}" type="button" data-act="block" data-id="${u.id}" data-b="${u.blocked?0:1}">${u.blocked?'Вернуть':'Закрыть'}</button>`:''}</div></div>`).join(''),
     flags:`<p class="mut">«Всем» — функция у всех; «Админам» — обкатка; «Выкл» — скрыта.</p>${D.features.map(f=>`<div class="urow"><b>${esc(f.t)}</b><div class="seg" role="group">${[['on','Всем'],['admin','Админам'],['off','Выкл']].map(([m,l])=>`<button type="button" data-act="flag" data-f="${f.id}" data-m="${m}" class="${D.flags[f.id]===m?'on':''}">${l}</button>`).join('')}</div></div>`).join('')}`,
     feedback:D.feedback.length?`<ul class="list">${D.feedback.map(f=>`<li><b>${esc(f.feature==='privacy'?'Обращение к владельцу':(D.features.find(x=>x.id===f.feature)||{t:'Общее'}).t)}</b> ${f.mood?'<span class="lv">'+({good:'полезно',unclear:'непонятно',bad:'мешает'})[f.mood]+'</span>':''}<p>${esc(f.text)}</p><small>${esc(f.name)} · ${dt(f.ts)}</small>${f.feature==='privacy'?(f.reply?`<p class="note ok reg">Ответ (${dt(f.replyAt)}): ${esc(f.reply)}</p>`:`<div class="row reg"><button class="btn sm pri" type="button" data-act="reply" data-id="${esc(f.id)}">Ответить</button></div>`):''}</li>`).join('')}</ul>`:'<p class="empty">Отзывов пока нет.</p>',
@@ -510,6 +560,56 @@ async function adminView(){ if(ME.user.role!=='admin'){ render('<p class="note b
     try{ const r=await api('POST','/api/admin/invites',{label:$('#invL').value,days:+$('#invD').value,role:$('#invA').checked?'admin':'member',multi:$('#invM').checked,uses:50});
       await adminView(); $('#invOut').innerHTML=`<div class="note ok reg"><b>Приглашение создано.</b> Ссылка показывается один раз — скопируйте и отправьте лично:<span class="code" id="invLink">${esc(r.link)}</span><button class="btn sm pri" type="button" data-act="copy" data-t="#invLink">Скопировать</button></div>`; }
     catch(err){ toast(err.message); } }); }
+
+/* ── пульт владельца: живая картина — кто сейчас в кабинете, что делает и как получается; обновляется сам каждые 8 секунд ── */
+let BOSS_T=null, BOSS_SEEN=0, BOSS_AT=0;
+function bossStop(){ clearInterval(BOSS_T); BOSS_T=null; }
+const VIEW_T={today:'на «Сегодня»',check:'в проверке чертежа',train:'на тренировке',skills:'в навыках',event:'готовится к сдаче',calendar:'в календаре',settings:'в настройках',more:'в меню',about:'читает о клубе',admin:'в админке',boss:'на пульте'};
+const ago=ts=>{ const s=Math.max(0,Math.round((Date.now()-ts)/1000)); return s<45?'только что':s<3600?Math.round(s/60)+' мин назад':s<86400?Math.round(s/3600)+' ч назад':new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'}); };
+const initials=n=>esc(String(n||'?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase());
+function actText(a){ const d=a.d||{};
+  switch(a.type){
+    case 'task': { const L=[['bad','не смог'],['warn','с подсказкой'],['ok','сам']][d.v]; return L?`<span class="lv ${L[0]}">${L[1]}</span> задача №${esc(d.n)}${d.ctx==='train'?' · тренировка':d.ctx==='diag'?' · диагностика':''}`:'отметил задачу'; }
+    case 'check': return 'открыл '+(d.k==='dz'?'сканер ДЗ':d.k==='task'?'проверку задачи по фото':'проверку');
+    case 'scan': return `проверил лист по ГОСТ — <span class="lv ${d.iss?'warn':'ok'}">${d.iss?d.iss+' '+plural(d.iss,'замечание','замечания','замечаний'):'без замечаний'}</span>`;
+    case 'mock': return d.s==='end'?'закончил пробный РК':'начал пробный РК (90 мин)';
+    case 'plan': return 'составил план подготовки';
+    case 'skill': return 'оценил себя по навыку ИКГ';
+    case 'signup': return '<span class="lv ok">новый участник</span> зарегистрировался'+(d.m?' · '+({email:'почта',yandex:'Яндекс ID',telegram:'Telegram'})[d.m]:'');
+    case 'login': return 'вошёл'+(d.m?' · '+({email:'почта',yandex:'Яндекс ID',telegram:'Telegram'})[d.m]:'');
+    default: return esc(a.type); } }
+const actIco={task:'train',check:'scan',scan:'scan',mock:'clock',plan:'cal',skill:'skills',signup:'user',login:'user'};
+async function bossView(){ if(ME.user.role!=='admin'){ render('<p class="note bad">Только для владельца.</p>'); return; }
+  if(!$('#boss')){ render(`<div id="boss" class="boss"><p class="mut">Подключаюсь к пульту…</p></div>`,'Пульт'); BOSS_SEEN=0; }
+  let L; try{ L=await api('GET','/api/admin/live'); }catch(e){ const b=$('#boss'); if(b) b.innerHTML=`<p class="note bad">${esc(e.message)}</p>`; return; }
+  const b=$('#boss'); if(!b||curView()!=='boss') return; BOSS_AT=Date.now();
+  const k=L.kpi, rate=k.tasks?Math.round(k.solved/k.tasks*100):null, maxH=Math.max(1,...L.hours.map(h=>h.n)), first=!BOSS_SEEN;
+  const tile=(v,l,s,cl)=>`<div class="bt${cl?' '+cl:''}"><b>${v}</b><span>${l}</span>${s?`<small>${s}</small>`:''}</div>`;
+  const who=(id,n,g)=>`<button type="button" class="who" data-act="bossUser" data-id="${esc(id)}"><i>${initials(n)}</i><span><b>${esc(n)}</b>${g?`<small>${esc(g)}</small>`:''}</span></button>`;
+  b.innerHTML=`<section class="bhero"><div><span class="live"><i></i>в эфире · <span id="bAgo">обновлено только что</span></span>
+      <h1>${esc((ME.user.name||'').split(' ')[0]||'Босс')}, ${k.online?'сейчас в кабинете — '+k.online+' '+plural(k.online,'человек','человека','человек'):'сейчас в кабинете тихо'}</h1>
+      <p>Сегодня заходили ${k.today} из ${k.total} · за неделю ${k.week}${k.newToday?' · новых сегодня: '+k.newToday:''}</p></div>
+      <a class="btn sm" href="#/admin">Админ-панель</a></section>
+    <div class="btiles">${tile(k.online,'онлайн','последние 2 минуты','on')}${tile(k.today,'активны сегодня',k.newToday?'+'+k.newToday+' новых':'')}${tile(k.tasks,'задач решали сегодня',rate==null?'':'сами — '+rate+'%')}${tile(k.checks,'проверок чертежей','сегодня')}</div>
+    <div class="bgrid"><div>
+      <section class="card"><h2>Сейчас в кабинете</h2>${L.online.length?`<ul class="olist">${L.online.map(o=>`<li>${who(o.id,o.name,o.group)}<span class="where">${esc(VIEW_T[o.view]||'в кабинете')}<small>${ago(o.at)}</small></span></li>`).join('')}</ul>`:'<p class="mut">Никого. Как только кто-то откроет кабинет — появится здесь.</p>'}</section>
+      <section class="card reg"><h2>Лента</h2>${L.feed.length?`<ul class="feed">${L.feed.map(a=>`<li class="${!first&&a.ts>BOSS_SEEN?'new':''}"><span class="ico">${ic(actIco[a.type]||'info')}</span><div>${who(a.user,a.name,a.group)}<p>${actText(a)}</p></div><time>${ago(a.ts)}</time></li>`).join('')}</ul>`:'<p class="mut">Пока ничего не происходило.</p>'}</section>
+    </div><div>
+      <section class="card"><h2>Активность за 24 часа</h2><div class="bars hb">${L.hours.map(h=>`<div class="bc" title="${h.h}:00 — ${h.n}"><i data-h="${Math.round(h.n/maxH*100)}"></i><small>${h.h%3?'':h.h}</small></div>`).join('')}</div></section>
+      <section class="card reg"><h2>Где спотыкаются</h2><p class="mut">Задачи, которые чаще всего «не смог» за 7 дней — кандидаты на разбор.</p>${L.hard.length?`<ul class="hard">${L.hard.map(x=>`<li><b>№${esc(x.n)}</b><span class="meter"><i data-w="${Math.round(x.bad/x.total*100)}"></i></span><small>${x.bad} из ${x.total} · ${x.people} ${plural(x.people,'человек','человека','человек')}</small></li>`).join('')}</ul>`:'<p class="mut">Пока никто не застрял.</p>'}</section>
+      <section class="card reg"><h2>Группы сегодня</h2>${L.groups.length?`<div class="tbl"><table><thead><tr><th>Группа</th><th>Людей</th><th>Действий</th></tr></thead><tbody>${L.groups.map(g=>`<tr><td>${esc(g.g)}</td><td>${g.users}</td><td>${g.acts}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mut">Сегодня ещё никого.</p>'}</section>
+    </div></div>`;
+  paint(b); BOSS_SEEN=L.feed.length?Math.max(BOSS_SEEN,L.feed[0].ts):BOSS_SEEN||1;
+  if(!BOSS_T) BOSS_T=setInterval(()=>{ if(curView()!=='boss'){ bossStop(); return; } const a=$('#bAgo'); if(a) a.textContent='обновлено '+Math.round((Date.now()-BOSS_AT)/1000)+' с назад';
+    if(document.visibilityState==='visible'&&Date.now()-BOSS_AT>8e3&&!$('#sheet')) bossView(); },1000); }
+async function bossUser(id){ openSheet('<p class="mut">Загружаю…</p>'); let U;
+  try{ U=await api('GET','/api/admin/user?id='+encodeURIComponent(id)); }catch(e){ openSheet(`<p class="note bad">${esc(e.message)}</p><div class="row reg"><button class="btn" data-close type="button">Закрыть</button></div>`); return; }
+  const u=U.user, s=U.stats, p=U.progress, rate=s.tasks?Math.round(s.solved/s.tasks*100):null;
+  openSheet(`<div class="uhead"><i>${initials(u.name)}</i><div><h2>${esc(u.name)}</h2><p class="mut">${u.group?esc(u.group)+' · ':''}${u.role==='admin'?'админ · ':''}с ${new Date(u.createdAt).toLocaleDateString('ru-RU')} · ${u.live?'<b class="okc">сейчас '+esc(VIEW_T[u.live.view]||'в кабинете')+'</b>':'был '+(u.lastSeen?ago(u.lastSeen):'—')}</p></div></div>
+    <div class="btiles sm">${[[s.tasks,'задач отмечено'],[rate==null?'—':rate+'%','решил сам'],[s.checks,'проверок'],[s.days,'дней с действиями']].map(([v,l])=>`<div class="bt"><b>${v}</b><span>${l}</span></div>`).join('')}</div>
+    <p class="mut reg">В повторении ${p.tasks} ${plural(p.tasks,'задача','задачи','задач')}, к повтору сегодня — ${p.due}. Навыки ИКГ: ${p.skillObs?p.skillOk+'% верных из '+p.skillObs:'нет данных'}. Отмечено шагов подготовки: ${p.done}.${p.syncedAt?' Прогресс сохранён '+ago(p.syncedAt)+'.':''}</p>
+    <h3 class="reg">Что делал</h3>${U.acts.length?`<ul class="feed sm">${U.acts.map(a=>`<li><span class="ico">${ic(actIco[a.type]||'info')}</span><div><p>${actText(a)}</p></div><time>${new Date(a.ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</time></li>`).join('')}</ul>`:'<p class="mut">Пока ничего.</p>'}
+    <div class="row reg"><button class="btn" data-close type="button">Закрыть</button></div>`); }
 
 /* ── отзыв ── */
 function feedback(f){ const name=f==='general'?'клуб в целом':(FEAT.FEATURES.find(x=>x.id===f)||{t:f}).t;
@@ -541,15 +641,15 @@ const ACT={
   qmore:el=>{ const q=$('.q',el.closest('.task')); q.classList.toggle('open'); el.textContent=q.classList.contains('open')?'Свернуть':'Условие целиком'; },
   rate:el=>{ const t=el.closest('.task'), v=+el.dataset.v; if(v===2) saveRating(t,2,[],[]); else { $$('.rate .btn',t).forEach(b=>b.classList.toggle('on',b===el)); errorPicker(t,v); } },
   rateSave:el=>{ const t=el.closest('.task'); saveRating(t,+el.dataset.v,$$('.errs [data-e].on',t).map(b=>b.dataset.e),$$('.errs [data-sym].on',t).map(b=>b.dataset.sym)); },
-  ikgSelf:el=>{ const id=el.dataset.ev, s=el.dataset.s, v=+el.dataset.v, st=LS.get(K.diag,{}); if(!st[id]) return; st[id].res[s]=v; LS.set(K.diag,st);
+  ikgSelf:el=>{ const id=el.dataset.ev, s=el.dataset.s, v=+el.dataset.v, st=LS.get(K.diag,{}); if(!st[id]) return; st[id].res[s]=v; LS.set(K.diag,st); track('skill',{s,v});
     LS.set(K.ev,BKT.merge(LS.get(K.ev,[]).filter(e=>e.id!=='self:'+id+':'+s),[{id:'self:'+id+':'+s,t:Date.now(),skills:[s],ok:v===2,src:'self'}]));
     if(Object.keys(st[id].res).length>=st[id].items.length) setDone(id+':diag',true); const e=events().find(x=>x.id===id); if(e) diagView(e); },
   addTrain:el=>{ let rep=LS.get(K.rep,{}); const d=dayNum(); el.dataset.n.split(',').forEach(n=>{ if(!rep[n]) rep=Object.assign({},rep,{[n]:{b:0,d:d,s:d,l:d,n:0}}); }); LS.set(K.rep,rep);
     const tr=LS.get(K.train,{}); if(tr.day===d){ delete tr.day; LS.set(K.train,tr); } toast('Добавлено — задачи в тренировке дня'); },
   evDateReset:el=>{ const s=calSet(); s.dates=s.dates||{}; delete s.dates[el.dataset.id]; LS.set(K.cal,s); eventView(el.dataset.id); },
   iiClear:el=>{ const m=LS.get(K.ii,{}); m[el.dataset.id]={when:'',where:'',what:'',t:Date.now()}; LS.set(K.ii,m); eventView(el.dataset.id); },
-  mockStart:el=>{ const m=LS.get(K.mock,{}); m[el.dataset.id]={start:Date.now(),min:90}; LS.set(K.mock,m); const e=events().find(x=>x.id===el.dataset.id); mockView(e); },
-  mockEnd:el=>{ const m=LS.get(K.mock,{}); m[el.dataset.id]=Object.assign({},m[el.dataset.id],{end:Date.now()}); LS.set(K.mock,m); setDone(el.dataset.id+':mock',true); toast('Пробный РК отмечен'); const e=events().find(x=>x.id===el.dataset.id); mockView(e); },
+  mockStart:el=>{ const m=LS.get(K.mock,{}); m[el.dataset.id]={start:Date.now(),min:90}; LS.set(K.mock,m); track('mock',{s:'start',e:el.dataset.id}); const e=events().find(x=>x.id===el.dataset.id); mockView(e); },
+  mockEnd:el=>{ const m=LS.get(K.mock,{}); m[el.dataset.id]=Object.assign({},m[el.dataset.id],{end:Date.now()}); LS.set(K.mock,m); track('mock',{s:'end',e:el.dataset.id}); setDone(el.dataset.id+':mock',true); toast('Пробный РК отмечен'); const e=events().find(x=>x.id===el.dataset.id); mockView(e); },
   scan:async()=>{ const n=+$('#scN').value, f=$('#scF').files[0], out=$('#scOut'); const t=taskBy(n);
     if(!t){ out.innerHTML='<p class="note bad reg">Укажите номер задачи тетради (1–89).</p>'; return; }
     if(!f){ out.innerHTML='<p class="note bad reg">Выберите фото.</p>'; return; }
@@ -558,6 +658,8 @@ const ACT={
   normo:async()=>{ const f=$('#nkF').files[0]; if(!f){ $('#nkOut').innerHTML='<p class="note bad reg">Выберите SVG-файл листа.</p>'; return; }
     if(f.size>8*1024*1024){ $('#nkOut').innerHTML='<p class="note bad reg">Файл больше 8 МБ.</p>'; return; } runNormo(await f.text(),true,'Ваш лист'); },
   normoSample:async el=>{ try{ const r=await fetch('core/samples/'+el.dataset.s+'.svg'); runNormo(await r.text(),false,'Образец «'+el.textContent+'»'); }catch(e){ toast('Нет сети'); } },
+  saveGroup:async()=>{ const g=normGroup($('#pGroup').value); if(g&&!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-11Б'); return; }
+    try{ const r=await api('POST','/api/me/profile',{group:g}); ME.user=r.user; settingsView(); toast(g?'Группа сохранена':'Группа убрана'); }catch(e){ toast(e.message); } },
   saveName:async()=>{ try{ const r=await api('POST','/api/me/profile',{name:$('#pName').value}); ME.user=r.user; toast('Сохранено'); }catch(e){ toast(e.message); } },
   saveRem:async()=>{ const b={enabled:$('#rOn').checked,time:$('#rTime').value,quietFrom:$('#rQf').value,quietTo:$('#rQt').value,tz:$('#rTz').value}; await saveRem(b); },
   pauseRem:async()=>{ await saveRem({paused:!(ME.reminders&&ME.reminders.paused)}); },
@@ -583,6 +685,14 @@ const ACT={
   reply:el=>openSheet(`<h2>Ответ на обращение</h2><p class="mut">Участник увидит ответ в «Мои обращения» и получит его в Telegram.</p><textarea id="rpT" maxlength="2000"></textarea><div class="row reg"><button class="btn pri grow" id="rpGo" type="button">Отправить</button><button class="btn" data-close type="button">Отмена</button></div>`,
     bg=>{ $('#rpGo',bg).addEventListener('click',async()=>{ try{ const r=await api('POST','/api/admin/reply',{id:el.dataset.id,text:$('#rpT',bg).value}); closeSheet(); toast(r.telegram?'Ответ отправлен и в Telegram':'Ответ сохранён в клубе'); adminView(); }catch(e){ toast(e.message); } }); }),
   atab:el=>{ ADMIN_TAB=el.dataset.t; adminView(); },
+  bossUser:el=>bossUser(el.dataset.id),
+  /* список участников в CSV (Excel открывает с разделителем «;» и BOM) */
+  usersCsv:async()=>{ try{ const D=await api('GET','/api/admin/overview'); const d=ms=>ms?new Date(ms).toLocaleString('ru-RU'):'';
+      const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+      const rows=[['Имя','Группа','Роль','Способы входа','Зарегистрирован','Последний вход','Последняя активность','Напоминания','Доступ закрыт']].concat(D.users.map(u=>[u.name,u.group,u.role==='admin'?'админ':'участник',(u.methods||[]).join(', '),d(u.createdAt),d(u.lastLogin),d(u.lastSeen),u.reminders?'да':'',u.blocked?'да':'']));
+      const blob=new Blob(['\ufeff'+rows.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download='nachert-uchastniki-'+today()+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
+    catch(e){ toast(e.message); } },
   revoke:async el=>{ if(!confirm('Отозвать приглашение?')) return; try{ await api('POST','/api/admin/invites/revoke',{h:el.dataset.h}); adminView(); }catch(e){ toast(e.message); } },
   block:async el=>{ try{ await api('POST','/api/admin/users/block',{id:el.dataset.id,blocked:el.dataset.b==='1'}); adminView(); }catch(e){ toast(e.message); } },
   flag:async el=>{ try{ await api('POST','/api/admin/flags',{flags:{[el.dataset.f]:el.dataset.m}}); await loadMe(); adminView(); }catch(e){ toast(e.message); } },
@@ -607,8 +717,16 @@ $('#theme').addEventListener('click',()=>{ const t=document.documentElement.data
 function wipeLocal(){ TOK.set(''); try{ const ks=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if((SYNC.syncable(k)&&!ON_MAIN)||/^nch2_club_/.test(k)) ks.push(k); } ks.forEach(k=>localStorage.removeItem(k)); }catch(e){} }
 
 /* ── маршруты ── */
-function tabs(){ const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(location.hash.replace(/^#\/?/,'').split('/')[0])||'';
-  $$('a',t).forEach(a=>{ a.hidden=!!a.dataset.f&&!flag(a.dataset.f); a.classList.toggle('on',a.dataset.r===r||(r==='event'&&a.dataset.r==='calendar')||(['check','settings','admin','about'].includes(r)&&a.dataset.r==='more')); }); }
+/* верхняя строка: неделя, дата, ближайшее событие, группа — на всех экранах кабинета */
+function topbar(){ const b=$('#ub'); if(!b) return; b.hidden=!ME; if(!ME) return;
+  const t=today(), td=dayNum(), wk=CAL.weekOf(week1(),t), p=dparts(t), nx=CAL.upcoming(calSet(),week1(),t,1)[0];
+  const wkT=wk>=1&&wk<=17?wk+'-я неделя':wk<1?'до семестра':'каникулы', k=nx?CAL.toDay(nx.date)-td:0;
+  const when=!nx?'':k===0?'сегодня':k===1?'завтра':'через '+k+' '+plural(k,'день','дня','дней');
+  b.innerHTML=`<div class="ubi"><span class="ubw">${esc(wkT)}</span><span class="ubd">${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span>
+    ${nx?`<a class="ubn${k<=1?' hot':''}" href="#/event/${nx.id}"><b>${esc(nx.short)} · ${esc(nx.subjTitle)}</b><span>${esc(when)}</span></a>`:''}
+    <a class="ubg${myGroup()?'':' none'}" href="#/settings">${myGroup()?esc(myGroup()):'указать группу'}</a></div>`; }
+function tabs(){ topbar(); const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(location.hash.replace(/^#\/?/,'').split('/')[0])||'';
+  $$('a',t).forEach(a=>{ a.hidden=(!!a.dataset.f&&!flag(a.dataset.f))||(a.dataset.admin!=null&&ME.user.role!=='admin'); a.classList.toggle('on',a.dataset.r===r||(r==='event'&&a.dataset.r==='calendar')||(['check','settings','admin','about'].includes(r)&&a.dataset.r==='more')); }); }
 /* возврат с oauth.telegram.org: #tgAuthResult=<base64 JSON, подписанный Telegram> → сервер проверяет подпись → «Войти как …?» */
 async function tgReturn(raw){ history.replaceState(null,'','#/'); let data=null;
   try{ data=JSON.parse(decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((raw.length+3)%4))))); }catch(e){}
@@ -634,7 +752,7 @@ function route(){ closeSheet(); const m=/^#tgAuthResult=([A-Za-z0-9+/=_%-]*)/.ex
     return settingsView(); }
   if(!ME){ if(LANDING&&$('#auth')) return; return loginView(); }
   if(!CORE){ render('<p class="mut">Загружаю задачи…</p>'); return; }
-  view().focus({preventScroll:true}); scrollTo(0,0);
+  view().focus({preventScroll:true}); scrollTo(0,0); clearTimeout(actTimer); actTimer=setTimeout(beat,800); if(p[0]!=='boss') bossStop();
   switch(p[0]){
     case '': case 'join': return todayView();
     case 'calendar': return flag('calendar')?calendarView():todayView();
@@ -646,6 +764,7 @@ function route(){ closeSheet(); const m=/^#tgAuthResult=([A-Za-z0-9+/=_%-]*)/.ex
     case 'more': return moreView();
     case 'about': return aboutView();
     case 'admin': return adminView();
+    case 'boss': return bossView();
     default: return todayView(); } }
 addEventListener('hashchange',route);
 
@@ -655,6 +774,7 @@ async function boot(){
   try{ await loadMe(); OFFLINE=false; }
   catch(e){ if(e.offline){ const c=LS.get(K.me,null); if(c){ ME=c; OFFLINE=true; } } else ME=null; }
   try{ const r=await fetch('core/tasks.json'); CORE=await r.json(); }catch(e){ CORE=null; }
+  try{ const r=await fetch('data/groups.json',{cache:'no-cache'}); GROUPS=await r.json(); }catch(e){}
   route(); if(ME&&!OFFLINE) syncNow(); }
 if('serviceWorker' in navigator&&location.protocol!=='file:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 boot();

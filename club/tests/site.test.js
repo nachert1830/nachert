@@ -20,7 +20,7 @@ async function open(size){ const ctx=await browser.newContext(Object.assign({loc
   const page=await ctx.newPage(); page.errs=[]; page.on('pageerror',e=>page.errs.push(String(e)));
   page.on('console',m=>{ if(/Content Security Policy|Refused to|CORS/.test(m.text())) page.errs.push(m.text()); }); return {ctx,page}; }
 /* новому — «Добро пожаловать»: имя и две отметки */
-async function onboard(page,name){ await page.waitForSelector('#onbF'); if(name) await page.fill('#onN',name); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); }
+async function onboard(page,name){ await page.waitForSelector('#onbF'); if(name) await page.fill('#onN',name); await page.fill('#onG','ИУ5-11Б'); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); }
 /* «Войти с Яндекс ID» → форма эмуляции Яндекса → обратно на сайт */
 async function yandex(page,id,name,login,o){ o=o||{};
   await page.click('button[data-act="yaLogin"]'); await page.waitForSelector('#yaAllow');
