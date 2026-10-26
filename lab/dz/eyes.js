@@ -156,31 +156,42 @@ function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(
   const D=C.dmap(dg.dig.map), SA=C.samples(gv.id,gv.data).S.map(q=>q.m), S0=SA.filter((q,i)=>i%Math.max(1,Math.round(SA.length/80))===0), S=SA.filter((q,i)=>i%3===0), at=p=>C.at(D,p), deg=Math.PI/180;
   const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), fx=[Math.min(...fig.map(p=>p[0])),Math.max(...fig.map(p=>p[0]))], fy=[Math.min(...fig.map(p=>p[1])),Math.max(...fig.map(p=>p[1]))];
   const cov=(th,k,tx,ty,tol,SS)=>{ const c=Math.cos(th)*k, sn=Math.sin(th)*k; let n=0; for(const m of SS){ if(at([tx+c*m[0]-sn*m[1],ty+sn*m[0]+c*m[1]])<=tol) n++; } return n/SS.length; };
+  /* фон: точки рядом с фигурой (в 2,5…4 мм от её отрезков, где линий условия нет). У верного места там чаще пусто
+     (только линии построений), а фигура, уменьшенная до «помещается куда угодно», лежит в гуще линий — фон тоже на
+     линиях. Мера места — строгая минус фон */
+  const dSeg=(p,q)=>{ const ax=q.b[0]-q.a[0], ay=q.b[1]-q.a[1], L2=ax*ax+ay*ay||1, t=Math.max(0,Math.min(1,((p[0]-q.a[0])*ax+(p[1]-q.a[1])*ay)/L2)); return Math.hypot(p[0]-q.a[0]-t*ax,p[1]-q.a[1]-t*ay); };
+  const BG=[]; S.forEach(m=>[[3,0],[-3,0],[0,3],[0,-3]].forEach(([dx,dy])=>{ const p=[m[0]+dx,m[1]+dy]; if(g.segs.every(q=>dSeg(p,q)>=2.5)) BG.push(p); }));
+  const BG0=BG.filter((p,i)=>i%Math.max(1,Math.round(BG.length/60))===0), bgOf=b=>BG.length?cov(b.th*deg,b.k,b.tx,b.ty,0.5*b.k,BG):0;
   const res=[], S1=raw?S0.filter((q,i)=>i%2===0):S0, step=raw?3:2;
   const hyps=raw?[].concat(...[0,90,180,270].map(fl=>Array.from({length:21},(_,i)=>[Math.pow(1.05,i-12),'кадр',fl]))):[].concat(...[[1,'A4'],[Math.SQRT1_2,'A3']].map(([s0,pg])=>[0,180].map(fl=>[s0,pg,fl])));
   for(const [s0,pg,flip] of hyps) for(let th=-4;th<=4;th+=(raw?4:2)) for(const kk of (raw?[1]:[0.95,1,1.05])){ const k=s0*kk, t=(flip+th)*deg;
     for(let ty=0;ty<=box[3];ty+=step) for(let tx=0;tx<=box[2];tx+=step){ const v=cov(t,k,tx,ty,Math.min(1.5,1.6*k),S1); if(v>=0.45) res.push({v,th:flip+th,k,tx,ty,pg}); } }
-  res.sort((a,b)=>b.v-a.v);
-  /* места: лучшее, затем следующее не ближе 40 мм; уточнение каждого */
-  const tops=[]; for(const q of res){ if(tops.every(t=>Math.hypot(t.tx-q.tx,t.ty-q.ty)>=40*q.k)) tops.push(q); if(tops.length>=12) break; }
+  /* в очередь мест — с поправкой на фон (иначе её заполняет фигура малого масштаба в гуще построений) */
+  res.forEach(q=>{ q.v0=q.v; q.v=q.v-cov(q.th*deg,q.k,q.tx,q.ty,Math.min(1.5,1.6*q.k),BG0); });
+  /* места: лучшее, затем следующее не ближе 40 мм; уточнение каждого. Две очереди — по покрытию и по покрытию за
+     вычетом фона (на мелком настоящем фото линии толстые, фон у верного места тоже заметен) */
+  const tops=[], pick=(key,N)=>{ let k0=0; for(const q of res.slice().sort((a,b)=>b[key]-a[key])){ if(tops.every(t=>Math.hypot(t.tx-q.tx,t.ty-q.ty)>=40*Math.min(t.k,q.k)||Math.abs(t.k/q.k-1)>0.1||Math.abs(t.th-q.th)>3)){ tops.push(q); if(++k0>=N) break; } } };
+  pick('v',10); pick('v0',10); tops.forEach(q=>{ q.v=q.v0; });
   const found=tops.map(b0=>{ let b=Object.assign({},b0,{v:cov(b0.th*deg,b0.k,b0.tx,b0.ty,1.2*b0.k,S)});
     for(const [dth,dk,dt] of [[1,0.02,1],[0.5,0.01,0.5],[0.25,0.005,0.25]]){ let bb=b; for(let th=b.th-2*dth;th<=b.th+2*dth+1e-9;th+=dth) for(let k=b.k*(1-2*dk);k<=b.k*(1+2*dk)+1e-9;k+=b.k*dk) for(let ty=b.ty-2*dt;ty<=b.ty+2*dt+1e-9;ty+=dt) for(let tx=b.tx-2*dt;tx<=b.tx+2*dt+1e-9;tx+=dt){ const v=cov(th*deg,k,tx,ty,0.8*k,S); if(v>bb.v) bb={v,th,k,tx,ty,pg:b.pg}; } b=bb; }
     return b; });
   /* строгая мера: доля ВСЕХ точек фигуры в 0,5 мм настоящего листа (допуск / масштаб) — у верного места ~ 0,9…1,
      у случайного совпадения с построениями — заметно меньше */
-  found.forEach(b=>{ b.strict=cov(b.th*deg,b.k,b.tx,b.ty,0.5*b.k,SA); });
-  if(o.dbg) console.log('места:',tops.map((t,i)=>Math.round(t.v*100)+'→'+Math.round(found[i].v*100)+'/'+Math.round(found[i].strict*100)+'% k'+found[i].k.toFixed(2)+' θ'+found[i].th+' ('+found[i].tx.toFixed(0)+','+found[i].ty.toFixed(0)+')').join(' | '));
+  found.forEach(b=>{ b.strict=cov(b.th*deg,b.k,b.tx,b.ty,0.5*b.k,SA); b.bg=bgOf(b); });
+  if(o.dbg) console.log('места:',tops.map((t,i)=>Math.round(t.v*100)+'→'+Math.round(found[i].v*100)+'/'+Math.round(found[i].strict*100)+'% фон '+Math.round(found[i].bg*100)+'% k'+found[i].k.toFixed(2)+' θ'+found[i].th+' ('+found[i].tx.toFixed(0)+','+found[i].ty.toFixed(0)+')').join(' | '));
   /* лист один: масштаб и поворот у всех чертежей общие — по лучшему (строгая мера), остальные должны совпасть (± 4 %, ± 3°) */
-  const ok=found.filter(b=>b.strict>=0.6).sort((a,b)=>b.strict-a.strict); if(!ok.length){ found.length=0; }
+  const sc=b=>b.strict-b.bg, ok=found.filter(b=>b.strict>=0.6&&sc(b)>=0.3).sort((a,b)=>sc(b)-sc(a)); if(!ok.length){ found.length=0; }
   else { const r0=ok[0];
     /* второй этап: масштаб и поворот листа известны — по всему листу ищем все копии фигуры с ними (± 3 %, ± 2°) */
     const res2=[]; for(let th=r0.th-2;th<=r0.th+2;th+=1) for(const kk of [0.97,1,1.03]){ const k=r0.k*kk;
       for(let ty=0;ty<=box[3];ty+=1.5) for(let tx=0;tx<=box[2];tx+=1.5){ const v=cov(th*deg,k,tx,ty,Math.min(1.5,1.2*k),S0); if(v>=0.5) res2.push({v,th,k,tx,ty,pg:r0.pg}); } }
     res2.sort((a,b)=>b.v-a.v); const t2=[]; for(const q of res2){ if(t2.every(t=>Math.hypot(t.tx-q.tx,t.ty-q.ty)>=40*q.k)) t2.push(q); if(t2.length>=8) break; }
     const f2=t2.map(b0=>{ let b=b0; for(const dt of [0.5,0.25]){ let bb=Object.assign({},b,{v:cov(b.th*deg,b.k,b.tx,b.ty,0.8*b.k,S)}); for(let ty=b.ty-3*dt;ty<=b.ty+3*dt+1e-9;ty+=dt) for(let tx=b.tx-3*dt;tx<=b.tx+3*dt+1e-9;tx+=dt){ const v=cov(b.th*deg,b.k,tx,ty,0.8*b.k,S); if(v>bb.v) bb=Object.assign({},b,{v,tx,ty}); } b=bb; }
-      b.strict=cov(b.th*deg,b.k,b.tx,b.ty,0.5*b.k,SA); return b; }).filter(b=>b.strict>=0.6);
-    if(o.dbg) console.log('второй этап:',f2.map(b=>Math.round(b.strict*100)+'% ('+b.tx.toFixed(0)+','+b.ty.toFixed(0)+')').join(' | '));
-    found.splice(0,found.length,...(f2.length?f2:[r0])); }
+      b.strict=cov(b.th*deg,b.k,b.tx,b.ty,0.5*b.k,SA); b.bg=bgOf(b); return b; }).filter(b=>b.strict>=0.6&&sc(b)>=0.3);
+    if(o.dbg) console.log('второй этап:',f2.map(b=>Math.round(b.strict*100)+'%/фон '+Math.round(b.bg*100)+'% ('+b.tx.toFixed(0)+','+b.ty.toFixed(0)+')').join(' | '));
+    /* и найденное на первом этапе с другим масштабом (перспектива: чертёж ближе к камере крупнее на 10–15 %) */
+    const all=f2.concat(ok).sort((a,b)=>sc(b)-sc(a)), uniq=[]; all.forEach(b=>{ if(uniq.every(u=>Math.hypot(u.tx-b.tx,u.ty-b.ty)>=40*Math.min(u.k,b.k))) uniq.push(b); });
+    found.splice(0,found.length,...uniq); }
   /* лист один: А4 или А3 и поворот — по большинству найденного; чужие гипотезы отбрасываются */
   if(!found.length) return {ok:false,reason:'на листе не нашёл фигуру условия варианта '+o.n+(tops[0]?' (лучшее место — '+Math.round(tops[0].v*100)+' % на линиях)':'')};
   const key=b=>b.pg+':'+(Math.round((((b.th%360)+360)%360)/90)%4*90), cnt={}; found.forEach(b=>{ cnt[key(b)]=(cnt[key(b)]||0)+b.v; });
