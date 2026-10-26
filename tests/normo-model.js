@@ -167,13 +167,19 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
        переходы между плоскостями ступенчатого разреза не изображают — две точки сечения друг от друга не отделены линией */
     const RBn=[]; (function wr(nd){ if(!nd) return; if(nd.rib!=null){ if(nd.rib===V.ax) RBn.push(nd); return; } if(nd.t==='u') nd.k.forEach(wr); else if(nd.t==='s') wr(nd.a); })(model0.tree);
     const RJ=RBn.length?IG3.jc(RBn.length>1?{t:'u',k:RBn}:RBn[0]):null, inRib=p=>!!RJ&&RJ(p[0],p[1],p[2])<0;
-    /* смена поверхности — ребро, только если есть излом (> ~11°): плоскость, касательная к цилиндру, — плавный переход, его не рисуют */
     const diff=(a,b)=>{ if(!a||!b){ why='hit'; return !!(a||b); }
       if(a.o===-2&&b.o===-2){ why='cut'; return inRib(a.p)!==inRib(b.p); } const dd=Math.abs(a.t-b.t), lim=0.6+g*Math.min(slope(a),slope(b))*1.6;
-      if(dd>lim){ why='depth '+dd.toFixed(2); return true; } const cs=a.n[0]*b.n[0]+a.n[1]*b.n[1]+a.n[2]*b.n[2]; if(a.o!==b.o&&cs<0.98){ why='own '+a.o+'/'+b.o+' '+cs.toFixed(3); return true; } why='n '+cs.toFixed(3)+' '+a.n.map(v=>v.toFixed(2))+' '+b.n.map(v=>v.toFixed(2)); return cs<0.87; };
+      if(dd>lim){ why='depth '+dd.toFixed(2); return true; } const cs=a.n[0]*b.n[0]+a.n[1]*b.n[1]+a.n[2]*b.n[2]; if(a.o!==b.o&&cs<0.996){ why='own '+a.o+'/'+b.o+' '+cs.toFixed(3); return true; } why='n '+cs.toFixed(3)+' '+a.n.map(v=>v.toFixed(2))+' '+b.n.map(v=>v.toFixed(2)); return cs<0.87; };
+    /* смена поверхности без излома — плавный переход (плоскость, касательная к цилиндру): его не рисуют (ГОСТ 2.305). Ищем делением
+       пополам место смены между лучами и сравниваем нормали по обе стороны прямо у него: у ребра они разные, у касания — одна */
+    const hit1=(u,v)=>{ const h=march(u,v,false)[0]; if(h){ h.o=own(h.p); h.n=nrm(h.p); } return h; };
+    const smooth=(u1,v1,u2,v2)=>{ let a=0, c=1; const P=t=>hit1(u1+(u2-u1)*t,v1+(v2-v1)*t), h0=P(0); if(!h0) return false;
+      for(let s=0;s<14;s++){ const m=(a+c)/2, h=P(m); if(!h) return false; if(h.o===h0.o) a=m; else c=m; }
+      const d=0.05/(Math.hypot(u2-u1,v2-v1)||1), ha=P(Math.max(0,a-d)), hc=P(Math.min(1,c+d));   /* в 0,05 мм от места смены: у самого ребра разностная нормаль смешивает обе грани */
+      if(!ha||!hc||Math.abs(ha.t-hc.t)>0.1) return false; return ha.n[0]*hc.n[0]+ha.n[1]*hc.n[1]+ha.n[2]*hc.n[2]>0.9995; };
     for(let i=0;i<=nu;i++) for(let j=0;j<=nv;j++){ const A=R[id(i,j)]; [[1,0],[0,1]].forEach(([di,dj])=>{ if(i+di>nu||j+dj>nv) return; const B=R[id(i+di,j+dj)];
         const m=toS((U(i)+U(i+di))/2,(Vv(j)+Vv(j+dj))/2); m.dir=di?'u':'v';
-        if(diff(A[0],B[0])){ if(C.opt.debug) m.why=why+' @'+[U(i),Vv(j)].map(v=>v.toFixed(2)); vis.push(m); return; }
+        if(diff(A[0],B[0])&&!(why.startsWith('own')&&smooth(U(i),Vv(j),U(i+di),Vv(j+dj)))){ if(C.opt.debug) m.why=why+' @'+[U(i),Vv(j)].map(v=>v.toFixed(2)); vis.push(m); return; }
         if(needHid){ const n=Math.max(A.length,B.length); for(let l=1;l<n;l++){ if(diff(A[l],B[l])){ if(C.opt.debug) m.why='L'+l+' '+A.length+'/'+B.length+' '+why+' @'+[U(i),Vv(j)].map(v=>v.toFixed(2))+' t='+A.map(h=>h.t.toFixed(2))+'|'+B.map(h=>h.t.toFixed(2)); hid.push(m); break; } } } }); }
     if(C.opt.debug){ (F.dbg=F.dbg||{vis:[],hid:[]}); vis.forEach(m=>F.dbg.vis.push(m)); hid.forEach(m=>F.dbg.hid.push(m)); }
     tm('edges',tq); tq=performance.now();
