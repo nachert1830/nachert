@@ -235,7 +235,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(st.w>st.iw+1) bad.push({name:h,rule:'горизонтальная прокрутка',msg:'ширина '+st.w+' при экране '+st.iw});
       if(st.huge.length) bad.push({name:h,rule:'элемент на весь экран',msg:st.huge.slice(0,3).join(', ')});
       if(st.txt<40) bad.push({name:h,rule:'пустая страница',msg:'текста '+st.txt+' символов'});
-      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)) queue.push(l); }); }   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js */
+      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)&&!/^#\/ng\/var\/dz\d\/(?!1(\/|$))/.test(l)) queue.push(l); }); }   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js; варианты ДЗ — tests/variants-run.js (здесь — первый вариант каждого задания) */
     info.push('Обход: страниц '+n);
     /* разбор каждой задачи до конца: «Дальше» до ответа */
     const tasks=await page.evaluate(()=>WB3.tasks.map(t=>t.n));

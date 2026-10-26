@@ -1798,6 +1798,14 @@ html.ovs-open,html.ovs-open body{overflow:hidden}
 .hw-cta small{display:block;color:var(--mut);margin-top:3px;font-size:13.5px;line-height:1.45}
 .hw-var{padding:var(--s4);border-radius:var(--r2);background:var(--surf2);border:1px solid var(--line);font-size:14.5px}
 .hw-nav{display:flex;justify-content:space-between;gap:var(--s3);margin:var(--s5) 0 var(--s4)}
+/* «Варианты»: номера вариантов, лист */
+.var-grp{margin:var(--s3) 0}.var-grp small{display:block;color:var(--mut);margin-bottom:6px}
+.var-nums{display:flex;flex-wrap:wrap;gap:6px}
+.var-nums a,.var-nums .off{min-width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid var(--bd);font-weight:600;text-decoration:none;color:inherit}
+.var-nums a:hover{border-color:var(--acc);color:var(--acc)}
+.var-nums .off{opacity:.38;cursor:default}
+.var-sheet{overflow:auto;border:1px solid var(--bd);border-radius:12px;background:#fff;padding:6px;margin:var(--s3) 0}
+.var-acts{margin:var(--s3) 0}.var-note{color:var(--mut);margin:6px 0}
 .hw-nav a{min-height:var(--tap);display:inline-flex;align-items:center;padding:0 14px;border-radius:99px;border:1px solid var(--bd);text-decoration:none;color:var(--ink2);font-weight:600;font-size:14px}
 .hw-dim{font-size:13.5px;color:var(--mut);margin:8px 0 0}
 /* лесенка подсказок в карточке шага */
@@ -26236,7 +26244,7 @@ const NAVS=[
 const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ № 2',short:'ДЗ 2',h:'#/ig/hw2'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
 const subjOf=r=>(r&&(r.s==='ig'||r.s==='part'))&&IGON()?'ig':'ng'; let NAVSUBJ=null;
 function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {learn:'ilr',points:'ilr',hw2:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
-  if(r.s==='ng') return {tasks:'nb',check:'rk',rk2:'rk',hw:'hw',path:'th',cheat:'th',learn:'th'}[r.tab]||'nb';
+  if(r.s==='ng') return {tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',path:'th',cheat:'th',learn:'th'}[r.tab]||'nb';
   if(!r.s||r.s==='home') return 'home';
   return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
 const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
@@ -26332,7 +26340,7 @@ function route(){
      Только при переходе в другой раздел/материал — шаги внутри задачи не анимируем. */
   const key=x=>{ const q=parseHash(x||'#/'); return [q.s,q.tab,q.item].join('/'); };
   const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); }catch(e){ go(); } }
+  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); vt.ready.catch(()=>{}); if(vt.updateCallbackDone) vt.updateCallbackDone.catch(()=>{}); }catch(e){ go(); } }   /* анимацию прервал следующий переход — это не ошибка */
   else go();
   ST.set('route',h);
 }
@@ -27088,10 +27096,11 @@ let LID=null, CURT=null, PLR=null;
 function viewNG(v,r){
   if(r.tab==='day') return viewDay(v,r);
   if(r.tab==='rk2') return RK2.view(v,r);
-  const tab=['path','tasks','hw','check','cheat','learn'].includes(r.tab)?r.tab:null;
+  const tab=['path','tasks','hw','check','cheat','learn','var'].includes(r.tab)?r.tab:null;
   if(!tab) return viewNG(v,{s:'ng',tab:'tasks'});
   if(tab==='learn') return LEARN.view(v,r.item,r.sub);
   if(tab==='hw') return hwView(v,r);
+  if(tab==='var') return varView(v,r);
   if(tab==='path'){ if(r.item==null) return ngPath(v); if(/^t\d+$/.test(r.item)) return openTaskView(v,+r.item.slice(1),'path',r.sub); return ngLesson(v,+r.item); }
   if(tab==='tasks'){ if(r.item==null) return ngTasks(v); return openTaskView(v,+r.item,'tasks',r.sub); }
   if(tab==='check'){
@@ -27211,13 +27220,61 @@ function setLessonDone(id,v){ const d=ST.get('done',{}); d[id]=v; ST.set('done',
 function openLesson(id){ nav(H('ng','path',id)); }
 
 /* ── ДЗ (домашние задания: методика + разбор своего варианта; модуль extras/ng-hw.js) ── */
+/* ═════ «Варианты»: любой вариант ДЗ — разбор по шагам ядром (kernel/), 3D, чистовик и черновик листа по ГОСТ ═════
+   Данные — variants/, ядро — kernel/ (оглавление — variants/README.md). Файлы грузятся при первом заходе в раздел.
+   #/ng/var — каталог; #/ng/var/dz1/7 — вариант 7 ДЗ №1; …/7/list — чистовик, …/7/draft — черновик. */
+const VAR_FILES=['variants/ng/dz1.js','variants/ng/dz2.js','variants/ng/dz3.js','variants/ng/dz4.js','variants/ng/dz5.js','kernel/ng.js','kernel/ng-dz1.js','kernel/ng-dz5.js','kernel/sheet.js'];
+let VAR_LOAD=null;
+const vesc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function varLoad(){ if(window.NGK&&window.SHEET) return Promise.resolve(); if(VAR_LOAD) return VAR_LOAD;
+  VAR_LOAD=VAR_FILES.reduce((p,f)=>p.then(()=>new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src=f; sc.onload=res; sc.onerror=()=>rej(new Error('не загрузился '+f)); document.head.appendChild(sc); })),Promise.resolve());
+  VAR_LOAD.catch(()=>{ VAR_LOAD=null; }); return VAR_LOAD; }
+const VAR_DZ=[
+  {id:'dz1',num:'№1',hw:'1',groups:[[1,10,'равносторонний треугольник'],[11,20,'параллелограмм'],[21,30,'равнобедренная трапеция']]},
+  {id:'dz2',num:'№2',hw:'2',groups:[[1,10,'2а · пирамида'],[11,20,'2б · призма'],[21,30,'2в · куб']]},
+  {id:'dz3',num:'№3',hw:'3',groups:[[1,30,'пирамида: замена плоскостей и вращение']]},
+  {id:'dz4',num:'№4',hw:'4a',groups:[[1,15,'4а'],[16,30,'4б']]},
+  {id:'dz5',num:'№5',hw:'5',groups:[[1,10,'конус'],[11,20,'наклонный цилиндр'],[21,30,'поверхность вращения (дуга R120)']]} ];
+function varMeta(dz,n){ const src=VARIANTS.ng[dz]; const pts=typeof src.points==='function'?src.points(n):src.points;
+  return {title:'ДЗ '+VAR_DZ.find(d=>d.id===dz).num,sub:src.title.replace(/^.*? · /,''),n,points:pts,data:src.V[n]}; }
+function varCatalog(){ return `<div class="intro"><h1>Решение своего варианта</h1><p class="lead">Выбери задание и номер варианта из таблицы задания: разбор по шагам (от намёка до чисел), 3D к каждому шагу и лист — черновик и чистовик по ГОСТ, готовый к печати в масштабе 1:1.</p></div>`+
+  VAR_DZ.map(d=>{ const src=window.VARIANTS&&VARIANTS.ng&&VARIANTS.ng[d.id], ok=n=>window.NGK&&NGK.supported(d.id,n);
+    return `<section class="hw-sec var-sec"><h2>ДЗ ${d.num}${src?' · '+vesc(src.title.replace(/^.*? · /,'')):''}</h2>`+d.groups.map(([a,b,t])=>`<div class="var-grp"><small>${a}–${b} · ${vesc(t)}</small><div class="var-nums">${Array.from({length:b-a+1},(_,i)=>a+i).map(n=>ok(n)?`<a href="${H('ng','var',d.id,n)}">${n}</a>`:`<span class="off" title="в работе">${n}</span>`).join('')}</div></div>`).join('')+`</section>`; }).join('')+
+  `<p class="hw-foot">Каждый вариант построен ядром по правилам и проверен теми же проверками, что примеры сайта: условие и ответ — числами, каждый элемент чертежа — построимость линейкой и циркулем, видимость — лучом к наблюдателю.</p>`; }
+function varView(v,r){
+  const dz=r.item, n=r.sub?+r.sub:null, mode=r.extra==='list'?'final':r.extra==='draft'?'draft':'steps';
+  const crumbs=dz?NGC(['Варианты',H('ng','var')],['ДЗ '+((VAR_DZ.find(d=>d.id===dz)||{}).num||'')+(n?' · вариант '+n:'')]):NGC(['Варианты']);
+  v.innerHTML=pageHTML({crumbs,tabs:['ng','hw'],next:null,noBottom:true,cls:'hwwrap varwrap',body:'<div id="varRoot"><p class="lead">Загружаю ядро решений: данные вариантов и программы построения…</p></div>'});
+  const here=location.hash;
+  varLoad().then(()=>{ if(location.hash!==here) return; const root=$('varRoot'); if(!root) return;
+    if(!dz||!n){ root.innerHTML=varCatalog(); return; }
+    const src=VARIANTS.ng[dz]; if(!src||!src.V[n]){ root.innerHTML='<div class="box warn">Нет такого варианта. <a href="'+H('ng','var')+'">К списку</a></div>'; return; }
+    if(!NGK.supported(dz,n)){ root.innerHTML=`<div class="box warn"><h4>ДЗ ${vesc(VAR_DZ.find(d=>d.id===dz).num)}, вариант ${n}</h4>Решение этого типа ещё в работе. <a href="${H('ng','hw',VAR_DZ.find(d=>d.id===dz).hw)}">Методика</a> · <a href="${H('ng','var')}">Другие варианты</a></div>`; return; }
+    let res; try{ res=NGK.solve(dz,n); }catch(e){ res={why:String(e&&e.message||e)}; }
+    if(!res||!res.task){ root.innerHTML='<div class="box warn">Вариант не решился: '+vesc(res&&res.why||'')+'</div>'; return; }
+    const meta=varMeta(dz,n), base=H('ng','var',dz,n), nums=NGK.numbers(dz), i=nums.indexOf(n);
+    const tabs=`<div class="hw-pills var-pills" role="tablist"><a role="tab" class="${mode==='steps'?'on':''}" href="${base}">Разбор по шагам</a><a role="tab" class="${mode==='final'?'on':''}" href="${base}/list">Чистовик</a><a role="tab" class="${mode==='draft'?'on':''}" href="${base}/draft">Черновик</a></div>`;
+    const navv=`<div class="hw-nav">${i>0?`<a href="${H('ng','var',dz,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${H('ng','var')}">Все варианты</a>${i<nums.length-1?`<a href="${H('ng','var',dz,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
+    if(mode==='steps'){ root.innerHTML=`<div class="hw-exhead"><a class="hw-back" href="${H('ng','var')}">← Все варианты</a>${tabs}</div><div id="varPl"></div>`;
+      document.body.classList.add('inplayer');
+      PLR=PLAYER.mount($('varPl'),res.task,{backHref:H('ng','var'),backLabel:'К вариантам',afterText:'Чистовик листа',onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
+    else { const sh=SHEET.ng(res,meta,mode), fname=dz+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
+      root.innerHTML=`<div class="intro"><div class="hw-kick">${vesc(meta.title)} · вариант ${n}</div><h1>${mode==='draft'?'Черновик':'Чистовик'} листа</h1></div>${tabs}
+        <p class="var-note">Формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — для проверки хода решения.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.'}</p>
+        <div class="var-acts"><button class="btn pri" type="button" id="varPrint">Открыть для печати (А3, 100 %)</button></div>
+        <div class="var-sheet">${sh.svg.replace(/width="297mm" height="420mm"/,'width="100%" style="height:auto;max-width:900px;display:block;margin:0 auto;background:#fff"')}</div>${navv}`;
+      const b=$('varPrint'); if(b) b.addEventListener('click',()=>SHEET.print(sh.svg,meta.title+' · вариант '+n,fname)); }
+    setLast({s:'ng',kind:'var',id:dz+'/'+n,href:base,label:meta.title+' · вариант '+n,sub:SUBJ.ng.name+' · варианты'});
+  }).catch(e=>{ const root=$('varRoot'); if(root) root.innerHTML='<div class="box warn"><h4>Не загрузилось</h4>'+vesc(String(e&&e.message||e))+'. Проверь сеть и обнови страницу.</div>'; });
+  return dz&&n?'ДЗ '+((VAR_DZ.find(d=>d.id===dz)||{}).num||'')+' · вариант '+n:'Решение своего варианта';
+}
 function hwView(v,r){
   const W=window.NGHW, id=r.item, ex=r.sub==='ex', d=W&&id?W.get(id):null;
   if(!W){ v.innerHTML=pageHTML({crumbs:NGC(['ДЗ']),tabs:['ng','hw'],next:null,body:'<div class="box warn"><h4>ДЗ</h4>Раздел не загрузился. Обнови страницу.</div>'}); return 'Как решать ДЗ'; }
   const crumbs=d?NGC(['ДЗ',H('ng','hw')],['ДЗ '+d.num]):NGC(['ДЗ']);
   const player=!!(d&&ex&&d.task);
   const pick=d?'':`${guideHTML('Как сделать ДЗ',['Выбери номер своего ДЗ','«Разбор примера» — полное решение похожего варианта','«Методика» — как решать свой вариант'])}
-   <div class="v8-pick hl"><b>Какое у тебя ДЗ?</b>${W.list().map(x=>`<a href="${H('ng','hw',x.n)}">${hwLabel(x.n)}</a>`).join('')}</div>`;
+   <div class="v8-pick hl"><b>Какое у тебя ДЗ?</b>${W.list().map(x=>`<a href="${H('ng','hw',x.n)}">${hwLabel(x.n)}</a>`).join('')}</div><div class="v8-pick"><b>Свой вариант по номеру</b><a href="${H('ng','var')}">Решение, 3D, черновик и чистовик листа →</a></div>`;
   v.innerHTML=pageHTML({crumbs,tabs:['ng','hw'],next:null,noBottom:true,cls:player?'taskwrap hwwrap':'hwwrap',body:'<div id="hwRoot"></div>'});
   W.render($('hwRoot'),d?d.n:null,player?'ex':'');
   if(pick){ const r=$('hwRoot'), i=r.querySelector('.intro'); if(i) i.insertAdjacentHTML('afterend',pick); else r.insertAdjacentHTML('afterbegin',pick); }

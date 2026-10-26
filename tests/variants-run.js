@@ -10,7 +10,7 @@ const ACCEPTED=new Set(JSON.parse(fs.readFileSync(path.join(__dirname,'variants-
 const fresh=list=>list.filter(x=>!ACCEPTED.has([x.name,x.rule,x.msg].join(' | ')));
 
 /* файлы данных и ядра — в порядке загрузки (ядро после данных) */
-const FILES=['variants/ng/dz1.js','variants/ng/dz2.js','variants/ng/dz3.js','variants/ng/dz4.js','variants/ng/dz5.js','kernel/ng.js','kernel/ng-dz1.js','kernel/ng-dz5.js'];
+const FILES=['variants/ng/dz1.js','variants/ng/dz2.js','variants/ng/dz3.js','variants/ng/dz4.js','variants/ng/dz5.js','kernel/ng.js','kernel/ng-dz1.js','kernel/ng-dz5.js','kernel/sheet.js'];
 /* две независимые расшифровки таблиц ДЗ №2 и №3 (variants/ и core/dz-variants.js) обязаны совпасть */
 function dataCheck(){ const out=[], C=require('../core/dz-variants.js');
   [['dz2',C.DZ2],['dz3',C.DZ3]].forEach(([dz,ref])=>{ const V=require('../variants/ng/'+dz+'.js').V;
@@ -38,6 +38,16 @@ async function runVariants(page,opts){ opts=opts||{};
       try{ add('3D-проверка',GEOM_CHECK({tasks:[Object.assign({n:name},r.task)]})); }catch(e){ out.push({name,rule:'сбой 3D-проверки',msg:String(e)}); }
       try{ add('«Евклид»',EUCLID_CHECK({tasks:[Object.assign({n:name},r.task)]})); }catch(e){ out.push({name,rule:'сбой «Евклида»',msg:String(e)}); }
       try{ add('арифметика',ARITH_CHECK({tasks:[Object.assign({n:name},r.task)]})); }catch(e){ out.push({name,rule:'сбой арифметики',msg:String(e)}); }
+      /* листы: строятся, без NaN, всё нарисованное — внутри рамки (20/5/5/5 на А3 297 × 420) */
+      if(window.SHEET) ['final','draft'].forEach(mode=>{ try{ const src=VARIANTS.ng[dz], pts=typeof src.points==='function'?src.points(n):src.points;
+          const sh=SHEET.ng(r,{title:dz,sub:'',n,points:pts,data:src.V[n]},mode);
+          if(/NaN|undefined|Infinity/.test(sh.svg)) out.push({name,rule:'лист ('+mode+')',msg:'в SVG есть NaN/undefined'});
+          const xs=[], ys=[]; sh.svg.replace(/<(line|circle|path|text)\b([^>]*)>/g,(m,t,a)=>{ const g=k=>{ const q=new RegExp(' '+k+'="([-\\d.]+)"').exec(a); return q?+q[1]:null; };
+            if(t==='line'){ xs.push(g('x1'),g('x2')); ys.push(g('y1'),g('y2')); } if(t==='circle'){ const r0=g('r')||0; xs.push(g('cx')-r0,g('cx')+r0); ys.push(g('cy')-r0,g('cy')+r0); } if(t==='text'){ xs.push(g('x')); ys.push(g('y')); }
+            if(t==='path'){ String((/ d="([^"]*)"/.exec(a)||[])[1]||'').replace(/([MLA])([^MLAZ]*)/g,(mm,c,body)=>{ const v=body.trim().split(/[\s,]+/).map(Number); if(c==='A'&&v.length>=7){ xs.push(v[5]); ys.push(v[6]); } else for(let i=0;i+1<v.length;i+=2){ xs.push(v[i]); ys.push(v[i+1]); } return mm; }); } return m; });
+          const X=xs.filter(v=>v!=null), Y=ys.filter(v=>v!=null), bad=X.some(v=>v<19.5||v>297)||Y.some(v=>v<4.5||v>420);
+          if(bad) out.push({name,rule:'лист ('+mode+')',msg:'чертёж выходит за рамку: x '+Math.min(...X).toFixed(1)+'…'+Math.max(...X).toFixed(1)+', y '+Math.min(...Y).toFixed(1)+'…'+Math.max(...Y).toFixed(1)});
+        }catch(e){ out.push({name,rule:'сбой листа ('+mode+')',msg:String(e&&e.stack||e).slice(0,200)}); } });
     }));
     return {checked,list:out}; },opts); }
 
