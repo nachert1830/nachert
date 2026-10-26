@@ -539,3 +539,14 @@ header::after,.ph h1::after,.hero::before,.card.tri::before{display:none}
 .hb{height:120px}
 .uhead{display:flex;gap:14px;align-items:center}.uhead>i{width:52px;height:52px;font-size:17px}.uhead h2{margin:0}.uhead p{margin:2px 0 0}
 .okc{color:var(--green)}
+
+/* ── мои занятия (расписание группы) ── */
+.lessons{list-style:none;margin:8px 0 10px;padding:0}
+.lessons li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;padding:9px 10px;border-radius:12px;align-items:baseline}
+.lessons li+li{border-top:1px solid var(--line)}
+.lessons li.hot{background:var(--blue-s);border-color:transparent}
+.lessons li>b{font:600 13px var(--mono);color:var(--ink);text-transform:uppercase}
+.lessons li small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+.sb{font:600 11px var(--mono);font-style:normal;letter-spacing:.04em;padding:2px 7px;border-radius:6px;margin-right:6px;background:var(--surf2);color:var(--ink2)}
+.sb.ng{background:var(--blue-s);color:var(--blue)}.sb.ikg{background:var(--green-s);color:var(--green)}
+.ubl{font:500 12px var(--mono);color:var(--green);background:var(--green-s);border-radius:8px;padding:4px 9px;white-space:nowrap}

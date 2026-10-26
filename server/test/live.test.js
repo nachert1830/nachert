@@ -10,6 +10,7 @@ test('группа: при регистрации и в профиле — то�
   assert.equal((await c.call('GET','/api/me',undefined,{as:'g'})).data.user.group,'ИУ5-11Б');
   assert.equal((await c.call('POST','/api/me/profile',{group:'привет мир'},{as:'g'})).status,400,'не группа — отказ');
   const ov=(await c.call('GET','/api/admin/overview',undefined,{as:'owner'})).data; assert.equal(ov.users.find(u=>u.name==='Гоша').group,'ИУ5-11Б');
+  for(const g of ['ИУ5-12/6','МТ13И-12/6','ИУ10-1.11/6','Э2И-75Б']){ const r=await c.call('POST','/api/me/profile',{group:g},{as:'g'}); assert.equal(r.status,200,g); assert.equal(r.data.user.group,g); }
 });
 
 test('живой пульт: онлайн, лента, задачи дня, «где спотыкаются», карточка участника; участнику — нельзя',async()=>{
