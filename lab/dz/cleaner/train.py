@@ -36,6 +36,8 @@ class Net(nn.Module):
         d1 = F.relu(s.u1(torch.cat([F.interpolate(d2, scale_factor=2, mode='nearest'), e1], 1)))
         return s.out(d1)
 net = Net(); print('параметров', sum(p.numel() for p in net.parameters()), flush=True)
+if args.get('init'):   # продолжить с сохранённых весов (обучение прервалось)
+    net.load_state_dict({k: torch.tensor(v, dtype=torch.float32) for k, v in json.load(open(args['init']))['w'].items()}); print('продолжаю с', args['init'], flush=True)
 
 def batch(src, bs, aug=True):
     b = src[np.random.randint(0, len(src), bs)].astype(np.float32) / 255.0

@@ -238,12 +238,17 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   const out=E.drawings.map((d,i)=>{ let r; try{ r=dz===2?Object.assign({ok:true},L('check').checkSheet(img,{dz,n,eyes:d})):GS.checkGridPhoto(img,Object.assign({},o,{dz,n,eyes:d,part:o.part||d.part||null}));
       if(dz===2&&r.verdict==='не могу прочитать') r.ok=false; }catch(e){ r={ok:false,verdict:'не могу прочитать',why:['ошибка разбора: '+String(e&&e.message||e)]}; }
     r.index=i; r.eyesPart=d.part; return r; });
+  /* один чертёж дважды (у модели две рамки вокруг одной копии): начало O найдено в одном месте (≤ 8 мм) — второй отбрасывается */
+  const Opx=r=>{ try{ return r&&r.ok&&r._grid&&r.given?r._grid.map(r.given.O[0],r.given.O[1]):null; }catch(e){ return null; } };
+  out.forEach((r,i)=>{ const a=Opx(r); if(!a) return; const ppm=r.plain&&r.plain.ppmPhoto||4; for(let j=0;j<i;j++){ const b=Opx(out[j]); if(b&&!out[j].dup&&Math.hypot(a[0]-b[0],a[1]-b[1])<8*ppm){ r.dup=j; break; } } });
+  const dups=out.filter(r=>r.dup!=null).length; for(let i=out.length-1;i>=0;i--) if(out[i].dup!=null) out.splice(i,1);
   /* итог по листу: «ошибка» — если хоть один чертёж с уверенной ошибкой; «верно» — если все прочитанные верны и
      ни один не отказал; иначе — по чертежам */
   const vs=out.map(r=>r.verdict), bad=vs.some(v=>v==='ошибка'), data=vs.some(v=>v==='ошибка в данных'), allOk=vs.length&&vs.every(v=>v==='верно'||v==='данные нанесены верно');
   const verdict=bad?'ошибка':data?'ошибка в данных':allOk?'верно':vs.every(v=>v==='не могу прочитать')?'не могу прочитать':'не могу утверждать';
   const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'};
   const why=out.map((r,i)=>'чертёж '+(i+1)+(r.eyesPart?' ('+(PN[r.eyesPart]||r.eyesPart)+')':'')+': '+r.verdict+(r.ok===false&&r.why&&r.why[0]?' — '+r.why[0]:''));
+  if(dups) why.push('у ИИ-зрения '+dups+' рамк'+(dups>1?'и':'а')+' вокруг уже найденного чертежа — не считаю дважды');
   return {ok:out.some(r=>r.ok),verdict,dz,n:out.find(r=>r.n)?out.find(r=>r.n).n:n,drawings:out,why,ms:Date.now()-t0}; }
 
 put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,bindAffine,bindHom,pairs,seedSim,searchFigure});

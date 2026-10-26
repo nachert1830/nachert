@@ -29,8 +29,10 @@ function grayPNG(im,box,maxSide){ const [bx,by,bw,bh]=box||[0,0,im.width,im.heig
 
 /* листы с правдой: группы = чертежи, у каждого точки условия в мм листа */
 function sheets(){ const out=[];
-  [3,9,14,21,27,30,6,17,24,12].slice(0,NQ).forEach((n,i)=>{ const s=Q.sheet({n,seed:11+i}); if(!s) return;
-    out.push({name:'ДЗ3 в'+n+' (4 чертежа)',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,pts:p.pts}))}); });
+  /* каждый второй лист — с ошибкой в части 1 или 4 (ось замены не ⟂, неверный радиус): про неё «верно» — ложное */
+  const ER=[null,'a_dir',null,'d_R',null,'a_d',null,'d_R',null,'a_dir'];
+  [3,9,14,21,27,30,6,17,24,12].slice(0,NQ).forEach((n,i)=>{ const s=Q.sheet({n,seed:11+i,err:ER[i]||undefined}); if(!s) return;
+    out.push({name:'ДЗ3 в'+n+' (4 чертежа'+(ER[i]?', ошибка '+ER[i]:'')+')',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,pts:p.pts,err:p.err}))}); });
   [8,15,25,3,19].slice(0,N2).forEach((n,i)=>{ const s=VS.sheet({dz:2,n,err:'ok',seed:21+i,turn:0}); if(!s) return; const t=s.truth, pts={};
     M.given(t.id,t.data).pts.forEach(q=>{ pts[q.l]=[t.O[0]+q.at[0],t.O[1]+q.at[1]]; }); pts.O=t.O.slice();
     out.push({name:'ДЗ2 в'+n,dz:2,n,img:s.img,H:t.H,groups:[{part:null,pts}]}); });
@@ -75,9 +77,15 @@ function score(sh,res){ const Hi=IMG.H.inv(sh.H), mm=p=>IMG.H.apply(Hi,p), used=
 
 async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; const t0=Date.now();
   let r; try{ r=EY.checkEyes(sh.img,{dz:sh.dz,n:sh.n,drawings:res.drawings},{dz:sh.dz,n:sh.n}); }catch(e){ return {err:String(e.message||e)}; }
-  const vs=r.drawings.map(g=>g.verdict), bad=sh.dz===2?vs.filter(v=>v==='ошибка'||v==='другое решение'||v==='не тот вариант'):vs.filter(v=>v==='ошибка'||v==='ошибка в данных');
+  /* где мозг поставил начало O каждого чертежа — на своём ли месте листа (≤ 6 мм от правды какого-то чертежа) */
+  const Hi=IMG.H.inv(sh.H); let misplaced=0; r.drawings.forEach(g=>{ if(!g.ok||!g._grid||!g.given) return; const o=IMG.H.apply(Hi,g._grid.map(g.given.O[0],g.given.O[1]));
+    if(!sh.groups.some(G=>Math.hypot(G.pts.O[0]-o[0],G.pts.O[1]-o[1])<=6)) misplaced++; });
+  /* чей это чертёж: ближайшее начало O правды; ложно — «ошибка» на верном чертеже или «верно» на чертеже с ошибкой */
+  const grpOf=g=>{ if(!g.ok||!g._grid||!g.given) return null; const o=IMG.H.apply(Hi,g._grid.map(g.given.O[0],g.given.O[1])); let b=null; sh.groups.forEach(G=>{ const d=Math.hypot(G.pts.O[0]-o[0],G.pts.O[1]-o[1]); if(d<=6&&(!b||d<b.d)) b={G,d}; }); return b&&b.G; };
+  const vs=r.drawings.map(g=>g.verdict), bad=sh.dz===2?vs.filter(v=>v==='ошибка'||v==='другое решение'||v==='не тот вариант'):r.drawings.filter(g=>{ const G=grpOf(g); return G&&G.err?g.verdict==='верно':g.verdict==='ошибка'||g.verdict==='ошибка в данных'; }).map(g=>g.verdict);
+  const caught=r.drawings.filter(g=>{ const G=grpOf(g); return G&&G.err&&g.verdict==='ошибка'; }).length;
   const read=r.drawings.filter(g=>g.ok).length, ok=sh.dz===2?vs.filter(v=>v==='верно').length:vs.filter(v=>v==='верно'||v==='данные нанесены верно').length;
-  return {verdicts:vs,read,ok,false:bad.length,falseWhy:r.drawings.filter(g=>bad.includes(g.verdict)).map(g=>(g.why||[]).filter(w=>/неточно|ошибк|должн|взята|отклон/.test(w)).join(' | ').slice(0,300)),ms:Date.now()-t0}; }
+  return {verdicts:vs,read,ok,misplaced,false:bad.length,caught,falseWhy:r.drawings.filter(g=>{ const G=grpOf(g); return sh.dz===2?bad.includes(g.verdict):G&&(G.err?g.verdict==='верно':g.verdict==='ошибка'||g.verdict==='ошибка в данных'); }).map(g=>(g.why||[]).filter(w=>/неточно|ошибк|должн|взята|отклон/.test(w)).join(' | ').slice(0,300)),ms:Date.now()-t0}; }
 
 (async()=>{ const base=SE.eyesFromEnv(process.env);
   if(!base.on||!(TOKEN||base.key)){ console.log('нет доступа к модели: нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY)'); process.exit(1); }
@@ -98,7 +106,7 @@ async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; cons
         const b=await brain(sh,res); if(b&&!b.err){ T.read+=b.read; T.ok+=b.ok; T.bdr+=res.drawings.length; T.false+=b.false; b.falseWhy.forEach(w=>T.falseWhy.push(sh.name+': '+w)); }
         raw.push({model:cfg.model.replace(cfg.folder,'<каталог>'),strat,sheet:sh.name,drawings:res.drawings,err:res.err||null,brain:b});
         console.log('  '+sh.name.padEnd(22)+' чертежей '+st.drawingsFound+'/'+sh.groups.length+(st.extra?' (+'+st.extra+' лишних)':'')+', точки '+st.found+'/'+st.total+(st.swap?', перепутано '+st.swap:'')+', промах медиана '+f1(med(st.err))+' мм, 90 % '+f1(q90(st.err))+' мм, '+(res.ms/1000).toFixed(1)+' с ('+res.calls+' запр.)'
-          +(b?b.err?' | мозг: сбой '+b.err:' | мозг: прочитано '+b.read+'/'+res.drawings.length+', «верно» '+b.ok+', ЛОЖНЫХ '+b.false+' ['+b.verdicts.join('; ')+'] '+(b.ms/1000).toFixed(0)+' с':'')+(res.err?' | '+res.err:'')); }
+          +(b?b.err?' | мозг: сбой '+b.err:' | мозг: прочитано '+b.read+'/'+res.drawings.length+', «верно» '+b.ok+(b.caught?', ошибка найдена '+b.caught:'')+(b.misplaced?', НЕ НА МЕСТЕ '+b.misplaced:'')+', ЛОЖНЫХ '+b.false+' ['+b.verdicts.join('; ')+'] '+(b.ms/1000).toFixed(0)+' с':'')+(res.err?' | '+res.err:'')); }
       const line='| '+cfg.model.replace(/^gpt:\/\/[^/]+\//,'').replace(/\/latest$/,'')+' | '+strat+' | '+T.dr+'/'+T.drT+' | '+T.found+'/'+T.total+' ('+Math.round(100*T.found/Math.max(1,T.total))+' %) | '+T.swap+' | '+f1(med(T.err))+' / '+f1(q90(T.err))+' | '+(T.ms/1000/Math.max(1,S.length-T.fails)).toFixed(1)+' с | '+T.read+'/'+T.bdr+' | '+T.ok+' | **'+T.false+'** |';
       md.push(line); T.falseWhy.forEach(w=>md.push('- ЛОЖНО: '+w));
       console.log('ИТОГО: чертежей '+T.dr+'/'+T.drT+', точки '+T.found+'/'+T.total+', перепутано '+T.swap+', промах медиана '+f1(med(T.err))+' мм, 90 % '+f1(q90(T.err))+' мм, '+(T.ms/1000).toFixed(0)+' с всего, мозг: прочитано '+T.read+'/'+T.bdr+', «верно» '+T.ok+', ЛОЖНЫХ '+T.false+(T.fails?', сбоев запроса '+T.fails:''));
