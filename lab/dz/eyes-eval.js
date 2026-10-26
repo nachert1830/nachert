@@ -34,7 +34,7 @@ function sheets(){ const out=[];
   /* каждый второй лист — с ошибкой в части 1 или 4 (ось замены не ⟂, неверный радиус): про неё «верно» — ложное */
   const ER=[null,'a_dir',null,'d_R',null,'a_d',null,'d_R',null,'a_dir'];
   [3,9,14,21,27,30,6,17,24,12].slice(0,NQ).forEach((n,i)=>{ const s=Q.sheet({n,seed:11+i,err:ER[i]||undefined}); if(!s) return;
-    out.push({name:'ДЗ3 в'+n+' (4 чертежа'+(ER[i]?', ошибка '+ER[i]:'')+')',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,built:p.built,pts:p.pts,err:p.err}))}); });
+    out.push({name:'ДЗ3 в'+n+' (4 чертежа'+(ER[i]?', ошибка '+ER[i]:'')+')',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,built:p.built,pts:p.pts,err:p.err&&p.affects!==false?p.err:null,errSoft:p.err&&p.affects===false?p.err:null}))}); });
   [8,15,25,3,19].slice(0,N2).forEach((n,i)=>{ const s=VS.sheet({dz:2,n,err:'ok',seed:21+i,turn:0}); if(!s) return; const t=s.truth, pts={};
     M.given(t.id,t.data).pts.forEach(q=>{ pts[q.l]=[t.O[0]+q.at[0],t.O[1]+q.at[1]]; }); pts.O=t.O.slice();
     out.push({name:'ДЗ2 в'+n,dz:2,n,img:s.img,H:t.H,groups:[{part:null,pts}]}); });
@@ -93,11 +93,13 @@ async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; cons
     if(!sh.groups.some(G=>Math.hypot(G.pts.O[0]-o[0],G.pts.O[1]-o[1])<=6)) misplaced++; });
   /* чей это чертёж: ближайшее начало O правды; ложно — «ошибка» на верном чертеже или «верно» на чертеже с ошибкой */
   const grpOf=g=>{ if(!g.ok||!g._grid||!g.given) return null; const o=IMG.H.apply(Hi,g._grid.map(g.given.O[0],g.given.O[1])); let b=null; sh.groups.forEach(G=>{ const d=Math.hypot(G.pts.O[0]-o[0],G.pts.O[1]-o[1]); if(d<=6&&(!b||d<b.d)) b={G,d}; }); return b&&b.G; };
+  /* ошибка, которая не меняет ответ (errSoft: a_d не в конце прямой A₄B₄C₄), — как в test-check3.js: «верно» не ложно,
+     но и «ошибка» про эту часть не ложна */
   /* ложно и по частям: «верно» части на чертеже другой части (или не построенной, или с ошибкой в ней), «ошибка» части,
      в которой ошибки нет */
   const partFalse=g=>{ const G=grpOf(g); if(!G||!g.parts) return []; return (g.shown||[]).filter(k=>{ const p=g.parts[k]; if(!p) return false; const errHere=!!(G.err&&G.err[0]===k&&G.part===k);
-    return p.st==='верно'&&(G.part!==k||!G.built||errHere)||p.st==='ошибка'&&!errHere; }).map(k=>k+':'+g.parts[k].st+' на чертеже '+G.part+(G.err?' ('+G.err+')':'')); };
-  const isFalse=g=>{ const G=grpOf(g); return G&&(G.err?g.verdict==='верно':g.verdict==='ошибка'||g.verdict==='ошибка в данных')||partFalse(g).length>0; };
+    return p.st==='верно'&&(G.part!==k||!G.built||errHere)||p.st==='ошибка'&&!errHere&&!(G.errSoft&&G.errSoft[0]===k&&G.part===k); }).map(k=>k+':'+g.parts[k].st+' на чертеже '+G.part+(G.err?' ('+G.err+')':'')); };
+  const isFalse=g=>{ const G=grpOf(g); return G&&(G.err?g.verdict==='верно':!G.errSoft&&(g.verdict==='ошибка'||g.verdict==='ошибка в данных'))||partFalse(g).length>0; };
   const vs=r.drawings.map(g=>g.verdict), bad=sh.dz===2?vs.filter(v=>v==='ошибка'||v==='другое решение'||v==='не тот вариант'):r.drawings.filter(isFalse).map(g=>g.verdict);
   const caught=r.drawings.filter(g=>{ const G=grpOf(g); return G&&G.err&&(g.verdict==='ошибка'||g.parts&&g.parts[G.err[0]]&&g.parts[G.err[0]].st==='ошибка'&&(g.shown||[]).includes(G.err[0])); }).length;
   const read=r.drawings.filter(g=>g.ok).length, ok=sh.dz===2?vs.filter(v=>v==='верно').length:vs.filter(v=>v==='верно'||v==='данные нанесены верно').length;
