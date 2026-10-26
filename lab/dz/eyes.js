@@ -78,7 +78,9 @@ function bindAffine(P,o){ o=o||{}; const tol0=o.tol||5, px=o.px||0, sR=o.sRange|
   for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) for(let k=j+1;k<n;k++){ const A=aff3([P[i].m,P[j].m,P[k].m],[P[i].p,P[j].p,P[k].p]); if(!A) continue;
     const dt=detA(A); if(dt<=0) continue; const s=Math.sqrt(dt); if(s<sR[0]||s>sR[1]) continue; const tol=Math.max(tol0,px/s);
     /* перекос: оси чертежа на фото — почти перпендикулярны и почти одного масштаба (телефон над листом) */
-    const ex=Math.hypot(A[0],A[3]), ey=Math.hypot(A[1],A[4]), cs=Math.abs(A[0]*A[1]+A[3]*A[4])/(ex*ey); if(ex/ey>1.6||ey/ex>1.6||cs>0.45) continue;
+    /* телефон над листом: наклон до ~30° сжимает одну ось не больше чем в 1,25 раза; сильнее — координаты глаз не в
+       px этого фото (шкала 0…1000 у прямоугольного кадра) или подписи перепутаны */
+    const ex=Math.hypot(A[0],A[3]), ey=Math.hypot(A[1],A[4]), cs=Math.abs(A[0]*A[1]+A[3]*A[4])/(ex*ey); if(ex/ey>1.25||ey/ex>1.25||cs>0.3) continue;
     const res=P.map(q=>{ const r=affAt(A,q.m); return Math.hypot(r[0]-q.p[0],r[1]-q.p[1])/s; }), inl=res.map(r=>r<=tol), ni=inl.filter(Boolean).length, sum=res.reduce((a,r,t)=>a+(inl[t]?r:tol),0);
     if(!best||ni>best.ni||ni===best.ni&&sum<best.sum) best={A,ni,sum,inl}; }
   if(!best) return null;
@@ -87,7 +89,8 @@ function bindAffine(P,o){ o=o||{}; const tol0=o.tol||5, px=o.px||0, sR=o.sRange|
   const tol=Math.max(tol0,px/Math.sqrt(Math.abs(detA(A))));
   for(let it=0;it<2;it++){ const s=Math.sqrt(Math.abs(detA(A))); inP=P.filter(q=>{ const r=affAt(A,q.m); return Math.hypot(r[0]-q.p[0],r[1]-q.p[1])/s<=tol; }); const A2=inP.length>=3?affLS(inP.map(q=>q.m),inP.map(q=>q.p)):null; if(A2&&detA(A2)>0) A=A2; }
   const s=Math.sqrt(detA(A)), res=inP.map(q=>{ const r=affAt(A,q.m); return Math.hypot(r[0]-q.p[0],r[1]-q.p[1])/s; });
-  return {A,s,inl:inP,out:P.filter(q=>!inP.includes(q)),rms:Math.sqrt(res.reduce((a,r)=>a+r*r,0)/Math.max(1,res.length))}; }
+  const ex=Math.hypot(A[0],A[3]), ey=Math.hypot(A[1],A[4]), aniso=Math.max(ex/ey,ey/ex)-1+Math.abs(A[0]*A[1]+A[3]*A[4])/(ex*ey);
+  return {A,s,aniso,inl:inP,out:P.filter(q=>!inP.includes(q)),rms:Math.sqrt(res.reduce((a,r)=>a+r*r,0)/Math.max(1,res.length))}; }
 
 /* ── уточнение: гомография мм условия → мм листа по измеренным точкам (перебор четвёрок, допуск tol) ── */
 function bindHom(P,tol){ const n=P.length; if(n<4) return null; let best=null;

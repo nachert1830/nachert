@@ -29,7 +29,14 @@ self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now
      Глаза не помогли (ничего не прочитано) — обычный путь, с их причиной в конце */
   if(e.data.eyes){ const EY=self.LAB.dzEyes, E=EY.parse(e.data.eyes), k=1/(e.data.eyesScale||1); let note=null;
     if(E.error) note='ИИ-зрение: '+E.error;
-    else { E.drawings.forEach(d=>{ Object.keys(d.pts).forEach(l=>{ d.pts[l]=[d.pts[l][0]*k,d.pts[l][1]*k]; }); if(d.box) d.box=d.box.map(v=>v*k); });
+    else { const E0=JSON.parse(JSON.stringify(E)); E.drawings.forEach(d=>{ Object.keys(d.pts).forEach(l=>{ d.pts[l]=[d.pts[l][0]*k,d.pts[l][1]*k]; }); if(d.box) d.box=d.box.map(v=>v*k); });
+      /* часть моделей (Qwen-VL прошлых версий) даёт координаты в шкале 0…1000, а не в px. Все координаты ≤ 1000 —
+         обе шкалы: берётся та, где привязка к условию честнее (больше согласных точек, меньше искажения осей) */
+      const all=[].concat(...E0.drawings.map(d=>Object.values(d.pts)));
+      if(all.length&&all.every(p=>p[0]<=1000&&p[1]<=1000)&&+n){ const W=img.width/1000, Hh=img.height/1000, E2=JSON.parse(JSON.stringify(E0)), gv=self.CORE.dzVariants.get(+dz,+n);
+        E2.drawings.forEach(d=>{ Object.keys(d.pts).forEach(l=>{ d.pts[l]=[d.pts[l][0]*W,d.pts[l][1]*Hh]; }); if(d.box) d.box=[d.box[0]*W,d.box[1]*Hh,d.box[2]*W,d.box[3]*Hh]; });
+        const score=EE=>EE.drawings.reduce((m,d)=>{ const b=gv?EY.bindAffine(EY.pairs(d,gv.id,gv.data),{px:0.025*Math.max(img.width,img.height)}):null; return m+(b?b.inl.length-3*b.aniso:0); },0);
+        if(gv&&score(E2)>score(E)) E.drawings=E2.drawings; }
       let r=null; try{ r=EY.checkEyes(img,E,{dz:+dz,n,answers,part}); }catch(err){ note='ИИ-зрение: ошибка разбора — '+String(err&&err.message||err); }
       if(r&&r.drawings.some(g=>g.ok)){ const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'};
         const drawings=r.drawings.map((g,i)=>Object.assign(+dz===2?{verdict:g.verdict,why:g.why||[],ex:g.ex?{steps:g.ex.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex.first&&g.ex.first.k}:null}:gridOut(g),{title:'Чертёж '+(i+1)+(g.part||g.eyesPart?' — '+PN[g.part||g.eyesPart]:'')}));
