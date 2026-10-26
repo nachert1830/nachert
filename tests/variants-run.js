@@ -26,7 +26,7 @@ async function loadAll(page){
 /* opts: {only:['ng2',…], n:[1,7]} → {checked, list:[{name,rule,msg}]} */
 async function runVariants(page,opts){ opts=opts||{};
   return page.evaluate(o=>{ const out=[]; let checked=0;
-    const dzs=(o.only&&o.only.length?o.only:DZR.list().map(d=>d.id)).filter(d=>DZR.numbers(d).length);
+    const dzs=(o.only&&o.only.length?o.only:DZR.list().map(d=>d.id)).filter(d=>!DZR.get(d).part&&DZR.numbers(d).length);   // ИГ (part) проверяет normo-run
     dzs.forEach(dz=>DZR.numbers(dz).forEach(n=>{ if(o.n&&o.n.length&&!o.n.includes(n)) return;
       const name=dz+' в.'+n; let r;
       try{ r=DZR.solve(dz,n); }catch(e){ out.push({name,rule:'сбой построения',msg:String(e&&e.stack||e).slice(0,300)}); return; }

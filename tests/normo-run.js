@@ -1,5 +1,5 @@
 /* Нормоконтроль листов ИГ (tests/normo.js, tests/normo-model.js) по всем листам сайта.
-   node tests/normo-run.js            — все листы ДЗ 2 (30 вариантов: чистовик и черновик) и лист урока
+   node tests/normo-run.js            — все листы ДЗ 2 и задания 4 (по 30 вариантов: чистовик и черновик) и лист урока
    node tests/normo-run.js --only=8   — один вариант;  --nomodel — без сверки с 3D-моделью;  --mut — проверка проверки
    Из tests/run.js вызывается runNormo(page). */
 const fs=require('fs'), path=require('path');
@@ -12,15 +12,19 @@ async function inject(page){ /* чертёжный шрифт должен бы�
 /* все листы: [имя, функция в странице, модель] */
 async function runNormo(page,o){ o=o||{}; await inject(page);
   const only=o.only?o.only.map(Number):null;
-  return page.evaluate(async({only,model})=>{ const out=[], t0=Date.now(), stat={sheets:0,ms:0};
+  return page.evaluate(async({only,model,o4,dz2})=>{ const out=[], t0=Date.now(), stat={sheets:0,ms:0};
     const one=(name,svg,opt)=>{ stat.sheets++; let r; try{ r=NORMO.check(svg,opt); }catch(e){ out.push({name,rule:'ошибка проверки',msg:String(e&&e.stack||e).slice(0,200)}); return; }
       r.issues.forEach(i=>out.push({name,rule:'ГОСТ '+i.gost+' · '+i.rule,msg:i.msg+(i.at?' (у '+i.at.map(v=>Math.round(v)).join(', ')+' мм)':''),sev:i.sev,at:i.at,k:r.k})); return r; };
     const pause=()=>new Promise(r=>setTimeout(r,0));
-    for(let n=1;n<=30;n++){ if(only&&!only.includes(n)) continue; if(!window.IG_VARS||!IG_VARS[n]) continue;
+    for(let n=1;n<=30;n++){ if(!dz2) break; if(only&&!only.includes(n)) continue; if(!window.IG_VARS||!IG_VARS[n]) continue;
       one('ИГ ДЗ 2, вариант '+n+', чистовик',IGS.sheet(n,'clean'),{model:model?IG_VARS[n]:null,spec:IGUI.igSpec(IG_VARS[n])}); await pause();
       one('ИГ ДЗ 2, вариант '+n+', черновик',IGS.sheet(n,'draft'),{draft:true}); await pause(); }
-    if(!only&&window.IGL){ one('ИГ урок (вариант 5), чистовик',IGL.sheet('clean'),{model:model&&window.IG_VARS?IG_VARS[5]:null,spec:IGUI.igSpec(IG_VARS[5])}); one('ИГ урок (вариант 5), черновик',IGL.sheet('draft'),{draft:true}); }
-    stat.ms=Date.now()-t0; return {issues:out,stat}; },{only,model:!o.nomodel}); }
+    /* ИГ, задание 4 (dz/ig/4/models.js): те же листы, тот же модуль */
+    const P4=window.DZR&&DZR.get('ig4'); if(P4&&P4.part&&(!only||o4)) for(let n=1;n<=30;n++){ if(only&&!only.includes(n)) continue; const m=P4.part(n); if(!m) continue; const R={md:m,nv:n,key:'ig4-'+n,dims:m.dims||[]};
+      one('ИГ задание 4, вариант '+n+', чистовик',IGS.sheet(R,'clean'),{model:model?m:null,spec:IGUI.igSpec(m)}); await pause();
+      one('ИГ задание 4, вариант '+n+', черновик',IGS.sheet(R,'draft'),{draft:true}); await pause(); }
+    if(!only&&dz2&&window.IGL){ one('ИГ урок (вариант 5), чистовик',IGL.sheet('clean'),{model:model&&window.IG_VARS?IG_VARS[5]:null,spec:IGUI.igSpec(IG_VARS[5])}); one('ИГ урок (вариант 5), черновик',IGL.sheet('draft'),{draft:true}); }
+    stat.ms=Date.now()-t0; return {issues:out,stat}; },{only,model:!o.nomodel,o4:o.ig4!==false,dz2:o.dz2!==false}); }
 
 module.exports={runNormo,inject,SRC};
 
@@ -34,7 +38,8 @@ if(require.main===module){ (async()=>{
   const page=await browser.newPage(); page.on('pageerror',e=>console.log('JS:',String(e)));
   await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await page.waitForTimeout(1500);
   const only=arg('only')?arg('only').split(','):null;
-  const r=await runNormo(page,{only,nomodel:process.argv.includes('--nomodel')});
+  const set=arg('set');   /* --set=ig4 — только листы задания 4, --set=dz2 — только ДЗ 2 */
+  const r=await runNormo(page,{only,nomodel:process.argv.includes('--nomodel'),ig4:set!=='dz2',dz2:set!=='ig4'});
   const by={}; r.issues.forEach(i=>{ (by[i.rule]=by[i.rule]||[]).push(i); });
   Object.entries(by).sort((a,b)=>b[1].length-a[1].length).forEach(([k,v])=>{ console.log('\n■ '+k+' — '+v.length); v.slice(0,process.argv.includes('--all')?999:6).forEach(i=>console.log('   '+i.name+': '+i.msg)); });
   console.log('\nЛистов: '+r.stat.sheets+', замечаний: '+r.issues.length+', '+Math.round(r.stat.ms/1000)+' с');

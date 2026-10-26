@@ -25,8 +25,10 @@ const DZR={
   all(){ return Object.values(defs); },
   list(course){ return Object.values(defs).filter(d=>d.num&&(!course||d.course===course)).sort((a,b)=>(a.course===b.course?0:a.course==='ng'?-1:1)||a.num-b.num); },
   typeOf(id,n){ const d=defs[id]; return d&&d.types?d.types.find(t=>+n>=t.from&&+n<=t.to)||null:null; },
-  has(id,n){ const d=defs[id]; return !!(d&&d.V&&d.V[n]&&d.solve&&(!d.has||d.has(+n))); },
-  numbers(id){ const d=defs[id]; return d&&d.V?Object.keys(d.V).map(Number).filter(n=>DZR.has(id,n)):[]; },
+  /* решено ли: у НГ — решатель по данным варианта (solve), у ИГ — 3D-модель детали (part) */
+  has(id,n){ const d=defs[id]; if(!d) return false; if(d.part){ try{ return !!d.part(+n); }catch(e){ return false; } }
+    return !!(d.V&&d.V[n]&&d.solve&&(!d.has||d.has(+n))); },
+  numbers(id){ const d=defs[id]; if(!d) return []; const all=d.V?Object.keys(d.V).map(Number):Array.from({length:d.count||0},(_,i)=>i+1); return all.filter(n=>DZR.has(id,n)); },
   solve(id,n){ n=+n; const d=defs[id]; if(!d||!d.V||!d.V[n]) return {why:'нет варианта '+id+' №'+n};
     if(!DZR.has(id,n)) return {why:'решение этого типа ещё в работе'};
     const r=d.solve(n,d.V[n],d.variants,d); if(r&&r.task) r.task.dzId=id; return r; },

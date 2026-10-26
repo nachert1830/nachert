@@ -6055,8 +6055,8 @@ return {has,html,bind,SPEC,ans3};
 <script src="dz/ng/5/solver-cone.js"></script>
 <script src="dz/ng/5/solver.js"></script>
 <script src="dz/ig/2/variants.js"></script>
-<script src="dz/ig/3/variants.js"></script><script src="dz/ig/3/method.js"></script>
-<script src="dz/ig/4/variants.js"></script><script src="dz/ig/4/method.js"></script>
+<script src="dz/ig/3/variants.js"></script><script src="dz/ig/3/method.js"></script><script src="dz/ig/3/models.js"></script>
+<script src="dz/ig/4/variants.js"></script><script src="dz/ig/4/method.js"></script><script src="dz/ig/4/models.js"></script>
 <script src="kernel/sheet.js"></script>
 <script>
 
@@ -25836,6 +25836,7 @@ function dzExView(v,d,code){ const task=dzExample(d,code), t=(d.types||[]).find(
 function dzVariant(v,d,n,extra){
   const mode=extra==='list'?'final':extra==='draft'?'draft':'steps', t=DZR.typeOf(d.id,n)||{name:''}, base=H('dz',d.id,n);
   const crumbs=[['ДЗ',H('dz')],[d.label,H('dz',d.id)],['Вариант '+n]];
+  if(d.part) return dzPart(v,d,n);
   if(!d.V||!d.V[n]){ v.innerHTML=pageHTML({crumbs,body:`<div class="box warn">Нет варианта ${n}. <a href="${H('dz',d.id)}">Все варианты ${vesc(d.label)}</a></div>`}); return d.label; }
   if(!DZR.has(d.id,n)){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'')+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Решатель для типа «${vesc(t.name)}» ещё в работе. Пока — <a href="${H('dz',d.id,'how')}#m-${t.code}">как решать этот тип</a>${d.examples&&d.examples[t.code]?` и <a href="${H('dz',d.id,'ex',t.code)}">пример по шагам</a>`:''}.</div>`}); return d.label+' · вариант '+n; }
   let res; try{ res=DZR.solve(d.id,n); }catch(e){ console.error(e); res={why:String(e&&e.message||e)}; }
@@ -25857,6 +25858,16 @@ function dzVariant(v,d,n,extra){
   return meta.title+' · вариант '+n+(mode==='steps'?'':mode==='final'?' · чистовик':' · черновик');
 }
 
+/* ИГ: деталь варианта — тот же разбор, что у заданий тетради (partPage): данные виды, 3D, построение по шагам, лист */
+function dzPart(v,d,n){ const crumbs=[['ДЗ',H('dz')],[d.label,H('dz',d.id)],['Вариант '+n]]; let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
+  if(!m){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'')+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Модель этого варианта ещё не готова. Пока — <a href="${H('dz',d.id,'how')}">как решать</a>.</div>`}); return d.label+' · вариант '+n; }
+  const nums=DZR.numbers(d.id), i=nums.indexOf(n);
+  const navv=`<div class="hw-nav">${i>0?`<a href="${H('dz',d.id,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${H('dz',d.id)}">Все варианты</a>${i<nums.length-1?`<a href="${H('dz',d.id,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
+  IGUI.partPage(v,{model:m,crumbs,title:d.label+' · вариант '+n+'. '+m.title,back:[H('dz',d.id),'Все варианты '+d.label],docTitle:d.label+' · вариант '+n,
+    tb:{name:'Вариант '+n,sub:m.title,task:d.label},q:d.text,sheet:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
+    bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')+`<p class="dz-vtype"><a href="${H('dz',d.id,'how')}">Как решать — методика</a></p>`+navv});
+  setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:H('dz',d.id,n),label:d.label+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
+  return d.label+' · вариант '+n; }
 function viewDZ(v,r){
   if(!window.DZR){ v.innerHTML=pageHTML({crumbs:[['ДЗ']],body:'<div class="box warn"><h4>ДЗ</h4>Раздел не загрузился. Обнови страницу.</div>'}); return 'ДЗ'; }
   if(!r.tab) return dzHub(v);
@@ -26691,7 +26702,7 @@ function partial(model,i){ const FT=features(model), A=[], Sb=[]; FT.slice(0,i+1
 /* линии → пути SVG: сплошные и штриховые */
 function paths(L){ const f2=v=>v.toFixed(2), path=Q=>Q.map((p,i)=>(i?'L':'M')+f2(p[0])+' '+f2(p[1])).join(''); return {v:chains(L.filter(s=>!s.h),0.45).map(path).join(''),h:chains(L.filter(s=>s.h),0.45).map(path).join('')}; }
 /* половина вида и половина разреза (front, left): невидимый контур на половине вида не проводят — внутреннее устройство показано разрезом */
-const VIEW={front:{yaw:0,pit:1e-4,cut:1},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left0:{yaw:Math.PI/2,pit:1e-4,cut:0,hid:3,full:1},frontF:{yaw:0,pit:1e-4,cut:2},leftF:{yaw:Math.PI/2,pit:1e-4,cut:3},left:{yaw:Math.PI/2,pit:1e-4,cut:5},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0,hid:1,full:1},topNH:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}};
+const VIEW={front:{yaw:0,pit:1e-4,cut:1},front0:{yaw:0,pit:1e-4,cut:0,hid:2,full:1},left0:{yaw:Math.PI/2,pit:1e-4,cut:0,hid:3,full:1},frontF:{yaw:0,pit:1e-4,cut:2},frontSH:{yaw:0,pit:1e-4,cut:7},frontS:{yaw:0,pit:1e-4,cut:8},leftF:{yaw:Math.PI/2,pit:1e-4,cut:3},left:{yaw:Math.PI/2,pit:1e-4,cut:5},top:{yaw:0,pit:Math.PI/2-1e-4,cut:0,hid:1,full:1},topNH:{yaw:0,pit:Math.PI/2-1e-4,cut:0},topcut:{yaw:0,pit:Math.PI/2-1e-4,cut:6}};
 /* ── условность ГОСТ 2.305 (условности и упрощения): отверстия на круглом фланце, не попадающие в секущую плоскость, показывают
    в разрезе как попавшие в неё — каждое поворачиваем вокруг оси детали в плоскость разреза, на тот же радиус (ближайшее положение).
    ax 'y' — фронтальная плоскость y = 0 (главный вид), 'x' — профильная x = 0 (вид слева). Отверстие поворачиваем, только если
@@ -26723,10 +26734,14 @@ function draw1(model,view,W,off,bnd){ const V=VIEW[view], E3=edges3(model), J=jc
   const cy=Math.cos(V.yaw), sy=Math.sin(V.yaw), cp=Math.cos(V.pit), sp=Math.sin(V.pit), F=[sy*cp,cy*cp,-sp], Rr=(()=>{ const r=crs(F,[0,0,1]), l=Math.hypot(...r); return r.map(v=>v/l); })(), Up=crs(Rr,F);
   const px=q=>{ const d=[q[0]-C[0],q[1]-C[1],q[2]-C[2]]; return [W/2+dot3(d,Rr)/scale*W, W/2-dot3(d,Up)/scale*W]; };
   /* разрез: убранная часть и секущие плоскости (одна из них — граница вида и разреза, её рёбра не рисуем) */
-  const cut=V.cut, CT={1:p=>Math.max(bnd-p[0],p[1]-off),2:p=>p[1]-off,3:p=>p[0]-off,5:p=>Math.max(p[0]-off,p[1]-bnd),6:p=>off-p[2]}[cut];
+  /* ступенчатый разрез (7 — половина вида и половина разреза, 8 — полный): секущие плоскости y = const на участках по x
+     (model.step: [[x0, x1, y], …]); переходы между ними на разрезе не изображают (ГОСТ 2.305) */
+  const STP=model.step||[[-1e4,1e4,0]], yAt=x=>(STP.find(q=>x>=q[0]&&x<=q[1])||STP[x<STP[0][0]?0:STP.length-1])[2];
+  const cut=V.cut, CT={1:p=>Math.max(bnd-p[0],p[1]-off),2:p=>p[1]-off,3:p=>p[0]-off,5:p=>Math.max(p[0]-off,p[1]-bnd),6:p=>off-p[2],7:p=>Math.max(bnd-p[0],p[1]-yAt(p[0])),8:p=>p[1]-yAt(p[0])}[cut];
   const Jv=CT?(x,y,z)=>Math.max(J(x,y,z),-CT([x,y,z])):J;
   const pl=(n,c,face)=>({t:'pl',n,c,J:()=>0,bb:E3.MB,face});
-  const CP={1:[pl([1,0,0],bnd,0),pl([0,1,0],off,1)],2:[pl([0,1,0],off,1)],3:[pl([1,0,0],off,1)],5:[pl([1,0,0],off,1),pl([0,1,0],bnd,0)],6:[pl([0,0,1],off,1)]}[cut]||[];
+  const stepPl=()=>STP.map(q=>pl([0,1,0],q[2],1)).concat(STP.slice(1).map(q=>pl([1,0,0],q[0],0)));
+  const CP={1:[pl([1,0,0],bnd,0),pl([0,1,0],off,1)],2:[pl([0,1,0],off,1)],3:[pl([1,0,0],off,1)],5:[pl([1,0,0],off,1),pl([0,1,0],bnd,0)],6:[pl([0,0,1],off,1)],7:[pl([1,0,0],bnd,0)].concat(stepPl()),8:stepPl()}[cut]||[];
   const SG=E3.segs.slice();
   CP.filter(c=>c.face).forEach(c=>E3.SS.forEach(B=>{ const bx=boxI(B.bb,E3.MB); if(!boxOk(bx)) return; pairCurves(c,B,bx,(p,q)=>{ if(Math.abs(B.J(...p))<2e-3||Math.abs(B.J(...q))<2e-3) SG.push({p,q,A:c,B}); }); }));
   /* очерк: поверхность касается луча зрения */
@@ -26745,7 +26760,7 @@ function draw1(model,view,W,off,bnd){ const V=VIEW[view], E3=edges3(model), J=jc
     if(Jv(q[0]-F[0]*0.5,q[1]-F[1]*0.5,q[2]-F[2]*0.5)>0.004) return false;
     return [O1,O2].some(o=>Jv(q[0]+o[0],q[1]+o[1],q[2]+o[2])<0&&Jv(q[0]-o[0],q[1]-o[1],q[2]-o[2])<0); };
   const seen=p=>{ let s=0.03; for(let i=0;i<6000;i++){ const q=[p[0]-F[0]*s,p[1]-F[1]*s,p[2]-F[2]*s]; if(!inB(q,MB)) return true; const v=Jv(q[0],q[1],q[2]); if(inMat(q,v)) return false; s+=Math.max(v,0.15); } return true; };
-  const px0=q=>W/2+dot3([q[0]-C[0],q[1]-C[1],q[2]-C[2]],Rr)/scale*W, bx=cut===1?px0([bnd,0,C[2]]):cut===5?px0([0,bnd,C[2]]):-1e4, half=V.full?W*2:(bx>-1e3?bx:W/2);
+  const px0=q=>W/2+dot3([q[0]-C[0],q[1]-C[1],q[2]-C[2]],Rr)/scale*W, bx=cut===1||cut===7?px0([bnd,0,C[2]]):cut===5?px0([0,bnd,C[2]]):-1e4, half=V.full?W*2:(bx>-1e3?bx:W/2);
   const st=(p,A,B)=>{ if(!valid(p,A,B)) return 0; if(seen(p)) return 1; return V.hid&&px(p)[0]<half-1.5?2:0; };
   const S2=[], tok={};   /* состояние точки считаем один раз за вызов */
   SG.forEach(g=>{ if(g.A.face===0||g.B&&g.B.face===0) return; const sp=g.p._v===tok?g.p._s:(g.p._v=tok,g.p._s=st(g.p,g.A,g.B)), sq_=g.q._v===tok?g.q._s:(g.q._v=tok,g.q._s=st(g.q,g.A,g.B));
@@ -26767,13 +26782,14 @@ function draw1(model,view,W,off,bnd){ const V=VIEW[view], E3=edges3(model), J=jc
   const vis=bridge(chains(SD.filter(s=>!s.h),0.45)).map(path).join(''), hid=chains(SD.filter(s=>s.h),0.45).map(path).join('');
   /* штриховка сечения на секущей плоскости */
   let hat='';
-  const fc=CP.find(c=>c.face);
-  if(fc){ const n=fc.n, ax=n[0]?0:n[1]?1:2, ua=ax===2?0:ax===0?1:0, va=ax===2?1:2, lo=[b[0][0]-1,b[0][1]-1,b[0][2]-1], hi=[b[1][0]+1,b[1][1]+1,b[1][2]+1];
-    const lim=cut===1?q=>bnd-q[0]:cut===5?q=>q[1]-bnd:()=>-1e9;   /* сечение — только в убранной части */
+  /* ступенчатый разрез: каждая секущая плоскость штрихуется на своём участке по x */
+  const FCL=cut===7||cut===8?CP.filter(c=>c.face).map((c,i)=>({c,x0:STP[i][0],x1:STP[i][1]})):[CP.find(c=>c.face)].filter(Boolean).map(c=>({c}));
+  FCL.forEach(({c:fc,x0:sx0,x1:sx1})=>{ const n=fc.n, ax=n[0]?0:n[1]?1:2, ua=ax===2?0:ax===0?1:0, va=ax===2?1:2, lo=[b[0][0]-1,b[0][1]-1,b[0][2]-1], hi=[b[1][0]+1,b[1][1]+1,b[1][2]+1];
+    const lim=cut===1?q=>bnd-q[0]:cut===5?q=>q[1]-bnd:cut===7?q=>Math.max(bnd-q[0],q[0]-sx1,sx0-q[0]):cut===8?q=>Math.max(q[0]-sx1,sx0-q[0]):()=>-1e9;   /* сечение — только в убранной части */
     const P3=(u,v)=>{ const q=[0,0,0]; q[ax]=fc.c; q[ua]=u; q[va]=v; return q; };
     /* штрихуем только разрезанный материал: он есть по обе стороны плоскости (грань детали, лежащая в плоскости, — не сечение) */
     const e=n.map(v=>v*0.01), loops=msLoops((u,v)=>{ const q=P3(u,v); return Math.max(J(q[0]+e[0],q[1]+e[1],q[2]+e[2]),J(q[0]-e[0],q[1]-e[1],q[2]-e[2]),lim(q)); },lo[ua],hi[ua],lo[va],hi[va],0.2);
-    hat=loops.map(L=>L.map((p,i)=>{ const q=px(P3(p[0],p[1])); return (i?'L':'M')+f2(q[0])+' '+f2(q[1]); }).join('')+'Z').join(''); }
+    hat+=loops.map(L=>L.map((p,i)=>{ const q=px(P3(p[0],p[1])); return (i?'L':'M')+f2(q[0])+' '+f2(q[1]); }).join('')+'Z').join(''); });
   /* толщины и шаг — в мм листа (ГОСТ 2.303, 2.306): основная s = 0,7, штриховка — шаг 7/3 мм (как на листе ДЗ, 7 единиц при 3 ед./мм),
      штриховая линия — штрихи 2,5 мм, промежутки 1,1 мм. Так у всех вариантов одинаково, какого бы размера ни была деталь */
   const mm=W/scale, sw=0.7*mm, hs=7/3*mm;
@@ -27126,14 +27142,14 @@ function secFig(model,sec,K){
 }
 /* обозначение секущей плоскости (ГОСТ 2.305): разомкнутая линия — два штриха за контуром, стрелки по направлению взгляда, буквы у стрелок.
    Q1, Q2 — концы следа на листе, Km — единиц листа на 1 мм */
-function secMark(Q1,Q2,Km,L,col){ col=col||'#111'; const f=v=>Math.round(v*10)/10, l=Math.hypot(Q2[0]-Q1[0],Q2[1]-Q1[1]), ex=(Q2[0]-Q1[0])/l, ey=(Q2[1]-Q1[1])/l, dx=-ey, dy=ex;
+function secMark(Q1,Q2,Km,L,col,which){ col=col||'#111'; const f=v=>Math.round(v*10)/10, l=Math.hypot(Q2[0]-Q1[0],Q2[1]-Q1[1]), ex=(Q2[0]-Q1[0])/l, ey=(Q2[1]-Q1[1])/l, dx=-ey, dy=ex;
   const ln=(a,c,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${col}" stroke-width="${w}"/>`;
   const arr=(q,ax,ay)=>`<path d="M${f(q[0])},${f(q[1])} l${f(ax*9-ay*2.6)},${f(ay*9+ax*2.6)} l${f(ay*5.2)},${f(-ax*5.2)}Z" fill="${col}"/>`;
   const one=(Q,sx,sy)=>{ const O=[Q[0]+sx*12*Km,Q[1]+sy*12*Km], T=[O[0]-sx*3*Km,O[1]-sy*3*Km], A=[T[0]-dx*10*Km,T[1]-dy*10*Km];
     /* буква — у стрелки с внешней стороны (за концом штриха), как в задании и по ГОСТ 2.305, п. 6.4 */
     const M=[A[0]+(T[0]-A[0])*.35+sx*(4*Km+8),A[1]+(T[1]-A[1])*.35+sy*(4*Km+8)];
     return ln(Q,O,3.1)+ln(A,T,.8)+arr(T,-dx,-dy)+`<text x="${f(M[0])}" y="${f(M[1]+7)}" class="igs-let" text-anchor="middle" fill="${col}">${L}</text>`; };
-  return one(Q1,-ex,-ey)+one(Q2,ex,ey); }
+  return which===1?one(Q1,-ex,-ey):which===2?one(Q2,ex,ey):one(Q1,-ex,-ey)+one(Q2,ex,ey); }   /* which — только один конец (ступенчатый след) */
 /* ── лист чертежа: виды в проекционной связи, оси, габариты, сечение, основная надпись; mode 'given' — только данные изображения задания ── */
 function sheetSVG(model,title,sub,task,mode){
   const given=mode==='given', W=900, hz=!given&&model.hz;
@@ -27279,8 +27295,11 @@ function symAx(model,ax){ const key=ax==='y'?'_sy':'_sx'; if(model[key]!=null) r
   Object.defineProperty(model,key,{value:asym<5}); return model[key]; }
 function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(window.IG_VARS||{}).find(k=>IG_VARS[k]===model), sp=Object.assign({F:'half',L:'half'},n?IG_SPEC[n]:{},model.spec||{});
   if(sp.L==='half'&&!symAx(model,'y')) sp.L='full';   /* несимметричная спереди назад деталь: половина вида и половина разреза на виде слева недопустима */
-  const DL=7; sp.xb=sp.F==='half'?-DL*crease(model,'x'):0; sp.yb=sp.L==='half'?DL*crease(model,'y'):0;
-  sp.fk={half:'front',view:'front0',full:'frontF'}[sp.F]; sp.lk={half:'left',view:'left0',full:'leftF'}[sp.L];
+  if(model.step&&(sp.F==='half'||sp.F==='full')) sp.F=sp.F==='half'?'stepH':'step';   /* ступенчатый разрез (model.step — участки секущих плоскостей) */
+  if(sp.F==='half'&&!symAx(model,'x')) sp.F='full'; if(sp.F==='stepH'&&!symAx(model,'x')) sp.F='step';   /* несимметричная слева направо: на главном виде — только полный разрез (ГОСТ 2.305, п. 7.10) */
+  sp.H=model.hz&&(model.hzFull||!symAx(model,'y'))?'full':'half';   /* hzFull — на оси вида сверху лежит ребро: половину вида с половиной разреза не соединяют */      /* горизонтальный разрез: половина вида и половина разреза — только у симметричной спереди назад детали */
+  const DL=7; sp.xb=sp.F==='half'||sp.F==='stepH'?-DL*crease(model,'x'):0; sp.yb=sp.L==='half'?DL*crease(model,'y'):0;
+  sp.fk={half:'front',view:'front0',full:'frontF',stepH:'frontSH',step:'frontS'}[sp.F]; sp.lk={half:'left',view:'left0',full:'leftF'}[sp.L];
   return model._spec=sp; }
 /* обозначения (ГОСТ 2.305, п. 6.7): фронтальный разрез обозначают, если его плоскость — не плоскость симметрии детали в целом
    (деталь несимметрична спереди назад). Сечение сохраняет букву из задания (А–А), фронтальный разрез получает следующую — Б–Б */
@@ -27296,7 +27315,7 @@ const pDes=model=>igSpec(model).L!=='view'&&!symAx(model,'x');
 const ySym=model=>symAx(model,'y');
 function letters(model){ if(model._lt) return model._lt; const o={}, AB=model.sec?['Б','В','Г','Д']:['А','Б','В','Г'], nx=()=>AB.shift(), sp=igSpec(model);
   if(model.sec) o.s='А'; else if(model.hz) o.h=nx();
-  if(sp.F!=='view'&&!ySym(model)) o.f=nx();
+  if(sp.F!=='view'&&(model.step||!ySym(model))) o.f=nx();   /* сложный (ступенчатый) разрез обозначают всегда */
   if(sp.L!=='view'&&pDes(model)) o.p=nx();
   if(model.sec&&model.hz) o.h=nx();
   Object.defineProperty(model,'_lt',{value:o}); return o; }
@@ -27637,14 +27656,14 @@ function partPage(v,o){
     const nv=parseInt(String(o.title).replace(/\D/g,''),10), box=$(v,'#igSheetBox'), sp=igSpec(n), tt={half:'половина вида и половина разреза',view:'вид, невидимый контур — штриховыми',full:'полный разрез'};
     const CAP={clean:'Чистовик. Главный вид — '+tt[sp.F]+'; вид слева — '+tt[sp.L]+'; вид сверху'+(n.hz?' — половина вида и половина горизонтального разреза':'')+'. Размеры — из задания.',
       draft:'Черновик. Те же изображения и сечение '+secL(n)+'–'+secL(n)+' в натуральную величину: оно стоит по направлению стрелок, точки переносятся перпендикулярно следу. Точка n″ на следе → n′ на виде сверху (линия связи) → n₁ в сечении (глубина та же, что на виде сверху).'};
-    const hw=window.IG_VARS&&IG_VARS[nv]===n, make=m=>{ try{ return hw&&nv===5&&window.IGL?IGL.sheet(m):hw&&window.IGS?IGS.sheet(nv,m):m==='clean'?sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):''; }catch(e){ console.error(e); return ''; } };
+    const own=o.sheet, hw=!own&&window.IG_VARS&&IG_VARS[nv]===n, make=m=>{ try{ return own?own(m):hw&&nv===5&&window.IGL?IGL.sheet(m):hw&&window.IGS?IGS.sheet(nv,m):m==='clean'?sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):''; }catch(e){ console.error(e); return ''; } };
     /* «Читаю чертёж»: нажатая линия подсвечивается на всех видах (IGREAD) */
     const rdw=document.createElement('div'); rdw.className='rd-bar'; rdw.innerHTML='<button class="rd-b" id="igRd" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5a2 2 0 0 1 4 0v5"/><path d="M13 10V8a2 2 0 0 1 4 0v4"/><path d="M17 12a2 2 0 0 1 4 0v3a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.4L4 15a2 2 0 0 1 3.4-2L9 15"/></svg>Читаю чертёж</button><span class="rd-hint">нажми на линию — увидишь её на всех видах</span><div class="rd-cap" id="igRdCap" aria-live="polite"></div>';
     box.parentNode.insertBefore(rdw,box); const RD=window.IGREAD?IGREAD.attach(box,n,$(v,'#igRdCap')):null;
     $(v,'#igRd').addEventListener('click',e=>{ const on=e.currentTarget.getAttribute('aria-pressed')!=='true'; e.currentTarget.setAttribute('aria-pressed',on); e.currentTarget.classList.toggle('on',on); RD&&RD.set(on); try{ TRACK&&TRACK('ig_read',{on:on?1:0}); }catch(e2){} });
     const pick=m=>{ const s2=make(m); box.innerHTML=s2||'<div class="igx-given-l">Лист не построился на этом устройстве.</div>'; RD&&RD.refresh();
       v.querySelectorAll('#igSheetSw button').forEach(x=>{ const on=x.dataset.s===m; x.classList.toggle('on',on); x.setAttribute('aria-selected',on); }); $(v,'#igSheetCap').textContent=CAP[m]; };
-    if(!hw){ pick('clean'); $(v,'#igSheetCap').textContent=CAP.clean.replace(/ Размеры — из задания\./,''); return; }
+    if(!hw&&!own){ pick('clean'); $(v,'#igSheetCap').textContent=CAP.clean.replace(/ Размеры — из задания\./,''); return; }
     box.insertAdjacentHTML('beforebegin','<div class="igx-modes" id="igSheetSw" role="tablist" aria-label="Лист"><button role="tab" data-s="clean">Чистовик</button><button role="tab" data-s="draft">Черновик</button></div>');
     v.querySelectorAll('#igSheetSw button').forEach(x=>x.addEventListener('click',()=>{ pick(x.dataset.s); try{ FX.buzz&&FX.buzz(6); }catch(e){} }));
     pick('clean'); }
@@ -27778,7 +27797,7 @@ function view(v,r){
   if(r.tab==='nk'&&window.IGNK) return IGNK.view(v,r.item);
   return home(v);
 }
-return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,holeAxesFL,axDash,axCircle,axLine,secRot,loading,frame,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given')};
+return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,holeAxesFL,axDash,axCircle,axLine,secRot,loading,frame,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given'),partPage,sheetSVG};
 })();
 
 /* ═════════ IGL: обучение — виды, разрезы и сечения на одной детали (ДЗ 2, вариант 5) ═════════
@@ -28511,8 +28530,9 @@ function dimsSVG(list,M){ let o=''; const W1=.8;
   return o; }
 
 /* ── вариант на листе ── */
-function ctx(n){ const md=IG_VARS[n], sp=IGUI.igSpec(md), b=md.box, x0=b[0][0], x1=b[1][0], y0=b[0][1], y1=b[1][1], z0=b[0][2], z1=b[1][2];
-  const G=(window.IG_DIMS&&IG_DIMS[n])||{};
+/* n — номер варианта ДЗ 2 или деталь другого задания: {md — модель, nv — номер варианта, key — ключ кэша, dims — размеры} */
+function ctx(n){ const RQ=typeof n==='object'?n:null, md=RQ?RQ.md:IG_VARS[n], sp=IGUI.igSpec(md), b=md.box, x0=b[0][0], x1=b[1][0], y0=b[0][1], y1=b[1][1], z0=b[0][2], z1=b[1][2];
+  const G=RQ?{d:RQ.dims||[]}:(window.IG_DIMS&&IG_DIMS[n])||{};
   /* зазоры между видами — под размеры: что выходит ниже главного вида и выше вида сверху; правее главного вида и левее вида слева */
   let fB=0, tA=0, fR=0, lL=0; const ex=(d)=>{ const V=d[0], t=d[1], P=[];
     if(t==='h') P.push([d[2][0],d[4]],[d[3][0],d[4]],d[2],d[3]); else if(t==='v') P.push([d[4],d[2][1]],[d[4],d[3][1]]); else if(t==='h1') P.push([d[2][0],d[3]]); else if(t==='v1') P.push([d[3],d[2][1]],[d[3],0]);
@@ -28615,12 +28635,21 @@ function fmtSheet(pts,n){ const C0=bbox(pts,0); const FM=[['А3',420,297],['А2'
     fr:`<rect x="0" y="0" width="${f(W3)}" height="${f(H3)}" fill="#fff" stroke="${INK}" stroke-width=".7"/><rect x="${f(20*k)}" y="${f(5*k)}" width="${f(W3-25*k)}" height="${f(H3-10*k)}" fill="none" stroke="${INK}" stroke-width="2.1"/>`
       +IGL.stampK(W3-5*k,H3-5*k,k,n,'1:1')+`<text x="${f(W3-5*k)}" y="${f(H3-1.4*k)}" class="igl-tbs" text-anchor="end">Формат ${fm[0]}</text>`}; }
 const MEMO={};
-function sheet(n,mode){ const key=n+'|'+mode; if(MEMO[key]) return MEMO[key]; REC={s:[],d:[]}; try{ return MEMO[key]=body(n,mode); } finally{ REC=null; } }
+function sheet(n,mode){ const key=(typeof n==='object'?n.key:n)+'|'+mode; if(MEMO[key]) return MEMO[key]; REC={s:[],d:[]}; try{ return MEMO[key]=body(n,mode); } finally{ REC=null; } }
+/* обозначение ступенчатого разреза на виде сверху (ГОСТ 2.305, п. 6.4): разомкнутая линия — штрихи за контуром у концов
+   (со стрелками взгляда и буквами) и штрихи на перегибах следа; участки следа между ними не проводят */
+function stepMark(ST,R,L,TP){ const S1=ST[0], S2=ST[ST.length-1], th=2.1, sl=10*k, f1=v=>Math.round(v*10)/10;
+  const seg=(a,b)=>ln(a,b,INK,th);
+  let o=IGUI.secMark(TP(R+4,S2[2]),TP(-R-4,S2[2]),k,L,null,1)+IGUI.secMark(TP(R+4,S1[2]),TP(-R-4,S1[2]),k,L,null,2);   /* концы: правый — на последнем участке, левый — на первом */
+  for(let i=1;i<ST.length;i++){ const x=ST[i][0], ya=ST[i-1][2], yb=ST[i][2], P=TP(x,ya), Q=TP(x,yb);   /* перегиб: уголок из двух штрихов */
+    o+=seg([P[0]-sl*0.5,P[1]],P)+seg(P,Q)+seg(Q,[Q[0]+sl*0.5,Q[1]]); }
+  return o; }
 function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}=C, LT=IGUI.letters(md), hz=md.hz;
   let o='', col='', c='', t='', pts=[];
   /* изображения */
   o+=img(C,DR(sp.fk,0,sp.xb),0,0)+img(C,DR(sp.lk,0,sp.yb),k*C.GX,0);
-  if(hz){ const top=DR('topNH'), cut=IG3.drawing(md,'topcut',W,hz.z),   /* половина вида — без невидимого контура */ id='igsHz'+n+mode, yc=k*C.TY;
+  if(hz&&sp.H==='full') o+=img(C,IG3.drawing(md,'topcut',W,hz.z),0,k*C.TY);   /* несимметричная спереди назад деталь: разрез А–А целиком на месте вида сверху */
+  else if(hz){ const top=DR('topNH'), cut=IG3.drawing(md,'topcut',W,hz.z),   /* половина вида — без невидимого контура */ id='igsHz'+(typeof n==='object'?n.key:n)+mode, yc=k*C.TY;
     o+=`<defs><clipPath id="${id}a"><rect x="-2000" y="-2000" width="4000" height="${f(yc+2000)}"/></clipPath><clipPath id="${id}b"><rect x="-2000" y="${f(yc)}" width="4000" height="2000"/></clipPath></defs>`
       +`<g clip-path="url(#${id}a)">${img(C,top,0,k*C.TY)}</g><g clip-path="url(#${id}b)">${img(C,cut,0,k*C.TY)}</g>`; }
   else o+=img(C,DR('top'),0,k*C.TY);
@@ -28636,8 +28665,8 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   o+=ln(FR(0,za),FR(0,zb),INK,.8,AX)+ln(LF(0,za),LF(0,zb),INK,.8,AX)
     +IGUI.axLine(TP(xa,0),TP(xb,0),anc(xa),k,INK,.8,rec)+IGUI.axLine(TP(0,ya),TP(0,yb),anc(ya),k,INK,.8,rec);
   /* оси отверстий: центровая окружность и перекрестия на виде сверху, оси на главном виде и виде слева */
-  { const done={c:{},x:{},y:{}}; HA.forEach(h=>{ const Rh=Math.hypot(h.x,h.y), a=h.r+3, ux=h.x/Rh, uy=h.y/Rh, dd=2*h.r<12-1e-6?null:AX;   /* центровые отверстий меньше Ø12 — сплошные тонкие (ГОСТ 2.303) */
-      if(!done.c[Rh.toFixed(1)]){ done.c[Rh.toFixed(1)]=1; o+=IGUI.axCircle(TP(0,0),Rh*k,HA.filter(q=>Math.abs(Math.hypot(q.x,q.y)-Rh)<0.05).map(q=>Math.atan2(q.y,q.x)*180/Math.PI).concat([0,90,180,270]),k,INK,.7); }
+  { const done={c:{},x:{},y:{}}, RC=!md.noPCD; HA.forEach(h=>{ const Rh=Math.hypot(h.x,h.y), a=h.r+3, ux=RC?h.x/Rh:1, uy=RC?h.y/Rh:0, dd=2*h.r<12-1e-6?null:AX;   /* noPCD — отверстия не на окружности (корпус): оси по x и y, без центровой окружности */   /* центровые отверстий меньше Ø12 — сплошные тонкие (ГОСТ 2.303) */
+      if(RC&&!done.c[Rh.toFixed(1)]){ done.c[Rh.toFixed(1)]=1; o+=IGUI.axCircle(TP(0,0),Rh*k,HA.filter(q=>Math.abs(Math.hypot(q.x,q.y)-Rh)<0.05).map(q=>Math.atan2(q.y,q.x)*180/Math.PI).concat([0,90,180,270]),k,INK,.7); }
       o+=ln(TP(h.x-ux*a,h.y-uy*a),TP(h.x+ux*a,h.y+uy*a),INK,.7,dd)+ln(TP(h.x+uy*a,h.y-ux*a),TP(h.x-uy*a,h.y+ux*a),INK,.7,dd);
     });
     const FL=IGUI.holeAxesFL(md); FL.F.forEach(h=>{ o+=ln(FR(h.x,h.z0-4),FR(h.x,h.z1+4),INK,.7,AX); }); FL.L.forEach(h=>{ o+=ln(LF(h.y,h.z0-4),LF(h.y,h.z1+4),INK,.7,AX); }); }
@@ -28645,7 +28674,8 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   const lb=(q,L)=>txt(q,L+'–'+L,'igs-let','middle');
   /* надпись «Б–Б» — над изображением, выше размеров над главным видом */
   const zTopF=Math.max(C.z1,...(C.G.d||[]).filter(d=>d[0]==='F'&&(d[1]==='h'||d[1]==='h1')).map(d=>d[1]==='h'?d[4]:d[3]).filter(z=>z>C.z1)), yLb=FR(0,zTopF)[1]-(zTopF>C.z1?34:16);
-  if(LT.f){ o+=IGUI.secMark(TP(R+4,0),TP(-R-4,0),k,LT.f)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
+  if(LT.f&&md.step){ o+=stepMark(md.step,R,LT.f,TP)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
+  else if(LT.f){ o+=IGUI.secMark(TP(R+4,0),TP(-R-4,0),k,LT.f)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   if(LT.p){ o+=IGUI.secMark(TP(0,-R-4),TP(0,R+4),k,LT.p)+lb([LF(0,0)[0],yLb],LT.p); }
   if(hz&&LT.h){ const y=FR(0,hz.z)[1]; o+=IGUI.secMark([FR(C.x0-6,0)[0],y],[FR(C.x1+6,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,C.y1)[1]-24],LT.h); }
   pts.push(FR(C.x0-8,C.z1+8),FR(C.x1,C.z0-6),LF(C.y1+6,C.z1+8),LF(C.y0-8,C.z0-6),TP(C.x0-8,C.y0-6),TP(C.x1+8,C.y1+6));   /* поля вокруг видов (размеры и подписи добавляют свои точки сами) */
@@ -28661,10 +28691,10 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   (C.G.ext||[]).forEach(q=>pts.push(q[0]==='F'?FR(q[1],q[2]):q[0]==='L'?LF(q[1],q[2]):TP(q[1],q[2])));
   /* черновик: цвет, след и сечение с построениями */
   if(draft){ const PKo=.55;
-    const fz=loopsOn(IG3.conv(md,'y'),[0,0,0],[1,0,0],[0,0,1],[C.x0-2,C.x1+2,C.z0-2,C.z1+2]), lz=loopsOn(IG3.conv(md,'x'),[0,0,0],[0,1,0],[0,0,1],[C.y0-2,C.y1+2,C.z0-2,C.z1+2]), id='igsPk'+n;   /* рассечённое — с условностью для отверстий фланца, как на разрезах */
+    const fz=loopsOn(IG3.conv(md,'y'),[0,0,0],[1,0,0],[0,0,1],[C.x0-2,C.x1+2,C.z0-2,C.z1+2]), lz=loopsOn(IG3.conv(md,'x'),[0,0,0],[0,1,0],[0,0,1],[C.y0-2,C.y1+2,C.z0-2,C.z1+2]), id='igsPk'+(typeof n==='object'?n.key:n);   /* рассечённое — с условностью для отверстий фланца, как на разрезах */
     if(sp.F!=='view') col+=`<defs><clipPath id="${id}f"><rect x="${f(sp.F==='full'?-4000:FR(sp.xb,0)[0])}" y="-4000" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}f)" d="${pathOf(fz,q=>FR(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`;
     if(sp.L!=='view') col+=`<defs><clipPath id="${id}l"><rect x="${f(sp.L==='full'?-4000:LF(sp.yb,0)[0])}" y="-4000" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}l)" d="${pathOf(lz,q=>LF(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`;
-    if(hz){ const hzL=loopsOn(md,[0,0,hz.z],[1,0,0],[0,1,0],[C.x0-2,C.x1+2,C.y0-2,C.y1+2]); col+=`<defs><clipPath id="${id}h"><rect x="-4000" y="${f(k*C.TY)}" width="8000" height="4000"/></clipPath></defs><path clip-path="url(#${id}h)" d="${pathOf(hzL,q=>TP(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`; }
+    if(hz){ const hzL=loopsOn(md,[0,0,hz.z],[1,0,0],[0,1,0],[C.x0-2,C.x1+2,C.y0-2,C.y1+2]); col+=`<defs><clipPath id="${id}h"><rect x="-4000" y="${f(sp.H==='full'?-4000:k*C.TY)}" width="8000" height="${sp.H==='full'?8000:4000}"/></clipPath></defs><path clip-path="url(#${id}h)" d="${pathOf(hzL,q=>TP(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`; }
     col+=yellow(C);
     const lab=labeler();
     /* вид слева: высоты переносятся с главного вида горизонтальными линиями связи */
@@ -28697,8 +28727,8 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   if(draft){ const bw=k*70, bh=k*34; B[3]+=bh+12; const bx=B[2]-bw-10, by=B[3]-bh-10;
     fr=`<rect x="${f(B[0])}" y="${f(B[1])}" width="${f(B[2]-B[0])}" height="${f(B[3]-B[1])}" fill="#fff" stroke="${INK}" stroke-width=".8"/><rect x="${f(bx)}" y="${f(by)}" width="${f(bw)}" height="${f(bh)}" fill="#fff" stroke="${INK}" stroke-width=".8"/>`
       +['Задача № 2','Вариант № '+n,'Фамилия И. О.','Группа ______'].map((x,i)=>`<text x="${f(bx+12)}" y="${f(by+bh*(i+.82)/4)}" class="igl-tbt">${x}</text>`).join(''); }
-  else { pts.push(...textPts(o+c+t)); const S=fmtSheet(pts,n); B=S.B; fr=S.fr; o=S.pre+o; t+=S.post; }
-  return `<svg class="igs-sheet igl-sv" viewBox="${f(B[0])} ${f(B[1])} ${f(B[2]-B[0])} ${f(B[3]-B[1])}" role="img" aria-label="${draft?'Черновик':'Чистовик'}, вариант ${n}">${fr}${col}${o}${c}${t}</svg>`; }
+  else { pts.push(...textPts(o+c+t)); const S=fmtSheet(pts,typeof n==='object'?n.nv:n); B=S.B; fr=S.fr; o=S.pre+o; t+=S.post; }
+  return `<svg class="igs-sheet igl-sv" viewBox="${f(B[0])} ${f(B[1])} ${f(B[2]-B[0])} ${f(B[3]-B[1])}" role="img" aria-label="${draft?'Черновик':'Чистовик'}, вариант ${typeof n==='object'?n.nv:n}">${fr}${col}${o}${c}${t}</svg>`; }
 /* проверка размеров: выносная линия упирается в линию чертежа (модель совпадает с заданием), число равно расстоянию по модели */
 function checkDims(n){ const C=ctx(n), md=C.md, sp=C.sp, bad=[], list=(C.G.d||[]);
   const views={F:C.DR(sp.fk,0,sp.xb),L:C.DR(sp.lk,0,sp.yb),T:C.DR('top'),F0:C.DR('front0'),L0:C.DR('left0')};
