@@ -20,7 +20,7 @@ function checkSheet(img,o){ o=o||{}; const dz=+o.dz||2, n=+o.n, g=V.get(dz,n); i
   /* o.eyes — чертёж от глаз (eyes.js): рамка и штамп не нужны, опора — сама фигура условия */
   let loc, dig, cal, pre=[]; const C=L('calib');
   if(o.eyes){ const pe=L('eyes').prepareEyes(img,o.eyes,{dz,n}); if(!pe.ok) return {verdict:'не могу прочитать',why:[pe.reason],stage:'глаза'};
-    loc={ok:true,eyes:true,O:null,fit:pe.fit}; dig=pe.dig; const c=pe.origin; cal=C.calibrate(dig,{},g.id,g.data,{range:[c[0]-3,c[1]-3,c[0]+3,c[1]+3],cands:L('gridsheet').axesCands(dig.segs)}); pre=pe.why; }
+    loc={ok:true,eyes:true,O:null,fit:pe.fit,eyesMm:pe.eyesMm}; dig=pe.dig; const c=pe.origin; cal=C.calibrate(dig,{},g.id,g.data,{range:[c[0]-3,c[1]-3,c[0]+3,c[1]+3],cands:L('gridsheet').axesCands(dig.segs)}); pre=pe.why; }
   else { loc=L('locate').locate(img); if(!loc.ok) return {verdict:'не могу прочитать',why:[loc.reason],stage:'лист',loc};
     dig=L('digitize').digitize(img,loc); if(!dig.ok) return {verdict:'не могу прочитать',why:[dig.reason],stage:'линии',loc,dig};
     cal=C.calibrate(dig,loc,g.id,g.data); }
@@ -34,7 +34,11 @@ function checkFrom(img,o,dz,n,g,loc,dig,cal,res){ const C=L('calib');
      фигуре условия (calib.givenErrors) — всегда: малая ошибка точки почти не портит общую калибровку, но ломает ответ */
   const ge=cal.ok?C.givenErrors(dig,cal,g.id,g.data):null;
   /* по глазам гомография по фигуре условия «впитывает» часть ошибки нанесения: только явные (≥ 3 мм) */
-  const bad=ge&&ge.ok&&(!loc.eyes||Math.abs(ge.best.d)>=3)?[ge.best]:[];
+  /* и как в gridsheet.js: глаза не видели эту проекцию или видят её на месте (ближе к варианту, чем к гипотезе) — молчим */
+  const eyesVeto=h=>{ if(!loc.eyes) return false; const E=loc.eyesMm||{}, T=cal.T, ap=m=>[T[0]+(1+T[2])*m[0]+T[3]*m[1],T[1]+T[4]*m[0]+(1+T[5])*m[1]], P=g.data[h.k], Q=P.slice(); Q['xyz'.indexOf(h.c)]+=h.d;
+    const ls=h.c==='x'?['″','′']:h.c==='y'?['′']:['″']; return ls.some(pr=>{ const e=E[h.k+pr]; if(!e) return true; const pj=pr==='″'?m=>[-m[0],-m[2]]:m=>[-m[0],m[1]], a=ap(pj(P)), b=ap(pj(Q));
+      return Math.hypot(e[0]-a[0],e[1]-a[1])<Math.hypot(e[0]-b[0],e[1]-b[1]); }); };
+  const bad=ge&&ge.ok&&(!loc.eyes||Math.abs(ge.best.d)>=3&&!eyesVeto(ge.best))?[ge.best]:[];
   const gmsg=h=>ge.coordSure?'у точки '+h.k+' координата '+h.c+' нанесена как ≈ '+f1(h.val)+' мм, а по варианту '+h.was+' мм (на листе: '+h.k+(h.c==='z'?'″':h.c==='y'?'′':'″ и '+h.k+'′')+')':'точка '+h.k+' нанесена не по данным варианта (сдвиг ≈ '+f1(Math.abs(h.d))+' мм; какая координата — по фото не различить)';
   if(!cal.ok||cal.cover<0.8){
     /* условие не узнаётся: не тот вариант? */
