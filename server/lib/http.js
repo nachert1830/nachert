@@ -31,7 +31,7 @@ function cookie(name,value,o){ const p=[name+'='+encodeURIComponent(value),'Path
 
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8',
   '.woff2':'font/woff2','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.txt':'text/plain; charset=utf-8'};
-const PUBLIC=/^\/(index\.html|app\.css|app\.js|theme\.js|sw\.js|manifest\.webmanifest|icon\.svg|(lib|legal)\/[a-z0-9-]+\.(js|html|css)|core\/[a-z0-9-]+\.(js|json)|core\/fonts\/[a-z0-9-]+\.woff2|core\/samples\/[a-z0-9-]+\.svg)$/;
+const PUBLIC=/^\/(index\.html|app\.css|app\.js|theme\.js|sw\.js|manifest\.webmanifest|icon\.svg|(lib|legal)\/[a-z0-9-]+\.(js|html|css)|core\/[a-z0-9-]+\.(js|json)|data\/[a-z0-9-]+\.json|core\/fonts\/[a-z0-9-]+\.woff2|core\/samples\/[a-z0-9-]+\.svg)$/;
 const cache=new Map();
 function staticFile(p,req,cfg){
   if(p==='/'||/^\/(invite|magic)\//.test(p)) p='/index.html';

@@ -27,7 +27,7 @@ async function botLogin(page,id,name,o){ o=o||{};
   await page.click('button[data-act="botLogin"]'); await page.waitForSelector('#dvId');
   await page.fill('#dvId',String(id)); await page.fill('#dvName',name||'Тест'); await page.click('button[data-act="devBot"]');
   await page.waitForSelector('#onbF, #tabs:not([hidden])'); if(o.noConsent) return;
-  if(await page.$('#onbF')){ await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); } }
+  if(await page.$('#onbF')){ if(await page.$('#onG')) await page.fill('#onG','ИУ5-11Б'); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); } }
 /* регистрация открыта: новый участник входит без приглашения */
 async function join(page,id,name){ await page.goto(URL+'/'); await page.waitForSelector('button[data-act="botLogin"]'); await botLogin(page,id,name); await page.waitForSelector('text=Привет'); }
 const noHScroll=page=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);
@@ -37,7 +37,8 @@ test('регистрация открыта: без согласия аккау�
   assert.equal(await page.isHidden('#tabs'),true);
   await botLogin(page,5551,'Новенький',{noConsent:true}); await page.waitForSelector('text=Добро пожаловать');
   assert.equal(await page.inputValue('#onN'),'Новенький','имя подставлено из Telegram');
-  await page.click('#onbF button[type=submit]'); await page.waitForSelector('#authMsg .note.bad'); assert.match(await page.textContent('#authMsg'),/галочки/);
+  await page.click('#onbF button[type=submit]'); await page.waitForSelector('#authMsg .note.bad'); assert.match(await page.textContent('#authMsg'),/группу/,'без группы — нельзя');
+  await page.fill('#onG','иу5 11б'); await page.click('#onbF button[type=submit]'); await page.waitForFunction(()=>/галочки/.test(document.querySelector('#authMsg').textContent));
   assert.equal(await page.evaluate(()=>fetch('/api/me').then(r=>r.status)),401,'без согласия — не вошли');
   await page.fill('#onN','Новенький Тест'); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); await page.waitForSelector('text=Привет, Новенький Тест');
   assert.deepEqual(page.errs,[]); await ctx.close();
@@ -48,7 +49,7 @@ test('вход → все разделы на телефоне, светлая �
   assert.equal(await page.evaluate(()=>location.hash),'#/','старые ссылки-приглашения ведут на вход');
   await botLogin(page,2001,'Аня',{noConsent:true});
   assert.equal(await page.evaluate(()=>location.hash),'#/','ссылка на вход убрана из адресной строки');
-  await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); await page.waitForSelector('text=Привет, Аня');
+  await page.fill('#onG','ИУ5-11Б'); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); await page.waitForSelector('text=Привет, Аня');
   for(const r of ['','calendar','event/ng-rk-2','event/ikg-dz-2','event/ng-rk-2/diag','event/ng-rk-2/mock','train','skills','check','settings','more','about']){
     await page.goto(URL+'/#/'+r); await page.waitForTimeout(250);
     assert.ok(await noHScroll(page),'горизонтальная прокрутка: #/'+r);
@@ -70,7 +71,7 @@ test('вход через бота на компьютере: участник �
   await page.goto(late.link); await page.waitForSelector('#authMsg, .acard .note.bad'); assert.match(await page.textContent('#view'),/устарела/);
   await dev('/dev/clock',{offsetMs:0});
   const p2=await dev('/dev/bot-login',{id:1000001,first_name:'Владелец',start:'login'}); await page.goto(p2.link); await page.waitForSelector('#onbF');
-  await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); await page.waitForSelector('text=Привет, Владелец');
+  await page.fill('#onG','ИУ5-11Б'); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); await page.waitForSelector('text=Привет, Владелец');
   const other=await phone(); await other.page.goto(p2.link); await other.page.waitForSelector('.acard .note.bad'); assert.match(await other.page.textContent('#view'),/использована/,'ссылка одноразовая'); await other.ctx.close();
   const again=await phone(); await again.page.goto(URL+'/'); await botLogin(again.page,1000001,'Владелец'); await again.page.waitForSelector('text=Привет, Владелец');
   assert.equal(await again.page.$('#onbF'),null,'участник входит без экрана согласия'); await again.ctx.close();
@@ -116,7 +117,7 @@ test('календарь и обратный план на фиксирован�
   const {ctx,page}=await phone(); await page.clock.install({time:new Date('2026-10-30T10:00:00+03:00')});
   await join(page,4001,'План');
   assert.match(await page.textContent('#view'),/9-я неделя · пт, 30 окт/);
-  assert.match(await page.textContent('[data-feature="plan"]'),/РК2 Начерт · Диагностика/);
+  assert.match(await page.locator('[data-feature="plan"]',{hasText:'По плану сегодня'}).textContent(),/РК2 Начерт · Диагностика/);
   assert.match(await page.textContent('[data-feature="calendar"]'),/РК2 · ИКГ[\s\S]*через 3 дня/);
   await page.goto(URL+'/#/event/ng-rk-2'); await page.waitForSelector('text=Обратный план');
   assert.equal(await page.inputValue('#evd'),'2026-11-09');
@@ -182,4 +183,19 @@ test('выход и удаление аккаунта стирают данны�
   assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>/^nch2_(rep|club_(ev|cal|done|ii))/.test(k)).length),0);
   await botLogin(page,7001,'Удаляюсь',{noConsent:true}); await page.waitForSelector('#onbF'); assert.match(await page.textContent('#view'),/Добро пожаловать/,'после удаления — как новый');
   assert.deepEqual(page.errs,[]); await ctx.close();
+});
+
+test('пульт владельца: участник в кабинете виден вживую, лента, карточка; участнику пульт не показывается',async()=>{
+  const own=await phone({viewport:{width:1366,height:900},isMobile:false,hasTouch:false}); await own.page.goto(URL+'/'); await botLogin(own.page,1000001,'Владелец'); await own.page.waitForSelector('text=Привет, Владелец');
+  const m=await phone(); await join(m.page,7301,'Пульт-Тест'); assert.equal(await m.page.isVisible('#tabs a[href="#/boss"]'),false,'участнику вкладки «Пульт» нет');
+  await m.page.goto(URL+'/#/train'); await m.page.waitForTimeout(400);
+  if(await m.page.$('.task:has(.rate)')){ await m.page.click('.task:has(.rate) button[data-v="2"]'); await m.page.waitForTimeout(300); }
+  await m.page.evaluate(()=>window.CLUB&&1); await m.page.waitForTimeout(1600);
+  await own.page.click('#tabs a[href="#/boss"]'); await own.page.waitForSelector('.bhero');
+  await own.page.waitForSelector('.olist >> text=Пульт-Тест'); assert.match(await own.page.textContent('.olist'),/на тренировке/);
+  assert.match(await own.page.textContent('.feed'),/Пульт-Тест[\s\S]*зарегистрировался/);
+  await own.page.screenshot({path:path.join(SHOTS,'boss-pc.png'),fullPage:true});
+  await own.page.click('.olist button[data-act="bossUser"]'); await own.page.waitForSelector('.uhead'); assert.match(await own.page.textContent('.uhead'),/Пульт-Тест/);
+  await own.page.screenshot({path:path.join(SHOTS,'boss-user.png')});
+  assert.deepEqual(own.page.errs,[]); assert.deepEqual(m.page.errs,[]); await own.ctx.close(); await m.ctx.close();
 });

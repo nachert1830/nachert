@@ -19,13 +19,16 @@ const REM=require('../../club/lib/reminder.js');
 const SRS=require('../../club/lib/srs.js');
 
 const DOCS_VERSION='2026-10-25';
-const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, MAX_BODY=300*1024;
+const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024;
 const DAY=864e5;
 
 class HttpError extends Error{ constructor(status,msg,extra){ super(msg); this.status=status; this.extra=extra; } }
 const fail=(s,m,x)=>{ throw new HttpError(s,m,x); };
 
 function maskIp(ip){ ip=String(ip||''); if(/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return ip.replace(/\.\d+$/,'.0'); if(ip.includes(':')) return ip.split(':').slice(0,3).join(':')+'::/48'; return ''; }
+/* учебная группа: «ИУ5-11Б», «рк6-31б» → «РК6-31Б»; пусто — не указана */
+const cleanGroup=s=>{ let x=String(s||'').toUpperCase().trim().replace(/[–—]/g,'-'); if(!x.includes('-')) x=x.replace(/[\s_]+/,'-'); return x.replace(/[^А-ЯЁA-Z0-9-]/g,'').slice(0,16); };
+const okGroup=g=>/^[А-ЯЁA-Z]{1,6}\d{0,2}-\d{1,3}[А-ЯЁA-Z]{0,2}$/.test(g);
 const cleanName=s=>String(s||'').replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,60);
 
 function createApp(o){
@@ -57,7 +60,7 @@ function createApp(o){
     const h=C.sha256(tok), s=await store.get('sessions',h), t=now(); if(!s) return null;
     if(s.expiresAt<t||s.lastSeen+IDLE_DAYS*DAY<t){ await store.del('sessions',h); return null; }
     const u=await store.get('users',s.userId); if(!u||u.blocked){ await store.del('sessions',h); return null; }
-    if(t-s.lastSeen>10*60e3) await store.update('sessions',h,{lastSeen:t});
+    if(t-s.lastSeen>10*60e3){ await store.update('sessions',h,{lastSeen:t}); await store.update('users',u.id,{lastSeen:t}); }
     return {h,s,user:u,bearer}; }
   const clearCookie=()=>H.cookie(cookieName,'',{secure:cfg.secure,maxAge:0});
 
@@ -76,7 +79,7 @@ function createApp(o){
   function consentOk(c){ return !!(c&&c.terms===true&&c.pd===true); }
 
   /* вход существующего участника или регистрация нового */
-  async function enter(req,{key,method,name,tgId,invite,consent,boot}){
+  async function enter(req,{key,method,name,tgId,invite,consent,boot,group}){
     const ident=await store.get('identities',key); let user=ident?await store.get('users',ident.userId):null, isNew=false;
     if(user&&user.blocked){ await logLogin(req,user.id,method,false,'заблокирован'); fail(403,'Доступ к клубу закрыт владельцем.'); }
     if(!user){
@@ -89,12 +92,12 @@ function createApp(o){
         if(!ok) fail(403,'По этой ссылке уже зарегистрировались все, кого приглашали.',{needInvite:true}); }
       else if(st&&st.inv){ const claimed=await store.update('invites',invite,{usedAt:t,usedBy:id},{ifEq:{usedAt:null,revokedAt:null}}); if(!claimed) fail(403,'Приглашение уже использовано.',{needInvite:true}); }
       user={id,name:cleanName(name)||'Участник',role:boot?'admin':(st&&st.inv&&st.inv.role==='admin'?'admin':'member'),method,createdAt:t,
-        tgId:tgId||null,ya:key.startsWith('ya:'),em:key.startsWith('em:'),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
+        tgId:tgId||null,ya:key.startsWith('ya:'),em:key.startsWith('em:'),...(group&&okGroup(group)?{group}:{}),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
       if(!(await store.put('identities',{id:key,userId:id,type:method,createdAt:t},{ifNotExists:true}))) fail(409,'Этот вход уже привязан к другому участнику.');
       await store.put('users',user); isNew=true; }
-    const ses=await newSession(req,user); await store.update('users',user.id,{lastLogin:now()}); await logLogin(req,user.id,method,true,isNew?'регистрация':'');
+    const ses=await newSession(req,user); await store.update('users',user.id,{lastLogin:now()}); await logLogin(req,user.id,method,true,isNew?'регистрация':''); await logAct(user.id,isNew?'signup':'login',{m:method});
     return {resp:H.json(200,{ok:true,isNew,user:publicUser(user),csrf:ses.csrf,session:ses.tok}),cookie:ses.cookie}; }
-  const publicUser=u=>({id:u.id,name:u.name,role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,email:!!u.em,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos)});
+  const publicUser=u=>({id:u.id,name:u.name,group:u.group||'',role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,email:!!u.em,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos)});
 
   /* ── проверки запроса ── */
   /* запрос — со страницы клуба: с адреса функции (тот же сайт) или с nachert1830.ru (список FRONT_ORIGINS, ответы с CORS) */
@@ -148,7 +151,7 @@ function createApp(o){
     const consent=consentOk(b.consent)?{terms:true,pd:true,photos:!!b.consent.photos}:null;
     if(!member&&!consent) fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true});
     if(!(await store.update('botlogin',id,{used:true,usedAt:t},{ifEq:{used:false}}))) fail(410,'Эта ссылка уже использована.',{expired:true});
-    return enter(req,{key,method,name:nm||r.name,tgId:key.startsWith('tg:')?key.slice(3):null,invite:r.invite,consent,boot:r.boot}); };
+    return enter(req,{key,method,name:nm||r.name,group:cleanGroup(b.group),tgId:key.startsWith('tg:')?key.slice(3):null,invite:r.invite,consent,boot:r.boot}); };
 
   /* ── официальный вход Telegram (oauth.telegram.org) ──
      Страница уходит на oauth.telegram.org/auth?bot_id=…&origin=…&return_to=<страница>; человек подтверждает вход в приложении
@@ -299,6 +302,7 @@ function createApp(o){
 
   A['POST /api/me/profile']=async(req,S)=>{ const b=body(req), set={};
     if(b.name!=null){ const n=cleanName(b.name); if(!n) fail(400,'Имя не может быть пустым.'); set.name=n; }
+    if(b.group!=null){ const g=cleanGroup(b.group); if(g&&!okGroup(g)) fail(400,'Группа — как в расписании, например ИУ5-11Б.'); set.group=g; }
     if(b.photos!=null) set.consent=Object.assign({},S.user.consent,{photos:b.photos===true,photosAt:now()});
     const u=await store.update('users',S.user.id,set); return H.json(200,{user:publicUser(u)}); };
 
@@ -359,7 +363,7 @@ function createApp(o){
     const [ids,prog,ses,logs,fb]=await Promise.all([store.scan('identities',x=>x.userId===u.id),store.get('progress',u.id),store.scan('sessions',x=>x.userId===u.id),
       store.query('loginlog',u.id),store.scan('feedback',x=>x.userId===u.id)]);
     const out={exportedAt:new Date(now()).toISOString(),about:'Все данные, которые клуб Начерта хранит о вас (club.nachert1830.ru).',
-      user:{id:u.id,name:u.name,role:u.role,method:u.method,telegramId:u.tgId||null,createdAt:u.createdAt,lastLogin:u.lastLogin||null,consent:u.consent,reminders:u.reminders,blocked:!!u.blocked},
+      user:{id:u.id,name:u.name,group:u.group||null,role:u.role,method:u.method,telegramId:u.tgId||null,createdAt:u.createdAt,lastLogin:u.lastLogin||null,consent:u.consent,reminders:u.reminders,blocked:!!u.blocked},
       identities:ids.map(i=>({type:i.type,key:i.id,createdAt:i.createdAt})),
       progress:prog?{data:prog.data,updatedAt:prog.updatedAt}:null,
       sessions:ses.map(s=>({createdAt:s.createdAt,lastSeen:s.lastSeen,expiresAt:s.expiresAt,current:s.id===S.h})),
@@ -375,15 +379,51 @@ function createApp(o){
     const t=now(); await store.put('feedback',{id:new Date(t).toISOString()+'#'+C.token(4),userId:S.user.id,name:S.user.name,feature,mood,text,ts:t,ver:String(b.ver||'').slice(0,20)});
     return H.json(200,{ok:true}); };
 
+  /* — что делают участники: короткие события из кабинета и «я сейчас здесь» (для живого пульта владельца) — */
+  const ACT_TYPES=new Set(['task','check','train','diag','mock','plan','skill','scan']), VIEWS=/^[a-z]{0,12}$/;
+  const actClean=d=>{ const o={}; if(!d||typeof d!=='object') return o; for(const k of Object.keys(d).slice(0,6)){ if(!/^[a-z]{1,8}$/.test(k)) continue; const v=d[k];
+    if(typeof v==='number'&&isFinite(v)) o[k]=Math.round(v*100)/100; else if(typeof v==='string') o[k]=v.replace(/[\u0000-\u001f]/g,'').slice(0,40); else if(typeof v==='boolean') o[k]=v; } return o; };
+  async function logAct(userId,type,d,t){ t=t||now(); await store.put('activity',{id:t.toString(36)+C.token(4),userId,ts:t,type,d:d||{}}); }
+  A['POST /api/act']=async(req,S)=>{ const b=body(req), t=now(), ev=Array.isArray(b.ev)?b.ev.slice(0,20):[];
+    for(const e of ev){ if(!e||!ACT_TYPES.has(e.type)) continue; await logAct(S.user.id,e.type,actClean(e.d),Math.min(t,Math.max(t-DAY,+e.t||t))); }
+    const v=VIEWS.test(String(b.view||''))?String(b.view||''):'', cur=S.user.live||{};
+    if(!b.away&&(t-(cur.at||0)>30e3||cur.view!==v)) await store.update('users',S.user.id,{live:{at:t,view:v}});
+    if(b.away) await store.update('users',S.user.id,{live:{at:0,view:v}});
+    return H.json(200,{ok:true}); };
+
   /* — админ — */
   const D={};
   D['GET /api/admin/overview']=async()=>{ const [inv,us,fl,st,fb,lg]=await Promise.all([store.scan('invites'),store.scan('users'),flagsRaw(),settings(),store.scan('feedback'),store.scan('loginlog')]);
     const ids=await store.scan('identities'); const methods={}; ids.forEach(i=>{ (methods[i.userId]=methods[i.userId]||[]).push(i.type); });
     return H.json(200,{invites:inv.sort((a,b)=>b.createdAt-a.createdAt).map(i=>({h:i.id,label:i.label,role:i.role||'member',multi:!!i.multi,uses:i.uses||0,maxUses:i.maxUses||1,createdAt:i.createdAt,expiresAt:i.expiresAt,usedAt:i.usedAt||null,usedBy:i.usedBy||null,revokedAt:i.revokedAt||null})),
-      users:us.sort((a,b)=>a.createdAt-b.createdAt).map(u=>({id:u.id,name:u.name,role:u.role,methods:methods[u.id]||[],createdAt:u.createdAt,lastLogin:u.lastLogin||null,blocked:!!u.blocked,reminders:!!(u.reminders&&u.reminders.enabled),photos:!!(u.consent&&u.consent.photos)})),
+      users:us.sort((a,b)=>a.createdAt-b.createdAt).map(u=>({id:u.id,name:u.name,group:u.group||'',method:u.method,lastSeen:u.lastSeen||u.lastLogin||null,role:u.role,methods:methods[u.id]||[],createdAt:u.createdAt,lastLogin:u.lastLogin||null,blocked:!!u.blocked,reminders:!!(u.reminders&&u.reminders.enabled),photos:!!(u.consent&&u.consent.photos)})),
       flags:fl,modes:FEAT.MODES,features:FEAT.FEATURES,settings:st,
       feedback:fb.sort((a,b)=>b.ts-a.ts).slice(0,300).map(f=>({id:f.id,ts:f.ts,name:f.name,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null,replyAt:f.replyAt||null})),
       logins:lg.sort((a,b)=>b.ts-a.ts).slice(0,200).map(x=>({ts:x.ts,user:x.h==='anon'?null:x.h,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip}))}); };
+  /* живой пульт: кто сейчас в кабинете и где, лента действий, итоги дня, часы активности, где спотыкаются */
+  const mskDay=t=>new Date(t+3*3600e3).toISOString().slice(0,10);
+  D['GET /api/admin/live']=async()=>{ const t=now(), [us,acts]=await Promise.all([store.scan('users'),store.scan('activity',x=>x.ts>t-7*DAY)]);
+    const U={}; us.forEach(u=>{ U[u.id]=u; }); const td=mskDay(t), today=acts.filter(a=>mskDay(a.ts)===td), tasks=today.filter(a=>a.type==='task');
+    const online=us.filter(u=>u.live&&u.live.at>t-120e3&&!u.blocked).sort((a,b)=>b.live.at-a.live.at).map(u=>({id:u.id,name:u.name,group:u.group||'',view:u.live.view||'',at:u.live.at}));
+    const activeToday=new Set(today.map(a=>a.userId)); us.forEach(u=>{ if(u.lastSeen&&mskDay(u.lastSeen)===td) activeToday.add(u.id); });
+    const hours=[...Array(24)].map((_,i)=>{ const from=t-(23-i)*3600e3-(t%3600e3), to=from+3600e3; return {h:new Date(from+3*3600e3).getUTCHours(),n:acts.filter(a=>a.ts>=from&&a.ts<to).length}; });
+    const fails={}; acts.filter(a=>a.type==='task'&&a.d&&a.d.n).forEach(a=>{ const x=fails[a.d.n]||(fails[a.d.n]={n:a.d.n,total:0,bad:0,who:new Set()}); x.total++; if(a.d.v===0) x.bad++; x.who.add(a.userId); });
+    const hard=Object.values(fails).filter(x=>x.bad).sort((a,b)=>b.bad-a.bad||b.total-a.total).slice(0,8).map(x=>({n:x.n,total:x.total,bad:x.bad,people:x.who.size}));
+    const byG={}; today.forEach(a=>{ const g=(U[a.userId]&&U[a.userId].group)||'— без группы'; const x=byG[g]||(byG[g]={g,users:new Set(),acts:0}); x.users.add(a.userId); x.acts++; });
+    const feed=acts.sort((a,b)=>b.ts-a.ts).slice(0,120).map(a=>({ts:a.ts,type:a.type,d:a.d||{},user:a.userId,name:(U[a.userId]&&U[a.userId].name)||'удалён',group:(U[a.userId]&&U[a.userId].group)||''}));
+    return H.json(200,{now:t,online,feed,hours,hard,
+      groups:Object.values(byG).map(x=>({g:x.g,users:x.users.size,acts:x.acts})).sort((a,b)=>b.users-a.users),
+      kpi:{online:online.length,today:activeToday.size,tasks:tasks.length,solved:tasks.filter(a=>a.d&&a.d.v===2).length,checks:today.filter(a=>a.type==='check'||a.type==='scan').length,
+        newToday:us.filter(u=>mskDay(u.createdAt)===td).length,total:us.length,week:new Set(acts.map(a=>a.userId)).size}}); };
+  /* карточка участника: его действия и сводка прогресса (из синхронизированного localStorage) */
+  D['GET /api/admin/user']=async(req)=>{ const id=String((req.query&&req.query.id)||''), u=await store.get('users',id); if(!u) fail(404,'Нет участника.');
+    const [acts,p]=await Promise.all([store.scan('activity',x=>x.userId===id),store.get('progress',id)]), data=(p&&p.data)||{}, J=k=>{ try{ return JSON.parse(data[k]||'null'); }catch(e){ return null; } };
+    const rep=J('nch2_rep')||{}, ev=J('nch2_club_ev')||[], done=J('nch2_club_done')||{}, tk=acts.filter(a=>a.type==='task');
+    const due=SRS.queue(rep,CAL.toDay(mskDay(now()))).filter(x=>x.due).length, okEv=ev.filter(e=>e&&e.ok).length;
+    return H.json(200,{user:{id:u.id,name:u.name,group:u.group||'',role:u.role,createdAt:u.createdAt,lastSeen:u.lastSeen||u.lastLogin||null,live:u.live&&u.live.at>now()-120e3?u.live:null},
+      progress:{tasks:Object.keys(rep).length,due,skillObs:ev.length,skillOk:ev.length?Math.round(okEv/ev.length*100):null,done:Object.values(done).filter(x=>x&&x.v).length,syncedAt:p?p.updatedAt:null},
+      stats:{tasks:tk.length,solved:tk.filter(a=>a.d&&a.d.v===2).length,hint:tk.filter(a=>a.d&&a.d.v===1).length,fail:tk.filter(a=>a.d&&a.d.v===0).length,checks:acts.filter(a=>a.type==='check'||a.type==='scan').length,days:new Set(acts.map(a=>mskDay(a.ts))).size},
+      acts:acts.sort((a,b)=>b.ts-a.ts).slice(0,150).map(a=>({ts:a.ts,type:a.type,d:a.d||{}}))}); };
   D['POST /api/admin/invites']=async(req,S)=>{ const b=body(req), days=Math.max(1,Math.min(60,+b.days||14)), code=C.token(16), t=now(), h=C.sha256(code);
     const inv={id:h,label:cleanName(b.label)||'без подписи',role:b.role==='admin'?'admin':'member',createdAt:t,expiresAt:t+days*DAY,createdBy:S.user.id};
     /* публичная ссылка: одна на многих (друзья, группа) — до maxUses регистраций, роль всегда «участник» */
@@ -418,6 +458,7 @@ function createApp(o){
     const logs=await store.query('loginlog',id); for(const x of logs) await store.del('loginlog',{h:x.h,r:x.r});
     const fb=await store.scan('feedback',x=>x.userId===id); for(const x of fb) await store.del('feedback',x.id);
     const inv=await store.scan('invites',x=>x.usedBy===id); for(const x of inv) await store.update('invites',x.id,{usedBy:'удалён'});
+    const ac=await store.scan('activity',x=>x.userId===id); for(const x of ac) await store.del('activity',x.id);
     await store.del('progress',id); await store.del('users',id); }
 
   /* ── бот: /start, /pause, /resume, /stop и кнопка «Пауза» ── */
@@ -468,7 +509,7 @@ function createApp(o){
 
   /* уборка: просроченные сессии, ссылки, лимиты, старый журнал входов */
   async function maintain(at){ const t=at||now();
-    for(const [tb,f] of [['sessions',x=>x.expiresAt<t||x.lastSeen+IDLE_DAYS*DAY<t],['botlogin',x=>x.exp<t-DAY],['ratelimit',x=>x.exp<t],['remsent',x=>x.exp<t]]){
+    for(const [tb,f] of [['sessions',x=>x.expiresAt<t||x.lastSeen+IDLE_DAYS*DAY<t],['botlogin',x=>x.exp<t-DAY],['ratelimit',x=>x.exp<t],['remsent',x=>x.exp<t],['activity',x=>x.ts<t-ACT_DAYS*DAY]]){
       const old=await store.scan(tb,f); for(const x of old) await store.del(tb,x.id); }
     const logs=await store.scan('loginlog',x=>x.ts<t-LOG_DAYS*DAY); for(const x of logs) await store.del('loginlog',{h:x.h,r:x.r}); }
 

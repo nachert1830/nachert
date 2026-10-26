@@ -19,7 +19,7 @@ const ROOT=path.join(__dirname,'..','..');
 const arg=k=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.slice(a.indexOf('=')+1):true):null; };
 const YC=process.env.YC_BIN||'yc';
 const NAMES={fn:'club-fn',gw:'club-gw',db:'club',secret:'club-secrets',api:'nachert-club-api',remind:'nachert-club-remind',gateway:'nachert-club',trigger:'club-remind'};
-const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent'];
+const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent','activity'];
 
 const say=s=>console.log(s), step=s=>console.log('\n▶ '+s);
 /* сеть до облака бывает нестабильной (VPN, Wi-Fi общежития): при сетевой ошибке — до 3 попыток с паузой */
