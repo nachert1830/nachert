@@ -62,6 +62,15 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(t.n&&t.all/t.n<0.85) fail.push('Проверка ДЗ ослабла: мутации кода ДЗ ловятся в '+Math.round(100*t.all/t.n)+'% случаев'); }
     await dpage.close(); }
 
+  /* 3б″. все варианты заданий (variants/): ядро (kernel/) строит разбор каждого, и он проходит те же проверки, что примеры */
+  { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
+    const VR=require('./variants-run.js'); await VR.loadAll(vpage);
+    const r=await VR.runVariants(vpage), list=VR.dataCheck().concat(r.list), bad=VR.fresh(list);
+    M.variants={checked:r.checked,remarks:list.length,fresh:bad.length};
+    info.push('Варианты ДЗ (ядро): построено и проверено '+r.checked+', замечаний '+list.length+' (разобранных вручную: '+(list.length-bad.length)+')');
+    bad.forEach(o=>fail.push('Варианты ДЗ · '+o.name+' · '+o.rule+' — '+String(o.msg).slice(0,200)));
+    await vpage.close(); }
+
   /* 3б′. трассировка происхождения (O4 «по построению»): каждая точка и линия — с того поля, которое указывает подпись */
   { const ppage=await browser.newPage(); await ppage.goto(URL); await ppage.waitForTimeout(1200);
     const {issues,stats}=await require('./provenance-run.js').runProvenance(ppage);

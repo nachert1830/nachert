@@ -26,6 +26,14 @@ const offLine2=(p,a,b)=>{ const dx=b[0]-a[0], dy=b[1]-a[1]; return Math.abs((p[0
 const offLine3=(p,a,b)=>len(cross(sub(p,a),sub(b,a)))/len(sub(b,a));
 const planeDist=(p,a,b,c)=>{ const n=cross(sub(b,a),sub(c,a)); return Math.abs(dot(sub(p,a),n))/len(n); };
 const r1=x=>Math.round(x*10)/10;
+/* посредник γ ⊃ EF — проецирующая плоскость: γ ⟂ π₁ (точки a, b на E′F′, X″ на a″b″) или γ ⟂ π₂ (a, b на E″F″, X′ на a′b′).
+   Какая — решает построение; проверяется, что все точки согласованы с одной из двух. */
+function gammaOK(ck,pa,pb,X,E,Fp,la,lb,xn,F2,H1,S,TOL){
+  const on=(pr,p)=>offLine2(pr(p),pr(E),pr(Fp))<TOL*S;
+  const g1=on(H1,pa)&&on(H1,pb), g2=on(F2,pa)&&on(F2,pb);
+  ck(g1||g2,'метод',la+', '+lb+' не в посреднике γ (ни на E′F′, ни на E″F″)');
+  if(g1) ck(offLine2(F2(X),F2(pa),F2(pb))<TOL*S,'метод',xn+'″ не на ℓ″ = '+la+'″'+lb+'″');
+  else if(g2) ck(offLine2(H1(X),H1(pa),H1(pb))<TOL*S,'метод',xn+'′ не на ℓ′ = '+la+'′'+lb+'′'); }
 const TOL=1e-3;                                         /* мм: чертёж посчитан в плавающей точке, а не нарисован рукой */
 const TOLD=1e-3;                                        /* градусы */
 
@@ -156,9 +164,8 @@ function checkTask(id,task,out){
       /* 3 = γ ∩ h_β, 4 = γ ∩ f_β: в плоскости β (на расстоянии Hh от ABC, по ту же сторону, что N), 3 — на уровне N, 4 — на глубине N, обе — в γ (3′, 4′ на E′F′) */
       const P3=R('3'), P4=R('4'), side=p=>Math.sign(dot(sub(p,A),nA));
       [[P3,'3',2],[P4,'4',1]].forEach(([p,l,ax])=>{ ck(Math.abs(planeDist(p,A,B,C)-Hh)<TOL&&side(p)===side(N),'метод','точка '+l+' не в плоскости β ∥ ABC');
-        ck(Math.abs(p[ax]-N[ax])<TOL,'метод','точка '+l+' не на '+(ax===2?'горизонтали':'фронтали')+' плоскости β через N');
-        ck(offLine2(H1(p),H1(E),H1(Fp))<TOL*S,'метод',l+'′ не на E′F′ (не в посреднике γ)'); });
-      ck(offLine2(F2(Sx),F2(P3),F2(P4))<TOL*S,'метод','S″ не на ℓ″ = 3″4″');
+        ck(Math.abs(p[ax]-N[ax])<TOL,'метод','точка '+l+' не на '+(ax===2?'горизонтали':'фронтали')+' плоскости β через N'); });
+      gammaOK(ck,P3,P4,Sx,E,Fp,'3','4','S',F2,H1,S,TOL);
       const tS=dot(sub(Sx,E),sub(Fp,E))/dot(sub(Fp,E),sub(Fp,E));
       if(/на отрезке EF/.test(ans)) ck(tS>=-1e-9&&tS<=1+1e-9,'утверждение в ответе','«на отрезке EF», а S за его пределами (t = '+tS.toFixed(2)+')');
       coordIn(ans,'S',Sx,'ответ'); valIn(ans,/Высота = (\d+(?:,\d+)?) мм/,planeDist(Sx,A,B,C),'высота',' мм');
@@ -178,9 +185,8 @@ function checkTask(id,task,out){
       ck(Math.abs(len(h)-Hh)<TOL,'условие задачи','высота '+len(h).toFixed(3)+' мм, по условию '+Hh);
       ck(dist(B1,add(B,h))<TOL&&dist(C1,add(C,h))<TOL,'условие задачи','второе основание не получено сдвигом на AA₁');
       ck(dist(K,mul(add(B,C),0.5))<TOL,'метод','K — не середина BC');
-      [['1',R('1')],['2',R('2')]].forEach(([l,p])=>{ ck(Math.abs(dot(sub(p,K),sub(C,B)))/len(sub(C,B))<TOL,'метод','точка '+l+' не в плоскости μ ⟂ BC через K');
-        ck(offLine2(H1(p),H1(E),H1(Fp))<TOL*S,'метод',l+'′ не на E′F′ (не в посреднике γ)'); });
-      ck(offLine2(F2(A),F2(R('1')),F2(R('2')))<TOL*S,'метод','A″ не на ℓ″ = 1″2″');
+      [['1',R('1')],['2',R('2')]].forEach(([l,p])=>{ ck(Math.abs(dot(sub(p,K),sub(C,B)))/len(sub(C,B))<TOL,'метод','точка '+l+' не в плоскости μ ⟂ BC через K'); });
+      gammaOK(ck,R('1'),R('2'),A,E,Fp,'1','2','A',F2,H1,S,TOL);
       ck(offLine3(D,A,A1)<TOL,'метод','D не на перпендикуляре n');
       coordIn(ans,'A',A,'ответ'); coordIn(ans,'A₁',A1,'ответ'); coordIn(ans,'B₁',B1,'ответ'); coordIn(ans,'C₁',C1,'ответ');
       valIn(ans,/AB = AC = (\d+(?:,\d+)?) мм/,dist(A,B),'AB = AC',' мм');
@@ -198,9 +204,8 @@ function checkTask(id,task,out){
       ck(Math.abs(angle(h,sub(B,A))-90)<TOLD&&Math.abs(angle(h,sub(D,A))-90)<TOLD,'условие задачи','AA₁ не перпендикулярно грани ABCD');
       ck(Math.abs(len(h)-a)<TOL,'условие задачи','|AA₁| = '+len(h).toFixed(3)+' ≠ a = '+a.toFixed(3));
       ck([[B1,B],[C1,C],[D1,D]].every(([x,y])=>dist(x,add(y,h))<TOL),'условие задачи','верхняя грань не получена сдвигом на AA₁');
-      [['1',R('1')],['2',R('2')]].forEach(([l,p])=>{ ck(Math.abs(dot(sub(p,A),sub(K,A)))/len(sub(K,A))<TOL,'метод','точка '+l+' не в плоскости μ ⟂ AK через A');
-        ck(offLine2(H1(p),H1(E),H1(Fp))<TOL*S,'метод',l+'′ не на E′F′ (не в посреднике γ)'); });
-      ck(offLine2(F2(B),F2(R('1')),F2(R('2')))<TOL*S,'метод','B″ не на ℓ″ = 1″2″');
+      [['1',R('1')],['2',R('2')]].forEach(([l,p])=>{ ck(Math.abs(dot(sub(p,A),sub(K,A)))/len(sub(K,A))<TOL,'метод','точка '+l+' не в плоскости μ ⟂ AK через A'); });
+      gammaOK(ck,R('1'),R('2'),B,E,Fp,'1','2','B',F2,H1,S,TOL);
       coordIn(ans,'B',B,'ответ'); coordIn(ans,'D',D,'ответ'); coordIn(ans,'C',C,'ответ'); coordIn(ans,'A₁',A1,'ответ');
       valIn(ans,/a = (\d+(?:,\d+)?) мм/,a,'ребро a',' мм');
       visCheck({A,B,C,D,'A₁':A1,'B₁':B1,'C₁':C1,'D₁':D1},[['A','B','C','D'],['A₁','B₁','C₁','D₁'],['A','B','B₁','A₁'],['B','C','C₁','B₁'],['C','D','D₁','C₁'],['D','A','A₁','D₁']]); }
@@ -214,12 +219,17 @@ function checkTask(id,task,out){
         /* расстояние со знаком: «+» — по другую сторону оси от старой проекции (точка над плоскостью), «−» — по ту же */
         const sg=p=>Math.sign((p[0]-axis.a[0])*(axis.b[1]-axis.a[1])-(p[1]-axis.a[1])*(axis.b[0]-axis.a[0])), sd=axis.d(X1)*(sg(X1)===sg(X0)?-1:1);
         ck(Math.abs(sd-keep)<TOL*S,'замена плоскостей',lab+': до новой оси '+(sd/S).toFixed(2)+' мм, должно быть '+(keep/S).toFixed(2)+' мм (сохраняемая координата)'); };
+      /* горизонталь основания: вершина P и точка D на противоположной стороне на уровне P — или горизонтальное ребро (D нет) */
+      const VV={A,B,C}, horiz=()=>{ const Dd=P['D′']&&R('D'); if(Dd){ const pv=['A','B','C'].find(n=>{ const o=['A','B','C'].filter(m=>m!==n); return Math.abs(Dd[2]-VV[n][2])<TOL&&offLine3(Dd,VV[o[0]],VV[o[1]])<TOL; });
+          ck(!!pv,'метод','D — не точка стороны основания на уровне противоположной вершины (h — не горизонталь)'); return pv?{a:P[pv+'′'],b:P['D′'],P:pv,D:Dd}:null; }
+        const e=[['A','B'],['A','C'],['B','C']].find(([p,q])=>Math.abs(VV[p][2]-VV[q][2])<TOL); ck(!!e,'метод','нет горизонтали основания (ни точки D, ни горизонтального ребра)'); return e?{a:P[e[0]+'′'],b:P[e[1]+'′'],P:e[0],D:VV[e[1]],tie:e[1]}:null; };
       if(/высота/.test(pl)){ const x14=ax('x₁₄'); if(!ck(!!x14,'замена плоскостей','нет оси x₁₄')) return;
-        const Dd=R('D'); ck(Dd&&Math.abs(Dd[2]-A[2])<TOL&&offLine3(Dd,B,C)<TOL,'метод','D — не точка BC на уровне A (AD — не горизонталь)');
-        ck(Math.abs(dot([x14.u[0],x14.u[1]],sub(P['D′'],P['A′']))/d2(P['D′'],P['A′']))<1e-6,'замена плоскостей','x₁₄ не перпендикулярна A′D′');
+        const hh=horiz(); if(!hh) return;
+        ck(Math.abs(dot([x14.u[0],x14.u[1]],sub(hh.b,hh.a))/d2(hh.b,hh.a))<1e-6,'замена плоскостей','x₁₄ не перпендикулярна горизонтали h′');
         ['A','B','C','S'].forEach(n=>xfer(P[n+'′'],P[n+'₄'],x14,(n==='S'?Sv:data[n])[2]*S,n+'₄'));
-        ck(offLine2(P['C₄'],P['A₄'],P['B₄'])<TOL*S,'замена плоскостей','A₄, B₄, C₄ не на одной прямой — плоскость не стала проецирующей');
-        const Hd=offLine2(P['S₄'],P['A₄'],P['B₄'])/S; ck(Math.abs(Hd-Hn)<TOL,'ответ','высота на π₄ '+Hd.toFixed(3)+' мм, расстояние S до ABC '+Hn.toFixed(3));
+        const far=[['A₄','B₄','C₄'],['A₄','C₄','B₄'],['B₄','C₄','A₄']].sort((u,v)=>d2(P[v[0]],P[v[1]])-d2(P[u[0]],P[u[1]]))[0];   /* вершины на оси h — одна точка на π₄ */
+        ck(offLine2(P[far[2]],P[far[0]],P[far[1]])<TOL*S,'замена плоскостей','A₄, B₄, C₄ не на одной прямой — плоскость не стала проецирующей');
+        const Hd=offLine2(P['S₄'],P[far[0]],P[far[1]])/S; ck(Math.abs(Hd-Hn)<TOL,'ответ','высота на π₄ '+Hd.toFixed(3)+' мм, расстояние S до ABC '+Hn.toFixed(3));
         valIn(ans,/H = (\d+(?:,\d+)?) мм/,Hn,'высота H',' мм'); valIn(text,/H = (\d+(?:,\d+)?) мм/,Hn,'высота H в шаге',' мм'); }
       if(/угол SAB/.test(pl)){ const x14=ax('x₁₄'), x45=ax('x₄₅'); if(!ck(!!x14&&!!x45,'замена плоскостей','нет осей x₁₄, x₄₅')) return;
         ck(Math.abs(x14.u[0]*(P['B′'][1]-P['A′'][1])-x14.u[1]*(P['B′'][0]-P['A′'][0]))/d2(P['A′'],P['B′'])<1e-6,'замена плоскостей','x₁₄ не параллельна A′B′');
@@ -232,21 +242,27 @@ function checkTask(id,task,out){
         const dd=deg(Math.acos(Math.max(-1,Math.min(1,dot(sub(P['C₅'],P['A₅']),sub(P['S₅'],P['A₅']))/d2(P['C₅'],P['A₅'])/d2(P['S₅'],P['A₅'])))));
         ck(Math.abs(dd-dih)<TOLD,'ответ','угол на π₅ '+dd.toFixed(3)+'°, двугранный угол '+dih.toFixed(3)+'°');
         valIn(ans,/AB: (\d+(?:,\d+)?)°/,dih,'двугранный угол','°'); }
-      if(/истинный вид/.test(pl)){ if(!need('D','O₁','B₁','C₁')) return;
-        const Dd=R('D'); ck(Math.abs(Dd[2]-A[2])<TOL&&offLine3(Dd,B,C)<TOL,'метод','D — не точка BC на уровне A');
-        const Ah=P['A′'], Dh=P['D′'], O=P['O₁′'], Bh=P['B′'], B0=P['B₁′'], C0=P['C₁′'], hdir=sub(Dh,Ah);
-        ck(offLine2(O,Ah,Dh)<TOL*S,'вращение','O₁′ не на оси A′D′');
-        ck(Math.abs(dot(sub(Bh,O),hdir))/d2(Bh,O)/len(hdir)<1e-6,'вращение','след плоскости вращения B не ⟂ A′D′');
-        ck(offLine2(B0,O,Bh)<TOL*S,'вращение','B₁′ не на следе плоскости вращения');
-        const Rr=Math.hypot(d2(O,Bh),(B[2]-A[2])*S); ck(Math.abs(d2(O,B0)-Rr)<TOL*S,'вращение','|O₁′B₁′| ≠ R = √(|O₁′B′|² + Δz²)');
-        if(P['B̄']) ck(Math.abs(d2(P['B̄'],Bh)-Math.abs(B[2]-A[2])*S)<TOL*S&&Math.abs(dot(sub(P['B̄'],Bh),sub(Bh,O)))/d2(P['B̄'],Bh)/d2(Bh,O)<1e-6,'вращение','катет B′B̄ — не Δz = |z_B − z_A| ⟂ O₁′B′');
-        ck(Math.abs(P['B₁″'][1]-P['A″'][1])<TOL*S&&Math.abs(P['C₁″'][1]-P['A″'][1])<TOL*S,'вращение','B₁″, C₁″ не на уровне оси вращения');
-        ck(offLine2(C0,B0,Dh)<TOL*S,'вращение','C₁′ не на прямой B₁′D′');
-        ck(Math.abs(dot(sub(C0,P['C′']),hdir))/Math.max(1e-9,d2(C0,P['C′']))/len(hdir)<1e-6,'вращение','C₁′ не на следе плоскости вращения C');
-        [[Ah,B0,dist(A,B),'AB'],[B0,C0,dist(B,C),'BC'],[C0,Ah,dist(C,A),'CA']].forEach(([p,s,v,l])=>ck(Math.abs(d2(p,s)/S-v)<TOL,'ответ','сторона '+l+' истинного вида '+(d2(p,s)/S).toFixed(3)+' мм, вычислено '+v.toFixed(3)));
+      if(/истинный вид/.test(pl)){ if(!need('O₁')) return;
+        const hh=horiz(); if(!hh) return;
+        const Ah=hh.a, Dh=hh.b, hdir=sub(Dh,Ah), zh=VV[hh.P][2], O=P['O₁′'];
+        /* повёрнутые вершины — те, у которых есть X₁; остальные (на оси) не движутся */
+        const rot=['A','B','C'].filter(n=>P[n+'₁′']), fixd=['A','B','C'].filter(n=>!P[n+'₁′']);
+        ck(rot.length>=1&&fixd.every(n=>Math.abs(VV[n][2]-zh)<TOL),'вращение','на месте осталась вершина не на оси вращения');
+        ck(offLine2(O,Ah,Dh)<TOL*S,'вращение','O₁′ не на оси h′');
+        rot.forEach(n=>{ const X=VV[n], Xh=P[n+'′'], X1=P[n+'₁′'], foot=(()=>{ const u=[hdir[0]/len(hdir),hdir[1]/len(hdir)], t=(Xh[0]-Ah[0])*u[0]+(Xh[1]-Ah[1])*u[1]; return [Ah[0]+u[0]*t,Ah[1]+u[1]*t]; })();
+          ck(Math.abs(dot(sub(X1,Xh),hdir))/Math.max(1e-9,d2(X1,Xh))/len(hdir)<1e-6,'вращение',n+'₁′ не на следе плоскости вращения '+n+' (⟂ h′)');
+          const Rr=Math.hypot(d2(foot,Xh),(X[2]-zh)*S); ck(Math.abs(d2(foot,X1)-Rr)<TOL*S,'вращение','|O′'+n+'₁′| ≠ R = √(|O′'+n+'′|² + Δz²)');
+          ck(Math.abs(P[n+'₁″'][1]+zh*S)<TOL*S,'вращение',n+'₁″ не на уровне оси вращения'); });
+        const k1=rot[0]; if(P[k1+'̄']) ck(Math.abs(d2(P[k1+'̄'],P[k1+'′'])-Math.abs(VV[k1][2]-zh)*S)<TOL*S,'вращение','катет '+k1+'′'+k1+'̄ — не Δz = |z − z_h| ⟂ O₁′'+k1+'′');
+        if(rot.length===2&&P['D′']) ck(offLine2(P[rot[1]+'₁′'],P[rot[0]+'₁′'],P['D′'])<TOL*S,'вращение',rot[1]+'₁′ не на прямой '+rot[0]+'₁′D′');
+        const im=n=>P[n+'₁′']||P[n+'′'];
+        [['A','B',dist(A,B),'AB'],['B','C',dist(B,C),'BC'],['C','A',dist(C,A),'CA']].forEach(([p,q,v,l])=>ck(Math.abs(d2(im(p),im(q))/S-v)<TOL,'ответ','сторона '+l+' истинного вида '+(d2(im(p),im(q))/S).toFixed(3)+' мм, вычислено '+v.toFixed(3)));
         valIn(ans,/AB = (\d+(?:,\d+)?)/,dist(A,B),'AB',''); valIn(ans,/BC = (\d+(?:,\d+)?)/,dist(B,C),'BC',''); valIn(ans,/CA = (\d+(?:,\d+)?)/,dist(C,A),'CA',''); }
-      if(/угол SA с/.test(pl)){ if(!need('D','E','T','O₃')) return;
-        const Ee=R('E'), T=R('T'); ck(Math.abs(Ee[1]-B[1])<TOL&&offLine3(Ee,A,C)<TOL,'метод','E — не точка AC на глубине B (BE — не фронталь)');
+      if(/угол SA с/.test(pl)){ if(!need('T','O₃')) return;
+        const T=R('T');
+        if(P['E′']){ const Ee=R('E'), fv=['A','B','C'].find(n=>{ const o=['A','B','C'].filter(m=>m!==n); return Math.abs(Ee[1]-VV[n][1])<TOL&&offLine3(Ee,VV[o[0]],VV[o[1]])<TOL; });
+          ck(!!fv,'метод','E — не точка стороны на глубине противоположной вершины (фронталь построена неверно)'); }
+        else ck([['A','B'],['A','C'],['B','C']].some(([p,q])=>Math.abs(VV[p][1]-VV[q][1])<TOL),'метод','нет фронтали основания (ни точки E, ни фронтального ребра)');
         ck(len(cross(sub(T,Sv),nA))/dist(T,Sv)/len(nA)<1e-6,'метод','T не на перпендикуляре из S к ABC');
         ck(Math.abs(T[2]-A[2])<TOL,'метод','T не на уровне A (AT — не горизонталь)');
         const Ah=P['A′'], Th=P['T′'], O=P['O₃′'], Sh=P['S′'], S0=P['S₁′'];
@@ -254,7 +270,7 @@ function checkTask(id,task,out){
         ck(offLine2(S0,O,Sh)<TOL*S,'вращение','S₁′ не на следе плоскости вращения');
         if(P['S̄']) ck(Math.abs(d2(P['S̄'],Sh)-Math.abs(Sv[2]-A[2])*S)<TOL*S&&Math.abs(dot(sub(P['S̄'],Sh),sub(Sh,O)))/d2(P['S̄'],Sh)/d2(Sh,O)<1e-6,'вращение','катет S′S̄ — не Δz = |z_S − z_A| ⟂ O₃′S′');
         ck(Math.abs(d2(Ah,S0)/S-dist(A,Sv))<TOL&&Math.abs(d2(Th,S0)/S-dist(T,Sv))<TOL,'вращение','треугольник A′S₁′T′ — не истинный вид AST');
-        const phi=deg(Math.asin(Hn/dist(Sv,A))), psi=angle(sub(A,Sv),sub(T,Sv));
+        const phi=deg(Math.asin(Hn/dist(Sv,A))), psi0=angle(sub(A,Sv),sub(T,Sv)), psi=Math.min(psi0,180-psi0);   /* угол между прямыми — острый */
         ck(Math.abs(phi-(90-psi))<TOLD,'ответ','φ ≠ 90° − ψ');
         valIn(ans,/φ = (\d+(?:,\d+)?)°/,phi,'угол φ','°'); valIn(ans,/ψ = (\d+(?:,\d+)?)°/,psi,'угол ψ','°');
         const ZS=Sv[2]-A[2]; const m=/Δz = (\d+(?:,\d+)?) − (\d+(?:,\d+)?) = (\d+(?:,\d+)?) мм/.exec(text);

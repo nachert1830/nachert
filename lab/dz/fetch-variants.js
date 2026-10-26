@@ -7,7 +7,7 @@ let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=re
 const ROOT=path.join(__dirname,'..','..'), {source}=require('../../tests/dz-run.js'), V=require('../../core/dz-variants.js'), DZ=require('../../core/dz.js');
 /* имя точки в строке данных сайта */
 const NAME={'2':{F:'Pf'},'2b':{F:'Fp'},'2c':{F:'Fp'},'3':{S:'Sv'}};
-const LINE={'2':/(HW\.calc\[2\] = \(function\(\)\{\n  const )([^;]*)(;)/,'2b':/(HW\.calc\['2b'\] = \(function\(\)\{\n  const )([^;]*)(;)/,'2c':/(HW\.calc\['2c'\] = \(function\(\)\{\n  const )([^;]*)(;)/,'3':/(HW\.calc\[3\] = \(function\(\)\{\n  const )([^;]*)(;)/};
+const LINE={'2':/(HW\.calcOf\[2\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,'2b':/(HW\.calcOf\['2b'\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,'2c':/(HW\.calcOf\['2c'\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,'3':/(HW\.calcOf\[3\] = function\(VAR_\)\{\n  let )([^;]*)(;)/};
 function patch(src,id,data){ return src.replace(LINE[id],(m,p,body,e)=>{ let b=body; Object.entries(data).forEach(([k,v])=>{ const nm=(NAME[id]&&NAME[id][k])||k, re=new RegExp('(^|[ ,])'+nm+'=\\[[^\\]]*\\]');
     if(!re.test(b)) throw new Error('в строке данных '+id+' нет '+nm); b=b.replace(re,(mm,pre)=>pre+nm+'=['+v.join(',')+']'); }); return p+b+e; }); }
 

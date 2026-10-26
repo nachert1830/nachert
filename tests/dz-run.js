@@ -14,10 +14,10 @@ function source(){ const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8
   if(a<0||b<0) throw new Error('блок ДЗ не найден');
   return html.slice(a,c); }
 const DATA={
-  '2':  /(HW\.calc\[2\] = \(function\(\)\{\n  const )([^;]*)(;)/,
-  '2b': /(HW\.calc\['2b'\] = \(function\(\)\{\n  const )([^;]*)(;)/,
-  '2c': /(HW\.calc\['2c'\] = \(function\(\)\{\n  const )([^;]*)(;)/,
-  '3':  /(HW\.calc\[3\] = \(function\(\)\{\n  const )([^;]*)(;)/ };
+  '2':  /(HW\.calcOf\[2\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,
+  '2b': /(HW\.calcOf\['2b'\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,
+  '2c': /(HW\.calcOf\['2c'\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,
+  '3':  /(HW\.calcOf\[3\] = function\(VAR_\)\{\n  let )([^;]*)(;)/ };
 /* искажение: только точки-тройки [x,y,z]; длины из условия (Hh, L0) не трогаем */
 /* прямая из условия (EF, BC, AK) не должна стать профильной (|Δx| < 6 мм): для неё метод через h и f не работает
    и в вариантах задания таких нет — такой вариант перебрасывается */
