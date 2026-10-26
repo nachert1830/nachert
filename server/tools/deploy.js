@@ -64,6 +64,12 @@ async function eyesPick(folder){ const EY=require('../lib/eyes');
   const r=await EY.pick({EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:E('EYES_MODEL')},testPng(),{token:()=>token,timeout:60000});
   r.tried.forEach(t=>say('  не отвечает: '+t.model.replace(folder,'<каталог>')+' — '+t.error));
   if(r.model){ say('  модель зрения: '+r.model.replace(folder,'<каталог>')+' — отвечает на фото'); return r.model; }
+  /* какие модели каталогу вообще доступны (OpenAI-совместимый список) — чтобы было из чего выбрать EYES_MODEL */
+  try{ const u=(E('EYES_URL')||EY.DEF_URL).replace(/\/chat\/completions$/,'/models');
+    const m=await fetch(u,{headers:{authorization:'Bearer '+token,'x-folder-id':folder},signal:AbortSignal.timeout(20000)}), t=await m.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
+    const ids=j&&Array.isArray(j.data)?j.data.map(x=>String(x.id||'').replace(folder,'<каталог>')).filter(Boolean):null;
+    say(ids?'  доступные модели ('+ids.length+'): '+ids.join(', '):'  список моделей: HTTP '+m.status+' '+t.replace(/\s+/g,' ').slice(0,200)); }
+  catch(e){ say('  список моделей не получен: '+e.message); }
   say('::warning::ИИ-зрение: ни одна модель не ответила на пробное фото (причины — выше). Сканер работает без него. Пришлите эти строки Claude.');
   return ''; }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
