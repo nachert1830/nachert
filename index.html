@@ -3813,6 +3813,141 @@ header,:root[data-theme=dark] header{background:color-mix(in srgb,var(--paper) 9
 }
 
 :root[data-theme=dark] .v8-share{background:var(--red-b)}
+/* ═════════ v9 · «триколор»: насыщенный синий, чистый белый, красный — «нажми сюда» (docs/color-policy.md) ═════════
+   Слой идёт последним. Как у TikTok, Spotify, Duolingo: одно яркое главное действие на экране, крупные «нажимаемые» кнопки
+   с бортиком снизу, цветные плитки разделов. Главная — синий блок поиска во всю ширину с красной кнопкой «Найти». */
+:root{
+  --surf2:#f1f5fd; --surf3:#e3ecfb;
+  --ink:#0a1733; --ink2:#2c3f5f; --mut:#56688a;
+  --line:#d5e0f2; --line2:#b7c8e6;
+  --blue:#1a5ae0; --blue-s:#e9f0ff; --acc:#1a5ae0; --acc-h:#1550c8; --acc-d:#0f3f9e; --blue-ink:#1a5ae0;
+  --navy:#0a2463; --navy2:#12357f;
+  --red:#d9222a; --red-s:#fdeaea; --hot:#e0252c; --red-b:#e0252c; --red-d:#a5141a;
+  --tri-w:#dbe5f6;
+}
+:root[data-theme="dark"]{
+  --paper:#07112a; --surf:#0e1c3a; --surf2:#14264a; --surf3:#1b315c;
+  --line:#21386a; --line2:#2f4b85;
+  --blue:#7fb0ff; --blue-s:#132a55; --acc:#2563eb; --acc-h:#2f6ff0; --acc-d:#123a99; --blue-ink:#7fb0ff;
+  --red:#ff6b6b; --red-s:#3a1620; --hot:#ff6b6b; --red-b:#e0252c; --red-d:#8e1016;
+  --tri-w:#e8eef8;
+}
+/* полоска-триколор под шапкой — толще и ярче */
+.v6-stripe{height:5px!important;border-radius:0!important;box-shadow:none!important}
+/* меню: где ты — сплошная синяя «таблетка» */
+.nav-top a.nv{font-weight:700!important}
+.nav-top a.nv.on{background:var(--acc)!important;color:#fff!important}
+.nav-top a.nv:not(.on):hover{background:var(--blue-s)!important;color:var(--acc)!important}
+.subj a.on{background:var(--navy)!important;color:#fff!important;box-shadow:none!important}
+:root[data-theme=dark] .subj a.on{background:var(--acc)!important}
+.nav-bot a.nv.on{color:var(--acc)}
+:root[data-theme=dark] .nav-bot a.nv.on{color:var(--blue)}
+.nvh-b,.nav-bot a.nv-home.on .nvh-b{background:var(--red-b)!important;color:#fff;box-shadow:0 4px 0 var(--red-d),0 0 0 4px var(--surf)!important}
+
+/* кнопки «нажми меня»: заливка + бортик снизу, при нажатии кнопка «проседает» (как в Duolingo) */
+.btn{border-width:1.5px;font-weight:700;border-radius:14px}
+.btn:not(.pri):not(.blue):not(.red):not(.ghost){box-shadow:0 3px 0 var(--line2)}
+.btn:not(.pri):not(.blue):not(.red):not(.ghost):hover{border-color:var(--acc);color:var(--acc)}
+.btn.pri,.btn.blue{background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important;box-shadow:0 4px 0 var(--acc-d)!important}
+.btn.pri:hover,.btn.blue:hover{background:var(--acc-h)!important;border-color:var(--acc-h)!important}
+.btn.red{background:var(--red-b)!important;border-color:var(--red-b)!important;color:#fff!important;box-shadow:0 4px 0 var(--red-d)!important}
+.btn:active:not(:disabled){transform:translateY(3px)!important}
+.btn.pri:active:not(:disabled),.btn.blue:active:not(:disabled){box-shadow:0 1px 0 var(--acc-d)!important}
+.btn.red:active:not(:disabled){box-shadow:0 1px 0 var(--red-d)!important}
+.btn:disabled{box-shadow:none!important}
+
+/* карточки — чётче рамка, при наведении приподнимаются */
+.card{border-width:1.5px}
+a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
+
+/* ── главная ── */
+.v8h{padding-top:20px}
+.v9-hero{position:relative;max-width:none!important;margin:0 auto;padding:44px 40px 30px!important;border:0!important;border-radius:32px!important;color:#fff;isolation:isolate;
+  background:radial-gradient(120% 90% at 85% 0%,#2f74ff 0%,rgba(47,116,255,0) 60%),linear-gradient(160deg,#0a2463 0%,#123c9c 55%,#1a5ae0 100%)!important;
+  box-shadow:0 24px 50px -28px rgba(10,36,99,.7)}
+/* чертёжная сетка и триколор сверху — фирменная деталь */
+.v9-hero::before{content:""!important;position:absolute;inset:0;height:auto!important;z-index:-1;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px) 0 0/28px 28px,linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px) 0 0/28px 28px!important;
+  -webkit-mask:linear-gradient(180deg,#000 0%,transparent 75%);mask:linear-gradient(180deg,#000 0%,transparent 75%)}
+.v9-hero>*{position:relative}
+.v9-kick{margin:0 auto 10px;width:fit-content;padding:5px 12px;border-radius:99px;background:rgba(255,255,255,.14);color:#dbe6ff;font:700 12px/1.3 var(--sans);letter-spacing:.06em;text-transform:uppercase}
+.v9-hero .v8-h{color:#fff!important;font:800 clamp(30px,5.4vw,48px)/1.08 var(--disp)!important;letter-spacing:-.03em;margin:4px auto 10px!important;max-width:720px}
+.v9-hero .v8-sub{color:#dbe6ff!important;font-size:16.5px;max-width:560px;margin:0 auto 22px!important}
+.v9-hero .v8-scope{background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.22)!important;margin-bottom:14px}
+.v9-hero .v8-scope button{color:#fff;font-weight:700}
+.v9-hero .v8-scope button:hover{color:#fff;background:rgba(255,255,255,.12)}
+.v9-hero .v8-scope button.on{background:#fff!important;color:var(--navy)!important}
+/* строка поиска — главное на экране: белая, крупная, с мягким свечением; красная «Найти» внутри */
+.v9-hero .v8-box{max-width:720px;margin:0 auto;position:relative}
+.v9-hero .v8-box .sr-form{border-radius:22px;background:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.18),0 18px 36px -16px rgba(0,0,0,.55);animation:v9Glow 2.6s ease-in-out 3}
+@keyframes v9Glow{0%,100%{box-shadow:0 0 0 6px rgba(255,255,255,.18),0 18px 36px -16px rgba(0,0,0,.55)}50%{box-shadow:0 0 0 12px rgba(255,255,255,.1),0 18px 36px -16px rgba(0,0,0,.55)}}
+.v9-hero .v8-box .sr-in{min-height:68px!important;border:0!important;border-radius:22px!important;background:#fff!important;color:#0a1733!important;font-size:18.5px!important;padding:0 172px 0 56px!important;box-shadow:none!important}
+.v9-hero .v8-box .sr-in::placeholder{color:#6b7a96}
+.v9-hero .v8-box .sr-in:focus{box-shadow:0 0 0 3px var(--acc)!important}
+.v9-hero .v8-box .sr-ic{left:20px;color:var(--acc)!important}
+.v9-hero .v8-box .sr-clr{right:142px;color:#6b7a96}
+.v9-go{position:absolute;right:8px;top:50%;transform:translateY(calc(-50% - 2px));display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 22px;border:0;border-radius:16px;
+  background:var(--red-b);color:#fff;font:800 17px var(--sans);cursor:pointer;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s,filter .15s}
+.v9-go:hover{filter:brightness(1.07)}
+.v9-go:active{transform:translateY(calc(-50% + 1px));box-shadow:0 1px 0 var(--red-d)}
+.v9-go:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.v9-hero .v8-ex{color:#c9d8ff!important;margin-top:18px!important}
+.v9-hero .v8-ex span{font-weight:600}
+.v9-hero .v8-ex button{background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.3)!important;color:#fff!important;font-weight:700!important;min-height:38px}
+.v9-hero .v8-ex button:hover{background:#fff!important;color:var(--navy)!important}
+.v9-hero .v8-res{background:#fff!important;border:0!important;color:#0a1733;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.v9-hero .v8-res span,.v9-hero .v8-res i{color:var(--red-b)}
+.v9-hero .v8-res small{color:#56688a}
+.v9-steps{list-style:none;display:flex;justify-content:center;flex-wrap:wrap;gap:8px 22px;margin:26px 0 0;padding:18px 0 0;border-top:1px solid rgba(255,255,255,.18);color:#dbe6ff;font-size:14.5px;font-weight:600}
+.v9-steps li{display:flex;align-items:center;gap:8px}
+.v9-steps b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#fff;color:var(--navy);font:800 13px var(--sans)}
+.v9-steps li:first-child b{background:var(--red-b);color:#fff}
+/* результаты поиска — белая панель внутри синего блока */
+.v9-hero .sr-res:not(:empty){margin-top:12px;padding:6px;border-radius:20px;background:var(--surf);color:var(--ink);box-shadow:0 18px 40px -18px rgba(0,0,0,.55)}
+.v9-hero .sr-res .sr-gh{color:var(--mut)}
+.v8h.has-q .v9-steps,.v8h.has-q .v9-kick{display:none}
+.v8h.has-q .v9-hero{padding-top:30px!important;padding-bottom:20px!important}
+/* «Поделиться» — красная кнопка с бортиком */
+.v8-meta{max-width:none!important;border-width:1.5px!important;border-radius:22px!important}
+.v8-share{border-radius:16px!important;font-weight:800!important;min-height:48px!important;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s}
+.v8-share:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
+/* разделы — плитки с иконками, как уроки в Duolingo */
+.v8-dirs{max-width:none!important}
+.v8-col{border:0!important;background:none!important;overflow:visible!important;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+.v8-col h3{grid-column:1/-1;background:none!important;border:0!important;padding:0 2px!important;font:800 18px var(--disp)!important}
+.v8-col h3 .v8-dot{width:12px;height:12px}
+.v8-l{display:flex!important;flex-direction:column;align-items:flex-start;gap:4px!important;padding:16px!important;border:1.5px solid var(--line2)!important;border-radius:20px!important;background:var(--surf);box-shadow:0 4px 0 var(--line2);transition:transform .1s,box-shadow .1s,border-color .15s;position:relative;min-height:148px}
+.v8-l+.v8-l{border-top:1.5px solid var(--line2)!important}
+.v8-l:hover{background:var(--surf)!important;border-color:var(--acc)!important;box-shadow:0 4px 0 var(--acc)}
+.v8-l:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line2)}
+.v9-ic{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:var(--acc);color:#fff;margin-bottom:8px;box-shadow:0 3px 0 var(--acc-d)}
+.v8-col:nth-child(2) .v9-ic{background:var(--navy);box-shadow:0 3px 0 #04102f}
+:root[data-theme=dark] .v8-col:nth-child(2) .v9-ic{background:#2b4a8f;box-shadow:0 3px 0 #0b1a3d}
+.v8-l b{font:800 18px/1.2 var(--disp)!important;color:var(--ink)!important}
+.v8-l small{color:var(--mut);font-size:13.5px;line-height:1.35}
+.v8-l i{position:absolute;top:16px;right:16px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--blue-s);color:var(--acc)!important;font-size:15px}
+.v8-l:hover i{background:var(--acc);color:#fff!important}
+.v8-cols{gap:28px!important}
+:root[data-theme=dark] .v9-hero{background:radial-gradient(120% 90% at 85% 0%,#2f6ff0 0%,rgba(47,111,240,0) 60%),linear-gradient(160deg,#081a4a 0%,#0f3388 55%,#1a50c8 100%)!important}
+:root[data-theme=dark] .v9-hero .v8-res{background:var(--surf)!important;color:var(--ink)}
+@media(max-width:640px){
+  .v8h{padding-top:12px}
+  .v9-hero{padding:34px 16px 22px!important;border-radius:26px!important;margin:0 -4px}
+  .v9-hero .v8-sub{font-size:15px;margin-bottom:18px!important}
+  .v9-hero .v8-box .sr-in{min-height:62px!important;font-size:17px!important;padding:0 64px 0 48px!important}
+  .v9-hero .v8-box .sr-ic{left:16px}
+  .v9-hero .v8-box .sr-clr{right:58px}
+  .v9-go{height:48px;width:48px;padding:0;justify-content:center;right:7px;border-radius:14px}
+  .v9-go span{display:none}
+  .v9-steps{flex-direction:column;align-items:flex-start;gap:10px;width:fit-content;margin-left:auto;margin-right:auto;text-align:left}
+  .v8-col{gap:10px}
+  .v8-l{min-height:138px;padding:14px!important}
+  .v8-l b{font-size:16.5px!important}
+  .v8-l i{top:14px;right:12px;width:26px;height:26px}
+  .v8-cols{gap:26px!important}
+}
+@media(max-width:360px){.v8-col{grid-template-columns:1fr}.v8-l{min-height:0}}
+@media(prefers-reduced-motion:reduce){.v9-hero .v8-box .sr-form{animation:none}}
 </style>
 </head>
 <body>
@@ -22350,6 +22485,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.18',d:'26 октября 2026',items:['Новый яркий дизайн: насыщенный синий, белый и красный. Красный — там, куда нажать.','Главная: большой синий блок поиска и красная кнопка «Найти» — впиши номер задачи, вариант или вопрос, и решение откроется первым. Под строкой — три шага: что вписать и куда жать дальше.','Разделы — крупные плитки с иконками; кнопки стали «нажимаемыми»: с бортиком снизу и откликом при нажатии.']},
   {v:'4.17',d:'26 октября 2026',items:['Новая главная — как у поисковика: одна строка поиска по начерту и инженерной графике. Номер задачи, «вариант 12», «ДЗ 3» или вопрос своими словами — ответ первым. Рядом — счётчик и «Поделиться».','Меню одинаковое для обоих предметов: Тетрадь · ДЗ · РК (в ИГ — «Учиться») · Теория.','Цвета спокойнее: белая страница, голубой — действие, красный — только то, куда стоит посмотреть.'],
    hidden:[{flag:'lk',t:'Личный кабинет nachert1830.ru/lk/ — на проверке: ссылки с сайта (кнопка «Кабинет» в шапке, карточка на главной) видны только в режиме владельца. «Сегодня» — ближайшая сдача, «Мои ДЗ» на своём варианте, проверка чертежа по фото по шагам.'}]},
   {v:'4.16',d:'26 октября 2026',items:['Новые цвета: синий · белый · розово-алый. Основа — чертёжная синька, главный блок — синий с розово-алым сиянием в углу; «начни здесь» и «Поделиться» — розово-алые. Обновлены значок приложения и тёмная тема. Чертежи остались как в учебнике.']},
@@ -25708,32 +25844,33 @@ function viewHome(v){
   const nT=WB3.tasks.length, nL=COURSE.length, nIW=(window.IG_WB||[]).length;
   const hw=(window.DZR?DZR.list('ng'):[]), nIG=(window.DZR?DZR.list('ig'):[]), sc=homeScope();
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
-  const lnk=(h,b,s)=>`<a class="v8-l" href="${h}"><b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
+  const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
-   <section class="v8-hero" id="hsearch" aria-labelledby="v8H">
-    <div class="v8-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="44" height="44"><rect width="32" height="32" rx="9" fill="var(--acc)"/><circle cx="12.5" cy="16" r="6.5" fill="#fff"/><circle cx="19.5" cy="16" r="6.5" fill="none" stroke="var(--red)" stroke-width="3"/></svg><b>Начерт</b></div>
+   <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
+    <p class="v9-kick">Начерт · инж. графика · МГТУ</p>
     <h1 id="v8H" class="v8-h">Найди решение своей задачи</h1>
-    <p class="v8-sub">Начертательная геометрия и инженерная графика — по шагам</p>
+    <p class="v8-sub">Впиши номер задачи, вариант или вопрос своими словами — решение откроется по шагам</p>
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
     <p class="v8-ex"><span>Например:</span>${ex.map(x=>`<button type="button" data-hq="${attr(x[1])}">${x[0]}</button>`).join('')}</p>
     ${tg?`<a class="v8-res" href="${attr(tg.href)}"><span>Продолжить</span><b>${attr(short(tg.label,70))}</b>${stepNote?`<small>${attr(stepNote.replace(/ · $/,''))}</small>`:''}<i aria-hidden="true">→</i></a>`:''}
+    <ol class="v9-steps" aria-label="Как найти решение"><li><b>1</b>Впиши номер или вопрос</li><li><b>2</b>Открой решение</li><li><b>3</b>Жми «Дальше» — шаг за шагом</li></ol>
    </section>
        <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
    <section class="v8-dirs" aria-labelledby="v8D">
     <h2 id="v8D" class="v8-dh">Или открой раздел</h2>
     <div class="v8-cols">
      <div class="v8-col"><h3><i class="v8-dot ng" aria-hidden="true"></i>Начертательная геометрия</h3>
-      ${lnk(H('ng','tasks'),'Тетрадь','все '+nT+' задач с решением по шагам')}
-      ${lnk(H('dz'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист')}
-      ${lnk(H('ng','rk2'),'РК','билет, 26 вопросов, пробный РК')}
-      ${lnk(H('ng','path'),'Теория',nL+' уроков, шпаргалка, 3D-модель')}
+      ${lnk(H('ng','tasks'),'Тетрадь','все '+nT+' задач с решением по шагам','nb')}
+      ${lnk(H('dz'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист','hw')}
+      ${lnk(H('ng','rk2'),'РК','билет, 26 вопросов, пробный РК','rk')}
+      ${lnk(H('ng','path'),'Теория',nL+' уроков, шпаргалка, 3D-модель','th')}
      </div>
      <div class="v8-col"><h3><i class="v8-dot ig" aria-hidden="true"></i>Инженерная графика</h3>
-      ${lnk(H('ig','wb'),'Тетрадь',nIW?nIW+' заданий: тела с отверстиями':'тела с отверстиями')}
-      ${lnk(H('dz'),'ДЗ','задания '+(nIG.length?nIG.map(d=>d.num).join(', '):'2–4')+': деталь в 3D и готовый лист')}
-      ${lnk(H('ig','learn'),'Учиться','виды, разрезы, сечения; защита точек')}
-      ${lnk(H('ig','theory'),'Теория ЕСКД','форматы, линии, размеры, разрезы')}
+      ${lnk(H('ig','wb'),'Тетрадь',nIW?nIW+' заданий: тела с отверстиями':'тела с отверстиями','nb')}
+      ${lnk(H('dz'),'ДЗ','задания '+(nIG.length?nIG.map(d=>d.num).join(', '):'2–4')+': деталь в 3D и готовый лист','hw')}
+      ${lnk(H('ig','learn'),'Учиться','виды, разрезы, сечения; защита точек','lr')}
+      ${lnk(H('ig','theory'),'Теория ЕСКД','форматы, линии, размеры, разрезы','th')}
      </div>
     </div>
     ${FLAGS.owner()?`<a class="v8-lk" href="lk/"><span class="v8-lki" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span><span><b>Личный кабинет</b><small>на проверке — видно только владельцу</small></span><i aria-hidden="true">→</i></a>`:''}
@@ -25742,6 +25879,10 @@ function viewHome(v){
   </div>`;
   NEXT=null;
   if(window.SEARCH){ const page=$('v8h'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:page,keep:true,noAuto:true,quiet:true,scope:homeScope,ph:'Номер задачи, вариант, тема или вопрос'});
+    /* красная «Найти» — куда нажать: открывает первый ответ, а пустая строка просто получает фокус */
+    const go=document.createElement('button'); go.type='button'; go.className='v9-go'; go.innerHTML='<span>Найти</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+    api.input.closest('form').appendChild(go);
+    go.addEventListener('click',()=>{ if(!api.val().trim()){ api.focus(); return; } const a=$('srHres')&&$('srHres').querySelector('a.sr-it'); if(a) a.click(); else api.focus(); });
     /* номер задачи / вариант / ДЗ — первыми ответами */
     const quick=()=>{ const res=$('srHres'); if(!res) return; const hs=quickHits(api.val(),homeScope()); if(!hs.length) return;
       res.insertAdjacentHTML('afterbegin',`<section class="sr-g sr-q" data-g="quick">${hs.map((x,i)=>`<a class="sr-it v7-n" id="srHq${i}" href="${x.h}" role="option"><span class="sr-tag">${x.tag}</span><b class="sr-t">${attr(x.t)}</b><span class="sr-w">${x.w} →</span></a>`).join('')}</section>`);
