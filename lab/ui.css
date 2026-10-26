@@ -1,0 +1,47 @@
+/* Оформление сканера — как у сайта и кабинета: белый лист, спокойный голубой, красный — только «ошибка тут».
+   Подключается после встроенных стилей страниц lab/*.html и перекрывает их; разметку и id логика сканера не замечает. */
+:root{ --bg:#ffffff; --card:#ffffff; --ink:#0e1c33; --mute:#5d6f8a; --line:#dbe4ef; --line2:#c2d1e3; --blue:#1e6fd9; --blue-s:#ebf3fe; --red:#dc2a22; --green:#13804e; --amber:#a15a05; --surf2:#f3f7fc; }
+:root[data-theme="dark"]{ --bg:#0b1424; --card:#111d33; --ink:#e8eef8; --mute:#8aa0c0; --line:#22355a; --line2:#304a73; --blue:#2068d8; --blue-s:#132a4d; --red:#ff6b5e; --green:#5fd191; --amber:#e6ac52; --surf2:#172741; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0b1424; --card:#111d33; --ink:#e8eef8; --mute:#8aa0c0; --line:#22355a; --line2:#304a73; --blue:#2068d8; --blue-s:#132a4d; --red:#ff6b5e; --green:#5fd191; --amber:#e6ac52; --surf2:#172741; } }
+body{ font-family:'Golos Text',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); }
+main{ max-width:760px; padding:16px 16px 40px; }
+h1{ font-size:24px; letter-spacing:-.02em; margin:6px 0 4px; }
+.sub{ font-size:15px; margin:0 0 16px; }
+html.embed h1,html.embed .sub{ display:none; }
+html.embed main{ padding-top:4px; }
+.card{ border-radius:18px; padding:16px; border-color:var(--line); }
+/* шаги: номер в голубом круге, заголовок, подсказка */
+.step{ position:relative; padding-left:60px; }
+.step::before{ content:attr(data-n); position:absolute; left:16px; top:15px; width:32px; height:32px; border-radius:50%; display:grid; place-items:center; background:var(--blue-s); color:var(--blue); font-weight:700; }
+.step h2{ font-size:17px; margin:4px 0 2px; letter-spacing:-.01em; }
+.step .shint{ color:var(--mute); font-size:14px; margin:0 0 12px; }
+.fld{ display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--mute); }
+.fld>select,.fld>input{ color:var(--ink); font-size:16px; }
+.fields{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+button,select,input[type=number],label.btn{ border-color:var(--line2); border-radius:12px; min-height:46px; padding:10px 14px; }
+input[type=number]{ width:100%; }
+select{ width:100%; }
+button:hover,label.btn:hover{ border-color:var(--blue); }
+label.btn.primary,button.primary{ background:var(--blue); border-color:var(--blue); color:#fff; font-weight:700; }
+label.btn,button{ font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.shoot{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px; }
+@media (max-width:420px){ .shoot{ grid-template-columns:1fr; } }
+.shoot .btn.primary{ min-height:54px; font-size:17px; }
+.confirm{ padding:12px 14px; border-radius:14px; background:var(--surf2); margin-top:12px; }
+.data td,.data th{ border-color:var(--line); }
+.ans{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:12px; }
+.stages{ margin:12px 0 0; color:var(--mute); }
+.stages li{ padding:2px 0; }
+/* результат */
+#vcard,#resCard{ border:1.5px solid var(--line2); }
+.verdict{ font-size:21px; letter-spacing:-.01em; }
+.verdict.ok{ color:var(--green); } .verdict.bad{ color:var(--red); } .verdict.ref{ color:var(--amber); }
+.mute{ font-size:13.5px; }
+canvas{ border-radius:12px; }
+.grid2 .card>.mute:first-child{ font-weight:600; margin-bottom:8px; }
+/* пока нет фото — пустых рамок нет */
+body:not(.has-photo) .after-photo{ display:none !important; }
+details summary{ font-size:14px; }
+.demo{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+.demo select{ width:auto; flex:1 1 180px; }
+.cam{ border-radius:16px; }

@@ -13,7 +13,7 @@ test('Яндекс ID: без приглашения — отказ, по при
   const r=await c.yandex(ANYA,{invite:code}); assert.equal(r.status,200); assert.equal(r.data.isNew,true); assert.equal(r.data.user.name,'Аня'); assert.equal(r.data.user.yandex,true);
   assert.match(r.data.session,/^[A-Za-z0-9_-]{40,}$/,'токен сессии — в ответе, для страницы на nachert1830.ru');
   const u=await c.store.get('users',r.data.user.id);
-  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','id','invite','lastLogin','method','name','reminders','role','tgId','ya']);
+  assert.deepEqual(Object.keys(u).sort(),['consent','createdAt','em','id','invite','lastLogin','method','name','reminders','role','tgId','ya']);
   assert.equal(u.method,'yandex'); assert.equal(u.tgId,null); assert.ok(!JSON.stringify(u).includes('anya.ya')&&!JSON.stringify(u).includes('Иванова'),'логин и фамилия не хранятся');
   assert.ok(await c.store.get('identities','ya:2001'));
   assert.ok(c.ya.calls.some(x=>x.url==='https://oauth.yandex.ru/revoke_token'),'токен Яндекса отозван сразу');
@@ -41,8 +41,8 @@ test('Яндекс ID: возврат — только на страницы к�
   const evil=await c.call('GET','/api/auth/yandex/start?ret='+encodeURIComponent('https://evil.example/')+'&s=clientstate-1234567890',undefined,{as:'b'});
   const state=new URL(evil.raw.headers.Location).searchParams.get('state'); c.ya.codes.E={id:'4001',first_name:'X'};
   assert.match((await c.call('GET','/api/auth/yandex/callback?code=E&state='+state,undefined,{as:'b'})).raw.headers.Location,/^http:\/\/localhost:8787\/#/);
-  const site=await c.yandex({id:'3001',login:'owner.ya'},{ret:'https://nachert1830.ru/club/',noRedeem:true});
-  assert.match(site.location,/^https:\/\/nachert1830\.ru\/club\/#\/ya\/[A-Za-z0-9_-]+\/clientstate-1234567890$/);
+  const site=await c.yandex({id:'3001',login:'owner.ya'},{ret:'https://nachert1830.ru/lk/',noRedeem:true});
+  assert.match(site.location,/^https:\/\/nachert1830\.ru\/lk\/#\/ya\/[A-Za-z0-9_-]+\/clientstate-1234567890$/);
   const bad=await c.call('GET','/api/auth/yandex/start?ret=x&s=short',undefined,{as:'b'}); assert.match(bad.raw.headers.Location,/#\/oops\/state$/);
 });
 
@@ -81,7 +81,7 @@ test('страница на nachert1830.ru: CORS только для сайто�
   assert.equal(put.status,200,'с токеном в заголовке CSRF-токен не нужен');
   assert.equal((await c.call('PUT','/api/progress',{data:{},mt:{}},{headers:{authorization:'Bearer '+tok,origin:'https://evil.example'},cookie:false,csrf:false})).status,403,'чужой сайт — отказ');
   assert.equal((await c.call('GET','/api/me',undefined,{headers:{authorization:'Bearer '+'x'.repeat(43)},cookie:false})).status,401);
-  const code=await c.invite('ya3001'); const reg=await c.yandex(ANYA,{invite:code,ret:'https://nachert1830.ru/club/',noRedeem:true});
+  const code=await c.invite('ya3001'); const reg=await c.yandex(ANYA,{invite:code,ret:'https://nachert1830.ru/lk/',noRedeem:true});
   const red=await c.call('POST','/api/auth/bot/redeem',{token:reg.token,confirm:true,consent:c.consent},{headers:site,as:'site'});
   assert.equal(red.status,200); assert.equal(red.setCookie,undefined,'на чужой сайт cookie не отдаётся'); assert.ok(red.data.session);
   const cfgJs=await c.call('GET','/config.js'); assert.equal(cfgJs.raw.body,"window.CLUB_API='';\n",'с адреса функции API — свой же сайт');

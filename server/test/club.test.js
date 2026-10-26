@@ -82,7 +82,7 @@ test('отзывы: на функцию, видны админу',async()=>{
   assert.equal((await c.call('POST','/api/admin/reply',{id:req.id,text:'Всё — в «Скачать мои данные»'},{as:'u'})).status,403,'отвечает только админ');
   const rp=await c.call('POST','/api/admin/reply',{id:req.id,text:'Всё — в «Скачать мои данные»'},{as:'owner'}); assert.equal(rp.data.telegram,true);
   assert.equal((await c.call('GET','/api/me/requests',undefined,{as:'u'})).data.requests[0].reply,'Всё — в «Скачать мои данные»');
-  assert.ok(c.outbox.some(x=>x.body&&x.body.chat_id==='740'&&/Ответ владельца/.test(x.body.text)),'ответ ушёл в Telegram');
+  assert.ok(c.outbox.some(x=>x.body&&x.body.chat_id==='740'&&/Ответ Начерта/.test(x.body.text)),'ответ ушёл в Telegram');
   const fb=(await c.call('GET','/api/admin/overview',undefined,{as:'owner'})).data.feedback.filter(f=>f.feature!=='privacy'); assert.equal(fb[0].feature,'training'); assert.equal(fb[0].text,'<b>не понял</b>','хранится как текст; экранирование — при выводе');
 });
 
@@ -164,7 +164,7 @@ test('скрипт развёртывания: архив функции — п�
   const {zip,crc32,packageFiles}=require('../tools/deploy.js');
   assert.equal(crc32(Buffer.from('123456789')),0xCBF43926);
   const files=packageFiles(), names=files.map(f=>f[0]);
-  assert.ok(names.includes('server/index.js')&&names.includes('club/index.html')&&names.includes('club/legal/consent.html'));
+  assert.ok(names.includes('server/index.js')&&names.includes('lk/index.html')&&names.includes('lk/legal/consent.html'));
   assert.ok(!names.some(n=>/(^|\/)(test|tests|tools|\.data)\/|\.md$/.test(n)),'лишнее не попадает в пакет');
   const z=zip(files); assert.equal(z.readUInt32LE(0),0x04034b50); assert.equal(z.readUInt32LE(z.length-22),0x06054b50); assert.equal(z.readUInt16LE(z.length-12),files.length);
 });

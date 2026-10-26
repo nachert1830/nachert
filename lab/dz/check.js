@@ -7,7 +7,7 @@
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
-const L=n=>isNode?require('./'+n+'.js'):self.LAB[{locate:'dzLocate',digitize:'dzDigitize',calib:'dzCalib',check2:'dzCheck2',check3:'dzCheck3',explain2:'dzExplain2'}[n]];
+const L=n=>isNode?require('./'+n+'.js'):self.LAB[{locate:'dzLocate',digitize:'dzDigitize',calib:'dzCalib',check2:'dzCheck2',check3:'dzCheck3',explain2:'dzExplain2',eyes:'dzEyes',gridsheet:'dzGridSheet'}[n]];
 const V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const f1=x=>(Math.round(x*10)/10).toString().replace('.',',');
 const COORD={f:['x','z'],h:['x','y']};
@@ -17,16 +17,32 @@ function pointMsg(p,data){ const d=p.dir, [cu,cv]=COORD[p.pr], P=data[p.n], out=
   if(Math.abs(d[1])>1.5){ const i=cv==='z'?2:1, val=cv==='z'?P[2]-d[1]:P[1]+d[1]; out.push(cv+' = '+f1(val)+' вместо '+P[i]); }
   return 'точка '+p.l+' нанесена не по данным варианта: '+(out.length?out.join(', '):'сдвиг '+f1(p.shift)+' мм'); }
 function checkSheet(img,o){ o=o||{}; const dz=+o.dz||2, n=+o.n, g=V.get(dz,n); if(!g) return {verdict:'не могу проверить',why:['нет варианта '+n+' ДЗ №'+dz],stage:'вариант'};
-  const loc=L('locate').locate(img); if(!loc.ok) return {verdict:'не могу прочитать',why:[loc.reason],stage:'лист',loc};
-  const dig=L('digitize').digitize(img,loc); if(!dig.ok) return {verdict:'не могу прочитать',why:[dig.reason],stage:'линии',loc,dig};
-  const C=L('calib'), cal=C.calibrate(dig,loc,g.id,g.data), res={loc,dig,cal};
+  /* o.eyes — чертёж от глаз (eyes.js): рамка и штамп не нужны, опора — сама фигура условия */
+  let loc, dig, cal, pre=[]; const C=L('calib');
+  if(o.eyes){ const pe=L('eyes').prepareEyes(img,o.eyes,{dz,n}); if(!pe.ok) return {verdict:'не могу прочитать',why:[pe.reason],stage:'глаза'};
+    loc={ok:true,eyes:true,O:null,fit:pe.fit,eyesMm:pe.eyesMm}; dig=pe.dig; const c=pe.origin; cal=C.calibrate(dig,{},g.id,g.data,{range:[c[0]-3,c[1]-3,c[0]+3,c[1]+3],cands:L('gridsheet').axesCands(dig.segs)}); pre=pe.why; }
+  else { loc=L('locate').locate(img); if(!loc.ok) return {verdict:'не могу прочитать',why:[loc.reason],stage:'лист',loc};
+    dig=L('digitize').digitize(img,loc); if(!dig.ok) return {verdict:'не могу прочитать',why:[dig.reason],stage:'линии',loc,dig};
+    cal=C.calibrate(dig,loc,g.id,g.data); }
+  const res={loc,dig,cal}, R0=checkFrom(img,o,dz,n,g,loc,dig,cal,res); if(pre.length) R0.why=pre.concat(R0.why);
+  /* по глазам без уточнённой перспективы (мало точек условия на линиях — у призмы и куба их всего 4) привязка грубая,
+     до 2–3 мм: тип линии и положение ответа так не меряются — вердикт не утверждаем */
+  if(loc.eyes&&!loc.fit&&['верно','ошибка','другое решение'].includes(R0.verdict)){ R0.why.push('перспектива по фото не уточнена (мало точек условия на линиях) — вердикт «'+R0.verdict+'» не утверждаю; переснимите крупнее'); R0.verdict='не могу утверждать'; }
+  return R0; }
+function checkFrom(img,o,dz,n,g,loc,dig,cal,res){ const C=L('calib');
   /* точки условия: какая-то нанесена не по данным? Проверка гипотезами «координата c точки P с ошибкой δ» по всей
      фигуре условия (calib.givenErrors) — всегда: малая ошибка точки почти не портит общую калибровку, но ломает ответ */
   const ge=cal.ok?C.givenErrors(dig,cal,g.id,g.data):null;
-  const bad=ge&&ge.ok?[ge.best]:[];
+  /* по глазам гомография по фигуре условия «впитывает» часть ошибки нанесения: только явные (≥ 3 мм) */
+  /* и как в gridsheet.js: глаза не видели эту проекцию или видят её на месте (ближе к варианту, чем к гипотезе) — молчим */
+  const eyesVeto=h=>{ if(!loc.eyes) return false; const E=loc.eyesMm||{}, T=cal.T, ap=m=>[T[0]+(1+T[2])*m[0]+T[3]*m[1],T[1]+T[4]*m[0]+(1+T[5])*m[1]], P=g.data[h.k], Q=P.slice(); Q['xyz'.indexOf(h.c)]+=h.d;
+    const ls=h.c==='x'?['″','′']:h.c==='y'?['′']:['″']; return ls.some(pr=>{ const e=E[h.k+pr]; if(!e) return true; const pj=pr==='″'?m=>[-m[0],-m[2]]:m=>[-m[0],m[1]], a=ap(pj(P)), b=ap(pj(Q));
+      return Math.hypot(e[0]-a[0],e[1]-a[1])<Math.hypot(e[0]-b[0],e[1]-b[1]); }); };
+  const bad=ge&&ge.ok&&(!loc.eyes||Math.abs(ge.best.d)>=3&&!eyesVeto(ge.best))?[ge.best]:[];
   const gmsg=h=>ge.coordSure?'у точки '+h.k+' координата '+h.c+' нанесена как ≈ '+f1(h.val)+' мм, а по варианту '+h.was+' мм (на листе: '+h.k+(h.c==='z'?'″':h.c==='y'?'′':'″ и '+h.k+'′')+')':'точка '+h.k+' нанесена не по данным варианта (сдвиг ≈ '+f1(Math.abs(h.d))+' мм; какая координата — по фото не различить)';
   if(!cal.ok||cal.cover<0.8){
     /* условие не узнаётся: не тот вариант? */
+    if(loc.eyes) return Object.assign(res,{verdict:'не могу прочитать',why:['условие варианта '+n+' на линиях — '+Math.round((cal.cover||0)*100)+' %: мало для проверки — переснимите крупнее'],stage:'условие'});
     const w=C.whichVariant(dig,loc,dz), best=w[0];
     if(best.n!==n&&best.cover>=0.85&&best.cover-w[1].cover>=0.15) return Object.assign(res,{verdict:'не тот вариант',why:['на листе, похоже, вариант '+best.n+' ('+Math.round(best.cover*100)+' % условия на линиях), а указан '+n+' ('+Math.round((cal.cover||0)*100)+' %). Проверьте номер варианта'],stage:'вариант',variants:w.slice(0,3)});
     if(bad.length&&cal.cover>=0.6) return Object.assign(res,{verdict:'ошибка',why:bad.map(gmsg).concat(['дальше построение идёт от неверно нанесённых данных']),stage:'условие'});

@@ -145,7 +145,7 @@ function measureGiven(dig,cal,id,data,o){ o=o||{}; const g=M.given(id,data), T=c
     drawn[n]=[x,y,z];
     /* погрешность координаты (мм): пересечение ≥ 3 рёбер — 0,25, двух — 0,5; узел линий — 1,0 (косвенная мера),
        неоднозначный — 1,5; метка-кружок — 1,0; ненадёжная проекция (расходится с надёжной) — 3 */
-    const sF=F?(wF?3:sgOf(f)):null, sH=Hh?(wH?3:sgOf(h)):null, sFx=Fx?sF:null, sHx=Hx?sH:null;
+    const fl=o.sigFloor||0, sF=F?Math.max(fl,wF?3:sgOf(f)):null, sH=Hh?Math.max(fl,wH?3:sgOf(h)):null, sFx=Fx?sF:null, sHx=Hx?sH:null;
     const sx=Fx&&Hx?Math.hypot(sFx,sHx)/2:Fx?sFx:Hx?sHx:null; sig[n]=[sx,sH,sF];
     if(F&&Hh) link.push({n,du:F[0]-Hh[0],sg:Math.hypot(sF,sH),sure:!wF&&!wH&&Math.abs(F[0]-Hh[0])>=Math.max(1.5,3*Math.hypot(sF,sH))});
     ['x','y','z'].forEach((c,i)=>{ const v=[x,y,z][i]; if(v==null) return; const d=v-data[n][i], sgm=sig[n][i]; diff.push({n,c,drawn:v,was:data[n][i],d,sg:sgm,sure:Math.abs(d)>=Math.max(1.5,3*sgm)}); }); });   /* «неточно» — с 1,5 мм: точность руки по клетке ~0,5 мм, замера — 0,1–0,3 */

@@ -1,10 +1,10 @@
 /* Общие стили юридических документов club.nachert1830.ru (без внешних ресурсов) */
 :root {
-  --bg: #f3f5fa;
+  --bg: #eef4fb;
   --card: #ffffff;
-  --text: #0d1530;
-  --muted: #5c6783;
-  --accent: #1f47b8;
+  --text: #071a36;
+  --muted: #50698c;
+  --accent: #0a58c8;
   --border: #d9deea;
   --mark-bg: #fff1b8;
   --mark-text: #4a3500;
@@ -16,11 +16,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0a0f22;
+    --bg: #061226;
     --card: #111833;
-    --text: #eef2ff;
-    --muted: #9aa6cf;
-    --accent: #8fb0ff;
+    --text: #eaf3ff;
+    --muted: #8ea8cc;
+    --accent: #7cb7ff;
     --border: #26304f;
     --mark-bg: #5a4300;
     --mark-text: #ffe9a8;

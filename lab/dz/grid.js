@@ -184,6 +184,9 @@ function findGrid(img,o){ o=o||{}; const cell=o.cell||5, dbg=[], W=img.width, Hh
   const Hg=H.fit(all.map(q=>[q.i*cell,q.j*cell]),all.map(q=>q.p)); if(!Hg) return {ok:false,reason:'гомография по сетке не сошлась',dbg};
   const hres=Math.sqrt(all.reduce((s,q)=>{ const p=H.apply(Hg,[q.i*cell,q.j*cell]); return s+(p[0]-q.p[0])**2+(p[1]-q.p[1])**2; },0)/all.length);
   dbg.push('узлов '+N.size+' (отброшено '+bad.length+'), клеток '+(i1-i0)+' × '+(j1-j0)+'; гладкость '+rms.toFixed(2)+' px; одна гомография дала бы '+hres.toFixed(2)+' px');
+  /* не сетка, а похожее на неё (параллельные линии чертежа на чистом листе): мало узлов и негладко. У настоящих
+     листов — от 500 узлов и гладкость 0,1–0,4 px; у ложной «сетки» — 60–100 узлов и 0,8 px */
+  if(N.size<200||rms>0.6) return {ok:false,reason:'сетка клеток не найдена (узлов '+N.size+', гладкость '+rms.toFixed(2)+' px)',dbg};
   /* недостающие узлы в пределах найденных — по гомографии 12 ближайших найденных */
   /* у края сетки 12 ближайших узлов почти на одной прямой — гомография по ним плохо обусловлена поперёк; берём 40 */
   const near=(i,j)=>all.map(q=>({q,d:(q.i-i)**2+(q.j-j)**2})).sort((a,b)=>a.d-b.d).slice(0,40).map(x=>x.q);
@@ -199,10 +202,13 @@ function findGrid(img,o){ o=o||{}; const cell=o.cell||5, dbg=[], W=img.width, Hh
   /* поле снимка в мм листа (через обратную глобальную гомографию), не дальше 12 клеток от сетки */
   const Hi=H.inv(Hg), cs=[[0,0],[W,0],[W,Hh],[0,Hh]].map(p=>H.apply(Hi,p)), lim=12*cell;
   const pbox=[Math.max(i0*cell-lim,Math.min(...cs.map(p=>p[0]))),Math.max(j0*cell-lim,Math.min(...cs.map(p=>p[1]))),Math.min(i1*cell+lim,Math.max(...cs.map(p=>p[0]))),Math.min(j1*cell+lim,Math.max(...cs.map(p=>p[1])))].map(v=>Math.round(v));
+  if(!(pbox[2]>pbox[0]+20&&pbox[3]>pbox[1]+20)) return {ok:false,reason:'сетка клеток читается ненадёжно (поле снимка не определилось)',dbg};
   return {ok:true,found,gridAt:(u,v)=>found.has(key(Math.round(u/cell),Math.round(v/cell))),photoBox:pbox,cell,ppm0:Math.hypot(c1[0]-c[0],c1[1]-c[1]),nodes:N.size-0,found:all.length,rms,hres,map,Hg,box:[i0*cell,j0*cell,i1*cell,j1*cell],dirs:D,dbg}; }
 
 /* «скан»: снимок в мм листа, ppm px/мм; белое там, где сетки нет */
-function rectify(img,g,o){ o=o||{}; const ppm=o.ppm||10, box=o.box||g.photoBox||g.box, w=Math.round((box[2]-box[0])*ppm), h=Math.round((box[3]-box[1])*ppm), out=IMG.rgba(w,h), d=img.data, W=img.width, Hh=img.height;
+function rectify(img,g,o){ o=o||{}; const ppm=o.ppm||10, box=o.box||g.photoBox||g.box, w=Math.round((box[2]-box[0])*ppm), h=Math.round((box[3]-box[1])*ppm);
+  if(!(w>0&&h>0&&w*h<1.2e8)) throw new Error('rectify: поле '+box.join(',')+' — пусто или слишком велико');
+  const out=IMG.rgba(w,h), d=img.data, W=img.width, Hh=img.height;
   for(let y=0;y<h;y++){ const v=box[1]+(y+0.5)/ppm; for(let x=0;x<w;x++){ const u=box[0]+(x+0.5)/ppm, p=g.map(u,v), X=p[0]-0.5, Y=p[1]-0.5, x0=Math.floor(X), y0=Math.floor(Y), o4=(y*w+x)*4;
     out.data[o4+3]=255; if(x0<0||y0<0||x0>=W-1||y0>=Hh-1){ out.data[o4]=out.data[o4+1]=out.data[o4+2]=255; continue; } const fx=X-x0, fy=Y-y0;
     for(let ch=0;ch<3;ch++){ const i00=(y0*W+x0)*4+ch, a=d[i00], b=d[i00+4], c=d[i00+W*4], e=d[i00+W*4+4]; out.data[o4+ch]=Math.round((a*(1-fx)+b*fx)*(1-fy)+(c*(1-fx)+e*fx)*fy); } } }

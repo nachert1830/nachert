@@ -1,5 +1,5 @@
 /* Хранилище в Yandex Database (serverless) через Document API — совместим с DynamoDB, запросы подписываются SigV4.
-   Таблицы создаются один раз командами из club/DEPLOY.md. Ключ: id (строка), у loginlog — h (хеш-ключ) + r (ключ сортировки).
+   Таблицы создаются один раз командами из lk/DEPLOY.md. Ключ: id (строка), у loginlog — h (хеш-ключ) + r (ключ сортировки).
    Интерфейс тот же, что у lib/store/memory.js. */
 'use strict';
 const {sign}=require('../sigv4');

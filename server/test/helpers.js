@@ -11,8 +11,10 @@ function club(opt){ opt=opt||{};
     yandex:{clientId:'ya-client',secret:'ya-secret'},adminYa:['owner.ya'],fronts:undefined,frontUrl:undefined},opt.cfg||{});
   cfg.fronts=cfg.fronts||[cfg.origin,'https://nachert1830.ru'];
   /* поддельный Яндекс ID: код → профиль; записывает, что у него спрашивали */
-  const ya={codes:{},calls:[],down:false};
-  async function yaFetch(url,o){ o=o||{}; ya.calls.push({url,body:o.body,auth:o.headers&&o.headers.Authorization});
+  const ya={codes:{},calls:[],down:false,eyes:null};
+  async function yaFetch(url,o){ o=o||{}; ya.calls.push({url,body:o.body,auth:o.headers&&(o.headers.Authorization||o.headers.authorization),headers:o.headers});
+    /* поддельная модель зрения: ответ задаёт тест (ya.eyes(body) → {status, json}) */
+    if(opt.eyes&&url===opt.eyes.url){ const a=ya.eyes?ya.eyes(JSON.parse(o.body)):{status:200,json:{choices:[{message:{content:'{"drawings":[]}'}}]}}; return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
     if(ya.down) throw new Error('нет сети');
     const res=(st,j)=>({ok:st<300,status:st,json:async()=>j});
     if(url==='https://oauth.yandex.ru/token'){ const b=new URLSearchParams(o.body);
@@ -22,7 +24,7 @@ function club(opt){ opt=opt||{};
       return p?res(200,Object.assign({client_id:'ya-client'},p)):res(401,{}); }
     if(url==='https://oauth.yandex.ru/revoke_token') return res(200,{status:'ok'});
     return res(404,{}); }
-  const app=createApp({cfg,store,clock:()=>clock.t,log:{log(){},error:(...a)=>process.env.DEBUG&&console.error(...a)},bot:botClient({dev:true,outbox}),fetch:yaFetch});
+  const app=createApp({cfg,store,clock:()=>clock.t,log:{log(){},error:(...a)=>process.env.DEBUG&&console.error(...a)},bot:botClient({dev:true,outbox}),fetch:yaFetch,eyes:opt.eyes,iamToken:()=>opt.iam||''});
   const jar={};
   async function call(method,path,body,o){ o=o||{}; const who=o.as||'default', c=jar[who]||(jar[who]={cookie:'',csrf:''});
     const headers=Object.assign({'content-type':'application/json',origin:cfg.origin,'user-agent':'test'},o.headers||{});

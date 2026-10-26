@@ -1,4 +1,4 @@
-/* Развёртывание клуба в Yandex Cloud одной командой (подробно, для новичка — club/DEPLOY.md).
+/* Развёртывание клуба в Yandex Cloud одной командой (подробно, для новичка — lk/DEPLOY.md).
      node server/tools/deploy.js
    Нужно заранее: Node.js, программа yc (уже выполнен «yc init»), бот от @BotFather и свой Telegram id.
    Скрипт спрашивает токен бота и Telegram id владельца и сам создаёт: сервисные аккаунты и роли, базу YDB и таблицы,
@@ -11,7 +11,7 @@
    В GitHub Actions (.github/workflows/club.yml) скрипт ничего не спрашивает: всё берёт из секретов репозитория и того, что уже есть в облаке.
      YANDEX_CLIENT_ID / YANDEX_CLIENT_SECRET — приложение на oauth.yandex.ru (вход через Яндекс ID)
      OWNER_YANDEX_LOGIN — логин Яндекса владельца (станет админом при первом входе), OWNER_TG_ID — Telegram id владельца (необязательно)
-     FRONT_URL — куда ведут ссылки входа (по умолчанию nachert1830.ru/club/, если страница там уже есть, иначе адрес функции) */
+     FRONT_URL — куда ведут ссылки входа (по умолчанию nachert1830.ru/lk/, если страница там уже есть, иначе адрес функции) */
 'use strict';
 const {execFileSync}=require('child_process'), fs=require('fs'), os=require('os'), path=require('path'), crypto=require('crypto'), zlib=require('zlib'), readline=require('readline');
 const {sign}=require('../lib/sigv4');
@@ -19,7 +19,7 @@ const ROOT=path.join(__dirname,'..','..');
 const arg=k=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.slice(a.indexOf('=')+1):true):null; };
 const YC=process.env.YC_BIN||'yc';
 const NAMES={fn:'club-fn',gw:'club-gw',db:'club',secret:'club-secrets',api:'nachert-club-api',remind:'nachert-club-remind',gateway:'nachert-club',trigger:'club-remind'};
-const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent'];
+const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent','activity'];
 
 const say=s=>console.log(s), step=s=>console.log('\n▶ '+s);
 /* сеть до облака бывает нестабильной (VPN, Wi-Fi общежития): при сетевой ошибке — до 3 попыток с паузой */
@@ -42,9 +42,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const CI=!!process.env.GITHUB_ACTIONS, E=k=>String(process.env[k]||'').trim();
 /* в GitHub Actions спрашивать некого: нет значения — понятная ошибка со списком, что добавить в секреты */
 const need=(what,how)=>{ throw new Error(what+' не задан. '+how); };
-const SITE_FRONT='https://nachert1830.ru/club/', SITE_ORIGIN='https://nachert1830.ru';
-async function siteProbe(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store',signal:AbortSignal.timeout(10000)}); const t=await r.text(); return r.ok&&/CLUB_API/.test(t)?'страница на сайте отвечает':'страница на сайте: HTTP '+r.status; }
-  catch(e){ return 'страница на сайте не открылась с этого сервера: '+String(e&&e.cause&&e.cause.code||e&&e.message||e); } }
+const SITE_FRONT='https://nachert1830.ru/lk/', SITE_ORIGIN='https://nachert1830.ru';
+/* https у сайта на GitHub Pages бывает без сертификата для своего домена — тогда ссылки входа ведут на http:// */
+async function siteProbe(){ try{ const r=await fetch(SITE_ORIGIN+'/',{cache:'no-store',signal:AbortSignal.timeout(10000)}); return {ok:r.ok,text:r.ok?'страница на сайте отвечает по https':'страница на сайте: HTTP '+r.status}; }
+  catch(e){ return {ok:false,text:'https у сайта не работает: '+String(e&&e.cause&&e.cause.code||e&&e.message||e)}; } }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
 function currentEnv(){ const v=get(['serverless','function','version','get-by-tag','--function-name',NAMES.api,'--tag','$latest']); return (v&&v.environment)||{}; }
 
@@ -66,7 +67,7 @@ function packageFiles(){ const out=[];
   const walk=(dir,rel)=>{ for(const f of fs.readdirSync(dir).sort()){ const p=path.join(dir,f), r=rel?rel+'/'+f:f;
     if(/^(\.data|\.deploy|test|tests|tools|node_modules)$/.test(f)||/\.md$/.test(f)||f.startsWith('.')) continue;
     if(fs.statSync(p).isDirectory()) walk(p,r); else out.push([r,fs.readFileSync(p)]); } };
-  walk(path.join(ROOT,'server'),'server'); walk(path.join(ROOT,'club'),'club'); return out; }
+  walk(path.join(ROOT,'server'),'server'); walk(path.join(ROOT,'lk'),'lk'); return out; }
 
 /* YDB Document API — создание таблиц */
 async function docapi(endpoint,cred,op,body){ const b=JSON.stringify(body);
@@ -80,12 +81,48 @@ async function telegram(token,method,body){ const r=await fetch('https://api.tel
 function ownerLink(fnId){ try{ const out=yc(['serverless','function','invoke',fnId?'--id':'--name',fnId||NAMES.api,'--data',JSON.stringify({club:'owner-login'})],{json:false});
   const m=out.match(/https:\/\/[^\s"]+\/#\/tg\/[A-Za-z0-9_-]{30,40}/); return m?m[0]:null; }catch(e){ return null; } }
 /* страница на nachert1830.ru (GitHub Pages) не знает адрес функции: пишем его в club/config.js и в connect-src CSP club/index.html */
-function writeFront(origin){ const cf=path.join(ROOT,'club','config.js'), ix=path.join(ROOT,'club','index.html');
+function writeFront(origin){ const cf=path.join(ROOT,'lk','config.js'), ix=path.join(ROOT,'lk','index.html');
   const c=fs.readFileSync(cf,'utf8').replace(/window\.CLUB_API='[^']*'/,"window.CLUB_API='"+origin+"'");
   const h=fs.readFileSync(ix,'utf8').replace(/connect-src 'self'[^;]*;/,"connect-src 'self' "+origin+";");
   fs.writeFileSync(cf,c); fs.writeFileSync(ix,h); say('  адрес API для страницы на сайте: '+origin); }
+/* Yandex Postbox (API как у Amazon SES v2): запросы подписываются SigV4 статическим ключом */
+const MAIL_DOMAIN='nachert1830.ru', DKIM_SEL='club';
+async function pbCall(cred,method,pathq,body){ const url='https://postbox.cloud.yandex.net'+pathq, b=body?JSON.stringify(body):'';
+  const s=sign({method,url,headers:body?{'content-type':'application/json'}:{},body:b},Object.assign({region:'ru-central1',service:'ses'},cred));
+  const r=await fetch(url,{method,headers:s.headers,body:body?b:undefined,signal:AbortSignal.timeout(20000)}); const t=await r.text(); let j={}; try{ j=JSON.parse(t); }catch(e){}
+  return {status:r.status,ok:r.ok,j,t}; }
+/* домен для писем: при первом запуске — создать в Postbox с ключом DKIM (ключ генерируется здесь, закрытая часть уходит
+   только в Postbox), открытая часть — в сейф, чтобы печатать DNS-запись, пока домен не подтверждён. Подтверждён — вход по почте включается */
+async function txtHas(name,needle){ try{ const r=await require('dns').promises.resolveTxt(name); return r.some(x=>x.join('').includes(needle)); }catch(e){ return false; } }
+function newDkim(sel){ const kp=crypto.generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{type:'spki',format:'der'},privateKeyEncoding:{type:'pkcs8',format:'der'}});
+  return {sel,priv:kp.privateKey.toString('base64'),pub:kp.publicKey.toString('base64')}; }
+/* домен для писем в Postbox с ключом DKIM. Ключ создаётся здесь и хранится в сейфе Lockbox (закрытая часть никуда не выводится):
+   если Postbox проверил DNS раньше, чем запись появилась (статус FAILED), — когда запись видна, проверка запускается заново
+   тем же ключом. Подтверждён — вход по почте включается. */
+async function postboxSetup(payload){ let k=null, from='';
+  const say2=(sel,pub)=>{ say('    имя (поддомен): '+sel+'._domainkey'); say('    тип: TXT'); say('    значение: v=DKIM1; k=rsa; p='+pub); };
+  try{ k=yc(['iam','access-key','create','--service-account-id',E('YC_SA_ID'),'--description','club deploy: Postbox (временный, удаляется сразу)']);
+    const cred={accessKeyId:k.access_key.key_id,secretAccessKey:k.secret};
+    let g=null; for(let i=0;i<8;i++){ g=await pbCall(cred,'GET','/v2/email/identities/'+MAIL_DOMAIN); if(g.status!==403&&g.status!==401) break; await sleep(4000); }
+    const keep=d=>{ payload.POSTBOX_DKIM_SELECTOR=d.sel; payload.POSTBOX_DKIM_PRIVATE=d.priv; payload.POSTBOX_DKIM_PUBLIC=d.pub; };
+    if(g.status===404){ const d=newDkim('nachert');
+      const c=await pbCall(cred,'POST','/v2/email/identities',{EmailIdentity:MAIL_DOMAIN,DkimSigningAttributes:{DomainSigningSelector:d.sel,DomainSigningPrivateKey:d.priv}});
+      if(!c.ok) throw new Error('создать домен не получилось: '+c.status+' '+c.t.slice(0,300));
+      keep(d); say('  домен '+MAIL_DOMAIN+' добавлен в Postbox'); g=await pbCall(cred,'GET','/v2/email/identities/'+MAIL_DOMAIN); }
+    if(!g.ok) throw new Error('Postbox ответил '+g.status+' '+g.t.slice(0,300));
+    let dk=(g.j.DkimAttributes&&g.j.DkimAttributes.Status)||'?';
+    if(g.j.VerifiedForSendingStatus===true){ from='noreply@'+MAIL_DOMAIN; say('  домен подтверждён — вход по почте включён (отправитель '+from+')'); return from; }
+    const sel=payload.POSTBOX_DKIM_SELECTOR||DKIM_SEL, seen=await txtHas(sel+'._domainkey.'+MAIL_DOMAIN,payload.POSTBOX_DKIM_PUBLIC.slice(-40));
+    /* перепроверка DKIM в Postbox — тот же запрос без ключа (так велит сам Postbox) */
+    if(dk==='FAILED'&&seen){ const r=await pbCall(cred,'PUT','/v2/email/identities/'+MAIL_DOMAIN+'/dkim/signing',{SigningAttributesOrigin:'EXTERNAL'}); say(r.ok?'  запись в DNS видна — проверка домена в Postbox запущена заново, подтверждение обычно за минуты':'  перезапуск проверки не удался: '+r.status+' '+r.t.slice(0,200)); }
+    else say('  домен ждёт подтверждения (DKIM: '+dk+(seen?', запись в DNS видна':', записи в DNS пока не видно')+'). TXT-запись у регистратора:');
+    if(!seen) say2(sel,payload.POSTBOX_DKIM_PUBLIC); }
+  catch(e){ say('  Postbox: '+e.message); }
+  finally{ if(k) try{ yc(['iam','access-key','delete','--id',k.access_key.id],{json:false}); }catch(e){ say('  временный ключ не удалился: '+e.message.split('\n')[0]); } }
+  return from; }
+
 async function main(){
-  say('Развёртывание клуба Начерта в Yandex Cloud.\nВсё создаётся в каталоге, выбранном в «yc init». Повторный запуск безопасен.');
+  say('Развёртывание личного кабинета Начерта в Yandex Cloud.\nВсё создаётся в каталоге, выбранном в «yc init». Повторный запуск безопасен.');
   step('Проверяю программу yc');
   const folder=yc(['config','get','folder-id'],{json:false});
   if(!/^[a-z0-9]{20}$/.test(folder)) throw new Error('Не выбран каталог. Выполните «yc init» и выберите облако и каталог.');
@@ -115,10 +152,10 @@ async function main(){
   if(!/^\d{5,12}:[A-Za-z0-9_-]{30,}$/.test(token||'')) throw new Error('Это не похоже на токен бота. Он выглядит так: 1234567890:AAH…');
   step('Проверяю бота');
   /* Telegram с этого компьютера может не открываться (без VPN), а облако — не открываться с VPN. Компьютеру Telegram не обязателен:
-     вебхук и команды бота настроит сам клуб из облака (server/lib/app.js → ensureBot) */
+     вебхук и команды бота настроит сам кабинет из облака (server/lib/app.js → ensureBot) */
   let me=null; try{ me=await telegram(token,'getMe'); say('  бот: @'+me.username); }
   catch(e){ if(/Unauthorized|Not Found/i.test(e.message)) throw new Error('Telegram не принял токен — проверьте, что скопировали его целиком из @BotFather.');
-    say('  Telegram с этого компьютера не открывается — это нормально, бота настроит сам клуб из облака.');
+    say('  Telegram с этого компьютера не открывается — это нормально, бота настроит сам кабинет из облака.');
     /* принимаем «@имя», «t.me/имя», «https://t.me/имя»; при ошибке спрашиваем ещё раз */
     const clean=x=>String(x||'').trim().replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i,'').replace(/^@/,'').replace(/[\s\/]+$/,'');
     const okName=x=>/^[A-Za-z][A-Za-z0-9_]{3,30}bot$/i.test(x);
@@ -129,7 +166,7 @@ async function main(){
     me={username:u}; }
   owner=owner||E('OWNER_TG_ID')||E('CLUB_OWNER_TG')||prev.ADMIN_TG_IDS||'';
   const yaOwner=(E('OWNER_YANDEX_LOGIN')||prev.ADMIN_YA_LOGINS||'').toLowerCase().replace(/@yandex\.ru$|@ya\.ru$/,'');
-  if(!owner&&!yaOwner){ if(CI) need('Владелец клуба','Добавьте секрет OWNER_YANDEX_LOGIN (логин Яндекса владельца) в GitHub.'); owner=await ask('Ваш Telegram id (число; узнать — написать боту @userinfobot): '); }
+  if(!owner&&!yaOwner){ if(CI) need('Владелец кабинета','Добавьте секрет OWNER_YANDEX_LOGIN (логин Яндекса владельца) в GitHub.'); owner=await ask('Ваш Telegram id (число; узнать — написать боту @userinfobot): '); }
   if(owner&&!/^\d{3,16}(,\d{3,16})*$/.test(owner)) throw new Error('Telegram id — это число, например 123456789.');
   if(yaOwner&&!/^[a-z0-9][a-z0-9.-]{0,40}(,[a-z0-9][a-z0-9.-]{0,40})*$/.test(yaOwner)) throw new Error('OWNER_YANDEX_LOGIN — логин Яндекса латиницей (то, что до @yandex.ru).');
   const yaId=E('YANDEX_CLIENT_ID')||prev.YANDEX_CLIENT_ID||'';
@@ -137,7 +174,8 @@ async function main(){
 
   step('Сервисные аккаунты и права');
   const sa={}; for(const k of ['fn','gw']){ sa[k]=get(['iam','service-account','get','--name',NAMES[k]])||yc(['iam','service-account','create','--name',NAMES[k]]); say('  '+NAMES[k]+': '+sa[k].id); }
-  for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['fn','postbox.sender'],['gw','functions.functionInvoker']])
+  /* ai.languageModels.user — глаза сканера: модель зрения в Yandex AI Studio по IAM-токену функции (server/lib/eyes.js) */
+  for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['fn','postbox.sender'],['fn','ai.languageModels.user'],['gw','functions.functionInvoker']])
     try{ yc(['resource-manager','folder','add-access-binding',folder,'--role',role,'--subject','serviceAccount:'+sa[k].id]); }catch(e){ if(!/already/i.test(e.message)) throw e; }
 
   step('База данных YDB (serverless, Россия)');
@@ -147,13 +185,21 @@ async function main(){
   if(db.status!=='RUNNING') throw new Error('База не запустилась: статус '+db.status);
   const endpoint=db.document_api_endpoint; say('  готово');
 
+  step('Почта (Yandex Postbox)');
+  const payloadBefore=JSON.stringify(payload);
+  let mailFrom=E('MAIL_FROM')||'';
+  if(CI&&E('YC_SA_ID')&&!mailFrom) mailFrom=await postboxSetup(payload);
+  if(!mailFrom&&!CI) mailFrom=prev.MAIL_FROM||'';
+  if(!mailFrom) say('  вход по почте пока выключен');
+
   step('Секреты в Lockbox');
   if(!payload.YDB_KEY_ID){ const k=yc(['iam','access-key','create','--service-account-id',sa.fn.id,'--description','club: YDB Document API']); payload.YDB_KEY_ID=k.access_key.key_id; payload.YDB_SECRET=k.secret; }
   payload.TG_WEBHOOK_SECRET=payload.TG_WEBHOOK_SECRET||crypto.randomBytes(32).toString('hex');
   const before=JSON.stringify(payload); payload.TG_BOT_TOKEN=token;
   if(E('YANDEX_CLIENT_SECRET')) payload.YANDEX_CLIENT_SECRET=E('YANDEX_CLIENT_SECRET');
+  if(E('EYES_KEY')) payload.EYES_KEY=E('EYES_KEY');
   if(yaId&&!payload.YANDEX_CLIENT_SECRET) need('YANDEX_CLIENT_SECRET','Добавьте секрет YANDEX_CLIENT_SECRET (Client secret приложения на oauth.yandex.ru) в GitHub.');
-  const changed=JSON.stringify(payload)!==before;
+  const changed=JSON.stringify(payload)!==before||JSON.stringify(payload)!==payloadBefore;
   const entries=JSON.stringify(Object.keys(payload).sort().map(k=>({key:k,text_value:payload[k]})));
   let secretId=sec&&sec.id;
   if(!secretId) secretId=yc(['lockbox','secret','create','--name',NAMES.secret,'--description','Клуб Начерта','--payload',entries]).id;
@@ -173,7 +219,7 @@ async function main(){
   step('Функции');
   const fn={}; for(const k of ['api','remind']) fn[k]=get(['serverless','function','get','--name',NAMES[k]])||yc(['serverless','function','create','--name',NAMES[k]]);
 
-  step('Шлюз (адрес клуба)');
+  step('Шлюз (адрес кабинета)');
   const spec=fs.readFileSync(path.join(ROOT,'server','apigw.yaml'),'utf8').replace(/\$\{FUNCTION_ID\}/g,fn.api.id).replace(/\$\{SA_ID\}/g,sa.gw.id);
   const specFile=path.join(os.tmpdir(),'club-apigw.yaml'); fs.writeFileSync(specFile,spec);
   let gw=get(['serverless','api-gateway','get','--name',NAMES.gateway]);
@@ -185,15 +231,18 @@ async function main(){
   say('  пакет: '+files.length+' файлов, '+Math.round(z.length/1024)+' КБ');
   /* куда ведут ссылки входа: страница на nachert1830.ru, если она уже опубликована, иначе — адрес функции */
   /* страница клуба опубликована вместе с сайтом (папка club/ в main) — ссылки входа и приглашений ведут туда */
-  const front=E('FRONT_URL')||SITE_FRONT;
-  say('  страница клуба: '+front+' ('+(await siteProbe())+')');
-  const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN,FRONT_URL:front,
+  const probe=await siteProbe(), front=(E('FRONT_URL')||'').replace(/\/club\/$/,'/lk/')||(probe.ok?SITE_FRONT:SITE_FRONT.replace('https://','http://'));
+  say('  страница кабинета: '+front+' ('+probe.text+')');
+  if(!probe.ok) say('::warning::У nachert1830.ru не работает HTTPS (нет сертификата для домена). GitHub → Settings → Pages → Custom domain → Enforce HTTPS (DEPLOY.md). Пока ссылки ведут на http://');
+  const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN+' http://nachert1830.ru',FRONT_URL:front,
     YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
-    MAIL_FROM:E('MAIL_FROM')||prev.MAIL_FROM||''};
+    MAIL_FROM:mailFrom,
+    /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
+    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:E('EYES_MODEL'),EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES')};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
-  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
-  for(const [k,entry,timeout] of [['api','server/index.handler','10s'],['remind','server/index.remind','120s']]){
+  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
+  for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){
     yc(['serverless','function','version','create','--function-id',fn[k].id,'--runtime','nodejs22','--entrypoint',entry,'--memory','256m','--execution-timeout',timeout,
       '--service-account-id',sa.fn.id,'--source-path',zf,'--environment',env].concat(secrets)); say('  '+NAMES[k]+': новая версия'); }
   /* сразу запустить функцию напоминаний: она подключает вебхук бота из облака, если с компьютера не получилось */
@@ -209,16 +258,16 @@ async function main(){
   /* что Telegram видел до этого: куда шлёт, сколько ждёт доставки, последняя ошибка доставки (без токена и секрета) */
   const hook=origin+'/api/tg/webhook';
   try{ const w=await telegram(token,'getWebhookInfo',{}); const ago=w.last_error_date?Math.round((Date.now()/1000-w.last_error_date)/60)+' мин назад':'';
-    say('  до настройки: вебхук '+(w.url===hook?'на клуб':w.url?'на другой адрес':'не задан')+', ждут доставки: '+(w.pending_update_count||0)+
+    say('  до настройки: вебхук '+(w.url===hook?'на кабинет':w.url?'на другой адрес':'не задан')+', ждут доставки: '+(w.pending_update_count||0)+
       ', последняя ошибка: '+(w.last_error_message?w.last_error_message+' ('+ago+')':'нет')); }catch(e){}
   try{ await telegram(token,'setWebhook',{url:origin+'/api/tg/webhook',secret_token:payload.TG_WEBHOOK_SECRET,allowed_updates:['message','callback_query','my_chat_member'],drop_pending_updates:true});
   /* серверы Telegram не достают до Yandex Cloud — бот не отвечает. Описание бота показывает сам Telegram, без нашего сервера:
      пусть человек сразу видит, что писать сюда не нужно, а вход — на сайте (официальный вход Telegram) */
   await telegram(token,'deleteMyCommands',{});
-  await telegram(token,'setMyDescription',{description:'Это бот клуба Начерта. Писать ему не нужно — он не отвечает.\n\nВход в клуб — на странице клуба кнопкой «Войти через Telegram»: подтверждение придёт от официального аккаунта Telegram.'});
-  await telegram(token,'setMyShortDescription',{short_description:'Писать сюда не нужно. Вход в клуб — на сайте, кнопкой «Войти через Telegram».'});
+  await telegram(token,'setMyDescription',{description:'Бот личного кабинета Начерта. Писать ему не нужно — он не отвечает.\n\nВход в личный кабинет — на сайте nachert1830.ru.'});
+  await telegram(token,'setMyShortDescription',{short_description:'Писать сюда не нужно. Вход в личный кабинет — на сайте nachert1830.ru.'});
   say('  готово'); }
-  catch(e){ say('  с этого компьютера не получилось — клуб сделает это сам в течение 15 минут'); }
+  catch(e){ say('  с этого компьютера не получилось — кабинет сделает это сам в течение 15 минут'); }
   /* самопроверка: «Старт» от несуществующего участника так, как его шлёт Telegram (с секретом) — клуб должен ответить отказом */
   try{ const r=await fetch(hook,{method:'POST',headers:{'content-type':'application/json','x-telegram-bot-api-secret-token':payload.TG_WEBHOOK_SECRET},
       body:JSON.stringify({update_id:1,message:{message_id:1,date:Math.floor(Date.now()/1000),from:{id:1,is_bot:false,first_name:'Проверка'},chat:{id:1,type:'private'},text:'/start'}})});
@@ -226,15 +275,15 @@ async function main(){
     const bad=await fetch(hook,{method:'POST',headers:{'content-type':'application/json'},body:'{}'}); say('  без секрета: HTTP '+bad.status+(bad.status===403?' (правильно — отказ)':' (ОШИБКА: должен быть отказ)')); }
   catch(e){ say('  самопроверка вебхука не удалась: '+e.message); }
 
-  step('Проверяю, что клуб отвечает');
+  step('Проверяю, что кабинет отвечает');
   let ok=false; for(let i=0;i<10&&!ok;i++){ try{ const r=await fetch(origin+'/api/config'); ok=r.ok; }catch(e){} if(!ok) await sleep(3000); }
-  say(ok?'  клуб работает':'  пока не отвечает — подождите минуту и откройте адрес ниже');
+  say(ok?'  кабинет работает':'  пока не отвечает — подождите минуту и откройте адрес ниже');
 
   if(arg('write-front')) writeFront(origin);
   say('\n════════════════════════════════════════════');
   say('Готово. Клуб: '+front+(front!==origin+'/'?'  (API: '+origin+')':''));
   if(yaId) say('Яндекс ID: в приложении на oauth.yandex.ru должен быть Redirect URI  '+origin+'/api/auth/yandex/callback');
-  if(CI){ say('Войти: откройте клуб → «Войти с Яндекс ID»'+(yaOwner?' (владелец — логин '+yaOwner.split(',')[0].replace(/^(.{2}).*$/,'$1…')+')':'')+' или «Войти через Telegram».'); say('════════════════════════════════════════════'); return; }
+  if(CI){ say('Войти: откройте кабинет → «Войти с Яндекс ID»'+(yaOwner?' (владелец — логин '+yaOwner.split(',')[0].replace(/^(.{2}).*$/,'$1…')+')':'')+' или по почте (когда домен подтверждён).'); say('════════════════════════════════════════════'); return; }
   const link=ownerLink(fn.api.id);
   say(link?'\nВаша ссылка для входа (владелец, админ). Действует 30 минут и срабатывает один раз — никому не пересылайте:\n\n  '+link+'\n':
     '\nСсылку для входа выдаст команда:  node server/tools/login.js');
