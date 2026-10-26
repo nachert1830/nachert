@@ -79,8 +79,25 @@ const week1=()=>(ME&&ME.week1)||(CFG&&CFG.week1)||CAL.DEFAULT_WEEK1;
 /* справочник групп (data/groups.json): день занятия по каждому предмету и точные даты — по группе студента */
 let GROUPS={groups:{}};
 const myGroup=()=>(ME&&ME.user&&ME.user.group)||'';
-const groupSched=()=>(GROUPS.groups||{})[myGroup()]||null;
-const okGroup=g=>/^[А-ЯЁA-Z]{1,6}\d{0,2}-\d{1,3}[А-ЯЁA-Z]{0,2}$/.test(g);
+/* «ИУ5-12Б» найдёт «ИУ5-12/6», если такая группа одна; «/4», «/6» в расписании — разные группы */
+const gBase=g=>String(g||'').replace(/(\/\d)?[А-ЯЁA-Z]*$/,'');
+const groupAlts=g=>Object.keys(GROUPS.groups||{}).filter(k=>gBase(k)===gBase(g));
+const groupKey=()=>{ const g=myGroup(), G=GROUPS.groups||{}; if(!g) return ''; if(G[g]) return g; const c=groupAlts(g); return c.length===1?c[0]:''; };
+const groupSched=()=>{ const k=groupKey(); return k?GROUPS.groups[k]:null; };
+const okGroup=g=>/^[А-ЯЁA-Z]{1,6}\d{0,2}[А-ЯЁA-Z]?-[\d.]{1,5}(\/\d)?[А-ЯЁA-Z]{0,2}$/.test(g);
+/* числитель — нечётные недели семестра, знаменатель — чётные */
+const parity=wk=>wk%2?'чс':'зн';
+const SUBJ_T={ikg:'ИКГ',ng:'Начерт'}, WD2=['','пн','вт','ср','чт','пт','сб','вс'];
+const parT=p=>p==='чс'?'по числителям':p==='зн'?'по знаменателям':'';
+/* ближайшее занятие группы с учётом числителя/знаменателя: {l, date, inDays} */
+function nextLesson(){ const g=groupSched(); if(!g||!g.lessons) return null; const t0=dayNum(), now=new Date(), hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  for(let i=0;i<15;i++){ const d=t0+i, ds=CAL.toStr(d), wd=CAL.weekday(d), wk=CAL.weekOf(week1(),ds);
+    const ls=g.lessons.filter(l=>l.day===wd&&(!l.par||l.par===parity(wk))&&(i>0||l.t>=hm)).sort((a,b)=>a.t.localeCompare(b.t));
+    if(ls.length) return {l:ls[0],date:ds,inDays:i}; } return null; }
+const lessonLi=(l,hot)=>`<li class="${hot?'hot':''}"><b>${WD2[l.day]} ${esc(l.t.replace(/^0/,''))}</b><span><em class="sb ${l.subj}">${SUBJ_T[l.subj]}</em> ауд. ${esc(l.rooms.join(', '))}${l.par?' · '+parT(l.par):''}<small>${esc((l.who||[]).join(', '))}${l.unsure?' · сверьте с расписанием':''}</small></span></li>`;
+function lessonsCard(){ const g=groupSched(); if(!g||!g.lessons) return ''; const nx=nextLesson();
+  return card('calendar','Мои занятия · '+esc(groupKey()),`${nx?`<p class="lead">Ближайшее — <b>${nx.inDays===0?'сегодня':nx.inDays===1?'завтра':esc(CAL.human(nx.date))} в ${esc(nx.l.t.replace(/^0/,''))}</b>: ${SUBJ_T[nx.l.subj]}, ауд. ${esc(nx.l.rooms.join(', '))}.</p>`:''}
+    <ul class="lessons">${g.lessons.map(l=>lessonLi(l,nx&&l===nx.l)).join('')}</ul><p class="mut">Сейчас ${CAL.weekOf(week1(),today())}-я неделя — ${parity(CAL.weekOf(week1(),today()))==='чс'?'числитель':'знаменатель'}. Расписание кафедры РК-1 с 1 сентября.</p>`,'',{icon:'cal'}); }
 const normGroup=g=>{ let x=String(g||'').toUpperCase().trim().replace(/[–—]/g,'-'); if(!x.includes('-')) x=x.replace(/[\s_]+/,'-'); return x.replace(/[\s_]+/g,''); };
 const calSet=()=>{ const s=LS.get(K.cal,{}), g=groupSched(); if(!g) return s;
   const cd=Object.assign({},s.classDay); ['ikg','ng'].forEach(k=>{ if(g[k]&&g[k].day) cd[k]=g[k].day; });
@@ -205,7 +222,7 @@ document.addEventListener('submit',async e=>{ const f=e.target;
     const b=$('#codeF button[type=submit]'); b.disabled=true;
     try{ const v=await api('POST','/api/auth/email/verify',{email:f.dataset.email,code}); return landingView(v.token); }
     catch(x){ b.disabled=false; msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }
-  if(f.id==='grpF'){ e.preventDefault(); const g=normGroup($('#grpI').value); if(!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-11Б'); return; }
+  if(f.id==='grpF'){ e.preventDefault(); const g=normGroup($('#grpI').value); if(!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-12/6'); return; }
     try{ const r=await api('POST','/api/me/profile',{group:g}); ME.user=r.user; LS.device(K.me,Object.assign({},ME,{csrf:undefined})); todayView(); toast('Группа сохранена'); }catch(x){ toast(x.message); } return; }
   /* привязка почты в настройках: адрес → код из письма */
   if(f.id==='lmF'){ e.preventDefault(); const email=$('#lmA').value.trim();
@@ -215,7 +232,7 @@ document.addEventListener('submit',async e=>{ const f=e.target;
     try{ const r=await api('POST','/api/me/link/email',{email:f.dataset.email,code:$('#lcC').value}); ME.user=r.user; settingsView(); toast('Почта привязана'); }
     catch(x){ $('#lmMsg').innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } return; }
   if(f.id==='onbF'){ e.preventDefault(); const msg=$('#authMsg'), terms=$('#cTerms').checked, pd=$('#cPd').checked, grp=normGroup($('#onG').value);
-    if(!okGroup(grp)){ msg.innerHTML='<p class="note bad">Укажите группу как в расписании, например ИУ5-11Б — по ней считаются даты.</p>'; $('#onG').focus(); return; }
+    if(!okGroup(grp)){ msg.innerHTML='<p class="note bad">Укажите группу как в расписании, например ИУ5-12/6 — по ней считаются занятия и даты.</p>'; $('#onG').focus(); return; }
     if(!terms||!pd){ msg.innerHTML='<p class="note bad">Отметьте обе галочки — без них аккаунт создать нельзя.</p>'; return; }
     const b=$('#onbF button[type=submit]'); b.disabled=true;
     try{ const r=await api('POST','/api/auth/bot/redeem',{token:LANDING,confirm:true,name:$('#onN').value.trim(),group:grp,consent:{terms,pd,photos:false}}); LANDING=null; await afterLogin(r); }
@@ -235,7 +252,7 @@ async function landingView(tok){ LANDING=tok; authShell('<p class="mut">Вход
   authShell(`<form class="af" id="onbF" novalidate><label class="f" for="onN">Как вас зовут</label>
       <input id="onN" class="inp" type="text" maxlength="60" autocomplete="given-name" placeholder="Имя" value="${esc(name&&name!=='Участник'?name:'')}">
       <label class="f" for="onG">Учебная группа</label>
-      <input id="onG" class="inp" type="text" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="Например, ИУ5-11Б" list="grpList">${grpList()}
+      <input id="onG" class="inp" type="text" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="Например, ИУ5-12/6" list="grpList">${grpList()}
       <label class="chk"><input type="checkbox" id="cTerms"><span>Принимаю <a href="legal/terms.html" target="_blank" rel="noopener">пользовательское соглашение</a> и <a href="legal/privacy.html" target="_blank" rel="noopener">политику обработки данных</a></span></label>
       <label class="chk"><input type="checkbox" id="cPd"><span>Даю <a href="legal/consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a><small>${r.method==='email'?'Храним только хеш почты, без самого адреса':'Храним только id и имя'} — и ваш прогресс. Данные в России.</small></span></label>
       <button class="btn pri full" type="submit">Создать аккаунт</button></form><div id="authMsg" aria-live="polite"></div>`,
@@ -260,8 +277,10 @@ function todayView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),we
       <p>${next?'Ближайшее — '+esc(next.title)+', '+esc(CAL.human(next.date))+'.':'Событий в таблице больше нет.'} ${steps.length?'По плану сегодня — '+steps.length+' '+plural(steps.length,'шаг','шага','шагов')+'.':''}</p></div>
     ${next?`<div class="count"><b>${next.inDays}</b><span>${plural(next.inDays,'день','дня','дней')} до ${esc(next.short)} · ${esc(next.subjTitle)}</span></div>`:''}</div></section>
   ${flag('scanner')?`<a class="cta-check" href="#/check"><span class="ico">${ic('scan')}</span><span><b>Проверить чертёж по фото</b><small>ДЗ №2–3 и задачи тетради — вердикт и где ошибка</small></span>${ic('arrow')}</a>`:''}
+  ${myGroup()&&!groupKey()&&groupAlts(myGroup()).length>1?`<section class="card grpask"><h2>Уточните группу</h2><p>В расписании несколько групп ${esc(gBase(myGroup()))}: ${groupAlts(myGroup()).map(k=>`<button class="btn sm" type="button" data-act="pickGroup" data-g="${esc(k)}">${esc(k)}</button>`).join(' ')}</p><p class="mut">«/4», «/5», «/6» — как написано у вас в расписании.</p></section>`:''}
   ${myGroup()?'':`<section class="card grpask"><div class="ch"><span class="ico red">${ic('user')}</span><h2>Укажите группу<small>по ней кабинет считает точные даты ДЗ, РК и модулей</small></h2></div>
-    <form class="af" id="grpF" novalidate><div class="row"><input id="grpI" class="inp grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" placeholder="Например, ИУ5-11Б">${grpList()}<button class="btn pri" type="submit">Сохранить</button></div></form></section>`}
+    <form class="af" id="grpF" novalidate><div class="row"><input id="grpI" class="inp grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" placeholder="Например, ИУ5-12/6">${grpList()}<button class="btn pri" type="submit">Сохранить</button></div></form></section>`}
+  ${lessonsCard()}
   ${next?topicsCard(next):''}
   ${onboard?`<section class="card tri"><div class="ch"><span class="ico">${ic('info')}</span><h2>С чего начать</h2><button class="fb" data-act="onboardOff" type="button">Скрыть</button></div><ol class="lead"><li>Укажите <a href="#/calendar">день занятий</a> по каждому предмету — от него считаются даты.</li><li>Есть прогресс на nachert1830.ru? Перенесите его: <a href="#/settings">Настройки → Перенести прогресс</a>.</li>${CFG&&CFG.telegram?'<li>Включите <a href="#/settings">напоминания</a> в Telegram, если удобно.</li>':'<li>Сфотографируйте лист ДЗ — <a href="#/check">проверка по фото</a> покажет, где ошибка.</li>'}</ol></section>`:''}
   <div class="grid"><div class="col">
@@ -278,7 +297,7 @@ function calendarView(){ const s=CAL.normSettings(calSet()), t=dayNum(), wkNow=C
     <div class="es">${w.events.map(e=>`<a class="chip${CAL.toDay(e.date)<t?' past':''}" href="#/event/${e.id}">${tagOf(e)}${esc(e.subjTitle)}${e.custom?' · '+esc(CAL.human(e.date)):''}</a>`).join('')||'<small>—</small>'}</div></div>`).join('');
   render(`${pageHead('Календарь сдач','Неделя в таблице — неделя крайнего срока. РК пишется один раз и только на своей неделе; М — закрытие модуля.')}
   <div class="grid"><div class="col">
-    ${groupSched()?card('calendar','Группа '+esc(myGroup()),`<p>Даты посчитаны по расписанию группы: занятие по ИКГ — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ikg&&groupSched().ikg.day||0]||'—')}, по начерту — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ng&&groupSched().ng.day||0]||'—')}.</p><p class="mut">Не та группа? <a href="#/settings">Изменить в настройках</a>.</p>`,'',{icon:'user'}):''}
+    ${groupSched()?card('calendar','Группа '+esc(groupKey()),`<ul class="lessons">${groupSched().lessons.map(l=>lessonLi(l)).join('')}</ul><p>Даты посчитаны по расписанию группы: занятие по ИКГ — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ikg&&groupSched().ikg.day||0]||'—')}, по начерту — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ng&&groupSched().ng.day||0]||'—')}.</p><p class="mut">Не та группа? <a href="#/settings">Изменить в настройках</a>.</p>`,'',{icon:'user'}):''}
     ${groupSched()?'':card('calendar','Моя группа',`${myGroup()?`<p class="mut">Расписания группы ${esc(myGroup())} пока нет в кабинете — укажите день занятий сами.</p>`:''}<div class="grid2">${['ikg','ng'].map(k=>`<div><label class="f" for="cd-${k}">Занятие по ${k==='ikg'?'ИКГ':'начерту'}</label><select id="cd-${k}" data-chg="classDay" data-s="${k}">${wd.map(([d,n])=>`<option value="${d}"${s.classDay[k]===d?' selected':''}>${n}</option>`).join('')}</select></div>`).join('')}</div>
       <label class="f">Предметы</label><div class="grid2">${['ikg','ng'].map(k=>`<label class="chk"><input type="checkbox" data-chg="subj" data-s="${k}"${s.subjects.includes(k)?' checked':''}><span>${k==='ikg'?'ИКГ':'Начерт'}</span></label>`).join('')}</div>
       <p class="mut">От дня занятия считаются даты событий; точную дату РК можно поставить в самом событии. Неделя 1 начинается ${esc(CAL.human(week1()))}.</p>`,
@@ -658,7 +677,7 @@ const ACT={
   normo:async()=>{ const f=$('#nkF').files[0]; if(!f){ $('#nkOut').innerHTML='<p class="note bad reg">Выберите SVG-файл листа.</p>'; return; }
     if(f.size>8*1024*1024){ $('#nkOut').innerHTML='<p class="note bad reg">Файл больше 8 МБ.</p>'; return; } runNormo(await f.text(),true,'Ваш лист'); },
   normoSample:async el=>{ try{ const r=await fetch('core/samples/'+el.dataset.s+'.svg'); runNormo(await r.text(),false,'Образец «'+el.textContent+'»'); }catch(e){ toast('Нет сети'); } },
-  saveGroup:async()=>{ const g=normGroup($('#pGroup').value); if(g&&!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-11Б'); return; }
+  saveGroup:async()=>{ const g=normGroup($('#pGroup').value); if(g&&!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-12/6'); return; }
     try{ const r=await api('POST','/api/me/profile',{group:g}); ME.user=r.user; settingsView(); toast(g?'Группа сохранена':'Группа убрана'); }catch(e){ toast(e.message); } },
   saveName:async()=>{ try{ const r=await api('POST','/api/me/profile',{name:$('#pName').value}); ME.user=r.user; toast('Сохранено'); }catch(e){ toast(e.message); } },
   saveRem:async()=>{ const b={enabled:$('#rOn').checked,time:$('#rTime').value,quietFrom:$('#rQf').value,quietTo:$('#rQt').value,tz:$('#rTz').value}; await saveRem(b); },
@@ -686,6 +705,7 @@ const ACT={
     bg=>{ $('#rpGo',bg).addEventListener('click',async()=>{ try{ const r=await api('POST','/api/admin/reply',{id:el.dataset.id,text:$('#rpT',bg).value}); closeSheet(); toast(r.telegram?'Ответ отправлен и в Telegram':'Ответ сохранён в клубе'); adminView(); }catch(e){ toast(e.message); } }); }),
   atab:el=>{ ADMIN_TAB=el.dataset.t; adminView(); },
   bossUser:el=>bossUser(el.dataset.id),
+  pickGroup:async el=>{ try{ const r=await api('POST','/api/me/profile',{group:el.dataset.g}); ME.user=r.user; LS.device(K.me,ME); todayView(); toast('Группа '+el.dataset.g); }catch(e){ toast(e.message); } },
   /* список участников в CSV (Excel открывает с разделителем «;» и BOM) */
   usersCsv:async()=>{ try{ const D=await api('GET','/api/admin/overview'); const d=ms=>ms?new Date(ms).toLocaleString('ru-RU'):'';
       const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
@@ -720,10 +740,11 @@ function wipeLocal(){ TOK.set(''); try{ const ks=[]; for(let i=0;i<localStorage.
 /* верхняя строка: неделя, дата, ближайшее событие, группа — на всех экранах кабинета */
 function topbar(){ const b=$('#ub'); if(!b) return; b.hidden=!ME; if(!ME) return;
   const t=today(), td=dayNum(), wk=CAL.weekOf(week1(),t), p=dparts(t), nx=CAL.upcoming(calSet(),week1(),t,1)[0];
-  const wkT=wk>=1&&wk<=17?wk+'-я неделя':wk<1?'до семестра':'каникулы', k=nx?CAL.toDay(nx.date)-td:0;
+  const wkT=wk>=1&&wk<=17?wk+'-я неделя · '+(parity(wk)==='чс'?'числ.':'знам.'):wk<1?'до семестра':'каникулы', k=nx?CAL.toDay(nx.date)-td:0, nl=nextLesson();
   const when=!nx?'':k===0?'сегодня':k===1?'завтра':'через '+k+' '+plural(k,'день','дня','дней');
   b.innerHTML=`<div class="ubi"><span class="ubw">${esc(wkT)}</span><span class="ubd">${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span>
     ${nx?`<a class="ubn${k<=1?' hot':''}" href="#/event/${nx.id}"><b>${esc(nx.short)} · ${esc(nx.subjTitle)}</b><span>${esc(when)}</span></a>`:''}
+    ${nl&&nl.inDays<=1?`<span class="ubl">${nl.inDays?'завтра':'сегодня'} ${esc(nl.l.t.replace(/^0/,''))} · ${SUBJ_T[nl.l.subj]} · ${esc(nl.l.rooms[0])}</span>`:''}
     <a class="ubg${myGroup()?'':' none'}" href="#/settings">${myGroup()?esc(myGroup()):'указать группу'}</a></div>`; }
 function tabs(){ topbar(); const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(location.hash.replace(/^#\/?/,'').split('/')[0])||'';
   $$('a',t).forEach(a=>{ a.hidden=(!!a.dataset.f&&!flag(a.dataset.f))||(a.dataset.admin!=null&&ME.user.role!=='admin'); a.classList.toggle('on',a.dataset.r===r||(r==='event'&&a.dataset.r==='calendar')||(['check','settings','admin','about'].includes(r)&&a.dataset.r==='more')); }); }

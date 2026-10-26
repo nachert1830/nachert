@@ -199,3 +199,15 @@ test('пульт владельца: участник в кабинете вид
   await own.page.screenshot({path:path.join(SHOTS,'boss-user.png')});
   assert.deepEqual(own.page.errs,[]); assert.deepEqual(m.page.errs,[]); await own.ctx.close(); await m.ctx.close();
 });
+
+test('расписание группы: «Мои занятия», ближайшее занятие, числитель/знаменатель; неоднозначная группа — выбор',async()=>{
+  const {ctx,page}=await phone(); await page.clock.install({time:new Date('2026-10-30T10:00:00+03:00')});
+  await join(page,7401,'Расписание'); await page.waitForSelector('.grpask >> text=Уточните группу');
+  await page.click('button[data-act="pickGroup"][data-g="ИУ5-11/6"]'); await page.waitForSelector('text=Мои занятия · ИУ5-11/6');
+  const t=await page.textContent('#view'); assert.match(t,/Ближайшее — завтра в 12:25/); assert.match(t,/ауд\. 1113, 1120/);
+  assert.match(await page.textContent('#ub'),/9-я неделя · числ\./); assert.match(await page.textContent('#ub'),/завтра 12:25 · Начерт · 1113/);
+  await page.goto(URL+'/#/settings'); await page.fill('#pGroup','РК5-11/6'); await page.click('button[data-act="saveGroup"]'); await page.waitForTimeout(300);
+  await page.goto(URL+'/#/calendar'); await page.waitForSelector('text=Группа РК5-11/6'); assert.match(await page.textContent('#view'),/сб 8:30[\s\S]*ИКГ[\s\S]*1115, 1117/);
+  await page.screenshot({path:path.join(SHOTS,'lessons.png'),fullPage:true});
+  assert.deepEqual(page.errs,[]); await ctx.close();
+});

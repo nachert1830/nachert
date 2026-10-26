@@ -27,8 +27,8 @@ const fail=(s,m,x)=>{ throw new HttpError(s,m,x); };
 
 function maskIp(ip){ ip=String(ip||''); if(/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return ip.replace(/\.\d+$/,'.0'); if(ip.includes(':')) return ip.split(':').slice(0,3).join(':')+'::/48'; return ''; }
 /* учебная группа: «ИУ5-11Б», «рк6-31б» → «РК6-31Б»; пусто — не указана */
-const cleanGroup=s=>{ let x=String(s||'').toUpperCase().trim().replace(/[–—]/g,'-'); if(!x.includes('-')) x=x.replace(/[\s_]+/,'-'); return x.replace(/[^А-ЯЁA-Z0-9-]/g,'').slice(0,16); };
-const okGroup=g=>/^[А-ЯЁA-Z]{1,6}\d{0,2}-\d{1,3}[А-ЯЁA-Z]{0,2}$/.test(g);
+const cleanGroup=s=>{ let x=String(s||'').toUpperCase().trim().replace(/[–—]/g,'-'); if(!x.includes('-')) x=x.replace(/[\s_]+/,'-'); return x.replace(/[^А-ЯЁA-Z0-9.\/-]/g,'').slice(0,16); };
+const okGroup=g=>/^[А-ЯЁA-Z]{1,6}\d{0,2}[А-ЯЁA-Z]?-[\d.]{1,5}(\/\d)?[А-ЯЁA-Z]{0,2}$/.test(g);
 const cleanName=s=>String(s||'').replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,60);
 
 function createApp(o){
@@ -302,7 +302,7 @@ function createApp(o){
 
   A['POST /api/me/profile']=async(req,S)=>{ const b=body(req), set={};
     if(b.name!=null){ const n=cleanName(b.name); if(!n) fail(400,'Имя не может быть пустым.'); set.name=n; }
-    if(b.group!=null){ const g=cleanGroup(b.group); if(g&&!okGroup(g)) fail(400,'Группа — как в расписании, например ИУ5-11Б.'); set.group=g; }
+    if(b.group!=null){ const g=cleanGroup(b.group); if(g&&!okGroup(g)) fail(400,'Группа — как в расписании, например ИУ5-12/6.'); set.group=g; }
     if(b.photos!=null) set.consent=Object.assign({},S.user.consent,{photos:b.photos===true,photosAt:now()});
     const u=await store.update('users',S.user.id,set); return H.json(200,{user:publicUser(u)}); };
 
