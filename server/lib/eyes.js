@@ -36,22 +36,30 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const headers={'content-type':'application/json',authorization:(cfg.key?cfg.auth:'Bearer')+' '+key};
   if(cfg.yandex&&cfg.folder) headers['x-folder-id']=cfg.folder;
   const hint=(q.dz?'ДЗ №'+q.dz+'. ':'')+(q.n?'Вариант '+q.n+'. ':'')+'Размер фото: '+q.w+' × '+q.h+' px.';
-  const body={model:cfg.model,temperature:0,max_tokens:1500,messages:[{role:'system',content:PROMPT},
-    {role:'user',content:[{type:'text',text:hint},{type:'image_url',image_url:{url:q.image}}]}]};
+  const body={model:cfg.model,temperature:0,max_tokens:1500,messages:[{role:'system',content:q.system||PROMPT},
+    {role:'user',content:[{type:'text',text:q.text||hint},{type:'image_url',image_url:{url:q.image}}]}]};
   const r=await http(cfg.url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(o.timeout||45000)});
   const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
   if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(j&&j.error?': '+String(j.error.message||j.error).slice(0,200):'')),{status:502});
-  const text=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;
+  /* модели с рассуждением (Qwen3.x) могут вернуть ход мысли в <think>…</think> — сканеру нужен только ответ */
+  const raw=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content, text=typeof raw==='string'?raw.replace(/<think>[\s\S]*?<\/think>/g,'').trim():raw;
   if(typeof text!=='string'||!text) throw Object.assign(new Error('Модель зрения вернула пустой ответ.'),{status:502});
   return {text,model:cfg.model}; }
 
-/* какая модель зрения в каталоге отвечает на запрос с картинкой: развёртывание (server/tools/deploy.js) пробует по очереди
-   и подключает первую. Не все модели AI Studio доступны в синхронном режиме: на остальные Yandex отвечает 400/404 */
-const CANDIDATES=['gemma-3-27b-it/latest','gemma-3-27b-it','qwen2.5-vl-32b-instruct/latest','qwen2.5-vl-32b-instruct'];
-/* pick(env, image, {fetch, token}) → {model (адрес модели или null), tried:[{model, error}]}; env.EYES_MODEL задан — пробуется только он */
-async function pick(env,image,o){ const tried=[], models=env.EYES_MODEL?[env.EYES_MODEL]:CANDIDATES.map(m=>'gpt://{folder}/'+m);
-  for(const m of models){ const cfg=eyesFromEnv(Object.assign({},env,{EYES_MODEL:m}));
-    try{ await ask(cfg,{image,w:256,h:256},o); return {model:cfg.model,tried}; }catch(e){ tried.push({model:cfg.model,error:e.message}); } }
+/* какая модель зрения в каталоге видит картинку: развёртывание (server/tools/deploy.js) пробует по очереди и подключает первую.
+   Не все модели AI Studio есть в синхронном режиме (на остальные Yandex отвечает 400/403), а текстовая модель может ответить
+   и без картинки — поэтому пробное фото с вопросом, на который без зрения не ответить: сколько на нём закрашенных кругов */
+const CANDIDATES=['qwen3.6-35b-a3b/latest','aliceai-llm/latest','gemma-3-27b-it/latest','qwen2.5-vl-32b-instruct/latest'];
+const PROBE={system:'Посмотри на картинку и ответь одним числом, без слов.',text:'Сколько чёрных закрашенных кругов на картинке?'};
+/* pick(env, {image, count}, {fetch, token, more:[адреса моделей из списка каталога]}) → {model (адрес или null), tried:[{model, error}]};
+   env.EYES_MODEL задан — пробуется только он */
+async function pick(env,probe,o){ o=o||{}; const tried=[], seen=new Set();
+  const models=env.EYES_MODEL?[env.EYES_MODEL]:CANDIDATES.map(m=>'gpt://{folder}/'+m).concat(o.more||[]);
+  for(const m of models){ const cfg=eyesFromEnv(Object.assign({},env,{EYES_MODEL:m})); if(seen.has(cfg.model)) continue; seen.add(cfg.model);
+    try{ const r=await ask(cfg,Object.assign({image:probe.image,w:256,h:256},PROBE),o), a=String(r.text);
+      if(new RegExp('(^|\\D)'+probe.count+'(\\D|$)').test(a)) return {model:cfg.model,tried};
+      tried.push({model:cfg.model,error:'не видит картинку: на «сколько кругов» ответила «'+a.slice(0,60)+'», а их '+probe.count}); }
+    catch(e){ tried.push({model:cfg.model,error:e.message}); } }
   return {model:null,tried}; }
 
 module.exports={eyesFromEnv,ask,pick,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES};
