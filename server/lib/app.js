@@ -18,9 +18,10 @@ const SYNC=require('../../lk/lib/sync.js');
 const CAL=require('../../lk/lib/calendar.js');
 const REM=require('../../lk/lib/reminder.js');
 const SRS=require('../../lk/lib/srs.js');
+const EYES=require('./eyes');
 
 const DOCS_VERSION='2026-10-25';
-const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024;
+const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024, EYES_BODY=3*1024*1024;
 const DAY=864e5;
 
 class HttpError extends Error{ constructor(status,msg,extra){ super(msg); this.status=status; this.extra=extra; } }
@@ -105,7 +106,7 @@ function createApp(o){
   /* запрос — со страницы клуба: с адреса функции (тот же сайт) или с nachert1830.ru (список FRONT_ORIGINS, ответы с CORS) */
   function sameOrigin(req){ const org=req.headers.origin; if(!org||!cfg.fronts.includes(org)) return false;
     const sfs=req.headers['sec-fetch-site']; return org!==cfg.origin||!sfs||sfs==='same-origin'||sfs==='none'; }
-  function body(req){ if(req.body.length>MAX_BODY) fail(413,'Слишком большой запрос.');
+  function body(req,max){ if(req.body.length>(max||MAX_BODY)) fail(413,'Слишком большой запрос.');
     if(!/^application\/json\b/i.test(req.headers['content-type']||'')) fail(415,'Нужен JSON.');
     try{ const b=JSON.parse(req.body||'{}'); if(!b||typeof b!=='object'||Array.isArray(b)) throw 0; return b; }catch(e){ fail(400,'Неверный JSON.'); } }
 
@@ -376,6 +377,14 @@ function createApp(o){
   A['POST /api/me/delete']=async(req,S)=>{ const b=body(req); if(b.confirm!=='УДАЛИТЬ') fail(400,'Подтвердите удаление словом УДАЛИТЬ.');
     await removeUser(S.user.id); log.log&&log.log('аккаунт удалён',S.user.id); return {resp:H.json(200,{ok:true}),cookie:clearCookie()}; };
 
+  /* глаза сканера: фото чертежа → модель со зрением → подписи точек (server/lib/eyes.js). Фото не сохраняется */
+  A['POST /api/eyes']=async(req,S)=>{ const ec=o.eyes; if(!ec||!ec.on) fail(503,'ИИ-зрение пока не подключено.');
+    const b=body(req,EYES_BODY), img=String(b.img||''); await limit('eyes',S.user.id,40,3600);
+    if(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/.test(img)) fail(400,'Нужно фото (JPEG, PNG или WebP).');
+    const w=Math.round(+b.w)||0, h=Math.round(+b.h)||0; if(!(w>=200&&h>=200&&w<=4096&&h<=4096)) fail(400,'Размер фото — от 200 до 4096 px.');
+    const dz=[1,2,3,4,5].includes(+b.dz)?+b.dz:null, n=cleanVariant(b.n)||null;
+    try{ const r=await EYES.ask(ec,{image:img,w,h,dz,n},{fetch:http,token:o.iamToken}); return H.json(200,{ok:true,text:r.text,model:r.model}); }
+    catch(e){ if(e instanceof HttpError) throw e; log.error('eyes',e&&e.message); fail(e&&e.status||502,e&&e.status?e.message:'Модель зрения не ответила. Попробуйте ещё раз.'); } };
   A['POST /api/feedback']=async(req,S)=>{ const b=body(req); await limit('fb',S.user.id,20,3600);
     const feature=FEAT.ids.includes(b.feature)||b.feature==='privacy'?b.feature:'general', mood=['good','unclear','bad'].includes(b.mood)?b.mood:null, text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000);
     if(!text&&!mood) fail(400,'Напишите пару слов или выберите оценку.');

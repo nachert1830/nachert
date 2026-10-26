@@ -10,7 +10,7 @@
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
-const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',check3:'dzCheck3',explain3d:'dzExplain3d',paper:'dzPaper'}[n]];
+const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',check3:'dzCheck3',explain3d:'dzExplain3d',paper:'dzPaper',eyes:'dzEyes'}[n]];
 const LN=isNode?require('../lines.js'):self.LAB.lines, DZ=isNode?require('../../core/dz.js'):self.CORE.dz, V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const f1=x=>(Math.round(x*10)/10).toString().replace('.',','), deg=x=>f1(x)+'°';
 const ANS={H:{name:'высота пирамиды',u:' мм',tol:1.5},dih:{name:'угол между гранью SAB и основанием',u:'°',tol:1.5},phi:{name:'угол между ребром SA и основанием',u:'°',tol:1.5}};
@@ -29,43 +29,65 @@ function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Dat
   /* опора листа: сетка клеток (точнее всего) или — на чистом листе — края бумаги и сама фигура условия (paper.js).
      paper: 'grid' | 'plain' | 'auto' (по умолчанию: сетка, а если её нет — чистый лист) */
   const mode=o.paper||'auto', G=L('grid'), C=L('calib');
-  let g=mode==='plain'?{ok:false,reason:'чистый лист'}:G.findGrid(img), sc, er, box, dig, cands, plain=null, vars=null, cal=null;
+  /* o.eyes — один чертёж от глаз (eyes.js): точки условия с подписями, примерно; опора — сама фигура условия */
+  let g=mode==='plain'?{ok:false,reason:'чистый лист'}:G.findGrid(img), sc, er, box, dig, cands, plain=null, vars=null, cal=null, eyesMm=null, eyesRange=null;
   if(g.ok){ sc=G.rectify(img,g,{ppm:8}); er=G.eraseGrid(sc); box=sc.box;
     const ex=LN.extract(er.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300}); if(!ex.ok) return {ok:false,verdict:'не могу прочитать',why:[ex.reason],grid:g};
-    dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map}; cands=axesCands(ex.segs); }
+    dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map}; cands=axesCands(ex.segs);
+    /* лист в клетку и глаза: метрика — сетка; глаза — где этот чертёж (его O) и какой вариант. Вариант без номера —
+       три лучших по глазам, из них по линиям (покрытие ≥ 80 % и запас 15 пунктов — как без глаз) */
+    if(o.eyes){ const ge=L('eyes').gridEyes(g,o.eyes,{dz,n:auto?0:n,box}); if(!ge.ok) return {ok:false,verdict:'не могу прочитать',why:[ge.reason],grid:g};
+      eyesMm=ge.eyesMm; eyesRange=[ge.O[0]-8,ge.O[1]-8,ge.O[0]+8,ge.O[1]+8]; why.push('глаза: чертёж и его начало O — по подписям точек (сетка — мера)'+(ge.out.length?'; не согласуются с условием и отброшены — '+ge.out.join(', '):''));
+      if(auto){ const vs=ge.cand.map(k=>{ const gk=V.get(dz,k), ck=C.calibrate(dig,{},gk.id,gk.data,{range:eyesRange,np:2,cands}); return {n:k,cover:ck.ok?ck.cover:0,cal:ck}; }).sort((a,b)=>b.cover-a.cover);
+        const b=vs[0], b2=vs[1]||{cover:0}; if(!b||b.cover<0.8||b.cover-b2.cover<0.15) return {ok:false,verdict:'не могу прочитать',why:['вариант по чертежу не узнаётся однозначно ('+vs.map(v=>v.n+' — '+Math.round(v.cover*100)+' %').join(', ')+') — укажите номер варианта'],grid:g};
+        n=b.n; gv=V.get(dz,n); cal=b.cal; why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(b.cover*100)+' %)'); } } }
   else if(mode==='grid') return {ok:false,verdict:'не могу прочитать',why:[g.reason+' — снимите лист целиком, сверху, при ровном свете'],grid:g};
-  else { plain=L('paper').preparePlain(img,{dz,n:auto?0:n}); if(!plain.ok) return {ok:false,verdict:'не могу прочитать',why:[plain.reason],grid:g,plain};
+  else { plain=o.eyes?L('eyes').prepareEyes(img,o.eyes,{dz,n:auto?0:n}):L('paper').preparePlain(img,{dz,n:auto?0:n}); if(plain.ok&&o.eyes) eyesMm=plain.eyesMm; if(!plain.ok) return {ok:false,verdict:'не могу прочитать',why:[plain.reason],grid:g,plain};
     sc=plain.scan; er={img:sc.img}; box=plain.box; dig=plain.dig; cands=plain.cands; why.push(...plain.why);
     if(auto){ n=plain.n; gv=V.get(dz,n); why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(plain.cover*100)+' %; ближайшая другая гипотеза — '+Math.round(plain.second*100)+' %)'); }
     /* карта и сводка «как у сетки»: мм листа → px снимка */
-    g={ok:true,map:plain.map,found:0,cell:null,rms:0,ppm0:1,plain:true}; }
+    g={ok:true,map:plain.map,found:0,cell:null,rms:0,ppm0:1,plain:true,eyes:!!o.eyes}; }
   /* вариант не указан — узнаём по чертежу: условие каждого из 30 вариантов прикладываем к линиям листа. Узнан, если
      лучший ложится на линии (≥ 80 %: настоящий даёт 90–100 %) и с запасом (≥ 15 пунктов) над вторым; иначе — просим
      указать номер. Было 60 %: быстрая оценка недооценила настоящий вариант, и чужой с 64 % прошёл за «узнанный» */
-  if(auto&&!plain){ vars=[]; for(let k=1;k<=30;k++){ const gk=V.get(dz,k); if(!gk) continue; const ck=C.calibrate(dig,{},gk.id,gk.data,{range:box,np:2,cands,quick:cands.length>0}); vars.push({n:k,cover:ck.ok?ck.cover:0}); }
+  if(auto&&!plain&&!cal){ vars=[]; for(let k=1;k<=30;k++){ const gk=V.get(dz,k); if(!gk) continue; const ck=C.calibrate(dig,{},gk.id,gk.data,{range:box,np:2,cands,quick:cands.length>0}); vars.push({n:k,cover:ck.ok?ck.cover:0}); }
     /* точно — три лучших по быстрой оценке (у быстрой O только на осях: вариант с недочерченной осью она недооценит) */
     vars.sort((a,b)=>b.cover-a.cover); vars.slice(0,3).forEach(v=>{ const gk=V.get(dz,v.n), ck=C.calibrate(dig,{},gk.id,gk.data,{range:box,np:2,cands}); v.cover=ck.ok?ck.cover:0; v.cal=ck; });
     vars.sort((a,b)=>(b.cal?1:0)-(a.cal?1:0)||b.cover-a.cover); const b=vars[0], b2=vars[1]||{cover:0};
     if(!b||b.cover<0.8||b.cover-b2.cover<0.15) return {ok:false,verdict:'не могу прочитать',why:['вариант по чертежу не узнаётся однозначно'+(b?' (похожи: '+vars.slice(0,3).map(v=>v.n+' — '+Math.round(v.cover*100)+' %').join(', ')+')':'')+' — укажите номер варианта'],variants:vars.slice(0,5).map(v=>({n:v.n,cover:v.cover})),grid:g,dig,scan:sc};
     n=b.n; gv=V.get(dz,n); why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(b.cover*100)+' %; ближайший другой — '+b2.n+': '+Math.round(b2.cover*100)+' %)'); cal=b.cal; }
-  if(!cal) cal=C.calibrate(dig,{},gv.id,gv.data,{range:box,np:2,cands});
+  if(!cal) cal=C.calibrate(dig,{},gv.id,gv.data,{range:eyesRange||box,np:2,cands});
   if(!cal.ok||cal.cover<0.45) return {ok:false,verdict:'не могу прочитать',why:['условие варианта '+n+' на листе не узнаётся ('+Math.round((cal.cover||0)*100)+' % фигуры на линиях) — проверьте номер варианта'],grid:g,cal,dig,scan:sc};
   /* заданное как начерчено */
   /* чистый лист: изгиб бумаги не виден — погрешность каждой координаты не меньше 0,5 мм (СКО подгонки сюда не годится:
      в нём и точки, где линий нет вовсе — рёбра S не начерчены, штриховые) */
-  const mg=L('given').measureGiven(dig,cal,gv.id,gv.data,{sigFloor:plain?0.5:0}), miss=Object.entries(mg.pts).filter(([l,p])=>p.src==='не найдена').map(([l])=>l);
+  /* по глазам на мелком фото (< 5 px/мм) замер грубее: σ не меньше 2,5 px */
+  const sigFloor=plain?Math.max(0.5,plain.ppmPhoto?2.5/plain.ppmPhoto:0):0;
+  const mg=L('given').measureGiven(dig,cal,gv.id,gv.data,{sigFloor}), miss=Object.entries(mg.pts).filter(([l,p])=>p.src==='не найдена').map(([l])=>l);
   const drawnOk=Object.values(mg.drawn).every(p=>p.every(v=>v!=null));
-  const res={ok:true,dz,n,id:gv.id,data:gv.data,paper:plain?'plain':'grid',plain:plain?{page:plain.page,flip:plain.flip,quad:plain.quad}:null,grid:plain?null:{nodes:g.found,cell:g.cell,rms:g.rms,hres:g.hres,ppm0:g.ppm0,dbg:g.dbg},scan:sc,erased:er,dig,cal,given:mg,ms:0};
+  const res={ok:true,dz,n,id:gv.id,data:gv.data,paper:o.eyes?'eyes':plain?'plain':'grid',plain:plain?{page:plain.page,flip:plain.flip,quad:plain.quad,fit:plain.fit,ppmPhoto:plain.ppmPhoto}:null,grid:plain?null:{nodes:g.found,cell:g.cell,rms:g.rms,hres:g.hres,ppm0:g.ppm0,dbg:g.dbg},scan:sc,erased:er,dig,cal,given:mg,ms:0};
   /* карта мм листа → px снимка (для разбора поверх фото) — не перечисляется: результат остаётся «данными» */
   Object.defineProperty(res,'_grid',{value:g,enumerable:false});
   const ref=DZ.solve(gv.id,gv.data); res.ref=ref;
   why.push('условие варианта '+n+' на линиях: '+Math.round(cal.cover*100)+' %; '+(plain?'подгонка условия — СКО '+f1(cal.rms||0)+' мм':'сетка: '+g.found+' узлов, лист выпрямлен с точностью '+f1(g.rms/g.ppm0*10)+' сотых мм'));
   /* «нанесено неточно» — отклонение ≥ 1,5 мм и ≥ 3σ замера этой точки (метку-кружок меряем грубее) */
+  /* глаза против «нанесено неточно»: если глаза видят точку там, где она должна быть по варианту (ближе, чем
+     найденная), найдена, скорее, чужая вершина (повёрнутая B₁′ рядом с B′) — об ошибке нанесения не утверждаем */
+  if(eyesMm){ const Tc=cal.T, apT=m=>[Tc[0]+(1+Tc[2])*m[0]+Tc[3]*m[1],Tc[1]+Tc[4]*m[0]+(1+Tc[5])*m[1]];
+    mg.diff.forEach(d=>{ if(!d.sure) return; const P=gv.data[d.n], ls=d.c==='x'?[d.n+'″',d.n+'′']:d.c==='y'?[d.n+'′']:[d.n+'″'];
+      /* глаза этой точки не видели — может, её на этом чертеже нет вовсе (часть в) без S): найден чужой узел */
+      const veto=ls.some(l=>!eyesMm[l])||ls.some(l=>{ const e=eyesMm[l], m=mg.pts[l]; if(!e||!m||m.src==='не найдена') return false; const ex=apT(l.endsWith('″')?[-P[0],-P[2]]:[-P[0],P[1]]);
+        return Math.hypot(e[0]-ex[0],e[1]-ex[1])<Math.hypot(e[0]-m.p[0],e[1]-m.p[1]); });
+      if(veto){ d.sure=false; d.eyesVeto=true; } });
+    /* по глазам масштаб и перспективу даёт сама фигура условия: гомография по ней «впитывает» часть ошибки нанесения
+       (крайняя точка, 2–3 мм). Поэтому — ошибка нанесения только от 3 мм, а «нанесено точно» не утверждаем */
+    if(plain) mg.diff.forEach(d=>{ if(d.sure&&Math.abs(d.d)<3) d.sure=false; }); }
   const big=mg.diff.filter(d=>d.sure);
   if(miss.length&&!(miss.every(l=>l[0]==='S'))) why.push('не нашёл на листе: '+miss.join(', '));
   if(big.length) why.push('данные нанесены неточно: '+big.map(d=>d.n+' '+d.c+' = '+f1(d.drawn)+' вместо '+d.was).join(', '));
   /* «точно» — только если это видно: отклонение < 1,5 мм И замер не грубее ± 1 мм (иначе 0,8 мм при ± 2 мм —
      не «точно», а «не знаю») */
+  else if(plain&&eyesMm) why.push('точность нанесения условия по такому фото не проверяется: масштаб и перспективу даёт сама фигура условия (ошибку от 3 мм сканер назвал бы); построение проверяется по начерченным точкам');
   else if(drawnOk&&mg.diff.every(d=>Math.abs(d.d)<1.5&&d.sg<=1)) why.push('все точки условия нанесены точно (каждая координата — в пределах 1,5 мм)');
   else if(drawnOk){ const un=mg.diff.filter(d=>Math.abs(d.d)>=1.5||d.sg>1); why.push('нанесение точек не подтверждаю: '+un.map(d=>d.n+' '+d.c+(Math.abs(d.d)>=1.5?' отклоняется на '+f1(Math.abs(d.d))+' мм при точности замера ± '+f1(d.sg)+' мм':' — замер грубый (± '+f1(d.sg)+' мм)')).join(', ')+' — переснимите ближе'); }
   const shs=Object.entries(mg.shift||{}).filter(([c,v])=>Math.abs(v)>=1.5); if(shs.length) why.push('весь чертёж сдвинут относительно '+shs.map(([c,v])=>(c==='x'?'оси z/y':'оси x')+' на '+f1(Math.abs(v))+' мм по '+c).join(' и ')+' — это перенос, на ответы не влияет');
@@ -110,7 +132,7 @@ function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Dat
       x.msg+='; '+w; why.push(w); }); }
   /* итог: «ошибка» — только по измеренному (данные ≥ 1 мм от варианта или ответ вне допуска для обоих эталонов) */
   const ans=res.answers||[], ansBad=ans.some(a=>a.st==='построение'||a.st==='неверно'), ansData=ans.some(a=>a.st==='данные');
-  const dataClean=mg.diff.length>0&&mg.diff.every(d=>Math.abs(d.d)<1.5&&d.sg<=1)&&(drawnOk||miss.every(l=>l[0]==='S'));
+  const dataClean=!(plain&&eyesMm)&&mg.diff.length>0&&mg.diff.every(d=>Math.abs(d.d)<1.5&&d.sg<=1)&&(drawnOk||miss.every(l=>l[0]==='S'));
   /* первая ошибка в шагах г) — уже «ошибка», даже без записанного ответа (шаг неверен по линиям листа) */
   const stepBad=!!(res.ex3d&&res.ex3d.first&&res.ex3d.steps[0]&&res.ex3d.steps[0].status==='ok');
   /* показанная часть проверена по начерченным данным и верна (в) — истинный вид) — это «верно», даже если нанесение
@@ -121,6 +143,8 @@ function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Dat
   if(part&&res.parts) res.shown=[part]; else if(res.parts) res.shown=Object.keys(res.parts).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено');
   /* видимость рёбер на листе в клетку — замечание (на экзаменационных листах её часто не требуют) */
   if(res.parts&&res.parts.vis&&res.parts.vis.st==='ошибка') res.visNote='видимость: '+res.parts.vis.why.filter(w=>/должно быть/.test(w)).join('; ');
+  /* по глазам без уточнённой перспективы (чистый лист, мало точек условия на линиях) привязка грубая — не утверждаем */
+  if(o.eyes&&plain&&!plain.fit&&['верно','ошибка','ошибка в данных','данные нанесены верно'].includes(res.verdict)){ why.push('перспектива по фото не уточнена (мало точек условия на линиях) — вердикт «'+res.verdict+'» не утверждаю; переснимите крупнее'); res.verdict='не могу утверждать'; }
   res.part=part; res.why=why; res.ms=Date.now()-t0; return res; }
 put('dzGridSheet',{checkGridPhoto,axesCands});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(3).map(x=>x.replace(/^--/,'').split('='))), IMG=require('../img.js');

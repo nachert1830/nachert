@@ -56,6 +56,11 @@ jobs:
           YANDEX_CLIENT_SECRET: ${{ secrets.YANDEX_CLIENT_SECRET }}
           FRONT_URL: ${{ vars.CLUB_FRONT_URL }}
           MAIL_FROM: ${{ vars.MAIL_FROM }}
+          EYES_URL: ${{ vars.EYES_URL }}
+          EYES_MODEL: ${{ vars.EYES_MODEL }}
+          EYES_AUTH: ${{ vars.EYES_AUTH }}
+          EYES: ${{ vars.EYES }}
+          EYES_KEY: ${{ secrets.EYES_KEY }}
         run: node server/tools/deploy.js --write-front
       - name: Адрес API — в страницу клуба на сайте
         if: steps.ready.outputs.ok == 'yes'

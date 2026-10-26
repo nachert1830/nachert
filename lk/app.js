@@ -430,20 +430,27 @@ function saveRating(el,v,errors,symptoms){ const n=+el.dataset.n, ctx=el.dataset
 /* Проверка: сначала «что у вас в руках» — крупные карточки простыми словами, потом три правила съёмки, потом сканер.
    Названия — по тому, что проверяет студент (ДЗ, задача тетради, лист из САПР), а не по устройству сканера. */
 const LAB=[
-  {id:'dz',src:'lab/dz.html',icon:'sheet',var:true,t:'ДЗ по начерту — фото листа',s:'ДЗ № 2 и № 3 · лист А3 с рамкой, в клетку или чистый',p:'Сфотографируйте лист целиком. Сканер найдёт рамку или края листа, сверит построение с условием вашего варианта и проверит ответ.'},
+  {id:'dz',src:'lab/dz.html',icon:'sheet',var:true,t:'ДЗ по начерту — фото листа',s:'ДЗ № 2 и № 3 · с ИИ-зрением — без рамки и штампа, все чертежи листа сразу',p:'Сфотографируйте лист или один чертёж крупно. С ИИ-зрением рамка, штамп и края листа не нужны: модель найдёт подписи точек и все чертежи листа, а сканер по линиям сверит построение с условием вашего варианта.'},
   {id:'cam',src:'lab/cam.html',icon:'scan',var:true,t:'ДЗ № 3 — камерой',s:'наведите камеру на лист — снимки она сделает сама',p:'Камера снимет 2–5 кадров с разных углов. Вывод — только если его подтверждают несколько снимков; разбор — прямо на фото.'},
   {id:'task',src:'lab/scan.html',icon:'doc',t:'Задача тетради № 46 или № 47',s:'фото решения — верно или где ошибка',p:'Вердикт с отметками прямо на фото и 3D-модель решения. Нет листа под рукой — попробуйте на примере.'}];
 const labBase=()=>/\/lk\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/lk\/(index\.html)?$/,''):null;
 /* вариант из профиля — сканеру сразу (?n=…): студенту не нужно вводить номер; нет варианта — сканер узнаёт его по чертежу */
 const labSrc=L=>L.src+(L.var&&myVariant()?'?n='+myVariant():'');
-const HOWTO=`<ol class="how8"><li><b>Лист целиком</b><span>все края в кадре; чистый лист — на тёмном столе</span></li><li><b>Ровный свет</b><span>без бликов и тени от телефона, телефон параллельно листу</span></li><li><b>Линии как на сдачу</b><span>обведены; сканер не уверен — так и скажет, переснимите ближе</span></li></ol>`;
+/* ИИ-зрение сканера: страница сканера в рамке (тот же сайт) просит прочитать фото моделью — кабинет ходит в /api/eyes
+   с токеном участника и отдаёт ответ обратно. Только своей рамке и только с этого сайта */
+window.addEventListener('message',async e=>{ const d=e.data, f=document.querySelector('iframe.labf'); if(e.origin!==location.origin||!d||!f||e.source!==f.contentWindow) return;
+  if(d.type==='nch-eyes-ping'){ e.source.postMessage({type:'nch-eyes-pong',on:!!ME},location.origin); return; }
+  if(d.type!=='nch-eyes') return; let out;
+  try{ const r=await api('POST','/api/eyes',{img:d.img,w:d.w,h:d.h,dz:d.dz,n:d.n}); out={ok:true,text:r.text,model:r.model}; }catch(err){ out={ok:false,error:err.message,status:err.status||0}; }
+  e.source.postMessage(Object.assign({type:'nch-eyes-r',id:d.id},out),location.origin); });
+const HOWTO=`<ol class="how8"><li><b>Чертёж крупно</b><span>с ИИ-зрением — лист или один чертёж, края не обязательны; без него — лист целиком</span></li><li><b>Ровный свет</b><span>без бликов и тени от телефона, телефон параллельно листу</span></li><li><b>Линии как на сдачу</b><span>обведены; сканер не уверен — так и скажет, переснимите ближе</span></li></ol>`;
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
   if(tool==='normo') return normoView();
   if(L&&base){ track('check',{k:tool}); const src=base+labSrc(L); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(src)}" target="_blank" rel="noopener">На весь экран ${ic('ext')}</a></div>
       <p class="labp">${esc(L.p)}${L.var&&myVariant()?` Вариант <b>${myVariant()}</b> — из профиля.`:''}</p>
       <iframe class="labf" src="${esc(src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
   const item=(href,icon,t,s,dis)=>`<a class="tool8" href="${href}"${dis?' aria-disabled="true"':''}><span class="ico">${ic(icon)}</span><span class="tt"><b>${esc(t)}</b><small>${esc(s)}</small></span>${ic('arrow')}</a>`;
-  render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте: сканер сверит построение с верным решением и покажет, где ошибка. Фото не покидает телефон.')}
+  render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте: сканер сверит построение с верным решением и покажет, где ошибка. Фото не сохраняется: его разбирает телефон, а с ИИ-зрением подписи на нём читает ещё модель в Yandex Cloud.')}
   <h2 class="q8">Что проверяем?</h2>
   <div class="tools8">${LAB.map(x=>item(base?'#/check/'+x.id:'#/check',x.icon,x.t,x.s,!base)).join('')}${flag('normo')?item('#/check/normo','sheet','Лист ИКГ из КОМПАС или другой САПР','файл SVG · формат, линии, шрифт, размеры по ГОСТ'):''}</div>
   ${base?'':`<p class="note warn">Сканер фото работает в кабинете на сайте. <a class="btn sm" href="https://nachert1830.ru/lk/#/check">Открыть на nachert1830.ru ${ic('ext')}</a></p>`}

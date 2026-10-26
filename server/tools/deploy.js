@@ -174,7 +174,8 @@ async function main(){
 
   step('Сервисные аккаунты и права');
   const sa={}; for(const k of ['fn','gw']){ sa[k]=get(['iam','service-account','get','--name',NAMES[k]])||yc(['iam','service-account','create','--name',NAMES[k]]); say('  '+NAMES[k]+': '+sa[k].id); }
-  for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['fn','postbox.sender'],['gw','functions.functionInvoker']])
+  /* ai.languageModels.user — глаза сканера: модель зрения в Yandex AI Studio по IAM-токену функции (server/lib/eyes.js) */
+  for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['fn','postbox.sender'],['fn','ai.languageModels.user'],['gw','functions.functionInvoker']])
     try{ yc(['resource-manager','folder','add-access-binding',folder,'--role',role,'--subject','serviceAccount:'+sa[k].id]); }catch(e){ if(!/already/i.test(e.message)) throw e; }
 
   step('База данных YDB (serverless, Россия)');
@@ -196,6 +197,7 @@ async function main(){
   payload.TG_WEBHOOK_SECRET=payload.TG_WEBHOOK_SECRET||crypto.randomBytes(32).toString('hex');
   const before=JSON.stringify(payload); payload.TG_BOT_TOKEN=token;
   if(E('YANDEX_CLIENT_SECRET')) payload.YANDEX_CLIENT_SECRET=E('YANDEX_CLIENT_SECRET');
+  if(E('EYES_KEY')) payload.EYES_KEY=E('EYES_KEY');
   if(yaId&&!payload.YANDEX_CLIENT_SECRET) need('YANDEX_CLIENT_SECRET','Добавьте секрет YANDEX_CLIENT_SECRET (Client secret приложения на oauth.yandex.ru) в GitHub.');
   const changed=JSON.stringify(payload)!==before||JSON.stringify(payload)!==payloadBefore;
   const entries=JSON.stringify(Object.keys(payload).sort().map(k=>({key:k,text_value:payload[k]})));
@@ -235,10 +237,12 @@ async function main(){
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN+' http://nachert1830.ru',FRONT_URL:front,
     YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
-    MAIL_FROM:mailFrom};
+    MAIL_FROM:mailFrom,
+    /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
+    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:E('EYES_MODEL'),EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES')};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
-  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
-  for(const [k,entry,timeout] of [['api','server/index.handler','10s'],['remind','server/index.remind','120s']]){
+  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
+  for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){
     yc(['serverless','function','version','create','--function-id',fn[k].id,'--runtime','nodejs22','--entrypoint',entry,'--memory','256m','--execution-timeout',timeout,
       '--service-account-id',sa.fn.id,'--source-path',zf,'--environment',env].concat(secrets)); say('  '+NAMES[k]+': новая версия'); }
   /* сразу запустить функцию напоминаний: она подключает вебхук бота из облака, если с компьютера не получилось */
