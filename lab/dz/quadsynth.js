@@ -26,7 +26,7 @@ function sheet(o){ const n=o.n, R=IMG.rng((o.seed||1)*7349+n*13), data=V.get(3,n
     const b=bbox(items.flatMap(itemPts)), O=[x0+6+15-b[0]+R()*Math.max(0,cw-12-(b[2]-b[0]+30)),y0+6+8-b[1]+R()*Math.max(0,ch-12-(b[3]-b[1]+16))];
     groups.push({items,O}); const pts={}; M.given('3',data).pts.forEach(q=>{ pts[q.l]=[O[0]+q.at[0],O[1]+q.at[1]]; }); pts.O=O.slice();
     gt.push({part,built,O,pts,box:[O[0]+b[0]-15,O[1]+b[1]-8,O[0]+Math.max(0,b[2])+12,O[1]+b[3]+8]}); });
-  const s=dzSynth({groups,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0,size:o.size});
+  const s=dzSynth({groups,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0,size:o.size,clean:o.clean});
   s.truth=Object.assign(s.truth,{dz:3,n,data,parts:gt}); return s; }
 module.exports={sheet};
 if(require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));

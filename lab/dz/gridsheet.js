@@ -10,7 +10,7 @@
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
-const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',check3:'dzCheck3',explain3d:'dzExplain3d',paper:'dzPaper',eyes:'dzEyes'}[n]];
+const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',check3:'dzCheck3',explain3d:'dzExplain3d',paper:'dzPaper',eyes:'dzEyes','cleaner/cleaner':'dzCleaner'}[n]];
 const LN=isNode?require('../lines.js'):self.LAB.lines, DZ=isNode?require('../../core/dz.js'):self.CORE.dz, V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const f1=x=>(Math.round(x*10)/10).toString().replace('.',','), deg=x=>f1(x)+'°';
 const ANS={H:{name:'высота пирамиды',u:' мм',tol:1.5},dih:{name:'угол между гранью SAB и основанием',u:'°',tol:1.5},phi:{name:'угол между ребром SA и основанием',u:'°',tol:1.5}};
@@ -22,7 +22,15 @@ function axesCands(segs){ const len=s=>Math.hypot(s.b[0]-s.a[0],s.b[1]-s.a[1]), 
   const hor=merge(segs.filter(s=>len(s)>=8&&(dir(s)<=1||dir(s)>=179)),1).filter(g=>g.L>=50&&g.ink>=0.5*g.L).sort((a,b)=>b.ink-a.ink).slice(0,10);
   const ver=merge(segs.filter(s=>len(s)>=8&&Math.abs(dir(s)-90)<=1.5),0).filter(g=>g.L>=40&&g.ink>=0.5*g.L).sort((a,b)=>b.ink-a.ink).slice(0,10);
   const out=[]; hor.forEach(h=>ver.forEach(v=>out.push([v.c,h.c]))); return out; }
-function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(), why=[]; let n=+o.n||0, gv=auto?null:V.get(dz,n);
+/* второй шанс: не прочитал — тот же путь по линиям после очистителя (нейросеть lab/dz/cleaner: карандаш без подписей,
+   теней, бликов и сетки). Все защиты от ложных — те же; вердикт второго прохода берётся, только если он сильнее отказа */
+const WEAK=v=>v==='не могу прочитать'||v==='не могу утверждать';
+function checkGridPhoto(img,o){ o=o||{}; const r=check0(img,o); if(o.clean||o.cleaner===false||!WEAK(r.verdict)) return r;
+  let hook=null; try{ hook=L('cleaner/cleaner').hook(); }catch(e){} if(!hook) return r;
+  let r2=null; try{ r2=check0(img,Object.assign({},o,{clean:hook})); }catch(e){ return r; }
+  if(WEAK(r2.verdict)&&!(r2.ok&&!r.ok)) return r;
+  r2.why=['линии найдены нейросетью-очистителем (второй проход: обычный разбор сказал «'+r.verdict+'»)'].concat(r2.why||[]); r2.cleaned=true; r2.ms=(r.ms||0)+(r2.ms||0); return r2; }
+function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(), why=[]; let n=+o.n||0, gv=auto?null:V.get(dz,n);
   /* какая часть задачи на этом фото (студент часто снимает каждую отдельно): указана — или по введённому ответу */
   const A0=o.answers||{}, given1=['H','dih','phi'].filter(k=>A0[k]!=null&&!isNaN(A0[k])), part=o.part||(given1.length===1?{H:'a',dih:'b',phi:'d'}[given1[0]]:null);
   if(!auto&&!gv) return {ok:false,verdict:'не могу проверить',why:['нет варианта '+n+' ДЗ №'+dz]};
@@ -32,7 +40,8 @@ function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Dat
   /* o.eyes — один чертёж от глаз (eyes.js): точки условия с подписями, примерно; опора — сама фигура условия */
   let g=mode==='plain'?{ok:false,reason:'чистый лист'}:G.findGrid(img), sc, er, box, dig, cands, plain=null, vars=null, cal=null, eyesMm=null, eyesRange=null;
   if(g.ok){ sc=G.rectify(img,g,{ppm:8}); er=G.eraseGrid(sc); box=sc.box;
-    const ex=LN.extract(er.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300}); if(!ex.ok) return {ok:false,verdict:'не могу прочитать',why:[ex.reason],grid:g};
+    /* второй шанс (o.clean): очиститель видит линии сквозь сетку — на вход скан без стирания */
+    const ex=LN.extract(o.clean?sc.img:er.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean:o.clean}); if(!ex.ok) return {ok:false,verdict:'не могу прочитать',why:[ex.reason],grid:g};
     dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map}; cands=axesCands(ex.segs);
     /* лист в клетку и глаза: метрика — сетка; глаза — где этот чертёж (его O) и какой вариант. Вариант без номера —
        три лучших по глазам, из них по линиям (покрытие ≥ 80 % и запас 15 пунктов — как без глаз) */
@@ -42,7 +51,7 @@ function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Dat
         const b=vs[0], b2=vs[1]||{cover:0}; if(!b||b.cover<0.8||b.cover-b2.cover<0.15) return {ok:false,verdict:'не могу прочитать',why:['вариант по чертежу не узнаётся однозначно ('+vs.map(v=>v.n+' — '+Math.round(v.cover*100)+' %').join(', ')+') — укажите номер варианта'],grid:g};
         n=b.n; gv=V.get(dz,n); cal=b.cal; why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(b.cover*100)+' %)'); } } }
   else if(mode==='grid') return {ok:false,verdict:'не могу прочитать',why:[g.reason+' — снимите лист целиком, сверху, при ровном свете'],grid:g};
-  else { plain=o.eyes?L('eyes').prepareEyes(img,o.eyes,{dz,n:auto?0:n}):L('paper').preparePlain(img,{dz,n:auto?0:n}); if(plain.ok&&o.eyes) eyesMm=plain.eyesMm; if(!plain.ok) return {ok:false,verdict:'не могу прочитать',why:[plain.reason],grid:g,plain};
+  else { plain=o.eyes?L('eyes').prepareEyes(img,o.eyes,{dz,n:auto?0:n,clean:o.clean}):L('paper').preparePlain(img,{dz,n:auto?0:n,clean:o.clean}); if(plain.ok&&o.eyes) eyesMm=plain.eyesMm; if(!plain.ok) return {ok:false,verdict:'не могу прочитать',why:[plain.reason],grid:g,plain};
     sc=plain.scan; er={img:sc.img}; box=plain.box; dig=plain.dig; cands=plain.cands; why.push(...plain.why);
     if(auto){ n=plain.n; gv=V.get(dz,n); why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(plain.cover*100)+' %; ближайшая другая гипотеза — '+Math.round(plain.second*100)+' %)'); }
     /* карта и сводка «как у сетки»: мм листа → px снимка */

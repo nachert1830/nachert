@@ -119,7 +119,7 @@ function preparePlain(img,o){ o=o||{}; const dz=+o.dz||3, why=[], P=findPaper(im
   const cor=[[0,0],[210,0],[210,297],[0,297]].map(toT), c=[-Math.min(...cor.map(p=>p[0])),-Math.min(...cor.map(p=>p[1]))];
   const box=[0,0,Math.ceil(Math.max(...cor.map(p=>p[0]))+c[0]),Math.ceil(Math.max(...cor.map(p=>p[1]))+c[1])];
   const map=(u,v)=>{ const q=[u-c[0],v-c[1]]; return H.apply(Ha,[T[0]+K[0][0]*q[0]+K[0][1]*q[1],T[1]+K[1][0]*q[0]+K[1][1]*q[1]]); };
-  const sc=L('grid').rectify(img,{map,box},{ppm:8,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300}); if(!ex.ok) return {ok:false,reason:ex.reason};
+  const sc=L('grid').rectify(img,{map,box},{ppm:8,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean:o.clean}); if(!ex.ok) return {ok:false,reason:ex.reason};
   const dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map};
   /* проверка «это и правда А4/А3»: на точном скане фигура условия подгоняется с 6 параметрами — масштаб по осям
      и перекос должны быть в 1,5 %. Лист другой пропорции (в клетку 200 × 260, обрезанный, тетрадный) иначе молча

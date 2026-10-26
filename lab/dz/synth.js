@@ -23,7 +23,7 @@ function turn(im,k){ k=((k%4)+4)%4; if(!k) return {im,M:[1,0,0,0,1,0,0,0,1]}; co
   return {im:o,M}; }
 
 function dzSynth(o){ o=o||{}; const id=o.id||'2', R=rng(o.seed||1), lv=S.LEVELS[o.level||'normal'], ex=o.items?{items:o.items}:o.groups?{items:[]}:EX[id], page=DS.A3;
-  const sheet=new S.Sheet(page.w,page.h,o.res||6);
+  const sheet=new S.Sheet(page.w,page.h,o.res||6); if(o.clean) sheet.cl=new Float32Array(sheet.w*sheet.h);
   const g0=gray(sheet.w,sheet.h); for(let i=0;i<g0.a.length;i++) g0.a[i]=R(); const g1=blur(g0,0.8); sheet.grain=new Float32Array(sheet.w*sheet.h);
   for(let i=0;i<g1.a.length;i++) sheet.grain[i]=Math.max(0.35,Math.min(1,0.7+(g1.a[i]-0.5)*3.2));
   sheet.layer='pencil'; const pen={dk:R.r(...lv.dark),thin:R.r(0.22,0.36),main:R.r(0.45,0.7)}, k=R.r(...lv.hand);
@@ -55,7 +55,7 @@ function dzSynth(o){ o=o||{}; const id=o.id||'2', R=rng(o.seed||1), lv=S.LEVELS[
   labels.forEach(l=>{ const s=String(l.s).split('').filter(c=>font.has(c)).join(''); if(!s) return; sheet.text(s,l.at,R.r(3,4.5),Math.min(0.95,pen.dk*1.1),R.r(0.22,0.35),{rot:R.n(0,0.06),shear:R.n(0.12,0.08),jit:0.02,grain:true},R); });
   /* съёмка: телефон книжно (3:4), затем возможный поворот снимка */
   const sz=o.size||[2250,3000], cam=S.camera(sheet,page,R,lv,sz), tk=o.turn!=null?o.turn:Math.floor(R()*4), tr=turn(cam.im,tk);
-  return {img:tr.im,truth:{id,H:IMG.H.norm(IMG.H.mul(tr.M,cam.M)),O,turn:tk,frame:fc,axis:ax,zAxis,zLine,items:ex.items,groups,params:Object.assign(cam.params,{hand:k,level:o.level||'normal'})}}; }
+  return {img:tr.im,truth:{id,H:IMG.H.norm(IMG.H.mul(tr.M,cam.M)),O,turn:tk,frame:fc,axis:ax,zAxis,zLine,items:ex.items,groups,clean:o.clean?{a:sheet.cl,w:sheet.w,h:sheet.h,px:sheet.px}:null,params:Object.assign(cam.params,{hand:k,level:o.level||'normal'})}}; }
 
 put('dzSynth',{dzSynth,turn});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));

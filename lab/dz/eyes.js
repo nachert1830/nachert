@@ -23,6 +23,7 @@
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
 const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',model:'dzModel',gridsheet:'dzGridSheet',check:'dzCheck'}[n]];
+/* o.clean — очиститель карандаша (второй проход): передаётся в оцифровку */
 const IMG=isNode?require('../img.js'):self.LAB.img, LN=isNode?require('../lines.js'):self.LAB.lines, V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const H=IMG.H;
 const f1=x=>(Math.round(x*10)/10).toString().replace('.',',');
@@ -102,21 +103,75 @@ function bindHom(P,tol){ const n=P.length; if(n<4) return null; let best=null;
   const r=resOf(M), I=P.filter((q,t)=>r[t]<=tol), rr=r.filter(x=>x<=tol);
   return {M,inl:I,out:P.filter((q,t)=>r[t]>tol),rms:Math.sqrt(rr.reduce((s,x)=>s+x*x,0)/Math.max(1,rr.length))}; }
 
+/* ── затравка без доверия к подписям: подобие по медианам (Тейл — Сен) — масштаб и поворот по парам точек, сдвиг по
+   точкам. Перепутанная подпись портит только свои пары, медиана её не замечает ── */
+function seedSim(P){ if(P.length<3) return null; const sc=[], an=[];
+  for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){ const dm=[P[j].m[0]-P[i].m[0],P[j].m[1]-P[i].m[1]], dp=[P[j].p[0]-P[i].p[0],P[j].p[1]-P[i].p[1]], lm=Math.hypot(...dm), lp=Math.hypot(...dp);
+    if(lm<8||lp<4) continue; sc.push(lp/lm); let a=Math.atan2(dp[1],dp[0])-Math.atan2(dm[1],dm[0]); while(a>Math.PI) a-=2*Math.PI; while(a<-Math.PI) a+=2*Math.PI; an.push(a); }
+  if(sc.length<3) return null; const md=a=>a.slice().sort((x,y)=>x-y)[a.length>>1], k=md(sc), th=md(an), c=Math.cos(th)*k, sn=Math.sin(th)*k;
+  const tx=md(P.map(q=>q.p[0]-(c*q.m[0]-sn*q.m[1]))), ty=md(P.map(q=>q.p[1]-(sn*q.m[0]+c*q.m[1])));
+  return [c,-sn,tx,sn,c,ty]; }
+/* ── поиск фигуры условия по линиям (шаблон известен точно): у затравки A (мм условия → px) перебор сдвига ± 36 мм,
+   поворота ± 16° и масштаба ×0,7…1,4 — где точки фигуры условия ложатся на линии фото (карта расстояний, допуск 1,2 мм).
+   Глазам достаточно сказать «чертёж примерно тут»: промах в 2–3 см и перепутанные подписи поиск не сбивают.
+   Возвращает уточнённое A и покрытие лучшего и второго (отдельного) положения — запас против чужой копии рядом ── */
+function searchFigure(img,A,gv,o){ o=o||{}; const C=L('calib'), g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]);
+  const R=o.r||36, F=[Math.min(...fig.map(p=>p[0]))-R-8,Math.min(...fig.map(p=>p[1]))-R-8,Math.max(...fig.map(p=>p[0]))+R+8,Math.max(...fig.map(p=>p[1]))+R+8];
+  const cO=[-Math.floor(F[0]),-Math.floor(F[1])], box=[0,0,Math.ceil(F[2]-F[0]),Math.ceil(F[3]-F[1])];
+  const dg=digitize(img,(u,v)=>affAt(A,[u-cO[0],v-cO[1]]),box,4,o.clean); if(!dg.ok) return null;
+  const D=C.dmap(dg.dig.map), SA=C.samples(gv.id,gv.data).S.map(q=>q.m), at=p=>C.at(D,p);
+  /* грубо — по ~80 точкам фигуры, сдвиг через 2 мм; точно — по каждой третьей (через 1,5 мм) у пяти лучших мест */
+  const S0=SA.filter((q,i)=>i%Math.max(1,Math.round(SA.length/80))===0), S=SA.filter((q,i)=>i%3===0);
+  const cov=(th,k,tx,ty,tol,SS)=>{ const c=Math.cos(th)*k, sn=Math.sin(th)*k; let n=0; for(const m of SS){ if(at([cO[0]+tx+c*m[0]-sn*m[1],cO[1]+ty+sn*m[0]+c*m[1]])<=tol) n++; } return n/SS.length; };
+  const res=[]; const deg=Math.PI/180;
+  for(let th=-16;th<=16;th+=2) for(let lk=-7;lk<=7;lk++){ const k=Math.pow(1.05,lk);
+    for(let ty=-R;ty<=R;ty+=2) for(let tx=-R;tx<=R;tx+=2){ const v=cov(th*deg,k,tx,ty,1.6,S0); if(v>=0.35) res.push({v,th,k,tx,ty}); } }
+  res.sort((a,b)=>b.v-a.v); if(!res.length) return {A,cover:0,second:0,shift:0,rot:0,k:1};
+  /* пять отдельных мест (не ближе 4 мм / 3°) — уточнение каждого, лучшее — найденное */
+  const tops=[]; for(const q of res){ if(tops.every(t=>Math.hypot(t.tx-q.tx,t.ty-q.ty)>4||Math.abs(t.th-q.th)>3)) tops.push(q); if(tops.length>=5) break; }
+  const fine=tops.map(b0=>{ let b=Object.assign({},b0,{v:cov(b0.th*deg,b0.k,b0.tx,b0.ty,1.2,S)});
+    for(const [dth,dk,dt] of [[1,0.02,1],[0.5,0.01,0.5],[0.25,0.005,0.25]]){ let bb=b; for(let th=b.th-2*dth;th<=b.th+2*dth+1e-9;th+=dth) for(let k=b.k-2*dk;k<=b.k+2*dk+1e-9;k+=dk) for(let ty=b.ty-2*dt;ty<=b.ty+2*dt+1e-9;ty+=dt) for(let tx=b.tx-2*dt;tx<=b.tx+2*dt+1e-9;tx+=dt){ const v=cov(th*deg,k,tx,ty,1.2,S); if(v>bb.v) bb={v,th,k,tx,ty}; } b=bb; }
+    return b; }).sort((a,b)=>b.v-a.v);
+  const b=fine[0];
+  /* второе положение — отдельное (дальше 6 мм или 5°) */
+  const sec=fine.find(q=>Math.hypot(q.tx-b.tx,q.ty-b.ty)>6||Math.abs(q.th-b.th)>5)||{v:0};
+  const c=Math.cos(b.th*deg)*b.k, sn=Math.sin(b.th*deg)*b.k, L2=[c,-sn,sn,c];
+  /* A′(m) = A(t + k·R·m) */
+  const An=[A[0]*L2[0]+A[1]*L2[2],A[0]*L2[1]+A[1]*L2[3],A[0]*b.tx+A[1]*b.ty+A[2],A[3]*L2[0]+A[4]*L2[2],A[3]*L2[1]+A[4]*L2[3],A[3]*b.tx+A[4]*b.ty+A[5]];
+  return {A:An,cover:b.v,second:sec.v,shift:Math.hypot(b.tx,b.ty),rot:b.th,k:b.k}; }
+
 /* выпрямить поле чертежа по map и оцифровать */
-function digitize(img,map,box,ppm){ const G=L('grid'), sc=G.rectify(img,{map,box},{ppm,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300});
+function digitize(img,map,box,ppm,clean){ const G=L('grid'), sc=G.rectify(img,{map,box},{ppm,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean});
   if(!ex.ok) return {ok:false,reason:ex.reason}; return {ok:true,sc,dig:{ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map}}; }
 
 /* ── один чертёж: глаза → привязка → уточнение → оцифровка в мм условия ── */
 function prepareEyes(img,drawing,o){ o=o||{}; const dz=+o.dz||3, why=[], C=L('calib'), GV=L('given'), GS=L('gridsheet');
   /* вариант: указан — он; нет — все 30: по глазам выбираем, чьё условие лучше объясняет подписанные точки */
   const ns=+o.n?[+o.n]:Array.from({length:30},(_,i)=>i+1), hyp=[];
-  ns.forEach(n=>{ const gv=V.get(dz,n); if(!gv) return; const P=pairs(drawing,gv.id,gv.data), b=P.length>=4?bindAffine(P,{px:0.025*Math.max(img.width,img.height)}):null; if(b) hyp.push({n,gv,P,b}); });
-  hyp.sort((x,y)=>y.b.inl.length-x.b.inl.length||x.b.rms-y.b.rms);
-  const h=hyp[0]; if(!h||h.b.inl.length<4) return {ok:false,reason:'точки, которые нашли глаза, не складываются в условие '+(+o.n?'варианта '+o.n:'ни одного варианта')+(h?' (согласны '+h.b.inl.length+' из '+h.P.length+')':'')+' — переснимите крупнее или укажите номер варианта'};
+  ns.forEach(n=>{ const gv=V.get(dz,n); if(!gv) return; const P=pairs(drawing,gv.id,gv.data); let b=P.length>=4?bindAffine(P,{px:0.025*Math.max(img.width,img.height)}):null;
+    /* подписи не складываются (глаза промахиваются на сантиметры, путают) — затравка по медианам, дальше решит поиск по линиям */
+    if((!b||b.inl.length<4)&&P.length>=3){ const A0=seedSim(P); if(A0&&detA(A0)>0){ const s0=Math.sqrt(detA(A0)); if(s0>=1.2&&s0<=60) b={A:A0,s:s0,aniso:0,inl:[],out:[],rms:NaN,seed:true}; } }
+    if(b) hyp.push({n,gv,P,b}); });
+  hyp.sort((x,y)=>(x.b.seed?1:0)-(y.b.seed?1:0)||y.b.inl.length-x.b.inl.length||x.b.rms-y.b.rms);
+  /* затравки по рамке чертежа: глаза обычно верно говорят, ГДЕ чертёж, но не где точки. Центр фигуры условия — в центре
+     рамки, масштаб — по размеру рамки (чертёж с построениями шире фигуры), три масштаба ×0,7 / ×1 / ×1,4 */
+  if(+o.n&&drawing.box&&drawing.box.every(isFinite)){ const gv=V.get(dz,+o.n), fig=L('model').given(gv.id,gv.data).segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]);
+    const fx=[Math.min(...fig.map(p=>p[0])),Math.max(...fig.map(p=>p[0]))], fy=[Math.min(...fig.map(p=>p[1])),Math.max(...fig.map(p=>p[1]))], [x0,y0,x1,y1]=drawing.box;
+    const s0=Math.sqrt(Math.abs((x1-x0)*(y1-y0))/((fx[1]-fx[0]+50)*(fy[1]-fy[0]+40))), cx=(x0+x1)/2, cy=(y0+y1)/2, mx=(fx[0]+fx[1])/2, my=(fy[0]+fy[1])/2;
+    if(s0>=1.2&&s0<=60) [1,0.7,1.4].forEach(k=>{ const sk=s0*k; hyp.push({n:+o.n,gv,P:pairs(drawing,gv.id,gv.data),b:{A:[sk,0,cx-sk*mx,0,sk,cy-sk*my],s:sk,aniso:0,inl:[],out:[],rms:NaN,seed:true,box:true}}); }); }
+  /* поиск фигуры условия по линиям у затравки — для указанного варианта (все затравки, до первой уверенной находки)
+     или трёх лучших по глазам */
+  for(const hh of hyp.slice(0,+o.n?6:3)){ let sf=null; try{ sf=searchFigure(img,hh.b.A,hh.gv,{clean:o.clean}); }catch(e){}
+    if(sf&&sf.cover>=0.55&&sf.cover-sf.second>=0.1){ hh.b=Object.assign({},hh.b,{A:sf.A,s:Math.sqrt(Math.abs(detA(sf.A))),found:sf,seed:false,inl:hh.b.inl.length>=4?hh.b.inl:hh.P});
+      if(+o.n&&sf.cover>=0.7) break; }
+    else if(hh.b.seed) hh.b.inl=[]; }
+  hyp.sort((x,y)=>(y.b.found?y.b.found.cover:0)-(x.b.found?x.b.found.cover:0)||y.b.inl.length-x.b.inl.length);
+  const h=hyp[0]; if(!h||!h.b.found&&h.b.inl.length<4) return {ok:false,reason:'точки, которые нашли глаза, не складываются в условие '+(+o.n?'варианта '+o.n:'ни одного варианта')+(h?' (согласны '+h.b.inl.length+' из '+h.P.length+')':'')+' — переснимите крупнее или укажите номер варианта'};
   /* без номера: второй вариант не должен объяснять глаза почти так же (иначе выбор — по линиям, ниже) */
   const rivals=+o.n?[]:hyp.slice(1,3).filter(x=>x.b.inl.length>=h.b.inl.length-1);
   const cand=[h].concat(rivals);
-  if(h.b.out.length) why.push('глаза: не согласуются с условием и отброшены — '+h.b.out.map(q=>q.l).join(', '));
+  if(h.b.found) why.push('фигура условия найдена по линиям у подсказки глаз: сдвиг '+f1(h.b.found.shift)+' мм, поворот '+f1(h.b.found.rot)+'°, масштаб ×'+h.b.found.k.toFixed(2)+'; на линиях '+Math.round(h.b.found.cover*100)+' % (другое положение — '+Math.round(h.b.found.second*100)+' %)');
+  else if(h.b.out.length) why.push('глаза: не согласуются с условием и отброшены — '+h.b.out.map(q=>q.l).join(', '));
   /* поле чертежа (мм условия): рамка глаз (если есть) и фигура условия с запасом; не больше 360 × 300 */
   const run=c=>{ const {gv,b}=c, A=b.A, Ai=(()=>{ const d=detA(A); return [A[4]/d,-A[1]/d,-A[3]/d,A[0]/d]; })(), toM=p=>{ const q=[p[0]-A[2],p[1]-A[5]]; return [Ai[0]*q[0]+Ai[1]*q[1],Ai[2]*q[0]+Ai[3]*q[1]]; };
     const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(s=>[s.a,s.b]).concat([[0,0]]);
@@ -130,7 +185,7 @@ function prepareEyes(img,drawing,o){ o=o||{}; const dz=+o.dz||3, why=[], C=L('ca
     /* мм листа (поле) → мм условия: m = Hm(q − c); px = A·m (сначала Hm = I, потом — уточнённая гомография) */
     let Hm=[1,0,0,0,1,0,0,0,1], last=null, fitInfo=null;
     const mapOf=Hm=>(u,v)=>affAt(A,H.apply(Hm,[u-cO[0],v-cO[1]]));
-    for(let it=0;it<3;it++){ const ppm=it<2?5:8, dg=digitize(img,mapOf(Hm),box,ppm); if(!dg.ok) return {ok:false,reason:dg.reason};
+    for(let it=0;it<3;it++){ const ppm=it<2?5:8, dg=digitize(img,mapOf(Hm),box,ppm,o.clean); if(!dg.ok) return {ok:false,reason:dg.reason};
       const cands=GS.axesCands(dg.dig.segs), cal=C.calibrate(dg.dig,{},gv.id,gv.data,{range:[cO[0]-(it?3:10),cO[1]-(it?3:10),cO[0]+(it?3:10),cO[1]+(it?3:10)],np:6,cands});
       last={dg,cal,cands};
       if(!cal.ok||cal.cover<0.45){ if(it===0) return {ok:false,reason:'по подсказке глаз условие варианта '+c.n+' на линиях не нашлось ('+Math.round((cal.cover||0)*100)+' %) — переснимите крупнее, при ровном свете',cover:cal.cover||0}; break; }
@@ -191,7 +246,7 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   const why=out.map((r,i)=>'чертёж '+(i+1)+(r.eyesPart?' ('+(PN[r.eyesPart]||r.eyesPart)+')':'')+': '+r.verdict+(r.ok===false&&r.why&&r.why[0]?' — '+r.why[0]:''));
   return {ok:out.some(r=>r.ok),verdict,dz,n:out.find(r=>r.n)?out.find(r=>r.n).n:n,drawings:out,why,ms:Date.now()-t0}; }
 
-put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,bindAffine,bindHom,pairs});
+put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,bindAffine,bindHom,pairs,seedSim,searchFigure});
 })();
 /* node lab/dz/eyes.js фото.png глаза.json [--n=9] — проверка фото по ответу глаз (JSON или текст ответа модели) */
 if(typeof module!=='undefined'&&require.main===module){ const a=Object.fromEntries(process.argv.slice(4).map(x=>x.replace(/^--/,'').split('='))), fs=require('fs'), IMG=require('../img.js'), E=module.exports;

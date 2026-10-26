@@ -47,7 +47,7 @@ const PX=10;                                                       /* растр
 function Sheet(w,h,px){ this.px=px||PX; this.w=Math.round(w*this.px); this.h=Math.round(h*this.px); this.pr=new Float32Array(this.w*this.h); this.pe=new Float32Array(this.w*this.h); this.tmp=new Float32Array(this.w*this.h); this.touched=[]; }
 /* штрих — ломаная (мм страницы): ширина w, тёмность dk; o.wob — дрожание поперёк, o.dash — [штрих, промежуток] мм,
    o.grain — зерно графита, o.press — неравномерный нажим */
-Sheet.prototype.stroke=function(pts,w,dk,o,R){ o=o||{}; const PXs=this.px, L=this.layer==='print'?this.pr:this.pe, T=this.tmp, tc=[];
+Sheet.prototype.stroke=function(pts,w,dk,o,R){ o=o||{}; const PXs=this.px, L=this.layer==='print'?this.pr:this.pe, T=this.tmp, tc=[], CL=this.cl&&this.layer!=='print'&&!this.noClean?this.cl:null;
   /* дрожание: дробим ломаную через 2 мм и сдвигаем поперёк гладким шумом */
   let P=[]; if(o.wob){ const ph=[R()*6.3,R()*6.3], f=[R.r(0.15,0.4),R.r(0.6,1.3)];
     let acc=0; for(let i=0;i<pts.length-1;i++){ const a=pts[i], b=pts[i+1], l=v2.dist(a,b), n=Math.max(1,Math.ceil(l/2)), nn=v2.perp(v2.unit(v2.sub(b,a)));
@@ -61,12 +61,15 @@ Sheet.prototype.stroke=function(pts,w,dk,o,R){ o=o||{}; const PXs=this.px, L=thi
       let c=Math.max(0,Math.min(1,(w/2-dist)*PXs+0.5)); if(c<=0) continue;
       const s=s0+t*l; if(o.dash){ const per=o.dash[0]+o.dash[1], ph=(s+o.dash[2])%per; if(ph>o.dash[0]) continue; }
       if(press) c*=press[0]+(press[1]-press[0])*(0.5+0.5*Math.sin(s*press[3]+press[2]));
-      const i2=y*this.w+x; if(T[i2]===0) tc.push(i2); if(c>T[i2]) T[i2]=c; }
+      const i2=y*this.w+x; if(T[i2]===0) tc.push(i2); if(c>T[i2]) T[i2]=c;
+      /* чистая правда для обучения очистителя (lab/dz/cleaner): где лежит линия карандаша — без нажима, зерна, тёмности */
+      if(CL&&c>CL[i2]) CL[i2]=c; }
     s0+=l; }
   for(const i2 of tc){ let c=T[i2]*dk; if(o.grain) c*=this.grain[i2]; L[i2]=1-(1-L[i2])*(1-c); T[i2]=0; } };
-Sheet.prototype.text=function(str,at,size,dk,w,o,R){ const lay=font.layout(str,at,size,o); lay.strokes.forEach(pl=>{
-    const P=o&&o.jit?pl.map(p=>[p[0]+R.n(0,o.jit*size),p[1]+R.n(0,o.jit*size)]):pl; this.stroke(P,w,dk,{grain:!!(o&&o.grain)},R); }); return lay.width; };
-Sheet.prototype.circle=function(c,r,w,dk,o,R){ const P=[]; for(let i=0;i<=20;i++){ const a=i/20*2*Math.PI; P.push([c[0]+r*Math.cos(a),c[1]+r*Math.sin(a)]); } this.stroke(P,w,dk,o,R); };
+/* подписи и кружки-метки в чистую правду не входят: очиститель оставляет только линии */
+Sheet.prototype.text=function(str,at,size,dk,w,o,R){ const lay=font.layout(str,at,size,o), nc=this.noClean; this.noClean=true; lay.strokes.forEach(pl=>{
+    const P=o&&o.jit?pl.map(p=>[p[0]+R.n(0,o.jit*size),p[1]+R.n(0,o.jit*size)]):pl; this.stroke(P,w,dk,{grain:!!(o&&o.grain)},R); }); this.noClean=nc; return lay.width; };
+Sheet.prototype.circle=function(c,r,w,dk,o,R){ const P=[]; for(let i=0;i<=20;i++){ const a=i/20*2*Math.PI; P.push([c[0]+r*Math.cos(a),c[1]+r*Math.sin(a)]); } const nc=this.noClean; this.noClean=true; this.stroke(P,w,dk,o,R); this.noClean=nc; };
 
 /* ── 3. камера: гомография страница → фото, свет, тень, расфокус, шум ── */
 /* opt.glare (0…1): вероятность блика — пятно, где свет отражается от графита и бумаги и линии бледнеют (лампа над листом);

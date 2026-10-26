@@ -42,7 +42,7 @@ function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6
   const D=JSON.parse(JSON.stringify(data)); let wrong=null;
   if(err==='given'){ const ks=Object.keys(D), k=ks[Math.floor(R()*ks.length)], cI=Math.floor(R()*3), d=(R()<0.5?-1:1)*R.r(2.5,4); D[k][cI]+=d; wrong={k,c:'xyz'[cI],d}; }
   const pr=(err==='p3h'||err==='rad'||(err==='ok'&&R()<0.6))?prog3d(D,err,R):null; if((err==='p3h'||err==='rad')&&!pr) return null;
-  const sh=new S.Sheet(page.w,page.h,6), g0=gray(sh.w,sh.h); for(let i=0;i<g0.a.length;i++) g0.a[i]=R(); const g1=blur(g0,0.8); sh.grain=new Float32Array(sh.w*sh.h);
+  const sh=new S.Sheet(page.w,page.h,6), g0=gray(sh.w,sh.h); if(o.clean) sh.cl=new Float32Array(sh.w*sh.h); for(let i=0;i<g0.a.length;i++) g0.a[i]=R(); const g1=blur(g0,0.8); sh.grain=new Float32Array(sh.w*sh.h);
   for(let i=0;i<g1.a.length;i++) sh.grain[i]=Math.max(0.35,Math.min(1,0.7+(g1.a[i]-0.5)*3.2));
   /* сетка печатью */
   sh.layer='print'; const ph=[R()*5,R()*5], gdk=R.r(0.3,0.6), gw=R.r(0.15,0.22);
@@ -68,7 +68,7 @@ function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6
   const sz=o.size||(plain?(pg==='A3'?[2400,3200]:[1800,2400]):[1500,2000]), cam=S.camera(sh,page,R,lv,sz);
   /* серия: тот же лист, ещё o.shots − 1 съёмок — другой наклон, свет, блик (как телефон в руке); свой поток случайностей */
   const shots=o.shots>1?[cam].concat(Array.from({length:o.shots-1},(_,k)=>S.camera(sh,page,rng((o.seed||1)*7919+n*131+k*17+1),lv,sz,{glare:o.glare==null?0.5:o.glare}))):null;
-  return {img:cam.im,imgs:shots&&shots.map(c=>c.im),truth:{n,err,plain,page:pg,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,progSegs:pr&&pr.segs,params:cam.params,shots:shots&&shots.map(c=>Object.assign({H:c.M},c.params))}}; }
+  return {img:cam.im,imgs:shots&&shots.map(c=>c.im),truth:{n,err,plain,page:pg,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,progSegs:pr&&pr.segs,clean:o.clean?{a:sh.cl,w:sh.w,h:sh.h,px:sh.px}:null,params:cam.params,shots:shots&&shots.map(c=>Object.assign({H:c.M},c.params))}}; }
 put('dzGsynth',{sheet,prog3d});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), s=sheet({n:+(a.n||7),err:a.err||'ok',seed:+(a.seed||1)});
   if(!s){ console.log('лист не построился'); process.exit(1); } require('fs').writeFileSync(a.out||'g.png',IMG.encodePNG(s.img)); console.log(JSON.stringify(s.truth,(k,v)=>k==='H'?undefined:typeof v==='number'?+v.toFixed(2):v)); }
