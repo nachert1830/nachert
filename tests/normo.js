@@ -250,7 +250,7 @@ function run(F,opt){
       const s0=Math.min(...pts.map(pr)), s1=Math.max(...pts.map(pr)), L=s1-s0, mid=[A[0]+u[0]*(s0+s1)/2,A[1]+u[1]*(s0+s1)/2];
       chains.push({polys:[[[A[0]+u[0]*s0,A[1]+u[1]*s0],[A[0]+u[0]*s1,A[1]+u[1]*s1]]]});
       const w=[FV,LV,TV].find(w=>w&&mid[0]>=w.b[0]-1*k&&mid[0]<=w.b[2]+1*k&&mid[1]>=w.b[1]-1*k&&mid[1]<=w.b[3]+1*k); if(!w) return;
-      const band=0.3*L; let lo=Infinity, hi=-Infinity;
+      const band=0.5*L; let lo=Infinity, hi=-Infinity;
       segAll.forEach(q=>{ if(!w.ids.includes(q.it.view)||(q.it.kind!=='thick'&&q.it.kind!=='dash')) return; [q.a,q.b,[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]].forEach(p=>{ const s=pr(p), n=Math.abs((p[0]-A[0])*u[1]-(p[1]-A[1])*u[0]); if(n>band||s<s0-0.01*k||s>s1+0.01*k) return; if(s<lo) lo=s; if(s>hi) hi=s; }); });
       if(!(hi>lo)) return; [[lo-s0,[A[0]+u[0]*s0,A[1]+u[1]*s0]],[s1-hi,[A[0]+u[0]*s1,A[1]+u[1]*s1]]].forEach(([o,at])=>{ if(o<2*k-0.3*k||o>5*k+0.3*k) add('2.303','осевая выходит за контур на 2…5 мм','выходит на '+mm(o)+' мм',at); }); }); }
 

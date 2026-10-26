@@ -7,8 +7,11 @@ let cache=null;
 function build(){
   const {P}=IG3, S=P.S, U=P.U, I=P.I, E=0.6;
   /* размеры: F — главный вид (x, z), L — вид слева (y, z), T — вид сверху (x, y); at — положение размерной линии */
-  const FV=(x,z0,z1,at,t)=>['F','v',[x,z0],[x,z1],at,t], FH=(x0,x1,z,at,t)=>['F','h',[x0,z],[x1,z],at,t];
-  const LV=(y,z0,z1,at,t)=>['L','v',[y,z0],[y,z1],at,t], TH=(x0,x1,y,at,t)=>['T','h',[x0,y],[x1,y],at,t], TV=(x,y0,y1,at,t)=>['T','v',[x,y0],[x,y1],at,t];
+  /* размер, симметричный оси (x0 = −x1): число — в стороне от осевой, чтобы она его не пересекала (ГОСТ 2.307) */
+  const off=(a,b,o)=>{ const w=b-a; return o||(Math.abs(a+b)<0.6&&w>=20?{sh:Math.min(w/2-5,Math.max(w/4,9))}:null); };
+  const FV=(x,z0,z1,at,t)=>['F','v',[x,z0],[x,z1],at,t], FH=(x0,x1,z,at,t,o)=>{ const q=off(x0,x1,o); return ['F','h',[x0,z],[x1,z],at,t].concat(q?[q.sh!=null?{tx:q.sh}:q]:[]); };
+  const LV=(y,z0,z1,at,t)=>['L','v',[y,z0],[y,z1],at,t], TH=(x0,x1,y,at,t,o)=>{ const q=off(x0,x1,o); return ['T','h',[x0,y],[x1,y],at,t].concat(q?[q.sh!=null?{tx:q.sh}:q]:[]); },
+    TV=(x,y0,y1,at,t,o)=>{ const q=off(y0,y1,o); return ['T','v',[x,y0],[x,y1],at,t].concat(q?[q.sh!=null?{tz:q.sh}:q]:[]); };
   /* выноска к отверстию: n отверстий Ø d, центр (x, y), выноска под углом a (град), длина e */
   const HL=(n,d,x,y,a,e)=>{ const u=[Math.cos(a*Math.PI/180),Math.sin(a*Math.PI/180)], q=e||16; return ['T','lead',[x+u[0]*d/2,y+u[1]*d/2],[x+u[0]*(d/2+q),y+u[1]*(d/2+q)],(n>1?n+' отв. ':'')+'Ø'+d,u[0]>=0?1:-1]; };
   const V={};
@@ -160,7 +163,7 @@ function build(){
         с отверстием Ø25 насквозь и два ребра толщиной 10 до высоты 70 */
   { const C4=[[-1,-1],[1,-1],[-1,1],[1,1]], slot=(sx,sy)=>U(P.box(10+E,20,15-E,30+E,{x:sx*(65+E/2),y:sy*27.5}),P.cyl(10,15-E,30+E,{x:sx*60,y:sy*27.5}));
   add(12,{title:'Фланец со стаканом',box:[[-70,-45,0],[70,45,80]],
-    tree:S(U(S(U(P.box(140,90,15,30),P.box(85,90,0,15.1),P.cyl(40,29.9,80)),P.cyl(32.5,25,80+E)),P.cyl(20,24.9,80),P.box(65,10,24.9,70)),
+    tree:S(U(S(U(P.box(140,90,15,30),P.box(85,90,0,15.1),P.cyl(40,29.9,80)),P.cyl(32.5,25,80+E)),P.cyl(20,24.9,80),RB(P.box(65,10,24.9,70))),
       I(P.box(70+2*E,90+2*E,-E,20,{}),P.hp([-20,0,12.5],[-35,0,0]),P.hp([20,0,12.5],[35,0,0])),P.cyl(12.5,19,80+E),...C4.map(([a,b])=>slot(a,b))),
     dims:[FH(-40,40,80,124,'Ø80'),FH(-32.5,32.5,80,112,'Ø65'),FH(-20,20,80,100,'Ø40'),FH(-12.5,12.5,80,88,'Ø25'),
       LV(45,70,80,57,'10'),LV(45,25,80,69,'55'),LV(45,0,80,81,'80'),LV(45,0,15,57,'15'),FV(-70,0,30,-94,'30'),FV(-70,0,20,-82,'20'),
