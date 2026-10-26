@@ -53,9 +53,9 @@ function run(N,img,o){ o=o||{}; const W=img.width, Hh=img.height, T=o.tile||256,
   const out={width:W,height:Hh,data:new Uint8ClampedArray(W*Hh*4)};
   for(let i=0;i<W*Hh;i++){ const v=Math.round(255*(1-P[i])); out.data[4*i]=out.data[4*i+1]=out.data[4*i+2]=v; out.data[4*i+3]=255; }
   return {img:out,p:P}; }
-/* веса — lab/dz/cleaner/weights.json: в Node — с диска, в потоке страницы — синхронно с сайта; нет файла — null */
+/* веса — lab/dz/cleaner/weights.json (или файл DZ_CLEANER — проверить новые веса, не кладя их в репозиторий): в Node — с диска, в потоке страницы — синхронно с сайта; нет файла — null */
 let NET; function get(){ if(NET!==undefined) return NET; NET=null;
-  try{ if(isNode){ const f=require('path').join(__dirname,'weights.json'); if(require('fs').existsSync(f)) NET=load(JSON.parse(require('fs').readFileSync(f,'utf8'))); }
+  try{ if(isNode){ const f=process.env.DZ_CLEANER||require('path').join(__dirname,'weights.json'); if(require('fs').existsSync(f)) NET=load(JSON.parse(require('fs').readFileSync(f,'utf8'))); }
     else { const x=new XMLHttpRequest(); x.open('GET',(self.LAB&&self.LAB.cleanerUrl)||'cleaner/weights.json',false); x.send(); if(x.status===200) NET=load(JSON.parse(x.responseText)); } }catch(e){ NET=null; }
   return NET; }
 /* функция для lines.js (o.clean): RGBA → RGBA с чистыми линиями */
