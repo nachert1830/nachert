@@ -54,7 +54,9 @@ function fit(D,S,x0,np,iters){ let x=x0.slice(), f=cost(D,S,x), lam=1e-2; const 
 function coarse(D,S,o0,ranges){ const sub=S.filter((q,i)=>i%3===0); let best=null;
   for(let dv=ranges.v[0];dv<=ranges.v[1];dv+=1) for(let du=ranges.u[0];du<=ranges.u[1];du+=1){ const x=[o0[0]+du,o0[1]+dv,0,0,0,0], c=coverOf(D,sub,x,1.2); if(!best||c>best.c) best={c,x}; }
   return best; }
-function calibrate(dig,loc,id,data,o){ o=o||{}; const D=dmap(dig.map), {pts,segs,S}=samples(id,data);
+function calibrate(dig,loc,id,data,o){ o=o||{}; const D=dmap(dig.map), sm=samples(id,data), {pts,segs}=sm;
+  /* o.exclude — без отрезков этой точки (проверка «не одна ли точка тянет подгонку») */
+  const S=o.exclude?sm.S.filter(q=>!q.seg.includes(o.exclude)):sm.S;
   /* начало: найденное O; иначе — ось x (v = 0) и сдвиг вдоль неё по всему полю */
   let o0, ranges;
   if(o.range){ o0=[0,0]; ranges={u:[o.range[0],o.range[2]],v:[o.range[1],o.range[3]]}; }   /* лист в клетку: O ищется по всему полю */

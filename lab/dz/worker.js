@@ -23,6 +23,8 @@ self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now
         try{ const segs=self.LAB.dzCalib.drawSegs(g.dig,{T:[g.given.O[0],g.given.O[1],0,0,0,0]}); out.svg=self.LAB.dzReport3d.svg({segs,data:g.given.drawn,ex:g.ex3d,why:(g.answers||[]).filter(a=>a.k==='phi').map(a=>a.msg.split('; на чертеже')[0])}); }catch(x){} }
       self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.stack||err)}); } return; }
   try{ r=self.LAB.dzCheck.checkSheet(img,{dz,n}); }catch(err){ self.postMessage({error:String(err&&err.stack||err)}); return; }
+  /* рамки и штампа нет (лист без оформления) — ДЗ №3 проверяем по сетке или по краям бумаги, как «лист в клетку» */
+  if(+dz===3&&r.verdict==='не могу прочитать'&&r.stage==='лист'){ self.onmessage({data:Object.assign({},e.data,{paper:'grid'})}); return; }
   const out={verdict:r.verdict,why:r.why,stage:r.stage,ms:Date.now()-t0,variants:r.variants||null};
   if(r.loc&&r.loc.ok) Object.assign(out,{H:r.loc.H,turn:r.loc.turn,pxPerMm:r.loc.pxPerMm,O:r.loc.O,axis:r.loc.axis});
   if(r.dig&&r.dig.ok) Object.assign(out,{box:r.dig.box,digO:r.dig.O,segs:r.dig.segs.map(s=>({a:s.a,b:s.b,k:s.k}))});

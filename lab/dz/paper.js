@@ -78,6 +78,15 @@ function findPaper(img){ const W=img.width, Hh=img.height, d=img.data, dbg=[];
   if(quad.some(q=>!q||q[0]<-W*0.06||q[1]<-Hh*0.06||q[0]>W*1.06||q[1]>Hh*1.06)) return {ok:false,reason:'угол листа за краем кадра — отодвиньте телефон',dbg};
   return {ok:true,quad,sides:fine,dbg}; }
 
+/* отношение сторон листа по перспективе (не по чертежу): прямой угол бумаги и равные масштабы осей дают фокус и
+   пропорцию. H0 — единичный квадрат → четырёхугольник (главная точка — центр кадра); f² = −(h11 h12 + h21 h22) /
+   (h31 h32); пропорция a = |K⁻¹h2| / |K⁻¹h1|. Фокус телефона неизвестен — перебираем 0,6…1,6 размера кадра (и
+   оценку, если она есть): у А4/А3 выходит 1,38–1,42, у листа в клетку 200 × 260 — 1,30 при любом */
+function aspectOf(quad,W,Hh){ const c=[W/2,Hh/2], M=Math.max(W,Hh), Ls=[0,1,2,3].map(s=>Math.hypot(quad[(s+1)%4][0]-quad[s][0],quad[(s+1)%4][1]-quad[s][1])), tall=Ls[1]+Ls[3]>=Ls[0]+Ls[2];
+  const q=(tall?quad:[quad[3],quad[0],quad[1],quad[2]]).map(p=>[p[0]-c[0],p[1]-c[1]]), H0=H.fit([[0,0],[1,0],[1,1],[0,1]],q); if(!H0) return null;
+  const h1=[H0[0],H0[3],H0[6]], h2=[H0[1],H0[4],H0[7]], f2=-(h1[0]*h2[0]+h1[1]*h2[1])/(h1[2]*h2[2]), fs=[];
+  for(let k=0.6;k<=1.6001;k+=0.1) fs.push(k*M); if(f2>0&&isFinite(f2)) fs.push(Math.sqrt(f2));
+  const as=fs.map(f=>{ const n=v=>Math.hypot(v[0]/f,v[1]/f,v[2]); return n(h2)/n(h1); }); return {min:Math.min(...as),max:Math.max(...as),as}; }
 /* лист → мм: книжный «А4» (210 × 297) — длинные стороны четырёхугольника идут вдоль высоты листа */
 function pageHom(quad){ const Ls=[0,1,2,3].map(s=>Math.hypot(quad[(s+1)%4][0]-quad[s][0],quad[(s+1)%4][1]-quad[s][1]));
   const tall=Ls[1]+Ls[3]>=Ls[0]+Ls[2]; /* ↗→↘ и ↙→↖ длиннее — лист стоит книжно в кадре */
@@ -85,6 +94,10 @@ function pageHom(quad){ const Ls=[0,1,2,3].map(s=>Math.hypot(quad[(s+1)%4][0]-qu
   return H.fit([[0,0],[210,0],[210,297],[0,297]],q); }
 const scale=(data,s,flip)=>Object.fromEntries(Object.entries(data).map(([k,p])=>[k,p.map(v=>v*s*(flip?-1:1))]));
 function preparePlain(img,o){ o=o||{}; const dz=+o.dz||3, why=[], P=findPaper(img); if(!P.ok) return {ok:false,reason:P.reason,dbg:P.dbg};
+  /* пропорция листа — 1 : √2 (А4, А3), иначе лист растянется молча и все точки «съедут» на миллиметры */
+  /* принят, если при каком-то правдоподобном фокусе (0,6…1,6 кадра) пропорция — 1,414 ± 3,5 % (синтетическая камера —
+     не честная обскура и даёт до 2,5 %; лист в клетку 200 × 260 и Letter — 1,29–1,30, далеко) */
+  const asp=aspectOf(P.quad,img.width,img.height); if(!asp||!asp.as.some(a=>Math.abs(a-SQ2)<=0.05)) return {ok:false,reason:'пропорции листа '+(asp?(((asp.min+asp.max)/2).toFixed(2).replace('.',',')):'?')+' : 1 — не А4/А3 (1,41 : 1). Если лист в клетку — снимите ближе, чтобы была видна сетка; другой формат пока не поддержан',dbg:P.dbg};
   const C=L('calib'), GS=isNode?require('./gridsheet.js'):self.LAB.dzGridSheet, Ha=pageHom(P.quad);
   /* 1. грубо: лист как А4, 5 px/мм — линии и кандидаты осей */
   const ga={map:(u,v)=>H.apply(Ha,[u,v]),box:[0,0,210,297]}, sa=L('grid').rectify(img,ga,{ppm:5,box:[0,0,210,297]});
@@ -108,7 +121,16 @@ function preparePlain(img,o){ o=o||{}; const dz=+o.dz||3, why=[], P=findPaper(im
   const map=(u,v)=>{ const q=[u-c[0],v-c[1]]; return H.apply(Ha,[T[0]+K[0][0]*q[0]+K[0][1]*q[1],T[1]+K[1][0]*q[0]+K[1][1]*q[1]]); };
   const sc=L('grid').rectify(img,{map,box},{ppm:8,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300}); if(!ex.ok) return {ok:false,reason:ex.reason};
   const dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map};
+  /* проверка «это и правда А4/А3»: на точном скане фигура условия подгоняется с 6 параметрами — масштаб по осям
+     и перекос должны быть в 1,5 %. Лист другой пропорции (в клетку 200 × 260, обрезанный, тетрадный) иначе молча
+     растягивался бы до 1 : √2 — и точки «нанесены неточно» на миллиметры */
+  { const gv=V.get(dz,b.n), c6=C.calibrate(dig,{},gv.id,gv.data,{range:box,np:6,cands:GS.axesCands(ex.segs)}), devOf=c=>{ const T6=c.T||[0,0,1,1,1,1]; return c.ok?Math.max(Math.abs(T6[2]),Math.abs(T6[5]),Math.abs(T6[3]),Math.abs(T6[4])):1; };
+    let dev=devOf(c6);
+    /* одна точка нанесена с ошибкой — она тянет подгонку (1–2 %): повтор без каждой точки по очереди; лист не той
+       пропорции растянут при любом исключении */
+    if(c6.ok&&dev>0.015){ const O6=c6.T; Object.keys(gv.data).forEach(k=>{ const ck=C.calibrate(dig,{},gv.id,gv.data,{range:[O6[0]-3,O6[1]-3,O6[0]+3,O6[1]+3],np:6,exclude:k}); dev=Math.min(dev,devOf(ck)); }); }
+    if(!c6.ok||dev>0.015) return {ok:false,reason:'пропорции листа не как у А4/А3 (фигура условия растянута на '+(c6.ok?(dev*100).toFixed(1).replace('.',','):'?')+' %) — если лист в клетку, снимите ближе, чтобы сетка была видна; иначе снимите лист целиком'}; }
   why.push('лист без рамки и клеток: края бумаги → перспектива; по фигуре условия — '+b.pg+(b.flip?' (лист перевёрнут)':''));
   return {ok:true,scan:sc,dig,box,map,origin:c,n:b.n,page:b.pg,flip:b.flip,cover:b.cover,second:b2.cover,why,cands:GS.axesCands(ex.segs),quad:P.quad,dbg:P.dbg}; }
-put('dzPaper',{findPaper,preparePlain,pageHom});
+put('dzPaper',{findPaper,preparePlain,pageHom,aspectOf});
 })();
