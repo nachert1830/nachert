@@ -45,4 +45,13 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   if(typeof text!=='string'||!text) throw Object.assign(new Error('Модель зрения вернула пустой ответ.'),{status:502});
   return {text,model:cfg.model}; }
 
-module.exports={eyesFromEnv,ask,PROMPT,DEF_URL,DEF_MODEL};
+/* какая модель зрения в каталоге отвечает на запрос с картинкой: развёртывание (server/tools/deploy.js) пробует по очереди
+   и подключает первую. Не все модели AI Studio доступны в синхронном режиме: на остальные Yandex отвечает 400/404 */
+const CANDIDATES=['gemma-3-27b-it/latest','gemma-3-27b-it','qwen2.5-vl-32b-instruct/latest','qwen2.5-vl-32b-instruct'];
+/* pick(env, image, {fetch, token}) → {model (адрес модели или null), tried:[{model, error}]}; env.EYES_MODEL задан — пробуется только он */
+async function pick(env,image,o){ const tried=[], models=env.EYES_MODEL?[env.EYES_MODEL]:CANDIDATES.map(m=>'gpt://{folder}/'+m);
+  for(const m of models){ const cfg=eyesFromEnv(Object.assign({},env,{EYES_MODEL:m}));
+    try{ await ask(cfg,{image,w:256,h:256},o); return {model:cfg.model,tried}; }catch(e){ tried.push({model:cfg.model,error:e.message}); } }
+  return {model:null,tried}; }
+
+module.exports={eyesFromEnv,ask,pick,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES};
