@@ -29069,8 +29069,10 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   /* ось выходит за контур на 5 мм: контур — крайние точки линий изображения в полосе вдоль оси шириной 0,5 её длины в каждую сторону (как в нормоконтроле)
      (паз на оси не укорачивает ось; у несимметричного сечения, где габарит шире, — по самому сечению). i — вдоль оси, j — поперёк */
   const SPN=(d,i,j,dflt)=>{ const P=[]; (d.lines||[]).forEach(L=>{ const a=L.a3, b=L.b3; if(a&&b) P.push(a,b,[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2]); });
-    if(!P.length) return dflt; const band=0.5*(Math.max(...P.map(p=>p[i]))-Math.min(...P.map(p=>p[i]))+10), Q=P.filter(p=>Math.abs(p[j])<=band);
-    return Q.length?[Math.min(...Q.map(p=>p[i])),Math.max(...Q.map(p=>p[i]))]:dflt; };
+    if(!P.length) return dflt; let r=[Math.min(...P.map(p=>p[i])),Math.max(...P.map(p=>p[i]))];
+    for(let it=0;it<4;it++){ const band=0.5*(r[1]-r[0]+10), Q=P.filter(p=>Math.abs(p[j])<=band); if(!Q.length) break;   /* полоса — от длины самой оси (контур + 2×5 мм), как в нормоконтроле */
+      const r2=[Math.min(...Q.map(p=>p[i])),Math.max(...Q.map(p=>p[i]))]; if(Math.abs(r2[0]-r[0])<0.01&&Math.abs(r2[1]-r[1])<0.01) break; r=r2; }
+    return r; };
   const DF=DR(sp.fk,0,sp.xb), DL=DR(sp.lk,0,sp.yb), DTv=hz?DR('topNH'):DR('top'), DTc=hz?IG3.drawing(md,'topcut',W,hz.z):DTv, DTx=hz&&sp.H==='full'?DTc:DTv;
   const EF=EX(DF), ETv=EX(DTv), ETc=hz?EX(DTc):ETv, ETx=hz&&sp.H==='full'?ETc:ETv;
   const sF=SPN(DF,2,0,[EF[0][2],EF[1][2]]), sL=SPN(DL,2,1,[EF[0][2],EF[1][2]]), sX=[SPN(DTx,0,1,[ETx[0][0],ETx[1][0]]),SPN(DTc,0,1,[ETc[0][0],ETc[1][0]])], sYc=SPN(DTc,1,0,[ETc[0][1],ETc[1][1]]), sYx=SPN(DTx,1,0,[ETx[0][1],ETx[1][1]]);

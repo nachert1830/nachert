@@ -125,7 +125,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
      в настоящие листы и должны ловиться там, где тренажёр их показывает, — без лишних замечаний */
   { const npage=await browser.newPage(); await npage.goto(URL); await npage.waitForTimeout(1200);
     /* ИГ задания 3 и 4 — выборка вариантов (все 30 — node tests/normo-run.js --set=ig3 | ig4): общий прогон укладывается в CI */
-    const nr=await require('./normo-run.js').runNormo(npage,{nomodel:QUICK,igSample:[1,7,13,18,24,29]});
+    const nr=await require('./normo-run.js').runNormo(npage,{nomodel:QUICK,igSample:[1,7,13,18,24,30]});
     info.push('Нормоконтроль ИГ: листов '+nr.stat.sheets+(QUICK?' (без сверки с моделью)':', виды сверены с 3D-моделью')+', '+Math.round(nr.stat.ms/1000)+' с');
     report('ИГ: нормоконтроль листов',nr.issues.map(i=>({name:i.name,rule:i.rule,msg:i.msg})));
     const mu=await require('./normo-mutate.js').runMutations(npage,{per:QUICK?1:2}), tot=Object.values(mu).reduce((a,x)=>[a[0]+x.поймано,a[1]+x.всего,a[2]+x.лишнее],[0,0,0]);
