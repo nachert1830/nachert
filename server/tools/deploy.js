@@ -46,6 +46,26 @@ const SITE_FRONT='https://nachert1830.ru/lk/', SITE_ORIGIN='https://nachert1830.
 /* https у сайта на GitHub Pages бывает без сертификата для своего домена — тогда ссылки входа ведут на http:// */
 async function siteProbe(){ try{ const r=await fetch(SITE_ORIGIN+'/',{cache:'no-store',signal:AbortSignal.timeout(10000)}); return {ok:r.ok,text:r.ok?'страница на сайте отвечает по https':'страница на сайте: HTTP '+r.status}; }
   catch(e){ return {ok:false,text:'https у сайта не работает: '+String(e&&e.cause&&e.cause.code||e&&e.message||e)}; } }
+/* тестовая картинка для проверки модели зрения: PNG 256×256, белый лист с осью и треугольником */
+function testPng(){ const W=256, Hh=256, px=Buffer.alloc((W+1)*Hh,255);
+  const dot=(x,y)=>{ for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&X<W&&Y>=0&&Y<Hh) px[Y*(W+1)+1+X]=0; } };
+  const line=(a,b)=>{ for(let t=0;t<=1;t+=1/400) dot(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t); };
+  for(let y=0;y<Hh;y++) px[y*(W+1)]=0;
+  line([16,128],[240,128]); line([60,40],[190,70]); line([190,70],[110,110]); line([110,110],[60,40]);
+  const chunk=(t,d)=>{ const l=Buffer.alloc(4); l.writeUInt32BE(d.length); const td=Buffer.concat([Buffer.from(t),d]), c=Buffer.alloc(4); c.writeUInt32BE(crc32(td)); return Buffer.concat([l,td,c]); };
+  const ih=Buffer.alloc(13); ih.writeUInt32BE(W,0); ih.writeUInt32BE(Hh,4); ih[8]=8; ih[9]=0;
+  return 'data:image/png;base64,'+Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ih),chunk('IDAT',zlib.deflateSync(px)),chunk('IEND',Buffer.alloc(0))]).toString('base64'); }
+/* глаза сканера: какая модель зрения в каталоге отвечает на запрос с картинкой — её и подключить (server/lib/eyes.js).
+   Модель не из Yandex Cloud (секрет EYES_KEY) или EYES=off — не проверяется */
+async function eyesPick(folder){ const EY=require('../lib/eyes');
+  if(E('EYES')==='off'){ say('  выключено (EYES=off)'); return ''; }
+  if(E('EYES_KEY')){ say('  модель не из Yandex Cloud (EYES_KEY) — проверка пропущена'); return ''; }
+  let token=''; try{ token=yc(['iam','create-token'],{json:false}); }catch(e){ say('  не получил IAM-токен для проверки модели — оставляю как есть'); return ''; }
+  const r=await EY.pick({EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:E('EYES_MODEL')},testPng(),{token:()=>token,timeout:60000});
+  r.tried.forEach(t=>say('  не отвечает: '+t.model.replace(folder,'<каталог>')+' — '+t.error));
+  if(r.model){ say('  модель зрения: '+r.model.replace(folder,'<каталог>')+' — отвечает на фото'); return r.model; }
+  say('::warning::ИИ-зрение: ни одна модель не ответила на пробное фото (причины — выше). Сканер работает без него. Пришлите эти строки Claude.');
+  return ''; }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
 function currentEnv(){ const v=get(['serverless','function','version','get-by-tag','--function-name',NAMES.api,'--tag','$latest']); return (v&&v.environment)||{}; }
 
@@ -178,6 +198,9 @@ async function main(){
   for(const [k,role] of [['fn','ydb.editor'],['fn','lockbox.payloadViewer'],['fn','postbox.sender'],['fn','ai.languageModels.user'],['gw','functions.functionInvoker']])
     try{ yc(['resource-manager','folder','add-access-binding',folder,'--role',role,'--subject','serviceAccount:'+sa[k].id]); }catch(e){ if(!/already/i.test(e.message)) throw e; }
 
+  step('ИИ-зрение сканера (Yandex AI Studio)');
+  const eyesModel=await eyesPick(folder);
+
   step('База данных YDB (serverless, Россия)');
   let db=get(['ydb','database','get','--name',NAMES.db]);
   if(!db){ say('  создаю базу — это займёт пару минут'); db=yc(['ydb','database','create','--name',NAMES.db,'--serverless']); }
@@ -239,7 +262,7 @@ async function main(){
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
     MAIL_FROM:mailFrom,
     /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
-    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:E('EYES_MODEL'),EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES')};
+    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:eyesModel||E('EYES_MODEL'),EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES')};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
   const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){
@@ -291,4 +314,4 @@ async function main(){
   say('════════════════════════════════════════════');
 }
 if(require.main===module) main().catch(e=>{ console.error('\n✖ '+e.message+'\n\nЕсли непонятно, что делать, — пришлите этот текст Claude.'); process.exit(1); });
-module.exports={zip,crc32,packageFiles,ownerLink};
+module.exports={zip,crc32,packageFiles,ownerLink,testPng};

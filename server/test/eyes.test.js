@@ -2,7 +2,8 @@
 'use strict';
 const test=require('node:test'), assert=require('node:assert');
 const {club}=require('./helpers');
-const {eyesFromEnv}=require('../lib/eyes');
+const {eyesFromEnv,pick}=require('../lib/eyes');
+const {testPng}=require('../tools/deploy');
 const IMG='data:image/jpeg;base64,'+Buffer.from('фото').toString('base64');
 const EYES={url:'https://llm.api.cloud.yandex.net/v1/chat/completions',model:'gpt://b1gtest/qwen2.5-vl-32b-instruct',folder:'b1gtest',key:'',auth:'Bearer',yandex:true,on:true};
 
@@ -38,3 +39,16 @@ test('лимит: не больше 40 фото в час на участник�
   const c=club({eyes:EYES,iam:'t'}); await c.owner(); let last;
   for(let i=0;i<41;i++) last=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600},{as:'owner'});
   assert.equal(last.status,429); });
+
+test('развёртывание: модель зрения подбирается — первая, что ответила на пробное фото; причины отказов остальных видны',async()=>{
+  const img=testPng(), png=Buffer.from(img.split(',')[1],'base64'); assert.equal(png.slice(1,4).toString(),'PNG'); assert.equal(png.readUInt32BE(16),256);
+  const calls=[], http=async(url,o)=>{ const b=JSON.parse(o.body); calls.push({url,model:b.model,auth:o.headers.authorization,folder:o.headers['x-folder-id'],img:b.messages[1].content[1].image_url.url});
+    const ok=/qwen2\.5-vl-32b-instruct\/latest$/.test(b.model);
+    return {ok,status:ok?200:400,text:async()=>JSON.stringify(ok?{choices:[{message:{content:'{"drawings":[]}'}}]}:{error:{message:'model not supported'}})}; };
+  const r=await pick({EYES_FOLDER:'b1gf'},img,{fetch:http,token:()=>'iam-1'});
+  assert.equal(r.model,'gpt://b1gf/qwen2.5-vl-32b-instruct/latest');
+  assert.deepEqual(r.tried.map(t=>t.model),['gpt://b1gf/gemma-3-27b-it/latest','gpt://b1gf/gemma-3-27b-it']); assert.match(r.tried[0].error,/400.*model not supported/);
+  assert.ok(calls.every(c=>c.auth==='Bearer iam-1'&&c.folder==='b1gf'&&c.img===img));
+  /* задана своя модель — пробуется только она; никто не ответил — model: null */
+  const none=await pick({EYES_FOLDER:'b1gf',EYES_MODEL:'gpt://{folder}/my-vl'},img,{fetch:http,token:()=>'t'});
+  assert.equal(none.model,null); assert.deepEqual(none.tried.map(t=>t.model),['gpt://b1gf/my-vl']); });
