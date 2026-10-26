@@ -163,7 +163,7 @@ test('проверка: предпроверка листа ИКГ по ГОСТ
   assert.doesNotMatch(clean,/script|onclick|javascript|https:\/\/evil/); assert.match(clean,/stroke-width="2"/);
   assert.equal(alerted,false,'скрипты из SVG не выполнились');
   /* на адресе функции сканера нет — он лежит рядом с клубом на сайте (/lab/): карточки неактивны, подсказка ведёт на сайт */
-  assert.equal(await page.getAttribute('a.tool[href="#/check"]','aria-disabled'),'true'); assert.match(await page.getAttribute('.note.warn a','href'),/nachert1830\.ru\/club\//);
+  assert.equal(await page.getAttribute('a.tool[href="#/check"]','aria-disabled'),'true'); assert.match(await page.getAttribute('.note.warn a','href'),/nachert1830\.ru\/lk\//);
   assert.deepEqual(page.errs.filter(e=>!/evil|x\.png|ERR_/.test(e)),[]); await ctx.close();
 });
 

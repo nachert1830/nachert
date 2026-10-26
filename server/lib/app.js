@@ -1,6 +1,6 @@
 /* API клуба. Одна функция обслуживает и API (/api/*), и статику клуба (club/), поэтому заголовки безопасности одни.
    createApp({cfg, store, clock, bot, log}) → {handle(req), remind(now), maintain(now)}.
-   Безопасность (подробно — club/README.md, раздел «Безопасность»):
+   Безопасность (подробно — lk/README.md, раздел «Безопасность»):
    • регистрация только по одноразовому приглашению (или владелец из ADMIN_TG_IDS / ADMIN_YA_LOGINS);
    • вход через Яндекс ID (OAuth, код подтверждения обменивается на сервере; хранится только id и имя) или через бота;
    • вход через бота: участник нажимает «Старт» у бота, бот присылает в ЕГО чат кнопку с одноразовой ссылкой (10 минут, один раз,
@@ -13,11 +13,11 @@
 const C=require('./crypto');
 const LET=require('./letters');
 const H=require('./http');
-const FEAT=require('../../club/lib/features.js');
-const SYNC=require('../../club/lib/sync.js');
-const CAL=require('../../club/lib/calendar.js');
-const REM=require('../../club/lib/reminder.js');
-const SRS=require('../../club/lib/srs.js');
+const FEAT=require('../../lk/lib/features.js');
+const SYNC=require('../../lk/lib/sync.js');
+const CAL=require('../../lk/lib/calendar.js');
+const REM=require('../../lk/lib/reminder.js');
+const SRS=require('../../lk/lib/srs.js');
 
 const DOCS_VERSION='2026-10-25';
 const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024;
@@ -221,7 +221,7 @@ function createApp(o){
      4) страница сверяет s со своим sessionStorage (вход начат в этом же браузере) и показывает «Войти как …?».
      Хранится только Yandex id и имя; логин Яндекса — только для сравнения с ADMIN_YA_LOGINS, не сохраняется. */
   const stateId=st=>C.sha256('yastate:'+st).slice(0,40), linkId=code=>C.sha256('link:'+code).slice(0,40);
-  const okRet=u=>typeof u==='string'&&(u===cfg.frontUrl||cfg.fronts.some(f=>u===f+'/'||u===f+'/club/'));
+  const okRet=u=>typeof u==='string'&&(u===cfg.frontUrl||cfg.fronts.some(f=>u===f+'/'||u===f+'/lk/'||u===f+'/club/'));
   const back=(ret,frag)=>({statusCode:302,headers:{Location:ret+'#/'+frag,'Cache-Control':'no-store'},body:''});
   R['GET /api/auth/yandex/start']=async(req)=>{ const q=req.query||{};
     if(!cfg.yandex.clientId) fail(404,'Вход через Яндекс ID не настроен.');

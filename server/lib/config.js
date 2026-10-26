@@ -1,4 +1,4 @@
-/* Настройки из переменных окружения (в Yandex Cloud — переменные функции и секреты Lockbox; список — club/DEPLOY.md).
+/* Настройки из переменных окружения (в Yandex Cloud — переменные функции и секреты Lockbox; список — lk/DEPLOY.md).
    Боевой режим без обязательных настроек не запускается: лучше отказ, чем вход без проверки подписи. */
 'use strict';
 /* списки — через запятую или пробел (в переменных функции Yandex Cloud запятая разделяет сами переменные) */
@@ -17,7 +17,7 @@ function fromEnv(env){ env=env||process.env;
     /* Яндекс ID: ClientID — в переменной функции, Client secret — в Lockbox. Владелец по логину Яндекса (логин не хранится) */
     yandex:{clientId:env.YANDEX_CLIENT_ID||'',secret:env.YANDEX_CLIENT_SECRET||''},
     adminYa:list(env.ADMIN_YA_LOGINS).map(x=>x.toLowerCase()),
-    /* сайты, с которых открывают клуб (nachert1830.ru/club/), и куда ведут ссылки входа */
+    /* сайты, с которых открывают клуб (nachert1830.ru/lk/), и куда ведут ссылки входа */
     fronts:list(env.FRONT_ORIGINS),
     frontUrl:env.FRONT_URL||'',
     /* регистрация открыта всем (вход по почте или Яндекс ID создаёт аккаунт); OPEN_SIGNUP=off — только по приглашениям */
