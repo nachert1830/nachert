@@ -70,6 +70,8 @@ input[type=file]{ display:none; }
 <script>
 const $=id=>document.getElementById(id), C=self.LAB.dzCapture, SR=self.LAB.dzSeries;
 const num=id=>{ const v=$(id).value; return v===''?null:+v; };
+/* вариант из адреса (?n=7 — кабинет передаёт вариант из профиля); нет — сканер узнаёт его по чертежу */
+{ const qn=+new URLSearchParams(location.search).get('n'); if(qn>=1&&qn<=30) $('n').value=qn; }
 const MAX=5, WANT=3, LONG=3000;   /* длинная сторона снимка для проверки: целый А3 на чистом листе — ≈ 6 px/мм */
 let stream=null, loop=null, cap=null, prev=null, frames=[], shots=[], busy=0, worker=null, done=false;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
