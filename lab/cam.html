@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Проверка по камере</title>
-<meta name="description" content="ДЗ №3 на листе в клетку: камера сама снимает серию кадров, кадры голосуют, разбор — поверх вашего фото. Всё считается в телефоне.">
+<meta name="description" content="ДЗ №3 на листе в клетку или на чистом листе без рамки: камера сама снимает серию кадров, кадры голосуют, разбор — поверх вашего фото. Всё считается в телефоне.">
 <style>
 :root{ --bg:#f6f5f1; --card:#fff; --ink:#1b1e24; --mute:#5f6670; --line:#d9d6ce; --blue:#2f6fb5; --red:#b3261e; --green:#2e7d4f; --amber:#a86800; --veil:rgba(0,0,0,.55); }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#15171b; --card:#1e2127; --ink:#e8e6e1; --mute:#a4a9b1; --line:#353a42; --blue:#7fb0ea; --red:#f08a80; --green:#7fcf9c; --amber:#e6b35a; } }
@@ -32,7 +32,7 @@ input[type=file]{ display:none; }
 <body>
 <main>
 <h1>Проверка по камере</h1>
-<p class="sub">ДЗ №3 на листе в клетку. Наведите камеру на лист: она сама снимет 2–5 кадров с разных углов. Кадры проверяются по отдельности и голосуют: вывод звучит, только если его подтверждают несколько кадров. Всё считается в телефоне, фото никуда не отправляются.</p>
+<p class="sub">ДЗ №3 на листе в клетку или на чистом листе (без рамки и штампа — тогда лист должен быть в кадре целиком, на тёмном фоне). Наведите камеру на лист: она сама снимет 2–5 кадров с разных углов. Кадры проверяются по отдельности и голосуют: вывод звучит, только если его подтверждают несколько кадров. Всё считается в телефоне, фото никуда не отправляются.</p>
 
 <div class="card">
   <div class="row">
@@ -69,7 +69,7 @@ input[type=file]{ display:none; }
 <script>
 const $=id=>document.getElementById(id), C=self.LAB.dzCapture, SR=self.LAB.dzSeries;
 const num=id=>{ const v=$(id).value; return v===''?null:+v; };
-const MAX=5, WANT=3, LONG=2000;   /* длинная сторона снимка для проверки: как в тестах (1500 × 2000) */
+const MAX=5, WANT=3, LONG=3000;   /* длинная сторона снимка для проверки: целый А3 на чистом листе — ≈ 6 px/мм */
 let stream=null, loop=null, cap=null, prev=null, frames=[], shots=[], busy=0, worker=null, done=false;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function dots(n,want){ $('dots').innerHTML=Array.from({length:want},(_,i)=>'<i class="'+(i<n?'on':'')+'"></i>').join(''); }

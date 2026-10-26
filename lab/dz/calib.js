@@ -22,6 +22,13 @@ const CAP=2;
 /* карта расстояний до линий (мм) по карте гребней оцифровки; кэш на объекте карты */
 function dmap(map){ if(map._D) return map._D; const g=map.g, w=g.w, h=g.h, a=new Float32Array(w*h), th=map.tR*0.6;
   for(let i=0;i<w*h;i++) a[i]=map.R[i]>=th?1:0;
+  /* шум в тени (лист без сетки, тёмный угол) — россыпь одиночных пятнышек: при плотности 3 % до ближайшего везде
+     < 1 мм, и любая фигура в тени «ложится на линии». Линия — связная цепочка: куски меньше 1,25 мм убираем */
+  { const lab=new Int32Array(w*h).fill(-1), st=[], minPx=Math.round(1.25*(g.ppm||8));
+    for(let i=0;i<w*h;i++){ if(!a[i]||lab[i]>=0) continue; const comp=[]; st.push(i); lab[i]=i;
+      while(st.length){ const j=st.pop(); comp.push(j); const x=j%w, y=(j/w)|0;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ if(!dx&&!dy) continue; const xx=x+dx, yy=y+dy; if(xx<0||yy<0||xx>=w||yy>=h) continue; const q=yy*w+xx; if(a[q]&&lab[q]<0){ lab[q]=i; st.push(q); } } }
+      if(comp.length<minPx) comp.forEach(j=>{ a[j]=0; }); } }
   map._D=RF.distMap({a,w,h,ppm:g.ppm||8,box:map.box},0.5,CAP); return map._D; }
 const at=(D,p)=>{ const v=IMG.sample(D,(p[0]-D.box[0])*D.ppm-0.5,(p[1]-D.box[1])*D.ppm-0.5); return v==null?CAP:v; };
 /* точки фигуры условия через 0,5 мм (мм чертежа), с меткой проекции и отрезка */
