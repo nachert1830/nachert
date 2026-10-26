@@ -13,7 +13,7 @@ function build(){
   const LV=(y,z0,z1,at,t)=>['L','v',[y,z0],[y,z1],at,t], TH=(x0,x1,y,at,t,o)=>{ const q=off(x0,x1,o); return ['T','h',[x0,y],[x1,y],at,t].concat(q?[q.sh!=null?{tx:q.sh}:q]:[]); },
     TV=(x,y0,y1,at,t,o)=>{ const q=off(y0,y1,o); return ['T','v',[x,y0],[x,y1],at,t].concat(q?[q.sh!=null?{tz:q.sh}:q]:[]); };
   /* выноска к отверстию: n отверстий Ø d, центр (x, y), выноска под углом a (град), длина e */
-  const HL=(n,d,x,y,a,e)=>{ const u=[Math.cos(a*Math.PI/180),Math.sin(a*Math.PI/180)], q=e||16; return ['T','lead',[x+u[0]*d/2,y+u[1]*d/2],[x+u[0]*(d/2+q),y+u[1]*(d/2+q)],(n>1?n+' отв. ':'')+'Ø'+d,u[0]>=0?1:-1]; };
+  const HL=(n,d,x,y,a,e)=>{ const u=[Math.cos(a*Math.PI/180),Math.sin(a*Math.PI/180)], q=e||16; return ['T','lead',[x+u[0]*d/2,y+u[1]*d/2],[x+u[0]*(d/2+q),y+u[1]*(d/2+q)],(n>1?n+' отв. ':'')+'Ø'+d,u[0]>=0?1:-1,{c:[x,y],r:d/2,e:q,a}]; };   /* c, r, a — лист может повернуть выноску, если она на что-то налезает */
   const V={};
   const hole=(d,x,y,z0,z1)=>P.cyl(d/2,z0-E,z1+E,{x,y});
   /* ребро жёсткости: секущая плоскость вдоль ребра (ax — ось его толщины: 1 — y, 0 — x) — ребро не штрихуют (ГОСТ 2.305) */
