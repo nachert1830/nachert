@@ -68,7 +68,7 @@ function sheet(o){ o=o||{}; const n=o.n||7, err=o.err||'ok', R=rng((o.seed||1)*6
   const sz=o.size||(plain?(pg==='A3'?[2400,3200]:[1800,2400]):[1500,2000]), cam=S.camera(sh,page,R,lv,sz);
   /* серия: тот же лист, ещё o.shots − 1 съёмок — другой наклон, свет, блик (как телефон в руке); свой поток случайностей */
   const shots=o.shots>1?[cam].concat(Array.from({length:o.shots-1},(_,k)=>S.camera(sh,page,rng((o.seed||1)*7919+n*131+k*17+1),lv,sz,{glare:o.glare==null?0.5:o.glare}))):null;
-  return {img:cam.im,imgs:shots&&shots.map(c=>c.im),truth:{n,err,plain,page:pg,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,params:cam.params,shots:shots&&shots.map(c=>Object.assign({H:c.M},c.params))}}; }
+  return {img:cam.im,imgs:shots&&shots.map(c=>c.im),truth:{n,err,plain,page:pg,data,drawn:D,wrong,O,ph,H:cam.M,noS,prog:pr&&pr.truth,progSegs:pr&&pr.segs,params:cam.params,shots:shots&&shots.map(c=>Object.assign({H:c.M},c.params))}}; }
 put('dzGsynth',{sheet,prog3d});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), s=sheet({n:+(a.n||7),err:a.err||'ok',seed:+(a.seed||1)});
   if(!s){ console.log('лист не построился'); process.exit(1); } require('fs').writeFileSync(a.out||'g.png',IMG.encodePNG(s.img)); console.log(JSON.stringify(s.truth,(k,v)=>k==='H'?undefined:typeof v==='number'?+v.toFixed(2):v)); }

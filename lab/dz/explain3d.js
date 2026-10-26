@@ -95,6 +95,10 @@ function explain3d(segs,data,o){ o=o||{}; const {A,B,C,S}=data, n=v3.unit(v3.cro
   if(s3==='ok') msg.push('3′ на продолжении S′A′'); else { const nm=s3==='bad'?named(hh.q3):null; msg.push('3′ взята в '+f1(d3)+' мм от прямой S′A′'+(nm?' — на пересечении линии связи с '+nm+', а нужно с продолжением S′A′':'')); }
   if(s4==='ok') msg.push('4′ на n′'); else { const nm=s4==='bad'?named(hh.q4):null; msg.push('4′ взята в '+f1(d4)+' мм от n′'+(nm?' — на '+nm:'')); }
   let s34=s3==='bad'||s4==='bad'?'bad':s3==='?'||s4==='?'?'?':'ok';
+  /* обе точки «не там» — студент так не ошибается (ошибка шага сдвигает одну точку), а чужая прямая за h₁′ — сдвигает обе:
+     не утверждаем. h₁ почти через A (|z − z_A| < 3 мм) — 3 ≡ A, 3′ ≡ A′: все прямые сходятся у A′, выбор h₁′ не различим */
+  if(s34==='bad'&&s3==='bad'&&s4==='bad'){ s34='?'; msg.push('обе точки разошлись — скорее, за h₁′ взята не та прямая: не утверждаю'); }
+  if(s34==='bad'&&Math.abs(h1.c-A[2])<3){ s34='?'; msg.push('h₁ проходит почти через A (3 ≡ A) — 3′ и 4′ по такому чертежу не различить'); }
   steps.push({k:'p3',name:'точки 3′ и 4′ (по линиям связи)',status:s34,msg:msg.join('; '),val:{d3,d4}});
   /* ── 3. вращение: радиус для ЕГО оси h₁′ (через его 3′ и 4′) ── */
   const ax={p:hh.q3,e:v2.unit(v2.sub(hh.q4,hh.q3))}, nax=[-ax.e[1],ax.e[0]], Os=v2.sub(SH,v2.mul(nax,v2.dot(v2.sub(SH,ax.p),nax))), r1=v2.dist(SH,Os), R=Math.hypot(r1,h1.c-S[2]);
