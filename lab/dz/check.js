@@ -20,11 +20,15 @@ function checkSheet(img,o){ o=o||{}; const dz=+o.dz||2, n=+o.n, g=V.get(dz,n); i
   /* o.eyes — чертёж от глаз (eyes.js): рамка и штамп не нужны, опора — сама фигура условия */
   let loc, dig, cal, pre=[]; const C=L('calib');
   if(o.eyes){ const pe=L('eyes').prepareEyes(img,o.eyes,{dz,n}); if(!pe.ok) return {verdict:'не могу прочитать',why:[pe.reason],stage:'глаза'};
-    loc={ok:true,eyes:true,O:null}; dig=pe.dig; const c=pe.origin; cal=C.calibrate(dig,{},g.id,g.data,{range:[c[0]-3,c[1]-3,c[0]+3,c[1]+3],cands:L('gridsheet').axesCands(dig.segs)}); pre=pe.why; }
+    loc={ok:true,eyes:true,O:null,fit:pe.fit}; dig=pe.dig; const c=pe.origin; cal=C.calibrate(dig,{},g.id,g.data,{range:[c[0]-3,c[1]-3,c[0]+3,c[1]+3],cands:L('gridsheet').axesCands(dig.segs)}); pre=pe.why; }
   else { loc=L('locate').locate(img); if(!loc.ok) return {verdict:'не могу прочитать',why:[loc.reason],stage:'лист',loc};
     dig=L('digitize').digitize(img,loc); if(!dig.ok) return {verdict:'не могу прочитать',why:[dig.reason],stage:'линии',loc,dig};
     cal=C.calibrate(dig,loc,g.id,g.data); }
-  const res={loc,dig,cal}, R0=checkFrom(img,o,dz,n,g,loc,dig,cal,res); if(pre.length) R0.why=pre.concat(R0.why); return R0; }
+  const res={loc,dig,cal}, R0=checkFrom(img,o,dz,n,g,loc,dig,cal,res); if(pre.length) R0.why=pre.concat(R0.why);
+  /* по глазам без уточнённой перспективы (мало точек условия на линиях — у призмы и куба их всего 4) привязка грубая,
+     до 2–3 мм: тип линии и положение ответа так не меряются — вердикт не утверждаем */
+  if(loc.eyes&&!loc.fit&&['верно','ошибка','другое решение'].includes(R0.verdict)){ R0.why.push('перспектива по фото не уточнена (мало точек условия на линиях) — вердикт «'+R0.verdict+'» не утверждаю; переснимите крупнее'); R0.verdict='не могу утверждать'; }
+  return R0; }
 function checkFrom(img,o,dz,n,g,loc,dig,cal,res){ const C=L('calib');
   /* точки условия: какая-то нанесена не по данным? Проверка гипотезами «координата c точки P с ошибкой δ» по всей
      фигуре условия (calib.givenErrors) — всегда: малая ошибка точки почти не портит общую калибровку, но ломает ответ */

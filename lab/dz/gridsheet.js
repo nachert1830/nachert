@@ -143,6 +143,8 @@ function checkGridPhoto(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Dat
   if(part&&res.parts) res.shown=[part]; else if(res.parts) res.shown=Object.keys(res.parts).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено');
   /* видимость рёбер на листе в клетку — замечание (на экзаменационных листах её часто не требуют) */
   if(res.parts&&res.parts.vis&&res.parts.vis.st==='ошибка') res.visNote='видимость: '+res.parts.vis.why.filter(w=>/должно быть/.test(w)).join('; ');
+  /* по глазам без уточнённой перспективы (чистый лист, мало точек условия на линиях) привязка грубая — не утверждаем */
+  if(o.eyes&&plain&&!plain.fit&&['верно','ошибка','ошибка в данных','данные нанесены верно'].includes(res.verdict)){ why.push('перспектива по фото не уточнена (мало точек условия на линиях) — вердикт «'+res.verdict+'» не утверждаю; переснимите крупнее'); res.verdict='не могу утверждать'; }
   res.part=part; res.why=why; res.ms=Date.now()-t0; return res; }
 put('dzGridSheet',{checkGridPhoto,axesCands});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(3).map(x=>x.replace(/^--/,'').split('='))), IMG=require('../img.js');
