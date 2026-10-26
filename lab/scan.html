@@ -29,22 +29,27 @@ details summary{ cursor:pointer; color:var(--mute); }
 .grid2{ display:grid; grid-template-columns:1fr; gap:14px; } @media (min-width:760px){ .grid2{ grid-template-columns:1fr 1fr; } }
 .tag{ display:inline-block; font-size:12px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--mute); }
 </style>
+<link rel="stylesheet" href="ui.css"><script src="ui.js"></script>
 </head>
 <body>
 <main>
-<h1>Сканер эпюра</h1>
-<p class="sub">Сфотографируйте лист с задачей целиком — сканер выпрямит его, найдёт линии и подписи, сверит с верным решением и известными ошибками и покажет 3D. Не уверен — откажет: «переснимите». Всё считается в телефоне, фото никуда не отправляется.</p>
+<h1>Проверка задачи по фото</h1>
+<p class="sub">Задачи тетради № 46 и № 47. Сканер выпрямит лист, найдёт линии и подписи, сверит с верным решением и типичными ошибками и покажет 3D. Не уверен — попросит переснять. Фото никуда не отправляется.</p>
 
-<div class="card">
-  <div class="row">
-    <select id="task"><option value="47">№ 47 — расстояние от точки до прямой</option><option value="46">№ 46 — пересечение треугольников</option></select>
+<div class="card step" data-n="1">
+  <h2>Какая задача</h2>
+  <p class="shint">Выберите задачу, решение которой на фото.</p>
+  <label class="fld">Задача<select id="task"><option value="47">№ 47 — расстояние от точки до прямой</option><option value="46">№ 46 — пересечение треугольников</option></select></label>
+</div>
+
+<div class="card step" data-n="2">
+  <h2>Снимите решение</h2>
+  <p class="shint">Лист целиком, сверху, при ровном свете; линии обведены как на сдачу.</p>
+  <div class="shoot">
     <label class="btn primary">Сфотографировать<input id="file" type="file" accept="image/*" capture="environment"></label>
     <label class="btn">Выбрать фото<input id="file2" type="file" accept="image/*"></label>
   </div>
-  <div class="row" style="margin-top:8px">
-    <span class="mute">Нет листа под рукой?</span>
-    <select id="demo"></select><button id="demoBtn">Синтетический лист</button>
-  </div>
+  <div class="demo"><span class="mute">Нет листа под рукой — попробуйте на примере:</span><select id="demo"></select><button id="demoBtn" data-photo>Показать пример</button></div>
   <ul class="stages" id="stages"></ul>
 </div>
 
@@ -54,17 +59,17 @@ details summary{ cursor:pointer; color:var(--mute); }
   <div class="mute" id="vnote" style="margin-top:6px"></div>
 </div>
 
-<div class="grid2">
-  <div class="card"><div class="mute">Фото и отметки</div><canvas id="cPhoto"></canvas></div>
-  <div class="card"><div class="mute">Выпрямленный лист: найденные линии и подписи</div><canvas id="cRect"></canvas>
+<div class="grid2 after-photo">
+  <div class="card"><div class="mute">Ваше фото и отметки</div><canvas id="cPhoto"></canvas></div>
+  <div class="card"><div class="mute">Лист выпрямлен: что нашёл сканер</div><canvas id="cRect"></canvas>
     <div class="mute" style="margin-top:6px"><span style="color:#b3261e">■</span> основная · <span style="color:#d17a00">■</span> тонкая · <span style="color:#7a3fbf">■</span> штриховая · <span style="color:#2f6fb5">■</span> не объяснена · рамки — подписи</div></div>
 </div>
-<div class="grid2">
-  <div class="card"><div class="mute">Цифровой чертёж (мм листа)</div><div id="scene"></div></div>
+<div class="grid2 after-photo">
+  <div class="card"><div class="mute">Чертёж, как его понял сканер</div><div id="scene"></div></div>
   <div class="card"><div class="mute">3D — потяните, чтобы повернуть</div><canvas id="c3d" width="600" height="480"></canvas></div>
 </div>
-<div class="card"><details><summary>Подробности (гипотезы и этапы)</summary><pre id="dbg" style="white-space:pre-wrap;font-size:12px"></pre></details></div>
-<p class="mute">Лаборатория: <code>lab/</code>, ядро — <code>core/</code>. Замер — <code>node lab/eval.js</code>, отчёт — <code>lab/REPORT-scanner.md</code>.</p>
+<div class="card after-photo"><details><summary>Технические подробности</summary><pre id="dbg" style="white-space:pre-wrap;font-size:12px"></pre></details></div>
+<!-- Лаборатория: lab/, ядро — core/. Замер — node lab/eval.js, отчёт — lab/REPORT-scanner.md. -->
 </main>
 
 <!-- ядро и сканер: те же файлы, что в тестах Node -->

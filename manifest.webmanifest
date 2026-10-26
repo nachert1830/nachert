@@ -10,8 +10,8 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
-  "background_color": "#1668dc",
-  "theme_color": "#1668dc",
+  "background_color": "#1e6fd9",
+  "theme_color": "#1e6fd9",
   "categories": ["education"],
   "icons": [
     {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},

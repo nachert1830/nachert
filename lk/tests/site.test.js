@@ -81,7 +81,7 @@ test('официальный вход Telegram, привязка Яндекс ID
 
 test('проверка чертежа: сканер открывается внутри кабинета',async()=>{
   const {ctx,page}=await open('phone'); await page.goto(CLUB); await mail(page,'scan@ex.ru'); await onboard(page,'Сканер'); await page.waitForSelector('text=Привет');
-  await page.click('.tile.accent'); await page.waitForSelector('a.tool[href="#/check/dz"]'); await page.click('a.tool[href="#/check/dz"]');
+  await page.click('#tabs a.tcenter'); await page.waitForSelector('a.tool8[href="#/check/dz"]'); await page.click('a.tool8[href="#/check/dz"]');
   const fr=await (await page.waitForSelector('iframe.labf')).contentFrame(); await fr.waitForSelector('body'); assert.match(await fr.title(),/ДЗ/,'сканер ДЗ загрузился в кабинете');
   assert.deepEqual(page.errs,[]); await ctx.close();
 });

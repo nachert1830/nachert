@@ -31,33 +31,45 @@ canvas{ width:100%; height:auto; display:block; border-radius:8px; background:#f
 .grid2{ display:grid; grid-template-columns:1fr; gap:14px; } @media (min-width:760px){ .grid2{ grid-template-columns:1fr 1fr; } }
 details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap; font-size:12px; overflow-wrap:anywhere; }
 </style>
+<link rel="stylesheet" href="ui.css"><script src="ui.js"></script>
 </head>
 <body>
 <main>
 <h1>Проверка ДЗ по фото</h1>
-<p class="sub">ДЗ №2 и №3 по начертательной геометрии, лист А3 книжный. Фото обрабатывается прямо в телефоне — никуда не отправляется. Если сканер не уверен, он так и скажет: ложный вердикт хуже отказа.</p>
+<p class="sub">ДЗ № 2 и № 3 по начертательной геометрии, лист А3 книжный. Фото обрабатывается прямо в телефоне и никуда не отправляется. Не уверен — сканер так и скажет.</p>
 
-<div class="card">
-  <div class="row">
-    <select id="dz"><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select>
-    <span>вариант</span><input id="n" type="number" min="1" max="30" value="8" inputmode="numeric">
-    <select id="paper"><option value="a3">А3 с рамкой</option><option value="grid">лист в клетку</option><option value="plain">чистый лист (без рамки и клеток)</option></select>
-    <select id="part" title="какая часть ДЗ №3 на фото"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select>
+<div class="card step" data-n="1">
+  <h2>Что на листе</h2>
+  <p class="shint">Номер ДЗ, ваш вариант и на чём чертили.</p>
+  <div class="fields">
+    <label class="fld">ДЗ<select id="dz"><option value="2">ДЗ № 2</option><option value="3">ДЗ № 3</option></select></label>
+    <label class="fld">Вариант<input id="n" type="number" min="1" max="30" value="8" inputmode="numeric"></label>
+    <label class="fld">Лист<select id="paper"><option value="a3">А3 с рамкой</option><option value="grid">лист в клетку</option><option value="plain">чистый лист (без рамки и клеток)</option></select></label>
+    <label class="fld">Что на фото<select id="part" title="какая часть ДЗ № 3 на фото"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select></label>
   </div>
-  <div class="row" id="ansRow" style="margin-top:8px" hidden>
-    <span class="mute">Ваши ответы (если есть):</span>
-    <span>H =</span><input id="aH" type="number" step="0.1" inputmode="decimal"><span>мм</span>
-    <span>∠SAB–ABC =</span><input id="aD" type="number" step="0.1" inputmode="decimal"><span>°</span>
-    <span>∠SA–ABC =</span><input id="aP" type="number" step="0.1" inputmode="decimal"><span>°</span>
+  <div class="ans" id="ansRow" hidden>
+    <label class="fld">Ваш ответ H, мм<input id="aH" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
+    <label class="fld">∠SAB–ABC, °<input id="aD" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
+    <label class="fld">∠SA–ABC, °<input id="aP" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
   </div>
-  <div class="mute" id="task" style="margin-top:8px"></div>
+</div>
+
+<div class="card step" data-n="2">
+  <h2>Сверьте условие</h2>
+  <p class="shint">Числа на листе должны совпадать с этими — иначе сканер сверит не с тем вариантом.</p>
+  <div class="mute" id="task"></div>
   <div class="data" id="data"></div>
-  <label class="confirm"><input type="checkbox" id="ok"><span>Я сверил: на моём листе — <b>именно эти данные</b> (вариант <b id="nn">8</b>)</span></label>
-  <div class="row" style="margin-top:10px">
+  <label class="confirm"><input type="checkbox" id="ok"><span>На моём листе — <b>именно эти данные</b> (вариант <b id="nn">8</b>)</span></label>
+</div>
+
+<div class="card step" data-n="3">
+  <h2>Снимите лист</h2>
+  <p class="shint">Лист целиком, сверху, при ровном свете; штамп — внизу справа.</p>
+  <div class="shoot">
     <label class="btn primary off" id="b1">Сфотографировать<input id="file" type="file" accept="image/*" capture="environment"></label>
     <label class="btn off" id="b2">Выбрать фото<input id="file2" type="file" accept="image/*"></label>
   </div>
-  <ul class="stages" id="stages"><li>Снимайте лист целиком, сверху, при ровном свете; штамп — внизу справа.</li></ul>
+  <ul class="stages" id="stages"><li>Кнопки включатся, когда отметите, что данные совпадают.</li></ul>
 </div>
 
 <div class="card" id="vcard" hidden>
@@ -68,13 +80,13 @@ details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap;
   <div class="mute" id="vnote" style="margin-top:6px"></div>
 </div>
 
-<div class="grid2">
-  <div class="card"><div class="mute">Фото: рамка, оси, найденное</div><canvas id="cPhoto"></canvas></div>
-  <div class="card"><div class="mute">Чертёж из рамки: линии листа (серые); <span style="color:#2e7d4f">■</span> верный ответ, <span style="color:#b3261e">■</span> найденный у вас</div><canvas id="cDraw"></canvas></div>
+<div class="grid2 after-photo">
+  <div class="card"><div class="mute">Ваше фото: что нашёл сканер</div><canvas id="cPhoto"></canvas></div>
+  <div class="card"><div class="mute">Чертёж с листа: серое — ваши линии, <span style="color:#13804e">■</span> верный ответ, <span style="color:#dc2a22">■</span> ваш</div><canvas id="cDraw"></canvas></div>
 </div>
-<div class="card" id="exCard" hidden><div class="mute">Разбор по шагам: ваши линии, точки построения и верный ответ (масштаб — мм чертежа)</div><div id="exSvg" style="overflow:auto"></div></div>
-<div class="card"><details><summary>Подробности</summary><pre id="dbg"></pre></details></div>
-<p class="mute">Лаборатория: <code>lab/dz/</code>, ядро — <code>core/dz.js</code>, варианты — <code>core/dz-variants.js</code>. Замеры — <code>node lab/dz/test-check2.js</code>, <code>node lab/dz/test-check3.js</code>; отчёт — <code>lab/dz/REPORT.md</code>.</p>
+<div class="card" id="exCard" hidden><div class="mute">Разбор по шагам: ваши линии, точки построения и верный ответ</div><div id="exSvg" style="overflow:auto"></div></div>
+<div class="card after-photo"><details><summary>Технические подробности</summary><pre id="dbg"></pre></details></div>
+<!-- Лаборатория: lab/dz/, ядро — core/dz.js, варианты — core/dz-variants.js. Замеры — node lab/dz/test-check2.js, node lab/dz/test-check3.js; отчёт — lab/dz/REPORT.md. -->
 </main>
 <script src="../core/dz.js"></script><script src="../core/dz-variants.js"></script><script src="img.js"></script>
 <script src="dz/model.js"></script>
@@ -97,9 +109,9 @@ function toImageData(img){ const k=Math.min(1,3000/Math.max(img.naturalWidth,img
 let worker=null;
 function loadFile(f){ if(!$('ok').checked) return; const url=URL.createObjectURL(f), im=new Image(); im.onload=()=>{ const d=toImageData(im); URL.revokeObjectURL(url); run(d); }; im.src=url; }
 $('file').onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]); $('file2').onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]);
-function run(img){ const dz=+$('dz').value, n=+$('n').value; $('vcard').hidden=true; drawPhoto(img,null); stage('Проверяю: лист, рамка, эпюр, условие варианта, ответ… (до минуты на телефоне)');
+function run(img){ const dz=+$('dz').value, n=+$('n').value; $('vcard').hidden=true; drawPhoto(img,null); stage('Проверяю лист и ответ… на телефоне — до минуты');
   if(worker) worker.terminate(); worker=new Worker('dz/worker.js');
-  worker.onmessage=e=>{ const r=e.data; if(r.error){ stage('Сбой: '+r.error); return; } stage('Готово за '+(r.ms/1000).toFixed(1)+' с'+(r.pxPerMm?' · '+f1(r.pxPerMm)+' px/мм':'')+(r.cover!=null?' · условие на линиях '+Math.round(r.cover*100)+' %':''));
+  worker.onmessage=e=>{ const r=e.data; if(r.error){ stage('Сбой: '+r.error); return; } stage('Готово за '+(r.ms/1000).toFixed(1)+' с');
     show(r,dz,n); drawPhoto(img,r); drawDraw(img,r,dz,n); $('dbg').textContent=JSON.stringify({вердикт:r.verdict,этап:r.stage,причины:r.why,части:r.parts||null,калибровка:r.T||null,СКО_мм:r.rms||null,рёбра:r.edges||null,варианты:r.variants||null},null,1); };
   const num=id=>{ const v=$(id).value; return v===''?null:+v; };
   worker.postMessage({img:{width:img.width,height:img.height,data:img.data},dz,n,paper:$('paper').value,part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
