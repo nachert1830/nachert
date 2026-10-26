@@ -14,8 +14,11 @@ function frame(img,dz,n,answers,part,paper){ const g=self.LAB.dzGridSheet.checkG
     const poly=(a,b)=>{ const N=Math.max(2,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/2)+1); return Array.from({length:N},(_,i)=>m([a[0]+(b[0]-a[0])*i/(N-1),a[1]+(b[1]-a[1])*i/(N-1)])); };
     fr.overlay=pr.map(q=>q.t==='dot'?Object.assign({},q,{p:m(q.p)}):Object.assign({},q,{pts:poly(q.a,q.b)})); }
   return fr; }
+/* фигура условия там, где её нашёл мозг: отрезки в px снимка (мм чертежа → мм листа (+O) → px), ломаной через 3 мм */
+function figPx(g){ try{ if(!g||!g.ok||!g._grid||!g.given) return null; const O=g.given.O, m=p=>g._grid.map(p[0]+O[0],p[1]+O[1]);
+    return self.LAB.dzModel.given(g.id,g.data).segs.map(q=>{ const N=Math.max(2,Math.ceil(Math.hypot(q.b[0]-q.a[0],q.b[1]-q.a[1])/3)+1); return Array.from({length:N},(_,i)=>m([q.a[0]+(q.b[0]-q.a[0])*i/(N-1),q.a[1]+(q.b[1]-q.a[1])*i/(N-1)])); }); }catch(e){ return null; } }
 /* ответ странице по листу в клетку / чистому листу / чертежу от глаз: вердикт, причины, части, шаги г), картинка разбора */
-function gridOut(g){ const out={verdict:g.verdict,why:(g.why||[]).concat((g.shown||[]).map(k=>g.parts&&g.parts[k]?'часть '+({a:'1',b:'2',c:'3',d:'4'}[k])+': '+g.parts[k].st+' — '+(g.parts[k].why||[]).join('; '):null).filter(Boolean),g.visNote?['замечание — '+g.visNote]:[])};
+function gridOut(g){ const out={fig:figPx(g),verdict:g.verdict,why:(g.why||[]).concat((g.shown||[]).map(k=>g.parts&&g.parts[k]?'часть '+({a:'1',b:'2',c:'3',d:'4'}[k])+': '+g.parts[k].st+' — '+(g.parts[k].why||[]).join('; '):null).filter(Boolean),g.visNote?['замечание — '+g.visNote]:[])};
   if(g.ex3d&&g.ex3d.steps.length&&g.dig){ out.ex={steps:g.ex3d.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex3d.first&&g.ex3d.first.k};
     try{ const segs=self.LAB.dzCalib.drawSegs(g.dig,{T:[g.given.O[0],g.given.O[1],0,0,0,0]}); out.svg=self.LAB.dzReport3d.svg({segs,data:g.given.drawn,ex:g.ex3d,why:(g.answers||[]).filter(a=>a.k==='phi').map(a=>a.msg.split('; на чертеже')[0])}); }catch(x){} }
   return out; }
@@ -41,7 +44,7 @@ self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now
       if(r&&r.drawings.some(g=>g.ok)){ const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'};
         const drawings=r.drawings.map((g,i)=>Object.assign(+dz===2?{verdict:g.verdict,why:g.why||[],ex:g.ex?{steps:g.ex.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex.first&&g.ex.first.k}:null}:gridOut(g),{title:'Чертёж '+(i+1)+(g.part||g.eyesPart?' — '+PN[g.part||g.eyesPart]:'')}));
         /* что увидели глаза — на фото (px снимка): точки с подписями и рамка каждого чертежа */
-        const eyesPts=E.drawings.map((d,i)=>({pts:d.pts,box:d.box,v:r.drawings[i].verdict}));
+        const eyesPts=E.drawings.map((d,i)=>({pts:d.pts,box:d.box,v:r.drawings[i].verdict,fig:drawings[i].fig}));
         self.postMessage({verdict:r.verdict,why:['ИИ-зрение нашло чертежей: '+r.drawings.length].concat(r.why),drawings,eyesPts,stage:'глаза',ms:Date.now()-t0}); return; }
       if(r) note='ИИ-зрение: '+r.why.join('; '); }
     self.onmessage({data:Object.assign({},e.data,{eyes:null,eyesNote:note})}); return; }

@@ -82,7 +82,7 @@ details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap;
 </div>
 
 <div class="grid2 after-photo">
-  <div class="card"><div class="mute">Ваше фото: что нашёл сканер (с ИИ-зрением — точки, которые увидела модель, и номер чертежа)</div><canvas id="cPhoto"></canvas></div>
+  <div class="card"><div class="mute">Ваше фото: что нашёл сканер (с ИИ-зрением — зелёным условие варианта там, где сканер нашёл его на ваших линиях, и номер чертежа)</div><canvas id="cPhoto"></canvas></div>
   <div class="card"><div class="mute">Чертёж с листа: серое — ваши линии, <span style="color:#13804e">■</span> верный ответ, <span style="color:#dc2a22">■</span> ваш</div><canvas id="cDraw"></canvas></div>
 </div>
 <div id="drw"></div>
@@ -157,7 +157,9 @@ function drawPhoto(img,r){ const c=$('cPhoto'), k=Math.min(1,900/img.width); c.w
   if(r&&r.eyesPts){ g.font='600 13px system-ui,sans-serif'; r.eyesPts.forEach((d,i)=>{ const col=d.v==='верно'||d.v==='данные нанесены верно'?'#2e7d4f':/ошибка/.test(d.v)?'#b3261e':'#2f6fb5';
       g.strokeStyle=col; g.fillStyle=col; g.lineWidth=2;
       if(d.box){ g.setLineDash([6,4]); g.strokeRect(d.box[0]*k,d.box[1]*k,(d.box[2]-d.box[0])*k,(d.box[3]-d.box[1])*k); g.setLineDash([]); }
-      Object.entries(d.pts).forEach(([l,p])=>{ const x=p[0]*k, y=p[1]*k; g.beginPath(); g.arc(x,y,4,0,7); g.stroke(); if(l!=='O') g.fillText(l,x+5,y-5); });
+      /* фигура условия там, где её нашёл сканер (по линиям) — поверх линий студента; точки глаз — бледно */
+      if(d.fig){ g.save(); g.strokeStyle='rgba(19,128,78,.85)'; g.lineWidth=2.5; d.fig.forEach(pl=>{ g.beginPath(); pl.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k)); g.stroke(); }); g.restore(); }
+      g.globalAlpha=d.fig?0.35:1; Object.entries(d.pts).forEach(([l,p])=>{ const x=p[0]*k, y=p[1]*k; g.beginPath(); g.arc(x,y,4,0,7); g.stroke(); if(l!=='O'&&!d.fig) g.fillText(l,x+5,y-5); }); g.globalAlpha=1;
       const O=d.pts.O||Object.values(d.pts)[0]; if(O){ g.beginPath(); g.arc(O[0]*k,O[1]*k,11,0,7); g.fill(); g.fillStyle='#fff'; g.fillText(String(i+1),O[0]*k-4,O[1]*k+5); } }); return; }
   if(!r||!r.H) return; const P=p=>{ const q=IMG.H.apply(r.H,p); return [q[0]*k,q[1]*k]; }, line=(a,b,col,w)=>{ g.strokeStyle=col; g.lineWidth=w||2; g.beginPath(); g.moveTo(...P(a)); g.lineTo(...P(b)); g.stroke(); };
   const F=[[20,5],[292,5],[292,415],[20,415]]; F.forEach((p,i)=>line(p,F[(i+1)%4],'rgba(47,111,181,.85)',2.5));

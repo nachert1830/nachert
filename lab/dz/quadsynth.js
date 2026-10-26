@@ -22,7 +22,7 @@ function sheet(o){ const n=o.n, R=IMG.rng((o.seed||1)*7349+n*13), data=V.get(3,n
     /* построение части, которое помещается в четверть (с полями 6 мм): до 300 попыток, иначе — только заданное */
     let items=given, built=false;
     for(let k=0;k<300;k++){ let p=null; try{ p=mk[part](); }catch(e){} if(!p) continue; const its=given.concat(p.items), b=bbox(its.flatMap(itemPts));
-      if(b[2]-b[0]+30<=cw-12&&b[3]-b[1]+16<=ch-12){ items=its; built=true; break; } }
+      if(b[2]-b[0]+27<=cw-2&&b[3]-b[1]+16<=ch-2){ items=its; built=true; break; } }
     const b=bbox(items.flatMap(itemPts)), O=[x0+6+15-b[0]+R()*Math.max(0,cw-12-(b[2]-b[0]+30)),y0+6+8-b[1]+R()*Math.max(0,ch-12-(b[3]-b[1]+16))];
     groups.push({items,O}); const pts={}; M.given('3',data).pts.forEach(q=>{ pts[q.l]=[O[0]+q.at[0],O[1]+q.at[1]]; }); pts.O=O.slice();
     gt.push({part,built,O,pts,box:[O[0]+b[0]-15,O[1]+b[1]-8,O[0]+Math.max(0,b[2])+12,O[1]+b[3]+8]}); });
