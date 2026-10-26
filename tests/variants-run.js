@@ -1,19 +1,19 @@
 /* ═══════════ Все варианты ДЗ: каждый разбор строится ядром и проходит проверки сайта ═══════════
-   Данные — variants/ (таблицы заданий). Для каждого варианта ядро строит разбор (шаги, чертёж) тем же кодом,
+   Данные и решатели — dz/<курс>/<номер>/ (реестр DZR, kernel/dz.js). Для каждого варианта ядро строит разбор (шаги, чертёж) тем же кодом,
    что пример на сайте, и разбор проходит те же проверки, что пример: ДЗ-оракул (условие и ответ числами),
    3D-проверка чертежа, «Евклид» (построимость), арифметика в тексте.
-   node tests/variants-run.js [--only=dz2,dz3] [--n=1,7]   — отдельный прогон;  runVariants(page) — из tests/run.js */
+   node tests/variants-run.js [--only=ng2,ng3] [--n=1,7]   — отдельный прогон;  runVariants(page) — из tests/run.js */
 const fs=require('fs'), path=require('path');
 const ROOT=path.join(__dirname,'..');
 /* разобранные вручную совпадения — tests/variants-baseline.json (ключ «вариант | правило | сообщение») */
 const ACCEPTED=new Set(JSON.parse(fs.readFileSync(path.join(__dirname,'variants-baseline.json'),'utf8')).accepted.map(a=>a.key));
 const fresh=list=>list.filter(x=>!ACCEPTED.has([x.name,x.rule,x.msg].join(' | ')));
 
-/* файлы данных и ядра — в порядке загрузки (ядро после данных) */
-const FILES=['variants/ng/dz1.js','variants/ng/dz2.js','variants/ng/dz3.js','variants/ng/dz4.js','variants/ng/dz5.js','kernel/ng.js','kernel/ng-dz1.js','kernel/ng-dz5.js','kernel/sheet.js'];
-/* две независимые расшифровки таблиц ДЗ №2 и №3 (variants/ и core/dz-variants.js) обязаны совпасть */
+/* данные, решатели и лист грузит сама страница (index.html → kernel/dz.js, dz/…, kernel/sheet.js) */
+const FILES=[];
+/* две независимые расшифровки таблиц ДЗ №2 и №3 (dz/ng/N/variants.js и core/dz-variants.js) обязаны совпасть */
 function dataCheck(){ const out=[], C=require('../core/dz-variants.js');
-  [['dz2',C.DZ2],['dz3',C.DZ3]].forEach(([dz,ref])=>{ const V=require('../variants/ng/'+dz+'.js').V;
+  [['ng2',C.DZ2],['ng3',C.DZ3]].forEach(([dz,ref])=>{ const V=require('../dz/ng/'+dz.slice(2)+'/variants.js').V;
     for(let n=1;n<=30;n++){ const a=V[n], b=ref[n]; if(!a||!b){ out.push({name:dz+' в.'+n,rule:'данные',msg:'нет варианта в одной из расшифровок'}); continue; }
       const ks=new Set([...Object.keys(a),...Object.keys(b)]); ks.forEach(k=>{ if(JSON.stringify(a[k])!==JSON.stringify(b[k])) out.push({name:dz+' в.'+n,rule:'данные: две расшифровки расходятся',msg:k+': '+JSON.stringify(a[k])+' и '+JSON.stringify(b[k])}); }); } });
   return out; }
@@ -23,24 +23,23 @@ async function loadAll(page){
   for(const f of ['geometry','euclid','arith','dz']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
 }
 
-/* opts: {only:['dz2',…], n:[1,7]} → {checked, list:[{name,rule,msg}]} */
+/* opts: {only:['ng2',…], n:[1,7]} → {checked, list:[{name,rule,msg}]} */
 async function runVariants(page,opts){ opts=opts||{};
   return page.evaluate(o=>{ const out=[]; let checked=0;
-    const dzs=(o.only&&o.only.length?o.only:NGK.list()).filter(d=>NGK.has(d));
-    dzs.forEach(dz=>NGK.numbers(dz).forEach(n=>{ if(o.n&&o.n.length&&!o.n.includes(n)) return;
+    const dzs=(o.only&&o.only.length?o.only:DZR.list().map(d=>d.id)).filter(d=>DZR.numbers(d).length);
+    dzs.forEach(dz=>DZR.numbers(dz).forEach(n=>{ if(o.n&&o.n.length&&!o.n.includes(n)) return;
       const name=dz+' в.'+n; let r;
-      try{ r=NGK.solve(dz,n); }catch(e){ out.push({name,rule:'сбой построения',msg:String(e&&e.stack||e).slice(0,300)}); return; }
+      try{ r=DZR.solve(dz,n); }catch(e){ out.push({name,rule:'сбой построения',msg:String(e&&e.stack||e).slice(0,300)}); return; }
       if(!r||!r.task){ out.push({name,rule:'нет разбора',msg:r&&r.why||''}); return; }
       checked++;
       (r.cert||[]).forEach(m=>out.push({name,rule:'условие задачи (сертификат ядра)',msg:m}));
       const add=(rule,list)=>list.forEach(x=>out.push({name,rule:rule+(x.rule?' · '+x.rule:''),msg:(x.name?x.name+': ':'')+(x.msg||'')}));
-      try{ if(r.hwId&&DZ_IDS.includes(r.hwId)) add('ДЗ-оракул',DZ_CHECK({get:id=>id===r.hwId?{task:r.task}:{task:null}}).filter(x=>!/нет разбора/.test(x.rule))); }catch(e){ out.push({name,rule:'сбой ДЗ-оракула',msg:String(e)}); }
+      try{ if(r.oracle&&DZ_IDS.includes(r.oracle)) add('ДЗ-оракул',DZ_CHECK({get:id=>id===r.oracle?{task:r.task}:{task:null}}).filter(x=>!/нет разбора/.test(x.rule))); }catch(e){ out.push({name,rule:'сбой ДЗ-оракула',msg:String(e)}); }
       try{ add('3D-проверка',GEOM_CHECK({tasks:[Object.assign({n:name},r.task)]})); }catch(e){ out.push({name,rule:'сбой 3D-проверки',msg:String(e)}); }
       try{ add('«Евклид»',EUCLID_CHECK({tasks:[Object.assign({n:name},r.task)]})); }catch(e){ out.push({name,rule:'сбой «Евклида»',msg:String(e)}); }
       try{ add('арифметика',ARITH_CHECK({tasks:[Object.assign({n:name},r.task)]})); }catch(e){ out.push({name,rule:'сбой арифметики',msg:String(e)}); }
       /* листы: строятся, без NaN, всё нарисованное — внутри рамки (20/5/5/5 на А3 297 × 420) */
-      if(window.SHEET) ['final','draft'].forEach(mode=>{ try{ const src=VARIANTS.ng[dz], pts=typeof src.points==='function'?src.points(n):src.points;
-          const sh=SHEET.ng(r,{title:dz,sub:'',n,points:pts,data:src.V[n]},mode);
+      if(window.SHEET) ['final','draft'].forEach(mode=>{ try{ const sh=SHEET.ng(r,DZR.meta(dz,n),mode);
           if(/NaN|undefined|Infinity/.test(sh.svg)) out.push({name,rule:'лист ('+mode+')',msg:'в SVG есть NaN/undefined'});
           const xs=[], ys=[]; sh.svg.replace(/<(line|circle|path|text)\b([^>]*)>/g,(m,t,a)=>{ const g=k=>{ const q=new RegExp(' '+k+'="([-\\d.]+)"').exec(a); return q?+q[1]:null; };
             if(t==='line'){ xs.push(g('x1'),g('x2')); ys.push(g('y1'),g('y2')); } if(t==='circle'){ const r0=g('r')||0; xs.push(g('cx')-r0,g('cx')+r0); ys.push(g('cy')-r0,g('cy')+r0); } if(t==='text'){ xs.push(g('x')); ys.push(g('y')); }

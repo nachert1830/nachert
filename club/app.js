@@ -238,7 +238,7 @@ function stepAction(s){ const e=s.evObj; if(!e) return '';
   if(s.k==='mock') return `<a class="btn sm" href="#/event/${e.id}/mock">Пробный РК</a>`;
   if(s.k==='light') return ext(mainUrl(e.subj==='ng'?'#/ng/cheat':'#/ig/theory'),'Шпаргалка на сайте');
   if(e.kind==='dz'&&s.k==='check'&&e.subj==='ikg'&&flag('normo')) return `<a class="btn sm" href="#/check">Предпроверка листа</a>`;
-  if(e.kind==='dz'&&s.k==='read') return ext(mainUrl(e.subj==='ng'?'#/ng/hw':'#/ig/hw2'),'Разборы ДЗ на сайте');
+  if(e.kind==='dz'&&s.k==='read') return ext(mainUrl('#/dz'),'Разборы ДЗ на сайте');
   return ''; }
 function eventView(id,sub){ const e=events().find(x=>x.id===id); if(!e){ render('<p class="note bad">Нет такого события.</p>'); return; }
   if(sub==='diag') return diagView(e); if(sub==='mix') return mixView(e); if(sub==='mock') return mockView(e);

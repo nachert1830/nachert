@@ -62,7 +62,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(t.n&&t.all/t.n<0.85) fail.push('Проверка ДЗ ослабла: мутации кода ДЗ ловятся в '+Math.round(100*t.all/t.n)+'% случаев'); }
     await dpage.close(); }
 
-  /* 3б″. все варианты заданий (variants/): ядро (kernel/) строит разбор каждого, и он проходит те же проверки, что примеры */
+  /* 3б″. все варианты заданий (dz/): решатели строят разбор каждого, и он проходит те же проверки, что примеры */
   { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
     const VR=require('./variants-run.js'); await VR.loadAll(vpage);
     const r=await VR.runVariants(vpage), list=VR.dataCheck().concat(r.list), bad=VR.fresh(list);
@@ -183,7 +183,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
      угол ребра с плоскостью), выбор варианта подставляет его данные и показывает те же числа; варианты-«зеркала» дают равные ответы;
      ответы варианта, вписанные как свои, проходят проверку */
   { const hp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const he=[]; hp.on('pageerror',e=>he.push(String(e)));
-    await hp.goto(URL+'#/ng/hw/3'); await hp.waitForTimeout(1500);
+    await hp.goto(URL+'#/dz/ng3/my'); await hp.waitForTimeout(1500);
     const out=await hp.evaluate(async()=>{ const bad=[], S=HWCHECK.SPEC['3'], V=S.vars, sub=(a,b)=>a.map((v,i)=>v-b[i]), dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], ln=a=>Math.sqrt(dt(a,a)), D=r=>r*180/Math.PI;
       const keys=Object.keys(V); if(keys.length!==30) bad.push({name:'ДЗ №3',rule:'30 вариантов',msg:'в таблице '+keys.length});
       const fmt=x=>String(Math.round(x*10)/10).replace('.',',');
@@ -202,7 +202,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(!/Все условия выполнены/.test(document.getElementById('hcRes').textContent)) bad.push({name:'ДЗ №3, вариант 17',rule:'ответы варианта проходят проверку',msg:document.getElementById('hcRes').textContent.slice(0,160)});
       document.querySelector('.hc-clr').click(); try{ localStorage.removeItem('nch2_hwvar_3'); }catch(e){}
       return bad; });
-    he.forEach(e=>out.push({name:'#/ng/hw/3',rule:'ошибка JS',msg:e.slice(0,200)}));
+    he.forEach(e=>out.push({name:'#/dz/ng3/my',rule:'ошибка JS',msg:e.slice(0,200)}));
     info.push('ДЗ №3, таблица вариантов: '+out.length+' замечаний (30 вариантов: данные, ответы, проверка своих чисел)');
     report('ДЗ №3: варианты и ответы',out); await hp.close(); }
 
@@ -235,7 +235,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(st.w>st.iw+1) bad.push({name:h,rule:'горизонтальная прокрутка',msg:'ширина '+st.w+' при экране '+st.iw});
       if(st.huge.length) bad.push({name:h,rule:'элемент на весь экран',msg:st.huge.slice(0,3).join(', ')});
       if(st.txt<40) bad.push({name:h,rule:'пустая страница',msg:'текста '+st.txt+' символов'});
-      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)&&!/^#\/ng\/var\/dz\d\/(?!1(\/|$))/.test(l)) queue.push(l); }); }   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js; варианты ДЗ — tests/variants-run.js (здесь — первый вариант каждого задания) */
+      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)&&!/^#\/dz\/\w+\/(?!1(\/|$))\d+/.test(l)) queue.push(l); }); }   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js; варианты ДЗ — tests/variants-run.js (здесь — первый вариант каждого задания) */
     info.push('Обход: страниц '+n);
     /* разбор каждой задачи до конца: «Дальше» до ответа */
     const tasks=await page.evaluate(()=>WB3.tasks.map(t=>t.n));

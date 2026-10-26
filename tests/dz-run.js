@@ -8,11 +8,13 @@
 const fs=require('fs'), path=require('path');
 const ROOT=path.join(__dirname,'..');
 
-/* исходный текст блока ДЗ на сайте и строки данных каждого примера */
-function source(){ const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
-  const a=html.indexOf('/* ДЗ №1–5: методика и разобранные примеры. */'), b=html.indexOf('window.NGHW={',a), c=html.indexOf('})();',b)+5;
-  if(a<0||b<0) throw new Error('блок ДЗ не найден');
-  return html.slice(a,c); }
+/* исходный текст решений ДЗ №2 и №3 (тот же код, что на сайте: dz/ng/lib.js + dz/ng/2|3/solver.js), собранный в одну
+   изолированную функцию: свои NGLIB и заглушка реестра — сайт и его реестр DZR не меняются. Результат — window.NGHW
+   с тем же интерфейсом, что раньше: get(id).task — разбор примера, _HW — расчёты. */
+function source(){ const rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  return '(function(){ const self={}, DZR={def(){}}; let NGLIB;\n'+rd('dz/ng/lib.js')+'\nNGLIB=self.NGLIB;\n/* ── 20-dz2.js ── */\n'+rd('dz/ng/2/solver.js')+'\n'+rd('dz/ng/3/solver.js')+
+    '\n/* ── 40-dz5.js ── */\nconst HW=NGLIB.HW, K={\'2\':2,\'2b\':\'2b\',\'2c\':\'2c\',\'3\':3}, RU=new Set();\n'+
+    'window.NGHW={get(id){ const t=HW.tasks[K[id]]; if(!t) return null; if(!RU.has(t)){ RU.add(t); try{ WB3.ruDec(t); }catch(e){} } return {n:id,task:t}; },_HW:HW};\n})();\n'; }
 const DATA={
   '2':  /(HW\.calcOf\[2\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,
   '2b': /(HW\.calcOf\['2b'\] = function\(VAR_\)\{\n  let )([^;]*)(;)/,
