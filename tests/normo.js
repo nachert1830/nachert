@@ -237,9 +237,13 @@ function run(F,opt){
   VW.forEach(w=>{ if(FV) return; const l=VW.find(u=>u!==w&&u.b[0]>w.b[2]&&ovY(u,w)>0), t=VW.find(u=>u!==w&&u.b[1]>w.b[3]&&ovX(u,w)>0); if(l||t){ FV=w; LV=l||null; TV=t||null; } });
   F.views={front:FV&&FV.b.map(v=>R(v/k)),left:LV&&LV.b.map(v=>R(v/k)),top:TV&&TV.b.map(v=>R(v/k))};
   const tol=0.35*k;
-  if(FV&&TV){ if(Math.abs(FV.b[0]-TV.b[0])>tol||Math.abs(FV.b[2]-TV.b[2])>tol) add('2.305','проекционная связь','главный вид и вид сверху: ширина '+mm(FV.b[2]-FV.b[0])+' и '+mm(TV.b[2]-TV.b[0])+' мм, сдвиг '+mm(TV.b[0]-FV.b[0])+' мм — не на одной вертикали',[TV.b[0],TV.b[1]]); }
-  if(FV&&LV){ if(Math.abs(FV.b[1]-LV.b[1])>tol||Math.abs(FV.b[3]-LV.b[3])>tol) add('2.305','проекционная связь','главный вид и вид слева: высота '+mm(FV.b[3]-FV.b[1])+' и '+mm(LV.b[3]-LV.b[1])+' мм, сдвиг '+mm(LV.b[1]-FV.b[1])+' мм — не на одной горизонтали',[LV.b[0],LV.b[1]]); }
-  if(TV&&LV){ const dT=TV.b[3]-TV.b[1], dL=LV.b[2]-LV.b[0]; if(Math.abs(dT-dL)>tol) add('2.305','проекционная связь','глубина на виде сверху '+mm(dT)+' мм, на виде слева '+mm(dL)+' мм',[LV.b[0],LV.b[3]]); }
+  /* разрез показывает только часть детали за плоскостью — его изображение может быть у́же соседнего вида: тогда в проекционной
+     связи оно должно лежать в пределах соседнего (а не совпадать с ним краями) */
+  const cutV=w=>fills.some(f=>f.pat&&w.ids.includes(f.view)), inside=(A,B,i)=>A.b[i]>=B.b[i]-tol&&A.b[i+2]<=B.b[i+2]+tol;
+  const aligned=(A,B,i)=>Math.abs(A.b[i]-B.b[i])<=tol&&Math.abs(A.b[i+2]-B.b[i+2])<=tol||cutV(A)&&inside(A,B,i)||cutV(B)&&inside(B,A,i);
+  if(FV&&TV){ if(!aligned(FV,TV,0)) add('2.305','проекционная связь','главный вид и вид сверху: ширина '+mm(FV.b[2]-FV.b[0])+' и '+mm(TV.b[2]-TV.b[0])+' мм, сдвиг '+mm(TV.b[0]-FV.b[0])+' мм — не на одной вертикали',[TV.b[0],TV.b[1]]); }
+  if(FV&&LV){ if(!aligned(FV,LV,1)) add('2.305','проекционная связь','главный вид и вид слева: высота '+mm(FV.b[3]-FV.b[1])+' и '+mm(LV.b[3]-LV.b[1])+' мм, сдвиг '+mm(LV.b[1]-FV.b[1])+' мм — не на одной горизонтали',[LV.b[0],LV.b[1]]); }
+  if(TV&&LV){ const dT=TV.b[3]-TV.b[1], dL=LV.b[2]-LV.b[0]; if(Math.abs(dT-dL)>tol&&!(cutV(TV)&&dT<dL)&&!(cutV(LV)&&dL<dT)) add('2.305','проекционная связь','глубина на виде сверху '+mm(dT)+' мм, на виде слева '+mm(dL)+' мм',[LV.b[0],LV.b[3]]); }
 
   /* ── осевые выходят за контур на 2…5 мм (ГОСТ 2.303): крайние точки контура своего изображения в полосе вдоль оси ── */
   const chains=[];

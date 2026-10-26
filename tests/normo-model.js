@@ -84,10 +84,10 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
     /* положение на листе: X = ox + k·u, Y = oy − k·v. Габарит детали на виде — лучами: грубо (1 мм), затем края двоичным поиском
        по нескольким строкам/столбцам у крайних точек */
     const hitAt=(u,v)=>march(u,v,false).length>0;
-    let E=FIT[name];
-    if(!E){ const cu=[], cvv=[]; let mu=Infinity,Mu=-Infinity,mv=Infinity,Mv=-Infinity; const HG=[];
+    /* габарит детали на виде лучами; при полном разрезе — по рассечённой детали (убранная часть не изображается) */
+    const fitE=()=>{ const cu=[], cvv=[]; let mu=Infinity,Mu=-Infinity,mv=Infinity,Mv=-Infinity; const HG=[];
       for(let i=0;i<=nu;i+=2){ HG[i]=[]; for(let j=0;j<=nv;j+=2){ const h=hitAt(U(i),Vv(j)); HG[i][j]=h; if(h){ mu=Math.min(mu,U(i)); Mu=Math.max(Mu,U(i)); mv=Math.min(mv,Vv(j)); Mv=Math.max(Mv,Vv(j)); } } }
-      if(!(Mu>mu)) return;
+      if(!(Mu>mu)) return null;
       const bis=(a,c,f)=>{ for(let s2=0;s2<18;s2++){ const m=(a+c)/2; if(f(m)) c=m; else a=m; } return c; };   /* a — пусто, c — деталь */
       const pick=(L,n)=>L.length<=n?L:Array.from({length:n},(_,i)=>L[Math.round(i*(L.length-1)/(n-1))]);
       const rowsAt=(uu)=>{ const o=[]; for(let j=0;j<=nv;j+=2){ const i=Math.round((uu-U(0))/g); if(HG[i]&&HG[i][j]) o.push(Vv(j)); } return o; };
@@ -96,12 +96,12 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
       const rowsLo=pick(rowsAt(mu),9).concat([v2lo+0.004,v2hi-0.004]), rowsHi=pick(rowsAt(Mu),9).concat([v2lo+0.004,v2hi-0.004]);
       const u2lo=Math.min(...rowsLo.filter(v=>hitAt(mu+2*g,v)||hitAt(mu,v)).map(v=>bis(mu-2*g,hitAt(mu,v)?mu:mu+2*g,u=>hitAt(u,v))));
       const u2hi=Math.max(...rowsHi.filter(v=>hitAt(Mu-2*g,v)||hitAt(Mu,v)).map(v=>bis(Mu+2*g,hitAt(Mu,v)?Mu:Mu-2*g,u=>hitAt(u,v))));
-      E=FIT[name]=[u2lo,u2hi,v2lo,v2hi]; }
+      return [u2lo,u2hi,v2lo,v2hi]; };
+    let E=FIT[name]; if(!E){ E=fitE(); if(!E) return; FIT[name]=E; }
     const W=(w.b[2]-w.b[0])/k, Hh=(w.b[3]-w.b[1])/k;
     tm('fit',tq); tq=performance.now();
     if(mapOnly){ MAP[name]={ox:w.b[0]-k*E[0],oy:w.b[1]+k*E[3]}; return; }
-    if(Math.abs((E[1]-E[0])-W)>0.4||Math.abs((E[3]-E[2])-Hh)>0.4) add('модель','габарит изображения = деталь',nm+': на листе '+(Math.round(W*10)/10)+' × '+(Math.round(Hh*10)/10)+' мм, у детали '+(Math.round((E[1]-E[0])*10)/10)+' × '+(Math.round((E[3]-E[2])*10)/10),[w.b[0],w.b[1]]);
-    const ox=w.b[0]-k*E[0], oy=w.b[1]+k*E[3], toS=(u,v)=>[ox+k*u,oy-k*v], toU=X=>(X-ox)/k, toV=Y=>(oy-Y)/k;
+    let ox=w.b[0]-k*E[0], oy=w.b[1]+k*E[3]; const toS=(u,v)=>[ox+k*u,oy-k*v], toU=X=>(X-ox)/k, toV=Y=>(oy-Y)/k;
     /* разрез в мм модели */
     if(H.length&&half){ const ub=bnd!=null?(vert?toU(bnd):toV(bnd)):null; let pl=0;
       if(plane&&plane.marks){ const c=plane.marks.map(m=>m.c), hz=Math.abs(c[0][1]-c[1][1])<1*k, vt=Math.abs(c[0][0]-c[1][0])<1*k;
@@ -152,6 +152,9 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
           const drawn=s=>{ const Y=vert?toS(ua,s)[1]:toS(s,ua)[0]; return onAx.some(q=>{ const a=vert?q.a[1]:q.a[0], b=vert?q.b[1]:q.b[0]; return Y>=Math.min(a,b)-0.6*k&&Y<=Math.max(a,b)+0.6*k; }); };
           let worst=0; long.forEach(r=>{ let m=0; r.forEach(s=>{ m=drawn(s)?0:m+1; worst=Math.max(worst,m); }); });
           if(worst*0.5>=3) add('модель','ребро на оси видно (ГОСТ 2.305)',nm+': ребро детали на оси симметрии не нарисовано на '+worst*0.5+' мм — волнистая линия смещена не в ту сторону',at); } } }
+    /* разрез (полный или половина): изображение — рассечённая деталь, её габарит может быть у́же (широкая часть была перед плоскостью) */
+    if(cutSD){ const E2=fitE(); if(E2){ E=E2; ox=w.b[0]-k*E[0]; oy=w.b[1]+k*E[3]; } }
+    if(Math.abs((E[1]-E[0])-W)>0.4||Math.abs((E[3]-E[2])-Hh)>0.4) add('модель','габарит изображения = деталь',nm+': на листе '+(Math.round(W*10)/10)+' × '+(Math.round(Hh*10)/10)+' мм, у детали '+(Math.round((E[1]-E[0])*10)/10)+' × '+(Math.round((E[3]-E[2])*10)/10),[w.b[0],w.b[1]]);
     /* ── лучи по сетке ── */
     const needHid=S.some(q=>q.it.kind==='dash');
     const R=new Array((nu+1)*(nv+1)), id=(i,j)=>i*(nv+1)+j;
