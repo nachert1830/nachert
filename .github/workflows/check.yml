@@ -1,7 +1,7 @@
 name: Проверка сайта
 on:
   push:
-    branches: [main]
+    branches: [main, stage]
   pull_request:
   workflow_dispatch:
 jobs:

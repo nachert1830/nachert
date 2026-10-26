@@ -1,0 +1,83 @@
+name: Публикация сайта
+# nachert1830.ru — из main; тестовая версия — из ветки stage в секретной папке nachert1830.ru/<STAGE_PATH>/ (как устроено — docs/STAGE.md).
+# Нужно один раз: Settings → Pages → Source: «GitHub Actions»; секрет репозитория STAGE_PATH — имя секретной папки.
+on:
+  push:
+    branches: [main, stage]
+  # коммиты ботов (views.json, адрес API кабинета) не запускают push — публикуем, когда их развёртывание закончилось
+  workflow_run:
+    workflows: ['Счётчик просмотров', 'Личный кабинет — развёртывание в Yandex Cloud']
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  # публиковать GitHub Pages разрешено только из main: пуш в stage просит main опубликовать всё заново
+  relay:
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Сайт — main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: _site
+      - name: Есть ли тестовая версия?
+        id: stage
+        env:
+          STAGE_PATH: ${{ secrets.STAGE_PATH }}
+        run: |
+          if [ -z "$STAGE_PATH" ]; then echo "::warning::Тестовая версия не опубликована: нет секрета STAGE_PATH (docs/STAGE.md)"; echo "ok=no" >> "$GITHUB_OUTPUT"; exit 0; fi
+          case "$STAGE_PATH" in *[!A-Za-z0-9_-]*) echo "::error::STAGE_PATH — только латиница, цифры, - и _"; exit 1;; esac
+          if [ -e "_site/$STAGE_PATH" ]; then echo "::error::STAGE_PATH совпадает с папкой сайта — выберите другое имя"; exit 1; fi
+          if ! git ls-remote --exit-code --heads "https://github.com/$GITHUB_REPOSITORY" stage >/dev/null; then echo "::warning::Тестовая версия не опубликована: нет ветки stage"; echo "ok=no" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "ok=yes" >> "$GITHUB_OUTPUT"
+      - name: Тестовая версия — stage
+        if: steps.stage.outputs.ok == 'yes'
+        uses: actions/checkout@v4
+        with:
+          ref: stage
+          path: _stage
+      - name: Тестовая версия — в секретную папку
+        if: steps.stage.outputs.ok == 'yes'
+        env:
+          STAGE_PATH: ${{ secrets.STAGE_PATH }}
+        run: |
+          node _site/.github/scripts/stage.js _stage "$(git -C _stage rev-parse --short HEAD)"
+          rm -rf _stage/.git _stage/.github
+          mv _stage "_site/$STAGE_PATH"
+      - name: Без служебных папок
+        run: rm -rf _site/.git _site/.github
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
