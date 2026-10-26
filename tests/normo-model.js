@@ -61,7 +61,8 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
       if(lab){ const M=marks.filter(m=>m.L===lab.s[0]); if(M.length>=2) plane={marks:M}; }
       if(name==='top'&&!lab) plane=null; }
     /* ── модель вида: с условностью для отверстий фланца, если вид с разрезом ── */
-    const model=H.length&&name!=='top'?IG3.conv(model0,name==='front'?'y':'x'):model0, J=IG3.jc(model.tree), b=model.box;
+    const model=H.length&&name!=='top'&&!(name==='front'&&model0.step)?IG3.conv(model0,name==='front'?'y':'x'):model0,   /* ступенчатый разрез проходит через сами отверстия — без условности */
+      J=IG3.jc(model.tree), b=model.box;
     const leaves=[]; (function wk(n){ if(!n) return; if(n.t==='u'||n.t==='i'){ n.k.forEach(wk); return; } if(n.t==='s'){ wk(n.a); n.k.forEach(wk); return; } leaves.push(IG3.jc(n)); })(model.tree);
     /* ── перевод мм ↔ лист: масштаб 1:1, сдвиг — по габариту изображения на листе и деталь лучами ── */
     const [u0,u1]=V.uR(b), [v0,v1]=V.vR(b), t0=V.lo(b)-1, t1=V.hi(b)+1;
@@ -106,21 +107,27 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
         const other=[FV,LV,TV].find(o=>o&&o!==w&&c.every(p=>p[0]>o.b[0]-25*k&&p[0]<o.b[2]+25*k&&p[1]>o.b[1]-25*k&&p[1]<o.b[3]+25*k));
         if(other===TV&&name==='front'&&hz&&MAP.top) pl=(MAP.top.oy-c[0][1])/k;
         else if(other===TV&&name==='left'&&vt&&MAP.top) pl=(c[0][0]-MAP.top.ox)/k;
-        else if(other===FV&&name==='top'&&hz&&MAP.front) pl=(MAP.front.oy-c[0][1])/k; }
+        else if(other===FV&&name==='top'&&hz&&MAP.front) pl=(MAP.front.oy-c[0][1])/k;
+        /* ступенчатый разрез (концы следа на разной глубине): участки плоскостей — из модели (model.step), а концы следа на листе
+           должны стоять на глубине первой и последней плоскостей */
+        else if(other===TV&&name==='front'&&!hz&&model0.step&&MAP.top){ const ST=model0.step, ys=c.map(p=>(MAP.top.oy-p[1])/k).sort((a,b)=>a-b), yt=[ST[0][2],ST[ST.length-1][2]].sort((a,b)=>a-b);
+          if(Math.abs(ys[0]-yt[0])>1||Math.abs(ys[1]-yt[1])>1) add('модель','обозначение разреза — по секущим плоскостям',nm+': концы следа А–А на глубине '+ys.map(v=>Math.round(v*10)/10).join(' и ')+' мм, а плоскости разреза — '+yt.join(' и '),c[0]);
+          pl={step:ST}; } }
       else if(name==='top') return;   /* горизонтальный разрез без обозначения — не знаем высоты */
       /* что убрано: часть между наблюдателем и плоскостью, в половине — только со стороны разреза */
       const side=half==='full'?null:half;
+      const yAt=pl&&pl.step?(x=>{ const ST=pl.step; return (ST.find(q=>x>=q[0]&&x<=q[1])||ST[x<ST[0][0]?0:ST.length-1])[2]; }):null;
       cutSD=p=>{ const u=name==='left'?-p[1]:p[0], v=name==='top'?p[1]:p[2];
-        const pd=name==='front'?p[1]-pl:name==='left'?p[0]-pl:pl-p[2];   /* < 0 — перед плоскостью (со стороны наблюдателя) */
+        const pd=yAt?p[1]-yAt(p[0]):name==='front'?p[1]-pl:name==='left'?p[0]-pl:pl-p[2];   /* < 0 — перед плоскостью (со стороны наблюдателя) */
         let hs=-1e9; if(side==='right') hs=ub-u; else if(side==='left') hs=u-ub; else if(side==='down') hs=v-ub; else if(side==='up') hs=ub-v;
         return Math.max(pd,hs); };
-      stats[name]={half,plane:Math.round(pl*10)/10,ub:ub!=null?Math.round(ub*10)/10:null};
+      stats[name]={half,plane:yAt?'step':Math.round(pl*10)/10,ub:ub!=null?Math.round(ub*10)/10:null};
       /* ребро детали на оси симметрии (ГОСТ 2.305): если оно совпало с осью, вид от разреза отделяют волнистой линией, а не осью
          (ребро слилось бы со штрихпунктиром). Ищем по модели, независимо от листа: по обе стороны оси (±0,6 мм) — первая поверхность
          на целой детали (наружное ребро) и на детали, разрезанной плоскостью целиком (внутреннее); излом нормали или скачок глубины
          на 3 мм подряд — ребро. Граница уже волнистая — это проверяет нормоконтроль по листу (ребро по оси нарисовано) */
       if(half!=='full'&&axC!=null){ const ua=vert?toU(axC):toV(axC);   /* ось симметрии в мм модели (граница может быть и волнистой) */
-        const pdF=p=>name==='front'?p[1]-pl:name==='left'?p[0]-pl:pl-p[2], Fo=p=>J(p[0],p[1],p[2]), Fc=p=>Math.max(J(p[0],p[1],p[2]),-pdF(p));
+        const pdF=p=>yAt?p[1]-yAt(p[0]):name==='front'?p[1]-pl:name==='left'?p[0]-pl:pl-p[2], Fo=p=>J(p[0],p[1],p[2]), Fc=p=>Math.max(J(p[0],p[1],p[2]),-pdF(p));
         const first=(f,u,v)=>{ let t=t0, tp=t0; for(let i=0;i<6000&&t<t1;i++){ const d=f(V.ray(u,v,t));
             if(d<0){ let a=tp, c=t; for(let s=0;s<18;s++){ const m=(a+c)/2; if(f(V.ray(u,v,m))<0) c=m; else a=m; }
               const p=V.ray(u,v,c), h=0.01, gx=f([p[0]+h,p[1],p[2]])-f([p[0]-h,p[1],p[2]]), gy=f([p[0],p[1]+h,p[2]])-f([p[0],p[1]-h,p[2]]), gz=f([p[0],p[1],p[2]+h])-f([p[0],p[1],p[2]-h]), l=Math.hypot(gx,gy,gz)||1;
@@ -146,7 +153,7 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
     /* ── лучи по сетке ── */
     const needHid=S.some(q=>q.it.kind==='dash');
     const R=new Array((nu+1)*(nv+1)), id=(i,j)=>i*(nv+1)+j;
-    const own=p=>{ let bi=-1, bv=Infinity; for(let i=0;i<leaves.length;i++){ const v=Math.abs(leaves[i](p[0],p[1],p[2])); if(v<bv){ bv=v; bi=i; } } if(cutSD){ const c=Math.abs(cutSD(p)); if(c<bv&&c<0.02) bi=-2; } return bi; };
+    const own=p=>{ let bi=-1, bv=Infinity; for(let i=0;i<leaves.length;i++){ const v=Math.abs(leaves[i](p[0],p[1],p[2])); if(v<bv){ bv=v; bi=i; } } if(cutSD){ const c=Math.abs(cutSD(p)); if(c<=bv+0.005&&c<0.02) bi=-2; } return bi; };   /* грань тела в самой секущей плоскости — тоже точка плоскости; сечение ли это — решает cutMat (материал по обе стороны) */
     const nrm=p=>{ const h=0.01, gx=Jv([p[0]+h,p[1],p[2]])-Jv([p[0]-h,p[1],p[2]]), gy=Jv([p[0],p[1]+h,p[2]])-Jv([p[0],p[1]-h,p[2]]), gz=Jv([p[0],p[1],p[2]+h])-Jv([p[0],p[1],p[2]-h]), l=Math.hypot(gx,gy,gz)||1; return [gx/l,gy/l,gz/l]; };
     for(let i=0;i<=nu;i++) for(let j=0;j<=nv;j++){ const hs=march(U(i),Vv(j),needHid); hs.forEach(h=>{ h.o=own(h.p); h.n=nrm(h.p); }); R[id(i,j)]=hs; }
     tm('rays'+(needHid?'H':''),tq); tq=performance.now();
@@ -154,8 +161,14 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
     const dirC=V.ax, vis=[], hid=[];
     const slope=h=>{ const c=Math.abs(h.n[dirC]); return c<0.05?20:Math.sqrt(1-c*c)/c; };
     let why='';
-    const diff=(a,b)=>{ if(!a||!b){ why='hit'; return !!(a||b); } const dd=Math.abs(a.t-b.t), lim=0.6+g*Math.min(slope(a),slope(b))*1.6;
-      if(dd>lim){ why='depth '+dd.toFixed(2); return true; } const cs=a.n[0]*b.n[0]+a.n[1]*b.n[1]+a.n[2]*b.n[2]; if(a.o!==b.o&&cs<0.996){ why='own '+a.o+'/'+b.o+' '+cs.toFixed(3); return true; } why='n '+cs.toFixed(3)+' '+a.n.map(v=>v.toFixed(2))+' '+b.n.map(v=>v.toFixed(2)); return cs<0.87; };
+    /* рёбра жёсткости вдоль секущей плоскости (ГОСТ 2.305): на разрезе не штрихуются, контур ребра — сплошной основной;
+       переходы между плоскостями ступенчатого разреза не изображают — две точки сечения друг от друга не отделены линией */
+    const RBn=[]; (function wr(nd){ if(!nd) return; if(nd.rib!=null){ if(nd.rib===V.ax) RBn.push(nd); return; } if(nd.t==='u') nd.k.forEach(wr); else if(nd.t==='s') wr(nd.a); })(model0.tree);
+    const RJ=RBn.length?IG3.jc(RBn.length>1?{t:'u',k:RBn}:RBn[0]):null, inRib=p=>!!RJ&&RJ(p[0],p[1],p[2])<0;
+    /* смена поверхности — ребро, только если есть излом (> ~11°): плоскость, касательная к цилиндру, — плавный переход, его не рисуют */
+    const diff=(a,b)=>{ if(!a||!b){ why='hit'; return !!(a||b); }
+      if(a.o===-2&&b.o===-2){ why='cut'; return inRib(a.p)!==inRib(b.p); } const dd=Math.abs(a.t-b.t), lim=0.6+g*Math.min(slope(a),slope(b))*1.6;
+      if(dd>lim){ why='depth '+dd.toFixed(2); return true; } const cs=a.n[0]*b.n[0]+a.n[1]*b.n[1]+a.n[2]*b.n[2]; if(a.o!==b.o&&cs<0.98){ why='own '+a.o+'/'+b.o+' '+cs.toFixed(3); return true; } why='n '+cs.toFixed(3)+' '+a.n.map(v=>v.toFixed(2))+' '+b.n.map(v=>v.toFixed(2)); return cs<0.87; };
     for(let i=0;i<=nu;i++) for(let j=0;j<=nv;j++){ const A=R[id(i,j)]; [[1,0],[0,1]].forEach(([di,dj])=>{ if(i+di>nu||j+dj>nv) return; const B=R[id(i+di,j+dj)];
         const m=toS((U(i)+U(i+di))/2,(Vv(j)+Vv(j+dj))/2); m.dir=di?'u':'v';
         if(diff(A[0],B[0])){ if(C.opt.debug) m.why=why+' @'+[U(i),Vv(j)].map(v=>v.toFixed(2)); vis.push(m); return; }
@@ -186,7 +199,7 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
     /* сечение — плоскость прошла по материалу: он был по обе стороны от неё. Грань детали в самой плоскости — не сечение (ГОСТ 2.306) */
     const fw=V.ray(0,0,1), bk=V.ray(0,0,0), F3=[fw[0]-bk[0],fw[1]-bk[1],fw[2]-bk[2]];
     const cutMat=h=>h&&h.o===-2&&J(h.p[0]-F3[0]*0.05,h.p[1]-F3[1]*0.05,h.p[2]-F3[2]*0.05)<0&&J(h.p[0]+F3[0]*0.05,h.p[1]+F3[1]*0.05,h.p[2]+F3[2]*0.05)<0;
-    if(cutSD){ const bad1=[], bad2=[]; for(let i=1;i<nu;i++) for(let j=1;j<nv;j++){ const h=R[id(i,j)][0], sec=cutMat(h), p=toS(U(i),Vv(j));
+    if(cutSD){ const bad1=[], bad2=[]; for(let i=1;i<nu;i++) for(let j=1;j<nv;j++){ const h=R[id(i,j)][0], sec=cutMat(h)&&!inRib(h.p), p=toS(U(i),Vv(j));
         if(VP.dist(p)<1*k||GT.dist(p)<1*k) continue; if(bnd!=null&&half!=='full'&&Math.abs((vert?p[0]:p[1])-bnd)<0.6*k) continue;   /* у границы вида и разреза — ширина линии */
         const hh=hatched(p); if(C.opt.debug) p.why=name+' u='+U(i).toFixed(2)+' v='+Vv(j).toFixed(2)+' o='+(h&&h.o)+' t='+(h&&h.t.toFixed(2));
         if(sec&&!hh) bad1.push(p); else if(!sec&&hh) bad2.push(p); }

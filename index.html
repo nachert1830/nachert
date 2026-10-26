@@ -28654,9 +28654,9 @@ const MEMO={};
 function sheet(n,mode){ const key=(typeof n==='object'?n.key:n)+'|'+mode; if(MEMO[key]) return MEMO[key]; REC={s:[],d:[]}; try{ return MEMO[key]=body(n,mode); } finally{ REC=null; } }
 /* обозначение ступенчатого разреза на виде сверху (ГОСТ 2.305, п. 6.4): разомкнутая линия — штрихи за контуром у концов
    (со стрелками взгляда и буквами) и штрихи на перегибах следа; участки следа между ними не проводят */
-function stepMark(ST,R,L,TP){ const S1=ST[0], S2=ST[ST.length-1], th=2.1, sl=10*k, f1=v=>Math.round(v*10)/10;
+function stepMark(ST,X,L,TP){ const S1=ST[0], S2=ST[ST.length-1], th=2.1, sl=10*k, f1=v=>Math.round(v*10)/10;   /* X — [x0, x1] детали: штрихи у её контура */
   const seg=(a,b)=>ln(a,b,INK,th);
-  let o=IGUI.secMark(TP(R+4,S2[2]),TP(-R-4,S2[2]),k,L,null,1)+IGUI.secMark(TP(R+4,S1[2]),TP(-R-4,S1[2]),k,L,null,2);   /* концы: правый — на последнем участке, левый — на первом */
+  let o=IGUI.secMark(TP(X[1]+4,S2[2]),TP(X[0]-4,S2[2]),k,L,null,1)+IGUI.secMark(TP(X[1]+4,S1[2]),TP(X[0]-4,S1[2]),k,L,null,2);   /* концы: правый — на последнем участке, левый — на первом */
   for(let i=1;i<ST.length;i++){ const x=ST[i][0], ya=ST[i-1][2], yb=ST[i][2], P=TP(x,ya), Q=TP(x,yb);   /* перегиб: уголок из двух штрихов */
     o+=seg([P[0]-sl*0.5,P[1]],P)+seg(P,Q)+seg(Q,[Q[0]+sl*0.5,Q[1]]); }
   return o; }
@@ -28678,16 +28678,16 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   /* концы осей — от крайних точек самих изображений (габарит модели бывает с запасом): ось выходит за контур на 5 мм */
   const EX=d=>{ const lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9]; (d.lines||[]).forEach(L=>[L.a3,L.b3].forEach(p=>{ if(p) for(let i=0;i<3;i++){ lo[i]=Math.min(lo[i],p[i]); hi[i]=Math.max(hi[i],p[i]); } })); return lo[0]<1e8?[lo,hi]:[[C.x0,C.y0,C.z0],[C.x1,C.y1,C.z1]]; };
   /* вид сверху с разрезом А–А: спереди (y < 0) изображён разрез — его габарит у́же вида (сечение выше основания), ось — от него */
-  /* ось выходит за контур там, где сама её пересекает (у несимметричного сечения габарит шире): крайние точки линий изображения
-     на оси — i меняется вдоль оси, j = 0 на ней */
-  const SPN=(d,i,j,dflt)=>{ let lo=1e9, hi=-1e9; (d.lines||[]).forEach(L=>{ const a=L.a3, b=L.b3; if(!a||!b) return; const pa=Math.abs(a[j])<0.01, pb=Math.abs(b[j])<0.01;
-      if(pa||pb){ if(pa){ lo=Math.min(lo,a[i]); hi=Math.max(hi,a[i]); } if(pb){ lo=Math.min(lo,b[i]); hi=Math.max(hi,b[i]); } return; }
-      if((a[j]>0)===(b[j]>0)) return; const v=a[i]+(b[i]-a[i])*(0-a[j])/(b[j]-a[j]); lo=Math.min(lo,v); hi=Math.max(hi,v); }); return lo<1e8?[lo,hi]:dflt; };
-  const DF=DR(sp.fk,0,sp.xb), DTv=hz?DR('topNH'):DR('top'), DTc=hz?IG3.drawing(md,'topcut',W,hz.z):DTv, DTx=hz&&sp.H==='full'?DTc:DTv;
+  /* ось выходит за контур на 5 мм: контур — крайние точки линий изображения в полосе вдоль оси шириной 0,3 её длины в каждую сторону
+     (паз на оси не укорачивает ось; у несимметричного сечения, где габарит шире, — по самому сечению). i — вдоль оси, j — поперёк */
+  const SPN=(d,i,j,dflt)=>{ const P=[]; (d.lines||[]).forEach(L=>{ const a=L.a3, b=L.b3; if(a&&b) P.push(a,b,[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2]); });
+    if(!P.length) return dflt; const band=0.3*(Math.max(...P.map(p=>p[i]))-Math.min(...P.map(p=>p[i]))+10), Q=P.filter(p=>Math.abs(p[j])<=band);
+    return Q.length?[Math.min(...Q.map(p=>p[i])),Math.max(...Q.map(p=>p[i]))]:dflt; };
+  const DF=DR(sp.fk,0,sp.xb), DL=DR(sp.lk,0,sp.yb), DTv=hz?DR('topNH'):DR('top'), DTc=hz?IG3.drawing(md,'topcut',W,hz.z):DTv, DTx=hz&&sp.H==='full'?DTc:DTv;
   const EF=EX(DF), ETv=EX(DTv), ETc=hz?EX(DTc):ETv, ETx=hz&&sp.H==='full'?ETc:ETv;
-  const sF=SPN(DF,2,0,[EF[0][2],EF[1][2]]), sX=[SPN(DTx,0,1,[ETx[0][0],ETx[1][0]]),SPN(DTc,0,1,[ETc[0][0],ETc[1][0]])], sYc=SPN(DTc,1,0,[ETc[0][1],ETc[1][1]]), sYx=SPN(DTx,1,0,[ETx[0][1],ETx[1][1]]);
-  const za=sF[0]-5, zb=sF[1]+5, xa=Math.min(sX[0][0],sX[1][0])-5, xb=Math.max(sX[0][1],sX[1][1])+5, ya=sYc[0]-5, yb=sYx[1]+5;
-  o+=ln(FR(0,za),FR(0,zb),INK,.8,AX)+ln(LF(0,za),LF(0,zb),INK,.8,AX)
+  const sF=SPN(DF,2,0,[EF[0][2],EF[1][2]]), sL=SPN(DL,2,1,[EF[0][2],EF[1][2]]), sX=[SPN(DTx,0,1,[ETx[0][0],ETx[1][0]]),SPN(DTc,0,1,[ETc[0][0],ETc[1][0]])], sYc=SPN(DTc,1,0,[ETc[0][1],ETc[1][1]]), sYx=SPN(DTx,1,0,[ETx[0][1],ETx[1][1]]);
+  const za=sF[0]-5, zb=sF[1]+5, zaL=sL[0]-5, zbL=sL[1]+5, xa=Math.min(sX[0][0],sX[1][0])-5, xb=Math.max(sX[0][1],sX[1][1])+5, ya=sYc[0]-5, yb=sYx[1]+5;
+  o+=ln(FR(0,za),FR(0,zb),INK,.8,AX)+ln(LF(0,zaL),LF(0,zbL),INK,.8,AX)
     +IGUI.axLine(TP(xa,0),TP(xb,0),anc(xa),k,INK,.8,rec)+IGUI.axLine(TP(0,ya),TP(0,yb),anc(ya),k,INK,.8,rec);
   /* оси отверстий: центровая окружность и перекрестия на виде сверху, оси на главном виде и виде слева */
   { const done={c:{},x:{},y:{}}, RC=!md.noPCD; HA.forEach(h=>{ const Rh=Math.hypot(h.x,h.y), a=h.r+3, ux=RC?h.x/Rh:1, uy=RC?h.y/Rh:0, dd=2*h.r<12-1e-6?null:AX;   /* noPCD — отверстия не на окружности (корпус): оси по x и y, без центровой окружности */   /* центровые отверстий меньше Ø12 — сплошные тонкие (ГОСТ 2.303) */
@@ -28699,7 +28699,7 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   const lb=(q,L)=>txt(q,L+'–'+L,'igs-let','middle');
   /* надпись «Б–Б» — над изображением, выше размеров над главным видом */
   const zTopF=Math.max(C.z1,...(C.G.d||[]).filter(d=>d[0]==='F'&&(d[1]==='h'||d[1]==='h1')).map(d=>d[1]==='h'?d[4]:d[3]).filter(z=>z>C.z1)), yLb=FR(0,zTopF)[1]-(zTopF>C.z1?34:16);
-  if(LT.f&&md.step){ o+=stepMark(md.step,R,LT.f,TP)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
+  if(LT.f&&md.step){ o+=stepMark(md.step,[C.x0,C.x1],LT.f,TP)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   else if(LT.f){ o+=IGUI.secMark(TP(C.x1+4,0),TP(C.x0-4,0),k,LT.f)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   if(LT.p){ o+=IGUI.secMark(TP(0,C.y0-4),TP(0,C.y1+4),k,LT.p)   /* штрихи — у контура вида сверху по его глубине (у вытянутой детали R — по длине, штрих ушёл бы на главный вид) */+lb([LF(0,0)[0],yLb],LT.p); }
   if(hz&&LT.h){ const y=FR(0,hz.z)[1]; o+=IGUI.secMark([FR(C.x0-6,0)[0],y],[FR(C.x1+6,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,C.y1)[1]-24],LT.h); }
