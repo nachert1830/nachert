@@ -1,0 +1,78 @@
+name: Личный кабинет — развёртывание в Yandex Cloud
+# Каждый пуш с изменениями клуба: проверки → функции, база, шлюз и бот в Yandex Cloud (server/tools/deploy.js) → адрес API для страницы на сайте.
+# Страница клуба — nachert1830.ru/lk/ (GitHub Pages из main). Что добавить в секреты репозитория — lk/DEPLOY.md.
+on:
+  push:
+    branches: [main, claude/modest-babbage-ozfp1h]
+    paths: ['server/**', 'lk/**', '.github/workflows/club.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: club-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Проверки (сервер и логика клуба)
+        run: node --test server/test/*.test.js lk/tests/lib.test.js
+      - name: Секреты на месте?
+        id: ready
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+        run: |
+          if [ -z "$YC_SA_KEY" ]; then echo "::warning::Развёртывание пропущено: в секретах репозитория нет YC_SA_KEY. Что добавить — lk/DEPLOY.md, шаги 1–3; потом Re-run all jobs."; echo "ok=no" >> "$GITHUB_OUTPUT"; else echo "ok=yes" >> "$GITHUB_OUTPUT"; fi
+      - name: Программа yc и ключ аккаунта развёртывания
+        if: steps.ready.outputs.ok == 'yes'
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+          YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID || 'b1gm1vb5prlop8thuobf' }}
+        run: |
+          # установка yc иногда виснет на скачивании — ограничение по времени и до 3 попыток
+          for i in 1 2 3; do timeout 120 bash -c 'curl -sSL --max-time 100 https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i "$HOME/yc" -n >/dev/null' && break; echo "yc не скачался, попытка $((i+1))"; sleep 5; done
+          test -x "$HOME/yc/bin/yc" || { echo "::error::Не удалось скачать программу yc — перезапустите развёртывание (Re-run)"; exit 1; }
+          echo "$HOME/yc/bin" >> "$GITHUB_PATH"
+          printf '%s' "$YC_SA_KEY" > "$RUNNER_TEMP/yc-key.json"
+          SA=$(node -e "try{const k=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));if(!k.service_account_id||!k.private_key)throw 0;console.log(k.service_account_id)}catch(e){process.exit(1)}" "$RUNNER_TEMP/yc-key.json") \
+            || { echo "::error::YC_SA_KEY — не ключ сервисного аккаунта. Нужно всё содержимое скачанного файла authorized_key.json"; exit 1; }
+          echo "YC_SA_ID=$SA" >> "$GITHUB_ENV"
+          "$HOME/yc/bin/yc" config profile create ci >/dev/null
+          "$HOME/yc/bin/yc" config set service-account-key "$RUNNER_TEMP/yc-key.json"
+          "$HOME/yc/bin/yc" config set folder-id "$YC_FOLDER_ID"
+          "$HOME/yc/bin/yc" config set endpoint api.cloud.yandex.net:443
+      - name: Развернуть
+        if: steps.ready.outputs.ok == 'yes'
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          OWNER_TG_ID: ${{ secrets.OWNER_TG_ID }}
+          OWNER_YANDEX_LOGIN: ${{ secrets.OWNER_YANDEX_LOGIN }}
+          YANDEX_CLIENT_ID: ${{ secrets.YANDEX_CLIENT_ID }}
+          YANDEX_CLIENT_SECRET: ${{ secrets.YANDEX_CLIENT_SECRET }}
+          FRONT_URL: ${{ vars.CLUB_FRONT_URL }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
+        run: node server/tools/deploy.js --write-front
+      - name: Адрес API — в страницу клуба на сайте
+        if: steps.ready.outputs.ok == 'yes'
+        run: |
+          git diff --quiet -- lk/config.js lk/index.html && exit 0
+          git config user.name "club-deploy"
+          git config user.email "club-deploy@users.noreply.github.com"
+          git add lk/config.js lk/index.html
+          git commit -m "Кабинет: адрес API для страницы на сайте"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Сайт nachert1830.ru — DNS, сертификат, страница клуба (для диагностики)
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "DNS A:"; getent ahostsv4 nachert1830.ru | awk '{print $1}' | sort -u
+          echo "Сертификат https://nachert1830.ru:"; echo | timeout 15 openssl s_client -connect nachert1830.ru:443 -servername nachert1830.ru 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName 2>/dev/null || echo "  не получить"
+          for u in https://nachert1830.ru/ https://nachert1830.ru/lk/ https://nachert1830.ru/lk/app.js https://nachert1830.ru/club/; do echo "$u → $(curl -s -o /dev/null -m 15 -w '%{http_code} %{redirect_url} %{errormsg}' "$u")"; done
+      - name: Убрать ключ
+        if: always()
+        run: rm -f "$RUNNER_TEMP/yc-key.json"

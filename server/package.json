@@ -1,0 +1,10 @@
+{
+  "name": "nachert-club-server",
+  "private": true,
+  "description": "Клуб Начерта: функции Yandex Cloud и локальная эмуляция. Зависимостей нет.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node dev.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js ../lk/tests/*.test.js"
+  }
+}

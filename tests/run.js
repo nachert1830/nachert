@@ -136,6 +136,67 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     report('Читаю чертёж',await require('./normo-mutate.js').readUi(upage,URL));
     await upage.close(); }
 
+  /* 3ж. «Научись защищать точки» (#/ig/points): каждая точка разбора лежит на поверхности детали варианта 5 (точка в штриховке — в материале, в секущей плоскости), видимость, под которую
+     написан текст шага (exp: главный вид, вид сверху, вид слева), совпадает с видимостью по модели на изображениях листа (луч к глазу,
+     разрезы — как на листе), и сверена с эталонным лучом (шаг 0,01 мм, любой материал — крестик); чертёж каждого шага строится. Тренажёр нажатиями: верное место и верная отметка засчитываются;
+     перепутанные перёд и зад или не та отметка (выколотая точка ↔ крестик) — нет */
+  { const tp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const te=[]; tp.on('pageerror',e=>te.push(String(e)));
+    await tp.goto(URL+'#/ig/points'); await tp.waitForTimeout(1500);
+    const out=await tp.evaluate(()=>{ const bad=[], J=IG3.jc(IG_VARS[5].tree), M={F:'″',T:'′',L:'‴'};
+      IGL.PEX().forEach(E=>{ const name='точка '+E.n, j=J(...E.p); if(E.cutp?!(j<-0.05&&Math.abs(E.p[E.cutp==='L'?0:1])<1e-9):Math.abs(j)>0.05) bad.push({name,rule:E.cutp?'точка в штриховке: в материале, в секущей плоскости':'точка на поверхности',msg:'J = '+j.toFixed(3)});
+        IGL.ptSVG(E,0); const got=['F','T','L'].map(v=>E.vis[v]).join('');
+        if(got!==E.exp) bad.push({name,rule:'видимость в тексте = видимость по модели',msg:'текст: '+E.exp+', модель: '+got+' (v — видна, h — закрыта, r — убрана разрезом)'});
+        E.s.forEach((s,i)=>{ const tx=(s.act.join(' ')+' '+(s.why||'')).replace(/<[^>]+>/g,'');
+          if(new RegExp('\\('+E.n+'[″′‴]\\)').test(tx)) bad.push({name,rule:'видимость — отметкой, не скобками',msg:'шаг '+(i+1)});
+          try{ const sv=IGL.ptSVG(E,i); if(!/<svg/.test(sv)||sv.indexOf(E.n+'')<0) bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+' пустой'}); }catch(e){ bad.push({name,rule:'чертёж шага',msg:'шаг '+(i+1)+': '+e}); } }); });
+      /* видимость — сверка с эталонным лучом: шаг 0,01 мм, любой материал на пути к глазу — крестик (точки разбора и 300 случайных точек тренажёра) */
+      const {stOn,imJ,PSF,PVD}=IGL.ptVis, ref=(p,n,v)=>{ const d=PVD[v], q=p.map((c,i)=>c+n[i]*.06); for(let s=0.01;s<200;s+=0.01) if(imJ(v,[q[0]+d[0]*s,q[1]+d[1]*s,q[2]+d[2]*s])<-1e-4) return 'h'; return 'v'; };
+      const vchk=(p,n,tag)=>['F','T','L'].forEach(v=>{ const a=stOn(p,n,v); if(a!=='r'&&a!==ref(p,n,v)) bad.push({name:tag,rule:'видимость = эталонный луч',msg:v+' '+p.map(x=>x.toFixed(2)).join(', ')+': на сайте '+a}); });
+      IGL.PEX().forEach(E=>vchk(E.p,E.nr,'точка '+E.n)); for(let i=0;i<300;i++){ const s=PSF[i%PSF.length], G=s.g(Math.random); if(!s.ok||s.ok(G.p)) vchk(G.p,G.n,'тренажёр: '+s.t); }
+      /* у самого очерка конуса: на долю градуса за очерком точка уже за материалом — крестик, на долю градуса перед ним — видна */
+      const rC=z=>40-(z-25)*10/95; [40,70,100].forEach(z=>[0.5,1,2,4].forEach(dg=>[1,-1].forEach(sg=>{ const r=rC(z), a=Math.PI-sg*dg*Math.PI/180, c=Math.cos(a), sn=Math.sin(a); vchk([r*c,r*sn,z],[c,sn,0.1],'конус у очерка'); }))); 
+      return bad; });
+    const cnt={ok:0,n:0,mir:0,sym:0};
+    for(let t=0;t<18;t++){ const mode=t%3; await tp.click('#igpTrNext'); await tp.evaluate(()=>document.getElementById('igpTrPic').scrollIntoView({block:'center'}));
+      const w=await tp.evaluate(mir=>{ const E=document.getElementById('igpTr').igpTask(), k=3, p=E.p, P={F:q=>[k*q[0],-k*q[2]],T:q=>[k*q[0],k*(84-q[1])],L:q=>[k*(168-q[1]),-k*q[2]]}, m=document.querySelector('#igpTrPic svg').getScreenCTM();
+        return {y:p[1],t:E.sf.t+', дана '+E.v,vis:E.vis,views:['F','T','L'].filter(v=>v!==E.v),pts:['F','T','L'].filter(v=>v!==E.v).map(v=>{ const a=P[v](mir&&v!=='F'?[p[0],-p[1],p[2]]:p); return [m.a*a[0]+m.e,m.d*a[1]+m.f]; })}; },mode===1);
+      for(const [x,y] of w.pts) await tp.mouse.click(x,y);
+      for(let j=0;j<2;j++){ const v=w.views[j], right=w.vis[v]==='v'?'v':'h', s=mode===2&&j===0?(right==='v'?'h':'v'):right; await tp.click(`#igpTrVis button[data-vw="${v}"][data-s="${s}"]`); }
+      await tp.click('#igpTrGo'); const res=await tp.evaluate(()=>document.getElementById('igpTrRes').textContent), yes=/Защищено/.test(res);
+      if(mode===0){ cnt.n++; if(yes) cnt.ok++; else out.push({name:'тренажёр',rule:'верный ответ засчитан',msg:w.t+' — '+res.slice(0,140)}); }
+      else if(mode===1){ if(Math.abs(w.y)>=1){ if(!yes) cnt.mir++; else out.push({name:'тренажёр',rule:'перёд и зад перепутаны — не засчитано',msg:w.t+' — '+res.slice(0,140)}); } }
+      else { if(!yes) cnt.sym++; else out.push({name:'тренажёр',rule:'не та отметка видимости — не засчитано',msg:w.t+' — '+res.slice(0,140)}); } }
+    te.forEach(e=>out.push({name:'#/ig/points',rule:'ошибка JS',msg:e.slice(0,200)}));
+    info.push('Защита точек: '+out.length+' замечаний; тренажёр — верных засчитано '+cnt.ok+' из '+cnt.n+', перепутанных перёд/зад отклонено '+cnt.mir+', неверных отметок отклонено '+cnt.sym);
+    report('ИГ: защита точек',out); await tp.close(); }
+
+  /* 3з. ДЗ №3, «Сверь свой лист»: таблица 30 вариантов задания. Ответы пересчитываются здесь независимо (нормаль, проекция на ребро AB,
+     угол ребра с плоскостью), выбор варианта подставляет его данные и показывает те же числа; варианты-«зеркала» дают равные ответы;
+     ответы варианта, вписанные как свои, проходят проверку */
+  { const hp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const he=[]; hp.on('pageerror',e=>he.push(String(e)));
+    await hp.goto(URL+'#/ng/hw/3'); await hp.waitForTimeout(1500);
+    const out=await hp.evaluate(async()=>{ const bad=[], S=HWCHECK.SPEC['3'], V=S.vars, sub=(a,b)=>a.map((v,i)=>v-b[i]), dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], ln=a=>Math.sqrt(dt(a,a)), D=r=>r*180/Math.PI;
+      const keys=Object.keys(V); if(keys.length!==30) bad.push({name:'ДЗ №3',rule:'30 вариантов',msg:'в таблице '+keys.length});
+      const fmt=x=>String(Math.round(x*10)/10).replace('.',',');
+      for(const n of keys){ const [A,B,C,Sv]=V[n], N=cr(sub(B,A),sub(C,A)), H=Math.abs(dt(sub(Sv,A),N))/ln(N);
+        /* двугранный угол при AB — между перпендикулярами к ребру, опущенными из C и из S (полуплоскости граней) */
+        const u=sub(B,A), e=u.map(v=>v/ln(u)), q=p=>{ const w=sub(p,A), t=dt(w,e); return sub(w,e.map(v=>v*t)); }, qc=q(C), qs=q(Sv), dih=D(Math.acos(dt(qc,qs)/ln(qc)/ln(qs))), phi=D(Math.asin(H/ln(sub(Sv,A))));
+        const R=S.ans({A,B,C,S:Sv}); [['H',H],['dih',dih],['phi',phi],['AB',ln(sub(B,A))],['BC',ln(sub(C,B))],['CA',ln(sub(A,C))]].forEach(([k,x])=>{ if(Math.abs(R[k]-x)>0.05) bad.push({name:'ДЗ №3, вариант '+n,rule:'ответ '+k,msg:'на сайте '+R[k].toFixed(2)+', пересчёт '+x.toFixed(2)}); });
+        if(H<5) bad.push({name:'ДЗ №3, вариант '+n,rule:'пирамида не вырождена',msg:'H = '+H.toFixed(1)});
+        document.querySelector(`.hc-vb[data-vn="${n}"]`).click(); await new Promise(r=>setTimeout(r,20));
+        const vals=['A','B','C','S'].flatMap(m=>[0,1,2].map(c=>+document.querySelector(`.hc-in[data-k="d:${m}:${c}"]`).value)), want=[A,B,C,Sv].flat();
+        if(vals.join()!==want.join()) bad.push({name:'ДЗ №3, вариант '+n,rule:'данные подставлены',msg:vals.join(',')});
+        const tx=document.getElementById('hcAns').textContent; if(!tx.includes('H = '+fmt(H)+' мм')||!tx.includes(fmt(dih)+'°')||!tx.includes('φ = '+fmt(phi)+'°')) bad.push({name:'ДЗ №3, вариант '+n,rule:'ответы показаны',msg:tx.replace(/\s+/g,' ').slice(0,160)}); }
+      /* свои числа = ответы варианта 17 → «Все условия выполнены» */
+      document.querySelector('.hc-vb[data-vn="17"]').click(); const R=S.ans({A:V[17][0],B:V[17][1],C:V[17][2],S:V[17][3]});
+      ['H','dih','AB','BC','CA','phi'].forEach(k=>{ document.querySelector(`.hc-in[data-k="v:${k}"]`).value=fmt(R[k]); }); document.querySelector('.hc-go').click(); await new Promise(r=>setTimeout(r,30));
+      if(!/Все условия выполнены/.test(document.getElementById('hcRes').textContent)) bad.push({name:'ДЗ №3, вариант 17',rule:'ответы варианта проходят проверку',msg:document.getElementById('hcRes').textContent.slice(0,160)});
+      document.querySelector('.hc-clr').click(); try{ localStorage.removeItem('nch2_hwvar_3'); }catch(e){}
+      return bad; });
+    he.forEach(e=>out.push({name:'#/ng/hw/3',rule:'ошибка JS',msg:e.slice(0,200)}));
+    info.push('ДЗ №3, таблица вариантов: '+out.length+' замечаний (30 вариантов: данные, ответы, проверка своих чисел)');
+    report('ДЗ №3: варианты и ответы',out); await hp.close(); }
+
   /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
      согласился на cookie. Здесь TRACK подменяется записью в список: открыть задачу, сменить режим, дойти до ответа */
   { const apage=await browser.newPage({viewport:{width:390,height:844}}); await apage.goto(URL+'#/ng/tasks/12'); await apage.waitForTimeout(1200);
