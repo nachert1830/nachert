@@ -50,13 +50,16 @@ test('вход → все разделы на телефоне, светлая �
   await botLogin(page,2001,'Аня',{noConsent:true});
   assert.equal(await page.evaluate(()=>location.hash),'#/','ссылка на вход убрана из адресной строки');
   await page.fill('#onG','ИУ5-11Б'); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); await page.waitForSelector('text=Привет, Аня');
-  for(const r of ['','calendar','event/ng-rk-2','event/ikg-dz-2','event/ng-rk-2/diag','event/ng-rk-2/mock','progress','train','skills','check','me','me/login','me/data']){
+  for(const r of ['','calendar','event/ng-rk-2','event/ikg-dz-2','event/ng-rk-2/diag','event/ng-rk-2/mock','check','check/normo','me','me/login','me/data']){
     await page.goto(URL+'/#/'+r); await page.waitForTimeout(250);
     assert.ok(await noHScroll(page),'горизонтальная прокрутка: #/'+r);
     for(const th of ['light','dark']){ await page.evaluate(t=>{ document.documentElement.dataset.theme=t; },th); await page.screenshot({path:path.join(SHOTS,(r||'today').replace(/\//g,'_')+'-'+th+'.png'),fullPage:true}); } }
   await page.goto(URL+'/#/me'); await page.evaluate(()=>{ document.documentElement.dataset.theme='light'; }); await page.click('button[data-act="theme"]');
   assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
-  assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(10, 15, 34)','тёмная тема — цвета основного сайта');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(11, 20, 36)','тёмная тема — цвета основного сайта');
+  /* тренажёров в кабинете нет: старые адреса ведут на «Сегодня» */
+  for(const r of ['progress','train','skills']){ await page.goto(URL+'/#/'+r); await page.waitForTimeout(200); assert.equal(await page.evaluate(()=>location.hash),'#/','#/'+r+' → «Сегодня»'); }
+  assert.deepEqual(await page.$$eval('#tabs a:not([hidden]) span:last-child',a=>a.map(x=>x.textContent)),['Сегодня','Сдачи','Проверка','Профиль'],'меню кабинета');
   assert.equal(await page.evaluate(()=>localStorage.getItem('nch2_theme')),'"dark"','тот же ключ темы, что на основном сайте');
   assert.equal(await page.isVisible('a[href="#/admin"]'),false); await page.goto(URL+'/#/me'); assert.equal(await page.isVisible('text=Админ-панель'),false,'участник админку не видит');
   const cookies=await ctx.cookies(); const sid=cookies.find(c=>c.name==='club_sid'); assert.ok(sid&&sid.httpOnly&&sid.sameSite==='Lax');
@@ -87,17 +90,17 @@ test('синхронизация: прогресс с устройства — �
   assert.equal(srvRep[52].b,1); assert.equal(srvRep[17].n,1);
   const b=await phone(); await b.page.goto(URL+'/'); await botLogin(b.page,3001,'Синх'); await b.page.waitForSelector('text=Привет');
   await b.page.waitForFunction(()=>!!localStorage.getItem('nch2_rep')&&JSON.parse(localStorage.getItem('nch2_rep'))[52]);
-  await b.page.goto(URL+'/#/train'); await b.page.waitForSelector('.task .rate');
-  assert.equal(await b.page.locator('.task').count(),3,'2 на повтор + 1 вперемешку');
+  await b.page.goto(URL+'/#/event/ng-rk-2/diag'); await b.page.waitForSelector('.task .rate');
   await b.ctx.setOffline(true);
-  const n=await b.page.getAttribute('.task:has(.rate)','data-n'); await b.page.click('.task:has(.rate) button[data-v="2"]');
+  const n=await b.page.getAttribute('.task:has(.rate)','data-n'), was=await b.page.evaluate(k=>((JSON.parse(localStorage.getItem('nch2_rep')||'{}'))[k]||{}).n||0,n);
+  await b.page.click('.task:has(.rate) button[data-v="2"]');
   await b.page.waitForFunction(()=>/офлайн/.test(document.querySelector('#net').textContent));
   await b.ctx.setOffline(false); await b.page.evaluate(()=>dispatchEvent(new Event('online')));
   await b.page.waitForFunction(()=>document.querySelector('#net').textContent==='сохранено',null,{timeout:10000});
   const after=await a.page.evaluate(()=>fetch('/api/progress').then(r=>r.json()).then(j=>JSON.parse(j.data.nch2_rep)));
-  assert.equal(after[n].n,2,'оценка, сделанная офлайн, дошла до аккаунта');
+  assert.equal(after[n].n,was+1,'оценка, сделанная офлайн, дошла до аккаунта');
   const ev=await a.page.evaluate(()=>fetch('/api/progress').then(r=>r.json()).then(j=>JSON.parse(j.data.nch2_club_ev||'[]')));
-  assert.ok(ev.some(e=>e.task===+n&&e.ok===true),'и наблюдение для карты навыков');
+  assert.ok(ev.some(e=>e.task===+n&&e.ok===true),'и наблюдение для плана подготовки');
   for(const x of [a,b]){ assert.deepEqual(x.page.errs,[]); await x.ctx.close(); }
 });
 
@@ -133,8 +136,8 @@ test('календарь и обратный план на фиксирован�
   const k=await page.locator('.task').count(); assert.ok(k>=3&&k<=6,'диагностика: по задаче на тему, '+k);
   for(let i=0;i<k;i++){ await page.click('.task:has(.rate) button[data-v="1"]'); await page.click('.task .errs button[data-e="proj"]'); await page.click('.task .errs button[data-act="rateSave"]'); }
   await page.waitForSelector('text=Диагностика пройдена');
-  await page.goto(URL+'/#/skills'); await page.waitForSelector('text=Что тренировать');
-  assert.match(await page.textContent('#view'),/Точка на эпюре Монжа[\s\S]*слабое место/,'ошибка «перепутал проекции» снизила навык эпюра');
+  const evs=await page.evaluate(()=>JSON.parse(localStorage.getItem('nch2_club_ev')||'[]'));
+  assert.ok(evs.some(e=>/:e\d+$/.test(e.id)&&e.ok===false),'ошибка «перепутал проекции» учтена отдельным навыком — она пойдёт в «слабые темы»');
   assert.deepEqual(page.errs,[]); await ctx.close();
 });
 
@@ -152,7 +155,7 @@ test('админ: участники, флаги, отзывы тестиров�
 
 test('проверка: предпроверка листа ИКГ по ГОСТ, сканер — только на сайте; вредный SVG обезврежен',async()=>{
   const {ctx,page}=await phone(); await join(page,5001,'Лист');
-  await page.goto(URL+'/#/check'); await page.click('details[data-feature="normo"] summary'); await page.click('button[data-s="ig-v5-clean"]'); await page.waitForSelector('#nkOut .note.ok',{timeout:30000});
+  await page.goto(URL+'/#/check'); await page.click('a.tool8[href="#/check/normo"]'); await page.click('button[data-s="ig-v5-clean"]'); await page.waitForSelector('#nkOut .note.ok',{timeout:30000});
   assert.match(await page.textContent('#nkOut'),/замечаний нет/);
   await page.click('button[data-s="ig-v8-thin"]'); await page.waitForSelector('#nkOut .note.warn',{timeout:30000});
   assert.match(await page.textContent('#nkOut'),/ГОСТ 2\.303/);
@@ -163,7 +166,7 @@ test('проверка: предпроверка листа ИКГ по ГОСТ
   assert.doesNotMatch(clean,/script|onclick|javascript|https:\/\/evil/); assert.match(clean,/stroke-width="2"/);
   assert.equal(alerted,false,'скрипты из SVG не выполнились');
   /* на адресе функции сканера нет — он лежит рядом с клубом на сайте (/lab/): карточки неактивны, подсказка ведёт на сайт */
-  assert.equal(await page.getAttribute('a.tool[href="#/check"]','aria-disabled'),'true'); assert.match(await page.getAttribute('.note.warn a','href'),/nachert1830\.ru\/lk\//);
+  await page.goto(URL+'/#/check'); assert.equal(await page.getAttribute('a.tool8[href="#/check"]','aria-disabled'),'true'); assert.match(await page.getAttribute('.note.warn a','href'),/nachert1830\.ru\/lk\//);
   assert.deepEqual(page.errs.filter(e=>!/evil|x\.png|ERR_/.test(e)),[]); await ctx.close();
 });
 
@@ -188,11 +191,11 @@ test('выход и удаление аккаунта стирают данны�
 test('пульт владельца: участник в кабинете виден вживую, лента, карточка; участнику пульт не показывается',async()=>{
   const own=await phone({viewport:{width:1366,height:900},isMobile:false,hasTouch:false}); await own.page.goto(URL+'/'); await botLogin(own.page,1000001,'Владелец'); await own.page.waitForSelector('text=Привет, Владелец');
   const m=await phone(); await join(m.page,7301,'Пульт-Тест'); assert.equal(await m.page.isVisible('#tabs a[href="#/boss"]'),false,'участнику вкладки «Пульт» нет');
-  await m.page.goto(URL+'/#/train'); await m.page.waitForTimeout(400);
+  await m.page.goto(URL+'/#/event/ng-rk-2/diag'); await m.page.waitForTimeout(400);
   if(await m.page.$('.task:has(.rate)')){ await m.page.click('.task:has(.rate) button[data-v="2"]'); await m.page.waitForTimeout(300); }
   await m.page.evaluate(()=>window.CLUB&&1); await m.page.waitForTimeout(1600);
   await own.page.click('#tabs a[href="#/boss"]'); await own.page.waitForSelector('.bhero');
-  await own.page.waitForSelector('.olist >> text=Пульт-Тест'); assert.match(await own.page.textContent('.olist'),/на тренировке/);
+  await own.page.waitForSelector('.olist >> text=Пульт-Тест'); assert.match(await own.page.textContent('.olist'),/готовится к сдаче/);
   assert.match(await own.page.textContent('.feed'),/Пульт-Тест[\s\S]*зарегистрировался/);
   await own.page.screenshot({path:path.join(SHOTS,'boss-pc.png'),fullPage:true});
   await own.page.click('.olist button[data-act="bossUser"]'); await own.page.waitForSelector('.uhead'); assert.match(await own.page.textContent('.uhead'),/Пульт-Тест/);

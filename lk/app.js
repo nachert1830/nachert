@@ -279,28 +279,36 @@ const whenWord=(k,date)=>k===0?'Сегодня':k===1?'Завтра':esc(CAL.hum
 function lessonNow(nl){ const l=nl.l;
   return `<section class="lesson ${l.subj}"><div><span class="k">${whenWord(nl.inDays,nl.date)} · ${esc(l.t.replace(/^0/,''))}</span><b>${l.subj==='ng'?'Начертательная геометрия':'Инженерная графика'}</b>
     <small>ауд. ${esc(l.rooms.join(', '))}${(l.who||[]).length?' · '+esc(l.who.join(', ')):''}</small></div><span class="ico">${ic('clock')}</span></section>`; }
-function deadlineCard(e,td){ const k=CAL.toDay(e.date)-td, tp=eventTopics(e), L=siteLink(e);
-  return `<section class="card dl k-${e.kind}" data-feature="calendar"><div class="dlh"><div><span class="tag ${e.kind}">${esc(e.short)}</span><b>${esc(e.subjTitle)}</b><small>${esc(e.kindFull)} · ${esc(CAL.human(e.date))}</small></div>
-      <div class="cnt"><b>${k===0?'!':k}</b><small>${k===0?'сегодня':plural(k,'день','дня','дней')}</small></div></div>
-    ${tp.length?`<div class="tchips">${tp.slice(0,3).map(x=>`<span class="tchip">${esc(x.t)}</span>`).join('')}${tp.length>3?`<a class="tchip more" href="#/event/${e.id}">ещё ${tp.length-3}</a>`:''}</div>`:''}
-    <div class="row"><a class="btn pri sm" href="#/event/${e.id}">План подготовки</a><a class="btn sm" href="${esc(L.href)}" target="_blank" rel="noopener noreferrer">${esc(L.t)} ${ic('ext')}</a></div></section>`; }
 const groupAsk=()=>`<section class="card ask"><h2>Ваша группа</h2><p class="mut">По ней — занятия, аудитории и точные даты сдач.</p>
   <form class="af" id="grpF" novalidate><div class="row"><input id="grpI" class="inp grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" placeholder="Например, ИУ5-12/6">${grpList()}<button class="btn pri" type="submit">Готово</button></div></form></section>`;
 const groupPick=()=>`<section class="card ask"><h2>Уточните группу</h2><p class="mut">«/4», «/5», «/6» — срок обучения, это разные группы.</p><div class="row">${groupAlts(myGroup()).map(k=>`<button class="btn sm" type="button" data-act="pickGroup" data-g="${esc(k)}">${esc(k)}</button>`).join('')}</div></section>`;
-function homeView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),week1(),t,4), next=evs[0], nl=nextLesson(), tr=trainingToday(), u=ME.user, v=myVariant(), done=doneMap();
+/* «Сегодня» — главный экран кабинета. Одна главная карточка: ближайшая сдача с отсчётом дней (красная цифра — единственный
+   красный на экране) и кнопкой «Готовиться». Ниже — шаги плана на сегодня, ближайшее занятие, мои ДЗ сразу на моём варианте
+   и что дальше. Тренажёров здесь нет: в кабинет приходят готовиться к конкретной сдаче. */
+function heroCard(e,td){ const k=CAL.toDay(e.date)-td, tp=eventTopics(e), L=siteLink(e);
+  return `<section class="card dl hero8 k-${e.kind}" data-feature="calendar"><div class="dlh"><div><span class="tag ${e.kind}">${esc(e.short)}</span><b>${esc(e.subjTitle)}</b><small>${esc(e.kindFull)} · ${esc(CAL.human(e.date))}</small></div>
+      <div class="cnt"><b>${k===0?'!':k}</b><small>${k===0?'сегодня':plural(k,'день','дня','дней')}</small></div></div>
+    ${tp.length?`<p class="h8k">${e.kind==='rk'?'Что будет на РК':'Что проверят'}</p><div class="tchips">${tp.slice(0,4).map(x=>`<span class="tchip">${esc(x.t)}</span>`).join('')}${tp.length>4?`<a class="tchip more" href="#/event/${e.id}">ещё ${tp.length-4}</a>`:''}</div>`:''}
+    <div class="row"><a class="btn pri" href="#/event/${e.id}">Готовиться по плану ${ic('arrow')}</a><a class="btn" href="${esc(L.href)}" target="_blank" rel="noopener noreferrer">${esc(L.t)} ${ic('ext')}</a></div></section>`; }
+/* мои ДЗ: ближайшие сдачи ДЗ — ссылка сразу на мой вариант и проверка листа по фото */
+function myHwCard(evs,td){ const hw=evs.filter(e=>e.kind==='dz').slice(0,3); if(!hw.length) return '';
+  const chk=e=>e.subj==='ikg'?(flag('normo')?'#/check/normo':''):(flag('scanner')&&(e.n===2||e.n===3)?'#/check/dz':'');
+  return `<section class="card myhw"><div class="sh"><h2>Мои ДЗ</h2><small>${myVariant()?'вариант '+myVariant():'<a href="#/me" data-act="editProfile">указать вариант</a>'}</small></div>
+    <ul class="hwl">${hw.map(e=>{ const L=siteLink(e), k=CAL.toDay(e.date)-td, c=chk(e);
+      return `<li><span class="hwt"><b>${esc(e.short+' · '+e.subjTitle)}</b><small>${esc(CAL.human(e.date))} · ${esc(CAL.inWords(k))}</small></span>
+        <span class="hwa"><a class="btn sm" href="${esc(L.href)}" target="_blank" rel="noopener noreferrer">${esc(L.t)} ${ic('ext')}</a>${c?`<a class="btn sm ghost" href="${c}">${ic('scan')}Проверить</a>`:''}</span></li>`; }).join('')}</ul></section>`; }
+function homeView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),week1(),t,8), next=evs.find(e=>e.kind!=='m')||evs[0], nl=nextLesson(), u=ME.user, v=myVariant(), done=doneMap();
   const amb=myGroup()&&!groupKey()&&groupAlts(myGroup()).length>1;
   const all=PL.todaySteps(events(),t,done,21), seen=new Set(), steps=all.filter(s=>{ if(s.event) return false; if(seen.has(s.ev.id)) return false; seen.add(s.ev.id); return true; }).slice(0,3);
+  const rest=evs.filter(e=>e!==next&&e.kind!=='dz').slice(0,3);
   render(`<a class="hello" href="#/me"><span class="av">${initials(u.name)}</span><span><b>Привет, ${esc(firstName(u.name))}</b><small>${[groupKey()||myGroup(),v?'вариант '+v:''].filter(Boolean).map(esc).join(' · ')||'заполните профиль'}</small></span>${ic('arrow')}</a>
   ${!myGroup()?groupAsk():amb?groupPick():''}
   ${myGroup()&&!v?`<a class="nudge" href="#/me" data-act="editProfile">${ic('plus')}<span>Укажите вариант — ссылки на ДЗ откроются сразу на нём</span></a>`:''}
-  ${nl?lessonNow(nl):''}
-  ${next?deadlineCard(next,td):''}
+  ${next?heroCard(next,td):`<section class="card"><h2>Сдач впереди нет</h2><p class="mut">Семестр закончился или ещё не начался.</p></section>`}
   ${flag('plan')&&steps.length?card('plan','По плану сегодня',`<ul class="today">${steps.map(s=>`<li class="${s.done?'done':''}"><a href="#/event/${s.ev.id}"><span class="dot">${s.done?ic('check'):''}</span><span><b>${esc(s.ev.short+' '+s.ev.subjTitle)} · ${esc(s.title)}</b><small>${s.min?'≈ '+s.min+' мин':''}</small></span>${ic('arrow')}</a></li>`).join('')}</ul>`):''}
-  <div class="duo">
-    ${flag('training')?`<a class="tile" href="#/train" data-feature="training"><span class="ico green">${ic('train')}</span><b>${tr.items.length&&!tr.left?'Тренировка сделана':'Тренировка дня'}</b><small>${tr.items.length?(tr.left?(tr.items.length-tr.left)+' из '+tr.items.length+' · ≈ '+tr.minutes+' мин':'задачи вернутся по интервалам'):'появится после первых оценок'}</small>${tr.items.length?`<span class="mini"><i data-w="${(tr.items.length-tr.left)/tr.items.length*100}"></i></span>`:''}</a>`:''}
-    ${flag('scanner')?`<a class="tile accent" href="#/check"><span class="ico">${ic('scan')}</span><b>Проверить чертёж</b><small>по фото — где ошибка</small></a>`:''}
-  </div>
-  ${evs.length>1?`<section class="card"><div class="sh"><h2>Дальше</h2><a href="#/calendar">Все сдачи</a></div><div class="evl">${evs.slice(1).map(e=>evRow(e,td)).join('')}</div></section>`:''}`,'Главная'); }
+  ${nl?lessonNow(nl):''}
+  ${myHwCard(evs,td)}
+  ${rest.length?`<section class="card"><div class="sh"><h2>Дальше</h2><a href="#/calendar">Все сдачи</a></div><div class="evl">${rest.map(e=>evRow(e,td)).join('')}</div></section>`:''}`,'Сегодня'); }
 const todayView=homeView;
 
 /* ── календарь ── */
@@ -308,7 +316,7 @@ function calendarView(){ const s=CAL.normSettings(calSet()), t=dayNum(), wkNow=C
   const wd=[1,2,3,4,5,6].map(d=>[d,['','понедельник','вторник','среда','четверг','пятница','суббота'][d]]);
   const ws=CAL.weeks(calSet(),week1(),17).map(w=>`<div class="wk${w.week===wkNow?' now':''}"><div class="n">${w.week}<small>${dparts(w.start).d} ${dparts(w.start).mon}</small></div>
     <div class="es">${w.events.map(e=>`<a class="chip${CAL.toDay(e.date)<t?' past':''}" href="#/event/${e.id}">${tagOf(e)}${esc(e.subjTitle)}${e.custom?' · '+esc(CAL.human(e.date)):''}</a>`).join('')||'<small>—</small>'}</div></div>`).join('');
-  render(`${pageHead('Сдачи семестра',groupSched()?'По расписанию группы '+esc(groupKey())+'. Неделя — неделя крайнего срока.':'Неделя — неделя крайнего срока; день — по вашим занятиям.',['#/','Главная'])}
+  render(`${pageHead('Сдачи семестра',groupSched()?'По расписанию группы '+esc(groupKey())+'. Неделя — неделя крайнего срока.':'Неделя — неделя крайнего срока; день — по вашим занятиям.')}
     ${groupSched()?'':card('calendar','Дни занятий',`${myGroup()?`<p class="mut">Группы ${esc(myGroup())} нет в расписании кафедры — укажите дни сами.</p>`:''}<div class="grid2">${['ikg','ng'].map(k=>`<div><label class="f" for="cd-${k}">${k==='ikg'?'ИКГ':'Начерт'}</label><select id="cd-${k}" data-chg="classDay" data-s="${k}">${wd.map(([d,n])=>`<option value="${d}"${s.classDay[k]===d?' selected':''}>${n}</option>`).join('')}</select></div>`).join('')}</div>
       <div class="grid2 reg">${['ikg','ng'].map(k=>`<label class="chk"><input type="checkbox" data-chg="subj" data-s="${k}"${s.subjects.includes(k)?' checked':''}><span>${k==='ikg'?'ИКГ':'Начерт'}</span></label>`).join('')}</div>`)}
     <section class="card"><div class="weeks">${ws}</div></section>`,'Сдачи'); }
@@ -330,14 +338,14 @@ function stepAction(s){ const e=s.evObj; if(!e) return '';
   if(s.group==='mix'&&s.when==='today') return `<a class="btn sm cta" href="#/event/${e.id}/mix">Задачи на сегодня</a>`;
   if(s.k==='mock') return `<a class="btn sm" href="#/event/${e.id}/mock">Пробный РК</a>`;
   if(s.k==='light') return ext(mainUrl(e.subj==='ng'?'#/ng/cheat':'#/ig/theory'),'Шпаргалка на сайте');
-  if(e.kind==='dz'&&s.k==='check'&&e.subj==='ikg'&&flag('normo')) return `<a class="btn sm" href="#/check">Предпроверка листа</a>`;
+  if(e.kind==='dz'&&s.k==='check'&&e.subj==='ikg'&&flag('normo')) return `<a class="btn sm" href="#/check/normo">Предпроверка листа</a>`;
   if(e.kind==='dz'&&s.k==='read') return ext(mainUrl(e.subj==='ng'?'#/ng/hw':'#/ig/hw2'),'Разборы ДЗ на сайте');
   return ''; }
 function eventView(id,sub){ const e=events().find(x=>x.id===id); if(!e){ render('<p class="note bad">Нет такого события.</p>'); return; }
   if(sub==='diag') return diagView(e); if(sub==='mix') return mixView(e); if(sub==='mock') return mockView(e);
   const p=PL.plan(e,today(),doneMap()); p.steps.forEach(s=>{ s.evObj=e; });
   const ii=LS.get(K.ii,{})[e.id]||{}, t=dayNum(), k=CAL.toDay(e.date)-t, dp=dparts(e.date);
-  render(`${pageHead(esc(e.title),'',['#/','Главная'])}
+  render(`${pageHead(esc(e.title),'',['#/calendar','Сдачи'])}
   <section class="hero"><div class="hero-row"><div><span class="pill${e.kind==='rk'?' red':''}">${esc(e.kindFull)} · неделя ${e.week}</span><h1>${dp.wd}, ${dp.d} ${dp.mon}</h1><p>Неделя ${e.week}: ${esc(CAL.human(e.start))} – ${esc(CAL.human(e.end))}. ${e.kind==='rk'?'РК пишется один раз и только на этой неделе.':'Крайний срок — на этой неделе.'}</p></div>
     <div class="count"><b>${k<0?'—':k}</b><span>${k<0?'событие прошло':plural(k,'день','дня','дней')+' осталось'}</span></div></div>
     <div class="row reg">${(L=>`<a class="btn sm onhero" href="${esc(L.href)}" target="_blank" rel="noopener noreferrer">${esc(L.t)} ${ic('ext')}</a>`)(siteLink(e))}</div></section>
@@ -373,15 +381,15 @@ function diagView(e){ const d=diagItems(e), n=Object.keys(d.res).length, all=d.i
       <ul class="list reg">${d.items.map(s=>`<li><b>${esc(topicTitle(s))}</b><div class="seg reg" role="group">${[['2','уверенно'],['1','сомневаюсь'],['0','не умею']].map(([v,l])=>`<button type="button" data-act="ikgSelf" data-ev="${e.id}" data-s="${s}" data-v="${v}" class="${d.res[s]===+v?'on':''}">${l}</button>`).join('')}</div></li>`).join('')}</ul>`,'',{icon:'sheet'});
   render(`${pageHead('Диагностика · '+esc(e.short+' '+e.subjTitle),e.subj==='ng'?'По одной задаче на тему РК. Решайте на бумаге без подсказок и отметьте результат честно — от этого зависит, что попадёт в тренировку.':'',['#/event/'+e.id,'План '+e.short+' · '+e.subjTitle])}
     <section class="card"><div class="row"><b class="grow">Готово: ${n} из ${all}</b>${n===all?'<span class="st-badge ok">пройдено</span>':''}</div><div class="bar"><i data-w="${all?n/all*100:0}"></i></div></section>
-    <div class="reg">${body}</div>${n===all?`<p class="note ok reg">Диагностика пройдена. Слабые темы — на <a href="#/skills">карте навыков</a>; они пойдут в план «вперемешку».</p>`:''}`,'Диагностика'); }
+    <div class="reg">${body}</div>${n===all?`<p class="note ok reg">Диагностика пройдена. Слабые темы пойдут в план: <a href="#/event/${e.id}/mix">слабые темы вперемешку</a>.</p>`:''}`,'Диагностика'); }
 function mixView(e){ let items=[];
   if(e.subj==='ng'){ const rec=BKT.recommend(estimate(),CORE.tasks,LS.get(K.rep,{}),CORE.rkTopics[e.n]||[],3); items=rec.map(r=>r.tasks[0]).filter(Boolean); }
   render(`${pageHead('Слабые темы вперемешку',e.subj==='ng'?'Три задачи из самых слабых тем РК, разных типов подряд. Сначала определите способ, потом решайте.':'Тренажёр «Нормоконтроль» на сайте и предпроверка своего листа — по слабым группам правил.',['#/event/'+e.id,'План '+e.short+' · '+e.subjTitle])}
-    <div>${e.subj==='ng'?items.map(n=>taskCard(n,'mix:'+e.id,null,'вперемешку')).join('')||'<p class="empty">Все темы РК освоены — повторяйте по тренировке дня.</p>':`<div class="row">${ext(mainUrl('#/ig/nk'),'Нормоконтроль','btn')}${flag('normo')?'<a class="btn pri" href="#/check">Предпроверка листа</a>':''}</div>`}</div>
+    <div>${e.subj==='ng'?items.map(n=>taskCard(n,'mix:'+e.id,null,'вперемешку')).join('')||'<p class="empty">Все темы РК освоены — пройдите пробный РК на время.</p>':`<div class="row">${ext(mainUrl('#/ig/nk'),'Нормоконтроль','btn')}${flag('normo')?'<a class="btn pri" href="#/check/normo">Предпроверка листа</a>':''}</div>`}</div>
     ${why('когда тип задачи заранее неизвестен, мозг учится главному для РК — выбирать способ (Rohrer, Dedrick, Stershic, 2015).')}`,'Вперемешку'); }
 function mockView(e){ const m=LS.get(K.mock,{})[e.id]||{}, href=e.subj==='ng'?(e.n===2?'#/ng/rk2/mock':e.n===1?'#/ng/check':'#/ng/check/tickets'):'#/ig/nk';
   const left=m.start&&!m.end?Math.max(0,m.start+(m.min||90)*60e3-Date.now()):0;
-  render(`${pageHead('Пробный РК на время','Билет целиком, без подсказок и разборов, с таймером. Потом — сверка и самооценка в тренировке.',['#/event/'+e.id,'План '+e.short+' · '+e.subjTitle])}
+  render(`${pageHead('Пробный РК на время','Билет целиком, без подсказок и разборов, с таймером. Потом — сверка с разбором на сайте.',['#/event/'+e.id,'План '+e.short+' · '+e.subjTitle])}
     ${card('plan','Таймер',`<div class="row">${ext(mainUrl(href),e.subj==='ng'?'Билет на сайте':'Тренажёр на сайте','btn')}</div>
       <div class="big" id="mockT">${m.end?'Готово':m.start?fmtLeft(left):'90:00'}</div>
       <div class="row">${!m.start||m.end?`<button class="btn cta lg" type="button" data-act="mockStart" data-id="${e.id}">${m.end?'Ещё раз':'Начать'} — 90 минут</button>`:`<button class="btn pri lg" type="button" data-act="mockEnd" data-id="${e.id}">Закончил</button>`}</div>`,
@@ -409,63 +417,22 @@ function saveRating(el,v,errors,symptoms){ const n=+el.dataset.n, ctx=el.dataset
   let rep=LS.get(K.rep,{}); rep=SRS.rate(rep,n,v,d); LS.set(K.rep,rep); track('task',{n,v,ctx:ctx.split(':')[0].slice(0,8)});
   const evs=BKT.fromRating({id:'c'+now.toString(36)+n,t:now,task:n,topic:t.topic,rating:v,errors,symptoms:(CORE.symptoms||[]).filter(s=>symptoms.includes(s.id)),src:ctx.split(':')[0]});
   LS.set(K.ev,BKT.merge(LS.get(K.ev,[]),evs));
-  if(ctx==='train'){ const tr=LS.get(K.train,{}); if(tr.day===d){ tr.res=tr.res||{}; tr.res[n]=v; LS.set(K.train,tr); } trainView(); }
-  else if(ctx.startsWith('diag:')){ const id=ctx.slice(5), st=LS.get(K.diag,{}); if(st[id]){ st[id].res[n]=v; LS.set(K.diag,st); if(Object.keys(st[id].res).length>=st[id].items.length) setDone(id+':diag',true); }
+  if(ctx.startsWith('diag:')){ const id=ctx.slice(5), st=LS.get(K.diag,{}); if(st[id]){ st[id].res[n]=v; LS.set(K.diag,st); if(Object.keys(st[id].res).length>=st[id].items.length) setDone(id+':diag',true); }
     const e=events().find(x=>x.id===id); if(e) diagView(e); }
   else if(ctx.startsWith('mix:')){ toast('Сохранено'); const id=ctx.slice(4); const e=events().find(x=>x.id===id); if(e) mixView(e); }
-  else skillsView(); }
-
-/* ── тренировка дня ── */
-function trainingToday(){ const d=dayNum(); let tr=LS.get(K.train,{});
-  if(tr.day!==d||!Array.isArray(tr.items)){ if(!CORE) return {items:[],minutes:0,left:0};
-    const est=estimate(), x=SRS.training(LS.get(K.rep,{}),d,CORE.tasks.filter(t=>t.topic),tp=>BKT.mastery(est,tp),focusTopics(),d);
-    tr={day:d,items:x.items,minutes:x.minutes,res:{},later:x.later}; LS.set(K.train,tr); }
-  const left=tr.items.filter(i=>tr.res==null||tr.res[i.n]==null).length; return Object.assign({},tr,{left}); }
-function trainView(){ const tr=trainingToday(), f=focusTopics(), rk=nextRk('ng',21), r=tr.items.filter(i=>i.kind==='review').length;
-  render(`${pageHead('','',['#/progress','Прогресс'])}<section class="hero"><div class="hero-row"><div><span class="pill">Тренировка дня · ≈ ${tr.minutes||0} мин</span><h1>${tr.items.length?(tr.left?'Осталось '+tr.left+' из '+tr.items.length:'На сегодня всё'):'Повторять пока нечего'}</h1>
-    <p>${tr.items.length?[r?r+' '+plural(r,'задача','задачи','задач')+' на повтор по интервалам':'',tr.items.length-r?'одна задача вперемешку'+(rk&&f.length?' — из тем '+esc(rk.short)+' по начерту':''):''].filter(Boolean).join(' и ')+'.':'Начните с рекомендаций на карте навыков — задачи вернутся сюда по интервалам.'}${tr.later?' Ещё '+tr.later+' ждут завтра: больше трёх повторов в день — перегрузка.':''}</p></div>
-    ${tr.items.length?`<div class="count"><b>${tr.items.length-tr.left}/${tr.items.length}</b><span>сделано сегодня</span></div>`:''}</div></section>
-  <p class="hint reg">Решите задачу на бумаге в режиме «Решаю сам» на сайте — и честно отметьте, как получилось.</p>
-  <div class="reg">${tr.items.map(i=>taskCard(i.n,'train',tr.res&&tr.res[i.n],i.kind==='review'?'повтор':'вперемешку')).join('')||`<div class="empty">${ic('train')}<p>Здесь появятся задачи. <a href="#/skills">Карта навыков →</a></p></div>`}</div>
-  ${tr.items.length&&!tr.left?'<p class="note ok reg">Готово. Следующие задачи вернутся по интервалам.</p>':''}`,'Тренировка дня'); }
-
-/* ── прогресс: тренировка дня, итог по навыкам и что подтянуть ── */
-function skillCounts(est){ const all=[...new Set([].concat(CORE.rkTopics[1]||[],CORE.rkTopics[2]||[],CORE.rkTopics[3]||[]))], cnt={master:0,mid:0,low:0,all:all.length};
-  all.forEach(s=>{ const o=est[s]; if(!o||!o.n) return; const lv=BKT.level(BKT.mastery(est,s),o.n).id; if(lv==='master') cnt.master++; else if(lv==='low') cnt.low++; else cnt.mid++; }); return cnt; }
-function progressView(){ const tr=trainingToday(), est=estimate(), f=focusTopics(), rec=BKT.recommend(est,CORE.tasks,LS.get(K.rep,{}),f,3), c=skillCounts(est), rk=nextRk('ng',21);
-  const pct=tr.items.length?Math.round((tr.items.length-tr.left)/tr.items.length*100):0;
-  render(`${pageHead('Прогресс')}
-    ${flag('training')?`<a class="card trainc" href="#/train" data-feature="training"><span class="ring" data-p="${pct}"><b>${tr.items.length?tr.items.length-tr.left+'/'+tr.items.length:'—'}</b></span><span><b>Тренировка дня</b><small>${tr.items.length?(tr.left?'≈ '+tr.minutes+' мин · повтор по интервалам':'На сегодня всё — задачи вернутся по интервалам'):'Задачи появятся после первых оценок'}</small></span>${ic('arrow')}</a>`:''}
-    ${flag('skills')?`<a class="card skc" href="#/skills" data-feature="skills"><div class="stats3"><div><b>${c.master}</b><span>освоено</span></div><div><b>${c.mid}</b><span>в процессе</span></div><div><b class="lowc">${c.low}</b><span>слабые</span></div></div><span class="rowlink">Карта навыков · ${c.all} тем ${ic('arrow')}</span></a>`:''}
-    ${flag('skills')&&rec.length?`<section class="card"><div class="sh"><h2>Подтянуть</h2><small>${rk&&f.length?'к '+esc(rk.short)+' по начерту':'самые слабые темы'}</small></div><ul class="rec">${rec.map(r=>`<li><b>${esc(topicTitle(r.skill))}</b> <span class="lv ${BKT.level(r.p,r.n).id}">${r.n?Math.round(r.p*100)+' %':'не решали'}</span><div class="row">${r.tasks.map(n=>ext(mainUrl('#/ng/tasks/'+n+'/try'),'№'+n)).join('')}${r.tasks.length?`<button class="btn sm pri" type="button" data-act="addTrain" data-n="${r.tasks.join(',')}">${ic('plus')}В тренировку</button>`:''}</div></li>`).join('')}</ul></section>`:''}`,'Прогресс');
-  $$('.ring',view()).forEach(r=>{ r.style.setProperty('--p',(+r.dataset.p||0)+'%'); }); }
-
-/* ── карта навыков ── */
-function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics(), rec=BKT.recommend(est,CORE.tasks,rep,f,3);
-  const all=[...new Set([].concat(CORE.rkTopics[1]||[],CORE.rkTopics[2]||[],CORE.rkTopics[3]||[]))];
-  const cnt={master:0,mid:0,low:0}; all.forEach(s=>{ const o=est[s]; if(!o||!o.n) return; const lv=BKT.level(BKT.mastery(est,s),o.n).id; if(lv==='master') cnt.master++; else if(lv==='low') cnt.low++; else cnt.mid++; });
-  const row=s=>{ const o=est[s]||{}, p=BKT.mastery(est,s), lv=BKT.level(p,o.n);
-    return `<div class="sk"><div class="h"><b>${esc(topicTitle(s))}</b><span class="lv ${lv.id}">${esc(lv.t)}</span></div><div class="bar${o.n?'':' none'}"><i class="${lv.id}" data-w="${o.n?Math.max(3,Math.round(p*100)):0}"></i></div><small>${o.n?'освоено на '+Math.round(p*100)+' % · наблюдений: '+o.n:'данных пока нет'}</small></div>`; };
-  const seen=new Set();
-  render(`${pageHead('','',['#/progress','Прогресс'])}<section class="hero"><span class="pill">Карта навыков · ${all.length} тем начерта</span><h1>Что уже получается</h1><p>Оценка обновляется после каждой самооценки в тренировке и диагностике.</p>
-    <div class="stats reg"><div class="stat"><b>${cnt.master}</b><span>освоено</span></div><div class="stat"><b>${cnt.mid}</b><span>в процессе</span></div><div class="stat"><b>${cnt.low}</b><span>слабые места</span></div></div></section>
-  <div class="grid"><div class="col">
-    ${card('skills','Что тренировать',rec.length?`<ul class="rec">${rec.map(r=>`<li><b>${esc(topicTitle(r.skill))}</b> <span class="lv ${BKT.level(r.p,r.n).id}">${r.n?Math.round(r.p*100)+' %':'ещё не решали'}</span><div class="row">${r.tasks.map(n=>ext(mainUrl('#/ng/tasks/'+n+'/try'),'№'+n)).join('')||'<small>Все задачи темы уже в повторении.</small>'}${r.tasks.length?`<button class="btn sm pri" type="button" data-act="addTrain" data-n="${r.tasks.join(',')}">${ic('plus')}В тренировку</button>`:''}</div></li>`).join('')}</ul>`:'<p class="mut">Все навыки освоены — повторяйте по интервалам.</p>',
-      'каждая самооценка — наблюдение. Оценка — Bayesian Knowledge Tracing (Corbett, Anderson, 1995): вероятность «навык освоен» обновляется по формуле Байеса с учётом промаха (знал, но ошибся, 10 %) и угадывания (20 %); освоено — от 95 %. «С подсказкой» считается ошибкой, описка — нет. Отмеченные ошибки снижают оценку своего навыка, а не только темы задачи.',{icon:'target',tone:'red',sub:f.length?'сначала темы ближайшего РК':'самые слабые темы'})}
-    <section class="card"><div class="ch"><span class="ico amber">${ic('sheet')}</span><h2>ИКГ · лист по ГОСТ<small>из предпроверки листов и диагностики</small></h2></div>${BKT.IKG_SKILLS.filter(s=>s.id!=='ikg-model'||est[s.id]).map(s=>row(s.id)).join('')}</section>
-  </div><div class="col">
-    ${[1,2,3].map(k=>`<section class="card"><div class="ch"><span class="ico">${ic('skills')}</span><h2>Начерт · РК${k}</h2></div>${(CORE.rkTopics[k]||[]).filter(s=>!seen.has(s)&&seen.add(s)).map(row).join('')||'<small>—</small>'}</section>`).join('')}
-  </div></div>`,'Карта навыков'); }
+  else toast('Сохранено'); }
 
 /* ── проверка: фото и нормоконтроль ── */
 /* ── проверка чертежа — главный раздел ──
    Сканер (ветка лаборатории: lab/scan.html — задачи № 46, № 47; lab/dz.html — лист ДЗ №2–3) лежит рядом с клубом на сайте
    (/lab/) и открывается внутри кабинета. Фото обрабатывается на устройстве и никуда не отправляется. Правило сканера:
    ложный вердикт хуже отказа — «не уверен» он говорит прямо. */
+/* Проверка: сначала «что у вас в руках» — крупные карточки простыми словами, потом три правила съёмки, потом сканер.
+   Названия — по тому, что проверяет студент (ДЗ, задача тетради, лист из САПР), а не по устройству сканера. */
 const LAB=[
-  {id:'cam',src:'lab/cam.html',icon:'scan',tone:'',var:true,t:'ДЗ № 3 — камерой',s:'2–5 кадров, кадры голосуют; лист в клетку или чистый лист',p:'Наведите камеру на лист — она сама снимет несколько кадров с разных углов. Вывод звучит, только если его подтверждают несколько кадров; разбор — прямо на фото.'},
-  {id:'dz',src:'lab/dz.html',icon:'sheet',tone:'',var:true,t:'ДЗ № 2–3 по начерту',s:'одно фото; ДЗ № 3 — с ИИ-зрением: все четыре чертежа листа сразу, без рамки и клеток',p:'Сфотографируйте лист — сканер найдёт рамку, сетку или края листа, сверит построение с условием вашего варианта и проверит ответ.'},
-  {id:'task',src:'lab/scan.html',icon:'scan',tone:'green',t:'Задачи тетради № 46 и 47',s:'фото решения — вердикт и отметки на фото',p:'Вердикт «верно» или где ошибка — с отметками прямо на фото, выпрямленный лист и 3D-модель решения. Есть синтетический лист, чтобы попробовать без бумаги.'}];
+  {id:'dz',src:'lab/dz.html',icon:'sheet',var:true,t:'ДЗ по начерту — фото листа',s:'ДЗ № 2 и № 3 · с ИИ-зрением — без рамки и штампа, все чертежи листа сразу',p:'Сфотографируйте лист или один чертёж крупно. С ИИ-зрением рамка, штамп и края листа не нужны: модель найдёт подписи точек и все чертежи листа, а сканер по линиям сверит построение с условием вашего варианта.'},
+  {id:'cam',src:'lab/cam.html',icon:'scan',var:true,t:'ДЗ № 3 — камерой',s:'наведите камеру на лист — снимки она сделает сама',p:'Камера снимет 2–5 кадров с разных углов. Вывод — только если его подтверждают несколько снимков; разбор — прямо на фото.'},
+  {id:'task',src:'lab/scan.html',icon:'doc',t:'Задача тетради № 46 или № 47',s:'фото решения — верно или где ошибка',p:'Вердикт с отметками прямо на фото и 3D-модель решения. Нет листа под рукой — попробуйте на примере.'}];
 const labBase=()=>/\/lk\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/lk\/(index\.html)?$/,''):null;
 /* вариант из профиля — сканеру сразу (?n=…): студенту не нужно вводить номер; нет варианта — сканер узнаёт его по чертежу */
 const labSrc=L=>L.src+(L.var&&myVariant()?'?n='+myVariant():'');
@@ -476,19 +443,25 @@ window.addEventListener('message',async e=>{ const d=e.data, f=document.querySel
   if(d.type!=='nch-eyes') return; let out;
   try{ const r=await api('POST','/api/eyes',{img:d.img,w:d.w,h:d.h,dz:d.dz,n:d.n}); out={ok:true,text:r.text,model:r.model}; }catch(err){ out={ok:false,error:err.message,status:err.status||0}; }
   e.source.postMessage(Object.assign({type:'nch-eyes-r',id:d.id},out),location.origin); });
+const HOWTO=`<ol class="how8"><li><b>Чертёж крупно</b><span>с ИИ-зрением — лист или один чертёж, края не обязательны; без него — лист целиком</span></li><li><b>Ровный свет</b><span>без бликов и тени от телефона, телефон параллельно листу</span></li><li><b>Линии как на сдачу</b><span>обведены; сканер не уверен — так и скажет, переснимите ближе</span></li></ol>`;
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
-  if(L&&base){ track('check',{k:tool}); const src=base+labSrc(L); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
+  if(tool==='normo') return normoView();
+  if(L&&base){ track('check',{k:tool}); const src=base+labSrc(L); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(src)}" target="_blank" rel="noopener">На весь экран ${ic('ext')}</a></div>
+      <p class="labp">${esc(L.p)}${L.var&&myVariant()?` Вариант <b>${myVariant()}</b> — из профиля.`:''}</p>
       <iframe class="labf" src="${esc(src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
-  render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте. Сканер сверит построение с верным решением и покажет, где ошибка. Фото не сохраняется: его разбирает телефон, а с ИИ-зрением подписи на нём читает ещё модель в Yandex Cloud.')}
-  <div class="tools">${LAB.map(x=>`<a class="tool" href="${base?'#/check/'+x.id:'#/check'}" ${base?'':'aria-disabled="true"'}><span class="ico ${x.tone}">${ic(x.icon)}</span><span class="tt"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span>${ic('arrow')}</a>`).join('')}</div>
-  ${base?'':`<p class="note warn">Сканер работает на странице кабинета на сайте: <a href="https://nachert1830.ru/lk/#/check">nachert1830.ru</a>.</p>`}
-  <details class="card fold"><summary><span class="ico">${ic('info')}</span><b>Как снимать, чтобы сканер понял</b></summary><ol class="lead"><li>Лист целиком в кадре. Подойдёт А3 с рамкой, лист в клетку или чистый лист без рамки — чистый кладите на тёмный стол.</li><li>Ровный свет без бликов; телефон параллельно листу. Камера сама подскажет, что не так.</li><li>Линии обведены как на сдачу.</li><li>«Не уверен» — переснимите ближе или при другом свете.</li></ol></details>
-  ${flag('normo')?`<details class="card fold" data-feature="normo"><summary><span class="ico amber">${ic('sheet')}</span><b>Лист ИКГ из САПР — проверка по ГОСТ</b></summary>
-      <p class="mut">Загрузите SVG: формат, рамка, основная надпись, линии, шрифт, виды и разрезы, штриховка, размеры.</p>
-      <label class="file"><input id="nkF" type="file" accept=".svg,image/svg+xml"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
-      <div class="row reg"><button class="btn pri" type="button" data-act="normo">Проверить мой лист</button></div>
-      <p class="mut reg">Или образцы ДЗ 2:</p><div class="samples"><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v5-clean">верный лист</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v8-thin">ошибка в линиях</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v12-numline">ошибка в размерах</button></div>
-      <div id="nkOut" aria-live="polite"></div></details>`:''}`,'Проверка'); }
+  const item=(href,icon,t,s,dis)=>`<a class="tool8" href="${href}"${dis?' aria-disabled="true"':''}><span class="ico">${ic(icon)}</span><span class="tt"><b>${esc(t)}</b><small>${esc(s)}</small></span>${ic('arrow')}</a>`;
+  render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте: сканер сверит построение с верным решением и покажет, где ошибка. Фото не сохраняется: его разбирает телефон, а с ИИ-зрением подписи на нём читает ещё модель в Yandex Cloud.')}
+  <h2 class="q8">Что проверяем?</h2>
+  <div class="tools8">${LAB.map(x=>item(base?'#/check/'+x.id:'#/check',x.icon,x.t,x.s,!base)).join('')}${flag('normo')?item('#/check/normo','sheet','Лист ИКГ из КОМПАС или другой САПР','файл SVG · формат, линии, шрифт, размеры по ГОСТ'):''}</div>
+  ${base?'':`<p class="note warn">Сканер фото работает в кабинете на сайте. <a class="btn sm" href="https://nachert1830.ru/lk/#/check">Открыть на nachert1830.ru ${ic('ext')}</a></p>`}
+  <section class="card"><h2>Как снять, чтобы сканер понял</h2>${HOWTO}</section>`,'Проверка'); }
+function normoView(){ if(!flag('normo')) return checkView();
+  render(`${pageHead('Лист ИКГ по ГОСТ','Загрузите лист из КОМПАС или другой САПР в SVG: формат, рамка, основная надпись, линии, шрифт, виды и разрезы, штриховка, размеры. Файл проверяется в браузере.',['#/check','Проверка'])}
+  <section class="card" data-feature="normo"><h2>Ваш лист</h2>
+    <label class="file reg"><input id="nkF" type="file" accept=".svg,image/svg+xml"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
+    <div class="row reg"><button class="btn pri" type="button" data-act="normo">Проверить мой лист</button></div>
+    <p class="mut reg">Нет своего — посмотрите на образцах ДЗ 2:</p><div class="samples"><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v5-clean">верный лист</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v8-thin">ошибка в линиях</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v12-numline">ошибка в размерах</button></div>
+    <div id="nkOut" aria-live="polite"></div></section>`,'Лист ИКГ по ГОСТ'); }
 
 /* SVG пользователя — без скриптов, обработчиков, внешних ссылок; style="…" переводится в атрибуты (CSP не пускает встроенные стили) */
 const PRES=new Set(['stroke','stroke-width','stroke-dasharray','stroke-dashoffset','stroke-linecap','stroke-linejoin','stroke-opacity','fill','fill-opacity','fill-rule','opacity','font-size','font-family','font-style','font-weight','text-anchor','dominant-baseline','visibility','display','vector-effect','letter-spacing']);
@@ -514,7 +487,7 @@ async function runNormo(svgText,own,label){ const out=$('#nkOut'); out.innerHTML
       <div class="sheetbox"><img src="${url}" alt="Проверенный лист">${v?`<svg class="ov" viewBox="${v.join(' ')}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${r.issues.filter(i=>i.at).map((i,j)=>`<circle cx="${v[0]+i.at[0]*r.k}" cy="${v[1]+i.at[1]*r.k}" r="${6*r.k}" fill="none" stroke="#d0342b" stroke-width="${1.2*r.k}"/><text x="${v[0]+i.at[0]*r.k+7*r.k}" y="${v[1]+i.at[1]*r.k-5*r.k}" fill="#d0342b" font-size="${5*r.k}" font-family="sans-serif">${j+1}</text>`).join('')}</svg>`:''}</div>
       ${Object.keys(by).map(g=>`<h3 class="reg">ГОСТ ${esc(g)}</h3><ul>${by[g].map(i=>`<li><b>${esc(i.rule)}</b> — ${esc(i.msg)}</li>`).join('')}</ul>`).join('')}`;
     track('scan',{k:'normo',iss:r.issues.length,own:!!own});
-    if(own){ LS.set(K.ev,BKT.merge(LS.get(K.ev,[]),BKT.fromNormo({id:'n'+Date.now().toString(36),t:Date.now(),issues:r.issues}))); out.insertAdjacentHTML('beforeend','<p class="mut">Результат учтён в <a href="#/skills">карте навыков ИКГ</a>.</p>'); } }
+    if(own){ LS.set(K.ev,BKT.merge(LS.get(K.ev,[]),BKT.fromNormo({id:'n'+Date.now().toString(36),t:Date.now(),issues:r.issues}))); } }
   catch(e){ out.innerHTML=`<p class="note bad reg">Не получилось проверить: ${esc(e.message)}</p>`; } }
 
 /* ── профиль: информация (имя, группа, вариант), расписание и короткий список настроек ── */
@@ -778,7 +751,7 @@ function wipeLocal(){ TOK.set(''); try{ const ks=[]; for(let i=0;i<localStorage.
 function topbar(){ const b=$('#ub'); if(!b) return; b.hidden=!ME; if(!ME) return;
   const t=today(), wk=CAL.weekOf(week1(),t), p=dparts(t);
   b.innerHTML=`<div class="ubi"><span class="ubw">${wk>=1&&wk<=17?wk+'-я неделя':wk<1?'до семестра':'каникулы'}</span>${wk>=1&&wk<=17?`<span class="ubp">${parity(wk)==='чс'?'числитель':'знаменатель'}</span>`:''}<span class="ubd">${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span></div>`; }
-const TAB_OF={'':'',event:'',calendar:'',check:'check',progress:'progress',train:'progress',skills:'progress',me:'me',settings:'me',admin:'me',boss:'boss'};
+const TAB_OF={'':'',event:'calendar',calendar:'calendar',check:'check',me:'me',settings:'me',admin:'me',boss:'boss'};
 function tabs(){ topbar(); const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=TAB_OF[(location.hash.replace(/^#\/?/,'').split('/')[0])||'']; const av=$('#tav'); if(av) av.textContent=String(ME.user.name||'·').trim().slice(0,1).toUpperCase();
   $$('a',t).forEach(a=>{ a.hidden=(!!a.dataset.f&&!flag(a.dataset.f))||(a.dataset.admin!=null&&ME.user.role!=='admin'); a.classList.toggle('on',a.dataset.r===(r==null?'':r)); }); }
 /* возврат с oauth.telegram.org: #tgAuthResult=<base64 JSON, подписанный Telegram> → сервер проверяет подпись → «Войти как …?» */
@@ -810,11 +783,9 @@ function route(){ closeSheet(); const m=/^#tgAuthResult=([A-Za-z0-9+/=_%-]*)/.ex
   switch(p[0]){
     case '': case 'join': return homeView();
     case 'calendar': return flag('calendar')?calendarView():homeView();
-    case 'progress': return progressView();
+    case 'progress': case 'train': case 'skills': history.replaceState(null,'','#/'); return homeView();
     case 'me': return meView(p[1]);
     case 'event': return eventView(p[1],p[2]);
-    case 'train': return flag('training')?trainView():todayView();
-    case 'skills': return flag('skills')?skillsView():todayView();
     case 'check': return checkView(p[1]);
     case 'settings': case 'more': case 'about': history.replaceState(null,'','#/me'); return meView();
     case 'admin': return adminView();
