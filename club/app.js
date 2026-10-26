@@ -68,7 +68,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 /* ── общее ── */
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); }
 function paint(root){ $$('[data-w]',root).forEach(el=>{ el.style.width=Math.max(0,Math.min(100,+el.dataset.w))+'%'; }); $$('[data-h]',root).forEach(el=>{ el.style.height=Math.max(2,Math.min(100,+el.dataset.h))+'%'; }); }
-function render(html,title){ const v=view(); v.innerHTML=html; paint(v); if(title) document.title=title+' · Кабинет Начерта'; tabs(); netState(); }
+function render(html,title){ const v=view(); v.innerHTML=html; paint(v); if(title) document.title=title+' · Личный кабинет Начерта'; tabs(); netState(); }
 function openSheet(html,onBind){ closeSheet(); const bg=document.createElement('div'); bg.className='sheet-bg'; bg.id='sheet';
   bg.innerHTML='<div class="sheet-p" role="dialog" aria-modal="true">'+html+'</div>'; document.body.appendChild(bg);
   bg.addEventListener('click',e=>{ if(e.target===bg||e.target.closest('[data-close]')) closeSheet(); }); paint(bg); const f=$('input,textarea,button',bg); if(f) f.focus(); if(onBind) onBind(bg); return bg; }
@@ -95,9 +95,6 @@ function nextLesson(){ const g=groupSched(); if(!g||!g.lessons) return null; con
     const ls=g.lessons.filter(l=>l.day===wd&&(!l.par||l.par===parity(wk))&&(i>0||l.t>=hm)).sort((a,b)=>a.t.localeCompare(b.t));
     if(ls.length) return {l:ls[0],date:ds,inDays:i}; } return null; }
 const lessonLi=(l,hot)=>`<li class="${hot?'hot':''}"><b>${WD2[l.day]} ${esc(l.t.replace(/^0/,''))}</b><span><em class="sb ${l.subj}">${SUBJ_T[l.subj]}</em> ауд. ${esc(l.rooms.join(', '))}${l.par?' · '+parT(l.par):''}<small>${esc((l.who||[]).join(', '))}${l.unsure?' · сверьте с расписанием':''}</small></span></li>`;
-function lessonsCard(){ const g=groupSched(); if(!g||!g.lessons) return ''; const nx=nextLesson();
-  return card('calendar','Мои занятия · '+esc(groupKey()),`${nx?`<p class="lead">Ближайшее — <b>${nx.inDays===0?'сегодня':nx.inDays===1?'завтра':esc(CAL.human(nx.date))} в ${esc(nx.l.t.replace(/^0/,''))}</b>: ${SUBJ_T[nx.l.subj]}, ауд. ${esc(nx.l.rooms.join(', '))}.</p>`:''}
-    <ul class="lessons">${g.lessons.map(l=>lessonLi(l,nx&&l===nx.l)).join('')}</ul><p class="mut">Сейчас ${CAL.weekOf(week1(),today())}-я неделя — ${parity(CAL.weekOf(week1(),today()))==='чс'?'числитель':'знаменатель'}. Расписание кафедры РК-1 с 1 сентября.</p>`,'',{icon:'cal'}); }
 const normGroup=g=>{ let x=String(g||'').toUpperCase().trim().replace(/[–—]/g,'-'); if(!x.includes('-')) x=x.replace(/[\s_]+/,'-'); return x.replace(/[\s_]+/g,''); };
 const calSet=()=>{ const s=LS.get(K.cal,{}), g=groupSched(); if(!g) return s;
   const cd=Object.assign({},s.classDay); ['ikg','ng'].forEach(k=>{ if(g[k]&&g[k].day) cd[k]=g[k].day; });
@@ -139,7 +136,9 @@ const IC={
   logout:'<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h11"/>',
   target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  plus:'<path d="M12 5v14M5 12h14"/>'
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>',
+  pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>'
 };
 const ic=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]||''}</svg>`;
 /* отзыв о функции — одной кнопкой в «Ещё», не на каждой карточке */
@@ -169,10 +168,9 @@ const estimate=()=>BKT.estimate(skillEvents());
    (s сверяется с sessionStorage этой вкладки). Участник входит сразу; новому — один экран: имя и согласие (152-ФЗ требует
    отдельного согласия на обработку данных), затем аккаунт создаётся. Отдельной страницы регистрации нет. */
 async function afterLogin(r){ if(r.session) TOK.set(r.session); ME=Object.assign({},ME||{},{csrf:r.csrf}); const local=SYNC.readLocal(localStorage), had=Object.keys(local.data).length;
-  await loadMe(); const ok=await syncNow();
+  await loadMe(); applyVariant(true); const ok=await syncNow();
   try{ sessionStorage.removeItem('club_invite'); }catch(e){}
   if(r.isNew&&had&&ok) toast('Прогресс с этого устройства перенесён в аккаунт'); else if(r.isNew) toast('Аккаунт создан. Добро пожаловать!');
-  if(r.isNew) LS.device('nch2_club_onboard',1);
   location.hash='#/'; route(); }
 async function loadMe(){ const m=await api('GET','/api/me'); ME=m; const c=Object.assign({},m); delete c.csrf; LS.device(K.me,c); return m; }
 const getInvite=()=>{ try{ return sessionStorage.getItem('club_invite')||undefined; }catch(e){ return undefined; } };
@@ -194,15 +192,16 @@ function authIdle(){ const ya=CFG&&CFG.yandex, tg=CFG&&CFG.telegram&&CFG.botName
     ${ya?yaBtn():''}${tg?`<button class="btn ghost full" type="button" data-act="${off?'tgLogin':'botLogin'}"><span class="tgmark">${ic('tg')}</span>Войти через Telegram</button>`:''}
     <div id="authMsg" aria-live="polite"></div>`; }
 /* каркас страницы входа: карточка по центру, справа (на компьютере) — что внутри */
-const FEATS=[['scan','red','Проверка чертежа по фото','Сфотографировали лист — узнали, где ошибка'],['cal','','Сроки ДЗ и РК','Календарь по неделям вашей группы'],
-  ['plan','amber','План подготовки','От дня РК назад: что делать каждый день'],['train','green','Тренировка дня','15 минут повтора на задачах тетради']];
+const FEATS=[['scan','red','Проверка чертежа по фото','сфотографировали лист — узнали, где ошибка'],['clock','','Занятия и сдачи вашей группы','аудитория, время, дни ДЗ и РК'],
+  ['book','green','Мой вариант','ДЗ на сайте открываются сразу на нём'],['train','amber','Тренировка дня','15 минут на задачах тетради']];
 function authShell(inner,o){ o=o||{};
   render(`<div class="authp"><section class="acard">${o.back?`<button class="aback" type="button" data-act="${o.back}">${ic('back')}Назад</button>`:''}
-      <div class="abrand"><i aria-hidden="true"></i><span>Кабинет Начерта</span></div>
+      <div class="abrand"><i aria-hidden="true"></i><span>Начерт<small>Личный кабинет</small></span></div>
       <h1>${o.title||'Вход'}</h1>${o.sub?`<p class="asub">${o.sub}</p>`:''}${o.err?`<p class="note bad">${esc(o.err)}</p>`:''}
       <div id="auth">${inner}</div>${o.noLegal?'':legal()}</section>
-    ${o.side===false?'':`<aside class="aside"><h2>Что внутри</h2><ul>${FEATS.map(([i,t,b,p])=>`<li><span class="ico ${t}">${ic(i)}</span><span><b>${b}</b><small>${p}</small></span></li>`).join('')}</ul></aside>`}</div>`,o.title||'Вход'); }
+    ${o.side===false?'':`<aside class="aside"><h2>Для студентов МГТУ</h2><ul>${FEATS.map(([i,t,b,p])=>`<li><span class="ico ${t}">${ic(i)}</span><span><b>${b}</b><small>${p}</small></span></li>`).join('')}</ul></aside>`}</div>`,o.title||'Вход'); }
 function loginView(err){ authShell(authIdle(),{title:'Вход в кабинет',sub:'Нет аккаунта — создадим при первом входе. Пароль не нужен.',err}); }
+const varSelect=(id,v)=>`<select id="${id}" class="inp"><option value="0">—</option>${[...Array(30)].map((_,i)=>`<option value="${i+1}"${v===i+1?' selected':''}>${i+1}</option>`).join('')}</select>`;
 /* почта, шаг 2: код из письма */
 async function mailStart(email){ const msg=$('#authMsg');
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ if(msg) msg.innerHTML='<p class="note bad">Проверьте адрес почты.</p>'; return; }
@@ -222,6 +221,7 @@ document.addEventListener('submit',async e=>{ const f=e.target;
     const b=$('#codeF button[type=submit]'); b.disabled=true;
     try{ const v=await api('POST','/api/auth/email/verify',{email:f.dataset.email,code}); return landingView(v.token); }
     catch(x){ b.disabled=false; msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } }
+  if(f.id==='profF'){ e.preventDefault(); return saveProfile(); }
   if(f.id==='grpF'){ e.preventDefault(); const g=normGroup($('#grpI').value); if(!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-12/6'); return; }
     try{ const r=await api('POST','/api/me/profile',{group:g}); ME.user=r.user; LS.device(K.me,Object.assign({},ME,{csrf:undefined})); todayView(); toast('Группа сохранена'); }catch(x){ toast(x.message); } return; }
   /* привязка почты в настройках: адрес → код из письма */
@@ -235,12 +235,12 @@ document.addEventListener('submit',async e=>{ const f=e.target;
     if(!okGroup(grp)){ msg.innerHTML='<p class="note bad">Укажите группу как в расписании, например ИУ5-12/6 — по ней считаются занятия и даты.</p>'; $('#onG').focus(); return; }
     if(!terms||!pd){ msg.innerHTML='<p class="note bad">Отметьте обе галочки — без них аккаунт создать нельзя.</p>'; return; }
     const b=$('#onbF button[type=submit]'); b.disabled=true;
-    try{ const r=await api('POST','/api/auth/bot/redeem',{token:LANDING,confirm:true,name:$('#onN').value.trim(),group:grp,consent:{terms,pd,photos:false}}); LANDING=null; await afterLogin(r); }
+    try{ const r=await api('POST','/api/auth/bot/redeem',{token:LANDING,confirm:true,name:$('#onN').value.trim(),group:grp,variant:+$('#onV').value||undefined,consent:{terms,pd,photos:false}}); LANDING=null; await afterLogin(r); }
     catch(x){ b.disabled=false; msg.innerHTML=`<p class="note bad">${esc(x.message)}</p>`; } } });
 function botSteps(){ const bot=CFG.botName||'', link='https://t.me/'+bot+'?start='+botStart();
-  return `<div class="wait"><ol><li class="on"><span>Откройте бота <b>@${esc(bot)}</b> в Telegram</span></li><li><span>Нажмите «Старт»</span></li><li><span>Бот пришлёт кнопку <b>«Войти в клуб»</b> — нажмите её</span></li></ol>
+  return `<div class="wait"><ol><li class="on"><span>Откройте бота <b>@${esc(bot)}</b> в Telegram</span></li><li><span>Нажмите «Старт»</span></li><li><span>Бот пришлёт кнопку <b>«Войти в кабинет»</b> — нажмите её</span></li></ol>
     <a class="btn pri full" href="${esc(link)}" target="_blank" rel="noopener noreferrer" id="openBot">Открыть бота</a><button class="btn ghost full" type="button" data-act="loginCancel">Назад</button>
-    ${CFG.devBot?`<div class="devbox"><b>Эмуляция бота</b> (только локально): нажать «Старт» за участника.<div class="grid2 reg"><input id="dvId" type="text" inputmode="numeric" value="1000002" aria-label="Telegram id"><input id="dvName" type="text" value="Тестировщик" aria-label="Имя"></div><div class="row reg"><button class="btn sm" type="button" data-act="devBot">В боте: «Старт»</button></div><small>1000001 — владелец клуба.</small></div>`:''}
+    ${CFG.devBot?`<div class="devbox"><b>Эмуляция бота</b> (только локально): нажать «Старт» за участника.<div class="grid2 reg"><input id="dvId" type="text" inputmode="numeric" value="1000002" aria-label="Telegram id"><input id="dvName" type="text" value="Тестировщик" aria-label="Имя"></div><div class="row reg"><button class="btn sm" type="button" data-act="devBot">В боте: «Старт»</button></div><small>1000001 — владелец.</small></div>`:''}
     </div><div id="authMsg" aria-live="polite"></div>`; }
 /* одноразовый вход (почта, Яндекс ID, бот): участник — сразу внутрь; новый — имя и согласие */
 let LANDING=null;
@@ -251,8 +251,8 @@ async function landingView(tok){ LANDING=tok; authShell('<p class="mut">Вход
   const name=r.method==='email'?'':r.name;
   authShell(`<form class="af" id="onbF" novalidate><label class="f" for="onN">Как вас зовут</label>
       <input id="onN" class="inp" type="text" maxlength="60" autocomplete="given-name" placeholder="Имя" value="${esc(name&&name!=='Участник'?name:'')}">
-      <label class="f" for="onG">Учебная группа</label>
-      <input id="onG" class="inp" type="text" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="Например, ИУ5-12/6" list="grpList">${grpList()}
+      <div class="grid2 gv"><div><label class="f" for="onG">Группа</label><input id="onG" class="inp" type="text" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="ИУ5-12/6" list="grpList">${grpList()}</div>
+      <div><label class="f" for="onV">Вариант</label>${varSelect('onV',0)}</div></div>
       <label class="chk"><input type="checkbox" id="cTerms"><span>Принимаю <a href="legal/terms.html" target="_blank" rel="noopener">пользовательское соглашение</a> и <a href="legal/privacy.html" target="_blank" rel="noopener">политику обработки данных</a></span></label>
       <label class="chk"><input type="checkbox" id="cPd"><span>Даю <a href="legal/consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a><small>${r.method==='email'?'Храним только хеш почты, без самого адреса':'Храним только id и имя'} — и ваш прогресс. Данные в России.</small></span></label>
       <button class="btn pri full" type="submit">Создать аккаунт</button></form><div id="authMsg" aria-live="polite"></div>`,
@@ -260,49 +260,58 @@ async function landingView(tok){ LANDING=tok; authShell('<p class="mut">Вход
 async function inviteView(err){ return loginView(err); }
 const grpList=()=>`<datalist id="grpList">${Object.keys(GROUPS.groups||{}).sort().map(g=>`<option value="${esc(g)}">`).join('')}</datalist>`;
 
-/* темы к ближайшему событию — по таблице сдач: начерт — темы модуля (РК n), ИКГ — требования к листу по ГОСТ */
+/* темы к событию — по таблице сдач: начерт — темы модуля (РК n), ИКГ — требования к листу по ГОСТ */
 function eventTopics(e){ if(!CORE) return []; if(e.subj==='ng') return (CORE.rkTopics[e.n]||[]).map(id=>({id,t:topicTitle(id)}));
   return (BKT.IKG_SKILLS||[]).map(x=>({id:x.id,t:x.title})); }
-function topicsCard(e){ const tp=eventTopics(e); if(!tp.length) return '';
-  return card('plan','Темы к '+esc(e.short)+' · '+esc(e.subjTitle),`<p class="mut">${esc(e.kindFull)} — ${esc(CAL.human(e.date))}. Что нужно уметь:</p>
-    <div class="tchips">${tp.map(x=>`<a class="tchip" href="#/skills">${esc(x.t)}</a>`).join('')}</div>
-    <div class="row reg"><a class="btn sm" href="#/event/${e.id}">План подготовки ${ic('arrow')}</a>${e.subj==='ng'?`<a class="btn sm ghost" href="#/train">Тренировка по этим темам</a>`:`<a class="btn sm ghost" href="#/check">Проверить лист</a>`}</div>`,'',{icon:'plan',tone:'amber'}); }
-/* ── «Сегодня» ── */
-function todayView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),week1(),t,5), wk=CAL.weekOf(week1(),t), done=doneMap();
-  /* по одному текущему шагу на событие и не больше трёх: длинный список «на сегодня» пугает и не делается */
-  const allSteps=PL.todaySteps(events(),t,done,21), seen=new Set(), steps=allSteps.filter(s=>{ if(s.event) return true; if(seen.has(s.ev.id)) return false; seen.add(s.ev.id); return true; }).slice(0,3), more=allSteps.length-steps.length;
-  const tr=trainingToday(), onboard=LS.get('nch2_club_onboard',0), next=evs[0], p=dparts(t);
-  const wkText=wk>=1&&wk<=17?wk+'-я неделя':wk<1?'до семестра':'семестр закончился';
-  render(`<section class="hero"><div class="hero-row"><div><span class="pill">${esc(wkText)} · ${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span><h1>Привет, ${esc(ME.user.name)}</h1>
-      <p>${next?'Ближайшее — '+esc(next.title)+', '+esc(CAL.human(next.date))+'.':'Событий в таблице больше нет.'} ${steps.length?'По плану сегодня — '+steps.length+' '+plural(steps.length,'шаг','шага','шагов')+'.':''}</p></div>
-    ${next?`<div class="count"><b>${next.inDays}</b><span>${plural(next.inDays,'день','дня','дней')} до ${esc(next.short)} · ${esc(next.subjTitle)}</span></div>`:''}</div></section>
-  ${flag('scanner')?`<a class="cta-check" href="#/check"><span class="ico">${ic('scan')}</span><span><b>Проверить чертёж по фото</b><small>ДЗ №2–3 и задачи тетради — вердикт и где ошибка</small></span>${ic('arrow')}</a>`:''}
-  ${myGroup()&&!groupKey()&&groupAlts(myGroup()).length>1?`<section class="card grpask"><h2>Уточните группу</h2><p>В расписании несколько групп ${esc(gBase(myGroup()))}: ${groupAlts(myGroup()).map(k=>`<button class="btn sm" type="button" data-act="pickGroup" data-g="${esc(k)}">${esc(k)}</button>`).join(' ')}</p><p class="mut">«/4», «/5», «/6» — как написано у вас в расписании.</p></section>`:''}
-  ${myGroup()?'':`<section class="card grpask"><div class="ch"><span class="ico red">${ic('user')}</span><h2>Укажите группу<small>по ней кабинет считает точные даты ДЗ, РК и модулей</small></h2></div>
-    <form class="af" id="grpF" novalidate><div class="row"><input id="grpI" class="inp grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" placeholder="Например, ИУ5-12/6">${grpList()}<button class="btn pri" type="submit">Сохранить</button></div></form></section>`}
-  ${lessonsCard()}
-  ${next?topicsCard(next):''}
-  ${onboard?`<section class="card tri"><div class="ch"><span class="ico">${ic('info')}</span><h2>С чего начать</h2><button class="fb" data-act="onboardOff" type="button">Скрыть</button></div><ol class="lead"><li>Укажите <a href="#/calendar">день занятий</a> по каждому предмету — от него считаются даты.</li><li>Есть прогресс на nachert1830.ru? Перенесите его: <a href="#/settings">Настройки → Перенести прогресс</a>.</li>${CFG&&CFG.telegram?'<li>Включите <a href="#/settings">напоминания</a> в Telegram, если удобно.</li>':'<li>Сфотографируйте лист ДЗ — <a href="#/check">проверка по фото</a> покажет, где ошибка.</li>'}</ol></section>`:''}
-  <div class="grid"><div class="col">
-    ${flag('training')?card('training','Тренировка дня',`<p class="lead">${tr.items.length?(tr.left?'Осталось '+tr.left+' из '+tr.items.length+' · ≈ '+tr.minutes+' мин':'На сегодня всё сделано'):'Повторять пока нечего — начните с карты навыков.'}</p>${tr.items.length&&tr.left?`<div class="bar"><i data-w="${(tr.items.length-tr.left)/tr.items.length*100}"></i></div>`:''}<div class="row reg"><a class="btn cta lg" href="#/train">${tr.left?'Начать тренировку':'Открыть'} ${ic('arrow')}</a></div>`,'',{icon:'train',tone:'green',sub:'повтор по интервалам + задача вперемешку'}):''}
-    ${flag('plan')?card('plan','По плану сегодня',steps.length?`<ol class="todo">${steps.map(s=>`<li class="${s.done?'done':''}"><span class="dot">${s.event?'◆':ic('target')}</span><div class="st"><b>${esc(s.ev.short+' '+s.ev.subjTitle)} · ${esc(s.title)}</b><small>${s.min?'≈ '+s.min+' мин':''}</small><div class="what">${esc(s.what)}</div><a href="#/event/${s.ev.id}">К плану →</a></div></li>`).join('')}</ol>${more>0?`<p class="mut reg">Ещё ${more} ${plural(more,'шаг','шага','шагов')} — в плане каждого события. Сначала эти.</p>`:''}`:'<p>На сегодня по обратному плану ничего. Хороший день для тренировки.</p>','',{navy:true,icon:'plan'}):''}
-  </div><div class="col">
-    ${flag('calendar')?card('calendar','Ближайшее',evs.length?`<div class="evl">${evs.map(e=>evRow(e,td)).join('')}</div><div class="row reg"><a class="btn ghost sm" href="#/calendar">Весь календарь ${ic('arrow')}</a></div>`:'<p class="mut">В таблице больше нет событий.</p>','',{icon:'cal'}):''}
-  </div></div>`,'Сегодня'); }
+/* ── вариант: один номер на все ДЗ (1–30). Сайт показывает «★ Мой вариант» по тем же ключам localStorage ── */
+const myVariant=()=>(ME&&ME.user&&ME.user.variant)||0;
+function applyVariant(force){ const v=myVariant(); if(!(v>=1&&v<=30)) return;
+  try{ ['nch2_igvar','nch2_hwvar_2','nch2_hwvar_3'].forEach(k=>{ if(force||!localStorage.getItem(k)) localStorage.setItem(k,String(v)); }); }catch(e){} }
+/* куда на сайте ведёт событие: ДЗ — сразу мой вариант (НГ ДЗ 2: 1–10 → 2а, 11–20 → 2б, 21–30 → 2в) */
+function siteLink(e){ const v=myVariant();
+  if(e.kind==='dz'&&e.subj==='ikg'&&e.n===2) return {href:mainUrl('#/ig/hw2'+(v?'/'+v:'')),t:v?'Мой вариант '+v:'Варианты ДЗ 2'};
+  if(e.kind==='dz'&&e.subj==='ng'){ const id=e.n===2&&v?(v<=10?'2':v<=20?'2b':'2c'):String(e.n); return {href:mainUrl('#/ng/hw/'+id),t:v&&e.n>1?'Мой вариант '+v:'Разбор ДЗ '+e.n}; }
+  return e.subj==='ng'?{href:mainUrl('#/ng/path'),t:'Теория на сайте'}:{href:mainUrl('#/ig/learn'),t:'Уроки на сайте'}; }
+const firstName=n=>String(n||'').trim();
+const initials=n=>esc(String(n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?');
+const whenWord=(k,date)=>k===0?'Сегодня':k===1?'Завтра':esc(CAL.human(date));
+/* ── главная: только то, что нужно сегодня — занятие, ближайшая сдача, план на сегодня, тренировка ── */
+function lessonNow(nl){ const l=nl.l;
+  return `<section class="lesson ${l.subj}"><div><span class="k">${whenWord(nl.inDays,nl.date)} · ${esc(l.t.replace(/^0/,''))}</span><b>${l.subj==='ng'?'Начертательная геометрия':'Инженерная графика'}</b>
+    <small>ауд. ${esc(l.rooms.join(', '))}${(l.who||[]).length?' · '+esc(l.who.join(', ')):''}</small></div><span class="ico">${ic('clock')}</span></section>`; }
+function deadlineCard(e,td){ const k=CAL.toDay(e.date)-td, tp=eventTopics(e), L=siteLink(e);
+  return `<section class="card dl k-${e.kind}" data-feature="calendar"><div class="dlh"><div><span class="tag ${e.kind}">${esc(e.short)}</span><b>${esc(e.subjTitle)}</b><small>${esc(e.kindFull)} · ${esc(CAL.human(e.date))}</small></div>
+      <div class="cnt"><b>${k===0?'!':k}</b><small>${k===0?'сегодня':plural(k,'день','дня','дней')}</small></div></div>
+    ${tp.length?`<div class="tchips">${tp.slice(0,3).map(x=>`<span class="tchip">${esc(x.t)}</span>`).join('')}${tp.length>3?`<a class="tchip more" href="#/event/${e.id}">ещё ${tp.length-3}</a>`:''}</div>`:''}
+    <div class="row"><a class="btn pri sm" href="#/event/${e.id}">План подготовки</a><a class="btn sm" href="${esc(L.href)}" target="_blank" rel="noopener noreferrer">${esc(L.t)} ${ic('ext')}</a></div></section>`; }
+const groupAsk=()=>`<section class="card ask"><h2>Ваша группа</h2><p class="mut">По ней — занятия, аудитории и точные даты сдач.</p>
+  <form class="af" id="grpF" novalidate><div class="row"><input id="grpI" class="inp grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" placeholder="Например, ИУ5-12/6">${grpList()}<button class="btn pri" type="submit">Готово</button></div></form></section>`;
+const groupPick=()=>`<section class="card ask"><h2>Уточните группу</h2><p class="mut">«/4», «/5», «/6» — срок обучения, это разные группы.</p><div class="row">${groupAlts(myGroup()).map(k=>`<button class="btn sm" type="button" data-act="pickGroup" data-g="${esc(k)}">${esc(k)}</button>`).join('')}</div></section>`;
+function homeView(){ const t=today(), td=dayNum(), evs=CAL.upcoming(calSet(),week1(),t,4), next=evs[0], nl=nextLesson(), tr=trainingToday(), u=ME.user, v=myVariant(), done=doneMap();
+  const amb=myGroup()&&!groupKey()&&groupAlts(myGroup()).length>1;
+  const all=PL.todaySteps(events(),t,done,21), seen=new Set(), steps=all.filter(s=>{ if(s.event) return false; if(seen.has(s.ev.id)) return false; seen.add(s.ev.id); return true; }).slice(0,3);
+  render(`<a class="hello" href="#/me"><span class="av">${initials(u.name)}</span><span><b>Привет, ${esc(firstName(u.name))}</b><small>${[groupKey()||myGroup(),v?'вариант '+v:''].filter(Boolean).map(esc).join(' · ')||'заполните профиль'}</small></span>${ic('arrow')}</a>
+  ${!myGroup()?groupAsk():amb?groupPick():''}
+  ${myGroup()&&!v?`<a class="nudge" href="#/me" data-act="editProfile">${ic('plus')}<span>Укажите вариант — ссылки на ДЗ откроются сразу на нём</span></a>`:''}
+  ${nl?lessonNow(nl):''}
+  ${next?deadlineCard(next,td):''}
+  ${flag('plan')&&steps.length?card('plan','По плану сегодня',`<ul class="today">${steps.map(s=>`<li class="${s.done?'done':''}"><a href="#/event/${s.ev.id}"><span class="dot">${s.done?ic('check'):''}</span><span><b>${esc(s.ev.short+' '+s.ev.subjTitle)} · ${esc(s.title)}</b><small>${s.min?'≈ '+s.min+' мин':''}</small></span>${ic('arrow')}</a></li>`).join('')}</ul>`):''}
+  <div class="duo">
+    ${flag('training')?`<a class="tile" href="#/train" data-feature="training"><span class="ico green">${ic('train')}</span><b>${tr.items.length&&!tr.left?'Тренировка сделана':'Тренировка дня'}</b><small>${tr.items.length?(tr.left?(tr.items.length-tr.left)+' из '+tr.items.length+' · ≈ '+tr.minutes+' мин':'задачи вернутся по интервалам'):'появится после первых оценок'}</small>${tr.items.length?`<span class="mini"><i data-w="${(tr.items.length-tr.left)/tr.items.length*100}"></i></span>`:''}</a>`:''}
+    ${flag('scanner')?`<a class="tile accent" href="#/check"><span class="ico">${ic('scan')}</span><b>Проверить чертёж</b><small>по фото — где ошибка</small></a>`:''}
+  </div>
+  ${evs.length>1?`<section class="card"><div class="sh"><h2>Дальше</h2><a href="#/calendar">Все сдачи</a></div><div class="evl">${evs.slice(1).map(e=>evRow(e,td)).join('')}</div></section>`:''}`,'Главная'); }
+const todayView=homeView;
 
 /* ── календарь ── */
 function calendarView(){ const s=CAL.normSettings(calSet()), t=dayNum(), wkNow=CAL.weekOf(week1(),today());
   const wd=[1,2,3,4,5,6].map(d=>[d,['','понедельник','вторник','среда','четверг','пятница','суббота'][d]]);
-  const ws=CAL.weeks(calSet(),week1(),17).map(w=>`<div class="wk${w.week===wkNow?' now':''}"><div class="n">${w.week}<small>${dparts(w.start).d} ${dparts(w.start).mon}</small>${w.week===wkNow?'<span class="nowtag">СЕЙЧАС</span>':''}</div>
+  const ws=CAL.weeks(calSet(),week1(),17).map(w=>`<div class="wk${w.week===wkNow?' now':''}"><div class="n">${w.week}<small>${dparts(w.start).d} ${dparts(w.start).mon}</small></div>
     <div class="es">${w.events.map(e=>`<a class="chip${CAL.toDay(e.date)<t?' past':''}" href="#/event/${e.id}">${tagOf(e)}${esc(e.subjTitle)}${e.custom?' · '+esc(CAL.human(e.date)):''}</a>`).join('')||'<small>—</small>'}</div></div>`).join('');
-  render(`${pageHead('Календарь сдач','Неделя в таблице — неделя крайнего срока. РК пишется один раз и только на своей неделе; М — закрытие модуля.')}
-  <div class="grid"><div class="col">
-    ${groupSched()?card('calendar','Группа '+esc(groupKey()),`<ul class="lessons">${groupSched().lessons.map(l=>lessonLi(l)).join('')}</ul><p>Даты посчитаны по расписанию группы: занятие по ИКГ — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ikg&&groupSched().ikg.day||0]||'—')}, по начерту — ${esc(['','пн','вт','ср','чт','пт','сб'][groupSched().ng&&groupSched().ng.day||0]||'—')}.</p><p class="mut">Не та группа? <a href="#/settings">Изменить в настройках</a>.</p>`,'',{icon:'user'}):''}
-    ${groupSched()?'':card('calendar','Моя группа',`${myGroup()?`<p class="mut">Расписания группы ${esc(myGroup())} пока нет в кабинете — укажите день занятий сами.</p>`:''}<div class="grid2">${['ikg','ng'].map(k=>`<div><label class="f" for="cd-${k}">Занятие по ${k==='ikg'?'ИКГ':'начерту'}</label><select id="cd-${k}" data-chg="classDay" data-s="${k}">${wd.map(([d,n])=>`<option value="${d}"${s.classDay[k]===d?' selected':''}>${n}</option>`).join('')}</select></div>`).join('')}</div>
-      <label class="f">Предметы</label><div class="grid2">${['ikg','ng'].map(k=>`<label class="chk"><input type="checkbox" data-chg="subj" data-s="${k}"${s.subjects.includes(k)?' checked':''}><span>${k==='ikg'?'ИКГ':'Начерт'}</span></label>`).join('')}</div>
-      <p class="mut">От дня занятия считаются даты событий; точную дату РК можно поставить в самом событии. Неделя 1 начинается ${esc(CAL.human(week1()))}.</p>`,
-      'срок, привязанный к конкретному дню, планируется точнее, чем «где-то на неделе», — а запас до него защищает от ошибки планирования (Buehler и др., 1994).',{icon:'user'})}
-  </div><div class="col"><section class="card"><div class="ch"><span class="ico">${ic('cal')}</span><h2>Недели семестра</h2></div><div class="weeks">${ws}</div></section></div></div>`,'Календарь'); }
+  render(`${pageHead('Сдачи семестра',groupSched()?'По расписанию группы '+esc(groupKey())+'. Неделя — неделя крайнего срока.':'Неделя — неделя крайнего срока; день — по вашим занятиям.',['#/','Главная'])}
+    ${groupSched()?'':card('calendar','Дни занятий',`${myGroup()?`<p class="mut">Группы ${esc(myGroup())} нет в расписании кафедры — укажите дни сами.</p>`:''}<div class="grid2">${['ikg','ng'].map(k=>`<div><label class="f" for="cd-${k}">${k==='ikg'?'ИКГ':'Начерт'}</label><select id="cd-${k}" data-chg="classDay" data-s="${k}">${wd.map(([d,n])=>`<option value="${d}"${s.classDay[k]===d?' selected':''}>${n}</option>`).join('')}</select></div>`).join('')}</div>
+      <div class="grid2 reg">${['ikg','ng'].map(k=>`<label class="chk"><input type="checkbox" data-chg="subj" data-s="${k}"${s.subjects.includes(k)?' checked':''}><span>${k==='ikg'?'ИКГ':'Начерт'}</span></label>`).join('')}</div>`)}
+    <section class="card"><div class="weeks">${ws}</div></section>`,'Сдачи'); }
 
 /* ── событие и обратный план ── */
 function stepLi(s,i){ const range=s.from&&s.to&&s.from!==s.to?esc(CAL.human(s.from))+' – '+esc(CAL.human(s.to)):esc(CAL.human(s.date));
@@ -328,9 +337,10 @@ function eventView(id,sub){ const e=events().find(x=>x.id===id); if(!e){ render(
   if(sub==='diag') return diagView(e); if(sub==='mix') return mixView(e); if(sub==='mock') return mockView(e);
   const p=PL.plan(e,today(),doneMap()); p.steps.forEach(s=>{ s.evObj=e; });
   const ii=LS.get(K.ii,{})[e.id]||{}, t=dayNum(), k=CAL.toDay(e.date)-t, dp=dparts(e.date);
-  render(`${pageHead(esc(e.title),'',['#/calendar','Календарь'])}
+  render(`${pageHead(esc(e.title),'',['#/','Главная'])}
   <section class="hero"><div class="hero-row"><div><span class="pill${e.kind==='rk'?' red':''}">${esc(e.kindFull)} · неделя ${e.week}</span><h1>${dp.wd}, ${dp.d} ${dp.mon}</h1><p>Неделя ${e.week}: ${esc(CAL.human(e.start))} – ${esc(CAL.human(e.end))}. ${e.kind==='rk'?'РК пишется один раз и только на этой неделе.':'Крайний срок — на этой неделе.'}</p></div>
-    <div class="count"><b>${k<0?'—':k}</b><span>${k<0?'событие прошло':plural(k,'день','дня','дней')+' осталось'}</span></div></div></section>
+    <div class="count"><b>${k<0?'—':k}</b><span>${k<0?'событие прошло':plural(k,'день','дня','дней')+' осталось'}</span></div></div>
+    <div class="row reg">${(L=>`<a class="btn sm onhero" href="${esc(L.href)}" target="_blank" rel="noopener noreferrer">${esc(L.t)} ${ic('ext')}</a>`)(siteLink(e))}</div></section>
   <div class="grid"><div class="col">
     ${flag('plan')?card('plan','Обратный план',p.over?'<p class="mut">Событие прошло.</p>':`${p.late?'<p class="note warn">План сокращён: времени меньше, чем нужно по полной схеме. Ничего не выброшено — шаги сдвинуты на ближайшие дни.</p>':''}<p class="mut">Нажмите на кружок шага, чтобы отметить его сделанным.</p><ol class="steps">${groupMix(p.steps).map(stepLi).join('')}</ol>`,
       e.kind==='rk'?'диагностика показывает, что тренировать (проверка себя, Roediger, Karpicke, 2006); задачи вперемешку учат выбирать способ (Rohrer, Taylor, 2007); пробный РК на время переносит навык в формат экзамена; накануне — без новых тем, сон закрепляет выученное.'
@@ -339,13 +349,12 @@ function eventView(id,sub){ const e=events().find(x=>x.id===id); if(!e){ render(
     <section class="card"><div class="ch"><span class="ico">${ic('cal')}</span><h2>${e.kind==='rk'?'День РК в моей группе':e.kind==='dz'?'День сдачи в моей группе':'День закрытия модуля'}</h2></div>
       <div class="row"><input id="evd" class="grow" type="date" min="${e.start}" max="${e.end}" value="${e.date}" data-chg="evDate" data-id="${e.id}" aria-label="Дата события">${e.custom?`<button class="btn sm" type="button" data-act="evDateReset" data-id="${e.id}">По дню занятия</button>`:''}</div>
       <p class="mut">Можно выбрать только день внутри недели ${e.week}.</p></section>
-    ${flag('plan')?card('plan','Когда — где — что',`<p class="mut">Одно конкретное намерение: «Если <i>когда</i>, <i>где</i>, то я <i>что</i>». Напоминание в Telegram покажет его.</p>
+    ${flag('plan')?`<details class="card fold"${ii.what?' open':''}><summary><span class="ico red">${ic('target')}</span><b>Когда и где буду готовиться</b></summary><p class="mut">Одно конкретное намерение: «Если <i>когда</i>, <i>где</i>, то я <i>что</i>». Напоминание в Telegram покажет его.</p>
       <form id="iiForm" data-id="${e.id}"><label class="f" for="iiW">Когда</label><input id="iiW" type="text" maxlength="60" placeholder="в четверг после пар, 17:30" value="${esc(ii.when||'')}">
       <label class="f" for="iiP">Где</label><input id="iiP" type="text" maxlength="60" placeholder="в читальном зале, 3-й этаж" value="${esc(ii.where||'')}">
       <label class="f" for="iiT">Что именно</label><input id="iiT" type="text" maxlength="120" placeholder="${e.kind==='rk'?'решаю задачи 52 и 57 без подсказок':'делаю черновик видов спереди и сверху'}" value="${esc(ii.what||'')}">
       <div class="row reg"><button class="btn pri" type="submit">Сохранить</button>${ii.what?'<button class="btn ghost" type="button" data-act="iiClear" data-id="'+e.id+'">Очистить</button>':''}</div></form>
-      ${ii.what?`<div class="ii"><span class="lbl">Ваше намерение</span><q>Если ${esc(ii.when||'…')}${ii.where?', '+esc(ii.where):''}, то я ${esc(ii.what)}.</q></div>`:''}`,
-      'конкретный план «когда — где — что» заметно повышает шанс, что дело будет сделано (implementation intentions, Gollwitzer, Sheeran, 2006: метаанализ 94 исследований, d ≈ 0,65).',{icon:'target',tone:'red'}):''}
+      ${ii.what?`<div class="ii"><span class="lbl">Ваше намерение</span><q>Если ${esc(ii.when||'…')}${ii.where?', '+esc(ii.where):''}, то я ${esc(ii.what)}.</q></div>`:''}</details>`:''}
   </div></div>`,e.title);
   const f=$('#iiForm'); if(f) f.addEventListener('submit',ev=>{ ev.preventDefault(); const m=LS.get(K.ii,{}); m[e.id]={when:$('#iiW').value.trim(),where:$('#iiP').value.trim(),what:$('#iiT').value.trim(),t:Date.now()};
     if(!m[e.id].what){ toast('Напишите, что именно будете делать'); return; } LS.set(K.ii,m); track('plan',{e:e.id}); toast('План сохранён'); eventView(e.id); }); }
@@ -413,14 +422,23 @@ function trainingToday(){ const d=dayNum(); let tr=LS.get(K.train,{});
     tr={day:d,items:x.items,minutes:x.minutes,res:{},later:x.later}; LS.set(K.train,tr); }
   const left=tr.items.filter(i=>tr.res==null||tr.res[i.n]==null).length; return Object.assign({},tr,{left}); }
 function trainView(){ const tr=trainingToday(), f=focusTopics(), rk=nextRk('ng',21), r=tr.items.filter(i=>i.kind==='review').length;
-  render(`<section class="hero"><div class="hero-row"><div><span class="pill">Тренировка дня · ≈ ${tr.minutes||0} мин</span><h1>${tr.items.length?(tr.left?'Осталось '+tr.left+' из '+tr.items.length:'На сегодня всё'):'Повторять пока нечего'}</h1>
+  render(`${pageHead('','',['#/progress','Прогресс'])}<section class="hero"><div class="hero-row"><div><span class="pill">Тренировка дня · ≈ ${tr.minutes||0} мин</span><h1>${tr.items.length?(tr.left?'Осталось '+tr.left+' из '+tr.items.length:'На сегодня всё'):'Повторять пока нечего'}</h1>
     <p>${tr.items.length?[r?r+' '+plural(r,'задача','задачи','задач')+' на повтор по интервалам':'',tr.items.length-r?'одна задача вперемешку'+(rk&&f.length?' — из тем '+esc(rk.short)+' по начерту':''):''].filter(Boolean).join(' и ')+'.':'Начните с рекомендаций на карте навыков — задачи вернутся сюда по интервалам.'}${tr.later?' Ещё '+tr.later+' ждут завтра: больше трёх повторов в день — перегрузка.':''}</p></div>
     ${tr.items.length?`<div class="count"><b>${tr.items.length-tr.left}/${tr.items.length}</b><span>сделано сегодня</span></div>`:''}</div></section>
-  <section class="card reg"><div class="ch"><span class="ico">${ic('info')}</span><h2>Как тренироваться<small>2 шага на задачу</small></h2>${fbBtn('training')}</div>
-    <ol class="lead"><li>Откройте задачу на сайте в режиме «Решаю сам» и решите на бумаге.</li><li>Вернитесь и честно отметьте, как получилось.</li></ol>
-    ${why('вспоминать, а не перечитывать (Roediger, Karpicke, 2006); возвращать задачу через растущие интервалы 1 → 3 → 7 → 16 → 35 дней (Cepeda и др., 2006); одна задача другого типа учит выбирать способ (Rohrer, Taylor, 2007). 15–20 минут в день лучше, чем вечер перед РК.')}</section>
+  <p class="hint reg">Решите задачу на бумаге в режиме «Решаю сам» на сайте — и честно отметьте, как получилось.</p>
   <div class="reg">${tr.items.map(i=>taskCard(i.n,'train',tr.res&&tr.res[i.n],i.kind==='review'?'повтор':'вперемешку')).join('')||`<div class="empty">${ic('train')}<p>Здесь появятся задачи. <a href="#/skills">Карта навыков →</a></p></div>`}</div>
   ${tr.items.length&&!tr.left?'<p class="note ok reg">Готово. Следующие задачи вернутся по интервалам.</p>':''}`,'Тренировка дня'); }
+
+/* ── прогресс: тренировка дня, итог по навыкам и что подтянуть ── */
+function skillCounts(est){ const all=[...new Set([].concat(CORE.rkTopics[1]||[],CORE.rkTopics[2]||[],CORE.rkTopics[3]||[]))], cnt={master:0,mid:0,low:0,all:all.length};
+  all.forEach(s=>{ const o=est[s]; if(!o||!o.n) return; const lv=BKT.level(BKT.mastery(est,s),o.n).id; if(lv==='master') cnt.master++; else if(lv==='low') cnt.low++; else cnt.mid++; }); return cnt; }
+function progressView(){ const tr=trainingToday(), est=estimate(), f=focusTopics(), rec=BKT.recommend(est,CORE.tasks,LS.get(K.rep,{}),f,3), c=skillCounts(est), rk=nextRk('ng',21);
+  const pct=tr.items.length?Math.round((tr.items.length-tr.left)/tr.items.length*100):0;
+  render(`${pageHead('Прогресс')}
+    ${flag('training')?`<a class="card trainc" href="#/train" data-feature="training"><span class="ring" data-p="${pct}"><b>${tr.items.length?tr.items.length-tr.left+'/'+tr.items.length:'—'}</b></span><span><b>Тренировка дня</b><small>${tr.items.length?(tr.left?'≈ '+tr.minutes+' мин · повтор по интервалам':'На сегодня всё — задачи вернутся по интервалам'):'Задачи появятся после первых оценок'}</small></span>${ic('arrow')}</a>`:''}
+    ${flag('skills')?`<a class="card skc" href="#/skills" data-feature="skills"><div class="stats3"><div><b>${c.master}</b><span>освоено</span></div><div><b>${c.mid}</b><span>в процессе</span></div><div><b class="lowc">${c.low}</b><span>слабые</span></div></div><span class="rowlink">Карта навыков · ${c.all} тем ${ic('arrow')}</span></a>`:''}
+    ${flag('skills')&&rec.length?`<section class="card"><div class="sh"><h2>Подтянуть</h2><small>${rk&&f.length?'к '+esc(rk.short)+' по начерту':'самые слабые темы'}</small></div><ul class="rec">${rec.map(r=>`<li><b>${esc(topicTitle(r.skill))}</b> <span class="lv ${BKT.level(r.p,r.n).id}">${r.n?Math.round(r.p*100)+' %':'не решали'}</span><div class="row">${r.tasks.map(n=>ext(mainUrl('#/ng/tasks/'+n+'/try'),'№'+n)).join('')}${r.tasks.length?`<button class="btn sm pri" type="button" data-act="addTrain" data-n="${r.tasks.join(',')}">${ic('plus')}В тренировку</button>`:''}</div></li>`).join('')}</ul></section>`:''}`,'Прогресс');
+  $$('.ring',view()).forEach(r=>{ r.style.setProperty('--p',(+r.dataset.p||0)+'%'); }); }
 
 /* ── карта навыков ── */
 function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics(), rec=BKT.recommend(est,CORE.tasks,rep,f,3);
@@ -429,7 +447,7 @@ function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics
   const row=s=>{ const o=est[s]||{}, p=BKT.mastery(est,s), lv=BKT.level(p,o.n);
     return `<div class="sk"><div class="h"><b>${esc(topicTitle(s))}</b><span class="lv ${lv.id}">${esc(lv.t)}</span></div><div class="bar${o.n?'':' none'}"><i class="${lv.id}" data-w="${o.n?Math.max(3,Math.round(p*100)):0}"></i></div><small>${o.n?'освоено на '+Math.round(p*100)+' % · наблюдений: '+o.n:'данных пока нет'}</small></div>`; };
   const seen=new Set();
-  render(`<section class="hero"><span class="pill">Карта навыков · ${all.length} тем начерта</span><h1>Что уже получается</h1><p>Оценка обновляется после каждой самооценки в тренировке и диагностике.</p>
+  render(`${pageHead('','',['#/progress','Прогресс'])}<section class="hero"><span class="pill">Карта навыков · ${all.length} тем начерта</span><h1>Что уже получается</h1><p>Оценка обновляется после каждой самооценки в тренировке и диагностике.</p>
     <div class="stats reg"><div class="stat"><b>${cnt.master}</b><span>освоено</span></div><div class="stat"><b>${cnt.mid}</b><span>в процессе</span></div><div class="stat"><b>${cnt.low}</b><span>слабые места</span></div></div></section>
   <div class="grid"><div class="col">
     ${card('skills','Что тренировать',rec.length?`<ul class="rec">${rec.map(r=>`<li><b>${esc(topicTitle(r.skill))}</b> <span class="lv ${BKT.level(r.p,r.n).id}">${r.n?Math.round(r.p*100)+' %':'ещё не решали'}</span><div class="row">${r.tasks.map(n=>ext(mainUrl('#/ng/tasks/'+n+'/try'),'№'+n)).join('')||'<small>Все задачи темы уже в повторении.</small>'}${r.tasks.length?`<button class="btn sm pri" type="button" data-act="addTrain" data-n="${r.tasks.join(',')}">${ic('plus')}В тренировку</button>`:''}</div></li>`).join('')}</ul>`:'<p class="mut">Все навыки освоены — повторяйте по интервалам.</p>',
@@ -445,27 +463,22 @@ function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics
    (/lab/) и открывается внутри кабинета. Фото обрабатывается на устройстве и никуда не отправляется. Правило сканера:
    ложный вердикт хуже отказа — «не уверен» он говорит прямо. */
 const LAB=[
-  {id:'dz',src:'lab/dz.html',icon:'sheet',tone:'',t:'ДЗ №2–3 по начерту',s:'фото листа целиком',p:'Сфотографируйте лист — сканер найдёт рамку и эпюр, сверит построение с условием вашего варианта и проверит ответ.'},
-  {id:'task',src:'lab/scan.html',icon:'scan',tone:'green',t:'Задачи тетради № 46 и № 47',s:'фото решения',p:'Вердикт «верно» или где ошибка — с отметками прямо на фото, выпрямленный лист и 3D-модель решения. Есть синтетический лист, чтобы попробовать без бумаги.'}];
+  {id:'dz',src:'lab/dz.html',icon:'sheet',tone:'',t:'ДЗ № 2–3 по начерту',s:'фото листа целиком — построение и ответ',p:'Сфотографируйте лист — сканер найдёт рамку и эпюр, сверит построение с условием вашего варианта и проверит ответ.'},
+  {id:'task',src:'lab/scan.html',icon:'scan',tone:'green',t:'Задачи тетради № 46 и 47',s:'фото решения — вердикт и отметки на фото',p:'Вердикт «верно» или где ошибка — с отметками прямо на фото, выпрямленный лист и 3D-модель решения. Есть синтетический лист, чтобы попробовать без бумаги.'}];
 const labBase=()=>/\/club\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/club\/(index\.html)?$/,''):null;
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
   if(L&&base){ track('check',{k:tool}); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(base+L.src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
       <iframe class="labf" src="${esc(base+L.src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
-  render(`<section class="hero"><span class="pill">Главная функция · бета</span><h1>Проверка чертежа по фото</h1>
-    <p>Решили на бумаге — сфотографируйте. Сканер прочитает лист, сверит построение с верным решением и скажет, где ошибка. Если не уверен — так и скажет: ложный «верно» хуже честного «не знаю».</p></section>
-  <div class="tools">${LAB.map(x=>`<a class="tool" href="${base?'#/check/'+x.id:'#/check'}" ${base?'':'aria-disabled="true"'}><span class="ico ${x.tone}">${ic(x.icon)}</span><span class="tt"><b>${esc(x.t)}</b><small>${esc(x.s)}</small><span>${esc(x.p)}</span></span>${ic('arrow')}</a>`).join('')}</div>
-  ${base?'':`<p class="note warn">Сканер открывается на странице клуба на сайте: <a href="https://nachert1830.ru/club/#/check">nachert1830.ru/club/</a>.</p>`}
-  <div class="grid"><div class="col">
-    ${flag('normo')?card('normo','Предпроверка листа ИКГ по ГОСТ',`<p>Есть лист в САПР? Загрузите SVG — нормоконтроль проверит формат, рамку, основную надпись, линии, шрифт, виды и разрезы, штриховку и размеры.</p>
-      <label class="f" for="nkF">Лист SVG</label><label class="file"><input id="nkF" type="file" accept=".svg,image/svg+xml"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
+  render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте. Сканер сверит построение с верным решением и покажет, где ошибка. Фото не покидает телефон.')}
+  <div class="tools">${LAB.map(x=>`<a class="tool" href="${base?'#/check/'+x.id:'#/check'}" ${base?'':'aria-disabled="true"'}><span class="ico ${x.tone}">${ic(x.icon)}</span><span class="tt"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span>${ic('arrow')}</a>`).join('')}</div>
+  ${base?'':`<p class="note warn">Сканер работает на странице кабинета на сайте: <a href="https://nachert1830.ru/club/#/check">nachert1830.ru</a>.</p>`}
+  <details class="card fold"><summary><span class="ico">${ic('info')}</span><b>Как снимать, чтобы сканер понял</b></summary><ol class="lead"><li>Лист целиком в кадре, рамка видна со всех сторон.</li><li>Ровный свет без бликов; телефон параллельно листу.</li><li>Линии обведены как на сдачу.</li><li>«Не уверен» — переснимите ближе или при другом свете.</li></ol></details>
+  ${flag('normo')?`<details class="card fold" data-feature="normo"><summary><span class="ico amber">${ic('sheet')}</span><b>Лист ИКГ из САПР — проверка по ГОСТ</b></summary>
+      <p class="mut">Загрузите SVG: формат, рамка, основная надпись, линии, шрифт, виды и разрезы, штриховка, размеры.</p>
+      <label class="file"><input id="nkF" type="file" accept=".svg,image/svg+xml"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label>
       <div class="row reg"><button class="btn pri" type="button" data-act="normo">Проверить мой лист</button></div>
       <p class="mut reg">Или образцы ДЗ 2:</p><div class="samples"><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v5-clean">верный лист</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v8-thin">ошибка в линиях</button><button class="btn sm" type="button" data-act="normoSample" data-s="ig-v12-numline">ошибка в размерах</button></div>
-      <div id="nkOut" aria-live="polite"></div>`,
-      'привычка нормоконтролёра — пройти лист по списку правил до сдачи — переносится на свой лист и снимает «слепоту автора». Это предпроверка, а не оценка преподавателя.',{icon:'sheet',tone:'amber',sub:'ГОСТ 2.301–2.307, 2.104'}):''}
-  </div><div class="col">
-    ${card('scanner','Как снимать, чтобы сканер понял',`<ol class="lead"><li>Лист целиком в кадре, рамка видна со всех сторон.</li><li>Ровный свет без бликов и резкой тени; телефон параллельно листу.</li><li>Линии обведены как на сдачу: основные — толще, построения — тонко.</li><li>Если сканер ответил «не уверен» — переснимите ближе или при другом свете.</li></ol>`,
-      'сразу после попытки обратная связь полезнее отложенной; поэтому проверка — до сдачи, пока ещё можно исправить.',{icon:'info'})}
-  </div></div>`,'Проверка'); }
+      <div id="nkOut" aria-live="polite"></div></details>`:''}`,'Проверка'); }
 
 /* SVG пользователя — без скриптов, обработчиков, внешних ссылок; style="…" переводится в атрибуты (CSP не пускает встроенные стили) */
 const PRES=new Set(['stroke','stroke-width','stroke-dasharray','stroke-dashoffset','stroke-linecap','stroke-linejoin','stroke-opacity','fill','fill-opacity','fill-rule','opacity','font-size','font-family','font-style','font-weight','text-anchor','dominant-baseline','visibility','display','vector-effect','letter-spacing']);
@@ -494,52 +507,66 @@ async function runNormo(svgText,own,label){ const out=$('#nkOut'); out.innerHTML
     if(own){ LS.set(K.ev,BKT.merge(LS.get(K.ev,[]),BKT.fromNormo({id:'n'+Date.now().toString(36),t:Date.now(),issues:r.issues}))); out.insertAdjacentHTML('beforeend','<p class="mut">Результат учтён в <a href="#/skills">карте навыков ИКГ</a>.</p>'); } }
   catch(e){ out.innerHTML=`<p class="note bad reg">Не получилось проверить: ${esc(e.message)}</p>`; } }
 
-/* ── настройки ── */
-function settingsView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){ return 'Europe/Moscow'; } })();
+/* ── профиль: информация (имя, группа, вариант), расписание и короткий список настроек ── */
+const rowLink=(href,icn,t,s,o)=>{ o=o||{}; return `<a class="rowl" href="${esc(href)}"${o.ext?' target="_blank" rel="noopener noreferrer"':''}${o.act?` data-act="${o.act}"`:''}><span class="ico ${o.tone||''}">${ic(icn)}</span><span><b>${t}</b>${s?`<small>${s}</small>`:''}</span>${ic(o.ext?'ext':'arrow')}</a>`; };
+const isDark=()=>document.documentElement.dataset.theme==='dark';
+function meView(sub){ if(sub==='login') return meLoginView(); if(sub==='data') return meDataView(); if(sub==='remind') return meRemindView();
+  const u=ME.user, v=myVariant(), gk=groupKey(), g=groupSched(), wk=CAL.weekOf(week1(),today()), nl=nextLesson();
+  const methods=[u.email?'почта':'',u.yandex?'Яндекс ID':'',u.telegram?'Telegram':''].filter(Boolean).join(', ');
+  render(`<div class="prof"><span class="av xl">${initials(u.name)}</span><h1>${esc(u.name)}</h1>${u.role==='admin'?'<span class="tagadm">владелец</span>':''}</div>
+    <section class="card info" data-feature="profile"><div class="sh"><h2>Информация</h2><button class="lnk" type="button" data-act="editProfile">Изменить</button></div>
+      <dl class="kv2"><div><dt>Имя</dt><dd>${esc(u.name)}</dd></div><div><dt>Группа</dt><dd>${gk?esc(gk):u.group?esc(u.group)+' <small>нет в расписании</small>':'<button class="lnk" type="button" data-act="editProfile">указать</button>'}</dd></div><div><dt>Вариант</dt><dd>${v||'<button class="lnk" type="button" data-act="editProfile">указать</button>'}</dd></div></dl></section>
+    ${g?`<section class="card"><div class="sh"><h2>Расписание</h2><small>${wk>=1&&wk<=17?wk+'-я неделя · '+(parity(wk)==='чс'?'числитель':'знаменатель'):''}</small></div><ul class="lessons">${g.lessons.map(l=>lessonLi(l,nl&&l===nl.l)).join('')}</ul></section>`:''}
+    <nav class="rows card">
+      ${flag('calendar')?rowLink('#/calendar','cal','Сдачи семестра','ДЗ, РК и модули по неделям'):''}
+      ${rowLink('#/me/login','shield','Вход и безопасность',methods||'способы входа')}
+      ${flag('reminders')&&CFG&&CFG.telegram?rowLink('#/me/remind','bell','Напоминания','в Telegram, раз в день',{tone:'amber'}):''}
+      ${rowLink('#/me/data','data','Данные и прогресс','сохранение, перенос, документы',{tone:'green'})}
+      <button class="rowl" type="button" data-act="theme"><span class="ico">${ic('moon')}</span><span><b>Тёмная тема</b></span><span class="sw${isDark()?' on':''}" aria-hidden="true"><i></i></span></button>
+      ${rowLink(mainUrl(),'book','Сайт Начерта','разборы, тетрадь, тренажёры',{ext:true})}
+    </nav>
+    ${u.role==='admin'?`<nav class="rows card">${rowLink('#/boss','pulse','Пульт','кто сейчас в кабинете и что делает',{tone:'green'})}${rowLink('#/admin','admin','Админ-панель','участники, функции, отзывы, семестр',{tone:'red'})}</nav>`:''}
+    <button class="btn ghost full reg" type="button" data-act="logout">${ic('logout')}Выйти</button>`,'Профиль'); }
+function editProfile(){ const u=ME.user;
+  openSheet(`<h2>Информация</h2><form class="af" id="profF" novalidate>
+      <label class="f" for="pName">Имя</label><input id="pName" class="inp" type="text" maxlength="60" autocomplete="given-name" value="${esc(u.name)}">
+      <div class="grid2 gv"><div><label class="f" for="pGroup">Группа</label><input id="pGroup" class="inp" type="text" maxlength="16" autocapitalize="characters" list="grpList" placeholder="ИУ5-12/6" value="${esc(groupKey()||u.group||'')}">${grpList()}</div>
+      <div><label class="f" for="pVar">Вариант</label>${varSelect('pVar',myVariant())}</div></div>
+      <p class="mut">Вариант — один на все ДЗ. На сайте ДЗ откроются сразу на нём.</p>
+      <div class="row reg"><button class="btn pri grow" type="submit">Сохранить</button><button class="btn" data-close type="button">Отмена</button></div></form>`); }
+async function saveProfile(){ const g=normGroup($('#pGroup').value), name=$('#pName').value.trim(), variant=+$('#pVar').value||0;
+  if(!name){ toast('Имя не может быть пустым'); return; } if(g&&!okGroup(g)){ toast('Группа — как в расписании, например ИУ5-12/6'); return; }
+  try{ const r=await api('POST','/api/me/profile',{name,group:g,variant}); ME.user=r.user; LS.device(K.me,Object.assign({},ME,{csrf:undefined})); applyVariant(true);
+    if(variant) track('plan',{e:'variant'}); closeSheet(); toast('Сохранено'); route(); }catch(e){ toast(e.message); } }
+function meLoginView(){ const u=ME.user;
+  render(`${pageHead('Вход и безопасность','Аккаунт один — способов входа может быть несколько.',['#/me','Профиль'])}
+    <section class="card"><div class="kv"><div><span>Почта</span><span>${u.email?'привязана':CFG&&CFG.email?'<button class="btn sm" type="button" data-act="linkMail">Привязать</button>':'—'}</span></div>
+      <div><span>Яндекс ID</span><span>${u.yandex?'привязан':CFG&&CFG.yandex?'<button class="btn sm" type="button" data-act="linkYa">Привязать</button>':'—'}</span></div>
+      ${CFG&&CFG.telegram||u.telegram?`<div><span>Telegram</span><span>${u.telegram?'привязан':CFG&&CFG.botName?'<button class="btn sm" type="button" data-act="linkTg">Привязать</button>':'—'}</span></div>`:''}</div><div id="linkOut"></div></section>
+    <section class="card"><div class="row"><button class="btn" type="button" data-act="logins">Журнал входов</button><button class="btn" type="button" data-act="logoutAll">Выйти на всех устройствах</button></div><div id="logOut"></div></section>`,'Вход и безопасность'); }
+function meRemindView(){ const u=ME.user, r=ME.reminders||REM.DEFAULTS, tz=(()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){ return 'Europe/Moscow'; } })();
   const tzs=[...new Set([r.tz,tz,'Europe/Moscow','Europe/Kaliningrad','Europe/Samara','Asia/Yekaterinburg','Asia/Omsk','Asia/Novosibirsk','Asia/Krasnoyarsk','Asia/Irkutsk','Asia/Vladivostok'].filter(Boolean))];
-  render(`${pageHead('Настройки','',['#/more','Ещё'])}
-  <div class="grid"><div class="col">
-    <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Профиль<small>${u.role==='admin'?'админ':'участник'}</small></h2></div>
-      <label class="f" for="pGroup">Учебная группа</label><div class="row"><input id="pGroup" class="grow" type="text" maxlength="16" autocapitalize="characters" list="grpList" value="${esc(u.group||'')}" placeholder="ИУ5-11Б">${grpList()}<button class="btn" type="button" data-act="saveGroup">Сохранить</button></div>
-      <p class="mut">${groupSched()?'Расписание группы есть — даты ДЗ, РК и модулей посчитаны по нему.':u.group?'Расписания этой группы пока нет — день занятий можно указать в календаре.':'По группе считаются даты сдач.'}</p>
-      <label class="f" for="pName">Имя</label><div class="row"><input id="pName" class="grow" type="text" maxlength="60" value="${esc(u.name)}"><button class="btn" type="button" data-act="saveName">Сохранить</button></div>
-      <label class="chk reg"><input type="checkbox" data-chg="photos"${u.photos?' checked':''}><span>Разрешаю использовать мои фото чертежей для улучшения проверки<small>Необязательно; сейчас фото никуда не отправляются</small></span></label></section>
-    ${flag('reminders')&&CFG&&CFG.telegram?card('reminders','Напоминания в Telegram',!u.telegram?`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
-      <p class="note">Напоминания приходят в Telegram. Сначала привяжите его ниже, в «Способах входа», — и здесь появятся настройки.</p>`:`<p class="mut">Не чаще раза в день, в выбранное время, только когда близко дедлайн или есть задачи на повтор. Без серий и «ты пропустил».</p>
+  render(`${pageHead('Напоминания','Не чаще раза в день и только по делу: близко сдача или есть задачи на повтор.',['#/me','Профиль'])}
+    <section class="card" data-feature="reminders">${!u.telegram?`<p>Напоминания приходят в Telegram. Сначала привяжите его в «Вход и безопасность».</p><div class="row reg"><a class="btn" href="#/me/login">Привязать Telegram</a></div>`:`
       <label class="chk"><input type="checkbox" id="rOn"${r.enabled?' checked':''}><span>Присылать напоминания</span></label>
       <div class="grid2"><div><label class="f" for="rTime">Время</label><input id="rTime" type="time" value="${esc(r.time)}"></div><div><label class="f" for="rTz">Часовой пояс</label><select id="rTz">${tzs.map(z=>`<option${z===r.tz?' selected':''}>${esc(z)}</option>`).join('')}</select></div>
       <div><label class="f" for="rQf">Тихие часы с</label><input id="rQf" type="time" value="${esc(r.quietFrom)}"></div><div><label class="f" for="rQt">до</label><input id="rQt" type="time" value="${esc(r.quietTo)}"></div></div>
       <div class="row reg"><button class="btn pri" type="button" data-act="saveRem">Сохранить</button>${r.enabled?`<button class="btn" type="button" data-act="pauseRem">${r.paused?'Снять с паузы':'Пауза'}</button>`:''}</div>
-      ${r.paused?'<p class="note warn reg">Напоминания на паузе.</p>':''}<div id="remMsg" aria-live="polite"></div>`,
-      'напоминание о конкретном шаге в выбранное время помогает начать; стыд и серии «не прерывай» вредят мотивации и вызывают избегание — их нет.',{icon:'bell',tone:'amber'}):''}
-    ${flag('sync')?card('sync','Прогресс',`<p class="mut">Хранится на устройстве (работает без сети) и в аккаунте.${lastSync?' Сохранено в '+new Date(lastSync).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'.':''}</p>
+      ${r.paused?'<p class="note warn reg">Напоминания на паузе.</p>':''}<div id="remMsg" aria-live="polite"></div>`}</section>`,'Напоминания'); }
+function meDataView(){ const u=ME.user;
+  render(`${pageHead('Данные и прогресс','Хранятся на устройстве и в аккаунте, в России (Yandex Cloud).',['#/me','Профиль'])}
+    ${flag('sync')?`<section class="card" data-feature="sync"><div class="sh"><h2>Прогресс</h2><small>${lastSync?'сохранено в '+new Date(lastSync).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):''}</small></div>
       <div class="row"><button class="btn" type="button" data-act="syncNow">Сохранить сейчас</button></div>
-      <h3 class="reg">Перенести прогресс с nachert1830.ru</h3><p class="mut">На сайте: «Тренировка дня» → внизу «Сохранить в файл». Здесь выберите этот файл:</p>
-      <label class="file"><input id="impF" type="file" accept="application/json,.json"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label><div class="row reg"><button class="btn" type="button" data-act="import">Перенести</button></div>`,'',{icon:'train',tone:'green'}):''}
-  </div><div class="col">
-    <section class="card"><div class="ch"><span class="ico green">${ic('data')}</span><h2>Мои данные<small>хранятся в России, Yandex Cloud</small></h2></div>
-      <div class="kv"><div><span>Хеш почты или id в Яндекс ID, имя</span><span>для входа</span></div><div><span>Прогресс и планы</span><span>для кабинета</span></div><div><span>Журнал входов</span><span>90 дней</span></div></div>
-      <div class="row reg"><button class="btn" type="button" data-act="export">Скачать мои данные</button><button class="btn" type="button" data-act="fb" data-f="privacy">Обращение к владельцу</button><button class="btn ghost" type="button" data-act="requests">Мои обращения</button></div><div id="reqOut"></div>
-      <p class="mut reg"><a href="legal/terms.html">Соглашение</a> · <a href="legal/privacy.html">Политика ПД</a> · <a href="legal/consent.html">Согласие</a></p></section>
-    <section class="card"><div class="ch"><span class="ico">${ic('user')}</span><h2>Способы входа<small>аккаунт один, способы можно добавлять</small></h2></div>
-      <div class="kv"><div><span>Яндекс ID</span><span>${u.yandex?'привязан':CFG&&CFG.yandex?'<button class="btn sm" type="button" data-act="linkYa">Привязать</button>':'—'}</span></div>
-      <div><span>Почта</span><span>${u.email?'привязана':CFG&&CFG.email?'<button class="btn sm" type="button" data-act="linkMail">Привязать</button>':'—'}</span></div>
-      <div><span>Telegram</span><span>${u.telegram?'привязан':CFG&&CFG.telegram&&CFG.botName?'<button class="btn sm" type="button" data-act="linkTg">Привязать</button>':'—'}</span></div></div><div id="linkOut"></div></section>
-    <section class="card"><div class="ch"><span class="ico">${ic('shield')}</span><h2>Безопасность</h2></div><div class="row"><button class="btn" type="button" data-act="logins">Журнал входов</button><button class="btn" type="button" data-act="logoutAll">Выйти на всех устройствах</button></div><div id="logOut"></div></section>
-    <section class="card"><div class="row"><button class="btn grow" type="button" data-act="logout">${ic('logout')}Выйти</button><button class="btn dan" type="button" data-act="delete">Удалить аккаунт</button></div></section>
-  </div></div>`,'Настройки'); }
-
-/* ── «Ещё» ── */
-function moreView(){ const m=(href,icn,tone,t,s,extl)=>`<a href="${esc(href)}"${extl?' target="_blank" rel="noopener noreferrer"':''}><span class="ico ${tone}">${ic(icn)}</span><span>${t}<small>${s}</small></span>${ic(extl?'ext':'arrow')}</a>`;
-  render(`${pageHead('Ещё')}<nav class="menu" aria-label="Разделы">
-  ${flag('calendar')?m('#/calendar','cal','','Календарь сдач','ДЗ, РК и закрытие модулей по неделям'):''}
-  ${m('#/settings','user','','Настройки','профиль, напоминания, прогресс, мои данные')}
-  ${ME.user.role==='admin'?m('#/boss','target','green','Пульт','живая картина: кто в кабинете, что делает, где спотыкается')+m('#/admin','admin','red','Админ-панель','статистика, участники, функции, отзывы'):''}
-  ${m(mainUrl(),'book','green','Основной сайт','тетрадь, разборы, тренажёры',true)}
-  ${m('#/about','info','','О клубе','что это и как оставить отзыв')}</nav>
-  <div class="row reg"><button class="btn wide" type="button" data-act="fb" data-f="general">${ic('fb')}Общий отзыв о клубе</button></div>`,'Ещё'); }
-function aboutView(){ render(`${pageHead('О клубе','',['#/more','Ещё'])}<section class="card tri"><p>Клуб — закрытое тестирование кабинета Начерта на тех же задачах тетради, что на сайте. Функции включаются по одной; у каждой есть кнопка «Отзыв» — туда всё, что мешает, непонятно или нравится.</p>
-  <p>Методика — интервальное повторение, перемешивание задач, проверка себя и «Решаю сам»; в каждой функции под чертой «Почему так».</p><p class="mut">Версия ${VER}. Не официальный сервис МГТУ.</p></section>`,'О клубе'); }
+      <details class="fold in"><summary><b>Перенести прогресс с сайта</b></summary><p class="mut">На сайте: «Тренировка дня» → внизу «Сохранить в файл». Здесь выберите этот файл:</p>
+      <label class="file"><input id="impF" type="file" accept="application/json,.json"><span class="btn sm">Выбрать файл</span><span class="fn">файл не выбран</span></label><div class="row reg"><button class="btn" type="button" data-act="import">Перенести</button></div></details></section>`:''}
+    <section class="card"><div class="sh"><h2>Мои данные</h2></div>
+      <div class="kv"><div><span>Для входа</span><span>хеш почты, id в Яндекс ID, имя</span></div><div><span>Для кабинета</span><span>группа, вариант, прогресс</span></div><div><span>Журнал входов</span><span>90 дней</span></div></div>
+      <label class="chk reg"><input type="checkbox" data-chg="photos"${u.photos?' checked':''}><span>Можно использовать мои фото чертежей для улучшения проверки<small>Необязательно; сейчас фото никуда не отправляются</small></span></label>
+      <div class="row reg"><button class="btn" type="button" data-act="export">Скачать мои данные</button><button class="btn" type="button" data-act="fb" data-f="privacy">Написать нам</button><button class="btn ghost" type="button" data-act="requests">Мои обращения</button></div><div id="reqOut"></div>
+      <p class="mut reg"><a href="legal/terms.html">Соглашение</a> · <a href="legal/privacy.html">Политика</a> · <a href="legal/consent.html">Согласие</a></p></section>
+    <button class="btn dan full" type="button" data-act="delete">Удалить аккаунт</button>`,'Данные'); }
+/* перерисовать текущий раздел профиля (после привязки, напоминаний и т. п.) */
+function settingsView(){ const p=location.hash.replace(/^#\/?/,'').split('/'); return meView(p[0]==='me'?p[1]:'login'); }
 
 /* ── админ-панель ── */
 let ADMIN_TAB='stats';
@@ -573,7 +600,7 @@ async function adminView(){ if(ME.user.role!=='admin'){ render('<p class="note b
     feedback:D.feedback.length?`<ul class="list">${D.feedback.map(f=>`<li><b>${esc(f.feature==='privacy'?'Обращение к владельцу':(D.features.find(x=>x.id===f.feature)||{t:'Общее'}).t)}</b> ${f.mood?'<span class="lv">'+({good:'полезно',unclear:'непонятно',bad:'мешает'})[f.mood]+'</span>':''}<p>${esc(f.text)}</p><small>${esc(f.name)} · ${dt(f.ts)}</small>${f.feature==='privacy'?(f.reply?`<p class="note ok reg">Ответ (${dt(f.replyAt)}): ${esc(f.reply)}</p>`:`<div class="row reg"><button class="btn sm pri" type="button" data-act="reply" data-id="${esc(f.id)}">Ответить</button></div>`):''}</li>`).join('')}</ul>`:'<p class="empty">Отзывов пока нет.</p>',
     logins:D.logins.map(l=>`<div class="urow"><div><b>${esc(l.user?names[l.user]||'удалён':'—')}</b><small>${dt(l.ts)} · ${esc(l.ip)}${l.reason?' · '+esc(l.reason):''}</small></div><span class="st-badge ${l.ok?'ok':'bad'}">${l.ok?'вход':'отказ'}</span></div>`).join('')||'<p class="mut">Пусто.</p>',
     settings:`<label class="f" for="w1">Понедельник недели 1</label><div class="row"><input id="w1" class="grow" type="date" value="${esc(D.settings.week1)}"><button class="btn pri" type="button" data-act="saveWeek1">Сохранить</button></div><p class="mut">По умолчанию 31.08.2026 — сверьте с расписанием МГТУ. От этой даты считаются все недели календаря.</p>`};
-  render(`${pageHead('Админ-панель','',['#/more','Ещё'])}<div class="seg wrap" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-act="atab" data-t="${k}" class="${ADMIN_TAB===k?'on':''}">${l}</button>`).join('')}</div>
+  render(`${pageHead('Админ-панель','',['#/me','Профиль'])}<div class="seg wrap" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-act="atab" data-t="${k}" class="${ADMIN_TAB===k?'on':''}">${l}</button>`).join('')}</div>
     <section class="card reg">${body[ADMIN_TAB]}</section>`,'Админ-панель');
   const f=$('#invForm'); if(f) f.addEventListener('submit',async e=>{ e.preventDefault();
     try{ const r=await api('POST','/api/admin/invites',{label:$('#invL').value,days:+$('#invD').value,role:$('#invA').checked?'admin':'member',multi:$('#invM').checked,uses:50});
@@ -583,9 +610,8 @@ async function adminView(){ if(ME.user.role!=='admin'){ render('<p class="note b
 /* ── пульт владельца: живая картина — кто сейчас в кабинете, что делает и как получается; обновляется сам каждые 8 секунд ── */
 let BOSS_T=null, BOSS_SEEN=0, BOSS_AT=0;
 function bossStop(){ clearInterval(BOSS_T); BOSS_T=null; }
-const VIEW_T={today:'на «Сегодня»',check:'в проверке чертежа',train:'на тренировке',skills:'в навыках',event:'готовится к сдаче',calendar:'в календаре',settings:'в настройках',more:'в меню',about:'читает о клубе',admin:'в админке',boss:'на пульте'};
+const VIEW_T={today:'на главной',check:'в проверке чертежа',progress:'смотрит прогресс',train:'на тренировке',skills:'в навыках',event:'готовится к сдаче',calendar:'смотрит сдачи',me:'в профиле',settings:'в профиле',admin:'в админке',boss:'на пульте'};
 const ago=ts=>{ const s=Math.max(0,Math.round((Date.now()-ts)/1000)); return s<45?'только что':s<3600?Math.round(s/60)+' мин назад':s<86400?Math.round(s/3600)+' ч назад':new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'}); };
-const initials=n=>esc(String(n||'?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase());
 function actText(a){ const d=a.d||{};
   switch(a.type){
     case 'task': { const L=[['bad','не смог'],['warn','с подсказкой'],['ok','сам']][d.v]; return L?`<span class="lv ${L[0]}">${L[1]}</span> задача №${esc(d.n)}${d.ctx==='train'?' · тренировка':d.ctx==='diag'?' · диагностика':''}`:'отметил задачу'; }
@@ -594,7 +620,7 @@ function actText(a){ const d=a.d||{};
     case 'mock': return d.s==='end'?'закончил пробный РК':'начал пробный РК (90 мин)';
     case 'plan': return 'составил план подготовки';
     case 'skill': return 'оценил себя по навыку ИКГ';
-    case 'signup': return '<span class="lv ok">новый участник</span> зарегистрировался'+(d.m?' · '+({email:'почта',yandex:'Яндекс ID',telegram:'Telegram'})[d.m]:'');
+    case 'signup': return '<span class="lv ok">новый</span> зарегистрировался'+(d.m?' · '+({email:'почта',yandex:'Яндекс ID',telegram:'Telegram'})[d.m]:'');
     case 'login': return 'вошёл'+(d.m?' · '+({email:'почта',yandex:'Яндекс ID',telegram:'Telegram'})[d.m]:'');
     default: return esc(a.type); } }
 const actIco={task:'train',check:'scan',scan:'scan',mock:'clock',plan:'cal',skill:'skills',signup:'user',login:'user'};
@@ -631,8 +657,8 @@ async function bossUser(id){ openSheet('<p class="mut">Загружаю…</p>')
     <div class="row reg"><button class="btn" data-close type="button">Закрыть</button></div>`); }
 
 /* ── отзыв ── */
-function feedback(f){ const name=f==='general'?'клуб в целом':(FEAT.FEATURES.find(x=>x.id===f)||{t:f}).t;
-  openSheet(`${f==='privacy'?'<h2>Обращение к владельцу</h2><p class="mut">Вопрос, претензия или запрос по персональным данным. Ответ — в течение 10 рабочих дней: в «Настройки» → «Мои обращения» и в Telegram.</p>':`<h2>Отзыв: ${esc(name)}</h2><p class="mut">Что полезно, что мешает, что непонятно. Видит только владелец клуба.</p>`}
+function feedback(f){ const name=f==='general'?'личный кабинет':(FEAT.FEATURES.find(x=>x.id===f)||{t:f}).t;
+  openSheet(`${f==='privacy'?'<h2>Написать нам</h2><p class="mut">Вопрос, предложение или запрос по персональным данным. Ответ — в течение 10 рабочих дней: «Профиль» → «Данные и прогресс» → «Мои обращения».</p>':`<h2>Отзыв: ${esc(name)}</h2><p class="mut">Что полезно, что мешает, что непонятно.</p>`}
     <div class="seg reg" role="group" id="fbMood">${[['good','Полезно'],['unclear','Непонятно'],['bad','Мешает']].map(([m,l])=>`<button type="button" data-m="${m}">${l}</button>`).join('')}</div>
     <label class="f" for="fbT">Подробнее</label><textarea id="fbT" maxlength="2000"></textarea><div class="row reg"><button class="btn pri grow" id="fbGo" type="button">Отправить</button><button class="btn" data-close type="button">Отмена</button></div>`,
     bg=>{ let mood=null; $('#fbMood',bg).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; mood=b.dataset.m; $$('#fbMood button',bg).forEach(x=>x.classList.toggle('on',x===b)); });
@@ -641,7 +667,8 @@ function feedback(f){ const name=f==='general'?'клуб в целом':(FEAT.FE
 /* ── действия ── */
 const ACT={
   fb:el=>feedback(el.dataset.f),
-  onboardOff:()=>{ LS.device('nch2_club_onboard'); todayView(); },
+  editProfile:()=>editProfile(),
+  theme:()=>{ const t=isDark()?'light':'dark'; document.documentElement.dataset.theme=t; LS.device('nch2_theme',t); const sw=$('.rowl .sw'); if(sw) sw.classList.toggle('on',t==='dark'); },
   botLogin:()=>{ const box=$('#auth'); if(box) box.innerHTML=botSteps(); },
   mailResend:()=>{ const f=$('#codeF'); if(f){ const em=f.dataset.email; loginView(); $('#emA').value=em; mailStart(em); } },
   tgLogin:()=>{ const q=new URLSearchParams({bot_id:CFG.botId,origin:location.origin,request_access:'write',return_to:pageUrl()}); location.href=CFG.tgLogin.url+'?'+q.toString(); },
@@ -650,7 +677,7 @@ const ACT={
   linkMail:()=>{ const box=$('#linkOut'); if(!box) return; box.innerHTML=`<form class="af reg" id="lmF" novalidate><label class="f" for="lmA">Почта</label><input id="lmA" class="inp" type="email" inputmode="email" autocomplete="email" placeholder="name@example.ru"><button class="btn pri" type="submit">Получить код</button></form><div id="lmMsg" aria-live="polite"></div>`; $('#lmA').focus(); },
   linkYa:async()=>{ try{ const r=await api('POST','/api/me/link',{to:'yandex',ret:pageUrl(),s:yaState()}); location.href=r.url; }catch(e){ toast(e.message); } },
   linkTg:async()=>{ try{ const r=await api('POST','/api/me/link',{to:'telegram'}); const box=$('#linkOut');
-      if(box) box.innerHTML=`<p class="note">Откройте бота и нажмите «Старт», затем — кнопку «Привязать к клубу» в ответе бота. <a class="btn sm" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Открыть бота</a> <button class="btn sm ghost" type="button" data-act="linkCheck">Готово, проверить</button></p>`; }
+      if(box) box.innerHTML=`<p class="note">Откройте бота и нажмите «Старт», затем — кнопку «Привязать к кабинету» в ответе бота. <a class="btn sm" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Открыть бота</a> <button class="btn sm ghost" type="button" data-act="linkCheck">Готово, проверить</button></p>`; }
     catch(e){ toast(e.message); } },
   linkCheck:async()=>{ try{ await loadMe(); settingsView(); toast(ME.user.telegram?'Telegram привязан':'Пока не привязан — нажмите «Старт» у бота'); }catch(e){ toast(e.message); } },
   notMe:()=>{ LANDING=null; toast('Вход отменён'); loginView(); },
@@ -695,14 +722,14 @@ const ACT={
   logout:async()=>{ if(isDirty()&&!(await syncNow())&&!confirm('Есть несохранённый прогресс, а сети нет. Выйти и потерять его на этом устройстве?')) return;
     try{ await api('POST','/api/auth/logout',{}); }catch(e){} wipeLocal(); ME=null; location.hash='#/'; route(); },
   export:async()=>{ try{ const tok=TOK.get(); const r=await fetch(API+'/api/me/export',tok?{headers:{Authorization:'Bearer '+tok},credentials:'omit'}:{credentials:'same-origin'}); if(!r.ok) throw new Error('Не получилось'); const b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
-    a.href=u; a.download='nachert-club-my-data.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(u); a.remove(); },1500); }catch(e){ toast(e.message); } },
+    a.href=u; a.download='nachert-moi-dannye.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(u); a.remove(); },1500); }catch(e){ toast(e.message); } },
   delete:()=>openSheet(`<h2>Удалить аккаунт</h2><p>Удалятся имя, Telegram id, прогресс в аккаунте, настройки, отзывы и журнал входов. Это нельзя отменить. Перед удалением можно <button class="btn sm" type="button" data-act="export">скачать свои данные</button>.</p>
     <label class="f" for="delC">Введите слово УДАЛИТЬ</label><input id="delC" type="text" autocomplete="off"><div class="row reg"><button class="btn dan grow" id="delGo" type="button">Удалить навсегда</button><button class="btn" data-close type="button">Отмена</button></div>`,
     bg=>{ $('#delGo',bg).addEventListener('click',async()=>{ try{ await api('POST','/api/me/delete',{confirm:$('#delC',bg).value.trim()}); closeSheet(); wipeLocal(); ME=null; toast('Аккаунт удалён'); location.hash='#/'; route(); }catch(e){ toast(e.message); } }); }),
   copy:async el=>{ const t=$(el.dataset.t).textContent; try{ await navigator.clipboard.writeText(t); toast('Скопировано'); }catch(e){ toast('Выделите и скопируйте вручную'); } },
   requests:async()=>{ try{ const r=await api('GET','/api/me/requests'); $('#reqOut').innerHTML=r.requests.length?`<ul class="list reg">${r.requests.map(q=>`<li>${esc(q.text)}<br><small>${new Date(q.ts).toLocaleString('ru-RU')}</small>${q.reply?`<p class="note ok reg">Ответ: ${esc(q.reply)}</p>`:'<p class="mut">Ответа пока нет.</p>'}</li>`).join('')}</ul>`:'<p class="mut reg">Обращений нет.</p>'; }catch(e){ toast(e.message); } },
   reply:el=>openSheet(`<h2>Ответ на обращение</h2><p class="mut">Участник увидит ответ в «Мои обращения» и получит его в Telegram.</p><textarea id="rpT" maxlength="2000"></textarea><div class="row reg"><button class="btn pri grow" id="rpGo" type="button">Отправить</button><button class="btn" data-close type="button">Отмена</button></div>`,
-    bg=>{ $('#rpGo',bg).addEventListener('click',async()=>{ try{ const r=await api('POST','/api/admin/reply',{id:el.dataset.id,text:$('#rpT',bg).value}); closeSheet(); toast(r.telegram?'Ответ отправлен и в Telegram':'Ответ сохранён в клубе'); adminView(); }catch(e){ toast(e.message); } }); }),
+    bg=>{ $('#rpGo',bg).addEventListener('click',async()=>{ try{ const r=await api('POST','/api/admin/reply',{id:el.dataset.id,text:$('#rpT',bg).value}); closeSheet(); toast(r.telegram?'Ответ отправлен и в Telegram':'Ответ сохранён в кабинете'); adminView(); }catch(e){ toast(e.message); } }); }),
   atab:el=>{ ADMIN_TAB=el.dataset.t; adminView(); },
   bossUser:el=>bossUser(el.dataset.id),
   pickGroup:async el=>{ try{ const r=await api('POST','/api/me/profile',{group:el.dataset.g}); ME.user=r.user; LS.device(K.me,ME); todayView(); toast('Группа '+el.dataset.g); }catch(e){ toast(e.message); } },
@@ -731,7 +758,7 @@ const CHG={
 document.addEventListener('click',e=>{ const el=e.target.closest('[data-act]'); if(el&&ACT[el.dataset.act]){ e.preventDefault(); ACT[el.dataset.act](el,e); } });
 document.addEventListener('change',e=>{ const f=e.target.closest('.file input[type=file]'); if(f){ const n=f.parentNode.querySelector('.fn'); if(n) n.textContent=f.files&&f.files[0]?f.files[0].name:'файл не выбран'; }
   const el=e.target.closest('[data-chg]'); if(el&&CHG[el.dataset.chg]) CHG[el.dataset.chg](el,e); });
-$('#theme').addEventListener('click',()=>{ const t=document.documentElement.dataset.theme==='dark'?'light':'dark'; document.documentElement.dataset.theme=t; LS.device('nch2_theme',t); });
+
 
 /* выход: стираем вход и данные клуба; на nachert1830.ru прогресс nch2_* общий с сайтом (он был и до клуба) — его не трогаем */
 function wipeLocal(){ TOK.set(''); try{ const ks=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if((SYNC.syncable(k)&&!ON_MAIN)||/^nch2_club_/.test(k)) ks.push(k); } ks.forEach(k=>localStorage.removeItem(k)); }catch(e){} }
@@ -739,15 +766,11 @@ function wipeLocal(){ TOK.set(''); try{ const ks=[]; for(let i=0;i<localStorage.
 /* ── маршруты ── */
 /* верхняя строка: неделя, дата, ближайшее событие, группа — на всех экранах кабинета */
 function topbar(){ const b=$('#ub'); if(!b) return; b.hidden=!ME; if(!ME) return;
-  const t=today(), td=dayNum(), wk=CAL.weekOf(week1(),t), p=dparts(t), nx=CAL.upcoming(calSet(),week1(),t,1)[0];
-  const wkT=wk>=1&&wk<=17?wk+'-я неделя · '+(parity(wk)==='чс'?'числ.':'знам.'):wk<1?'до семестра':'каникулы', k=nx?CAL.toDay(nx.date)-td:0, nl=nextLesson();
-  const when=!nx?'':k===0?'сегодня':k===1?'завтра':'через '+k+' '+plural(k,'день','дня','дней');
-  b.innerHTML=`<div class="ubi"><span class="ubw">${esc(wkT)}</span><span class="ubd">${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span>
-    ${nx?`<a class="ubn${k<=1?' hot':''}" href="#/event/${nx.id}"><b>${esc(nx.short)} · ${esc(nx.subjTitle)}</b><span>${esc(when)}</span></a>`:''}
-    ${nl&&nl.inDays<=1?`<span class="ubl">${nl.inDays?'завтра':'сегодня'} ${esc(nl.l.t.replace(/^0/,''))} · ${SUBJ_T[nl.l.subj]} · ${esc(nl.l.rooms[0])}</span>`:''}
-    <a class="ubg${myGroup()?'':' none'}" href="#/settings">${myGroup()?esc(myGroup()):'указать группу'}</a></div>`; }
-function tabs(){ topbar(); const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=(location.hash.replace(/^#\/?/,'').split('/')[0])||'';
-  $$('a',t).forEach(a=>{ a.hidden=(!!a.dataset.f&&!flag(a.dataset.f))||(a.dataset.admin!=null&&ME.user.role!=='admin'); a.classList.toggle('on',a.dataset.r===r||(r==='event'&&a.dataset.r==='calendar')||(['check','settings','admin','about'].includes(r)&&a.dataset.r==='more')); }); }
+  const t=today(), wk=CAL.weekOf(week1(),t), p=dparts(t);
+  b.innerHTML=`<div class="ubi"><span class="ubw">${wk>=1&&wk<=17?wk+'-я неделя':wk<1?'до семестра':'каникулы'}</span>${wk>=1&&wk<=17?`<span class="ubp">${parity(wk)==='чс'?'числитель':'знаменатель'}</span>`:''}<span class="ubd">${esc(p.wd)}, ${p.d} ${esc(p.mon)}</span></div>`; }
+const TAB_OF={'':'',event:'',calendar:'',check:'check',progress:'progress',train:'progress',skills:'progress',me:'me',settings:'me',admin:'me',boss:'boss'};
+function tabs(){ topbar(); const t=$('#tabs'); t.hidden=!ME; if(!ME) return; const r=TAB_OF[(location.hash.replace(/^#\/?/,'').split('/')[0])||'']; const av=$('#tav'); if(av) av.textContent=String(ME.user.name||'·').trim().slice(0,1).toUpperCase();
+  $$('a',t).forEach(a=>{ a.hidden=(!!a.dataset.f&&!flag(a.dataset.f))||(a.dataset.admin!=null&&ME.user.role!=='admin'); a.classList.toggle('on',a.dataset.r===(r==null?'':r)); }); }
 /* возврат с oauth.telegram.org: #tgAuthResult=<base64 JSON, подписанный Telegram> → сервер проверяет подпись → «Войти как …?» */
 async function tgReturn(raw){ history.replaceState(null,'','#/'); let data=null;
   try{ data=JSON.parse(decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((raw.length+3)%4))))); }catch(e){}
@@ -765,9 +788,9 @@ function route(){ closeSheet(); const m=/^#tgAuthResult=([A-Za-z0-9+/=_%-]*)/.ex
   if(p[0]==='oops'){ history.replaceState(null,'','#/'); if(!ME) return loginView(OOPS[p[1]]||'Не получилось войти.'); toast(OOPS[p[1]]||'Не получилось'); }
   /* привязка второго способа входа: подтверждает только этот браузер с тем же аккаунтом (сервер сверяет сессию) */
   if(p[0]==='link'&&p[1]){ const tok=p[1], cs=p[2]; let mine=''; if(cs){ try{ mine=sessionStorage.getItem('club_ya_s')||''; sessionStorage.removeItem('club_ya_s'); }catch(e){} }
-    history.replaceState(null,'','#/settings');
+    history.replaceState(null,'','#/me/login');
     if(cs&&cs!==mine){ if(!ME) return loginView(OOPS.state); toast(OOPS.state); return settingsView(); }
-    if(!ME) return loginView('Чтобы привязать вход, сначала войдите в клуб в этом браузере, затем откройте ссылку снова.');
+    if(!ME) return loginView('Чтобы привязать вход, сначала войдите в кабинет в этом браузере, затем откройте ссылку снова.');
     api('POST','/api/me/link/confirm',{token:tok}).then(r=>{ ME.user=r.user; settingsView(); toast(r.linked==='yandex'?'Яндекс ID привязан':'Telegram привязан'); })
       .catch(e=>{ settingsView(); const b=$('#linkOut'); if(b) b.innerHTML=`<p class="note bad">${esc(e.message)}</p>`; else toast(e.message); });
     return settingsView(); }
@@ -775,15 +798,15 @@ function route(){ closeSheet(); const m=/^#tgAuthResult=([A-Za-z0-9+/=_%-]*)/.ex
   if(!CORE){ render('<p class="mut">Загружаю задачи…</p>'); return; }
   view().focus({preventScroll:true}); scrollTo(0,0); clearTimeout(actTimer); actTimer=setTimeout(beat,800); if(p[0]!=='boss') bossStop();
   switch(p[0]){
-    case '': case 'join': return todayView();
-    case 'calendar': return flag('calendar')?calendarView():todayView();
+    case '': case 'join': return homeView();
+    case 'calendar': return flag('calendar')?calendarView():homeView();
+    case 'progress': return progressView();
+    case 'me': return meView(p[1]);
     case 'event': return eventView(p[1],p[2]);
     case 'train': return flag('training')?trainView():todayView();
     case 'skills': return flag('skills')?skillsView():todayView();
     case 'check': return checkView(p[1]);
-    case 'settings': return settingsView();
-    case 'more': return moreView();
-    case 'about': return aboutView();
+    case 'settings': case 'more': case 'about': history.replaceState(null,'','#/me'); return meView();
     case 'admin': return adminView();
     case 'boss': return bossView();
     default: return todayView(); } }
@@ -791,12 +814,12 @@ addEventListener('hashchange',route);
 
 async function boot(){
   try{ CFG=await api('GET','/api/config'); LS.device('nch2_club_cfg',CFG); }catch(e){ CFG=LS.get('nch2_club_cfg',null); }
-  if(!CFG){ render('<section class="card"><h2>Нет связи</h2><p>Клуб открывается впервые и без сети не может загрузиться. Подключитесь к интернету.</p></section>'); return; }
+  if(!CFG){ render('<section class="card"><h2>Нет связи</h2><p>Кабинет открывается впервые и без сети не может загрузиться. Подключитесь к интернету.</p></section>'); return; }
   try{ await loadMe(); OFFLINE=false; }
   catch(e){ if(e.offline){ const c=LS.get(K.me,null); if(c){ ME=c; OFFLINE=true; } } else ME=null; }
   try{ const r=await fetch('core/tasks.json'); CORE=await r.json(); }catch(e){ CORE=null; }
   try{ const r=await fetch('data/groups.json',{cache:'no-cache'}); GROUPS=await r.json(); }catch(e){}
-  route(); if(ME&&!OFFLINE) syncNow(); }
+  if(ME) applyVariant(false); route(); if(ME&&!OFFLINE) syncNow(); }
 if('serviceWorker' in navigator&&location.protocol!=='file:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 boot();
 window.CLUB={get me(){ return ME; },syncNow,sanitizeSvg,LS};

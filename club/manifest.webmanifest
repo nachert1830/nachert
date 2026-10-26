@@ -1,1 +1,1 @@
-{"name":"Клуб Начерта","short_name":"Клуб","start_url":"/","display":"standalone","background_color":"#f3f5fa","theme_color":"#1f47b8","lang":"ru","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml"}]}
+{"name":"Личный кабинет Начерта","short_name":"Начерт","start_url":"./","display":"standalone","background_color":"#f3f5fa","theme_color":"#1f47b8","lang":"ru","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml"}]}

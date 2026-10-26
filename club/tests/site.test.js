@@ -40,8 +40,8 @@ test('регистрация по почте без приглашений: ко
   await mail(page,'Anna@Ex.ru'); await page.waitForSelector('text=Добро пожаловать'); assert.match(await page.textContent('.asub'),/an•••@ex\.ru/);
   await onboard(page,'Аня'); await page.waitForSelector('text=Привет, Аня');
   assert.match(await page.evaluate(()=>localStorage.getItem('club_tok')||''),/^[A-Za-z0-9_-]{40,}$/,'вход — токеном в localStorage сайта');
-  assert.equal(await page.getAttribute('#tabs a:first-child','href'),'#/check','первая вкладка — проверка');
-  page.on('dialog',d=>d.accept()); await page.goto(CLUB+'#/settings'); await page.click('button[data-act="logout"]'); await page.waitForSelector('#emA');
+  assert.equal(await page.getAttribute('#tabs a.tcenter','href'),'#/check','проверка — по центру меню');
+  page.on('dialog',d=>d.accept()); await page.goto(CLUB+'#/me'); await page.click('button[data-act="logout"]'); await page.waitForSelector('#emA');
   await mail(page,'anna@ex.ru'); await page.waitForSelector('text=Привет, Аня'); assert.equal(await page.$('#onbF'),null,'участник — без экрана согласия');
   assert.deepEqual(page.errs,[]); await ctx.close();
 });
@@ -49,10 +49,10 @@ test('регистрация по почте без приглашений: ко
 test('Яндекс ID: владелец по логину, новый человек без приглашения, отмена; ни ошибок CSP, ни CORS',async()=>{
   const {ctx,page}=await open('pc'); await page.goto(CLUB); await page.waitForSelector('button[data-act="yaLogin"]');
   await yandex(page,5000001,'Андрей','owner'); await page.waitForSelector('text=Привет, Андрей');
-  await page.goto(CLUB+'#/more'); await page.waitForSelector('text=Админ-панель');
+  await page.goto(CLUB+'#/me'); await page.waitForSelector('text=Админ-панель');
   assert.deepEqual(await ctx.cookies(API),[],'cookie на адрес API не ставится'); assert.deepEqual(page.errs,[]); await ctx.close();
   const t=await open('phone'); await t.page.goto(CLUB); await yandex(t.page,5000002,'Боб','bob'); await t.page.waitForSelector('text=Привет, Боб');
-  await t.page.goto(CLUB+'#/more'); assert.equal(await t.page.isVisible('text=Админ-панель'),false,'новый — участник, не админ');
+  await t.page.goto(CLUB+'#/me'); await t.page.waitForSelector('.prof'); assert.equal(await t.page.isVisible('text=Админ-панель'),false,'новый — участник, не админ');
   assert.deepEqual(t.page.errs,[]); await t.ctx.close();
   const s=await open('pc'); await s.page.goto(CLUB); await yandex(s.page,5000003,'Чужой','x',{deny:true}); await s.page.waitForSelector('text=Вы отменили вход');
   assert.deepEqual(s.page.errs,[]); await s.ctx.close();
@@ -64,13 +64,13 @@ test('официальный вход Telegram, привязка Яндекс ID
   await page.fill('input[name=id]','7007'); await page.fill('input[name=first_name]','Вера'); await page.click('#tgAllow');
   await onboard(page); await page.waitForSelector('text=Привет, Вера'); assert.equal(await page.evaluate(()=>location.hash),'#/','данные Telegram убраны из адреса');
   await page.waitForFunction(()=>/сохранено/.test((document.querySelector('#net')||{}).textContent||''),null,{timeout:8000});
-  await page.goto(CLUB+'#/settings'); await page.click('button[data-act="linkYa"]'); await page.waitForSelector('#yaAllow');
+  await page.goto(CLUB+'#/me/login'); await page.click('button[data-act="linkYa"]'); await page.waitForSelector('#yaAllow');
   await page.fill('input[name=id]','5000099'); await page.click('#yaAllow'); await page.waitForSelector('text=Яндекс ID привязан');
   await page.click('button[data-act="linkMail"]'); await page.fill('#lmA','vera@ex.ru'); await page.click('#lmF button[type=submit]'); await page.waitForSelector('#lcC');
   const box=await dev('/dev/outbox'); const code=/(\d{6})/.exec(box.mail.filter(x=>x.to==='vera@ex.ru').pop().subject)[1];
   await page.fill('#lcC',code); await page.click('#lcF button[type=submit]'); await page.waitForSelector('text=Почта привязана');
-  assert.match(await page.textContent('.card:has-text("Способы входа")'),/Яндекс ID\s*привязан[\s\S]*Почта\s*привязана[\s\S]*Telegram\s*привязан/);
-  page.on('dialog',d=>d.accept()); await page.click('button[data-act="logout"]'); await page.waitForSelector('#emA');
+  assert.match(await page.textContent('#view'),/Почта\s*привязана[\s\S]*Яндекс ID\s*привязан[\s\S]*Telegram\s*привязан/);
+  page.on('dialog',d=>d.accept()); await page.goto(CLUB+'#/me'); await page.click('button[data-act="logout"]'); await page.waitForSelector('#emA');
   assert.equal(await page.evaluate(()=>localStorage.getItem('club_tok')),null,'вход стёрт');
   assert.ok(await page.evaluate(()=>localStorage.getItem('nch2_rep')),'прогресс сайта на месте: он был до кабинета');
   assert.deepEqual(page.errs,[]); await ctx.close();
@@ -81,7 +81,7 @@ test('официальный вход Telegram, привязка Яндекс ID
 
 test('проверка чертежа: сканер открывается внутри кабинета',async()=>{
   const {ctx,page}=await open('phone'); await page.goto(CLUB); await mail(page,'scan@ex.ru'); await onboard(page,'Сканер'); await page.waitForSelector('text=Привет');
-  await page.click('a.cta-check'); await page.waitForSelector('a.tool[href="#/check/dz"]'); await page.click('a.tool[href="#/check/dz"]');
+  await page.click('.tile.accent'); await page.waitForSelector('a.tool[href="#/check/dz"]'); await page.click('a.tool[href="#/check/dz"]');
   const fr=await (await page.waitForSelector('iframe.labf')).contentFrame(); await fr.waitForSelector('body'); assert.match(await fr.title(),/ДЗ/,'сканер ДЗ загрузился в кабинете');
   assert.deepEqual(page.errs,[]); await ctx.close();
 });
