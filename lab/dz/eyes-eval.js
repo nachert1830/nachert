@@ -38,11 +38,15 @@ function sheets(){ const out=[];
 
 async function ask(cfg,pic,dz,n,text){ const t0=Date.now(); const r=await SE.ask(cfg,{image:pic.url,w:pic.w,h:pic.h,dz,n,text},{token:()=>TOKEN,timeout:90000}); return {text:r.text,ms:Date.now()-t0,info:r.info}; }
 /* стратегии: ответ — чертежи с точками в px полного снимка */
-async function full(cfg,sh){ const pic=grayPNG(sh.img,null,1280), r=await ask(cfg,pic,sh.dz,sh.n), E=EY.parse(r.text);
-  if(E.error) return {drawings:[],ms:r.ms,calls:1,err:E.error};
-  E.drawings.forEach(d=>{ Object.keys(d.pts).forEach(l=>{ d.pts[l]=[d.pts[l][0]/pic.k,d.pts[l][1]/pic.k]; }); if(d.box) d.box=d.box.map(v=>v/pic.k); });
-  return {drawings:E.drawings,ms:r.ms,calls:1}; }
-async function zoom(cfg,sh){ const f=await full(cfg,sh); if(!f.drawings.length) return Object.assign(f,{note:'первый проход пуст'}); let ms=f.ms, calls=1; const out=[];
+/* шкала координат ответа: px присланного фото или 0…1000 (так отвечает семейство Qwen3-VL) — A.scale=px|n1000|auto */
+const SCALE=A.scale||'px';
+function toFull(E,pic,mode,W,Hh){ E.drawings.forEach(d=>{ const f=p=>mode==='n1000'?[pic.bx+p[0]/1000*pic.w/pic.k,pic.by+p[1]/1000*pic.h/pic.k]:[pic.bx+p[0]/pic.k,pic.by+p[1]/pic.k];
+    Object.keys(d.pts).forEach(l=>{ d.pts[l]=f(d.pts[l]); }); if(d.box){ const a=f([d.box[0],d.box[1]]), b=f([d.box[2],d.box[3]]); d.box=[a[0],a[1],b[0],b[1]]; } }); return E; }
+async function full(cfg,sh,mode){ const pic=Object.assign(grayPNG(sh.img,null,1280),{bx:0,by:0}), r=await ask(cfg,pic,sh.dz,sh.n), E=EY.parse(r.text);
+  if(E.error) return {drawings:[],ms:r.ms,calls:1,err:E.error,text:r.text.slice(0,300)};
+  const raw=JSON.parse(JSON.stringify(E)); toFull(E,pic,mode||SCALE);
+  return {drawings:E.drawings,raw,pic,ms:r.ms,calls:1,text:r.text.slice(0,400)}; }
+async function zoom(cfg,sh){ const f=await full(cfg,sh,SCALE); if(!f.drawings.length) return Object.assign(f,{note:'первый проход пуст'}); let ms=f.ms, calls=1; const out=[];
   for(const d of f.drawings){ const P=Object.values(d.pts); let b=d.box&&d.box.every(isFinite)?d.box.slice():null;
     if(!b&&P.length){ b=[Math.min(...P.map(p=>p[0])),Math.min(...P.map(p=>p[1])),Math.max(...P.map(p=>p[0])),Math.max(...P.map(p=>p[1]))]; }
     if(!b){ out.push(d); continue; }
@@ -53,7 +57,7 @@ async function zoom(cfg,sh){ const f=await full(cfg,sh); if(!f.drawings.length) 
     try{ const r=await ask(cfg,pic,sh.dz,sh.n,'На фото — ОДИН чертёж (вырезан с листа). ДЗ №'+sh.dz+'. Вариант '+sh.n+'. Размер фото: '+pic.w+' × '+pic.h+' px.'); ms+=r.ms; calls++;
       const E=EY.parse(r.text); if(E.error||!E.drawings.length){ out.push(d); continue; }
       const dd=E.drawings.sort((a,c)=>Object.keys(c.pts).length-Object.keys(a.pts).length)[0];
-      Object.keys(dd.pts).forEach(l=>{ dd.pts[l]=[x0+dd.pts[l][0]/pic.k,y0+dd.pts[l][1]/pic.k]; }); dd.box=[x0,y0,x1,y1]; dd.part=dd.part||d.part; out.push(dd); }
+      toFull({drawings:[dd]},Object.assign(pic,{bx:x0,by:y0}),SCALE); dd.box=[x0,y0,x1,y1]; dd.part=dd.part||d.part; out.push(dd); }
     catch(e){ out.push(d); } }
   return {drawings:out,ms,calls}; }
 
@@ -84,7 +88,13 @@ async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; cons
     for(const strat of STR){ const T={found:0,total:0,swap:0,err:[],extra:0,dr:0,drT:0,ms:0,calls:0,fails:0,read:0,ok:0,bdr:0,false:0,falseWhy:[]};
       console.log('\n══ модель '+cfg.model.replace(cfg.folder,'<каталог>')+', стратегия '+strat);
       for(const sh of S){ let res; try{ res=await (strat==='zoom'?zoom:full)(cfg,sh); }catch(e){ T.fails++; console.log('  '+sh.name+': ОШИБКА '+e.message.slice(0,200)); continue; }
-        const st=score(sh,res); T.found+=st.found; T.total+=st.total; T.swap+=st.swap; T.err.push(...st.err); T.extra+=st.extra; T.dr+=st.drawingsFound; T.drT+=sh.groups.length; T.ms+=res.ms; T.calls+=res.calls;
+        const st=score(sh,res);
+        /* диагностика: та же выдача в другой шкале и остаток после лучшего аффинного (систематическое — лечится) */
+        if(res.raw&&strat==='full'){ const alt=toFull(JSON.parse(JSON.stringify(res.raw)),res.pic,SCALE==='px'?'n1000':'px'), sa=score(sh,{drawings:alt.drawings});
+          const Hi=IMG.H.inv(sh.H), pairs=[]; res.drawings.forEach(d=>{ if(d._group==null) return; const g=sh.groups[d._group]; Object.entries(d.pts).forEach(([l,p])=>{ if(g.pts[l]) pairs.push({p:IMG.H.apply(Hi,p),t:g.pts[l]}); }); });
+          let aff='—'; if(pairs.length>=6){ const Af=EY.bindAffine(pairs.map(q=>({l:'',m:q.p,p:q.t})),{tol:15,sRange:[0.5,2]}); if(Af) aff='масштаб '+Af.s.toFixed(3)+', согласных '+Af.inl.length+'/'+pairs.length+', остаток '+f1(Af.rms)+' мм'; }
+          T.diag=(T.diag||[]); T.diag.push(sh.name+': в шкале '+(SCALE==='px'?'0…1000':'px')+' — точки '+sa.found+'/'+sa.total+', промах '+f1(med(sa.err))+' мм; лучшее аффинное по точкам: '+aff);
+          console.log('    · '+T.diag[T.diag.length-1]+' | ответ: '+String(res.text||'').replace(/\s+/g,' ').slice(0,220)); } T.found+=st.found; T.total+=st.total; T.swap+=st.swap; T.err.push(...st.err); T.extra+=st.extra; T.dr+=st.drawingsFound; T.drT+=sh.groups.length; T.ms+=res.ms; T.calls+=res.calls;
         const b=await brain(sh,res); if(b&&!b.err){ T.read+=b.read; T.ok+=b.ok; T.bdr+=res.drawings.length; T.false+=b.false; b.falseWhy.forEach(w=>T.falseWhy.push(sh.name+': '+w)); }
         raw.push({model:cfg.model.replace(cfg.folder,'<каталог>'),strat,sheet:sh.name,drawings:res.drawings,err:res.err||null,brain:b});
         console.log('  '+sh.name.padEnd(22)+' чертежей '+st.drawingsFound+'/'+sh.groups.length+(st.extra?' (+'+st.extra+' лишних)':'')+', точки '+st.found+'/'+st.total+(st.swap?', перепутано '+st.swap:'')+', промах медиана '+f1(med(st.err))+' мм, 90 % '+f1(q90(st.err))+' мм, '+(res.ms/1000).toFixed(1)+' с ('+res.calls+' запр.)'
