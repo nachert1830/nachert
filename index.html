@@ -28695,16 +28695,18 @@ function dimsSVG(list,M,opt){ let o=''; const W1=.8; opt=opt||{};
      продолжении; помехи — линии изображений (видимые и штриховые), оси, выносные и размерные линии, выноски, уже стоящие числа */
   const AUTO=!!(opt.auto&&REC), OB=AUTO?REC.s.concat(REC.h||[]):[], TB=AUTO?(REC.t||[]).slice():[], own=(g,i)=>(g.own=i,g);
   /* выноска: p — на окружности (у 'dia' — с другой стороны диаметра), q — излом, e — конец полки; tx — надпись, sd — полка вправо/влево */
-  const LG=(d,m,ag,sd0)=>{ const t=d[1]; let p,q,tx,sd,a0=null;
-    if(t==='lead'){ const A=d[6]; if(A&&ag!=null){ const u=[Math.cos(ag*Math.PI/180),Math.sin(ag*Math.PI/180)]; p=m([A.c[0]+u[0]*A.r,A.c[1]+u[1]*A.r]); q=m([A.c[0]+u[0]*(A.r+A.e),A.c[1]+u[1]*(A.r+A.e)]); a0=m([A.c[0]+u[0]*(A.r+1),A.c[1]+u[1]*(A.r+1)]); }
+  const LG=(d,m,ag,sd0,ex)=>{ const t=d[1]; let p,q,tx,sd,a0=null;
+    if(t==='rad'){ const g=ag!=null?ag:d[4], u=[Math.cos(g*Math.PI/180),Math.sin(g*Math.PI/180)], E=ex!=null?ex:d[5]; p=m([d[2][0]+u[0]*d[3],d[2][1]+u[1]*d[3]]); q=m([d[2][0]+u[0]*(d[3]+E),d[2][1]+u[1]*(d[3]+E)]); a0=m([d[2][0]+u[0]*(d[3]+1),d[2][1]+u[1]*(d[3]+1)]); tx=d[6]; sd=sd0!=null?sd0:d[7]; }
+    else if(t==='lead'){ const A=d[6]; if(A&&ag!=null){ const u=[Math.cos(ag*Math.PI/180),Math.sin(ag*Math.PI/180)]; p=m([A.c[0]+u[0]*A.r,A.c[1]+u[1]*A.r]); q=m([A.c[0]+u[0]*(A.r+A.e),A.c[1]+u[1]*(A.r+A.e)]); a0=m([A.c[0]+u[0]*(A.r+1),A.c[1]+u[1]*(A.r+1)]); }
       else { p=m(d[2]); q=m(d[3]); } tx=d[4]; sd=sd0!=null?sd0:d[5]; if(!a0){ const L=Math.hypot(q[0]-p[0],q[1]-p[1])||1; a0=[p[0]+(q[0]-p[0])*3/L,p[1]+(q[1]-p[1])*3/L]; } }
     else { const g=ag!=null?ag:d[4], u=[Math.cos(g*Math.PI/180),Math.sin(g*Math.PI/180)]; p=m([d[2][0]+u[0]*d[3]/2,d[2][1]+u[1]*d[3]/2]); q=m([d[2][0]-u[0]*(d[3]/2+d[5]),d[2][1]-u[1]*(d[3]/2+d[5])]); a0=m([d[2][0]-u[0]*(d[3]/2+1),d[2][1]-u[1]*(d[3]/2+1)]); tx=d[6]; sd=sd0!=null?sd0:d[7]; }
+    if(AUTO&&Math.abs(q[0]-p[0])>4) sd=q[0]>p[0]?1:-1;   /* полка — в ту сторону, куда идёт выноска: иначе выноска пересекает свою надпись */
     const e=[q[0]+(sd||1)*(tw(tx)+10),q[1]];
     return {p,q,e,tx,sd,seg:[[a0[0],a0[1],q[0],q[1]],[q[0],q[1],e[0],e[1]]],box:[Math.min(q[0],e[0]),q[1]-23,Math.max(q[0],e[0]),q[1]-3]}; };
   if(AUTO) (list||[]).forEach((d,i)=>{ const m=M[d[0]], t=d[1];
     if(t==='h'){ const a=m(d[2]), b=m(d[3]), y=m([d[2][0],d[4]])[1]; OB.push(own([a[0],a[1],a[0],y],i),own([b[0],b[1],b[0],y],i),own([a[0],y,b[0],y],i)); }
     else if(t==='v'){ const a=m(d[2]), b=m(d[3]), x=m([d[4],d[2][1]])[0]; OB.push(own([a[0],a[1],x,a[1]],i),own([b[0],b[1],x,b[1]],i),own([x,a[1],x,b[1]],i)); }
-    else if(t==='lead'||t==='dia'){ const G=LG(d,m); G.seg.forEach(g=>OB.push(own(g,i))); TB.push(own(G.box,i)); } });
+    else if(t==='lead'||t==='dia'||t==='rad'){ const G=LG(d,m); G.seg.forEach(g=>OB.push(own(g,i))); TB.push(own(G.box,i)); } });
   const cross=(g,B)=>{ /* отрезок и прямоугольник (Лианг — Барски) */ let t0=0, t1=1; const dx=g[2]-g[0], dy=g[3]-g[1];
     for(const [pp,qq] of [[-dx,g[0]-B[0]],[dx,B[2]-g[0]],[-dy,g[1]-B[1]],[dy,B[3]-g[1]]]){ if(Math.abs(pp)<1e-9){ if(qq<0) return false; continue; } const r=qq/pp; if(pp<0){ if(r>t1) return false; if(r>t0) t0=r; } else { if(r<t0) return false; if(r<t1) t1=r; } } return true; };
   const PADB=B=>[B[0]-3,B[1]-3,B[2]+3,B[3]+3];   /* запас у надписи: глифы выше расчётной строки, линия вплотную — уже «пересекает» */
@@ -28766,8 +28768,13 @@ function dimsSVG(list,M,opt){ let o=''; const W1=.8; opt=opt||{};
       else o+=ln(a,b,INK,W1)+ar(a,ux,uy)+ar(b,-ux,-uy)+`<text x="${f(mx)}" y="${f(my+4)}" transform="rotate(${f(rot)} ${f(mx)} ${f(my+4)})" class="igs-dim" text-anchor="middle">${tx}</text>`; }
     else if(t==='line'){ const [,,A,B]=d; o+=ln(m(A),m(B),INK,.7); }
     else if(t==='rad'){ /* радиус: размерная линия из центра, стрелка на дуге, полка снаружи */
-      const [,,c,Rr,ag,ext,tx,sd]=d, u=[Math.cos(ag*Math.PI/180),Math.sin(ag*Math.PI/180)], c0=m(c), p=m([c[0]+u[0]*Rr,c[1]+u[1]*Rr]), q=m([c[0]+u[0]*(Rr+ext),c[1]+u[1]*(Rr+ext)]);
-      const L=Math.hypot(p[0]-c0[0],p[1]-c0[1]), ux=(p[0]-c0[0])/L, uy=(p[1]-c0[1])/L, e=[q[0]+(sd||1)*(tw(tx)+10),q[1]];
+      let G=LG(d,m), ag=d[4];
+      /* auto: полка и число налезают — поворот не дальше ±45° (стрелка остаётся на той же дуге) и длиннее выход */
+      if(AUTO&&!(d[8]&&d[8].fix)&&lhits(G,i)){ let bn=lhits(G,i), best=null;
+        for(const da of [0,15,-15,30,-30,45,-45]){ for(const ex of [d[5],d[5]+10,d[5]+20]){ const H=LG(d,m,d[4]+da,null,ex), nn=lhits(H,i); if(nn<bn){ bn=nn; best=H; ag=d[4]+da; } if(!nn) break; } if(!bn) break; }
+        if(best){ for(let j=OB.length-1;j>=0;j--) if(OB[j].own===i) OB.splice(j,1); for(let j=TB.length-1;j>=0;j--) if(TB[j].own===i) TB.splice(j,1); best.seg.forEach(g=>OB.push(own(g,i))); TB.push(own(best.box,i)); G=best; } }
+      const c=d[2], tx=d[6], c0=m(c), p=G.p, q=G.q, sd=G.sd;
+      const L=Math.hypot(p[0]-c0[0],p[1]-c0[1]), ux=(p[0]-c0[0])/L, uy=(p[1]-c0[1])/L, e=G.e;
       o+=ln(c0,q,INK,W1)+ln(q,e,INK,W1)+`<path d="M${f(p[0])},${f(p[1])} L${f(p[0]-ux*12-uy*2.6)},${f(p[1]-uy*12+ux*2.6)} L${f(p[0]-ux*12+uy*2.6)},${f(p[1]-uy*12-ux*2.6)}Z" fill="${INK}"/>`+txt([(q[0]+e[0])/2,q[1]-6],tx,'igs-dim','middle'); }
     else if(t==='ang'){ const [,,c,r,a0,a1,tx,op]=d, P=(rr,a)=>m([c[0]+rr*Math.cos(a*Math.PI/180),c[1]+rr*Math.sin(a*Math.PI/180)]), e=(op&&op.e)||[0,0];
       [a0,a1].forEach((a,i)=>{ o+=ln(P(e[i],a),P(r+3,a),INK,W1); });
