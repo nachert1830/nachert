@@ -8,7 +8,7 @@
      POST /dev/remind                — прогнать напоминания сейчас;  POST /dev/invite — новое приглашение
      POST /dev/clock {offsetMs}      — сдвиг часов сервера (только с --test)
    Ключи: --port=8787  --memory  --fresh (стереть файл базы)  --test  --quiet
-          --site-port=8788 — ещё и «сайт» как GitHub Pages: http://localhost:8788/club/ ходит в API на другом адресе (CORS, токен в заголовке)
+          --site-port=8788 — ещё и «сайт» как GitHub Pages: http://localhost:8788/lk/ ходит в API на другом адресе (CORS, токен в заголовке)
    Владелец в эмуляции — Telegram id 1000001 (ADMIN_TG_IDS) или логин Яндекса owner (ADMIN_YA_LOGINS). */
 'use strict';
 const http=require('http'), fs=require('fs'), path=require('path'), crypto=require('crypto');
@@ -31,7 +31,7 @@ const origin='http://localhost:'+PORT, site=SITE?'http://localhost:'+SITE:null;
 const cfg={dev:true,limitScale:TEST?20:1,openSignup:!arg('invites'),origin,secure:false,botToken:BOT_TOKEN,botName:'nachert_club_dev_bot',webhookSecret:'dev-webhook-secret',
   adminTg:['1000001'],mainUrl:process.env.MAIN_URL||'https://nachert1830.ru',week1:process.env.CLUB_WEEK1||'',
   yandex:{clientId:'dev-client',secret:'dev-secret',authUrl:origin+'/dev/ya/authorize',tokenUrl:origin+'/dev/ya/token',infoUrl:origin+'/dev/ya/info',revokeUrl:origin+'/dev/ya/revoke'},
-  adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/club/':origin+'/',
+  adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/lk/':origin+'/',
   /* как в облаке: официальный вход Telegram — только на «сайте» (у @BotFather один домен), на адресе функции — бот */
   tgLogin:{url:origin+'/dev/tg/auth',origins:site?[site]:[]}};
 const yaCodes=new Map();
@@ -107,13 +107,13 @@ const srv=http.createServer(async(q,r)=>{
   }catch(e){ console.error(e); if(!r.headersSent) send(r,500,{error:String(e.message)}); }
 });
 
-/* «сайт» как GitHub Pages: /club/* — файлы клуба; config.js указывает на API на другом адресе, в CSP — тот же адрес */
+/* «сайт» как GitHub Pages: /lk/* — личный кабинет (/club/ — старый адрес, перенаправление); config.js указывает на API на другом адресе, в CSP — тот же адрес */
 const ROOT=path.join(__dirname,'..'), TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.woff2':'font/woff2','.webmanifest':'application/manifest+json'};
-const siteSrv=SITE?http.createServer((q,r)=>{ let p=decodeURIComponent(new URL(q.url,'http://x').pathname); if(p==='/club') { r.writeHead(301,{Location:'/club/'}); return r.end(); }
-  if(p.endsWith('/')) p+='index.html'; if(!/^\/(club|lab|core)\//.test(p)||p.includes('..')){ r.writeHead(404); return r.end('нет'); }
-  if(p==='/club/config.js'){ r.writeHead(200,{'Content-Type':TYPES['.js']}); return r.end("window.CLUB_API='"+origin+"';\n"); }
+const siteSrv=SITE?http.createServer((q,r)=>{ let p=decodeURIComponent(new URL(q.url,'http://x').pathname); if(p==='/lk'||p==='/club') { r.writeHead(301,{Location:p+'/'}); return r.end(); }
+  if(p.endsWith('/')) p+='index.html'; if(!/^\/(lk|club|lab|core)\//.test(p)||p.includes('..')){ r.writeHead(404); return r.end('нет'); }
+  if(p==='/lk/config.js'){ r.writeHead(200,{'Content-Type':TYPES['.js']}); return r.end("window.CLUB_API='"+origin+"';\n"); }
   const f=path.join(ROOT,p); if(!fs.existsSync(f)||!fs.statSync(f).isFile()){ r.writeHead(404); return r.end('нет'); }
-  let b=fs.readFileSync(f); if(p==='/club/index.html') b=Buffer.from(b.toString('utf8').replace(/connect-src [^;]*;/,"connect-src 'self' "+origin+";"));
+  let b=fs.readFileSync(f); if(p==='/lk/index.html') b=Buffer.from(b.toString('utf8').replace(/connect-src [^;]*;/,"connect-src 'self' "+origin+";"));
   r.writeHead(200,{'Content-Type':TYPES[path.extname(f)]||'application/octet-stream','Cache-Control':'no-cache'}); r.end(b); }):null;
 if(siteSrv) siteSrv.listen(SITE,'127.0.0.1');
 
@@ -122,7 +122,7 @@ srv.listen(PORT,'127.0.0.1',async()=>{
     console.log('\n  Клуб Начерта (локальная эмуляция): '+origin+'\n'+
       '  Владелец: «Войти через Telegram» → блок «Эмуляция бота», id 1000001\n'+
       '  Приглашение для тестировщика: '+inv.link+'\n'+
-      (site?'  Как на сайте (GitHub Pages): '+site+'/club/\n':'')+
+      (site?'  Как на сайте (GitHub Pages): '+site+'/lk/\n':'')+
       '  Яндекс ID: эмуляция, логин owner — владелец\n'+
       '  Сообщения бота: '+origin+'/dev/outbox\n'+
       '  База: '+(MEM?'в памяти':DBF)+'\n'); }

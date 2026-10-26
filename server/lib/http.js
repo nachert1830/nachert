@@ -1,7 +1,7 @@
 /* HTTP: событие Yandex Cloud Functions (через API Gateway) → запрос; ответы, cookie, заголовки безопасности, статика клуба. */
 'use strict';
 const fs=require('fs'), path=require('path'), crypto=require('crypto');
-const CLUB=path.join(__dirname,'..','..','club');
+const CLUB=path.join(__dirname,'..','..','lk');
 
 function header(h,name){ if(!h) return undefined; const n=name.toLowerCase(); for(const k of Object.keys(h)) if(k.toLowerCase()===n) return Array.isArray(h[k])?h[k][0]:h[k]; return undefined; }
 function parseCookies(s){ const out={}; String(s||'').split(/;\s*/).forEach(p=>{ const i=p.indexOf('='); if(i>0){ const k=p.slice(0,i).trim(); if(!(k in out)) try{ out[k]=decodeURIComponent(p.slice(i+1).trim()); }catch(e){} } }); return out; }

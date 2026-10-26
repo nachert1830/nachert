@@ -1,4 +1,4 @@
-# Спецификация Yandex API Gateway для club.nachert1830.ru (см. club/DEPLOY.md, шаг 6).
+# Спецификация Yandex API Gateway для club.nachert1830.ru (см. lk/DEPLOY.md, шаг 6).
 # Вся страница клуба и /api/* обслуживаются одной функцией — заголовки безопасности (CSP, HSTS, cookie) везде одни.
 # Перед загрузкой подставьте ${FUNCTION_ID} (функция nachert-club-api) и ${SA_ID} (сервисный аккаунт с ролью functions.functionInvoker).
 openapi: 3.0.0

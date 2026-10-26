@@ -5,6 +5,6 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "dev": "node dev.js",
-    "test": "node --test --test-concurrency=1 test/*.test.js ../club/tests/*.test.js"
+    "test": "node --test --test-concurrency=1 test/*.test.js ../lk/tests/*.test.js"
   }
 }

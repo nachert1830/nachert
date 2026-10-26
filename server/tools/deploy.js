@@ -1,4 +1,4 @@
-/* Развёртывание клуба в Yandex Cloud одной командой (подробно, для новичка — club/DEPLOY.md).
+/* Развёртывание клуба в Yandex Cloud одной командой (подробно, для новичка — lk/DEPLOY.md).
      node server/tools/deploy.js
    Нужно заранее: Node.js, программа yc (уже выполнен «yc init»), бот от @BotFather и свой Telegram id.
    Скрипт спрашивает токен бота и Telegram id владельца и сам создаёт: сервисные аккаунты и роли, базу YDB и таблицы,
@@ -11,7 +11,7 @@
    В GitHub Actions (.github/workflows/club.yml) скрипт ничего не спрашивает: всё берёт из секретов репозитория и того, что уже есть в облаке.
      YANDEX_CLIENT_ID / YANDEX_CLIENT_SECRET — приложение на oauth.yandex.ru (вход через Яндекс ID)
      OWNER_YANDEX_LOGIN — логин Яндекса владельца (станет админом при первом входе), OWNER_TG_ID — Telegram id владельца (необязательно)
-     FRONT_URL — куда ведут ссылки входа (по умолчанию nachert1830.ru/club/, если страница там уже есть, иначе адрес функции) */
+     FRONT_URL — куда ведут ссылки входа (по умолчанию nachert1830.ru/lk/, если страница там уже есть, иначе адрес функции) */
 'use strict';
 const {execFileSync}=require('child_process'), fs=require('fs'), os=require('os'), path=require('path'), crypto=require('crypto'), zlib=require('zlib'), readline=require('readline');
 const {sign}=require('../lib/sigv4');
@@ -42,9 +42,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const CI=!!process.env.GITHUB_ACTIONS, E=k=>String(process.env[k]||'').trim();
 /* в GitHub Actions спрашивать некого: нет значения — понятная ошибка со списком, что добавить в секреты */
 const need=(what,how)=>{ throw new Error(what+' не задан. '+how); };
-const SITE_FRONT='https://nachert1830.ru/club/', SITE_ORIGIN='https://nachert1830.ru';
+const SITE_FRONT='https://nachert1830.ru/lk/', SITE_ORIGIN='https://nachert1830.ru';
 /* https у сайта на GitHub Pages бывает без сертификата для своего домена — тогда ссылки входа ведут на http:// */
-async function siteProbe(){ try{ const r=await fetch(SITE_FRONT+'config.js',{cache:'no-store',signal:AbortSignal.timeout(10000)}); const t=await r.text(); return {ok:r.ok&&/CLUB_API/.test(t),text:r.ok?'страница на сайте отвечает по https':'страница на сайте: HTTP '+r.status}; }
+async function siteProbe(){ try{ const r=await fetch(SITE_ORIGIN+'/',{cache:'no-store',signal:AbortSignal.timeout(10000)}); return {ok:r.ok,text:r.ok?'страница на сайте отвечает по https':'страница на сайте: HTTP '+r.status}; }
   catch(e){ return {ok:false,text:'https у сайта не работает: '+String(e&&e.cause&&e.cause.code||e&&e.message||e)}; } }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
 function currentEnv(){ const v=get(['serverless','function','version','get-by-tag','--function-name',NAMES.api,'--tag','$latest']); return (v&&v.environment)||{}; }
@@ -67,7 +67,7 @@ function packageFiles(){ const out=[];
   const walk=(dir,rel)=>{ for(const f of fs.readdirSync(dir).sort()){ const p=path.join(dir,f), r=rel?rel+'/'+f:f;
     if(/^(\.data|\.deploy|test|tests|tools|node_modules)$/.test(f)||/\.md$/.test(f)||f.startsWith('.')) continue;
     if(fs.statSync(p).isDirectory()) walk(p,r); else out.push([r,fs.readFileSync(p)]); } };
-  walk(path.join(ROOT,'server'),'server'); walk(path.join(ROOT,'club'),'club'); return out; }
+  walk(path.join(ROOT,'server'),'server'); walk(path.join(ROOT,'lk'),'lk'); return out; }
 
 /* YDB Document API — создание таблиц */
 async function docapi(endpoint,cred,op,body){ const b=JSON.stringify(body);
@@ -81,7 +81,7 @@ async function telegram(token,method,body){ const r=await fetch('https://api.tel
 function ownerLink(fnId){ try{ const out=yc(['serverless','function','invoke',fnId?'--id':'--name',fnId||NAMES.api,'--data',JSON.stringify({club:'owner-login'})],{json:false});
   const m=out.match(/https:\/\/[^\s"]+\/#\/tg\/[A-Za-z0-9_-]{30,40}/); return m?m[0]:null; }catch(e){ return null; } }
 /* страница на nachert1830.ru (GitHub Pages) не знает адрес функции: пишем его в club/config.js и в connect-src CSP club/index.html */
-function writeFront(origin){ const cf=path.join(ROOT,'club','config.js'), ix=path.join(ROOT,'club','index.html');
+function writeFront(origin){ const cf=path.join(ROOT,'lk','config.js'), ix=path.join(ROOT,'lk','index.html');
   const c=fs.readFileSync(cf,'utf8').replace(/window\.CLUB_API='[^']*'/,"window.CLUB_API='"+origin+"'");
   const h=fs.readFileSync(ix,'utf8').replace(/connect-src 'self'[^;]*;/,"connect-src 'self' "+origin+";");
   fs.writeFileSync(cf,c); fs.writeFileSync(ix,h); say('  адрес API для страницы на сайте: '+origin); }
@@ -229,7 +229,7 @@ async function main(){
   say('  пакет: '+files.length+' файлов, '+Math.round(z.length/1024)+' КБ');
   /* куда ведут ссылки входа: страница на nachert1830.ru, если она уже опубликована, иначе — адрес функции */
   /* страница клуба опубликована вместе с сайтом (папка club/ в main) — ссылки входа и приглашений ведут туда */
-  const probe=await siteProbe(), front=E('FRONT_URL')||(probe.ok?SITE_FRONT:SITE_FRONT.replace('https://','http://'));
+  const probe=await siteProbe(), front=(E('FRONT_URL')||'').replace(/\/club\/$/,'/lk/')||(probe.ok?SITE_FRONT:SITE_FRONT.replace('https://','http://'));
   say('  страница кабинета: '+front+' ('+probe.text+')');
   if(!probe.ok) say('::warning::У nachert1830.ru не работает HTTPS (нет сертификата для домена). GitHub → Settings → Pages → Custom domain → Enforce HTTPS (DEPLOY.md). Пока ссылки ведут на http://');
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN+' http://nachert1830.ru',FRONT_URL:front,

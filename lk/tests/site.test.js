@@ -1,11 +1,11 @@
-/* Кабинет как на nachert1830.ru/club/ (GitHub Pages) с API на другом адресе (функция в Yandex Cloud): node --test club/tests/site.test.js
+/* Кабинет как на nachert1830.ru/lk/ (GitHub Pages) с API на другом адресе (функция в Yandex Cloud): node --test club/tests/site.test.js
    Поднимает node server/dev.js --site-port: «сайт» на одном порту, API на другом — CORS, токен в заголовке, CSP с адресом API.
    Регистрация открыта: вход по почте (код), через Яндекс ID (эмуляция oauth.yandex.ru) и официальный вход Telegram (эмуляция). */
 'use strict';
 const test=require('node:test'), assert=require('node:assert/strict');
 const {spawn}=require('child_process'), path=require('path'), fs=require('fs');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
-const PORT=8600+Math.floor(Math.random()*40)*2, API='http://localhost:'+PORT, SITE='http://localhost:'+(PORT+1), CLUB=SITE+'/club/';
+const PORT=8600+Math.floor(Math.random()*40)*2, API='http://localhost:'+PORT, SITE='http://localhost:'+(PORT+1), CLUB=SITE+'/lk/';
 let srv, browser;
 
 test.before(async()=>{

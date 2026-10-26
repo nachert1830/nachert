@@ -10,11 +10,11 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const view=()=>$('#view');
 const K={cal:'nch2_club_cal',done:'nch2_club_done',ii:'nch2_club_ii',ev:'nch2_club_ev',rep:'nch2_rep',train:'nch2_club_train',diag:'nch2_club_diag',mock:'nch2_club_mock',me:'nch2_club_me',seen:'nch2_club_seen'};
 let CFG=null, ME=null, CORE=null, OFFLINE=false;
-/* API: на nachert1830.ru/club/ — адрес функции в Yandex Cloud из config.js; со страницы на адресе функции — свой же сайт ('').
+/* API: на nachert1830.ru/lk/ — адрес функции в Yandex Cloud из config.js; со страницы на адресе функции — свой же сайт ('').
    Вход хранится токеном в localStorage и уходит заголовком Authorization (cookie на другой сайт браузеры не отправляют). */
 const API=String(window.CLUB_API||'').replace(/\/$/,''), ON_MAIN=!!API;
 const TOK={ get(){ try{ return localStorage.getItem('club_tok')||''; }catch(e){ return ''; } }, set(v){ try{ if(v) localStorage.setItem('club_tok',v); else localStorage.removeItem('club_tok'); }catch(e){} } };
-/* адрес этой страницы для возврата после Яндекс ID: https://nachert1830.ru/club/ или https://<функция>/ */
+/* адрес этой страницы для возврата после Яндекс ID: https://nachert1830.ru/lk/ или https://<функция>/ */
 const pageUrl=()=>location.origin+location.pathname.replace(/index\.html$/,'');
 
 /* ── хранилище: любое изменение помечает ключ временем (для слияния) и ставит синхронизацию в очередь ── */
@@ -465,13 +465,13 @@ function skillsView(){ const est=estimate(), rep=LS.get(K.rep,{}), f=focusTopics
 const LAB=[
   {id:'dz',src:'lab/dz.html',icon:'sheet',tone:'',t:'ДЗ № 2–3 по начерту',s:'фото листа целиком — построение и ответ',p:'Сфотографируйте лист — сканер найдёт рамку и эпюр, сверит построение с условием вашего варианта и проверит ответ.'},
   {id:'task',src:'lab/scan.html',icon:'scan',tone:'green',t:'Задачи тетради № 46 и 47',s:'фото решения — вердикт и отметки на фото',p:'Вердикт «верно» или где ошибка — с отметками прямо на фото, выпрямленный лист и 3D-модель решения. Есть синтетический лист, чтобы попробовать без бумаги.'}];
-const labBase=()=>/\/club\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/club\/(index\.html)?$/,''):null;
+const labBase=()=>/\/lk\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/lk\/(index\.html)?$/,''):null;
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
   if(L&&base){ track('check',{k:tool}); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(base+L.src)}" target="_blank" rel="noopener">Отдельно ${ic('ext')}</a></div>
       <iframe class="labf" src="${esc(base+L.src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
   render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте. Сканер сверит построение с верным решением и покажет, где ошибка. Фото не покидает телефон.')}
   <div class="tools">${LAB.map(x=>`<a class="tool" href="${base?'#/check/'+x.id:'#/check'}" ${base?'':'aria-disabled="true"'}><span class="ico ${x.tone}">${ic(x.icon)}</span><span class="tt"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span>${ic('arrow')}</a>`).join('')}</div>
-  ${base?'':`<p class="note warn">Сканер работает на странице кабинета на сайте: <a href="https://nachert1830.ru/club/#/check">nachert1830.ru</a>.</p>`}
+  ${base?'':`<p class="note warn">Сканер работает на странице кабинета на сайте: <a href="https://nachert1830.ru/lk/#/check">nachert1830.ru</a>.</p>`}
   <details class="card fold"><summary><span class="ico">${ic('info')}</span><b>Как снимать, чтобы сканер понял</b></summary><ol class="lead"><li>Лист целиком в кадре, рамка видна со всех сторон.</li><li>Ровный свет без бликов; телефон параллельно листу.</li><li>Линии обведены как на сдачу.</li><li>«Не уверен» — переснимите ближе или при другом свете.</li></ol></details>
   ${flag('normo')?`<details class="card fold" data-feature="normo"><summary><span class="ico amber">${ic('sheet')}</span><b>Лист ИКГ из САПР — проверка по ГОСТ</b></summary>
       <p class="mut">Загрузите SVG: формат, рамка, основная надпись, линии, шрифт, виды и разрезы, штриховка, размеры.</p>
