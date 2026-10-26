@@ -11,6 +11,7 @@
    • лимиты запросов, журнал входов (IP усечён), выгрузка и удаление своих данных. */
 'use strict';
 const C=require('./crypto');
+const LET=require('./letters');
 const H=require('./http');
 const FEAT=require('../../club/lib/features.js');
 const SYNC=require('../../club/lib/sync.js');
@@ -28,6 +29,7 @@ const fail=(s,m,x)=>{ throw new HttpError(s,m,x); };
 function maskIp(ip){ ip=String(ip||''); if(/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return ip.replace(/\.\d+$/,'.0'); if(ip.includes(':')) return ip.split(':').slice(0,3).join(':')+'::/48'; return ''; }
 /* учебная группа: «ИУ5-11Б», «рк6-31б» → «РК6-31Б»; пусто — не указана */
 const cleanGroup=s=>{ let x=String(s||'').toUpperCase().trim().replace(/[–—]/g,'-'); if(!x.includes('-')) x=x.replace(/[\s_]+/,'-'); return x.replace(/[^А-ЯЁA-Z0-9.\/-]/g,'').slice(0,16); };
+const cleanVariant=v=>{ const n=parseInt(v,10); return n>=1&&n<=40?n:0; };
 const okGroup=g=>/^[А-ЯЁA-Z]{1,6}\d{0,2}[А-ЯЁA-Z]?-[\d.]{1,5}(\/\d)?[А-ЯЁA-Z]{0,2}$/.test(g);
 const cleanName=s=>String(s||'').replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,60);
 
@@ -45,7 +47,7 @@ function createApp(o){
   /* ── лимиты запросов: фиксированное окно ── */
   async function limit(bucket,key,max,winSec){ const t=now(), w=Math.floor(t/1000/winSec);
     const n=await store.incr('ratelimit',bucket+':'+key+':'+w,'n',1,{exp:(w+1)*winSec*1000});
-    if(n>max) fail(429,'Слишком много попыток. Подождите немного и попробуйте снова.',{retry:Math.ceil(((w+1)*winSec*1000-t)/1000)}); }
+    if(n>max*(cfg.limitScale||1)) fail(429,'Слишком много попыток. Подождите немного и попробуйте снова.',{retry:Math.ceil(((w+1)*winSec*1000-t)/1000)}); }
 
   async function logLogin(req,userId,method,ok,reason){ const t=now();
     try{ await store.put('loginlog',{h:userId||'anon',r:new Date(t).toISOString()+'#'+C.token(4),ts:t,method,ok,reason:reason||'',ip:maskIp(req.ip)}); }catch(e){ log.error('loginlog',e); } }
@@ -79,9 +81,9 @@ function createApp(o){
   function consentOk(c){ return !!(c&&c.terms===true&&c.pd===true); }
 
   /* вход существующего участника или регистрация нового */
-  async function enter(req,{key,method,name,tgId,invite,consent,boot,group}){
+  async function enter(req,{key,method,name,tgId,invite,consent,boot,group,variant}){
     const ident=await store.get('identities',key); let user=ident?await store.get('users',ident.userId):null, isNew=false;
-    if(user&&user.blocked){ await logLogin(req,user.id,method,false,'заблокирован'); fail(403,'Доступ к клубу закрыт владельцем.'); }
+    if(user&&user.blocked){ await logLogin(req,user.id,method,false,'заблокирован'); fail(403,'Доступ к личному кабинету закрыт.'); }
     if(!user){
       boot=!!boot||isBootstrap(key);
       let st=null; if(!boot){ st=await inviteState(invite); if(!st.ok){ await logLogin(req,null,method,false,'без приглашения: '+st.why); fail(403,st.why,{needInvite:true}); } }
@@ -92,12 +94,12 @@ function createApp(o){
         if(!ok) fail(403,'По этой ссылке уже зарегистрировались все, кого приглашали.',{needInvite:true}); }
       else if(st&&st.inv){ const claimed=await store.update('invites',invite,{usedAt:t,usedBy:id},{ifEq:{usedAt:null,revokedAt:null}}); if(!claimed) fail(403,'Приглашение уже использовано.',{needInvite:true}); }
       user={id,name:cleanName(name)||'Участник',role:boot?'admin':(st&&st.inv&&st.inv.role==='admin'?'admin':'member'),method,createdAt:t,
-        tgId:tgId||null,ya:key.startsWith('ya:'),em:key.startsWith('em:'),...(group&&okGroup(group)?{group}:{}),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
+        tgId:tgId||null,ya:key.startsWith('ya:'),em:key.startsWith('em:'),...(group&&okGroup(group)?{group}:{}),...(cleanVariant(variant)?{variant:cleanVariant(variant)}:{}),consent:{terms:DOCS_VERSION,pd:DOCS_VERSION,at:t,photos:!!consent.photos,photosAt:t},reminders:Object.assign(REM.norm({}),{canWrite:true}),invite:invite?invite.slice(0,12):null};
       if(!(await store.put('identities',{id:key,userId:id,type:method,createdAt:t},{ifNotExists:true}))) fail(409,'Этот вход уже привязан к другому участнику.');
       await store.put('users',user); isNew=true; }
     const ses=await newSession(req,user); await store.update('users',user.id,{lastLogin:now()}); await logLogin(req,user.id,method,true,isNew?'регистрация':''); await logAct(user.id,isNew?'signup':'login',{m:method});
     return {resp:H.json(200,{ok:true,isNew,user:publicUser(user),csrf:ses.csrf,session:ses.tok}),cookie:ses.cookie}; }
-  const publicUser=u=>({id:u.id,name:u.name,group:u.group||'',role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,email:!!u.em,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos)});
+  const publicUser=u=>({id:u.id,name:u.name,group:u.group||'',variant:u.variant||0,role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,email:!!u.em,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos)});
 
   /* ── проверки запроса ── */
   /* запрос — со страницы клуба: с адреса функции (тот же сайт) или с nachert1830.ru (список FRONT_ORIGINS, ответы с CORS) */
@@ -125,11 +127,11 @@ function createApp(o){
   async function botLoginLink(from,param){ const t=now(), key='tg:'+from.id;
     const member=await store.get('identities',key), code=/^i_[A-Za-z0-9_-]{16,62}$/.test(param||'')?param.slice(2):null, inv=code?inviteHash(code):null;
     if(!member&&!isBootstrap(key)){ const st=await inviteState(inv);
-      if(!st.ok) return say(from.id,'Это бот закрытого клуба Начерта. '+(code?st.why:'Вход — по личной ссылке-приглашению.')); }
+      if(!st.ok) return say(from.id,'Это бот личного кабинета Начерта. '+(code?st.why:'Вход — по личной ссылке-приглашению.')); }
     const tok=C.token(24), name=cleanName(from.first_name)||'Участник';
     await store.put('botlogin',{id:loginId(tok),key,method:'telegram',name,invite:member?null:inv,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
-    return say(from.id,'Вход в клуб Начерта.\n\nНажмите кнопку — откроется клуб, и вы войдёте. Ссылка действует '+LOGIN_MIN+' минут и срабатывает один раз. Не пересылайте её: по ней можно войти в ваш аккаунт.',
-      {reply_markup:{inline_keyboard:[[{text:'Войти в клуб',url:cfg.frontUrl+'#/tg/'+tok}]]}}); }
+    return say(from.id,'Вход в личный кабинет Начерта.\n\nНажмите кнопку — откроется кабинет, и вы войдёте. Ссылка действует '+LOGIN_MIN+' минут и срабатывает один раз. Не пересылайте её: по ней можно войти в ваш аккаунт.',
+      {reply_markup:{inline_keyboard:[[{text:'Войти в кабинет',url:cfg.frontUrl+'#/tg/'+tok}]]}}); }
   /* вход владельца без Telegram: ссылку выдаёт сама функция при прямом вызове из yc (server/tools/login.js).
      Вызвать функцию напрямую может только тот, у кого есть права в облаке, — шлюз передаёт ей лишь HTTP-запросы. */
   async function ownerLink(){ const owner=cfg.adminTg[0]; if(!owner) throw new Error('ADMIN_TG_IDS не задан');
@@ -151,7 +153,7 @@ function createApp(o){
     const consent=consentOk(b.consent)?{terms:true,pd:true,photos:!!b.consent.photos}:null;
     if(!member&&!consent) fail(400,'Для регистрации нужно принять соглашение и дать согласие на обработку данных.',{needConsent:true});
     if(!(await store.update('botlogin',id,{used:true,usedAt:t},{ifEq:{used:false}}))) fail(410,'Эта ссылка уже использована.',{expired:true});
-    return enter(req,{key,method,name:nm||r.name,group:cleanGroup(b.group),tgId:key.startsWith('tg:')?key.slice(3):null,invite:r.invite,consent,boot:r.boot}); };
+    return enter(req,{key,method,name:nm||r.name,group:cleanGroup(b.group),variant:b.variant,tgId:key.startsWith('tg:')?key.slice(3):null,invite:r.invite,consent,boot:r.boot}); };
 
   /* ── официальный вход Telegram (oauth.telegram.org) ──
      Страница уходит на oauth.telegram.org/auth?bot_id=…&origin=…&return_to=<страница>; человек подтверждает вход в приложении
@@ -173,7 +175,7 @@ function createApp(o){
     if(v.at<t-LOGIN_MIN*60e3||v.at>t+60e3){ await logLogin(req,null,'telegram',false,'подтверждение устарело'); fail(410,'Подтверждение Telegram устарело. Нажмите «Войти через Telegram» ещё раз.',{expired:true}); }
     if(!(await store.put('botlogin',{id:C.sha256('tgauth:'+v.hash).slice(0,40),kind:'tgauth',exp:t+DAY,createdAt:t},{ifNotExists:true}))) fail(410,'Это подтверждение уже использовано. Нажмите «Войти через Telegram» ещё раз.',{expired:true});
     const key='tg:'+v.id, member=!!(await store.get('identities',key)), inv=member?null:inviteHash(b.invite);
-    if(!member&&!isBootstrap(key)){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'telegram',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Этот Telegram ещё не в клубе. Новых участников клуб принимает только по личной ссылке-приглашению.',{needInvite:true}); } }
+    if(!member&&!isBootstrap(key)){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'telegram',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Регистрация сейчас закрыта.',{needInvite:true}); } }
     const tok=C.token(24);
     await store.put('botlogin',{id:loginId(tok),key,method:'telegram',name:v.name,invite:inv,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t});
     return H.json(200,{token:tok}); };
@@ -190,10 +192,10 @@ function createApp(o){
     if(!okEmail(e)) fail(400,'Проверьте адрес почты.');
     await limit('emip',maskIp(req.ip),10,600); await limit('emaddr',C.sha256(e).slice(0,24),5,3600);
     const key=emKey(e), member=!!(await store.get('identities',key)), inv=member?null:inviteHash(b.invite);
-    if(!member){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'email',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Этой почты ещё нет в клубе. Новых участников клуб принимает только по ссылке-приглашению.',{needInvite:true}); } }
+    if(!member){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'email',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Регистрация сейчас закрыта.',{needInvite:true}); } }
     const code=String(require('crypto').randomInt(0,1e6)).padStart(6,'0'), t=now();
     await store.put('botlogin',{id:emRec(e),kind:'emcode',code:C.sha256(code+':'+e),invite:inv,tries:0,exp:t+LOGIN_MIN*60e3,createdAt:t});
-    const r=await mailer.send({to:e,subject:'Код входа в клуб Начерта: '+code,text:'Ваш код входа в клуб Начерта: '+code+'\n\nВведите его на странице клуба. Код действует '+LOGIN_MIN+' минут и срабатывает один раз.\nЕсли вы не входили в клуб — просто удалите это письмо.'});
+    const r=await mailer.send(Object.assign({to:e},LET.loginCode(code,LOGIN_MIN)));
     if(!r||!r.ok){ log.error('почта',r&&r.error); fail(502,'Не получилось отправить письмо. Попробуйте ещё раз через минуту.'); }
     return H.json(200,{ok:true,to:maskEmail(e),minutes:LOGIN_MIN}); };
   R['POST /api/auth/email/verify']=async(req)=>{ const b=body(req), e=normEmail(b.email), code=String(b.code||'').replace(/\D/g,''), t=now();
@@ -274,13 +276,13 @@ function createApp(o){
   async function linkCode(S,to){ const code=C.token(18), t=now(); await limit('link',S.user.id,10,3600);
     await store.put('botlogin',{id:linkId(code),kind:'link',to,userId:S.user.id,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t}); return code; }
   async function linkTelegram(from,code){ const t=now(), l=/^[A-Za-z0-9_-]{20,40}$/.test(code)?await store.get('botlogin',linkId(code)):null;
-    if(!l||l.kind!=='link'||l.to!=='telegram'||l.used||l.exp<t) return say(from.id,'Ссылка для привязки устарела. Нажмите «Привязать Telegram» в настройках клуба ещё раз.');
+    if(!l||l.kind!=='link'||l.to!=='telegram'||l.used||l.exp<t) return say(from.id,'Ссылка для привязки устарела. Нажмите «Привязать Telegram» в профиле личного кабинета ещё раз.');
     const key='tg:'+from.id, ex=await store.get('identities',key);
-    if(ex&&ex.userId!==l.userId) return say(from.id,'Этот Telegram уже привязан к другому аккаунту клуба.');
+    if(ex&&ex.userId!==l.userId) return say(from.id,'Этот Telegram уже привязан к другому аккаунту.');
     if(!(await store.update('botlogin',l.id,{used:true,usedAt:t},{ifEq:{used:false}}))) return say(from.id,'Ссылка уже использована.');
     const tok=await linkOk(l.userId,key);
-    return say(from.id,'Привязка Telegram к аккаунту клуба. Нажмите кнопку — откроется клуб, где вы вошли, и привязка завершится. Ссылка действует '+LOGIN_MIN+' минут.',
-      {reply_markup:{inline_keyboard:[[{text:'Привязать к клубу',url:cfg.frontUrl+'#/link/'+tok}]]}}); }
+    return say(from.id,'Привязка Telegram к личному кабинету. Нажмите кнопку — откроется кабинет, где вы вошли, и привязка завершится. Ссылка действует '+LOGIN_MIN+' минут.',
+      {reply_markup:{inline_keyboard:[[{text:'Привязать к кабинету',url:cfg.frontUrl+'#/link/'+tok}]]}}); }
 
   /* — с сессией — */
   const A={};
@@ -303,6 +305,7 @@ function createApp(o){
   A['POST /api/me/profile']=async(req,S)=>{ const b=body(req), set={};
     if(b.name!=null){ const n=cleanName(b.name); if(!n) fail(400,'Имя не может быть пустым.'); set.name=n; }
     if(b.group!=null){ const g=cleanGroup(b.group); if(g&&!okGroup(g)) fail(400,'Группа — как в расписании, например ИУ5-12/6.'); set.group=g; }
+    if(b.variant!=null) set.variant=cleanVariant(b.variant);
     if(b.photos!=null) set.consent=Object.assign({},S.user.consent,{photos:b.photos===true,photosAt:now()});
     const u=await store.update('users',S.user.id,set); return H.json(200,{user:publicUser(u)}); };
 
@@ -312,7 +315,7 @@ function createApp(o){
     if(b.enabled&&!S.user.tgId) fail(409,'Напоминания приходят в Telegram — сначала привяжите его: «Настройки» → «Способы входа».',{needTelegram:true});
     let canWrite=cur.canWrite;
     if(next.enabled&&(!cur.enabled||cur.canWrite===false)){ await limit('remtest',S.user.id,5,3600);
-      const r=await o.bot.send(S.user.tgId,'Напоминания клуба Начерта включены: не чаще раза в день, около '+next.time+', тихие часы '+next.quietFrom+'–'+next.quietTo+'. Пауза — /pause или кнопка в клубе.');
+      const r=await o.bot.send(S.user.tgId,'Напоминания личного кабинета Начерта включены: не чаще раза в день, около '+next.time+', тихие часы '+next.quietFrom+'–'+next.quietTo+'. Пауза — /pause или в профиле личного кабинета.');
       canWrite=!!(r&&r.ok);
       if(!canWrite){ await store.update('users',S.user.id,{reminders:Object.assign({},cur,{canWrite:false})});
         fail(409,'Бот пока не может вам писать. Откройте бота и нажмите «Старт», затем включите напоминания ещё раз.',{needStart:true,bot:cfg.botName?'https://t.me/'+cfg.botName+'?start=remind':null}); } }
@@ -326,10 +329,10 @@ function createApp(o){
       if(!okRet(b.ret)||!/^[A-Za-z0-9_-]{16,64}$/.test(b.s||'')) fail(400,'Неверный адрес возврата.');
       return H.json(200,{url:cfg.origin+'/api/auth/yandex/start?'+new URLSearchParams({link:await linkCode(S,'yandex'),ret:b.ret,s:b.s}).toString()}); }
     if(b.to==='email'){ const e=normEmail(b.email); if(!mailer.enabled) fail(404,'Вход по почте пока не настроен.'); if(!okEmail(e)) fail(400,'Проверьте адрес почты.');
-      await limit('link',S.user.id,10,3600); const ex=await store.get('identities',emKey(e)); if(ex&&ex.userId!==S.user.id) fail(409,'Эта почта уже привязана к другому аккаунту клуба.');
+      await limit('link',S.user.id,10,3600); const ex=await store.get('identities',emKey(e)); if(ex&&ex.userId!==S.user.id) fail(409,'Эта почта уже привязана к другому аккаунту.');
       const code=String(require('crypto').randomInt(0,1e6)).padStart(6,'0'), t=now();
       await store.put('botlogin',{id:C.sha256('emlink:'+S.user.id+':'+e).slice(0,40),kind:'emlink',code:C.sha256(code+':'+e),tries:0,exp:t+LOGIN_MIN*60e3,createdAt:t});
-      const r=await mailer.send({to:e,subject:'Код для привязки почты к клубу Начерта: '+code,text:'Код для привязки этой почты к аккаунту клуба Начерта: '+code+'\n\nКод действует '+LOGIN_MIN+' минут. Если вы ничего не привязывали — просто удалите письмо.'});
+      const r=await mailer.send(Object.assign({to:e},LET.linkCode(code,LOGIN_MIN)));
       if(!r||!r.ok) fail(502,'Не получилось отправить письмо. Попробуйте ещё раз через минуту.');
       return H.json(200,{to:maskEmail(e),minutes:LOGIN_MIN}); }
     fail(400,'Что привязать: telegram, yandex или email.'); };
@@ -340,15 +343,15 @@ function createApp(o){
     await store.update('botlogin',id,{tries:r.tries+1});
     if(code.length!==6||!C.safeEqual(C.sha256(code+':'+e),r.code)) fail(400,'Код не подошёл.');
     await store.del('botlogin',id);
-    const ex=await store.get('identities',emKey(e)); if(ex&&ex.userId!==S.user.id) fail(409,'Эта почта уже привязана к другому аккаунту клуба.');
+    const ex=await store.get('identities',emKey(e)); if(ex&&ex.userId!==S.user.id) fail(409,'Эта почта уже привязана к другому аккаунту.');
     if(!ex) await store.put('identities',{id:emKey(e),userId:S.user.id,type:'email',createdAt:t},{ifNotExists:true});
     const u=await store.update('users',S.user.id,{em:true}); await logLogin(req,S.user.id,'email',true,'привязка почты');
     return H.json(200,{user:publicUser(u)}); };
   A['POST /api/me/link/confirm']=async(req,S)=>{ const b=body(req), tok=String(b.token||''), t=now();
     const r=/^[A-Za-z0-9_-]{30,40}$/.test(tok)?await store.get('botlogin',okId(tok)):null;
     if(!r||r.kind!=='linkok'||r.used||r.exp<t) fail(410,'Ссылка для привязки устарела. Нажмите «Привязать» в настройках ещё раз.');
-    if(r.userId!==S.user.id) fail(403,'Эта ссылка привязки — для другого аккаунта клуба. Привязка не выполнена.');
-    const ex=await store.get('identities',r.key); if(ex&&ex.userId!==S.user.id) fail(409,'Этот вход уже привязан к другому аккаунту клуба.');
+    if(r.userId!==S.user.id) fail(403,'Эта ссылка привязки — для другого аккаунта. Привязка не выполнена.');
+    const ex=await store.get('identities',r.key); if(ex&&ex.userId!==S.user.id) fail(409,'Этот вход уже привязан к другому аккаунту.');
     if(!(await store.update('botlogin',r.id,{used:true,usedAt:t},{ifEq:{used:false}}))) fail(410,'Ссылка уже использована.');
     const tg=r.key.startsWith('tg:');
     if(!ex) await store.put('identities',{id:r.key,userId:S.user.id,type:tg?'telegram':'yandex',createdAt:t},{ifNotExists:true});
@@ -362,8 +365,8 @@ function createApp(o){
   A['GET /api/me/export']=async(req,S)=>{ await limit('export',S.user.id,10,3600); const u=S.user;
     const [ids,prog,ses,logs,fb]=await Promise.all([store.scan('identities',x=>x.userId===u.id),store.get('progress',u.id),store.scan('sessions',x=>x.userId===u.id),
       store.query('loginlog',u.id),store.scan('feedback',x=>x.userId===u.id)]);
-    const out={exportedAt:new Date(now()).toISOString(),about:'Все данные, которые клуб Начерта хранит о вас (club.nachert1830.ru).',
-      user:{id:u.id,name:u.name,group:u.group||null,role:u.role,method:u.method,telegramId:u.tgId||null,createdAt:u.createdAt,lastLogin:u.lastLogin||null,consent:u.consent,reminders:u.reminders,blocked:!!u.blocked},
+    const out={exportedAt:new Date(now()).toISOString(),about:'Все данные, которые личный кабинет Начерта хранит о вас (nachert1830.ru).',
+      user:{id:u.id,name:u.name,group:u.group||null,variant:u.variant||null,role:u.role,method:u.method,telegramId:u.tgId||null,createdAt:u.createdAt,lastLogin:u.lastLogin||null,consent:u.consent,reminders:u.reminders,blocked:!!u.blocked},
       identities:ids.map(i=>({type:i.type,key:i.id,createdAt:i.createdAt})),
       progress:prog?{data:prog.data,updatedAt:prog.updatedAt}:null,
       sessions:ses.map(s=>({createdAt:s.createdAt,lastSeen:s.lastSeen,expiresAt:s.expiresAt,current:s.id===S.h})),
@@ -396,7 +399,7 @@ function createApp(o){
   D['GET /api/admin/overview']=async()=>{ const [inv,us,fl,st,fb,lg]=await Promise.all([store.scan('invites'),store.scan('users'),flagsRaw(),settings(),store.scan('feedback'),store.scan('loginlog')]);
     const ids=await store.scan('identities'); const methods={}; ids.forEach(i=>{ (methods[i.userId]=methods[i.userId]||[]).push(i.type); });
     return H.json(200,{invites:inv.sort((a,b)=>b.createdAt-a.createdAt).map(i=>({h:i.id,label:i.label,role:i.role||'member',multi:!!i.multi,uses:i.uses||0,maxUses:i.maxUses||1,createdAt:i.createdAt,expiresAt:i.expiresAt,usedAt:i.usedAt||null,usedBy:i.usedBy||null,revokedAt:i.revokedAt||null})),
-      users:us.sort((a,b)=>a.createdAt-b.createdAt).map(u=>({id:u.id,name:u.name,group:u.group||'',method:u.method,lastSeen:u.lastSeen||u.lastLogin||null,role:u.role,methods:methods[u.id]||[],createdAt:u.createdAt,lastLogin:u.lastLogin||null,blocked:!!u.blocked,reminders:!!(u.reminders&&u.reminders.enabled),photos:!!(u.consent&&u.consent.photos)})),
+      users:us.sort((a,b)=>a.createdAt-b.createdAt).map(u=>({id:u.id,name:u.name,group:u.group||'',variant:u.variant||0,method:u.method,lastSeen:u.lastSeen||u.lastLogin||null,role:u.role,methods:methods[u.id]||[],createdAt:u.createdAt,lastLogin:u.lastLogin||null,blocked:!!u.blocked,reminders:!!(u.reminders&&u.reminders.enabled),photos:!!(u.consent&&u.consent.photos)})),
       flags:fl,modes:FEAT.MODES,features:FEAT.FEATURES,settings:st,
       feedback:fb.sort((a,b)=>b.ts-a.ts).slice(0,300).map(f=>({id:f.id,ts:f.ts,name:f.name,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null,replyAt:f.replyAt||null})),
       logins:lg.sort((a,b)=>b.ts-a.ts).slice(0,200).map(x=>({ts:x.ts,user:x.h==='anon'?null:x.h,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip}))}); };
@@ -420,7 +423,7 @@ function createApp(o){
     const [acts,p]=await Promise.all([store.scan('activity',x=>x.userId===id),store.get('progress',id)]), data=(p&&p.data)||{}, J=k=>{ try{ return JSON.parse(data[k]||'null'); }catch(e){ return null; } };
     const rep=J('nch2_rep')||{}, ev=J('nch2_club_ev')||[], done=J('nch2_club_done')||{}, tk=acts.filter(a=>a.type==='task');
     const due=SRS.queue(rep,CAL.toDay(mskDay(now()))).filter(x=>x.due).length, okEv=ev.filter(e=>e&&e.ok).length;
-    return H.json(200,{user:{id:u.id,name:u.name,group:u.group||'',role:u.role,createdAt:u.createdAt,lastSeen:u.lastSeen||u.lastLogin||null,live:u.live&&u.live.at>now()-120e3?u.live:null},
+    return H.json(200,{user:{id:u.id,name:u.name,group:u.group||'',variant:u.variant||0,role:u.role,createdAt:u.createdAt,lastSeen:u.lastSeen||u.lastLogin||null,live:u.live&&u.live.at>now()-120e3?u.live:null},
       progress:{tasks:Object.keys(rep).length,due,skillObs:ev.length,skillOk:ev.length?Math.round(okEv/ev.length*100):null,done:Object.values(done).filter(x=>x&&x.v).length,syncedAt:p?p.updatedAt:null},
       stats:{tasks:tk.length,solved:tk.filter(a=>a.d&&a.d.v===2).length,hint:tk.filter(a=>a.d&&a.d.v===1).length,fail:tk.filter(a=>a.d&&a.d.v===0).length,checks:acts.filter(a=>a.type==='check'||a.type==='scan').length,days:new Set(acts.map(a=>mskDay(a.ts))).size},
       acts:acts.sort((a,b)=>b.ts-a.ts).slice(0,150).map(a=>({ts:a.ts,type:a.type,d:a.d||{}}))}); };
@@ -444,7 +447,7 @@ function createApp(o){
   D['POST /api/admin/reply']=async(req)=>{ const b=body(req), text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000); if(!text) fail(400,'Пустой ответ.');
     const f=await store.get('feedback',String(b.id||'')); if(!f||f.feature!=='privacy') fail(404,'Нет такого обращения.');
     await store.update('feedback',f.id,{reply:text,replyAt:now()}); const u=await store.get('users',f.userId); let tg=false;
-    if(u&&u.tgId){ const r=await o.bot.send(u.tgId,'Ответ владельца клуба Начерта на ваше обращение:\n\n'+text); tg=!!(r&&r.ok); }
+    if(u&&u.tgId){ const r=await o.bot.send(u.tgId,'Ответ Начерта на ваше обращение:\n\n'+text); tg=!!(r&&r.ok); }
     return H.json(200,{ok:true,telegram:tg}); };
   D['POST /api/admin/flags']=async(req)=>{ const b=body(req), cur=await flagsRaw();
     Object.keys(b.flags||{}).forEach(k=>{ if(FEAT.ids.includes(k)&&FEAT.MODES.includes(b.flags[k])) cur[k]=b.flags[k]; });
@@ -468,7 +471,7 @@ function createApp(o){
     const ident=await store.get('identities','tg:'+from.id), user=ident?await store.get('users',ident.userId):null;
     const setR=async patch=>{ if(user) await store.update('users',user.id,{reminders:Object.assign({},user.reminders||{},patch)}); };
     if(mcm){ const st=mcm.new_chat_member&&mcm.new_chat_member.status; if(st==='kicked') await setR({canWrite:false}); if(st==='member') await setR({canWrite:true}); return null; }
-    if(cb){ if(user&&cb.data==='pause'){ await setR({paused:true}); return {method:'answerCallbackQuery',callback_query_id:cb.id,text:'Напоминания на паузе. Вернуть — /resume или в клубе.'}; }
+    if(cb){ if(user&&cb.data==='pause'){ await setR({paused:true}); return {method:'answerCallbackQuery',callback_query_id:cb.id,text:'Напоминания на паузе. Вернуть — /resume или в личном кабинете.'}; }
       return {method:'answerCallbackQuery',callback_query_id:cb.id}; }
     const parts=String((msg&&msg.text)||'').trim().split(/\s+/), text=parts[0].replace(/@.*$/,'');
     if(text==='/start'&&/^l_/.test(parts[1]||'')) return linkTelegram(from,parts[1].slice(2));
@@ -477,7 +480,7 @@ function createApp(o){
     if(text==='/start'){ await setR({canWrite:true}); return botLoginLink(from,null); }
     if(text==='/pause'){ await setR({paused:true}); return say(from.id,'Напоминания на паузе. Вернуть — /resume.'); }
     if(text==='/resume'){ await setR({paused:false,canWrite:true}); return say(from.id,'Напоминания снова включены.'); }
-    if(text==='/stop'){ await setR({enabled:false}); return say(from.id,'Напоминания выключены. Включить снова — в клубе, раздел «Настройки».'); }
+    if(text==='/stop'){ await setR({enabled:false}); return say(from.id,'Напоминания выключены. Включить снова — в личном кабинете, раздел «Профиль».'); }
     return null; }
 
   /* ── напоминания: запускается таймером каждые 15 минут ── */
@@ -486,7 +489,7 @@ function createApp(o){
     const url=cfg.origin+'/api/tg/webhook', info=await o.bot.api('getWebhookInfo',{}).catch(()=>null);
     if(info&&info.ok&&info.result&&info.result.url===url) return 'ok';
     const r=await o.bot.api('setWebhook',{url,secret_token:cfg.webhookSecret,allowed_updates:['message','callback_query','my_chat_member']}).catch(e=>({ok:false,description:e.message}));
-    await o.bot.api('setMyCommands',{commands:[{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'login',description:'Войти в клуб'},{command:'stop',description:'Выключить напоминания'}]}).catch(()=>{});
+    await o.bot.api('setMyCommands',{commands:[{command:'pause',description:'Поставить напоминания на паузу'},{command:'resume',description:'Снять с паузы'},{command:'login',description:'Войти в личный кабинет'},{command:'stop',description:'Выключить напоминания'}]}).catch(()=>{});
     if(!r||!r.ok) log.error('вебхук бота не подключён',r&&r.description); return r&&r.ok?'set':'fail: '+String((r&&r.description)||'нет ответа').slice(0,200); }
 
   async function remind(at){ const t=at||now(), out={sent:0,skipped:{}};
@@ -503,7 +506,7 @@ function createApp(o){
       /* одно напоминание в день даже при параллельных запусках: сначала занять день, потом писать */
       if(!(await store.put('remsent',{id:u.id+':'+d.date,exp:t+3*DAY},{ifNotExists:true}))) continue;
       await store.update('users',u.id,{reminders:Object.assign({},u.reminders,{lastSent:d.date})});
-      const r=await o.bot.send(u.tgId,text,{reply_markup:{inline_keyboard:[[{text:'Открыть клуб',url:cfg.frontUrl}],[{text:'Пауза',callback_data:'pause'}]]}});
+      const r=await o.bot.send(u.tgId,text,{reply_markup:{inline_keyboard:[[{text:'Открыть кабинет',url:cfg.frontUrl}],[{text:'Пауза',callback_data:'pause'}]]}});
       if(r&&r.ok) out.sent++; else if(r&&r.error_code===403) await store.update('users',u.id,{reminders:Object.assign({},u.reminders,{lastSent:d.date,canWrite:false})}); }
     await maintain(t); return out; }
 

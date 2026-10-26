@@ -4,8 +4,8 @@
 'use strict';
 const {sign}=require('./sigv4');
 function postbox({from,accessKeyId,secretAccessKey,endpoint,fetchImpl}){ endpoint=(endpoint||'https://postbox.cloud.yandex.net').replace(/\/$/,''); fetchImpl=fetchImpl||fetch;
-  return {enabled:!!from, async send({to,subject,text}){
-    const body=JSON.stringify({FromEmailAddress:from,Destination:{ToAddresses:[to]},Content:{Simple:{Subject:{Data:subject,Charset:'UTF-8'},Body:{Text:{Data:text,Charset:'UTF-8'}}}}});
+  return {enabled:!!from, async send({to,subject,text,html}){
+    const body=JSON.stringify({FromEmailAddress:from,Destination:{ToAddresses:[to]},Content:{Simple:{Subject:{Data:subject,Charset:'UTF-8'},Body:Object.assign({Text:{Data:text,Charset:'UTF-8'}},html?{Html:{Data:html,Charset:'UTF-8'}}:{})}}});
     const req={method:'POST',url:endpoint+'/v2/email/outbound-emails',headers:{'content-type':'application/json'},body};
     const s=sign(req,{accessKeyId,secretAccessKey,region:'ru-central1',service:'ses'});
     let r; try{ r=await fetchImpl(req.url,{method:'POST',headers:s.headers,body,signal:AbortSignal.timeout(8000)}); }catch(e){ return {ok:false,error:'нет связи с Postbox'}; }

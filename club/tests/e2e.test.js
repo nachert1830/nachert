@@ -50,15 +50,15 @@ test('вход → все разделы на телефоне, светлая �
   await botLogin(page,2001,'Аня',{noConsent:true});
   assert.equal(await page.evaluate(()=>location.hash),'#/','ссылка на вход убрана из адресной строки');
   await page.fill('#onG','ИУ5-11Б'); await page.check('#cTerms'); await page.check('#cPd'); await page.click('#onbF button[type=submit]'); await page.waitForSelector('text=Привет, Аня');
-  for(const r of ['','calendar','event/ng-rk-2','event/ikg-dz-2','event/ng-rk-2/diag','event/ng-rk-2/mock','train','skills','check','settings','more','about']){
+  for(const r of ['','calendar','event/ng-rk-2','event/ikg-dz-2','event/ng-rk-2/diag','event/ng-rk-2/mock','progress','train','skills','check','me','me/login','me/data']){
     await page.goto(URL+'/#/'+r); await page.waitForTimeout(250);
     assert.ok(await noHScroll(page),'горизонтальная прокрутка: #/'+r);
     for(const th of ['light','dark']){ await page.evaluate(t=>{ document.documentElement.dataset.theme=t; },th); await page.screenshot({path:path.join(SHOTS,(r||'today').replace(/\//g,'_')+'-'+th+'.png'),fullPage:true}); } }
-  await page.evaluate(()=>{ document.documentElement.dataset.theme='light'; }); await page.click('#theme');
+  await page.goto(URL+'/#/me'); await page.evaluate(()=>{ document.documentElement.dataset.theme='light'; }); await page.click('button[data-act="theme"]');
   assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
   assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(10, 15, 34)','тёмная тема — цвета основного сайта');
   assert.equal(await page.evaluate(()=>localStorage.getItem('nch2_theme')),'"dark"','тот же ключ темы, что на основном сайте');
-  assert.equal(await page.isVisible('a[href="#/admin"]'),false); await page.goto(URL+'/#/more'); assert.equal(await page.isVisible('text=Админ-панель'),false,'участник админку не видит');
+  assert.equal(await page.isVisible('a[href="#/admin"]'),false); await page.goto(URL+'/#/me'); assert.equal(await page.isVisible('text=Админ-панель'),false,'участник админку не видит');
   const cookies=await ctx.cookies(); const sid=cookies.find(c=>c.name==='club_sid'); assert.ok(sid&&sid.httpOnly&&sid.sameSite==='Lax');
   assert.deepEqual(page.errs,[]); await ctx.close();
 });
@@ -105,7 +105,7 @@ test('перенос файлом с основного сайта (формат
   const {ctx,page}=await phone(); await join(page,3101,'Файл');
   const f=path.join(os.tmpdir(),'nachert-progress-e2e.json');
   fs.writeFileSync(f,JSON.stringify({app:'nachert',v:1,at:'2026-10-10T10:00:00Z',data:{nch2_rep:JSON.stringify({60:{b:2,d:1,s:1,l:1,n:3,r:2}}),nch2_ck:'"y"'}}));
-  await page.goto(URL+'/#/settings'); await page.setInputFiles('#impF',f); await page.click('button[data-act="import"]');
+  await page.goto(URL+'/#/me/data'); await page.click('details.fold.in summary'); await page.setInputFiles('#impF',f); await page.click('button[data-act="import"]');
   await page.waitForSelector('text=Задач в повторении: 1');
   await page.waitForFunction(()=>document.querySelector('#net').textContent==='сохранено',null,{timeout:10000});
   const rep=await page.evaluate(()=>fetch('/api/progress').then(r=>r.json()).then(j=>j.data));
@@ -116,9 +116,9 @@ test('перенос файлом с основного сайта (формат
 test('календарь и обратный план на фиксированной дате (30.10.2026)',async()=>{
   const {ctx,page}=await phone(); await page.clock.install({time:new Date('2026-10-30T10:00:00+03:00')});
   await join(page,4001,'План');
-  assert.match(await page.textContent('#view'),/9-я неделя · пт, 30 окт/);
+  assert.match(await page.textContent('#ub'),/9-я неделя[\s\S]*числитель[\s\S]*пт, 30 окт/);
   assert.match(await page.locator('[data-feature="plan"]',{hasText:'По плану сегодня'}).textContent(),/РК2 Начерт · Диагностика/);
-  assert.match(await page.textContent('[data-feature="calendar"]'),/РК2 · ИКГ[\s\S]*через 3 дня/);
+  assert.match(await page.textContent('.dl'),/РК2[\s\S]*ИКГ[\s\S]*3[\s\S]*дня/);
   await page.goto(URL+'/#/event/ng-rk-2'); await page.waitForSelector('text=Обратный план');
   assert.equal(await page.inputValue('#evd'),'2026-11-09');
   const steps=await page.$$eval('.steps li .st small',e=>e.map(x=>x.textContent));
@@ -127,7 +127,7 @@ test('календарь и обратный план на фиксирован�
   assert.equal(await page.inputValue('#evd'),'2026-11-11','занятие по начерту в среду — РК в среду');
   await page.fill('#evd','2026-11-13'); await page.dispatchEvent('#evd','change'); await page.waitForTimeout(200);
   assert.match(await page.textContent('.steps'),/ср, 11 ноя/,'пробный РК — за 2 дня до 13 ноября');
-  await page.fill('#iiW','в четверг, 17:30'); await page.fill('#iiP','читальный зал'); await page.fill('#iiT','решаю задачи 52 и 57'); await page.click('#iiForm button[type=submit]');
+  await page.click('details.fold summary:has-text("Когда и где")'); await page.fill('#iiW','в четверг, 17:30'); await page.fill('#iiP','читальный зал'); await page.fill('#iiT','решаю задачи 52 и 57'); await page.click('#iiForm button[type=submit]');
   await page.waitForSelector('text=Если в четверг, 17:30, читальный зал, то я решаю задачи 52 и 57.');
   await page.goto(URL+'/#/event/ng-rk-2/diag'); await page.waitForSelector('.task');
   const k=await page.locator('.task').count(); assert.ok(k>=3&&k<=6,'диагностика: по задаче на тему, '+k);
@@ -140,7 +140,7 @@ test('календарь и обратный план на фиксирован�
 
 test('админ: участники, флаги, отзывы тестировщиков',async()=>{
   const {ctx,page}=await phone(); await page.goto(URL+'/'); await botLogin(page,1000001,'Владелец'); await page.waitForSelector('text=Привет, Владелец');
-  await page.goto(URL+'/#/more'); await page.click('button[data-act="fb"][data-f="general"]'); await page.click('#fbMood button[data-m="good"]'); await page.fill('#fbT','Календарь понятный'); await page.click('#fbGo'); await page.waitForSelector('text=Спасибо');
+  await page.goto(URL+'/#/me/data'); await page.click('button[data-act="fb"][data-f="privacy"]'); await page.click('#fbMood button[data-m="good"]'); await page.fill('#fbT','Календарь понятный'); await page.click('#fbGo'); await page.waitForSelector('text=Спасибо');
   await page.goto(URL+'/#/admin'); await page.waitForSelector('button[data-act="atab"][data-t="users"]');
   assert.equal(await page.$('button[data-act="atab"][data-t="invites"]'),null,'приглашений больше нет');
   await page.click('button[data-act="atab"][data-t="flags"]'); await page.click('button[data-act="flag"][data-f="scanner"][data-m="off"]'); await page.waitForTimeout(300);
@@ -152,7 +152,7 @@ test('админ: участники, флаги, отзывы тестиров�
 
 test('проверка: предпроверка листа ИКГ по ГОСТ, сканер — только на сайте; вредный SVG обезврежен',async()=>{
   const {ctx,page}=await phone(); await join(page,5001,'Лист');
-  await page.goto(URL+'/#/check'); await page.click('button[data-s="ig-v5-clean"]'); await page.waitForSelector('#nkOut .note.ok',{timeout:30000});
+  await page.goto(URL+'/#/check'); await page.click('details[data-feature="normo"] summary'); await page.click('button[data-s="ig-v5-clean"]'); await page.waitForSelector('#nkOut .note.ok',{timeout:30000});
   assert.match(await page.textContent('#nkOut'),/замечаний нет/);
   await page.click('button[data-s="ig-v8-thin"]'); await page.waitForSelector('#nkOut .note.warn',{timeout:30000});
   assert.match(await page.textContent('#nkOut'),/ГОСТ 2\.303/);
@@ -163,7 +163,7 @@ test('проверка: предпроверка листа ИКГ по ГОСТ
   assert.doesNotMatch(clean,/script|onclick|javascript|https:\/\/evil/); assert.match(clean,/stroke-width="2"/);
   assert.equal(alerted,false,'скрипты из SVG не выполнились');
   /* на адресе функции сканера нет — он лежит рядом с клубом на сайте (/lab/): карточки неактивны, подсказка ведёт на сайт */
-  assert.equal(await page.getAttribute('a.tool[href="#/check"]','aria-disabled'),'true'); assert.match(await page.textContent('#view'),/nachert1830\.ru\/club/);
+  assert.equal(await page.getAttribute('a.tool[href="#/check"]','aria-disabled'),'true'); assert.match(await page.getAttribute('.note.warn a','href'),/nachert1830\.ru\/club\//);
   assert.deepEqual(page.errs.filter(e=>!/evil|x\.png|ERR_/.test(e)),[]); await ctx.close();
 });
 
@@ -172,13 +172,13 @@ test('офлайн: кабинет открывается без сети пос
   await page.evaluate(()=>navigator.serviceWorker.ready); await page.reload(); await page.waitForSelector('text=Привет, Офлайн'); await page.waitForTimeout(300);
   await ctx.setOffline(true); await page.reload(); await page.waitForSelector('text=Привет, Офлайн',{timeout:10000});
   assert.match(await page.textContent('#net'),/офлайн/);
-  await page.goto(URL+'/#/calendar'); await page.waitForSelector('text=Недели');
+  await page.goto(URL+'/#/calendar'); await page.waitForSelector('.weeks');
   await ctx.setOffline(false); await ctx.close();
 });
 
 test('выход и удаление аккаунта стирают данные с устройства',async()=>{
   const {ctx,page}=await phone(); await join(page,7001,'Удаляюсь');
-  await page.goto(URL+'/#/settings'); await page.click('button[data-act="delete"]'); await page.fill('#delC','УДАЛИТЬ'); await page.click('#delGo');
+  await page.goto(URL+'/#/me/data'); await page.click('button[data-act="delete"]'); await page.fill('#delC','УДАЛИТЬ'); await page.click('#delGo');
   await page.waitForSelector('text=Вход в кабинет');
   assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>/^nch2_(rep|club_(ev|cal|done|ii))/.test(k)).length),0);
   await botLogin(page,7001,'Удаляюсь',{noConsent:true}); await page.waitForSelector('#onbF'); assert.match(await page.textContent('#view'),/Добро пожаловать/,'после удаления — как новый');
@@ -200,14 +200,19 @@ test('пульт владельца: участник в кабинете вид
   assert.deepEqual(own.page.errs,[]); assert.deepEqual(m.page.errs,[]); await own.ctx.close(); await m.ctx.close();
 });
 
-test('расписание группы: «Мои занятия», ближайшее занятие, числитель/знаменатель; неоднозначная группа — выбор',async()=>{
+test('расписание группы: ближайшее занятие, числитель/знаменатель, вариант → ссылка на сайт; неоднозначная группа — выбор',async()=>{
   const {ctx,page}=await phone(); await page.clock.install({time:new Date('2026-10-30T10:00:00+03:00')});
-  await join(page,7401,'Расписание'); await page.waitForSelector('.grpask >> text=Уточните группу');
-  await page.click('button[data-act="pickGroup"][data-g="ИУ5-11/6"]'); await page.waitForSelector('text=Мои занятия · ИУ5-11/6');
-  const t=await page.textContent('#view'); assert.match(t,/Ближайшее — завтра в 12:25/); assert.match(t,/ауд\. 1113, 1120/);
-  assert.match(await page.textContent('#ub'),/9-я неделя · числ\./); assert.match(await page.textContent('#ub'),/завтра 12:25 · Начерт · 1113/);
-  await page.goto(URL+'/#/settings'); await page.fill('#pGroup','РК5-11/6'); await page.click('button[data-act="saveGroup"]'); await page.waitForTimeout(300);
-  await page.goto(URL+'/#/calendar'); await page.waitForSelector('text=Группа РК5-11/6'); assert.match(await page.textContent('#view'),/сб 8:30[\s\S]*ИКГ[\s\S]*1115, 1117/);
-  await page.screenshot({path:path.join(SHOTS,'lessons.png'),fullPage:true});
+  await join(page,7401,'Расписание'); await page.waitForSelector('.ask >> text=Уточните группу');
+  await page.click('button[data-act="pickGroup"][data-g="ИУ5-11/6"]'); await page.waitForSelector('.lesson');
+  const t=await page.textContent('.lesson'); assert.match(t,/Завтра · 12:25/); assert.match(t,/Начертательная геометрия/); assert.match(t,/ауд\. 1113, 1120/);
+  assert.match(await page.textContent('#ub'),/9-я неделя[\s\S]*числитель/);
+  await page.click('.nudge'); await page.waitForSelector('#profF'); await page.fill('#pGroup','РК5-11/6'); await page.selectOption('#pVar','12'); await page.click('#profF button[type=submit]');
+  await page.waitForSelector('text=РК5-11/6 · вариант 12');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('nch2_igvar')),'12','сайт увидит «мой вариант»');
+  const href=await page.getAttribute('.dl a[target=_blank]','href'); assert.ok(/#\/(ig\/hw2\/12|ng\/hw\/2b|ng\/(path|hw\/\d))|ig\/learn/.test(href),href);
+  await page.goto(URL+'/#/me'); await page.waitForSelector('text=Расписание'); assert.match(await page.textContent('#view'),/Вариант\s*12[\s\S]*сб 8:30[\s\S]*ИКГ[\s\S]*1115, 1117/);
+  await page.screenshot({path:path.join(SHOTS,'me.png'),fullPage:true});
+  await page.goto(URL+'/'); await page.waitForSelector('.lesson'); await page.screenshot({path:path.join(SHOTS,'home.png'),fullPage:true});
+  await page.goto(URL+'/#/calendar'); await page.waitForSelector('text=По расписанию группы РК5-11/6');
   assert.deepEqual(page.errs,[]); await ctx.close();
 });

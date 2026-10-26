@@ -122,7 +122,7 @@ async function postboxSetup(payload){ let k=null, from='';
   return from; }
 
 async function main(){
-  say('Развёртывание клуба Начерта в Yandex Cloud.\nВсё создаётся в каталоге, выбранном в «yc init». Повторный запуск безопасен.');
+  say('Развёртывание личного кабинета Начерта в Yandex Cloud.\nВсё создаётся в каталоге, выбранном в «yc init». Повторный запуск безопасен.');
   step('Проверяю программу yc');
   const folder=yc(['config','get','folder-id'],{json:false});
   if(!/^[a-z0-9]{20}$/.test(folder)) throw new Error('Не выбран каталог. Выполните «yc init» и выберите облако и каталог.');
@@ -152,10 +152,10 @@ async function main(){
   if(!/^\d{5,12}:[A-Za-z0-9_-]{30,}$/.test(token||'')) throw new Error('Это не похоже на токен бота. Он выглядит так: 1234567890:AAH…');
   step('Проверяю бота');
   /* Telegram с этого компьютера может не открываться (без VPN), а облако — не открываться с VPN. Компьютеру Telegram не обязателен:
-     вебхук и команды бота настроит сам клуб из облака (server/lib/app.js → ensureBot) */
+     вебхук и команды бота настроит сам кабинет из облака (server/lib/app.js → ensureBot) */
   let me=null; try{ me=await telegram(token,'getMe'); say('  бот: @'+me.username); }
   catch(e){ if(/Unauthorized|Not Found/i.test(e.message)) throw new Error('Telegram не принял токен — проверьте, что скопировали его целиком из @BotFather.');
-    say('  Telegram с этого компьютера не открывается — это нормально, бота настроит сам клуб из облака.');
+    say('  Telegram с этого компьютера не открывается — это нормально, бота настроит сам кабинет из облака.');
     /* принимаем «@имя», «t.me/имя», «https://t.me/имя»; при ошибке спрашиваем ещё раз */
     const clean=x=>String(x||'').trim().replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i,'').replace(/^@/,'').replace(/[\s\/]+$/,'');
     const okName=x=>/^[A-Za-z][A-Za-z0-9_]{3,30}bot$/i.test(x);
@@ -166,7 +166,7 @@ async function main(){
     me={username:u}; }
   owner=owner||E('OWNER_TG_ID')||E('CLUB_OWNER_TG')||prev.ADMIN_TG_IDS||'';
   const yaOwner=(E('OWNER_YANDEX_LOGIN')||prev.ADMIN_YA_LOGINS||'').toLowerCase().replace(/@yandex\.ru$|@ya\.ru$/,'');
-  if(!owner&&!yaOwner){ if(CI) need('Владелец клуба','Добавьте секрет OWNER_YANDEX_LOGIN (логин Яндекса владельца) в GitHub.'); owner=await ask('Ваш Telegram id (число; узнать — написать боту @userinfobot): '); }
+  if(!owner&&!yaOwner){ if(CI) need('Владелец кабинета','Добавьте секрет OWNER_YANDEX_LOGIN (логин Яндекса владельца) в GitHub.'); owner=await ask('Ваш Telegram id (число; узнать — написать боту @userinfobot): '); }
   if(owner&&!/^\d{3,16}(,\d{3,16})*$/.test(owner)) throw new Error('Telegram id — это число, например 123456789.');
   if(yaOwner&&!/^[a-z0-9][a-z0-9.-]{0,40}(,[a-z0-9][a-z0-9.-]{0,40})*$/.test(yaOwner)) throw new Error('OWNER_YANDEX_LOGIN — логин Яндекса латиницей (то, что до @yandex.ru).');
   const yaId=E('YANDEX_CLIENT_ID')||prev.YANDEX_CLIENT_ID||'';
@@ -217,7 +217,7 @@ async function main(){
   step('Функции');
   const fn={}; for(const k of ['api','remind']) fn[k]=get(['serverless','function','get','--name',NAMES[k]])||yc(['serverless','function','create','--name',NAMES[k]]);
 
-  step('Шлюз (адрес клуба)');
+  step('Шлюз (адрес кабинета)');
   const spec=fs.readFileSync(path.join(ROOT,'server','apigw.yaml'),'utf8').replace(/\$\{FUNCTION_ID\}/g,fn.api.id).replace(/\$\{SA_ID\}/g,sa.gw.id);
   const specFile=path.join(os.tmpdir(),'club-apigw.yaml'); fs.writeFileSync(specFile,spec);
   let gw=get(['serverless','api-gateway','get','--name',NAMES.gateway]);
@@ -230,7 +230,7 @@ async function main(){
   /* куда ведут ссылки входа: страница на nachert1830.ru, если она уже опубликована, иначе — адрес функции */
   /* страница клуба опубликована вместе с сайтом (папка club/ в main) — ссылки входа и приглашений ведут туда */
   const probe=await siteProbe(), front=E('FRONT_URL')||(probe.ok?SITE_FRONT:SITE_FRONT.replace('https://','http://'));
-  say('  страница клуба: '+front+' ('+probe.text+')');
+  say('  страница кабинета: '+front+' ('+probe.text+')');
   if(!probe.ok) say('::warning::У nachert1830.ru не работает HTTPS (нет сертификата для домена). GitHub → Settings → Pages → Custom domain → Enforce HTTPS (DEPLOY.md). Пока ссылки ведут на http://');
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN+' http://nachert1830.ru',FRONT_URL:front,
     YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',
@@ -254,16 +254,16 @@ async function main(){
   /* что Telegram видел до этого: куда шлёт, сколько ждёт доставки, последняя ошибка доставки (без токена и секрета) */
   const hook=origin+'/api/tg/webhook';
   try{ const w=await telegram(token,'getWebhookInfo',{}); const ago=w.last_error_date?Math.round((Date.now()/1000-w.last_error_date)/60)+' мин назад':'';
-    say('  до настройки: вебхук '+(w.url===hook?'на клуб':w.url?'на другой адрес':'не задан')+', ждут доставки: '+(w.pending_update_count||0)+
+    say('  до настройки: вебхук '+(w.url===hook?'на кабинет':w.url?'на другой адрес':'не задан')+', ждут доставки: '+(w.pending_update_count||0)+
       ', последняя ошибка: '+(w.last_error_message?w.last_error_message+' ('+ago+')':'нет')); }catch(e){}
   try{ await telegram(token,'setWebhook',{url:origin+'/api/tg/webhook',secret_token:payload.TG_WEBHOOK_SECRET,allowed_updates:['message','callback_query','my_chat_member'],drop_pending_updates:true});
   /* серверы Telegram не достают до Yandex Cloud — бот не отвечает. Описание бота показывает сам Telegram, без нашего сервера:
      пусть человек сразу видит, что писать сюда не нужно, а вход — на сайте (официальный вход Telegram) */
   await telegram(token,'deleteMyCommands',{});
-  await telegram(token,'setMyDescription',{description:'Это бот клуба Начерта. Писать ему не нужно — он не отвечает.\n\nВход в клуб — на странице клуба кнопкой «Войти через Telegram»: подтверждение придёт от официального аккаунта Telegram.'});
-  await telegram(token,'setMyShortDescription',{short_description:'Писать сюда не нужно. Вход в клуб — на сайте, кнопкой «Войти через Telegram».'});
+  await telegram(token,'setMyDescription',{description:'Бот личного кабинета Начерта. Писать ему не нужно — он не отвечает.\n\nВход в личный кабинет — на сайте nachert1830.ru.'});
+  await telegram(token,'setMyShortDescription',{short_description:'Писать сюда не нужно. Вход в личный кабинет — на сайте nachert1830.ru.'});
   say('  готово'); }
-  catch(e){ say('  с этого компьютера не получилось — клуб сделает это сам в течение 15 минут'); }
+  catch(e){ say('  с этого компьютера не получилось — кабинет сделает это сам в течение 15 минут'); }
   /* самопроверка: «Старт» от несуществующего участника так, как его шлёт Telegram (с секретом) — клуб должен ответить отказом */
   try{ const r=await fetch(hook,{method:'POST',headers:{'content-type':'application/json','x-telegram-bot-api-secret-token':payload.TG_WEBHOOK_SECRET},
       body:JSON.stringify({update_id:1,message:{message_id:1,date:Math.floor(Date.now()/1000),from:{id:1,is_bot:false,first_name:'Проверка'},chat:{id:1,type:'private'},text:'/start'}})});
@@ -271,15 +271,15 @@ async function main(){
     const bad=await fetch(hook,{method:'POST',headers:{'content-type':'application/json'},body:'{}'}); say('  без секрета: HTTP '+bad.status+(bad.status===403?' (правильно — отказ)':' (ОШИБКА: должен быть отказ)')); }
   catch(e){ say('  самопроверка вебхука не удалась: '+e.message); }
 
-  step('Проверяю, что клуб отвечает');
+  step('Проверяю, что кабинет отвечает');
   let ok=false; for(let i=0;i<10&&!ok;i++){ try{ const r=await fetch(origin+'/api/config'); ok=r.ok; }catch(e){} if(!ok) await sleep(3000); }
-  say(ok?'  клуб работает':'  пока не отвечает — подождите минуту и откройте адрес ниже');
+  say(ok?'  кабинет работает':'  пока не отвечает — подождите минуту и откройте адрес ниже');
 
   if(arg('write-front')) writeFront(origin);
   say('\n════════════════════════════════════════════');
   say('Готово. Клуб: '+front+(front!==origin+'/'?'  (API: '+origin+')':''));
   if(yaId) say('Яндекс ID: в приложении на oauth.yandex.ru должен быть Redirect URI  '+origin+'/api/auth/yandex/callback');
-  if(CI){ say('Войти: откройте клуб → «Войти с Яндекс ID»'+(yaOwner?' (владелец — логин '+yaOwner.split(',')[0].replace(/^(.{2}).*$/,'$1…')+')':'')+' или по почте (когда домен подтверждён).'); say('════════════════════════════════════════════'); return; }
+  if(CI){ say('Войти: откройте кабинет → «Войти с Яндекс ID»'+(yaOwner?' (владелец — логин '+yaOwner.split(',')[0].replace(/^(.{2}).*$/,'$1…')+')':'')+' или по почте (когда домен подтверждён).'); say('════════════════════════════════════════════'); return; }
   const link=ownerLink(fn.api.id);
   say(link?'\nВаша ссылка для входа (владелец, админ). Действует 30 минут и срабатывает один раз — никому не пересылайте:\n\n  '+link+'\n':
     '\nСсылку для входа выдаст команда:  node server/tools/login.js');
