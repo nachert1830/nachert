@@ -1,10 +1,12 @@
 /* ═══════════ Замер глаз на настоящей модели: синтетические листы, где правда известна до сотых мм ═══════════
-   node lab/dz/eyes-eval.js [--sheets=6] [--dz2=3] [--strategy=full,zoom] [--models=m1,m2] [--brain=1]
+   node lab/dz/eyes-eval.js [--sheets=6] [--dz2=3] [--strategy=full,zoom,own,own+full] [--models=m1,m2] [--brain=1]
+   node lab/dz/eyes-eval.js --strategy=own --dz2=0 — свои глаза, без модели (findDrawings: все копии фигуры по линиям)
    Нужен доступ к модели: EYES_TOKEN (IAM-токен) и EYES_FOLDER — Yandex AI Studio (или EYES_KEY / EYES_URL / EYES_MODEL —
    другая модель). Отсюда Yandex Cloud недоступен — прогон идёт в GitHub Actions (.github/workflows/eyes-eval.yml).
    Листы: ДЗ №3 — четыре чертежа на А3 (quadsynth.js), ДЗ №2 — А3 с одним чертежом (vsynth.js).
    Стратегии: full — всё фото одним запросом (1280 px); zoom — «лупа»: первый запрос находит чертежи, затем каждый чертёж
-   отдельным запросом, вырезанный крупно (до 1280 px на один чертёж).
+   отдельным запросом, вырезанный крупно (до 1280 px на один чертёж); own — свои глаза без модели; own+full — свои
+   глаза и рамки модели вместе (mergeDrawings, как в сканере).
    Меры: найдено чертежей; по подписям точек условия — найдено, перепутано (ближе к другой точке своего чертежа), промах в мм
    (медиана, 90 %); время; затем мозг (eyes.js → проверка) по ответу глаз: прочитано чертежей и ЛОЖНЫЕ вердикты (все листы
    начерчены верно — любое «ошибка» ложно). */
@@ -32,7 +34,7 @@ function sheets(){ const out=[];
   /* каждый второй лист — с ошибкой в части 1 или 4 (ось замены не ⟂, неверный радиус): про неё «верно» — ложное */
   const ER=[null,'a_dir',null,'d_R',null,'a_d',null,'d_R',null,'a_dir'];
   [3,9,14,21,27,30,6,17,24,12].slice(0,NQ).forEach((n,i)=>{ const s=Q.sheet({n,seed:11+i,err:ER[i]||undefined}); if(!s) return;
-    out.push({name:'ДЗ3 в'+n+' (4 чертежа'+(ER[i]?', ошибка '+ER[i]:'')+')',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,pts:p.pts,err:p.err}))}); });
+    out.push({name:'ДЗ3 в'+n+' (4 чертежа'+(ER[i]?', ошибка '+ER[i]:'')+')',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,built:p.built,pts:p.pts,err:p.err}))}); });
   [8,15,25,3,19].slice(0,N2).forEach((n,i)=>{ const s=VS.sheet({dz:2,n,err:'ok',seed:21+i,turn:0}); if(!s) return; const t=s.truth, pts={};
     M.given(t.id,t.data).pts.forEach(q=>{ pts[q.l]=[t.O[0]+q.at[0],t.O[1]+q.at[1]]; }); pts.O=t.O.slice();
     out.push({name:'ДЗ2 в'+n,dz:2,n,img:s.img,H:t.H,groups:[{part:null,pts}]}); });
@@ -63,10 +65,19 @@ async function zoom(cfg,sh){ const f=await full(cfg,sh,SCALE); if(!f.drawings.le
     catch(e){ out.push(d); } }
   return {drawings:out,ms,calls}; }
 
+/* свои глаза: чертежи по линиям, без модели (только ДЗ №3) */
+async function own(cfg,sh){ const t0=Date.now(); if(sh.dz!==3) return {drawings:[],ms:0,calls:0,err:'свои глаза — только ДЗ №3'};
+  const f=EY.findDrawings(sh.img,{dz:3,n:sh.n}); return {drawings:f.ok?f.drawings:[],ms:Date.now()-t0,calls:0,err:f.ok?null:f.reason}; }
+async function ownFull(cfg,sh){ const a=await own(cfg,sh), b=await full(cfg,sh); return {drawings:sh.dz===3?EY.mergeDrawings(a.drawings,b.drawings):b.drawings,ms:a.ms+b.ms,calls:b.calls,raw:b.raw,pic:b.pic,text:b.text,err:b.err}; }
+const STRATS={full,zoom,own,'own+full':ownFull};
+
 /* оценка ответа глаз против правды листа */
 function score(sh,res){ const Hi=IMG.H.inv(sh.H), mm=p=>IMG.H.apply(Hi,p), used=new Set(), st={found:0,total:0,swap:0,err:[],extra:0,drawingsFound:0};
   sh.groups.forEach(g=>{ st.total+=Object.keys(g.pts).length; });
-  res.drawings.forEach(d=>{ /* какой чертёж листа это: где больше подписей в 15 мм от своей правды */
+  res.drawings.forEach(d=>{ /* свои глаза: подписей нет — чертёж по началу O привязки (≤ 6 мм от правды) */
+    if(d.A&&!Object.keys(d.pts||{}).length){ const o=mm([d.A[2],d.A[5]]); let b=null; sh.groups.forEach((g,gi)=>{ if(used.has(gi)) return; const e=Math.hypot(g.pts.O[0]-o[0],g.pts.O[1]-o[1]); if(e<=6&&(!b||e<b.e)) b={gi,e}; });
+      if(!b){ st.extra++; return; } used.add(b.gi); st.drawingsFound++; d._group=b.gi; return; }
+    /* какой чертёж листа это: где больше подписей в 15 мм от своей правды */
     let best=null; sh.groups.forEach((g,gi)=>{ if(used.has(gi)) return; let k=0; Object.entries(d.pts).forEach(([l,p])=>{ const t=g.pts[l]; if(t){ const m=mm(p); if(Math.hypot(m[0]-t[0],m[1]-t[1])<=15) k++; } }); if(!best||k>best.k) best={gi,k}; });
     if(!best||best.k===0){ st.extra++; return; } used.add(best.gi); st.drawingsFound++; const g=sh.groups[best.gi]; d._group=best.gi;
     Object.entries(d.pts).forEach(([l,p])=>{ const t=g.pts[l]; if(!t) return; const m=mm(p), e=Math.hypot(m[0]-t[0],m[1]-t[1]);
@@ -82,20 +93,26 @@ async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; cons
     if(!sh.groups.some(G=>Math.hypot(G.pts.O[0]-o[0],G.pts.O[1]-o[1])<=6)) misplaced++; });
   /* чей это чертёж: ближайшее начало O правды; ложно — «ошибка» на верном чертеже или «верно» на чертеже с ошибкой */
   const grpOf=g=>{ if(!g.ok||!g._grid||!g.given) return null; const o=IMG.H.apply(Hi,g._grid.map(g.given.O[0],g.given.O[1])); let b=null; sh.groups.forEach(G=>{ const d=Math.hypot(G.pts.O[0]-o[0],G.pts.O[1]-o[1]); if(d<=6&&(!b||d<b.d)) b={G,d}; }); return b&&b.G; };
-  const vs=r.drawings.map(g=>g.verdict), bad=sh.dz===2?vs.filter(v=>v==='ошибка'||v==='другое решение'||v==='не тот вариант'):r.drawings.filter(g=>{ const G=grpOf(g); return G&&G.err?g.verdict==='верно':g.verdict==='ошибка'||g.verdict==='ошибка в данных'; }).map(g=>g.verdict);
-  const caught=r.drawings.filter(g=>{ const G=grpOf(g); return G&&G.err&&g.verdict==='ошибка'; }).length;
+  /* ложно и по частям: «верно» части на чертеже другой части (или не построенной, или с ошибкой в ней), «ошибка» части,
+     в которой ошибки нет */
+  const partFalse=g=>{ const G=grpOf(g); if(!G||!g.parts) return []; return (g.shown||[]).filter(k=>{ const p=g.parts[k]; if(!p) return false; const errHere=!!(G.err&&G.err[0]===k&&G.part===k);
+    return p.st==='верно'&&(G.part!==k||!G.built||errHere)||p.st==='ошибка'&&!errHere; }).map(k=>k+':'+g.parts[k].st+' на чертеже '+G.part+(G.err?' ('+G.err+')':'')); };
+  const isFalse=g=>{ const G=grpOf(g); return G&&(G.err?g.verdict==='верно':g.verdict==='ошибка'||g.verdict==='ошибка в данных')||partFalse(g).length>0; };
+  const vs=r.drawings.map(g=>g.verdict), bad=sh.dz===2?vs.filter(v=>v==='ошибка'||v==='другое решение'||v==='не тот вариант'):r.drawings.filter(isFalse).map(g=>g.verdict);
+  const caught=r.drawings.filter(g=>{ const G=grpOf(g); return G&&G.err&&(g.verdict==='ошибка'||g.parts&&g.parts[G.err[0]]&&g.parts[G.err[0]].st==='ошибка'&&(g.shown||[]).includes(G.err[0])); }).length;
   const read=r.drawings.filter(g=>g.ok).length, ok=sh.dz===2?vs.filter(v=>v==='верно').length:vs.filter(v=>v==='верно'||v==='данные нанесены верно').length;
-  return {verdicts:vs,read,ok,misplaced,false:bad.length,caught,falseWhy:r.drawings.filter(g=>{ const G=grpOf(g); return sh.dz===2?bad.includes(g.verdict):G&&(G.err?g.verdict==='верно':g.verdict==='ошибка'||g.verdict==='ошибка в данных'); }).map(g=>(g.why||[]).filter(w=>/неточно|ошибк|должн|взята|отклон/.test(w)).join(' | ').slice(0,300)),ms:Date.now()-t0}; }
+  return {verdicts:vs,read,ok,misplaced,false:bad.length,caught,falseWhy:r.drawings.filter(g=>sh.dz===2?bad.includes(g.verdict):isFalse(g)).map(g=>partFalse(g).concat((g.why||[]).filter(w=>/неточно|ошибк|должн|взята|отклон/.test(w))).join(' | ').slice(0,300)),ms:Date.now()-t0}; }
 
 (async()=>{ const base=SE.eyesFromEnv(process.env);
-  if(!base.on||!(TOKEN||base.key)){ console.log('нет доступа к модели: нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY)'); process.exit(1); }
-  const models=A.models?A.models.split(',').map(m=>m.includes('://')?m:'gpt://{folder}/'+m):[process.env.EYES_MODEL||SE.DEF_MODEL];
+  const noModel=STR.every(s=>s==='own');
+  if(!noModel&&(!base.on||!(TOKEN||base.key))){ console.log('нет доступа к модели: нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY); без модели — --strategy=own'); process.exit(1); }
+  const models=noModel?['свои глаза']:A.models?A.models.split(',').map(m=>m.includes('://')?m:'gpt://{folder}/'+m):[process.env.EYES_MODEL||SE.DEF_MODEL];
   console.log('листы строю…'); const S=sheets(); console.log('листов: '+S.length+' ('+S.map(s=>s.name).join(', ')+')');
   const md=['# Замер глаз на настоящей модели','','листы: '+S.map(s=>s.name).join(', '),''], raw=[];
   for(const m of models){ const cfg=SE.eyesFromEnv(Object.assign({},process.env,{EYES_MODEL:m}));
     for(const strat of STR){ const T={found:0,total:0,swap:0,err:[],extra:0,dr:0,drT:0,ms:0,calls:0,fails:0,read:0,ok:0,bdr:0,false:0,falseWhy:[]};
       console.log('\n══ модель '+cfg.model.replace(cfg.folder,'<каталог>')+', стратегия '+strat);
-      for(const sh of S){ let res; try{ res=await (strat==='zoom'?zoom:full)(cfg,sh); }catch(e){ T.fails++; console.log('  '+sh.name+': ОШИБКА '+e.message.slice(0,200)); continue; }
+      for(const sh of S){ let res; try{ res=await STRATS[strat](cfg,sh); }catch(e){ T.fails++; console.log('  '+sh.name+': ОШИБКА '+e.message.slice(0,200)); continue; }
         const st=score(sh,res);
         /* диагностика: та же выдача в другой шкале и остаток после лучшего аффинного (систематическое — лечится) */
         if(res.raw&&strat==='full'){ const alt=toFull(JSON.parse(JSON.stringify(res.raw)),res.pic,SCALE==='px'?'n1000':'px'), sa=score(sh,{drawings:alt.drawings});

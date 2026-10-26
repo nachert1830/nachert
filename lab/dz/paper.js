@@ -131,6 +131,8 @@ function preparePlain(img,o){ o=o||{}; const dz=+o.dz||3, why=[], P=findPaper(im
     if(c6.ok&&dev>0.015){ const O6=c6.T; Object.keys(gv.data).forEach(k=>{ const ck=C.calibrate(dig,{},gv.id,gv.data,{range:[O6[0]-3,O6[1]-3,O6[0]+3,O6[1]+3],np:6,exclude:k}); dev=Math.min(dev,devOf(ck)); }); }
     if(!c6.ok||dev>0.015) return {ok:false,reason:'пропорции листа не как у А4/А3 (фигура условия растянута на '+(c6.ok?(dev*100).toFixed(1).replace('.',','):'?')+' %) — если лист в клетку, снимите ближе, чтобы сетка была видна; иначе снимите лист целиком'}; }
   why.push('лист без рамки и клеток: края бумаги → перспектива; по фигуре условия — '+b.pg+(b.flip?' (лист перевёрнут)':''));
-  return {ok:true,scan:sc,dig,box,map,origin:c,n:b.n,page:b.pg,flip:b.flip,cover:b.cover,second:b2.cover,why,cands:GS.axesCands(ex.segs),quad:P.quad,dbg:P.dbg}; }
+  /* px снимка на мм у начала координат чертежа: на мелком фото (лист А3 с четырьмя чертежами целиком) замер грубее */
+  const m0=map(c[0],c[1]), m1=map(c[0]+10,c[1]), m2=map(c[0],c[1]+10), ppmPhoto=(Math.hypot(m1[0]-m0[0],m1[1]-m0[1])+Math.hypot(m2[0]-m0[0],m2[1]-m0[1]))/20;
+  return {ok:true,scan:sc,dig,box,map,origin:c,n:b.n,page:b.pg,flip:b.flip,cover:b.cover,second:b2.cover,why,cands:GS.axesCands(ex.segs),quad:P.quad,dbg:P.dbg,ppmPhoto}; }
 put('dzPaper',{findPaper,preparePlain,pageHom,aspectOf});
 })();

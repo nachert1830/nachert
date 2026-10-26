@@ -22,15 +22,24 @@ function gridOut(g){ const out={fig:figPx(g),verdict:g.verdict,why:(g.why||[]).c
   if(g.ex3d&&g.ex3d.steps.length&&g.dig){ out.ex={steps:g.ex3d.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex3d.first&&g.ex3d.first.k};
     try{ const segs=self.LAB.dzCalib.drawSegs(g.dig,{T:[g.given.O[0],g.given.O[1],0,0,0,0]}); out.svg=self.LAB.dzReport3d.svg({segs,data:g.given.drawn,ex:g.ex3d,why:(g.answers||[]).filter(a=>a.k==='phi').map(a=>a.msg.split('; на чертеже')[0])}); }catch(x){} }
   return out; }
+/* свои глаза, без модели (ДЗ №3, лист без клеток): все копии фигуры условия на листе по линиям → каждый чертёж отдельно */
+function ownEyes(img,dz,n,answers,part,t0,why0){ const EY=self.LAB.dzEyes; let own=null; try{ own=EY.findDrawings(img,{dz:3,n}); }catch(x){ return null; } if(!own||!own.ok) return null;
+  let r=null; try{ r=EY.checkEyes(img,{dz:3,n,drawings:own.drawings},{dz:3,n,answers,part,grid:{ok:false,reason:'чистый лист'}}); }catch(x){ return null; } if(!r||!r.drawings.some(g=>g.ok)) return null;
+  const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'}, drawings=r.drawings.map((g,i)=>Object.assign(gridOut(g),{title:'Чертёж '+(i+1)+(g.partGuess&&g.partGuess.length===1?' — '+PN[g.partGuess[0]]:'')}));
+  const eyesPts=r.drawings.map((g,j)=>{ let O=null; try{ if(g._grid&&g.given) O=g._grid.map(g.given.O[0],g.given.O[1]); }catch(x){} return {pts:{},v:g.verdict,fig:drawings[j].fig,O}; });
+  return {verdict:r.verdict,why:['свои глаза (без ИИ-зрения): чертежей найдено по линиям — '+r.drawings.length].concat(r.why,why0||[]),drawings,eyesPts,stage:'свои глаза',ms:Date.now()-t0}; }
 self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now(); let r;
   if(mode==='frame'){ try{ self.postMessage({frame:frame(img,dz,n,answers,part,paper),ms:Date.now()-t0}); }catch(err){ self.postMessage({error:String(err&&err.stack||err)}); } return; }
   /* лист в клетку: сетка вместо рамки (gridsheet.js) — свой ответ странице */
   /* лист в клетку или чистый лист (края бумаги + условие): gridsheet.js; «в клетку» — с запасным чистым листом */
-  if(paper==='grid'||paper==='plain'){ try{ const g=self.LAB.dzGridSheet.checkGridPhoto(img,{dz,n,answers,part,paper:paper==='plain'?'plain':'auto'}); const out=gridOut(g); if(e.data.eyesNote) out.why.push(e.data.eyesNote); self.postMessage(Object.assign(out,{stage:'клетка',ms:Date.now()-t0})); }
+  if(paper==='grid'||paper==='plain'){ try{ const g=self.LAB.dzGridSheet.checkGridPhoto(img,{dz,n,answers,part,paper:paper==='plain'?'plain':'auto'}); const out=gridOut(g); if(e.data.eyesNote) out.why.push(e.data.eyesNote);
+      /* не прочитал и сетки нет — свои глаза: может, на листе несколько чертежей */
+      if(+dz===3&&+n&&(g.verdict==='не могу прочитать'||g.verdict==='не могу утверждать')&&g.paper!=='grid'&&!(g.grid&&g.grid.ok&&!g.grid.plain)){ const oe=ownEyes(img,dz,n,answers,part,t0,['обычный разбор листа: '+g.verdict].concat(e.data.eyesNote?[e.data.eyesNote]:[])); if(oe){ self.postMessage(oe); return; } }
+      self.postMessage(Object.assign(out,{stage:'клетка',ms:Date.now()-t0})); }
     catch(err){ self.postMessage({error:String(err&&err.stack||err)}); } return; }
   /* глаза (модель со зрением в кабинете) прочитали подписи: каждый чертёж листа — отдельно, со своим O (eyes.js).
      Глаза не помогли (ничего не прочитано) — обычный путь, с их причиной в конце */
-  if(e.data.eyes){ const EY=self.LAB.dzEyes, E=EY.parse(e.data.eyes), k=1/(e.data.eyesScale||1); let note=null;
+  if(e.data.eyes){ const EY=self.LAB.dzEyes, E=EY.parse(e.data.eyes), k=1/(e.data.eyesScale||1); let note=null, ownNote=null;
     if(E.error) note='ИИ-зрение: '+E.error;
     else { const E0=JSON.parse(JSON.stringify(E)); E.drawings.forEach(d=>{ Object.keys(d.pts).forEach(l=>{ d.pts[l]=[d.pts[l][0]*k,d.pts[l][1]*k]; }); if(d.box) d.box=d.box.map(v=>v*k); });
       /* часть моделей (Qwen-VL прошлых версий) даёт координаты в шкале 0…1000, а не в px. Все координаты ≤ 1000 —
@@ -40,12 +49,14 @@ self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now
         E2.drawings.forEach(d=>{ Object.keys(d.pts).forEach(l=>{ d.pts[l]=[d.pts[l][0]*W,d.pts[l][1]*Hh]; }); if(d.box) d.box=[d.box[0]*W,d.box[1]*Hh,d.box[2]*W,d.box[3]*Hh]; });
         const score=EE=>EE.drawings.reduce((m,d)=>{ const b=gv?EY.bindAffine(EY.pairs(d,gv.id,gv.data),{px:0.025*Math.max(img.width,img.height)}):null; return m+(b?b.inl.length-3*b.aniso:0); },0);
         if(gv&&score(E2)>score(E)) E.drawings=E2.drawings; }
-      let r=null; try{ r=EY.checkEyes(img,E,{dz:+dz,n,answers,part}); }catch(err){ note='ИИ-зрение: ошибка разбора — '+String(err&&err.message||err); }
+      /* ДЗ №3 на листе без клеток: свои глаза (поиск всех копий фигуры условия по линиям) + рамки модели */
+      let grid0; if(+dz===3&&+n){ try{ grid0=self.LAB.dzGrid.findGrid(img); }catch(x){} if(!(grid0&&grid0.ok)){ try{ const own=EY.findDrawings(img,{dz:3,n}); if(own.ok){ E.drawings=EY.mergeDrawings(own.drawings,E.drawings); ownNote='свои глаза нашли чертежей по линиям: '+own.drawings.length; } }catch(x){} } }
+      let r=null; try{ r=EY.checkEyes(img,E,{dz:+dz,n,answers,part,grid:grid0}); }catch(err){ note='ИИ-зрение: ошибка разбора — '+String(err&&err.message||err); }
       if(r&&r.drawings.some(g=>g.ok)){ const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'};
         const drawings=r.drawings.map((g,i)=>Object.assign(+dz===2?{verdict:g.verdict,why:g.why||[],ex:g.ex?{steps:g.ex.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex.first&&g.ex.first.k}:null}:gridOut(g),{title:'Чертёж '+(i+1)+(g.part||g.eyesPart?' — '+PN[g.part||g.eyesPart]:'')}));
         /* что увидели глаза — на фото (px снимка): точки с подписями и рамка каждого чертежа */
-        const eyesPts=E.drawings.map((d,i)=>({pts:d.pts,box:d.box,v:r.drawings[i].verdict,fig:drawings[i].fig}));
-        self.postMessage({verdict:r.verdict,why:['ИИ-зрение нашло чертежей: '+r.drawings.length].concat(r.why),drawings,eyesPts,stage:'глаза',ms:Date.now()-t0}); return; }
+        const eyesPts=r.drawings.map((g,j)=>{ const d=E.drawings[g.index]||{}; let O=null; try{ if(g._grid&&g.given) O=g._grid.map(g.given.O[0],g.given.O[1]); }catch(x){} return {pts:d.pts||{},box:d.box,v:g.verdict,fig:drawings[j].fig,O}; });
+        self.postMessage({verdict:r.verdict,why:['ИИ-зрение нашло чертежей: '+r.drawings.length].concat(ownNote?[ownNote]:[],r.why),drawings,eyesPts,stage:'глаза',ms:Date.now()-t0}); return; }
       if(r) note='ИИ-зрение: '+r.why.join('; '); }
     self.onmessage({data:Object.assign({},e.data,{eyes:null,eyesNote:note})}); return; }
   try{ r=self.LAB.dzCheck.checkSheet(img,{dz,n}); }catch(err){ self.postMessage({error:String(err&&err.stack||err)}); return; }

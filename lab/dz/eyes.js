@@ -22,7 +22,7 @@
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
-const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',model:'dzModel',gridsheet:'dzGridSheet',check:'dzCheck'}[n]];
+const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',model:'dzModel',gridsheet:'dzGridSheet',check:'dzCheck',paper:'dzPaper'}[n]];
 /* o.clean — очиститель карандаша (второй проход): передаётся в оцифровку */
 const IMG=isNode?require('../img.js'):self.LAB.img, LN=isNode?require('../lines.js'):self.LAB.lines, V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const H=IMG.H;
@@ -124,7 +124,9 @@ function searchFigure(img,A,gv,o){ o=o||{}; const C=L('calib'), g=L('model').giv
   const S0=SA.filter((q,i)=>i%Math.max(1,Math.round(SA.length/80))===0), S=SA.filter((q,i)=>i%3===0);
   const cov=(th,k,tx,ty,tol,SS)=>{ const c=Math.cos(th)*k, sn=Math.sin(th)*k; let n=0; for(const m of SS){ if(at([cO[0]+tx+c*m[0]-sn*m[1],cO[1]+ty+sn*m[0]+c*m[1]])<=tol) n++; } return n/SS.length; };
   const res=[]; const deg=Math.PI/180;
-  for(let th=-16;th<=16;th+=2) for(let lk=-7;lk<=7;lk++){ const k=Math.pow(1.05,lk);
+  /* o.th, o.lk — пределы поворота (°) и масштаба (шагов ×1,05): у своих глаз привязка уже точная — искать только рядом */
+  const TH=o.th||16, LK=o.lk==null?7:o.lk;
+  for(let th=-TH;th<=TH;th+=2) for(let lk=-LK;lk<=LK;lk++){ const k=Math.pow(1.05,lk);
     for(let ty=-R;ty<=R;ty+=2) for(let tx=-R;tx<=R;tx+=2){ const v=cov(th*deg,k,tx,ty,1.6,S0); if(v>=0.35) res.push({v,th,k,tx,ty}); } }
   res.sort((a,b)=>b.v-a.v); if(!res.length) return {A,cover:0,second:0,shift:0,rot:0,k:1};
   /* пять отдельных мест (не ближе 4 мм / 3°) — уточнение каждого, лучшее — найденное */
@@ -140,6 +142,56 @@ function searchFigure(img,A,gv,o){ o=o||{}; const C=L('calib'), g=L('model').giv
   const An=[A[0]*L2[0]+A[1]*L2[2],A[0]*L2[1]+A[1]*L2[3],A[0]*b.tx+A[1]*b.ty+A[2],A[3]*L2[0]+A[4]*L2[2],A[3]*L2[1]+A[4]*L2[3],A[3]*b.tx+A[4]*b.ty+A[5]];
   return {A:An,cover:b.v,second:sec.v,shift:Math.hypot(b.tx,b.ty),rot:b.th,k:b.k}; }
 
+/* ── свои глаза, без модели: край листа → лист выпрямлен (книжный А4, А3 — тот же лист ×√2) → перебор по всему листу,
+   где лежат копии фигуры условия (ДЗ №3 — четыре чертежа, у каждого своя). Лист А4 или А3, перевёрнут или нет —
+   гипотезы. Каждое найденное место (≥ 55 % фигуры на линиях, не ближе 40 мм к другому) — чертёж с готовой привязкой.
+   findDrawings(img, {dz, n}) → {ok, reason, drawings:[{A (мм условия → px), cover}], page} ── */
+function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(!gv) return {ok:false,reason:'нужен номер варианта'};
+  const PA=L('paper'), C=L('calib'), P=PA.findPaper(img);
+  /* край листа есть — лист выпрямлен (А4 в мм; А3 — масштаб 1/√2); нет (лист обрезан, светлый фон) — сам кадр в «мм»:
+     длинная сторона кадра = 420 мм, а настоящий масштаб и поворот телефона (0/90/180/270°) — гипотезы перебора */
+  let Ha=P.ok?PA.pageHom(P.quad):null, raw=!Ha, box=[0,0,210,297];
+  if(raw){ const s0=Math.max(img.width,img.height)/420; Ha=[s0,0,0,0,s0,0,0,0,1]; box=[0,0,Math.floor(img.width/s0),Math.floor(img.height/s0)]; }
+  const dg=digitize(img,(u,v)=>H.apply(Ha,[u,v]),box,4,o.clean); if(!dg.ok) return {ok:false,reason:dg.reason};
+  const D=C.dmap(dg.dig.map), SA=C.samples(gv.id,gv.data).S.map(q=>q.m), S0=SA.filter((q,i)=>i%Math.max(1,Math.round(SA.length/80))===0), S=SA.filter((q,i)=>i%3===0), at=p=>C.at(D,p), deg=Math.PI/180;
+  const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), fx=[Math.min(...fig.map(p=>p[0])),Math.max(...fig.map(p=>p[0]))], fy=[Math.min(...fig.map(p=>p[1])),Math.max(...fig.map(p=>p[1]))];
+  const cov=(th,k,tx,ty,tol,SS)=>{ const c=Math.cos(th)*k, sn=Math.sin(th)*k; let n=0; for(const m of SS){ if(at([tx+c*m[0]-sn*m[1],ty+sn*m[0]+c*m[1]])<=tol) n++; } return n/SS.length; };
+  const res=[], S1=raw?S0.filter((q,i)=>i%2===0):S0, step=raw?3:2;
+  const hyps=raw?[].concat(...[0,90,180,270].map(fl=>Array.from({length:21},(_,i)=>[Math.pow(1.05,i-12),'кадр',fl]))):[].concat(...[[1,'A4'],[Math.SQRT1_2,'A3']].map(([s0,pg])=>[0,180].map(fl=>[s0,pg,fl])));
+  for(const [s0,pg,flip] of hyps) for(let th=-4;th<=4;th+=(raw?4:2)) for(const kk of (raw?[1]:[0.95,1,1.05])){ const k=s0*kk, t=(flip+th)*deg;
+    for(let ty=0;ty<=box[3];ty+=step) for(let tx=0;tx<=box[2];tx+=step){ const v=cov(t,k,tx,ty,Math.min(1.5,1.6*k),S1); if(v>=0.45) res.push({v,th:flip+th,k,tx,ty,pg}); } }
+  res.sort((a,b)=>b.v-a.v);
+  /* места: лучшее, затем следующее не ближе 40 мм; уточнение каждого */
+  const tops=[]; for(const q of res){ if(tops.every(t=>Math.hypot(t.tx-q.tx,t.ty-q.ty)>=40*q.k)) tops.push(q); if(tops.length>=12) break; }
+  const found=tops.map(b0=>{ let b=Object.assign({},b0,{v:cov(b0.th*deg,b0.k,b0.tx,b0.ty,1.2*b0.k,S)});
+    for(const [dth,dk,dt] of [[1,0.02,1],[0.5,0.01,0.5],[0.25,0.005,0.25]]){ let bb=b; for(let th=b.th-2*dth;th<=b.th+2*dth+1e-9;th+=dth) for(let k=b.k*(1-2*dk);k<=b.k*(1+2*dk)+1e-9;k+=b.k*dk) for(let ty=b.ty-2*dt;ty<=b.ty+2*dt+1e-9;ty+=dt) for(let tx=b.tx-2*dt;tx<=b.tx+2*dt+1e-9;tx+=dt){ const v=cov(th*deg,k,tx,ty,0.8*k,S); if(v>bb.v) bb={v,th,k,tx,ty,pg:b.pg}; } b=bb; }
+    return b; });
+  /* строгая мера: доля ВСЕХ точек фигуры в 0,5 мм настоящего листа (допуск / масштаб) — у верного места ~ 0,9…1,
+     у случайного совпадения с построениями — заметно меньше */
+  found.forEach(b=>{ b.strict=cov(b.th*deg,b.k,b.tx,b.ty,0.5*b.k,SA); });
+  if(o.dbg) console.log('места:',tops.map((t,i)=>Math.round(t.v*100)+'→'+Math.round(found[i].v*100)+'/'+Math.round(found[i].strict*100)+'% k'+found[i].k.toFixed(2)+' θ'+found[i].th+' ('+found[i].tx.toFixed(0)+','+found[i].ty.toFixed(0)+')').join(' | '));
+  /* лист один: масштаб и поворот у всех чертежей общие — по лучшему (строгая мера), остальные должны совпасть (± 4 %, ± 3°) */
+  const ok=found.filter(b=>b.strict>=0.6).sort((a,b)=>b.strict-a.strict); if(!ok.length){ found.length=0; }
+  else { const r0=ok[0];
+    /* второй этап: масштаб и поворот листа известны — по всему листу ищем все копии фигуры с ними (± 3 %, ± 2°) */
+    const res2=[]; for(let th=r0.th-2;th<=r0.th+2;th+=1) for(const kk of [0.97,1,1.03]){ const k=r0.k*kk;
+      for(let ty=0;ty<=box[3];ty+=1.5) for(let tx=0;tx<=box[2];tx+=1.5){ const v=cov(th*deg,k,tx,ty,Math.min(1.5,1.2*k),S0); if(v>=0.5) res2.push({v,th,k,tx,ty,pg:r0.pg}); } }
+    res2.sort((a,b)=>b.v-a.v); const t2=[]; for(const q of res2){ if(t2.every(t=>Math.hypot(t.tx-q.tx,t.ty-q.ty)>=40*q.k)) t2.push(q); if(t2.length>=8) break; }
+    const f2=t2.map(b0=>{ let b=b0; for(const dt of [0.5,0.25]){ let bb=Object.assign({},b,{v:cov(b.th*deg,b.k,b.tx,b.ty,0.8*b.k,S)}); for(let ty=b.ty-3*dt;ty<=b.ty+3*dt+1e-9;ty+=dt) for(let tx=b.tx-3*dt;tx<=b.tx+3*dt+1e-9;tx+=dt){ const v=cov(b.th*deg,b.k,tx,ty,0.8*b.k,S); if(v>bb.v) bb=Object.assign({},b,{v,tx,ty}); } b=bb; }
+      b.strict=cov(b.th*deg,b.k,b.tx,b.ty,0.5*b.k,SA); return b; }).filter(b=>b.strict>=0.6);
+    if(o.dbg) console.log('второй этап:',f2.map(b=>Math.round(b.strict*100)+'% ('+b.tx.toFixed(0)+','+b.ty.toFixed(0)+')').join(' | '));
+    found.splice(0,found.length,...(f2.length?f2:[r0])); }
+  /* лист один: А4 или А3 и поворот — по большинству найденного; чужие гипотезы отбрасываются */
+  if(!found.length) return {ok:false,reason:'на листе не нашёл фигуру условия варианта '+o.n+(tops[0]?' (лучшее место — '+Math.round(tops[0].v*100)+' % на линиях)':'')};
+  const key=b=>b.pg+':'+(Math.round((((b.th%360)+360)%360)/90)%4*90), cnt={}; found.forEach(b=>{ cnt[key(b)]=(cnt[key(b)]||0)+b.v; });
+  const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0], keep=found.filter(b=>key(b)===best).sort((a,b)=>a.ty-b.ty||a.tx-b.tx);
+  const drawings=keep.map(b=>{ const c=Math.cos(b.th*deg)*b.k, sn=Math.sin(b.th*deg)*b.k;
+    /* A(m) = Ha(t + k·R·m) — гомография листа, линеаризованная у центра фигуры (дальше чертёж уточняется своей гомографией) */
+    const m0=[(fx[0]+fx[1])/2,(fy[0]+fy[1])/2], q0=[b.tx+c*m0[0]-sn*m0[1],b.ty+sn*m0[0]+c*m0[1]], p0=H.apply(Ha,q0), e=1, pu=H.apply(Ha,[q0[0]+e,q0[1]]), pv=H.apply(Ha,[q0[0],q0[1]+e]);
+    const J=[(pu[0]-p0[0])/e,(pv[0]-p0[0])/e,(pu[1]-p0[1])/e,(pv[1]-p0[1])/e], Lm=[J[0]*c+J[1]*sn,-J[0]*sn+J[1]*c,J[2]*c+J[3]*sn,-J[2]*sn+J[3]*c];
+    return {A:[Lm[0],Lm[1],p0[0]-Lm[0]*m0[0]-Lm[1]*m0[1],Lm[2],Lm[3],p0[1]-Lm[2]*m0[0]-Lm[3]*m0[1]],cover:b.v,pts:{}}; });
+  return {ok:true,drawings,page:raw?'без края листа':best.split(':')[0],turn:+best.split(':')[1]}; }
+
 /* выпрямить поле чертежа по map и оцифровать */
 function digitize(img,map,box,ppm,clean){ const G=L('grid'), sc=G.rectify(img,{map,box},{ppm,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean});
   if(!ex.ok) return {ok:false,reason:ex.reason}; return {ok:true,sc,dig:{ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map}}; }
@@ -148,7 +200,9 @@ function digitize(img,map,box,ppm,clean){ const G=L('grid'), sc=G.rectify(img,{m
 function prepareEyes(img,drawing,o){ o=o||{}; const dz=+o.dz||3, why=[], C=L('calib'), GV=L('given'), GS=L('gridsheet');
   /* вариант: указан — он; нет — все 30: по глазам выбираем, чьё условие лучше объясняет подписанные точки */
   const ns=+o.n?[+o.n]:Array.from({length:30},(_,i)=>i+1), hyp=[];
-  ns.forEach(n=>{ const gv=V.get(dz,n); if(!gv) return; const P=pairs(drawing,gv.id,gv.data); let b=P.length>=4?bindAffine(P,{px:0.025*Math.max(img.width,img.height)}):null;
+  /* привязка уже есть (свои глаза: findDrawings) — только уточнить поиском рядом */
+  if(drawing.A&&+o.n){ const gv=V.get(dz,+o.n), A=drawing.A; hyp.push({n:+o.n,gv,P:[],b:{A,s:Math.sqrt(Math.abs(detA(A))),aniso:0,inl:[],out:[],rms:NaN,seed:true,own:true}}); }
+  else ns.forEach(n=>{ const gv=V.get(dz,n); if(!gv) return; const P=pairs(drawing,gv.id,gv.data); let b=P.length>=4?bindAffine(P,{px:0.025*Math.max(img.width,img.height)}):null;
     /* подписи не складываются (глаза промахиваются на сантиметры, путают) — затравка по медианам, дальше решит поиск по линиям */
     if((!b||b.inl.length<4)&&P.length>=3){ const A0=seedSim(P); if(A0&&detA(A0)>0){ const s0=Math.sqrt(detA(A0)); if(s0>=1.2&&s0<=60) b={A:A0,s:s0,aniso:0,inl:[],out:[],rms:NaN,seed:true}; } }
     if(b) hyp.push({n,gv,P,b}); });
@@ -161,7 +215,7 @@ function prepareEyes(img,drawing,o){ o=o||{}; const dz=+o.dz||3, why=[], C=L('ca
     if(s0>=1.2&&s0<=60) [1,0.7,1.4].forEach(k=>{ const sk=s0*k; hyp.push({n:+o.n,gv,P:pairs(drawing,gv.id,gv.data),b:{A:[sk,0,cx-sk*mx,0,sk,cy-sk*my],s:sk,aniso:0,inl:[],out:[],rms:NaN,seed:true,box:true}}); }); }
   /* поиск фигуры условия по линиям у затравки — для указанного варианта (все затравки, до первой уверенной находки)
      или трёх лучших по глазам */
-  for(const hh of hyp.slice(0,+o.n?6:3)){ let sf=null; try{ sf=searchFigure(img,hh.b.A,hh.gv,{clean:o.clean}); }catch(e){}
+  for(const hh of hyp.slice(0,+o.n?6:3)){ let sf=null; try{ sf=searchFigure(img,hh.b.A,hh.gv,hh.b.own?{clean:o.clean,r:6,th:4,lk:1}:{clean:o.clean}); }catch(e){}
     if(sf&&sf.cover>=0.55&&sf.cover-sf.second>=0.1){ hh.b=Object.assign({},hh.b,{A:sf.A,s:Math.sqrt(Math.abs(detA(sf.A))),found:sf,seed:false,inl:hh.b.inl.length>=4?hh.b.inl:hh.P});
       if(+o.n&&sf.cover>=0.7) break; }
     else if(hh.b.seed) hh.b.inl=[]; }
@@ -231,9 +285,17 @@ function gridEyes(g,drawing,o){ const dz=+o.dz||3, B=o.box, src=[], dst=[];
   const cand=hyp.filter(x=>x.b.inl.length>=h.b.inl.length-1).slice(0,3).map(x=>x.n);
   return {ok:true,n:h.n,cand,eyesMm:mm,O:affAt(h.b.A,[0,0]),out:h.b.out.map(q=>q.l)}; }
 
+/* свои глаза + модель: чертежи, найденные по линиям (точная привязка), и рамки модели, в которых своих нет (там модель
+   увидела то, что поиск пропустил); номер части — от рамки модели, внутри которой лежит найденное начало O */
+function mergeDrawings(own,eyes){ const out=(own||[]).map(d=>Object.assign({},d)), inBox=(b,p)=>b&&p[0]>=b[0]&&p[0]<=b[2]&&p[1]>=b[1]&&p[1]<=b[3];
+  (eyes||[]).forEach(e=>{ const hit=out.filter(d=>d.A&&inBox(e.box,[d.A[2],d.A[5]])); if(hit.length) hit.forEach(d=>{ if(!d.part&&e.part) d.part=e.part; }); else out.push(e); });
+  return out; }
+
 /* ── весь лист: каждый чертёж — отдельно, со своим O ── */
 function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(eyes); if(E.error) return {ok:false,verdict:'не могу прочитать',why:[E.error],drawings:[]};
   const dz=+o.dz||E.dz||3, n=+o.n||E.n||0, GS=L('gridsheet'), t0=Date.now();
+  /* сетка листа — одна на все чертежи: ищется один раз */
+  if(dz===3&&o.grid===undefined){ try{ o=Object.assign({},o,{grid:L('grid').findGrid(img)}); }catch(e){} }
   /* ДЗ №2 — проверка ответа (check.js: вершина, рёбра, видимость, шаги 2а); ДЗ №3 — части и шаги (gridsheet.js) */
   const out=E.drawings.map((d,i)=>{ let r; try{ r=dz===2?Object.assign({ok:true},L('check').checkSheet(img,{dz,n,eyes:d})):GS.checkGridPhoto(img,Object.assign({},o,{dz,n,eyes:d,part:o.part||d.part||null}));
       if(dz===2&&r.verdict==='не могу прочитать') r.ok=false; }catch(e){ r={ok:false,verdict:'не могу прочитать',why:['ошибка разбора: '+String(e&&e.message||e)]}; }
@@ -242,6 +304,10 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   const Opx=r=>{ try{ return r&&r.ok&&r._grid&&r.given?r._grid.map(r.given.O[0],r.given.O[1]):null; }catch(e){ return null; } };
   out.forEach((r,i)=>{ const a=Opx(r); if(!a) return; const ppm=r.plain&&r.plain.ppmPhoto||4; for(let j=0;j<i;j++){ const b=Opx(out[j]); if(b&&!out[j].dup&&Math.hypot(a[0]-b[0],a[1]-b[1])<8*ppm){ r.dup=j; break; } } });
   const dups=out.filter(r=>r.dup!=null).length; for(let i=out.length-1;i>=0;i--) if(out[i].dup!=null) out.splice(i,1);
+  /* каждая часть на листе — один раз: часть, построение которой сошлось («верно») на одном чертеже, на другом —
+     чужие похожие линии; «ошибка» там по подсказке модели не утверждается (часть указал сам студент — утверждается) */
+  if(dz===3&&!o.part){ const okP=new Set(); out.forEach(r=>(r.shown||[]).forEach(k=>{ if(r.parts&&r.parts[k]&&r.parts[k].st==='верно') okP.add(k); }));
+    out.forEach(r=>{ if(!r.parts) return; Object.keys(r.parts).forEach(k=>{ if(k!=='vis'&&okP.has(k)&&r.parts[k].st==='ошибка'){ r.parts[k]=GS.unsurePart(r.parts[k],k); } }); }); }
   /* итог по листу: «ошибка» — если хоть один чертёж с уверенной ошибкой; «верно» — если все прочитанные верны и
      ни один не отказал; иначе — по чертежам */
   const vs=out.map(r=>r.verdict), bad=vs.some(v=>v==='ошибка'), data=vs.some(v=>v==='ошибка в данных'), allOk=vs.length&&vs.every(v=>v==='верно'||v==='данные нанесены верно');
@@ -251,7 +317,7 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   if(dups) why.push('у ИИ-зрения '+dups+' рамк'+(dups>1?'и':'а')+' вокруг уже найденного чертежа — не считаю дважды');
   return {ok:out.some(r=>r.ok),verdict,dz,n:out.find(r=>r.n)?out.find(r=>r.n).n:n,drawings:out,why,ms:Date.now()-t0}; }
 
-put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,bindAffine,bindHom,pairs,seedSim,searchFigure});
+put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,findDrawings,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
 })();
 /* node lab/dz/eyes.js фото.png глаза.json [--n=9] — проверка фото по ответу глаз (JSON или текст ответа модели) */
 if(typeof module!=='undefined'&&require.main===module){ const a=Object.fromEntries(process.argv.slice(4).map(x=>x.replace(/^--/,'').split('='))), fs=require('fs'), IMG=require('../img.js'), E=module.exports;

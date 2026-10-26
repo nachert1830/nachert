@@ -38,7 +38,7 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
      paper: 'grid' | 'plain' | 'auto' (по умолчанию: сетка, а если её нет — чистый лист) */
   const mode=o.paper||'auto', G=L('grid'), C=L('calib');
   /* o.eyes — один чертёж от глаз (eyes.js): точки условия с подписями, примерно; опора — сама фигура условия */
-  let g=mode==='plain'?{ok:false,reason:'чистый лист'}:G.findGrid(img), sc, er, box, dig, cands, plain=null, vars=null, cal=null, eyesMm=null, eyesRange=null;
+  let g=mode==='plain'?{ok:false,reason:'чистый лист'}:o.grid||G.findGrid(img), sc, er, box, dig, cands, plain=null, vars=null, cal=null, eyesMm=null, eyesRange=null;
   if(g.ok){ sc=G.rectify(img,g,{ppm:8}); er=G.eraseGrid(sc); box=sc.box;
     /* второй шанс (o.clean): очиститель видит линии сквозь сетку — на вход скан без стирания */
     const ex=LN.extract(o.clean?sc.img:er.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean:o.clean}); if(!ex.ok) return {ok:false,verdict:'не могу прочитать',why:[ex.reason],grid:g};
@@ -70,7 +70,7 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
   /* заданное как начерчено */
   /* чистый лист: изгиб бумаги не виден — погрешность каждой координаты не меньше 0,5 мм (СКО подгонки сюда не годится:
      в нём и точки, где линий нет вовсе — рёбра S не начерчены, штриховые) */
-  /* по глазам на мелком фото (< 5 px/мм) замер грубее: σ не меньше 2,5 px */
+  /* на мелком фото (< 5 px/мм: глаза по фрагменту, лист А3 целиком) замер грубее: σ не меньше 2,5 px снимка */
   const sigFloor=plain?Math.max(0.5,plain.ppmPhoto?2.5/plain.ppmPhoto:0):0;
   const mg=L('given').measureGiven(dig,cal,gv.id,gv.data,{sigFloor}), miss=Object.entries(mg.pts).filter(([l,p])=>p.src==='не найдена').map(([l])=>l);
   const drawnOk=Object.values(mg.drawn).every(p=>p.every(v=>v!=null));
@@ -146,16 +146,26 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
   const stepBad=!!(res.ex3d&&res.ex3d.first&&res.ex3d.steps[0]&&res.ex3d.steps[0].status==='ok');
   /* показанная часть проверена по начерченным данным и верна (в) — истинный вид) — это «верно», даже если нанесение
      точек замером не подтверждено: построение сходится со своими же точками */
-  const PSH=part?[part]:Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено'), partOk=PSH.length>0&&PSH.every(k=>res.parts&&res.parts[k]&&res.parts[k].st==='верно');
+  /* чертёж листа по глазам (у каждой части свой чертёж), какая это часть — неизвестно (или только подсказка модели):
+     на чертеже одной части проверка другой находит «похожие» линии и видит в них ошибку (на настоящем листе: угол SA
+     принят за угол граней). Без подсказки «ошибка» части не утверждается; с подсказкой — решает весь лист (checkEyes) */
+  if(o.eyes&&!part&&res.parts) Object.keys(res.parts).forEach(k=>{ if(k!=='vis'&&res.parts[k].st==='ошибка') res.parts[k]=unsurePart(res.parts[k],k); });
+  /* какая это часть — та, чьё построение сошлось («верно»), а «не найдено / не могу» у остальных — их здесь просто нет */
+  const defin=!part&&o.eyes?Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st==='верно'):[];
+  if(defin.length) res.partGuess=defin;
+  const PSH=part?[part]:defin.length?defin:Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено'), partOk=PSH.length>0&&PSH.every(k=>res.parts&&res.parts[k]&&res.parts[k].st==='верно');
   res.verdict=miss.length>2&&!ans.length&&!partOk?'не могу утверждать':ansBad||stepBad?'ошибка':ansData||big.length?'ошибка в данных':ans.length?'верно':dataClean?'данные нанесены верно':partOk?'верно':'не могу утверждать';
   /* части, которых на фото нет, не показываем: на снимке одной части чужие «похожие» линии — не ответ */
-  if(part&&res.parts) res.shown=[part]; else if(res.parts) res.shown=Object.keys(res.parts).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено');
+  if(part&&res.parts) res.shown=[part]; else if(defin.length) res.shown=defin; else if(res.parts) res.shown=Object.keys(res.parts).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено');
   /* видимость рёбер на листе в клетку — замечание (на экзаменационных листах её часто не требуют) */
   if(res.parts&&res.parts.vis&&res.parts.vis.st==='ошибка') res.visNote='видимость: '+res.parts.vis.why.filter(w=>/должно быть/.test(w)).join('; ');
   /* по глазам без уточнённой перспективы (чистый лист, мало точек условия на линиях) привязка грубая — не утверждаем */
   if(o.eyes&&plain&&!plain.fit&&['верно','ошибка','ошибка в данных','данные нанесены верно'].includes(res.verdict)){ why.push('перспектива по фото не уточнена (мало точек условия на линиях) — вердикт «'+res.verdict+'» не утверждаю; переснимите крупнее'); res.verdict='не могу утверждать'; }
   res.part=part; res.why=why; res.ms=Date.now()-t0; return res; }
-put('dzGridSheet',{checkGridPhoto,axesCands});
+/* «ошибка» части, когда неизвестно, та ли это часть, — «не могу утверждать» с причиной */
+const PNAME={a:'а) высота',b:'б) угол граней',c:'в) истинный вид',d:'г) угол SA'};
+function unsurePart(p,k){ return Object.assign({},p,{st:'не могу утверждать',unsure:true,why:['похоже на часть '+(PNAME[k]||k)+' с ошибкой, но какая часть на этом чертеже, не опознано — укажите часть, чтобы проверить'].concat(p.why||[])}); }
+put('dzGridSheet',{checkGridPhoto,axesCands,unsurePart});
 if(isNode&&require.main===module){ const a=Object.fromEntries(process.argv.slice(3).map(x=>x.replace(/^--/,'').split('='))), IMG=require('../img.js');
   const img=IMG.decodePNG(require('fs').readFileSync(process.argv[2])), r=checkGridPhoto(img,{dz:+(a.dz||3),n:+(a.n||1),part:a.part||null,answers:{H:a.H!=null?+a.H:null,dih:a.dih!=null?+a.dih:null,phi:a.phi!=null?+a.phi:null}});
   console.log('ДЗ №'+(a.dz||3)+', вариант '+(a.n||1)+': '+r.verdict.toUpperCase()+' ('+r.ms+' мс)'); r.why.forEach(w=>console.log('  — '+w));

@@ -9,9 +9,9 @@ on:
         required: false
         default: ''
       strategy:
-        description: 'full, zoom или full,zoom'
+        description: 'full, zoom, own (свои глаза без модели), own+full (свои глаза + модель, как в сканере) — через запятую'
         required: false
-        default: 'full,zoom'
+        default: 'full,own+full'
       sheets:
         description: 'листов ДЗ №3 (по 4 чертежа)'
         required: false
@@ -19,7 +19,7 @@ on:
       scale:
         description: 'шкала координат ответа модели: px или n1000'
         required: false
-        default: 'px'
+        default: 'n1000'
   push:
     branches: [claude/affectionate-mayer-nz0uny]
     paths: ['lab/dz/eyes-eval.js', 'lab/dz/eyes.js', 'server/lib/eyes.js', '.github/workflows/eyes-eval.yml']
@@ -31,7 +31,7 @@ concurrency:
 jobs:
   eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,7 +59,7 @@ jobs:
         env:
           EYES_OPTS: '{"reasoning_effort":"none"}'
           EYES_MODEL: 'gpt://{folder}/qwen3.6-35b-a3b/latest'
-        run: node lab/dz/eyes-eval.js --sheets=${{ github.event.inputs.sheets || '4' }} --dz2=2 --strategy=${{ github.event.inputs.strategy || 'full' }} --models=${{ github.event.inputs.models || 'qwen3.6-35b-a3b/latest,aliceai-llm/latest' }} --scale=${{ github.event.inputs.scale || 'px' }} --out=eyes-eval.json
+        run: node lab/dz/eyes-eval.js --sheets=${{ github.event.inputs.sheets || '4' }} --dz2=2 --strategy=${{ github.event.inputs.strategy || 'full,own+full' }} --models=${{ github.event.inputs.models || 'qwen3.6-35b-a3b/latest' }} --scale=${{ github.event.inputs.scale || 'n1000' }} --out=eyes-eval.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
