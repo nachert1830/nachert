@@ -56,9 +56,9 @@ function testPng(){ const W=256, Hh=256, px=Buffer.alloc((W+1)*Hh,255);
 /* глаза сканера: какая модель зрения в каталоге видит картинку — её и подключить (server/lib/eyes.js).
    Модель не из Yandex Cloud (секрет EYES_KEY) или EYES=off — не проверяется */
 async function eyesPick(folder){ const EY=require('../lib/eyes');
-  if(E('EYES')==='off'){ say('  выключено (EYES=off)'); return ''; }
-  if(E('EYES_KEY')){ say('  модель не из Yandex Cloud (EYES_KEY) — проверка пропущена'); return ''; }
-  let token=''; try{ token=yc(['iam','create-token'],{json:false}); }catch(e){ say('  не получил IAM-токен для проверки модели — оставляю как есть'); return ''; }
+  if(E('EYES')==='off'){ say('  выключено (EYES=off)'); return {}; }
+  if(E('EYES_KEY')){ say('  модель не из Yandex Cloud (EYES_KEY) — проверка пропущена'); return {}; }
+  let token=''; try{ token=yc(['iam','create-token'],{json:false}); }catch(e){ say('  не получил IAM-токен для проверки модели — оставляю как есть'); return {}; }
   /* какие модели каталогу доступны (OpenAI-совместимый список): кроме известных моделей зрения, пробуются и они */
   let more=[]; try{ const u=(E('EYES_URL')||EY.DEF_URL).replace(/\/chat\/completions$/,'/models');
     const m=await fetch(u,{headers:{authorization:'Bearer '+token,'x-folder-id':folder},signal:AbortSignal.timeout(20000)}), t=await m.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
@@ -69,9 +69,15 @@ async function eyesPick(folder){ const EY=require('../lib/eyes');
   const r=await EY.pick({EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:E('EYES_MODEL')},{image:testPng(),count:PROBE_DOTS.length},{token:()=>token,timeout:60000,more});
   const hide=x=>x.split(folder).join('<каталог>');
   r.tried.forEach(t=>say('  не подходит: '+hide(t.model)+' — '+t.error));
-  if(r.model){ say('  модель зрения: '+hide(r.model)+' — видит пробное фото, подключаю'); return r.model; }
-  say('::warning::ИИ-зрение: ни одна модель каталога не увидела пробное фото (причины — выше). Сканер работает без него. Пришлите эти строки Claude.');
-  return ''; }
+  if(!r.model){ say('::warning::ИИ-зрение: ни одна модель каталога не увидела пробное фото (причины — выше). Сканер работает без него. Пришлите эти строки Claude.');
+    return {}; }
+  say('  модель зрения: '+hide(r.model)+' — видит пробное фото');
+  /* настоящий запрос сканера: с какими добавками модель возвращает JSON и быстрее всего */
+  const t=await EY.tune({EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:r.model},testPng(),{token:()=>token,timeout:45000});
+  t.results.forEach(x=>say('    '+x.name+': '+(x.ok?'годится':'нет')+' — '+(x.ms/1000).toFixed(1)+' с, '+x.note));
+  if(!t.best){ say('::warning::ИИ-зрение: модель '+hide(r.model)+' не вернула JSON на запрос сканера ни с одной настройкой (выше). Пришлите эти строки Claude.'); return {model:r.model}; }
+  say('  подключаю: '+hide(r.model)+', '+t.best.name+' ('+(t.best.ms/1000).toFixed(1)+' с)');
+  return {model:r.model,opts:Object.keys(t.best.opts).length?Buffer.from(JSON.stringify(t.best.opts)).toString('base64url'):''}; }
 /* переменные текущей версии функции: что владелец задал при прошлом развёртывании (Telegram id владельца, имя бота, Яндекс ID) */
 function currentEnv(){ const v=get(['serverless','function','version','get-by-tag','--function-name',NAMES.api,'--tag','$latest']); return (v&&v.environment)||{}; }
 
@@ -205,7 +211,7 @@ async function main(){
     try{ yc(['resource-manager','folder','add-access-binding',folder,'--role',role,'--subject','serviceAccount:'+sa[k].id]); }catch(e){ if(!/already/i.test(e.message)) throw e; }
 
   step('ИИ-зрение сканера (Yandex AI Studio)');
-  const eyesModel=await eyesPick(folder);
+  const eyes=await eyesPick(folder);
 
   step('База данных YDB (serverless, Россия)');
   let db=get(['ydb','database','get','--name',NAMES.db]);
@@ -268,7 +274,7 @@ async function main(){
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
     MAIL_FROM:mailFrom,
     /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
-    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:eyesModel||E('EYES_MODEL'),EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES')};
+    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:eyes.model||E('EYES_MODEL'),EYES_OPTS:eyes.opts||'',EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES')};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
   const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){
