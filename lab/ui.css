@@ -1,8 +1,8 @@
 /* Оформление сканера — как у сайта и кабинета: белый лист, спокойный голубой, красный — только «ошибка тут».
    Подключается после встроенных стилей страниц lab/*.html и перекрывает их; разметку и id логика сканера не замечает. */
-:root{ --bg:#ffffff; --card:#ffffff; --ink:#0e1c33; --mute:#5d6f8a; --line:#e4ebf4; --line2:#cfdbea; --blue:#1e6fd9; --blue-s:#ebf3fe; --red:#dc2a22; --green:#13804e; --amber:#a15a05; --surf2:#f3f7fc; }
-:root[data-theme="dark"]{ --bg:#0b1424; --card:#111d33; --ink:#e8eef8; --mute:#8aa0c0; --line:#1c2c47; --line2:#2a3f62; --blue:#2068d8; --blue-s:#132a4d; --red:#ff6b5e; --green:#5fd191; --amber:#e6ac52; --surf2:#172741; }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0b1424; --card:#111d33; --ink:#e8eef8; --mute:#8aa0c0; --line:#1c2c47; --line2:#2a3f62; --blue:#2068d8; --blue-s:#132a4d; --red:#ff6b5e; --green:#5fd191; --amber:#e6ac52; --surf2:#172741; } }
+:root{ --bg:#ffffff; --card:#ffffff; --ink:#0e1c33; --mute:#5d6f8a; --line:#dbe4ef; --line2:#c2d1e3; --blue:#1e6fd9; --blue-s:#ebf3fe; --red:#dc2a22; --green:#13804e; --amber:#a15a05; --surf2:#f3f7fc; }
+:root[data-theme="dark"]{ --bg:#0b1424; --card:#111d33; --ink:#e8eef8; --mute:#8aa0c0; --line:#22355a; --line2:#304a73; --blue:#2068d8; --blue-s:#132a4d; --red:#ff6b5e; --green:#5fd191; --amber:#e6ac52; --surf2:#172741; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0b1424; --card:#111d33; --ink:#e8eef8; --mute:#8aa0c0; --line:#22355a; --line2:#304a73; --blue:#2068d8; --blue-s:#132a4d; --red:#ff6b5e; --green:#5fd191; --amber:#e6ac52; --surf2:#172741; } }
 body{ font-family:'Golos Text',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); }
 main{ max-width:760px; padding:16px 16px 40px; }
 h1{ font-size:24px; letter-spacing:-.02em; margin:6px 0 4px; }
