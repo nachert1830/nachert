@@ -27,7 +27,12 @@ function build(){
     const OUT=[];   /* размеры над видом: потом по ширине — меньшие ближе к виду (ГОСТ 2.307: выносные не пересекают размерные) */
     polys.forEach((P0,pi)=>{ const zs=P0.map(q=>q[1]), zl=Math.min(...zs), zh=Math.max(...zs);
       /* внутри выреза — только если у него снизу и сверху стороны (не вершина) не уже 34 мм и высота больше 30: иначе число налезет на штриховку */
-      const wAt=z=>{ const e=P0.filter(q=>Math.abs(q[1]-z)<0.01).map(q=>q[0]); return e.length>1?Math.max(...e)-Math.min(...e):0; }, inside=zh-zl>30&&wAt(zl)>34&&wAt(zh)>34;
+      const wAt=z=>{ const e=P0.filter(q=>Math.abs(q[1]-z)<0.01).map(q=>q[0]); return e.length>1?Math.max(...e)-Math.min(...e):0; };
+      /* пределы выреза по x на высоте z (сечение многоугольника горизонталью) */
+      const span=z=>{ const X=[]; P0.forEach((a,i)=>{ const b=P0[(i+1)%P0.length]; if((a[1]-z)*(b[1]-z)<=0&&a[1]!==b[1]) X.push(a[0]+(b[0]-a[0])*(z-a[1])/(b[1]-a[1])); }); return X.length>1?[Math.min(...X),Math.max(...X)]:null; };
+      /* число размера внутри выреза — правее оси на 4…9 мм; помещается, если вырез на высоте числа (до 6 мм над размерной) шире */
+      const fits=(z,w)=>{ const t=String(fm(w)).length*3.7+3, need=[4,4+t]; return [z+1,z+6].every(zz=>{ const S=span(zz); return S&&S[1]>=need[1]&&S[0]<=-need[0]+0; }); };
+      const inside=zh-zl>30&&wAt(zl)>34&&wAt(zh)>34&&fits(zl+8,wAt(zl))&&fits(zh-8,wAt(zh));
       const ex=z=>P0.filter(q=>Math.abs(q[1]-z)<0.01).map(q=>q[0]).sort((a,c)=>a-c).join(), same=ex(zl)===ex(zh);   /* прямоугольник: ширина одна — второй раз не ставим */
       [[zl,inside&&zl>0.5?zl+8:null],[zh,inside&&zh<H-0.5?zh-8:null]].forEach(([z,at],k2)=>{ if(k2&&(same||o.skipTop&&(o.skipTop===true||o.skipTop.includes(pi)))) return;   /* верх выреза задан направлением сторон (в вершину) — лишний размер не ставим */
         const e=P0.filter(q=>Math.abs(q[1]-z)<0.01).map(q=>q[0]).sort((a,c)=>a-c); if(e.length<2) return;
@@ -35,7 +40,7 @@ function build(){
         /* короткое звено цепочки рисуется со стрелками снаружи и числом за стрелкой — у левого звена число слева (tl),
            чтобы оно не легло на соседнее звено */
         const seg=(u,v,a,side)=>['F','h',[u,z],[v,z],a,fm(v-u)].concat(side<0?[{tl:1}]:[]);
-        const mk=a=>Math.abs(xa+xb)<0.6?[['F','h',[xa,z],[xb,z],a,fm(w),{tx:Math.min(w/2-4,Math.max(w/4,13))}]]   /* число — правее оси и волнистой линии (она в 7 мм от оси), чтобы линии его не пересекали */
+        const mk=a=>Math.abs(xa+xb)<0.6?[['F','h',[xa,z],[xb,z],a,fm(w),{tx:4+(String(fm(w)).length*3.7+3)/2}]]   /* число — правее оси и волнистой линии (она в 7 мм от оси), чтобы линии его не пересекали */
           :xa>0.5?[seg(0,xa,a,-1),seg(xa,xb,a,1)]:xb<-0.5?[seg(xa,xb,a,-1),seg(xb,0,a,1)]
           :[seg(xa,0,a,-1),seg(0,xb,a,1)];   /* несимметричный — цепочкой от оси, в одну линию */
         if(at!=null) d.push(...mk(at)); else OUT.push({w:Math.max(-xa,xb,w*(Math.abs(xa+xb)<0.6?0.5:1)),mk}); }); });
@@ -140,7 +145,7 @@ function build(){
     cut:[K([[0,20],[40,60],[20,90],[-20,90],[-40,60]])]});
   /* 18 — конус Ø110 (вершина на z 120) срезан на z 60 (Ø55); на срезе — шестигранная призма, вписанная в Ø55 (вершины
         спереди и сзади), до z 120; K — трапеция: 60 на z 20, 25 на z 100 */
-  add(18,{title:'Конус и шестигранная призма',lv:[60],ex:[['T','dia',[0,0],55,-60,12,'Ø55',1,{}]],dia:110,box:[[-55,-55,0],[55,55,120]],hz:60,
+  add(18,{title:'Конус и шестигранная призма',lv:[60],ex:[['T','dia',[0,0],55,-60,12,'Ø55',1,{}]],dia:110,box:[[-55,-55,0],[55,55,120]],hz:65,
     outer:U(P.cone(55,27.5,0,60),pri(6,55,59.9,120,90)),
     cut:[K([[-30,20],[30,20],[12.5,100],[-12.5,100]])]});
   /* 19 — «катушка» (тело вращения): торцы Ø110 на z 0 и z 120, конусы до Ø38 на z 25 и z 95, короткие переходы к

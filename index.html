@@ -28915,6 +28915,8 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
       +`<g clip-path="url(#${id}a)">${img(C,top,0,k*C.TY)}</g><g clip-path="url(#${id}b)">${img(C,cut,0,k*C.TY)}</g>`; }
   else o+=img(C,DR('top'),0,k*C.TY);
   if(sp.xb) o+=IGUI.wavy(FR(sp.xb,C.z0+0.5),FR(sp.xb,C.z1-0.5)); if(sp.yb) o+=IGUI.wavy(LF(sp.yb,C.z0+0.5),LF(sp.yb,C.z1-0.5));
+  /* волнистая — тоже помеха для размерных чисел (полоса шириной в её размах) */
+  if(REC) [[sp.xb,FR],[sp.yb,LF]].forEach(([v,T])=>{ if(!v) return; const a=T(v,C.z0), b=T(v,C.z1); [-4,0,4].forEach(d=>REC.s.push([a[0]+d,a[1],b[0]+d,b[1]])); });
   /* оси симметрии (ГОСТ 2.303): выходят за контур на 2–5 мм */
   const R=Math.max(C.x1,-C.x0,C.y1,-C.y0);
   /* на виде сверху оси пересекают центровые окружности отверстий — там у обеих линий штрих (опоры осей и окружностей) */

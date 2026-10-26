@@ -1,6 +1,6 @@
 /* Нормоконтроль листов ИГ (tests/normo.js, tests/normo-model.js) по всем листам сайта.
    node tests/normo-run.js            — все листы ДЗ 2 и задания 4 (по 30 вариантов: чистовик и черновик) и лист урока
-   node tests/normo-run.js --only=8   — один вариант;  --nomodel — без сверки с 3D-моделью;  --mut — проверка проверки
+   node tests/normo-run.js --only=8   — один вариант;  --set=ig3 | ig4 | dz2 — один набор;  --nomodel — без сверки с 3D-моделью;  --mut — проверка проверки
    Из tests/run.js вызывается runNormo(page). */
 const fs=require('fs'), path=require('path');
 const SRC=['normo.js','normo-model.js'].map(f=>path.join(__dirname,f)).filter(f=>fs.existsSync(f)).map(f=>fs.readFileSync(f,'utf8'));
@@ -12,7 +12,7 @@ async function inject(page){ /* чертёжный шрифт должен бы�
 /* все листы: [имя, функция в странице, модель] */
 async function runNormo(page,o){ o=o||{}; await inject(page);
   const only=o.only?o.only.map(Number):null;
-  return page.evaluate(async({only,model,o3,o4,dz2})=>{ const out=[], t0=Date.now(), stat={sheets:0,ms:0};
+  return page.evaluate(async({only,model,o3,o4,dz2,igSample})=>{ const out=[], t0=Date.now(), stat={sheets:0,ms:0};
     const one=(name,svg,opt)=>{ stat.sheets++; let r; try{ r=NORMO.check(svg,opt); }catch(e){ out.push({name,rule:'ошибка проверки',msg:String(e&&e.stack||e).slice(0,200)}); return; }
       r.issues.forEach(i=>out.push({name,rule:'ГОСТ '+i.gost+' · '+i.rule,msg:i.msg+(i.at?' (у '+i.at.map(v=>Math.round(v)).join(', ')+' мм)':''),sev:i.sev,at:i.at,k:r.k})); return r; };
     const pause=()=>new Promise(r=>setTimeout(r,0));
@@ -21,11 +21,11 @@ async function runNormo(page,o){ o=o||{}; await inject(page);
       one('ИГ ДЗ 2, вариант '+n+', черновик',IGS.sheet(n,'draft'),{draft:true}); await pause(); }
     /* ИГ, задания 3 и 4 (dz/ig/N/models.js): те же листы, тот же модуль */
     for(const [id,on] of [['ig3',o3],['ig4',o4]]){ const PN=window.DZR&&DZR.get(id); if(!on||!PN||!PN.part) continue; const N=id.slice(2);
-      for(let n=1;n<=30;n++){ if(only&&!only.includes(n)) continue; const m=PN.part(n); if(!m) continue; const R={md:m,nv:n,key:id+'-'+n,dims:m.dims||[]};
+      for(let n=1;n<=30;n++){ if(only&&!only.includes(n)) continue; if(!only&&igSample&&!igSample.includes(n)) continue; const m=PN.part(n); if(!m) continue; const R={md:m,nv:n,key:id+'-'+n,dims:m.dims||[]};
         one('ИГ задание '+N+', вариант '+n+', чистовик',IGS.sheet(R,'clean'),{model:model?m:null,spec:IGUI.igSpec(m)}); await pause();
         one('ИГ задание '+N+', вариант '+n+', черновик',IGS.sheet(R,'draft'),{draft:true}); await pause(); } }
     if(!only&&dz2&&window.IGL){ one('ИГ урок (вариант 5), чистовик',IGL.sheet('clean'),{model:model&&window.IG_VARS?IG_VARS[5]:null,spec:IGUI.igSpec(IG_VARS[5])}); one('ИГ урок (вариант 5), черновик',IGL.sheet('draft'),{draft:true}); }
-    stat.ms=Date.now()-t0; return {issues:out,stat}; },{only,model:!o.nomodel,o3:o.ig3!==false,o4:o.ig4!==false,dz2:o.dz2!==false}); }
+    stat.ms=Date.now()-t0; return {issues:out,stat}; },{only,model:!o.nomodel,o3:o.ig3!==false,o4:o.ig4!==false,dz2:o.dz2!==false,igSample:o.igSample||null}); }
 
 module.exports={runNormo,inject,SRC};
 
