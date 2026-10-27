@@ -267,6 +267,11 @@ function run(F,opt){
       const inv=f.M, det=inv.a*inv.d-inv.b*inv.c, x=p[0]-inv.e, y=p[1]-inv.f, lp=svgPt(f.el,(inv.d*x-inv.c*y)/det,(-inv.b*x+inv.a*y)/det);
       if(f.el.isPointInFill(lp)) (axis==='v'?p[0]:p[1])<(axis==='v'?box.ax:box.ay)?a++:b++; } return [a,b]; };
   const axLines=chains;   /* оси — целиком, из всех кусков */
+  /* симметрична ли деталь слева направо (по 3D-модели, если она есть): у несимметричной половина разреза справа от вертикальной оси невозможна —
+     так различаем раскладки вида сверху, когда штриховка по одну сторону от обеих осей */
+  const lrSym=opt.model&&window.IG3?(()=>{ const b=opt.model.box, T=opt.model.tree; let bad=0, sd=777; const rnd=()=>(sd=(sd*1103515245+12345)%2147483648)/2147483648;
+    for(let i=0;i<4000&&bad<5;i++){ const x=b[0][0]+rnd()*(b[1][0]-b[0][0]), y=b[0][1]+rnd()*(b[1][1]-b[0][1]), z=b[0][2]+rnd()*(b[1][2]-b[0][2]); if((IG3.J(T,x,y,z)<0)!==(IG3.J(T,-x,y,z)<0)) bad++; }
+    return bad<5; })():null;
   [FV,LV,TV].forEach((w,wi)=>{ if(!w) return; const H=hatchOf(w); if(!H.length) return; const cx=(w.b[0]+w.b[2])/2, cy=(w.b[1]+w.b[3])/2;
     const vx=axLines.find(it=>{ const P=it.polys[0]; return Math.abs(P[0][0]-P[1][0])<0.05*k&&Math.abs(P[0][0]-cx)<1*k&&Math.min(P[0][1],P[1][1])<w.b[1]&&Math.max(P[0][1],P[1][1])>w.b[3]; });
     const hy=axLines.find(it=>{ const P=it.polys[0]; return Math.abs(P[0][1]-P[1][1])<0.05*k&&Math.abs(P[0][1]-cy)<1*k&&Math.min(P[0][0],P[1][0])<w.b[0]&&Math.max(P[0][0],P[1][0])>w.b[2]; });
@@ -276,7 +281,7 @@ function run(F,opt){
     /* разрез только с одной стороны оси — это половина разреза: справа от вертикальной оси или снизу от горизонтальной */
     /* на виде сверху граница бывает и вертикальной осью (разрез справа), и горизонтальной (разрез снизу) — v: по вертикальной оси */
     const hV=L+Rr>0&&Math.min(L,Rr)<0.08*(L+Rr)?(L>Rr?'left':'right'):null, hH=U+D>0&&Math.min(U,D)<0.08*(U+D)?(U>D?'up':'down'):null;
-    const v=wi<2||!!hV&&!hH, half=v?hV:hH;
+    const v=wi<2||!!hV&&(!hH||lrSym===true), half=v?hV:hH;
     if(v&&half==='left'&&vx) add('2.305','половина разреза — справа от оси','на '+name+' разрез слева от оси симметрии',[box.ax-5*k,cy]);
     if(!v&&half==='up'&&hy) add('2.305','половина разреза — снизу от оси','на '+name+' разрез сверху от оси',[cx,box.ay-5*k]);
     /* на половине вида невидимый контур не проводят */
@@ -391,7 +396,7 @@ function run(F,opt){
   { const used=labs.map(t=>t.s[0]); const dup=used.filter((L,i)=>used.indexOf(L)!==i); dup.forEach(L=>add('2.305','буквы не повторяются','«'+L+'–'+L+'» дважды',labs.find(t=>t.s[0]===L).c)); }
 
   /* ── сверка с 3D-моделью ── */
-  if(opt.model&&window.NORMO_MODEL) NORMO_MODEL(F,opt.model,{k,FV,LV,TV,segAll,items,fills,hatch,add,opt,axLines:chains,marks,labs});
+  if(opt.model&&window.NORMO_MODEL) NORMO_MODEL(F,opt.model,{k,FV,LV,TV,segAll,items,fills,hatch,add,opt,axLines:chains,marks,labs,lrSym});
   return {k,fmt:F.fmt,views:F.views,s:R(s,2),model:F.modelStats,review:F.review||[],issues}; }
 
 window.NORMO={check,flatten};

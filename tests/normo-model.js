@@ -46,7 +46,7 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
     /* граница вида и разреза: волнистая линия этого изображения или ось симметрии */
     /* на виде сверху граница — вертикальная ось (разрез справа, как на главном виде) или горизонтальная (разрез снизу): пробуем обе */
     let vert, wav, axs, axC, bnd, half;
-    for(const vv of name==='top'?[true,false]:[true]){ vert=vv;
+    for(const vv of name==='top'?(C.lrSym===false?[false,true]:[true,false]):[true]){ vert=vv;   /* несимметричная слева направо — сначала горизонтальная граница */
       /* волнистая: тонкая кривая вдоль границы (вертикальная на главном виде и виде слева), колеблется у хорды не больше чем на 1,5 мм */
       const isWavy=it=>{ if(!it.curve||it.kind!=='thin'||it.view>=0) return false; const P=it.polys[0], A=P[0], B=P[P.length-1], L=dist(A,B); if(L<10*k) return false;
         if(vert?Math.abs(B[0]-A[0])>0.05*L:Math.abs(B[1]-A[1])>0.05*L) return false; let dev=0, sg=0, ch=0; P.forEach(p=>{ const d=((B[0]-A[0])*(p[1]-A[1])-(B[1]-A[1])*(p[0]-A[0]))/L; dev=Math.max(dev,Math.abs(d)); const s2=Math.sign(d); if(s2&&s2!==sg){ ch++; sg=s2; } }); return dev<1.5*k&&ch>=4; };
