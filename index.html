@@ -27630,7 +27630,7 @@ function sheetSVG(model,title,sub,task,mode){
   if(D.left){ const la=P(D.left,[0,0,z0-7],X0+S,Y0), lb=P(D.left,[0,0,z1+7],X0+S,Y0); o+=ln(la,lb,'#111',AX,.8); }
   if(!given&&SP.xb) o+=wavy(P(D.front,[SP.xb,0,z0+0.5],X0,Y0),P(D.front,[SP.xb,0,z1-0.5],X0,Y0));
   if(!given&&SP.yb&&D.left) o+=wavy(P(D.left,[0,SP.yb,z0+0.5],X0+S,Y0),P(D.left,[0,SP.yb,z1-0.5],X0+S,Y0));
-  o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);
+  if(!(given&&model.noTop)) o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);   /* вида сверху в задании нет — и его осей нет */
   /* оси отверстий (ГОСТ 2.303): на виде сверху — центровая окружность и перекрестия, на главном виде и виде слева — оси отверстий */
   if(!given){ const HL=holeAxes(model), done={c:{},x:{},y:{}}; HL.forEach(h=>{ const R=Math.hypot(h.x,h.y), q=P(D.top,[h.x,h.y,z1],X0,TOPY), a=h.r+3;
       if(!done.c[R.toFixed(1)]){ done.c[R.toFixed(1)]=1; const c0=P(D.top,[0,0,z1],X0,TOPY); o+=axCircle(c0,R*Km,HL.filter(q=>Math.abs(Math.hypot(q.x,q.y)-R)<0.05).map(q=>Math.atan2(q.y,q.x)*180/Math.PI),Km,'#111',.7); }
@@ -27849,6 +27849,7 @@ function stepLines(model,i){ const c=model._sl||(Object.defineProperty(model,'_s
   const nw=cur.filter(s=>!was(s)), old=cur.filter(s=>was(s));
   return c[i]={old:IG3.paths(old),cur:IG3.paths(nw),segs:nw}; }
 function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':'Главный вид и вид сверху — из задания.'+(model.givenTop?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду — дальше он уже достроен.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
+   ...(model.noTop?[['top','Вид сверху','Вида сверху в задании нет — строим его первым, под главным видом. Ширины переносим с главного вида вертикальными линиями связи; глубины берём из формы тела (у шара и цилиндра контур сверху — окружность того же диаметра). Отверстия, идущие вдоль взгляда (K), видны сверху как линии по их ширине на главном виде; невидимые контуры — штриховыми. Дальше глубины для вида слева берём с этого вида.']]:[]),
    ['axis','Ось симметрии вида слева','Сначала проводим ось симметрии вида слева — от неё будем откладывать глубины. Высоты общие с главным видом.']];
   let first=true;
   FT.forEach((f,i)=>{ const u=stepLines(model,i); if(!u.segs.length) return;   /* элемент не добавляет линий на виде слева — шаг не нужен */
@@ -27902,7 +27903,8 @@ function stepsSVG(model,st,steps){
   /* оси симметрии */
   const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
   const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0], noT=kind==='given'&&model.noTop; if(!noT) o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
-  if(kind!=='given'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
+  if(kind==='top') [b[0][0],b[1][0]].forEach(x=>{ o+=L(FR([x,0,z0]),TP([x,b[1][1],z1]),AC,null,1); });   /* построение вида сверху: ширины — вертикальными линиями связи */
+  if(kind!=='given'&&kind!=='top'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
   /* как в задании: оси отверстий и центровая окружность на виде сверху, след плоскости А на главном виде — с первого шага */
   { const Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10, dn={};
     if(!noT) holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), q=TP([h.x,h.y,z1]), a=h.r+3, ux=h.x/R, uy=h.y/R;
