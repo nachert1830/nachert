@@ -184,7 +184,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
      угол ребра с плоскостью), выбор варианта подставляет его данные и показывает те же числа; варианты-«зеркала» дают равные ответы;
      ответы варианта, вписанные как свои, проходят проверку */
   { const hp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const he=[]; hp.on('pageerror',e=>he.push(String(e)));
-    await hp.goto(URL+'#/dz/ng3/my'); await hp.waitForTimeout(1500);
+    await hp.goto(URL+'#/ng/dz/3/my'); await hp.waitForTimeout(1500);
     const out=await hp.evaluate(async()=>{ const bad=[], S=HWCHECK.SPEC['3'], V=S.vars, sub=(a,b)=>a.map((v,i)=>v-b[i]), dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], ln=a=>Math.sqrt(dt(a,a)), D=r=>r*180/Math.PI;
       const keys=Object.keys(V); if(keys.length!==30) bad.push({name:'ДЗ №3',rule:'30 вариантов',msg:'в таблице '+keys.length});
       const fmt=x=>String(Math.round(x*10)/10).replace('.',',');
@@ -203,7 +203,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
       if(!/Все условия выполнены/.test(document.getElementById('hcRes').textContent)) bad.push({name:'ДЗ №3, вариант 17',rule:'ответы варианта проходят проверку',msg:document.getElementById('hcRes').textContent.slice(0,160)});
       document.querySelector('.hc-clr').click(); try{ localStorage.removeItem('nch2_hwvar_3'); }catch(e){}
       return bad; });
-    he.forEach(e=>out.push({name:'#/dz/ng3/my',rule:'ошибка JS',msg:e.slice(0,200)}));
+    he.forEach(e=>out.push({name:'#/ng/dz/3/my',rule:'ошибка JS',msg:e.slice(0,200)}));
     info.push('ДЗ №3, таблица вариантов: '+out.length+' замечаний (30 вариантов: данные, ответы, проверка своих чисел)');
     report('ДЗ №3: варианты и ответы',out); await hp.close(); }
 
