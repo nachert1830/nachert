@@ -44,19 +44,22 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
         const M=f.M; cx.transform(M.a,M.b,M.c,M.d,M.e,M.f); cx.fillStyle='#000'; cx.fill(new Path2D(f.el.getAttribute('d')),(getComputedStyle(f.el).fillRule==='evenodd')?'evenodd':'nonzero'); cx.restore(); });
       const D=cx.getImageData(0,0,cw,ch).data; return p=>{ const i=Math.floor((p[0]-X0)/q), j=Math.floor((p[1]-Y0)/q); return i>=0&&j>=0&&i<cw&&j<ch&&D[(j*cw+i)*4+3]>127; }; })();
     /* граница вида и разреза: волнистая линия этого изображения или ось симметрии */
-    const vert=name!=='top';
-    /* волнистая: тонкая кривая вдоль границы (вертикальная на главном виде и виде слева), колеблется у хорды не больше чем на 1,5 мм */
-    const isWavy=it=>{ if(!it.curve||it.kind!=='thin'||it.view>=0) return false; const P=it.polys[0], A=P[0], B=P[P.length-1], L=dist(A,B); if(L<10*k) return false;
-      if(vert?Math.abs(B[0]-A[0])>0.05*L:Math.abs(B[1]-A[1])>0.05*L) return false; let dev=0, sg=0, ch=0; P.forEach(p=>{ const d=((B[0]-A[0])*(p[1]-A[1])-(B[1]-A[1])*(p[0]-A[0]))/L; dev=Math.max(dev,Math.abs(d)); const s2=Math.sign(d); if(s2&&s2!==sg){ ch++; sg=s2; } }); return dev<1.5*k&&ch>=4; };
-    const wav=segAll.filter(q=>isWavy(q.it)&&[q.a,q.b].every(p=>p[0]>=w.b[0]-1&&p[0]<=w.b[2]+1&&p[1]>=w.b[1]-1&&p[1]<=w.b[3]+1));
-    /* ось — вдоль всего изображения: длина в его пределах ≥ 60 % (у выступа по краю ось кончается у контура на оси, ниже края вида) */
-    const cover=(a,b,lo,hi)=>Math.max(0,Math.min(Math.max(a,b),hi)-Math.max(Math.min(a,b),lo))>=0.6*(hi-lo);
-    const axs=C.axLines.filter(it=>{ const P=it.polys[0]; return vert?Math.abs(P[0][0]-P[1][0])<0.05*k&&P[0][0]>w.b[0]&&P[0][0]<w.b[2]&&cover(P[0][1],P[1][1],w.b[1],w.b[3])
-      :Math.abs(P[0][1]-P[1][1])<0.05*k&&P[0][1]>w.b[1]&&P[0][1]<w.b[3]&&cover(P[0][0],P[1][0],w.b[0],w.b[2]); });
-    const axC=axs.map(it=>vert?it.polys[0][0][0]:it.polys[0][0][1]).sort((a,b)=>Math.abs(a-(vert?(w.b[0]+w.b[2])/2:(w.b[1]+w.b[3])/2))-Math.abs(b-(vert?(w.b[0]+w.b[2])/2:(w.b[1]+w.b[3])/2)))[0];
-    const bnd=wav.length?wav.reduce((s,q)=>s+(vert?(q.a[0]+q.b[0])/2:(q.a[1]+q.b[1])/2),0)/wav.length:axC;
-    let half=null; if(H.length){ let a=0,b=0; const n=40; for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const p=[w.b[0]+(w.b[2]-w.b[0])*(i+.5)/n,w.b[1]+(w.b[3]-w.b[1])*(j+.5)/n]; if(hatched(p)) (bnd==null?0:(vert?p[0]:p[1])<bnd)?a++:b++; }
-      half=bnd==null||Math.min(a,b)>0.08*(a+b)?'full':vert?(a>b?'left':'right'):(a>b?'up':'down'); }
+    /* на виде сверху граница — вертикальная ось (разрез справа, как на главном виде) или горизонтальная (разрез снизу): пробуем обе */
+    let vert, wav, axs, axC, bnd, half;
+    for(const vv of name==='top'?[true,false]:[true]){ vert=vv;
+      /* волнистая: тонкая кривая вдоль границы (вертикальная на главном виде и виде слева), колеблется у хорды не больше чем на 1,5 мм */
+      const isWavy=it=>{ if(!it.curve||it.kind!=='thin'||it.view>=0) return false; const P=it.polys[0], A=P[0], B=P[P.length-1], L=dist(A,B); if(L<10*k) return false;
+        if(vert?Math.abs(B[0]-A[0])>0.05*L:Math.abs(B[1]-A[1])>0.05*L) return false; let dev=0, sg=0, ch=0; P.forEach(p=>{ const d=((B[0]-A[0])*(p[1]-A[1])-(B[1]-A[1])*(p[0]-A[0]))/L; dev=Math.max(dev,Math.abs(d)); const s2=Math.sign(d); if(s2&&s2!==sg){ ch++; sg=s2; } }); return dev<1.5*k&&ch>=4; };
+      wav=segAll.filter(q=>isWavy(q.it)&&[q.a,q.b].every(p=>p[0]>=w.b[0]-1&&p[0]<=w.b[2]+1&&p[1]>=w.b[1]-1&&p[1]<=w.b[3]+1));
+      /* ось — вдоль всего изображения: длина в его пределах ≥ 60 % (у выступа по краю ось кончается у контура на оси, ниже края вида) */
+      const cover=(a,b,lo,hi)=>Math.max(0,Math.min(Math.max(a,b),hi)-Math.max(Math.min(a,b),lo))>=0.6*(hi-lo);
+      axs=C.axLines.filter(it=>{ const P=it.polys[0]; return vert?Math.abs(P[0][0]-P[1][0])<0.05*k&&P[0][0]>w.b[0]&&P[0][0]<w.b[2]&&cover(P[0][1],P[1][1],w.b[1],w.b[3])
+        :Math.abs(P[0][1]-P[1][1])<0.05*k&&P[0][1]>w.b[1]&&P[0][1]<w.b[3]&&cover(P[0][0],P[1][0],w.b[0],w.b[2]); });
+      axC=axs.map(it=>vert?it.polys[0][0][0]:it.polys[0][0][1]).sort((a,b)=>Math.abs(a-(vert?(w.b[0]+w.b[2])/2:(w.b[1]+w.b[3])/2))-Math.abs(b-(vert?(w.b[0]+w.b[2])/2:(w.b[1]+w.b[3])/2)))[0];
+      bnd=wav.length?wav.reduce((s,q)=>s+(vert?(q.a[0]+q.b[0])/2:(q.a[1]+q.b[1])/2),0)/wav.length:axC;
+      half=null; if(H.length){ let a=0,b=0; const n=40; for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const p=[w.b[0]+(w.b[2]-w.b[0])*(i+.5)/n,w.b[1]+(w.b[3]-w.b[1])*(j+.5)/n]; if(hatched(p)) (bnd==null?0:(vert?p[0]:p[1])<bnd)?a++:b++; }
+        half=bnd==null||Math.min(a,b)>0.08*(a+b)?'full':vert?(a>b?'left':'right'):(a>b?'up':'down'); }
+      if(name!=='top'||half&&half!=='full') break; }
     /* секущая плоскость: по обозначению над изображением, иначе — плоскость симметрии (0) */
     let plane=null; if(H.length){ plane=name==='top'?null:0;
       const lab=labs.find(t=>t.c[0]>w.b[0]-5*k&&t.c[0]<w.b[2]+5*k&&t.c[1]<w.b[1]&&t.c[1]>w.b[1]-70*k);   /* над размерами над видом — может стоять высоко */
