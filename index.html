@@ -27648,10 +27648,11 @@ function sheetSVG(model,title,sub,task,mode){
     if(D.left) FL.L.forEach(h=>{ o+=ln(P(D.left,[0,h.y,h.z0-4],X0+S,Y0),P(D.left,[0,h.y,h.z1+4],X0+S,Y0),'#111',AX,.7); }); }
   const arr=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*9-dy*2.6)},${f(dy*9+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="#111"/>`;
   const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+(hz?22*Km+16:26);   /* при горизонтальном разрезе размер — за его штрихом */
-  o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.7)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.7)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.7)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
+  const noDim=!!(window.IG_WB&&IG_WB.includes(model));   /* рабочая тетрадь: размеры на листе не нужны (в задании их нет) */
+  if(!noDim) o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.7)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.7)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.7)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
     +`<text x="${f(hx-5)}" y="${f((hb[1]+ht[1])/2)}" transform="rotate(-90 ${f(hx-5)} ${f((hb[1]+ht[1])/2)})" class="igs-dim" text-anchor="middle">${Math.round(z1-z0)}</text>`;
   const sx=Math.abs(b[0][0]+b[1][0])<0.5, wl=P(D.front,[sx?-r:b[0][0],0,zw],X0,Y0), wr=P(D.front,[sx?r:b[1][0],0,zw],X0,Y0), wy=P(D.front,[0,0,z0],X0,Y0)[1]+24;   /* несимметричная деталь — по её краям */
-  o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.7)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.7)+ln([wl[0],wy],[wr[0],wy],'#111',null,.7)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
+  if(!noDim) o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.7)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.7)+ln([wl[0],wy],[wr[0],wy],'#111',null,.7)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
     +`<text x="${f((wl[0]+wr[0])/2+(wr[0]-wl[0])*.22)}" y="${f(wy-5)}" class="igs-dim" text-anchor="middle">${round&&sx?'Ø':''}${Math.round(sx?2*r:b[1][0]-b[0][0])}</text>`;
   if(model.sec){ const [[x1,z1s],[x2,z2s]]=model.sec.p; o+=secMark(P(D.front,[x1,0,z1s],X0,Y0),P(D.front,[x2,0,z2s],X0,Y0),Km,given?'А':secL(model)); }
   if(!given&&prL(model)&&D.left){ const L=prL(model), lt=P(D.left,[0,0,z1],X0+S,Y0); o+=secMark(P(D.top,[0,-r-3,z1],X0,TOPY),P(D.top,[0,r+3,z1],X0,TOPY),Km,L)+`<text x="${f(lt[0])}" y="${f(lt[1]-16)}" class="igs-let" text-anchor="middle">${L}–${L}</text>`; }
@@ -27871,7 +27872,7 @@ function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дан�
       +(LT.f?' Фронтальная плоскость здесь — не плоскость симметрии детали (спереди и сзади деталь разная), поэтому разрез обозначают: на виде сверху — разомкнутая линия со стрелками и буквами '+LT.f+', над главным видом — «'+LT.f+'–'+LT.f+'».':'')
       +(sp.F!=='view'&&!LT.f||sp.L!=='view'&&!LT.p?' Разрез, плоскость которого — плоскость симметрии детали и который стоит в проекционной связи, не обозначают.':'')]); }
   if(model.sec) out.push(['sec','Сечение '+secL(model)+'–'+secL(model),'Наклонная плоскость задана следом на главном виде. Точки контура переносим перпендикулярно следу — фигура строится в натуральную величину, со штриховкой.']);
-  out.push(['sheet','Готовый лист','Все изображения на листе в проекционной связи, с осями, размерами и основной надписью.']);
+  out.push(['sheet','Готовый лист','Все изображения на листе в проекционной связи, с осями'+(window.IG_WB&&IG_WB.includes(model)?'':', размерами')+' и основной надписью.']);
   return out; }
 /* характерные точки элемента на виде слева: верхний и нижний уровни и излом между ними; на каждом уровне — ближайшая к нам точка контура */
 function featPts(segs){ const P=[]; segs.forEach(q=>{ P.push(q.a3,q.b3); }); if(!P.length) return [];
