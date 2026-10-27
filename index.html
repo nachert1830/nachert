@@ -27517,6 +27517,7 @@ L[4].tree=S({t:'sph',r:71}, thru(65,-20,30.5), P.cyl(23.5,-80,80));
    givenTop — что дано на виде сверху («достроить» — только наружный контур тела); noTop — вид сверху не дан */
 const HZ={1:68,2:80,3:57.5,4:44.5,5:5,6:84,7:20,8:71.5,9:3,10:35}, FV={1:'view',2:'view',3:'view',4:'view'};
 L.forEach(t=>{ t.hz={L:'А',z:HZ[t.n]}; t.spec={F:FV[t.n]||'half',L:'half'}; if(/^Достроить вид сверху|^Достроить вид спереди и вид сверху/.test(t.q)) t.givenTop=t.tree.a; if(/^Построить вид сверху/.test(t.q)) t.noTop=true; });
+L[4].givenTop=S({t:'sph',r:71}, P.cyl(23.5,-80,80));   /* 5: на виде сверху дано и вертикальное отверстие — две окружности, как в тетради */
 return L;
 })();
 
@@ -27847,7 +27848,7 @@ function stepLines(model,i){ const c=model._sl||(Object.defineProperty(model,'_s
       if(q.h!==s.h) continue; const ux=q.b[0]-q.a[0], uy=q.b[1]-q.a[1], l=Math.hypot(ux,uy)||1e-9, u=((p[0]-q.a[0])*ux+(p[1]-q.a[1])*uy)/(l*l); if(u>-0.02&&u<1.02&&Math.abs((p[0]-q.a[0])*uy-(p[1]-q.a[1])*ux)/l<0.5) return true; } return false; });
   const nw=cur.filter(s=>!was(s)), old=cur.filter(s=>was(s));
   return c[i]={old:IG3.paths(old),cur:IG3.paths(nw),segs:nw}; }
-function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано','Главный вид и вид сверху — из задания. Вид слева строим справа от главного вида, на одной высоте с ним.'],
+function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':'Главный вид и вид сверху — из задания.'+(model.givenTop?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду — дальше он уже достроен.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
    ['axis','Ось симметрии вида слева','Сначала проводим ось симметрии вида слева — от неё будем откладывать глубины. Высоты общие с главным видом.']];
   let first=true;
   FT.forEach((f,i)=>{ const u=stepLines(model,i); if(!u.segs.length) return;   /* элемент не добавляет линий на виде слева — шаг не нужен */
@@ -27883,7 +27884,8 @@ function stepsSVG(model,st,steps){
   const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2], cut=kind==='cut'||kind==='sec';
   let o='';
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
-  o+=img(cut?'front':'front0',X0,Y0)+img('top',X0,TOPY);
+  if(kind==='given'&&model.givenTop) d.topG=IG3.drawing({tree:model.givenTop,box:model.box},'top',W);   /* «Дано» — вид сверху как в задании (не достроен) */
+  o+=img(cut?'front':'front0',X0,Y0)+(kind==='given'&&model.noTop?'':img(kind==='given'&&d.topG?'topG':'top',X0,TOPY));
   if(cut){ o+=img('left',X0+S,Y0);
     /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
     if(sp.xb) o+=wavy(P('front',[sp.xb,0,z0+0.5],X0,Y0),P('front',[sp.xb,0,z1-0.5],X0,Y0)); if(sp.yb) o+=wavy(P('left',[0,sp.yb,z0+0.5],X0+S,Y0),P('left',[0,sp.yb,z1-0.5],X0+S,Y0));
@@ -27899,11 +27901,11 @@ function stepsSVG(model,st,steps){
     view=`<g transform="translate(${X0+S} ${Y0}) scale(${k0})">${g(u.old,'#111')}${g(u.cur,HL)}</g>`; }
   /* оси симметрии */
   const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
-  const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0]; o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
+  const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0], noT=kind==='given'&&model.noTop; if(!noT) o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
   if(kind!=='given'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
   /* как в задании: оси отверстий и центровая окружность на виде сверху, след плоскости А на главном виде — с первого шага */
   { const Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10, dn={};
-    holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), q=TP([h.x,h.y,z1]), a=h.r+3, ux=h.x/R, uy=h.y/R;
+    if(!noT) holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), q=TP([h.x,h.y,z1]), a=h.r+3, ux=h.x/R, uy=h.y/R;
       if(!dn[R.toFixed(1)]){ dn[R.toFixed(1)]=1; o+=`<circle cx="${f(tc[0])}" cy="${f(tc[1])}" r="${f(R*Km)}" fill="none" stroke="#111" stroke-width=".7" stroke-dasharray="${AX}"/>`; }
       o+=L(TP([h.x-ux*a,h.y-uy*a,z1]),TP([h.x+ux*a,h.y+uy*a,z1]),'#111',AX,.5)+L(TP([h.x+uy*a,h.y-ux*a,z1]),TP([h.x-uy*a,h.y+ux*a,z1]),'#111',AX,.5); });
     if(model.sec&&kind!=='sec'){ const [[x1,za],[x2,zb]]=model.sec.p; o+=secMark(FR([x1,0,za]),FR([x2,0,zb]),Km,secL(model)); } }
