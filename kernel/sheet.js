@@ -33,7 +33,7 @@ function draw(items,T,sc,mode,occ){ const S=L.S, out=[], st=ST[mode], lab=[], u=
   const unit=d=>{ const l=Math.hypot(d[0],d[1])||1; return [d[0]/l,d[1]/l]; };
   const ext=(a,b,e0,e1)=>{ const d=unit([b[0]-a[0],b[1]-a[1]]); return [[a[0]-d[0]*e0,a[1]-d[1]*e0],[b[0]+d[0]*e1,b[1]+d[1]*e1]]; };
   const DIR={ne:[1,-1],nw:[-1,-1],se:[1,1],sw:[-1,1],n:[0,-1],s:[0,1],e:[1,0],w:[-1,0]};
-  items.forEach(it=>{ if(!it) return; const k=it.k;
+  items.forEach(it=>{ if(!it||it.k==='ghost') return; const k=it.k;   /* бледное «дано» (полные очерки до решения) на лист не идёт */
     switch(it.t){
       case 'seg': if(k==='ghost') break; line(it.a,it.b,k); if(it.l&&k!=='paper') lab.push({at:it.lat||[(it.a[0]+it.b[0])/2,(it.a[1]+it.b[1])/2],l:it.l,la:it.la,k,sz:3.5}); break;
       case 'line': { if(k==='ghost') break; const [a,b]=ext(it.a,it.b,it.e0===undefined?14:it.e0,it.e1===undefined?14:it.e1); line(a,b,k); if(it.l) lab.push({at:b,l:it.l,la:it.la,k,sz:3.5}); break; }

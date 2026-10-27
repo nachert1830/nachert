@@ -6362,6 +6362,7 @@ return {has,html,bind,SPEC,ans3};
 <script src="dz/ng/3/solver.js"></script>
 <script src="dz/ng/4/variants.js"></script>
 <script src="dz/ng/4/method.js"></script>
+<script src="dz/ng/4/surf.js"></script>
 <script src="dz/ng/4/solver.js"></script>
 <script src="dz/ng/5/variants.js"></script>
 <script src="dz/ng/5/method.js"></script>
@@ -23091,7 +23092,7 @@ function pairUp(cand,segs,seen,key,prof,ctx,nameAt){
 }
 function model(items,regItems){
   const RI=regItems||items, prof=RI.some(i=>i&&(i.t==='axis3'||(i.t==='pt'&&i.l&&isProf(i.l))));
-  const CS=coordSet(RI), pts={}, segs=[], polys=[], flat=[], dots=[], seen=new Set(), R=registry(RI,CS), ctx=prof?null:liftCtx(RI), cand=[];
+  const CS=coordSet(RI), pts={}, segs=[], polys=[], flat=[], dots=[], meshes=[], seen=new Set(), R=registry(RI,CS), ctx=prof?null:liftCtx(RI), cand=[];
   /* точка в пространстве — по двум её проекциям на чертеже (как строит студент): x — по линии связи, y — из ′, z — из ″ */
   const PJ={}; const collect=(arr,into)=>arr.forEach(i=>{ if(i&&i.t==='pt'&&i.at&&i.l) strip(i.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)([′″])\)?$/.exec(l.trim()); if(m&&m[1].length<5){ const o=into[m[1]]=into[m[1]]||{}; if(!o[m[2]]) o[m[2]]=i.at; } }); });
   collect(items||[],PJ); const PJF={}; collect(RI,PJF);
@@ -23118,6 +23119,9 @@ function model(items,regItems){
       else { const pl=planeOf(it,path); if(!pl) return; ls=fixed(path,pl); } }
     if(ls.length) flat.push({ls,k:it.k||'main',g:it._g||'given'}); };
   (items||[]).forEach(it=>{ if(!it) return;
+    /* тела задачи — сетка треугольников в пространстве (только для 3D; на эпюре и листе её нет) */
+    if(it.t==='mesh3'){ if(it.tris&&it.tris.length) meshes.push({tris:it.tris,col:it.col||'#b9a77a',g:it._g||'given'}); return; }
+    if(it.k==='ghost'&&it.open3d) return;   /* бледные очерки «дано» — в 3D вместо них сами тела */
     if(it.t==='pt'&&it.at&&it.l){
       if(it.at._3) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)[′″]\)?$/.exec(l.trim()); if(m&&m[1].length<5){ const o=pts[m[1]];
         const p3=recon(m[1])||(verified(it.at,CS)?it.at._3:null);
@@ -23137,7 +23141,7 @@ function model(items,regItems){
       const pth=it.t==='line'?extendP(it.a,it.b,it.e0===undefined?14:it.e0,it.e1===undefined?14:it.e1):[it.a,it.b];
       if((it.t==='seg'||it.t==='line')&&/^(main|hid|res|resd|grn|grnd)$/.test(it.k||'main')) cand.push({a:pth[0],b:pth[1],k:it.k||'main',g:it._g||'given',l:strip(it.l||'').trim()});
       F(it,pth); return; }
-    if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)){ polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill}); return; }
+    if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)){ polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill,open:!!it.open3d}); return; }
       F(it,it.p,it.close!==false); return; }
     if(it.t==='curve'&&it.p) F(it,it.p,false);
     else if(it.t==='arc'&&it.c) F(it,arcP(it),false);
@@ -23147,7 +23151,7 @@ function model(items,regItems){
   /* подписанная точка, чья проекция (″ или ′) стоит в этом месте чертежа */
   const nameAt=(q,mk)=>{ for(const src of [PJ,PJF]) for(const nm in src){ const o=src[nm][mk]; if(o&&Math.hypot(o[0]-q[0],o[1]-q[1])<1) return nm; } return null; };
   pairUp(cand,segs,seen,key,prof,ctx,nameAt);
-  return {pts,segs,polys,flat,dots,prof};
+  return {pts,segs,polys,flat,dots,prof,meshes};
 }
 function has(part){ try{ const all=PLAYER.scene(part,(part.steps||[]).length).items, m=model(all); return Object.keys(m.pts).length>=2||m.segs.length>=2; }catch(e){ return false; } }
 /* ── окно ──
@@ -23162,7 +23166,7 @@ function open(t,pi,k){
   const fullItems=PLAYER.scene(part,n).items, full=model(fullItems), cache={};
   const M=kk=>cache[kk]||(cache[kk]=model(PLAYER.scene(part,kk).items,fullItems));
   /* рамка по всей задаче — при смене шага и вращении масштаб не прыгает */
-  const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p),...full.flat.map(o=>[].concat(...o.ls)),full.dots.map(d=>d.p));
+  const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p),...full.flat.map(o=>[].concat(...o.ls)),full.dots.map(d=>d.p),...full.meshes.map(o=>[].concat(...o.tris)));
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(0,...all.map(p=>p[i])));
   const pad=[0,1,2].map(i=>Math.max(6,(mx[i]-mn[i])*0.08)); for(let i=0;i<3;i++){ mn[i]-=pad[i]; mx[i]+=pad[i]; }
   const C=[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];
@@ -23265,7 +23269,15 @@ function open(t,pi,k){
       put(nw,hid(mid3([s.a[0],s.a[1],0],[s.b[0],s.b[1],0])),ln([s.a[0],s.a[1],0],[s.b[0],s.b[1],0],{c:col,w:.9,o:.5}));
       put(nw,hid(mid3([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]])),ln([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]],{c:col,w:.9,o:.5})); });
     /* грани */
-    m.polys.forEach(o=>{ const col=COL[o.k]||COL.main, c=o.p.reduce((s,p)=>[s[0]+p[0]/o.p.length,s[1]+p[1]/o.p.length,s[2]+p[2]/o.p.length],[0,0,0]); put(o.g==='new',hid(c),polyS(o.p,col,o.g==='new'?.3:.18,col)); });
+    m.polys.forEach(o=>{ const col=COL[o.k]||COL.main;
+      /* открытая линия в пространстве (кривая пересечения, очерк) — ломаной, без заливки */
+      if(o.open){ const nw=o.g==='new', dsh=/d$|^hid$/.test(o.k); for(let i=1;i<o.p.length;i++) seg3(o.p[i-1],o.p[i],{c:col,w:nw?1.7:1.2,d:dsh?'5 3':null},nw); return; }
+      const c=o.p.reduce((s,p)=>[s[0]+p[0]/o.p.length,s[1]+p[1]/o.p.length,s[2]+p[2]/o.p.length],[0,0,0]); put(o.g==='new',hid(c),polyS(o.p,col,o.g==='new'?.3:.18,col)); });
+    /* тела: треугольники от дальних к ближним, освещение — от зрителя и чуть сверху */
+    let mesh=''; if(m.meshes.length){ const Lt=(()=>{ const v=[-D[0],-D[1],-D[2]+0.7], l=Math.hypot(...v)||1; return v.map(x=>x/l); })(), T3=[];
+      m.meshes.forEach(o=>{ const rgb=[1,3,5].map(i=>parseInt(o.col.slice(i,i+2),16)); o.tris.forEach(t=>{ const q=t.map(P), nr=crs(sub(t[1],t[0]),sub(t[2],t[0])), nl=Math.hypot(...nr)||1;
+        const sh=0.5+0.5*Math.abs(dot(nr,Lt))/nl; T3.push({d:(q[0][2]+q[1][2]+q[2][2])/3,s:`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke-width=".35" fill-opacity=".8" stroke-opacity=".8"/>`}); }); });
+      T3.sort((a,b)=>b.d-a.d); mesh='<g class="t3d-mesh">'+T3.map(x=>x.s).join('')+'</g>'; }
     /* построения на плоскостях проекций (как на эпюре) */
     m.flat.forEach(o=>{ const col=COL[o.k]||COL.main, nw=o.g==='new'; o.ls.forEach(l=>{ for(let i=0;i<l.length-1;i++){ const a=l[i], b=l[i+1], h=hid(mid3(a,b));
       put(nw,h,ln(a,b,{c:col,w:nw?1.15:.8,o:nw?1:.65})); } }); });
@@ -23306,7 +23318,7 @@ function open(t,pi,k){
       +`<radialGradient id="t3bgG" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="var(--t3bg)"/><stop offset="1" stop-color="var(--t3bg)"/></radialGradient></defs>`;
     return defs+`<rect width="${S.VW}" height="${S.VH}" fill="url(#t3bgG)"/>`
       +`<g opacity="${(.5*fadeOld).toFixed(2)}">`+Lr.ho+`</g><g opacity=".55">`+Lr.hn+`</g>`
-      +planes+`<g opacity="${fadeOld}">`+Lr.vo+`</g>`+Lr.vn+sel+labels; };
+      +planes+mesh+`<g opacity="${fadeOld}">`+Lr.vo+`</g>`+Lr.vn+sel+labels; };
   /* плавный переход к виду */
   const cen=(yaw,pit)=>{ const c=spanC(yaw,pit); return {yaw,pit,zoom:1,px:-c.cu*S.sc,py:(S.cy0||0)+c.cv*S.sc}; };
   const views={home:()=>(S.moved=false,HOME),front:()=>cen(0,0),top:()=>cen(0,Math.PI/2)};
