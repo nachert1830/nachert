@@ -164,12 +164,15 @@ function row(T){ return '| '+T.name+' | '+(T.partBuilt?T.partOk+' из '+T.partB
 const HEAD=['| модель | часть опознана | «верно» | ошибка найдена | **ложных** | время на лист | цена за лист |','|---|---|---|---|---|---|---|'];
 function table(files){ const rows=[].concat(...files.map(f=>{ try{ return JSON.parse(fs.readFileSync(f,'utf8')).rows||[]; }catch(e){ return [{name:f+': нет результата ('+e.message.slice(0,60)+')',miss:true}]; } }));
   const ok=rows.filter(r=>!r.miss).sort((a,b)=>a.false-b.false||(b.partOk-(b.partWrong||0)*2)-(a.partOk-(a.partWrong||0)*2)||b.caught-a.caught||b.ok-a.ok||a.ms-b.ms);
-  const best=ok.find(r=>r.false===0&&r.calls>0&&!r.fails);
+  /* лучшая — среди зарубежных (OpenRouter: имя с «/»), при 0 ложных и без сбоев; Qwen в Yandex — запасная всегда */
+  const best=ok.find(r=>r.false===0&&r.calls>0&&!r.fails&&r.name.includes('/')&&r.sheets===r.sheetNames.length);
   const md=['## Глаза: какая модель лучше','','листов: '+(ok[0]?ok[0].sheets+' ('+ok[0].sheetNames.join(', ')+')':'—'),'',...HEAD,...ok.map(row),...rows.filter(r=>r.miss).map(r=>'| '+r.name+' | | | | | | |'),'',
-    best?'Лучшая при 0 ложных: **'+best.name+'**':'Ни одна модель не прошла без ложных',''].concat(...ok.filter(r=>r.falseWhy&&r.falseWhy.length).map(r=>r.falseWhy.slice(0,6).map(w=>'- ЛОЖНО ('+r.name+'): '+w))).concat(...ok.filter(r=>r.partWhy&&r.partWhy.length).map(r=>['- часть ('+r.name+'): '+r.partWhy.slice(0,8).join('; ')])).concat(ok.filter(r=>r.scales).map(r=>'- шкала ('+r.name+'): '+Object.entries(r.scales).map(([k,v])=>k+' ×'+v).join(', ')));
+    best?'Лучшая при 0 ложных: **'+best.name+'** — подключить в кабинете: переменная репозитория EYES_BEST_MODEL='+best.name.replace(/,.*/,'')+' и секрет OPENROUTER_API_KEY, затем развёртывание (club.yml); запасная — Qwen в Yandex':'Зарубежная модель не подключается: ни одна не прошла все листы без ложных (или не измерена) — в кабинете остаётся Qwen в Yandex',''].concat(...ok.filter(r=>r.falseWhy&&r.falseWhy.length).map(r=>r.falseWhy.slice(0,6).map(w=>'- ЛОЖНО ('+r.name+'): '+w))).concat(...ok.filter(r=>r.partWhy&&r.partWhy.length).map(r=>['- часть ('+r.name+'): '+r.partWhy.slice(0,8).join('; ')])).concat(ok.filter(r=>r.scales).map(r=>'- шкала ('+r.name+'): '+Object.entries(r.scales).map(([k,v])=>k+' ×'+v).join(', ')));
   if(process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,md.join('\n')+'\n'); console.log(md.join('\n')); }
 
 (async()=>{ if(A.table){ table(A.table.split(',').flatMap(f=>fs.existsSync(f)&&fs.statSync(f).isDirectory()?fs.readdirSync(f,{recursive:true}).filter(x=>/\.json$/.test(x)).map(x=>f+'/'+x):[f])); return; }
+  /* --resolve=имя,… — только точные имена в списке OpenRouter (ключ не нужен) */
+  if(A.resolve){ for(const m of A.resolve.split(',')){ const r=await orResolve(m); console.log('OpenRouter: '+m+' → '+(r.id?r.id+' ($'+(r.price.prompt*1e6).toFixed(2)+' / $'+(r.price.completion*1e6).toFixed(2)+' за 1 млн токенов)':'нет такой; есть: '+r.near.join(', '))+(r.others&&r.others.length?' (ещё: '+r.others.join(', ')+')':'')); } return; }
   const OR=A.provider==='openrouter', env=Object.assign({},process.env,OR?{EYES_URL:SE.OR_URL}:{}), base=SE.eyesFromEnv(env);
   const noModel=STR.every(s=>/^(own|net|net\+own)$/.test(s));
   if(!noModel&&(!base.on||!(TOKEN||base.key))){ console.log('нет доступа к модели: '+(OR?'нужен OPENROUTER_API_KEY':'нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY)')+'; без модели — --strategy=own'); process.exit(1); }

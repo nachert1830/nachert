@@ -68,6 +68,7 @@ jobs:
             none) node lab/dz/eyes-eval.js --sheets=$S --dz2=0 --strategy=own --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|OpenRouter|  ДЗ3)' ;;
             yandex) node lab/dz/eyes-eval.js --sheets=$S --dz2=0 --strategy=$ST --models=${{ matrix.model }} --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|  ДЗ3)' ;;
             openrouter)
+              node lab/dz/eyes-eval.js --resolve=${{ matrix.model }}
               test -n "$OPENROUTER_API_KEY" || { echo "::error::нет секрета OPENROUTER_API_KEY"; echo '{"rows":[{"name":"${{ matrix.model }}: нет секрета OPENROUTER_API_KEY","miss":true}]}' > eyes-${{ matrix.id }}.json; exit 1; }
               node lab/dz/eyes-eval.js --provider=openrouter --sheets=$S --dz2=0 --strategy=$ST --models=${{ matrix.model }} --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|OpenRouter|  ДЗ3)' ;;
           esac

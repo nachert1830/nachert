@@ -61,6 +61,8 @@ jobs:
           EYES_AUTH: ${{ vars.EYES_AUTH }}
           EYES: ${{ vars.EYES }}
           EYES_KEY: ${{ secrets.EYES_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          EYES_BEST_MODEL: ${{ vars.EYES_BEST_MODEL }}
         run: node server/tools/deploy.js --write-front
       - name: Адрес API — в страницу клуба на сайте
         if: steps.ready.outputs.ok == 'yes'

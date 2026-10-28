@@ -79,10 +79,10 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   return {text,model:cfg.model,info}; }
 
 /* askAny(cfg, q, o): лучшая модель (cfg.best), если q.consent (фото можно отправить за рубеж) и она есть; сбой — запасная
-   (cfg, Qwen в Yandex). Без согласия зарубежная модель не спрашивается никогда → {text, model, info, fallback?} */
+   (cfg, Qwen в Yandex). 35 с + 22 с — в пределах 60 с функции. Без согласия зарубежная модель не спрашивается никогда → {text, model, info, fallback?} */
 async function askAny(cfg,q,o){ o=o||{}; const main=cfg.best&&q.consent?cfg.best:null, spare=cfg.foreign?null:cfg;
   if(main){ try{ return await ask(main,q,Object.assign({},o,{timeout:o.mainTimeout||35000})); }
-    catch(e){ if(!spare||!spare.on||!(spare.key||o.token)) throw e; const r=await ask(spare,q,o); return Object.assign(r,{fallback:main.model+': '+e.message}); } }
+    catch(e){ if(!spare||!spare.on||!(spare.key||o.token)) throw e; const r=await ask(spare,q,Object.assign({},o,{timeout:22000})); return Object.assign(r,{fallback:main.model+': '+e.message}); } }
   if(cfg.foreign&&!q.consent) throw Object.assign(new Error('Модель зрения — зарубежная: нужно согласие на отправку фото.'),{status:403});
   return ask(cfg,q,o); }
 
