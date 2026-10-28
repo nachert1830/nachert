@@ -213,7 +213,9 @@ function dTick(A,tr,v){ const now=performance.now();
   if(D.phase==='wait'){ clearOv(); guide(null); const s=Math.round((Date.now()-D.t0)/1000); setHint('ищу чертежи на общем снимке…'); $('camT').textContent='Ищу чертежи…'; $('camS').textContent='можно опустить телефон';
     tip('Смотрю снимок листа — где чертежи и насколько крупно'+(s>5?' · '+s+' с':''),'busy'); return; }
   if(D.phase!=='close') return; clearOv();
-  if(D.cur<0){ setHint(D.pend.some(x=>x)?'проверяю снимки…':'готово'); toWait(); return; }
+  /* все чертежи сняты — камера ждёт проверки: снимок могут вернуть («мелко», «расходятся»), тогда сразу попросит ещё */
+  if(D.cur<0){ const k=D.pend.reduce((a,b)=>a+b,0); setHint(k?'проверяю снимки…':'готово'); guide(null); drawMap(); $('map').hidden=false;
+    $('camT').textContent='Все чертежи сняты'; $('camS').textContent='можно опустить телефон'; tip('Проверяю снимки'+(k?' — осталось '+k:'')+'…','busy'); return; }
   const d=D.ov.drawings[D.cur], act=D.cap.feed(A,now), N=D.ov.drawings.length;
   setHint('Чертёж '+(D.cur+1)+' из '+N+' ('+d.pos+'): '+(A.ok?'поднесите телефон, чтобы чертёж занял весь кадр'+(D.msg?' · '+D.msg:A.soft&&A.soft[0]?' · '+A.soft[0]:''):A.hints[0]));
   $('camT').textContent='Чертёж '+(D.cur+1)+' из '+N; $('camS').textContent=d.pos+' — поднесите телефон ближе'; guide('close',A.ok);
@@ -234,28 +236,31 @@ function onDraw(m){ if(!D) return;
   else { D.sess.add(j,{ok:false,why:[c.reason]}); D.log.push('чертёж '+(j+1)+': '+c.reason); }
   /* снимок вблизи не взят — снова к камере */
   if(D.cur<0) D.cur=pick(j+1); drawMap(); progDots();
-  if(D.phase==='wait2'){ if(D.cur>=0){ reopen(); return; } waitDraw(); }
-  if(D.cur<0&&!D.pend.some(x=>x)) finish(); }
+  if(D.phase==='wait2') waitDraw();
+  if((D.cur<0||D.phase==='wait2')&&!D.pend.some(x=>x)) finish(); }
 /* карта листа поверх видео: снятые чертежи — зелёные, текущий — жёлтый */
 function drawMap(){ if(!D||!D.ov||!D.ovCanvas) return; const cv=$('map'), src=D.ovCanvas, k=360/Math.max(src.width,src.height); cv.width=Math.round(src.width*k); cv.height=Math.round(src.height*k); cv.hidden=D.phase!=='close';
   const ctx=cv.getContext('2d'); ctx.drawImage(src,0,0,cv.width,cv.height); ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,cv.width,cv.height); ctx.lineWidth=4; ctx.font='bold 34px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
   D.ov.drawings.forEach((d,j)=>{ ctx.lineWidth=j===D.cur?8:4; const col=j===D.cur?'#ffcc33':!D.sess.need(j)?'#3fd07a':D.pend[j]?'#7fb0ea':'#ffffff'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.beginPath(); d.box.forEach((p,i)=>i?ctx.lineTo(p[0]*k,p[1]*k):ctx.moveTo(p[0]*k,p[1]*k)); ctx.closePath(); ctx.stroke(); ctx.fillText(String(j+1),d.c[0]*k,d.c[1]*k); }); }
-/* все чертежи сняты, снимки ещё проверяются — экран ожидания по чертежам */
-function toWait(){ if(D.phase!=='close') return; D.phase='wait2'; stopCam(); waitDraw(); }
+/* камеру закрыли, а снимки ещё проверяются — экран ожидания по чертежам */
 function waitDraw(){ const N=D.ov.drawings.length;
   if(!W){ W=SC.Wait({img:D.ovCanvas,title:'Проверяю чертежи',sub:'Снимки сделаны. Проверка идёт здесь, на устройстве.',steps:[{k:'sheet',t:'Снял весь лист'},{k:'find',t:'Нашёл '+N+' '+SC.plural(N,'чертёж','чертежа','чертежей')}].concat(D.ov.drawings.map((d,j)=>({k:'d'+j,t:'Чертёж '+(j+1)+' — '+d.pos})),[{k:'done',t:'Собираю результат'}])}); SC.screen('scrWait'); W.set('find','done'); }
   D.ov.drawings.forEach((d,j)=>W.set('d'+j,D.pend[j]?'now':'done',{small:D.pend[j]?'проверяю':D.sess.fr[j].length?'снимков '+D.sess.fr[j].length:''})); }
-function reopen(){ if(W){ W.stop(); W=null; } openCam().then(tr=>{ if(!tr) return; D.phase='close'; D.cap=C.Capturer({shots:999,max:999,content:true}); drawMap(); progDots(); runLoop(tr,$('video')); }); }
+function reopen(){ if(W){ W.stop(); W=null; } openCam().then(tr=>{ if(!tr) return; D.phase='close'; D.cap=D.cap||C.Capturer({shots:999,max:999,content:true}); drawMap(); progDots(); runLoop(tr,$('video')); }); }
 /* итог по чертежам: вердикт серии каждого (closeup.js), лист — общий снимок с рамками и номерами */
-function finish(){ D.phase='done'; stopCam(); if(W){ W.set('done','done'); W.stop(); W=null; } const R=D.sess.result();
+function finish(){ D.phase='done'; stopCam(); if(W){ W.set('done','done'); W.stop(); W=null; }
+  /* переснять не успели — прежние снимки чертежа возвращаются */
+  if(D.only!=null&&!D.sess.fr[D.only].length&&D.backup) D.backup.forEach(f=>D.sess.fr[D.only].push(f));
   /* пересъёмка после фото: переснятый чертёж — по новым снимкам, остальные — как были */
+  if(D.base&&!D.sess.fr[D.only].length){ D=null; showUp(); return; }
+  const R=D.sess.result();
   if(D.base){ const r=R[D.only], b=D.base.slice(), i=D.baseI; b[i]=Object.assign({},b[i],{verdict:r.verdict,why:r.why.filter(Boolean),parts:r.parts,part:r.part||b[i].part,ex:null,svg:null,sub:'переснят крупно · снимков '+r.read+' из '+r.n});
     D=null; UP.ds=b; showUp(); SC.toast('Чертёж '+(i+1)+' перепроверен'); return; }
   const ds=SC.fromSession(R,D.ov.drawings);
   D.only=null; SC.renderResult({ds,src:D.ovCanvas,variant:nVal(),onReshoot:reshoot,onNew:toStart,log:D.log,tech:JSON.stringify(R.map(r=>({вердикт:r.verdict,части:r.parts,кадров:r.read+'/'+r.n})),null,1),
     note:'Вывод по части — только если его подтвердили несколько снимков этого чертежа с разных углов.'}); }
 /* переснять один чертёж: камера сразу просит его, прежние снимки этого чертежа — не в счёт */
-function reshoot(j){ if(D&&D.ov&&D.sess){ D.only=j; D.sess.fr[j].length=0; D.pend[j]=0; D.cur=j; D.phase='wait2'; reopen(); return; }
+function reshoot(j){ if(D&&D.ov&&D.sess){ D.only=j; D.backup=D.sess.fr[j].slice(); D.sess.fr[j].length=0; D.pend[j]=0; D.cur=j; D.phase='wait2'; reopen(); return; }
   if(UP) return upReshoot(j); SC.toast('Это пример — переснять можно настоящий лист'); }
 
 function stopCam(){ if(loop) clearTimeout(loop); loop=null; if(stream) stream.getTracks().forEach(t=>t.stop()); stream=null; $('camCard').hidden=true; document.body.style.overflow=''; }
@@ -265,7 +270,10 @@ $('start').onclick=startCam;
 $('stop').onclick=()=>{ const d=D; stopCam(); if(d&&d.ov&&d.sess&&(d.phase==='close'||d.phase==='wait2')){ if(d.pend.some(x=>x)){ d.phase='wait2'; waitDraw(); } else finish(); return; }
   if(!d&&frames.length){ done=true; if(!busy&&!queue.length) seriesResult(SR.combine(frames)); else { W=SC.Wait({img:shots[0]&&shots[0].img,steps:[{k:'photo',t:'Кадры сняты'},{k:'check',t:'Проверяю кадры'},{k:'done',t:'Собираю результат'}]}); SC.screen('scrWait'); W.set('check','now'); } return; }
   toStart(); };
-$('camErrX').onclick=toStart;
+$('camErrX').onclick=()=>{ const d=D; stopCam(); if(d&&d.sess&&d.ov) finish(); else toStart(); };
+/* камеры нет, а просили переснять чертёж — фото этого чертежа крупно */
+async function closeFromFile(f){ const j=D.only, c=await SC.fileToCanvas(f,FULL).catch(()=>null); if(!c){ SC.toast('Файл не открылся'); return; }
+  stopCam(); D.pend[j]++; D.cur=-1; D.phase='wait2'; waitDraw(); queue.push({mode:'close',want:j,img:SC.imageData(c)}); next(); }
 
 /* ── фото или PDF (ноутбук; или если камеры нет): один снимок листа → поток → результат ── */
 let UP=null;
@@ -274,7 +282,7 @@ async function upload(f){ if(!f) return; stopCam(); reset(); let src; try{ src=a
 function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo};
   W=SC.Wait({img:src,steps:SC.waitSteps(),cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('sheet','now');
   ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } W.set('done','done'); W.stop(); W=null;
-    if(m.error){ SC.toast('Сбой проверки: '+m.error.split('\n')[0]); }
+    if(m.error){ SC.toast('Сбой проверки: '+String(m.error).split('\n')[0]); SC.screen('scrStart'); return; }
     UP.r=m; showUp(); };
   worker.postMessage({img:SC.imageData(src),dz:3,n,paper:demo?'plain':'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
 function showUp(){ const r=UP.r||{}, ds=UP.ds||(r.cam?SC.fromSession(r.R,r.ov.drawings):SC.fromWorker(r));
@@ -293,7 +301,7 @@ function upReshoot(i){ const u=UP, src=u.src, n=nVal(); if(!n){ SC.toast('Ука
     /* после пересъёмки — обычный итог по чертежам; остальные чертежи берут вердикт из проверки фото */
     D.base=ds; D.baseI=i; worker.onmessage=e2=>{ const m2=e2.data; if(m2&&m2.progress) return; busy--; onDraw(m2); next(); }; reopen(); };
   worker.postMessage({mode:'overview',img:SC.imageData(src),dz:3,n,answers:{}}); }
-$('file').onchange=$('file2').onchange=$('file3').onchange=$('file4').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; upload(f); };
+$('file').onchange=$('file2').onchange=$('file3').onchange=$('file4').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; if(D&&D.ov&&D.sess&&D.only!=null&&e.target.id!=='file'&&e.target.id!=='file2') closeFromFile(f); else upload(f); };
 SC.dropZone($('drop'),upload);
 
 /* ── примеры: готовые синтетические листы, без камеры и без интернета ── */

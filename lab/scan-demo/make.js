@@ -6,13 +6,13 @@
    [--cam --shots=2 — съёмка по чертежам: общий снимок + каждый чертёж вблизи, ответ — итог серий closeup.js]
    Описание примера (название, подпись) — в index.json, руками: что вышло, то и пишем. Лист проверяется минуты. */
 const fs=require('fs'), path=require('path'), vm=require('vm'), DZ=path.join(__dirname,'../dz/');
-const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
+const a=Object.fromEntries(process.argv.slice(2).map(s=>{ const [k,v]=s.replace(/^--/,'').split('='); return [k,v==null?'1':v]; }));
 const Q=require(DZ+'quadsynth.js'), IMG=require('../img.js'), size=(a.size||'1500x2000').split('x').map(Number);
 const view=a.view!=null?+a.view:null;
 const s0=Q.sheet({n:+a.n,seed:+a.seed,err:a.err||undefined,size,closeup:view!=null||a.cam?8:undefined,closeShots:+a.shots||(a.cam?2:1),closeSize:[2250,3000]});
 const img=view!=null?s0.views[view].img:s0.img, t0=Date.now();
 /* поток как в браузере: importScripts — файлы lab/dz/ в одном контексте */
-const out=[], ctx={console}; ctx.self=ctx; ctx.postMessage=m=>out.push(m);
+const out=[], ctx={console,setTimeout:()=>0}; ctx.self=ctx;   /* setTimeout потока — только фоновый кеш опознания, здесь не нужен */ ctx.postMessage=m=>out.push(m);
 ctx.importScripts=(...f)=>f.forEach(x=>vm.runInContext(fs.readFileSync(path.resolve(DZ,x),'utf8'),ctx,{filename:x}));
 vm.createContext(ctx); vm.runInContext(fs.readFileSync(DZ+'worker.js','utf8'),ctx);
 let r;

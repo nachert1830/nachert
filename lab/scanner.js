@@ -54,12 +54,12 @@ const badStep=ex=>ex&&ex.steps?ex.steps.findIndex(s=>s.status==='bad'):-1;
 function phrase(d){ const t=tone(d.verdict), ps=d.parts||{}, ks=Object.keys(ps).filter(k=>PART[k]);
   const okK=ks.filter(k=>ps[k].st==='верно'), badK=ks.filter(k=>/ошибка/.test(ps[k].st));
   const clean=s=>String(s||'').replace(/\s*\([^)]*\)\s*$/,'').replace(/;.*$/,'');
-  if(t==='ok'){ const k=d.part||okK[0]; return {say:k?PART[k]+' — построено верно'+(ps[k]&&ps[k].why[0]?': '+clean(ps[k].why[0])+'.':'.'):'Построение сходится с условием варианта.'}; }
+  if(t==='ok'){ const k=d.part||okK[0]; return {say:k?(k!==d.part?PART[k]+' — построено верно':'Построено верно')+(ps[k]&&ps[k].why[0]?': '+clean(ps[k].why[0])+'.':'.'):'Построение сходится с условием варианта.'}; }
   if(t==='bad'){ const k=badK[0]||d.part, j=badStep(d.ex); let where=null;
     if(j>=0){ const s=d.ex.steps[j]; where='Шаг '+(j+1)+' — '+s.name+': '+s.msg; }
     else if(k&&ps[k]&&ps[k].why[0]) where=cap(ps[k].why[0]);
     else if(/ошибка в данных/.test(d.verdict)) where=cap((d.why||[]).find(w=>/вместо|не там/.test(w))||'условие нанесено не по данным варианта');
-    return {say:(k?PART[k]+': ':'')+(/данных/.test(d.verdict)?'условие нанесено с ошибкой.':'в построении ошибка.'),where}; }
+    return {say:/данных/.test(d.verdict)?'Условие нанесено не по данным варианта.':k&&k!==d.part?PART[k]+': в построении ошибка.':'В построении ошибка.',where}; }
   /* не могу утверждать: какая часть — не опознана или построение не сошлось уверенно */
   const all=(d.why||[]).join(' '), small=/мелко|px\/мм|ближе/.test(all), read=d.verdict==='не могу прочитать'||d.verdict==='не снят';
   if(d.verdict==='не снят') return {say:'Этот чертёж ещё не снят.',ask:'Поднесите телефон к нему — он займёт весь кадр.'};
@@ -153,7 +153,7 @@ function paintCrop(cv,src,d){ const q=d._q; if(!q) return false; const xs=q.map(
 /* сводка по листу */
 function summary(ds){ const n={ok:0,bad:0,calm:0}; ds.forEach(d=>n[tone(d.verdict)]++); const N=ds.length, bad=ds.filter(d=>tone(d.verdict)==='bad').map(d=>d.i+1);
   const list=a=>a.length===1?String(a[0]):a.slice(0,-1).join(', ')+' и '+a[a.length-1];
-  if(n.bad) return {t:'bad',h:N>1?'Ошибка в чертеже '+list(bad):'В построении ошибка',p:N>1?'Что не так — в карточке '+(bad.length>1?'каждого':'чертежа')+'. Остальное: '+(n.ok?'верно — '+n.ok:'')+(n.ok&&n.calm?', ':'')+(n.calm?'проверить не смог — '+n.calm:'')+'.':'Где именно — ниже.'};
+  if(n.bad) return {t:'bad',h:N>1?'Ошибка в чертеже '+list(bad):'В построении ошибка',p:N>1?[n.ok?'верно — '+n.ok:'',n.calm?'не смог проверить — '+n.calm:''].filter(Boolean).join(', ').replace(/^./,c=>c.toUpperCase())+(n.ok||n.calm?'. ':'')+'Где ошибка — в карточке ниже.':'Где именно — ниже.'};
   if(n.ok===N) return {t:'ok',h:N>1?'Все '+N+' '+plural(N,'чертёж','чертежа','чертежей')+' верно':'Верно',p:'Построения сходятся с условием варианта.'};
   if(n.ok) return {t:'calm',h:'Верно '+n.ok+' из '+N,p:'Ещё '+n.calm+' '+plural(n.calm,'чертёж','чертежа','чертежей')+' не смог проверить уверенно — переснимите '+(n.calm>1?'их':'его')+' ближе, и я досмотрю.'};
   return {t:'calm',h:'Пока не могу утверждать',p:'Линии видны, но уверенного вывода нет. Переснимите чертежи ближе — по одному, при ровном свете.'}; }
@@ -161,7 +161,7 @@ function summary(ds){ const n={ok:0,bad:0,calm:0}; ds.forEach(d=>n[tone(d.verdic
 /* полный экран результата. o: {el, src (canvas), ds, variant, demo, onReshoot(i), onNew, extra (html), tech} */
 S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, Sm=summary(ds);
   ds.forEach(d=>{ d._q=src?boxOf(d,src.width,src.height):null; });
-  const pinOf=d=>{ const q=d._q; if(!q) return null; return [Math.min(...q.map(p=>p[0])),Math.min(...q.map(p=>p[1]))]; };
+  const pinOf=d=>{ const q=d._q; if(!q) return null; return q.reduce((a,p)=>p[0]+p[1]<a[0]+a[1]?p:a); };
   const ic=t=>I(t==='ok'?'ok':t==='bad'?'bad':'q'), word=t=>t==='ok'?'Верно':t==='bad'?'Ошибка':'Не могу утверждать';
   el.innerHTML=(o.demo?'<div class="demo-badge">'+I('play')+' Пример · '+esc(o.demo)+'</div>':'')
     +'<div class="res"><div class="col-a">'
@@ -203,10 +203,12 @@ S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, Sm=summar
   S.screen(el.id); };
 
 /* ── примеры: синтетические листы (lab/dz/quadsynth.js), проверенные этим же сканером заранее (lab/scan-demo/make.js) ── */
-S.examples=async()=>{ try{ const r=await fetch('scan-demo/index.json'); return r.ok?await r.json():[]; }catch(e){ return []; } };
+/* загружаются сразу со страницей — дальше показ не зависит от сети */
+const EX={};
+const exGet=x=>EX[x.json]||(EX[x.json]=Promise.all([fetch('scan-demo/'+x.json).then(r=>r.json()),new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src='scan-demo/'+x.img; })]).catch(e=>{ delete EX[x.json]; throw e; }));
+S.examples=async()=>{ try{ const r=await fetch('scan-demo/index.json'), list=r.ok?await r.json():[]; list.forEach(x=>exGet(x).catch(()=>{})); return list; }catch(e){ return []; } };
 S.renderExamples=(el,list,onPick)=>{ if(!el) return; if(!list.length){ el.closest('[data-examples]')&&(el.closest('[data-examples]').hidden=true); return; }
   el.innerHTML=list.map((x,i)=>'<button class="ex" data-i="'+i+'"><img src="scan-demo/'+esc(x.thumb||x.img)+'" alt="" loading="lazy" width="300" height="400"><b>'+esc(x.name)+'</b><small><span class="dot '+(x.tone==='bad'?'bad':x.tone==='calm'?'calm':'')+'"></span>'+esc(x.note)+'</small></button>').join('');
   el.onclick=e=>{ const b=e.target.closest('.ex'); if(b) onPick(list[+b.dataset.i]); }; };
-S.loadExample=async x=>{ const [r,im]=await Promise.all([fetch('scan-demo/'+x.json).then(r=>r.json()),new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src='scan-demo/'+x.img; })]);
-  return {r,src:S.toCanvas(im)}; };
+S.loadExample=async x=>{ const [r,im]=await exGet(x); return {r:JSON.parse(JSON.stringify(r)),src:S.toCanvas(im)}; };
 })();
