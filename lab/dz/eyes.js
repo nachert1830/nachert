@@ -185,7 +185,12 @@ function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(
   const dg=digitize(img,(u,v)=>H.apply(Ha,[u,v]),box,4,o.clean,true); if(!dg.ok) return {ok:false,reason:dg.reason};
   const D=C.dmap(dg.dig.map), SA=C.samples(gv.id,gv.data).S.map(q=>q.m), S0=SA.filter((q,i)=>i%Math.max(1,Math.round(SA.length/80))===0), S=SA.filter((q,i)=>i%3===0), at=p=>C.at(D,p), deg=Math.PI/180;
   const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), fx=[Math.min(...fig.map(p=>p[0])),Math.max(...fig.map(p=>p[0]))], fy=[Math.min(...fig.map(p=>p[1])),Math.max(...fig.map(p=>p[1]))];
-  const cov=(th,k,tx,ty,tol,SS)=>{ const c=Math.cos(th)*k, sn=Math.sin(th)*k; let n=0; for(const m of SS){ if(at([tx+c*m[0]-sn*m[1],ty+sn*m[0]+c*m[1]])<=tol) n++; } return n/SS.length; };
+  /* доля точек фигуры у линий: C.at (билинейно по карте расстояний) — встроено, та же арифметика, без массивов на каждую точку */
+  const Da=D.a, Dw=D.w, Dh=D.h, bx0=D.box[0], by0=D.box[1], dp=D.ppm, CAP=C.CAP;
+  const cov=(th,k,tx,ty,tol,SS)=>{ const c=Math.cos(th)*k, sn=Math.sin(th)*k; let n=0;
+    for(const m of SS){ const x=(tx+c*m[0]-sn*m[1]-bx0)*dp-0.5, y=(ty+sn*m[0]+c*m[1]-by0)*dp-0.5, x0=Math.floor(x), y0=Math.floor(y); let v;
+      if(x0<0||y0<0||x0>=Dw-1||y0>=Dh-1) v=CAP; else { const fx=x-x0, fy=y-y0, i=y0*Dw+x0; v=(Da[i]*(1-fx)+Da[i+1]*fx)*(1-fy)+(Da[i+Dw]*(1-fx)+Da[i+Dw+1]*fx)*fy; }
+      if(v<=tol) n++; } return n/SS.length; };
   /* фон: точки рядом с фигурой (в 2,5…4 мм от её отрезков, где линий условия нет). У верного места там чаще пусто
      (только линии построений), а фигура, уменьшенная до «помещается куда угодно», лежит в гуще линий — фон тоже на
      линиях. Мера места — строгая минус фон */
@@ -195,12 +200,7 @@ function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(
   const res=[], S1=raw?S0.filter((q,i)=>i%2===0):S0, step=raw?3:2;
   const hyps=raw?[].concat(...[0,90,180,270].map(fl=>Array.from({length:21},(_,i)=>[Math.pow(1.05,i-12),'кадр',fl]))):[].concat(...[[1,'A4'],[Math.SQRT1_2,'A3']].map(([s0,pg])=>[0,180].map(fl=>[s0,pg,fl])));
   for(const [s0,pg,flip] of hyps) for(let th=-4;th<=4;th+=(raw?4:2)) for(const kk of (raw?[1]:[0.95,1,1.05])){ const k=s0*kk, t=(flip+th)*deg;
-    /* сетка положений: сначала через 2·step с допуском шире на полшага по диагонали, затем исходная сетка (step, тот же
-       допуск) — только в клетках вокруг мест, где грубо набралось ≥ 0,4: втрое-вчетверо быстрее, те же места */
-    const tol=Math.min(1.5,1.6*k), S2=S1.filter((q,i)=>i%2===0), seen=new Set();
-    for(let ty0=0;ty0<=box[3];ty0+=2*step) for(let tx0=0;tx0<=box[2];tx0+=2*step){ if(cov(t,k,tx0,ty0,tol+step*1.42,S2)<0.4) continue;
-      for(let ty=Math.max(0,ty0-step);ty<=Math.min(box[3],ty0+step);ty+=step) for(let tx=Math.max(0,tx0-step);tx<=Math.min(box[2],tx0+step);tx+=step){ const key=tx+':'+ty; if(seen.has(key)) continue; seen.add(key);
-        const v=cov(t,k,tx,ty,tol,S1); if(v>=0.45) res.push({v,th:flip+th,k,tx,ty,pg}); } } }
+    for(let ty=0;ty<=box[3];ty+=step) for(let tx=0;tx<=box[2];tx+=step){ const v=cov(t,k,tx,ty,Math.min(1.5,1.6*k),S1); if(v>=0.45) res.push({v,th:flip+th,k,tx,ty,pg}); } }
   /* в очередь мест — с поправкой на фон (иначе её заполняет фигура малого масштаба в гуще построений) */
   res.forEach(q=>{ q.v0=q.v; q.v=q.v-cov(q.th*deg,q.k,q.tx,q.ty,Math.min(1.5,1.6*q.k),BG0); });
   /* места: лучшее, затем следующее не ближе 40 мм; уточнение каждого. Две очереди — по покрытию и по покрытию за
