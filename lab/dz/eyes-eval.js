@@ -154,8 +154,8 @@ async function orResolve(name){ const r=await fetch('https://openrouter.ai/api/v
   const n=name.toLowerCase(), size=id=>{ const m=id.match(/(\d+(?:\.\d+)?)b(?![a-z])/); return m?+m[1]:0; };
   let c=all.filter(m=>m.id.toLowerCase()===n); if(!c.length) c=all.filter(m=>m.id.toLowerCase().startsWith(n)); if(!c.length) c=all.filter(m=>m.id.toLowerCase().includes(n.split('/').pop()));
   c=c.filter(m=>!/:free$/.test(m.id)).concat(c.filter(m=>/:free$/.test(m.id)));
-  /* «-image» — модели, которые рисуют картинки (gemini-3-pro-image), не для чтения: только если попросили; «:batch» — пакетный режим */
-  const odd=id=>(/-image/.test(id)&&!/image/.test(n))||/:batch$/.test(id);
+  /* «-image» — модели, которые рисуют картинки (gemini-3-pro-image), не для чтения: только если попросили; «:batch» — пакетный режим, «-customtools» — вариант для агентов */
+  const odd=id=>(/-image/.test(id)&&!/image/.test(n))||(/-customtools/.test(id)&&!/customtools/.test(n))||/:batch$/.test(id);
   c.sort((a,b)=>(odd(a.id)-odd(b.id))||(/:free$/.test(a.id)-/:free$/.test(b.id))||size(b.id)-size(a.id)||(/thinking/.test(a.id)-/thinking/.test(b.id))||a.id.length-b.id.length);
   /* нет такой — та же модель новее: «gemini-3-pro» → «gemini-3.1-pro-preview» (из нескольких — самая новая) */
   if(!c.some(x=>!odd(x.id))){ const re=new RegExp('^'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/-(\d+)-/,'-$1(?:\\.\\d+)?-')); c=all.filter(x=>re.test(x.id.toLowerCase())&&!odd(x.id)&&!/:free$/.test(x.id)).sort((a,b)=>b.id.localeCompare(a.id)); }
