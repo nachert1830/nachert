@@ -292,7 +292,7 @@ function heroCard(e,td){ const k=CAL.toDay(e.date)-td, tp=eventTopics(e), L=site
     <div class="row"><a class="btn pri" href="#/event/${e.id}">Готовиться по плану ${ic('arrow')}</a><a class="btn" href="${esc(L.href)}" target="_blank" rel="noopener noreferrer">${esc(L.t)} ${ic('ext')}</a></div></section>`; }
 /* мои ДЗ: ближайшие сдачи ДЗ — ссылка сразу на мой вариант и проверка листа по фото */
 function myHwCard(evs,td){ const hw=evs.filter(e=>e.kind==='dz').slice(0,3); if(!hw.length) return '';
-  const chk=e=>e.subj==='ikg'?(flag('normo')?'#/check/normo':''):(flag('scanner')&&(e.n===2||e.n===3)?'#/check/dz':'');
+  const chk=e=>e.subj==='ikg'?(flag('normo')?'#/check/normo':''):(flag('scanner')&&(e.n===3?'#/check/cam':e.n===2?'#/check/dz':''));
   return `<section class="card myhw"><div class="sh"><h2>Мои ДЗ</h2><small>${myVariant()?'вариант '+myVariant():'<a href="#/me" data-act="editProfile">указать вариант</a>'}</small></div>
     <ul class="hwl">${hw.map(e=>{ const L=siteLink(e), k=CAL.toDay(e.date)-td, c=chk(e);
       return `<li><span class="hwt"><b>${esc(e.short+' · '+e.subjTitle)}</b><small>${esc(CAL.human(e.date))} · ${esc(CAL.inWords(k))}</small></span>
@@ -430,8 +430,8 @@ function saveRating(el,v,errors,symptoms){ const n=+el.dataset.n, ctx=el.dataset
 /* Проверка: сначала «что у вас в руках» — крупные карточки простыми словами, потом три правила съёмки, потом сканер.
    Названия — по тому, что проверяет студент (ДЗ, задача тетради, лист из САПР), а не по устройству сканера. */
 const LAB=[
-  {id:'dz',src:'lab/dz.html',icon:'sheet',var:true,t:'ДЗ по начерту — фото листа',s:'ДЗ № 2 и № 3 · с ИИ-зрением — без рамки и штампа, все чертежи листа сразу',p:'Сфотографируйте лист или один чертёж крупно. С ИИ-зрением рамка, штамп и края листа не нужны: модель найдёт подписи точек и все чертежи листа, а сканер по линиям сверит построение с условием вашего варианта.'},
-  {id:'cam',src:'lab/cam.html',icon:'scan',var:true,t:'ДЗ № 3 — камерой',s:'наведите камеру на лист — снимки она сделает сама',p:'Камера снимет 2–5 кадров с разных углов. Вывод — только если его подтверждают несколько снимков; разбор — прямо на фото.'},
+  {id:'cam',src:'lab/cam.html',icon:'scan',var:true,t:'ДЗ № 3 — пирамида SABC',s:'камера сама снимет весь лист и каждый чертёж · на ноутбуке — фото или PDF',p:'Вариант — из профиля или «узнать по чертежу». Камера снимет весь лист, затем попросит поднести телефон к каждому из четырёх чертежей и снимет сама, когда кадр резкий. Ответ — по каждой части: верно, ошибка (где именно) или «не могу утверждать» с просьбой переснять.'},
+  {id:'dz',src:'lab/dz.html',icon:'sheet',var:true,t:'ДЗ № 2 — фото листа',s:'пирамида, призма или куб · фото или PDF листа',p:'Сфотографируйте лист целиком или чертёж крупно: сканер найдёт чертёж, сверит построение с условием вашего варианта и покажет, где ошибка.'},
   {id:'task',src:'lab/scan.html',icon:'doc',t:'Задача тетради № 46 или № 47',s:'фото решения — верно или где ошибка',p:'Вердикт с отметками прямо на фото и 3D-модель решения. Нет листа под рукой — попробуйте на примере.'}];
 const labBase=()=>/\/lk\/(index\.html)?$/.test(location.pathname)?location.pathname.replace(/lk\/(index\.html)?$/,''):null;
 /* вариант из профиля — сканеру сразу (?n=…): студенту не нужно вводить номер; нет варианта — сканер узнаёт его по чертежу */
@@ -443,14 +443,19 @@ window.addEventListener('message',async e=>{ const d=e.data, f=document.querySel
   if(d.type!=='nch-eyes') return; let out;
   try{ const r=await api('POST','/api/eyes',{img:d.img,w:d.w,h:d.h,dz:d.dz,n:d.n,consent:d.consent===true}); out={ok:true,text:r.text,model:r.model}; }catch(err){ out={ok:false,error:err.message,status:err.status||0}; }
   e.source.postMessage(Object.assign({type:'nch-eyes-r',id:d.id},out),location.origin); });
+/* сканер в кабинете — ровно до нижнего меню: одна прокрутка (внутри сканера), а камера сканера просит весь экран */
+function fitLab(){ const f=document.querySelector('iframe.labf'); if(!f) return; const t=document.querySelector('.tabs'), tb=t&&getComputedStyle(t).bottom==='0px'?t.offsetHeight:0;
+  f.style.height=Math.max(420,innerHeight-f.getBoundingClientRect().top-window.scrollY-tb-8)+'px'; }
+addEventListener('resize',fitLab);
+window.addEventListener('message',e=>{ const d=e.data, f=document.querySelector('iframe.labf'); if(e.origin!==location.origin||!d||!f||e.source!==f.contentWindow||d.type!=='nch-lab-full') return;
+  f.classList.toggle('full',!!d.on); document.documentElement.classList.toggle('labfull',!!d.on); });
 const HOWTO=`<ol class="how8"><li><b>Чертёж крупно</b><span>с ИИ-зрением — лист или один чертёж, края не обязательны; без него — лист целиком</span></li><li><b>Ровный свет</b><span>без бликов и тени от телефона, телефон параллельно листу</span></li><li><b>Линии как на сдачу</b><span>обведены; сканер не уверен — так и скажет, переснимите ближе</span></li></ol>`;
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
   if(tool==='normo') return normoView();
-  if(L&&base){ track('check',{k:tool}); const src=base+labSrc(L); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(src)}" target="_blank" rel="noopener">На весь экран ${ic('ext')}</a></div>
-      <p class="labp">${esc(L.p)}${L.var&&myVariant()?` Вариант <b>${myVariant()}</b> — из профиля.`:''}</p>
-      <iframe class="labf" src="${esc(src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); return; }
+  if(L&&base){ track('check',{k:tool}); const src=base+labSrc(L); render(`<div class="labbar"><a class="back" href="#/check">${ic('back')}Проверка</a><b>${esc(L.t)}</b><a class="btn sm ghost" href="${esc(src)}" target="_blank" rel="noopener" aria-label="Открыть на весь экран">${ic('ext')}</a></div>
+      <iframe class="labf" src="${esc(src)}" title="${esc(L.t)}" allow="camera; fullscreen"></iframe>`,L.t); fitLab(); return; }
   const item=(href,icon,t,s,dis)=>`<a class="tool8" href="${href}"${dis?' aria-disabled="true"':''}><span class="ico">${ic(icon)}</span><span class="tt"><b>${esc(t)}</b><small>${esc(s)}</small></span>${ic('arrow')}</a>`;
-  render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте: сканер сверит построение с верным решением и покажет, где ошибка. Фото не сохраняется: его разбирает телефон, а с ИИ-зрением подписи на нём читает ещё модель в Yandex Cloud.')}
+  render(`${pageHead('Проверка чертежа','Решили на бумаге — сфотографируйте: сканер сверит построение с верным решением и покажет, где ошибка. Фото не сохраняется: его разбирает телефон, а ИИ-зрение (модель в Yandex Cloud) подсказывает, где какой чертёж.')}
   <h2 class="q8">Что проверяем?</h2>
   <div class="tools8">${LAB.map(x=>item(base?'#/check/'+x.id:'#/check',x.icon,x.t,x.s,!base)).join('')}${flag('normo')?item('#/check/normo','sheet','Лист ИКГ из КОМПАС или другой САПР','файл SVG · формат, линии, шрифт, размеры по ГОСТ'):''}</div>
   ${base?'':`<p class="note warn">Сканер фото работает в кабинете на сайте. <a class="btn sm" href="https://nachert1830.ru/lk/#/check">Открыть на nachert1830.ru ${ic('ext')}</a></p>`}

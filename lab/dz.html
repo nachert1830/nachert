@@ -46,11 +46,6 @@
         </div>
         <p class="cond" id="cond"></p>
       </div>
-      <div class="field">
-        <span class="lbl" id="paperL">На чём чертили</span>
-        <div class="seg" role="group" aria-labelledby="paperL" id="paperSeg"><button type="button" data-v="a3" aria-pressed="false">А3 с рамкой</button><button type="button" data-v="grid" aria-pressed="false">В клетку</button><button type="button" data-v="plain" aria-pressed="true">Чистый лист</button></div>
-        <select id="paper" class="sr" tabindex="-1" aria-hidden="true"><option value="a3">А3 с рамкой</option><option value="grid">лист в клетку</option><option value="plain" selected>чистый лист</option></select>
-      </div>
       <label class="ask" id="aiRow" hidden style="cursor:pointer;margin:0 0 16px"><input type="checkbox" id="ai" checked style="width:22px;height:22px;margin:0;flex:none"><span><b>ИИ-зрение</b> — модель найдёт подписи точек и каждый чертёж листа; меряет и проверяет сканер. <span class="note">Фото уходит модели в Yandex Cloud и не сохраняется.</span></span></label>
       <label class="ask" id="aiRow2" hidden style="cursor:pointer;margin:0 0 16px"><input type="checkbox" id="aiFar" style="width:22px;height:22px;margin:0;flex:none"><span><b>Точнее: зарубежная модель</b> — лучше узнаёт, где какой чертёж и какая часть. <span class="note">Только для своего листа или примера: отмечая, вы соглашаетесь, что фото уйдёт модели за рубежом (через OpenRouter); не сохраняется. Без отметки — только Yandex Cloud.</span></span></label>
       <div class="go">
@@ -93,8 +88,9 @@ function showVariant(){ const dz=+$('dz').value, n=nVal(), g=CO.dzVariants.get(d
   $('camLink').hidden=dz!==3; }
 /* вариант из адреса (?n=7 — кабинет передаёт вариант из профиля) */
 { const qn=+new URLSearchParams(location.search).get('n'); if(qn>=1&&qn<=30) $('n').value=qn; }
-seg('dzSeg','dz',()=>{ setPaper($('dz').value==='2'?'a3':'plain'); showVariant(); });
-function setPaper(v){ $('paper').value=v; [...$('paperSeg').children].forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===v))); } seg('paperSeg','paper');
+seg('dzSeg','dz',showVariant);
+/* вид бумаги — сам: ДЗ № 3 — сетка, иначе края листа или свои глаза; ДЗ № 2 — рамка А3, без неё — ИИ-зрение */
+const paper=()=>$('dz').value==='3'?'grid':'a3';
 $('n').oninput=showVariant; $('nMinus').onclick=()=>{ $('n').value=Math.max(1,nVal()-1); showVariant(); }; $('nPlus').onclick=()=>{ $('n').value=Math.min(30,nVal()+1); showVariant(); }; showVariant();
 
 let worker=null, W=null, last=null;
@@ -128,17 +124,19 @@ async function run(src,demo){ const dz=+$('dz').value, n=nVal(), img=SC.imageDat
     if(r.error){ SC.toast('Сбой проверки: '+String(r.error).split('\n')[0]); SC.screen('scrStart'); return; } if(eyesNote) r.why=(r.why||[]).concat([eyesNote]);
     last.r=r; last.eyes=eyes; show(); });
   const num=id=>{ const v=$(id).value; return v===''?null:+v; };
-  worker.postMessage({img,dz,n,paper:$('paper').value,part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},eyes,eyesScale,eyesModel}); }
+  worker.postMessage({img,dz,n,paper:paper(),part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},eyes,eyesScale,eyesModel}); }
 
 /* результат: чертежи листа (ДЗ № 3, свои глаза или ИИ-зрение) — лист с номерами и карточки; лист с рамкой — фото и чертёж */
 function show(){ const {r,src,dz,n,demo}=last, ds=r.cam?SC.fromSession(r.R,r.ov.drawings):SC.fromWorker(r); if(!r.drawings&&r.parts&&ds[0]) ds[0].parts=r.parts;
   let extra='', sheet=src;
-  if(!r.drawings&&r.H){ sheet=drawPhoto(src,r); extra='<div class="duo" style="margin-top:14px"><figure><canvas id="cDraw"></canvas><figcaption>Чертёж с листа: серое — ваши линии, <b style="color:#13804e">■</b> верный ответ, <b style="color:#dc2a22">■</b> ваш</figcaption></figure></div>'; }
+  /* лист с рамкой: что понял сканер — верный ответ и найденный у студента — на чертеже (только если чертёж прочитан) */
+  if(!r.drawings&&r.H) sheet=drawPhoto(src,r);
+  if(!r.drawings&&r.H&&r.box&&r.T&&dz===2) extra='<figure class="clean" style="margin-top:14px"><canvas id="cDraw"></canvas><figcaption>Как понял чертёж сканер: <b style="color:#13804e">зелёное</b> — верный ответ, <b style="color:#dc2a22">красное</b> — найденный у вас</figcaption></figure>';
   SC.renderResult({ds,src:sheet,variant:n,dz,demo,onNew:toStart,onRerun:demo&&!r.cam?()=>run(src,demo):null, log:r.log,
     onReshoot:demo?()=>SC.toast('Это пример — переснять можно настоящий лист'):()=>{ SC.toast('Снимите этот чертёж крупно — он займёт весь кадр'); $('file').click(); },
     note:(demo?'Синтетический лист (lab/dz/quadsynth.js), проверен этим же сканером. «Проверить заново» — проверка прямо сейчас (до нескольких минут). ':'')+(r.verdict==='верно'&&!r.drawings?'Проверено: положение ответа по условию задачи (допуск 1,5 мм / 1,5°) и тип линий рёбер.':r.ms&&!demo?'Проверено за '+Math.round(r.ms/1000)+' с на этом устройстве.':''),
     tech:JSON.stringify({вердикт:r.verdict,этап:r.stage,причины:r.why,чертежи:r.drawings?r.drawings.map(d=>({вердикт:d.verdict,причины:d.why})):null,части:r.parts||null,калибровка:r.T||null,СКО_мм:r.rms||null,рёбра:r.edges||null,варианты:r.variants||null,глаза:last.eyes||null},null,1)});
-  if(!r.drawings&&r.box&&$('cDraw')) drawDraw(src,r,dz,n); }
+  if($('cDraw')) drawDraw(src,r,dz,n); }
 
 /* мм чертежа → мм листа (калибровка T) → px фото (гомография H) */
 const AP=(T,m)=>[T[0]+(1+T[2])*m[0]+T[3]*m[1],T[1]+T[4]*m[0]+(1+T[5])*m[1]];
@@ -150,9 +148,8 @@ function drawPhoto(src,r){ const c=document.createElement('canvas'); c.width=src
 /* чертёж из рамки (5 px/мм): фото, линии оцифровки, ответ — верный и найденный */
 function drawDraw(src,r,dz,n){ const B=r.box, q=5, w=Math.round((B[2]-B[0])*q), h=Math.round((B[3]-B[1])*q), c=$('cDraw'); c.width=w; c.height=h;
   const img=src.getContext('2d').getImageData(0,0,src.width,src.height), g=c.getContext('2d'), out=g.createImageData(w,h), d=img.data;
-  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const p=IMG.H.apply(r.H,[B[0]+(x+0.5)/q,B[1]+(y+0.5)/q]), X=Math.round(p[0]), Y=Math.round(p[1]), o=(y*w+x)*4; out.data[o+3]=255; if(X<0||Y<0||X>=img.width||Y>=img.height) continue; const i=(Y*img.width+X)*4; for(let e=0;e<3;e++) out.data[o+e]=150+d[i+e]*0.4; }
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const p=IMG.H.apply(r.H,[B[0]+(x+0.5)/q,B[1]+(y+0.5)/q]), X=Math.round(p[0]), Y=Math.round(p[1]), o=(y*w+x)*4; out.data[o+3]=255; if(X<0||Y<0||X>=img.width||Y>=img.height) continue; const i=(Y*img.width+X)*4; for(let e=0;e<3;e++) out.data[o+e]=175+d[i+e]*0.3; }
   g.putImageData(out,0,0); const pg=p=>[(p[0]-B[0])*q,(p[1]-B[1])*q], O=r.digO||[0,0];
-  g.lineWidth=1; g.strokeStyle='rgba(60,60,60,.55)'; (r.segs||[]).forEach(s=>{ g.beginPath(); g.moveTo(...pg([s.a[0]+O[0],s.a[1]+O[1]])); g.lineTo(...pg([s.b[0]+O[0],s.b[1]+O[1]])); g.stroke(); });
   if(!r.T||dz!==2) return; const gv=CO.dzVariants.get(2,n), sv=CO.dz.solve(gv.id,gv.data); if(!sv.ok) return;
   const main=gv.id==='2'?(sv.sol.find(s=>s.inSeg)||sv.sol[0]):gv.id==='2b'?sv.sol[0]:sv.sol.find(s=>s.toK&&s.side==='над');
   const solidDraw=(sol,col,dash)=>{ const S=L.dzModel.solid(gv.id,sol,gv.data); g.strokeStyle=col; g.lineWidth=2; S.edges.forEach(e=>[L.dzModel.Fp,L.dzModel.Hp].forEach(Pj=>{ g.setLineDash(dash||[]); g.beginPath(); g.moveTo(...pg(AP(r.T,Pj(S.V[e.a])))); g.lineTo(...pg(AP(r.T,Pj(S.V[e.b])))); g.stroke(); })); g.setLineDash([]); };
@@ -160,7 +157,7 @@ function drawDraw(src,r,dz,n){ const B=r.box, q=5, w=Math.round((B[2]-B[0])*q), 
 
 /* примеры: готовые синтетические листы ДЗ № 3 — без камеры и без интернета */
 SC.examples().then(list=>SC.renderExamples($('exList'),list,async x=>{ try{ const {r,src}=await SC.loadExample(x);
-  $('dz').value='3'; [...$('dzSeg').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v==='3'))); $('n').value=x.n; setPaper('plain'); showVariant();
+  $('dz').value='3'; [...$('dzSeg').children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v==='3'))); $('n').value=x.n; showVariant();
   last={src,dz:3,n:x.n,demo:x.name,r}; show(); }catch(e){ SC.toast('Пример не загрузился'); } }));
 })();
 </script>

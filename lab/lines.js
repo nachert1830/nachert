@@ -14,15 +14,18 @@ const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='func
 const lab=n=>isNode?require('./'+n+'.js'):self.LAB[n];
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
 const IMG=lab('img'), CL=lab('clean'), {SHEETS,toPage}=lab('sheets'), font=lab('font');
-const PPM=8;
+const PPM=8, PPM8=PPM;
 
 /* производные гауссианы (раздельные свёртки) */
 function kern(s,o){ const r=Math.ceil(3.5*s), k=new Float32Array(2*r+1); for(let i=-r;i<=r;i++){ const g=Math.exp(-i*i/(2*s*s));
     k[i+r]=o===0?g:o===1?-i/(s*s)*g:(i*i/(s*s)-1)/(s*s)*g; }
   if(o===0){ let S=0; k.forEach(v=>S+=v); for(let i=0;i<k.length;i++) k[i]/=S; } else { const n=1/(Math.sqrt(2*Math.PI)*s); for(let i=0;i<k.length;i++) k[i]*=n; } return k; }
-function conv(g,kx,ky){ const {w,h}=g, t=new Float32Array(w*h), o=new Float32Array(w*h), rx=(kx.length-1)/2, ry=(ky.length-1)/2;
-  for(let y=0;y<h;y++){ const row=y*w; for(let x=0;x<w;x++){ let v=0; for(let j=-rx;j<=rx;j++){ const xx=x+j<0?0:x+j>=w?w-1:x+j; v+=g.a[row+xx]*kx[j+rx]; } t[row+x]=v; } }
-  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ let v=0; for(let j=-ry;j<=ry;j++){ const yy=y+j<0?0:y+j>=h?h-1:y+j; v+=t[yy*w+x]*ky[j+ry]; } o[y*w+x]=v; }
+/* внутри строки (столбца) — без проверки края: тот же порядок сложения, тот же результат, втрое быстрее */
+function conv(g,kx,ky){ const {w,h}=g, a=g.a, t=new Float32Array(w*h), o=new Float32Array(w*h), rx=(kx.length-1)/2, ry=(ky.length-1)/2, KX=kx.length, KY=ky.length;
+  for(let y=0;y<h;y++){ const row=y*w;
+    for(let x=0;x<w;x++){ let v=0; if(x>=rx&&x<w-rx){ const b=row+x-rx; for(let j=0;j<KX;j++) v+=a[b+j]*kx[j]; } else for(let j=-rx;j<=rx;j++){ const xx=x+j<0?0:x+j>=w?w-1:x+j; v+=a[row+xx]*kx[j+rx]; } t[row+x]=v; } }
+  for(let y=0;y<h;y++){ const inner=y>=ry&&y<h-ry, b0=(y-ry)*w;
+    for(let x=0;x<w;x++){ let v=0; if(inner){ let b=b0+x; for(let j=0;j<KY;j++,b+=w) v+=t[b]*ky[j]; } else for(let j=-ry;j<=ry;j++){ const yy=y+j<0?0:y+j>=h?h-1:y+j; v+=t[yy*w+x]*ky[j+ry]; } o[y*w+x]=v; } }
   return {w,h,a:o}; }
 function ridges(g,s){ const k0=kern(s,0), k1=kern(s,1), k2=kern(s,2), xx=conv(g,k2,k0), yy=conv(g,k0,k2), xy=conv(g,k1,k1), n=g.w*g.h;
   const R=new Float32Array(n), nx=new Float32Array(n), ny=new Float32Array(n);
@@ -31,7 +34,7 @@ function ridges(g,s){ const k0=kern(s,0), k1=kern(s,1), k2=kern(s,2), xx=conv(g,
   return {R,nx,ny}; }
 
 /* маска напечатанного: линии «дано» (±0,45 мм), кружки, подписи — по шаблону, в мм страницы */
-function printMask(SH,box,w,h){ const m=new Uint8Array(w*h), P=p=>[(p[0]-box[0])*PPM,(p[1]-box[1])*PPM];
+function printMask(SH,box,w,h,ppm){ const PPM=ppm||PPM8, m=new Uint8Array(w*h), P=p=>[(p[0]-box[0])*PPM,(p[1]-box[1])*PPM];
   const segMask=(a,b,r)=>{ const A=P(a), B=P(b), R=r*PPM, x0=Math.max(0,Math.floor(Math.min(A[0],B[0])-R)), x1=Math.min(w-1,Math.ceil(Math.max(A[0],B[0])+R)), y0=Math.max(0,Math.floor(Math.min(A[1],B[1])-R)), y1=Math.min(h-1,Math.ceil(Math.max(A[1],B[1])+R));
     const dx=B[0]-A[0], dy=B[1]-A[1], L2=dx*dx+dy*dy||1e-9; for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const t=Math.max(0,Math.min(1,((x+0.5-A[0])*dx+(y+0.5-A[1])*dy)/L2)), ex=x+0.5-A[0]-t*dx, ey=y+0.5-A[1]-t*dy; if(ex*ex+ey*ey<=R*R) m[y*w+x]=1; } };
   /* печатные подписи не маскируем: линия студента часто идёт прямо по букве (катет мимо «A′»); их штрихи короткие,
@@ -46,17 +49,18 @@ function printText(SH){ const out=[]; SH.given().forEach(it=>{ if(it.t!=='txt') 
     lay.strokes.forEach(pl=>pl.forEach(p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); })); out.push([x0-0.6,y0-0.6,x1+0.6,y1+0.6]); }); return out; }
 const dSeg=(p,a,b)=>{ const dx=b[0]-a[0], dy=b[1]-a[1], L=dx*dx+dy*dy||1e-9, t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L)); return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy); };
 
-function extract(img,rect,o){ o=o||{}; const SH=o.sheet||SHEETS[o.n||47], roi=SH.roi, box=[toPage(SH,[roi[0],roi[1]])[0],toPage(SH,[roi[0],roi[1]])[1],toPage(SH,[roi[2],roi[3]])[0],toPage(SH,[roi[2],roi[3]])[1]];
+/* o.ppm — грубый проход (поиск чертежа, опознание, первая привязка): 4 px/мм вместо 8 — вчетверо меньше пикселей; σ гребней — те же мм */
+function extract(img,rect,o){ o=o||{}; const PPM=o.ppm||PPM8, SH=o.sheet||SHEETS[o.n||47], roi=SH.roi, box=[toPage(SH,[roi[0],roi[1]])[0],toPage(SH,[roi[0],roi[1]])[1],toPage(SH,[roi[2],roi[3]])[0],toPage(SH,[roi[2],roi[3]])[1]];
   /* карта тёмности по полному фото — только в прямоугольнике, который покрывает область построения */
   let ink=rect.ink, M=rect.H; if(!ink){ const cs=[[box[0],box[1]],[box[2],box[1]],[box[2],box[3]],[box[0],box[3]]].map(p=>IMG.H.apply(rect.H,p));
     const x0=Math.max(0,Math.floor(Math.min(...cs.map(p=>p[0]))-20)), y0=Math.max(0,Math.floor(Math.min(...cs.map(p=>p[1]))-20)), x1=Math.min(img.width,Math.ceil(Math.max(...cs.map(p=>p[0]))+20)), y1=Math.min(img.height,Math.ceil(Math.max(...cs.map(p=>p[1]))+20));
     const cr=IMG.rgba(x1-x0,y1-y0); for(let y=y0;y<y1;y++) cr.data.set(img.data.subarray((y*img.width+x0)*4,(y*img.width+x1)*4),((y-y0)*(x1-x0))*4);
     /* o.clean — очиститель карандаша (lab/dz/cleaner): на вход — линии чёрным на белом, без подписей, теней и сетки */
     ink=CL.ink(o.clean?o.clean(cr):cr).ink; M=IMG.H.norm(IMG.H.mul([1,0,-x0,0,1,-y0,0,0,1],rect.H)); }
-  const g=CL.warp(ink,M,box,PPM), {w,h}=g, n=w*h, mask=printMask(SH,box,w,h);
+  const g=CL.warp(ink,M,box,PPM), {w,h}=g, n=w*h, mask=printMask(SH,box,w,h,PPM);
   /* два масштаба: тонкие линии — σ 1,5 px (0,19 мм), толстые основные — σ 3 px: на мелком масштабе у толстой линии
      два гребня по краям (двойник), на крупном — один посередине; берём масштаб с большим откликом */
-  const r1=ridges(g,1.5), r2=ridges(g,3), R=r1.R, nx=r1.nx, ny=r1.ny;
+  const r1=ridges(g,Math.max(1,1.5*PPM/8)), r2=ridges(g,3*PPM/8), R=r1.R, nx=r1.nx, ny=r1.ny;
   for(let i=0;i<n;i++) if(r2.R[i]>R[i]){ R[i]=r2.R[i]; nx[i]=r2.nx[i]; ny[i]=r2.ny[i]; }
   /* шум: распределение R на бумаге */
   const smp=[]; for(let i=0;i<n;i+=11) if(!mask[i]) smp.push(R[i]); smp.sort((a,b)=>a-b);
@@ -71,11 +75,12 @@ function extract(img,rect,o){ o=o||{}; const SH=o.sheet||SHEETS[o.n||47], roi=SH
   /* Хаф с направлением */
   const TH=360, dth=Math.PI/TH, rmax=Math.hypot(w,h), RS=1, NR=Math.ceil(2*rmax*RS)+1, cs=[], sn=[]; for(let t=0;t<TH;t++){ cs.push(Math.cos(t*dth)); sn.push(Math.sin(t*dth)); }
   const segs=[];
-  for(let iter=0;iter<(o.maxIter||80);iter++){ const acc=new Float32Array(TH*NR); let best=0, bt=0, br=0;
+  const acc=new Float32Array(TH*NR);   /* накопитель — один на все итерации (обнуляется), а не 10 МБ на каждую */
+  for(let iter=0;iter<(o.maxIter||80);iter++){ if(iter) acc.fill(0); let best=0, bt=0, br=0;
     for(const c of C){ if(c.used) continue; let t0=Math.round((Math.atan2(c.ny,c.nx)+2*Math.PI)%Math.PI/dth)%TH;
       /* голос по ρ — треугольником на ±1 px: разброс середины гребня (дрожь, шум) не дробит пик */
       for(let d=-6;d<=6;d++){ const t=(t0+d+TH)%TH, rho=(c.x*cs[t]+c.y*sn[t]+rmax)*RS, ri=Math.floor(rho), fr=rho-ri, k=t*NR+ri;
-        acc[k]+=c.r*(1-fr*0.5); acc[k+1]+=c.r*(0.5+fr*0.5); if(ri>0) acc[k-1]+=c.r*(0.5-fr*0.5); if(fr<0.5) acc[k+2]+=0; 
+        acc[k]+=c.r*(1-fr*0.5); acc[k+1]+=c.r*(0.5+fr*0.5); if(ri>0) acc[k-1]+=c.r*(0.5-fr*0.5); 
         if(acc[k]>best){ best=acc[k]; bt=t; br=ri; } if(acc[k+1]>best){ best=acc[k+1]; bt=t; br=ri+1; } } }
     if(best<tR*4*PPM){ if(o.dbg) o.dbg.push('стоп на '+iter); break; } if(o.dbg) o.dbg.push(iter+': '+(bt*180/TH).toFixed(1)+'° '+(br/RS-rmax).toFixed(0)+' '+best.toFixed(2));
     /* прямая пика → пиксели у неё → участки */
@@ -125,7 +130,7 @@ function extract(img,rect,o){ o=o||{}; const SH=o.sheet||SHEETS[o.n||47], roi=SH
 /* проверка предсказанной линии прямо по карте гребней (для бледных линий, которых нет среди отрезков):
    вдоль отрезка a→b (мм чертежа) через 0,5 мм ищем поперёк (±1,2 мм) максимум гребня нужного направления;
    доля мест, где гребень выше слабого порога, и МНК-прямая по найденным серединам */
-function probe(map,a,b){ const {R,nx,ny,mask,box,O}=map, w=map.g.w, h=map.g.h, P=p=>[(p[0]+O[0]-box[0])*PPM,(p[1]+O[1]-box[1])*PPM];
+function probe(map,a,b){ const PPM=map.g.ppm||PPM8, {R,nx,ny,mask,box,O}=map, w=map.g.w, h=map.g.h, P=p=>[(p[0]+O[0]-box[0])*PPM,(p[1]+O[1]-box[1])*PPM];
   const A=P(a), B=P(b), L=Math.hypot(B[0]-A[0],B[1]-A[1]); if(L<2*PPM) return null; const u=[(B[0]-A[0])/L,(B[1]-A[1])/L], n=[-u[1],u[0]];
   let tot=0; const hits=[];
   for(let t=0;t<=L;t+=0.5*PPM){ const c=[A[0]+u[0]*t,A[1]+u[1]*t], ci=Math.floor(c[1])*w+Math.floor(c[0]); if(c[0]<1||c[1]<1||c[0]>=w-1||c[1]>=h-1) continue; if(mask[ci]) continue; tot++;

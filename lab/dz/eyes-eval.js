@@ -93,7 +93,14 @@ async function ownFull(cfg,sh){ const a=await own(cfg,sh), b=await full(cfg,sh);
 let NETL=null; const NET=()=>NETL||(NETL=(async()=>{ const N=require('./net/eyesnet.js'); await N.load(A.netw||__dirname+'/net/eyes.onnx'); return N; })());
 async function net(cfg,sh){ const t0=Date.now(), N=await NET(), r=await N.eyes(sh.img,{dz:sh.dz,n:sh.n}); return {drawings:r.ok?r.drawings:[],ms:Date.now()-t0,calls:0,err:r.ok?null:r.reason}; }
 async function netOwn(cfg,sh){ const a=await own(cfg,sh), b=await net(cfg,sh); return {drawings:EY.mergeDrawings(a.drawings,b.drawings),ms:a.ms+b.ms,calls:0,err:a.err&&b.err}; }
-const STRATS={full,zoom,own,'own+full':ownFull,net,'net+own':netOwn};
+/* заглушка модели — злая подсказка части (замер того, что номер части от модели — только подсказка): рамка — правда, часть —
+   верная в половине случаев, чужая в трети, у чертежа только с условием — чаще всего какая-нибудь (как у Qwen3.6 в 7к) */
+async function mock(cfg,sh){ const R=IMG.rng(sh.n*977+7), P=p=>IMG.H.apply(sh.H,p);
+  const drawings=sh.groups.map(g=>{ const xs=Object.values(g.pts).map(P), b=[Math.min(...xs.map(p=>p[0])),Math.min(...xs.map(p=>p[1])),Math.max(...xs.map(p=>p[0])),Math.max(...xs.map(p=>p[1]))], w=b[2]-b[0], h=b[3]-b[1];
+    const x=R(), other=()=>'abcd'.replace(g.part||'','')[Math.floor(R()*3)], part=!g.built?(x<0.8?'abcd'[Math.floor(R()*4)]:null):x<0.5?g.part:x<0.83?other():null;
+    return {box:[b[0]-0.3*w,b[1]-0.15*h,b[2]+0.3*w,b[3]+0.15*h],part,pts:{}}; });
+  const a=await own(cfg,sh); return {drawings:sh.dz===3?EY.mergeDrawings(a.drawings,drawings):drawings,model:drawings,ms:a.ms,calls:0}; }
+const STRATS={full,zoom,own,'own+full':ownFull,net,'net+own':netOwn,'own+mock':mock};
 
 /* оценка ответа глаз против правды листа */
 function score(sh,res){ const Hi=IMG.H.inv(sh.H), mm=p=>IMG.H.apply(Hi,p), used=new Set(), st={found:0,total:0,swap:0,err:[],extra:0,drawingsFound:0};
@@ -178,7 +185,7 @@ function table(files){ const rows=[].concat(...files.map(f=>{ try{ return JSON.p
   /* --resolve=имя,… — только точные имена в списке OpenRouter (ключ не нужен) */
   if(A.resolve){ for(const m of A.resolve.split(',')){ const r=await orResolve(m); console.log('OpenRouter: '+m+' → '+(r.id?r.id+' ($'+(r.price.prompt*1e6).toFixed(2)+' / $'+(r.price.completion*1e6).toFixed(2)+' за 1 млн токенов)':'нет такой; есть: '+r.near.join(', '))+(r.others&&r.others.length?' (ещё: '+r.others.join(', ')+')':'')); } return; }
   const OR=A.provider==='openrouter', env=Object.assign({},process.env,OR?{EYES_URL:SE.OR_URL}:{}), base=SE.eyesFromEnv(env);
-  const noModel=STR.every(s=>/^(own|net|net\+own)$/.test(s));
+  const noModel=STR.every(s=>/^(own|net|net\+own|own\+mock)$/.test(s));
   if(!noModel&&(!base.on||!(TOKEN||base.key))){ console.log('нет доступа к модели: '+(OR?'нужен OPENROUTER_API_KEY':'нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY)')+'; без модели — --strategy=own'); process.exit(1); }
   let models=noModel?['свои глаза']:A.models?A.models.split(',').map(m=>OR||m.includes('://')?m:'gpt://{folder}/'+m):[process.env.EYES_MODEL||SE.DEF_MODEL];
   if(OR&&!noModel){ const res=[]; for(const m of models){ const r=await orResolve(m); console.log('OpenRouter: '+m+' → '+(r.id||'нет такой; есть: '+r.near.join(', '))+(r.others&&r.others.length?' (ещё: '+r.others.join(', ')+')':'')); if(r.id){ res.push(r.id); PRICE=r.price; } } models=res;

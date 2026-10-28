@@ -305,3 +305,41 @@ details.tech pre{ white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; 
   .ex b{ font-size:13px; }
 }
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+
+/* ── результат по частям (ДЗ № 3): четыре компактные карточки — весь ответ на одном экране телефона ── */
+.res .col-b{ display:grid; gap:10px; align-content:start; }
+.res .sum{ padding:12px 14px; gap:12px; border-radius:18px; }
+.res .sum .big{ width:42px; height:42px; border-radius:13px; } .res .sum .big svg{ width:24px; height:24px; }
+.res .sum h1{ font-size:clamp(19px,4.8vw,23px); }
+.res .sum p{ font-size:13.5px; line-height:1.4; }
+.res .sum p .note{ white-space:nowrap; }
+.card.pc{ padding:11px 13px; border-radius:16px; }
+.card.pc .num{ width:28px; height:28px; font-size:14px; }
+.card.pc .card-h{ gap:10px; }
+.card.pc .card-h h3{ font-size:15.5px; min-width:0; }
+.card.pc .pill{ padding:3px 9px; font-size:12.5px; }
+.card.pc .say{ margin:6px 0 0; font-size:14.5px; line-height:1.4; }
+.card.pc .where{ margin:6px 0 0; padding:7px 10px; border-radius:11px; font-size:14px; }
+.ask1{ margin:4px 0 0; font-size:13.5px; color:var(--mut); }
+.card .acts{ margin-top:8px; gap:6px; }
+.card.pc .acts .btn{ min-height:34px; padding:6px 11px; font-size:13.5px; }
+.card .acts .btn svg{ transition:transform .2s; } .card .acts .btn.open svg{ transform:rotate(180deg); }
+.card .more{ margin-top:10px; display:grid; gap:10px; }
+.card .more ul{ margin:0; padding-left:18px; font-size:14px; color:var(--ink2,var(--ink)); }
+.clean{ margin:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; }
+.clean svg{ display:block; width:100%; height:auto; max-height:62vh; }
+.clean figcaption{ padding:7px 10px; font-size:12.5px; color:#4b5568; background:#f6f8fc; border-top:1px solid #e3e8f2; }
+.crop canvas{ display:block; width:100%; height:auto; border-radius:12px; }
+.res .foot{ display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.clean canvas{ display:block; width:100%; height:auto; }
+.res .cards{ list-style:none; margin:0; padding:0; min-width:0; }
+.res .col-a,.res .col-b{ min-width:0; }
+.card.pc .card-h h3{ flex:1; }
+.card.pc .acts{ align-items:center; }
+.card.pc .acts .lnk{ background:none; border:0; padding:4px 2px; min-height:30px; color:var(--link); font:600 14px var(--body,inherit); display:inline-flex; align-items:center; gap:4px; cursor:pointer; }
+.card.pc .acts .lnk svg{ width:16px; height:16px; }
+.card.pc .acts .btn{ margin-left:auto; }
+.airow{ display:grid; gap:8px; margin:0 0 14px; padding:10px 12px; border-radius:14px; background:var(--surf2); border:1px solid var(--line); }
+.airow .tg{ display:flex; gap:10px; align-items:flex-start; font-size:14px; line-height:1.4; cursor:pointer; }
+.airow .tg input{ width:20px; height:20px; margin:1px 0 0; flex:none; accent-color:var(--acc); }
+.airow .tg.sub{ font-size:13px; color:var(--mut); }

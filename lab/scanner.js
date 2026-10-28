@@ -28,6 +28,8 @@ S.fillIcons=root=>(root||document).querySelectorAll('[data-i]').forEach(e=>{ if(
 const root=document.documentElement;
 try{ const t=JSON.parse(localStorage.getItem('nch2_theme')); if(t==='light'||t==='dark') root.dataset.theme=t; }catch(e){}
 try{ if(window.self!==window.top) root.classList.add('embed'); }catch(e){ root.classList.add('embed'); }
+/* камера внутри кабинета — на весь экран телефона: кабинет растягивает рамку сканера (lk/app.js fitLab) */
+S.full=on=>{ try{ if(window.parent!==window) window.parent.postMessage({type:'nch-lab-full',on:!!on},location.origin); }catch(e){} };
 const dark=()=>root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
 S.themeBtn=b=>{ if(!b) return; const sync=()=>{ b.innerHTML=I(dark()?'sun':'moon'); b.setAttribute('aria-label',dark()?'Светлая тема':'Тёмная тема'); };
   sync(); b.onclick=()=>{ const t=dark()?'light':'dark'; root.dataset.theme=t; try{ localStorage.setItem('nch2_theme',JSON.stringify(t)); }catch(e){} sync(); }; };
@@ -38,9 +40,28 @@ S.screen=id=>{ document.querySelectorAll('.scr').forEach(e=>{ e.hidden=e.id!==id
 S.toast=(t,ms)=>{ const old=document.querySelector('.toast'); if(old) old.remove(); const d=document.createElement('div'); d.className='toast'; d.setAttribute('role','status'); d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),ms||3200); };
 S.vibrate=ms=>{ try{ navigator.vibrate&&navigator.vibrate(ms||25); }catch(e){} };
 
+/* ── ИИ-зрение через кабинет: страница открыта в нём (тот же сайт), кабинет ходит в /api/eyes с токеном участника.
+   Модель говорит только «где какой чертёж и какая часть»; меряет и решает сканер. Без кабинета, без сети или при сбое —
+   свои глаза (поиск по линиям), сканер работает как обычно ── */
+const PARENT=window.parent!==window?window.parent:null, aiWait={}; let aiSeq=0, aiCb=null; S.ai={on:false,model:''};
+window.addEventListener('message',e=>{ const d=e.data; if(e.origin!==location.origin||!d) return;
+  if(d.type==='nch-eyes-pong'){ S.ai.on=!!d.on; aiCb&&aiCb(S.ai.on); }
+  if(d.type==='nch-eyes-r'&&aiWait[d.id]){ aiWait[d.id](d); delete aiWait[d.id]; } });
+S.aiPing=cb=>{ aiCb=cb; if(PARENT) try{ PARENT.postMessage({type:'nch-eyes-ping'},location.origin); }catch(e){} };
+/* снимок → JPEG, длинная сторона 1280 px (модели хватает, запрос лёгкий); consent — можно зарубежной модели */
+S.askEyes=(img,dz,n,consent)=>{ if(!PARENT||!S.ai.on) return Promise.resolve({ok:false,error:'ИИ-зрение недоступно'});
+  const W=img.width, H=img.height, k=Math.min(1,1280/Math.max(W,H)), c=document.createElement('canvas'); c.width=Math.round(W*k); c.height=Math.round(H*k);
+  if(img.getContext) c.getContext('2d').drawImage(img,0,0,c.width,c.height); else { const t=document.createElement('canvas'); t.width=W; t.height=H; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(img.data.buffer||img.data),W,H),0,0); c.getContext('2d').drawImage(t,0,0,c.width,c.height); }
+  const id=++aiSeq, url=c.toDataURL('image/jpeg',0.85);
+  return new Promise(res=>{ const to=setTimeout(()=>{ delete aiWait[id]; res({ok:false,error:'модель не ответила за минуту'}); },65000);
+    aiWait[id]=d=>{ clearTimeout(to); if(d.ok&&d.model) S.ai.model=d.model; res(Object.assign(d,{scale:k})); };
+    PARENT.postMessage({type:'nch-eyes',id,img:url,w:c.width,h:c.height,dz,n,consent:!!consent},location.origin); }); };
+S.modelName=m=>String(m||'').replace(/^gpt:\/\/[^/]+\//,'').replace(/\/latest$/,'');
+
 /* ── вердикт → тон: ok — верно, bad — ошибка, calm — не могу утверждать (спокойно, это просьба, а не поломка) ── */
 const tone=S.tone=v=>/^(верно|ответы верны|данные нанесены верно|другое решение)/.test(v||'')?'ok':/ошибка|не тот вариант/.test(v||'')?'bad':'calm';
 const PART={a:'Высота пирамиды',b:'Угол между гранями SAB и ABC',c:'Истинный вид треугольника ABC',d:'Угол SA с основанием'};
+const PSHORT={a:'Высота',b:'Угол граней',c:'Истинный вид ABC',d:'Угол SA с основанием'};
 const PNUM={a:'1',b:'2',c:'3',d:'4'}, NUMP={'1':'a','2':'b','3':'c','4':'d'};
 S.PART=PART;
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
@@ -71,13 +92,16 @@ function phrase(d){ const t=tone(d.verdict), ps=d.parts||{}, ks=Object.keys(ps).
 /* ответ потока (или серии по чертежам) → список чертежей для экрана */
 S.fromWorker=r=>{ if(!r) return [];
   if(r.drawings&&r.drawings.length) return r.drawings.map((d,i)=>{ const e=(r.eyesPts||[])[i]||{}, ps=partsFromWhy(d.why), m=/—\s*(\d)\)/.exec(d.title||'');
-    return {i,title:'Чертёж '+(i+1),part:m?NUMP[m[1]]:null,verdict:d.verdict,why:d.why||[],parts:ps,ex:d.ex,svg:d.svg,fig:d.fig||e.fig||null,O:e.O||null,box:e.box||null}; });
+    return {i,title:'Чертёж '+(i+1),part:m?NUMP[m[1]]:null,verdict:d.verdict,why:d.why||[],parts:ps,ex:d.ex,svg:d.svg,fig:d.fig||e.fig||null,O:e.O||null,box:e.box||null,cons:d.cons||null}; });
   /* один чертёж (лист в клетку или один крупный): сам ответ */
   const ps=partsFromWhy(r.why), shown=Object.keys(ps).filter(k=>ps[k].st==='верно');
-  return [{i:0,title:'Чертёж',part:shown.length===1?shown[0]:null,verdict:r.verdict,why:r.why||[],parts:ps,ex:r.ex,svg:r.svg,fig:r.fig||null,O:null,box:null}]; };
+  return [{i:0,title:'Чертёж',part:shown.length===1?shown[0]:null,verdict:r.verdict,why:r.why||[],parts:ps,ex:r.ex,svg:r.svg,fig:r.fig||null,O:null,box:null,cons:r.cons||null}]; };
 
 /* итог съёмки по чертежам (closeup.js Session.result) + чертежи общего снимка → список чертежей для экрана */
-S.fromSession=(R,ovd)=>R.map((r,j)=>({i:j,title:'Чертёж '+(j+1),sub:ovd[j].pos+' · снимков '+r.read+' из '+r.n,part:r.part,verdict:r.verdict,why:(r.why||[]).filter(Boolean),parts:r.parts,ex:null,svg:null,fig:null,quad:ovd[j].box}));
+S.fromSession=(R,ovd)=>R.map((r,j)=>{ const A=ovd[j].A, m=A?p=>[A[0]*p[0]+A[1]*p[1]+A[2],A[3]*p[0]+A[4]*p[1]+A[5]]:null;
+  /* что понял мозг на снимках вблизи (мм чертежа) → общий снимок: аффинное «мм условия → px» этого чертежа */
+  const cons=r.geo?Object.fromEntries(Object.entries(r.geo).map(([k,g])=>[k,{st:r.parts[k]&&r.parts[k].st,geo:g,px:m?g.map(q=>q.t==='p'?Object.assign({},q,{p:m(q.p)}):Object.assign({},q,{a:m(q.a),b:m(q.b)})):null}])):null;
+  return {i:j,title:'Чертёж '+(j+1),sub:ovd[j].pos+' · снимков '+r.read+' из '+r.n,part:r.part,verdict:r.verdict,why:(r.why||[]).filter(Boolean),parts:r.parts,ex:null,svg:null,fig:null,quad:ovd[j].box,cons}; });
 
 /* ── картинка: ImageData / canvas / img → canvas ── */
 S.toCanvas=(src,long)=>{ const W=src.naturalWidth||src.videoWidth||src.width, H=src.naturalHeight||src.videoHeight||src.height, k=Math.min(1,(long||1e9)/Math.max(W,H)), c=document.createElement('canvas');
@@ -136,18 +160,23 @@ function boxOf(d,W,H){ if(d.quad) return d.quad; let pts=null;
   const m=0.22*Math.max(x1-x0,y1-y0); x0=Math.max(0,x0-m); y0=Math.max(0,y0-m); x1=Math.min(W,x1+m); y1=Math.min(H,y1+m); return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]]; }
 function rrect(g,q,r){ const xs=q.map(p=>p[0]), ys=q.map(p=>p[1]), axis=Math.abs(q[0][1]-q[1][1])<1&&Math.abs(q[0][0]-q[3][0])<1;
   g.beginPath(); if(axis&&g.roundRect){ g.roundRect(Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys),r); } else { q.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.closePath(); } }
-/* лист: фото, рамки чертежей цветом вердикта, найденная фигура условия поверх линий студента */
+/* построение части поверх фото: у опознанного чертежа — понятое мозгом (geo, px снимка); иначе — найденная фигура условия */
+const geoPx=d=>d.part&&d.cons&&d.cons[d.part]&&d.cons[d.part].px;
+const toneOf=d=>d.part&&d.parts&&d.parts[d.part]?(d.parts[d.part].st==='верно'?'ok':d.parts[d.part].st==='ошибка'?'bad':'calm'):tone(d.verdict);
+/* лист: фото, рамки чертежей цветом вердикта части, построение — поверх линий студента */
 function paintSheet(cv,src,ds,o){ const W=src.width, H=src.height, k=Math.min(1,1600/Math.max(W,H)); cv.width=Math.round(W*k); cv.height=Math.round(H*k);
   const g=cv.getContext('2d'); g.drawImage(src,0,0,cv.width,cv.height); if(o.plain) return; const lw=Math.max(2,cv.width/360);
-  ds.forEach(d=>{ const q=d._q; if(!q) return; const t=tone(d.verdict), Q=q.map(p=>[p[0]*k,p[1]*k]);
-    g.save(); g.fillStyle=t==='ok'?'rgba(19,163,95,.07)':t==='bad'?'rgba(224,37,44,.08)':'rgba(111,132,171,.08)'; rrect(g,Q,14*lw/2.5); g.fill();
+  ds.forEach(d=>{ const q=d._q; if(!q) return; const t=toneOf(d), Q=q.map(p=>[p[0]*k,p[1]*k]);
+    g.save(); g.fillStyle='rgba(255,255,255,.18)'; rrect(g,Q,14*lw/2.5); g.fill();
     g.strokeStyle=COL[t]; g.lineWidth=lw*1.3; if(t==='calm') g.setLineDash([lw*4,lw*3]); rrect(g,Q,14*lw/2.5); g.stroke(); g.restore();
-    if(d.fig){ g.save(); g.strokeStyle=t==='bad'?'rgba(224,37,44,.9)':t==='ok'?'rgba(19,163,95,.95)':'rgba(70,110,200,.9)'; g.lineWidth=lw; g.lineCap='round'; g.lineJoin='round';
+    const gp=geoPx(d); if(gp){ paintGeo(g,gp,k,0,0,lw*0.7); return; }
+    if(d.fig){ g.save(); g.strokeStyle='rgba(111,132,171,.75)'; g.lineWidth=lw*0.6; g.lineCap='round'; g.lineJoin='round';
       d.fig.forEach(pl=>{ g.beginPath(); pl.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k)); g.stroke(); }); g.restore(); } }); }
-/* вырезка одного чертежа — для карточки (где именно) */
-function paintCrop(cv,src,d){ const q=d._q; if(!q) return false; const xs=q.map(p=>p[0]), ys=q.map(p=>p[1]), x0=Math.max(0,Math.min(...xs)), y0=Math.max(0,Math.min(...ys)), w=Math.min(src.width,Math.max(...xs))-x0, h=Math.min(src.height,Math.max(...ys))-y0;
+/* вырезка одного чертежа — для карточки: фото и построение части поверх */
+function paintCrop(cv,src,d,part){ const q=d._q; if(!q) return false; const xs=q.map(p=>p[0]), ys=q.map(p=>p[1]), x0=Math.max(0,Math.min(...xs)), y0=Math.max(0,Math.min(...ys)), w=Math.min(src.width,Math.max(...xs))-x0, h=Math.min(src.height,Math.max(...ys))-y0;
   if(w<20||h<20) return false; const k=Math.min(2,900/w); cv.width=Math.round(w*k); cv.height=Math.round(h*k); const g=cv.getContext('2d'); g.drawImage(src,x0,y0,w,h,0,0,cv.width,cv.height);
-  if(d.fig){ const t=tone(d.verdict); g.strokeStyle=t==='bad'?'rgba(224,37,44,.9)':t==='ok'?'rgba(19,163,95,.95)':'rgba(70,110,200,.9)'; g.lineWidth=Math.max(2,cv.width/300); g.lineCap='round';
+  const gp=part&&d.cons&&d.cons[part]&&d.cons[part].px; if(gp) paintGeo(g,gp,k,x0,y0,Math.max(1.6,cv.width/380));
+  else if(d.fig){ g.strokeStyle='rgba(70,110,200,.9)'; g.lineWidth=Math.max(2,cv.width/300); g.lineCap='round';
     d.fig.forEach(pl=>{ g.beginPath(); pl.forEach((p,i)=>i?g.lineTo((p[0]-x0)*k,(p[1]-y0)*k):g.moveTo((p[0]-x0)*k,(p[1]-y0)*k)); g.stroke(); }); } return true; }
 
 /* сводка по листу */
@@ -158,47 +187,102 @@ function summary(ds){ const n={ok:0,bad:0,calm:0}; ds.forEach(d=>n[tone(d.verdic
   if(n.ok) return {t:'calm',h:'Верно '+n.ok+' из '+N,p:'Ещё '+n.calm+' '+plural(n.calm,'чертёж','чертежа','чертежей')+' не смог проверить уверенно — переснимите '+(n.calm>1?'их':'его')+' ближе, и я досмотрю.'};
   return {t:'calm',h:'Пока не могу утверждать',p:'Линии видны, но уверенного вывода нет. Переснимите чертежи ближе — по одному, при ровном свете.'}; }
 
-/* полный экран результата. o: {el, src (canvas), ds, variant, demo, onReshoot(i), onNew, extra (html), tech} */
-S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, Sm=summary(ds);
+/* ── чистый чертёж: то, что понял мозг (check3 geo), — отдельно (SVG в мм чертежа) и поверх фото ──
+   заданная пирамида — серым; построение части — синим (оси — штрихпунктир, линии связи — тонкие, ответ — толще);
+   где у студента не так — красным, где должно быть — зелёным кружком */
+const GEO_COL={ax:'#5d7bb5',lnk:'#8fa6cf',eg:'#2a5bd7',res:'#1a46c4',pt:'#1a46c4',bad:'#e0252c',good:'#13a35f'};
+function figOf(n){ try{ const L=self.LAB, gv=self.CORE.dzVariants.get(3,+n); return L&&L.dzModel&&gv?L.dzModel.given(gv.id,gv.data).segs:null; }catch(e){ return null; } }
+S.cleanSvg=(geo,fig)=>{ if(!geo||!geo.length) return '';
+  const pts=geo.flatMap(q=>q.t==='p'?[q.p]:[q.a,q.b]).concat((fig||[]).flatMap(q=>[q.a,q.b]));
+  const x0=Math.min(...pts.map(p=>p[0]))-6, x1=Math.max(...pts.map(p=>p[0]))+10, y0=Math.min(...pts.map(p=>p[1]))-6, y1=Math.max(...pts.map(p=>p[1]))+6, n2=v=>Math.round(v*100)/100;
+  const o=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+n2(x0)+' '+n2(y0)+' '+n2(x1-x0)+' '+n2(y1-y0)+'" font-family="system-ui,sans-serif" role="img" aria-label="Построение, как его понял сканер">',
+    '<rect x="'+n2(x0)+'" y="'+n2(y0)+'" width="'+n2(x1-x0)+'" height="'+n2(y1-y0)+'" fill="#fff"/>'];
+  const ln=(a,b,c,w,da)=>o.push('<line x1="'+n2(a[0])+'" y1="'+n2(a[1])+'" x2="'+n2(b[0])+'" y2="'+n2(b[1])+'" stroke="'+c+'" stroke-width="'+w+'" stroke-linecap="round"'+(da?' stroke-dasharray="'+da+'"':'')+'/>');
+  (fig||[]).forEach(q=>ln(q.a,q.b,'#7d8696',q.k==='hid'?0.25:0.4,q.k==='hid'?'1.6 1':''));
+  const W={ax:0.3,lnk:0.18,eg:0.35,res:0.6,bad:0.55,good:0.45}, DA={ax:'5 1.2 1 1.2',lnk:'1.2 0.9',good:'3 1.5'};
+  geo.filter(q=>q.t==='l').forEach(q=>{ ln(q.a,q.b,GEO_COL[q.k]||GEO_COL.eg,W[q.k]||0.35,DA[q.k]); if(q.l) o.push('<text x="'+n2(q.b[0]+1)+'" y="'+n2(q.b[1]-1)+'" font-size="3.2" fill="'+(GEO_COL[q.k]||GEO_COL.ax)+'">'+esc(q.l)+'</text>'); });
+  geo.filter(q=>q.t==='p').forEach(q=>{ const c=GEO_COL[q.k]||GEO_COL.pt; o.push('<circle cx="'+n2(q.p[0])+'" cy="'+n2(q.p[1])+'" r="'+(q.k==='pt'?0.9:1.5)+'" fill="'+(q.k==='pt'?c:'none')+'" stroke="'+c+'" stroke-width="0.5"/>');
+    if(q.l) o.push('<text x="'+n2(q.p[0]+1.6)+'" y="'+n2(q.p[1]-1.4)+'" font-size="3.2" fill="'+c+'"'+(q.k==='bad'?' font-weight="700"':'')+'>'+esc(q.l)+'</text>'); });
+  o.push('</svg>'); return o.join(''); };
+/* то же построение поверх фото (px снимка): g — 2d, k — масштаб холста, ox/oy — сдвиг (вырезка) */
+function paintGeo(g,px,k,ox,oy,lw){ const P=p=>[(p[0]-(ox||0))*k,(p[1]-(oy||0))*k]; g.save(); g.lineCap='round';
+  px.filter(q=>q.t==='l').forEach(q=>{ g.strokeStyle=GEO_COL[q.k]||GEO_COL.eg; g.globalAlpha=q.k==='lnk'?0.75:0.95; g.lineWidth=lw*(q.k==='res'||q.k==='bad'?1.25:q.k==='lnk'?0.5:0.8); g.setLineDash(q.k==='ax'?[lw*5,lw*2,lw,lw*2]:q.k==='lnk'?[lw*2,lw*1.6]:q.k==='good'?[lw*4,lw*2]:[]);
+    g.beginPath(); g.moveTo(...P(q.a)); g.lineTo(...P(q.b)); g.stroke(); });
+  g.setLineDash([]); g.globalAlpha=1; g.font='600 '+Math.round(lw*6)+'px system-ui,sans-serif';
+  px.filter(q=>q.t==='p').forEach(q=>{ const c=GEO_COL[q.k]||GEO_COL.pt, p=P(q.p); g.strokeStyle=c; g.fillStyle=c; g.lineWidth=lw*0.9; g.beginPath(); g.arc(p[0],p[1],lw*(q.k==='pt'?1.4:2.6),0,7); q.k==='pt'?g.fill():g.stroke();
+    if(q.l&&q.k!=='pt'){ g.lineWidth=lw*2; g.strokeStyle='rgba(255,255,255,.9)'; g.strokeText(q.l,p[0]+lw*3,p[1]-lw*3); g.fillText(q.l,p[0]+lw*3,p[1]-lw*3); } });
+  g.restore(); }
+
+/* ── ДЗ № 3: четыре части листа → четыре карточки. Часть — у чертежа, который мозг опознал по построению (или подтвердил
+   подсказку модели); у неопознанного чертежа части нет — «не понял, какая это часть», вердикта по нему не придумываем ── */
+const cut=s=>String(s||'').replace(/\s*\([^)]*\)\s*$/,'').replace(/;.*$/,'');
+function partCards(ds){ const unk=ds.filter(d=>!d.part&&d.verdict!=='не снят'), free=unk.slice();
+  return ['a','b','c','d'].map(k=>{ const d=ds.find(x=>x.part===k), p=d&&d.parts&&d.parts[k];
+    if(d&&p){ const st=p.st==='верно'?'ok':p.st==='ошибка'?'bad':'calm', w=(p.why||[]).filter(Boolean);
+      if(st==='ok') return {k,d,t:'ok',say:'Построено верно'+(w[0]?': '+cut(w[0])+'.':'.')};
+      if(st==='bad'){ const j=badStep(d.ex); return {k,d,t:'bad',say:'В построении ошибка.',where:j>=0?'шаг '+(j+1)+' — '+d.ex.steps[j].name+': '+d.ex.steps[j].msg:cap(cut(w[0])||'смотрите разбор на чертеже')}; }
+      const small=/мелко|px\/мм|ближе/.test(w.join(' '));
+      return {k,d,t:'calm',say:'Построение вижу, но утверждать не могу — '+(small?'снимите чертёж ближе, во весь кадр.':'переснимите крупно, ровно, без блика.'),why1:w[0]}; }
+    const g=free.shift();
+    if(g) return {k,d:null,guess:g,t:'calm',say:'Не понял, какой из чертежей — эта часть: снимите её крупно, во весь кадр.'};
+    const ns=ds.find(x=>x.verdict==='не снят');
+    return {k,d:null,guess:ns||null,t:'calm',say:ns?'Чертёж ещё не снят — поднесите телефон к нему.':'Чертёж этой части не нашёл — если он есть, снимите его крупно.'}; }); }
+/* сводка по частям */
+function partSummary(cs,ds){ const n={ok:0,bad:0,calm:0}; cs.forEach(c=>n[c.t]++); const nm=t=>cs.filter(c=>c.t===t).map(c=>PNUM[c.k]), list=a=>a.length===1?a[0]:a.slice(0,-1).join(', ')+' и '+a[a.length-1];
+  const data=ds.find(d=>/ошибка в данных/.test(d.verdict));
+  if(n.bad) return {t:'bad',h:'Ошибка в част'+(n.bad>1?'ях ':'и ')+list(nm('bad')),p:(n.ok?'Верно: '+list(nm('ok'))+'. ':'')+(n.calm?'Не могу утверждать: '+list(nm('calm'))+'.':'')};
+  if(data) return {t:'bad',h:'Условие нанесено с ошибкой',p:cap(cut((data.why||[]).find(w=>/вместо|не там/.test(w))||'точки условия не по данным варианта'))};
+  if(n.ok===4) return {t:'ok',h:'Все 4 части верно',p:'Построения сходятся с условием варианта.'};
+  if(n.ok) return {t:'calm',h:'Верно: '+list(nm('ok')),p:'Остальное не могу утверждать — переснимите '+(n.calm>1?'эти чертежи':'этот чертёж')+' ближе.'};
+  return {t:'calm',h:'Пока не могу утверждать',p:'Переснимите чертежи ближе — по одному, при ровном свете.'}; }
+
+/* полный экран результата. o: {el, src (canvas), ds, variant, dz, demo, onReshoot(i), onNew, onRerun, note, log, tech}.
+   ДЗ № 3 — четыре карточки частей (одна фраза, подробности под «Подробнее»); иначе — карточки чертежей */
+S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, byPart=(o.dz||3)===3&&!o.whole;
   ds.forEach(d=>{ d._q=src?boxOf(d,src.width,src.height):null; });
+  const cs=byPart?partCards(ds):null, Sm=byPart?partSummary(cs,ds):summary(ds), fig=byPart?figOf(o.variant):null;
   const pinOf=d=>{ const q=d._q; if(!q) return null; return [Math.min(...q.map(p=>p[0])),Math.min(...q.map(p=>p[1]))]; };
   const ic=t=>I(t==='ok'?'ok':t==='bad'?'bad':'q'), word=t=>t==='ok'?'Верно':t==='bad'?'Ошибка':'Не могу утверждать';
+  const card=c=>{ const d=c.d, geo=d&&d.cons&&d.cons[c.k], svg=geo?S.cleanSvg(geo.geo,fig):'', tgt=d||c.guess;
+    return '<li class="card pc '+c.t+'" id="pcard'+c.k+'" data-k="'+c.k+'"'+(tgt?' data-i="'+tgt.i+'"':'')+'><div class="card-h"><span class="num">'+PNUM[c.k]+'</span><h3 title="'+esc(PART[c.k])+'">'+esc(PSHORT[c.k])+'</h3><span class="pill">'+ic(c.t)+word(c.t)+'</span></div>'
+      +'<p class="say">'+esc(c.say)+'</p>'+(c.where?'<div class="where">'+I('pin')+'<div>'+esc(c.where)+'</div></div>':'')+(c.ask?'<p class="ask1">'+esc(c.ask)+'</p>':'')
+      +'<div class="acts">'+(d?'<button class="lnk" data-act="more" aria-expanded="false">'+I('down')+'Подробнее</button>':'')+(o.onReshoot&&tgt&&c.t!=='ok'?'<button class="btn '+(c.t==='calm'?'pri':'ghost')+' sm" data-act="reshoot">'+I('redo')+'Переснять этот чертёж</button>':'')+'</div>'
+      +(d?'<div class="more" hidden>'
+        +(svg?'<figure class="clean">'+svg+'<figcaption>Как понял построение сканер'+(geo.geo.some(q=>q.k==='bad')?': <b style="color:#e0252c">красное</b> — у вас, <b style="color:#13a35f">зелёное</b> — где должно быть':'')+'. Серое — заданная пирамида.</figcaption></figure>':'')
+        +(src&&d._q?'<div class="crop"><canvas data-crop="'+d.i+'" data-k="'+c.k+'"></canvas><p class="note">'+esc(d.title)+(d.sub?' · '+esc(d.sub):'')+' — на фото</p></div>':'')
+        +(c.k==='d'&&d.ex&&d.ex.steps&&d.ex.steps.length?'<div class="ksteps">'+d.ex.steps.map(s=>'<div class="'+(s.status==='ok'?'ok':s.status==='bad'?'bad':'ref')+'"><i>'+(s.status==='ok'?'✓':s.status==='bad'?'✕':'?')+'</i><span>'+esc(s.name)+' — '+esc(s.msg)+'</span></div>').join('')+'</div>':'')
+        +'<ul>'+(d.parts[c.k].why||[]).filter(Boolean).map(w=>'<li>'+esc(cap(w))+'</li>').join('')+'</ul>'+(o.onReshoot&&c.t==='ok'?'<div><button class="btn ghost sm" data-act="reshoot">'+I('redo')+'Переснять этот чертёж</button></div>':'')+'</div>':'')+'</li>'; };
+  const dcard=d=>{ const t=tone(d.verdict), ph=phrase(d), stepsH=d.ex&&d.ex.steps&&d.ex.steps.length>1||d.ex&&d.ex.steps&&d.ex.steps[0]&&d.ex.steps[0].status!=='?'?d.ex.steps:null;
+    return '<li class="card '+t+'" id="card'+d.i+'" data-i="'+d.i+'"><div class="card-h"><span class="num">'+(ds.length>1?d.i+1:ic(t))+'</span><div style="min-width:0"><h3>'+esc(d.title)+'</h3>'+(d.sub?'<div class="sub">'+esc(d.sub)+'</div>':'')+'</div><span class="pill">'+ic(t)+word(t)+'</span></div>'
+      +'<p class="say">'+esc(ph.say)+'</p>'+(ph.where?'<div class="where">'+I('pin')+'<div><b>Где:</b> '+esc(ph.where)+'</div></div>':'')+(ph.ask?'<p class="ask1">'+esc(ph.ask)+'</p>':'')
+      +(t==='bad'&&d.svg?'<div class="svgbox" aria-label="Разбор: красное — как у вас, зелёное — как надо">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div>':'')
+      +'<div class="acts">'+'<button class="btn ghost sm" data-act="more" aria-expanded="false">'+I('down')+'Подробнее</button>'+(o.onReshoot?'<button class="btn '+(t==='calm'?'pri':'ghost')+' sm" data-act="reshoot">'+I('redo')+'Переснять</button>':'')+'</div>'
+      +'<div class="more" hidden>'+(stepsH?'<div class="ksteps">'+stepsH.map(s=>'<div class="'+(s.status==='ok'?'ok':s.status==='bad'?'bad':'ref')+'"><i>'+(s.status==='ok'?'✓':s.status==='bad'?'✕':'?')+'</i><span>'+esc(s.name)+' — '+esc(s.msg)+'</span></div>').join('')+'</div>':'')
+        +'<ul>'+(d.why||[]).filter(Boolean).map(w=>'<li>'+esc(cap(w))+'</li>').join('')+'</ul>'+(src&&d._q?'<div class="crop"><canvas data-crop="'+d.i+'"></canvas></div>':'')+(t!=='bad'&&d.svg?'<div class="svgbox">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div>':'')+'</div></li>'; };
   el.innerHTML=(o.demo?'<div class="demo-badge">'+I('play')+' Пример · '+esc(o.demo)+'</div>':'')
-    +'<div class="res"><div class="col-a">'
-    +'<div class="sum '+Sm.t+'"><div class="big">'+ic(Sm.t)+'</div><div><h1 id="vtitle">'+esc(Sm.h)+'</h1><p>'+esc(Sm.p)+'</p>'+(o.variant?'<p class="note" style="margin-top:4px">ДЗ № '+(o.dz||3)+' · вариант '+esc(o.variant)+'</p>':'')+'</div></div>'
-    +(src?'<div class="sheet" style="margin-top:14px" id="sheetBox"><div class="lay-tog"><button class="btn sm" id="layBtn" aria-pressed="true">Только фото</button></div><canvas id="sheetCv" role="img" aria-label="Фото листа: чертежи отмечены номерами и цветом вердикта"></canvas><div class="pins" id="pins"></div>'
-      +'<div class="sheet-cap"><span><i></i>линии — фигура условия, найденная на ваших линиях</span><span><b style="color:#13a35f">■</b> верно</span><span><b style="color:#e0252c">■</b> ошибка</span><span><b style="color:#6f84ab">■</b> не могу утверждать</span></div></div>':'')
-    +(o.extra||'')+'</div>'
-    +'<div class="col-b"><ol class="cards" id="vwhy" style="list-style:none;margin:0;padding:0">'+ds.map(d=>{ const t=tone(d.verdict), ph=phrase(d), stepsH=d.ex&&d.ex.steps&&d.ex.steps.length>1||d.ex&&d.ex.steps&&d.ex.steps[0]&&d.ex.steps[0].status!=='?'?d.ex.steps:null;
-      return '<li class="card '+t+'" id="card'+d.i+'" data-i="'+d.i+'"><div class="card-h"><span class="num">'+(ds.length>1?d.i+1:ic(t))+'</span><div style="min-width:0"><h3>'+esc(d.part?PNUM[d.part]+'. '+PART[d.part]:d.title)+'</h3>'+(d.part&&ds.length>1?'<div class="sub">'+esc(d.title)+'</div>':d.sub?'<div class="sub">'+esc(d.sub)+'</div>':'')+'</div><span class="pill">'+ic(t)+word(t)+'</span></div>'
-        +'<p class="say">'+esc(ph.say)+'</p>'
-        +(ph.where?'<div class="where">'+I('pin')+'<div><b>Где:</b> '+esc(ph.where)+'</div></div>':'')
-        +(ph.ask?'<div class="ask">'+I('cam')+'<div>'+esc(ph.ask)+'</div></div>':'')
-        +(t==='bad'&&d.svg?'<div class="svgbox" aria-label="Разбор: красное — как у вас, зелёное — как надо">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div><p class="note">Красное — как у вас, зелёное — как надо.</p>':'')
-        +'<div class="acts">'+(o.onReshoot?'<button class="btn '+(t==='calm'?'pri':'')+' sm" data-act="reshoot">'+I('redo')+'Переснять этот чертёж</button>':'')+(src&&d._q&&ds.length>1?'<button class="btn ghost sm" data-act="show">'+I('pin')+'На листе</button>':'')+'</div>'
-        +'<details class="why"><summary>Почему '+I('down')+'</summary>'
-          +(stepsH?'<div class="ksteps">'+stepsH.map((s,j)=>'<div class="'+(s.status==='ok'?'ok':s.status==='bad'?'bad':'ref')+'"><i>'+(s.status==='ok'?'✓':s.status==='bad'?'✕':'?')+'</i><span>'+esc(s.name)+' — '+esc(s.msg)+'</span></div>').join('')+'</div>':'')
-          +'<ul>'+(d.why||[]).filter(Boolean).map(w=>'<li>'+esc(cap(w))+'</li>').join('')+'</ul>'
-          +(src&&d._q?'<div class="crop"><canvas data-crop="'+d.i+'"></canvas></div>':'')
-          +(t!=='bad'&&d.svg?'<div class="svgbox">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div>':'')+'</details>'
-        +'</li>'; }).join('')+'</ol>'
-    +'<div class="foot" style="margin-top:16px">'+(o.onNew?'<button class="btn pri" id="newBtn">'+I('cam')+'Новый лист</button>':'')+(o.onRerun?'<button class="btn" id="rerunBtn">'+I('redo')+'Проверить заново</button>':'')+'</div>'
+    +'<div class="res"><div class="col-b">'
+    +'<div class="sum '+Sm.t+'"><div class="big">'+ic(Sm.t)+'</div><div><h1 id="vtitle">'+esc(Sm.h)+'</h1><p>'+esc(Sm.p)+(o.variant?' <span class="note">ДЗ № '+(o.dz||3)+' · вариант '+esc(o.variant)+'</span>':'')+'</p></div></div>'
+    +'<ol class="cards" id="vwhy">'+(byPart?cs.map(card):ds.map(dcard)).join('')+'</ol>'
+    +'<div class="foot">'+(o.onNew?'<button class="btn pri" id="newBtn">'+I('cam')+'Новый лист</button>':'')+(o.onRerun?'<button class="btn" id="rerunBtn">'+I('redo')+'Проверить заново</button>':'')+'</div></div>'
+    +'<div class="col-a">'+(src?'<div class="sheet" id="sheetBox"><div class="lay-tog"><button class="btn sm" id="layBtn" aria-pressed="true">Только фото</button></div><canvas id="sheetCv" role="img" aria-label="Фото листа: чертежи отмечены номером части и цветом вердикта"></canvas><div class="pins" id="pins"></div>'
+      +'<div class="sheet-cap"><span><b style="color:'+GEO_COL.res+'">—</b> построение, как его понял сканер</span><span><b style="color:#e0252c">■</b> ошибка</span><span><b style="color:#13a35f">■</b> верно</span><span><b style="color:#6f84ab">▫</b> не могу утверждать</span></div></div>':'')
+    +(o.extra||'')
     +(o.note?'<p class="note">'+esc(o.note)+'</p>':'')
-    +'<details class="tech"><summary>Технические подробности</summary><div id="frames">'+(o.log||[]).map(l=>'<div>'+esc(l)+'</div>').join('')+'</div><pre>'+esc(o.tech||'')+'</pre></details>'
-    +'</div></div>';
-  /* лист и номера */
+    +'<details class="tech"><summary>Технические подробности</summary><div id="frames">'+(o.log||[]).map(l=>'<div>'+esc(l)+'</div>').join('')+'</div><pre>'+esc(o.tech||'')+'</pre></details></div></div>';
+  /* лист: номера — часть (1–4) или «?» */
   let plain=false; const cv=$('sheetCv');
-  const paint=()=>{ if(!cv) return; paintSheet(cv,src,ds,{plain}); const pins=$('pins'); pins.innerHTML=plain?'':ds.map(d=>{ const p=pinOf(d); if(!p) return ''; const t=tone(d.verdict);
-      return '<button class="pin '+t+'" data-i="'+d.i+'" style="left:'+(100*Math.max(0.04,Math.min(0.96,p[0]/src.width)))+'%;top:'+(100*Math.max(0.03,Math.min(0.97,p[1]/src.height)))+'%;animation-delay:'+(d.i*70)+'ms" aria-label="Чертёж '+(d.i+1)+': '+word(t)+'">'+(ds.length>1?d.i+1:'')+'</button>'; }).join(''); };
+  const paint=()=>{ if(!cv) return; paintSheet(cv,src,ds,{plain}); const pins=$('pins'); pins.innerHTML=plain?'':ds.map(d=>{ const p=pinOf(d); if(!p) return ''; const t=byPart?(d.part&&d.parts&&d.parts[d.part]?(d.parts[d.part].st==='верно'?'ok':d.parts[d.part].st==='ошибка'?'bad':'calm'):'calm'):tone(d.verdict);
+      return '<button class="pin '+t+'" data-i="'+d.i+'" style="left:'+(100*Math.max(0.04,Math.min(0.96,p[0]/src.width)))+'%;top:'+(100*Math.max(0.03,Math.min(0.97,p[1]/src.height)))+'%;animation-delay:'+(d.i*70)+'ms" aria-label="'+esc(d.title)+': '+(byPart?(d.part?'часть '+PNUM[d.part]:'часть не опознана'):word(t))+'">'+(byPart?(d.part?PNUM[d.part]:'?'):ds.length>1?d.i+1:'')+'</button>'; }).join(''); };
   paint();
   if($('layBtn')) $('layBtn').onclick=()=>{ plain=!plain; $('layBtn').textContent=plain?'Показать разбор':'Только фото'; $('layBtn').setAttribute('aria-pressed',String(!plain)); paint(); };
-  const hl=(i,on)=>{ const c=$('card'+i), p=el.querySelector('.pin[data-i="'+i+'"]'); c&&c.classList.toggle('hl',on); p&&p.classList.toggle('hl',on); };
-  el.onclick=e=>{ const pin=e.target.closest('.pin'); if(pin){ const c=$('card'+pin.dataset.i); c.scrollIntoView({behavior:'smooth',block:'center'}); hl(+pin.dataset.i,true); setTimeout(()=>hl(+pin.dataset.i,false),1400); return; }
-    const b=e.target.closest('[data-act]'); if(!b) return; const i=+b.closest('.card').dataset.i;
-    if(b.dataset.act==='reshoot') o.onReshoot(i);
-    if(b.dataset.act==='show'){ $('sheetBox').scrollIntoView({behavior:'smooth',block:'start'}); hl(i,true); setTimeout(()=>hl(i,false),1600); } };
-  el.querySelectorAll('.card').forEach(c=>{ c.onmouseenter=()=>hl(+c.dataset.i,true); c.onmouseleave=()=>hl(+c.dataset.i,false); });
-  el.querySelectorAll('details.why').forEach(dt=>dt.addEventListener('toggle',()=>{ const c=dt.querySelector('canvas[data-crop]'); if(dt.open&&c&&!c.width) { if(!paintCrop(c,src,ds[+c.dataset.crop])) c.parentNode.remove(); } }));
+  const cardOf=i=>byPart?el.querySelector('.card[data-i="'+i+'"]'):$('card'+i);
+  const hl=(i,on)=>{ const c=cardOf(i), p=el.querySelector('.pin[data-i="'+i+'"]'); c&&c.classList.toggle('hl',on); p&&p.classList.toggle('hl',on); };
+  el.onclick=e=>{ const pin=e.target.closest('.pin'); if(pin){ const c=cardOf(pin.dataset.i); if(c){ c.scrollIntoView({behavior:'smooth',block:'center'}); hl(+pin.dataset.i,true); setTimeout(()=>hl(+pin.dataset.i,false),1400); } return; }
+    const b=e.target.closest('[data-act]'); if(!b) return; const c=b.closest('.card');
+    if(b.dataset.act==='reshoot') o.onReshoot(+c.dataset.i);
+    if(b.dataset.act==='more'){ const m=c.querySelector('.more'), on=m.hidden; m.hidden=!on; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('open',on);
+      const cc=m.querySelector('canvas[data-crop]'); if(on&&cc&&!cc.dataset.done){ cc.dataset.done='1'; if(!paintCrop(cc,src,ds[+cc.dataset.crop],cc.dataset.k)) cc.parentNode.remove(); } } };
+  el.querySelectorAll('.card[data-i]').forEach(c=>{ c.onmouseenter=()=>hl(+c.dataset.i,true); c.onmouseleave=()=>hl(+c.dataset.i,false); });
   if($('newBtn')) $('newBtn').onclick=o.onNew; if($('rerunBtn')) $('rerunBtn').onclick=o.onRerun;
   S.screen(el.id); };
 

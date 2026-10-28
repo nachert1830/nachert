@@ -43,6 +43,10 @@
         </div>
         <p class="cond" id="cond"></p>
       </div>
+      <div class="airow" id="aiRow" hidden>
+        <label class="tg"><input type="checkbox" id="ai" checked><span><b>ИИ-зрение</b> подскажет, где какой чертёж и какая часть; проверяет сканер по линиям</span></label>
+        <label class="tg sub"><input type="checkbox" id="aiFar"><span>Лист мой — можно точнее, зарубежной моделью <span class="note">(фото уйдёт через OpenRouter, не сохраняется; без отметки — только Yandex Cloud)</span></span></label>
+      </div>
       <div class="go">
         <button class="btn pri big wide" id="start" type="button" data-i="cam">Сканировать</button>
         <div class="or touch-only">или</div>
@@ -103,6 +107,7 @@
 </div>
 
 <script src="../core/dz.js"></script><script src="../core/dz-variants.js"></script>
+<script src="dz/model.js"></script>
 <script src="dz/capture.js"></script>
 <script src="dz/series.js"></script>
 <script src="dz/closeup.js"></script>
@@ -118,6 +123,11 @@ function showVar(){ const n=nVal(); $('nAuto').setAttribute('aria-pressed',Strin
   const g=n&&CO.dzVariants.get(3,n); $('cond').innerHTML=g?'Сверьте с листом: '+Object.keys(g.data).map(k=>'<b>'+k+'</b>('+g.data[k].join('; ')+')').join(' '):'Сканер узнает вариант по условию на листе. С номером — быстрее и точнее: можно снимать по чертежам.'; }
 $('n').oninput=showVar; $('nMinus').onclick=()=>{ $('n').value=Math.max(1,(nVal()||2)-1); showVar(); }; $('nPlus').onclick=()=>{ $('n').value=Math.min(30,(nVal()||0)+1); showVar(); };
 $('nAuto').onclick=()=>{ $('n').value=''; showVar(); }; showVar();
+/* ИИ-зрение — включено по умолчанию, если страница открыта в кабинете; согласие на зарубежную модель — запоминается */
+SC.aiPing(on=>{ $('aiRow').hidden=!on; }); try{ $('aiFar').checked=localStorage.getItem('nch_ai_far')==='1'; }catch(e){}
+$('aiFar').onchange=()=>{ try{ localStorage.setItem('nch_ai_far',$('aiFar').checked?'1':'0'); }catch(e){} };
+const useAi=()=>SC.ai.on&&$('ai').checked, AI={note:null,model:'',hints:null};
+const aiAsk=img=>SC.askEyes(img,3,nVal(),$('aiFar').checked).then(a=>{ if(a.ok){ AI.model=a.model||''; AI.note='ИИ-зрение ('+SC.modelName(a.model)+') ответило'+(a.fallback?' — запасная модель':''); } else AI.note='ИИ-зрение недоступно ('+(a.error||'нет ответа')+') — проверено своими глазами'; return a; });
 $('howSeg').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; $('how').value=b.dataset.v; [...$('howSeg').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b))); };
 
 const MAX=5, WANT=3, LONG=3000;   /* длинная сторона снимка для проверки: целый А3 на чистом листе — ≈ 6 px/мм */
@@ -133,7 +143,7 @@ function dots(n,want){ $('dots').innerHTML=Array.from({length:want},(_,i)=>'<i c
 function guide(kind,ok){ const g=$('guide'); g.hidden=!kind; g.classList.toggle('close',kind==='close'); g.classList.toggle('ok',!!ok); }
 
 /* проверка кадров по очереди в одном потоке: тот же код, что в тестах Node */
-function ensureWorker(){ if(worker) return worker; worker=SC.worker(null,m=>{ busy--; if(D){ onDraw(m); next(); return; } if(m.error){ frames.push({ok:false,why:['сбой: '+m.error]}); } else frames.push(m.frame); update(); next(); }); return worker; }
+function ensureWorker(){ if(worker) return worker; worker=SC.worker(null,m=>{ if(m&&m.hints){ AI.hints=m.hints; if(D) D.log.push('ИИ-зрение ('+SC.modelName(AI.model)+'): части чертежей — '+m.hints.map((h,j)=>(j+1)+': '+(h?{a:1,b:2,c:3,d:4}[h]:'—')).join(', ')); return; } busy--; if(D){ onDraw(m); next(); return; } if(m.error){ frames.push({ok:false,why:['сбой: '+m.error]}); } else frames.push(m.frame); update(); next(); }); return worker; }
 const queue=[]; function next(){ if(busy||!queue.length) return; const s=queue.shift(); busy++; ensureWorker().postMessage({mode:s.mode||'frame',want:s.want,img:s.img,dz:3,n:nVal(),part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
 function submit(img,bmp){ shots.push({img,bmp}); queue.push({img}); next(); }
 
@@ -155,11 +165,11 @@ function seriesCanvas(S){ const i=frames.findIndex(f=>f.ok&&f.overlay), sh=shots
     else { ctx.setLineDash([]); ctx.beginPath(); ctx.arc(q.p[0],q.p[1],9*k,0,7); ctx.stroke(); if(q.label){ ctx.font=(22*k)+'px system-ui'; ctx.fillText(q.label,q.p[0]+12*k,q.p[1]-10*k); } } }); return cv; }
 function seriesResult(S){ if(W){ W.stop(); W=null; } const src=seriesCanvas(S);
   const ds=[{i:0,title:'Лист целиком',sub:'кадров '+frames.length+(S.n?' · вариант '+S.n:''),verdict:S.verdict||'не могу утверждать',why:S.why||[],parts:{},ex:null,svg:null,fig:null}];
-  SC.renderResult({ds,src,variant:S.n||nVal()||null,onNew:toStart,log:frames.map((f,i)=>'кадр '+(i+1)+': '+(f.ok?f.verdict:'не прочитан')),tech:JSON.stringify({вердикт:S.verdict,причины:S.why},null,1),
+  SC.renderResult({ds,src,whole:true,variant:S.n||nVal()||null,onNew:toStart,log:frames.map((f,i)=>'кадр '+(i+1)+': '+(f.ok?f.verdict:'не прочитан')),tech:JSON.stringify({вердикт:S.verdict,причины:S.why},null,1),
     note:'Вывод — только то, что подтвердили несколько кадров. Разбор на фото: зелёное — как надо, красное — как у вас.'}); }
 
 /* ── камера: задняя, максимальное разрешение; кадр видео → оценка за миллисекунды → автоснимок ── */
-async function openCam(){ $('camCard').hidden=false; $('camErr').hidden=true; document.body.style.overflow='hidden'; tip('Включаю камеру…'); guide(null);
+async function openCam(){ SC.full(true); $('camCard').hidden=false; $('camErr').hidden=true; document.body.style.overflow='hidden'; tip('Включаю камеру…'); guide(null);
   try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160}},audio:false}); }
   catch(e){ $('camErrT').textContent=(e&&e.name==='NotAllowedError'?'Нет разрешения на камеру — разрешите её в настройках браузера. ':'Не получилось включить камеру ('+(e&&e.name||'нет камеры')+'). ')+'Можно загрузить фото листа.'; $('camErr').hidden=false; return null; }
   const v=$('video'); v.srcObject=stream; await v.play().catch(()=>{}); const tr=stream.getVideoTracks()[0], st=tr.getSettings?tr.getSettings():{}; $('camInfo').textContent=Math.round((st.width||v.videoWidth)*(st.height||v.videoHeight)/1e6*10)/10+' Мп'; return tr; }
@@ -202,7 +212,9 @@ let D=null;
 /* следующий чертёж: ещё нужен кадр и его снимок не в проверке (переснять один — только он) */
 function pick(from){ const N=D.ov.drawings.length; if(D.only!=null) return D.sess.need(D.only)&&!D.pend[D.only]?D.only:-1; for(let i=0;i<N;i++){ const j=(from+i)%N; if(D.sess.need(j)&&!D.pend[j]) return j; } return -1; }
 function progDots(){ if(!D||!D.ov){ $('dots').innerHTML=''; return; } $('dots').innerHTML=D.ov.drawings.map((d,j)=>'<i class="'+(j===D.cur?'cur':!D.sess.need(j)?'done':D.pend[j]?'busy':'')+'"></i>').join(''); }
-function ovShot(A,tr,v){ flash(); D.phase='wait'; D.ovThumb=A.thumb; D.t0=Date.now(); grabImg(tr,v,FULL).then(im=>{ D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next(); }); }
+function ovShot(A,tr,v){ flash(); D.phase='wait'; D.ovThumb=A.thumb; D.t0=Date.now(); grabImg(tr,v,FULL).then(im=>{ D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next();
+    /* модель — параллельно с поиском чертежей: её рамки и номера частей придут в поток подсказкой для снимков вблизи */
+    if(useAi()) aiAsk(im.canvas).then(a=>{ if(a.ok) ensureWorker().postMessage({mode:'hints',eyes:a.text,eyesScale:a.scale,eyesModel:a.model,n:nVal()}); }); }); }
 function closeShot(tr,v){ flash(); const j=D.cur; D.pend[j]++; D.msg=''; D.cur=pick(j+1); drawMap(); progDots();
   grabImg(tr,v,FULL).then(im=>{ queue.push({mode:'close',want:j,img:{width:im.width,height:im.height,data:im.data}}); next(); }); }
 function dTick(A,tr,v){ const now=performance.now();
@@ -253,14 +265,15 @@ function finish(){ D.phase='done'; stopCam(); if(W){ W.set('done','done'); W.sto
     D=null; UP.ds=b; showUp(); SC.toast('Чертёж '+(i+1)+' перепроверен'); return; }
   const ds=SC.fromSession(R,D.ov.drawings);
   D.only=null; SC.renderResult({ds,src:D.ovCanvas,variant:nVal(),onReshoot:reshoot,onNew:toStart,log:D.log,tech:JSON.stringify(R.map(r=>({вердикт:r.verdict,части:r.parts,кадров:r.read+'/'+r.n})),null,1),
-    note:'Вывод по части — только если его подтвердили несколько снимков этого чертежа с разных углов.'}); }
+    note:(AI.note?AI.note+'. ':'')+'Вывод по части — только если его подтвердили несколько снимков этого чертежа с разных углов.'}); }
 /* переснять один чертёж: камера сразу просит его, прежние снимки этого чертежа — не в счёт */
 function reshoot(j){ if(D&&D.ov&&D.sess){ D.only=j; D.sess.fr[j].length=0; D.pend[j]=0; D.cur=j; D.phase='wait2'; reopen(); return; }
   if(UP) return upReshoot(j); SC.toast('Это пример — переснять можно настоящий лист'); }
 
-function stopCam(){ if(loop) clearTimeout(loop); loop=null; if(stream) stream.getTracks().forEach(t=>t.stop()); stream=null; $('camCard').hidden=true; document.body.style.overflow=''; }
-function reset(){ frames=[]; shots=[]; queue.length=0; done=false; prev=null; D=null; UP=null; if(W){ W.stop(); W=null; } if(worker){ worker.terminate(); worker=null; busy=0; } }
-function toStart(){ stopCam(); reset(); SC.screen('scrStart'); }
+function stopCam(){ SC.full(false); if(loop) clearTimeout(loop); loop=null; if(stream) stream.getTracks().forEach(t=>t.stop()); stream=null; $('camCard').hidden=true; document.body.style.overflow=''; }
+function reset(){ AI.note=null; AI.hints=null; frames=[]; shots=[]; queue.length=0; done=false; prev=null; D=null; UP=null; if(W){ W.stop(); W=null; } if(worker){ worker.terminate(); worker=null; busy=0; } }
+/* после примера — вариант студента, как был (пример ставит свой) */
+function toStart(){ const nPrev=UP&&UP.demo?UP.nPrev:null; stopCam(); reset(); if(nPrev!=null){ $('n').value=nPrev; showVar(); } SC.screen('scrStart'); }
 $('start').onclick=startCam;
 $('stop').onclick=()=>{ const d=D; stopCam(); if(d&&d.ov&&d.sess&&(d.phase==='close'||d.phase==='wait2')){ if(d.pend.some(x=>x)){ d.phase='wait2'; waitDraw(); } else finish(); return; }
   if(!d&&frames.length){ done=true; if(!busy&&!queue.length) seriesResult(SR.combine(frames)); else { W=SC.Wait({img:shots[0]&&shots[0].img,steps:[{k:'photo',t:'Кадры сняты'},{k:'check',t:'Проверяю кадры'},{k:'done',t:'Собираю результат'}]}); SC.screen('scrWait'); W.set('check','now'); } return; }
@@ -271,16 +284,18 @@ $('camErrX').onclick=toStart;
 let UP=null;
 async function upload(f){ if(!f) return; stopCam(); reset(); let src; try{ src=await SC.fileToCanvas(f,LONG); }catch(e){ SC.toast(e.message||'Файл не открылся'); SC.screen('scrStart'); return; }
   checkSheet(src); }
-function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo};
-  W=SC.Wait({img:src,steps:SC.waitSteps(),cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('sheet','now');
+async function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo}; const ai=!demo&&useAi(), steps=SC.waitSteps(); if(ai) steps.splice(1,0,{k:'eyes',t:'ИИ-зрение смотрит лист'});
+  W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done');
+  let eyes=null, sc=1; if(ai){ W.set('eyes','now'); const a=await aiAsk(src); if(!W) return; if(a.ok){ eyes=a.text; sc=a.scale; } W.set('eyes','done',{t:a.ok?'ИИ-зрение ответило ('+SC.modelName(a.model)+')':'ИИ-зрение недоступно — свои глаза'}); }
+  W.set('sheet','now');
   ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } W.set('done','done'); W.stop(); W=null;
     if(m.error){ SC.toast('Сбой проверки: '+m.error.split('\n')[0]); }
     UP.r=m; showUp(); };
-  worker.postMessage({img:SC.imageData(src),dz:3,n,paper:demo?'plain':'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
+  worker.postMessage({img:SC.imageData(src),dz:3,n,paper:demo?'plain':'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},eyes,eyesScale:sc,eyesModel:AI.model}); }
 function showUp(){ const r=UP.r||{}, ds=UP.ds||(r.cam?SC.fromSession(r.R,r.ov.drawings):SC.fromWorker(r));
   SC.renderResult({ds,src:UP.src,variant:UP.n||null,demo:UP.demo,onReshoot:UP.demo?()=>SC.toast('Это пример — переснять можно настоящий лист'):reshoot,onNew:toStart,
     onRerun:UP.demo&&!r.cam?()=>{ const s=UP.src, d=UP.demo; reset(); checkSheet(s,d); }:null,
-    note:UP.demo?(r.cam?'Съёмка по чертежам на синтетическом листе (lab/dz/quadsynth.js): общий снимок и каждый чертёж вблизи, с разных углов — проверено этим же сканером.':'Синтетический лист (lab/dz/quadsynth.js), проверен этим же сканером. «Проверить заново» — проверка прямо сейчас, на этом устройстве (до нескольких минут).'):(r.ms?'Проверено за '+Math.round(r.ms/1000)+' с на этом устройстве.':''),
+    note:(AI.note&&!UP.demo?AI.note+'. ':'')+(UP.demo?(r.cam?'Съёмка по чертежам на синтетическом листе (lab/dz/quadsynth.js): общий снимок и каждый чертёж вблизи, с разных углов — проверено этим же сканером.':'Синтетический лист (lab/dz/quadsynth.js), проверен этим же сканером. «Проверить заново» — проверка прямо сейчас, на этом устройстве (до нескольких минут).'):(r.ms?'Проверено за '+Math.round(r.ms/1000)+' с на этом устройстве.':'')),
     log:r.log, tech:JSON.stringify({вердикт:r.verdict,этап:r.stage,причины:r.why,чертежи:(r.drawings||[]).map(d=>({вердикт:d.verdict,причины:d.why}))},null,1)}); }
 /* переснять чертёж после фото: общий снимок — потоку (он запоминает чертежи), затем камера к нужному */
 function upReshoot(i){ const u=UP, src=u.src, n=nVal(); if(!n){ SC.toast('Укажите номер варианта — тогда перепроверю чертёж отдельно'); return; }
@@ -297,7 +312,7 @@ $('file').onchange=$('file2').onchange=$('file3').onchange=$('file4').onchange=e
 SC.dropZone($('drop'),upload);
 
 /* ── примеры: готовые синтетические листы, без камеры и без интернета ── */
-SC.examples().then(list=>SC.renderExamples($('exList'),list,async x=>{ reset(); try{ const {r,src}=await SC.loadExample(x); $('n').value=x.n; showVar(); UP={src,n:x.n,demo:x.name,r}; showUp(); }catch(e){ SC.toast('Пример не загрузился'); } }));
+SC.examples().then(list=>SC.renderExamples($('exList'),list,async x=>{ reset(); try{ const {r,src}=await SC.loadExample(x); const nPrev=$('n').value; $('n').value=x.n; showVar(); UP={src,n:x.n,demo:x.name,r,nPrev}; showUp(); }catch(e){ SC.toast('Пример не загрузился'); } }));
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('camCard').hidden) $('stop').click(); });
 </script>
 </body>

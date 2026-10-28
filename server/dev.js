@@ -18,6 +18,7 @@ const {memoryStore}=require('./lib/store/memory');
 const {botClient}=require('./lib/telegram');
 const {devMail}=require('./lib/mail');
 const C=require('./lib/crypto');
+const {eyesFromEnv}=require('./lib/eyes');
 
 const arg=(k,d)=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.split('=')[1]:true):d; };
 const SITE=+arg('site-port',0)||0, PORT=+arg('port',process.env.PORT||8787), MEM=!!arg('memory'), TEST=!!arg('test'), QUIET=!!arg('quiet');
@@ -33,7 +34,9 @@ const cfg={dev:true,limitScale:TEST?20:1,openSignup:!arg('invites'),origin,secur
   yandex:{clientId:'dev-client',secret:'dev-secret',authUrl:origin+'/dev/ya/authorize',tokenUrl:origin+'/dev/ya/token',infoUrl:origin+'/dev/ya/info',revokeUrl:origin+'/dev/ya/revoke'},
   adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/lk/':origin+'/',
   /* как в облаке: официальный вход Telegram — только на «сайте» (у @BotFather один домен), на адресе функции — бот */
-  tgLogin:{url:origin+'/dev/tg/auth',origins:site?[site]:[]}};
+  tgLogin:{url:origin+'/dev/tg/auth',origins:site?[site]:[]},
+  /* ИИ-зрение — как в облаке, из переменных EYES_URL, EYES_KEY, EYES_MODEL (по умолчанию выключено: нет ключа) */
+  eyes:eyesFromEnv(Object.assign({EYES_URL:'http://localhost:0/off'},process.env))};
 const yaCodes=new Map();
 const page=(r,html)=>{ r.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'"}); r.end(html); };
 const escH=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);

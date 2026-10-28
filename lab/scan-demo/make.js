@@ -24,7 +24,7 @@ if(a.cam){ /* съёмка по чертежам, как в камере: общ
   const S=ctx.LAB.dzCloseup.Session({drawings:ov.drawings,frames:ov.frames});
   s0.views.forEach((v,i)=>{ const j=want[i%4]; if(!S.need(j)) return; ctx.onmessage({data:{mode:'close',want:j,img:v.img,dz:3,n:+a.n,answers:{}}}); const c=out.pop().close;
     if(c.ok) c.got.forEach(g=>{ S.add(g.j,g.frame); log.push('чертёж '+(g.j+1)+': '+g.ppm.toFixed(1).replace('.',',')+' px/мм — '+(g.frame.verdict||'не прочитан')); }); else log.push('чертёж '+(j+1)+': '+c.reason); console.log(log[log.length-1]); });
-  r={cam:true,ov:{drawings:ov.drawings.map(d=>({c:d.c,box:d.box,ppm:d.ppm,pos:d.pos,title:d.title}))},R:S.result(),log}; r.verdict=r.R.map(x=>x.verdict).join(', '); }
+  r={cam:true,ov:{drawings:ov.drawings.map(d=>({c:d.c,box:d.box,ppm:d.ppm,pos:d.pos,title:d.title,A:d.A}))},R:S.result(),log}; r.verdict=r.R.map(x=>x.verdict).join(', '); }
 else { ctx.onmessage({data:{img,dz:3,n:+a.n,paper:'plain',answers:{},part:null}}); r=out[out.length-1]; } r.demo={n:+a.n,seed:+a.seed,err:a.err||null,view,parts:s0.truth.parts.map(p=>({part:p.part,built:p.built,err:p.err})),s:Math.round((Date.now()-t0)/1000)};
 fs.writeFileSync(path.join(__dirname,a.id+'.json'),JSON.stringify(r));
 console.log(a.id+': '+r.verdict+' — '+(r.drawings||r.R||[]).map(d=>d.title+': '+d.verdict).join(' | ')+' ('+r.demo.s+' с)');

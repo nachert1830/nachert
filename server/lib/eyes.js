@@ -6,6 +6,7 @@
      EYES_MODEL  — модель; {folder} заменяется на каталог (по умолчанию gpt://{folder}/qwen2.5-vl-32b-instruct)
      EYES_FOLDER — каталог Yandex Cloud (по умолчанию — каталог функции)
      EYES_KEY    — ключ API, если модель не в Yandex Cloud (тогда Authorization: Bearer <ключ>); EYES_AUTH=Api-Key — «Api-Key <ключ>»
+     EYES_FOREIGN — 0: модель в России, хоть и не в Yandex Cloud (согласие на отправку за рубеж не нужно); по умолчанию зарубежная — всё, что не Yandex
      OPENROUTER_API_KEY, EYES_BEST_MODEL — лучшая модель через OpenRouter (зарубежная): основная, если студент согласился
                    отправить фото; Qwen в Yandex — запасной и без согласия (askAny)
    Фото никуда не сохраняется: только запрос к модели. */
@@ -40,7 +41,7 @@ const PROMPT=`Ты — глаза сканера домашних заданий
 function eyesFromEnv(env){ env=env||process.env; const folder=env.EYES_FOLDER||env.YC_FOLDER_ID||'';
   const model=(env.EYES_MODEL||DEF_MODEL).replace('{folder}',folder), url=env.EYES_URL||DEF_URL, yandex=/\.yandex\.net\//.test(url), openrouter=/openrouter\.ai\//.test(url);
   const key=env.EYES_KEY||(openrouter?env.OPENROUTER_API_KEY:'')||'';
-  const cfg={url,model,folder,key,auth:env.EYES_AUTH||'Bearer',yandex,openrouter,foreign:!yandex,opts:Object.assign(openrouter?orOpts(model):{},opts(env.EYES_OPTS)),on:env.EYES!=='off'&&!!(key||yandex&&folder)};
+  const cfg={url,model,folder,key,auth:env.EYES_AUTH||'Bearer',yandex,openrouter,foreign:env.EYES_FOREIGN!=null?env.EYES_FOREIGN!=='0':!yandex,opts:Object.assign(openrouter?orOpts(model):{},opts(env.EYES_OPTS)),on:env.EYES!=='off'&&!!(key||yandex&&folder)};
   /* лучшая модель (замер — lab/dz/REPORT.md, 7к) через OpenRouter: зарубежная — только с согласием на отправку фото
      (askAny); без согласия, без ключа или при сбое — модель выше (Qwen в Yandex AI Studio) */
   const bm=env.EYES_BEST_MODEL===undefined?BEST_MODEL:env.EYES_BEST_MODEL, bk=env.OPENROUTER_API_KEY||'';

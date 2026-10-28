@@ -28,7 +28,9 @@ function figBox(n){ const gv=Vm().get(3,+n), g=Mm().given(gv.id,gv.data), P=g.se
   return [Math.min(...P.map(p=>p[0])),Math.min(...P.map(p=>p[1])),Math.max(...P.map(p=>p[0])),Math.max(...P.map(p=>p[1]))]; }
 /* кадр серии одного чертежа: только то, что голосует */
 function frameOf(g,ppm){ return {ok:!!g.ok,verdict:g.verdict,why:g.why||[],ppm,ms:g.ms,shown:g.shown||[],partGuess:g.partGuess||null,
-  parts:g.parts?Object.fromEntries(Object.entries(g.parts).map(([k,p])=>[k,{st:p.st,why:p.why||[]}])):{}}; }
+  parts:g.parts?Object.fromEntries(Object.entries(g.parts).map(([k,p])=>[k,{st:p.st,why:p.why||[]}])):{},
+  /* что понял мозг (check3 geo, мм чертежа) — для чистого чертежа; только показанные части */
+  geo:g.parts?Object.fromEntries((g.shown||[]).filter(k=>g.parts[k]&&g.parts[k].geo).map(k=>[k,g.parts[k].geo])):{}}; }
 function check(img,ds,o){ const r=EYm().checkEyes(img,{dz:3,n:o.n,drawings:ds},{dz:3,n:o.n,answers:o.answers,grid:{ok:false,reason:'чистый лист'}}); return r&&r.drawings||[]; }
 
 function overview(img,o){ o=o||{}; const n=+o.n, EY=EYm(); if(!Vm().get(3,n)) return {ok:false,reason:'для съёмки по чертежам нужен номер варианта'};
@@ -54,7 +56,8 @@ function close(img,ov,o){ o=o||{}; const n=+o.n, EY=EYm(), f=EY.findDrawings(img
     else if(o.want!=null&&j!==o.want&&i===0) note='это чертёж '+(j+1)+', а просил '+(o.want+1);
     if(got.some(g=>g.j===j)) return; got.push({j,known,ppm:q.ppm,A:q.d.A,cover:q.d.cover,note,score:m.score}); });
   if(!got.length) return {ok:false,reason:'не узнал, какой это чертёж общего снимка'};
-  const r=check(img,got.map(g=>({A:g.A,cover:g.cover,pts:{}})),o);
+  /* подсказка модели (номер части у чертежа общего снимка) — мозгу: он примет её, только если построение её подтвердит */
+  const r=check(img,got.map(g=>({A:g.A,cover:g.cover,pts:{},part:o.hints&&o.hints[g.j]||null})),o);
   return {ok:true,got:got.map((g,i)=>({j:g.j,known:g.known,ppm:g.ppm,note:g.note,score:g.score,frame:r[i]?frameOf(r[i],g.ppm):{ok:false,why:['мозг не вернул чертёж']}}))}; }
 
 /* серия кадров одного чертежа → вердикт по частям (правило series.js: ≥ ⌈2k/3⌉ из k, не меньше двух, без возражений) */
@@ -67,6 +70,7 @@ function vote(frames){ const R=frames.filter(f=>f&&f.ok), k=R.length, need=Math.
     if(v.conf) out.conflicts.push('часть '+PN[q]);
     const st=v.res==='верно'||v.res==='ошибка'?v.res:'не могу утверждать', src=R.find(f=>f.parts[q]&&f.parts[q].st===st);
     out.parts[q]={st,why:v.conf?['кадры расходятся ('+Object.entries(v.c).map(([s,x])=>s+' — '+x).join(', ')+')']:src?src.parts[q].why:['подтвердил '+Math.max(0,...Object.values(v.c))+' кадр(а) из '+k+', нужно '+need]};
+    const gs=src&&src.geo&&src.geo[q]?src:R.find(f=>f.geo&&f.geo[q]); if(gs&&!v.conf) (out.geo=out.geo||{})[q]=gs.geo[q];
     out.shown.push(q); });
   const pv=Object.values(out.parts).map(p=>p.st), wv=pick(R.map(f=>f.verdict));
   out.verdict=pv.includes('ошибка')?'ошибка':pv.includes('верно')?'верно':wv.res||'не могу утверждать';
@@ -91,7 +95,8 @@ function Session(ov,o){ o=o||{}; const shots=o.shots||SHOTS, max=o.max||MAX, fr=
         if(js.length>=2) js.forEach(j=>unsure(j,q,'«верно» этой части вышло на чертежах '+js.map(x=>x+1).join(' и ')+' — часть на листе одна, не утверждаю'));
         else D.forEach((d,j)=>{ if(j!==js[0]&&d.parts[q]&&d.parts[q].st==='ошибка') unsure(j,q,'эта часть сошлась на чертеже '+(js[0]+1)+' — здесь, видимо, чужие похожие линии'); }); });
       /* какая это часть — только та, что сошлась («верно»): «не могу утверждать» части её не опознаёт */
-      return D.map((d,j)=>{ const ok=d.shown.filter(q=>d.parts[q].st==='верно'); return Object.assign(d,{title:ov.drawings[j].title,part:ok.length===1?ok[0]:null}); }); } }; }
+      /* «ошибка» в серии — только у части, опознанной построением (gridsheet idPart): она тоже называет часть */
+      return D.map((d,j)=>{ const ok=d.shown.filter(q=>d.parts[q].st==='верно'), bad=d.shown.filter(q=>d.parts[q].st==='ошибка'); return Object.assign(d,{title:ov.drawings[j].title,part:ok.length===1?ok[0]:!ok.length&&bad.length===1?bad[0]:null}); }); } }; }
 
 put('dzCloseup',{overview,close,vote,Session,MIN_PPM,ppmOf});
 })();
