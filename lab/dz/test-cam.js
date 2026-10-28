@@ -17,9 +17,10 @@ const ROOT=path.resolve(__dirname,'../..');
   const port=srv.address().port, {chromium}=require('playwright'), br=await chromium.launch(), pg=await br.newPage({viewport:{width:430,height:900}});
   pg.on('pageerror',e=>console.log('ОШИБКА СТРАНИЦЫ: '+e.message));
   /* камера — холст: тест рисует на нём нужный снимок, поток идёт с холста */
-  /* холст постоянного размера (сенсор камеры): снимок вписан без искажения, вокруг тёмный стол */
-  await pg.addInitScript(()=>{ const cv=document.createElement('canvas'); cv.width=3000; cv.height=3000; const ctx=cv.getContext('2d'); let img=null;
-    const put=()=>{ ctx.fillStyle='#2a2622'; ctx.fillRect(0,0,cv.width,cv.height); if(img){ const k=Math.min(cv.width/img.width,cv.height/img.height), w=img.width*k, h=img.height*k; ctx.drawImage(img,(cv.width-w)/2,(cv.height-h)/2,w,h); } };
+  /* холст — сенсор телефона 2250 × 3000 (книжно): снимок вписан без искажения, альбомный — повёрнут на 90° (телефон
+     держат как обычно), полей нет — иначе края кадра внутри холста выглядят как «весь лист в кадре» */
+  await pg.addInitScript(()=>{ const cv=document.createElement('canvas'); cv.width=2250; cv.height=3000; const ctx=cv.getContext('2d'); let img=null;
+    const put=()=>{ if(!img) return; ctx.save(); if(img.width>img.height){ ctx.translate(cv.width,0); ctx.rotate(Math.PI/2); ctx.drawImage(img,0,0,cv.height,cv.width); } else ctx.drawImage(img,0,0,cv.width,cv.height); ctx.restore(); };
     setInterval(put,100);
     window.__show=url=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ img=im; put(); res(); }; im.src=url; });
     navigator.mediaDevices.getUserMedia=async()=>cv.captureStream(10); });
@@ -29,7 +30,7 @@ const ROOT=path.resolve(__dirname,'../..');
   const wait=async(f,ms)=>{ const t=Date.now(); while(Date.now()-t<ms){ if(await f()) return true; await pg.waitForTimeout(300); } return false; };
   if(!await wait(async()=>(await phase())==='close'||(await phase())==='done',240000)){ console.log('общий снимок не разобран: '+await hint()); await br.close(); srv.close(); process.exit(1); }
   /* правда: чертёж страницы j ↔ часть листа (начало O ближе всего к центру фигуры на снимке) */
-  const cs=await pg.evaluate('D.ov.drawings.map(d=>d.c)'), fg=require('./model.js').given('3',s.truth.data).segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), m0=[(Math.min(...fg.map(p=>p[0]))+Math.max(...fg.map(p=>p[0])))/2,(Math.min(...fg.map(p=>p[1]))+Math.max(...fg.map(p=>p[1])))/2], G=s.truth.parts.map(p=>IMG.H.apply(s.truth.H,[p.O[0]+m0[0],p.O[1]+m0[1]])), who=cs.map(c=>{ let b=-1, bd=1e9; G.forEach((g,k)=>{ const d=Math.hypot(g[0]-c[0],g[1]-c[1]); if(d<bd){ bd=d; b=k; } }); return b; });
+  const cs=await pg.evaluate('D.ov.drawings.map(d=>d.c)'), fg=require('./model.js').given('3',s.truth.data).segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), m0=[(Math.min(...fg.map(p=>p[0]))+Math.max(...fg.map(p=>p[0])))/2,(Math.min(...fg.map(p=>p[1]))+Math.max(...fg.map(p=>p[1])))/2], ks=2250/s.img.width, G=s.truth.parts.map(p=>IMG.H.apply(s.truth.H,[p.O[0]+m0[0],p.O[1]+m0[1]]).map(v=>v*ks)), who=cs.map(c=>{ let b=-1, bd=1e9; G.forEach((g,k)=>{ const d=Math.hypot(g[0]-c[0],g[1]-c[1]); if(d<bd){ bd=d; b=k; } }); return b; });
   console.log('страница нашла чертежей '+cs.length+' → части '+who.map(k=>'abcd'[k]).join(','));
   const used=[0,0,0,0]; let last='', steps=0;
   while(steps++<30&&(await phase())==='close'){ const h=await hint(), m=h.match(/^Чертёж (\d+) из/);
