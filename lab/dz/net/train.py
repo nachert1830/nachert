@@ -9,7 +9,7 @@ import sys, struct, time, math, random
 import numpy as np
 
 args = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '=' in a)
-NP = 9; NAMES = ['A″', 'B″', 'C″', 'S″', 'A′', 'B′', 'C′', 'S′', 'O']; STRIDE = 4; LONG = 640
+NP = 9; NAMES = ['A″', 'B″', 'C″', 'S″', 'A′', 'B′', 'C′', 'S′', 'O']; STRIDE = 4; LONG = int(args.get('long', 640)); THR = float(args.get('thr', 0.3))
 
 def load(files):
     out = []
@@ -22,7 +22,8 @@ def load(files):
             out.append((a, ppm, P))
     return out
 
-def peaks(hm, thr=0.3):
+def peaks(hm, thr=None):
+    thr = THR if thr is None else thr
     """пики карты: локальный максимум 3×3 выше порога, центр — взвешенное среднее 3×3 (в px входа)"""
     C, H, W = hm.shape; out = []
     for c in range(C):
@@ -104,7 +105,10 @@ def sample():
     for k, px, py in P:
         dx, dy = px - cx, py - cy; u = (math.cos(th)*dx + math.sin(th)*dy)*r + h; v = (-math.sin(th)*dx + math.cos(th)*dy)*r + h
         gu, gv = (u + 0.5)/STRIDE - 0.5, (v + 0.5)/STRIDE - 0.5
-        if -3 < gu < g+3 and -3 < gv < g+3: tgt[int(k)] = np.maximum(tgt[int(k)], np.exp(-((xx-gu)**2 + (yy-gv)**2)/(2*1.0**2)))
+        if -3 < gu < g+3 and -3 < gv < g+3:
+            tgt[int(k)] = np.maximum(tgt[int(k)], np.exp(-((xx-gu)**2 + (yy-gv)**2)/(2*1.0**2)))
+            iu, iv = round(gu), round(gv)                                      # ближайшая клетка — пик (1), как в CenterNet
+            if 0 <= iu < g and 0 <= iv < g: tgt[int(k), iv, iu] = 1
     # фото: яркость, контраст, гамма, блик, размытие, шум
     x = np.clip((x - 0.5)*random.uniform(0.6, 1.3) + 0.5 + random.uniform(-0.2, 0.15), 0, 1)**random.uniform(0.7, 1.5)
     if random.random() < 0.3:

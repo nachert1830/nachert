@@ -23,7 +23,8 @@ function peaks(hm,C,Hh,W,thr){ const out=[];
   for(let c=0;c<C;c++){ const o=c*Hh*W; for(let y=0;y<Hh;y++) for(let x=0;x<W;x++){ const v=hm[o+y*W+x]; if(v<=thr) continue; let mx=true, s=0, sx=0, sy=0;
       for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const yy=y+dy, xx=x+dx; if(yy<0||xx<0||yy>=Hh||xx>=W) continue; const u=hm[o+yy*W+xx]; if(u>v) mx=false; s+=u; sx+=u*xx; sy+=u*yy; }
       if(mx) out.push({c,l:NAMES[c],x:(sx/s+0.5)*STRIDE-0.5,y:(sy/s+0.5)*STRIDE-0.5,v}); } }
-  return out; }
+  /* на каждую точку — не больше 12 сильнейших пиков (чертежей на листе не больше 8) */
+  const cnt=new Array(C).fill(0); return out.sort((a,b)=>b.v-a.v).filter(p=>cnt[p.c]++<12); }
 /* чертежи из пиков: подобие «мм условия → px входа» по паре пиков разных точек; согласные точки (≤ 4 мм) — чертёж.
    Жадно: лучший по сумме уверенностей (не меньше 4 точек), его пики убираются, снова. Масштаб — 0,6…8 px входа на мм */
 function group(P,fig,o){ o=o||{}; const out=[], left=P.slice(), MIN=o.min||4;
