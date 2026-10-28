@@ -40,7 +40,7 @@ const step=s=>console.log('· '+s), fail=s=>{ console.log('✖ НЕ РАБОТА
       const got=await f2.waitForSelector('#vcard:not([hidden]), #scrResult:not([hidden]) .card',{timeout:480000}).then(()=>true,()=>false);
       if(!got){ const st=await f2.evaluate(()=>{ const e=document.getElementById('stage')||document.querySelector('#scrWait'); return e?e.innerText.replace(/\s+/g,' ').slice(0,300):'—'; }); await shot('x-photo-wait');
         calls.forEach((c,i)=>step('запрос к модели '+(i+1)+': HTTP '+c.status+(c.model?', модель '+c.model:'')+(c.error?', ошибка: '+c.error:'')));
-        throw new Error('ответа нет за 8 мин; на странице: '+st+'; запросов к модели: '+calls.length); } await pg.waitForTimeout(800); await shot('4b-photo-result'); { const b=(await pg.screenshot({type:'jpeg',quality:55})).toString('base64'); for(let i=0;i<b.length;i+=4000) console.log('СНИМОК сайт '+b.slice(i,i+4000)); } await pg.screenshot({path:path.join(OUT,'4b-photo-result-full.png'),fullPage:true});
+        throw new Error('ответа нет за 8 мин; на странице: '+st+'; запросов к модели: '+calls.length); } await pg.waitForTimeout(800); await shot('4b-photo-result'); await pg.screenshot({path:path.join(OUT,'4b-photo-result-full.png'),fullPage:true});
       const v=await f2.evaluate(()=>{ const t=document.querySelector('#vtitle'), w=[...document.querySelectorAll('#vwhy li, #vwhy .card')].slice(0,8).map(e=>e.innerText.replace(/\s+/g,' ').slice(0,160)); return (t?t.textContent:'')+' | '+w.join(' | '); });
       step('ответ (прежняя страница) за '+Math.round((Date.now()-t1)/1000)+' с: '+v);
       calls.forEach((c,i)=>step('запрос к модели '+(i+1)+': HTTP '+c.status+(c.model?', модель '+c.model:'')+(c.fallback?' (запасная)':'')+(c.error?', ошибка: '+c.error:'')+(c.len?', ответ '+c.len+' знаков':'')));
@@ -51,7 +51,6 @@ const step=s=>console.log('· '+s), fail=s=>{ console.log('✖ НЕ РАБОТА
     const t0=Date.now(); await fr.setInputFiles('#file2',file); await fr.waitForSelector('#scrWait:not([hidden])',{timeout:30000}); await pg.waitForTimeout(3000); await shot('3-wait');
     await fr.waitForSelector('#scrResult:not([hidden]) .card',{timeout:900000}); await pg.waitForTimeout(800); const dt=Math.round((Date.now()-t0)/1000);
     await shot('4-result'); await pg.screenshot({path:path.join(OUT,'4-result-full.png'),fullPage:true});
-    { const b=(await pg.screenshot({type:'jpeg',quality:55})).toString('base64'); for(let i=0;i<b.length;i+=4000) console.log('СНИМОК сайт '+b.slice(i,i+4000)); }
     const res=await fr.evaluate(()=>({h:(document.querySelector('#vtitle')||{}).textContent,note:[...document.querySelectorAll('#scrResult p.note')].map(e=>e.textContent).join(' '),
       cards:[...document.querySelectorAll('#vwhy .card')].map(c=>c.querySelector('h3').textContent+' — '+c.querySelector('.pill').textContent+': '+c.querySelector('.say').textContent)}));
     step('ответ за '+dt+' с: '+res.h); res.cards.forEach(c=>console.log('    '+c)); step('подпись: '+res.note);

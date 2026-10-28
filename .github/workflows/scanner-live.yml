@@ -17,7 +17,7 @@ on:
     branches: [main, claude/scanner-release]
     paths: ['lab/cam.html', 'lab/scanner.js', 'lab/dz/**', 'lk/app.js', 'server/lib/eyes.js', '.github/workflows/scanner-live.yml']
 permissions:
-  contents: read
+  contents: write   # только служебная ветка claude/scanner-live-shots со снимками экрана
 concurrency:
   group: scanner-live
   cancel-in-progress: true
@@ -63,7 +63,7 @@ jobs:
         env:
           EYES_MODEL: 'gpt://{folder}/qwen3.6-35b-a3b/latest'
           EYES_OPTS: '{"reasoning_effort":"none"}'
-        run: node lab/dz/test-path.js --n=${{ github.event.inputs.n || '21' }} --eyes=env --only=phone --b64=1 --out=live-shots/new || true
+        run: node lab/dz/test-path.js --n=${{ github.event.inputs.n || '21' }} --eyes=env --only=phone --out=live-shots/new || true
       - name: Путь студента на сайте
         run: node lab/dz/test-live.js --n=${{ github.event.inputs.n || '21' }} --far=${{ github.event.inputs.far || '1' }} --out=live-shots
       - uses: actions/upload-artifact@v4
@@ -72,3 +72,12 @@ jobs:
           name: scanner-live
           path: live-shots/**/*.png
           if-no-files-found: ignore
+      - name: Снимки — в служебную ветку claude/scanner-live-shots (лист синтетический; артефакт — то же)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          test -d live-shots || exit 0
+          D=$RUNNER_TEMP/shots; mkdir -p "$D" && cp -r live-shots/. "$D/" && cd "$D"
+          git init -q && git checkout -q -b shots && git add . && git -c user.name=scanner-live -c user.email=scanner-live@users.noreply.github.com commit -qm "Живая проверка: снимки экрана, ${{ github.sha }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" shots:claude/scanner-live-shots
