@@ -34,9 +34,11 @@ const ROOT=path.resolve(__dirname,'../..');
     if(h!==last){ console.log('  · '+h); last=h; }
     if(!m){ await pg.waitForTimeout(1000); continue; } const j=+m[1]-1, k=who[j];
     if(used[k]>=3){ console.log('  ракурсы чертежа '+(j+1)+' кончились'); break; }
+    const shots0=await pg.evaluate('D.pend.reduce((a,b)=>a+b,0)+D.sess.fr.reduce((a,f)=>a+f.length,0)');
     await pg.evaluate(u=>window.__show(u),'/__img/'+(1+used[k]*4+k)); used[k]++;
-    /* снимок сделан — страница просит другой чертёж (или ждёт проверку) */
-    await wait(async()=>{ const h2=await hint(); return !h2.startsWith('Чертёж '+(j+1)+' из')||(await phase())!=='close'; },20000); }
+    /* ждём снимок (страница просит другой чертёж или снимок ушёл в проверку); нет за 30 с — что мешает, и другой ракурс */
+    const shot=await wait(async()=>(await phase())!=='close'||await pg.evaluate('D.pend.reduce((a,b)=>a+b,0)+D.sess.fr.reduce((a,f)=>a+f.length,0)')>shots0,30000);
+    if(!shot) console.log('  снимок не сделан за 30 с: '+await hint()); }
   await wait(async()=>(await phase())==='done',600000);
   const v=await pg.$eval('#vtitle',e=>e.textContent), why=await pg.$$eval('#vwhy li',L=>L.map(e=>e.innerText.replace(/\s+/g,' '))), fr=await pg.$$eval('#frames div',L=>L.map(e=>e.textContent));
   console.log('ИТОГ страницы: '+v+'\n'+why.map(w=>'  '+w).join('\n')+'\n  снимки:\n'+fr.map(w=>'   '+w).join('\n'));

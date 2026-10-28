@@ -144,12 +144,12 @@ const PNm={a:'1) высота',b:'2) угол граней',c:'3) истинны
 function pick(from){ const N=D.ov.drawings.length; for(let i=0;i<N;i++){ const j=(from+i)%N; if(D.sess.need(j)&&!D.pend[j]) return j; } return -1; }
 function dTick(A,tr,v){ const now=performance.now();
   if(D.phase==='ov'){ overlay(A,...(A.size||[1,1])); const act=D.cap.feed(A,now); $('hint').textContent=(D.msg?D.msg+' — ':'')+(A.ok?'весь лист в кадр: '+D.cap.hint(A):A.hints[0]);
-    if(act==='shot'||act==='done-shot'){ flash(); D.phase='wait'; grabImg(tr,v,FULL).then(im=>{ D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next(); }); } return; }
+    if(act==='shot'||act==='done-shot'){ flash(); D.phase='wait'; D.ovThumb=A.thumb; grabImg(tr,v,FULL).then(im=>{ D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next(); }); } return; }
   if(D.phase==='wait'){ $('hint').textContent='ищу чертежи на общем снимке…'; return; }
   if(D.phase!=='close') return; clearOv();
   if(D.cur<0){ $('hint').textContent=D.pend.some(x=>x)?'проверяю снимки…':'готово'; return; }
   const d=D.ov.drawings[D.cur], act=D.cap.feed(A,now);
-  $('hint').textContent='Чертёж '+(D.cur+1)+' из '+D.ov.drawings.length+' ('+d.pos+'): '+(A.ok?'поднесите телефон, чтобы чертёж занял весь кадр'+(D.msg?' · '+D.msg:''):A.hints[0]);
+  $('hint').textContent='Чертёж '+(D.cur+1)+' из '+D.ov.drawings.length+' ('+d.pos+'): '+(A.ok?'поднесите телефон, чтобы чертёж занял весь кадр'+(D.msg?' · '+D.msg:A.soft&&A.soft[0]?' · '+A.soft[0]:''):A.hints[0]);
   if(act==='shot'||act==='done-shot'){ flash(); const j=D.cur; D.pend[j]++; D.msg=''; D.cur=pick(j+1); drawMap();
     grabImg(tr,v,FULL).then(im=>{ queue.push({mode:'close',want:j,img:{width:im.width,height:im.height,data:im.data}}); next(); }); } }
 function clearOv(){ const cv=$('ov'); cv.getContext('2d').clearRect(0,0,cv.width,cv.height); }
@@ -157,7 +157,7 @@ function clearOv(){ const cv=$('ov'); cv.getContext('2d').clearRect(0,0,cv.width
 function onDraw(m){ if(!D) return;
   if(m.overview||(m.error&&m.mode==='overview')){ const o=m.overview;
     if(!o||!o.ok){ D.tries++; D.msg='чертежей не нашёл ('+(o?o.reason:m.error)+')'; D.phase='ov'; D.cap=C.Capturer({shots:1,max:1}); if(D.tries>=3){ D.msg+='. Снимите весь лист кнопкой «Выбрать фото»'; } return; }
-    D.ov=o; D.sess=CU.Session({drawings:o.drawings,frames:o.frames}); D.pend=o.drawings.map(()=>0); D.phase='close'; D.cap=C.Capturer({shots:999,max:999,content:true});
+    D.ov=o; D.sess=CU.Session({drawings:o.drawings,frames:o.frames}); D.pend=o.drawings.map(()=>0); D.phase='close'; D.cap=C.Capturer({shots:999,max:999,content:true,from:D.ovThumb});
     D.log.push('весь лист: чертежей '+o.drawings.length+', '+o.drawings.map(q=>q.ppm.toFixed(1).replace('.',',')).join(' / ')+' px/мм'+(Object.keys(o.frames).length?' (крупные проверены по нему)':''));
     D.cur=pick(0); drawMap(); render(); if(D.cur<0) finish(); return; }
   const j=m.want; D.pend[j]=Math.max(0,D.pend[j]-1); const c=m.close;

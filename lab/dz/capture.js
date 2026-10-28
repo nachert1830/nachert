@@ -83,15 +83,20 @@ function shiftOf(A,B){ if(!A||!B||A.w!==B.w||A.h!==B.h) return 1; const {w,h}=A,
   const m=(A.m+B.m)/2||1e-6; if(!best||best.v>1.2*m) return 1;            /* совместить не удалось — в кадре другое */
   return Math.hypot(best.dx,best.dy)/Math.max(w,h); }
 /* автомат: ждёт хороший устойчивый кадр; после снимка — ждёт сдвига ракурса, потом снова хорошего */
-/* o.content — съёмка вблизи: устойчивость и «телефон сдвинули» — по содержимому кадра, а не по углам листа */
-function Capturer(o){ o=o||{}; let want=o.shots||3; const hold=o.hold||400, max=o.max||5; let n=0, goodSince=null, lastShotQuad=null, lastThumb=null, needMove=false, prevA=null, bestSharp=0;
+/* o.content — съёмка вблизи: устойчивость и «телефон сдвинули» — по содержимому кадра, а не по углам листа;
+   o.from — контуры общего снимка: первый снимок вблизи — только когда телефон от него сдвинули */
+function Capturer(o){ o=o||{}; let want=o.shots||3; const hold=o.hold||400, max=o.max||5; let n=0, goodSince=null, lastShotQuad=null, lastThumb=o.from||null, needMove=!!o.from, prevA=null, bestSharp=0;
   return { get n(){ return n; }, get want(){ return want; },
     /* вывод серии не устоялся — ещё кадр (до max) */
     more(){ if(want<max){ want++; return true; } return false; },
     /* резкость — относительно лучшего кадра сеанса (у чистого А3 она ниже, чем у листа в клетку): ≥ 60 % лучшего */
     feed(A,now){ if(n>=want) return 'done'; if(A.paper) bestSharp=Math.max(bestSharp,A.sharp); A.soft=A.soft||[];
       /* вблизи лист и не должен быть целиком в кадре */
-      if(o.content&&A.paper){ A.hints=A.hints.filter(h=>!/^лист не целиком|^подойдите ближе/.test(h)); A.ok=!A.hints.length; }
+      if(o.content&&A.paper){ A.hints=A.hints.filter(h=>!/^лист не целиком|^подойдите ближе|^держите телефон параллельно|^сильный блик/.test(h));
+        /* края листа вблизи не видны — наклон по ним не мерится; блик — совет (у каждого ракурса свой) */
+        if(A.glare>0.15) A.soft.unshift('блик на листе — следующий снимок под другим углом');
+        if(A.paper.touch<0.05&&A.paper.fill<0.85) A.hints.unshift('весь лист в кадре — поднесите телефон ближе к чертежу');
+        A.ok=!A.hints.length; }
       if(A.ok&&A.sharp<0.6*bestSharp){ A.ok=false; A.hints.push('нерезко — держите телефон неподвижно, дайте камере навестись'); }
       const stable=A.ok&&A.motion!=null&&A.motion<LIM.motion&&(!o.content||A.shift!=null&&A.shift<LIM.motion); prevA=A;
       if(needMove&&o.content&&lastThumb){ if(shiftOf(lastThumb,A.thumb)>=0.03) needMove=false; }
