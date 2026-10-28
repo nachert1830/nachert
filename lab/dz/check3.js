@@ -227,6 +227,26 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     if(v2.len(path)>8){ const ev=pointEvidence(D,T,t.S0,[t.A0,t.Y0],v2.unit(path),Hp(data.S));
       if(ev.st==='bad'){ out.st='ошибка'; out.why.push('радиус вращения S взят неверно: S₀ сдвинута на '+f1(ev.d)+' мм — угол φ искажён'); }
       else if(ev.st==='?') out.hint='S₀'+(ev.d!=null?' (≈ '+f1(Math.abs(ev.d))+' мм от нужного — проверьте радиус вращения S)':''); }
+    /* программа построения с выбором студента: радиус S свободен — подгоняется вместе с уровнем оси (иначе уровень
+       «подстраивается» под неверную S₀). Сдвинутая вдоль пути S₀ объясняет прямые S₀A₀ и S₀n₀ (≥ 0,9), без сдвига они
+       не объясняются (≤ 0,8), ось вращения на месте — радиус взят неверно */
+    if(out.st!=='ошибка'&&v2.len(path)>8){ let R=null;
+      const fit=(same,c0,c1,cs,d0,d1,ds)=>{ for(let c=c0;c<=c1;c+=cs){ const tc=M3.sigma(data,c,same); if(!tc) continue; const pc=v2.sub(tc.S0,M3.foot(tc.S0,tc.axis)); if(v2.len(pc)<=8) continue;
+        const u=v2.unit(pc), axc=covOne(D,T,v2.add(tc.axis.p,v2.mul(tc.axis.e,-30)),v2.add(tc.axis.p,v2.mul(tc.axis.e,30)))||0;
+        for(let dd=d0;dd<=d1;dd+=ds){ const Q=v2.add(tc.S0,v2.mul(u,dd)), mn=cov(D,T,[[Q,tc.A0],[Q,tc.Y0]]), sc=0.5*mn+0.2*axc; if(!R||sc>R.sc) R={sc,c,dd,mn,axc,tc,u,same}; } } };
+      /* грубо — обе ветки поворота, весь диапазон уровня; точно — у лучшего */
+      for(const same of [true,false]) fit(same,lo,hi,1,-12,12,1);
+      if(R) fit(R.same,R.c-1,R.c+1,0.25,R.dd-1,R.dd+1,0.125);
+      if(R){ /* сдвиги, объясняющие прямые почти так же (плато: S₀ скользит вдоль них) — утверждается только ближний к нулю */
+        const tc=R.tc, at=dd=>v2.add(tc.S0,v2.mul(R.u,dd)), mnAt=dd=>cov(D,T,[[at(dd),tc.A0],[at(dd),tc.Y0]]); let dmin=Infinity, dlo=Infinity, dhi=-Infinity;
+        /* путь S короче 8 мм (S₀ рядом с S′) — о радиусе не говорит: не в минус (как путь A) */
+        const pAt=dd=>{ const Q=at(dd); return v2.len(v2.sub(Hp(data.S),Q))>8?covOne(D,T,Hp(data.S),Q)||0:1; }; let pth=-1, dBest=R.dd;
+        for(let dd=-15;dd<=15;dd+=0.25) if(mnAt(dd)>=R.mn-0.05){ dlo=Math.min(dlo,dd); dhi=Math.max(dhi,dd); dmin=Math.min(dmin,Math.abs(dd)); const p=pAt(dd); if(p>pth){ pth=p; dBest=dd; } }
+        if(dlo<=0&&dhi>=0) dmin=0; pth=Math.max(0,pth); R.dd=dBest;
+        /* где кончается начерченный путь S — там и S₀ на плато */
+        const aMove=v2.len(v2.sub(tc.A0,Hp(data.A))), aPath=aMove>2?(aMove>5?covOne(D,T,Hp(data.A),tc.A0)||0:0):1;
+        const scR=0.5*R.mn+0.15*pth+0.2*R.axc+0.15*aPath; out.ev.R={d:R.dd,lo:dlo,hi:dhi,dmin,m:R.mn,m0:best.main,c:R.c,same:R.same,axc:R.axc,pth,aPath,sc:scR}; out.ev.sc=Math.max(out.ev.sc,scR);
+        if(dmin>=BAD&&R.mn>=0.9&&best.main<=0.8&&R.axc>=0.7&&aPath>=0.7){ out.st='ошибка'; out.why.push('радиус вращения S взят неверно: прямые S₀A₀ и S₀n₀ сходятся не меньше чем в '+f1(dmin)+' мм от нужного места S₀ — угол φ искажён'); } } }
     const l1=covOne(D,T,t.S0,t.A0)||0, l2=covOne(D,T,t.S0,t.Y0)||0;
     if(out.st==='верно'&&(best.axc<0.7||best.aPath<0.7)){ out.st='не могу утверждать'; out.why.push('не нашёл оси вращения (горизонтали плоскости SA, n) там, где она должна быть при этом повороте'); }
     /* S₀ должна быть подтверждена сама: сдвиг вдоль S₀A₀ укорачивает прямую, но она остаётся «на месте», а угол ψ меняется */
