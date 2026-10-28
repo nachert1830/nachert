@@ -74,12 +74,14 @@ Sheet.prototype.circle=function(c,r,w,dk,o,R){ const P=[]; for(let i=0;i<=20;i++
 /* ── 3. камера: гомография страница → фото, свет, тень, расфокус, шум ── */
 /* opt.glare (0…1): вероятность блика — пятно, где свет отражается от графита и бумаги и линии бледнеют (лампа над листом);
    только по явному запросу: остальные тесты идут на прежних случайных потоках */
+/* opt.view=[u0,v0,u1,v1] (мм страницы) — съёмка вблизи: в кадре эта часть листа, края бумаги могут быть за кадром */
 function camera(sheet,page,R,lv,size,opt){ const [W,Hh]=size; opt=opt||{};
-  const rot=R.n(0,lv.rot/2)*Math.PI/180, fill=R.r(...lv.fill), sc=Math.min(W/page.w,Hh/page.h)*fill;
+  const vw=opt.view||[0,0,page.w,page.h], vc=[(vw[0]+vw[2])/2,(vw[1]+vw[3])/2], vs=[vw[2]-vw[0],vw[3]-vw[1]];
+  const rot=R.n(0,lv.rot/2)*Math.PI/180, fill=R.r(...lv.fill), sc=Math.min(W/vs[0],Hh/vs[1])*fill;
   const c=[W/2+R.n(0,W*0.03),Hh/2+R.n(0,Hh*0.03)], corners=[[0,0],[page.w,0],[page.w,page.h],[0,page.h]];
-  const tilt=R.r(...lv.tilt), dir=R()*2*Math.PI, dst=corners.map(p=>{ const q=v2.rot([(p[0]-page.w/2)*sc,(p[1]-page.h/2)*sc],rot);
+  const tilt=R.r(...lv.tilt), dir=R()*2*Math.PI, dst=corners.map(p=>{ const q=v2.rot([(p[0]-vc[0])*sc,(p[1]-vc[1])*sc],rot);
       /* наклон телефона: дальний край страницы меньше — сжатие вдоль направления dir */
-      const along=(q[0]*Math.cos(dir)+q[1]*Math.sin(dir))/(Math.max(page.w,page.h)*sc/2), k=1-tilt*along;
+      const along=(q[0]*Math.cos(dir)+q[1]*Math.sin(dir))/(Math.max(vs[0],vs[1])*sc/2), k=1-tilt*along;
       return [c[0]+q[0]*k+R.n(0,W*0.004),c[1]+q[1]*k+R.n(0,W*0.004)]; });
   const M=H.fit(corners,dst), Mi=H.inv(M);
   /* фон стола, бумага, свет */
