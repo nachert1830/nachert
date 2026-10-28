@@ -4032,18 +4032,16 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .dzx-secs{display:flex;flex-wrap:wrap;gap:8px;margin:var(--s5) 0 0;padding-top:var(--s4);border-top:1px solid var(--line)}
 .dzx-secs a{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border-radius:99px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);font:600 14.5px var(--sans);text-decoration:none}
 .dzx-secs a:hover{border-color:var(--acc);color:var(--acc)}
-.dzx-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:var(--s4) 0 var(--s2);font-size:13.5px;color:var(--mut)}
-/* короткая ссылка: кусочек ремешка + адрес; нажал — скопировал */
-.dzx-link{display:inline-flex;align-items:stretch;height:36px;padding:0;border-radius:10px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);overflow:hidden;cursor:pointer;font:700 13.5px/1 var(--mono);transition:border-color .15s}
-.dzx-link .dzx-strap{width:16px;border-right:1px solid var(--line)}
-.dzx-link span{display:flex;align-items:center;padding:0 10px;white-space:nowrap}
-.dzx-link b{display:flex;align-items:center;padding:0 10px 0 0;color:var(--acc)}
-.dzx-link span{padding-right:6px}
-.dzx-link:hover{border-color:var(--acc)}
-.dzx-link:active{transform:scale(.97)}
+/* «Поделиться»: красная — «нажми сюда» (docs/IA.md), с бортиком, как остальные главные кнопки */
+.dzx-share{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px 0 11px;border:0;border-radius:12px;background:var(--red-b);color:#fff;font:700 14px/1 var(--sans);cursor:pointer;box-shadow:0 3px 0 var(--red-d,#a5141a);white-space:nowrap}
+.dzx-share span{display:flex;flex-direction:column;gap:4px;text-align:left}
+.dzx-share small{font:500 13px/1.25 var(--sans);opacity:.9;white-space:normal}
+.dzx-share:hover{filter:brightness(1.07)}
+.dzx-share:active{transform:translateY(2px);box-shadow:0 1px 0 var(--red-d,#a5141a)}
+.dzx-share.lg{display:flex;width:100%;max-width:440px;height:auto;min-height:62px;margin:var(--s4) 0 0;padding:11px 18px;gap:12px;border-radius:16px;font-size:16.5px;box-shadow:0 4px 0 var(--red-d,#a5141a)}
+.dzx-share.lg svg{width:22px;height:22px;flex:none}
 /* в варианте «назад» уже есть в строке варианта — у плеера свою не повторяем */
 .dzx-var .pl-back{display:none}
-.dzx-link.ok{border-color:var(--green)}.dzx-link.ok span{color:var(--green)}
 /* вариант: к заданию · ‹ Вариант 13 › · мой · ссылка */
 .dzx-vbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"up vn va";align-items:center;gap:8px 10px;margin:2px 0 10px}
 .dzx-vbar .dzx-up{grid-area:up;justify-self:start}
@@ -22610,7 +22608,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'4.19',d:'28 октября 2026',items:['ДЗ — один раздел на оба предмета: на одном экране все ДЗ по начерту и инженерной графике. Впиши свой вариант один раз — у каждого ДЗ появится кнопка сразу к нему.','Страница ДЗ — это выбор варианта: номера по типам (у ИГ — номер или картинка) и «Мой вариант» первым. Условие с таблицами, как решать, пример, ошибки и защита — кнопками внизу.','У варианта — стрелки ‹ › к соседним, «мой» и короткая ссылка: nachert1830.ru/#/ng4/13 (начерт, ДЗ 4, вариант 13), #/ig3/7 — инж. графика. Нажми — «Поделиться»: Telegram, ВК, QR или скопировать. Старые ссылки и закладки работают.','Ссылка на задачу внутри варианта: #/ng3/7/b — ДЗ 3, вариант 7, задача б). Переключил задачу — ссылка и стрелки к соседним вариантам ведут в неё же.','Поиск понимает «дз 4 13» — сразу вариант.']},
+  {v:'4.19',d:'28 октября 2026',items:['ДЗ — один раздел на оба предмета: на одном экране все ДЗ по начерту и инженерной графике. Впиши свой вариант один раз — у каждого ДЗ появится кнопка сразу к нему.','Страница ДЗ — это выбор варианта: номера по типам (у ИГ — номер или картинка) и «Мой вариант» первым. Условие с таблицами, как решать, пример, ошибки и защита — кнопками внизу.','У варианта — стрелки ‹ › к соседним, «мой» и красная «Поделиться»: Telegram, ВК, QR или скопировать. Отправляется ровно то, что открыто, — вариант и задача в нём.','На странице ДЗ — «Скинуть группе»: у каждого свой вариант, по ссылке все найдут свой.','Короткие адреса: nachert1830.ru/#/ng4/13 — начерт, ДЗ 4, вариант 13; #/ig3/7 — инж. графика. Старые ссылки и закладки работают.','Поиск понимает «дз 4 13» — сразу вариант.']},
   {v:'4.18',d:'26 октября 2026',items:['Новый яркий дизайн: насыщенный синий, белый и красный. Красный — там, куда нажать.','Главная: большой синий блок поиска и красная кнопка «Найти» — впиши номер задачи, вариант или вопрос, и решение откроется первым. Под строкой — три шага: что вписать и куда жать дальше.','Разделы — крупные плитки с иконками; кнопки стали «нажимаемыми»: с бортиком снизу и откликом при нажатии.']},
   {v:'4.17',d:'26 октября 2026',items:['Новая главная — как у поисковика: одна строка поиска по начерту и инженерной графике. Номер задачи, «вариант 12», «ДЗ 3» или вопрос своими словами — ответ первым. Рядом — счётчик и «Поделиться».','Меню одинаковое для обоих предметов: Тетрадь · ДЗ · РК (в ИГ — «Учиться») · Теория.','Цвета спокойнее: белая страница, голубой — действие, красный — только то, куда стоит посмотреть.'],
    hidden:[{flag:'lk',t:'Личный кабинет nachert1830.ru/lk/ — на проверке: ссылки с сайта (кнопка «Кабинет» в шапке, карточка на главной) видны только в режиме владельца. «Сегодня» — ближайшая сдача, «Мои ДЗ» на своём варианте, проверка чертежа по фото по шагам.'}]},
@@ -26210,15 +26208,15 @@ const dzTyName=t=>t.name.replace(/^\d[а-яa-z]? · /,'');
 const dzThumb=(d,n)=>d.id==='ig2'?'ig/v'+String(n).padStart(2,'0')+'.jpg':'dz/ig/'+d.num+'/img/v'+String(n).padStart(2,'0')+'.jpg';
 const dzBetaNote=()=>`<div class="igx-beta dz-betab" role="note"><i>Бета</i><span><b>Раздел новый.</b> Решение строится по 3D-модели детали, прочитанной с чертежа задания. Сверь картинку варианта со своим заданием; нашёл расхождение — напиши, исправим.</span></div>`;
 const DZ_BACK='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-/* короткая ссылка «поделиться»: «ремешок» (белая лента с синей и красной полосой) + адрес ng3/7/b; нажал — Telegram, ВК, QR, скопировать.
-   Пункт задачи внутри варианта — латинской буквой: а → a, б → b, в → v, г → g (#/ng3/7/b — ДЗ №3, вариант 7, задача б) */
+/* «Поделиться»: красная кнопка с самолётиком — Telegram, ВК, QR, скопировать. Отправляется короткий адрес (#/ng4/13);
+   пункт задачи внутри варианта — латинской буквой: а → a, б → b, в → v, г → g (#/ng3/7/b — ДЗ №3, вариант 7, задача б) */
 const DZ_PL='abvgde';
-const DZ_SHARE='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14.5V3"/><path d="m7.5 7 4.5-4.5L16.5 7"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16"/></svg>';
-const dzLinkHTML=(h,t)=>`<button type="button" class="dzx-link" data-dzlink="${attr(h)}" data-title="${attr(t||'')}" aria-label="Поделиться ссылкой ${attr(h.replace(/^#\//,''))}"><i class="dzx-strap" aria-hidden="true"></i><span>${vesc(h.replace(/^#\//,''))}</span><b>${DZ_SHARE}</b></button>`;
-function dzLinkSet(b,h,t){ if(!b) return; b.dataset.dzlink=h; b.dataset.title=t||''; b.setAttribute('aria-label','Поделиться ссылкой '+h.replace(/^#\//,'')); b.querySelector('span').textContent=h.replace(/^#\//,''); }
+const DZ_SEND='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2.5 10.6 13.4"/><path d="M21.5 2.5 14.6 21.5l-4-8.1-8.1-4z"/></svg>';
+const dzShareHTML=(h,t,label,sub)=>`<button type="button" class="dzx-share${sub?' lg':''}" data-dzlink="${attr(h)}" data-title="${attr(t||'')}">${DZ_SEND}<span><b>${label||'Поделиться'}</b>${sub?`<small>${sub}</small>`:''}</span></button>`;
+function dzLinkSet(b,h,t){ if(!b) return; b.dataset.dzlink=h; b.dataset.title=t||''; }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-dzlink]'); if(!b) return; e.preventDefault();
   const host=/^(localhost|127\.)/.test(location.hostname)?location.host:location.hostname.replace(/^www\./,''), url='https://'+host+'/'+b.dataset.dzlink;
-  try{ FX.shareMenu({url,title:b.dataset.title||document.title,heading:'Поделиться'}); }catch(_){ try{ FX.copy(url); }catch(__){} } });
+  try{ FX.buzz('light'); FX.shareMenu({url,title:b.dataset.title||document.title,heading:b.classList.contains('lg')?'Скинуть группе':'Поделиться'}); }catch(_){ try{ FX.copy(url); }catch(__){} } });
 
 /* ── все ДЗ: строка = задание; справа — сразу мой вариант ── */
 function dzRows(c){ return DZR.list(c).map(d=>{ const m=dzMyN(d), ok=m&&DZR.has(d.id,m);
@@ -26257,9 +26255,9 @@ function dzPick(v,d){
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzHead(d)+(d.beta?dzBetaNote():'')+
    (m&&has(m)?`<a class="dzx-mine" href="${HDZ(d.id,m)}"><i class="dzx-strap" aria-hidden="true"></i><span>Мой вариант</span><b>${m}</b><em>Открыть →</em></a>`:'')+
    `<h2 class="dzx-h">${m?'Другой вариант':'Выбери вариант'}</h2>${grid}
+   ${dzShareHTML(HDZ(d.id),d.label+' · '+d.title+' — все '+N+' вариантов по шагам','Скинуть группе','каждый откроет свой вариант')}
    ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}${n===m?' ★':''}</b>${name(n)?`<small>${vesc(name(n))}</small>`:''}</a>`).join('')}</div></details>`:''}
-   <nav class="dzx-secs" aria-label="Про это ДЗ">${secs.map(([k,t])=>`<a href="${HDZ(d.id,k)}">${t}</a>`).join('')}</nav>
-   <div class="dzx-foot"><span>Поделиться этим ДЗ</span>${dzLinkHTML(HDZ(d.id),d.label+' · '+d.title+' — все варианты по шагам')}</div>`});
+   <nav class="dzx-secs" aria-label="Про это ДЗ">${secs.map(([k,t])=>`<a href="${HDZ(d.id,k)}">${t}</a>`).join('')}</nav>`});
   setLast({s:d.course,kind:'dz',id:d.id,href:HDZ(d.id),label:d.label+'. '+d.title,sub:dzCourse(d.course)+' · ДЗ'});
   return d.label+' · '+d.title; }
 
@@ -26338,7 +26336,7 @@ function dzExView(v,d,code){ const task=dzExample(d,code), t=(d.types||[]).find(
 function dzVarBar(d,n,extra){ const nums=DZR.numbers(d.id), i=nums.indexOf(n), p=nums[i-1], q=nums[i+1], mine=dzMyN(d)===n, x=extra?[extra]:[];
   return `<div class="dzx-vbar"><a class="dzx-up" href="${HDZ(d.id)}">${DZ_BACK}${vesc(d.label)}</a>
     <div class="dzx-vn">${p?`<a href="${HDZ(d.id,p,...x)}" aria-label="Вариант ${p}" rel="prev">‹</a>`:'<span></span>'}<h1>Вариант ${n}${dzBeta(d)}</h1>${q?`<a href="${HDZ(d.id,q,...x)}" aria-label="Вариант ${q}" rel="next">›</a>`:'<span></span>'}</div>
-    <span class="dzx-va"><button type="button" class="dzx-star${mine?' on':''}" id="dzStar" aria-pressed="${mine}" title="Мой вариант">${mine?'★':'☆'}<span>мой</span></button>${dzLinkHTML(HDZ(d.id,n,...x),d.label+', вариант '+n+' — разбор по шагам')}</span></div>`; }
+    <span class="dzx-va"><button type="button" class="dzx-star${mine?' on':''}" id="dzStar" aria-pressed="${mine}" title="Мой вариант">${mine?'★':'☆'}<span>мой</span></button>${dzShareHTML(HDZ(d.id,n,...x),d.label+', вариант '+n+' — разбор по шагам')}</span></div>`; }
 function dzBindStar(v,d,n){ const st=v.querySelector('#dzStar'); if(!st) return;
   st.addEventListener('click',()=>{ const on=dzMyN(d)!==n; dzSetMine(d,on?n:0); st.classList.toggle('on',on); st.setAttribute('aria-pressed',on); st.innerHTML=(on?'★':'☆')+'<span>мой</span>';
     toast(on?'Вариант '+n+' — твой: он будет первым в «ДЗ»':'Отметка снята'); try{ FX.buzz&&FX.buzz(6); }catch(e){} }); }
@@ -26359,7 +26357,7 @@ function dzVariant(v,d,n,extra){
     /* открыт пункт б) — адрес #/ng3/7/b: им и делятся, с него и стрелки ‹ › ведут в тот же пункт соседнего варианта */
     const onPart=k=>{ const x=k&&parts.length>1?[DZ_PL[k]]:[], h=HDZ(d.id,n,...x), lbl=parts.length>1&&parts[k]&&parts[k].l?', задача '+parts[k].l:'';
       if(location.hash!==h){ try{ history.replaceState(history.state,'',h); CURH=location.hash; }catch(e){} }
-      dzLinkSet(v.querySelector('.dzx-va .dzx-link'),h,d.label+', вариант '+n+lbl+' — разбор по шагам');
+      dzLinkSet(v.querySelector('.dzx-va .dzx-share'),h,d.label+', вариант '+n+lbl+' — разбор по шагам');
       v.querySelectorAll('.dzx-vn a').forEach(a=>{ const m=+a.getAttribute('aria-label').replace(/\D/g,''); a.href=HDZ(d.id,m,...x); }); };
     PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К вариантам',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
   else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
