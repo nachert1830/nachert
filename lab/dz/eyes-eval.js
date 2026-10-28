@@ -150,12 +150,16 @@ function partScore(sh,ds){ const st={ok:0,wrong:0,none:0,built:0,why:[]}; if(sh.
 
 /* OpenRouter: точное имя модели — из списка (ближайшее к заданному: то же имя, или начинается с него; из нескольких —
    с картинками на входе, не :free, самая большая по числу параметров, instruct раньше thinking) и цены за токен */
-async function orResolve(name){ const r=await fetch('https://openrouter.ai/api/v1/models',{signal:AbortSignal.timeout(30000)}), j=await r.json(), all=(j.data||[]).filter(m=>((m.architecture||{}).input_modalities||['image']).includes('image'));
+async function orResolve(name){ const r=await fetch('https://openrouter.ai/api/v1/models',{signal:AbortSignal.timeout(30000)}), j=await r.json(), every=j.data||[], all=every.filter(m=>((m.architecture||{}).input_modalities||['image']).includes('image'));
   const n=name.toLowerCase(), size=id=>{ const m=id.match(/(\d+(?:\.\d+)?)b(?![a-z])/); return m?+m[1]:0; };
   let c=all.filter(m=>m.id.toLowerCase()===n); if(!c.length) c=all.filter(m=>m.id.toLowerCase().startsWith(n)); if(!c.length) c=all.filter(m=>m.id.toLowerCase().includes(n.split('/').pop()));
   c=c.filter(m=>!/:free$/.test(m.id)).concat(c.filter(m=>/:free$/.test(m.id)));
-  c.sort((a,b)=>(/:free$/.test(a.id)-/:free$/.test(b.id))||size(b.id)-size(a.id)||(/thinking/.test(a.id)-/thinking/.test(b.id))||a.id.length-b.id.length);
-  const m=c[0]; if(!m) return {id:null,near:all.filter(x=>x.id.startsWith(n.split('/')[0]+'/')).map(x=>x.id).slice(0,30)};
+  /* «-image» — модели, которые рисуют картинки (gemini-3-pro-image), не для чтения: только если попросили; «:batch» — пакетный режим */
+  const odd=id=>(/-image/.test(id)&&!/image/.test(n))||/:batch$/.test(id);
+  c.sort((a,b)=>(odd(a.id)-odd(b.id))||(/:free$/.test(a.id)-/:free$/.test(b.id))||size(b.id)-size(a.id)||(/thinking/.test(a.id)-/thinking/.test(b.id))||a.id.length-b.id.length);
+  /* нет такой — та же модель новее: «gemini-3-pro» → «gemini-3.1-pro-preview» (из нескольких — самая новая) */
+  if(!c.some(x=>!odd(x.id))){ const re=new RegExp('^'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/-(\d+)-/,'-$1(?:\\.\\d+)?-')); c=all.filter(x=>re.test(x.id.toLowerCase())&&!odd(x.id)&&!/:free$/.test(x.id)).sort((a,b)=>b.id.localeCompare(a.id)); }
+  const m=c.find(x=>!odd(x.id))||null; if(!m) return {id:null,near:every.filter(x=>x.id.startsWith(n.split('/')[0]+'/')).map(x=>x.id+(((x.architecture||{}).input_modalities||[]).includes('image')?'':' (без картинок)')).slice(0,30)};
   const P=m.pricing||{}; return {id:m.id,price:{prompt:+P.prompt||0,completion:+P.completion||0,image:+P.image||0},others:c.slice(1,6).map(x=>x.id)}; }
 
 const sec=ms=>(ms/1000).toFixed(1).replace('.',',')+' с', usd=x=>x?'$'+(x<0.01?x.toFixed(4):x.toFixed(3)):'—';
@@ -167,7 +171,7 @@ function table(files){ const rows=[].concat(...files.map(f=>{ try{ return JSON.p
   /* лучшая — среди зарубежных (OpenRouter: имя с «/»), при 0 ложных и без сбоев; Qwen в Yandex — запасная всегда */
   const best=ok.find(r=>r.false===0&&r.calls>0&&!r.fails&&r.name.includes('/')&&r.sheets===r.sheetNames.length);
   const md=['## Глаза: какая модель лучше','','листов: '+(ok[0]?ok[0].sheets+' ('+ok[0].sheetNames.join(', ')+')':'—'),'',...HEAD,...ok.map(row),...rows.filter(r=>r.miss).map(r=>'| '+r.name+' | | | | | | |'),'',
-    best?'Лучшая при 0 ложных: **'+best.name+'** — подключить в кабинете: переменная репозитория EYES_BEST_MODEL='+best.name.replace(/,.*/,'')+' и секрет OPENROUTER_API_KEY, затем развёртывание (club.yml); запасная — Qwen в Yandex':'Зарубежная модель не подключается: ни одна не прошла все листы без ложных (или не измерена) — в кабинете остаётся Qwen в Yandex',''].concat(...ok.filter(r=>r.falseWhy&&r.falseWhy.length).map(r=>r.falseWhy.slice(0,6).map(w=>'- ЛОЖНО ('+r.name+'): '+w))).concat(...ok.filter(r=>r.partWhy&&r.partWhy.length).map(r=>['- часть ('+r.name+'): '+r.partWhy.slice(0,8).join('; ')])).concat(ok.filter(r=>r.scales).map(r=>'- шкала ('+r.name+'): '+Object.entries(r.scales).map(([k,v])=>k+' ×'+v).join(', ')));
+    best?'Лучшая при 0 ложных: **'+best.name+'** — подключить в кабинете: переменная репозитория EYES_BEST_MODEL='+best.name.replace(/,.*/,'')+' и секрет OPENROUTER_API_KEY, затем развёртывание (club.yml); запасная — Qwen в Yandex':'Зарубежная модель не подключается: ни одна не прошла все листы без ложных (или не измерена) — в кабинете остаётся Qwen в Yandex',''].concat(...ok.filter(r=>r.falseWhy&&r.falseWhy.length).map(r=>r.falseWhy.slice(0,6).map(w=>'- ЛОЖНО ('+r.name+'): '+w))).concat(...ok.filter(r=>r.partWhy&&r.partWhy.length).map(r=>['- часть ('+r.name+'): '+r.partWhy.slice(0,8).join('; ')])).concat(ok.filter(r=>r.scales&&Object.keys(r.scales).length).map(r=>'- шкала ('+r.name+'): '+Object.entries(r.scales).map(([k,v])=>k+' ×'+v).join(', ')));
   if(process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,md.join('\n')+'\n'); console.log(md.join('\n')); }
 
 (async()=>{ if(A.table){ table(A.table.split(',').flatMap(f=>fs.existsSync(f)&&fs.statSync(f).isDirectory()?fs.readdirSync(f,{recursive:true}).filter(x=>/\.json$/.test(x)).map(x=>f+'/'+x):[f])); return; }
