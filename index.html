@@ -3982,15 +3982,28 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--strap:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}}
 .dzx-strap{display:block;flex:none;width:22px;align-self:stretch;background:var(--strap)}
 .dzx .intro{margin-bottom:var(--s3)}
-/* мой вариант */
-.dzx-var{display:flex;align-items:stretch;max-width:760px;min-height:72px;margin:0 0 var(--s4);border-radius:18px;overflow:hidden;background:var(--acc);color:#fff;cursor:text;box-shadow:0 4px 0 var(--acc-d,#0f3f9e)}
-.dzx-var>span{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:10px 12px 10px 16px}
-.dzx-var b{font:800 18px/1.2 var(--disp)}
-.dzx-var small{font:500 13.5px/1.3 var(--sans);opacity:.9}
-.dzx-var input{flex:none;align-self:center;width:76px;height:52px;margin:0 12px 0 0;border:0;border-radius:14px;background:#fff;color:var(--navy);font:800 26px/1 var(--disp);text-align:center;font-variant-numeric:tabular-nums}
-.dzx-var input::placeholder{color:#9aabc2}
-.dzx-var input:focus{outline:3px solid rgba(255,255,255,.55);outline-offset:2px}
-.dzx-var.dzx-nov input{box-shadow:0 0 0 3px var(--red-b)}
+/* виджет ДЗ: тёмно-синяя карточка (как «Найди свой вариант» на главной ИГ), ДЗ → № → красная «Открыть вариант» */
+.dzw{position:relative;max-width:760px;margin:0 0 var(--s4);padding:20px 18px 18px;border-radius:22px;color:#fff;background:linear-gradient(140deg,var(--navy),var(--navy2));box-shadow:0 26px 50px -30px rgba(20,25,70,.8);overflow:hidden}
+.dzw-k{display:block;font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:#ffb4ad}
+.dzw h2{margin:6px 0 12px;font:800 clamp(23px,5vw,28px)/1.15 var(--disp);color:#fff}
+.dzw-dz{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:8px;max-width:420px}
+.dzw-dz button{min-height:44px;padding:0 4px;white-space:nowrap;border-radius:12px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font:700 15px var(--sans);cursor:pointer}
+.dzw-dz button:hover{border-color:rgba(255,255,255,.65)}
+.dzw-dz button.on{background:#fff;border-color:#fff;color:var(--navy)}
+.dzw-t{margin:10px 0 12px;font-size:15px;line-height:1.4;color:rgba(255,255,255,.88)}
+.dzw-go{display:flex;gap:8px}
+.dzw-go input{width:84px;min-height:54px;border-radius:14px;border:0;background:#fff;color:#071a36;font:800 24px var(--mono);text-align:center}
+.dzw-go input:focus{outline:3px solid rgba(255,255,255,.55);outline-offset:2px}
+.dzw-open{flex:1;min-height:54px;background:var(--red-b)!important;border:0!important;color:#fff!important;font-weight:800!important;font-size:16.5px!important;box-shadow:0 4px 0 var(--red-d,#a5141a)}
+.dzw-open:active{transform:translateY(2px);box-shadow:0 2px 0 var(--red-d,#a5141a)}
+.dzw-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:12px;font-size:14.5px}
+.dzw-l a{color:#fff;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.4)}
+.dzw-mine{padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.16);font-weight:700}
+.dzw-hint{color:rgba(255,255,255,.75)}
+.dzw-two{display:grid;gap:14px;max-width:760px}.dzw-two .dzw{margin:0}
+@media(min-width:1000px){.dzw-two{grid-template-columns:1fr 1fr;max-width:1100px}}
+.dzx-t small{display:block;margin-top:2px;font-size:13.5px;line-height:1.35;color:var(--ink2)}
+.sjh-list{max-width:760px}
 /* список ДЗ */
 .dzx-sec{margin:var(--s4) 0 var(--s4);max-width:760px}
 .dzx-sec h2{margin:0 0 10px;font:800 21px/1.2 var(--disp);color:var(--ink)}
@@ -25134,7 +25147,7 @@ const NAVS=[
 const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
 const subjOf=r=>r&&r.s==='dz'?(r.tab?(/^ig/.test(r.tab)&&IGON()?'ig':'ng'):(NAVSUBJ||'ng')):(r&&(r.s==='ig'||r.s==='part'))&&IGON()?'ig':'ng'; let NAVSUBJ=null;
 function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {learn:'ilr',points:'ilr',nk:'ilr',hw2:'ihw',dz:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
-  if(r.s==='ng') return {tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',dz:'hw',path:'th',cheat:'th',learn:'th',day:'th'}[r.tab]||'nb';
+  if(r.s==='ng') return r.tab?{tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',dz:'hw',path:'th',cheat:'th',learn:'th',day:'th'}[r.tab]||'nb':'nghome';
   if(r.s==='dz') return subjOf(r)==='ig'?'ihw':'hw';
   if(!r.s||r.s==='home') return 'home';
   return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
@@ -25160,7 +25173,7 @@ function buildNav(sj){
   }
   /* предмет: Начерт и инженерная графика — два отдельных раздела; переключатель виден, пока ИГ открыта */
   const bar=$('subjBar'); if(bar){ if(IGON()){ bar.hidden=false;
-    bar.innerHTML=`<a href="#/ng/tasks" role="tab" data-sj="ng" class="${sj==='ng'?'on':''}" aria-selected="${sj==='ng'}" title="Начертательная геометрия">Начерт</a><a href="#/ig" role="tab" data-sj="ig" class="${sj==='ig'?'on':''}" aria-selected="${sj==='ig'}" title="Инженерная графика">Инж. графика</a>`; } else { bar.hidden=true; bar.innerHTML=''; } }
+    bar.innerHTML=`<a href="#/ng" role="tab" data-sj="ng" class="${sj==='ng'?'on':''}" aria-selected="${sj==='ng'}" title="Начертательная геометрия">Начерт</a><a href="#/ig" role="tab" data-sj="ig" class="${sj==='ig'?'on':''}" aria-selected="${sj==='ig'}" title="Инженерная графика">Инж. графика</a>`; } else { bar.hidden=true; bar.innerHTML=''; } }
 }
 
 /* ───────── маршрут курса: урок → его задачи → следующий урок ───────── */
@@ -26028,6 +26041,7 @@ function viewNG(v,r){
   if(r.tab==='dz') return dzOld('ng',r);
   if(r.tab==='day') return viewDay(v,r);
   if(r.tab==='rk2') return RK2.view(v,r);
+  if(!r.tab) return subjHome(v,'ng');
   const tab=['path','tasks','hw','check','cheat','learn','var'].includes(r.tab)?r.tab:null;
   if(!tab) return viewNG(v,{s:'ng',tab:'tasks'});
   if(tab==='learn') return LEARN.view(v,r.item,r.sub);
@@ -26198,27 +26212,49 @@ document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closes
   const host=/^(localhost|127\.)/.test(location.hostname)?location.host:location.hostname.replace(/^www\./,''), url='https://'+host+'/'+b.dataset.dzlink;
   try{ FX.buzz('light'); FX.shareMenu({url,title:b.dataset.title||document.title,heading:b.classList.contains('lg')?'Скинуть группе':'Поделиться'}); }catch(_){ try{ FX.copy(url); }catch(__){} } });
 
-/* ── все ДЗ: сверху — мой вариант (один раз), строка ДЗ ведёт сразу в него ── */
-function dzRows(c){ const m=dzVar(); return DZR.list(c).map(d=>`<li><a class="dzx-main" href="${HDZ(d.id,m&&DZR.has(d.id,m)?m:'')}"><span class="dzx-no" aria-hidden="true">${d.num}</span><span class="dzx-t"><b>${vesc(d.title)}${dzBeta(d)}</b></span><span class="dzx-arr" aria-hidden="true">›</span></a></li>`).join(''); }
-function dzVarCard(m){ return `<label class="dzx-var${m?'':' dzx-nov'}"><i class="dzx-strap" aria-hidden="true"></i><span><b>Мой вариант</b><small>${m?'все ДЗ открываются на нём':'впиши один раз — для всех ДЗ'}</small></span>
-    <input id="dzVarIn" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="№" autocomplete="off" value="${m||''}" aria-label="Мой вариант"></label>`; }
+/* ── виджет ДЗ (с главной ИГ — студентам он удобнее всего): ДЗ 2 · 3 · 4 → номер → «Открыть вариант».
+   Номер — мой вариант (один на все ДЗ): вписал — запомнился. Один и тот же виджет на «ДЗ», на главной начерта и ИГ ── */
+function dzWidget(c){ const L=DZR.list(c); if(!L.length) return ''; const m=dzVar(), sel=L.find(d=>d.id===ST.get('dzw_'+c,''))||L[0];
+  return `<section class="dzw" data-c="${c}" aria-label="ДЗ · ${dzCourse(c)}"><span class="dzw-k">ДЗ · ${dzCourse(c)}</span><h2>Открой свой вариант</h2>
+    <div class="dzw-dz" role="radiogroup" aria-label="Какое ДЗ" style="--n:${L.length}">${L.map(d=>`<button type="button" role="radio" data-id="${d.id}" aria-checked="${d===sel}" class="${d===sel?'on':''}">ДЗ ${d.num}</button>`).join('')}</div>
+    <p class="dzw-t">${vesc(sel.title)}${dzBeta(sel)}</p>
+    <div class="dzw-go"><input inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="№" autocomplete="off" value="${m||''}" aria-label="Мой вариант (один на все ДЗ)"><button type="button" class="btn dzw-open">Открыть вариант</button></div>
+    <div class="dzw-l">${m?`<span class="dzw-mine">★ Мой вариант ${m}</span>`:'<span class="dzw-hint">номер один на все ДЗ — впиши один раз</span>'}${sel.method?`<a href="${HDZ(sel.id,'how')}">Как решать →</a>`:''}</div></section>`; }
+function dzWidgetBind(v){ v.querySelectorAll('.dzw').forEach(w=>{ const c=w.dataset.c, inp=w.querySelector('input'), cur=()=>DZR.get(w.querySelector('.dzw-dz .on').dataset.id);
+  const foot=()=>{ const d=cur(), n=dzVar(); w.querySelector('.dzw-t').innerHTML=vesc(d.title)+dzBeta(d);
+    w.querySelector('.dzw-l').innerHTML=(n?`<span class="dzw-mine">★ Мой вариант ${n}</span>`:'<span class="dzw-hint">номер один на все ДЗ — впиши один раз</span>')+(d.method?`<a href="${HDZ(d.id,'how')}">Как решать →</a>`:''); };
+  w.querySelectorAll('.dzw-dz button').forEach(b=>b.addEventListener('click',()=>{ w.querySelectorAll('.dzw-dz button').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-checked',on); }); ST.set('dzw_'+c,b.dataset.id); foot(); try{ FX.buzz('tick'); }catch(e){} }));
+  /* вписал номер — он мой во всех ДЗ (и во втором виджете на экране) */
+  inp.addEventListener('input',()=>{ const n=parseInt(inp.value,10); if(n>=1&&n<=30){ dzSetVar(n); v.querySelectorAll('.dzw input').forEach(x=>{ if(x!==inp) x.value=n; }); v.querySelectorAll('.dzw').forEach(x=>x.__foot&&x.__foot()); } });
+  w.__foot=foot;
+  const go=()=>{ const d=cur(), n=parseInt(inp.value,10), N=dzCount(d); if(!(n>=1&&n<=N)){ inp.focus(); try{ FX.note('Номер варианта — от 1 до '+N); }catch(e){} return; } dzSetVar(n); nav(HDZ(d.id,n)); };
+  w.querySelector('.dzw-open').addEventListener('click',go); inp.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); }); }); }
 function dzHub(v){
-  const m=dzVar(), first=NAVSUBJ==='ig'?['ig','ng']:['ng','ig'];
-  const sec=c=>`<section class="dzx-sec" aria-labelledby="dzS${c}"><h2 id="dzS${c}">${dzSubj(c)}</h2><ul class="dzx-list" id="dzL${c}">${dzRows(c)}</ul></section>`;
+  const first=NAVSUBJ==='ig'?['ig','ng']:['ng','ig'];
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx',body:`
    <div class="intro"><h1>Домашние задания</h1></div>
-   ${dzVarCard(m)}
-   ${first.map(sec).join('')}
+   <div class="dzw-two">${first.map(dzWidget).join('')}</div>
    ${dzShareHTML('#/dz','Все ДЗ по начерту и инженерной графике — разбор своего варианта по шагам','Скинуть группе','каждый впишет свой вариант')}
    <details class="dzx-rules"><summary>Как оформить и защитить ДЗ</summary><div class="hw-rg">
     <div><b>Лист</b><p>Каждая задача — на отдельном листе (обычно А3). Рамка и основная надпись — по ГОСТ 2.301 и 2.104. Слева от основной надписи — таблица координат заданных точек.</p></div>
     <div><b>Построения</b><p>Сначала тонко карандашом. Линии построения не стирай: по ним проверяют ход решения. Это и есть черновик — на сайте он в цвете, чтобы было видно, что откуда взялось.</p></div>
     <div><b>Обводка</b><p>Заданное и найденное — сплошной основной линией, построения — сплошной тонкой, невидимое — штриховой (ГОСТ 2.303). Надписи — шрифтом 5 и 3,5 (ГОСТ 2.304). Это чистовик.</p></div>
     <div><b>Защита</b><p>Объясни каждый шаг: что строишь, зачем и по какой теореме. Типичные вопросы — в «Ошибки и защита» каждого ДЗ.</p></div></div></details>`});
-  const inp=$('dzVarIn'); inp.addEventListener('input',()=>{ const n=parseInt(inp.value,10); if(inp.value.trim()&&!(n>=1&&n<=30)) return;
-    dzSetVar(n||0); const card=inp.closest('.dzx-var'); card.classList.toggle('dzx-nov',!n); card.querySelector('small').textContent=n?'все ДЗ открываются на нём':'впиши один раз — для всех ДЗ';
-    ['ng','ig'].forEach(c=>{ $('dzL'+c).innerHTML=dzRows(c); }); });
+  dzWidgetBind(v);
   return 'ДЗ'; }
+
+/* ── главная предмета (#/ng, #/ig) — одна структура у обоих: заголовок → виджет ДЗ → разделы одним списком ── */
+function subjHome(v,c){
+  const svg=ic=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
+  const nT=(window.WB3&&WB3.tasks?WB3.tasks.length:89), nW=(window.IG_WB||[]).length;
+  const R=c==='ng'?[[H('ng','tasks'),'nb','Рабочая тетрадь','все '+nT+' задач — решение по шагам'],[H('ng','rk2'),'rk','Подготовка к РК','билеты, вопросы теории, пробный РК'],[H('ng','path'),'th','Теория','уроки с картинками и шпаргалка'],[H('epure'),'ep','3D-модель и эпюр','двигай точку — эпюр строится сам']]
+    :[[H('ig','learn'),'lr','Учиться с нуля','виды, разрезы, сечения — один вариант по шагам'],[H('ig','points'),'tr','Защита точек','как найти две недостающие проекции точки'],[H('ig','wb'),'nb','Рабочая тетрадь',(nW?nW+' заданий: ':'')+'тела с отверстиями'],[H('ig','theory'),'th','Теория ЕСКД','форматы, линии, размеры, виды, разрезы, штриховка']];
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx sjh',body:`
+   <div class="intro"><h1>${dzCourse(c)}</h1></div>
+   ${dzWidget(c)}
+   <ul class="dzx-list sjh-list">${R.map(([h,ic,t,sub])=>`<li><a class="dzx-main" href="${h}"><span class="dzx-no" aria-hidden="true">${svg(ic)}</span><span class="dzx-t"><b>${t}</b><small>${sub}</small></span><span class="dzx-arr" aria-hidden="true">›</span></a></li>`).join('')}</ul>`});
+  dzWidgetBind(v); NEXT=null;
+  return dzCourse(c); }
 
 /* ДЗ без известного варианта: выбрать номер — он запомнится для всех ДЗ */
 function dzPick(v,d){
@@ -27742,29 +27778,7 @@ function sheetSVG(model,title,sub,task,mode){
 }
 /* ── страницы ── */
 function crumbs(list){ return list; }
-function home(v){
-  const mv=myVar();
-  v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name]],next:null,noBottom:true,cls:'igx',body:`
-   <div class="igh-top"><span class="igx-badge">Инженерная графика</span><h1>Куда тебе?</h1><p class="lead">ДЗ № 2, 3 и 4 по вариантам, задачи рабочей тетради и разбор сечений и разрезов по шагам.</p></div>${IGBETA()}
-   <a class="igh-pts" href="${H('ig','points')}"><span class="igh-pk">Бета · скоро защита ДЗ 2?</span><b>Научись защищать точки</b><p>Как найти две недостающие проекции точки — по шагам, в 3D с плоскостями проекций и на тренажёре.</p><span class="igh-pa">Научиться →</span></a>
-   <section class="igh-hw">
-    <div class="igh-hw-t"><span class="igh-k">ДЗ № 2 · «Построение изображений»</span><b>Найди свой вариант</b><p>30 вариантов. В каждом — условие, деталь в 3D, построение по шагам и готовый лист.</p>
-     <div class="igh-find"><input id="ighNum" inputmode="numeric" maxlength="2" placeholder="№" autocomplete="off" aria-label="Номер варианта, от 1 до 30"><button class="btn igh-go" id="ighGo">Открыть вариант</button></div>
-     <div class="igh-hw-l">${mv?`<a class="igh-mine" href="${HDZ('ig2',mv)}">★ Мой вариант ${mv}</a>`:''}<a href="${HDZ('ig2')}">Все 30 вариантов →</a></div></div>
-    <div class="igh-hw-3d" id="igHero" aria-hidden="true"></div>
-   </section>
-   <div class="igh-dz">${['ig3','ig4'].map(id=>{ const d=window.DZR&&DZR.get(id); return d?`<a href="${HDZ(id)}"><b>${d.label}${d.beta?' <span class="dz-beta">бета</span>':''}</b><small>${d.title}</small><em>Выбрать вариант →</em></a>`:''; }).join('')}</div>
-   <div class="igh-two">
-    <a class="igh-c" href="${H('ig','wb')}"><span class="igh-k">Раздел 5 · тела с отверстиями</span><b>Рабочая тетрадь</b><p>${IG_WB.length} заданий: призма, цилиндр, пирамида, конус, шар. Найди по номеру рисунка.</p><span class="igh-a">Открыть тетрадь →</span></a>
-    <a class="igh-c igh-learn" href="${H('ig','learn')}"><span class="igh-k">Учиться с нуля</span><b>Виды, разрезы, сечения</b><p>Один вариант от условия до чистовика: что строим, почему так и какой пункт ГОСТ.</p><span class="igh-a">Начать →</span></a>
-   </div>
-   <a class="igh-th" href="${H('ig','theory')}"><b>Теория ЕСКД</b><span>форматы, линии, шрифты, размеры, виды, разрезы, сечения, штриховка</span><i>→</i></a>`});
-  const go=()=>{ const n=parseInt($(v,'#ighNum').value,10); if(n>=1&&n<=N) nav(HDZ('ig2',n)); else { $(v,'#ighNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
-  $(v,'#ighGo').addEventListener('click',go); $(v,'#ighNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
-  const h=$(v,'#igHero'); if(hasGL&&h&&window.innerWidth>=700){ const pick=mv||[15,22,4,18,30,13][Math.floor(Math.random()*6)]; const m=mountViewer(h,pick,{state:{cut:1,res:1.5}});
-    if(m){ let on=true; const spin=()=>{ if(!on||!h.isConnected) return; if(!h.classList.contains('busy')){ m.S.yaw+=0.004; m.v.draw(.7); } requestAnimationFrame(spin); }; requestAnimationFrame(spin); m.cv.addEventListener('pointerdown',()=>{ on=false; }); } }
-  NEXT=null; return SUBJ.ig.name;
-}
+function home(v){ return subjHome(v,'ig'); }   /* главная ИГ: виджет ДЗ и разделы — как у начерта (subjHome) */
 /* штриховка сечения (ГОСТ 2.306, п. 5): 45° к рамке; если так штрихи почти совпадают с осью сечения (она параллельна следу) — 30° или 60° */
 function hatchDeg(th){ const a=((th*180/Math.PI)%180+180)%180, near=v=>Math.min(Math.abs(a-v),180-Math.abs(a-v)); if(near(45)>=10) return 45; return near(60)>=near(30)?60:30; }
 const secRot=model=>{ const [[x1,z1],[x2,z2]]=model.sec.p; return 90-hatchDeg(Math.atan2(z2-z1,x2-x1)); };
