@@ -49,6 +49,8 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
 .logo i::before{ content:""; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 0 0 3px #e8392b; }
 .logo small{ font:500 13px var(--sans); color:var(--mut); letter-spacing:0; }
 .top .sp{ flex:1; }
+.top .btn{ white-space:nowrap; }
+@media (max-width:400px){ .logo small{ display:none; } }
 .ibtn{ width:44px; height:44px; border-radius:12px; border:1.5px solid var(--line); background:var(--surf); color:var(--ink2); display:grid; place-items:center; cursor:pointer; }
 .ibtn:hover{ border-color:var(--acc); color:var(--acc); }
 .stripe{ height:4px; background:linear-gradient(90deg,var(--navy) 0 33.3%,#dbe5f6 33.3% 66.6%,var(--red-b) 66.6%); }
@@ -133,13 +135,13 @@ input[type=file]{ position:absolute; width:1px; height:1px; opacity:0; pointer-e
 .or::before,.or::after{ content:""; flex:1; height:1px; background:var(--line); }
 
 /* примеры */
-.ex-h{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:0 0 10px; }
+.ex-h{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 10px; margin:0 0 10px; }
 .ex-h h2{ font:700 18px var(--disp); margin:0; }
 .ex-h span{ color:var(--mut); font-size:13px; }
 .examples{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .ex{ display:flex; flex-direction:column; gap:8px; padding:8px; border-radius:16px; border:1.5px solid var(--line); background:var(--surf); cursor:pointer; text-align:left; transition:border-color .15s,transform .15s var(--ease),box-shadow .15s; min-width:0; }
 .ex:hover{ border-color:var(--acc); transform:translateY(-2px); box-shadow:var(--shadow); }
-.ex img{ width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:10px; background:#f4f4f0; display:block; }
+.ex img{ width:100%; height:auto; aspect-ratio:3/4; object-fit:cover; border-radius:10px; background:#f4f4f0; display:block; }
 .ex b{ font-size:14px; line-height:1.25; }
 .ex small{ display:flex; align-items:flex-start; gap:5px; font-size:12.5px; color:var(--mut); line-height:1.3; }
 .dot{ width:9px; height:9px; border-radius:50%; flex:none; background:var(--ok); margin-top:3px; }
@@ -242,7 +244,7 @@ details.more[open] summary::before{ transform:rotate(90deg); }
 @keyframes pop{ from{ transform:translate(-50%,-50%) scale(.3); opacity:0; } }
 .sheet-cap{ display:flex; flex-wrap:wrap; gap:6px 14px; padding:10px 14px; font-size:13px; color:var(--mut); background:var(--surf); border-top:1px solid var(--line); }
 .sheet-cap span{ display:inline-flex; align-items:center; gap:6px; }
-.sheet-cap i{ width:18px; height:3px; border-radius:2px; background:linear-gradient(90deg,#13a35f 0 33%,#e0252c 33% 66%,#466ec8 66%); display:inline-block; }
+.sheet-cap i{ width:18px; height:3px; border-radius:2px; background:#1a5ae0; display:inline-block; }
 .lay-tog{ position:absolute; top:10px; right:10px; z-index:2; }
 .lay-tog .btn{ background:rgba(255,255,255,.92); color:#0a1733; border-color:transparent; box-shadow:0 2px 8px rgba(0,0,0,.2); min-height:40px; font-size:14px; padding:6px 12px; }
 
@@ -278,7 +280,8 @@ details.more[open] summary::before{ transform:rotate(90deg); }
 .svgbox{ margin-top:10px; border-radius:14px; overflow:hidden; border:1px solid var(--line); background:#fff; }
 .svgbox svg{ display:block; width:100%; height:auto; }
 .crop{ margin-top:12px; border-radius:14px; overflow:hidden; border:1px solid var(--line); background:#fff; }
-.crop canvas{ display:block; width:100%; height:auto; }
+.crop{ text-align:center; }
+.crop canvas{ display:block; width:auto; max-width:100%; max-height:420px; height:auto; margin:0 auto; }
 
 .foot{ display:flex; flex-wrap:wrap; gap:10px; margin-top:4px; }
 .note{ font-size:13px; color:var(--mut); margin:6px 0 0; }

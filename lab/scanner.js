@@ -128,7 +128,7 @@ S.onProgress=(W,m)=>{ if(m.progress==='sheet') W.set('sheet','now');
 const plural=S.plural=(n,a,b,c)=>{ const m=n%10, h=n%100; return m===1&&h!==11?a:m>=2&&m<=4&&(h<10||h>=20)?b:c; };
 
 /* ── результат: сводка, лист с чертежами, карточки ── */
-const COL={ok:'#13a35f',bad:'#e0252c',calm:'#6f84ab'};
+const COL={ok:'#13a35f',bad:'#e0252c',calm:'#6f84ab'}, FIG='rgba(26,90,224,.9)';   /* фигура условия — всегда синяя: вердикт — рамка и номер */
 /* рамка чертежа на фото: из найденной фигуры (px) с полем, иначе — данная рамка */
 function boxOf(d,W,H){ if(d.quad){ const c=d.quad.reduce((a,p)=>[a[0]+p[0]/4,a[1]+p[1]/4],[0,0]); return d.quad.map(p=>[c[0]+(p[0]-c[0])*0.82,c[1]+(p[1]-c[1])*0.82]); } let pts=null;
   if(d.fig&&d.fig.length) pts=[].concat(...d.fig); else if(d.box&&d.box.length===4&&typeof d.box[0]==='number') pts=[[d.box[0],d.box[1]],[d.box[2],d.box[3]]];
@@ -142,12 +142,12 @@ function paintSheet(cv,src,ds,o){ const W=src.width, H=src.height, k=Math.min(1,
   ds.forEach(d=>{ const q=d._q; if(!q) return; const t=tone(d.verdict), Q=q.map(p=>[p[0]*k,p[1]*k]);
     g.save(); g.fillStyle=t==='ok'?'rgba(19,163,95,.07)':t==='bad'?'rgba(224,37,44,.08)':'rgba(111,132,171,.08)'; rrect(g,Q,14*lw/2.5); g.fill();
     g.strokeStyle=COL[t]; g.lineWidth=lw*1.3; if(t==='calm') g.setLineDash([lw*4,lw*3]); rrect(g,Q,14*lw/2.5); g.stroke(); g.restore();
-    if(d.fig){ g.save(); g.strokeStyle=t==='bad'?'rgba(224,37,44,.9)':t==='ok'?'rgba(19,163,95,.95)':'rgba(70,110,200,.9)'; g.lineWidth=lw; g.lineCap='round'; g.lineJoin='round';
+    if(d.fig){ g.save(); g.strokeStyle=FIG; g.lineWidth=lw; g.lineCap='round'; g.lineJoin='round';
       d.fig.forEach(pl=>{ g.beginPath(); pl.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k)); g.stroke(); }); g.restore(); } }); }
 /* вырезка одного чертежа — для карточки (где именно) */
 function paintCrop(cv,src,d){ const q=d._q; if(!q) return false; const xs=q.map(p=>p[0]), ys=q.map(p=>p[1]), x0=Math.max(0,Math.min(...xs)), y0=Math.max(0,Math.min(...ys)), w=Math.min(src.width,Math.max(...xs))-x0, h=Math.min(src.height,Math.max(...ys))-y0;
   if(w<20||h<20) return false; const k=Math.min(2,900/w); cv.width=Math.round(w*k); cv.height=Math.round(h*k); const g=cv.getContext('2d'); g.drawImage(src,x0,y0,w,h,0,0,cv.width,cv.height);
-  if(d.fig){ const t=tone(d.verdict); g.strokeStyle=t==='bad'?'rgba(224,37,44,.9)':t==='ok'?'rgba(19,163,95,.95)':'rgba(70,110,200,.9)'; g.lineWidth=Math.max(2,cv.width/300); g.lineCap='round';
+  if(d.fig){ g.strokeStyle=FIG; g.lineWidth=Math.max(2,cv.width/300); g.lineCap='round';
     d.fig.forEach(pl=>{ g.beginPath(); pl.forEach((p,i)=>i?g.lineTo((p[0]-x0)*k,(p[1]-y0)*k):g.moveTo((p[0]-x0)*k,(p[1]-y0)*k)); g.stroke(); }); } return true; }
 
 /* сводка по листу */
@@ -159,6 +159,8 @@ function summary(ds){ const n={ok:0,bad:0,calm:0}; ds.forEach(d=>n[tone(d.verdic
   return {t:'calm',h:'Пока не могу утверждать',p:'Линии видны, но уверенного вывода нет. Переснимите чертежи ближе — по одному, при ровном свете.'}; }
 
 /* полный экран результата. o: {el, src (canvas), ds, variant, demo, onReshoot(i), onNew, extra (html), tech} */
+/* рисунок разбора потока (report3d.js) — по шагам части 4; у других частей ДЗ № 3 его не показываем */
+const svgOk=d=>!!d.svg&&(!d.part||d.part==='d');
 S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, Sm=summary(ds);
   ds.forEach(d=>{ d._q=src?boxOf(d,src.width,src.height):null; });
   const pinOf=d=>{ const q=d._q; if(!q) return null; return q.reduce((a,p)=>p[0]+p[1]<a[0]+a[1]?p:a); };
@@ -167,20 +169,21 @@ S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, Sm=summar
     +'<div class="res"><div class="col-a">'
     +'<div class="sum '+Sm.t+'"><div class="big">'+ic(Sm.t)+'</div><div><h1 id="vtitle">'+esc(Sm.h)+'</h1><p>'+esc(Sm.p)+'</p>'+(o.variant?'<p class="note" style="margin-top:4px">ДЗ № '+(o.dz||3)+' · вариант '+esc(o.variant)+'</p>':'')+'</div></div>'
     +(src?'<div class="sheet" style="margin-top:14px" id="sheetBox"><div class="lay-tog"><button class="btn sm" id="layBtn" aria-pressed="true">Только фото</button></div><canvas id="sheetCv" role="img" aria-label="Фото листа: чертежи отмечены номерами и цветом вердикта"></canvas><div class="pins" id="pins"></div>'
-      +'<div class="sheet-cap"><span><i></i>линии — фигура условия, найденная на ваших линиях</span><span><b style="color:#13a35f">■</b> верно</span><span><b style="color:#e0252c">■</b> ошибка</span><span><b style="color:#6f84ab">■</b> не могу утверждать</span></div></div>':'')
+      +'<div class="sheet-cap"><span><i></i>синее — фигура условия, найденная на ваших линиях</span><span><b style="color:#13a35f">■</b> верно</span><span><b style="color:#e0252c">■</b> ошибка</span><span><b style="color:#6f84ab">■</b> не могу утверждать</span></div></div>':'')
     +(o.extra||'')+'</div>'
     +'<div class="col-b"><ol class="cards" id="vwhy" style="list-style:none;margin:0;padding:0">'+ds.map(d=>{ const t=tone(d.verdict), ph=phrase(d), stepsH=d.ex&&d.ex.steps&&d.ex.steps.length>1||d.ex&&d.ex.steps&&d.ex.steps[0]&&d.ex.steps[0].status!=='?'?d.ex.steps:null;
       return '<li class="card '+t+'" id="card'+d.i+'" data-i="'+d.i+'"><div class="card-h"><span class="num">'+(ds.length>1?d.i+1:ic(t))+'</span><div style="min-width:0"><h3>'+esc(d.part?PNUM[d.part]+'. '+PART[d.part]:d.title)+'</h3>'+(d.part&&ds.length>1?'<div class="sub">'+esc(d.title+(d.sub?' · '+d.sub:''))+'</div>':d.sub?'<div class="sub">'+esc(d.sub)+'</div>':'')+'</div><span class="pill">'+ic(t)+word(t)+'</span></div>'
         +'<p class="say">'+esc(ph.say)+'</p>'
         +(ph.where?'<div class="where">'+I('pin')+'<div><b>Где:</b> '+esc(ph.where)+'</div></div>':'')
         +(ph.ask?'<div class="ask">'+I('cam')+'<div>'+esc(ph.ask)+'</div></div>':'')
-        +(t==='bad'&&d.svg?'<div class="svgbox" aria-label="Разбор: красное — как у вас, зелёное — как надо">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div><p class="note">Красное — как у вас, зелёное — как надо.</p>':'')
+        +(t==='bad'&&src&&d._q?'<div class="crop"><canvas data-crop="'+d.i+'" data-now="1" role="img" aria-label="Чертёж '+(d.i+1)+' на фото"></canvas></div>':'')
+        +(t==='bad'&&svgOk(d)?'<div class="svgbox" aria-label="Разбор: красное — как у вас, зелёное — как надо">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div><p class="note">Разбор: красное — как у вас, зелёное — как надо.</p>':'')
         +'<div class="acts">'+(o.onReshoot?'<button class="btn '+(t==='calm'?'pri':'')+' sm" data-act="reshoot">'+I('redo')+'Переснять этот чертёж</button>':'')+(src&&d._q&&ds.length>1?'<button class="btn ghost sm" data-act="show">'+I('pin')+'На листе</button>':'')+'</div>'
         +'<details class="why"><summary>Почему '+I('down')+'</summary>'
           +(stepsH?'<div class="ksteps">'+stepsH.map((s,j)=>'<div class="'+(s.status==='ok'?'ok':s.status==='bad'?'bad':'ref')+'"><i>'+(s.status==='ok'?'✓':s.status==='bad'?'✕':'?')+'</i><span>'+esc(s.name)+' — '+esc(s.msg)+'</span></div>').join('')+'</div>':'')
           +'<ul>'+(d.why||[]).filter(Boolean).map(w=>'<li>'+esc(cap(w))+'</li>').join('')+'</ul>'
-          +(src&&d._q?'<div class="crop"><canvas data-crop="'+d.i+'"></canvas></div>':'')
-          +(t!=='bad'&&d.svg?'<div class="svgbox">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div>':'')+'</details>'
+          +(src&&d._q&&t!=='bad'?'<div class="crop"><canvas data-crop="'+d.i+'"></canvas></div>':'')
+          +(t!=='bad'&&svgOk(d)?'<div class="svgbox">'+d.svg.replace(/width="\d+(\.\d+)?" height="\d+(\.\d+)?"/,'')+'</div>':'')+'</details>'
         +'</li>'; }).join('')+'</ol>'
     +'<div class="foot" style="margin-top:16px">'+(o.onNew?'<button class="btn pri" id="newBtn">'+I('cam')+'Новый лист</button>':'')+(o.onRerun?'<button class="btn" id="rerunBtn">'+I('redo')+'Проверить заново</button>':'')+'</div>'
     +(o.note?'<p class="note">'+esc(o.note)+'</p>':'')
@@ -198,6 +201,7 @@ S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, Sm=summar
     if(b.dataset.act==='reshoot') o.onReshoot(i);
     if(b.dataset.act==='show'){ $('sheetBox').scrollIntoView({behavior:'smooth',block:'start'}); hl(i,true); setTimeout(()=>hl(i,false),1600); } };
   el.querySelectorAll('.card').forEach(c=>{ c.onmouseenter=()=>hl(+c.dataset.i,true); c.onmouseleave=()=>hl(+c.dataset.i,false); });
+  el.querySelectorAll('canvas[data-now]').forEach(c=>{ if(!paintCrop(c,src,ds[+c.dataset.crop])) c.parentNode.remove(); });
   el.querySelectorAll('details.why').forEach(dt=>dt.addEventListener('toggle',()=>{ const c=dt.querySelector('canvas[data-crop]'); if(dt.open&&c&&!c.width) { if(!paintCrop(c,src,ds[+c.dataset.crop])) c.parentNode.remove(); } }));
   if($('newBtn')) $('newBtn').onclick=o.onNew; if($('rerunBtn')) $('rerunBtn').onclick=o.onRerun;
   S.screen(el.id); };
