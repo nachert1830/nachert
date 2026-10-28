@@ -3,6 +3,8 @@
    Поднимает server/dev.js (эмуляция кабинета, вход за участника) и «сайт» (lk/, lab/), входит, открывает lk/#/check,
    выбирает ДЗ № 3, смотрит пример, загружает синтетический лист (quadsynth.js) и ждёт результат. Снимки экрана —
    390 × 844 (телефон) и 1440 × 900 (ноутбук). --cpu=4 — замедление процессора ×4 (средний телефон), время — по этапам.
+   --eyes=env — ИИ-зрение — настоящая модель из переменных (EYES_URL, EYES_MODEL, EYES_KEY, …), как в облаке; --b64=1 — снимок
+   экрана ответа ещё и в журнал (JPEG base64, строки «СНИМОК …») — чтобы забрать его из журнала Actions.
    --eyes=mock — ИИ-зрение кабинета отвечает заглушкой (рамки и номера частей из правды листа, как ответила бы хорошая
    модель): проверяет, что модель вызывается и её ответ доходит до мозга; это не замер модели. */
 'use strict';
@@ -50,9 +52,11 @@ const log=s=>console.log(s), sec=t=>((Date.now()-t)/1000).toFixed(1)+' с';
     await fr.waitForSelector('#scrWait:not([hidden])'); await pg.waitForTimeout(1500); await shot('4-wait');
     await fr.waitForSelector('#scrResult:not([hidden]) .card',{timeout:900000}); const dt=Date.now()-t1; await pg.waitForTimeout(500);
     await shot('5-result'); await shot('5-result-full',{fullPage:true});
+    if(A.b64==='1'){ const b=(await pg.screenshot({type:'jpeg',quality:55})).toString('base64'); for(let i=0;i<b.length;i+=4000) console.log('СНИМОК '+vn+' '+b.slice(i,i+4000)); }
     const res=await fr.evaluate(()=>({h:document.querySelector('#vtitle')&&document.querySelector('#vtitle').textContent,cards:[...document.querySelectorAll('#vwhy .card')].map(c=>c.querySelector('h3').textContent+' — '+c.querySelector('.pill').textContent+': '+c.querySelector('.say').textContent),
       tech:(document.querySelector('details.tech pre')||{}).textContent||'',note:[...document.querySelectorAll('#scrResult p.note')].map(e=>e.textContent).join(' ')}));
     log('['+vn+'] результат за '+(dt/1000).toFixed(1)+' с'+(cpu>1?' (процессор ×'+cpu+')':'')+': '+res.h); res.cards.forEach(c=>log('   '+c)); log('   подпись: '+res.note);
+    if(A.eyes==='env') log('   модель: '+(/ИИ-зрение \((.+?)\) ответило/.exec(res.note)||[0,'не ответила — '+res.note])[1]);
     if(mock) log('   модель вызвана: '+calls+' раз; её ответ на странице: '+(/ИИ-зрение (заглушка) ответило/.test(res.note)?'да':'нет'));
     /* подробности первой карточки — раскрыть и снять */
     const d0=await fr.$('#vwhy [data-act=more]'); if(d0){ await d0.click(); await pg.waitForTimeout(400); await shot('6-details',{fullPage:true}); }

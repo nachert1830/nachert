@@ -56,13 +56,19 @@ jobs:
           OUT=$(yc serverless function invoke --name nachert-club-api --data '{"club":"owner-login"}' 2>&1) || true
           L=$(printf '%s' "$OUT" | grep -oE 'https://[^ "\\]+/#/tg/[A-Za-z0-9_-]{20,}' | head -1)
           test -n "$L" || { echo "::error::ссылку входа получить не удалось — ответ функции кабинета:"; printf '%s\n' "$OUT" | sed -E 's#/tg/[A-Za-z0-9_-]+#/tg/…#g' | head -20; rm -f "$RUNNER_TEMP/yc-key.json"; exit 1; }
+          T=$(yc iam create-token); echo "::add-mask::$T"; echo "EYES_KEY=$T" >> "$GITHUB_ENV"; echo "EYES_FOLDER=$YC_FOLDER_ID" >> "$GITHUB_ENV"
           rm -f "$RUNNER_TEMP/yc-key.json"
           echo "::add-mask::$L"; echo "NCH_LOGIN=$L" >> "$GITHUB_ENV"
-      - name: Путь студента
+      - name: Новая версия кабинета (эмуляция server/dev.js) с настоящей моделью — Qwen в Yandex
+        env:
+          EYES_MODEL: 'gpt://{folder}/qwen3.6-35b-a3b/latest'
+          EYES_OPTS: '{"reasoning_effort":"none"}'
+        run: node lab/dz/test-path.js --n=${{ github.event.inputs.n || '21' }} --eyes=env --only=phone --b64=1 --out=live-shots/new || true
+      - name: Путь студента на сайте
         run: node lab/dz/test-live.js --n=${{ github.event.inputs.n || '21' }} --far=${{ github.event.inputs.far || '1' }} --out=live-shots
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: scanner-live
-          path: live-shots/*.png
+          path: live-shots/**/*.png
           if-no-files-found: ignore
