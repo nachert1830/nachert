@@ -51,6 +51,7 @@ jobs:
           "$HOME/yc/bin/yc" config profile create ci >/dev/null
           "$HOME/yc/bin/yc" config set service-account-key "$RUNNER_TEMP/yc-key.json"
           "$HOME/yc/bin/yc" config set folder-id "$YC_FOLDER_ID"
+          "$HOME/yc/bin/yc" config set endpoint api.cloud.yandex.net:443
           export PATH="$HOME/yc/bin:$PATH"
           OUT=$(yc serverless function invoke --name nachert-club-api --data '{"club":"owner-login"}' 2>&1) || true
           L=$(printf '%s' "$OUT" | grep -oE 'https://[^ "\\]+/#/tg/[A-Za-z0-9_-]{20,}' | head -1)
