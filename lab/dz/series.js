@@ -53,7 +53,7 @@ function combine(results,o){ o=o||{}; const R=results.filter(r=>r&&r.ok), k=R.le
   if(RM.length){ out.ref=RM[0].ref; out.mine={}; out.smine={}; Object.keys(RM[0].mine).forEach(q=>{ if(typeof RM[0].mine[q]!=='number') return; const v=RM.map(r=>r.mine[q]); out.mine[q]=med(v); out.smine[q]=Math.max(med(RM.map(r=>(r.smine||{})[q]||0)),spread(v)); });
     if(out.mine.H!=null) why.push('для пирамиды, как она начерчена: H = '+f1(out.mine.H)+' ± '+f1(out.smine.H)+' мм, угол SAB–ABC = '+f1(out.mine.dih)+' ± '+f1(out.smine.dih)+'°, угол SA–ABC = '+f1(out.mine.phi)+' ± '+f1(out.smine.phi)+'°'); }
   /* 3. ответы студента: статус — голосованием; верно ↔ неверное — противоположны */
-  const OPPA=[['верно','построение'],['верно','данные'],['верно','неверно'],['данные','построение']];
+  const OPPA=[['верно','построение'],['верно','данные'],['верно','неверно'],['данные','построение'],['верно','неточно']];
   out.answers=[]; [...new Set(R.flatMap(r=>(r.answers||[]).map(a=>a.k)))].forEach(q=>{ const as=R.map(r=>(r.answers||[]).find(a=>a.k===q)).filter(Boolean), v=vote(as.map(a=>a.st),OPPA,k);
     const pick=v.st?as.find(a=>a.st===v.st):null; if(v.conflict) conflicts.push('ответ '+q+': кадры расходятся ('+v.conflict+')');
     const a={k:q,a:as[0].a,st:v.st||'не могу утверждать',msg:pick?pick.msg:'ответ '+f1(as[0].a)+': кадры расходятся ('+Object.entries(v.c).map(([s,c])=>s+' — '+c).join(', ')+') — переснимите',ref:as[0].ref,mine:out.mine?out.mine[q]:as[0].mine};

@@ -13,7 +13,7 @@ const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; se
 const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',check3:'dzCheck3',explain3d:'dzExplain3d',paper:'dzPaper',eyes:'dzEyes','cleaner/cleaner':'dzCleaner'}[n]];
 const LN=isNode?require('../lines.js'):self.LAB.lines, DZ=isNode?require('../../core/dz.js'):self.CORE.dz, V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const f1=x=>(Math.round(x*10)/10).toString().replace('.',','), deg=x=>f1(x)+'°';
-const ANS={H:{name:'высота пирамиды',u:' мм',tol:1.5},dih:{name:'угол между гранью SAB и основанием',u:'°',tol:1.5},phi:{name:'угол между ребром SA и основанием',u:'°',tol:1.5}};
+const ANS_BAD=3, ANS={H:{name:'высота пирамиды',u:' мм',tol:1.5},dih:{name:'угол между гранью SAB и основанием',u:'°',tol:1.5},phi:{name:'угол между ребром SA и основанием',u:'°',tol:1.5}};
 /* оси эпюра — кандидаты O: пересечения длинных горизонталей и вертикалей */
 function axesCands(segs){ const len=s=>Math.hypot(s.b[0]-s.a[0],s.b[1]-s.a[1]), dir=s=>Math.abs(Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])*180/Math.PI);
   /* ось рвётся подписями и построениями: коллинеарные куски (±0,6 мм) — одна прямая, длина — по охвату */
@@ -119,6 +119,8 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
          ответ не сходится и со своей пирамидой (дальше допуска + 2σ замера); иначе причину не утверждаем */
       let st, msg; const pts=big.map(d=>d.n+' '+d.c+' = '+f1(d.drawn)+' вместо '+d.was).join(', ');
       if(Math.abs(dr)<=spec.tol){ st='верно'; msg=spec.name+' '+f1(a)+u+' — верно (эталон '+f1(ref[k])+u+')'; }
+      /* 1,5…3 мм (°) от эталона — шаг карандаша, толщина линии: не «верно» и не «неверно» (как у частей: ошибка — от 3) */
+      else if(Math.abs(dr)<ANS_BAD&&!(spread>=spec.tol&&Math.abs(dm)<=spec.tol+2*sg)){ st='неточно'; msg=spec.name+' '+f1(a)+u+' — отличается от эталона ('+f1(ref[k])+u+') на '+f1(Math.abs(dr))+u+': в пределах точности построения карандашом ошибку не утверждаю'; }
       else if(spread>=spec.tol&&Math.abs(dm)<=spec.tol+2*sg){ st='данные'; msg=spec.name+' '+f1(a)+u+' — неверно (эталон '+f1(ref[k])+u+'), но для пирамиды, как она начерчена, ответ '+f1(mine[k])+' ± '+f1(sg)+u+' — с ним ваш сходится: способ верный, ошибка — в нанесении данных'+(pts?' ('+pts+')':''); }
       else if(Math.abs(dm)>spec.tol+2*sg){ st='построение'; msg=spec.name+' '+f1(a)+u+' — неверно (эталон '+f1(ref[k])+u+'); и для пирамиды, как она начерчена, должно быть '+f1(mine[k])+' ± '+f1(sg)+u+' — ошибка в построении или в замере'; }
       else { st='неверно'; msg=spec.name+' '+f1(a)+u+' — неверно на '+f1(Math.abs(dr))+u+' (эталон '+f1(ref[k])+u+'); для начерченной пирамиды '+f1(mine[k])+' ± '+f1(sg)+u+' — причина (данные или построение) в пределах точности фото не различается'; }
@@ -149,12 +151,17 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
   /* чертёж листа по глазам (у каждой части свой чертёж), какая это часть — неизвестно (или только подсказка модели):
      на чертеже одной части проверка другой находит «похожие» линии и видит в них ошибку (на настоящем листе: угол SA
      принят за угол граней). Без подсказки «ошибка» части не утверждается; с подсказкой — решает весь лист (checkEyes) */
-  if(o.eyes&&!part&&res.parts) Object.keys(res.parts).forEach(k=>{ if(k!=='vis'&&res.parts[k].st==='ошибка') res.parts[k]=unsurePart(res.parts[k],k); });
+  /* часть опознана построением: её программа объясняет линии чертежа почти полностью (мера ≥ 0,97), а программы
+     других частей — заметно хуже (≤ 0,92 и на 0,08 ниже). На синтетике у своей части 1,00, у чужих ≤ 0,90 (eyes-eval) */
+  const evs=Object.keys(res.parts||{}).filter(k=>k!=='vis').map(k=>({k,sc:res.parts[k].ev&&res.parts[k].ev.sc||0})).sort((x,y)=>y.sc-x.sc);
+  const idPart=o.eyes&&!part&&evs.length>1&&evs[0].sc>=0.97&&evs[1].sc<=Math.min(0.92,evs[0].sc-0.08)?evs[0].k:null; if(idPart) res.idPart=idPart;
+  if(o.eyes&&!part&&res.parts) Object.keys(res.parts).forEach(k=>{ if(k!=='vis'&&k!==idPart&&res.parts[k].st==='ошибка') res.parts[k]=unsurePart(res.parts[k],k); });
   /* какая это часть — та, чьё построение сошлось («верно»), а «не найдено / не могу» у остальных — их здесь просто нет */
-  const defin=!part&&o.eyes?Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st==='верно'):[];
+  const defin=!part&&o.eyes?(idPart&&res.parts[idPart].st==='ошибка'?[idPart]:Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st==='верно')):[];
   if(defin.length) res.partGuess=defin;
   const PSH=part?[part]:defin.length?defin:Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено'), partOk=PSH.length>0&&PSH.every(k=>res.parts&&res.parts[k]&&res.parts[k].st==='верно');
-  res.verdict=miss.length>2&&!ans.length&&!partOk?'не могу утверждать':ansBad||stepBad?'ошибка':ansData||big.length?'ошибка в данных':ans.length?'верно':dataClean?'данные нанесены верно':partOk?'верно':'не могу утверждать';
+  const idBad=!!(idPart&&res.parts[idPart].st==='ошибка');
+  res.verdict=miss.length>2&&!ans.length&&!partOk?'не могу утверждать':ansBad||stepBad||idBad?'ошибка':ansData||big.length?'ошибка в данных':ans.length&&ans.every(a=>a.st==='верно')?'верно':dataClean?'данные нанесены верно':partOk?'верно':'не могу утверждать';
   /* части, которых на фото нет, не показываем: на снимке одной части чужие «похожие» линии — не ответ */
   if(part&&res.parts) res.shown=[part]; else if(defin.length) res.shown=defin; else if(res.parts) res.shown=Object.keys(res.parts).filter(k=>k!=='vis'&&res.parts[k].st!=='не найдено');
   /* видимость рёбер на листе в клетку — замечание (на экзаменационных листах её часто не требуют) */

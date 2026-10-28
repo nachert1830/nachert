@@ -1,0 +1,6 @@
+{
+  "name": "nachert-eyes-net",
+  "private": true,
+  "description": "Сеть глаз: ONNX Runtime Web — в браузере с jsDelivr, в node (замеры lab/) — отсюда: npm ci",
+  "dependencies": { "onnxruntime-web": "1.20.1" }
+}
