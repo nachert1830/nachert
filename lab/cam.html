@@ -4,189 +4,301 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Проверка по камере</title>
-<meta name="description" content="ДЗ №3 на листе в клетку или на чистом листе без рамки: камера сама снимает серию кадров, кадры голосуют, разбор — поверх вашего фото. Всё считается в телефоне.">
-<style>
-:root{ --bg:#f6f5f1; --card:#fff; --ink:#1b1e24; --mute:#5f6670; --line:#d9d6ce; --blue:#2f6fb5; --red:#b3261e; --green:#2e7d4f; --amber:#a86800; --veil:rgba(0,0,0,.55); }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#15171b; --card:#1e2127; --ink:#e8e6e1; --mute:#a4a9b1; --line:#353a42; --blue:#7fb0ea; --red:#f08a80; --green:#7fcf9c; --amber:#e6b35a; } }
-:root[data-theme="dark"]{ --bg:#15171b; --card:#1e2127; --ink:#e8e6e1; --mute:#a4a9b1; --line:#353a42; --blue:#7fb0ea; --red:#f08a80; --green:#7fcf9c; --amber:#e6b35a; }
-*{ box-sizing:border-box; }
-body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-main{ max-width:880px; margin:0 auto; padding:16px; }
-h1{ font-size:22px; margin:4px 0 2px; } .sub{ color:var(--mute); font-size:14px; margin:0 0 14px; }
-.card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:0 0 14px; }
-.row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-button,select,input[type=number],label.btn{ font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:10px; padding:10px 14px; }
-input[type=number]{ width:90px; } button,label.btn{ cursor:pointer; } button.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
-input[type=file]{ display:none; }
-.cam{ position:relative; border-radius:12px; overflow:hidden; background:#000; }
-.cam video,.cam canvas{ display:block; width:100%; height:auto; }
-.cam canvas.ov{ position:absolute; inset:0; height:100%; pointer-events:none; }
-.hint{ position:absolute; left:0; right:0; bottom:0; padding:12px 14px; background:var(--veil); color:#fff; font-size:17px; font-weight:600; }
-.dots{ position:absolute; top:10px; right:12px; display:flex; gap:6px; } .dots i{ width:14px; height:14px; border-radius:50%; border:2px solid #fff; display:block; } .dots i.on{ background:#fff; }
-.verdict{ font-size:19px; font-weight:600; } .verdict.ok{ color:var(--green); } .verdict.bad{ color:var(--red); } .verdict.ref{ color:var(--amber); }
-.why{ margin:6px 0 0; padding-left:18px; } .mute{ color:var(--mute); font-size:14px; }
-.frames{ font-size:14px; } .frames div{ padding:2px 0; }
-#photo{ width:100%; height:auto; display:block; border-radius:8px; }
-.cam canvas.map{ position:absolute; top:10px; left:10px; width:28%; height:auto; border:2px solid #fff; border-radius:6px; background:#000; }
-.dr{ border-top:1px solid var(--line); padding:8px 0 4px; } .dr b{ font-weight:600; }
-</style>
-<link rel="stylesheet" href="ui.css"><script src="ui.js"></script>
+<title>Сканер ДЗ № 3</title>
+<meta name="description" content="ДЗ № 3 по начертательной геометрии: наведите камеру на лист — сканер сам снимет весь лист и каждый из четырёх чертежей, проверит построения и покажет, где ошибка. Всё считается в телефоне.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07112a" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="scanner.css">
+<script src="scanner.js"></script>
 </head>
 <body>
-<main>
-<h1>ДЗ № 3 — камерой</h1>
-<p class="sub">Лист в клетку или чистый лист. Чистый лист с четырьмя чертежами: сначала весь лист (на тёмном столе), затем камера попросит поднести телефон к каждому чертежу — так он снят крупно, от 8 px/мм. Вывод — только если его подтверждают несколько кадров. Всё считается в телефоне.</p>
+<header class="top"><div class="top-in">
+  <a class="logo" href="../" aria-label="Начерт — на главную"><i aria-hidden="true"></i><span>Сканер ДЗ <small>· начерт</small></span></a>
+  <span class="sp"></span>
+  <a class="btn ghost sm" href="dz.html" id="toPhoto">По фото</a>
+  <button class="ibtn" id="theme" type="button"></button>
+</div><div class="stripe" aria-hidden="true"></div></header>
 
-<div class="card step" data-n="1">
-  <h2>Что на листе</h2>
-  <p class="shint">Вариант можно не вводить — сканер узнает его по чертежу.</p>
-  <div class="fields">
-    <label class="fld">Вариант<input id="n" type="number" min="1" max="30" placeholder="узнать сам" inputmode="numeric"></label>
-    <label class="fld">Как снимать<select id="how"><option value="draw">по чертежам</option><option value="sheet">весь лист</option></select></label>
-    <label class="fld">Что на фото<select id="part"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select></label>
+<main class="app">
+<!-- 1. старт -->
+<section class="scr" id="scrStart" aria-labelledby="h1">
+  <div class="start">
+    <div class="hero">
+      <span class="kick">ДЗ № 3 · пирамида SABC</span>
+      <h1 id="h1">Наведите камеру — проверю весь лист</h1>
+      <p>Сначала весь лист, потом каждый из четырёх чертежей крупно. Снимки сделаю сам, когда кадр резкий.</p>
+      <ul class="facts">
+        <li data-i="ok">4 части за один проход</li>
+        <li data-i="pin">покажу, где ошибка</li>
+        <li data-i="sheet">фото не уходит с телефона</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="field">
+        <span class="lbl" id="varL">Вариант</span>
+        <div class="var" role="group" aria-labelledby="varL">
+          <div class="stepper"><button type="button" id="nMinus" aria-label="Вариант меньше">−</button><input id="n" type="number" min="1" max="30" inputmode="numeric" placeholder="—" aria-label="Номер варианта"><button type="button" id="nPlus" aria-label="Вариант больше">+</button></div>
+          <button type="button" class="chip" id="nAuto" aria-pressed="false" data-i="q">Узнать по чертежу</button>
+        </div>
+        <p class="cond" id="cond"></p>
+      </div>
+      <div class="go">
+        <button class="btn pri big wide" id="start" type="button" data-i="cam">Сканировать</button>
+        <div class="or touch-only">или</div>
+        <label class="btn wide touch-only" data-i="up">Загрузить фото или PDF<input id="file" type="file" accept="image/*,application/pdf"></label>
+        <label class="drop" id="drop" data-i="up"><b>Перетащите фото или PDF листа</b><span>или нажмите, чтобы выбрать файл · лист целиком, сверху</span><input id="file2" type="file" accept="image/*,application/pdf"></label>
+      </div>
+      <select id="how" class="sr" tabindex="-1" aria-hidden="true"><option value="draw">по чертежам</option><option value="sheet">весь лист</option></select>
+      <details class="more">
+        <summary>Ещё настройки</summary>
+        <div class="field" style="margin-top:10px">
+          <span class="lbl" id="howL">Как снимать</span>
+          <div class="seg" role="group" aria-labelledby="howL" id="howSeg"><button type="button" data-v="draw" aria-pressed="true">По чертежам</button><button type="button" data-v="sheet" aria-pressed="false">Весь лист, 3–5 кадров</button></div>
+        </div>
+        <div class="mfields">
+          <label>Что на фото<select id="part"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select></label>
+          <label>Ваш ответ H, мм<input id="aH" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
+          <label>∠SAB–ABC, °<input id="aD" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
+          <label>∠SA–ABC, °<input id="aP" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
+        </div>
+      </details>
+    </div>
   </div>
-  <div class="ans">
-    <label class="fld">Ваш ответ H, мм<input id="aH" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
-    <label class="fld">∠SAB–ABC, °<input id="aD" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
-    <label class="fld">∠SA–ABC, °<input id="aP" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
-  </div>
-</div>
+  <section class="panel" data-examples style="margin-top:20px" aria-labelledby="exH">
+    <div class="ex-h"><h2 id="exH">Пример без камеры</h2><span>синтетические листы, проверены этим сканером</span></div>
+    <div class="examples" id="exList"></div>
+  </section>
+</section>
 
-<div class="card step" data-n="2">
-  <h2>Наведите камеру</h2>
-  <p class="shint">Держите телефон над листом и медленно меняйте угол — точки внизу покажут, сколько кадров уже есть.</p>
-  <div class="shoot">
-    <button class="primary" id="start">Включить камеру</button>
-    <label class="btn">Выбрать 2–5 фото<input id="files" type="file" accept="image/*" multiple></label>
-  </div>
-</div>
-
-<div class="card" id="camCard" hidden>
-  <div class="cam"><video id="video" playsinline muted autoplay></video><canvas class="ov" id="ov"></canvas><div class="dots" id="dots"></div><canvas class="map" id="map" hidden></canvas><div class="hint" id="hint">Включаю камеру…</div></div>
-  <div class="row" style="margin-top:10px"><button id="stop">Остановить</button><span class="mute" id="camInfo"></span></div>
-</div>
-
-<div class="card" id="resCard" hidden>
-  <div class="verdict" id="vtitle"></div>
-  <ul class="why" id="vwhy"></ul>
-  <div class="frames mute" id="frames" style="margin-top:8px"></div>
-  <div class="row" style="margin-top:10px"><label class="mute"><input type="checkbox" id="showOv" checked> разбор поверх фото (зелёное — как надо, красное — как у вас)</label></div>
-  <canvas id="photo" style="margin-top:8px"></canvas>
-</div>
+<!-- 3. ожидание и 4. результат -->
+<section class="scr" id="scrWait" hidden aria-live="polite"></section>
+<section class="scr" id="scrResult" hidden></section>
 </main>
+
+<!-- 2. камера -->
+<div class="cam" id="camCard" hidden role="dialog" aria-modal="true" aria-label="Камера">
+  <video id="video" playsinline muted autoplay></video>
+  <canvas class="ov" id="ov"></canvas>
+  <div class="shade"></div>
+  <div class="guide" id="guide" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <canvas class="minimap" id="map" hidden aria-hidden="true"></canvas>
+  <div class="cam-top">
+    <button class="ibtn" id="stop" type="button" aria-label="Закрыть камеру" data-i="x"></button>
+    <div class="cam-title"><b id="camT">Весь лист</b><span id="camS">положите лист на тёмный стол</span><div class="prog" id="dots" aria-hidden="true"></div></div>
+    <span style="width:44px"></span>
+  </div>
+  <div class="cam-bot">
+    <div class="tip" id="tip"><span id="tipI"></span><span id="tipT">Включаю камеру…</span></div>
+    <div class="cam-row">
+      <div class="side"><label class="ibtn" aria-label="Выбрать фото" data-i="up"><input id="file3" type="file" accept="image/*,application/pdf"></label></div>
+      <button class="shutter auto" id="shutter" type="button" aria-label="Снять сейчас"></button>
+      <div class="side"><span class="qbadge" id="camInfo"></span></div>
+    </div>
+    <div class="qbadge" id="qInfo">Снимаю сам, когда кадр резкий · можно нажать кнопку</div>
+  </div>
+  <div class="flash" id="flash"></div>
+  <p class="sr" id="hint" aria-live="polite"></p>
+  <div class="cam-err" id="camErr" hidden><div style="font:700 20px var(--disp)">Камера недоступна</div><p id="camErrT"></p><label class="btn pri big" data-i="up">Загрузить фото или PDF<input id="file4" type="file" accept="image/*,application/pdf"></label><button class="btn ghost" id="camErrX" type="button" style="color:#9cc0ff">Назад</button></div>
+</div>
+
+<script src="../core/dz.js"></script><script src="../core/dz-variants.js"></script>
 <script src="dz/capture.js"></script>
 <script src="dz/series.js"></script>
 <script src="dz/closeup.js"></script>
 <script>
-const $=id=>document.getElementById(id), C=self.LAB.dzCapture, SR=self.LAB.dzSeries, CU=self.LAB.dzCloseup;
+const SC=self.SCAN, $=SC.$, C=self.LAB.dzCapture, SR=self.LAB.dzSeries, CU=self.LAB.dzCloseup, CO=self.CORE;
+SC.fillIcons(); SC.themeBtn($('theme'));
 const num=id=>{ const v=$(id).value; return v===''?null:+v; };
+const nVal=()=>{ const v=+$('n').value; return v>=1&&v<=30?v:0; };
 /* вариант из адреса (?n=7 — кабинет передаёт вариант из профиля); нет — сканер узнаёт его по чертежу */
 { const qn=+new URLSearchParams(location.search).get('n'); if(qn>=1&&qn<=30) $('n').value=qn; }
+/* вариант: номер ± или «узнать по чертежу»; под ним — условие, чтобы сверить с листом */
+function showVar(){ const n=nVal(); $('nAuto').setAttribute('aria-pressed',String(!n));
+  const g=n&&CO.dzVariants.get(3,n); $('cond').innerHTML=g?'Сверьте с листом: '+Object.keys(g.data).map(k=>'<b>'+k+'</b>('+g.data[k].join('; ')+')').join(' '):'Сканер узнает вариант по условию на листе. С номером — быстрее и точнее: можно снимать по чертежам.'; }
+$('n').oninput=showVar; $('nMinus').onclick=()=>{ $('n').value=Math.max(1,(nVal()||2)-1); showVar(); }; $('nPlus').onclick=()=>{ $('n').value=Math.min(30,(nVal()||0)+1); showVar(); };
+$('nAuto').onclick=()=>{ $('n').value=''; showVar(); }; showVar();
+$('howSeg').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; $('how').value=b.dataset.v; [...$('howSeg').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b))); };
+
 const MAX=5, WANT=3, LONG=3000;   /* длинная сторона снимка для проверки: целый А3 на чистом листе — ≈ 6 px/мм */
 const FULL=4096;                   /* по чертежам — полное разрешение сенсора (12 Мп: чертёж вблизи — 12–16 px/мм) */
-let stream=null, loop=null, cap=null, prev=null, frames=[], shots=[], busy=0, worker=null, done=false;
+let stream=null, loop=null, cap=null, prev=null, frames=[], shots=[], busy=0, worker=null, done=false, W=null, last=null;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-function dots(n,want){ $('dots').innerHTML=Array.from({length:want},(_,i)=>'<i class="'+(i<n?'on':'')+'"></i>').join(''); }
+
+/* ── вид камеры: заголовок, подсказка с иконкой, полоска прогресса 1–N ── */
+const KIND=t=>/блик/.test(t)?'glare':/ближе|отодвиньте|не целиком|не вижу/.test(t)?'far':/параллельно/.test(t)?'tilt':/нерезко/.test(t)?'blur':/свет/.test(t)?'light':'hold';
+function tip(t,state){ $('tipT').textContent=t; $('tipI').innerHTML=state==='busy'?'<span class="spin"></span>':SC.icon(state==='ok'?'ok':KIND(t)); $('tip').className='tip'+(state&&state!=='busy'?' '+state:''); $('camCard').classList.toggle('busy',state==='busy'); }
+function setHint(t){ if($('hint').textContent!==t) $('hint').textContent=t; }
+function dots(n,want){ $('dots').innerHTML=Array.from({length:want},(_,i)=>'<i class="'+(i<n?'done':i===n?'cur':'')+'"></i>').join(''); }
+function guide(kind,ok){ const g=$('guide'); g.hidden=!kind; g.classList.toggle('close',kind==='close'); g.classList.toggle('ok',!!ok); }
+
 /* проверка кадров по очереди в одном потоке: тот же код, что в тестах Node */
-function ensureWorker(){ if(worker) return worker; worker=new Worker('dz/worker.js');
-  worker.onmessage=e=>{ busy--; const m=e.data; if(D){ onDraw(m); next(); return; } if(m.error){ frames.push({ok:false,why:['сбой: '+m.error]}); } else frames.push(m.frame); update(); next(); }; return worker; }
-const queue=[]; function next(){ if(busy||!queue.length) return; const s=queue.shift(); busy++; ensureWorker().postMessage({mode:s.mode||'frame',want:s.want,img:s.img,dz:3,n:+$('n').value||0,part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
+function ensureWorker(){ if(worker) return worker; worker=SC.worker(null,m=>{ busy--; if(D){ onDraw(m); next(); return; } if(m.error){ frames.push({ok:false,why:['сбой: '+m.error]}); } else frames.push(m.frame); update(); next(); }); return worker; }
+const queue=[]; function next(){ if(busy||!queue.length) return; const s=queue.shift(); busy++; ensureWorker().postMessage({mode:s.mode||'frame',want:s.want,img:s.img,dz:3,n:nVal(),part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
 function submit(img,bmp){ shots.push({img,bmp}); queue.push({img}); next(); }
-/* итог по серии: вердикт, причины, по каждому кадру — кратко; разбор — поверх лучшего кадра */
-function update(){ const S=SR.combine(frames); $('resCard').hidden=false;
-  const v=S.verdict||'—', cls=/^верно|нанесены верно/.test(v)?'ok':/ошибка/.test(v)?'bad':'ref'; $('vtitle').textContent=v[0].toUpperCase()+v.slice(1); $('vtitle').className='verdict '+cls;
-  $('vwhy').innerHTML=(S.why||[]).map(w=>'<li>'+w.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</li>').join('');
-  $('frames').innerHTML=frames.map((f,i)=>'<div>кадр '+(i+1)+': '+(f.ok?f.verdict:'не прочитан — '+((f.why||[])[0]||''))+(f.ms?' · '+(f.ms/1000).toFixed(1)+' с':'')+'</div>').join('')+(queue.length||busy?'<div>проверяю…</div>':'');
-  draw(S);
+
+/* ── съёмка всего листа серией (вариант не указан или «весь лист»): кадры голосуют (series.js) ── */
+function update(){ const S=SR.combine(frames); $('frames')&&($('frames').innerHTML=frames.map((f,i)=>'<div>кадр '+(i+1)+': '+(f.ok?f.verdict:'не прочитан — '+((f.why||[])[0]||''))+'</div>').join(''));
+  if(W) W.set('check','now',{t:'Проверяю кадры',small:frames.length+'/'+Math.max(frames.length+queue.length+busy,1)});
+  if(done&&!busy&&!queue.length){ seriesResult(S); return; }
   if(done||busy||queue.length) return;
-  if(SR.enough(S,MAX)){ done=true; stopCam(); return; }
+  if(SR.enough(S,MAX)){ done=true; stopCam(); seriesResult(S); return; }
   /* вывод не устоялся, а снимки кончились — просим ещё кадр (до 5); больше нельзя — стоп, вывод как есть */
-  if(cap&&cap.n>=cap.want){ if(cap.more()) dots(cap.n,cap.want); else { done=true; stopCam(); } } }
-/* разбор поверх фото — только то, что подтвердила серия: точки условия с уверенным «неточно» и построение г),
-   если серия нашла в нём первую ошибку */
-function draw(S){ const i=frames.findIndex(f=>f.ok&&f.overlay), sh=shots[i>=0?i:0]; if(!sh) return; const cv=$('photo'), ctx=cv.getContext('2d');
-  cv.width=sh.img.width; cv.height=sh.img.height; ctx.putImageData(new ImageData(sh.img.data,sh.img.width,sh.img.height),0,0);
-  if(i<0||!$('showOv').checked) return; const sure=new Set(((S.given&&S.given.diff)||[]).filter(d=>d.sure).map(d=>'data:'+d.n)), show=q=>q.g==='ex'?!!S.first:sure.has(q.g);
-  const k=cv.width/900, col={good:css('--green')||'#2e7d4f',stud:css('--red')||'#b3261e'}; ctx.lineCap='round';
+  if(cap&&cap.n>=cap.want){ if(cap.more()) dots(cap.n,cap.want); else { done=true; stopCam(); seriesResult(S); } } }
+/* разбор поверх лучшего кадра — только то, что подтвердила серия */
+function seriesCanvas(S){ const i=frames.findIndex(f=>f.ok&&f.overlay), sh=shots[i>=0?i:0]; if(!sh) return null; const cv=document.createElement('canvas'), ctx=cv.getContext('2d');
+  cv.width=sh.img.width; cv.height=sh.img.height; ctx.putImageData(new ImageData(sh.img.data,sh.img.width,sh.img.height),0,0); if(i<0) return cv;
+  const sure=new Set(((S.given&&S.given.diff)||[]).filter(d=>d.sure).map(d=>'data:'+d.n)), show=q=>q.g==='ex'?!!S.first:sure.has(q.g);
+  const k=cv.width/900, col={good:'#13a35f',stud:'#e0252c'}; ctx.lineCap='round';
   frames[i].overlay.filter(show).forEach(q=>{ ctx.strokeStyle=col[q.col]; ctx.fillStyle=col[q.col]; ctx.lineWidth=3*k;
     if(q.t==='line'){ ctx.setLineDash(q.dash?[10*k,7*k]:[]); ctx.beginPath(); q.pts.forEach((p,j)=>j?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke(); }
-    else { ctx.setLineDash([]); ctx.beginPath(); ctx.arc(q.p[0],q.p[1],9*k,0,7); ctx.stroke(); if(q.label){ ctx.font=(22*k)+'px system-ui'; ctx.fillText(q.label,q.p[0]+12*k,q.p[1]-10*k); } } }); }
-$('showOv').onchange=()=>draw(SR.combine(frames));
-/* камера: задняя, максимальное разрешение; кадр видео → оценка за миллисекунды → автоснимок */
-async function startCam(){ reset(); $('camCard').hidden=false; $('hint').textContent='Включаю камеру…';
+    else { ctx.setLineDash([]); ctx.beginPath(); ctx.arc(q.p[0],q.p[1],9*k,0,7); ctx.stroke(); if(q.label){ ctx.font=(22*k)+'px system-ui'; ctx.fillText(q.label,q.p[0]+12*k,q.p[1]-10*k); } } }); return cv; }
+function seriesResult(S){ if(W){ W.stop(); W=null; } const src=seriesCanvas(S);
+  const ds=[{i:0,title:'Лист целиком',sub:'кадров '+frames.length+(S.n?' · вариант '+S.n:''),verdict:S.verdict||'не могу утверждать',why:S.why||[],parts:{},ex:null,svg:null,fig:null}];
+  SC.renderResult({ds,src,variant:S.n||nVal()||null,onNew:toStart,log:frames.map((f,i)=>'кадр '+(i+1)+': '+(f.ok?f.verdict:'не прочитан')),tech:JSON.stringify({вердикт:S.verdict,причины:S.why},null,1),
+    note:'Вывод — только то, что подтвердили несколько кадров. Разбор на фото: зелёное — как надо, красное — как у вас.'}); }
+
+/* ── камера: задняя, максимальное разрешение; кадр видео → оценка за миллисекунды → автоснимок ── */
+async function openCam(){ $('camCard').hidden=false; $('camErr').hidden=true; document.body.style.overflow='hidden'; tip('Включаю камеру…'); guide(null);
   try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160}},audio:false}); }
-  catch(e){ $('hint').textContent='Камера недоступна ('+e.name+') — выберите 2–5 фото кнопкой выше'; return; }
-  const v=$('video'); v.srcObject=stream; await v.play().catch(()=>{}); const tr=stream.getVideoTracks()[0], st=tr.getSettings?tr.getSettings():{}; $('camInfo').textContent=(st.width||v.videoWidth)+' × '+(st.height||v.videoHeight)+' px';
+  catch(e){ $('camErrT').textContent=(e&&e.name==='NotAllowedError'?'Нет разрешения на камеру — разрешите её в настройках браузера. ':'Не получилось включить камеру ('+(e&&e.name||'нет камеры')+'). ')+'Можно загрузить фото листа.'; $('camErr').hidden=false; return null; }
+  const v=$('video'); v.srcObject=stream; await v.play().catch(()=>{}); const tr=stream.getVideoTracks()[0], st=tr.getSettings?tr.getSettings():{}; $('camInfo').textContent=Math.round((st.width||v.videoWidth)*(st.height||v.videoHeight)/1e6*10)/10+' Мп'; return tr; }
+async function startCam(){ reset(); const tr=await openCam(); if(!tr) return; const v=$('video');
   cap=C.Capturer({shots:WANT,max:MAX}); dots(0,WANT); $('map').hidden=true;
-  if($('how').value==='draw'&&!$('part').value){ if(+$('n').value>=1){ D={phase:'ov',cap:C.Capturer({shots:1,max:1}),pend:[],log:[],tries:0,msg:''}; $('dots').innerHTML=''; }
-    else $('camInfo').textContent+=' · по чертежам — нужен номер варианта, снимаю весь лист'; } const small=document.createElement('canvas'), sctx=small.getContext('2d',{willReadFrequently:true});
-  const tick=async()=>{ if(!stream) return; const W=v.videoWidth, H=v.videoHeight; if(W&&H){ const k=Math.max(W,H)/480; small.width=Math.round(W/k); small.height=Math.round(H/k); sctx.drawImage(v,0,0,small.width,small.height);
-      const A=C.analyze(sctx.getImageData(0,0,small.width,small.height),prev); prev=A;
-      if(D) dTick(A,tr,v); else { overlay(A,small.width,small.height); const act=cap.feed(A,performance.now()); $('hint').textContent=cap.hint(A);
+  if($('how').value==='draw'&&!$('part').value){ if(nVal()){ D={phase:'ov',cap:C.Capturer({shots:1,max:1}),pend:[],log:[],tries:0,msg:''}; $('dots').innerHTML=''; }
+    else SC.toast('Вариант не указан — снимаю весь лист, 3–5 кадров'); }
+  if(!D){ $('camT').textContent='Весь лист'; $('camS').textContent='3–5 кадров с разных углов'; }
+  runLoop(tr,v); }
+function runLoop(tr,v){ const small=document.createElement('canvas'), sctx=small.getContext('2d',{willReadFrequently:true});
+  const tick=async()=>{ if(!stream) return; const Wd=v.videoWidth, H=v.videoHeight; if(Wd&&H){ const k=Math.max(Wd,H)/480; small.width=Math.round(Wd/k); small.height=Math.round(H/k); sctx.drawImage(v,0,0,small.width,small.height);
+      const A=C.analyze(sctx.getImageData(0,0,small.width,small.height),prev); prev=A; last={A,tr,v};
+      if(D) dTick(A,tr,v); else { overlay(A); const act=cap.feed(A,performance.now()), h=cap.hint(A); setHint(h); tip(cap1(h),A.ok?'ok':''); guide('sheet',A.ok);
         if(act==='shot'||act==='done-shot'){ dots(cap.n,cap.want); flash(); grab(tr,v); } } }
     loop=setTimeout(tick,120); }; tick(); }
+const cap1=s=>s?s[0].toUpperCase()+s.slice(1):s;
+/* видео — целиком (object-fit: contain: что видит камера, то и на экране): координаты кадра → экран */
+function vmap(w,h){ const cv=$('ov'), r=cv.getBoundingClientRect(), v=$('video'), dpr=devicePixelRatio||1; cv.width=r.width*dpr; cv.height=r.height*dpr;
+  const vw=v.videoWidth||w, vh=v.videoHeight||h, s=Math.min(r.width/vw,r.height/vh)*dpr, ox=(cv.width-vw*s)/2, oy=(cv.height-vh*s)/2, kx=vw/w, ky=vh/h;
+  return {cv,ctx:cv.getContext('2d'),P:p=>[p[0]*kx*s+ox,p[1]*ky*s+oy],dpr}; }
 /* рамка листа поверх видео: зелёная — можно снимать, жёлтая — что-то мешает */
-function overlay(A,w,h){ const cv=$('ov'), r=cv.getBoundingClientRect(); cv.width=r.width*devicePixelRatio; cv.height=r.height*devicePixelRatio; const ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height);
-  if(!A.paper) return; const sx=cv.width/w, sy=cv.height/h, q=A.paper.quadSmall; ctx.lineWidth=4*devicePixelRatio; ctx.strokeStyle=A.ok?'#3fd07a':'#ffcc33'; ctx.beginPath(); q.forEach((p,i)=>i?ctx.lineTo(p[0]*sx,p[1]*sy):ctx.moveTo(p[0]*sx,p[1]*sy)); ctx.closePath(); ctx.stroke(); }
-function flash(){ const c=$('ov'), ctx=c.getContext('2d'); ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fillRect(0,0,c.width,c.height); }
+function overlay(A){ const m=vmap(...(A.size||[1,1])); m.ctx.clearRect(0,0,m.cv.width,m.cv.height); if(!A.paper) return;
+  const q=A.paper.quadSmall.map(m.P); m.ctx.lineWidth=4*m.dpr; m.ctx.lineJoin='round'; m.ctx.strokeStyle=A.ok?'#3fd07a':'#ffcc33'; m.ctx.fillStyle=A.ok?'rgba(63,208,122,.12)':'rgba(255,204,51,.08)';
+  m.ctx.beginPath(); q.forEach((p,i)=>i?m.ctx.lineTo(p[0],p[1]):m.ctx.moveTo(p[0],p[1])); m.ctx.closePath(); m.ctx.fill(); m.ctx.stroke(); }
+function clearOv(){ const cv=$('ov'); cv.getContext('2d').clearRect(0,0,cv.width,cv.height); }
+function flash(){ const f=$('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); SC.vibrate(30); }
 /* снимок: ImageCapture (полное разрешение сенсора), иначе — кадр видео; длинная сторона → long px */
 async function grabImg(tr,v,long){ let src=null; try{ if(self.ImageCapture){ const ic=new ImageCapture(tr), b=await ic.takePhoto(); src=await createImageBitmap(b); } }catch(e){ src=null; } if(!src) src=v;
-  const W=src.videoWidth||src.width, H=src.videoHeight||src.height, k=Math.max(1,Math.max(W,H)/long), c=document.createElement('canvas'); c.width=Math.round(W/k); c.height=Math.round(H/k);
+  const Wd=src.videoWidth||src.width, H=src.videoHeight||src.height, k=Math.max(1,Math.max(Wd,H)/long), c=document.createElement('canvas'); c.width=Math.round(Wd/k); c.height=Math.round(H/k);
   const ctx=c.getContext('2d'); ctx.drawImage(src,0,0,c.width,c.height); const d=ctx.getImageData(0,0,c.width,c.height); return {width:c.width,height:c.height,data:d.data,canvas:c}; }
 async function grab(tr,v){ const im=await grabImg(tr,v,LONG); submit({width:im.width,height:im.height,data:im.data}); }
+/* кнопка затвора — снять сейчас, не дожидаясь автоснимка */
+$('shutter').onclick=()=>{ if(!last||!stream) return; const {A,tr,v}=last;
+  if(D){ if(D.phase==='ov'){ ovShot(A,tr,v); } else if(D.phase==='close'&&D.cur>=0) closeShot(tr,v); return; }
+  if(cap&&cap.n<cap.want){ flash(); grab(tr,v); dots(Math.min(cap.n+1,cap.want),cap.want); } };
 
 /* ── по чертежам (closeup.js): весь лист → где чертежи и сколько px/мм → «поднесите к чертежу N» → у каждого чертежа
    своя серия (2–3 снимка ≥ 8 px/мм с разных углов). Пока снимок проверяется, камера уже просит следующий чертёж ── */
 let D=null;
-const PNm={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'};
-/* следующий чертёж: ещё нужен кадр и его снимок не в проверке */
-function pick(from){ const N=D.ov.drawings.length; for(let i=0;i<N;i++){ const j=(from+i)%N; if(D.sess.need(j)&&!D.pend[j]) return j; } return -1; }
+/* следующий чертёж: ещё нужен кадр и его снимок не в проверке (переснять один — только он) */
+function pick(from){ const N=D.ov.drawings.length; if(D.only!=null) return D.sess.need(D.only)&&!D.pend[D.only]?D.only:-1; for(let i=0;i<N;i++){ const j=(from+i)%N; if(D.sess.need(j)&&!D.pend[j]) return j; } return -1; }
+function progDots(){ if(!D||!D.ov){ $('dots').innerHTML=''; return; } $('dots').innerHTML=D.ov.drawings.map((d,j)=>'<i class="'+(j===D.cur?'cur':!D.sess.need(j)?'done':D.pend[j]?'busy':'')+'"></i>').join(''); }
+function ovShot(A,tr,v){ flash(); D.phase='wait'; D.ovThumb=A.thumb; D.t0=Date.now(); grabImg(tr,v,FULL).then(im=>{ D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next(); }); }
+function closeShot(tr,v){ flash(); const j=D.cur; D.pend[j]++; D.msg=''; D.cur=pick(j+1); drawMap(); progDots();
+  grabImg(tr,v,FULL).then(im=>{ queue.push({mode:'close',want:j,img:{width:im.width,height:im.height,data:im.data}}); next(); }); }
 function dTick(A,tr,v){ const now=performance.now();
-  if(D.phase==='ov'){ overlay(A,...(A.size||[1,1])); const act=D.cap.feed(A,now); $('hint').textContent=(D.msg?D.msg+' — ':'')+(A.ok?'весь лист в кадр: '+D.cap.hint(A):A.hints[0]);
-    if(act==='shot'||act==='done-shot'){ flash(); D.phase='wait'; D.ovThumb=A.thumb; grabImg(tr,v,FULL).then(im=>{ D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next(); }); } return; }
-  if(D.phase==='wait'){ $('hint').textContent='ищу чертежи на общем снимке…'; return; }
+  if(D.phase==='ov'){ overlay(A); const act=D.cap.feed(A,now), h=(D.msg?D.msg+' — ':'')+(A.ok?'весь лист в кадр: '+D.cap.hint(A):A.hints[0]);
+    setHint(h); $('camT').textContent='Весь лист'; $('camS').textContent='шаг 1 — найду на нём чертежи'; guide('sheet',A.ok);
+    tip(D.msg?cap1(D.msg):A.ok?'Весь лист в рамке — держите так…':cap1(A.hints[0]),D.msg?'warn':A.ok?'ok':'');
+    if(act==='shot'||act==='done-shot') ovShot(A,tr,v); return; }
+  if(D.phase==='wait'){ clearOv(); guide(null); const s=Math.round((Date.now()-D.t0)/1000); setHint('ищу чертежи на общем снимке…'); $('camT').textContent='Ищу чертежи…'; $('camS').textContent='можно опустить телефон';
+    tip('Смотрю снимок листа — где чертежи и насколько крупно'+(s>5?' · '+s+' с':''),'busy'); return; }
   if(D.phase!=='close') return; clearOv();
-  if(D.cur<0){ $('hint').textContent=D.pend.some(x=>x)?'проверяю снимки…':'готово'; return; }
-  const d=D.ov.drawings[D.cur], act=D.cap.feed(A,now);
-  $('hint').textContent='Чертёж '+(D.cur+1)+' из '+D.ov.drawings.length+' ('+d.pos+'): '+(A.ok?'поднесите телефон, чтобы чертёж занял весь кадр'+(D.msg?' · '+D.msg:A.soft&&A.soft[0]?' · '+A.soft[0]:''):A.hints[0]);
-  if(act==='shot'||act==='done-shot'){ flash(); const j=D.cur; D.pend[j]++; D.msg=''; D.cur=pick(j+1); drawMap();
-    grabImg(tr,v,FULL).then(im=>{ queue.push({mode:'close',want:j,img:{width:im.width,height:im.height,data:im.data}}); next(); }); } }
-function clearOv(){ const cv=$('ov'); cv.getContext('2d').clearRect(0,0,cv.width,cv.height); }
+  if(D.cur<0){ setHint(D.pend.some(x=>x)?'проверяю снимки…':'готово'); toWait(); return; }
+  const d=D.ov.drawings[D.cur], act=D.cap.feed(A,now), N=D.ov.drawings.length;
+  setHint('Чертёж '+(D.cur+1)+' из '+N+' ('+d.pos+'): '+(A.ok?'поднесите телефон, чтобы чертёж занял весь кадр'+(D.msg?' · '+D.msg:A.soft&&A.soft[0]?' · '+A.soft[0]:''):A.hints[0]));
+  $('camT').textContent='Чертёж '+(D.cur+1)+' из '+N; $('camS').textContent=d.pos+' — поднесите телефон ближе'; guide('close',A.ok);
+  tip(D.msg?cap1(D.msg):A.ok?(A.soft&&A.soft[0]?cap1(A.soft[0]):'Чертёж во весь кадр — держите так…'):cap1(A.hints[0]),D.msg?'warn':A.ok&&!(A.soft&&A.soft[0])?'ok':'');
+  if(act==='shot'||act==='done-shot') closeShot(tr,v); }
 /* ответ потока: общий снимок или снимок вблизи */
 function onDraw(m){ if(!D) return;
   if(m.overview||(m.error&&m.mode==='overview')){ const o=m.overview;
-    if(!o||!o.ok){ D.tries++; D.msg='чертежей не нашёл ('+(o?o.reason:m.error)+')'; D.phase='ov'; D.cap=C.Capturer({shots:1,max:1}); if(D.tries>=3){ D.msg+='. Снимите весь лист кнопкой «Выбрать фото»'; } return; }
+    if(!o||!o.ok){ D.tries++; D.msg='чертежей не нашёл'+(o&&o.reason?' ('+o.reason+')':''); D.phase='ov'; D.cap=C.Capturer({shots:1,max:1}); if(D.tries>=3){ D.msg+='. Загрузите фото листа кнопкой слева'; } return; }
     D.ov=o; D.sess=CU.Session({drawings:o.drawings,frames:o.frames}); D.pend=o.drawings.map(()=>0); D.phase='close'; D.cap=C.Capturer({shots:999,max:999,content:true,from:D.ovThumb});
     D.log.push('весь лист: чертежей '+o.drawings.length+', '+o.drawings.map(q=>q.ppm.toFixed(1).replace('.',',')).join(' / ')+' px/мм'+(Object.keys(o.frames).length?' (крупные проверены по нему)':''));
-    D.cur=pick(0); drawMap(); render(); if(D.cur<0) finish(); return; }
+    SC.toast('Нашёл '+o.drawings.length+' '+SC.plural(o.drawings.length,'чертёж','чертежа','чертежей')+' — теперь каждый крупно'); SC.vibrate(40);
+    D.cur=pick(0); drawMap(); progDots(); if(D.cur<0) finish(); return; }
   const j=m.want; D.pend[j]=Math.max(0,D.pend[j]-1); const c=m.close;
   if(m.error) D.sess.add(j,{ok:false,why:['сбой: '+m.error]});
   else if(c.ok) c.got.forEach(g=>{ D.sess.add(g.j,g.frame); D.log.push('чертёж '+(g.j+1)+': '+g.ppm.toFixed(1).replace('.',',')+' px/мм — '+(g.frame.verdict||'не прочитан')+(g.note?' ('+g.note+')':'')); });
-  else if(c.ppm!=null){ D.msg='чертёж '+(j+1)+' снят мелко ('+c.ppm.toFixed(1).replace('.',',')+' px/мм) — ближе'; D.log.push('чертёж '+(j+1)+': '+c.reason); }
+  else if(c.ppm!=null){ D.msg='чертёж '+(j+1)+' снят мелко — поднесите ближе'; D.log.push('чертёж '+(j+1)+': '+c.reason); }
   else { D.sess.add(j,{ok:false,why:[c.reason]}); D.log.push('чертёж '+(j+1)+': '+c.reason); }
-  if(D.cur<0) D.cur=pick(j+1); drawMap(); render();
+  /* снимок вблизи не взят — снова к камере */
+  if(D.cur<0) D.cur=pick(j+1); drawMap(); progDots();
+  if(D.phase==='wait2'){ if(D.cur>=0){ reopen(); return; } waitDraw(); }
   if(D.cur<0&&!D.pend.some(x=>x)) finish(); }
 /* карта листа поверх видео: снятые чертежи — зелёные, текущий — жёлтый */
-function drawMap(){ if(!D||!D.ov||!D.ovCanvas) return; const cv=$('map'), src=D.ovCanvas, k=360/Math.max(src.width,src.height); cv.width=Math.round(src.width*k); cv.height=Math.round(src.height*k); cv.hidden=false;
-  const ctx=cv.getContext('2d'); ctx.drawImage(src,0,0,cv.width,cv.height); ctx.lineWidth=3; ctx.font='bold 22px system-ui';
-  D.ov.drawings.forEach((d,j)=>{ const col=j===D.cur?'#ffcc33':!D.sess.need(j)?'#3fd07a':D.pend[j]?'#7fb0ea':'#ffffff'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.beginPath(); d.box.forEach((p,i)=>i?ctx.lineTo(p[0]*k,p[1]*k):ctx.moveTo(p[0]*k,p[1]*k)); ctx.closePath(); ctx.stroke(); ctx.fillText(String(j+1),d.c[0]*k-6,d.c[1]*k+8); }); }
-/* итог по чертежам: вердикт серии каждого, общий — «ошибка», если хоть один с ошибкой; «верно» — если все верны */
-function render(){ if(!D||!D.sess) return; const R=D.sess.result(); $('resCard').hidden=false;
-  const vs=R.map(r=>r.verdict), v=vs.includes('ошибка')?'ошибка':vs.includes('ошибка в данных')?'ошибка в данных':vs.length&&vs.every(x=>x==='верно'||x==='данные нанесены верно')?'верно':'не могу утверждать';
-  $('vtitle').textContent=v[0].toUpperCase()+v.slice(1); $('vtitle').className='verdict '+(/^верно|нанесены верно/.test(v)?'ok':/ошибка/.test(v)?'bad':'ref');
-  const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  $('vwhy').innerHTML=R.map(r=>'<li class="dr"><b>'+esc(r.title[0].toUpperCase()+r.title.slice(1))+(r.part?' · '+PNm[r.part]:'')+'</b>: '+esc(r.verdict)+' <span class="mute">(кадров '+r.read+' из '+r.n+(r.ppm?', от '+r.ppm.toFixed(1).replace('.',',')+' px/мм':'')+')</span>'+(r.part||r.verdict==='ошибка'?'<br>'+r.why.filter(Boolean).map(esc).join('<br>'):r.why.length?'<br>часть не опознана — вывода нет <details><summary class="mute">подробнее</summary>'+r.why.filter(Boolean).map(esc).join('<br>')+'</details>':'')+'</li>').join('');
-  $('frames').innerHTML=D.log.map(l=>'<div>'+esc(l)+'</div>').join('')+(queue.length||busy?'<div>проверяю…</div>':''); }
-function finish(){ D.phase='done'; stopCam(); render(); const cv=$('photo'); if(D.ovCanvas){ cv.width=D.ovCanvas.width; cv.height=D.ovCanvas.height; const ctx=cv.getContext('2d'); ctx.drawImage(D.ovCanvas,0,0);
-    const R=D.sess.result(), k=cv.width/900; ctx.lineWidth=4*k; ctx.font='bold '+(40*k)+'px system-ui';
-    D.ov.drawings.forEach((d,j)=>{ const col=R[j].verdict==='верно'?css('--green'):/ошибка/.test(R[j].verdict)?css('--red'):css('--amber'); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.beginPath(); d.box.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.stroke(); ctx.fillText(String(j+1),d.box[0][0]+8*k,d.box[0][1]+44*k); }); } }
-function stopCam(){ if(loop) clearTimeout(loop); loop=null; if(stream) stream.getTracks().forEach(t=>t.stop()); stream=null; $('camCard').hidden=true; }
-function reset(){ frames=[]; shots=[]; queue.length=0; done=false; prev=null; D=null; if(worker){ worker.terminate(); worker=null; busy=0; } $('resCard').hidden=true; }
-$('start').onclick=startCam; $('stop').onclick=stopCam;
-/* без камеры: несколько фото из галереи — та же серия */
-$('files').onchange=async e=>{ reset(); stopCam(); $('map').hidden=true; const fs=[...e.target.files].slice(0,MAX); for(const f of fs){ const b=await createImageBitmap(f), k=Math.max(1,Math.max(b.width,b.height)/LONG), c=document.createElement('canvas'); c.width=Math.round(b.width/k); c.height=Math.round(b.height/k);
-    const ctx=c.getContext('2d'); ctx.drawImage(b,0,0,c.width,c.height); const d=ctx.getImageData(0,0,c.width,c.height); submit({width:c.width,height:c.height,data:d.data}); } };
+function drawMap(){ if(!D||!D.ov||!D.ovCanvas) return; const cv=$('map'), src=D.ovCanvas, k=360/Math.max(src.width,src.height); cv.width=Math.round(src.width*k); cv.height=Math.round(src.height*k); cv.hidden=D.phase!=='close';
+  const ctx=cv.getContext('2d'); ctx.drawImage(src,0,0,cv.width,cv.height); ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,cv.width,cv.height); ctx.lineWidth=4; ctx.font='bold 34px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  D.ov.drawings.forEach((d,j)=>{ ctx.lineWidth=j===D.cur?8:4; const col=j===D.cur?'#ffcc33':!D.sess.need(j)?'#3fd07a':D.pend[j]?'#7fb0ea':'#ffffff'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.beginPath(); d.box.forEach((p,i)=>i?ctx.lineTo(p[0]*k,p[1]*k):ctx.moveTo(p[0]*k,p[1]*k)); ctx.closePath(); ctx.stroke(); ctx.fillText(String(j+1),d.c[0]*k,d.c[1]*k); }); }
+/* все чертежи сняты, снимки ещё проверяются — экран ожидания по чертежам */
+function toWait(){ if(D.phase!=='close') return; D.phase='wait2'; stopCam(); waitDraw(); }
+function waitDraw(){ const N=D.ov.drawings.length;
+  if(!W){ W=SC.Wait({img:D.ovCanvas,title:'Проверяю чертежи',sub:'Снимки сделаны. Проверка идёт здесь, на устройстве.',steps:[{k:'sheet',t:'Снял весь лист'},{k:'find',t:'Нашёл '+N+' '+SC.plural(N,'чертёж','чертежа','чертежей')}].concat(D.ov.drawings.map((d,j)=>({k:'d'+j,t:'Чертёж '+(j+1)+' — '+d.pos})),[{k:'done',t:'Собираю результат'}])}); SC.screen('scrWait'); W.set('find','done'); }
+  D.ov.drawings.forEach((d,j)=>W.set('d'+j,D.pend[j]?'now':'done',{small:D.pend[j]?'проверяю':D.sess.fr[j].length?'снимков '+D.sess.fr[j].length:''})); }
+function reopen(){ if(W){ W.stop(); W=null; } openCam().then(tr=>{ if(!tr) return; D.phase='close'; D.cap=C.Capturer({shots:999,max:999,content:true}); drawMap(); progDots(); runLoop(tr,$('video')); }); }
+/* итог по чертежам: вердикт серии каждого (closeup.js), лист — общий снимок с рамками и номерами */
+function finish(){ D.phase='done'; stopCam(); if(W){ W.set('done','done'); W.stop(); W=null; } const R=D.sess.result();
+  /* пересъёмка после фото: переснятый чертёж — по новым снимкам, остальные — как были */
+  if(D.base){ const r=R[D.only], b=D.base.slice(), i=D.baseI; b[i]=Object.assign({},b[i],{verdict:r.verdict,why:r.why.filter(Boolean),parts:r.parts,part:r.part||b[i].part,ex:null,svg:null,sub:'переснят крупно · снимков '+r.read+' из '+r.n});
+    D=null; UP.ds=b; showUp(); SC.toast('Чертёж '+(i+1)+' перепроверен'); return; }
+  const ds=SC.fromSession(R,D.ov.drawings);
+  D.only=null; SC.renderResult({ds,src:D.ovCanvas,variant:nVal(),onReshoot:reshoot,onNew:toStart,log:D.log,tech:JSON.stringify(R.map(r=>({вердикт:r.verdict,части:r.parts,кадров:r.read+'/'+r.n})),null,1),
+    note:'Вывод по части — только если его подтвердили несколько снимков этого чертежа с разных углов.'}); }
+/* переснять один чертёж: камера сразу просит его, прежние снимки этого чертежа — не в счёт */
+function reshoot(j){ if(D&&D.ov&&D.sess){ D.only=j; D.sess.fr[j].length=0; D.pend[j]=0; D.cur=j; D.phase='wait2'; reopen(); return; }
+  if(UP) return upReshoot(j); SC.toast('Это пример — переснять можно настоящий лист'); }
+
+function stopCam(){ if(loop) clearTimeout(loop); loop=null; if(stream) stream.getTracks().forEach(t=>t.stop()); stream=null; $('camCard').hidden=true; document.body.style.overflow=''; }
+function reset(){ frames=[]; shots=[]; queue.length=0; done=false; prev=null; D=null; UP=null; if(W){ W.stop(); W=null; } if(worker){ worker.terminate(); worker=null; busy=0; } }
+function toStart(){ stopCam(); reset(); SC.screen('scrStart'); }
+$('start').onclick=startCam;
+$('stop').onclick=()=>{ const d=D; stopCam(); if(d&&d.ov&&d.sess&&(d.phase==='close'||d.phase==='wait2')){ if(d.pend.some(x=>x)){ d.phase='wait2'; waitDraw(); } else finish(); return; }
+  if(!d&&frames.length){ done=true; if(!busy&&!queue.length) seriesResult(SR.combine(frames)); else { W=SC.Wait({img:shots[0]&&shots[0].img,steps:[{k:'photo',t:'Кадры сняты'},{k:'check',t:'Проверяю кадры'},{k:'done',t:'Собираю результат'}]}); SC.screen('scrWait'); W.set('check','now'); } return; }
+  toStart(); };
+$('camErrX').onclick=toStart;
+
+/* ── фото или PDF (ноутбук; или если камеры нет): один снимок листа → поток → результат ── */
+let UP=null;
+async function upload(f){ if(!f) return; stopCam(); reset(); let src; try{ src=await SC.fileToCanvas(f,LONG); }catch(e){ SC.toast(e.message||'Файл не открылся'); SC.screen('scrStart'); return; }
+  checkSheet(src); }
+function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo};
+  W=SC.Wait({img:src,steps:SC.waitSteps(),cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('sheet','now');
+  ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } W.set('done','done'); W.stop(); W=null;
+    if(m.error){ SC.toast('Сбой проверки: '+m.error.split('\n')[0]); }
+    UP.r=m; showUp(); };
+  worker.postMessage({img:SC.imageData(src),dz:3,n,paper:demo?'plain':'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
+function showUp(){ const r=UP.r||{}, ds=UP.ds||(r.cam?SC.fromSession(r.R,r.ov.drawings):SC.fromWorker(r));
+  SC.renderResult({ds,src:UP.src,variant:UP.n||null,demo:UP.demo,onReshoot:UP.demo?()=>SC.toast('Это пример — переснять можно настоящий лист'):reshoot,onNew:toStart,
+    onRerun:UP.demo&&!r.cam?()=>{ const s=UP.src, d=UP.demo; reset(); checkSheet(s,d); }:null,
+    note:UP.demo?(r.cam?'Съёмка по чертежам на синтетическом листе (lab/dz/quadsynth.js): общий снимок и каждый чертёж вблизи, с разных углов — проверено этим же сканером.':'Синтетический лист (lab/dz/quadsynth.js), проверен этим же сканером. «Проверить заново» — проверка прямо сейчас, на этом устройстве (до нескольких минут).'):(r.ms?'Проверено за '+Math.round(r.ms/1000)+' с на этом устройстве.':''),
+    log:r.log, tech:JSON.stringify({вердикт:r.verdict,этап:r.stage,причины:r.why,чертежи:(r.drawings||[]).map(d=>({вердикт:d.verdict,причины:d.why}))},null,1)}); }
+/* переснять чертёж после фото: общий снимок — потоку (он запоминает чертежи), затем камера к нужному */
+function upReshoot(i){ const u=UP, src=u.src, n=nVal(); if(!n){ SC.toast('Укажите номер варианта — тогда перепроверю чертёж отдельно'); return; }
+  const ds=u.ds||SC.fromWorker(u.r), f=ds[i]&&ds[i].fig, fc=f?[].concat(...f).reduce((a,p,_,A)=>[a[0]+p[0]/A.length,a[1]+p[1]/A.length],[0,0]):null;
+  W=SC.Wait({img:src,title:'Готовлю пересъёмку',steps:[{k:'find',t:'Вспоминаю, где чертежи'},{k:'cam',t:'Включаю камеру'}]}); SC.screen('scrWait'); W.set('find','now');
+  D={phase:'wait2',pend:[],log:[],tries:0,msg:'',ovCanvas:src}; ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress) return; busy=0;
+    const o=m.overview; if(!o||!o.ok){ D=null; SC.toast('Не нашёл чертежи на фото — снимите лист заново'); showUp(); return; }
+    let j=0; if(fc){ let b=1e18; o.drawings.forEach((d,k)=>{ const v=Math.hypot(d.c[0]-fc[0],d.c[1]-fc[1]); if(v<b){ b=v; j=k; } }); }
+    D.ov=o; D.sess=CU.Session({drawings:o.drawings,frames:{}}); D.pend=o.drawings.map(()=>0); D.only=j; D.cur=j; D.ovThumb=null;
+    /* после пересъёмки — обычный итог по чертежам; остальные чертежи берут вердикт из проверки фото */
+    D.base=ds; D.baseI=i; worker.onmessage=e2=>{ const m2=e2.data; if(m2&&m2.progress) return; busy--; onDraw(m2); next(); }; reopen(); };
+  worker.postMessage({mode:'overview',img:SC.imageData(src),dz:3,n,answers:{}}); }
+$('file').onchange=$('file2').onchange=$('file3').onchange=$('file4').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; upload(f); };
+SC.dropZone($('drop'),upload);
+
+/* ── примеры: готовые синтетические листы, без камеры и без интернета ── */
+SC.examples().then(list=>SC.renderExamples($('exList'),list,async x=>{ reset(); try{ const {r,src}=await SC.loadExample(x); $('n').value=x.n; showVar(); UP={src,n:x.n,demo:x.name,r}; showUp(); }catch(e){ SC.toast('Пример не загрузился'); } }));
+addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('camCard').hidden) $('stop').click(); });
 </script>
 </body>
 </html>
