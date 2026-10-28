@@ -266,6 +266,11 @@ function run(F,opt){
       const inv=f.M, det=inv.a*inv.d-inv.b*inv.c, x=p[0]-inv.e, y=p[1]-inv.f, lp=svgPt(f.el,(inv.d*x-inv.c*y)/det,(-inv.b*x+inv.a*y)/det);
       if(f.el.isPointInFill(lp)) (axis==='v'?p[0]:p[1])<(axis==='v'?box.ax:box.ay)?a++:b++; } return [a,b]; };
   const axLines=chains;   /* оси — целиком, из всех кусков */
+  /* симметрична ли деталь слева направо (по 3D-модели, если она есть): у несимметричной половина разреза справа от вертикальной оси невозможна —
+     так различаем раскладки вида сверху, когда штриховка по одну сторону от обеих осей */
+  const lrSym=opt.model&&window.IG3?(()=>{ const b=opt.model.box, T=opt.model.tree; let bad=0, sd=777; const rnd=()=>(sd=(sd*1103515245+12345)%2147483648)/2147483648;
+    for(let i=0;i<4000&&bad<5;i++){ const x=b[0][0]+rnd()*(b[1][0]-b[0][0]), y=b[0][1]+rnd()*(b[1][1]-b[0][1]), z=b[0][2]+rnd()*(b[1][2]-b[0][2]); if((IG3.J(T,x,y,z)<0)!==(IG3.J(T,-x,y,z)<0)) bad++; }
+    return bad<5; })():null;
   [FV,LV,TV].forEach((w,wi)=>{ if(!w) return; const H=hatchOf(w); if(!H.length) return; const cx=(w.b[0]+w.b[2])/2, cy=(w.b[1]+w.b[3])/2;
     const vx=axLines.find(it=>{ const P=it.polys[0]; return Math.abs(P[0][0]-P[1][0])<0.05*k&&Math.abs(P[0][0]-cx)<1*k&&Math.min(P[0][1],P[1][1])<w.b[1]&&Math.max(P[0][1],P[1][1])>w.b[3]; });
     const hy=axLines.find(it=>{ const P=it.polys[0]; return Math.abs(P[0][1]-P[1][1])<0.05*k&&Math.abs(P[0][1]-cy)<1*k&&Math.min(P[0][0],P[1][0])<w.b[0]&&Math.max(P[0][0],P[1][0])>w.b[2]; });
@@ -273,18 +278,20 @@ function run(F,opt){
     let L=0,Rr=0,U=0,D=0; H.forEach(f=>{ const v=fillArea(f,box,'v'), h=fillArea(f,box,'h'); L+=v[0]; Rr+=v[1]; U+=h[0]; D+=h[1]; });
     const name=['главном виде','виде слева','виде сверху'][wi];
     /* разрез только с одной стороны оси — это половина разреза: справа от вертикальной оси или снизу от горизонтальной */
-    const half=wi===2?(U+D>0&&Math.min(U,D)<0.08*(U+D)?(U>D?'up':'down'):null):(L+Rr>0&&Math.min(L,Rr)<0.08*(L+Rr)?(L>Rr?'left':'right'):null);
-    if(wi<2&&half==='left'&&vx) add('2.305','половина разреза — справа от оси','на '+name+' разрез слева от оси симметрии',[box.ax-5*k,cy]);
-    if(wi===2&&half==='up'&&hy) add('2.305','половина разреза — снизу от оси','на '+name+' разрез сверху от оси',[cx,box.ay-5*k]);
+    /* на виде сверху граница бывает и вертикальной осью (разрез справа), и горизонтальной (разрез снизу) — v: по вертикальной оси */
+    const hV=L+Rr>0&&Math.min(L,Rr)<0.08*(L+Rr)?(L>Rr?'left':'right'):null, hH=U+D>0&&Math.min(U,D)<0.08*(U+D)?(U>D?'up':'down'):null;
+    const v=wi<2||!!hV&&(!hH||lrSym===true), half=v?hV:hH;
+    if(v&&half==='left'&&vx) add('2.305','половина разреза — справа от оси','на '+name+' разрез слева от оси симметрии',[box.ax-5*k,cy]);
+    if(!v&&half==='up'&&hy) add('2.305','половина разреза — снизу от оси','на '+name+' разрез сверху от оси',[cx,box.ay-5*k]);
     /* на половине вида невидимый контур не проводят */
-    if(half){ const hid=segAll.filter(q=>w.ids.includes(q.it.view)&&q.it.kind==='dash'), side=q=>{ const m=[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]; return wi<2?(half==='right'?m[0]<box.ax-0.5*k:m[0]>box.ax+0.5*k):(half==='down'?m[1]<box.ay-0.5*k:m[1]>box.ay+0.5*k); };
+    if(half){ const hid=segAll.filter(q=>w.ids.includes(q.it.view)&&q.it.kind==='dash'), side=q=>{ const m=[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]; return v?(half==='right'?m[0]<box.ax-0.5*k:m[0]>box.ax+0.5*k):(half==='down'?m[1]<box.ay-0.5*k:m[1]>box.ay+0.5*k); };
       const bad=hid.filter(side); const len=bad.reduce((a,q)=>a+dist(q.a,q.b),0); if(len>3*k) add('2.305','на половине вида — без невидимого контура','на '+name+' штриховые линии на половине вида ('+mm(len)+' мм)',bad[0].a); }
     /* ребро на оси симметрии (ГОСТ 2.305, соединение половины вида и половины разреза): если с осью совпадает ребро, вид от разреза
        отделяют сплошной волнистой линией, смещённой так, чтобы ребро было видно (внутреннее — в разрезе, наружное — на виде).
        По листу: граница волнистая → по оси идёт сплошная основная (ребро нарисовано; если волнистая не с той стороны, ребро
        оказывается на половине вида без невидимого контура или в срезанной части — и пропадает); ребро по оси есть → граница
        волнистая, а не ось (иначе ребро сливается со штрихпунктиром). u — координата поперёк оси, v — вдоль */
-    if(half&&(wi<2?vx:hy)){ const U=p=>wi<2?p[0]:p[1], V=p=>wi<2?p[1]:p[0], ax0=wi<2?box.ax:box.ay, lo=wi<2?w.b[1]:w.b[0], hi=wi<2?w.b[3]:w.b[2];
+    if(half&&(v?vx:hy)){ const U=p=>v?p[0]:p[1], V=p=>v?p[1]:p[0], ax0=v?box.ax:box.ay, lo=v?w.b[1]:w.b[0], hi=v?w.b[3]:w.b[2];
       const cand=items.filter(it=>it.curve&&it.kind==='thin'&&(w.ids.includes(it.view)||it.view<0)&&it.polys.length);
       /* волнистая этого изображения: узкая поперёк оси, длинная вдоль, рядом с осью и большей частью в пределах изображения */
       const wav=cand.filter(it=>{ const P=[].concat(...it.polys), us=P.map(U), vs=P.map(V), v0=Math.min(...vs), v1=Math.max(...vs);
@@ -298,7 +305,7 @@ function run(F,opt){
       wav.forEach(it=>{ const P=[].concat(...it.polys), vs=P.map(V), um=P.reduce((s,p)=>s+U(p),0)/P.length, v0=Math.min(...vs), v1=Math.max(...vs);
         if(Math.abs(um-ax0)<1*k) add('2.305','волнистая граница смещена от оси','на '+name+' волнистая линия лежит на оси симметрии — её смещают так, чтобы ребро на оси было видно',P[0]);
         else if(axLen(v0,v1)<Math.min(3*k,0.2*(v1-v0))) add('2.305','ребро на оси видно','на '+name+' граница вида и разреза — волнистая линия, а сплошного ребра по оси нет: волнистая смещена не в ту сторону или ребро не нарисовано',P[Math.floor(P.length/2)]); });
-      if(!wav.length&&axLen(lo,hi)>=3*k) add('2.305','ребро на оси — граница волнистой линией','на '+name+' по оси симметрии идёт ребро ('+mm(axLen(lo,hi))+' мм), а граница вида и разреза — сама ось: ребро сливается с осью',wi<2?[ax0,(lo+hi)/2]:[(lo+hi)/2,ax0]); } });
+      if(!wav.length&&axLen(lo,hi)>=3*k) add('2.305','ребро на оси — граница волнистой линией','на '+name+' по оси симметрии идёт ребро ('+mm(axLen(lo,hi))+' мм), а граница вида и разреза — сама ось: ребро сливается с осью',v?[ax0,(lo+hi)/2]:[(lo+hi)/2,ax0]); } });
 
   /* ── ГОСТ 2.306: штриховка ── */
   if(hatch.length){ const P0=hatch[0].pat; hatch.forEach(f=>{ const p=f.pat;
@@ -388,7 +395,7 @@ function run(F,opt){
   { const used=labs.map(t=>t.s[0]); const dup=used.filter((L,i)=>used.indexOf(L)!==i); dup.forEach(L=>add('2.305','буквы не повторяются','«'+L+'–'+L+'» дважды',labs.find(t=>t.s[0]===L).c)); }
 
   /* ── сверка с 3D-моделью ── */
-  if(opt.model&&window.NORMO_MODEL) NORMO_MODEL(F,opt.model,{k,FV,LV,TV,segAll,items,fills,hatch,add,opt,axLines:chains,marks,labs});
+  if(opt.model&&window.NORMO_MODEL) NORMO_MODEL(F,opt.model,{k,FV,LV,TV,segAll,items,fills,hatch,add,opt,axLines:chains,marks,labs,lrSym});
   return {k,fmt:F.fmt,views:F.views,s:R(s,2),model:F.modelStats,review:F.review||[],issues}; }
 
 window.NORMO={check,flatten};

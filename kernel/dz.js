@@ -49,7 +49,7 @@ function methodText(d){ const m=d&&d.method; if(!m) return strip([d&&d.short,d&&
     (m.mistakes||[]).join(' '),(m.defense||[]).map(q=>q.q+' '+q.a).join(' ')].join(' ')); }
 self.NGHW={
   /* для поиска: по записи на ДЗ */
-  list(){ return DZR.list().map(d=>({n:(d.course==='ig'?'ИГ №':'№')+d.num,title:d.title,kw:(d.kw||[]).join('; '),body:methodText(d),href:d.href?d.href():'#/dz/'+d.id})); },
+  list(){ return DZR.list().map(d=>({n:(d.course==='ig'?'ИГ №':'№')+d.num,title:d.title,kw:(d.kw||[]).join('; '),body:methodText(d),href:d.href?d.href():'#/'+d.course+'/dz/'+d.num})); },
   get(id){ id=norm(id); const L=LEGACY[id], d=L&&DZR.get(L[0]); if(!d) return null; const task=exampleTask(id);
     return {n:id,id,dz:L[0],type:L[1],num:'№'+(id==='2'?'2а':id==='2b'?'2б':id==='2c'?'2в':id==='4a'?'4а':id==='4b'?'4б':id),title:d.title,task,body:methodText(d),steps:task?(task.parts||[task]).reduce((s,p)=>s+(p.steps||[]).length,0):0}; },
   /* разбор на данных D программой примера (HW.calcOf / HW.taskOf); пример сайта при этом не меняется */

@@ -1818,7 +1818,7 @@ html.ovs-open,html.ovs-open body{overflow:hidden}
 .hw-l.l3{border-color:color-mix(in srgb,var(--acc) 45%,var(--line))}
 .hw-l.l4>summary{color:var(--green)}
 .hw-l.l5>summary{color:var(--acc)}
-/* ── раздел «ДЗ» (#/dz) ── */
+/* ── раздел «ДЗ» (#/ng/dz, #/ig/dz) ── */
 .dz-go{display:grid;grid-template-columns:1fr 84px auto;gap:8px;align-items:center;padding:14px;border-radius:var(--r2);background:var(--surf);border:1.5px solid color-mix(in srgb,var(--acc) 40%,var(--line));margin:var(--s4) 0}
 .dz-go b{grid-column:1/-1;font-size:15px}
 .dz-go select,.dz-go input{min-width:0;height:44px;padding:0 10px;border-radius:12px;border:1px solid var(--line2,var(--bd));background:var(--surf2);color:var(--ink);font:500 15px var(--sans)}
@@ -1837,6 +1837,29 @@ a.dz-card:hover,.dz-card:has(.dz-cm:hover){border-color:var(--acc)}
 .dz-types i{flex:none;min-width:44px;font:600 12px var(--mono);font-style:normal;color:var(--mut)}
 .dz-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--line)}
 .dz-st{font:600 12px var(--mono);color:var(--mut)}.dz-st.ok{color:var(--green)}.dz-st.work{color:var(--amber)}
+.dz-beta{display:inline-block;vertical-align:middle;margin-left:8px;padding:3px 8px 2px;border-radius:8px;background:var(--red);color:#fff;font:800 11px/1.2 var(--mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;position:relative;top:-2px}
+h1 .dz-beta{font-size:12px;top:-4px}
+.igx-beta.dz-betab{background:color-mix(in srgb,var(--red) 6%,var(--surf));border-color:color-mix(in srgb,var(--red) 30%,var(--line))}.igx-beta.dz-betab i{background:var(--red)}
+.dzi-list{display:grid;gap:14px;margin:var(--s4) 0}
+.dzi{border-radius:20px;background:var(--surf);border:1.5px solid var(--line);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.dzi:hover{border-color:var(--acc);box-shadow:0 14px 30px -20px rgba(37,99,235,.7)}
+.dzi-main{display:grid;grid-template-columns:132px 1fr;gap:14px;align-items:center;padding:14px;text-decoration:none;color:inherit}
+.dzi-img{display:block;width:132px;height:150px;border-radius:12px;overflow:hidden;background:#fff;border:1px solid var(--line)}.dzi-img img{display:block;width:100%;height:100%;object-fit:contain}
+.dzi-t{display:flex;flex-direction:column;gap:5px;min-width:0}
+.dzi-k{font:700 12px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--acc)}
+.dzi-t b{font-family:var(--disp);font-size:20px;line-height:1.2;color:var(--ink)}
+.dzi-t small{font-size:13.5px;line-height:1.45;color:var(--ink2)}
+.dzi-go{align-self:flex-start;margin-top:6px;min-height:44px}
+.dzi-mine{display:block;padding:12px 16px;border-top:1px solid var(--line);font-weight:700;color:var(--acc);text-decoration:none;background:var(--surf2)}
+.dzi-other{margin:var(--s4) 0;font-size:15px;color:var(--ink2)}.dzi-other a{font-weight:700}
+@media (max-width:520px){.dzi-main{grid-template-columns:96px 1fr;gap:12px}.dzi-img{width:96px;height:120px}.dzi-t b{font-size:18px}.dzi-t small{display:none}}
+.dzwrap .igx-back+.intro{margin-top:14px}.dz-find{margin-top:var(--s4)}.dz-find .btn{min-height:44px;padding:0 22px}
+.dz-pick{margin:var(--s4) 0 10px;font-size:17px}
+.dz-vgrid .igx-img{aspect-ratio:4/5}.dz-vgrid small{font-size:12px;line-height:1.3;color:var(--ink2);text-align:center}
+.dz-need{margin-top:var(--s4)}
+.dz-more{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin:0 0 var(--s4)}
+.dz-more a{display:flex;flex-direction:column;gap:3px;padding:14px 16px;border-radius:16px;background:var(--surf);border:1px solid var(--line);text-decoration:none;color:inherit}.dz-more a:hover{border-color:var(--acc)}
+.dz-more b{color:var(--acc);font-size:16px}.dz-more span{font-size:13.5px;color:var(--ink2)}
 .dz-acts{display:flex;gap:12px;flex-wrap:wrap}.dz-acts a{font-size:14px;font-weight:600;color:var(--blue-ink,var(--acc));text-decoration:none}
 .dz-my{color:var(--acc)!important}
 .dz-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-right:calc(-1*var(--s3,12px));padding-right:var(--s3,12px)}
@@ -2469,6 +2492,9 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .igh-c{display:flex;flex-direction:column;gap:6px;padding:18px;border-radius:18px;background:var(--surf);border:1px solid color-mix(in srgb,var(--acc) 35%,var(--line));color:var(--ink);text-decoration:none;box-shadow:0 14px 30px -24px rgba(10,88,200,.8)}
 .igh-c b{font:800 20px/1.2 var(--disp)}.igh-c p{margin:0;color:var(--ink2);font-size:14.5px;line-height:1.5}.igh-a{margin-top:auto;padding-top:6px;font-weight:800;color:var(--acc)}
 .igh-learn .igh-k{color:var(--green)}
+.igh-dz{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:12px 0}
+.igh-dz a{display:flex;flex-direction:column;gap:4px;padding:14px 18px;border-radius:16px;background:var(--surf);border:1.5px solid var(--line);color:var(--ink);text-decoration:none}.igh-dz a:hover{border-color:var(--acc)}
+.igh-dz b{font-size:17px}.igh-dz small{font-size:14px;color:var(--ink2)}.igh-dz em{font-style:normal;font-weight:800;color:var(--acc);margin-top:4px}
 .igh-th{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:16px;background:var(--surf);border:1px solid var(--line);color:var(--ink);text-decoration:none}.igh-th span{color:var(--mut);font-size:13.5px;flex:1}.igh-th i{font-style:normal;font-weight:800;color:var(--acc)}
 @media(max-width:640px){.igh-th{flex-wrap:wrap}.igh-th span{flex-basis:100%;order:3}}
 .igx-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -6336,6 +6362,7 @@ return {has,html,bind,SPEC,ans3};
 <script src="dz/ng/3/solver.js"></script>
 <script src="dz/ng/4/variants.js"></script>
 <script src="dz/ng/4/method.js"></script>
+<script src="dz/ng/4/surf.js"></script>
 <script src="dz/ng/4/solver.js"></script>
 <script src="dz/ng/5/variants.js"></script>
 <script src="dz/ng/5/method.js"></script>
@@ -23065,7 +23092,7 @@ function pairUp(cand,segs,seen,key,prof,ctx,nameAt){
 }
 function model(items,regItems){
   const RI=regItems||items, prof=RI.some(i=>i&&(i.t==='axis3'||(i.t==='pt'&&i.l&&isProf(i.l))));
-  const CS=coordSet(RI), pts={}, segs=[], polys=[], flat=[], dots=[], seen=new Set(), R=registry(RI,CS), ctx=prof?null:liftCtx(RI), cand=[];
+  const CS=coordSet(RI), pts={}, segs=[], polys=[], flat=[], dots=[], meshes=[], seen=new Set(), R=registry(RI,CS), ctx=prof?null:liftCtx(RI), cand=[];
   /* точка в пространстве — по двум её проекциям на чертеже (как строит студент): x — по линии связи, y — из ′, z — из ″ */
   const PJ={}; const collect=(arr,into)=>arr.forEach(i=>{ if(i&&i.t==='pt'&&i.at&&i.l) strip(i.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)([′″])\)?$/.exec(l.trim()); if(m&&m[1].length<5){ const o=into[m[1]]=into[m[1]]||{}; if(!o[m[2]]) o[m[2]]=i.at; } }); });
   collect(items||[],PJ); const PJF={}; collect(RI,PJF);
@@ -23092,6 +23119,9 @@ function model(items,regItems){
       else { const pl=planeOf(it,path); if(!pl) return; ls=fixed(path,pl); } }
     if(ls.length) flat.push({ls,k:it.k||'main',g:it._g||'given'}); };
   (items||[]).forEach(it=>{ if(!it) return;
+    /* тела задачи — сетка треугольников в пространстве (только для 3D; на эпюре и листе её нет) */
+    if(it.t==='mesh3'){ if(it.tris&&it.tris.length) meshes.push({tris:it.tris,col:it.col||'#b9a77a',g:it._g||'given'}); return; }
+    if(it.k==='ghost'&&it.open3d) return;   /* бледные очерки «дано» — в 3D вместо них сами тела */
     if(it.t==='pt'&&it.at&&it.l){
       if(it.at._3) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)[′″]\)?$/.exec(l.trim()); if(m&&m[1].length<5){ const o=pts[m[1]];
         const p3=recon(m[1])||(verified(it.at,CS)?it.at._3:null);
@@ -23111,7 +23141,7 @@ function model(items,regItems){
       const pth=it.t==='line'?extendP(it.a,it.b,it.e0===undefined?14:it.e0,it.e1===undefined?14:it.e1):[it.a,it.b];
       if((it.t==='seg'||it.t==='line')&&/^(main|hid|res|resd|grn|grnd)$/.test(it.k||'main')) cand.push({a:pth[0],b:pth[1],k:it.k||'main',g:it._g||'given',l:strip(it.l||'').trim()});
       F(it,pth); return; }
-    if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)){ polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill}); return; }
+    if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)){ polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill,open:!!it.open3d}); return; }
       F(it,it.p,it.close!==false); return; }
     if(it.t==='curve'&&it.p) F(it,it.p,false);
     else if(it.t==='arc'&&it.c) F(it,arcP(it),false);
@@ -23121,7 +23151,7 @@ function model(items,regItems){
   /* подписанная точка, чья проекция (″ или ′) стоит в этом месте чертежа */
   const nameAt=(q,mk)=>{ for(const src of [PJ,PJF]) for(const nm in src){ const o=src[nm][mk]; if(o&&Math.hypot(o[0]-q[0],o[1]-q[1])<1) return nm; } return null; };
   pairUp(cand,segs,seen,key,prof,ctx,nameAt);
-  return {pts,segs,polys,flat,dots,prof};
+  return {pts,segs,polys,flat,dots,prof,meshes};
 }
 function has(part){ try{ const all=PLAYER.scene(part,(part.steps||[]).length).items, m=model(all); return Object.keys(m.pts).length>=2||m.segs.length>=2; }catch(e){ return false; } }
 /* ── окно ──
@@ -23136,7 +23166,7 @@ function open(t,pi,k){
   const fullItems=PLAYER.scene(part,n).items, full=model(fullItems), cache={};
   const M=kk=>cache[kk]||(cache[kk]=model(PLAYER.scene(part,kk).items,fullItems));
   /* рамка по всей задаче — при смене шага и вращении масштаб не прыгает */
-  const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p),...full.flat.map(o=>[].concat(...o.ls)),full.dots.map(d=>d.p));
+  const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p),...full.flat.map(o=>[].concat(...o.ls)),full.dots.map(d=>d.p),...full.meshes.map(o=>[].concat(...o.tris)));
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(0,...all.map(p=>p[i])));
   const pad=[0,1,2].map(i=>Math.max(6,(mx[i]-mn[i])*0.08)); for(let i=0;i<3;i++){ mn[i]-=pad[i]; mx[i]+=pad[i]; }
   const C=[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];
@@ -23239,7 +23269,15 @@ function open(t,pi,k){
       put(nw,hid(mid3([s.a[0],s.a[1],0],[s.b[0],s.b[1],0])),ln([s.a[0],s.a[1],0],[s.b[0],s.b[1],0],{c:col,w:.9,o:.5}));
       put(nw,hid(mid3([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]])),ln([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]],{c:col,w:.9,o:.5})); });
     /* грани */
-    m.polys.forEach(o=>{ const col=COL[o.k]||COL.main, c=o.p.reduce((s,p)=>[s[0]+p[0]/o.p.length,s[1]+p[1]/o.p.length,s[2]+p[2]/o.p.length],[0,0,0]); put(o.g==='new',hid(c),polyS(o.p,col,o.g==='new'?.3:.18,col)); });
+    m.polys.forEach(o=>{ const col=COL[o.k]||COL.main;
+      /* открытая линия в пространстве (кривая пересечения, очерк) — ломаной, без заливки */
+      if(o.open){ const nw=o.g==='new', dsh=/d$|^hid$/.test(o.k); for(let i=1;i<o.p.length;i++) seg3(o.p[i-1],o.p[i],{c:col,w:nw?1.7:1.2,d:dsh?'5 3':null},nw); return; }
+      const c=o.p.reduce((s,p)=>[s[0]+p[0]/o.p.length,s[1]+p[1]/o.p.length,s[2]+p[2]/o.p.length],[0,0,0]); put(o.g==='new',hid(c),polyS(o.p,col,o.g==='new'?.3:.18,col)); });
+    /* тела: треугольники от дальних к ближним, освещение — от зрителя и чуть сверху */
+    let mesh=''; if(m.meshes.length){ const Lt=(()=>{ const v=[-D[0],-D[1],-D[2]+0.7], l=Math.hypot(...v)||1; return v.map(x=>x/l); })(), T3=[];
+      m.meshes.forEach(o=>{ const rgb=[1,3,5].map(i=>parseInt(o.col.slice(i,i+2),16)); o.tris.forEach(t=>{ const q=t.map(P), nr=crs(sub(t[1],t[0]),sub(t[2],t[0])), nl=Math.hypot(...nr)||1;
+        const sh=0.5+0.5*Math.abs(dot(nr,Lt))/nl; T3.push({d:(q[0][2]+q[1][2]+q[2][2])/3,s:`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke-width=".35" fill-opacity=".8" stroke-opacity=".8"/>`}); }); });
+      T3.sort((a,b)=>b.d-a.d); mesh='<g class="t3d-mesh">'+T3.map(x=>x.s).join('')+'</g>'; }
     /* построения на плоскостях проекций (как на эпюре) */
     m.flat.forEach(o=>{ const col=COL[o.k]||COL.main, nw=o.g==='new'; o.ls.forEach(l=>{ for(let i=0;i<l.length-1;i++){ const a=l[i], b=l[i+1], h=hid(mid3(a,b));
       put(nw,h,ln(a,b,{c:col,w:nw?1.15:.8,o:nw?1:.65})); } }); });
@@ -23280,7 +23318,7 @@ function open(t,pi,k){
       +`<radialGradient id="t3bgG" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="var(--t3bg)"/><stop offset="1" stop-color="var(--t3bg)"/></radialGradient></defs>`;
     return defs+`<rect width="${S.VW}" height="${S.VH}" fill="url(#t3bgG)"/>`
       +`<g opacity="${(.5*fadeOld).toFixed(2)}">`+Lr.ho+`</g><g opacity=".55">`+Lr.hn+`</g>`
-      +planes+`<g opacity="${fadeOld}">`+Lr.vo+`</g>`+Lr.vn+sel+labels; };
+      +planes+mesh+`<g opacity="${fadeOld}">`+Lr.vo+`</g>`+Lr.vn+sel+labels; };
   /* плавный переход к виду */
   const cen=(yaw,pit)=>{ const c=spanC(yaw,pit); return {yaw,pit,zoom:1,px:-c.cu*S.sc,py:(S.cy0||0)+c.cv*S.sc}; };
   const views={home:()=>(S.moved=false,HOME),front:()=>cen(0,0),top:()=>cen(0,Math.PI/2)};
@@ -25014,19 +25052,23 @@ const SUBJ={
 /* главное меню = главные задачи студента: найти решение, готовиться к РК, понять ДЗ, разобраться в теме */
 const NAVS=[
   {id:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ng/tasks'},
-  {id:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},
+  {id:'hw',name:'ДЗ',short:'ДЗ',h:'#/ng/dz'},
   {id:'rk',name:'РК',short:'РК',h:'#/ng/rk2'},
   {id:'th',name:'Теория',short:'Теория',h:'#/ng/path'},
   {id:'ep',name:'3D-модель',short:'3D',h:'#/epure',hide:true},
   {id:'ig',name:'Инж. графика',short:'ИГ',h:'#/ig',soon:true}];
-const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
+const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ',short:'ДЗ',h:'#/ig/dz'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
 const subjOf=r=>r&&r.s==='dz'?(r.tab?(/^ig/.test(r.tab)&&IGON()?'ig':'ng'):(NAVSUBJ||'ng')):(r&&(r.s==='ig'||r.s==='part'))&&IGON()?'ig':'ng'; let NAVSUBJ=null;
-function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {learn:'ilr',points:'ilr',nk:'ilr',hw2:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
-  if(r.s==='ng') return {tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',path:'th',cheat:'th',learn:'th',day:'th'}[r.tab]||'nb';
+function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {learn:'ilr',points:'ilr',nk:'ilr',hw2:'ihw',dz:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
+  if(r.s==='ng') return {tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',dz:'hw',path:'th',cheat:'th',learn:'th',day:'th'}[r.tab]||'nb';
   if(r.s==='dz') return subjOf(r)==='ig'?'ihw':'hw';
   if(!r.s||r.s==='home') return 'home';
   return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
 const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
+/* адреса ДЗ: у каждого предмета свой раздел — #/ng/dz (все ДЗ по начерту), #/ng/dz/4 (ДЗ №4), #/ng/dz/4/13 (вариант),
+   #/ig/dz/3/7 — то же для инженерной графики. HDZ('ng4', 13) → #/ng/dz/4/13; HDZ('ng') → #/ng/dz; прежние #/dz/… переадресуются */
+const HDZ=(id,...a)=>{ if(!id) return H(NAVSUBJ==='ig'?'ig':'ng','dz'); if(id==='ng'||id==='ig') return H(id,'dz'); const m=/^(ng|ig)(\d+)$/.exec(id); return m?H(m[1],'dz',m[2],...a):H('ng','dz'); };
+const dzR=(c,r)=>({s:'dz',tab:r.item?c+r.item:c,item:r.sub,sub:r.extra});
 function buildNav(sj){
   sj=sj||subjOf(parseHash(location.hash)); NAVSUBJ=sj;
   const svg=(ic,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
@@ -25835,8 +25877,8 @@ function quickHits(q,scope){
   if(m){ const n=+m[1]; if(scope!=='ig') task(n); if(scope!=='ng') igv(n); return out; }
   m=/^(?:мой\s+)?(?:вариант|вар\.?|в)\s*№?\s*(\d{1,2})$/.exec(s); if(m){ if(scope!=='ng') igv(+m[1]); return out; }
   m=/^дз\s*№?\s*(\d)\s*([абвbc]?)$/.exec(s);
-  if(m&&scope!=='ig'&&window.DZR){ const d=DZR.get('ng'+m[1]); if(d) out.push({tag:'ДЗ · начерт',t:'ДЗ №'+d.num+' — '+short(d.title||'',110),w:'Любой вариант по шагам, методика, лист',h:H('dz',d.id)}); }
-  if(m&&scope!=='ng'&&window.DZR){ const d=DZR.get('ig'+m[1]); if(d) out.push({tag:'ДЗ · инж. графика',t:(d.label||'Задание №'+d.num)+' — '+short(d.title||'',110),w:'Найди свой вариант: деталь в 3D и готовый лист',h:H('dz',d.id)}); }
+  if(m&&scope!=='ig'&&window.DZR){ const d=DZR.get('ng'+m[1]); if(d) out.push({tag:'ДЗ · начерт',t:'ДЗ №'+d.num+' — '+short(d.title||'',110),w:'Любой вариант по шагам, методика, лист',h:HDZ(d.id)}); }
+  if(m&&scope!=='ng'&&window.DZR){ const d=DZR.get('ig'+m[1]); if(d) out.push({tag:'ДЗ · инж. графика',t:(d.label||'Задание №'+d.num)+' — '+short(d.title||'',110),w:'Найди свой вариант: деталь в 3D и готовый лист',h:HDZ(d.id)}); }
   return out; }
 function viewHome(v){
   const tg=resumeTarget();
@@ -25862,13 +25904,13 @@ function viewHome(v){
     <div class="v8-cols">
      <div class="v8-col"><h3><i class="v8-dot ng" aria-hidden="true"></i>Начертательная геометрия</h3>
       ${lnk(H('ng','tasks'),'Тетрадь','все '+nT+' задач с решением по шагам','nb')}
-      ${lnk(H('dz'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист','hw')}
+      ${lnk(HDZ('ng'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист','hw')}
       ${lnk(H('ng','rk2'),'РК','билет, 26 вопросов, пробный РК','rk')}
       ${lnk(H('ng','path'),'Теория',nL+' уроков, шпаргалка, 3D-модель','th')}
      </div>
      <div class="v8-col"><h3><i class="v8-dot ig" aria-hidden="true"></i>Инженерная графика</h3>
       ${lnk(H('ig','wb'),'Тетрадь',nIW?nIW+' заданий: тела с отверстиями':'тела с отверстиями','nb')}
-      ${lnk(H('dz'),'ДЗ','задания '+(nIG.length?nIG.map(d=>d.num).join(', '):'2–4')+': деталь в 3D и готовый лист','hw')}
+      ${lnk(HDZ('ig'),'ДЗ','задания '+(nIG.length?nIG.map(d=>d.num).join(', '):'2–4')+': деталь в 3D и готовый лист','hw')}
       ${lnk(H('ig','learn'),'Учиться','виды, разрезы, сечения; защита точек','lr')}
       ${lnk(H('ig','theory'),'Теория ЕСКД','форматы, линии, размеры, разрезы','th')}
      </div>
@@ -25902,6 +25944,7 @@ function viewHome(v){
 /* ═════════ НАЧЕРТАТЕЛЬНАЯ ГЕОМЕТРИЯ ═════════ */
 let LID=null, CURT=null, PLR=null;
 function viewNG(v,r){
+  if(r.tab==='dz') return dzView(v,dzR('ng',r));
   if(r.tab==='day') return viewDay(v,r);
   if(r.tab==='rk2') return RK2.view(v,r);
   const tab=['path','tasks','hw','check','cheat','learn','var'].includes(r.tab)?r.tab:null;
@@ -26026,18 +26069,21 @@ function mountLab(host,L){ if(!L){ host.innerHTML=''; return; }
 function setLessonDone(id,v){ const d=ST.get('done',{}); d[id]=v; ST.set('done',d); renderHProg(); }
 function openLesson(id){ nav(H('ng','path',id)); }
 
-/* ═════ «ДЗ» — один раздел для всех домашних заданий (НГ и ИГ) ═════
+/* ═════ «ДЗ» — у каждого предмета свой раздел ДЗ: начерт (#/ng/dz) и инженерная графика (#/ig/dz) ═════
    Данные, методики и решатели — в реестре DZR (kernel/dz.js, папки dz/<курс>/<номер>/; оглавление — dz/README.md).
-   #/dz                     — все ДЗ: что задано, сколько вариантов решено, быстрый переход к своему варианту;
-   #/dz/ng2                 — страница ДЗ, вкладка «Условие»: условие каждого типа и номера вариантов;
-   #/dz/ng2/how             — «Как решать»: суть, план по шагам для каждого типа, теория;
-   #/dz/ng2/ex[/2b]         — «Пример»: разобранный пример типа по шагам (плеер);
-   #/dz/ng2/my              — «Мой вариант»: номер → разбор; сверка своего листа числами;
-   #/dz/ng2/faq             — «Ошибки и защита»;
-   #/dz/ng2/7[/list|/draft] — вариант 7: разбор по шагам и 3D, чистовик, черновик листа А3 по ГОСТ. */
+   #/ng/dz                     — все ДЗ по начерту: что задано, сколько вариантов решено, быстрый переход к своему варианту;
+   #/ng/dz/2                   — страница ДЗ, вкладка «Условие»: условие каждого типа и номера вариантов;
+   #/ng/dz/2/how               — «Как решать»: суть, план по шагам для каждого типа, теория;
+   #/ng/dz/2/ex[/2b]           — «Пример»: разобранный пример типа по шагам (плеер);
+   #/ng/dz/2/my                — «Мой вариант»: номер → разбор; сверка своего листа числами;
+   #/ng/dz/2/faq               — «Ошибки и защита»;
+   #/ng/dz/2/7[/list|/draft]   — вариант 7: разбор по шагам и 3D, чистовик, черновик листа А3 по ГОСТ;
+   #/ig/dz, #/ig/dz/3, #/ig/dz/3/7 — то же для инженерной графики (задание 2 — #/ig/hw2).
+   Внутри страниц адрес строит HDZ(id, …), а разбор маршрута — dzView({tab:'ng2', item, sub}). */
 const DZ_TABS=[['','Условие'],['how','Как решать'],['ex','Пример'],['my','Мой вариант'],['faq','Ошибки и защита']];
 const vesc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const dzCourse=c=>c==='ig'?'Инженерная графика':'Начертательная геометрия';
+const dzCrumb=c=>c==='ig'?'ДЗ по инж. графике':'ДЗ по начерту';
 const dzMine=()=>{ try{ return ST.get('dzmine',{})||{}; }catch(e){ return {}; } };
 const dzSetMine=(id,n)=>{ const o=dzMine(); if(n) o[id]=n; else delete o[id]; ST.set('dzmine',o); };
 /* прежний id «Сверь свой лист» (HWCHECK) для типа варианта */
@@ -26050,30 +26096,33 @@ function dzExample(d,code){ const f=d.examples&&d.examples[code]; if(!f) return 
 function dzSolved(d){ return window.DZR?DZR.numbers(d.id).length:0; }
 function dzCount(d){ return d.V?Object.keys(d.V).length:(d.count||0); }
 function dzStatus(d){ if(d.href) return '<span class="dz-st ok">все '+d.count+' вариантов на сайте</span>';
-  const s=dzSolved(d), n=dzCount(d); return s?`<span class="dz-st${s===n?' ok':''}">решено ядром: ${s} из ${n}</span>`:'<span class="dz-st work">решатель в работе</span>'; }
-const dzHref=(d,...a)=>d.href&&!a.length?d.href():H('dz',d.id,...a);
+  const s=dzSolved(d), n=dzCount(d); return s===n?`<span class="dz-st ok">все ${n} вариантов на сайте</span>`:s?`<span class="dz-st">готово ${s} из ${n} вариантов</span>`:'<span class="dz-st work">разбор готовится</span>'; }
+const dzBeta=d=>d.beta?' <i class="dz-beta">бета</i>':'';
+const dzHref=(d,...a)=>d.href&&!a.length?d.href():HDZ(d.id,...a);
 
 /* номера вариантов типа: решённые — ссылки, остальные — серые */
 function dzNums(d,t){ const mine=dzMine()[d.id];
   return `<div class="var-nums">${Array.from({length:t.to-t.from+1},(_,i)=>t.from+i).map(n=>d.href?`<a href="${d.href(n)}">${n}</a>`:
-    DZR.has(d.id,n)?`<a href="${H('dz',d.id,n)}"${+mine===n?' class="mine" title="Мой вариант"':''}>${n}</a>`:`<span class="off" title="решатель этого типа в работе">${n}</span>`).join('')}</div>`; }
+    DZR.has(d.id,n)?`<a href="${HDZ(d.id,n)}"${+mine===n?' class="mine" title="Мой вариант"':''}>${n}</a>`:`<span class="off" title="решатель этого типа в работе">${n}</span>`).join('')}</div>`; }
 function dzTypesOf(d){ return d.types||[{code:'all',from:1,to:dzCount(d),name:'Варианты 1–'+dzCount(d),text:d.text||''}]; }
 
 /* ── все ДЗ ── */
-function dzHub(v){
-  const mine=dzMine(), list=DZR.list();
+function dzHub(v,course){
+  if(course==='ig') return dzHubIG(v);
+  const mine=dzMine(), list=DZR.list('ng');
   const card=d=>{ const ty=d.types||[]; const my=mine[d.id];
-    return `<article class="dz-card"><a class="dz-cm" href="${dzHref(d)}"><span class="dz-num">${vesc(d.label)}</span><b>${vesc(d.title)}</b><small>${vesc(d.short||'')}</small></a>
+    return `<article class="dz-card"><a class="dz-cm" href="${dzHref(d)}"><span class="dz-num">${vesc(d.label)}${dzBeta(d)}</span><b>${vesc(d.title)}</b><small>${vesc(d.short||'')}</small></a>
       ${ty.length>1?`<div class="dz-types">${ty.map(t=>`<span><i>${t.from}–${t.to}</i>${vesc(t.name.replace(/^\d[а-яa-z]? · /,''))}</span>`).join('')}</div>`:''}
-      <div class="dz-foot">${dzStatus(d)}<span class="dz-acts">${my?`<a class="dz-my" href="${H('dz',d.id,my)}">★ Вариант ${my}</a>`:''}${d.href?'':`<a href="${H('dz',d.id,'how')}">Как решать</a>`}</span></div></article>`; };
-  const sec=c=>{ const L=list.filter(d=>d.course===c); return L.length?`<section class="dz-sec"><h2>${dzCourse(c)}</h2><div class="dz-grid">${L.map(card).join('')}</div></section>`:''; };
-  v.innerHTML=pageHTML({crumbs:[['ДЗ']],next:null,noBottom:true,cls:'hwwrap dzwrap',body:`
-   <div class="intro"><h1>Домашние задания</h1><p class="lead">Каждое ДЗ — на одной странице: условие и все варианты по типам, как решать, разобранный пример, <b>твой вариант</b> по шагам с 3D и листом А3 по ГОСТ (черновик и чистовик), ошибки и вопросы защиты.</p></div>
+      <div class="dz-foot">${dzStatus(d)}<span class="dz-acts">${my?`<a class="dz-my" href="${HDZ(d.id,my)}">★ Вариант ${my}</a>`:''}${d.href?'':`<a href="${HDZ(d.id,'how')}">Как решать</a>`}</span></div></article>`; };
+  const sec=c=>{ const L=list.filter(d=>d.course===c); return L.length?`<section class="dz-sec"><h2>Все задания</h2><div class="dz-grid">${L.map(card).join('')}</div></section>`:''; };
+  v.innerHTML=pageHTML({crumbs:[['ДЗ по начерту']],next:null,noBottom:true,cls:'hwwrap dzwrap',body:`
+   <div class="intro"><div class="hw-kick">Начертательная геометрия</div><h1>ДЗ по начерту</h1><p class="lead">Каждое ДЗ — на одной странице: условие и все варианты по типам, как решать, разобранный пример, <b>твой вариант</b> по шагам с 3D и листом А3 по ГОСТ (черновик и чистовик), ошибки и вопросы защиты.</p></div>
    <form class="dz-go" id="dzGo" autocomplete="off"><b>Сразу к своему варианту</b>
-     <select id="dzGoId" aria-label="Задание">${list.map(d=>`<option value="${d.id}">${vesc(d.course==='ng'?'Начерт':'Инж. графика')} · ${vesc(d.label)}</option>`).join('')}</select>
+     <select id="dzGoId" aria-label="Задание">${list.map(d=>`<option value="${d.id}">${vesc(d.label)} · ${vesc(d.title)}</option>`).join('')}</select>
      <input id="dzGoN" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="№" aria-label="Номер варианта">
      <button class="btn pri" type="submit">Открыть →</button></form>
-   ${sec('ng')}${sec('ig')}
+   ${sec('ng')}
+   <p class="dzi-other">Ищешь инженерную графику? <a href="${HDZ('ig')}">ДЗ по инж. графике →</a></p>
    <section class="hw-rules"><h2>Как оформить и защитить ДЗ</h2><div class="hw-rg">
     <div><b>Лист</b><p>Каждая задача — на отдельном листе (обычно А3). Рамка и основная надпись — по ГОСТ 2.301 и 2.104. Слева от основной надписи — таблица координат заданных точек.</p></div>
     <div><b>Построения</b><p>Сначала тонко карандашом. Линии построения не стирай: по ним проверяют ход решения. Это и есть черновик — на сайте он в цвете, чтобы было видно, что откуда взялось.</p></div>
@@ -26081,13 +26130,13 @@ function dzHub(v){
     <div><b>Защита</b><p>Объясни каждый шаг: что строишь, зачем и по какой теореме. Типичные вопросы — во вкладке «Ошибки и защита» каждого ДЗ.</p></div></div></section>`});
   const f=$('dzGo'); f.addEventListener('submit',e=>{ e.preventDefault(); const d=DZR.get($('dzGoId').value), n=parseInt($('dzGoN').value,10), N=dzCount(d);
     if(!(n>=1&&n<=N)){ $('dzGoN').focus(); try{ FX.note&&FX.note('Номер варианта — от 1 до '+N); }catch(_){} return; }
-    nav(d.href?d.href(n):H('dz',d.id,n)); });
-  return 'Домашние задания';
+    nav(d.href?d.href(n):HDZ(d.id,n)); });
+  return 'ДЗ по начерту';
 }
 
 /* ── вкладки страницы ДЗ ── */
 function dzTabsHTML(d,on){ return `<nav class="hw-pills dz-tabs" role="tablist" aria-label="Разделы ДЗ">${DZ_TABS.map(([k,t])=>
-  (k==='ex'&&!d.examples)?'':`<a role="tab" href="${H('dz',d.id,k)}" class="${on===k?'on':''}" aria-selected="${on===k}">${t}</a>`).join('')}</nav>`; }
+  (k==='ex'&&!d.examples)?'':`<a role="tab" href="${HDZ(d.id,k)}" class="${on===k?'on':''}" aria-selected="${on===k}">${t}</a>`).join('')}</nav>`; }
 function dzHead(d,on){ return `<div class="intro"><div class="hw-kick">${vesc(d.label)} · ${dzCourse(d.course)}</div><h1>${vesc(d.title)}</h1>${d.short?`<p class="lead">${vesc(d.short)}</p>`:''}</div>${dzTabsHTML(d,on)}`; }
 const dzList=a=>a&&a.length?`<ul class="hw-err">${a.map(x=>`<li>${x}</li>`).join('')}</ul>`:'';
 const dzQA=a=>a&&a.length?`<div class="hw-qa">${a.map(q=>`<details><summary>${vesc(q.q)}</summary><p>${q.a}</p></details>`).join('')}</div>`:'';
@@ -26098,7 +26147,7 @@ function dzCond(d){ const types=dzTypesOf(d);
     return `<section class="hw-sec dz-type" id="t-${t.code}"><div class="dz-range">Варианты ${t.from}–${t.to}</div><h2>${vesc(t.name)}</h2>
       ${t.text?`<p class="dz-text">${vesc(t.text)}</p>`:''}${pts.length?`<p class="dz-given">Дано в таблице варианта: ${pts.map(p=>'<b>'+p+'</b>').join(', ')} — координаты x, y, z, мм.</p>`:''}${dimT}
       <div class="dz-sub">${DZR.has(d.id,t.from)||d.href?'Выбери номер — разбор по шагам, 3D и лист:':'Решатель этого типа в работе — пока смотри «Как решать»'+(ex?' и пример':'')+'.'}</div>${dzNums(d,t)}
-      <div class="dz-links"><a href="${H('dz',d.id,'how')}#m-${t.code}">Как решать этот тип →</a>${ex?`<a href="${H('dz',d.id,'ex',t.code)}">Пример по шагам →</a>`:''}</div></section>`; }).join('')+
+      <div class="dz-links"><a href="${HDZ(d.id,'how')}#m-${t.code}">Как решать этот тип →</a>${ex?`<a href="${HDZ(d.id,'ex',t.code)}">Пример по шагам →</a>`:''}</div></section>`; }).join('')+
     (d.sheet?`<section class="hw-sec"><h2>Что должно быть на листе</h2>${dzList(d.sheet)}</section>`:''); }
 const DZ_COLS={Dk:'Dк',dk:'dк',Hk:'Hк',Xk:'Xк',Yk:'Yк',Xc:'Xц',Yc:'Yц',Zc:'Zц',Dc:'Dц',Dp:'Dп',Xp:'Xп',Yp:'Yп',Xt:'Xт',Yt:'Yт',Dt:'Dт',Rt:'Rт',phi:'φ°',alpha:'α°',beta:'β°'};
 
@@ -26106,10 +26155,10 @@ function dzHow(d){ const m=d.method; if(!m) return '<div class="box">Метод�
   const types=dzTypesOf(d), T=m.types||{};
   const plan=p=>`<ol class="hw-algo">${p.map(a=>`<li><b>${vesc(a.t)}.</b> ${a.d}${a.why?`<span class="dz-why"><i>Почему так:</i> ${a.why}</span>`:''}</li>`).join('')}</ol>`;
   const blocks=types.filter(t=>T[t.code]).map(t=>{ const x=T[t.code];
-    return `<section class="hw-sec dz-mt" id="m-${t.code}"><div class="dz-range">Варианты ${t.from}–${t.to}</div><h2>${vesc(t.name)}</h2>
+    return `<section class="hw-sec dz-mt" id="m-${t.code}">${d.types?`<div class="dz-range">Варианты ${t.from}–${t.to}</div><h2>${vesc(t.name)}</h2>`:'<h2>Порядок построения</h2>'}
       ${x.idea?`<p class="dz-idea">${x.idea}</p>`:''}${x.plan?plan(x.plan):''}
       ${x.answer?`<p class="dz-ans"><b>Что в ответе.</b> ${x.answer}</p>`:''}${x.check&&x.check.length?`<div class="dz-chk"><b>Проверь себя</b>${dzList(x.check)}</div>`:''}
-      ${d.examples&&d.examples[t.code]?`<a class="dz-exl" href="${H('dz',d.id,'ex',t.code)}">▶ Этот тип — пример по шагам</a>`:''}</section>`; }).join('');
+      ${d.examples&&d.examples[t.code]?`<a class="dz-exl" href="${HDZ(d.id,'ex',t.code)}">▶ Этот тип — пример по шагам</a>`:''}</section>`; }).join('');
   const other=types.filter(t=>!T[t.code]);
   return `${m.essence?`<section class="hw-sec"><h2>Суть задания</h2><p>${m.essence}</p></section>`:''}
     ${m.idea?`<section class="hw-sec dz-key"><h2>Главная мысль</h2><p>${m.idea}</p></section>`:''}
@@ -26129,55 +26178,56 @@ function dzMy(d){ const mine=dzMine()[d.id], types=dzTypesOf(d);
   const ck=types.map(t=>dzCheckId(d.id,t.code)).filter((x,i,a)=>x&&window.HWCHECK&&HWCHECK.has(x)&&a.indexOf(x)===i);
   return `<section class="hw-sec"><h2>Номер твоего варианта</h2><p>Нажми свой номер — откроется разбор по шагам, 3D и лист. Там же кнопка «☆ Это мой вариант»: номер запомнится и будет первым здесь и в списке всех ДЗ.</p>
      ${types.map(t=>`<div class="var-grp"><small>${t.from}–${t.to} · ${vesc(t.name)}</small>${dzNums(d,t)}</div>`).join('')}
-     ${mine?`<p class="dz-mine">★ Твой вариант: <a href="${H('dz',d.id,mine)}"><b>${mine}</b> — открыть разбор</a> · <button class="linkbtn" type="button" id="dzUnmine">забыть</button></p>`:''}</section>
+     ${mine?`<p class="dz-mine">★ Твой вариант: <a href="${HDZ(d.id,mine)}"><b>${mine}</b> — открыть разбор</a> · <button class="linkbtn" type="button" id="dzUnmine">забыть</button></p>`:''}</section>
    ${ck.map(x=>`<div class="dz-ck" data-ck="${x}">${HWCHECK.html(x)}</div>`).join('')}`; }
 
 function dzPage(v,r,d){
+  if(d.course==='ig'&&d.part) return dzIgPage(v,r,d);
   const sec=['how','ex','my','faq'].includes(r.item)?r.item:'';
   if(sec==='ex'){ const types=dzTypesOf(d).filter(t=>d.examples&&d.examples[t.code]); const code=r.sub||(types.length===1?types[0].code:null);
     if(code&&d.examples&&d.examples[code]) return dzExView(v,d,code);
-    v.innerHTML=pageHTML({crumbs:[['ДЗ',H('dz')],[d.label,H('dz',d.id)],['Пример']],next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'ex')+
+    v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)],['Пример']],next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'ex')+
       `<div class="hw-plate" role="note">Пример — полностью разобранное решение одного варианта каждого типа. Свой вариант открой по номеру — разбор построится на твоих данных.</div><div class="dz-grid">${types.map(t=>{ const tk=dzExample(d,t.code), s=dzSteps(tk);
-        return `<a class="dz-card dz-cm" href="${H('dz',d.id,'ex',t.code)}"><span class="dz-num">Варианты ${t.from}–${t.to}</span><b>${vesc(t.name)}</b><small>▶ ${s} ${stW(s)}: чертёж растёт на глазах, у каждого шага — намёк, принцип, числа</small></a>`; }).join('')}</div>`});
+        return `<a class="dz-card dz-cm" href="${HDZ(d.id,'ex',t.code)}"><span class="dz-num">Варианты ${t.from}–${t.to}</span><b>${vesc(t.name)}</b><small>▶ ${s} ${stW(s)}: чертёж растёт на глазах, у каждого шага — намёк, принцип, числа</small></a>`; }).join('')}</div>`});
     return d.label+' · пример'; }
   const body=sec==='how'?dzHow(d):sec==='faq'?dzFaq(d):sec==='my'?dzMy(d):dzCond(d);
-  v.innerHTML=pageHTML({crumbs:[['ДЗ',H('dz')],[d.label+' · '+d.title]],next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,sec)+body+dzNavHTML(d)});
+  v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label+' · '+d.title]],next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,sec)+body+dzNavHTML(d)});
   if(sec==='my'){ v.querySelectorAll('.dz-ck').forEach(b=>{ try{ HWCHECK.bind(b,b.dataset.ck); }catch(e){} });
     const u=$('dzUnmine'); if(u) u.addEventListener('click',()=>{ dzSetMine(d.id,0); CURH=null; route(); }); }
   { const tb=v.querySelector('.dz-tabs'), on=tb&&tb.querySelector('a.on'); if(on) tb.scrollLeft=Math.max(0,on.offsetLeft-tb.offsetLeft-16); }
   v.querySelectorAll('[data-jump]').forEach(a=>a.addEventListener('click',e=>{ const el=document.getElementById(a.dataset.jump); if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); } }));
-  setLast({s:d.course,kind:'dz',id:d.id,href:H('dz',d.id,sec),label:d.label+'. '+d.title,sub:dzCourse(d.course)+' · ДЗ'});
+  setLast({s:d.course,kind:'dz',id:d.id,href:HDZ(d.id,sec),label:d.label+'. '+d.title,sub:dzCourse(d.course)+' · ДЗ'});
   return d.label+' · '+(DZ_TABS.find(x=>x[0]===sec)||DZ_TABS[0])[1];
 }
 function dzNavHTML(d){ const L=DZR.list(d.course), i=L.indexOf(d), p=L[i-1], n=L[i+1];
-  return `<div class="hw-nav">${p?`<a href="${dzHref(p)}">← ${vesc(p.label)}</a>`:'<span></span>'}<a href="${H('dz')}">Все ДЗ</a>${n?`<a href="${dzHref(n)}">${vesc(n.label)} →</a>`:'<span></span>'}</div>`; }
+  return `<div class="hw-nav">${p?`<a href="${dzHref(p)}">← ${vesc(p.label)}</a>`:'<span></span>'}<a href="${HDZ(d.course)}">Все ДЗ</a>${n?`<a href="${dzHref(n)}">${vesc(n.label)} →</a>`:'<span></span>'}</div>`; }
 
 function dzExView(v,d,code){ const task=dzExample(d,code), t=(d.types||[]).find(x=>x.code===code)||{name:''};
-  if(!task){ v.innerHTML=pageHTML({crumbs:[['ДЗ',H('dz')],[d.label,H('dz',d.id)]],body:'<div class="box warn">Пример не построился.</div>'}); return d.label; }
+  if(!task){ v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)]],body:'<div class="box warn">Пример не построился.</div>'}); return d.label; }
   const L=Object.keys(d.examples), i=L.indexOf(code), nx=L[i+1];
-  v.innerHTML=pageHTML({crumbs:[['ДЗ',H('dz')],[d.label,H('dz',d.id)],['Пример · '+t.name]],next:null,noBottom:true,cls:'taskwrap hwwrap',body:
-    `<div class="hw-exhead"><a class="hw-back" href="${H('dz',d.id,'how')}#m-${code}">← Как решать</a>${dzTabsHTML(d,'ex')}</div><div class="hw-plate slim" role="note">Пример: ${vesc(t.name)}. Свой вариант открой по номеру — разбор построится на твоих данных.</div><div id="dzPl"></div>`});
+  v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)],['Пример · '+t.name]],next:null,noBottom:true,cls:'taskwrap hwwrap',body:
+    `<div class="hw-exhead"><a class="hw-back" href="${HDZ(d.id,'how')}#m-${code}">← Как решать</a>${dzTabsHTML(d,'ex')}</div><div class="hw-plate slim" role="note">Пример: ${vesc(t.name)}. Свой вариант открой по номеру — разбор построится на твоих данных.</div><div id="dzPl"></div>`});
   document.body.classList.add('inplayer');
-  PLR=PLAYER.mount($('dzPl'),task,{backHref:H('dz',d.id,'how'),backLabel:'К методике',afterText:nx?'Следующий тип':'Мой вариант',onDone:()=>{ try{ location.hash=nx?H('dz',d.id,'ex',nx):H('dz',d.id,'my'); }catch(e){} }});
-  setLast({s:d.course,kind:'dz',id:d.id+'/ex/'+code,href:H('dz',d.id,'ex',code),label:d.label+' · пример: '+t.name,sub:dzCourse(d.course)+' · ДЗ'});
+  PLR=PLAYER.mount($('dzPl'),task,{backHref:HDZ(d.id,'how'),backLabel:'К методике',afterText:nx?'Следующий тип':'Мой вариант',onDone:()=>{ try{ location.hash=nx?HDZ(d.id,'ex',nx):HDZ(d.id,'my'); }catch(e){} }});
+  setLast({s:d.course,kind:'dz',id:d.id+'/ex/'+code,href:HDZ(d.id,'ex',code),label:d.label+' · пример: '+t.name,sub:dzCourse(d.course)+' · ДЗ'});
   return d.label+' · пример';
 }
 
 /* ── вариант: разбор по шагам (3D — кнопкой у чертежа), чистовик и черновик листа ── */
 function dzVariant(v,d,n,extra){
-  const mode=extra==='list'?'final':extra==='draft'?'draft':'steps', t=DZR.typeOf(d.id,n)||{name:''}, base=H('dz',d.id,n);
-  const crumbs=[['ДЗ',H('dz')],[d.label,H('dz',d.id)],['Вариант '+n]];
+  const mode=extra==='list'?'final':extra==='draft'?'draft':'steps', t=DZR.typeOf(d.id,n)||{name:''}, base=HDZ(d.id,n);
+  const crumbs=[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)],['Вариант '+n]];
   if(d.part) return dzPart(v,d,n);
-  if(!d.V||!d.V[n]){ v.innerHTML=pageHTML({crumbs,body:`<div class="box warn">Нет варианта ${n}. <a href="${H('dz',d.id)}">Все варианты ${vesc(d.label)}</a></div>`}); return d.label; }
-  if(!DZR.has(d.id,n)){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'')+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Решатель для типа «${vesc(t.name)}» ещё в работе. Пока — <a href="${H('dz',d.id,'how')}#m-${t.code}">как решать этот тип</a>${d.examples&&d.examples[t.code]?` и <a href="${H('dz',d.id,'ex',t.code)}">пример по шагам</a>`:''}.</div>`}); return d.label+' · вариант '+n; }
+  if(!d.V||!d.V[n]){ v.innerHTML=pageHTML({crumbs,body:`<div class="box warn">Нет варианта ${n}. <a href="${HDZ(d.id)}">Все варианты ${vesc(d.label)}</a></div>`}); return d.label; }
+  if(!DZR.has(d.id,n)){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'')+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Решатель для типа «${vesc(t.name)}» ещё в работе. Пока — <a href="${HDZ(d.id,'how')}#m-${t.code}">как решать этот тип</a>${d.examples&&d.examples[t.code]?` и <a href="${HDZ(d.id,'ex',t.code)}">пример по шагам</a>`:''}.</div>`}); return d.label+' · вариант '+n; }
   let res; try{ res=DZR.solve(d.id,n); }catch(e){ console.error(e); res={why:String(e&&e.message||e)}; }
   if(!res||!res.task){ v.innerHTML=pageHTML({crumbs,body:'<div class="box warn">Вариант не решился: '+vesc(res&&res.why||'')+'</div>'}); return d.label; }
   const meta=DZR.meta(d.id,n), nums=DZR.numbers(d.id), i=nums.indexOf(n), mine=+dzMine()[d.id]===n;
   const tabs=`<div class="hw-pills var-pills" role="tablist"><a role="tab" class="${mode==='steps'?'on':''}" href="${base}">Разбор по шагам</a><a role="tab" class="${mode==='final'?'on':''}" href="${base}/list">Чистовик</a><a role="tab" class="${mode==='draft'?'on':''}" href="${base}/draft">Черновик</a><button type="button" class="dz-star${mine?' on':''}" id="dzStar" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Это мой вариант'}</button></div>`;
-  const navv=`<div class="hw-nav">${i>0?`<a href="${H('dz',d.id,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${H('dz',d.id)}">Все варианты</a>${i<nums.length-1?`<a href="${H('dz',d.id,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
-  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'taskwrap hwwrap',body:`<div class="hw-exhead"><a class="hw-back" href="${H('dz',d.id)}">← ${vesc(d.label)}</a>${tabs}</div><p class="dz-vtype">Тип: <b>${vesc(t.name)}</b> · <a href="${H('dz',d.id,'how')}#m-${t.code}">как решать</a></p><div id="dzPl"></div>`});
+  const navv=`<div class="hw-nav">${i>0?`<a href="${HDZ(d.id,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${HDZ(d.id)}">Все варианты</a>${i<nums.length-1?`<a href="${HDZ(d.id,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
+  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'taskwrap hwwrap',body:`<div class="hw-exhead"><a class="hw-back" href="${HDZ(d.id)}">← ${vesc(d.label)}</a>${tabs}</div><p class="dz-vtype">Тип: <b>${vesc(t.name)}</b> · <a href="${HDZ(d.id,'how')}#m-${t.code}">как решать</a></p><div id="dzPl"></div>`});
     document.body.classList.add('inplayer');
-    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:H('dz',d.id),backLabel:'К заданию',afterText:'Чистовик листа',onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
+    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К заданию',afterText:'Чистовик листа',onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
   else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
     v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap varwrap',body:`<div class="intro"><div class="hw-kick">${vesc(meta.title)} · вариант ${n}</div><h1>${mode==='draft'?'Черновик':'Чистовик'} листа</h1></div>${tabs}
       <p class="var-note">Формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — видно, что откуда взялось; так проверяют ход решения.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.'}</p>
@@ -26189,28 +26239,73 @@ function dzVariant(v,d,n,extra){
   return meta.title+' · вариант '+n+(mode==='steps'?'':mode==='final'?' · чистовик':' · черновик');
 }
 
+/* ── Инженерная графика: ДЗ → вариант по картинке → разбор. Всё, что нужно, — на двух экранах ── */
+const DZ_BACK='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+/* мой вариант: у ДЗ 2 он хранится в разделе ИГ (nch2_igvar), у остальных — в общем списке «ДЗ» */
+const dzMyN=d=>{ if(d.id==='ig2'){ try{ return +localStorage.getItem('nch2_igvar')||0; }catch(e){ return 0; } } return +dzMine()[d.id]||0; };
+const dzThumb=(d,n)=>d.id==='ig2'?'ig/v'+String(n).padStart(2,'0')+'.jpg':'dz/ig/'+d.num+'/img/v'+String(n).padStart(2,'0')+'.jpg';
+const dzBetaNote=()=>`<div class="igx-beta dz-betab" role="note"><i>Бета</i><span><b>Раздел новый.</b> Решение строится по 3D-модели детали, прочитанной с чертежа задания. Сверь картинку варианта со своим заданием; нашёл расхождение — напиши, исправим.</span></div>`;
+function dzHubIG(v){
+  const L=DZR.list('ig');
+  v.innerHTML=pageHTML({crumbs:[['ДЗ по инж. графике']],next:null,noBottom:true,cls:'igx dzwrap',body:`
+   <div class="intro"><h1>ДЗ по инженерной графике</h1><p class="lead">Нажми своё ДЗ, потом — свой вариант. Там условие, деталь в 3D, построение по шагам и готовый лист А3.</p></div>
+   <div class="dzi-list">${L.map(d=>{ const m=dzMyN(d);
+     return `<article class="dzi"><a class="dzi-main" href="${dzHref(d)}"><span class="dzi-img"><img src="${dzThumb(d,m||(d.id==='ig2'?5:1))}" alt="" loading="lazy" decoding="async"></span>
+       <span class="dzi-t"><span class="dzi-k">${vesc(d.label)}${dzBeta(d)}</span><b>${vesc(d.title)}</b><small>${vesc(d.short||'')}</small><span class="btn pri dzi-go">Выбрать вариант →</span></span></a>
+       ${m?`<a class="dzi-mine" href="${d.href?d.href(m):HDZ(d.id,m)}">★ Мой вариант ${m} — открыть</a>`:''}</article>`; }).join('')}</div>
+   <p class="dzi-other">Ищешь начерт? <a href="${HDZ('ng')}">ДЗ по начертательной геометрии →</a></p>`});
+  return 'ДЗ по инженерной графике'; }
+
+/* страница ДЗ: номер или картинка → вариант; ниже — что сдать, как решать, защита */
+function dzIgPage(v,r,d){
+  const base=HDZ(d.id), sec=['how','faq'].includes(r.item)?r.item:'';
+  if(sec){ const t=sec==='how'?'Как решать':'Ошибки и вопросы на защите';
+    v.innerHTML=pageHTML({crumbs:[['ДЗ по инж. графике',HDZ('ig')],[d.label,base],[t]],next:null,noBottom:true,cls:'hwwrap dzwrap',body:`<a class="igx-back" href="${base}">${DZ_BACK}К вариантам ${vesc(d.label)}</a>
+      <div class="intro"><div class="hw-kick">${vesc(d.label)} · ${vesc(d.title)}</div><h1>${t}</h1></div>${sec==='how'?dzHow(d):dzFaq(d)}
+      <div class="hw-nav"><span></span><a href="${base}">К вариантам ${vesc(d.label)}</a><span></span></div>`});
+    setLast({s:'ig',kind:'dz',id:d.id,href:HDZ(d.id,sec),label:d.label+'. '+t,sub:dzCourse(d.course)+' · ДЗ'});
+    return d.label+' · '+t; }
+  const N=dzCount(d), m=dzMyN(d), nums=DZR.numbers(d.id), name=n=>{ try{ const p=d.part(n); return p&&p.title||''; }catch(e){ return ''; } };
+  v.innerHTML=pageHTML({crumbs:[['ДЗ по инж. графике',HDZ('ig')],[d.label]],next:null,noBottom:true,cls:'igx dzwrap',body:`
+   <div class="intro"><div class="hw-kick">${vesc(d.label)} · инженерная графика</div><h1>${vesc(d.title)}${dzBeta(d)}</h1><p class="lead">${vesc(d.text||d.short||'')}</p></div>${d.beta?dzBetaNote():''}
+   ${m?`<a class="igx-mine" href="${HDZ(d.id,m)}"><span>★ Мой вариант</span><b>${m}</b><i>Открыть →</i></a>`:''}
+   <div class="igx-find dz-find"><label for="dzNum">Номер варианта</label><input id="dzNum" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="1–${N}" autocomplete="off"><button class="btn pri" id="dzNumGo" type="button">Открыть</button></div>
+   <h2 class="dz-pick">или найди свой по картинке</h2>
+   <div class="igx-grid dz-vgrid">${nums.map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}${+m===n?' ★':''}</b><small>${vesc(name(n))}</small></a>`).join('')}</div>
+   ${d.sheet&&d.sheet.length?`<details class="igx-need dz-need"><summary>Что сдать: лист А3</summary><ol>${d.sheet.map(x=>`<li>${x}</li>`).join('')}</ol></details>`:''}
+   <div class="dz-more"><a href="${HDZ(d.id,'how')}"><b>Как решать</b><span>порядок построения по шагам и почему так</span></a><a href="${HDZ(d.id,'faq')}"><b>Ошибки и защита</b><span>что чаще всего не так и что спросят</span></a></div>
+   ${dzNavHTML(d)}`});
+  const go=()=>{ const n=parseInt($('dzNum').value,10); if(n>=1&&n<=N) nav(HDZ(d.id,n)); else { $('dzNum').focus(); try{ FX.note&&FX.note('Номер варианта — от 1 до '+N); }catch(_){} } };
+  $('dzNumGo').addEventListener('click',go); $('dzNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
+  setLast({s:'ig',kind:'dz',id:d.id,href:base,label:d.label+'. '+d.title,sub:dzCourse(d.course)+' · ДЗ'});
+  return d.label+' · '+d.title; }
+
 /* ИГ: деталь варианта — тот же разбор, что у заданий тетради (partPage): данные виды, 3D, построение по шагам, лист */
-function dzPart(v,d,n){ const crumbs=[['ДЗ',H('dz')],[d.label,H('dz',d.id)],['Вариант '+n]]; let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
-  if(!m){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'')+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Модель этого варианта ещё не готова. Пока — <a href="${H('dz',d.id,'how')}">как решать</a>.</div>`}); return d.label+' · вариант '+n; }
-  const nums=DZR.numbers(d.id), i=nums.indexOf(n);
-  const navv=`<div class="hw-nav">${i>0?`<a href="${H('dz',d.id,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${H('dz',d.id)}">Все варианты</a>${i<nums.length-1?`<a href="${H('dz',d.id,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
-  IGUI.partPage(v,{model:m,crumbs,title:d.label+' · вариант '+n+'. '+m.title,back:[H('dz',d.id),'Все варианты '+d.label],docTitle:d.label+' · вариант '+n,
-    tb:{name:'Вариант '+n,sub:m.title,task:d.label},q:d.text,sheet:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
-    bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')+`<p class="dz-vtype"><a href="${H('dz',d.id,'how')}">Как решать — методика</a></p>`+navv});
-  setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:H('dz',d.id,n),label:d.label+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
+function dzPart(v,d,n){ const crumbs=[['ДЗ по инж. графике',HDZ('ig')],[d.label,HDZ(d.id)],['Вариант '+n]]; let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
+  if(!m){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'igx dzwrap',body:`<a class="igx-back" href="${HDZ(d.id)}">${DZ_BACK}Все варианты ${vesc(d.label)}</a><div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. Выбери свой из <a href="${HDZ(d.id)}">списка вариантов</a>.</div>`}); return d.label+' · вариант '+n; }
+  const nums=DZR.numbers(d.id), i=nums.indexOf(n), mine=dzMyN(d)===n;
+  const navv=`<div class="hw-nav">${i>0?`<a href="${HDZ(d.id,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${HDZ(d.id)}">Все варианты</a>${i<nums.length-1?`<a href="${HDZ(d.id,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
+  IGUI.partPage(v,{model:m,crumbs,title:'Вариант '+n+dzBeta(d),back:[HDZ(d.id),'Все варианты '+d.label],docTitle:d.label+' · вариант '+n,
+    star:`<button class="igx-star${mine?' on':''}" id="dzStar" type="button" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Мой вариант'}</button>`,beta:d.beta?dzBetaNote():'',
+    tb:{name:'Вариант '+n,sub:m.title,task:d.label},fig:d.label+' · '+m.title,q:d.text,sheet:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
+    bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')+`<p class="dz-vtype"><a href="${HDZ(d.id,'how')}">Как решать — порядок построения</a> · <a href="${HDZ(d.id,'faq')}">ошибки и защита</a></p>`+navv});
+  const st=$('dzStar'); if(st) st.addEventListener('click',()=>{ const on=dzMyN(d)!==n; dzSetMine(d.id,on?n:0); st.classList.toggle('on',on); st.setAttribute('aria-pressed',on); st.textContent=on?'★ Мой вариант':'☆ Мой вариант'; try{ FX.buzz&&FX.buzz(6); }catch(e){} });
+  setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:HDZ(d.id,n),label:d.label+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
   return d.label+' · вариант '+n; }
-function viewDZ(v,r){
+/* прежние адреса #/dz/ng4/13… → #/ng/dz/4/13… (ссылки в закладках и «последнем открытом» продолжают работать) */
+function viewDZ(v,r){ const to=!r.tab?HDZ():(r.tab==='ng'||r.tab==='ig')?HDZ(r.tab):HDZ(r.tab,r.item,r.sub,r.extra); setTimeout(()=>redir(to),0); return 'ДЗ'; }
+function dzView(v,r){
   if(!window.DZR){ v.innerHTML=pageHTML({crumbs:[['ДЗ']],body:'<div class="box warn"><h4>ДЗ</h4>Раздел не загрузился. Обнови страницу.</div>'}); return 'ДЗ'; }
-  if(!r.tab) return dzHub(v);
-  const d=DZR.get(r.tab); if(!d||!d.num){ setTimeout(()=>redir(H('dz')),0); return 'ДЗ'; }
+  if(!r.tab||r.tab==='ng'||r.tab==='ig') return dzHub(v,r.tab||NAVSUBJ||'ng');
+  const d=DZR.get(r.tab); if(!d||!d.num){ setTimeout(()=>redir(HDZ()),0); return 'ДЗ'; }
   if(d.href) { setTimeout(()=>redir(d.href(r.item&&/^\d+$/.test(r.item)?+r.item:0)),0); return d.label; }
   if(r.item&&/^\d+$/.test(r.item)) return dzVariant(v,d,+r.item,r.sub);
   return dzPage(v,r,d);
 }
 /* прежние адреса: #/ng/hw[/id[/ex]] и #/ng/var[/dzN/n[/list]] → раздел «ДЗ» */
 function dzLegacy(r){ const L={'1':'ng1','2':'ng2','2b':'ng2','2c':'ng2','3':'ng3','4a':'ng4','4b':'ng4','4':'ng4','5':'ng5'}, T={'2':'2a','2b':'2b','2c':'2c','4a':'4a2','4b':'4b3'};
-  if(r.tab==='hw'){ const id=L[String(r.item||'').toLowerCase()]; if(!id) return H('dz'); return r.sub==='ex'?H('dz',id,'ex',T[r.item]||''):H('dz',id,T[r.item]&&id==='ng2'?'how':''); }
-  const m=/^dz(\d)$/.exec(r.item||''); if(!m) return H('dz'); return H('dz','ng'+m[1],r.sub||'',r.sub?r.extra||'':''); }
+  if(r.tab==='hw'){ const id=L[String(r.item||'').toLowerCase()]; if(!id) return HDZ(); return r.sub==='ex'?HDZ(id,'ex',T[r.item]||''):HDZ(id,T[r.item]&&id==='ng2'?'how':''); }
+  const m=/^dz(\d)$/.exec(r.item||''); if(!m) return HDZ(); return HDZ('ng'+m[1],r.sub||'',r.sub?r.extra||'':''); }
 
 /* ── Задачи (тетрадь) ── */
 const SECS=[['Проецирование точки',1,8],['Проецирование прямой. Следы',9,16],['Взаимное положение прямых',17,22],
@@ -26802,7 +26897,9 @@ function viewer(canvas,opt){
     const J=jc(model.tree), b=model.box, tri=[], seg=[], parts=[];
     H.forEach((h,i)=>{ const n=[h[0],h[1],h[2]], O=n.map(v=>v*h[3]), ax=n.map(Math.abs);
       const U=ax[1]>0.9?[1,0,0]:ax[0]>0.9?[0,1,0]:ax[2]>0.9?[1,0,0]:(()=>{ const c=[n[2],0,-n[0]], l=Math.hypot(...c)||1; return c.map(v=>v/l); })(), V=crs(n,U);
-      const oth=H.filter((_,j)=>j!==i), f=(u,v)=>{ const x=O[0]+U[0]*u+V[0]*v, y=O[1]+U[1]*u+V[1]*v, z=O[2]+U[2]*u+V[2]*v; let d=J(x,y,z); oth.forEach(g=>{ d=Math.max(d,g[3]-(g[0]*x+g[1]*y+g[2]*z)); }); return d; };
+      /* материал — чуть внутри оставленной части (на 0,05 мм от плоскости): грань детали, совпавшая с секущей плоскостью (отверстие K кончается
+         ровно на оси), — не срез, штриховать её нечего */
+      const oth=H.filter((_,j)=>j!==i), f=(u,v)=>{ const x=O[0]+U[0]*u+V[0]*v, y=O[1]+U[1]*u+V[1]*v, z=O[2]+U[2]*u+V[2]*v; let d=J(x-n[0]*0.05,y-n[1]*0.05,z-n[2]*0.05); oth.forEach(g=>{ d=Math.max(d,g[3]-(g[0]*x+g[1]*y+g[2]*z)); }); return d; };
       let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9; for(let c=0;c<8;c++){ const q=[b[c&1][0],b[(c>>1)&1][1],b[(c>>2)&1][2]].map((v,k)=>v-O[k]); const u=dot3(q,U), v=dot3(q,V); u0=Math.min(u0,u); u1=Math.max(u1,u); v0=Math.min(v0,v); v1=Math.max(v1,v); }
       const R=capOf(f,O,U,V,u0-1,u1+1,v0-1,v1+1,0.3); parts.push({s:tri.length,n:R.tri.length,U,V}); R.tri.forEach(p=>tri.push(p)); R.seg.forEach(p=>seg.push(p)); });
     [cT,cS].forEach(x=>x&&gl.deleteBuffer(x)); const ta=new Float32Array(tri.length*3); tri.forEach((p,k)=>{ ta[3*k]=p[0]; ta[3*k+1]=p[1]; ta[3*k+2]=p[2]; });
@@ -27215,7 +27312,8 @@ const V={};
 /* 5 */ V[5]={tree:S(U(flange(110,25),cone(40,30,25,120)), triP(25,50,0,120), ...H4(10,95,0,25)), box:[[-55,-55,0],[55,55,120]]};
 /* 6 */ V[6]={tree:S(U(flange(110,25),cone(35,25,25,120)), P.ngon(6,40*Math.cos(Math.PI/6),-E,120+E,{a:0}), ...H4(10,90,0,25)), box:[[-55,-55,0],[55,55,120]]};
 /* 7 */ V[7]={tree:S(U(flange(120,20),cyl(40,20,120)), tri(40,-E,80.01), triP(40,70,80,120), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
-/* 8 */ V[8]={tree:S(U(flange(110,30),cone(55,35,30,120)), cyl(30,20,80), cyl(17.5,80-E,90), sq45P(35,60,90,120), ...H4(12,40,0,20)), box:[[-55,-55,0],[55,55,120]]};   /* воронка — правильная четырёхгранная пирамида: квадрат вписан в Ø60 вверху и в Ø35 внизу (z 90), горловина Ø35, полость Ø60; 4 отв. Ø12 — центры на Ø40 (размер задания; на главном виде задания оси отверстий — на ±14 = 20·cos 45°). Сверху их не видно: край отверстия на 14 от оси, сторона квадрата Ø35 — на 12,4 */
+/* 8 */ V[8]={tree:S(U(flange(110,30),cone(55,35,30,120)), cyl(30,20,80), sq45P(35,35,80,90), sq45P(35,60,90,120), ...H4(12,40,0,20)), box:[[-55,-55,0],[55,55,120]]};   /* воронка — правильная четырёхгранная пирамида: квадрат вписан в Ø60 вверху и в Ø35 внизу (z 90); горловина — квадратная призма того же квадрата
+   (на виде сверху задания окружность Ø35 — тонкая сплошная, вспомогательная: в неё вписан квадрат; цилиндр дал бы штриховую), полость Ø60; 4 отв. Ø12 — центры на Ø40 (размер задания; на главном виде задания оси отверстий — на ±14 = 20·cos 45°). Сверху их не видно: край отверстия на 14 от оси, сторона квадрата Ø35 — на 12,4 */
 /* 9 */ V[9]={tree:S(U(flange(120,20),cone(40,30,20,120)), hexP(35,50,80,120), cyl(25,30,80.01), cylX(20,0,30.01), ...H4(12,100,0,20)), box:[[-60,-60,0],[60,60,120]]};
 /* 10 */ V[10]={tree:S(U(flange(110,20),cone(35,30,20,120)), cylT(50,70,120), P.npyr(6,(30-20/70*E)*Math.cos(Math.PI/6),(50+20/70*0.01)*Math.cos(Math.PI/6),-E,70.01,{a:0}), ...H4(10,90,0,20)), box:[[-55,-55,0],[55,55,120]]};   /* шестигранник Ø30 внизу → Ø50 у дна расточки */
 /* 11 */ V[11]={tree:S(U(hexP(120,90,0,80,false),cyl(35,80,120)), coneB(25,40,0,70), cylT(40,69.99,120), ...blind(4,10,55,100,120,45)), box:[[-60,-52,0],[60,52,120]]};
@@ -27298,8 +27396,8 @@ D[7]={d:[['F','v',[-60,0],[-60,20],-70,'20'],['F','h',[-60,0],[60,0],-12,'Ø120'
   ['L','v',[60,0],[40,120],72,'120'],['L','v',[-10,80],[-17.5,120],-72,'40'],
   dia(100,230,18,1),dia(40,-20,48,1),dia(70,200,32,1),hl(4,12,100,315,-20),ang(68,225,270,'45°',50,60)]};
 D[8]={d:[['F','v',[-55,0],[-55,30],-65,'30'],['F','h',[14,0],[26,0],-12,'4 отв. Ø12',{tl:1}],['F','h',[-55,0],[55,0],-24,'Ø110'],['F','h',[-35,120],[35,120],132,'Ø70'],
-  ['L','v',[55,0],[35,120],67,'120'],['L','v',[-17.5,90],[-30,120],-67,'30'],['L','v',[-30,20],[-30,80],-67,'60'],['L','v',[-30,0],[-30,20],-67,'20'],['L','h1',[-30,50],50,'Ø60'],['L','h1',[-17.5,90],130,'Ø35'],
-  dia(40,-15,48,1),ang(64,-45,0,'45°',20,55)]};
+  ['L','v',[55,0],[35,120],67,'120'],['L','v',[-17.5,90],[-30,120],-67,'30'],['L','v',[-30,20],[-30,80],-67,'60'],['L','v',[-30,0],[-30,20],-67,'20'],['L','h1',[-30,50],50,'Ø60'],
+  dia(35,200,50,1),dia(40,-15,48,1),ang(64,-45,0,'45°',20,55)]};
 D[9]={d:[['F','v',[-60,0],[-60,20],-70,'20'],['F','h1',[10,0],-12,'Ø20',{tx:18}],['F','h',[-60,0],[60,0],-24,'Ø120'],['F','h',[-30,120],[30,120],134,'Ø60'],['F','h1',[25,55],55,'Ø50'],
   ['L','v',[60,0],[30,120],72,'120'],['L','v',[-25,30],[-25,80],-72,'50'],['L','v',[-60,0],[-25,30],-72,'30'],
   dia(80,-20,30),dia(100,15,14,1),dia(35,25,52,1),hl(4,12,100,45,30),ang(68,-45,0,'45°',50,60)]};
@@ -27414,14 +27512,21 @@ const L=[
  {n:10,fig:70,page:43,title:'Конус с призмой',q:'Достроить вид сверху, построить вид слева, выполнить разрезы. K — сквозное отверстие.',
   why:'Усечённый конус, на его верхнем срезе — четырёхгранная призма, повёрнутая ребром к нам (рёбра лежат на окружности среза). Нижние боковые грани отверстия K проходят через вершину конуса и поэтому режут его по прямым — образующим (тонкие линии на рисунке тетради). Нижняя грань режет конус по окружности, вертикальные грани верхней части — призму по прямым.',
   tree:S(U(P.I(P.cone(60,0.3,0,127.6),P.hp([0,0,1],[0,0,49.4])), P.box(52,52,45,129.4,{a:45})),
-    thru(42,49,118.3), P.I(thru(80,21.4,49.6), P.hp([1,0,0.2685],[21,0,49.4]), P.hp([-1,0,0.2685],[-21,0,49.4]))), box:[[-60,-60,0],[60,60,129.4]]}
+    thru(42,49,118.3), P.I(thru(80,21.4,49.6), P.hp([1,0,0.2685],[21,0,49.4]), P.hp([-1,0,0.2685],[-21,0,49.4]))), box:[[-60,-60,0],[60,60,129.4]]},
+ {n:11,fig:71,page:44,title:'Шаровой слой с призмой',q:'Достроить вид сверху, построить вид слева, выполнить разрезы. K — сквозное отверстие.',
+  why:'Низ — шаровой слой: шар Ø120 срезан по центру (основание) и горизонтальной плоскостью на высоте 44; на срезе стоит четырёхгранная призма, повёрнутая ребром к нам, — её вертикальные рёбра лежат на окружности среза. Снизу — глухое цилиндрическое отверстие Ø48 (штриховые на главном виде и штриховая окружность на виде сверху). Прямоугольное отверстие K идёт насквозь спереди назад и внизу выходит в цилиндрическое. Вертикальные грани K режут шар по дугам окружностей (на виде слева — дуги), а призму — по прямым; нижняя грань K — плоскость, она режет шар по окружности, видимой сверху.',
+  /* размеры сняты с рисунка тетради (на нём размеров нет): шар R60 с центром в основании, срез на z 44 (окружность среза R40,8 — по ней вершины квадрата
+     призмы, сторона 57,7), верх призмы 134; отверстие Ø48 глубиной 30; K — ширина 32 по оси, z 14…96 */
+  tree:S(U(P.I({t:'sph',r:60},P.hp([0,0,1],[0,0,44]),P.hp([0,0,-1],[0,0,0])), P.box(57.7,57.7,30,134,{a:45})), P.cyl(24,-1,30), thru(32,14,96)), box:[[-60,-60,0],[60,60,134]]}
 ];
 /* шар: точная функция расстояния в обоих движках через узел 'sph' */
 L[4].tree=S({t:'sph',r:71}, thru(65,-20,30.5), P.cyl(23.5,-80,80));
 /* что строим по заданию: F — главный вид ('view' — без разреза, 'half' — с фронтальным разрезом), hz — горизонтальный разрез (уровень — середина отверстия K).
    givenTop — что дано на виде сверху («достроить» — только наружный контур тела); noTop — вид сверху не дан */
-const HZ={1:68,2:80,3:57.5,4:44.5,5:5,6:84,7:20,8:71.5,9:3,10:35}, FV={1:'view',2:'view',3:'view',4:'view'};
+const HZ={1:68,2:80,3:57.5,4:44.5,5:5,6:84,7:20,8:71.5,9:3,10:35,11:70}, FV={1:'view',2:'view',3:'view',4:'view'};
 L.forEach(t=>{ t.hz={L:'А',z:HZ[t.n]}; t.spec={F:FV[t.n]||'half',L:'half'}; if(/^Достроить вид сверху|^Достроить вид спереди и вид сверху/.test(t.q)) t.givenTop=t.tree.a; if(/^Построить вид сверху/.test(t.q)) t.noTop=true; });
+L[4].givenTop=S({t:'sph',r:71}, P.cyl(23.5,-80,80));   /* 5: на виде сверху дано и вертикальное отверстие — две окружности, как в тетради */
+L[10].givenTop=S(L[10].tree.a, P.cyl(24,-1,30));   /* 11: на виде сверху дано и цилиндрическое отверстие снизу (штриховая окружность) */
 return L;
 })();
 
@@ -27522,8 +27627,11 @@ function sheetSVG(model,title,sub,task,mode){
     return `<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${col||'#111'}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`; };
   const tc=P(D.top,[0,0,z1],X0,TOPY), e=P(D.top,[r+7,0,z1],X0,TOPY)[0]-tc[0];
   o+=`<image href="${D.front.url}" x="${X0}" y="${Y0}" width="${S}" height="${S}"/>`;
-  /* горизонтальный разрез на месте вида сверху: сзади (вверху) — половина вида, спереди (внизу) — половина разреза */
-  o+=hz&&D.cut?`<defs><clipPath id="${hid}a"><rect x="${X0}" y="${TOPY}" width="${S}" height="${f(tc[1]-TOPY)}"/></clipPath><clipPath id="${hid}b"><rect x="${X0}" y="${f(tc[1])}" width="${S}" height="${f(TOPY+S-tc[1])}"/></clipPath></defs>`
+  /* горизонтальный разрез на месте вида сверху: слева от вертикальной оси — половина вида, справа — половина разреза; 'halfD' — сверху вид, снизу разрез; 'full' — полный */
+  o+=hz&&D.cut&&SP.H==='full'?`<image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"/>`
+    :hz&&D.cut&&SP.H==='halfD'?`<defs><clipPath id="${hid}a"><rect x="${X0}" y="${TOPY}" width="${S}" height="${f(tc[1]-TOPY)}"/></clipPath><clipPath id="${hid}b"><rect x="${X0}" y="${f(tc[1])}" width="${S}" height="${f(TOPY+S-tc[1])}"/></clipPath></defs>`
+      +`<image href="${IG3.drawing(model,'topNH',W).url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}a)"/><image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}b)"/>`
+    :hz&&D.cut?`<defs><clipPath id="${hid}a"><rect x="${X0}" y="${TOPY}" width="${f(tc[0]-X0)}" height="${S}"/></clipPath><clipPath id="${hid}b"><rect x="${f(tc[0])}" y="${TOPY}" width="${f(X0+S-tc[0])}" height="${S}"/></clipPath></defs>`
     +`<image href="${IG3.drawing(model,'topNH',W).url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}a)"/><image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}b)"/>`
     :given&&model.noTop?'':`<image href="${D.top.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"/>`;
   if(D.left) o+=`<image href="${D.left.url}" x="${X0+S}" y="${Y0}" width="${S}" height="${S}"/>`;
@@ -27531,7 +27639,7 @@ function sheetSVG(model,title,sub,task,mode){
   if(D.left){ const la=P(D.left,[0,0,z0-7],X0+S,Y0), lb=P(D.left,[0,0,z1+7],X0+S,Y0); o+=ln(la,lb,'#111',AX,.8); }
   if(!given&&SP.xb) o+=wavy(P(D.front,[SP.xb,0,z0+0.5],X0,Y0),P(D.front,[SP.xb,0,z1-0.5],X0,Y0));
   if(!given&&SP.yb&&D.left) o+=wavy(P(D.left,[0,SP.yb,z0+0.5],X0+S,Y0),P(D.left,[0,SP.yb,z1-0.5],X0+S,Y0));
-  o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);
+  if(!(given&&model.noTop)) o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);   /* вида сверху в задании нет — и его осей нет */
   /* оси отверстий (ГОСТ 2.303): на виде сверху — центровая окружность и перекрестия, на главном виде и виде слева — оси отверстий */
   if(!given){ const HL=holeAxes(model), done={c:{},x:{},y:{}}; HL.forEach(h=>{ const R=Math.hypot(h.x,h.y), q=P(D.top,[h.x,h.y,z1],X0,TOPY), a=h.r+3;
       if(!done.c[R.toFixed(1)]){ done.c[R.toFixed(1)]=1; const c0=P(D.top,[0,0,z1],X0,TOPY); o+=axCircle(c0,R*Km,HL.filter(q=>Math.abs(Math.hypot(q.x,q.y)-R)<0.05).map(q=>Math.atan2(q.y,q.x)*180/Math.PI),Km,'#111',.7); }
@@ -27541,10 +27649,11 @@ function sheetSVG(model,title,sub,task,mode){
     if(D.left) FL.L.forEach(h=>{ o+=ln(P(D.left,[0,h.y,h.z0-4],X0+S,Y0),P(D.left,[0,h.y,h.z1+4],X0+S,Y0),'#111',AX,.7); }); }
   const arr=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*9-dy*2.6)},${f(dy*9+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="#111"/>`;
   const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+(hz?22*Km+16:26);   /* при горизонтальном разрезе размер — за его штрихом */
-  o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.7)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.7)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.7)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
+  const noDim=!!(window.IG_WB&&IG_WB.includes(model));   /* рабочая тетрадь: размеры на листе не нужны (в задании их нет) */
+  if(!noDim) o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.7)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.7)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.7)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
     +`<text x="${f(hx-5)}" y="${f((hb[1]+ht[1])/2)}" transform="rotate(-90 ${f(hx-5)} ${f((hb[1]+ht[1])/2)})" class="igs-dim" text-anchor="middle">${Math.round(z1-z0)}</text>`;
   const sx=Math.abs(b[0][0]+b[1][0])<0.5, wl=P(D.front,[sx?-r:b[0][0],0,zw],X0,Y0), wr=P(D.front,[sx?r:b[1][0],0,zw],X0,Y0), wy=P(D.front,[0,0,z0],X0,Y0)[1]+24;   /* несимметричная деталь — по её краям */
-  o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.7)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.7)+ln([wl[0],wy],[wr[0],wy],'#111',null,.7)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
+  if(!noDim) o+=ln([wl[0],wl[1]+3],[wl[0],wy+4],'#111',null,.7)+ln([wr[0],wr[1]+3],[wr[0],wy+4],'#111',null,.7)+ln([wl[0],wy],[wr[0],wy],'#111',null,.7)+arr([wl[0],wy],1,0)+arr([wr[0],wy],-1,0)
     +`<text x="${f((wl[0]+wr[0])/2+(wr[0]-wl[0])*.22)}" y="${f(wy-5)}" class="igs-dim" text-anchor="middle">${round&&sx?'Ø':''}${Math.round(sx?2*r:b[1][0]-b[0][0])}</text>`;
   if(model.sec){ const [[x1,z1s],[x2,z2s]]=model.sec.p; o+=secMark(P(D.front,[x1,0,z1s],X0,Y0),P(D.front,[x2,0,z2s],X0,Y0),Km,given?'А':secL(model)); }
   if(!given&&prL(model)&&D.left){ const L=prL(model), lt=P(D.left,[0,0,z1],X0+S,Y0); o+=secMark(P(D.top,[0,-r-3,z1],X0,TOPY),P(D.top,[0,r+3,z1],X0,TOPY),Km,L)+`<text x="${f(lt[0])}" y="${f(lt[1]-16)}" class="igs-let" text-anchor="middle">${L}–${L}</text>`; }
@@ -27569,7 +27678,7 @@ function crumbs(list){ return list; }
 function home(v){
   const mv=myVar();
   v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name]],next:null,noBottom:true,cls:'igx',body:`
-   <div class="igh-top"><span class="igx-badge">Инженерная графика</span><h1>Куда тебе?</h1><p class="lead">ДЗ № 2 по вариантам, задачи рабочей тетради и разбор сечений и разрезов по шагам.</p></div>${IGBETA()}
+   <div class="igh-top"><span class="igx-badge">Инженерная графика</span><h1>Куда тебе?</h1><p class="lead">ДЗ № 2, 3 и 4 по вариантам, задачи рабочей тетради и разбор сечений и разрезов по шагам.</p></div>${IGBETA()}
    <a class="igh-pts" href="${H('ig','points')}"><span class="igh-pk">Бета · скоро защита ДЗ 2?</span><b>Научись защищать точки</b><p>Как найти две недостающие проекции точки — по шагам, в 3D с плоскостями проекций и на тренажёре.</p><span class="igh-pa">Научиться →</span></a>
    <section class="igh-hw">
     <div class="igh-hw-t"><span class="igh-k">ДЗ № 2 · «Построение изображений»</span><b>Найди свой вариант</b><p>30 вариантов. В каждом — условие, деталь в 3D, построение по шагам и готовый лист.</p>
@@ -27577,6 +27686,7 @@ function home(v){
      <div class="igh-hw-l">${mv?`<a class="igh-mine" href="${H('ig','hw2',mv)}">★ Мой вариант ${mv}</a>`:''}<a href="${H('ig','hw2')}">Все 30 вариантов →</a></div></div>
     <div class="igh-hw-3d" id="igHero" aria-hidden="true"></div>
    </section>
+   <div class="igh-dz">${['ig3','ig4'].map(id=>{ const d=window.DZR&&DZR.get(id); return d?`<a href="${HDZ(id)}"><b>${d.label}${d.beta?' <span class="dz-beta">бета</span>':''}</b><small>${d.title}</small><em>Выбрать вариант →</em></a>`:''; }).join('')}</div>
    <div class="igh-two">
     <a class="igh-c" href="${H('ig','wb')}"><span class="igh-k">Раздел 5 · тела с отверстиями</span><b>Рабочая тетрадь</b><p>${IG_WB.length} заданий: призма, цилиндр, пирамида, конус, шар. Найди по номеру рисунка.</p><span class="igh-a">Открыть тетрадь →</span></a>
     <a class="igh-c igh-learn" href="${H('ig','learn')}"><span class="igh-k">Учиться с нуля</span><b>Виды, разрезы, сечения</b><p>Один вариант от условия до чистовика: что строим, почему так и какой пункт ГОСТ.</p><span class="igh-a">Начать →</span></a>
@@ -27634,6 +27744,13 @@ function crease(model,ax){ const J=IG3.J, T=model.tree, b=model.box, h=0.05, d=0
         if(nn>0.3){ const out=o?[0,u+Math.sign(u||1)*2.5,z]:[u+Math.sign(u||1)*2.5,0,z]; if(J(T,...out)<0) inner++; else outer++; } }
       prev=v; } }
   return inner+outer<6?0:(inner>=outer?1:-1); }   /* ребро на оси — на заметной высоте (от 9 мм), а не точка у вершины конуса */
+/* ребро на вертикальной оси вида сверху (x = 0): на половине вида — видимое сверху, на половине разреза — ниже секущей плоскости.
+   Луч сверху вниз по x = 0 до поверхности; излом там, где нормаль заметно наклонена к x (у гладкой симметричной поверхности на оси n_x = 0) */
+function creaseTop(model){ if(model._ct!=null) return model._ct; const J=IG3.J, T=model.tree, b=model.box, h=0.05, d=0.35, zc=model.hz.z;
+  const hit=(y,zs)=>{ let prev=null; for(let z=zs;z>b[0][2]-1;z-=0.25){ const v=J(T,0,y,z); if(prev!=null&&prev>=0&&v<0) return z; prev=v; } return null; };
+  const kink=(y,z)=>{ const g=k=>{ const a=[d,y,z], c=[d,y,z]; a[k]+=h; c[k]-=h; return (J(T,...a)-J(T,...c))/(2*h); }, n=[g(0),g(1),g(2)]; return Math.abs(n[0])/(Math.hypot(...n)||1)>0.3; };
+  let nv=0, nc=0; for(let y=b[0][1]+0.25;y<b[1][1];y+=0.5){ const zv=hit(y,b[1][2]+1); if(zv!=null&&kink(y,zv)) nv++; const zcut=J(T,0,y,zc)<0?null:hit(y,zc); if(zcut!=null&&kink(y,zcut)) nc++; }
+  Object.defineProperty(model,'_ct',{value:nv>=12||nc>=12}); return model._ct; }   /* ребро — от 6 мм */
 /* симметрия детали относительно плоскости y = 0 ('y') или x = 0 ('x'): 8000 псевдослучайных точек (одинаково при каждом открытии);
    несимметричный объём бывает маленьким (треугольное отверстие), поэтому точек много, а порог — 5 несовпадений */
 function symAx(model,ax){ const key=ax==='y'?'_sy':'_sx'; if(model[key]!=null) return model[key]; const b=model.box, T=model.tree; let asym=0, sd=ax==='y'?12345:777; const rnd=()=>(sd=(sd*1103515245+12345)%2147483648)/2147483648;
@@ -27644,7 +27761,10 @@ function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(
   if(sp.L==='half'&&!symAx(model,'y')) sp.L='full';   /* несимметричная спереди назад деталь: половина вида и половина разреза на виде слева недопустима */
   if(model.step&&(sp.F==='half'||sp.F==='full')) sp.F=sp.F==='half'?'stepH':'step';   /* ступенчатый разрез (model.step — участки секущих плоскостей) */
   if(sp.F==='half'&&!symAx(model,'x')) sp.F='full'; if(sp.F==='stepH'&&!symAx(model,'x')) sp.F='step';   /* несимметричная слева направо: на главном виде — только полный разрез (ГОСТ 2.305, п. 7.10) */
-  sp.H=model.hz&&(model.hzFull||!symAx(model,'y'))?'full':'half';   /* hzFull — на оси вида сверху лежит ребро: половину вида с половиной разреза не соединяют */      /* горизонтальный разрез: половина вида и половина разреза — только у симметричной спереди назад детали */
+  /* горизонтальный разрез: как на главном виде — слева половина вида, справа половина разреза ('half', граница — вертикальная ось), если деталь симметрична
+     слева направо и на этой оси вида сверху нет ребра; иначе — по горизонтальной оси, разрез снизу ('halfD': симметрична спереди назад, hzFull — ребро на
+     горизонтальной оси); иначе полный разрез */
+  sp.H=!model.hz?'half':symAx(model,'x')&&!creaseTop(model)?'half':!model.hzFull&&symAx(model,'y')?'halfD':'full';
   const DL=7; sp.xb=sp.F==='half'||sp.F==='stepH'?-DL*crease(model,'x'):0; sp.yb=sp.L==='half'?DL*crease(model,'y'):0;
   sp.fk={half:'front',view:'front0',full:'frontF',stepH:'frontSH',step:'frontS'}[sp.F]; sp.lk={half:'left',view:'left0',full:'leftF'}[sp.L];
   return model._spec=sp; }
@@ -27738,7 +27858,8 @@ function stepLines(model,i){ const c=model._sl||(Object.defineProperty(model,'_s
       if(q.h!==s.h) continue; const ux=q.b[0]-q.a[0], uy=q.b[1]-q.a[1], l=Math.hypot(ux,uy)||1e-9, u=((p[0]-q.a[0])*ux+(p[1]-q.a[1])*uy)/(l*l); if(u>-0.02&&u<1.02&&Math.abs((p[0]-q.a[0])*uy-(p[1]-q.a[1])*ux)/l<0.5) return true; } return false; });
   const nw=cur.filter(s=>!was(s)), old=cur.filter(s=>was(s));
   return c[i]={old:IG3.paths(old),cur:IG3.paths(nw),segs:nw}; }
-function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано','Главный вид и вид сверху — из задания. Вид слева строим справа от главного вида, на одной высоте с ним.'],
+function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':'Главный вид и вид сверху — из задания.'+(model.givenTop?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду — дальше он уже достроен.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
+   ...(model.noTop?[['top','Вид сверху','Вида сверху в задании нет — строим его первым, под главным видом. Ширины переносим с главного вида вертикальными линиями связи; глубины берём из формы тела (у шара и цилиндра контур сверху — окружность того же диаметра). Отверстия, идущие вдоль взгляда (K), видны сверху как линии по их ширине на главном виде; невидимые контуры — штриховыми. Дальше глубины для вида слева берём с этого вида.']]:[]),
    ['axis','Ось симметрии вида слева','Сначала проводим ось симметрии вида слева — от неё будем откладывать глубины. Высоты общие с главным видом.']];
   let first=true;
   FT.forEach((f,i)=>{ const u=stepLines(model,i); if(!u.segs.length) return;   /* элемент не добавляет линий на виде слева — шаг не нужен */
@@ -27752,7 +27873,7 @@ function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дан�
       +(LT.f?' Фронтальная плоскость здесь — не плоскость симметрии детали (спереди и сзади деталь разная), поэтому разрез обозначают: на виде сверху — разомкнутая линия со стрелками и буквами '+LT.f+', над главным видом — «'+LT.f+'–'+LT.f+'».':'')
       +(sp.F!=='view'&&!LT.f||sp.L!=='view'&&!LT.p?' Разрез, плоскость которого — плоскость симметрии детали и который стоит в проекционной связи, не обозначают.':'')]); }
   if(model.sec) out.push(['sec','Сечение '+secL(model)+'–'+secL(model),'Наклонная плоскость задана следом на главном виде. Точки контура переносим перпендикулярно следу — фигура строится в натуральную величину, со штриховкой.']);
-  out.push(['sheet','Готовый лист','Все изображения на листе в проекционной связи, с осями, размерами и основной надписью.']);
+  out.push(['sheet','Готовый лист','Все изображения на листе в проекционной связи, с осями'+(window.IG_WB&&IG_WB.includes(model)?'':', размерами')+' и основной надписью.']);
   return out; }
 /* характерные точки элемента на виде слева: верхний и нижний уровни и излом между ними; на каждом уровне — ближайшая к нам точка контура */
 function featPts(segs){ const P=[]; segs.forEach(q=>{ P.push(q.a3,q.b3); }); if(!P.length) return [];
@@ -27774,7 +27895,8 @@ function stepsSVG(model,st,steps){
   const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2], cut=kind==='cut'||kind==='sec';
   let o='';
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
-  o+=img(cut?'front':'front0',X0,Y0)+img('top',X0,TOPY);
+  if(kind==='given'&&model.givenTop) d.topG=IG3.drawing({tree:model.givenTop,box:model.box},'top',W);   /* «Дано» — вид сверху как в задании (не достроен) */
+  o+=img(cut?'front':'front0',X0,Y0)+(kind==='given'&&model.noTop?'':img(kind==='given'&&d.topG?'topG':'top',X0,TOPY));
   if(cut){ o+=img('left',X0+S,Y0);
     /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
     if(sp.xb) o+=wavy(P('front',[sp.xb,0,z0+0.5],X0,Y0),P('front',[sp.xb,0,z1-0.5],X0,Y0)); if(sp.yb) o+=wavy(P('left',[0,sp.yb,z0+0.5],X0+S,Y0),P('left',[0,sp.yb,z1-0.5],X0+S,Y0));
@@ -27790,11 +27912,12 @@ function stepsSVG(model,st,steps){
     view=`<g transform="translate(${X0+S} ${Y0}) scale(${k0})">${g(u.old,'#111')}${g(u.cur,HL)}</g>`; }
   /* оси симметрии */
   const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
-  const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0]; o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
-  if(kind!=='given'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
+  const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0], noT=kind==='given'&&model.noTop; if(!noT) o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
+  if(kind==='top') [b[0][0],b[1][0]].forEach(x=>{ o+=L(FR([x,0,z0]),TP([x,b[1][1],z1]),AC,null,1); });   /* построение вида сверху: ширины — вертикальными линиями связи */
+  if(kind!=='given'&&kind!=='top'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
   /* как в задании: оси отверстий и центровая окружность на виде сверху, след плоскости А на главном виде — с первого шага */
   { const Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10, dn={};
-    holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), q=TP([h.x,h.y,z1]), a=h.r+3, ux=h.x/R, uy=h.y/R;
+    if(!noT) holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), q=TP([h.x,h.y,z1]), a=h.r+3, ux=h.x/R, uy=h.y/R;
       if(!dn[R.toFixed(1)]){ dn[R.toFixed(1)]=1; o+=`<circle cx="${f(tc[0])}" cy="${f(tc[1])}" r="${f(R*Km)}" fill="none" stroke="#111" stroke-width=".7" stroke-dasharray="${AX}"/>`; }
       o+=L(TP([h.x-ux*a,h.y-uy*a,z1]),TP([h.x+ux*a,h.y+uy*a,z1]),'#111',AX,.5)+L(TP([h.x+uy*a,h.y-ux*a,z1]),TP([h.x-uy*a,h.y+ux*a,z1]),'#111',AX,.5); });
     if(model.sec&&kind!=='sec'){ const [[x1,za],[x2,zb]]=model.sec.p; o+=secMark(FR([x1,0,za]),FR([x2,0,zb]),Km,secL(model)); } }
@@ -27964,7 +28087,7 @@ function partPage(v,o){
   const n=o.model;
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
    <a class="igx-back" href="${o.back[0]}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>${o.back[1]}</a>
-   <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}</div>${IGBETA()}
+   <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}</div>${o.beta!=null?o.beta:IGBETA()}
    <section class="igx-task"><div class="igx-task-t"><span class="igx-k">Задание${o.fig?' · '+o.fig:''}</span><p>${o.q||''}</p></div>
     <div class="igx-given" id="igGiven">${o.img?`<div class="igx-dwg igx-orig"><img src="${o.img}" alt="Чертёж задания" decoding="async"></div>`:'<div class="igx-given-l">Строю данные изображения…</div>'}</div></section>
    ${o.learn?`<a class="igx-xl" href="${H('ig','learn')}"><b>Как это строится?</b> Разбор по шагам: вид слева, разрезы, сечение А–А →</a><a class="igx-xl igp-go" href="${H('ig','points')}"><b>Защита листа:</b> как найти две недостающие проекции точки →</a>`:''}
@@ -28001,7 +28124,7 @@ function partPage(v,o){
   function sheetNow(){
     /* чистовик и черновик — как на образце; вариант 5 разобран в «Обучении» по шагам — тот же лист */
     const nv=parseInt(String(o.title).replace(/\D/g,''),10), box=$(v,'#igSheetBox'), sp=igSpec(n), tt={half:'половина вида и половина разреза',view:'вид, невидимый контур — штриховыми',full:'полный разрез'};
-    const CAP={clean:'Чистовик. Главный вид — '+tt[sp.F]+'; вид слева — '+tt[sp.L]+'; вид сверху'+(n.hz?' — половина вида и половина горизонтального разреза':'')+'. Размеры — из задания.',
+    const CAP={clean:'Чистовик. Главный вид — '+tt[sp.F]+'; вид слева — '+tt[sp.L]+'; вид сверху'+(n.hz?(sp.H==='full'?' — полный горизонтальный разрез':' — половина вида и половина горизонтального разреза'+(sp.H==='halfD'?' (разрез снизу: справа от вертикальной оси нельзя)':'')):'')+'. Размеры — из задания.',
       draft:'Черновик. Те же изображения и сечение '+secL(n)+'–'+secL(n)+' в натуральную величину: оно стоит по направлению стрелок, точки переносятся перпендикулярно следу. Точка n″ на следе → n′ на виде сверху (линия связи) → n₁ в сечении (глубина та же, что на виде сверху).'};
     const own=o.sheet, hw=!own&&window.IG_VARS&&IG_VARS[nv]===n, make=m=>{ try{ return own?own(m):hw&&nv===5&&window.IGL?IGL.sheet(m):hw&&window.IGS?IGS.sheet(nv,m):m==='clean'?sheetSVG(n,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):''; }catch(e){ console.error(e); return ''; } };
     /* «Читаю чертёж»: нажатая линия подсвечивается на всех видах (IGREAD) */
@@ -29050,9 +29173,10 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   let o='', col='', c='', t='', pts=[];
   /* изображения */
   o+=img(C,DR(sp.fk,0,sp.xb),0,0)+img(C,DR(sp.lk,0,sp.yb),k*C.GX,0);
-  if(hz&&sp.H==='full') o+=img(C,IG3.drawing(md,'topcut',W,hz.z),0,k*C.TY);   /* несимметричная спереди назад деталь: разрез А–А целиком на месте вида сверху */
-  else if(hz){ const top=DR('topNH'), cut=IG3.drawing(md,'topcut',W,hz.z),   /* половина вида — без невидимого контура */ id='igsHz'+(typeof n==='object'?n.key:n)+mode, yc=k*C.TY;
-    o+=`<defs><clipPath id="${id}a"><rect x="-2000" y="-2000" width="4000" height="${f(yc+2000)}"/></clipPath><clipPath id="${id}b"><rect x="-2000" y="${f(yc)}" width="4000" height="2000"/></clipPath></defs>`
+  if(hz&&sp.H==='full') o+=img(C,IG3.drawing(md,'topcut',W,hz.z),0,k*C.TY);   /* половину вида с половиной разреза соединить нельзя: разрез А–А целиком на месте вида сверху */
+  else if(hz){ const top=DR('topNH'), cut=IG3.drawing(md,'topcut',W,hz.z),   /* половина вида — без невидимого контура */ id='igsHz'+(typeof n==='object'?n.key:n)+mode, xc=TP(0,0)[0], yc=k*C.TY;   /* 'half': слева от вертикальной оси — вид, справа — разрез; 'halfD': сверху — вид, снизу — разрез */
+    o+=(sp.H==='half'?`<defs><clipPath id="${id}a"><rect x="-2000" y="-2000" width="${f(xc+2000)}" height="8000"/></clipPath><clipPath id="${id}b"><rect x="${f(xc)}" y="-2000" width="4000" height="8000"/></clipPath></defs>`
+      :`<defs><clipPath id="${id}a"><rect x="-2000" y="-2000" width="4000" height="${f(yc+2000)}"/></clipPath><clipPath id="${id}b"><rect x="-2000" y="${f(yc)}" width="4000" height="2000"/></clipPath></defs>`)
       +`<g clip-path="url(#${id}a)">${img(C,top,0,k*C.TY)}</g><g clip-path="url(#${id}b)">${img(C,cut,0,k*C.TY)}</g>`; }
   else o+=img(C,DR('top'),0,k*C.TY);
   if(sp.xb) o+=IGUI.wavy(FR(sp.xb,C.z0+0.5),FR(sp.xb,C.z1-0.5)); if(sp.yb) o+=IGUI.wavy(LF(sp.yb,C.z0+0.5),LF(sp.yb,C.z1-0.5));
@@ -29065,16 +29189,18 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   const anc=v0=>[{t:(0-v0)*k,pr:2}].concat(...RH.map(r=>[{t:(r-v0)*k,pr:1},{t:(-r-v0)*k,pr:1}]));
   /* концы осей — от крайних точек самих изображений (габарит модели бывает с запасом): ось выходит за контур на 5 мм */
   const EX=d=>{ const lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9]; (d.lines||[]).forEach(L=>[L.a3,L.b3].forEach(p=>{ if(p) for(let i=0;i<3;i++){ lo[i]=Math.min(lo[i],p[i]); hi[i]=Math.max(hi[i],p[i]); } })); return lo[0]<1e8?[lo,hi]:[[C.x0,C.y0,C.z0],[C.x1,C.y1,C.z1]]; };
-  /* вид сверху с разрезом А–А: спереди (y < 0) изображён разрез — его габарит у́же вида (сечение выше основания), ось — от него */
+  /* вид сверху с разрезом А–А: справа (x > 0; снизу, y < 0, — у 'halfD') изображён разрез — его габарит у́же вида (сечение выше основания), этот конец оси — от него */
   /* ось выходит за контур на 5 мм: контур — крайние точки линий изображения в полосе вдоль оси шириной 0,5 её длины в каждую сторону (как в нормоконтроле)
      (паз на оси не укорачивает ось; у несимметричного сечения, где габарит шире, — по самому сечению). i — вдоль оси, j — поперёк */
   const SPN=(d,i,j,dflt)=>{ const P=[]; (d.lines||[]).forEach(L=>{ const a=L.a3, b=L.b3; if(a&&b) P.push(a,b,[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2]); });
-    if(!P.length) return dflt; const band=0.5*(Math.max(...P.map(p=>p[i]))-Math.min(...P.map(p=>p[i]))+10), Q=P.filter(p=>Math.abs(p[j])<=band);
-    return Q.length?[Math.min(...Q.map(p=>p[i])),Math.max(...Q.map(p=>p[i]))]:dflt; };
+    if(!P.length) return dflt; let r=[Math.min(...P.map(p=>p[i])),Math.max(...P.map(p=>p[i]))];
+    for(let it=0;it<4;it++){ const band=0.5*(r[1]-r[0]+10), Q=P.filter(p=>Math.abs(p[j])<=band); if(!Q.length) break;   /* полоса — от длины самой оси (контур + 2×5 мм), как в нормоконтроле */
+      const r2=[Math.min(...Q.map(p=>p[i])),Math.max(...Q.map(p=>p[i]))]; if(Math.abs(r2[0]-r[0])<0.01&&Math.abs(r2[1]-r[1])<0.01) break; r=r2; }
+    return r; };
   const DF=DR(sp.fk,0,sp.xb), DL=DR(sp.lk,0,sp.yb), DTv=hz?DR('topNH'):DR('top'), DTc=hz?IG3.drawing(md,'topcut',W,hz.z):DTv, DTx=hz&&sp.H==='full'?DTc:DTv;
   const EF=EX(DF), ETv=EX(DTv), ETc=hz?EX(DTc):ETv, ETx=hz&&sp.H==='full'?ETc:ETv;
   const sF=SPN(DF,2,0,[EF[0][2],EF[1][2]]), sL=SPN(DL,2,1,[EF[0][2],EF[1][2]]), sX=[SPN(DTx,0,1,[ETx[0][0],ETx[1][0]]),SPN(DTc,0,1,[ETc[0][0],ETc[1][0]])], sYc=SPN(DTc,1,0,[ETc[0][1],ETc[1][1]]), sYx=SPN(DTx,1,0,[ETx[0][1],ETx[1][1]]);
-  const za=sF[0]-5, zb=sF[1]+5, zaL=sL[0]-5, zbL=sL[1]+5, xa=Math.min(sX[0][0],sX[1][0])-5, xb=Math.max(sX[0][1],sX[1][1])+5, ya=sYc[0]-5, yb=sYx[1]+5;
+  const za=sF[0]-5, zb=sF[1]+5, zaL=sL[0]-5, zbL=sL[1]+5, D2=sp.H==='halfD'||!hz, xa=(D2?Math.min(sX[0][0],sX[1][0]):sX[0][0])-5, xb=(D2?Math.max(sX[0][1],sX[1][1]):sX[1][1])+5, ya=(D2?sYc[0]:Math.min(sYc[0],sYx[0]))-5, yb=(D2?sYx[1]:Math.max(sYc[1],sYx[1]))+5;
   o+=ln(FR(0,za),FR(0,zb),INK,.8,AX)+ln(LF(0,zaL),LF(0,zbL),INK,.8,AX)
     +IGUI.axLine(TP(xa,0),TP(xb,0),anc(xa),k,INK,.8,rec)+IGUI.axLine(TP(0,ya),TP(0,yb),anc(ya),k,INK,.8,rec);
   /* оси отверстий: центровая окружность и перекрестия на виде сверху, оси на главном виде и виде слева */
@@ -29109,7 +29235,7 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
     const fz=loopsOn(IG3.conv(md,'y'),[0,0,0],[1,0,0],[0,0,1],[C.x0-2,C.x1+2,C.z0-2,C.z1+2]), lz=loopsOn(IG3.conv(md,'x'),[0,0,0],[0,1,0],[0,0,1],[C.y0-2,C.y1+2,C.z0-2,C.z1+2]), id='igsPk'+(typeof n==='object'?n.key:n);   /* рассечённое — с условностью для отверстий фланца, как на разрезах */
     if(sp.F!=='view') col+=`<defs><clipPath id="${id}f"><rect x="${f(sp.F==='full'?-4000:FR(sp.xb,0)[0])}" y="-4000" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}f)" d="${pathOf(fz,q=>FR(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`;
     if(sp.L!=='view') col+=`<defs><clipPath id="${id}l"><rect x="${f(sp.L==='full'?-4000:LF(sp.yb,0)[0])}" y="-4000" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}l)" d="${pathOf(lz,q=>LF(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`;
-    if(hz){ const hzL=loopsOn(md,[0,0,hz.z],[1,0,0],[0,1,0],[C.x0-2,C.x1+2,C.y0-2,C.y1+2]); col+=`<defs><clipPath id="${id}h"><rect x="-4000" y="${f(sp.H==='full'?-4000:k*C.TY)}" width="8000" height="${sp.H==='full'?8000:4000}"/></clipPath></defs><path clip-path="url(#${id}h)" d="${pathOf(hzL,q=>TP(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`; }
+    if(hz){ const hzL=loopsOn(md,[0,0,hz.z],[1,0,0],[0,1,0],[C.x0-2,C.x1+2,C.y0-2,C.y1+2]); col+=`<defs><clipPath id="${id}h"><rect x="${f(sp.H==='half'?TP(0,0)[0]:-4000)}" y="${f(sp.H==='halfD'?k*C.TY:-4000)}" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}h)" d="${pathOf(hzL,q=>TP(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`; }
     col+=yellow(C);
     const lab=labeler();
     /* вид слева: высоты переносятся с главного вида горизонтальными линиями связи */
@@ -29453,6 +29579,7 @@ return {attach,describe,chain,viewsOf};
 })();
 
 function viewIG(v,r){
+  if(r&&r.tab==='dz'&&window.IGUI) return dzView(v,dzR('ig',r));
   if(window.IGUI) return IGUI.view(v,r||{});
   setTimeout(()=>redir('#/'),0); return 'Начерт';   /* раздел ещё не открыт — для всех, кроме владельца, его нет */
   v.innerHTML=`<div class="wrap page igsoon">

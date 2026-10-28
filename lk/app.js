@@ -267,11 +267,11 @@ function eventTopics(e){ if(!CORE) return []; if(e.subj==='ng') return (CORE.rkT
 const myVariant=()=>(ME&&ME.user&&ME.user.variant)||0;
 function applyVariant(force){ const v=myVariant(); if(!(v>=1&&v<=30)) return;
   try{ ['nch2_igvar','nch2_hwvar_2','nch2_hwvar_3'].forEach(k=>{ if(force||!localStorage.getItem(k)) localStorage.setItem(k,String(v)); }); }catch(e){} }
-/* куда на сайте ведёт событие: ДЗ — сразу мой вариант в разделе «ДЗ» (#/dz/<ДЗ>/<вариант>) */
+/* куда на сайте ведёт событие: ДЗ — сразу мой вариант в разделе ДЗ своего предмета (#/ng/dz/<ДЗ>/<вариант>, #/ig/dz/…) */
 function siteLink(e){ const v=myVariant();
   if(e.kind==='dz'&&e.subj==='ikg'&&e.n===2) return {href:mainUrl('#/ig/hw2'+(v?'/'+v:'')),t:v?'Мой вариант '+v:'Варианты ДЗ 2'};
-  if(e.kind==='dz'&&e.subj==='ikg') return {href:mainUrl('#/dz/ig'+e.n+(v?'/'+v:'')),t:v?'Мой вариант '+v:'Задание №'+e.n};
-  if(e.kind==='dz'&&e.subj==='ng') return {href:mainUrl('#/dz/ng'+e.n+(v?'/'+v:'')),t:v?'Мой вариант '+v:'Разбор ДЗ '+e.n};
+  if(e.kind==='dz'&&e.subj==='ikg') return {href:mainUrl('#/ig/dz/'+e.n+(v?'/'+v:'')),t:v?'Мой вариант '+v:'Задание №'+e.n};
+  if(e.kind==='dz'&&e.subj==='ng') return {href:mainUrl('#/ng/dz/'+e.n+(v?'/'+v:'')),t:v?'Мой вариант '+v:'Разбор ДЗ '+e.n};
   return e.subj==='ng'?{href:mainUrl('#/ng/path'),t:'Теория на сайте'}:{href:mainUrl('#/ig/learn'),t:'Уроки на сайте'}; }
 const firstName=n=>String(n||'').trim();
 const initials=n=>esc(String(n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?');
@@ -340,7 +340,7 @@ function stepAction(s){ const e=s.evObj; if(!e) return '';
   if(s.k==='mock') return `<a class="btn sm" href="#/event/${e.id}/mock">Пробный РК</a>`;
   if(s.k==='light') return ext(mainUrl(e.subj==='ng'?'#/ng/cheat':'#/ig/theory'),'Шпаргалка на сайте');
   if(e.kind==='dz'&&s.k==='check'&&e.subj==='ikg'&&flag('normo')) return `<a class="btn sm" href="#/check/normo">Предпроверка листа</a>`;
-  if(e.kind==='dz'&&s.k==='read') return ext(mainUrl('#/dz'),'Разборы ДЗ на сайте');
+  if(e.kind==='dz'&&s.k==='read') return ext(mainUrl(e.subj==='ng'?'#/ng/dz':'#/ig/dz'),'Разборы ДЗ на сайте');
   return ''; }
 function eventView(id,sub){ const e=events().find(x=>x.id===id); if(!e){ render('<p class="note bad">Нет такого события.</p>'); return; }
   if(sub==='diag') return diagView(e); if(sub==='mix') return mixView(e); if(sub==='mock') return mockView(e);
