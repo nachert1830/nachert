@@ -43,7 +43,7 @@ for(const sh of IX.sheets.concat((IX.foreign||[]).map(f=>Object.assign({foreign:
     if(T&&g.ok) hit.add(T); const cls=[];
     if(g.verdict==='ошибка в данных') cls.push({t:'data',bad:true,s:'ошибка в данных'}); else if(g.verdict==='данные нанесены верно') cls.push({t:'data',bad:false,s:'данные верно'});
     (g.shown||[]).forEach(k=>{ const p=g.parts&&g.parts[k]; if(p&&(p.st==='верно'||p.st==='ошибка')) cls.push({t:'part',k,bad:p.st==='ошибка',s:PN[k]+': '+p.st}); });
-    (g.answers||[]).forEach(x=>cls.push({t:'ans',bad:x.st!=='верно',s:'ответ '+x.a+': '+(x.st==='верно'?'верно':'неверно ('+x.st+')')}));
+    (g.answers||[]).filter(x=>x.st!=='неточно').forEach(x=>cls.push({t:'ans',bad:x.st!=='верно',s:'ответ '+x.a+': '+(x.st==='верно'?'верно':'неверно ('+x.st+')')}));
     if(!cls.some(c=>c.t==='part'||c.t==='ans')&&(g.verdict==='верно'||g.verdict==='ошибка')) cls.push({t:'sheet',bad:g.verdict==='ошибка',s:'чертёж: '+g.verdict});
     const guess=g.partGuess&&g.partGuess.length===1?g.partGuess[0]:null, named=new Set(cls.filter(c=>c.t==='part').map(c=>c.k)); if(guess) named.add(guess);
     if(T&&T.part!=='0'&&named.has(T.part)) S.parts++; if(T&&[...named].some(k=>k!==T.part)) S.partsWrong++;
