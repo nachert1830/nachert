@@ -14,6 +14,7 @@ function club(opt){ opt=opt||{};
   const ya={codes:{},calls:[],down:false,eyes:null};
   async function yaFetch(url,o){ o=o||{}; ya.calls.push({url,body:o.body,auth:o.headers&&(o.headers.Authorization||o.headers.authorization),headers:o.headers});
     /* поддельная модель зрения: ответ задаёт тест (ya.eyes(body) → {status, json}) */
+    if(opt.eyes&&opt.eyes.best&&url===opt.eyes.best.url){ const a=ya.best?ya.best(JSON.parse(o.body)):{status:500,json:{error:{message:'нет'}}}; ya.calls.push({url,headers:o.headers}); return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
     if(opt.eyes&&url===opt.eyes.url){ const a=ya.eyes?ya.eyes(JSON.parse(o.body)):{status:200,json:{choices:[{message:{content:'{"drawings":[]}'}}]}}; return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
     if(ya.down) throw new Error('нет сети');
     const res=(st,j)=>({ok:st<300,status:st,json:async()=>j});

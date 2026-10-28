@@ -6,30 +6,49 @@
      EYES_MODEL  — модель; {folder} заменяется на каталог (по умолчанию gpt://{folder}/qwen2.5-vl-32b-instruct)
      EYES_FOLDER — каталог Yandex Cloud (по умолчанию — каталог функции)
      EYES_KEY    — ключ API, если модель не в Yandex Cloud (тогда Authorization: Bearer <ключ>); EYES_AUTH=Api-Key — «Api-Key <ключ>»
+     OPENROUTER_API_KEY, EYES_BEST_MODEL — лучшая модель через OpenRouter (зарубежная): основная, если студент согласился
+                   отправить фото; Qwen в Yandex — запасной и без согласия (askAny)
    Фото никуда не сохраняется: только запрос к модели. */
 'use strict';
-const DEF_URL='https://llm.api.cloud.yandex.net/v1/chat/completions', DEF_MODEL='gpt://{folder}/qwen2.5-vl-32b-instruct';
+const DEF_URL='https://llm.api.cloud.yandex.net/v1/chat/completions', DEF_MODEL='gpt://{folder}/qwen2.5-vl-32b-instruct', OR_URL='https://openrouter.ai/api/v1/chat/completions';
+/* лучшая модель по замеру (REPORT.md, 7к); EYES_BEST_MODEL — другая, EYES_BEST_MODEL=off — не подключать */
+const BEST_MODEL='';
 
 const PROMPT=`Ты — глаза сканера домашних заданий по начертательной геометрии (эпюр Монжа). Ничего не оценивай и не решай —
-только найди на фото подписанные точки ЗАДАННОЙ фигуры (условия задачи) и скажи, где они.
-На фото — лист ДЗ или один его чертёж крупно. ДЗ №2: пирамида, призма или куб — заданы точки из таблицы варианта
-(A, B, C, E, F, K). ДЗ №3: пирамида SABC (точки A, B, C, S); на одном листе обычно четыре чертежа — 1) высота пирамиды,
-2) угол между гранью SAB и основанием, 3) истинный вид основания ABC, 4) угол между ребром SA и основанием.
-Для КАЖДОГО отдельного чертежа (у каждого своя ось x и своя копия заданной фигуры) верни:
-- part: для ДЗ №3 — какая это часть (1, 2, 3 или 4), если понятно по построению или подписи; иначе null;
-- box: ГЛАВНОЕ — прямоугольник этого чертежа в пикселях фото [x0, y0, x1, y1], плотно: ось x чертежа, обе проекции
-  фигуры и все построения этой части (не весь лист и не соседний чертёж);
-- pts: точки заданной фигуры и начало координат, в пикселях фото (x вправо, y вниз, начало — левый верхний угол):
-  "A''", "B''" … — фронтальные проекции (над осью x), "A'", "B'" … — горизонтальные (под осью x), "O" — пересечение
-  оси x с осью z/y. Координата — сама точка (кружок или место, где сходятся рёбра), а не буква подписи.
-Не выдумывай: если точку не видно или подпись не читается — не включай её. Точки построения (A1, A4, B1', 1', 3'' и т. п.)
-и точки ответа не включай. Если на листе написан номер варианта — верни его в n.
+только скажи, ГДЕ на фото каждый чертёж и КАКАЯ это часть задания. Всё измеряет и проверяет сканер по линиям.
+На фото — лист ДЗ или один его чертёж крупно. ДЗ №3: пирамида SABC (точки A, B, C, S); на листе обычно четыре чертежа,
+у каждого своя ось x и своя копия пирамиды. Часть узнаётся по построению:
+ 1 — высота пирамиды: ЗАМЕНА плоскостей проекций один раз (одна новая ось x₁ или x₁₄; основание ABC в новой проекции —
+     отрезок, высота — перпендикуляр из S к нему);
+ 2 — угол между гранью SAB и основанием: ДВЕ замены (две новые оси, x₁ и x₂ или x₁₄ и x₄₅; ребро AB становится точкой,
+     грани — отрезками, угол между ними);
+ 3 — истинный вид основания ABC: ВРАЩЕНИЕ треугольника вокруг горизонтали или фронтали (линия уровня h или f через
+     вершину, дуги/перпендикуляры к ней, повёрнутые точки A₀ B₀ C₀ или A₁ B₁ C₁);
+ 4 — угол между ребром SA и основанием: ВРАЩЕНИЕ плоскости (дуги из центра вращения, повёрнутые точки S₀ / A₀, угол φ
+     у ребра).
+Только пирамида без построений (условие) — part: null. ДЗ №2: пирамида, призма или куб — part: null.
+Для КАЖДОГО отдельного чертежа верни:
+- box: ГЛАВНОЕ — прямоугольник этого чертежа в пикселях фото [x0, y0, x1, y1] (x вправо, y вниз, начало — левый
+  верхний угол), плотно: ось x чертежа, обе проекции фигуры и все построения этой части (не весь лист и не соседний чертёж);
+- part: 1, 2, 3 или 4 — по построению (или по подписи); не уверен — null. Неверная часть хуже, чем null;
+- pts (по желанию): точки заданной фигуры в пикселях фото — "A''", "B''" … фронтальные (над осью x), "A'", "B'" …
+  горизонтальные (под осью x), "O" — пересечение оси x с осью z/y. Не выдумывай: не видно — не включай.
+Если на листе написан номер варианта — верни его в n.
 Ответ — только JSON без пояснений:
-{"dz": 3, "n": 7, "drawings": [{"part": 4, "box": [x0, y0, x1, y1], "pts": {"A''": [x, y], "A'": [x, y], "O": [x, y]}}]}`;
+{"dz": 3, "n": 7, "drawings": [{"box": [x0, y0, x1, y1], "part": 4, "pts": {"A''": [x, y], "A'": [x, y], "O": [x, y]}}]}`;
 
 function eyesFromEnv(env){ env=env||process.env; const folder=env.EYES_FOLDER||env.YC_FOLDER_ID||'';
-  const model=(env.EYES_MODEL||DEF_MODEL).replace('{folder}',folder), url=env.EYES_URL||DEF_URL, yandex=/\.yandex\.net\//.test(url);
-  return {url,model,folder,key:env.EYES_KEY||'',auth:env.EYES_AUTH||'Bearer',yandex,opts:opts(env.EYES_OPTS),on:env.EYES!=='off'&&!!(env.EYES_KEY||yandex&&folder)}; }
+  const model=(env.EYES_MODEL||DEF_MODEL).replace('{folder}',folder), url=env.EYES_URL||DEF_URL, yandex=/\.yandex\.net\//.test(url), openrouter=/openrouter\.ai\//.test(url);
+  const key=env.EYES_KEY||(openrouter?env.OPENROUTER_API_KEY:'')||'';
+  const cfg={url,model,folder,key,auth:env.EYES_AUTH||'Bearer',yandex,openrouter,foreign:!yandex,opts:Object.assign(openrouter?orOpts(model):{},opts(env.EYES_OPTS)),on:env.EYES!=='off'&&!!(key||yandex&&folder)};
+  /* лучшая модель (замер — lab/dz/REPORT.md, 7к) через OpenRouter: зарубежная — только с согласием на отправку фото
+     (askAny); без согласия, без ключа или при сбое — модель выше (Qwen в Yandex AI Studio) */
+  const bm=env.EYES_BEST_MODEL===undefined?BEST_MODEL:env.EYES_BEST_MODEL, bk=env.OPENROUTER_API_KEY||'';
+  cfg.best=env.EYES!=='off'&&bm&&bk&&bm!=='off'?eyesFromEnv({EYES_URL:env.EYES_BEST_URL||OR_URL,EYES_MODEL:bm,OPENROUTER_API_KEY:bk,EYES_OPTS:env.EYES_BEST_OPTS,EYES_BEST_MODEL:'off'}):null;
+  cfg.best=cfg.best&&cfg.best.on?cfg.best:null; cfg.on=cfg.on||!!cfg.best;
+  return cfg; }
+/* OpenRouter: модели с рассуждением (Gemini 3, GPT-5) — коротко, иначе ответ через минуту; usage.cost — цена запроса */
+function orOpts(model){ return Object.assign({max_tokens:8000,usage:{include:true}},/gemini|gpt-5|\/o\d/.test(model)?{reasoning:{effort:'low'}}:{}); }
 /* EYES_OPTS — добавки к запросу модели (например, выключить рассуждение), JSON или base64 от JSON: в переменных функции
    Yandex Cloud запятая разделяет сами переменные, поэтому развёртывание пишет base64 */
 function opts(v){ v=String(v||'').trim(); if(!v) return {}; try{ const o=JSON.parse(v[0]==='{'?v:Buffer.from(v,'base64').toString('utf8')); return o&&typeof o==='object'&&!Array.isArray(o)?o:{}; }catch(e){ return {}; } }
@@ -43,6 +62,7 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const key=cfg.key||(o.token&&o.token()||''); if(!key) throw Object.assign(new Error('ИИ-зрение не настроено: нет ключа модели.'),{status:503});
   const headers={'content-type':'application/json',authorization:(cfg.key?cfg.auth:'Bearer')+' '+key};
   if(cfg.yandex&&cfg.folder) headers['x-folder-id']=cfg.folder;
+  if(cfg.openrouter) headers['x-title']='nachert scanner';
   const hint=(q.dz?'ДЗ №'+q.dz+'. ':'')+(q.n?'Вариант '+q.n+'. ':'')+'Размер фото: '+q.w+' × '+q.h+' px.';
   const body=Object.assign({model:cfg.model,temperature:0,max_tokens:1500,messages:[{role:'system',content:q.system||PROMPT},
     {role:'user',content:[{type:'text',text:q.text||hint},{type:'image_url',image_url:{url:q.image}}]}]},cfg.opts||{},q.opts||{});
@@ -57,6 +77,14 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const info={finish:c.finish_reason||null,ms:Date.now()-t0,think:think.length+(typeof raw==='string'&&/<think>/.test(raw)?raw.length:0),usage:j&&j.usage||null};
   if(!text) throw Object.assign(new Error('Модель зрения вернула пустой ответ'+(info.finish==='length'?': не уложилась в лимит ответа (рассуждала '+info.think+' знаков)':'')+'.'),{status:502,info});
   return {text,model:cfg.model,info}; }
+
+/* askAny(cfg, q, o): лучшая модель (cfg.best), если q.consent (фото можно отправить за рубеж) и она есть; сбой — запасная
+   (cfg, Qwen в Yandex). Без согласия зарубежная модель не спрашивается никогда → {text, model, info, fallback?} */
+async function askAny(cfg,q,o){ o=o||{}; const main=cfg.best&&q.consent?cfg.best:null, spare=cfg.foreign?null:cfg;
+  if(main){ try{ return await ask(main,q,Object.assign({},o,{timeout:o.mainTimeout||35000})); }
+    catch(e){ if(!spare||!spare.on||!(spare.key||o.token)) throw e; const r=await ask(spare,q,o); return Object.assign(r,{fallback:main.model+': '+e.message}); } }
+  if(cfg.foreign&&!q.consent) throw Object.assign(new Error('Модель зрения — зарубежная: нужно согласие на отправку фото.'),{status:403});
+  return ask(cfg,q,o); }
 
 /* какая модель зрения в каталоге видит картинку: развёртывание (server/tools/deploy.js) пробует по очереди и подключает первую.
    Не все модели AI Studio есть в синхронном режиме (на остальные Yandex отвечает 400/403), а текстовая модель может ответить
@@ -89,4 +117,4 @@ async function tune(env,image,o){ const cfg=eyesFromEnv(env), res=[];
   const best=good&&good.think>0?Object.assign({},good,{opts:Object.assign({max_tokens:8000},good.opts)}):good;
   return {best,results:res}; }
 
-module.exports={eyesFromEnv,ask,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};
+module.exports={eyesFromEnv,ask,askAny,orOpts,OR_URL,BEST_MODEL,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};

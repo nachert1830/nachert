@@ -48,12 +48,41 @@ function parse(x){ let o=x;
       /* точки — объектом {A″:[x,y]} или списком [{label:'A″', x, y} | {label, at:[x,y]}] */
       if(Array.isArray(src)) src=Object.fromEntries(src.map(q=>[q&&(q.label||q.l||q.name),q&&(q.at||q.p||q)]));
       Object.entries(src).forEach(([l,p])=>{ const q=label(l), P=pt(p); if(q&&P) pts[key(q)]=P; });
-      const box=Array.isArray(d.box)&&d.box.length===4&&d.box.every(v=>num(v)!=null)?d.box.map(num):null;
+      const bb=d.box||d.box_2d||d.bbox, box=Array.isArray(bb)&&bb.length===4&&bb.every(v=>num(v)!=null)?bb.map(num):null;
       const part=/^[abcd]$/.test(String(d.part||''))?String(d.part):({'1':'a','2':'b','3':'c','4':'d'})[String(d.part||'')]||null;
-      return {part,box,pts,scale:num(d.scale)}; }).filter(d=>Object.keys(d.pts).length);
-  if(!drawings.length) return {error:'глаза не нашли на фото подписанных точек условия'};
+      return {part,box,pts,scale:num(d.scale)}; }).filter(d=>Object.keys(d.pts).length||d.box);
+  if(!drawings.length) return {error:'глаза не нашли на фото ни чертежей, ни подписанных точек условия'};
   const dz=num(o.dz), n=num(o.n||o.variant);
   return {dz:dz&&dz>=1&&dz<=5?dz:null,n:n&&n>=1&&n<=30?Math.round(n):null,drawings}; }
+
+/* ── шкала координат ответа модели ──
+   Модели отвечают по-разному: px присланного фото (GPT, Claude, Qwen2.5-VL), 0…1000 [x, y] (Qwen3-VL, Qwen3.x),
+   0…1000 [y, x] (Gemini: точки [y, x], рамки [y0, x0, y1, x1]), реже 0…100 и 0…1. Шкала выбирается по самому ответу:
+   где подписи складываются в условие варианта (bindAffine), а рамки накрывают чертежи, найденные по линиям (o.own),
+   и не вылезают за фото; при равенстве — по имени модели (o.model).
+   rescale(E, {w, h — px присланного фото, k — во сколько раз оно меньше полного, bx, by — где вырезано (px полного),
+     model, dz, n, own:[чертежи findDrawings], W, H — px полного, only — только эта шкала}) → {E (px полного снимка), scale, scores} */
+const SCALES={px:{s:0,yx:false},n1000:{s:1000,yx:false},yx1000:{s:1000,yx:true},n100:{s:100,yx:false},n1:{s:1,yx:false}};
+function scalePrior(model){ model=String(model||'').toLowerCase();
+  return /gemini/.test(model)?'yx1000':/qwen3/.test(model)?'n1000':/molmo/.test(model)?'n100':'px'; }
+function rescale(E,o){ o=o||{}; const k=o.k||1, bx=o.bx||0, by=o.by||0, w=o.w, h=o.h, W=o.W||w/k, Hh=o.H||h/k;
+  const all=[].concat(...E.drawings.map(d=>Object.values(d.pts).concat(d.box?[[d.box[0],d.box[1]],[d.box[2],d.box[3]]]:[]))), mx=Math.max(0,...all.map(p=>Math.max(Math.abs(p[0]),Math.abs(p[1]))));
+  const prior=scalePrior(o.model), gv=o.n?V.get(+o.dz||3,+o.n):null, out={};
+  const map=(name,p)=>{ const S=SCALES[name], q=S.yx?[p[1],p[0]]:p; return S.s?[bx+q[0]/S.s*w/k,by+q[1]/S.s*h/k]:[bx+q[0]/k,by+q[1]/k]; };
+  const conv=name=>({drawings:E.drawings.map(d=>{ const pts={}; Object.keys(d.pts).forEach(l=>{ pts[l]=map(name,d.pts[l]); });
+    let box=null; if(d.box){ const a=map(name,[d.box[0],d.box[1]]), b=map(name,[d.box[2],d.box[3]]); box=[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])]; }
+    return Object.assign({},d,{pts,box}); })});
+  Object.keys(SCALES).filter(x=>!o.only||x===o.only).forEach(name=>{ const S=SCALES[name]; if(!o.only&&S.s&&mx>S.s*1.02) return; if(!o.only&&!S.s&&(mx>Math.max(w,h)*1.05||mx<=1.5)) return;
+    const C=conv(name); let sc=0;
+    /* подписи: сколько точек согласны с условием варианта (минус искажение осей) */
+    if(gv) C.drawings.forEach(d=>{ if(Object.keys(d.pts).length<4) return; const b=bindAffine(pairs(d,gv.id,gv.data),{px:0.025*Math.max(W,Hh)}); if(b) sc+=b.inl.length-3*b.aniso; });
+    /* рамки: начало O своего чертежа внутри рамки +2; рамка за краем фото −2; рамка без своего чертежа −0,5 (свои глаза могли пропустить) */
+    C.drawings.forEach(d=>{ const b=d.box; if(!b) return; if(b[0]<-0.05*W||b[1]<-0.05*Hh||b[2]>1.05*W||b[3]>1.05*Hh||b[2]-b[0]<0.02*W||b[3]-b[1]<0.02*Hh){ sc-=2; return; }
+      if(o.own&&o.own.length){ const hit=o.own.filter(q=>q.A&&q.A[2]>=b[0]&&q.A[2]<=b[2]&&q.A[5]>=b[1]&&q.A[5]<=b[3]).length; sc+=hit===1?2:hit>1?0.5:-0.5; } });
+    if(name===prior) sc+=0.25;
+    out[name]={E:C,sc}; });
+  const names=Object.keys(out).sort((a,b)=>out[b].sc-out[a].sc); if(!names.length) return {E:conv('px'),scale:'px',scores:{}};
+  return {E:Object.assign({},E,out[names[0]].E),scale:names[0],scores:Object.fromEntries(names.map(n=>[n,Math.round(out[n].sc*10)/10]))}; }
 
 /* ── привязка по глазам: мм условия (чертёж, от O) → px ── */
 /* аффинное по 3 парам: px = A·m + t */
@@ -348,7 +377,7 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   if(dups) why.push('у ИИ-зрения '+dups+' рамк'+(dups>1?'и':'а')+' вокруг уже найденного чертежа — не считаю дважды');
   return {ok:out.some(r=>r.ok),verdict,dz,n:out.find(r=>r.n)?out.find(r=>r.n).n:n,drawings:out,why,ms:Date.now()-t0}; }
 
-put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,findDrawings,sameDrawing,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
+put('dzEyes',{parse,label,rescale,scalePrior,SCALES,prepareEyes,gridEyes,checkEyes,findDrawings,sameDrawing,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
 })();
 /* node lab/dz/eyes.js фото.png глаза.json [--n=9] — проверка фото по ответу глаз (JSON или текст ответа модели) */
 if(typeof module!=='undefined'&&require.main===module){ const a=Object.fromEntries(process.argv.slice(4).map(x=>x.replace(/^--/,'').split('='))), fs=require('fs'), IMG=require('../img.js'), E=module.exports;

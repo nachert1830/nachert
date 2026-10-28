@@ -48,6 +48,7 @@ details summary{ cursor:pointer; color:var(--mute); } pre{ white-space:pre-wrap;
     <label class="fld">Что на фото<select id="part" title="какая часть ДЗ № 3 на фото"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select></label>
   </div>
   <label class="confirm" id="aiRow" hidden><input type="checkbox" id="ai" checked><span><b>ИИ-зрение</b> — модель находит на фото подписи точек и каждый чертёж листа (без рамки, штампа, клеток и краёв листа; у ДЗ №3 — все четыре части листа сразу); меряет и проверяет — сканер, по линиям. <span class="mute">Фото уходит модели в Yandex Cloud и не сохраняется.</span></span></label>
+  <label class="confirm" id="aiRow2" hidden><input type="checkbox" id="aiFar"><span><b>Точнее: зарубежная модель</b> — лучше узнаёт, где какой чертёж и какая часть. <span class="mute">Только для своего листа или примера: отмечая, вы соглашаетесь, что фото уйдёт модели за рубежом (через OpenRouter); не сохраняется. Без отметки — только Yandex Cloud.</span></span></label>
   <div class="ans" id="ansRow" hidden>
     <label class="fld">Ваш ответ H, мм<input id="aH" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
     <label class="fld">∠SAB–ABC, °<input id="aD" type="number" step="0.1" inputmode="decimal" placeholder="если есть"></label>
@@ -112,30 +113,30 @@ let worker=null;
 /* ИИ-зрение — через кабинет: страница открыта в нём (тот же сайт), кабинет ходит в /api/eyes с токеном участника */
 const PARENT=window.parent!==window?window.parent:null; let aiOn=false, aiSeq=0; const aiWait={};
 window.addEventListener('message',e=>{ const d=e.data; if(e.origin!==location.origin||!d) return;
-  if(d.type==='nch-eyes-pong'){ aiOn=!!d.on; $('aiRow').hidden=!aiOn; }
+  if(d.type==='nch-eyes-pong'){ aiOn=!!d.on; $('aiRow').hidden=!aiOn; $('aiRow2').hidden=!aiOn; }
   if(d.type==='nch-eyes-r'&&aiWait[d.id]){ aiWait[d.id](d); delete aiWait[d.id]; } });
 if(PARENT) try{ PARENT.postMessage({type:'nch-eyes-ping'},location.origin); }catch(e){}
 /* фото для глаз: длинная сторона 1280 px, JPEG — модели хватает, запрос лёгкий */
 function askEyes(img,dz,n){ const k=Math.min(1,1280/Math.max(img.width,img.height)), c=document.createElement('canvas'), t=document.createElement('canvas');
   t.width=img.width; t.height=img.height; t.getContext('2d').putImageData(img,0,0); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(t,0,0,c.width,c.height);
   const id=++aiSeq, url=c.toDataURL('image/jpeg',0.85);
-  return new Promise(res=>{ const to=setTimeout(()=>{ delete aiWait[id]; res({ok:false,error:'модель не ответила за минуту'}); },60000);
+  return new Promise(res=>{ const to=setTimeout(()=>{ delete aiWait[id]; res({ok:false,error:'модель не ответила за минуту'}); },65000);
     aiWait[id]=d=>{ clearTimeout(to); res(Object.assign(d,{scale:k})); };
-    PARENT.postMessage({type:'nch-eyes',id,img:url,w:c.width,h:c.height,dz,n},location.origin); }); }
+    PARENT.postMessage({type:'nch-eyes',id,img:url,w:c.width,h:c.height,dz,n,consent:$('aiFar').checked},location.origin); }); }
 function loadFile(f){ if(!$('ok').checked) return; const url=URL.createObjectURL(f), im=new Image(); im.onload=()=>{ const d=toImageData(im); URL.revokeObjectURL(url); run(d); }; im.src=url; }
 $('file').onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]); $('file2').onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]);
 async function run(img){ const dz=+$('dz').value, n=+$('n').value; $('vcard').hidden=true; $('drw').innerHTML=''; drawPhoto(img,null);
   /* глаза — сначала (несколько секунд), потом мозг в потоке */
-  let eyes=null, eyesScale=1, eyesNote=null;
+  let eyes=null, eyesScale=1, eyesNote=null, eyesModel='';
   if(aiOn&&$('ai').checked){ stage('ИИ-зрение читает подписи и чертежи на фото…'); const a=await askEyes(img,dz,n);
-    if(a.ok){ eyes=a.text; eyesScale=a.scale; } else eyesNote='ИИ-зрение недоступно: '+(a.error||'нет ответа')+' — проверено без него'; }
+    if(a.ok){ eyes=a.text; eyesScale=a.scale; eyesModel=a.model||''; } else eyesNote='ИИ-зрение недоступно: '+(a.error||'нет ответа')+' — проверено без него'; }
   stage('Проверяю: лист, эпюр, условие варианта, построение… (до минуты на телефоне)');
   if(worker) worker.terminate(); worker=new Worker('dz/worker.js');
   worker.onmessage=e=>{ const r=e.data; if(r.error){ stage('Сбой: '+r.error); return; } if(eyesNote) r.why=(r.why||[]).concat([eyesNote]);
     stage('Готово за '+(r.ms/1000).toFixed(1)+' с'+(r.stage==='глаза'?' · ИИ-зрение + сканер':'')+(r.pxPerMm?' · '+f1(r.pxPerMm)+' px/мм':'')+(r.cover!=null?' · условие на линиях '+Math.round(r.cover*100)+' %':''));
     show(r,dz,n); drawPhoto(img,r); drawDraw(img,r,dz,n); $('dbg').textContent=JSON.stringify({вердикт:r.verdict,этап:r.stage,причины:r.why,чертежи:r.drawings?r.drawings.map(d=>({вердикт:d.verdict,причины:d.why})):null,части:r.parts||null,калибровка:r.T||null,СКО_мм:r.rms||null,рёбра:r.edges||null,варианты:r.variants||null,глаза:eyes},null,1); };
   const num=id=>{ const v=$(id).value; return v===''?null:+v; };
-  worker.postMessage({img:{width:img.width,height:img.height,data:img.data},dz,n,paper:$('paper').value,part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},eyes,eyesScale}); }
+  worker.postMessage({img:{width:img.width,height:img.height,data:img.data},dz,n,paper:$('paper').value,part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},eyes,eyesScale,eyesModel}); }
 const CLS={'верно':'ok','ответы верны':'ok','ошибка':'bad','ошибка в данных':'bad','данные нанесены верно':'ok','другое решение':'ok','не тот вариант':'bad'};
 const PN={a:'а) высота',b:'б) угол SAB — ABC',c:'в) истинный вид ABC',d:'г) угол SA с основанием',vis:'видимость пирамиды'};
 function show(r){ $('vcard').hidden=false; const t=$('vtitle'); t.className='verdict '+(CLS[r.verdict]||'ref'); t.textContent=r.verdict[0].toUpperCase()+r.verdict.slice(1);

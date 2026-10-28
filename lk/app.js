@@ -441,7 +441,7 @@ const labSrc=L=>L.src+(L.var&&myVariant()?'?n='+myVariant():'');
 window.addEventListener('message',async e=>{ const d=e.data, f=document.querySelector('iframe.labf'); if(e.origin!==location.origin||!d||!f||e.source!==f.contentWindow) return;
   if(d.type==='nch-eyes-ping'){ e.source.postMessage({type:'nch-eyes-pong',on:!!ME},location.origin); return; }
   if(d.type!=='nch-eyes') return; let out;
-  try{ const r=await api('POST','/api/eyes',{img:d.img,w:d.w,h:d.h,dz:d.dz,n:d.n}); out={ok:true,text:r.text,model:r.model}; }catch(err){ out={ok:false,error:err.message,status:err.status||0}; }
+  try{ const r=await api('POST','/api/eyes',{img:d.img,w:d.w,h:d.h,dz:d.dz,n:d.n,consent:d.consent===true}); out={ok:true,text:r.text,model:r.model}; }catch(err){ out={ok:false,error:err.message,status:err.status||0}; }
   e.source.postMessage(Object.assign({type:'nch-eyes-r',id:d.id},out),location.origin); });
 const HOWTO=`<ol class="how8"><li><b>Чертёж крупно</b><span>с ИИ-зрением — лист или один чертёж, края не обязательны; без него — лист целиком</span></li><li><b>Ровный свет</b><span>без бликов и тени от телефона, телефон параллельно листу</span></li><li><b>Линии как на сдачу</b><span>обведены; сканер не уверен — так и скажет, переснимите ближе</span></li></ol>`;
 function checkView(tool){ const base=labBase(), L=LAB.find(x=>x.id===tool);
