@@ -22,7 +22,9 @@ const ROOT=path.resolve(__dirname,'../..');
   await pg.addInitScript(()=>{ const cv=document.createElement('canvas'); cv.width=2250; cv.height=3000; const ctx=cv.getContext('2d'); let img=null;
     const put=()=>{ if(!img) return; ctx.save(); if(img.width>img.height){ ctx.translate(cv.width,0); ctx.rotate(Math.PI/2); ctx.drawImage(img,0,0,cv.height,cv.width); } else ctx.drawImage(img,0,0,cv.width,cv.height); ctx.restore(); };
     setInterval(put,100);
-    window.__show=url=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ img=im; put(); res(); }; im.src=url; });
+    window.__show=url=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ img=im; window.__shown=url; put(); res(); }; im.src=url; });
+    /* какой снимок был у «телефона», когда страница отправила кадр в проверку */
+    window.__sent=[]; const pm=Worker.prototype.postMessage; Worker.prototype.postMessage=function(m){ if(m&&m.mode==='close') window.__sent.push((m.want+1)+'←'+window.__shown); return pm.apply(this,arguments); };
     navigator.mediaDevices.getUserMedia=async()=>cv.captureStream(10); });
   await pg.goto('http://localhost:'+port+'/lab/cam.html?n='+n); await pg.selectOption('#how','draw');
   await pg.evaluate(()=>window.__show('/__img/0')); await pg.click('#start');
@@ -33,17 +35,22 @@ const ROOT=path.resolve(__dirname,'../..');
   const cs=await pg.evaluate('D.ov.drawings.map(d=>d.c)'), fg=require('./model.js').given('3',s.truth.data).segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), m0=[(Math.min(...fg.map(p=>p[0]))+Math.max(...fg.map(p=>p[0])))/2,(Math.min(...fg.map(p=>p[1]))+Math.max(...fg.map(p=>p[1])))/2], ks=2250/s.img.width, G=s.truth.parts.map(p=>IMG.H.apply(s.truth.H,[p.O[0]+m0[0],p.O[1]+m0[1]]).map(v=>v*ks)), who=cs.map(c=>{ let b=-1, bd=1e9; G.forEach((g,k)=>{ const d=Math.hypot(g[0]-c[0],g[1]-c[1]); if(d<bd){ bd=d; b=k; } }); return b; });
   console.log('страница нашла чертежей '+cs.length+' → части '+who.map(k=>'abcd'[k]).join(','));
   const used=[0,0,0,0], tEnd=Date.now()+2400000; let last='';
-  while(Date.now()<tEnd&&(await phase())==='close'){ const h=await hint(), m=h.match(/^Чертёж (\d+) из/);
+  /* подсказку читаем, только когда страница не снимает (D.snap): после снимка она просит следующий чертёж не сразу */
+  while(Date.now()<tEnd&&(await phase())==='close'){ if(await pg.evaluate('!!(D&&D.snap)')){ await pg.waitForTimeout(200); continue; } const h=await hint(), m=h.match(/^Чертёж (\d+) из/);
     if(h!==last){ console.log('  · '+h); last=h; }
     if(!m){ await pg.waitForTimeout(1000); continue; } const j=+m[1]-1, k=who[j];
     if(used[k]>=3){ console.log('  ракурсы чертежа '+(j+1)+' кончились'); break; }
-    const shots0=await pg.evaluate('D.pend.reduce((a,b)=>a+b,0)+D.sess.fr.reduce((a,f)=>a+f.length,0)');
+    const shots0=await pg.evaluate('window.__sent.length');
     await pg.evaluate(u=>window.__show(u),'/__img/'+(1+used[k]*4+k)); used[k]++;
     /* ждём снимок (страница просит другой чертёж или снимок ушёл в проверку); нет за 30 с — что мешает, и другой ракурс */
-    const shot=await wait(async()=>(await phase())!=='close'||await pg.evaluate('D.pend.reduce((a,b)=>a+b,0)+D.sess.fr.reduce((a,f)=>a+f.length,0)')>shots0,30000);
-    if(!shot) console.log('  снимок не сделан за 30 с: '+await hint()); }
+    const shot=await wait(async()=>(await phase())!=='close'||await pg.evaluate('window.__sent.length')>shots0,30000);
+    if(!shot) console.log('  снимок не сделан за 30 с: '+await hint());
+    /* страница обновляет подсказку на следующем такте камеры (≈ 120 мс) */
+    await wait(async()=>!(await pg.evaluate('!!(D&&D.snap)'))&&(await hint())!==h,3000); }
   await wait(async()=>(await phase())==='done',600000);
   const v=await pg.$eval('#vtitle',e=>e.textContent), why=await pg.$$eval('#vwhy li',L=>L.map(e=>e.innerText.replace(/\s+/g,' '))), fr=await pg.$$eval('#frames div',L=>L.map(e=>e.textContent));
+  console.log('отправлено: '+await pg.evaluate(()=>window.__sent.join(', ')));
+  console.log('сессия: '+await pg.evaluate(()=>D&&D.sess?JSON.stringify(D.sess.result().map(r=>[r.verdict,r.part])):'нет'));
   console.log('ИТОГ страницы: '+v+'\n'+why.map(w=>'  '+w).join('\n')+'\n  снимки:\n'+fr.map(w=>'   '+w).join('\n'));
   if(A.out) await pg.screenshot({path:path.join(A.out,'cam-v'+n+'.png'),fullPage:true});
   console.log('время: '+((Date.now()-t0)/1000).toFixed(0)+' с, фаза: '+await phase());

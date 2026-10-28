@@ -81,8 +81,9 @@ function vote(frames){ const R=frames.filter(f=>f&&f.ok), k=R.length, need=Math.
 
 function Session(ov,o){ o=o||{}; const shots=o.shots||SHOTS, max=o.max||MAX, fr=ov.drawings.map(()=>[]);
   Object.entries(ov.frames||{}).forEach(([j,f])=>fr[+j].push(f));
-  /* ещё кадр нужен: прочитанных меньше shots, или кадры расходятся (до max) */
-  const need=j=>{ if(fr[j].length>=max) return false; const S=vote(fr[j]); return S.read<shots||S.conflicts.length>0; };
+  /* ещё кадр: мало прочитанных, кадры расходятся, или один кадр утверждает часть, а подтверждения не хватило */
+  const need=j=>{ if(fr[j].length>=max) return false; const S=vote(fr[j]); if(S.read<shots||S.conflicts.length>0) return true;
+    return S.shown.some(q=>S.parts[q].st==='не могу утверждать'&&fr[j].some(f=>f&&f.ok&&f.parts[q]&&(f.parts[q].st==='верно'||f.parts[q].st==='ошибка'))); };
   return { fr, add(j,f){ if(fr[j]) fr[j].push(f); }, need,
     next(from){ const N=fr.length; for(let i=0;i<N;i++){ const j=((from||0)+i)%N; if(need(j)) return j; } return -1; },
     done(){ return fr.every((x,j)=>!need(j)); },

@@ -215,7 +215,7 @@ function paintGeo(g,px,k,ox,oy,lw){ const P=p=>[(p[0]-(ox||0))*k,(p[1]-(oy||0))*
 
 /* ── ДЗ № 3: четыре части листа → четыре карточки. Часть — у чертежа, который мозг опознал по построению (или подтвердил
    подсказку модели); у неопознанного чертежа части нет — «не понял, какая это часть», вердикта по нему не придумываем ── */
-const cut=s=>String(s||'').replace(/\s*\([^)]*\)\s*$/,'').replace(/;.*$/,'');
+const cut=s=>String(s||'').replace(/;.*$/,'').replace(/\s*\([^)]*\)\s*$/,'');
 function partCards(ds){ const unk=ds.filter(d=>!d.part&&d.verdict!=='не снят'), free=unk.slice();
   return ['a','b','c','d'].map(k=>{ const d=ds.find(x=>x.part===k), p=d&&d.parts&&d.parts[k];
     if(d&&p){ const st=p.st==='верно'?'ok':p.st==='ошибка'?'bad':'calm', w=(p.why||[]).filter(Boolean);

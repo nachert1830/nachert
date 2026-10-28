@@ -182,7 +182,7 @@ function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(
      длинная сторона кадра = 420 мм, а настоящий масштаб и поворот телефона (0/90/180/270°) — гипотезы перебора */
   let Ha=P.ok?PA.pageHom(P.quad):null, raw=!Ha, box=[0,0,210,297];
   if(raw){ const s0=Math.max(img.width,img.height)/(o.side||420); Ha=[s0,0,0,0,s0,0,0,0,1]; box=[0,0,Math.floor(img.width/s0),Math.floor(img.height/s0)]; }
-  const dg=digitize(img,(u,v)=>H.apply(Ha,[u,v]),box,4,o.clean,true); if(!dg.ok) return {ok:false,reason:dg.reason};
+  const dg=digitize(img,(u,v)=>H.apply(Ha,[u,v]),box,4,o.clean,o.fine!==true); if(!dg.ok) return {ok:false,reason:dg.reason};
   const D=C.dmap(dg.dig.map), SA=C.samples(gv.id,gv.data).S.map(q=>q.m), S0=SA.filter((q,i)=>i%Math.max(1,Math.round(SA.length/80))===0), S=SA.filter((q,i)=>i%3===0), at=p=>C.at(D,p), deg=Math.PI/180;
   const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), fx=[Math.min(...fig.map(p=>p[0])),Math.max(...fig.map(p=>p[0]))], fy=[Math.min(...fig.map(p=>p[1])),Math.max(...fig.map(p=>p[1]))];
   /* доля точек фигуры у линий: C.at (билинейно по карте расстояний) — встроено, та же арифметика, без массивов на каждую точку */
@@ -228,6 +228,8 @@ function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(
     const all=f2.concat(ok).sort((a,b)=>sc(b)-sc(a)), uniq=[]; all.forEach(b=>{ if(uniq.every(u=>Math.hypot(u.tx-b.tx,u.ty-b.ty)>=40*Math.min(u.k,b.k))) uniq.push(b); });
     found.splice(0,found.length,...uniq); }
   /* лист один: А4 или А3 и поворот — по большинству найденного; чужие гипотезы отбрасываются */
+  /* грубо (4 px/мм) не нашлось — ещё раз на 8 px/мм: мягкий снимок (кадр видео, лёгкая нерезкость) грубо теряет тонкие линии */
+  if(!found.length&&o.fine!==true) return findDrawings(img,Object.assign({},o,{fine:true}));
   if(!found.length) return {ok:false,reason:'на листе не нашёл фигуру условия варианта '+o.n+(tops[0]?' (лучшее место — '+Math.round(tops[0].v*100)+' % на линиях)':'')};
   const key=b=>b.pg+':'+(Math.round((((b.th%360)+360)%360)/90)%4*90), cnt={}; found.forEach(b=>{ cnt[key(b)]=(cnt[key(b)]||0)+b.v; });
   const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0], keep=found.filter(b=>key(b)===best).sort((a,b)=>a.ty-b.ty||a.tx-b.tx);

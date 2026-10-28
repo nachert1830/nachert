@@ -212,11 +212,13 @@ let D=null;
 /* следующий чертёж: ещё нужен кадр и его снимок не в проверке (переснять один — только он) */
 function pick(from){ const N=D.ov.drawings.length; if(D.only!=null) return D.sess.need(D.only)&&!D.pend[D.only]?D.only:-1; for(let i=0;i<N;i++){ const j=(from+i)%N; if(D.sess.need(j)&&!D.pend[j]) return j; } return -1; }
 function progDots(){ if(!D||!D.ov){ $('dots').innerHTML=''; return; } $('dots').innerHTML=D.ov.drawings.map((d,j)=>'<i class="'+(j===D.cur?'cur':!D.sess.need(j)?'done':D.pend[j]?'busy':'')+'"></i>').join(''); }
-function ovShot(A,tr,v){ flash(); D.phase='wait'; D.ovThumb=A.thumb; D.t0=Date.now(); grabImg(tr,v,FULL).then(im=>{ D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next();
+/* снимок — сначала, вспышка и «следующий» — после: полный снимок сенсора приходит с задержкой, а телефон по вспышке уже ведут дальше */
+function ovShot(A,tr,v){ D.phase='wait'; D.ovThumb=A.thumb; D.t0=Date.now(); grabImg(tr,v,FULL).then(im=>{ flash(); D.ovCanvas=im.canvas; queue.push({mode:'overview',img:{width:im.width,height:im.height,data:im.data}}); next();
     /* модель — параллельно с поиском чертежей: её рамки и номера частей придут в поток подсказкой для снимков вблизи */
     if(useAi()) aiAsk(im.canvas).then(a=>{ if(a.ok) ensureWorker().postMessage({mode:'hints',eyes:a.text,eyesScale:a.scale,eyesModel:a.model,n:nVal()}); }); }); }
-function closeShot(tr,v){ flash(); const j=D.cur; D.pend[j]++; D.msg=''; D.cur=pick(j+1); drawMap(); progDots();
-  grabImg(tr,v,FULL).then(im=>{ queue.push({mode:'close',want:j,img:{width:im.width,height:im.height,data:im.data}}); next(); }); }
+function closeShot(tr,v){ if(D.snap) return; const j=D.cur; D.snap=true; tip('Снимаю — держите телефон…','busy');
+  grabImg(tr,v,FULL).then(im=>{ D.snap=false; if(!D||D.phase!=='close') return; flash(); D.pend[j]++; D.msg=''; D.cur=pick(j+1); drawMap(); progDots();
+    queue.push({mode:'close',want:j,img:{width:im.width,height:im.height,data:im.data}}); next(); }); }
 function dTick(A,tr,v){ const now=performance.now();
   if(D.phase==='ov'){ overlay(A); const act=D.cap.feed(A,now), h=(D.msg?D.msg+' — ':'')+(A.ok?'весь лист в кадр: '+D.cap.hint(A):A.hints[0]);
     setHint(h); $('camT').textContent='Весь лист'; $('camS').textContent='шаг 1 — найду на нём чертежи'; guide('sheet',A.ok);
@@ -224,7 +226,7 @@ function dTick(A,tr,v){ const now=performance.now();
     if(act==='shot'||act==='done-shot') ovShot(A,tr,v); return; }
   if(D.phase==='wait'){ clearOv(); guide(null); const s=Math.round((Date.now()-D.t0)/1000); setHint('ищу чертежи на общем снимке…'); $('camT').textContent='Ищу чертежи…'; $('camS').textContent='можно опустить телефон';
     tip('Смотрю снимок листа — где чертежи и насколько крупно'+(s>5?' · '+s+' с':''),'busy'); return; }
-  if(D.phase!=='close') return; clearOv();
+  if(D.phase!=='close'||D.snap) return; clearOv();
   if(D.cur<0){ setHint(D.pend.some(x=>x)?'проверяю снимки…':'готово'); toWait(); return; }
   const d=D.ov.drawings[D.cur], act=D.cap.feed(A,now), N=D.ov.drawings.length;
   setHint('Чертёж '+(D.cur+1)+' из '+N+' ('+d.pos+'): '+(A.ok?'поднесите телефон, чтобы чертёж занял весь кадр'+(D.msg?' · '+D.msg:A.soft&&A.soft[0]?' · '+A.soft[0]:''):A.hints[0]));
