@@ -90,6 +90,8 @@ function Capturer(o){ o=o||{}; let want=o.shots||3; const hold=o.hold||400, max=
     more(){ if(want<max){ want++; return true; } return false; },
     /* резкость — относительно лучшего кадра сеанса (у чистого А3 она ниже, чем у листа в клетку): ≥ 60 % лучшего */
     feed(A,now){ if(n>=want) return 'done'; if(A.paper) bestSharp=Math.max(bestSharp,A.sharp); A.soft=A.soft||[];
+      /* вблизи лист и не должен быть целиком в кадре */
+      if(o.content&&A.paper){ A.hints=A.hints.filter(h=>!/^лист не целиком|^подойдите ближе/.test(h)); A.ok=!A.hints.length; }
       if(A.ok&&A.sharp<0.6*bestSharp){ A.ok=false; A.hints.push('нерезко — держите телефон неподвижно, дайте камере навестись'); }
       const stable=A.ok&&A.motion!=null&&A.motion<LIM.motion&&(!o.content||A.shift!=null&&A.shift<LIM.motion); prevA=A;
       if(needMove&&o.content&&lastThumb){ if(shiftOf(lastThumb,A.thumb)>=0.03) needMove=false; }

@@ -35,7 +35,9 @@ function closeMode(d){ const CU=self.LAB.dzCloseup, t0=Date.now();
     return {overview:r.ok?{ok:true,drawings:r.drawings.map(q=>({c:q.c,box:q.box,ppm:q.ppm,pos:q.pos,title:q.title})),frames:r.frames}:{ok:false,reason:r.reason},ms:Date.now()-t0}; }
   const r=CU.close(d.img,OV,{n:d.n,answers:d.answers,want:d.want}); return {close:r.ok?{ok:true,got:r.got}:{ok:false,reason:r.reason,ppm:r.ppm},want:d.want,ms:Date.now()-t0}; }
 self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now(); let r;
-  if(mode==='overview'||mode==='close'){ try{ self.postMessage(closeMode(e.data)); }catch(err){ self.postMessage({error:String(err&&err.stack||err),want:e.data.want,mode}); } return; }
+  if(mode==='overview'||mode==='close'){ try{ self.postMessage(closeMode(e.data)); }catch(err){ self.postMessage({error:String(err&&err.stack||err),want:e.data.want,mode}); }
+    /* пока студент подносит телефон — линии чертежей общего снимка для опознания (sameDrawing кэширует их) */
+    if(mode==='overview'&&OV&&OV.drawings.length) setTimeout(()=>{ try{ self.LAB.dzEyes.sameDrawing({img:OV.img,A:OV.drawings[0].A},OV,{dz:3,n}); }catch(x){} },0); return; }
   if(mode==='frame'){ try{ self.postMessage({frame:frame(img,dz,n,answers,part,paper),ms:Date.now()-t0}); }catch(err){ self.postMessage({error:String(err&&err.stack||err)}); } return; }
   /* лист в клетку: сетка вместо рамки (gridsheet.js) — свой ответ странице */
   /* лист в клетку или чистый лист (края бумаги + условие): gridsheet.js; «в клетку» — с запасным чистым листом */

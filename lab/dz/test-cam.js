@@ -27,7 +27,7 @@ const ROOT=path.resolve(__dirname,'../..');
   const wait=async(f,ms)=>{ const t=Date.now(); while(Date.now()-t<ms){ if(await f()) return true; await pg.waitForTimeout(300); } return false; };
   if(!await wait(async()=>(await phase())==='close'||(await phase())==='done',240000)){ console.log('общий снимок не разобран: '+await hint()); await br.close(); srv.close(); process.exit(1); }
   /* правда: чертёж страницы j ↔ часть листа (начало O ближе всего к центру фигуры на снимке) */
-  const cs=await pg.evaluate('D.ov.drawings.map(d=>d.c)'), G=s.truth.parts.map(p=>IMG.H.apply(s.truth.H,[p.O[0]+60,p.O[1]])), who=cs.map(c=>{ let b=-1, bd=1e9; G.forEach((g,k)=>{ const d=Math.hypot(g[0]-c[0],g[1]-c[1]); if(d<bd){ bd=d; b=k; } }); return b; });
+  const cs=await pg.evaluate('D.ov.drawings.map(d=>d.c)'), fg=require('./model.js').given('3',s.truth.data).segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), m0=[(Math.min(...fg.map(p=>p[0]))+Math.max(...fg.map(p=>p[0])))/2,(Math.min(...fg.map(p=>p[1]))+Math.max(...fg.map(p=>p[1])))/2], G=s.truth.parts.map(p=>IMG.H.apply(s.truth.H,[p.O[0]+m0[0],p.O[1]+m0[1]])), who=cs.map(c=>{ let b=-1, bd=1e9; G.forEach((g,k)=>{ const d=Math.hypot(g[0]-c[0],g[1]-c[1]); if(d<bd){ bd=d; b=k; } }); return b; });
   console.log('страница нашла чертежей '+cs.length+' → части '+who.map(k=>'abcd'[k]).join(','));
   const used=[0,0,0,0]; let last='', steps=0;
   while(steps++<30&&(await phase())==='close'){ const h=await hint(), m=h.match(/^Чертёж (\d+) из/);

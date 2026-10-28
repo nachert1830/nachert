@@ -218,7 +218,8 @@ function sameDrawing(cu,ov,o){ o=o||{}; const gv=V.get(+o.dz||3,+o.n); if(!gv) r
   const d1=digitize(cu.img,mapA(cu.A),box,4); if(!d1.ok) return {j:-1,why:d1.reason};
   const P=[]; d1.dig.segs.forEach(q=>{ const n=Math.max(1,Math.ceil(Math.hypot(q.b[0]-q.a[0],q.b[1]-q.a[1]))); for(let i=0;i<=n;i++){ const p=[q.a[0]+(q.b[0]-q.a[0])*i/n,q.a[1]+(q.b[1]-q.a[1])*i/n]; if(common.every(c=>dSeg(p,c)>=2)) P.push(p); } });
   if(P.length<30) return {j:-1,why:'на снимке вблизи мало линий построения ('+P.length+' мм) — не с чем сравнить'};
-  const scores=ov.drawings.map(d=>{ const dg=digitize(ov.img,mapA(d.A),box,4); if(!dg.ok) return 0; const D=C.dmap(dg.dig.map); return P.filter(p=>C.at(D,p)<=1.5).length/P.length; });
+  /* линии чертежей общего снимка — один раз на снимок (d._dm): с ним сравнивается каждый снимок вблизи */
+  const scores=ov.drawings.map(d=>{ if(d._dm===undefined){ const dg=digitize(ov.img,mapA(d.A),box,4); d._dm=dg.ok?C.dmap(dg.dig.map):null; } return d._dm?P.filter(p=>C.at(d._dm,p)<=1.5).length/P.length:0; });
   const ord=scores.map((v,j)=>[v,j]).sort((a,b)=>b[0]-a[0]), b0=ord[0]||[0,-1], b1=ord[1]||[0,-1], ok=b0[0]>=0.4&&b0[0]-b1[0]>=0.15;
   return {j:ok?b0[1]:-1,score:b0[0],second:b1[0],scores,why:ok?null:'не узнал, какой это чертёж общего снимка (лучший '+Math.round(b0[0]*100)+' %, второй '+Math.round(b1[0]*100)+' %)'}; }
 
