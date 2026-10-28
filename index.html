@@ -1818,7 +1818,7 @@ html.ovs-open,html.ovs-open body{overflow:hidden}
 .hw-l.l3{border-color:color-mix(in srgb,var(--acc) 45%,var(--line))}
 .hw-l.l4>summary{color:var(--green)}
 .hw-l.l5>summary{color:var(--acc)}
-/* ── раздел «ДЗ» (#/ng/dz, #/ig/dz) ── */
+/* ── раздел «ДЗ», прежняя разметка карточек и страниц (стили новой — ниже, «ДЗ (#/dz, #/ng4, #/ng4/13)») ── */
 .dz-go{display:grid;grid-template-columns:1fr 84px auto;gap:8px;align-items:center;padding:14px;border-radius:var(--r2);background:var(--surf);border:1.5px solid color-mix(in srgb,var(--acc) 40%,var(--line));margin:var(--s4) 0}
 .dz-go b{grid-column:1/-1;font-size:15px}
 .dz-go select,.dz-go input{min-width:0;height:44px;padding:0 10px;border-radius:12px;border:1px solid var(--line2,var(--bd));background:var(--surf2);color:var(--ink);font:500 15px var(--sans)}
@@ -3974,6 +3974,98 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 }
 @media(max-width:360px){.v8-col{grid-template-columns:1fr}.v8-l{min-height:0}}
 @media(prefers-reduced-motion:reduce){.v9-hero .v8-box .sr-form{animation:none}}
+/* ═════════ ДЗ (#/dz, #/ng4, #/ng4/13): путь «ДЗ → вариант → разбор», ничего лишнего на пути ═════════
+   «Ремешок» — белая лента с тёмно-синей и красной полосой (как NATO-ремешок часов): метка своего варианта и коротких ссылок.
+   Синий «циферблат» — кнопка «Мой вариант». Лента одинакова в обеих темах: это предмет, а не фон */
+:root{--strap:linear-gradient(90deg,#fff 0 16%,var(--navy) 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
+:root[data-theme="dark"]{--strap:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--strap:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}}
+.dzx-strap{display:block;flex:none;width:18px;align-self:stretch;background:var(--strap)}
+.dzx .intro{margin-bottom:var(--s3)}
+.dzx-up{display:inline-flex;align-items:center;gap:4px;min-height:40px;font-weight:700;font-size:15px;color:var(--acc);text-decoration:none}
+.dzx-up:hover{text-decoration:underline}
+/* все ДЗ */
+.dzx-sec{margin:var(--s4) 0 var(--s5);max-width:760px}
+.dzx-rules{max-width:760px}
+.dzx-sh{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 0 10px}
+.dzx-sh h2{margin:0;font:800 21px/1.2 var(--disp);color:var(--ink)}
+.dzx-my{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+.dzx-my input{width:58px;height:40px;padding:0 6px;border-radius:12px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);font:700 17px var(--mono);text-align:center}
+.dzx-my input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--blue-s)}
+.dzx-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.dzx-row{display:flex;gap:8px;min-width:0}
+.dzx-main{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:12px;min-height:60px;padding:9px 14px 9px 10px;border-radius:16px;background:var(--surf);border:1.5px solid var(--line);color:inherit;text-decoration:none;transition:border-color .15s}
+.dzx-main:hover{border-color:var(--acc)}
+.dzx-no{flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--navy);color:#fff;font:800 19px/1 var(--disp);font-variant-numeric:tabular-nums}
+:root[data-theme="dark"] .dzx-no{background:var(--acc)}
+.dzx-t{min-width:0;display:flex;flex-direction:column}
+.dzx-t b{font:700 16px/1.3 var(--sans);color:var(--ink)}
+.dzx-go{flex:none;width:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:16px;background:var(--acc);color:#fff;text-decoration:none;font:800 21px/1 var(--disp);font-variant-numeric:tabular-nums;box-shadow:0 3px 0 var(--acc-d,#0f3f9e)}
+.dzx-go small{font:700 10.5px/1.4 var(--sans);letter-spacing:.6px;text-transform:uppercase;opacity:.85}
+.dzx-go:hover{background:var(--acc-h)}
+.dzx-go:active{transform:translateY(2px);box-shadow:0 1px 0 var(--acc-d,#0f3f9e)}
+.dzx-rules{margin:var(--s5) 0 var(--s4);border-top:1px solid var(--line);padding-top:var(--s3)}
+.dzx-rules summary,.dzx-pics summary{cursor:pointer;font-weight:700;font-size:15.5px;color:var(--acc);min-height:44px;display:flex;align-items:center}
+.dzx-rules .hw-rg{margin-top:var(--s3)}
+/* страница ДЗ: выбрать вариант */
+.dzx-mine{display:flex;align-items:stretch;gap:0;margin:0 0 var(--s4);border-radius:18px;overflow:hidden;background:var(--acc);color:#fff;text-decoration:none;min-height:64px;box-shadow:0 4px 0 var(--acc-d,#0f3f9e)}
+.dzx-mine .dzx-strap{width:22px}
+.dzx-mine span{align-self:center;padding:0 0 0 16px;font:700 15px var(--sans);opacity:.9}
+.dzx-mine b{align-self:center;padding:0 10px;font:800 30px/1 var(--disp);font-variant-numeric:tabular-nums}
+.dzx-mine em{align-self:center;margin-left:auto;padding:0 18px;font:700 15px var(--sans);font-style:normal}
+.dzx-mine:hover{background:var(--acc-h)}
+.dzx-mine:active{transform:translateY(2px);box-shadow:0 2px 0 var(--acc-d,#0f3f9e)}
+.dzx-h{margin:0 0 10px;font:800 18px/1.25 var(--disp)}
+.dzx-ty{margin:0 0 14px}
+.dzx-tyn{display:flex;gap:8px;align-items:baseline;min-width:0;margin:0 0 6px;font-size:13.5px;color:var(--ink2)}
+.dzx-tyn i{flex:none;font:700 12px var(--mono);font-style:normal;color:var(--mut)}
+.dzx-tyn span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dzx-nums{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;max-width:440px}
+.dzx-nums.c6{grid-template-columns:repeat(6,minmax(0,1fr));max-width:520px}
+.dzx-nums a,.dzx-nums .off{height:50px;display:flex;align-items:center;justify-content:center;border-radius:13px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);font:700 18px/1 var(--disp);font-variant-numeric:tabular-nums;text-decoration:none}
+.dzx-nums a:hover{border-color:var(--acc);color:var(--acc)}
+.dzx-nums a:active{transform:scale(.96)}
+.dzx-nums a.mine{background:var(--acc);border-color:var(--acc);color:#fff}
+.dzx-nums .off{opacity:.38;cursor:default}
+.dzx-pics{margin:var(--s3) 0 0}
+.dzx-pics .igx-grid{margin-top:var(--s2)}
+.dzx-secs{display:flex;flex-wrap:wrap;gap:8px;margin:var(--s5) 0 0;padding-top:var(--s4);border-top:1px solid var(--line)}
+.dzx-secs a{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border-radius:99px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);font:600 14.5px var(--sans);text-decoration:none}
+.dzx-secs a:hover{border-color:var(--acc);color:var(--acc)}
+.dzx-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:var(--s4) 0 var(--s2);font-size:13.5px;color:var(--mut)}
+/* короткая ссылка: кусочек ремешка + адрес; нажал — скопировал */
+.dzx-link{display:inline-flex;align-items:stretch;height:36px;padding:0;border-radius:10px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);overflow:hidden;cursor:pointer;font:700 13.5px/1 var(--mono);transition:border-color .15s}
+.dzx-link .dzx-strap{width:16px;border-right:1px solid var(--line)}
+.dzx-link span{display:flex;align-items:center;padding:0 10px;white-space:nowrap}
+.dzx-link:hover{border-color:var(--acc)}
+.dzx-link.ok{border-color:var(--green)}.dzx-link.ok span{color:var(--green)}
+/* вариант: к заданию · ‹ Вариант 13 › · мой · ссылка */
+.dzx-vbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"up vn va";align-items:center;gap:8px 10px;margin:2px 0 10px}
+.dzx-vbar .dzx-up{grid-area:up;justify-self:start}
+.dzx-vn{grid-area:vn;display:flex;align-items:center;gap:6px}
+.dzx-vn h1{margin:0;font:800 22px/1.15 var(--disp);white-space:nowrap}
+.dzx-vn h1::after{display:none}
+.dzx-vn a,.dzx-vn>span{flex:none;width:38px;height:38px;display:grid;place-items:center;border-radius:11px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);font:700 22px/1 var(--sans);text-decoration:none}
+.dzx-vn>span{visibility:hidden}
+.dzx-vn a:hover{border-color:var(--acc);color:var(--acc)}
+.dzx-va{grid-area:va;justify-self:end;display:flex;gap:6px;align-items:center}
+.dzx-star{display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 10px;border-radius:10px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);font:700 17px/1 var(--sans);cursor:pointer}
+.dzx-star span{font-size:12.5px;color:var(--mut)}
+.dzx-star.on{background:var(--acc);border-color:var(--acc);color:#fff}.dzx-star.on span{color:#fff}
+.dzx-modes{margin:0 0 6px}
+@media (max-width:640px){
+  .dzx-vbar{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"up va" "vn vn"}
+  .dzx-vn{justify-self:stretch;justify-content:space-between}
+  .dzx-sh{flex-wrap:wrap}
+}
+@media (max-width:899px){
+  body.inplayer .dzx-var .dzx-vbar{margin-bottom:6px;gap:4px 8px}
+  body.inplayer .dzx-var .dzx-vn h1{font-size:19px}
+  body.inplayer .dzx-var .dzx-vn a,body.inplayer .dzx-var .dzx-vn>span{width:34px;height:34px}
+  body.inplayer .dzx-var .dzx-modes a{min-height:34px;padding:0 12px;font-size:13px}
+  body.inplayer .dzx-var .dz-vtype{display:none}
+}
+@media (min-width:900px){ body.inplayer .dzx-var .dzx-vbar,body.inplayer .dzx-var .dzx-modes{margin-left:20px;margin-right:20px} body.inplayer .dzx-var .dz-vtype{margin:0 20px 6px} }
 </style>
 </head>
 <body>
@@ -6525,7 +6617,7 @@ function docSubj(d){ const t=d.type||'';
   if(/^ig-|^part$/.test(t)) return 'ig'; if(/^ng-/.test(t)) return 'ng';
   if(t==='topic'){ const tp=((root.TOPICS&&TOPICS.list)||[]).find(x=>'topic:'+x.id===d.key); return tp&&tp.subj==='ig'?'ig':'ng'; }
   if(d.key==='tool:epure') return 'all';
-  return /^#\/ig\b/.test(d.href||'')?'ig':'ng'; }
+  return /^#\/ig(\b|\d)/.test(d.href||'')?'ig':'ng'; }
 function buildDocs(){
   const docs=[]; const T=(root.TAGS&&root.TAGS.map)||{};
   const add=d=>{ const t=T[d.key]; d.kw=(d.kw||[]).concat(t&&t.kw||[]); d.sym=(d.sym||[]).concat(t&&t.sym||[]); if(t&&t.topic) d.topic=t.topic;
@@ -6575,10 +6667,10 @@ function buildDocs(){
     const VR=g(()=>window.IG_VARS);
     if(VR){ const how='Главный вид — половина вида и половина фронтального разреза; вид слева — половина вида и половина профильного разреза; вид сверху; наклонное сечение А–А. В каждом варианте — условие, деталь в 3D с разрезами, построение по шагам и готовый лист (чистовик и черновик).';
       add({key:'ig-hw2',type:'ig-hw',grp:'e',label:'ДЗ № 2',title:'ДЗ № 2 «Построение изображений» — все 30 вариантов с решением',kw:['дз 2','дз №2','домашнее задание 2','построение изображений','мой вариант','варианты','лист а3'],segs:[seg('',how)],
-        href:Hh('ig','hw2'),where:S('ig')+' · ДЗ № 2'});
+        href:Hh('ig2'),where:S('ig')+' · ДЗ № 2'});
       Object.keys(VR).map(Number).filter(n=>n>0).sort((a,b)=>a-b).forEach(n=>add({key:'ig-hw2:'+n,type:'ig-hw',grp:'e',label:'ДЗ № 2 · вариант '+n,
         title:'ДЗ № 2, вариант '+n+' — построение изображений',kw:['вариант '+n,'вариант №'+n,'дз 2 вариант '+n,'вариант '+n+' дз 2','дз №2 вариант '+n,'дз 2','построение изображений','разрез','сечение'],segs:[seg('',how)],
-        href:Hh('ig','hw2',n),where:S('ig')+' · ДЗ № 2 · вариант '+n})); }
+        href:Hh('ig2',n),where:S('ig')+' · ДЗ № 2 · вариант '+n})); }
     (g(()=>window.IG_WB)||[]).forEach(t=>add({key:'ig-wb:'+t.n,type:'ig-task',grp:'e',label:'Рабочая тетрадь · рис. '+t.fig,title:t.n+'. '+t.title+' — рис. '+t.fig+', стр. '+t.page,
       kw:['рабочая тетрадь','рис '+t.fig,'рисунок '+t.fig,'тела с отверстиями','сквозное отверстие','вид слева','разрезы',t.title],segs:[seg('Задание',stripHTML(t.q)),seg('',stripHTML(t.why||''))],
       href:Hh('ig','wb',t.n),where:S('ig')+' · Рабочая тетрадь · раздел 5'}));
@@ -22512,6 +22604,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.19',d:'28 октября 2026',items:['ДЗ — один раздел на оба предмета: на одном экране все ДЗ по начерту и инженерной графике. Впиши свой вариант один раз — у каждого ДЗ появится кнопка сразу к нему.','Страница ДЗ — это выбор варианта: номера по типам (у ИГ — номер или картинка) и «Мой вариант» первым. Условие с таблицами, как решать, пример, ошибки и защита — кнопками внизу.','У варианта — стрелки ‹ › к соседним, «мой» и короткая ссылка: nachert1830.ru/#/ng4/13 (начерт, ДЗ 4, вариант 13), #/ig3/7 — инж. графика. Нажми — ссылка скопирована. Старые ссылки и закладки работают.','Поиск понимает «дз 4 13» — сразу вариант.']},
   {v:'4.18',d:'26 октября 2026',items:['Новый яркий дизайн: насыщенный синий, белый и красный. Красный — там, куда нажать.','Главная: большой синий блок поиска и красная кнопка «Найти» — впиши номер задачи, вариант или вопрос, и решение откроется первым. Под строкой — три шага: что вписать и куда жать дальше.','Разделы — крупные плитки с иконками; кнопки стали «нажимаемыми»: с бортиком снизу и откликом при нажатии.']},
   {v:'4.17',d:'26 октября 2026',items:['Новая главная — как у поисковика: одна строка поиска по начерту и инженерной графике. Номер задачи, «вариант 12», «ДЗ 3» или вопрос своими словами — ответ первым. Рядом — счётчик и «Поделиться».','Меню одинаковое для обоих предметов: Тетрадь · ДЗ · РК (в ИГ — «Учиться») · Теория.','Цвета спокойнее: белая страница, голубой — действие, красный — только то, куда стоит посмотреть.'],
    hidden:[{flag:'lk',t:'Личный кабинет nachert1830.ru/lk/ — на проверке: ссылки с сайта (кнопка «Кабинет» в шапке, карточка на главной) видны только в режиме владельца. «Сегодня» — ближайшая сдача, «Мои ДЗ» на своём варианте, проверка чертежа по фото по шагам.'}]},
@@ -25052,12 +25145,12 @@ const SUBJ={
 /* главное меню = главные задачи студента: найти решение, готовиться к РК, понять ДЗ, разобраться в теме */
 const NAVS=[
   {id:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ng/tasks'},
-  {id:'hw',name:'ДЗ',short:'ДЗ',h:'#/ng/dz'},
+  {id:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},
   {id:'rk',name:'РК',short:'РК',h:'#/ng/rk2'},
   {id:'th',name:'Теория',short:'Теория',h:'#/ng/path'},
   {id:'ep',name:'3D-модель',short:'3D',h:'#/epure',hide:true},
   {id:'ig',name:'Инж. графика',short:'ИГ',h:'#/ig',soon:true}];
-const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ',short:'ДЗ',h:'#/ig/dz'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
+const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
 const subjOf=r=>r&&r.s==='dz'?(r.tab?(/^ig/.test(r.tab)&&IGON()?'ig':'ng'):(NAVSUBJ||'ng')):(r&&(r.s==='ig'||r.s==='part'))&&IGON()?'ig':'ng'; let NAVSUBJ=null;
 function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {learn:'ilr',points:'ilr',nk:'ilr',hw2:'ihw',dz:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
   if(r.s==='ng') return {tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',dz:'hw',path:'th',cheat:'th',learn:'th',day:'th'}[r.tab]||'nb';
@@ -25065,10 +25158,9 @@ function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; retur
   if(!r.s||r.s==='home') return 'home';
   return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
 const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
-/* адреса ДЗ: у каждого предмета свой раздел — #/ng/dz (все ДЗ по начерту), #/ng/dz/4 (ДЗ №4), #/ng/dz/4/13 (вариант),
-   #/ig/dz/3/7 — то же для инженерной графики. HDZ('ng4', 13) → #/ng/dz/4/13; HDZ('ng') → #/ng/dz; прежние #/dz/… переадресуются */
-const HDZ=(id,...a)=>{ if(!id) return H(NAVSUBJ==='ig'?'ig':'ng','dz'); if(id==='ng'||id==='ig') return H(id,'dz'); const m=/^(ng|ig)(\d+)$/.exec(id); return m?H(m[1],'dz',m[2],...a):H('ng','dz'); };
-const dzR=(c,r)=>({s:'dz',tab:r.item?c+r.item:c,item:r.sub,sub:r.extra});
+/* короткие адреса ДЗ: #/dz — все ДЗ обоих предметов, #/ng4 — ДЗ №4 по начерту, #/ng4/13 — вариант 13, #/ig3/7 — инж. графика.
+   HDZ('ng4', 13) → #/ng4/13; HDZ() и HDZ('ng') → #/dz. Прежние #/ng/dz/…, #/ig/dz/…, #/dz/…, #/ig/hw2/… переадресуются */
+const HDZ=(id,...a)=>/^(ng|ig)\d$/.test(id||'')?H(id,...a):'#/dz';
 function buildNav(sj){
   sj=sj||subjOf(parseHash(location.hash)); NAVSUBJ=sj;
   const svg=(ic,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
@@ -25145,6 +25237,7 @@ function parseHash(h){
   h=h||'';
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
+  if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
   const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
@@ -25872,10 +25965,15 @@ function homeScope(){ const s=ST.get('home_scope','all'); return HOME_SCOPES.som
 function quickHits(q,scope){
   const out=[], s=String(q||'').toLowerCase().replace(/ё/g,'е').trim(); if(!s) return out;
   const task=n=>{ const t=WB3.get(n); if(t) out.push({tag:'Тетрадь · начерт',t:'Задача №'+n+' — '+short(t.q,130),w:'Решение по шагам',h:H('ng','tasks',n)}); };
-  const igv=n=>{ if(n>=1&&n<=30&&window.IG_VARS) out.push({tag:'ДЗ 2 · инж. графика',t:'Вариант '+n+' — построение изображений',w:'Условие, деталь в 3D и готовый лист',h:H('ig','hw2',n)}); };
+  const igv=n=>{ if(n>=1&&n<=30&&window.IG_VARS) out.push({tag:'ДЗ 2 · инж. графика',t:'Вариант '+n+' — построение изображений',w:'Условие, деталь в 3D и готовый лист',h:HDZ('ig2',n)}); };
   let m=/^(?:задач[аиу]?\s*)?№?\s*(\d{1,2})$/.exec(s);
   if(m){ const n=+m[1]; if(scope!=='ig') task(n); if(scope!=='ng') igv(n); return out; }
   m=/^(?:мой\s+)?(?:вариант|вар\.?|в)\s*№?\s*(\d{1,2})$/.exec(s); if(m){ if(scope!=='ng') igv(+m[1]); return out; }
+  /* «дз 4 13», «дз4 вариант 13» — сразу вариант (ДЗ с таким номером есть у обоих предметов — оба) */
+  m=/^(?:дз|домашка)\s*№?\s*(\d)\s*[,.]?\s*(?:вариант|вар\.?|в\.?)?\s*№?\s*(\d{1,2})$/.exec(s);
+  if(m&&window.DZR){ [['ng','ДЗ · начерт'],['ig','ДЗ · инж. графика']].forEach(([c,tag])=>{ const d=DZR.get(c+m[1]), n=+m[2];
+      if(d&&scope!==(c==='ng'?'ig':'ng')&&DZR.has(d.id,n)) out.push({tag,t:d.label+', вариант '+n+' — '+short(d.title||'',100),w:'Разбор по шагам, 3D и лист А3',h:HDZ(d.id,n)}); });
+    if(out.length) return out; }
   m=/^дз\s*№?\s*(\d)\s*([абвbc]?)$/.exec(s);
   if(m&&scope!=='ig'&&window.DZR){ const d=DZR.get('ng'+m[1]); if(d) out.push({tag:'ДЗ · начерт',t:'ДЗ №'+d.num+' — '+short(d.title||'',110),w:'Любой вариант по шагам, методика, лист',h:HDZ(d.id)}); }
   if(m&&scope!=='ng'&&window.DZR){ const d=DZR.get('ig'+m[1]); if(d) out.push({tag:'ДЗ · инж. графика',t:(d.label||'Задание №'+d.num)+' — '+short(d.title||'',110),w:'Найди свой вариант: деталь в 3D и готовый лист',h:HDZ(d.id)}); }
@@ -25944,7 +26042,7 @@ function viewHome(v){
 /* ═════════ НАЧЕРТАТЕЛЬНАЯ ГЕОМЕТРИЯ ═════════ */
 let LID=null, CURT=null, PLR=null;
 function viewNG(v,r){
-  if(r.tab==='dz') return dzView(v,dzR('ng',r));
+  if(r.tab==='dz') return dzOld('ng',r);
   if(r.tab==='day') return viewDay(v,r);
   if(r.tab==='rk2') return RK2.view(v,r);
   const tab=['path','tasks','hw','check','cheat','learn','var'].includes(r.tab)?r.tab:null;
@@ -26069,84 +26167,105 @@ function mountLab(host,L){ if(!L){ host.innerHTML=''; return; }
 function setLessonDone(id,v){ const d=ST.get('done',{}); d[id]=v; ST.set('done',d); renderHProg(); }
 function openLesson(id){ nav(H('ng','path',id)); }
 
-/* ═════ «ДЗ» — у каждого предмета свой раздел ДЗ: начерт (#/ng/dz) и инженерная графика (#/ig/dz) ═════
+/* ═════ «ДЗ» — один раздел на оба предмета, короткие адреса ═════
    Данные, методики и решатели — в реестре DZR (kernel/dz.js, папки dz/<курс>/<номер>/; оглавление — dz/README.md).
-   #/ng/dz                     — все ДЗ по начерту: что задано, сколько вариантов решено, быстрый переход к своему варианту;
-   #/ng/dz/2                   — страница ДЗ, вкладка «Условие»: условие каждого типа и номера вариантов;
-   #/ng/dz/2/how               — «Как решать»: суть, план по шагам для каждого типа, теория;
-   #/ng/dz/2/ex[/2b]           — «Пример»: разобранный пример типа по шагам (плеер);
-   #/ng/dz/2/my                — «Мой вариант»: номер → разбор; сверка своего листа числами;
-   #/ng/dz/2/faq               — «Ошибки и защита»;
-   #/ng/dz/2/7[/list|/draft]   — вариант 7: разбор по шагам и 3D, чистовик, черновик листа А3 по ГОСТ;
-   #/ig/dz, #/ig/dz/3, #/ig/dz/3/7 — то же для инженерной графики (задание 2 — #/ig/hw2).
-   Внутри страниц адрес строит HDZ(id, …), а разбор маршрута — dzView({tab:'ng2', item, sub}). */
-const DZ_TABS=[['','Условие'],['how','Как решать'],['ex','Пример'],['my','Мой вариант'],['faq','Ошибки и защита']];
+   Путь студента: ДЗ → номер варианта → разбор. Всё остальное (условие с таблицами, методика, пример, защита) — по кнопке, не на пути.
+   #/dz                        — все ДЗ начерта и инженерной графики на одном экране; «мой вариант» вписывается один раз на предмет;
+   #/ng4                       — ДЗ №4: выбрать вариант (у ИГ — номером или по картинке);
+   #/ng4/13[/list|/draft]      — вариант 13: разбор по шагам и 3D, чистовик, черновик листа А3 по ГОСТ;
+   #/ng4/cond · /how · /ex[/<тип>] · /faq · /my — условие и таблицы, как решать, пример по шагам, ошибки и защита, сверка ответов;
+   #/ig3, #/ig3/7, #/ig2/5     — то же для инженерной графики.
+   Адрес строит HDZ(id, …); прежние #/ng/dz/…, #/ig/dz/…, #/dz/<id>/…, #/ig/hw2/…, #/ng/hw/…, #/ng/var/… переадресуются сюда. */
+const DZ_SECS=[['cond','Условие'],['how','Как решать'],['ex','Пример'],['faq','Ошибки и защита'],['my','Сверить ответы']];
 const vesc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const dzCourse=c=>c==='ig'?'Инженерная графика':'Начертательная геометрия';
-const dzCrumb=c=>c==='ig'?'ДЗ по инж. графике':'ДЗ по начерту';
+const dzSubj=c=>c==='ig'?'Инж. графика':'Начерт';
+/* мой вариант: {ng4:13} — отмеченный в задании; {ng:13} — номер по предмету (обычно один на все ДЗ), им заполняются остальные задания.
+   У ДЗ 2 по ИГ номер ещё и в nch2_igvar — его читает главная ИГ */
 const dzMine=()=>{ try{ return ST.get('dzmine',{})||{}; }catch(e){ return {}; } };
-const dzSetMine=(id,n)=>{ const o=dzMine(); if(n) o[id]=n; else delete o[id]; ST.set('dzmine',o); };
+function dzMyN(d){ const o=dzMine(); let n=+o[d.id]||0;
+  if(!n&&d.id==='ig2'){ try{ n=+localStorage.getItem('nch2_igvar')||0; }catch(e){} }
+  n=n||+o[d.course]||0; return n>=1&&n<=dzCount(d)?n:0; }
+function dzSetMine(d,n){ const o=dzMine();
+  if(n){ o[d.id]=n; o[d.course]=n; } else { if(+o[d.course]===dzMyN(d)) delete o[d.course]; delete o[d.id]; }
+  ST.set('dzmine',o); if(d.id==='ig2'){ try{ if(n) localStorage.setItem('nch2_igvar',String(n)); else localStorage.removeItem('nch2_igvar'); }catch(e){} } }
 /* прежний id «Сверь свой лист» (HWCHECK) для типа варианта */
 const dzCheckId=(id,code)=>id==='ng2'?{'2a':'2','2b':'2b','2c':'2c'}[code]:id==='ng3'?'3':null;
+const dzChecks=d=>dzTypesOf(d).map(t=>dzCheckId(d.id,t.code)).filter((x,i,a)=>x&&window.HWCHECK&&HWCHECK.has(x)&&a.indexOf(x)===i);
 const stW=n=>{ const m=n%100, k=n%10; return (m>=11&&m<=14)?'шагов':k===1?'шаг':(k>=2&&k<=4)?'шага':'шагов'; };
 const dzSteps=t=>t?(t.parts||[t]).reduce((s,p)=>s+(p.steps||[]).length,0):0;
 const DZ_RU=new WeakSet();
 function dzExample(d,code){ const f=d.examples&&d.examples[code]; if(!f) return null; let t=null; try{ t=f(); }catch(e){ console.error(e); }
   if(t&&!DZ_RU.has(t)){ DZ_RU.add(t); try{ WB3.ruDec(t); }catch(e){} } return t; }
-function dzSolved(d){ return window.DZR?DZR.numbers(d.id).length:0; }
 function dzCount(d){ return d.V?Object.keys(d.V).length:(d.count||0); }
-function dzStatus(d){ if(d.href) return '<span class="dz-st ok">все '+d.count+' вариантов на сайте</span>';
-  const s=dzSolved(d), n=dzCount(d); return s===n?`<span class="dz-st ok">все ${n} вариантов на сайте</span>`:s?`<span class="dz-st">готово ${s} из ${n} вариантов</span>`:'<span class="dz-st work">разбор готовится</span>'; }
-const dzBeta=d=>d.beta?' <i class="dz-beta">бета</i>':'';
-const dzHref=(d,...a)=>d.href&&!a.length?d.href():HDZ(d.id,...a);
-
-/* номера вариантов типа: решённые — ссылки, остальные — серые */
-function dzNums(d,t){ const mine=dzMine()[d.id];
-  return `<div class="var-nums">${Array.from({length:t.to-t.from+1},(_,i)=>t.from+i).map(n=>d.href?`<a href="${d.href(n)}">${n}</a>`:
-    DZR.has(d.id,n)?`<a href="${HDZ(d.id,n)}"${+mine===n?' class="mine" title="Мой вариант"':''}>${n}</a>`:`<span class="off" title="решатель этого типа в работе">${n}</span>`).join('')}</div>`; }
 function dzTypesOf(d){ return d.types||[{code:'all',from:1,to:dzCount(d),name:'Варианты 1–'+dzCount(d),text:d.text||''}]; }
+const dzBeta=d=>d.beta?' <i class="dz-beta">бета</i>':'';
+const dzTyName=t=>t.name.replace(/^\d[а-яa-z]? · /,'');
+const dzThumb=(d,n)=>d.id==='ig2'?'ig/v'+String(n).padStart(2,'0')+'.jpg':'dz/ig/'+d.num+'/img/v'+String(n).padStart(2,'0')+'.jpg';
+const dzBetaNote=()=>`<div class="igx-beta dz-betab" role="note"><i>Бета</i><span><b>Раздел новый.</b> Решение строится по 3D-модели детали, прочитанной с чертежа задания. Сверь картинку варианта со своим заданием; нашёл расхождение — напиши, исправим.</span></div>`;
+const DZ_BACK='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+/* короткая ссылка: nachert1830.ru/#/ng4/13 — «ремешок» (белая лента с синей и красной полосой), нажал — скопировал */
+const dzLinkHTML=h=>`<button type="button" class="dzx-link" data-dzlink="${attr(h)}" title="Скопировать ссылку"><i class="dzx-strap" aria-hidden="true"></i><span>${vesc(h.replace(/^#\//,''))}</span></button>`;
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-dzlink]'); if(!b) return; e.preventDefault();
+  const host=/^(localhost|127\.)/.test(location.hostname)?location.host:location.hostname.replace(/^www\./,''), url='https://'+host+'/'+b.dataset.dzlink;
+  const ok=()=>{ toast('Ссылка скопирована: '+host+'/'+b.dataset.dzlink); b.classList.add('ok'); setTimeout(()=>b.classList.remove('ok'),1400); try{ FX.buzz('light'); }catch(_){} };
+  try{ navigator.clipboard.writeText(url).then(ok,()=>FX.share(document.title,url)); }catch(_){ try{ FX.share(document.title,url); }catch(__){} } });
 
-/* ── все ДЗ ── */
-function dzHub(v,course){
-  if(course==='ig') return dzHubIG(v);
-  const mine=dzMine(), list=DZR.list('ng');
-  const card=d=>{ const ty=d.types||[]; const my=mine[d.id];
-    return `<article class="dz-card"><a class="dz-cm" href="${dzHref(d)}"><span class="dz-num">${vesc(d.label)}${dzBeta(d)}</span><b>${vesc(d.title)}</b><small>${vesc(d.short||'')}</small></a>
-      ${ty.length>1?`<div class="dz-types">${ty.map(t=>`<span><i>${t.from}–${t.to}</i>${vesc(t.name.replace(/^\d[а-яa-z]? · /,''))}</span>`).join('')}</div>`:''}
-      <div class="dz-foot">${dzStatus(d)}<span class="dz-acts">${my?`<a class="dz-my" href="${HDZ(d.id,my)}">★ Вариант ${my}</a>`:''}${d.href?'':`<a href="${HDZ(d.id,'how')}">Как решать</a>`}</span></div></article>`; };
-  const sec=c=>{ const L=list.filter(d=>d.course===c); return L.length?`<section class="dz-sec"><h2>Все задания</h2><div class="dz-grid">${L.map(card).join('')}</div></section>`:''; };
-  v.innerHTML=pageHTML({crumbs:[['ДЗ по начерту']],next:null,noBottom:true,cls:'hwwrap dzwrap',body:`
-   <div class="intro"><div class="hw-kick">Начертательная геометрия</div><h1>ДЗ по начерту</h1><p class="lead">Каждое ДЗ — на одной странице: условие и все варианты по типам, как решать, разобранный пример, <b>твой вариант</b> по шагам с 3D и листом А3 по ГОСТ (черновик и чистовик), ошибки и вопросы защиты.</p></div>
-   <form class="dz-go" id="dzGo" autocomplete="off"><b>Сразу к своему варианту</b>
-     <select id="dzGoId" aria-label="Задание">${list.map(d=>`<option value="${d.id}">${vesc(d.label)} · ${vesc(d.title)}</option>`).join('')}</select>
-     <input id="dzGoN" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="№" aria-label="Номер варианта">
-     <button class="btn pri" type="submit">Открыть →</button></form>
-   ${sec('ng')}
-   <p class="dzi-other">Ищешь инженерную графику? <a href="${HDZ('ig')}">ДЗ по инж. графике →</a></p>
-   <section class="hw-rules"><h2>Как оформить и защитить ДЗ</h2><div class="hw-rg">
+/* ── все ДЗ: строка = задание; справа — сразу мой вариант ── */
+function dzRows(c){ return DZR.list(c).map(d=>{ const m=dzMyN(d), ok=m&&DZR.has(d.id,m);
+  return `<li class="dzx-row"><a class="dzx-main" href="${HDZ(d.id)}"><span class="dzx-no" aria-hidden="true">${d.num}</span><span class="dzx-t"><b>${vesc(d.title)}${dzBeta(d)}</b></span></a>${ok?`<a class="dzx-go" href="${HDZ(d.id,m)}" aria-label="${vesc(d.label)}, вариант ${m}"><small>вар.</small>${m}</a>`:''}</li>`; }).join(''); }
+function dzHub(v){
+  const sec=c=>`<section class="dzx-sec" aria-labelledby="dzS${c}"><div class="dzx-sh"><h2 id="dzS${c}">${dzSubj(c)}</h2>
+      <label class="dzx-my"><span>мой вариант</span><input data-my="${c}" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="№" autocomplete="off" value="${+dzMine()[c]||''}" aria-label="Мой вариант по предмету «${dzSubj(c)}»"></label></div>
+      <ul class="dzx-list" id="dzL${c}">${dzRows(c)}</ul></section>`;
+  const first=NAVSUBJ==='ig'?['ig','ng']:['ng','ig'];
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx',body:`
+   <div class="intro"><h1>Домашние задания</h1><p class="lead">ДЗ → номер варианта → разбор по шагам и лист А3. Впиши свой вариант — он откроется одним нажатием.</p></div>
+   ${first.map(sec).join('')}
+   <details class="dzx-rules"><summary>Как оформить и защитить ДЗ</summary><div class="hw-rg">
     <div><b>Лист</b><p>Каждая задача — на отдельном листе (обычно А3). Рамка и основная надпись — по ГОСТ 2.301 и 2.104. Слева от основной надписи — таблица координат заданных точек.</p></div>
     <div><b>Построения</b><p>Сначала тонко карандашом. Линии построения не стирай: по ним проверяют ход решения. Это и есть черновик — на сайте он в цвете, чтобы было видно, что откуда взялось.</p></div>
     <div><b>Обводка</b><p>Заданное и найденное — сплошной основной линией, построения — сплошной тонкой, невидимое — штриховой (ГОСТ 2.303). Надписи — шрифтом 5 и 3,5 (ГОСТ 2.304). Это чистовик.</p></div>
-    <div><b>Защита</b><p>Объясни каждый шаг: что строишь, зачем и по какой теореме. Типичные вопросы — во вкладке «Ошибки и защита» каждого ДЗ.</p></div></div></section>`});
-  const f=$('dzGo'); f.addEventListener('submit',e=>{ e.preventDefault(); const d=DZR.get($('dzGoId').value), n=parseInt($('dzGoN').value,10), N=dzCount(d);
-    if(!(n>=1&&n<=N)){ $('dzGoN').focus(); try{ FX.note&&FX.note('Номер варианта — от 1 до '+N); }catch(_){} return; }
-    nav(d.href?d.href(n):HDZ(d.id,n)); });
-  return 'ДЗ по начерту';
-}
+    <div><b>Защита</b><p>Объясни каждый шаг: что строишь, зачем и по какой теореме. Типичные вопросы — в «Ошибки и защита» каждого ДЗ.</p></div></div></details>`});
+  v.querySelectorAll('[data-my]').forEach(inp=>inp.addEventListener('input',()=>{ const c=inp.dataset.my, n=parseInt(inp.value,10), o=dzMine();
+    if(n>=1&&n<=30) o[c]=n; else if(!inp.value.trim()) delete o[c]; else return;
+    /* номер по предмету главнее отмеченных раньше в заданиях: вписал — во всех ДЗ предмета этот номер */
+    DZR.list(c).forEach(d=>{ delete o[d.id]; }); if(c==='ig'){ try{ if(o.ig) localStorage.setItem('nch2_igvar',String(o.ig)); else localStorage.removeItem('nch2_igvar'); }catch(e){} }
+    ST.set('dzmine',o); $('dzL'+c).innerHTML=dzRows(c); }));
+  return 'ДЗ'; }
 
-/* ── вкладки страницы ДЗ ── */
-function dzTabsHTML(d,on){ return `<nav class="hw-pills dz-tabs" role="tablist" aria-label="Разделы ДЗ">${DZ_TABS.map(([k,t])=>
-  (k==='ex'&&!d.examples)?'':`<a role="tab" href="${HDZ(d.id,k)}" class="${on===k?'on':''}" aria-selected="${on===k}">${t}</a>`).join('')}</nav>`; }
-function dzHead(d,on){ return `<div class="intro"><div class="hw-kick">${vesc(d.label)} · ${dzCourse(d.course)}</div><h1>${vesc(d.title)}</h1>${d.short?`<p class="lead">${vesc(d.short)}</p>`:''}</div>${dzTabsHTML(d,on)}`; }
+/* ── страница ДЗ: главное — выбрать вариант; остальное — плитками внизу ── */
+function dzSecsOf(d){ return DZ_SECS.filter(([k])=>k==='ex'?!!d.examples:k==='my'?dzChecks(d).length>0:k==='cond'?!!(d.types||d.text||d.sheet):k==='how'||k==='faq'?!!d.method:true); }
+function dzHead(d,kick){ return `<a class="dzx-up" href="${kick?HDZ(d.id):HDZ()}">${DZ_BACK}${kick?vesc(d.label)+' · варианты':'Все ДЗ'}</a>
+  <div class="intro"><div class="hw-kick">${vesc(d.label)} · ${kick?vesc(d.title):dzSubj(d.course)}</div><h1>${kick?vesc(kick):vesc(d.title)+dzBeta(d)}</h1></div>`; }
+function dzPick(v,d){
+  const m=dzMyN(d), has=n=>DZR.has(d.id,n), N=dzCount(d), ig=d.course==='ig', secs=dzSecsOf(d);
+  const num=n=>has(n)?`<a href="${HDZ(d.id,n)}"${n===m?' class="mine" aria-label="Вариант '+n+', мой"':''}>${n}</a>`:`<span class="off" title="решение этого типа готовится">${n}</span>`;
+  const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+  const grid=ig?`<div class="dzx-nums c6">${range(1,N).map(num).join('')}</div>`:
+    dzTypesOf(d).map(t=>`<div class="dzx-ty"><div class="dzx-tyn"><i>${t.from}–${t.to}</i><span>${vesc(dzTyName(t))}</span></div><div class="dzx-nums${t.to-t.from+1>10?' c6':''}">${range(t.from,t.to).map(num).join('')}</div></div>`).join('');
+  const name=n=>{ try{ const p=d.part&&d.part(n); return p&&p.title||''; }catch(e){ return ''; } };
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzHead(d)+(d.beta?dzBetaNote():'')+
+   (m&&has(m)?`<a class="dzx-mine" href="${HDZ(d.id,m)}"><i class="dzx-strap" aria-hidden="true"></i><span>Мой вариант</span><b>${m}</b><em>Открыть →</em></a>`:'')+
+   `<h2 class="dzx-h">${m?'Другой вариант':'Выбери вариант'}</h2>${grid}
+   ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}${n===m?' ★':''}</b>${name(n)?`<small>${vesc(name(n))}</small>`:''}</a>`).join('')}</div></details>`:''}
+   <nav class="dzx-secs" aria-label="Про это ДЗ">${secs.map(([k,t])=>`<a href="${HDZ(d.id,k)}">${t}</a>`).join('')}</nav>
+   <div class="dzx-foot"><span>Ссылка на это ДЗ</span>${dzLinkHTML(HDZ(d.id))}</div>`});
+  setLast({s:d.course,kind:'dz',id:d.id,href:HDZ(d.id),label:d.label+'. '+d.title,sub:dzCourse(d.course)+' · ДЗ'});
+  return d.label+' · '+d.title; }
+
 const dzList=a=>a&&a.length?`<ul class="hw-err">${a.map(x=>`<li>${x}</li>`).join('')}</ul>`:'';
 const dzQA=a=>a&&a.length?`<div class="hw-qa">${a.map(q=>`<details><summary>${vesc(q.q)}</summary><p>${q.a}</p></details>`).join('')}</div>`:'';
+function dzNums(d,t){ const m=dzMyN(d);
+  return `<div class="var-nums">${Array.from({length:t.to-t.from+1},(_,i)=>t.from+i).map(n=>DZR.has(d.id,n)?`<a href="${HDZ(d.id,n)}"${m===n?' class="mine" title="Мой вариант"':''}>${n}</a>`:`<span class="off" title="решатель этого типа в работе">${n}</span>`).join('')}</div>`; }
 
-function dzCond(d){ const types=dzTypesOf(d);
+function dzCond(d){ const types=d.types?dzTypesOf(d):[];
+  if(!types.length) return `${d.text?`<section class="hw-sec"><p class="dz-text">${vesc(d.text)}</p></section>`:''}${d.sheet&&d.sheet.length?`<section class="hw-sec"><h2>Что сдать: лист А3</h2><ol class="hw-err">${d.sheet.map(x=>`<li>${x}</li>`).join('')}</ol></section>`:''}`;
   return types.map(t=>{ const ex=d.examples&&d.examples[t.code], cols=t.cols, pts=t.given||d.given||[];
     const dimT=cols&&d.V?`<div class="hc-tw dz-dims"><table><thead><tr><th>№</th>${cols.map(c=>`<th>${vesc(DZ_COLS[c]||c)}</th>`).join('')}</tr></thead><tbody>${Array.from({length:t.to-t.from+1},(_,i)=>t.from+i).map(n=>`<tr><td>${n}</td>${cols.map(c=>`<td>${d.V[n][c]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'';
     return `<section class="hw-sec dz-type" id="t-${t.code}"><div class="dz-range">Варианты ${t.from}–${t.to}</div><h2>${vesc(t.name)}</h2>
       ${t.text?`<p class="dz-text">${vesc(t.text)}</p>`:''}${pts.length?`<p class="dz-given">Дано в таблице варианта: ${pts.map(p=>'<b>'+p+'</b>').join(', ')} — координаты x, y, z, мм.</p>`:''}${dimT}
-      <div class="dz-sub">${DZR.has(d.id,t.from)||d.href?'Выбери номер — разбор по шагам, 3D и лист:':'Решатель этого типа в работе — пока смотри «Как решать»'+(ex?' и пример':'')+'.'}</div>${dzNums(d,t)}
+      ${dzNums(d,t)}
       <div class="dz-links"><a href="${HDZ(d.id,'how')}#m-${t.code}">Как решать этот тип →</a>${ex?`<a href="${HDZ(d.id,'ex',t.code)}">Пример по шагам →</a>`:''}</div></section>`; }).join('')+
     (d.sheet?`<section class="hw-sec"><h2>Что должно быть на листе</h2>${dzList(d.sheet)}</section>`:''); }
 const DZ_COLS={Dk:'Dк',dk:'dк',Hk:'Hк',Xk:'Xк',Yk:'Yк',Xc:'Xц',Yc:'Yц',Zc:'Zц',Dc:'Dц',Dp:'Dп',Xp:'Xп',Yp:'Yп',Xt:'Xт',Yt:'Yт',Dt:'Dт',Rt:'Rт',phi:'φ°',alpha:'α°',beta:'β°'};
@@ -26162,7 +26281,7 @@ function dzHow(d){ const m=d.method; if(!m) return '<div class="box">Метод�
   const other=types.filter(t=>!T[t.code]);
   return `${m.essence?`<section class="hw-sec"><h2>Суть задания</h2><p>${m.essence}</p></section>`:''}
     ${m.idea?`<section class="hw-sec dz-key"><h2>Главная мысль</h2><p>${m.idea}</p></section>`:''}
-    ${types.length>1?`<nav class="dz-jump" aria-label="Типы вариантов"><b>Твой тип:</b>${types.map(t=>`<a href="#m-${t.code}" data-jump="m-${t.code}">${t.from}–${t.to} · ${vesc(t.name.replace(/^\d[а-яa-z]? · /,''))}</a>`).join('')}</nav>`:''}
+    ${types.length>1?`<nav class="dz-jump" aria-label="Типы вариантов"><b>Твой тип:</b>${types.map(t=>`<a href="#m-${t.code}" data-jump="m-${t.code}">${t.from}–${t.to} · ${vesc(dzTyName(t))}</a>`).join('')}</nav>`:''}
     ${blocks}${other.length&&m.extra?`<section class="hw-sec hw-var">${m.extra}</section>`:''}
     ${m.sheet&&m.sheet.length?`<section class="hw-sec"><h2>Оформление листа</h2>${dzList(m.sheet)}</section>`:''}
     ${m.theory&&m.theory.length?`<section class="hw-sec"><h2>Что повторить</h2><ul class="hw-links">${m.theory.map(x=>`<li><a href="${x.h}">${vesc(x.t)}</a></li>`).join('')}</ul></section>`:''}`; }
@@ -26174,134 +26293,95 @@ function dzFaq(d){ const m=d.method||{}, T=m.types||{}, types=dzTypesOf(d);
     <section class="hw-sec"><h2>Что спрашивают на защите</h2>${dzQA(m.defense)}${def.map(t=>`${one?'':`<h3 class="dz-h3">${vesc(t.name)}</h3>`}${dzQA(T[t.code].defense)}`).join('')}</section>`;
   return /<li>|<details>/.test(out)?out:'<div class="box">Список ошибок и вопросов защиты для этого задания пишется.</div>'; }
 
-function dzMy(d){ const mine=dzMine()[d.id], types=dzTypesOf(d);
-  const ck=types.map(t=>dzCheckId(d.id,t.code)).filter((x,i,a)=>x&&window.HWCHECK&&HWCHECK.has(x)&&a.indexOf(x)===i);
-  return `<section class="hw-sec"><h2>Номер твоего варианта</h2><p>Нажми свой номер — откроется разбор по шагам, 3D и лист. Там же кнопка «☆ Это мой вариант»: номер запомнится и будет первым здесь и в списке всех ДЗ.</p>
-     ${types.map(t=>`<div class="var-grp"><small>${t.from}–${t.to} · ${vesc(t.name)}</small>${dzNums(d,t)}</div>`).join('')}
-     ${mine?`<p class="dz-mine">★ Твой вариант: <a href="${HDZ(d.id,mine)}"><b>${mine}</b> — открыть разбор</a> · <button class="linkbtn" type="button" id="dzUnmine">забыть</button></p>`:''}</section>
-   ${ck.map(x=>`<div class="dz-ck" data-ck="${x}">${HWCHECK.html(x)}</div>`).join('')}`; }
+/* «Сверить ответы»: свои числа против ответа варианта (ДЗ №2, №3) */
+function dzMy(d){ return `<p class="lead">Выбери свой вариант в таблице и впиши свои ответы — сайт сверит их с условием задачи.</p>${dzChecks(d).map(x=>`<div class="dz-ck" data-ck="${x}">${HWCHECK.html(x)}</div>`).join('')}`; }
 
-function dzPage(v,r,d){
-  if(d.course==='ig'&&d.part) return dzIgPage(v,r,d);
-  const sec=['how','ex','my','faq'].includes(r.item)?r.item:'';
-  if(sec==='ex'){ const types=dzTypesOf(d).filter(t=>d.examples&&d.examples[t.code]); const code=r.sub||(types.length===1?types[0].code:null);
+/* разделы «про ДЗ»: Условие · Как решать · Пример · Ошибки и защита · Сверить ответы */
+function dzSecTabs(d,on){ return `<nav class="hw-pills dz-tabs" role="tablist" aria-label="Про это ДЗ">${dzSecsOf(d).map(([k,t])=>`<a role="tab" href="${HDZ(d.id,k)}" class="${on===k?'on':''}" aria-selected="${on===k}">${t}</a>`).join('')}</nav>`; }
+function dzSec(v,d,sec,sub){
+  if(sec==='ex'){ const types=dzTypesOf(d).filter(t=>d.examples&&d.examples[t.code]); const code=sub||(types.length===1?types[0].code:null);
     if(code&&d.examples&&d.examples[code]) return dzExView(v,d,code);
-    v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)],['Пример']],next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'ex')+
+    v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx',body:dzHead(d,'Пример')+dzSecTabs(d,'ex')+
       `<div class="hw-plate" role="note">Пример — полностью разобранное решение одного варианта каждого типа. Свой вариант открой по номеру — разбор построится на твоих данных.</div><div class="dz-grid">${types.map(t=>{ const tk=dzExample(d,t.code), s=dzSteps(tk);
         return `<a class="dz-card dz-cm" href="${HDZ(d.id,'ex',t.code)}"><span class="dz-num">Варианты ${t.from}–${t.to}</span><b>${vesc(t.name)}</b><small>▶ ${s} ${stW(s)}: чертёж растёт на глазах, у каждого шага — намёк, принцип, числа</small></a>`; }).join('')}</div>`});
     return d.label+' · пример'; }
+  const t=(DZ_SECS.find(x=>x[0]===sec)||DZ_SECS[0])[1];
   const body=sec==='how'?dzHow(d):sec==='faq'?dzFaq(d):sec==='my'?dzMy(d):dzCond(d);
-  v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label+' · '+d.title]],next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,sec)+body+dzNavHTML(d)});
-  if(sec==='my'){ v.querySelectorAll('.dz-ck').forEach(b=>{ try{ HWCHECK.bind(b,b.dataset.ck); }catch(e){} });
-    const u=$('dzUnmine'); if(u) u.addEventListener('click',()=>{ dzSetMine(d.id,0); CURH=null; route(); }); }
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx',body:dzHead(d,t)+dzSecTabs(d,sec)+body+
+    `<div class="hw-nav"><span></span><a href="${HDZ(d.id)}">К вариантам ${vesc(d.label)}</a><span></span></div>`});
+  if(sec==='my') v.querySelectorAll('.dz-ck').forEach(b=>{ try{ HWCHECK.bind(b,b.dataset.ck); }catch(e){} });
   { const tb=v.querySelector('.dz-tabs'), on=tb&&tb.querySelector('a.on'); if(on) tb.scrollLeft=Math.max(0,on.offsetLeft-tb.offsetLeft-16); }
   v.querySelectorAll('[data-jump]').forEach(a=>a.addEventListener('click',e=>{ const el=document.getElementById(a.dataset.jump); if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); } }));
-  setLast({s:d.course,kind:'dz',id:d.id,href:HDZ(d.id,sec),label:d.label+'. '+d.title,sub:dzCourse(d.course)+' · ДЗ'});
-  return d.label+' · '+(DZ_TABS.find(x=>x[0]===sec)||DZ_TABS[0])[1];
-}
-function dzNavHTML(d){ const L=DZR.list(d.course), i=L.indexOf(d), p=L[i-1], n=L[i+1];
-  return `<div class="hw-nav">${p?`<a href="${dzHref(p)}">← ${vesc(p.label)}</a>`:'<span></span>'}<a href="${HDZ(d.course)}">Все ДЗ</a>${n?`<a href="${dzHref(n)}">${vesc(n.label)} →</a>`:'<span></span>'}</div>`; }
+  setLast({s:d.course,kind:'dz',id:d.id+'/'+sec,href:HDZ(d.id,sec),label:d.label+'. '+t,sub:dzCourse(d.course)+' · ДЗ'});
+  return d.label+' · '+t; }
 
 function dzExView(v,d,code){ const task=dzExample(d,code), t=(d.types||[]).find(x=>x.code===code)||{name:''};
-  if(!task){ v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)]],body:'<div class="box warn">Пример не построился.</div>'}); return d.label; }
+  if(!task){ v.innerHTML=pageHTML({crumbs:null,body:dzHead(d,'Пример')+'<div class="box warn">Пример не построился.</div>'}); return d.label; }
   const L=Object.keys(d.examples), i=L.indexOf(code), nx=L[i+1];
-  v.innerHTML=pageHTML({crumbs:[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)],['Пример · '+t.name]],next:null,noBottom:true,cls:'taskwrap hwwrap',body:
-    `<div class="hw-exhead"><a class="hw-back" href="${HDZ(d.id,'how')}#m-${code}">← Как решать</a>${dzTabsHTML(d,'ex')}</div><div class="hw-plate slim" role="note">Пример: ${vesc(t.name)}. Свой вариант открой по номеру — разбор построится на твоих данных.</div><div id="dzPl"></div>`});
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap',body:
+    `<div class="hw-exhead"><a class="hw-back" href="${HDZ(d.id,'how')}#m-${code}">← Как решать</a>${dzSecTabs(d,'ex')}</div><div class="hw-plate slim" role="note">Пример: ${vesc(t.name)}. Свой вариант открой по номеру — разбор построится на твоих данных.</div><div id="dzPl"></div>`});
   document.body.classList.add('inplayer');
-  PLR=PLAYER.mount($('dzPl'),task,{backHref:HDZ(d.id,'how'),backLabel:'К методике',afterText:nx?'Следующий тип':'Мой вариант',onDone:()=>{ try{ location.hash=nx?HDZ(d.id,'ex',nx):HDZ(d.id,'my'); }catch(e){} }});
+  PLR=PLAYER.mount($('dzPl'),task,{backHref:HDZ(d.id),backLabel:'К вариантам',afterText:nx?'Следующий тип':'Выбрать свой вариант',onDone:()=>{ try{ location.hash=nx?HDZ(d.id,'ex',nx):HDZ(d.id); }catch(e){} }});
   setLast({s:d.course,kind:'dz',id:d.id+'/ex/'+code,href:HDZ(d.id,'ex',code),label:d.label+' · пример: '+t.name,sub:dzCourse(d.course)+' · ДЗ'});
-  return d.label+' · пример';
-}
+  return d.label+' · пример'; }
 
-/* ── вариант: разбор по шагам (3D — кнопкой у чертежа), чистовик и черновик листа ── */
+/* ── вариант: одна строка навигации на обоих предметах — к заданию, соседние варианты (‹ ›), «мой», короткая ссылка ── */
+function dzVarBar(d,n,extra){ const nums=DZR.numbers(d.id), i=nums.indexOf(n), p=nums[i-1], q=nums[i+1], mine=dzMyN(d)===n, x=extra?[extra]:[];
+  return `<div class="dzx-vbar"><a class="dzx-up" href="${HDZ(d.id)}">${DZ_BACK}${vesc(d.label)}</a>
+    <div class="dzx-vn">${p?`<a href="${HDZ(d.id,p,...x)}" aria-label="Вариант ${p}" rel="prev">‹</a>`:'<span></span>'}<h1>Вариант ${n}${dzBeta(d)}</h1>${q?`<a href="${HDZ(d.id,q,...x)}" aria-label="Вариант ${q}" rel="next">›</a>`:'<span></span>'}</div>
+    <span class="dzx-va"><button type="button" class="dzx-star${mine?' on':''}" id="dzStar" aria-pressed="${mine}" title="Мой вариант">${mine?'★':'☆'}<span>мой</span></button>${dzLinkHTML(HDZ(d.id,n))}</span></div>`; }
+function dzBindStar(v,d,n){ const st=v.querySelector('#dzStar'); if(!st) return;
+  st.addEventListener('click',()=>{ const on=dzMyN(d)!==n; dzSetMine(d,on?n:0); st.classList.toggle('on',on); st.setAttribute('aria-pressed',on); st.innerHTML=(on?'★':'☆')+'<span>мой</span>';
+    toast(on?'Вариант '+n+' — твой: он будет первым в «ДЗ»':'Отметка снята'); try{ FX.buzz&&FX.buzz(6); }catch(e){} }); }
+
 function dzVariant(v,d,n,extra){
+  if(d.course==='ig') return dzPart(v,d,n);
   const mode=extra==='list'?'final':extra==='draft'?'draft':'steps', t=DZR.typeOf(d.id,n)||{name:''}, base=HDZ(d.id,n);
-  const crumbs=[[dzCrumb(d.course),HDZ(d.course)],[d.label,HDZ(d.id)],['Вариант '+n]];
-  if(d.part) return dzPart(v,d,n);
-  if(!d.V||!d.V[n]){ v.innerHTML=pageHTML({crumbs,body:`<div class="box warn">Нет варианта ${n}. <a href="${HDZ(d.id)}">Все варианты ${vesc(d.label)}</a></div>`}); return d.label; }
-  if(!DZR.has(d.id,n)){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap dzwrap',body:dzHead(d,'')+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Решатель для типа «${vesc(t.name)}» ещё в работе. Пока — <a href="${HDZ(d.id,'how')}#m-${t.code}">как решать этот тип</a>${d.examples&&d.examples[t.code]?` и <a href="${HDZ(d.id,'ex',t.code)}">пример по шагам</a>`:''}.</div>`}); return d.label+' · вариант '+n; }
+  const miss=html=>{ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx',body:dzHead(d)+html}); return d.label+' · вариант '+n; };
+  if(!d.V||!d.V[n]) return miss(`<div class="box warn">Нет варианта ${n}. <a href="${HDZ(d.id)}">Выбрать вариант</a></div>`);
+  if(!DZR.has(d.id,n)) return miss(`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Решатель для типа «${vesc(t.name)}» ещё в работе. Пока — <a href="${HDZ(d.id,'how')}#m-${t.code}">как решать этот тип</a>${d.examples&&d.examples[t.code]?` и <a href="${HDZ(d.id,'ex',t.code)}">пример по шагам</a>`:''}.</div>`);
   let res; try{ res=DZR.solve(d.id,n); }catch(e){ console.error(e); res={why:String(e&&e.message||e)}; }
-  if(!res||!res.task){ v.innerHTML=pageHTML({crumbs,body:'<div class="box warn">Вариант не решился: '+vesc(res&&res.why||'')+'</div>'}); return d.label; }
-  const meta=DZR.meta(d.id,n), nums=DZR.numbers(d.id), i=nums.indexOf(n), mine=+dzMine()[d.id]===n;
-  const tabs=`<div class="hw-pills var-pills" role="tablist"><a role="tab" class="${mode==='steps'?'on':''}" href="${base}">Разбор по шагам</a><a role="tab" class="${mode==='final'?'on':''}" href="${base}/list">Чистовик</a><a role="tab" class="${mode==='draft'?'on':''}" href="${base}/draft">Черновик</a><button type="button" class="dz-star${mine?' on':''}" id="dzStar" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Это мой вариант'}</button></div>`;
-  const navv=`<div class="hw-nav">${i>0?`<a href="${HDZ(d.id,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${HDZ(d.id)}">Все варианты</a>${i<nums.length-1?`<a href="${HDZ(d.id,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
-  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'taskwrap hwwrap',body:`<div class="hw-exhead"><a class="hw-back" href="${HDZ(d.id)}">← ${vesc(d.label)}</a>${tabs}</div><p class="dz-vtype">Тип: <b>${vesc(t.name)}</b> · <a href="${HDZ(d.id,'how')}#m-${t.code}">как решать</a></p><div id="dzPl"></div>`});
+  if(!res||!res.task) return miss('<div class="box warn">Вариант не решился: '+vesc(res&&res.why||'')+'</div>');
+  const meta=DZR.meta(d.id,n);
+  const bar=dzVarBar(d,n,mode==='steps'?'':extra)+`<div class="hw-pills var-pills dzx-modes" role="tablist"><a role="tab" class="${mode==='steps'?'on':''}" href="${base}">Разбор по шагам</a><a role="tab" class="${mode==='final'?'on':''}" href="${base}/list">Чистовик</a><a role="tab" class="${mode==='draft'?'on':''}" href="${base}/draft">Черновик</a></div>`;
+  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-var',body:`${bar}<p class="dz-vtype">Тип: <b>${vesc(t.name)}</b> · <a href="${HDZ(d.id,'how')}#m-${t.code}">как решать</a></p><div id="dzPl"></div>`});
     document.body.classList.add('inplayer');
-    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К заданию',afterText:'Чистовик листа',onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
+    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К вариантам',afterText:'Чистовик листа',onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
   else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
-    v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'hwwrap varwrap',body:`<div class="intro"><div class="hw-kick">${vesc(meta.title)} · вариант ${n}</div><h1>${mode==='draft'?'Черновик':'Чистовик'} листа</h1></div>${tabs}
-      <p class="var-note">Формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — видно, что откуда взялось; так проверяют ход решения.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.'}</p>
+    v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap varwrap dzx dzx-var',body:`${bar}
+      <p class="var-note">${mode==='draft'?'Черновик':'Чистовик'} листа: формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — видно, что откуда взялось; так проверяют ход решения.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.'}</p>
       <div class="var-acts"><button class="btn pri" type="button" id="varPrint">Открыть для печати (А3, 100 %)</button></div>
-      <div class="var-sheet">${sh.svg.replace(/width="297mm" height="420mm"/,'width="100%" style="height:auto;max-width:900px;display:block;margin:0 auto;background:#fff"')}</div>${navv}`});
+      <div class="var-sheet">${sh.svg.replace(/width="297mm" height="420mm"/,'width="100%" style="height:auto;max-width:900px;display:block;margin:0 auto;background:#fff"')}</div>`});
     const b=$('varPrint'); if(b) b.addEventListener('click',()=>SHEET.print(sh.svg,meta.title+' · вариант '+n,fname)); }
-  const st=$('dzStar'); if(st) st.addEventListener('click',()=>{ const on=+dzMine()[d.id]===n; dzSetMine(d.id,on?0:n); st.classList.toggle('on',!on); st.setAttribute('aria-pressed',!on); st.textContent=on?'☆ Это мой вариант':'★ Мой вариант'; });
+  dzBindStar(v,d,n);
   setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:base,label:meta.title+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
-  return meta.title+' · вариант '+n+(mode==='steps'?'':mode==='final'?' · чистовик':' · черновик');
-}
-
-/* ── Инженерная графика: ДЗ → вариант по картинке → разбор. Всё, что нужно, — на двух экранах ── */
-const DZ_BACK='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-/* мой вариант: у ДЗ 2 он хранится в разделе ИГ (nch2_igvar), у остальных — в общем списке «ДЗ» */
-const dzMyN=d=>{ if(d.id==='ig2'){ try{ return +localStorage.getItem('nch2_igvar')||0; }catch(e){ return 0; } } return +dzMine()[d.id]||0; };
-const dzThumb=(d,n)=>d.id==='ig2'?'ig/v'+String(n).padStart(2,'0')+'.jpg':'dz/ig/'+d.num+'/img/v'+String(n).padStart(2,'0')+'.jpg';
-const dzBetaNote=()=>`<div class="igx-beta dz-betab" role="note"><i>Бета</i><span><b>Раздел новый.</b> Решение строится по 3D-модели детали, прочитанной с чертежа задания. Сверь картинку варианта со своим заданием; нашёл расхождение — напиши, исправим.</span></div>`;
-function dzHubIG(v){
-  const L=DZR.list('ig');
-  v.innerHTML=pageHTML({crumbs:[['ДЗ по инж. графике']],next:null,noBottom:true,cls:'igx dzwrap',body:`
-   <div class="intro"><h1>ДЗ по инженерной графике</h1><p class="lead">Нажми своё ДЗ, потом — свой вариант. Там условие, деталь в 3D, построение по шагам и готовый лист А3.</p></div>
-   <div class="dzi-list">${L.map(d=>{ const m=dzMyN(d);
-     return `<article class="dzi"><a class="dzi-main" href="${dzHref(d)}"><span class="dzi-img"><img src="${dzThumb(d,m||(d.id==='ig2'?5:1))}" alt="" loading="lazy" decoding="async"></span>
-       <span class="dzi-t"><span class="dzi-k">${vesc(d.label)}${dzBeta(d)}</span><b>${vesc(d.title)}</b><small>${vesc(d.short||'')}</small><span class="btn pri dzi-go">Выбрать вариант →</span></span></a>
-       ${m?`<a class="dzi-mine" href="${d.href?d.href(m):HDZ(d.id,m)}">★ Мой вариант ${m} — открыть</a>`:''}</article>`; }).join('')}</div>
-   <p class="dzi-other">Ищешь начерт? <a href="${HDZ('ng')}">ДЗ по начертательной геометрии →</a></p>`});
-  return 'ДЗ по инженерной графике'; }
-
-/* страница ДЗ: номер или картинка → вариант; ниже — что сдать, как решать, защита */
-function dzIgPage(v,r,d){
-  const base=HDZ(d.id), sec=['how','faq'].includes(r.item)?r.item:'';
-  if(sec){ const t=sec==='how'?'Как решать':'Ошибки и вопросы на защите';
-    v.innerHTML=pageHTML({crumbs:[['ДЗ по инж. графике',HDZ('ig')],[d.label,base],[t]],next:null,noBottom:true,cls:'hwwrap dzwrap',body:`<a class="igx-back" href="${base}">${DZ_BACK}К вариантам ${vesc(d.label)}</a>
-      <div class="intro"><div class="hw-kick">${vesc(d.label)} · ${vesc(d.title)}</div><h1>${t}</h1></div>${sec==='how'?dzHow(d):dzFaq(d)}
-      <div class="hw-nav"><span></span><a href="${base}">К вариантам ${vesc(d.label)}</a><span></span></div>`});
-    setLast({s:'ig',kind:'dz',id:d.id,href:HDZ(d.id,sec),label:d.label+'. '+t,sub:dzCourse(d.course)+' · ДЗ'});
-    return d.label+' · '+t; }
-  const N=dzCount(d), m=dzMyN(d), nums=DZR.numbers(d.id), name=n=>{ try{ const p=d.part(n); return p&&p.title||''; }catch(e){ return ''; } };
-  v.innerHTML=pageHTML({crumbs:[['ДЗ по инж. графике',HDZ('ig')],[d.label]],next:null,noBottom:true,cls:'igx dzwrap',body:`
-   <div class="intro"><div class="hw-kick">${vesc(d.label)} · инженерная графика</div><h1>${vesc(d.title)}${dzBeta(d)}</h1><p class="lead">${vesc(d.text||d.short||'')}</p></div>${d.beta?dzBetaNote():''}
-   ${m?`<a class="igx-mine" href="${HDZ(d.id,m)}"><span>★ Мой вариант</span><b>${m}</b><i>Открыть →</i></a>`:''}
-   <div class="igx-find dz-find"><label for="dzNum">Номер варианта</label><input id="dzNum" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="1–${N}" autocomplete="off"><button class="btn pri" id="dzNumGo" type="button">Открыть</button></div>
-   <h2 class="dz-pick">или найди свой по картинке</h2>
-   <div class="igx-grid dz-vgrid">${nums.map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}${+m===n?' ★':''}</b><small>${vesc(name(n))}</small></a>`).join('')}</div>
-   ${d.sheet&&d.sheet.length?`<details class="igx-need dz-need"><summary>Что сдать: лист А3</summary><ol>${d.sheet.map(x=>`<li>${x}</li>`).join('')}</ol></details>`:''}
-   <div class="dz-more"><a href="${HDZ(d.id,'how')}"><b>Как решать</b><span>порядок построения по шагам и почему так</span></a><a href="${HDZ(d.id,'faq')}"><b>Ошибки и защита</b><span>что чаще всего не так и что спросят</span></a></div>
-   ${dzNavHTML(d)}`});
-  const go=()=>{ const n=parseInt($('dzNum').value,10); if(n>=1&&n<=N) nav(HDZ(d.id,n)); else { $('dzNum').focus(); try{ FX.note&&FX.note('Номер варианта — от 1 до '+N); }catch(_){} } };
-  $('dzNumGo').addEventListener('click',go); $('dzNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
-  setLast({s:'ig',kind:'dz',id:d.id,href:base,label:d.label+'. '+d.title,sub:dzCourse(d.course)+' · ДЗ'});
-  return d.label+' · '+d.title; }
+  return meta.title+' · вариант '+n+(mode==='steps'?'':mode==='final'?' · чистовик':' · черновик'); }
 
 /* ИГ: деталь варианта — тот же разбор, что у заданий тетради (partPage): данные виды, 3D, построение по шагам, лист */
-function dzPart(v,d,n){ const crumbs=[['ДЗ по инж. графике',HDZ('ig')],[d.label,HDZ(d.id)],['Вариант '+n]]; let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
-  if(!m){ v.innerHTML=pageHTML({crumbs,next:null,noBottom:true,cls:'igx dzwrap',body:`<a class="igx-back" href="${HDZ(d.id)}">${DZ_BACK}Все варианты ${vesc(d.label)}</a><div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. Выбери свой из <a href="${HDZ(d.id)}">списка вариантов</a>.</div>`}); return d.label+' · вариант '+n; }
-  const nums=DZR.numbers(d.id), i=nums.indexOf(n), mine=dzMyN(d)===n;
-  const navv=`<div class="hw-nav">${i>0?`<a href="${HDZ(d.id,nums[i-1])}">← Вариант ${nums[i-1]}</a>`:'<span></span>'}<a href="${HDZ(d.id)}">Все варианты</a>${i<nums.length-1?`<a href="${HDZ(d.id,nums[i+1])}">Вариант ${nums[i+1]} →</a>`:'<span></span>'}</div>`;
-  IGUI.partPage(v,{model:m,crumbs,title:'Вариант '+n+dzBeta(d),back:[HDZ(d.id),'Все варианты '+d.label],docTitle:d.label+' · вариант '+n,
-    star:`<button class="igx-star${mine?' on':''}" id="dzStar" type="button" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Мой вариант'}</button>`,beta:d.beta?dzBetaNote():'',
-    tb:{name:'Вариант '+n,sub:m.title,task:d.label},fig:d.label+' · '+m.title,q:d.text,sheet:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
-    bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')+`<p class="dz-vtype"><a href="${HDZ(d.id,'how')}">Как решать — порядок построения</a> · <a href="${HDZ(d.id,'faq')}">ошибки и защита</a></p>`+navv});
-  const st=$('dzStar'); if(st) st.addEventListener('click',()=>{ const on=dzMyN(d)!==n; dzSetMine(d.id,on?n:0); st.classList.toggle('on',on); st.setAttribute('aria-pressed',on); st.textContent=on?'★ Мой вариант':'☆ Мой вариант'; try{ FX.buzz&&FX.buzz(6); }catch(e){} });
+function dzPart(v,d,n){ let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
+  if(!m||!window.IGUI){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'igx dzwrap dzx',body:dzHead(d)+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. <a href="${HDZ(d.id)}">Выбрать вариант</a>.</div>`}); return d.label+' · вариант '+n; }
+  IGUI.partPage(v,{model:m,head:dzVarBar(d,n),crumbs:null,title:'Вариант '+n,back:[HDZ(d.id),d.label],docTitle:d.label+' · вариант '+n,beta:d.beta?dzBetaNote():'',
+    img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:d.text,
+    sheet:d.id==='ig2'?null:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
+    bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')+(d.method?`<p class="dz-vtype"><a href="${HDZ(d.id,'how')}">Как решать — порядок построения</a> · <a href="${HDZ(d.id,'faq')}">ошибки и защита</a></p>`:'')});
+  dzBindStar(v,d,n);
   setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:HDZ(d.id,n),label:d.label+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
   return d.label+' · вариант '+n; }
-/* прежние адреса #/dz/ng4/13… → #/ng/dz/4/13… (ссылки в закладках и «последнем открытом» продолжают работать) */
-function viewDZ(v,r){ const to=!r.tab?HDZ():(r.tab==='ng'||r.tab==='ig')?HDZ(r.tab):HDZ(r.tab,r.item,r.sub,r.extra); setTimeout(()=>redir(to),0); return 'ДЗ'; }
+
+/* маршрут раздела: r = {tab:'ng4', item, sub, extra}; без tab — все ДЗ */
 function dzView(v,r){
-  if(!window.DZR){ v.innerHTML=pageHTML({crumbs:[['ДЗ']],body:'<div class="box warn"><h4>ДЗ</h4>Раздел не загрузился. Обнови страницу.</div>'}); return 'ДЗ'; }
-  if(!r.tab||r.tab==='ng'||r.tab==='ig') return dzHub(v,r.tab||NAVSUBJ||'ng');
+  if(!window.DZR){ v.innerHTML=pageHTML({crumbs:null,body:'<div class="box warn"><h4>ДЗ</h4>Раздел не загрузился. Обнови страницу.</div>'}); return 'ДЗ'; }
+  if(!r.tab) return dzHub(v);
   const d=DZR.get(r.tab); if(!d||!d.num){ setTimeout(()=>redir(HDZ()),0); return 'ДЗ'; }
-  if(d.href) { setTimeout(()=>redir(d.href(r.item&&/^\d+$/.test(r.item)?+r.item:0)),0); return d.label; }
   if(r.item&&/^\d+$/.test(r.item)) return dzVariant(v,d,+r.item,r.sub);
-  return dzPage(v,r,d);
-}
+  if(r.item&&dzSecsOf(d).some(x=>x[0]===r.item)) return dzSec(v,d,r.item,r.sub);
+  if(r.item){ setTimeout(()=>redir(HDZ(d.id)),0); return d.label; }
+  return dzPick(v,d); }
+/* #/dz… — раздел; прежние #/dz/<id>/… и #/dz/ng|ig — переадресация на короткие адреса */
+function viewDZ(v,r){ if(r.short||!r.tab) return dzView(v,r);
+  setTimeout(()=>redir(/^(ng|ig)\d$/.test(r.tab)?HDZ(r.tab,r.item,r.sub,r.extra):HDZ()),0); return 'ДЗ'; }
+/* прежние #/ng/dz/4/13…, #/ig/dz/3/7…, #/ig/hw2/5 */
+function dzOld(c,r){ const id=r.item?c+r.item:''; setTimeout(()=>redir(id?HDZ(id,r.sub,r.extra):HDZ()),0); return 'ДЗ'; }
 /* прежние адреса: #/ng/hw[/id[/ex]] и #/ng/var[/dzN/n[/list]] → раздел «ДЗ» */
 function dzLegacy(r){ const L={'1':'ng1','2':'ng2','2b':'ng2','2c':'ng2','3':'ng3','4a':'ng4','4b':'ng4','4':'ng4','5':'ng5'}, T={'2':'2a','2b':'2b','2c':'2c','4a':'4a2','4b':'4b3'};
   if(r.tab==='hw'){ const id=L[String(r.item||'').toLowerCase()]; if(!id) return HDZ(); return r.sub==='ex'?HDZ(id,'ex',T[r.item]||''):HDZ(id,T[r.item]&&id==='ng2'?'how':''); }
@@ -27682,7 +27762,7 @@ function home(v){
    <section class="igh-hw">
     <div class="igh-hw-t"><span class="igh-k">ДЗ № 2 · «Построение изображений»</span><b>Найди свой вариант</b><p>30 вариантов. В каждом — условие, деталь в 3D, построение по шагам и готовый лист.</p>
      <div class="igh-find"><input id="ighNum" inputmode="numeric" maxlength="2" placeholder="№" autocomplete="off" aria-label="Номер варианта, от 1 до 30"><button class="btn igh-go" id="ighGo">Открыть вариант</button></div>
-     <div class="igh-hw-l">${mv?`<a class="igh-mine" href="${H('ig','hw2',mv)}">★ Мой вариант ${mv}</a>`:''}<a href="${H('ig','hw2')}">Все 30 вариантов →</a></div></div>
+     <div class="igh-hw-l">${mv?`<a class="igh-mine" href="${HDZ('ig2',mv)}">★ Мой вариант ${mv}</a>`:''}<a href="${HDZ('ig2')}">Все 30 вариантов →</a></div></div>
     <div class="igh-hw-3d" id="igHero" aria-hidden="true"></div>
    </section>
    <div class="igh-dz">${['ig3','ig4'].map(id=>{ const d=window.DZR&&DZR.get(id); return d?`<a href="${HDZ(id)}"><b>${d.label}${d.beta?' <span class="dz-beta">бета</span>':''}</b><small>${d.title}</small><em>Выбрать вариант →</em></a>`:''; }).join('')}</div>
@@ -27691,42 +27771,16 @@ function home(v){
     <a class="igh-c igh-learn" href="${H('ig','learn')}"><span class="igh-k">Учиться с нуля</span><b>Виды, разрезы, сечения</b><p>Один вариант от условия до чистовика: что строим, почему так и какой пункт ГОСТ.</p><span class="igh-a">Начать →</span></a>
    </div>
    <a class="igh-th" href="${H('ig','theory')}"><b>Теория ЕСКД</b><span>форматы, линии, шрифты, размеры, виды, разрезы, сечения, штриховка</span><i>→</i></a>`});
-  const go=()=>{ const n=parseInt($(v,'#ighNum').value,10); if(n>=1&&n<=N) nav(H('ig','hw2',n)); else { $(v,'#ighNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
+  const go=()=>{ const n=parseInt($(v,'#ighNum').value,10); if(n>=1&&n<=N) nav(HDZ('ig2',n)); else { $(v,'#ighNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
   $(v,'#ighGo').addEventListener('click',go); $(v,'#ighNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
   const h=$(v,'#igHero'); if(hasGL&&h&&window.innerWidth>=700){ const pick=mv||[15,22,4,18,30,13][Math.floor(Math.random()*6)]; const m=mountViewer(h,pick,{state:{cut:1,res:1.5}});
     if(m){ let on=true; const spin=()=>{ if(!on||!h.isConnected) return; if(!h.classList.contains('busy')){ m.S.yaw+=0.004; m.v.draw(.7); } requestAnimationFrame(spin); }; requestAnimationFrame(spin); m.cv.addEventListener('pointerdown',()=>{ on=false; }); } }
   NEXT=null; return SUBJ.ig.name;
 }
-function catalog(v){
-  v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2']],next:null,noBottom:true,cls:'igx',body:`
-   <div class="intro"><h1>ДЗ 2 · Построение изображений</h1><p class="lead">Найди свой вариант: на карточке — чертёж из задания. Внутри — условие, а по кнопке — решение: деталь в 3D, разрезы и готовый чертёж.</p>
-    <a class="igx-xl" href="${H('ig','learn')}"><b>Впервые строишь разрезы и сечения?</b> Сначала пройди один вариант по шагам →</a></div>${IGBETA()}
-   ${myVar()?`<a class="igx-mine" href="${H('ig','hw2',myVar())}"><span>★ Мой вариант</span><b>${myVar()}</b><i>Открыть →</i></a>`:''}
-   <div class="igx-find"><label for="igNum">Мой вариант</label><input id="igNum" inputmode="numeric" maxlength="2" placeholder="1–30" autocomplete="off"><button class="btn pri" id="igGo">Открыть</button></div>
-   <details class="igx-need"${window.innerWidth>700?' open':''}><summary>Что нужно построить на листе А3</summary>
-    <ol><li><b>Главный вид</b> — половина вида и половина фронтального разреза. Деталь симметрична, поэтому разрез ставят справа от оси, граница — штрихпунктирная осевая линия.</li>
-     <li><b>Вид слева</b> — так же: половина вида и половина профильного разреза.</li>
-     <li><b>Вид сверху</b> — по двум данным изображениям.</li>
-     <li><b>Сечение A–A</b> — наклонной плоскостью по стрелкам: строится в натуральную величину, штриховка под 45°.</li>
-     <li>Оформление — по ЕСКД: линии, штриховка, обозначения.</li></ol></details>
-   <div class="igx-grid" id="igGrid">${Array.from({length:N},(_,i)=>`<a class="igx-v" href="${H('ig','hw2',i+1)}" data-n="${i+1}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="ig/v${String(i+1).padStart(2,'0')}.jpg"></span><b>Вариант ${i+1}</b></a>`).join('')}</div>`});
-  const go=()=>{ const n=parseInt($(v,'#igNum').value,10); if(n>=1&&n<=N) nav(H('ig','hw2',n)); else { $(v,'#igNum').focus(); FX.note&&FX.note('Номер варианта — от 1 до 30'); } };
-  $(v,'#igGo').addEventListener('click',go); $(v,'#igNum').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
-  NEXT=null; return 'ДЗ 2 · '+SUBJ.ig.name;
-}
 /* штриховка сечения (ГОСТ 2.306, п. 5): 45° к рамке; если так штрихи почти совпадают с осью сечения (она параллельна следу) — 30° или 60° */
 function hatchDeg(th){ const a=((th*180/Math.PI)%180+180)%180, near=v=>Math.min(Math.abs(a-v),180-Math.abs(a-v)); if(near(45)>=10) return 45; return near(60)>=near(30)?60:30; }
 const secRot=model=>{ const [[x1,z1],[x2,z2]]=model.sec.p; return 90-hatchDeg(Math.atan2(z2-z1,x2-x1)); };
 const myVar=()=>{ try{ return +localStorage.getItem('nch2_igvar')||0; }catch(e){ return 0; } };
-function variant(v,n){
-  if(!(n>=1&&n<=N)){ setTimeout(()=>redir(H('ig','hw2')),0); return 'ДЗ 2'; }
-  const mine=myVar()===n;
-  return partPage(v,{model:IG_VARS[n],star:`<button class="igx-star${mine?' on':''}" id="igStar" aria-pressed="${mine}">${mine?'★ Мой вариант':'☆ Мой вариант'}</button>`,crumbs:[[SUBJ.ig.name,H('ig')],['ДЗ 2',H('ig','hw2')],['Вариант '+n]],title:'Вариант '+n,
-    back:[H('ig','hw2'),'Все варианты'],docTitle:'Вариант '+n+' · ДЗ 2 · '+SUBJ.ig.name,
-    img:'ig/v'+String(n).padStart(2,'0')+'.jpg', learn:true,
-    q:'По двум данным изображениям — главному виду и виду сверху — построить вид слева. Выполнить необходимые разрезы: на симметричных изображениях — половина вида и половина разреза. Построить сечение A–A наклонной плоскостью.',fig:'ДЗ 2, вариант '+n,
-    note:''});
-}
 /* ── какие изображения на листе (ГОСТ 2.305) ──
    F/L: 'half' — половина вида и половина разреза, 'view' — вид без разреза (с невидимым контуром), 'full' — полный разрез.
    Несимметричная спереди-назад деталь → вид слева только полным разрезом. Если на ось симметрии попадает ребро,
@@ -28085,8 +28139,8 @@ function loading(host,title,sub){ const el=document.createElement('div'); el.cla
 function partPage(v,o){
   const n=o.model;
   v.innerHTML=pageHTML({crumbs:o.crumbs,next:null,noBottom:true,cls:'igx',body:`
-   <a class="igx-back" href="${o.back[0]}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>${o.back[1]}</a>
-   <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}</div>${o.beta!=null?o.beta:IGBETA()}
+   ${o.head||`<a class="igx-back" href="${o.back[0]}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>${o.back[1]}</a>
+   <div class="igx-vh"><h1>${o.title}</h1>${o.star||''}</div>`}${o.beta!=null?o.beta:IGBETA()}
    <section class="igx-task"><div class="igx-task-t"><span class="igx-k">Задание${o.fig?' · '+o.fig:''}</span><p>${o.q||''}</p></div>
     <div class="igx-given" id="igGiven">${o.img?`<div class="igx-dwg igx-orig"><img src="${o.img}" alt="Чертёж задания" decoding="async"></div>`:'<div class="igx-given-l">Строю данные изображения…</div>'}</div></section>
    ${o.learn?`<a class="igx-xl" href="${H('ig','learn')}"><b>Как это строится?</b> Разбор по шагам: вид слева, разрезы, сечение А–А →</a><a class="igx-xl igp-go" href="${H('ig','points')}"><b>Защита листа:</b> как найти две недостающие проекции точки →</a>`:''}
@@ -28258,7 +28312,6 @@ function theory(v,id){
   NEXT=null; return (cur?cur.t+' · ':'')+'Теория · '+SUBJ.ig.name;
 }
 function view(v,r){
-  if(r.tab==='hw2') return r.item?variant(v,parseInt(r.item,10)):catalog(v);
   if(r.tab==='wb') return r.item?wbItem(v,parseInt(r.item,10)):wbList(v);
   if(r.tab==='theory') return theory(v,r.item);
   if(r.tab==='learn'&&window.IGL) return IGL.view(v,r.item);
@@ -28889,7 +28942,7 @@ function page(v){
    <div id="iglUnf"></div>
    <h2 class="igx-h2">Правила ГОСТ 2.305 и 2.306 — коротко</h2>
    <div class="igl-rules">${RULES.map(r=>`<details class="igx-th"><summary><b>${r[0]}</b></summary>${r[1]}</details>`).join('')}</div>
-   <a class="igx-xl igx-xl-go" href="${H('ig','hw2')}"><b>Понял метод?</b> Теперь свой вариант ДЗ № 2 →</a>`});
+   <a class="igx-xl igx-xl-go" href="${HDZ('ig2')}"><b>Понял метод?</b> Теперь свой вариант ДЗ № 2 →</a>`});
   const D3=mount3d(v); let i=0; try{ i=Math.max(0,Math.min(ST.length-1,+sessionStorage.getItem('igl_step')||0)); }catch(e){}
   const show=(move)=>{ const s=ST[i]; let svg=''; try{ svg=stepSVG(i); }catch(e){ console.error(e); }
     $(v,'#iglPic').innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
@@ -29461,7 +29514,7 @@ function round(v,n,seed){
    <div class="gy-bar"><span class="gy-hint" id="nkHint">Нажми на место нарушения</span><button class="gy-zb" id="nkZoom" aria-label="Увеличить лист">＋</button></div>
    <div class="nk-sheet" id="nkSheet"></div>
    <div class="gy-res" id="nkRes" aria-live="polite"></div>
-   <div class="gy-row"><button class="btn ghost" id="nkShow">Показать нарушение</button><button class="btn ghost" id="nkCmp" hidden>Верный лист</button><a class="btn pri" href="${href(n,rnd())}">Следующее</a><a class="btn" href="${H('ig','hw2',n)}">Вариант ${n}</a></div></div>`});
+   <div class="gy-row"><button class="btn ghost" id="nkShow">Показать нарушение</button><button class="btn ghost" id="nkCmp" hidden>Верный лист</button><a class="btn pri" href="${href(n,rnd())}">Следующее</a><a class="btn" href="${HDZ('ig2',n)}">Вариант ${n}</a></div></div>`});
   const box=v.querySelector('#nkSheet'), L=IGUI.loading(box,'Готовлю лист','Считаю виды детали — на телефоне это может занять до полминуты');
   const md=IG_VARS[n], sp=IGUI.igSpec(md), Q=[()=>IG3.drawing(md,sp.fk,900,0,sp.xb),()=>IG3.drawing(md,sp.lk,900,0,sp.yb),()=>IG3.drawing(md,md.hz?'topNH':'top',900)].concat(md.hz?[()=>IG3.drawing(md,'topcut',900,md.hz.z)]:[]).concat([()=>IGS.sheet(n,'clean')]);
   const alive=()=>box.isConnected;
@@ -29578,7 +29631,7 @@ return {attach,describe,chain,viewsOf};
 })();
 
 function viewIG(v,r){
-  if(r&&r.tab==='dz'&&window.IGUI) return dzView(v,dzR('ig',r));
+  if(r&&(r.tab==='dz'||r.tab==='hw2')) return dzOld('ig',r.tab==='hw2'?{item:'2',sub:r.item}:r);
   if(window.IGUI) return IGUI.view(v,r||{});
   setTimeout(()=>redir('#/'),0); return 'Начерт';   /* раздел ещё не открыт — для всех, кроме владельца, его нет */
   v.innerHTML=`<div class="wrap page igsoon">

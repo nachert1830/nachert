@@ -39,8 +39,8 @@ async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Чит
   const log=[], t0=Date.now(), onc=m=>{ if(m.type()==='error'||m.type()==='warning') log.push(Math.round((Date.now()-t0)/1000)+'с '+m.type()+': '+m.text().slice(0,160)); }, one=e=>log.push('pageerror: '+String(e).slice(0,160));
   page.on('console',onc); page.on('pageerror',one);
   /* сразу на вкладке «Лист», как страница восстанавливает последнюю вкладку: 3D не запускается (в CI WebGL программный, и лист ждал за ним) */
-  await page.evaluate(()=>{ try{ sessionStorage.setItem('igsol:#/ig/hw2/8','1'); sessionStorage.setItem('igsol:#/ig/hw2/8:t','sheet'); }catch(e){} });
-  await page.goto(URL+'#/ig/hw2/8'); await page.waitForTimeout(800);
+  await page.evaluate(()=>{ try{ sessionStorage.setItem('igsol:#/ig2/8','1'); sessionStorage.setItem('igsol:#/ig2/8:t','sheet'); }catch(e){} });
+  await page.goto(URL+'#/ig2/8'); await page.waitForTimeout(800);
   if(!await page.$('#igSheetBox:not([hidden])')){ await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200); await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{}); }
   /* панель загрузки — только у самого листа: вкладка 3D могла ещё считаться (в CI WebGL программный и медленный) */
   /* опрос сам, а не waitForFunction: в CI он обрывался ошибкой через несколько секунд, и тест считал, что листа нет (прогоны 150–157);

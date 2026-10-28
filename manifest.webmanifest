@@ -21,7 +21,7 @@
   ],
   "shortcuts": [
     {"name": "Решённая тетрадь", "short_name": "Тетрадь", "description": "Все задачи рабочей тетради по шагам", "url": "./#/ng/tasks", "icons": [{"src": "app/sc-tasks.png", "sizes": "192x192", "type": "image/png"}]},
-    {"name": "Домашние задания", "short_name": "ДЗ", "description": "Порядок решения и разобранный пример к каждому ДЗ", "url": "./#/ng/hw", "icons": [{"src": "app/sc-hw.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Домашние задания", "short_name": "ДЗ", "description": "Порядок решения и разобранный пример к каждому ДЗ", "url": "./#/dz", "icons": [{"src": "app/sc-hw.png", "sizes": "192x192", "type": "image/png"}]},
     {"name": "Подготовка к РК", "short_name": "РК", "description": "Билеты с разбором, теория, пробный РК", "url": "./#/ng/check", "icons": [{"src": "app/sc-rk.png", "sizes": "192x192", "type": "image/png"}]},
     {"name": "Уроки и теория", "short_name": "Теория", "description": "Короткие уроки с картинками", "url": "./#/ng/path", "icons": [{"src": "app/sc-path.png", "sizes": "192x192", "type": "image/png"}]}
   ],

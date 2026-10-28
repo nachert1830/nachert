@@ -1,5 +1,5 @@
 /* Офлайн: сайт — один файл. Сначала сеть (чтобы обновления приходили), при отсутствии сети — копия из кэша. */
-const C='nachert-v118';
+const C='nachert-v119';
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(C).then(c=>c.addAll(['./','./index.html','./manifest.webmanifest','./icon-192.png','./apple-touch-icon.png','./kernel/dz.js','./dz/ng/lib.js','./dz/ng/1/variants.js','./dz/ng/1/method.js','./dz/ng/1/solver.js','./dz/ng/2/variants.js','./dz/ng/2/method.js','./dz/ng/2/solver.js','./dz/ng/3/variants.js','./dz/ng/3/method.js','./dz/ng/3/solver.js','./dz/ng/4/variants.js','./dz/ng/4/method.js','./dz/ng/4/surf.js','./dz/ng/4/solver.js','./dz/ng/5/variants.js','./dz/ng/5/method.js','./dz/ng/5/solver-cone.js','./dz/ng/5/solver.js','./dz/ig/2/variants.js','./dz/ig/3/variants.js','./dz/ig/3/method.js','./dz/ig/3/models.js','./dz/ig/4/variants.js','./dz/ig/4/method.js','./dz/ig/4/models.js','./kernel/sheet.js'])).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch',e=>{

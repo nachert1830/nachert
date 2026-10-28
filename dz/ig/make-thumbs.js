@@ -16,7 +16,7 @@ const arg=process.argv.slice(2), only=arg.filter(a=>/^ig\d$/.test(a)), nums=arg.
     r.writeHead(200,{'Content-Type':TYPES[path.extname(p)]||'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const browser=await chromium.launch();
   const page=await browser.newPage({viewport:{width:600,height:2000},deviceScaleFactor:1});
-  await page.goto('http://127.0.0.1:'+srv.address().port+'/#/ig/dz'); await page.waitForTimeout(1500);
+  await page.goto('http://127.0.0.1:'+srv.address().port+'/#/dz'); await page.waitForTimeout(1500);
   for(const id of only.length?only:['ig3','ig4']){
     const dir=path.join(ROOT,'dz','ig',id.slice(2),'img'); fs.mkdirSync(dir,{recursive:true});
     for(const n of nums.length?nums:Array.from({length:30},(_,i)=>i+1)){
