@@ -51,7 +51,8 @@ function extract(img,rect,o){ o=o||{}; const SH=o.sheet||SHEETS[o.n||47], roi=SH
   let ink=rect.ink, M=rect.H; if(!ink){ const cs=[[box[0],box[1]],[box[2],box[1]],[box[2],box[3]],[box[0],box[3]]].map(p=>IMG.H.apply(rect.H,p));
     const x0=Math.max(0,Math.floor(Math.min(...cs.map(p=>p[0]))-20)), y0=Math.max(0,Math.floor(Math.min(...cs.map(p=>p[1]))-20)), x1=Math.min(img.width,Math.ceil(Math.max(...cs.map(p=>p[0]))+20)), y1=Math.min(img.height,Math.ceil(Math.max(...cs.map(p=>p[1]))+20));
     const cr=IMG.rgba(x1-x0,y1-y0); for(let y=y0;y<y1;y++) cr.data.set(img.data.subarray((y*img.width+x0)*4,(y*img.width+x1)*4),((y-y0)*(x1-x0))*4);
-    ink=CL.ink(cr).ink; M=IMG.H.norm(IMG.H.mul([1,0,-x0,0,1,-y0,0,0,1],rect.H)); }
+    /* o.clean — очиститель карандаша (lab/dz/cleaner): на вход — линии чёрным на белом, без подписей, теней и сетки */
+    ink=CL.ink(o.clean?o.clean(cr):cr).ink; M=IMG.H.norm(IMG.H.mul([1,0,-x0,0,1,-y0,0,0,1],rect.H)); }
   const g=CL.warp(ink,M,box,PPM), {w,h}=g, n=w*h, mask=printMask(SH,box,w,h);
   /* два масштаба: тонкие линии — σ 1,5 px (0,19 мм), толстые основные — σ 3 px: на мелком масштабе у толстой линии
      два гребня по краям (двойник), на крупном — один посередине; берём масштаб с большим откликом */

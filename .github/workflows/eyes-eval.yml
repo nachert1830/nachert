@@ -1,0 +1,68 @@
+name: Глаза сканера — замер на настоящей модели
+# Синтетические листы (правда известна до сотых мм) → модель зрения в Yandex AI Studio → промахи, перепутанные подписи,
+# вердикты мозга. Ничего не развёртывает и ничего не меняет в облаке: только запросы к модели (lab/dz/eyes-eval.js).
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: 'модели через запятую (имя в каталоге, например qwen3.6-35b-a3b/latest); пусто — та, что подключена'
+        required: false
+        default: ''
+      strategy:
+        description: 'full, zoom, own (свои глаза без модели), own+full (свои глаза + модель, как в сканере) — через запятую'
+        required: false
+        default: 'full,own+full'
+      sheets:
+        description: 'листов ДЗ №3 (по 4 чертежа)'
+        required: false
+        default: '4'
+      scale:
+        description: 'шкала координат ответа модели: px или n1000'
+        required: false
+        default: 'n1000'
+  push:
+    branches: [claude/affectionate-mayer-nz0uny]
+    paths: ['lab/dz/eyes-eval.js', 'lab/dz/eyes.js', 'server/lib/eyes.js', '.github/workflows/eyes-eval.yml']
+permissions:
+  contents: read
+concurrency:
+  group: eyes-eval
+  cancel-in-progress: true
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Программа yc и IAM-токен (ключ аккаунта развёртывания)
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+          YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID || 'b1gm1vb5prlop8thuobf' }}
+        run: |
+          test -n "$YC_SA_KEY" || { echo "::error::нет секрета YC_SA_KEY"; exit 1; }
+          for i in 1 2 3; do timeout 120 bash -c 'curl -sSL --max-time 100 https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i "$HOME/yc" -n >/dev/null' && break; sleep 5; done
+          printf '%s' "$YC_SA_KEY" > "$RUNNER_TEMP/yc-key.json"
+          "$HOME/yc/bin/yc" config profile create ci >/dev/null
+          "$HOME/yc/bin/yc" config set service-account-key "$RUNNER_TEMP/yc-key.json"
+          "$HOME/yc/bin/yc" config set folder-id "$YC_FOLDER_ID"
+          T=$("$HOME/yc/bin/yc" iam create-token); echo "::add-mask::$T"
+          echo "EYES_TOKEN=$T" >> "$GITHUB_ENV"; echo "EYES_FOLDER=$YC_FOLDER_ID" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/yc-key.json"
+      - name: Модели каталога
+        run: |
+          curl -s -m 20 -H "Authorization: Bearer $EYES_TOKEN" -H "x-folder-id: $EYES_FOLDER" https://llm.api.cloud.yandex.net/v1/models \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{ try{ const j=JSON.parse(s); (j.data||[]).forEach(m=>console.log("  "+String(m.id).replace(process.env.EYES_FOLDER,"<каталог>"))); }catch(e){ console.log(s.slice(0,300)); } })'
+      - name: Замер
+        env:
+          EYES_OPTS: '{"reasoning_effort":"none"}'
+          EYES_MODEL: 'gpt://{folder}/qwen3.6-35b-a3b/latest'
+        run: node lab/dz/eyes-eval.js --sheets=${{ github.event.inputs.sheets || '4' }} --dz2=2 --strategy=${{ github.event.inputs.strategy || 'full,own+full' }} --models=${{ github.event.inputs.models || 'qwen3.6-35b-a3b/latest' }} --scale=${{ github.event.inputs.scale || 'n1000' }} --out=eyes-eval.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eyes-eval
+          path: eyes-eval.json
+          if-no-files-found: ignore

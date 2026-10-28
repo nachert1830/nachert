@@ -116,5 +116,5 @@ function whichVariant(dig,loc,dz,o){ o=o||{}; const out=[];
 function drawSegs(dig,cal){ const T=cal.T, a=1+T[2], b=T[3], c=T[4], d=1+T[5], det=a*d-b*c, O=dig.O||[0,0];
   const inv=p=>{ const x=p[0]+O[0]-T[0], y=p[1]+O[1]-T[1]; return [(d*x-b*y)/det,(-c*x+a*y)/det]; };
   return dig.segs.map(s=>({a:inv(s.a),b:inv(s.b),len:s.len,k:s.k})); }
-put('dzCalib',{calibrate,whichVariant,givenErrors,apply,dmap,at,CAP,drawSegs});
+put('dzCalib',{calibrate,whichVariant,givenErrors,apply,dmap,at,CAP,drawSegs,samples,coverOf});
 })();

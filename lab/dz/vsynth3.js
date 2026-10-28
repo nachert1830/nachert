@@ -86,7 +86,7 @@ function sheet(o){ const n=o.n, err=o.err||'ok', R=IMG.rng((o.seed||1)*104729+n*
   const expect=err==='ok'?'верно':err==='variant'?'не тот вариант':'ошибка';
   s.truth=Object.assign(s.truth,{dz:3,n,drawn,id:'3',err,expect,wrongPt,flipped,data,parts:Object.fromEntries(Object.entries(parts).map(([k,p])=>[k,p.info]))});
   return s; }
-module.exports={sheet,ERRS:['a_dir','a_d','b_dir','c_R','d_R','vis','given','variant']};
+module.exports={sheet,partA,partB,partC,partD,ERRS:['a_dir','a_d','b_dir','c_R','d_R','vis','given','variant']};
 if(require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
   const s=sheet({n:+(a.n||8),err:a.err||'ok',seed:+(a.seed||1),turn:a.turn!=null?+a.turn:0}); if(!s){ console.log('не разместилось'); process.exit(1); }
   require('fs').writeFileSync(a.out||'v3.png',IMG.encodePNG(s.img)); console.log('ДЗ3 в'+s.truth.n+', ошибка '+s.truth.err+', ждём «'+s.truth.expect+'»', JSON.stringify(Object.fromEntries(Object.entries(s.truth.parts).map(([k,p])=>[k,p.base||p.form]))));
