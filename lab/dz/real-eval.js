@@ -3,7 +3,7 @@
    Разметка — lab/private/real/index.json (тоже не в git):
      {"sheets":[{"file":"p-001.jpg","src":"откуда","dz":3,"n":7,"kind":"клетка",
        "drawings":[{"part":"0"|"a"|"b"|"c"|"d","box":[x0,y0,x1,y1] (px фото),"err":null|"a"…|"?","dataErr":false|true|"?",
-                    "answer":{"H":28}|{"dih":81}|{"phi":25}, "partial":true — обрезан, не считается}]}],
+                    "answer":{"H":28}|{"dih":81}|{"phi":25}, "answerErr":false|true|"?", "partial":true — обрезан, не считается}]}],
       "foreign":[{"file":"…","why":"другая задача"}]}  — чужие листы: любой вердикт по ним ложный.
    err — в какой части ошибка построения (null — нет, "?" — владелец ещё не сказал: такие вердикты не идут ни в верные,
    ни в ложные, а считаются отдельно). part "0" — чертёж условия без частей.
@@ -30,6 +30,7 @@ const inBox=(b,p)=>b&&p&&p[0]>=b[0]&&p[0]<=b[2]&&p[1]>=b[1]&&p[1]<=b[3];
 function judge(cl,T){ if(!T) return 'ложно';
   if(cl.t==='data'){ if(T.dataErr==='?'||T.dataErr==null) return 'не размечено'; return (cl.bad===!!T.dataErr)?'верно':'ложно'; }
   if(cl.t==='part'){ if(T.part!==cl.k) return 'ложно'; if(T.err==='?') return 'не размечено'; return (cl.bad===(T.err===cl.k))?'верно':'ложно'; }
+  if(cl.t==='ans'){ const e=T.answerErr; if(e==='?'||e==null) return 'не размечено'; return cl.bad===!!e?'верно':'ложно'; }
   if(cl.t==='sheet'){ if(T.err==='?'||T.dataErr==='?') return 'не размечено'; const bad=!!T.err||!!T.dataErr; return cl.bad===bad?'верно':'ложно'; } }
 const S={photos:0,truthDr:0,found:0,parts:0,partsWrong:0,ok:0,bad:0,unl:0,refuse:0,ms:0}, lines=[];
 for(const sh of IX.sheets.concat((IX.foreign||[]).map(f=>Object.assign({foreign:true,dz:3,n:7,drawings:[]},f)))){
@@ -42,7 +43,8 @@ for(const sh of IX.sheets.concat((IX.foreign||[]).map(f=>Object.assign({foreign:
     if(T&&g.ok) hit.add(T); const cls=[];
     if(g.verdict==='ошибка в данных') cls.push({t:'data',bad:true,s:'ошибка в данных'}); else if(g.verdict==='данные нанесены верно') cls.push({t:'data',bad:false,s:'данные верно'});
     (g.shown||[]).forEach(k=>{ const p=g.parts&&g.parts[k]; if(p&&(p.st==='верно'||p.st==='ошибка')) cls.push({t:'part',k,bad:p.st==='ошибка',s:PN[k]+': '+p.st}); });
-    if(!cls.some(c=>c.t==='part')&&(g.verdict==='верно'||g.verdict==='ошибка')) cls.push({t:'sheet',bad:g.verdict==='ошибка',s:'чертёж: '+g.verdict});
+    (g.answers||[]).forEach(x=>cls.push({t:'ans',bad:x.st!=='верно',s:'ответ '+x.a+': '+(x.st==='верно'?'верно':'неверно ('+x.st+')')}));
+    if(!cls.some(c=>c.t==='part'||c.t==='ans')&&(g.verdict==='верно'||g.verdict==='ошибка')) cls.push({t:'sheet',bad:g.verdict==='ошибка',s:'чертёж: '+g.verdict});
     const guess=g.partGuess&&g.partGuess.length===1?g.partGuess[0]:null, named=new Set(cls.filter(c=>c.t==='part').map(c=>c.k)); if(guess) named.add(guess);
     if(T&&T.part!=='0'&&named.has(T.part)) S.parts++; if(T&&[...named].some(k=>k!==T.part)) S.partsWrong++;
     cls.forEach(c=>{ c.j=judge(c,T); if(c.j==='верно') S.ok++; else if(c.j==='ложно') S.bad++; else S.unl++; });
