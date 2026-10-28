@@ -56,6 +56,8 @@ const log=s=>console.log(s), sec=t=>((Date.now()-t)/1000).toFixed(1)+' с';
     const res=await fr.evaluate(()=>({h:document.querySelector('#vtitle')&&document.querySelector('#vtitle').textContent,cards:[...document.querySelectorAll('#vwhy .card')].map(c=>c.querySelector('h3').textContent+' — '+c.querySelector('.pill').textContent+': '+c.querySelector('.say').textContent),
       tech:(document.querySelector('details.tech pre')||{}).textContent||'',note:[...document.querySelectorAll('#scrResult p.note')].map(e=>e.textContent).join(' ')}));
     log('['+vn+'] результат за '+(dt/1000).toFixed(1)+' с'+(cpu>1?' (процессор ×'+cpu+')':'')+': '+res.h); res.cards.forEach(c=>log('   '+c)); log('   подпись: '+res.note);
+    /* подпись под ответом (какая модель ответила) — снимком, прокрутив до неё */
+    await fr.evaluate(()=>{ const n=[...document.querySelectorAll('#scrResult p.note')].pop(); n&&n.scrollIntoView({block:'center'}); }); await pg.waitForTimeout(300); await shot('5-result-note');
     if(A.eyes==='env') log('   модель: '+(/ИИ-зрение \((.+?)\) ответило/.exec(res.note)||[0,'не ответила — '+res.note])[1]);
     if(mock) log('   модель вызвана: '+calls+' раз; её ответ на странице: '+(/ИИ-зрение (заглушка) ответило/.test(res.note)?'да':'нет'));
     /* подробности первой карточки — раскрыть и снять */
