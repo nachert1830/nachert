@@ -43,7 +43,7 @@ input[type=file]{ display:none; }
   <p class="shint">Вариант можно не вводить — сканер узнает его по чертежу.</p>
   <div class="fields">
     <label class="fld">Вариант<input id="n" type="number" min="1" max="30" placeholder="узнать сам" inputmode="numeric"></label>
-    <label class="fld">Как снимать<select id="how"><option value="draw">по чертежам: весь лист, затем каждый вблизи</option><option value="sheet">весь лист, 2–5 кадров</option></select></label>
+    <label class="fld">Как снимать<select id="how"><option value="draw">по чертежам</option><option value="sheet">весь лист</option></select></label>
     <label class="fld">Что на фото<select id="part"><option value="">все части</option><option value="a">1) высота</option><option value="b">2) угол граней</option><option value="c">3) истинный вид</option><option value="d">4) угол SA</option></select></label>
   </div>
   <div class="ans">
@@ -176,7 +176,7 @@ function render(){ if(!D||!D.sess) return; const R=D.sess.result(); $('resCard')
   const vs=R.map(r=>r.verdict), v=vs.includes('ошибка')?'ошибка':vs.includes('ошибка в данных')?'ошибка в данных':vs.length&&vs.every(x=>x==='верно'||x==='данные нанесены верно')?'верно':'не могу утверждать';
   $('vtitle').textContent=v[0].toUpperCase()+v.slice(1); $('vtitle').className='verdict '+(/^верно|нанесены верно/.test(v)?'ok':/ошибка/.test(v)?'bad':'ref');
   const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  $('vwhy').innerHTML=R.map(r=>'<li class="dr"><b>'+esc(r.title[0].toUpperCase()+r.title.slice(1))+(r.part?' · '+PNm[r.part]:'')+'</b>: '+esc(r.verdict)+' <span class="mute">(кадров '+r.read+' из '+r.n+(r.ppm?', от '+r.ppm.toFixed(1).replace('.',',')+' px/мм':'')+')</span>'+(r.why.length?'<br>'+r.why.filter(Boolean).map(esc).join('<br>'):'')+'</li>').join('');
+  $('vwhy').innerHTML=R.map(r=>'<li class="dr"><b>'+esc(r.title[0].toUpperCase()+r.title.slice(1))+(r.part?' · '+PNm[r.part]:'')+'</b>: '+esc(r.verdict)+' <span class="mute">(кадров '+r.read+' из '+r.n+(r.ppm?', от '+r.ppm.toFixed(1).replace('.',',')+' px/мм':'')+')</span>'+(r.part||r.verdict==='ошибка'?'<br>'+r.why.filter(Boolean).map(esc).join('<br>'):r.why.length?'<br>часть не опознана — вывода нет <details><summary class="mute">подробнее</summary>'+r.why.filter(Boolean).map(esc).join('<br>')+'</details>':'')+'</li>').join('');
   $('frames').innerHTML=D.log.map(l=>'<div>'+esc(l)+'</div>').join('')+(queue.length||busy?'<div>проверяю…</div>':''); }
 function finish(){ D.phase='done'; stopCam(); render(); const cv=$('photo'); if(D.ovCanvas){ cv.width=D.ovCanvas.width; cv.height=D.ovCanvas.height; const ctx=cv.getContext('2d'); ctx.drawImage(D.ovCanvas,0,0);
     const R=D.sess.result(), k=cv.width/900; ctx.lineWidth=4*k; ctx.font='bold '+(40*k)+'px system-ui';
