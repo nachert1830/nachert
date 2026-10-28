@@ -36,6 +36,10 @@ const step=s=>console.log('· '+s), fail=s=>{ console.log('✖ НЕ РАБОТА
       await f2.evaluate(()=>{ const ok=document.getElementById('ok'); if(ok&&!ok.checked){ ok.checked=true; ok.dispatchEvent(new Event('change',{bubbles:true})); } });
       const ai2=await f2.waitForSelector('#aiRow:not([hidden])',{timeout:15000}).then(()=>true,()=>false); step('ИИ-зрение на странице «фото листа»: '+(ai2?'включено':'НЕ ВИДНО'));
       if(ai2&&A.far==='1'&&await f2.$('#aiFar')) await f2.check('#aiFar').catch(()=>{});
+      /* прежняя страница при загрузке ставит вариант из профиля — номер и отметку «мои данные» — перед самой загрузкой */
+      await pg.waitForTimeout(1500); await f2.fill('#n',String(n)); await f2.dispatchEvent('#n','input'); await f2.dispatchEvent('#n','change');
+      if(await f2.$('#ok')) await f2.check('#ok',{force:true}).catch(()=>f2.evaluate(()=>{ const ok=document.getElementById('ok'); ok.checked=true; ok.dispatchEvent(new Event('change',{bubbles:true})); }));
+      step('прежняя страница: вариант '+await f2.$eval('#n',e=>e.value)+', «мои данные» — '+await f2.evaluate(()=>{ const ok=document.getElementById('ok'); return ok?(ok.checked?'да':'нет'):'нет отметки'; }));
       await shot('2b-photo-start'); const t1=Date.now(); await f2.setInputFiles('#file',file);
       const got=await f2.waitForSelector('#vcard:not([hidden]), #scrResult:not([hidden]) .card',{timeout:480000}).then(()=>true,()=>false);
       if(!got){ const st=await f2.evaluate(()=>{ const e=document.getElementById('stage')||document.querySelector('#scrWait'); return e?e.innerText.replace(/\s+/g,' ').slice(0,300):'—'; }); await shot('x-photo-wait');

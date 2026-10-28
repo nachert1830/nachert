@@ -43,7 +43,7 @@ const outbox=[]; let offset=0;
 const log=QUIET?{log(){},error:(...a)=>console.error(...a)}:console;
 const store=memoryStore(MEM?null:DBF);
 /* ИИ-зрение — как в облаке, из переменных EYES_URL, EYES_KEY, EYES_MODEL (по умолчанию выключено: нет ключа) */
-const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox}),mail:devMail(outbox),eyes:eyesFromEnv(Object.assign({EYES_URL:'http://localhost:0/off'},process.env))});
+const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox}),mail:devMail(outbox),eyes:eyesFromEnv(process.env)});
 
 async function newInvite(label,days){ const code=C.token(16), t=Date.now()+offset;
   await store.put('invites',{id:C.sha256(code),label:label||'эмуляция',role:'member',createdAt:t,expiresAt:t+(days||14)*864e5,createdBy:'dev'});
