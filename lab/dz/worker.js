@@ -1,7 +1,7 @@
 /* Проверка листа ДЗ в отдельном потоке (страница lab/dz.html): те же файлы, что в тестах Node.
    Вход: {img:{width,height,data}, dz, n}; выход: вердикт, причины и то, что нужно странице для рисования. */
 importScripts('../../core/dz.js','../../core/dz-variants.js','../img.js','../clean.js','../font.js','../sheets.js','../rectify.js','../lines.js',
-  'sheet.js','locate.js','digitize.js','model.js','model3.js','calib.js','check2.js','check3.js','explain2.js','report2.js','check.js','grid.js','given.js','explain3d.js','report3d.js','paper.js','gridsheet.js','series.js','eyes.js','cleaner/cleaner.js');
+  'sheet.js','locate.js','digitize.js','model.js','model3.js','calib.js','check2.js','check3.js','explain2.js','report2.js','check.js','grid.js','given.js','explain3d.js','report3d.js','paper.js','gridsheet.js','series.js','eyes.js','cleaner/cleaner.js','closeup.js');
 /* кадр серии (lab/cam.html): только данные для голосования (series.js) и разбор в пикселях этого снимка */
 function frame(img,dz,n,answers,part,paper){ const g=self.LAB.dzGridSheet.checkGridPhoto(img,{dz,n,answers,part,paper:paper||'auto'});
   const fr={ok:!!g.ok,n:g.n,verdict:g.verdict,why:g.why||[],ms:g.ms,ref:g.ref,mine:g.mine,smine:g.smine,answers:g.answers||[],
@@ -28,7 +28,16 @@ function ownEyes(img,dz,n,answers,part,t0,why0){ const EY=self.LAB.dzEyes; let o
   const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'}, drawings=r.drawings.map((g,i)=>Object.assign(gridOut(g),{title:'Чертёж '+(i+1)+(g.partGuess&&g.partGuess.length===1?' — '+PN[g.partGuess[0]]:'')}));
   const eyesPts=r.drawings.map((g,j)=>{ let O=null; try{ if(g._grid&&g.given) O=g._grid.map(g.given.O[0],g.given.O[1]); }catch(x){} return {pts:{},v:g.verdict,fig:drawings[j].fig,O}; });
   return {verdict:r.verdict,why:['свои глаза (без ИИ-зрения): чертежей найдено по линиям — '+r.drawings.length].concat(r.why,why0||[]),drawings,eyesPts,stage:'свои глаза',ms:Date.now()-t0}; }
+/* съёмка по чертежам (closeup.js): общий снимок запоминается здесь же — с ним сравнивается каждый снимок вблизи */
+let OV=null;
+function closeMode(d){ const CU=self.LAB.dzCloseup, t0=Date.now();
+  if(d.mode==='overview'){ const r=CU.overview(d.img,{n:d.n,answers:d.answers}); OV=r.ok?{img:d.img,drawings:r.drawings}:null;
+    return {overview:r.ok?{ok:true,drawings:r.drawings.map(q=>({c:q.c,box:q.box,ppm:q.ppm,pos:q.pos,title:q.title})),frames:r.frames}:{ok:false,reason:r.reason},ms:Date.now()-t0}; }
+  const r=CU.close(d.img,OV,{n:d.n,answers:d.answers,want:d.want}); return {close:r.ok?{ok:true,got:r.got}:{ok:false,reason:r.reason,ppm:r.ppm},want:d.want,ms:Date.now()-t0}; }
 self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now(); let r;
+  if(mode==='overview'||mode==='close'){ try{ self.postMessage(closeMode(e.data)); }catch(err){ self.postMessage({error:String(err&&err.stack||err),want:e.data.want,mode}); }
+    /* пока студент подносит телефон — линии чертежей общего снимка для опознания (sameDrawing кэширует их) */
+    if(mode==='overview'&&OV&&OV.drawings.length) setTimeout(()=>{ try{ self.LAB.dzEyes.sameDrawing({img:OV.img,A:OV.drawings[0].A},OV,{dz:3,n}); }catch(x){} },0); return; }
   if(mode==='frame'){ try{ self.postMessage({frame:frame(img,dz,n,answers,part,paper),ms:Date.now()-t0}); }catch(err){ self.postMessage({error:String(err&&err.stack||err)}); } return; }
   /* лист в клетку: сетка вместо рамки (gridsheet.js) — свой ответ странице */
   /* лист в клетку или чистый лист (края бумаги + условие): gridsheet.js; «в клетку» — с запасным чистым листом */

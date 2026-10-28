@@ -147,11 +147,12 @@ function searchFigure(img,A,gv,o){ o=o||{}; const C=L('calib'), g=L('model').giv
    гипотезы. Каждое найденное место (≥ 55 % фигуры на линиях, не ближе 40 мм к другому) — чертёж с готовой привязкой.
    findDrawings(img, {dz, n}) → {ok, reason, drawings:[{A (мм условия → px), cover}], page} ── */
 function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(!gv) return {ok:false,reason:'нужен номер варианта'};
-  const PA=L('paper'), C=L('calib'), P=PA.findPaper(img);
+  /* o.side — снимок вблизи (камера поднесена к чертежу): края бумаги не ищутся, длинная сторона кадра — o.side «мм» */
+  const PA=L('paper'), C=L('calib'), P=o.side?{ok:false}:PA.findPaper(img);
   /* край листа есть — лист выпрямлен (А4 в мм; А3 — масштаб 1/√2); нет (лист обрезан, светлый фон) — сам кадр в «мм»:
      длинная сторона кадра = 420 мм, а настоящий масштаб и поворот телефона (0/90/180/270°) — гипотезы перебора */
   let Ha=P.ok?PA.pageHom(P.quad):null, raw=!Ha, box=[0,0,210,297];
-  if(raw){ const s0=Math.max(img.width,img.height)/420; Ha=[s0,0,0,0,s0,0,0,0,1]; box=[0,0,Math.floor(img.width/s0),Math.floor(img.height/s0)]; }
+  if(raw){ const s0=Math.max(img.width,img.height)/(o.side||420); Ha=[s0,0,0,0,s0,0,0,0,1]; box=[0,0,Math.floor(img.width/s0),Math.floor(img.height/s0)]; }
   const dg=digitize(img,(u,v)=>H.apply(Ha,[u,v]),box,4,o.clean); if(!dg.ok) return {ok:false,reason:dg.reason};
   const D=C.dmap(dg.dig.map), SA=C.samples(gv.id,gv.data).S.map(q=>q.m), S0=SA.filter((q,i)=>i%Math.max(1,Math.round(SA.length/80))===0), S=SA.filter((q,i)=>i%3===0), at=p=>C.at(D,p), deg=Math.PI/180;
   const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), fx=[Math.min(...fig.map(p=>p[0])),Math.max(...fig.map(p=>p[0]))], fy=[Math.min(...fig.map(p=>p[1])),Math.max(...fig.map(p=>p[1]))];
@@ -202,6 +203,25 @@ function findDrawings(img,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n); if(
     const J=[(pu[0]-p0[0])/e,(pv[0]-p0[0])/e,(pu[1]-p0[1])/e,(pv[1]-p0[1])/e], Lm=[J[0]*c+J[1]*sn,-J[0]*sn+J[1]*c,J[2]*c+J[3]*sn,-J[2]*sn+J[3]*c];
     return {A:[Lm[0],Lm[1],p0[0]-Lm[0]*m0[0]-Lm[1]*m0[1],Lm[2],Lm[3],p0[1]-Lm[2]*m0[0]-Lm[3]*m0[1]],cover:b.v,pts:{}}; });
   return {ok:true,drawings,page:raw?'без края листа':best.split(':')[0],turn:+best.split(':')[1]}; }
+
+/* ── какой это чертёж: снимок вблизи ↔ чертежи общего снимка (камера просит поднести телефон к каждому). Фигура условия,
+   оси и линии связи у всех чертежей листа общие — сравниваются только остальные линии (построение части), в мм условия:
+   доля линий снимка вблизи, у которых на общем снимке в 1,5 мм есть линия. Узнан — лучший ≥ 0,4 и на 0,15 выше второго.
+   Ошибка опознания вердикт не меняет (он — по снимку вблизи), только то, какой чертёж считать снятым.
+   sameDrawing({img, A}, {img, drawings:[{A}]}, {dz, n}) → {j (−1 — не узнан), score, second, scores[], why} ── */
+function sameDrawing(cu,ov,o){ o=o||{}; const gv=V.get(+o.dz||3,+o.n); if(!gv) return {j:-1,why:'нужен номер варианта'};
+  const C=L('calib'), g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]);
+  const box=[Math.min(...fig.map(p=>p[0]))-45,Math.min(...fig.map(p=>p[1]))-45,Math.max(...fig.map(p=>p[0]))+45,Math.max(...fig.map(p=>p[1]))+45];
+  const mapA=A=>(u,v)=>[A[0]*u+A[1]*v+A[2],A[3]*u+A[4]*v+A[5]];
+  const dSeg=(p,q)=>{ const ax=q.b[0]-q.a[0], ay=q.b[1]-q.a[1], L2=ax*ax+ay*ay||1, t=Math.max(0,Math.min(1,((p[0]-q.a[0])*ax+(p[1]-q.a[1])*ay)/L2)); return Math.hypot(p[0]-q.a[0]-t*ax,p[1]-q.a[1]-t*ay); };
+  const common=g.segs.concat(g.conn,[{a:[box[0],0],b:[box[2],0]},{a:[0,box[1]],b:[0,box[3]]}]);
+  const d1=digitize(cu.img,mapA(cu.A),box,4); if(!d1.ok) return {j:-1,why:d1.reason};
+  const P=[]; d1.dig.segs.forEach(q=>{ const n=Math.max(1,Math.ceil(Math.hypot(q.b[0]-q.a[0],q.b[1]-q.a[1]))); for(let i=0;i<=n;i++){ const p=[q.a[0]+(q.b[0]-q.a[0])*i/n,q.a[1]+(q.b[1]-q.a[1])*i/n]; if(common.every(c=>dSeg(p,c)>=2)) P.push(p); } });
+  if(P.length<30) return {j:-1,why:'на снимке вблизи мало линий построения ('+P.length+' мм) — не с чем сравнить'};
+  /* линии чертежей общего снимка — один раз на снимок (d._dm): с ним сравнивается каждый снимок вблизи */
+  const scores=ov.drawings.map(d=>{ if(d._dm===undefined){ const dg=digitize(ov.img,mapA(d.A),box,4); d._dm=dg.ok?C.dmap(dg.dig.map):null; } return d._dm?P.filter(p=>C.at(d._dm,p)<=1.5).length/P.length:0; });
+  const ord=scores.map((v,j)=>[v,j]).sort((a,b)=>b[0]-a[0]), b0=ord[0]||[0,-1], b1=ord[1]||[0,-1], ok=b0[0]>=0.4&&b0[0]-b1[0]>=0.15;
+  return {j:ok?b0[1]:-1,score:b0[0],second:b1[0],scores,why:ok?null:'не узнал, какой это чертёж общего снимка (лучший '+Math.round(b0[0]*100)+' %, второй '+Math.round(b1[0]*100)+' %)'}; }
 
 /* выпрямить поле чертежа по map и оцифровать */
 function digitize(img,map,box,ppm,clean){ const G=L('grid'), sc=G.rectify(img,{map,box},{ppm,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean});
@@ -328,7 +348,7 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   if(dups) why.push('у ИИ-зрения '+dups+' рамк'+(dups>1?'и':'а')+' вокруг уже найденного чертежа — не считаю дважды');
   return {ok:out.some(r=>r.ok),verdict,dz,n:out.find(r=>r.n)?out.find(r=>r.n).n:n,drawings:out,why,ms:Date.now()-t0}; }
 
-put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,findDrawings,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
+put('dzEyes',{parse,label,prepareEyes,gridEyes,checkEyes,findDrawings,sameDrawing,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
 })();
 /* node lab/dz/eyes.js фото.png глаза.json [--n=9] — проверка фото по ответу глаз (JSON или текст ответа модели) */
 if(typeof module!=='undefined'&&require.main===module){ const a=Object.fromEntries(process.argv.slice(4).map(x=>x.replace(/^--/,'').split('='))), fs=require('fs'), IMG=require('../img.js'), E=module.exports;
