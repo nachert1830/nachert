@@ -771,3 +771,68 @@ details.fold.in{margin-top:14px;padding-top:12px;border-top:1px solid var(--line
 .hero,:root[data-theme="dark"] .hero{background:var(--blue2);box-shadow:none}
 :root[data-theme="dark"] .hero{background:#173a72}
 .count{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22)}
+
+/* ═════ v9 · «триколор» — как сайт и сканер (docs/color-policy.md): насыщенный синий — действие, красный — «посмотри сюда»,
+   полоска тёмно-синий · белый · красный под шапкой, «нажимаемые» кнопки с бортиком снизу (при нажатии проседают). ═════ */
+:root{--blue:#1a5ae0;--blue2:#1a5ae0;--blue-d:#0f3f9e;--blue-s:#e9f0ff;--navy:#0a2463;--navy2:#12357f;
+  --red:#d9222a;--red-b:#e0252c;--red-d:#a5141a;--red-s:#fdeaea;--line:#d5e0f2;--line2:#b7c8e6;--surf2:#f1f5fd;--surf3:#e3ecfb;--ink:#0a1733;--mut:#56688a;
+  --tri:linear-gradient(90deg,#0a2463 0 33.3%,#dbe5f6 33.3% 66.6%,#e0252c 66.6%)}
+:root[data-theme="dark"]{--paper:#07112a;--surf:#0e1c3a;--surf2:#14264a;--surf3:#1b315c;--line:#21386a;--line2:#2f4b85;
+  --blue:#7fb0ff;--blue2:#2563eb;--blue-d:#123a99;--blue-s:#132a55;--red:#ff6b6b;--red-b:#e0252c;--red-d:#8e1016;--red-s:#3a1620;
+  --tri:linear-gradient(90deg,#2563eb 0 33.3%,#e8eef8 33.3% 66.6%,#e0252c 66.6%)}
+/* шапка: полоска-триколор */
+body>header{border-bottom:0}
+body>header::after{content:"";display:block;height:4px;background:var(--tri)}
+.brand i,.abrand i{border-radius:10px}
+/* кнопки */
+.btn{border-width:1.5px;font-weight:700;border-radius:14px;transition:transform .08s,box-shadow .08s,background .15s,border-color .15s}
+.btn:not(.pri):not(.cta):not(.tg):not(.white):not(.ghost):not(.onhero):not(.dan){box-shadow:0 3px 0 var(--line2)}
+.btn:not(.pri):not(.cta):not(.tg):not(.white):not(.ghost):not(.onhero):not(.dan):hover{border-color:var(--blue2);color:var(--blue2)}
+:root[data-theme="dark"] .btn:not(.pri):not(.cta):not(.tg):not(.white):not(.ghost):not(.onhero):not(.dan):hover{color:var(--blue)}
+.btn.pri{background:var(--blue2);border-color:var(--blue2);color:#fff;box-shadow:0 4px 0 var(--blue-d)}
+.btn.pri:hover{background:#1550c8;border-color:#1550c8;color:#fff}
+.btn.cta{background:var(--red-b);border-color:var(--red-b);box-shadow:0 4px 0 var(--red-d)}
+.btn:active:not(:disabled){transform:translateY(3px)}
+.btn.pri:active:not(:disabled){box-shadow:0 1px 0 var(--blue-d)}
+.btn.cta:active:not(:disabled){box-shadow:0 1px 0 var(--red-d)}
+.btn:not(.pri):not(.cta):active:not(:disabled){box-shadow:0 0 0 var(--line2)}
+.btn:disabled{box-shadow:none!important}
+/* карточки — чёткая рамка */
+.card{border-width:1.5px}
+a.card:hover,.tool8:hover{border-color:var(--blue2)}
+/* главная карточка — ближайшая сдача: синий блок с чертёжной сеткой, как герой сайта */
+.hero8{position:relative;isolation:isolate;overflow:hidden;border:0;color:#fff;
+  background:radial-gradient(120% 90% at 90% 0%,#2f74ff 0%,rgba(47,116,255,0) 60%),linear-gradient(160deg,#0a2463 0%,#123c9c 55%,#1a5ae0 100%);box-shadow:0 22px 44px -26px rgba(10,36,99,.7)}
+.hero8::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px) 0 0/24px 24px;
+  -webkit-mask:linear-gradient(180deg,#000,transparent 85%);mask:linear-gradient(180deg,#000,transparent 85%)}
+.hero8,.hero8 .dlh b,.hero8 b{color:#fff}
+.hero8 small,.hero8 .mut,.hero8 .cnt small,.hero8 .cnt span{color:#d6e2ff}
+.hero8 .cnt b,.hero8.k-rk .cnt b{color:#fff}
+.hero8 .h8k{color:#b9cdfa}
+.hero8 .tchip{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22);color:#fff}
+.hero8 a.tchip,.hero8 .tchip a{color:#fff}
+.hero8 .btn.pri{background:#fff;border-color:#fff;color:var(--navy);box-shadow:0 4px 0 #9fb6e8}
+.hero8 .btn.pri:hover{background:#f1f5fd;color:var(--navy)}
+.hero8 .btn.pri:active:not(:disabled){box-shadow:0 1px 0 #9fb6e8}
+.hero8 .btn:not(.pri){background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff;box-shadow:none}
+.hero8 .btn:not(.pri):hover{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.5)}
+:root[data-theme="dark"] .hero8{background:radial-gradient(120% 90% at 90% 0%,#2f6ff0 0%,rgba(47,111,240,0) 60%),linear-gradient(160deg,#0a1d52 0%,#123a99 60%,#2563eb 100%)}
+/* метка сдачи — белая на синем; РК — красная, как указатель */
+.hero8 .tag{background:#fff;color:var(--navy)}
+.hero8 .tag.rk{background:var(--red-b);color:#fff}
+.hero8 .tag.m{background:#13804e;color:#fff}
+/* нижнее меню: «Проверка» — синяя кнопка с бортиком; где ты — синим */
+.tabs a.on{color:var(--blue2)}
+:root[data-theme="dark"] .tabs a.on{color:var(--blue)}
+.tabs a.tcenter svg{background:var(--blue2);box-shadow:0 3px 0 var(--blue-d)}
+.tabs a.tcenter.on svg{background:var(--red-b);box-shadow:0 3px 0 var(--red-d)}
+@media(min-width:900px){.tabs a.on{background:var(--blue2);color:#fff;box-shadow:none}.tabs a.tcenter svg,.tabs a.tcenter.on svg{background:none;box-shadow:none}}
+/* проверка: карточки инструментов — значок сплошной синий */
+.tool8{border-width:1.5px}
+.tool8 .ico{background:var(--blue2);color:#fff;box-shadow:0 3px 0 var(--blue-d)}
+.tool8:hover .ico{transform:translateY(-1px)}
+.how8 li::before{background:var(--blue2);color:#fff}
+.q8,.h8k{color:var(--mut)}
+.hero8 .dlh small{color:#d6e2ff}
+@media(min-width:900px){body>header::after{display:none}body>header{background-image:var(--tri);background-size:100% 4px;background-repeat:no-repeat;background-position:top}}

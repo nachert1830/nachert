@@ -130,7 +130,7 @@ const plural=S.plural=(n,a,b,c)=>{ const m=n%10, h=n%100; return m===1&&h!==11?a
 /* ── результат: сводка, лист с чертежами, карточки ── */
 const COL={ok:'#13a35f',bad:'#e0252c',calm:'#6f84ab'};
 /* рамка чертежа на фото: из найденной фигуры (px) с полем, иначе — данная рамка */
-function boxOf(d,W,H){ if(d.quad) return d.quad; let pts=null;
+function boxOf(d,W,H){ if(d.quad){ const c=d.quad.reduce((a,p)=>[a[0]+p[0]/4,a[1]+p[1]/4],[0,0]); return d.quad.map(p=>[c[0]+(p[0]-c[0])*0.82,c[1]+(p[1]-c[1])*0.82]); } let pts=null;
   if(d.fig&&d.fig.length) pts=[].concat(...d.fig); else if(d.box&&d.box.length===4&&typeof d.box[0]==='number') pts=[[d.box[0],d.box[1]],[d.box[2],d.box[3]]];
   if(!pts||!pts.length) return null; let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; pts.forEach(p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); });
   const m=0.22*Math.max(x1-x0,y1-y0); x0=Math.max(0,x0-m); y0=Math.max(0,y0-m); x1=Math.min(W,x1+m); y1=Math.min(H,y1+m); return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]]; }
@@ -170,7 +170,7 @@ S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, Sm=summar
       +'<div class="sheet-cap"><span><i></i>линии — фигура условия, найденная на ваших линиях</span><span><b style="color:#13a35f">■</b> верно</span><span><b style="color:#e0252c">■</b> ошибка</span><span><b style="color:#6f84ab">■</b> не могу утверждать</span></div></div>':'')
     +(o.extra||'')+'</div>'
     +'<div class="col-b"><ol class="cards" id="vwhy" style="list-style:none;margin:0;padding:0">'+ds.map(d=>{ const t=tone(d.verdict), ph=phrase(d), stepsH=d.ex&&d.ex.steps&&d.ex.steps.length>1||d.ex&&d.ex.steps&&d.ex.steps[0]&&d.ex.steps[0].status!=='?'?d.ex.steps:null;
-      return '<li class="card '+t+'" id="card'+d.i+'" data-i="'+d.i+'"><div class="card-h"><span class="num">'+(ds.length>1?d.i+1:ic(t))+'</span><div style="min-width:0"><h3>'+esc(d.part?PNUM[d.part]+'. '+PART[d.part]:d.title)+'</h3>'+(d.part&&ds.length>1?'<div class="sub">'+esc(d.title)+'</div>':d.sub?'<div class="sub">'+esc(d.sub)+'</div>':'')+'</div><span class="pill">'+ic(t)+word(t)+'</span></div>'
+      return '<li class="card '+t+'" id="card'+d.i+'" data-i="'+d.i+'"><div class="card-h"><span class="num">'+(ds.length>1?d.i+1:ic(t))+'</span><div style="min-width:0"><h3>'+esc(d.part?PNUM[d.part]+'. '+PART[d.part]:d.title)+'</h3>'+(d.part&&ds.length>1?'<div class="sub">'+esc(d.title+(d.sub?' · '+d.sub:''))+'</div>':d.sub?'<div class="sub">'+esc(d.sub)+'</div>':'')+'</div><span class="pill">'+ic(t)+word(t)+'</span></div>'
         +'<p class="say">'+esc(ph.say)+'</p>'
         +(ph.where?'<div class="where">'+I('pin')+'<div><b>Где:</b> '+esc(ph.where)+'</div></div>':'')
         +(ph.ask?'<div class="ask">'+I('cam')+'<div>'+esc(ph.ask)+'</div></div>':'')

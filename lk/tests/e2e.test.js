@@ -56,7 +56,7 @@ test('вход → все разделы на телефоне, светлая �
     for(const th of ['light','dark']){ await page.evaluate(t=>{ document.documentElement.dataset.theme=t; },th); await page.screenshot({path:path.join(SHOTS,(r||'today').replace(/\//g,'_')+'-'+th+'.png'),fullPage:true}); } }
   await page.goto(URL+'/#/me'); await page.evaluate(()=>{ document.documentElement.dataset.theme='light'; }); await page.click('button[data-act="theme"]');
   assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
-  assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(11, 20, 36)','тёмная тема — цвета основного сайта');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgb(7, 17, 42)','тёмная тема — цвета основного сайта');
   /* тренажёров в кабинете нет: старые адреса ведут на «Сегодня» */
   for(const r of ['progress','train','skills']){ await page.goto(URL+'/#/'+r); await page.waitForTimeout(200); assert.equal(await page.evaluate(()=>location.hash),'#/','#/'+r+' → «Сегодня»'); }
   assert.deepEqual(await page.$$eval('#tabs a:not([hidden]) span:last-child',a=>a.map(x=>x.textContent)),['Сегодня','Сдачи','Проверка','Профиль'],'меню кабинета');
