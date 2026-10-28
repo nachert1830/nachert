@@ -51,10 +51,11 @@ jobs:
           "$HOME/yc/bin/yc" config profile create ci >/dev/null
           "$HOME/yc/bin/yc" config set service-account-key "$RUNNER_TEMP/yc-key.json"
           "$HOME/yc/bin/yc" config set folder-id "$YC_FOLDER_ID"
-          rm -f "$RUNNER_TEMP/yc-key.json"
           export PATH="$HOME/yc/bin:$PATH"
-          L=$(node -e "console.log(require('./server/tools/deploy').ownerLink()||'')")
-          test -n "$L" || { echo "::error::ссылку входа получить не удалось (функция кабинета не ответила)"; exit 1; }
+          OUT=$(yc serverless function invoke --name nachert-club-api --data '{"club":"owner-login"}' 2>&1) || true
+          L=$(printf '%s' "$OUT" | grep -oE 'https://[^ "\\]+/#/tg/[A-Za-z0-9_-]{20,}' | head -1)
+          test -n "$L" || { echo "::error::ссылку входа получить не удалось — ответ функции кабинета:"; printf '%s\n' "$OUT" | sed -E 's#/tg/[A-Za-z0-9_-]+#/tg/…#g' | head -20; rm -f "$RUNNER_TEMP/yc-key.json"; exit 1; }
+          rm -f "$RUNNER_TEMP/yc-key.json"
           echo "::add-mask::$L"; echo "NCH_LOGIN=$L" >> "$GITHUB_ENV"
       - name: Путь студента
         run: node lab/dz/test-live.js --n=${{ github.event.inputs.n || '21' }} --far=${{ github.event.inputs.far || '1' }} --out=live-shots
