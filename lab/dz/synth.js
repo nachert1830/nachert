@@ -55,8 +55,8 @@ function dzSynth(o){ o=o||{}; const id=o.id||'2', R=rng(o.seed||1), lv=S.LEVELS[
   labels.forEach(l=>{ const s=String(l.s).split('').filter(c=>font.has(c)).join(''); if(!s) return; sheet.text(s,l.at,R.r(3,4.5),Math.min(0.95,pen.dk*1.1),R.r(0.22,0.35),{rot:R.n(0,0.06),shear:R.n(0.12,0.08),jit:0.02,grain:true},R); });
   /* съёмка: телефон книжно (3:4), затем возможный поворот снимка */
   const sz=o.size||[2250,3000], cam=S.camera(sheet,page,R,lv,sz), tk=o.turn!=null?o.turn:Math.floor(R()*4), tr=turn(cam.im,tk);
-  /* o.views — ещё снимки того же листа вблизи (мм страницы: [u0,v0,u1,v1]; телефон повёрнут по форме места), свой поток случайностей у каждого: [{img, H}] */
-  const views=(o.views||[]).map((vw,j)=>{ const cj=S.camera(sheet,page,IMG.rng((o.seed||1)*7919+j*131+17),lv,(vw[2]-vw[0]>vw[3]-vw[1])===(sz[0]>sz[1])?sz:[sz[1],sz[0]],{view:vw}), tj=turn(cj.im,tk); return {img:tj.im,H:IMG.H.norm(IMG.H.mul(tj.M,cj.M)),view:vw}; });
+  /* o.views — ещё снимки того же листа вблизи (мм страницы: [u0,v0,u1,v1]; размер o.viewSize, телефон повёрнут по форме места), свой поток случайностей у каждого: [{img, H}] */
+  const vz=o.viewSize||sz, views=(o.views||[]).map((vw,j)=>{ const cj=S.camera(sheet,page,IMG.rng((o.seed||1)*7919+j*131+17),lv,(vw[2]-vw[0]>vw[3]-vw[1])===(vz[0]>vz[1])?vz:[vz[1],vz[0]],{view:vw}), tj=turn(cj.im,tk); return {img:tj.im,H:IMG.H.norm(IMG.H.mul(tj.M,cj.M)),view:vw}; });
   return {img:tr.im,views,truth:{id,H:IMG.H.norm(IMG.H.mul(tr.M,cam.M)),O,turn:tk,frame:fc,axis:ax,zAxis,zLine,items:ex.items,groups,clean:o.clean?{a:sheet.cl,w:sheet.w,h:sheet.h,px:sheet.px}:null,params:Object.assign(cam.params,{hand:k,level:o.level||'normal'})}}; }
 
 put('dzSynth',{dzSynth,turn});

@@ -10,7 +10,7 @@
    Снимок — когда всё хорошо и кадр устойчив 0,4 с. Следующий — только после того, как телефон сдвинули (углы ушли
    на ≥ 3 % кадра): у другого ракурса другой блик и другой шум, поэтому кадры серии ошибаются независимо.
    analyze(rgba{width,height,data}, prev) → {ok, hints[] (мешают снимку), soft[] (советы), paper:{fill, quad, quadSmall, touch}, tilt, sharp, glare, light, motion}
-   Capturer({shots, max}) — автомат съёмки: feed(analysis, now) → 'wait' | 'shot' | 'done-shot' | 'done'; more() — ещё кадр */
+   Capturer({shots, max, content}) — автомат съёмки: feed(analysis, now) → 'wait' | 'shot' | 'done-shot' | 'done'; more() — ещё кадр */
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
@@ -59,7 +59,8 @@ function analyze(im,prev){ const g=small(im,480), {w,h,a}=g, th=otsu(a), m=new U
     bump=cells.filter(c=>c.r>=0.06).length/cells.length; }
   const light=sL/nL, sharp=nl?lap/nl/Math.max(0.05,light*light):0, glare=Math.max(sat/nL,bump), fill=bestN/(w*h), touchF=touch/edge;
   let motion=null; if(prev&&prev.paper){ const q0=prev.paper.quad; motion=quad.reduce((s,p,i)=>s+L(p,q0[i]),0)/4/Math.max(w,h); }
-  Object.assign(out,{paper:{fill,quad:quad.map(p=>[p[0]*g.k,p[1]*g.k]),quadSmall:quad,touch:touchF},tilt,sharp,glare,light,motion,size:[w,h]});
+  const thumb=edges(g); let shift=null; if(prev&&prev.thumb) shift=shiftOf(prev.thumb,thumb);
+  Object.assign(out,{paper:{fill,quad:quad.map(p=>[p[0]*g.k,p[1]*g.k]),quadSmall:quad,touch:touchF},tilt,sharp,glare,light,motion,size:[w,h],thumb,shift});
   /* подсказки — по одной главной причине за раз, в порядке «что исправить первым» */
   if(fill<LIM.fill) hints.push('подойдите ближе — лист занимает '+Math.round(fill*100)+' % кадра');
   else if(touchF>LIM.touch&&fill<0.6) hints.push('лист не целиком — отодвиньте телефон');
@@ -69,19 +70,33 @@ function analyze(im,prev){ const g=small(im,480), {w,h,a}=g, th=otsu(a), m=new U
   if(tilt>LIM.tilt) hints.push('держите телефон параллельно листу');
   if(sharp<LIM.sharp) hints.push('нерезко — держите телефон неподвижно');
   out.ok=!hints.length; return out; }
+/* сдвиг по содержимому кадра (съёмка вблизи: лист во весь кадр, его углы не двигаются): контуры кадра 64 px по длинной
+   стороне, сдвиг — лучшее совмещение двух таких картинок (± 12 px, средняя |разность|); совместить не удалось (в кадре
+   другое) — сдвиг 1. shiftOf → доля кадра */
+function edges(g){ const k=Math.max(g.w,g.h)/64, w=Math.max(8,Math.round(g.w/k)), h=Math.max(8,Math.round(g.h/k)), b=new Float32Array(w*h), e=new Float32Array(w*h);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ let s=0, n=0; for(let yy=Math.floor(y*k);yy<Math.min(g.h,Math.floor((y+1)*k));yy++) for(let xx=Math.floor(x*k);xx<Math.min(g.w,Math.floor((x+1)*k));xx++){ s+=g.a[yy*g.w+xx]; n++; } b[y*w+x]=n?s/n:0; }
+  let m=0; for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){ const i=y*w+x, v=Math.hypot(b[i+1]-b[i-1],b[i+w]-b[i-w]); e[i]=v; m+=v; } m/=(w-2)*(h-2)||1;
+  return {w,h,e,m}; }
+function shiftOf(A,B){ if(!A||!B||A.w!==B.w||A.h!==B.h) return 1; const {w,h}=A, R=12; let best=null, at0=null;
+  for(let dy=-R;dy<=R;dy++) for(let dx=-R;dx<=R;dx++){ let s=0, n=0; for(let y=Math.max(1,1-dy);y<Math.min(h-1,h-1-dy);y+=2) for(let x=Math.max(1,1-dx);x<Math.min(w-1,w-1-dx);x+=2){ s+=Math.abs(A.e[y*w+x]-B.e[(y+dy)*w+x+dx]); n++; }
+    if(n<50) continue; const v=s/n; if(!dx&&!dy) at0=v; if(!best||v<best.v) best={v,dx,dy}; }
+  const m=(A.m+B.m)/2||1e-6; if(!best||best.v>1.2*m) return 1;            /* совместить не удалось — в кадре другое */
+  return Math.hypot(best.dx,best.dy)/Math.max(w,h); }
 /* автомат: ждёт хороший устойчивый кадр; после снимка — ждёт сдвига ракурса, потом снова хорошего */
-function Capturer(o){ o=o||{}; let want=o.shots||3; const hold=o.hold||400, max=o.max||5; let n=0, goodSince=null, lastShotQuad=null, needMove=false, prevA=null, bestSharp=0;
+/* o.content — съёмка вблизи: устойчивость и «телефон сдвинули» — по содержимому кадра, а не по углам листа */
+function Capturer(o){ o=o||{}; let want=o.shots||3; const hold=o.hold||400, max=o.max||5; let n=0, goodSince=null, lastShotQuad=null, lastThumb=null, needMove=false, prevA=null, bestSharp=0;
   return { get n(){ return n; }, get want(){ return want; },
     /* вывод серии не устоялся — ещё кадр (до max) */
     more(){ if(want<max){ want++; return true; } return false; },
     /* резкость — относительно лучшего кадра сеанса (у чистого А3 она ниже, чем у листа в клетку): ≥ 60 % лучшего */
     feed(A,now){ if(n>=want) return 'done'; if(A.paper) bestSharp=Math.max(bestSharp,A.sharp); A.soft=A.soft||[];
       if(A.ok&&A.sharp<0.6*bestSharp){ A.ok=false; A.hints.push('нерезко — держите телефон неподвижно, дайте камере навестись'); }
-      const stable=A.ok&&A.motion!=null&&A.motion<LIM.motion; prevA=A;
-      if(needMove&&A.paper&&lastShotQuad){ const L=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]), mv=A.paper.quadSmall.reduce((s,p,i)=>s+L(p,lastShotQuad[i]),0)/4/Math.max(...A.size); if(mv>=0.03) needMove=false; }
+      const stable=A.ok&&A.motion!=null&&A.motion<LIM.motion&&(!o.content||A.shift!=null&&A.shift<LIM.motion); prevA=A;
+      if(needMove&&o.content&&lastThumb){ if(shiftOf(lastThumb,A.thumb)>=0.03) needMove=false; }
+      else if(needMove&&A.paper&&lastShotQuad){ const L=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]), mv=A.paper.quadSmall.reduce((s,p,i)=>s+L(p,lastShotQuad[i]),0)/4/Math.max(...A.size); if(mv>=0.03) needMove=false; }
       if(!stable||needMove){ goodSince=null; return 'wait'; }
       if(goodSince==null) goodSince=now; if(now-goodSince<hold) return 'wait';
-      n++; goodSince=null; needMove=true; lastShotQuad=A.paper.quadSmall; return n>=want?'done-shot':'shot'; },
+      n++; goodSince=null; needMove=true; lastShotQuad=A.paper.quadSmall; lastThumb=A.thumb; return n>=want?'done-shot':'shot'; },
     hint(A){ if(n>=want) return 'готово'; if(!A.ok) return A.hints[0]; if(needMove) return 'кадр '+n+' из '+want+' снят — чуть сдвиньте телефон (другой угол — другой блик)'; return (A.soft&&A.soft[0])||'держите так…'; } }; }
-put('dzCapture',{analyze,Capturer,LIM,otsu});
+put('dzCapture',{analyze,Capturer,LIM,otsu,shiftOf});
 })();
