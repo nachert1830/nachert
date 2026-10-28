@@ -25,7 +25,22 @@ const step=s=>console.log('· '+s), fail=s=>{ console.log('✖ НЕ РАБОТА
     const fr=await (await pg.waitForSelector('iframe.labf',{timeout:30000})).contentFrame(); await fr.waitForSelector('#start',{timeout:30000});
     await fr.fill('#n',String(n)); await fr.dispatchEvent('#n','input');
     const ai=await fr.waitForSelector('#aiRow:not([hidden])',{timeout:15000}).then(()=>true,()=>false); step('ИИ-зрение в сканере: '+(ai?'включено':'НЕ ВИДНО'));
-    if(!ai){ await shot('2-start'); fail('шаг «ИИ-зрение»: переключатель скрыт — кабинет ответил, что модели нет (/api/eyes не настроен) или страница не в кабинете'); }
+    if(!ai){ await shot('2-start'); fail('шаг «ИИ-зрение» на странице ДЗ № 3: переключателя нет или он скрыт (на сайте прежняя версия сканера, или кабинет ответил, что модели нет)');
+      /* запасной путь — страница «фото листа» (dz.html): на прежней версии сайта ИИ-зрение есть только там */
+      await pg.goto(SITE+'/lk/#/check'); await pg.waitForSelector('.tool8'); const t2=await pg.$$eval('.tool8 b',L=>L.map(e=>e.textContent)), k2=t2.findIndex(t=>/фото листа/i.test(t));
+      if(k2<0) throw new Error('нет карточки «фото листа»'); await pg.click('.tool8 >> nth='+k2); step('запасной путь: «'+t2[k2]+'»');
+      const f2=await (await pg.waitForSelector('iframe.labf',{timeout:30000})).contentFrame(); await f2.waitForSelector('#file',{state:'attached',timeout:30000});
+      if(await f2.$('#dz')) await f2.selectOption('#dz','3').catch(()=>{}); await f2.fill('#n',String(n)); await f2.dispatchEvent('#n','input');
+      if(await f2.$('#paper')) await f2.selectOption('#paper','plain').catch(()=>{}); if(await f2.$('#ok')) await f2.check('#ok').catch(()=>{});
+      const ai2=await f2.waitForSelector('#aiRow:not([hidden])',{timeout:15000}).then(()=>true,()=>false); step('ИИ-зрение на странице «фото листа»: '+(ai2?'включено':'НЕ ВИДНО'));
+      if(ai2&&A.far==='1'&&await f2.$('#aiFar')) await f2.check('#aiFar').catch(()=>{});
+      await shot('2b-photo-start'); const t1=Date.now(); await f2.setInputFiles('#file',file);
+      await f2.waitForSelector('#vcard:not([hidden]), #scrResult:not([hidden]) .card',{timeout:900000}); await pg.waitForTimeout(800); await shot('4b-photo-result'); await pg.screenshot({path:path.join(OUT,'4b-photo-result-full.png'),fullPage:true});
+      const v=await f2.evaluate(()=>{ const t=document.querySelector('#vtitle'), w=[...document.querySelectorAll('#vwhy li, #vwhy .card')].slice(0,8).map(e=>e.innerText.replace(/\s+/g,' ').slice(0,160)); return (t?t.textContent:'')+' | '+w.join(' | '); });
+      step('ответ (прежняя страница) за '+Math.round((Date.now()-t1)/1000)+' с: '+v);
+      calls.forEach((c,i)=>step('запрос к модели '+(i+1)+': HTTP '+c.status+(c.model?', модель '+c.model:'')+(c.fallback?' (запасная)':'')+(c.error?', ошибка: '+c.error:'')+(c.len?', ответ '+c.len+' знаков':'')));
+      if(calls.some(c=>c.status===200&&c.model)) step('модель на сайте вызвана и ответила (через прежнюю страницу «фото листа»)'); else fail('шаг «ответ модели» на прежней странице: '+(calls.length?calls.map(c=>'HTTP '+c.status+(c.error?' — '+c.error:'')).join('; '):'запросов к /api/eyes не было'));
+      await br.close(); return; }
     if(ai&&A.far==='1'){ await fr.check('#aiFar'); step('отметка «лист мой — можно зарубежной модели»: да (лист синтетический)'); }
     await pg.waitForTimeout(400); await shot('2-start');
     const t0=Date.now(); await fr.setInputFiles('#file2',file); await fr.waitForSelector('#scrWait:not([hidden])',{timeout:30000}); await pg.waitForTimeout(3000); await shot('3-wait');
