@@ -1,7 +1,7 @@
 name: Сканер — живая проверка на сайте
 # Кабинет на nachert1830.ru → «Проверка» → ДЗ № 3 → фото синтетического листа → ответ (lab/dz/test-live.js, Chromium).
 # Вход — одноразовая ссылка владельца (server/tools/login.js через yc). Ничего не развёртывает: только открывает сайт как студент.
-# Снимки экрана и журнал — в артефакте scanner-live.
+# Снимки экрана и журнал — в артефакте scanner-live. Пуш в рабочую ветку проверяет сайт как есть (до слияния — прежняя версия).
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: false
         default: '21'
   push:
-    branches: [main]
+    branches: [main, claude/scanner-release]
     paths: ['lab/cam.html', 'lab/scanner.js', 'lab/dz/**', 'lk/app.js', 'server/lib/eyes.js', '.github/workflows/scanner-live.yml']
 permissions:
   contents: read
@@ -36,6 +36,7 @@ jobs:
           npx playwright install --with-deps chromium >/dev/null
           echo "NODE_PATH=$RUNNER_TEMP/pw/node_modules" >> "$GITHUB_ENV"
       - name: Сайт обновился (GitHub Pages)
+        if: github.ref == 'refs/heads/main'
         run: |
           for i in $(seq 1 40); do curl -fsS "https://nachert1830.ru/lab/cam.html?t=$(date +%s)" | grep -q 'id="aiRow"' && { echo "страница сканера — свежая"; exit 0; }; sleep 15; done
           echo "::warning::на сайте ещё старая страница сканера — проверяю как есть"

@@ -53,7 +53,7 @@ const log=s=>console.log(s), sec=t=>((Date.now()-t)/1000).toFixed(1)+' с';
     const res=await fr.evaluate(()=>({h:document.querySelector('#vtitle')&&document.querySelector('#vtitle').textContent,cards:[...document.querySelectorAll('#vwhy .card')].map(c=>c.querySelector('h3').textContent+' — '+c.querySelector('.pill').textContent+': '+c.querySelector('.say').textContent),
       tech:(document.querySelector('details.tech pre')||{}).textContent||'',note:[...document.querySelectorAll('#scrResult p.note')].map(e=>e.textContent).join(' ')}));
     log('['+vn+'] результат за '+(dt/1000).toFixed(1)+' с'+(cpu>1?' (процессор ×'+cpu+')':'')+': '+res.h); res.cards.forEach(c=>log('   '+c)); log('   подпись: '+res.note);
-    if(mock) log('   модель вызвана: '+calls+' раз; в ответе страницы: '+(/заглушка|ИИ-зрение/.test(res.tech)?'да':'нет'));
+    if(mock) log('   модель вызвана: '+calls+' раз; её ответ на странице: '+(/ИИ-зрение (заглушка) ответило/.test(res.note)?'да':'нет'));
     /* подробности первой карточки — раскрыть и снять */
     const d0=await fr.$('#vwhy [data-act=more]'); if(d0){ await d0.click(); await pg.waitForTimeout(400); await shot('6-details',{fullPage:true}); }
     if(errs.length){ fails++; log('   ОШИБКИ СТРАНИЦЫ: '+errs.join(' | ')); }

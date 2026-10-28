@@ -20,7 +20,8 @@ const step=s=>console.log('· '+s), fail=s=>{ console.log('✖ НЕ РАБОТА
   try{
     await pg.goto(LOGIN); await pg.waitForSelector('#tabs:not([hidden])',{timeout:60000}); step('вход в кабинет: да');
     await pg.goto(SITE+'/lk/#/check'); await pg.waitForSelector('.tool8',{timeout:30000}); await pg.waitForTimeout(800); await shot('1-check');
-    const first=await pg.$eval('.tool8 b',e=>e.textContent); step('«Проверка», первая карточка: '+first); await pg.click('.tool8 >> nth=0');
+    const tools=await pg.$$eval('.tool8 b',L=>L.map(e=>e.textContent)), k=tools.findIndex(t=>/ДЗ\s*№\s*3/.test(t)); step('«Проверка»: '+tools.join(' · '));
+    if(k<0){ fail('шаг «Проверка»: нет карточки ДЗ № 3'); throw new Error('нет карточки'); } await pg.click('.tool8 >> nth='+k);
     const fr=await (await pg.waitForSelector('iframe.labf',{timeout:30000})).contentFrame(); await fr.waitForSelector('#start',{timeout:30000});
     await fr.fill('#n',String(n)); await fr.dispatchEvent('#n','input');
     const ai=await fr.waitForSelector('#aiRow:not([hidden])',{timeout:15000}).then(()=>true,()=>false); step('ИИ-зрение в сканере: '+(ai?'включено':'НЕ ВИДНО'));
