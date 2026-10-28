@@ -343,3 +343,14 @@ details.tech pre{ white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; 
 .airow .tg{ display:flex; gap:10px; align-items:flex-start; font-size:14px; line-height:1.4; cursor:pointer; }
 .airow .tg input{ width:20px; height:20px; margin:1px 0 0; flex:none; accent-color:var(--acc); }
 .airow .tg.sub{ font-size:13px; color:var(--mut); }
+/* в кабинете заголовок уже есть — заставку прячем: вариант и «Сканировать» сразу на экране телефона */
+html.embed .start .hero{ display:none; }
+html.embed .app{ padding-top:10px; }
+.card.pc .acts{ flex-wrap:nowrap; }
+@media (max-width:480px){ .card.pc .acts .lg{ display:none; } .card.pc .card-h h3{ font-size:15px; } .card.pc .pill{ font-size:12px; padding:3px 8px; } .res .sum p .note{ display:none; } }
+.res .cards{ gap:8px; }
+.card.pc{ padding:9px 12px; }
+.card.pc .say{ margin-top:4px; font-size:14px; }
+.card.pc .where{ margin-top:5px; padding:6px 9px; font-size:13.5px; gap:8px; }
+.card.pc .acts{ margin-top:4px; }
+.card.pc .acts .btn{ min-height:32px; padding:4px 10px; }

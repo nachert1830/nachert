@@ -35,15 +35,15 @@ const cfg={dev:true,limitScale:TEST?20:1,openSignup:!arg('invites'),origin,secur
   adminYa:['owner'],fronts:site?[origin,site]:[origin],frontUrl:site?site+'/lk/':origin+'/',
   /* как в облаке: официальный вход Telegram — только на «сайте» (у @BotFather один домен), на адресе функции — бот */
   tgLogin:{url:origin+'/dev/tg/auth',origins:site?[site]:[]},
-  /* ИИ-зрение — как в облаке, из переменных EYES_URL, EYES_KEY, EYES_MODEL (по умолчанию выключено: нет ключа) */
-  eyes:eyesFromEnv(Object.assign({EYES_URL:'http://localhost:0/off'},process.env))};
+};
 const yaCodes=new Map();
 const page=(r,html)=>{ r.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'"}); r.end(html); };
 const escH=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const outbox=[]; let offset=0;
 const log=QUIET?{log(){},error:(...a)=>console.error(...a)}:console;
 const store=memoryStore(MEM?null:DBF);
-const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox}),mail:devMail(outbox)});
+/* ИИ-зрение — как в облаке, из переменных EYES_URL, EYES_KEY, EYES_MODEL (по умолчанию выключено: нет ключа) */
+const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox}),mail:devMail(outbox),eyes:eyesFromEnv(Object.assign({EYES_URL:'http://localhost:0/off'},process.env))});
 
 async function newInvite(label,days){ const code=C.token(16), t=Date.now()+offset;
   await store.put('invites',{id:C.sha256(code),label:label||'эмуляция',role:'member',createdAt:t,expiresAt:t+(days||14)*864e5,createdBy:'dev'});

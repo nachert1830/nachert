@@ -22,14 +22,16 @@ function figPx(g){ try{ if(!g||!g.ok||!g._grid||!g.given) return null; const O=g
 function consOf(g){ if(!g||!g.parts) return null; const out={}; let m=null; try{ if(g._grid&&g.given){ const O=g.given.O; m=p=>g._grid.map(p[0]+O[0],p[1]+O[1]); } }catch(e){}
   (g.shown||[]).forEach(k=>{ const p=g.parts[k]; if(!p||!p.geo) return; out[k]={st:p.st,geo:p.geo,px:m?p.geo.map(q=>q.t==='p'?Object.assign({},q,{p:m(q.p)}):Object.assign({},q,{a:m(q.a),b:m(q.b)})):null}; });
   return Object.keys(out).length?out:null; }
-function gridOut(g){ const out={fig:figPx(g),cons:consOf(g),verdict:g.verdict,why:(g.why||[]).concat((g.shown||[]).map(k=>g.parts&&g.parts[k]?'часть '+({a:'1',b:'2',c:'3',d:'4'}[k])+': '+g.parts[k].st+' — '+(g.parts[k].why||[]).join('; '):null).filter(Boolean),g.visNote?['замечание — '+g.visNote]:[])};
+/* какая это часть: опознана построением (idPart — в том числе без уверенного вердикта) или сошлась одна */
+const partOf=g=>g.idPart||(g.partGuess&&g.partGuess.length===1?g.partGuess[0]:null);
+function gridOut(g){ const out={fig:figPx(g),cons:consOf(g),part:partOf(g),verdict:g.verdict,why:(g.why||[]).concat((g.shown||[]).map(k=>g.parts&&g.parts[k]?'часть '+({a:'1',b:'2',c:'3',d:'4'}[k])+': '+g.parts[k].st+' — '+(g.parts[k].why||[]).join('; '):null).filter(Boolean),g.visNote?['замечание — '+g.visNote]:[])};
   if(g.ex3d&&g.ex3d.steps.length&&g.dig){ out.ex={steps:g.ex3d.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex3d.first&&g.ex3d.first.k};
     try{ const segs=self.LAB.dzCalib.drawSegs(g.dig,{T:[g.given.O[0],g.given.O[1],0,0,0,0]}); out.svg=self.LAB.dzReport3d.svg({segs,data:g.given.drawn,ex:g.ex3d,why:(g.answers||[]).filter(a=>a.k==='phi').map(a=>a.msg.split('; на чертеже')[0])}); }catch(x){} }
   return out; }
 /* свои глаза, без модели (ДЗ №3, лист без клеток): все копии фигуры условия на листе по линиям → каждый чертёж отдельно */
 function ownEyes(img,dz,n,answers,part,t0,why0){ const EY=self.LAB.dzEyes; let own=null; try{ own=EY.findDrawings(img,{dz:3,n}); }catch(x){ return null; } if(!own||!own.ok) return null;
   let r=null; try{ r=EY.checkEyes(img,{dz:3,n,drawings:own.drawings},{dz:3,n,answers,part,grid:{ok:false,reason:'чистый лист'}}); }catch(x){ return null; } if(!r||!r.drawings.some(g=>g.ok)) return null;
-  const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'}, drawings=r.drawings.map((g,i)=>Object.assign(gridOut(g),{title:'Чертёж '+(i+1)+(g.partGuess&&g.partGuess.length===1?' — '+PN[g.partGuess[0]]:'')}));
+  const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'}, drawings=r.drawings.map((g,i)=>Object.assign(gridOut(g),{title:'Чертёж '+(i+1)+(partOf(g)?' — '+PN[partOf(g)]:'')}));
   const eyesPts=r.drawings.map((g,j)=>{ let O=null; try{ if(g._grid&&g.given) O=g._grid.map(g.given.O[0],g.given.O[1]); }catch(x){} return {pts:{},v:g.verdict,fig:drawings[j].fig,O}; });
   return {verdict:r.verdict,why:['свои глаза (без ИИ-зрения): чертежей найдено по линиям — '+r.drawings.length].concat(r.why,why0||[]),drawings,eyesPts,stage:'свои глаза',ms:Date.now()-t0}; }
 /* съёмка по чертежам (closeup.js): общий снимок запоминается здесь же — с ним сравнивается каждый снимок вблизи */
@@ -69,7 +71,7 @@ self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now
       if(own0){ E.drawings=EY.mergeDrawings(own0,E.drawings); ownNote='свои глаза нашли чертежей по линиям: '+own0.length; }
       let r=null; try{ r=EY.checkEyes(img,E,{dz:+dz,n,answers,part,grid:grid0}); }catch(err){ note='ИИ-зрение: ошибка разбора — '+String(err&&err.message||err); }
       if(r&&r.drawings.some(g=>g.ok)){ const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'};
-        const drawings=r.drawings.map((g,i)=>Object.assign(+dz===2?{verdict:g.verdict,why:g.why||[],ex:g.ex?{steps:g.ex.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex.first&&g.ex.first.k}:null}:gridOut(g),{title:'Чертёж '+(i+1)+(g.part?' — '+PN[g.part]:g.partGuess&&g.partGuess.length===1?' — '+PN[g.partGuess[0]]:'')}));
+        const drawings=r.drawings.map((g,i)=>Object.assign(+dz===2?{verdict:g.verdict,why:g.why||[],ex:g.ex?{steps:g.ex.steps.map(s=>({k:s.k,name:s.name,status:s.status,msg:s.msg})),first:g.ex.first&&g.ex.first.k}:null}:gridOut(g),{title:'Чертёж '+(i+1)+(g.part?' — '+PN[g.part]:partOf(g)?' — '+PN[partOf(g)]:'')}));
         /* что увидели глаза — на фото (px снимка): точки с подписями и рамка каждого чертежа */
         const eyesPts=r.drawings.map((g,j)=>{ const d=E.drawings[g.index]||{}; let O=null; try{ if(g._grid&&g.given) O=g._grid.map(g.given.O[0],g.given.O[1]); }catch(x){} return {pts:d.pts||{},box:d.box,v:g.verdict,fig:drawings[j].fig,O}; });
         self.postMessage({verdict:r.verdict,why:['ИИ-зрение'+(e.data.eyesModel?' ('+String(e.data.eyesModel).replace(/^gpt:\/\/[^/]+\//,'')+', шкала '+rs.scale+')':'')+' нашло чертежей: '+r.drawings.length].concat(ownNote?[ownNote]:[],r.why),drawings,eyesPts,stage:'глаза',ms:Date.now()-t0}); return; }

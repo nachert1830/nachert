@@ -92,7 +92,7 @@ function phrase(d){ const t=tone(d.verdict), ps=d.parts||{}, ks=Object.keys(ps).
 /* ответ потока (или серии по чертежам) → список чертежей для экрана */
 S.fromWorker=r=>{ if(!r) return [];
   if(r.drawings&&r.drawings.length) return r.drawings.map((d,i)=>{ const e=(r.eyesPts||[])[i]||{}, ps=partsFromWhy(d.why), m=/—\s*(\d)\)/.exec(d.title||'');
-    return {i,title:'Чертёж '+(i+1),part:m?NUMP[m[1]]:null,verdict:d.verdict,why:d.why||[],parts:ps,ex:d.ex,svg:d.svg,fig:d.fig||e.fig||null,O:e.O||null,box:e.box||null,cons:d.cons||null}; });
+    return {i,title:'Чертёж '+(i+1),part:d.part||(m?NUMP[m[1]]:null),verdict:d.verdict,why:d.why||[],parts:ps,ex:d.ex,svg:d.svg,fig:d.fig||e.fig||null,O:e.O||null,box:e.box||null,cons:d.cons||null}; });
   /* один чертёж (лист в клетку или один крупный): сам ответ */
   const ps=partsFromWhy(r.why), shown=Object.keys(ps).filter(k=>ps[k].st==='верно');
   return [{i:0,title:'Чертёж',part:shown.length===1?shown[0]:null,verdict:r.verdict,why:r.why||[],parts:ps,ex:r.ex,svg:r.svg,fig:r.fig||null,O:null,box:null,cons:r.cons||null}]; };
@@ -220,13 +220,13 @@ function partCards(ds){ const unk=ds.filter(d=>!d.part&&d.verdict!=='не сня
   return ['a','b','c','d'].map(k=>{ const d=ds.find(x=>x.part===k), p=d&&d.parts&&d.parts[k];
     if(d&&p){ const st=p.st==='верно'?'ok':p.st==='ошибка'?'bad':'calm', w=(p.why||[]).filter(Boolean);
       if(st==='ok') return {k,d,t:'ok',say:'Построено верно'+(w[0]?': '+cut(w[0])+'.':'.')};
-      if(st==='bad'){ const j=badStep(d.ex); return {k,d,t:'bad',say:'В построении ошибка.',where:j>=0?'шаг '+(j+1)+' — '+d.ex.steps[j].name+': '+d.ex.steps[j].msg:cap(cut(w[0])||'смотрите разбор на чертеже')}; }
+      if(st==='bad'){ const j=badStep(d.ex); return {k,d,t:'bad',say:'В построении ошибка.',where:j>=0?'шаг '+(j+1)+' — '+d.ex.steps[j].name+': '+d.ex.steps[j].msg.split(/:\s/)[0]:cap(String(cut(w[0])||'смотрите разбор на чертеже').split(/:\s/)[0])}; }
       const small=/мелко|px\/мм|ближе/.test(w.join(' '));
-      return {k,d,t:'calm',say:'Построение вижу, но утверждать не могу — '+(small?'снимите чертёж ближе, во весь кадр.':'переснимите крупно, ровно, без блика.'),why1:w[0]}; }
+      return {k,d,t:'calm',say:'Построение вижу, но не уверен: '+(small?'снимите ближе, во весь кадр.':'переснимите крупно, без блика.'),why1:w[0]}; }
     const g=free.shift();
-    if(g) return {k,d:null,guess:g,t:'calm',say:'Не понял, какой из чертежей — эта часть: снимите её крупно, во весь кадр.'};
+    if(g) return {k,d:null,guess:g,t:'calm',say:'Не понял, какой чертёж — эта часть: снимите его крупно.'};
     const ns=ds.find(x=>x.verdict==='не снят');
-    return {k,d:null,guess:ns||null,t:'calm',say:ns?'Чертёж ещё не снят — поднесите телефон к нему.':'Чертёж этой части не нашёл — если он есть, снимите его крупно.'}; }); }
+    return {k,d:null,guess:ns||null,t:'calm',say:ns?'Ещё не снят — поднесите телефон к чертежу.':'Чертёж этой части не нашёл — снимите его крупно.'}; }); }
 /* сводка по частям */
 function partSummary(cs,ds){ const n={ok:0,bad:0,calm:0}; cs.forEach(c=>n[c.t]++); const nm=t=>cs.filter(c=>c.t===t).map(c=>PNUM[c.k]), list=a=>a.length===1?a[0]:a.slice(0,-1).join(', ')+' и '+a[a.length-1];
   const data=ds.find(d=>/ошибка в данных/.test(d.verdict));
@@ -246,7 +246,7 @@ S.renderResult=o=>{ const el=$(o.el||'scrResult'), ds=o.ds, src=o.src, byPart=(o
   const card=c=>{ const d=c.d, geo=d&&d.cons&&d.cons[c.k], svg=geo?S.cleanSvg(geo.geo,fig):'', tgt=d||c.guess;
     return '<li class="card pc '+c.t+'" id="pcard'+c.k+'" data-k="'+c.k+'"'+(tgt?' data-i="'+tgt.i+'"':'')+'><div class="card-h"><span class="num">'+PNUM[c.k]+'</span><h3 title="'+esc(PART[c.k])+'">'+esc(PSHORT[c.k])+'</h3><span class="pill">'+ic(c.t)+word(c.t)+'</span></div>'
       +'<p class="say">'+esc(c.say)+'</p>'+(c.where?'<div class="where">'+I('pin')+'<div>'+esc(c.where)+'</div></div>':'')+(c.ask?'<p class="ask1">'+esc(c.ask)+'</p>':'')
-      +'<div class="acts">'+(d?'<button class="lnk" data-act="more" aria-expanded="false">'+I('down')+'Подробнее</button>':'')+(o.onReshoot&&tgt&&c.t!=='ok'?'<button class="btn '+(c.t==='calm'?'pri':'ghost')+' sm" data-act="reshoot">'+I('redo')+'Переснять этот чертёж</button>':'')+'</div>'
+      +'<div class="acts">'+(d?'<button class="lnk" data-act="more" aria-expanded="false">'+I('down')+'Подробнее</button>':'')+(o.onReshoot&&tgt&&c.t!=='ok'?'<button class="btn '+(c.t==='calm'?'pri':'ghost')+' sm" data-act="reshoot" aria-label="Переснять этот чертёж">'+I('redo')+'Переснять<span class="lg"> этот чертёж</span></button>':'')+'</div>'
       +(d?'<div class="more" hidden>'
         +(svg?'<figure class="clean">'+svg+'<figcaption>Как понял построение сканер'+(geo.geo.some(q=>q.k==='bad')?': <b style="color:#e0252c">красное</b> — у вас, <b style="color:#13a35f">зелёное</b> — где должно быть':'')+'. Серое — заданная пирамида.</figcaption></figure>':'')
         +(src&&d._q?'<div class="crop"><canvas data-crop="'+d.i+'" data-k="'+c.k+'"></canvas><p class="note">'+esc(d.title)+(d.sub?' · '+esc(d.sub):'')+' — на фото</p></div>':'')

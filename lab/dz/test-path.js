@@ -39,7 +39,8 @@ const log=s=>console.log(s), sec=t=>((Date.now()-t)/1000).toFixed(1)+' с';
     await pg.goto(URL+'/lk/#/check'); await pg.waitForSelector('.tool8'); await pg.waitForTimeout(300); await shot('1-check');
     /* ДЗ № 3 — первая карточка */
     const tools=await pg.$$eval('.tool8 b',L=>L.map(e=>e.textContent)); log('['+vn+'] «Проверка»: '+tools.join(' · '));
-    await pg.click('.tool8 >> nth=0'); const fr=await (await pg.waitForSelector('iframe.labf')).contentFrame(); await fr.waitForSelector('#start'); await pg.waitForTimeout(500); await shot('2-start');
+    await pg.click('.tool8 >> nth=0'); const fr=await (await pg.waitForSelector('iframe.labf')).contentFrame(); await fr.waitForSelector('#start'); await pg.waitForTimeout(800); await shot('2-start');
+    log('['+vn+'] ИИ-зрение в сканере: '+await fr.evaluate(()=>SCAN.ai.on&&!document.getElementById('aiRow').hidden?'включено':'нет'));
     if(cpu>1){ const cdp=await ctx.newCDPSession(pg); await cdp.send('Emulation.setCPUThrottlingRate',{rate:cpu}); }
     /* пример без камеры */
     if(await fr.$('#exList .ex')){ await fr.click('#exList .ex >> nth=0'); await fr.waitForSelector('#scrResult:not([hidden]) .card'); await pg.waitForTimeout(400); await shot('3-example');
@@ -50,8 +51,8 @@ const log=s=>console.log(s), sec=t=>((Date.now()-t)/1000).toFixed(1)+' с';
     await fr.waitForSelector('#scrResult:not([hidden]) .card',{timeout:900000}); const dt=Date.now()-t1; await pg.waitForTimeout(500);
     await shot('5-result'); await shot('5-result-full',{fullPage:true});
     const res=await fr.evaluate(()=>({h:document.querySelector('#vtitle')&&document.querySelector('#vtitle').textContent,cards:[...document.querySelectorAll('#vwhy .card')].map(c=>c.querySelector('h3').textContent+' — '+c.querySelector('.pill').textContent+': '+c.querySelector('.say').textContent),
-      tech:(document.querySelector('details.tech pre')||{}).textContent||''}));
-    log('['+vn+'] результат за '+(dt/1000).toFixed(1)+' с'+(cpu>1?' (процессор ×'+cpu+')':'')+': '+res.h); res.cards.forEach(c=>log('   '+c));
+      tech:(document.querySelector('details.tech pre')||{}).textContent||'',note:[...document.querySelectorAll('#scrResult p.note')].map(e=>e.textContent).join(' ')}));
+    log('['+vn+'] результат за '+(dt/1000).toFixed(1)+' с'+(cpu>1?' (процессор ×'+cpu+')':'')+': '+res.h); res.cards.forEach(c=>log('   '+c)); log('   подпись: '+res.note);
     if(mock) log('   модель вызвана: '+calls+' раз; в ответе страницы: '+(/заглушка|ИИ-зрение/.test(res.tech)?'да':'нет'));
     /* подробности первой карточки — раскрыть и снять */
     const d0=await fr.$('#vwhy [data-act=more]'); if(d0){ await d0.click(); await pg.waitForTimeout(400); await shot('6-details',{fullPage:true}); }

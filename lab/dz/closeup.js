@@ -27,7 +27,7 @@ const app=(A,p)=>[A[0]*p[0]+A[1]*p[1]+A[2],A[3]*p[0]+A[4]*p[1]+A[5]];
 function figBox(n){ const gv=Vm().get(3,+n), g=Mm().given(gv.id,gv.data), P=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]);
   return [Math.min(...P.map(p=>p[0])),Math.min(...P.map(p=>p[1])),Math.max(...P.map(p=>p[0])),Math.max(...P.map(p=>p[1]))]; }
 /* кадр серии одного чертежа: только то, что голосует */
-function frameOf(g,ppm){ return {ok:!!g.ok,verdict:g.verdict,why:g.why||[],ppm,ms:g.ms,shown:g.shown||[],partGuess:g.partGuess||null,
+function frameOf(g,ppm){ return {ok:!!g.ok,verdict:g.verdict,why:g.why||[],ppm,ms:g.ms,shown:g.shown||[],partGuess:g.partGuess||null,idPart:g.idPart||null,
   parts:g.parts?Object.fromEntries(Object.entries(g.parts).map(([k,p])=>[k,{st:p.st,why:p.why||[]}])):{},
   /* что понял мозг (check3 geo, мм чертежа) — для чистого чертежа; только показанные части */
   geo:g.parts?Object.fromEntries((g.shown||[]).filter(k=>g.parts[k]&&g.parts[k].geo).map(k=>[k,g.parts[k].geo])):{}}; }
@@ -96,7 +96,9 @@ function Session(ov,o){ o=o||{}; const shots=o.shots||SHOTS, max=o.max||MAX, fr=
         else D.forEach((d,j)=>{ if(j!==js[0]&&d.parts[q]&&d.parts[q].st==='ошибка') unsure(j,q,'эта часть сошлась на чертеже '+(js[0]+1)+' — здесь, видимо, чужие похожие линии'); }); });
       /* какая это часть — только та, что сошлась («верно»): «не могу утверждать» части её не опознаёт */
       /* «ошибка» в серии — только у части, опознанной построением (gridsheet idPart): она тоже называет часть */
-      return D.map((d,j)=>{ const ok=d.shown.filter(q=>d.parts[q].st==='верно'), bad=d.shown.filter(q=>d.parts[q].st==='ошибка'); return Object.assign(d,{title:ov.drawings[j].title,part:ok.length===1?ok[0]:!ok.length&&bad.length===1?bad[0]:null}); }); } }; }
+      return D.map((d,j)=>{ const ok=d.shown.filter(q=>d.parts[q].st==='верно'), bad=d.shown.filter(q=>d.parts[q].st==='ошибка'); /* без вердикта — часть, которую построение опознало на всех прочитанных кадрах (не меньше двух) */
+        const ids=fr[j].filter(f=>f&&f.ok).map(f=>f.idPart), idk=ids.length>=2&&ids.every(x=>x&&x===ids[0])?ids[0]:null;
+        return Object.assign(d,{title:ov.drawings[j].title,part:ok.length===1?ok[0]:!ok.length&&bad.length===1?bad[0]:!ok.length&&!bad.length?idk:null}); }); } }; }
 
 put('dzCloseup',{overview,close,vote,Session,MIN_PPM,ppmOf});
 })();
