@@ -92,12 +92,14 @@ function Capturer(o){ o=o||{}; let want=o.shots||3; const hold=o.hold||400, max=
     /* резкость — относительно лучшего кадра сеанса (у чистого А3 она ниже, чем у листа в клетку): ≥ 60 % лучшего */
     feed(A,now){ if(n>=want) return 'done'; if(A.paper) bestSharp=Math.max(bestSharp,A.sharp); A.soft=A.soft||[];
       /* вблизи лист и не должен быть целиком в кадре */
-      if(o.content&&A.paper){ A.hints=A.hints.filter(h=>!/^лист не целиком|^подойдите ближе|^держите телефон параллельно|^сильный блик/.test(h));
-        /* края листа вблизи не видны — наклон по ним не мерится; блик — совет (у каждого ракурса свой) */
+      if(o.content&&A.paper){ A.hints=A.hints.filter(h=>!/^лист не целиком|^подойдите ближе|^держите телефон параллельно|^сильный блик|^нерезко/.test(h));
+        /* края листа вблизи не видны — наклон по ним не мерится; блик — совет (у каждого ракурса свой); резкость по
+           лапласиану зависит от того, сколько линий в кадре (пустой угол чертежа «нерезок»), — не мерится: смаз виден как
+           сдвиг кадра, а нечитаемый снимок мозг вернёт отказом, и камера попросит ещё */
         if(A.glare>0.15) A.soft.unshift('блик на листе — следующий снимок под другим углом');
         if(A.paper.touch<0.05&&A.paper.fill<0.85) A.hints.unshift('весь лист в кадре — поднесите телефон ближе к чертежу');
         A.ok=!A.hints.length; }
-      if(A.ok&&A.sharp<0.6*bestSharp){ A.ok=false; A.hints.push('нерезко — держите телефон неподвижно, дайте камере навестись'); }
+      if(A.ok&&!o.content&&A.sharp<0.6*bestSharp){ A.ok=false; A.hints.push('нерезко — держите телефон неподвижно, дайте камере навестись'); }
       const stable=A.ok&&A.motion!=null&&A.motion<LIM.motion&&(!o.content||A.shift!=null&&A.shift<LIM.motion); prevA=A;
       if(needMove&&o.content&&lastThumb){ if(shiftOf(lastThumb,A.thumb)>=0.03) needMove=false; }
       else if(needMove&&A.paper&&lastShotQuad){ const L=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]), mv=A.paper.quadSmall.reduce((s,p,i)=>s+L(p,lastShotQuad[i]),0)/4/Math.max(...A.size); if(mv>=0.03) needMove=false; }

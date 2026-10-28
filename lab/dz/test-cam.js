@@ -17,9 +17,11 @@ const ROOT=path.resolve(__dirname,'../..');
   const port=srv.address().port, {chromium}=require('playwright'), br=await chromium.launch(), pg=await br.newPage({viewport:{width:430,height:900}});
   pg.on('pageerror',e=>console.log('ОШИБКА СТРАНИЦЫ: '+e.message));
   /* камера — холст: тест рисует на нём нужный снимок, поток идёт с холста */
-  await pg.addInitScript(()=>{ const cv=document.createElement('canvas'); cv.width=1500; cv.height=2000; const ctx=cv.getContext('2d'); let img=null;
-    setInterval(()=>{ if(img){ ctx.drawImage(img,0,0,cv.width,cv.height); } },100);
-    window.__show=url=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ cv.width=im.width; cv.height=im.height; img=im; ctx.drawImage(im,0,0); res(); }; im.src=url; });
+  /* холст постоянного размера (сенсор камеры): снимок вписан без искажения, вокруг тёмный стол */
+  await pg.addInitScript(()=>{ const cv=document.createElement('canvas'); cv.width=3000; cv.height=3000; const ctx=cv.getContext('2d'); let img=null;
+    const put=()=>{ ctx.fillStyle='#2a2622'; ctx.fillRect(0,0,cv.width,cv.height); if(img){ const k=Math.min(cv.width/img.width,cv.height/img.height), w=img.width*k, h=img.height*k; ctx.drawImage(img,(cv.width-w)/2,(cv.height-h)/2,w,h); } };
+    setInterval(put,100);
+    window.__show=url=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ img=im; put(); res(); }; im.src=url; });
     navigator.mediaDevices.getUserMedia=async()=>cv.captureStream(10); });
   await pg.goto('http://localhost:'+port+'/lab/cam.html?n='+n); await pg.selectOption('#how','draw');
   await pg.evaluate(()=>window.__show('/__img/0')); await pg.click('#start');
