@@ -3,7 +3,7 @@
    1) высота (замена плоскостей), 2) угол граней, 3) истинный вид ABC (вращение), 4) угол SA (вращение плоскости).
    Построения — из lab/dz/vsynth3.js (те же случайные выборы студента); чертёж ставится в свою четверть поля над штампом.
    Нужен для замера глаз (eyes-eval.js): правда известна для каждой подписи каждого чертежа.
-   sheet({n, seed, level, turn, err}) → {img, truth:{H (мм листа → px), n, data, parts:[{part, built, err, affects, O (мм листа), pts:{A″:[u,v] мм листа}, box}]}} */
+   sheet({n, seed, level, turn, err, size, closeup}) → {img, views:[{img, H}] (closeup), truth:{H (мм листа → px), n, data, parts:[{part, built, err, affects, O (мм листа), pts:{A″:[u,v] мм листа}, box}]}} */
 const IMG=require('../img.js'), DZ=require('../../core/dz.js'), V=require('../../core/dz-variants.js'), M=require('./model.js'), M3=require('./model3.js'), V3=require('./vsynth3.js'), DS=require('./sheet.js'), {dzSynth}=require('./synth.js');
 const {Fp,Hp}=M3, NM=M3.NAMES;
 const bbox=pts=>{ let a=[1e9,1e9,-1e9,-1e9]; pts.forEach(p=>{ a=[Math.min(a[0],p[0]),Math.min(a[1],p[1]),Math.max(a[2],p[0]),Math.max(a[3],p[1])]; }); return a; };
@@ -29,7 +29,9 @@ function sheet(o){ const n=o.n, R=IMG.rng((o.seed||1)*7349+n*13), data=V.get(3,n
     groups.push({items,O}); const pts={}; M.given('3',data).pts.forEach(q=>{ pts[q.l]=[O[0]+q.at[0],O[1]+q.at[1]]; }); pts.O=O.slice();
     /* affects — ошибка меняет ответ (a_d: не та точка — не конец прямой A₄B₄C₄, тогда прямая и высота верны, как в test-check3.js) */
     gt.push({part,built,err:built&&E(part)!=='ok'?E(part):null,affects:built&&E(part)!=='ok'?!(E(part)==='a_d'&&info&&info.affects===false):null,O,pts,box:[O[0]+b[0]-15,O[1]+b[1]-8,O[0]+Math.max(0,b[2])+12,O[1]+b[3]+8]}); });
-  const s=dzSynth({groups,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0,size:o.size,clean:o.clean});
+  /* o.closeup — ещё по снимку каждого чертежа вблизи (как просит камера): его место с полем o.closeup мм; s.views[i] — часть i */
+  const pad=b=>[b[0]-o.closeup,b[1]-o.closeup,b[2]+o.closeup,b[3]+o.closeup];
+  const s=dzSynth({groups,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0,size:o.size,clean:o.clean,views:o.closeup!=null?gt.map(g=>pad(g.box)):undefined});
   s.truth=Object.assign(s.truth,{dz:3,n,data,parts:gt,err:o.err||'ok'}); return s; }
 module.exports={sheet};
 if(require.main===module){ const a=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));

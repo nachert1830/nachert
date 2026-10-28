@@ -13,6 +13,10 @@
 const IMG=require('../img.js'), zlib=require('zlib'), fs=require('fs'), M=require('./model.js'), EY=require('./eyes.js'), SE=require('../../server/lib/eyes.js');
 const Q=require('./quadsynth.js'), VS=require('./vsynth.js');
 const A=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('='))), NQ=+(A.sheets||6), N2=+(A.dz2||3), STR=(A.strategy||'full,zoom').split(','), BRAIN=A.brain!=='0';
+/* --size=W,H — размер синтетического снимка (px/мм листа: 3000 px по длинной стороне ≈ 6 px/мм); --ppm — в имени листа */
+const CLOSE=A.closeup!=null?+A.closeup:null, CSIDE=+(A.side||220);
+/* --closeup=8 [--side=220] — снимки вблизи: каждый чертёж своим кадром (с полем 8 мм); side — «мм» длинной стороны кадра для поиска */
+const SIZE=A.size?A.size.split(',').map(Number):undefined, ppmOf=Hm=>{ const P=q=>IMG.H.apply(Hm,q), p=P([210,148]), u=P([211,148]), v=P([210,149]); return Math.sqrt(Math.abs((u[0]-p[0])*(v[1]-p[1])-(u[1]-p[1])*(v[0]-p[0]))); };
 const TOKEN=process.env.EYES_TOKEN||'';
 const med=a=>{ const t=a.slice().sort((x,y)=>x-y); return t.length?t[t.length>>1]:NaN; }, q90=a=>{ const t=a.slice().sort((x,y)=>x-y); return t.length?t[Math.floor(t.length*0.9)]:NaN; };
 const f1=x=>isFinite(x)?x.toFixed(1):'—';
@@ -33,8 +37,11 @@ function grayPNG(im,box,maxSide){ const [bx,by,bw,bh]=box||[0,0,im.width,im.heig
 function sheets(){ const out=[];
   /* каждый второй лист — с ошибкой в части 1 или 4 (ось замены не ⟂, неверный радиус): про неё «верно» — ложное */
   const ER=[null,'a_dir',null,'d_R',null,'a_d',null,'d_R',null,'a_dir'];
-  [3,9,14,21,27,30,6,17,24,12].slice(0,NQ).forEach((n,i)=>{ const s=Q.sheet({n,seed:11+i,err:ER[i]||undefined}); if(!s) return;
-    out.push({name:'ДЗ3 в'+n+' (4 чертежа'+(ER[i]?', ошибка '+ER[i]:'')+')',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,built:p.built,pts:p.pts,err:p.err&&p.affects!==false?p.err:null,errSoft:p.err&&p.affects===false?p.err:null}))}); });
+  [3,9,14,21,27,30,6,17,24,12].slice(0,NQ).forEach((n,i)=>{ const s=Q.sheet({n,seed:11+i,err:ER[i]||undefined,size:SIZE,closeup:CLOSE}); if(!s) return;
+    const G=s.truth.parts.map(p=>({part:p.part,built:p.built,pts:p.pts,err:p.err&&p.affects!==false?p.err:null,errSoft:p.err&&p.affects===false?p.err:null}));
+    /* --closeup=поле мм: вместо общего снимка — снимок каждого чертежа вблизи (как просит камера); в кадре один чертёж, правда — все */
+    if(CLOSE!=null){ s.views.forEach((v,j)=>out.push({name:'ДЗ3 в'+n+' вблизи '+'abcd'[j]+(ER[i]?' (ошибка '+ER[i]+')':'')+', '+ppmOf(v.H).toFixed(1).replace('.',',')+' px/мм',dz:3,n,img:v.img,H:v.H,groups:G,want:1,side:CSIDE})); return; }
+    out.push({name:'ДЗ3 в'+n+' (4 чертежа'+(ER[i]?', ошибка '+ER[i]:'')+', '+ppmOf(s.truth.H).toFixed(1).replace('.',',')+' px/мм)',dz:3,n,img:s.img,H:s.truth.H,groups:s.truth.parts.map(p=>({part:p.part,built:p.built,pts:p.pts,err:p.err&&p.affects!==false?p.err:null,errSoft:p.err&&p.affects===false?p.err:null}))}); });
   [8,15,25,3,19].slice(0,N2).forEach((n,i)=>{ const s=VS.sheet({dz:2,n,err:'ok',seed:21+i,turn:0}); if(!s) return; const t=s.truth, pts={};
     M.given(t.id,t.data).pts.forEach(q=>{ pts[q.l]=[t.O[0]+q.at[0],t.O[1]+q.at[1]]; }); pts.O=t.O.slice();
     out.push({name:'ДЗ2 в'+n,dz:2,n,img:s.img,H:t.H,groups:[{part:null,pts}]}); });
@@ -67,7 +74,7 @@ async function zoom(cfg,sh){ const f=await full(cfg,sh,SCALE); if(!f.drawings.le
 
 /* свои глаза: чертежи по линиям, без модели (только ДЗ №3) */
 async function own(cfg,sh){ const t0=Date.now(); if(sh.dz!==3) return {drawings:[],ms:0,calls:0,err:'свои глаза — только ДЗ №3'};
-  const f=EY.findDrawings(sh.img,{dz:3,n:sh.n}); return {drawings:f.ok?f.drawings:[],ms:Date.now()-t0,calls:0,err:f.ok?null:f.reason}; }
+  const f=EY.findDrawings(sh.img,{dz:3,n:sh.n,side:sh.side}); return {drawings:f.ok?f.drawings:[],ms:Date.now()-t0,calls:0,err:f.ok?null:f.reason}; }
 async function ownFull(cfg,sh){ const a=await own(cfg,sh), b=await full(cfg,sh); return {drawings:sh.dz===3?EY.mergeDrawings(a.drawings,b.drawings):b.drawings,ms:a.ms+b.ms,calls:b.calls,raw:b.raw,pic:b.pic,text:b.text,err:b.err}; }
 const STRATS={full,zoom,own,'own+full':ownFull};
 
@@ -121,7 +128,7 @@ async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; cons
           const Hi=IMG.H.inv(sh.H), pairs=[]; res.drawings.forEach(d=>{ if(d._group==null) return; const g=sh.groups[d._group]; Object.entries(d.pts).forEach(([l,p])=>{ if(g.pts[l]) pairs.push({p:IMG.H.apply(Hi,p),t:g.pts[l]}); }); });
           let aff='—'; if(pairs.length>=6){ const Af=EY.bindAffine(pairs.map(q=>({l:'',m:q.p,p:q.t})),{tol:15,sRange:[0.5,2]}); if(Af) aff='масштаб '+Af.s.toFixed(3)+', согласных '+Af.inl.length+'/'+pairs.length+', остаток '+f1(Af.rms)+' мм'; }
           T.diag=(T.diag||[]); T.diag.push(sh.name+': в шкале '+(SCALE==='px'?'0…1000':'px')+' — точки '+sa.found+'/'+sa.total+', промах '+f1(med(sa.err))+' мм; лучшее аффинное по точкам: '+aff);
-          console.log('    · '+T.diag[T.diag.length-1]+' | ответ: '+String(res.text||'').replace(/\s+/g,' ').slice(0,220)); } T.found+=st.found; T.total+=st.total; T.swap+=st.swap; T.err.push(...st.err); T.extra+=st.extra; T.dr+=st.drawingsFound; T.drT+=sh.groups.length; T.ms+=res.ms; T.calls+=res.calls;
+          console.log('    · '+T.diag[T.diag.length-1]+' | ответ: '+String(res.text||'').replace(/\s+/g,' ').slice(0,220)); } T.found+=st.found; T.total+=st.total; T.swap+=st.swap; T.err.push(...st.err); T.extra+=st.extra; T.dr+=Math.min(st.drawingsFound,sh.want||4); T.drT+=sh.want||sh.groups.length; T.ms+=res.ms; T.calls+=res.calls;
         const b=await brain(sh,res); if(b&&!b.err){ T.read+=b.read; T.ok+=b.ok; T.bdr+=res.drawings.length; T.false+=b.false; b.falseWhy.forEach(w=>T.falseWhy.push(sh.name+': '+w)); }
         raw.push({model:cfg.model.replace(cfg.folder,'<каталог>'),strat,sheet:sh.name,drawings:res.drawings,err:res.err||null,brain:b});
         console.log('  '+sh.name.padEnd(22)+' чертежей '+st.drawingsFound+'/'+sh.groups.length+(st.extra?' (+'+st.extra+' лишних)':'')+', точки '+st.found+'/'+st.total+(st.swap?', перепутано '+st.swap:'')+', промах медиана '+f1(med(st.err))+' мм, 90 % '+f1(q90(st.err))+' мм, '+(res.ms/1000).toFixed(1)+' с ('+res.calls+' запр.)'
