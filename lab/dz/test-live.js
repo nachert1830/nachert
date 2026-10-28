@@ -31,11 +31,16 @@ const step=s=>console.log('· '+s), fail=s=>{ console.log('✖ НЕ РАБОТА
       if(k2<0) throw new Error('нет карточки «фото листа»'); await pg.click('.tool8 >> nth='+k2); step('запасной путь: «'+t2[k2]+'»');
       const f2=await (await pg.waitForSelector('iframe.labf',{timeout:30000})).contentFrame(); await f2.waitForSelector('#file',{state:'attached',timeout:30000});
       if(await f2.$('#dz')) await f2.selectOption('#dz','3').catch(()=>{}); await f2.fill('#n',String(n)); await f2.dispatchEvent('#n','input');
-      if(await f2.$('#paper')) await f2.selectOption('#paper','plain').catch(()=>{}); if(await f2.$('#ok')) await f2.check('#ok').catch(()=>{});
+      if(await f2.$('#paper')) await f2.selectOption('#paper','plain').catch(()=>{});
+      /* «на моём листе — именно эти данные»: без отметки прежняя страница фото не берёт */
+      await f2.evaluate(()=>{ const ok=document.getElementById('ok'); if(ok&&!ok.checked){ ok.checked=true; ok.dispatchEvent(new Event('change',{bubbles:true})); } });
       const ai2=await f2.waitForSelector('#aiRow:not([hidden])',{timeout:15000}).then(()=>true,()=>false); step('ИИ-зрение на странице «фото листа»: '+(ai2?'включено':'НЕ ВИДНО'));
       if(ai2&&A.far==='1'&&await f2.$('#aiFar')) await f2.check('#aiFar').catch(()=>{});
       await shot('2b-photo-start'); const t1=Date.now(); await f2.setInputFiles('#file',file);
-      await f2.waitForSelector('#vcard:not([hidden]), #scrResult:not([hidden]) .card',{timeout:900000}); await pg.waitForTimeout(800); await shot('4b-photo-result'); await pg.screenshot({path:path.join(OUT,'4b-photo-result-full.png'),fullPage:true});
+      const got=await f2.waitForSelector('#vcard:not([hidden]), #scrResult:not([hidden]) .card',{timeout:480000}).then(()=>true,()=>false);
+      if(!got){ const st=await f2.evaluate(()=>{ const e=document.getElementById('stage')||document.querySelector('#scrWait'); return e?e.innerText.replace(/\s+/g,' ').slice(0,300):'—'; }); await shot('x-photo-wait');
+        calls.forEach((c,i)=>step('запрос к модели '+(i+1)+': HTTP '+c.status+(c.model?', модель '+c.model:'')+(c.error?', ошибка: '+c.error:'')));
+        throw new Error('ответа нет за 8 мин; на странице: '+st+'; запросов к модели: '+calls.length); } await pg.waitForTimeout(800); await shot('4b-photo-result'); await pg.screenshot({path:path.join(OUT,'4b-photo-result-full.png'),fullPage:true});
       const v=await f2.evaluate(()=>{ const t=document.querySelector('#vtitle'), w=[...document.querySelectorAll('#vwhy li, #vwhy .card')].slice(0,8).map(e=>e.innerText.replace(/\s+/g,' ').slice(0,160)); return (t?t.textContent:'')+' | '+w.join(' | '); });
       step('ответ (прежняя страница) за '+Math.round((Date.now()-t1)/1000)+' с: '+v);
       calls.forEach((c,i)=>step('запрос к модели '+(i+1)+': HTTP '+c.status+(c.model?', модель '+c.model:'')+(c.fallback?' (запасная)':'')+(c.error?', ошибка: '+c.error:'')+(c.len?', ответ '+c.len+' знаков':'')));
