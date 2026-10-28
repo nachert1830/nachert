@@ -1,5 +1,5 @@
 /* ═══════════ Замер глаз на настоящей модели: синтетические листы, где правда известна до сотых мм ═══════════
-   node lab/dz/eyes-eval.js [--sheets=6] [--dz2=3] [--strategy=full,zoom,own,own+full] [--models=m1,m2] [--brain=1]
+   node lab/dz/eyes-eval.js [--sheets=6] [--dz2=3] [--strategy=full,zoom,own,own+full,net,net+own] [--netw=eyes.onnx] [--models=m1,m2] [--brain=1]
    node lab/dz/eyes-eval.js --strategy=own --dz2=0 — свои глаза, без модели (findDrawings: все копии фигуры по линиям)
    Нужен доступ к модели: EYES_TOKEN (IAM-токен) и EYES_FOLDER — Yandex AI Studio (или EYES_KEY / EYES_URL / EYES_MODEL —
    другая модель). Отсюда Yandex Cloud недоступен — прогон идёт в GitHub Actions (.github/workflows/eyes-eval.yml).
@@ -69,7 +69,11 @@ async function zoom(cfg,sh){ const f=await full(cfg,sh,SCALE); if(!f.drawings.le
 async function own(cfg,sh){ const t0=Date.now(); if(sh.dz!==3) return {drawings:[],ms:0,calls:0,err:'свои глаза — только ДЗ №3'};
   const f=EY.findDrawings(sh.img,{dz:3,n:sh.n}); return {drawings:f.ok?f.drawings:[],ms:Date.now()-t0,calls:0,err:f.ok?null:f.reason}; }
 async function ownFull(cfg,sh){ const a=await own(cfg,sh), b=await full(cfg,sh); return {drawings:sh.dz===3?EY.mergeDrawings(a.drawings,b.drawings):b.drawings,ms:a.ms+b.ms,calls:b.calls,raw:b.raw,pic:b.pic,text:b.text,err:b.err}; }
-const STRATS={full,zoom,own,'own+full':ownFull};
+/* сеть глаз (lab/dz/net): кандидаты точек → чертежи по геометрии; net+own — свои глаза по линиям, а чертежи сети — где своих нет */
+let NETL=null; const NET=()=>NETL||(NETL=(async()=>{ const N=require('./net/eyesnet.js'); await N.load(A.netw||__dirname+'/net/eyes.onnx'); return N; })());
+async function net(cfg,sh){ const t0=Date.now(), N=await NET(), r=await N.eyes(sh.img,{dz:sh.dz,n:sh.n}); return {drawings:r.ok?r.drawings:[],ms:Date.now()-t0,calls:0,err:r.ok?null:r.reason}; }
+async function netOwn(cfg,sh){ const a=await own(cfg,sh), b=await net(cfg,sh); return {drawings:EY.mergeDrawings(a.drawings,b.drawings),ms:a.ms+b.ms,calls:0,err:a.err&&b.err}; }
+const STRATS={full,zoom,own,'own+full':ownFull,net,'net+own':netOwn};
 
 /* оценка ответа глаз против правды листа */
 function score(sh,res){ const Hi=IMG.H.inv(sh.H), mm=p=>IMG.H.apply(Hi,p), used=new Set(), st={found:0,total:0,swap:0,err:[],extra:0,drawingsFound:0};
@@ -106,7 +110,7 @@ async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; cons
   return {verdicts:vs,read,ok,misplaced,false:bad.length,caught,falseWhy:r.drawings.filter(g=>sh.dz===2?bad.includes(g.verdict):isFalse(g)).map(g=>partFalse(g).concat((g.why||[]).filter(w=>/неточно|ошибк|должн|взята|отклон/.test(w))).join(' | ').slice(0,300)),ms:Date.now()-t0}; }
 
 (async()=>{ const base=SE.eyesFromEnv(process.env);
-  const noModel=STR.every(s=>s==='own');
+  const noModel=STR.every(s=>/^(own|net|net\+own)$/.test(s));
   if(!noModel&&(!base.on||!(TOKEN||base.key))){ console.log('нет доступа к модели: нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY); без модели — --strategy=own'); process.exit(1); }
   const models=noModel?['свои глаза']:A.models?A.models.split(',').map(m=>m.includes('://')?m:'gpt://{folder}/'+m):[process.env.EYES_MODEL||SE.DEF_MODEL];
   console.log('листы строю…'); const S=sheets(); console.log('листов: '+S.length+' ('+S.map(s=>s.name).join(', ')+')');

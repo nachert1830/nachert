@@ -1,5 +1,5 @@
 /* ═══════════ Главная метрика: настоящие листы студентов (фото — только в lab/private/real/, в git их нет) ═══════════
-   node lab/dz/real-eval.js [--hints=1] [--only=p-001,p-004] [--v=1]
+   node lab/dz/real-eval.js [--hints=1] [--only=p-001,p-004] [--v=1] [--net=1 | --netw=eyes.onnx]
    Разметка — lab/private/real/index.json (тоже не в git):
      {"sheets":[{"file":"p-001.jpg","src":"откуда","dz":3,"n":7,"kind":"клетка",
        "drawings":[{"part":"0"|"a"|"b"|"c"|"d","box":[x0,y0,x1,y1] (px фото),"err":null|"a"…|"?","dataErr":false|true|"?",
@@ -19,7 +19,13 @@ const WEAK=v=>v==='не могу прочитать'||v==='не могу утв�
 function load(f){ const p=path.join(DIR,f), png=p.replace(/\.(jpe?g|heic)$/i,'.png');
   if(png!==p&&!fs.existsSync(png)) cp.execFileSync('convert',[p,'-auto-orient',png]); return IMG.decodePNG(fs.readFileSync(png)); }
 /* как в worker.js: обычный разбор листа, затем свои глаза */
-function scan(img,dz,n,answers,part){ const g=GS.checkGridPhoto(img,{dz,n,answers,part,paper:'auto'});
+/* --net=1: сеть глаз (lab/dz/net) — где чертежи; если она нашла их больше одного (или обычный разбор без вердикта) —
+   каждый чертёж проверяется отдельно, как с глазами модели (checkEyes); меряет и судит по-прежнему геометрия */
+const NETW=A.netw||(A.net==='1'?path.join(__dirname,'net/eyes.onnx'):null); let NET=null;
+async function scan(img,dz,n,answers,part){ const g=GS.checkGridPhoto(img,{dz,n,answers,part,paper:'auto'});
+  if(NETW&&dz===3&&n){ if(!NET){ NET=require('./net/eyesnet.js'); await NET.load(NETW); } const e=await NET.eyes(img,{dz,n});
+    if(e.ok&&(e.drawings.length>1||WEAK(g.verdict))){ let r=null; try{ r=EY.checkEyes(img,{dz,n,drawings:e.drawings},{dz,n,answers,part}); }catch(x){}
+      if(r&&r.drawings.some(q=>q.ok)) return {stage:'сеть ('+e.drawings.length+')',drawings:r.drawings,first:g.verdict}; } }
   if(dz===3&&n&&WEAK(g.verdict)&&g.paper!=='grid'&&!(g.grid&&g.grid.ok&&!g.grid.plain)){ let own=null; try{ own=EY.findDrawings(img,{dz:3,n}); }catch(e){}
     if(own&&own.ok){ let r=null; try{ r=EY.checkEyes(img,{dz:3,n,drawings:own.drawings},{dz:3,n,answers,part,grid:{ok:false,reason:'чистый лист'}}); }catch(e){}
       if(r&&r.drawings.some(q=>q.ok)) return {stage:'свои глаза',drawings:r.drawings,first:g.verdict}; } }
@@ -33,11 +39,12 @@ function judge(cl,T){ if(!T) return 'ложно';
   if(cl.t==='ans'){ const e=T.answerErr; if(e==='?'||e==null) return 'не размечено'; return cl.bad===!!e?'верно':'ложно'; }
   if(cl.t==='sheet'){ if(T.err==='?'||T.dataErr==='?') return 'не размечено'; const bad=!!T.err||!!T.dataErr; return cl.bad===bad?'верно':'ложно'; } }
 const S={photos:0,truthDr:0,found:0,parts:0,partsWrong:0,ok:0,bad:0,unl:0,refuse:0,ms:0}, lines=[];
+(async()=>{
 for(const sh of IX.sheets.concat((IX.foreign||[]).map(f=>Object.assign({foreign:true,dz:3,n:7,drawings:[]},f)))){
   if(ONLY&&!ONLY.some(o=>sh.file.startsWith(o))) continue;
   const img=load(sh.file), TD=sh.drawings.filter(d=>!d.partial), one=TD.length===1?TD[0]:null, t0=Date.now();
   const answers=HINTS&&one&&one.answer?one.answer:{}, part=HINTS&&one&&one.part!=='0'?one.part:null;
-  let res; try{ res=scan(img,sh.dz,sh.n,answers,part); }catch(e){ res={stage:'сбой: '+String(e&&e.message||e),drawings:[]}; }
+  let res; try{ res=await scan(img,sh.dz,sh.n,answers,part); }catch(e){ res={stage:'сбой: '+String(e&&e.message||e),drawings:[]}; }
   const ms=Date.now()-t0; S.photos++; S.ms+=ms; S.truthDr+=TD.length; const hit=new Set(), out=[];
   res.drawings.forEach((g,i)=>{ const o=Opx(g); let T=o?TD.find(d=>inBox(d.box,o)):null; if(!T&&!o&&one&&g.ok) T=one; if(sh.foreign) T=null;
     if(T&&g.ok) hit.add(T); const cls=[];
@@ -56,3 +63,4 @@ for(const sh of IX.sheets.concat((IX.foreign||[]).map(f=>Object.assign({foreign:
 lines.forEach(l=>console.log(l));
 console.log('\nИТОГО'+(HINTS?' (с подсказкой части и ответом)':'')+': фото '+S.photos+', чертежей найдено '+S.found+'/'+S.truthDr+', частей опознано '+S.parts+(S.partsWrong?' (названа чужая — '+S.partsWrong+')':'')
   +', вердиктов верных '+S.ok+', ЛОЖНЫХ '+S.bad+', не размечено '+S.unl+', отказов (чертежей без вердикта) '+S.refuse+', '+(S.ms/1000/Math.max(1,S.photos)).toFixed(0)+' с на фото');
+})();
