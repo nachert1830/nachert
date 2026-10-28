@@ -32,8 +32,8 @@ const ROOT=path.resolve(__dirname,'../..');
   /* правда: чертёж страницы j ↔ часть листа (начало O ближе всего к центру фигуры на снимке) */
   const cs=await pg.evaluate('D.ov.drawings.map(d=>d.c)'), fg=require('./model.js').given('3',s.truth.data).segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), m0=[(Math.min(...fg.map(p=>p[0]))+Math.max(...fg.map(p=>p[0])))/2,(Math.min(...fg.map(p=>p[1]))+Math.max(...fg.map(p=>p[1])))/2], ks=2250/s.img.width, G=s.truth.parts.map(p=>IMG.H.apply(s.truth.H,[p.O[0]+m0[0],p.O[1]+m0[1]]).map(v=>v*ks)), who=cs.map(c=>{ let b=-1, bd=1e9; G.forEach((g,k)=>{ const d=Math.hypot(g[0]-c[0],g[1]-c[1]); if(d<bd){ bd=d; b=k; } }); return b; });
   console.log('страница нашла чертежей '+cs.length+' → части '+who.map(k=>'abcd'[k]).join(','));
-  const used=[0,0,0,0]; let last='', steps=0;
-  while(steps++<30&&(await phase())==='close'){ const h=await hint(), m=h.match(/^Чертёж (\d+) из/);
+  const used=[0,0,0,0], tEnd=Date.now()+2400000; let last='';
+  while(Date.now()<tEnd&&(await phase())==='close'){ const h=await hint(), m=h.match(/^Чертёж (\d+) из/);
     if(h!==last){ console.log('  · '+h); last=h; }
     if(!m){ await pg.waitForTimeout(1000); continue; } const j=+m[1]-1, k=who[j];
     if(used[k]>=3){ console.log('  ракурсы чертежа '+(j+1)+' кончились'); break; }

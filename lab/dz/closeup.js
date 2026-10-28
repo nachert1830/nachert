@@ -90,7 +90,8 @@ function Session(ov,o){ o=o||{}; const shots=o.shots||SHOTS, max=o.max||MAX, fr=
       ['a','b','c','d'].forEach(q=>{ const js=D.map((d,j)=>d.parts[q]&&d.parts[q].st==='верно'?j:-1).filter(j=>j>=0); if(!js.length) return;
         if(js.length>=2) js.forEach(j=>unsure(j,q,'«верно» этой части вышло на чертежах '+js.map(x=>x+1).join(' и ')+' — часть на листе одна, не утверждаю'));
         else D.forEach((d,j)=>{ if(j!==js[0]&&d.parts[q]&&d.parts[q].st==='ошибка') unsure(j,q,'эта часть сошлась на чертеже '+(js[0]+1)+' — здесь, видимо, чужие похожие линии'); }); });
-      return D.map((d,j)=>Object.assign(d,{title:ov.drawings[j].title,part:d.shown.length===1?d.shown[0]:null})); } }; }
+      /* какая это часть — только та, что сошлась («верно»): «не могу утверждать» части её не опознаёт */
+      return D.map((d,j)=>{ const ok=d.shown.filter(q=>d.parts[q].st==='верно'); return Object.assign(d,{title:ov.drawings[j].title,part:ok.length===1?ok[0]:null}); }); } }; }
 
 put('dzCloseup',{overview,close,vote,Session,MIN_PPM,ppmOf});
 })();
