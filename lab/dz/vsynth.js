@@ -50,7 +50,7 @@ function sheet(o){ const dz=o.dz||2, n=o.n, err=o.err||'ok', R=IMG.rng((o.seed||
   if(u1-u0>272-40||v1-v0>355-30) return null;
   /* вспомогательные линии сайта — только для верно начерченного заданного (у чужих данных свои) */
   if(err!=='given') items=items.concat(aux(dz,drawn).map(it=>Object.assign({},it)));
-  const s=dzSynth({items,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0});
+  const s=dzSynth({items,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0,size:o.size,clean:o.clean});
   const expect=err==='ok'?'верно':err==='other'?'другое решение':err==='variant'?'не тот вариант':err==='none'?'ответ не найден':'ошибка';
   s.truth=Object.assign(s.truth,{dz,n:claimed,drawn,id,err,expect,wrongPt,flipped,data,sol});
   return s; }
@@ -61,7 +61,7 @@ function progSheet(o){ const n=o.n, err=o.err||'ok', g=V.get(2,n); if(g.id!=='2'
   if(!b) return null; let items=M.items('2',data,{S:b.S}).concat(b.items);
   let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9; items.forEach(it=>['at','a','b'].forEach(f=>{ if(it[f]){ u0=Math.min(u0,it[f][0]); u1=Math.max(u1,it[f][0]); v0=Math.min(v0,it[f][1]); v1=Math.max(v1,it[f][1]); } }));
   if(u1-u0>272-40||v1-v0>355-30) return null;
-  const s=dzSynth({items,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0});
+  const s=dzSynth({items,seed:o.seed||1,level:o.level||'normal',turn:o.turn!=null?o.turn:0,size:o.size,clean:o.clean});
   const dh=Math.abs(b.steps.Sh-80), expect=dh>=3?'ошибка':dh<=1.5?'верно':'?';
   s.truth=Object.assign(s.truth,{dz:2,n,id:'2',err,expect,data,sol:{S:b.S},prog:b.steps}); return s; }
 put('dzVsynth',{sheet,ERRS,COMMON,main,alt,progSheet,PROG_ERRS});

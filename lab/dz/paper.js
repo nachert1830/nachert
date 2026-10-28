@@ -119,7 +119,7 @@ function preparePlain(img,o){ o=o||{}; const dz=+o.dz||3, why=[], P=findPaper(im
   const cor=[[0,0],[210,0],[210,297],[0,297]].map(toT), c=[-Math.min(...cor.map(p=>p[0])),-Math.min(...cor.map(p=>p[1]))];
   const box=[0,0,Math.ceil(Math.max(...cor.map(p=>p[0]))+c[0]),Math.ceil(Math.max(...cor.map(p=>p[1]))+c[1])];
   const map=(u,v)=>{ const q=[u-c[0],v-c[1]]; return H.apply(Ha,[T[0]+K[0][0]*q[0]+K[0][1]*q[1],T[1]+K[1][0]*q[0]+K[1][1]*q[1]]); };
-  const sc=L('grid').rectify(img,{map,box},{ppm:8,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300}); if(!ex.ok) return {ok:false,reason:ex.reason};
+  const sc=L('grid').rectify(img,{map,box},{ppm:8,box}), ex=LN.extract(sc.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean:o.clean}); if(!ex.ok) return {ok:false,reason:ex.reason};
   const dig={ok:true,origin:'page',O:[0,0],box,segs:ex.segs,map:ex.map};
   /* проверка «это и правда А4/А3»: на точном скане фигура условия подгоняется с 6 параметрами — масштаб по осям
      и перекос должны быть в 1,5 %. Лист другой пропорции (в клетку 200 × 260, обрезанный, тетрадный) иначе молча
@@ -131,6 +131,8 @@ function preparePlain(img,o){ o=o||{}; const dz=+o.dz||3, why=[], P=findPaper(im
     if(c6.ok&&dev>0.015){ const O6=c6.T; Object.keys(gv.data).forEach(k=>{ const ck=C.calibrate(dig,{},gv.id,gv.data,{range:[O6[0]-3,O6[1]-3,O6[0]+3,O6[1]+3],np:6,exclude:k}); dev=Math.min(dev,devOf(ck)); }); }
     if(!c6.ok||dev>0.015) return {ok:false,reason:'пропорции листа не как у А4/А3 (фигура условия растянута на '+(c6.ok?(dev*100).toFixed(1).replace('.',','):'?')+' %) — если лист в клетку, снимите ближе, чтобы сетка была видна; иначе снимите лист целиком'}; }
   why.push('лист без рамки и клеток: края бумаги → перспектива; по фигуре условия — '+b.pg+(b.flip?' (лист перевёрнут)':''));
-  return {ok:true,scan:sc,dig,box,map,origin:c,n:b.n,page:b.pg,flip:b.flip,cover:b.cover,second:b2.cover,why,cands:GS.axesCands(ex.segs),quad:P.quad,dbg:P.dbg}; }
+  /* px снимка на мм у начала координат чертежа: на мелком фото (лист А3 с четырьмя чертежами целиком) замер грубее */
+  const m0=map(c[0],c[1]), m1=map(c[0]+10,c[1]), m2=map(c[0],c[1]+10), ppmPhoto=(Math.hypot(m1[0]-m0[0],m1[1]-m0[1])+Math.hypot(m2[0]-m0[0],m2[1]-m0[1]))/20;
+  return {ok:true,scan:sc,dig,box,map,origin:c,n:b.n,page:b.pg,flip:b.flip,cover:b.cover,second:b2.cover,why,cands:GS.axesCands(ex.segs),quad:P.quad,dbg:P.dbg,ppmPhoto}; }
 put('dzPaper',{findPaper,preparePlain,pageHom,aspectOf});
 })();
