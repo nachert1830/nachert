@@ -53,6 +53,10 @@ function digitMode(d){ const EY=self.LAB.dzEyes, GS=self.LAB.dzGridSheet, t0=Dat
   if(P.error) return {digitFail:P.error};
   let ds=P.drawings; if(d.part){ const own=ds.filter(q=>q.part===d.part); ds=own.length?own:ds.length===1?ds:ds.filter(q=>!q.part); }
   if(!ds.length) return {digitFail:'модель не нашла чертёж части '+({a:1,b:2,c:3,d:4}[d.part])};
+  /* один чертёж в двух ответах (запросы по частям идут отдельно): центры точек ближе 4 % кадра — оставить тот, где линий больше */
+  { const c=q=>{ const P=Object.values(q.pts); return P.length?[P.reduce((s,p)=>s+p[0],0)/P.length,P.reduce((s,p)=>s+p[1],0)/P.length]:null; }, lim=0.04*Math.hypot(d.img.width,d.img.height), keep=[];
+    ds.slice().sort((x,y)=>y.segs.length-x.segs.length).forEach(q=>{ const a=c(q); if(a&&keep.some(k=>{ const b=c(k); return b&&Math.hypot(a[0]-b[0],a[1]-b[1])<lim; })) return; keep.push(q); });
+    ds=ds.filter(q=>keep.includes(q)); }
   const typed=Object.fromEntries(Object.entries(d.answers||{}).filter(([k,v])=>v!=null&&!isNaN(v)));
   const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'}, NM={H:'H',phi:'φ',dih:'угол граней'};
   const rs=ds.map(q=>{ const answers=Object.assign({},q.answers,typed); let g;

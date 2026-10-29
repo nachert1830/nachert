@@ -114,7 +114,7 @@ async function askAny(cfg,q,o){ o=o||{}; const main=cfg.best&&q.consent?cfg.best
 async function askDigit(cfg,q,o){ o=o||{}; if(!cfg.digit) throw Object.assign(new Error('Оцифровка моделью не подключена.'),{status:503});
   if(!q.consent) throw Object.assign(new Error('Оцифровка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
   const text='Размер фото: '+q.w+' × '+q.h+' px.'+(q.n?' Вариант '+q.n+'.':'')+(q.part?' Нужна только часть '+q.part+': выпиши один этот чертёж (D '+q.part+').':'');
-  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:DIGIT_PROMPT,text,opts:{max_tokens:6000}},Object.assign({},o,{timeout:o.timeout||50000})); }
+  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:DIGIT_PROMPT,text,opts:{max_tokens:6000}},Object.assign({},o,{timeout:o.timeout||55000})); }
 
 /* какая модель зрения в каталоге видит картинку: развёртывание (server/tools/deploy.js) пробует по очереди и подключает первую.
    Не все модели AI Studio есть в синхронном режиме (на остальные Yandex отвечает 400/403), а текстовая модель может ответить
