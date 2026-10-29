@@ -4,6 +4,8 @@
    verdict, why, drawings[{title, verdict, why, ex, svg, fig}], eyesPts[{v, fig, O, box}]. */
 (function(){
 const S=self.SCAN={};
+/* версия файлов потока проверки — новая при каждой загрузке страницы: после обновления сайта браузер не возьмёт старый код из кэша */
+S.VER=Date.now().toString(36);
 const $=S.$=id=>document.getElementById(id);
 const esc=S.esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const f1=S.f1=x=>(Math.round(x*10)/10).toString().replace('.',',');
@@ -127,7 +129,7 @@ S.dropZone=(el,onFile)=>{ if(!el) return; const over=on=>el.classList.toggle('ov
   document.addEventListener('drop',e=>{ if(!e.dataTransfer||!e.dataTransfer.files.length) return; e.preventDefault(); onFile(e.dataTransfer.files[0]); }); };
 
 /* ── поток проверки: worker-ui.js шлёт этапы {progress, …} и итог ── */
-S.worker=(onProgress,onDone)=>{ const w=new Worker('dz/worker-ui.js'); w.onmessage=e=>{ const m=e.data; if(m&&m.progress) onProgress&&onProgress(m); else onDone&&onDone(m); }; return w; };
+S.worker=(onProgress,onDone)=>{ const w=new Worker('dz/worker-ui.js?v='+S.VER); w.onmessage=e=>{ const m=e.data; if(m&&m.progress) onProgress&&onProgress(m); else onDone&&onDone(m); }; return w; };
 
 /* ── ожидание: этапы с галочками, фото со «сканирующей» полосой, время ── */
 S.Wait=function(o){ const el=$(o.el||'scrWait'); let t0=Date.now(), tm=null, steps=o.steps.map(s=>Object.assign({st:'todo'},s));

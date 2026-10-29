@@ -1,7 +1,7 @@
 /* Поток проверки для интерфейса сканера (lab/cam.html, lab/dz.html): ровно worker.js, плюс отметки этапов для экрана
    ожидания. Проверку не меняет: вызовы проходят насквозь, страница лишь узнаёт, что началось и сколько найдено.
    Сообщения этапов: {progress:'sheet'} — ищу лист; 'find' — ищу чертежи; 'found', count; 'check', i, count — проверяю i-й. */
-importScripts('worker.js');
+importScripts('worker.js'+((self.location&&self.location.search)||''));
 (function(){
   const post=m=>{ try{ self.postMessage(Object.assign({progress:m.k},m)); }catch(e){} };
   const GS=self.LAB.dzGridSheet, EY=self.LAB.dzEyes;
