@@ -15,7 +15,22 @@
 'use strict';
 const DEF_URL='https://llm.api.cloud.yandex.net/v1/chat/completions', DEF_MODEL='gpt://{folder}/qwen2.5-vl-32b-instruct', OR_URL='https://openrouter.ai/api/v1/chat/completions';
 /* лучшая модель по замеру (REPORT.md, 7к); EYES_BEST_MODEL — другая, EYES_BEST_MODEL=off — не подключать */
-const BEST_MODEL='anthropic/claude-opus-5.5';   /* замер 29.10 (6 листов): часть опознана 12 из 14, неверно 0, ложных 0, $0,031 за лист */
+const BEST_MODEL='anthropic/claude-opus-5.5';
+/* оцифровка чертежа целиком (mode: 'digit'): модель выписывает точки, отрезки и записанные ответы, мозг сканера проверяет
+   по ним (lab/dz/eyes.js prepareDigit). Замер 7м: Sonnet 5.5 — точки ≈ 0,4 мм, линии 91–100 % в 1 мм, $0,01 за чертёж.
+   EYES_DIGIT_MODEL — другая модель, off — не подключать */
+const DIGIT_MODEL='anthropic/claude-sonnet-5.5';
+const DIGIT_PROMPT=`Ты — оцифровщик чертежей. На фото — лист ДЗ №3 по начертательной геометрии (эпюр Монжа, пирамида SABC): один
+или несколько отдельных чертежей, у каждого своя ось x и своя копия пирамиды. Лист может быть повёрнут. Координаты — в пикселях
+ЭТОГО фото: начало — левый верхний угол, x вправо, y вниз, целые числа. Ничего не оценивай — только перепиши, что начерчено.
+Выпиши построчно, без пояснений и без markdown, для КАЖДОГО чертежа:
+D <часть: 1 — высота (одна замена плоскостей), 2 — угол граней (две замены), 3 — истинный вид ABC (вращение вокруг h или f),
+  4 — угол SA с основанием (вращение плоскости); 0 — только условие или не понять> — строка начинает чертёж;
+T <x> <y> <текст> — каждая записанная надпись этого чертежа как написано (H=28, φ=25°, h″∥X, n′⊥h′ …);
+P <подпись> <x> <y> — каждая подписанная точка: подпись как на чертеже (A″, B′, S₄, A₀, 1″ …) и где сама точка, не текст;
+S <x1> <y1> <x2> <y2> — каждый прямой отрезок чертежа от конца до конца: рёбра, оси, тонкие линии связи и построения;
+  штриховой (невидимый) — с буквой d в конце: S <x1> <y1> <x2> <y2> d. Отрезок, прерванный точкой, можно дать одним.
+Дуги, клетки бумаги, рамку и бланк не пиши. Не выдумывай: чего не видно — не пиши.`;   /* замер 29.10 (6 листов): часть опознана 12 из 14, неверно 0, ложных 0, $0,031 за лист */
 
 const PROMPT=`Ты — глаза сканера домашних заданий по начертательной геометрии (эпюр Монжа). Ничего не оценивай и не решай —
 только скажи, ГДЕ на фото каждый чертёж и КАКАЯ это часть задания. Всё измеряет и проверяет сканер по линиям.
@@ -49,6 +64,10 @@ function eyesFromEnv(env){ env=env||process.env; const folder=env.EYES_FOLDER||e
   const bm=env.EYES_BEST_MODEL===undefined?BEST_MODEL:env.EYES_BEST_MODEL, bk=env.OPENROUTER_API_KEY||'';
   cfg.best=env.EYES!=='off'&&bm&&bk&&bm!=='off'?eyesFromEnv({EYES_URL:env.EYES_BEST_URL||OR_URL,EYES_MODEL:bm,OPENROUTER_API_KEY:bk,EYES_OPTS:env.EYES_BEST_OPTS,EYES_BEST_MODEL:'off'}):null;
   cfg.best=cfg.best&&cfg.best.on?cfg.best:null; cfg.on=cfg.on||!!cfg.best;
+  /* оцифровщик (зарубежный, OpenRouter): только с согласием, как лучшая модель */
+  const dm=env.EYES_DIGIT_MODEL===undefined?DIGIT_MODEL:env.EYES_DIGIT_MODEL;
+  cfg.digit=env.EYES!=='off'&&dm&&bk&&dm!=='off'&&!env.EYES_DIGIT_NESTED?eyesFromEnv({EYES_URL:OR_URL,EYES_MODEL:dm,OPENROUTER_API_KEY:bk,EYES_BEST_MODEL:'off',EYES_DIGIT_NESTED:'1'}):null;
+  cfg.digit=cfg.digit&&cfg.digit.on?cfg.digit:null; cfg.on=cfg.on||!!cfg.digit;
   cfg.bestFor=env.EYES_BEST_FOR==='admin'?'admin':'all'; cfg.bestDefault=env.EYES_BEST_DEFAULT==='1';
   return cfg; }
 /* OpenRouter: модели с рассуждением (Gemini 3, GPT-5) — коротко, иначе ответ через минуту; usage.cost — цена запроса */
@@ -90,6 +109,13 @@ async function askAny(cfg,q,o){ o=o||{}; const main=cfg.best&&q.consent?cfg.best
   if(cfg.foreign&&!q.consent) throw Object.assign(new Error('Модель зрения — зарубежная: нужно согласие на отправку фото.'),{status:403});
   return ask(cfg,q,o); }
 
+/* askDigit(cfg, {image, w, h, n, part, consent}) — оцифровка чертежа моделью (cfg.digit). Только с согласием: модель
+   зарубежная. part — часть, которую выбрал студент (1–4): тогда только этот чертёж → {text, model, info} */
+async function askDigit(cfg,q,o){ o=o||{}; if(!cfg.digit) throw Object.assign(new Error('Оцифровка моделью не подключена.'),{status:503});
+  if(!q.consent) throw Object.assign(new Error('Оцифровка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
+  const text='Размер фото: '+q.w+' × '+q.h+' px.'+(q.n?' Вариант '+q.n+'.':'')+(q.part?' Нужна только часть '+q.part+': выпиши один этот чертёж (D '+q.part+').':'');
+  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:DIGIT_PROMPT,text,opts:{max_tokens:6000}},Object.assign({},o,{timeout:o.timeout||50000})); }
+
 /* какая модель зрения в каталоге видит картинку: развёртывание (server/tools/deploy.js) пробует по очереди и подключает первую.
    Не все модели AI Studio есть в синхронном режиме (на остальные Yandex отвечает 400/403), а текстовая модель может ответить
    и без картинки — поэтому пробное фото с вопросом, на который без зрения не ответить: сколько на нём закрашенных кругов */
@@ -121,4 +147,4 @@ async function tune(env,image,o){ const cfg=eyesFromEnv(env), res=[];
   const best=good&&good.think>0?Object.assign({},good,{opts:Object.assign({max_tokens:8000},good.opts)}):good;
   return {best,results:res}; }
 
-module.exports={eyesFromEnv,ask,askAny,orOpts,OR_URL,BEST_MODEL,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};
+module.exports={eyesFromEnv,ask,askAny,askDigit,DIGIT_MODEL,DIGIT_PROMPT,orOpts,OR_URL,BEST_MODEL,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};

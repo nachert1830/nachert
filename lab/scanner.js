@@ -49,13 +49,14 @@ window.addEventListener('message',e=>{ const d=e.data; if(e.origin!==location.or
   if(d.type==='nch-eyes-r'&&aiWait[d.id]){ aiWait[d.id](d); delete aiWait[d.id]; } });
 S.aiPing=cb=>{ aiCb=cb; if(PARENT) try{ PARENT.postMessage({type:'nch-eyes-ping'},location.origin); }catch(e){} };
 /* снимок → JPEG, длинная сторона 1280 px (модели хватает, запрос лёгкий); consent — можно зарубежной модели */
-S.askEyes=(img,dz,n,consent)=>{ if(!PARENT||!S.ai.on) return Promise.resolve({ok:false,error:'ИИ-зрение недоступно'});
-  const W=img.width, H=img.height, k=Math.min(1,1280/Math.max(W,H)), c=document.createElement('canvas'); c.width=Math.round(W*k); c.height=Math.round(H*k);
+/* opt.mode='digit' — оцифровка чертежа целиком (Claude Sonnet): фото крупнее (1568 px), opt.part — выбранная часть 1–4 */
+S.askEyes=(img,dz,n,consent,opt)=>{ opt=opt||{}; if(!PARENT||!S.ai.on) return Promise.resolve({ok:false,error:'ИИ-зрение недоступно'});
+  const W=img.width, H=img.height, k=Math.min(1,(opt.mode==='digit'?1568:1280)/Math.max(W,H)), c=document.createElement('canvas'); c.width=Math.round(W*k); c.height=Math.round(H*k);
   if(img.getContext) c.getContext('2d').drawImage(img,0,0,c.width,c.height); else { const t=document.createElement('canvas'); t.width=W; t.height=H; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(img.data.buffer||img.data),W,H),0,0); c.getContext('2d').drawImage(t,0,0,c.width,c.height); }
-  const id=++aiSeq, url=c.toDataURL('image/jpeg',0.85);
+  const id=++aiSeq, url=c.toDataURL('image/jpeg',opt.mode==='digit'?0.9:0.85);
   return new Promise(res=>{ const to=setTimeout(()=>{ delete aiWait[id]; res({ok:false,error:'модель не ответила за минуту'}); },65000);
     aiWait[id]=d=>{ clearTimeout(to); if(d.ok&&d.model) S.ai.model=d.model; res(Object.assign(d,{scale:k})); };
-    PARENT.postMessage({type:'nch-eyes',id,img:url,w:c.width,h:c.height,dz,n,consent:!!consent},location.origin); }); };
+    PARENT.postMessage({type:'nch-eyes',id,img:url,w:c.width,h:c.height,dz,n,consent:!!consent,mode:opt.mode,part:opt.part},location.origin); }); };
 S.modelName=m=>String(m||'').replace(/^gpt:\/\/[^/]+\//,'').replace(/\/latest$/,'');
 
 /* ── вердикт → тон: ok — верно, bad — ошибка, calm — не могу утверждать (спокойно, это просьба, а не поломка) ── */

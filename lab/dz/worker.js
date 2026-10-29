@@ -46,7 +46,29 @@ function closeMode(d){ const CU=self.LAB.dzCloseup, t0=Date.now();
   if(d.mode==='overview'){ const r=CU.overview(d.img,{n:d.n,answers:d.answers}); OV=r.ok?{img:d.img,drawings:r.drawings}:null; HINTS=null;
     return {overview:r.ok?{ok:true,drawings:r.drawings.map(q=>({c:q.c,box:q.box,ppm:q.ppm,pos:q.pos,title:q.title,A:q.A})),frames:r.frames}:{ok:false,reason:r.reason},ms:Date.now()-t0}; }
   const r=CU.close(d.img,OV,{n:d.n,answers:d.answers,want:d.want,hints:HINTS}); return {close:r.ok?{ok:true,got:r.got}:{ok:false,reason:r.reason,ppm:r.ppm},want:d.want,ms:Date.now()-t0}; }
+/* оцифровка моделью (Claude Sonnet, eyes.js parseDigit): каждый чертёж ответа → мозг по его линиям (gridsheet.js digit).
+   Выбрана часть — только её чертёж. Ответы, которые студент ввёл сам, важнее прочитанных моделью. Ничего не сложилось —
+   {digitFail}: страница проверит по линиям, как обычно */
+function digitMode(d){ const EY=self.LAB.dzEyes, GS=self.LAB.dzGridSheet, t0=Date.now(), P=EY.parseDigit(d.digit,d.digitScale||1);
+  if(P.error) return {digitFail:P.error};
+  let ds=P.drawings; if(d.part){ const own=ds.filter(q=>q.part===d.part); ds=own.length?own:ds.length===1?ds:ds.filter(q=>!q.part); }
+  if(!ds.length) return {digitFail:'модель не нашла чертёж части '+({a:1,b:2,c:3,d:4}[d.part])};
+  const typed=Object.fromEntries(Object.entries(d.answers||{}).filter(([k,v])=>v!=null&&!isNaN(v)));
+  const PN={a:'1) высота',b:'2) угол граней',c:'3) истинный вид',d:'4) угол SA'}, NM={H:'H',phi:'φ',dih:'угол граней'};
+  const rs=ds.map(q=>{ const answers=Object.assign({},q.answers,typed); let g;
+    try{ g=GS.checkGridPhoto(d.img,{dz:3,n:+d.n,answers,part:d.part||null,digit:q,eyes:{pts:q.pts},partHint:d.part?null:q.part,cleaner:false}); }catch(err){ g={ok:false,verdict:'не могу прочитать',why:['ошибка разбора: '+String(err&&err.message||err)]}; }
+    const read=Object.entries(q.answers).filter(([k])=>typed[k]==null).map(([k,v])=>NM[k]+' = '+String(v).replace('.',','));
+    if(read.length) g.why=(g.why||[]).concat(['модель прочитала на листе ответ: '+read.join(', ')+' — проверен']);
+    return {g,q}; });
+  if(!rs.some(x=>x.g.ok)) return {digitFail:rs.map(x=>(x.g.why||[])[0]).filter(Boolean).join('; ')||'оцифровка не сложилась'};
+  const drawings=rs.map(({g,q},i)=>Object.assign(gridOut(g),{title:'Чертёж '+(i+1)+(d.part?' — '+PN[d.part]:partOf(g)?' — '+PN[partOf(g)]:q.part?' — '+PN[q.part]+' (по модели)':'')}));
+  const eyesPts=rs.map(({g,q},j)=>{ let O=null; try{ if(g._grid&&g.given) O=g._grid.map(g.given.O[0],g.given.O[1]); }catch(x){}
+    const xs=q.segs.flatMap(s=>[s.a,s.b]), box=xs.length?[Math.min(...xs.map(p=>p[0])),Math.min(...xs.map(p=>p[1])),Math.max(...xs.map(p=>p[0])),Math.max(...xs.map(p=>p[1]))]:null;
+    return {pts:q.pts,box,v:g.verdict,fig:drawings[j].fig,O}; });
+  const vs=rs.map(x=>x.g.verdict), verdict=vs.some(v=>v==='ошибка')?'ошибка':vs.some(v=>v==='ошибка в данных')?'ошибка в данных':vs.length&&vs.every(v=>v==='верно'||v==='данные нанесены верно')?'верно':'не могу утверждать';
+  return {verdict,why:['оцифровка — '+String(d.digitModel||'модель').replace(/^anthropic\//,'')+': чертежей '+ds.length+(d.part?' (часть '+({a:1,b:2,c:3,d:4}[d.part])+')':'')].concat(rs.map(({g},i)=>'чертёж '+(i+1)+': '+g.verdict+(g.ok===false&&g.why&&g.why[0]?' — '+g.why[0]:''))),drawings,eyesPts,stage:'оцифровка',ms:Date.now()-t0}; }
 self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now(); let r;
+  if(mode==='digit'){ try{ self.postMessage(digitMode(e.data)); }catch(err){ self.postMessage({digitFail:'сбой: '+String(err&&err.message||err)}); } return; }
   if(mode==='overview'||mode==='close'||mode==='hints'){ try{ self.postMessage(closeMode(e.data)); }catch(err){ self.postMessage({error:String(err&&err.stack||err),want:e.data.want,mode}); }
     /* пока студент подносит телефон — линии чертежей общего снимка для опознания (sameDrawing кэширует их) */
     if(mode==='overview'&&OV&&OV.drawings.length) setTimeout(()=>{ try{ self.LAB.dzEyes.sameDrawing({img:OV.img,A:OV.drawings[0].A},OV,{dz:3,n}); }catch(x){} },0); return; }

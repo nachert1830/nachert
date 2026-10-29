@@ -45,7 +45,12 @@
       </div>
       <div class="airow" id="aiRow" hidden>
         <label class="tg"><input type="checkbox" id="ai" checked><span><b>ИИ-зрение</b> подскажет, где какой чертёж и какая часть; проверяет сканер по линиям</span></label>
+        <label class="tg sub"><input type="checkbox" id="aiDigit" checked><span><b>Оцифровка Claude Sonnet</b> — модель переписывает весь чертёж (точки, линии, ответы), сканер проверяет по нему; нужна отметка ниже <span class="note">(≈ 1 ₽ за чертёж, 10–20 с)</span></span></label>
         <label class="tg sub"><input type="checkbox" id="aiFar"><span>Лист мой — можно точнее, зарубежной моделью <span class="note">(фото уйдёт через OpenRouter, не сохраняется; без отметки — только Yandex Cloud)</span></span></label>
+      </div>
+      <div class="field" style="margin:0 0 14px">
+        <span class="lbl" id="partL">Какую часть проверить: 1 — высота, 2 — угол граней, 3 — истинный вид ABC, 4 — угол SA</span>
+        <div class="seg" role="group" aria-labelledby="partL" id="partSeg"><button type="button" data-v="" aria-pressed="true">Все</button><button type="button" data-v="a" aria-pressed="false" title="1) высота H">1</button><button type="button" data-v="b" aria-pressed="false" title="2) угол граней">2</button><button type="button" data-v="c" aria-pressed="false" title="3) истинный вид ABC">3</button><button type="button" data-v="d" aria-pressed="false" title="4) угол SA, φ">4</button></div>
       </div>
       <div class="go">
         <button class="btn pri big wide" id="start" type="button" data-i="cam">Сканировать</button>
@@ -126,6 +131,13 @@ $('nAuto').onclick=()=>{ $('n').value=''; showVar(); }; showVar();
 /* ИИ-зрение — включено по умолчанию, если страница открыта в кабинете; согласие на зарубежную модель — запоминается */
 SC.aiPing(on=>{ $('aiRow').hidden=!on; }); try{ $('aiFar').checked=localStorage.getItem('nch_ai_far')==='1'; }catch(e){}
 $('aiFar').onchange=()=>{ try{ localStorage.setItem('nch_ai_far',$('aiFar').checked?'1':'0'); }catch(e){} };
+try{ $('aiDigit').checked=localStorage.getItem('nch_ai_digit')!=='0'; }catch(e){}
+$('aiDigit').onchange=()=>{ try{ localStorage.setItem('nch_ai_digit',$('aiDigit').checked?'1':'0'); }catch(e){} };
+/* какую часть проверить: кнопки на виду ↔ список в «Ещё настройки» */
+const syncPart=()=>[...$('partSeg').children].forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===$('part').value)));
+$('partSeg').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; $('part').value=b.dataset.v; syncPart(); }; $('part').addEventListener('change',syncPart);
+/* оцифровка моделью: ИИ-зрение в кабинете, отметка «оцифровка» и согласие на зарубежную модель, номер варианта */
+const useDigit=()=>SC.ai.on&&$('ai').checked&&$('aiDigit').checked&&$('aiFar').checked&&!!nVal();
 const useAi=()=>SC.ai.on&&$('ai').checked, AI={note:null,model:'',hints:null};
 const aiAsk=img=>SC.askEyes(img,3,nVal(),$('aiFar').checked).then(a=>{ if(a.ok){ AI.model=a.model||''; AI.note='ИИ-зрение ('+SC.modelName(a.model)+') ответило'+(a.fallback?' — запасная модель':''); } else AI.note='ИИ-зрение недоступно ('+(a.error||'нет ответа')+') — проверено своими глазами'; return a; });
 $('howSeg').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; $('how').value=b.dataset.v; [...$('howSeg').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b))); };
@@ -276,7 +288,8 @@ function stopCam(){ SC.full(false); if(loop) clearTimeout(loop); loop=null; if(s
 function reset(){ AI.note=null; AI.hints=null; frames=[]; shots=[]; queue.length=0; done=false; prev=null; D=null; UP=null; if(W){ W.stop(); W=null; } if(worker){ worker.terminate(); worker=null; busy=0; } }
 /* после примера — вариант студента, как был (пример ставит свой) */
 function toStart(){ const nPrev=UP&&UP.demo?UP.nPrev:null; stopCam(); reset(); if(nPrev!=null){ $('n').value=nPrev; showVar(); } SC.screen('scrStart'); }
-$('start').onclick=startCam;
+/* с оцифровкой моделью — один снимок (камера телефона или файл) вместо серии: модели нужно одно резкое фото */
+$('start').onclick=()=>{ if(useDigit()){ const f=$('file'); f.setAttribute('capture','environment'); f.click(); setTimeout(()=>f.removeAttribute('capture'),1000); return; } startCam(); };
 $('stop').onclick=()=>{ const d=D; stopCam(); if(d&&d.ov&&d.sess&&(d.phase==='close'||d.phase==='wait2')){ if(d.pend.some(x=>x)){ d.phase='wait2'; waitDraw(); } else finish(); return; }
   if(!d&&frames.length){ done=true; if(!busy&&!queue.length) seriesResult(SR.combine(frames)); else { W=SC.Wait({img:shots[0]&&shots[0].img,steps:[{k:'photo',t:'Кадры сняты'},{k:'check',t:'Проверяю кадры'},{k:'done',t:'Собираю результат'}]}); SC.screen('scrWait'); W.set('check','now'); } return; }
   toStart(); };
@@ -286,7 +299,7 @@ $('camErrX').onclick=toStart;
 let UP=null;
 async function upload(f){ if(!f) return; stopCam(); reset(); let src; try{ src=await SC.fileToCanvas(f,LONG); }catch(e){ SC.toast(e.message||'Файл не открылся'); SC.screen('scrStart'); return; }
   checkSheet(src); }
-async function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo}; const ai=!demo&&useAi(), steps=SC.waitSteps(); if(ai) steps.splice(1,0,{k:'eyes',t:'ИИ-зрение смотрит лист'});
+async function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo}; if(!demo&&useDigit()) return digitSheet(src,n); const ai=!demo&&useAi(), steps=SC.waitSteps(); if(ai) steps.splice(1,0,{k:'eyes',t:'ИИ-зрение смотрит лист'});
   W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done');
   let eyes=null, sc=1; if(ai){ W.set('eyes','now'); const a=await aiAsk(src); if(!W) return; if(a.ok){ eyes=a.text; sc=a.scale; } W.set('eyes','done',{t:a.ok?'ИИ-зрение ответило ('+SC.modelName(a.model)+')':'ИИ-зрение недоступно — свои глаза'}); }
   W.set('sheet','now');
@@ -294,6 +307,21 @@ async function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo}; const ai=!
     if(m.error){ SC.toast('Сбой проверки: '+m.error.split('\n')[0]); }
     UP.r=m; showUp(); };
   worker.postMessage({img:SC.imageData(src),dz:3,n,paper:demo?'plain':'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},eyes,eyesScale:sc,eyesModel:AI.model}); }
+/* фото → Claude Sonnet оцифровывает чертёж(и) → мозг проверяет по оцифровке (eyes.js prepareDigit → gridsheet.js).
+   Модель не ответила или оцифровка не сложилась — обычная проверка по линиям */
+async function digitSheet(src,n){ const part=$('part').value||'', steps=[{k:'photo',t:'Фото'},{k:'eyes',t:'Claude Sonnet оцифровывает чертёж'},{k:'sheet',t:'Сканер проверяет построение'},{k:'done',t:'Готово'}];
+  W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('eyes','now');
+  const a=await SC.askEyes(src,3,n,true,{mode:'digit',part:{a:1,b:2,c:3,d:4}[part]}); if(!W) return;
+  if(!a.ok){ W.set('eyes','done',{t:'Оцифровка недоступна — проверяю по линиям'}); AI.note='оцифровка моделью недоступна ('+(a.error||'нет ответа')+')'; W.stop(); W=null; return checkSheetPlain(src); }
+  AI.model=a.model||''; AI.note='Оцифровка: '+SC.modelName(a.model); W.set('eyes','done',{t:'Чертёж оцифрован ('+SC.modelName(a.model)+')'}); W.set('sheet','now');
+  ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } if(!W) return; W.set('done','done'); W.stop(); W=null;
+    if(m.error){ SC.toast('Сбой проверки: '+m.error.split('\n')[0]); }
+    if(m.digitFail){ AI.note='оцифровка не сложилась: '+m.digitFail; return checkSheetPlain(src); }
+    UP.r=m; showUp(); };
+  worker.postMessage({mode:'digit',img:SC.imageData(src),dz:3,n,part:part||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},digit:a.text,digitScale:a.scale,digitModel:a.model}); }
+async function checkSheetPlain(src){ const n=UP.n; const steps=SC.waitSteps(); W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('sheet','now');
+  ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } W.set('done','done'); W.stop(); W=null; if(m.error) SC.toast('Сбой проверки: '+m.error.split('\n')[0]); UP.r=m; showUp(); };
+  worker.postMessage({img:SC.imageData(src),dz:3,n,paper:'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
 function showUp(){ const r=UP.r||{}, ds=UP.ds||(r.cam?SC.fromSession(r.R,r.ov.drawings):SC.fromWorker(r));
   SC.renderResult({ds,src:UP.src,variant:UP.n||null,demo:UP.demo,onReshoot:UP.demo?()=>SC.toast('Это пример — переснять можно настоящий лист'):reshoot,onNew:toStart,
     onRerun:UP.demo&&!r.cam?()=>{ const s=UP.src, d=UP.demo; reset(); checkSheet(s,d); }:null,

@@ -339,6 +339,59 @@ function prepareEyes(img,drawing,o){ o=o||{}; const dz=+o.dz||3, why=[], C=L('ca
   Object.entries(drawing.pts).forEach(([l,p])=>{ const q=[p[0]-A[2],p[1]-A[5]], m=[(A[4]*q[0]-A[1]*q[1])/d,(-A[3]*q[0]+A[0]*q[1])/d], f=H.apply(Hmi,m); eyesMm[l]=[f[0]+b.cO[0],f[1]+b.cO[1]]; });
   return {ok:true,scan:dg.sc,dig:dg.dig,box:b.box,map:b.map,origin:b.cO,n:b.c.n,eyesMm,cover:b.last.cal.cover,second:b2?b2.last.cal.cover:0,why,cands:b.last.cands,ppmPhoto:s,fit:b.fit,eyesOut:b.c.b.out.map(q=>q.l)}; }
 
+/* ── оцифровка моделью (Claude Sonnet, server/lib/eyes.js DIGIT_PROMPT): модель выписывает весь чертёж — точки с
+   подписями, отрезки, записанные ответы; мозг работает с этой оцифровкой вместо линий lines.js (замер 7м: точки
+   ≈ 0,4 мм, линии 91–100 % в 1 мм; тонкие построения бывают пропущены — тогда часть «не могу утверждать», а не «ошибка»).
+   Формат ответа: «D <часть 1–4 | 0>» — начало блока чертежа; «P <подпись> x y», «S x1 y1 x2 y2 [d — штриховая]»,
+   «T x y текст» (px присланного фото). Без строк D — один чертёж.
+   parseDigit(text, k — во сколько раз присланное фото меньше снимка) → {drawings:[{part, pts, segs, texts, answers}]} | {error} */
+function parseDigit(text,k){ k=k||1; const out=[]; let cur=null, num='(-?\\d+(?:[.,]\\d+)?)'; const nb=s=>+String(s).replace(',','.')/k;
+  const open=part=>{ cur={part:({'1':'a','2':'b','3':'c','4':'d'})[part]||null,pts:{},raw:{},segs:[],texts:[]}; out.push(cur); };
+  String(text||'').replace(/```\w*/g,'').split(/\r?\n/).forEach(line=>{ const s=line.replace(/[*`|]/g,' ').replace(/[(),;]/g,' ').trim(); let m;
+    if((m=s.match(/^D\s*(\d)?/))&&/^D(\s|$)/.test(s)){ open(m[1]); return; }
+    if((m=s.match(new RegExp('^P\\s+(\\S+)\\s+'+num+'\\s+'+num)))){ if(!cur) open(null); const q=label(m[1]), p=[nb(m[2]),nb(m[3])]; cur.raw[m[1]]=p; if(q) cur.pts[key(q)]=p; return; }
+    if((m=s.match(new RegExp('^S\\s+'+num+'\\s+'+num+'\\s+'+num+'\\s+'+num+'(\\s+[dDшШ])?')))){ if(!cur) open(null); cur.segs.push({a:[nb(m[1]),nb(m[2])],b:[nb(m[3]),nb(m[4])],dash:!!m[5]}); return; }
+    if((m=s.match(new RegExp('^T\\s+'+num+'\\s+'+num+'\\s+(.+)$')))){ if(!cur) open(null); cur.texts.push({p:[nb(m[1]),nb(m[2])],s:m[3].trim()}); } });
+  const drawings=out.filter(d=>d.segs.length||Object.keys(d.pts).length);
+  /* записанные ответы: H = 28 → высота; φ = 25° → угол SA; угол граней — β/α/∠ (только у части 2) */
+  drawings.forEach(d=>{ const A={}; d.texts.forEach(t=>{ const v=t.s.replace(/\s+/g,''), g=re=>{ const m=v.match(re); return m?+m[1].replace(',','.'):null; };
+      const H=g(/^H=(\d+(?:[.,]\d+)?)/i), phi=g(/^[φϕΦ]=(\d+(?:[.,]\d+)?)/), dih=g(/^[βαθ∠]=(\d+(?:[.,]\d+)?)/);
+      if(H!=null) A.H=H; if(phi!=null) A.phi=phi; if(dih!=null&&d.part==='b') A.dih=dih; }); d.answers=A; });
+  return drawings.length?{drawings}:{error:'модель не выписала ни точек, ни линий'}; }
+
+/* линии модели → оцифровка «как от lines.js» (мм поля чертежа): привязка по точкам условия (их мм известны из варианта) —
+   аффинное, затем гомография (перспектива); отрезки — в мм; карта гребней — растр отрезков 8 px/мм (штриховые — штрихами,
+   чтобы видимость проверялась как обычно).
+   prepareDigit(img, drawing (parseDigit), {dz, n}) → как prepareEyes: {ok, reason, scan, dig, box, map, origin, n, eyesMm, why[], cands, ppmPhoto, fit, range} */
+function prepareDigit(img,drawing,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o.n), why=[], PPM=8;
+  if(!gv) return {ok:false,reason:'для оцифровки моделью нужен номер варианта'};
+  const P=pairs(drawing,gv.id,gv.data), b=P.length>=4?bindAffine(P,{tol:3}):null;
+  if(!b||b.inl.length<4) return {ok:false,reason:'точки условия, которые выписала модель, не складываются в условие варианта '+o.n+(b?' (согласны '+b.inl.length+' из '+P.length+')':' (подписанных точек условия '+P.length+')')};
+  /* перспектива: гомография по согласным точкам условия (допуск 1,5 мм); мало точек — аффинное */
+  const s=b.s, hb=bindHom(P,1.5*s), Aff=[b.A[0],b.A[1],b.A[2],b.A[3],b.A[4],b.A[5],0,0,1], M=hb?hb.M:Aff, Mi=H.inv(M), toM=p=>H.apply(Mi,p);
+  why.push('оцифровка моделью: точек условия согласно с вариантом '+(hb?hb.inl.length:b.inl.length)+' из '+P.length+(hb?', перспектива — по ним (СКО '+f1(hb.rms/s)+' мм)':', привязка аффинная')+'; линий '+drawing.segs.length+(b.out.length?'; не на своих местах — '+b.out.map(q=>q.l).join(', '):''));
+  /* поле: фигура условия и линии модели рядом с ней (± 120 × 100 мм), не больше 360 × 300 */
+  const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), bb=Q=>[Math.min(...Q.map(p=>p[0])),Math.min(...Q.map(p=>p[1])),Math.max(...Q.map(p=>p[0])),Math.max(...Q.map(p=>p[1]))], F=bb(fig);
+  const near=p=>p[0]>=F[0]-120&&p[0]<=F[2]+120&&p[1]>=F[1]-100&&p[1]<=F[3]+100;
+  const segsM=drawing.segs.map(q=>({a:toM(q.a),b:toM(q.b),dash:q.dash})).filter(q=>near(q.a)&&near(q.b)&&Math.hypot(q.b[0]-q.a[0],q.b[1]-q.a[1])>=1.5);
+  const Bx=bb(fig.concat(segsM.flatMap(q=>[q.a,q.b])));
+  let u0=Bx[0]-6, v0=Bx[1]-6, u1=Bx[2]+6, v1=Bx[3]+6; if(u1-u0>360){ const m=(F[0]+F[2])/2; u0=m-180; u1=m+180; } if(v1-v0>300){ const m=(F[1]+F[3])/2; v0=m-150; v1=m+150; }
+  const cO=[-Math.floor(u0),-Math.floor(v0)], box=[0,0,Math.ceil(u1-u0),Math.ceil(v1-v0)], sh=p=>[p[0]+cO[0],p[1]+cO[1]];
+  /* растр: линия ≈ 0,4 мм; штриховая — штрихи 3 мм через 1,5 мм */
+  const w=box[2]*PPM, hgt=box[3]*PPM, a=new Float32Array(w*hgt);
+  const dot=(x,y)=>{ for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<w&&Y<hgt) a[Y*w+X]=1; } };
+  const segs=segsM.map(q=>{ const A=sh(q.a), B=sh(q.b), L=Math.hypot(B[0]-A[0],B[1]-A[1]), n=Math.ceil(L*PPM*2);
+    for(let i=0;i<=n;i++){ const t=i/n; if(q.dash&&((t*L)%4.5)>3) continue; dot((A[0]+(B[0]-A[0])*t)*PPM,(A[1]+(B[1]-A[1])*t)*PPM); }
+    return {a:A,b:B,len:L,k:q.dash?'dash':'main',str:1,dark:1,weight:L,fill:q.dash?0.66:1,sd:0.2}; });
+  const gr={w,h:hgt,a,ppm:PPM,box}, map={g:gr,box,R:a,tR:0.5,mask:null,C:null,nx:null,ny:null,tLow:0.3,O:[0,0]};
+  const mapPx=(u,v)=>H.apply(M,[u-cO[0],v-cO[1]]);
+  /* снимок поля (для разбора поверх фото и отчёта) — грубо, 2 px/мм */
+  let scan=null; try{ scan=L('grid').rectify(img,{map:mapPx,box},{ppm:2,box}); }catch(e){ scan={img:IMG.rgba(1,1),box,ppm:2}; }
+  /* где модель видела точки условия — в мм поля (сверка «нанесено неточно» в gridsheet.js) */
+  const eyesMm={}; Object.entries(drawing.pts).forEach(([l,p])=>{ eyesMm[l]=sh(toM(p)); });
+  return {ok:true,scan,dig:{ok:true,origin:'page',O:[0,0],box,segs,map},box,map:mapPx,origin:cO,n:+o.n,eyesMm,cover:1,second:0,why,cands:L('gridsheet').axesCands(segs),ppmPhoto:s,
+    fit:hb?{n:hb.inl.length,of:P.length,rms:hb.rms/s,out:hb.out.map(q=>q.l)}:null,range:[cO[0]-3,cO[1]-3,cO[0]+3,cO[1]+3],digit:true}; }
+
 /* ── лист в клетку: метрику даёт сетка (точнее), глаза — только где чертёж, его O и вариант ──
    gridEyes(g (сетка: мм листа → px), drawing, {dz, n, box}) → {ok, reason, n, cand:[n…], eyesMm, O (мм листа)} */
 function gridEyes(g,drawing,o){ const dz=+o.dz||3, B=o.box, src=[], dst=[];
@@ -385,7 +438,7 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   if(dups) why.push('у ИИ-зрения '+dups+' рамк'+(dups>1?'и':'а')+' вокруг уже найденного чертежа — не считаю дважды');
   return {ok:out.some(r=>r.ok),verdict,dz,n:out.find(r=>r.n)?out.find(r=>r.n).n:n,drawings:out,why,ms:Date.now()-t0}; }
 
-put('dzEyes',{parse,label,rescale,scalePrior,SCALES,prepareEyes,gridEyes,checkEyes,findDrawings,sameDrawing,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
+put('dzEyes',{parseDigit,prepareDigit,parse,label,rescale,scalePrior,SCALES,prepareEyes,gridEyes,checkEyes,findDrawings,sameDrawing,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
 })();
 /* node lab/dz/eyes.js фото.png глаза.json [--n=9] — проверка фото по ответу глаз (JSON или текст ответа модели) */
 if(typeof module!=='undefined'&&require.main===module){ const a=Object.fromEntries(process.argv.slice(4).map(x=>x.replace(/^--/,'').split('='))), fs=require('fs'), IMG=require('../img.js'), E=module.exports;

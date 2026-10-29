@@ -1,0 +1,47 @@
+name: Оцифровка чертежа большой моделью
+# Синтетический снимок вблизи одного чертежа ДЗ №3 (quadsynth.js, правда известна) → модель через OpenRouter выписывает
+# точки с подписями и все отрезки в px → сравнение с правдой в мм (lab/dz/digit-eval.js). Весь прогон — не дороже $0,095:
+# max_tokens каждого запроса урезается под остаток предела. Ничего не развёртывает; уходит только синтетический лист.
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: 'модели OpenRouter через запятую (по порядку; на что не хватит предела — пропускаются)'
+        required: false
+        default: 'anthropic/claude-opus-5.5,anthropic/claude-sonnet-5.5,google/gemini-3.1-pro-preview'
+      sheet:
+        description: 'лист: вариант, seed, ошибка студента (n=9 seed=12 err=a_dir — ось x₁₄ не ⟂ h′; n=21 seed=13 — без ошибки)'
+        required: false
+        default: '--n=9 --seed=12 --err=a_dir'
+      limit:
+        description: 'предел $ на весь прогон'
+        required: false
+        default: '0.047'
+      views:
+        description: 'снимки вблизи: 0 — часть 1, 1 — часть 2, 2 — только условие, 3 — часть 4'
+        required: false
+        default: '0'
+permissions:
+  contents: read
+concurrency:
+  group: digit-eval
+  cancel-in-progress: false
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Замер
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: node lab/dz/digit-eval.js --models="${{ github.event.inputs.models || 'anthropic/claude-opus-5.5,anthropic/claude-sonnet-5.5,google/gemini-3.1-pro-preview' }}" ${{ github.event.inputs.sheet || '--n=9 --seed=12 --err=a_dir' }} --views="${{ github.event.inputs.views || '0' }}" --limit="${{ github.event.inputs.limit || '0.047' }}" --out=digit-eval.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: digit-eval
+          path: digit-eval.json
+          if-no-files-found: ignore
