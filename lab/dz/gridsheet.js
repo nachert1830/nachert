@@ -38,7 +38,8 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
      paper: 'grid' | 'plain' | 'auto' (по умолчанию: сетка, а если её нет — чистый лист) */
   const mode=o.paper||'auto', G=L('grid'), C=L('calib');
   /* o.eyes — один чертёж от глаз (eyes.js): точки условия с подписями, примерно; опора — сама фигура условия */
-  let g=mode==='plain'?{ok:false,reason:'чистый лист'}:o.grid||G.findGrid(img), sc, er, box, dig, cands, plain=null, vars=null, cal=null, eyesMm=null, eyesRange=null;
+  /* o.digit — чертёж, оцифрованный моделью (eyes.js parseDigit): линии и точки уже есть, сетка и lines.js не нужны */
+  let g=o.digit?{ok:false,reason:'оцифровка моделью'}:mode==='plain'?{ok:false,reason:'чистый лист'}:o.grid||G.findGrid(img), sc, er, box, dig, cands, plain=null, vars=null, cal=null, eyesMm=null, eyesRange=null;
   if(g.ok){ sc=G.rectify(img,g,{ppm:8}); er=G.eraseGrid(sc); box=sc.box;
     /* второй шанс (o.clean): очиститель видит линии сквозь сетку — на вход скан без стирания */
     const ex=LN.extract(o.clean?sc.img:er.img,{H:sc.H},{sheet:{O:[0,0],roi:box,given:()=>[]},maxIter:300,clean:o.clean}); if(!ex.ok) return {ok:false,verdict:'не могу прочитать',why:[ex.reason],grid:g};
@@ -50,8 +51,8 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
       if(auto){ const vs=ge.cand.map(k=>{ const gk=V.get(dz,k), ck=C.calibrate(dig,{},gk.id,gk.data,{range:eyesRange,np:2,cands}); return {n:k,cover:ck.ok?ck.cover:0,cal:ck}; }).sort((a,b)=>b.cover-a.cover);
         const b=vs[0], b2=vs[1]||{cover:0}; if(!b||b.cover<0.8||b.cover-b2.cover<0.15) return {ok:false,verdict:'не могу прочитать',why:['вариант по чертежу не узнаётся однозначно ('+vs.map(v=>v.n+' — '+Math.round(v.cover*100)+' %').join(', ')+') — укажите номер варианта'],grid:g};
         n=b.n; gv=V.get(dz,n); cal=b.cal; why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(b.cover*100)+' %)'); } } }
-  else if(mode==='grid') return {ok:false,verdict:'не могу прочитать',why:[g.reason+' — снимите лист целиком, сверху, при ровном свете'],grid:g};
-  else { plain=o.eyes?L('eyes').prepareEyes(img,o.eyes,{dz,n:auto?0:n,clean:o.clean}):L('paper').preparePlain(img,{dz,n:auto?0:n,clean:o.clean}); if(plain.ok&&o.eyes) eyesMm=plain.eyesMm; if(!plain.ok) return {ok:false,verdict:'не могу прочитать',why:[plain.reason],grid:g,plain};
+  else if(mode==='grid'&&!o.digit) return {ok:false,verdict:'не могу прочитать',why:[g.reason+' — снимите лист целиком, сверху, при ровном свете'],grid:g};
+  else { plain=o.digit?L('eyes').prepareDigit(img,o.digit,{dz,n}):o.eyes?L('eyes').prepareEyes(img,o.eyes,{dz,n:auto?0:n,clean:o.clean}):L('paper').preparePlain(img,{dz,n:auto?0:n,clean:o.clean}); if(plain.ok&&o.eyes) eyesMm=plain.eyesMm; if(!plain.ok) return {ok:false,verdict:'не могу прочитать',why:[plain.reason],grid:g,plain};
     sc=plain.scan; er={img:sc.img}; box=plain.box; dig=plain.dig; cands=plain.cands; why.push(...plain.why);
     if(auto){ n=plain.n; gv=V.get(dz,n); why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(plain.cover*100)+' %; ближайшая другая гипотеза — '+Math.round(plain.second*100)+' %)'); }
     /* карта и сводка «как у сетки»: мм листа → px снимка */
@@ -65,7 +66,7 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
     vars.sort((a,b)=>(b.cal?1:0)-(a.cal?1:0)||b.cover-a.cover); const b=vars[0], b2=vars[1]||{cover:0};
     if(!b||b.cover<0.8||b.cover-b2.cover<0.15) return {ok:false,verdict:'не могу прочитать',why:['вариант по чертежу не узнаётся однозначно'+(b?' (похожи: '+vars.slice(0,3).map(v=>v.n+' — '+Math.round(v.cover*100)+' %').join(', ')+')':'')+' — укажите номер варианта'],variants:vars.slice(0,5).map(v=>({n:v.n,cover:v.cover})),grid:g,dig,scan:sc};
     n=b.n; gv=V.get(dz,n); why.push('вариант узнан по чертежу: '+n+' (условие на линиях '+Math.round(b.cover*100)+' %; ближайший другой — '+b2.n+': '+Math.round(b2.cover*100)+' %)'); cal=b.cal; }
-  if(!cal) cal=C.calibrate(dig,{},gv.id,gv.data,{range:eyesRange||box,np:2,cands});
+  if(!cal) cal=C.calibrate(dig,{},gv.id,gv.data,{range:eyesRange||(plain&&plain.range)||box,np:2,cands});
   if(!cal.ok||cal.cover<0.45) return {ok:false,verdict:'не могу прочитать',why:['условие варианта '+n+' на листе не узнаётся ('+Math.round((cal.cover||0)*100)+' % фигуры на линиях) — проверьте номер варианта'],grid:g,cal,dig,scan:sc};
   /* заданное как начерчено */
   /* чистый лист: изгиб бумаги не виден — погрешность каждой координаты не меньше 0,5 мм (СКО подгонки сюда не годится:
@@ -74,7 +75,7 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
   const sigFloor=plain?Math.max(0.5,plain.ppmPhoto?2.5/plain.ppmPhoto:0):0;
   const mg=L('given').measureGiven(dig,cal,gv.id,gv.data,{sigFloor}), miss=Object.entries(mg.pts).filter(([l,p])=>p.src==='не найдена').map(([l])=>l);
   const drawnOk=Object.values(mg.drawn).every(p=>p.every(v=>v!=null));
-  const res={ok:true,dz,n,id:gv.id,data:gv.data,paper:o.eyes?'eyes':plain?'plain':'grid',plain:plain?{page:plain.page,flip:plain.flip,quad:plain.quad,fit:plain.fit,ppmPhoto:plain.ppmPhoto}:null,grid:plain?null:{nodes:g.found,cell:g.cell,rms:g.rms,hres:g.hres,ppm0:g.ppm0,dbg:g.dbg},scan:sc,erased:er,dig,cal,given:mg,ms:0};
+  const res={ok:true,dz,n,id:gv.id,data:gv.data,paper:o.digit?'digit':o.eyes?'eyes':plain?'plain':'grid',plain:plain?{page:plain.page,flip:plain.flip,quad:plain.quad,fit:plain.fit,ppmPhoto:plain.ppmPhoto}:null,grid:plain?null:{nodes:g.found,cell:g.cell,rms:g.rms,hres:g.hres,ppm0:g.ppm0,dbg:g.dbg},scan:sc,erased:er,dig,cal,given:mg,ms:0};
   /* карта мм листа → px снимка (для разбора поверх фото) — не перечисляется: результат остаётся «данными» */
   Object.defineProperty(res,'_grid',{value:g,enumerable:false});
   const ref=DZ.solve(gv.id,gv.data); res.ref=ref;

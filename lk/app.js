@@ -441,7 +441,7 @@ const labSrc=L=>L.src+(L.var&&myVariant()?'?n='+myVariant():'');
 window.addEventListener('message',async e=>{ const d=e.data, f=document.querySelector('iframe.labf'); if(e.origin!==location.origin||!d||!f||e.source!==f.contentWindow) return;
   if(d.type==='nch-eyes-ping'){ e.source.postMessage({type:'nch-eyes-pong',on:!!ME},location.origin); return; }
   if(d.type!=='nch-eyes') return; let out;
-  try{ const r=await api('POST','/api/eyes',{img:d.img,w:d.w,h:d.h,dz:d.dz,n:d.n,consent:d.consent===true}); out={ok:true,text:r.text,model:r.model}; }catch(err){ out={ok:false,error:err.message,status:err.status||0}; }
+  try{ const r=await api('POST','/api/eyes',{img:d.img,w:d.w,h:d.h,dz:d.dz,n:d.n,consent:d.consent===true,mode:d.mode==='digit'?'digit':undefined,part:d.part||undefined}); out={ok:true,text:r.text,model:r.model}; }catch(err){ out={ok:false,error:err.message,status:err.status||0}; }
   e.source.postMessage(Object.assign({type:'nch-eyes-r',id:d.id},out),location.origin); });
 /* сканер в кабинете — ровно до нижнего меню: одна прокрутка (внутри сканера), а камера сканера просит весь экран */
 function fitLab(){ const f=document.querySelector('iframe.labf'); if(!f) return; const t=document.querySelector('.tabs'), tb=t&&getComputedStyle(t).bottom==='0px'?t.offsetHeight:0;

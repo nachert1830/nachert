@@ -105,3 +105,14 @@ test('стенд владельца: EYES_BEST_FOR=admin, EYES_BEST_DEFAULT=1 �
   c.ya.best=()=>({status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[5,6,7,8],"part":1}]}'}}]}});
   let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'owner'}); assert.equal(r.data.model,'anthropic/claude-opus-5.5');
   r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,consent:true},{as:'m5001'}); assert.equal(r.status,200); assert.equal(r.data.model,cfg.model); });
+
+test('оцифровка (mode: digit): Claude Sonnet через OpenRouter, только с согласием; выбранная часть — в запросе',async()=>{
+  const cfg=eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key',EYES_BEST_MODEL:'anthropic/claude-opus-5.5',EYES_BEST_FOR:'admin',EYES_BEST_DEFAULT:'1'});
+  assert.equal(cfg.digit.model,'anthropic/claude-sonnet-5.5'); assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key',EYES_DIGIT_MODEL:'off'}).digit,null);
+  const c=club({eyes:cfg,iam:'iam-1'}); await c.owner(); await c.member(5002,'m5002'); const seen=[];
+  c.ya.eyes=()=>({status:200,json:{choices:[{message:{content:'{"drawings":[]}'}}]}});
+  c.ya.best=b=>{ seen.push(b); return {status:200,json:{choices:[{message:{content:'D 1\nP A″ 10 20\nS 1 2 3 4'}}]}}; };
+  let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,n:7,mode:'digit',part:1},{as:'owner'});
+  assert.equal(r.status,200); assert.equal(r.data.mode,'digit'); assert.equal(r.data.model,'anthropic/claude-sonnet-5.5'); assert.match(r.data.text,/^D 1/);
+  assert.equal(seen[0].model,'anthropic/claude-sonnet-5.5'); assert.match(seen[0].messages[0].content,/оцифровщик/); assert.match(seen[0].messages[1].content[0].text,/только часть 1/);
+  r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,n:7,mode:'digit',consent:true},{as:'m5002'}); assert.equal(r.status,403); assert.equal(seen.length,1); });
