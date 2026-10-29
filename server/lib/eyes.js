@@ -18,8 +18,10 @@
 const DEF_URL='https://llm.api.cloud.yandex.net/v1/chat/completions', DEF_MODEL='gpt://{folder}/qwen2.5-vl-32b-instruct', PX_URL='https://api.proxyapi.ru/v1/chat/completions';
 /* OpenRouter — только для замеров в lab/dz (ключ OPENROUTER_API_KEY); кабинет ходит к зарубежным моделям через ProxyAPI */
 const OR_URL='https://openrouter.ai/api/v1/chat/completions';
-/* лучшая модель по замеру (REPORT.md, 7к); EYES_BEST_MODEL — другая, EYES_BEST_MODEL=off — не подключать */
-const BEST_MODEL='anthropic/claude-opus-5-5';
+/* лучшая модель: Sonnet — по замеру (REPORT.md, 7к+) части узнаёт не хуже Opus (13 из 14 против 12), 0 ложных, и вдвое
+   дешевле; а ProxyAPI пускает запрос, только если баланса хватает на его завышенную оценку (фото считается как текст) —
+   у Opus это сотни рублей. EYES_BEST_MODEL — другая, EYES_BEST_MODEL=off — не подключать */
+const BEST_MODEL='anthropic/claude-sonnet-5-5';
 /* оцифровка чертежа целиком (mode: 'digit'): модель выписывает точки, отрезки и записанные ответы, мозг сканера проверяет
    по ним (lab/dz/eyes.js prepareDigit). Замер 7м: Sonnet 5.5 — точки ≈ 0,4 мм, линии 91–100 % в 1 мм, $0,01 за чертёж.
    EYES_DIGIT_MODEL — другая модель, off — не подключать */

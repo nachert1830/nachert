@@ -89,6 +89,8 @@ test('лучшая модель (ProxyAPI) — всем вошедшим, без
   assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',EYES_BEST_MODEL:'google/gemini-3-flash'}).best,null);
   /* ключ OpenRouter кабинету больше не подходит: без PROXYAPI_KEY лучшей модели нет */
   assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key'}).best,null);
+  /* по умолчанию — Sonnet: у Opus оценка ProxyAPI перед запросом больше обычного баланса */
+  assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',PROXYAPI_KEY:'px-key'}).best.model,'anthropic/claude-sonnet-5-5');
   const c=club({eyes:cfg,iam:'iam-1'}); await c.owner(); await c.member(5001,'m5001'); const seen=[];
   c.ya.eyes=b=>{ seen.push('yandex'); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[1,2,3,4]}]}'}}]}}; };
   let sent=null; c.ya.best=b=>{ sent=b; seen.push('best:'+b.model); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[5,6,7,8],"part":2}]}'}}]}}; };
