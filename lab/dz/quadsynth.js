@@ -28,7 +28,7 @@ function sheet(o){ const n=o.n, R=IMG.rng((o.seed||1)*7349+n*13), data=V.get(3,n
     const b=bbox(items.flatMap(itemPts)), O=[x0+6+15-b[0]+R()*Math.max(0,cw-12-(b[2]-b[0]+30)),y0+6+8-b[1]+R()*Math.max(0,ch-12-(b[3]-b[1]+16))];
     groups.push({items,O}); const pts={}; M.given('3',data).pts.forEach(q=>{ pts[q.l]=[O[0]+q.at[0],O[1]+q.at[1]]; }); pts.O=O.slice();
     /* affects — ошибка меняет ответ (a_d: не та точка — не конец прямой A₄B₄C₄, тогда прямая и высота верны, как в test-check3.js) */
-    gt.push({part,built,err:built&&E(part)!=='ok'?E(part):null,affects:built&&E(part)!=='ok'?!(E(part)==='a_d'&&info&&info.affects===false):null,O,pts,box:[O[0]+b[0]-15,O[1]+b[1]-8,O[0]+Math.max(0,b[2])+12,O[1]+b[3]+8]}); });
+    gt.push({part,built,items,err:built&&E(part)!=='ok'?E(part):null,affects:built&&E(part)!=='ok'?!(E(part)==='a_d'&&info&&info.affects===false):null,O,pts,box:[O[0]+b[0]-15,O[1]+b[1]-8,O[0]+Math.max(0,b[2])+12,O[1]+b[3]+8]}); });
   /* o.closeup — ещё снимки каждого чертежа вблизи (как просит камера): его место с полем o.closeup мм, o.closeShots снимков
      каждого (свой ракурс у каждого), размер o.closeSize; s.views[i] — часть i % 4 */
   const pad=b=>[b[0]-o.closeup,b[1]-o.closeup,b[2]+o.closeup,b[3]+o.closeup];
