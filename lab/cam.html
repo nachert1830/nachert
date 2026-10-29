@@ -83,6 +83,18 @@
 <!-- 3. ожидание и 4. результат -->
 <section class="scr" id="scrWait" hidden aria-live="polite"></section>
 <section class="scr" id="scrResult" hidden></section>
+<section class="scr" id="scrFail" hidden aria-live="polite">
+  <div class="panel">
+    <h2 style="margin:0 0 8px;font-size:20px">Проверка не проведена</h2>
+    <p id="failWhy" style="margin:0 0 12px"></p>
+    <p class="note" style="margin:0 0 16px">Проверьте, что на фото ДЗ № 3 указанного варианта и чертёж целиком в кадре.</p>
+    <div class="go">
+      <button class="btn pri big wide" id="failRetry" type="button" data-i="redo">Попробовать ещё раз</button>
+      <button class="btn wide" id="failNew" type="button" data-i="cam">Новое фото</button>
+      <button class="btn wide" id="failBack" type="button" data-i="back">К началу</button>
+    </div>
+  </div>
+</section>
 </main>
 
 <!-- 2. камера -->
@@ -308,20 +320,25 @@ async function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo}; if(!demo&&
     UP.r=m; showUp(); };
   worker.postMessage({img:SC.imageData(src),dz:3,n,paper:demo?'plain':'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},eyes,eyesScale:sc,eyesModel:AI.model}); }
 /* фото → Claude Sonnet оцифровывает чертёж(и) → мозг проверяет по оцифровке (eyes.js prepareDigit → gridsheet.js).
-   Модель не ответила или оцифровка не сложилась — обычная проверка по линиям */
+   Модель не ответила — ещё попытка (до 3 всего); не вышло — экран с причиной и кнопкой «Проверить заново».
+   В долгую проверку по линиям на телефоне не уходим: оцифровка — секунды, линии — минуты */
+const TRIES=3;
 async function digitSheet(src,n){ const part=$('part').value||'', steps=[{k:'photo',t:'Фото'},{k:'eyes',t:'Claude Sonnet оцифровывает чертёж'},{k:'sheet',t:'Сканер проверяет построение'},{k:'done',t:'Готово'}];
   W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('eyes','now');
-  const a=await SC.askEyes(src,3,n,true,{mode:'digit',part:{a:1,b:2,c:3,d:4}[part]}); if(!W) return;
-  if(!a.ok){ W.set('eyes','done',{t:'Оцифровка недоступна — проверяю по линиям'}); AI.note='оцифровка моделью недоступна ('+(a.error||'нет ответа')+')'; W.stop(); W=null; return checkSheetPlain(src); }
+  let a=null; for(let t=1;t<=TRIES;t++){ if(t>1&&W) W.set('eyes','now',{t:'Claude Sonnet не ответил — попытка '+t+' из '+TRIES});
+    a=await SC.askEyes(src,3,n,true,{mode:'digit',part:{a:1,b:2,c:3,d:4}[part]}); if(!W) return; if(a.ok) break; }
+  if(!a.ok){ W.stop(); W=null; return digitFailed(src,n,'Claude Sonnet не ответил ('+TRIES+' попытки): '+(a.error||'нет ответа')); }
   AI.model=a.model||''; AI.note='Оцифровка: '+SC.modelName(a.model); W.set('eyes','done',{t:'Чертёж оцифрован ('+SC.modelName(a.model)+')'}); W.set('sheet','now');
   ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } if(!W) return; W.set('done','done'); W.stop(); W=null;
-    if(m.error){ SC.toast('Сбой проверки: '+m.error.split('\n')[0]); }
-    if(m.digitFail){ AI.note='оцифровка не сложилась: '+m.digitFail; return checkSheetPlain(src); }
+    if(m.error) return digitFailed(src,n,'сбой проверки: '+m.error.split('\n')[0]);
+    if(m.digitFail) return digitFailed(src,n,'оцифровка не сложилась: '+m.digitFail);
     UP.r=m; showUp(); };
   worker.postMessage({mode:'digit',img:SC.imageData(src),dz:3,n,part:part||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')},digit:a.text,digitScale:a.scale,digitModel:a.model}); }
-async function checkSheetPlain(src){ const n=UP.n; const steps=SC.waitSteps(); W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('sheet','now');
-  ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } W.set('done','done'); W.stop(); W=null; if(m.error) SC.toast('Сбой проверки: '+m.error.split('\n')[0]); UP.r=m; showUp(); };
-  worker.postMessage({img:SC.imageData(src),dz:3,n,paper:'grid',part:$('part').value||null,answers:{H:num('aH'),dih:num('aD'),phi:num('aP')}}); }
+/* оцифровка не вышла: причина и что сделать — «Попробовать ещё раз» (то же фото), «Новое фото», «К началу» */
+function digitFailed(src,n,why){ $('failWhy').textContent=why.charAt(0).toUpperCase()+why.slice(1)+'.'; SC.fillIcons($('scrFail')); SC.screen('scrFail');
+  $('failRetry').onclick=()=>{ reset(); UP={src,n}; digitSheet(src,n); };
+  $('failNew').onclick=()=>{ reset(); const f=$('file'); f.setAttribute('capture','environment'); f.click(); setTimeout(()=>f.removeAttribute('capture'),1000); };
+  $('failBack').onclick=toStart; }
 function showUp(){ const r=UP.r||{}, ds=UP.ds||(r.cam?SC.fromSession(r.R,r.ov.drawings):SC.fromWorker(r));
   SC.renderResult({ds,src:UP.src,variant:UP.n||null,demo:UP.demo,onReshoot:UP.demo?()=>SC.toast('Это пример — переснять можно настоящий лист'):reshoot,onNew:toStart,
     onRerun:UP.demo&&!r.cam?()=>{ const s=UP.src, d=UP.demo; reset(); checkSheet(s,d); }:null,
