@@ -324,12 +324,18 @@ async function checkSheet(src,demo){ const n=nVal(); UP={src,n,demo}; if(!demo&&
    В долгую проверку по линиям на телефоне не уходим: оцифровка — секунды, линии — минуты */
 const TRIES=3;
 async function digitSheet(src,n){ const part=$('part').value||'', steps=[{k:'photo',t:'Фото'},{k:'eyes',t:'Claude Sonnet оцифровывает чертёж'},{k:'sheet',t:'Сканер проверяет построение'},{k:'done',t:'Готово'}];
-  W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done'); W.set('eyes','now');
-  let a=null; for(let t=1;t<=TRIES;t++){ if(t>1&&W) W.set('eyes','now',{t:'Claude Sonnet не ответил — попытка '+t+' из '+TRIES});
-    a=await SC.askEyes(src,3,n,true,{mode:'digit',part:{a:1,b:2,c:3,d:4}[part]}); if(!W) return; if(a.ok) break; }
-  if(!a.ok){ W.stop(); W=null; return digitFailed(src,n,'Claude Sonnet не ответил ('+TRIES+' попытки): '+(a.error||'нет ответа')); }
+  W=SC.Wait({img:src,steps,cancel:toStart}); SC.screen('scrWait'); W.set('photo','done');
+  /* «Все» — четыре запроса сразу, по одному на часть: весь лист одним ответом модель пишет дольше, чем сервер её ждёт (50 с) */
+  const ps=part?[{a:1,b:2,c:3,d:4}[part]]:[1,2,3,4];
+  W.set('eyes','now',{t:'Claude Sonnet оцифровывает '+(ps.length>1?'чертежи 1–4 (одновременно)':'чертёж '+ps[0])});
+  const askP=async p=>{ let a=null; for(let t=1;t<=TRIES;t++){ a=await SC.askEyes(src,3,n,true,{mode:'digit',part:p}); if(!W||a.ok) break; } return a; };
+  const res=await Promise.all(ps.map(askP)); if(!W) return;
+  const good=res.filter(r=>r&&r.ok);
+  if(!good.length){ W.stop(); W=null; return digitFailed(src,n,'Claude Sonnet не ответил (по '+TRIES+' попытки на чертёж): '+((res[0]&&res[0].error)||'нет ответа')); }
   /* кабинет открыт со старой версией (вкладка с до обновления): он не просит оцифровку, и модель отвечает рамками */
-  if(a.mode!=='digit'){ W.stop(); W=null; return digitFailed(src,n,'кабинет открыт в старой версии — закройте вкладку кабинета и откройте заново (или обновите страницу), потом снимите ещё раз'); }
+  if(good.some(r=>r.mode!=='digit')){ W.stop(); W=null; return digitFailed(src,n,'кабинет открыт в старой версии — закройте вкладку кабинета и откройте заново (или обновите страницу), потом снимите ещё раз'); }
+  const a={ok:true,model:good[0].model,scale:good[0].scale,text:good.map(r=>r.text).join('\n')};
+  if(good.length<ps.length) AI.note='не ответил по '+(ps.length-good.length)+' из '+ps.length+' чертежей';
   AI.model=a.model||''; AI.note='Оцифровка: '+SC.modelName(a.model); W.set('eyes','done',{t:'Чертёж оцифрован ('+SC.modelName(a.model)+')'}); W.set('sheet','now');
   ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } if(!W) return; W.set('done','done'); W.stop(); W=null;
     if(m.error) return digitFailed(src,n,'сбой проверки: '+m.error.split('\n')[0]);
