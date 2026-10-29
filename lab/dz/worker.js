@@ -49,7 +49,10 @@ function closeMode(d){ const CU=self.LAB.dzCloseup, t0=Date.now();
 /* оцифровка моделью (Claude Sonnet, eyes.js parseDigit): каждый чертёж ответа → мозг по его линиям (gridsheet.js digit).
    Выбрана часть — только её чертёж. Ответы, которые студент ввёл сам, важнее прочитанных моделью. Ничего не сложилось —
    {digitFail}: страница проверит по линиям, как обычно */
-function digitMode(d){ const EY=self.LAB.dzEyes, GS=self.LAB.dzGridSheet, t0=Date.now(), P=EY.parseDigit(d.digit,d.digitScale||1);
+function digitMode(d){ const EY=self.LAB.dzEyes, GS=self.LAB.dzGridSheet, t0=Date.now();
+  /* шкала ответа — по самому фото: посредник модели мог уменьшить картинку (eyes.js digitFit) */
+  let F={k:d.digitScale||1,note:null}; try{ F=EY.digitFit(d.img,d.digit,d.digitScale||1); }catch(x){}
+  const P=EY.parseDigit(d.digit,F.k);
   if(P.error) return {digitFail:P.error};
   let ds=P.drawings; if(d.part){ const own=ds.filter(q=>q.part===d.part); ds=own.length?own:ds.length===1?ds:ds.filter(q=>!q.part); }
   if(!ds.length) return {digitFail:'модель не нашла чертёж части '+({a:1,b:2,c:3,d:4}[d.part])};
@@ -70,7 +73,7 @@ function digitMode(d){ const EY=self.LAB.dzEyes, GS=self.LAB.dzGridSheet, t0=Dat
     const xs=q.segs.flatMap(s=>[s.a,s.b]), box=xs.length?[Math.min(...xs.map(p=>p[0])),Math.min(...xs.map(p=>p[1])),Math.max(...xs.map(p=>p[0])),Math.max(...xs.map(p=>p[1]))]:null;
     return {pts:q.pts,box,v:g.verdict,fig:drawings[j].fig,O}; });
   const vs=rs.map(x=>x.g.verdict), verdict=vs.some(v=>v==='ошибка')?'ошибка':vs.some(v=>v==='ошибка в данных')?'ошибка в данных':vs.length&&vs.every(v=>v==='верно'||v==='данные нанесены верно')?'верно':'не могу утверждать';
-  return {verdict,why:['оцифровка — '+String(d.digitModel||'модель').replace(/^anthropic\//,'')+': чертежей '+ds.length+(d.part?' (часть '+({a:1,b:2,c:3,d:4}[d.part])+')':'')].concat(rs.map(({g},i)=>'чертёж '+(i+1)+': '+g.verdict+(g.ok===false&&g.why&&g.why[0]?' — '+g.why[0]:''))),drawings,eyesPts,stage:'оцифровка',ms:Date.now()-t0}; }
+  return {verdict,why:['оцифровка — '+String(d.digitModel||'модель').replace(/^anthropic\//,'')+': чертежей '+ds.length+(d.part?' (часть '+({a:1,b:2,c:3,d:4}[d.part])+')':'')].concat(F.note?[F.note]:[],rs.map(({g},i)=>'чертёж '+(i+1)+': '+g.verdict+(g.ok===false&&g.why&&g.why[0]?' — '+g.why[0]:''))),drawings,eyesPts,stage:'оцифровка',ms:Date.now()-t0}; }
 self.onmessage=e=>{ const {img,dz,n,paper,answers,part,mode}=e.data, t0=Date.now(); let r;
   if(mode==='digit'){ try{ self.postMessage(digitMode(e.data)); }catch(err){ self.postMessage({digitFail:'сбой: '+String(err&&err.message||err)}); } return; }
   if(mode==='overview'||mode==='close'||mode==='hints'){ try{ self.postMessage(closeMode(e.data)); }catch(err){ self.postMessage({error:String(err&&err.stack||err),want:e.data.want,mode}); }
