@@ -76,8 +76,10 @@ function eyesFromEnv(env){ env=env||process.env; const folder=env.EYES_FOLDER||e
   return cfg; }
 /* OpenRouter: модели с рассуждением (Gemini 3, GPT-5) — коротко, иначе ответ через минуту; usage.cost — цена запроса */
 function orOpts(model){ return Object.assign({max_tokens:8000,usage:{include:true}},/gemini|gpt-5|\/o\d/.test(model)?{reasoning:{effort:'low'}}:{}); }
-/* ProxyAPI (OpenAI-совместимый /chat/completions): только стандартные поля OpenAI — рассуждение коротко через reasoning_effort */
-function pxOpts(model){ return Object.assign({max_tokens:8000},/gemini|gpt-5|\/o\d/.test(model)?{reasoning_effort:'low'}:{}); }
+/* ProxyAPI (OpenAI-совместимый /chat/completions): только стандартные поля OpenAI — рассуждение коротко через reasoning_effort.
+   Лимит ответа — max_completion_tokens (в ask): по нему ProxyAPI заранее оценивает цену и сверяет с балансом; без него
+   оценка — по самому длинному ответу модели (у Opus — сотни рублей), и запрос отклоняется с 402 при живом балансе */
+function pxOpts(model){ const think=/gemini|gpt-5|\/o\d/.test(model); return Object.assign({max_tokens:think?8000:3000},think?{reasoning_effort:'low'}:{}); }
 /* имя модели для ProxyAPI: у Claude версия через дефис (anthropic/claude-opus-5-5), а не через точку, как в OpenRouter */
 function pxModel(model){ return /^anthropic\/claude-/.test(model)?model.replace(/(\d)\.(\d)/g,'$1-$2'):model; }
 /* EYES_OPTS — добавки к запросу модели (например, выключить рассуждение), JSON или base64 от JSON: в переменных функции
@@ -97,9 +99,11 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const hint=(q.dz?'ДЗ №'+q.dz+'. ':'')+(q.n?'Вариант '+q.n+'. ':'')+'Размер фото: '+q.w+' × '+q.h+' px.';
   const body=Object.assign({model:cfg.model,temperature:0,max_tokens:1500,messages:[{role:'system',content:q.system||PROMPT},
     {role:'user',content:[{type:'text',text:q.text||hint},{type:'image_url',image_url:{url:q.image}}]}]},cfg.opts||{},q.opts||{});
+  if(cfg.proxyapi&&body.max_tokens){ body.max_completion_tokens=body.max_tokens; delete body.max_tokens; }
   const t0=Date.now(), r=await http(cfg.url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(o.timeout||45000)});
   const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
-  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(j&&j.error?': '+String(j.error.message||j.error).slice(0,200):'')),{status:502});
+  const why=j&&(j.error?j.error.message||j.error:j.detail||j.message);
+  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):'')),{status:502});
   /* модели с рассуждением (Qwen3.x) возвращают ход мысли в <think>…</think> или отдельным полем — сканеру нужен только ответ;
      если на ответ не хватило лимита, JSON бывает только в ходе мысли */
   const c=j&&j.choices&&j.choices[0]||{}, m=c.message||{}, raw=m.content, think=String(m.reasoning_content||m.reasoning||'');
