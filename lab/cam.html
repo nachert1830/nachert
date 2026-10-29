@@ -45,8 +45,8 @@
       </div>
       <div class="airow" id="aiRow" hidden>
         <label class="tg"><input type="checkbox" id="ai" checked><span><b>ИИ-зрение</b> подскажет, где какой чертёж и какая часть; проверяет сканер по линиям</span></label>
-        <label class="tg sub"><input type="checkbox" id="aiDigit" checked><span><b>Оцифровка Claude Sonnet</b> — модель переписывает весь чертёж (точки, линии, ответы), сканер проверяет по нему; нужна отметка ниже <span class="note">(≈ 1 ₽ за чертёж, 10–20 с)</span></span></label>
-        <label class="tg sub"><input type="checkbox" id="aiFar"><span>Лист мой — можно точнее, зарубежной моделью <span class="note">(фото уйдёт через OpenRouter, не сохраняется; без отметки — только Yandex Cloud)</span></span></label>
+        <label class="tg sub"><input type="checkbox" id="aiDigit" checked><span><b>Оцифровка Claude Sonnet</b> — модель переписывает весь чертёж (точки, линии, ответы), сканер проверяет по нему; <span class="note">(≈ 1 ₽ за чертёж, 10–20 с)</span></span></label>
+        <label class="tg sub" hidden><input type="checkbox" id="aiFar" checked><span>Лист мой — можно точнее, зарубежной моделью <span class="note">(фото уйдёт через OpenRouter, не сохраняется; без отметки — только Yandex Cloud)</span></span></label>
       </div>
       <div class="field" style="margin:0 0 14px">
         <span class="lbl" id="partL">Какую часть проверить: 1 — высота, 2 — угол граней, 3 — истинный вид ABC, 4 — угол SA</span>
@@ -141,7 +141,7 @@ function showVar(){ const n=nVal(); $('nAuto').setAttribute('aria-pressed',Strin
 $('n').oninput=showVar; $('nMinus').onclick=()=>{ $('n').value=Math.max(1,(nVal()||2)-1); showVar(); }; $('nPlus').onclick=()=>{ $('n').value=Math.min(30,(nVal()||0)+1); showVar(); };
 $('nAuto').onclick=()=>{ $('n').value=''; showVar(); }; showVar();
 /* ИИ-зрение — включено по умолчанию, если страница открыта в кабинете; согласие на зарубежную модель — запоминается */
-SC.aiPing(on=>{ $('aiRow').hidden=!on; }); try{ $('aiFar').checked=localStorage.getItem('nch_ai_far')==='1'; }catch(e){}
+SC.aiPing(on=>{ $('aiRow').hidden=!on; }); $('aiFar').checked=true;
 $('aiFar').onchange=()=>{ try{ localStorage.setItem('nch_ai_far',$('aiFar').checked?'1':'0'); }catch(e){} };
 try{ $('aiDigit').checked=localStorage.getItem('nch_ai_digit')!=='0'; }catch(e){}
 $('aiDigit').onchange=()=>{ try{ localStorage.setItem('nch_ai_digit',$('aiDigit').checked?'1':'0'); }catch(e){} };
@@ -149,7 +149,7 @@ $('aiDigit').onchange=()=>{ try{ localStorage.setItem('nch_ai_digit',$('aiDigit'
 const syncPart=()=>[...$('partSeg').children].forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===$('part').value)));
 $('partSeg').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; $('part').value=b.dataset.v; syncPart(); }; $('part').addEventListener('change',syncPart);
 /* оцифровка моделью: ИИ-зрение в кабинете, отметка «оцифровка» и согласие на зарубежную модель, номер варианта */
-const useDigit=()=>SC.ai.on&&$('ai').checked&&$('aiDigit').checked&&$('aiFar').checked&&!!nVal();
+const useDigit=()=>SC.ai.on&&$('ai').checked&&$('aiDigit').checked&&!!nVal();
 const useAi=()=>SC.ai.on&&$('ai').checked, AI={note:null,model:'',hints:null};
 const aiAsk=img=>SC.askEyes(img,3,nVal(),$('aiFar').checked).then(a=>{ if(a.ok){ AI.model=a.model||''; AI.note='ИИ-зрение ('+SC.modelName(a.model)+') ответило'+(a.fallback?' — запасная модель':''); } else AI.note='ИИ-зрение недоступно ('+(a.error||'нет ответа')+') — проверено своими глазами'; return a; });
 $('howSeg').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; $('how').value=b.dataset.v; [...$('howSeg').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b))); };

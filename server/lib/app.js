@@ -379,13 +379,14 @@ function createApp(o){
 
   /* глаза сканера: фото чертежа → модель со зрением → подписи точек (server/lib/eyes.js). Фото не сохраняется */
   A['POST /api/eyes']=async(req,S)=>{ const ec=o.eyes; if(!ec||!ec.on) fail(503,'ИИ-зрение пока не подключено.');
-    const b=body(req,EYES_BODY), img=String(b.img||''); await limit('eyes',S.user.id,40,3600);
+    const b=body(req,EYES_BODY), img=String(b.img||''); await limit('eyes',S.user.id,1000,3600);
     if(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/.test(img)) fail(400,'Нужно фото (JPEG, PNG или WebP).');
     const w=Math.round(+b.w)||0, h=Math.round(+b.h)||0; if(!(w>=200&&h>=200&&w<=4096&&h<=4096)) fail(400,'Размер фото — от 200 до 4096 px.');
     const dz=[1,2,3,4,5].includes(+b.dz)?+b.dz:null, n=cleanVariant(b.n)||null;
     /* consent — студент отметил, что лист его (или пример) и фото можно отправить зарубежной модели; без отметки — только Yandex */
     /* лучшая (зарубежная) модель: кому можно (EYES_BEST_FOR) и нужна ли отметка «лист мой» (EYES_BEST_DEFAULT — стенд владельца) */
-    const mayBest=ec.bestFor!=='admin'||S.user.role==='admin', consent=mayBest&&(b.consent===true||ec.bestDefault);
+    /* кабинет — для одного владельца: зарубежная модель (Claude через OpenRouter) — всем вошедшим, без отметки согласия */
+    const consent=true;
     /* mode: 'digit' — оцифровка чертежа целиком (Sonnet): точки, отрезки, записанные ответы; part — часть, которую выбрал студент */
     const part=[1,2,3,4].includes(+b.part)?+b.part:null;
     try{ const r=b.mode==='digit'?await EYES.askDigit(ec,{image:img,w,h,n,part,consent},{fetch:http}):await EYES.askAny(ec,{image:img,w,h,dz,n,consent},{fetch:http,token:o.iamToken}); if(r.fallback) log.error('eyes',r.fallback);
