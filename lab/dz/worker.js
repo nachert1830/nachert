@@ -1,7 +1,7 @@
 /* Проверка листа ДЗ в отдельном потоке (страница lab/dz.html): те же файлы, что в тестах Node.
    Вход: {img:{width,height,data}, dz, n}; выход: вердикт, причины и то, что нужно странице для рисования. */
-importScripts('../../core/dz.js','../../core/dz-variants.js','../img.js','../clean.js','../font.js','../sheets.js','../rectify.js','../lines.js',
-  'sheet.js','locate.js','digitize.js','model.js','model3.js','calib.js','check2.js','check3.js','explain2.js','report2.js','check.js','grid.js','given.js','explain3d.js','report3d.js','paper.js','gridsheet.js','series.js','eyes.js','cleaner/cleaner.js','closeup.js');
+importScripts(...['../../core/dz.js','../../core/dz-variants.js','../img.js','../clean.js','../font.js','../sheets.js','../rectify.js','../lines.js',
+  'sheet.js','locate.js','digitize.js','model.js','model3.js','calib.js','check2.js','check3.js','explain2.js','report2.js','check.js','grid.js','given.js','explain3d.js','report3d.js','paper.js','gridsheet.js','series.js','eyes.js','cleaner/cleaner.js','closeup.js'].map(f=>f+((self.location&&self.location.search)||'')));
 /* кадр серии (lab/cam.html): только данные для голосования (series.js) и разбор в пикселях этого снимка */
 function frame(img,dz,n,answers,part,paper){ const g=self.LAB.dzGridSheet.checkGridPhoto(img,{dz,n,answers,part,paper:paper||'auto'});
   const fr={ok:!!g.ok,n:g.n,verdict:g.verdict,why:g.why||[],ms:g.ms,ref:g.ref,mine:g.mine,smine:g.smine,answers:g.answers||[],

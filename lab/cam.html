@@ -328,6 +328,8 @@ async function digitSheet(src,n){ const part=$('part').value||'', steps=[{k:'pho
   let a=null; for(let t=1;t<=TRIES;t++){ if(t>1&&W) W.set('eyes','now',{t:'Claude Sonnet не ответил — попытка '+t+' из '+TRIES});
     a=await SC.askEyes(src,3,n,true,{mode:'digit',part:{a:1,b:2,c:3,d:4}[part]}); if(!W) return; if(a.ok) break; }
   if(!a.ok){ W.stop(); W=null; return digitFailed(src,n,'Claude Sonnet не ответил ('+TRIES+' попытки): '+(a.error||'нет ответа')); }
+  /* кабинет открыт со старой версией (вкладка с до обновления): он не просит оцифровку, и модель отвечает рамками */
+  if(a.mode!=='digit'){ W.stop(); W=null; return digitFailed(src,n,'кабинет открыт в старой версии — закройте вкладку кабинета и откройте заново (или обновите страницу), потом снимите ещё раз'); }
   AI.model=a.model||''; AI.note='Оцифровка: '+SC.modelName(a.model); W.set('eyes','done',{t:'Чертёж оцифрован ('+SC.modelName(a.model)+')'}); W.set('sheet','now');
   ensureWorker(); worker.onmessage=e=>{ const m=e.data; if(m&&m.progress){ SC.onProgress(W,m); return; } if(!W) return; W.set('done','done'); W.stop(); W=null;
     if(m.error) return digitFailed(src,n,'сбой проверки: '+m.error.split('\n')[0]);
