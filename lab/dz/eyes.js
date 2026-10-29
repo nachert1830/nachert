@@ -344,20 +344,49 @@ function prepareEyes(img,drawing,o){ o=o||{}; const dz=+o.dz||3, why=[], C=L('ca
    ≈ 0,4 мм, линии 91–100 % в 1 мм; тонкие построения бывают пропущены — тогда часть «не могу утверждать», а не «ошибка»).
    Формат ответа: «D <часть 1–4 | 0>» — начало блока чертежа; «P <подпись> x y», «S x1 y1 x2 y2 [d — штриховая]»,
    «T x y текст» (px присланного фото). Без строк D — один чертёж.
-   parseDigit(text, k — во сколько раз присланное фото меньше снимка) → {drawings:[{part, pts, segs, texts, answers}]} | {error} */
-function parseDigit(text,k){ k=k||1; const out=[]; let cur=null, num='(-?\\d+(?:[.,]\\d+)?)'; const nb=s=>+String(s).replace(',','.')/k;
+   parseDigit(text, k — во сколько раз присланное фото меньше снимка; [kx, ky] — по осям) → {drawings:[{part, pts, segs, texts, answers}]} | {error} */
+function parseDigit(text,k){ k=k||1; const kx=Array.isArray(k)?k[0]:k, ky=Array.isArray(k)?k[1]:k; const out=[]; let cur=null, num='(-?\\d+(?:[.,]\\d+)?)';
+  const nx=s=>+String(s).replace(',','.')/kx, ny=s=>+String(s).replace(',','.')/ky;
   const open=part=>{ cur={part:({'1':'a','2':'b','3':'c','4':'d'})[part]||null,pts:{},raw:{},segs:[],texts:[]}; out.push(cur); };
   String(text||'').replace(/```\w*/g,'').split(/\r?\n/).forEach(line=>{ const s=line.replace(/[*`|]/g,' ').replace(/[(),;]/g,' ').trim(); let m;
     if((m=s.match(/^D\s*(\d)?/))&&/^D(\s|$)/.test(s)){ open(m[1]); return; }
-    if((m=s.match(new RegExp('^P\\s+(\\S+)\\s+'+num+'\\s+'+num)))){ if(!cur) open(null); const q=label(m[1]), p=[nb(m[2]),nb(m[3])]; cur.raw[m[1]]=p; if(q) cur.pts[key(q)]=p; return; }
-    if((m=s.match(new RegExp('^S\\s+'+num+'\\s+'+num+'\\s+'+num+'\\s+'+num+'(\\s+[dDшШ])?')))){ if(!cur) open(null); cur.segs.push({a:[nb(m[1]),nb(m[2])],b:[nb(m[3]),nb(m[4])],dash:!!m[5]}); return; }
-    if((m=s.match(new RegExp('^T\\s+'+num+'\\s+'+num+'\\s+(.+)$')))){ if(!cur) open(null); cur.texts.push({p:[nb(m[1]),nb(m[2])],s:m[3].trim()}); } });
+    if((m=s.match(new RegExp('^P\\s+(\\S+)\\s+'+num+'\\s+'+num)))){ if(!cur) open(null); const q=label(m[1]), p=[nx(m[2]),ny(m[3])]; cur.raw[m[1]]=p; if(q) cur.pts[key(q)]=p; return; }
+    if((m=s.match(new RegExp('^S\\s+'+num+'\\s+'+num+'\\s+'+num+'\\s+'+num+'(\\s+[dDшШ])?')))){ if(!cur) open(null); cur.segs.push({a:[nx(m[1]),ny(m[2])],b:[nx(m[3]),ny(m[4])],dash:!!m[5]}); return; }
+    if((m=s.match(new RegExp('^T\\s+'+num+'\\s+'+num+'\\s+(.+)$')))){ if(!cur) open(null); cur.texts.push({p:[nx(m[1]),ny(m[2])],s:m[3].trim()}); } });
   const drawings=out.filter(d=>d.segs.length||Object.keys(d.pts).length);
   /* записанные ответы: H = 28 → высота; φ = 25° → угол SA; угол граней — β/α/∠ (только у части 2) */
   drawings.forEach(d=>{ const A={}; d.texts.forEach(t=>{ const v=t.s.replace(/\s+/g,''), g=re=>{ const m=v.match(re); return m?+m[1].replace(',','.'):null; };
       const H=g(/^H=(\d+(?:[.,]\d+)?)/i), phi=g(/^[φϕΦ]=(\d+(?:[.,]\d+)?)/), dih=g(/^[βαθ∠]=(\d+(?:[.,]\d+)?)/);
       if(H!=null) A.H=H; if(phi!=null) A.phi=phi; if(dih!=null&&d.part==='b') A.dih=dih; }); d.answers=A; });
   return drawings.length?{drawings}:{error:'модель не выписала ни точек, ни линий'}; }
+
+/* масштаб ответа модели: координаты могут прийти не в px присланного фото — посредник (ProxyAPI) или сама модель
+   уменьшает картинку, и точки приходят в px уменьшенной (окно чертежа тогда маленькое и в углу), реже — в 0…1000.
+   Привязка по точкам условия этого не замечает (аффинное), а снимок поля и сверка с фото — да. Шкала — по самому фото:
+   при верной линии модели лежат на карандаше. digitFit(img (полный снимок), text, k (как в parseDigit)) →
+   {k (для parseDigit), r (во сколько раз координаты мельче присланного фото; 1 — как надо), scale:'px'|'n1000', on (доля
+   точек линий на карандаше), on1 (то же без пересчёта), note (что пересчитано, для «почему») } */
+function digitFit(img,text,k){ k=k||1; const P=parseDigit(text,1); if(P.error) return {k,r:1,scale:'px',on:0,on1:0,note:null};
+  const W=img.width, Hh=img.height, D=img.data, segs=[].concat(...P.drawings.map(d=>d.segs)).sort((a,b)=>Math.hypot(b.b[0]-b.a[0],b.b[1]-b.a[1])-Math.hypot(a.b[0]-a.a[0],a.b[1]-a.a[1])).slice(0,300);
+  if(!segs.length||!W||!Hh) return {k,r:1,scale:'px',on:0,on1:0,note:null};
+  const lum=(x,y)=>{ const i=(y*W+x)*4; return (D[i]+D[i+1]+D[i+2])/3; };
+  /* порог карандаша: между бумагой (70-й процентиль яркости) и самым тёмным (2-й) — по выборке точек */
+  const smp=[]; for(let i=0;i<4000;i++){ const x=Math.floor((i*7919)%W), y=Math.floor(((i*104729)>>>3)%Hh); smp.push(lum(x,y)); } smp.sort((a,b)=>a-b);
+  const thr=(smp[Math.floor(smp.length*0.7)]+smp[Math.floor(smp.length*0.02)])/2;
+  const dark=(x,y)=>{ x=Math.round(x); y=Math.round(y); if(x<2||y<2||x>=W-2||y>=Hh-2) return false; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++) if(lum(x+dx,y+dy)<thr) return true; return false; };
+  /* доля точек отрезков на карандаше при пересчёте «координата модели → px снимка»: x/kx, y/ky */
+  const score=(kx,ky)=>{ let hit=0, all=0; segs.forEach(q=>{ const a=[q.a[0]/kx,q.a[1]/ky], b=[q.b[0]/kx,q.b[1]/ky], L=Math.hypot(b[0]-a[0],b[1]-a[1]), n=Math.max(2,Math.min(40,Math.round(L/6)));
+      for(let i=1;i<n;i++){ const t=i/n; all++; if(dark(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t)) hit++; } }); return all?hit/all:0; };
+  const on1=score(k,k); let best={r:1,on:on1};
+  for(let r=0.25;r<=1.15;r+=0.02){ const v=score(k*r,k*r); if(v>best.on) best={r,on:v}; }
+  for(let r=best.r-0.02;r<=best.r+0.02;r+=0.002){ const v=score(k*r,k*r); if(v>best.on) best={r,on:v}; }
+  /* 0…1000 по обеим осям (Gemini и др.): x·W/1000, y·H/1000 */
+  const kN=[1000/W,1000/Hh], onN=score(kN[0],kN[1]);
+  /* пересчёт — только если он заметно лучше: линий на карандаше больше в 1,2 раза и хотя бы треть */
+  const good=v=>v>=0.33&&v>=on1*1.2+0.03;
+  if(good(onN)&&onN>=best.on) return {k:kN,r:null,scale:'n1000',on:onN,on1,note:'координаты модели — в долях 0…1000, пересчитаны в px (линий на карандаше '+Math.round(onN*100)+' % против '+Math.round(on1*100)+' %)'};
+  if(Math.abs(best.r-1)>0.03&&good(best.on)) return {k:k*best.r,r:best.r,scale:'px',on:best.on,on1,note:'координаты модели — в уменьшенном фото (×'+best.r.toFixed(2).replace('.',',')+'), пересчитаны (линий на карандаше '+Math.round(best.on*100)+' % против '+Math.round(on1*100)+' %)'};
+  return {k,r:1,scale:'px',on:on1,on1,note:null}; }
 
 /* линии модели → оцифровка «как от lines.js» (мм поля чертежа): привязка по точкам условия (их мм известны из варианта) —
    аффинное, затем гомография (перспектива); отрезки — в мм; карта гребней — растр отрезков 8 px/мм (штриховые — штрихами,
@@ -438,7 +467,7 @@ function checkEyes(img,eyes,o){ o=o||{}; const E=eyes&&eyes.drawings?eyes:parse(
   if(dups) why.push('у ИИ-зрения '+dups+' рамк'+(dups>1?'и':'а')+' вокруг уже найденного чертежа — не считаю дважды');
   return {ok:out.some(r=>r.ok),verdict,dz,n:out.find(r=>r.n)?out.find(r=>r.n).n:n,drawings:out,why,ms:Date.now()-t0}; }
 
-put('dzEyes',{parseDigit,prepareDigit,parse,label,rescale,scalePrior,SCALES,prepareEyes,gridEyes,checkEyes,findDrawings,sameDrawing,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
+put('dzEyes',{parseDigit,digitFit,prepareDigit,parse,label,rescale,scalePrior,SCALES,prepareEyes,gridEyes,checkEyes,findDrawings,sameDrawing,mergeDrawings,bindAffine,bindHom,pairs,seedSim,searchFigure});
 })();
 /* node lab/dz/eyes.js фото.png глаза.json [--n=9] — проверка фото по ответу глаз (JSON или текст ответа модели) */
 if(typeof module!=='undefined'&&require.main===module){ const a=Object.fromEntries(process.argv.slice(4).map(x=>x.replace(/^--/,'').split('='))), fs=require('fs'), IMG=require('../img.js'), E=module.exports;
