@@ -120,20 +120,22 @@ Yandex отвечает 400/403). В журнале (шаг «Развернут
 Модель не из Yandex Cloud (любой сервис с OpenAI-совместимым API и картинками): `EYES_URL`, `EYES_MODEL` и секрет
 **`EYES_KEY`** (ключ API; заголовок `Authorization: Bearer <ключ>`, для `Api-Key` — переменная `EYES_AUTH=Api-Key`).
 
-### Точнее: Claude (или другая зарубежная модель) через OpenRouter
+### Точнее: Claude (или другая зарубежная модель) через ProxyAPI
 
-Модель в Yandex — основная и работает всегда. Зарубежная «лучшая» модель спрашивается **только** если студент отметил
-«Лист мой — можно точнее, зарубежной моделью» (фото уходит за рубеж — нужно согласие); без отметки, без ключа или если
-она не ответила за 35 с — снова Yandex. Подключить Claude:
+Модель в Yandex — основная и работает всегда. Зарубежная «лучшая» модель (по умолчанию Claude Opus, оцифровка — Claude
+Sonnet) идёт через [ProxyAPI](https://proxyapi.ru) — российский сервис с оплатой в рублях и единым OpenAI-совместимым
+адресом `https://api.proxyapi.ru/v1/chat/completions` (ключ — `Authorization: Bearer <ключ>`). Сама модель зарубежная:
+фото уходит за рубеж, поэтому нужно согласие; без него, без ключа или если модель не ответила за 35 с — снова Yandex.
+Подключить:
 
-1. openrouter.ai → Keys → создать ключ (и пополнить баланс).
-2. GitHub → Settings → Secrets and variables → Actions → **Secrets** → `OPENROUTER_API_KEY` = ключ.
-3. Замерить, что Claude действительно лучше и без ложных: Actions → «Глаза сканера — какая модель лучше» → Run workflow,
-   `sheets` = 6, `only` = `own,yandex-qwen,claude-opus-5.5,claude-sonnet-5.5`. В задаче «table» — таблица и строка
-   «Лучшая при 0 ложных: …»; точное имя модели — в журнале задачи («OpenRouter: anthropic/…»). В модели уходят только
-   синтетические листы.
-4. **Variables** → `EYES_BEST_MODEL` = это имя (например `anthropic/claude-opus-5.5`) → развёртывание (Actions →
-   «Личный кабинет — развёртывание» → Run workflow). `EYES_BEST_MODEL=off` — выключить.
+1. console.proxyapi.ru → «Ключи API» → создать ключ (и пополнить баланс в рублях).
+2. GitHub → Settings → Secrets and variables → Actions → **Secrets** → `PROXYAPI_KEY` = ключ. Старый секрет
+   `OPENROUTER_API_KEY` кабинету больше не нужен (развёртывание само убирает его из Lockbox; для замеров в
+   `lab/dz` он пока используется).
+3. Развернуть: Actions → «Личный кабинет — развёртывание» → Run workflow.
+4. Другая модель — **Variables** → `EYES_BEST_MODEL` (имя с вендором, как в каталоге ProxyAPI: `anthropic/claude-opus-5-5`,
+   `anthropic/claude-sonnet-5-5`, `google/gemini-…`; имя в духе OpenRouter `anthropic/claude-opus-5.5` тоже примется) →
+   развёртывание. `EYES_BEST_MODEL=off` — выключить.
 5. В сканере: отметка «Лист мой…» → под ответом «ИИ-зрение (anthropic/claude-…) ответило».
 
 Проверить: после развёртывания открыть сканер в кабинете — появится галочка «ИИ-зрение». Если модель недоступна,

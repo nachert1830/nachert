@@ -83,26 +83,30 @@ test('развёртывание: настройка запроса — из в�
     assert.ok(t2.best.opts.max_tokens===8000); }
   finally{ Date.now=real; } });
 
-test('лучшая модель (OpenRouter) — всем вошедшим, без отметки согласия (кабинет для одного владельца); сбой — Qwen в Yandex',async()=>{
-  const cfg=eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key',EYES_BEST_MODEL:'google/gemini-3-flash'});
-  assert.equal(cfg.yandex,true); assert.equal(cfg.best.model,'google/gemini-3-flash'); assert.equal(cfg.best.url,'https://openrouter.ai/api/v1/chat/completions');
+test('лучшая модель (ProxyAPI) — всем вошедшим, без отметки согласия (кабинет для одного владельца); сбой — Qwen в Yandex',async()=>{
+  const cfg=eyesFromEnv({YC_FOLDER_ID:'b1gtest',PROXYAPI_KEY:'px-key',EYES_BEST_MODEL:'google/gemini-3-flash'});
+  assert.equal(cfg.yandex,true); assert.equal(cfg.best.model,'google/gemini-3-flash'); assert.equal(cfg.best.url,'https://api.proxyapi.ru/v1/chat/completions');
   assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',EYES_BEST_MODEL:'google/gemini-3-flash'}).best,null);
+  /* ключ OpenRouter кабинету больше не подходит: без PROXYAPI_KEY лучшей модели нет */
+  assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key'}).best,null);
   const c=club({eyes:cfg,iam:'iam-1'}); await c.owner(); await c.member(5001,'m5001'); const seen=[];
   c.ya.eyes=b=>{ seen.push('yandex'); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[1,2,3,4]}]}'}}]}}; };
   c.ya.best=b=>{ seen.push('best:'+b.model); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[5,6,7,8],"part":2}]}'}}]}}; };
   let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'owner'}); assert.equal(r.status,200); assert.equal(r.data.model,'google/gemini-3-flash'); assert.match(r.data.text,/"part":2/);
   r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'m5001'}); assert.equal(r.status,200); assert.equal(r.data.model,'google/gemini-3-flash');
-  const call=c.ya.calls.find(x=>x.url===cfg.best.url); assert.equal(call.headers.authorization,'Bearer or-key'); assert.equal(call.headers['x-folder-id'],undefined);
+  const call=c.ya.calls.find(x=>x.url===cfg.best.url); assert.equal(call.headers.authorization,'Bearer px-key'); assert.equal(call.headers['x-folder-id'],undefined); assert.equal(call.headers['x-title'],undefined);
   c.ya.best=()=>({status:500,json:{error:{message:'упала'}}});
   r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'owner'}); assert.equal(r.status,200); assert.equal(r.data.model,cfg.model); assert.equal(r.data.fallback,true);
   assert.deepEqual(seen,['best:google/gemini-3-flash','best:google/gemini-3-flash','yandex']); });
 
-test('оцифровка (mode: digit): Claude Sonnet через OpenRouter — без отметки согласия; выбранная часть — в запросе',async()=>{
-  const cfg=eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key',EYES_BEST_MODEL:'anthropic/claude-opus-5.5'});
-  assert.equal(cfg.digit.model,'anthropic/claude-sonnet-5.5'); assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key',EYES_DIGIT_MODEL:'off'}).digit,null);
+test('оцифровка (mode: digit): Claude Sonnet через ProxyAPI — без отметки согласия; выбранная часть — в запросе',async()=>{
+  const cfg=eyesFromEnv({YC_FOLDER_ID:'b1gtest',PROXYAPI_KEY:'px-key',EYES_BEST_MODEL:'anthropic/claude-opus-5.5'});
+  assert.equal(cfg.best.model,'anthropic/claude-opus-5-5');   /* имя в духе OpenRouter (через точку) → как в ProxyAPI */
+  assert.equal(cfg.digit.model,'anthropic/claude-sonnet-5-5'); assert.equal(cfg.digit.url,'https://api.proxyapi.ru/v1/chat/completions');
+  assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',PROXYAPI_KEY:'px-key',EYES_DIGIT_MODEL:'off'}).digit,null);
   const c=club({eyes:cfg,iam:'iam-1'}); await c.owner(); await c.member(5002,'m5002'); const seen=[];
   c.ya.eyes=()=>({status:200,json:{choices:[{message:{content:'{"drawings":[]}'}}]}});
   c.ya.best=b=>{ seen.push(b); return {status:200,json:{choices:[{message:{content:'D 1\nP A″ 10 20\nS 1 2 3 4'}}]}}; };
   let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,n:7,mode:'digit',part:1},{as:'m5002'});
-  assert.equal(r.status,200); assert.equal(r.data.mode,'digit'); assert.equal(r.data.model,'anthropic/claude-sonnet-5.5'); assert.match(r.data.text,/^D 1/);
-  assert.equal(seen[0].model,'anthropic/claude-sonnet-5.5'); assert.match(seen[0].messages[0].content,/оцифровщик/); assert.match(seen[0].messages[1].content[0].text,/только часть 1/); });
+  assert.equal(r.status,200); assert.equal(r.data.mode,'digit'); assert.equal(r.data.model,'anthropic/claude-sonnet-5-5'); assert.match(r.data.text,/^D 1/);
+  assert.equal(seen[0].model,'anthropic/claude-sonnet-5-5'); assert.equal(seen[0].usage,undefined); assert.equal(seen[0].reasoning,undefined); assert.match(seen[0].messages[0].content,/оцифровщик/); assert.match(seen[0].messages[1].content[0].text,/только часть 1/); });
