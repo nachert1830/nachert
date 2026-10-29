@@ -91,10 +91,11 @@ test('лучшая модель (ProxyAPI) — всем вошедшим, без
   assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key'}).best,null);
   const c=club({eyes:cfg,iam:'iam-1'}); await c.owner(); await c.member(5001,'m5001'); const seen=[];
   c.ya.eyes=b=>{ seen.push('yandex'); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[1,2,3,4]}]}'}}]}}; };
-  c.ya.best=b=>{ seen.push('best:'+b.model); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[5,6,7,8],"part":2}]}'}}]}}; };
+  let sent=null; c.ya.best=b=>{ sent=b; seen.push('best:'+b.model); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[5,6,7,8],"part":2}]}'}}]}}; };
   let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'owner'}); assert.equal(r.status,200); assert.equal(r.data.model,'google/gemini-3-flash'); assert.match(r.data.text,/"part":2/);
   r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'m5001'}); assert.equal(r.status,200); assert.equal(r.data.model,'google/gemini-3-flash');
   const call=c.ya.calls.find(x=>x.url===cfg.best.url); assert.equal(call.headers.authorization,'Bearer px-key'); assert.equal(call.headers['x-folder-id'],undefined); assert.equal(call.headers['x-title'],undefined);
+  assert.equal(sent.max_completion_tokens,8000); assert.equal(sent.reasoning_effort,'low'); assert.equal(sent.max_tokens,undefined);
   c.ya.best=()=>({status:500,json:{error:{message:'упала'}}});
   r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'owner'}); assert.equal(r.status,200); assert.equal(r.data.model,cfg.model); assert.equal(r.data.fallback,true);
   assert.deepEqual(seen,['best:google/gemini-3-flash','best:google/gemini-3-flash','yandex']); });
@@ -109,4 +110,9 @@ test('оцифровка (mode: digit): Claude Sonnet через ProxyAPI — б
   c.ya.best=b=>{ seen.push(b); return {status:200,json:{choices:[{message:{content:'D 1\nP A″ 10 20\nS 1 2 3 4'}}]}}; };
   let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,n:7,mode:'digit',part:1},{as:'m5002'});
   assert.equal(r.status,200); assert.equal(r.data.mode,'digit'); assert.equal(r.data.model,'anthropic/claude-sonnet-5-5'); assert.match(r.data.text,/^D 1/);
-  assert.equal(seen[0].model,'anthropic/claude-sonnet-5-5'); assert.equal(seen[0].usage,undefined); assert.equal(seen[0].reasoning,undefined); assert.match(seen[0].messages[0].content,/оцифровщик/); assert.match(seen[0].messages[1].content[0].text,/только часть 1/); });
+  assert.equal(seen[0].model,'anthropic/claude-sonnet-5-5'); assert.equal(seen[0].usage,undefined); assert.equal(seen[0].reasoning,undefined);
+  /* ProxyAPI сверяет баланс с ценой самого длинного ответа: лимит — max_completion_tokens, иначе 402 при живом балансе */
+  assert.equal(seen[0].max_completion_tokens,6000); assert.equal(seen[0].max_tokens,undefined);
+  c.ya.best=()=>({status:402,json:{detail:'Insufficient balance to run this request.'}});
+  r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,n:7,mode:'digit',part:1},{as:'m5002'});
+  assert.equal(r.status,502); assert.match(r.data.error||JSON.stringify(r.data),/402: Insufficient balance/); assert.match(seen[0].messages[0].content,/оцифровщик/); assert.match(seen[0].messages[1].content[0].text,/только часть 1/); });
