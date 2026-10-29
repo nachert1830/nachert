@@ -10,7 +10,7 @@
    Кнопки «Поделиться» отправляют эти адреса (SHAREURL в index.html). После правки названий ДЗ — перегенерировать. */
 const http=require('http'), fs=require('fs'), path=require('path');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
-const ROOT=path.join(__dirname,'..'), SITE='http://nachert1830.ru', V='1';
+const ROOT=path.join(__dirname,'..'), SITE='http://nachert1830.ru', V='2';
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2'};
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
@@ -31,34 +31,29 @@ function stub({p,hash,title,desc,img}){ const url=SITE+p;
 <body><p><a href="/#/${hash}">${esc(title)} — открыть</a></p></body></html>
 `; }
 
-/* обложка 1200×630: слева — что это, справа — чертёж на белой карточке */
-function cover({k,t,sub,chips,pic,pic2}){ const F='/fonts/';
-  const big=t.length>34?52:t.length>22?60:68;
+/* обложка 1200×630 — коротко и крупно: логотип, одно большое слово, одна строка, чертёж. Мелкого текста нет:
+   в ленте мессенджера превью маленькое, читается только крупное */
+function cover({t,sub,pic,pic2}){ const F='/fonts/', big=t.length>12?96:t.length>7?120:150;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:G;font-weight:400 800;src:url(${F}geologica-cyrillic.woff2) format('woff2');unicode-range:U+0400-045F}
 @font-face{font-family:G;font-weight:400 800;src:url(${F}geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2013-2014,U+2116}
 @font-face{font-family:T;font-weight:400 700;src:url(${F}golos-text-cyrillic.woff2) format('woff2');unicode-range:U+0400-045F}
 @font-face{font-family:T;font-weight:400 700;src:url(${F}golos-text-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2013-2014,U+2116}
-@font-face{font-family:M;font-weight:600;src:url(${F}ibm-plex-mono-cyrillic-600.woff2) format('woff2');unicode-range:U+0400-045F}
-@font-face{font-family:M;font-weight:600;src:url(${F}ibm-plex-mono-latin-600.woff2) format('woff2');unicode-range:U+0000-00FF,U+2116}
 html,body{margin:0}
 body{width:1200px;height:630px;overflow:hidden;position:relative;color:#fff;font-family:T,sans-serif;
   background:radial-gradient(900px 520px at 92% -10%,rgba(37,99,235,.55),transparent 62%),linear-gradient(140deg,#071a4d 0,#0a2463 45%,#12357f 100%)}
-.tri{position:absolute;left:0;right:0;bottom:0;height:14px;background:linear-gradient(90deg,#2f6ff0 0 40%,#fff 40% 60%,#e0252c 60% 100%)}
-.l{position:absolute;left:72px;top:60px;width:${pic2?520:pic?600:1000}px}
-.logo{display:flex;align-items:center;gap:16px;font:700 32px G}.logo img{width:60px;height:60px;border-radius:16px}
-.k{margin-top:44px;font:600 21px M;letter-spacing:.07em;text-transform:uppercase;color:#ffb4ad}
-h1{margin:14px 0 0;font:800 ${big}px/1.08 G;letter-spacing:-.5px}
-p{margin:20px 0 0;font:500 27px/1.35 T;color:rgba(255,255,255,.86)}
-.chips{position:absolute;left:72px;bottom:58px;display:flex;gap:12px}
-.chip{padding:12px 20px;border-radius:14px;background:rgba(255,255,255,.13);font:700 22px T}.chip.red{background:#e0252c}
-.r{position:absolute;right:70px;top:58px;bottom:72px;width:410px;background:#fff;border-radius:24px;box-shadow:0 34px 70px -24px rgba(0,0,0,.65);padding:16px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;transform:rotate(1.5deg)}
+.tri{position:absolute;left:0;right:0;bottom:0;height:16px;background:linear-gradient(90deg,#2f6ff0 0 40%,#fff 40% 60%,#e0252c 60% 100%)}
+.logo{position:absolute;left:72px;top:60px;display:flex;align-items:center;gap:18px;font:700 40px G}.logo img{width:72px;height:72px;border-radius:18px}
+.l{position:absolute;left:72px;bottom:96px;width:${pic2?560:pic?620:1000}px}
+h1{margin:0;font:800 ${big}px/1 G;letter-spacing:-1.5px;white-space:pre-line}
+p{margin:22px 0 0;font:700 42px/1.2 T;color:#ffb4ad}
+.r{position:absolute;right:70px;top:54px;bottom:70px;width:400px;background:#fff;border-radius:26px;box-shadow:0 34px 70px -24px rgba(0,0,0,.65);padding:16px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;transform:rotate(2deg)}
 .r svg,.r img{max-width:100%;max-height:100%;display:block}
-.r2{right:250px;top:110px;bottom:120px;width:300px;transform:rotate(-6deg);opacity:.96}
+.r2{right:250px;top:110px;bottom:120px;width:300px;transform:rotate(-6deg)}
 </style></head><body>
 ${pic2?`<div class="r r2">${pic2}</div>`:''}${pic?`<div class="r">${pic}</div>`:''}
-<div class="l"><div class="logo"><img src="/icon-192.png" alt="">Начерт</div><div class="k">${esc(k)}</div><h1>${esc(t)}</h1><p>${esc(sub)}</p></div>
-<div class="chips">${chips.map((c,i)=>`<span class="chip${i===0?' red':''}">${esc(c)}</span>`).join('')}</div><div class="tri"></div>
+<div class="logo"><img src="/icon-192.png" alt="">Начерт</div>
+<div class="l"><h1>${esc(t)}</h1>${sub?`<p>${esc(sub)}</p>`:''}</div><div class="tri"></div>
 </body></html>`; }
 
 let COVER='';
@@ -81,20 +76,20 @@ let COVER='';
   const make=async(file,o)=>{ COVER=cover(o); await shot.goto(base+'/__cover?'+file,{waitUntil:'load'}); await shot.evaluate(()=>document.fonts.ready); await shot.waitForTimeout(200);
     await shot.screenshot({path:path.join(ROOT,file),type:'jpeg',quality:86}); console.log(file,fs.statSync(path.join(ROOT,file)).size); };
   const ng4=L.find(d=>d.id==='ng4')||L[0], ig3=L.find(d=>d.id==='ig3')||L.find(d=>d.course==='ig');
-  await make('og.jpg',{k:'Начерт и инженерная графика',t:'Решение по шагам',sub:'ДЗ на твоём варианте, тетради, РК и 3D-модели',chips:['ДЗ на твоём варианте','89 задач','РК'],pic:pic(ig3),pic2:ng4.svg});
-  await make('og/dz.jpg',{k:'Домашние задания',t:'Твой вариант — по шагам',sub:'Начерт и инженерная графика: разбор, 3D и лист А3 по ГОСТ',chips:['Впиши свой вариант','чистовик и черновик'],pic:pic(ig3),pic2:ng4.svg});
-  await make('og/ng.jpg',{k:'Начерт',t:subjName.ng,sub:'ДЗ на твоём варианте, все задачи тетради, подготовка к РК и 3D-эпюр',chips:['ДЗ №1–5','89 задач','РК'],pic:ng4.svg});
-  await make('og/ig.jpg',{k:'Инж. графика',t:subjName.ig,sub:'ДЗ на твоём варианте: деталь в 3D, построение по шагам и лист по ГОСТ',chips:['ДЗ №2–4','виды и разрезы','ЕСКД'],pic:pic(ig3)});
-  for(const d of L) await make('og/'+d.id+'.jpg',{k:d.label+' · '+subjName[d.course],t:d.title,sub:'Твой вариант: разбор по шагам, 3D и лист А3 по ГОСТ',chips:['все '+d.count+' вариантов',d.course==='ng'?'чистовик и черновик':'деталь в 3D'],pic:pic(d)});
+  await make('og.jpg',{t:'По шагам',sub:'начерт и инж. графика',pic:pic(ig3),pic2:ng4.svg});
+  await make('og/dz.jpg',{t:'Твой\nвариант',sub:'ДЗ по шагам',pic:pic(ig3),pic2:ng4.svg});
+  await make('og/ng.jpg',{t:'Начерт',sub:'по шагам',pic:ng4.svg});
+  await make('og/ig.jpg',{t:'Инжа',sub:'инженерная графика',pic:pic(ig3)});
+  for(const d of L) await make('og/'+d.id+'.jpg',{t:'ДЗ '+d.num,sub:d.course==='ng'?'начерт':'инж. графика',pic:pic(d)});
   await browser.close(); srv.close();
 
   /* страницы-адреса */
   const put=(rel,o)=>{ const dir=path.join(ROOT,rel); fs.mkdirSync(dir,{recursive:true}); fs.writeFileSync(path.join(dir,'index.html'),stub(Object.assign({p:'/'+rel+'/'},o))); };
-  put('dz',{hash:'dz',title:'Домашние задания — твой вариант по шагам',desc:'Начерт и инженерная графика: впиши свой вариант — разбор по шагам, 3D и лист А3 по ГОСТ.',img:'dz'});
-  put('ng',{hash:'ng',title:'Начертательная геометрия по шагам',desc:'ДЗ на твоём варианте, решённая рабочая тетрадь, подготовка к РК и 3D-модель с эпюром.',img:'ng'});
-  put('ig',{hash:'ig',title:'Инженерная графика по шагам',desc:'ДЗ на твоём варианте: деталь в 3D, построение видов и разрезов по шагам, лист по ГОСТ.',img:'ig'});
-  for(const d of L){ const subj=d.course==='ng'?'по начерту':'по инженерной графике';
-    put(d.id,{hash:d.id,title:d.label+' '+subj+' — '+d.title,desc:'Твой вариант: разбор по шагам, 3D и лист А3 по ГОСТ. Все '+d.count+' вариантов.',img:d.id});
-    for(let n=1;n<=d.count;n++) put(d.id+'/'+n,{hash:d.id+'/'+n,title:d.label+' '+subj+', вариант '+n,desc:d.title+': разбор варианта '+n+' по шагам, 3D и лист А3 по ГОСТ.',img:d.id}); }
+  put('dz',{hash:'dz',title:'Домашние задания по шагам',desc:'Впиши свой вариант — разбор, 3D и лист А3.',img:'dz'});
+  put('ng',{hash:'ng',title:'Начерт по шагам',desc:'ДЗ, тетрадь, РК и 3D-эпюр.',img:'ng'});
+  put('ig',{hash:'ig',title:'Инженерная графика по шагам',desc:'ДЗ, тетрадь и теория ЕСКД.',img:'ig'});
+  for(const d of L){ const subj=d.course==='ng'?'по начерту':'по инже';
+    put(d.id,{hash:d.id,title:'ДЗ '+d.num+' '+subj,desc:d.title+'. Твой вариант по шагам.',img:d.id});
+    for(let n=1;n<=d.count;n++) put(d.id+'/'+n,{hash:d.id+'/'+n,title:'ДЗ '+d.num+' '+subj+' · вариант '+n,desc:'Разбор по шагам, 3D и лист А3.',img:d.id}); }
   console.log('страниц-адресов:',3+L.length*31);
 })();
