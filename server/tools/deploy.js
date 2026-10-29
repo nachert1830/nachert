@@ -212,6 +212,8 @@ async function main(){
 
   step('ИИ-зрение сканера (Yandex AI Studio)');
   const eyes=await eyesPick(folder);
+  { const EY=require('../lib/eyes'), c=EY.eyesFromEnv({YC_FOLDER_ID:folder,PROXYAPI_KEY:E('PROXYAPI_KEY')||payload.PROXYAPI_KEY||'',EYES_BEST_MODEL:E('EYES_BEST_MODEL')||undefined});
+    say(c.best?'  зарубежная модель (ProxyAPI): '+c.best.model+(E('EYES_BEST_MODEL')?' — из переменной EYES_BEST_MODEL':'')+'; оцифровка: '+(c.digit?c.digit.model:'выключена'):'  зарубежная модель: выключена (нет секрета PROXYAPI_KEY или EYES_BEST_MODEL=off)'); }
 
   step('База данных YDB (serverless, Россия)');
   let db=get(['ydb','database','get','--name',NAMES.db]);
