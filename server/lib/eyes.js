@@ -7,19 +7,23 @@
      EYES_FOLDER — каталог Yandex Cloud (по умолчанию — каталог функции)
      EYES_KEY    — ключ API, если модель не в Yandex Cloud (тогда Authorization: Bearer <ключ>); EYES_AUTH=Api-Key — «Api-Key <ключ>»
      EYES_FOREIGN — 0: модель в России, хоть и не в Yandex Cloud (согласие на отправку за рубеж не нужно); по умолчанию зарубежная — всё, что не Yandex
-     OPENROUTER_API_KEY, EYES_BEST_MODEL — лучшая модель через OpenRouter (зарубежная): основная, если студент согласился
-     EYES_BEST_FOR=admin — лучшая модель только для владельца (тестовый стенд: адрес виден в журналах, баланс OpenRouter не для всех);
+     PROXYAPI_KEY, EYES_BEST_MODEL — лучшая модель через ProxyAPI (proxyapi.ru, оплата в рублях; модель зарубежная): основная,
+                   если студент согласился. Адрес — единый OpenAI-совместимый api.proxyapi.ru/v1/chat/completions, имя модели —
+                   с вендором: anthropic/claude-opus-5-5 (имя в духе OpenRouter, anthropic/claude-opus-5.5, тоже принимается)
+     EYES_BEST_FOR=admin — лучшая модель только для владельца (тестовый стенд: адрес виден в журналах, баланс ProxyAPI не для всех);
      EYES_BEST_DEFAULT=1 — для тех, кому она доступна, — без отметки «лист мой» (владелец тестирует своими листами)
                    отправить фото; Qwen в Yandex — запасной и без согласия (askAny)
    Фото никуда не сохраняется: только запрос к модели. */
 'use strict';
-const DEF_URL='https://llm.api.cloud.yandex.net/v1/chat/completions', DEF_MODEL='gpt://{folder}/qwen2.5-vl-32b-instruct', OR_URL='https://openrouter.ai/api/v1/chat/completions';
+const DEF_URL='https://llm.api.cloud.yandex.net/v1/chat/completions', DEF_MODEL='gpt://{folder}/qwen2.5-vl-32b-instruct', PX_URL='https://api.proxyapi.ru/v1/chat/completions';
+/* OpenRouter — только для замеров в lab/dz (ключ OPENROUTER_API_KEY); кабинет ходит к зарубежным моделям через ProxyAPI */
+const OR_URL='https://openrouter.ai/api/v1/chat/completions';
 /* лучшая модель по замеру (REPORT.md, 7к); EYES_BEST_MODEL — другая, EYES_BEST_MODEL=off — не подключать */
-const BEST_MODEL='anthropic/claude-opus-5.5';
+const BEST_MODEL='anthropic/claude-opus-5-5';
 /* оцифровка чертежа целиком (mode: 'digit'): модель выписывает точки, отрезки и записанные ответы, мозг сканера проверяет
    по ним (lab/dz/eyes.js prepareDigit). Замер 7м: Sonnet 5.5 — точки ≈ 0,4 мм, линии 91–100 % в 1 мм, $0,01 за чертёж.
    EYES_DIGIT_MODEL — другая модель, off — не подключать */
-const DIGIT_MODEL='anthropic/claude-sonnet-5.5';
+const DIGIT_MODEL='anthropic/claude-sonnet-5-5';
 const DIGIT_PROMPT=`Ты — оцифровщик чертежей. На фото — лист ДЗ №3 по начертательной геометрии (эпюр Монжа, пирамида SABC): один
 или несколько отдельных чертежей, у каждого своя ось x и своя копия пирамиды. Лист может быть повёрнут. Координаты — в пикселях
 ЭТОГО фото: начало — левый верхний угол, x вправо, y вниз, целые числа. Ничего не оценивай — только перепиши, что начерчено.
@@ -56,22 +60,26 @@ const PROMPT=`Ты — глаза сканера домашних заданий
 {"dz": 3, "n": 7, "drawings": [{"box": [x0, y0, x1, y1], "part": 4, "pts": {"A''": [x, y], "A'": [x, y], "O": [x, y]}}]}`;
 
 function eyesFromEnv(env){ env=env||process.env; const folder=env.EYES_FOLDER||env.YC_FOLDER_ID||'';
-  const model=(env.EYES_MODEL||DEF_MODEL).replace('{folder}',folder), url=env.EYES_URL||DEF_URL, yandex=/\.yandex\.net\//.test(url), openrouter=/openrouter\.ai\//.test(url);
-  const key=env.EYES_KEY||(openrouter?env.OPENROUTER_API_KEY:'')||'';
-  const cfg={url,model,folder,key,auth:env.EYES_AUTH||'Bearer',yandex,openrouter,foreign:env.EYES_FOREIGN!=null?env.EYES_FOREIGN!=='0':!yandex,opts:Object.assign(openrouter?orOpts(model):{},opts(env.EYES_OPTS)),on:env.EYES!=='off'&&!!(key||yandex&&folder)};
-  /* лучшая модель (замер — lab/dz/REPORT.md, 7к) через OpenRouter: зарубежная — только с согласием на отправку фото
+  const model=(env.EYES_MODEL||DEF_MODEL).replace('{folder}',folder), url=env.EYES_URL||DEF_URL, yandex=/\.yandex\.net\//.test(url), openrouter=/openrouter\.ai\//.test(url), proxyapi=/proxyapi\.ru\//.test(url);
+  const key=env.EYES_KEY||(proxyapi?env.PROXYAPI_KEY:openrouter?env.OPENROUTER_API_KEY:'')||'', m=proxyapi?pxModel(model):model;
+  const cfg={url,model:m,folder,key,auth:env.EYES_AUTH||'Bearer',yandex,openrouter,proxyapi,foreign:env.EYES_FOREIGN!=null?env.EYES_FOREIGN!=='0':!yandex,opts:Object.assign(openrouter?orOpts(m):proxyapi?pxOpts(m):{},opts(env.EYES_OPTS)),on:env.EYES!=='off'&&!!(key||yandex&&folder)};
+  /* лучшая модель (замер — lab/dz/REPORT.md, 7к) через ProxyAPI: зарубежная — только с согласием на отправку фото
      (askAny); без согласия, без ключа или при сбое — модель выше (Qwen в Yandex AI Studio) */
-  const bm=env.EYES_BEST_MODEL===undefined?BEST_MODEL:env.EYES_BEST_MODEL, bk=env.OPENROUTER_API_KEY||'';
-  cfg.best=env.EYES!=='off'&&bm&&bk&&bm!=='off'?eyesFromEnv({EYES_URL:env.EYES_BEST_URL||OR_URL,EYES_MODEL:bm,OPENROUTER_API_KEY:bk,EYES_OPTS:env.EYES_BEST_OPTS,EYES_BEST_MODEL:'off'}):null;
+  const bm=env.EYES_BEST_MODEL===undefined?BEST_MODEL:env.EYES_BEST_MODEL, bk=env.PROXYAPI_KEY||'';
+  cfg.best=env.EYES!=='off'&&bm&&bk&&bm!=='off'?eyesFromEnv({EYES_URL:env.EYES_BEST_URL||PX_URL,EYES_MODEL:bm,PROXYAPI_KEY:bk,EYES_OPTS:env.EYES_BEST_OPTS,EYES_BEST_MODEL:'off'}):null;
   cfg.best=cfg.best&&cfg.best.on?cfg.best:null; cfg.on=cfg.on||!!cfg.best;
-  /* оцифровщик (зарубежный, OpenRouter): только с согласием, как лучшая модель */
+  /* оцифровщик (зарубежный, ProxyAPI): только с согласием, как лучшая модель */
   const dm=env.EYES_DIGIT_MODEL===undefined?DIGIT_MODEL:env.EYES_DIGIT_MODEL;
-  cfg.digit=env.EYES!=='off'&&dm&&bk&&dm!=='off'&&!env.EYES_DIGIT_NESTED?eyesFromEnv({EYES_URL:OR_URL,EYES_MODEL:dm,OPENROUTER_API_KEY:bk,EYES_BEST_MODEL:'off',EYES_DIGIT_NESTED:'1'}):null;
+  cfg.digit=env.EYES!=='off'&&dm&&bk&&dm!=='off'&&!env.EYES_DIGIT_NESTED?eyesFromEnv({EYES_URL:PX_URL,EYES_MODEL:dm,PROXYAPI_KEY:bk,EYES_BEST_MODEL:'off',EYES_DIGIT_NESTED:'1'}):null;
   cfg.digit=cfg.digit&&cfg.digit.on?cfg.digit:null; cfg.on=cfg.on||!!cfg.digit;
   cfg.bestFor=env.EYES_BEST_FOR==='admin'?'admin':'all'; cfg.bestDefault=env.EYES_BEST_DEFAULT==='1';
   return cfg; }
 /* OpenRouter: модели с рассуждением (Gemini 3, GPT-5) — коротко, иначе ответ через минуту; usage.cost — цена запроса */
 function orOpts(model){ return Object.assign({max_tokens:8000,usage:{include:true}},/gemini|gpt-5|\/o\d/.test(model)?{reasoning:{effort:'low'}}:{}); }
+/* ProxyAPI (OpenAI-совместимый /chat/completions): только стандартные поля OpenAI — рассуждение коротко через reasoning_effort */
+function pxOpts(model){ return Object.assign({max_tokens:8000},/gemini|gpt-5|\/o\d/.test(model)?{reasoning_effort:'low'}:{}); }
+/* имя модели для ProxyAPI: у Claude версия через дефис (anthropic/claude-opus-5-5), а не через точку, как в OpenRouter */
+function pxModel(model){ return /^anthropic\/claude-/.test(model)?model.replace(/(\d)\.(\d)/g,'$1-$2'):model; }
 /* EYES_OPTS — добавки к запросу модели (например, выключить рассуждение), JSON или base64 от JSON: в переменных функции
    Yandex Cloud запятая разделяет сами переменные, поэтому развёртывание пишет base64 */
 function opts(v){ v=String(v||'').trim(); if(!v) return {}; try{ const o=JSON.parse(v[0]==='{'?v:Buffer.from(v,'base64').toString('utf8')); return o&&typeof o==='object'&&!Array.isArray(o)?o:{}; }catch(e){ return {}; } }
@@ -85,7 +93,7 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const key=cfg.key||(o.token&&o.token()||''); if(!key) throw Object.assign(new Error('ИИ-зрение не настроено: нет ключа модели.'),{status:503});
   const headers={'content-type':'application/json',authorization:(cfg.key?cfg.auth:'Bearer')+' '+key};
   if(cfg.yandex&&cfg.folder) headers['x-folder-id']=cfg.folder;
-  if(cfg.openrouter) headers['x-title']='nachert scanner';
+  if(cfg.openrouter) headers['x-title']='nachert scanner';   /* только OpenRouter: ProxyAPI заголовок не нужен */
   const hint=(q.dz?'ДЗ №'+q.dz+'. ':'')+(q.n?'Вариант '+q.n+'. ':'')+'Размер фото: '+q.w+' × '+q.h+' px.';
   const body=Object.assign({model:cfg.model,temperature:0,max_tokens:1500,messages:[{role:'system',content:q.system||PROMPT},
     {role:'user',content:[{type:'text',text:q.text||hint},{type:'image_url',image_url:{url:q.image}}]}]},cfg.opts||{},q.opts||{});
@@ -147,4 +155,4 @@ async function tune(env,image,o){ const cfg=eyesFromEnv(env), res=[];
   const best=good&&good.think>0?Object.assign({},good,{opts:Object.assign({max_tokens:8000},good.opts)}):good;
   return {best,results:res}; }
 
-module.exports={eyesFromEnv,ask,askAny,askDigit,DIGIT_MODEL,DIGIT_PROMPT,orOpts,OR_URL,BEST_MODEL,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};
+module.exports={eyesFromEnv,ask,askAny,askDigit,DIGIT_MODEL,DIGIT_PROMPT,orOpts,pxOpts,pxModel,OR_URL,PX_URL,BEST_MODEL,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};
