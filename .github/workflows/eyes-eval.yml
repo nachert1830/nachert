@@ -14,6 +14,10 @@ on:
         description: 'стратегия для моделей: own+full (свои глаза + рамки и части модели, как в сканере), full, zoom'
         required: false
         default: 'own+full'
+      only:
+        description: 'только эти строки матрицы через запятую (например own,yandex-qwen,claude-opus-5.5); пусто — все'
+        required: false
+        default: ''
   push:
     branches: [claude/eyes-best-models]
     paths: ['lab/dz/eyes-eval.js', 'lab/dz/eyes.js', 'server/lib/eyes.js', '.github/workflows/eyes-eval.yml']
@@ -35,7 +39,9 @@ jobs:
           - {id: gemini-3-pro, provider: openrouter, model: 'google/gemini-3-pro'}
           - {id: gemini-3-flash, provider: openrouter, model: 'google/gemini-3-flash'}
           - {id: gpt-5, provider: openrouter, model: 'openai/gpt-5'}
+          - {id: claude-opus-5.5, provider: openrouter, model: 'anthropic/claude-opus-5.5'}
           - {id: claude-sonnet-5.5, provider: openrouter, model: 'anthropic/claude-sonnet-5.5'}
+          - {id: claude-haiku-5.5, provider: openrouter, model: 'anthropic/claude-haiku-5.5'}
           - {id: qwen3-vl, provider: openrouter, model: 'qwen/qwen3-vl'}
           - {id: molmo-2, provider: openrouter, model: 'allenai/molmo-2-8b'}
     steps:
@@ -63,7 +69,8 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           EYES_OPTS: ${{ matrix.provider == 'yandex' && '{"reasoning_effort":"none"}' || '' }}
         run: |
-          S=${{ github.event.inputs.sheets || '2' }}; ST=${{ github.event.inputs.strategy || 'own+full' }}
+          S=${{ github.event.inputs.sheets || '2' }}; ST=${{ github.event.inputs.strategy || 'own+full' }}; ONLY="${{ github.event.inputs.only }}"
+          if [ -n "$ONLY" ] && ! printf ',%s,' "$ONLY" | grep -q ",${{ matrix.id }},"; then echo "не в списке only — пропускаю"; exit 0; fi
           case "${{ matrix.provider }}" in
             none) node lab/dz/eyes-eval.js --sheets=$S --dz2=0 --strategy=own --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|OpenRouter|  ДЗ3)' ;;
             yandex) node lab/dz/eyes-eval.js --sheets=$S --dz2=0 --strategy=$ST --models=${{ matrix.model }} --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|  ДЗ3)' ;;
