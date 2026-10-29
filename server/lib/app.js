@@ -383,7 +383,11 @@ function createApp(o){
     if(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/.test(img)) fail(400,'Нужно фото (JPEG, PNG или WebP).');
     const w=Math.round(+b.w)||0, h=Math.round(+b.h)||0; if(!(w>=200&&h>=200&&w<=4096&&h<=4096)) fail(400,'Размер фото — от 200 до 4096 px.');
     const dz=[1,2,3,4,5].includes(+b.dz)?+b.dz:null, n=cleanVariant(b.n)||null;
-    try{ const r=await EYES.ask(ec,{image:img,w,h,dz,n},{fetch:http,token:o.iamToken}); return H.json(200,{ok:true,text:r.text,model:r.model}); }
+    /* consent — студент отметил, что лист его (или пример) и фото можно отправить зарубежной модели; без отметки — только Yandex */
+    /* лучшая (зарубежная) модель: кому можно (EYES_BEST_FOR) и нужна ли отметка «лист мой» (EYES_BEST_DEFAULT — стенд владельца) */
+    const mayBest=ec.bestFor!=='admin'||S.user.role==='admin', consent=mayBest&&(b.consent===true||ec.bestDefault);
+    try{ const r=await EYES.askAny(ec,{image:img,w,h,dz,n,consent},{fetch:http,token:o.iamToken}); if(r.fallback) log.error('eyes',r.fallback);
+      return H.json(200,{ok:true,text:r.text,model:r.model,fallback:!!r.fallback}); }
     catch(e){ if(e instanceof HttpError) throw e; log.error('eyes',e&&e.message); fail(e&&e.status||502,e&&e.status?e.message:'Модель зрения не ответила. Попробуйте ещё раз.'); } };
   A['POST /api/feedback']=async(req,S)=>{ const b=body(req); await limit('fb',S.user.id,20,3600);
     const feature=FEAT.ids.includes(b.feature)||b.feature==='privacy'?b.feature:'general', mood=['good','unclear','bad'].includes(b.mood)?b.mood:null, text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000);

@@ -1,43 +1,56 @@
-name: Глаза сканера — замер на настоящей модели
-# Синтетические листы (правда известна до сотых мм) → модель зрения в Yandex AI Studio → промахи, перепутанные подписи,
-# вердикты мозга. Ничего не развёртывает и ничего не меняет в облаке: только запросы к модели (lab/dz/eyes-eval.js).
+name: Глаза сканера — какая модель лучше
+# Синтетические листы ДЗ №3 (quadsynth.js, правда известна; половина — с ошибкой в части 1 или 4) → модель зрения
+# (рамка каждого чертежа и номер части) → свои глаза + мозг → таблица: часть опознана, «верно», ошибка найдена, ЛОЖНЫХ,
+# время, цена за лист (lab/dz/eyes-eval.js). Ничего не развёртывает. В зарубежные модели (OpenRouter) уходят только
+# синтетические листы — фото студентов здесь нет.
 on:
   workflow_dispatch:
     inputs:
-      models:
-        description: 'модели через запятую (имя в каталоге, например qwen3.6-35b-a3b/latest); пусто — та, что подключена'
+      sheets:
+        description: 'листов ДЗ №3 (по 4 чертежа; каждый второй — с ошибкой)'
+        required: false
+        default: '2'
+      strategy:
+        description: 'стратегия для моделей: own+full (свои глаза + рамки и части модели, как в сканере), full, zoom'
+        required: false
+        default: 'own+full'
+      only:
+        description: 'только эти строки матрицы через запятую (например own,yandex-qwen,claude-opus-5.5); пусто — все'
         required: false
         default: ''
-      strategy:
-        description: 'full, zoom, own (свои глаза без модели), own+full (свои глаза + модель, как в сканере) — через запятую'
-        required: false
-        default: 'full,own+full'
-      sheets:
-        description: 'листов ДЗ №3 (по 4 чертежа)'
-        required: false
-        default: '4'
-      scale:
-        description: 'шкала координат ответа модели: px или n1000'
-        required: false
-        default: 'n1000'
   push:
-    branches: [claude/affectionate-mayer-nz0uny]
+    branches: [claude/eyes-best-models]
     paths: ['lab/dz/eyes-eval.js', 'lab/dz/eyes.js', 'server/lib/eyes.js', '.github/workflows/eyes-eval.yml']
 permissions:
   contents: read
 concurrency:
-  group: eyes-eval
+  group: eyes-eval-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {id: own, provider: none, model: ''}
+          - {id: yandex-qwen, provider: yandex, model: 'qwen3.6-35b-a3b/latest'}
+          - {id: gemini-3-pro, provider: openrouter, model: 'google/gemini-3-pro'}
+          - {id: gemini-3-flash, provider: openrouter, model: 'google/gemini-3-flash'}
+          - {id: gpt-5, provider: openrouter, model: 'openai/gpt-5'}
+          - {id: claude-opus-5.5, provider: openrouter, model: 'anthropic/claude-opus-5.5'}
+          - {id: claude-sonnet-5.5, provider: openrouter, model: 'anthropic/claude-sonnet-5.5'}
+          - {id: claude-haiku-5.5, provider: openrouter, model: 'anthropic/claude-haiku-5.5'}
+          - {id: qwen3-vl, provider: openrouter, model: 'qwen/qwen3-vl'}
+          - {id: molmo-2, provider: openrouter, model: 'allenai/molmo-2-8b'}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Программа yc и IAM-токен (ключ аккаунта развёртывания)
+      - name: IAM-токен Yandex Cloud (ключ аккаунта развёртывания)
+        if: matrix.provider == 'yandex'
         env:
           YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
           YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID || 'b1gm1vb5prlop8thuobf' }}
@@ -51,18 +64,42 @@ jobs:
           T=$("$HOME/yc/bin/yc" iam create-token); echo "::add-mask::$T"
           echo "EYES_TOKEN=$T" >> "$GITHUB_ENV"; echo "EYES_FOLDER=$YC_FOLDER_ID" >> "$GITHUB_ENV"
           rm -f "$RUNNER_TEMP/yc-key.json"
-      - name: Модели каталога
-        run: |
-          curl -s -m 20 -H "Authorization: Bearer $EYES_TOKEN" -H "x-folder-id: $EYES_FOLDER" https://llm.api.cloud.yandex.net/v1/models \
-            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{ try{ const j=JSON.parse(s); (j.data||[]).forEach(m=>console.log("  "+String(m.id).replace(process.env.EYES_FOLDER,"<каталог>"))); }catch(e){ console.log(s.slice(0,300)); } })'
       - name: Замер
         env:
-          EYES_OPTS: '{"reasoning_effort":"none"}'
-          EYES_MODEL: 'gpt://{folder}/qwen3.6-35b-a3b/latest'
-        run: node lab/dz/eyes-eval.js --sheets=${{ github.event.inputs.sheets || '4' }} --dz2=2 --strategy=${{ github.event.inputs.strategy || 'full,own+full' }} --models=${{ github.event.inputs.models || 'qwen3.6-35b-a3b/latest' }} --scale=${{ github.event.inputs.scale || 'n1000' }} --out=eyes-eval.json
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          EYES_OPTS: ${{ matrix.provider == 'yandex' && '{"reasoning_effort":"none"}' || '' }}
+        run: |
+          S=${{ github.event.inputs.sheets || '2' }}; ST=${{ github.event.inputs.strategy || 'own+full' }}; ONLY="${{ github.event.inputs.only }}"
+          if [ -n "$ONLY" ] && ! printf ',%s,' "$ONLY" | grep -q ",${{ matrix.id }},"; then echo "не в списке only — пропускаю"; exit 0; fi
+          case "${{ matrix.provider }}" in
+            none) node lab/dz/eyes-eval.js --sheets=$S --dz2=0 --strategy=own --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|OpenRouter|  ДЗ3)' ;;
+            yandex) node lab/dz/eyes-eval.js --sheets=$S --dz2=0 --strategy=$ST --models=${{ matrix.model }} --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|  ДЗ3)' ;;
+            openrouter)
+              node lab/dz/eyes-eval.js --resolve=${{ matrix.model }}
+              test -n "$OPENROUTER_API_KEY" || { echo "::error::нет секрета OPENROUTER_API_KEY"; echo '{"rows":[{"name":"${{ matrix.model }}: нет секрета OPENROUTER_API_KEY","miss":true}]}' > eyes-${{ matrix.id }}.json; exit 1; }
+              node lab/dz/eyes-eval.js --provider=openrouter --sheets=$S --dz2=0 --strategy=$ST --models=${{ matrix.model }} --out=eyes-${{ matrix.id }}.json | grep -E '^(ИТОГО|  ЛОЖНО|OpenRouter|  ДЗ3)' ;;
+          esac
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: eyes-eval
-          path: eyes-eval.json
+          name: eyes-${{ matrix.id }}
+          path: eyes-${{ matrix.id }}.json
           if-no-files-found: ignore
+  table:
+    needs: eval
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: res
+      - name: Таблица
+        run: node lab/dz/eyes-eval.js --table=res
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eyes-all
+          path: res

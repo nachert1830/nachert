@@ -82,3 +82,26 @@ test('развёртывание: настройка запроса — из в�
     const t2=await tune({EYES_FOLDER:'b1gf',EYES_MODEL:'gpt://{folder}/q'},'data:,',{fetch:async(u,o)=>{ const b=JSON.parse(o.body); if(b.chat_template_kwargs||b.reasoning_effort) return http(u,{body:JSON.stringify({max_tokens:1500})}); return http(u,o); },token:()=>'t'});
     assert.ok(t2.best.opts.max_tokens===8000); }
   finally{ Date.now=real; } });
+
+test('лучшая модель (OpenRouter) — только с согласием на отправку фото; без согласия и при сбое — Qwen в Yandex',async()=>{
+  const cfg=eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key',EYES_BEST_MODEL:'google/gemini-3-flash'});
+  assert.equal(cfg.yandex,true); assert.equal(cfg.best.model,'google/gemini-3-flash'); assert.equal(cfg.best.url,'https://openrouter.ai/api/v1/chat/completions');
+  assert.equal(eyesFromEnv({YC_FOLDER_ID:'b1gtest',EYES_BEST_MODEL:'google/gemini-3-flash'}).best,null);
+  const c=club({eyes:cfg,iam:'iam-1'}); await c.owner(); const seen=[];
+  c.ya.eyes=b=>{ seen.push('yandex'); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[1,2,3,4]}]}'}}]}}; };
+  c.ya.best=b=>{ seen.push('best:'+b.model); return {status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[5,6,7,8],"part":2}]}'}}]}}; };
+  let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'owner'}); assert.equal(r.status,200); assert.equal(r.data.model,cfg.model);
+  r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,consent:true},{as:'owner'}); assert.equal(r.data.model,'google/gemini-3-flash'); assert.match(r.data.text,/"part":2/);
+  const call=c.ya.calls.find(x=>x.url===cfg.best.url); assert.equal(call.headers.authorization,'Bearer or-key'); assert.equal(call.headers['x-folder-id'],undefined);
+  c.ya.best=()=>({status:500,json:{error:{message:'упала'}}});
+  r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,consent:true},{as:'owner'}); assert.equal(r.status,200); assert.equal(r.data.model,cfg.model); assert.equal(r.data.fallback,true);
+  assert.deepEqual(seen,['yandex','best:google/gemini-3-flash','yandex']); });
+
+test('стенд владельца: EYES_BEST_FOR=admin, EYES_BEST_DEFAULT=1 — владельцу лучшая модель без отметки, участнику — только Yandex',async()=>{
+  const cfg=eyesFromEnv({YC_FOLDER_ID:'b1gtest',OPENROUTER_API_KEY:'or-key',EYES_BEST_MODEL:'anthropic/claude-opus-5.5',EYES_BEST_FOR:'admin',EYES_BEST_DEFAULT:'1'});
+  assert.equal(cfg.bestFor,'admin'); assert.equal(cfg.bestDefault,true);
+  const c=club({eyes:cfg,iam:'iam-1'}); await c.owner(); await c.member(5001,'m5001');
+  c.ya.eyes=()=>({status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[1,2,3,4]}]}'}}]}});
+  c.ya.best=()=>({status:200,json:{choices:[{message:{content:'{"drawings":[{"box":[5,6,7,8],"part":1}]}'}}]}});
+  let r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3},{as:'owner'}); assert.equal(r.data.model,'anthropic/claude-opus-5.5');
+  r=await c.call('POST','/api/eyes',{img:IMG,w:800,h:600,dz:3,consent:true},{as:'m5001'}); assert.equal(r.status,200); assert.equal(r.data.model,cfg.model); });

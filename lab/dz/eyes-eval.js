@@ -1,12 +1,17 @@
 /* ═══════════ Замер глаз на настоящей модели: синтетические листы, где правда известна до сотых мм ═══════════
    node lab/dz/eyes-eval.js [--sheets=6] [--dz2=3] [--strategy=full,zoom,own,own+full,net,net+own] [--netw=eyes.onnx] [--models=m1,m2] [--brain=1]
    node lab/dz/eyes-eval.js --strategy=own --dz2=0 — свои глаза, без модели (findDrawings: все копии фигуры по линиям)
+   node lab/dz/eyes-eval.js --provider=openrouter --models=google/gemini-3-pro --strategy=own+full --dz2=0 — модель через
+     OpenRouter (ключ OPENROUTER_API_KEY; точное имя — из списка моделей OpenRouter, ближайшее к заданному)
+   node lab/dz/eyes-eval.js --table=a.json,b.json — сводная таблица прогонов (REPORT.md, 7к; итог workflow)
    Нужен доступ к модели: EYES_TOKEN (IAM-токен) и EYES_FOLDER — Yandex AI Studio (или EYES_KEY / EYES_URL / EYES_MODEL —
    другая модель). Отсюда Yandex Cloud недоступен — прогон идёт в GitHub Actions (.github/workflows/eyes-eval.yml).
    Листы: ДЗ №3 — четыре чертежа на А3 (quadsynth.js), ДЗ №2 — А3 с одним чертежом (vsynth.js).
    Стратегии: full — всё фото одним запросом (1280 px); zoom — «лупа»: первый запрос находит чертежи, затем каждый чертёж
    отдельным запросом, вырезанный крупно (до 1280 px на один чертёж); own — свои глаза без модели; own+full — свои
    глаза и рамки модели вместе (mergeDrawings, как в сканере).
+   Шкала координат ответа — сама (eyes.js rescale: px, 0…1000 [x, y], 0…1000 [y, x] у Gemini); --scale=px|n1000|yx1000 — задать.
+   Часть опознана — номер части у чертежа (от модели) против правды quadsynth: верно / неверно (опаснее, чем «не знаю»).
    Меры: найдено чертежей; по подписям точек условия — найдено, перепутано (ближе к другой точке своего чертежа), промах в мм
    (медиана, 90 %); время; затем мозг (eyes.js → проверка) по ответу глаз: прочитано чертежей и ЛОЖНЫЕ вердикты (все листы
    начерчены верно — любое «ошибка» ложно). */
@@ -47,17 +52,20 @@ function sheets(){ const out=[];
     out.push({name:'ДЗ2 в'+n,dz:2,n,img:s.img,H:t.H,groups:[{part:null,pts}]}); });
   return out; }
 
-async function ask(cfg,pic,dz,n,text){ const t0=Date.now(); const r=await SE.ask(cfg,{image:pic.url,w:pic.w,h:pic.h,dz,n,text},{token:()=>TOKEN,timeout:90000}); return {text:r.text,ms:Date.now()-t0,info:r.info}; }
+/* цена запроса: OpenRouter отдаёт usage.cost ($); иначе — по токенам и ценам из списка моделей (PRICE) */
+let PRICE=null; const costOf=u=>!u?0:u.cost!=null?+u.cost:PRICE?(u.prompt_tokens||0)*PRICE.prompt+(u.completion_tokens||0)*PRICE.completion+PRICE.image:0;
+async function ask(cfg,pic,dz,n,text){ const t0=Date.now(); const r=await SE.ask(cfg,{image:pic.url,w:pic.w,h:pic.h,dz,n,text},{token:()=>TOKEN,timeout:180000}); const u=r.info&&r.info.usage;
+  return {text:r.text,ms:Date.now()-t0,info:r.info,cost:costOf(u),tok:u?(u.prompt_tokens||0)+(u.completion_tokens||0):0}; }
 /* стратегии: ответ — чертежи с точками в px полного снимка */
-/* шкала координат ответа: px присланного фото или 0…1000 (так отвечает семейство Qwen3-VL) — A.scale=px|n1000|auto */
-const SCALE=A.scale||'px';
-function toFull(E,pic,mode,W,Hh){ E.drawings.forEach(d=>{ const f=p=>mode==='n1000'?[pic.bx+p[0]/1000*pic.w/pic.k,pic.by+p[1]/1000*pic.h/pic.k]:[pic.bx+p[0]/pic.k,pic.by+p[1]/pic.k];
-    Object.keys(d.pts).forEach(l=>{ d.pts[l]=f(d.pts[l]); }); if(d.box){ const a=f([d.box[0],d.box[1]]), b=f([d.box[2],d.box[3]]); d.box=[a[0],a[1],b[0],b[1]]; } }); return E; }
-async function full(cfg,sh,mode){ const pic=Object.assign(grayPNG(sh.img,null,1280),{bx:0,by:0}), r=await ask(cfg,pic,sh.dz,sh.n), E=EY.parse(r.text);
-  if(E.error) return {drawings:[],ms:r.ms,calls:1,err:E.error,text:r.text.slice(0,300)};
-  const raw=JSON.parse(JSON.stringify(E)); toFull(E,pic,mode||SCALE);
-  return {drawings:E.drawings,raw,pic,ms:r.ms,calls:1,text:r.text.slice(0,400)}; }
-async function zoom(cfg,sh){ const f=await full(cfg,sh,SCALE); if(!f.drawings.length) return Object.assign(f,{note:'первый проход пуст'}); let ms=f.ms, calls=1; const out=[];
+/* шкала координат ответа — сама, по ответу (eyes.js rescale), или задана --scale; свои глаза листа — для выбора по рамкам */
+const SCALE=A.scale||'auto';
+function toFull(E,pic,cfg,sh,own){ const o={w:pic.w,h:pic.h,k:pic.k,bx:pic.bx,by:pic.by,W:sh.img.width,H:sh.img.height,model:cfg.model,dz:sh.dz,n:sh.n,own};
+  const r=EY.rescale(E,SCALE==='auto'?o:Object.assign(o,{only:SCALE})); E.drawings=r.E.drawings; return r.scale; }
+async function full(cfg,sh){ const pic=Object.assign(grayPNG(sh.img,null,1280),{bx:0,by:0}), r=await ask(cfg,pic,sh.dz,sh.n), E=EY.parse(r.text);
+  if(E.error) return {drawings:[],model:[],ms:r.ms,calls:1,cost:r.cost,tok:r.tok,err:E.error,text:r.text.slice(0,300)};
+  const own=sh.dz===3?(await own_(sh)).drawings:null, scale=toFull(E,pic,cfg,sh,own);
+  return {drawings:E.drawings,model:E.drawings,scale,ms:r.ms,calls:1,cost:r.cost,tok:r.tok,text:r.text.slice(0,400)}; }
+async function zoom(cfg,sh){ const f=await full(cfg,sh); if(!f.drawings.length) return Object.assign(f,{note:'первый проход пуст'}); let ms=f.ms, calls=1, cost=f.cost, tok=f.tok; const out=[];
   for(const d of f.drawings){ const P=Object.values(d.pts); let b=d.box&&d.box.every(isFinite)?d.box.slice():null;
     if(!b&&P.length){ b=[Math.min(...P.map(p=>p[0])),Math.min(...P.map(p=>p[1])),Math.max(...P.map(p=>p[0])),Math.max(...P.map(p=>p[1]))]; }
     if(!b){ out.push(d); continue; }
@@ -65,22 +73,34 @@ async function zoom(cfg,sh){ const f=await full(cfg,sh,SCALE); if(!f.drawings.le
     const W=sh.img.width, Hh=sh.img.height, mw=Math.max((b[2]-b[0])*0.15,W*0.03), mh=Math.max((b[3]-b[1])*0.15,Hh*0.03);
     const x0=Math.max(0,Math.floor(b[0]-mw)), y0=Math.max(0,Math.floor(b[1]-mh)), x1=Math.min(W,Math.ceil(b[2]+mw)), y1=Math.min(Hh,Math.ceil(b[3]+mh));
     const pic=grayPNG(sh.img,[x0,y0,x1-x0,y1-y0],1280);
-    try{ const r=await ask(cfg,pic,sh.dz,sh.n,'На фото — ОДИН чертёж (вырезан с листа). ДЗ №'+sh.dz+'. Вариант '+sh.n+'. Размер фото: '+pic.w+' × '+pic.h+' px.'); ms+=r.ms; calls++;
+    try{ const r=await ask(cfg,pic,sh.dz,sh.n,'На фото — ОДИН чертёж (вырезан с листа). ДЗ №'+sh.dz+'. Вариант '+sh.n+'. Размер фото: '+pic.w+' × '+pic.h+' px.'); ms+=r.ms; calls++; cost+=r.cost; tok+=r.tok;
       const E=EY.parse(r.text); if(E.error||!E.drawings.length){ out.push(d); continue; }
       const dd=E.drawings.sort((a,c)=>Object.keys(c.pts).length-Object.keys(a.pts).length)[0];
-      toFull({drawings:[dd]},Object.assign(pic,{bx:x0,by:y0}),SCALE); dd.box=[x0,y0,x1,y1]; dd.part=dd.part||d.part; out.push(dd); }
+      toFull({drawings:[dd]},Object.assign(pic,{bx:x0,by:y0}),cfg,sh,null); dd.box=[x0,y0,x1,y1]; dd.part=dd.part||d.part; out.push(dd); }
     catch(e){ out.push(d); } }
-  return {drawings:out,ms,calls}; }
+  return {drawings:out,model:f.model,scale:f.scale,ms,calls,cost,tok}; }
 
 /* свои глаза: чертежи по линиям, без модели (только ДЗ №3) */
-async function own(cfg,sh){ const t0=Date.now(); if(sh.dz!==3) return {drawings:[],ms:0,calls:0,err:'свои глаза — только ДЗ №3'};
-  const f=EY.findDrawings(sh.img,{dz:3,n:sh.n,side:sh.side}); return {drawings:f.ok?f.drawings:[],ms:Date.now()-t0,calls:0,err:f.ok?null:f.reason}; }
-async function ownFull(cfg,sh){ const a=await own(cfg,sh), b=await full(cfg,sh); return {drawings:sh.dz===3?EY.mergeDrawings(a.drawings,b.drawings):b.drawings,ms:a.ms+b.ms,calls:b.calls,raw:b.raw,pic:b.pic,text:b.text,err:b.err}; }
+/* свои глаза листа — один раз на лист (их ждут и стратегии с моделью: рамки, шкала) */
+const OWN=new Map();
+async function own_(sh){ if(OWN.has(sh)) return OWN.get(sh); const t0=Date.now(); let r;
+  if(sh.dz!==3) r={drawings:[],ms:0,calls:0,err:'свои глаза — только ДЗ №3'};
+  else { const f=EY.findDrawings(sh.img,{dz:3,n:sh.n,side:sh.side}); r={drawings:f.ok?f.drawings:[],ms:Date.now()-t0,calls:0,err:f.ok?null:f.reason}; }
+  OWN.set(sh,r); return r; }
+async function own(cfg,sh){ const r=await own_(sh); return Object.assign({},r,{drawings:r.drawings.map(d=>Object.assign({},d))}); }
+async function ownFull(cfg,sh){ const a=await own(cfg,sh), b=await full(cfg,sh); return {drawings:sh.dz===3?EY.mergeDrawings(a.drawings,b.drawings):b.drawings,model:b.model,scale:b.scale,ms:a.ms+b.ms,msModel:b.ms,calls:b.calls,cost:b.cost,tok:b.tok,text:b.text,err:b.err}; }
 /* сеть глаз (lab/dz/net): кандидаты точек → чертежи по геометрии; net+own — свои глаза по линиям, а чертежи сети — где своих нет */
 let NETL=null; const NET=()=>NETL||(NETL=(async()=>{ const N=require('./net/eyesnet.js'); await N.load(A.netw||__dirname+'/net/eyes.onnx'); return N; })());
 async function net(cfg,sh){ const t0=Date.now(), N=await NET(), r=await N.eyes(sh.img,{dz:sh.dz,n:sh.n}); return {drawings:r.ok?r.drawings:[],ms:Date.now()-t0,calls:0,err:r.ok?null:r.reason}; }
 async function netOwn(cfg,sh){ const a=await own(cfg,sh), b=await net(cfg,sh); return {drawings:EY.mergeDrawings(a.drawings,b.drawings),ms:a.ms+b.ms,calls:0,err:a.err&&b.err}; }
-const STRATS={full,zoom,own,'own+full':ownFull,net,'net+own':netOwn};
+/* заглушка модели — злая подсказка части (замер того, что номер части от модели — только подсказка): рамка — правда, часть —
+   верная в половине случаев, чужая в трети, у чертежа только с условием — чаще всего какая-нибудь (как у Qwen3.6 в 7к) */
+async function mock(cfg,sh){ const R=IMG.rng(sh.n*977+7), P=p=>IMG.H.apply(sh.H,p);
+  const drawings=sh.groups.map(g=>{ const xs=Object.values(g.pts).map(P), b=[Math.min(...xs.map(p=>p[0])),Math.min(...xs.map(p=>p[1])),Math.max(...xs.map(p=>p[0])),Math.max(...xs.map(p=>p[1]))], w=b[2]-b[0], h=b[3]-b[1];
+    const x=R(), other=()=>'abcd'.replace(g.part||'','')[Math.floor(R()*3)], part=!g.built?(x<0.8?'abcd'[Math.floor(R()*4)]:null):x<0.5?g.part:x<0.83?other():null;
+    return {box:[b[0]-0.3*w,b[1]-0.15*h,b[2]+0.3*w,b[3]+0.15*h],part,pts:{}}; });
+  const a=await own(cfg,sh); return {drawings:sh.dz===3?EY.mergeDrawings(a.drawings,drawings):drawings,model:drawings,ms:a.ms,calls:0}; }
+const STRATS={full,zoom,own,'own+full':ownFull,net,'net+own':netOwn,'own+mock':mock};
 
 /* оценка ответа глаз против правды листа */
 function score(sh,res){ const Hi=IMG.H.inv(sh.H), mm=p=>IMG.H.apply(Hi,p), used=new Set(), st={found:0,total:0,swap:0,err:[],extra:0,drawingsFound:0};
@@ -88,6 +108,8 @@ function score(sh,res){ const Hi=IMG.H.inv(sh.H), mm=p=>IMG.H.apply(Hi,p), used=
   res.drawings.forEach(d=>{ /* свои глаза: подписей нет — чертёж по началу O привязки (≤ 6 мм от правды) */
     if(d.A&&!Object.keys(d.pts||{}).length){ const o=mm([d.A[2],d.A[5]]); let b=null; sh.groups.forEach((g,gi)=>{ if(used.has(gi)) return; const e=Math.hypot(g.pts.O[0]-o[0],g.pts.O[1]-o[1]); if(e<=6&&(!b||e<b.e)) b={gi,e}; });
       if(!b){ st.extra++; return; } used.add(b.gi); st.drawingsFound++; d._group=b.gi; return; }
+    /* только рамка (точки — по желанию): чертёж, чьих точек условия в ней больше всего */
+    if(!Object.keys(d.pts||{}).length){ const gi=boxGroup(sh,d.box,used); if(gi==null){ st.extra++; return; } used.add(gi); st.drawingsFound++; d._group=gi; return; }
     /* какой чертёж листа это: где больше подписей в 15 мм от своей правды */
     let best=null; sh.groups.forEach((g,gi)=>{ if(used.has(gi)) return; let k=0; Object.entries(d.pts).forEach(([l,p])=>{ const t=g.pts[l]; if(t){ const m=mm(p); if(Math.hypot(m[0]-t[0],m[1]-t[1])<=15) k++; } }); if(!best||k>best.k) best={gi,k}; });
     if(!best||best.k===0){ st.extra++; return; } used.add(best.gi); st.drawingsFound++; const g=sh.groups[best.gi]; d._group=best.gi;
@@ -114,33 +136,76 @@ async function brain(sh,res){ if(!BRAIN||!res.drawings.length) return null; cons
   const vs=r.drawings.map(g=>g.verdict), bad=sh.dz===2?vs.filter(v=>v==='ошибка'||v==='другое решение'||v==='не тот вариант'):r.drawings.filter(isFalse).map(g=>g.verdict);
   const caught=r.drawings.filter(g=>{ const G=grpOf(g); return G&&G.err&&(g.verdict==='ошибка'||g.parts&&g.parts[G.err[0]]&&g.parts[G.err[0]].st==='ошибка'&&(g.shown||[]).includes(G.err[0])); }).length;
   const read=r.drawings.filter(g=>g.ok).length, ok=sh.dz===2?vs.filter(v=>v==='верно').length:vs.filter(v=>v==='верно'||v==='данные нанесены верно').length;
-  return {verdicts:vs,read,ok,misplaced,false:bad.length,caught,falseWhy:r.drawings.filter(g=>sh.dz===2?bad.includes(g.verdict):isFalse(g)).map(g=>partFalse(g).concat((g.why||[]).filter(w=>/неточно|ошибк|должн|взята|отклон/.test(w))).join(' | ').slice(0,300)),ms:Date.now()-t0}; }
+  /* какую часть опознал сам мозг (по построению): для своих глаз — это и есть «часть опознана» */
+  const bparts=r.drawings.map(g=>{ const G=grpOf(g); const p=g.idPart||(g.partGuess&&g.partGuess.length===1?g.partGuess[0]:null); return G?{box:null,pts:{},_gi:sh.groups.indexOf(G),part:p}:null; }).filter(Boolean);
+  return {verdicts:vs,read,ok,misplaced,false:bad.length,caught,bparts,falseWhy:r.drawings.filter(g=>sh.dz===2?bad.includes(g.verdict):isFalse(g)).map(g=>partFalse(g).concat((g.why||[]).filter(w=>/неточно|ошибк|должн|взята|отклон/.test(w))).join(' | ').slice(0,300)),ms:Date.now()-t0}; }
 
-(async()=>{ const base=SE.eyesFromEnv(process.env);
-  const noModel=STR.every(s=>/^(own|net|net\+own)$/.test(s));
-  if(!noModel&&(!base.on||!(TOKEN||base.key))){ console.log('нет доступа к модели: нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY); без модели — --strategy=own'); process.exit(1); }
-  const models=noModel?['свои глаза']:A.models?A.models.split(',').map(m=>m.includes('://')?m:'gpt://{folder}/'+m):[process.env.EYES_MODEL||SE.DEF_MODEL];
+/* рамка → чертёж листа: в ней ≥ 6 из 9 точек его условия (больше, чем у соседей) */
+function boxGroup(sh,box,used){ if(!box||!box.every(isFinite)) return null; let b=null;
+  sh.groups.forEach((g,i)=>{ if(used&&used.has(i)) return; const k=Object.values(g.pts).filter(t=>{ const p=IMG.H.apply(sh.H,t); return p[0]>=box[0]&&p[0]<=box[2]&&p[1]>=box[1]&&p[1]<=box[3]; }).length;
+    if(k>=6&&(!b||k>b.k)) b={i,k}; }); return b?b.i:null; }
+/* часть опознана: номер части у чертежа (как ответила модель) против правды quadsynth. Чертёж — по рамке, иначе по подписям.
+   Построенный чертёж: верно / неверно / не сказала; чертёж только с условием: любой номер — неверно */
+function partScore(sh,ds){ const st={ok:0,wrong:0,none:0,built:0,why:[]}; if(sh.dz!==3) return st; const Hi=IMG.H.inv(sh.H), got=new Map();
+  (ds||[]).forEach(d=>{ let gi=d._gi!=null?d._gi:boxGroup(sh,d.box,null);
+    if(gi==null&&Object.keys(d.pts||{}).length){ let b=null; sh.groups.forEach((g,i)=>{ const k=Object.entries(d.pts).filter(([l,p])=>{ const t=g.pts[l]; if(!t) return false; const m=IMG.H.apply(Hi,p); return Math.hypot(m[0]-t[0],m[1]-t[1])<=15; }).length; if(k&&(!b||k>b.k)) b={i,k}; }); if(b) gi=b.i; }
+    if(gi==null) return; if(!got.has(gi)||!got.get(gi)&&d.part) got.set(gi,d.part||null); });
+  const PN={a:1,b:2,c:3,d:4};
+  sh.groups.forEach((g,i)=>{ const p=got.get(i)||null; if(g.built){ st.built++; if(p===g.part) st.ok++; else if(p){ st.wrong++; st.why.push('часть '+PN[g.part]+' названа '+PN[p]); } else st.none++; }
+    else if(p){ st.wrong++; st.why.push('условие без построений названо частью '+PN[p]); } });
+  return st; }
+
+/* OpenRouter: точное имя модели — из списка (ближайшее к заданному: то же имя, или начинается с него; из нескольких —
+   с картинками на входе, не :free, самая большая по числу параметров, instruct раньше thinking) и цены за токен */
+async function orResolve(name){ const r=await fetch('https://openrouter.ai/api/v1/models',{signal:AbortSignal.timeout(30000)}), j=await r.json(), every=j.data||[], all=every.filter(m=>((m.architecture||{}).input_modalities||['image']).includes('image'));
+  const n=name.toLowerCase(), size=id=>{ const m=id.match(/(\d+(?:\.\d+)?)b(?![a-z])/); return m?+m[1]:0; };
+  let c=all.filter(m=>m.id.toLowerCase()===n); if(!c.length) c=all.filter(m=>m.id.toLowerCase().startsWith(n)); if(!c.length) c=all.filter(m=>m.id.toLowerCase().includes(n.split('/').pop()));
+  c=c.filter(m=>!/:free$/.test(m.id)).concat(c.filter(m=>/:free$/.test(m.id)));
+  /* «-image» — модели, которые рисуют картинки (gemini-3-pro-image), не для чтения: только если попросили; «:batch» — пакетный режим, «-customtools» — вариант для агентов */
+  const odd=id=>(/-image/.test(id)&&!/image/.test(n))||(/-customtools/.test(id)&&!/customtools/.test(n))||/:batch$/.test(id);
+  c.sort((a,b)=>(odd(a.id)-odd(b.id))||(/:free$/.test(a.id)-/:free$/.test(b.id))||size(b.id)-size(a.id)||(/thinking/.test(a.id)-/thinking/.test(b.id))||a.id.length-b.id.length);
+  /* нет такой — та же модель новее: «gemini-3-pro» → «gemini-3.1-pro-preview» (из нескольких — самая новая) */
+  if(!c.some(x=>!odd(x.id))){ const re=new RegExp('^'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/-(\d+)-/,'-$1(?:\\.\\d+)?-')); c=all.filter(x=>re.test(x.id.toLowerCase())&&!odd(x.id)&&!/:free$/.test(x.id)).sort((a,b)=>b.id.localeCompare(a.id)); }
+  const m=c.find(x=>!odd(x.id))||null; if(!m) return {id:null,near:every.filter(x=>x.id.startsWith(n.split('/')[0]+'/')).map(x=>x.id+(((x.architecture||{}).input_modalities||[]).includes('image')?'':' (без картинок)')).slice(0,30)};
+  const P=m.pricing||{}; return {id:m.id,price:{prompt:+P.prompt||0,completion:+P.completion||0,image:+P.image||0},others:c.slice(1,6).map(x=>x.id)}; }
+
+const sec=ms=>(ms/1000).toFixed(1).replace('.',',')+' с', usd=x=>x?'$'+(x<0.01?x.toFixed(4):x.toFixed(3)):'—';
+/* строка итоговой таблицы: модель | часть опознана | «верно» | ошибка найдена | ложных | время | цена за лист */
+function row(T){ return '| '+T.name+' | '+(T.partBuilt?T.partOk+' из '+T.partBuilt+(T.partWrong?' (неверно '+T.partWrong+')':''):'—')+' | '+T.ok+' (прочитано '+T.read+')'+' | '+T.caught+' из '+T.errs+' | **'+T.false+'** | '+sec(T.ms/Math.max(1,T.sheets))+(T.msModel?' (модель '+sec(T.msModel/Math.max(1,T.sheets))+')':'')+' | '+(T.cost?usd(T.cost/Math.max(1,T.sheets)):T.tok?Math.round(T.tok/Math.max(1,T.sheets)/100)/10+' тыс. токенов':T.calls?'—':'0')+(T.fails?' | сбоев '+T.fails:'')+' |'; }
+const HEAD=['| модель | часть опознана | «верно» | ошибка найдена | **ложных** | время на лист | цена за лист |','|---|---|---|---|---|---|---|'];
+function table(files){ const rows=[].concat(...files.map(f=>{ try{ return JSON.parse(fs.readFileSync(f,'utf8')).rows||[]; }catch(e){ return [{name:f+': нет результата ('+e.message.slice(0,60)+')',miss:true}]; } }));
+  const ok=rows.filter(r=>!r.miss).sort((a,b)=>a.false-b.false||(b.partOk-(b.partWrong||0)*2)-(a.partOk-(a.partWrong||0)*2)||b.caught-a.caught||b.ok-a.ok||a.ms-b.ms);
+  /* лучшая — среди зарубежных (OpenRouter: имя с «/»), при 0 ложных и без сбоев; Qwen в Yandex — запасная всегда */
+  const best=ok.find(r=>r.false===0&&r.calls>0&&!r.fails&&r.name.includes('/')&&r.sheets===r.sheetNames.length);
+  const md=['## Глаза: какая модель лучше','','листов: '+(ok[0]?ok[0].sheets+' ('+ok[0].sheetNames.join(', ')+')':'—'),'',...HEAD,...ok.map(row),...rows.filter(r=>r.miss).map(r=>'| '+r.name+' | | | | | | |'),'',
+    best?'Лучшая при 0 ложных: **'+best.name+'** — подключить в кабинете: переменная репозитория EYES_BEST_MODEL='+best.name.replace(/,.*/,'')+' и секрет OPENROUTER_API_KEY, затем развёртывание (club.yml); запасная — Qwen в Yandex':'Зарубежная модель не подключается: ни одна не прошла все листы без ложных (или не измерена) — в кабинете остаётся Qwen в Yandex',''].concat(...ok.filter(r=>r.falseWhy&&r.falseWhy.length).map(r=>r.falseWhy.slice(0,6).map(w=>'- ЛОЖНО ('+r.name+'): '+w))).concat(...ok.filter(r=>r.partWhy&&r.partWhy.length).map(r=>['- часть ('+r.name+'): '+r.partWhy.slice(0,8).join('; ')])).concat(ok.filter(r=>r.scales&&Object.keys(r.scales).length).map(r=>'- шкала ('+r.name+'): '+Object.entries(r.scales).map(([k,v])=>k+' ×'+v).join(', ')));
+  if(process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,md.join('\n')+'\n'); console.log(md.join('\n')); }
+
+(async()=>{ if(A.table){ table(A.table.split(',').flatMap(f=>fs.existsSync(f)&&fs.statSync(f).isDirectory()?fs.readdirSync(f,{recursive:true}).filter(x=>/\.json$/.test(x)).map(x=>f+'/'+x):[f])); return; }
+  /* --resolve=имя,… — только точные имена в списке OpenRouter (ключ не нужен) */
+  if(A.resolve){ for(const m of A.resolve.split(',')){ const r=await orResolve(m); console.log('OpenRouter: '+m+' → '+(r.id?r.id+' ($'+(r.price.prompt*1e6).toFixed(2)+' / $'+(r.price.completion*1e6).toFixed(2)+' за 1 млн токенов)':'нет такой; есть: '+r.near.join(', '))+(r.others&&r.others.length?' (ещё: '+r.others.join(', ')+')':'')); } return; }
+  const OR=A.provider==='openrouter', env=Object.assign({},process.env,OR?{EYES_URL:SE.OR_URL}:{}), base=SE.eyesFromEnv(env);
+  const noModel=STR.every(s=>/^(own|net|net\+own|own\+mock)$/.test(s));
+  if(!noModel&&(!base.on||!(TOKEN||base.key))){ console.log('нет доступа к модели: '+(OR?'нужен OPENROUTER_API_KEY':'нужны EYES_TOKEN и EYES_FOLDER (или EYES_KEY)')+'; без модели — --strategy=own'); process.exit(1); }
+  let models=noModel?['свои глаза']:A.models?A.models.split(',').map(m=>OR||m.includes('://')?m:'gpt://{folder}/'+m):[process.env.EYES_MODEL||SE.DEF_MODEL];
+  if(OR&&!noModel){ const res=[]; for(const m of models){ const r=await orResolve(m); console.log('OpenRouter: '+m+' → '+(r.id||'нет такой; есть: '+r.near.join(', '))+(r.others&&r.others.length?' (ещё: '+r.others.join(', ')+')':'')); if(r.id){ res.push(r.id); PRICE=r.price; } } models=res;
+    if(!models.length){ fs.writeFileSync(A.out||'eyes-eval.json',JSON.stringify({rows:[{name:A.models+': нет в списке OpenRouter',miss:true}]})); process.exit(1); } }
   console.log('листы строю…'); const S=sheets(); console.log('листов: '+S.length+' ('+S.map(s=>s.name).join(', ')+')');
-  const md=['# Замер глаз на настоящей модели','','листы: '+S.map(s=>s.name).join(', '),''], raw=[];
-  for(const m of models){ const cfg=SE.eyesFromEnv(Object.assign({},process.env,{EYES_MODEL:m}));
-    for(const strat of STR){ const T={found:0,total:0,swap:0,err:[],extra:0,dr:0,drT:0,ms:0,calls:0,fails:0,read:0,ok:0,bdr:0,false:0,falseWhy:[]};
-      console.log('\n══ модель '+cfg.model.replace(cfg.folder,'<каталог>')+', стратегия '+strat);
-      for(const sh of S){ let res; try{ res=await STRATS[strat](cfg,sh); }catch(e){ T.fails++; console.log('  '+sh.name+': ОШИБКА '+e.message.slice(0,200)); continue; }
-        const st=score(sh,res);
-        /* диагностика: та же выдача в другой шкале и остаток после лучшего аффинного (систематическое — лечится) */
-        if(res.raw&&strat==='full'){ const alt=toFull(JSON.parse(JSON.stringify(res.raw)),res.pic,SCALE==='px'?'n1000':'px'), sa=score(sh,{drawings:alt.drawings});
-          const Hi=IMG.H.inv(sh.H), pairs=[]; res.drawings.forEach(d=>{ if(d._group==null) return; const g=sh.groups[d._group]; Object.entries(d.pts).forEach(([l,p])=>{ if(g.pts[l]) pairs.push({p:IMG.H.apply(Hi,p),t:g.pts[l]}); }); });
-          let aff='—'; if(pairs.length>=6){ const Af=EY.bindAffine(pairs.map(q=>({l:'',m:q.p,p:q.t})),{tol:15,sRange:[0.5,2]}); if(Af) aff='масштаб '+Af.s.toFixed(3)+', согласных '+Af.inl.length+'/'+pairs.length+', остаток '+f1(Af.rms)+' мм'; }
-          T.diag=(T.diag||[]); T.diag.push(sh.name+': в шкале '+(SCALE==='px'?'0…1000':'px')+' — точки '+sa.found+'/'+sa.total+', промах '+f1(med(sa.err))+' мм; лучшее аффинное по точкам: '+aff);
-          console.log('    · '+T.diag[T.diag.length-1]+' | ответ: '+String(res.text||'').replace(/\s+/g,' ').slice(0,220)); } T.found+=st.found; T.total+=st.total; T.swap+=st.swap; T.err.push(...st.err); T.extra+=st.extra; T.dr+=Math.min(st.drawingsFound,sh.want||4); T.drT+=sh.want||sh.groups.length; T.ms+=res.ms; T.calls+=res.calls;
-        const b=await brain(sh,res); if(b&&!b.err){ T.read+=b.read; T.ok+=b.ok; T.bdr+=res.drawings.length; T.false+=b.false; b.falseWhy.forEach(w=>T.falseWhy.push(sh.name+': '+w)); }
-        raw.push({model:cfg.model.replace(cfg.folder,'<каталог>'),strat,sheet:sh.name,drawings:res.drawings,err:res.err||null,brain:b});
-        console.log('  '+sh.name.padEnd(22)+' чертежей '+st.drawingsFound+'/'+sh.groups.length+(st.extra?' (+'+st.extra+' лишних)':'')+', точки '+st.found+'/'+st.total+(st.swap?', перепутано '+st.swap:'')+', промах медиана '+f1(med(st.err))+' мм, 90 % '+f1(q90(st.err))+' мм, '+(res.ms/1000).toFixed(1)+' с ('+res.calls+' запр.)'
-          +(b?b.err?' | мозг: сбой '+b.err:' | мозг: прочитано '+b.read+'/'+res.drawings.length+', «верно» '+b.ok+(b.caught?', ошибка найдена '+b.caught:'')+(b.misplaced?', НЕ НА МЕСТЕ '+b.misplaced:'')+', ЛОЖНЫХ '+b.false+' ['+b.verdicts.join('; ')+'] '+(b.ms/1000).toFixed(0)+' с':'')+(res.err?' | '+res.err:'')); }
-      const line='| '+cfg.model.replace(/^gpt:\/\/[^/]+\//,'').replace(/\/latest$/,'')+' | '+strat+' | '+T.dr+'/'+T.drT+' | '+T.found+'/'+T.total+' ('+Math.round(100*T.found/Math.max(1,T.total))+' %) | '+T.swap+' | '+f1(med(T.err))+' / '+f1(q90(T.err))+' | '+(T.ms/1000/Math.max(1,S.length-T.fails)).toFixed(1)+' с | '+T.read+'/'+T.bdr+' | '+T.ok+' | **'+T.false+'** |';
-      md.push(line); T.falseWhy.forEach(w=>md.push('- ЛОЖНО: '+w));
-      console.log('ИТОГО: чертежей '+T.dr+'/'+T.drT+', точки '+T.found+'/'+T.total+', перепутано '+T.swap+', промах медиана '+f1(med(T.err))+' мм, 90 % '+f1(q90(T.err))+' мм, '+(T.ms/1000).toFixed(0)+' с всего, мозг: прочитано '+T.read+'/'+T.bdr+', «верно» '+T.ok+', ЛОЖНЫХ '+T.false+(T.fails?', сбоев запроса '+T.fails:''));
-      T.falseWhy.forEach(w=>console.log('  ЛОЖНО: '+w)); } }
-  md.splice(4,0,'| модель | стратегия | чертежей | точки | перепутано | промах, мм (медиана / 90 %) | время на лист | мозг: прочитано | «верно» | ложных |','|---|---|---|---|---|---|---|---|---|---|');
-  if(process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,md.join('\n')+'\n');
-  fs.writeFileSync(A.out||'eyes-eval.json',JSON.stringify(raw,null,1)); console.log('\n'+md.join('\n')); })().catch(e=>{ console.error(e); process.exit(1); });
+  const rows=[], raw=[];
+  for(const m of models){ const cfg=noModel?{model:'свои глаза'}:SE.eyesFromEnv(Object.assign({},env,{EYES_MODEL:m}));
+    for(const strat of STR){ const name=(noModel?'свои глаза (без модели)':cfg.model.replace(/^gpt:\/\/[^/]+\//,'').replace(/\/latest$/,'')+(OR?'':' (Yandex)'))+(STR.length>1?', '+strat:'');
+      const T={name,strat,sheets:0,sheetNames:S.map(s=>s.name),found:0,total:0,swap:0,err:[],dr:0,drT:0,ms:0,msModel:0,calls:0,cost:0,tok:0,fails:0,read:0,ok:0,bdr:0,false:0,caught:0,errs:0,partOk:0,partWrong:0,partNone:0,partBuilt:0,partWhy:[],falseWhy:[],scales:{}};
+      console.log('\n══ '+name);
+      for(const sh of S){ T.errs+=sh.groups.filter(g=>g.built!==false&&g.err).length;
+        let res; try{ res=await STRATS[strat](cfg,sh); }catch(e){ T.fails++; console.log('  '+sh.name+': СБОЙ '+e.message.slice(0,200)); continue; }
+        T.sheets++; const st=score(sh,res), b=await brain(sh,res), ps=partScore(sh,res.model||(b&&b.bparts)||[]);
+        T.found+=st.found; T.total+=st.total; T.swap+=st.swap; T.err.push(...st.err); T.dr+=Math.min(st.drawingsFound,sh.want||4); T.drT+=sh.want||sh.groups.length;
+        T.ms+=res.ms; T.msModel+=res.msModel||(res.calls?res.ms:0); T.calls+=res.calls; T.cost+=res.cost||0; T.tok+=res.tok||0; if(res.scale) T.scales[res.scale]=(T.scales[res.scale]||0)+1;
+        T.partOk+=ps.ok; T.partWrong+=ps.wrong; T.partNone+=ps.none; T.partBuilt+=ps.built; ps.why.forEach(w=>T.partWhy.push(sh.name.replace(/ \(.*/,'')+': '+w));
+        if(b&&!b.err){ T.read+=b.read; T.ok+=b.ok; T.bdr+=res.drawings.length; T.false+=b.false; T.caught+=b.caught; b.falseWhy.forEach(w=>T.falseWhy.push(sh.name+': '+w)); }
+        raw.push({model:name,sheet:sh.name,scale:res.scale||null,text:res.text||null,model_drawings:res.model||null,err:res.err||null,brain:b&&{verdicts:b.verdicts,read:b.read,ok:b.ok,false:b.false,caught:b.caught}});
+        console.log('  '+sh.name.replace(/ \(.*/,'').padEnd(10)+' чертежей '+st.drawingsFound+'/'+sh.groups.length+', часть '+ps.ok+'/'+ps.built+(ps.wrong?' (неверно '+ps.wrong+')':'')+(res.scale?', шкала '+res.scale:'')+', '+sec(res.ms)+(res.cost?', '+usd(res.cost):'')
+          +(b?b.err?' | мозг: сбой '+b.err:' | мозг: прочитано '+b.read+', «верно» '+b.ok+', ошибка найдена '+b.caught+', ЛОЖНЫХ '+b.false:'')+(res.err?' | '+String(res.err).slice(0,120):'')); }
+      delete T.err; rows.push(T); console.log('ИТОГО '+row(T)); T.falseWhy.forEach(w=>console.log('  ЛОЖНО: '+w)); } }
+  fs.writeFileSync(A.out||'eyes-eval.json',JSON.stringify({rows,raw},null,1));
+  if(!A.out||A.summary==='1'){ const f=(A.out||'eyes-eval.json'); table([f]); } })().catch(e=>{ console.error(e); process.exit(1); });

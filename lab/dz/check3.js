@@ -123,7 +123,23 @@ function axisLines(dig,cal,data){ const segs=drawSegs(dig,cal), g=M.given('3',da
    в другом уровне (угол φ от уровня не зависит, а положения — зависят) */
 function pinLevel(D,T,make,c0,half){ let pts=[], mx=-1; for(let c=c0-3;c<=c0+3+1e-9;c+=0.05){ const t=make(c); if(!t) continue; const ax=t.axis, v=covOne(D,T,v2.add(ax.p,v2.mul(ax.e,-half)),v2.add(ax.p,v2.mul(ax.e,half)))||0; pts.push([c,v]); if(v>mx) mx=v; }
   const top=pts.filter(p=>p[1]>=mx-0.02).map(p=>p[0]); return top.length?top.reduce((a,b)=>a+b,0)/top.length:c0; }
-function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve('3',data), d=M3.dirs(data), why=[], parts={}; SEGS=drawSegs(dig,cal);
+/* чистый чертёж: ось — отрезок прямой L на участке, где лежат её точки (± 12 мм) */
+function axisSeg(L,pts,lbl,k){ const ts=pts.map(p=>v2.dot(v2.sub(p,L.p),L.e)), t0=Math.min(...ts)-12, t1=Math.max(...ts)+12;
+  return {t:'l',a:v2.add(L.p,v2.mul(L.e,t0)),b:v2.add(L.p,v2.mul(L.e,t1)),k:k||'ax',l:lbl}; }
+/* шаг замены: новая ось, линии связи (от проекции, что остаётся), новые проекции и рёбра на новой плоскости; bad — точки,
+   отложенные неверно (у студента — сдвинута по линии связи), axisBad — ось не того направления */
+function geoRep(s,keep,sub,bad,axisBad,step,goodDir){ const g=[], P=s.P, nm=step==='b2'?'x₄₅':sub==='₄'?'x₁₄':'x';
+  g.push(axisSeg(s.L,NM.map(k=>keep(k)).concat(NM.map(k=>P[k])),nm+(axisBad?' у вас':''),axisBad?'bad':'ax'));
+  /* ось не того направления — где она должна быть: то же место, нужное направление */
+  if(axisBad&&goodDir){ const G=M3.line(s.L.p,goodDir); g.push(axisSeg(G,NM.map(k=>keep(k)),nm+' нужная','good')); }
+  NM.forEach(k=>{ g.push({t:'l',a:keep(k),b:P[k],k:'lnk'}); g.push({t:'p',p:P[k],l:k+sub,k:'pt'}); });
+  const res=step==='a'?[['S','A'],['S','B'],['S','C']]:step==='b2'?[['A','C'],['A','S']]:[['A','B'],['B','C'],['C','A'],['S','A'],['S','B'],['S','C']];
+  EDGES.forEach(([a,b])=>g.push({t:'l',a:P[a],b:P[b],k:res.some(q=>q[0]===a&&q[1]===b||q[1]===a&&q[0]===b)&&step!=='b1'?'res':'eg'}));
+  if(step==='a'){ const ps=[P.A,P.B,P.C]; let far=[0,1]; for(let i=0;i<3;i++) for(let j=i+1;j<3;j++) if(v2.len(v2.sub(ps[i],ps[j]))>v2.len(v2.sub(ps[far[0]],ps[far[1]]))) far=[i,j];
+    const E=M3.line(ps[far[0]],v2.sub(ps[far[1]],ps[far[0]])), K=M3.foot(P.S,E); g.push({t:'l',a:ps[far[0]],b:ps[far[1]],k:'res'},{t:'l',a:P.S,b:K,k:'res',l:'H'}); }
+  (bad||[]).forEach(x=>{ const at=v2.add(P[x.k],v2.mul(s.nu,x.d)); g.push({t:'p',p:at,l:x.k+sub+' у вас',k:'bad'},{t:'p',p:P[x.k],l:'',k:'good'}); });
+  return g; }
+function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve('3',data), d=M3.dirs(data), why=[], parts={}, GX={}; SEGS=drawSegs(dig,cal);
   const lines=axisLines(dig,cal,data);
   /* а), б) первый шаг: все гипотезы замены, по направлению оси — к своей части */
   const H1=replaceHyps(D,T,data,lines,null);
@@ -144,7 +160,7 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     /* о положении A₄, B₄, C₄ говорят только рёбра из S₄: прямая A₄B₄C₄ проходит через верные места всех трёх
        при любой ошибке студента в одной из них */
     const cp=checkPoints(D,T,s.P,s.nu,k=>k==='S'?['A','B','C']:['S'],null,k=>hA.base==='h'?Hp(data[k]):Fp(data[k]));
-    cp.bad.forEach(ps=>{ const k=ps.k; out.st='ошибка'; out.why.push('для '+k+'₄ отложено ≈ '+f1((hA.base==='h'?data[k][2]:data[k][1])+ps.d)+' мм вместо '+(hA.base==='h'?'z = '+data[k][2]:'y = '+data[k][1])+' мм'); });
+    GX.a=cp.bad; cp.bad.forEach(ps=>{ const k=ps.k; out.st='ошибка'; out.why.push('для '+k+'₄ отложено ≈ '+f1((hA.base==='h'?data[k][2]:data[k][1])+ps.d)+' мм вместо '+(hA.base==='h'?'z = '+data[k][2]:'y = '+data[k][1])+' мм'); });
     /* вердикт — по тому, от чего зависит ответ: прямая A₄B₄C₄ (основание ребром), S₄ и высота S₄K₄ ⟂ этой прямой.
        Отдельные A₄, B₄, C₄ — лишь подсказки: ошибка в одной из них без влияния на прямую ответа не портит */
     const ps=[s.P.A,s.P.B,s.P.C]; let far=[0,1]; for(let i=0;i<3;i++) for(let j=i+1;j<3;j++) if(v2.len(v2.sub(ps[i],ps[j]))>v2.len(v2.sub(ps[far[0]],ps[far[1]]))) far=[i,j];
@@ -170,13 +186,13 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     if(dv1>=ANG_BAD&&!sureWrong(hB,LB,dirB)) return {st:'не могу утверждать',why:['не нашёл оси '+nm1+' ∥ '+(hB.base==='h'?'A′B′':'A″B″')+'; похожая прямая отклонена на '+f1(dv1)+'° — проверьте построение (б)']};
     if(dv1>=ANG_BAD) return {st:'ошибка',why:['ось '+nm1+' не параллельна '+(hB.base==='h'?'A′B′':'A″B″')+' (отклонение '+f1(dv1)+'°): ребро AB на π₄ не в натуральную величину']};
     const cp1=checkPoints(D,T,s1.P,s1.nu,k=>NM.filter(o=>o!==k),null,k=>hB.base==='h'?Hp(data[k]):Fp(data[k]));
-    cp1.bad.forEach(ps=>{ out.st='ошибка'; out.why.push('для '+ps.k+'₄ отложено расстояние с ошибкой ≈ '+f1(ps.d)+' мм'); });
+    GX.b1=cp1.bad; cp1.bad.forEach(ps=>{ out.st='ошибка'; out.why.push('для '+ps.k+'₄ отложено расстояние с ошибкой ≈ '+f1(ps.d)+' мм'); });
     /* второй шаг — от начерченных A₄…S₄ */
     const s1a=Object.assign({},s1,{P:anchor(D,T,s1.P,Object.fromEntries(NM.map(k=>[k,hB.base==='h'?Hp(data[k]):Fp(data[k])])))});
     const H2=replaceHyps(D,T,data,lines.filter(L=>Math.abs(M3.sdist(L.p,hB.L,v2.perp(hB.L.e)))>1||angDeg(L.e,hB.L.e)>1),{base:hB.base,s:s1a}).map(h=>Object.assign(h,{fig:bestK(D,T,[[h.s.P.A,h.s.P.C],[h.s.P.A,h.s.P.S],[h.s.P.B,h.s.P.C],[h.s.P.B,h.s.P.S]],2)})).map(h=>Object.assign(h,{score:0.6*h.cc+0.4*h.fig})).sort((a,b)=>b.score-a.score);
     const ab=v2.unit(v2.sub(s1a.P.B,s1a.P.A)), dir2=h=>angDeg(h.L.e,v2.perp(ab)), L2=H2.filter(h=>dir2(h)<15), h2=pick(L2,dir2);
     if(!h2) return Object.assign(out,{st:out.st==='ошибка'?'ошибка':'не найдено',why:out.why.concat(['не нашёл второй замены (ось ⟂ A₄B₄)'])});
-    const dv2=angDeg(h2.L.e,v2.perp(ab));
+    GX.b2={s1a,h2}; const dv2=angDeg(h2.L.e,v2.perp(ab));
     if(dv2>=ANG_BAD&&!sureWrong(h2,L2,dir2)) return {st:'не могу утверждать',why:out.why.concat(['не нашёл оси x₄₅ ⟂ A₄B₄; похожая прямая отклонена на '+f1(dv2)+'°'])};
     if(dv2>=ANG_BAD) return {st:'ошибка',why:out.why.concat(['ось x₄₅ не перпендикулярна A₄B₄ (отклонение '+f1(dv2)+'°): ребро AB на π₅ не в точку, угол между гранями так не виден'])};
     if(dv2>TOL&&out.st==='верно') out.st='не могу утверждать', out.why.push('x₄₅ ⟂ A₄B₄ с отклонением '+f1(dv2)+'° — на грани допуска');
@@ -199,7 +215,7 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     { const c1=pinLevel(D,T,c=>M3.rotate(data,best.form,c,best.same),best.c,40), t1=M3.rotate(data,best.form,c1,best.same); if(t1){ best.c=c1; best.t=t1; best.axc=covOne(D,T,v2.add(t1.axis.p,v2.mul(t1.axis.e,-40)),v2.add(t1.axis.p,v2.mul(t1.axis.e,40)))||0; } }
     const out={st:'верно',why:[],form:best.form,c:best.c,P:best.t.P,ev:{sc:best.sc,tri:best.tri,axc:best.axc}}, P=best.t.P, pr=best.form==='h'?Hp:Fp;
     ['A','B','C'].forEach(k=>{ const path=v2.sub(P[k],pr(data[k])); if(v2.len(path)<8) return; const ev=pointEvidence(D,T,P[k],['A','B','C'].filter(o=>o!==k).map(o=>P[o]),v2.unit(path),pr(data[k]));
-      if(ev.st==='bad'){ out.st='ошибка'; out.why.push('радиус вращения точки '+k+' взят неверно: '+k+'₀ сдвинута на '+f1(ev.d)+' мм по пути вращения — истинный вид искажён'); }
+      if(ev.st==='bad'){ (GX.c=GX.c||[]).push({k,p:v2.add(P[k],v2.mul(v2.unit(path),ev.d))}); out.st='ошибка'; out.why.push('радиус вращения точки '+k+' взят неверно: '+k+'₀ сдвинута на '+f1(ev.d)+' мм по пути вращения — истинный вид искажён'); }
       else if(ev.st==='?') out.hint=(out.hint||[]).concat([k+'₀'+(ev.d!=null?' (≈ '+f1(Math.abs(ev.d))+' мм от нужного)':'')]); });
     if(best.axc<0.7&&out.st==='верно'){ out.st='не могу утверждать'; out.why.push('не нашёл оси вращения ('+(best.form==='h'?'горизонтали':'фронтали')+') там, где она должна быть'); }
     /* повёрнутые вершины должны быть подтверждены (сдвиг вдоль стороны её укорачивает, но не уводит с места) */
@@ -225,7 +241,7 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
       const aMove=v2.len(v2.sub(t1.A0,Hp(data.A))); best.aPath=aMove>2?(aMove>5?covOne(D,T,Hp(data.A),t1.A0)||0:0):1; } }
     const out={st:'верно',why:[],phi:r.phi,t:best.t,ev:{sc:best.sc,main:best.main,axc:best.axc}}, t=best.t, path=v2.sub(t.S0,M3.foot(t.S0,t.axis));
     if(v2.len(path)>8){ const ev=pointEvidence(D,T,t.S0,[t.A0,t.Y0],v2.unit(path),Hp(data.S));
-      if(ev.st==='bad'){ out.st='ошибка'; out.why.push('радиус вращения S взят неверно: S₀ сдвинута на '+f1(ev.d)+' мм — угол φ искажён'); }
+      if(ev.st==='bad'){ GX.d=v2.add(t.S0,v2.mul(v2.unit(path),ev.d)); out.st='ошибка'; out.why.push('радиус вращения S взят неверно: S₀ сдвинута на '+f1(ev.d)+' мм — угол φ искажён'); }
       else if(ev.st==='?') out.hint='S₀'+(ev.d!=null?' (≈ '+f1(Math.abs(ev.d))+' мм от нужного — проверьте радиус вращения S)':''); }
     /* программа построения с выбором студента: радиус S свободен — подгоняется вместе с уровнем оси (иначе уровень
        «подстраивается» под неверную S₀). Сдвинутая вдоль пути S₀ объясняет прямые S₀A₀ и S₀n₀ (≥ 0,9), без сдвига они
@@ -246,7 +262,7 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
         /* где кончается начерченный путь S — там и S₀ на плато */
         const aMove=v2.len(v2.sub(tc.A0,Hp(data.A))), aPath=aMove>2?(aMove>5?covOne(D,T,Hp(data.A),tc.A0)||0:0):1;
         const scR=0.5*R.mn+0.15*pth+0.2*R.axc+0.15*aPath; out.ev.R={d:R.dd,lo:dlo,hi:dhi,dmin,m:R.mn,m0:best.main,c:R.c,same:R.same,axc:R.axc,pth,aPath,sc:scR}; out.ev.sc=Math.max(out.ev.sc,scR);
-        if(dmin>=BAD&&R.mn>=0.9&&best.main<=0.8&&R.axc>=0.7&&aPath>=0.7){ out.st='ошибка'; out.why.push('радиус вращения S взят неверно: прямые S₀A₀ и S₀n₀ сходятся не меньше чем в '+f1(dmin)+' мм от нужного места S₀ — угол φ искажён'); } } }
+        if(dmin>=BAD&&R.mn>=0.9&&best.main<=0.8&&R.axc>=0.7&&aPath>=0.7){ GX.d=at(R.dd); out.st='ошибка'; out.why.push('радиус вращения S взят неверно: прямые S₀A₀ и S₀n₀ сходятся не меньше чем в '+f1(dmin)+' мм от нужного места S₀ — угол φ искажён'); } } }
     const l1=covOne(D,T,t.S0,t.A0)||0, l2=covOne(D,T,t.S0,t.Y0)||0;
     if(out.st==='верно'&&(best.axc<0.7||best.aPath<0.7)){ out.st='не могу утверждать'; out.why.push('не нашёл оси вращения (горизонтали плоскости SA, n) там, где она должна быть при этом повороте'); }
     /* S₀ должна быть подтверждена сама: сдвиг вдоль S₀A₀ укорачивает прямую, но она остаётся «на месте», а угол ψ меняется */
@@ -258,6 +274,20 @@ function check3(dig,loc,cal,data){ const D=C.dmap(dig.map), T=cal.T, r=DZ.solve(
     return out; })();
   /* насколько построение каждой части объясняет линии чертежа (замены: 0,6·связи + 0,4·рёбра на π₄) — по нему видно, какая это часть */
   if(parts.a) parts.a.ev=hA&&{sc:hA.score,cc:hA.cc,fig:hA.fig,dv:dirA(hA)}; if(parts.b) parts.b.ev=hB&&{sc:hB.score,cc:hB.cc,fig:hB.fig,dv:dirB(hB)};
+  /* что понял мозг — для чистого чертежа: построение части в мм чертежа (как у parts: от O, u = −x) */
+  const keepOf=base=>k=>base==='h'?Hp(data[k]):Fp(data[k]);
+  if(parts.a&&hA) parts.a.geo=geoRep(hA.s,keepOf(hA.base),'₄',GX.a,parts.a.st==='ошибка'&&!(GX.a&&GX.a.length),'a',v2.perp(hA.base==='h'?d.hH:d.fF));
+  if(parts.b&&hB){ const g=geoRep(hB.s,keepOf(hB.base),'₄',GX.b1,parts.b.st==='ошибка'&&!(GX.b1&&GX.b1.length)&&!GX.b2,'b1',hB.base==='h'?d.ABh:d.ABf);
+    if(GX.b2){ const {s1a,h2}=GX.b2, g2=geoRep(h2.s,k=>s1a.P[k],'₅',null,parts.b.st==='ошибка'&&!(GX.b1&&GX.b1.length),'b2',v2.perp(v2.unit(v2.sub(s1a.P.B,s1a.P.A)))); g.push(...g2); } parts.b.geo=g; }
+  if(parts.c&&parts.c.P){ const P=parts.c.P, pr=parts.c.form==='h'?Hp:Fp, g=[], t=M3.rotate(data,parts.c.form,parts.c.c,true);
+    if(t) g.push(axisSeg(t.axis,['A','B','C'].map(k=>pr(data[k])).concat(['A','B','C'].map(k=>P[k])),parts.c.form==='h'?'h′':'f″'));
+    ['A','B','C'].forEach(k=>{ if(v2.len(v2.sub(P[k],pr(data[k])))>2) g.push({t:'l',a:pr(data[k]),b:P[k],k:'lnk'}); g.push({t:'p',p:P[k],l:k+'₀',k:'pt'}); });
+    [['A','B'],['B','C'],['C','A']].forEach(([a,b])=>g.push({t:'l',a:P[a],b:P[b],k:'res'}));
+    (GX.c||[]).forEach(x=>{ g.push({t:'p',p:x.p,l:x.k+'₀ у вас',k:'bad'}); g.push({t:'p',p:P[x.k],l:'',k:'good'}); }); parts.c.geo=g; }
+  if(parts.d&&parts.d.t){ const t=parts.d.t, g=[]; g.push(axisSeg(t.axis,[Hp(data.S),Hp(data.A),t.S0,t.A0],'h₁′'));
+    g.push({t:'l',a:Hp(data.S),b:t.S0,k:'lnk'}); if(v2.len(v2.sub(t.A0,Hp(data.A)))>2) g.push({t:'l',a:Hp(data.A),b:t.A0,k:'lnk'});
+    g.push({t:'l',a:t.S0,b:t.A0,k:'res'},{t:'l',a:t.S0,b:t.Y0,k:'res'},{t:'p',p:t.S0,l:'S₀',k:'pt'},{t:'p',p:t.A0,l:'A₀',k:'pt'},{t:'p',p:t.Y0,l:'n₀',k:'pt'});
+    if(GX.d){ g.push({t:'p',p:GX.d,l:'S₀ у вас',k:'bad'},{t:'l',a:GX.d,b:t.A0,k:'bad'},{t:'p',p:t.S0,l:'',k:'good'}); } parts.d.geo=g; }
   /* линии найденных построений — для чтения видимости заданной пирамиды (их надо обходить: построение может лечь
      прямо на ребро — например, повёрнутый A₀B₀ почти на A″B″) */
   const pred=[]; const pushFig=(P,keep)=>{ NM.forEach(k=>{ if(P[k]&&keep&&keep[k]) pred.push([keep[k],P[k]]); }); EDGES.forEach(([a,b])=>{ if(P[a]&&P[b]) pred.push([P[a],P[b]]); }); };

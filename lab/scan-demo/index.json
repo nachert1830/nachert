@@ -1,0 +1,4 @@
+[
+ {"name":"Вариант 21","n":21,"tone":"ok","note":"три части верно, одна не опознана","img":"v21.jpg","thumb":"v21-s.jpg","json":"v21.json"},
+ {"name":"Вариант 9","n":9,"tone":"bad","note":"ошибка в части 1 — ось не ⟂ фронтали","img":"v9e.jpg","thumb":"v9e-s.jpg","json":"v9e.json"}
+]

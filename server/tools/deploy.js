@@ -233,6 +233,8 @@ async function main(){
   const before=JSON.stringify(payload); payload.TG_BOT_TOKEN=token;
   if(E('YANDEX_CLIENT_SECRET')) payload.YANDEX_CLIENT_SECRET=E('YANDEX_CLIENT_SECRET');
   if(E('EYES_KEY')) payload.EYES_KEY=E('EYES_KEY');
+  /* лучшая модель зрения через OpenRouter (только с согласием студента; запасная — Qwen в Yandex), server/lib/eyes.js */
+  if(E('OPENROUTER_API_KEY')) payload.OPENROUTER_API_KEY=E('OPENROUTER_API_KEY');
   if(yaId&&!payload.YANDEX_CLIENT_SECRET) need('YANDEX_CLIENT_SECRET','Добавьте секрет YANDEX_CLIENT_SECRET (Client secret приложения на oauth.yandex.ru) в GitHub.');
   const changed=JSON.stringify(payload)!==before||JSON.stringify(payload)!==payloadBefore;
   const entries=JSON.stringify(Object.keys(payload).sort().map(k=>({key:k,text_value:payload[k]})));
@@ -274,9 +276,11 @@ async function main(){
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
     MAIL_FROM:mailFrom,
     /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
-    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:eyes.model||E('EYES_MODEL'),EYES_OPTS:eyes.opts||'',EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES')};
+    EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:eyes.model||E('EYES_MODEL'),EYES_OPTS:eyes.opts||'',EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES'),EYES_BEST_MODEL:E('EYES_BEST_MODEL'),
+    /* на время тестов: лучшая (зарубежная) модель — только владельцу и без отметки «лист мой»; для всех — vars EYES_BEST_FOR=all, EYES_BEST_DEFAULT=0 */
+    EYES_BEST_FOR:E('EYES_BEST_FOR')||'admin',EYES_BEST_DEFAULT:E('EYES_BEST_DEFAULT')||'1'};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
-  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
+  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY','OPENROUTER_API_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){
     yc(['serverless','function','version','create','--function-id',fn[k].id,'--runtime','nodejs22','--entrypoint',entry,'--memory','256m','--execution-timeout',timeout,
       '--service-account-id',sa.fn.id,'--source-path',zf,'--environment',env].concat(secrets)); say('  '+NAMES[k]+': новая версия'); }

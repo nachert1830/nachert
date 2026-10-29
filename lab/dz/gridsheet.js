@@ -154,7 +154,13 @@ function check0(img,o){ o=o||{}; const dz=+o.dz||3, auto=!(+o.n), t0=Date.now(),
   /* часть опознана построением: её программа объясняет линии чертежа почти полностью (мера ≥ 0,97), а программы
      других частей — заметно хуже (≤ 0,92 и на 0,08 ниже). На синтетике у своей части 1,00, у чужих ≤ 0,90 (eyes-eval) */
   const evs=Object.keys(res.parts||{}).filter(k=>k!=='vis').map(k=>({k,sc:res.parts[k].ev&&res.parts[k].ev.sc||0})).sort((x,y)=>y.sc-x.sc);
-  const idPart=o.eyes&&!part&&evs.length>1&&evs[0].sc>=0.97&&evs[1].sc<=Math.min(0.92,evs[0].sc-0.08)?evs[0].k:null; if(idPart) res.idPart=idPart;
+  /* подсказка модели (номер части у рамки) — не вердикт: принимается, только если построение этой части объясняет линии
+     лучше всех (≥ 0,97 и впереди остальных хотя бы на 0,03) — тогда мозг сам подтвердил часть; иначе часть не опознана */
+  const byBrain=o.eyes&&!part&&evs.length>1&&evs[0].sc>=0.97&&evs[1].sc<=Math.min(0.92,evs[0].sc-0.08)?evs[0].k:null;
+  const hint=o.eyes&&!part&&o.partHint&&evs.length&&evs[0].k===o.partHint&&evs[0].sc>=0.97&&(evs.length<2||evs[1].sc<=evs[0].sc-0.03)?o.partHint:null;
+  const idPart=byBrain||hint; if(idPart) res.idPart=idPart;
+  if(o.partHint&&!part){ res.hint={k:o.partHint,ok:idPart===o.partHint,sc:evs.length?Math.round(((evs.find(x=>x.k===o.partHint)||{}).sc||0)*100)/100:null};
+    why.push('ИИ-зрение: часть '+({a:1,b:2,c:3,d:4}[o.partHint])+(res.hint.ok?' — построение подтверждает':' — построение не подтверждает'+(byBrain?' (по линиям — часть '+({a:1,b:2,c:3,d:4}[byBrain])+')':''))); }
   if(o.eyes&&!part&&res.parts) Object.keys(res.parts).forEach(k=>{ if(k!=='vis'&&k!==idPart&&res.parts[k].st==='ошибка') res.parts[k]=unsurePart(res.parts[k],k); });
   /* какая это часть — та, чьё построение сошлось («верно»), а «не найдено / не могу» у остальных — их здесь просто нет */
   const defin=!part&&o.eyes?(idPart&&res.parts[idPart].st==='ошибка'?[idPart]:Object.keys(res.parts||{}).filter(k=>k!=='vis'&&res.parts[k].st==='верно')):[];
