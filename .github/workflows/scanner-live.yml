@@ -1,7 +1,7 @@
 name: Сканер — живая проверка на сайте
 # Кабинет на nachert1830.ru → «Проверка» → ДЗ № 3 → фото синтетического листа → ответ (lab/dz/test-live.js, Chromium).
 # Вход — одноразовая ссылка владельца (server/tools/login.js через yc). Ничего не развёртывает: только открывает сайт как студент.
-# Снимки экрана и журнал — в артефакте scanner-live. Пуш в рабочую ветку проверяет сайт как есть (до слияния — прежняя версия).
+# Снимки экрана и журнал — в артефакте scanner-live. Только вручную (Run workflow): каждый прогон — запросы к модели за деньги.
 on:
   workflow_dispatch:
     inputs:
@@ -13,9 +13,6 @@ on:
         description: 'вариант синтетического листа'
         required: false
         default: '21'
-  push:
-    branches: [main, claude/scanner-release]
-    paths: ['lab/cam.html', 'lab/scanner.js', 'lab/dz/**', 'lk/app.js', 'server/lib/eyes.js', '.github/workflows/scanner-live.yml']
 permissions:
   contents: write   # только служебная ветка claude/scanner-live-shots со снимками экрана
 concurrency:
