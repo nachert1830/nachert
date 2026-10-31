@@ -25,6 +25,11 @@ const SYSTEM='Ты — оцифровщик чертежей. На фото — 
   'P <подпись> <x> <y> — каждая подписанная точка: подпись как на чертеже (A″, B′, S₄, K₄ …) и где сама точка (не текст подписи);\n'+
   'S <x1> <y1> <x2> <y2> — каждый прямой отрезок чертежа от конца до конца: рёбра, штриховые линии, тонкие линии связи, оси X, Z, Y, '+
   'линии построения. Отрезок, который прерывается точкой, можно дать одним отрезком. Рамку листа и чужие чертежи у края фото не пиши.';
+/* --p=2: копия, а не проверка — модель склонна «исправлять» кривое построение студента до правильного */
+const SYSTEM2=SYSTEM+'\nТы копируешь, а не проверяешь. Рисуй каждую линию там, где она реально лежит на фото, даже если построение неверное: '+
+  'не выравнивай линии до перпендикуляров и параллелей, не достраивай то, чего нет, не пропускай бледные тонкие линии. '+
+  'Конец отрезка — там, где он кончается на бумаге (в точке или на пересечении), а не там, где «должен». Сначала все точки, затем отрезки по порядку: толстые, штриховые, тонкие.';
+const SYS=A.p==='2'?SYSTEM2:SYSTEM;
 
 /* снимок → RGBA длинной стороной до SIDE (среднее по клетке) */
 function resize(im,side){ const k=Math.min(1,side/Math.max(im.width,im.height)), w=Math.round(im.width*k), h=Math.round(im.height*k), o=IMG.rgba(w,h), d=im.data;
@@ -82,7 +87,7 @@ function measure(tr,ans,toMM){ const inBox=p=>p[0]>=tr.box[0]&&p[0]<=tr.box[2]&&
 
 /* шкала ответа: px просили; 0…1000 — пробуем тоже, берём лучшую по точности отрезков в 3 мм */
 function bestScale(tr,ans,pic,toMMpx){ const S={px:p=>p,'n1000 xy':p=>[p[0]*pic.w/1000,p[1]*pic.h/1000],'n1000 yx':p=>[p[1]*pic.w/1000,p[0]*pic.h/1000]}; let best=null;
-  Object.entries(S).forEach(([name,f])=>{ const m=measure(tr,ans,p=>toMMpx(f(p))), sc=m.prec3+m.rec3+m.le2/Math.max(1,m.nPts); if(!best||sc>best.sc) best={name,m,sc}; }); return best; }
+  Object.entries(S).forEach(([name,f])=>{ const m=measure(tr,ans,p=>toMMpx(f(p))), sc=m.prec3+m.rec3+m.le2/Math.max(1,m.nPts); if(!best||sc>best.sc) best={name,m,sc,f}; }); return best; }
 
 /* цена: OpenRouter, точное имя из списка моделей */
 async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/api/v1/models',{signal:AbortSignal.timeout(30000)})).json(), all=j.data||[];
@@ -96,13 +101,15 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
       tr.okSegs=ok.segs; tr.errSegs=tr.segs.filter(q=>!okK.has(key(q))); }
     if(A.dump) fs.writeFileSync(A.dump+'-'+vi+'.png',png);
     const P=q=>IMG.H.apply(v.H,q), a=P([tr.box[0],tr.box[1]]), b=P([tr.box[0]+1,tr.box[1]]), ppm=Math.hypot(b[0]-a[0],b[1]-a[1])*r.k;
-    return {vi,part:tr.part,tr,w:r.im.width,h:r.im.height,k:r.k,ppm,url:'data:image/png;base64,'+png.toString('base64'),kb:png.length/1024,toMM:p=>IMG.H.apply(Hi,[p[0]/r.k,p[1]/r.k]),toPx:q=>{ const p=IMG.H.apply(v.H,q); return [p[0]*r.k,p[1]*r.k]; }}; });
+    const gr=new Float32Array(r.im.width*r.im.height); for(let i=0;i<gr.length;i++) gr[i]=0.299*r.im.data[i*4]+0.587*r.im.data[i*4+1]+0.114*r.im.data[i*4+2];
+    return {vi,part:tr.part,tr,gray:{w:r.im.width,h:r.im.height,a:gr},w:r.im.width,h:r.im.height,k:r.k,ppm,url:'data:image/png;base64,'+png.toString('base64'),kb:png.length/1024,toMM:p=>IMG.H.apply(Hi,[p[0]/r.k,p[1]/r.k]),toPx:q=>{ const p=IMG.H.apply(v.H,q); return [p[0]*r.k,p[1]*r.k]; }}; });
   pics.forEach(p=>console.log('снимок '+p.vi+' (часть '+('abcd'.indexOf(p.part)+1)+'): '+p.w+' × '+p.h+' px, '+f1(p.ppm)+' px/мм, '+Math.round(p.kb)+' КБ; правда: отрезков '+p.tr.segs.length+', точек '+Object.keys(p.tr.pts).length));
-  const PX=(A.provider||'proxyapi')==='proxyapi', key=PX?(process.env.PROXYAPI_KEY||'proxy-injected'):process.env.OPENROUTER_API_KEY||''; if(!DRY&&!key){ console.log('нет OPENROUTER_API_KEY'); process.exit(1); }
+  const PX=(A.provider||'proxyapi')==='proxyapi', key=PX?(process.env.PROXYAPI_KEY||'proxy-injected'):process.env.OPENROUTER_API_KEY||''; if(!DRY&&!A.replay&&!key){ console.log('нет OPENROUTER_API_KEY'); process.exit(1); }
   let spent=0; const rows=[], raw=[];
-  for(const p of pics) for(const name of DRY?['правда с шумом']:MODELS){
+  for(const p of pics) for(const name of A.replay?['replay']:DRY?['правда с шумом']:MODELS){
     let text, cost=0, ms=0, info=null, model=name;
-    if(DRY){ const R=IMG.rng(7), n=()=>(R()-0.5)*6; text=Object.entries(p.tr.pts).map(([l,q])=>{ const x=p.toPx(q); return 'P '+l+' '+Math.round(x[0]+n())+' '+Math.round(x[1]+n()); })
+    if(A.replay){ const j=JSON.parse(fs.readFileSync(A.replay,'utf8')), r=j.raw.find(x=>x.view===p.vi)||j.raw[0]; text=r.text; model=r.model+' (replay)'; }
+    else if(DRY){ const R=IMG.rng(7), n=()=>(R()-0.5)*6; text=Object.entries(p.tr.pts).map(([l,q])=>{ const x=p.toPx(q); return 'P '+l+' '+Math.round(x[0]+n())+' '+Math.round(x[1]+n()); })
         .concat(p.tr.segs.slice(2).map(([a,b])=>{ const x=p.toPx(a), y=p.toPx(b); return 'S '+[x[0],x[1],y[0],y[1]].map(v=>Math.round(v+n())).join(' '); })).join('\n'); }
     else { const pr=PX?{id:SE.pxModel(name),prompt:3e-6,completion:15e-6,image:0,internal:0}:await priceOf(name); if(!pr){ console.log('\n══ '+name+': нет в списке OpenRouter'); continue; } model=pr.id;
       /* худший случай: вход (картинка ≈ w·h/750 токенов + текст, с запасом ×1,5) + max_tokens ответа (и рассуждения) */
@@ -111,17 +118,29 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
       const maxTok=Math.min(cap,Math.floor((LIMIT-spent-inCost)/outP));
       if(maxTok<minTok){ console.log('\n══ '+model+', снимок '+p.vi+': пропущено — не помещается в $'+LIMIT+' (потрачено $'+spent.toFixed(4)+')'); continue; }
       const cfg=PX?SE.eyesFromEnv({EYES_URL:SE.PX_URL,EYES_MODEL:model,PROXYAPI_KEY:key,EYES_BEST_MODEL:'off',EYES_DIGIT_MODEL:'off'}):SE.eyesFromEnv({EYES_URL:SE.OR_URL,EYES_MODEL:model,OPENROUTER_API_KEY:key,EYES_BEST_MODEL:'off'}), t0=Date.now();
-      try{ const r=await SE.ask(cfg,{image:p.url,w:p.w,h:p.h,system:SYSTEM,text:'Размер фото: '+p.w+' × '+p.h+' px.',opts:{max_tokens:maxTok}},{timeout:240000});
+      try{ const r=await SE.ask(cfg,{image:p.url,w:p.w,h:p.h,system:SYS,text:'Размер фото: '+p.w+' × '+p.h+' px.',opts:{max_tokens:maxTok}},{timeout:240000});
         text=r.text; info=r.info; const u=info&&info.usage; cost=u&&u.cost!=null?+u.cost:u?(u.prompt_tokens||0)*pr.prompt+(u.completion_tokens||0)*outP:inCost+maxTok*outP; }
       catch(e){ text=''; info={error:e.message}; cost=e.info&&e.info.usage&&e.info.usage.cost!=null?+e.info.usage.cost:inCost+maxTok*outP; console.log('СБОЙ '+model+': '+e.message.slice(0,300)); }
       ms=Date.now()-t0; spent+=cost; }
-    const ans=parse(text), b=bestScale(p.tr,ans,p,p.toMM), m=b.m;
+    const ans=parse(text); let b=bestScale(p.tr,ans,p,p.toMM), m=b.m, rf=null;
+    if(A.refine==='1'&&b.name==='px'){ const RF=require('./refine.js'); const t0=Date.now(); rf=RF.refine(p.gray,ans.segs,{ppm:p.ppm,inkMin:A.inkmin?+A.inkmin:undefined,find:A.find!=='0',minLen:A.minlen?+A.minlen:undefined}); const ms2=Date.now()-t0;
+      const was=m, ans2={pts:ans.pts,segs:rf.segs.map(q=>q.p)}; m=measure(p.tr,ans2,p.toMM); b={name:'px',m};
+      const fnd=rf.segs.filter(q=>q.src==='found').map(q=>[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])]), mod=rf.segs.filter(q=>q.src==='model').map(q=>[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])]);
+      const prFound=fnd.length?cover(fnd,p.tr.segs,1).f:null, prMod=mod.length?cover(mod,p.tr.segs,1).f:null;
+      console.log('  притяжка к карандашу ('+ms2+' мс): модель дала '+rf.stats.model+', оставлено '+rf.stats.kept+', отброшено «на бумаге нет» '+rf.stats.dropped+', найдено сверх модели '+rf.stats.found+'; точность найденных '+(prFound==null?'—':pc(prFound,1))+', оставленных модельных '+(prMod==null?'—':pc(prMod,1)));
+      if(A.found) rf.segs.filter(q=>q.src==='found').forEach(q=>{ const m=[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])], c=cover([m],p.tr.segs,1).f; console.log('    найдена: длина '+Math.hypot(m[1][0]-m[0][0],m[1][1]-m[0][1]).toFixed(1)+' мм, чернил '+Math.round(q.ink*100)+' %, на правде '+Math.round(c*100)+' %, угол '+(Math.atan2(m[1][1]-m[0][1],m[1][0]-m[0][0])*180/Math.PI).toFixed(0)+'°'); });
+      console.log('  до: полнота '+pc(was.rec1,1)+' / '+pc(was.rec3,1)+', точность '+pc(was.prec1,1)+' / '+pc(was.prec3,1)+', целиком '+was.whole+' из '+was.nSeg+'; ошибка студента '+(was.errC==null?'—':pc(was.errC,1)));
+      if(A.miss){ rf.dropped.forEach(d=>console.log('    отброшен: ('+d.p.map(v=>Math.round(v))+') чернил '+(d.ink==null?'—':Math.round(d.ink*100)+' %')+' '+d.why)); } }
     rows.push({model,view:p.vi,part:p.part,scale:b.name,ms,cost,tok:info&&info.usage?{in:info.usage.prompt_tokens,out:info.usage.completion_tokens}:null,finish:info&&info.finish,lines:{P:ans.pts.length,S:ans.segs.length},m});
     raw.push({model,view:p.vi,text});
     console.log('\n══ '+model+', снимок '+p.vi+(rows[rows.length-1].tok?', токенов '+JSON.stringify(rows[rows.length-1].tok):'')+(ms?', '+(ms/1000).toFixed(1)+' с':'')+(cost?', $'+cost.toFixed(4):'')+(info&&info.finish?', finish '+info.finish:'')+', шкала '+b.name);
     console.log('  точки: подписей '+m.found+' из '+m.nPts+' (перепутано '+m.swap+', лишних '+m.unknown+'), промах медиана '+f1(m.med)+' мм, ≤ 1 мм — '+m.le1+', ≤ 2 мм — '+m.le2);
     if(m.errC!=null) console.log('  ошибка студента: её отрезков ('+p.tr.errSegs.length+') найдено в 1 мм — '+pc(m.errC,1)+'; ответа на месте «как надо» (в 1 мм) — '+pc(m.okP,1)+' (на верных отрезках совпадает и так)');
     console.log('  отрезки: правды '+m.nSeg+', у модели '+m.nAns+'; полнота '+pc(m.rec1,1)+' (1 мм) / '+pc(m.rec3,1)+' (3 мм); точность '+pc(m.prec1,1)+' / '+pc(m.prec3,1)+'; целиком найдено '+m.whole+' из '+m.nSeg);
+    if(A.miss){ const msegs=parse(text).segs.map(q=>[b.f([q[0],q[1]]),b.f([q[2],q[3]])]).map(q=>[p.toMM(q[0]),p.toMM(q[1])]);
+      p.tr.segs.forEach((sg,i)=>{ const c=cover([sg],msegs,1).f; if(c<0.9){ console.log('  пропущен/сдвинут #'+i+': ('+sg[0].map(v=>v.toFixed(1))+') → ('+sg[1].map(v=>v.toFixed(1))+') длина '+Math.hypot(sg[1][0]-sg[0][0],sg[1][1]-sg[0][1]).toFixed(1)+' мм, в 1 мм лежит '+Math.round(c*100)+' %, в 3 мм '+Math.round(cover([sg],msegs,3).f*100)+' %'+(p.tr.errSegs&&p.tr.errSegs.includes(sg)?' [ОШИБКА СТУДЕНТА]':''));
+        if(c<0.5){ const L=q=>Math.hypot(q[1][0]-q[0][0],q[1][1]-q[0][1]), near=msegs.map(t=>({t,d:dist([(t[0][0]+t[1][0])/2,(t[0][1]+t[1][1])/2],sg[0],sg[1]),a:dAng(sg,t)})).sort((x,y)=>x.d-y.d)[0];
+          if(near) console.log('     ближайший отрезок модели: середина в '+near.d.toFixed(1)+' мм от правды, угол между ними '+near.a.toFixed(1)+'°, длина '+L(near.t).toFixed(1)+' мм'); } } }); }
     console.log('----- ответ '+model+' (снимок '+p.vi+') -----\n'+text+'\n----- конец -----'); }
   console.log('\nпотрачено всего: $'+spent.toFixed(4)+' (предел $'+LIMIT+')');
   const md=['## Оцифровка чертежа большой моделью (ДЗ №3 в'+N+(ERR?', ошибка '+ERR:'')+', снимок вблизи)','','| модель | снимок | точки: найдено | промах, медиана | ≤ 1 мм | ≤ 2 мм | отрезки: полнота 1 мм / 3 мм | точность 1 мм / 3 мм | целиком | время | цена |','|---|---|---|---|---|---|---|---|---|---|---|',
