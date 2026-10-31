@@ -97,19 +97,19 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
     const P=q=>IMG.H.apply(v.H,q), a=P([tr.box[0],tr.box[1]]), b=P([tr.box[0]+1,tr.box[1]]), ppm=Math.hypot(b[0]-a[0],b[1]-a[1])*r.k;
     return {vi,part:tr.part,tr,w:r.im.width,h:r.im.height,k:r.k,ppm,url:'data:image/png;base64,'+png.toString('base64'),kb:png.length/1024,toMM:p=>IMG.H.apply(Hi,[p[0]/r.k,p[1]/r.k]),toPx:q=>{ const p=IMG.H.apply(v.H,q); return [p[0]*r.k,p[1]*r.k]; }}; });
   pics.forEach(p=>console.log('снимок '+p.vi+' (часть '+('abcd'.indexOf(p.part)+1)+'): '+p.w+' × '+p.h+' px, '+f1(p.ppm)+' px/мм, '+Math.round(p.kb)+' КБ; правда: отрезков '+p.tr.segs.length+', точек '+Object.keys(p.tr.pts).length));
-  const key=process.env.OPENROUTER_API_KEY||''; if(!DRY&&!key){ console.log('нет OPENROUTER_API_KEY'); process.exit(1); }
+  const PX=(A.provider||'proxyapi')==='proxyapi', key=PX?(process.env.PROXYAPI_KEY||'proxy-injected'):process.env.OPENROUTER_API_KEY||''; if(!DRY&&!key){ console.log('нет OPENROUTER_API_KEY'); process.exit(1); }
   let spent=0; const rows=[], raw=[];
   for(const p of pics) for(const name of DRY?['правда с шумом']:MODELS){
     let text, cost=0, ms=0, info=null, model=name;
     if(DRY){ const R=IMG.rng(7), n=()=>(R()-0.5)*6; text=Object.entries(p.tr.pts).map(([l,q])=>{ const x=p.toPx(q); return 'P '+l+' '+Math.round(x[0]+n())+' '+Math.round(x[1]+n()); })
         .concat(p.tr.segs.slice(2).map(([a,b])=>{ const x=p.toPx(a), y=p.toPx(b); return 'S '+[x[0],x[1],y[0],y[1]].map(v=>Math.round(v+n())).join(' '); })).join('\n'); }
-    else { const pr=await priceOf(name); if(!pr){ console.log('\n══ '+name+': нет в списке OpenRouter'); continue; } model=pr.id;
+    else { const pr=PX?{id:SE.pxModel(name),prompt:3e-6,completion:15e-6,image:0}:await priceOf(name); if(!pr){ console.log('\n══ '+name+': нет в списке OpenRouter'); continue; } model=pr.id;
       /* худший случай: вход (картинка ≈ w·h/750 токенов + текст, с запасом ×1,5) + max_tokens ответа (и рассуждения) */
       console.log('цена '+model+': $'+(pr.prompt*1e6).toFixed(2)+' / $'+(pr.completion*1e6).toFixed(2)+' за 1 млн');
       const inCost=(p.w*p.h/750+1000)*pr.prompt+pr.image, outP=Math.max(pr.completion,pr.internal), cap=/gemini|gpt-5/.test(model)?6000:2000, minTok=/gemini|gpt-5/.test(model)?1500:900;
       const maxTok=Math.min(cap,Math.floor((LIMIT-spent-inCost)/outP));
       if(maxTok<minTok){ console.log('\n══ '+model+', снимок '+p.vi+': пропущено — не помещается в $'+LIMIT+' (потрачено $'+spent.toFixed(4)+')'); continue; }
-      const cfg=SE.eyesFromEnv({EYES_URL:SE.OR_URL,EYES_MODEL:model,OPENROUTER_API_KEY:key,EYES_BEST_MODEL:'off'}), t0=Date.now();
+      const cfg=PX?SE.eyesFromEnv({EYES_URL:SE.PX_URL,EYES_MODEL:model,PROXYAPI_KEY:key,EYES_BEST_MODEL:'off',EYES_DIGIT_MODEL:'off'}):SE.eyesFromEnv({EYES_URL:SE.OR_URL,EYES_MODEL:model,OPENROUTER_API_KEY:key,EYES_BEST_MODEL:'off'}), t0=Date.now();
       try{ const r=await SE.ask(cfg,{image:p.url,w:p.w,h:p.h,system:SYSTEM,text:'Размер фото: '+p.w+' × '+p.h+' px.',opts:{max_tokens:maxTok}},{timeout:240000});
         text=r.text; info=r.info; const u=info&&info.usage; cost=u&&u.cost!=null?+u.cost:u?(u.prompt_tokens||0)*pr.prompt+(u.completion_tokens||0)*outP:inCost+maxTok*outP; }
       catch(e){ text=''; info={error:e.message}; cost=e.info&&e.info.usage&&e.info.usage.cost!=null?+e.info.usage.cost:inCost+maxTok*outP; console.log('СБОЙ '+model+': '+e.message.slice(0,300)); }
