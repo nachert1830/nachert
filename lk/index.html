@@ -43,6 +43,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0}
+[hidden]{display:none!important}
 body{background:var(--paper);color:var(--ink);font:16px/1.4 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
 button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
 svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -167,6 +168,53 @@ h2{font:600 20px var(--disp);margin:0 0 10px}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:12px}
+
+/* Сдачи и расписание */
+.demo{font:600 10.5px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--mut);background:var(--surf2);border-radius:8px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+.ask{display:flex;flex-direction:column;gap:10px;align-items:flex-start;background:linear-gradient(135deg,var(--surf2),var(--surf))}
+.ask p{margin:0;color:var(--ink2);font-size:15px}
+.due{background:linear-gradient(135deg,var(--navy) 0%,var(--acc) 140%);color:#fff;padding:18px;display:block;width:100%}
+.due::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:22px 22px;mask-image:linear-gradient(120deg,#000,transparent 75%);-webkit-mask-image:linear-gradient(120deg,#000,transparent 75%)}
+.due>*{position:relative}
+.due .when{display:flex;align-items:center;gap:8px;font:600 13px var(--sans);letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+.due .when i{width:8px;height:8px;border-radius:4px;background:#7dffb0;box-shadow:0 0 0 4px rgba(125,255,176,.25)}
+.due .dt{font:700 32px/1.1 var(--disp);margin:8px 0 2px}
+.due .dd{font:600 19px var(--disp)}
+.due .dw{font-size:14px;opacity:.8;margin-top:2px}
+.due .hint{margin-top:12px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.14);font-size:14.5px;line-height:1.35}
+.due .more{margin-top:12px;display:grid;gap:6px}
+.due .more div{display:flex;justify-content:space-between;gap:10px;font-size:14.5px;opacity:.92}
+.due .more b{font-weight:600}
+.due .all{margin-top:12px;font:600 14px var(--sans);opacity:.9}
+.lesson{width:100%;display:block}
+.lesson .lt{font:700 34px/1.05 var(--disp);margin:2px 0 4px}
+.lesson .lw{font:600 13px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.lesson .ls{font-size:15.5px;color:var(--ink2)}
+.lesson .lp{font-size:14px;color:var(--mut);margin-top:2px}
+.rows{display:grid;gap:8px}
+.row{display:flex;gap:12px;align-items:center;background:var(--surf);border-radius:18px;padding:12px 14px}
+.row .k{flex:none;width:58px;height:48px;border-radius:14px;display:grid;place-items:center;font:700 15px var(--disp);background:var(--blue-s);color:var(--blue)}
+.row .k.k-rk{background:var(--acc);color:#fff}
+.row .m{flex:1;min-width:0}
+.row .m b{display:block;font-weight:600}
+.row .m small{color:var(--mut);font-size:13.5px}
+.row .d{flex:none;text-align:right;font:600 14px var(--sans)}
+.row .d small{display:block;font-weight:500;color:var(--mut);font-size:12.5px}
+.row.soon7 .d{color:var(--blue)}
+.row.past{opacity:.5}
+.wk{font:600 13px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:8px 4px 0}
+.note{font-size:13.5px;color:var(--mut);margin:4px 4px 0}
+details summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px}
+.sheet{position:fixed;inset:0;z-index:80;background:rgba(3,8,20,.6);display:none;align-items:flex-end}
+.sheet.on{display:flex}
+.sheet-in{width:100%;max-width:480px;margin:0 auto;background:var(--surf);border-radius:26px 26px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:80vh;display:flex;flex-direction:column;gap:10px}
+.sheet-in h2{margin:0}
+.sheet-in input{height:48px;border-radius:16px;border:2px solid var(--line);background:var(--surf2);color:var(--ink);font:500 17px var(--sans);padding:0 14px;outline:0}
+.sheet-in input:focus{border-color:var(--acc)}
+.glist{overflow:auto;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;min-height:80px}
+.glist button{height:42px;padding:0 14px;border-radius:14px;background:var(--surf2);font-weight:600}
+.glist button.on{background:var(--acc);color:#fff}
+.glist p{color:var(--mut);margin:6px 2px}
 </style>
 </head>
 <body>
@@ -193,9 +241,9 @@ h2{font:600 20px var(--disp);margin:0 0 10px}
 
 <div class="app">
   <header class="top">
-    <button class="hello" data-soon="Профиль">Привет! <svg class="i"><use href="#i-chev"/></svg></button>
-    <button class="chip fire" data-soon="Серия дней"><svg class="i"><use href="#i-flame"/></svg>12</button>
-    <button class="icon-btn" data-soon="Уведомления" aria-label="Уведомления"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button>
+    <button class="hello" id="hello" data-group aria-label="Выбрать группу"><span id="helloT">Привет!</span> <svg class="i"><use href="#i-chev"/></svg></button>
+    <button class="chip fire" data-soon="Серия дней"><svg class="i"><use href="#i-flame"/></svg>12<span class="demo">демо</span></button>
+    <button class="icon-btn" data-soon="Уведомления" aria-label="Уведомления"><svg class="i"><use href="#i-bell"/></svg></button>
   </header>
   
   <main>
@@ -207,29 +255,24 @@ h2{font:600 20px var(--disp);margin:0 0 10px}
         <button type="button" class="cam" data-soon="Поиск по фото условия" aria-label="Найти по фото условия"><svg class="i" style="width:20px;height:20px"><use href="#i-camera"/></svg></button>
       </label>
 
-      <div class="stories" id="stories" aria-label="Истории"></div>
+      <div class="card ask" id="groupAsk" hidden>
+        <b style="font:600 18px var(--disp)">Выберите свою группу</b>
+        <p>Покажем ваши занятия и точные сроки сдач — ДЗ, РК и модулей.</p>
+        <button class="btn" data-group>Выбрать группу</button>
+      </div>
+      <div id="due"></div>
+      <div id="lesson"></div>
 
-      <!-- Ближайшее: потом — из lk/data/groups.json по группе студента -->
-      <button class="card next" data-soon="Расписание" aria-label="Ближайшее занятие">
-        <div class="when"><i></i>Сегодня · следующая пара</div>
-        <div class="time">14:05</div>
-        <div class="what">Инженерная и компьютерная графика · ауд. 1120</div>
-        <div class="who">Горюнова И. А.</div>
-        <div class="deadlines">
-          <div class="dl"><b>6 дн</b><small>до РК 1</small></div>
-          <div class="dl"><b>3 дн</b><small>до сдачи ДЗ №2</small></div>
-          <div class="dl"><b>2</b><small>занятия на неделе</small></div>
-        </div>
-      </button>
+      <div class="stories" id="stories" aria-label="Истории"></div>
 
       <div class="two">
         <button class="card tile" data-soon="Готовность к РК">
-          <div class="ttl">Готовность к РК <svg class="i"><use href="#i-chev"/></svg></div>
+          <div class="ttl">Готовность <span class="demo">демо</span> <svg class="i"><use href="#i-chev"/></svg></div>
           <div class="ring"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" id="ring" cx="50" cy="50" r="42" style="stroke-dashoffset:264"/></svg><b>64%</b></div>
           <div class="sub">Сегодня 15 минут · 3 задачи</div>
         </button>
         <button class="card tile" data-soon="Серия дней">
-          <div class="ttl">Серия <svg class="i"><use href="#i-chev"/></svg></div>
+          <div class="ttl">Серия <span class="demo">демо</span> <svg class="i"><use href="#i-chev"/></svg></div>
           <div class="big">12 <span style="font-size:17px;font-weight:600" class="mut">дней</span></div>
           <div class="week" aria-label="Неделя">
             <span class="on">П</span><span class="on">В</span><span class="on">С</span><span class="on">Ч</span><span class="on today">П</span><span>С</span><span>В</span>
@@ -265,16 +308,16 @@ h2{font:600 20px var(--disp);margin:0 0 10px}
     </section>
 
     <!-- Остальные вкладки — заглушки, пока не сделаны -->
-    <section class="view" id="v-cal"><div class="card soon"><svg class="i"><use href="#i-cal"/></svg><h2>Сдачи</h2><p class="mut">Расписание, ДЗ, РК и модули семестра — скоро.</p></div></section>
+    <section class="view" id="v-cal"><h2 style="margin:6px 4px 0">Что и когда сдавать</h2><div id="calList" class="rows"></div></section>
     <section class="view" id="v-learn"><div class="card soon"><svg class="i"><use href="#i-book"/></svg><h2>Учёба</h2><p class="mut">Тетрадь, билеты и разборы — скоро.</p></div></section>
-    <section class="view" id="v-me"><div class="card soon"><svg class="i"><use href="#i-user"/></svg><h2>Профиль</h2><p class="mut">Группа, вариант, напоминания — скоро.</p></div></section>
+    <section class="view" id="v-me"><div class="card" style="display:grid;gap:12px"><h2 style="margin:0">Профиль</h2><div class="mut" id="meG"></div><button class="btn" data-group>Выбрать группу</button><p class="note" style="margin:0">Вариант, напоминания и прогресс — скоро.</p></div></section>
     <section class="view" id="v-check"><div class="card soon"><svg class="i"><use href="#i-scan"/></svg><h2>Проверка листа</h2><p class="mut">Сфотографируйте лист — получите вердикт. Скоро.</p></div></section>
   </main>
 </div>
 
 <nav class="tabs" aria-label="Разделы"><div class="tabs-in">
   <button class="tab on" data-tab="home"><svg class="i"><use href="#i-home"/></svg>Главная</button>
-  <button class="tab" data-tab="cal"><svg class="i"><use href="#i-cal"/></svg>Сдачи<span class="badge">2</span></button>
+  <button class="tab" data-tab="cal"><svg class="i"><use href="#i-cal"/></svg>Сдачи<span class="badge" id="calBadge" hidden></span></button>
   <button class="tab center" data-tab="check" aria-label="Проверка"><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span>Проверка</span></button>
   <button class="tab" data-tab="learn"><svg class="i"><use href="#i-book"/></svg>Учёба</button>
   <button class="tab" data-tab="me"><svg class="i"><use href="#i-user"/></svg>Профиль</button>
@@ -286,6 +329,12 @@ h2{font:600 20px var(--disp);margin:0 0 10px}
   <div class="sv-body"><h3 id="svT"></h3><p id="svP"></p></div>
   <div class="sv-tap"><button id="svPrev" aria-label="Назад"></button><button id="svNext" aria-label="Дальше"></button></div>
 </div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Выбор группы"><div class="sheet-in">
+  <h2>Моя группа</h2>
+  <input id="gq" type="search" placeholder="Например, АК1-31" autocomplete="off" autocapitalize="characters">
+  <div class="glist" id="glist"></div>
+  <button class="btn" id="gx" style="background:var(--surf3);box-shadow:none;color:var(--ink)">Закрыть</button>
+</div></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -293,20 +342,127 @@ h2{font:600 20px var(--disp);margin:0 0 10px}
   'use strict';
   /* Демо-данные: потом заменяются реальными (группа студента, РК, ДЗ). */
   var STORIES=[
-    {t:'РК 1 через 6 дней',p:'Диагностика покажет слабые темы. Это 10 минут.',c:'linear-gradient(160deg,#1a3f9a,#0a2463)'},
+    {t:'Как готовиться к РК',p:'Начните с диагностики — она покажет слабые темы. Это 10 минут.',c:'linear-gradient(160deg,#1a3f9a,#0a2463)'},
     {t:'Ошибка недели',p:'Перепутали проекции точки. Разбираем за минуту.',c:'linear-gradient(160deg,#a5141a,#4a0b30)'},
     {t:'Новый разбор',p:'Пересечение плоскостей — по шагам, с чертежом.',c:'linear-gradient(160deg,#12357f,#2563eb)'},
     {t:'Как оформить лист',p:'Рамка, основная надпись, шрифт — проверка по ГОСТ.',c:'linear-gradient(160deg,#0f3f9e,#07112a)'}
   ];
   var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 
+  /* ───── Данные: группа, расписание, сроки ───── */
+  var DAY=864e5, W1='2026-08-31';   /* понедельник 1-й учебной недели */
+  var TABLE=[['ikg','dz',1,4],['ikg','rk',1,5],['ikg','m',1,6],['ikg','dz',2,9],['ikg','rk',2,10],['ikg','m',2,11],['ikg','dz',3,14],['ikg','rk',3,15],['ikg','m',3,16],
+             ['ng','dz',1,5],['ng','rk',1,6],['ng','m',1,7],['ng','dz',2,10],['ng','rk',2,11],['ng','m',2,12],['ng','dz',3,14],['ng','rk',3,15],['ng','m',3,16]];
+  var SUBJ={ikg:'ИКГ',ng:'Начерт'}, SUBJ_FULL={ikg:'Инженерная и компьютерная графика',ng:'Начертательная геометрия'};
+  var MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'], WDN=['','пн','вт','ср','чт','пт','сб','вс'];
+  function p2(n){return (n<10?'0':'')+n}
+  function toDay(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);return Math.round(Date.UTC(+m[1],+m[2]-1,+m[3])/DAY)}
+  function ymd(d){var x=new Date(d*DAY);return x.getUTCFullYear()+'-'+p2(x.getUTCMonth()+1)+'-'+p2(x.getUTCDate())}
+  function todayDay(){var x=new Date();return Math.round(Date.UTC(x.getFullYear(),x.getMonth(),x.getDate())/DAY)}
+  function wday(d){return ((new Date(d*DAY).getUTCDay()+6)%7)+1}
+  function human(d){var x=new Date(d*DAY);return WDN[wday(d)]+', '+x.getUTCDate()+' '+MON[x.getUTCMonth()]}
+  function short(d){var x=new Date(d*DAY);return x.getUTCDate()+' '+MON[x.getUTCMonth()]}
+  function inWords(k){if(k<=0)return 'сегодня';if(k===1)return 'завтра';if(k===2)return 'послезавтра';var a=k%10,b=k%100;return 'через '+k+' '+(a===1&&b!==11?'день':a>=2&&a<=4&&(b<12||b>14)?'дня':'дней')}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+  var DB=null, group=lsGet('lk_group')||'';
+  function gdata(){return DB&&group&&DB.groups[group]||null}
+
+  /* События семестра. Неделя в таблице — неделя крайнего срока; день берём по занятию группы (без группы — понедельник, самый ранний). */
+  function events(){
+    var g=gdata(), subs=g?['ikg','ng'].filter(function(k){return g[k]}):['ikg','ng'], w1=toDay(W1);
+    return TABLE.filter(function(r){return subs.indexOf(r[0])>=0}).map(function(r){
+      var start=w1+7*(r[3]-1), cd=g&&g[r[0]]?g[r[0]].day:1;
+      return {subj:r[0],kind:r[1],n:r[2],week:r[3],start:start,end:start+6,date:start+cd-1};
+    }).sort(function(a,b){return a.date-b.date||a.subj.localeCompare(b.subj)});
+  }
+  function label(e){return (e.kind==='m'?'М':e.kind==='dz'?'ДЗ':'РК')+' '+e.n}
+  function titleOf(e){return e.kind==='m'?'Закрытие модуля '+e.n:e.kind==='dz'?'Домашнее задание '+e.n:'Рубежный контроль '+e.n}
+  /* сколько дней осталось и какую дату показывать: день занятия, а если он прошёл, но неделя ещё идёт — конец недели */
+  function when(e,t){var onDay=e.date>=t; return {days:(onDay?e.date:e.end)-t, text:onDay?human(e.date):'до '+human(e.end), late:!onDay}}
+  function upcoming(){var t=todayDay();return events().filter(function(e){return e.end>=t})}
+  function hintFor(e,d){
+    if(e.kind==='rk') return d>=9?'Время есть: начните с диагностики — найдёте слабые темы.':d>=3?'По 2–3 задачи в день из слабых тем, вперемешку.':d>=1?'Пробный РК на время и лёгкое повторение.':'РК сегодня. Удачи!';
+    if(e.kind==='dz') return d>=14?'Прочитайте условие и выберите способ решения.':d>=7?'Сделайте черновик, потом чистовик.':d>=3?'Чистовик и сверка по ГОСТ.':'Оставьте запас на проверку и сдачу.';
+    return 'Закройте долги по ДЗ и РК до конца недели.';
+  }
+
+  /* ───── Отрисовка ───── */
+  function renderDue(){
+    var t=todayDay(), up=upcoming(), box=$('#due'); if(t<toDay(W1)) {}
+    if(!up.length){ box.innerHTML='<div class="card"><b style="font:600 18px var(--disp)">Все сдачи семестра позади</b><p class="mut" style="margin:6px 0 0">Новых сроков пока нет.</p></div>'; return; }
+    var e=up[0], w=when(e,t), rest=up.slice(1,4);
+    box.innerHTML='<button class="card due" data-tab-go="cal" aria-label="Все сдачи"><div class="when"><i></i>Ближайшая сдача</div>'
+      +'<div class="dt">'+label(e)+' · '+SUBJ[e.subj]+'</div><div class="dd">'+inWords(w.days)+' · '+esc(w.text)+'</div>'
+      +'<div class="dw">Неделя '+e.week+' · '+short(e.start)+' — '+short(e.end)+(group?'':' · дата — по понедельнику')+'</div>'
+      +'<div class="hint">'+esc(hintFor(e,w.days))+'</div>'
+      +(rest.length?'<div class="more">'+rest.map(function(x){var y=when(x,t);return '<div><b>'+label(x)+' · '+SUBJ[x.subj]+'</b><span>'+inWords(y.days)+' · '+esc(y.text)+'</span></div>'}).join('')+'</div>':'')
+      +'<div class="all">Все сдачи семестра →</div></button>';
+  }
+  function nextLesson(g){
+    var now=new Date(), t=todayDay(), hm=p2(now.getHours())+':'+p2(now.getMinutes()), w1=toDay(W1);
+    for(var i=0;i<14;i++){ var d=t+i, w=wday(d); if(w>6) continue; var wk=Math.floor((d-w1)/7)+1, par=(wk%2?'чс':'зн');
+      var ls=g.lessons.filter(function(l){return l.day===w&&(!l.par||l.par===par)&&(i>0||l.t>=hm)}).sort(function(a,b){return a.t<b.t?-1:1});
+      if(ls.length) return {l:ls[0],date:d,i:i}; }
+    return null;
+  }
+  function renderLesson(){
+    var box=$('#lesson'), g=gdata();
+    if(!g){ box.innerHTML=''; return; }
+    var n=nextLesson(g);
+    if(!n){ box.innerHTML='<div class="card lesson"><div class="lw">Занятия</div><div class="ls">В ближайшие две недели занятий нет.</div></div>'; return; }
+    var l=n.l, day=n.i===0?'Сегодня':n.i===1?'Завтра':human(n.date);
+    box.innerHTML='<div class="card lesson"><div class="lw">'+esc(day)+' · следующая пара</div><div class="lt">'+esc(l.t.replace(/^0/,''))+'</div>'
+      +'<div class="ls">'+SUBJ_FULL[l.subj]+'</div><div class="lp">ауд. '+esc(l.rooms.join(', '))+(l.par?' · '+(l.par==='чс'?'числитель':'знаменатель'):'')
+      +((l.who&&l.who.length)?' · '+esc(l.who.join('; ')):'')+(l.unsure?' · сверьте с расписанием':'')+'</div></div>';
+  }
+  function row(e,t,past){
+    var w=when(e,t);
+    return '<div class="row'+(past?' past':w.days<=7?' soon7':'')+'"><div class="k k-'+e.kind+'">'+label(e)+'</div><div class="m"><b>'+titleOf(e)+'</b><small>'+SUBJ[e.subj]+' · неделя '+e.week+' · '+short(e.start)+' — '+short(e.end)+'</small></div>'
+      +'<div class="d">'+(past?'прошло':inWords(w.days))+'<small>'+(past?'':esc(w.text))+'</small></div></div>';
+  }
+  function renderCal(){
+    var t=todayDay(), all=events(), up=all.filter(function(e){return e.end>=t}), past=all.filter(function(e){return e.end<t}), h='';
+    if(!group) h+='<div class="note">Группа не выбрана: даты — по понедельникам. <a href="#" data-group style="color:var(--blue)">Выбрать группу</a></div>';
+    else h+='<div class="note">Даты — по дню вашего занятия; крайний срок — конец недели. Точный день уточните у преподавателя.</div>';
+    h+=up.map(function(e){return row(e,t,false)}).join('');
+    if(past.length) h+='<details><summary>Прошедшие ('+past.length+')</summary><div class="rows">'+past.map(function(e){return row(e,t,true)}).join('')+'</div></details>';
+    $('#calList').innerHTML=h;
+    var soon7=up.filter(function(e){return when(e,t).days<=7}).length, b=$('#calBadge'); b.textContent=soon7; b.hidden=!soon7;
+  }
+  function renderAll(){
+    $('#helloT').textContent=group||'Привет!'; $('#groupAsk').hidden=!!group;
+    $('#meG').textContent=group?'Группа: '+group:'Группа не выбрана';
+    renderDue(); renderLesson(); renderCal();
+  }
+
+  /* ───── Выбор группы ───── */
+  var sheet=$('#sheet'), gq=$('#gq'), glist=$('#glist');
+  function fillGroups(){
+    if(!DB){ glist.innerHTML='<p>Расписание не загрузилось. Проверьте интернет и откройте окно снова.</p>'; return; }
+    var q=gq.value.replace(/\s+/g,'').toUpperCase(), ks=Object.keys(DB.groups).filter(function(k){return !q||k.toUpperCase().indexOf(q)>=0}).slice(0,60);
+    glist.innerHTML=ks.length?ks.map(function(k){return '<button type="button" data-pick="'+esc(k)+'"'+(k===group?' class="on"':'')+'>'+esc(k)+'</button>'}).join(''):'<p>Такой группы нет в расписании. Проверьте запись, например «АК1-31».</p>';
+  }
+  function openSheet(){ sheet.classList.add('on'); gq.value=''; fillGroups(); setTimeout(function(){gq.focus()},50); }
+  function closeSheet(){ sheet.classList.remove('on'); }
+  gq.addEventListener('input',fillGroups);
+  $('#gx').addEventListener('click',closeSheet);
+  sheet.addEventListener('click',function(e){ if(e.target===sheet) closeSheet(); var b=e.target.closest('[data-pick]'); if(b){ group=b.getAttribute('data-pick'); lsSet('lk_group',group); closeSheet(); renderAll(); } });
+  document.addEventListener('click',function(e){ var b=e.target.closest('[data-group]'); if(b){ e.preventDefault(); openSheet(); } });
+
+  fetch('data/groups.json').then(function(r){return r.json()}).then(function(j){ DB=j; if(group&&!j.groups[group]){ group=''; lsSet('lk_group',''); } renderAll(); }).catch(function(){ renderAll(); });
+
   /* Заглушка «скоро» — для всего, что ещё не реализовано */
   var toast=$('#toast'), tt;
   function soon(name){ toast.textContent=(name||'Раздел')+' — скоро'; toast.classList.add('on'); clearTimeout(tt); tt=setTimeout(function(){toast.classList.remove('on')},1800); }
-  document.addEventListener('click',function(e){ var b=e.target.closest('[data-soon]'); if(b){ e.preventDefault(); soon(b.getAttribute('data-soon')); } });
+  document.addEventListener('click',function(e){ var b=e.target.closest('[data-soon]'); if(b&&!b.closest('[data-group]')){ e.preventDefault(); soon(b.getAttribute('data-soon')); } });
   $('#q').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); soon('Поиск'); } });
 
   /* Вкладки */
+  function goTab(id){ var t=$('.tab[data-tab="'+id+'"]'); if(t) t.click(); }
+  document.addEventListener('click',function(e){ var b=e.target.closest('[data-tab-go]'); if(b) goTab(b.getAttribute('data-tab-go')); });
   $$('.tab').forEach(function(t){ t.addEventListener('click',function(){
     var id=t.getAttribute('data-tab');
     $$('.tab').forEach(function(x){x.classList.toggle('on',x===t)});

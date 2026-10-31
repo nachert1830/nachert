@@ -1,10 +1,9 @@
 name: Личный кабинет — развёртывание в Yandex Cloud
 # Каждый пуш с изменениями клуба: проверки → функции, база, шлюз и бот в Yandex Cloud (server/tools/deploy.js) → адрес API для страницы на сайте.
 # Страница клуба — nachert1830.ru/lk/ (GitHub Pages из main). Что добавить в секреты репозитория — lk/DEPLOY.md.
+# Автозапуск по пушу отключён: кабинет перестраивается, из lk/ удалена логика, которую подключает server/.
+# Вернуть — когда server/ будет приведён в порядок: on.push с paths ['server/**', 'lk/**'].
 on:
-  push:
-    branches: [main, claude/modest-babbage-ozfp1h]
-    paths: ['server/**', 'lk/**', '.github/workflows/club.yml']
   workflow_dispatch:
 permissions:
   contents: write
