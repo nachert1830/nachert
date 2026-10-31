@@ -44,6 +44,6 @@ function draw(im,r,path){ const o={width:im.width,height:im.height,data:new Uint
   r.circles.forEach(c=>{ for(let a=0;a<6.283;a+=0.5/Math.max(4,c.r)){ put(c.cx+c.r*Math.cos(a),c.cy+c.r*Math.sin(a),[230,0,0]); put(c.cx+(c.r+1)*Math.cos(a),c.cy+(c.r+1)*Math.sin(a),[230,0,0]); } });
   fs.writeFileSync(path,IMG.encodePNG(o)); }
 
-module.exports={detect,darkness};
+module.exports={detect,darkness,dilate,lineMask,comps};
 if(require.main===module){ const f=process.argv[2], im=IMG.decodePNG(fs.readFileSync(f)), t0=Date.now(), r=detect(im);
   const out=(A.out||'.')+'/'+require('path').basename(f,'.png')+'-text.png'; draw(im,r,out); console.log(f+': '+im.width+'×'+im.height+', кружков '+r.circles.length+', '+(Date.now()-t0)+' мс → '+out); }
