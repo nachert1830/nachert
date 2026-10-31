@@ -105,7 +105,7 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const t0=Date.now(), r=await http(cfg.url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(o.timeout||45000)});
   const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
   const why=j&&(j.error?j.error.message||j.error:j.detail||j.message);
-  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):'')),{status:502});
+  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):t?': '+t.slice(0,200):'')),{status:502});
   /* модели с рассуждением (Qwen3.x) возвращают ход мысли в <think>…</think> или отдельным полем — сканеру нужен только ответ;
      если на ответ не хватило лимита, JSON бывает только в ходе мысли */
   const c=j&&j.choices&&j.choices[0]||{}, m=c.message||{}, raw=m.content, think=String(m.reasoning_content||m.reasoning||'');

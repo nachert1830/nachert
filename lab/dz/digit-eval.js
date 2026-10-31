@@ -94,6 +94,7 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
     /* правильное построение того же чертежа (лист без ошибки, его отрезки — на место этого чертежа): что отличается — ошибка */
     if(s0&&s.truth.parts[vi].err){ const ok=truthOf(s,vi,s0.truth.parts[vi].items), key=q=>q.map(p=>p.map(v=>v.toFixed(2)).join(',')).join(';'), okK=new Set(ok.segs.map(key));
       tr.okSegs=ok.segs; tr.errSegs=tr.segs.filter(q=>!okK.has(key(q))); }
+    if(A.dump) fs.writeFileSync(A.dump+'-'+vi+'.png',png);
     const P=q=>IMG.H.apply(v.H,q), a=P([tr.box[0],tr.box[1]]), b=P([tr.box[0]+1,tr.box[1]]), ppm=Math.hypot(b[0]-a[0],b[1]-a[1])*r.k;
     return {vi,part:tr.part,tr,w:r.im.width,h:r.im.height,k:r.k,ppm,url:'data:image/png;base64,'+png.toString('base64'),kb:png.length/1024,toMM:p=>IMG.H.apply(Hi,[p[0]/r.k,p[1]/r.k]),toPx:q=>{ const p=IMG.H.apply(v.H,q); return [p[0]*r.k,p[1]*r.k]; }}; });
   pics.forEach(p=>console.log('снимок '+p.vi+' (часть '+('abcd'.indexOf(p.part)+1)+'): '+p.w+' × '+p.h+' px, '+f1(p.ppm)+' px/мм, '+Math.round(p.kb)+' КБ; правда: отрезков '+p.tr.segs.length+', точек '+Object.keys(p.tr.pts).length));
@@ -103,7 +104,7 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
     let text, cost=0, ms=0, info=null, model=name;
     if(DRY){ const R=IMG.rng(7), n=()=>(R()-0.5)*6; text=Object.entries(p.tr.pts).map(([l,q])=>{ const x=p.toPx(q); return 'P '+l+' '+Math.round(x[0]+n())+' '+Math.round(x[1]+n()); })
         .concat(p.tr.segs.slice(2).map(([a,b])=>{ const x=p.toPx(a), y=p.toPx(b); return 'S '+[x[0],x[1],y[0],y[1]].map(v=>Math.round(v+n())).join(' '); })).join('\n'); }
-    else { const pr=PX?{id:SE.pxModel(name),prompt:3e-6,completion:15e-6,image:0}:await priceOf(name); if(!pr){ console.log('\n══ '+name+': нет в списке OpenRouter'); continue; } model=pr.id;
+    else { const pr=PX?{id:SE.pxModel(name),prompt:3e-6,completion:15e-6,image:0,internal:0}:await priceOf(name); if(!pr){ console.log('\n══ '+name+': нет в списке OpenRouter'); continue; } model=pr.id;
       /* худший случай: вход (картинка ≈ w·h/750 токенов + текст, с запасом ×1,5) + max_tokens ответа (и рассуждения) */
       console.log('цена '+model+': $'+(pr.prompt*1e6).toFixed(2)+' / $'+(pr.completion*1e6).toFixed(2)+' за 1 млн');
       const inCost=(p.w*p.h/750+1000)*pr.prompt+pr.image, outP=Math.max(pr.completion,pr.internal), cap=/gemini|gpt-5/.test(model)?6000:2000, minTok=/gemini|gpt-5/.test(model)?1500:900;
