@@ -13,7 +13,8 @@
      два щипка                    — зум (расстояние между руками);
      щипок + кулак второй рукой   — панорама (двигает рука со щипком);
      два кулака                   — «взять и разобрать»: развёл руки — деталь раскрылась, свёл — собралась;
-     открытая ладонь 1,5 с        — сброс вида.
+     открытая ладонь 1,5 с        — сброс вида;
+     кулак                        — «поймать» крутящуюся по инерции деталь.
    Защита от ложных срабатываний: гистерезис всех порогов, поза засчитывается, только продержавшись holdOn мс,
    и снимается, только пропав на holdOff мс; рука у края кадра и слишком далёкая рука не управляют;
    после двуручного жеста вращение начинается только со свежего щипка (иначе оставшаяся рука дёргает деталь). */
@@ -177,11 +178,13 @@ export function createController(opt = {}) {
     associate(dets, t);
     ctl.tracks.forEach(tr => { debounce(tr, t, ev); smooth(tr, t); });
 
+    /* кулак «ловит» деталь: инерция останавливается */
+    if (ev.some(e => e.type === 'fist-on') && ctl.fling) { ctl.fling = null; ev.push({ type: 'catch', t }); }
     const T = ctl.tracks, by = p => T.filter(tr => tr.pose === p);
     const pins = by('pinch'), fists = by('fist'), opens = by('open'), v = view;
 
     /* вращение кончается: щипок отпущен, а рука на месте — с инерцией; пропала или ушла к краю — без */
-    if (ctl.mode === 'rotate' && ctl.g) { const h = T.find(tr => tr.id === ctl.g.id); ctl.g.released = !!(h && h.present && h.pose !== 'none' && h.pose !== 'pinch'); }
+    if (ctl.mode === 'rotate' && ctl.g) { const h = T.find(tr => tr.id === ctl.g.id); ctl.g.released = !!(h && h.present && (h.pose === 'idle' || h.pose === 'open')); }   /* сжал в кулак — «поймал», без инерции */
     const multi = ['zoom', 'pan', 'explode'].includes(ctl.mode);
 
     /* выбор жеста */

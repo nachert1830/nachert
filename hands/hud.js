@@ -18,10 +18,10 @@ const INSET = 0.08;                                         /* поля кадр
 /* подписи частей варианта 5: высота z на оси части, радиус (выноска начинается на очерке), сторона выноски
    (у пробок сторона выбирается по тому, где пробка на экране относительно детали) */
 export const LABELS = {
-  flange: { z: 12.5, r: 55, side: 1, t: 'Фланец', d: 'цилиндр Ø110, высота 25' },
-  cone: { z: 75, r: 34, side: -1, t: 'Усечённый конус', d: 'Ø80 → Ø60, высота 95' },
-  pyr: { z: 112, r: 12, side: 1, t: 'Сквозное отверстие', d: 'правильная трёхгранная пирамида, вписана в Ø25 → Ø50' },
-  hole0: { z: 0, r: 5, side: -1, t: '4 отверстия Ø10', d: 'на окружности Ø95, через 90°' }
+  flange: { z: 12.5, r: 55, side: 1, s: 'Фланец Ø110', t: 'Фланец', d: 'цилиндр Ø110, высота 25' },
+  cone: { z: 75, r: 34, side: -1, s: 'Конус Ø80→Ø60', t: 'Усечённый конус', d: 'Ø80 → Ø60, высота 95' },
+  pyr: { z: 112, r: 12, side: 1, s: 'Пирамида-отверстие', t: 'Сквозное отверстие', d: 'правильная трёхгранная пирамида, вписана в Ø25 → Ø50' },
+  hole0: { z: 0, r: 5, side: -1, s: '4 отв. Ø10', t: '4 отверстия Ø10', d: 'на окружности Ø95, через 90°' }
 };
 
 export function createHud(canvas) {
@@ -84,19 +84,28 @@ export function createHud(canvas) {
     const k = Math.max(0, Math.min(1, (view.explode - 0.55) / 0.25)); if (k <= 0) return;
     const L = holo.layout(view.explode);
     ctx.save(); ctx.globalAlpha = k; ctx.font = '600 13px system-ui,sans-serif';
-    const ppm = holo.pxPerMm(), mid = holo.project([0, 0, 60]);
+    const ppm = holo.pxPerMm(), mid = holo.project([0, 0, 60]), compact = W < 640;
     for (const id in LABELS) {
       const lb = LABELS[id], part = holo.parts.find(p => p.id === id); if (!part) continue;
       const o = id.startsWith('hole') ? L.hole : L[id], ax = id.startsWith('hole') ? [part.c[0], part.c[1]] : [0, 0];
       const c = holo.project([ax[0] + o[0], ax[1] + o[1], lb.z + o[2]]); if (!c) continue;
       let side = lb.side; if (part.role === 'plug' && mid && Math.abs(c[0] - mid[0]) > 20) side = Math.sign(c[0] - mid[0]);
+      /* не помещается — выноска на другую сторону; не помещается нигде (узкий экран) — текст прижимается к краю */
+      const title = compact ? lb.s : lb.t, desc = compact ? '' : lb.d;        /* узкий экран — только короткое имя */
+      ctx.font = '12px system-ui,sans-serif'; const tw = Math.max(ctx.measureText(desc).width, (ctx.font = '600 13px system-ui,sans-serif', ctx.measureText(title).width));
+      const fits = sd => { const x0 = c[0] + sd * (lb.r * ppm + 64); return sd > 0 ? x0 + tw < W - 44 : x0 - tw > 8; };
+      if (!fits(side) && fits(-side)) side = -side;
       const p = [c[0] + side * lb.r * ppm, c[1]];
       const col = part.role === 'plug' ? AM : CY, ex = p[0] + side * 40, ey = p[1] - 24;
-      glow(col, 8); ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(ex, ey); ctx.lineTo(ex + side * 18, ey); ctx.stroke();
+      ctx.textAlign = side > 0 ? 'left' : 'right'; let tx = ex + side * 24;
+      const tx0 = tx; if (side > 0) tx = Math.min(tx, W - 44 - tw); else tx = Math.max(tx, 8 + tw);
+      /* выноска: от очерка части наискосок, затем горизонтально до текста; текст прижат к краю и наехал бы
+         на линию — поднимаем его над концом выноски */
+      const lift = tx !== tx0 ? -16 : 0, end = lift ? ex + side * 14 : tx - side * 6;
+      glow(col, 8); ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(ex, ey); ctx.lineTo(end, ey); ctx.stroke();
       ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p[0], p[1], 2.5, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
-      ctx.textAlign = side > 0 ? 'left' : 'right'; const tx = ex + side * 24;
-      ctx.fillStyle = col; ctx.font = '600 13px system-ui,sans-serif'; ctx.fillText(lb.t, tx, ey + 4);
-      ctx.fillStyle = TXT; ctx.font = '12px system-ui,sans-serif'; ctx.fillText(lb.d, tx, ey + 20);
+      ctx.fillStyle = col; ctx.font = '600 13px system-ui,sans-serif'; ctx.fillText(title, tx, ey + 4 + lift - (lift && desc ? 16 : 0));
+      if (desc) { ctx.fillStyle = TXT; ctx.font = '12px system-ui,sans-serif'; ctx.fillText(desc, tx, ey + 20 + lift - (lift ? 16 : 0)); }
     }
     ctx.restore();
   }

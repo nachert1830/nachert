@@ -58,6 +58,21 @@ test('вращение: быстрый свайп и отпускание — и
   assert.ok(y2 < y1 - 0.05, 'после отпускания модель ещё крутится');
   assert.ok(!c.fling, 'инерция затухла');
 });
+test('кулак ловит деталь: инерция останавливается; щипок → кулак — без инерции', () => {
+  const c = ctlNew();
+  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.3 })]);
+  run(c, 333, 600, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.3, 0.6, (t - 333) / 267) })]);
+  let fr = run(c, 633, 800, () => [hand({ pose: 'idle', cx: 0.6 })]);
+  assert.equal(events(fr, 'fling').length, 1);
+  fr = run(c, 833, 1200, () => [hand({ pose: 'fist', cx: 0.6 })]);
+  assert.equal(events(fr, 'catch').length, 1); assert.ok(!c.fling);
+  const y = c.view.yaw; c.tick(2000); assert.equal(c.view.yaw, y, 'после «поимки» не крутится');
+  /* щипок сразу в кулак */
+  const d = ctlNew();
+  run(d, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.3 })]);
+  run(d, 333, 600, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.3, 0.6, (t - 333) / 267) })]);
+  assert.equal(events(run(d, 633, 900, () => [hand({ pose: 'fist', cx: 0.6 })]), 'fling').length, 0);
+});
 test('вращение: медленное движение — без инерции; сглаживание не даёт рывка при размыкании пальцев', () => {
   const c = ctlNew();
   run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.5 })]);
