@@ -53,9 +53,9 @@ function snap(D,seg,o){ const {G,w,h}=D, thr=D.thr*(o.soft==null?0.6:o.soft), pp
         pts.push({x:cx+nx*(bt+sub),y:cy+ny*(bt+sub),w:best,t:bt}); } }
     if(pts.length<Math.max(6,L0*0.2)) return {p:seg.slice(0,4),ink:pts.length/Math.max(1,(s1-s0)),moved:0,n:pts.length,lost:true};
     /* выбросы: сначала по расстоянию до прямой, потом по её МНК */
-    let f=tls(pts), keep=pts;
+    let f=tls(pts), keep=pts; if(!f) return {p:seg.slice(0,4),ink:0,moved:0,n:pts.length,lost:true};
     for(let k=0;k<3;k++){ const nn=-f.dy, mm=f.dx, r=keep.map(c=>Math.abs((c.x-f.x)*nn+(c.y-f.y)*mm)); const s=r.slice().sort((a,b)=>a-b)[Math.floor(r.length*0.6)]||0.5, lim=Math.max(1.2,2.5*s);
-      keep=keep.filter((c,i)=>r[i]<=lim); if(keep.length<6) break; f=tls(keep); }
+      keep=keep.filter((c,i)=>r[i]<=lim); if(keep.length<6) break; const f2=tls(keep); if(!f2) break; f=f2; }
     if(keep.length<6) return {p:seg.slice(0,4),ink:keep.length/Math.max(1,(s1-s0)),moved:0,n:keep.length,lost:true};
     if(f.dx*line.dx+f.dy*line.dy<0){ f.dx=-f.dx; f.dy=-f.dy; }
     line=f; R=Math.max(1.2*ppm*0.5,R*0.5); pts=keep; }
