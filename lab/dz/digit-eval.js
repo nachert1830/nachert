@@ -123,11 +123,13 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
       catch(e){ text=''; info={error:e.message}; cost=e.info&&e.info.usage&&e.info.usage.cost!=null?+e.info.usage.cost:inCost+maxTok*outP; console.log('СБОЙ '+model+': '+e.message.slice(0,300)); }
       ms=Date.now()-t0; spent+=cost; }
     const ans=parse(text); let b=bestScale(p.tr,ans,p,p.toMM), m=b.m, rf=null;
-    if(A.refine==='1'&&b.name==='px'){ const RF=require('./refine.js'); const t0=Date.now(); rf=RF.refine(p.gray,ans.segs,{ppm:p.ppm,inkMin:A.inkmin?+A.inkmin:undefined,find:A.find!=='0',minLen:A.minlen?+A.minlen:undefined}); const ms2=Date.now()-t0;
+    if(A.refine==='1'&&b.name==='px'){ const RF=require('./refine.js'); const t0=Date.now(); rf=RF.refine(p.gray,ans.segs,{points:ans.pts.map(q=>[q[1],q[2]]),ppm:p.ppm,inkMin:A.inkmin?+A.inkmin:undefined,find:A.find!=='0',minLen:A.minlen?+A.minlen:undefined}); const ms2=Date.now()-t0;
       const was=m, ans2={pts:ans.pts,segs:rf.segs.map(q=>q.p)}; m=measure(p.tr,ans2,p.toMM); b={name:'px',m};
       const fnd=rf.segs.filter(q=>q.src==='found').map(q=>[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])]), mod=rf.segs.filter(q=>q.src==='model').map(q=>[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])]);
       const prFound=fnd.length?cover(fnd,p.tr.segs,1).f:null, prMod=mod.length?cover(mod,p.tr.segs,1).f:null;
       console.log('  притяжка к карандашу ('+ms2+' мс): модель дала '+rf.stats.model+', оставлено '+rf.stats.kept+', отброшено «на бумаге нет» '+rf.stats.dropped+', найдено сверх модели '+rf.stats.found+'; точность найденных '+(prFound==null?'—':pc(prFound,1))+', оставленных модельных '+(prMod==null?'—':pc(prMod,1)));
+      { const vf=rf.segs.filter(q=>!q.unverified).map(q=>q.p), uv=rf.segs.filter(q=>q.unverified).map(q=>q.p), mm=l=>l.map(q=>[p.toMM([q[0],q[1]]),p.toMM([q[2],q[3]])]);
+        const mv=measure(p.tr,{pts:ans.pts,segs:vf},p.toMM); console.log('  подтверждённые карандашом: '+vf.length+' отрезков, точность '+pc(mv.prec1,1)+' / '+pc(mv.prec3,1)+', полнота '+pc(mv.rec1,1)+'; не подтверждены (помечены): '+uv.length+(uv.length?', из них верны '+pc(cover(mm(uv),p.tr.segs,1).f,1):'')); }
       if(A.found) rf.segs.filter(q=>q.src==='found').forEach(q=>{ const m=[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])], c=cover([m],p.tr.segs,1).f; console.log('    найдена: длина '+Math.hypot(m[1][0]-m[0][0],m[1][1]-m[0][1]).toFixed(1)+' мм, чернил '+Math.round(q.ink*100)+' %, на правде '+Math.round(c*100)+' %, угол '+(Math.atan2(m[1][1]-m[0][1],m[1][0]-m[0][0])*180/Math.PI).toFixed(0)+'°'); });
       console.log('  до: полнота '+pc(was.rec1,1)+' / '+pc(was.rec3,1)+', точность '+pc(was.prec1,1)+' / '+pc(was.prec3,1)+', целиком '+was.whole+' из '+was.nSeg+'; ошибка студента '+(was.errC==null?'—':pc(was.errC,1)));
       if(A.miss){ rf.dropped.forEach(d=>console.log('    отброшен: ('+d.p.map(v=>Math.round(v))+') чернил '+(d.ink==null?'—':Math.round(d.ink*100)+' %')+' '+d.why)); } }

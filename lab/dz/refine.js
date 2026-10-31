@@ -28,7 +28,7 @@ function gauss(a,w,h,s){ const r=Math.ceil(3*s), k=new Float32Array(2*r+1); let 
 /* тёмность: насколько пиксель темнее окружающей бумаги (0 — бумага), в уровнях серого; thr — порог «это карандаш» */
 function darkness(g,o){ const {w,h,a}=g, big=Math.max(6,Math.round((o.ppm||7)*1.6));
   /* фон — по окну ≈ 3 мм: карандашная линия (0,3–0,5 мм) в среднее почти не попадает, а свет и тень плавные */
-  const bg=boxBlur(a,w,h,big), d=new Float32Array(w*h); for(let i=0;i<d.length;i++) d[i]=Math.max(0,bg[i]-a[i]);
+  const bg=boxBlur(a,w,h,big), d=new Float32Array(w*h); for(let i=0;i<d.length;i++) d[i]=o.relative===false?Math.max(0,bg[i]-a[i]):Math.max(0,bg[i]-a[i])/Math.max(25,bg[i])*200;   /* относительно местного фона: в тени бледный карандаш слабее по уровням серого, но так же заметен */
   const G=gauss(d,w,h,o.sigma||1.0), v=Array.from(G.filter((_,i)=>i%7===0)).sort((x,y)=>x-y), med=v[v.length>>1], mad=v[Math.floor(v.length*0.75)]-med;
   /* шум бумаги: верхний квартиль гладкой карты, порог — несколько таких */
   const thr=Math.max(1.2,med+(o.k||5)*Math.max(mad,0.15));
@@ -42,7 +42,7 @@ function tls(P){ let W=0,mx=0,my=0; P.forEach(c=>{ W+=c.w; mx+=c.w*c.x; my+=c.w*
   const th=0.5*Math.atan2(2*sxy,sxx-syy); return {x:mx,y:my,dx:Math.cos(th),dy:Math.sin(th)}; }
 
 /* притянуть один отрезок: [x1,y1,x2,y2] → {p, ink, moved, n} или null */
-function snap(D,seg,o){ const {G,thr,w,h}=D, ppm=o.ppm||7; let [x1,y1,x2,y2]=seg; const L0=Math.hypot(x2-x1,y2-y1); if(L0<2) return null;
+function snap(D,seg,o){ const {G,w,h}=D, thr=D.thr*(o.soft==null?0.6:o.soft), ppm=o.ppm||7; let [x1,y1,x2,y2]=seg; const L0=Math.hypot(x2-x1,y2-y1); if(L0<2) return null;
   let line={x:(x1+x2)/2,y:(y1+y2)/2,dx:(x2-x1)/L0,dy:(y2-y1)/L0}, R=(o.radius||2.5)*ppm, ext=0, pts=[];
   const s0=-L0/2*0.96, s1=L0/2*0.96;
   for(let it=0;it<4;it++){ pts=[]; const nx=-line.dy, ny=line.dx;
@@ -60,7 +60,9 @@ function snap(D,seg,o){ const {G,thr,w,h}=D, ppm=o.ppm||7; let [x1,y1,x2,y2]=seg
     if(f.dx*line.dx+f.dy*line.dy<0){ f.dx=-f.dx; f.dy=-f.dy; }
     line=f; R=Math.max(1.2*ppm*0.5,R*0.5); pts=keep; }
   /* чернила вдоль уточнённой прямой: на каждом шаге вдоль s — есть ли гребень ближе 1,5 px; концы: по первому/последнему чернильному месту */
-  const sOf=(x,y)=>(x-line.x)*line.dx+(y-line.y)*line.dy, nx=-line.dy, ny=line.dx, along=(s)=>{ const cx=line.x+line.dx*s, cy=line.y+line.dy*s; let m=0; for(let t=-1.5;t<=1.5;t+=0.5){ const v=bil(G,w,h,cx+nx*t,cy+ny*t); if(v>m) m=v; } return m>thr; };
+  const sOf=(x,y)=>(x-line.x)*line.dx+(y-line.y)*line.dy, nx=-line.dy, ny=line.dx, along=(s)=>{ const cx=line.x+line.dx*s, cy=line.y+line.dy*s; let m=0; for(let t=-1.5;t<=1.5;t+=0.5){ const v=bil(G,w,h,cx+nx*t,cy+ny*t); if(v>m) m=v; }
+    /* локальный контраст: линия темнее соседних полос (±4…6 px) заметно, а не просто выше общего порога; в тени и на зерне порог плывёт, соседи — нет */
+    const off=(bil(G,w,h,cx+nx*5,cy+ny*5)+bil(G,w,h,cx-nx*5,cy-ny*5)+bil(G,w,h,cx+nx*4,cy+ny*4)+bil(G,w,h,cx-nx*4,cy-ny*4))/4; return m>thr*0.7&&m>off*1.6+thr*0.25; };
   const A=sOf(x1,y1), B=sOf(x2,y2), lo=Math.min(A,B), hi=Math.max(A,B), ink=[];
   for(let s=lo;s<=hi;s+=1) ink.push(along(s)?1:0);
   const frac=ink.reduce((a,b)=>a+b,0)/Math.max(1,ink.length);
@@ -96,21 +98,38 @@ function findMissing(D,used,o){ const {G,thr,w,h}=D, ppm=o.ppm||7, minLen=(o.min
     runs.forEach(r=>{ if(!r.length) return; const s0=pts[r[0]][0]*dx+pts[r[0]][1]*dy, s1=pts[r[r.length-1]][0]*dx+pts[r[r.length-1]][1]*dy, len=s1-s0;
       if(len>=minLen&&r.length>=len*0.55){ const f=tls(r.map(k=>({x:pts[k][0],y:pts[k][1],w:pts[k][2]}))); if(f){ const a=(pts[r[0]][0]-f.x)*f.dx+(pts[r[0]][1]-f.y)*f.dy, b=(pts[r[r.length-1]][0]-f.x)*f.dx+(pts[r[r.length-1]][1]-f.y)*f.dy;
         /* карандашная линия — один гребень на каждый шаг вдоль неё; заметно больше — полоса (край бумаги, тень, рамка), а не линия */
-        if(r.length/len<=(o.maxInk||1.15)) out.push({p:[f.x+f.dx*a,f.y+f.dy*a,f.x+f.dx*b,f.y+f.dy*b],ink:r.length/len,src:'found'}); any=true; r.forEach(k=>alive[k]=0); } } });
+        if(r.length/len<=(o.maxInk||1.15)) out.push({p:[f.x+f.dx*a,f.y+f.dy*a,f.x+f.dx*b,f.y+f.dy*b],ink:r.length/len,src:'found',g:r.reduce((a,k)=>a+pts[k][2],0)/r.length}); any=true; r.forEach(k=>alive[k]=0); } } });
     if(!any){ near.forEach(k=>alive[k]=0); } }
   return out; }
 
+const dSegPt=(p,s)=>{ const dx=s[2]-s[0], dy=s[3]-s[1], L=dx*dx+dy*dy||1e-9, t=Math.max(0,Math.min(1,((p[0]-s[0])*dx+(p[1]-s[1])*dy)/L)); return Math.hypot(p[0]-s[0]-t*dx,p[1]-s[1]-t*dy); };
+function meanG(D,p){ const L=Math.hypot(p[2]-p[0],p[3]-p[1]), n=Math.max(2,Math.ceil(L)); let t=0; for(let k=0;k<=n;k++){ let m=0; const x=p[0]+(p[2]-p[0])*k/n, y=p[1]+(p[3]-p[1])*k/n; for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const v=bil(D.G,D.w,D.h,x+dx,y+dy); if(v>m) m=v; } t+=m; } return t/(n+1); }
 function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assign({ppm},o)), res=[], dropped=[], inkMin=o.inkMin==null?0.45:o.inkMin;
-  segs.forEach((s,i)=>{ const r=snap(D,s,{ppm,radius:o.radius,extend:o.extend}); if(!r){ dropped.push({p:s.slice(0,4),why:'короткий',i}); return; }
-    if(r.lost||r.ink<inkMin){ dropped.push({p:s.slice(0,4),ink:r.ink,why:'на бумаге нет',i}); return; }
+  const snaps=segs.map((s,i)=>({s,i,r:snap(D,s,{ppm,radius:o.radius,extend:o.extend})}));
+  /* фото надёжное, если большинство отрезков модели подтверждено карандашом: тогда отрезок без чернил — выдумка модели («как надо») и отбрасывается;
+     на тёмном, смазанном фото бледные линии могут не проявиться — тогда отрезок остаётся как есть, с пометкой «не подтверждён» */
+  const okN=snaps.filter(x=>x.r&&!x.r.lost&&x.r.ink>=inkMin).length, reliable=snaps.length?okN/snaps.length>=(o.reliable==null?0.8:o.reliable):false;
+  const weak=[];
+  snaps.forEach(({s,i,r})=>{ if(!r){ dropped.push({p:s.slice(0,4),why:'короткий',i}); return; }
+    if(r.lost||r.ink<inkMin){ weak.push({p:s.slice(0,4),ink:r.ink,dash:!!s[4],i,drop:reliable}); return; }
     res.push({p:r.p,src:'model',ink:r.ink,moved:r.moved,dMid:r.dMid,dash:!!s[4],i}); });
   /* занято: пиксели у уже найденных отрезков (дальше 3 px от них — свободны) */
   const used=new Uint8Array(D.w*D.h), mark=p=>{ const L=Math.hypot(p[2]-p[0],p[3]-p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=p[0]+(p[2]-p[0])*k/n, y=p[1]+(p[3]-p[1])*k/n; for(let dy=-3;dy<=3;dy++) for(let dx=-3;dx<=3;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) used[Y*D.w+X]=1; } } };
   res.forEach(r=>mark(r.p));
   /* искать пропущенное только там, где модель видела чертёж: рамка оставленных отрезков + 6 мм (край бумаги, рамка листа, клетка — не чертёж) */
-  let found=[]; if(o.find!==false&&res.length){ const xs=res.flatMap(r=>[r.p[0],r.p[2]]), ys=res.flatMap(r=>[r.p[1],r.p[3]]), pad=(o.pad==null?6:o.pad)*ppm, bx=[Math.min(...xs)-pad,Math.min(...ys)-pad,Math.max(...xs)+pad,Math.max(...ys)+pad];
-    const fin=[0,0,D.w,D.h].map(()=>0); void fin;
-    found=findMissing(D,used,{ppm,minLen:o.minLen,maxFind:o.maxFind,box:bx}); }
-  return {segs:res.concat(found),dropped,stats:{model:segs.length,kept:res.length,dropped:dropped.length,found:found.length,thr:D.thr}}; }
+  let found=[]; if(o.find!==false&&res.length){ const pad=(o.pad==null?6:o.pad)*ppm; let bx;
+    if(o.region) bx=[o.region[0]-pad,o.region[1]-pad,o.region[2]+pad,o.region[3]+pad];   /* region — рамка подписанных точек чертежа (px): оси идут через весь лист, а чертёж — нет */
+    else { const xs=res.flatMap(r=>[r.p[0],r.p[2]]), ys=res.flatMap(r=>[r.p[1],r.p[3]]); bx=[Math.min(...xs)-pad,Math.min(...ys)-pad,Math.max(...xs)+pad,Math.max(...ys)+pad]; }
+    found=findMissing(D,used,{ppm,minLen:o.minLen,maxFind:o.maxFind,box:bx});
+    /* карандаш — слабый контраст; линейка, край стола, чужие предметы — в разы темнее проверенных линий */
+    const ref=res.filter(r=>!r.unverified&&r.src==='model').map(r=>meanG(D,r.p)).sort((a,b)=>a-b), med=ref.length?ref[ref.length>>1]:0;
+    if(med>0) found=found.filter(f=>meanG(D,f.p)<=(o.maxContrast||2.2)*med);
+    /* линия построения связана с чертежом: хоть один конец у проверенного отрезка или у подписанной точки (штрихи текста висят отдельно) */
+    const touch=res.filter(r=>!r.unverified).map(r=>r.p), tp=(o.points||[]), tol=(o.touch||3)*ppm;
+    found=found.filter(f=>[[f.p[0],f.p[1]],[f.p[2],f.p[3]]].some(e=>touch.some(t=>dSegPt(e,t)<=tol)||tp.some(q=>Math.hypot(q[0]-e[0],q[1]-e[1])<=tol))); }
+  /* слабый отрезок (чернил мало): выдумка модели («как надо»), если рядом найдена настоящая линия, заменяющая его; иначе — бледная настоящая, остаётся как есть */
+  const near=(a,b)=>{ const ma=[(a[0]+a[2])/2,(a[1]+a[3])/2], mb=[(b[0]+b[2])/2,(b[1]+b[3])/2], d=Math.min(dSegPt(ma,b),dSegPt(mb,a)); let da=Math.abs(Math.atan2(a[3]-a[1],a[2]-a[0])-Math.atan2(b[3]-b[1],b[2]-b[0]))%Math.PI; da=Math.min(da,Math.PI-da)*180/Math.PI; return d<=(o.replaceDist||3)*ppm&&da<=(o.replaceAng||12); };
+  weak.forEach(w=>{ if(w.drop&&found.some(f=>near(w.p,f.p))) dropped.push({p:w.p,ink:w.ink,why:'на бумаге нет, заменён найденной линией',i:w.i}); else res.push({p:w.p,src:'model',ink:w.ink,moved:0,unverified:true,dash:w.dash,i:w.i}); });
+  return {segs:res.concat(found),dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
 put({refine,darkness,snap,findMissing});
 })();
