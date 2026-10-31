@@ -1,4 +1,4 @@
-/* АВТОГЕНЕРАЦИЯ: node hands/tools/extract-models.js — не править руками. Источник: index.html (IG3, IG_VARS, IG_DIMS, IG_WB, IGUI). */
+/* АВТОГЕНЕРАЦИЯ: node hands/tools/extract-models.js — не править руками. Источник: index.html (IG3, IG_VARS, IG_DIMS, IG_WB, IGUI); в экспорт IG3 добавлены CSG, featLines, silLines. */
 window.IG3=(function(){
 /* ── описание детали: конструкторы ── */
 const P={
@@ -569,7 +569,7 @@ function secShape(tree,O,U,V,box,step){
   return {loops,holes:keep.map(E=>E.map(e=>e.q)),all:loops.concat(keep.map(E=>E.map(e=>e.q)))}; }
 /* сетка детали и рёбра — заранее, отдельными кусками (просмотрщик потом берёт готовое из кэша модели) */
 function prep(m,k){ if(k!=='lines'){ if(!m._mesh) Object.defineProperty(m,'_mesh',{value:CSG.mesh(m.tree),configurable:true}); } else { try{ featLines(m); }catch(e){} } }
-return {P,J,jc,viewer,section,secShape,drawing,features,partial,paths,prep,conv,edges3};
+return {CSG,featLines,silLines,P,J,jc,viewer,section,secShape,drawing,features,partial,paths,prep,conv,edges3};
 })();
 
 /* ═════════ IG_VARS: 30 вариантов задачи 2 «Построение изображений» ═════════

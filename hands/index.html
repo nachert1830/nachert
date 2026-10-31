@@ -4,190 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Начерт · Руки (тест)</title>
-<style>
-:root{--bg:#0b1020;--surf:#131a30;--line:#25304f;--txt:#e8ecf8;--mut:#8b97b8;--cy:#35e0ff;--ok:#4ade80;--warn:#fbbf24}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surf)}
-header b{letter-spacing:.04em}
-header .tag{font-size:12px;color:var(--bg);background:var(--cy);border-radius:99px;padding:2px 9px;font-weight:600}
-header .sp{flex:1}
-a.btn,button,select{font:inherit;color:var(--txt);background:#1b2542;border:1px solid var(--line);border-radius:10px;padding:7px 13px;cursor:pointer;text-decoration:none}
-a.btn:hover,button:hover{border-color:var(--cy)}
-button.on{background:var(--cy);color:#04202a;border-color:var(--cy);font-weight:600}
-main{position:relative;height:calc(100% - 58px)}
-#stage{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 40%,#1a2547 0%,#0b1020 70%)}
-#stage canvas{display:block;width:100%;height:100%;cursor:grab}
-#hud{position:absolute;left:16px;top:14px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
-.chip{align-self:flex-start;background:rgba(19,26,48,.82);border:1px solid var(--line);border-radius:99px;padding:4px 12px;font-size:13px;color:var(--mut);backdrop-filter:blur(6px)}
-.chip.act{color:var(--ok);border-color:var(--ok)}
-#cam{position:absolute;right:16px;bottom:16px;width:min(300px,38vw);aspect-ratio:4/3;border-radius:14px;overflow:hidden;border:1px solid var(--cy);box-shadow:0 0 28px -6px var(--cy);background:#000;display:none}
-#cam video,#cam canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1);object-fit:cover}
-#help{position:absolute;left:16px;bottom:16px;max-width:360px;background:rgba(19,26,48,.82);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--mut);backdrop-filter:blur(6px)}
-#help b{color:var(--txt)} #help li{margin:3px 0} #help ul{margin:6px 0 0;padding-left:18px}
-#err{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:#3b1220;border:1px solid #f87171;color:#fecaca;border-radius:12px;padding:10px 16px;display:none;max-width:90%}
-@media(max-width:640px){#help{display:none}}
-</style>
+<!-- Та же строгость, что на сайте: только свои файлы. 'wasm-unsafe-eval' — для WebAssembly MediaPipe (без него wasm не компилируется). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>Начерт · Голограмма</title>
+<link rel="stylesheet" href="hands.css">
 </head>
 <body>
 <header>
-  <b>НАЧЕРТ</b><span class="tag">тест · руки</span>
-  <label>Деталь <select id="mdl"></select></label>
+  <b class="brand">НАЧЕРТ</b><span class="tag">голограмма · вариант 5</span>
   <span class="sp"></span>
-  <button id="go">✋ Включить управление руками</button>
-  <a class="btn" href="../lk/">Личный кабинет →</a>
+  <button id="go" title="Камера (C)">✋ Включить руки</button>
+  <button id="mode" title="Голограмма / чертёж (H)" aria-pressed="false">◐ Чертёж</button>
+  <button id="snd" title="Звук (S)" aria-pressed="false">🔇</button>
+  <button id="rec" title="Записать точки рук для настройки порогов (Z)" aria-pressed="false">● Запись</button>
+  <label class="btn" title="Воспроизвести запись (JSON)">⟲ <input id="replay" type="file" accept="application/json,.json" hidden>Повтор</label>
 </header>
-<main>
-  <div id="stage"></div>
-  <div id="hud"><span class="chip" id="st">камера выключена</span><span class="chip" id="hh" style="display:none"></span></div>
-  <div id="help"><b>Жесты</b> (щипок = большой + указательный)
+<main id="stage">
+  <canvas id="gl" role="img" aria-label="3D-деталь, вариант 5: фланец и усечённый конус со сквозным пирамидальным отверстием"></canvas>
+  <canvas id="hud" aria-hidden="true"></canvas>
+  <div id="chips"><span class="chip" id="st">камера выключена</span><span class="chip mode" id="md"></span></div>
+  <aside id="help">
+    <b>Жесты</b> <span class="mut">щипок = большой + указательный</span>
     <ul>
-      <li><b>Щипок одной рукой</b> и двигай — вращать деталь</li>
-      <li><b>Щипок двумя руками</b>, разводи/своди — зум</li>
-      <li><b>Открытая ладонь</b> ~1,5 с — вернуть вид</li>
-      <li>Мышь и касания тоже работают</li>
-    </ul></div>
+      <li><i>🤏</i><span>щипок одной рукой и веди — <b>вращать</b> (отпусти на ходу — докрутится)</span></li>
+      <li><i>🤏🤏</i><span>щипок двумя руками, разводи/своди — <b>зум</b></span></li>
+      <li><i>🤏✊</i><span>щипок + кулак другой рукой — <b>сдвиг</b> (ведёт рука со щипком)</span></li>
+      <li><i>✊✊</i><span>два кулака: «взял» деталь и развёл руки — <b>разобрать</b>, свёл — собрать</span></li>
+      <li><i>✋</i><span>открытая ладонь 1,5 с — <b>вернуть вид</b></span></li>
+    </ul>
+    <div class="mut">Мышь: тянуть — вращать, колесо — зум, правая кнопка или Shift — сдвиг, E — разобрать/собрать, двойной щелчок — сброс.
+    Видео не покидает компьютер: руки распознаются здесь же, в браузере.</div>
+  </aside>
   <div id="cam"><video id="vid" playsinline muted></video><canvas id="ov"></canvas></div>
-  <div id="err"></div>
+  <div id="err" role="alert"></div>
 </main>
-
-<script src="models.js"></script>
-<script type="module">
-import { FilesetResolver, HandLandmarker } from './vendor/vision_bundle.mjs';
-
-const $ = id => document.getElementById(id);
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-const showErr = m => { const e = $('err'); e.textContent = m; e.style.display = 'block'; };
-
-/* ── 3D-просмотрщик сайта (тот же, что на листах) ── */
-const HOME = { yaw: -0.62, pit: 0.42, zoom: 1 };
-let V = null;
-function mount(n) {
-  if (V) { try { V.v.ro && V.v.ro.disconnect(); } catch (_) {} $('stage').innerHTML = ''; }
-  V = IGUI.mountViewer($('stage'), +n, { state: { ...HOME } });
-  if (!V) showErr('WebGL недоступен — 3D не покажется.');
-}
-const sel = $('mdl');
-Object.keys(IG_VARS).sort((a, b) => a - b).forEach(k => sel.add(new Option('Вариант ' + k, k)));
-sel.onchange = () => mount(sel.value);
-mount(sel.value);
-
-/* ── жесты ──
-   hands — массив рук, рука — 21 точка {x,y} в координатах кадра 0..1 (до зеркала).
-   Функция чистая от камеры: ей можно скормить синтетические точки (см. window.__feed). */
-const PINCH_ON = 0.38, PINCH_OFF = 0.58;        /* порог щипка в долях размера ладони (с гистерезисом) */
-const ROT_GAIN = 4.2;                           /* рад на ширину кадра */
-const RESET_MS = 1500;
-const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const state = { hands: [], g: null, openSince: 0, lastT: 0 };
-
-function analyse(h, prev) {
-  const palm = dist(h[0], h[9]) || 1e-6;
-  const ratio = dist(h[4], h[8]) / palm;
-  const pinched = prev && prev.pinched ? ratio < PINCH_OFF : ratio < PINCH_ON;
-  /* открытая ладонь: все 4 пальца вытянуты (кончик дальше от запястья, чем сустав PIP) */
-  const ext = [[8, 6], [12, 10], [16, 14], [20, 18]].every(([t, p]) => dist(h[t], h[0]) > dist(h[p], h[0]) * 1.12);
-  const open = ext && ratio > 0.8;
-  /* точка захвата — середина между кончиками большого и указательного, с зеркалом по x */
-  const raw = { x: 1 - (h[4].x + h[8].x) / 2, y: (h[4].y + h[8].y) / 2 };
-  const a = 0.45, p = prev && prev.pt ? prev.pt : raw;
-  const pt = { x: p.x + (raw.x - p.x) * a, y: p.y + (raw.y - p.y) * a };
-  return { pinched, open, pt, ratio, palm };
-}
-
-function onHands(hands, t) {
-  const S = V && V.S; if (!S) return;
-  const cur = hands.map((h, i) => analyse(h, state.hands[i]));
-  state.hands = cur;
-  const pin = cur.filter(c => c.pinched);
-  const chip = $('st'), hh = $('hh'); hh.style.display = 'none';
-
-  if (pin.length >= 2) {                              /* зум: расстояние между руками */
-    const d = Math.hypot(pin[0].pt.x - pin[1].pt.x, pin[0].pt.y - pin[1].pt.y);
-    if (!state.g || state.g.m !== 'z') state.g = { m: 'z', d0: d, z0: S.zoom };
-    S.zoom = clamp(state.g.z0 * (d / Math.max(state.g.d0, 1e-3)), 0.5, 5);
-    chip.textContent = 'зум ×' + S.zoom.toFixed(2); chip.className = 'chip act';
-    V.draw();
-  } else if (pin.length === 1) {                      /* вращение: смещение точки щипка */
-    const p = pin[0].pt;
-    if (!state.g || state.g.m !== 'r') state.g = { m: 'r', x: p.x, y: p.y };
-    S.yaw -= (p.x - state.g.x) * ROT_GAIN;
-    S.pit = clamp(S.pit + (p.y - state.g.y) * ROT_GAIN, -0.2, Math.PI / 2 - 1e-3);
-    state.g.x = p.x; state.g.y = p.y;
-    chip.textContent = 'вращаю'; chip.className = 'chip act';
-    V.draw();
-  } else {
-    state.g = null;
-    chip.textContent = cur.length ? 'руку вижу — сделай щипок' : 'руки не видно';
-    chip.className = 'chip';
-  }
-
-  /* сброс вида: открытая ладонь, удерживаемая RESET_MS (только когда ничего не щиплем) */
-  if (!pin.length && cur.some(c => c.open)) {
-    if (!state.openSince) state.openSince = t;
-    const left = RESET_MS - (t - state.openSince);
-    if (left <= 0) { V.to(HOME, 600); state.openSince = 0; }
-    else { hh.style.display = ''; hh.textContent = 'держи ладонь… сброс через ' + (left / 1000).toFixed(1) + ' с'; }
-  } else state.openSince = 0;
-}
-window.__feed = onHands;                              /* отладка/тесты: __feed([[21 точек]], performance.now()) */
-
-/* ── камера и MediaPipe ── */
-let landmarker = null, stream = null, running = false, lastVideoT = -1;
-const vid = $('vid'), ov = $('ov'), octx = ov.getContext('2d');
-const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-
-function drawSkeleton(hands) {
-  const w = ov.width = vid.videoWidth || 640, h = ov.height = vid.videoHeight || 480;
-  octx.clearRect(0, 0, w, h);
-  hands.forEach((lm, i) => {
-    const pinched = state.hands[i] && state.hands[i].pinched;
-    octx.strokeStyle = pinched ? '#4ade80' : '#35e0ff'; octx.lineWidth = 3; octx.beginPath();
-    BONES.forEach(([a, b]) => { octx.moveTo(lm[a].x * w, lm[a].y * h); octx.lineTo(lm[b].x * w, lm[b].y * h); });
-    octx.stroke();
-    octx.fillStyle = '#fff'; lm.forEach(p => { octx.beginPath(); octx.arc(p.x * w, p.y * h, 3, 0, 7); octx.fill(); });
-    if (pinched) { const m = { x: (lm[4].x + lm[8].x) / 2, y: (lm[4].y + lm[8].y) / 2 }; octx.fillStyle = '#4ade80'; octx.beginPath(); octx.arc(m.x * w, m.y * h, 9, 0, 7); octx.fill(); }
-  });
-}
-
-function loop() {
-  if (!running) return;
-  if (vid.readyState >= 2 && vid.currentTime !== lastVideoT) {
-    lastVideoT = vid.currentTime;
-    const res = landmarker.detectForVideo(vid, performance.now());
-    onHands(res.landmarks, performance.now());
-    drawSkeleton(res.landmarks);
-  }
-  requestAnimationFrame(loop);
-}
-
-async function start() {
-  const b = $('go'); b.disabled = true; $('st').textContent = 'загружаю модель рук…';
-  try {
-    if (!landmarker) {
-      const fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
-      const opts = d => ({ baseOptions: { modelAssetPath: './vendor/hand_landmarker.task', delegate: d }, runningMode: 'VIDEO', numHands: 2 });
-      try { landmarker = await HandLandmarker.createFromOptions(fs, opts('GPU')); }
-      catch (_) { landmarker = await HandLandmarker.createFromOptions(fs, opts('CPU')); }
-    }
-    $('st').textContent = 'жду камеру…';
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } }, audio: false });
-    vid.srcObject = stream; await vid.play();
-    $('cam').style.display = 'block'; running = true; state.hands = []; state.g = null;
-    b.textContent = '✋ Выключить'; b.classList.add('on'); b.disabled = false;
-    $('st').textContent = 'руки не видно'; loop();
-  } catch (e) {
-    console.error(e); b.disabled = false; $('st').textContent = 'камера выключена';
-    showErr(e && e.name === 'NotAllowedError' ? 'Нет доступа к камере — разреши её в настройках браузера.' : 'Не получилось запустить: ' + (e && e.message || e));
-  }
-}
-function stop() {
-  running = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null;
-  $('cam').style.display = 'none'; $('go').textContent = '✋ Включить управление руками'; $('go').classList.remove('on');
-  $('st').textContent = 'камера выключена'; $('st').className = 'chip'; $('hh').style.display = 'none'; state.g = null;
-}
-$('go').onclick = () => running ? stop() : (($('err').style.display = 'none'), start());
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
