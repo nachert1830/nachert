@@ -1,5 +1,5 @@
-/* Расписание групп: club/data/raw/*.txt (переписано с фото стенда кафедры) → club/data/groups.json.
-   node club/tools/groups.js — запускать после правки txt. Формат строки: «группы | аудитория преподаватель | …»;
+/* Расписание групп: lk/data/raw/*.txt (переписано с фото стенда кафедры) → lk/data/groups.json.
+   node lk/tools/groups.js — запускать после правки txt. Формат строки: «группы | аудитория преподаватель | …»;
    у группы суффиксы: НГ — начертательная геометрия (иначе ИКГ), чс / зн — только по числителям / знаменателям; «?» в конце — плохо видно на фото. */
 'use strict';
 const fs=require('fs'), path=require('path');
@@ -25,7 +25,7 @@ function build(){ const files=fs.readdirSync(RAW).filter(f=>f.endsWith('.txt')).
   Object.values(groups).forEach(g=>{ ['ikg','ng'].forEach(s=>{ const ls=g.lessons.filter(l=>l.subj===s); if(!ls.length) return;
     const l=ls.find(x=>!x.par)||ls[0]; g[s]={day:l.day,time:l.t}; }); });
   const days=[...new Set(all.map(l=>l.day))].sort();
-  return {about:'Расписание занятий кафедры РК-1 (ИКГ и начертательная геометрия) с 01.09.2026 — переписано с фото стенда. Источник: club/data/raw/*.txt, сборка: node club/tools/groups.js',
+  return {about:'Расписание занятий кафедры РК-1 (ИКГ и начертательная геометрия) с 01.09.2026 — переписано с фото стенда. Источник: lk/data/raw/*.txt, сборка: node lk/tools/groups.js',
     updated:new Date().toISOString().slice(0,10),days,groups:Object.keys(groups).sort((a,b)=>a.localeCompare(b,'ru')).reduce((o,k)=>(o[k]=groups[k],o),{})}; }
 if(require.main===module){ const j=build(); fs.writeFileSync(path.join(DIR,'groups.json'),JSON.stringify(j)+'\n');
   console.log('групп:',Object.keys(j.groups).length,'· дни:',j.days.join(','),'· занятий:',Object.values(j.groups).reduce((n,g)=>n+g.lessons.length,0)); }
