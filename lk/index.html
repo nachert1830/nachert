@@ -374,15 +374,17 @@ details summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px}
   function events(){
     var g=gdata(), subs=g?['ikg','ng'].filter(function(k){return g[k]}):['ikg','ng'], w1=toDay(W1);
     return TABLE.filter(function(r){return subs.indexOf(r[0])>=0}).map(function(r){
-      var start=w1+7*(r[3]-1), cd=g&&g[r[0]]?g[r[0]].day:1;
-      return {subj:r[0],kind:r[1],n:r[2],week:r[3],start:start,end:start+6,date:start+cd-1};
+      var start=w1+7*(r[3]-1), cd=g&&g[r[0]]?g[r[0]].day:1, tm=g&&g[r[0]]?g[r[0]].time:'';
+      return {subj:r[0],kind:r[1],n:r[2],week:r[3],start:start,end:start+6,date:start+cd-1,time:tm};
     }).sort(function(a,b){return a.date-b.date||a.subj.localeCompare(b.subj)});
   }
   function label(e){return (e.kind==='m'?'М':e.kind==='dz'?'ДЗ':'РК')+' '+e.n}
   function titleOf(e){return e.kind==='m'?'Закрытие модуля '+e.n:e.kind==='dz'?'Домашнее задание '+e.n:'Рубежный контроль '+e.n}
-  /* сколько дней осталось и какую дату показывать: день занятия, а если он прошёл, но неделя ещё идёт — конец недели */
-  function when(e,t){var onDay=e.date>=t; return {days:(onDay?e.date:e.end)-t, text:onDay?human(e.date):'до '+human(e.end), late:!onDay}}
-  function upcoming(){var t=todayDay();return events().filter(function(e){return e.end>=t})}
+  /* срок — день занятия группы на этой неделе, до начала пары; без группы — понедельник */
+  function nowHM(){var x=new Date();return p2(x.getHours())+':'+p2(x.getMinutes())}
+  function isPast(e,t){return e.date<t||(e.date===t&&!!e.time&&e.time<nowHM())}
+  function when(e,t){return {days:e.date-t, text:human(e.date)+(e.time?' до '+e.time.replace(/^0/,''):'')}}
+  function upcoming(){var t=todayDay();return events().filter(function(e){return !isPast(e,t)})}
   function hintFor(e,d){
     if(e.kind==='rk') return d>=9?'Время есть: начните с диагностики — найдёте слабые темы.':d>=3?'По 2–3 задачи в день из слабых тем, вперемешку.':d>=1?'Пробный РК на время и лёгкое повторение.':'РК сегодня. Удачи!';
     if(e.kind==='dz') return d>=14?'Прочитайте условие и выберите способ решения.':d>=7?'Сделайте черновик, потом чистовик.':d>=3?'Чистовик и сверка по ГОСТ.':'Оставьте запас на проверку и сдачу.';
@@ -396,7 +398,7 @@ details summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px}
     var e=up[0], w=when(e,t), rest=up.slice(1,4);
     box.innerHTML='<button class="card due" data-tab-go="cal" aria-label="Все сдачи"><div class="when"><i></i>Ближайшая сдача</div>'
       +'<div class="dt">'+label(e)+' · '+SUBJ[e.subj]+'</div><div class="dd">'+inWords(w.days)+' · '+esc(w.text)+'</div>'
-      +'<div class="dw">Неделя '+e.week+' · '+short(e.start)+' — '+short(e.end)+(group?'':' · дата — по понедельнику')+'</div>'
+      +'<div class="dw">Неделя '+e.week+(group?' · сдать до вашей пары':' · дата — по понедельнику, выберите группу')+'</div>'
       +'<div class="hint">'+esc(hintFor(e,w.days))+'</div>'
       +(rest.length?'<div class="more">'+rest.map(function(x){var y=when(x,t);return '<div><b>'+label(x)+' · '+SUBJ[x.subj]+'</b><span>'+inWords(y.days)+' · '+esc(y.text)+'</span></div>'}).join('')+'</div>':'')
       +'<div class="all">Все сдачи семестра →</div></button>';
@@ -420,13 +422,13 @@ details summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px}
   }
   function row(e,t,past){
     var w=when(e,t);
-    return '<div class="row'+(past?' past':w.days<=7?' soon7':'')+'"><div class="k k-'+e.kind+'">'+label(e)+'</div><div class="m"><b>'+titleOf(e)+'</b><small>'+SUBJ[e.subj]+' · неделя '+e.week+' · '+short(e.start)+' — '+short(e.end)+'</small></div>'
+    return '<div class="row'+(past?' past':w.days<=7?' soon7':'')+'"><div class="k k-'+e.kind+'">'+label(e)+'</div><div class="m"><b>'+titleOf(e)+'</b><small>'+SUBJ[e.subj]+' · неделя '+e.week+'</small></div>'
       +'<div class="d">'+(past?'прошло':inWords(w.days))+'<small>'+(past?'':esc(w.text))+'</small></div></div>';
   }
   function renderCal(){
-    var t=todayDay(), all=events(), up=all.filter(function(e){return e.end>=t}), past=all.filter(function(e){return e.end<t}), h='';
+    var t=todayDay(), all=events(), up=all.filter(function(e){return !isPast(e,t)}), past=all.filter(function(e){return isPast(e,t)}), h='';
     if(!group) h+='<div class="note">Группа не выбрана: даты — по понедельникам. <a href="#" data-group style="color:var(--blue)">Выбрать группу</a></div>';
-    else h+='<div class="note">Даты — по дню вашего занятия; крайний срок — конец недели. Точный день уточните у преподавателя.</div>';
+    else h+='<div class="note">Срок — в день вашего занятия на указанной неделе, до начала пары. Точный день уточните у преподавателя.</div>';
     h+=up.map(function(e){return row(e,t,false)}).join('');
     if(past.length) h+='<details><summary>Прошедшие ('+past.length+')</summary><div class="rows">'+past.map(function(e){return row(e,t,true)}).join('')+'</div></details>';
     $('#calList').innerHTML=h;
