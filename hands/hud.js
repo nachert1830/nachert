@@ -30,11 +30,13 @@ export function createHud(canvas) {
   const map = p => ({ x: (p.x - INSET) / (1 - 2 * INSET) * W, y: (p.y - INSET) / (1 - 2 * INSET) * H });
 
   function size() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2); W = canvas.clientWidth; H = canvas.clientHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5); W = canvas.clientWidth; H = canvas.clientHeight;
     const w = Math.round(W * dpr), h = Math.round(H * dpr); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  const glow = (c, b) => { ctx.shadowColor = c; ctx.shadowBlur = b; };
+  /* shadowBlur в canvas 2D — отдельный проход размытия на каждую фигуру: на встроенной графике это десятки мс за кадр.
+     Свечение HUD не нужно — оставлен вызов-заглушка, чтобы не трогать места рисования */
+  const glow = () => {};
   const ring = (x, y, r, c, lw, a0 = 0, a1 = Math.PI * 2) => { ctx.beginPath(); ctx.arc(x, y, r, a0, a1); ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.stroke(); };
 
   function drawHand(h, frame, t, reduced) {

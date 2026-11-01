@@ -40,7 +40,20 @@ function render(t) {
     dirty = false;
   }
 }
-function loop(t) { render(t); requestAnimationFrame(loop); }
+/* адаптивное разрешение: смотрим на интервал между кадрами браузера, пока картинка обновляется непрерывно.
+   Не успеваем (> 24 мс, меньше ~40 кадров/с) — снижаем разрешение рендера на 20 %; есть запас 3 с подряд — поднимаем. */
+const perf = { last: 0, ema: 16, n: 0, t0: 0, good: 0 };
+function adaptScale(t) {
+  if (!holo) return;
+  const dt = t - perf.last; perf.last = t;
+  if (dt <= 0 || dt > 250) return;                             /* вкладка была в фоне */
+  perf.ema = 0.9 * perf.ema + 0.1 * dt;
+  if (t - perf.t0 < 1000) return; perf.t0 = t;
+  if (perf.ema > 24 && holo.scale > 0.45) { holo.setScale(holo.scale * 0.8); perf.good = 0; dirty = true; }
+  else if (perf.ema < 18 && holo.scale < 1 && ++perf.good >= 3) { holo.setScale(holo.scale * 1.15); perf.good = 0; dirty = true; }
+}
+window.__perf = () => ({ frameMs: +perf.ema.toFixed(1), scale: holo ? +holo.scale.toFixed(2) : 0 });
+function loop(t) { render(t); adaptScale(t); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 if (holo) holo.scan(performance.now() + 200);
 
@@ -206,7 +219,7 @@ async function pump() {
         if (rec.on) rec.frames.push({ t: Math.round(now - rec.t0), hands: hands.map(h => ({ handed: h.handed, score: +(+h.score).toFixed(3), lm: h.lm.map(p => [+p.x.toFixed(4), +p.y.toFixed(4), +(p.z || 0).toFixed(4)]) })) });
         onHands(hands, performance.now()); drawPreview(hands);
         fpsN++; const n2 = performance.now(); if (n2 - fpsT > 1000) { fps = fpsN * 1000 / (n2 - fpsT); fpsN = 0; fpsT = n2; }
-        info = `${delegate} · ${det.kind} · ${fps.toFixed(0)} кадр/с · распознавание ${detMs.toFixed(0)} мс` + (rec.on ? ' · ● ЗАПИСЬ ' + rec.frames.length : '');
+        info = `${delegate} · ${det.kind} · руки ${fps.toFixed(0)} кадр/с, ${detMs.toFixed(0)} мс · экран ${(1000 / perf.ema).toFixed(0)} кадр/с` + (holo && holo.scale < 0.99 ? ` · разрешение ${Math.round(holo.scale * 100)}%` : '') + (rec.on ? ' · ● ЗАПИСЬ ' + rec.frames.length : '');
         await adapt();
       }
     } catch (e) {
@@ -221,7 +234,9 @@ const schedule = () => { if (!running) return; if (vid.requestVideoFrameCallback
 
 const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
 function drawPreview(hands) {
-  const w = ov.width = vid.videoWidth || 640, h = ov.height = vid.videoHeight || 480; octx.clearRect(0, 0, w, h);
+  const w = vid.videoWidth || 640, h = vid.videoHeight || 480;
+  if (ov.width !== w || ov.height !== h) { ov.width = w; ov.height = h; }     /* присваивание размера пересоздаёт холст — только при смене */
+  octx.clearRect(0, 0, w, h);
   octx.strokeStyle = '#35e0ff'; octx.lineWidth = 2;
   hands.forEach(({ lm }) => { octx.beginPath(); BONES.forEach(([a, b]) => { octx.moveTo(lm[a].x * w, lm[a].y * h); octx.lineTo(lm[b].x * w, lm[b].y * h); }); octx.stroke(); });
 }

@@ -121,6 +121,7 @@ export function createHolo(canvas, data, opt = {}) {
   const R0 = Math.hypot(b[1][0] - b[0][0], b[1][1] - b[0][1], b[1][2] - b[0][2]) / 2;
   const FLOOR = b[0][2] - 95;                                   /* пол ниже самой низкой точки разобранной детали */
   let scan = { t0: -1e9, z0: 0, z1: 0 }, mode = opt.mode || 'holo', last = null;
+  let scale = 1;                                                 /* доля разрешения: снижается, если кадры не успевают */
 
   /* ── камера: как в IG3.viewer, плюс «рамка» по разобранной детали, чтобы всё помещалось ── */
   function camera(view, w, h) {
@@ -152,7 +153,7 @@ export function createHolo(canvas, data, opt = {}) {
   }
 
   function draw(view, t, o = {}) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = Math.max(2, Math.round(canvas.clientWidth * dpr)), h = Math.max(2, Math.round(canvas.clientHeight * dpr));
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * scale, w = Math.max(2, Math.round(canvas.clientWidth * dpr)), h = Math.max(2, Math.round(canvas.clientHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, w, h);
     const cam = camera(view, w, h), { MM, F, L } = cam, draft = mode === 'draft' ? 1 : 0, anim = o.reduced ? 0 : 1;
@@ -225,13 +226,14 @@ export function createHolo(canvas, data, opt = {}) {
   /* мировая точка → пиксели CSS (для подписей и курсоров HUD) */
   function project(p, cam = last) {
     if (!cam) return null; const m = cam.MM, x = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], y = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13];
-    const dpr = Math.min(window.devicePixelRatio || 1, 2); return [(x * 0.5 + 0.5) * cam.w / dpr, (0.5 - y * 0.5) * cam.h / dpr];
+    return [(x * 0.5 + 0.5) * canvas.clientWidth, (0.5 - y * 0.5) * canvas.clientHeight];
   }
 
   return {
     gl, draw, project, layout, parts: M.parts, floor: FLOOR,
-    pxPerMm: () => (last ? last.h / last.us / Math.min(window.devicePixelRatio || 1, 2) : 1),
+    pxPerMm: () => (last ? canvas.clientHeight / last.us : 1),
     setMode(m) { mode = m; }, get mode() { return mode; },
+    setScale(k) { scale = Math.max(0.4, Math.min(1, k)); }, get scale() { return scale; },
     scan(t) { scan = { t0: t, z0: b[1][2] + 10, z1: b[0][2] - 10 }; }       /* луч сверху вниз — при загрузке и сбросе */
   };
 }
