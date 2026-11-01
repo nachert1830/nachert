@@ -27,6 +27,7 @@ export const LABELS = {
 export function createHud(canvas) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
+  const shownPts = new Map(); let moving = false, seen = new Set();
   const map = p => ({ x: (p.x - INSET) / (1 - 2 * INSET) * W, y: (p.y - INSET) / (1 - 2 * INSET) * H });
 
   function size() {
@@ -41,7 +42,12 @@ export function createHud(canvas) {
 
   function drawHand(h, frame, t, reduced) {
     if (!h.pts) return;
-    const P = h.pts.map(map), col = h.ignored ? BAD : h.pose === 'pinch' ? OK : h.pose === 'fist' ? AM : CY;
+    /* курсоры между кадрами распознавания плавно догоняют руку (τ = 35 мс) — а не прыгают 15–30 раз в секунду */
+    const tgt = h.pts.map(map), prev = shownPts.get(h.id), k = reduced || !prev ? 1 : 1 - Math.exp(-Math.min(100, t - (prev.t || t)) / 35);
+    const P = prev ? tgt.map((q, i) => ({ x: prev.P[i].x + (q.x - prev.P[i].x) * k, y: prev.P[i].y + (q.y - prev.P[i].y) * k })) : tgt;
+    shownPts.set(h.id, { P, t }); seen.add(h.id);
+    if (P.some((q, i) => Math.abs(q.x - tgt[i].x) + Math.abs(q.y - tgt[i].y) > 0.5)) moving = true;
+    const col = h.ignored ? BAD : h.pose === 'pinch' ? OK : h.pose === 'fist' ? AM : CY;
     const a = h.present ? 1 : 0.35;
     ctx.save(); ctx.globalAlpha = a;
     /* скелет — бледно */
@@ -139,7 +145,10 @@ export function createHud(canvas) {
     drawFrame(view, info);
     if (showLabels) drawLabels(holo, view);
     drawGauge(view, frame || { mode: '' });
+    moving = false; seen = new Set();
     if (frame) frame.hands.forEach(h => drawHand(h, frame, t, reduced));
+    for (const id of shownPts.keys()) if (!seen.has(id)) shownPts.delete(id);
+    return moving;                                                  /* true — курсоры ещё догоняют, нужен следующий кадр */
   }
   return { draw, map };
 }

@@ -24,20 +24,33 @@ const store = (k, v) => { try { v === undefined ? localStorage.removeItem(k) : l
 const load = k => { try { return localStorage.getItem(k); } catch (_) { return null; } };
 
 /* ── отрисовка: каждый кадр, пока что-то движется или идёт камера (мерцание); иначе — по изменению ── */
-let camOn = false, lastDraw = 0;
+let camOn = false, lastDraw = 0, lastT = 0;
+/* показанный вид плавно догоняет вид контроллера каждый кадр экрана (экспонента, τ = 40 мс):
+   руки распознаются 15–30 раз в секунду, а экран — 60; без этого деталь двигалась бы ступеньками */
+const shown = Object.assign({}, view), FOLLOW = ['yaw', 'pit', 'zoom', 'panX', 'panY', 'explode'];
+function follow(t) {
+  const dt = Math.min(100, Math.max(0, t - lastT)); lastT = t;
+  const k = reduced() ? 1 : 1 - Math.exp(-dt / 40); let d = 0;
+  FOLLOW.forEach(key => { let e = view[key] - shown[key];
+    if (key === 'zoom') { shown.zoom = Math.exp(Math.log(shown.zoom) + (Math.log(view.zoom) - Math.log(shown.zoom)) * k); d = Math.max(d, Math.abs(e) / view.zoom); return; }
+    shown[key] += e * k; d = Math.max(d, Math.abs(e)); });
+  if (d < 1e-4) FOLLOW.forEach(key => { shown[key] = view[key]; });
+  return d >= 1e-4;
+}
 function render(t) {
-  const moving = ctl.tick(t) || manual.anim();
+  const moving = ctl.tick(t) | manual.anim() | follow(t);
   if (!holo) return;
   /* только «фон» (мерцание голограммы) — не чаще 30 кадров/с: меньше нагрузка, процессор остаётся распознаванию */
   const ambient = !reduced() && holo.mode === 'holo';
   if (dirty || moving || (ambient && t - lastDraw > 31)) {
     lastDraw = t;
-    holo.draw(view, t, { reduced: reduced() });
-    hud.draw({ frame: camOn || feedOn ? frame : null, view, holo, t, reduced: reduced(), info });
+    holo.draw(shown, t, { reduced: reduced() });
+    const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info });
+    if (handsMoving) dirty = true;
     /* подсказка уходит, когда мешает: идёт жест или деталь разобрана (слева — выноски) */
     const dim = view.explode > 0.02 || (frame && frame.mode !== 'idle' && (camOn || feedOn));
     if (dim !== helpDim) { helpDim = dim; $('help').classList.toggle('dim', dim); }
-    dirty = false;
+    if (!handsMoving) dirty = false;
   }
 }
 /* адаптивное разрешение: смотрим на интервал между кадрами браузера, пока картинка обновляется непрерывно.
@@ -84,7 +97,7 @@ function onHands(hands, t) {
 /* отладка и автотесты: __feed([[21 точка], …], t) — как кадр камеры */
 window.__feed = (hands, t) => { feedOn = true; const f = onHands(hands, t == null ? performance.now() : t); render(t == null ? performance.now() : t); return f; };
 window.__camInfo = () => info;
-window.__app = { view, ctl, holo, HOME, render: t => { dirty = true; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
+window.__app = { shown, view, ctl, holo, HOME, render: t => { dirty = true; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
 
 /* ── мышь и касания (жесты рук им не мешают) ── */
 const cv = $('gl'), pts = new Map();
@@ -161,7 +174,11 @@ function workerDetector() {
         w.onerror = e => { const p = pend; pend = null; p && p.rej(new Error(e.message || 'воркер не запустился')); }; }
       return (await call({ type: 'init', delegate: d })).delegate;
     },
-    async detect(v, t) { const bitmap = await createImageBitmap(v); return call({ type: 'frame', bitmap, t }, [bitmap]); },
+    async detect(v, t) {
+      /* в поток — кадр 480 px по ширине: MediaPipe всё равно ужимает до 192–224 px, а копировать вдвое меньше */
+      const w = 480, h = Math.round(w * (v.videoHeight || 480) / (v.videoWidth || 640));
+      const bitmap = await createImageBitmap(v, { resizeWidth: w, resizeHeight: h, resizeQuality: 'low' });
+      return call({ type: 'frame', bitmap, t }, [bitmap]); },
     close() { if (w) { w.postMessage({ type: 'close' }); w.terminate(); w = null; } }
   };
 }
