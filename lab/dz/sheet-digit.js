@@ -20,6 +20,12 @@ async function ask(model,system,text,jpg,tokens,tag){ const f=path.join(DIR,NAME
   const img='data:image/jpeg;base64,'+fs.readFileSync(jpg).toString('base64'), r=await SE.ask(cfg(model),{image:img,w:0,h:0,system,text,opts:Object.assign({max_tokens:tokens},A.effort==='off'?{}:{reasoning_effort:A.effort||'low'})},{timeout:200000});
   const u=r.info.usage||{}, pr=PRICE(model), c=(u.prompt_tokens||0)*pr[0]+(u.completion_tokens||0)*pr[1]; spent+=c; calls++;
   console.log('  '+tag+': '+model.split('/')[1]+', токенов '+(u.prompt_tokens||'?')+' → '+(u.completion_tokens||'?')+', ≈ $'+c.toFixed(4)); fs.writeFileSync(f,r.text); return r.text; }
+/* привязка точек модели к условию: variant — номер или auto (перебор вариантов 1–30 заданий dz); лучший — больше согласных точек, при равенстве — меньше невязка */
+function fitVariant(text,variant,dz){ const dr=EY.parseDigit(text,1).drawings[0]; if(!dr) return null; let best=null;
+  const dzs=dz?[+dz]:[2,3], ns=variant==='auto'?Array.from({length:30},(_,i)=>i+1):[+variant];
+  dzs.forEach(d=>ns.forEach(n=>{ const gv=V.get(d,n); if(!gv) return; const PP=EY.pairs(dr,gv.id,gv.data), b=PP.length>=4?EY.bindAffine(PP,{tol:3}):null; if(!b||b.inl.length<4) return;
+    const r={dz:d,n,inl:b.inl.length,of:PP.length,rmsMm:b.rms/b.s,ppm:b.s,out:(b.out||[]).map(q=>q.l)}; if(!best||r.inl>best.inl||(r.inl===best.inl&&r.rmsMm<best.rmsMm)) best=r; }));
+  return best||{inl:0,of:0,rmsMm:null}; }
 const mapPt=(Am,u,v)=>[Am[0]*u+Am[1]*v+Am[2],Am[3]*u+Am[4]*v+Am[5]];
 function readPGM(f){ const b=fs.readFileSync(f); let i=0, tok=[]; while(tok.length<4){ while(/\s/.test(String.fromCharCode(b[i]))) i++; let s=''; while(!/\s/.test(String.fromCharCode(b[i]))) s+=String.fromCharCode(b[i++]); tok.push(s); } i++;
   const w=+tok[1], h=+tok[2], a=new Float32Array(w*h); for(let k=0;k<w*h;k++) a[k]=b[i+k]; return {w,h,a}; }
@@ -36,8 +42,7 @@ function readPGM(f){ const b=fs.readFileSync(f); let i=0, tok=[]; while(tok.leng
     const cut=py(['cut',photo,base,'box='+d.box.map(Math.round).join(','),'rot='+lay.rot,'pad='+(A.pad||40),'side=1200']), g=readPGM(base+'.pgm');
     let text; try{ text=await ask(DM,LY.DIGIT_PROMPT,'Размер фото: '+cut.w+' × '+cut.h+' px.',base+'.jpg',2500,tag); }catch(e){ console.log('  '+tag+': '+e.message); out.drawings.push({part:d.part,box:d.box,error:e.message}); continue; }
     /* привязка точек модели к условию варианта: настоящий px/мм и невязка в мм (автоматическая метрика точности, без ручного эталона) */
-    let fit=null; if(A.variant){ try{ const gv=V.get(+(A.dz||3),+A.variant), dr=EY.parseDigit(text,1).drawings[0]; if(gv&&dr){ const PP=EY.pairs(dr,gv.id,gv.data), b=PP.length>=4?EY.bindAffine(PP,{tol:3}):null;
-        if(b&&b.inl.length>=4) fit={inl:b.inl.length,of:PP.length,rmsMm:b.rms/b.s,ppm:b.s,out:(b.out||[]).map(q=>q.l)}; else fit={inl:b?b.inl.length:0,of:PP.length,rmsMm:null}; } }catch(e){ fit={error:e.message}; } }
+    let fit=null; if(A.variant){ try{ fit=fitVariant(text,A.variant,A.dz); }catch(e){ fit={error:e.message}; } }
     const P=LY.parseDigit(text), ppm=Math.max(2,Math.min(meta.W,meta.H)/210*cut.k); /* px/мм вырезки ≈ короткая сторона фото / 210 мм × уменьшение вырезки (грубо; нужно притяжке только для размера окна поиска) */
     const rg=P.pts.length>=4?[Math.min(...P.pts.map(q=>q[1])),Math.min(...P.pts.map(q=>q[2])),Math.max(...P.pts.map(q=>q[1])),Math.max(...P.pts.map(q=>q[2]))]:null;
     const rf=RF.refine(g,P.segs,{ppm:fit&&fit.ppm?fit.ppm:ppm,findCap:A.cap?+A.cap:0.35,region:rg,points:P.pts.map(q=>[q[1],q[2]])});
@@ -48,6 +53,6 @@ function readPGM(f){ const b=fs.readFileSync(f); let i=0, tok=[]; while(tok.leng
       txt:P.txt.map(q=>mapPt(Am,q[0],q[1]).concat(q[2])),
       fit,stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length},rf.stats)});
     const s=out.drawings[out.drawings.length-1].stats;
-    console.log('  '+tag+' (часть '+(d.part==null?'?':d.part)+'): точек '+s.pts+', модель '+s.model+' отрезков → оставлено '+s.kept+' (не подтверждено '+s.unverified+'), отброшено '+s.dropped+', найдено сверх модели '+s.found+', фото надёжное '+s.reliable+(f=>f?(f.rmsMm!=null?' | привязка к условию: точек '+f.inl+' из '+f.of+', невязка '+f.rmsMm.toFixed(2)+' мм, '+f.ppm.toFixed(1)+' px/мм':' | привязка к условию: не сошлась ('+f.inl+' из '+f.of+')'):'')(out.drawings[out.drawings.length-1].fit)); }
+    console.log('  '+tag+' (часть '+(d.part==null?'?':d.part)+'): точек '+s.pts+', модель '+s.model+' отрезков → оставлено '+s.kept+' (не подтверждено '+s.unverified+'), отброшено '+s.dropped+', найдено сверх модели '+s.found+', фото надёжное '+s.reliable+(f=>f?(f.rmsMm!=null?' | привязка к условию (ДЗ №'+f.dz+', вариант '+f.n+'): точек '+f.inl+' из '+f.of+', невязка '+f.rmsMm.toFixed(2)+' мм, '+f.ppm.toFixed(1)+' px/мм':' | привязка к условию: не сошлась ('+f.inl+' из '+f.of+')'):'')(out.drawings[out.drawings.length-1].fit)); }
   out.cost=+spent.toFixed(4); out.calls=calls; fs.writeFileSync(path.join(DIR,NAME+'.sheet.json'),JSON.stringify(out));
   console.log('  итого запросов '+calls+', ≈ $'+spent.toFixed(4)); })().catch(e=>{ console.error('СБОЙ: '+e.message); process.exit(1); });
