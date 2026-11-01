@@ -121,6 +121,8 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
     if(o.region) bx=[o.region[0]-pad,o.region[1]-pad,o.region[2]+pad,o.region[3]+pad];   /* region — рамка подписанных точек чертежа (px): оси идут через весь лист, а чертёж — нет */
     else { const xs=res.flatMap(r=>[r.p[0],r.p[2]]), ys=res.flatMap(r=>[r.p[1],r.p[3]]); bx=[Math.min(...xs)-pad,Math.min(...ys)-pad,Math.max(...xs)+pad,Math.max(...ys)+pad]; }
     found=findMissing(D,used,{ppm,minLen:o.minLen,maxFind:o.maxFind,box:bx});
+    /* найденное — добавка, а не основа копии: не больше доли от отрезков модели (плотные чертежи дают много случайных гребней); лучшие — длинные и чистые */
+    { const cap=Math.max(3,Math.floor((o.findCap==null?0.35:o.findCap)*segs.length)); if(o.findCap!==0&&found.length>cap) found=found.map(f=>({f,sc:Math.hypot(f.p[2]-f.p[0],f.p[3]-f.p[1])*Math.min(1,f.ink)})).sort((a,b)=>b.sc-a.sc).slice(0,cap).map(x=>x.f); }
     /* карандаш — слабый контраст; линейка, край стола, чужие предметы — в разы темнее проверенных линий */
     const ref=res.filter(r=>!r.unverified&&r.src==='model').map(r=>meanG(D,r.p)).sort((a,b)=>a-b), med=ref.length?ref[ref.length>>1]:0;
     if(med>0) found=found.filter(f=>meanG(D,f.p)<=(o.maxContrast||2.2)*med);
