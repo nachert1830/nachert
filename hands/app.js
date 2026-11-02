@@ -1,4 +1,7 @@
-/* Голограмма варианта 5: сборка страницы — камера и MediaPipe, жесты, мышь/касания, рендер, HUD, звук, запись.
+/* «3D руками»: сборка страницы — камера и MediaPipe, жесты, панель управления, мышь/касания, рендер, HUD, звук, запись.
+   Управление рукой — как мышью: кончик указательного — курсор, щипок (большой + указательный) — нажатие.
+   Щипок на кнопке или ползунке панели — нажимает/тянет его; щипок в любом другом месте — вращает деталь;
+   два щипка — зум; открытая ладонь 1,5 с — сброс. Хлопки, щелчки и «лезвие» выключены: срабатывали ненадёжно.
    Логика жестов — в gestures.js (чистая, с тестами), рисование — holo.js и hud.js. */
 /* модель: ?m=v5 — деталь «вариант 5», по умолчанию — вентиль угловой (сборка с механизмом); грузится только выбранная */
 const MKEY = new URLSearchParams(location.search).get('m') === 'v5' ? 'v5' : 'valve';
@@ -29,7 +32,8 @@ try { holo = createHolo($('gl'), MODEL, { antialias: !WEAK, scale: WEAK ? 0.8 : 
 if (SOFT) setTimeout(() => showErr('Браузер рисует 3D без видеокарты (программно) — будет медленно.\nВключи «Использовать аппаратное ускорение» в настройках браузера и перезапусти его.'), 400);
 if (!holo) showErr('WebGL недоступен — голограмма не покажется.');
 const hud = createHud($('hud'));
-const ctl = createController({ reducedMotion: reduced(), cfg: { steer: !!MODEL.kin } });   /* «штурвал» — у моделей с механизмом */
+/* hitUI: щипок «по интерфейсу»? — точка кадра → экран → есть ли под курсором кнопка/ползунок (с «магнитом») */
+const ctl = createController({ reducedMotion: reduced(), cfg: { extras: false, steer: false }, hitUI: (x, y) => { const S = toClient({ x, y }); return !!uiTarget(S.x, S.y); } });
 RM.addEventListener && RM.addEventListener('change', () => { ctl.reduced = reduced(); });
 const view = ctl.view;
 let frame = null, dirty = true, info = '', helpDim = false;
@@ -57,7 +61,7 @@ function mongeTo(stage) {
   if (stage) manual.explodeTo(0);
   const T = stage === 1 ? { yaw: 0.72, pit: 0.5, zoom: 1, panX: 0, panY: 0 } : stage === 2 ? { yaw: 0, pit: 1e-4, zoom: 1, panX: 0, panY: 0 } : HOME;
   ctl.reset(performance.now(), Object.assign({}, T, stage ? {} : { explode: view.explode }));
-  tool('mg', '📐', ['Эпюр', 'Развернуть', 'Выйти'][stage]); $('mg').classList.toggle('on', !!stage);
+  $('mg').textContent = ['📐 Эпюр', '📐 Развернуть', '✕ Из эпюра'][stage]; $('mg').classList.toggle('on', !!stage);
   sound.play([{ type: 'view' }]); dirty = true;
 }
 function mongeAnim(dt) {
@@ -114,13 +118,14 @@ function render(t) {
     lastDraw = t;
     holo.draw(shown, t, { reduced: reduced(), open: shown.open || 0, clip: cut, hover: pointer && pointer.hover, monge: MG.a > 0.001 ? { a: MG.a, u: MG.u } : null });
     const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info, pointer, section: cut && cutLabel(), planes: mongeLabels(), showLabels: !quiz.on && !MG.stage,
-      inset: innerWidth <= 720 ? { l: 0, b: 64 } : { l: 76, b: 0 } });   /* панель инструментов: слева или снизу */   /* в тесте выноски выдали бы ответы */
+      inset: innerWidth <= 820 ? { l: 0, b: 64, r: 0 } : { l: 76, b: 0, r: 290 } });   /* панели: слева режимы, справа управление (на телефоне — снизу) */   /* в тесте выноски выдали бы ответы */
     if (handsMoving) dirty = true;
     /* подсказка уходит, когда мешает: идёт жест или деталь разобрана (слева — выноски) */
     const dim = view.explode > 0.02 || MG.stage > 0 || quiz.on || coach.active || (frame && frame.mode !== 'idle' && (camOn || feedOn));
     if (dim !== helpDim) { helpDim = dim; $('help').classList.toggle('dim', dim); }
     if (!handsMoving) dirty = false;
   }
+  syncUI();
 }
 /* адаптивное разрешение: смотрим на интервал между кадрами браузера, пока картинка обновляется непрерывно.
    Не успеваем (> 24 мс, меньше ~40 кадров/с) — снижаем разрешение рендера на 20 %; есть запас 3 с подряд — поднимаем. */
@@ -139,10 +144,13 @@ function loop(t) { render(t); adaptScale(t); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 if (holo) holo.scan(performance.now() + 200);
 
-/* ── режим: голограмма / чертёж ── */
-function setMode(m) { holo && holo.setMode(m); tool('mode', m === 'draft' ? '✨' : '📄', m === 'draft' ? 'Голограмма' : 'Чертёж'); $('mode').setAttribute('aria-pressed', m === 'draft'); store('hands.mode', m); dirty = true; }
-$('mode').onclick = () => setMode(holo && holo.mode === 'draft' ? 'holo' : 'draft');
-setMode(load('hands.mode') === 'draft' ? 'draft' : 'holo');
+/* ── тема, как на сайте: светлая (бело-сине-красная, 3D — «чертёж») / тёмная (тёмно-синяя, 3D — «голограмма») ── */
+function setTheme(th) {
+  document.documentElement.dataset.theme = th; holo && holo.setMode(th === 'dark' ? 'holo' : 'draft');
+  tool('mode', th === 'dark' ? '☀️' : '🌙', th === 'dark' ? 'Светлая' : 'Тёмная'); $('mode').setAttribute('aria-pressed', th === 'dark'); store('hands.theme', th); dirty = true;
+}
+$('mode').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+setTheme(load('hands.theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
 /* ── звук ── */
 function setSound(v) { sound.set(v); tool('snd', v ? '🔊' : '🔇', 'Звук'); $('snd').classList.toggle('on', v); $('snd').setAttribute('aria-pressed', v); store('hands.snd', v ? '1' : undefined); }
@@ -154,41 +162,21 @@ let feedOn = false;
 /* ── разрез и указка: экранные жесты → мир (нужна камера рендера) ──
    cut = { n, w, kind } — убираем dot(n, p) > w. Плоскость остаётся, когда ладонь ушла; убирает её сброс (ладонь 1,5 с, R, Esc). */
 let cut = null, pointer = null;
-const snapAxis = v => (Math.abs(v[0]) >= Math.abs(v[1]) ? [Math.sign(v[0]) || 1, 0, 0] : [0, Math.sign(v[1]) || 1, 0]);
-function bladeToCut(b) {
-  const c = holo && holo.camera(); if (!c) return;
-  const S = hud.map(b), lin = (P0, P1, target, k) => { const a = holo.project(P0, c), q = holo.project(P1, c); const den = q[k] - a[k]; return Math.abs(den) < 15 ? null : (target - a[k]) / den; };
-  if (b.kind === 'h') {                                   /* горизонтальный разрез: z по высоте ладони на экране; убираем верх */
-    const u = lin([0, 0, 0], [0, 0, 100], S.y, 1); if (u == null) return;      /* смотрим строго сверху — высоту не задать */
-    cut = { n: [0, 0, 1], w: u * 100, kind: 'h' };
-  } else {                                                /* вертикальный: плоскость ⟂ оси детали, ближайшей к «вправо» на экране */
-    const n = snapAxis(c.Rv), u = lin([0, 0, 0], n.map(v => v * 100), S.x, 0); if (u == null) return;
-    let w = u * 100, nn = n;
-    /* убираем ту половину, что ближе к зрителю — срез смотрит на нас */
-    const toEye = nn[0] * -c.F[0] + nn[1] * -c.F[1], toRight = nn[0] * c.Rv[0] + nn[1] * c.Rv[1];
-    if (Math.abs(toEye) > 0.05 ? toEye < 0 : toRight < 0) { nn = nn.map(v => -v); w = -w; }   /* срез ребром (главный вид) — убираем правую половину */
-    cut = { n: nn, w, kind: Math.abs(n[1]) > 0.5 ? 'front' : 'profile' };
-  }
-}
 const cutLabel = () => {
   const ax = Math.abs(cut.n[2]) > 0.5 ? 'z' : Math.abs(cut.n[1]) > 0.5 ? 'y' : 'x', val = cut.w * (cut.n[0] + cut.n[1] + cut.n[2]);
   return { title: cut.kind === 'h' ? 'горизонтальный разрез' : cut.kind === 'front' ? 'фронтальный разрез' : 'профильный разрез',
-    value: `${ax} = ${val.toFixed(0)} мм`, hint: frame && frame.mode === 'section' ? '' : 'ладонь 1,5 с или R — убрать разрез' };
+    value: `${ax} = ${val.toFixed(0)} мм`, hint: '«Нет» на панели, ладонь 1,5 с или R — убрать разрез' };
 };
 function onHands(hands, t) {
   frame = ctl.update(hands, t);
   sound.play(frame.events);
-  coach.update(frame, view, frame.events, camOn || feedOn);
   frame.events.forEach(e => {
-    if (e.type === 'reset') { holo && holo.scan(t); cut = null; if (MG.stage) mongeTo(0); }
-    if (e.type === 'clap') {                               /* хлопок: деталь разлетается / собирается, по экрану — ударная волна */
-      if (MG.stage) mongeTo(MG.stage === 1 ? 2 : 1); else manual.explodeTo(view.explode > 0.5 ? 0 : 1);
-      const hs = frame.hands.filter(h => h.palmC), m = hs.length ? hs.reduce((a, h) => ({ x: a.x + h.palmC.x / hs.length, y: a.y + h.palmC.y / hs.length }), { x: 0, y: 0 }) : { x: 0.5, y: 0.5 };
-      const S = hud.map(m); hud.effect('shock', S.x, S.y, performance.now());
-    }
-    if (e.type === 'snap') { const h = frame.hands.find(q => q.id === e.id); if (h && h.pts) { const S = hud.map(h.pts[12]); hud.effect('snap', S.x, S.y, performance.now()); } }
+    if (e.type === 'reset') { holo && holo.scan(t); setCut(''); if (MG.stage) mongeTo(0); }
+    if (e.type === 'ui-down') uiDown(e);
+    if (e.type === 'ui-up') uiUp(e);
   });
-  if (frame.blade) bladeToCut(frame.blade);
+  handUI(frame);
+  coach.update(frame, view, frame.events, camOn || feedOn);
   if (frame.point && holo) { const S = hud.map(frame.point); pointer = { x: S.x, y: S.y, hover: holo.pick(S.x, S.y, cut) }; } else pointer = null;
   const st = $('st'), md = $('md');
   const n = frame.hands.filter(h => h.present).length;
@@ -204,13 +192,13 @@ window.__camInfo = () => info;
 window.__app = { get pairing() { return pairing; }, shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; lastDraw = -1e9; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
 
 /* ── модель: подпись и переключатель (в меню «Ещё») ── */
-document.querySelector('#brand .sub').textContent = 'Голограмма · ' + MODEL.title.toLowerCase();
+document.querySelector('#brand .sub').textContent = '3D руками · ' + MODEL.title.toLowerCase(); $('mtitle').textContent = MODEL.title; $('secOpen').hidden = !MODEL.kin;
 $('model').textContent = MKEY === 'v5' ? '🔩 Показать вентиль (сборка)' : '🧊 Показать деталь «вариант 5»';
 $('model').onclick = () => { const u = new URL(location.href); if (MKEY === 'v5') u.searchParams.delete('m'); else u.searchParams.set('m', 'v5'); location.href = u.href; };
 
 /* ── приглашение и карточка жестов ── */
 $('cta').onclick = () => $('go').click();
-let helpOpen = load('hands.help') !== '0' && innerWidth > 720;          /* на телефоне карточка закрыла бы деталь — по кнопке */
+let helpOpen = load('hands.help') !== '0' && innerWidth > 820;          /* на телефоне карточка закрыла бы деталь — по кнопке */
 const setHelp = v => { helpOpen = v; $('help').classList.toggle('closed', !v); $('helpBtn').setAttribute('aria-expanded', v); $('helpBtn').classList.toggle('on', v); store('hands.help', v ? undefined : '0'); dirty = true; };
 $('helpBtn').onclick = () => setHelp(!helpOpen); $('helpX').onclick = () => setHelp(false);
 setHelp(helpOpen);
@@ -263,6 +251,7 @@ const manual = (() => {
       if (g && g.m === 'rot' && performance.now() - g.t < 70 && Math.hypot(vel.y, vel.p) > 0.0004 && !reduced()) ctl.fling = { vy: vel.y, vp: vel.p };
       g = null; vel = { y: 0, p: 0 };
     },
+    halt() { tween = null; },
     explodeTo(to, key = 'explode', msPer = 900) { const from = view[key] || 0, t0 = performance.now(), ms = reduced() ? 0 : msPer * Math.abs(to - from) + 1; tween = { key, from, to, t0, ms }; },
     anim() { if (!tween) return false; const u = Math.min(1, (performance.now() - tween.t0) / tween.ms), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
       view[tween.key] = tween.from + (tween.to - tween.from) * e; if (u >= 1) tween = null; return true; }
@@ -274,7 +263,7 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => { e.preventDefault(); ctl.stopMotion();
   if (e.altKey) view.explode = Math.max(0, Math.min(1, view.explode - e.deltaY * 0.0015));
   else view.zoom = Math.max(0.5, Math.min(5, view.zoom * Math.exp(-e.deltaY * 0.0015))); dirty = true; }, { passive: false });
-cv.addEventListener('dblclick', () => { ctl.reset(performance.now()); holo && holo.scan(performance.now()); cut = null; });
+cv.addEventListener('dblclick', () => resetAll());
 /* мышь: наведение — та же подсветка части, что у указки пальцем */
 cv.addEventListener('pointermove', e => { if (pts.size || (frame && frame.point)) return; const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   const hv = holo && holo.pick(x, y, cut); const nw = hv ? { x, y, hover: hv, mouse: true } : null; if ((nw && nw.hover) !== (pointer && pointer.hover)) dirty = true; pointer = nw; if (nw) dirty = true; });
@@ -286,9 +275,9 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k === 'e' || k === 'у') manual.explodeTo(view.explode > 0.5 ? 0 : 1);
   else if ((k === 'o' || k === 'щ') && MODEL.kin) manual.explodeTo((view.open || 0) > 0.5 ? 0 : 1, 'open', 2200);   /* открыть/закрыть вентиль */
-  else if (k === 'r' || k === 'к' || k === 'escape') { ctl.reset(performance.now()); holo && holo.scan(performance.now()); cut = null; }
+  else if (k === 'r' || k === 'к' || k === 'escape') resetAll();
   else if (k === 'm' || k === 'ь') mongeTo((MG.stage + 1) % 3);
-  else if (k === 'x' || k === 'ч') cut = cut ? null : { n: [0, -1, 0], w: 0, kind: 'front' };          /* фронтальный разрез по оси — для мыши */
+  else if (k === 'x' || k === 'ч') setCut(CUTS[(CUTS.indexOf(cutKind) + 1) % CUTS.length]);        /* разрезы по кругу: нет → гориз. → фронт. → проф. */
   else if (k === 'v' || k === 'м') { const V = VIEWS[ctl.viewIdx = (ctl.viewIdx + 1) % VIEWS.length]; ctl.reset(performance.now(), { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 }); }
   else if (k === 'h' || k === 'р') $('mode').click();
   else if (k === 's' || k === 'ы') $('snd').click();
@@ -297,6 +286,109 @@ addEventListener('keydown', e => {
   else return;
   dirty = true;
 });
+
+/* ── панель управления: одна и та же для мыши, касаний, клавиатуры и руки ──
+   Рука: курсор — кончик указательного; над кнопкой/ползунком он «прилипает» (магнит 18 px) и элемент
+   подсвечивается красной рамкой; щипок — нажатие. Ползунок, схваченный щипком, едет за рукой относительно
+   (не прыгает под палец) — пока пальцы сомкнуты. Цель щипка — где был курсор за 150 мс до смыкания (gestures.js). */
+const UI_SEL = 'button:not(:disabled), .sl:not([hidden]), summary, .menu .mi';
+function toClient(p) { const r = $('hud').getBoundingClientRect(), S = hud.map(p); return { x: r.left + S.x, y: r.top + S.y }; }
+function uiTarget(x, y) {
+  const el = document.elementFromPoint(x, y), hit = el && el.closest(UI_SEL);
+  if (hit && $('stage').contains(hit)) return hit;
+  let best = null, bd = 18;
+  for (const e of document.querySelectorAll(UI_SEL)) {
+    const r = e.getBoundingClientRect(); if (!r.width || !r.height || e.closest('[hidden]')) continue;
+    const d = Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
+    if (d < bd) { bd = d; best = e; }
+  }
+  return best;
+}
+/* ползунки: значение 0..1 */
+const CUTS = ['', 'h', 'front', 'profile'];
+let cutKind = '', cutU = 0.5;
+const AX = { h: 2, front: 1, profile: 0 };
+const cutRange = () => { const b = holo ? holo.box : [[-50, -50, -50], [50, 50, 50]], a = AX[cutKind] ?? 1; return [b[0][a] + 2, b[1][a] - 2]; };
+function applyCut() {
+  if (!cutKind) { cut = null; dirty = true; return; }
+  const [lo, hi] = cutRange(), c = lo + (hi - lo) * cutU, a = AX[cutKind];
+  /* убираем то, что ближе к зрителю этого вида: верх (гориз.), перед (фронт.), левую часть (проф.) */
+  const n = [0, 0, 0]; n[a] = cutKind === 'h' ? 1 : -1;
+  cut = { n, w: n[a] * c, kind: cutKind }; dirty = true;
+}
+function setCut(kind) {
+  cutKind = kind || '';
+  if (cutKind) { const [lo, hi] = cutRange(); cutU = Math.max(0, Math.min(1, (0 - lo) / (hi - lo))); if (MG.stage) mongeTo(0); }   /* по оси детали */
+  applyCut();
+}
+const SL = {
+  explode: { get: () => view.explode, set: v => { manual.halt(); ctl.stopMotion(); view.explode = v; if (v > 0.02 && MG.stage) mongeTo(0); }, fmt: v => Math.round(v * 100) + ' %' },
+  open: { get: () => view.open || 0, set: v => { manual.halt(); view.open = v; }, fmt: v => (v < 0.01 ? 'закрыт' : v > 0.99 ? 'открыт' : Math.round(v * 100) + ' %') },
+  cutpos: { get: () => cutU, set: v => { cutU = v; applyCut(); }, fmt: () => (cut ? cutLabel().value.replace(/^. = /, '') : '') }
+};
+const slEl = k => document.querySelector(`.sl[data-k="${k}"]`);
+function slSet(k, v) { SL[k].set(Math.max(0, Math.min(1, v))); dirty = true; }
+/* мышь и касания: значение — под пальцем; клавиатура — стрелки */
+document.querySelectorAll('.sl').forEach(el => {
+  const k = el.dataset.k, tr = el.querySelector('.tr'), at = e => { const r = tr.getBoundingClientRect(); return (e.clientX - r.left) / r.width; };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {} el.classList.add('drag'); slSet(k, at(e)); });
+  el.addEventListener('pointermove', e => { if (el.classList.contains('drag') && !el.dataset.hand) slSet(k, at(e)); });
+  const end = () => { if (!el.dataset.hand) el.classList.remove('drag'); };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  el.addEventListener('keydown', e => { const d = { ArrowRight: 0.05, ArrowUp: 0.05, ArrowLeft: -0.05, ArrowDown: -0.05 }[e.key]; if (d == null) return; e.preventDefault(); e.stopPropagation(); slSet(k, SL[k].get() + d); });
+});
+document.querySelectorAll('.seg[data-g="cut"] button').forEach(b => { b.onclick = () => setCut(b.dataset.v); });
+document.querySelectorAll('.seg[data-g="view"] button').forEach(b => { b.onclick = () => {
+  const i = +b.dataset.v, V = VIEWS[i]; ctl.viewIdx = i; if (MG.stage) mongeTo(0);
+  ctl.reset(performance.now(), { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 }); sound.play([{ type: 'view' }]); }; });
+function resetAll() { if (MG.stage) mongeTo(0); ctl.reset(performance.now()); holo && holo.scan(performance.now()); setCut(''); dirty = true; }
+$('rst').onclick = resetAll;
+
+/* состояние панели ← вид (каждый кадр, DOM трогаем только при изменении) */
+const uiShown = {};
+function syncUI() {
+  for (const k in SL) {
+    const v = SL[k].get(), txt = SL[k].fmt(v), key = v.toFixed(3) + txt; if (uiShown[k] === key) continue; uiShown[k] = key;
+    const el = slEl(k); if (!el) continue;
+    el.querySelector('.fill').style.width = v * 100 + '%'; el.querySelector('.kn').style.left = v * 100 + '%';
+    el.querySelector('output').textContent = txt; el.setAttribute('aria-valuenow', Math.round(v * 100));
+  }
+  const wrap = a => ((a % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+  const vi = MG.stage ? -1 : VIEWS.findIndex(V => Math.abs(wrap(view.yaw - V.yaw)) < 0.03 && Math.abs(view.pit - V.pit) < 0.03);
+  const key = cutKind + '|' + vi; if (uiShown.seg === key) return; uiShown.seg = key;
+  document.querySelectorAll('.seg[data-g="cut"] button').forEach(b => b.classList.toggle('on', b.dataset.v === cutKind));
+  document.querySelectorAll('.seg[data-g="view"] button').forEach(b => b.classList.toggle('on', +b.dataset.v === vi));
+  slEl('cutpos').hidden = !cutKind;
+}
+
+/* рука над панелью: подсветка, нажатие, перетаскивание */
+let handHover = new Set(), handDrag = null;           /* handDrag = { id, k, el, x0, v0 } */
+function handUI(f) {
+  const now = new Set();
+  f.hands.forEach(h => {
+    if (!h.present || h.ignored || !h.cursor) return;
+    if (handDrag && handDrag.id === h.id) {           /* тянем ползунок: смещение руки → смещение значения */
+      const S = toClient(h.cursor), r = handDrag.el.querySelector('.tr').getBoundingClientRect();
+      slSet(handDrag.k, handDrag.v0 + (S.x - handDrag.x0) / Math.max(60, r.width)); h.ui = true; return;
+    }
+    if (h.pose === 'pinch' && !h.captured) return;    /* щипок по детали — вращение, панель не подсвечиваем */
+    const S = toClient(h.cursor), el = uiTarget(S.x, S.y); if (el) { now.add(el); h.ui = true; }
+  });
+  handHover.forEach(el => { if (!now.has(el)) el.classList.remove('hand'); });
+  now.forEach(el => el.classList.add('hand')); handHover = now;
+}
+function uiDown(e) {
+  const S = toClient(e.at), el = uiTarget(S.x, S.y); if (!el) return;
+  lastInput = performance.now();
+  if (el.classList.contains('sl')) {
+    const h = frame && frame.hands.find(q => q.id === e.id), C = h && h.cursor ? toClient(h.cursor) : S;
+    handDrag = { id: e.id, k: el.dataset.k, el, x0: C.x, v0: SL[el.dataset.k].get() }; el.dataset.hand = '1'; el.classList.add('drag');
+  } else { el.classList.remove('press'); void el.offsetWidth; el.classList.add('press'); el.click(); }
+}
+function uiUp(e) {
+  if (!handDrag || handDrag.id !== e.id) return;
+  delete handDrag.el.dataset.hand; handDrag.el.classList.remove('drag'); handDrag = null;
+}
 
 /* ── камера и MediaPipe (всё локально: модель и wasm — в vendor/, видео никуда не уходит) ──
    Распознавание — в воркере (detector.worker.js): рендер голограммы идёт на своей частоте, даже если кадр

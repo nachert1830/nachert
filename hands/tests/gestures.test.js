@@ -346,3 +346,34 @@ test('разбор при включённом штурвале: развест�
   run(c, 0, 300, () => fists2(0, 0.2)); run(c, 333, 900, t => fists2(0, lerp(0.2, 0.36, (t - 333) / 400)));
   assert.ok(c.view.explode > 0.4); assert.ok(!c.view.open);
 });
+
+/* ── «наведи и щипни»: щипок над интерфейсом — нажатие, а не вращение ── */
+test('щипок над кнопкой: ui-down/ui-up, деталь не вращается; точка — до смыкания пальцев', () => {
+  const hits = [];
+  const c = createController({ cfg: { extras: false }, hitUI: (x, y) => { hits.push({ x, y }); return x > 0.7; } });
+  /* рука справа (над панелью): навели, потом щипок и ведём */
+  run(c, 0, 300, () => [hand({ pose: 'idle', cx: 0.8 })]);
+  let fr = run(c, 333, 500, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.8 })]);
+  assert.equal(events(fr, 'ui-down').length, 1);
+  const y0 = c.view.yaw;
+  fr = run(c, 533, 900, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.8, 0.9, (t - 533) / 300) })]);
+  assert.equal(c.view.yaw, y0, 'захваченный щипок не вращает');
+  assert.ok(fr[fr.length - 1].hands[0].captured);
+  fr = run(c, 933, 1200, () => [hand({ pose: 'idle', cx: 0.9 })]);
+  assert.equal(events(fr, 'ui-up').length, 1);
+  assert.ok(hits.length >= 1);
+});
+test('щипок не над интерфейсом — обычное вращение', () => {
+  const c = createController({ cfg: { extras: false }, hitUI: x => x > 0.7 });
+  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.4 })]);
+  run(c, 333, 900, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.4, 0.55, (t - 333) / 500) })]);
+  assert.ok(HOME.yaw - c.view.yaw > 0.3);
+});
+test('без «extras» хлопок и щелчок ничего не делают', () => {
+  const c = createController({ cfg: { extras: false } });
+  run(c, 0, 300, () => pair(0.55)); let fr = run(c, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200)));
+  assert.equal(events(fr, 'clap').length, 0);
+  const d = createController({ cfg: { extras: false } });
+  run(d, 0, 300, () => [hand({ pose: 'snap' })]); fr = run(d, 333, 700, () => [hand({ pose: 'snapped' })]);
+  assert.equal(events(fr, 'snap').length, 0);
+});

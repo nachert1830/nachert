@@ -76,7 +76,7 @@ srv.listen(0, async () => {
         const { hand } = await import('./tests/synth.js'), { encodeHands } = await import('./link.js');
         await new Promise(r => setTimeout(r, 300));
         for (let i = 0; i < 40; i++) { const cx = 0.35 + 0.006 * Math.max(0, i - 8);
-          window.__sensor.send(encodeHands([{ lm: hand({ pose: 'fist', cx }), handed: 'Right', score: 0.95 }], { ms: 20 })); await new Promise(r => setTimeout(r, 33)); }
+          window.__sensor.send(encodeHands([{ lm: hand({ pose: 'pinch', gap: 0.1, cx }), handed: 'Right', score: 0.95 }], { ms: 20 })); await new Promise(r => setTimeout(r, 33)); }
       });
       await L.waitForTimeout(400);
       const r = await L.evaluate(() => ({ yaw: window.__app.view.yaw, st: window.__app.pairing.st }));

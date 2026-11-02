@@ -26,7 +26,7 @@ srv.listen(0, async () => {
     ok(errs.length === 0, 'страница без ошибок' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     const lit = await p.evaluate(() => { const c = document.getElementById('gl'), g = c.getContext('webgl'); window.__app.render(performance.now()); const w = c.width, h = c.height, px = new Uint8Array(4);   /* в той же задаче, что и отрисовка */
       g.readPixels(w >> 1, h >> 1, 1, 1, g.RGBA, g.UNSIGNED_BYTE, px); return [...px]; });
-    ok(lit[1] > 0.75 * lit[2] && lit[1] > 25, 'в центре кадра — деталь: циановое стекло, а не синий фон (пиксель ' + lit.join(',') + ')');
+    ok(Math.max(...lit.slice(0, 3)) < 240 && lit[2] > 60, 'в центре кадра — деталь, а не фон (пиксель ' + lit.join(',') + ')');
 
     /* жесты синтетическими руками — тем же генератором, что в node-тестах */
     const res = await p.evaluate(async () => {
@@ -37,16 +37,27 @@ srv.listen(0, async () => {
       feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.4 })], 8);
       for (let i = 0; i <= 15; i++) feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.4 + 0.01 * i })]);
       out.rot = y0 - v.yaw; out.mode = A.frame.mode;
-      /* курсор щипка — в главном окне, а не только в превью камеры: ищем зелёный пиксель вокруг точки щипка */
+      /* курсор щипка — в главном окне, а не только в превью камеры: ищем красный пиксель (щипок) у кончика указательного */
       const hud = document.getElementById('hud'), ctx = hud.getContext('2d'), h = A.frame.hands[0], dpr = hud.width / hud.clientWidth;
-      const x = ((h.pin.x - 0.08) / 0.84) * hud.clientWidth * dpr, y = ((h.pin.y - 0.08) / 0.84) * hud.clientHeight * dpr;
-      const d = ctx.getImageData(Math.round(x - 30), Math.round(y - 30), 60, 60).data; let green = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i + 1] > 180 && d[i] < 180 && d[i + 3] > 100) green++;
-      out.cursor = green;
+      const x = ((h.cursor.x - 0.08) / 0.84) * hud.clientWidth * dpr, y = ((h.cursor.y - 0.08) / 0.84) * hud.clientHeight * dpr;
+      const d = ctx.getImageData(Math.round(x - 30), Math.round(y - 30), 60, 60).data; let red = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i + 1] < 120 && d[i + 3] > 100) red++;
+      out.cursor = red;
       feed([hand({ pose: 'idle', cx: 0.55 })], 10); A.ctl.stopMotion();
-      /* разбор */
-      const two = dd => [hand({ pose: 'fist', cx: 0.5 - dd / 2 }), hand({ pose: 'fist', cx: 0.5 + dd / 2, seed: 3 })];
-      feed(two(0.2), 8); for (let i = 0; i <= 12; i++) feed(two(0.2 + 0.025 * i)); feed(two(0.5), 4);
+      /* панель рукой: курсор (кончик указательного) — на элемент, щипок — нажать / тянуть */
+      const hr = hud.getBoundingClientRect(), toFrame = el => { const r = el.getBoundingClientRect(); return { x: 0.08 + (r.left + r.width / 2 - hr.left) / hr.width * 0.84, y: 0.08 + (r.top + r.height / 2 - hr.top) / hr.height * 0.84 }; };
+      feed([hand({ pose: 'pinch', gap: 0.9, cx: 0.5, cy: 0.5 })], 3); const c0 = A.frame.hands[0].cursor, off = { x: c0.x - 0.5, y: c0.y - 0.5 };
+      const pinchAt = (tg, dx = 0) => {
+        feed([hand({ pose: 'pinch', gap: 0.9, cx: tg.x - off.x, cy: tg.y - off.y })], 10);
+        feed([hand({ pose: 'pinch', gap: 0.1, cx: tg.x - off.x, cy: tg.y - off.y })], 6);
+        for (let i = 1; i <= 10; i++) feed([hand({ pose: 'pinch', gap: 0.1, cx: tg.x - off.x + dx * i / 10, cy: tg.y - off.y })]);
+        feed([hand({ pose: 'pinch', gap: 0.9, cx: tg.x - off.x + dx, cy: tg.y - off.y })], 8);
+      };
+      feed([], 12);
+      const yaw1 = v.yaw;
+      pinchAt(toFrame(document.querySelector('.seg[data-g="cut"] button[data-v="front"]')));
+      out.cut = A.cut && A.cut.kind; out.noRot = Math.abs(v.yaw - yaw1);
+      pinchAt(toFrame(document.querySelector('.sl[data-k="explode"] .kn')), 0.2);
       out.explode = v.explode;
       feed([], 12);
       /* сброс ладонью */
@@ -56,7 +67,8 @@ srv.listen(0, async () => {
     });
     ok(res.rot > 0.4, `щипок + движение вращает (Δyaw = ${res.rot.toFixed(2)}, режим ${res.mode})`);
     ok(res.cursor > 10, `курсор щипка нарисован в главном окне (${res.cursor} пикс.)`);
-    ok(res.explode > 0.9, `два кулака разбирают деталь (${(res.explode * 100).toFixed(0)} %)`);
+    ok(res.cut === 'front' && res.noRot < 1e-3, `щипок по кнопке «Фронт.» включает разрез и не вращает деталь (${res.cut}, Δyaw ${res.noRot.toFixed(3)})`);
+    ok(res.explode > 0.5, `щипок по ползунку «Разбор» и ведение руки разбирают модель (${(res.explode * 100).toFixed(0)} %)`);
     ok(Math.abs(res.after.yaw + 0.62) < 1e-3 && res.after.explode < 1e-3, 'открытая ладонь 1,5 с возвращает вид');
     if (OUT) {
       await p.evaluate(async () => { const { hand } = await import('./tests/synth.js'); const A = window.__app; let t = 2e6;

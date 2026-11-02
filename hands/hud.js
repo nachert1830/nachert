@@ -3,13 +3,14 @@
    Руки приходят из gestures.js уже в зеркале, координаты кадра 0..1; удобная зона кадра (без полей)
    растягивается на всё окно — до краёв окна не нужно тянуться до краёв кадра. */
 
-/* палитры: голограмма (тёмный фон) и чертёж (светлый фон) — HUD перекрашивается вместе со сценой */
+/* палитры сайта: тёмная тема ('holo') и светлая ('draft') — HUD перекрашивается вместе со сценой.
+   Синий — линии и курсор, красный — действие (щипок, захват, вынутый материал), BG — подложка плашек */
 const PAL = {
-  holo: { CY: '#35e0ff', CY2: 'rgba(53,224,255,', AM: '#ffb547', OK: '#7dffb2', BAD: '#ff6b81', TXT: 'rgba(220,245,255,.8)' },
-  draft: { CY: '#0b7fa6', CY2: 'rgba(11,110,150,', AM: '#c46a00', OK: '#138a4f', BAD: '#c8203c', TXT: 'rgba(25,35,50,.85)' }
+  holo: { CY: '#7cb7ff', CY2: 'rgba(124,183,255,', AM: '#ff6b6b', OK: '#ff6b6b', BAD: '#ffb4b4', TXT: 'rgba(232,238,248,.85)', BG: 'rgba(7,17,42,.9)' },
+  draft: { CY: '#1a5ae0', CY2: 'rgba(26,90,224,', AM: '#d9222a', OK: '#d9222a', BAD: '#d9222a', TXT: 'rgba(14,28,51,.8)', BG: 'rgba(255,255,255,.94)' }
 };
-let CY, CY2, AM, OK, BAD, TXT;
-const usePal = k => ({ CY, CY2, AM, OK, BAD, TXT } = PAL[k] || PAL.holo);
+let CY, CY2, AM, OK, BAD, TXT, BG;
+const usePal = k => ({ CY, CY2, AM, OK, BAD, TXT, BG } = PAL[k] || PAL.holo);
 usePal('holo');
 const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
 const TIPS = [4, 8, 12, 16, 20];
@@ -20,7 +21,7 @@ const INSET = 0.08;                                         /* поля кадр
      { at: [x, y, z] } — точка на детали (сборка); сторона выноски у сборки чередуется по номерам позиций */
 export function createHud(canvas) {
   const ctx = canvas.getContext('2d');
-  let W = 0, H = 0, dpr = 1;
+  let W = 0, H = 0, dpr = 1, RW = 0;                            /* RW — ширина правой панели: подписи туда не заходят */
   const shownPts = new Map(); let moving = false, seen = new Set();
   const map = p => ({ x: (p.x - INSET) / (1 - 2 * INSET) * W, y: (p.y - INSET) / (1 - 2 * INSET) * H });
 
@@ -47,20 +48,25 @@ export function createHud(canvas) {
     /* скелет — бледно */
     ctx.strokeStyle = h.ignored ? BAD : CY2 + '.28)'; ctx.lineWidth = 1.2; ctx.beginPath();
     BONES.forEach(([i, j]) => { ctx.moveTo(P[i].x, P[i].y); ctx.lineTo(P[j].x, P[j].y); }); ctx.stroke();
-    /* курсоры на кончиках */
-    glow(col, 10);
-    TIPS.forEach(i => { const main = i === 4 || i === 8; ring(P[i].x, P[i].y, main ? 7 : 4, main ? col : CY2 + '.6)', main ? 2 : 1.2);
-      if (main) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(P[i].x, P[i].y, 2, 0, 7); ctx.fill(); } });
-    /* линия щипка: тем ярче, чем ближе пальцы; сомкнуты — сплошная, с кольцом захвата */
-    const A = P[4], B = P[8], m = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
-    if (h.pose === 'pinch') {
-      ctx.setLineDash([]); ctx.strokeStyle = OK; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    /* кончики остальных пальцев — точки */
+    TIPS.forEach(i => { if (i === 8) return; ctx.fillStyle = CY2 + '.55)'; ctx.beginPath(); ctx.arc(P[i].x, P[i].y, i === 4 ? 3.5 : 2.5, 0, 7); ctx.fill(); });
+    const A = P[4], B = P[8], m = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, pin = h.pose === 'pinch';
+    /* линия щипка: тем ярче, чем ближе пальцы; сомкнуты над деталью — сплошная, с кольцом захвата */
+    if (pin && !h.captured) {
+      ctx.strokeStyle = OK; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
       ring(m.x, m.y, h.drives ? 15 : 11, OK, 2);
       if (h.drives && !reduced) { const k = (t / 900) % 1; ctx.globalAlpha = a * (1 - k); ring(m.x, m.y, 15 + 16 * k, OK, 1.5); ctx.globalAlpha = a; }
-    } else if (h.pinchAmt > 0.05 && h.pose !== 'fist') {
+    } else if (!pin && h.pinchAmt > 0.05 && h.pose !== 'fist') {
       ctx.setLineDash([4, 5]); ctx.strokeStyle = CY2 + (0.25 + 0.6 * h.pinchAmt) + ')'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke(); ctx.setLineDash([]);
     }
+    /* курсор — кончик указательного: кольцо заполняется по мере смыкания пальцев; сомкнуты — красный диск.
+       Над кнопкой или ползунком (h.ui) кольцо крупнее: видно, что щипок нажмёт именно её */
+    const C = B, R0 = h.ui || h.captured ? 17 : 13;
+    ctx.globalAlpha = a * 0.6; ctx.fillStyle = BG; ctx.beginPath(); ctx.arc(C.x, C.y, R0, 0, 7); ctx.fill(); ctx.globalAlpha = a;
+    ring(C.x, C.y, R0, pin ? OK : CY, 2.5);
+    if (!pin && h.pinchAmt > 0.02) ring(C.x, C.y, R0, OK, 3.5, -Math.PI / 2, -Math.PI / 2 + h.pinchAmt * Math.PI * 2);
+    ctx.fillStyle = pin ? OK : CY; ctx.beginPath(); ctx.arc(C.x, C.y, pin ? R0 - 5 : 3.5, 0, 7); ctx.fill();
     /* кулак — шестигранный прицел вокруг ладони */
     const c = map(h.palmC), s = Math.hypot(P[0].x - P[9].x, P[0].y - P[9].y) * 0.9;
     if (h.pose === 'fist') {
@@ -98,7 +104,7 @@ export function createHud(canvas) {
       const col = items.filter(i => i.side === side).sort((a, b) => a.y - b.y); if (!col.length) continue;
       const tw = Math.max(...col.map(i => ctx.measureText(i.lb.t).width));
       const edge = side > 0 ? Math.max(...col.map(i => i.p[0])) + 50 : Math.min(...col.map(i => i.p[0])) - 50;
-      const x = side > 0 ? Math.min(edge, W - 44 - tw) : Math.max(edge, 8 + tw);
+      const x = side > 0 ? Math.min(edge, W - RW - 44 - tw) : Math.max(edge, 8 + tw);
       let y = -1e9; col.forEach(i => { i.ty = Math.max(i.y, y + 22); y = i.ty; });
       const over = y - (H - 90); if (over > 0) col.forEach(i => { i.ty -= over; });          /* не уходим под нижнюю плашку */
       col.forEach(i => {
@@ -134,12 +140,12 @@ export function createHud(canvas) {
       /* не помещается — выноска на другую сторону; не помещается нигде (узкий экран) — текст прижимается к краю */
       const title = compact ? lb.s : lb.t, desc = compact ? '' : lb.d;        /* узкий экран — только короткое имя */
       ctx.font = '12px system-ui,sans-serif'; const tw = Math.max(ctx.measureText(desc).width, (ctx.font = '600 13px system-ui,sans-serif', ctx.measureText(title).width));
-      const fits = sd => { const x0 = c[0] + sd * (lb.r * ppm + 64); return sd > 0 ? x0 + tw < W - 44 : x0 - tw > 8; };
+      const fits = sd => { const x0 = c[0] + sd * (lb.r * ppm + 64); return sd > 0 ? x0 + tw < W - RW - 44 : x0 - tw > 8; };
       if (!fits(side) && fits(-side)) side = -side;
       const p = [c[0] + side * lb.r * ppm, c[1]];
       const col = part.role === 'plug' ? AM : CY, ex = p[0] + side * 40, ey = p[1] - 24;
       ctx.textAlign = side > 0 ? 'left' : 'right'; let tx = ex + side * 24;
-      const tx0 = tx; if (side > 0) tx = Math.min(tx, W - 44 - tw); else tx = Math.max(tx, 8 + tw);
+      const tx0 = tx; if (side > 0) tx = Math.min(tx, W - RW - 44 - tw); else tx = Math.max(tx, 8 + tw);
       /* выноска: от очерка части наискосок, затем горизонтально до текста; текст прижат к краю и наехал бы
          на линию — поднимаем его над концом выноски */
       const lift = tx !== tx0 ? -16 : 0, end = lift ? ex + side * 14 : tx - side * 6;
@@ -166,11 +172,11 @@ export function createHud(canvas) {
   function drawFrame(view, info, inset) {
     const L0 = inset.l, B0 = H - inset.b;
     ctx.save(); ctx.strokeStyle = CY2 + '.35)'; ctx.lineWidth = 1.5; const m = 14, l = 26;
-    [[L0 + m, m, 1, 1], [W - m, m, -1, 1], [L0 + m, B0 - m, 1, -1], [W - m, B0 - m, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x, y + sy * l); ctx.lineTo(x, y); ctx.lineTo(x + sx * l, y); ctx.stroke(); });
+    [[L0 + m, m, 1, 1], [W - RW - m, m, -1, 1], [L0 + m, B0 - m, 1, -1], [W - RW - m, B0 - m, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x, y + sy * l); ctx.lineTo(x, y); ctx.lineTo(x + sx * l, y); ctx.stroke(); });
     ctx.fillStyle = CY2 + '.7)'; ctx.font = "500 11px Plex,ui-monospace,SFMono-Regular,Menlo,monospace"; ctx.textAlign = 'left';
     const deg = r => ((r * 180 / Math.PI) % 360 + 360) % 360;
     ctx.fillText(`YAW ${deg(view.yaw).toFixed(0).padStart(3)}°  PIT ${(view.pit * 180 / Math.PI).toFixed(0).padStart(3)}°  ZOOM ×${view.zoom.toFixed(2)}`, L0 + 26, B0 - 24);
-    if (info) { ctx.textAlign = 'right'; ctx.fillText(info, W - 26, B0 - 24); }
+    if (info) { ctx.textAlign = 'right'; ctx.fillText(info, W - RW - 26, B0 - 24); }
     ctx.restore();
   }
 
@@ -203,11 +209,11 @@ export function createHud(canvas) {
     if (ptr.dwell > 0) ring(x, y, 16, AM, 3, -Math.PI / 2, -Math.PI / 2 + ptr.dwell * Math.PI * 2);
     if (hover && !ptr.quiz) {
       const lb = (holo.model.labels || {})[hover]; if (lb) {
-        const side = x > W - 260 ? -1 : 1, tx = x + side * 30;
+        const side = x > W - RW - 260 ? -1 : 1, tx = x + side * 30;
         ctx.textAlign = side > 0 ? 'left' : 'right';
         ctx.font = '600 14px system-ui,sans-serif'; const w1 = ctx.measureText(lb.t).width; ctx.font = '12px system-ui,sans-serif'; const w2 = ctx.measureText(lb.d).width;
         const bw = Math.max(w1, w2) + 20, bx = side > 0 ? tx - 10 : tx - bw + 10;
-        ctx.fillStyle = holo.mode === 'draft' ? 'rgba(255,255,255,.92)' : 'rgba(4,12,24,.88)'; ctx.strokeStyle = col; ctx.lineWidth = 1;
+        ctx.fillStyle = BG; ctx.strokeStyle = col; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.rect(bx, y - 42, bw, 46); ctx.fill(); ctx.stroke();
         ctx.fillStyle = col; ctx.font = '600 14px system-ui,sans-serif'; ctx.fillText(lb.t, tx, y - 22);
         ctx.fillStyle = TXT; ctx.font = '12px system-ui,sans-serif'; ctx.fillText(lb.d, tx, y - 6);
@@ -220,11 +226,11 @@ export function createHud(canvas) {
   function drawSection(sec) {
     if (!sec) return;
     ctx.save(); ctx.font = '600 13px ui-monospace,SFMono-Regular,Menlo,monospace'; ctx.textAlign = 'center';
-    const text = sec.title.toUpperCase() + (sec.value ? '  ·  ' + sec.value : ''), w = ctx.measureText(text).width + 28;
+    const text = sec.title.toUpperCase() + (sec.value ? '  ·  ' + sec.value : ''), w = ctx.measureText(text).width + 28, CX = (W - RW) / 2;
     const Y = 52;                                                   /* вверху, под чипами: внизу — обучение и подсказка */
-    ctx.fillStyle = 'rgba(4,12,24,.85)'; ctx.strokeStyle = CY; ctx.lineWidth = 1; ctx.beginPath(); ctx.rect(W / 2 - w / 2, Y, w, 28); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = CY; ctx.fillText(text, W / 2, Y + 19);
-    if (sec.hint) { ctx.font = '11px system-ui,sans-serif'; ctx.fillStyle = TXT; ctx.fillText(sec.hint, W / 2, Y + 44); }
+    ctx.fillStyle = BG; ctx.strokeStyle = CY; ctx.lineWidth = 1; ctx.beginPath(); ctx.rect(CX - w / 2, Y, w, 28); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = CY; ctx.fillText(text, CX, Y + 19);
+    if (sec.hint) { ctx.font = '11px system-ui,sans-serif'; ctx.fillStyle = TXT; ctx.fillText(sec.hint, CX, Y + 44); }
     ctx.restore();
   }
 
@@ -232,11 +238,10 @@ export function createHud(canvas) {
     if (!P) return; ctx.save(); ctx.font = '600 13px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = CY;
     P.forEach(q => ctx.fillText(q.text, q.x, q.y)); ctx.restore();
   }
-  function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null, planes = null, inset = { l: 0, b: 0 } }) {
-    usePal(holo.mode); size(); ctx.clearRect(0, 0, W, H);
+  function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null, planes = null, inset = { l: 0, b: 0, r: 0 } }) {
+    usePal(holo.mode); size(); ctx.clearRect(0, 0, W, H); RW = inset.r || 0;
     drawFrame(view, info, inset);
     if (showLabels) drawLabels(holo, view);
-    drawGauge(view, frame || { mode: '' });
     drawSection(section); drawPlanes(planes);
     moving = false; seen = new Set();
     if (frame) frame.hands.forEach(h => drawHand(h, frame, t, reduced));

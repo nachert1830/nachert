@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#03060c">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07112a" media="(prefers-color-scheme: dark)">
 <!-- Та же строгость, что на сайте: только свои файлы. 'wasm-unsafe-eval' — для WebAssembly MediaPipe (без него wasm не компилируется);
      брокеры MQTT (emqx, hivemq) — связь с телефоном-датчиком: знакомство и, если нет прямого канала, точки рук (видео — никогда). -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://broker.emqx.io:8084 wss://broker.hivemq.com:8884; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
-<title>Начерт · Голограмма</title>
+<title>Начерт · 3D руками</title>
 <link rel="preload" href="../fonts/geologica-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="hands.css">
 </head>
@@ -17,20 +18,19 @@
   <canvas id="gl" role="img" aria-label="3D-модель: вентиль угловой или деталь варианта 5"></canvas>
   <canvas id="hud" aria-hidden="true"></canvas>
 
-  <!-- бренд и состояние -->
+  <!-- шапка: бренд и состояние -->
   <div id="brand">
-    <a href="../" class="logo" title="На главную «Начерта»">НАЧЕРТ</a>
-    <span class="sub">Голограмма</span>
+    <a href="../" class="logo" title="На главную «Начерта»"><span class="tri" aria-hidden="true"><i></i><i></i><i></i></span>НАЧЕРТ</a>
+    <span class="sub">3D руками</span>
   </div>
   <div id="chips"><span class="chip" id="st">камера выключена</span><span class="chip mode" id="md"></span><span class="chip perf" id="pf" hidden></span></div>
 
-  <!-- панель инструментов: слева на компьютере, снизу на телефоне -->
-  <nav id="rail" aria-label="Инструменты">
+  <!-- слева: режимы -->
+  <nav id="rail" aria-label="Режимы">
     <button id="go" class="tool primary" title="Камера (C)"><i>✋</i><span>Руки</span></button>
     <button id="ph" class="tool" title="Телефон как датчик рук: камера и распознавание — на телефоне, картинка — здесь"><i>📱</i><span>Телефон</span></button>
-    <button id="mg" class="tool" title="Угол Монжа и эпюр (M); в режиме хлопок разворачивает"><i>📐</i><span>Эпюр</span></button>
-    <button id="qz" class="tool" title="Проверь себя: найди части детали"><i>🎯</i><span>Тест</span></button>
-    <button id="mode" class="tool" title="Голограмма / чертёж (H)" aria-pressed="false"><i>📄</i><span>Чертёж</span></button>
+    <button id="qz" class="tool" title="Проверь себя: найди части"><i>🎯</i><span>Тест</span></button>
+    <button id="mode" class="tool" title="Светлая / тёмная тема (H)" aria-pressed="false"><i>🌙</i><span>Тема</span></button>
     <button id="snd" class="tool" title="Звук (S)" aria-pressed="false"><i>🔇</i><span>Звук</span></button>
     <button id="helpBtn" class="tool" title="Жесты (?)" aria-expanded="true" aria-controls="help"><i>?</i><span>Жесты</span></button>
     <details id="more" class="tool-more">
@@ -45,22 +45,48 @@
     </details>
   </nav>
 
-  <!-- жесты: карточка с пиктограммами -->
-  <aside id="help" class="panel" aria-label="Жесты">
+  <!-- справа: управление моделью — мышью, касанием и рукой («наведи и щипни») -->
+  <aside id="ctl" class="card" aria-label="Управление моделью">
+    <h2 id="mtitle">Модель</h2>
+    <section>
+      <h3>Разбор</h3>
+      <div class="sl" data-k="explode" role="slider" aria-label="Разбор" tabindex="0"><div class="tr"><div class="fill"></div><div class="kn"></div></div><output>0 %</output></div>
+    </section>
+    <section id="secOpen" hidden>
+      <h3>Вентиль</h3>
+      <div class="sl" data-k="open" role="slider" aria-label="Открытие вентиля" tabindex="0"><div class="tr"><div class="fill"></div><div class="kn"></div></div><output>закрыт</output></div>
+    </section>
+    <section>
+      <h3>Разрез</h3>
+      <div class="seg" data-g="cut">
+        <button type="button" data-v="" class="on">Нет</button><button type="button" data-v="h" title="Горизонтальный разрез">Гориз.</button><button type="button" data-v="front" title="Фронтальный разрез">Фронт.</button><button type="button" data-v="profile" title="Профильный разрез">Проф.</button>
+      </div>
+      <div class="sl" data-k="cutpos" role="slider" aria-label="Положение секущей плоскости" tabindex="0" hidden><div class="tr"><div class="fill"></div><div class="kn"></div></div><output>по оси</output></div>
+    </section>
+    <section>
+      <h3>Вид</h3>
+      <div class="seg" data-g="view">
+        <button type="button" data-v="0">Главный</button><button type="button" data-v="1">Сверху</button><button type="button" data-v="2">Слева</button><button type="button" data-v="3" class="on">Изо</button>
+      </div>
+    </section>
+    <div class="row">
+      <button type="button" id="mg" class="btn">📐 Эпюр</button>
+      <button type="button" id="rst" class="btn ghost">↺ Сброс</button>
+    </div>
+  </aside>
+
+  <!-- жесты -->
+  <aside id="help" class="card" aria-label="Жесты">
     <header><b>Жесты</b><button type="button" class="x" id="helpX" aria-label="Скрыть">✕</button></header>
     <ul class="g">
-      <li><i>✊</i><b>Вращать</b><span>сожми кулак или щипни и веди руку; разожми на ходу — докрутится</span></li>
+      <li><i>☝️</i><b>Курсор</b><span>кончик указательного пальца</span></li>
+      <li><i>🤏</i><b>Нажать</b><span>наведи на кнопку и сомкни большой и указательный</span></li>
+      <li><i>🤏↔</i><b>Ползунок</b><span>щипни ползунок и веди руку</span></li>
+      <li><i>🤏⟳</i><b>Вращать</b><span>щипни деталь (или пустое место) и веди; отпусти на ходу — докрутится</span></li>
       <li><i>🤏🤏</i><b>Зум</b><span>щипни двумя руками, разводи и своди</span></li>
-      <li><i>👏</i><b>Разобрать</b><span>хлопни — части разлетятся, ещё раз — соберутся</span></li>
-      <li><i>✊✊</i><b>Разобрать плавно</b><span>два кулака, разводи руки</span></li>
-      <li><i>🎡</i><b>Открыть вентиль</b><span>два кулака — поверни, как руль; клавиша O</span></li>
-      <li><i>🖐</i><b>Разрез</b><span>ладонь ребром: горизонтально или вертикально</span></li>
-      <li><i>☝️</i><b>Что это?</b><span>наведи указательный палец на часть</span></li>
-      <li><i>🫰</i><b>Виды</b><span>щелчок пальцами: главный, сверху, слева</span></li>
-      <li><i>🤏✊</i><b>Сдвиг</b><span>щипок + кулак другой рукой</span></li>
       <li><i>✋</i><b>Сброс</b><span>открытая ладонь 1,5 с</span></li>
     </ul>
-    <p class="mut">Мышь: тянуть — вращать, колесо — зум, Shift — сдвиг, E — разобрать, X — разрез, V — виды, M — эпюр.
+    <p class="mut">Всё остальное — на панели «Управление» справа: разбор, разрез, вид, эпюр. Мышью — так же; колесо — зум, Shift — сдвиг.
       Видео не покидает компьютер: руки распознаются прямо в браузере.</p>
   </aside>
 
@@ -69,9 +95,9 @@
 
   <div id="cam"><video id="vid" playsinline muted></video><canvas id="ov"></canvas></div>
   <div id="err" role="alert"></div>
-  <aside id="quiz" class="panel" role="status" hidden></aside>
-  <!-- сопряжение с телефоном: QR-код со ссылкой на датчик + веб-камера ищет ответный код -->
-  <aside id="pair" class="panel" hidden aria-label="Телефон как датчик рук">
+  <aside id="quiz" class="card" role="status" hidden></aside>
+  <!-- сопряжение с телефоном -->
+  <aside id="pair" class="card" hidden aria-label="Телефон как датчик рук">
     <header><b>📱 Телефон — датчик рук</b><button type="button" class="x" id="pairX" aria-label="Закрыть">✕</button></header>
     <div class="pairgrid">
       <canvas id="pairQr" width="10" height="10" aria-label="QR-код со ссылкой на датчик"></canvas>
@@ -79,7 +105,7 @@
         <p id="pairMsg">Готовлю код…</p>
         <ol class="steps"><li>Открой камеру на айфоне и наведи на код</li><li>Нажми на ссылку и разреши камеру</li><li>Всё — управляй руками перед телефоном. Работает и с VPN, и через мобильный интернет</li></ol>
         <video id="pairVid" playsinline muted hidden></video>
-        <div class="row2"><button type="button" id="pairNew">Новый код</button></div>
+        <div class="row2"><button type="button" id="pairNew" class="btn ghost">Новый код</button></div>
       </div>
     </div>
     <p class="mut">Телефон распознаёт руки сам и шлёт сюда только координаты пальцев (видео остаётся на телефоне): напрямую, если устройства в одной сети, иначе — через сервис связи в интернете.</p>

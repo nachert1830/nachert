@@ -7,10 +7,10 @@ import { createMonge } from './monge.js';
      фон → сетка-пол (деталь «парит» над ним) → горизонтальная проекция детали на пол (П₁) →
      тела (свечение по контуру) → рёбра и очерк (свечение + яркая середина) → невидимые линии (штрихом, как на чертеже) →
      «пробки» — вынутый материал (янтарь, полупрозрачно).
-   Режим 'draft' — светлый «чертёжный»: серая заливка и чёрные линии, как на сайте. */
+   Режим 'draft' — светлая тема сайта: бело-голубая заливка, тёмно-синие линии, красный — разрез и вынутый материал. */
 
-const CY = [0.21, 0.88, 1.0];          /* #35e0ff */
-const AMBER = [1.0, 0.71, 0.28];
+const CY = [0.42, 0.68, 1.0];          /* #6badff — голубой сайта на тёмно-синем */
+const AMBER = [1.0, 0.42, 0.42];       /* #ff6b6b — красный сайта (тёмная тема) */
 
 /* ── раскодировка данных модели (v5.js, valve-data.js) ──
    Вершины — vtx (в данных: строка «pos» у v5, «mesh» у сборок, где «pos» — номер позиции). Поверхности для очерка
@@ -50,8 +50,8 @@ const GL = {
   bgV: 'attribute vec2 a;varying vec2 vU;void main(){vU=a;gl_Position=vec4(a,0.,1.);}',
   bgF: `precision mediump float;varying vec2 vU;uniform vec2 uRes;uniform float uDraft;
 void main(){ vec2 p=vU*vec2(uRes.x/uRes.y,1.); float r=length(p*vec2(.8,1.)-vec2(0.,.15));
-  vec3 holo=mix(vec3(.075,.13,.22),vec3(.012,.02,.04),smoothstep(.0,1.5,r));
-  vec3 draft=mix(vec3(1.),vec3(.90,.915,.935),smoothstep(.0,1.6,r));
+  vec3 holo=mix(vec3(.075,.15,.31),vec3(.027,.067,.165),smoothstep(.0,1.5,r));
+  vec3 draft=mix(vec3(1.),vec3(.957,.969,.988),smoothstep(.0,1.6,r));
   gl_FragColor=vec4(mix(holo,draft,uDraft),1.); }`,
   /* uRot — поворот детали вокруг оси z (cos, sin): маховик и шпиндель, когда открывают вентиль */
   meshV: 'attribute vec3 aP,aN;uniform mat4 uM;uniform vec3 uO;uniform vec2 uRot;varying vec3 vP,vN;vec3 R(vec3 v){return vec3(uRot.x*v.x-uRot.y*v.y,uRot.y*v.x+uRot.x*v.y,v.z);}void main(){vec3 p=R(aP)+uO;vP=p;vN=R(aN);gl_Position=uM*vec4(p,1.);}',
@@ -63,15 +63,15 @@ void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard;
   float ndv=abs(dot(n,uF)), fr=pow(1.-ndv,2.2);
   vec3 L1=normalize(vec3(-.5,-.75,.9)), L2=normalize(vec3(.85,.25,.35)); float d1=max(dot(n,L1),0.), d2=max(dot(n,L2),0.), hemi=.5+.5*n.z;
   if(uDraft>.5){
-    vec3 base=vec3(.74,.75,.77), hv=normalize(L1+uF*-1.); float sp=pow(max(dot(n,hv),0.),48.)*.3;
-    vec3 c=base*(.30+.30*hemi+d1*.58+d2*.18)+sp; if(!gl_FrontFacing) c*=.55; c=mix(c,vec3(.45,.78,1.),.35*uHi);
-    if(uPlug>.5) { gl_FragColor=vec4(vec3(.95,.62,.25)*(.25+.6*fr)*uA,uA*.5); return; }
+    vec3 base=vec3(.80,.85,.93), hv=normalize(L1+uF*-1.); float sp=pow(max(dot(n,hv),0.),48.)*.3;
+    vec3 c=base*(.30+.30*hemi+d1*.58+d2*.18)+sp; if(!gl_FrontFacing) c*=.55; c=mix(c,vec3(.55,.70,1.),.45*uHi);
+    if(uPlug>.5) { gl_FragColor=vec4(vec3(.85,.13,.16)*(.25+.6*fr)*uA,uA*.5); return; }
     gl_FragColor=vec4(c,1.); return; }
   float scan=1.; if(uAnim>.5) scan=.95+.05*sin(gl_FragCoord.y*1.7-uT*.004);
   float band=exp(-pow((vP.z-uScan)/5.,2.));
   if(uPlug>.5){ vec3 c=uCol*(.06+.28*d1+.85*fr)+uCol*band*.6; gl_FragColor=vec4(c*scan*uFl*uA,1.); return; }
   /* тело: тёмное стекло, форма читается по свету, контур — по свечению Френеля */
-  vec3 c=uCol*(.07+.20*d1+.07*d2+.08*hemi)*(1.+1.6*uHi)+uCol*fr*(.85+.9*uHi)+vec3(.75,.97,1.)*band*.55;
+  vec3 c=uCol*(.07+.20*d1+.07*d2+.08*hemi)*(1.+1.6*uHi)+uCol*fr*(.85+.9*uHi)+vec3(.8,.9,1.)*band*.55;
   if(!gl_FrontFacing) c*=.5;
   gl_FragColor=vec4(c*scan*uFl,1.); }`,
   lineV: `attribute vec3 aA,aB;attribute vec3 aT;uniform mat4 uM;uniform vec2 uRes;uniform float uW,uFlat;uniform vec3 uO;uniform vec2 uRot;varying float vY,vS;varying vec3 vP;
@@ -91,7 +91,7 @@ float hl(vec3 d){ float h=fract(dot(vW,d)/uStep); return smoothstep(.36,.44,h)*(
 void main(){
   /* крышка среза: штриховка по правилам детали (ГОСТ 2.306): наклон и шаг, сетка — неметалл, сплошь — тонкая деталь */
   if(uCap>.5){ float ln=uSolid>.5?1.:max(hl(uHU),uNet>.5?hl(uHV):0.);
-    gl_FragColor=uDraft>.5?vec4(mix(vec3(.97),vec3(.12,.13,.15),ln),1.):vec4(mix(uCol*.30,vec3(.8,.98,1.),ln*.9)*uFl,1.); return; } vec2 q=abs(vU), px=uSz*(1.-q); float edge=1.-smoothstep(0.,2.5,min(px.x,px.y));
+    gl_FragColor=uDraft>.5?vec4(mix(vec3(.98,.985,1.),vec3(.04,.14,.39),ln),1.):vec4(mix(uCol*.30,vec3(.85,.92,1.),ln*.9)*uFl,1.); return; } vec2 q=abs(vU), px=uSz*(1.-q); float edge=1.-smoothstep(0.,2.5,min(px.x,px.y));
   vec2 g=abs(fract(vU*uSz/20.+.5)-.5)*20.; float grid=1.-smoothstep(.2,.9,min(g.x,g.y));
   float sweep=uAnim>.5?exp(-pow(fract(uT*.0004)*2.-1.-vU.y,2.)*40.)*.25:0.;
   gl_FragColor=vec4(uCol,(.05+grid*.10+edge*.85+sweep)*(uDraft>.5?.8:1.)); }`,
@@ -189,7 +189,7 @@ export function createHolo(canvas, model, opt = {}) {
     /* пол и проекция на него */
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(PG.p); gl.uniformMatrix4fv(PG.U.uM, false, MM); gl.uniform1f(PG.U.uZ, FLOOR); gl.uniform1f(PG.U.uPx, px); gl.uniform1f(PG.U.uT, t); gl.uniform1f(PG.U.uAnim, anim); gl.uniform1f(PG.U.uFade, mg ? 1 - mg.a : 1); gl.uniform1f(PG.U.uDraft, draft);
-    gl.uniform3fv(PG.U.uCol, draft ? [0.35, 0.42, 0.5] : CY); { const l = attr(PG.p, 'a', gridB, 2); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([l]); }
+    gl.uniform3fv(PG.U.uCol, draft ? [0.10, 0.35, 0.88] : CY); { const l = attr(PG.p, 'a', gridB, 2); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([l]); }
 
     /* секущая плоскость (o.clip = {n:[3], w}): убираем dot(n, p) > w; штриховка — по диагонали в плоскости */
     const clip = o.clip, clipOn = clip ? 1 : 0, cv4 = clip ? [clip.n[0], clip.n[1], clip.n[2], clip.w] : [0, 0, 1, 1e9];
@@ -211,7 +211,7 @@ export function createHolo(canvas, model, opt = {}) {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     const floorA = mg ? 1 - mg.a : 1;
     if (floorA > 0.01) {
-      each(bodies, p => lines(p.lB, p.lN, O(p), 1.1, draft ? [0.3, 0.36, 0.44] : CY, (draft ? 0.35 : 0.26) * floorA, 0, 0, FLOOR + 0.2));
+      each(bodies, p => lines(p.lB, p.lN, O(p), 1.1, draft ? [0.04, 0.14, 0.39] : CY, (draft ? 0.35 : 0.26) * floorA, 0, 0, FLOOR + 0.2));
       if (L.plugA > 0.01) plugs.forEach(p => lines(p.lB, p.lN, O(p), 1.0, AMBER, 0.2 * L.plugA * floorA, 0, 0, FLOOR + 0.2));
     }
 
@@ -240,14 +240,14 @@ export function createHolo(canvas, model, opt = {}) {
 
     /* видимые линии: свечение + середина */
     gl.enable(gl.BLEND); gl.depthMask(false);
-    const lineCol = draft ? [0.08, 0.09, 0.11] : [0.80, 0.97, 1.0];
+    const lineCol = draft ? [0.04, 0.14, 0.39] : [0.88, 0.93, 1.0];
     if (!draft) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE); each(bodies, p => lines(p.lB, p.lN, O(p), isHov(p) ? 11 : 6, CY, (isHov(p) ? 1 : 0.55) * flick, 1)); silDraw(6, CY, 0.55 * flick, 1); }
     else if (hov) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); each(bodies.filter(isHov), p => lines(p.lB, p.lN, O(p), 5, [0.2, 0.55, 0.9], 0.45, 1)); }
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     each(bodies, p => lines(p.lB, p.lN, O(p), draft ? 1.25 : 1.35, lineCol, 1, 0)); silDraw(draft ? 1.25 : 1.35, lineCol, 1, 0);
     /* невидимые — штрихом (шаг 4 мм), бледно; у сборки их слишком много — только при разборе */
     gl.depthFunc(gl.GREATER);
-    if (!model.assembly || exploded) { each(bodies, p => lines(p.lB, p.lN, O(p), 1, draft ? [0.25, 0.27, 0.3] : CY, draft ? 0.55 : 0.32, 0, 4)); silDraw(1, draft ? [0.25, 0.27, 0.3] : CY, draft ? 0.55 : 0.32, 0, 4); }
+    if (!model.assembly || exploded) { each(bodies, p => lines(p.lB, p.lN, O(p), 1, draft ? [0.10, 0.35, 0.88] : CY, draft ? 0.55 : 0.32, 0, 4)); silDraw(1, draft ? [0.10, 0.35, 0.88] : CY, draft ? 0.55 : 0.32, 0, 4); }
     gl.depthFunc(gl.LEQUAL);
 
     /* поток среды: когда вентиль открыт и собран — светящиеся штрихи по каналу; сквозь стенки — бледнее */
@@ -267,7 +267,7 @@ export function createHolo(canvas, model, opt = {}) {
       }
       const fb = lineBuf(new Float32Array(arr)); gl.bindBuffer(gl.ARRAY_BUFFER, flowB); gl.bufferData(gl.ARRAY_BUFFER, fb, gl.DYNAMIC_DRAW);
       gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE); gl.depthMask(false);
-      const wc = draft ? [0.1, 0.45, 0.95] : [0.75, 1.0, 1.0];
+      const wc = draft ? [0.10, 0.35, 0.88] : [0.8, 0.9, 1.0];
       gl.depthFunc(gl.LEQUAL); lines(flowB, fb.length / 9, ZERO, 4, wc, 0.9 * Math.min(1, op * 3), 1); lines(flowB, fb.length / 9, ZERO, 1.6, wc, Math.min(1, op * 3), 0);
       gl.depthFunc(gl.GREATER); lines(flowB, fb.length / 9, ZERO, 3, wc, 0.35 * Math.min(1, op * 3), 1); gl.depthFunc(gl.LEQUAL);
     }
@@ -279,7 +279,7 @@ export function createHolo(canvas, model, opt = {}) {
       const P = (u, v) => { const q = [0, 0, 0]; q[ax] = c; q[i] = u; q[j] = v; return q; };
       const V = [[a0, b0, -1, -1], [a1, b0, 1, -1], [a1, b1, 1, 1], [a0, b0, -1, -1], [a1, b1, 1, 1], [a0, b1, -1, 1]].flatMap(([u, v, su, sv]) => [...P(u, v), su, sv]);
       gl.bindBuffer(gl.ARRAY_BUFFER, planeB); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(V), gl.DYNAMIC_DRAW);
-      gl.useProgram(PP.p); gl.uniformMatrix4fv(PP.U.uM, false, MM); gl.uniform3fv(PP.U.uCol, draft ? [0.1, 0.45, 0.75] : CY);
+      gl.useProgram(PP.p); gl.uniformMatrix4fv(PP.U.uM, false, MM); gl.uniform3fv(PP.U.uCol, draft ? [0.85, 0.13, 0.16] : AMBER);
       gl.uniform2f(PP.U.uSz, (a1 - a0) / 2, (b1 - b0) / 2); gl.uniform1f(PP.U.uT, t); gl.uniform1f(PP.U.uAnim, anim); gl.uniform1f(PP.U.uDraft, draft);
       gl.uniform3fv(PP.U.uHU, HU); gl.uniform1f(PP.U.uFl, flick);
       const quad = () => { const x = attr(PP.p, 'a', planeB, 3, 20, 0), y = attr(PP.p, 'b', planeB, 2, 20, 12); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([x, y]); };
@@ -318,7 +318,7 @@ export function createHolo(canvas, model, opt = {}) {
         const fr = MGd.frame(k, u), [a, b, c, d] = fr, sz = [Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / 2, Math.hypot(d[0] - a[0], d[1] - a[1], d[2] - a[2]) / 2];
         const V = [[a, -1, -1], [b, 1, -1], [c, 1, 1], [a, -1, -1], [c, 1, 1], [d, -1, 1]].flatMap(([q, su, sv]) => [...q, su, sv]);
         gl.bindBuffer(gl.ARRAY_BUFFER, planeB); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(V), gl.DYNAMIC_DRAW);
-        gl.useProgram(PP.p); gl.uniform3fv(PP.U.uCol, draft ? [0.25, 0.45, 0.65] : CY); gl.uniform2f(PP.U.uSz, sz[0], sz[1]);
+        gl.useProgram(PP.p); gl.uniform3fv(PP.U.uCol, draft ? [0.10, 0.35, 0.88] : CY); gl.uniform2f(PP.U.uSz, sz[0], sz[1]);
         const x = attr(PP.p, 'a', planeB, 3, 20, 0), y = attr(PP.p, 'b', planeB, 2, 20, 12); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([x, y]);
       });
       const get = (k, which) => { const id = k + which + key; let e = mgCache.get(id);
@@ -326,13 +326,13 @@ export function createHolo(canvas, model, opt = {}) {
           const P = MGd.segs(k, which, u), f = new Float32Array(P.length * 3); P.forEach((q, i) => { f[3 * i] = q[0]; f[3 * i + 1] = q[1]; f[3 * i + 2] = q[2]; });
           const arr = lineBuf(f); e = { b: buf(arr), n: arr.length / 9 }; mgCache.set(id, e); }
         return e; };
-      const col = draft ? [0.08, 0.09, 0.11] : [0.80, 0.97, 1.0];
+      const col = draft ? [0.04, 0.14, 0.39] : [0.88, 0.93, 1.0];
       gl.depthFunc(gl.LEQUAL);
       ['p1', 'p2', 'p3'].forEach(k => {
         const v = get(k, 'vis'), h = get(k, 'inv');
         if (!draft) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE); lines(v.b, v.n, [0, 0, 0], 5, CY, 0.45 * A, 1); }
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        lines(v.b, v.n, [0, 0, 0], 1.5, col, A, 0); lines(h.b, h.n, [0, 0, 0], 1.3, draft ? [0.2, 0.22, 0.26] : [0.55, 0.9, 1.0], A, 0, 6);   /* штрих 6 мм: при мелком масштабе эпюра 3 мм сливались в точки */
+        lines(v.b, v.n, [0, 0, 0], 1.5, col, A, 0); lines(h.b, h.n, [0, 0, 0], 1.3, draft ? [0.10, 0.35, 0.88] : [0.6, 0.78, 1.0], A, 0, 6);   /* штрих 6 мм: при мелком масштабе эпюра 3 мм сливались в точки */
       });
       gl.uniform1f(PL.U.uClipOn, clipOn);
     }
@@ -343,7 +343,7 @@ export function createHolo(canvas, model, opt = {}) {
       gl.useProgram(PM.p); gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-1, -2);
       plugs.forEach(p => mesh(p, AMBER, L.plugA * (draft ? 1 : 0.55), 1)); gl.disable(gl.POLYGON_OFFSET_FILL);
       gl.useProgram(PL.p); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      plugs.forEach(p => lines(p.lB, p.lN, O(p), 1.2, draft ? [0.6, 0.35, 0.05] : [1, 0.85, 0.6], L.plugA, 0));
+      plugs.forEach(p => lines(p.lB, p.lN, O(p), 1.2, draft ? [0.7, 0.1, 0.12] : [1, 0.75, 0.75], L.plugA, 0));
       gl.depthFunc(gl.GREATER); plugs.forEach(p => lines(p.lB, p.lN, O(p), 1, AMBER, 0.3 * L.plugA, 0, 4)); gl.depthFunc(gl.LEQUAL);
     }
     gl.depthMask(true); gl.disable(gl.BLEND);
