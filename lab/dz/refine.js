@@ -176,6 +176,19 @@ function findCircles(D,used,o){ o=o||{}; const {G,thr,w,h}=D, ppm=o.ppm||7, rmin
     out.push({cx:sn.cx,cy:sn.cy,r:sn.r,a1:sn.a1,a2:sn.a2,full:!!sn.full,ink:sn.full?sn.ink:sn.inkRun,span,src:'found'}); }
   return out; }
 
+/* ═══ привязка подписанных точек к геометрии ═══
+   Модель называет точку с погрешностью в доли миллиметра — в пикселях это 1–3 px. Настоящая точка чертежа — конец отрезка или пересечение двух линий.
+   snapPoints(points [[подпись,x,y]], segs [[x1,y1,x2,y2]], {ppm, radius}) → [[подпись,x,y,moved]]: точка переносится на ближайший конец отрезка
+   или пересечение двух отрезков в радиусе radius мм (по умолчанию 2); нет такого рядом — остаётся как есть. */
+function segIntersect(a,b){ const d1x=a[2]-a[0], d1y=a[3]-a[1], d2x=b[2]-b[0], d2y=b[3]-b[1], den=d1x*d2y-d1y*d2x; if(Math.abs(den)<1e-9) return null;
+  const t=((b[0]-a[0])*d2y-(b[1]-a[1])*d2x)/den, u=((b[0]-a[0])*d1y-(b[1]-a[1])*d1x)/den; return {t,u,x:a[0]+t*d1x,y:a[1]+t*d1y}; }
+function snapPoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, R=(o.radius||2)*ppm, ext=(o.extend==null?0.8:o.extend)*ppm; const cand=[];
+  segs.forEach(s=>{ cand.push([s[0],s[1]],[s[2],s[3]]); });
+  for(let i=0;i<segs.length;i++){ const a=segs[i], La=Math.hypot(a[2]-a[0],a[3]-a[1])||1; for(let j=i+1;j<segs.length;j++){ const b=segs[j], Lb=Math.hypot(b[2]-b[0],b[3]-b[1])||1, r=segIntersect(a,b); if(!r) continue;
+      /* пересечение — на самих отрезках (с небольшим запасом: линии на бумаге заходят друг за друга или чуть не доходят) */
+      if(r.t>=-ext/La&&r.t<=1+ext/La&&r.u>=-ext/Lb&&r.u<=1+ext/Lb) cand.push([r.x,r.y]); } }
+  return points.map(([l,x,y])=>{ let best=null, bd=R; for(const c of cand){ const d=Math.hypot(c[0]-x,c[1]-y); if(d<bd){ bd=d; best=c; } } return best?[l,best[0],best[1],bd]:[l,x,y,0]; }); }
+
 function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assign({ppm},o)), res=[], dropped=[], inkMin=o.inkMin==null?0.45:o.inkMin;
   const snaps=segs.map((s,i)=>({s,i,r:snap(D,s,{ppm,radius:o.radius,extend:o.extend})}));
   /* фото надёжное, если большинство отрезков модели подтверждено карандашом: тогда отрезок без чернил — выдумка модели («как надо») и отбрасывается;
@@ -212,5 +225,5 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
   if(o.findCircles){ const usedC=new Uint8Array(D.w*D.h); res.forEach(r=>{ const L=Math.hypot(r.p[2]-r.p[0],r.p[3]-r.p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=r.p[0]+(r.p[2]-r.p[0])*k/n, y=r.p[1]+(r.p[3]-r.p[1])*k/n; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) usedC[Y*D.w+X]=1; } } });
     findCircles(D,usedC,{ppm,box:o.region?[o.region[0]-6*ppm,o.region[1]-6*ppm,o.region[2]+6*ppm,o.region[3]+6*ppm]:null,maxFind:o.maxFindCircles}).forEach(c=>{ if(!circ.some(m=>Math.hypot(m.cx-c.cx,m.cy-c.cy)<1.5*ppm&&Math.abs(m.r-c.r)<1.5*ppm)) circ.push(c); }); }
   return {segs:res.concat(found),circles:circ,droppedCircles:droppedC,dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
-put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk});
+put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk,snapPoints});
 })();
