@@ -90,7 +90,9 @@ const steps=[]; function step(id,text,state){ let li=steps.find(s=>s.id===id); i
 const fmt=(a,d)=>isFinite(a)?a.toFixed(d==null?2:d).replace('.',','):'—';
 
 async function ask(mode,canvas,q){ const url=canvas.toDataURL('image/jpeg',0.85), r=await fetch(CLOUD||API+'/api/eyes',{method:'POST',headers:CLOUD?{'content-type':'application/json','x-scan-code':encodeURIComponent(CODE)}:{'content-type':'application/json','x-beta-password':PASS},body:JSON.stringify({img:url,w:canvas.width,h:canvas.height,mode})});
-  const j=await r.json().catch(()=>({ok:false,error:'сервер ответил не JSON'})); if(!r.ok||!j.ok) throw new Error(j.error||('ошибка '+r.status)); return j; }
+  const raw=await r.text(); let j=null; try{ j=JSON.parse(raw); }catch(e){}
+  /* откуда ошибка: ответ нашей функции (error), платформы Yandex Cloud (message) или не JSON; в конце — код ответа */
+  if(!r.ok||!j||!j.ok) throw new Error(((j&&(j.error||j.message))||(raw?raw.replace(/\s+/g,' ').slice(0,120):'пустой ответ'))+' [HTTP '+r.status+(CLOUD?', облако':'')+']'); return j; }
 function scaled(bmp,side){ const k=Math.min(1,side/Math.max(bmp.width,bmp.height)), c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext('2d').drawImage(bmp,0,0,c.width,c.height); return {c,k}; }
 /* вырезка чертежа: рамка + поле, поворот по часовой на rot, длинная сторона ≤ side; A — (u,v) вырезки → (x,y) фото (как lab/dz/tools/crop.py) */
 function cut(bmp,box,rot,pad,side){ const W=bmp.width,H=bmp.height, X0=Math.max(0,Math.round(box[0]-pad)), Y0=Math.max(0,Math.round(box[1]-pad)), X1=Math.min(W,Math.round(box[2]+pad)), Y1=Math.min(H,Math.round(box[3]+pad)), cw=X1-X0, ch=Y1-Y0;
