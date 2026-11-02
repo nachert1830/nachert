@@ -16,7 +16,14 @@ const reduced = () => RM.matches;
 
 /* ── 3D ── */
 let holo = null;
-try { holo = createHolo($('gl'), DATA); } catch (e) { console.error(e); }
+const gpuName = (() => { try { const g = document.createElement('canvas').getContext('webgl'), x = g && g.getExtension('WEBGL_debug_renderer_info'); return x ? g.getParameter(x.UNMASKED_RENDERER_WEBGL) : (g ? g.getParameter(g.RENDERER) : 'нет WebGL'); } catch (_) { return '?'; } })();
+/* слабая графика: встроенная Intel HD/UHD (без Iris) — Chrome сам помечает MSAA на ней как «неприемлемо медленный»;
+   программный рендер (SwiftShader, llvmpipe, Microsoft Basic Render) — тем более. Для них: без MSAA, разрешение 80 %,
+   3D не чаще 30 кадров/с, распознавание рук — сначала на процессоре (видеокарта и так занята голограммой) */
+const SOFT = /swiftshader|llvmpipe|basic render|software/i.test(gpuName);
+const WEAK = SOFT || (/intel/i.test(gpuName) && /(uhd|hd) graphics/i.test(gpuName) && !/iris/i.test(gpuName));
+try { holo = createHolo($('gl'), DATA, { antialias: !WEAK, scale: WEAK ? 0.8 : 1 }); } catch (e) { console.error(e); }
+if (SOFT) setTimeout(() => showErr('Браузер рисует 3D без видеокарты (программно) — будет медленно.\nВключи «Использовать аппаратное ускорение» в настройках браузера и перезапусти его.'), 400);
 if (!holo) showErr('WebGL недоступен — голограмма не покажется.');
 const hud = createHud($('hud'));
 const ctl = createController({ reducedMotion: reduced() });
@@ -102,7 +109,8 @@ function render(t) {
   if (!holo) return;
   /* только «фон» (мерцание голограммы) — не чаще 30 кадров/с: меньше нагрузка, процессор остаётся распознаванию */
   const ambient = !reduced() && holo.mode === 'holo';
-  if (dirty || moving || (ambient && t - lastDraw > 31)) {
+  /* слабая графика — не чаще 30 кадров/с: руки всё равно обновляются не чаще, а видеокарта вдвое свободнее */
+  if ((dirty || moving || (ambient && t - lastDraw > 31)) && (!WEAK || t - lastDraw > 30)) {
     lastDraw = t;
     holo.draw(shown, t, { reduced: reduced(), clip: cut, hover: pointer && pointer.hover, monge: MG.a > 0.001 ? { a: MG.a, u: MG.u } : null });
     const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info, pointer, section: cut && cutLabel(), planes: mongeLabels(), showLabels: !quiz.on && !MG.stage,
@@ -193,7 +201,7 @@ function onHands(hands, t) {
 /* отладка и автотесты: __feed([[21 точка], …], t) — как кадр камеры */
 window.__feed = (hands, t) => { feedOn = true; const f = onHands(hands, t == null ? performance.now() : t); render(t == null ? performance.now() : t); return f; };
 window.__camInfo = () => info;
-window.__app = { shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
+window.__app = { shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; lastDraw = -1e9; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
 
 /* ── приглашение и карточка жестов ── */
 $('cta').onclick = () => $('go').click();
@@ -343,13 +351,14 @@ async function initDetector() {
 /* калибровка делегата на этой машине: 2,5 с на GPU и 2,5 с на CPU; берём, где лучше вместе и руки, и экран.
    На встроенной графике MediaPipe-GPU делит видеокарту с голограммой: руки быстрые, а экран дёргается —
    поэтому в оценке и время распознавания, и интервал кадров экрана. Выбор запоминается для этой видеокарты. */
-const gpuName = (() => { try { const g = document.createElement('canvas').getContext('webgl'), x = g && g.getExtension('WEBGL_debug_renderer_info'); return x ? g.getParameter(x.UNMASKED_RENDERER_WEBGL) : (g ? g.getParameter(g.RENDERER) : 'нет WebGL'); } catch (_) { return '?'; } })();
 const calib = { phase: '', t0: 0, res: {}, det: [], scr: [] };
 const CAL_MS = 2500, calKey = 'hands.delegate:' + gpuName;
 function calibStart() {
   const saved = load(calKey);
   if (saved === 'GPU' || saved === 'CPU') { calib.phase = 'done'; calib.res.saved = saved; tried = false; return saved; }
-  calib.phase = 'GPU'; calib.t0 = 0; calib.det = []; calib.scr = []; return 'GPU';
+  /* на слабой графике начинаем с CPU: если он хорош, GPU ещё проверим; порядок — ради первого впечатления */
+  const first = WEAK ? 'CPU' : 'GPU';
+  calib.phase = first; calib.t0 = 0; calib.det = []; calib.scr = []; return first;
 }
 async function adapt() {
   const now = performance.now();
@@ -362,8 +371,9 @@ async function adapt() {
     const med = a => { const q = [...a].sort((x, y) => x - y); return q[q.length >> 1] || 0; };
     const r = { det: med(calib.det), scr: med(calib.scr) }; r.cost = Math.max(r.det, 33) + 1.5 * Math.max(0, r.scr - 17);
     calib.res[calib.phase] = r; calib.det = []; calib.scr = []; calib.t0 = 0;
-    if (calib.phase === 'GPU') { calib.phase = 'CPU'; delegate = await det.init('CPU'); detN = 0; return; }
-    const best = !calib.res.GPU || calib.res.CPU.cost <= calib.res.GPU.cost ? 'CPU' : 'GPU';
+    const other = calib.phase === 'GPU' ? 'CPU' : 'GPU';
+    if (!calib.res[other]) { calib.phase = other; delegate = await det.init(other); detN = 0; if (delegate !== other) { calib.phase = 'done'; store(calKey, delegate); } return; }
+    const best = calib.res.CPU.cost <= calib.res.GPU.cost ? 'CPU' : 'GPU';
     calib.phase = 'done'; store(calKey, best);
     if (best !== delegate) { delegate = await det.init(best); detN = 0; }
     return;
@@ -437,7 +447,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && run
 function report() {
   const c = $('gl');
   return ['Начерт · голограмма — диагностика', new Date().toISOString(),
-    'браузер: ' + navigator.userAgent, 'видеокарта: ' + gpuName,
+    'браузер: ' + navigator.userAgent, 'видеокарта: ' + gpuName + (WEAK ? ' (профиль слабой графики)' : ''),
     `экран: ${innerWidth}×${innerHeight}, DPR ${devicePixelRatio}, холст ${c.width}×${c.height}, разрешение ${holo ? Math.round(holo.scale * 100) : '-'}%`,
     `кадр экрана: ${perf.ema.toFixed(1)} мс (${(1000 / perf.ema).toFixed(0)} кадр/с)`,
     `руки: ${camOn ? `${delegate}, ${det ? det.kind : '-'}, ${fps.toFixed(0)} кадр/с, распознавание ${detMs.toFixed(0)} мс` : 'камера выключена'}`,

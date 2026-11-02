@@ -114,7 +114,7 @@ void main(){ float r=length(vP), fade=1.-smoothstep(120.,260.,r);
 };
 
 export function createHolo(canvas, data, opt = {}) {
-  const gl = canvas.getContext('webgl', { antialias: true, alpha: false, stencil: true, premultipliedAlpha: false, preserveDrawingBuffer: !!opt.keep });
+  const gl = canvas.getContext('webgl', { antialias: opt.antialias !== false, alpha: false, stencil: true, premultipliedAlpha: false, preserveDrawingBuffer: !!opt.keep });
   if (!gl) return null;
   const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
   const prog = (v, f) => { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, v)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, f)); gl.linkProgram(p);
@@ -139,7 +139,7 @@ export function createHolo(canvas, data, opt = {}) {
   const R0 = Math.hypot(b[1][0] - b[0][0], b[1][1] - b[0][1], b[1][2] - b[0][2]) / 2;
   const FLOOR = b[0][2] - 95;                                   /* пол ниже самой низкой точки разобранной детали */
   let scan = { t0: -1e9, z0: 0, z1: 0 }, mode = opt.mode || 'holo', last = null;
-  let scale = 1;                                                 /* доля разрешения: снижается, если кадры не успевают */
+  let scale = opt.scale || 1;                                    /* доля разрешения: снижается, если кадры не успевают */
 
   /* ── камера: как в IG3.viewer, плюс «рамка» по разобранной детали, чтобы всё помещалось ── */
   function camera(view, w, h, extra) {
