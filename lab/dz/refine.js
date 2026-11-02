@@ -114,6 +114,68 @@ function findMissing(D,used,o){ const {G,thr,w,h}=D, ppm=o.ppm||7, minLen=(o.min
 
 const dSegPt=(p,s)=>{ const dx=s[2]-s[0], dy=s[3]-s[1], L=dx*dx+dy*dy||1e-9, t=Math.max(0,Math.min(1,((p[0]-s[0])*dx+(p[1]-s[1])*dy)/L)); return Math.hypot(p[0]-s[0]-t*dx,p[1]-s[1]-t*dy); };
 function meanG(D,p){ const L=Math.hypot(p[2]-p[0],p[3]-p[1]), n=Math.max(2,Math.ceil(L)); let t=0; for(let k=0;k<=n;k++){ let m=0; const x=p[0]+(p[2]-p[0])*k/n, y=p[1]+(p[3]-p[1])*k/n; for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const v=bil(D.G,D.w,D.h,x+dx,y+dy); if(v>m) m=v; } t+=m; } return t/(n+1); }
+
+/* ═══ окружности и дуги ═══
+   Формат модели: C <cx> <cy> <r> [d] — окружность; R <cx> <cy> <r> <a1> <a2> [d] — дуга от a1 до a2 по часовой стрелке на экране
+   (углы в градусах, 0° — вправо, 90° — вниз, как на снимке; y вниз). d — штриховая.
+   snapCircle(D, {cx,cy,r,a1,a2}, {ppm}) → уточнённая окружность/дуга по гребню карандаша: центр и радиус (спуск по сумме отклика вдоль
+   всего кольца, с потолком вклада точки), углы дуги — по непрерывному куску чернил; ink — доля подтверждённого кольца.
+   findCircles(D, usedMask, {ppm, box}) → окружности и дуги, которых модель не выписала: Хаф по центрам с направлением поперёк гребня
+   (собственный вектор гессиана), затем радиус по гистограмме расстояний и проверка чернил по углам. */
+const TAU=Math.PI*2, NB26=(()=>{ const a=[]; for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) for(let k=-1;k<=1;k++) if(i||j||k) a.push([i,j,k]); return a; })();   /* все сочетания сдвигов: в узкой долине «центр ↔ радиус» осевой спуск стоит */
+function ringSamples(r){ return Math.max(24,Math.min(720,Math.ceil(TAU*r/1.5))); }
+function ringScore(D,cx,cy,r,cap){ const n=ringSamples(r); let t=0; for(let k=0;k<n;k++){ const a=TAU*k/n; t+=Math.min(cap,bil(D.G,D.w,D.h,cx+r*Math.cos(a),cy+r*Math.sin(a))); } return t/n; }
+/* чернила по углам: образец «заинкован», если кольцо заметно темнее своих соседей по радиусу (±d1, ±d2) */
+function ringInk(D,cx,cy,r,ppm){ const n=ringSamples(r), d1=Math.max(4,0.6*ppm), d2=Math.max(5,0.9*ppm), thr=D.thr, ink=new Uint8Array(n);
+  for(let k=0;k<n;k++){ const a=TAU*k/n, c=Math.cos(a), s=Math.sin(a); let m=0; for(let t=-1.5;t<=1.5;t+=0.5){ const v=bil(D.G,D.w,D.h,cx+(r+t)*c,cy+(r+t)*s); if(v>m) m=v; }
+    const off=(bil(D.G,D.w,D.h,cx+(r+d2)*c,cy+(r+d2)*s)+bil(D.G,D.w,D.h,cx+(r-d2)*c,cy+(r-d2)*s)+bil(D.G,D.w,D.h,cx+(r+d1)*c,cy+(r+d1)*s)+bil(D.G,D.w,D.h,cx+(r-d1)*c,cy+(r-d1)*s))/4;
+    ink[k]=(m>thr*1.2&&m>off*1.6+thr*0.25)?1:0; } return ink; }
+/* самый длинный непрерывный кусок чернил по кругу (разрывы до gap образцов склеиваются): [старт, длина] в образцах */
+function longestRun(ink,gap){ const n=ink.length; if(!n) return [0,0]; let on=0; for(let i=0;i<n;i++) on+=ink[i]; if(on===0) return [0,0]; if(on===n) return [0,n];
+  let z=0; for(let i=0;i<n;i++) if(!ink[i]&&!ink[(i+1)%n]){ z=(i+1)%n; break; }
+  const a=[]; for(let i=0;i<n;i++) a.push(ink[(z+i)%n]); let best=[0,0], st=-1, last=-1;
+  for(let i=0;i<n;i++){ if(a[i]){ if(st<0) st=i; last=i; } else if(st>=0&&i-last>gap){ if(last-st+1>best[1]) best=[st,last-st+1]; st=-1; } }
+  if(st>=0&&last-st+1>best[1]) best=[st,last-st+1]; return [(z+best[0])%n,best[1]]; }
+function snapCircle(D,c,o){ o=o||{}; const ppm=o.ppm||7, cap=5*D.thr; let cx=c.cx, cy=c.cy, r=c.r; if(!(r>=3)) return null;
+  const W=(o.radius||2)*ppm; if(!D.G2) D.G2=gauss(D.G,D.w,D.h,Math.max(2.5,0.5*ppm));   /* грубая карта: кольцо шириной 1–2 px при смещении на 10 px не даёт градиента — сначала спуск по сглаженной */
+  const descend=(GG,capK,step0,stop)=>{ const E={G:GG,w:D.w,h:D.h}; let best=ringScore(E,cx,cy,r,cap*capK), step=step0;
+    for(let it=0;it<120&&step>=stop;it++){ let imp=false; for(const [dx,dy,dr] of NB26){ const nx=cx+dx*step, ny=cy+dy*step, nr=r+dr*step;
+        if(Math.hypot(nx-c.cx,ny-c.cy)>W||Math.abs(nr-c.r)>W||nr<3) continue; const sc=ringScore(E,nx,ny,nr,cap*capK)*(1-0.02*(Math.hypot(nx-c.cx,ny-c.cy)+Math.abs(nr-c.r))/W); if(sc>best+1e-7){ best=sc; cx=nx; cy=ny; r=nr; imp=true; } } if(!imp) step/=2; } return best; };
+  descend(D.G2,0.4,Math.max(1.5,W/4),0.5); descend(D.G,1,1,0.25); const best=descend(D.G,5,0.5,0.1);   /* финал — с высоким потолком: оптимум на вершине гребня, а не на плоскости среза */
+  const ink=ringInk(D,cx,cy,r,ppm), n=ink.length, gap=Math.max(2,Math.round(n*3*ppm/(TAU*r))), run=longestRun(ink,gap), on=ink.reduce((a,b)=>a+b,0);
+  const res={cx,cy,r,ink:on/n,moved:Math.hypot(cx-c.cx,cy-c.cy)+Math.abs(r-c.r),score:best};
+  if(run[1]>=n*0.92||(on>=n*0.85&&c.a1==null)){ res.full=true; res.a1=0; res.a2=360; res.span=360; res.inkRun=res.ink; return res; }
+  let st=run[0], len=run[1];
+  if(c.a1!=null){ /* модель дала дугу: берём тот кусок чернил, что содержит середину её дуги */
+    const m=(((c.a1+((c.a2-c.a1+360)%360)/2)%360)+360)%360, k0=Math.round(m/360*n)%n, has=i=>ink[((i%n)+n)%n];
+    if(has(k0)||has(k0+1)||has(k0-1)){ let R=k0, L=k0, g=0; for(let i=k0+1;i<k0+n;i++){ if(has(i)){ R=i; g=0; } else if(++g>gap) break; } g=0; for(let i=k0-1;i>k0-n&&i>R-n;i--){ if(has(i)){ L=i; g=0; } else if(++g>gap) break; } st=((L%n)+n)%n; len=R-L+1; } }
+  { let c=0; for(let i=0;i<len;i++) c+=ink[(st+i)%n]; res.inkRun=len?c/len:0; }   /* доля чернил внутри самой дуги (ink — от полного кольца, у дуги он мал по определению) */
+  res.span=len/n*360; res.a1=(st/n*360)%360; res.a2=(((st+len-1)/n*360)%360+360)%360; if(len>=n*0.92){ res.full=true; res.a1=0; res.a2=360; res.span=360; }
+  return res; }
+
+function findCircles(D,used,o){ o=o||{}; const {G,thr,w,h}=D, ppm=o.ppm||7, rmin=(o.rmin||4)*ppm, rmax=(o.rmax||70)*ppm, B=o.box||[0,0,w,h], out=[];
+  const gxx=(x,y)=>G[y*w+x+1]-2*G[y*w+x]+G[y*w+x-1], gyy=(x,y)=>G[(y+1)*w+x]-2*G[y*w+x]+G[(y-1)*w+x], gxy=(x,y)=>(G[(y+1)*w+x+1]-G[(y+1)*w+x-1]-G[(y-1)*w+x+1]+G[(y-1)*w+x-1])/4;
+  const pts=[]; for(let y=Math.max(2,Math.floor(B[1]));y<Math.min(h-2,B[3]);y++) for(let x=Math.max(2,Math.floor(B[0]));x<Math.min(w-2,B[2]);x++){ const v=G[y*w+x]; if(v<=thr*1.2||(used&&used[y*w+x])) continue;
+    const a=gxx(x,y), d=gyy(x,y), b=gxy(x,y), tr=a+d, det=a*d-b*b, disc=Math.sqrt(Math.max(0,tr*tr/4-det)), l1=tr/2-disc; if(l1>-thr*0.15) continue;   /* гребень: сильная отрицательная кривизна поперёк */
+    let nx=b, ny=l1-a; const L=Math.hypot(nx,ny); if(L<1e-9){ nx=1; ny=0; } else { nx/=L; ny/=L; } pts.push([x,y,nx,ny,v]); }
+  if(pts.length<40) return out;
+  const cell=Math.max(2,ppm*0.6), CW=Math.ceil(w/cell), CH=Math.ceil(h/cell), acc=new Float32Array(CW*CH), rstep=Math.max(1,ppm*0.4);
+  pts.forEach(([x,y,nx,ny])=>{ for(let r=rmin;r<=rmax;r+=rstep) for(const sg of [1,-1]){ const cx=x+sg*nx*r, cy=y+sg*ny*r; if(cx<0||cy<0||cx>=w||cy>=h) continue; acc[Math.floor(cy/cell)*CW+Math.floor(cx/cell)]+=1/Math.sqrt(r); } });   /* 1/√r: большие окружности не забивают малые */
+  for(let it=0;it<(o.maxFind||6);it++){ let bi=-1,bv=0; for(let i=0;i<acc.length;i++) if(acc[i]>bv){ bv=acc[i]; bi=i; } if(bi<0||bv<2.5) break;
+    const ccx=(bi%CW+0.5)*cell, ccy=(Math.floor(bi/CW)+0.5)*cell;
+    for(let dy=-3;dy<=3;dy++) for(let dx=-3;dx<=3;dx++){ const X=bi%CW+dx, Y=Math.floor(bi/CW)+dy; if(X>=0&&Y>=0&&X<CW&&Y<CH) acc[Y*CW+X]=0; }
+    /* радиус по гистограмме расстояний от центра до гребневых точек, нормаль которых смотрит на центр */
+    const hist=new Map(), hs=Math.max(1,ppm*0.3); pts.forEach(([x,y,nx,ny])=>{ const dx=x-ccx, dy=y-ccy, r=Math.hypot(dx,dy); if(r<rmin||r>rmax) return; if(Math.abs((dx*nx+dy*ny)/r)<0.85) return; const k=Math.round(r/hs); hist.set(k,(hist.get(k)||0)+1); });
+    let rb=0,rv=0; hist.forEach((v,k)=>{ const sm=v+(hist.get(k-1)||0)+(hist.get(k+1)||0); if(sm>rv){ rv=sm; rb=k; } }); const r0=rb*hs; if(!r0||rv<Math.max(25,0.25*TAU*r0/1.5)) continue;
+    const sn=snapCircle(D,{cx:ccx,cy:ccy,r:r0},{ppm,radius:o.snapRadius||1.5}); if(!sn) continue; const span=sn.span||0; if(span<(o.minSpan||70)||(sn.inkRun||0)<0.7) continue;
+    if(out.some(c=>Math.hypot(c.cx-sn.cx,c.cy-sn.cy)<1.5*ppm&&Math.abs(c.r-sn.r)<1.5*ppm)) continue;
+    if(span/180*Math.PI*sn.r<(o.minArc||10)*ppm) continue;   /* дуга короче 10 мм — это штрихи, а не окружность */
+    /* дубль: дуга лежит на уже принятой окружности (другой центр и радиус, но те же пиксели) */
+    { const cnt=24; let a0=sn.full?0:sn.a1, L=sn.full?360:((sn.a2-sn.a1+360)%360); const on=(q)=>{ let k=0; for(let i=0;i<cnt;i++){ const an=(a0+L*i/(cnt-1))*Math.PI/180, px=sn.cx+sn.r*Math.cos(an), py=sn.cy+sn.r*Math.sin(an); if(Math.abs(Math.hypot(px-q.cx,py-q.cy)-q.r)<=0.8*ppm) k++; } return k/cnt; };
+      if(out.some(q=>on(q)>=0.7)) continue; }
+    out.push({cx:sn.cx,cy:sn.cy,r:sn.r,a1:sn.a1,a2:sn.a2,full:!!sn.full,ink:sn.full?sn.ink:sn.inkRun,span,src:'found'}); }
+  return out; }
+
 function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assign({ppm},o)), res=[], dropped=[], inkMin=o.inkMin==null?0.45:o.inkMin;
   const snaps=segs.map((s,i)=>({s,i,r:snap(D,s,{ppm,radius:o.radius,extend:o.extend})}));
   /* фото надёжное, если большинство отрезков модели подтверждено карандашом: тогда отрезок без чернил — выдумка модели («как надо») и отбрасывается;
@@ -142,6 +204,13 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
   /* слабый отрезок (чернил мало): выдумка модели («как надо»), если рядом найдена настоящая линия, заменяющая его; иначе — бледная настоящая, остаётся как есть */
   const near=(a,b)=>{ const ma=[(a[0]+a[2])/2,(a[1]+a[3])/2], mb=[(b[0]+b[2])/2,(b[1]+b[3])/2], d=Math.min(dSegPt(ma,b),dSegPt(mb,a)); let da=Math.abs(Math.atan2(a[3]-a[1],a[2]-a[0])-Math.atan2(b[3]-b[1],b[2]-b[0]))%Math.PI; da=Math.min(da,Math.PI-da)*180/Math.PI; return d<=(o.replaceDist||3)*ppm&&da<=(o.replaceAng||12); };
   weak.forEach(w=>{ if(w.drop&&(w.ink<(o.emptyInk==null?0.12:o.emptyInk)||found.some(f=>near(w.p,f.p)))) dropped.push({p:w.p,ink:w.ink,why:w.ink<(o.emptyInk==null?0.12:o.emptyInk)?'на бумаге пусто':'на бумаге нет, заменён найденной линией',i:w.i}); else res.push({p:w.p,src:'model',ink:w.ink,moved:0,unverified:true,dash:w.dash,i:w.i}); });
-  return {segs:res.concat(found),dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
-put({refine,darkness,snap,findMissing});
+  /* окружности и дуги: ответ модели уточняется по карандашу; пропущенные — Хафом (o.findCircles) */
+  const circ=[], droppedC=[];
+  (o.circles||[]).forEach(c=>{ const r=snapCircle(D,c,{ppm,radius:o.radius}); if(!r){ droppedC.push(c); return; }
+    const q=r.full?r.ink:(r.inkRun||0); if(q<0.3||(r.span||0)<20){ droppedC.push(Object.assign({ink:q,why:'на бумаге нет'},c)); return; }
+    circ.push({cx:r.cx,cy:r.cy,r:r.r,a1:r.a1,a2:r.a2,full:!!r.full,span:r.span,ink:r.ink,src:'model',dash:!!c.dash,unverified:q<0.55}); });
+  if(o.findCircles){ const usedC=new Uint8Array(D.w*D.h); res.forEach(r=>{ const L=Math.hypot(r.p[2]-r.p[0],r.p[3]-r.p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=r.p[0]+(r.p[2]-r.p[0])*k/n, y=r.p[1]+(r.p[3]-r.p[1])*k/n; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) usedC[Y*D.w+X]=1; } } });
+    findCircles(D,usedC,{ppm,box:o.region?[o.region[0]-6*ppm,o.region[1]-6*ppm,o.region[2]+6*ppm,o.region[3]+6*ppm]:null,maxFind:o.maxFindCircles}).forEach(c=>{ if(!circ.some(m=>Math.hypot(m.cx-c.cx,m.cy-c.cy)<1.5*ppm&&Math.abs(m.r-c.r)<1.5*ppm)) circ.push(c); }); }
+  return {segs:res.concat(found),circles:circ,droppedCircles:droppedC,dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
+put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk});
 })();
