@@ -1,6 +1,6 @@
 /* ═══════════ Бета оцифровки листа: локальный сервер (без зависимостей) ═══════════
    PROXYAPI_KEY=… node lab/dz/beta-server.js [--port=8787] [--host=127.0.0.1] [--limit=3]
-   Открыть http://127.0.0.1:8787/ — страница lab/beta/: фото листа → раскладка → оцифровка каждого чертежа → цифровая копия.
+   Открыть http://127.0.0.1:8787/ — страница lk/scan/ (так же она лежит на сайте по прямой ссылке): фото листа → раскладка → оцифровка каждого чертежа → цифровая копия.
    Сервер делает три вещи: раздаёт lab/ и core/ (без lab/private и lab/photos), держит ключ ProxyAPI (в страницу он не попадает)
    и проксирует POST /api/eyes (режимы layout и crop, как у кабинета: server/lib/app.js) моделям Claude через ProxyAPI.
    Фото нигде не сохраняется. Потолок расходов --limit ($, по токенам ответа): дальше сервер отвечает 429.
@@ -16,7 +16,9 @@ const cfg=EYES.eyesFromEnv({PROXYAPI_KEY:KEY||'mock'});
 const PRICE=m=>/haiku/.test(m)?[1e-6,5e-6]:[3e-6,15e-6];   /* $ за токен: оценка сверху, ProxyAPI считает в рублях */
 let spent=0, calls=0;
 const MIME={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.ico':'image/x-icon'};
-const send=(res,code,body,type)=>{ res.writeHead(code,{'content-type':type||'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer'}); res.end(typeof body==='string'||Buffer.isBuffer(body)?body:JSON.stringify(body)); };
+let ORIGIN=null;   /* Origin текущего запроса, если он разрешён: страница на сайте (lk/scan) ходит сюда с компьютера владельца */
+const ALLOWED=/^https?:\/\/((www\.)?nachert1830\.ru|localhost(:\d+)?|127\.0\.0\.1(:\d+)?)$/;
+const send=(res,code,body,type)=>{ res.writeHead(code,Object.assign(ORIGIN?{'access-control-allow-origin':ORIGIN,'vary':'Origin','access-control-allow-private-network':'true'}:{},{'content-type':type||'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer'})); res.end(typeof body==='string'||Buffer.isBuffer(body)?body:JSON.stringify(body)); };
 const okPass=req=>!PASS||req.headers['x-beta-password']===PASS;
 function readBody(req,max){ return new Promise((ok,bad)=>{ let n=0; const a=[]; req.on('data',c=>{ n+=c.length; if(n>max){ bad(Object.assign(new Error('Слишком большой запрос'),{status:413})); req.destroy(); } else a.push(c); }); req.on('end',()=>ok(Buffer.concat(a).toString('utf8'))); req.on('error',bad); }); }
 
@@ -38,13 +40,15 @@ async function eyes(req,res){
   catch(e){ console.error('ошибка модели:',String(e&&e.message||e).slice(0,200)); send(res,e&&e.status&&e.status<600?e.status:502,{ok:false,error:String(e&&e.message||'Модель не ответила').slice(0,200)}); } }
 
 http.createServer(async(req,res)=>{ try{
-  const u=new URL(req.url,'http://x'), p=decodeURIComponent(u.pathname);
+  const u=new URL(req.url,'http://x'), p=decodeURIComponent(u.pathname); const og=req.headers.origin; ORIGIN=og&&ALLOWED.test(og)?og:null;
+  if(req.method==='OPTIONS'){ if(!ORIGIN) return send(res,403,{ok:false,error:'Этот адрес страницы не разрешён'}); res.writeHead(204,{'access-control-allow-origin':ORIGIN,'vary':'Origin','access-control-allow-methods':'GET,POST,OPTIONS','access-control-allow-headers':'content-type,x-beta-password','access-control-allow-private-network':'true','access-control-max-age':'600'}); return res.end(); }
+  if(og&&!ORIGIN&&p.startsWith('/api/')) return send(res,403,{ok:false,error:'Этот адрес страницы не разрешён'});
   if(req.method==='POST'&&p==='/api/eyes') return eyes(req,res);
   if(req.method==='GET'&&p==='/api/status') return send(res,200,{ok:true,beta:true,passwordNeeded:!!PASS,spent:+spent.toFixed(4),limit:LIMIT,calls,layout:cfg.layout&&cfg.layout.model,digit:cfg.digit&&cfg.digit.model});
   if(req.method!=='GET'&&req.method!=='HEAD') return send(res,405,{ok:false,error:'Только GET и POST /api/eyes'});
-  if(p==='/') { res.writeHead(302,{location:'/lab/beta/'}); return res.end(); }
+  if(p==='/') { res.writeHead(302,{location:'/lk/scan/'}); return res.end(); }
   /* статика: только lab/ и core/, без служебного и личного */
-  const rel=path.normalize(p).replace(/^[\\/]+/,''); if(!/^(lab|core)[\\/]/.test(rel)||/(^|[\\/])(private|photos|node_modules|\.git)([\\/]|$)/.test(rel)||rel.includes('..')) return send(res,404,'не найдено','text/plain; charset=utf-8');
+  const rel=path.normalize(p).replace(/^[\\/]+/,''); if(!/^(lab|core)[\\/]|^lk[\\/]scan[\\/]/.test(rel)||/(^|[\\/])(private|photos|node_modules|\.git)([\\/]|$)/.test(rel)||rel.includes('..')) return send(res,404,'не найдено','text/plain; charset=utf-8');
   let f=path.join(ROOT,rel); if(fs.existsSync(f)&&fs.statSync(f).isDirectory()) f=path.join(f,'index.html');
   if(!fs.existsSync(f)) return send(res,404,'не найдено','text/plain; charset=utf-8');
   send(res,200,fs.readFileSync(f),MIME[path.extname(f)]||'application/octet-stream');
