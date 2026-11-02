@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#03060c">
+<!-- Та же строгость, что на сайте: только свои файлы. 'wasm-unsafe-eval' — для WebAssembly MediaPipe (без него wasm не компилируется). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>Начерт · Голограмма</title>
+<link rel="preload" href="../fonts/geologica-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="hands.css">
+</head>
+<body>
+<main id="stage">
+  <canvas id="gl" role="img" aria-label="3D-деталь, вариант 5: фланец и усечённый конус со сквозным пирамидальным отверстием"></canvas>
+  <canvas id="hud" aria-hidden="true"></canvas>
+
+  <!-- бренд и состояние -->
+  <div id="brand">
+    <a href="../" class="logo" title="На главную «Начерта»">НАЧЕРТ</a>
+    <span class="sub">Голограмма · вариант 5</span>
+  </div>
+  <div id="chips"><span class="chip" id="st">камера выключена</span><span class="chip mode" id="md"></span></div>
+
+  <!-- панель инструментов: слева на компьютере, снизу на телефоне -->
+  <nav id="rail" aria-label="Инструменты">
+    <button id="go" class="tool primary" title="Камера (C)"><i>✋</i><span>Руки</span></button>
+    <button id="mg" class="tool" title="Угол Монжа и эпюр (M); в режиме хлопок разворачивает"><i>📐</i><span>Эпюр</span></button>
+    <button id="qz" class="tool" title="Проверь себя: найди части детали"><i>🎯</i><span>Тест</span></button>
+    <button id="mode" class="tool" title="Голограмма / чертёж (H)" aria-pressed="false"><i>📄</i><span>Чертёж</span></button>
+    <button id="snd" class="tool" title="Звук (S)" aria-pressed="false"><i>🔇</i><span>Звук</span></button>
+    <button id="helpBtn" class="tool" title="Жесты (?)" aria-expanded="true" aria-controls="help"><i>?</i><span>Жесты</span></button>
+    <details id="more" class="tool-more">
+      <summary class="tool" title="Ещё"><i>⋯</i><span>Ещё</span></summary>
+      <div class="menu">
+        <button id="tutor" type="button">🎓 Обучение жестам</button>
+        <button id="rec" type="button" aria-pressed="false">● Записать точки рук</button>
+        <label class="mi">⟲ Повтор записи<input id="replay" type="file" accept="application/json,.json" hidden></label>
+        <button id="diag" type="button">📋 Диагностика скорости</button>
+      </div>
+    </details>
+  </nav>
+
+  <!-- жесты: карточка с пиктограммами -->
+  <aside id="help" class="panel" aria-label="Жесты">
+    <header><b>Жесты</b><button type="button" class="x" id="helpX" aria-label="Скрыть">✕</button></header>
+    <ul class="g">
+      <li><i>✊</i><b>Вращать</b><span>сожми кулак или щипни и веди руку; разожми на ходу — докрутится</span></li>
+      <li><i>🤏🤏</i><b>Зум</b><span>щипни двумя руками, разводи и своди</span></li>
+      <li><i>👏</i><b>Разобрать</b><span>хлопни — части разлетятся, ещё раз — соберутся</span></li>
+      <li><i>✊✊</i><b>Разобрать плавно</b><span>два кулака, разводи руки</span></li>
+      <li><i>🖐</i><b>Разрез</b><span>ладонь ребром: горизонтально или вертикально</span></li>
+      <li><i>☝️</i><b>Что это?</b><span>наведи указательный палец на часть</span></li>
+      <li><i>🫰</i><b>Виды</b><span>щелчок пальцами: главный, сверху, слева</span></li>
+      <li><i>🤏✊</i><b>Сдвиг</b><span>щипок + кулак другой рукой</span></li>
+      <li><i>✋</i><b>Сброс</b><span>открытая ладонь 1,5 с</span></li>
+    </ul>
+    <p class="mut">Мышь: тянуть — вращать, колесо — зум, Shift — сдвиг, E — разобрать, X — разрез, V — виды, M — эпюр.
+      Видео не покидает компьютер: руки распознаются прямо в браузере.</p>
+  </aside>
+
+  <!-- приглашение, пока камера выключена -->
+  <button id="cta" type="button"><i>✋</i><span><b>Включить управление руками</b><small>нужна веб-камера · видео не покидает компьютер</small></span></button>
+
+  <div id="cam"><video id="vid" playsinline muted></video><canvas id="ov"></canvas></div>
+  <div id="err" role="alert"></div>
+  <aside id="quiz" class="panel" role="status" hidden></aside>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
