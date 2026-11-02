@@ -74,7 +74,7 @@ const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','
 const $=id=>document.getElementById(id), L=self.LAB;
 let file=null, RES=null, PASS=sessionStorage.getItem('betaPass')||'';
 try{}catch(e){}
-const CLOUD=String(window.SCAN_API||'').trim();   /* адрес облачной функции — config.js, его пишет развёртывание */
+const CLOUD=String(window.SCAN_API||'').trim().replace(/[?&]integration=raw$/,'');   /* raw-режим Яндекса не отдаёт функции заголовки — адрес всегда без него */   /* адрес облачной функции — config.js, его пишет развёртывание */
 let CODE=''; try{ CODE=localStorage.getItem('scanCode')||''; }catch(e){}
 if(CLOUD){ $('coderow').classList.remove('hide'); $('code').value=CODE; $('code').onchange=()=>{ CODE=$('code').value.trim(); try{ localStorage.setItem('scanCode',CODE); }catch(e){} }; }
 const hosted=!CLOUD&&!/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)&&location.protocol!=='file:';
@@ -109,15 +109,17 @@ async function run(){ if(CLOUD&&!CODE){ $('prog').classList.remove('hide'); $('s
     if(!lay.ok){ step('lay','Раскладка не помогла ('+lay.why+') — лист как один чертёж','done'); lay={ok:true,rot:0,drawings:[{box:[0,0,W,H],part:null}]}; } else step('lay','Чертежей: '+lay.drawings.length+(lay.rot?', лист повёрнут на '+lay.rot+'°':'')+(lay.drawings.some(d=>d.part)?' (части '+lay.drawings.map(d=>d.part||'?').join(', ')+')':''),'done');
     const dzSel=$('dz').value==='auto'?null:+$('dz').value, vSel=/^\d+$/.test($('variant').value.trim())?$('variant').value.trim():'auto';
     const out={name:file.name.replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]};
-    const jobs=lay.drawings.map((d,i)=>async()=>{ const id='d'+i; step(id,'Чертёж '+(i+1)+': оцифровка…'); const cr=cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),1200);
+    const jobs=lay.drawings.map((d,i)=>async()=>{ const id='d'+i; step(id,'Чертёж '+(i+1)+': оцифровка…'); const cr=cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),1568);
       let j; try{ j=await ask('crop',cr.c); }catch(e){ step(id,'Чертёж '+(i+1)+': '+e.message,'err'); return {part:d.part,box:d.box,error:e.message}; } cost+=j.cost||0; calls++;
       const P=LY.parseDigit(j.text); let fit=null; try{ fit=SL.fitVariant(j.text,vSel,dzSel); }catch(e){}
       const rg=P.pts.length>=4?[Math.min(...P.pts.map(q=>q[1])),Math.min(...P.pts.map(q=>q[2])),Math.max(...P.pts.map(q=>q[1])),Math.max(...P.pts.map(q=>q[2]))]:null;
       const ppm=Math.max(2,Math.min(W,H)/210*cr.k), rf=RF.refine({w:cr.w,h:cr.h,a:cr.gray},P.segs,{circles:P.circles,findCircles:true,ppm:fit&&fit.ppm?fit.ppm:ppm,region:rg,points:P.pts.map(q=>[q[1],q[2]]),findCap:0.35});
+      /* точки — на ближайший конец отрезка или пересечение (в радиусе 1 мм): копия геометрически согласована */
+      const sp=RF.snapPoints(P.pts,rf.segs.map(q=>q.p),{ppm:fit&&fit.ppm?fit.ppm:ppm,radius:1}); P.pts=sp.map(q=>[q[0],q[1],q[2]]);
       let toMm=null; if(fit&&fit.M){ const Mi=IMG.H.inv(fit.M); toMm=(x,y)=>IMG.H.apply(Mi,[x,y]); } else if(fit&&fit.A){ const a=fit.A, det=a[0]*a[4]-a[1]*a[3]; if(Math.abs(det)>1e-9) toMm=(x,y)=>{ const X=x-a[2], Y=y-a[5]; return [(a[4]*X-a[1]*Y)/det,(-a[3]*X+a[0]*Y)/det]; }; }
-      const mmCopy=toMm?{pts:P.pts.map(q=>[q[0]].concat(toMm(q[1],q[2]).map(v=>+v.toFixed(2)))),segs:rf.segs.map(q=>({p:toMm(q.p[0],q.p[1]).concat(toMm(q.p[2],q.p[3])).map(v=>+v.toFixed(2)),src:q.src,unverified:!!q.unverified,dash:!!q.dash}))}:null;
+      const mmCopy=toMm?{pts:P.pts.map(q=>[q[0]].concat(toMm(q[1],q[2]).map(v=>+v.toFixed(2)))),txt:P.txt.map(q=>toMm(q[0],q[1]).map(v=>+v.toFixed(2)).concat(q[2])),segs:rf.segs.map(q=>({p:toMm(q.p[0],q.p[1]).concat(toMm(q.p[2],q.p[3])).map(v=>+v.toFixed(2)),src:q.src,unverified:!!q.unverified,dash:!!q.dash}))}:null;
       const circles=(rf.circles||[]).map(c=>{ const poly=SL.arcPoints(c); return {src:c.src,unverified:!!c.unverified,dash:!!c.dash,full:!!c.full,c:[c.cx,c.cy,c.r].map(v=>+v.toFixed(2)),a:c.full?null:[+c.a1.toFixed(1),+c.a2.toFixed(1)],poly:poly.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?poly.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}; });
-      const dr={part:d.part,box:d.box,rot:lay.rot,mm:mmCopy,circles,fit,pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length},rf.stats)};
+      const dr={part:d.part,box:d.box,rot:lay.rot,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length},rf.stats)};
       step(id,'Чертёж '+(i+1)+': точек '+P.pts.length+', отрезков '+rf.stats.kept+(circles.length?', окружностей и дуг '+circles.length:'')+(fit&&fit.rmsMm!=null?', привязка ДЗ №'+fit.dz+' в.'+fit.n+', невязка '+fmt(fit.hom?fit.hom.rmsMm:fit.rmsMm)+' мм':', к условию не привязался'),'done'); return dr; });
     /* до двух чертежей одновременно */
     const q=jobs.slice(); const workers=[0,1].map(async()=>{ while(q.length){ const job=q.shift(), idx=jobs.indexOf(job); out.drawings[idx]=await job(); } }); await Promise.all(workers);
@@ -129,7 +131,9 @@ function show(){ const {out,bmp,svg}=RES; $('res').classList.remove('hide');
   const cv=$('cv'), k=Math.min(1,1100/bmp.width); cv.width=Math.round(bmp.width*k); cv.height=Math.round(bmp.height*k); const g=cv.getContext('2d'); g.drawImage(bmp,0,0,cv.width,cv.height); g.globalAlpha=1; g.lineCap='round';
   out.drawings.forEach(d=>{ if(!d.segs) return; d.segs.forEach(s=>{ g.strokeStyle=s.src==='found'?'#2f6bff':s.unverified?'#e07b00':'#1f9d3a'; g.lineWidth=s.src==='found'?1.2:1.8; g.setLineDash(s.dash?[6,4]:s.unverified?[4,3]:[]); g.beginPath(); g.moveTo(s.p[0]*k,s.p[1]*k); g.lineTo(s.p[2]*k,s.p[3]*k); g.stroke(); }); g.setLineDash([]);
     (d.circles||[]).forEach(c=>{ g.strokeStyle=c.src==='found'?'#2f6bff':c.unverified?'#e07b00':'#1f9d3a'; g.lineWidth=1.8; g.setLineDash(c.dash?[6,4]:c.unverified?[4,3]:[]); g.beginPath(); (c.poly||[]).forEach((q,i)=>i?g.lineTo(q[0]*k,q[1]*k):g.moveTo(q[0]*k,q[1]*k)); g.stroke(); }); g.setLineDash([]);
-    d.pts.forEach(p=>{ g.fillStyle='#c0005a'; g.beginPath(); g.arc(p[1]*k,p[2]*k,2.5,0,7); g.fill(); }); });
+    const fsz=Math.max(12,cv.width/52); g.font='600 '+fsz+'px system-ui,sans-serif'; g.lineJoin='round'; g.textBaseline='alphabetic';
+    d.pts.forEach(p=>{ g.fillStyle='#c0005a'; g.beginPath(); g.arc(p[1]*k,p[2]*k,Math.max(2.5,fsz*0.16),0,7); g.fill(); g.lineWidth=fsz*0.3; g.strokeStyle='rgba(255,255,255,.92)'; g.strokeText(p[0],p[1]*k+fsz*0.3,p[2]*k-fsz*0.25); g.fillStyle='#9a0046'; g.fillText(p[0],p[1]*k+fsz*0.3,p[2]*k-fsz*0.25); });
+    g.font='italic '+Math.round(fsz*0.78)+'px system-ui,sans-serif'; (d.txt||[]).forEach(q=>{ const s=String(q[2]).slice(0,40); g.lineWidth=fsz*0.26; g.strokeStyle='rgba(255,255,255,.9)'; g.strokeText(s,q[0]*k,q[1]*k); g.fillStyle='#1d3557'; g.fillText(s,q[0]*k,q[1]*k); }); });
   $('vSvg').innerHTML=svg||'<p class="note">Не из чего строить копию: у модели нет отрезков.</p>';
   /* показатели */
   const rows=out.drawings.map((d,i)=>{ if(!d.segs) return '<tr><td>'+(i+1)+'</td><td colspan="5"><span class="pill bad">'+(d.error||'ошибка')+'</span></td></tr>'; const f=d.fit, s=d.stats, conf=s.kept?Math.round(100*(s.kept-s.unverified)/s.kept):0;

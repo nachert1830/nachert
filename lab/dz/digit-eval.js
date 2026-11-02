@@ -124,7 +124,8 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
       ms=Date.now()-t0; spent+=cost; }
     const ans=parse(text); let b=bestScale(p.tr,ans,p,p.toMM), m=b.m, rf=null;
     if(A.refine==='1'&&b.name==='px'){ const RF=require('./refine.js'); const t0=Date.now(); rf=RF.refine(p.gray,ans.segs,{points:ans.pts.map(q=>[q[1],q[2]]),ppm:p.ppm,inkMin:A.inkmin?+A.inkmin:undefined,find:A.find!=='0',minLen:A.minlen?+A.minlen:undefined}); const ms2=Date.now()-t0;
-      const was=m, ans2={pts:ans.pts,segs:rf.segs.map(q=>q.p)}; m=measure(p.tr,ans2,p.toMM); b={name:'px',m};
+      const was=m, sp=RF.snapPoints(ans.pts,rf.segs.map(q=>q.p),{ppm:p.ppm,radius:+(A.snapr||2)}), ans2={pts:A.nosnap==='1'?ans.pts:sp.map(q=>[q[0],q[1],q[2]]),segs:rf.segs.map(q=>q.p)}; m=measure(p.tr,ans2,p.toMM); b={name:'px',m};
+      console.log('  точки до привязки к геометрии: промах медиана '+f1(was.med)+' мм, ≤ 1 мм — '+was.le1+' из '+was.found+'; после: медиана '+f1(m.med)+' мм, ≤ 1 мм — '+m.le1+' из '+m.found+' (сдвинуто '+sp.filter(q=>q[3]>0).length+' из '+sp.length+')');
       const fnd=rf.segs.filter(q=>q.src==='found').map(q=>[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])]), mod=rf.segs.filter(q=>q.src==='model').map(q=>[p.toMM([q.p[0],q.p[1]]),p.toMM([q.p[2],q.p[3]])]);
       const prFound=fnd.length?cover(fnd,p.tr.segs,1).f:null, prMod=mod.length?cover(mod,p.tr.segs,1).f:null;
       console.log('  притяжка к карандашу ('+ms2+' мс): модель дала '+rf.stats.model+', оставлено '+rf.stats.kept+', отброшено «на бумаге нет» '+rf.stats.dropped+', найдено сверх модели '+rf.stats.found+'; точность найденных '+(prFound==null?'—':pc(prFound,1))+', оставленных модельных '+(prMod==null?'—':pc(prMod,1)));
