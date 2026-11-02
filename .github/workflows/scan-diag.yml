@@ -1,0 +1,48 @@
+name: Сканер листа — диагностика облака
+# Ничего не меняет: под ключом YC_SA_KEY печатает в журнал, что видит сервисный аккаунт (его роли на каталоге, функция nachert-scan, её версии),
+# и что функция отвечает из интернета (код и тело ответа). Секреты не выводятся. Запуск вручную: Actions → «Сканер листа — диагностика облака».
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Программа yc и ключ аккаунта
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+          YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID || 'b1gm1vb5prlop8thuobf' }}
+        run: |
+          test -n "$YC_SA_KEY" || { echo "::error::Нет секрета YC_SA_KEY"; exit 1; }
+          for i in 1 2 3; do timeout 120 bash -c 'curl -sSL --max-time 100 https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i "$HOME/yc" -n >/dev/null' && break; sleep 5; done
+          echo "$HOME/yc/bin" >> "$GITHUB_PATH"
+          printf '%s' "$YC_SA_KEY" > "$RUNNER_TEMP/yc-key.json"
+          echo "SA_ID=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).service_account_id||'нет')}catch(e){console.log('ключ не читается как JSON')}" "$RUNNER_TEMP/yc-key.json")" >> "$GITHUB_ENV"
+          "$HOME/yc/bin/yc" config profile create ci >/dev/null
+          "$HOME/yc/bin/yc" config set service-account-key "$RUNNER_TEMP/yc-key.json"
+          "$HOME/yc/bin/yc" config set folder-id "$YC_FOLDER_ID"
+          "$HOME/yc/bin/yc" config set endpoint api.cloud.yandex.net:443
+      - name: Что видит сервисный аккаунт
+        env:
+          YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID || 'b1gm1vb5prlop8thuobf' }}
+        run: |
+          run(){ echo; echo "════ $*"; "$@" 2>&1 | head -60 || true; }
+          echo "Сервисный аккаунт из ключа: $SA_ID"
+          run yc iam service-account get "$SA_ID"
+          run yc resource-manager folder get "$YC_FOLDER_ID"
+          echo; echo "════ Роли на каталоге (кому какая роль)"; yc resource-manager folder list-access-bindings --id "$YC_FOLDER_ID" --format json 2>&1 | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{ try{ JSON.parse(s).forEach(b=>console.log((b.subject.id===process.env.SA_ID?'>>> ЭТОТ АККАУНТ  ':'                ')+b.subject.type+' '+b.subject.id+' → '+b.role_id)); }catch(e){ console.log(s.slice(0,600)); } })" || true
+          run yc serverless function list
+          run yc serverless function get --name nachert-scan
+          run yc serverless function version list --function-name nachert-scan --limit 5
+          run yc billing billing-account list
+          run yc resource-manager cloud list
+      - name: Что функция отвечает из интернета
+        run: |
+          ID=$(yc serverless function get --name nachert-scan --format json 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).id)}catch(e){console.log('')}})")
+          echo "id функции: ${ID:-не найден}"; test -n "$ID" || exit 0
+          for H in "" "-H Origin:https://nachert1830.ru"; do echo; echo "════ GET https://functions.yandexcloud.net/$ID  $H"; curl -sS -m 30 -i $H "https://functions.yandexcloud.net/$ID" | head -25 | cut -c1-300; done
+      - name: Убрать ключ
+        if: always()
+        run: rm -f "$RUNNER_TEMP/yc-key.json"
