@@ -1,0 +1,89 @@
+name: Сканер листа — развёртывание облачной функции
+# Одна функция Yandex Cloud (nachert-scan) без шлюза и базы: страница nachert1830.ru/lk/scan/ присылает ей кадры чертежей, функция
+# добавляет ключ ProxyAPI и возвращает ответ модели. Доступ — по коду (SHA-256 в SCAN_CODE_SHA256). Адрес функции записывается
+# в lk/scan/config.js и коммитится в main (страница публикуется GitHub Pages). Нужны секреты: YC_SA_KEY, PROXYAPI_KEY (как у club.yml).
+# Запуск вручную: Actions → «Сканер листа — развёртывание» → Run workflow (ветка main).
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'код доступа (по умолчанию — «виктория»; хранится только как SHA-256)'
+        required: false
+        default: 'виктория'
+      limit:
+        description: 'лимит расходов функции, $ на экземпляр (страховка; главный предел — баланс ProxyAPI)'
+        required: false
+        default: '5'
+permissions:
+  contents: write
+concurrency:
+  group: scan-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Проверки функции
+        run: node --test server/test/scan-api.test.js server/test/sheet-modes.test.js
+      - name: Секреты на месте?
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+          PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+        run: |
+          test -n "$YC_SA_KEY" || { echo "::error::Нет секрета YC_SA_KEY (ключ сервисного аккаунта Yandex Cloud, как для club.yml)"; exit 1; }
+          test -n "$PROXYAPI_KEY" || { echo "::error::Нет секрета PROXYAPI_KEY (ключ ProxyAPI, как для club.yml)"; exit 1; }
+      - name: Программа yc и ключ аккаунта развёртывания
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+          YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID || 'b1gm1vb5prlop8thuobf' }}
+        run: |
+          for i in 1 2 3; do timeout 120 bash -c 'curl -sSL --max-time 100 https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i "$HOME/yc" -n >/dev/null' && break; echo "yc не скачался, попытка $((i+1))"; sleep 5; done
+          test -x "$HOME/yc/bin/yc" || { echo "::error::Не удалось скачать программу yc — перезапустите"; exit 1; }
+          echo "$HOME/yc/bin" >> "$GITHUB_PATH"
+          printf '%s' "$YC_SA_KEY" > "$RUNNER_TEMP/yc-key.json"
+          "$HOME/yc/bin/yc" config profile create ci >/dev/null
+          "$HOME/yc/bin/yc" config set service-account-key "$RUNNER_TEMP/yc-key.json"
+          "$HOME/yc/bin/yc" config set folder-id "$YC_FOLDER_ID"
+          "$HOME/yc/bin/yc" config set endpoint api.cloud.yandex.net:443
+      - name: Функция nachert-scan
+        env:
+          PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+          SCAN_CODE: ${{ github.event.inputs.code || 'виктория' }}
+          SCAN_LIMIT: ${{ github.event.inputs.limit || '5' }}
+        run: |
+          echo "::add-mask::$PROXYAPI_KEY"
+          HASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.SCAN_CODE))")
+          rm -rf pkg && mkdir pkg && cp server/scan/index.js pkg/index.js && cp server/lib/eyes.js server/lib/sheetprompts.js pkg/
+          (cd pkg && zip -qr ../scan.zip .)
+          yc serverless function get --name nachert-scan >/dev/null 2>&1 || yc serverless function create --name nachert-scan >/dev/null
+          yc serverless function allow-unauthenticated-invoke --name nachert-scan >/dev/null
+          yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 60s \
+            --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,SCAN_LIMIT_USD=$SCAN_LIMIT,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
+          ID=$(yc serverless function get --name nachert-scan --format json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).id))")
+          URL="https://functions.yandexcloud.net/$ID?integration=raw"
+          echo "SCAN_URL=$URL" >> "$GITHUB_ENV"; echo "Адрес функции: $URL"
+      - name: "Проверка — функция жива, код проверяется"
+        env:
+          C: ${{ github.event.inputs.code || 'виктория' }}
+        run: |
+          ENC=$(node -e "console.log(encodeURIComponent(process.env.C))")
+          echo "GET без кода (ожидаем codeNeeded):"; curl -sS -m 30 -H "Origin: https://nachert1830.ru" "$SCAN_URL"; echo
+          echo -n "GET с неверным кодом (ожидаем 401): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -H "Origin: https://nachert1830.ru" -H "x-scan-code: nope" "$SCAN_URL"
+          echo -n "GET с верным кодом (ожидаем 200): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC" "$SCAN_URL"
+          echo -n "OPTIONS с сайта (ожидаем 204): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -X OPTIONS -H "Origin: https://nachert1830.ru" -H "Access-Control-Request-Method: POST" "$SCAN_URL"
+          echo -n "OPTIONS с чужого адреса (ожидаем 403): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -X OPTIONS -H "Origin: https://evil.example" "$SCAN_URL"
+      - name: Адрес — в страницу сканера (lk/scan/config.js) и в main
+        run: |
+          printf '/* Адрес облачной функции сканера. Файл пишет .github/workflows/scan-deploy.yml. */\nwindow.SCAN_API=window.SCAN_API||"%s";\n' "$SCAN_URL" > lk/scan/config.js
+          git diff --quiet -- lk/scan/config.js && { echo "адрес не изменился"; exit 0; }
+          git config user.name "scan-deploy"; git config user.email "scan-deploy@users.noreply.github.com"
+          git add lk/scan/config.js; git commit -m "Сканер листа: адрес облачной функции для страницы lk/scan"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Убрать ключ
+        if: always()
+        run: rm -f "$RUNNER_TEMP/yc-key.json" scan.zip
