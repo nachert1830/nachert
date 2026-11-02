@@ -22,7 +22,7 @@
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const put=(n,v)=>{ if(isNode) module.exports=v; else { self.LAB=self.LAB||{}; self.LAB[n]=v; } };
-const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',model:'dzModel',gridsheet:'dzGridSheet',check:'dzCheck',paper:'dzPaper'}[n]];
+const L=n=>isNode?require('./'+n+'.js'):self.LAB[{grid:'dzGrid',calib:'dzCalib',given:'dzGiven',model:'dzModel',gridsheet:'dzGridSheet',check:'dzCheck',paper:'dzPaper',refine:'refine'}[n]];
 /* o.clean — очиститель карандаша (второй проход): передаётся в оцифровку */
 const IMG=isNode?require('../img.js'):self.LAB.img, LN=isNode?require('../lines.js'):self.LAB.lines, V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 const H=IMG.H;
@@ -402,7 +402,17 @@ function prepareDigit(img,drawing,o){ o=o||{}; const dz=+o.dz||3, gv=V.get(dz,+o
   /* поле: фигура условия и линии модели рядом с ней (± 120 × 100 мм), не больше 360 × 300 */
   const g=L('model').given(gv.id,gv.data), fig=g.segs.flatMap(q=>[q.a,q.b]).concat([[0,0]]), bb=Q=>[Math.min(...Q.map(p=>p[0])),Math.min(...Q.map(p=>p[1])),Math.max(...Q.map(p=>p[0])),Math.max(...Q.map(p=>p[1]))], F=bb(fig);
   const near=p=>p[0]>=F[0]-120&&p[0]<=F[2]+120&&p[1]>=F[1]-100&&p[1]<=F[3]+100;
-  const segsM=drawing.segs.map(q=>({a:toM(q.a),b:toM(q.b),dash:q.dash})).filter(q=>near(q.a)&&near(q.b)&&Math.hypot(q.b[0]-q.a[0],q.b[1]-q.a[1])>=1.5);
+  /* притяжка ответа модели к карандашу на самом снимке (lab/dz/refine.js): отрезок уточняется по гребню линии, выдуманный
+     («как надо» вместо начерченного) заменяется найденным или помечается; снимок ужимается до 1600 px ради скорости.
+     o.refine===false — выключить; o.refineFind===true — добавлять и линии, которых модель не выписала (в проверку — нет: лишняя линия вредит) */
+  let dsegs=drawing.segs;
+  if(o.refine!==false&&img&&img.data){ try{ const RF=L('refine'); if(RF){ const k=Math.min(1,1600/Math.max(img.width,img.height)), w=Math.max(1,Math.round(img.width*k)), h=Math.max(1,Math.round(img.height*k)), a=new Float32Array(w*h), D=img.data;
+      for(let y=0;y<h;y++){ const Y0=Math.floor(y/k), Y1=Math.max(Y0+1,Math.floor((y+1)/k)); for(let x=0;x<w;x++){ const X0=Math.floor(x/k), X1=Math.max(X0+1,Math.floor((x+1)/k)); let t=0,n=0; for(let yy=Y0;yy<Y1&&yy<img.height;yy+=1) for(let xx=X0;xx<X1&&xx<img.width;xx+=1){ const i=(yy*img.width+xx)*4; t+=0.299*D[i]+0.587*D[i+1]+0.114*D[i+2]; n++; } a[y*w+x]=n?t/n:255; } }
+      const px=drawing.segs.map(q=>[q.a[0]*k,q.a[1]*k,q.b[0]*k,q.b[1]*k].concat(q.dash?[1]:[])), pts=Object.values(drawing.pts).map(p=>[p[0]*k,p[1]*k]), reg=pts.length>=4?[Math.min(...pts.map(p=>p[0])),Math.min(...pts.map(p=>p[1])),Math.max(...pts.map(p=>p[0])),Math.max(...pts.map(p=>p[1]))]:null;
+      const rf=RF.refine({w,h,a},px,{ppm:b.s*k,region:reg,points:pts,find:o.refineFind===true});
+      if(rf.segs.length>=Math.min(8,drawing.segs.length)){ dsegs=rf.segs.map(q=>({a:[q.p[0]/k,q.p[1]/k],b:[q.p[2]/k,q.p[3]/k],dash:!!q.dash}));
+        why.push('притяжка к карандашу: из '+drawing.segs.length+' отрезков модели уточнено '+rf.stats.kept+(rf.stats.unverified?' (не подтверждено карандашом '+rf.stats.unverified+')':'')+(rf.stats.dropped?', отброшено выдуманных '+rf.stats.dropped:'')+(rf.stats.found?', добавлено найденных '+rf.stats.found:'')); rf.dropped.slice(0,6).forEach(d=>why.push('  отброшен отрезок ('+d.p.map(t=>Math.round(t/k))+'): '+(d.ink==null?d.why:'под ним '+Math.round(d.ink*100)+' % карандаша'))); } } }catch(e){ why.push('притяжка к карандашу не удалась: '+String(e&&e.message||e).slice(0,80)); } }
+  const segsM=dsegs.map(q=>({a:toM(q.a),b:toM(q.b),dash:q.dash})).filter(q=>near(q.a)&&near(q.b)&&Math.hypot(q.b[0]-q.a[0],q.b[1]-q.a[1])>=1.5);
   const Bx=bb(fig.concat(segsM.flatMap(q=>[q.a,q.b])));
   let u0=Bx[0]-6, v0=Bx[1]-6, u1=Bx[2]+6, v1=Bx[3]+6; if(u1-u0>360){ const m=(F[0]+F[2])/2; u0=m-180; u1=m+180; } if(v1-v0>300){ const m=(F[1]+F[3])/2; v0=m-150; v1=m+150; }
   const cO=[-Math.floor(u0),-Math.floor(v0)], box=[0,0,Math.ceil(u1-u0),Math.ceil(v1-v0)], sh=p=>[p[0]+cO[0],p[1]+cO[1]];
