@@ -14,13 +14,13 @@
 </head>
 <body>
 <main id="stage">
-  <canvas id="gl" role="img" aria-label="3D-деталь, вариант 5: фланец и усечённый конус со сквозным пирамидальным отверстием"></canvas>
+  <canvas id="gl" role="img" aria-label="3D-модель: вентиль угловой или деталь варианта 5"></canvas>
   <canvas id="hud" aria-hidden="true"></canvas>
 
   <!-- бренд и состояние -->
   <div id="brand">
     <a href="../" class="logo" title="На главную «Начерта»">НАЧЕРТ</a>
-    <span class="sub">Голограмма · вариант 5</span>
+    <span class="sub">Голограмма</span>
   </div>
   <div id="chips"><span class="chip" id="st">камера выключена</span><span class="chip mode" id="md"></span><span class="chip perf" id="pf" hidden></span></div>
 
@@ -36,6 +36,7 @@
     <details id="more" class="tool-more">
       <summary class="tool" title="Ещё"><i>⋯</i><span>Ещё</span></summary>
       <div class="menu">
+        <button id="model" type="button">🔁 Другая модель</button>
         <button id="tutor" type="button">🎓 Обучение жестам</button>
         <button id="rec" type="button" aria-pressed="false">● Записать точки рук</button>
         <label class="mi">⟲ Повтор записи<input id="replay" type="file" accept="application/json,.json" hidden></label>
@@ -52,6 +53,7 @@
       <li><i>🤏🤏</i><b>Зум</b><span>щипни двумя руками, разводи и своди</span></li>
       <li><i>👏</i><b>Разобрать</b><span>хлопни — части разлетятся, ещё раз — соберутся</span></li>
       <li><i>✊✊</i><b>Разобрать плавно</b><span>два кулака, разводи руки</span></li>
+      <li><i>🎡</i><b>Открыть вентиль</b><span>два кулака — поверни, как руль; клавиша O</span></li>
       <li><i>🖐</i><b>Разрез</b><span>ладонь ребром: горизонтально или вертикально</span></li>
       <li><i>☝️</i><b>Что это?</b><span>наведи указательный палец на часть</span></li>
       <li><i>🫰</i><b>Виды</b><span>щелчок пальцами: главный, сверху, слева</span></li>

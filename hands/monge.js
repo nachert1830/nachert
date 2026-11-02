@@ -47,7 +47,14 @@ export function createMonge(mesh, lines, surf, box) {
   /* очерк тел вращения для направления d (как в holo.js) */
   function sil(d) {
     const out = [], A = Math.hypot(d[0], d[1]); if (A < 1e-4) return out;
-    surf.forEach(([cx, cy, r0, r1, z0, z1]) => { const k = (r0 - r1) / (z1 - z0), c = -k * d[2] / A; if (Math.abs(c) > 1) return;
+    surf.forEach(sf => {
+      if (sf[0] === 'x') {                                              /* цилиндр вдоль x (патрубок): очерк — его контур на П₁ и П₂ */
+        const [, cy, cz, r, x0, x1] = sf; if (Math.hypot(d[1], d[2]) < 1e-4) return;
+        const p0 = Math.atan2(-d[1], d[2]);
+        for (const ph of [p0, p0 + Math.PI]) { const co = Math.cos(ph), si = Math.sin(ph); out.push([x0, cy + r * co, cz + r * si], [x1, cy + r * co, cz + r * si]); }
+        return;
+      }
+      const [, cx, cy, r0, r1, z0, z1] = sf; const k = (r0 - r1) / (z1 - z0), c = -k * d[2] / A; if (Math.abs(c) > 1) return;
       const al = Math.atan2(d[1], d[0]), ac = Math.acos(c);
       for (const ph of [al + ac, al - ac]) { const co = Math.cos(ph), si = Math.sin(ph); out.push([cx + r0 * co, cy + r0 * si, z0], [cx + r1 * co, cy + r1 * si, z1]); } });
     return out;

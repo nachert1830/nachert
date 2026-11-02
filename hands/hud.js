@@ -15,15 +15,9 @@ const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [
 const TIPS = [4, 8, 12, 16, 20];
 const INSET = 0.08;                                         /* поля кадра, которые не отображаются на окно */
 
-/* подписи частей варианта 5: высота z на оси части, радиус (выноска начинается на очерке), сторона выноски
-   (у пробок сторона выбирается по тому, где пробка на экране относительно детали) */
-export const LABELS = {
-  flange: { z: 12.5, r: 55, side: 1, s: 'Фланец Ø110', t: 'Фланец', d: 'цилиндр Ø110, высота 25' },
-  cone: { z: 75, r: 34, side: -1, s: 'Конус Ø80→Ø60', t: 'Усечённый конус', d: 'Ø80 → Ø60, высота 95' },
-  pyr: { z: 112, r: 12, side: 1, s: 'Пирамида-отверстие', t: 'Сквозное отверстие', d: 'правильная трёхгранная пирамида, вписана в Ø25 → Ø50' },
-  hole0: { z: 0, r: 5, side: -1, s: '4 отв. Ø10', t: '4 отверстия Ø10', d: 'на окружности Ø95, через 90°' }
-};
-
+/* подписи частей берутся из описания модели (model-*.js → labels):
+     { z, r, side } — точка на оси детали и радиус до очерка (деталь «вариант 5»);
+     { at: [x, y, z] } — точка на детали (сборка); сторона выноски у сборки чередуется по номерам позиций */
 export function createHud(canvas) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
@@ -88,16 +82,55 @@ export function createHud(canvas) {
   }
 
   /* выносные подписи частей при разборе */
+  /* сборка: выноски двумя колонками по бокам, как позиции на сборочном чертеже — в колонке подписи по высоте
+     и раздвинуты, чтобы не налезали; деталь уходит в колонку той стороны, где она на экране */
+  function drawCallouts(holo, k) {
+    const LB = holo.model.labels || {}, mid = holo.project([0, 0, 0]), items = [];
+    for (const id in LB) {
+      const lb = LB[id], part = holo.parts.find(p => p.id === id); if (!part || !lb.at) continue;
+      const o = holo.offset(id), c0 = holo.project([o[0], o[1], lb.at[2] + o[2]]); if (!c0) continue;
+      const side = c0[0] >= (mid ? mid[0] : W / 2) ? 1 : -1;
+      const p = holo.project([side * Math.abs(lb.at[0]) + o[0], lb.at[1] + o[1], lb.at[2] + o[2]]);
+      items.push({ lb, side, p, y: p[1] });
+    }
+    ctx.save(); ctx.globalAlpha = k; ctx.font = '600 13px system-ui,sans-serif';
+    for (const side of [-1, 1]) {
+      const col = items.filter(i => i.side === side).sort((a, b) => a.y - b.y); if (!col.length) continue;
+      const tw = Math.max(...col.map(i => ctx.measureText(i.lb.t).width));
+      const edge = side > 0 ? Math.max(...col.map(i => i.p[0])) + 50 : Math.min(...col.map(i => i.p[0])) - 50;
+      const x = side > 0 ? Math.min(edge, W - 44 - tw) : Math.max(edge, 8 + tw);
+      let y = -1e9; col.forEach(i => { i.ty = Math.max(i.y, y + 22); y = i.ty; });
+      const over = y - (H - 90); if (over > 0) col.forEach(i => { i.ty -= over; });          /* не уходим под нижнюю плашку */
+      col.forEach(i => {
+        ctx.strokeStyle = CY; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(i.p[0], i.p[1]); ctx.lineTo(x - side * 8, i.ty); ctx.stroke();
+        ctx.fillStyle = CY; ctx.beginPath(); ctx.arc(i.p[0], i.p[1], 2.5, 0, 7); ctx.fill();
+        ctx.textAlign = side > 0 ? 'left' : 'right'; ctx.fillStyle = CY; ctx.fillText(i.lb.t, x, i.ty + 4);
+      });
+    }
+    ctx.restore();
+  }
+
   function drawLabels(holo, view) {
     const k = Math.max(0, Math.min(1, (view.explode - 0.55) / 0.25)); if (k <= 0) return;
-    const L = holo.layout(view.explode);
+    if (holo.model.assembly) return drawCallouts(holo, k);
+    const LB = holo.model.labels || {};
     ctx.save(); ctx.globalAlpha = k; ctx.font = '600 13px system-ui,sans-serif';
-    const ppm = holo.pxPerMm(), mid = holo.project([0, 0, 60]), compact = W < 640;
-    for (const id in LABELS) {
-      const lb = LABELS[id], part = holo.parts.find(p => p.id === id); if (!part) continue;
-      const o = id.startsWith('hole') ? L.hole : L[id], ax = id.startsWith('hole') ? [part.c[0], part.c[1]] : [0, 0];
-      const c = holo.project([ax[0] + o[0], ax[1] + o[1], lb.z + o[2]]); if (!c) continue;
-      let side = lb.side; if (part.role === 'plug' && mid && Math.abs(c[0] - mid[0]) > 20) side = Math.sign(c[0] - mid[0]);
+    const ppm = holo.pxPerMm(), mid = holo.project([0, 0, 60]), compact = W < 640 || holo.model.assembly;
+    let n = 0;
+    for (const key in LB) {
+      const lb = LB[key], pid = lb.id || key, part = holo.parts.find(p => p.id === pid); if (!part) continue;
+      const o = holo.offset(pid);
+      let side = lb.side, c, rr = 0;
+      if (lb.at) {                                                       /* сборка: точка на детали, стороны — по очереди */
+        side = (n++ % 2) ? -1 : 1; const ax = side > 0 ? lb.at[0] : -lb.at[0];
+        c = holo.project([ax + o[0], lb.at[1] + o[1], lb.at[2] + o[2]]);
+      } else {
+        const ax = pid.startsWith('hole') ? [part.c[0], part.c[1]] : [0, 0];
+        c = holo.project([ax[0] + o[0], ax[1] + o[1], lb.z + o[2]]); rr = lb.r;
+        if (part.role === 'plug' && mid && c && Math.abs(c[0] - mid[0]) > 20) side = Math.sign(c[0] - mid[0]);
+      }
+      if (!c) continue;
+      lb.r = rr;
       /* не помещается — выноска на другую сторону; не помещается нигде (узкий экран) — текст прижимается к краю */
       const title = compact ? lb.s : lb.t, desc = compact ? '' : lb.d;        /* узкий экран — только короткое имя */
       ctx.font = '12px system-ui,sans-serif'; const tw = Math.max(ctx.measureText(desc).width, (ctx.font = '600 13px system-ui,sans-serif', ctx.measureText(title).width));
@@ -169,7 +202,7 @@ export function createHud(canvas) {
     for (let k = 0; k < (ptr.mouse ? 0 : 4); k++) { const a = k * Math.PI / 2 + t / 900; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 13, y + Math.sin(a) * 13); ctx.lineTo(x + Math.cos(a) * 20, y + Math.sin(a) * 20); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); }
     if (ptr.dwell > 0) ring(x, y, 16, AM, 3, -Math.PI / 2, -Math.PI / 2 + ptr.dwell * Math.PI * 2);
     if (hover && !ptr.quiz) {
-      const lb = LABELS[hover === 'holes' ? 'hole0' : hover]; if (lb) {
+      const lb = (holo.model.labels || {})[hover]; if (lb) {
         const side = x > W - 260 ? -1 : 1, tx = x + side * 30;
         ctx.textAlign = side > 0 ? 'left' : 'right';
         ctx.font = '600 14px system-ui,sans-serif'; const w1 = ctx.measureText(lb.t).width; ctx.font = '12px system-ui,sans-serif'; const w2 = ctx.measureText(lb.d).width;
