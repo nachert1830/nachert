@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#03060c">
-<!-- Та же строгость, что на сайте: только свои файлы. 'wasm-unsafe-eval' — для WebAssembly MediaPipe (без него wasm не компилируется). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<!-- Та же строгость, что на сайте: только свои файлы. 'wasm-unsafe-eval' — для WebAssembly MediaPipe (без него wasm не компилируется);
+     ntfy.sh — «почтовый ящик», через который телефон передаёт ответ соединения (только адреса и ключи, ~100 символов). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://ntfy.sh; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <title>Начерт · Голограмма</title>
 <link rel="preload" href="../fonts/geologica-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="hands.css">
@@ -26,6 +27,7 @@
   <!-- панель инструментов: слева на компьютере, снизу на телефоне -->
   <nav id="rail" aria-label="Инструменты">
     <button id="go" class="tool primary" title="Камера (C)"><i>✋</i><span>Руки</span></button>
+    <button id="ph" class="tool" title="Телефон как датчик рук: камера и распознавание — на телефоне, картинка — здесь"><i>📱</i><span>Телефон</span></button>
     <button id="mg" class="tool" title="Угол Монжа и эпюр (M); в режиме хлопок разворачивает"><i>📐</i><span>Эпюр</span></button>
     <button id="qz" class="tool" title="Проверь себя: найди части детали"><i>🎯</i><span>Тест</span></button>
     <button id="mode" class="tool" title="Голограмма / чертёж (H)" aria-pressed="false"><i>📄</i><span>Чертёж</span></button>
@@ -66,6 +68,20 @@
   <div id="cam"><video id="vid" playsinline muted></video><canvas id="ov"></canvas></div>
   <div id="err" role="alert"></div>
   <aside id="quiz" class="panel" role="status" hidden></aside>
+  <!-- сопряжение с телефоном: QR-код со ссылкой на датчик + веб-камера ищет ответный код -->
+  <aside id="pair" class="panel" hidden aria-label="Телефон как датчик рук">
+    <header><b>📱 Телефон — датчик рук</b><button type="button" class="x" id="pairX" aria-label="Закрыть">✕</button></header>
+    <div class="pairgrid">
+      <canvas id="pairQr" width="10" height="10" aria-label="QR-код со ссылкой на датчик"></canvas>
+      <div>
+        <p id="pairMsg">Готовлю код…</p>
+        <ol class="steps"><li>Открой камеру на айфоне и наведи на код</li><li>Нажми на ссылку и разреши камеру</li><li>Всё — управляй руками перед телефоном</li></ol>
+        <div class="pairvid" id="pairVidBox" hidden><video id="pairVid" playsinline muted></video><span>камера ноутбука ищет код с телефона</span></div>
+        <div class="row2"><button type="button" id="pairNew">Новый код</button></div>
+      </div>
+    </div>
+    <p class="mut">Телефон распознаёт руки сам и шлёт сюда только координаты пальцев — напрямую по Wi-Fi. Телефон и ноутбук — в одной сети.</p>
+  </aside>
 </main>
 <script type="module" src="app.js"></script>
 </body>
