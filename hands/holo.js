@@ -1,3 +1,4 @@
+import { createMonge } from './monge.js';
 /* Голограмма детали: свой WebGL-рендерер (WebGL 1, как просмотрщик сайта).
    Камера — та же, что у IG3.viewer: ортографическая, yaw/pit/zoom, сдвиг tx/ty по осям экрана, — поэтому вид
    совпадает с сайтом. Отличия — стиль и «разбор»: каждая часть детали рисуется со своим смещением.
@@ -103,12 +104,12 @@ void main(){
   float sweep=uAnim>.5?exp(-pow(fract(uT*.0004)*2.-1.-vU.y,2.)*40.)*.25:0.;
   gl_FragColor=vec4(uCol,(.05+grid*.10+edge*.85+sweep)*(uDraft>.5?.8:1.)); }`,
   gridV: 'attribute vec2 a;uniform mat4 uM;uniform float uZ;varying vec2 vP;void main(){vP=a;gl_Position=uM*vec4(a,uZ,1.);}',
-  gridF: `precision highp float;varying vec2 vP;uniform float uPx,uT,uAnim,uDraft;uniform vec3 uCol;
+  gridF: `precision highp float;varying vec2 vP;uniform float uPx,uT,uAnim,uDraft,uFade;uniform vec3 uCol;
 float ln(float v,float s,float w){ float d=abs(fract(v/s+.5)-.5)*s; return 1.-smoothstep(w*.5,w*1.5,d); }
 void main(){ float r=length(vP), fade=1.-smoothstep(120.,260.,r);
   float w=max(uPx,.2), g=max(ln(vP.x,10.,w),ln(vP.y,10.,w))*.35+max(ln(vP.x,50.,w*1.6),ln(vP.y,50.,w*1.6))*.65;
   float ring=exp(-pow((r-72.)/1.6,2.))*(uAnim>.5?.75+.25*sin(uT*.002):.85)+exp(-pow((r-78.)/.9,2.))*.35;
-  float a=(g*.32+ring*.6)*fade; if(uDraft>.5) a*=.55;
+  float a=(g*.32+ring*.6)*fade*uFade; if(uDraft>.5) a*=.55;
   gl_FragColor=vec4(uCol,a); }`
 };
 
@@ -128,6 +129,9 @@ export function createHolo(canvas, data, opt = {}) {
   const offA = ls => ls.forEach(l => { if (l >= 0) gl.disableVertexAttribArray(l); });
 
   const M = decode(data);
+  let MG = null;                                                 /* «угол Монжа» — считается при первом включении (~0,1 с) */
+  const monge = () => MG || (MG = createMonge(M.whole.pos, M.whole.lines, M.parts.filter(p => p.role === 'body').flatMap(p => p.surf), M.box));
+  const mgCache = new Map();
   const up = p => Object.assign(p, { mB: buf(p.pos), nB: buf(p.nrm), lB: buf(lineBuf(p.lines)), lN: p.lines.length / 6 * 6 });   /* 6 вершин на отрезок */
   up(M.whole); M.parts.forEach(up);
   const silB = gl.createBuffer();
@@ -138,10 +142,11 @@ export function createHolo(canvas, data, opt = {}) {
   let scale = 1;                                                 /* доля разрешения: снижается, если кадры не успевают */
 
   /* ── камера: как в IG3.viewer, плюс «рамка» по разобранной детали, чтобы всё помещалось ── */
-  function camera(view, w, h) {
+  function camera(view, w, h, extra) {
     const L = layout(view.explode || 0);
     const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
     M.parts.forEach(p => { const o = offsetOf(L, p.id); for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p.bb[0][k] + o[k]); hi[k] = Math.max(hi[k], p.bb[1][k] + o[k]); } });
+    if (extra) for (let k = 0; k < 3; k++) { lo[k] = lo[k] + (Math.min(lo[k], extra.lo[k]) - lo[k]) * extra.a; hi[k] = hi[k] + (Math.max(hi[k], extra.hi[k]) - hi[k]) * extra.a; }
     const C = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], R = Math.max(R0, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2 * 0.92);
     const cy = Math.cos(view.yaw), sy = Math.sin(view.yaw), cp = Math.cos(view.pit), sp = Math.sin(view.pit);
     const F = [sy * cp, cy * cp, -sp], Rv = norm(cross(F, [0, 0, 1])), Up = cross(Rv, F);
@@ -170,7 +175,8 @@ export function createHolo(canvas, data, opt = {}) {
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * scale, w = Math.max(2, Math.round(canvas.clientWidth * dpr)), h = Math.max(2, Math.round(canvas.clientHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, w, h);
-    const cam = camera(view, w, h), { MM, F, L } = cam, draft = mode === 'draft' ? 1 : 0, anim = o.reduced ? 0 : 1;
+    const mg = o.monge && o.monge.a > 0.001 ? o.monge : null, MGd = mg ? monge() : null;
+    const cam = camera(view, w, h, mg ? Object.assign({ a: mg.a }, MGd.bounds(mg.u)) : null), { MM, F, L } = cam, draft = mode === 'draft' ? 1 : 0, anim = o.reduced ? 0 : 1;
     const e = view.explode || 0, exploded = e > 0.002, px = cam.us / h;
     const flick = anim && !draft ? 0.97 + 0.03 * Math.sin(t * 0.013) * Math.sin(t * 0.0071) - (Math.sin(t * 0.0009) > 0.995 ? 0.12 : 0) : 1;
     const su = (t - scan.t0) / 1400, scanZ = !anim || su < 0 || su > 1 ? -1e5 : scan.z0 + (scan.z1 - scan.z0) * su;
@@ -181,7 +187,7 @@ export function createHolo(canvas, data, opt = {}) {
 
     /* пол и проекция на него */
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.useProgram(PG.p); gl.uniformMatrix4fv(PG.U.uM, false, MM); gl.uniform1f(PG.U.uZ, FLOOR); gl.uniform1f(PG.U.uPx, px); gl.uniform1f(PG.U.uT, t); gl.uniform1f(PG.U.uAnim, anim); gl.uniform1f(PG.U.uDraft, draft);
+    gl.useProgram(PG.p); gl.uniformMatrix4fv(PG.U.uM, false, MM); gl.uniform1f(PG.U.uZ, FLOOR); gl.uniform1f(PG.U.uPx, px); gl.uniform1f(PG.U.uT, t); gl.uniform1f(PG.U.uAnim, anim); gl.uniform1f(PG.U.uFade, mg ? 1 - mg.a : 1); gl.uniform1f(PG.U.uDraft, draft);
     gl.uniform3fv(PG.U.uCol, draft ? [0.35, 0.42, 0.5] : CY); { const l = attr(PG.p, 'a', gridB, 2); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([l]); }
 
     /* секущая плоскость (o.clip = {n:[3], w}): убираем dot(n, p) > w; штриховка — по диагонали в плоскости */
@@ -194,11 +200,15 @@ export function createHolo(canvas, data, opt = {}) {
       gl.uniform3fv(PL.U.uO, o3); gl.uniform1f(PL.U.uW, wd * dpr); gl.uniform3fv(PL.U.uCol, col); gl.uniform1f(PL.U.uA, a); gl.uniform1f(PL.U.uGlow, glow); gl.uniform1f(PL.U.uDash, dash || 0); gl.uniform1f(PL.U.uFlat, flat == null ? -1e9 : flat);
       const st = 36, x = attr(PL.p, 'aA', B, 3, st, 0), y = attr(PL.p, 'aB', B, 3, st, 12), z = attr(PL.p, 'aT', B, 3, st, 24); gl.drawArrays(gl.TRIANGLES, 0, n); offA([x, y, z]); };
     /* целиком — одной сеткой; разобрана или наведена указка — по частям (чтобы подсветить одну) */
-    const bodies = exploded || hov ? M.parts.filter(p => p.role === 'body') : [M.whole], plugs = M.parts.filter(p => p.role === 'plug');
+    const hideModel = !!(mg && mg.u > 0.3);                   /* эпюр разворачивается — деталь уходит */
+    const bodies = hideModel ? [] : exploded || hov ? M.parts.filter(p => p.role === 'body') : [M.whole], plugs = hideModel ? [] : M.parts.filter(p => p.role === 'plug');
     const O = p => (p === M.whole ? [0, 0, 0] : offsetOf(L, p.id));
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-    bodies.forEach(p => lines(p.lB, p.lN, O(p), 1.1, draft ? [0.3, 0.36, 0.44] : CY, draft ? 0.35 : 0.26, 0, 0, FLOOR + 0.2));
-    if (L.plugA > 0.01) plugs.forEach(p => lines(p.lB, p.lN, O(p), 1.0, AMBER, 0.2 * L.plugA, 0, 0, FLOOR + 0.2));
+    const floorA = mg ? 1 - mg.a : 1;
+    if (floorA > 0.01) {
+      bodies.forEach(p => lines(p.lB, p.lN, O(p), 1.1, draft ? [0.3, 0.36, 0.44] : CY, (draft ? 0.35 : 0.26) * floorA, 0, 0, FLOOR + 0.2));
+      if (L.plugA > 0.01) plugs.forEach(p => lines(p.lB, p.lN, O(p), 1.0, AMBER, 0.2 * L.plugA * floorA, 0, 0, FLOOR + 0.2));
+    }
 
     /* тела */
     gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
@@ -213,7 +223,7 @@ export function createHolo(canvas, data, opt = {}) {
     gl.disable(gl.POLYGON_OFFSET_FILL);
 
     /* очерк — в общий буфер: по частям, со своим смещением */
-    const sil = silhouettes(F), silBy = {};
+    const sil = hideModel ? [] : silhouettes(F), silBy = {};
     sil.forEach(s => { const k = exploded ? s.id : 'whole'; (silBy[k] = silBy[k] || []).push(s.a[0], s.a[1], s.a[2], s.b[0], s.b[1], s.b[2]); });
     const silDraw = (wd, col, a, glow, dash) => Object.keys(silBy).forEach(k => {
       const arr = lineBuf(silBy[k]); gl.bindBuffer(gl.ARRAY_BUFFER, silB); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
@@ -257,6 +267,34 @@ export function createHolo(canvas, data, opt = {}) {
       gl.disable(gl.STENCIL_TEST); gl.depthMask(false);
       /* сам лист — полупрозрачно поверх */
       gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(PP.U.uCap, 0); quad();
+    }
+
+    /* угол Монжа: три плоскости проекций, на них — видимые линии сплошной, невидимые штрихом; развёртка в эпюр */
+    if (mg) {
+      const u = mg.u, key = u.toFixed(3), A = mg.a;
+      gl.useProgram(PP.p); gl.uniformMatrix4fv(PP.U.uM, false, MM); gl.uniform1f(PP.U.uCap, 0); gl.uniform1f(PP.U.uT, t); gl.uniform1f(PP.U.uAnim, 0); gl.uniform1f(PP.U.uDraft, draft);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+      ['p1', 'p2', 'p3'].forEach(k => {
+        const fr = MGd.frame(k, u), [a, b, c, d] = fr, sz = [Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / 2, Math.hypot(d[0] - a[0], d[1] - a[1], d[2] - a[2]) / 2];
+        const V = [[a, -1, -1], [b, 1, -1], [c, 1, 1], [a, -1, -1], [c, 1, 1], [d, -1, 1]].flatMap(([q, su, sv]) => [...q, su, sv]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, planeB); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(V), gl.DYNAMIC_DRAW);
+        gl.useProgram(PP.p); gl.uniform3fv(PP.U.uCol, draft ? [0.25, 0.45, 0.65] : CY); gl.uniform2f(PP.U.uSz, sz[0], sz[1]);
+        const x = attr(PP.p, 'a', planeB, 3, 20, 0), y = attr(PP.p, 'b', planeB, 2, 20, 12); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([x, y]);
+      });
+      const get = (k, which) => { const id = k + which + key; let e = mgCache.get(id);
+        if (!e) { if (mgCache.size > 24) { for (const [kk, vv] of mgCache) { gl.deleteBuffer(vv.b); mgCache.delete(kk); if (mgCache.size < 12) break; } }
+          const P = MGd.segs(k, which, u), f = new Float32Array(P.length * 3); P.forEach((q, i) => { f[3 * i] = q[0]; f[3 * i + 1] = q[1]; f[3 * i + 2] = q[2]; });
+          const arr = lineBuf(f); e = { b: buf(arr), n: arr.length / 9 }; mgCache.set(id, e); }
+        return e; };
+      const col = draft ? [0.08, 0.09, 0.11] : [0.80, 0.97, 1.0];
+      gl.depthFunc(gl.LEQUAL);
+      ['p1', 'p2', 'p3'].forEach(k => {
+        const v = get(k, 'vis'), h = get(k, 'inv');
+        if (!draft) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE); lines(v.b, v.n, [0, 0, 0], 5, CY, 0.45 * A, 1); }
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        lines(v.b, v.n, [0, 0, 0], 1.5, col, A, 0); lines(h.b, h.n, [0, 0, 0], 1.3, draft ? [0.2, 0.22, 0.26] : [0.55, 0.9, 1.0], A, 0, 6);   /* штрих 6 мм: при мелком масштабе эпюра 3 мм сливались в точки */
+      });
+      gl.uniform1f(PL.U.uClipOn, clipOn);
     }
 
     /* пробки — вынутый материал: поверх (они совпадают со стенками отверстий), сложение цветов */
@@ -305,6 +343,7 @@ export function createHolo(canvas, data, opt = {}) {
   return {
     gl, draw, project, pick, layout, parts: M.parts, floor: FLOOR, box: M.box,
     camera: () => last,
+    mongeInfo: () => MG,
     pxPerMm: () => (last ? canvas.clientHeight / last.us : 1),
     setMode(m) { mode = m; }, get mode() { return mode; },
     setScale(k) { scale = Math.max(0.4, Math.min(1, k)); }, get scale() { return scale; },

@@ -14,7 +14,7 @@
      щипок + кулак второй рукой   — панорама (двигает рука со щипком);
      два кулака                   — «взять и разобрать»: развёл руки — деталь раскрылась, свёл — собралась;
      открытая ладонь 1,5 с        — сброс вида;
-     кулак                        — «поймать» крутящуюся по инерции деталь;
+     кулак                        — тоже вращение («схватил и крутишь»); ловит крутящуюся по инерции деталь;
      хлопок                       — деталь разлетается на части / собирается (событие clap);
      щелчок (большой + средний)   — следующий стандартный вид: главный → сверху → слева → изометрия;
      ребро ладони («лезвие»)      — секущая плоскость: ладонь горизонтально — горизонтальный разрез,
@@ -264,19 +264,21 @@ export function createController(opt = {}) {
         if (step(e) !== step(v.explode)) ev.push({ type: 'explode-step', e, t });
         v.explode = e;
       }
-    } else if (pins.length === 1 && fists.length === 0) {
-      const h = pins[0];
-      if ((multi || h.poseT <= ctl.multiEnd) && ctl.mode !== 'rotate') begin('wait', t, ev);       /* щипок пережил двуручный жест — ждём свежий */
+    } else if ((pins.length === 1 && fists.length === 0) || (fists.length === 1 && pins.length === 0)) {
+      /* вращение: щипок (точно) или кулак («схватил и крутишь» — естественнее и не устаёт) */
+      const h = pins[0] || fists[0], at = h.pose === 'fist' ? h.palmC : h.pin;
+      if ((multi || h.poseT <= ctl.multiEnd) && ctl.mode !== 'rotate') begin('wait', t, ev);       /* хватка пережила двуручный жест — ждём свежую */
       else {
-        begin('rotate', t, ev, { x: h.pin.x, y: h.pin.y, id: h.id, hist: [{ t, yaw: v.yaw, pit: v.pit }] });
+        if (ctl.mode === 'rotate' && ctl.g && ctl.g.id !== h.id) begin('idle', t, ev);
+        begin('rotate', t, ev, { x: at.x, y: at.y, id: h.id, hist: [{ t, yaw: v.yaw, pit: v.pit }] });
         const g = ctl.g;
         if (stable(h)) {
-          const dx = dz(h.pin.x - g.x), dy = dz(h.pin.y - g.y);
+          const dx = dz(at.x - g.x), dy = dz(at.y - g.y);
           v.yaw -= dx * cfg.rotGain; v.pit = clamp(v.pit + dy * cfg.rotGain, cfg.pitMin, cfg.pitMax);
-          if (dx) g.x = h.pin.x; if (dy) g.y = h.pin.y;
+          if (dx) g.x = at.x; if (dy) g.y = at.y;
           g.hist.push({ t, yaw: v.yaw, pit: v.pit }); while (g.hist.length > 2 && t - g.hist[0].t > 300) g.hist.shift();
           g.relT = 0;
-        } else if (!g.relT && h.present && h.cand && h.cand !== 'pinch') g.relT = h.candT;   /* пальцы начали размыкаться */
+        } else if (!g.relT && h.present && h.cand && h.cand !== h.pose) g.relT = h.candT;   /* хватка начала разжиматься */
       }
     } else if (by('blade').length && !pins.length && !fists.length) {
       /* лезвие: секущая плоскость идёт за ребром ладони; где она в мире — считает app.js (нужна камера) */
@@ -342,5 +344,5 @@ const LABEL = {
   rotate: () => 'вращение', zoom: v => 'зум ×' + v.zoom.toFixed(2), pan: () => 'панорама',
   explode: v => 'разбор ' + Math.round(v.explode * 100) + '%', reset: () => 'держи ладонь — сброс вида',
   section: () => 'разрез — веди ребром ладони', point: () => 'указка',
-  wait: () => 'отпусти щипок и щипни снова', idle: () => ''
+  wait: () => 'отпусти и схвати снова', idle: () => ''
 };

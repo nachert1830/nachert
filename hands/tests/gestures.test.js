@@ -146,6 +146,15 @@ test('разбор держится после того, как руки отп�
   const e = c.view.explode; run(c, 933, 1500, () => [hand({ pose: 'idle', cx: 0.35 }), hand({ pose: 'idle', cx: 0.65, seed: 3 })]);
   assert.equal(c.view.explode, e); assert.ok(e > 0.8);
 });
+test('кулак тоже вращает: схватил и повёл — деталь поворачивается; отпустил на ходу — инерция', () => {
+  const c = ctlNew(), y0 = c.view.yaw;
+  run(c, 0, 300, () => [hand({ pose: 'fist', cx: 0.4 })]);
+  run(c, 333, 900, t => [hand({ pose: 'fist', cx: lerp(0.4, 0.55, (t - 333) / 500) })]);
+  near(y0 - c.view.yaw, 0.15 * CFG.rotGain, 0.08, 'yaw');
+  run(c, 933, 1200, t => [hand({ pose: 'fist', cx: lerp(0.55, 0.8, (t - 933) / 200) })]);
+  const fr = run(c, 1233, 1500, () => [hand({ pose: 'open', cx: 0.8 })]);
+  assert.equal(events(fr, 'fling').length, 1);
+});
 test('кулак не путается со щипком (большой палец лежит на указательном)', () => {
   const c = ctlNew(), fr = run(c, 0, 800, () => [hand({ pose: 'fist' })]);
   assert.equal(events(fr, 'pinch-on').length, 0);

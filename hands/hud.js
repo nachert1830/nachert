@@ -166,7 +166,8 @@ export function createHud(canvas) {
     ctx.save();
     if (!ptr.mouse) ring(x, y, 10, col, 2), ring(x, y, 3, col, 2);
     for (let k = 0; k < (ptr.mouse ? 0 : 4); k++) { const a = k * Math.PI / 2 + t / 900; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 13, y + Math.sin(a) * 13); ctx.lineTo(x + Math.cos(a) * 20, y + Math.sin(a) * 20); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); }
-    if (hover) {
+    if (ptr.dwell > 0) ring(x, y, 16, AM, 3, -Math.PI / 2, -Math.PI / 2 + ptr.dwell * Math.PI * 2);
+    if (hover && !ptr.quiz) {
       const lb = LABELS[hover === 'holes' ? 'hole0' : hover]; if (lb) {
         const side = x > W - 260 ? -1 : 1, tx = x + side * 30;
         ctx.textAlign = side > 0 ? 'left' : 'right';
@@ -181,23 +182,28 @@ export function createHud(canvas) {
     ctx.restore();
   }
 
-  /* разрез: подпись снизу по центру */
+  /* разрез: подпись вверху по центру */
   function drawSection(sec) {
     if (!sec) return;
     ctx.save(); ctx.font = '600 13px ui-monospace,SFMono-Regular,Menlo,monospace'; ctx.textAlign = 'center';
     const text = sec.title.toUpperCase() + (sec.value ? '  ·  ' + sec.value : ''), w = ctx.measureText(text).width + 28;
-    ctx.fillStyle = 'rgba(4,12,24,.85)'; ctx.strokeStyle = CY; ctx.lineWidth = 1; ctx.beginPath(); ctx.rect(W / 2 - w / 2, H - 70, w, 28); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = CY; ctx.fillText(text, W / 2, H - 51);
-    if (sec.hint) { ctx.font = '11px system-ui,sans-serif'; ctx.fillStyle = TXT; ctx.fillText(sec.hint, W / 2, H - 78); }
+    const Y = 52;                                                   /* вверху, под чипами: внизу — обучение и подсказка */
+    ctx.fillStyle = 'rgba(4,12,24,.85)'; ctx.strokeStyle = CY; ctx.lineWidth = 1; ctx.beginPath(); ctx.rect(W / 2 - w / 2, Y, w, 28); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = CY; ctx.fillText(text, W / 2, Y + 19);
+    if (sec.hint) { ctx.font = '11px system-ui,sans-serif'; ctx.fillStyle = TXT; ctx.fillText(sec.hint, W / 2, Y + 44); }
     ctx.restore();
   }
 
-  function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null }) {
+  function drawPlanes(P) {
+    if (!P) return; ctx.save(); ctx.font = '600 13px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = CY;
+    P.forEach(q => ctx.fillText(q.text, q.x, q.y)); ctx.restore();
+  }
+  function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null, planes = null }) {
     usePal(holo.mode); size(); ctx.clearRect(0, 0, W, H);
     drawFrame(view, info);
     if (showLabels) drawLabels(holo, view);
     drawGauge(view, frame || { mode: '' });
-    drawSection(section);
+    drawSection(section); drawPlanes(planes);
     moving = false; seen = new Set();
     if (frame) frame.hands.forEach(h => drawHand(h, frame, t, reduced));
     for (const id of shownPts.keys()) if (!seen.has(id)) shownPts.delete(id);

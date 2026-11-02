@@ -14,10 +14,14 @@
   <b class="brand">НАЧЕРТ</b><span class="tag">голограмма · вариант 5</span>
   <span class="sp"></span>
   <button id="go" title="Камера (C)">✋ Включить руки</button>
-  <button id="mode" title="Голограмма / чертёж (H)" aria-pressed="false">◐ Чертёж</button>
+  <button id="mode" title="Чертёж (H)" aria-pressed="false">◐</button>
   <button id="snd" title="Звук (S)" aria-pressed="false">🔇</button>
-  <button id="rec" title="Записать точки рук для настройки порогов (Z)" aria-pressed="false">● Запись</button>
-  <label class="btn" title="Воспроизвести запись (JSON)">⟲ <input id="replay" type="file" accept="application/json,.json" hidden>Повтор</label>
+  <button id="rec" title="Записать точки рук для настройки порогов (Z)" aria-pressed="false" aria-label="Запись">●</button>
+  <button id="mg" title="Угол Монжа и эпюр (M; в режиме — хлопок разворачивает)">📐 Эпюр</button>
+  <button id="qz" title="Проверь себя: найди части детали">🎯 Тест</button>
+  <button id="tutor" title="Обучение жестам" aria-label="Обучение">🎓</button>
+  <button id="diag" title="Диагностика: скопировать отчёт о скорости" aria-label="Диагностика">📋</button>
+  <label class="btn" title="Воспроизвести запись (JSON)" aria-label="Повтор записи">⟲<input id="replay" type="file" accept="application/json,.json" hidden></label>
 </header>
 <main id="stage">
   <canvas id="gl" role="img" aria-label="3D-деталь, вариант 5: фланец и усечённый конус со сквозным пирамидальным отверстием"></canvas>
@@ -41,6 +45,7 @@
   </aside>
   <div id="cam"><video id="vid" playsinline muted></video><canvas id="ov"></canvas></div>
   <div id="err" role="alert"></div>
+  <aside id="quiz" role="status" hidden></aside>
 </main>
 <script type="module" src="app.js"></script>
 </body>
