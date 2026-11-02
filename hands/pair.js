@@ -1,16 +1,14 @@
 /* Ноутбук: телефон как датчик рук.
-   start(): предложение соединения → QR-код со ссылкой на страницу-датчик (sensor.html#o=…&r=ящик) → телефон
-   сканирует его, открывает ссылку и кладёт ответ в «почтовый ящик» (ntfy.sh) → ноутбук слушает ящик → прямой канал
-   WebRTC. Телефону достаточно отсканировать один код. Дальше с телефона приходят только точки рук.
-   Запасной путь (ящик недоступен): scanFallback() — веб-камера ноутбука считывает ответный код с экрана телефона. */
+   start(): QR-код со ссылкой на страницу-датчик (sensor.html#o=предложение&r=канал&q=брокер). Телефон сканирует его —
+   и всё. Связь двумя путями сразу:
+     • брокер MQTT (публичный, по WebSocket) — знакомство устройств и запасной путь для точек рук: работает через
+       любые сети — VPN, мобильный интернет, разные Wi-Fi;
+     • прямой канал WebRTC — если устройства видят друг друга (одна сеть, без VPN): быстрее, без посредника.
+   Точки рук принимаются с любого пути; телефон сам выбирает прямой, когда он есть.
+   Через брокер идут только координаты пальцев (~0,5 КБ на кадр) — видео остаётся на телефоне. */
 import qrcode from './vendor/qr/qrcode.mjs';
-import { packSDP, unpackSDP, gathered, STUN, decodeHands, RELAY, newTopic, relayListen } from './link.js';
-
-let jsqrP = null;
-const loadJsQR = () => jsqrP || (jsqrP = new Promise((res, rej) => {
-  if (window.jsQR) return res(window.jsQR);
-  const s = document.createElement('script'); s.src = 'vendor/qr/jsQR.js'; s.onload = () => res(window.jsQR); s.onerror = () => rej(new Error('не загрузился распознаватель QR')); document.head.appendChild(s);
-}));
+import { packSDP, unpackSDP, gathered, STUN, decodeHands } from './link.js';
+import { connectMqtt, BROKERS } from './mqtt.js';
 
 export function drawQR(canvas, text) {
   const q = qrcode(0, 'L'); q.addData(text); q.make();
@@ -18,79 +16,85 @@ export function drawQR(canvas, text) {
   const g = canvas.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); g.fillStyle = '#000';
   for (let r = 0; r < N; r++) for (let k = 0; k < N; k++) if (q.isDark(r, k)) g.fillRect((k + m) * s, (r + m) * s, s, s);
 }
+const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 
 export function createPairing({ onHands, onOpen, onClose, onStatus }) {
-  let pc = null, dc = null, scan = null, ping = 0, box = null, applied = false;
-  const st = { state: 'idle', rtt: 0, fps: 0, phoneMs: 0, n: 0, t0: 0 };
+  let pc = null, dc = null, mq = null, ping = 0, applied = false, ch = '', lastSeen = 0, watch = 0;
+  const st = { state: 'idle', path: '', rtt: 0, fps: 0, phoneMs: 0, n: 0, t0: 0, log: [] };      /* path: 'прямо' | 'интернет' */
 
-  async function stopScan() { if (!scan) return; scan.stop = true; scan.stream && scan.stream.getTracks().forEach(t => t.stop()); scan = null; }
-
-  /* ответ телефона — QR-кодом на экране телефона перед веб-камерой ноутбука */
-  async function scanAnswer(video, apply) {
-    const jsQR = await loadJsQR();
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-    scan = { stream, stop: false }; const my = scan;
-    video.srcObject = stream; await video.play();
-    const c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true });
-    const tick = async () => {
-      if (my.stop) return;
-      const W = video.videoWidth, H = video.videoHeight;
-      if (W) { c.width = W; c.height = H; g.drawImage(video, 0, 0);
-        const code = jsQR(g.getImageData(0, 0, W, H).data, W, H, { inversionAttempts: 'dontInvert' });
-        if (code && /^1~/.test(code.data)) { my.stop = true; try { await apply(code.data); } catch (e) { onStatus('Код считан, но не подошёл: ' + e.message + '. Нажми «Новый код».'); } return; } }
-      setTimeout(tick, 120);
-    };
-    tick();
+  const opened = path => {
+    st.path = path; lastSeen = performance.now();
+    if (st.state === 'on') { onStatus('Телефон: связь ' + (path === 'прямо' ? 'напрямую' : 'через интернет')); return; }
+    st.state = 'on'; st.t0 = performance.now(); st.n = 0; onOpen();
+    clearInterval(ping); ping = setInterval(sendPing, 1000);
+    /* телефон замолчал на 6 с (закрыли вкладку, ушёл из сети) — считаем отключённым */
+    /* сторож — только когда руки уже шли: до этого телефон может долго грузить и прогревать модель */
+    clearInterval(watch); watch = setInterval(() => { if (st.state === 'on' && st.got && performance.now() - lastSeen > 10000) { onStatus('Телефон пропал'); stop(); } }, 1500);
+  };
+  function sendPing() {
+    const m = JSON.stringify({ k: 'p', t: performance.now() });
+    if (dc && dc.readyState === 'open') dc.send(m); else if (mq) mq.publish(ch + '/down', m);
   }
-
-  /* ответ телефона применяется один раз — пришёл ли он через ящик или запасным кодом */
+  /* сообщение телефона — с любого пути */
+  function onMsg(text, path) {
+    if (/^1~/.test(text)) { apply(text); return; }
+    let m; try { m = JSON.parse(text); } catch (_) { return; }
+    const now = performance.now(); lastSeen = now;
+    if (st.state !== 'on' && m.k !== 'bye') opened(path);                 /* телефон на связи — любое его сообщение */
+    if (m.k === 'h') {
+      if (st.state !== 'on') opened(path);
+      else if (path === 'прямо' && st.path !== 'прямо') opened('прямо');  /* прямой путь появился позже — переходим на него */
+      if (path === 'интернет' && st.path === 'прямо') return;           /* прямой путь есть — дубли через брокер не нужны */
+      st.got = true; st.n++; st.phoneMs = m.ms || 0; if (now - st.t0 > 1000) { st.fps = st.n * 1000 / (now - st.t0); st.n = 0; st.t0 = now; }
+      onHands(decodeHands(m), now);
+    } else if (m.k === 'q') st.rtt = 0.7 * st.rtt + 0.3 * (now - m.t);
+    else if (m.k === 's') { st.log.push(m.text); onStatus('Телефон: ' + m.text); }
+    else if (m.k === 'bye') { onStatus('Телефон отключился'); stop(); }
+  }
   async function apply(text) {
-    if (applied || !pc || !/^1~/.test(text)) return; applied = true;
+    if (applied || !pc) return; applied = true;
     onStatus('Телефон ответил — соединяюсь…');
-    try { await pc.setRemoteDescription(unpackSDP(text, 'answer')); }
-    catch (e) { applied = false; onStatus('Ответ телефона не подошёл: ' + e.message + '. Нажми «Новый код».'); }
+    try { await pc.setRemoteDescription(unpackSDP(text, 'answer')); } catch (e) { onStatus('Прямой канал не собрался (' + e.message + ') — работаем через интернет'); }
   }
 
   async function start(qrCanvas, video, opt = {}) {
-    stop(); st.state = 'pairing'; applied = false;
-    /* Chrome без разрешения камеры прячет адрес ноутбука за временным именем «….local», а Safari на айфоне такие имена
-       не разрешает — телефон не находит ноутбук. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
+    stop(); st.state = 'pairing'; applied = false; st.path = ''; st.log = []; st.got = false;
+    ch = 'nachert/' + newId();
+    const brokers = opt.brokers || BROKERS;
+    onStatus('Подключаюсь к сервису связи…');
+    /* брокер — первым: через него придёт ответ телефона и, если нужно, точки рук */
+    mq = await connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет'));
+    mq.subscribe(ch + '/up');
+    mq.onclose = () => { if (st.state === 'pairing') onStatus('Связь с сервисом оборвалась — нажми «Новый код»'); };
+    /* Chrome без разрешения камеры прячет адрес ноутбука за «….local», а Safari такие имена не разрешает —
+       прямой канал не сложится. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
     try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); s.getTracks().forEach(t => t.stop()); } catch (_) {}
-    const base = opt.relay || RELAY, topic = newTopic();
-    box = relayListen(base, topic, text => {                           /* слушаем ящик заранее — до того, как телефон ответит */
-      if (text.startsWith('S~')) { onStatus('Телефон: ' + text.slice(2)); return; }
-      apply(text); });
-    pc = new RTCPeerConnection({ iceServers: STUN });
-    dc = pc.createDataChannel('hands', { ordered: false, maxRetransmits: 0 });   /* старые точки не нужны — без повторов */
-    dc.onopen = () => { st.state = 'on'; st.t0 = performance.now(); st.n = 0; stopScan(); if (box) { box.close(); box = null; } onOpen();
-      ping = setInterval(() => { if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ k: 'p', t: performance.now() })); }, 1000); };
-    dc.onmessage = e => { const m = JSON.parse(e.data), now = performance.now();
-      if (m.k === 'h') { st.n++; st.phoneMs = m.ms || 0; if (now - st.t0 > 1000) { st.fps = st.n * 1000 / (now - st.t0); st.n = 0; st.t0 = now; } onHands(decodeHands(m), now); }
-      else if (m.k === 'q') st.rtt = 0.7 * st.rtt + 0.3 * (now - m.t); };
-    dc.onclose = () => { if (st.state !== 'idle') { st.state = 'idle'; clearInterval(ping); onClose(); } };
-    pc.onconnectionstatechange = () => { if (pc && pc.connectionState === 'failed') { applied = false; onStatus('Не соединилось: телефон и ноутбук не видят друг друга. Нужна одна сеть Wi-Fi (не гостевая), на телефоне — без мобильных данных. Нажми «Новый код».'); } };
-    await pc.setLocalDescription(await pc.createOffer());
-    await gathered(pc);
-    const code = packSDP(pc.localDescription.sdp);
+    let code = '';
+    try {
+      pc = new RTCPeerConnection({ iceServers: STUN });
+      dc = pc.createDataChannel('hands', { ordered: false, maxRetransmits: 0 });   /* старые точки не нужны — без повторов */
+      dc.onopen = () => opened('прямо');
+      dc.onmessage = e => onMsg(e.data, 'прямо');
+      dc.onclose = () => { if (st.path === 'прямо' && st.state === 'on') { st.path = 'интернет'; onStatus('Прямой канал закрылся — продолжаю через интернет'); } };
+      await pc.setLocalDescription(await pc.createOffer());
+      await gathered(pc, 2500);
+      code = packSDP(pc.localDescription.sdp);
+    } catch (e) { console.warn('прямой канал недоступен', e); code = ''; }
     const url = new URL('sensor.html', location.href);
-    url.hash = 'o=' + encodeURIComponent(code) + '&r=' + topic + (base !== RELAY ? '&b=' + encodeURIComponent(base) : '');
+    url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + '&q=' + encodeURIComponent(mq.url);
     drawQR(qrCanvas, url.href);
-    const addrs = (code.split('~')[5] || '').split(';').filter(Boolean).map(c => c.split(',')[1]);
-    st.addrs = addrs;
-    onStatus('Наведи камеру айфона на код и открой ссылку — дальше всё само.' + (addrs.length && addrs.every(a => /\.local$/.test(a)) ? ' (Адрес ноутбука скрыт браузером — разреши камеру этому сайту, иначе телефон может его не найти.)' : ''));
-    st.video = video;
+    onStatus('Наведи камеру айфона на код и открой ссылку — дальше всё само. Работает и с VPN, и через мобильный интернет.');
     return url.href;
   }
-  /* запасной путь: ящик недоступен — телефон показывает ответный код, веб-камера ноутбука его считывает */
-  async function scanFallback() { if (!pc || scan) return; onStatus('Поднеси экран телефона с кодом к веб-камере ноутбука…'); await scanAnswer(st.video, apply); }
 
   function stop() {
-    stopScan(); clearInterval(ping); if (box) { box.close(); box = null; }
+    clearInterval(ping); clearInterval(watch);
     const was = st.state; st.state = 'idle';
+    try { if (mq) { mq.publish(ch + '/down', JSON.stringify({ k: 'bye' })); mq.close(); } } catch (_) {}
     try { dc && dc.close(); pc && pc.close(); } catch (_) {}
-    pc = dc = null; if (was === 'on') onClose();
+    pc = dc = mq = null; if (was === 'on') onClose();
   }
-  /* для тестов: ответ строкой, без камеры */
-  async function answer(text) { await stopScan(); await apply(text); }
-  return { start, stop, answer, scanFallback, st, get offerSDP() { return pc && pc.localDescription && pc.localDescription.sdp; } };
+  /* для тестов: ответ строкой */
+  async function answer(text) { await apply(text); }
+  return { start, stop, answer, st, get offerSDP() { return pc && pc.localDescription && pc.localDescription.sdp; } };
 }
