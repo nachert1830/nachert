@@ -352,7 +352,7 @@ async function initDetector() {
    На встроенной графике MediaPipe-GPU делит видеокарту с голограммой: руки быстрые, а экран дёргается —
    поэтому в оценке и время распознавания, и интервал кадров экрана. Выбор запоминается для этой видеокарты. */
 const calib = { phase: '', t0: 0, res: {}, det: [], scr: [] };
-const CAL_MS = 2500, calKey = 'hands.delegate:' + gpuName;
+const CAL_MS = 2500, calKey = 'hands.delegate.v2:' + gpuName;
 function calibStart() {
   const saved = load(calKey);
   if (saved === 'GPU' || saved === 'CPU') { calib.phase = 'done'; calib.res.saved = saved; tried = false; return saved; }
