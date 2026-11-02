@@ -60,24 +60,46 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
   const o=DEMO.make(), dm=o.drawings[0], PX=(u,v)=>[u*5+700,v*5+800], box=[250,400,800,1200], pad=40, X0=box[0]-pad, Y0=box[1]-pad;
   const cp=(u,v)=>{ const p=PX(u,v); return [Math.round(p[0]-X0),Math.round(p[1]-Y0)]; };
   const text=dm.mm.pts.map(q=>'P '+q[0]+' '+cp(q[1],q[2]).join(' ')).concat(dm.mm.segs.filter(s=>s.src!=='found').map(s=>'S '+cp(s.p[0],s.p[1]).concat(cp(s.p[2],s.p[3])).join(' ')+(s.dash?' d':''))).join('\n');
-  const calls={layout:0,crop:0};
+  const calls={layout:0,crop:0,crop2:0}, ans={crop:text,crop2:text};
   await pg.route(/functions\.yandexcloud\.net/,async r=>{ const q=r.request(); if(q.method()==='GET') return r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"scan":true,"codeOk":true}'});
     const b=JSON.parse(q.postData()||'{}'); calls[b.mode]=(calls[b.mode]||0)+1;
-    const k=800/2000, t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*k)),part:1}]}):text;
+    const k=800/2000, t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*k)),part:1}]}):ans[b.mode];
     return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:t,mode:b.mode,cost:0})}); });
   await pg.evaluate(()=>{ localStorage.setItem('scanCode','тест'); }); await pg.reload(); await pg.waitForTimeout(500); await pg.click('.tab[data-tab="check"]');
   const segs=dm.mm.segs.filter(s=>!s.unverified).map(s=>({a:PX(s.p[0],s.p[1]),b:PX(s.p[2],s.p[3]),dash:s.dash}));
-  const res=await pg.evaluate(async segs=>{ const c=document.createElement('canvas'); c.width=1500; c.height=2000; const g=c.getContext('2d'); g.fillStyle='#f4f2ec'; g.fillRect(0,0,1500,2000); g.strokeStyle='#3a3a3a'; g.lineWidth=3; g.lineCap='round';
+  const scanOnce=prec=>pg.evaluate(async([segs,prec])=>{ localStorage.setItem('lk_scanPrec',prec); document.getElementById('scPrec').value=prec; const c=document.createElement('canvas'); c.width=1500; c.height=2000; const g=c.getContext('2d'); g.fillStyle='#f4f2ec'; g.fillRect(0,0,1500,2000); g.strokeStyle='#3a3a3a'; g.lineWidth=3; g.lineCap='round';
       segs.forEach(s=>{ g.setLineDash(s.dash?[18,9]:[]); g.beginPath(); g.moveTo(s.a[0],s.a[1]); g.lineTo(s.b[0],s.b[1]); g.stroke(); });
       const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.9)), f=new File([blob],'лист.jpg',{type:'image/jpeg'});
       await LKSCAN.scan(f); const dr=LKSCAN.dr; if(!dr) return {err:document.getElementById('scSteps').textContent};
       DRAWINGS.issues(dr).filter(i=>i.fix&&i.fix.k==='rename').forEach(i=>DRAWINGS.apply(dr,i.fix));   /* «C» без штриха → C′ */
-      const sp=DRAWINGS.space(dr); return {dz:dr.dz,n:dr.n,rms:dr.rms,approx:dr.approx,pts:Object.fromEntries(Object.values(sp.pts).map(p=>[p.name,p.P])),edges:sp.edges.length,unv:dr.segs.filter(s=>s.unv).length,ph:!!dr.ph,photo:!!document.getElementById('edPhoto')}; },segs);
+      const sp=DRAWINGS.space(dr); return {dz:dr.dz,n:dr.n,rms:dr.rms,approx:dr.approx,pts:Object.fromEntries(Object.values(sp.pts).map(p=>[p.name,p.P])),edges:sp.edges.length,unv:dr.segs.filter(s=>s.unv).length,ph:!!dr.ph,photo:!!document.getElementById('edPhoto'),
+        segs:dr.segs.map(s=>[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2]),labels:dr.pts.map(p=>p.l),steps:document.getElementById('scSteps').textContent}; },[segs,prec]);
+  const res=await scanOnce('auto');
   if(res.err) B('конвейер сканера на синтетическом фото',res.err.slice(0,240));
   else { if(res.dz!==3||res.n!==21) B('конвейер: привязка к ДЗ №3 в.21','ДЗ '+res.dz+' в.'+res.n);
     ['A','B','C','S'].forEach(n=>{ if(!res.pts[n]||!near(res.pts[n],DEMO.DATA[n],3)) B('конвейер: 3D-точка '+n,res.pts[n]?res.pts[n].map(v=>v.toFixed(1)).join(', '):'нет'); });
     if(res.edges!==6) B('конвейер: 6 рёбер пирамиды',res.edges); if(!res.ph) B('конвейер: привязка фото к копии','нет');
-    if(calls.layout!==1||calls.crop!==1) B('конвейер: запросы к облаку — раскладка и один чертёж',JSON.stringify(calls)); }
+    if(calls.layout!==1||calls.crop!==1||calls.crop2!==0) B('конвейер: хорошая первая оцифровка — без второй проверки',JSON.stringify(calls)); }
+  /* 3б. «максимальная точность»: первая модель пропустила рёбра SA и точку S′, вторая их нашла — и выдумала линию, которой на бумаге нет */
+  { const fakeMm=[[-75,25],[-60,45]], fake='S '+cp(...fakeMm[0]).concat(cp(...fakeMm[1])).join(' '), sa=new Set(['S″','S′']);
+    const lack=dm.mm.segs.filter(s=>s.src!=='found').filter(s=>{ const hit=q=>dm.mm.pts.some(p=>sa.has(p[0])&&Math.hypot(p[1]-q[0],p[2]-q[1])<0.6), A=dm.mm.pts.filter(p=>/^A/.test(p[0]));
+      return hit([s.p[0],s.p[1]])&&A.some(p=>Math.hypot(p[1]-s.p[2],p[2]-s.p[3])<0.6)||hit([s.p[2],s.p[3]])&&A.some(p=>Math.hypot(p[1]-s.p[0],p[2]-s.p[1])<0.6); });
+    const key=s=>'S '+cp(s.p[0],s.p[1]).concat(cp(s.p[2],s.p[3])).join(' '), miss=new Set(lack.map(key));
+    ans.crop=text.split('\n').filter(l=>!miss.has(l.replace(/ d$/,''))&&!/^P S′ /.test(l)).join('\n'); ans.crop2=text+'\n'+fake;
+    Object.assign(calls,{layout:0,crop:0,crop2:0}); const r=await scanOnce('max');
+    if(r.err) B('две модели: конвейер',r.err.slice(0,240));
+    else { if(lack.length!==2) B('две модели: в ответе первой модели нет рёбер SA','убрано '+lack.length);
+      if(calls.crop2!==1) B('две модели: «максимальная» — вторая проверка',JSON.stringify(calls));
+      if(!r.labels.includes('S′')) B('две модели: точку S′ добавила вторая модель',r.labels.join(' '));
+      if(r.edges!==6) B('две модели: пирамида целиком (6 рёбер) — пропущенное первой нашла вторая',r.edges);
+      const fm=[(fakeMm[0][0]+fakeMm[1][0])/2,(fakeMm[0][1]+fakeMm[1][1])/2]; if(r.segs.some(m=>Math.hypot(m[0]-fm[0],m[1]-fm[1])<3)) B('две модели: выдуманная второй моделью линия отброшена по карандашу','осталась');
+      if(!/Sonnet|вторая модель добавила/.test(r.steps)&&!/добавила/.test(r.steps)) B('две модели: ход работы говорит о второй проверке',r.steps.slice(0,200)); } }
+  /* 3в. «авто»: первая оцифровка слабая (не привязалась к варианту — мало точек условия) → вторая проверка сама */
+  { ans.crop=text.split('\n').filter(l=>!/^P [BCS]/.test(l)).join('\n'); ans.crop2=text; Object.assign(calls,{layout:0,crop:0,crop2:0}); const r=await scanOnce('auto');
+    if(r.err) B('авто: конвейер',r.err.slice(0,240));
+    else { if(calls.crop2!==1) B('авто: слабая первая оцифровка → вторая проверка',JSON.stringify(calls)); if(r.dz!==3||r.n!==21) B('авто: после второй проверки — привязка к ДЗ №3 в.21','ДЗ '+r.dz+' в.'+r.n); } }
+  /* 3г. «быстро»: одна модель, даже если слабая */
+  { Object.assign(calls,{layout:0,crop:0,crop2:0}); await scanOnce('fast'); if(calls.crop2!==0) B('быстро: без второй проверки',JSON.stringify(calls)); ans.crop=text; ans.crop2=text; }
   /* бета-страница lk/scan/ — на том же конвейере; её результат уходит в «Мои чертежи» кабинета */
   const bp=await browser.newPage(); const be=[]; bp.on('pageerror',e=>be.push(String(e)));
   await bp.route(/functions\.yandexcloud\.net/,async r=>{ const q=r.request(); if(q.method()==='GET') return r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"scan":true}'});

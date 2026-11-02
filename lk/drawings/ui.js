@@ -66,6 +66,7 @@ root.innerHTML=`
     <div class="fl">
       <label>Задание<select class="sc-in" id="scDz"><option value="auto">Узнать само</option><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select></label>
       <label>Вариант<input class="sc-in" id="scVar" inputmode="numeric" placeholder="авто" autocomplete="off"></label>
+      <label style="grid-column:1/-1">Точность<select class="sc-in" id="scPrec"><option value="auto">Авто: Opus, при сомнениях — вторая проверка Sonnet</option><option value="max">Максимальная: всегда две модели (дороже)</option><option value="fast">Быстро: одна модель</option></select></label>
       <label style="grid-column:1/-1">Код доступа к сканеру<input class="sc-in" id="scCode" type="password" autocomplete="off" placeholder="выдаёт преподаватель или автор сайта"></label>
     </div>
     <p class="note" style="margin:10px 0 0">Кадры чертежей отправляются модели Claude (через ProxyAPI) только для оцифровки и не сохраняются. Копии и фото хранятся в этом браузере.</p>
@@ -83,6 +84,7 @@ const CLOUD=String(self.SCAN_API||'').trim();
 let CODE=ls.get('scanCode')||'';
 $('#scCode').value=CODE; $('#scCode').addEventListener('change',()=>{ CODE=$('#scCode').value.trim(); ls.set('scanCode',CODE); });
 $('#scVar').value=ls.get('lk_scanVar')||''; $('#scVar').addEventListener('change',()=>ls.set('lk_scanVar',$('#scVar').value.trim()));
+$('#scPrec').value=ls.get('lk_scanPrec')||'auto'; $('#scPrec').addEventListener('change',()=>ls.set('lk_scanPrec',$('#scPrec').value));
 $('#scDz').value=ls.get('lk_scanDz')||'auto'; $('#scDz').addEventListener('change',()=>ls.set('lk_scanDz',$('#scDz').value));
 
 const steps=new Map();
@@ -95,7 +97,7 @@ async function scan(file){ if(!file||busy) return;
   busy=true; progStart('Сканирую лист…');
   try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk1'); step('lib','Сканер загружен','done');
     const pipe=self.SCANPIPE.create({cloud:CLOUD,code:CODE});
-    const {out,bmp}=await pipe.run(file,{dz:$('#scDz').value,variant:$('#scVar').value},step);
+    const {out,bmp}=await pipe.run(file,{dz:$('#scDz').value,variant:$('#scVar').value,precision:$('#scPrec').value},step);
     const ok=out.drawings.filter(d=>d&&d.segs&&d.segs.length);
     if(!ok.length){ $('#scProgT').textContent='Чертежи не распознались'; step('x','Ни один чертёж не оцифрован. Снимите ближе и ровнее, без тени.','err'); return; }
     const photo=thumb(bmp,1600), sh=D.fromScan(out,{name:sheetName(out)}); sh.photoK=photo.k;

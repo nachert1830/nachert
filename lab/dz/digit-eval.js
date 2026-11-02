@@ -94,7 +94,8 @@ async function priceOf(id){ const j=await (await fetch('https://openrouter.ai/ap
   const m=all.find(x=>x.id===id)||all.find(x=>x.id.startsWith(id)); if(!m) return null; const P=m.pricing||{};
   return {id:m.id,prompt:+P.prompt||0,completion:+P.completion||0,image:+P.image||0,internal:+P.internal_reasoning||0}; }
 
-(async()=>{ console.log('лист строю… (ДЗ №3 в'+N+(ERR?', ошибка '+ERR:'')+', снимки вблизи)'); const s=Q.sheet({n:N,seed:SEED,err:ERR,closeup:8}), s0=ERR?Q.sheet({n:N,seed:SEED,closeup:8}):null;
+module.exports={truthOf,measure,cover,norm,parse};
+if(require.main===module) (async()=>{ console.log('лист строю… (ДЗ №3 в'+N+(ERR?', ошибка '+ERR:'')+', снимки вблизи)'); const s=Q.sheet({n:N,seed:SEED,err:ERR,closeup:8}), s0=ERR?Q.sheet({n:N,seed:SEED,closeup:8}):null;
   const pics=VIEWS.map(vi=>{ const v=s.views[vi], r=resize(v.img,SIDE), png=grayPNG(r.im), Hi=IMG.H.inv(v.H), tr=truthOf(s,vi);
     /* правильное построение того же чертежа (лист без ошибки, его отрезки — на место этого чертежа): что отличается — ошибка */
     if(s0&&s.truth.parts[vi].err){ const ok=truthOf(s,vi,s0.truth.parts[vi].items), key=q=>q.map(p=>p.map(v=>v.toFixed(2)).join(',')).join(';'), okK=new Set(ok.segs.map(key));

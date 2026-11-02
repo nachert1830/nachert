@@ -110,7 +110,7 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const t0=Date.now(), r=await http(cfg.url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(o.timeout||45000)});
   const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
   const why=j&&(j.error?j.error.message||j.error:j.detail||j.message);
-  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):t?': '+t.slice(0,200):'')),{status:502});
+  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):t?': '+t.slice(0,200):'')),{status:502,upstream:r.status});
   /* модели с рассуждением (Qwen3.x) возвращают ход мысли в <think>…</think> или отдельным полем — сканеру нужен только ответ;
      если на ответ не хватило лимита, JSON бывает только в ходе мысли */
   const c=j&&j.choices&&j.choices[0]||{}, m=c.message||{}, raw=m.content, think=String(m.reasoning_content||m.reasoning||'');
@@ -142,7 +142,8 @@ async function askLayout(cfg,q,o){ o=o||{}; if(!cfg.layout) throw Object.assign(
 /* askCrop(cfg, {image, w, h, consent}) — оцифровка одного чертежа (шаг 3): строки P/S/T в px присланного кадра → {text, model, info} */
 async function askCrop(cfg,q,o){ o=o||{}; if(!cfg.digit) throw Object.assign(new Error('Оцифровка моделью не подключена.'),{status:503});
   if(!q.consent) throw Object.assign(new Error('Оцифровка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
-  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:SP.DIGIT_PROMPT,text:'Размер фото: '+q.w+' × '+q.h+' px.',opts:{max_tokens:3000}},Object.assign({},o,{timeout:o.timeout||55000})); }
+  /* q.maxTokens — лимит ответа: у Opus 5.5 рассуждение не выключается и идёт в тот же лимит, ему нужно больше */
+  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:SP.DIGIT_PROMPT,text:'Размер фото: '+q.w+' × '+q.h+' px.',opts:{max_tokens:q.maxTokens||3000}},Object.assign({},o,{timeout:o.timeout||55000})); }
 
 /* какая модель зрения в каталоге видит картинку: развёртывание (server/tools/deploy.js) пробует по очереди и подключает первую.
    Не все модели AI Studio есть в синхронном режиме (на остальные Yandex отвечает 400/403), а текстовая модель может ответить

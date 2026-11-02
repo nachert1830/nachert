@@ -14,6 +14,14 @@ on:
         description: 'лимит расходов функции, $ на экземпляр (страховка; главный предел — баланс ProxyAPI)'
         required: false
         default: '5'
+      digit:
+        description: 'модель оцифровки чертежа: opus | sonnet (сбой — тот же кадр второй модели)'
+        required: false
+        default: 'opus'
+      check:
+        description: 'модель второй, независимой оцифровки слабых чертежей: sonnet | opus'
+        required: false
+        default: 'sonnet'
 permissions:
   contents: write
 concurrency:
@@ -55,6 +63,8 @@ jobs:
           PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
           SCAN_CODE: ${{ github.event.inputs.code || 'виктория' }}
           SCAN_LIMIT: ${{ github.event.inputs.limit || '5' }}
+          SCAN_DIGIT: ${{ github.event.inputs.digit || 'opus' }}
+          SCAN_CHECK: ${{ github.event.inputs.check || 'sonnet' }}
         run: |
           echo "::add-mask::$PROXYAPI_KEY"
           HASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.SCAN_CODE))")
@@ -62,8 +72,8 @@ jobs:
           (cd pkg && zip -qr ../scan.zip .)
           yc serverless function get --name nachert-scan >/dev/null 2>&1 || yc serverless function create --name nachert-scan >/dev/null
           yc serverless function allow-unauthenticated-invoke --name nachert-scan >/dev/null
-          yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 60s \
-            --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,SCAN_LIMIT_USD=$SCAN_LIMIT,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
+          yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 120s \
+            --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,SCAN_LIMIT_USD=$SCAN_LIMIT,SCAN_DIGIT_MODEL=$SCAN_DIGIT,SCAN_CHECK_MODEL=$SCAN_CHECK,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
           ID=$(yc serverless function get --name nachert-scan --format json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).id))")
           URL="https://functions.yandexcloud.net/$ID"
           echo "SCAN_URL=$URL" >> "$GITHUB_ENV"; echo "Адрес функции: $URL"

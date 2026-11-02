@@ -1,0 +1,54 @@
+name: Сканер — какая связка моделей точнее (A/B)
+# Синтетические листы ДЗ №3 целиком (правда известна) → конвейер кабинета (lk/scan/pipeline.js, Chromium) → живая облачная
+# функция: на каждый чертёж два ответа — Claude Opus 5.5 и Claude Sonnet 5.5; из них считаются связки Sonnet · Opus ·
+# Opus + Sonnet · Авто (lab/dz/scan-ab.js). Деньги — запросы к ProxyAPI: предел limit (по оценке функции), лист ≈ $0,15–0,2.
+# Ответы моделей — в артефакте scan-ab (пересчёт без денег: node lab/dz/scan-ab.js --replay=scan-ab.json). Только вручную.
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'код доступа к сканеру'
+        required: false
+        default: 'виктория'
+      sheets:
+        description: 'листы: вариант:seed[:ошибка], через запятую'
+        required: false
+        default: '21:1,9:12:a_dir'
+      limit:
+        description: 'предел $ на весь замер'
+        required: false
+        default: '0.6'
+permissions:
+  contents: read
+concurrency:
+  group: scan-ab
+  cancel-in-progress: false
+jobs:
+  ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Playwright и Chromium
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm i playwright@1.47.2 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          echo "NODE_PATH=$RUNNER_TEMP/pw/node_modules" >> "$GITHUB_ENV"
+      - name: Замер
+        env:
+          C: ${{ github.event.inputs.code || 'виктория' }}
+          SHEETS: ${{ github.event.inputs.sheets || '21:1,9:12:a_dir' }}
+          LIMIT: ${{ github.event.inputs.limit || '0.6' }}
+        run: |
+          URL=$(node -e "const m=require('fs').readFileSync('lk/scan/config.js','utf8').match(/\"(https:[^\"]+)\"/); console.log(m?m[1]:'')")
+          test -n "$URL" || { echo "::error::в lk/scan/config.js нет адреса функции"; exit 1; }
+          node lab/dz/scan-ab.js --url="$URL" --code="$C" --sheets="$SHEETS" --limit="$LIMIT" --out=scan-ab.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scan-ab
+          path: scan-ab.json
+          if-no-files-found: ignore
