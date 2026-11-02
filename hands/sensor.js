@@ -33,7 +33,7 @@ async function makeDetector() {
   const { FilesetResolver, HandLandmarker } = await import('./vendor/vision_bundle.mjs');
   const fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
   const mk = d => HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker_lite.task', delegate: d },
-    runningMode: 'VIDEO', numHands: 2, minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.6, minTrackingConfidence: 0.5 });
+    runningMode: 'VIDEO', numHands: 2, minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
   /* прогрев: первый кадр на видеокарте компилирует шейдеры (может занять секунды) — делаем это сейчас, на пустой
      картинке, пока идёт знакомство, а не на первом живом кадре. Видеокарта упала на прогреве — сразу процессор */
   const warm = () => { const c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').fillRect(0, 0, 64, 64); lmk.detectForVideo(c, ++lastStamp); };
@@ -41,9 +41,20 @@ async function makeDetector() {
   catch (e) { tell('видеокарта не подошла (' + String(e.message || e).slice(0, 120) + ') — пробую процессор'); try { lmk && lmk.close(); } catch (_) {} lmk = await mk('CPU'); delegate = 'CPU'; warm(); }
   tell('распознавание готово: ' + delegate);
 }
-function detect(t) {
+/* кадр для распознавания — копия видео на 2D-холсте (480 px): на айфоне видеокарта MediaPipe, читая сам <video>,
+   временами получает чёрную текстуру и молча не находит рук; с холста — надёжно, и копировать вдвое меньше */
+const fc = document.createElement('canvas'), fx = fc.getContext('2d', { willReadFrequently: true });
+function grab() {
+  const W = 480, H = Math.round(W * (vid.videoHeight || 480) / (vid.videoWidth || 640));
+  if (fc.width !== W || fc.height !== H) { fc.width = W; fc.height = H; }
+  fx.drawImage(vid, 0, 0, W, H); return fc;
+}
+/* средняя яркость кадра (по 64 точкам): ≈0 — камера отдаёт чёрное */
+function dark() { const d = fx.getImageData(0, 0, fc.width, fc.height).data; let s = 0, k = 0; for (let i = 0; i < d.length; i += Math.floor(d.length / 64 / 4) * 4) { s += d[i] + d[i + 1] + d[i + 2]; k++; } return s / k / 3 < 4; }
+let cpu = null;                                                       /* запасной детектор на процессоре — проверка «видеокарта слепа?» */
+function detect(t, src) {
   if (t <= lastStamp) t = lastStamp + 1; lastStamp = t;                /* VIDEO-режим требует растущих меток времени */
-  const t1 = performance.now(), r = lmk.detectForVideo(vid, t), ms = performance.now() - t1;
+  const t1 = performance.now(), r = lmk.detectForVideo(src, t), ms = performance.now() - t1;
   const hands = (r.landmarks || []).map((pts, i) => { const h = r.handedness && r.handedness[i] && r.handedness[i][0];
     return { lm: pts.map(p => ({ x: p.x, y: p.y, z: p.z })), handed: h ? h.categoryName : null, score: h ? h.score : 1 }; });
   return { ms, hands, delegate };
@@ -65,13 +76,29 @@ async function pump() {
     try {
       const W = 480, H = Math.round(W * (vid.videoHeight || 480) / (vid.videoWidth || 640));
       let r;
-      try { r = detect(performance.now()); }
+      const src = grab();
+      try { r = detect(performance.now(), src); }
       catch (e) {                                                       /* видеокарта упала на кадре — один раз на процессор */
         if (delegate !== 'GPU') throw e; tell('видеокарта упала на кадре — перехожу на процессор'); try { lmk.close(); } catch (_) {}
         const { FilesetResolver, HandLandmarker } = await import('./vendor/vision_bundle.mjs'), fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
         lmk = await HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker_lite.task', delegate: 'CPU' }, runningMode: 'VIDEO', numHands: 2 });
         delegate = 'CPU'; busy = false; return pump(); }
       detMs = 0.85 * detMs + 0.15 * r.ms; n++;
+      /* видеокарта 3 с не видит рук — раз в 2 с проверяем тот же кадр на процессоре; там рука есть — видеокарта
+         «слепая» (бывает на айфоне), насовсем переходим на процессор */
+      if (delegate === 'GPU' && !r.hands.length && missT && performance.now() - missT > 3000 && performance.now() - (pump.chk || 0) > 2000) {
+        pump.chk = performance.now();
+        if (dark()) { if (!pump.dk) { pump.dk = 1; tell('камера телефона отдаёт чёрный кадр — закрой и открой страницу заново'); } }
+        else try {
+          if (!cpu) { const { FilesetResolver, HandLandmarker } = await import('./vendor/vision_bundle.mjs'), fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
+            cpu = await HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker_lite.task', delegate: 'CPU' }, runningMode: 'IMAGE', numHands: 2 }); }
+          const rc = cpu.detect(src);
+          if (rc.landmarks && rc.landmarks.length) { tell('видеокарта телефона не видела руку — перехожу на процессор'); try { lmk.close(); } catch (_) {}
+            const { FilesetResolver, HandLandmarker } = await import('./vendor/vision_bundle.mjs'), fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
+            lmk = await HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker_lite.task', delegate: 'CPU' }, runningMode: 'VIDEO', numHands: 2 });
+            delegate = 'CPU'; cpu.close(); cpu = null; }
+        } catch (e) { console.warn(e); }
+      }
       /* обе камеры, направленные на человека, дают незеркальный кадр «глазами наблюдателя» — как веб-камера ноутбука;
          зеркалит (как в зеркале) уже ноутбук, отражать здесь не нужно */
       const hands = r.hands;

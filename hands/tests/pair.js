@@ -45,7 +45,9 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); 
 srv.on('upgrade', (req, sock) => { if (req.url === '/mqtt') wsUpgrade(req, sock); else sock.destroy(); });
 srv.listen(0, async () => {
   const base = `http://localhost:${srv.address().port}/hands/`;
-  const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
+  /* HAND_VIDEO=рука.y4m — камера «телефона» показывает настоящую руку: проверяем всю цепочку с распознаванием */
+  const VID = process.env.HAND_VIDEO;
+  const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', ...(VID ? ['--use-file-for-fake-video-capture=' + VID] : [])] });
   const ctx = await b.newContext(); await ctx.grantPermissions(['camera']);
   const L = await ctx.newPage(), P = await ctx.newPage(), errs = [];
   [L, P].forEach(pg => pg.on('pageerror', e => errs.push(e.message)));
@@ -70,6 +72,11 @@ srv.listen(0, async () => {
       ok(on && path === (scen === 'vpn' ? 'интернет' : 'прямо'), `${scen === 'vpn' ? '«как с VPN»' : '«одна сеть»'}: подключился одним сканированием, путь — ${path || 'нет'}`);
       /* в контейнере видеокарта программная — прогрев модели на «телефоне» идёт ~10 с; ждём его */
       await L.waitForFunction(() => window.__app.pairing.st.log.some(t => /распознавание готово/.test(t)), null, { timeout: 90000 }).catch(() => {});
+      if (VID) {   /* настоящая рука в камере телефона → ноутбук её видит */
+        const seen = await L.waitForFunction(() => { const f = window.__app.frame; return f && f.hands.some(h => h.present); }, null, { timeout: 20000 }).then(() => true).catch(() => false);
+        const fps = await L.evaluate(() => window.__app.pairing.st.fps);
+        ok(seen, `  рука перед камерой телефона распознана и видна на ноутбуке (${fps.toFixed(0)} кадр/с)`);
+      }
       await P.evaluate(() => window.__sensor.pause());
       const y0 = await L.evaluate(() => window.__app.view.yaw);
       await P.evaluate(async () => {
