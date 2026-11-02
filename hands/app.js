@@ -464,7 +464,6 @@ async function pairStart() {
 }
 $('ph').onclick = () => (pairing.st.state === 'on' ? pairing.stop() : pairStart());
 $('pairNew').onclick = () => pairStart();
-$('pairNo').onclick = () => { $('pairVidBox').hidden = false; pairing.scanFallback().catch(e => { $('pairMsg').textContent = 'Камера ноутбука не включилась: ' + e.message; }); };
 $('pairX').onclick = () => { if (pairing.st.state !== 'on') pairing.stop(); $('pair').hidden = true; };
 
 async function start() {

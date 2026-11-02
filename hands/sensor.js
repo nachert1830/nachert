@@ -3,10 +3,11 @@
    2) «Начать»: камера, распознавание (тот же воркер, что на ноутбуке), ответ соединения — QR-кодом на экране;
    3) ноутбук считал ответ своей веб-камерой — прямой канал WebRTC; дальше сюда только пинги, туда — точки рук.
    Видео никуда не уходит: распознаёт MediaPipe прямо на телефоне. */
-import qrcode from './vendor/qr/qrcode.mjs';
 import { packSDP, unpackSDP, gathered, STUN, encodeHands, RELAY, relaySend } from './link.js';
 
 const $ = id => document.getElementById(id);
+/* что происходит на телефоне — сообщаем и ноутбуку (через тот же ящик): там видно, где застряло */
+const tell = text => { if (topic) relaySend(base, topic, 'S~' + text).catch(() => {}); };
 const say = (t, l) => { $('title').textContent = t; if (l != null) $('lead').textContent = l; };
 const HP = new URLSearchParams(location.hash.slice(1)), offer = HP.get('o'), topic = HP.get('r'), base = HP.get('b') || RELAY;
 if (!offer) { say('Открой эту страницу по QR-коду', 'На ноутбуке в голограмме нажми «📱 Телефон» и наведи камеру телефона на код.'); $('start').hidden = true; }
@@ -15,13 +16,6 @@ let pc = null, dc = null, stream = null, facing = 'user', running = false, busy 
 let w = null, pend = null, n = 0, t0 = performance.now(), fps = 0, detMs = 0;
 const vid = $('vid'), ov = $('ov'), oc = ov.getContext('2d');
 
-function drawQR(text) {
-  const q = qrcode(0, 'L'); q.addData(text); q.make();
-  const N = q.getModuleCount(), s = 8, c = $('qr'); c.width = c.height = N * s;
-  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.fillStyle = '#000';
-  for (let r = 0; r < N; r++) for (let k = 0; k < N; k++) if (q.isDark(r, k)) g.fillRect(k * s, r * s, s, s);
-  c.hidden = false;
-}
 
 /* распознавание — в воркере, как на ноутбуке (облегчённая модель, вторая рука по требованию) */
 function worker() {
@@ -73,27 +67,30 @@ $('start').onclick = async () => {
     const ready = worker();                                         /* модель грузится, пока знакомимся */
     pc = new RTCPeerConnection({ iceServers: STUN });
     pc.ondatachannel = e => { dc = e.channel;
-      dc.onopen = async () => { $('qr').hidden = true; say('Подключено — управляй руками', 'Деталь — на экране ноутбука. Держи руки в кадре телефона.');
+      dc.onopen = async () => { say('Подключено — управляй руками', 'Деталь — на экране ноутбука. Держи руки в кадре телефона.');
         $('prev').hidden = false; $('flip').hidden = $('stop').hidden = false; $('tip').hidden = false;
         try { await ready; } catch (err) { say('Не запустилось распознавание', String(err.message || err)); return; }
         running = true; pump(); };
       dc.onmessage = e => { const m = JSON.parse(e.data); if (m.k === 'p') dc.send(JSON.stringify({ k: 'q', t: m.t })); };
       dc.onclose = () => { running = false; say('Связь закрыта', 'Чтобы подключиться снова — нажми «📱 Телефон» на ноутбуке и отсканируй новый код.'); }; };
-    pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') say('Не соединилось', 'Телефон и ноутбук должны быть в одной сети Wi-Fi (не гостевой). Попробуй ещё раз — новый код на ноутбуке.'); };
+    pc.onconnectionstatechange = () => { tell('соединение: ' + pc.connectionState);
+      if (pc.connectionState === 'failed') { say('Не соединилось', 'Телефон и ноутбук не видят друг друга. Проверь, что оба в одной сети Wi-Fi (не гостевой, на телефоне выключены мобильные данные), .'); retry(); } };
+    pc.oniceconnectionstatechange = () => tell('ICE: ' + pc.iceConnectionState);
     await pc.setRemoteDescription(unpackSDP(decodeURIComponent(offer), 'offer'));
     await pc.setLocalDescription(await pc.createAnswer());
     await gathered(pc);
     const ans = packSDP(pc.localDescription.sdp);
     $('start').hidden = true;
-    /* ответ — в «почтовый ящик», который слушает ноутбук; не вышло — запасной путь: код на экране для веб-камеры ноутбука */
+    /* ответ — в «почтовый ящик», который слушает ноутбук. Никаких кодов на экране телефона */
     try {
-      if (!topic) throw new Error('в ссылке нет ящика');
+      if (!topic) throw new Error('в ссылке нет ящика — отсканируй код на ноутбуке ещё раз');
       await relaySend(base, topic, ans);
+      tell('ответ отправлен, адреса телефона: ' + (ans.split('~')[5] || 'нет'));
       say('Соединяюсь с ноутбуком…', 'Пара секунд. Телефон и ноутбук должны быть в одной сети Wi-Fi.');
-      setTimeout(() => { if (!dc || dc.readyState !== 'open') { drawQR(ans); say('Не соединилось само', 'Нажми на ноутбуке «Не подключается?» и поднеси к его веб-камере этот код.'); } }, 12000);
+      setTimeout(() => { if (!dc || dc.readyState !== 'open') { say('Не соединилось', 'Телефон и ноутбук не видят друг друга. Проверь одну сеть Wi-Fi (не гостевую; на телефоне выключи мобильные данные).'); retry(); } }, 15000);
     } catch (e) {
-      console.warn(e); drawQR(ans);
-      say('Покажи этот код камере ноутбука', 'Нажми на ноутбуке «Не подключается?» и поднеси экран телефона к его веб-камере на 20–40 см.');
+      console.warn(e);
+      say('Нет связи с сервисом знакомства', 'Не открылся ntfy.sh (' + (e.message || e) + '). Проверь интернет на телефоне.'); retry();
     }
   } catch (e) {
     console.error(e); $('start').disabled = false;
@@ -101,6 +98,9 @@ $('start').onclick = async () => {
     say('Нажми «Начать»', e && e.name === 'NotAllowedError' ? 'Нужен доступ к камере: нажми «Начать» и разреши, либо включи камеру для сайта в настройках Safari.' : String(e.message || e));
   }
 };
+/* не вышло — новый код на ноутбуке (старое предложение уже использовано) */
+function retry() { $('start').hidden = true; $('lead').textContent += ' Потом на ноутбуке нажми «Новый код» и отсканируй его ещё раз.'; }
+
 /* открыли по ссылке с ноутбука — запускаемся сами: нужно только разрешить камеру (кнопка — если браузер не дал без нажатия) */
 if (offer) $('start').click();
 $('flip').onclick = async () => { facing = facing === 'user' ? 'environment' : 'user'; try { await camera(); } catch (e) { console.warn(e); } };

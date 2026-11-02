@@ -53,8 +53,13 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
 
   async function start(qrCanvas, video, opt = {}) {
     stop(); st.state = 'pairing'; applied = false;
+    /* Chrome без разрешения камеры прячет адрес ноутбука за временным именем «….local», а Safari на айфоне такие имена
+       не разрешает — телефон не находит ноутбук. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
+    try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); s.getTracks().forEach(t => t.stop()); } catch (_) {}
     const base = opt.relay || RELAY, topic = newTopic();
-    box = relayListen(base, topic, text => { apply(text); });          /* слушаем ящик заранее — до того, как телефон ответит */
+    box = relayListen(base, topic, text => {                           /* слушаем ящик заранее — до того, как телефон ответит */
+      if (text.startsWith('S~')) { onStatus('Телефон: ' + text.slice(2)); return; }
+      apply(text); });
     pc = new RTCPeerConnection({ iceServers: STUN });
     dc = pc.createDataChannel('hands', { ordered: false, maxRetransmits: 0 });   /* старые точки не нужны — без повторов */
     dc.onopen = () => { st.state = 'on'; st.t0 = performance.now(); st.n = 0; stopScan(); if (box) { box.close(); box = null; } onOpen();
@@ -63,14 +68,16 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
       if (m.k === 'h') { st.n++; st.phoneMs = m.ms || 0; if (now - st.t0 > 1000) { st.fps = st.n * 1000 / (now - st.t0); st.n = 0; st.t0 = now; } onHands(decodeHands(m), now); }
       else if (m.k === 'q') st.rtt = 0.7 * st.rtt + 0.3 * (now - m.t); };
     dc.onclose = () => { if (st.state !== 'idle') { st.state = 'idle'; clearInterval(ping); onClose(); } };
-    pc.onconnectionstatechange = () => { if (pc && pc.connectionState === 'failed') { onStatus('Не соединилось. Телефон и ноутбук должны быть в одной сети Wi-Fi (не гостевой). Нажми «Новый код».'); } };
+    pc.onconnectionstatechange = () => { if (pc && pc.connectionState === 'failed') { applied = false; onStatus('Не соединилось: телефон и ноутбук не видят друг друга. Нужна одна сеть Wi-Fi (не гостевая), на телефоне — без мобильных данных. Нажми «Новый код».'); } };
     await pc.setLocalDescription(await pc.createOffer());
     await gathered(pc);
     const code = packSDP(pc.localDescription.sdp);
     const url = new URL('sensor.html', location.href);
     url.hash = 'o=' + encodeURIComponent(code) + '&r=' + topic + (base !== RELAY ? '&b=' + encodeURIComponent(base) : '');
     drawQR(qrCanvas, url.href);
-    onStatus('Наведи камеру айфона на код и открой ссылку — дальше всё само.');
+    const addrs = (code.split('~')[5] || '').split(';').filter(Boolean).map(c => c.split(',')[1]);
+    st.addrs = addrs;
+    onStatus('Наведи камеру айфона на код и открой ссылку — дальше всё само.' + (addrs.length && addrs.every(a => /\.local$/.test(a)) ? ' (Адрес ноутбука скрыт браузером — разреши камеру этому сайту, иначе телефон может его не найти.)' : ''));
     st.video = video;
     return url.href;
   }
