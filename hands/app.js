@@ -3,7 +3,7 @@
 import DATA from './v5.js';
 import { createHolo } from './holo.js';
 import { createHud } from './hud.js';
-import { createController, HOME } from './gestures.js';
+import { createController, HOME, VIEWS } from './gestures.js';
 import { sound } from './sound.js';
 
 const $ = id => document.getElementById(id);
@@ -44,8 +44,8 @@ function render(t) {
   const ambient = !reduced() && holo.mode === 'holo';
   if (dirty || moving || (ambient && t - lastDraw > 31)) {
     lastDraw = t;
-    holo.draw(shown, t, { reduced: reduced() });
-    const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info });
+    holo.draw(shown, t, { reduced: reduced(), clip: cut, hover: pointer && pointer.hover });
+    const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info, pointer, section: cut && cutLabel() });
     if (handsMoving) dirty = true;
     /* подсказка уходит, когда мешает: идёт жест или деталь разобрана (слева — выноски) */
     const dim = view.explode > 0.02 || (frame && frame.mode !== 'idle' && (camOn || feedOn));
@@ -82,10 +82,44 @@ if (load('hands.snd') === '1') { $('snd').textContent = '🔊'; }       /* зв�
 
 /* ── жесты: общий вход для камеры, повтора записи и тестов ── */
 let feedOn = false;
+/* ── разрез и указка: экранные жесты → мир (нужна камера рендера) ──
+   cut = { n, w, kind } — убираем dot(n, p) > w. Плоскость остаётся, когда ладонь ушла; убирает её сброс (ладонь 1,5 с, R, Esc). */
+let cut = null, pointer = null;
+const snapAxis = v => (Math.abs(v[0]) >= Math.abs(v[1]) ? [Math.sign(v[0]) || 1, 0, 0] : [0, Math.sign(v[1]) || 1, 0]);
+function bladeToCut(b) {
+  const c = holo && holo.camera(); if (!c) return;
+  const S = hud.map(b), lin = (P0, P1, target, k) => { const a = holo.project(P0, c), q = holo.project(P1, c); const den = q[k] - a[k]; return Math.abs(den) < 15 ? null : (target - a[k]) / den; };
+  if (b.kind === 'h') {                                   /* горизонтальный разрез: z по высоте ладони на экране; убираем верх */
+    const u = lin([0, 0, 0], [0, 0, 100], S.y, 1); if (u == null) return;      /* смотрим строго сверху — высоту не задать */
+    cut = { n: [0, 0, 1], w: u * 100, kind: 'h' };
+  } else {                                                /* вертикальный: плоскость ⟂ оси детали, ближайшей к «вправо» на экране */
+    const n = snapAxis(c.Rv), u = lin([0, 0, 0], n.map(v => v * 100), S.x, 0); if (u == null) return;
+    let w = u * 100, nn = n;
+    /* убираем ту половину, что ближе к зрителю — срез смотрит на нас */
+    const toEye = nn[0] * -c.F[0] + nn[1] * -c.F[1], toRight = nn[0] * c.Rv[0] + nn[1] * c.Rv[1];
+    if (Math.abs(toEye) > 0.05 ? toEye < 0 : toRight < 0) { nn = nn.map(v => -v); w = -w; }   /* срез ребром (главный вид) — убираем правую половину */
+    cut = { n: nn, w, kind: Math.abs(n[1]) > 0.5 ? 'front' : 'profile' };
+  }
+}
+const cutLabel = () => {
+  const ax = Math.abs(cut.n[2]) > 0.5 ? 'z' : Math.abs(cut.n[1]) > 0.5 ? 'y' : 'x', val = cut.w * (cut.n[0] + cut.n[1] + cut.n[2]);
+  return { title: cut.kind === 'h' ? 'горизонтальный разрез' : cut.kind === 'front' ? 'фронтальный разрез' : 'профильный разрез',
+    value: `${ax} = ${val.toFixed(0)} мм`, hint: frame && frame.mode === 'section' ? '' : 'ладонь 1,5 с или R — убрать разрез' };
+};
 function onHands(hands, t) {
   frame = ctl.update(hands, t);
   sound.play(frame.events);
-  frame.events.forEach(e => { if (e.type === 'reset' && holo) holo.scan(t); });
+  frame.events.forEach(e => {
+    if (e.type === 'reset') { holo && holo.scan(t); cut = null; }
+    if (e.type === 'clap') {                               /* хлопок: деталь разлетается / собирается, по экрану — ударная волна */
+      manual.explodeTo(view.explode > 0.5 ? 0 : 1);
+      const hs = frame.hands.filter(h => h.palmC), m = hs.length ? hs.reduce((a, h) => ({ x: a.x + h.palmC.x / hs.length, y: a.y + h.palmC.y / hs.length }), { x: 0, y: 0 }) : { x: 0.5, y: 0.5 };
+      const S = hud.map(m); hud.effect('shock', S.x, S.y, performance.now());
+    }
+    if (e.type === 'snap') { const h = frame.hands.find(q => q.id === e.id); if (h && h.pts) { const S = hud.map(h.pts[12]); hud.effect('snap', S.x, S.y, performance.now()); } }
+  });
+  if (frame.blade) bladeToCut(frame.blade);
+  if (frame.point && holo) { const S = hud.map(frame.point); pointer = { x: S.x, y: S.y, hover: holo.pick(S.x, S.y, cut) }; } else pointer = null;
   const st = $('st'), md = $('md');
   const n = frame.hands.filter(h => h.present).length;
   st.textContent = !n ? 'руки не видно' : frame.hands.some(h => h.present && h.ignored) ? 'рука у края кадра — ближе к центру' : n === 1 ? 'вижу руку' : 'вижу обе руки';
@@ -97,7 +131,7 @@ function onHands(hands, t) {
 /* отладка и автотесты: __feed([[21 точка], …], t) — как кадр камеры */
 window.__feed = (hands, t) => { feedOn = true; const f = onHands(hands, t == null ? performance.now() : t); render(t == null ? performance.now() : t); return f; };
 window.__camInfo = () => info;
-window.__app = { shown, view, ctl, holo, HOME, render: t => { dirty = true; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
+window.__app = { shown, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
 
 /* ── мышь и касания (жесты рук им не мешают) ── */
 const cv = $('gl'), pts = new Map();
@@ -141,13 +175,19 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => { e.preventDefault(); ctl.stopMotion();
   if (e.altKey) view.explode = Math.max(0, Math.min(1, view.explode - e.deltaY * 0.0015));
   else view.zoom = Math.max(0.5, Math.min(5, view.zoom * Math.exp(-e.deltaY * 0.0015))); dirty = true; }, { passive: false });
-cv.addEventListener('dblclick', () => { ctl.reset(performance.now()); holo && holo.scan(performance.now()); });
+cv.addEventListener('dblclick', () => { ctl.reset(performance.now()); holo && holo.scan(performance.now()); cut = null; });
+/* мышь: наведение — та же подсветка части, что у указки пальцем */
+cv.addEventListener('pointermove', e => { if (pts.size || (frame && frame.point)) return; const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const hv = holo && holo.pick(x, y, cut); const nw = hv ? { x, y, hover: hv, mouse: true } : null; if ((nw && nw.hover) !== (pointer && pointer.hover)) dirty = true; pointer = nw; if (nw) dirty = true; });
+cv.addEventListener('pointerleave', () => { if (!(frame && frame.point)) { pointer = null; dirty = true; } });
 addEventListener('resize', () => { dirty = true; });
 addEventListener('keydown', e => {
   if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === 'e' || k === 'у') manual.explodeTo(view.explode > 0.5 ? 0 : 1);
-  else if (k === 'r' || k === 'к' || k === 'escape') { ctl.reset(performance.now()); holo && holo.scan(performance.now()); }
+  else if (k === 'r' || k === 'к' || k === 'escape') { ctl.reset(performance.now()); holo && holo.scan(performance.now()); cut = null; }
+  else if (k === 'x' || k === 'ч') cut = cut ? null : { n: [0, -1, 0], w: 0, kind: 'front' };          /* фронтальный разрез по оси — для мыши */
+  else if (k === 'v' || k === 'м') { const V = VIEWS[ctl.viewIdx = (ctl.viewIdx + 1) % VIEWS.length]; ctl.reset(performance.now(), { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 }); }
   else if (k === 'h' || k === 'р') $('mode').click();
   else if (k === 's' || k === 'ы') $('snd').click();
   else if (k === 'c' || k === 'с') $('go').click();

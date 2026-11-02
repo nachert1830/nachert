@@ -226,3 +226,90 @@ test('фильтр 1€: покой сглаживается, быстрый х�
   for (let i = 0; i < 10; i++) { t += DT; y = f.f(0.5 + 0.05 * (i + 1), t); }   /* 1,5 кадра/с */
   assert.ok(Math.abs(y - 1.0) < 0.12, 'отставание ' + (1 - y).toFixed(3));
 });
+
+/* ── новые жесты: щелчок, хлопок, лезвие, указка ── */
+import { VIEWS } from '../gestures.js';
+
+test('щелчок: взвод ≥ holdOn и быстрый отлёт среднего — следующий стандартный вид', () => {
+  const c = ctlNew();
+  run(c, 0, 300, () => [hand({ pose: 'snap' })]);
+  const fr = run(c, 333, 900, () => [hand({ pose: 'snapped' })]);
+  assert.equal(events(fr, 'snap').length, 1);
+  assert.equal(events(fr, 'view')[0].view, VIEWS[0].k, 'первый щелчок — главный вид');
+  c.tick(5000); near(c.view.yaw, 0, 1e-6); near(c.view.pit, 1e-4, 1e-6);
+  assert.equal(fr[1].label, 'Главный вид', 'подпись вида всплывает');
+  run(c, 933, 1300, () => [hand({ pose: 'snap' })]); run(c, 1333, 1600, () => [hand({ pose: 'snapped' })]);
+  c.tick(9000); near(c.view.pit, Math.PI / 2 - 1e-3, 1e-6, 'второй — вид сверху');
+});
+test('щелчок: медленное размыкание — не щелчок; короткий взвод — не щелчок', () => {
+  const slow = ctlNew();
+  run(slow, 0, 300, () => [hand({ pose: 'snap' })]);
+  /* средний отходит плавно: точки 400 мс перетекают от «взвода» к «после щелчка» */
+  const A = hand({ pose: 'snap' }), B = hand({ pose: 'snapped' }), mix = u => A.map((p, i) => ({ x: lerp(p.x, B[i].x, u), y: lerp(p.y, B[i].y, u), z: lerp(p.z, B[i].z, u) }));
+  let fr = run(slow, 333, 900, t => [mix((t - 333) / 400)]);
+  assert.equal(events(fr, 'snap').length, 0);
+  const short = ctlNew();
+  fr = run(short, 0, 600, t => [hand({ pose: t < 33 ? 'snap' : 'snapped' })]);
+  assert.equal(events(fr, 'snap').length, 0);
+});
+test('щелчок не путается со щипком: большой + указательный вращают, а не переключают вид', () => {
+  const c = ctlNew();
+  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1 })]);
+  const fr = run(c, 333, 700, () => [hand({ pose: 'open' })]);
+  assert.equal(events(fr, 'snap').length, 0);
+});
+
+const pair = (d, pose = 'open') => [hand({ pose, cx: 0.5 - d / 2, rot: -0.3 }), hand({ pose, cx: 0.5 + d / 2, rot: 0.3, seed: 3 })];
+test('хлопок: ладони быстро сошлись — событие clap; один раз за cooldown', () => {
+  const c = ctlNew();
+  run(c, 0, 300, () => pair(0.55));
+  const fr = run(c, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200)));
+  assert.equal(events(fr, 'clap').length, 1);
+  const fr2 = run(c, 633, 900, t => pair(lerp(0.12, 0.5, (t - 633) / 200)));
+  assert.equal(events(fr2, 'clap').length, 0, 'разведение — не хлопок');
+});
+test('хлопок не запускает сброс: открытые после хлопка ладони не возвращают вид', () => {
+  const c = ctlNew(); c.view.yaw = 1;
+  run(c, 0, 300, () => pair(0.55));
+  run(c, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200)));
+  const fr = run(c, 633, 3000, () => pair(0.25));
+  assert.equal(events(fr, 'reset').length, 0); assert.equal(c.view.yaw, 1);
+});
+test('хлопок: MediaPipe потерял руки в момент касания — всё равно хлопок', () => {
+  const c = ctlNew();
+  run(c, 0, 300, () => pair(0.55));
+  run(c, 333, 466, t => pair(lerp(0.55, 0.2, (t - 333) / 133)));
+  const fr = run(c, 499, 700, () => []);
+  assert.equal(events(fr, 'clap').length, 1);
+});
+test('хлопок: медленно свести руки — не хлопок; два кулака — не хлопок (это разбор)', () => {
+  const c = ctlNew();
+  run(c, 0, 300, () => pair(0.55));
+  let fr = run(c, 333, 2400, t => pair(lerp(0.55, 0.12, (t - 333) / 2000)));
+  assert.equal(events(fr, 'clap').length, 0, 'медленно');
+  const f = ctlNew();
+  run(f, 0, 300, () => pair(0.55, 'fist'));
+  fr = run(f, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200), 'fist'));
+  assert.equal(events(fr, 'clap').length, 0, 'кулаки');
+});
+
+test('лезвие: ребро ладони — режим section; горизонтально — h, вертикально — v; положение — центр ладони', () => {
+  const c = ctlNew();
+  let fr = run(c, 0, 300, () => [hand({ pose: 'blade', rot: Math.PI / 2, cy: 0.4 })]);
+  const f = fr[fr.length - 1];
+  assert.equal(f.mode, 'section'); assert.equal(f.blade.kind, 'h'); near(f.blade.y, 0.4, 0.03);
+  fr = run(c, 333, 700, () => [hand({ pose: 'blade', rot: 0, cx: 0.3 })]);
+  assert.equal(fr[fr.length - 1].blade.kind, 'v'); near(fr[fr.length - 1].blade.x, 0.3, 0.03);
+});
+test('лезвие не включает сброс (ладонь ребром ≠ открытая ладонь)', () => {
+  const c = ctlNew(); c.view.yaw = 1;
+  const fr = run(c, 0, 2500, () => [hand({ pose: 'blade', rot: Math.PI / 2 })]);
+  assert.equal(events(fr, 'reset').length, 0); assert.equal(c.view.yaw, 1);
+});
+test('указка: вытянутый указательный — режим point, точка — кончик указательного; не вращает', () => {
+  const c = ctlNew(), fr = run(c, 0, 600, t => [hand({ pose: 'point', cx: lerp(0.4, 0.6, t / 600) })]);
+  const f = fr[fr.length - 1];
+  assert.equal(f.mode, 'point'); assert.ok(f.point && f.point.y < 0.5, 'кончик выше ладони');
+  assert.equal(c.view.yaw, HOME.yaw);
+  assert.equal(events(fr, 'pinch-on').length, 0);
+});

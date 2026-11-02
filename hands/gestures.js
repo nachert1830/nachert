@@ -14,7 +14,12 @@
      щипок + кулак второй рукой   — панорама (двигает рука со щипком);
      два кулака                   — «взять и разобрать»: развёл руки — деталь раскрылась, свёл — собралась;
      открытая ладонь 1,5 с        — сброс вида;
-     кулак                        — «поймать» крутящуюся по инерции деталь.
+     кулак                        — «поймать» крутящуюся по инерции деталь;
+     хлопок                       — деталь разлетается на части / собирается (событие clap);
+     щелчок (большой + средний)   — следующий стандартный вид: главный → сверху → слева → изометрия;
+     ребро ладони («лезвие»)      — секущая плоскость: ладонь горизонтально — горизонтальный разрез,
+                                    вертикально — фронтальный/профильный (frame.blade, плоскость считает app.js);
+     указательный палец           — указка: часть под пальцем подсвечивается (frame.point).
    Защита от ложных срабатываний: гистерезис всех порогов, поза засчитывается, только продержавшись holdOn мс,
    и снимается, только пропав на holdOff мс; рука у края кадра и слишком далёкая рука не управляют;
    после двуручного жеста вращение начинается только со свежего щипка (иначе оставшаяся рука дёргает деталь). */
@@ -38,8 +43,19 @@ export const CFG = {
   resetMs: 1500, resetAnim: 650,
   zoomMin: 0.5, zoomMax: 5,
   pitMin: -0.2, pitMax: Math.PI / 2 - 1e-3,
-  euro: { minCutoff: 2.2, beta: 6.0, dCutoff: 1.0 }   /* фильтр 1€ для точек (координаты 0..1, частоты в Гц) */
+  euro: { minCutoff: 2.2, beta: 6.0, dCutoff: 1.0 },  /* фильтр 1€ для точек (координаты 0..1, частоты в Гц) */
+  pointExt: 1.55, pointCurlOn: 1.22, pointCurlOff: 1.35,   /* указка: указательный прямой, остальные согнуты */
+  snapOn: 0.30, snapOff: 0.42, snapGo: 0.62, snapMs: 130,  /* щелчок: |4−12| мал, затем за ≤ snapMs вырос выше snapGo */
+  bladeOn: 0.35, bladeOff: 0.45,      /* лезвие: ширина ладони |5−17| / длина |0−9| — ладонь ребром к камере */
+  clapFrom: 3.2, clapTo: 1.4, clapMs: 320, clapCool: 800   /* хлопок: ладони сошлись с clapFrom до clapTo размеров ладони за clapMs */
 };
+/* стандартные виды для щелчка: как VIEWS на сайте (главный — вдоль +y, слева — вдоль −x) */
+export const VIEWS = [
+  { k: 'front', t: 'Главный вид', yaw: 0, pit: 1e-4 },
+  { k: 'top', t: 'Вид сверху', yaw: 0, pit: Math.PI / 2 - 1e-3 },
+  { k: 'left', t: 'Вид слева', yaw: Math.PI / 2, pit: 1e-4 },
+  { k: 'iso', t: 'Изометрия', yaw: -0.62, pit: 0.42 }
+];
 export const HOME = { yaw: -0.62, pit: 0.42, zoom: 1, panX: 0, panY: 0, explode: 0 };
 
 /* ── фильтр 1€ (Casiez, Roussel, Vogel, 2012): на медленном — сильное сглаживание, на быстром — малая задержка ── */
@@ -66,19 +82,26 @@ const PALM = [0, 5, 9, 13, 17];
 export function features(lm, cfg = CFG) {
   const palm = (D2(lm[0], lm[5]) + D2(lm[0], lm[9]) + D2(lm[0], lm[13]) + D2(lm[0], lm[17])) / 4 || 1e-6;
   const curl = FINGERS.map(([t, m]) => D2(lm[t], lm[0]) / (D2(lm[m], lm[0]) || 1e-6));
-  const pinch = D3(lm[4], lm[8]) / palm, thumb = D2(lm[4], lm[5]) / palm;
+  const pinch = D3(lm[4], lm[8]) / palm, thumb = D2(lm[4], lm[5]) / palm, mid = D3(lm[4], lm[12]) / palm;
+  /* ширина ладони к длине: ладонь к камере ~0,8; ребром — < 0,35 (пясти 5 и 17 сходятся в кадре) */
+  const width = D2(lm[5], lm[17]) / (D2(lm[0], lm[9]) || 1e-6);
+  const vert = Math.abs(lm[9].y - lm[0].y) > Math.abs(lm[9].x - lm[0].x);          /* пальцы смотрят вверх/вниз */
   const c = { x: 0, y: 0 }; PALM.forEach(i => { c.x += lm[i].x / 5; c.y += lm[i].y / 5; });
   const e = cfg.edge, out = p => p.x < e || p.x > 1 - e || p.y < e || p.y > 1 - e;
   const edge = out(c) || out(lm[4]) || out(lm[8]);
-  return { palm, curl, cmax: Math.max(...curl), cmin: Math.min(...curl), pinch, thumb, c, edge, far: palm < cfg.minPalm };
+  return { palm, curl, cmax: Math.max(...curl), cmin: Math.min(...curl), others: Math.max(curl[1], curl[2], curl[3]), pinch, thumb, mid, width, vert, c, edge, far: palm < cfg.minPalm };
 }
 
-/* сырая поза с гистерезисом относительно текущей подтверждённой: none | fist | pinch | open | idle */
+/* сырая поза с гистерезисом относительно текущей подтверждённой: none | fist | point | snap | pinch | blade | open | idle */
 export function classify(f, cur, cfg = CFG) {
   if (f.edge || f.far) return 'none';
   if (f.cmax < (cur === 'fist' ? cfg.fistOff : cfg.fistOn)) return 'fist';          /* кулак важнее щипка: в кулаке большой палец касается указательного */
+  if (f.curl[0] > cfg.pointExt && f.others < (cur === 'point' ? cfg.pointCurlOff : cfg.pointCurlOn) && f.pinch > 0.6) return 'point';
+  /* «взвод» щелчка: большой касается среднего, а не указательного (иначе это обычный щипок) */
+  if (f.mid < (cur === 'snap' ? cfg.snapOff : cfg.snapOn) && f.pinch > f.mid + 0.18) return 'snap';
   if (f.pinch < (cur === 'pinch' ? cfg.pinchOff : cfg.pinchOn)) return 'pinch';
-  if (f.cmin > (cur === 'open' ? cfg.openOff : cfg.openOn) && f.thumb > cfg.thumbOut && f.pinch > 0.9) return 'open';
+  if (f.cmin > cfg.openOff && f.width < (cur === 'blade' ? cfg.bladeOff : cfg.bladeOn)) return 'blade';
+  if (f.cmin > (cur === 'open' ? cfg.openOff : cfg.openOn) && f.thumb > cfg.thumbOut && f.pinch > 0.9 && f.width > cfg.bladeOff) return 'open';
   return 'idle';
 }
 
@@ -89,7 +112,8 @@ export function createController(opt = {}) {
   const cfg = Object.assign({}, CFG, opt.cfg || {});
   const view = Object.assign({}, HOME, opt.view || {});
   const ctl = { cfg, view, reduced: !!opt.reducedMotion, tracks: [], mode: 'idle', g: null, multiEnd: -1e9,
-    fling: null, tween: null, openSince: 0, resetLock: false, lastT: 0, frame: null };
+    fling: null, tween: null, openSince: 0, resetLock: false, lastT: 0, frame: null,
+    viewIdx: 3, clapT: -1e9, pairHist: [], toast: null };
 
   const mkTrack = (d, t) => ({ id: NEXT_ID++, handed: d.handed, seen: t, pose: 'none', raw: 'none', cand: null, candT: 0, poseT: t,
     fx: Array.from({ length: 21 }, () => new OneEuro(cfg.euro)), fy: Array.from({ length: 21 }, () => new OneEuro(cfg.euro)), pts: null, f: null, c: d.f.c });
@@ -118,6 +142,13 @@ export function createController(opt = {}) {
   /* подтверждение позы: новая поза должна продержаться holdOn (включение) или holdOff (снятие активной) */
   function debounce(tr, t, ev) {
     const raw = tr.present ? classify(tr.f, tr.pose, cfg) : tr.pose;   /* пропавшая на миг рука держит позу */
+    /* щелчок — быстрый: ловим по сырой позе, не дожидаясь подтверждения. Взведён (поза snap подтверждена),
+       и за ≤ snapMs после последнего «взведённого» кадра средний палец отлетел от большого */
+    if (tr.present && raw === 'snap') tr.snapRawT = t;
+    if (tr.present && tr.pose === 'snap' && raw !== 'snap' && tr.f.mid > cfg.snapGo && t - (tr.snapRawT || 0) <= cfg.snapMs && !tr.snapDone) {
+      tr.snapDone = true; ev.push({ type: 'snap', id: tr.id, t });
+    }
+    if (raw === 'snap') tr.snapDone = false;
     tr.raw = raw;
     if (raw === tr.pose) { tr.cand = null; return; }
     if (tr.cand !== raw) { tr.cand = raw; tr.candT = t; }
@@ -183,6 +214,30 @@ export function createController(opt = {}) {
     const T = ctl.tracks, by = p => T.filter(tr => tr.pose === p);
     const pins = by('pinch'), fists = by('fist'), opens = by('open'), v = view;
 
+    /* щелчок — следующий стандартный вид */
+    if (ev.some(e => e.type === 'snap') && !pins.length && !fists.length) {
+      ctl.viewIdx = (ctl.viewIdx + 1) % VIEWS.length; const V = VIEWS[ctl.viewIdx];
+      resetView(t, { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 });
+      ctl.toast = { t, text: V.t }; ev.push({ type: 'view', view: V.k, title: V.t, t });
+    }
+
+    /* хлопок: две открытые (или расслабленные) ладони быстро сошлись. MediaPipe часто теряет руки в момент
+       касания — поэтому хлопок засчитывается и тогда, когда руки пропали сразу после быстрого сближения */
+    const flat = T.filter(tr => tr.present && !tr.f.edge && !['pinch', 'fist', 'snap'].includes(tr.pose));
+    if (flat.length === 2) {
+      const d = D2(flat[0].f.c, flat[1].f.c) / ((flat[0].f.palm + flat[1].f.palm) / 2);
+      ctl.pairHist.push({ t, d }); while (ctl.pairHist.length && t - ctl.pairHist[0].t > cfg.clapMs) ctl.pairHist.shift();
+    }
+    const H = ctl.pairHist, lastD = H.length ? H[H.length - 1] : null;
+    if (H.length >= 2 && t - ctl.clapT > cfg.clapCool && !['zoom', 'pan', 'explode'].includes(ctl.mode)) {
+      const far = Math.max(...H.map(h => h.d)), lost = flat.length < 2 && t - lastD.t < 120;
+      if (far > cfg.clapFrom && (lastD.d < cfg.clapTo || (lost && lastD.d < cfg.clapTo * 1.8))) {
+        ctl.clapT = t; ctl.pairHist = []; ev.push({ type: 'clap', t });
+        ctl.resetLock = true; if (ctl.mode === 'reset') begin('idle', t, ev);      /* после хлопка ладони открыты — это не сброс */
+      }
+    }
+    if (flat.length < 2 && lastD && t - lastD.t > 150) ctl.pairHist = [];
+
     /* вращение кончается: щипок отпущен, а рука на месте — с инерцией; пропала или ушла к краю — без */
     if (ctl.mode === 'rotate' && ctl.g) { const h = T.find(tr => tr.id === ctl.g.id); ctl.g.released = !!(h && h.present && (h.pose === 'idle' || h.pose === 'open')); }   /* сжал в кулак — «поймал», без инерции */
     const multi = ['zoom', 'pan', 'explode'].includes(ctl.mode);
@@ -223,6 +278,11 @@ export function createController(opt = {}) {
           g.relT = 0;
         } else if (!g.relT && h.present && h.cand && h.cand !== 'pinch') g.relT = h.candT;   /* пальцы начали размыкаться */
       }
+    } else if (by('blade').length && !pins.length && !fists.length) {
+      /* лезвие: секущая плоскость идёт за ребром ладони; где она в мире — считает app.js (нужна камера) */
+      const h = by('blade')[0]; begin('section', t, ev, { id: h.id });
+    } else if (by('point').length && !pins.length && !fists.length) {
+      const h = by('point')[0]; begin('point', t, ev, { id: h.id });
     } else if (opens.length >= 1 && pins.length === 0 && fists.length === 0) {
       if (ctl.resetLock) begin('idle', t, ev);
       else {
@@ -233,8 +293,12 @@ export function createController(opt = {}) {
     if (!opens.length) ctl.resetLock = false;
 
     const resetP = ctl.mode === 'reset' ? clamp((t - ctl.openSince) / cfg.resetMs, 0, 1) : 0;
+    const gT = ctl.g && T.find(tr => tr.id === ctl.g.id);
+    const blade = ctl.mode === 'section' && gT && gT.pts ? { kind: gT.f.vert ? 'v' : 'h', x: gT.palmC.x, y: gT.palmC.y } : null;
+    const point = ctl.mode === 'point' && gT && gT.pts ? { x: gT.pts[8].x, y: gT.pts[8].y, id: gT.id } : null;
+    if (ctl.toast && t - ctl.toast.t > 1600) ctl.toast = null;
     ctl.frame = {
-      t, mode: ctl.mode, label: LABEL[ctl.mode] ? LABEL[ctl.mode](v) : '', resetP, events: ev,
+      t, mode: ctl.mode, label: ctl.toast ? ctl.toast.text : LABEL[ctl.mode] ? LABEL[ctl.mode](v) : '', resetP, events: ev, blade, point,
       hands: T.map(tr => ({ id: tr.id, handed: tr.handed, pose: tr.pose, raw: tr.raw, present: tr.present, pts: tr.pts, pin: tr.pin, palmC: tr.palmC,
         ignored: !!(tr.f && (tr.f.edge || tr.f.far)), why: tr.f ? (tr.f.edge ? 'край кадра' : tr.f.far ? 'далеко' : '') : '',
         pinchAmt: tr.f ? clamp((cfg.pinchOff * 1.6 - tr.f.pinch) / (cfg.pinchOff * 1.6 - cfg.pinchOn), 0, 1) : 0,
@@ -277,5 +341,6 @@ export function createController(opt = {}) {
 const LABEL = {
   rotate: () => 'вращение', zoom: v => 'зум ×' + v.zoom.toFixed(2), pan: () => 'панорама',
   explode: v => 'разбор ' + Math.round(v.explode * 100) + '%', reset: () => 'держи ладонь — сброс вида',
+  section: () => 'разрез — веди ребром ладони', point: () => 'указка',
   wait: () => 'отпусти щипок и щипни снова', idle: () => ''
 };

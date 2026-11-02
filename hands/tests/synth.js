@@ -13,6 +13,13 @@ const LEN = { 5: [0.45, 0.27, 0.22], 9: [0.50, 0.30, 0.23], 13: [0.46, 0.28, 0.2
 const BEND = {
   open: [0, 0, 0], idle: [30, 40, 20], fist: [95, 95, 65], pinch: [35, 35, 20]
 };
+/* сгиб по пальцам для поз, где пальцы ведут себя по-разному: [указательный, средний, безымянный, мизинец] */
+const PER = {
+  point: [BEND.open, BEND.fist, BEND.fist, BEND.fist],
+  snap: [BEND.open, BEND.pinch, BEND.idle, BEND.idle],        /* большой упёрся в средний, указательный отведён */
+  snapped: [BEND.idle, BEND.fist, BEND.idle, BEND.idle],      /* средний ударил в ладонь */
+  blade: [BEND.open, BEND.open, BEND.open, BEND.open]
+};
 
 function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) / 4294967296); }; }
 function gauss(r) { const u = Math.max(1e-9, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
@@ -23,7 +30,7 @@ export function handLocal(pose = 'open', gap = 1.2, bendOver) {
   const bend = bendOver || BEND[pose] || BEND.idle;
   for (const m of [5, 9, 13, 17]) {
     const [x, y] = MCP[m]; P[m] = [x, y, 0];
-    const fb = pose === 'pinch' && m !== 5 ? BEND.idle : bend;        /* при щипке остальные пальцы расслаблены */
+    const fb = PER[pose] && !bendOver ? PER[pose][[5, 9, 13, 17].indexOf(m)] : pose === 'pinch' && m !== 5 ? BEND.idle : bend;   /* при щипке остальные пальцы расслаблены */
     let a = 0, p = [x, y, 0];
     for (let j = 0; j < 3; j++) { a += fb[j] * Math.PI / 180; const l = LEN[m][j];
       p = [p[0] + (x * 0.08) * l, p[1] + Math.cos(a) * l, p[2] - Math.sin(a) * l]; P[m + j + 1] = p; }
@@ -35,7 +42,11 @@ export function handLocal(pose = 'open', gap = 1.2, bendOver) {
     P[4] = tip; P[3] = [(P[2][0] + tip[0]) / 2 - 0.05, (P[2][1] + tip[1]) / 2, tip[2] / 2];
   } else if (pose === 'fist') {                  /* большой палец лежит на согнутых пальцах — касается указательного */
     P[3] = [-0.45, 0.62, -0.1]; P[4] = [-0.22, 0.72, -0.25];
-  } else if (pose === 'open') {
+  } else if (pose === 'snap') {                  /* кончик большого — к кончику среднего */
+    const t12 = P[12]; P[4] = [t12[0] - 0.12, t12[1] - 0.05, t12[2]]; P[3] = [(P[2][0] + P[4][0]) / 2 - 0.05, (P[2][1] + P[4][1]) / 2, P[4][2] / 2];
+  } else if (pose === 'point') {                 /* большой прижат к согнутым пальцам */
+    P[3] = [-0.42, 0.55, -0.1]; P[4] = [-0.1, 0.6, -0.3];
+  } else if (pose === 'open' || pose === 'blade' || pose === 'snapped') {
     P[3] = [-0.78, 0.6, 0]; P[4] = [-0.95, 0.75, 0];
   } else { P[3] = [-0.62, 0.6, -0.05]; P[4] = [-0.6, 0.78, -0.1]; }
   return P;
@@ -47,8 +58,9 @@ const LC = (() => { const P = handLocal('open'); const c = [0, 0]; [0, 5, 9, 13,
 export function hand(o = {}) {
   const { pose = 'open', gap = 1.2, cx = 0.5, cy = 0.55, size = 0.12, rot = 0, noise = 0, seed = 7, bend } = o;
   const P = handLocal(pose, gap, bend), r = rng(seed), c = Math.cos(rot), s = Math.sin(rot);
+  const sq = pose === 'blade' ? 0.25 : 1;                  /* ребро ладони к камере: поперёк ладони всё сжато */
   return P.map(([x, y, z]) => {
-    const lx = x - LC[0], ly = y - LC[1];
+    const lx = (x - LC[0]) * sq, ly = y - LC[1];
     /* локальная y — вверх по руке, в кадре вверх — это минус y */
     const X = (lx * c - ly * s) * size, Y = -(lx * s + ly * c) * size;
     const mx = cx + X, my = cy + Y;

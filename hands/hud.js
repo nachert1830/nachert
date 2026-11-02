@@ -140,15 +140,70 @@ export function createHud(canvas) {
     ctx.restore();
   }
 
-  function draw({ frame, view, holo, t, reduced, info, showLabels = true }) {
+  /* разовые эффекты: ударная волна хлопка, вспышка щелчка */
+  const fx = [];
+  function effect(type, x, y, t) { fx.push({ type, x, y, t0: t }); }
+  function drawEffects(t, reduced) {
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const e = fx[i], u = (t - e.t0) / (e.type === 'shock' ? 700 : 450); if (u > 1 || u < 0) { if (u > 1) fx.splice(i, 1); continue; }
+      ctx.save(); ctx.globalAlpha = 1 - u;
+      if (e.type === 'shock') {
+        const R = Math.max(W, H) * (reduced ? 0.15 : 0.08 + 0.55 * u);
+        ring(e.x, e.y, R, CY, 3 * (1 - u) + 1); ring(e.x, e.y, R * 0.72, CY2 + '.6)', 1.5); ring(e.x, e.y, R * 0.45, AM, 1);
+      } else {
+        const R = 14 + 40 * u; ring(e.x, e.y, R, OK, 2);
+        for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; ctx.beginPath(); ctx.moveTo(e.x + Math.cos(a) * R * 0.6, e.y + Math.sin(a) * R * 0.6); ctx.lineTo(e.x + Math.cos(a) * R, e.y + Math.sin(a) * R); ctx.strokeStyle = OK; ctx.lineWidth = 1.5; ctx.stroke(); }
+      }
+      ctx.restore();
+    }
+    return fx.length > 0;
+  }
+
+  /* указка: прицел на кончике пальца, луч в деталь и подпись части под ним */
+  function drawPointer(ptr, holo, t) {
+    if (!ptr) return;
+    const { x, y, hover } = ptr, col = hover ? OK : CY;
+    ctx.save();
+    if (!ptr.mouse) ring(x, y, 10, col, 2), ring(x, y, 3, col, 2);
+    for (let k = 0; k < (ptr.mouse ? 0 : 4); k++) { const a = k * Math.PI / 2 + t / 900; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 13, y + Math.sin(a) * 13); ctx.lineTo(x + Math.cos(a) * 20, y + Math.sin(a) * 20); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); }
+    if (hover) {
+      const lb = LABELS[hover === 'holes' ? 'hole0' : hover]; if (lb) {
+        const side = x > W - 260 ? -1 : 1, tx = x + side * 30;
+        ctx.textAlign = side > 0 ? 'left' : 'right';
+        ctx.font = '600 14px system-ui,sans-serif'; const w1 = ctx.measureText(lb.t).width; ctx.font = '12px system-ui,sans-serif'; const w2 = ctx.measureText(lb.d).width;
+        const bw = Math.max(w1, w2) + 20, bx = side > 0 ? tx - 10 : tx - bw + 10;
+        ctx.fillStyle = holo.mode === 'draft' ? 'rgba(255,255,255,.92)' : 'rgba(4,12,24,.88)'; ctx.strokeStyle = col; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.rect(bx, y - 42, bw, 46); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = col; ctx.font = '600 14px system-ui,sans-serif'; ctx.fillText(lb.t, tx, y - 22);
+        ctx.fillStyle = TXT; ctx.font = '12px system-ui,sans-serif'; ctx.fillText(lb.d, tx, y - 6);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* разрез: подпись снизу по центру */
+  function drawSection(sec) {
+    if (!sec) return;
+    ctx.save(); ctx.font = '600 13px ui-monospace,SFMono-Regular,Menlo,monospace'; ctx.textAlign = 'center';
+    const text = sec.title.toUpperCase() + (sec.value ? '  ·  ' + sec.value : ''), w = ctx.measureText(text).width + 28;
+    ctx.fillStyle = 'rgba(4,12,24,.85)'; ctx.strokeStyle = CY; ctx.lineWidth = 1; ctx.beginPath(); ctx.rect(W / 2 - w / 2, H - 70, w, 28); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = CY; ctx.fillText(text, W / 2, H - 51);
+    if (sec.hint) { ctx.font = '11px system-ui,sans-serif'; ctx.fillStyle = TXT; ctx.fillText(sec.hint, W / 2, H - 78); }
+    ctx.restore();
+  }
+
+  function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null }) {
     usePal(holo.mode); size(); ctx.clearRect(0, 0, W, H);
     drawFrame(view, info);
     if (showLabels) drawLabels(holo, view);
     drawGauge(view, frame || { mode: '' });
+    drawSection(section);
     moving = false; seen = new Set();
     if (frame) frame.hands.forEach(h => drawHand(h, frame, t, reduced));
     for (const id of shownPts.keys()) if (!seen.has(id)) shownPts.delete(id);
+    drawPointer(pointer, holo, t);
+    if (drawEffects(t, reduced)) moving = true;
     return moving;                                                  /* true — курсоры ещё догоняют, нужен следующий кадр */
   }
-  return { draw, map };
+  return { draw, map, effect };
 }
