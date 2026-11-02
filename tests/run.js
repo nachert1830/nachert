@@ -8,7 +8,7 @@ let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=re
 const ROOT=path.join(__dirname,'..'), QUICK=process.argv.includes('--quick');
 /* --json=файл — все замеры одной записью (для тезисов и отчётов: каждое число — с коммитом, на котором оно получено) */
 const JSONOUT=(process.argv.find(a=>a.startsWith('--json='))||'').slice(7), M={};
-const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.webmanifest':'application/manifest+json','.txt':'text/plain'};
+const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.webmanifest':'application/manifest+json','.txt':'text/plain'};
 const baseline=JSON.parse(fs.readFileSync(path.join(__dirname,'baseline.json'),'utf8')).accepted.map(a=>a.key);
 
 function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html';
@@ -218,6 +218,12 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     const ev=await apage.evaluate(()=>window.__EV);
     ['task_open:watch:12','task_mode:try:12','task_done:watch:12'].forEach(e=>{ if(!ev.includes(e)) fail.push('Статистика режимов: нет события '+e+' (пришло: '+ev.join(', ')+')'); });
     info.push('Статистика режимов: '+ev.length+' событий на один разбор ('+[...new Set(ev.map(e=>e.split(':')[0]))].join(', ')+')'); await apage.close(); }
+
+  /* 3и. кабинет: сканер → «Мои чертежи» → доводка → 3D (tests/lk-drawings.js): логика восстановления по двум проекциям,
+     путь студента в кабинете и настоящий конвейер сканера на синтетическом фото (облако подменено ответами модели) */
+  { const {bad,res}=await require('./lk-drawings.js').runLk(browser,URL);
+    info.push('Мои чертежи: '+bad.length+' замечаний'+(res&&!res.err?' (конвейер на синтетическом фото: ДЗ №'+res.dz+' в.'+res.n+', невязка '+res.rms+' мм, рёбер '+res.edges+')':''));
+    report('Мои чертежи (сканер в кабинете)',bad); }
 
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));

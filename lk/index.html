@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#07112a">
 <title>Начерт — кабинет</title>
 <link rel="icon" href="../icon-192.png">
+<link rel="stylesheet" href="drawings/ui.css?v=1">
 <style>
 /* Шрифты — из общей папки сайта */
 @font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
@@ -284,10 +285,10 @@ details summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px}
       <!-- Проверка листа по фото -->
       <div class="card promo">
         <div>
-          <h3>Проверь лист по фото</h3>
-          <p>Вердикт за минуту: что верно, где ошибка</p>
+          <h3>Оцифруй лист по фото</h3>
+          <p>Копия в мм, доводка и 3D по твоему эпюру</p>
         </div>
-        <button class="btn white" data-soon="Проверка листа">Проверить</button>
+        <button class="btn white" data-scan="cam">Сканировать</button>
         <svg class="art" viewBox="0 0 160 170" aria-hidden="true">
           <g transform="rotate(8 80 90)">
             <rect x="26" y="22" width="108" height="140" rx="8" fill="#fff"/>
@@ -311,14 +312,15 @@ details summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px}
     <section class="view" id="v-cal"><h2 style="margin:6px 4px 0">Что и когда сдавать</h2><div id="calList" class="rows"></div></section>
     <section class="view" id="v-learn"><div class="card soon"><svg class="i"><use href="#i-book"/></svg><h2>Учёба</h2><p class="mut">Тетрадь, билеты и разборы — скоро.</p></div></section>
     <section class="view" id="v-me"><div class="card" style="display:grid;gap:12px"><h2 style="margin:0">Профиль</h2><div class="mut" id="meG"></div><button class="btn" data-group>Выбрать группу</button><p class="note" style="margin:0">Вариант, напоминания и прогресс — скоро.</p></div></section>
-    <section class="view" id="v-check"><div class="card soon"><svg class="i"><use href="#i-scan"/></svg><h2>Проверка листа</h2><p class="mut">Сфотографируйте лист — получите вердикт. Скоро.</p></div></section>
+    <!-- Сканер чертежей и «Мои чертежи» — lk/drawings/ui.js -->
+    <section class="view" id="v-check"><div class="card soon"><svg class="i"><use href="#i-scan"/></svg><h2>Сканер чертежей</h2><p class="mut">Загружается…</p></div></section>
   </main>
 </div>
 
 <nav class="tabs" aria-label="Разделы"><div class="tabs-in">
   <button class="tab on" data-tab="home"><svg class="i"><use href="#i-home"/></svg>Главная</button>
   <button class="tab" data-tab="cal"><svg class="i"><use href="#i-cal"/></svg>Сдачи<span class="badge" id="calBadge" hidden></span></button>
-  <button class="tab center" data-tab="check" aria-label="Проверка"><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span>Проверка</span></button>
+  <button class="tab center" data-tab="check" aria-label="Сканер чертежей"><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span>Скан</span></button>
   <button class="tab" data-tab="learn"><svg class="i"><use href="#i-book"/></svg>Учёба</button>
   <button class="tab" data-tab="me"><svg class="i"><use href="#i-user"/></svg>Профиль</button>
 </div></nav>
@@ -501,5 +503,11 @@ details summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px}
   document.addEventListener('keydown',function(e){ if(!sv.classList.contains('on')) return; if(e.key==='Escape') close(); if(e.key==='ArrowRight') show(cur+1); if(e.key==='ArrowLeft') show(cur-1); });
 })();
 </script>
+<script src="scan/config.js"></script>
+<script src="scan/pipeline.js?v=lk1"></script>
+<script src="drawings/model.js?v=1"></script>
+<script src="drawings/view3d.js?v=1"></script>
+<script src="drawings/demo.js?v=1"></script>
+<script src="drawings/ui.js?v=1"></script>
 </body>
 </html>
