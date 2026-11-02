@@ -74,7 +74,7 @@ const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','
 const $=id=>document.getElementById(id), L=self.LAB;
 let file=null, RES=null, PASS=sessionStorage.getItem('betaPass')||'';
 try{}catch(e){}
-const CLOUD=String(window.SCAN_API||'').trim();   /* адрес облачной функции — config.js, его пишет развёртывание */
+const CLOUD=String(window.SCAN_API||'').trim().replace(/[?&]integration=raw$/,'');   /* raw-режим Яндекса не отдаёт функции заголовки — адрес всегда без него */   /* адрес облачной функции — config.js, его пишет развёртывание */
 let CODE=''; try{ CODE=localStorage.getItem('scanCode')||''; }catch(e){}
 if(CLOUD){ $('coderow').classList.remove('hide'); $('code').value=CODE; $('code').onchange=()=>{ CODE=$('code').value.trim(); try{ localStorage.setItem('scanCode',CODE); }catch(e){} }; }
 const hosted=!CLOUD&&!/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)&&location.protocol!=='file:';

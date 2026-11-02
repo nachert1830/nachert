@@ -4,7 +4,7 @@
    Доступ — по коду: заголовок x-scan-code, сверка по SHA-256 (SCAN_CODE_SHA256), перебор кода ограничен (10 неудач за 10 минут на адрес).
    Браузер: CORS только для SCAN_ORIGINS (по умолчанию nachert1830.ru). Расход ограничен: SCAN_LIMIT_USD на экземпляр функции и
    SCAN_HOURLY запросов в час — это страховка, а не бухгалтерия (счётчики живут, пока жив экземпляр); баланс ProxyAPI — главный предел.
-   Фото не сохраняется и не пишется в журнал. Развёртывание: .github/workflows/scan-deploy.yml. Вызов — ?integration=raw. */
+   Фото не сохраняется и не пишется в журнал. Развёртывание: .github/workflows/scan-deploy.yml. Вызов — по адресу функции БЕЗ ?integration=raw (в raw-режиме функция получает только тело запроса: ни заголовков, ни метода, ни статуса ответа). */
 'use strict';
 const crypto=require('crypto');
 const EY=(()=>{ try{ return require('./eyes.js'); }catch(e){ return require('../lib/eyes.js'); } })();

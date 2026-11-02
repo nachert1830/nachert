@@ -1,5 +1,5 @@
 name: Сканер листа — развёртывание облачной функции
-# Одна функция Yandex Cloud (nachert-scan) без шлюза и базы: страница nachert1830.ru/lk/scan/ присылает ей кадры чертежей, функция
+# Одна функция Yandex Cloud (nachert-scan) без шлюза и базы (вызов по адресу БЕЗ ?integration=raw — в raw-режиме функция не видит заголовков и метода): страница nachert1830.ru/lk/scan/ присылает ей кадры чертежей, функция
 # добавляет ключ ProxyAPI и возвращает ответ модели. Доступ — по коду (SHA-256 в SCAN_CODE_SHA256). Адрес функции записывается
 # в lk/scan/config.js и коммитится в main (страница публикуется GitHub Pages). Нужны секреты: YC_SA_KEY, PROXYAPI_KEY (как у club.yml).
 # Запуск вручную: Actions → «Сканер листа — развёртывание» → Run workflow (ветка main).
@@ -65,18 +65,25 @@ jobs:
           yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 60s \
             --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,SCAN_LIMIT_USD=$SCAN_LIMIT,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
           ID=$(yc serverless function get --name nachert-scan --format json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).id))")
-          URL="https://functions.yandexcloud.net/$ID?integration=raw"
+          URL="https://functions.yandexcloud.net/$ID"
           echo "SCAN_URL=$URL" >> "$GITHUB_ENV"; echo "Адрес функции: $URL"
-      - name: "Проверка — функция жива, код проверяется"
+      - name: "Проверка — функция жива, код проверяется (любое расхождение — ошибка)"
         env:
           C: ${{ github.event.inputs.code || 'виктория' }}
         run: |
           ENC=$(node -e "console.log(encodeURIComponent(process.env.C))")
-          echo "GET без кода (ожидаем codeNeeded):"; curl -sS -m 30 -H "Origin: https://nachert1830.ru" "$SCAN_URL"; echo
-          echo -n "GET с неверным кодом (ожидаем 401): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -H "Origin: https://nachert1830.ru" -H "x-scan-code: nope" "$SCAN_URL"
-          echo -n "GET с верным кодом (ожидаем 200): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC" "$SCAN_URL"
-          echo -n "OPTIONS с сайта (ожидаем 204): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -X OPTIONS -H "Origin: https://nachert1830.ru" -H "Access-Control-Request-Method: POST" "$SCAN_URL"
-          echo -n "OPTIONS с чужого адреса (ожидаем 403): "; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" -X OPTIONS -H "Origin: https://evil.example" "$SCAN_URL"
+          fail=0
+          chk(){ # описание, ожидаемый код, остальные аргументы curl
+            local d="$1" want="$2"; shift 2
+            got=$(curl -sS -m 40 -o /tmp/body.txt -w "%{http_code}" "$@" "$SCAN_URL"); echo "$d: HTTP $got (ждали $want)"; [ "$got" = "$want" ] || { echo "::error::$d: получили $got, ждали $want"; head -c 300 /tmp/body.txt; echo; fail=1; }; }
+          chk "GET без кода" 200 -H "Origin: https://nachert1830.ru"; grep -q codeNeeded /tmp/body.txt || { echo "::error::в ответе нет codeNeeded"; fail=1; }
+          chk "GET с неверным кодом" 401 -H "Origin: https://nachert1830.ru" -H "x-scan-code: nope"
+          chk "GET с верным кодом" 200 -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC"; grep -q codeOk /tmp/body.txt || { echo "::error::верный код не принят"; fail=1; }
+          chk "OPTIONS с сайта" 204 -X OPTIONS -H "Origin: https://nachert1830.ru" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,x-scan-code" -D /tmp/h.txt
+          grep -qi "access-control-allow-origin: https://nachert1830.ru" /tmp/h.txt || { echo "::error::нет заголовка CORS для сайта"; cat /tmp/h.txt; fail=1; }
+          chk "OPTIONS с чужого адреса" 403 -X OPTIONS -H "Origin: https://evil.example"
+          chk "POST без кода" 401 -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -d '{}'
+          exit $fail
       - name: Адрес — в страницу сканера (lk/scan/config.js) и в main
         run: |
           printf '/* Адрес облачной функции сканера. Файл пишет .github/workflows/scan-deploy.yml. */\nwindow.SCAN_API=window.SCAN_API||"%s";\n' "$SCAN_URL" > lk/scan/config.js
