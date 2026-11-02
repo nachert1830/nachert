@@ -1,379 +1,316 @@
 /* Автотесты жестов: node --test hands/tests/
-   Синтетические руки (synth.js) → createController().update(hands, t) → проверяем вид и события.
-   Каждый жест — с пороговыми случаями: ±ε у порога, гистерезис, длительность чуть меньше/больше минимальной. */
+   Синтетические руки (synth.js) → createController().update(hands, t) → проверяем вид, захваты, меню и события.
+   Каждый жест — с пороговыми случаями: ±ε у порога, гистерезис, длительность чуть меньше/больше минимальной,
+   низкая частота кадров, пропажа руки, вторая рука. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createController, CFG, HOME, OneEuro } from '../gestures.js';
+import { createController, CFG, HOME, OneEuro, features, classify } from '../gestures.js';
 import { hand, run, events } from './synth.js';
 
-const DT = 33;                                           /* ≈ 30 кадров/с, как у камеры */
 const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg || ''} ожидалось ${b}±${eps}, получено ${a}`);
 const lerp = (a, b, u) => a + (b - a) * Math.max(0, Math.min(1, u));
-const ctlNew = (o) => createController(o);
+/* контроллер с подменяемой целью щипка: tg.v — что «под курсором» */
+const mk = (o = {}) => { const tg = { v: null }; const c = createController(Object.assign({ target: () => tg.v, menu: () => MENU }, o)); c.tg = tg; return c; };
+const MENU = [{ k: 'up', t: 'Вверх' }, { k: 'right', t: 'Вправо', sub: [{ k: 's0' }, { k: 's1' }, { k: 's2' }, { k: 's3' }] }, { k: 'down', t: 'Вниз' }, { k: 'left', t: 'Влево' }];
+const P = (o = {}) => hand(Object.assign({ pose: 'pinch', gap: 0.1 }, o));
+const I = (o = {}) => hand(Object.assign({ pose: 'idle' }, o));
+const O = (o = {}) => hand(Object.assign({ pose: 'open' }, o));
 
-/* ── щипок: порог, гистерезис, минимальная длительность ── */
+/* ── щипок: порог, гистерезис, длительность, кадры ── */
 test('щипок: чуть ниже порога включения — да, чуть выше — нет', () => {
   for (const [gap, on] of [[CFG.pinchOn - 0.02, true], [CFG.pinchOn + 0.02, false]]) {
-    const c = ctlNew(), fr = run(c, 0, 400, () => [hand({ pose: 'pinch', gap })]);
+    const c = mk(), fr = run(c, 0, 400, () => [P({ gap })]);
     assert.equal(events(fr, 'pinch-on').length > 0, on, 'gap ' + gap);
   }
 });
 test('щипок: гистерезис — включённый держится до pinchOff', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1 })]);
-  let fr = run(c, 333, 900, () => [hand({ pose: 'pinch', gap: CFG.pinchOff - 0.03 })]);    /* выше pinchOn, но ниже pinchOff */
+  const c = mk();
+  run(c, 0, 300, () => [P()]);
+  let fr = run(c, 333, 900, () => [P({ gap: CFG.pinchOff - 0.03 })]);
   assert.equal(events(fr, 'pinch-off').length, 0, 'не должен отпуститься внутри зоны гистерезиса');
-  fr = run(c, 933, 1400, () => [hand({ pose: 'pinch', gap: CFG.pinchOff + 0.03 })]);
+  fr = run(c, 933, 1400, () => [P({ gap: CFG.pinchOff + 0.03 })]);
   assert.equal(events(fr, 'pinch-off').length, 1);
 });
 test('щипок: короче holdOn — не засчитывается, дольше — засчитывается', () => {
-  const short = ctlNew(), long = ctlNew();
-  const f = len => t => [hand({ pose: t >= 99 && t < 99 + len ? 'pinch' : 'idle', gap: 0.1 })];
-  assert.equal(events(run(short, 0, 600, f(CFG.holdOn - 30)), 'pinch-on').length, 0);
-  assert.equal(events(run(long, 0, 600, f(CFG.holdOn + 40)), 'pinch-on').length, 1);
+  const f = len => t => [t >= 99 && t < 99 + len ? P() : I()];
+  assert.equal(events(run(mk(), 0, 600, f(CFG.holdOn - 30)), 'pinch-on').length, 0);
+  assert.equal(events(run(mk(), 0, 600, f(CFG.holdOn + 40)), 'pinch-on').length, 1);
+});
+test('7 кадров/с: щипок в одном кадре — выброс, в двух подряд — засчитан', () => {
+  const dt = 143, one = mk(), two = mk();
+  const e1 = events(run(one, 0, 1500, t => [t === 429 ? P() : I()], dt), 'pinch-on');
+  const e2 = events(run(two, 0, 1500, t => [t === 429 || t === 572 ? P() : I()], dt), 'pinch-on');
+  assert.equal(e1.length, 0, 'один кадр'); assert.equal(e2.length, 1, 'два кадра');
 });
 test('щипок: пропуск на 1–2 кадра (дрожь пальцев) не отпускает', () => {
-  const c = ctlNew();
-  const fr = run(c, 0, 1200, t => [hand({ pose: 'pinch', gap: t > 500 && t < 560 ? 0.7 : 0.1 })]);
+  const c = mk(), fr = run(c, 0, 1200, t => [P({ gap: t > 500 && t < 560 ? 0.7 : 0.1 })]);
   assert.equal(events(fr, 'pinch-off').length, 0);
 });
+test('кулак — не щипок, хотя большой палец лежит на указательном', () => {
+  const f = features(hand({ pose: 'fist' }));
+  assert.ok(f.pinch < CFG.pinchOn, 'в кулаке кончики 4 и 8 рядом'); assert.equal(classify(f, 'none'), 'fist');
+  assert.equal(events(run(mk(), 0, 800, () => [hand({ pose: 'fist' })]), 'pinch-on').length, 0);
+});
+test('быстрое (смазанное) движение: щипок не начинается, пока рука не замедлится', () => {
+  const c = mk();
+  run(c, 0, 300, () => [I({ cx: 0.3 })]);
+  let fr = run(c, 333, 700, t => [P({ cx: 0.3 + (t - 333) * 0.0012 })]);           /* ~1,2 кадра/с ≈ 10 ладоней/с */
+  assert.equal(events(fr, 'pinch-on').length, 0, 'на скорости');
+  fr = run(c, 733, 1100, () => [P({ cx: 0.74 })]);
+  assert.equal(events(fr, 'pinch-on').length, 1, 'остановилась — щипок');
+});
 
-/* ── вращение и инерция ── */
-test('вращение: щипок и движение вправо/вниз — yaw уменьшается, pit растёт на rotGain × смещение', () => {
-  const c = ctlNew(), y0 = c.view.yaw, p0 = c.view.pit;
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.4, cy: 0.5 })]);
-  run(c, 333, 1300, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.4, 0.6, (t - 333) / 700), cy: lerp(0.5, 0.55, (t - 333) / 700) })]);
-  run(c, 1333, 1800, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.6, cy: 0.55 })]);     /* постоять: фильтр догонит */
+/* ── щипок по пустому месту: вращение и инерция ── */
+test('вращение: щипок мимо целей и движение вправо/вниз — yaw уменьшается, pit растёт на rotGain × смещение', () => {
+  const c = mk(), y0 = c.view.yaw, p0 = c.view.pit;
+  run(c, 0, 300, () => [P({ cx: 0.4, cy: 0.5 })]);
+  assert.equal(c.mode, 'rotate', 'по пустому месту вращение — сразу');
+  run(c, 333, 1300, t => [P({ cx: lerp(0.4, 0.6, (t - 333) / 700), cy: lerp(0.5, 0.55, (t - 333) / 700) })]);
+  run(c, 1333, 1800, () => [P({ cx: 0.6, cy: 0.55 })]);
   near(y0 - c.view.yaw, 0.2 * CFG.rotGain, 0.05, 'yaw');
   near(c.view.pit - p0, 0.05 * CFG.rotGain, 0.04, 'pit');
-  assert.equal(c.frame.mode, 'rotate');
 });
-test('вращение: быстрый свайп и отпускание — инерция докручивает и затухает', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.3 })]);
-  run(c, 333, 600, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.3, 0.6, (t - 333) / 267) })]);   /* ~1,1 кадра/с */
-  const fr = run(c, 633, 900, () => [hand({ pose: 'idle', cx: 0.6 })]);
+test('вращение: быстрый свайп и отпускание — инерция докручивает и затухает; щипок её ловит', () => {
+  const c = mk();
+  run(c, 0, 300, () => [P({ cx: 0.3 })]);
+  run(c, 333, 600, t => [P({ cx: lerp(0.3, 0.6, (t - 333) / 267) })]);
+  const fr = run(c, 633, 900, () => [I({ cx: 0.6 })]);
   assert.equal(events(fr, 'fling').length, 1, 'ждали инерцию');
-  const y1 = c.view.yaw; c.tick(1100); const y2 = c.view.yaw; c.tick(3000); c.tick(6000);
-  assert.ok(y2 < y1 - 0.05, 'после отпускания модель ещё крутится');
-  assert.ok(!c.fling, 'инерция затухла');
+  const y1 = c.view.yaw; c.tick(1000); assert.ok(c.view.yaw < y1 - 0.02, 'после отпускания модель ещё крутится');
+  const fr2 = run(c, 1033, 1300, () => [P({ cx: 0.6 })]);
+  assert.equal(events(fr2, 'catch').length, 1); assert.ok(!c.fling, 'щипок остановил инерцию');
 });
-test('кулак ловит деталь: инерция останавливается; щипок → кулак — без инерции', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.3 })]);
-  run(c, 333, 600, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.3, 0.6, (t - 333) / 267) })]);
-  let fr = run(c, 633, 800, () => [hand({ pose: 'idle', cx: 0.6 })]);
-  assert.equal(events(fr, 'fling').length, 1);
-  fr = run(c, 833, 1200, () => [hand({ pose: 'fist', cx: 0.6 })]);
-  assert.equal(events(fr, 'catch').length, 1); assert.ok(!c.fling);
-  const y = c.view.yaw; c.tick(2000); assert.equal(c.view.yaw, y, 'после «поимки» не крутится');
-  /* щипок сразу в кулак */
-  const d = ctlNew();
-  run(d, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.3 })]);
-  run(d, 333, 600, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.3, 0.6, (t - 333) / 267) })]);
-  assert.equal(events(run(d, 633, 900, () => [hand({ pose: 'fist', cx: 0.6 })]), 'fling').length, 0);
+test('вращение: медленное движение — без инерции; reduced motion — без инерции', () => {
+  const c = mk();
+  run(c, 0, 300, () => [P({ cx: 0.5 })]);
+  run(c, 333, 2300, t => [P({ cx: lerp(0.5, 0.55, (t - 333) / 2000) })]);
+  assert.equal(events(run(c, 2333, 2700, () => [I({ cx: 0.55 })]), 'fling').length, 0);
+  const d = mk({ reducedMotion: true });
+  run(d, 0, 300, () => [P({ cx: 0.3 })]); run(d, 333, 600, t => [P({ cx: lerp(0.3, 0.6, (t - 333) / 267) })]);
+  assert.equal(events(run(d, 633, 900, () => [I({ cx: 0.6 })]), 'fling').length, 0);
 });
-test('вращение: медленное движение — без инерции; сглаживание не даёт рывка при размыкании пальцев', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.5 })]);
-  run(c, 333, 2300, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.5, 0.55, (t - 333) / 2000) })]);
-  const y1 = c.view.yaw;
-  /* пальцы размыкаются: кончик большого уходит — точка щипка смещается, вид не должен прыгнуть */
-  const fr = run(c, 2333, 2700, t => [hand({ pose: 'pinch', gap: lerp(0.1, 0.9, (t - 2333) / 150), cx: 0.55 })]);
-  assert.equal(events(fr, 'fling').length, 0);
-  near(c.view.yaw, y1, 0.03, 'рывок при отпускании');
-});
-test('prefers-reduced-motion: инерции нет, сброс без анимации', () => {
-  const c = ctlNew({ reducedMotion: true });
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.3 })]);
-  run(c, 333, 600, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.3, 0.6, (t - 333) / 267) })]);
-  const fr = run(c, 633, 900, () => [hand({ pose: 'idle', cx: 0.6 })]);
-  assert.equal(events(fr, 'fling').length, 0);
-  run(c, 933, 2600, () => [hand({ pose: 'open', cx: 0.6 })]);
-  assert.deepEqual({ ...c.view }, { ...HOME });
+test('7 кадров/с — упрощённый режим: без инерции', () => {
+  const c = mk(), dt = 143;
+  run(c, 0, 1000, () => [P({ cx: 0.3 })], dt);
+  run(c, 1001, 1430, t => [P({ cx: lerp(0.3, 0.55, (t - 1001) / 429) })], dt);
+  const fr = run(c, 1573, 2300, () => [I({ cx: 0.55 })], dt);
+  assert.ok(fr[0].lowFps, 'режим включился'); assert.equal(events(fr, 'fling').length, 0);
 });
 
-/* ── зум ── */
-test('зум: два щипка, расстояние 0,3 → 0,45 — зум ×1,5; верхний предел', () => {
-  const c = ctlNew(), two = d => [hand({ pose: 'pinch', gap: 0.1, cx: 0.5 - d / 2 }), hand({ pose: 'pinch', gap: 0.1, cx: 0.5 + d / 2, seed: 3 })];
-  run(c, 0, 300, () => two(0.3));
-  run(c, 333, 1000, t => two(lerp(0.3, 0.45, (t - 333) / 500)));
-  run(c, 1033, 1500, () => two(0.45));
-  near(c.view.zoom, 1.5, 0.06, 'zoom');
-  run(c, 1533, 2500, t => two(lerp(0.45, 0.95, (t - 1533) / 500)));
-  assert.ok(c.view.zoom <= CFG.zoomMax);
-  assert.equal(c.view.yaw, HOME.yaw, 'зум не вращает');
+/* ── щипок по детали: удержание — «взять», движение — вращение ── */
+test('щипок по детали и удержание 400 мс на месте — grab и захват детали, без вращения', () => {
+  const c = mk(); c.tg.v = { kind: 'part', id: 'wheel' };
+  run(c, 0, 200, () => [I()]);
+  let fr = run(c, 233, 560, () => [P()]);
+  assert.equal(c.mode, 'pending'); assert.equal(events(fr, 'grab').length, 0, 'раньше 400 мс не берём');
+  assert.ok(fr[fr.length - 1].holdP > 0.3 && fr[fr.length - 1].holdP < 1, 'прогресс удержания виден');
+  fr = run(c, 593, 900, () => [P()]);
+  assert.equal(events(fr, 'grab').length, 1); assert.equal(events(fr, 'drag-start')[0].kind, 'part');
+  assert.equal(c.mode, 'drag'); assert.equal(c.view.yaw, HOME.yaw);
+  fr = run(c, 933, 1200, t => [P({ cx: lerp(0.5, 0.6, (t - 933) / 200) })]);
+  assert.ok(fr.some(f => f.drag && f.drag.dx > 0), 'drag отдаёт смещение курсора'); assert.equal(c.view.yaw, HOME.yaw, 'деталь тянем — модель не вращается');
+  fr = run(c, 1233, 1500, () => [I({ cx: 0.6 })]);
+  assert.equal(events(fr, 'drag-end').length, 1);
 });
-test('зум → одна рука: оставшийся щипок НЕ вращает, пока не щипнуть заново', () => {
-  const c = ctlNew(), two = (d, x2) => [hand({ pose: 'pinch', gap: 0.1, cx: 0.35 }), hand({ pose: x2, gap: 0.1, cx: 0.35 + d, seed: 3 })];
-  run(c, 0, 400, () => two(0.3, 'pinch'));
-  run(c, 433, 800, () => two(0.3, 'idle'));                                    /* правая отпустила */
-  run(c, 833, 1500, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.35, 0.55, (t - 833) / 600) })]);
-  assert.equal(c.view.yaw, HOME.yaw, 'вращения быть не должно');
-  assert.equal(c.frame.mode, 'wait');
-  run(c, 1533, 1800, () => [hand({ pose: 'idle', cx: 0.55 })]);               /* отпустил */
-  run(c, 1833, 2600, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.55, 0.45, (t - 2033) / 400) })]);
-  assert.ok(c.view.yaw > HOME.yaw + 0.2, 'свежий щипок вращает');
+test('щипок по детали и сразу движение — вращение, деталь не берётся; смещение с начала не теряется', () => {
+  const c = mk(); c.tg.v = { kind: 'part', id: 'body' };
+  run(c, 0, 200, () => [I({ cx: 0.4 })]);
+  run(c, 233, 330, () => [P({ cx: 0.4 })]);
+  const fr = run(c, 363, 900, t => [P({ cx: lerp(0.4, 0.55, (t - 363) / 300) })]);
+  assert.equal(events(fr, 'grab').length, 0); assert.equal(c.mode, 'rotate');
+  run(c, 933, 1300, () => [P({ cx: 0.55 })]);
+  near(HOME.yaw - c.view.yaw, 0.15 * CFG.rotGain, 0.06, 'yaw');
 });
-
-/* ── панорама: щипок + кулак ── */
-test('панорама: щипок одной рукой + кулак другой; вращения нет', () => {
-  const c = ctlNew(), f = x => [hand({ pose: 'pinch', gap: 0.1, cx: x, cy: 0.5 }), hand({ pose: 'fist', cx: 0.75, seed: 3 })];
-  run(c, 0, 300, () => f(0.3));
-  run(c, 333, 1000, t => f(lerp(0.3, 0.45, (t - 333) / 500)));
-  run(c, 1033, 1400, () => f(0.45));
-  assert.equal(c.frame.mode, 'pan');
-  near(c.view.panX, -0.15 * CFG.panGain, 0.03, 'panX');
-  near(c.view.yaw, HOME.yaw, 1e-9, 'yaw');
+test('щипок по детали и отпускание до 400 мс — «тап», без вращения и захвата', () => {
+  const c = mk(); c.tg.v = { kind: 'part', id: 'body' };
+  run(c, 0, 200, () => [I()]); run(c, 233, 400, () => [P()]);
+  const fr = run(c, 433, 700, () => [I()]);
+  assert.equal(events(fr, 'tap').length, 1); assert.equal(events(fr, 'grab').length, 0); assert.equal(c.view.yaw, HOME.yaw);
 });
 
-/* ── разбор: два кулака ── */
-test('разбор: развести кулаки на половину explodeSpan — 50 %; свести — 0; пределы 0..1', () => {
-  const c = ctlNew(), f = d => [hand({ pose: 'fist', cx: 0.5 - d / 2 }), hand({ pose: 'fist', cx: 0.5 + d / 2, seed: 3 })];
-  run(c, 0, 300, () => f(0.2));
-  run(c, 333, 900, t => f(lerp(0.2, 0.2 + CFG.explodeSpan / 2, (t - 333) / 400)));
-  run(c, 933, 1300, () => f(0.2 + CFG.explodeSpan / 2));
-  near(c.view.explode, 0.5, 0.04, 'explode');
-  assert.equal(c.frame.mode, 'explode');
-  run(c, 1333, 2200, t => f(lerp(0.2 + CFG.explodeSpan / 2, 0.9, (t - 1333) / 400)));
-  assert.equal(c.view.explode, 1);
-  run(c, 2233, 3200, t => f(lerp(0.9, 0.12, (t - 2233) / 500)));
-  assert.equal(c.view.explode, 0);
-});
-test('разбор держится после того, как руки отпустили', () => {
-  const c = ctlNew(), f = d => [hand({ pose: 'fist', cx: 0.5 - d / 2 }), hand({ pose: 'fist', cx: 0.5 + d / 2, seed: 3 })];
-  run(c, 0, 300, () => f(0.2)); run(c, 333, 900, t => f(lerp(0.2, 0.5, (t - 333) / 400)));
-  const e = c.view.explode; run(c, 933, 1500, () => [hand({ pose: 'idle', cx: 0.35 }), hand({ pose: 'idle', cx: 0.65, seed: 3 })]);
-  assert.equal(c.view.explode, e); assert.ok(e > 0.8);
-});
-test('кулак тоже вращает: схватил и повёл — деталь поворачивается; отпустил на ходу — инерция', () => {
-  const c = ctlNew(), y0 = c.view.yaw;
-  run(c, 0, 300, () => [hand({ pose: 'fist', cx: 0.4 })]);
-  run(c, 333, 900, t => [hand({ pose: 'fist', cx: lerp(0.4, 0.55, (t - 333) / 500) })]);
-  near(y0 - c.view.yaw, 0.15 * CFG.rotGain, 0.08, 'yaw');
-  run(c, 933, 1200, t => [hand({ pose: 'fist', cx: lerp(0.55, 0.8, (t - 933) / 200) })]);
-  const fr = run(c, 1233, 1500, () => [hand({ pose: 'open', cx: 0.8 })]);
-  assert.equal(events(fr, 'fling').length, 1);
-});
-test('кулак не путается со щипком (большой палец лежит на указательном)', () => {
-  const c = ctlNew(), fr = run(c, 0, 800, () => [hand({ pose: 'fist' })]);
-  assert.equal(events(fr, 'pinch-on').length, 0);
-  assert.equal(c.frame.hands[0].pose, 'fist');
-});
-
-/* ── сброс ── */
-test('сброс: ладонь 1,4 с — нет, 1,5 с — да; прогресс для индикатора; один раз за жест', () => {
-  const c = ctlNew(); c.view.yaw = 2; c.view.zoom = 3; c.view.explode = 0.7;
-  let fr = run(c, 0, 1400 + CFG.holdOn, () => [hand({ pose: 'open' })]);
-  assert.equal(events(fr, 'reset').length, 0);
-  assert.ok(fr[fr.length - 1].resetP > 0.85 && fr[fr.length - 1].resetP < 1, 'индикатор почти полон');
-  fr = run(c, 1400 + CFG.holdOn + DT, 4000, () => [hand({ pose: 'open' })]);
-  assert.equal(events(fr, 'reset').length, 1, 'ровно один сброс за жест');
-  c.tick(4000 + CFG.resetAnim + 10);
-  near(c.view.yaw, HOME.yaw, 1e-6); near(c.view.zoom, 1, 1e-6); near(c.view.explode, 0, 1e-6);
-});
-test('сброс: ладонь опустили раньше — прогресс обнуляется', () => {
-  const c = ctlNew();
-  run(c, 0, 1000, () => [hand({ pose: 'open' })]);
-  run(c, 1033, 1300, () => [hand({ pose: 'idle' })]);
-  const fr = run(c, 1333, 2500, () => [hand({ pose: 'open' })]);
-  assert.equal(events(fr, 'reset').length, 0);
-});
-test('сброс не срабатывает, пока другая рука щиплет', () => {
-  const c = ctlNew(), fr = run(c, 0, 2500, () => [hand({ pose: 'open', cx: 0.3 }), hand({ pose: 'pinch', gap: 0.1, cx: 0.7, seed: 3 })]);
-  assert.equal(events(fr, 'reset').length, 0);
-});
-
-/* ── защита от ложных срабатываний ── */
-test('рука у края кадра не управляет; на 2 % дальше от края — управляет', () => {
-  for (const [cx, ok] of [[CFG.edge * 0.4, false], [0.1, true]]) {
-    const c = ctlNew();
-    run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx, size: 0.08 })]);
-    run(c, 333, 900, t => [hand({ pose: 'pinch', gap: 0.1, cx, cy: lerp(0.5, 0.65, (t - 333) / 400), size: 0.08 })]);
-    assert.equal(c.view.pit !== HOME.pit, ok, 'cx=' + cx);
-  }
-});
-test('рука ушла к краю во время вращения — вращение кончается без инерции', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.6 })]);
-  const fr = run(c, 333, 900, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.6, 0.995, (t - 333) / 200) })]);
-  assert.equal(events(fr, 'fling').length, 0);
-  assert.notEqual(c.frame.mode, 'rotate');
-});
-test('слишком далёкая (маленькая) рука не управляет', () => {
-  const c = ctlNew(), fr = run(c, 0, 800, () => [hand({ pose: 'pinch', gap: 0.1, size: CFG.minPalm * 0.7 })]);
-  assert.equal(events(fr, 'pinch-on').length, 0);
-});
-test('MediaPipe поменял руки местами в массиве — жест не сбивается', () => {
-  const c = ctlNew(), A = () => hand({ pose: 'pinch', gap: 0.1, cx: 0.3 }), B = () => hand({ pose: 'idle', cx: 0.7, seed: 3 });
-  const fr = run(c, 0, 1500, t => (Math.floor(t / 66) % 2 ? [A(), B()] : [B(), A()]));
-  assert.equal(events(fr, 'pinch-on').length, 1); assert.equal(events(fr, 'pinch-off').length, 0);
-  assert.equal(c.tracks.length, 2);
-});
-test('рука пропала на 100 мс — жест продолжается; на 400 мс — кончается', () => {
-  const c = ctlNew(), P = x => [hand({ pose: 'pinch', gap: 0.1, cx: x })];
-  run(c, 0, 300, () => P(0.5));
-  let fr = run(c, 333, 433, () => []);
-  assert.equal(c.frame.mode, 'rotate'); assert.equal(events(fr, 'pinch-off').length, 0);
-  run(c, 466, 600, () => P(0.5));
-  fr = run(c, 633, 1100, () => []);
-  assert.equal(c.frame.mode, 'idle'); assert.equal(events(fr, 'fling').length, 0);
-});
-test('дрожь точек (σ = 0,002) на неподвижном щипке почти не крутит деталь', () => {
-  const c = ctlNew();
-  run(c, 0, 4000, t => [hand({ pose: 'pinch', gap: 0.1, noise: 0.002, seed: 1 + Math.round(t) })]);
-  near(c.view.yaw, HOME.yaw, 0.02, 'yaw'); near(c.view.pit, HOME.pit, 0.02, 'pit');
-});
-test('неуверенная детекция (score < 0,5) игнорируется', () => {
-  const c = ctlNew(), fr = run(c, 0, 600, () => [{ lm: hand({ pose: 'pinch', gap: 0.1 }), handed: 'Right', score: 0.3 }]);
-  assert.equal(events(fr, 'pinch-on').length, 0);
-});
-test('фильтр 1€: покой сглаживается, быстрый ход догоняется без большой задержки', () => {
-  const f = new OneEuro(CFG.euro); let t = 0, y = 0;
-  for (let i = 0; i < 60; i++) { t += DT; y = f.f(0.5 + (i % 2 ? 0.003 : -0.003), t); }
-  near(y, 0.5, 0.0015, 'дрожь');
-  for (let i = 0; i < 10; i++) { t += DT; y = f.f(0.5 + 0.05 * (i + 1), t); }   /* 1,5 кадра/с */
-  assert.ok(Math.abs(y - 1.0) < 0.12, 'отставание ' + (1 - y).toFixed(3));
-});
-
-/* ── новые жесты: щелчок, хлопок, лезвие, указка ── */
-import { VIEWS } from '../gestures.js';
-
-test('щелчок: взвод ≥ holdOn и быстрый отлёт среднего — следующий стандартный вид', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => [hand({ pose: 'snap' })]);
-  const fr = run(c, 333, 900, () => [hand({ pose: 'snapped' })]);
-  assert.equal(events(fr, 'snap').length, 1);
-  assert.equal(events(fr, 'view')[0].view, VIEWS[0].k, 'первый щелчок — главный вид');
-  c.tick(5000); near(c.view.yaw, 0, 1e-6); near(c.view.pit, 1e-4, 1e-6);
-  assert.equal(fr[1].label, 'Главный вид', 'подпись вида всплывает');
-  run(c, 933, 1300, () => [hand({ pose: 'snap' })]); run(c, 1333, 1600, () => [hand({ pose: 'snapped' })]);
-  c.tick(9000); near(c.view.pit, Math.PI / 2 - 1e-3, 1e-6, 'второй — вид сверху');
-});
-test('щелчок: медленное размыкание — не щелчок; короткий взвод — не щелчок', () => {
-  const slow = ctlNew();
-  run(slow, 0, 300, () => [hand({ pose: 'snap' })]);
-  /* средний отходит плавно: точки 400 мс перетекают от «взвода» к «после щелчка» */
-  const A = hand({ pose: 'snap' }), B = hand({ pose: 'snapped' }), mix = u => A.map((p, i) => ({ x: lerp(p.x, B[i].x, u), y: lerp(p.y, B[i].y, u), z: lerp(p.z, B[i].z, u) }));
-  let fr = run(slow, 333, 900, t => [mix((t - 333) / 400)]);
-  assert.equal(events(fr, 'snap').length, 0);
-  const short = ctlNew();
-  fr = run(short, 0, 600, t => [hand({ pose: t < 33 ? 'snap' : 'snapped' })]);
-  assert.equal(events(fr, 'snap').length, 0);
-});
-test('щелчок не путается со щипком: большой + указательный вращают, а не переключают вид', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1 })]);
-  const fr = run(c, 333, 700, () => [hand({ pose: 'open' })]);
-  assert.equal(events(fr, 'snap').length, 0);
-});
-
-const pair = (d, pose = 'open') => [hand({ pose, cx: 0.5 - d / 2, rot: -0.3 }), hand({ pose, cx: 0.5 + d / 2, rot: 0.3, seed: 3 })];
-test('хлопок: ладони быстро сошлись — событие clap; один раз за cooldown', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => pair(0.55));
-  const fr = run(c, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200)));
-  assert.equal(events(fr, 'clap').length, 1);
-  const fr2 = run(c, 633, 900, t => pair(lerp(0.12, 0.5, (t - 633) / 200)));
-  assert.equal(events(fr2, 'clap').length, 0, 'разведение — не хлопок');
-});
-test('хлопок не запускает сброс: открытые после хлопка ладони не возвращают вид', () => {
-  const c = ctlNew(); c.view.yaw = 1;
-  run(c, 0, 300, () => pair(0.55));
-  run(c, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200)));
-  const fr = run(c, 633, 3000, () => pair(0.25));
-  assert.equal(events(fr, 'reset').length, 0); assert.equal(c.view.yaw, 1);
-});
-test('хлопок: MediaPipe потерял руки в момент касания — всё равно хлопок', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => pair(0.55));
-  run(c, 333, 466, t => pair(lerp(0.55, 0.2, (t - 333) / 133)));
-  const fr = run(c, 499, 700, () => []);
-  assert.equal(events(fr, 'clap').length, 1);
-});
-test('хлопок: медленно свести руки — не хлопок; два кулака — не хлопок (это разбор)', () => {
-  const c = ctlNew();
-  run(c, 0, 300, () => pair(0.55));
-  let fr = run(c, 333, 2400, t => pair(lerp(0.55, 0.12, (t - 333) / 2000)));
-  assert.equal(events(fr, 'clap').length, 0, 'медленно');
-  const f = ctlNew();
-  run(f, 0, 300, () => pair(0.55, 'fist'));
-  fr = run(f, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200), 'fist'));
-  assert.equal(events(fr, 'clap').length, 0, 'кулаки');
-});
-
-test('лезвие: ребро ладони — режим section; горизонтально — h, вертикально — v; положение — центр ладони', () => {
-  const c = ctlNew();
-  let fr = run(c, 0, 300, () => [hand({ pose: 'blade', rot: Math.PI / 2, cy: 0.4 })]);
-  const f = fr[fr.length - 1];
-  assert.equal(f.mode, 'section'); assert.equal(f.blade.kind, 'h'); near(f.blade.y, 0.4, 0.03);
-  fr = run(c, 333, 700, () => [hand({ pose: 'blade', rot: 0, cx: 0.3 })]);
-  assert.equal(fr[fr.length - 1].blade.kind, 'v'); near(fr[fr.length - 1].blade.x, 0.3, 0.03);
-});
-test('лезвие не включает сброс (ладонь ребром ≠ открытая ладонь)', () => {
-  const c = ctlNew(); c.view.yaw = 1;
-  const fr = run(c, 0, 2500, () => [hand({ pose: 'blade', rot: Math.PI / 2 })]);
-  assert.equal(events(fr, 'reset').length, 0); assert.equal(c.view.yaw, 1);
-});
-test('указка: вытянутый указательный — режим point, точка — кончик указательного; не вращает', () => {
-  const c = ctlNew(), fr = run(c, 0, 600, t => [hand({ pose: 'point', cx: lerp(0.4, 0.6, t / 600) })]);
-  const f = fr[fr.length - 1];
-  assert.equal(f.mode, 'point'); assert.ok(f.point && f.point.y < 0.5, 'кончик выше ладони');
+/* ── кнопки: нажатие на отпускание ── */
+test('кнопка: щипок и отпускание ≤ 800 мс на месте — ui-click; модель не вращается', () => {
+  const c = mk(); c.tg.v = { kind: 'ui', el: 'btn' };
+  run(c, 0, 200, () => [I()]);
+  let fr = run(c, 233, 500, () => [P()]);
+  assert.equal(events(fr, 'ui-down').length, 1); assert.equal(events(fr, 'ui-click').length, 0, 'на нажатие ещё не срабатывает');
+  fr = run(c, 533, 800, () => [I()]);
+  assert.equal(events(fr, 'ui-click').length, 1); assert.equal(events(fr, 'ui-click')[0].target.el, 'btn');
   assert.equal(c.view.yaw, HOME.yaw);
+});
+test('кнопка: держал дольше 800 мс или увёл курсор — отмена без нажатия', () => {
+  const a = mk(); a.tg.v = { kind: 'ui' };
+  run(a, 0, 200, () => [I()]); run(a, 233, 1300, () => [P()]);
+  let fr = run(a, 1333, 1600, () => [I()]);
+  assert.equal(events(fr, 'ui-click').length, 0); assert.equal(events(fr, 'ui-cancel').length, 1);
+  const b = mk(); b.tg.v = { kind: 'ui' };
+  run(b, 0, 200, () => [I({ cx: 0.5 })]); run(b, 233, 330, () => [P({ cx: 0.5 })]);
+  run(b, 363, 600, t => [P({ cx: lerp(0.5, 0.56, (t - 363) / 200) })]);
+  fr = run(b, 633, 900, () => [I({ cx: 0.56 })]);
+  assert.equal(events(fr, 'ui-click').length, 0, 'курсор ушёл'); assert.equal(b.view.yaw, HOME.yaw);
+});
+test('ползунок: захват на щипке, смещение курсора идёт в drag, вторая рука не перехватывает', () => {
+  const c = mk(); c.tg.v = { kind: 'slider', k: 'explode' };
+  run(c, 0, 200, () => [I({ cx: 0.4 }), I({ cx: 0.75, seed: 3 })]);
+  let fr = run(c, 233, 400, () => [P({ cx: 0.4 }), I({ cx: 0.75, seed: 3 })]);
+  assert.equal(events(fr, 'drag-start').length, 1); assert.equal(events(fr, 'drag-start')[0].kind, 'slider');
+  fr = run(c, 433, 800, t => [P({ cx: lerp(0.4, 0.5, (t - 433) / 300) }), P({ cx: 0.75, seed: 3 })]);
+  const sum = fr.reduce((s, f) => s + (f.drag ? f.drag.dx : 0), 0);
+  near(sum, 0.1 / (CFG.box.x1 - CFG.box.x0), 0.05, 'Σdx в долях экрана');
+  assert.equal(c.mode, 'drag', 'вторая рука не превратила захват в зум'); assert.equal(c.view.zoom, 1);
+});
+
+/* ── два щипка: зум и сдвиг ── */
+const two = (d, mx = 0.5, o = {}) => [P(Object.assign({ cx: mx - d / 2 }, o)), P(Object.assign({ cx: mx + d / 2, seed: 3 }, o))];
+test('зум: развели руки вдвое — зум ×2 (с мёртвой зоной 4 %)', () => {
+  const c = mk();
+  run(c, 0, 300, () => two(0.3));
+  assert.equal(c.mode, 'zoom');
+  run(c, 333, 1000, t => two(lerp(0.3, 0.6, (t - 333) / 600)));
+  run(c, 1033, 1400, () => two(0.6));
+  near(c.view.zoom, 2 / 1.04, 0.12, 'zoom');
+});
+test('зум: дрожь в пределах мёртвой зоны — не меняет; пределы 0,5…5', () => {
+  const c = mk();
+  run(c, 0, 300, () => two(0.3)); run(c, 333, 800, t => two(0.3 + 0.006 * Math.sin(t / 50)));
+  assert.equal(c.view.zoom, 1);
+  run(c, 833, 1400, t => two(lerp(0.3, 0.6, (t - 833) / 400))); run(c, 1433, 2400, t => two(lerp(0.6, 0.06, (t - 1433) / 700)));
+  assert.ok(c.view.zoom >= CFG.zoomMin - 1e-9);
+});
+test('сдвиг: обе руки со щипком ведут вместе — панорама; расстояние то же — зум не меняется', () => {
+  const c = mk();
+  run(c, 0, 300, () => two(0.3, 0.45)); run(c, 333, 1000, t => two(0.3, lerp(0.45, 0.55, (t - 333) / 600))); run(c, 1033, 1300, () => two(0.3, 0.55));
+  assert.ok(c.view.panX < -0.05, 'panX ' + c.view.panX); near(c.view.zoom, 1, 0.01);
+});
+test('зум: руки ближе 1,5 ладони — заморозка и предупреждение', () => {
+  const c = mk();
+  run(c, 0, 300, () => two(0.4));
+  const fr = run(c, 333, 900, t => two(lerp(0.4, 0.14, (t - 333) / 300)));
+  assert.ok(fr[fr.length - 1].close, 'флаг «слишком близко»');
+  const z = c.view.zoom; run(c, 933, 1200, () => two(0.12)); assert.equal(c.view.zoom, z);
+});
+test('после зума оставшийся щипок не вращает, пока не щипнуть заново; вторая рука в вращении — переход в зум', () => {
+  const c = mk();
+  run(c, 0, 300, () => two(0.3));
+  run(c, 333, 600, () => [P({ cx: 0.35 }), I({ cx: 0.65, seed: 3 })]);
+  assert.equal(c.mode, 'wait');
+  const y = c.view.yaw; run(c, 633, 1100, t => [P({ cx: lerp(0.35, 0.5, (t - 633) / 400) })]); assert.equal(c.view.yaw, y);
+  run(c, 1133, 1400, () => [I({ cx: 0.5 })]); run(c, 1433, 1700, () => [P({ cx: 0.5 })]);
+  assert.equal(c.mode, 'rotate', 'свежий щипок вращает');
+  run(c, 1733, 2000, () => [P({ cx: 0.5 }), P({ cx: 0.8, seed: 3 })]);
+  assert.equal(c.mode, 'zoom');
+});
+
+/* ── меню ладонью ── */
+const armOpen = (c, from = 0, o = {}) => run(c, from, from + 700, () => [O(o)]);
+test('ладонь 400 мс — меню ещё нет, 500 мс — открылось; прогресс виден', () => {
+  const c = mk();
+  let fr = run(c, 0, 400, () => [O()]);
+  assert.equal(events(fr, 'menu-open').length, 0); assert.ok(fr[fr.length - 1].armP > 0.5);
+  fr = run(c, 433, 700, () => [O()]);
+  assert.equal(events(fr, 'menu-open').length, 1); assert.equal(c.mode, 'menu'); assert.ok(fr[fr.length - 1].menu);
+});
+test('меню: щипок в центре — «сброс»; увёл вправо и щипнул — подменю, вниз и щипнул — пункт подменю', () => {
+  const c = mk();
+  armOpen(c);
+  let fr = run(c, 733, 900, () => [P()]);
+  assert.deepEqual(events(fr, 'menu').map(e => e.key), ['reset']); assert.equal(c.mode, 'idle');
+  const d = mk();
+  armOpen(d);
+  run(d, 733, 1100, t => [O({ cx: lerp(0.5, 0.58, (t - 733) / 200) })]);
+  assert.equal(d.frame.menu.sel, 1, 'сектор «вправо»');
+  fr = run(d, 1133, 1300, () => [P({ cx: 0.58 })]);
+  assert.equal(events(fr, 'menu-open').length, 1, 'подменю'); assert.equal(d.frame.menu.level, 1);
+  run(d, 1333, 1500, () => [I({ cx: 0.58 })]);
+  run(d, 1533, 1900, t => [I({ cx: 0.58, cy: lerp(0.55, 0.63, (t - 1533) / 200) })]);
+  assert.equal(d.frame.menu.sel, 2, 'сектор «вниз»');
+  fr = run(d, 1933, 2100, () => [P({ cx: 0.58, cy: 0.63 })]);
+  assert.deepEqual(events(fr, 'menu').map(e => [e.key, e.parent]), [['s2', 'right']]);
+});
+test('меню: кулак закрывает; рука пропала дольше 250 мс — закрывается; сразу после выбора не открывается снова', () => {
+  const a = mk(); armOpen(a);
+  let fr = run(a, 733, 1000, () => [hand({ pose: 'fist' })]);
+  assert.equal(events(fr, 'menu-close').length, 1); assert.equal(a.mode, 'idle');
+  const b = mk(); armOpen(b);
+  fr = run(b, 733, 1100, () => []);
+  assert.equal(events(fr, 'menu-close').length, 1);
+  const c = mk(); armOpen(c);
+  run(c, 733, 900, () => [P()]);                                         /* выбрал «сброс» */
+  fr = run(c, 933, 1500, () => [O()]);
+  assert.equal(events(fr, 'menu-open').length, 0, 'та же ладонь сразу — не открывает');
+});
+test('меню не открывается, пока другая рука щиплет, и на взмахе', () => {
+  const c = mk();
+  const fr = run(c, 0, 1200, () => [O({ cx: 0.3 }), P({ cx: 0.75, seed: 3 })]);
+  assert.equal(events(fr, 'menu-open').length, 0);
+  const d = mk();
+  const fr2 = run(d, 0, 1200, t => [O({ cx: 0.5 + 0.12 * Math.sin(t / 80) })]);
+  assert.equal(events(fr2, 'menu-open').length, 0);
+});
+
+/* ── надёжность: край, расстояние, пропуски, перестановка ── */
+test('рука у края кадра и далёкая рука не управляют', () => {
+  const c = mk();
+  let fr = run(c, 0, 600, () => [P({ cx: 0.02 })]);
+  assert.equal(events(fr, 'pinch-on').length, 0); assert.ok(fr[fr.length - 1].hands[0].ignored);
+  fr = run(mk(), 0, 600, () => [P({ size: 0.03 })]);
   assert.equal(events(fr, 'pinch-on').length, 0);
 });
-
-/* ── «штурвал»: два кулака повернуть, как руль — вентиль открывается (только у моделей с механизмом) ── */
-const fists2 = (ang, d = 0.4) => { const c = Math.cos(ang), s2 = Math.sin(ang);
-  return [hand({ pose: 'fist', cx: 0.5 - c * d / 2, cy: 0.5 + s2 * d / 2 }), hand({ pose: 'fist', cx: 0.5 + c * d / 2, cy: 0.5 - s2 * d / 2, seed: 3 })]; };
-test('штурвал: повернуть два кулака против часовой на 0,6 рад — вентиль открыт на 50 %, разбор не трогается', () => {
-  const c = createController({ cfg: { steer: true } });
-  run(c, 0, 300, () => fists2(0));
-  const fr = run(c, 333, 900, t => fists2(lerp(0, 0.6, (t - 333) / 400)));
-  run(c, 933, 1200, () => fists2(0.6));
-  near(c.view.open, 0.6 / CFG.steerSpan, 0.06, 'open'); assert.equal(c.view.explode, 0);
-  assert.ok(fr.some(f => f.steer), 'режим штурвала'); assert.match(c.frame.label, /вентиль открыт/);
-  run(c, 1233, 1900, t => fists2(lerp(0.6, -0.2, (t - 1233) / 400)));
-  assert.equal(c.view.open, 0, 'по часовой — закрыт, не меньше нуля');
+test('пропуск руки 200 мс во время вращения — продолжает без скачка; 400 мс — конец без инерции', () => {
+  const c = mk();
+  run(c, 0, 300, () => [P({ cx: 0.4 })]);
+  run(c, 333, 600, t => [P({ cx: lerp(0.4, 0.45, (t - 333) / 267) })]);
+  run(c, 633, 820, () => []);
+  assert.equal(c.mode, 'rotate', 'держим');
+  const y = c.view.yaw;
+  run(c, 853, 900, () => [P({ cx: 0.5 })]);                              /* вернулась дальше — без скачка */
+  near(c.view.yaw, y, 0.02, 'нет рывка');
+  const fr = run(c, 933, 1500, () => []);
+  assert.equal(c.mode, 'idle'); assert.equal(events(fr, 'fling').length, 0);
 });
-test('штурвал выключен у модели без механизма: поворот кулаков ничего не открывает', () => {
-  const c = createController();
-  run(c, 0, 300, () => fists2(0)); run(c, 333, 900, t => fists2(lerp(0, 0.6, (t - 333) / 400)));
-  assert.ok(!c.view.open); assert.equal(c.view.explode, 0);
+test('перестановка рук в массиве MediaPipe не путает треки', () => {
+  const c = mk();
+  const A = { cx: 0.3 }, B = { cx: 0.7, seed: 3 };
+  run(c, 0, 300, t => (Math.floor(t / 33) % 2 ? [P(A), I(B)] : [I(B), P(A)]));
+  assert.equal(c.tracks.length, 2); assert.equal(c.mode, 'rotate');
 });
-test('разбор при включённом штурвале: развести кулаки без поворота — разбор, не открытие', () => {
-  const c = createController({ cfg: { steer: true } });
-  run(c, 0, 300, () => fists2(0, 0.2)); run(c, 333, 900, t => fists2(0, lerp(0.2, 0.36, (t - 333) / 400)));
-  assert.ok(c.view.explode > 0.4); assert.ok(!c.view.open);
+test('низкий score — рука отбрасывается', () => {
+  const c = mk(), fr = run(c, 0, 400, () => [{ lm: P(), score: 0.3 }]);
+  assert.equal(fr[fr.length - 1].hands.length, 0);
 });
 
-/* ── «наведи и щипни»: щипок над интерфейсом — нажатие, а не вращение ── */
-test('щипок над кнопкой: ui-down/ui-up, деталь не вращается; точка — до смыкания пальцев', () => {
-  const hits = [];
-  const c = createController({ cfg: { extras: false }, hitUI: (x, y) => { hits.push({ x, y }); return x > 0.7; } });
-  /* рука справа (над панелью): навели, потом щипок и ведём */
-  run(c, 0, 300, () => [hand({ pose: 'idle', cx: 0.8 })]);
-  let fr = run(c, 333, 500, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.8 })]);
-  assert.equal(events(fr, 'ui-down').length, 1);
-  const y0 = c.view.yaw;
-  fr = run(c, 533, 900, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.8, 0.9, (t - 533) / 300) })]);
-  assert.equal(c.view.yaw, y0, 'захваченный щипок не вращает');
-  assert.ok(fr[fr.length - 1].hands[0].captured);
-  fr = run(c, 933, 1200, () => [hand({ pose: 'idle', cx: 0.9 })]);
-  assert.equal(events(fr, 'ui-up').length, 1);
-  assert.ok(hits.length >= 1);
+/* ── курсор ── */
+test('курсор: доли экрана в пределах 0..1; рабочая зона растянута на экран', () => {
+  const c = mk();
+  run(c, 0, 400, () => [I({ cx: 0.5, cy: 0.52 })]);
+  const a = c.frame.hands[0].cursor;
+  run(c, 433, 900, () => [I({ cx: 0.6, cy: 0.52 })]);
+  const b = c.frame.hands[0].cursor;
+  near(b.x - a.x, 0.1 / (CFG.box.x1 - CFG.box.x0), 0.03, 'Δx экрана');
+  for (const p of [a, b]) assert.ok(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1);
+  run(c, 933, 1300, () => [I({ cx: 0.95 })]); assert.equal(c.frame.hands[0].cursor.x, 1, 'у края зоны — к краю экрана');
 });
-test('щипок не над интерфейсом — обычное вращение', () => {
-  const c = createController({ cfg: { extras: false }, hitUI: x => x > 0.7 });
-  run(c, 0, 300, () => [hand({ pose: 'pinch', gap: 0.1, cx: 0.4 })]);
-  run(c, 333, 900, t => [hand({ pose: 'pinch', gap: 0.1, cx: lerp(0.4, 0.55, (t - 333) / 500) })]);
-  assert.ok(HOME.yaw - c.view.yaw > 0.3);
+test('курсор: шум точек σ = 0,002 кадра — курсор в покое дрожит меньше 0,4 % экрана', () => {
+  const c = mk(); let s = 1; const xs = [];
+  run(c, 0, 600, () => [I({ noise: 0.002, seed: s++ })]);
+  run(c, 633, 2000, () => [I({ noise: 0.002, seed: s++ })]).forEach(f => xs.push(f.hands[0].cursor.x));
+  const m = xs.reduce((a, b) => a + b) / xs.length, sd = Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length);
+  assert.ok(sd < 0.004, 'σ курсора ' + sd.toFixed(4));
 });
-test('без «extras» хлопок и щелчок ничего не делают', () => {
-  const c = createController({ cfg: { extras: false } });
-  run(c, 0, 300, () => pair(0.55)); let fr = run(c, 333, 600, t => pair(lerp(0.55, 0.12, (t - 333) / 200)));
-  assert.equal(events(fr, 'clap').length, 0);
-  const d = createController({ cfg: { extras: false } });
-  run(d, 0, 300, () => [hand({ pose: 'snap' })]); fr = run(d, 333, 700, () => [hand({ pose: 'snapped' })]);
-  assert.equal(events(fr, 'snap').length, 0);
+test('цель щипка — где был курсор до смыкания', () => {
+  const seen = [];
+  const c = createController({ target: (x, y) => { seen.push(x); return null; } });
+  run(c, 0, 500, () => [I({ cx: 0.5 })]);
+  const before = c.frame.hands[0].cursor.x;
+  run(c, 533, 700, () => [P({ cx: 0.5 })]);
+  near(seen[0], before, 0.005, 'aim');
+});
+
+/* ── фильтр ── */
+test('фильтр 1€: постоянный сигнал не искажается, скачок догоняется', () => {
+  const f = new OneEuro(CFG.euro); let v;
+  for (let t = 0; t < 500; t += 33) v = f.f(0.5, t);
+  near(v, 0.5, 1e-9);
+  for (let t = 500; t < 1500; t += 33) v = f.f(0.7, t);
+  near(v, 0.7, 0.005);
 });

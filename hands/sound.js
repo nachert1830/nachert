@@ -15,7 +15,7 @@ function blip(f0, f1, dur, type = 'sine', vol = 1) {
   g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
 }
-/* шумовой всплеск — для хлопка: белый шум через полосовой фильтр с быстрым затуханием */
+/* шумовой всплеск — для «взял деталь»: белый шум через полосовой фильтр с быстрым затуханием */
 function burst(f, dur, vol = 1) {
   if (!on || !ac) return;
   const t = ac.currentTime, n = Math.floor(ac.sampleRate * dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
@@ -25,16 +25,17 @@ function burst(f, dur, vol = 1) {
   src.connect(bp); bp.connect(g); g.connect(master); src.start(t);
 }
 const SND = {
-  'clap': () => { burst(1800, 0.25, 1.4); blip(180, 60, 0.35, 'sine', 0.9); },
-  'snap': () => { burst(3500, 0.06, 1.2); blip(2600, 1900, 0.05, 'square', 0.3); },
   'view': () => blip(660, 990, 0.12, 'triangle', 0.5),
   'pinch-on': () => blip(1320, 1760, 0.06, 'sine', 0.9),
   'pinch-off': () => blip(1100, 740, 0.07, 'sine', 0.6),
-  'fist-on': () => blip(220, 330, 0.09, 'triangle', 0.9),
+  'ui-click': () => blip(1700, 2100, 0.05, 'triangle', 0.7),
+  'grab': () => { blip(300, 520, 0.09, 'triangle', 0.9); burst(900, 0.05, 0.5); },
+  'menu-open': () => blip(520, 780, 0.1, 'triangle', 0.6),
+  'menu-sel': () => blip(1900, 1900, 0.025, 'sine', 0.35),
+  'menu': () => blip(780, 1170, 0.1, 'triangle', 0.6),
   'explode-step': () => blip(2400, 2600, 0.03, 'square', 0.25),
   'reset': () => { blip(500, 1500, 0.22, 'sine', 0.8); setTimeout(() => blip(1500, 2200, 0.12, 'sine', 0.5), 120); },
-  'mode': e => { if (e.mode === 'zoom' || e.mode === 'pan' || e.mode === 'explode') blip(880, 990, 0.05, 'triangle', 0.5);
-    if (e.mode === 'section') blip(300, 1200, 0.18, 'sawtooth', 0.15); if (e.mode === 'point') blip(1500, 1500, 0.03, 'sine', 0.4); }
+  'mode': e => { if (e.mode === 'zoom') blip(880, 990, 0.05, 'triangle', 0.5); }
 };
 export const sound = {
   get on() { return on; },

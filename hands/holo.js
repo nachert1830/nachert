@@ -133,7 +133,8 @@ export function createHolo(canvas, model, opt = {}) {
   const R0 = Math.hypot(b[1][0] - b[0][0], b[1][1] - b[0][1], b[1][2] - b[0][2]) / 2;
   const FLOOR = b[0][2] - 95;                                   /* пол ниже самой низкой точки разобранной детали */
   let scan = { t0: -1e9, z0: 0, z1: 0 }, mode = opt.mode || 'holo', last = null;
-  let scale = opt.scale || 1;                                    /* доля разрешения: снижается, если кадры не успевают */
+  let scale = opt.scale || 1;
+  const pulls = {};                                              /* id детали → [dx, dy, dz] мм: деталь вытащена рукой */                                    /* доля разрешения: снижается, если кадры не успевают */
 
   /* ── камера: как в IG3.viewer, плюс «рамка» по разобранной детали, чтобы всё помещалось ── */
   function camera(view, w, h, extra, open) {
@@ -141,6 +142,8 @@ export function createHolo(canvas, model, opt = {}) {
     const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
     M.parts.forEach(p => { const o = offOf(L, p.id); for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p.bb[0][k] + o[k]); hi[k] = Math.max(hi[k], p.bb[1][k] + o[k]); } });
     if (extra) for (let k = 0; k < 3; k++) { lo[k] = lo[k] + (Math.min(lo[k], extra.lo[k]) - lo[k]) * extra.a; hi[k] = hi[k] + (Math.max(hi[k], extra.hi[k]) - hi[k]) * extra.a; }
+    /* «вынутые» рукой детали — поверх раскладки и после рамки: камера не отъезжает, пока деталь тянут */
+    for (const id in pulls) { const o = (L.off && L.off[id]) || [0, 0, 0], q = pulls[id]; if (q[0] || q[1] || q[2]) (L.off || (L.off = {}))[id] = [o[0] + q[0], o[1] + q[1], o[2] + q[2]]; }
     const C = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], R = Math.max(R0, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2 * (model.assembly ? 1.02 : 0.92));
     const cy = Math.cos(view.yaw), sy = Math.sin(view.yaw), cp = Math.cos(view.pit), sp = Math.sin(view.pit);
     const F = [sy * cp, cy * cp, -sp], Rv = norm(cross(F, [0, 0, 1])), Up = cross(Rv, F);
@@ -387,6 +390,8 @@ export function createHolo(canvas, model, opt = {}) {
     camera: () => last,
     offset: id => (last ? offOf(last.L, id) : ZERO),               /* где деталь сейчас (разбор, механизм) — для подписей */
     mongeInfo: () => MG,
+    pull(id, d) { if (d) pulls[id] = d; else if (id) delete pulls[id]; else for (const k in pulls) delete pulls[k]; },
+    pulls: () => pulls,
     pxPerMm: () => (last ? canvas.clientHeight / last.us : 1),
     setMode(m) { mode = m; }, get mode() { return mode; },
     setScale(k) { scale = Math.max(0.4, Math.min(1, k)); }, get scale() { return scale; },

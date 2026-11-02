@@ -2,7 +2,8 @@
 /* Смоук-тест страницы в настоящем Chromium (Playwright): node hands/tests/smoke.js [папка-для-снимков]
    Сам поднимает статический сервер из корня репозитория. Проверяет:
      • страница грузится под своей CSP без ошибок, WebGL рисует деталь;
-     • синтетические руки через window.__feed: вращение, курсоры HUD в главном окне, разбор двумя кулаками, сброс ладонью;
+     • синтетические руки через window.__feed: вращение, курсор в главном окне, кнопка и ползунок щипком,
+     маховик круговым движением, радиальное меню ладонью и сброс из его центра;
      • MediaPipe (wasm, самохост) создаётся под этой CSP — CPU-делегат — и распознаёт кадр (пустой — 0 рук). */
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
@@ -33,47 +34,72 @@ srv.listen(0, async () => {
       const { hand } = await import('./tests/synth.js');
       const A = window.__app, v = A.view, out = {}; let t = 1e6;
       const feed = (h, n = 1) => { for (let i = 0; i < n; i++) { t += 33; window.__feed(h, t); } };
+      const hud = document.getElementById('hud'), hr = hud.getBoundingClientRect(), B = A.ctl.cfg.box;
+      /* курсор (доли экрана) ← рука: калибруем смещение точки курсора от центра ладони синтетической руки */
+      feed([hand({ pose: 'idle', cx: 0.5, cy: 0.5 })], 20); const c0 = A.frame.hands[0].cursor;
+      const at = (sx, sy) => ({ cx: 0.5 + (sx - c0.x) * (B.x1 - B.x0), cy: 0.5 + (sy - c0.y) * (B.y1 - B.y0) });
+      const scr = (px, py) => at(px / hr.width, py / hr.height);
+      const elAt = el => { const r = el.getBoundingClientRect(); return scr(r.left + r.width / 2 - hr.left, r.top + r.height / 2 - hr.top); };
+      feed([], 12);
+      /* вращение: щипок мимо панели и сразу ведём */
       const y0 = v.yaw;
-      feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.4 })], 8);
+      feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.4 })], 6);
       for (let i = 0; i <= 15; i++) feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.4 + 0.01 * i })]);
       out.rot = y0 - v.yaw; out.mode = A.frame.mode;
-      /* курсор щипка — в главном окне, а не только в превью камеры: ищем красный пиксель (щипок) у кончика указательного */
-      const hud = document.getElementById('hud'), ctx = hud.getContext('2d'), h = A.frame.hands[0], dpr = hud.width / hud.clientWidth;
-      const x = ((h.cursor.x - 0.08) / 0.84) * hud.clientWidth * dpr, y = ((h.cursor.y - 0.08) / 0.84) * hud.clientHeight * dpr;
-      const d = ctx.getImageData(Math.round(x - 30), Math.round(y - 30), 60, 60).data; let red = 0;
+      /* курсор щипка — в главном окне: красный диск в точке курсора */
+      const ctx = hud.getContext('2d'), h = A.frame.hands[0], dpr = hud.width / hud.clientWidth;
+      const x = h.cursor.x * hud.clientWidth * dpr, y = h.cursor.y * hud.clientHeight * dpr;
+      const d = ctx.getImageData(Math.round(x - 20), Math.round(y - 20), 40, 40).data; let red = 0;
       for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i + 1] < 120 && d[i + 3] > 100) red++;
       out.cursor = red;
-      feed([hand({ pose: 'idle', cx: 0.55 })], 10); A.ctl.stopMotion();
-      /* панель рукой: курсор (кончик указательного) — на элемент, щипок — нажать / тянуть */
-      const hr = hud.getBoundingClientRect(), toFrame = el => { const r = el.getBoundingClientRect(); return { x: 0.08 + (r.left + r.width / 2 - hr.left) / hr.width * 0.84, y: 0.08 + (r.top + r.height / 2 - hr.top) / hr.height * 0.84 }; };
-      feed([hand({ pose: 'pinch', gap: 0.9, cx: 0.5, cy: 0.5 })], 3); const c0 = A.frame.hands[0].cursor, off = { x: c0.x - 0.5, y: c0.y - 0.5 };
-      const pinchAt = (tg, dx = 0) => {
-        feed([hand({ pose: 'pinch', gap: 0.9, cx: tg.x - off.x, cy: tg.y - off.y })], 10);
-        feed([hand({ pose: 'pinch', gap: 0.1, cx: tg.x - off.x, cy: tg.y - off.y })], 6);
-        for (let i = 1; i <= 10; i++) feed([hand({ pose: 'pinch', gap: 0.1, cx: tg.x - off.x + dx * i / 10, cy: tg.y - off.y })]);
-        feed([hand({ pose: 'pinch', gap: 0.9, cx: tg.x - off.x + dx, cy: tg.y - off.y })], 8);
+      feed([hand({ pose: 'idle', cx: 0.55 })], 10); A.ctl.stopMotion(); feed([], 12);
+      /* панель рукой: навести — щипнуть — (вести) — отпустить */
+      const pinchAt = (tg, dx = 0, hold = 6) => {
+        feed([hand({ pose: 'idle', cx: tg.cx, cy: tg.cy })], 15);
+        feed([hand({ pose: 'pinch', gap: 0.1, cx: tg.cx, cy: tg.cy })], hold);
+        for (let i = 1; i <= 10; i++) feed([hand({ pose: 'pinch', gap: 0.1, cx: tg.cx + dx * i / 10, cy: tg.cy })]);
+        feed([hand({ pose: 'idle', cx: tg.cx + dx, cy: tg.cy })], 8);
       };
-      feed([], 12);
       const yaw1 = v.yaw;
-      pinchAt(toFrame(document.querySelector('.seg[data-g="cut"] button[data-v="front"]')));
+      pinchAt(elAt(document.querySelector('.seg[data-g="cut"] button[data-v="front"]')));
       out.cut = A.cut && A.cut.kind; out.noRot = Math.abs(v.yaw - yaw1);
-      pinchAt(toFrame(document.querySelector('.sl[data-k="explode"] .kn')), 0.2);
+      pinchAt(elAt(document.querySelector('.seg[data-g="cut"] button[data-v=""]')));
+      pinchAt(elAt(document.querySelector('.sl[data-k="explode"] .kn')), 0.2);
       out.explode = v.explode;
+      feed([], 12); v.explode = 0; A.render(t);
+      /* маховик: щипнуть обод и провести рукой 3/4 оборота против часовой */
+      const M = A.holo.model;
+      if (M.wheel) {
+        A.ctl.reset(t, { yaw: 0, pit: 1.2, zoom: 1.6, panX: 0, panY: 0 }); A.ctl.tick(t + 2000); A.render(t + 2000);
+        const o = A.holo.offset('wheel'), C = A.holo.project([M.wheel.c[0] + o[0], M.wheel.c[1] + o[1], M.wheel.c[2] + o[2]]), lb = M.labels.wheel.at;
+        const R0 = A.holo.project([lb[0] + o[0], lb[1] + o[1], lb[2] + o[2]]), rr = Math.max(40, Math.hypot(R0[0] - C[0], R0[1] - C[1]) * 0.9), a0 = Math.atan2(-(R0[1] - C[1]), R0[0] - C[0]);
+        const P = a => scr(C[0] + rr * Math.cos(a), C[1] - rr * Math.sin(a));
+        const s0 = P(a0); feed([hand({ pose: 'idle', cx: s0.cx, cy: s0.cy })], 15); feed([hand({ pose: 'pinch', gap: 0.1, cx: s0.cx, cy: s0.cy })], 4);
+        out.wheelMode = A.frame.drag && A.frame.drag.kind;
+        for (let i = 1; i <= 24; i++) { const q = P(a0 + i / 24 * 1.5 * Math.PI); feed([hand({ pose: 'pinch', gap: 0.1, cx: q.cx, cy: q.cy })]); }
+        out.open = v.open || 0; feed([hand({ pose: 'idle', cx: 0.5, cy: 0.5 })], 8);
+      }
       feed([], 12);
-      /* сброс ладонью */
-      feed([hand({ pose: 'open' })], 55); out.resetEv = true; A.ctl.tick(t + 2000);
-      out.after = { yaw: v.yaw, explode: v.explode };
+      /* меню ладонью: 0,5 с — меню; щипок в центре — сброс; «Вернуть» — откатывает */
+      feed([hand({ pose: 'open', cx: 0.5, cy: 0.5 })], 22); out.menu = !!A.frame.menu;
+      feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.5, cy: 0.5 })], 5); A.ctl.tick(t + 2000);
+      out.after = { yaw: v.yaw, explode: v.explode, open: v.open || 0 };
+      out.undo = !document.getElementById('undo').hidden;
+      feed([hand({ pose: 'idle', cx: 0.5, cy: 0.5 })], 8);
       return out;
     });
     ok(res.rot > 0.4, `щипок + движение вращает (Δyaw = ${res.rot.toFixed(2)}, режим ${res.mode})`);
     ok(res.cursor > 10, `курсор щипка нарисован в главном окне (${res.cursor} пикс.)`);
-    ok(res.cut === 'front' && res.noRot < 1e-3, `щипок по кнопке «Фронт.» включает разрез и не вращает деталь (${res.cut}, Δyaw ${res.noRot.toFixed(3)})`);
+    ok(res.cut === 'front' && res.noRot < 1e-3, `щипок по кнопке «Фронт.» включает разрез (на отпускание) и не вращает деталь (${res.cut}, Δyaw ${res.noRot.toFixed(3)})`);
     ok(res.explode > 0.5, `щипок по ползунку «Разбор» и ведение руки разбирают модель (${(res.explode * 100).toFixed(0)} %)`);
-    ok(Math.abs(res.after.yaw + 0.62) < 1e-3 && res.after.explode < 1e-3, 'открытая ладонь 1,5 с возвращает вид');
+    if (res.wheelMode !== undefined) ok(res.wheelMode === 'wheel' && res.open > 0.1, `щипок по маховику и круговое движение открывают вентиль (${res.wheelMode}, ${(res.open * 100).toFixed(0)} %)`);
+    ok(res.menu, 'открытая ладонь 0,5 с открывает радиальное меню');
+    ok(Math.abs(res.after.yaw + 0.62) < 1e-3 && res.after.explode < 1e-3 && res.after.open < 1e-3 && res.undo, 'щипок в центре меню — сброс, появляется «Вернуть»');
     if (OUT) {
       await p.evaluate(async () => { const { hand } = await import('./tests/synth.js'); const A = window.__app; let t = 2e6;
         A.view.explode = 0.85; A.view.yaw = -0.3;
-        for (let i = 0; i < 6; i++) { t += 33; window.__feed([hand({ pose: 'pinch', gap: 0.12, cx: 0.66, cy: 0.42, rot: -0.3 }), hand({ pose: 'open', cx: 0.3, cy: 0.5, rot: 0.25, seed: 3 })], t); } });
+        for (let i = 0; i < 24; i++) { t += 33; window.__feed([hand({ pose: 'open', cx: 0.5, cy: 0.5 })], t); }
+        for (let i = 0; i < 8; i++) { t += 33; window.__feed([hand({ pose: 'open', cx: 0.5 + i * 0.008, cy: 0.5 - i * 0.004 })], t); } });
       await p.waitForTimeout(150); await p.screenshot({ path: path.join(OUT, 'hands-hud.png') });
     }
 

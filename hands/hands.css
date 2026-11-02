@@ -88,6 +88,9 @@ main{position:fixed;inset:0}
 .btn.ghost{background:none;color:var(--acc)} .btn.ghost:hover,.btn.ghost.hand{background:var(--blue-s)}
 .hand{outline:3px solid var(--red)!important;outline-offset:2px}
 .press{animation:press .25s}
+.hold{box-shadow:inset 0 0 0 2px var(--red)!important}
+/* «↶ Вернуть» после сброса — крупная, нажимается и рукой */
+#undo{position:absolute;left:calc(var(--rail) + (100% - var(--rail) - var(--ctl)) / 2);top:96px;transform:translateX(-50%);z-index:6;min-height:48px;padding:10px 22px;font-size:14px}
 @keyframes press{50%{transform:scale(.94)}}
 
 /* жесты */

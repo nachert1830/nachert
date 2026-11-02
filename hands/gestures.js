@@ -1,58 +1,64 @@
-/* Жесты рук → вид 3D-детали. Чистый модуль: ни DOM, ни камеры, ни WebGL — только точки и время.
+/* Жесты рук → вид 3D-модели. Чистый модуль: ни DOM, ни камеры, ни WebGL — только точки и время.
    Его кормят и MediaPipe (app.js), и тесты (tests/gestures.test.js) синтетическими руками.
 
    Вход update(hands, t):
      hands — массив рук; рука — либо массив 21 точки {x, y, z?} (координаты кадра 0..1, ДО зеркала),
              либо {lm: [...21 точка], handed: 'Left'|'Right', score}.
      t     — время, мс (performance.now()).
-   Выход — кадр: режим, подпись, руки для HUD (уже в зеркале, как видит себя человек), прогресс сброса, события.
-   Вид (yaw, pit, zoom, panX, panY, explode) лежит в ctl.view; tick(t) докручивает инерцию и анимацию сброса.
+   Выход — кадр: режим, подпись, руки для HUD, курсоры, захват (drag), меню, прогресс удержаний, события.
+   Вид (yaw, pit, zoom, panX, panY) лежит в ctl.view; tick(t) докручивает инерцию и анимацию вида.
 
-   Жесты:
-     щипок одной рукой            — вращение (с инерцией после отпускания);
-     два щипка                    — зум (расстояние между руками);
-     щипок + кулак второй рукой   — панорама (двигает рука со щипком);
-     два кулака                   — «взять и разобрать»: развёл руки — деталь раскрылась, свёл — собралась;
-     открытая ладонь 1,5 с        — сброс вида;
-     кулак                        — тоже вращение («схватил и крутишь»); ловит крутящуюся по инерции деталь;
-     хлопок                       — деталь разлетается на части / собирается (событие clap);
-     щелчок (большой + средний)   — следующий стандартный вид: главный → сверху → слева → изометрия;
-     ребро ладони («лезвие»)      — секущая плоскость: ладонь горизонтально — горизонтальный разрез,
-                                    вертикально — фронтальный/профильный (frame.blade, плоскость считает app.js);
-     указательный палец           — указка: часть под пальцем подсвечивается (frame.point).
-   Защита от ложных срабатываний: гистерезис всех порогов, поза засчитывается, только продержавшись holdOn мс,
-   и снимается, только пропав на holdOff мс; рука у края кадра и слишком далёкая рука не управляют;
-   после двуручного жеста вращение начинается только со свежего щипка (иначе оставшаяся рука дёргает деталь). */
+   Схема «наведи и щипни» — три позы (щипок, открытая ладонь, всё остальное), смысл щипка задаёт цель под курсором:
+     курсор                       — точка у основания указательного (2·p5 + p9)/3: не съезжает при щипке;
+                                    своя «медленная» фильтрация 1€ и зона залипания;
+     щипок по кнопке              — нажатие НА ОТПУСКАНИЕ (≤ 800 мс, курсор ушёл < 40 px), иначе отмена;
+     щипок по ползунку/маховику/ручке плоскости — захват: приложение двигает величину, пока пальцы сомкнуты;
+     щипок по пустому месту       — сразу вращение (с инерцией после отпускания);
+     щипок по детали              — 400 мс решают: повёл руку (> 0,025 кадра) — вращение,
+                                    держишь на месте (< 0,015) — «взял деталь» (событие grab);
+     два щипка                    — зум (расстояние) и сдвиг (середина) с мёртвыми зонами;
+     открытая ладонь 500 мс       — радиальное меню у курсора: повёл к сектору — щипнул — выбрал;
+                                    центр — «Сброс»; кулак, пропажа руки или 6 с без выбора — закрыть.
+   Хлопок, щелчок, «лезвие», кулаки и руль убраны: на 15–30 кадрах/с с веб-камеры их не распознать надёжно.
+   Защита от ложных срабатываний: гистерезис порогов; поза засчитывается, продержавшись ≥ holdOn мс И ≥ 2 кадров;
+   щипок не засчитывается в кулаке и на быстром (смазанном) движении; рука у края кадра и далёкая рука не управляют;
+   пропавшая на ≤ 250 мс рука держит состояние и продолжает без скачка; после двуручного жеста — только свежий щипок. */
 
 export const CFG = {
   pinchOn: 0.30, pinchOff: 0.48,      /* щипок: |4−8| / размер ладони; гистерезис */
+  idxCurl: 1.20,                      /* щипок — только если указательный не согнут в кулак: |8−0| / |5−0| */
+  pinchSpeed: 2.0,                    /* размеров ладони в секунду: быстрее — кадр смазан, щипок не начинаем */
   fistOn: 1.20, fistOff: 1.36,        /* кулак: все 4 пальца согнуты — max(|кончик−запястье| / |пясть−запястье|) */
   openOn: 1.62, openOff: 1.50,        /* ладонь: все 4 пальца прямые — min(того же отношения) */
-  thumbOut: 0.55,                     /* ладонь: большой палец отведён — |4−5| / размер ладони */
-  holdOn: 50, holdOff: 100,           /* мс: поза должна продержаться, чтобы включиться / выключиться */
+  thumbOut: 0.55, openWidth: 0.45,    /* ладонь: большой отведён (|4−5| / ладонь), ладонь к камере, не ребром (|5−17| / |0−9|) */
+  holdOn: 60, holdOff: 100, minFrames: 2,   /* поза должна продержаться ≥ мс И ≥ кадров (на 7 кадрах/с — по кадрам) */
   edge: 0.035,                        /* доля кадра: центр ладони или кончики 4, 8 ближе к краю — рука не управляет */
-  minPalm: 0.045,                     /* размер ладони в долях кадра: меньше — рука слишком далеко */
-  lostMs: 160,                        /* рука пропала из кадра на столько — держим её состояние (MediaPipe мигает) */
-  matchMax: 0.30,                     /* дальше — это уже другая рука */
+  edgeWarn: 0.08,                     /* ближе к краю — предупреждение на экране */
+  minPalm: 0.045, nearPalm: 0.065, farPalm: 0.35,   /* размер ладони в долях кадра: «далеко» (не управляет), «ближе», «дальше» */
+  lostMs: 250,                        /* рука пропала из кадра на столько — держим её состояние (MediaPipe мигает) */
+  matchMax: 0.15,                     /* дальше — это уже другая рука */
   rotGain: 4.2,                       /* рад на ширину кадра */
   panGain: 1.5,                       /* размеров детали на ширину кадра (делится на зум) */
-  explodeSpan: 0.32,                  /* развести кулаки на столько (доля кадра) — деталь раскрыта полностью */
   deadZone: 0.0012,                   /* смещение точки за кадр меньше этого — дрожь, не движение */
   flingMin: 0.0005, flingMax: 0.010,  /* рад/мс: медленнее — без инерции; быстрее — обрезаем */
-  flingTau: 320,                      /* мс: постоянная затухания инерции (докрутка ≈ v·τ) */
-  resetMs: 1500, resetAnim: 650,
+  flingTau: 350,                      /* мс: постоянная затухания инерции (докрутка ≈ v·τ) */
+  resetAnim: 650,
   zoomMin: 0.5, zoomMax: 5,
   pitMin: -0.2, pitMax: Math.PI / 2 - 1e-3,
-  euro: { minCutoff: 4.0, beta: 10.0, dCutoff: 1.5 }, /* фильтр 1€ (координаты 0..1, Гц): срез 4 Гц — задержка ~40 мс; при 2,2 Гц деталь «плыла» за рукой на ~70 мс */
-  pointExt: 1.55, pointCurlOn: 1.22, pointCurlOff: 1.35,   /* указка: указательный прямой, остальные согнуты */
-  snapOn: 0.30, snapOff: 0.42, snapGo: 0.62, snapMs: 130,  /* щелчок: |4−12| мал, затем за ≤ snapMs вырос выше snapGo */
-  bladeOn: 0.35, bladeOff: 0.45,      /* лезвие: ширина ладони |5−17| / длина |0−9| — ладонь ребром к камере */
-  clapFrom: 3.2, clapTo: 1.4, clapMs: 320, clapCool: 800,  /* хлопок: ладони сошлись с clapFrom до clapTo размеров ладони за clapMs */
-  extras: true,                       /* хлопок, щелчок, «лезвие», «штурвал», разбор и сдвиг кулаками: страница их выключает (ненадёжны) */
-  aimMs: 150,                         /* щипок по кнопке: цель — где был курсор за столько до смыкания (пальцы «съезжают») */
-  steer: false, steerSpan: 1.2, steerOn: 0.26, steerMaxD: 0.06, explodeOn: 0.04   /* «штурвал» (у моделей с механизмом): поворот линии между кулаками на 1,2 рад — вентиль открыт полностью */
+  euro: { minCutoff: 4.0, beta: 10.0, dCutoff: 1.5 },        /* точки руки (вращение — быстрый отклик) */
+  cursorEuro: { minCutoff: 0.8, beta: 14, dCutoff: 1.0 },    /* курсор: покой — сильное сглаживание, быстрое движение — без задержки */
+  box: { x0: 0.27, x1: 0.73, y0: 0.30, y1: 0.74 },           /* рабочая зона кадра (в зеркале) → весь экран: кистью, локоть на столе */
+  stick: 0.0045,                      /* доля экрана (~6 px на 1440): дрожь курсора внутри — не двигает его */
+  aimMs: 80,                          /* цель щипка — где был курсор за столько до смыкания */
+  holdMs: 400, moveOn: 0.025, holdStill: 0.015,   /* щипок по детали: удержание → «взять», движение → вращение */
+  clickMs: 800, clickDrift: 0.028,    /* кнопка: нажатие на отпускание, если щипок ≤ 800 мс и курсор ушёл < 0,028 экрана (~40 px) */
+  menuMs: 500, menuStill: 0.4,        /* ладонь держится 500 мс, рука медленнее 0,4 ладони/с — меню */
+  menuR: 0.10, menuROff: 0.075,       /* доля экрана: отклонение курсора от центра меню — выбран сектор (с гистерезисом) */
+  menuIdle: 6000,                     /* мс без движения в меню — закрыть */
+  zoomDead: 0.04, panDead: 0.01, twoMin: 1.5,   /* два щипка: мёртвые зоны; руки ближе 1,5 ладони — заморозка */
+  lowFps: 12                          /* ниже — упрощённый режим: без инерции, удержания на 30 % дольше */
 };
-/* стандартные виды для щелчка: как VIEWS на сайте (главный — вдоль +y, слева — вдоль −x) */
+/* стандартные виды: как VIEWS на сайте (главный — вдоль +y, слева — вдоль −x) */
 export const VIEWS = [
   { k: 'front', t: 'Главный вид', yaw: 0, pit: 1e-4 },
   { k: 'top', t: 'Вид сверху', yaw: 0, pit: Math.PI / 2 - 1e-3 },
@@ -80,53 +86,53 @@ const D3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, ((a.z || 0) - (b.z || 0)) 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const FINGERS = [[8, 5], [12, 9], [16, 13], [20, 17]];     /* [кончик, пясть] указательного … мизинца */
 const PALM = [0, 5, 9, 13, 17];
+/* точка курсора — у основания указательного: при смыкании пальцев она почти не сдвигается (кончик съезжает на 3–5 % кадра) */
+export const anchorOf = p => ({ x: (2 * p[5].x + p[9].x) / 3, y: (2 * p[5].y + p[9].y) / 3 });
 
 /* признаки одной руки по сырым точкам */
 export function features(lm, cfg = CFG) {
   const palm = (D2(lm[0], lm[5]) + D2(lm[0], lm[9]) + D2(lm[0], lm[13]) + D2(lm[0], lm[17])) / 4 || 1e-6;
   const curl = FINGERS.map(([t, m]) => D2(lm[t], lm[0]) / (D2(lm[m], lm[0]) || 1e-6));
-  const pinch = D3(lm[4], lm[8]) / palm, thumb = D2(lm[4], lm[5]) / palm, mid = D3(lm[4], lm[12]) / palm;
+  const pinch = D3(lm[4], lm[8]) / palm, thumb = D2(lm[4], lm[5]) / palm;
   /* ширина ладони к длине: ладонь к камере ~0,8; ребром — < 0,35 (пясти 5 и 17 сходятся в кадре) */
   const width = D2(lm[5], lm[17]) / (D2(lm[0], lm[9]) || 1e-6);
-  const vert = Math.abs(lm[9].y - lm[0].y) > Math.abs(lm[9].x - lm[0].x);          /* пальцы смотрят вверх/вниз */
   const c = { x: 0, y: 0 }; PALM.forEach(i => { c.x += lm[i].x / 5; c.y += lm[i].y / 5; });
   const e = cfg.edge, out = p => p.x < e || p.x > 1 - e || p.y < e || p.y > 1 - e;
   const edge = out(c) || out(lm[4]) || out(lm[8]);
-  return { palm, curl, cmax: Math.max(...curl), cmin: Math.min(...curl), others: Math.max(curl[1], curl[2], curl[3]), pinch, thumb, mid, width, vert, c, edge, far: palm < cfg.minPalm };
+  return { palm, curl, cmax: Math.max(...curl), cmin: Math.min(...curl), pinch, thumb, width, c, edge, far: palm < cfg.minPalm, speed: 0 };
 }
 
-/* сырая поза с гистерезисом относительно текущей подтверждённой: none | fist | point | snap | pinch | blade | open | idle */
+/* сырая поза с гистерезисом относительно текущей подтверждённой: none | fist | pinch | open | idle */
 export function classify(f, cur, cfg = CFG) {
   if (f.edge || f.far) return 'none';
-  if (f.cmax < (cur === 'fist' ? cfg.fistOff : cfg.fistOn)) return 'fist';          /* кулак важнее щипка: в кулаке большой палец касается указательного */
-  if (f.curl[0] > cfg.pointExt && f.others < (cur === 'point' ? cfg.pointCurlOff : cfg.pointCurlOn) && f.pinch > 0.6) return 'point';
-  /* «взвод» щелчка: большой касается среднего, а не указательного (иначе это обычный щипок) */
-  if (cfg.extras && f.mid < (cur === 'snap' ? cfg.snapOff : cfg.snapOn) && f.pinch > f.mid + 0.18) return 'snap';
-  if (f.pinch < (cur === 'pinch' ? cfg.pinchOff : cfg.pinchOn)) return 'pinch';
-  if (cfg.extras && f.cmin > cfg.openOff && f.width < (cur === 'blade' ? cfg.bladeOff : cfg.bladeOn)) return 'blade';
-  if (f.cmin > (cur === 'open' ? cfg.openOff : cfg.openOn) && f.thumb > cfg.thumbOut && f.pinch > 0.9 && f.width > cfg.bladeOff) return 'open';
+  if (f.cmax < (cur === 'fist' ? cfg.fistOff : cfg.fistOn)) return 'fist';          /* в кулаке большой палец лежит на указательном — это не щипок */
+  if (f.pinch < (cur === 'pinch' ? cfg.pinchOff : cfg.pinchOn) && (cur === 'pinch' || (f.curl[0] > cfg.idxCurl && f.speed < cfg.pinchSpeed))) return 'pinch';
+  if (f.cmin > (cur === 'open' ? cfg.openOff : cfg.openOn) && f.thumb > cfg.thumbOut && f.pinch > 0.9 && f.width > cfg.openWidth) return 'open';
   return 'idle';
 }
 
-const ACTIVE = new Set(['pinch', 'fist']);
+const ACTIVE = new Set(['pinch']);
 let NEXT_ID = 1;
 
+/* opt.target(sx, sy) — что под курсором (доли экрана): null | { kind: 'ui' | 'slider' | 'wheel' | 'plane' | 'part', id?, ... }.
+   opt.menu() — пункты корневого меню: [{ k, t, i?, sub?: [...] }]; сектора по часовой, первый — вверху. */
 export function createController(opt = {}) {
   const cfg = Object.assign({}, CFG, opt.cfg || {});
+  if (opt.cfg && opt.cfg.box) cfg.box = Object.assign({}, CFG.box, opt.cfg.box);
   const view = Object.assign({}, HOME, opt.view || {});
-  const hitUI = opt.hitUI || null;                                   /* (x, y) кадра → щипок здесь — по интерфейсу? */
+  const target = opt.target || (() => null);
+  const menuRoot = opt.menu || (() => []);
   const ctl = { cfg, view, reduced: !!opt.reducedMotion, tracks: [], mode: 'idle', g: null, multiEnd: -1e9,
-    fling: null, tween: null, openSince: 0, resetLock: false, lastT: 0, frame: null,
-    viewIdx: 3, clapT: -1e9, pairHist: [], toast: null };
+    fling: null, tween: null, lastT: 0, frame: null, viewIdx: 3, menu: null, arm: null, dtE: 33, prevUpd: 0 };
 
-  const mkTrack = (d, t) => ({ id: NEXT_ID++, handed: d.handed, seen: t, pose: 'none', raw: 'none', cand: null, candT: 0, poseT: t,
-    fx: Array.from({ length: 21 }, () => new OneEuro(cfg.euro)), fy: Array.from({ length: 21 }, () => new OneEuro(cfg.euro)), pts: null, f: null, c: d.f.c });
+  const mkTrack = (d, t) => ({ id: NEXT_ID++, handed: d.handed, seen: t, pose: 'none', raw: 'none', cand: null, candT: 0, candN: 0, poseT: t,
+    fx: Array.from({ length: 21 }, () => new OneEuro(cfg.euro)), fy: Array.from({ length: 21 }, () => new OneEuro(cfg.euro)),
+    cx: new OneEuro(cfg.cursorEuro), cy: new OneEuro(cfg.cursorEuro), cur: null, hist: [], pts: null, f: null, c: d.f.c, speed: 0, present: true, rejoin: false });
 
   /* сопоставление найденных рук с прежними: по положению ладони (+ штраф за другую руку), а не по индексу —
-     MediaPipe может поменять руки местами между кадрами */
+     MediaPipe может поменять руки местами, а «левая/правая» у него путаются */
   function associate(dets, t) {
-    const T = ctl.tracks, cost = (d, k) => D2(d.f.c, k.c) + (d.handed && k.handed && d.handed !== k.handed ? 0.15 : 0);
-    /* все взаимно однозначные назначения: детекция i → трек k или «новая рука» (рук ≤ 2, вариантов мало) */
+    const T = ctl.tracks, cost = (d, k) => D2(d.f.c, k.c) + (d.handed && k.handed && d.handed !== k.handed ? 0.05 : 0);
     let best = null;
     const go = (i, pp, used, c) => {
       if (i === dets.length) { if (!best || c < best.c) best = { p: pp.slice(), c }; return; }
@@ -137,73 +143,73 @@ export function createController(opt = {}) {
     go(0, [], new Set(), 0);
     const used = new Set();
     dets.forEach((d, i) => { const k = best.p[i]; let tr;
-      if (k === null || k === undefined) { tr = mkTrack(d, t); T.push(tr); } else tr = T[k];
+      if (k === null || k === undefined) { tr = mkTrack(d, t); T.push(tr); }
+      else {
+        tr = T[k];
+        const dt = Math.max(1, t - tr.seen) / 1000, sp = D2(d.f.c, tr.c) / dt / d.f.palm;    /* ладоней в секунду */
+        tr.speed = tr.present ? 0.5 * tr.speed + 0.5 * sp : 0;
+        tr.rejoin = !tr.present;                                                         /* вернулась после пропуска */
+      }
+      d.f.speed = tr.speed;
       used.add(tr); tr.seen = t; tr.lm = d.lm; tr.f = d.f; tr.c = d.f.c; if (d.handed) tr.handed = d.handed; tr.present = true; });
-    T.forEach(tr => { if (!used.has(tr)) tr.present = false; });
+    T.forEach(tr => { if (!used.has(tr)) { tr.present = false; tr.rejoin = false; } });
+    const gone = T.filter(tr => !tr.present && t - tr.seen >= cfg.lostMs);
     ctl.tracks = T.filter(tr => tr.present || t - tr.seen < cfg.lostMs);
+    return gone;
   }
 
-  /* подтверждение позы: новая поза должна продержаться holdOn (включение) или holdOff (снятие активной) */
+  /* подтверждение позы: новая поза должна продержаться holdOn (holdOff для снятия щипка) и ≥ minFrames кадров */
   function debounce(tr, t, ev) {
     const raw = tr.present ? classify(tr.f, tr.pose, cfg) : tr.pose;   /* пропавшая на миг рука держит позу */
-    /* щелчок — быстрый: ловим по сырой позе, не дожидаясь подтверждения. Взведён (поза snap подтверждена),
-       и за ≤ snapMs после последнего «взведённого» кадра средний палец отлетел от большого */
-    if (tr.present && raw === 'snap') tr.snapRawT = t;
-    if (tr.present && tr.pose === 'snap' && raw !== 'snap' && tr.f.mid > cfg.snapGo && t - (tr.snapRawT || 0) <= cfg.snapMs && !tr.snapDone) {
-      tr.snapDone = true; ev.push({ type: 'snap', id: tr.id, t });
-    }
-    if (raw === 'snap') tr.snapDone = false;
     tr.raw = raw;
-    if (raw === tr.pose) { tr.cand = null; return; }
-    if (tr.cand !== raw) { tr.cand = raw; tr.candT = t; }
-    const need = ACTIVE.has(tr.pose) ? cfg.holdOff : cfg.holdOn;
-    if (t - tr.candT >= need) {
-      const was = tr.pose; tr.pose = raw; tr.poseT = t; tr.cand = null;
+    if (!tr.present) return;
+    if (raw === tr.pose) { tr.cand = null; tr.candN = 0; return; }
+    if (tr.cand !== raw) { tr.cand = raw; tr.candT = t; tr.candN = 0; }
+    tr.candN++;
+    const need = (ACTIVE.has(tr.pose) ? cfg.holdOff : cfg.holdOn) * (ctl.lowFps ? 1.3 : 1);
+    if (t - tr.candT >= need && tr.candN >= cfg.minFrames) {
+      const was = tr.pose; tr.pose = raw; tr.poseT = t; tr.cand = null; tr.candN = 0;
       if (was === 'pinch') ev.push({ type: 'pinch-off', id: tr.id, t });
-      if (raw === 'pinch') {
-        ev.push({ type: 'pinch-on', id: tr.id, t });
-        /* где целился: курсор до того, как пальцы начали смыкаться (при смыкании кончик указательного съезжает) */
-        const H = tr.hist || [], want = tr.candT - cfg.aimMs; let aim = tr.pts ? tr.pts[8] : null;
-        for (const h of H) if (h.t <= want) aim = h; else break;
-        if (hitUI && aim && hitUI(aim.x, aim.y)) { tr.captured = true; ev.push({ type: 'ui-down', id: tr.id, at: { x: aim.x, y: aim.y }, t }); }
-      }
-      if (was === 'pinch' && tr.captured) { tr.captured = false; ev.push({ type: 'ui-up', id: tr.id, t }); }
+      if (raw === 'pinch') ev.push({ type: 'pinch-on', id: tr.id, t, aimT: tr.candT - cfg.aimMs });
       if (raw === 'fist') ev.push({ type: 'fist-on', id: tr.id, t });
     }
   }
 
-  /* точки в зеркале (как в зеркале видит себя человек), сглаженные 1€ */
+  /* точки в зеркале (как человек видит себя), сглаженные 1€; курсор — своя медленная фильтрация + залипание */
   function smooth(tr, t) {
     if (!tr.present) return;
     tr.pts = tr.lm.map((p, i) => ({ x: tr.fx[i].f(1 - p.x, t), y: tr.fy[i].f(p.y, t) }));
-    tr.pin = { x: (tr.pts[4].x + tr.pts[8].x) / 2, y: (tr.pts[4].y + tr.pts[8].y) / 2 };
-    (tr.hist = tr.hist || []).push({ t, x: tr.pts[8].x, y: tr.pts[8].y }); while (tr.hist.length > 2 && t - tr.hist[0].t > 300) tr.hist.shift();   /* курсор — кончик указательного */
     const c = { x: 0, y: 0 }; PALM.forEach(i => { c.x += tr.pts[i].x / 5; c.y += tr.pts[i].y / 5; }); tr.palmC = c;
+    const raw = anchorOf(tr.lm), B = cfg.box;
+    const ax = tr.cx.f(1 - raw.x, t), ay = tr.cy.f(raw.y, t);
+    const s = { x: (ax - B.x0) / (B.x1 - B.x0), y: (ay - B.y0) / (B.y1 - B.y0) };
+    /* залипание: курсор стоит, пока «настоящая» точка не ушла дальше stick; потом тянется за ней на поводке — без скачка.
+       curU — без обрезки краем экрана: захваченный ползунок у края панели тянется и дальше края */
+    if (!tr.curU || tr.rejoin) tr.curU = s;
+    else { const d = D2(s, tr.curU); if (d > cfg.stick) { const k = (d - cfg.stick) / d; tr.curU = { x: tr.curU.x + (s.x - tr.curU.x) * k, y: tr.curU.y + (s.y - tr.curU.y) * k }; } }
+    tr.cur = { x: clamp(tr.curU.x, 0, 1), y: clamp(tr.curU.y, 0, 1) };
+    tr.hist.push({ t, x: tr.cur.x, y: tr.cur.y }); while (tr.hist.length > 2 && t - tr.hist[0].t > 400) tr.hist.shift();
+    tr.anchorF = { x: ax, y: ay };
   }
+  const aimOf = (tr, at) => { let a = tr.hist.length ? tr.hist[0] : tr.cur; for (const h of tr.hist) if (h.t <= at) a = h; else break; return a ? { x: a.x, y: a.y } : null; };
 
   const stable = tr => tr.present && tr.raw === tr.pose;     /* поза не «на выходе» — движение можно применять */
   const dz = v => (Math.abs(v) < cfg.deadZone ? 0 : v);
   const stopMotion = () => { ctl.fling = null; ctl.tween = null; };
+  const byId = id => ctl.tracks.find(tr => tr.id === id);
 
-  function begin(mode, t, ev, p) {
+  function setMode(mode, t, ev, g = null) {
     const prev = ctl.mode;
-    if (prev === mode && ctl.g) return;
-    /* конец прежнего жеста */
-    if (prev === 'rotate' && ctl.g && mode !== 'rotate') endRotate(t, ev, ctl.g.released);
-    if (['zoom', 'pan', 'explode'].includes(prev) && mode !== prev) ctl.multiEnd = t;
-    if (prev === 'reset' && mode !== 'reset') ctl.openSince = 0;
-    ctl.mode = mode; ctl.g = null;
+    if (['zoom'].includes(prev) && mode !== prev) ctl.multiEnd = t;
+    ctl.mode = mode; ctl.g = g;
     if (mode !== prev) ev.push({ type: 'mode', mode, from: prev, t });
-    if (mode === 'idle' || mode === 'wait') return;
-    if (mode !== 'reset') stopMotion();
-    ctl.g = Object.assign({ t0: t }, p);
   }
 
   function endRotate(t, ev, released) {
-    const g = ctl.g; if (!g || !released || ctl.reduced) return;
-    /* скорость — по отсчётам ДО отпускания: в момент размыкания пальцев точка щипка прыгает */
+    const g = ctl.g; if (!g || !released || ctl.reduced || ctl.lowFps) return;
+    /* скорость — по отсчётам ДО отпускания: в момент размыкания пальцев точки прыгают */
     const S = g.hist, tEnd = g.relT || t;
-    const ok = S.filter(s => s.t <= tEnd - 20 && s.t >= tEnd - 170);
+    const ok = S.filter(s => s.t <= tEnd - 20 && s.t >= tEnd - 120);
     if (ok.length < 2) return;
     const a = ok[0], b = ok[ok.length - 1], dt = Math.max(1, b.t - a.t);
     let vy = (b.yaw - a.yaw) / dt, vp = (b.pit - a.pit) / dt; const sp = Math.hypot(vy, vp);
@@ -212,135 +218,217 @@ export function createController(opt = {}) {
     ctl.fling = { vy, vp, t }; ev.push({ type: 'fling', vy, vp, t });
   }
 
+  /* конец захвата/жеста: rel — пальцы разжаты на месте (а не рука пропала) */
+  function finish(t, ev, rel) {
+    const g = ctl.g, m = ctl.mode;
+    if (m === 'rotate') endRotate(t, ev, rel);
+    if (m === 'pending' && rel) ev.push({ type: 'tap', id: g.id, target: g.target, t });
+    if (m === 'drag') {
+      const tr = byId(g.id);
+      if (g.target.kind === 'ui') {
+        const drift = tr && tr.cur ? D2(tr.cur, g.start) : 1;
+        if (rel && t - g.t0 <= cfg.clickMs && drift < cfg.clickDrift) ev.push({ type: 'ui-click', id: g.id, target: g.target, at: g.start, t });
+        else ev.push({ type: 'ui-cancel', id: g.id, target: g.target, t });
+      }
+      ev.push({ type: 'drag-end', id: g.id, kind: g.target.kind, target: g.target, lost: !rel, t });
+    }
+    setMode('idle', t, ev);
+  }
+
+  /* ── меню: открыто у курсора, сектор — по направлению отклонения ── */
+  function openMenu(tr, t, ev, items, level) {
+    ctl.menu = { id: tr.id, x: tr.cur.x, y: tr.cur.y, items, level, sel: -1, t0: t, tMove: t, last: { x: tr.cur.x, y: tr.cur.y } };
+    setMode('menu', t, ev, { id: tr.id });
+    ev.push({ type: 'menu-open', level, t });
+  }
+  function menuSel(M, p) {
+    const n = M.items.length, dx = p.x - M.x, dy = p.y - M.y, r = Math.hypot(dx, dy);
+    if (!n) return -1;
+    if (r < (M.sel >= 0 ? cfg.menuROff : cfg.menuR)) return -1;
+    const a = (Math.atan2(dx, -dy) + 2 * Math.PI) % (2 * Math.PI), w = 2 * Math.PI / n;    /* 0 — вверх, по часовой */
+    const k = Math.round(a / w) % n;
+    if (M.sel >= 0 && M.sel !== k) {                         /* гистерезис по углу: 8° за границу сектора */
+      let d = Math.abs(a - M.sel * w); d = Math.min(d, 2 * Math.PI - d);
+      if (d < w / 2 + 0.14) return M.sel;
+    }
+    return k;
+  }
+  function menuPick(t, ev) {
+    const M = ctl.menu, tr = byId(M.id);
+    if (M.sel < 0) { ev.push({ type: 'menu', key: 'reset', t }); closeMenu(t, ev, true); return; }
+    const it = M.items[M.sel];
+    if (it.sub && it.sub.length) { openMenu(tr, t, ev, it.sub, (M.level || 0) + 1); ctl.menu.parent = it.k; return; }
+    ev.push({ type: 'menu', key: it.k, parent: M.parent || null, t }); closeMenu(t, ev, true);
+  }
+  function closeMenu(t, ev, picked) {
+    if (!ctl.menu) return;
+    ctl.menu = null; if (!picked) ev.push({ type: 'menu-close', t });
+    ctl.arm = null; ctl.lockT = ctl.lastT;                   /* ладонь, открывшая меню, не откроет его снова сразу: нужна заново показанная ладонь */
+    setMode('idle', t, ev);
+  }
+
   function update(hands, t) {
     const ev = [];
     tick(t);
+    if (ctl.prevUpd) ctl.dtE = 0.85 * ctl.dtE + 0.15 * clamp(t - ctl.prevUpd, 1, 500);
+    ctl.prevUpd = t; ctl.lowFps = 1000 / ctl.dtE < cfg.lowFps;
     const dets = (hands || []).map(h => { const lm = Array.isArray(h) ? h : (h.lm || h.landmarks); return { lm, handed: Array.isArray(h) ? null : h.handed, score: Array.isArray(h) ? 1 : (h.score == null ? 1 : h.score) }; })
       .filter(d => d.lm && d.lm.length >= 21 && d.score >= 0.5).slice(0, 2);
     dets.forEach(d => { d.f = features(d.lm, cfg); });
-    associate(dets, t);
+    const gone = associate(dets, t);
     ctl.tracks.forEach(tr => { debounce(tr, t, ev); smooth(tr, t); });
+    const T = ctl.tracks, v = view, g0 = ctl.g;
 
-    /* кулак «ловит» деталь: инерция останавливается */
-    if (ev.some(e => e.type === 'fist-on') && ctl.fling) { ctl.fling = null; ev.push({ type: 'catch', t }); }
-    const T = ctl.tracks, by = p => T.filter(tr => tr.pose === p && !tr.captured);  /* рука на кнопке/ползунке — не вращает */
-    const pins = by('pinch'), fists = by('fist'), opens = by('open'), v = view;
+    /* владелец жеста пропал дольше lostMs — жест кончается без инерции, значения остаются */
+    if (g0 && gone.some(tr => tr.id === g0.id || (g0.ids && g0.ids.includes(tr.id)))) {
+      if (ctl.mode === 'menu') closeMenu(t, ev, false);
+      else if (ctl.mode === 'zoom') { const rest = T.find(tr => g0.ids.includes(tr.id) && tr.pose === 'pinch'); setMode(rest ? 'wait' : 'idle', t, ev); }
+      else finish(t, ev, false);
+    }
+    if (ctl.arm && !byId(ctl.arm.id)) ctl.arm = null;
 
-    /* щелчок — следующий стандартный вид */
-    if (cfg.extras && ev.some(e => e.type === 'snap') && !pins.length && !fists.length) {
-      ctl.viewIdx = (ctl.viewIdx + 1) % VIEWS.length; const V = VIEWS[ctl.viewIdx];
-      resetView(t, { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 });
-      ctl.toast = { t, text: V.t }; ev.push({ type: 'view', view: V.k, title: V.t, t });
+    /* ── щипки: начало ── */
+    const pinsNow = () => T.filter(tr => tr.pose === 'pinch' && tr.present);
+    for (const e of ev.filter(e => e.type === 'pinch-on')) {
+      const tr = byId(e.id); if (!tr) continue;
+      if (ctl.fling) { ctl.fling = null; ev.push({ type: 'catch', t }); }        /* щипок «ловит» крутящуюся деталь */
+      if (ctl.mode === 'menu') { if (ctl.menu.id === tr.id) menuPick(t, ev); continue; }
+      if (ctl.mode === 'drag' || ctl.mode === 'zoom' || ctl.mode === 'wait') { tr.ignored = true; continue; }   /* занято другой рукой */
+      if ((ctl.mode === 'rotate' || ctl.mode === 'pending') && ctl.g.id !== tr.id) { startZoom(byId(ctl.g.id), tr, t, ev); continue; }
+      const other = pinsNow().find(o => o.id !== tr.id && !o.ignored);
+      if (other && t - other.poseT < 400) { startZoom(other, tr, t, ev); continue; }
+      ctl.arm = null;
+      const aim = aimOf(tr, e.aimT) || tr.cur, tg = aim ? target(aim.x, aim.y) : null;
+      stopMotion();
+      if (tg && ['ui', 'slider', 'wheel', 'plane'].includes(tg.kind)) {
+        setMode('drag', t, ev, { id: tr.id, target: tg, t0: t, start: { x: aim.x, y: aim.y }, px: tr.curU.x, py: tr.curU.y });
+        ev.push({ type: tg.kind === 'ui' ? 'ui-down' : 'drag-start', id: tr.id, kind: tg.kind, target: tg, at: aim, t });
+      } else if (tg && tg.kind === 'part') {
+        setMode('pending', t, ev, { id: tr.id, target: tg, t0: t, x: tr.palmC.x, y: tr.palmC.y, cur: { x: aim.x, y: aim.y } });
+      } else startRotate(tr, t, ev);
+    }
+    function startRotate(tr, t, ev, from) {
+      const at = from || tr.palmC;
+      setMode('rotate', t, ev, { id: tr.id, x: at.x, y: at.y, hist: [{ t, yaw: v.yaw, pit: v.pit }], relT: 0 });
+    }
+    function startZoom(a, b, t, ev) {
+      if (ctl.mode === 'rotate') ctl.fling = null;
+      const d = D2(a.palmC, b.palmC), m = { x: (a.palmC.x + b.palmC.x) / 2, y: (a.palmC.y + b.palmC.y) / 2 };
+      setMode('zoom', t, ev, { ids: [a.id, b.id], id: a.id, d0: Math.max(d, 0.02), z0: v.zoom, m0: m, zOn: false, pOn: false });
     }
 
-    /* хлопок: две открытые (или расслабленные) ладони быстро сошлись. MediaPipe часто теряет руки в момент
-       касания — поэтому хлопок засчитывается и тогда, когда руки пропали сразу после быстрого сближения */
-    const flat = cfg.extras ? T.filter(tr => tr.present && !tr.f.edge && !['pinch', 'fist', 'snap'].includes(tr.pose)) : [];
-    if (flat.length === 2) {
-      const d = D2(flat[0].f.c, flat[1].f.c) / ((flat[0].f.palm + flat[1].f.palm) / 2);
-      ctl.pairHist.push({ t, d }); while (ctl.pairHist.length && t - ctl.pairHist[0].t > cfg.clapMs) ctl.pairHist.shift();
-    }
-    const H = ctl.pairHist, lastD = H.length ? H[H.length - 1] : null;
-    if (H.length >= 2 && t - ctl.clapT > cfg.clapCool && !['zoom', 'pan', 'explode'].includes(ctl.mode)) {
-      const far = Math.max(...H.map(h => h.d)), lost = flat.length < 2 && t - lastD.t < 120;
-      if (far > cfg.clapFrom && (lastD.d < cfg.clapTo || (lost && lastD.d < cfg.clapTo * 1.8))) {
-        ctl.clapT = t; ctl.pairHist = []; ev.push({ type: 'clap', t });
-        ctl.resetLock = true; if (ctl.mode === 'reset') begin('idle', t, ev);      /* после хлопка ладони открыты — это не сброс */
+    /* ── щипки: конец ── */
+    for (const e of ev.filter(e => e.type === 'pinch-off')) {
+      const tr = byId(e.id); if (tr) tr.ignored = false;
+      if (!ctl.g) continue;
+      if (ctl.mode === 'zoom' && ctl.g.ids.includes(e.id)) { const rest = pinsNow().some(o => ctl.g.ids.includes(o.id) && o.id !== e.id); setMode(rest ? 'wait' : 'idle', t, ev); continue; }
+      if (ctl.mode === 'wait') continue;
+      if (ctl.g.id === e.id && ['rotate', 'pending', 'drag'].includes(ctl.mode)) {
+        if (ctl.mode === 'rotate' && !ctl.g.relT) ctl.g.relT = (tr && tr.candT) || t;
+        finish(t, ev, !!(tr && tr.present));
       }
     }
-    if (flat.length < 2 && lastD && t - lastD.t > 150) ctl.pairHist = [];
+    if (ctl.mode === 'wait' && !pinsNow().length) setMode('idle', t, ev);
 
-    /* вращение кончается: щипок отпущен, а рука на месте — с инерцией; пропала или ушла к краю — без */
-    if (ctl.mode === 'rotate' && ctl.g) { const h = T.find(tr => tr.id === ctl.g.id); ctl.g.released = !!(h && h.present && (h.pose === 'idle' || h.pose === 'open')); }   /* сжал в кулак — «поймал», без инерции */
-    const multi = ['zoom', 'pan', 'explode'].includes(ctl.mode);
-
-    /* выбор жеста */
-    if (pins.length >= 2) {
-      const d = D2(pins[0].palmC, pins[1].palmC);                    /* центры ладоней: не «плывут», когда шевелятся пальцы */
-      begin('zoom', t, ev, { d0: Math.max(d, 0.05), z0: v.zoom, ids: [pins[0].id, pins[1].id] });
-      if (pins.every(stable)) v.zoom = clamp(ctl.g.z0 * Math.max(d, 0.01) / ctl.g.d0, cfg.zoomMin, cfg.zoomMax);
-    } else if (cfg.extras && pins.length === 1 && fists.length === 1) {
-      const h = pins[0], at = h.palmC;
-      begin('pan', t, ev, { x: at.x, y: at.y, id: h.id });
-      if (stable(h) && stable(fists[0])) {
+    /* ── непрерывная часть ── */
+    const g = ctl.g, own = g && byId(g.id);
+    if (ctl.mode === 'pending' && own && own.present) {
+      const hold = cfg.holdMs * (ctl.lowFps ? 1.3 : 1), moved = D2(own.palmC, g);
+      if (moved > cfg.moveOn) startRotate(own, t, ev, { x: g.x, y: g.y });         /* повёл руку — это вращение; смещение с начала не теряем */
+      else if (t - g.t0 >= hold) {
+        if (moved < cfg.holdStill) {
+          ev.push({ type: 'grab', id: own.id, target: g.target, t });
+          setMode('drag', t, ev, { id: own.id, target: g.target, t0: t, start: g.cur, px: own.curU.x, py: own.curU.y });
+          ev.push({ type: 'drag-start', id: own.id, kind: 'part', target: g.target, at: g.cur, t });
+        } else startRotate(own, t, ev, { x: g.x, y: g.y });
+      }
+    }
+    if (ctl.mode === 'rotate' && own) {
+      const at = own.palmC;
+      if (own.rejoin) { ctl.g.x = at.x; ctl.g.y = at.y; }                            /* вернулась после пропуска — без скачка */
+      if (stable(own)) {
         const dx = dz(at.x - ctl.g.x), dy = dz(at.y - ctl.g.y);
-        v.panX -= dx * cfg.panGain / v.zoom; v.panY += dy * cfg.panGain / v.zoom;
+        v.yaw -= dx * cfg.rotGain; v.pit = clamp(v.pit + dy * cfg.rotGain, cfg.pitMin, cfg.pitMax);
         if (dx) ctl.g.x = at.x; if (dy) ctl.g.y = at.y;
-      }
-    } else if (cfg.extras && fists.length === 2) {
-      /* два кулака: развести — разбор; повернуть, как руль, — «штурвал» (открыть/закрыть вентиль). Что именно —
-         решает первое заметное движение: изменилось расстояние или угол линии между кулаками */
-      const A = fists[0].palmC, B = fists[1].palmC, d = D2(A, B), [l, r] = A.x <= B.x ? [A, B] : [B, A];
-      const ang = Math.atan2(-(r.y - l.y), r.x - l.x);                  /* против часовой — плюс (y кадра вниз) */
-      begin('explode', t, ev, { d0: d, e0: v.explode, a0: ang, o0: v.open || 0, kind: null });
-      if (fists.every(stable)) {
-        const g = ctl.g, dd = d - g.d0; let da = ang - g.a0; da = Math.atan2(Math.sin(da), Math.cos(da));
-        if (!g.kind) {
-          if (cfg.steer && Math.abs(da) > cfg.steerOn && Math.abs(dd) < cfg.steerMaxD) { g.kind = 'steer'; ev.push({ type: 'steer', t }); }
-          else if (Math.abs(dd) > cfg.explodeOn) g.kind = 'explode';
+        ctl.g.hist.push({ t, yaw: v.yaw, pit: v.pit }); while (ctl.g.hist.length > 2 && t - ctl.g.hist[0].t > 300) ctl.g.hist.shift();
+        ctl.g.relT = 0;
+      } else if (!ctl.g.relT && own.present && own.cand && own.cand !== own.pose) ctl.g.relT = own.candT;   /* пальцы начали разжиматься */
+    }
+    let drag = null;
+    if (ctl.mode === 'drag' && own) {
+      if (own.rejoin || !own.present) { ctl.g.px = own.curU.x; ctl.g.py = own.curU.y; }
+      drag = { id: own.id, kind: ctl.g.target.kind, target: ctl.g.target, t0: ctl.g.t0, start: ctl.g.start,
+        x: own.curU.x, y: own.curU.y, px: ctl.g.px, py: ctl.g.py, dx: own.present ? own.curU.x - ctl.g.px : 0, dy: own.present ? own.curU.y - ctl.g.py : 0 };
+      ctl.g.px = own.curU.x; ctl.g.py = own.curU.y;
+    }
+    let close = false;
+    if (ctl.mode === 'zoom') {
+      const [a, b] = ctl.g.ids.map(byId);
+      if (a && b) {
+        const d = D2(a.palmC, b.palmC), m = { x: (a.palmC.x + b.palmC.x) / 2, y: (a.palmC.y + b.palmC.y) / 2 }, pal = ((a.f ? a.f.palm : 0.1) + (b.f ? b.f.palm : 0.1)) / 2;
+        close = d < cfg.twoMin * pal;
+        if (a.rejoin || b.rejoin) { const zz = v.zoom; ctl.g.z0 = zz; ctl.g.d0 = Math.max(d, 0.02); ctl.g.m0 = m; ctl.g.pan0 = { x: v.panX, y: v.panY }; }
+        if (!close && stable(a) && stable(b)) {
+          const r = d / ctl.g.d0;
+          if (!ctl.g.zOn && Math.abs(r - 1) > cfg.zoomDead) { ctl.g.zOn = true; ctl.g.d0 = d; ctl.g.z0 = v.zoom; }     /* мёртвая зона без скачка */
+          else if (ctl.g.zOn) v.zoom = clamp(ctl.g.z0 * d / ctl.g.d0, cfg.zoomMin, cfg.zoomMax);
+          const mx = m.x - ctl.g.m0.x, my = m.y - ctl.g.m0.y;
+          if (!ctl.g.pOn && Math.hypot(mx, my) > cfg.panDead) { ctl.g.pOn = true; ctl.g.m0 = m; ctl.g.pan0 = { x: v.panX, y: v.panY }; }
+          else if (ctl.g.pOn) { v.panX = ctl.g.pan0.x - mx * cfg.panGain / v.zoom; v.panY = ctl.g.pan0.y + my * cfg.panGain / v.zoom; }
         }
-        if (g.kind === 'explode') {
-          const e = clamp(g.e0 + dd / cfg.explodeSpan, 0, 1);
-          const step = x => Math.floor(x * 4 + 1e-9);
-          if (step(e) !== step(v.explode)) ev.push({ type: 'explode-step', e, t });
-          v.explode = e;
-        } else if (g.kind === 'steer') {
-          const o = clamp(g.o0 + da / cfg.steerSpan, 0, 1), step = x => Math.floor(x * 10 + 1e-9);
-          if (step(o) !== step(v.open || 0)) ev.push({ type: 'explode-step', e: o, t });   /* щелчок трещотки */
-          v.open = o;
-        }
       }
-    } else if ((pins.length === 1 && fists.length === 0) || (fists.length === 1 && pins.length === 0)) {
-      /* вращение: щипок (точно) или кулак («схватил и крутишь» — естественнее и не устаёт) */
-      /* точка хватки — центр ладони: при размыкании пальцев середина щипка «уезжает» и доворачивала деталь */
-      const h = pins[0] || fists[0], at = h.palmC;
-      if ((multi || h.poseT <= ctl.multiEnd) && ctl.mode !== 'rotate') begin('wait', t, ev);       /* хватка пережила двуручный жест — ждём свежую */
-      else {
-        if (ctl.mode === 'rotate' && ctl.g && ctl.g.id !== h.id) begin('idle', t, ev);
-        begin('rotate', t, ev, { x: at.x, y: at.y, id: h.id, hist: [{ t, yaw: v.yaw, pit: v.pit }] });
-        const g = ctl.g;
-        if (stable(h)) {
-          const dx = dz(at.x - g.x), dy = dz(at.y - g.y);
-          v.yaw -= dx * cfg.rotGain; v.pit = clamp(v.pit + dy * cfg.rotGain, cfg.pitMin, cfg.pitMax);
-          if (dx) g.x = at.x; if (dy) g.y = at.y;
-          g.hist.push({ t, yaw: v.yaw, pit: v.pit }); while (g.hist.length > 2 && t - g.hist[0].t > 300) g.hist.shift();
-          g.relT = 0;
-        } else if (!g.relT && h.present && h.cand && h.cand !== h.pose) g.relT = h.candT;   /* хватка начала разжиматься */
-      }
-    } else if (by('blade').length && !pins.length && !fists.length) {
-      /* лезвие: секущая плоскость идёт за ребром ладони; где она в мире — считает app.js (нужна камера) */
-      const h = by('blade')[0]; begin('section', t, ev, { id: h.id });
-    } else if (by('point').length && !pins.length && !fists.length) {
-      const h = by('point')[0]; begin('point', t, ev, { id: h.id });
-    } else if (opens.length >= 1 && pins.length === 0 && fists.length === 0) {
-      if (ctl.resetLock) begin('idle', t, ev);
-      else {
-        if (ctl.mode !== 'reset') { begin('reset', t, ev, {}); ctl.openSince = t; }
-        if (t - ctl.openSince >= cfg.resetMs) { resetView(t); ev.push({ type: 'reset', t }); ctl.resetLock = true; begin('idle', t, ev); }
-      }
-    } else begin('idle', t, ev);
-    if (!opens.length) ctl.resetLock = false;
+    }
 
-    const resetP = ctl.mode === 'reset' ? clamp((t - ctl.openSince) / cfg.resetMs, 0, 1) : 0;
-    const gT = ctl.g && T.find(tr => tr.id === ctl.g.id);
-    const blade = ctl.mode === 'section' && gT && gT.pts ? { kind: gT.f.vert ? 'v' : 'h', x: gT.palmC.x, y: gT.palmC.y } : null;
-    const point = ctl.mode === 'point' && gT && gT.pts ? { x: gT.pts[8].x, y: gT.pts[8].y, id: gT.id } : null;
-    if (ctl.toast && t - ctl.toast.t > 1600) ctl.toast = null;
-    const steering = ctl.mode === 'explode' && ctl.g && ctl.g.kind === 'steer';
-    const label = ctl.toast ? ctl.toast.text : steering ? 'вентиль открыт ' + Math.round((v.open || 0) * 100) + '%'
-      : ctl.mode === 'explode' && ctl.g && !ctl.g.kind && cfg.steer ? 'разведи — разобрать · поверни — открыть' : LABEL[ctl.mode] ? LABEL[ctl.mode](v) : '';
+    /* ── меню ── */
+    if (ctl.mode === 'menu') {
+      const M = ctl.menu, tr = byId(M.id);
+      if (!tr) closeMenu(t, ev, false);
+      else if (tr.present && tr.pose === 'fist') closeMenu(t, ev, false);
+      else if (tr.present && tr.cur) {
+        if (D2(tr.cur, M.last) > 0.01) { M.last = { x: tr.cur.x, y: tr.cur.y }; M.tMove = t; }
+        const s = menuSel(M, tr.cur); if (s !== M.sel) { M.sel = s; if (s >= 0) ev.push({ type: 'menu-sel', i: s, t }); }
+        if (t - M.tMove > cfg.menuIdle) closeMenu(t, ev, false);
+      }
+    }
+    /* ладонь → взвод меню: одна открытая неподвижная ладонь, никто не щиплет */
+    if (ctl.mode === 'idle' || ctl.mode === 'arm') {
+      const opens = T.filter(tr => tr.present && tr.pose === 'open' && !tr.ignored);
+      const fresh = tr => tr.poseT > (ctl.lockT || -1e9) && t - (ctl.lockT || -1e9) > 800;
+      const cand = !pinsNow().length && opens.find(tr => fresh(tr) && tr.speed < cfg.menuStill * 2.5);
+      if (cand && (!ctl.arm || ctl.arm.id !== cand.id)) ctl.arm = { id: cand.id, t0: t };
+      if (cand && ctl.arm) {
+        if (cand.speed > cfg.menuStill) ctl.arm.t0 = Math.max(ctl.arm.t0, t - 0.5 * (t - ctl.arm.t0));     /* дёрнулась — откат прогресса наполовину */
+        if (ctl.mode !== 'arm') setMode('arm', t, ev, { id: cand.id });
+        if (t - ctl.arm.t0 >= cfg.menuMs * (ctl.lowFps ? 1.3 : 1)) openMenu(cand, t, ev, menuRoot(), 0);
+      } else { ctl.arm = null; if (ctl.mode === 'arm') setMode('idle', t, ev); }
+    }
+
+    /* ── кадр для HUD ── */
+    const armP = ctl.mode === 'arm' && ctl.arm ? clamp((t - ctl.arm.t0) / (cfg.menuMs * (ctl.lowFps ? 1.3 : 1)), 0, 1) : 0;
+    const holdP = ctl.mode === 'pending' ? clamp((t - ctl.g.t0) / (cfg.holdMs * (ctl.lowFps ? 1.3 : 1)), 0, 1) : 0;
+    const driver = id => !!(ctl.g && (ctl.g.id === id || (ctl.g.ids && ctl.g.ids.includes(id))));
+    const lead = T.find(tr => driver(tr.id) && tr.present) || T.find(tr => tr.present && !(tr.f && (tr.f.edge || tr.f.far)));
+    const label = LABEL[ctl.mode] ? LABEL[ctl.mode](v, ctl) : '';
     ctl.frame = {
-      t, mode: ctl.mode, steer: steering, label, resetP, events: ev, blade, point,
-      hands: T.map(tr => ({ id: tr.id, handed: tr.handed, pose: tr.pose, raw: tr.raw, present: tr.present, pts: tr.pts, pin: tr.pin, palmC: tr.palmC,
-        cursor: tr.pts ? tr.pts[8] : null, captured: !!tr.captured,
-        ignored: !!(tr.f && (tr.f.edge || tr.f.far)), why: tr.f ? (tr.f.edge ? 'край кадра' : tr.f.far ? 'далеко' : '') : '',
-        pinchAmt: tr.f ? clamp((cfg.pinchOff * 1.6 - tr.f.pinch) / (cfg.pinchOff * 1.6 - cfg.pinchOn), 0, 1) : 0,
-        drives: !!(ctl.g && (ctl.g.id === tr.id || (ctl.g.ids && ctl.g.ids.includes(tr.id)) || (['explode', 'pan', 'zoom'].includes(ctl.mode) && ACTIVE.has(tr.pose)))) }))
+      t, mode: ctl.mode, label, events: ev, drag, armP, holdP, close, lowFps: ctl.lowFps, fps: 1000 / ctl.dtE,
+      lead: lead ? lead.id : null,
+      menu: ctl.menu ? { x: ctl.menu.x, y: ctl.menu.y, items: ctl.menu.items, sel: ctl.menu.sel, level: ctl.menu.level, parent: ctl.menu.parent || null } : null,
+      target: ctl.g && ctl.g.target ? ctl.g.target : null,
+      hands: T.map(tr => {
+        const f = tr.f, a = tr.anchorF, w = cfg.edgeWarn;
+        const edgeDir = a ? (a.x < w ? 'l' : a.x > 1 - w ? 'r' : a.y < w ? 't' : a.y > 1 - w ? 'b' : '') : '';
+        return { id: tr.id, handed: tr.handed, pose: tr.pose, raw: tr.raw, present: tr.present, pts: tr.pts, palmC: tr.palmC,
+          cursor: tr.cur, captured: driver(tr.id) && ctl.mode === 'drag', busy: !!tr.ignored,
+          ignored: !!(f && (f.edge || f.far)), why: f ? (f.edge ? 'край кадра' : f.far ? 'далеко' : '') : '',
+          dist: f ? (f.palm < cfg.nearPalm ? 'near' : f.palm > cfg.farPalm ? 'far' : '') : '', edgeDir,
+          pinchAmt: f ? clamp((0.7 - f.pinch) / (0.7 - cfg.pinchOn), 0, 1) : 0,
+          drives: driver(tr.id) };
+      })
     };
     return ctl.frame;
   }
 
-  /* инерция и анимация сброса; вызывать каждый кадр отрисовки (update зовёт сам) */
+  /* инерция и анимация вида; вызывать каждый кадр отрисовки (update зовёт сам) */
   function tick(t) {
     const dt = clamp(t - (ctl.lastT || t), 0, 5000); ctl.lastT = t;
     const v = view; let moving = false;
@@ -368,12 +456,13 @@ export function createController(opt = {}) {
 
   ctl.update = update; ctl.tick = tick; ctl.reset = resetView; ctl.stopMotion = stopMotion;
   ctl.busy = () => !!(ctl.fling || ctl.tween);
+  ctl.closeMenu = () => { if (ctl.menu) { ctl.menu = null; ctl.mode = 'idle'; ctl.g = null; } };
   return ctl;
 }
 
 const LABEL = {
-  rotate: () => 'вращение', zoom: v => 'зум ×' + v.zoom.toFixed(2), pan: () => 'панорама',
-  explode: v => 'разбор ' + Math.round(v.explode * 100) + '%', reset: () => 'держи ладонь — сброс вида',
-  section: () => 'разрез — веди ребром ладони', point: () => 'указка',
-  wait: () => 'отпусти и схвати снова', idle: () => ''
+  rotate: () => 'вращение', zoom: v => 'зум ×' + v.zoom.toFixed(2), pending: () => 'держи — взять деталь · веди — вращать',
+  drag: (v, c) => ({ slider: 'ползунок', wheel: 'маховик', plane: 'секущая плоскость', part: 'деталь', ui: '' })[c.g && c.g.target ? c.g.target.kind : ''] || '',
+  arm: () => 'держи ладонь — меню', menu: () => 'веди к пункту и щипни · центр — сброс · кулак — закрыть',
+  wait: () => 'отпусти и щипни снова', idle: () => ''
 };
