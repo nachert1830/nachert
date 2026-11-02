@@ -1,7 +1,7 @@
 /* ═══════════ Сканер листа: облачная функция (Yandex Cloud Functions, вызов по адресу, без шлюза) ═══════════
    Страница nachert1830.ru/lk/scan/ присылает сюда кадры чертежей; функция добавляет ключ ProxyAPI (из окружения функции — в страницу он
    не попадает) и возвращает ответ модели. Режимы: layout (где чертежи) и crop (оцифровка одного чертежа), как server/lib/eyes.js.
-   Доступ — по коду: заголовок x-scan-code, сверка по SHA-256 (SCAN_CODE_SHA256), перебор кода ограничен (10 неудач за 10 минут на адрес).
+   Доступ — по коду: заголовок x-scan-code, сверка по SHA-256 (SCAN_CODE_SHA256; личный код владельца — OWNER_CODE_SHA256, он же открывает me/), перебор кода ограничен (10 неудач за 10 минут на адрес).
    Браузер: CORS только для SCAN_ORIGINS (по умолчанию nachert1830.ru). Расход ограничен: SCAN_LIMIT_USD на экземпляр функции и
    SCAN_HOURLY запросов в час — это страховка, а не бухгалтерия (счётчики живут, пока жив экземпляр); баланс ProxyAPI — главный предел.
    Модели (переменные функции; по умолчанию — лучшая связка по замеру lab/dz/REPORT.md, «Opus + проверка Sonnet»):
@@ -38,8 +38,13 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
   /* GET без кода — «жива ли функция и нужен ли код» (код не проверяется, статистику не отдаём) */
   if(method==='GET'&&!code) return reply(200,{ok:true,scan:true,codeNeeded:true},origin);
   const f=state.fails.get(ip)||[]; const recent=f.filter(t=>now-t<600000); if(recent.length>=10) return reply(429,{ok:false,error:'Слишком много неверных кодов. Подождите 10 минут.'},origin);
-  if(!hash||!same(sha(code),hash)){ recent.push(now); state.fails.set(ip,recent); if(state.fails.size>500) state.fails.clear(); return reply(401,{ok:false,error:'Неверный код доступа'},origin); }
-  if(method==='GET') return reply(200,{ok:true,scan:true,codeNeeded:true,codeOk:true,spent:+state.spent.toFixed(3),limit:+(process.env.SCAN_LIMIT_USD||5)},origin);
+  /* код владельца (OWNER_CODE_SHA256) — второй, личный код: открывает страницу владельца me/ и тоже даёт сканировать */
+  const ownerHash=process.env.OWNER_CODE_SHA256||'', owner=!!code&&!!ownerHash&&same(sha(code),ownerHash);
+  if(!owner&&(!hash||!same(sha(code),hash))){ recent.push(now); state.fails.set(ip,recent); if(state.fails.size>500) state.fails.clear(); return reply(401,{ok:false,error:'Неверный код доступа'},origin); }
+  /* GET ?owner=1 — вход на страницу владельца: студенческий код здесь не годится (403) */
+  const wantOwner=String((event.queryStringParameters&&event.queryStringParameters.owner)||'')==='1';
+  if(method==='GET'&&wantOwner&&!owner) return reply(403,{ok:false,owner:false,error:'Эта страница только для владельца'},origin);
+  if(method==='GET') return reply(200,{ok:true,scan:true,codeNeeded:true,codeOk:true,owner,spent:+state.spent.toFixed(3),limit:+(process.env.SCAN_LIMIT_USD||5)},origin);
   if(method!=='POST') return reply(405,{ok:false,error:'Только GET и POST'},origin);
   const key=process.env.PROXYAPI_KEY||''; if(!key) return reply(503,{ok:false,error:'На сервере не задан ключ ProxyAPI'},origin);
   if(now-state.hour>3600000){ state.hour=now; state.hourCalls=0; }

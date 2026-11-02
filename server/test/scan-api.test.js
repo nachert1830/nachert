@@ -57,3 +57,15 @@ test('модели — из переменных функции',async()=>{ cons
   process.env.SCAN_DIGIT_MODEL='sonnet'; process.env.SCAN_LAYOUT_MODEL='anthropic/claude-sonnet-5-5';
   await F.handler(ev('POST',{headers:h,body:body({mode:'crop'})})); await F.handler(ev('POST',{headers:h,body:body()})); delete process.env.SCAN_DIGIT_MODEL; delete process.env.SCAN_LAYOUT_MODEL;
   assert.deepEqual(log.map(x=>x.b.model),['anthropic/claude-sonnet-5-5','anthropic/claude-sonnet-5-5']); });
+test('код владельца: открывает страницу me/ (GET ?owner=1) и сканирует; студенческий код на me/ — 403; без OWNER_CODE_SHA256 владельца нет',async()=>{ F._setFetch(fake([]));
+  const q={owner:'1'}, get=(code,qs)=>F.handler(ev('GET',{headers:{origin:OK,'x-scan-code':encodeURIComponent(code)},queryStringParameters:qs}));
+  delete process.env.OWNER_CODE_SHA256;
+  assert.equal((await get('виктория',q)).statusCode,403,'владелец не задан — никто не владелец');
+  process.env.OWNER_CODE_SHA256=F.sha('мой-личный-код');
+  try{
+    const a=await get('Мой-Личный-Код',q); assert.equal(a.statusCode,200); assert.equal(JSON.parse(a.body).owner,true);
+    const s=await get('виктория',q); assert.equal(s.statusCode,403); assert.equal(JSON.parse(s.body).owner,false);
+    const s2=await get('виктория'); assert.equal(s2.statusCode,200); assert.equal(JSON.parse(s2.body).owner,false,'студенту сканер открыт, но он не владелец');
+    assert.equal((await get('чужой',q)).statusCode,401);
+    const p=await F.handler(ev('POST',{headers:{origin:OK,'x-scan-code':encodeURIComponent('мой-личный-код')},body:body()})); assert.equal(p.statusCode,200,'код владельца сканирует');
+  } finally { delete process.env.OWNER_CODE_SHA256; } });

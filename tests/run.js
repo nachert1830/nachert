@@ -225,6 +225,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     info.push('Мои чертежи: '+bad.length+' замечаний'+(res&&!res.err?' (конвейер на синтетическом фото: ДЗ №'+res.dz+' в.'+res.n+', невязка '+res.rms+' мм, рёбер '+res.edges+')':''));
     report('Мои чертежи (сканер в кабинете)',bad); }
 
+  /* 3к. пульт владельца me/ (tests/me-hub.js): рука как мышь (me/pointer.js), вход только по коду владельца,
+     кабинет · сканер · 3D · голограмма · сайт на одной странице */
+  { const bad=await require('./me-hub.js').runMe(browser,URL); info.push('Пульт владельца: '+bad.length+' замечаний'); report('Пульт владельца (me/)',bad); }
+
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
   report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));

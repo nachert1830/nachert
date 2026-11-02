@@ -2,6 +2,8 @@ name: Сканер листа — развёртывание облачной ф
 # Одна функция Yandex Cloud (nachert-scan) без шлюза и базы (вызов по адресу БЕЗ ?integration=raw — в raw-режиме функция не видит заголовков и метода): страница nachert1830.ru/lk/scan/ присылает ей кадры чертежей, функция
 # добавляет ключ ProxyAPI и возвращает ответ модели. Доступ — по коду (SHA-256 в SCAN_CODE_SHA256). Адрес функции записывается
 # в lk/scan/config.js и коммитится в main (страница публикуется GitHub Pages). Нужны секреты: YC_SA_KEY, PROXYAPI_KEY (как у club.yml).
+# Секрет OWNER_CODE (необязательный) — личный код владельца: открывает страницу nachert1830.ru/me/ (сканер + кабинет + 3D + жесты + сайт);
+# в функцию уходит только его SHA-256 (OWNER_CODE_SHA256). Без секрета страница владельца не открывается никому.
 # Запуск вручную: Actions → «Сканер листа — развёртывание» → Run workflow (ветка main).
 on:
   workflow_dispatch:
@@ -65,33 +67,40 @@ jobs:
           SCAN_LIMIT: ${{ github.event.inputs.limit || '5' }}
           SCAN_DIGIT: ${{ github.event.inputs.digit || 'opus' }}
           SCAN_CHECK: ${{ github.event.inputs.check || 'sonnet' }}
+          OWNER_CODE: ${{ secrets.OWNER_CODE }}
         run: |
           echo "::add-mask::$PROXYAPI_KEY"
           HASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.SCAN_CODE))")
+          OHASH=""; [ -n "$OWNER_CODE" ] && OHASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.OWNER_CODE))")
           rm -rf pkg && mkdir pkg && cp server/scan/index.js pkg/index.js && cp server/lib/eyes.js server/lib/sheetprompts.js pkg/
           (cd pkg && zip -qr ../scan.zip .)
           yc serverless function get --name nachert-scan >/dev/null 2>&1 || yc serverless function create --name nachert-scan >/dev/null
           yc serverless function allow-unauthenticated-invoke --name nachert-scan >/dev/null
           yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 120s \
-            --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,SCAN_LIMIT_USD=$SCAN_LIMIT,SCAN_DIGIT_MODEL=$SCAN_DIGIT,SCAN_CHECK_MODEL=$SCAN_CHECK,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
+            --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,OWNER_CODE_SHA256=$OHASH,SCAN_LIMIT_USD=$SCAN_LIMIT,SCAN_DIGIT_MODEL=$SCAN_DIGIT,SCAN_CHECK_MODEL=$SCAN_CHECK,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
           ID=$(yc serverless function get --name nachert-scan --format json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).id))")
           URL="https://functions.yandexcloud.net/$ID"
           echo "SCAN_URL=$URL" >> "$GITHUB_ENV"; echo "Адрес функции: $URL"
       - name: "Проверка — функция жива, код проверяется (любое расхождение — ошибка)"
         env:
           C: ${{ github.event.inputs.code || 'виктория' }}
+          OWNER_CODE: ${{ secrets.OWNER_CODE }}
         run: |
           ENC=$(node -e "console.log(encodeURIComponent(process.env.C))")
           fail=0
           chk(){ # описание, ожидаемый код, остальные аргументы curl
             local d="$1" want="$2"; shift 2
-            got=$(curl -sS -m 40 -o /tmp/body.txt -w "%{http_code}" "$@" "$SCAN_URL"); echo "$d: HTTP $got (ждали $want)"; [ "$got" = "$want" ] || { echo "::error::$d: получили $got, ждали $want"; head -c 300 /tmp/body.txt; echo; fail=1; }; }
+            got=$(curl -sS -m 40 -o /tmp/body.txt -w "%{http_code}" "$@" "${U:-$SCAN_URL}"); echo "$d: HTTP $got (ждали $want)"; [ "$got" = "$want" ] || { echo "::error::$d: получили $got, ждали $want"; head -c 300 /tmp/body.txt; echo; fail=1; }; }
           chk "GET без кода" 200 -H "Origin: https://nachert1830.ru"; grep -q codeNeeded /tmp/body.txt || { echo "::error::в ответе нет codeNeeded"; fail=1; }
           chk "GET с неверным кодом" 401 -H "Origin: https://nachert1830.ru" -H "x-scan-code: nope"
           chk "GET с верным кодом" 200 -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC"; grep -q codeOk /tmp/body.txt || { echo "::error::верный код не принят"; fail=1; }
           chk "OPTIONS с сайта" 204 -X OPTIONS -H "Origin: https://nachert1830.ru" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,x-scan-code" -D /tmp/h.txt
           grep -qi "access-control-allow-origin: https://nachert1830.ru" /tmp/h.txt || { echo "::error::нет заголовка CORS для сайта"; cat /tmp/h.txt; fail=1; }
           chk "OPTIONS с чужого адреса" 403 -X OPTIONS -H "Origin: https://evil.example"
+          U="$SCAN_URL?owner=1" chk "страница владельца по студенческому коду" 403 -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC"
+          if [ -n "$OWNER_CODE" ]; then OENC=$(node -e "console.log(encodeURIComponent(process.env.OWNER_CODE))")
+            U="$SCAN_URL?owner=1" chk "страница владельца по коду владельца" 200 -H "Origin: https://nachert1830.ru" -H "x-scan-code: $OENC"; grep -q '"owner":true' /tmp/body.txt || { echo "::error::код владельца не принят"; fail=1; }
+          else echo "::warning::секрет OWNER_CODE не задан — страница me/ не откроется никому"; fi
           chk "POST без кода" 401 -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -d '{}'
           exit $fail
       - name: Адрес — в страницу сканера (lk/scan/config.js) и в main
