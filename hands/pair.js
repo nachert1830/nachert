@@ -21,7 +21,7 @@ export function drawQR(canvas, text) {
 
 export function createPairing({ onHands, onOpen, onClose, onStatus }) {
   let pc = null, dc = null, scan = null, ping = 0, box = null, applied = false;
-  const st = { state: 'idle', rtt: 0, fps: 0, phoneMs: 0, n: 0, t0: 0 };
+  const st = { state: 'idle', rtt: 0, fps: 0, phoneMs: 0, n: 0, t0: 0, log: [] };      /* log — что сообщал телефон */
 
   async function stopScan() { if (!scan) return; scan.stop = true; scan.stream && scan.stream.getTracks().forEach(t => t.stop()); scan = null; }
 
@@ -58,7 +58,7 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); s.getTracks().forEach(t => t.stop()); } catch (_) {}
     const base = opt.relay || RELAY, topic = newTopic();
     box = relayListen(base, topic, text => {                           /* слушаем ящик заранее — до того, как телефон ответит */
-      if (text.startsWith('S~')) { onStatus('Телефон: ' + text.slice(2)); return; }
+      if (text.startsWith('S~')) { st.log.push(text.slice(2)); onStatus('Телефон: ' + text.slice(2)); return; }
       apply(text); });
     pc = new RTCPeerConnection({ iceServers: STUN });
     dc = pc.createDataChannel('hands', { ordered: false, maxRetransmits: 0 });   /* старые точки не нужны — без повторов */
@@ -66,7 +66,8 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
       ping = setInterval(() => { if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ k: 'p', t: performance.now() })); }, 1000); };
     dc.onmessage = e => { const m = JSON.parse(e.data), now = performance.now();
       if (m.k === 'h') { st.n++; st.phoneMs = m.ms || 0; if (now - st.t0 > 1000) { st.fps = st.n * 1000 / (now - st.t0); st.n = 0; st.t0 = now; } onHands(decodeHands(m), now); }
-      else if (m.k === 'q') st.rtt = 0.7 * st.rtt + 0.3 * (now - m.t); };
+      else if (m.k === 'q') st.rtt = 0.7 * st.rtt + 0.3 * (now - m.t);
+      else if (m.k === 's') { st.log.push(m.text); onStatus('Телефон: ' + m.text); } };
     dc.onclose = () => { if (st.state !== 'idle') { st.state = 'idle'; clearInterval(ping); onClose(); } };
     pc.onconnectionstatechange = () => { if (pc && pc.connectionState === 'failed') { applied = false; onStatus('Не соединилось: телефон и ноутбук не видят друг друга. Нужна одна сеть Wi-Fi (не гостевая), на телефоне — без мобильных данных. Нажми «Новый код».'); } };
     await pc.setLocalDescription(await pc.createOffer());

@@ -44,6 +44,9 @@ srv.listen(0, async () => {
     const open = await L.waitForFunction(() => window.__app.pairing.st.state === 'on', null, { timeout: 30000 }).then(() => true).catch(() => false);
     ok(open, 'телефон отсканировал один код — канал WebRTC открыт, без второго кода');
     await P.waitForFunction(() => window.__sensor.dc && window.__sensor.dc.readyState === 'open', null, { timeout: 10000 });
+    const ready = await L.waitForFunction(() => window.__app.pairing.st.log.some(t => /распознавание готово/.test(t)), null, { timeout: 60000 }).then(() => true).catch(() => false);
+    const log = await L.evaluate(() => window.__app.pairing.st.log);
+    ok(ready, 'на «телефоне» запустилось распознавание (без воркера), ноутбук это видит: ' + log.join(' | '));
     await P.evaluate(() => window.__sensor.pause());
     const y0 = await L.evaluate(() => window.__app.view.yaw);
     /* «телефон» шлёт синтетические руки: кулак ведёт вправо — деталь поворачивается */

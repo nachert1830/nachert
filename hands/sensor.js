@@ -1,29 +1,43 @@
 /* Телефон — датчик рук для голограммы на ноутбуке.
    1) открыли по QR-коду с ноутбука: в адресе (после #) — предложение соединения;
-   2) «Начать»: камера, распознавание (тот же воркер, что на ноутбуке), ответ соединения — QR-кодом на экране;
-   3) ноутбук считал ответ своей веб-камерой — прямой канал WebRTC; дальше сюда только пинги, туда — точки рук.
+   2) сразу: камера, ответ соединения — в «почтовый ящик», который слушает ноутбук;
+   3) прямой канал WebRTC; дальше сюда только пинги, туда — точки рук.
+   Распознавание — в основном потоке, одним экземпляром облегчённой модели: на телефоне нет 3D, которое
+   надо беречь, а воркер (динамический import, WebGL в фоновом потоке, два экземпляра wasm по ~14 МБ) на iOS не взлетал.
    Видео никуда не уходит: распознаёт MediaPipe прямо на телефоне. */
 import { packSDP, unpackSDP, gathered, STUN, encodeHands, RELAY, relaySend } from './link.js';
 
 const $ = id => document.getElementById(id);
 /* что происходит на телефоне — сообщаем и ноутбуку (через тот же ящик): там видно, где застряло */
-const tell = text => { if (topic) relaySend(base, topic, 'S~' + text).catch(() => {}); };
+const tell = text => {                                                /* канал открыт — по нему, иначе — через ящик */
+  if (dc && dc.readyState === 'open') { try { dc.send(JSON.stringify({ k: 's', text })); return; } catch (_) {} }
+  if (topic) relaySend(base, topic, 'S~' + text).catch(() => {}); };
 const say = (t, l) => { $('title').textContent = t; if (l != null) $('lead').textContent = l; };
 const HP = new URLSearchParams(location.hash.slice(1)), offer = HP.get('o'), topic = HP.get('r'), base = HP.get('b') || RELAY;
 if (!offer) { say('Открой эту страницу по QR-коду', 'На ноутбуке в голограмме нажми «📱 Телефон» и наведи камеру телефона на код.'); $('start').hidden = true; }
 
 let pc = null, dc = null, stream = null, facing = 'user', running = false, busy = false, lastT = -1, lock = null;
-let w = null, pend = null, n = 0, t0 = performance.now(), fps = 0, detMs = 0;
+let lmk = null, delegate = '', n = 0, t0 = performance.now(), fps = 0, detMs = 0, lastStamp = 0;
 const vid = $('vid'), ov = $('ov'), oc = ov.getContext('2d');
 
 
-/* распознавание — в воркере, как на ноутбуке (облегчённая модель, вторая рука по требованию) */
-function worker() {
-  w = new Worker('detector.worker.js');
-  w.onmessage = e => { const p = pend; pend = null; p && (e.data.type === 'fail' || e.data.type === 'error' ? p.rej(new Error(e.data.error)) : p.res(e.data)); };
-  return new Promise((res, rej) => { pend = { res, rej }; w.postMessage({ type: 'init', delegate: 'GPU' }); });
+/* распознавание — MediaPipe в основном потоке: видеокарта, не вышло — процессор */
+async function makeDetector() {
+  const { FilesetResolver, HandLandmarker } = await import('./vendor/vision_bundle.mjs');
+  const fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
+  const mk = d => HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker_lite.task', delegate: d },
+    runningMode: 'VIDEO', numHands: 2, minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.6, minTrackingConfidence: 0.5 });
+  try { lmk = await mk('GPU'); delegate = 'GPU'; }
+  catch (e) { tell('видеокарта не подошла (' + (e.message || e).slice(0, 120) + ') — пробую процессор'); lmk = await mk('CPU'); delegate = 'CPU'; }
+  tell('распознавание готово: ' + delegate);
 }
-const detect = (bitmap, t) => new Promise((res, rej) => { pend = { res, rej }; w.postMessage({ type: 'frame', bitmap, t }, [bitmap]); });
+function detect(t) {
+  if (t <= lastStamp) t = lastStamp + 1; lastStamp = t;                /* VIDEO-режим требует растущих меток времени */
+  const t1 = performance.now(), r = lmk.detectForVideo(vid, t), ms = performance.now() - t1;
+  const hands = (r.landmarks || []).map((pts, i) => { const h = r.handedness && r.handedness[i] && r.handedness[i][0];
+    return { lm: pts.map(p => ({ x: p.x, y: p.y, z: p.z })), handed: h ? h.categoryName : null, score: h ? h.score : 1 }; });
+  return { ms, hands, delegate };
+}
 
 async function camera() {
   if (stream) stream.getTracks().forEach(t => t.stop());
@@ -39,8 +53,13 @@ async function pump() {
     lastT = vid.currentTime; busy = true;
     try {
       const W = 480, H = Math.round(W * (vid.videoHeight || 480) / (vid.videoWidth || 640));
-      const bm = await createImageBitmap(vid, { resizeWidth: W, resizeHeight: H, resizeQuality: 'low' });
-      const r = await detect(bm, performance.now());
+      let r;
+      try { r = detect(performance.now()); }
+      catch (e) {                                                       /* видеокарта упала на кадре — один раз на процессор */
+        if (delegate !== 'GPU') throw e; tell('видеокарта упала на кадре — перехожу на процессор'); try { lmk.close(); } catch (_) {}
+        const { FilesetResolver, HandLandmarker } = await import('./vendor/vision_bundle.mjs'), fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
+        lmk = await HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker_lite.task', delegate: 'CPU' }, runningMode: 'VIDEO', numHands: 2 });
+        delegate = 'CPU'; busy = false; return pump(); }
       detMs = 0.85 * detMs + 0.15 * r.ms; n++;
       /* обе камеры, направленные на человека, дают незеркальный кадр «глазами наблюдателя» — как веб-камера ноутбука;
          зеркалит (как в зеркале) уже ноутбук, отражать здесь не нужно */
@@ -50,7 +69,7 @@ async function pump() {
       r.hands.forEach(({ lm }) => { oc.beginPath(); BONES.forEach(([a, b]) => { oc.moveTo(lm[a].x * ov.width, lm[a].y * ov.height); oc.lineTo(lm[b].x * ov.width, lm[b].y * ov.height); }); oc.stroke(); });
       const now = performance.now(); if (now - t0 > 1000) { fps = n * 1000 / (now - t0); n = 0; t0 = now;
         $('stat').textContent = `руки ${fps.toFixed(0)} кадр/с · ${detMs.toFixed(0)} мс · ${r.delegate}` + (r.hands.length ? ` · вижу ${r.hands.length === 1 ? 'руку' : 'обе руки'}` : ''); }
-    } catch (e) { console.warn(e); }
+    } catch (e) { console.warn(e); if (!pump.err) { pump.err = 1; tell('ошибка распознавания: ' + (e.message || e).slice(0, 200)); } }
     busy = false;
   }
   vid.requestVideoFrameCallback ? vid.requestVideoFrameCallback(() => pump()) : requestAnimationFrame(() => pump());
@@ -64,12 +83,13 @@ $('start').onclick = async () => {
   try {
     if (!navigator.mediaDevices || !window.RTCPeerConnection) throw new Error('браузер не умеет камеру или WebRTC');
     await camera(); keepAwake();
-    const ready = worker();                                         /* модель грузится, пока знакомимся */
+    const ready = makeDetector();                                   /* модель грузится, пока знакомимся */
+    ready.catch(err => tell('распознавание не запустилось: ' + String(err && err.message || err).slice(0, 300)));
     pc = new RTCPeerConnection({ iceServers: STUN });
     pc.ondatachannel = e => { dc = e.channel;
       dc.onopen = async () => { say('Подключено — управляй руками', 'Деталь — на экране ноутбука. Держи руки в кадре телефона.');
         $('prev').hidden = false; $('flip').hidden = $('stop').hidden = false; $('tip').hidden = false;
-        try { await ready; } catch (err) { say('Не запустилось распознавание', String(err.message || err)); return; }
+        try { await ready; } catch (err) { say('Не запустилось распознавание', 'Причина: ' + String(err && err.message || err) + '. Её видно и на ноутбуке.'); return; }
         running = true; pump(); };
       dc.onmessage = e => { const m = JSON.parse(e.data); if (m.k === 'p') dc.send(JSON.stringify({ k: 'q', t: m.t })); };
       dc.onclose = () => { running = false; say('Связь закрыта', 'Чтобы подключиться снова — нажми «📱 Телефон» на ноутбуке и отсканируй новый код.'); }; };

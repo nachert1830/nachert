@@ -448,7 +448,9 @@ const pairing = createPairing({
     $('cta').hidden = camOn; $('pf').hidden = true; info = ''; $('st').textContent = 'телефон отключён'; $('st').className = 'chip';
     frame = ctl.update([], performance.now()); dirty = true;
   },
-  onStatus: m => { $('pairMsg').textContent = m; }
+  onStatus: m => { $('pairMsg').textContent = m;
+    /* после соединения окно закрыто — важное от телефона (ошибки распознавания) показываем поверх */
+    if (phoneOn && /не запустил|ошибка|упала/.test(m)) { showErr(m); setTimeout(() => showErr(''), 10000); } }
 });
 function phoneInfo() {
   const S = pairing.st, el = $('pf');
