@@ -35,8 +35,8 @@ main{position:fixed;inset:0}
 /* бренд — как на сайте: трёхцветная метка и тёмно-синее имя */
 #brand{position:absolute;left:calc(var(--rail) + 20px);top:16px;display:flex;flex-direction:column;gap:3px;z-index:2}
 #brand .logo{display:flex;align-items:center;gap:9px;font:700 16px/1 var(--ui);letter-spacing:.2em;color:var(--navy);text-decoration:none}
-#brand .tri{display:inline-flex;flex-direction:column;width:16px;height:13px;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
-#brand .tri i{flex:1} #brand .tri i:nth-child(1){background:#fff} #brand .tri i:nth-child(2){background:var(--acc)} #brand .tri i:nth-child(3){background:var(--red)}
+.tri{display:inline-flex;flex-direction:column;width:16px;height:13px;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+.tri i{flex:1} .tri i:nth-child(1){background:#fff} .tri i:nth-child(2){background:var(--acc)} .tri i:nth-child(3){background:var(--red)}
 #brand .sub{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut);padding-left:25px}
 
 /* состояние */

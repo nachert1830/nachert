@@ -57,6 +57,7 @@ async function camera() {
 }
 
 const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
+let missT = 0, seeK = '';
 async function pump() {
   if (!running) return;
   if (!busy && vid.readyState >= 2 && vid.currentTime !== lastT) {
@@ -76,10 +77,17 @@ async function pump() {
       const hands = r.hands;
       /* пустые кадры (рук не видно) — каждый 5-й: ноутбуку хватит как «я на связи», а брокер не забиваем */
       if (hands.length || (n % 5 === 0)) send(encodeHands(hands, { ms: Math.round(detMs) }), true);
-      ov.width = 320; ov.height = Math.round(320 * H / W); oc.clearRect(0, 0, ov.width, ov.height); oc.strokeStyle = '#35e0ff'; oc.lineWidth = 2;
+      ov.width = 320; ov.height = Math.round(320 * H / W); oc.clearRect(0, 0, ov.width, ov.height); oc.strokeStyle = '#4cd28a'; oc.lineWidth = 3;
       r.hands.forEach(({ lm }) => { oc.beginPath(); BONES.forEach(([a, b]) => { oc.moveTo(lm[a].x * ov.width, lm[a].y * ov.height); oc.lineTo(lm[b].x * ov.width, lm[b].y * ov.height); }); oc.stroke(); });
       const now = performance.now(); if (now - t0 > 1000) { fps = n * 1000 / (now - t0); n = 0; t0 = now;
-        $('stat').textContent = `руки ${fps.toFixed(0)} кадр/с · ${detMs.toFixed(0)} мс · ${r.delegate}` + (r.hands.length ? ` · вижу ${r.hands.length === 1 ? 'руку' : 'обе руки'}` : ''); }
+        $('stat').textContent = `${fps.toFixed(0)} кадр/с · ${detMs.toFixed(0)} мс · ${r.delegate === 'GPU' ? 'видеокарта' : 'процессор'}`; }
+      /* главное, что нужно знать человеку: видит ли телефон руку (сразу, без ожидания секунды) */
+      const k = r.hands.length ? 'ok' : 'no';
+      if (k === 'ok') missT = 0; else if (!missT) missT = performance.now();
+      const shown = k === 'ok' || performance.now() - missT > 600 ? k : seeK;          /* «не вижу» — после 0,6 с без руки, не мигает */
+      if (shown !== seeK) { seeK = shown; const el = $('see'); el.hidden = false; el.className = shown;
+        el.textContent = shown === 'ok' ? (r.hands.length === 2 ? '✋✋ Вижу обе руки' : '✋ Вижу руку') : 'Не вижу руку — подними ладонь перед камерой телефона, в 40–70 см';
+        $('prev').className = shown === 'ok' ? 'see' : 'miss'; }
     } catch (e) { console.warn(e); if (!pump.err) { pump.err = 1; tell('ошибка распознавания: ' + (e.message || e).slice(0, 200)); } }
     busy = false;
   }

@@ -180,7 +180,7 @@ function onHands(hands, t) {
   if (frame.point && holo) { const S = hud.map(frame.point); pointer = { x: S.x, y: S.y, hover: holo.pick(S.x, S.y, cut) }; } else pointer = null;
   const st = $('st'), md = $('md');
   const n = frame.hands.filter(h => h.present).length;
-  st.textContent = !n ? 'руки не видно' : frame.hands.some(h => h.present && h.ignored) ? 'рука у края кадра — ближе к центру' : n === 1 ? 'вижу руку' : 'вижу обе руки';
+  st.textContent = !n ? (phoneOn ? 'телефон не видит руку — подними ладонь перед его камерой' : 'руки не видно') : frame.hands.some(h => h.present && h.ignored) ? 'рука у края кадра — ближе к центру' : n === 1 ? 'вижу руку' : 'вижу обе руки';
   st.className = 'chip' + (n ? ' act' : '');
   md.textContent = frame.label || '';
   dirty = true;
@@ -553,7 +553,10 @@ function phoneInfo() {
   const S = pairing.st, el = $('pf');
   info = `📱 телефон · руки ${S.fps.toFixed(0)}/с · ${S.phoneMs} мс на телефоне · сеть ${S.rtt.toFixed(0)} мс`;
   el.hidden = false; el.textContent = `📱 руки ${S.fps.toFixed(0)}/с · ${S.phoneMs} мс · сеть ${S.rtt.toFixed(0)} мс`;
-  el.className = 'chip perf' + (S.fps < 15 ? ' bad' : S.fps >= 24 ? ' good' : ''); dirty = true;
+  /* без руки телефон шлёт лишь каждый 5-й кадр (~6/с) — это не тормоза, а «руки нет»: так и пишем */
+  const seen = frame && frame.hands.some(h => h.present);
+  if (!seen) el.textContent = `📱 на связи · руки в кадре телефона нет · сеть ${S.rtt.toFixed(0)} мс`;
+  el.className = 'chip perf' + (seen && S.fps < 15 ? ' bad' : seen && S.fps >= 24 ? ' good' : ''); dirty = true;
 }
 async function pairStart() {
   if (running) stop();
