@@ -389,8 +389,10 @@ function createApp(o){
     const consent=true;
     /* mode: 'digit' — оцифровка чертежа целиком (Sonnet): точки, отрезки, записанные ответы; part — часть, которую выбрал студент */
     const part=[1,2,3,4].includes(+b.part)?+b.part:null;
-    try{ const r=b.mode==='digit'?await EYES.askDigit(ec,{image:img,w,h,n,part,consent},{fetch:http}):await EYES.askAny(ec,{image:img,w,h,dz,n,consent},{fetch:http,token:o.iamToken}); if(r.fallback) log.error('eyes',r.fallback);
-      return H.json(200,{ok:true,text:r.text,model:r.model,fallback:!!r.fallback,mode:b.mode==='digit'?'digit':'eyes'}); }
+    /* mode: 'layout' — раскладка листа (где чертежи), 'crop' — оцифровка одного чертежа (кадр уже вырезан браузером): конвейер листа, lab/beta */
+    const mode=['digit','layout','crop'].includes(b.mode)?b.mode:'eyes';
+    try{ const r=mode==='digit'?await EYES.askDigit(ec,{image:img,w,h,n,part,consent},{fetch:http}):mode==='layout'?await EYES.askLayout(ec,{image:img,w,h,consent},{fetch:http}):mode==='crop'?await EYES.askCrop(ec,{image:img,w,h,consent},{fetch:http}):await EYES.askAny(ec,{image:img,w,h,dz,n,consent},{fetch:http,token:o.iamToken}); if(r.fallback) log.error('eyes',r.fallback);
+      return H.json(200,{ok:true,text:r.text,model:r.model,fallback:!!r.fallback,mode,usage:r.info&&r.info.usage?{in:r.info.usage.prompt_tokens,out:r.info.usage.completion_tokens}:null}); }
     catch(e){ if(e instanceof HttpError) throw e; log.error('eyes',e&&e.message); fail(e&&e.status||502,e&&e.status?e.message:'Модель зрения не ответила. Попробуйте ещё раз.'); } };
   A['POST /api/feedback']=async(req,S)=>{ const b=body(req); await limit('fb',S.user.id,20,3600);
     const feature=FEAT.ids.includes(b.feature)||b.feature==='privacy'?b.feature:'general', mood=['good','unclear','bad'].includes(b.mood)?b.mood:null, text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000);

@@ -25,7 +25,8 @@ const BEST_MODEL='anthropic/claude-sonnet-5-5';
 /* оцифровка чертежа целиком (mode: 'digit'): модель выписывает точки, отрезки и записанные ответы, мозг сканера проверяет
    по ним (lab/dz/eyes.js prepareDigit). Замер 7м: Sonnet 5.5 — точки ≈ 0,4 мм, линии 91–100 % в 1 мм, $0,01 за чертёж.
    EYES_DIGIT_MODEL — другая модель, off — не подключать */
-const DIGIT_MODEL='anthropic/claude-sonnet-5-5';
+const DIGIT_MODEL='anthropic/claude-sonnet-5-5', LAYOUT_MODEL='anthropic/claude-haiku-5-5';
+const SP=require('./sheetprompts.js');
 const DIGIT_PROMPT=`Ты — оцифровщик чертежей. На фото — лист ДЗ №3 по начертательной геометрии (эпюр Монжа, пирамида SABC): один
 или несколько отдельных чертежей, у каждого своя ось x и своя копия пирамиды. Лист может быть повёрнут. Координаты — в пикселях
 ЭТОГО фото: начало — левый верхний угол, x вправо, y вниз, целые числа. Ничего не оценивай — только перепиши, что начерчено.
@@ -74,6 +75,10 @@ function eyesFromEnv(env){ env=env||process.env; const folder=env.EYES_FOLDER||e
   const dm=env.EYES_DIGIT_MODEL===undefined?DIGIT_MODEL:env.EYES_DIGIT_MODEL;
   cfg.digit=env.EYES!=='off'&&dm&&bk&&dm!=='off'&&!env.EYES_DIGIT_NESTED?eyesFromEnv({EYES_URL:PX_URL,EYES_MODEL:dm,PROXYAPI_KEY:bk,EYES_BEST_MODEL:'off',EYES_DIGIT_NESTED:'1'}):null;
   cfg.digit=cfg.digit&&cfg.digit.on?cfg.digit:null; cfg.on=cfg.on||!!cfg.digit;
+  /* раскладка листа (дешёвая модель, кадр ≤ 800 px): где чертежи; оцифровка каждого чертежа — cfg.digit. EYES_LAYOUT_MODEL=off — не подключать */
+  const lm=env.EYES_LAYOUT_MODEL===undefined?LAYOUT_MODEL:env.EYES_LAYOUT_MODEL;
+  cfg.layout=env.EYES!=='off'&&lm&&bk&&lm!=='off'&&!env.EYES_DIGIT_NESTED?eyesFromEnv({EYES_URL:PX_URL,EYES_MODEL:lm,PROXYAPI_KEY:bk,EYES_BEST_MODEL:'off',EYES_DIGIT_NESTED:'1'}):null;
+  cfg.layout=cfg.layout&&cfg.layout.on?cfg.layout:null; cfg.on=cfg.on||!!cfg.layout;
   cfg.bestFor=env.EYES_BEST_FOR==='admin'?'admin':'all'; cfg.bestDefault=env.EYES_BEST_DEFAULT==='1';
   return cfg; }
 /* OpenRouter: модели с рассуждением (Gemini 3, GPT-5) — коротко, иначе ответ через минуту; usage.cost — цена запроса */
@@ -105,7 +110,7 @@ async function ask(cfg,q,o){ o=o||{}; const http=o.fetch||((...a)=>fetch(...a));
   const t0=Date.now(), r=await http(cfg.url,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(o.timeout||45000)});
   const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
   const why=j&&(j.error?j.error.message||j.error:j.detail||j.message);
-  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):'')),{status:502});
+  if(!r.ok) throw Object.assign(new Error('Модель зрения ответила ошибкой '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):t?': '+t.slice(0,200):'')),{status:502});
   /* модели с рассуждением (Qwen3.x) возвращают ход мысли в <think>…</think> или отдельным полем — сканеру нужен только ответ;
      если на ответ не хватило лимита, JSON бывает только в ходе мысли */
   const c=j&&j.choices&&j.choices[0]||{}, m=c.message||{}, raw=m.content, think=String(m.reasoning_content||m.reasoning||'');
@@ -129,6 +134,15 @@ async function askDigit(cfg,q,o){ o=o||{}; if(!cfg.digit) throw Object.assign(ne
   if(!q.consent) throw Object.assign(new Error('Оцифровка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
   const text='Размер фото: '+q.w+' × '+q.h+' px.'+(q.n?' Вариант '+q.n+'.':'')+(q.part?' Нужна только часть '+q.part+': выпиши один этот чертёж (D '+q.part+').':'');
   return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:DIGIT_PROMPT,text,opts:{max_tokens:6000}},Object.assign({},o,{timeout:o.timeout||55000})); }
+
+/* askLayout(cfg, {image, w, h, consent}) — раскладка листа (шаг 1 конвейера): JSON {rot, drawings:[{box, part}]} в px присланного кадра → {text, model, info} */
+async function askLayout(cfg,q,o){ o=o||{}; if(!cfg.layout) throw Object.assign(new Error('Раскладка листа не подключена.'),{status:503});
+  if(!q.consent) throw Object.assign(new Error('Раскладка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
+  return ask(cfg.layout,{image:q.image,w:q.w,h:q.h,system:SP.LAYOUT_PROMPT,text:'Размер фото: '+q.w+' × '+q.h+' px.',opts:{max_tokens:2000}},Object.assign({},o,{timeout:o.timeout||40000})); }
+/* askCrop(cfg, {image, w, h, consent}) — оцифровка одного чертежа (шаг 3): строки P/S/T в px присланного кадра → {text, model, info} */
+async function askCrop(cfg,q,o){ o=o||{}; if(!cfg.digit) throw Object.assign(new Error('Оцифровка моделью не подключена.'),{status:503});
+  if(!q.consent) throw Object.assign(new Error('Оцифровка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
+  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:SP.DIGIT_PROMPT,text:'Размер фото: '+q.w+' × '+q.h+' px.',opts:{max_tokens:3000}},Object.assign({},o,{timeout:o.timeout||55000})); }
 
 /* какая модель зрения в каталоге видит картинку: развёртывание (server/tools/deploy.js) пробует по очереди и подключает первую.
    Не все модели AI Studio есть в синхронном режиме (на остальные Yandex отвечает 400/403), а текстовая модель может ответить
@@ -161,4 +175,4 @@ async function tune(env,image,o){ const cfg=eyesFromEnv(env), res=[];
   const best=good&&good.think>0?Object.assign({},good,{opts:Object.assign({max_tokens:8000},good.opts)}):good;
   return {best,results:res}; }
 
-module.exports={eyesFromEnv,ask,askAny,askDigit,DIGIT_MODEL,DIGIT_PROMPT,orOpts,pxOpts,pxModel,OR_URL,PX_URL,BEST_MODEL,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};
+module.exports={eyesFromEnv,ask,askAny,askDigit,askLayout,askCrop,LAYOUT_MODEL,DIGIT_MODEL,DIGIT_PROMPT,orOpts,pxOpts,pxModel,OR_URL,PX_URL,BEST_MODEL,pick,tune,lastJson,PROMPT,DEF_URL,DEF_MODEL,CANDIDATES,VARIANTS};
