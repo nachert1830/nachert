@@ -4,11 +4,11 @@
    3) ноутбук считал ответ своей веб-камерой — прямой канал WebRTC; дальше сюда только пинги, туда — точки рук.
    Видео никуда не уходит: распознаёт MediaPipe прямо на телефоне. */
 import qrcode from './vendor/qr/qrcode.mjs';
-import { packSDP, unpackSDP, gathered, STUN, encodeHands } from './link.js';
+import { packSDP, unpackSDP, gathered, STUN, encodeHands, RELAY, relaySend } from './link.js';
 
 const $ = id => document.getElementById(id);
 const say = (t, l) => { $('title').textContent = t; if (l != null) $('lead').textContent = l; };
-const offer = new URLSearchParams(location.hash.slice(1)).get('o');
+const HP = new URLSearchParams(location.hash.slice(1)), offer = HP.get('o'), topic = HP.get('r'), base = HP.get('b') || RELAY;
 if (!offer) { say('Открой эту страницу по QR-коду', 'На ноутбуке в голограмме нажми «📱 Телефон» и наведи камеру телефона на код.'); $('start').hidden = true; }
 
 let pc = null, dc = null, stream = null, facing = 'user', running = false, busy = false, lastT = -1, lock = null;
@@ -83,14 +83,26 @@ $('start').onclick = async () => {
     await pc.setRemoteDescription(unpackSDP(decodeURIComponent(offer), 'offer'));
     await pc.setLocalDescription(await pc.createAnswer());
     await gathered(pc);
-    drawQR(packSDP(pc.localDescription.sdp));
-    say('Покажи этот код камере ноутбука', 'Поднеси экран телефона к веб-камере ноутбука на 20–40 см — соединение установится само.');
+    const ans = packSDP(pc.localDescription.sdp);
     $('start').hidden = true;
+    /* ответ — в «почтовый ящик», который слушает ноутбук; не вышло — запасной путь: код на экране для веб-камеры ноутбука */
+    try {
+      if (!topic) throw new Error('в ссылке нет ящика');
+      await relaySend(base, topic, ans);
+      say('Соединяюсь с ноутбуком…', 'Пара секунд. Телефон и ноутбук должны быть в одной сети Wi-Fi.');
+      setTimeout(() => { if (!dc || dc.readyState !== 'open') { drawQR(ans); say('Не соединилось само', 'Нажми на ноутбуке «Не подключается?» и поднеси к его веб-камере этот код.'); } }, 12000);
+    } catch (e) {
+      console.warn(e); drawQR(ans);
+      say('Покажи этот код камере ноутбука', 'Нажми на ноутбуке «Не подключается?» и поднеси экран телефона к его веб-камере на 20–40 см.');
+    }
   } catch (e) {
     console.error(e); $('start').disabled = false;
-    say('Не получилось', e && e.name === 'NotAllowedError' ? 'Нет доступа к камере — разреши её в настройках Safari для этого сайта.' : String(e.message || e));
+    $('start').hidden = false; $('start').textContent = 'Начать';
+    say('Нажми «Начать»', e && e.name === 'NotAllowedError' ? 'Нужен доступ к камере: нажми «Начать» и разреши, либо включи камеру для сайта в настройках Safari.' : String(e.message || e));
   }
 };
+/* открыли по ссылке с ноутбука — запускаемся сами: нужно только разрешить камеру (кнопка — если браузер не дал без нажатия) */
+if (offer) $('start').click();
 $('flip').onclick = async () => { facing = facing === 'user' ? 'environment' : 'user'; try { await camera(); } catch (e) { console.warn(e); } };
 $('stop').onclick = () => { running = false; try { dc && dc.close(); pc && pc.close(); } catch (_) {} if (stream) stream.getTracks().forEach(t => t.stop()); if (lock) lock.release().catch(() => {});
   say('Остановлено', 'Закрой вкладку или отсканируй новый код с ноутбука.'); $('prev').hidden = $('flip').hidden = $('stop').hidden = $('tip').hidden = true; };

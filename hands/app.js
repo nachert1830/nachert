@@ -458,12 +458,13 @@ function phoneInfo() {
 }
 async function pairStart() {
   if (running) stop();
-  $('pair').hidden = false; $('pairMsg').textContent = 'Готовлю код…';
+  $('pair').hidden = false; $('pairVidBox').hidden = true; $('pairMsg').textContent = 'Готовлю код…';
   try { await pairing.start($('pairQr'), $('pairVid')); }
   catch (e) { console.error(e); $('pairMsg').textContent = 'Не получилось: ' + (e && e.name === 'NotAllowedError' ? 'нет доступа к камере ноутбука — она нужна, чтобы считать код с телефона.' : (e.message || e)); }
 }
 $('ph').onclick = () => (pairing.st.state === 'on' ? pairing.stop() : pairStart());
 $('pairNew').onclick = () => pairStart();
+$('pairNo').onclick = () => { $('pairVidBox').hidden = false; pairing.scanFallback().catch(e => { $('pairMsg').textContent = 'Камера ноутбука не включилась: ' + e.message; }); };
 $('pairX').onclick = () => { if (pairing.st.state !== 'on') pairing.stop(); $('pair').hidden = true; };
 
 async function start() {

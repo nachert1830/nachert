@@ -1,11 +1,25 @@
 /* Связь «телефон — датчик рук, ноутбук — экран»: прямое WebRTC-соединение без серверов.
-   Знакомство устройств — двумя QR-кодами: ноутбук показывает предложение (offer) в ссылке на страницу-датчик,
-   телефон показывает ответ (answer), ноутбук считывает его своей веб-камерой.
+   Знакомство устройств — одним QR-кодом: ноутбук показывает ссылку на страницу-датчик с предложением (offer)
+   и именем «почтового ящика»; телефон отвечает (answer) в этот ящик, ноутбук его слушает.
    Чтобы описание соединения влезло в QR-код, из SDP берём только существенное — ключи ICE, отпечаток DTLS,
    адреса — и собираем SDP обратно по шаблону канала данных (~200 символов вместо ~1500).
    По каналу идут только координаты точек рук — видео остаётся на телефоне. */
 
 export const STUN = [{ urls: 'stun:stun.l.google.com:19302' }];   /* адрес снаружи — на случай, если локальные адреса не сойдутся */
+
+/* «Почтовый ящик» для ответа телефона: ntfy.sh — открытый сервис рассылок по HTTP (без регистрации и библиотек).
+   Ноутбук слушает ящик со случайным именем (128 бит — угадать нельзя), телефон кладёт туда ответ соединения
+   (~100 символов: адреса и ключи). Видео и точки рук через ящик не идут — только напрямую между устройствами. */
+export const RELAY = 'https://ntfy.sh/';
+export const newTopic = () => 'nachert-' + b64u(crypto.getRandomValues(new Uint8Array(16)));
+export function relayListen(base, topic, onText) {
+  const es = new EventSource(base + topic + '/sse');
+  es.onmessage = e => { try { const m = JSON.parse(e.data); if (m.event === 'message' && m.message) onText(m.message); } catch (_) {} };
+  return { close: () => es.close(), es };
+}
+export async function relaySend(base, topic, text) {
+  const r = await fetch(base + topic, { method: 'POST', body: text }); if (!r.ok) throw new Error('ящик ответил ' + r.status);
+}
 const PRIO = { host: 2122260223, srflx: 1686052607, prflx: 1845501695, relay: 41885439 };
 const b64u = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
