@@ -42,12 +42,19 @@ function tls(P){ let W=0,mx=0,my=0; P.forEach(c=>{ W+=c.w; mx+=c.w*c.x; my+=c.w*
   const th=0.5*Math.atan2(2*sxy,sxx-syy); return {x:mx,y:my,dx:Math.cos(th),dy:Math.sin(th)}; }
 
 /* притянуть один отрезок: [x1,y1,x2,y2] → {p, ink, moved, n} или null */
-function snap(D,seg,o){ const {G,w,h}=D, thr=D.thr*(o.soft==null?0.6:o.soft), ppm=o.ppm||7; let [x1,y1,x2,y2]=seg; const L0=Math.hypot(x2-x1,y2-y1); if(L0<2) return null;
-  let line={x:(x1+x2)/2,y:(y1+y2)/2,dx:(x2-x1)/L0,dy:(y2-y1)/L0}, R=(o.radius||2.5)*ppm, ext=0, pts=[];
+function snap(D,seg,o){ const {G,w,h}=D, thr=D.thr*(o.soft==null?0.6:o.soft), ppm=o.ppm||7; let [x1,y1,x2,y2]=seg; let L0=Math.hypot(x2-x1,y2-y1); if(L0<2) return null;
+  let line={x:(x1+x2)/2,y:(y1+y2)/2,dx:(x2-x1)/L0,dy:(y2-y1)/L0}, R=(o.radius||2)*ppm, ext=0, pts=[];
+  /* шаг 0: устойчивое выравнивание — положение обоих концов перебирается в окне ±R, оценка = сумма отклика вдоль ВСЕЙ линии × прайор
+     (модель ошибается на доли мм: чем дальше от её ответа, тем меньше вес). Слабую линию рядом с сильной это не теряет */
+  { const ux=(x2-x1)/L0, uy=(y2-y1)/L0, nx0=-uy, ny0=ux, step=Math.max(1,R/14), sig=Math.max(1.5,0.9*ppm), cap=5*D.thr, M=Math.max(8,Math.min(400,Math.round(L0/2))); let best=null, ids=[];
+    for(let i=0;i<=M;i++){ const f=0.02+0.96*i/M; ids.push([x1+(x2-x1)*f,y1+(y2-y1)*f,f]); }
+    for(let ta=-R;ta<=R;ta+=step) for(let tb=-R;tb<=R;tb+=step){ let sc=0; for(let q=0;q<ids.length;q++){ const f=ids[q][2], t=ta*(1-f)+tb*f; sc+=Math.min(cap,bil(G,w,h,ids[q][0]+nx0*t,ids[q][1]+ny0*t)); }   /* вклад точки ограничен: тёмная соседка не перетягивает, побеждает линия, непрерывная по всей длине */
+      sc=sc/ids.length*Math.exp(-0.5*((ta/sig)*(ta/sig)+(tb/sig)*(tb/sig))*0.35); if(!best||sc>best.sc) best={sc,ta,tb}; }
+    if(best&&best.sc>thr*0.8){ x1+=nx0*best.ta; y1+=ny0*best.ta; x2+=nx0*best.tb; y2+=ny0*best.tb; seg=[x1,y1,x2,y2].concat(seg.slice(4)); L0=Math.hypot(x2-x1,y2-y1); line={x:(x1+x2)/2,y:(y1+y2)/2,dx:(x2-x1)/L0,dy:(y2-y1)/L0}; R=Math.max(1.2*ppm*0.5,Math.min(R,1.0*ppm)); } }
   const s0=-L0/2*0.96, s1=L0/2*0.96;
   for(let it=0;it<4;it++){ pts=[]; const nx=-line.dy, ny=line.dx;
     for(let s=s0;s<=s1;s+=1){ const cx=line.x+line.dx*s, cy=line.y+line.dy*s; let best=-1, bt=0;
-      for(let t=-R;t<=R;t+=0.5){ const v=bil(G,w,h,cx+nx*t,cy+ny*t); if(v>best){ best=v; bt=t; } }
+      let sc0=-1; for(let t=-R;t<=R;t+=0.5){ const v=bil(G,w,h,cx+nx*t,cy+ny*t), sc=v*(1-0.6*Math.abs(t)/R); if(sc>sc0){ sc0=sc; best=v; bt=t; } }   /* гребень выбирается с поправкой на близость к предсказанной прямой: соседний параллельный не перетянет */
       if(best>thr){ /* субпиксельно: парабола по трём точкам */
         const a=bil(G,w,h,cx+nx*(bt-0.5),cy+ny*(bt-0.5)), c=bil(G,w,h,cx+nx*(bt+0.5),cy+ny*(bt+0.5)), den=a-2*best+c, sub=den<-1e-6?0.5*(a-c)/den*0.5:0;
         pts.push({x:cx+nx*(bt+sub),y:cy+ny*(bt+sub),w:best,t:bt}); } }
@@ -62,7 +69,7 @@ function snap(D,seg,o){ const {G,w,h}=D, thr=D.thr*(o.soft==null?0.6:o.soft), pp
   /* чернила вдоль уточнённой прямой: на каждом шаге вдоль s — есть ли гребень ближе 1,5 px; концы: по первому/последнему чернильному месту */
   const sOf=(x,y)=>(x-line.x)*line.dx+(y-line.y)*line.dy, nx=-line.dy, ny=line.dx, along=(s)=>{ const cx=line.x+line.dx*s, cy=line.y+line.dy*s; let m=0; for(let t=-1.5;t<=1.5;t+=0.5){ const v=bil(G,w,h,cx+nx*t,cy+ny*t); if(v>m) m=v; }
     /* локальный контраст: линия темнее соседних полос (±4…6 px) заметно, а не просто выше общего порога; в тени и на зерне порог плывёт, соседи — нет */
-    const off=(bil(G,w,h,cx+nx*5,cy+ny*5)+bil(G,w,h,cx-nx*5,cy-ny*5)+bil(G,w,h,cx+nx*4,cy+ny*4)+bil(G,w,h,cx-nx*4,cy-ny*4))/4; return m>thr*0.7&&m>off*1.6+thr*0.25; };
+    const d1=Math.max(4,0.6*ppm), d2=Math.max(5,0.9*ppm), off=(bil(G,w,h,cx+nx*d2,cy+ny*d2)+bil(G,w,h,cx-nx*d2,cy-ny*d2)+bil(G,w,h,cx+nx*d1,cy+ny*d1)+bil(G,w,h,cx-nx*d1,cy-ny*d1))/4;   /* соседи — за шириной самой линии (≈ 0,5 мм), а не на её краю */ return m>thr*0.7&&m>off*1.6+thr*0.25; };
   const A=sOf(x1,y1), B=sOf(x2,y2), lo=Math.min(A,B), hi=Math.max(A,B), ink=[];
   for(let s=lo;s<=hi;s+=1) ink.push(along(s)?1:0);
   const frac=ink.reduce((a,b)=>a+b,0)/Math.max(1,ink.length);
@@ -71,6 +78,9 @@ function snap(D,seg,o){ const {G,w,h}=D, thr=D.thr*(o.soft==null?0.6:o.soft), pp
   let sLo=lo+first, sHi=lo+last; const maxExt=(o.extend==null?2:o.extend)*ppm;
   for(let e=1;e<=maxExt;e++){ if(along(sLo-1)) sLo-=1; else break; } for(let e=1;e<=maxExt;e++){ if(along(sHi+1)) sHi+=1; else break; }
   void gap;
+  /* подрезка и продление концов — только у длинных отрезков и не больше 30 % длины с каждого края: короткий (< 20 мм) не трогаем,
+     иначе шум в оценке чернил съедает его целиком */
+  if(L0<20*ppm){ sLo=lo; sHi=hi; } else { const span=hi-lo; sLo=Math.min(sLo,lo+0.3*span); sHi=Math.max(sHi,hi-0.3*span); }
   const pa=[line.x+line.dx*sLo,line.y+line.dy*sLo], pb=[line.x+line.dx*sHi,line.y+line.dy*sHi];
   const orient=(x2-x1)*(pb[0]-pa[0])+(y2-y1)*(pb[1]-pa[1])<0; const p=orient?[pb[0],pb[1],pa[0],pa[1]]:[pa[0],pa[1],pb[0],pb[1]];
   const moved=Math.max(Math.hypot(p[0]-x1,p[1]-y1),Math.hypot(p[2]-x2,p[3]-y2));
@@ -131,7 +141,7 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
     found=found.filter(f=>[[f.p[0],f.p[1]],[f.p[2],f.p[3]]].some(e=>touch.some(t=>dSegPt(e,t)<=tol)||tp.some(q=>Math.hypot(q[0]-e[0],q[1]-e[1])<=tol))); }
   /* слабый отрезок (чернил мало): выдумка модели («как надо»), если рядом найдена настоящая линия, заменяющая его; иначе — бледная настоящая, остаётся как есть */
   const near=(a,b)=>{ const ma=[(a[0]+a[2])/2,(a[1]+a[3])/2], mb=[(b[0]+b[2])/2,(b[1]+b[3])/2], d=Math.min(dSegPt(ma,b),dSegPt(mb,a)); let da=Math.abs(Math.atan2(a[3]-a[1],a[2]-a[0])-Math.atan2(b[3]-b[1],b[2]-b[0]))%Math.PI; da=Math.min(da,Math.PI-da)*180/Math.PI; return d<=(o.replaceDist||3)*ppm&&da<=(o.replaceAng||12); };
-  weak.forEach(w=>{ if(w.drop&&found.some(f=>near(w.p,f.p))) dropped.push({p:w.p,ink:w.ink,why:'на бумаге нет, заменён найденной линией',i:w.i}); else res.push({p:w.p,src:'model',ink:w.ink,moved:0,unverified:true,dash:w.dash,i:w.i}); });
+  weak.forEach(w=>{ if(w.drop&&(w.ink<(o.emptyInk==null?0.12:o.emptyInk)||found.some(f=>near(w.p,f.p)))) dropped.push({p:w.p,ink:w.ink,why:w.ink<(o.emptyInk==null?0.12:o.emptyInk)?'на бумаге пусто':'на бумаге нет, заменён найденной линией',i:w.i}); else res.push({p:w.p,src:'model',ink:w.ink,moved:0,unverified:true,dash:w.dash,i:w.i}); });
   return {segs:res.concat(found),dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
 put({refine,darkness,snap,findMissing});
 })();
