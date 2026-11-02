@@ -79,12 +79,12 @@ srv.listen(0, async () => {
     cp.on('pageerror', e => errs.push(e.message));
     await cp.goto(url); await cp.waitForFunction(() => window.__app && window.__app.holo);
     await cp.click('#go');
-    const camOk = await cp.waitForFunction(() => /Выключить/.test(document.getElementById('go').textContent), null, { timeout: 60000 }).then(() => true).catch(() => false);
+    const camOk = await cp.waitForFunction(() => document.getElementById('go').classList.contains('on'), null, { timeout: 60000 }).then(() => true).catch(() => false);
     await cp.waitForFunction(() => /кадр\/с/.test(window.__camInfo && window.__camInfo() || ''), null, { timeout: 120000 }).catch(() => {});   /* первый кадр: загрузка wasm и модели, прогрев */
     const camState = await cp.evaluate(() => ({ btn: document.getElementById('go').textContent, err: document.getElementById('err').textContent, info: window.__camInfo && window.__camInfo() }));
-    ok(camOk && /Выключить/.test(camState.btn) && /кадр\/с/.test(camState.info || ''), 'камера и цикл распознавания запускаются: ' + (camState.info || camState.err || camState.btn));
+    ok(camOk && /кадр\/с/.test(camState.info || ''), 'камера и цикл распознавания запускаются: ' + (camState.info || camState.err || camState.btn));
     await cp.click('#go'); await cp.waitForTimeout(200);
-    ok(/Включить/.test(await cp.textContent('#go')), 'камера выключается');
+    ok(!(await cp.evaluate(() => document.getElementById('go').classList.contains('on'))) && await cp.isVisible('#cta'), 'камера выключается, снова видно приглашение');
     ok(errs.length === 0, 'по ходу проверки — без ошибок в консоли' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   } catch (e) { ok(false, 'исключение: ' + e.message); }
   await b.close(); srv.close();

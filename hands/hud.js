@@ -130,13 +130,14 @@ export function createHud(canvas) {
   }
 
   /* уголки рамки и показания */
-  function drawFrame(view, info) {
+  function drawFrame(view, info, inset) {
+    const L0 = inset.l, B0 = H - inset.b;
     ctx.save(); ctx.strokeStyle = CY2 + '.35)'; ctx.lineWidth = 1.5; const m = 14, l = 26;
-    [[m, m, 1, 1], [W - m, m, -1, 1], [m, H - m, 1, -1], [W - m, H - m, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x, y + sy * l); ctx.lineTo(x, y); ctx.lineTo(x + sx * l, y); ctx.stroke(); });
-    ctx.fillStyle = CY2 + '.7)'; ctx.font = '11px ui-monospace,SFMono-Regular,Menlo,monospace'; ctx.textAlign = 'left';
+    [[L0 + m, m, 1, 1], [W - m, m, -1, 1], [L0 + m, B0 - m, 1, -1], [W - m, B0 - m, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x, y + sy * l); ctx.lineTo(x, y); ctx.lineTo(x + sx * l, y); ctx.stroke(); });
+    ctx.fillStyle = CY2 + '.7)'; ctx.font = "500 11px Plex,ui-monospace,SFMono-Regular,Menlo,monospace"; ctx.textAlign = 'left';
     const deg = r => ((r * 180 / Math.PI) % 360 + 360) % 360;
-    ctx.fillText(`ВАРИАНТ 5   YAW ${deg(view.yaw).toFixed(0).padStart(3)}°  PIT ${(view.pit * 180 / Math.PI).toFixed(0).padStart(3)}°  ZOOM ×${view.zoom.toFixed(2)}`, 26, H - 24);
-    if (info) { ctx.textAlign = 'right'; ctx.fillText(info, W - 26, H - 24); }
+    ctx.fillText(`YAW ${deg(view.yaw).toFixed(0).padStart(3)}°  PIT ${(view.pit * 180 / Math.PI).toFixed(0).padStart(3)}°  ZOOM ×${view.zoom.toFixed(2)}`, L0 + 26, B0 - 24);
+    if (info) { ctx.textAlign = 'right'; ctx.fillText(info, W - 26, B0 - 24); }
     ctx.restore();
   }
 
@@ -198,9 +199,9 @@ export function createHud(canvas) {
     if (!P) return; ctx.save(); ctx.font = '600 13px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = CY;
     P.forEach(q => ctx.fillText(q.text, q.x, q.y)); ctx.restore();
   }
-  function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null, planes = null }) {
+  function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null, planes = null, inset = { l: 0, b: 0 } }) {
     usePal(holo.mode); size(); ctx.clearRect(0, 0, W, H);
-    drawFrame(view, info);
+    drawFrame(view, info, inset);
     if (showLabels) drawLabels(holo, view);
     drawGauge(view, frame || { mode: '' });
     drawSection(section); drawPlanes(planes);

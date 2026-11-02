@@ -8,6 +8,8 @@ import { sound } from './sound.js';
 import { createCoach } from './coach.js';
 
 const $ = id => document.getElementById(id);
+/* кнопка панели: иконка + подпись */
+const tool = (id, icon, text) => { const b = document.getElementById(id); b.querySelector('i').textContent = icon; b.querySelector('span').textContent = text; };
 const showErr = m => { const e = $('err'); e.textContent = m; e.style.display = m ? 'block' : 'none'; };
 const RM = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 const reduced = () => RM.matches;
@@ -45,7 +47,7 @@ function mongeTo(stage) {
   if (stage) manual.explodeTo(0);
   const T = stage === 1 ? { yaw: 0.72, pit: 0.5, zoom: 1, panX: 0, panY: 0 } : stage === 2 ? { yaw: 0, pit: 1e-4, zoom: 1, panX: 0, panY: 0 } : HOME;
   ctl.reset(performance.now(), Object.assign({}, T, stage ? {} : { explode: view.explode }));
-  $('mg').textContent = ['📐 Эпюр', '📐 Развернуть', '📐 Выйти'][stage]; $('mg').classList.toggle('on', !!stage);
+  tool('mg', '📐', ['Эпюр', 'Развернуть', 'Выйти'][stage]); $('mg').classList.toggle('on', !!stage);
   sound.play([{ type: 'view' }]); dirty = true;
 }
 function mongeAnim(dt) {
@@ -94,7 +96,8 @@ function quizDwell(now) {
 }
 
 function render(t) {
-  const moving = ctl.tick(t) | manual.anim() | follow(t) | mongeAnim(Math.min(100, t - (render.t || t)));
+  const dtR = Math.min(100, t - (render.t || t));
+  const moving = ctl.tick(t) | manual.anim() | follow(t) | mongeAnim(dtR) | attract(dtR);
   render.t = t; quizDwell(t); if (pointer) pointer.quiz = quiz.on;          /* в «Проверь себя» подпись под пальцем выдала бы ответ */
   if (!holo) return;
   /* только «фон» (мерцание голограммы) — не чаще 30 кадров/с: меньше нагрузка, процессор остаётся распознаванию */
@@ -102,7 +105,8 @@ function render(t) {
   if (dirty || moving || (ambient && t - lastDraw > 31)) {
     lastDraw = t;
     holo.draw(shown, t, { reduced: reduced(), clip: cut, hover: pointer && pointer.hover, monge: MG.a > 0.001 ? { a: MG.a, u: MG.u } : null });
-    const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info, pointer, section: cut && cutLabel(), planes: mongeLabels(), showLabels: !quiz.on && !MG.stage });   /* в тесте выноски выдали бы ответы */
+    const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info, pointer, section: cut && cutLabel(), planes: mongeLabels(), showLabels: !quiz.on && !MG.stage,
+      inset: innerWidth <= 720 ? { l: 0, b: 64 } : { l: 76, b: 0 } });   /* панель инструментов: слева или снизу */   /* в тесте выноски выдали бы ответы */
     if (handsMoving) dirty = true;
     /* подсказка уходит, когда мешает: идёт жест или деталь разобрана (слева — выноски) */
     const dim = view.explode > 0.02 || MG.stage > 0 || quiz.on || coach.active || (frame && frame.mode !== 'idle' && (camOn || feedOn));
@@ -128,14 +132,14 @@ requestAnimationFrame(loop);
 if (holo) holo.scan(performance.now() + 200);
 
 /* ── режим: голограмма / чертёж ── */
-function setMode(m) { holo && holo.setMode(m); $('mode').textContent = m === 'draft' ? '◑' : '◐'; $('mode').title = (m === 'draft' ? 'Голограмма' : 'Чертёж') + ' (H)'; $('mode').setAttribute('aria-pressed', m === 'draft'); store('hands.mode', m); dirty = true; }
+function setMode(m) { holo && holo.setMode(m); tool('mode', m === 'draft' ? '✨' : '📄', m === 'draft' ? 'Голограмма' : 'Чертёж'); $('mode').setAttribute('aria-pressed', m === 'draft'); store('hands.mode', m); dirty = true; }
 $('mode').onclick = () => setMode(holo && holo.mode === 'draft' ? 'holo' : 'draft');
 setMode(load('hands.mode') === 'draft' ? 'draft' : 'holo');
 
 /* ── звук ── */
-function setSound(v) { sound.set(v); $('snd').textContent = v ? '🔊' : '🔇'; $('snd').classList.toggle('on', v); $('snd').setAttribute('aria-pressed', v); store('hands.snd', v ? '1' : undefined); }
+function setSound(v) { sound.set(v); tool('snd', v ? '🔊' : '🔇', 'Звук'); $('snd').classList.toggle('on', v); $('snd').setAttribute('aria-pressed', v); store('hands.snd', v ? '1' : undefined); }
 $('snd').onclick = () => setSound(!sound.on);
-if (load('hands.snd') === '1') { $('snd').textContent = '🔊'; }       /* звук включится по первому нажатию — так требует браузер */
+if (load('hands.snd') === '1') tool('snd', '🔊', 'Звук');       /* звук включится по первому нажатию — так требует браузер */
 
 /* ── жесты: общий вход для камеры, повтора записи и тестов ── */
 let feedOn = false;
@@ -190,6 +194,24 @@ function onHands(hands, t) {
 window.__feed = (hands, t) => { feedOn = true; const f = onHands(hands, t == null ? performance.now() : t); render(t == null ? performance.now() : t); return f; };
 window.__camInfo = () => info;
 window.__app = { shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
+
+/* ── приглашение и карточка жестов ── */
+$('cta').onclick = () => $('go').click();
+let helpOpen = load('hands.help') !== '0' && innerWidth > 720;          /* на телефоне карточка закрыла бы деталь — по кнопке */
+const setHelp = v => { helpOpen = v; $('help').classList.toggle('closed', !v); $('helpBtn').setAttribute('aria-expanded', v); $('helpBtn').classList.toggle('on', v); store('hands.help', v ? undefined : '0'); dirty = true; };
+$('helpBtn').onclick = () => setHelp(!helpOpen); $('helpX').onclick = () => setHelp(false);
+setHelp(helpOpen);
+/* меню «Ещё» закрывается по выбору пункта и по щелчку мимо */
+$('more').addEventListener('click', e => { if (e.target.closest('.menu button')) $('more').open = false; });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#more')) $('more').open = false; });
+
+/* витрина: пока страницей не пользуются (камера выключена, 6 с без мыши и клавиш) — деталь медленно вращается */
+let lastInput = performance.now();
+['pointerdown', 'wheel', 'keydown'].forEach(t => addEventListener(t, () => { lastInput = performance.now(); }, { passive: true }));
+function attract(dt) {
+  if (camOn || feedOn || reduced() || quiz.on || MG.stage || ctl.busy() || performance.now() - lastInput < 6000) return false;
+  view.yaw += dt * 0.00018; return true;
+}
 
 /* ── обучение и подсказка ── */
 const coach = createCoach($('stage'), { store, load, onStep: () => sound.play([{ type: 'view' }]) });
@@ -394,7 +416,7 @@ async function start() {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } }, audio: false });
     vid.srcObject = stream; await vid.play();
     $('cam').style.display = 'block'; running = true; camOn = true; fpsT = performance.now(); busy = false;
-    b.textContent = '✋ Выключить руки'; b.classList.add('on'); b.disabled = false;
+    tool('go', '✋', 'Выкл.'); b.classList.add('on'); b.disabled = false; $('cta').hidden = true;
     $('st').textContent = 'руки не видно'; schedule();
     if (coach.firstRun()) coach.start();
   } catch (e) {
@@ -404,7 +426,7 @@ async function start() {
 }
 function stop() {
   running = false; camOn = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null;
-  $('cam').style.display = 'none'; $('go').textContent = '✋ Включить руки'; $('go').classList.remove('on');
+  $('cam').style.display = 'none'; tool('go', '✋', 'Руки'); $('go').classList.remove('on'); $('cta').hidden = false;
   $('st').textContent = 'камера выключена'; $('st').className = 'chip'; $('md').textContent = ''; info = '';
   frame = ctl.update([], performance.now()); dirty = true;
 }
@@ -424,7 +446,7 @@ function report() {
 }
 $('diag').onclick = async () => {
   const txt = report();
-  try { await navigator.clipboard.writeText(txt); $('diag').textContent = '✓ Скопировано'; setTimeout(() => { $('diag').textContent = '📋'; }, 1800); }
+  try { await navigator.clipboard.writeText(txt); $('diag').textContent = '✓ Скопировано — вставь в чат'; setTimeout(() => { $('diag').textContent = '📋 Диагностика скорости'; }, 2200); }
   catch (_) { showErr(txt); }
 };
 
