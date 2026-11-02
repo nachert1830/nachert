@@ -322,3 +322,27 @@ test('указка: вытянутый указательный — режим p
   assert.equal(c.view.yaw, HOME.yaw);
   assert.equal(events(fr, 'pinch-on').length, 0);
 });
+
+/* ── «штурвал»: два кулака повернуть, как руль — вентиль открывается (только у моделей с механизмом) ── */
+const fists2 = (ang, d = 0.4) => { const c = Math.cos(ang), s2 = Math.sin(ang);
+  return [hand({ pose: 'fist', cx: 0.5 - c * d / 2, cy: 0.5 + s2 * d / 2 }), hand({ pose: 'fist', cx: 0.5 + c * d / 2, cy: 0.5 - s2 * d / 2, seed: 3 })]; };
+test('штурвал: повернуть два кулака против часовой на 0,6 рад — вентиль открыт на 50 %, разбор не трогается', () => {
+  const c = createController({ cfg: { steer: true } });
+  run(c, 0, 300, () => fists2(0));
+  const fr = run(c, 333, 900, t => fists2(lerp(0, 0.6, (t - 333) / 400)));
+  run(c, 933, 1200, () => fists2(0.6));
+  near(c.view.open, 0.6 / CFG.steerSpan, 0.06, 'open'); assert.equal(c.view.explode, 0);
+  assert.ok(fr.some(f => f.steer), 'режим штурвала'); assert.match(c.frame.label, /вентиль открыт/);
+  run(c, 1233, 1900, t => fists2(lerp(0.6, -0.2, (t - 1233) / 400)));
+  assert.equal(c.view.open, 0, 'по часовой — закрыт, не меньше нуля');
+});
+test('штурвал выключен у модели без механизма: поворот кулаков ничего не открывает', () => {
+  const c = createController();
+  run(c, 0, 300, () => fists2(0)); run(c, 333, 900, t => fists2(lerp(0, 0.6, (t - 333) / 400)));
+  assert.ok(!c.view.open); assert.equal(c.view.explode, 0);
+});
+test('разбор при включённом штурвале: развести кулаки без поворота — разбор, не открытие', () => {
+  const c = createController({ cfg: { steer: true } });
+  run(c, 0, 300, () => fists2(0, 0.2)); run(c, 333, 900, t => fists2(0, lerp(0.2, 0.36, (t - 333) / 400)));
+  assert.ok(c.view.explode > 0.4); assert.ok(!c.view.open);
+});

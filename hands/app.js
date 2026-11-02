@@ -1,6 +1,8 @@
 /* Голограмма варианта 5: сборка страницы — камера и MediaPipe, жесты, мышь/касания, рендер, HUD, звук, запись.
    Логика жестов — в gestures.js (чистая, с тестами), рисование — holo.js и hud.js. */
-import DATA from './v5.js';
+/* модель: ?m=v5 — деталь «вариант 5», по умолчанию — вентиль угловой (сборка с механизмом); грузится только выбранная */
+const MKEY = new URLSearchParams(location.search).get('m') === 'v5' ? 'v5' : 'valve';
+const MODEL = (await import(MKEY === 'v5' ? './model-v5.js' : './model-valve.js')).default;
 import { createHolo } from './holo.js';
 import { createHud } from './hud.js';
 import { createController, HOME, VIEWS } from './gestures.js';
@@ -23,11 +25,11 @@ const gpuName = (() => { try { const g = document.createElement('canvas').getCon
    3D не чаще 30 кадров/с, распознавание рук — сначала на процессоре (видеокарта и так занята голограммой) */
 const SOFT = /swiftshader|llvmpipe|basic render|software/i.test(gpuName);
 const WEAK = SOFT || (/intel/i.test(gpuName) && /(uhd|hd) graphics/i.test(gpuName) && !/iris/i.test(gpuName));
-try { holo = createHolo($('gl'), DATA, { antialias: !WEAK, scale: WEAK ? 0.8 : 1 }); } catch (e) { console.error(e); }
+try { holo = createHolo($('gl'), MODEL, { antialias: !WEAK, scale: WEAK ? 0.8 : 1 }); } catch (e) { console.error(e); }
 if (SOFT) setTimeout(() => showErr('Браузер рисует 3D без видеокарты (программно) — будет медленно.\nВключи «Использовать аппаратное ускорение» в настройках браузера и перезапусти его.'), 400);
 if (!holo) showErr('WebGL недоступен — голограмма не покажется.');
 const hud = createHud($('hud'));
-const ctl = createController({ reducedMotion: reduced() });
+const ctl = createController({ reducedMotion: reduced(), cfg: { steer: !!MODEL.kin } });   /* «штурвал» — у моделей с механизмом */
 RM.addEventListener && RM.addEventListener('change', () => { ctl.reduced = reduced(); });
 const view = ctl.view;
 let frame = null, dirty = true, info = '', helpDim = false;
@@ -38,7 +40,7 @@ const load = k => { try { return localStorage.getItem(k); } catch (_) { return n
 let camOn = false, lastDraw = 0, lastT = 0;
 /* показанный вид плавно догоняет вид контроллера каждый кадр экрана (экспонента, τ = 40 мс):
    руки распознаются 15–30 раз в секунду, а экран — 60; без этого деталь двигалась бы ступеньками */
-const shown = Object.assign({}, view), FOLLOW = ['yaw', 'pit', 'zoom', 'panX', 'panY', 'explode'];
+const shown = Object.assign({}, view), FOLLOW = ['yaw', 'pit', 'zoom', 'panX', 'panY', 'explode', 'open'];
 function follow(t) {
   const dt = Math.min(100, Math.max(0, t - lastT)); lastT = t;
   let d = 0;
@@ -70,11 +72,8 @@ const mongeLabels = () => {
 };
 
 /* ── «Проверь себя»: покажи часть — указкой (задержать 0,9 с) или щелчком мыши ── */
-const QUIZ = [
-  { id: 'flange', q: 'Покажи фланец' }, { id: 'cone', q: 'Покажи усечённый конус' },
-  { id: 'pyr', q: 'Покажи материал, вынутый сквозным пирамидальным отверстием' }, { id: 'holes', q: 'Покажи материал, вынутый отверстиями Ø10' }
-];
-const NAMES = { flange: 'фланец', cone: 'усечённый конус', pyr: 'пирамидальное отверстие', holes: 'отверстия Ø10' };
+const QUIZ = MODEL.quiz;                                             /* вопросы и имена частей — из описания модели */
+const NAMES = Object.fromEntries(Object.entries(MODEL.labels).map(([k, v]) => [k, (v.t || k).replace(/^\d+\. /, '').toLowerCase()]));
 const quiz = { on: false, list: [], i: 0, score: 0, tries: 0, dwell: null, msg: '', msgT: 0 };
 function quizStart() {
   mongeTo(0); cut = null; manual.explodeTo(1);
@@ -113,7 +112,7 @@ function render(t) {
   /* слабая графика — не чаще 30 кадров/с: руки всё равно обновляются не чаще, а видеокарта вдвое свободнее */
   if ((dirty || moving || (ambient && t - lastDraw > 31)) && (!WEAK || t - lastDraw > 30)) {
     lastDraw = t;
-    holo.draw(shown, t, { reduced: reduced(), clip: cut, hover: pointer && pointer.hover, monge: MG.a > 0.001 ? { a: MG.a, u: MG.u } : null });
+    holo.draw(shown, t, { reduced: reduced(), open: shown.open || 0, clip: cut, hover: pointer && pointer.hover, monge: MG.a > 0.001 ? { a: MG.a, u: MG.u } : null });
     const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info, pointer, section: cut && cutLabel(), planes: mongeLabels(), showLabels: !quiz.on && !MG.stage,
       inset: innerWidth <= 720 ? { l: 0, b: 64 } : { l: 76, b: 0 } });   /* панель инструментов: слева или снизу */   /* в тесте выноски выдали бы ответы */
     if (handsMoving) dirty = true;
@@ -204,6 +203,11 @@ window.__feed = (hands, t) => { feedOn = true; const f = onHands(hands, t == nul
 window.__camInfo = () => info;
 window.__app = { get pairing() { return pairing; }, shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; lastDraw = -1e9; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
 
+/* ── модель: подпись и переключатель (в меню «Ещё») ── */
+document.querySelector('#brand .sub').textContent = 'Голограмма · ' + MODEL.title.toLowerCase();
+$('model').textContent = MKEY === 'v5' ? '🔩 Показать вентиль (сборка)' : '🧊 Показать деталь «вариант 5»';
+$('model').onclick = () => { const u = new URL(location.href); if (MKEY === 'v5') u.searchParams.delete('m'); else u.searchParams.set('m', 'v5'); location.href = u.href; };
+
 /* ── приглашение и карточка жестов ── */
 $('cta').onclick = () => $('go').click();
 let helpOpen = load('hands.help') !== '0' && innerWidth > 720;          /* на телефоне карточка закрыла бы деталь — по кнопке */
@@ -259,9 +263,9 @@ const manual = (() => {
       if (g && g.m === 'rot' && performance.now() - g.t < 70 && Math.hypot(vel.y, vel.p) > 0.0004 && !reduced()) ctl.fling = { vy: vel.y, vp: vel.p };
       g = null; vel = { y: 0, p: 0 };
     },
-    explodeTo(to) { const from = view.explode, t0 = performance.now(), ms = reduced() ? 0 : 900 * Math.abs(to - from) + 1; tween = { from, to, t0, ms }; },
+    explodeTo(to, key = 'explode', msPer = 900) { const from = view[key] || 0, t0 = performance.now(), ms = reduced() ? 0 : msPer * Math.abs(to - from) + 1; tween = { key, from, to, t0, ms }; },
     anim() { if (!tween) return false; const u = Math.min(1, (performance.now() - tween.t0) / tween.ms), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
-      view.explode = tween.from + (tween.to - tween.from) * e; if (u >= 1) tween = null; return true; }
+      view[tween.key] = tween.from + (tween.to - tween.from) * e; if (u >= 1) tween = null; return true; }
   };
 })();
 cv.addEventListener('pointerdown', manual.down); cv.addEventListener('pointermove', manual.move);
@@ -281,6 +285,7 @@ addEventListener('keydown', e => {
   if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === 'e' || k === 'у') manual.explodeTo(view.explode > 0.5 ? 0 : 1);
+  else if ((k === 'o' || k === 'щ') && MODEL.kin) manual.explodeTo((view.open || 0) > 0.5 ? 0 : 1, 'open', 2200);   /* открыть/закрыть вентиль */
   else if (k === 'r' || k === 'к' || k === 'escape') { ctl.reset(performance.now()); holo && holo.scan(performance.now()); cut = null; }
   else if (k === 'm' || k === 'ь') mongeTo((MG.stage + 1) % 3);
   else if (k === 'x' || k === 'ч') cut = cut ? null : { n: [0, -1, 0], w: 0, kind: 'front' };          /* фронтальный разрез по оси — для мыши */

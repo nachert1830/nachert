@@ -12,35 +12,24 @@ import { createMonge } from './monge.js';
 const CY = [0.21, 0.88, 1.0];          /* #35e0ff */
 const AMBER = [1.0, 0.71, 0.28];
 
-/* ── раскладка «разбора»: смещение каждой части, e ∈ [0, 1] ──
-   1-я фаза: фланец вниз, конус вверх; 2-я: пробки выходят из отверстий по своей оси —
-   пирамида (расширяется кверху) — вверх из конуса и в сторону, отверстия фланца — вниз. */
-const sm = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
-export function layout(e) {
-  const u1 = sm(e / 0.5), u2 = sm((e - 0.3) / 0.7), up = sm(u2 / 0.55), side = sm((u2 - 0.45) / 0.55);
-  const gap = 40 * u1;
-  return {
-    flange: [0, 0, -gap],
-    cone: [0, 0, gap],
-    pyr: [105 * side, 0, gap + 175 * up - 135 * side],          /* поднять выше конуса, увести вбок, опустить рядом */
-    hole: [0, 0, -gap - 48 * u2],
-    plugA: sm((e - 0.04) / 0.12)                                   /* пробки проявляются, когда тела уже разошлись */
-  };
-}
-export const offsetOf = (L, id) => (id.startsWith('hole') ? L.hole : L[id]);
-
-/* ── раскодировка данных из v5.js ── */
+/* ── раскодировка данных модели (v5.js, valve-data.js) ──
+   Вершины — vtx (в данных: строка «pos» у v5, «mesh» у сборок, где «pos» — номер позиции). Поверхности для очерка
+   приводятся к виду ['z', cx, cy, r0, r1, z0, z1] или ['x', cy, cz, r, x0, x1]. «Целиком» нет в данных — склеиваем. */
 function b64(s, T) { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); }
 function decode(D) {
   const q = 1 / D.q, F = a => { const o = new Float32Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] * q; return o; };
   const N = a => { const o = new Float32Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] / 127; return o; };
   const one = p => {
-    const pos = F(b64(p.pos, Int16Array)), nrm = N(b64(p.nrm, Int8Array)), lines = F(b64(p.lines, Int16Array));
+    const vtx = F(b64(typeof p.mesh === 'string' ? p.mesh : p.pos, Int16Array)), nrm = N(b64(p.nrm, Int8Array)), lines = F(b64(p.lines, Int16Array));
     const bb = [[1e9, 1e9, 1e9], [-1e9, -1e9, -1e9]];
-    for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { bb[0][k] = Math.min(bb[0][k], pos[i + k]); bb[1][k] = Math.max(bb[1][k], pos[i + k]); }
-    return Object.assign({}, p, { pos, nrm, lines, bb });
+    for (let i = 0; i < vtx.length; i += 3) for (let k = 0; k < 3; k++) { bb[0][k] = Math.min(bb[0][k], vtx[i + k]); bb[1][k] = Math.max(bb[1][k], vtx[i + k]); }
+    const surf = (p.surf || []).map(x => (typeof x[0] === 'string' ? x : ['z', ...x]));
+    return Object.assign({}, p, { vtx, nrm, lines, bb, surf, role: p.role || 'body', count: vtx.length / 3 });
   };
-  return { box: D.box, whole: one(D.whole), parts: D.parts.map(one) };
+  const parts = D.parts.map(one);
+  const cat = k => { const n = parts.reduce((a, p) => a + p[k].length, 0), o = new Float32Array(n); let i = 0; for (const p of parts) { o.set(p[k], i); i += p[k].length; } return o; };
+  const whole = D.whole ? one(D.whole) : (() => { const vtx = cat('vtx'); return { id: 'whole', vtx, nrm: cat('nrm'), lines: cat('lines'), count: vtx.length / 3, surf: [], role: 'body', bb: null }; })();
+  return { box: D.box, whole, parts };
 }
 
 /* отрезки → квадрики для толстых линий: на вершину A, B, параметр (t, сторона), длина дуги s (для штриха) */
@@ -64,7 +53,8 @@ void main(){ vec2 p=vU*vec2(uRes.x/uRes.y,1.); float r=length(p*vec2(.8,1.)-vec2
   vec3 holo=mix(vec3(.075,.13,.22),vec3(.012,.02,.04),smoothstep(.0,1.5,r));
   vec3 draft=mix(vec3(1.),vec3(.90,.915,.935),smoothstep(.0,1.6,r));
   gl_FragColor=vec4(mix(holo,draft,uDraft),1.); }`,
-  meshV: 'attribute vec3 aP,aN;uniform mat4 uM;uniform vec3 uO;varying vec3 vP,vN;void main(){vec3 p=aP+uO;vP=p;vN=aN;gl_Position=uM*vec4(p,1.);}',
+  /* uRot — поворот детали вокруг оси z (cos, sin): маховик и шпиндель, когда открывают вентиль */
+  meshV: 'attribute vec3 aP,aN;uniform mat4 uM;uniform vec3 uO;uniform vec2 uRot;varying vec3 vP,vN;vec3 R(vec3 v){return vec3(uRot.x*v.x-uRot.y*v.y,uRot.y*v.x+uRot.x*v.y,v.z);}void main(){vec3 p=R(aP)+uO;vP=p;vN=R(aN);gl_Position=uM*vec4(p,1.);}',
   meshF: `precision highp float;varying vec3 vP,vN;uniform vec3 uF,uCol,uHU;uniform float uT,uA,uScan,uDraft,uPlug,uFl,uAnim,uClipOn,uHi;uniform vec4 uClip;
 void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard;
   /* при разрезе изнанку граней не рисуем: срез закрывает плоская «крышка» со штриховкой (по стенсилу, см. draw) */
@@ -84,8 +74,9 @@ void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard;
   vec3 c=uCol*(.07+.20*d1+.07*d2+.08*hemi)*(1.+1.6*uHi)+uCol*fr*(.85+.9*uHi)+vec3(.75,.97,1.)*band*.55;
   if(!gl_FrontFacing) c*=.5;
   gl_FragColor=vec4(c*scan*uFl,1.); }`,
-  lineV: `attribute vec3 aA,aB;attribute vec3 aT;uniform mat4 uM;uniform vec2 uRes;uniform float uW,uFlat;uniform vec3 uO;varying float vY,vS;varying vec3 vP;
-void main(){ vec3 A=aA+uO, B=aB+uO; if(uFlat>-1e8){A.z=uFlat;B.z=uFlat;}
+  lineV: `attribute vec3 aA,aB;attribute vec3 aT;uniform mat4 uM;uniform vec2 uRes;uniform float uW,uFlat;uniform vec3 uO;uniform vec2 uRot;varying float vY,vS;varying vec3 vP;
+vec3 R(vec3 v){return vec3(uRot.x*v.x-uRot.y*v.y,uRot.y*v.x+uRot.x*v.y,v.z);}
+void main(){ vec3 A=R(aA)+uO, B=R(aB)+uO; if(uFlat>-1e8){A.z=uFlat;B.z=uFlat;}
   vec4 a=uM*vec4(A,1.), b=uM*vec4(B,1.); vec2 d=(b.xy-a.xy)*uRes; float l=length(d); vec2 dir=l>1e-6?d/l:vec2(1.,0.), nr=vec2(-dir.y,dir.x);
   vec4 p=mix(a,b,aT.x); p.xy+=(nr*aT.y+dir*(aT.x*2.-1.))*uW/uRes; p.z-=.0015; vY=aT.y; vS=aT.z; vP=mix(A,B,aT.x); gl_Position=p; }`,
   lineF: `precision highp float;varying float vY,vS;varying vec3 vP;uniform vec3 uCol;uniform float uA,uGlow,uDash,uScan,uClipOn;uniform vec4 uClip;
@@ -95,10 +86,11 @@ void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard; float d=abs(vY);
   gl_FragColor=vec4(uCol*(1.+band*.8),a*uA); }`,
   /* секущая плоскость: полупрозрачный лист с яркой кромкой и сеткой 10 мм */
   planeV: 'attribute vec3 a;attribute vec2 b;uniform mat4 uM;varying vec2 vU;varying vec3 vW;void main(){vU=b;vW=a;gl_Position=uM*vec4(a,1.);}',
-  planeF: `precision highp float;varying vec2 vU;varying vec3 vW;uniform vec3 uCol,uHU;uniform vec2 uSz;uniform float uT,uAnim,uDraft,uCap,uFl;
+  planeF: `precision highp float;varying vec2 vU;varying vec3 vW;uniform vec3 uCol,uHU,uHV;uniform vec2 uSz;uniform float uT,uAnim,uDraft,uCap,uFl,uStep,uNet,uSolid;
+float hl(vec3 d){ float h=fract(dot(vW,d)/uStep); return smoothstep(.36,.44,h)*(1.-smoothstep(.56,.64,h)); }
 void main(){
-  /* крышка среза: штриховка 45°, шаг 3 мм — как сечение на чертеже */
-  if(uCap>.5){ float h=fract(dot(vW,uHU)/3.), ln=smoothstep(.36,.44,h)*(1.-smoothstep(.56,.64,h));
+  /* крышка среза: штриховка по правилам детали (ГОСТ 2.306): наклон и шаг, сетка — неметалл, сплошь — тонкая деталь */
+  if(uCap>.5){ float ln=uSolid>.5?1.:max(hl(uHU),uNet>.5?hl(uHV):0.);
     gl_FragColor=uDraft>.5?vec4(mix(vec3(.97),vec3(.12,.13,.15),ln),1.):vec4(mix(uCol*.30,vec3(.8,.98,1.),ln*.9)*uFl,1.); return; } vec2 q=abs(vU), px=uSz*(1.-q); float edge=1.-smoothstep(0.,2.5,min(px.x,px.y));
   vec2 g=abs(fract(vU*uSz/20.+.5)-.5)*20.; float grid=1.-smoothstep(.2,.9,min(g.x,g.y));
   float sweep=uAnim>.5?exp(-pow(fract(uT*.0004)*2.-1.-vU.y,2.)*40.)*.25:0.;
@@ -113,7 +105,8 @@ void main(){ float r=length(vP), fade=1.-smoothstep(120.,260.,r);
   gl_FragColor=vec4(uCol,a); }`
 };
 
-export function createHolo(canvas, data, opt = {}) {
+export function createHolo(canvas, model, opt = {}) {
+  const data = model.data;
   const gl = canvas.getContext('webgl', { antialias: opt.antialias !== false, alpha: false, stencil: true, premultipliedAlpha: false, preserveDrawingBuffer: !!opt.keep });
   if (!gl) return null;
   const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
@@ -130,11 +123,12 @@ export function createHolo(canvas, data, opt = {}) {
 
   const M = decode(data);
   let MG = null;                                                 /* «угол Монжа» — считается при первом включении (~0,1 с) */
-  const monge = () => MG || (MG = createMonge(M.whole.pos, M.whole.lines, M.parts.filter(p => p.role === 'body').flatMap(p => p.surf), M.box));
+  const monge = () => MG || (MG = createMonge(M.whole.vtx, M.whole.lines, M.parts.filter(p => p.role === 'body').flatMap(p => p.surf), M.box));
   const mgCache = new Map();
-  const up = p => Object.assign(p, { mB: buf(p.pos), nB: buf(p.nrm), lB: buf(lineBuf(p.lines)), lN: p.lines.length / 6 * 6 });   /* 6 вершин на отрезок */
+  const up = p => Object.assign(p, { mB: buf(p.vtx), nB: buf(p.nrm), lB: buf(lineBuf(p.lines)), lN: p.lines.length / 6 * 6 });   /* 6 вершин на отрезок */
   up(M.whole); M.parts.forEach(up);
-  const silB = gl.createBuffer();
+  const silB = gl.createBuffer(), flowB = gl.createBuffer();
+  const ZERO = [0, 0, 0], offOf = (L, id) => (L.off && L.off[id]) || ZERO, rotOf = (L, id) => (L.rot && L.rot[id]) || 0;
   const b = M.box, C0 = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2, (b[0][2] + b[1][2]) / 2];
   const R0 = Math.hypot(b[1][0] - b[0][0], b[1][1] - b[0][1], b[1][2] - b[0][2]) / 2;
   const FLOOR = b[0][2] - 95;                                   /* пол ниже самой низкой точки разобранной детали */
@@ -142,12 +136,12 @@ export function createHolo(canvas, data, opt = {}) {
   let scale = opt.scale || 1;                                    /* доля разрешения: снижается, если кадры не успевают */
 
   /* ── камера: как в IG3.viewer, плюс «рамка» по разобранной детали, чтобы всё помещалось ── */
-  function camera(view, w, h, extra) {
-    const L = layout(view.explode || 0);
+  function camera(view, w, h, extra, open) {
+    const L = model.layout(view.explode || 0, open || 0);
     const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
-    M.parts.forEach(p => { const o = offsetOf(L, p.id); for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p.bb[0][k] + o[k]); hi[k] = Math.max(hi[k], p.bb[1][k] + o[k]); } });
+    M.parts.forEach(p => { const o = offOf(L, p.id); for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p.bb[0][k] + o[k]); hi[k] = Math.max(hi[k], p.bb[1][k] + o[k]); } });
     if (extra) for (let k = 0; k < 3; k++) { lo[k] = lo[k] + (Math.min(lo[k], extra.lo[k]) - lo[k]) * extra.a; hi[k] = hi[k] + (Math.max(hi[k], extra.hi[k]) - hi[k]) * extra.a; }
-    const C = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], R = Math.max(R0, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2 * 0.92);
+    const C = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], R = Math.max(R0, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2 * (model.assembly ? 1.02 : 0.92));
     const cy = Math.cos(view.yaw), sy = Math.sin(view.yaw), cp = Math.cos(view.pit), sp = Math.sin(view.pit);
     const F = [sy * cp, cy * cp, -sp], Rv = norm(cross(F, [0, 0, 1])), Up = cross(Rv, F);
     const tx = (view.panX || 0) * R0 * 2.25, ty = (view.panY || 0) * R0 * 2.25;
@@ -162,7 +156,14 @@ export function createHolo(canvas, data, opt = {}) {
   /* очерк тел вращения (оси вдоль z) — аналитически, каждый кадр: образующие, где нормаль ⟂ взгляду */
   function silhouettes(F) {
     const out = [];
-    M.parts.forEach(p => p.surf.forEach(([cx, cy, r0, r1, z0, z1]) => {
+    M.parts.forEach(p => p.surf.forEach(sf => {
+      if (sf[0] === 'x') {                                          /* цилиндр вдоль x: нормаль (0, cos φ, sin φ) ⟂ взгляду */
+        const [, cy, cz, r, x0, x1] = sf, ph0 = Math.atan2(-F[1], F[2]);
+        if (Math.hypot(F[1], F[2]) < 1e-4) return;
+        for (const ph of [ph0, ph0 + Math.PI]) { const co = Math.cos(ph), si = Math.sin(ph); out.push({ id: p.id, a: [x0, cy + r * co, cz + r * si], b: [x1, cy + r * co, cz + r * si] }); }
+        return;
+      }
+      const [, cx, cy, r0, r1, z0, z1] = sf;
       const A = Math.hypot(F[0], F[1]); if (A < 1e-4) return;
       const k = (r0 - r1) / (z1 - z0), c = -k * F[2] / A; if (Math.abs(c) > 1) return;
       const al = Math.atan2(F[1], F[0]), ac = Math.acos(c);
@@ -176,7 +177,7 @@ export function createHolo(canvas, data, opt = {}) {
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, w, h);
     const mg = o.monge && o.monge.a > 0.001 ? o.monge : null, MGd = mg ? monge() : null;
-    const cam = camera(view, w, h, mg ? Object.assign({ a: mg.a }, MGd.bounds(mg.u)) : null), { MM, F, L } = cam, draft = mode === 'draft' ? 1 : 0, anim = o.reduced ? 0 : 1;
+    const cam = camera(view, w, h, mg ? Object.assign({ a: mg.a }, MGd.bounds(mg.u)) : null, o.open), { MM, F, L } = cam, draft = mode === 'draft' ? 1 : 0, anim = o.reduced ? 0 : 1;
     const e = view.explode || 0, exploded = e > 0.002, px = cam.us / h;
     const flick = anim && !draft ? 0.97 + 0.03 * Math.sin(t * 0.013) * Math.sin(t * 0.0071) - (Math.sin(t * 0.0009) > 0.995 ? 0.12 : 0) : 1;
     const su = (t - scan.t0) / 1400, scanZ = !anim || su < 0 || su > 1 ? -1e5 : scan.z0 + (scan.z1 - scan.z0) * su;
@@ -196,17 +197,21 @@ export function createHolo(canvas, data, opt = {}) {
     if (clip) { const n = clip.n, a = Math.abs(n[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1], U = norm(cross(n, a)), V = cross(n, U); HU = norm([U[0] + V[0], U[1] + V[1], U[2] + V[2]]); }
     gl.useProgram(PL.p); gl.uniformMatrix4fv(PL.U.uM, false, MM); gl.uniform2fv(PL.U.uRes, [w, h]); gl.uniform1f(PL.U.uScan, scanZ); gl.uniform4fv(PL.U.uClip, cv4);
     const hov = o.hover || null;
-    const lines = (B, n, o3, wd, col, a, glow, dash, flat) => { if (!n) return; gl.useProgram(PL.p); gl.uniform1f(PL.U.uClipOn, flat == null ? clipOn : 0);
-      gl.uniform3fv(PL.U.uO, o3); gl.uniform1f(PL.U.uW, wd * dpr); gl.uniform3fv(PL.U.uCol, col); gl.uniform1f(PL.U.uA, a); gl.uniform1f(PL.U.uGlow, glow); gl.uniform1f(PL.U.uDash, dash || 0); gl.uniform1f(PL.U.uFlat, flat == null ? -1e9 : flat);
+    let lineClip = 1, lineRot = 0;                                 /* для детали: рассекать ли (ГОСТ — нет для шпинделя, шпилек, гаек), поворот */
+    const lines = (B, n, o3, wd, col, a, glow, dash, flat) => { if (!n) return; gl.useProgram(PL.p); gl.uniform1f(PL.U.uClipOn, flat == null ? clipOn * lineClip : 0);
+      gl.uniform2f(PL.U.uRot, Math.cos(lineRot), Math.sin(lineRot)); gl.uniform3fv(PL.U.uO, o3); gl.uniform1f(PL.U.uW, wd * dpr); gl.uniform3fv(PL.U.uCol, col); gl.uniform1f(PL.U.uA, a); gl.uniform1f(PL.U.uGlow, glow); gl.uniform1f(PL.U.uDash, dash || 0); gl.uniform1f(PL.U.uFlat, flat == null ? -1e9 : flat);
       const st = 36, x = attr(PL.p, 'aA', B, 3, st, 0), y = attr(PL.p, 'aB', B, 3, st, 12), z = attr(PL.p, 'aT', B, 3, st, 24); gl.drawArrays(gl.TRIANGLES, 0, n); offA([x, y, z]); };
     /* целиком — одной сеткой; разобрана или наведена указка — по частям (чтобы подсветить одну) */
     const hideModel = !!(mg && mg.u > 0.3);                   /* эпюр разворачивается — деталь уходит */
-    const bodies = hideModel ? [] : exploded || hov ? M.parts.filter(p => p.role === 'body') : [M.whole], plugs = hideModel ? [] : M.parts.filter(p => p.role === 'plug');
-    const O = p => (p === M.whole ? [0, 0, 0] : offsetOf(L, p.id));
+    const moved = M.parts.some(p => rotOf(L, p.id) || offOf(L, p.id) !== ZERO && (offOf(L, p.id)[0] || offOf(L, p.id)[1] || offOf(L, p.id)[2]));
+    const whole = !exploded && !hov && !moved && !(clip && model.assembly);  /* одной сеткой — когда части на местах */
+    const bodies = hideModel ? [] : whole ? [M.whole] : M.parts.filter(p => p.role === 'body'), plugs = hideModel ? [] : M.parts.filter(p => p.role === 'plug');
+    const O = p => (p === M.whole ? ZERO : offOf(L, p.id)), Rt = p => (p === M.whole ? 0 : rotOf(L, p.id));
+    const each = (list, f) => list.forEach(p => { lineClip = p.nocut ? 0 : 1; lineRot = Rt(p); f(p); }); lineClip = 1; lineRot = 0;
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     const floorA = mg ? 1 - mg.a : 1;
     if (floorA > 0.01) {
-      bodies.forEach(p => lines(p.lB, p.lN, O(p), 1.1, draft ? [0.3, 0.36, 0.44] : CY, (draft ? 0.35 : 0.26) * floorA, 0, 0, FLOOR + 0.2));
+      each(bodies, p => lines(p.lB, p.lN, O(p), 1.1, draft ? [0.3, 0.36, 0.44] : CY, (draft ? 0.35 : 0.26) * floorA, 0, 0, FLOOR + 0.2));
       if (L.plugA > 0.01) plugs.forEach(p => lines(p.lB, p.lN, O(p), 1.0, AMBER, 0.2 * L.plugA * floorA, 0, 0, FLOOR + 0.2));
     }
 
@@ -215,8 +220,9 @@ export function createHolo(canvas, data, opt = {}) {
     gl.useProgram(PM.p); gl.uniformMatrix4fv(PM.U.uM, false, MM); gl.uniform3fv(PM.U.uF, F); gl.uniform1f(PM.U.uT, t); gl.uniform1f(PM.U.uScan, scanZ);
     gl.uniform1f(PM.U.uDraft, draft); gl.uniform1f(PM.U.uFl, flick); gl.uniform1f(PM.U.uAnim, anim);
     gl.uniform1f(PM.U.uClipOn, clipOn); gl.uniform4fv(PM.U.uClip, cv4); gl.uniform3fv(PM.U.uHU, HU);
-    const isHov = p => !!hov && (p.id === hov || (hov === 'holes' && p.id.startsWith('hole')));
-    const mesh = (p, col, a, plug) => { gl.useProgram(PM.p); gl.uniform3fv(PM.U.uO, O(p)); gl.uniform3fv(PM.U.uCol, col); gl.uniform1f(PM.U.uA, a); gl.uniform1f(PM.U.uPlug, plug); gl.uniform1f(PM.U.uHi, isHov(p) ? 1 : 0);
+    const isHov = p => !!hov && p !== M.whole && model.group(p.id) === hov;
+    const mesh = (p, col, a, plug) => { gl.useProgram(PM.p); gl.uniform3fv(PM.U.uO, O(p)); gl.uniform1f(PM.U.uClipOn, p.nocut ? 0 : clipOn);
+      const r = Rt(p); gl.uniform2f(PM.U.uRot, Math.cos(r), Math.sin(r)); gl.uniform3fv(PM.U.uCol, col); gl.uniform1f(PM.U.uA, a); gl.uniform1f(PM.U.uPlug, plug); gl.uniform1f(PM.U.uHi, isHov(p) ? 1 : 0);
       const x = attr(PM.p, 'aP', p.mB, 3), y = attr(PM.p, 'aN', p.nB, 3); gl.drawArrays(gl.TRIANGLES, 0, p.count); offA([x, y]); };
     gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 2);
     bodies.forEach(p => mesh(p, CY, 1, 0));
@@ -224,24 +230,47 @@ export function createHolo(canvas, data, opt = {}) {
 
     /* очерк — в общий буфер: по частям, со своим смещением */
     const sil = hideModel ? [] : silhouettes(F), silBy = {};
-    sil.forEach(s => { const k = exploded ? s.id : 'whole'; (silBy[k] = silBy[k] || []).push(s.a[0], s.a[1], s.a[2], s.b[0], s.b[1], s.b[2]); });
+    sil.forEach(s => { const k = whole ? 'whole' : s.id; (silBy[k] = silBy[k] || []).push(s.a[0], s.a[1], s.a[2], s.b[0], s.b[1], s.b[2]); });
     const silDraw = (wd, col, a, glow, dash) => Object.keys(silBy).forEach(k => {
       const arr = lineBuf(silBy[k]); gl.bindBuffer(gl.ARRAY_BUFFER, silB); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
       const p = k === 'whole' ? M.whole : M.parts.find(q => q.id === k);
       if (k !== 'whole' && p.role === 'plug' && L.plugA < 0.01) return;
-      lines(silB, arr.length / 9, O(p), wd, p.role === 'plug' ? AMBER : col, a * (p.role === 'plug' ? L.plugA : 1), glow, dash); });
+      lineClip = p.nocut ? 0 : 1; lineRot = Rt(p);
+      lines(silB, arr.length / 9, O(p), wd, p.role === 'plug' ? AMBER : col, a * (p.role === 'plug' ? L.plugA : 1), glow, dash); lineClip = 1; lineRot = 0; });
 
     /* видимые линии: свечение + середина */
     gl.enable(gl.BLEND); gl.depthMask(false);
     const lineCol = draft ? [0.08, 0.09, 0.11] : [0.80, 0.97, 1.0];
-    if (!draft) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE); bodies.forEach(p => lines(p.lB, p.lN, O(p), isHov(p) ? 11 : 6, CY, (isHov(p) ? 1 : 0.55) * flick, 1)); silDraw(6, CY, 0.55 * flick, 1); }
-    else if (hov) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); bodies.filter(isHov).forEach(p => lines(p.lB, p.lN, O(p), 5, [0.2, 0.55, 0.9], 0.45, 1)); }
+    if (!draft) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE); each(bodies, p => lines(p.lB, p.lN, O(p), isHov(p) ? 11 : 6, CY, (isHov(p) ? 1 : 0.55) * flick, 1)); silDraw(6, CY, 0.55 * flick, 1); }
+    else if (hov) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); each(bodies.filter(isHov), p => lines(p.lB, p.lN, O(p), 5, [0.2, 0.55, 0.9], 0.45, 1)); }
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    bodies.forEach(p => lines(p.lB, p.lN, O(p), draft ? 1.25 : 1.35, lineCol, 1, 0)); silDraw(draft ? 1.25 : 1.35, lineCol, 1, 0);
-    /* невидимые — штрихом (шаг 4 мм), бледно */
+    each(bodies, p => lines(p.lB, p.lN, O(p), draft ? 1.25 : 1.35, lineCol, 1, 0)); silDraw(draft ? 1.25 : 1.35, lineCol, 1, 0);
+    /* невидимые — штрихом (шаг 4 мм), бледно; у сборки их слишком много — только при разборе */
     gl.depthFunc(gl.GREATER);
-    bodies.forEach(p => lines(p.lB, p.lN, O(p), 1, draft ? [0.25, 0.27, 0.3] : CY, draft ? 0.55 : 0.32, 0, 4)); silDraw(1, draft ? [0.25, 0.27, 0.3] : CY, draft ? 0.55 : 0.32, 0, 4);
+    if (!model.assembly || exploded) { each(bodies, p => lines(p.lB, p.lN, O(p), 1, draft ? [0.25, 0.27, 0.3] : CY, draft ? 0.55 : 0.32, 0, 4)); silDraw(1, draft ? [0.25, 0.27, 0.3] : CY, draft ? 0.55 : 0.32, 0, 4); }
     gl.depthFunc(gl.LEQUAL);
+
+    /* поток среды: когда вентиль открыт и собран — светящиеся штрихи по каналу; сквозь стенки — бледнее */
+    const fl = model.flow, op = o.open || 0;
+    if (fl && op > 0.02 && e < 0.05 && !hideModel) {
+      const P = fl.path, seg = [], Ls = []; let tot = 0;
+      for (let i = 0; i < P.length - 1; i++) { const l = Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1], P[i + 1][2] - P[i][2]); Ls.push(l); tot += l; }
+      const at = u => { let d = u * tot; for (let i = 0; i < Ls.length; i++) { if (d <= Ls[i] || i === Ls.length - 1) { const k = Math.min(1, d / Ls[i]); return P[i].map((v, j) => v + (P[i + 1][j] - v) * k); } d -= Ls[i]; } return P[P.length - 1]; };
+      const N = 70, speed = 0.00018 * (0.4 + op), arr = [];
+      for (let i = 0; i < N; i++) {
+        const ph = (i * 0.618034) % 1, ra = ((i * 0.37) % 1) * Math.PI * 2, rr = fl.r * Math.sqrt(((i * 0.7548) % 1)) * 0.8;
+        const u = (ph + t * speed) % 1, a = at(u), b = at(Math.max(0, u - 0.025));
+        /* разброс по сечению канала: в плоскости, перпендикулярной пути (путь лежит в плоскости xz, вторая ось — y) */
+        const dir = norm([a[0] - b[0], a[1] - b[1], a[2] - b[2]]), pu = norm(cross(dir, [0, 1, 0])), dx = Math.cos(ra) * rr, dy = Math.sin(ra) * rr;
+        const sh = [pu[0] * dx, dy, pu[2] * dx];
+        arr.push(a[0] + sh[0], a[1] + sh[1], a[2] + sh[2], b[0] + sh[0], b[1] + sh[1], b[2] + sh[2]);
+      }
+      const fb = lineBuf(new Float32Array(arr)); gl.bindBuffer(gl.ARRAY_BUFFER, flowB); gl.bufferData(gl.ARRAY_BUFFER, fb, gl.DYNAMIC_DRAW);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE); gl.depthMask(false);
+      const wc = draft ? [0.1, 0.45, 0.95] : [0.75, 1.0, 1.0];
+      gl.depthFunc(gl.LEQUAL); lines(flowB, fb.length / 9, ZERO, 4, wc, 0.9 * Math.min(1, op * 3), 1); lines(flowB, fb.length / 9, ZERO, 1.6, wc, Math.min(1, op * 3), 0);
+      gl.depthFunc(gl.GREATER); lines(flowB, fb.length / 9, ZERO, 3, wc, 0.35 * Math.min(1, op * 3), 1); gl.depthFunc(gl.LEQUAL);
+    }
 
     /* лист секущей плоскости — по рамке детали (с учётом разбора) */
     if (clip) {
@@ -256,14 +285,25 @@ export function createHolo(canvas, data, opt = {}) {
       const quad = () => { const x = attr(PP.p, 'a', planeB, 3, 20, 0), y = attr(PP.p, 'b', planeB, 2, 20, 12); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([x, y]); };
       /* крышка: где плоскость внутри материала, луч из камеры пересекает поверхность тела нечётное число раз
          (считаем чётность в стенсиле по всем граням, отрезанное — отброшено) — там рисуем штриховку с записью глубины */
-      gl.clearStencil(0); gl.clear(gl.STENCIL_BUFFER_BIT); gl.enable(gl.STENCIL_TEST);
-      gl.colorMask(false, false, false, false); gl.depthMask(false); gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
-      gl.stencilFunc(gl.ALWAYS, 0, 1); gl.stencilOp(gl.KEEP, gl.KEEP, gl.INVERT);
-      gl.useProgram(PM.p); gl.uniform1f(PM.U.uClipOn, 1); gl.uniform1f(PM.U.uPlug, 1);   /* uPlug: изнанку не отбрасывать */
-      bodies.forEach(p => { gl.uniform3fv(PM.U.uO, O(p)); const x = attr(PM.p, 'aP', p.mB, 3), y = attr(PM.p, 'aN', p.nB, 3); gl.drawArrays(gl.TRIANGLES, 0, p.count); offA([x, y]); });
-      gl.colorMask(true, true, true, true); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
-      gl.stencilFunc(gl.EQUAL, 1, 1); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-      gl.useProgram(PP.p); gl.uniform1f(PP.U.uCap, 1); quad();
+      /* по каждой рассекаемой детали — своя крышка и своя штриховка (у смежных деталей — разный наклон/шаг, ГОСТ 2.306) */
+      const hU = norm(cross(n, Math.abs(n[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1])), hV = cross(n, hU);
+      const dirOf = deg => { const a = deg * Math.PI / 180; return norm([hU[0] * Math.cos(a) + hV[0] * Math.sin(a), hU[1] * Math.cos(a) + hV[1] * Math.sin(a), hU[2] * Math.cos(a) + hV[2] * Math.sin(a)]); };
+      gl.enable(gl.STENCIL_TEST);
+      bodies.filter(p => !p.nocut).forEach(p => {
+        const hs = p.hatch || { a: 45, step: 3 };
+        gl.clearStencil(0); gl.clear(gl.STENCIL_BUFFER_BIT);
+        gl.colorMask(false, false, false, false); gl.depthMask(false); gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
+        gl.stencilFunc(gl.ALWAYS, 0, 1); gl.stencilOp(gl.KEEP, gl.KEEP, gl.INVERT);
+        gl.useProgram(PM.p); gl.uniform1f(PM.U.uClipOn, 1); gl.uniform1f(PM.U.uPlug, 1);   /* uPlug: изнанку не отбрасывать */
+        const r = Rt(p); gl.uniform2f(PM.U.uRot, Math.cos(r), Math.sin(r)); gl.uniform3fv(PM.U.uO, O(p));
+        { const x = attr(PM.p, 'aP', p.mB, 3), y = attr(PM.p, 'aN', p.nB, 3); gl.drawArrays(gl.TRIANGLES, 0, p.count); offA([x, y]); }
+        gl.colorMask(true, true, true, true); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+        gl.stencilFunc(gl.EQUAL, 1, 1); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        gl.useProgram(PP.p); gl.uniform1f(PP.U.uCap, 1);
+        gl.uniform3fv(PP.U.uHU, dirOf(hs.a == null ? 45 : hs.a)); gl.uniform3fv(PP.U.uHV, dirOf((hs.a == null ? 45 : hs.a) + 90));
+        gl.uniform1f(PP.U.uStep, hs.step || 3); gl.uniform1f(PP.U.uNet, hs.net ? 1 : 0); gl.uniform1f(PP.U.uSolid, hs.solid ? 1 : 0);
+        quad();
+      });
       gl.disable(gl.STENCIL_TEST); gl.depthMask(false);
       /* сам лист — полупрозрачно поверх */
       gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(PP.U.uCap, 0); quad();
@@ -320,18 +360,20 @@ export function createHolo(canvas, data, opt = {}) {
     let best = null, bt = Infinity;
     M.parts.forEach(p => {
       if (p.role === 'plug' && c.L.plugA < 0.3) return;
-      const o = offsetOf(c.L, p.id), P = p.pos;
+      /* луч — в систему детали (без смещения и поворота): дешевле, чем двигать все её треугольники */
+      const o = offOf(c.L, p.id), r = -rotOf(c.L, p.id), cr = Math.cos(r), sr = Math.sin(r), P = p.vtx;
+      const ro = [O[0] - o[0], O[1] - o[1], O[2] - o[2]], Op = [cr * ro[0] - sr * ro[1], sr * ro[0] + cr * ro[1], ro[2]], dp = [cr * d[0] - sr * d[1], sr * d[0] + cr * d[1], d[2]];
       for (let i = 0; i < P.length; i += 9) {
-        const v0 = [P[i] + o[0], P[i + 1] + o[1], P[i + 2] + o[2]], e1 = [P[i + 3] + o[0] - v0[0], P[i + 4] + o[1] - v0[1], P[i + 5] + o[2] - v0[2]], e2 = [P[i + 6] + o[0] - v0[0], P[i + 7] + o[1] - v0[1], P[i + 8] + o[2] - v0[2]];
-        const pv = cross(d, e2), det = e1[0] * pv[0] + e1[1] * pv[1] + e1[2] * pv[2]; if (Math.abs(det) < 1e-9) continue;
-        const tv = [O[0] - v0[0], O[1] - v0[1], O[2] - v0[2]], u = (tv[0] * pv[0] + tv[1] * pv[1] + tv[2] * pv[2]) / det; if (u < 0 || u > 1) continue;
-        const qv = cross(tv, e1), v = (d[0] * qv[0] + d[1] * qv[1] + d[2] * qv[2]) / det; if (v < 0 || u + v > 1) continue;
+        const v0 = [P[i], P[i + 1], P[i + 2]], e1 = [P[i + 3] - v0[0], P[i + 4] - v0[1], P[i + 5] - v0[2]], e2 = [P[i + 6] - v0[0], P[i + 7] - v0[1], P[i + 8] - v0[2]];
+        const pv = cross(dp, e2), det = e1[0] * pv[0] + e1[1] * pv[1] + e1[2] * pv[2]; if (Math.abs(det) < 1e-9) continue;
+        const tv = [Op[0] - v0[0], Op[1] - v0[1], Op[2] - v0[2]], u = (tv[0] * pv[0] + tv[1] * pv[1] + tv[2] * pv[2]) / det; if (u < 0 || u > 1) continue;
+        const qv = cross(tv, e1), v = (dp[0] * qv[0] + dp[1] * qv[1] + dp[2] * qv[2]) / det; if (v < 0 || u + v > 1) continue;
         const t = (e2[0] * qv[0] + e2[1] * qv[1] + e2[2] * qv[2]) / det; if (t <= 0 || t >= bt) continue;
-        if (clip) { const hp = [O[0] + d[0] * t, O[1] + d[1] * t, O[2] + d[2] * t]; if (clip.n[0] * hp[0] + clip.n[1] * hp[1] + clip.n[2] * hp[2] > clip.w) continue; }
+        if (clip && !p.nocut) { const hp = [O[0] + d[0] * t, O[1] + d[1] * t, O[2] + d[2] * t]; if (clip.n[0] * hp[0] + clip.n[1] * hp[1] + clip.n[2] * hp[2] > clip.w) continue; }
         bt = t; best = p.id;
       }
     });
-    return best && best.startsWith('hole') ? 'holes' : best;
+    return best && model.group(best);
   }
 
   /* мировая точка → пиксели CSS (для подписей и курсоров HUD) */
@@ -341,8 +383,9 @@ export function createHolo(canvas, data, opt = {}) {
   }
 
   return {
-    gl, draw, project, pick, layout, parts: M.parts, floor: FLOOR, box: M.box,
+    gl, draw, project, pick, model, parts: M.parts, floor: FLOOR, box: M.box,
     camera: () => last,
+    offset: id => (last ? offOf(last.L, id) : ZERO),               /* где деталь сейчас (разбор, механизм) — для подписей */
     mongeInfo: () => MG,
     pxPerMm: () => (last ? canvas.clientHeight / last.us : 1),
     setMode(m) { mode = m; }, get mode() { return mode; },

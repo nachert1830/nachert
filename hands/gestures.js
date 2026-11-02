@@ -47,7 +47,8 @@ export const CFG = {
   pointExt: 1.55, pointCurlOn: 1.22, pointCurlOff: 1.35,   /* указка: указательный прямой, остальные согнуты */
   snapOn: 0.30, snapOff: 0.42, snapGo: 0.62, snapMs: 130,  /* щелчок: |4−12| мал, затем за ≤ snapMs вырос выше snapGo */
   bladeOn: 0.35, bladeOff: 0.45,      /* лезвие: ширина ладони |5−17| / длина |0−9| — ладонь ребром к камере */
-  clapFrom: 3.2, clapTo: 1.4, clapMs: 320, clapCool: 800   /* хлопок: ладони сошлись с clapFrom до clapTo размеров ладони за clapMs */
+  clapFrom: 3.2, clapTo: 1.4, clapMs: 320, clapCool: 800,  /* хлопок: ладони сошлись с clapFrom до clapTo размеров ладони за clapMs */
+  steer: false, steerSpan: 1.2, steerOn: 0.26, steerMaxD: 0.06, explodeOn: 0.04   /* «штурвал» (у моделей с механизмом): поворот линии между кулаками на 1,2 рад — вентиль открыт полностью */
 };
 /* стандартные виды для щелчка: как VIEWS на сайте (главный — вдоль +y, слева — вдоль −x) */
 export const VIEWS = [
@@ -56,7 +57,7 @@ export const VIEWS = [
   { k: 'left', t: 'Вид слева', yaw: Math.PI / 2, pit: 1e-4 },
   { k: 'iso', t: 'Изометрия', yaw: -0.62, pit: 0.42 }
 ];
-export const HOME = { yaw: -0.62, pit: 0.42, zoom: 1, panX: 0, panY: 0, explode: 0 };
+export const HOME = { yaw: -0.62, pit: 0.42, zoom: 1, panX: 0, panY: 0, explode: 0, open: 0 };
 
 /* ── фильтр 1€ (Casiez, Roussel, Vogel, 2012): на медленном — сильное сглаживание, на быстром — малая задержка ── */
 export class OneEuro {
@@ -256,13 +257,27 @@ export function createController(opt = {}) {
         if (dx) ctl.g.x = at.x; if (dy) ctl.g.y = at.y;
       }
     } else if (fists.length === 2) {
-      const d = D2(fists[0].palmC, fists[1].palmC);
-      begin('explode', t, ev, { d0: d, e0: v.explode });
+      /* два кулака: развести — разбор; повернуть, как руль, — «штурвал» (открыть/закрыть вентиль). Что именно —
+         решает первое заметное движение: изменилось расстояние или угол линии между кулаками */
+      const A = fists[0].palmC, B = fists[1].palmC, d = D2(A, B), [l, r] = A.x <= B.x ? [A, B] : [B, A];
+      const ang = Math.atan2(-(r.y - l.y), r.x - l.x);                  /* против часовой — плюс (y кадра вниз) */
+      begin('explode', t, ev, { d0: d, e0: v.explode, a0: ang, o0: v.open || 0, kind: null });
       if (fists.every(stable)) {
-        const e = clamp(ctl.g.e0 + (d - ctl.g.d0) / cfg.explodeSpan, 0, 1);
-        const step = x => Math.floor(x * 4 + 1e-9);
-        if (step(e) !== step(v.explode)) ev.push({ type: 'explode-step', e, t });
-        v.explode = e;
+        const g = ctl.g, dd = d - g.d0; let da = ang - g.a0; da = Math.atan2(Math.sin(da), Math.cos(da));
+        if (!g.kind) {
+          if (cfg.steer && Math.abs(da) > cfg.steerOn && Math.abs(dd) < cfg.steerMaxD) { g.kind = 'steer'; ev.push({ type: 'steer', t }); }
+          else if (Math.abs(dd) > cfg.explodeOn) g.kind = 'explode';
+        }
+        if (g.kind === 'explode') {
+          const e = clamp(g.e0 + dd / cfg.explodeSpan, 0, 1);
+          const step = x => Math.floor(x * 4 + 1e-9);
+          if (step(e) !== step(v.explode)) ev.push({ type: 'explode-step', e, t });
+          v.explode = e;
+        } else if (g.kind === 'steer') {
+          const o = clamp(g.o0 + da / cfg.steerSpan, 0, 1), step = x => Math.floor(x * 10 + 1e-9);
+          if (step(o) !== step(v.open || 0)) ev.push({ type: 'explode-step', e: o, t });   /* щелчок трещотки */
+          v.open = o;
+        }
       }
     } else if ((pins.length === 1 && fists.length === 0) || (fists.length === 1 && pins.length === 0)) {
       /* вращение: щипок (точно) или кулак («схватил и крутишь» — естественнее и не устаёт) */
@@ -300,8 +315,11 @@ export function createController(opt = {}) {
     const blade = ctl.mode === 'section' && gT && gT.pts ? { kind: gT.f.vert ? 'v' : 'h', x: gT.palmC.x, y: gT.palmC.y } : null;
     const point = ctl.mode === 'point' && gT && gT.pts ? { x: gT.pts[8].x, y: gT.pts[8].y, id: gT.id } : null;
     if (ctl.toast && t - ctl.toast.t > 1600) ctl.toast = null;
+    const steering = ctl.mode === 'explode' && ctl.g && ctl.g.kind === 'steer';
+    const label = ctl.toast ? ctl.toast.text : steering ? 'вентиль открыт ' + Math.round((v.open || 0) * 100) + '%'
+      : ctl.mode === 'explode' && ctl.g && !ctl.g.kind && cfg.steer ? 'разведи — разобрать · поверни — открыть' : LABEL[ctl.mode] ? LABEL[ctl.mode](v) : '';
     ctl.frame = {
-      t, mode: ctl.mode, label: ctl.toast ? ctl.toast.text : LABEL[ctl.mode] ? LABEL[ctl.mode](v) : '', resetP, events: ev, blade, point,
+      t, mode: ctl.mode, steer: steering, label, resetP, events: ev, blade, point,
       hands: T.map(tr => ({ id: tr.id, handed: tr.handed, pose: tr.pose, raw: tr.raw, present: tr.present, pts: tr.pts, pin: tr.pin, palmC: tr.palmC,
         ignored: !!(tr.f && (tr.f.edge || tr.f.far)), why: tr.f ? (tr.f.edge ? 'край кадра' : tr.f.far ? 'далеко' : '') : '',
         pinchAmt: tr.f ? clamp((cfg.pinchOff * 1.6 - tr.f.pinch) / (cfg.pinchOff * 1.6 - cfg.pinchOn), 0, 1) : 0,
