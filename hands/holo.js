@@ -9,8 +9,17 @@ import { createMonge } from './monge.js';
      «пробки» — вынутый материал (янтарь, полупрозрачно).
    Режим 'draft' — светлая тема сайта: бело-голубая заливка, тёмно-синие линии, красный — разрез и вынутый материал. */
 
-const CY = [0.42, 0.68, 1.0];          /* #6badff — голубой сайта на тёмно-синем */
-const AMBER = [1.0, 0.42, 0.42];       /* #ff6b6b — красный сайта (тёмная тема) */
+const CY = [0.30, 0.82, 1.0];          /* #4dd1ff — голограмма «как у Старка»: циан на почти чёрном синем */
+const AMBER = [1.0, 0.60, 0.24];       /* #ff993d — оранжевый акцент голограммы: разрез, вынутый материал, наведение */
+/* материалы деталей для светлой темы («чертёж» — реалистичный металл): цвет и глянец по строке материала */
+const MATS = [
+  [/латун|бронз/i, [0.86, 0.68, 0.36], 0.85, 1],
+  [/графит/i, [0.20, 0.21, 0.23], 0.15, 0],
+  [/паронит|резин/i, [0.42, 0.47, 0.40], 0.2, 0],
+  [/СЧ|чугун/i, [0.56, 0.60, 0.66], 0.35, 0.6],
+  [/сталь|Ст\d/i, [0.78, 0.81, 0.86], 0.75, 1]
+];
+const matOf = m => { for (const [re, c, g, k] of MATS) if (re.test(m || '')) return { c, g, k }; return { c: [0.80, 0.85, 0.93], g: 0.45, k: 0.4 }; };
 
 /* ── раскодировка данных модели (v5.js, valve-data.js) ──
    Вершины — vtx (в данных: строка «pos» у v5, «mesh» у сборок, где «pos» — номер позиции). Поверхности для очерка
@@ -48,14 +57,18 @@ function lineBuf(L) {
 
 const GL = {
   bgV: 'attribute vec2 a;varying vec2 vU;void main(){vU=a;gl_Position=vec4(a,0.,1.);}',
-  bgF: `precision mediump float;varying vec2 vU;uniform vec2 uRes;uniform float uDraft;
-void main(){ vec2 p=vU*vec2(uRes.x/uRes.y,1.); float r=length(p*vec2(.8,1.)-vec2(0.,.15));
-  vec3 holo=mix(vec3(.075,.15,.31),vec3(.027,.067,.165),smoothstep(.0,1.5,r));
-  vec3 draft=mix(vec3(1.),vec3(.957,.969,.988),smoothstep(.0,1.6,r));
+  bgF: `precision mediump float;varying vec2 vU;uniform vec2 uRes;uniform float uDraft,uT,uAnim;
+void main(){ vec2 p=vU*vec2(uRes.x/uRes.y,1.); float r=length(p*vec2(.8,1.)-vec2(0.,.1));
+  vec3 holo=mix(vec3(.035,.11,.20),vec3(.008,.024,.055),smoothstep(.0,1.45,r));
+  holo+=vec3(.05,.22,.32)*exp(-r*r*3.)*.55;                                  /* свечение проектора за моделью */
+  vec2 g=fract(gl_FragCoord.xy/26.)-.5; holo+=vec3(.12,.45,.6)*(1.-smoothstep(.0,.06,length(g)))*.10*(1.-smoothstep(.4,1.5,r));
+  if(uAnim>.5){ float sy=fract(uT*.00006)*2.4-1.2; holo+=vec3(.15,.55,.75)*exp(-pow((vU.y-sy)*60.,2.))*.06; }
+  holo*=1.-.35*smoothstep(.9,1.9,length(vU*vec2(1.,1.15)));                   /* виньетка */
+  vec3 draft=mix(vec3(1.),vec3(.93,.95,.98),smoothstep(.0,1.6,r));
   gl_FragColor=vec4(mix(holo,draft,uDraft),1.); }`,
   /* uRot — поворот детали вокруг оси z (cos, sin): маховик и шпиндель, когда открывают вентиль */
   meshV: 'attribute vec3 aP,aN;uniform mat4 uM;uniform vec3 uO;uniform vec2 uRot;varying vec3 vP,vN;vec3 R(vec3 v){return vec3(uRot.x*v.x-uRot.y*v.y,uRot.y*v.x+uRot.x*v.y,v.z);}void main(){vec3 p=R(aP)+uO;vP=p;vN=R(aN);gl_Position=uM*vec4(p,1.);}',
-  meshF: `precision highp float;varying vec3 vP,vN;uniform vec3 uF,uCol,uHU;uniform float uT,uA,uScan,uDraft,uPlug,uFl,uAnim,uClipOn,uHi;uniform vec4 uClip;
+  meshF: `precision highp float;varying vec3 vP,vN;uniform vec3 uF,uCol,uHU,uMat;uniform float uT,uA,uScan,uDraft,uPlug,uFl,uAnim,uClipOn,uHi,uGloss,uMetal;uniform vec4 uClip;
 void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard;
   /* при разрезе изнанку граней не рисуем: срез закрывает плоская «крышка» со штриховкой (по стенсилу, см. draw) */
   if(uClipOn>.5&&!gl_FrontFacing&&uPlug<.5) discard;
@@ -63,15 +76,27 @@ void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard;
   float ndv=abs(dot(n,uF)), fr=pow(1.-ndv,2.2);
   vec3 L1=normalize(vec3(-.5,-.75,.9)), L2=normalize(vec3(.85,.25,.35)); float d1=max(dot(n,L1),0.), d2=max(dot(n,L2),0.), hemi=.5+.5*n.z;
   if(uDraft>.5){
-    vec3 base=vec3(.80,.85,.93), hv=normalize(L1+uF*-1.); float sp=pow(max(dot(n,hv),0.),48.)*.3;
-    vec3 c=base*(.30+.30*hemi+d1*.58+d2*.18)+sp; if(!gl_FrontFacing) c*=.55; c=mix(c,vec3(.55,.70,1.),.45*uHi);
     if(uPlug>.5) { gl_FragColor=vec4(vec3(.85,.13,.16)*(.25+.6*fr)*uA,uA*.5); return; }
+    /* металл: рассеянный свет + отражение «студии» (небо, пол, софтбоксы) + блик Блинна — Фонга + Френель */
+    vec3 base=uMat, V=-uF, R=reflect(uF,n);
+    float sky=smoothstep(-.35,.7,R.z), box1=pow(max(dot(R,L1),0.),18.), box2=pow(max(dot(R,normalize(vec3(.9,-.2,.5))),0.),30.);
+    vec3 env=mix(vec3(.30,.33,.38),vec3(1.,1.,1.03),sky)+vec3(1.)*(box1*.9+box2*.6);
+    float sh=mix(14.,110.,uGloss), sp=pow(max(dot(n,normalize(L1+V)),0.),sh)*(.25+.9*uGloss)+pow(max(dot(n,normalize(L2+V)),0.),sh)*.35*uGloss;
+    float F0=mix(.04,.6,uMetal), fres=F0+(1.-F0)*pow(1.-ndv,5.);
+    vec3 dif=base*(.22+.28*hemi+d1*.62+d2*.20);
+    vec3 c=mix(dif,base*env,uMetal*.55*uGloss)+env*fres*.28*(.4+uGloss)+vec3(sp);
+    c*=.82+.18*hemi;                                                            /* «полость»: снизу темнее */
+    if(!gl_FrontFacing) c*=.55;
+    c=mix(c,vec3(.25,.55,1.),.38*uHi);
     gl_FragColor=vec4(c,1.); return; }
-  float scan=1.; if(uAnim>.5) scan=.95+.05*sin(gl_FragCoord.y*1.7-uT*.004);
+  float scan=1.; if(uAnim>.5) scan=.94+.06*sin(gl_FragCoord.y*1.7-uT*.004);
   float band=exp(-pow((vP.z-uScan)/5.,2.));
+  /* голограмма: полосы интерференции по высоте ползут вверх, тонкие линии каждые 2,5 мм */
+  float drift=uAnim>.5?uT*.012:0., stripes=smoothstep(.82,1.,abs(sin((vP.z-drift)*1.25)))*.16, wave=.5+.5*sin(vP.z*.06-uT*.0016*uAnim);
+  vec3 col=mix(uCol,vec3(1.,.62,.26),uHi*.85);
   if(uPlug>.5){ vec3 c=uCol*(.06+.28*d1+.85*fr)+uCol*band*.6; gl_FragColor=vec4(c*scan*uFl*uA,1.); return; }
   /* тело: тёмное стекло, форма читается по свету, контур — по свечению Френеля */
-  vec3 c=uCol*(.07+.20*d1+.07*d2+.08*hemi)*(1.+1.6*uHi)+uCol*fr*(.85+.9*uHi)+vec3(.8,.9,1.)*band*.55;
+  vec3 c=col*(.05+.17*d1+.06*d2+.07*hemi)*(1.+1.3*uHi)+col*fr*(1.0+.9*uHi)+col*stripes*(.6+.4*wave)+col*.05*wave+vec3(.8,.95,1.)*band*.55;
   if(!gl_FrontFacing) c*=.5;
   gl_FragColor=vec4(c*scan*uFl,1.); }`,
   lineV: `attribute vec3 aA,aB;attribute vec3 aT;uniform mat4 uM;uniform vec2 uRes;uniform float uW,uFlat;uniform vec3 uO;uniform vec2 uRot;varying float vY,vS;varying vec3 vP;
@@ -86,8 +111,15 @@ void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard; float d=abs(vY);
   gl_FragColor=vec4(uCol*(1.+band*.8),a*uA); }`,
   /* секущая плоскость: полупрозрачный лист с яркой кромкой и сеткой 10 мм */
   planeV: 'attribute vec3 a;attribute vec2 b;uniform mat4 uM;varying vec2 vU;varying vec3 vW;void main(){vU=b;vW=a;gl_Position=uM*vec4(a,1.);}',
-  planeF: `precision highp float;varying vec2 vU;varying vec3 vW;uniform vec3 uCol,uHU,uHV;uniform vec2 uSz;uniform float uT,uAnim,uDraft,uCap,uFl,uStep,uNet,uSolid;
-float hl(vec3 d){ float h=fract(dot(vW,d)/uStep); return smoothstep(.36,.44,h)*(1.-smoothstep(.56,.64,h)); }
+  planeF: `__DER__precision highp float;varying vec2 vU;varying vec3 vW;uniform vec3 uCol,uHU,uHV;uniform vec2 uSz;uniform float uT,uAnim,uDraft,uCap,uFl,uStep,uNet,uSolid;
+/* линия штриховки шириной 22 % шага; с производными — сглаженная на ширину пикселя (без муара на мелком шаге) */
+float hl(vec3 d){ float x=dot(vW,d)/uStep, h=abs(fract(x)-.5);
+#ifdef DER
+  float w=clamp(fwidth(x),.001,.5); return (1.-smoothstep(.11-w*.75,.11+w*.75,h))*clamp(1.6-w*2.5,0.,1.)+clamp(w*2.5-1.,0.,1.)*.22;
+#else
+  return 1.-smoothstep(.06,.14,h);
+#endif
+}
 void main(){
   /* крышка среза: штриховка по правилам детали (ГОСТ 2.306): наклон и шаг, сетка — неметалл, сплошь — тонкая деталь */
   if(uCap>.5){ float ln=uSolid>.5?1.:max(hl(uHU),uNet>.5?hl(uHV):0.);
@@ -96,13 +128,22 @@ void main(){
   float sweep=uAnim>.5?exp(-pow(fract(uT*.0004)*2.-1.-vU.y,2.)*40.)*.25:0.;
   gl_FragColor=vec4(uCol,(.05+grid*.10+edge*.85+sweep)*(uDraft>.5?.8:1.)); }`,
   gridV: 'attribute vec2 a;uniform mat4 uM;uniform float uZ;varying vec2 vP;void main(){vP=a;gl_Position=uM*vec4(a,uZ,1.);}',
-  gridF: `precision highp float;varying vec2 vP;uniform float uPx,uT,uAnim,uDraft,uFade;uniform vec3 uCol;
+  gridF: `precision highp float;varying vec2 vP;uniform float uPx,uT,uAnim,uDraft,uFade,uSh;uniform vec3 uCol;
 float ln(float v,float s,float w){ float d=abs(fract(v/s+.5)-.5)*s; return 1.-smoothstep(w*.5,w*1.5,d); }
-void main(){ float r=length(vP), fade=1.-smoothstep(120.,260.,r);
+float rg(float r,float c,float w){ return exp(-pow((r-c)/w,2.)); }
+void main(){ float r=length(vP), fade=1.-smoothstep(120.,260.,r), an=atan(vP.y,vP.x), tt=uAnim>.5?uT:0.;
   float w=max(uPx,.2), g=max(ln(vP.x,10.,w),ln(vP.y,10.,w))*.35+max(ln(vP.x,50.,w*1.6),ln(vP.y,50.,w*1.6))*.65;
-  float ring=exp(-pow((r-72.)/1.6,2.))*(uAnim>.5?.75+.25*sin(uT*.002):.85)+exp(-pow((r-78.)/.9,2.))*.35;
+  float ring=rg(r,72.,1.6)*(uAnim>.5?.75+.25*sin(uT*.002):.85)+rg(r,78.,.9)*.35;
+  if(uDraft<.5){
+    /* проектор голограммы: кольца-сегменты вращаются навстречу, риски через 5°, свет из центра */
+    float s1=step(.35,fract(an/6.2832*18.+tt*.00005))*rg(r,92.,1.4)*.8, s2=step(.5,fract(an/6.2832*6.-tt*.00008))*rg(r,104.,2.2)*.7;
+    float tick=step(.86,fract(an/6.2832*72.))*step(108.,r)*step(r,116.)*.6, core=exp(-r*r/1600.)*.35;
+    ring+=s1+s2+tick+core+rg(r,60.,.8)*.4; }
   float a=(g*.32+ring*.6)*fade*uFade; if(uDraft>.5) a*=.55;
-  gl_FragColor=vec4(uCol,a); }`
+  /* светлая тема: мягкая тень модели на полу */
+  float sh=uDraft>.5?exp(-r*r/(uSh*uSh))*.20*uFade:0.;
+  vec3 c=mix(uCol,vec3(.06,.10,.20),sh/(a+sh+1e-4));
+  gl_FragColor=vec4(c,a+sh); }`
 };
 
 export function createHolo(canvas, model, opt = {}) {
@@ -114,7 +155,9 @@ export function createHolo(canvas, model, opt = {}) {
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
     const U = new Proxy({}, { get: (o, k) => (k in o ? o[k] : (o[k] = gl.getUniformLocation(p, k))) }); return { p, U }; };
   const buf = (d, usage) => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, d, usage || gl.STATIC_DRAW); return b; };
-  const PB = prog(GL.bgV, GL.bgF), PM = prog(GL.meshV, GL.meshF), PL = prog(GL.lineV, GL.lineF), PG = prog(GL.gridV, GL.gridF), PP = prog(GL.planeV, GL.planeF);
+  const DER = !!gl.getExtension('OES_standard_derivatives');       /* сглаженная штриховка; нет расширения — по-старому */
+  const PB = prog(GL.bgV, GL.bgF), PM = prog(GL.meshV, GL.meshF), PL = prog(GL.lineV, GL.lineF), PG = prog(GL.gridV, GL.gridF),
+    PP = prog(GL.planeV, GL.planeF.replace('__DER__', DER ? '#extension GL_OES_standard_derivatives : enable\n#define DER 1\n' : ''));
   const planeB = gl.createBuffer();
   const bgB = buf(new Float32Array([-1, -1, 3, -1, -1, 3]));
   const G = 600, gridB = buf(new Float32Array([-G, -G, G, -G, G, G, -G, -G, G, G, -G, G]));
@@ -187,11 +230,11 @@ export function createHolo(canvas, model, opt = {}) {
     last = cam;
 
     gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.depthMask(true); gl.clearColor(0, 0, 0, 1); gl.clearDepth(1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.useProgram(PB.p); gl.uniform2f(PB.U.uRes, w, h); gl.uniform1f(PB.U.uDraft, draft); { const l = attr(PB.p, 'a', bgB, 2); gl.drawArrays(gl.TRIANGLES, 0, 3); offA([l]); }
+    gl.useProgram(PB.p); gl.uniform2f(PB.U.uRes, w, h); gl.uniform1f(PB.U.uDraft, draft); gl.uniform1f(PB.U.uT, t); gl.uniform1f(PB.U.uAnim, anim); { const l = attr(PB.p, 'a', bgB, 2); gl.drawArrays(gl.TRIANGLES, 0, 3); offA([l]); }
 
     /* пол и проекция на него */
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.useProgram(PG.p); gl.uniformMatrix4fv(PG.U.uM, false, MM); gl.uniform1f(PG.U.uZ, FLOOR); gl.uniform1f(PG.U.uPx, px); gl.uniform1f(PG.U.uT, t); gl.uniform1f(PG.U.uAnim, anim); gl.uniform1f(PG.U.uFade, mg ? 1 - mg.a : 1); gl.uniform1f(PG.U.uDraft, draft);
+    gl.useProgram(PG.p); gl.uniformMatrix4fv(PG.U.uM, false, MM); gl.uniform1f(PG.U.uZ, FLOOR); gl.uniform1f(PG.U.uPx, px); gl.uniform1f(PG.U.uT, t); gl.uniform1f(PG.U.uAnim, anim); gl.uniform1f(PG.U.uFade, mg ? 1 - mg.a : 1); gl.uniform1f(PG.U.uDraft, draft); gl.uniform1f(PG.U.uSh, R0 * 0.9);
     gl.uniform3fv(PG.U.uCol, draft ? [0.10, 0.35, 0.88] : CY); { const l = attr(PG.p, 'a', gridB, 2); gl.drawArrays(gl.TRIANGLES, 0, 6); offA([l]); }
 
     /* секущая плоскость (o.clip = {n:[3], w}): убираем dot(n, p) > w; штриховка — по диагонали в плоскости */
@@ -207,7 +250,7 @@ export function createHolo(canvas, model, opt = {}) {
     /* целиком — одной сеткой; разобрана или наведена указка — по частям (чтобы подсветить одну) */
     const hideModel = !!(mg && mg.u > 0.3);                   /* эпюр разворачивается — деталь уходит */
     const moved = M.parts.some(p => rotOf(L, p.id) || offOf(L, p.id) !== ZERO && (offOf(L, p.id)[0] || offOf(L, p.id)[1] || offOf(L, p.id)[2]));
-    const whole = !exploded && !hov && !moved && !(clip && model.assembly);  /* одной сеткой — когда части на местах */
+    const whole = !exploded && !hov && !moved && !model.assembly;  /* одной сеткой — деталь, когда части на местах (у сборки — по деталям: у каждой свой материал) */
     const bodies = hideModel ? [] : whole ? [M.whole] : M.parts.filter(p => p.role === 'body'), plugs = hideModel ? [] : M.parts.filter(p => p.role === 'plug');
     const O = p => (p === M.whole ? ZERO : offOf(L, p.id)), Rt = p => (p === M.whole ? 0 : rotOf(L, p.id));
     const each = (list, f) => list.forEach(p => { lineClip = p.nocut ? 0 : 1; lineRot = Rt(p); f(p); }); lineClip = 1; lineRot = 0;
@@ -226,6 +269,7 @@ export function createHolo(canvas, model, opt = {}) {
     const isHov = p => !!hov && p !== M.whole && model.group(p.id) === hov;
     const mesh = (p, col, a, plug) => { gl.useProgram(PM.p); gl.uniform3fv(PM.U.uO, O(p)); gl.uniform1f(PM.U.uClipOn, p.nocut ? 0 : clipOn);
       const r = Rt(p); gl.uniform2f(PM.U.uRot, Math.cos(r), Math.sin(r)); gl.uniform3fv(PM.U.uCol, col); gl.uniform1f(PM.U.uA, a); gl.uniform1f(PM.U.uPlug, plug); gl.uniform1f(PM.U.uHi, isHov(p) ? 1 : 0);
+      const mt = p.mt || (p.mt = matOf(p === M.whole ? '' : p.mat)); gl.uniform3fv(PM.U.uMat, mt.c); gl.uniform1f(PM.U.uGloss, mt.g); gl.uniform1f(PM.U.uMetal, mt.k);
       const x = attr(PM.p, 'aP', p.mB, 3), y = attr(PM.p, 'aN', p.nB, 3); gl.drawArrays(gl.TRIANGLES, 0, p.count); offA([x, y]); };
     gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 2);
     bodies.forEach(p => mesh(p, CY, 1, 0));
@@ -244,7 +288,7 @@ export function createHolo(canvas, model, opt = {}) {
     /* видимые линии: свечение + середина */
     gl.enable(gl.BLEND); gl.depthMask(false);
     const lineCol = draft ? [0.04, 0.14, 0.39] : [0.88, 0.93, 1.0];
-    if (!draft) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE); each(bodies, p => lines(p.lB, p.lN, O(p), isHov(p) ? 11 : 6, CY, (isHov(p) ? 1 : 0.55) * flick, 1)); silDraw(6, CY, 0.55 * flick, 1); }
+    if (!draft) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE); each(bodies, p => lines(p.lB, p.lN, O(p), isHov(p) ? 11 : 6, isHov(p) ? AMBER : CY, (isHov(p) ? 0.9 : 0.55) * flick, 1)); silDraw(6, CY, 0.55 * flick, 1); }
     else if (hov) { gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); each(bodies.filter(isHov), p => lines(p.lB, p.lN, O(p), 5, [0.2, 0.55, 0.9], 0.45, 1)); }
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     each(bodies, p => lines(p.lB, p.lN, O(p), draft ? 1.25 : 1.35, lineCol, 1, 0)); silDraw(draft ? 1.25 : 1.35, lineCol, 1, 0);
@@ -366,6 +410,10 @@ export function createHolo(canvas, model, opt = {}) {
       /* луч — в систему детали (без смещения и поворота): дешевле, чем двигать все её треугольники */
       const o = offOf(c.L, p.id), r = -rotOf(c.L, p.id), cr = Math.cos(r), sr = Math.sin(r), P = p.vtx;
       const ro = [O[0] - o[0], O[1] - o[1], O[2] - o[2]], Op = [cr * ro[0] - sr * ro[1], sr * ro[0] + cr * ro[1], ro[2]], dp = [cr * d[0] - sr * d[1], sr * d[0] + cr * d[1], d[2]];
+      /* отсев по описанной сфере детали: луч мимо — треугольники не перебираем (у сборки их ~70 тыс.) */
+      const bb = p.bb, sc = [(bb[0][0] + bb[1][0]) / 2, (bb[0][1] + bb[1][1]) / 2, (bb[0][2] + bb[1][2]) / 2], sr2 = ((bb[1][0] - bb[0][0]) ** 2 + (bb[1][1] - bb[0][1]) ** 2 + (bb[1][2] - bb[0][2]) ** 2) / 4;
+      const w0 = [sc[0] - Op[0], sc[1] - Op[1], sc[2] - Op[2]], tc = w0[0] * dp[0] + w0[1] * dp[1] + w0[2] * dp[2];
+      if (w0[0] ** 2 + w0[1] ** 2 + w0[2] ** 2 - tc * tc > sr2 || tc + Math.sqrt(sr2) < 0 || tc - Math.sqrt(sr2) > bt) return;
       for (let i = 0; i < P.length; i += 9) {
         const v0 = [P[i], P[i + 1], P[i + 2]], e1 = [P[i + 3] - v0[0], P[i + 4] - v0[1], P[i + 5] - v0[2]], e2 = [P[i + 6] - v0[0], P[i + 7] - v0[1], P[i + 8] - v0[2]];
         const pv = cross(dp, e2), det = e1[0] * pv[0] + e1[1] * pv[1] + e1[2] * pv[2]; if (Math.abs(det) < 1e-9) continue;

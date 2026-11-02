@@ -146,7 +146,7 @@ function setTheme(th) {
   tool('mode', th === 'dark' ? '☀️' : '🌙', th === 'dark' ? 'Светлая' : 'Тёмная'); $('mode').setAttribute('aria-pressed', th === 'dark'); store('hands.theme', th); dirty = true;
 }
 $('mode').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-setTheme(load('hands.theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+setTheme(load('hands.theme') || 'dark');                     /* по умолчанию — голографический стенд (тёмная); выбор запоминается */
 
 /* ── звук ── */
 function setSound(v) { sound.set(v); tool('snd', v ? '🔊' : '🔇', 'Звук'); $('snd').classList.toggle('on', v); $('snd').setAttribute('aria-pressed', v); store('hands.snd', v ? '1' : undefined); }
@@ -382,15 +382,15 @@ function handTarget(x, y) {
   if (el) return el.classList.contains('sl') ? { kind: 'slider', el, k: el.dataset.k } : { kind: 'ui', el };
   const r = HUDR(), lx = S.x - r.left, ly = S.y - r.top, H = handles();
   if (H.plane && Math.hypot(lx - H.plane.x, ly - H.plane.y) < 32) return { kind: 'plane' };
-  const id = pickNear(lx, ly);
+  const id = pickNear(lx, ly, true);
   if (!id) return null;
   if (id === 'wheel' && MODEL.wheel && MODEL.kin && !quiz.on) return { kind: 'wheel', id };
   return { kind: 'part', id };
 }
-/* «пузырь»: деталь под курсором, а если мимо — ближайшая в радиусе 20 и 40 px */
-function pickNear(x, y) {
+/* «пузырь» (для щипка): деталь под курсором, а если мимо — ближайшая в радиусе 20 и 40 px; наведению хватает одного луча */
+function pickNear(x, y, bubble) {
   if (!holo) return null;
-  let id = holo.pick(x, y, cut); if (id) return id;
+  let id = holo.pick(x, y, cut); if (id || !bubble) return id;
   for (const R of [20, 40]) for (let k = 0; k < 8; k++) { id = holo.pick(x + R * Math.cos(k * Math.PI / 4), y + R * Math.sin(k * Math.PI / 4), cut); if (id) return id; }
   return null;
 }
@@ -415,7 +415,9 @@ function handHover(f, t) {
   if (!(camOn || feedOn)) return;
   const h = f.hands.find(q => q.id === f.lead);
   if (!h || !h.present || !h.cursor || h.ui || f.menu || (f.drag && f.drag.kind !== 'part')) { if (pointer && !pointer.mouse) { pointer = null; dirty = true; } hov.id = null; hov.cand = null; return; }
-  const S = hud.map(h.cursor), id = f.drag && f.drag.kind === 'part' ? f.drag.target.id : pickNear(S.x, S.y);
+  const S = hud.map(h.cursor), vk = [shown.yaw, shown.pit, shown.zoom, shown.explode, shown.open || 0, cutU, cutKind].join('|');
+  if (!hov.at || Math.hypot(S.x - hov.at.x, S.y - hov.at.y) > 2 || hov.vk !== vk) { hov.at = S; hov.vk = vk; hov.pick = pickNear(S.x, S.y); }   /* луч — только когда курсор или вид сдвинулись */
+  const id = f.drag && f.drag.kind === 'part' ? f.drag.target.id : hov.pick;
   if (id !== hov.id) { if (hov.cand !== id) { hov.cand = id; hov.candT = t; } if (t - hov.candT >= 120 || f.drag) { hov.id = id; hov.since = t; hov.cand = null; } }
   else hov.cand = null;
   pointer = { x: S.x, y: S.y, hover: hov.id, named: !!hov.id && t - hov.since >= 300, hand: true, quiz: quiz.on };

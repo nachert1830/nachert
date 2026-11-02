@@ -6,7 +6,7 @@
 /* палитры сайта: тёмная тема ('holo') и светлая ('draft') — HUD перекрашивается вместе со сценой.
    Синий — линии и курсор, красный — действие (щипок, захват, вынутый материал), BG — подложка плашек */
 const PAL = {
-  holo: { CY: '#7cb7ff', CY2: 'rgba(124,183,255,', AM: '#ff6b6b', OK: '#ff6b6b', BAD: '#ffb4b4', TXT: 'rgba(232,238,248,.85)', BG: 'rgba(7,17,42,.9)' },
+  holo: { CY: '#4dd1ff', CY2: 'rgba(77,209,255,', AM: '#ff993d', OK: '#ff993d', BAD: '#ff7a6b', TXT: 'rgba(214,240,255,.88)', BG: 'rgba(2,14,28,.86)' },
   draft: { CY: '#1a5ae0', CY2: 'rgba(26,90,224,', AM: '#d9222a', OK: '#d9222a', BAD: '#d9222a', TXT: 'rgba(14,28,51,.8)', BG: 'rgba(255,255,255,.94)' }
 };
 let CY, CY2, AM, OK, BAD, TXT, BG;
@@ -19,7 +19,7 @@ const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [
      { at: [x, y, z] } — точка на детали (сборка); сторона выноски у сборки чередуется по номерам позиций */
 export function createHud(canvas) {
   const ctx = canvas.getContext('2d');
-  let W = 0, H = 0, dpr = 1, RW = 0;                            /* RW — ширина правой панели: подписи туда не заходят */
+  let W = 0, H = 0, dpr = 1, RW = 0, stark = false;                            /* RW — ширина правой панели: подписи туда не заходят */
   const shown = new Map(); let moving = false, seen = new Set();
   const map = p => ({ x: p.x * W, y: p.y * H });               /* курсор — доли экрана */
 
@@ -56,6 +56,8 @@ export function createHud(canvas) {
     if (!pin && h.pinchAmt > 0.02) ring(C.x, C.y, R0 + 2, OK, 2, -Math.PI / 2, -Math.PI / 2 + h.pinchAmt * Math.PI * 2);
     ctx.fillStyle = pin ? OK : CY; ctx.beginPath(); ctx.arc(C.x, C.y, pin ? 7 : 3, 0, 7); ctx.fill();
     if (h.captured) ring(C.x, C.y, R0 + 6, OK, 1.5);
+    if (stark) { const sp = reduced ? 0 : t / 700; for (let i = 0; i < 3; i++) { const a0 = sp + i * 2.094; ring(C.x, C.y, R0 + 10, pin ? OK : CY2 + '.7)', 1.5, a0, a0 + 0.9); }
+      ctx.strokeStyle = CY2 + '.6)'; ctx.lineWidth = 1; ctx.beginPath(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { ctx.moveTo(C.x + dx * (R0 + 14), C.y + dy * (R0 + 14)); ctx.lineTo(C.x + dx * (R0 + 20), C.y + dy * (R0 + 20)); } ctx.stroke(); }
     if (pin && h.drives && frame.mode === 'rotate' && !reduced) { const k = (t / 900) % 1; ctx.globalAlpha = a * (1 - k); ring(C.x, C.y, 16 + 16 * k, OK, 1.5); ctx.globalAlpha = a; }
     /* удержания: щипок по детали (0,4 с — взять) и ладонь (0,5 с — меню) */
     if (lead && frame.holdP > 0) ring(C.x, C.y, 22, AM, 3.5, -Math.PI / 2, -Math.PI / 2 + frame.holdP * Math.PI * 2);
@@ -93,7 +95,10 @@ export function createHud(canvas) {
     const ctr = M.sel < 0;
     ctx.beginPath(); ctx.arc(c.x, c.y, R1 - 6, 0, 7); ctx.fillStyle = BG; ctx.fill(); ring(c.x, c.y, R1 - 6, ctr ? OK : CY2 + '.5)', ctr ? 2 : 1);
     text('↺', c.x, c.y - 2, ctr ? OK : TXT, '16px system-ui,sans-serif'); text('Сброс', c.x, c.y + 14, ctr ? OK : TXT, '600 11px system-ui,sans-serif');
-    text('веди к пункту и щипни · кулак — закрыть', c.x, c.y + R2 + 22, TXT, '12px system-ui,sans-serif');
+    if (stark) { const sp = reduced ? 0 : t / 2500; ctx.strokeStyle = CY2 + '.5)'; ctx.lineWidth = 1; ctx.beginPath();
+      for (let i = 0; i < 90; i++) { const a = sp + i * Math.PI / 45, l = i % 5 ? 4 : 9; ctx.moveTo(c.x + Math.cos(a) * (R2 + 8), c.y + Math.sin(a) * (R2 + 8)); ctx.lineTo(c.x + Math.cos(a) * (R2 + 8 + l), c.y + Math.sin(a) * (R2 + 8 + l)); }
+      ctx.stroke(); ring(c.x, c.y, R2 + 24, AM, 2, -sp * 2, -sp * 2 + 0.5); ring(c.x, c.y, R2 + 24, AM, 2, -sp * 2 + Math.PI, -sp * 2 + Math.PI + 0.5); }
+    text('веди к пункту и щипни · кулак — закрыть', c.x, c.y + R2 + (stark ? 44 : 22), TXT, '12px system-ui,sans-serif');
     ctx.restore();
   }
 
@@ -120,7 +125,7 @@ export function createHud(canvas) {
 
   /* мини-скелет руки в углу (когда нет превью камеры — телефон, повтор): видит ли система руку и какую позу */
   function drawMini(frame, inset) {
-    const w = 110, h = 82, x0 = (inset.l || 0) + 14, y0 = H - (inset.b || 0) - h - 44;
+    const w = 110, h = 82, x0 = W - RW - w - 14, y0 = H - (inset.b || 0) - h - 44;      /* справа внизу — там, где превью камеры */
     ctx.save(); ctx.fillStyle = BG; ctx.globalAlpha = 0.85; ctx.fillRect(x0, y0, w, h); ctx.globalAlpha = 1; ctx.strokeStyle = CY2 + '.4)'; ctx.lineWidth = 1; ctx.strokeRect(x0, y0, w, h);
     const any = frame.hands.some(q => q.present);
     if (!any) text('руки не видно', x0 + w / 2, y0 + h / 2 + 4, TXT, '11px system-ui,sans-serif');
@@ -222,11 +227,129 @@ export function createHud(canvas) {
     ctx.fillText('РАЗБОР ' + Math.round(e * 100) + '%', x + 10, y0 - 12); ctx.restore();
   }
 
+  /* ════ голографический стенд (тёмная тема): целеуказатель вокруг модели, лента азимута, шкала тангажа,
+     телеметрия, захват детали, загрузка. В светлой теме («чертёж») ничего этого нет — там строгий лист. ════ */
+  const MONO = "500 11px Plex,ui-monospace,SFMono-Regular,Menlo,monospace";
+  const deg = r => ((r * 180 / Math.PI) % 360 + 360) % 360;
+  const boot = { t0: null };
+  const ease = u => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 3);
+
+  /* кольца вокруг модели: тонкая окружность, вращающиеся дуги, шкала с рисками через 5°, отметка азимута */
+  function drawRings(view, holo, t, reduced, k) {
+    const b = holo.box, c = holo.project([(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2, (b[0][2] + b[1][2]) / 2]); if (!c) return;
+    const R = Math.min(Math.max(120, holo.pxPerMm() * Math.hypot(b[1][0] - b[0][0], b[1][1] - b[0][1], b[1][2] - b[0][2]) * 0.36), Math.min(W - RW, H) * 0.36) * (0.6 + 0.4 * k);
+    const sp = reduced ? 0 : t / 1000;
+    ctx.save(); ctx.globalAlpha = k;
+    ring(c[0], c[1], R, CY2 + '.18)', 1);
+    for (let i = 0; i < 3; i++) { const a = sp * 0.35 + i * 2.094; ring(c[0], c[1], R * 1.04, CY2 + '.55)', 2, a, a + 0.62); }
+    for (let i = 0; i < 2; i++) { const a = -sp * 0.22 + i * Math.PI; ring(c[0], c[1], R * 1.10, AM, 1.5, a, a + 0.28); }
+    ctx.strokeStyle = CY2 + '.35)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let i = 0; i < 72; i++) { const a = i * Math.PI / 36 - view.yaw, l = i % 6 ? 5 : 11, co = Math.cos(a), si = Math.sin(a);
+      ctx.moveTo(c[0] + co * R * 1.16, c[1] + si * R * 1.16); ctx.lineTo(c[0] + co * (R * 1.16 + l), c[1] + si * (R * 1.16 + l)); }
+    ctx.stroke();
+    /* отметка «на зрителя» и подпись азимута */
+    ctx.fillStyle = AM; ctx.beginPath(); ctx.moveTo(c[0], c[1] - R * 1.16 + 2); ctx.lineTo(c[0] - 6, c[1] - R * 1.16 - 9); ctx.lineTo(c[0] + 6, c[1] - R * 1.16 - 9); ctx.fill();
+    text(`АЗ ${deg(view.yaw).toFixed(0).padStart(3, '0')}°`, c[0], c[1] - R * 1.16 - 16, AM, MONO);
+    ctx.restore();
+  }
+
+  /* лента азимута сверху и шкала тангажа слева — как авиаприбор */
+  function drawTapes(view, inset, frame) {
+    const act = !!(frame && ['rotate', 'zoom'].includes(frame.mode));          /* приборы ярко — только когда модель крутят */
+    const L0 = inset.l || 0, CX = L0 + (W - RW - L0) / 2, y = 64, half = 170, ppd = 2.2, yd = deg(view.yaw);
+    ctx.save(); ctx.beginPath(); ctx.rect(CX - half, y - 4, half * 2, 30); ctx.clip();
+    ctx.strokeStyle = CY2 + '.45)'; ctx.fillStyle = CY2 + '.75)'; ctx.font = MONO; ctx.textAlign = 'center'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let d = Math.floor(yd / 5) * 5 - 90; d <= yd + 90; d += 5) { const x = CX + (d - yd) * ppd; ctx.moveTo(x, y); ctx.lineTo(x, y + (d % 30 ? 5 : 10));
+      if (d % 30 === 0) ctx.fillText(String(((d % 360) + 360) % 360).padStart(3, '0'), x, y + 22); }
+    ctx.stroke(); ctx.restore();
+    ctx.save(); const g = ctx.createLinearGradient(CX - half, 0, CX + half, 0); g.addColorStop(0, CY2 + '0)'); g.addColorStop(0.5, CY2 + '.5)'); g.addColorStop(1, CY2 + '0)');
+    ctx.strokeStyle = g; ctx.beginPath(); ctx.moveTo(CX - half, y); ctx.lineTo(CX + half, y); ctx.stroke();
+    ctx.fillStyle = AM; ctx.beginPath(); ctx.moveTo(CX, y + 1); ctx.lineTo(CX - 5, y - 7); ctx.lineTo(CX + 5, y - 7); ctx.fill(); ctx.restore();
+    /* тангаж */
+    /* тангаж — справа, у панели (слева — карточка жестов) */
+    const X = L0 + 34, CY0 = H / 2, ph = 150, pd = view.pit * 180 / Math.PI, pp = 2.4;
+    ctx.save(); ctx.globalAlpha = act ? 1 : 0.4; ctx.beginPath(); ctx.rect(X - 4, CY0 - ph, 50, ph * 2); ctx.clip();
+    ctx.strokeStyle = CY2 + '.45)'; ctx.fillStyle = CY2 + '.75)'; ctx.font = MONO; ctx.textAlign = 'left'; ctx.beginPath();
+    for (let d = Math.floor(pd / 5) * 5 - 70; d <= pd + 70; d += 5) { const yy = CY0 - (d - pd) * pp; ctx.moveTo(X, yy); ctx.lineTo(X + (d % 15 ? 5 : 11), yy);
+      if (d % 15 === 0) ctx.fillText((d > 0 ? '+' : '') + d, X + 14, yy + 4); }
+    ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.globalAlpha = act ? 1 : 0.4; ctx.fillStyle = AM; ctx.beginPath(); ctx.moveTo(X - 2, CY0); ctx.lineTo(X - 10, CY0 - 5); ctx.lineTo(X - 10, CY0 + 5); ctx.fill();
+    text('ТАНГАЖ', X + 4, CY0 - ph - 8, CY2 + '.7)', MONO, 'left'); ctx.restore();
+  }
+
+  /* телеметрия: блок слева внизу — числа и полосы */
+  function drawTelemetry(view, frame, info, inset, holo, t) {
+    const x0 = (inset.l || 0) + 16, w = 236, rows = [
+      ['АЗИМУТ', deg(view.yaw).toFixed(0) + '°', deg(view.yaw) / 360],
+      ['ТАНГАЖ', (view.pit * 180 / Math.PI).toFixed(0) + '°', (view.pit + 0.2) / 1.77],
+      ['МАСШТАБ', '×' + view.zoom.toFixed(2), Math.log(view.zoom / 0.5) / Math.log(10)],
+      ['РАЗБОР', Math.round((view.explode || 0) * 100) + ' %', view.explode || 0]];
+    if (holo.model.kin) rows.push(['ВЕНТИЛЬ', Math.round((view.open || 0) * 100) + ' %', view.open || 0]);
+    const n = frame ? frame.hands.filter(h => h.present).length : 0;
+    const h = 30 + rows.length * 19 + 22, y0 = H - (inset.b || 0) - h - 14;
+    ctx.save(); ctx.fillStyle = BG; ctx.globalAlpha = 0.78; ctx.fillRect(x0, y0, w, h); ctx.globalAlpha = 1;
+    ctx.strokeStyle = CY2 + '.35)'; ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1);
+    ctx.fillStyle = CY; ctx.fillRect(x0, y0, 26, 2);
+    text('ТЕЛЕМЕТРИЯ · ' + (holo.model.title || '').toUpperCase(), x0 + 10, y0 + 18, CY, MONO, 'left');
+    rows.forEach(([k, v, u], i) => { const y = y0 + 38 + i * 19;
+      text(k, x0 + 10, y, CY2 + '.7)', MONO, 'left'); text(v, x0 + 132, y, CY, MONO, 'right');
+      ctx.fillStyle = CY2 + '.15)'; ctx.fillRect(x0 + 142, y - 7, 82, 5); ctx.fillStyle = CY; ctx.fillRect(x0 + 142, y - 7, 82 * Math.max(0, Math.min(1, u)), 5); });
+    const on = (t / 600) % 2 < 1.4;
+    ctx.fillStyle = n ? '#4dffb8' : AM; if (on) { ctx.beginPath(); ctx.arc(x0 + 14, y0 + h - 12, 3.5, 0, 7); ctx.fill(); }
+    text(n ? `РУКИ: ${n} · ${frame && frame.fps ? frame.fps.toFixed(0) : '–'} КАДР/С` : 'РУКИ: ОЖИДАНИЕ', x0 + 24, y0 + h - 8, n ? '#4dffb8' : AM, MONO, 'left');
+    if (info) text(info, W - RW - 26, H - (inset.b || 0) - 24, CY2 + '.6)', MONO, 'right');
+    ctx.restore();
+  }
+
+  /* захват детали: скобки по экранной рамке детали, линия к карточке анализа (номер, имя, материал, габарит) */
+  const lock = { id: null, t0: 0 };
+  function drawLock(ptr, holo, t, reduced) {
+    if (!ptr || !ptr.hover || ptr.quiz || ptr.named === false) { lock.id = null; return; }
+    const id = ptr.hover, part = holo.parts.find(p => p.id === id) || holo.parts.find(p => holo.model.group && holo.model.group(p.id) === id); if (!part || !part.bb) return;
+    if (lock.id !== id) { lock.id = id; lock.t0 = t; }
+    const o = holo.offset(part.id), bb = part.bb, xs = [], ys = [];
+    for (let i = 0; i < 8; i++) { const q = holo.project([bb[i & 1][0] + o[0], bb[(i >> 1) & 1][1] + o[1], bb[(i >> 2) & 1][2] + o[2]]); if (q) { xs.push(q[0]); ys.push(q[1]); } }
+    if (!xs.length) return;
+    const u = reduced ? 1 : ease((t - lock.t0) / 260), pad = 10 + 26 * (1 - u);
+    const x0 = Math.min(...xs) - pad, x1 = Math.max(...xs) + pad, y0 = Math.min(...ys) - pad, y1 = Math.max(...ys) + pad, L = Math.min(18, (x1 - x0) / 3, (y1 - y0) / 3);
+    ctx.save(); ctx.strokeStyle = AM; ctx.lineWidth = 2; ctx.globalAlpha = 0.4 + 0.6 * u; ctx.beginPath();
+    [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.moveTo(x, y + sy * L); ctx.lineTo(x, y); ctx.lineTo(x + sx * L, y); });
+    ctx.stroke();
+    const lb = (holo.model.labels || {})[id] || {}, dp = (holo.model.data && holo.model.data.parts || []).find(p => p.id === part.id);
+    const dims = [0, 1, 2].map(k => Math.round(bb[1][k] - bb[0][k]));
+    const lines = [lb.t || id, 'МАТЕРИАЛ: ' + ((dp && dp.mat) || lb.d || '—'), `ГАБАРИТ: ${dims[0]}×${dims[1]}×${dims[2]} мм`];
+    const side = x1 + 250 < W - RW ? 1 : -1, cx = side > 0 ? x1 + 40 : x0 - 40, cy = Math.max(70, y0 + 10), bw = 236, bh = 68;
+    ctx.beginPath(); ctx.moveTo(side > 0 ? x1 : x0, y0 + 10); ctx.lineTo(cx, cy); ctx.lineTo(cx + side * 12, cy); ctx.lineWidth = 1; ctx.stroke();
+    const bx = side > 0 ? cx + 12 : cx - 12 - bw;
+    ctx.fillStyle = BG; ctx.globalAlpha = 0.9 * u; ctx.fillRect(bx, cy - 14, bw, bh); ctx.globalAlpha = u; ctx.strokeRect(bx + 0.5, cy - 13.5, bw - 1, bh - 1);
+    ctx.fillStyle = AM; ctx.fillRect(bx, cy - 14, 4, bh);
+    text('АНАЛИЗ ДЕТАЛИ', bx + 12, cy, AM, MONO, 'left');
+    text(lines[0], bx + 12, cy + 18, '#fff', '600 13px system-ui,sans-serif', 'left');
+    text(lines[1], bx + 12, cy + 34, TXT, MONO, 'left'); text(lines[2], bx + 12, cy + 48, TXT, MONO, 'left');
+    ctx.restore();
+  }
+
+  /* загрузка: кольца разворачиваются, строки «печатаются» — 2,4 с при первом показе голограммы */
+  function drawBoot(holo, t, reduced, inset) {
+    if (reduced) return 1;
+    if (boot.t0 == null) boot.t0 = t;
+    const u = (t - boot.t0) / 2400; if (u >= 1) return 1;
+    const CX = (inset.l || 0) + (W - RW - (inset.l || 0)) / 2, CY0 = H * 0.46, L = [
+      'НАЧЕРТ // ГОЛОГРАФИЧЕСКИЙ СТЕНД', 'ЗАГРУЗКА МОДЕЛИ: ' + (holo.model.title || '').toUpperCase() + ' · ' + holo.parts.length + ' ДЕТ.',
+      'КАЛИБРОВКА ПРОЕКТОРА ........ OK', 'ОТСЛЕЖИВАНИЕ РУК ............ ГОТОВО'];
+    ctx.save(); ctx.globalAlpha = u < 0.8 ? 1 : 1 - (u - 0.8) / 0.2;
+    for (let i = 0; i < 3; i++) { const r = 40 + 90 * ease(u * 1.6 - i * 0.15); ring(CX, CY0, r, i === 1 ? AM : CY, 1.5, t / 400 + i, t / 400 + i + 4.2); }
+    L.forEach((s, i) => { const k = Math.max(0, Math.min(1, u * 2.2 - i * 0.3)); if (k > 0) text(s.slice(0, Math.ceil(s.length * k)) + (k < 1 ? '▌' : ''), CX, CY0 + 150 + i * 18, i ? CY : AM, MONO); });
+    ctx.restore();
+    return ease(u / 0.6);
+  }
+
   /* уголки рамки и показания */
-  function drawFrame(view, info, inset) {
+  function drawFrame(view, info, inset, cornersOnly) {
     const L0 = inset.l, B0 = H - inset.b;
     ctx.save(); ctx.strokeStyle = CY2 + '.35)'; ctx.lineWidth = 1.5; const m = 14, l = 26;
     [[L0 + m, m, 1, 1], [W - RW - m, m, -1, 1], [L0 + m, B0 - m, 1, -1], [W - RW - m, B0 - m, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x, y + sy * l); ctx.lineTo(x, y); ctx.lineTo(x + sx * l, y); ctx.stroke(); });
+    if (cornersOnly) { ctx.restore(); return; }
     ctx.fillStyle = CY2 + '.7)'; ctx.font = "500 11px Plex,ui-monospace,SFMono-Regular,Menlo,monospace"; ctx.textAlign = 'left';
     const deg = r => ((r * 180 / Math.PI) % 360 + 360) % 360;
     ctx.fillText(`YAW ${deg(view.yaw).toFixed(0).padStart(3)}°  PIT ${(view.pit * 180 / Math.PI).toFixed(0).padStart(3)}°  ZOOM ×${view.zoom.toFixed(2)}`, L0 + 26, B0 - 24);
@@ -290,12 +413,14 @@ export function createHud(canvas) {
     P.forEach(q => ctx.fillText(q.text, q.x, q.y)); ctx.restore();
   }
   function draw({ frame, view, holo, t, reduced, info, showLabels = true, pointer = null, section = null, planes = null, handles = null, mini = false, inset = { l: 0, b: 0, r: 0 } }) {
-    usePal(holo.mode); size(); ctx.clearRect(0, 0, W, H); RW = inset.r || 0;
-    drawFrame(view, info, inset);
+    usePal(holo.mode); size(); ctx.clearRect(0, 0, W, H); RW = inset.r || 0; stark = holo.mode === 'holo';
+    let bootK = 1;
+    if (stark) { bootK = drawBoot(holo, t, reduced, inset); if (bootK < 1) moving = true; drawFrame(view, '', inset, true); drawRings(view, holo, t, reduced, bootK); drawTapes(view, inset, frame); drawTelemetry(view, frame, info, inset, holo, t); }
+    else drawFrame(view, info, inset);
     if (showLabels) drawLabels(holo, view);
     drawSection(section); drawPlanes(planes); drawHandles(handles, t);
-    moving = false; seen = new Set();
-    drawPointer(pointer, holo, t);
+    seen = new Set();
+    if (stark) drawLock(pointer, holo, t, reduced); else drawPointer(pointer, holo, t);
     if (frame) {
       drawEdges(frame); drawPair(frame);
       drawMenu(frame.menu, t, reduced);
@@ -304,7 +429,9 @@ export function createHud(canvas) {
     }
     for (const id of shown.keys()) if (!seen.has(id)) shown.delete(id);
     if (drawEffects(t, reduced)) moving = true;
-    return moving;                                                  /* true — курсоры ещё догоняют, нужен следующий кадр */
+    /* кольца и стрелки голограммы крутятся с «фоновой» перерисовкой (≤ 30 кадр/с, app.js) — отдельно кадры не просим */
+    const mv = moving; moving = false;
+    return mv;                                                  /* true — курсоры ещё догоняют, нужен следующий кадр */
   }
   return { draw, map, effect };
 }

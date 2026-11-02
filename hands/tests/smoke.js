@@ -46,11 +46,11 @@ srv.listen(0, async () => {
       feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.4 })], 6);
       for (let i = 0; i <= 15; i++) feed([hand({ pose: 'pinch', gap: 0.1, cx: 0.4 + 0.01 * i })]);
       out.rot = y0 - v.yaw; out.mode = A.frame.mode;
-      /* курсор щипка — в главном окне: красный диск в точке курсора */
+      /* курсор щипка — в главном окне: диск цвета действия в точке курсора */
       const ctx = hud.getContext('2d'), h = A.frame.hands[0], dpr = hud.width / hud.clientWidth;
       const x = h.cursor.x * hud.clientWidth * dpr, y = h.cursor.y * hud.clientHeight * dpr;
       const d = ctx.getImageData(Math.round(x - 20), Math.round(y - 20), 40, 40).data; let red = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i + 1] < 120 && d[i + 3] > 100) red++;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i + 1] < 180 && d[i + 2] < 120 && d[i + 3] > 100) red++;   /* цвет действия: красный (светлая) или оранжевый (тёмная) */
       out.cursor = red;
       feed([hand({ pose: 'idle', cx: 0.55 })], 10); A.ctl.stopMotion(); feed([], 12);
       /* панель рукой: навести — щипнуть — (вести) — отпустить */
@@ -100,7 +100,7 @@ srv.listen(0, async () => {
         A.view.explode = 0.85; A.view.yaw = -0.3;
         for (let i = 0; i < 24; i++) { t += 33; window.__feed([hand({ pose: 'open', cx: 0.5, cy: 0.5 })], t); }
         for (let i = 0; i < 8; i++) { t += 33; window.__feed([hand({ pose: 'open', cx: 0.5 + i * 0.008, cy: 0.5 - i * 0.004 })], t); } });
-      await p.waitForTimeout(150); await p.screenshot({ path: path.join(OUT, 'hands-hud.png') });
+      await p.waitForTimeout(150); await p.screenshot({ path: path.join(OUT, 'hands-hud.png'), timeout: 180000 });   /* программный рендер копит очередь кадров от __feed */
     }
 
     /* MediaPipe под CSP страницы: wasm + модель из vendor/, CPU-делегат (в CI нет GPU) */
