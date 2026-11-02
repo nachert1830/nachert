@@ -1,0 +1,50 @@
+name: Сканер листа — сквозная проверка (облако → ProxyAPI)
+# Шлёт в облачную функцию nachert-scan настоящие запросы, как страница: раскладка (Haiku) и оцифровка (Sonnet) на крошечном рисунке (≈ $0,01),
+# и печатает код и текст ответа. Так видно, отвечает ли модель из облака, или упирается в ключ/баланс ProxyAPI, лимиты функции и т. п.
+# Запуск вручную: Actions → «Сканер листа — сквозная проверка». Секреты не нужны: код доступа — вход, адрес функции читается из lk/scan/config.js.
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'код доступа'
+        required: false
+        default: 'виктория'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Запросы к функции
+        env:
+          C: ${{ github.event.inputs.code || 'виктория' }}
+        run: |
+          URL=$(node -e "const m=require('fs').readFileSync('lk/scan/config.js','utf8').match(/\"(https:[^\"]+)\"/); console.log(m?m[1]:'')")
+          test -n "$URL" || { echo "::error::в lk/scan/config.js нет адреса функции"; exit 1; }
+          echo "Адрес функции: $URL"
+          node -e "
+          const zlib=require('zlib'),fs=require('fs'); const W=320,H=320, raw=Buffer.alloc((W+1)*H,245);
+          for(let y=0;y<H;y++) raw[y*(W+1)]=0;
+          const px=(x,y)=>{ if(x>=0&&y>=0&&x<W&&y<H) raw[y*(W+1)+1+x]=40; };
+          for(let i=40;i<=280;i++){ px(i,60); px(i,61); px(i,260); px(i,261); px(40,i-20); px(41,i-20); px(280,i-20); px(281,i-20); px(i,i-20); }
+          const T=new Uint32Array(256).map((_,n)=>{ let c=n; for(let j=0;j<8;j++) c=c&1?0xEDB88320^(c>>>1):c>>>1; return c>>>0; }), crc=b=>{ let c=0xFFFFFFFF; for(const x of b) c=T[(c^x)&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+          const ch=(t,d)=>{ const l=Buffer.alloc(4); l.writeUInt32BE(d.length); const td=Buffer.concat([Buffer.from(t),d]), c=Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([l,td,c]); };
+          const ih=Buffer.alloc(13); ih.writeUInt32BE(W,0); ih.writeUInt32BE(H,4); ih[8]=8; ih[9]=0;
+          const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),ch('IHDR',ih),ch('IDAT',zlib.deflateSync(raw)),ch('IEND',Buffer.alloc(0))]);
+          const img='data:image/png;base64,'+png.toString('base64');
+          for(const mode of ['layout','crop']) fs.writeFileSync('body-'+mode+'.json',JSON.stringify({img,w:W,h:H,mode}));
+          "
+          ENC=$(node -e "console.log(encodeURIComponent(process.env.C))")
+          fail=0
+          for MODE in layout crop; do
+            echo; echo "════ POST $MODE"
+            CODE=$(curl -sS -m 100 -o resp-$MODE.json -w "%{http_code}" -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC" --data @body-$MODE.json "$URL")
+            echo "HTTP $CODE"; head -c 700 resp-$MODE.json; echo
+            [ "$CODE" = "200" ] || { echo "::error::$MODE: HTTP $CODE"; fail=1; }
+          done
+          exit $fail
