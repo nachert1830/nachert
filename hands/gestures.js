@@ -29,7 +29,7 @@ export const CFG = {
   fistOn: 1.20, fistOff: 1.36,        /* кулак: все 4 пальца согнуты — max(|кончик−запястье| / |пясть−запястье|) */
   openOn: 1.62, openOff: 1.50,        /* ладонь: все 4 пальца прямые — min(того же отношения) */
   thumbOut: 0.55,                     /* ладонь: большой палец отведён — |4−5| / размер ладони */
-  holdOn: 70, holdOff: 100,           /* мс: поза должна продержаться, чтобы включиться / выключиться */
+  holdOn: 50, holdOff: 100,           /* мс: поза должна продержаться, чтобы включиться / выключиться */
   edge: 0.035,                        /* доля кадра: центр ладони или кончики 4, 8 ближе к краю — рука не управляет */
   minPalm: 0.045,                     /* размер ладони в долях кадра: меньше — рука слишком далеко */
   lostMs: 160,                        /* рука пропала из кадра на столько — держим её состояние (MediaPipe мигает) */
@@ -43,7 +43,7 @@ export const CFG = {
   resetMs: 1500, resetAnim: 650,
   zoomMin: 0.5, zoomMax: 5,
   pitMin: -0.2, pitMax: Math.PI / 2 - 1e-3,
-  euro: { minCutoff: 2.2, beta: 6.0, dCutoff: 1.0 },  /* фильтр 1€ для точек (координаты 0..1, частоты в Гц) */
+  euro: { minCutoff: 4.0, beta: 10.0, dCutoff: 1.5 }, /* фильтр 1€ (координаты 0..1, Гц): срез 4 Гц — задержка ~40 мс; при 2,2 Гц деталь «плыла» за рукой на ~70 мс */
   pointExt: 1.55, pointCurlOn: 1.22, pointCurlOff: 1.35,   /* указка: указательный прямой, остальные согнуты */
   snapOn: 0.30, snapOff: 0.42, snapGo: 0.62, snapMs: 130,  /* щелчок: |4−12| мал, затем за ≤ snapMs вырос выше snapGo */
   bladeOn: 0.35, bladeOff: 0.45,      /* лезвие: ширина ладони |5−17| / длина |0−9| — ладонь ребром к камере */
@@ -244,16 +244,16 @@ export function createController(opt = {}) {
 
     /* выбор жеста */
     if (pins.length >= 2) {
-      const d = D2(pins[0].pin, pins[1].pin);
+      const d = D2(pins[0].palmC, pins[1].palmC);                    /* центры ладоней: не «плывут», когда шевелятся пальцы */
       begin('zoom', t, ev, { d0: Math.max(d, 0.05), z0: v.zoom, ids: [pins[0].id, pins[1].id] });
       if (pins.every(stable)) v.zoom = clamp(ctl.g.z0 * Math.max(d, 0.01) / ctl.g.d0, cfg.zoomMin, cfg.zoomMax);
     } else if (pins.length === 1 && fists.length === 1) {
-      const h = pins[0];
-      begin('pan', t, ev, { x: h.pin.x, y: h.pin.y, id: h.id });
+      const h = pins[0], at = h.palmC;
+      begin('pan', t, ev, { x: at.x, y: at.y, id: h.id });
       if (stable(h) && stable(fists[0])) {
-        const dx = dz(h.pin.x - ctl.g.x), dy = dz(h.pin.y - ctl.g.y);
+        const dx = dz(at.x - ctl.g.x), dy = dz(at.y - ctl.g.y);
         v.panX -= dx * cfg.panGain / v.zoom; v.panY += dy * cfg.panGain / v.zoom;
-        if (dx) ctl.g.x = h.pin.x; if (dy) ctl.g.y = h.pin.y;
+        if (dx) ctl.g.x = at.x; if (dy) ctl.g.y = at.y;
       }
     } else if (fists.length === 2) {
       const d = D2(fists[0].palmC, fists[1].palmC);
@@ -266,7 +266,8 @@ export function createController(opt = {}) {
       }
     } else if ((pins.length === 1 && fists.length === 0) || (fists.length === 1 && pins.length === 0)) {
       /* вращение: щипок (точно) или кулак («схватил и крутишь» — естественнее и не устаёт) */
-      const h = pins[0] || fists[0], at = h.pose === 'fist' ? h.palmC : h.pin;
+      /* точка хватки — центр ладони: при размыкании пальцев середина щипка «уезжает» и доворачивала деталь */
+      const h = pins[0] || fists[0], at = h.palmC;
       if ((multi || h.poseT <= ctl.multiEnd) && ctl.mode !== 'rotate') begin('wait', t, ev);       /* хватка пережила двуручный жест — ждём свежую */
       else {
         if (ctl.mode === 'rotate' && ctl.g && ctl.g.id !== h.id) begin('idle', t, ev);
