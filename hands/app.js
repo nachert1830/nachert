@@ -6,6 +6,7 @@ import { createHud } from './hud.js';
 import { createController, HOME, VIEWS } from './gestures.js';
 import { sound } from './sound.js';
 import { createCoach } from './coach.js';
+import { createPairing } from './pair.js';
 
 const $ = id => document.getElementById(id);
 /* кнопка панели: иконка + подпись */
@@ -201,7 +202,7 @@ function onHands(hands, t) {
 /* отладка и автотесты: __feed([[21 точка], …], t) — как кадр камеры */
 window.__feed = (hands, t) => { feedOn = true; const f = onHands(hands, t == null ? performance.now() : t); render(t == null ? performance.now() : t); return f; };
 window.__camInfo = () => info;
-window.__app = { shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; lastDraw = -1e9; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
+window.__app = { get pairing() { return pairing; }, shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; lastDraw = -1e9; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
 
 /* ── приглашение и карточка жестов ── */
 $('cta').onclick = () => $('go').click();
@@ -433,7 +434,40 @@ function drawPreview(hands) {
   hands.forEach(({ lm }) => { octx.beginPath(); BONES.forEach(([a, b]) => { octx.moveTo(lm[a].x * w, lm[a].y * h); octx.lineTo(lm[b].x * w, lm[b].y * h); }); octx.stroke(); });
 }
 
+/* ── телефон как датчик рук: камера и распознавание — на телефоне, сюда — только точки по WebRTC ── */
+let phoneOn = false, phoneTimer = 0;
+const pairing = createPairing({
+  onHands: (hands, t) => onHands(hands, t),
+  onOpen: () => {
+    phoneOn = true; feedOn = true; $('pair').hidden = true; $('cta').hidden = true;
+    tool('ph', '📱', 'Отключить'); $('ph').classList.add('on'); $('st').textContent = 'телефон подключён'; $('st').className = 'chip act';
+    phoneTimer = setInterval(phoneInfo, 1000); if (coach.firstRun()) coach.start(); sound.play([{ type: 'view' }]);
+  },
+  onClose: () => {
+    phoneOn = false; feedOn = false; clearInterval(phoneTimer); tool('ph', '📱', 'Телефон'); $('ph').classList.remove('on');
+    $('cta').hidden = camOn; $('pf').hidden = true; info = ''; $('st').textContent = 'телефон отключён'; $('st').className = 'chip';
+    frame = ctl.update([], performance.now()); dirty = true;
+  },
+  onStatus: m => { $('pairMsg').textContent = m; }
+});
+function phoneInfo() {
+  const S = pairing.st, el = $('pf');
+  info = `📱 телефон · руки ${S.fps.toFixed(0)}/с · ${S.phoneMs} мс на телефоне · сеть ${S.rtt.toFixed(0)} мс`;
+  el.hidden = false; el.textContent = `📱 руки ${S.fps.toFixed(0)}/с · ${S.phoneMs} мс · сеть ${S.rtt.toFixed(0)} мс`;
+  el.className = 'chip perf' + (S.fps < 15 ? ' bad' : S.fps >= 24 ? ' good' : ''); dirty = true;
+}
+async function pairStart() {
+  if (running) stop();
+  $('pair').hidden = false; $('pairMsg').textContent = 'Готовлю код…';
+  try { await pairing.start($('pairQr'), $('pairVid')); }
+  catch (e) { console.error(e); $('pairMsg').textContent = 'Не получилось: ' + (e && e.name === 'NotAllowedError' ? 'нет доступа к камере ноутбука — она нужна, чтобы считать код с телефона.' : (e.message || e)); }
+}
+$('ph').onclick = () => (pairing.st.state === 'on' ? pairing.stop() : pairStart());
+$('pairNew').onclick = () => pairStart();
+$('pairX').onclick = () => { if (pairing.st.state !== 'on') pairing.stop(); $('pair').hidden = true; };
+
 async function start() {
+  if (pairing.st.state !== 'idle') pairing.stop();
   const b = $('go'); b.disabled = true; showErr(''); $('st').textContent = 'загружаю модель рук…';
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('браузер не даёт доступ к камере (нужен https или localhost)');

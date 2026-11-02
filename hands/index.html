@@ -26,6 +26,7 @@
   <!-- панель инструментов: слева на компьютере, снизу на телефоне -->
   <nav id="rail" aria-label="Инструменты">
     <button id="go" class="tool primary" title="Камера (C)"><i>✋</i><span>Руки</span></button>
+    <button id="ph" class="tool" title="Телефон как датчик рук: камера и распознавание — на телефоне, картинка — здесь"><i>📱</i><span>Телефон</span></button>
     <button id="mg" class="tool" title="Угол Монжа и эпюр (M); в режиме хлопок разворачивает"><i>📐</i><span>Эпюр</span></button>
     <button id="qz" class="tool" title="Проверь себя: найди части детали"><i>🎯</i><span>Тест</span></button>
     <button id="mode" class="tool" title="Голограмма / чертёж (H)" aria-pressed="false"><i>📄</i><span>Чертёж</span></button>
@@ -66,6 +67,19 @@
   <div id="cam"><video id="vid" playsinline muted></video><canvas id="ov"></canvas></div>
   <div id="err" role="alert"></div>
   <aside id="quiz" class="panel" role="status" hidden></aside>
+  <!-- сопряжение с телефоном: QR-код со ссылкой на датчик + веб-камера ищет ответный код -->
+  <aside id="pair" class="panel" hidden aria-label="Телефон как датчик рук">
+    <header><b>📱 Телефон — датчик рук</b><button type="button" class="x" id="pairX" aria-label="Закрыть">✕</button></header>
+    <div class="pairgrid">
+      <canvas id="pairQr" width="10" height="10" aria-label="QR-код со ссылкой на датчик"></canvas>
+      <div>
+        <p id="pairMsg">Готовлю код…</p>
+        <div class="pairvid"><video id="pairVid" playsinline muted></video><span>камера ноутбука ищет код с телефона</span></div>
+        <button type="button" id="pairNew">Новый код</button>
+      </div>
+    </div>
+    <p class="mut">Телефон распознаёт руки сам и шлёт сюда только координаты пальцев — напрямую по Wi-Fi, без серверов. Телефон и ноутбук — в одной сети.</p>
+  </aside>
 </main>
 <script type="module" src="app.js"></script>
 </body>
