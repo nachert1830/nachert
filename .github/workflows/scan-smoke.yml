@@ -38,6 +38,11 @@ jobs:
           const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),ch('IHDR',ih),ch('IDAT',zlib.deflateSync(raw)),ch('IEND',Buffer.alloc(0))]);
           const img='data:image/png;base64,'+png.toString('base64');
           for(const mode of ['layout','crop']) fs.writeFileSync('body-'+mode+'.json',JSON.stringify({img,w:W,h:H,mode}));
+          /* крупный кадр: серый шум 1000×900 с редкими линиями (несжимаемый, ≈ 0,9 МБ) — по размеру как большой снимок с телефона */
+          { const BW=1000,BH=900, br=Buffer.alloc((BW+1)*BH); require('crypto').randomFillSync(br); for(let y=0;y<BH;y++){ br[y*(BW+1)]=0; for(let x=0;x<BW;x++){ const i=y*(BW+1)+1+x; br[i]=200+(br[i]>>3); } }
+            for(let i=60;i<940;i++){ const o=300*(BW+1)+1+i; br[o]=30; br[o+BW+1]=30; }
+            const bp=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),ch('IHDR',(()=>{ const b=Buffer.alloc(13); b.writeUInt32BE(BW,0); b.writeUInt32BE(BH,4); b[8]=8; b[9]=0; return b; })()),ch('IDAT',zlib.deflateSync(br,{level:1})),ch('IEND',Buffer.alloc(0))]);
+            fs.writeFileSync('body-big.json',JSON.stringify({img:'data:image/png;base64,'+bp.toString('base64'),w:BW,h:BH,mode:'crop'})); console.log('крупный кадр: '+Math.round(fs.statSync('body-big.json').size/1024)+' КБ запроса'); }
           "
           ENC=$(node -e "console.log(encodeURIComponent(process.env.C))")
           fail=0
@@ -47,4 +52,8 @@ jobs:
             echo "HTTP $CODE"; head -c 700 resp-$MODE.json; echo
             [ "$CODE" = "200" ] || { echo "::error::$MODE: HTTP $CODE"; fail=1; }
           done
+          echo; echo "════ POST crop — КРУПНЫЙ кадр (проверка: не отклоняет ли ProxyAPI большой запрос по оценке цены)"
+          CODE=$(curl -sS -m 120 -o resp-big.json -w "%{http_code}" -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC" --data @body-big.json "$URL")
+          echo "HTTP $CODE"; head -c 500 resp-big.json; echo
+          [ "$CODE" = "200" ] || { echo "::warning::крупный кадр отклонён: HTTP $CODE — страница должна слать кадры меньше"; }
           exit $fail
