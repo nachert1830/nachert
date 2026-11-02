@@ -22,7 +22,7 @@ canvas,svg{max-width:100%;height:auto;border-radius:8px;background:#fff}.view{ov
 table{border-collapse:collapse;width:100%;font-size:.92rem}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600}
 .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:.82rem;border:1px solid var(--line)}.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.warn{color:var(--warn);border-color:var(--warn)}.pill.bad{color:var(--bad);border-color:var(--bad)}
 .legend span{margin-right:12px;white-space:nowrap}.sw{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:4px}
-.note{color:var(--mut);font-size:.9rem}.hide{display:none}
+.note{color:var(--mut);font-size:.9rem}.hide{display:none !important}
 </style>
 </head>
 <body>
@@ -39,6 +39,7 @@ table{border-collapse:collapse;width:100%;font-size:.92rem}td,th{border-bottom:1
   <div class="row" style="margin-top:10px">
     <label class="f">Задание <select id="dz"><option value="auto">авто</option><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select></label>
     <label class="f">Вариант <input id="variant" type="text" value="авто" size="4" title="число 1–30 или «авто»"></label>
+    <label class="f hide" id="coderow">Код доступа <input id="code" type="password" autocomplete="off" style="width:10em" placeholder="код"></label>
     <label class="f hide" id="pwrow">Пароль <input id="pw" type="password"></label>
   </div>
   <div class="row hide" id="apirow" style="margin-top:10px">
@@ -61,6 +62,7 @@ table{border-collapse:collapse;width:100%;font-size:.92rem}td,th{border-bottom:1
 </div>
 </main>
 
+<script src="config.js"></script>
 <script>
 /* страница читает те же модули, что и воркер сканера; порядок как в lab/dz/worker.js */
 const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','/lab/font.js','/lab/sheets.js','/lab/rectify.js','/lab/lines.js',
@@ -72,11 +74,14 @@ const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','
 const $=id=>document.getElementById(id), L=self.LAB;
 let file=null, RES=null, PASS=sessionStorage.getItem('betaPass')||'';
 try{}catch(e){}
-const hosted=!/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)&&location.protocol!=='file:';
+const CLOUD=String(window.SCAN_API||'').trim();   /* адрес облачной функции — config.js, его пишет развёртывание */
+let CODE=''; try{ CODE=localStorage.getItem('scanCode')||''; }catch(e){}
+if(CLOUD){ $('coderow').classList.remove('hide'); $('code').value=CODE; $('code').onchange=()=>{ CODE=$('code').value.trim(); try{ localStorage.setItem('scanCode',CODE); }catch(e){} }; }
+const hosted=!CLOUD&&!/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)&&location.protocol!=='file:';
 let API=''; try{ API=(localStorage.getItem('betaApi')||'').replace(/\/+$/,''); }catch(e){}
 if(hosted){ $('apirow').classList.remove('hide'); $('api').value=API||'http://127.0.0.1:8787'; if(!API) API='http://127.0.0.1:8787'; }
 $('apiSave').onclick=()=>{ API=$('api').value.trim().replace(/\/+$/,''); try{ localStorage.setItem('betaApi',API); }catch(e){} location.reload(); };
-fetch(API+'/api/status').then(r=>r.json()).then(j=>{ $('status').textContent='Сервер: раскладка — '+(j.layout||'?').split('/').pop()+', оцифровка — '+(j.digit||'?').split('/').pop()+'; потрачено $'+j.spent+' из $'+j.limit; if(j.passwordNeeded) $('pwrow').classList.remove('hide'); }).catch(()=>{ $('status').textContent=hosted?'Нет связи с сервером беты по адресу '+API+'. Запустите на своём компьютере: PROXYAPI_KEY=… node lab/dz/beta-server.js — и откройте эту страницу на том же компьютере.':'Нет связи с сервером беты (запущен ли lab/dz/beta-server.js?)'; });
+fetch(CLOUD||API+'/api/status').then(r=>r.json()).then(j=>{ if(CLOUD){ $('status').textContent=j&&j.scan?'Сервер готов. Введите код доступа и загрузите фото.':'Сервер ответил неожиданно'; return; } $('status').textContent='Сервер: раскладка — '+(j.layout||'?').split('/').pop()+', оцифровка — '+(j.digit||'?').split('/').pop()+'; потрачено $'+j.spent+' из $'+j.limit; if(j.passwordNeeded) $('pwrow').classList.remove('hide'); }).catch(()=>{ $('status').textContent=CLOUD?'Нет связи с сервером сканера. Проверьте интернет и обновите страницу.':hosted?'Нет связи с сервером беты по адресу '+API+'. Запустите на своём компьютере: PROXYAPI_KEY=… node lab/dz/beta-server.js — и откройте эту страницу на том же компьютере.':'Нет связи с сервером беты (запущен ли lab/dz/beta-server.js?)'; });
 $('pw').value=PASS; $('pw').onchange=()=>{ PASS=$('pw').value; try{ sessionStorage.setItem('betaPass',PASS); }catch(e){} };
 $('file').onchange=e=>{ file=e.target.files[0]||null; $('go').disabled=!file; if(file) $('go').textContent='Оцифровать «'+(file.name.length>22?file.name.slice(0,20)+'…':file.name)+'»'; };
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b)); ['Ov','Svg','Tab'].forEach(k=>$('v'+k).classList.toggle('hide',b.dataset.t!==k.toLowerCase())); $('legend').classList.toggle('hide',b.dataset.t==='tab'); });
@@ -84,7 +89,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{ document.qu
 const steps=[]; function step(id,text,state){ let li=steps.find(s=>s.id===id); if(!li){ li={id,el:document.createElement('li')}; steps.push(li); $('steps').appendChild(li.el); } li.el.textContent=text; li.el.className=state||'run'; }
 const fmt=(a,d)=>isFinite(a)?a.toFixed(d==null?2:d).replace('.',','):'—';
 
-async function ask(mode,canvas,q){ const url=canvas.toDataURL('image/jpeg',0.85), r=await fetch(API+'/api/eyes',{method:'POST',headers:{'content-type':'application/json','x-beta-password':PASS},body:JSON.stringify({img:url,w:canvas.width,h:canvas.height,mode})});
+async function ask(mode,canvas,q){ const url=canvas.toDataURL('image/jpeg',0.85), r=await fetch(CLOUD||API+'/api/eyes',{method:'POST',headers:CLOUD?{'content-type':'application/json','x-scan-code':encodeURIComponent(CODE)}:{'content-type':'application/json','x-beta-password':PASS},body:JSON.stringify({img:url,w:canvas.width,h:canvas.height,mode})});
   const j=await r.json().catch(()=>({ok:false,error:'сервер ответил не JSON'})); if(!r.ok||!j.ok) throw new Error(j.error||('ошибка '+r.status)); return j; }
 function scaled(bmp,side){ const k=Math.min(1,side/Math.max(bmp.width,bmp.height)), c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext('2d').drawImage(bmp,0,0,c.width,c.height); return {c,k}; }
 /* вырезка чертежа: рамка + поле, поворот по часовой на rot, длинная сторона ≤ side; A — (u,v) вырезки → (x,y) фото (как lab/dz/tools/crop.py) */
@@ -97,7 +102,7 @@ function cut(bmp,box,rot,pad,side){ const W=bmp.width,H=bmp.height, X0=Math.max(
   return {c,w:c.width,h:c.height,A,k,gray}; }
 const mapPt=(A,u,v)=>[A[0]*u+A[1]*v+A[2],A[3]*u+A[4]*v+A[5]];
 
-async function run(){ const LY=L.layout, SL=L.sheetlib, RF=L.refine, IMG=L.img; $('go').disabled=true; $('prog').classList.remove('hide'); $('res').classList.add('hide'); $('steps').innerHTML=''; steps.length=0; let cost=0, calls=0;
+async function run(){ if(CLOUD&&!CODE){ $('prog').classList.remove('hide'); $('steps').innerHTML=''; steps.length=0; step('x','Введите код доступа','err'); $('code').focus(); return; } const LY=L.layout, SL=L.sheetlib, RF=L.refine, IMG=L.img; $('go').disabled=true; $('prog').classList.remove('hide'); $('res').classList.add('hide'); $('steps').innerHTML=''; steps.length=0; let cost=0, calls=0;
   const t0=Date.now(); try{
     step('l','Читаю фото…'); const bmp=await createImageBitmap(file,{imageOrientation:'from-image'}); const W=bmp.width,H=bmp.height; step('l','Фото '+W+' × '+H+' px','done');
     step('lay','Нахожу чертежи на листе…'); const sm=scaled(bmp,800); let lay; try{ const j=await ask('layout',sm.c); cost+=j.cost||0; calls++; lay=LY.parseLayout(j.text,1/sm.k,W,H); }catch(e){ lay={ok:false,why:e.message}; }
