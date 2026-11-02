@@ -1,2 +1,2 @@
-/* Адрес облачной функции сканера. Файл перезаписывает развёртывание (.github/workflows/scan-deploy.yml); пусто — страница работает с локальным сервером беты. */
-window.SCAN_API=window.SCAN_API||'';
+/* Адрес облачной функции сканера. Файл пишет .github/workflows/scan-deploy.yml. */
+window.SCAN_API=window.SCAN_API||"https://functions.yandexcloud.net/d4eeeikt4mkvhcptvgkk";

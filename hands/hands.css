@@ -72,13 +72,15 @@ main{position:fixed;inset:0}
 
 /* приглашение включить руки */
 #cta{position:absolute;left:calc(50% + var(--rail) / 2);bottom:42px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - var(--rail) - 24px);display:flex;align-items:center;gap:14px;padding:12px 22px 12px 16px;
-  border:1px solid var(--cy);border-radius:99px;background:rgba(5,20,34,.92);color:var(--txt);box-shadow:0 0 40px -12px var(--cy);z-index:3;animation:pulse 2.6s infinite}
+  border:1px solid var(--cy);border-radius:99px;background:rgba(5,20,34,.92);color:var(--txt);box-shadow:0 0 40px -12px var(--cy);z-index:3}
+/* пульс — кольцом через transform/opacity: композитор, без перерисовки (анимация box-shadow перерисовывала каждый кадр) */
+#cta::after{content:'';position:absolute;inset:-1px;border:1px solid var(--cy);border-radius:inherit;animation:pulse 2.6s infinite;will-change:transform,opacity;pointer-events:none}
 #cta i{font-style:normal;font-size:28px;line-height:1}
 #cta span{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
 #cta b{font:600 16px/1.2 var(--ui)} #cta small{font-size:12px;color:var(--mut)}
 #cta:hover{background:rgba(10,34,54,.95)}
 #cta[hidden]{display:none}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(53,224,255,.45),0 0 40px -12px var(--cy)}70%{box-shadow:0 0 0 14px rgba(53,224,255,0),0 0 40px -12px var(--cy)}100%{box-shadow:0 0 0 0 rgba(53,224,255,0),0 0 40px -12px var(--cy)}}
+@keyframes pulse{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(1.12,1.35);opacity:0}}
 
 /* превью камеры — срезанные углы */
 #cam{position:absolute;right:16px;bottom:44px;width:min(200px,28vw);aspect-ratio:4/3;overflow:hidden;background:#000;display:none;opacity:.9;
