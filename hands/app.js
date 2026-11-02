@@ -325,7 +325,7 @@ function mainDetector() {
     async init(d) {
       const { FilesetResolver, HandLandmarker } = await import('./vendor/vision_bundle.mjs');
       const fs = await FilesetResolver.forVisionTasks('./vendor/wasm');
-      const mk = dd => HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker.task', delegate: dd }, runningMode: 'VIDEO', numHands: 2,
+      const mk = dd => HandLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: './vendor/hand_landmarker_lite.task', delegate: dd }, runningMode: 'VIDEO', numHands: 2,
         minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.6, minTrackingConfidence: 0.5 });
       try { lm && lm.close(); } catch (_) {}
       try { lm = await mk(d); return d; } catch (e) { if (d !== 'GPU') throw e; lm = await mk('CPU'); return 'CPU'; }
@@ -352,7 +352,7 @@ async function initDetector() {
    На встроенной графике MediaPipe-GPU делит видеокарту с голограммой: руки быстрые, а экран дёргается —
    поэтому в оценке и время распознавания, и интервал кадров экрана. Выбор запоминается для этой видеокарты. */
 const calib = { phase: '', t0: 0, res: {}, det: [], scr: [] };
-const CAL_MS = 2500, calKey = 'hands.delegate.v2:' + gpuName;
+const CAL_MS = 2500, calKey = 'hands.delegate.v3:' + gpuName;
 function calibStart() {
   const saved = load(calKey);
   if (saved === 'GPU' || saved === 'CPU') { calib.phase = 'done'; calib.res.saved = saved; tried = false; return saved; }
@@ -382,6 +382,22 @@ async function adapt() {
   if (!tried && detN > 20 && detMs > 150) { tried = true; delegate = await det.init(delegate === 'GPU' ? 'CPU' : 'GPU'); detN = 0; }
 }
 
+/* ── что на самом деле тормозит: камера (мало кадров), распознавание (долго) или ничего ── */
+const cam = { n: 0, t: 0, fps: 0, warned: false, t0: 0 };
+function perfChip() {
+  const now = performance.now(); if (now - cam.t > 900) { cam.fps = cam.n * 1000 / (now - cam.t); cam.n = 0; cam.t = now; }
+  const el = $('pf'), calibrating = calib.phase === 'GPU' || calib.phase === 'CPU';
+  el.hidden = !camOn;
+  el.textContent = calibrating ? `калибровка ${calib.phase}…` : `камера ${cam.fps ? cam.fps.toFixed(0) : '?'} · руки ${fps.toFixed(0)}/с · ${detMs.toFixed(0)} мс`;
+  const bad = !calibrating && (fps < 15 || (cam.fps && cam.fps < 20));
+  el.className = 'chip perf' + (bad ? ' bad' : fps >= 24 ? ' good' : '');
+  /* подсказка — один раз за включение, когда калибровка позади и прошло 4 с */
+  if (!calibrating && !cam.warned && now - cam.t0 > 4000 && cam.fps) {
+    if (cam.fps < 20) { cam.warned = true; showErr(`Камера отдаёт ${cam.fps.toFixed(0)} кадров/с — мало света: камера сама снижает частоту, чтобы дольше снимать кадр.\nВключи свет спереди (на лицо и руки) — жесты станут плавнее.`); setTimeout(() => showErr(''), 9000); }
+    else if (fps < 15) { cam.warned = true; showErr(`Распознавание рук медленное: ${detMs.toFixed(0)} мс на кадр.\nПодключи зарядку (на батарее Windows режет процессор), закрой тяжёлые вкладки и запись экрана.`); setTimeout(() => showErr(''), 9000); }
+  }
+}
+
 async function pump() {
   if (!running) return;
   const now = performance.now();
@@ -394,7 +410,7 @@ async function pump() {
         const hands = r.hands;
         if (rec.on) rec.frames.push({ t: Math.round(now - rec.t0), hands: hands.map(h => ({ handed: h.handed, score: +(+h.score).toFixed(3), lm: h.lm.map(p => [+p.x.toFixed(4), +p.y.toFixed(4), +(p.z || 0).toFixed(4)]) })) });
         onHands(hands, performance.now()); drawPreview(hands);
-        fpsN++; const n2 = performance.now(); if (n2 - fpsT > 1000) { fps = fpsN * 1000 / (n2 - fpsT); fpsN = 0; fpsT = n2; }
+        fpsN++; const n2 = performance.now(); if (n2 - fpsT > 1000) { fps = fpsN * 1000 / (n2 - fpsT); fpsN = 0; fpsT = n2; perfChip(); }
         info = (calib.phase === 'GPU' || calib.phase === 'CPU' ? `калибровка ${calib.phase}… · ` : '') + `${delegate} · ${det.kind} · руки ${fps.toFixed(0)} кадр/с, ${detMs.toFixed(0)} мс · экран ${(1000 / perf.ema).toFixed(0)} кадр/с` + (holo && holo.scale < 0.99 ? ` · разрешение ${Math.round(holo.scale * 100)}%` : '') + (rec.on ? ' · ● ЗАПИСЬ ' + rec.frames.length : '');
         await adapt();
       }
@@ -426,6 +442,8 @@ async function start() {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } }, audio: false });
     vid.srcObject = stream; await vid.play();
     $('cam').style.display = 'block'; running = true; camOn = true; fpsT = performance.now(); busy = false;
+    cam.n = 0; cam.t = performance.now(); cam.warned = false; cam.t0 = performance.now();
+    if (vid.requestVideoFrameCallback) { const tick = () => { if (!running) return; cam.n++; vid.requestVideoFrameCallback(tick); }; vid.requestVideoFrameCallback(tick); }
     tool('go', '✋', 'Выкл.'); b.classList.add('on'); b.disabled = false; $('cta').hidden = true;
     $('st').textContent = 'руки не видно'; schedule();
     if (coach.firstRun()) coach.start();

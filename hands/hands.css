@@ -36,6 +36,7 @@ main{position:fixed;inset:0}
 .chip{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:5px 14px;font:500 12px/1.2 var(--body);color:var(--mut);white-space:nowrap}
 .chip.act{color:var(--ok);border-color:rgba(125,255,178,.6)}
 .chip.mode:empty{display:none}
+.chip.perf{font:500 11px/1.3 var(--mono);padding-top:6px} .chip.perf.good{color:var(--ok)} .chip.perf.bad{color:var(--bad);border-color:rgba(255,107,129,.6)} .chip[hidden]{display:none}
 .chip.mode{color:var(--cy);border-color:var(--line2);letter-spacing:.1em;text-transform:uppercase;font:500 11px/1.3 var(--mono);padding-top:6px}
 
 /* панель инструментов */
