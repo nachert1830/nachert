@@ -56,4 +56,4 @@ function parseDigit(text){ const pts=[], segs=[], txt=[]; let bad=0;
     else if(t[0]==='P'&&t.length>=4){ const x=+t[2], y=+t[3]; if(isFinite(x)&&isFinite(y)) pts.push([t[1],x,y]); else bad++; }
     else if(t[0]==='T'&&t.length>=4){ const x=+t[1], y=+t[2]; if(isFinite(x)&&isFinite(y)) txt.push([x,y,t.slice(3).join(' ')]); } });
   return {pts,segs,txt,bad}; }
-module.exports={LAYOUT_PROMPT,DIGIT_PROMPT,parseLayout,parseDigit};
+{ const api={LAYOUT_PROMPT,DIGIT_PROMPT,parseLayout,parseDigit}; if(typeof module!=='undefined'&&module.exports) module.exports=api; else { self.LAB=self.LAB||{}; self.LAB.layout=api; } }
