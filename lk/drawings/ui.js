@@ -66,7 +66,7 @@ root.innerHTML=`
     <div class="fl">
       <label>Задание<select class="sc-in" id="scDz"><option value="auto">Узнать само</option><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select></label>
       <label>Вариант<input class="sc-in" id="scVar" inputmode="numeric" placeholder="авто" autocomplete="off"></label>
-      <label style="grid-column:1/-1">Точность<select class="sc-in" id="scPrec"><option value="auto">Авто: Opus, при сомнениях — вторая проверка Sonnet</option><option value="max">Максимальная: всегда две модели (дороже)</option><option value="fast">Быстро: одна модель</option></select></label>
+      <label style="grid-column:1/-1">Точность<select class="sc-in" id="scPrec"><option value="max">Максимальная: Opus + Sonnet, две независимые оцифровки</option><option value="auto">Экономная: вторая модель — только при сомнениях</option><option value="fast">Быстро: одна модель</option></select></label>
       <label style="grid-column:1/-1">Код доступа к сканеру<input class="sc-in" id="scCode" type="password" autocomplete="off" placeholder="выдаёт преподаватель или автор сайта"></label>
     </div>
     <p class="note" style="margin:10px 0 0">Кадры чертежей отправляются модели Claude (через ProxyAPI) только для оцифровки и не сохраняются. Копии и фото хранятся в этом браузере.</p>
@@ -84,7 +84,7 @@ const CLOUD=String(self.SCAN_API||'').trim();
 let CODE=ls.get('scanCode')||'';
 $('#scCode').value=CODE; $('#scCode').addEventListener('change',()=>{ CODE=$('#scCode').value.trim(); ls.set('scanCode',CODE); });
 $('#scVar').value=ls.get('lk_scanVar')||''; $('#scVar').addEventListener('change',()=>ls.set('lk_scanVar',$('#scVar').value.trim()));
-$('#scPrec').value=ls.get('lk_scanPrec')||'auto'; $('#scPrec').addEventListener('change',()=>ls.set('lk_scanPrec',$('#scPrec').value));
+$('#scPrec').value=ls.get('lk_scanPrec')||'max';   /* замер lab/dz/REPORT.md 7о: две модели — точки на 20 % точнее */ $('#scPrec').addEventListener('change',()=>ls.set('lk_scanPrec',$('#scPrec').value));
 $('#scDz').value=ls.get('lk_scanDz')||'auto'; $('#scDz').addEventListener('change',()=>ls.set('lk_scanDz',$('#scDz').value));
 
 const steps=new Map();

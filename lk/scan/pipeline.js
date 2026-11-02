@@ -83,13 +83,13 @@ function create(o){ o=o||{};
     else step('lay','Чертежей: '+lay.drawings.length+(lay.rot?', лист повёрнут на '+lay.rot+'°':'')+(lay.drawings.some(d=>d.part)?' (части '+lay.drawings.map(d=>d.part||'?').join(', ')+')':''),'done');
     const dzSel=sel.dz&&sel.dz!=='auto'?+sel.dz:null, vSel=/^\d+$/.test(String(sel.variant||'').trim())?String(sel.variant).trim():'auto';
     const out={name:String(file.name||'лист').replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]};
-    const ctx0={W,H,vSel,dzSel,rot:lay.rot}, prec=sel.precision||'auto', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
+    const ctx0={W,H,vSel,dzSel,rot:lay.rot}, prec=sel.precision||'max', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
     const jobs=lay.drawings.map((d,i)=>async()=>{ const id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),1280), ctx=Object.assign({d},ctx0);
       let jA; try{ jA=await ask('crop',cr.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return {part:d.part,box:d.box,error:e.message}; } cost+=jA.cost||0; calls++;
       const reads=[{mode:'crop',model:jA.model,fallback:jA.fallback||null,cost:jA.cost||0}];
       let R=digest(cr,jA.text,null,ctx);
       /* вторая, независимая оцифровка другой моделью — если первая слабая (или «максимальная точность»); сливаются, карандаш решает */
-      if(!jA.fallback&&(prec==='max'||(prec==='auto'&&R.q.weak))){ step(id,nm+': вторая проверка другой моделью ('+R.q.why.join(', ')+')…');
+      if(!jA.fallback&&(prec==='max'||(prec==='auto'&&R.q.weak))){ step(id,nm+': вторая, независимая оцифровка другой моделью'+(R.q.why.length?' ('+R.q.why.join(', ')+')':'')+'…');
         try{ const jB=await ask('crop2',cr.c); cost+=jB.cost||0; calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
           const M=digest(cr,jA.text,jB.text,ctx); if(better(M.q,R.q)){ R=M; } else R.dr.secondKept=false; }
         catch(e){ R.dr.secondError=e.message; } }
