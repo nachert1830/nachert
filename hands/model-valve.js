@@ -21,6 +21,11 @@ export default {
     return { off, rot, plugA: 0 };
   },
   group: id => id,
+  /* «вынуть рукой»: направление — первый шаг разборки детали, ход — его длина (корпус не вынимается) */
+  pullDir: id => { const p = data.parts.find(q => q.id === id), st = p && p.ex[0]; if (!st) return null;
+    const L = Math.hypot(...st.d); return { dir: st.d.map(x => x / L), max: L, at: p.anchor }; },
+  /* маховик: центр — на оси шпинделя, на высоте обода; 1 оборот руки = 30 % хода (весь ход — 3,5 оборота шпинделя) */
+  wheel: { id: 'wheel', c: [0, 0, data.parts.find(q => q.id === 'wheel').anchor[2]], perTurn: 0.3 },
   /* подписи — позиции, как на сборочном чертеже */
   labels: Object.fromEntries(data.parts.map(p => [p.id, { at: p.anchor, side: p.anchor[0] > 20 ? 1 : -1, s: `${p.pos}. ${p.name.replace(/ \(.*\)/, '')}`, t: `${p.pos}. ${p.name}`, d: p.mat }])),
   quiz: [

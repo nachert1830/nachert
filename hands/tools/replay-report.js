@@ -53,7 +53,7 @@ F.forEach(f => { if (prevT && f.t - prevT > 120) gaps++; prevT = f.t;
     if (e.type === 'pinch-off' && on.has(e.id) && e.t - on.get(e.id) < 250) chatter.push(e.t);
     if (e.type === 'mode') { if (e.t - modeT < 200 && mode !== 'idle') flips.push(`${(e.t / 1000).toFixed(2)} с: ${e.from}→${e.mode}`); mode = e.mode; modeT = e.t;
       console.log(`  ${(e.t / 1000).toFixed(2).padStart(7)} с  ${e.from.padEnd(8)} → ${e.mode}`); }
-    if (['fling', 'reset'].includes(e.type)) console.log(`  ${(e.t / 1000).toFixed(2).padStart(7)} с  · ${e.type}`);
+    if (['fling', 'grab', 'tap', 'ui-click', 'ui-cancel', 'menu-open', 'menu', 'menu-close', 'drag-start', 'drag-end'].includes(e.type)) console.log(`  ${(e.t / 1000).toFixed(2).padStart(7)} с  · ${e.type}${e.key ? ' ' + e.key : e.kind ? ' ' + e.kind : ''}`);
   }); });
 console.log(`\nдребезг: коротких щипков (< 250 мс) — ${chatter.length}, быстрых смен жеста (< 200 мс) — ${flips.length}, пропусков детекции > 120 мс — ${gaps}`);
 flips.slice(0, 10).forEach(s => console.log('  ' + s));

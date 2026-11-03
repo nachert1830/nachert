@@ -1,7 +1,8 @@
 /* «3D руками»: сборка страницы — камера и MediaPipe, жесты, панель управления, мышь/касания, рендер, HUD, звук, запись.
-   Управление рукой — как мышью: кончик указательного — курсор, щипок (большой + указательный) — нажатие.
-   Щипок на кнопке или ползунке панели — нажимает/тянет его; щипок в любом другом месте — вращает деталь;
-   два щипка — зум; открытая ладонь 1,5 с — сброс. Хлопки, щелчки и «лезвие» выключены: срабатывали ненадёжно.
+   Управление рукой — «наведи и щипни»: курсор — основание указательного пальца, щипок (большой + указательный) —
+   действие, а смысл щипка задаёт то, что под курсором: кнопка — нажать (на отпускание), ползунок — тянуть,
+   маховик — крутить, ручка секущей плоскости — двигать, деталь — подержать 0,4 с и вытащить, пустое место — вращать.
+   Два щипка — зум и сдвиг; открытая ладонь 0,5 с — радиальное меню (вид, разрез, эпюр, разбор, вентиль, тест; центр — сброс).
    Логика жестов — в gestures.js (чистая, с тестами), рисование — holo.js и hud.js. */
 /* модель: ?m=v5 — деталь «вариант 5», по умолчанию — вентиль угловой (сборка с механизмом); грузится только выбранная */
 const MKEY = new URLSearchParams(location.search).get('m') === 'v5' ? 'v5' : 'valve';
@@ -32,8 +33,8 @@ try { holo = createHolo($('gl'), MODEL, { antialias: !WEAK, scale: WEAK ? 0.8 : 
 if (SOFT) setTimeout(() => showErr('Браузер рисует 3D без видеокарты (программно) — будет медленно.\nВключи «Использовать аппаратное ускорение» в настройках браузера и перезапусти его.'), 400);
 if (!holo) showErr('WebGL недоступен — голограмма не покажется.');
 const hud = createHud($('hud'));
-/* hitUI: щипок «по интерфейсу»? — точка кадра → экран → есть ли под курсором кнопка/ползунок (с «магнитом») */
-const ctl = createController({ reducedMotion: reduced(), cfg: { extras: false, steer: false }, hitUI: (x, y) => { const S = toClient({ x, y }); return !!uiTarget(S.x, S.y); } });
+/* цель щипка: курсор (доли экрана) → что под ним; радиальное меню — пункты по состоянию страницы */
+const ctl = createController({ reducedMotion: reduced(), target: (x, y) => handTarget(x, y), menu: () => menuItems() });
 RM.addEventListener && RM.addEventListener('change', () => { ctl.reduced = reduced(); });
 const view = ctl.view;
 let frame = null, dirty = true, info = '', helpDim = false;
@@ -75,7 +76,7 @@ const mongeLabels = () => {
   return Object.keys(N).map(k => { const f = info.frame(k, MG.u), q = holo.project(k === 'p1' ? f[0] : f[3]); return q && { x: q[0] + 6, y: q[1] + (k === 'p1' ? -8 : 16), text: N[k] }; }).filter(Boolean);
 };
 
-/* ── «Проверь себя»: покажи часть — указкой (задержать 0,9 с) или щелчком мыши ── */
+/* ── «Проверь себя»: покажи часть — наведи и щипни с удержанием 0,4 с, или щёлкни мышью ── */
 const QUIZ = MODEL.quiz;                                             /* вопросы и имена частей — из описания модели */
 const NAMES = Object.fromEntries(Object.entries(MODEL.labels).map(([k, v]) => [k, (v.t || k).replace(/^\d+\. /, '').toLowerCase()]));
 const quiz = { on: false, list: [], i: 0, score: 0, tries: 0, dwell: null, msg: '', msgT: 0 };
@@ -95,21 +96,15 @@ function quizShow() {
   const done = quiz.i >= quiz.list.length;
   el.innerHTML = done
     ? `<b>Результат: ${quiz.score} из ${quiz.list.length}</b><p>${quiz.score === quiz.list.length ? 'Отлично — деталь читаешь уверенно.' : 'Пройди ещё раз — с первой попытки засчитываются только верные ответы.'}</p><button type="button" id="qa">Ещё раз</button> <button type="button" id="qx">Закрыть</button>`
-    : `<small>Проверь себя · ${quiz.i + 1} из ${quiz.list.length}</small><b>${quiz.list[quiz.i].q}</b><p>☝️ Наведи указательный палец и задержи — или щёлкни мышью.</p><p class="qm">${quiz.msg}</p><button type="button" id="qx">Закрыть</button>`;
+    : `<small>Проверь себя · ${quiz.i + 1} из ${quiz.list.length}</small><b>${quiz.list[quiz.i].q}</b><p>🤏 Наведи курсор на деталь, щипни и подержи — или щёлкни мышью.</p><p class="qm">${quiz.msg}</p><button type="button" id="qx">Закрыть</button>`;
   el.querySelector('#qx').onclick = () => { quiz.on = false; quizShow(); };
   const again = el.querySelector('#qa'); if (again) again.onclick = quizStart;
-}
-function quizDwell(now) {
-  if (!quiz.on || !pointer || pointer.mouse || !pointer.hover) { if (quiz.dwell) quiz.dwell = null; return; }
-  if (!quiz.dwell || quiz.dwell.id !== pointer.hover) quiz.dwell = { id: pointer.hover, t: now };
-  pointer.dwell = Math.min(1, (now - quiz.dwell.t) / 900);
-  if (pointer.dwell >= 1) { quizAnswer(pointer.hover, now); quiz.dwell = { id: '__', t: now }; }
 }
 
 function render(t) {
   const dtR = Math.min(100, t - (render.t || t));
   const moving = ctl.tick(t) | manual.anim() | follow(t) | mongeAnim(dtR) | attract(dtR);
-  render.t = t; quizDwell(t); if (pointer) pointer.quiz = quiz.on;          /* в «Проверь себя» подпись под пальцем выдала бы ответ */
+  render.t = t; if (pointer) pointer.quiz = quiz.on; pullAnim(t);          /* в «Проверь себя» подпись под пальцем выдала бы ответ */
   if (!holo) return;
   /* только «фон» (мерцание голограммы) — не чаще 30 кадров/с: меньше нагрузка, процессор остаётся распознаванию */
   const ambient = !reduced() && holo.mode === 'holo';
@@ -118,6 +113,7 @@ function render(t) {
     lastDraw = t;
     holo.draw(shown, t, { reduced: reduced(), open: shown.open || 0, clip: cut, hover: pointer && pointer.hover, monge: MG.a > 0.001 ? { a: MG.a, u: MG.u } : null });
     const handsMoving = hud.draw({ frame: camOn || feedOn ? frame : null, view: shown, holo, t, reduced: reduced(), info, pointer, section: cut && cutLabel(), planes: mongeLabels(), showLabels: !quiz.on && !MG.stage,
+      handles: handles(), mini: !camOn,
       inset: innerWidth <= 820 ? { l: 0, b: 64, r: 0 } : { l: 76, b: 0, r: 290 } });   /* панели: слева режимы, справа управление (на телефоне — снизу) */   /* в тесте выноски выдали бы ответы */
     if (handsMoving) dirty = true;
     /* подсказка уходит, когда мешает: идёт жест или деталь разобрана (слева — выноски) */
@@ -150,7 +146,7 @@ function setTheme(th) {
   tool('mode', th === 'dark' ? '☀️' : '🌙', th === 'dark' ? 'Светлая' : 'Тёмная'); $('mode').setAttribute('aria-pressed', th === 'dark'); store('hands.theme', th); dirty = true;
 }
 $('mode').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-setTheme(load('hands.theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+setTheme(load('hands.theme') || 'dark');                     /* по умолчанию — голографический стенд (тёмная); выбор запоминается */
 
 /* ── звук ── */
 function setSound(v) { sound.set(v); tool('snd', v ? '🔊' : '🔇', 'Звук'); $('snd').classList.toggle('on', v); $('snd').setAttribute('aria-pressed', v); store('hands.snd', v ? '1' : undefined); }
@@ -165,19 +161,23 @@ let cut = null, pointer = null;
 const cutLabel = () => {
   const ax = Math.abs(cut.n[2]) > 0.5 ? 'z' : Math.abs(cut.n[1]) > 0.5 ? 'y' : 'x', val = cut.w * (cut.n[0] + cut.n[1] + cut.n[2]);
   return { title: cut.kind === 'h' ? 'горизонтальный разрез' : cut.kind === 'front' ? 'фронтальный разрез' : 'профильный разрез',
-    value: `${ax} = ${val.toFixed(0)} мм`, hint: '«Нет» на панели, ладонь 1,5 с или R — убрать разрез' };
+    value: `${ax} = ${val.toFixed(0)} мм`, hint: '🤏 тяни красную ручку — двигать плоскость · ✋ меню → Разрез → Нет — убрать' };
 };
 function onHands(hands, t) {
   frame = ctl.update(hands, t);
   sound.play(frame.events);
   frame.events.forEach(e => {
-    if (e.type === 'reset') { holo && holo.scan(t); setCut(''); if (MG.stage) mongeTo(0); }
-    if (e.type === 'ui-down') uiDown(e);
-    if (e.type === 'ui-up') uiUp(e);
+    if (e.type === 'ui-down') uiPress(e.target.el, true);
+    if (e.type === 'ui-cancel') uiPress(e.target.el, false);
+    if (e.type === 'ui-click') { uiPress(e.target.el, false); lastInput = performance.now(); e.target.el.click(); }
+    if (e.type === 'drag-start') dragStart(e);
+    if (e.type === 'drag-end') dragEnd(e);
+    if (e.type === 'menu') menuDo(e.key);
   });
+  if (frame.drag) dragMove(frame.drag);
   handUI(frame);
-  coach.update(frame, view, frame.events, camOn || feedOn);
-  if (frame.point && holo) { const S = hud.map(frame.point); pointer = { x: S.x, y: S.y, hover: holo.pick(S.x, S.y, cut) }; } else pointer = null;
+  handHover(frame, t);
+  coach.update(frame, view, frame.events, camOn || feedOn, { hover: pointer && pointer.named ? pointer.hover : null });
   const st = $('st'), md = $('md');
   const n = frame.hands.filter(h => h.present).length;
   st.textContent = !n ? (phoneOn ? 'телефон не видит руку — подними ладонь перед его камерой' : 'руки не видно') : frame.hands.some(h => h.present && h.ignored) ? 'рука у края кадра — ближе к центру' : n === 1 ? 'вижу руку' : 'вижу обе руки';
@@ -265,10 +265,10 @@ cv.addEventListener('wheel', e => { e.preventDefault(); ctl.stopMotion();
   else view.zoom = Math.max(0.5, Math.min(5, view.zoom * Math.exp(-e.deltaY * 0.0015))); dirty = true; }, { passive: false });
 cv.addEventListener('dblclick', () => resetAll());
 /* мышь: наведение — та же подсветка части, что у указки пальцем */
-cv.addEventListener('pointermove', e => { if (pts.size || (frame && frame.point)) return; const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-  const hv = holo && holo.pick(x, y, cut); const nw = hv ? { x, y, hover: hv, mouse: true } : null; if ((nw && nw.hover) !== (pointer && pointer.hover)) dirty = true; pointer = nw; if (nw) dirty = true; });
+cv.addEventListener('pointermove', e => { if (pts.size || handPtr()) return; const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const hv = holo && holo.pick(x, y, cut); const nw = hv ? { x, y, hover: hv, mouse: true, named: true } : null; if ((nw && nw.hover) !== (pointer && pointer.hover)) dirty = true; pointer = nw; if (nw) dirty = true; });
 cv.addEventListener('click', e => { if (!quiz.on) return; const r = cv.getBoundingClientRect(), id = holo && holo.pick(e.clientX - r.left, e.clientY - r.top, cut); if (id) quizAnswer(id, performance.now()); });
-cv.addEventListener('pointerleave', () => { if (!(frame && frame.point)) { pointer = null; dirty = true; } });
+cv.addEventListener('pointerleave', () => { if (!handPtr()) { pointer = null; dirty = true; } });
 addEventListener('resize', () => { dirty = true; });
 addEventListener('keydown', e => {
   if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -288,15 +288,15 @@ addEventListener('keydown', e => {
 });
 
 /* ── панель управления: одна и та же для мыши, касаний, клавиатуры и руки ──
-   Рука: курсор — кончик указательного; над кнопкой/ползунком он «прилипает» (магнит 18 px) и элемент
-   подсвечивается красной рамкой; щипок — нажатие. Ползунок, схваченный щипком, едет за рукой относительно
-   (не прыгает под палец) — пока пальцы сомкнуты. Цель щипка — где был курсор за 150 мс до смыкания (gestures.js). */
+   Рука: курсор — основание указательного; над кнопкой/ползунком он «прилипает» (магнит 24 px, на медленной
+   машине — 30 px) и элемент подсвечивается красной рамкой. Кнопка нажимается на ОТПУСКАНИЕ щипка (≤ 0,8 с, курсор
+   не ушёл дальше 40 px — иначе отмена); ползунок, схваченный щипком, едет за рукой относительно, пока пальцы сомкнуты. */
 const UI_SEL = 'button:not(:disabled), .sl:not([hidden]), summary, .menu .mi';
 function toClient(p) { const r = $('hud').getBoundingClientRect(), S = hud.map(p); return { x: r.left + S.x, y: r.top + S.y }; }
 function uiTarget(x, y) {
   const el = document.elementFromPoint(x, y), hit = el && el.closest(UI_SEL);
   if (hit && $('stage').contains(hit)) return hit;
-  let best = null, bd = 18;
+  let best = null, bd = frame && frame.lowFps ? 30 : 24;
   for (const e of document.querySelectorAll(UI_SEL)) {
     const r = e.getBoundingClientRect(); if (!r.width || !r.height || e.closest('[hidden]')) continue;
     const d = Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
@@ -341,8 +341,22 @@ document.querySelectorAll('.seg[data-g="cut"] button').forEach(b => { b.onclick 
 document.querySelectorAll('.seg[data-g="view"] button').forEach(b => { b.onclick = () => {
   const i = +b.dataset.v, V = VIEWS[i]; ctl.viewIdx = i; if (MG.stage) mongeTo(0);
   ctl.reset(performance.now(), { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 }); sound.play([{ type: 'view' }]); }; });
-function resetAll() { if (MG.stage) mongeTo(0); ctl.reset(performance.now()); holo && holo.scan(performance.now()); setCut(''); dirty = true; }
+/* сброс — отменяемый: 6 с висит кнопка «↶ Вернуть» (нажимается и рукой) */
+let undo = null, undoTimer = 0;
+function resetAll() {
+  undo = { view: Object.assign({}, view), cutKind, cutU, stage: MG.stage, pulls: JSON.parse(JSON.stringify(holo ? holo.pulls() : {})) };
+  if (MG.stage) mongeTo(0); ctl.reset(performance.now()); holo && holo.scan(performance.now()); setCut(''); holo && holo.pull(null); pullT.clear(); dirty = true;
+  $('undo').hidden = false; clearTimeout(undoTimer); undoTimer = setTimeout(() => { $('undo').hidden = true; undo = null; }, 6000);
+  sound.play([{ type: 'reset' }]);
+}
 $('rst').onclick = resetAll;
+$('undo').onclick = () => {
+  if (!undo) return; const u = undo; undo = null; $('undo').hidden = true;
+  if (u.stage) mongeTo(u.stage); setCut(u.cutKind); cutU = u.cutU; applyCut();
+  for (const id in u.pulls) holo && holo.pull(id, u.pulls[id]);
+  ctl.reset(performance.now(), { yaw: u.view.yaw, pit: u.view.pit, zoom: u.view.zoom, panX: u.view.panX, panY: u.view.panY, explode: u.view.explode, open: u.view.open || 0 });
+  dirty = true;
+};
 
 /* состояние панели ← вид (каждый кадр, DOM трогаем только при изменении) */
 const uiShown = {};
@@ -361,33 +375,148 @@ function syncUI() {
   slEl('cutpos').hidden = !cutKind;
 }
 
-/* рука над панелью: подсветка, нажатие, перетаскивание */
-let handHover = new Set(), handDrag = null;           /* handDrag = { id, k, el, x0, v0 } */
+/* ── рука: подсветка панели, наведение на детали, захваты ── */
+const HUDR = () => $('hud').getBoundingClientRect();
+function handTarget(x, y) {
+  const S = toClient({ x, y }), el = uiTarget(S.x, S.y);
+  if (el) return el.classList.contains('sl') ? { kind: 'slider', el, k: el.dataset.k } : { kind: 'ui', el };
+  const r = HUDR(), lx = S.x - r.left, ly = S.y - r.top, H = handles();
+  if (H.plane && Math.hypot(lx - H.plane.x, ly - H.plane.y) < 32) return { kind: 'plane' };
+  const id = pickNear(lx, ly, true);
+  if (!id) return null;
+  if (id === 'wheel' && MODEL.wheel && MODEL.kin && !quiz.on) return { kind: 'wheel', id };
+  return { kind: 'part', id };
+}
+/* «пузырь» (для щипка): деталь под курсором, а если мимо — ближайшая в радиусе 20 и 40 px; наведению хватает одного луча */
+function pickNear(x, y, bubble) {
+  if (!holo) return null;
+  let id = holo.pick(x, y, cut); if (id || !bubble) return id;
+  for (const R of [20, 40]) for (let k = 0; k < 8; k++) { id = holo.pick(x + R * Math.cos(k * Math.PI / 4), y + R * Math.sin(k * Math.PI / 4), cut); if (id) return id; }
+  return null;
+}
+/* рука ведёт курсор (а не мышь)? */
+const handPtr = () => !!(frame && (camOn || feedOn) && frame.hands.some(h => h.present && h.cursor));
+function uiPress(el, on) { if (!el) return; if (on) { el.classList.remove('press'); void el.offsetWidth; el.classList.add('press'); } el.classList.toggle('hold', !!on); }
+let handHoverEl = new Set();
 function handUI(f) {
   const now = new Set();
   f.hands.forEach(h => {
     if (!h.present || h.ignored || !h.cursor) return;
-    if (handDrag && handDrag.id === h.id) {           /* тянем ползунок: смещение руки → смещение значения */
-      const S = toClient(h.cursor), r = handDrag.el.querySelector('.tr').getBoundingClientRect();
-      slSet(handDrag.k, handDrag.v0 + (S.x - handDrag.x0) / Math.max(60, r.width)); h.ui = true; return;
-    }
-    if (h.pose === 'pinch' && !h.captured) return;    /* щипок по детали — вращение, панель не подсвечиваем */
+    if (h.captured && f.drag && f.drag.target && f.drag.target.el) { now.add(f.drag.target.el); h.ui = true; return; }
+    if (h.pose === 'pinch' || f.menu) return;          /* щипок по детали / меню — панель не подсвечиваем */
     const S = toClient(h.cursor), el = uiTarget(S.x, S.y); if (el) { now.add(el); h.ui = true; }
   });
-  handHover.forEach(el => { if (!now.has(el)) el.classList.remove('hand'); });
-  now.forEach(el => el.classList.add('hand')); handHover = now;
+  handHoverEl.forEach(el => { if (!now.has(el)) el.classList.remove('hand'); });
+  now.forEach(el => el.classList.add('hand')); handHoverEl = now;
 }
-function uiDown(e) {
-  const S = toClient(e.at), el = uiTarget(S.x, S.y); if (!el) return;
+/* наведение на детали: смена детали — после 120 мс на новой (гистерезис), название — после 300 мс */
+const hov = { id: null, cand: null, candT: 0, since: 0 };
+function handHover(f, t) {
+  if (!(camOn || feedOn)) return;
+  const h = f.hands.find(q => q.id === f.lead);
+  if (!h || !h.present || !h.cursor || h.ui || f.menu || (f.drag && f.drag.kind !== 'part')) { if (pointer && !pointer.mouse) { pointer = null; dirty = true; } hov.id = null; hov.cand = null; return; }
+  const S = hud.map(h.cursor), vk = [shown.yaw, shown.pit, shown.zoom, shown.explode, shown.open || 0, cutU, cutKind].join('|');
+  if (!hov.at || Math.hypot(S.x - hov.at.x, S.y - hov.at.y) > 2 || hov.vk !== vk) { hov.at = S; hov.vk = vk; hov.pick = pickNear(S.x, S.y); }   /* луч — только когда курсор или вид сдвинулись */
+  const id = f.drag && f.drag.kind === 'part' ? f.drag.target.id : hov.pick;
+  if (id !== hov.id) { if (hov.cand !== id) { hov.cand = id; hov.candT = t; } if (t - hov.candT >= 120 || f.drag) { hov.id = id; hov.since = t; hov.cand = null; } }
+  else hov.cand = null;
+  pointer = { x: S.x, y: S.y, hover: hov.id, named: !!hov.id && t - hov.since >= 300, hand: true, quiz: quiz.on };
+}
+
+/* ── захваты рукой: ползунок, маховик, ручка плоскости, деталь ── */
+let handDrag = null;
+const W3 = () => ({ w: $('hud').clientWidth, h: $('hud').clientHeight });
+function dragStart(e) {
+  lastInput = performance.now(); manual.halt();
+  if (e.kind === 'slider') { const el = e.target.el; handDrag = { kind: 'slider', id: e.id, k: el.dataset.k, el }; el.dataset.hand = '1'; el.classList.add('drag'); }
+  else if (e.kind === 'wheel') handDrag = { kind: 'wheel', id: e.id, a: null };
+  else if (e.kind === 'plane') handDrag = { kind: 'plane', id: e.id };
+  else if (e.kind === 'part') {
+    const pid = e.target.id;
+    if (quiz.on) { quizAnswer(pid, performance.now()); handDrag = { kind: 'none', id: e.id }; return; }
+    const P = MODEL.pullDir && MODEL.pullDir(pid);
+    if (!P || !holo) { handDrag = { kind: 'none', id: e.id }; return; }
+    const cur = holo.pulls()[pid], amt = cur ? Math.hypot(...cur) : 0;
+    pullT.delete(pid); handDrag = { kind: 'part', id: e.id, pid, P, amt };
+  }
+}
+/* смещение курсора (доли экрана) → изменение величины вдоль экранного направления мировой оси, мм */
+function alongMm(world, dirW, dx, dy) {
+  const a = holo.project(world), b = holo.project([world[0] + dirW[0] * 10, world[1] + dirW[1] * 10, world[2] + dirW[2] * 10]); if (!a || !b) return 0;
+  const { w, h } = W3(), ux = b[0] - a[0], uy = b[1] - a[1], L2 = ux * ux + uy * uy; if (L2 < 4) return 0;     /* ось смотрит на зрителя — не тянется */
+  return (dx * w * ux + dy * h * uy) / L2 * 10;
+}
+function dragMove(d) {
+  if (!handDrag || handDrag.id !== d.id || !holo) return;
+  const { w, h } = W3();
+  if (handDrag.kind === 'slider') slSet(handDrag.k, SL[handDrag.k].get() + d.dx / 0.45);   /* весь ползунок — 0,45 экрана движения курсора */
+  else if (handDrag.kind === 'wheel') {
+    const o = holo.offset('wheel'), c = MODEL.wheel.c, C = holo.project([c[0] + o[0], c[1] + o[1], c[2] + o[2]]); if (!C) return;
+    const x = d.x * w - C[0], y = d.y * h - C[1];
+    if (Math.hypot(x, y) < 30) { handDrag.a = null; return; }                     /* у центра угол неустойчив */
+    const a = Math.atan2(-y, x);                                                  /* против часовой — плюс: открыть */
+    if (handDrag.a != null) { let da = a - handDrag.a; da = Math.atan2(Math.sin(da), Math.cos(da));
+      const was = view.open || 0; view.open = Math.max(0, Math.min(1, was + da / (2 * Math.PI) * MODEL.wheel.perTurn));
+      if (Math.floor(was * 10) !== Math.floor(view.open * 10)) sound.play([{ type: 'explode-step' }]); }
+    handDrag.a = a; dirty = true;
+  } else if (handDrag.kind === 'plane' && cutKind) {
+    const a = AX[cutKind], e = [0, 0, 0]; e[a] = 1; const H = handles();
+    if (!H.plane) return; const mm = alongMm(H.plane.w, e, d.dx, d.dy), [lo, hi] = cutRange();
+    cutU = Math.max(0, Math.min(1, cutU + mm / (hi - lo))); applyCut();
+  } else if (handDrag.kind === 'part') {
+    const D = handDrag, o = holo.offset(D.pid), at = [D.P.at[0] + o[0], D.P.at[1] + o[1], D.P.at[2] + o[2]];
+    D.amt = Math.max(0, Math.min(D.P.max, D.amt + alongMm(at, D.P.dir, d.dx, d.dy)));
+    holo.pull(D.pid, D.amt > 0.01 ? D.P.dir.map(x => x * D.amt) : null); dirty = true;
+  }
+}
+/* отпустил деталь: вынута больше чем на 40 % — встаёт в разобранное положение, иначе пружиной возвращается */
+const pullT = new Map();
+function dragEnd(e) {
+  const D = handDrag; if (!D || D.id !== e.id) return; handDrag = null;
+  if (D.kind === 'slider') { delete D.el.dataset.hand; D.el.classList.remove('drag'); }
+  if (D.kind === 'part') pullT.set(D.pid, { from: D.amt, to: D.amt > 0.4 * D.P.max ? D.P.max : 0, t0: performance.now(), P: D.P });
+}
+function pullAnim(t) {
+  if (!holo) return;
+  for (const [id, a] of pullT) { const u = reduced() ? 1 : Math.min(1, (t - a.t0) / 300), k = 1 - Math.pow(1 - u, 3), v = a.from + (a.to - a.from) * k;
+    holo.pull(id, v > 0.01 ? a.P.dir.map(x => x * v) : null); dirty = true; if (u >= 1) pullT.delete(id); }
+}
+/* ручки для HUD: секущая плоскость (на плоскости, сбоку от детали) и маховик */
+function handles() {
+  const out = {}; if (!holo) return out;
+  if (cutKind) {
+    const a = AX[cutKind], b = holo.box, [lo, hi] = cutRange(), w = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2, (b[0][2] + b[1][2]) / 2], o = a === 0 ? 1 : 0;
+    w[a] = lo + (hi - lo) * cutU; w[o] = b[1][o] + 22;
+    const p = holo.project(w), e = w.slice(); e[a] += 10; const q = holo.project(e);
+    if (p && q) out.plane = { x: p[0], y: p[1], w, dir: [q[0] - p[0], q[1] - p[1]], active: !!(handDrag && handDrag.kind === 'plane') };
+  }
+  if (MODEL.wheel && MODEL.kin && !quiz.on && ((handDrag && handDrag.kind === 'wheel') || (pointer && pointer.hand && pointer.hover === 'wheel'))) {
+    const o = holo.offset('wheel'), c = MODEL.wheel.c, C = holo.project([c[0] + o[0], c[1] + o[1], c[2] + o[2]]);
+    if (C) out.wheel = { x: C[0], y: C[1], open: view.open || 0, active: !!(handDrag && handDrag.kind === 'wheel') };
+  }
+  return out;
+}
+/* ── радиальное меню (ладонь 0,5 с): сектора по часовой, первый — вверху; центр — сброс ── */
+function menuItems() {
+  return [
+    { k: 'view', i: '👁', t: 'Вид', sub: [{ k: 'v1', t: 'Сверху' }, { k: 'v3', t: 'Изо' }, { k: 'v0', t: 'Главный' }, { k: 'v2', t: 'Слева' }] },
+    { k: 'cut', i: '✂', t: 'Разрез', sub: [{ k: 'c:h', t: 'Гориз.' }, { k: 'c:front', t: 'Фронт.' }, { k: 'c:', t: 'Нет' }, { k: 'c:profile', t: 'Проф.' }] },
+    { k: 'monge', i: '📐', t: ['Эпюр', 'Развернуть', 'Из эпюра'][MG.stage] },
+    { k: 'explode', i: '🧩', t: view.explode > 0.5 ? 'Собрать' : 'Разобрать' },
+    ...(MODEL.kin ? [{ k: 'open', i: '🔧', t: (view.open || 0) > 0.5 ? 'Закрыть' : 'Открыть' }] : []),
+    { k: 'quiz', i: '🎯', t: quiz.on ? 'Из теста' : 'Тест' }
+  ];
+}
+function menuDo(k) {
   lastInput = performance.now();
-  if (el.classList.contains('sl')) {
-    const h = frame && frame.hands.find(q => q.id === e.id), C = h && h.cursor ? toClient(h.cursor) : S;
-    handDrag = { id: e.id, k: el.dataset.k, el, x0: C.x, v0: SL[el.dataset.k].get() }; el.dataset.hand = '1'; el.classList.add('drag');
-  } else { el.classList.remove('press'); void el.offsetWidth; el.classList.add('press'); el.click(); }
-}
-function uiUp(e) {
-  if (!handDrag || handDrag.id !== e.id) return;
-  delete handDrag.el.dataset.hand; handDrag.el.classList.remove('drag'); handDrag = null;
+  if (k === 'reset') return resetAll();
+  if (/^v\d$/.test(k)) { const i = +k[1], V = VIEWS[i]; ctl.viewIdx = i; if (MG.stage) mongeTo(0); ctl.reset(performance.now(), { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 }); }
+  else if (k.startsWith('c:')) setCut(k.slice(2));
+  else if (k === 'monge') mongeTo((MG.stage + 1) % 3);
+  else if (k === 'explode') { if (MG.stage && view.explode < 0.5) mongeTo(0); manual.explodeTo(view.explode > 0.5 ? 0 : 1); }
+  else if (k === 'open') manual.explodeTo((view.open || 0) > 0.5 ? 0 : 1, 'open', 2200);
+  else if (k === 'quiz') $('qz').click();
+  dirty = true;
 }
 
 /* ── камера и MediaPipe (всё локально: модель и wasm — в vendor/, видео никуда не уходит) ──
