@@ -29,7 +29,7 @@ button:focus-visible,summary:focus-visible,.mi:focus-within,a:focus-visible,.sl:
 
 main{position:fixed;inset:0}
 #gl,#hud{position:absolute;inset:0;width:100%;height:100%;display:block}
-#gl{cursor:grab;touch-action:none;width:auto;right:var(--ctl)} #gl.drag{cursor:grabbing}   /* 3D — левее панели управления (HUD — на всё окно: рука дотягивается до панели) */
+#gl{cursor:grab;touch-action:none;width:calc(100% - var(--ctl));right:auto}   /* ширина — явно: у canvas «auto» = его пиксели (×DPR), на айфоне (DPR 3) холст раздувался втрое и деталь уезжала за край */ #gl.drag{cursor:grabbing}   /* 3D — левее панели управления (HUD — на всё окно: рука дотягивается до панели) */
 #hud{pointer-events:none;z-index:7}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -160,11 +160,13 @@ main{position:fixed;inset:0}
   .tool{width:auto;min-width:44px;padding:6px 4px} .tool.primary{margin:0} .tool-more{margin:0}
   .menu{left:auto;right:0;bottom:calc(100% + 8px)}
   #brand{left:16px;top:12px} #chips{top:54px;left:50%}
-  #ctl{left:8px;right:8px;top:auto;bottom:72px;width:auto;max-height:46vh;padding:12px;gap:10px}
+  #ctl{left:8px;right:8px;top:auto;bottom:72px;width:auto;max-height:32vh;padding:10px 12px;gap:8px}
+  /* деталь — в свободной части над панелью управления (высота явно: у canvas «auto» — его пиксели) */
+  #gl{height:calc(100% - 64px - 32vh - 8px)}
   #ctl h2{display:none}
   #help{left:12px;right:12px;width:auto;top:92px;max-height:calc(100% - 200px);overflow:auto} #help .g{grid-template-columns:1fr}
   #quiz{left:12px;right:12px;width:auto;top:92px}
-  #cta{left:50%;bottom:auto;top:96px} #coach{left:50%;bottom:auto;top:96px} #hint{display:none}
+  #cta{left:50%;bottom:auto;top:96px;padding:8px 14px 8px 10px;gap:8px} #cta small{display:none} #cta i{font-size:20px} #coach{left:50%;bottom:auto;top:96px} #hint{display:none}
   #cam{right:12px;bottom:auto;top:92px;width:28vw}
   .pairgrid{grid-template-columns:1fr} #pairQr{margin:0 auto} #pair{left:50%}
 }

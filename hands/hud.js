@@ -281,6 +281,7 @@ export function createHud(canvas) {
 
   /* телеметрия: блок слева внизу — числа и полосы */
   function drawTelemetry(view, frame, info, inset, holo, t) {
+    if (W <= 820) return;   /* телефон: блок закрыл бы деталь */
     const x0 = (inset.l || 0) + 16, w = 236, rows = [
       ['АЗИМУТ', deg(view.yaw).toFixed(0) + '°', deg(view.yaw) / 360],
       ['ТАНГАЖ', (view.pit * 180 / Math.PI).toFixed(0) + '°', (view.pit + 0.2) / 1.77],
