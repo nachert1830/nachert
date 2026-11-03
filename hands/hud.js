@@ -379,12 +379,47 @@ export function createHud(canvas) {
 
   /* разовые эффекты: ударная волна хлопка, вспышка щелчка */
   const fx = [];
-  function effect(type, x, y, t) { fx.push({ type, x, y, t0: t }); }
+  function effect(type, x, y, t, extra) { fx.push(Object.assign({ type, x, y, t0: t }, extra || {})); }
+  /* световой след за курсором руки — последние 320 мс */
+  const trails = new Map();
+  function drawTrails(frame, t, reduced) {
+    if (reduced || !frame) { trails.clear(); return; }
+    const live = new Set();
+    frame.hands.forEach(h => { if (!h.present || !h.cursor) return; live.add(h.id); const p = map(h.cursor);
+      let tr = trails.get(h.id); if (!tr) trails.set(h.id, tr = []); tr.push({ x: p.x, y: p.y, t }); while (tr.length && t - tr[0].t > 320) tr.shift(); });
+    for (const id of [...trails.keys()]) if (!live.has(id)) trails.delete(id);
+    ctx.save(); ctx.lineCap = 'round'; ctx.shadowColor = 'rgba(77,209,255,.9)'; ctx.shadowBlur = 12;
+    trails.forEach(tr => { for (let i = 1; i < tr.length; i++) { const u = 1 - (t - tr[i].t) / 320;
+      ctx.strokeStyle = `rgba(140,230,255,${(0.55 * u).toFixed(3)})`; ctx.lineWidth = 1 + 5 * u; ctx.beginPath(); ctx.moveTo(tr[i - 1].x, tr[i - 1].y); ctx.lineTo(tr[i].x, tr[i].y); ctx.stroke(); } });
+    ctx.restore();
+  }
+  /* разбор двумя ладонями: дуга-разряд между руками и процент */
+  function drawSpread(frame, view, t) {
+    if (!frame || frame.mode !== 'spread') return;
+    const H2 = frame.hands.filter(h => h.present && h.cursor).slice(0, 2).map(h => map(h.cursor)); if (H2.length < 2) return;
+    const [a, b] = H2, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, e = view.explode || 0;
+    ctx.save(); ctx.shadowColor = 'rgba(77,209,255,.9)'; ctx.shadowBlur = 16; ctx.lineWidth = 2;
+    for (let k = 0; k < 3; k++) { ctx.strokeStyle = k ? CY2 + '.35)' : CY; ctx.beginPath(); ctx.moveTo(a.x, a.y);
+      for (let i = 1; i <= 16; i++) { const u = i / 16, j = i < 16 ? (Math.sin(t / 40 + i * 2.1 + k * 7) * 7) : 0;
+        ctx.lineTo(a.x + (b.x - a.x) * u + j * 0.3, a.y + (b.y - a.y) * u - Math.sin(u * Math.PI) * 26 * (1 + k * 0.3) + j); }
+      ctx.stroke(); }
+    [a, b].forEach(p => { ring(p.x, p.y, 16 + 4 * Math.sin(t / 120), CY, 2); ring(p.x, p.y, 26, CY2 + '.35)', 1); });
+    ctx.shadowBlur = 0; text('РАЗБОР ' + Math.round(e * 100) + ' %', mx, my - 44, AM, '600 15px Plex,ui-monospace,Menlo,monospace');
+    ctx.restore(); moving = true;
+  }
   function drawEffects(t, reduced) {
     for (let i = fx.length - 1; i >= 0; i--) {
-      const e = fx[i], u = (t - e.t0) / (e.type === 'shock' ? 700 : 450); if (u > 1 || u < 0) { if (u > 1) fx.splice(i, 1); continue; }
+      const e = fx[i], u = (t - e.t0) / (e.type === 'shock' ? 700 : e.type === 'swipe' ? 800 : 450); if (u > 1 || u < 0) { if (u > 1) fx.splice(i, 1); continue; }
       ctx.save(); ctx.globalAlpha = 1 - u;
-      if (e.type === 'shock') {
+      if (e.type === 'swipe') {                  /* мах ладонью: световая полоса через экран и название вида */
+        const y = H * 0.5, x = e.dir > 0 ? W * (u * 1.2 - 0.1) : W * (1.1 - u * 1.2), g = ctx.createLinearGradient(x - e.dir * 260, 0, x, 0);
+        g.addColorStop(0, 'rgba(77,209,255,0)'); g.addColorStop(1, 'rgba(160,235,255,.85)');
+        ctx.fillStyle = g; ctx.fillRect(Math.min(x, x - e.dir * 260), y - 2, 260, 4);
+        ctx.shadowColor = 'rgba(77,209,255,.9)'; ctx.shadowBlur = 18; ctx.globalAlpha = Math.min(1, 3 * (1 - u));
+        text((e.dir > 0 ? '▶  ' : '◀  ') + (e.label || '').toUpperCase(), W / 2, y - 18, CY, '600 22px Plex,ui-monospace,Menlo,monospace');
+      } else if (e.type === 'ripple') {          /* щипок: двойная волна */
+        ring(e.x, e.y, 10 + 46 * u, CY, 2.5 * (1 - u) + 0.5); ring(e.x, e.y, 6 + 26 * u, AM, 1.5);
+      } else if (e.type === 'shock') {
         const R = Math.max(W, H) * (reduced ? 0.15 : 0.08 + 0.55 * u);
         ring(e.x, e.y, R, CY, 3 * (1 - u) + 1); ring(e.x, e.y, R * 0.72, CY2 + '.6)', 1.5); ring(e.x, e.y, R * 0.45, AM, 1);
       } else {
@@ -444,6 +479,7 @@ export function createHud(canvas) {
     if (frame) {
       drawEdges(frame); drawPair(frame);
       drawMenu(frame.menu, t, reduced);
+      drawTrails(frame, t, reduced); drawSpread(frame, view, t);
       frame.hands.forEach(h => drawHand(h, frame, t, reduced));
       if (mini) drawMini(frame, inset);
     }

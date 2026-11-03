@@ -176,6 +176,10 @@ function onHands(hands, t) {
     if (e.type === 'drag-start') dragStart(e);
     if (e.type === 'drag-end') dragEnd(e);
     if (e.type === 'menu') menuDo(e.key);
+    if (e.type === 'pinch-on') { const h = frame.hands.find(x => x.id === e.id); if (h && h.cursor) { const q = hud.map(h.cursor); hud.effect('ripple', q.x, q.y, performance.now()); } }
+    if (e.type === 'spread-start') { manual.halt(); if (MG.stage) mongeTo(0); }
+    if (e.type === 'swipe') { const n = VIEWS.length, V = VIEWS[ctl.viewIdx = ((ctl.viewIdx || 0) + e.dir + n) % n]; if (MG.stage) mongeTo(0);
+      ctl.reset(performance.now(), { yaw: V.yaw, pit: V.pit, panX: 0, panY: 0 }); hud.effect('swipe', 0, 0, performance.now(), { dir: e.dir, label: V.t }); }
   });
   if (frame.drag) dragMove(frame.drag);
   handUI(frame);
@@ -192,7 +196,7 @@ function onHands(hands, t) {
 /* отладка и автотесты: __feed([[21 точка], …], t) — как кадр камеры */
 window.__feed = (hands, t) => { feedOn = true; const f = onHands(hands, t == null ? performance.now() : t); render(t == null ? performance.now() : t); return f; };
 window.__camInfo = () => info;
-window.__app = { get pairing() { return pairing; }, shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; lastDraw = -1e9; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
+window.__app = { hud, get pairing() { return pairing; }, shown, MG, mongeTo, quiz, quizStart, quizAnswer, view, ctl, holo, HOME, get cut() { return cut; }, set cut(c) { cut = c; dirty = true; }, get pointer() { return pointer; }, render: t => { dirty = true; lastDraw = -1e9; render(t); },   /* принудительно: для тестов и снимков */ get frame() { return frame; } };
 
 /* ── модель: подпись и переключатель (в меню «Ещё») ── */
 document.querySelector('#brand .sub').textContent = '3D руками · ' + MODEL.title.toLowerCase(); $('mtitle').textContent = MODEL.title; $('secOpen').hidden = !MODEL.kin;

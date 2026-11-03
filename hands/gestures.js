@@ -18,7 +18,9 @@
                                     держишь на месте (< 0,015) — «взял деталь» (событие grab);
      два щипка                    — зум (расстояние) и сдвиг (середина) с мёртвыми зонами;
      открытая ладонь 500 мс       — радиальное меню у курсора: повёл к сектору — щипнул — выбрал;
-                                    центр — «Сброс»; кулак, пропажа руки или 6 с без выбора — закрыть.
+                                    центр — «Сброс»; кулак, пропажа руки или 6 с без выбора — закрыть;
+     две открытые ладони          — разбор: развёл ладони — деталь раскрывается, свёл — собирается (событие spread-*);
+     мах открытой ладонью вбок    — следующий / предыдущий стандартный вид (событие swipe, dir ±1: вправо — +1).
    Хлопок, щелчок, «лезвие», кулаки и руль убраны: на 15–30 кадрах/с с веб-камеры их не распознать надёжно.
    Защита от ложных срабатываний: гистерезис порогов; поза засчитывается, продержавшись ≥ holdOn мс И ≥ 2 кадров;
    щипок не засчитывается в кулаке и на быстром (смазанном) движении; рука у края кадра и далёкая рука не управляют;
@@ -56,7 +58,9 @@ export const CFG = {
   menuR: 0.10, menuROff: 0.075,       /* доля экрана: отклонение курсора от центра меню — выбран сектор (с гистерезисом) */
   menuIdle: 6000,                     /* мс без движения в меню — закрыть */
   zoomDead: 0.04, panDead: 0.01, twoMin: 1.5,   /* два щипка: мёртвые зоны; руки ближе 1,5 ладони — заморозка */
-  lowFps: 12                          /* ниже — упрощённый режим: без инерции, удержания на 30 % дольше */
+  lowFps: 12,                         /* ниже — упрощённый режим: без инерции, удержания на 30 % дольше */
+  spreadHold: 200, spreadGain: 2.2,   /* две открытые ладони ≥ 200 мс — разбор; разведение на 0,45 кадра — от собранной до разобранной */
+  swipeMs: 260, swipeDist: 0.16, swipeGap: 800   /* мах ладонью: за ≤ 260 мс на ≥ 0,16 кадра, в основном вбок — следующий вид; пауза между махами */
 };
 /* стандартные виды: как VIEWS на сайте (главный — вдоль +y, слева — вдоль −x) */
 export const VIEWS = [
@@ -390,8 +394,29 @@ export function createController(opt = {}) {
         if (t - M.tMove > cfg.menuIdle) closeMenu(t, ev, false);
       }
     }
+    /* ── две открытые ладони — разбор ── */
+    const palms = T.filter(tr => tr.present && tr.pose === 'open' && !tr.ignored && !(tr.f && (tr.f.edge || tr.f.far)));
+    if (ctl.mode === 'spread') {
+      const [a, b] = ctl.g.ids.map(byId);
+      if (a && b && palms.includes(a) && palms.includes(b)) v.explode = clamp(ctl.g.e0 + (D2(a.palmC, b.palmC) - ctl.g.d0) * cfg.spreadGain, 0, 1);
+      else { ev.push({ type: 'spread-end', explode: v.explode, t }); ctl.lockT = t; setMode('idle', t, ev); }
+    } else if ((ctl.mode === 'idle' || ctl.mode === 'arm') && palms.length >= 2 && palms.slice(0, 2).every(tr => t - tr.poseT >= cfg.spreadHold)) {
+      const [a, b] = palms; ctl.arm = null; ctl.sw = null; stopMotion();
+      setMode('spread', t, ev, { ids: [a.id, b.id], d0: Math.max(D2(a.palmC, b.palmC), 0.02), e0: v.explode || 0 });
+      ev.push({ type: 'spread-start', t });
+    }
+    /* ── мах ладонью вбок — следующий вид ── */
+    if ((ctl.mode === 'idle' || ctl.mode === 'arm') && palms.length === 1) {
+      const tr = palms[0]; if (!ctl.sw || ctl.sw.id !== tr.id) ctl.sw = { id: tr.id, h: [] };
+      const h = ctl.sw.h; h.push({ t, x: tr.palmC.x, y: tr.palmC.y }); while (h.length && t - h[0].t > cfg.swipeMs) h.shift();
+      const dx = h.length > 1 ? h[h.length - 1].x - h[0].x : 0, dy = h.length > 1 ? h[h.length - 1].y - h[0].y : 0;
+      if (Math.abs(dx) >= cfg.swipeDist && Math.abs(dy) < 0.5 * Math.abs(dx) && t - (ctl.swipeT || -1e9) > cfg.swipeGap && t - tr.poseT > 150) {
+        ctl.swipeT = t; ctl.lockT = t; ctl.arm = null; h.length = 0; if (ctl.mode === 'arm') setMode('idle', t, ev);
+        ev.push({ type: 'swipe', dir: dx > 0 ? 1 : -1, t });
+      }
+    } else if (ctl.sw && !palms.length) ctl.sw = null;
     /* ладонь → взвод меню: одна открытая неподвижная ладонь, никто не щиплет */
-    if (ctl.mode === 'idle' || ctl.mode === 'arm') {
+    if ((ctl.mode === 'idle' || ctl.mode === 'arm') && palms.length < 2) {
       const opens = T.filter(tr => tr.present && tr.pose === 'open' && !tr.ignored);
       const fresh = tr => tr.poseT > (ctl.lockT || -1e9) && t - (ctl.lockT || -1e9) > 800;
       const cand = !pinsNow().length && opens.find(tr => fresh(tr) && tr.speed < cfg.menuStill * 2.5);
@@ -464,5 +489,6 @@ const LABEL = {
   rotate: () => 'вращение', zoom: v => 'зум ×' + v.zoom.toFixed(2), pending: () => 'держи — взять деталь · веди — вращать',
   drag: (v, c) => ({ slider: 'ползунок', wheel: 'маховик', plane: 'секущая плоскость', part: 'деталь', ui: '' })[c.g && c.g.target ? c.g.target.kind : ''] || '',
   arm: () => 'держи ладонь — меню', menu: () => 'веди к пункту и щипни · центр — сброс · кулак — закрыть',
-  wait: () => 'отпусти и щипни снова', idle: () => ''
+  wait: () => 'отпусти и щипни снова', idle: () => '',
+  spread: v => 'разбор ' + Math.round((v.explode || 0) * 100) + ' % · разводи и своди ладони'
 };

@@ -314,3 +314,35 @@ test('фильтр 1€: постоянный сигнал не искажает
   for (let t = 500; t < 1500; t += 33) v = f.f(0.7, t);
   near(v, 0.7, 0.005);
 });
+
+/* ── две ладони — разбор; мах ладонью — следующий вид ── */
+test('две открытые ладони: развёл — деталь раскрылась, свёл — собралась; меню при этом не открывается', () => {
+  const c = mk();
+  let fr = run(c, 0, 400, () => [O({ cx: 0.4, cy: 0.5 }), O({ cx: 0.6, cy: 0.5 })]);
+  assert.equal(events(fr, 'spread-start').length, 1, 'разбор начался'); assert.equal(c.frame.mode, 'spread');
+  assert.equal(events(fr, 'menu-open').length, 0, 'меню не открылось');
+  fr = run(c, 433, 1100, t => { const u = (t - 433) / 600; return [O({ cx: lerp(0.4, 0.2, u), cy: 0.5 }), O({ cx: lerp(0.6, 0.8, u), cy: 0.5 })]; });
+  assert.ok(c.view.explode > 0.6, 'развёл ладони — разобрана: ' + c.view.explode.toFixed(2));
+  fr = run(c, 1133, 1800, t => { const u = (t - 1133) / 600; return [O({ cx: lerp(0.2, 0.42, u), cy: 0.5 }), O({ cx: lerp(0.8, 0.58, u), cy: 0.5 })]; });
+  assert.ok(c.view.explode < 0.15, 'свёл — собрана: ' + c.view.explode.toFixed(2));
+  fr = run(c, 1833, 2200, () => [O({ cx: 0.42, cy: 0.5 })]);
+  assert.equal(events(fr, 'spread-end').length, 1, 'одна ладонь ушла — разбор закончен');
+  assert.equal(events(fr, 'menu-open').length, 0, 'оставшаяся ладонь сразу меню не открывает');
+});
+test('мах ладонью вправо — следующий вид, влево — предыдущий; медленно — не мах, а меню', () => {
+  const c = mk();
+  run(c, 0, 300, () => [O({ cx: 0.35, cy: 0.5 })]);
+  let fr = run(c, 333, 560, t => [O({ cx: lerp(0.35, 0.65, (t - 333) / 200), cy: 0.5 })]);
+  const sw = events(fr, 'swipe'); assert.equal(sw.length, 1, 'мах засчитан'); assert.equal(sw[0].dir, 1, 'вправо — +1');
+  fr = run(c, 600, 1500, () => [O({ cx: 0.65, cy: 0.5 })]);
+  fr = run(c, 1533, 1760, t => [O({ cx: lerp(0.65, 0.35, (t - 1533) / 200), cy: 0.5 })]);
+  assert.deepEqual(events(fr, 'swipe').map(e => e.dir), [-1], 'влево — −1');
+  const s = mk(); fr = run(s, 0, 2500, t => [O({ cx: lerp(0.35, 0.45, t / 2500), cy: 0.5 })]);
+  assert.equal(events(fr, 'swipe').length, 0, 'медленное движение — не мах');
+  assert.equal(events(fr, 'menu-open').length, 1, 'а неподвижная ладонь — меню');
+});
+test('мах вниз/вверх — не мах вбок', () => {
+  const c = mk(); run(c, 0, 300, () => [O({ cx: 0.5, cy: 0.35 })]);
+  const fr = run(c, 333, 560, t => [O({ cx: 0.5 + 0.05 * (t - 333) / 200, cy: lerp(0.35, 0.65, (t - 333) / 200) })]);
+  assert.equal(events(fr, 'swipe').length, 0);
+});
