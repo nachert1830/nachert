@@ -63,12 +63,16 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     stop(); st.state = 'pairing'; applied = false; st.path = ''; st.log = []; st.got = false;
     ch = 'nachert/' + newId();
     const brokers = opt.brokers || BROKERS;
-    onStatus('Подключаюсь к сервису связи…');
-    /* брокер — первым: через него придёт ответ телефона и, если нужно, точки рук. Не ответил за 3 с — обходимся без него */
-    try { mq = await connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет'), opt.brokerMs || 3000);
+    onStatus('Готовлю код…');
+    /* брокер — первым: через него придёт ответ телефона и, если нужно, точки рук. Не ответил за 2 с — обходимся без него
+       и сутки его не ждём (провайдер блокирует — каждый раз ждать незачем) */
+    const KEY = 'nch_nobroker', skip = !opt.brokers && (() => { try { return Date.now() - (+localStorage.getItem(KEY) || 0) < 864e5; } catch (_) { return false; } })();
+    try { if (skip) throw new Error('брокер недоступен (запомнено)');
+      mq = await connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет'), opt.brokerMs || 2000);
+      try { localStorage.removeItem(KEY); } catch (_) {}
       mq.subscribe(ch + '/up');
       mq.onclose = () => { if (st.state === 'pairing') onStatus('Связь с сервисом оборвалась — нажми «Новый код»'); }; }
-    catch (e) { mq = null; console.warn('брокер недоступен — знакомство через ответный QR', e); }
+    catch (e) { mq = null; if (!skip && !opt.brokers) try { localStorage.setItem(KEY, String(Date.now())); } catch (_) {} console.warn('брокер недоступен — знакомство через ответный QR', e); }
     if (st.state !== 'pairing') return '';
     /* Chrome без разрешения камеры прячет адрес ноутбука за «….local», а Safari такие имена не разрешает —
        прямой канал не сложится. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
@@ -88,8 +92,8 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     const url = new URL('sensor.html', location.href);
     url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + (mq ? '&q=' + encodeURIComponent(mq.url) : '&n=1');
     drawQR(qrCanvas, url.href);
-    if (mq) onStatus('Наведи камеру айфона на код и открой ссылку — дальше всё само. Работает и с VPN, и через мобильный интернет.');
-    else { onStatus('Сервис связи недоступен — подключимся напрямую. 1) Отсканируй код телефоном. 2) Телефон покажет свой код — поднеси его к камере ноутбука. Ноутбук и телефон — в одной сети (например, ноутбук в точке доступа телефона).');
+    if (mq) onStatus('Отсканируй код телефоном.');
+    else { onStatus('1. Отсканируй код телефоном.\n2. Покажи телефон камере ноутбука.');
       if (!opt.noScan) startScan(video).catch(e => onStatus('Камера ноутбука не включилась (' + (e.message || e) + ') — нужен доступ к камере, чтобы прочитать код телефона.')); }
     return url.href;
   }
