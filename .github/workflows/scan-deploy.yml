@@ -107,8 +107,6 @@ jobs:
           SIGC=$(node -e "console.log(require('crypto').randomBytes(16).toString('hex'))")
           U="$SCAN_URL?sig=$SIGC" chk "связь телефон-ноутбук: ответ телефона" 200 -X POST -H "Origin: https://nachert1830.ru" -H "content-type: application/json" -d '{"a":"1~ufrag~pwdpwdpwdpwdpwdpwdpwdpwd~AbCd~a~h,192.168.43.2,51234"}'
           U="$SCAN_URL?sig=$SIGC" chk "связь телефон-ноутбук: ноутбук забирает ответ" 200 -H "Origin: https://nachert1830.ru"; grep -q '192.168.43.2' /tmp/body.txt || echo "::warning::ответ попал в другой экземпляр функции (телефон повторяет его — дойдёт)"
-          U="$SCAN_URL?hand=$SIGC" chk "руки через сервер: телефон шлёт" 200 -X POST -H "Origin: https://nachert1830.ru" -H "content-type: application/json" -d '{"m":["{\"k\":\"h\",\"h\":[]}"]}'
-          U="$SCAN_URL?hand=$SIGC&after=0" chk "руки через сервер: ноутбук получает" 200 -H "Origin: https://nachert1830.ru"; grep -q '"seq":1' /tmp/body.txt || { echo "::error::руки через сервер не дошли до ноутбука (другая копия функции?)"; cat /tmp/body.txt; fail=1; }
           chk "POST без кода" 401 -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -d '{}'
           exit $fail
       - name: Адрес — в страницу сканера (lk/scan/config.js) и в main

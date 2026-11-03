@@ -221,6 +221,3 @@ main{position:fixed;inset:0}
 [data-theme="dark"] #undo{background:rgba(255,138,61,.18);border-color:var(--red);color:#ffc49a}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-/* камера ноутбука читает ответный QR телефона (знакомство без брокера) */
-#pairVid{display:block;width:100%;max-width:280px;margin:8px 0;border-radius:10px;transform:scaleX(-1)}
-#pairVid[hidden]{display:none}

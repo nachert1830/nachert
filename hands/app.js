@@ -691,7 +691,7 @@ function phoneInfo() {
 async function pairStart() {
   if (running) stop();
   $('pair').hidden = false; $('pairMsg').textContent = 'Готовлю код…';
-  try { await pairing.start($('pairQr'), $('pairVid')); }
+  try { await pairing.start($('pairQr')); }
   catch (e) { console.error(e); $('pairMsg').textContent = 'Не получилось: ' + (e && e.message || e) + '. Нажми «Новый код».'; }
 }
 $('ph').onclick = () => (pairing.st.state === 'on' ? pairing.stop() : pairStart());

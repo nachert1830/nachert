@@ -28,7 +28,7 @@ const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map(),sigHits:new Map
 /* ── общее хранилище связи «телефон ↔ ноутбук»: таблица YDB (Document API) — общая для всех копий функции.
    Копий функции в облаке несколько, и запросы телефона и ноутбука попадают в разные — память одной копии другим не видна.
    YDB_DOCAPI_ENDPOINT / YDB_KEY_ID / YDB_SECRET (база кабинета club, таблица RELAY_TABLE) кладёт scan-deploy.yml;
-   без них — память копии (тесты и локальный запуск). Записи: s:<канал> — ответ WebRTC, h:<канал> — очередь рук, l:<канал> — ноутбук слушает. */
+   без них — память копии (тесты и локальный запуск). Записи: s:<канал> — ответ WebRTC, (руки идут потоком WebRTC, не через функцию). */
 const SIGV=(()=>{ try{ return require('./sigv4.js'); }catch(e){ try{ return require('../lib/sigv4.js'); }catch(x){ return null; } } })();
 const KV=(()=>{ const E=process.env; if(!E.YDB_DOCAPI_ENDPOINT||!E.YDB_KEY_ID||!E.YDB_SECRET||!SIGV) return null;
   const T=E.RELAY_TABLE||'nachert_relay', cred={accessKeyId:E.YDB_KEY_ID,secretAccessKey:E.YDB_SECRET,region:'ru-central1',service:'dynamodb'};
@@ -53,21 +53,6 @@ async function signal(method,ch,body,ip,origin){
     await kvPut('s:'+ch,{a,t:Date.now()}); return reply(200,{ok:true},origin); }
   const v=await kvGet('s:'+ch); return reply(200,{ok:true,a:v&&Date.now()-v.t<180000?v.a:null},origin); }
 
-/* ── руки (?hand=<канал>), когда прямой канал WebRTC не сложился (точка доступа айфона, разные сети):
-   телефон POST {m:[сообщения]} ~12 раз в секунду (точки рук — последний кадр), ноутбук GET ?after=<номер> — опрос до 0,9 с,
-   ответ — как только пришло новое. Очередь — 30 последних сообщений. */
-async function handRelay(method,ch,raw,q,origin){ const now=Date.now();
-  if(!/^[0-9a-f]{32}$/.test(ch)) return reply(400,{ok:false,error:'канал'},origin);
-  if(method==='POST'){ let m=[]; try{ m=JSON.parse(raw||'{}').m; }catch(x){}
-    if(!Array.isArray(m)||m.length>20||m.some(x=>typeof x!=='string'||x.length>6000||!/^\{"k":"[a-z]"/.test(x))) return reply(400,{ok:false,error:'сообщения'},origin);
-    const [e0,l]=await Promise.all([kvGet('h:'+ch),kvGet('l:'+ch)]), e=e0||{seq:0,q:[]};
-    m.forEach(x=>e.q.push({s:++e.seq,m:x})); if(e.q.length>30) e.q.splice(0,e.q.length-30); e.t=now;
-    await kvPut('h:'+ch,e); return reply(200,{ok:true,seen:!!(l&&now-l.t<2500)},origin); }
-  const after=+(q&&q.after)||0; kvPut('l:'+ch,{t:now}).catch(()=>{});
-  for(;;){ const e=await kvGet('h:'+ch);
-    if(e&&(e.seq>after||e.seq<after)) return reply(200,{ok:true,seq:e.seq,m:e.seq<after?e.q.map(x=>x.m):e.q.filter(x=>x.s>after).map(x=>x.m)},origin);
-    if(Date.now()-now>900) return reply(200,{ok:true,seq:e?e.seq:after,m:[]},origin);
-    await sleepMs(KV?90:30); } }
 const same=(a,b)=>{ a=Buffer.from(String(a)); b=Buffer.from(String(b)); return a.length===b.length&&crypto.timingSafeEqual(a,b); };
 function reply(code,obj,origin){ const h={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
   if(origin){ h['access-control-allow-origin']=origin; h.vary='Origin'; } return {statusCode:code,headers:h,body:obj==null?'':JSON.stringify(obj)}; }
@@ -78,8 +63,6 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
   if(og&&!origin) return reply(403,{ok:false,error:'Этот адрес страницы не разрешён'});
   const ip=String(hd['x-forwarded-for']||hd['x-real-ip']||'?').split(',')[0].trim(), now=Date.now();
   const sigCh=event.queryStringParameters&&event.queryStringParameters.sig;
-  const handCh=event.queryStringParameters&&event.queryStringParameters.hand;
-  if(handCh!=null&&(method==='GET'||method==='POST')){ const raw=event.isBase64Encoded?Buffer.from(String(event.body||''),'base64').toString('utf8'):String(event.body||''); return handRelay(method,String(handCh),raw.slice(0,64*1024),event.queryStringParameters,origin); }
   if(sigCh!=null&&(method==='GET'||method==='POST')){ const raw=event.isBase64Encoded?Buffer.from(String(event.body||''),'base64').toString('utf8'):String(event.body||''); return signal(method,String(sigCh),raw.slice(0,4096),ip,origin); }
   const code=(v=>{ try{ return decodeURIComponent(v); }catch(e){ return v; } })(String(hd['x-scan-code']||'')), hash=process.env.SCAN_CODE_SHA256||'';
   /* GET без кода — «жива ли функция и нужен ли код» (код не проверяется, статистику не отдаём) */

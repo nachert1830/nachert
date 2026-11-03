@@ -58,10 +58,9 @@ srv.listen(0, async () => {
   try {
     await L.goto(base); await L.waitForFunction(() => window.__app && window.__app.holo);
     const broker = `ws://localhost:${srv.address().port}/mqtt`;
-    for (const scen of ['relay', 'server']) {   /* один QR: ответ телефона — через нашу функцию (без брокеров и VPN), руки — напрямую */   /* relay — брокер заблокирован (без VPN): ответ телефона — через нашу функцию, одно сканирование */
+    for (const scen of ['relay']) {   /* один QR: ответ телефона — через нашу функцию (без брокеров и VPN), руки — напрямую */   /* relay — брокер заблокирован (без VPN): ответ телефона — через нашу функцию, одно сканирование */
       const P = await ctx.newPage(); P.on('pageerror', e => errs.push(e.message));
       let url = await L.evaluate(([b, qr]) => window.__app.pairing.start(document.getElementById('pairQr'), document.getElementById('pairVid'), qr ? { brokers: ['ws://localhost:1/mqtt'], sig: location.origin + '/sig' } : { brokers: [b], sig: '' }), [broker, true]);
-      if (scen === 'server') url += '&t=nodirect';   /* прямой канал не складывается (точка доступа айфона) — руки через функцию */
       if (scen === 'relay') {
         const qrText = await L.evaluate(async () => {
           await new Promise((res, rej) => { if (window.jsQR) return res(); const s = document.createElement('script'); s.src = 'vendor/qr/jsQR.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
