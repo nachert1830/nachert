@@ -63,6 +63,17 @@ void main(){ vec2 p=vU*vec2(uRes.x/uRes.y,1.); float r=length(p*vec2(.8,1.)-vec2
   holo+=vec3(.05,.22,.32)*exp(-r*r*3.)*.55;                                  /* свечение проектора за моделью */
   vec2 g=fract(gl_FragCoord.xy/26.)-.5; holo+=vec3(.12,.45,.6)*(1.-smoothstep(.0,.06,length(g)))*.10*(1.-smoothstep(.4,1.5,r));
   if(uAnim>.5){ float sy=fract(uT*.00006)*2.4-1.2; holo+=vec3(.15,.55,.75)*exp(-pow((vU.y-sy)*60.,2.))*.06; }
+  /* стол-проектор внизу: светящийся диск с кольцами и световой столб вверх к детали */
+  vec2 q=vec2(p.x/1.05,(vU.y+.80)/.16); float e=length(q), ta=uAnim>.5?uT*.0004:0.;
+  holo+=vec3(.25,.75,1.)*exp(-pow((e-1.)*9.,2.))*.55+vec3(.2,.6,.9)*exp(-e*e*2.2)*.22;
+  holo+=vec3(.15,.55,.85)*(.5+.5*sin(e*34.-ta*6.))*exp(-e*e*1.4)*.07*step(e,1.);
+  holo+=vec3(1.,.62,.25)*exp(-pow((e-.62)*24.,2.))*.12*(.6+.4*sin(atan(q.y,q.x)*6.+ta*3.));
+  float col=exp(-pow(p.x/(.34+.18*clamp(vU.y+.8,0.,1.)),2.))*smoothstep(-.82,-.55,vU.y)*(1.-smoothstep(-.2,.9,vU.y));
+  holo+=vec3(.12,.42,.62)*col*.20;
+  /* пылинки в луче: медленно поднимаются и мерцают */
+  vec2 cell=floor(vec2(gl_FragCoord.x/14.,gl_FragCoord.y/14.-(uAnim>.5?uT*.0012:0.))); float h=fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+  vec2 f=fract(vec2(gl_FragCoord.x/14.,gl_FragCoord.y/14.-(uAnim>.5?uT*.0012:0.)))-vec2(fract(h*7.),fract(h*13.));
+  holo+=vec3(.55,.85,1.)*step(.985,h)*exp(-dot(f,f)*90.)*(.5+.5*sin(uT*.003+h*40.))*(.35+col*1.4);
   holo*=1.-.35*smoothstep(.9,1.9,length(vU*vec2(1.,1.15)));                   /* виньетка */
   vec3 draft=mix(vec3(1.),vec3(.93,.95,.98),smoothstep(.0,1.6,r));
   gl_FragColor=vec4(mix(holo,draft,uDraft),1.); }`,
@@ -97,6 +108,9 @@ void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard;
   if(uPlug>.5){ vec3 c=uCol*(.06+.28*d1+.85*fr)+uCol*band*.6; gl_FragColor=vec4(c*scan*uFl*uA,1.); return; }
   /* тело: тёмное стекло, форма читается по свету, контур — по свечению Френеля */
   vec3 c=col*(.05+.17*d1+.06*d2+.07*hemi)*(1.+1.3*uHi)+col*fr*(1.0+.9*uHi)+col*stripes*(.6+.4*wave)+col*.05*wave+vec3(.8,.95,1.)*band*.55;
+  /* радужная кайма по контуру — как у проекции в воздухе: слева тёплая, справа холодная */
+  vec3 sx=normalize(cross(uF,vec3(0.,0.,1.))+vec3(1e-4)); float side=dot(n,sx);
+  c+=pow(fr,1.6)*(vec3(1.,.25,.45)*max(side,0.)+vec3(.2,.5,1.)*max(-side,0.))*.55;
   if(!gl_FrontFacing) c*=.5;
   gl_FragColor=vec4(c*scan*uFl,1.); }`,
   lineV: `attribute vec3 aA,aB;attribute vec3 aT;uniform mat4 uM;uniform vec2 uRes;uniform float uW,uFlat;uniform vec3 uO;uniform vec2 uRot;varying float vY,vS;varying vec3 vP;

@@ -219,5 +219,18 @@ main{position:fixed;inset:0}
 [data-theme="dark"] #cam{border:1px solid var(--acc-h);border-radius:3px;box-shadow:var(--glow)}
 [data-theme="dark"] #err{border-radius:3px;background:rgba(40,12,4,.85)}
 [data-theme="dark"] #undo{background:rgba(255,138,61,.18);border-color:var(--red);color:#ffc49a}
+/* ── стенд «как в мастерской»: стеклянные панели со срезанными углами и светящимися скобками ── */
+[data-theme="dark"] .card,[data-theme="dark"] .menu{background:linear-gradient(160deg,rgba(10,40,64,.55),rgba(3,14,28,.62));
+  -webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%);
+  border:1px solid rgba(77,209,255,.28);box-shadow:0 0 24px -6px rgba(77,209,255,.45),inset 0 0 30px -12px rgba(77,209,255,.35);
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+[data-theme="dark"] #ctl,[data-theme="dark"] #help,[data-theme="dark"] #pair{background-image:
+  linear-gradient(#4dd1ff,#4dd1ff),linear-gradient(#4dd1ff,#4dd1ff),linear-gradient(#ffaa3c,#ffaa3c),linear-gradient(#ffaa3c,#ffaa3c),
+  linear-gradient(160deg,rgba(10,40,64,.55),rgba(3,14,28,.62));
+  background-size:22px 2px,2px 22px,22px 2px,2px 22px,100% 100%;
+  background-position:right 0 top 0,right 0 top 0,left 0 bottom 0,left 0 bottom 0,0 0;background-repeat:no-repeat}
+[data-theme="dark"] #rail{background:linear-gradient(180deg,rgba(6,28,48,.7),rgba(2,10,22,.75));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-color:rgba(77,209,255,.25)}
+[data-theme="dark"] #rail .tool.on,[data-theme="dark"] #ctl button.on{box-shadow:0 0 14px rgba(77,209,255,.6),inset 0 0 10px rgba(77,209,255,.35)}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 

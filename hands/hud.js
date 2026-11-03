@@ -240,18 +240,35 @@ export function createHud(canvas) {
   function drawRings(view, holo, t, reduced, k) {
     const b = holo.box, c = holo.project([(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2, (b[0][2] + b[1][2]) / 2]); if (!c) return;
     const R = Math.min(Math.max(120, holo.pxPerMm() * Math.hypot(b[1][0] - b[0][0], b[1][1] - b[0][1], b[1][2] - b[0][2]) * 0.36), Math.min(W - RW, H) * 0.36) * (0.6 + 0.4 * k);
-    const sp = reduced ? 0 : t / 1000;
-    ctx.save(); ctx.globalAlpha = k;
-    ring(c[0], c[1], R, CY2 + '.18)', 1);
-    for (let i = 0; i < 3; i++) { const a = sp * 0.35 + i * 2.094; ring(c[0], c[1], R * 1.04, CY2 + '.55)', 2, a, a + 0.62); }
-    for (let i = 0; i < 2; i++) { const a = -sp * 0.22 + i * Math.PI; ring(c[0], c[1], R * 1.10, AM, 1.5, a, a + 0.28); }
-    ctx.strokeStyle = CY2 + '.35)'; ctx.lineWidth = 1; ctx.beginPath();
+    const sp = reduced ? 0 : t / 1000, X = c[0], Y = c[1];
+    ctx.save(); ctx.globalAlpha = k; ctx.shadowColor = 'rgba(77,209,255,.8)'; ctx.shadowBlur = 8;
+    /* внутренние кольца: тонкое, пунктирное (крутится назад), сегментное */
+    ring(X, Y, R * 0.92, CY2 + '.14)', 1);
+    ctx.setLineDash([2, 7]); ctx.lineDashOffset = -sp * 30; ring(X, Y, R * 0.97, CY2 + '.45)', 1); ctx.setLineDash([]);
+    ring(X, Y, R, CY2 + '.22)', 1);
+    for (let i = 0; i < 3; i++) { const a = sp * 0.35 + i * 2.094; ring(X, Y, R * 1.04, CY2 + '.75)', 2.5, a, a + 0.62); }
+    /* золотые сегменты — широкое кольцо с вырезами, медленно против часовой */
+    ctx.shadowColor = 'rgba(255,170,60,.8)';
+    for (let i = 0; i < 12; i++) { const a = -sp * 0.12 + i * Math.PI / 6; ring(X, Y, R * 1.10, i % 3 ? 'rgba(255,170,60,.28)' : AM, i % 3 ? 3 : 5, a + 0.04, a + Math.PI / 6 - 0.04); }
+    for (let i = 0; i < 2; i++) { const a = sp * 0.5 + i * Math.PI; ring(X, Y, R * 1.21, 'rgba(255,190,90,.75)', 1.5, a, a + 0.9); }
+    ctx.shadowColor = 'rgba(77,209,255,.8)';
+    /* шкала по кругу — привязана к азимуту детали */
+    ctx.strokeStyle = CY2 + '.4)'; ctx.lineWidth = 1; ctx.beginPath();
     for (let i = 0; i < 72; i++) { const a = i * Math.PI / 36 - view.yaw, l = i % 6 ? 5 : 11, co = Math.cos(a), si = Math.sin(a);
-      ctx.moveTo(c[0] + co * R * 1.16, c[1] + si * R * 1.16); ctx.lineTo(c[0] + co * (R * 1.16 + l), c[1] + si * (R * 1.16 + l)); }
+      ctx.moveTo(X + co * R * 1.16, Y + si * R * 1.16); ctx.lineTo(X + co * (R * 1.16 + l), Y + si * (R * 1.16 + l)); }
     ctx.stroke();
+    /* внешнее тонкое кольцо и бегущая точка-«спутник» */
+    ring(X, Y, R * 1.30, CY2 + '.12)', 1);
+    const sa = sp * 0.8; ctx.fillStyle = CY; ctx.beginPath(); ctx.arc(X + Math.cos(sa) * R * 1.30, Y + Math.sin(sa) * R * 1.30, 3, 0, 7); ctx.fill();
+    /* подписи-данные на кольце */
+    ctx.shadowBlur = 0;
+    const lab = [[-0.75, 'ОБЪЕКТ · ' + String(holo.model.title || '').toUpperCase()], [0.62, 'МАСШТАБ ×' + view.zoom.toFixed(2)], [2.4, 'ТАНГАЖ ' + (view.pit * 180 / Math.PI).toFixed(0) + '°']];
+    lab.forEach(([a, s2]) => { const x = X + Math.cos(a) * R * 1.36, y = Y + Math.sin(a) * R * 1.36;
+      ctx.strokeStyle = CY2 + '.35)'; ctx.beginPath(); ctx.moveTo(X + Math.cos(a) * R * 1.30, Y + Math.sin(a) * R * 1.30); ctx.lineTo(x, y); ctx.lineTo(x + (Math.cos(a) > 0 ? 26 : -26), y); ctx.stroke();
+      text(s2, x + (Math.cos(a) > 0 ? 30 : -30), y - 2, CY, MONO, Math.cos(a) > 0 ? 'left' : 'right'); });
     /* отметка «на зрителя» и подпись азимута */
-    ctx.fillStyle = AM; ctx.beginPath(); ctx.moveTo(c[0], c[1] - R * 1.16 + 2); ctx.lineTo(c[0] - 6, c[1] - R * 1.16 - 9); ctx.lineTo(c[0] + 6, c[1] - R * 1.16 - 9); ctx.fill();
-    text(`АЗ ${deg(view.yaw).toFixed(0).padStart(3, '0')}°`, c[0], c[1] - R * 1.16 - 16, AM, MONO);
+    ctx.fillStyle = AM; ctx.beginPath(); ctx.moveTo(X, Y - R * 1.16 + 2); ctx.lineTo(X - 6, Y - R * 1.16 - 9); ctx.lineTo(X + 6, Y - R * 1.16 - 9); ctx.fill();
+    text(`АЗ ${deg(view.yaw).toFixed(0).padStart(3, '0')}°`, X, Y - R * 1.16 - 16, AM, MONO);
     ctx.restore();
   }
 
