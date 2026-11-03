@@ -58,23 +58,22 @@ srv.listen(0, async () => {
   try {
     await L.goto(base); await L.waitForFunction(() => window.__app && window.__app.holo);
     const broker = `ws://localhost:${srv.address().port}/mqtt`;
-    for (const scen of ['vpn', 'lan', 'relay']) {   /* relay — брокер заблокирован (без VPN): ответ телефона — через нашу функцию, одно сканирование */
+    for (const scen of ['relay']) {   /* один QR: ответ телефона — через нашу функцию (без брокеров и VPN), руки — напрямую */   /* relay — брокер заблокирован (без VPN): ответ телефона — через нашу функцию, одно сканирование */
       const P = await ctx.newPage(); P.on('pageerror', e => errs.push(e.message));
       let url = await L.evaluate(([b, qr]) => window.__app.pairing.start(document.getElementById('pairQr'), document.getElementById('pairVid'), qr ? { brokers: ['ws://localhost:1/mqtt'], sig: location.origin + '/sig' } : { brokers: [b], sig: '' }), [broker, scen === 'relay']);
-      if (scen === 'vpn') {
+      if (scen === 'relay') {
         const qrText = await L.evaluate(async () => {
           await new Promise((res, rej) => { if (window.jsQR) return res(); const s = document.createElement('script'); s.src = 'vendor/qr/jsQR.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
           const c = document.getElementById('pairQr'), g = c.getContext('2d'); return (window.jsQR(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height) || {}).data;
         });
-        ok(qrText === url && /&r=[0-9a-f]{32}/.test(url), `QR-код на ноутбуке читается (${url.length} символов) и содержит канал`);
-        url = url.replace(/o=[^&]*&/, '');                         /* «VPN»: прямого канала не будет — только брокер */
+        ok(qrText === url && /&r=[0-9a-f]{32}/.test(url) && !/[#&]q=/.test(url), `QR-код на ноутбуке читается (${url.length} символов) и содержит канал`);
       }
       await P.goto(url);
-      if (scen === 'relay') ok(/[#&]o=/.test(url) && /&s=/.test(url), 'брокер недоступен — код с предложением и адресом ретранслятора, сразу');
+      if (scen === 'relay') ok(/[#&]o=/.test(url) && /&s=/.test(url), 'код сразу: предложение WebRTC и адрес нашей функции, без брокеров');
       const on = await L.waitForFunction(() => window.__app.pairing.st.state === 'on', null, { timeout: 60000 }).then(() => true).catch(() => false);
       if (scen === 'lan') await L.waitForFunction(() => window.__app.pairing.st.path === 'прямо', null, { timeout: 15000 }).catch(() => {});
       const path = await L.evaluate(() => window.__app.pairing.st.path);
-      ok(on && path === (scen === 'vpn' ? 'интернет' : 'прямо'), `${scen === 'vpn' ? '«как с VPN»' : scen === 'lan' ? '«одна сеть»' : '«без VPN, брокер заблокирован» — ответ через нашу функцию'}: подключился одним сканированием, путь — ${path || 'нет'}`);
+      ok(on && path === (scen === 'vpn' ? 'интернет' : 'прямо'), `${scen === 'vpn' ? '«как с VPN»' : scen === 'lan' ? '«одна сеть»' : '«без VPN и брокеров» — ответ через нашу функцию'}: подключился одним сканированием, путь — ${path || 'нет'}`);
       /* в контейнере видеокарта программная — прогрев модели на «телефоне» идёт ~10 с; ждём его */
       await L.waitForFunction(() => window.__app.pairing.st.log.some(t => /распознавание готово/.test(t)), null, { timeout: 90000 }).catch(() => {});
       if (VID) {   /* настоящая рука в камере телефона → ноутбук её видит */

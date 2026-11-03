@@ -51,3 +51,21 @@ export async function connectMqtt(urls, onMessage, ms = 6000) {
   for (const u of urls) { try { return await connectOne(u, onMessage, ms); } catch (e) { errs.push(e.message); } }
   throw new Error(errs.join('; '));
 }
+
+/* ко ВСЕМ брокерам сразу, каждый со своим переподключением: ноутбук и телефон слушают все — не разойдутся по разным
+   брокерам (одному провайдер режет один, другому — другой). onMessage(topic, text, conn) — conn: какой брокер принёс;
+   alive() — false, и связь больше не восстанавливаем. onUp(conn) — брокер подключился (в т. ч. заново). */
+export function linkAll(urls, onMessage, topic, alive, onUp) {
+  const live = new Set();
+  urls.forEach(u => (function go(d) { setTimeout(() => {
+    if (!alive()) return;
+    let me = null;
+    connectOne(u, (t, x) => onMessage(t, x, me), 6000).then(c => {
+      if (!alive()) { c.close(); return; }
+      me = c; live.add(c); c.subscribe(topic);
+      c.onclose = () => { live.delete(c); go(1000); };
+      if (onUp) onUp(c);
+    }).catch(() => go(Math.min(10000, (d || 1000) * 2)));
+  }, d || 0); })(0));
+  return { live, publish(t, x) { live.forEach(c => c.publish(t, x)); }, close() { const a = [...live]; live.clear(); a.forEach(c => c.close()); } };
+}

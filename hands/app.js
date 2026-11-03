@@ -692,7 +692,7 @@ async function pairStart() {
   if (running) stop();
   $('pair').hidden = false; $('pairMsg').textContent = 'Готовлю код…';
   try { await pairing.start($('pairQr'), $('pairVid')); }
-  catch (e) { console.error(e); $('pairMsg').textContent = /брокер/.test(e && e.message || '') ? 'Ноутбук не достучался до сервиса связи в интернете. Проверь интернет (с VPN или без) и нажми «Новый код».' : 'Не получилось: ' + (e.message || e); }
+  catch (e) { console.error(e); $('pairMsg').textContent = 'Не получилось: ' + (e && e.message || e) + '. Нажми «Новый код».'; }
 }
 $('ph').onclick = () => (pairing.st.state === 'on' ? pairing.stop() : pairStart());
 $('pairNew').onclick = () => pairStart();

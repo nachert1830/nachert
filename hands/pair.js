@@ -1,16 +1,9 @@
-/* Ноутбук: телефон как датчик рук.
-   start(): QR-код со ссылкой на страницу-датчик (sensor.html#o=предложение&r=канал&q=брокер). Телефон сканирует его —
-   и всё. Связь двумя путями сразу:
-     • брокер MQTT (публичный, по WebSocket) — знакомство устройств и запасной путь для точек рук: работает через
-       любые сети — VPN, мобильный интернет, разные Wi-Fi;
-     • прямой канал WebRTC — если устройства видят друг друга (одна сеть, без VPN): быстрее, без посредника.
-   Брокер недоступен (провайдер его блокирует, нет интернета; ноутбук в точке доступа телефона) — знакомство без сети:
-   телефон показывает ответный QR-код, ноутбук читает его своей камерой (jsQR) — дальше руки идут напрямую.
-   Точки рук принимаются с любого пути; телефон сам выбирает прямой, когда он есть.
-   Через брокер идут только координаты пальцев (~0,5 КБ на кадр) — видео остаётся на телефоне. */
+/* Ноутбук: телефон как датчик рук — один QR, без брокеров и VPN.
+   start(): QR-код со ссылкой на страницу-датчик (sensor.html#o=предложение WebRTC&r=канал&s=наша функция). Телефон сканирует —
+   и всё: ответ телефона приходит через нашу функцию в Яндекс Облаке (доступна из России), руки — прямым каналом WebRTC.
+   Ноутбук и телефон — в одной сети (ноутбук в точке доступа телефона или общий Wi-Fi). Видео остаётся на телефоне. */
 import qrcode from './vendor/qr/qrcode.mjs';
 import { packSDP, unpackSDP, gathered, STUN, decodeHands } from './link.js';
-import { connectMqtt, BROKERS } from './mqtt.js';
 
 export function drawQR(canvas, text) {
   const q = qrcode(0, 'L'); q.addData(text); q.make();
@@ -62,18 +55,8 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
   async function start(qrCanvas, video, opt = {}) {
     stop(); st.state = 'pairing'; applied = false; st.path = ''; st.log = []; st.got = false;
     ch = 'nachert/' + newId(); const my = ch;
-    const brokers = opt.brokers || BROKERS, sig = opt.sig !== undefined ? opt.sig : (self.SCAN_API || '');
+    const sig = opt.sig !== undefined ? opt.sig : (self.SCAN_API || '');
     onStatus('Готовлю код…');
-    /* брокер — в фоне, QR его не ждёт: без VPN зарубежный брокер бывает недоступен, тогда ответ придёт через нашу функцию */
-    /* оборвался — тихо переподключаемся к тому же каналу, пока сопряжение живо (VPN и мобильная сеть рвут WebSocket) */
-    (function link(delay) { setTimeout(() => {
-      if (ch !== my || st.state === 'idle') return;
-      connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет')).then(m => {
-        if (ch !== my || st.state === 'idle') { m.close(); return; }
-        mq = m; mq.subscribe(ch + '/up');
-        mq.onclose = () => { if (mq === m) mq = null; link(1000); };
-      }).catch(() => link(Math.min(10000, (delay || 1000) * 2)));
-    }, delay || 0); })(0);
     /* Chrome без разрешения камеры прячет адрес ноутбука за «….local», а Safari такие имена не разрешает —
        прямой канал не сложится. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
     try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); s.getTracks().forEach(t => t.stop()); } catch (_) {}
@@ -83,18 +66,19 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
       dc = pc.createDataChannel('hands', { ordered: false, maxRetransmits: 0 });   /* старые точки не нужны — без повторов */
       dc.onopen = () => opened('прямо');
       dc.onmessage = e => onMsg(e.data, 'прямо');
-      dc.onclose = () => { if (st.path === 'прямо' && st.state === 'on') { st.path = 'интернет'; onStatus('Прямой канал закрылся — продолжаю через интернет'); } };
+      dc.onclose = () => { if (st.state === 'on') { onStatus('Связь с телефоном закрылась — нажми «Новый код»'); stop(); } };
       await pc.setLocalDescription(await pc.createOffer());
       await gathered(pc, 2500);
       code = packSDP(pc.localDescription.sdp);
     } catch (e) { console.warn('прямой канал недоступен', e); code = ''; }
     if (ch !== my) return '';
+    if (!code || !sig) throw new Error(!code ? 'этот браузер не умеет WebRTC' : 'не задан адрес связи (lk/scan/config.js)');
     const url = new URL('sensor.html', location.href);
-    url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + '&q=' + encodeURIComponent(brokers[0]) + (sig && code ? '&s=' + encodeURIComponent(sig) : '');
+    url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + (sig ? '&s=' + encodeURIComponent(sig) : '');
     drawQR(qrCanvas, url.href);
     onStatus('Отсканируй код телефоном.');
     /* ответ телефона — опросом нашей функции (раз в 0,7 с, пока не соединились) */
-    if (sig && code) (async function poll() {
+    (async function poll() {
       const id = ch.split('/')[1];
       while (ch === my && st.state === 'pairing' && !applied) {
         try { const r = await fetch(sig + (sig.includes('?') ? '&' : '?') + 'sig=' + id, { cache: 'no-store' }); const j = await r.json(); if (j && j.a && ch === my) { apply(j.a); break; } } catch (_) {}
@@ -121,7 +105,7 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
   function stop() {
     clearInterval(ping); clearInterval(watch); stopScan();
     const was = st.state; st.state = 'idle';
-    try { if (mq) { mq.publish(ch + '/down', JSON.stringify({ k: 'bye' })); mq.close(); } } catch (_) {}
+    const m = mq; mq = null; try { if (m) { m.publish(ch + '/down', JSON.stringify({ k: 'bye' })); m.close(); } } catch (_) {}
     try { dc && dc.close(); pc && pc.close(); } catch (_) {}
     pc = dc = mq = null; if (was === 'on') onClose();
   }
