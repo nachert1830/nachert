@@ -21,7 +21,8 @@ function send(text, drop) {
   return '';
 }
 /* что происходит на телефоне — сообщаем и ноутбуку: там видно, где застряло */
-const tell = text => send(JSON.stringify({ k: 's', text }));
+const told = [];   /* сказанное до открытия канала (без брокера) — повторим, когда канал откроется */
+const tell = text => { const m = JSON.stringify({ k: 's', text }); if (!send(m)) told.push(m); };
 const say = (t, l) => { $('title').textContent = t; if (l != null) $('lead').textContent = l; };
 const HP = new URLSearchParams(location.hash.slice(1)), offer = HP.get('o'), chId = HP.get('r'), broker = HP.get('q');
 let noBroker = HP.get('n') === '1';
@@ -171,7 +172,7 @@ function onCtl(text, path) {
 async function direct() {
   pc = new RTCPeerConnection({ iceServers: STUN });
   pc.ondatachannel = e => { dc = e.channel;
-    dc.onopen = () => { $('ans').hidden = true; tell('прямой канал открыт — руки идут напрямую'); };
+    dc.onopen = () => { $('ans').hidden = true; told.splice(0).forEach(m => send(m)); tell('прямой канал открыт — руки идут напрямую'); };
     dc.onmessage = e2 => onCtl(e2.data, 'прямо');
     dc.onclose = () => { if (running) tell('прямой канал закрылся — продолжаю через интернет'); }; };
   pc.onconnectionstatechange = () => { if (pc.connectionState !== 'failed') return; tell('прямой канал не сложился (VPN или разные сети) — работаю через интернет');
