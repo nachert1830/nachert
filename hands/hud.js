@@ -19,6 +19,8 @@ const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [
      { at: [x, y, z] } — точка на детали (сборка); сторона выноски у сборки чередуется по номерам позиций */
 export function createHud(canvas) {
   const ctx = canvas.getContext('2d');
+  /* радиус дуги не бывает отрицательным: в крошечном или скрытом окне (iframe пульта me/ при переключении) кольца сжимаются до нуля, а не роняют кадр */
+  { const arc0 = ctx.arc.bind(ctx); ctx.arc = (x, y, r, a0, a1, ccw) => arc0(x, y, Math.max(0, r), a0, a1, ccw); }
   let W = 0, H = 0, dpr = 1, RW = 0, stark = false;                            /* RW — ширина правой панели: подписи туда не заходят */
   const shown = new Map(); let moving = false, seen = new Set();
   const map = p => ({ x: p.x * W, y: p.y * H });               /* курсор — доли экрана */

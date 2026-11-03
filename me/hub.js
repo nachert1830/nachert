@@ -39,9 +39,8 @@ $('#lockForm').addEventListener('submit', e => { e.preventDefault(); const c = $
 $('#lockBtn').addEventListener('click', () => { ls.set('ownerCode', null); stopHands(); location.replace(location.pathname); });
 
 /* ───────── разделы ───────── */
-const PANE_OF = { duo: 'lk', scan: 'lk', lk: 'lk', holo: 'holo', site: 'site' };   /* duo — сканер и 3D с жестами рядом (по умолчанию на широком экране) */
+const PANE_OF = { scan: 'lk', lk: 'lk', holo: 'holo', site: 'site' };
 let cur = '', prevPane = '', split = false, splitUser = false, started = false;
-const wide = () => innerWidth > 900;
 const frame = p => $('.pane[data-pane="' + p + '"]');
 function load(p) { const f = frame(p); if (!f.getAttribute('src') || f.getAttribute('src') === 'about:blank') { f.onload = () => patch(f); f.src = SRC[p]; } return f; }
 function lkReady(f, ms) { return new Promise(res => { const t0 = Date.now(); (function poll() { let w = null; try { w = f.contentWindow; } catch (e) {}
@@ -49,11 +48,11 @@ function lkReady(f, ms) { return new Promise(res => { const t0 = Date.now(); (fu
 async function lkTab(id) { const w = await lkReady(load('lk')); if (!w) return null; const t = w.document.querySelector('.tab[data-tab="' + id + '"]'); if (t) t.click(); return w; }
 
 function go(id, opt) {
-  if (!PANE_OF[id]) id = wide() ? 'duo' : 'scan';
-  if (id === 'duo' && !wide()) id = 'scan';
+  if (!PANE_OF[id]) id = 'scan';
   const p = PANE_OF[id], was = PANE_OF[cur] || '';
   if (was && was !== p) prevPane = was;
-  split = id === 'duo' || splitUser; if (id === 'duo') prevPane = 'holo';
+  split = splitUser && p !== 'holo';   /* голограмма — всегда на весь экран */
+  if (prevPane === 'holo') prevPane = p === 'site' ? 'lk' : 'site';   /* и в «Рядом» её не ставим */
   cur = id; $$('.tab').forEach(b => { const on = b.getAttribute('data-go') === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   load(p);
   /* голограмма держит свою камеру: пока она на экране, руки пульта молчат; ушли с неё — выгружаем, камера свободна */
@@ -62,18 +61,19 @@ function go(id, opt) {
   if (holoSeen && HANDS.on) { stopHands(true); toast('У голограммы свои жесты — «Включить руки» внутри. Руки пульта вернутся, когда уйдёте с неё.', 4500); }
   if (!holoSeen && HANDS.resume) { HANDS.resume = false; startHands(); }
   layout();
-  if (id === 'scan' || id === 'duo') lkTab('check'); else if (id === 'lk' && !(opt && opt.keep)) lkTab('home');
+  if (id === 'scan') lkTab('check'); else if (id === 'lk' && !(opt && opt.keep)) lkTab('home');
   if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
 }
 function layout() {
   const p = PANE_OF[cur], two = split && prevPane && prevPane !== p;
   $('#panes').classList.toggle('split', !!two);
+  $('.stage').classList.toggle('full', p === 'holo');   /* на голограмме — без боковой панели, вся ширина ей */
   $$('.pane').forEach(f => { const n = f.getAttribute('data-pane'); f.classList.toggle('on', n === p); f.classList.toggle('prev', !!two && n === prevPane); });
   if (two) load(prevPane);
 }
 $$('.tab').forEach(b => b.addEventListener('click', () => go(b.getAttribute('data-go'))));
 $('#splitBtn').addEventListener('click', () => { splitUser = !splitUser; $('#splitBtn').classList.toggle('on', splitUser); $('#splitBtn').setAttribute('aria-pressed', splitUser);
-  if (splitUser && !prevPane) prevPane = PANE_OF[cur] === 'site' ? 'lk' : 'site'; go(cur === 'duo' && !splitUser ? 'scan' : cur, { keep: true }); });
+  if (splitUser && !prevPane) prevPane = PANE_OF[cur] === 'site' ? 'lk' : 'site'; go(cur, { keep: true }); });
 
 /* ───────── «Мои чертежи» и сканер — сбоку ───────── */
 function sheets() { try { const a = JSON.parse(ls.get('lk_sheets') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
@@ -101,7 +101,7 @@ addEventListener('storage', e => { if (e.key === 'lk_sheets' && !$('#side').hidd
 /* ───────── клавиши (и внутри разделов) ───────── */
 function keys(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey) return;
-  const k = e.code, map = { Digit0: 'duo', Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site' };
+  const k = e.code, map = { Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site' };
   if (map[k]) { e.preventDefault(); go(map[k]); }
   else if (k === 'KeyD') { e.preventDefault(); side($('#side').hidden); }
   else if (k === 'KeyS') { e.preventDefault(); $('#splitBtn').click(); }
@@ -191,7 +191,7 @@ function back() { const f = frame(PANE_OF[cur]); let w; try { w = f.contentWindo
 document.addEventListener('visibilitychange', () => { if (document.hidden && HANDS.on) stopHands(true); else if (!document.hidden && HANDS.resume) { HANDS.resume = false; startHands(); } });
 
 /* ───────── старт ───────── */
-function start() { if (started) return; started = true; side(ls.get('me_side') === '1' || (ls.get('me_side') == null && innerWidth > 900)); go((location.hash || '').slice(1) || (wide() ? 'duo' : 'scan')); }
+function start() { if (started) return; started = true; side(ls.get('me_side') === '1' || (ls.get('me_side') == null && innerWidth > 900)); go((location.hash || '').slice(1) || 'scan'); }
 addEventListener('hashchange', () => { const id = location.hash.slice(1); if (started && PANE_OF[id] && id !== cur) go(id); });
 const saved = ls.get('ownerCode');
 if (saved) unlock(saved, true); else $('#code').focus();

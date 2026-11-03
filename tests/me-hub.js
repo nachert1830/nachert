@@ -58,8 +58,7 @@ async function ui(browser, URL) {
     await page.fill('#code', OWNER); await page.click('#enter'); await page.waitForSelector('#hub:not([hidden])', { timeout: 5000 });
     const lk = page.frameLocator('.pane[data-pane="lk"]');
     await lk.locator('.tab[data-tab="check"].on').waitFor({ timeout: 15000 }).catch(() => B('вкладка «Скан» кабинета открыта', 'нет'));
-    if (await page.evaluate(() => ME.cur) !== 'duo' || !(await page.$('.panes.split .pane.prev[data-pane="holo"]')) || !/hands/.test(await page.$eval('.pane[data-pane="holo"]', f => f.getAttribute('src') || '')))
-      B('широкий экран: сканер и 3D с жестами — сразу на одном экране', await page.evaluate(() => ME.cur));
+    if (await page.evaluate(() => ME.cur) !== 'scan' || await page.$('.panes.split')) B('по умолчанию — сканер на весь экран', await page.evaluate(() => ME.cur));
     if (await page.evaluate(() => localStorage.getItem('scanCode')) !== OWNER) B('сканер кабинета получил код владельца', 'нет');
     /* пример из кабинета → «Мои чертежи» сбоку → 3D */
     await lk.locator('#scDemo').click(); await page.waitForTimeout(500);
@@ -80,6 +79,8 @@ async function ui(browser, URL) {
     /* голограмма: открылась по Alt+3, ушли — выгружена */
     await page.keyboard.press('Alt+3'); await page.waitForTimeout(300);
     if (!/hands/.test(await page.$eval('.pane[data-pane="holo"]', f => f.getAttribute('src')))) B('Alt+3 — голограмма', 'не загрузилась');
+    { const g = await page.evaluate(() => { const f = document.querySelector('.pane[data-pane="holo"]').getBoundingClientRect(); return { w: f.width, side: getComputedStyle(document.getElementById('side')).display }; });
+      if (g.w < 1280 - 2 || g.side !== 'none') B('голограмма — на весь экран, без боковой панели', JSON.stringify(g)); }
     await page.keyboard.press('Alt+1'); await page.waitForTimeout(200);
     if (await page.$eval('.pane[data-pane="holo"]', f => f.getAttribute('src')) !== 'about:blank') B('ушли с голограммы — выгружена (камера свободна)', 'осталась');
     /* «Рядом»: два раздела */

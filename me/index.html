@@ -73,6 +73,7 @@ button{cursor:pointer}
 .pane.on{display:block}
 .panes.split{grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
 .panes.split .pane.prev{display:block;grid-column:2}
+.stage.full #side{display:none}
 .cue{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);pointer-events:none;font-size:14px}
 
 /* курсор руки */
@@ -84,7 +85,7 @@ button{cursor:pointer}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--surf3);color:var(--ink);padding:10px 16px;border-radius:12px;box-shadow:var(--shadow);z-index:60;font-size:14px;max-width:calc(100% - 32px)}
 
 @media (max-width:900px){
-  .tab kbd,#splitBtn,#duoTab{display:none}
+  .tab kbd,#splitBtn{display:none}
   #side{position:absolute;inset:0 auto 0 0;z-index:20;width:min(320px,88%);box-shadow:var(--shadow)}
   .panes.split{grid-template-columns:1fr}
   .panes.split .pane.prev{display:none}
@@ -114,7 +115,6 @@ button{cursor:pointer}
   <header class="bar">
     <div class="brand">Начерт<i>·</i><span>пульт</span></div>
     <nav class="tabs" role="tablist" aria-label="Разделы">
-      <button class="tab" role="tab" data-go="duo" id="duoTab" title="Сканер и 3D с жестами на одном экране">Скан + 3D<kbd>Alt 0</kbd></button>
       <button class="tab" role="tab" data-go="scan">Скан<kbd>Alt 1</kbd></button>
       <button class="tab" role="tab" data-go="lk">Кабинет<kbd>Alt 2</kbd></button>
       <button class="tab" role="tab" data-go="holo">3D · жесты<kbd>Alt 3</kbd></button>
