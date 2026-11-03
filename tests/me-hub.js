@@ -58,6 +58,8 @@ async function ui(browser, URL) {
     await page.fill('#code', OWNER); await page.click('#enter'); await page.waitForSelector('#hub:not([hidden])', { timeout: 5000 });
     const lk = page.frameLocator('.pane[data-pane="lk"]');
     await lk.locator('.tab[data-tab="check"].on').waitFor({ timeout: 15000 }).catch(() => B('вкладка «Скан» кабинета открыта', 'нет'));
+    if (await page.evaluate(() => ME.cur) !== 'duo' || !(await page.$('.panes.split .pane.prev[data-pane="holo"]')) || !/hands/.test(await page.$eval('.pane[data-pane="holo"]', f => f.getAttribute('src') || '')))
+      B('широкий экран: сканер и 3D с жестами — сразу на одном экране', await page.evaluate(() => ME.cur));
     if (await page.evaluate(() => localStorage.getItem('scanCode')) !== OWNER) B('сканер кабинета получил код владельца', 'нет');
     /* пример из кабинета → «Мои чертежи» сбоку → 3D */
     await lk.locator('#scDemo').click(); await page.waitForTimeout(500);
