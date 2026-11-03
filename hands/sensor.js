@@ -190,9 +190,9 @@ async function direct() {
   if (mq) mq.publish(ch + '/up', answer);
   /* и через нашу функцию — повторяем, пока не соединились (так ответ дойдёт и до другого экземпляра функции) */
   setTimeout(() => { if (!(dc && dc.readyState === 'open')) relay(); }, 3000);   /* прямой не открылся за 3 с — через сервер */
-  if (SIG) for (let i = 0; i < 40 && !linked && !(dc && dc.readyState === 'open'); i++) {
+  if (SIG) for (let i = 0; i < 60 && !linked && !(dc && dc.readyState === 'open'); i++) {
     fetch(SIG + (SIG.includes('?') ? '&' : '?') + 'sig=' + chId, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a: answer }) }).catch(() => {});
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, i < 20 ? 400 : 1500));   /* первые 8 с — часто: подключение быстрее */
   }
 }
 

@@ -94,7 +94,7 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
       const id = ch.split('/')[1];
       while (ch === my && st.state === 'pairing' && !applied) {
         try { const r = await fetch(sig + (sig.includes('?') ? '&' : '?') + 'sig=' + id, { cache: 'no-store' }); const j = await r.json(); if (j && j.a && ch === my) { apply(j.a); break; } } catch (_) {}
-        await new Promise(r => setTimeout(r, 700));
+        await new Promise(r => setTimeout(r, 400));
       }
     })();
     return url.href;

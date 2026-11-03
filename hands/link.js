@@ -5,7 +5,11 @@
    адреса — и собираем SDP обратно по шаблону канала данных (~200 символов вместо ~1500).
    По каналу идут только координаты точек рук — видео остаётся на телефоне. */
 
-export const STUN = [{ urls: 'stun:stun.l.google.com:19302' }];   /* адрес снаружи — на случай, если локальные адреса не сойдутся */
+/* адрес снаружи (STUN) и ретранслятор потока (TURN): когда прямой путь невозможен — точка доступа айфона (Safari не ищет
+   путь через неё), разные сети, — поток рук идёт через TURN, по-прежнему WebRTC: ~30 кадров/с, задержка — десятки мс.
+   Open Relay (Metered) — бесплатный публичный TURN; не ответит — останутся прямые пути и запасной путь через нашу функцию */
+export const STUN = [{ urls: 'stun:stun.l.google.com:19302' },
+  { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' }];
 
 const PRIO = { host: 2122260223, srflx: 1686052607, prflx: 1845501695, relay: 41885439 };
 const b64u = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -20,10 +24,10 @@ export function packSDP(sdp) {
   for (const line of sdp.split(/\r?\n/)) {
     const m = line.match(/^a=candidate:\S+ 1 udp \d+ (\S+) (\d+) typ (\w+)/i); if (!m) continue;
     const key = m[1] + ':' + m[2]; if (seen.has(key)) continue; seen.add(key);
-    cands.push([m[3][0], m[1], m[2]].join(','));                      /* h — host, s — srflx, p — prflx */
+    cands.push([m[3][0], m[1], m[2]].join(','));                      /* h — host, s — srflx, p — prflx, r — relay */
   }
   const fpb = b64u(Uint8Array.from(fp.split(':').map(h => parseInt(h, 16))));
-  return ['1', ufrag, pwd, fpb, { actpass: 'p', active: 'a', passive: 's' }[setup] || 'p', cands.slice(0, 6).join(';')].join('~');
+  return ['1', ufrag, pwd, fpb, { actpass: 'p', active: 'a', passive: 's' }[setup] || 'p', ['h', 's', 'p', 'r'].flatMap(t => cands.filter(c => c[0] === t).slice(0, t === 'h' ? 4 : 2)).join(';')].join('~');
 }
 
 /* короткая строка → SDP канала данных (тот же формат, что дают Chrome и Safari) */

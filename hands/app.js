@@ -681,11 +681,11 @@ const pairing = createPairing({
 function phoneInfo() {
   const S = pairing.st, el = $('pf');
   info = `📱 телефон · руки ${S.fps.toFixed(0)}/с · ${S.phoneMs} мс на телефоне · сеть ${S.rtt.toFixed(0)} мс`;
-  el.hidden = false; el.textContent = `📱 руки ${S.fps.toFixed(0)}/с · ${S.phoneMs} мс · ${S.path === 'прямо' ? 'напрямую' : 'через интернет'} ${S.rtt.toFixed(0)} мс`;
+  el.hidden = false; el.textContent = `📱 руки ${S.fps.toFixed(0)}/с · ${S.phoneMs} мс · ${S.path === 'прямо' ? 'поток WebRTC' : 'через сервер — медленно'}`;
   el.title = S.path === 'прямо' ? 'Телефон и ноутбук связаны напрямую по Wi-Fi' : 'Прямой канал не сложился (VPN, разные сети или «изоляция клиентов» в Wi-Fi) — точки идут через сервис в интернете, медленнее';
   /* без руки телефон шлёт лишь каждый 5-й кадр (~6/с) — это не тормоза, а «руки нет»: так и пишем */
   const seen = frame && frame.hands.some(h => h.present);
-  if (!seen) el.textContent = `📱 на связи (${S.path === 'прямо' ? 'напрямую' : 'через интернет'}) · руки в кадре телефона нет`;
+  if (!seen) el.textContent = `📱 на связи (${S.path === 'прямо' ? 'поток WebRTC' : 'через сервер — медленно'}) · руки в кадре телефона нет`;
   el.className = 'chip perf' + (seen && S.fps < 15 ? ' bad' : seen && S.fps >= 24 ? ' good' : ''); dirty = true;
 }
 async function pairStart() {
