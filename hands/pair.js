@@ -25,7 +25,7 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
   const st = { state: 'idle', path: '', rtt: 0, fps: 0, phoneMs: 0, n: 0, t0: 0, log: [] };      /* path: 'прямо' | 'интернет' */
 
   const opened = path => {
-    st.path = path; lastSeen = performance.now();
+    stopScan(); st.path = path; lastSeen = performance.now();
     if (st.state === 'on') { onStatus('Телефон: связь ' + (path === 'прямо' ? 'напрямую' : 'через интернет')); return; }
     st.state = 'on'; st.t0 = performance.now(); st.n = 0; onOpen();
     clearInterval(ping); ping = setInterval(sendPing, 1000);
@@ -92,9 +92,9 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     const url = new URL('sensor.html', location.href);
     url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + (mq ? '&q=' + encodeURIComponent(mq.url) : '&n=1');
     drawQR(qrCanvas, url.href);
-    if (mq) onStatus('Отсканируй код телефоном.');
-    else { onStatus('1. Отсканируй код телефоном.\n2. Покажи телефон камере ноутбука.');
-      if (!opt.noScan) startScan(video).catch(e => onStatus('Камера ноутбука не включилась (' + (e.message || e) + ') — нужен доступ к камере, чтобы прочитать код телефона.')); }
+    onStatus('1. Отсканируй код телефоном.\n2. Покажи телефон камере ноутбука.');
+    /* камера ноутбука ищет ответный код телефона всегда: сервис связи мог ответить ноутбуку, но не телефону */
+    if (code && !opt.noScan) startScan(video).catch(e => onStatus('Нужен доступ к камере ноутбука — разреши и нажми «Новый код» (' + (e.message || e) + ')'));
     return url.href;
   }
 
@@ -107,8 +107,8 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     const c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true });
     scan = { stream, v, t: setInterval(() => {
       if (v.readyState < 2) return; const k = Math.min(1, 960 / v.videoWidth); c.width = v.videoWidth * k; c.height = v.videoHeight * k;
-      g.drawImage(v, 0, 0, c.width, c.height); const r = window.jsQR(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: 'dontInvert' });
-      if (r && /^1~/.test(r.data)) apply(r.data); }, 200) };
+      g.drawImage(v, 0, 0, c.width, c.height); const r = window.jsQR(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: 'attemptBoth' });
+      if (r && /^1~/.test(r.data)) apply(r.data); }, 150) };
   }
   function stopScan() { if (!scan) return; clearInterval(scan.t); scan.stream.getTracks().forEach(t => t.stop()); scan.v.srcObject = null; scan.v.hidden = true; scan = null; }
 
@@ -121,5 +121,5 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
   }
   /* для тестов: ответ строкой */
   async function answer(text) { await apply(text); }
-  return { start, stop, answer, st, get offerSDP() { return pc && pc.localDescription && pc.localDescription.sdp; } };
+  return { start, stop, answer, scan: v => startScan(v), st, get offerSDP() { return pc && pc.localDescription && pc.localDescription.sdp; } };
 }

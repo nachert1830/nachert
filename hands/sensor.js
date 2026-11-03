@@ -165,7 +165,7 @@ function onCtl(text, path) {
     const pong = JSON.stringify({ k: 'q', t: m.t });
     if (path === 'прямо' && dc && dc.readyState === 'open') dc.send(pong); else if (mq) mq.publish(ch + '/up', pong);
     const via = dc && dc.readyState === 'open' ? 'напрямую' : 'через интернет';
-    if (linked !== via) { linked = via; say('Подключено — управляй руками', `Деталь — на экране ноутбука. Связь ${via}.`);
+    if (linked !== via) { linked = via; $('ans').hidden = true; say('Подключено — управляй руками', `Деталь — на экране ноутбука. Связь ${via}.`);
       $('prev').hidden = false; $('flip').hidden = $('stop').hidden = false; $('tip').hidden = false; }
   } else if (m.k === 'bye') { running = false; linked = ''; say('Ноутбук закрыл связь', 'Чтобы подключиться снова — «📱 Телефон» на ноутбуке и новый код.'); }
 }
@@ -182,8 +182,8 @@ async function direct() {
   await gathered(pc, 2500);
   const ans = packSDP(pc.localDescription.sdp);                      /* ответ — строкой «1~…» */
   if (mq) mq.publish(ch + '/up', ans);
-  else if (!(dc && dc.readyState === 'open')) { drawQR($('ans'), ans); $('ans').hidden = false;
-    say('Покажи камере ноутбука', ''); }
+  /* код показываем всегда, пока не связались: сервис связи мог не дойти до ноутбука */
+  if (!linked && !(dc && dc.readyState === 'open')) { drawQR($('ans'), ans); $('ans').hidden = false; say('Покажи камере ноутбука', ''); }
 }
 
 /* открыли по ссылке с ноутбука — запускаемся сами: нужно только разрешить камеру (кнопка — если браузер не дал без нажатия) */
