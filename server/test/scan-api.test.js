@@ -68,4 +68,6 @@ test('код владельца: открывает страницу me/ (GET ?o
     const s2=await get('виктория'); assert.equal(s2.statusCode,200); assert.equal(JSON.parse(s2.body).owner,false,'студенту сканер открыт, но он не владелец');
     assert.equal((await get('чужой',q)).statusCode,401);
     const p=await F.handler(ev('POST',{headers:{origin:OK,'x-scan-code':encodeURIComponent('мой-личный-код')},body:body()})); assert.equal(p.statusCode,200,'код владельца сканирует');
+    process.env.OWNER_CODE_SHA256=F.sha('виктория');
+    assert.equal((await get('виктория',q)).statusCode,403,'код владельца = студенческому — владельца нет');
   } finally { delete process.env.OWNER_CODE_SHA256; } });

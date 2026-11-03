@@ -72,6 +72,7 @@ jobs:
           echo "::add-mask::$PROXYAPI_KEY"
           HASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.SCAN_CODE))")
           OHASH=""; [ -n "$OWNER_CODE" ] && OHASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.OWNER_CODE))")
+          [ -n "$OHASH" ] && [ "$OHASH" = "$HASH" ] && echo "::error::Секрет OWNER_CODE совпадает со студенческим кодом сканера — пульт me/ закрыт для всех. Задайте в OWNER_CODE другой, личный код и запустите развёртывание ещё раз."
           rm -rf pkg && mkdir pkg && cp server/scan/index.js pkg/index.js && cp server/lib/eyes.js server/lib/sheetprompts.js pkg/
           (cd pkg && zip -qr ../scan.zip .)
           yc serverless function get --name nachert-scan >/dev/null 2>&1 || yc serverless function create --name nachert-scan >/dev/null
@@ -98,7 +99,9 @@ jobs:
           grep -qi "access-control-allow-origin: https://nachert1830.ru" /tmp/h.txt || { echo "::error::нет заголовка CORS для сайта"; cat /tmp/h.txt; fail=1; }
           chk "OPTIONS с чужого адреса" 403 -X OPTIONS -H "Origin: https://evil.example"
           U="$SCAN_URL?owner=1" chk "страница владельца по студенческому коду" 403 -H "Origin: https://nachert1830.ru" -H "x-scan-code: $ENC"
-          if [ -n "$OWNER_CODE" ]; then OENC=$(node -e "console.log(encodeURIComponent(process.env.OWNER_CODE))")
+          SAME=$(node -e "const F=require('./server/scan/index.js');console.log(F.sha(process.env.OWNER_CODE||'')===F.sha(process.env.C)?1:0)")
+          if [ "$SAME" = 1 ]; then echo "::error::OWNER_CODE совпадает со студенческим кодом — задайте другой личный код (пульт сейчас закрыт для всех)"; fail=1
+          elif [ -n "$OWNER_CODE" ]; then OENC=$(node -e "console.log(encodeURIComponent(process.env.OWNER_CODE))")
             U="$SCAN_URL?owner=1" chk "страница владельца по коду владельца" 200 -H "Origin: https://nachert1830.ru" -H "x-scan-code: $OENC"; grep -q '"owner":true' /tmp/body.txt || { echo "::error::код владельца не принят"; fail=1; }
           else echo "::warning::секрет OWNER_CODE не задан — страница me/ не откроется никому"; fi
           chk "POST без кода" 401 -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -d '{}'

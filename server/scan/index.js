@@ -39,7 +39,8 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
   if(method==='GET'&&!code) return reply(200,{ok:true,scan:true,codeNeeded:true},origin);
   const f=state.fails.get(ip)||[]; const recent=f.filter(t=>now-t<600000); if(recent.length>=10) return reply(429,{ok:false,error:'Слишком много неверных кодов. Подождите 10 минут.'},origin);
   /* код владельца (OWNER_CODE_SHA256) — второй, личный код: открывает страницу владельца me/ и тоже даёт сканировать */
-  const ownerHash=process.env.OWNER_CODE_SHA256||'', owner=!!code&&!!ownerHash&&same(sha(code),ownerHash);
+  /* код владельца, совпавший со студенческим, не действует: иначе пульт открылся бы всем студентам */
+  const ownerHash=process.env.OWNER_CODE_SHA256||'', owner=!!code&&!!ownerHash&&ownerHash!==hash&&same(sha(code),ownerHash);
   if(!owner&&(!hash||!same(sha(code),hash))){ recent.push(now); state.fails.set(ip,recent); if(state.fails.size>500) state.fails.clear(); return reply(401,{ok:false,error:'Неверный код доступа'},origin); }
   /* GET ?owner=1 — вход на страницу владельца: студенческий код здесь не годится (403) */
   const wantOwner=String((event.queryStringParameters&&event.queryStringParameters.owner)||'')==='1';
