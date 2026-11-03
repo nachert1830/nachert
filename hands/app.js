@@ -29,7 +29,7 @@ const gpuName = (() => { try { const g = document.createElement('canvas').getCon
    3D не чаще 30 кадров/с, распознавание рук — сначала на процессоре (видеокарта и так занята голограммой) */
 const SOFT = /swiftshader|llvmpipe|basic render|software/i.test(gpuName);
 const WEAK = SOFT || (/intel/i.test(gpuName) && /(uhd|hd) graphics/i.test(gpuName) && !/iris/i.test(gpuName));
-try { holo = createHolo($('gl'), MODEL, { antialias: !WEAK, scale: WEAK ? 0.8 : 1 }); } catch (e) { console.error(e); }
+try { holo = createHolo($('gl'), MODEL, { antialias: !SOFT, scale: 1 }); }   /* чётко всегда; скорость — за счёт разрешения только в движении */ catch (e) { console.error(e); }
 if (SOFT) setTimeout(() => showErr('Браузер рисует 3D без видеокарты (программно) — будет медленно.\nВключи «Использовать аппаратное ускорение» в настройках браузера и перезапусти его.'), 400);
 if (!holo) showErr('WebGL недоступен — голограмма не покажется.');
 const hud = createHud($('hud'));
@@ -101,9 +101,10 @@ function quizShow() {
   const again = el.querySelector('#qa'); if (again) again.onclick = quizStart;
 }
 
+let lastMoveT = 0;   /* когда деталь последний раз двигалась — для полного разрешения в покое */
 function render(t) {
   const dtR = Math.min(100, t - (render.t || t));
-  const moving = ctl.tick(t) | manual.anim() | follow(t) | mongeAnim(dtR) | attract(dtR);
+  const moving = ctl.tick(t) | manual.anim() | follow(t) | mongeAnim(dtR) | attract(dtR); if (moving) lastMoveT = t;
   render.t = t; if (pointer) pointer.quiz = quiz.on; pullAnim(t);          /* в «Проверь себя» подпись под пальцем выдала бы ответ */
   if (!holo) return;
   /* только «фон» (мерцание голограммы) — не чаще 30 кадров/с: меньше нагрузка, процессор остаётся распознаванию */
@@ -132,11 +133,13 @@ function adaptScale(t) {
   if (dt <= 0 || dt > 250) return;                             /* вкладка была в фоне */
   perf.ema = 0.9 * perf.ema + 0.1 * dt;
   if (t - perf.t0 < 1000) return; perf.t0 = t;
-  if (perf.ema > 24 && holo.scale > 0.45) { holo.setScale(holo.scale * 0.8); perf.good = 0; dirty = true; }
+  if (perf.ema > 24 && holo.scale > 0.75 && t - lastMoveT < 250) { holo.setScale(holo.scale * 0.85); perf.good = 0; dirty = true; }
   else if (perf.ema < 18 && holo.scale < 1 && ++perf.good >= 3) { holo.setScale(holo.scale * 1.15); perf.good = 0; dirty = true; }
 }
 window.__perf = () => ({ frameMs: +perf.ema.toFixed(1), scale: holo ? +holo.scale.toFixed(2) : 0 });
-function loop(t) { render(t); adaptScale(t); requestAnimationFrame(loop); }
+/* деталь остановилась — сразу полное разрешение: снижаем его только в движении */
+function sharpen(t) { if (holo && holo.scale < 1 && t - lastMoveT > 250) { holo.setScale(1); perf.good = 0; dirty = true; } }
+function loop(t) { render(t); adaptScale(t); sharpen(t); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 if (holo) holo.scan(performance.now() + 200);
 

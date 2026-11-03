@@ -100,10 +100,10 @@ void main(){ if(uClipOn>.5&&dot(uClip.xyz,vP)>uClip.w) discard;
     if(!gl_FrontFacing) c*=.55;
     c=mix(c,vec3(.25,.55,1.),.38*uHi);
     gl_FragColor=vec4(c,1.); return; }
-  float scan=1.; if(uAnim>.5) scan=.94+.06*sin(gl_FragCoord.y*1.7-uT*.004);
+  float scan=1.;
   float band=exp(-pow((vP.z-uScan)/5.,2.));
   /* голограмма: полосы интерференции по высоте ползут вверх, тонкие линии каждые 2,5 мм */
-  float drift=uAnim>.5?uT*.012:0., stripes=smoothstep(.82,1.,abs(sin((vP.z-drift)*1.25)))*.16, wave=.5+.5*sin(vP.z*.06-uT*.0016*uAnim);
+  float drift=uAnim>.5?uT*.012:0., stripes=0.   /* полосы давали рябь (муар) — деталь выглядела мутной; чётче без них */, wave=.5+.5*sin(vP.z*.06-uT*.0016*uAnim);
   vec3 col=mix(uCol,vec3(1.,.62,.26),uHi*.85);
   if(uPlug>.5){ vec3 c=uCol*(.06+.28*d1+.85*fr)+uCol*band*.6; gl_FragColor=vec4(c*scan*uFl*uA,1.); return; }
   /* тело: тёмное стекло, форма читается по свету, контур — по свечению Френеля */
@@ -233,7 +233,7 @@ export function createHolo(canvas, model, opt = {}) {
   }
 
   function draw(view, t, o = {}) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * scale, w = Math.max(2, Math.round(canvas.clientWidth * dpr)), h = Math.max(2, Math.round(canvas.clientHeight * dpr));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) * scale,   /* до 2×: на ретине и айфоне деталь чёткая */ w = Math.max(2, Math.round(canvas.clientWidth * dpr)), h = Math.max(2, Math.round(canvas.clientHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, w, h);
     const mg = o.monge && o.monge.a > 0.001 ? o.monge : null, MGd = mg ? monge() : null;
@@ -456,7 +456,7 @@ export function createHolo(canvas, model, opt = {}) {
     pulls: () => pulls,
     pxPerMm: () => (last ? canvas.clientHeight / last.us : 1),
     setMode(m) { mode = m; }, get mode() { return mode; },
-    setScale(k) { scale = Math.max(0.4, Math.min(1, k)); }, get scale() { return scale; },
+    setScale(k) { scale = Math.max(0.7, Math.min(1, k)); }, get scale() { return scale; },
     scan(t) { scan = { t0: t, z0: b[1][2] + 10, z1: b[0][2] - 10 }; }       /* луч сверху вниз — при загрузке и сбросе */
   };
 }
