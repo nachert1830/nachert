@@ -24,37 +24,50 @@ const MODELS={opus:'anthropic/claude-opus-5-5',sonnet:'anthropic/claude-sonnet-5
 const model=(v,d)=>MODELS[v]||v||MODELS[d]||d;   /* opus | sonnet | haiku или полное имя */
 /* лимит ответа: Opus 5.5 рассуждает всегда (рассуждение — в том же лимите); ProxyAPI заранее оценивает цену по лимиту, поэтому не больше нужного */
 const TOKENS=m=>/opus|fable|mythos/.test(m)?9000:3000;
-const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map(),sig:new Map(),sigHits:new Map(),hand:new Map()};
-/* ── ретранслятор рук (?hand=<канал>), когда прямой канал WebRTC не сложился (точка доступа айфона, разные сети, без VPN) ──
-   Телефон POST {m:[сообщения]} (~12 раз в секунду, точки рук — последний кадр), ноутбук GET ?after=<номер> — длинный опрос
-   до 0,9 с: ответ, как только пришло новое. Очередь — 30 последних сообщений, канал живёт 2 минуты без обращений.
-   Нужна одна живая копия функции на всех: версия развёрнута с concurrency (scan-deploy.yml). */
-async function handRelay(method,ch,raw,q,origin){ const now=Date.now();
+const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map(),sigHits:new Map()};
+/* ── общее хранилище связи «телефон ↔ ноутбук»: таблица YDB (Document API) — общая для всех копий функции.
+   Копий функции в облаке несколько, и запросы телефона и ноутбука попадают в разные — память одной копии другим не видна.
+   YDB_DOCAPI_ENDPOINT / YDB_KEY_ID / YDB_SECRET (база кабинета club, таблица RELAY_TABLE) кладёт scan-deploy.yml;
+   без них — память копии (тесты и локальный запуск). Записи: s:<канал> — ответ WebRTC, h:<канал> — очередь рук, l:<канал> — ноутбук слушает. */
+const SIGV=(()=>{ try{ return require('./sigv4.js'); }catch(e){ try{ return require('../lib/sigv4.js'); }catch(x){ return null; } } })();
+const KV=(()=>{ const E=process.env; if(!E.YDB_DOCAPI_ENDPOINT||!E.YDB_KEY_ID||!E.YDB_SECRET||!SIGV) return null;
+  const T=E.RELAY_TABLE||'nachert_relay', cred={accessKeyId:E.YDB_KEY_ID,secretAccessKey:E.YDB_SECRET,region:'ru-central1',service:'dynamodb'};
+  async function call(op,body){ const b=JSON.stringify(body), req={method:'POST',url:E.YDB_DOCAPI_ENDPOINT,headers:{'content-type':'application/x-amz-json-1.0','x-amz-target':'DynamoDB_20120810.'+op},body:b};
+    const sg=SIGV.sign(req,cred,Date.now()), r=await doFetch(E.YDB_DOCAPI_ENDPOINT,{method:'POST',headers:sg.headers,body:b}); const t=await r.text();
+    if(!r.ok) throw new Error('YDB '+op+': '+r.status+' '+t.slice(0,200)); return t?JSON.parse(t):{}; }
+  return { async get(id){ const j=await call('GetItem',{TableName:T,Key:{id:{S:id}},ConsistentRead:true}); return j.Item&&j.Item.v?JSON.parse(j.Item.v.S):null; },
+    async put(id,v){ await call('PutItem',{TableName:T,Item:{id:{S:id},v:{S:JSON.stringify(v)}}}); } }; })();
+const mem=new Map();
+const kvGet=async id=>{ if(KV) return KV.get(id); const v=mem.get(id); return v&&Date.now()-v.t0<180000?v.v:null; };
+const kvPut=async(id,v)=>{ if(KV) return KV.put(id,v); if(mem.size>2000) mem.clear(); mem.set(id,{v,t0:Date.now()}); };
+const sleepMs=ms=>new Promise(r=>setTimeout(r,ms));
+function limitIp(ip,max){ const now=Date.now(), h=(state.sigHits.get(ip)||[]).filter(t=>now-t<60000); h.push(now); state.sigHits.set(ip,h); if(state.sigHits.size>2000) state.sigHits.clear(); return h.length>max; }
+
+/* ── знакомство (?sig=<канал>): телефон кладёт ответ WebRTC (строка «1~…», ≤ 1 КБ), ноутбук забирает опросом. Без кода:
+   ключи соединения одноразовые, канал — случайные 128 бит. Нужен без VPN: зарубежные брокеры заблокированы, функция — в России. */
+async function signal(method,ch,body,ip,origin){
   if(!/^[0-9a-f]{32}$/.test(ch)) return reply(400,{ok:false,error:'канал'},origin);
-  for(const [k,v] of state.hand) if(now-Math.max(v.t,v.seen)>120000){ v.w.forEach(f=>f()); state.hand.delete(k); }
-  let e=state.hand.get(ch); if(!e){ if(state.hand.size>=200) return reply(429,{ok:false,error:'занято'},origin); e={seq:0,q:[],t:now,seen:0,w:[]}; state.hand.set(ch,e); }
-  if(method==='POST'){ let m=[]; try{ m=JSON.parse(raw||'{}').m; }catch(x){}
-    if(!Array.isArray(m)||m.length>20||m.some(x=>typeof x!=='string'||x.length>6000||!/^\{"k":"[a-z]"/.test(x))) return reply(400,{ok:false,error:'сообщения'},origin);
-    m.forEach(x=>{ e.q.push({s:++e.seq,m:x}); }); if(e.q.length>30) e.q.splice(0,e.q.length-30); e.t=now;
-    const w=e.w; e.w=[]; w.forEach(f=>f());
-    return reply(200,{ok:true,seen:now-e.seen<2500},origin); }
-  e.seen=now; const after=+(q&&q.after)||0;
-  if(!(e.seq>after)) await new Promise(res=>{ e.w.push(res); setTimeout(res,900); });
-  e.seen=Date.now(); return reply(200,{ok:true,seq:e.seq,m:e.q.filter(x=>x.s>after).map(x=>x.m)},origin); }
-/* ── ретранслятор знакомства «телефон → ноутбук» для голограммы hands/ (?sig=<канал>) ──
-   Ноутбук показывает QR с предложением WebRTC; телефон кладёт сюда ответ (строка «1~…», ≤ 1 КБ), ноутбук забирает его опросом.
-   Нужен, когда зарубежные брокеры MQTT недоступны (блокировка без VPN): эта функция — в Яндекс Облаке, из России доступна.
-   Без кода: в ответе нет ничего секретного (ключи соединения одноразовые, канал — случайные 128 бит), живёт 2 минуты.
-   Память экземпляра: телефон повторяет ответ, пока не соединится, — так он попадёт и в другой экземпляр функции. */
-function signal(method,ch,body,ip,origin){ const now=Date.now();
-  if(!/^[0-9a-f]{32}$/.test(ch)) return reply(400,{ok:false,error:'канал'},origin);
-  const h=(state.sigHits.get(ip)||[]).filter(t=>now-t<60000); h.push(now); state.sigHits.set(ip,h); if(state.sigHits.size>2000) state.sigHits.clear();
-  if(h.length>240) return reply(429,{ok:false,error:'Слишком часто'},origin);
-  for(const [k,v] of state.sig) if(now-v.t>120000) state.sig.delete(k);
+  if(limitIp(ip,600)) return reply(429,{ok:false,error:'Слишком часто'},origin);
   if(method==='POST'){ let a=''; try{ a=String(JSON.parse(body||'{}').a||''); }catch(e){}
     if(!/^1~[A-Za-z0-9+\/=_~;,.:-]{20,1000}$/.test(a)) return reply(400,{ok:false,error:'ответ'},origin);
-    if(state.sig.size<1000||state.sig.has(ch)) state.sig.set(ch,{a,t:now}); return reply(200,{ok:true},origin); }
-  const v=state.sig.get(ch); return reply(200,{ok:true,a:v?v.a:null},origin); }
+    await kvPut('s:'+ch,{a,t:Date.now()}); return reply(200,{ok:true},origin); }
+  const v=await kvGet('s:'+ch); return reply(200,{ok:true,a:v&&Date.now()-v.t<180000?v.a:null},origin); }
+
+/* ── руки (?hand=<канал>), когда прямой канал WebRTC не сложился (точка доступа айфона, разные сети):
+   телефон POST {m:[сообщения]} ~12 раз в секунду (точки рук — последний кадр), ноутбук GET ?after=<номер> — опрос до 0,9 с,
+   ответ — как только пришло новое. Очередь — 30 последних сообщений. */
+async function handRelay(method,ch,raw,q,origin){ const now=Date.now();
+  if(!/^[0-9a-f]{32}$/.test(ch)) return reply(400,{ok:false,error:'канал'},origin);
+  if(method==='POST'){ let m=[]; try{ m=JSON.parse(raw||'{}').m; }catch(x){}
+    if(!Array.isArray(m)||m.length>20||m.some(x=>typeof x!=='string'||x.length>6000||!/^\{"k":"[a-z]"/.test(x))) return reply(400,{ok:false,error:'сообщения'},origin);
+    const [e0,l]=await Promise.all([kvGet('h:'+ch),kvGet('l:'+ch)]), e=e0||{seq:0,q:[]};
+    m.forEach(x=>e.q.push({s:++e.seq,m:x})); if(e.q.length>30) e.q.splice(0,e.q.length-30); e.t=now;
+    await kvPut('h:'+ch,e); return reply(200,{ok:true,seen:!!(l&&now-l.t<2500)},origin); }
+  const after=+(q&&q.after)||0; kvPut('l:'+ch,{t:now}).catch(()=>{});
+  for(;;){ const e=await kvGet('h:'+ch);
+    if(e&&(e.seq>after||e.seq<after)) return reply(200,{ok:true,seq:e.seq,m:e.seq<after?e.q.map(x=>x.m):e.q.filter(x=>x.s>after).map(x=>x.m)},origin);
+    if(Date.now()-now>900) return reply(200,{ok:true,seq:e?e.seq:after,m:[]},origin);
+    await sleepMs(KV?90:30); } }
 const same=(a,b)=>{ a=Buffer.from(String(a)); b=Buffer.from(String(b)); return a.length===b.length&&crypto.timingSafeEqual(a,b); };
 function reply(code,obj,origin){ const h={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
   if(origin){ h['access-control-allow-origin']=origin; h.vary='Origin'; } return {statusCode:code,headers:h,body:obj==null?'':JSON.stringify(obj)}; }
@@ -105,4 +118,4 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
     const {c,u}=spend(r);
     return reply(200,{ok:true,text:r.text,model:r.model,mode,fallback,usage:{in:u.prompt_tokens||0,out:u.completion_tokens||0},cost:+c.toFixed(5)},origin); }
   catch(e){ const st=e&&e.status&&e.status<600?e.status:502; return reply(st,{ok:false,error:String(e&&e.message||'Модель не ответила').slice(0,200)},origin); } }
-module.exports={handler,sha,_setFetch:f=>{ doFetch=f; },_reset:()=>{ state.spent=0; state.hour=Date.now(); state.hourCalls=0; state.fails.clear(); }};
+module.exports={handler,sha,_setFetch:f=>{ doFetch=f; },_reset:()=>{ mem.clear(); state.sigHits.clear(); state.spent=0; state.hour=Date.now(); state.hourCalls=0; state.fails.clear(); }};
