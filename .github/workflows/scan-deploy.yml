@@ -77,7 +77,7 @@ jobs:
           (cd pkg && zip -qr ../scan.zip .)
           yc serverless function get --name nachert-scan >/dev/null 2>&1 || yc serverless function create --name nachert-scan >/dev/null
           yc serverless function allow-unauthenticated-invoke --name nachert-scan >/dev/null
-          yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 120s \
+          yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 120s --concurrency 16 \
             --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,OWNER_CODE_SHA256=$OHASH,SCAN_LIMIT_USD=$SCAN_LIMIT,SCAN_DIGIT_MODEL=$SCAN_DIGIT,SCAN_CHECK_MODEL=$SCAN_CHECK,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
           ID=$(yc serverless function get --name nachert-scan --format json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).id))")
           URL="https://functions.yandexcloud.net/$ID"
@@ -107,6 +107,8 @@ jobs:
           SIGC=$(node -e "console.log(require('crypto').randomBytes(16).toString('hex'))")
           U="$SCAN_URL?sig=$SIGC" chk "связь телефон-ноутбук: ответ телефона" 200 -X POST -H "Origin: https://nachert1830.ru" -H "content-type: application/json" -d '{"a":"1~ufrag~pwdpwdpwdpwdpwdpwdpwdpwd~AbCd~a~h,192.168.43.2,51234"}'
           U="$SCAN_URL?sig=$SIGC" chk "связь телефон-ноутбук: ноутбук забирает ответ" 200 -H "Origin: https://nachert1830.ru"; grep -q '192.168.43.2' /tmp/body.txt || echo "::warning::ответ попал в другой экземпляр функции (телефон повторяет его — дойдёт)"
+          U="$SCAN_URL?hand=$SIGC" chk "руки через сервер: телефон шлёт" 200 -X POST -H "Origin: https://nachert1830.ru" -H "content-type: application/json" -d '{"m":["{\"k\":\"h\",\"h\":[]}"]}'
+          U="$SCAN_URL?hand=$SIGC&after=0" chk "руки через сервер: ноутбук получает" 200 -H "Origin: https://nachert1830.ru"; grep -q '"seq":1' /tmp/body.txt || { echo "::error::руки через сервер не дошли до ноутбука (другая копия функции?)"; cat /tmp/body.txt; fail=1; }
           chk "POST без кода" 401 -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -d '{}'
           exit $fail
       - name: Адрес — в страницу сканера (lk/scan/config.js) и в main

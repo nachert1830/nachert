@@ -79,3 +79,12 @@ test('ретранслятор знакомства телефона и ноут
   assert.equal((await F.handler(ev('POST',{queryStringParameters:{sig:ch},body:JSON.stringify({a:'<script>'})}))).statusCode,400);
   assert.equal((await F.handler(ev('GET',{queryStringParameters:{sig:'короткий'}}))).statusCode,400);
   assert.equal((await F.handler({httpMethod:'GET',headers:{origin:'https://evil.example'},queryStringParameters:{sig:ch}})).statusCode,403); });
+test('ретранслятор рук (?hand=): телефон кладёт, ноутбук длинным опросом забирает новое; мусор — 400',async()=>{
+  const ch='fedcba9876543210fedcba9876543210', H='{"k":"h","h":[]}';
+  const g0=F.handler(ev('GET',{queryStringParameters:{hand:ch,after:'0'}}));            /* ноутбук ждёт */
+  const p=await F.handler(ev('POST',{queryStringParameters:{hand:ch},body:JSON.stringify({m:[H,'{"k":"s","text":"ok"}']})})); assert.equal(p.statusCode,200);
+  const j=JSON.parse((await g0).body); assert.deepEqual(j.m,[H,'{"k":"s","text":"ok"}']); assert.equal(j.seq,2);
+  assert.equal(JSON.parse((await F.handler(ev('POST',{queryStringParameters:{hand:ch},body:JSON.stringify({m:[H]})}))).body).seen,true,'ноутбук на связи');
+  const j2=JSON.parse((await F.handler(ev('GET',{queryStringParameters:{hand:ch,after:'2'}}))).body); assert.deepEqual(j2.m,[H]);
+  const t0=Date.now(), j3=JSON.parse((await F.handler(ev('GET',{queryStringParameters:{hand:ch,after:'3'}}))).body); assert.deepEqual(j3.m,[]); assert.ok(Date.now()-t0>=800,'нового нет — ждём до 0,9 с');
+  assert.equal((await F.handler(ev('POST',{queryStringParameters:{hand:ch},body:JSON.stringify({m:['<script>']})}))).statusCode,400); });

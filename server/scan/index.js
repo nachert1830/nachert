@@ -24,7 +24,23 @@ const MODELS={opus:'anthropic/claude-opus-5-5',sonnet:'anthropic/claude-sonnet-5
 const model=(v,d)=>MODELS[v]||v||MODELS[d]||d;   /* opus | sonnet | haiku или полное имя */
 /* лимит ответа: Opus 5.5 рассуждает всегда (рассуждение — в том же лимите); ProxyAPI заранее оценивает цену по лимиту, поэтому не больше нужного */
 const TOKENS=m=>/opus|fable|mythos/.test(m)?9000:3000;
-const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map(),sig:new Map(),sigHits:new Map()};
+const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map(),sig:new Map(),sigHits:new Map(),hand:new Map()};
+/* ── ретранслятор рук (?hand=<канал>), когда прямой канал WebRTC не сложился (точка доступа айфона, разные сети, без VPN) ──
+   Телефон POST {m:[сообщения]} (~12 раз в секунду, точки рук — последний кадр), ноутбук GET ?after=<номер> — длинный опрос
+   до 0,9 с: ответ, как только пришло новое. Очередь — 30 последних сообщений, канал живёт 2 минуты без обращений.
+   Нужна одна живая копия функции на всех: версия развёрнута с concurrency (scan-deploy.yml). */
+async function handRelay(method,ch,raw,q,origin){ const now=Date.now();
+  if(!/^[0-9a-f]{32}$/.test(ch)) return reply(400,{ok:false,error:'канал'},origin);
+  for(const [k,v] of state.hand) if(now-Math.max(v.t,v.seen)>120000){ v.w.forEach(f=>f()); state.hand.delete(k); }
+  let e=state.hand.get(ch); if(!e){ if(state.hand.size>=200) return reply(429,{ok:false,error:'занято'},origin); e={seq:0,q:[],t:now,seen:0,w:[]}; state.hand.set(ch,e); }
+  if(method==='POST'){ let m=[]; try{ m=JSON.parse(raw||'{}').m; }catch(x){}
+    if(!Array.isArray(m)||m.length>20||m.some(x=>typeof x!=='string'||x.length>6000||!/^\{"k":"[a-z]"/.test(x))) return reply(400,{ok:false,error:'сообщения'},origin);
+    m.forEach(x=>{ e.q.push({s:++e.seq,m:x}); }); if(e.q.length>30) e.q.splice(0,e.q.length-30); e.t=now;
+    const w=e.w; e.w=[]; w.forEach(f=>f());
+    return reply(200,{ok:true,seen:now-e.seen<2500},origin); }
+  e.seen=now; const after=+(q&&q.after)||0;
+  if(!(e.seq>after)) await new Promise(res=>{ e.w.push(res); setTimeout(res,900); });
+  e.seen=Date.now(); return reply(200,{ok:true,seq:e.seq,m:e.q.filter(x=>x.s>after).map(x=>x.m)},origin); }
 /* ── ретранслятор знакомства «телефон → ноутбук» для голограммы hands/ (?sig=<канал>) ──
    Ноутбук показывает QR с предложением WebRTC; телефон кладёт сюда ответ (строка «1~…», ≤ 1 КБ), ноутбук забирает его опросом.
    Нужен, когда зарубежные брокеры MQTT недоступны (блокировка без VPN): эта функция — в Яндекс Облаке, из России доступна.
@@ -49,6 +65,8 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
   if(og&&!origin) return reply(403,{ok:false,error:'Этот адрес страницы не разрешён'});
   const ip=String(hd['x-forwarded-for']||hd['x-real-ip']||'?').split(',')[0].trim(), now=Date.now();
   const sigCh=event.queryStringParameters&&event.queryStringParameters.sig;
+  const handCh=event.queryStringParameters&&event.queryStringParameters.hand;
+  if(handCh!=null&&(method==='GET'||method==='POST')){ const raw=event.isBase64Encoded?Buffer.from(String(event.body||''),'base64').toString('utf8'):String(event.body||''); return handRelay(method,String(handCh),raw.slice(0,64*1024),event.queryStringParameters,origin); }
   if(sigCh!=null&&(method==='GET'||method==='POST')){ const raw=event.isBase64Encoded?Buffer.from(String(event.body||''),'base64').toString('utf8'):String(event.body||''); return signal(method,String(sigCh),raw.slice(0,4096),ip,origin); }
   const code=(v=>{ try{ return decodeURIComponent(v); }catch(e){ return v; } })(String(hd['x-scan-code']||'')), hash=process.env.SCAN_CODE_SHA256||'';
   /* GET без кода — «жива ли функция и нужен ли код» (код не проверяется, статистику не отдаём) */

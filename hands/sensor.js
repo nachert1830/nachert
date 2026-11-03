@@ -10,10 +10,26 @@ const $ = id => document.getElementById(id);
 /* отправка ноутбуку: прямой канал, если открыт, иначе — брокер. Сообщения рук не копим: очередь — значит, пропускаем */
 function send(text, drop) {
   if (dc && dc.readyState === 'open') { if (!drop || dc.bufferedAmount < 32768) { try { dc.send(text); return 'прямо'; } catch (_) {} } return ''; }
-  /* брокер: тот, через который пришёл пинг ноутбука (он точно слушает его); пока пинга не было — во все */
-  if (up && !up.closed) { if (!drop || up.buffered < 16384) up.publish(ch + '/up', text); return 'интернет'; }
-  if (mq && mq.live.size) { mq.publish(ch + '/up', text); return 'интернет'; }
+  /* запасной путь — наша функция: точки рук — только последний кадр, остальное — по порядку */
+  if (relayOn) { if (text.startsWith('{"k":"h"')) relayH = text; else if (relayQ.length < 20) relayQ.push(text); return 'интернет'; }
   return '';
+}
+let relayOn = false, relayH = '', relayQ = [];
+/* руки через нашу функцию (?hand=), пока прямой канал закрыт: ~12 отправок в секунду, ноутбук забирает длинным опросом */
+async function relay() {
+  if (relayOn || !SIG || stopped) return; relayOn = true; relayQ.push(...told.splice(0));
+  relayQ.push(JSON.stringify({ k: 's', text: 'руки идут через сервер (прямой канал не сложился)' }));
+  while (relayOn && !stopped && !(dc && dc.readyState === 'open')) {
+    const t0 = performance.now(), m = relayQ.splice(0); if (relayH) { m.push(relayH); relayH = ''; }
+    if (m.length) try {
+      const r = await fetch(SIG + (SIG.includes('?') ? '&' : '?') + 'hand=' + chId, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ m }) });
+      const j = await r.json().catch(() => ({}));
+      if (j.seen && linked !== 'через интернет') { linked = 'через интернет'; say('Подключено — управляй руками', 'Деталь — на экране ноутбука. Связь через сервер.');
+        $('flip').hidden = $('stop').hidden = false; $('tip').hidden = false; }
+    } catch (_) {}
+    await new Promise(r => setTimeout(r, Math.max(10, 80 - (performance.now() - t0))));
+  }
+  relayOn = false;
 }
 /* что происходит на телефоне — сообщаем и ноутбуку: там видно, где застряло */
 const told = [];   /* сказанное до открытия канала (без брокера) — повторим, когда канал откроется */
@@ -130,7 +146,7 @@ $('start').onclick = async () => {
   $('start').disabled = true; say('Запускаю…', 'Разреши доступ к камере.');
   try {
     if (!navigator.mediaDevices || !window.RTCPeerConnection) throw new Error('браузер не умеет камеру или WebRTC');
-    await camera(); keepAwake();
+    await camera(); keepAwake(); $('prev').hidden = false;   /* своё изображение — сразу, не после соединения */
     const ready = makeDetector();                                   /* модель грузится, пока знакомимся */
     ready.catch(err => tell('распознавание не запустилось: ' + String(err && err.message || err).slice(0, 300)));
     /* брокер — основной путь: через него знакомимся, и через него же идут руки, если прямого канала нет */
@@ -140,7 +156,8 @@ $('start').onclick = async () => {
     ready.then(() => { running = true; pump(); }, err => say('Не запустилось распознавание', 'Причина: ' + String(err && err.message || err) + '. Её видно и на ноутбуке.'));
     /* прямой канал — попытка в фоне: получится (одна сеть, без VPN) — руки пойдут им, быстрее */
     if (!offer || !SIG) { say('Старый код', 'Нажми на ноутбуке «Новый код» и отсканируй его.'); return; }
-    direct().catch(e => say('Не соединилось', String(e.message || e)));
+    if (HP.get('t') === 'nodirect') relay();   /* только для теста hands/tests/pair.js: как будто прямой канал не складывается */
+    else direct().catch(e => { tell('прямой канал: ' + (e.message || e)); relay(); });
     setTimeout(() => { if (!linked) say('Ноутбук не отвечает', 'Ноутбук и телефон — в одной сети без VPN (ноутбук в точке доступа телефона). Нажми на ноутбуке «Новый код» и отсканируй ещё раз.'); }, 20000);
   } catch (e) {
     console.error(e); $('start').disabled = false;
@@ -162,17 +179,17 @@ function onCtl(text, path) {
 async function direct() {
   pc = new RTCPeerConnection({ iceServers: STUN });
   pc.ondatachannel = e => { dc = e.channel;
-    dc.onopen = () => { told.splice(0).forEach(m => send(m)); tell('прямой канал открыт — руки идут напрямую'); };
+    dc.onopen = () => { relayOn = false; told.splice(0).forEach(m => send(m)); tell('прямой канал открыт — руки идут напрямую'); };
     dc.onmessage = e2 => onCtl(e2.data, 'прямо');
-    dc.onclose = () => { if (running) { running = false; say('Связь закрылась', 'Нажми на ноутбуке «Новый код» и отсканируй его ещё раз.'); } }; };
-  pc.onconnectionstatechange = () => { if (pc.connectionState !== 'failed') return; tell('прямой канал не сложился (VPN или разные сети) — работаю через интернет');
-    say('Не соединилось', 'Ноутбук и телефон — в одной сети без VPN: включи на телефоне точку доступа, подключи к ней ноутбук и нажми на ноутбуке «Новый код».'); };
+    dc.onclose = () => { if (!stopped) relay(); }; };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') relay(); };
   await pc.setRemoteDescription(unpackSDP(decodeURIComponent(offer), 'offer'));
   await pc.setLocalDescription(await pc.createAnswer());
   await gathered(pc, 2500);
   answer = packSDP(pc.localDescription.sdp);                         /* ответ — строкой «1~…» */
   if (mq) mq.publish(ch + '/up', answer);
   /* и через нашу функцию — повторяем, пока не соединились (так ответ дойдёт и до другого экземпляра функции) */
+  setTimeout(() => { if (!(dc && dc.readyState === 'open')) relay(); }, 3000);   /* прямой не открылся за 3 с — через сервер */
   if (SIG) for (let i = 0; i < 40 && !linked && !(dc && dc.readyState === 'open'); i++) {
     fetch(SIG + (SIG.includes('?') ? '&' : '?') + 'sig=' + chId, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a: answer }) }).catch(() => {});
     await new Promise(r => setTimeout(r, 1500));

@@ -14,7 +14,7 @@ export function drawQR(canvas, text) {
 const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 
 export function createPairing({ onHands, onOpen, onClose, onStatus }) {
-  let pc = null, dc = null, mq = null, ping = 0, applied = false, ch = '', lastSeen = 0, watch = 0, scan = null;
+  let relaying = '', pc = null, dc = null, mq = null, ping = 0, applied = false, ch = '', lastSeen = 0, watch = 0, scan = null, SIG = '';
   const st = { state: 'idle', path: '', rtt: 0, fps: 0, phoneMs: 0, n: 0, t0: 0, log: [] };      /* path: 'прямо' | 'интернет' */
 
   const opened = path => {
@@ -51,11 +51,22 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     stopScan(); onStatus('Телефон ответил — соединяюсь…');
     try { await pc.setRemoteDescription(unpackSDP(text, 'answer')); } catch (e) { onStatus('Прямой канал не собрался (' + e.message + ') — работаем через интернет'); }
   }
+  /* запасной путь рук — через нашу функцию (?hand=): длинный опрос, пока прямой канал не открылся.
+     Нужен, когда прямой не складывается: точка доступа айфона (Safari не ищет путь через неё), разные сети */
+  async function relay() {
+    if (!SIG || relaying === ch) return; relaying = ch; const my = ch, id = ch.split('/')[1]; let after = 0;
+    while (ch === my && st.state !== 'idle' && !(dc && dc.readyState === 'open')) {
+      try { const r = await fetch(SIG + (SIG.includes('?') ? '&' : '?') + 'hand=' + id + '&after=' + after, { cache: 'no-store' }); const j = await r.json();
+        if (j && j.ok) { if (j.seq < after) after = 0; else { after = j.seq; (j.m || []).forEach(x => onMsg(x, 'интернет')); } } else await new Promise(r => setTimeout(r, 500)); }
+      catch (_) { await new Promise(r => setTimeout(r, 500)); }
+    }
+    if (relaying === my) relaying = '';
+  }
 
   async function start(qrCanvas, video, opt = {}) {
     stop(); st.state = 'pairing'; applied = false; st.path = ''; st.log = []; st.got = false;
     ch = 'nachert/' + newId(); const my = ch;
-    const sig = opt.sig !== undefined ? opt.sig : (self.SCAN_API || '');
+    const sig = opt.sig !== undefined ? opt.sig : (self.SCAN_API || ''); SIG = sig;
     onStatus('Готовлю код…');
     /* Chrome без разрешения камеры прячет адрес ноутбука за «….local», а Safari такие имена не разрешает —
        прямой канал не сложится. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
@@ -66,7 +77,7 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
       dc = pc.createDataChannel('hands', { ordered: false, maxRetransmits: 0 });   /* старые точки не нужны — без повторов */
       dc.onopen = () => opened('прямо');
       dc.onmessage = e => onMsg(e.data, 'прямо');
-      dc.onclose = () => { if (st.state === 'on') { onStatus('Связь с телефоном закрылась — нажми «Новый код»'); stop(); } };
+      dc.onclose = () => { if (st.state === 'on') { st.path = 'интернет'; onStatus('Прямой канал закрылся — продолжаю через сервер'); relaying = ''; relay(); } };
       await pc.setLocalDescription(await pc.createOffer());
       await gathered(pc, 2500);
       code = packSDP(pc.localDescription.sdp);
@@ -77,6 +88,7 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + (sig ? '&s=' + encodeURIComponent(sig) : '');
     drawQR(qrCanvas, url.href);
     onStatus('Отсканируй код телефоном.');
+    relay();   /* запасной путь слушаем сразу (длинный опрос ~1 раз в секунду, пока ждём) */
     /* ответ телефона — опросом нашей функции (раз в 0,7 с, пока не соединились) */
     (async function poll() {
       const id = ch.split('/')[1];
