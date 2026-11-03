@@ -27727,13 +27727,14 @@ function sheetSVG(model,title,sub,task,mode){
   o+=hz&&D.cut&&SP.H==='full'?`<image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"/>`
     :hz&&D.cut&&SP.H==='halfD'?`<defs><clipPath id="${hid}a"><rect x="${X0}" y="${TOPY}" width="${S}" height="${f(tc[1]-TOPY)}"/></clipPath><clipPath id="${hid}b"><rect x="${X0}" y="${f(tc[1])}" width="${S}" height="${f(TOPY+S-tc[1])}"/></clipPath></defs>`
       +`<image href="${IG3.drawing(model,'topNH',W).url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}a)"/><image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}b)"/>`
-    :hz&&D.cut?`<defs><clipPath id="${hid}a"><rect x="${X0}" y="${TOPY}" width="${f(tc[0]-X0)}" height="${S}"/></clipPath><clipPath id="${hid}b"><rect x="${f(tc[0])}" y="${TOPY}" width="${f(X0+S-tc[0])}" height="${S}"/></clipPath></defs>`
+    :hz&&D.cut?(()=>{ const xc=P(D.top,[SP.tb,0,z1],X0,TOPY)[0]; return `<defs><clipPath id="${hid}a"><rect x="${X0}" y="${TOPY}" width="${f(xc-X0)}" height="${S}"/></clipPath><clipPath id="${hid}b"><rect x="${f(xc)}" y="${TOPY}" width="${f(X0+S-xc)}" height="${S}"/></clipPath></defs>`; })()
     +`<image href="${IG3.drawing(model,'topNH',W).url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}a)"/><image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}b)"/>`
     :given&&model.noTop?'':`<image href="${D.top.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"/>`;
   if(D.left) o+=`<image href="${D.left.url}" x="${X0+S}" y="${Y0}" width="${S}" height="${S}"/>`;
   const fa=P(D.front,[0,0,z0-7],X0,Y0), fb=P(D.front,[0,0,z1+7],X0,Y0); o+=ln(fa,fb,'#111',AX,.8);
   if(D.left){ const la=P(D.left,[0,0,z0-7],X0+S,Y0), lb=P(D.left,[0,0,z1+7],X0+S,Y0); o+=ln(la,lb,'#111',AX,.8); }
   if(!given&&SP.xb) o+=wavy(P(D.front,[SP.xb,0,z0+0.5],X0,Y0),P(D.front,[SP.xb,0,z1-0.5],X0,Y0));
+  if(hz&&D.cut&&SP.H==='half'&&SP.tb) { const [ya,yb]=topSpan(model,SP.tb); o+=wavy(P(D.top,[SP.tb,ya,z1],X0,TOPY),P(D.top,[SP.tb,yb,z1],X0,TOPY)); }
   if(!given&&SP.yb&&D.left) o+=wavy(P(D.left,[0,SP.yb,z0+0.5],X0+S,Y0),P(D.left,[0,SP.yb,z1-0.5],X0+S,Y0));
   if(!(given&&model.noTop)) o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);   /* вида сверху в задании нет — и его осей нет */
   /* оси отверстий (ГОСТ 2.303): на виде сверху — центровая окружность и перекрестия, на главном виде и виде слева — оси отверстий */
@@ -27798,7 +27799,11 @@ function creaseTop(model){ if(model._ct!=null) return model._ct; const J=IG3.J, 
   const hit=(y,zs)=>{ let prev=null; for(let z=zs;z>b[0][2]-1;z-=0.25){ const v=J(T,0,y,z); if(prev!=null&&prev>=0&&v<0) return z; prev=v; } return null; };
   const kink=(y,z)=>{ const g=k=>{ const a=[d,y,z], c=[d,y,z]; a[k]+=h; c[k]-=h; return (J(T,...a)-J(T,...c))/(2*h); }, n=[g(0),g(1),g(2)]; return Math.abs(n[0])/(Math.hypot(...n)||1)>0.3; };
   let nv=0, nc=0; for(let y=b[0][1]+0.25;y<b[1][1];y+=0.5){ const zv=hit(y,b[1][2]+1); if(zv!=null&&kink(y,zv)) nv++; const zcut=J(T,0,y,zc)<0?null:hit(y,zc); if(zcut!=null&&kink(y,zcut)) nc++; }
-  Object.defineProperty(model,'_ct',{value:nv>=12||nc>=12}); return model._ct; }   /* ребро — от 6 мм */
+  Object.defineProperty(model,'_ct',{value:nv>=12?1:nc>=12?-1:0}); return model._ct; }   /* ребро — от 6 мм; 1 — наружное (видно сверху), −1 — только в разрезе (внутреннее) */
+/* волнистая линия на виде сверху при x = const — только в пределах контура детали: крайние y, где есть материал (на любой высоте) */
+function topSpan(model,x){ const b=model.box, J=IG3.J, T=model.tree; let lo=null, hi=null;
+  for(let y=b[0][1];y<=b[1][1];y+=0.25) for(let z=b[0][2]+0.1;z<b[1][2];z+=0.5) if(J(T,x,y,z)<0){ if(lo==null) lo=y; hi=y; break; }
+  return lo==null?[b[0][1],b[1][1]]:[lo+0.5,hi-0.5]; }
 /* симметрия детали относительно плоскости y = 0 ('y') или x = 0 ('x'): 8000 псевдослучайных точек (одинаково при каждом открытии);
    несимметричный объём бывает маленьким (треугольное отверстие), поэтому точек много, а порог — 5 несовпадений */
 function symAx(model,ax){ const key=ax==='y'?'_sy':'_sx'; if(model[key]!=null) return model[key]; const b=model.box, T=model.tree; let asym=0, sd=ax==='y'?12345:777; const rnd=()=>(sd=(sd*1103515245+12345)%2147483648)/2147483648;
@@ -27812,7 +27817,10 @@ function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(
   /* горизонтальный разрез: как на главном виде — слева половина вида, справа половина разреза ('half', граница — вертикальная ось), если деталь симметрична
      слева направо и на этой оси вида сверху нет ребра; иначе — по горизонтальной оси, разрез снизу ('halfD': симметрична спереди назад, hzFull — ребро на
      горизонтальной оси); иначе полный разрез */
-  sp.H=!model.hz?'half':symAx(model,'x')&&!creaseTop(model)?'half':!model.hzFull&&symAx(model,'y')?'halfD':'full';
+  sp.H=!model.hz?'half':symAx(model,'x')&&!creaseTop(model)?'half':!model.hzFull&&symAx(model,'y')?'halfD':symAx(model,'x')?'half':'full';
+  /* ребро на вертикальной оси (пирамида ребром к нам): половину вида и половину разреза разделяют волнистой линией (ГОСТ 2.305, п. 7.10) —
+     наружное ребро — правее оси (вида больше), внутреннее — левее (разреза больше), чтобы ребро осталось на чертеже */
+  sp.tb=model.hz&&sp.H==='half'?7*creaseTop(model):0;
   const DL=7; sp.xb=sp.F==='half'||sp.F==='stepH'?-DL*crease(model,'x'):0; sp.yb=sp.L==='half'?DL*crease(model,'y'):0;
   sp.fk={half:'front',view:'front0',full:'frontF',stepH:'frontSH',step:'frontS'}[sp.F]; sp.lk={half:'left',view:'left0',full:'leftF'}[sp.L];
   return model._spec=sp; }
@@ -28314,7 +28322,7 @@ function view(v,r){
   if(r.tab==='nk'&&window.IGNK) return IGNK.view(v,r.item);
   return home(v);
 }
-return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,holeAxesFL,axDash,axCircle,axLine,secRot,loading,frame,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given'),partPage,sheetSVG};
+return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,topSpan,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,holeAxesFL,axDash,axCircle,axLine,secRot,loading,frame,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given'),partPage,sheetSVG};
 })();
 
 /* ═════════ IGL: обучение — виды, разрезы и сечения на одной детали (ДЗ 2, вариант 5) ═════════
@@ -29221,11 +29229,12 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   /* изображения */
   o+=img(C,DR(sp.fk,0,sp.xb),0,0)+img(C,DR(sp.lk,0,sp.yb),k*C.GX,0);
   if(hz&&sp.H==='full') o+=img(C,IG3.drawing(md,'topcut',W,hz.z),0,k*C.TY);   /* половину вида с половиной разреза соединить нельзя: разрез А–А целиком на месте вида сверху */
-  else if(hz){ const top=DR('topNH'), cut=IG3.drawing(md,'topcut',W,hz.z),   /* половина вида — без невидимого контура */ id='igsHz'+(typeof n==='object'?n.key:n)+mode, xc=TP(0,0)[0], yc=k*C.TY;   /* 'half': слева от вертикальной оси — вид, справа — разрез; 'halfD': сверху — вид, снизу — разрез */
+  else if(hz){ const top=DR('topNH'), cut=IG3.drawing(md,'topcut',W,hz.z),   /* половина вида — без невидимого контура */ id='igsHz'+(typeof n==='object'?n.key:n)+mode, xc=TP(sp.tb||0,0)[0], yc=k*C.TY;   /* 'half': слева от вертикальной оси — вид, справа — разрез; 'halfD': сверху — вид, снизу — разрез */
     o+=(sp.H==='half'?`<defs><clipPath id="${id}a"><rect x="-2000" y="-2000" width="${f(xc+2000)}" height="8000"/></clipPath><clipPath id="${id}b"><rect x="${f(xc)}" y="-2000" width="4000" height="8000"/></clipPath></defs>`
       :`<defs><clipPath id="${id}a"><rect x="-2000" y="-2000" width="4000" height="${f(yc+2000)}"/></clipPath><clipPath id="${id}b"><rect x="-2000" y="${f(yc)}" width="4000" height="2000"/></clipPath></defs>`)
       +`<g clip-path="url(#${id}a)">${img(C,top,0,k*C.TY)}</g><g clip-path="url(#${id}b)">${img(C,cut,0,k*C.TY)}</g>`; }
   else o+=img(C,DR('top'),0,k*C.TY);
+  if(hz&&sp.H==='half'&&sp.tb) { const [ya,yb]=IGUI.topSpan(md,sp.tb); o+=IGUI.wavy(TP(sp.tb,ya),TP(sp.tb,yb)); }   /* граница вида и разреза при ребре на оси */
   if(sp.xb) o+=IGUI.wavy(FR(sp.xb,C.z0+0.5),FR(sp.xb,C.z1-0.5)); if(sp.yb) o+=IGUI.wavy(LF(sp.yb,C.z0+0.5),LF(sp.yb,C.z1-0.5));
   /* волнистая — тоже помеха для размерных чисел (полоса шириной в её размах) */
   if(REC) [[sp.xb,FR],[sp.yb,LF]].forEach(([v,T])=>{ if(!v) return; const a=T(v,C.z0), b=T(v,C.z1); [-4,0,4].forEach(d=>REC.s.push([a[0]+d,a[1],b[0]+d,b[1]])); });
@@ -29282,7 +29291,7 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
     const fz=loopsOn(IG3.conv(md,'y'),[0,0,0],[1,0,0],[0,0,1],[C.x0-2,C.x1+2,C.z0-2,C.z1+2]), lz=loopsOn(IG3.conv(md,'x'),[0,0,0],[0,1,0],[0,0,1],[C.y0-2,C.y1+2,C.z0-2,C.z1+2]), id='igsPk'+(typeof n==='object'?n.key:n);   /* рассечённое — с условностью для отверстий фланца, как на разрезах */
     if(sp.F!=='view') col+=`<defs><clipPath id="${id}f"><rect x="${f(sp.F==='full'?-4000:FR(sp.xb,0)[0])}" y="-4000" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}f)" d="${pathOf(fz,q=>FR(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`;
     if(sp.L!=='view') col+=`<defs><clipPath id="${id}l"><rect x="${f(sp.L==='full'?-4000:LF(sp.yb,0)[0])}" y="-4000" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}l)" d="${pathOf(lz,q=>LF(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`;
-    if(hz){ const hzL=loopsOn(md,[0,0,hz.z],[1,0,0],[0,1,0],[C.x0-2,C.x1+2,C.y0-2,C.y1+2]); col+=`<defs><clipPath id="${id}h"><rect x="${f(sp.H==='half'?TP(0,0)[0]:-4000)}" y="${f(sp.H==='halfD'?k*C.TY:-4000)}" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}h)" d="${pathOf(hzL,q=>TP(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`; }
+    if(hz){ const hzL=loopsOn(md,[0,0,hz.z],[1,0,0],[0,1,0],[C.x0-2,C.x1+2,C.y0-2,C.y1+2]); col+=`<defs><clipPath id="${id}h"><rect x="${f(sp.H==='half'?TP(sp.tb||0,0)[0]:-4000)}" y="${f(sp.H==='halfD'?k*C.TY:-4000)}" width="8000" height="8000"/></clipPath></defs><path clip-path="url(#${id}h)" d="${pathOf(hzL,q=>TP(q[0],q[1]))}" fill="${PK}" fill-opacity="${PKo}" fill-rule="evenodd"/>`; }
     col+=yellow(C);
     const lab=labeler();
     /* вид слева: высоты переносятся с главного вида горизонтальными линиями связи */
