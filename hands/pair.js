@@ -65,11 +65,15 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
     const brokers = opt.brokers || BROKERS, sig = opt.sig !== undefined ? opt.sig : (self.SCAN_API || '');
     onStatus('Готовлю код…');
     /* брокер — в фоне, QR его не ждёт: без VPN зарубежный брокер бывает недоступен, тогда ответ придёт через нашу функцию */
-    connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет')).then(m => {
-      if (ch !== my || st.state === 'idle') { m.close(); return; }
-      mq = m; mq.subscribe(ch + '/up');
-      mq.onclose = () => { if (st.state === 'pairing' && !sig) onStatus('Связь с сервисом оборвалась — нажми «Новый код»'); };
-    }).catch(e => console.warn('брокер недоступен', e && e.message));
+    /* оборвался — тихо переподключаемся к тому же каналу, пока сопряжение живо (VPN и мобильная сеть рвут WebSocket) */
+    (function link(delay) { setTimeout(() => {
+      if (ch !== my || st.state === 'idle') return;
+      connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет')).then(m => {
+        if (ch !== my || st.state === 'idle') { m.close(); return; }
+        mq = m; mq.subscribe(ch + '/up');
+        mq.onclose = () => { if (mq === m) mq = null; link(1000); };
+      }).catch(() => link(Math.min(10000, (delay || 1000) * 2)));
+    }, delay || 0); })(0);
     /* Chrome без разрешения камеры прячет адрес ноутбука за «….local», а Safari такие имена не разрешает —
        прямой канал не сложится. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
     try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); s.getTracks().forEach(t => t.stop()); } catch (_) {}
