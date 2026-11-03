@@ -18356,7 +18356,7 @@ WB3.add({
 /* ---------- № 64 ---------- */
 (function(){
 const sc=2.6, {F,H}=mk(sc);
-const A=[40,19.7,8.2], K=[32,4.1,17.5], dk=[-18.5,8,A[2]-K[2]];      // h = AP₁ — горизонталь: z(P₁) = z(A)
+const A=[40,19.7,13], K=[32,4.1,17.5], dk=[-18.5,8,A[2]-K[2]];      // h = AP₁ — горизонталь: z(P₁) = z(A)
 const LBt=t=>v3.add(K,v3.mul(dk,t)), P1=LBt(1);
 const O3=v3.foot(K,A,P1), Ah=H(A), Kh=H(K), Oh=H(O3), h1=H(P1);
 const tri=triH(H,sc,O3,K,{A:'O',B:'K',side:1,la:'e',lla:[14,-10,'start']});
