@@ -104,6 +104,9 @@ jobs:
           elif [ -n "$OWNER_CODE" ]; then OENC=$(node -e "console.log(encodeURIComponent(process.env.OWNER_CODE))")
             U="$SCAN_URL?owner=1" chk "страница владельца по коду владельца" 200 -H "Origin: https://nachert1830.ru" -H "x-scan-code: $OENC"; grep -q '"owner":true' /tmp/body.txt || { echo "::error::код владельца не принят"; fail=1; }
           else echo "::warning::секрет OWNER_CODE не задан — страница me/ не откроется никому"; fi
+          SIGC=$(node -e "console.log(require('crypto').randomBytes(16).toString('hex'))")
+          U="$SCAN_URL?sig=$SIGC" chk "связь телефон-ноутбук: ответ телефона" 200 -X POST -H "Origin: https://nachert1830.ru" -H "content-type: application/json" -d '{"a":"1~ufrag~pwdpwdpwdpwdpwdpwdpwdpwd~AbCd~a~h,192.168.43.2,51234"}'
+          U="$SCAN_URL?sig=$SIGC" chk "связь телефон-ноутбук: ноутбук забирает ответ" 200 -H "Origin: https://nachert1830.ru"; grep -q '192.168.43.2' /tmp/body.txt || echo "::warning::ответ попал в другой экземпляр функции (телефон повторяет его — дойдёт)"
           chk "POST без кода" 401 -X POST -H "content-type: application/json" -H "Origin: https://nachert1830.ru" -d '{}'
           exit $fail
       - name: Адрес — в страницу сканера (lk/scan/config.js) и в main
