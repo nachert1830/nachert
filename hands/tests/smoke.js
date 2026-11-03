@@ -15,13 +15,14 @@ const srv = http.createServer((q, r) => {
   const p = path.join(ROOT, f); if (!p.startsWith(ROOT) || !fs.existsSync(p)) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(r);
 });
+/* odml.pa.googleapis.com — телеметрия MediaPipe; CSP страницы её блокирует (так и задумано: данные не уходят) — не ошибка */
 let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails++; };
 
 srv.listen(0, async () => {
   const url = `http://localhost:${srv.address().port}/hands/`;
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
   const p = await b.newPage({ viewport: { width: 1280, height: 800 } });
-  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if ((m.type() === 'error' && !/^(INFO|I\d{4}|W\d{4}):?/.test(m.text())) || /WebGL: INVALID/.test(m.text())) errs.push(m.text());   /* MediaPipe пишет служебное INFO в console.error */ });
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if ((m.type() === 'error' && !/^(INFO|I\d{4}|W\d{4}):?/.test(m.text()) && !/odml\.pa\.googleapis\.com/.test(m.text())) || /WebGL: INVALID/.test(m.text())) errs.push(m.text());   /* MediaPipe пишет служебное INFO в console.error */ });
   try {
     await p.goto(url); await p.waitForFunction(() => window.__app && window.__app.holo, null, { timeout: 15000 }); await p.waitForTimeout(500);
     ok(errs.length === 0, 'страница без ошибок' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
