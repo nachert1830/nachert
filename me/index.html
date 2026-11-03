@@ -44,6 +44,7 @@ button{cursor:pointer}
 .btn{height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--surf2);font-weight:600;white-space:nowrap}
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;flex:1}
 .btn.sm{height:34px;padding:0 12px;font-size:13px;border-radius:10px}
+a.btn{display:inline-flex;align-items:center;text-decoration:none}
 .btn.on{background:var(--blue-s);border-color:var(--blue);color:var(--blue)}
 .err{color:var(--red);font-size:14px;margin-top:12px;min-height:1.4em}
 
@@ -121,6 +122,7 @@ button{cursor:pointer}
       <button class="tab" role="tab" data-go="site">Сайт<kbd>Alt 4</kbd></button>
     </nav>
     <div class="tools">
+      <a class="btn sm" id="holoTab" href="../hands/" target="_blank" rel="noopener" title="Голограмма с жестами — отдельной вкладкой браузера, на весь экран">3D ↗</a>
       <button class="btn sm" id="sideBtn" aria-pressed="false" title="Мои чертежи (Alt D)">Чертежи</button>
       <button class="btn sm" id="splitBtn" aria-pressed="false" title="Два раздела рядом (Alt S)">Рядом</button>
       <button class="btn sm" id="gestBtn" aria-pressed="false" title="Управлять всем пультом рукой (Alt G)">✋ Руки</button>
