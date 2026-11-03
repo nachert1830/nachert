@@ -8,6 +8,10 @@
    Видео никуда не уходит: распознаёт MediaPipe прямо на телефоне. */
 import { packSDP, unpackSDP, gathered, STUN, encodeHands } from './link.js';
 import { connectMqtt, BROKERS } from './mqtt.js';
+import { drawQR } from './pair.js';
+/* Без брокера (провайдер блокирует сервис связи, ноутбук в точке доступа телефона; в адресе n=1 или брокер не ответил):
+   ответ на предложение — QR-кодом на экране телефона, ноутбук читает его своей камерой. Руки — только прямым каналом,
+   это и самый быстрый путь: без интернета и посредника. */
 
 const $ = id => document.getElementById(id);
 /* отправка ноутбуку: прямой канал, если открыт, иначе — брокер. Сообщения рук не копим: очередь — значит, пропускаем */
@@ -20,6 +24,7 @@ function send(text, drop) {
 const tell = text => send(JSON.stringify({ k: 's', text }));
 const say = (t, l) => { $('title').textContent = t; if (l != null) $('lead').textContent = l; };
 const HP = new URLSearchParams(location.hash.slice(1)), offer = HP.get('o'), chId = HP.get('r'), broker = HP.get('q');
+let noBroker = HP.get('n') === '1';
 const ch = 'nachert/' + chId;
 if (!chId) { say('Открой эту страницу по QR-коду', 'На ноутбуке в голограмме нажми «📱 Телефон» и наведи камеру телефона на код.'); $('start').hidden = true; }
 
@@ -133,16 +138,19 @@ $('start').onclick = async () => {
     ready.catch(err => tell('распознавание не запустилось: ' + String(err && err.message || err).slice(0, 300)));
     /* брокер — основной путь: через него знакомимся, и через него же идут руки, если прямого канала нет */
     const list = [broker, ...BROKERS].filter((u, i, a) => u && a.indexOf(u) === i);
-    try { mq = await connectMqtt(list, (topic, text) => onCtl(text, 'интернет')); }
-    catch (e) { $('start').hidden = true; say('Нет связи с сервисом', 'Телефон не достучался до сервиса связи в интернете. Проверь интернет на телефоне (с VPN или без — оба варианта подходят) и отсканируй код на ноутбуке ещё раз.'); return; }
-    mq.subscribe(ch + '/down');
-    mq.onclose = () => { if (!(dc && dc.readyState === 'open')) say('Связь оборвалась', 'Нажми на ноутбуке «Новый код» и отсканируй его ещё раз.'); };
-    tell('телефон на связи');
-    $('start').hidden = true; say('Соединяюсь с ноутбуком…', 'Пара секунд.');
+    if (!noBroker) {
+      try { mq = await connectMqtt(list, (topic, text) => onCtl(text, 'интернет'), 3000); }
+      catch (e) { if (!offer) { $('start').hidden = true; say('Нет связи с сервисом', 'Телефон не достучался до сервиса связи в интернете. Проверь интернет на телефоне и отсканируй код на ноутбуке ещё раз.'); return; }
+        noBroker = true; }
+    }
+    if (mq) { mq.subscribe(ch + '/down');
+      mq.onclose = () => { if (!(dc && dc.readyState === 'open')) say('Связь оборвалась', 'Нажми на ноутбуке «Новый код» и отсканируй его ещё раз.'); };
+      tell('телефон на связи'); }
+    $('start').hidden = true; say('Соединяюсь с ноутбуком…', noBroker ? 'Напрямую, без интернета: сейчас появится код для камеры ноутбука.' : 'Пара секунд.');
     ready.then(() => { running = true; pump(); }, err => say('Не запустилось распознавание', 'Причина: ' + String(err && err.message || err) + '. Её видно и на ноутбуке.'));
     /* прямой канал — попытка в фоне: получится (одна сеть, без VPN) — руки пойдут им, быстрее */
-    if (offer) direct().catch(e => tell('прямой канал не сложился: ' + (e.message || e) + ' — работаю через интернет'));
-    setTimeout(() => { if (!linked) say('Ноутбук не отвечает', 'Проверь, что на ноутбуке открыто окно с QR-кодом, и отсканируй его ещё раз (или нажми там «Новый код»).'); }, 15000);
+    if (offer) direct().catch(e => { tell('прямой канал не сложился: ' + (e.message || e) + ' — работаю через интернет'); if (noBroker) say('Не соединилось', 'Прямой канал не сложился: ' + (e.message || e)); });
+    if (!noBroker) setTimeout(() => { if (!linked) say('Ноутбук не отвечает', 'Проверь, что на ноутбуке открыто окно с QR-кодом, и отсканируй его ещё раз (или нажми там «Новый код»).'); }, 15000);
   } catch (e) {
     console.error(e); $('start').disabled = false;
     $('start').hidden = false; $('start').textContent = 'Начать';
@@ -163,14 +171,18 @@ function onCtl(text, path) {
 async function direct() {
   pc = new RTCPeerConnection({ iceServers: STUN });
   pc.ondatachannel = e => { dc = e.channel;
-    dc.onopen = () => tell('прямой канал открыт — руки идут напрямую');
+    dc.onopen = () => { $('ans').hidden = true; tell('прямой канал открыт — руки идут напрямую'); };
     dc.onmessage = e2 => onCtl(e2.data, 'прямо');
     dc.onclose = () => { if (running) tell('прямой канал закрылся — продолжаю через интернет'); }; };
-  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') tell('прямой канал не сложился (VPN или разные сети) — работаю через интернет'); };
+  pc.onconnectionstatechange = () => { if (pc.connectionState !== 'failed') return; tell('прямой канал не сложился (VPN или разные сети) — работаю через интернет');
+    if (noBroker) { $('ans').hidden = true; say('Не соединилось напрямую', 'Ноутбук и телефон должны быть в одной сети без VPN: включи на телефоне точку доступа, подключи к ней ноутбук и нажми на ноутбуке «Новый код».'); } };
   await pc.setRemoteDescription(unpackSDP(decodeURIComponent(offer), 'offer'));
   await pc.setLocalDescription(await pc.createAnswer());
   await gathered(pc, 2500);
-  mq.publish(ch + '/up', packSDP(pc.localDescription.sdp));          /* ответ — строкой «1~…» */
+  const ans = packSDP(pc.localDescription.sdp);                      /* ответ — строкой «1~…» */
+  if (mq) mq.publish(ch + '/up', ans);
+  else if (!(dc && dc.readyState === 'open')) { drawQR($('ans'), ans); $('ans').hidden = false;
+    say('Покажи этот код ноутбуку', 'Поднеси экран телефона к камере ноутбука (20–40 см) — соединимся напрямую, это самый быстрый путь.'); }
 }
 
 /* открыли по ссылке с ноутбука — запускаемся сами: нужно только разрешить камеру (кнопка — если браузер не дал без нажатия) */
