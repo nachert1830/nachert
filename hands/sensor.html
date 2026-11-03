@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07112a" media="(prefers-color-scheme: dark)">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://broker.emqx.io:8084 wss://broker.hivemq.com:8884; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://functions.yandexcloud.net wss://broker.emqx.io:8084 wss://broker.hivemq.com:8884; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <title>Начерт · датчик рук</title>
 <link rel="stylesheet" href="hands.css">
 <style>
@@ -25,7 +25,6 @@
   #see.ok{background:var(--ok);color:#fff} #see.no{background:var(--red);color:#fff}
   #stat{font:500 12px var(--mono);color:var(--mut)}
   .sensor .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:0}
-  #ans{width:min(86vw,380px);height:auto;image-rendering:pixelated;border-radius:12px}
   [hidden]{display:none!important}
 </style>
 </head>
@@ -35,7 +34,6 @@
   <h1 id="title">Телефон — датчик рук</h1>
   <p id="lead">Камера и распознавание рук работают на телефоне, на ноутбук уходят только координаты пальцев — видео не покидает телефон.</p>
   <button id="start" class="big" type="button">Начать</button>
-  <canvas id="ans" hidden aria-label="Ответный QR-код для камеры ноутбука"></canvas>
   <div id="prev" hidden><video id="vid" playsinline muted></video><canvas id="ov"></canvas></div>
   <div id="see" role="status" hidden></div>
   <div id="stat"></div>

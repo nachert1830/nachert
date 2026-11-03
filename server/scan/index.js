@@ -24,7 +24,21 @@ const MODELS={opus:'anthropic/claude-opus-5-5',sonnet:'anthropic/claude-sonnet-5
 const model=(v,d)=>MODELS[v]||v||MODELS[d]||d;   /* opus | sonnet | haiku или полное имя */
 /* лимит ответа: Opus 5.5 рассуждает всегда (рассуждение — в том же лимите); ProxyAPI заранее оценивает цену по лимиту, поэтому не больше нужного */
 const TOKENS=m=>/opus|fable|mythos/.test(m)?9000:3000;
-const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map()};
+const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map(),sig:new Map(),sigHits:new Map()};
+/* ── ретранслятор знакомства «телефон → ноутбук» для голограммы hands/ (?sig=<канал>) ──
+   Ноутбук показывает QR с предложением WebRTC; телефон кладёт сюда ответ (строка «1~…», ≤ 1 КБ), ноутбук забирает его опросом.
+   Нужен, когда зарубежные брокеры MQTT недоступны (блокировка без VPN): эта функция — в Яндекс Облаке, из России доступна.
+   Без кода: в ответе нет ничего секретного (ключи соединения одноразовые, канал — случайные 128 бит), живёт 2 минуты.
+   Память экземпляра: телефон повторяет ответ, пока не соединится, — так он попадёт и в другой экземпляр функции. */
+function signal(method,ch,body,ip,origin){ const now=Date.now();
+  if(!/^[0-9a-f]{32}$/.test(ch)) return reply(400,{ok:false,error:'канал'},origin);
+  const h=(state.sigHits.get(ip)||[]).filter(t=>now-t<60000); h.push(now); state.sigHits.set(ip,h); if(state.sigHits.size>2000) state.sigHits.clear();
+  if(h.length>240) return reply(429,{ok:false,error:'Слишком часто'},origin);
+  for(const [k,v] of state.sig) if(now-v.t>120000) state.sig.delete(k);
+  if(method==='POST'){ let a=''; try{ a=String(JSON.parse(body||'{}').a||''); }catch(e){}
+    if(!/^1~[A-Za-z0-9+\/=_~;,.:-]{20,1000}$/.test(a)) return reply(400,{ok:false,error:'ответ'},origin);
+    if(state.sig.size<1000||state.sig.has(ch)) state.sig.set(ch,{a,t:now}); return reply(200,{ok:true},origin); }
+  const v=state.sig.get(ch); return reply(200,{ok:true,a:v?v.a:null},origin); }
 const same=(a,b)=>{ a=Buffer.from(String(a)); b=Buffer.from(String(b)); return a.length===b.length&&crypto.timingSafeEqual(a,b); };
 function reply(code,obj,origin){ const h={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
   if(origin){ h['access-control-allow-origin']=origin; h.vary='Origin'; } return {statusCode:code,headers:h,body:obj==null?'':JSON.stringify(obj)}; }
@@ -34,6 +48,8 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
     Object.assign(r.headers,{'access-control-allow-methods':'GET,POST,OPTIONS','access-control-allow-headers':'content-type,x-scan-code','access-control-max-age':'600'}); return r; }
   if(og&&!origin) return reply(403,{ok:false,error:'Этот адрес страницы не разрешён'});
   const ip=String(hd['x-forwarded-for']||hd['x-real-ip']||'?').split(',')[0].trim(), now=Date.now();
+  const sigCh=event.queryStringParameters&&event.queryStringParameters.sig;
+  if(sigCh!=null&&(method==='GET'||method==='POST')){ const raw=event.isBase64Encoded?Buffer.from(String(event.body||''),'base64').toString('utf8'):String(event.body||''); return signal(method,String(sigCh),raw.slice(0,4096),ip,origin); }
   const code=(v=>{ try{ return decodeURIComponent(v); }catch(e){ return v; } })(String(hd['x-scan-code']||'')), hash=process.env.SCAN_CODE_SHA256||'';
   /* GET без кода — «жива ли функция и нужен ли код» (код не проверяется, статистику не отдаём) */
   if(method==='GET'&&!code) return reply(200,{ok:true,scan:true,codeNeeded:true},origin);

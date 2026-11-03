@@ -36,7 +36,11 @@ function wsUpgrade(req, sock) {
       if (op === 8) { sock.end(); return; } if (op === 2 || op === 0) { mbuf = Buffer.concat([mbuf, pl]); mqtt(); } } });
   const bye = () => c.topics.forEach(t => subs.get(t) && subs.get(t).delete(c)); sock.on('close', bye); sock.on('error', bye);
 }
+const SIGF = require('../../server/scan/index.js');   /* ретранслятор ответа — тот же обработчик, что в облаке */
 const srv = http.createServer((q, r) => {
+  if (q.url.startsWith('/sig')) { let body = ''; q.on('data', d => body += d); q.on('end', async () => {
+    const res = await SIGF.handler({ httpMethod: q.method, headers: q.headers, queryStringParameters: Object.fromEntries(new URL(q.url, 'http://x').searchParams), body });
+    r.writeHead(res.statusCode, res.headers); r.end(res.body); }); return; }
   let f = decodeURIComponent(q.url.split('?')[0].split('#')[0]); if (f.endsWith('/')) f += 'index.html';
   const p = path.join(ROOT, f); if (!p.startsWith(ROOT) || !fs.existsSync(p)) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(r); });
@@ -44,7 +48,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); 
 
 srv.on('upgrade', (req, sock) => { if (req.url === '/mqtt') wsUpgrade(req, sock); else sock.destroy(); });
 srv.listen(0, async () => {
-  const base = `http://localhost:${srv.address().port}/hands/`;
+  const base = `http://localhost:${srv.address().port}/hands/`; process.env.SCAN_ORIGINS = `http://localhost:${srv.address().port}`;
   /* HAND_VIDEO=рука.y4m — камера «телефона» показывает настоящую руку: проверяем всю цепочку с распознаванием */
   const VID = process.env.HAND_VIDEO;
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', ...(VID ? ['--use-file-for-fake-video-capture=' + VID] : [])] });
@@ -54,9 +58,9 @@ srv.listen(0, async () => {
   try {
     await L.goto(base); await L.waitForFunction(() => window.__app && window.__app.holo);
     const broker = `ws://localhost:${srv.address().port}/mqtt`;
-    for (const scen of ['vpn', 'lan', 'qr']) {   /* qr — брокер заблокирован: ответ телефона — QR-кодом в камеру ноутбука */
+    for (const scen of ['vpn', 'lan', 'relay']) {   /* relay — брокер заблокирован (без VPN): ответ телефона — через нашу функцию, одно сканирование */
       const P = await ctx.newPage(); P.on('pageerror', e => errs.push(e.message));
-      let url = await L.evaluate(([b, qr]) => window.__app.pairing.start(document.getElementById('pairQr'), document.getElementById('pairVid'), qr ? { brokers: ['ws://localhost:1/mqtt'], brokerMs: 800, noScan: true } : { brokers: [b] }), [broker, scen === 'qr']);
+      let url = await L.evaluate(([b, qr]) => window.__app.pairing.start(document.getElementById('pairQr'), document.getElementById('pairVid'), qr ? { brokers: ['ws://localhost:1/mqtt'], sig: location.origin + '/sig' } : { brokers: [b], sig: '' }), [broker, scen === 'relay']);
       if (scen === 'vpn') {
         const qrText = await L.evaluate(async () => {
           await new Promise((res, rej) => { if (window.jsQR) return res(); const s = document.createElement('script'); s.src = 'vendor/qr/jsQR.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
@@ -66,20 +70,11 @@ srv.listen(0, async () => {
         url = url.replace(/o=[^&]*&/, '');                         /* «VPN»: прямого канала не будет — только брокер */
       }
       await P.goto(url);
-      if (scen === 'qr') {
-        ok(/&n=1/.test(url) && /[#&]o=/.test(url), 'брокер недоступен — ноутбук всё равно дал код (прямой канал, без сервиса связи)');
-        await P.waitForSelector('#ans:not([hidden])', { timeout: 30000 }).catch(() => {});
-        const ans = await P.evaluate(async () => {
-          await new Promise((res, rej) => { if (window.jsQR) return res(); const s = document.createElement('script'); s.src = 'vendor/qr/jsQR.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
-          const c = document.getElementById('ans'), g = c.getContext('2d'); return (window.jsQR(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height) || {}).data || '';
-        });
-        ok(/^1~/.test(ans), `  телефон показал ответный QR-код (${ans.length} символов) — его читает камера ноутбука`);
-        await L.evaluate(t => window.__app.pairing.answer(t), ans);
-      }
+      if (scen === 'relay') ok(/[#&]o=/.test(url) && /&s=/.test(url), 'брокер недоступен — код с предложением и адресом ретранслятора, сразу');
       const on = await L.waitForFunction(() => window.__app.pairing.st.state === 'on', null, { timeout: 60000 }).then(() => true).catch(() => false);
       if (scen === 'lan') await L.waitForFunction(() => window.__app.pairing.st.path === 'прямо', null, { timeout: 15000 }).catch(() => {});
       const path = await L.evaluate(() => window.__app.pairing.st.path);
-      ok(on && path === (scen === 'vpn' ? 'интернет' : 'прямо'), `${scen === 'vpn' ? '«как с VPN»' : scen === 'lan' ? '«одна сеть»' : '«без сервиса связи» (точка доступа телефона)'}: подключился, путь — ${path || 'нет'}`);
+      ok(on && path === (scen === 'vpn' ? 'интернет' : 'прямо'), `${scen === 'vpn' ? '«как с VPN»' : scen === 'lan' ? '«одна сеть»' : '«без VPN, брокер заблокирован» — ответ через нашу функцию'}: подключился одним сканированием, путь — ${path || 'нет'}`);
       /* в контейнере видеокарта программная — прогрев модели на «телефоне» идёт ~10 с; ждём его */
       await L.waitForFunction(() => window.__app.pairing.st.log.some(t => /распознавание готово/.test(t)), null, { timeout: 90000 }).catch(() => {});
       if (VID) {   /* настоящая рука в камере телефона → ноутбук её видит */

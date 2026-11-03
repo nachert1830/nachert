@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#07112a" media="(prefers-color-scheme: dark)">
 <!-- Та же строгость, что на сайте: только свои файлы. 'wasm-unsafe-eval' — для WebAssembly MediaPipe (без него wasm не компилируется);
      брокеры MQTT (emqx, hivemq) — связь с телефоном-датчиком: знакомство и, если нет прямого канала, точки рук (видео — никогда). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://broker.emqx.io:8084 wss://broker.hivemq.com:8884; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://functions.yandexcloud.net wss://broker.emqx.io:8084 wss://broker.hivemq.com:8884; worker-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <title>Начерт · 3D руками</title>
 <link rel="preload" href="../fonts/geologica-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="hands.css">
@@ -114,6 +114,7 @@
     <p class="mut">Телефон распознаёт руки сам и шлёт сюда только координаты пальцев (видео остаётся на телефоне): напрямую, если устройства в одной сети, иначе — через сервис связи в интернете.</p>
   </aside>
 </main>
+<script src="../lk/scan/config.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

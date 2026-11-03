@@ -61,19 +61,15 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
 
   async function start(qrCanvas, video, opt = {}) {
     stop(); st.state = 'pairing'; applied = false; st.path = ''; st.log = []; st.got = false;
-    ch = 'nachert/' + newId();
-    const brokers = opt.brokers || BROKERS;
+    ch = 'nachert/' + newId(); const my = ch;
+    const brokers = opt.brokers || BROKERS, sig = opt.sig !== undefined ? opt.sig : (self.SCAN_API || '');
     onStatus('Готовлю код…');
-    /* брокер — первым: через него придёт ответ телефона и, если нужно, точки рук. Не ответил за 2 с — обходимся без него
-       и сутки его не ждём (провайдер блокирует — каждый раз ждать незачем) */
-    const KEY = 'nch_nobroker', skip = !opt.brokers && (() => { try { return Date.now() - (+localStorage.getItem(KEY) || 0) < 864e5; } catch (_) { return false; } })();
-    try { if (skip) throw new Error('брокер недоступен (запомнено)');
-      mq = await connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет'), opt.brokerMs || 2000);
-      try { localStorage.removeItem(KEY); } catch (_) {}
-      mq.subscribe(ch + '/up');
-      mq.onclose = () => { if (st.state === 'pairing') onStatus('Связь с сервисом оборвалась — нажми «Новый код»'); }; }
-    catch (e) { mq = null; if (!skip && !opt.brokers) try { localStorage.setItem(KEY, String(Date.now())); } catch (_) {} console.warn('брокер недоступен — знакомство через ответный QR', e); }
-    if (st.state !== 'pairing') return '';
+    /* брокер — в фоне, QR его не ждёт: без VPN зарубежный брокер бывает недоступен, тогда ответ придёт через нашу функцию */
+    connectMqtt(brokers, (topic, text) => onMsg(text, 'интернет')).then(m => {
+      if (ch !== my || st.state === 'idle') { m.close(); return; }
+      mq = m; mq.subscribe(ch + '/up');
+      mq.onclose = () => { if (st.state === 'pairing' && !sig) onStatus('Связь с сервисом оборвалась — нажми «Новый код»'); };
+    }).catch(e => console.warn('брокер недоступен', e && e.message));
     /* Chrome без разрешения камеры прячет адрес ноутбука за «….local», а Safari такие имена не разрешает —
        прямой канал не сложится. С разрешением камеры адреса настоящие: на миг включаем и сразу гасим */
     try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); s.getTracks().forEach(t => t.stop()); } catch (_) {}
@@ -88,13 +84,19 @@ export function createPairing({ onHands, onOpen, onClose, onStatus }) {
       await gathered(pc, 2500);
       code = packSDP(pc.localDescription.sdp);
     } catch (e) { console.warn('прямой канал недоступен', e); code = ''; }
-    if (!mq && !code) throw new Error('брокер не ответил, а прямой канал этот браузер не умеет');
+    if (ch !== my) return '';
     const url = new URL('sensor.html', location.href);
-    url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + (mq ? '&q=' + encodeURIComponent(mq.url) : '&n=1');
+    url.hash = (code ? 'o=' + encodeURIComponent(code) + '&' : '') + 'r=' + ch.split('/')[1] + '&q=' + encodeURIComponent(brokers[0]) + (sig && code ? '&s=' + encodeURIComponent(sig) : '');
     drawQR(qrCanvas, url.href);
-    onStatus('1. Отсканируй код телефоном.\n2. Покажи телефон камере ноутбука.');
-    /* камера ноутбука ищет ответный код телефона всегда: сервис связи мог ответить ноутбуку, но не телефону */
-    if (code && !opt.noScan) startScan(video).catch(e => onStatus('Нужен доступ к камере ноутбука — разреши и нажми «Новый код» (' + (e.message || e) + ')'));
+    onStatus('Отсканируй код телефоном.');
+    /* ответ телефона — опросом нашей функции (раз в 0,7 с, пока не соединились) */
+    if (sig && code) (async function poll() {
+      const id = ch.split('/')[1];
+      while (ch === my && st.state === 'pairing' && !applied) {
+        try { const r = await fetch(sig + (sig.includes('?') ? '&' : '?') + 'sig=' + id, { cache: 'no-store' }); const j = await r.json(); if (j && j.a && ch === my) { apply(j.a); break; } } catch (_) {}
+        await new Promise(r => setTimeout(r, 700));
+      }
+    })();
     return url.href;
   }
 

@@ -71,3 +71,11 @@ test('код владельца: открывает страницу me/ (GET ?o
     process.env.OWNER_CODE_SHA256=F.sha('виктория');
     assert.equal((await get('виктория',q)).statusCode,403,'код владельца = студенческому — владельца нет');
   } finally { delete process.env.OWNER_CODE_SHA256; } });
+test('ретранслятор знакомства телефона и ноутбука (?sig=): без кода, только ответ «1~…», канал — 128 бит',async()=>{
+  const ch='0123456789abcdef0123456789abcdef', A='1~uf~pwd+pwd/pwd+pwd/pwdpwd~AbC-_x~a~h,192.168.43.2,51234';
+  const g=await F.handler(ev('GET',{queryStringParameters:{sig:ch}})); assert.equal(g.statusCode,200); assert.equal(JSON.parse(g.body).a,null);
+  const p=await F.handler(ev('POST',{queryStringParameters:{sig:ch},body:JSON.stringify({a:A})})); assert.equal(p.statusCode,200);
+  const g2=await F.handler(ev('GET',{queryStringParameters:{sig:ch}})); assert.equal(JSON.parse(g2.body).a,A); assert.equal(g2.headers['access-control-allow-origin'],OK);
+  assert.equal((await F.handler(ev('POST',{queryStringParameters:{sig:ch},body:JSON.stringify({a:'<script>'})}))).statusCode,400);
+  assert.equal((await F.handler(ev('GET',{queryStringParameters:{sig:'короткий'}}))).statusCode,400);
+  assert.equal((await F.handler({httpMethod:'GET',headers:{origin:'https://evil.example'},queryStringParameters:{sig:ch}})).statusCode,403); });
