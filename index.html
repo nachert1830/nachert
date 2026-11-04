@@ -28418,6 +28418,7 @@ function creaseTop(model){ if(model._ct!=null) return model._ct; const J=IG3.J, 
   const hit=(y,zs)=>{ let prev=null; for(let z=zs;z>b[0][2]-1;z-=0.25){ const v=J(T,0,y,z); if(prev!=null&&prev>=0&&v<0) return z; prev=v; } return null; };
   const kink=(y,z)=>{ const g=k=>{ const a=[d,y,z], c=[d,y,z]; a[k]+=h; c[k]-=h; return (J(T,...a)-J(T,...c))/(2*h); }, n=[g(0),g(1),g(2)]; return Math.abs(n[0])/(Math.hypot(...n)||1)>0.3; };
   let nv=0, nc=0; for(let y=b[0][1]+0.25;y<b[1][1];y+=0.5){ const zv=hit(y,b[1][2]+1); if(zv!=null&&kink(y,zv)) nv++; const zcut=J(T,0,y,zc)<0?null:hit(y,zc); if(zcut!=null&&kink(y,zcut)) nc++; }
+  Object.defineProperty(model,'_ctMix',{value:nv>=12&&nc>=12});   /* ребро видно и сверху, и в разрезе — волнистую линию не сместить, не потеряв одну из частей */
   Object.defineProperty(model,'_ct',{value:nv>=12?1:nc>=12?-1:0}); return model._ct; }   /* ребро — от 6 мм; 1 — наружное (видно сверху), −1 — только в разрезе (внутреннее) */
 /* волнистая линия на виде сверху при x = const — только в пределах контура детали: крайние y, где есть материал (на любой высоте) */
 function topSpan(model,x){ const b=model.box, J=IG3.J, T=model.tree; let lo=null, hi=null;
@@ -28436,7 +28437,9 @@ function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(
   /* горизонтальный разрез: как на главном виде — слева половина вида, справа половина разреза ('half', граница — вертикальная ось), если деталь симметрична
      слева направо и на этой оси вида сверху нет ребра; иначе — по горизонтальной оси, разрез снизу ('halfD': симметрична спереди назад, hzFull — ребро на
      горизонтальной оси); иначе полный разрез */
-  sp.H=!model.hz?'half':symAx(model,'x')&&!creaseTop(model)?'half':!model.hzFull&&symAx(model,'y')?'halfD':symAx(model,'x')?'half':'full';
+  /* hzRight (ДЗ 4): разрез справа всегда, когда деталь симметрична слева направо, — ребро на оси обходит волнистая линия; иначе снизу,
+     а если и на горизонтальной оси ребро (hzFull) — полный разрез */
+  sp.H=!model.hz?'half':model.hzRight&&!(creaseTop(model),model._ctMix)?(symAx(model,'x')?'half':!model.hzFull&&symAx(model,'y')?'halfD':'full'):symAx(model,'x')&&!creaseTop(model)?'half':!model.hzFull&&symAx(model,'y')?'halfD':symAx(model,'x')?'half':'full';
   /* ребро на вертикальной оси (пирамида ребром к нам): половину вида и половину разреза разделяют волнистой линией (ГОСТ 2.305, п. 7.10) —
      наружное ребро — правее оси (вида больше), внутреннее — левее (разреза больше), чтобы ребро осталось на чертеже */
   sp.tb=model.hz&&sp.H==='half'?7*creaseTop(model):0;
@@ -29734,7 +29737,7 @@ function ctx(n){ const RQ=typeof n==='object'?n:null, md=RQ?RQ.md:IG_VARS[n], sp
   /* зазоры между видами — под размеры: что выходит ниже главного вида и выше вида сверху; правее главного вида и левее вида слева */
   let fB=0, tA=0, fR=0, lL=0; const ex=(d)=>{ const V=d[0], t=d[1], P=[];
     if(t==='h') P.push([d[2][0],d[4]],[d[3][0],d[4]],d[2],d[3]); else if(t==='v') P.push([d[4],d[2][1]],[d[4],d[3][1]]); else if(t==='h1') P.push([d[2][0],d[3]]); else if(t==='v1') P.push([d[3],d[2][1]],[d[3],0]);
-    else if(t==='lead') P.push(d[3]); else if(t==='dia'){ const u=[Math.cos(d[4]*Math.PI/180),Math.sin(d[4]*Math.PI/180)], r=d[3]/2+d[5]; P.push([-u[0]*r,-u[1]*r]); }
+    else if(t==='lead') P.push(d[3]); else if(t==='dia'){ const u=[Math.cos(d[4]*Math.PI/180),Math.sin(d[4]*Math.PI/180)], r=d[3]/2+d[5]; P.push([-u[0]*r,-u[1]*r]); if(V==='T') P.push([d[2][0],d[2][1]+d[3]/2]); }   /* описанная окружность на виде сверху выходит за контур — над ней надпись «А–А» */
     else if(t==='ang'){ for(let a=d[4];a<=d[5];a+=5) P.push([(d[3]+9)*Math.cos(a*Math.PI/180),(d[3]+9)*Math.sin(a*Math.PI/180)]); }
     else if(t==='rad'){ const u=[Math.cos(d[4]*Math.PI/180),Math.sin(d[4]*Math.PI/180)]; P.push([u[0]*(d[3]+d[5]),u[1]*(d[3]+d[5])]); }
     P.forEach(q=>{ if(V==='F'){ fB=Math.min(fB,q[1]); fR=Math.max(fR,q[0]-x1); } if(V==='T') tA=Math.max(tA,q[1]-y1); if(V==='L') lL=Math.max(lL,q[0]-y1); }); };
@@ -29876,7 +29879,8 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   const EF=EX(DF), ETv=EX(DTv), ETc=hz?EX(DTc):ETv, ETx=hz&&sp.H==='full'?ETc:ETv;
   const sF=SPN(DF,2,0,[EF[0][2],EF[1][2]]), sL=SPN(DL,2,1,[EF[0][2],EF[1][2]]), sX=[SPN(DTx,0,1,[ETx[0][0],ETx[1][0]]),SPN(DTc,0,1,[ETc[0][0],ETc[1][0]])], sYc=SPN(DTc,1,0,[ETc[0][1],ETc[1][1]]), sYx=SPN(DTx,1,0,[ETx[0][1],ETx[1][1]]);
   const za=sF[0]-5, zb=sF[1]+5, zaL=sL[0]-5, zbL=sL[1]+5, D2=sp.H==='halfD'||!hz, xa=(D2?Math.min(sX[0][0],sX[1][0]):sX[0][0])-5, xb=(D2?Math.max(sX[0][1],sX[1][1]):sX[1][1])+5, ya=(D2?sYc[0]:Math.min(sYc[0],sYx[0]))-5, yb=(D2?sYx[1]:Math.max(sYc[1],sYx[1]))+5;
-  o+=ln(FR(0,za),FR(0,zb),INK,.8,AX)+ln(LF(0,zaL),LF(0,zbL),INK,.8,AX)
+  const AC=(C.G.d||[]).filter(d=>d[0]==='F'&&d[1]==='dia'&&d[8]&&d[8].circ&&Math.abs(d[2][0])<0.01);   /* вспомогательные окружности на оси главного вида: оси пересекаются штрихами */
+  o+=(AC.length?IGUI.axLine(FR(0,za),FR(0,zb),AC.map(d=>({t:(d[2][1]-za)*k,pr:2})),k,INK,.8,rec):ln(FR(0,za),FR(0,zb),INK,.8,AX))+ln(LF(0,zaL),LF(0,zbL),INK,.8,AX)
     +IGUI.axLine(TP(xa,0),TP(xb,0),anc(xa),k,INK,.8,rec)+IGUI.axLine(TP(0,ya),TP(0,yb),anc(ya),k,INK,.8,rec);
   /* оси отверстий: центровая окружность и перекрестия на виде сверху, оси на главном виде и виде слева */
   { const done={c:{},x:{},y:{}}, RC=!md.noPCD; HA.forEach(h=>{ const Rh=Math.hypot(h.x,h.y), a=h.r+3, ux=RC?h.x/Rh:1, uy=RC?h.y/Rh:0, dd=2*h.r<12-1e-6?null:AX;   /* noPCD — отверстия не на окружности (корпус): оси по x и y, без центровой окружности */   /* центровые отверстий меньше Ø12 — сплошные тонкие (ГОСТ 2.303) */
@@ -29891,11 +29895,16 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   if(LT.f&&md.step){ o+=stepMark(md.step,[C.x0,C.x1],LT.f,TP)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   else if(LT.f){ o+=IGUI.secMark(TP(C.x1+4,0),TP(C.x0-4,0),k,LT.f)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   if(LT.p){ o+=IGUI.secMark(TP(0,C.y0-4),TP(0,C.y1+4),k,LT.p)   /* штрихи — у контура вида сверху по его глубине (у вытянутой детали R — по длине, штрих ушёл бы на главный вид) */+lb([LF(0,0)[0],yLb],LT.p); }
-  if(hz&&LT.h){ const y=FR(0,hz.z)[1]; o+=IGUI.secMark([FR(C.x0-6,0)[0],y],[FR(C.x1+6,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,C.y1)[1]-24],LT.h); }
+  if(hz&&LT.h){ const y=FR(0,hz.z)[1]; o+=IGUI.secMark([FR(C.x0-6,0)[0],y],[FR(C.x1+6,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,Math.max(C.y1,...(C.G.d||[]).filter(d=>d[0]==='T'&&d[1]==='dia').map(d=>d[2][1]+d[3]/2)))[1]-24],LT.h); }   /* над описанной окружностью, если она выше контура */
   pts.push(FR(C.x0-8,C.z1+8),FR(C.x1,C.z0-6),LF(C.y1+6,C.z1+8),LF(C.y0-8,C.z0-6),TP(C.x0-8,C.y0-6),TP(C.x1+8,C.y1+6));   /* поля вокруг видов (размеры и подписи добавляют свои точки сами) */
   /* размеры из задания */
   /* буквы обозначений разрезов (А, Б…) и надписи над видами — место занято: размерные числа их обходят */
   REC.t=[...o.matchAll(/<text x="([-\d.]+)" y="([-\d.]+)"[^>]*class="igs-let"[^>]*>([^<]*)<\/text>/g)].map(m=>{ const x=+m[1], y=+m[2], w=String(m[3]).length*13; return [x-w/2-4,y-24,x+w/2+4,y+4]; });
+  /* фигура выреза, вписанная в окружность (как в задании: «треугольник, вписанный в Ø60»): окружность — тонкой сплошной, центр — горизонтальной
+     центровой (вертикальная — ось симметрии вида), выходит за окружность на 3 мм (ГОСТ 2.303) */
+  (C.G.d||[]).forEach(d=>{ if(d[0]!=='F'||d[1]!=='dia'||!(d[8]&&d[8].circ)) return; const R=d[3]/2, c0=FR(d[2][0],d[2][1]);
+    c+=`<circle cx="${f(c0[0])}" cy="${f(c0[1])}" r="${f(R*k)}" fill="none" stroke="${INK}" stroke-width=".7"/>`; if(REC) for(let i=0;i<24;i++){ const a=i*Math.PI/12, b=(i+1)*Math.PI/12; REC.s.push([c0[0]+R*k*Math.cos(a),c0[1]+R*k*Math.sin(a),c0[0]+R*k*Math.cos(b),c0[1]+R*k*Math.sin(b)]); }
+    o+=IGUI.axLine(FR(d[2][0]-R-3,d[2][1]),FR(d[2][0]+R+3,d[2][1]),[{t:(R+3)*k,pr:2}],k,INK,.7,REC?(a,b)=>REC.s.push([a[0],a[1],b[0],b[1]]):null); });
   c+=dimsSVG(C.G.d,{F:q=>FR(q[0],q[1]),L:q=>LF(q[0],q[1]),T:q=>TP(q[0],q[1])},{auto:typeof n==='object'});   /* листы заданий 3, 4 — место числа подбирается */
   /* диаметр окружности, которой на виде сверху нет линией (многогранник «вписан в Ø…», как в задании): саму окружность — тонкой сплошной, как на образце */
   { const tv=C.DR('top'), mm=(tv.px([10,0,0])[0]-tv.px([0,0,0])[0])/10;
