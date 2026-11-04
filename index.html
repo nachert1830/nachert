@@ -29631,6 +29631,13 @@ function dimsSVG(list,M,opt){ let o=''; const W1=.8; opt=opt||{};
   const tw=t=>[...String(t)].reduce((a,c)=>a+(/[0-9.,]/.test(c)?11:/[ ]/.test(c)?6:13),0);
   /* auto — место числа подбирается (ГОСТ 2.307: число не пересекают никакие линии): вдоль размерной линии, затем снаружи на её
      продолжении; помехи — линии изображений (видимые и штриховые), оси, выносные и размерные линии, выноски, уже стоящие числа */
+  /* выносная линия начинается на контуре изображения (ГОСТ 2.307): габаритная точка A может лежать там, где контур срезан (фаска, скос) — тогда линия
+     висела бы в воздухе. Берём ближайшую к A точку контура на той же прямой, со стороны детали; vert — выносная вертикальная (размер 'h'), dir — к размерной линии */
+  const CT=(REC&&REC.c)||opt.ct||null; const snap=(a,vert,dir)=>{ if(!CT) return a; const P=vert?0:1, Q=1-P; let best=null, bd=200;
+    for(const g of CT){ const p1=g[P], p2=g[2+P], q1=g[Q], q2=g[2+Q], lo=Math.min(p1,p2), hi=Math.max(p1,p2); if(a[P]<lo-.8||a[P]>hi+.8) continue;
+      let qa, qb; if(hi-lo<=.8){ qa=Math.min(q1,q2); qb=Math.max(q1,q2); } else { const t=Math.max(0,Math.min(1,(a[P]-p1)/(p2-p1))); qa=qb=q1+(q2-q1)*t; }
+      const c=Math.max(qa,Math.min(qb,a[Q])), d=(c-a[Q])*-dir; if(d<-.8) continue; if(d<=.8) return a; if(d<bd){ bd=d; best=c; } }
+    if(best==null) return a; const r=a.slice(); r[Q]=best; return r; };
   const AUTO=!!(opt.auto&&REC), OB=AUTO?REC.s.concat(REC.h||[]):[], TB=AUTO?(REC.t||[]).slice():[], own=(g,i)=>(g.own=i,g);
   /* выноска: p — на окружности (у 'dia' — с другой стороны диаметра), q — излом, e — конец полки; tx — надпись, sd — полка вправо/влево */
   const LG=(d,m,ag,sd0,ex)=>{ const t=d[1]; let p,q,tx,sd,a0=null;
@@ -29642,8 +29649,8 @@ function dimsSVG(list,M,opt){ let o=''; const W1=.8; opt=opt||{};
     const e=[q[0]+(sd||1)*(tw(tx)+10),q[1]];
     return {p,q,e,tx,sd,seg:[[a0[0],a0[1],q[0],q[1]],[q[0],q[1],e[0],e[1]]],box:[Math.min(q[0],e[0]),q[1]-23,Math.max(q[0],e[0]),q[1]-3]}; };
   if(AUTO) (list||[]).forEach((d,i)=>{ const m=M[d[0]], t=d[1];
-    if(t==='h'){ const a=m(d[2]), b=m(d[3]), y=m([d[2][0],d[4]])[1]; OB.push(own([a[0],a[1],a[0],y],i),own([b[0],b[1],b[0],y],i),own([a[0],y,b[0],y],i)); }
-    else if(t==='v'){ const a=m(d[2]), b=m(d[3]), x=m([d[4],d[2][1]])[0]; OB.push(own([a[0],a[1],x,a[1]],i),own([b[0],b[1],x,b[1]],i),own([x,a[1],x,b[1]],i)); }
+    if(t==='h'){ const a=m(d[2]), b=m(d[3]), y=m([d[2][0],d[4]])[1], sa=snap(a,true,y<a[1]?-1:1), sb=snap(b,true,y<b[1]?-1:1); OB.push(own([sa[0],sa[1],a[0],y],i),own([sb[0],sb[1],b[0],y],i),own([a[0],y,b[0],y],i)); }
+    else if(t==='v'){ const a=m(d[2]), b=m(d[3]), x=m([d[4],d[2][1]])[0], sa=snap(a,false,x<a[0]?-1:1), sb=snap(b,false,x<b[0]?-1:1); OB.push(own([sa[0],sa[1],x,a[1]],i),own([sb[0],sb[1],x,b[1]],i),own([x,a[1],x,b[1]],i)); }
     else if(t==='lead'||t==='dia'||t==='rad'){ const G=LG(d,m); G.seg.forEach(g=>OB.push(own(g,i))); TB.push(own(G.box,i)); } });
   const cross=(g,B)=>{ /* отрезок и прямоугольник (Лианг — Барски) */ let t0=0, t1=1; const dx=g[2]-g[0], dy=g[3]-g[1];
     for(const [pp,qq] of [[-dx,g[0]-B[0]],[dx,B[2]-g[0]],[-dy,g[1]-B[1]],[dy,B[3]-g[1]]]){ if(Math.abs(pp)<1e-9){ if(qq<0) return false; continue; } const r=qq/pp; if(pp<0){ if(r>t1) return false; if(r>t0) t0=r; } else { if(r<t0) return false; if(r<t1) t1=r; } } return true; };
@@ -29657,7 +29664,7 @@ function dimsSVG(list,M,opt){ let o=''; const W1=.8; opt=opt||{};
     const d1=d(C,D,A), d2=d(C,D,B2), d3=d(A,B2,C), d4=d(A,B2,D); return (d1*d2<-1e-6)&&(d3*d4<-1e-6); };
   (list||[]).forEach((d,i)=>{ const V=d[0], m=M[V], t=d[1];
     if(t==='h'){ const [,,A,B,at,tx,op]=d, a=m(A), b=m(B), y=m([A[0],at])[1], s=y<a[1]?-1:1, x1=Math.min(a[0],b[0]), x2=Math.max(a[0],b[0]);
-      if(Math.abs(a[1]-y)>1) o+=ln(a,[a[0],y+s*6],INK,W1); if(Math.abs(b[1]-y)>1) o+=ln(b,[b[0],y+s*6],INK,W1);
+      if(Math.abs(a[1]-y)>1) o+=ln(snap(a,true,s),[a[0],y+s*6],INK,W1); if(Math.abs(b[1]-y)>1) o+=ln(snap(b,true,s),[b[0],y+s*6],INK,W1);
       const short=x2-x1<tw(tx)+30; let cx=op&&op.tx!=null?m([op.tx,at])[0]:(x1+x2)/2;
       if(AUTO&&!short&&!(op&&op.fix)){ const w=tw(tx), bx=c=>[c-w/2-2,y-23,c+w/2+2,y-3], L=x2-x1, lo=x1+w/2+5, hi=x2-w/2-5;
         const C=[cx,(x1+x2)/2,...[0.18,-0.18,0.3,-0.3,0.4,-0.4].map(r=>(x1+x2)/2+r*L)].filter(c=>c>=lo&&c<=hi), ok=C.find(c=>free(bx(c),i));
@@ -29670,14 +29677,14 @@ function dimsSVG(list,M,opt){ let o=''; const W1=.8; opt=opt||{};
         o+=ln([x1-22,y],[x2+22,y],INK,W1)+ar([x1,y],-1,0)+ar([x2,y],1,0)+(tl?txt([x1-26,y-6],tx,'igs-dim','end'):txt([x2+26,y-6],tx,'igs-dim','start')); } }   /* короткий размер: стрелки снаружи, число за стрелкой (tl — слева) */
     else if(t==='h1'){ /* половина вида и половина разреза: размерная линия с одной стрелкой, за ось на 3 мм (ГОСТ 2.307, п. 4.5) */
       const [,,A,at,tx,op]=d, a=m(A), y=m([A[0],at])[1], s=y<a[1]?-1:1, ax=m([0,at])[0], dirx=a[0]>ax?-1:1, e=ax+dirx*3*k;
-      if(Math.abs(a[1]-y)>1) o+=ln(a,[a[0],y+s*6],INK,W1); o+=ln([a[0],y],[e,y],INK,W1)+ar([a[0],y],dirx,0);
+      if(Math.abs(a[1]-y)>1) o+=ln(snap(a,true,s),[a[0],y+s*6],INK,W1); o+=ln([a[0],y],[e,y],INK,W1)+ar([a[0],y],dirx,0);
       const cx=op&&op.tx!=null?m([op.tx,at])[0]:(a[0]+ax)/2; o+=txt([cx,y-6],tx,'igs-dim','middle'); }
     else if(t==='v1'){ /* то же, что h1, по вертикали: от точки A за ось (y = 0 на виде сверху, z… — ось вида) на 3 мм, одна стрелка */
       const [,,A,at,tx]=d, a=m(A), x=m([at,A[1]])[0], s=x<a[0]?-1:1, ay=m([at,0])[1], diry=a[1]>ay?-1:1, e=ay+diry*3*k;
-      if(Math.abs(a[0]-x)>1) o+=ln(a,[x+s*6,a[1]],INK,W1); o+=ln([x,a[1]],[x,e],INK,W1)+ar([x,a[1]],0,diry);
+      if(Math.abs(a[0]-x)>1) o+=ln(snap(a,false,s),[x+s*6,a[1]],INK,W1); o+=ln([x,a[1]],[x,e],INK,W1)+ar([x,a[1]],0,diry);
       const cy=(a[1]+ay)/2; o+=`<text x="${f(x-6)}" y="${f(cy)}" transform="rotate(-90 ${f(x-6)} ${f(cy)})" class="igs-dim" text-anchor="middle">${tx}</text>`; }
     else if(t==='v'){ const [,,A,B,at,tx,op]=d, a=m(A), b=m(B), x=m([at,A[1]])[0], s=x<a[0]?-1:1, y1=Math.min(a[1],b[1]), y2=Math.max(a[1],b[1]);
-      if(Math.abs(a[0]-x)>1) o+=ln(a,[x+s*6,a[1]],INK,W1); if(Math.abs(b[0]-x)>1) o+=ln(b,[x+s*6,b[1]],INK,W1);
+      if(Math.abs(a[0]-x)>1) o+=ln(snap(a,false,s),[x+s*6,a[1]],INK,W1); if(Math.abs(b[0]-x)>1) o+=ln(snap(b,false,s),[x+s*6,b[1]],INK,W1);
       const short=y2-y1<tw(tx)+24; let cy=op&&op.tz!=null?m([at,op.tz])[1]:(y1+y2)/2;
       if(AUTO&&!short&&!(op&&op.fix)){ const w=tw(tx), bx=c=>[x-25,c-w/2-2,x-5,c+w/2+2], L=y2-y1, lo=y1+w/2+5, hi=y2-w/2-5;
         const C=[cy,(y1+y2)/2,...[0.18,-0.18,0.3,-0.3,0.4,-0.4].map(r=>(y1+y2)/2+r*L)].filter(c=>c>=lo&&c<=hi), ok=C.find(c=>free(bx(c),i));
@@ -29748,7 +29755,7 @@ function ctx(n){ const RQ=typeof n==='object'?n:null, md=RQ?RQ.md:IG_VARS[n], sp
   const DR=(view,off,bnd)=>IG3.drawing(md,view,W,off||0,bnd||0);
   return {n,md,sp,b,x0,x1,y0,y1,z0,z1,G,TY,GX,FR,TP,LF,DR}; }
 function img(C,d,OX,OY){ const m=(()=>{ const q=C.DR('front0'); return (q.px([10,0,0])[0]-q.px([0,0,0])[0])/10; })(), o=d.px([0,0,0]), sc=k/m, tx=OX-o[0]*sc, ty=OY-o[1]*sc;
-  if(REC) (d.lines||[]).forEach(L=>{ const g=[tx+L.a[0]*sc,ty+L.a[1]*sc,tx+L.b[0]*sc,ty+L.b[1]*sc]; if(!L.h) REC.s.push(g); else (REC.h=REC.h||[]).push(g); });   /* штриховые — отдельно: для места размерных чисел */
+  if(REC) (d.lines||[]).forEach(L=>{ const g=[tx+L.a[0]*sc,ty+L.a[1]*sc,tx+L.b[0]*sc,ty+L.b[1]*sc]; if(!L.h){ REC.s.push(g); (REC.c=REC.c||[]).push(g); } else (REC.h=REC.h||[]).push(g); });   /* штриховые — отдельно: для места размерных чисел */
   return `<image href="${d.url}" width="${W}" height="${W}" transform="translate(${f(tx)} ${f(ty)}) scale(${sc.toFixed(5)})"/>`; }
 /* след наклонной плоскости и сечение в проекционной связи: ось сечения ∥ следу, точки переносятся перпендикулярно следу */
 function secGeo(C){ const md=C.md; if(!md.sec) return null; const [[xa,za],[xb,zb]]=md.sec.p, th=Math.atan2(zb-za,xb-xa), c=Math.cos(th), s=Math.sin(th), L=Math.hypot(xb-xa,zb-za);
