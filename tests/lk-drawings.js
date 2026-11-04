@@ -65,6 +65,17 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
     ['A','B','C','S'].forEach(a=>['B','C','S'].forEach(b=>{ if(a<b) ['″','′'].forEach(p=>E.push(by[a+p].concat(by[b+p]))); }));
     ['A','B','C','S'].forEach(a=>{ const f=by[a+'″'], h=by[a+'′']; E.push([f[0],f[1]-20,h[0],h[1]+20]); });
     const mg=RF.matchGiven(E,G.map(q=>({l:q.l,pr:q.pr,at:q.at})),{ppm:k}), me=mg?Math.max(...mg.pts.map(([l,x,y])=>Math.hypot(x-by[l][0],y-by[l][1]))):null;
+    /* проверка по результату (lk/scan/verify.js): эталон в.14 — как у мозга сканера (H 29,3 мм, угол граней 54,1°, угол SA 35°) */
+    { const VF=require(ROOT+'/lk/scan/verify.js'), r=VF.ref(LIB.variants.get(3,14).data);
+      if(Math.abs(r.H-29.3)>0.05||Math.abs(r.dih-54.1)>0.05||Math.abs(r.phi-35)>0.05) B('эталон варианта 14 (H, угол граней, угол SA)',[r.H,r.dih,r.phi].map(v=>v.toFixed(2)).join(', '));
+      const fam=(h,suf)=>[['A'+suf,0,0],['B'+suf,40,0],['C'+suf,70,0],['S'+suf,30,-h]], a=VF.verify(fam(r.H,'‴'),LIB.variants.get(3,14).data), b=VF.verify(fam(r.H+4,'₄'),LIB.variants.get(3,14).data);
+      if(a.verdict!=='верно'||a.found[0].k!=='H') B('высота по проекции «основание ребром» (подписи ‴) — верно',JSON.stringify(a.found));
+      if(b.verdict!=='расходится с эталоном') B('высота на 4 мм больше (подписи ₄) — расходится',b.verdict);
+      const t=[['A⁗',0,0],['B⁗',r.sides.AB,0]], ang=Math.acos((r.sides.AB**2+r.sides.CA**2-r.sides.BC**2)/(2*r.sides.AB*r.sides.CA)); t.push(['C⁗',r.sides.CA*Math.cos(ang),r.sides.CA*Math.sin(ang)]);
+      const c=VF.verify(t,LIB.variants.get(3,14).data), d=VF.verify(t.map(q=>q[0]==='C⁗'?[q[0],q[1]+4,q[2]]:q),LIB.variants.get(3,14).data);
+      if(c.verdict!=='верно') B('истинный вид ABC (подписи ⁗) — верно',c.verdict);
+      if(d.verdict==='расходится с эталоном') B('истинный вид с неверной стороной — «не уверен», не обвинение',d.verdict);
+      if(VF.verify([['A″',0,0],['B″',40,0],['C″',70,0],['S″',30,-r.H]],LIB.variants.get(3,14).data).found.length) B('проекции ″ и ′ — не результат построения','нашлось'); }
     if(!mg||mg.inl!==8||me>0.5||Math.abs(mg.shift+6)>0.6) B('точки условия по форме (без подписей): 8 из 8, сдвиг проекций −6 мм',JSON.stringify(mg&&{inl:mg.inl,shift:mg.shift,maxErr:me}));
   }
   return bad; }

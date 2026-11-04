@@ -10,10 +10,10 @@
 (function(){
 'use strict';
 const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','/lab/font.js','/lab/sheets.js','/lab/rectify.js','/lab/lines.js',
- '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js'];
+ '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js','/lk/scan/verify.js'];
 
 let loading=null;
-function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE) return Promise.resolve();
+function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE&&self.SCANVERIFY) return Promise.resolve();
   if(loading) return loading;
   loading=LIBS.reduce((p,src)=>p.then(()=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src+'?v='+(v||'lk1'); s.async=false;
     s.onload=res; s.onerror=()=>rej(new Error('не загрузился модуль сканера '+src)); document.head.appendChild(s); })),Promise.resolve());
@@ -174,6 +174,11 @@ function create(o){ o=o||{};
           if(!ok(X)) return;
           X.dr.sheetVote={was:f&&f.rmsMm!=null?{dz:f.dz,n:f.n}:null}; out.drawings[i]=X.dr;
           step('d'+i,'Чертёж '+(i+1)+': '+(f&&f.rmsMm!=null?'был привязан к ДЗ №'+f.dz+' в.'+f.n:'не был привязан')+' — по листу вариант '+sv.n+', невязка '+fmt(X.q.rms)+' мм','done'); }); } }
+    /* проверка по результату (lk/scan/verify.js): истинные величины в копии против эталона варианта — каким бы способом и с какими
+       подписями студент ни строил; на офлайн-копии, без запросов */
+    if(self.SCANVERIFY&&self.CORE&&self.CORE.dzVariants) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==3||dr.fit.rmsMm==null) return;
+      try{ const gv=self.CORE.dzVariants.get(3,+dr.fit.n); if(!gv) return; const v=self.SCANVERIFY.verify(dr.mm.pts,gv.data);
+        if(v.found.length) dr.verify={verdict:v.verdict,found:v.found.map(f=>({k:f.k,what:f.what,got:Array.isArray(f.got)?f.got.map(t=>+t.toFixed(1)):+f.got.toFixed(1),want:Array.isArray(f.want)?f.want.map(t=>+t.toFixed(1)):+f.want.toFixed(1),st:f.st,from:f.from,unit:f.unit}))}; }catch(e){} });
     /* проверка построения (ДЗ №3): мозг сканера (lab/dz/check3.js через gridsheet) по уточнённой копии каждого чертежа.
        Только по запросу (sel.check = true): на 62 настоящих чертежах (REPORT 7с) почти всё — «не могу утверждать» (студенты строят
        не только способом из указания), одно «ошибка в данных» — скорее ложное; студенту такой вердикт показывать рано */

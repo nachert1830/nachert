@@ -95,7 +95,7 @@ async function scan(file){ if(!file||busy) return;
   if(!CLOUD){ progStart('Сканер сейчас недоступен'); step('x','Адрес сервера сканера не задан. Попробуйте пример — он работает без сервера.','err'); return; }
   if(!CODE){ $('#scSet').open=true; $('#scCode').focus(); progStart('Нужен код доступа'); step('x','Введите код доступа в «Настройках сканера» и выберите фото ещё раз.','err'); return; }
   busy=true; progStart('Сканирую лист…');
-  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk3'); step('lib','Сканер загружен','done');
+  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk4'); step('lib','Сканер загружен','done');
     const pipe=self.SCANPIPE.create({cloud:CLOUD,code:CODE});
     const {out,bmp}=await pipe.run(file,{dz:$('#scDz').value,variant:$('#scVar').value,precision:$('#scPrec').value},step);
     const ok=out.drawings.filter(d=>d&&d.segs&&d.segs.length);
@@ -280,6 +280,11 @@ function renderFix(){ if(!DR||PANE!=='fix') return; const box=$('#fixList'), is=
   let h='<div class="card"><div class="st '+(ok?'ok':'no')+'"><span class="big3">'+(ok?ICON.ok:ICON.warn)+'</span><span><b>'+(ok?(big.length?'3D уже можно смотреть':'Копия доведена'):'Пока не хватает для 3D')+'</b><br><small class="mut">'+(big.length?'Осталось поправить: '+big.length:'Замечаний нет')+'</small></span></div>'
     +'<div class="nums"><div><b>'+Object.keys(sp.pts).length+'</b><small>точек в 3D</small></div><div><b>'+sp.edges.length+'</b><small>рёбер</small></div><div><b>'+sp.faces.length+'</b><small>граней</small></div></div>'
     +(ok?'<button class="btn" style="width:100%;margin-top:12px" data-go3d>'+ICON.cube+'Смотреть в 3D</button>':'')+'</div>';
+  /* проверка по результату — истинные величины копии против эталона варианта (на момент скана) */
+  if(DR.verify&&DR.verify.found&&DR.verify.found.length){ const v=DR.verify, fm=x=>Array.isArray(x)?x.map(f1).join(' / '):f1(x);
+    h+='<div class="card"><div class="st '+(v.verdict==='верно'?'ok':v.verdict==='расходится с эталоном'?'no':'')+'"><span class="big3">'+(v.verdict==='верно'?ICON.ok:ICON.warn)+'</span><span><b>Проверка по результату: '+esc(v.verdict)+'</b><br><small class="mut">'
+      +v.found.map(f=>esc(f.what)+' — начерчено '+fm(f.got)+' '+f.unit+', по варианту '+fm(f.want)+' '+f.unit+' ('+esc(f.st)+', проекция '+esc(f.from)+')').join('; ')
+      +(v.verdict==='расходится с эталоном'?'. Проверьте построение этой величины.':'')+'</small></span></div></div>'; }
   /* проверка построения — вердикт сканера (на момент скана) */
   if(DR.check){ const c=DR.check, cls=c.verdict==='верно'?'ok':c.verdict==='ошибка'?'no':'', ic=c.verdict==='верно'?ICON.ok:ICON.warn;
     h+='<div class="card"><div class="st '+cls+'"><span class="big3">'+ic+'</span><span><b>Проверка построения: '+esc(c.verdict)+'</b><br><small class="mut">'+(c.partName?'Часть '+esc(c.partName)+'. ':'')+esc((c.why||[]).join('. '))+(c.verdict==='не могу утверждать'?' Сканер говорит «ошибка», только когда уверен: доведите копию или снимите чертёж крупнее.':'')+'</small></span></div></div>'; }
