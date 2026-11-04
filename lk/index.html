@@ -176,6 +176,7 @@ main{padding:4px 12px 0}
 
 /* РК — подробно (вкладка «РК») */
 .rkx{display:grid;gap:12px}
+.rkb{display:grid;gap:12px;align-content:start}
 .rkx .hero{background:var(--rk);box-shadow:0 18px 36px -22px rgba(124,45,240,.7)}
 .steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .step{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--line);border-radius:18px;padding:10px 10px 10px 10px}
@@ -259,8 +260,8 @@ details.past .rows{margin-top:4px}
 @keyframes ring{0%{opacity:.8;transform:scale(.92)}70%,100%{opacity:0;transform:scale(1.18)}}
 .tab.center .fab svg{width:30px;height:30px}
 .tab.center:active .fab{transform:scale(.93)}
-.tab.center span:last-child{color:var(--mut);margin-top:2px}
-.tab.center.on span:last-child{color:var(--ink)}
+.tab.center .sm{color:var(--mut);margin-top:2px}
+.tab.center.on .sm{color:var(--ink)}
 
 /* Тост, лист выбора группы */
 .toast{position:fixed;left:50%;bottom:calc(var(--tabh) + 26px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:70;background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:16px;font-weight:600;font-size:15px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;white-space:nowrap}
@@ -284,16 +285,64 @@ details.past .rows{margin-top:4px}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:12px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 
-/* Широкий экран: «Горит» и «Сканер» — рядом, дальше РК и сдачи в две колонки */
+/* ═══ Компьютер ═══
+   ≥ 880 px: нижнее меню становится боковой панелью слева, сканер — яркая кнопка вверху панели,
+   окно выбора группы — по центру. ≥ 1180 px: на главной «Горит» и сканер рядом, дальше РК и сроки в две колонки,
+   на вкладке «РК» — предметы рядом. */
+.tab .lg{display:none}
+@media (hover:hover){
+  .btn,.tab,.row,.step,.rkc,.sec .more,.gpill{transition:filter .15s,background .15s,transform .08s,box-shadow .08s}
+  .btn:hover,.rkc:hover,.gpill:hover{filter:brightness(1.08)}
+  .tab:not(.on):not(.center):hover{color:var(--ink);background:var(--surf2)}
+  .row:hover,.step:hover{background:var(--surf2)}
+  .sec .more:hover{text-decoration:underline;text-underline-offset:3px}
+  .chk:hover{border-color:var(--mut)}
+}
 @media (min-width:880px){
-  main{padding:4px 24px 0}
-  .top{padding-left:24px;padding-right:24px}
-  #v-home.on{max-width:none;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:16px}
-  #v-home .full{grid-column:1/-1}
-  .rkrow{grid-auto-flow:row;grid-template-columns:1fr 1fr;overflow:visible;margin:0;padding:0}
-  .hero{min-height:100%}
+  .app{max-width:none;padding:0 32px 48px 280px}
+  .top{padding:20px 0 14px;max-width:1120px;margin:0 auto}
+  main{padding:4px 0 0}
+  .view.on{max-width:720px}
+  #v-cal.on{max-width:760px}
+  #v-rk.on{max-width:760px}
+  #v-check.on{max-width:720px}
+  /* боковая панель */
+  .tabs{top:16px;bottom:16px;left:16px;right:auto;width:236px;padding:0}
+  .tabs-in{height:100%;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:14px 12px;border-radius:26px;max-width:none}
+  .tab{flex-direction:row;justify-content:flex-start;gap:14px;height:50px;padding:0 14px;font:600 15.5px var(--sans);border-radius:16px}
+  .tab svg{width:24px;height:24px}
+  .tab.on{background:var(--surf3)}
+  .tab.on::before{display:none}
+  .tab .badge,.tab .dot{position:static;margin-left:auto;box-shadow:none}
+  .tab .badge{min-width:22px;height:22px;border-radius:11px;font-size:12px;line-height:22px}
+  .tab.center{order:-1;height:60px;margin:0 0 12px;background:var(--scan);color:#fff;box-shadow:0 14px 30px -14px var(--scan-glow);padding:0 16px}
+  .tab.center .fab{width:auto;height:auto;margin:0;background:none;box-shadow:none;border-radius:0}
+  .tab.center .fab::after{display:none}
+  .tab.center .fab svg{width:26px;height:26px}
+  .tab.center .sm{display:none}
+  .tab.center .lg{display:inline;color:#fff!important;margin:0;font-weight:700}
+  .tab.center.on{background:var(--scan);box-shadow:0 0 0 3px var(--paper),0 0 0 5px #4d86ff}
+  .tab.center:hover{filter:brightness(1.1)}
+  .tab.center:active{transform:scale(.98)}
+  .toast{bottom:28px;left:calc(50% + 124px)}
+  .sheet{align-items:center;justify-content:center;padding:24px}
+  .sheet-in{border-radius:28px;max-height:70vh}
   .hot-t{font-size:46px}
+}
+@media (min-width:880px) and (max-width:1179px){
+  .scan{min-height:250px}
+  .scan .acts{max-width:calc(100% - 190px)}
+}
+@media (min-width:1180px){
+  #v-home.on{max-width:1120px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:18px}
+  #v-home .full{grid-column:1/-1}
+  #v-home .mini,#v-home #lesson{align-self:start}
   #v-home:has(#lesson:empty) .mini{grid-column:1/-1}
+  .rkrow{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(0,1fr));overflow:visible;margin:0;padding:0}
+  #v-rk.on{max-width:1120px}
+  #rkList{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:18px}
+  #rkList>.wk,#rkList>.row{grid-column:1/-1}
+  .scan h3{font-size:32px}
 }
 </style>
 </head>
@@ -399,7 +448,7 @@ details.past .rows{margin-top:4px}
 <nav class="tabs" aria-label="Разделы"><div class="tabs-in">
   <button class="tab on" data-tab="home"><svg class="i"><use href="#i-home"/></svg>Главная</button>
   <button class="tab" data-tab="cal"><svg class="i"><use href="#i-list"/></svg>Сдачи<span class="badge" id="calBadge" hidden></span></button>
-  <button class="tab center" data-tab="check" aria-label="Сканер чертежей"><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span>Скан</span></button>
+  <button class="tab center" data-tab="check" aria-label="Сканер чертежей"><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span class="sm">Скан</span><span class="lg">Сканер чертежа</span></button>
   <button class="tab" data-tab="rk"><svg class="i"><use href="#i-target"/></svg>РК<span class="dot" id="rkDot" hidden></span></button>
   <button class="tab" data-tab="me"><svg class="i"><use href="#i-user"/></svg>Профиль</button>
 </div></nav>
@@ -594,17 +643,18 @@ details.past .rows{margin-top:4px}
     var t=todayDay(), rs=events().filter(function(e){return e.kind==='rk'&&!isPast(e,t)});
     $('#rkDot').hidden=!rs.some(function(e){return e.date-t<=14});
     if(!rs.length){ $('#rkList').innerHTML='<div class="card"><b>РК в этом семестре позади</b></div>'; return; }
-    var first={}, later=0;
-    $('#rkList').innerHTML=rs.map(function(e){ var d=e.date-t, p=prepOf(e), main=!first[e.subj]; first[e.subj]=1;
-      if(!main) return (later++?'':'<div class="wk">Позже</div>')+'<div class="row k-rk"><div class="m"><b><span class="kd">'+label(e)+'</span>'+SUBJ[e.subj]+'</b><small>'+esc(dateText(e))+'</small></div><div class="d">'+inWords(d)+'</div><span class="go"></span></div>';
-      return '<section class="hero" aria-label="'+label(e)+' '+SUBJ_FULL[e.subj]+'"><div class="row1"><span class="pill">'+(d<=7?'<i style="width:8px;height:8px;border-radius:4px;background:#fff;animation:pulse 1.4s infinite"></i>Скоро':'Неделя '+e.week)+'</span><span class="meta">готовность '+Math.round(p.n/p.all*100)+'%</span></div>'
+    var first={}, mains=[], later=[];
+    rs.forEach(function(e){ (first[e.subj]?later:mains).push(e); first[e.subj]=1; });
+    $('#rkList').innerHTML=mains.concat(later).map(function(e){ var d=e.date-t, p=prepOf(e), main=mains.indexOf(e)>=0;
+      if(!main) return (e===later[0]?'<div class="wk">Позже</div>':'')+'<div class="row k-rk"><div class="m"><b><span class="kd">'+label(e)+'</span>'+SUBJ[e.subj]+'</b><small>'+esc(dateText(e))+'</small></div><div class="d">'+inWords(d)+'</div><span class="go"></span></div>';
+      return '<div class="rkb"><section class="hero" aria-label="'+label(e)+' '+SUBJ_FULL[e.subj]+'"><div class="row1"><span class="pill">'+(d<=7?'<i style="width:8px;height:8px;border-radius:4px;background:#fff;animation:pulse 1.4s infinite"></i>Скоро':'Неделя '+e.week)+'</span><span class="meta">готовность '+Math.round(p.n/p.all*100)+'%</span></div>'
         +'<div><div class="hot-t" style="font-size:34px">'+label(e)+' · '+SUBJ[e.subj]+'</div><div class="hot-s">'+SUBJ_FULL[e.subj]+'</div></div>'
         +countHTML(d,e)+'<div class="tbar"><i style="width:'+Math.round(p.n/p.all*100)+'%"></i></div>'
         +'<div class="hint">'+esc(hintFor(e,d))+'</div>'
         +(p.next?'<div class="acts"><a class="btn white" href="'+p.next.h+'">'+esc(p.next.t)+'<svg class="i"><use href="#i-ext"/></svg></a></div>':'')+'</section>'
         +'<ol class="steps">'+p.steps.map(function(s,i){ var on=!!p.m[s.k];
           return '<li class="step'+(on?' on':'')+'"><button class="chk" data-prep="'+e.id+'|'+s.k+'" aria-pressed="'+on+'" aria-label="'+esc(s.t)+': '+(on?'снять отметку':'отметить — пройдено')+'"><svg class="i"><use href="#i-check"/></svg></button>'
-            +'<a href="'+s.h+'"><b>'+(i+1)+'. '+esc(s.t)+'</b><small>'+esc(s.s)+'</small></a><a class="go" href="'+s.h+'" aria-label="Открыть: '+esc(s.t)+'"><svg class="i"><use href="#i-ext"/></svg></a></li>'; }).join('')+'</ol>';
+            +'<a href="'+s.h+'"><b>'+(i+1)+'. '+esc(s.t)+'</b><small>'+esc(s.s)+'</small></a><a class="go" href="'+s.h+'" aria-label="Открыть: '+esc(s.t)+'"><svg class="i"><use href="#i-ext"/></svg></a></li>'; }).join('')+'</ol></div>';
     }).join('');
   }
 
