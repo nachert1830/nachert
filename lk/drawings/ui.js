@@ -95,7 +95,7 @@ async function scan(file){ if(!file||busy) return;
   if(!CLOUD){ progStart('Сканер сейчас недоступен'); step('x','Адрес сервера сканера не задан. Попробуйте пример — он работает без сервера.','err'); return; }
   if(!CODE){ $('#scSet').open=true; $('#scCode').focus(); progStart('Нужен код доступа'); step('x','Введите код доступа в «Настройках сканера» и выберите фото ещё раз.','err'); return; }
   busy=true; progStart('Сканирую лист…');
-  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk1'); step('lib','Сканер загружен','done');
+  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk3'); step('lib','Сканер загружен','done');
     const pipe=self.SCANPIPE.create({cloud:CLOUD,code:CODE});
     const {out,bmp}=await pipe.run(file,{dz:$('#scDz').value,variant:$('#scVar').value,precision:$('#scPrec').value},step);
     const ok=out.drawings.filter(d=>d&&d.segs&&d.segs.length);
