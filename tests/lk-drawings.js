@@ -65,6 +65,17 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
     ['A','B','C','S'].forEach(a=>['B','C','S'].forEach(b=>{ if(a<b) ['″','′'].forEach(p=>E.push(by[a+p].concat(by[b+p]))); }));
     ['A','B','C','S'].forEach(a=>{ const f=by[a+'″'], h=by[a+'′']; E.push([f[0],f[1]-20,h[0],h[1]+20]); });
     const mg=RF.matchGiven(E,G.map(q=>({l:q.l,pr:q.pr,at:q.at})),{ppm:k}), me=mg?Math.max(...mg.pts.map(([l,x,y])=>Math.hypot(x-by[l][0],y-by[l][1]))):null;
+    /* проверка по результату (lk/scan/verify.js): эталон в.14 — как у мозга сканера (H 29,3 мм, угол граней 54,1°, угол SA 35°) */
+    { const VF=require(ROOT+'/lk/scan/verify.js'), r=VF.ref(LIB.variants.get(3,14).data);
+      if(Math.abs(r.H-29.3)>0.05||Math.abs(r.dih-54.1)>0.05||Math.abs(r.phi-35)>0.05) B('эталон варианта 14 (H, угол граней, угол SA)',[r.H,r.dih,r.phi].map(v=>v.toFixed(2)).join(', '));
+      const fam=(h,suf)=>[['A'+suf,0,0],['B'+suf,40,0],['C'+suf,70,0],['S'+suf,30,-h]], a=VF.verify(fam(r.H,'‴'),LIB.variants.get(3,14).data), b=VF.verify(fam(r.H+4,'₄'),LIB.variants.get(3,14).data);
+      if(a.verdict!=='верно'||a.found[0].k!=='H') B('высота по проекции «основание ребром» (подписи ‴) — верно',JSON.stringify(a.found));
+      if(b.verdict!=='расходится с эталоном') B('высота на 4 мм больше (подписи ₄) — расходится',b.verdict);
+      const t=[['A⁗',0,0],['B⁗',r.sides.AB,0]], ang=Math.acos((r.sides.AB**2+r.sides.CA**2-r.sides.BC**2)/(2*r.sides.AB*r.sides.CA)); t.push(['C⁗',r.sides.CA*Math.cos(ang),r.sides.CA*Math.sin(ang)]);
+      const c=VF.verify(t,LIB.variants.get(3,14).data), d=VF.verify(t.map(q=>q[0]==='C⁗'?[q[0],q[1]+4,q[2]]:q),LIB.variants.get(3,14).data);
+      if(c.verdict!=='верно') B('истинный вид ABC (подписи ⁗) — верно',c.verdict);
+      if(d.verdict==='расходится с эталоном') B('истинный вид с неверной стороной — «не уверен», не обвинение',d.verdict);
+      if(VF.verify([['A″',0,0],['B″',40,0],['C″',70,0],['S″',30,-r.H]],LIB.variants.get(3,14).data).found.length) B('проекции ″ и ′ — не результат построения','нашлось'); }
     if(!mg||mg.inl!==8||me>0.5||Math.abs(mg.shift+6)>0.6) B('точки условия по форме (без подписей): 8 из 8, сдвиг проекций −6 мм',JSON.stringify(mg&&{inl:mg.inl,shift:mg.shift,maxErr:me}));
   }
   return bad; }
@@ -151,6 +162,17 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
     /* голос листа: три чертежа за вариант 18 — победитель с масштабом листа; один чертёж ничего не решает */
     const sv=await pg.evaluate(()=>{ const f=(n,inl,rms,ppm)=>({fit:{dz:3,n,inl,rmsMm:rms},ppm}); return [SCANPIPE.sheetVariant([f(17,4,0.2,2.4),f(18,8,0.4,2.4),f(18,8,0.3,2.7),f(18,8,0.3,2.7)]),SCANPIPE.sheetVariant([f(5,8,0.4,2.5),f(8,4,0.1,2.5),{error:'x'}])]; });
     if(!sv[0]||sv[0].n!==18||Math.abs(sv[0].ppm-2.7)>1e-9||sv[1]!==null) B('голос листа: вариант большинства и масштаб; один чертёж — не голос',JSON.stringify(sv)); }
+  /* 3е. живой сканер (lk/scan/live.js) без камеры: лист на столе под углом — углы уточняются до пикселей, ровный лист без стола */
+  { const t=await pg.evaluate(async()=>{ if(!self.LIVESCAN) return {err:'нет LIVESCAN'}; await LIVESCAN.load();
+      const c=document.createElement('canvas'); c.width=1200; c.height=1600; const g=c.getContext('2d'); g.fillStyle='#5a4030'; g.fillRect(0,0,1200,1600);
+      const Q=[[180,230],[1010,150],[1080,1420],[230,1500]]; g.fillStyle='#eeeeea'; g.beginPath(); Q.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.closePath(); g.fill();
+      g.strokeStyle='#333'; g.lineWidth=3; g.beginPath(); g.moveTo(400,600); g.lineTo(800,900); g.stroke();
+      const rough=Q.map((p,i)=>[p[0]+[14,-12,-15,10][i],p[1]+[12,15,-11,-14][i]]), r=LIVESCAN.refineQuad(c,rough), err=Math.max(...r.map((p,i)=>Math.hypot(p[0]-Q[i][0],p[1]-Q[i][1])));
+      const f=LIVESCAN.rectify(c,LIVESCAN.sheetQuad(c,rough),1000), d=f.getContext('2d').getImageData(0,0,f.width,f.height).data; let dark=0; for(let i=0;i<d.length;i+=4*7) if(d[i]<160&&d[i]-d[i+2]>25) dark++;
+      return {err,w:f.width,h:f.height,brown:dark}; });
+    if(t.err&&typeof t.err==='string') B('живой сканер загрузился',t.err);
+    else { if(!(t.err<=3)) B('живой сканер: углы листа уточнены до пикселей (≤ 3 px на 1600)','промах угла '+t.err.toFixed(1)+' px');
+      if(!(t.h>t.w&&t.h<=1000)) B('живой сканер: ровный лист нужного размера',t.w+'×'+t.h); if(t.brown>40) B('живой сканер: на ровном листе нет стола','тёмно-бурых точек '+t.brown); } }
   /* 3г. «быстро»: одна модель, даже если слабая */
   { Object.assign(calls,{layout:0,crop:0,crop2:0}); await scanOnce('fast'); if(calls.crop2!==0) B('быстро: без второй проверки',JSON.stringify(calls)); ans.crop=text; ans.crop2=text; }
   /* бета-страница lk/scan/ — на том же конвейере; её результат уходит в «Мои чертежи» кабинета */

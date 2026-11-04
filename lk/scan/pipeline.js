@@ -10,10 +10,10 @@
 (function(){
 'use strict';
 const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','/lab/font.js','/lab/sheets.js','/lab/rectify.js','/lab/lines.js',
- '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js'];
+ '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js','/lk/scan/verify.js'];
 
 let loading=null;
-function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE) return Promise.resolve();
+function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE&&self.SCANVERIFY) return Promise.resolve();
   if(loading) return loading;
   loading=LIBS.reduce((p,src)=>p.then(()=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src+'?v='+(v||'lk1'); s.async=false;
     s.onload=res; s.onerror=()=>rej(new Error('не загрузился модуль сканера '+src)); document.head.appendChild(s); })),Promise.resolve());
@@ -92,6 +92,18 @@ function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.
   const dr={part:d.part,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length,placed,primesFixed:pf.length},rf.stats)};
   if(mg) dr.merge=mg.info; if(geo) dr.geoGiven={inl:geo.inl,rmsMm:+geo.rmsMm.toFixed(2)};
   return {dr,q:quality(fit,rf,P)}; }
+/* вердикт по одному чертежу: копия (px фото: точки на перекрёстках, линии по карандашу) → разбор как ответ модели → проверка
+   части (gridsheet.checkGridPhoto → check3): «верно» — всё на месте в допуске 1,5 мм; «ошибка» — найдено уверенно (≥ 3 мм / 5°);
+   иначе «не могу утверждать» с причиной. Ложное «ошибка» хуже молчания: проверка требует доказательства по линиям */
+const PART={a:'1 — высота',b:'2 — угол граней',c:'3 — истинный вид ABC',d:'4 — угол SA'};
+function checkDrawing(img,dr){ const L=self.LAB, t0=Date.now();
+  try{ const txt=dr.pts.map(q=>'P '+q[0]+' '+q[1].toFixed(1)+' '+q[2].toFixed(1)).concat(dr.segs.filter(q=>!q.unverified).map(q=>'S '+q.p.map(t=>t.toFixed(1)).join(' ')+(q.dash?' d':''))).join('\n');
+    const q=L.dzEyes.parseDigit(txt,1).drawings[0]; if(!q) return {verdict:'не могу утверждать',why:['копия пуста']};
+    const g=L.dzGridSheet.checkGridPhoto(img,{dz:3,n:+dr.fit.n,digit:q,eyes:{pts:q.pts},cleaner:false,answers:{}});
+    const parts=g.parts?Object.fromEntries(Object.entries(g.parts).filter(([k,x])=>x&&x.st).map(([k,x])=>[k,{st:x.st,why:(x.why||[])[0]||null,measured:x.measured!=null?+(+x.measured).toFixed(1):null,mWhy:x.mWhy||null}])):{};
+    const main=Object.entries(parts).find(([k,x])=>x.st===g.verdict)||Object.entries(parts)[0];
+    return {verdict:g.verdict,part:main?main[0]:null,partName:main?PART[main[0]]:null,why:[main&&main[1].why,main&&main[1].mWhy].filter(Boolean),parts,ms:Date.now()-t0}; }
+  catch(e){ return {verdict:'не могу утверждать',why:['проверка не сложилась: '+String(e&&e.message||e).slice(0,120)],ms:Date.now()-t0}; } }
 /* качество копии: привязалась ли к условию варианта, невязка, доля линий, подтверждённых карандашом, сколько ответа модели не нашлось на бумаге */
 function quality(fit,rf,P){ const bound=!!(fit&&fit.rmsMm!=null&&fit.inl>=4), rms=bound?(fit.hom?fit.hom.rmsMm:fit.rmsMm):null, st=rf.stats, kept=st.kept||0;
   const conf=kept?(kept-(st.unverified||0))/kept:0, drop=(st.dropped||0)/Math.max(1,st.model||0), why=[];
@@ -162,9 +174,21 @@ function create(o){ o=o||{};
           if(!ok(X)) return;
           X.dr.sheetVote={was:f&&f.rmsMm!=null?{dz:f.dz,n:f.n}:null}; out.drawings[i]=X.dr;
           step('d'+i,'Чертёж '+(i+1)+': '+(f&&f.rmsMm!=null?'был привязан к ДЗ №'+f.dz+' в.'+f.n:'не был привязан')+' — по листу вариант '+sv.n+', невязка '+fmt(X.q.rms)+' мм','done'); }); } }
+    /* проверка по результату (lk/scan/verify.js): истинные величины в копии против эталона варианта — каким бы способом и с какими
+       подписями студент ни строил; на офлайн-копии, без запросов */
+    if(self.SCANVERIFY&&self.CORE&&self.CORE.dzVariants) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==3||dr.fit.rmsMm==null) return;
+      try{ const gv=self.CORE.dzVariants.get(3,+dr.fit.n); if(!gv) return; const v=self.SCANVERIFY.verify(dr.mm.pts,gv.data);
+        if(v.found.length) dr.verify={verdict:v.verdict,found:v.found.map(f=>({k:f.k,what:f.what,got:Array.isArray(f.got)?f.got.map(t=>+t.toFixed(1)):+f.got.toFixed(1),want:Array.isArray(f.want)?f.want.map(t=>+t.toFixed(1)):+f.want.toFixed(1),st:f.st,from:f.from,unit:f.unit}))}; }catch(e){} });
+    /* проверка построения (ДЗ №3): мозг сканера (lab/dz/check3.js через gridsheet) по уточнённой копии каждого чертежа.
+       Только по запросу (sel.check = true): на 62 настоящих чертежах (REPORT 7с) почти всё — «не могу утверждать» (студенты строят
+       не только способом из указания), одно «ошибка в данных» — скорее ложное; студенту такой вердикт показывать рано */
+    if(sel.check===true&&L.dzGridSheet&&out.drawings.some(d=>d&&!d.error&&d.fit&&d.fit.dz===3&&d.fit.rmsMm!=null)){ step('chk','Проверяю построение…'); let img=null;
+      try{ const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.drawImage(bmp,0,0); img=g.getImageData(0,0,W,H); }catch(e){}
+      if(img){ out.drawings.forEach(dr=>{ if(dr&&!dr.error&&dr.fit&&dr.fit.dz===3&&dr.fit.rmsMm!=null) dr.check=checkDrawing(img,dr); });
+        const vs=out.drawings.filter(d=>d&&d.check).map(d=>d.check.verdict); step('chk','Проверка: '+['верно','ошибка','не могу утверждать'].map(v=>[v,vs.filter(x=>x===v).length]).filter(x=>x[1]).map(x=>x[0]+' — '+x[1]).join(', '),'done'); } }
     out.cost=+cost.toFixed(4); out.calls=calls; out.seconds=Math.round((Date.now()-t0)/1000); return {out,bmp}; }
 
   return {status,ask,run,cloud:CLOUD,api:API}; }
 
-self.SCANPIPE={LIBS,load,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,sheetVariant,CUT_SIDE,VIEW};
+self.SCANPIPE={LIBS,load,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,sheetVariant,checkDrawing,CUT_SIDE,VIEW};
 })();
