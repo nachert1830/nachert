@@ -42,6 +42,14 @@ function toText(P){ const f=v=>String(Math.round(v*10)/10);
   return [].concat(P.pts.map(q=>'P '+q[0]+' '+f(q[1])+' '+f(q[2])),P.segs.map(s=>'S '+s.slice(0,4).map(f).join(' ')+(s[4]?' d':'')),
     (P.circles||[]).map(c=>(c.a1==null?'C ':'R ')+[c.cx,c.cy,c.r].map(f).join(' ')+(c.a1==null?'':' '+f(c.a1)+' '+f(c.a2))+(c.dash?' d':'')),
     (P.txt||[]).map(t=>'T '+f(t[0])+' '+f(t[1])+' '+t[2])).join('\n'); }
-const api={merge,keepB,sameSeg,lab,toText};
+/* штрихи на бледном фото: модель подписывает обе проекции точки одинаково (A″ и A″, а A′ нет). Во ДЗ №3 фронтальная проекция ″ —
+   над осью x, горизонтальная ′ — под ней (координаты условия y, z ≥ 0), поэтому из двух одинаковых подписей верхняя — ″, нижняя — ′.
+   Только когда второй подписи этой буквы нет совсем и одинаковых точек ровно две (иначе это может быть другое построение).
+   fixPrimes(pts [[подпись,x,y]]) → {pts, fixed: [подпись, …]} (y — вниз, кадр в правильной ориентации листа) */
+function fixPrimes(pts){ const by=new Map(); pts.forEach((q,i)=>{ const k=lab(q[0]); if(!by.has(k)) by.set(k,[]); by.get(k).push(i); }); const out=pts.map(q=>q.slice()), fixed=[];
+  by.forEach((ids,k)=>{ const m=k.match(/^(.+?)([″′])$/); if(!m||ids.length!==2) return; const other=m[1]+(m[2]==='″'?'′':'″'); if(by.has(other)) return;
+    const [hi,lo]=ids.slice().sort((a,b)=>pts[a][2]-pts[b][2]); out[hi][0]=m[1]+'″'; out[lo][0]=m[1]+'′'; fixed.push(m[1]); });
+  return {pts:out,fixed}; }
+const api={merge,keepB,sameSeg,lab,toText,fixPrimes};
 if(typeof module!=='undefined'&&module.exports) module.exports=api; else { self.SCANMERGE=api; }
 })();

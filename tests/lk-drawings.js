@@ -50,6 +50,22 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
     if(d(r2[0],100,100)>0.05) B('догадка второй модели у перекрёстка — точка на нём',r2[0].join(', '));
     const m=MG.merge({pts:[['A″',10,10]],segs:[]},{pts:[['A″',30,10],["B'",5,5]],segs:[]},{ppm});
     if(!m.alts.get('A″')||m.alts.get('A″').length!==2||m.P.pts.find(q=>q[0]==='A″')[1]!==10) B('слияние: при споре моделей остаётся первая, обе догадки — в alts',JSON.stringify([...m.alts]));
+    /* штрихи: A″ дважды и нет A′ — верхняя ″, нижняя ′; есть обе подписи — не трогать */
+    const fp=MG.fixPrimes([['A″',10,50],['A″',12,90],['B″',30,40],['B′',30,80],['B″',60,20]]);
+    if(fp.pts[0][0]!=='A″'||fp.pts[1][0]!=='A′'||fp.fixed.join()!=='A'||fp.pts[4][0]!=='B″') B('одинаковые подписи двух проекций → ″ сверху, ′ снизу',JSON.stringify(fp));
+    /* привязка к варианту (lab/dz/sheetlib.js): лишняя точка с той же подписью; безосный эпюр (′ сдвинуты на 7 мм) */
+    const SL=require(ROOT+'/lab/dz/sheetlib.js'), gv=LIB.variants.get(3,18), G=LIB.model.given(gv.id,gv.data).pts, k=4;
+    const txt=(dl,extra)=>G.map(q=>'P '+q.l+' '+Math.round((100+q.at[0]*k)*10)/10+' '+Math.round((300+(q.at[1]+(q.pr==='h'?dl:0))*k)*10)/10).concat(extra||[]).join('\n');
+    const f0=SL.fitVariant(txt(0),'auto',3), f1=SL.fitVariant(txt(-7),'auto',3), f2=SL.fitVariant(txt(0,['P A″ 40 40']),'auto',3);
+    if(!f0||f0.n!==18||f0.inl!==8||f0.free!=null) B('привязка: вариант 18 по 8 точкам, без сдвига',JSON.stringify(f0&&{n:f0.n,inl:f0.inl,free:f0.free}));
+    if(!f1||f1.n!==18||f1.inl!==8||Math.abs(f1.free+7)>0.3) B('безосный эпюр: горизонтальная проекция ближе на 7 мм — вариант 18, сдвиг −7',JSON.stringify(f1&&{n:f1.n,inl:f1.inl,free:f1.free}));
+    if(!f2||f2.n!==18||f2.inl!==8) B('повтор подписи (точка построения тоже «A″») — привязка по верной',JSON.stringify(f2&&{n:f2.n,inl:f2.inl}));
+    /* точки условия без подписей: пирамида варианта среди вершин линий, ′ сдвинуты на 6 мм, масштаб на 8 % меньше */
+    const sc=k*0.92, P=q=>[100+q.at[0]*sc,300+(q.at[1]+(q.pr==='h'?-6:0))*sc], by=Object.fromEntries(G.map(q=>[q.l,P(q)])), E=[];
+    ['A','B','C','S'].forEach(a=>['B','C','S'].forEach(b=>{ if(a<b) ['″','′'].forEach(p=>E.push(by[a+p].concat(by[b+p]))); }));
+    ['A','B','C','S'].forEach(a=>{ const f=by[a+'″'], h=by[a+'′']; E.push([f[0],f[1]-20,h[0],h[1]+20]); });
+    const mg=RF.matchGiven(E,G.map(q=>({l:q.l,pr:q.pr,at:q.at})),{ppm:k}), me=mg?Math.max(...mg.pts.map(([l,x,y])=>Math.hypot(x-by[l][0],y-by[l][1]))):null;
+    if(!mg||mg.inl!==8||me>0.5||Math.abs(mg.shift+6)>0.6) B('точки условия по форме (без подписей): 8 из 8, сдвиг проекций −6 мм',JSON.stringify(mg&&{inl:mg.inl,shift:mg.shift,maxErr:me}));
   }
   return bad; }
 
@@ -131,7 +147,10 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
     const eh=t.h.map(y=>Math.min(Math.abs(y-120),Math.abs(y-380))), ev=t.v.map(x=>Math.min(Math.abs(x-150),Math.abs(x-550)));
     if(t.h.length<2||t.v.length<2||Math.max(...eh,...ev)>0.25) B('линии после притяжки — на месте, без сдвига на полпикселя','горизонтали '+t.h.map(v=>v.toFixed(2))+'; вертикали '+t.v.map(v=>v.toFixed(2)));
     const ex={'A″':[150,120],'B″':[550,120],'A′':[150,380],'B′':[550,380]}, ep=t.pts.map(q=>ex[q[0]]?Math.hypot(q[1]-ex[q[0]][0],q[2]-ex[q[0]][1]):0);
-    if(t.pts.length!==4||Math.max(...ep)>0.3) B('точки — на перекрёстках нарисованных линий','промах, px: '+ep.map(v=>v.toFixed(2)).join(', ')); }
+    if(t.pts.length!==4||Math.max(...ep)>0.3) B('точки — на перекрёстках нарисованных линий','промах, px: '+ep.map(v=>v.toFixed(2)).join(', '));
+    /* голос листа: три чертежа за вариант 18 — победитель с масштабом листа; один чертёж ничего не решает */
+    const sv=await pg.evaluate(()=>{ const f=(n,inl,rms,ppm)=>({fit:{dz:3,n,inl,rmsMm:rms},ppm}); return [SCANPIPE.sheetVariant([f(17,4,0.2,2.4),f(18,8,0.4,2.4),f(18,8,0.3,2.7),f(18,8,0.3,2.7)]),SCANPIPE.sheetVariant([f(5,8,0.4,2.5),f(8,4,0.1,2.5),{error:'x'}])]; });
+    if(!sv[0]||sv[0].n!==18||Math.abs(sv[0].ppm-2.7)>1e-9||sv[1]!==null) B('голос листа: вариант большинства и масштаб; один чертёж — не голос',JSON.stringify(sv)); }
   /* 3г. «быстро»: одна модель, даже если слабая */
   { Object.assign(calls,{layout:0,crop:0,crop2:0}); await scanOnce('fast'); if(calls.crop2!==0) B('быстро: без второй проверки',JSON.stringify(calls)); ans.crop=text; ans.crop2=text; }
   /* бета-страница lk/scan/ — на том же конвейере; её результат уходит в «Мои чертежи» кабинета */

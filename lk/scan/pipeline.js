@@ -63,18 +63,24 @@ const fmt=(a,d)=>isFinite(a)?a.toFixed(d==null?2:d).replace('.',','):'—';
    c = {W, H (фото), vSel, dzSel (вариант и задание), rot, d (рамка чертежа)} */
 function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.refine, IMG=L.img, MG=self.SCANMERGE, d=c.d||{};
   if(cr.m&&cr.m.s!==1){ tA=scaleText(tA,1/cr.m.s); tB=scaleText(tB,1/cr.m.s); }   /* ответ — в px кадра модели */
-  const ppm0=Math.max(2,Math.min(c.W,c.H)/210*cr.k); let P=LY.parseDigit(tA), text=tA, mg=null;
-  if(tB!=null){ let fA=null; try{ fA=SL.fitVariant(tA,c.vSel,c.dzSel); }catch(e){} mg=MG.merge(P,LY.parseDigit(tB),{ppm:fA&&fA.ppm?fA.ppm:ppm0}); P=mg.P; text=MG.toText(P); }
+  /* одинаковые подписи двух проекций (A″ и A″ без A′) — верхняя ″, нижняя ′ (merge.fixPrimes): иначе к варианту не привязать */
+  const parse=t=>{ const Q=LY.parseDigit(t), f=MG.fixPrimes(Q.pts); Q.pts=f.pts; Q.primesFixed=f.fixed; return Q; };
+  const ppm0=Math.max(2,Math.min(c.W,c.H)/210*cr.k); let P=parse(tA), text=P.primesFixed.length?MG.toText(P):tA, mg=null; const pf=P.primesFixed;
+  if(tB!=null){ let fA=null; try{ fA=SL.fitVariant(text,c.vSel,c.dzSel); }catch(e){} mg=MG.merge(P,parse(tB),{ppm:fA&&fA.ppm?fA.ppm:ppm0}); P=mg.P; text=MG.toText(P); }
   let fit=null; try{ fit=SL.fitVariant(text,c.vSel,c.dzSel); }catch(e){}
   const rg=P.pts.length>=4?[Math.min(...P.pts.map(q=>q[1])),Math.min(...P.pts.map(q=>q[2])),Math.max(...P.pts.map(q=>q[1])),Math.max(...P.pts.map(q=>q[2]))]:null;
   /* притяжка считает в индексах пикселей (значение пикселя i — в его центре), а координаты фото, модели и canvas — от края
      пикселя (центр пикселя i — i + 0,5): без поправки вся копия сдвигалась на полпикселя влево-вверх (≈ 0,15 мм при 3,3 px/мм) */
   const HP=0.5, sh=(s,k)=>s.map((v,i)=>i<4?v+k:v), shC=(c,k)=>Object.assign({},c,{cx:c.cx+k,cy:c.cy+k});
-  const ppm=ppm0; let rf=RF.refine({w:cr.w,h:cr.h,a:cr.gray},P.segs.map(s=>sh(s,-HP)),{circles:P.circles.map(c=>shC(c,-HP)),findCircles:true,ppm:fit&&fit.ppm?fit.ppm:ppm,region:rg,points:P.pts.map(q=>[q[1]-HP,q[2]-HP]),findCap:0.35});
+  const ppm=c.geo?c.geo.ppm:ppm0; let rf=RF.refine({w:cr.w,h:cr.h,a:cr.gray},P.segs.map(s=>sh(s,-HP)),{circles:P.circles.map(c=>shC(c,-HP)),findCircles:true,ppm:fit&&fit.ppm?fit.ppm:ppm,region:rg,points:P.pts.map(q=>[q[1]-HP,q[2]-HP]),findCap:0.35});
   if(mg) rf=MG.keepB(rf,mg.nA,P.circles.map(c=>shC(c,-HP)));   /* добавленное второй моделью без карандаша — вон */
   rf=Object.assign({},rf,{segs:rf.segs.map(q=>Object.assign({},q,{p:sh(q.p,HP)})),circles:(rf.circles||[]).map(c=>shC(c,HP))});
   /* точки — на перекрёсток уточнённых линий (МНК по всем линиям, что через него проходят) или хотя бы на линию: копия
      геометрически согласована и точнее догадки модели; догадки обеих моделей — кандидаты (refine.placePoints) */
+  /* точки условия по форме (голос листа: вариант и масштаб известны, а подписи не прочитаны или перепутаны) — refine.matchGiven */
+  let geo=null; if(c.geo){ const gv=self.CORE&&self.CORE.dzVariants.get(c.geo.dz,c.geo.n), G=gv?L.dzModel.given(gv.id,gv.data).pts.map(q=>({l:q.l,pr:q.pr,at:q.at})):[];
+    geo=G.length?RF.matchGiven(rf.segs.filter(q=>!q.unverified).map(q=>q.p),G,{ppm:c.geo.ppm}):null;
+    if(geo){ const gl=new Set(geo.pts.map(q=>MG.lab(q[0]))); P.pts=P.pts.filter(q=>!gl.has(MG.lab(q[0]))).concat(geo.pts); } }
   const pp=RF.placePoints(P.pts,rf.segs.filter(q=>!q.unverified).map(q=>q.p),{ppm:fit&&fit.ppm?fit.ppm:ppm,alts:mg?mg.alts:null}); P.pts=pp.map(q=>[q[0],q[1],q[2]]);
   const placed={vertex:pp.filter(q=>q[4]>=2).length,line:pp.filter(q=>q[4]===1).length,free:pp.filter(q=>!q[4]).length};
   /* привязка к варианту — заново, по уточнённым точкам: невязка честнее, мм копии точнее (не хуже прежней — иначе прежняя) */
@@ -83,8 +89,8 @@ function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.
   let toMm=null; if(fit&&fit.M){ const Mi=IMG.H.inv(fit.M); toMm=(x,y)=>IMG.H.apply(Mi,[x,y]); } else if(fit&&fit.A){ const a=fit.A, det=a[0]*a[4]-a[1]*a[3]; if(Math.abs(det)>1e-9) toMm=(x,y)=>{ const X=x-a[2], Y=y-a[5]; return [(a[4]*X-a[1]*Y)/det,(-a[3]*X+a[0]*Y)/det]; }; }
   const mmCopy=toMm?{pts:P.pts.map(q=>[q[0]].concat(toMm(q[1],q[2]).map(v=>+v.toFixed(2)))),txt:P.txt.map(q=>toMm(q[0],q[1]).map(v=>+v.toFixed(2)).concat(q[2])),segs:rf.segs.map(q=>({p:toMm(q.p[0],q.p[1]).concat(toMm(q.p[2],q.p[3])).map(v=>+v.toFixed(2)),src:q.src,unverified:!!q.unverified,dash:!!q.dash}))}:null;
   const circles=(rf.circles||[]).map(c=>{ const poly=SL.arcPoints(c); return {src:c.src,unverified:!!c.unverified,dash:!!c.dash,full:!!c.full,c:[c.cx,c.cy,c.r].map(v=>+v.toFixed(2)),a:c.full?null:[+c.a1.toFixed(1),+c.a2.toFixed(1)],poly:poly.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?poly.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}; });
-  const dr={part:d.part,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length,placed},rf.stats)};
-  if(mg) dr.merge=mg.info;
+  const dr={part:d.part,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length,placed,primesFixed:pf.length},rf.stats)};
+  if(mg) dr.merge=mg.info; if(geo) dr.geoGiven={inl:geo.inl,rmsMm:+geo.rmsMm.toFixed(2)};
   return {dr,q:quality(fit,rf,P)}; }
 /* качество копии: привязалась ли к условию варианта, невязка, доля линий, подтверждённых карандашом, сколько ответа модели не нашлось на бумаге */
 function quality(fit,rf,P){ const bound=!!(fit&&fit.rmsMm!=null&&fit.inl>=4), rms=bound?(fit.hom?fit.hom.rmsMm:fit.rmsMm):null, st=rf.stats, kept=st.kept||0;
@@ -93,6 +99,15 @@ function quality(fit,rf,P){ const bound=!!(fit&&fit.rmsMm!=null&&fit.inl>=4), rm
   if(conf<0.9) why.push('без карандаша '+Math.round(100*(1-conf))+' % линий'); if(drop>0.15) why.push('не на бумаге '+Math.round(100*drop)+' % ответа');
   if(P.pts.length<6) why.push('мало точек');
   return {bound,inl:bound?fit.inl:0,rms,conf,drop,pts:P.pts.length,confirmed:kept-(st.unverified||0),weak:why.length>0,why}; }
+/* вариант листа: голоса чертежей, привязанных честно (невязка ≤ 0,8 мм), с весом — числом точек условия; победитель — если за него
+   ≥ 2 чертежа и ≥ 60 % веса, иначе null (один чертёж листа ничего не решает за остальные) */
+function sheetVariant(drs){ const V=new Map(); let tot=0;
+  (drs||[]).forEach(d=>{ const f=d&&!d.error&&d.fit; if(!f||f.rmsMm==null||f.inl<4) return; const r=f.hom?f.hom.rmsMm:f.rmsMm; if(!(r<=0.8)) return;
+    const k=f.dz+':'+f.n, v=V.get(k)||{dz:f.dz,n:f.n,w:0,c:0}; v.w+=f.inl; v.c++; V.set(k,v); tot+=f.inl; });
+  const best=[...V.values()].sort((a,b)=>b.w-a.w)[0]; if(!(best&&best.c>=2&&best.w>=0.6*tot)) return null;
+  /* масштаб листа (px фото на мм) — медиана по чертежам победителя: для поиска точек условия по форме у остальных */
+  const pp=(drs||[]).filter(d=>d&&!d.error&&d.fit&&d.fit.dz===best.dz&&d.fit.n===best.n&&d.ppm).map(d=>d.ppm).sort((a,b)=>a-b);
+  return {dz:best.dz,n:best.n,drawings:best.c,ppm:pp.length?pp[pp.length>>1]:null}; }
 /* слитая копия лучше, если не потеряла привязку к варианту и не ухудшила её */
 function better(M,A){ if(A.bound&&(!M.bound||M.inl<A.inl||M.rms>A.rms+0.2)) return false; return M.bound||!A.bound; }
 
@@ -120,24 +135,36 @@ function create(o){ o=o||{};
     const dzSel=sel.dz&&sel.dz!=='auto'?+sel.dz:null, vSel=/^\d+$/.test(String(sel.variant||'').trim())?String(sel.variant).trim():'auto';
     const out={name:String(file.name||'лист').replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]};
     const ctx0={W,H,vSel,dzSel,rot:lay.rot}, prec=sel.precision||'max', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
+    const redo=[];
     const jobs=lay.drawings.map((d,i)=>async()=>{ const id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),CUT_SIDE,VIEW), ctx=Object.assign({d},ctx0);
       let jA; try{ jA=await ask('crop',cr.m.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return {part:d.part,box:d.box,error:e.message}; } cost+=jA.cost||0; calls++;
       const reads=[{mode:'crop',model:jA.model,fallback:jA.fallback||null,cost:jA.cost||0}];
-      let R=digest(cr,jA.text,null,ctx);
+      let R=digest(cr,jA.text,null,ctx), tB=null;
       /* вторая, независимая оцифровка другой моделью — если первая слабая (или «максимальная точность»); сливаются, карандаш решает */
       if(!jA.fallback&&(prec==='max'||(prec==='auto'&&R.q.weak))){ step(id,nm+': вторая, независимая оцифровка другой моделью'+(R.q.why.length?' ('+R.q.why.join(', ')+')':'')+'…');
         try{ const jB=await ask('crop2',cr.m.c); cost+=jB.cost||0; calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
-          const M=digest(cr,jA.text,jB.text,ctx); if(better(M.q,R.q)){ R=M; } else R.dr.secondKept=false; }
+          const M=digest(cr,jA.text,jB.text,ctx); if(better(M.q,R.q)){ R=M; tB=jB.text; } else R.dr.secondKept=false; }
         catch(e){ R.dr.secondError=e.message; } }
       const dr=R.dr, fit=dr.fit, mg=dr.merge; dr.reads=reads; dr.quality=R.q;
+      redo[i]=(n,dz,geoPpm)=>{ const X=digest(cr,jA.text,tB,Object.assign({},ctx,{vSel:String(n),dzSel:dz},geoPpm?{geo:{n,dz,ppm:geoPpm*cr.k}}:{})); X.dr.reads=reads; X.dr.quality=X.q; if(mg) X.dr.merge=X.dr.merge||mg; return X; };   /* те же ответы — другой вариант (голос листа) */
       step(id,nm+': '+reads.map(r=>mname(r.model)).join(' + ')+' — точек '+dr.stats.pts+', отрезков '+dr.stats.kept+(dr.circles.length?', окружностей и дуг '+dr.circles.length:'')
         +(mg?' (вторая модель добавила: линий '+Math.max(0,mg.segsAdded-(dr.stats.dropB||0))+', точек '+mg.ptsAdded+')':'')
         +(fit&&fit.rmsMm!=null?', привязка ДЗ №'+fit.dz+' в.'+fit.n+', невязка '+fmt(fit.hom?fit.hom.rmsMm:fit.rmsMm)+' мм':', к условию не привязался'),'done'); return dr; });
     /* до двух чертежей одновременно */
     const q=jobs.slice(); await Promise.all([0,1].map(async()=>{ while(q.length){ const job=q.shift(), idx=jobs.indexOf(job); out.drawings[idx]=await job(); } }));
+    /* голос листа: на листе — один вариант. Чертёж, привязавшийся к другому (или ни к какому), пересчитывается по варианту
+       большинства на тех же ответах моделей; принимается, если привязка к нему честная (≥ 4 точек условия, невязка ≤ 1 мм) */
+    if(vSel==='auto'){ const sv=sheetVariant(out.drawings);
+      if(sv){ out.variant=sv; out.drawings.forEach((dr,i)=>{ if(!dr||dr.error||!redo[i]) return; const f=dr.fit; if(f&&f.rmsMm!=null&&f.dz===sv.dz&&String(f.n)===String(sv.n)) return;
+          const ok=X=>X&&X.q.bound&&X.q.rms<=1&&String(X.dr.fit.n)===String(sv.n);
+          let X=null; try{ X=redo[i](sv.n,sv.dz); }catch(e){}
+          if(!ok(X)&&sv.ppm){ try{ X=redo[i](sv.n,sv.dz,sv.ppm); }catch(e){ X=null; } }   /* подписи не помогли — точки условия по форме */
+          if(!ok(X)) return;
+          X.dr.sheetVote={was:f&&f.rmsMm!=null?{dz:f.dz,n:f.n}:null}; out.drawings[i]=X.dr;
+          step('d'+i,'Чертёж '+(i+1)+': '+(f&&f.rmsMm!=null?'был привязан к ДЗ №'+f.dz+' в.'+f.n:'не был привязан')+' — по листу вариант '+sv.n+', невязка '+fmt(X.q.rms)+' мм','done'); }); } }
     out.cost=+cost.toFixed(4); out.calls=calls; out.seconds=Math.round((Date.now()-t0)/1000); return {out,bmp}; }
 
   return {status,ask,run,cloud:CLOUD,api:API}; }
 
-self.SCANPIPE={LIBS,load,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,CUT_SIDE,VIEW};
+self.SCANPIPE={LIBS,load,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,sheetVariant,CUT_SIDE,VIEW};
 })();

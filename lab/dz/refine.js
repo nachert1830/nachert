@@ -202,7 +202,8 @@ function snapPoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, R=(o.radius||2)
         отрезка рядом — на конец.
    placePoints(points [[подпись,x,y]], segs [[x1,y1,x2,y2]] | [{p}], {ppm, alts: Map подпись → [[x,y],…], radius, far, tol}) →
      [[подпись, x, y, сдвиг px, опора (число линий; 1 — на линии, 0 — не тронута)]] */
-function placePoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, tol=(o.tol||0.4)*ppm, ext=(o.extend==null?1:o.extend)*ppm, R=(o.radius||1.3)*ppm, FAR=(o.far||2.6)*ppm, alts=o.alts||new Map();
+/* вершины чертежа: перекрёстки уточнённых линий с опорой ≥ 2 (общее для placePoints и matchGiven) → {L, V:[{x,y,n}], along, perp, ext} */
+function geomOf(segs,o){ const ppm=o.ppm||7, tol=(o.tol||0.4)*ppm, ext=(o.extend==null?1:o.extend)*ppm;
   const L=segs.map(s=>{ const p=s.p||s, dx=p[2]-p[0], dy=p[3]-p[1], len=Math.hypot(dx,dy)||1; return {p,ux:dx/len,uy:dy/len,len}; }).filter(l=>l.len>=1.5*ppm);
   const along=(l,x,y)=>(x-l.p[0])*l.ux+(y-l.p[1])*l.uy, perp=(l,x,y)=>(x-l.p[0])*l.uy-(y-l.p[1])*l.ux;
   const onLine=(l,x,y)=>{ const t=along(l,x,y); return Math.abs(perp(l,x,y))<=tol&&t>=-ext&&t<=l.len+ext; };
@@ -215,6 +216,8 @@ function placePoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, tol=(o.tol||0.
     cand.push([x,y]); }
   /* кандидаты ближе tol — одна вершина: опора и МНК-положение считаются один раз */
   const V=[]; cand.forEach(([x,y])=>{ if(V.some(v=>Math.hypot(v.x0-x,v.y0-y)<tol)) return; const s=support(x,y); if(s.length<2) return; const q=lsq(s,x,y); V.push({x0:x,y0:y,x:q[0],y:q[1],n:s.length}); });
+  return {L,V,along,perp,ext}; }
+function placePoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, R=(o.radius||1.3)*ppm, FAR=(o.far||2.6)*ppm, alts=o.alts||new Map(), {L,V,along,perp,ext}=geomOf(segs,o);
   return points.map(([lb,x,y])=>{ const G=[[x,y]].concat(alts.get(lb)||[]);
     let best=null; V.forEach(v=>{ const d=Math.min(...G.map(g=>Math.hypot(g[0]-v.x,g[1]-v.y))); if(d>(v.n>=3?FAR:R)) return; const cost=d-0.45*ppm*Math.min(2,v.n-2); if(!best||cost<best.cost) best={v,cost,d}; });
     if(best) return [lb,best.v.x,best.v.y,Math.hypot(best.v.x-x,best.v.y-y),best.v.n];
@@ -222,6 +225,44 @@ function placePoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, tol=(o.tol||0.
     let bl=null; L.forEach(l=>{ const t=along(l,x,y), e=Math.abs(perp(l,x,y)); if(e>0.7*ppm||t<-ext||t>l.len+ext) return; if(!bl||e<bl.e) bl={l,t,e}; });
     if(bl){ const l=bl.l, t=Math.abs(bl.t)<0.8*ppm?0:Math.abs(bl.t-l.len)<0.8*ppm?l.len:Math.max(0,Math.min(l.len,bl.t)), nx=l.p[0]+l.ux*t, ny=l.p[1]+l.uy*t; return [lb,nx,ny,Math.hypot(nx-x,ny-y),1]; }
     return [lb,x,y,0,0]; }); }
+
+/* ═══ точки условия без подписей: форма заданной фигуры среди вершин чертежа ═══
+   На мелком или бледном фото модель видит линии, но не читает подписи (или путает штрихи: ″ → ‴) — тогда к варианту не привязать.
+   Если вариант уже известен (голос листа) и известен масштаб (px/мм соседних чертежей), заданные точки условия (мм чертежа)
+   ищутся как фигура среди вершин (перекрёстков уточнённых линий):
+     фронтальная проекция (pr 'f') — сдвиг по каждой паре «вершина ↔ точка», поворот ± 3°, масштаб ± 15 % (у чертежей одного
+       листа px/мм расходятся до 14 %) — прикидка, затем подобие МНК по найденным парам; согласная точка — вершина ближе tol мм;
+     горизонтальная (pr 'h') — та же фигура, но со свободным сдвигом вдоль линии связи: эпюр бывает безосный, и расстояние
+       между проекциями — не по таблице варианта.
+   Принимается, только если согласных ≥ minIn (6 из 8: случайно такая форма среди вершин не складывается), и другой кандидат
+   (другое место) не так же хорош — иначе null: две копии пирамиды на чертеже — не угадывать.
+   matchGiven(segs, G [{l, pr:'f'|'h', at:[x,y] мм}], {ppm — px/мм, tol, minIn}) → {pts:[[подпись,x,y]], inl, rmsMm, shift мм} | null */
+function matchGiven(segs,G,o){ o=o||{}; const s0=o.ppm, tol=(o.tol||1.2)*s0, minIn=o.minIn||Math.min(6,G.length-1); if(!s0||G.length<4) return null;
+  const {V}=geomOf(segs,{ppm:s0}); if(V.length<minIn) return null; const Gf=G.filter(g=>g.pr!=='h'), Gh=G.filter(g=>g.pr==='h'), hyp=[];
+  /* ′ всегда ниже своей ″ (на линии связи): сдвиг не меньше −(наименьший зазор по таблице) + 2 мм — иначе проекции меняются местами */
+  const base=l=>String(l).replace(/[″′]$/,''), gaps=Gh.map(h=>{ const f=Gf.find(q=>base(q.l)===base(h.l)); return f?h.at[1]-f.at[1]:null; }).filter(v=>v!=null), dlMin=gaps.length?-Math.min(...gaps)+2:-60;
+  const near=(x,y,t,ban)=>{ let b=null, bd=t||tol; for(const w of V){ if(ban&&ban.has(w)) continue; const d=Math.hypot(w.x-x,w.y-y); if(d<bd){ bd=d; b=w; } } return b?{w:b,d:bd}:null; };
+  /* подобие по парам (мм → px): x' = a·x − b·y + tx, y' = b·x + a·y + ty, МНК */
+  const sim=P=>{ const n=P.length; let mx=0,my=0,px=0,py=0; P.forEach(([m,p])=>{ mx+=m[0]; my+=m[1]; px+=p[0]; py+=p[1]; }); mx/=n; my/=n; px/=n; py/=n;
+    let sxx=0,sab=0,sba=0; P.forEach(([m,p])=>{ const u=m[0]-mx, v=m[1]-my, X=p[0]-px, Y=p[1]-py; sxx+=u*u+v*v; sab+=u*X+v*Y; sba+=u*Y-v*X; }); if(sxx<1e-9) return null;
+    const a=sab/sxx, b=sba/sxx; return {a,b,tx:px-(a*mx-b*my),ty:py-(b*mx+a*my)}; };
+  const ap=(T,m)=>[T.a*m[0]-T.b*m[1]+T.tx,T.b*m[0]+T.a*m[1]+T.ty];
+  for(const dth of [-3,0,3]) for(const ks of [0.85,0.9,0.95,1,1.05,1.1,1.15]){ const th=dth*Math.PI/180, a0=Math.cos(th)*s0*ks, b0=Math.sin(th)*s0*ks, seen=new Set();
+    V.forEach(v=>Gf.forEach(g=>{ let T={a:a0,b:b0,tx:0,ty:0}; const q0=ap(T,g.at); T.tx=v.x-q0[0]; T.ty=v.y-q0[1]; const key=Math.round(T.tx/tol)+','+Math.round(T.ty/tol); if(seen.has(key)) return; seen.add(key);
+      /* фронтальная проекция: прикидка с допуском ×2 → подобие МНК по найденным парам → снова (масштаб сеткой с шагом 5 % — грубо: на 80 мм это 4 мм) */
+      let mf=Gf.map(q=>{ const p=ap(T,q.at); return near(p[0],p[1],2*tol); });
+      for(let it=0;it<2;it++){ const P=Gf.map((q,i)=>mf[i]?[q.at,[mf[i].w.x,mf[i].w.y]]:null).filter(Boolean); if(P.length<3) return; const T2=sim(P); if(!T2) return; const k=Math.hypot(T2.a,T2.b)/s0; if(k<0.8||k>1.2) return; T=T2; mf=Gf.map(q=>{ const p=ap(T,q.at); return near(p[0],p[1]); }); }
+      const inf=mf.filter(Boolean).length; if(inf<Math.min(3,Gf.length)) return;
+      /* горизонтальная проекция — та же фигура со свободным сдвигом вдоль линии связи (безосный эпюр) */
+      /* вершины фронтальной проекции горизонтальной не достаются: иначе сдвиг «на z + y» кладёт A′ на A″, если у варианта таких точек две */
+      const sc=Math.hypot(T.a,T.b), ux=-T.b/sc, uy=T.a/sc, HP=Gh.map(q=>ap(T,q.at)), ban=new Set(mf.filter(Boolean).map(q=>q.w)); let bh={inl:0,m:HP.map(()=>null),dl:0};
+      const cands=new Set(); HP.forEach(q=>V.forEach(w=>{ if(ban.has(w)) return; const dx=w.x-q[0], dy=w.y-q[1], al=dx*ux+dy*uy, pe=Math.abs(dx*uy-dy*ux); if(pe<=tol&&Math.abs(al)<=60*s0&&al/sc>=dlMin) cands.add(Math.round(al/(0.25*s0))*0.25*s0); }));
+      cands.forEach(dl=>{ const m=HP.map(q=>near(q[0]+ux*dl,q[1]+uy*dl,0,ban)), k=m.filter(Boolean).length; if(k>bh.inl||(k===bh.inl&&Math.abs(dl)<Math.abs(bh.dl))) bh={inl:k,m,dl}; });
+      const m=mf.concat(bh.m), inl=inf+bh.inl; if(inl<minIn) return; const e2=m.reduce((acc,q)=>acc+(q?q.d*q.d:0),0);
+      hyp.push({inl,rms:Math.sqrt(e2/inl),m:m.map(q=>q&&q.w),tx:T.tx,ty:T.ty,dl:bh.dl,sc}); })); }
+  if(!hyp.length) return null; hyp.sort((a,b)=>b.inl-a.inl||a.rms-b.rms); const best=hyp[0], GG=Gf.concat(Gh);
+  const rival=hyp.find(h=>Math.hypot(h.tx-best.tx,h.ty-best.ty)>3*tol); if(rival&&rival.inl>=best.inl) return null;
+  return {pts:GG.map((g,i)=>best.m[i]?[g.l,best.m[i].x,best.m[i].y]:null).filter(Boolean),inl:best.inl,rmsMm:best.rms/s0,shift:+(best.dl/best.sc).toFixed(1)}; }
 
 function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assign({ppm},o)), res=[], dropped=[], inkMin=o.inkMin==null?0.45:o.inkMin;
   const snaps=segs.map((s,i)=>({s,i,r:snap(D,s,{ppm,radius:o.radius,extend:o.extend})}));
@@ -259,5 +300,5 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
   if(o.findCircles){ const usedC=new Uint8Array(D.w*D.h); res.forEach(r=>{ const L=Math.hypot(r.p[2]-r.p[0],r.p[3]-r.p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=r.p[0]+(r.p[2]-r.p[0])*k/n, y=r.p[1]+(r.p[3]-r.p[1])*k/n; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) usedC[Y*D.w+X]=1; } } });
     findCircles(D,usedC,{ppm,box:o.region?[o.region[0]-6*ppm,o.region[1]-6*ppm,o.region[2]+6*ppm,o.region[3]+6*ppm]:null,maxFind:o.maxFindCircles}).forEach(c=>{ if(!circ.some(m=>Math.hypot(m.cx-c.cx,m.cy-c.cy)<1.5*ppm&&Math.abs(m.r-c.r)<1.5*ppm)) circ.push(c); }); }
   return {segs:res.concat(found),circles:circ,droppedCircles:droppedC,dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
-put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk,snapPoints,placePoints});
+put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk,snapPoints,placePoints,matchGiven});
 })();
