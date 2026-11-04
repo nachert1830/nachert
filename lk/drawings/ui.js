@@ -112,6 +112,10 @@ function sheetName(out){ const d=new Date(), f=(out.drawings||[]).find(x=>x&&x.f
 function thumb(bmp,side){ const k=Math.min(1,side/Math.max(bmp.width,bmp.height)), c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext('2d').drawImage(bmp,0,0,c.width,c.height); return {url:c.toDataURL('image/jpeg',0.78),k}; }
 const plural=(n,a,b,c)=>{ const m=n%10, h=n%100; return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c; };
 ['#scCam','#scPick'].forEach(s=>$(s).addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; scan(f); }));
+/* «Сканировать» — живой сканер (lk/scan/live.js): видео, контур листа, автоснимок в полном разрешении, ровный лист.
+   Камеры в браузере нет (или отказ) — системная камера, как раньше */
+function camera(){ if(self.LIVESCAN&&self.LIVESCAN.supported()&&!busy){ self.LIVESCAN.open({onShot:f=>scan(f)}); return; } $('#scCam').click(); }
+$('label[for="scCam"]').addEventListener('click',e=>{ if(self.LIVESCAN&&self.LIVESCAN.supported()){ e.preventDefault(); camera(); } });
 $('#scDemo').addEventListener('click',()=>{ const sh=D.fromScan(self.DRAWINGS_DEMO.make(),{name:'Пример · ДЗ №3, вариант 21'}); sh.demo=true; SHEETS.unshift(sh); save(true); renderList(); openSheet(sh.id); });
 
 function sheetState(sh){ const r=sh.drawings.map(dr=>D.ready(dr)), k=sh.drawings.reduce((a,dr)=>a+D.issues(dr,LIB).filter(i=>i.lvl!=='info').length,0); return {ready:r.filter(Boolean).length,k}; }
@@ -276,6 +280,9 @@ function renderFix(){ if(!DR||PANE!=='fix') return; const box=$('#fixList'), is=
   let h='<div class="card"><div class="st '+(ok?'ok':'no')+'"><span class="big3">'+(ok?ICON.ok:ICON.warn)+'</span><span><b>'+(ok?(big.length?'3D уже можно смотреть':'Копия доведена'):'Пока не хватает для 3D')+'</b><br><small class="mut">'+(big.length?'Осталось поправить: '+big.length:'Замечаний нет')+'</small></span></div>'
     +'<div class="nums"><div><b>'+Object.keys(sp.pts).length+'</b><small>точек в 3D</small></div><div><b>'+sp.edges.length+'</b><small>рёбер</small></div><div><b>'+sp.faces.length+'</b><small>граней</small></div></div>'
     +(ok?'<button class="btn" style="width:100%;margin-top:12px" data-go3d>'+ICON.cube+'Смотреть в 3D</button>':'')+'</div>';
+  /* проверка построения — вердикт сканера (на момент скана) */
+  if(DR.check){ const c=DR.check, cls=c.verdict==='верно'?'ok':c.verdict==='ошибка'?'no':'', ic=c.verdict==='верно'?ICON.ok:ICON.warn;
+    h+='<div class="card"><div class="st '+cls+'"><span class="big3">'+ic+'</span><span><b>Проверка построения: '+esc(c.verdict)+'</b><br><small class="mut">'+(c.partName?'Часть '+esc(c.partName)+'. ':'')+esc((c.why||[]).join('. '))+(c.verdict==='не могу утверждать'?' Сканер говорит «ошибка», только когда уверен: доведите копию или снимите чертёж крупнее.':'')+'</small></span></div></div>'; }
   /* привязка к варианту */
   h+='<div class="card bind">'+(DR.dz&&DR.n?'<b>ДЗ №'+DR.dz+', вариант '+DR.n+'</b><small class="mut">'+(DR.rms!=null?'Точки условия совпали с таблицей варианта, расхождение '+f1(DR.rms)+' мм. ':'')+'Копия — в точных миллиметрах листа.</small>'
       :'<b>Вариант не определён</b><small class="mut">Укажите задание и вариант — копия пересчитается в точные мм по точкам условия, и «Доводка» сверит их с таблицей.</small>')
@@ -320,7 +327,7 @@ function render3dCtl(){ const b=$('#v3Unf'); if(b){ b.textContent=unfolded?'Со
 $('#v3views').addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b||!V3) return; $$('#v3views button').forEach(x=>x.classList.toggle('on',x===b)); V3.view(b.getAttribute('data-v')); });
 
 /* ═════ вход: кнопки кабинета ведут сюда ═════ */
-document.addEventListener('click',e=>{ const b=e.target.closest('[data-scan]'); if(!b) return; e.preventDefault(); const t=document.querySelector('.tab[data-tab="check"]'); if(t) t.click(); if(b.getAttribute('data-scan')==='cam') $('#scCam').click(); });
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-scan]'); if(!b) return; e.preventDefault(); const t=document.querySelector('.tab[data-tab="check"]'); if(t) t.click(); if(b.getAttribute('data-scan')==='cam') camera(); });
 /* адрес: #scan — открыта вкладка «Скан» (после перезагрузки и «назад» из чертежа возвращаемся сюда) */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{ if(dv.classList.contains('on')) return; const on=t.getAttribute('data-tab')==='check'; if(on!==(location.hash==='#scan')) history.replaceState(history.state,'',on?'#scan':location.pathname+location.search); }));
 if(/^#scan/.test(location.hash)){ if(location.hash!=='#scan') history.replaceState(null,'','#scan'); const t=document.querySelector('.tab[data-tab="check"]'); if(t) setTimeout(()=>t.click(),0); }

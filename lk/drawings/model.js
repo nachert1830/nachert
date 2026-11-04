@@ -57,6 +57,7 @@ function fromScan(out,o){ o=o||{}; const sheet={id:uid('s'),name:o.name||out.nam
   return sheet; }
 function fromDrawing(d,out){ const f=d.fit&&d.fit.rmsMm!=null?d.fit:null;
   const dr={id:uid('d'),part:d.part||null,dz:f?f.dz:null,n:f?f.n:null,rms:f?r2(f.hom?f.hom.rmsMm:f.rmsMm):null,approx:false,pts:[],segs:[],arcs:[],txt:[],created:Date.now()};
+  if(d.check) dr.check=d.check;   /* вердикт сканера по построению (pipeline.checkDrawing) — на момент скана; правки копии его не меняют */
   let T;
   if(d.mm&&f&&d.mm.segs){ T=(x,y)=>[x,y];
     d.mm.pts.forEach(q=>dr.pts.push({id:uid('p'),l:String(q[0]),at:[r2(q[1]),r2(q[2])]}));

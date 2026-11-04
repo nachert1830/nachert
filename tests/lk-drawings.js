@@ -151,6 +151,17 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
     /* голос листа: три чертежа за вариант 18 — победитель с масштабом листа; один чертёж ничего не решает */
     const sv=await pg.evaluate(()=>{ const f=(n,inl,rms,ppm)=>({fit:{dz:3,n,inl,rmsMm:rms},ppm}); return [SCANPIPE.sheetVariant([f(17,4,0.2,2.4),f(18,8,0.4,2.4),f(18,8,0.3,2.7),f(18,8,0.3,2.7)]),SCANPIPE.sheetVariant([f(5,8,0.4,2.5),f(8,4,0.1,2.5),{error:'x'}])]; });
     if(!sv[0]||sv[0].n!==18||Math.abs(sv[0].ppm-2.7)>1e-9||sv[1]!==null) B('голос листа: вариант большинства и масштаб; один чертёж — не голос',JSON.stringify(sv)); }
+  /* 3е. живой сканер (lk/scan/live.js) без камеры: лист на столе под углом — углы уточняются до пикселей, ровный лист без стола */
+  { const t=await pg.evaluate(async()=>{ if(!self.LIVESCAN) return {err:'нет LIVESCAN'}; await LIVESCAN.load();
+      const c=document.createElement('canvas'); c.width=1200; c.height=1600; const g=c.getContext('2d'); g.fillStyle='#5a4030'; g.fillRect(0,0,1200,1600);
+      const Q=[[180,230],[1010,150],[1080,1420],[230,1500]]; g.fillStyle='#eeeeea'; g.beginPath(); Q.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.closePath(); g.fill();
+      g.strokeStyle='#333'; g.lineWidth=3; g.beginPath(); g.moveTo(400,600); g.lineTo(800,900); g.stroke();
+      const rough=Q.map((p,i)=>[p[0]+[14,-12,-15,10][i],p[1]+[12,15,-11,-14][i]]), r=LIVESCAN.refineQuad(c,rough), err=Math.max(...r.map((p,i)=>Math.hypot(p[0]-Q[i][0],p[1]-Q[i][1])));
+      const f=LIVESCAN.rectify(c,LIVESCAN.sheetQuad(c,rough),1000), d=f.getContext('2d').getImageData(0,0,f.width,f.height).data; let dark=0; for(let i=0;i<d.length;i+=4*7) if(d[i]<160&&d[i]-d[i+2]>25) dark++;
+      return {err,w:f.width,h:f.height,brown:dark}; });
+    if(t.err&&typeof t.err==='string') B('живой сканер загрузился',t.err);
+    else { if(!(t.err<=3)) B('живой сканер: углы листа уточнены до пикселей (≤ 3 px на 1600)','промах угла '+t.err.toFixed(1)+' px');
+      if(!(t.h>t.w&&t.h<=1000)) B('живой сканер: ровный лист нужного размера',t.w+'×'+t.h); if(t.brown>40) B('живой сканер: на ровном листе нет стола','тёмно-бурых точек '+t.brown); } }
   /* 3г. «быстро»: одна модель, даже если слабая */
   { Object.assign(calls,{layout:0,crop:0,crop2:0}); await scanOnce('fast'); if(calls.crop2!==0) B('быстро: без второй проверки',JSON.stringify(calls)); ans.crop=text; ans.crop2=text; }
   /* бета-страница lk/scan/ — на том же конвейере; её результат уходит в «Мои чертежи» кабинета */
