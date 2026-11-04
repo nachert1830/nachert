@@ -255,7 +255,10 @@ function run(F,opt){
       chains.push({polys:[[[A[0]+u[0]*s0,A[1]+u[1]*s0],[A[0]+u[0]*s1,A[1]+u[1]*s1]]]});
       const w=[FV,LV,TV].find(w=>w&&mid[0]>=w.b[0]-1*k&&mid[0]<=w.b[2]+1*k&&mid[1]>=w.b[1]-1*k&&mid[1]<=w.b[3]+1*k); if(!w) return;
       const band=0.5*L; let lo=Infinity, hi=-Infinity;
-      segAll.forEach(q=>{ if(!w.ids.includes(q.it.view)||(q.it.kind!=='thick'&&q.it.kind!=='dash')) return; [q.a,q.b,[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]].forEach(p=>{ const s=pr(p), n=Math.abs((p[0]-A[0])*u[1]-(p[1]-A[1])*u[0]); if(n>band||s<s0-0.01*k||s>s1+0.01*k) return; if(s<lo) lo=s; if(s>hi) hi=s; }); });
+      /* вспомогательная окружность на главном виде (фигура выреза, вписанная в Ø…): центровая через её центр выходит за саму окружность */
+      const auxC=it=>{ if(w!==FV||it.tag!=='circle'||it.kind!=='thin') return false; const P=it.polys[0], c=[(Math.min(...P.map(p=>p[0]))+Math.max(...P.map(p=>p[0])))/2,(Math.min(...P.map(p=>p[1]))+Math.max(...P.map(p=>p[1])))/2];
+        return Math.abs((c[0]-A[0])*u[1]-(c[1]-A[1])*u[0])<0.5*k&&Math.abs(pr(c)-(s0+s1)/2)<0.5*k; };
+      segAll.forEach(q=>{ if(!auxC(q.it)&&(!w.ids.includes(q.it.view)||(q.it.kind!=='thick'&&q.it.kind!=='dash'))) return; [q.a,q.b,[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]].forEach(p=>{ const s=pr(p), n=Math.abs((p[0]-A[0])*u[1]-(p[1]-A[1])*u[0]); if(n>band||s<s0-0.01*k||s>s1+0.01*k) return; if(s<lo) lo=s; if(s>hi) hi=s; }); });
       if(!(hi>lo)) return; [[lo-s0,[A[0]+u[0]*s0,A[1]+u[1]*s0]],[s1-hi,[A[0]+u[0]*s1,A[1]+u[1]*s1]]].forEach(([o,at])=>{ if(o<2*k-0.3*k||o>5*k+0.3*k) add('2.303','осевая выходит за контур на 2…5 мм','выходит на '+mm(o)+' мм',at); }); }); }
 
   /* ── половина вида и половина разреза; невидимый контур на половине вида ── */
