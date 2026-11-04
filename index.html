@@ -28446,6 +28446,7 @@ function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(
   sp.H=!model.hz?'half':model.hzRight&&!(creaseTop(model),model._ctMix)?(symAx(model,'x')?'half':!model.hzFull&&symAx(model,'y')?'halfD':'full'):symAx(model,'x')&&!creaseTop(model)?'half':!model.hzFull&&symAx(model,'y')?'halfD':symAx(model,'x')?'half':'full';
   /* ребро на вертикальной оси (пирамида ребром к нам): половину вида и половину разреза разделяют волнистой линией (ГОСТ 2.305, п. 7.10) —
      наружное ребро — правее оси (вида больше), внутреннее — левее (разреза больше), чтобы ребро осталось на чертеже */
+  if(model.hzForce) sp.H=model.hzForce;   /* ДЗ 5: разрез А–А задан явно (ребро на оси, волнистую линию не сместить) */
   sp.tb=model.hz&&sp.H==='half'?7*creaseTop(model):0;
   const DL=7; sp.xb=sp.F==='half'||sp.F==='stepH'?-DL*crease(model,'x'):0; sp.yb=sp.L==='half'?DL*crease(model,'y'):0;
   sp.fk={half:'front',view:'front0',full:'frontF',stepH:'frontSH',step:'frontS'}[sp.F]; sp.lk={half:'left',view:'left0',full:'leftF'}[sp.L];
