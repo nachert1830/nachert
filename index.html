@@ -4049,6 +4049,155 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 @media (max-width:640px){ .dzx-tl i{display:none} }
 @media (max-width:899px){ body.inplayer .dzx-varp .dzx-top{margin-bottom:4px} body.inplayer .dzx-varp .dzx-pills{margin-bottom:6px} body.inplayer .dzx-varp .dzx-pills a{min-height:34px;padding:0 12px;font-size:13px} }
 @media (min-width:900px){ body.inplayer .dzx-varp .dzx-top,body.inplayer .dzx-varp .dzx-pills{margin-left:20px;margin-right:20px} }
+/* ═════════ «Сдашь РК2?» — пробный билет-игра (#/rk, тизер на главной) ═════════ */
+.rkg-page{max-width:760px}
+.rkg-kick{margin:0;font:600 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.rkg-hero{position:relative;padding:22px 18px 18px;border-radius:24px;background:linear-gradient(150deg,var(--navy),var(--navy2));color:#fff;overflow:hidden;box-shadow:0 18px 40px -22px rgba(7,26,54,.6)}
+.rkg-hero .rkg-kick{color:rgba(255,255,255,.72);max-width:62%}
+.rkg-h{margin:6px 0 8px;font:800 clamp(34px,9vw,52px)/1 var(--disp);letter-spacing:-.02em;color:#fff;max-width:62%}
+.rkg-sub{margin:0 0 16px;font-size:15px;line-height:1.5;color:rgba(255,255,255,.86);max-width:34em}
+.rkg-tix{position:absolute;right:14px;top:16px;width:112px;height:128px;transform:rotate(6deg);pointer-events:none}
+.rkg-tix i,.rkg-tix b{position:absolute;inset:0;border-radius:14px;background:#fff;box-shadow:0 10px 24px -10px rgba(0,0,0,.5)}
+.rkg-tix i:nth-child(1){transform:rotate(-14deg) translate(-8px,6px);opacity:.35}
+.rkg-tix i:nth-child(2){transform:rotate(-7deg) translate(-4px,3px);opacity:.6}
+.rkg-tix b{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--navy);border:2px dashed #c9d6e8;background:#fff}
+.rkg-tix b span{font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#5d6f8a}
+.rkg-tix b em{font:800 40px/1 var(--disp);font-style:normal;color:#dc2a22}
+.rkg-tix b small{font:700 11px var(--mono);color:#16325c}
+.rkg-tix.pull b{animation:rkgPull .42s var(--ease) forwards}
+@keyframes rkgPull{to{transform:translate(-40px,-30px) rotate(-18deg) scale(1.15);opacity:0}}
+.rkg-modes{display:grid;gap:8px;margin:0 0 14px}
+.rkg-modes button{display:grid;gap:1px;text-align:left;padding:11px 14px;border-radius:14px;border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:inherit;cursor:pointer;min-height:52px;transition:background .15s,border-color .15s}
+.rkg-modes button b{font:700 15.5px var(--disp)}.rkg-modes button span{font-size:12.5px;color:rgba(255,255,255,.72)}
+.rkg-modes button.on{background:#fff;border-color:#fff;color:var(--navy)}.rkg-modes button.on span{color:#5d6f8a}
+.rkg-modes button:focus-visible{outline:3px solid #ffd27a;outline-offset:2px}
+.rkg-go{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;padding:0 20px;border:0;border-radius:16px;background:var(--red-b);color:#fff;font:800 18px var(--disp);cursor:pointer;box-shadow:0 10px 22px -10px rgba(220,42,34,.8);transition:transform .15s}
+.rkg-go i{font-style:normal;font-size:20px;transition:transform .2s}
+.rkg-go:hover{transform:translateY(-1px)}.rkg-go:hover i{transform:translateX(3px)}
+.rkg-go:active{transform:scale(.98)}
+.rkg-go.sm{min-height:50px;font-size:16px;box-shadow:none}
+.rkg-hero .rkg-go{animation:rkgPulse 2.4s ease-in-out infinite}
+@keyframes rkgPulse{0%,100%{box-shadow:0 10px 22px -10px rgba(220,42,34,.8),0 0 0 0 rgba(255,255,255,.0)}50%{box-shadow:0 10px 22px -10px rgba(220,42,34,.8),0 0 0 6px rgba(255,255,255,.14)}}
+.rkg-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;list-style:none;margin:14px 0 0;padding:0}
+.rkg-stats li{padding:9px 6px;border-radius:12px;background:rgba(255,255,255,.08);text-align:center}
+.rkg-stats b{display:block;font:800 20px/1.1 var(--disp)}.rkg-stats span{font-size:11.5px;color:rgba(255,255,255,.72)}
+.rkg-last{margin:10px 0 0;font-size:13px;color:rgba(255,255,255,.75)}
+.rkg-rules{display:grid;gap:10px;margin:16px 0 0}
+.rkg-rules div{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:start;padding:12px 14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
+.rkg-rules svg{grid-row:1/3;color:var(--acc);margin-top:2px}.rkg-rules b{font:700 15px var(--disp);color:var(--ink)}.rkg-rules span{font-size:13.5px;line-height:1.45;color:var(--ink2)}
+.rkg-fine{margin:14px 0 0;font-size:12.5px;line-height:1.5;color:var(--mut)}
+/* игра */
+.rkg-hud{position:sticky;top:calc(var(--hh) + 4px);z-index:5;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:8px 12px;margin:0 0 6px;border-radius:14px;background:color-mix(in srgb,var(--surf) 92%,transparent);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(8px)}
+.rkg-tk{font:700 12px var(--mono);color:var(--mut);white-space:nowrap}
+.rkg-pips{display:flex;gap:4px;list-style:none;margin:0;padding:0;min-width:0}
+.rkg-pips li{flex:1;height:7px;border-radius:99px;background:var(--line);min-width:6px;transition:background .3s}
+.rkg-pips li.cur{background:var(--acc);animation:rkgBlink 1.4s ease-in-out infinite}.rkg-pips li.ok{background:var(--green)}.rkg-pips li.no{background:var(--red-b)}
+@keyframes rkgBlink{50%{opacity:.45}}
+.rkg-cb{display:inline-flex;align-items:center;gap:3px;font:800 15px var(--disp);color:var(--mut)}
+.rkg-cb small{font:700 11px var(--mono);padding:1px 5px;border-radius:99px;background:var(--red-b);color:#fff}
+.rkg-cb.hot{color:var(--red)}.rkg-cb.flare svg{animation:rkgFlare .6s var(--ease)}
+@keyframes rkgFlare{40%{transform:scale(1.6) rotate(-10deg)}}
+.rkg-sc{position:relative;min-width:44px;text-align:right;font:800 17px var(--disp);color:var(--ink)}
+.rkg-sc.bump b{display:inline-block;animation:rkgBump .4s var(--ease)}
+@keyframes rkgBump{40%{transform:scale(1.35);color:var(--green)}}
+.rkg-float{position:absolute;right:0;top:-2px;font:800 15px var(--disp);color:var(--green);pointer-events:none;animation:rkgFloat 1.1s var(--ease) forwards}
+@keyframes rkgFloat{to{transform:translateY(-26px);opacity:0}}
+.rkg-timer{height:5px;border-radius:99px;background:var(--line);overflow:hidden;margin:0 2px 14px}
+.rkg-timer i{display:block;height:100%;background:var(--acc);transform-origin:left;transition:transform .1s linear,background .3s}
+.rkg-timer.low i{background:var(--red-b)}.rkg-timer.stop i{opacity:.35}
+.rkg-q.shake{animation:rkgShake .4s}
+@keyframes rkgShake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.rkg-tag{display:flex;align-items:center;gap:8px;margin:0 0 6px;font:600 12.5px var(--sans);color:var(--mut)}
+.rkg-tag em{margin-left:auto;font:600 12px var(--mono);font-style:normal}
+.rkg-tag span,.rkg-mis summary span,.rkg-bar i{display:inline-block;padding:2px 8px;border-radius:99px;font:700 11px var(--mono);letter-spacing:.03em;font-style:normal}
+.rkg-tag .ng,.rkg-mis .ng,.rkg-bar i.ng{background:var(--blue-s);color:var(--blue)}
+.rkg-tag .ig,.rkg-mis .ig,.rkg-bar i.ig{background:color-mix(in srgb,var(--amber) 14%,var(--surf));color:var(--amber)}
+.rkg-ask{margin:0 0 12px;font:700 19px/1.35 var(--disp);color:var(--ink);letter-spacing:-.005em}
+.rkg-fig{display:flex;justify-content:center;margin:0 0 12px;padding:8px;border-radius:14px;background:var(--sheet);border:1px solid var(--line)}
+.rkg-fig svg{display:block;width:100%;height:auto;max-height:42vh}
+.rkg-fig.sm svg{max-height:200px}
+.rkg-pics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rkg-po{position:relative;display:flex;align-items:center;justify-content:center;min-height:120px;padding:26px 6px 8px;border:2px solid var(--line2);border-radius:14px;background:var(--sheet);cursor:pointer;font:inherit;color:#15161a;transition:border-color .15s,transform .15s,opacity .2s}
+.rkg-po svg{display:block;width:100%;height:auto;max-height:190px}
+.rkg-po:not(:disabled):hover{border-color:var(--acc);transform:translateY(-2px)}
+.rkg-po .lt,.rkg-to .lt{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:var(--surf2);border:1px solid var(--line2);font:700 12.5px var(--sans);color:var(--ink2)}
+.rkg-po .lt{position:absolute;left:7px;top:6px;background:#e5eef8;border-color:#c1d1e6;color:#36405c}
+.rkg-txts{display:grid;gap:8px}
+.rkg-to{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:10px 14px;text-align:left;border:1.5px solid var(--line2);border-radius:14px;background:var(--surf);color:var(--ink);font:inherit;font-size:15px;line-height:1.4;cursor:pointer;transition:border-color .15s,transform .15s,background .15s,opacity .2s}
+.rkg-to:not(:disabled):hover{border-color:var(--acc);transform:translateX(2px)}
+.rkg-po:focus-visible,.rkg-to:focus-visible{outline:none;box-shadow:var(--ring);border-color:var(--acc)}
+.rkg-po.ok,.rkg-to.ok{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}.rkg-to.ok{background:var(--green-s)}
+.rkg-po.ok .lt,.rkg-to.ok .lt{background:var(--green);border-color:var(--green);color:#fff}
+.rkg-po.no,.rkg-to.no{border-color:var(--red);box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 20%,transparent)}.rkg-to.no{background:var(--red-s)}
+.rkg-po.no .lt,.rkg-to.no .lt{background:var(--red-b);border-color:var(--red);color:#fff}
+.rkg-po:disabled,.rkg-to:disabled{cursor:default}.rkg-po.lk,.rkg-to.lk{opacity:.45}
+.rkg-po.ok,.rkg-to.ok{animation:rkgPop .35s var(--ease)}
+@keyframes rkgPop{50%{transform:scale(1.03)}}
+.rkg-hint{margin:12px 0 0;font-size:14px;color:var(--ink2)}.rkg-hint summary{cursor:pointer;color:var(--acc);font-weight:600;min-height:32px;display:flex;align-items:center}.rkg-hint p{margin:4px 0 0;line-height:1.5}
+.rkg-fb{margin:14px 0 0;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--surf);font-size:14.5px;line-height:1.5;color:var(--ink2);animation:rkgIn .3s var(--ease)}
+@keyframes rkgIn{from{transform:translateY(8px);opacity:0}}
+.rkg-fb.ok{border-color:color-mix(in srgb,var(--green) 40%,transparent);background:var(--green-s)}
+.rkg-fb.no{border-color:color-mix(in srgb,var(--red) 35%,transparent);background:var(--red-s)}
+.rkg-fb>b{display:block;font:800 17px var(--disp);color:var(--ink)}
+.rkg-fb.ok>b{color:var(--green)}.rkg-fb.no>b{color:var(--red)}
+.rkg-pts{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:99px;background:var(--green);color:#fff;font:800 13px var(--disp);vertical-align:2px}
+.rkg-fb p{margin:6px 0 0}.rkg-err{font-weight:600;color:var(--ink)}
+.rkg-next{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;margin:12px 0 0;border:0;border-radius:14px;background:var(--acc);color:var(--on-acc);font:800 16.5px var(--disp);text-decoration:none;cursor:pointer}
+.rkg-next i{font-style:normal}.rkg-next:hover{background:var(--acc-h)}
+/* итог */
+.rkg-res{padding:18px 16px;border-radius:24px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow2)}
+.rkg-rt{display:flex;align-items:center;gap:16px;margin:10px 0 12px}
+.rkg-ring{position:relative;flex:none;width:124px;height:124px}.rkg-ring svg{width:124px;height:124px}
+.rkg-ring .bg{fill:none;stroke:var(--line);stroke-width:12}.rkg-ring .fg{fill:none;stroke-width:12;stroke-linecap:round;animation:rkgRing 1s var(--ease)}
+.rkg-ring .fg.g{stroke:var(--green)}.rkg-ring .fg.a{stroke:var(--amber)}.rkg-ring .fg.r{stroke:var(--red)}
+@keyframes rkgRing{from{stroke-dasharray:0 400}}
+.rkg-ring>div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rkg-ring b{font:800 32px/1 var(--disp);color:var(--ink)}.rkg-ring span{font:500 12px var(--mono);color:var(--mut);margin-top:3px}
+.rkg-rd{min-width:0}.rkg-lv{margin:0 0 4px;font:800 24px/1.15 var(--disp)}.rkg-lv.g{color:var(--green)}.rkg-lv.a{color:var(--amber)}.rkg-lv.r{color:var(--red)}
+.rkg-rd p{margin:0;font-size:14.5px;line-height:1.45;color:var(--ink2)}
+.rkg-badges{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0 0 6px;padding:0}
+.rkg-badges li{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:99px;background:var(--surf2);border:1px solid var(--line);font-size:13px;color:var(--ink2)}
+.rkg-badges b{color:var(--ink)}.rkg-badges em{font-style:normal;font-weight:700;color:var(--red)}
+.rkg-badges li.rk{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700}
+.rkg-h2{margin:18px 0 8px;font:700 13px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.rkg-bars{display:grid;gap:4px}
+.rkg-bar{display:grid;grid-template-columns:minmax(0,1fr) 40px;align-items:center;gap:5px 10px;padding:8px 6px;border-radius:10px;text-decoration:none;color:var(--ink)}
+.rkg-bar .rkg-bt{grid-column:1/-1;grid-row:2}
+.rkg-bar:hover{background:var(--surf2)}
+.rkg-bar>span:first-child{display:flex;align-items:center;gap:6px;font:600 14px var(--sans);min-width:0}
+.rkg-bt{display:block;height:8px;border-radius:99px;background:var(--line);overflow:hidden}.rkg-bt i{display:block;height:100%;border-radius:99px}
+.rkg-bt.g i{background:var(--green)}.rkg-bt.a i{background:var(--amber)}.rkg-bt.r i{background:var(--red-b)}
+.rkg-bar b{font:600 12.5px var(--mono);text-align:right;color:var(--ink2)}
+.rkg-cta{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;margin:14px 0 0;padding:14px 16px;border-radius:16px;background:linear-gradient(145deg,var(--navy),var(--navy2));color:#fff;text-decoration:none}
+.rkg-cta span{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.rkg-cta b{grid-column:1;font:700 17px/1.3 var(--disp)}
+.rkg-cta i{grid-column:2;grid-row:1/3;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--red-b);font-style:normal;font-weight:700}
+.rkg-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 0}
+.rkg-sh{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:16px;border:1.5px solid var(--line2);background:var(--surf);color:var(--ink);font:700 16px var(--disp);cursor:pointer}
+.rkg-sh:hover{border-color:var(--acc)}
+.rkg-mis{display:grid;gap:8px}
+.rkg-mis details{padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surf2);font-size:14px;line-height:1.5;color:var(--ink2)}
+.rkg-mis summary{cursor:pointer;font-weight:600;color:var(--ink);list-style-position:outside}
+.rkg-mis summary span{margin-right:6px}
+.rkg-mis p{margin:8px 0 0}.rkg-mis a{display:inline-block;margin:8px 0 0;font-weight:600}.rkg-mk{font-weight:600;color:var(--ink)}
+.rkg-mis .rkg-fig{margin:8px 0 0}
+.r2-game{margin:0 0 var(--s4,16px)}.r2-game i{animation:rkgPulse 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.r2-game i{animation:none}}
+/* тизер на главной */
+.rkg-tz{margin:var(--s5,20px) 0;padding:16px;border-radius:22px;background:var(--surf);border:2px solid color-mix(in srgb,var(--acc) 35%,var(--line));box-shadow:var(--shadow2)}
+.rkg-tzh h2{margin:4px 0 12px;font:800 22px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
+.rkg-tz .rkg-ask{font-size:16.5px}
+.rkg-tz .rkg-fig svg{max-height:34vh}
+.rkg-tzall{display:block;margin:12px 0 0;font-weight:700;text-decoration:none;color:var(--acc)}
+@media (min-width:720px){
+  .rkg-modes{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rkg-rules{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rkg-hero{padding:30px 28px 24px}.rkg-tix{right:34px;top:28px;width:130px;height:150px}
+  .rkg-res{padding:24px 26px}
+  .rkg-ask{font-size:21px}
+}
+@media (max-width:380px){.rkg-tix{width:92px;height:108px;right:8px}.rkg-tix b em{font-size:32px}.rkg-hud{gap:7px;padding:7px 9px}.rkg-tk{display:none}.rkg-hud{grid-template-columns:1fr auto auto}}
+@media (prefers-reduced-motion:reduce){.rkg-hero .rkg-go,.rkg-pips li.cur,.rkg-q.shake,.rkg-po.ok,.rkg-to.ok,.rkg-fb,.rkg-ring .fg,.rkg-float,.rkg-sc.bump b,.rkg-cb.flare svg{animation:none}}
 </style>
 </head>
 <body>
@@ -6674,6 +6823,7 @@ function buildDocs(){
    ['quiz','Тест на время по начертательной геометрии','c',Hh('ng','check','quiz'),'Подготовка к РК · Быстрый тест','Короткий тест на время; ошибки разбираются.',['тест онлайн','проверить себя']],
    ['tickets','Билеты РК1 с разбором','c',Hh('ng','check','tickets'),'Подготовка к РК · Билеты','Билеты РК1 с пошаговым разбором.',['билеты','экзамен','рк']],
    ['rk2','РК2: замена плоскостей и вращение — билет, 26 вопросов, готовность 0–100','c',Hh('ng','rk2'),'Подготовка к РК · РК2','Билет РК2 с разбором по шагам, 26 вопросов теории, задания с оценкой уверенности и готовность к РК2 от 0 до 100.',['рк2','рк 2','рубежный контроль 2','готовность','замена плоскостей проекций','вращение','преобразование чертежа']],
+   ['rkgame','Сдашь РК2? Пробный билет-игра: 10 заданий по начерту и инже на время','c',Hh('rk'),'Подготовка к РК · Сдашь РК2?','Билет-игра: эпюры, виды, разрезы, ГОСТ. Очки, серия, в конце — прогноз «сдашь / не сдашь» и темы для повторения.',['сдашь ли рк2','пробный билет','рк2 инжа','рк2 инженерная графика','вид слева','разрез','игра','тест рк2']],
    ['rk2mock','Пробный РК2: три задачи билета на время','c',Hh('ng','rk2','mock'),'Подготовка к РК · РК2','Секундомер, три задачи на бумаге, сверка по контрольным точкам.',['пробный рк2','рк2 на время']],
    ['learn','Тренировка дня: повторение задач, карточки, типы задач вперемешку','c',Hh('ng','learn'),'Учиться самому · Тренировка дня','Разобранные задачи возвращаются через 1, 3, 7, 16, 35 дней — реши по памяти и оцени себя. Почему так учиться: вспоминать, повторять с перерывами, перемешивать.',['как учиться','как запомнить','повторение','тренировка','самостоятельно','методика','как готовиться']],
    ['kind','Узнай тип задачи — какой способ применить','c',Hh('ng','learn','kind'),'Учиться самому · Узнай тип задачи','Задачи из тетради вперемешку: определи тему и способ, не решая до конца.',['какой способ','с чего начать','тип задачи','не знаю как начать','какой метод']],
@@ -24817,6 +24967,7 @@ function hub(v){
     ${swHTML()}
     <div class="intro"><h1>РК2: способы преобразования чертежа</h1><p class="lead">На РК2 — билет из трёх задач: замена плоскостей проекций, вращение вокруг проецирующей прямой, вращение вокруг прямой уровня. И 26 вопросов теории о параллельности, перпендикулярности и преобразованиях.</p></div>
     ${facHTML()}
+    <a class="r2-next r2-game" href="${H('rk','ng')}"><span class="r2-nk">4 минуты · как игра</span><b>Сдашь РК2? Тяни пробный билет</b><span>8 заданий на время с чертежами — в конце прогноз и что повторить.</span><i aria-hidden="true">→</i></a>
     ${f==='sec'?`<section class="box warn r2-other"><h4>У твоего потока другой РК2</h4><p>Для ИУ1Б, ИУ3, ИУ5, ИУ6, РК6, МТ9, БМТ1-13Б на РК2 — сечение тела проецирующей плоскостью: горизонтальная и профильная проекции сечения и его истинный вид. Этот раздел — про другую тему.</p><p>Что поможет: <a href="${H('ng','tasks',54)}">задача №54</a> — натуральный вид сечения призмы заменой плоскостей; <a href="${H('ng','path',13)}">урок 13</a> — как достроить точку в плоскости; модуль <a href="${H('ng','rk2','m','zam')}">«Замена плоскостей»</a> — для истинного вида.</p></section>`:''}
     ${f==='iu'?`<div class="box tip r2-other"><h4>ИУ1 (специалисты), ИУ2</h4><p>Ваш РК2 — те же способы преобразования, вопросы 1–5 из списка кафедры: расстояния и углы заменой плоскостей, натуральная величина вращением. Готовность считается по трём модулям преобразований. Плоскопараллельное перемещение (через горизонталь) — родственник вращения вокруг проецирующей прямой, только без оси: фигуру двигают параллельно π₁, её горизонтальная проекция переносится без изменения формы и размеров, а высоты точек не меняются.</p></div>`:''}
     ${readyHTML(R)}
@@ -25054,6 +25205,469 @@ function line(){ const R=readiness(); if(R.na) return 'Другой РК2 у т�
 return {view,readiness,modScore,snapshot,level,nextStep,line,MODS,Q,ITEMS,GENS,GEN_OF,_:{itemScore,genScore,isDanger,decay,taskCredit,planFor,inst,judge,rec,CHECK,iMount}};
 })();
 
+/* ═════════ «Сдашь РК2?» — пробный билет-игра по начерту и инже (#/rk) ═════════
+   Билет: 10 заданий — 5 по начерту (чертежи из генераторов РК2: замена, вращение, параллельность, перпендикуляр,
+   путь точки; вопросы по задачам билетов: плоскость ∥ BCD через h и f, вращение отрезка вокруг i, ABC ∥ a) и 5 по инже
+   (вид слева / вид сверху по двум видам, половина вида и половина разреза, ГОСТ 2.305, 2.302, 2.303).
+   Режимы: mix — 10 заданий · ng — 8 · ig — 8. На задание — время (текст 45 с, чертёж 75 с); вышло время — ответ не засчитан.
+   Очки: 100 + до 50 за скорость; серия верных: с 3-го ×1,5, с 5-го ×2. Итог — доля верных (задание с чертежом весит 1,5)
+   → «сдашь уверенно / сдашь / на грани / пока не сдашь» и темы с ошибками → куда идти готовиться.
+   Чертежи ИГ строятся по размерам детали (bracket — уголок с двумя отверстиями, sleeve — втулка с фланцем): каждый вид —
+   проекция той же модели, неверные варианты — одна конкретная ошибка (зеркальный вид, отверстие не на той глубине,
+   невидимое — сплошной, штриховка по пустоте, разрез слева, граница — сплошная). Проверка — tests/rkg.js.
+   Адреса: #/rk · #/rk/ng · #/rk/ig (режим выбран). На главной — тизер: первое задание билета прямо на главной (teaser).
+   Хранилище: 'rkg' {best:{mix,ng,ig}, runs, days:[день…], last:{m,pc,ok,n,sc,d}}. */
+window.RKG=(function(){
+const day=()=>Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/864e5);
+const shuffle=a=>{ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const L4='АБВГ';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const Hh=(...a)=>'#/'+a.join('/');
+
+/* ── темы: где готовиться ── */
+const TOP={
+  par:{s:'ng',t:'Параллельность',h:()=>Hh('ng','rk2','m','par')},
+  perp:{s:'ng',t:'Перпендикулярность',h:()=>Hh('ng','rk2','m','perp')},
+  zam:{s:'ng',t:'Замена плоскостей',h:()=>Hh('ng','rk2','m','zam')},
+  rot:{s:'ng',t:'Вращение',h:()=>Hh('ng','rk2','m','rotp')},
+  views:{s:'ig',t:'Виды',h:()=>Hh('ig','learn')},
+  sec:{s:'ig',t:'Разрезы',h:()=>Hh('ig','learn')},
+  gost:{s:'ig',t:'Оформление по ГОСТ',h:()=>Hh('ig','theory')}
+};
+const SUBJ={ng:'Начерт',ig:'Инжа'};
+const MODES={mix:{t:'Билет-микс',sub:'начерт + инжа',n:10},ng:{t:'Только начерт',sub:'замена, вращение, ∥ и ⊥',n:8},ig:{t:'Только инжа',sub:'виды, разрезы, ГОСТ',n:8}};
+
+/* ═════ чертежи ИГ: мм → SVG ═════
+   Вид — набор элементов в своих координатах (X вправо, Y вверх, мм). Стили по ГОСТ 2.303: m — основная, h — штриховая
+   (невидимый контур), a — штрихпунктирная (оси), x — штриховка. */
+const INK='#15161a', K=3.2;
+let UID=0;
+const f1=v=>Math.round(v*100)/100;
+const SW={m:2.1,h:1.15,a:.8};
+const DASH={h:'6 3.4',a:'14 3 2.2 3'};
+function svgOf(views,alt,o){ o=o||{};
+  /* views: [{dx,dy, it:[…]}] — dx, dy — сдвиг вида (мм, Y вверх) */
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const P=(v,X,Y)=>[(v.dx+X)*K,-(v.dy+Y)*K];
+  const pts=[]; views.forEach(v=>v.it.forEach(e=>{ (e.p||[e.a,e.b].filter(Boolean)).forEach(q=>pts.push(P(v,q[0],q[1]))); if(e.c){ const c=P(v,e.c[0],e.c[1]); pts.push([c[0]-e.r*K,c[1]-e.r*K],[c[0]+e.r*K,c[1]+e.r*K]); } }));
+  pts.forEach(p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); });
+  const pad=o.pad||8; x0-=pad; y0-=pad; x1+=pad; y1+=pad;
+  if(o.minW&&x1-x0<o.minW){ const d=(o.minW-(x1-x0))/2; x0-=d; x1+=d; }
+  if(o.minH&&y1-y0<o.minH){ const d=(o.minH-(y1-y0))/2; y0-=d; y1+=d; }
+  const id='rkh'+(++UID); let defs='', body='';
+  const st=s=>`stroke="${INK}" stroke-width="${SW[s]}"${DASH[s]?` stroke-dasharray="${DASH[s]}"`:''} stroke-linecap="${s==='m'?'round':'butt'}"`;
+  views.forEach(v=>v.it.forEach(e=>{
+    if(e.t==='l'){ const a=P(v,...e.a), b=P(v,...e.b); body+=`<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" ${st(e.s)}/>`; }
+    else if(e.t==='p'){ const d=e.p.map((q,i)=>{ const p=P(v,...q); return (i?'L':'M')+f1(p[0])+' '+f1(p[1]); }).join('')+(e.z?'Z':''); body+=`<path d="${d}" fill="none" ${st(e.s)} stroke-linejoin="round"/>`; }
+    else if(e.t==='x'){ if(!defs) defs=`<pattern id="${id}" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="${INK}" stroke-width="1"/></pattern>`;
+      const d=e.p.map((q,i)=>{ const p=P(v,...q); return (i?'L':'M')+f1(p[0])+' '+f1(p[1]); }).join('')+'Z'; body=`<path d="${d}" fill="url(#${id})" stroke="none"/>`+body; }
+    else if(e.t==='c'){ const c=P(v,...e.c); body+=`<circle cx="${f1(c[0])}" cy="${f1(c[1])}" r="${f1(e.r*K)}" fill="none" ${st(e.s)}/>`; }
+  }));
+  const W=x1-x0, Hg=y1-y0;
+  return `<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(W)} ${f1(Hg)}" width="${f1(W)}" height="${f1(Hg)}" role="img" aria-label="${esc(alt||'Чертёж')}" xmlns="http://www.w3.org/2000/svg"><rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(W)}" height="${f1(Hg)}" fill="#fff"/>${defs?`<defs>${defs}</defs>`:''}${body}</svg>`;
+}
+const Ln=(a,b,s)=>({t:'l',a,b,s:s||'m'}), Pl=(p,s,z)=>({t:'p',p,s:s||'m',z:z!==false}), Cr=(c,r,s)=>({t:'c',c,r,s:s||'m'}), Hx=p=>({t:'x',p});
+const cross=(c,r)=>[Ln([c[0]-r,c[1]],[c[0]+r,c[1]],'a'),Ln([c[0],c[1]-r],[c[0],c[1]+r],'a')];
+const flipX=it=>it.map(e=>Object.assign({},e,e.a?{a:[-e.a[0],e.a[1]],b:[-e.b[0],e.b[1]]}:{},e.p?{p:e.p.map(q=>[-q[0],q[1]])}:{},e.c?{c:[-e.c[0],e.c[1]]}:{}));
+const flipY=it=>it.map(e=>Object.assign({},e,e.a?{a:[e.a[0],-e.a[1]],b:[e.b[0],-e.b[1]]}:{},e.p?{p:e.p.map(q=>[q[0],-q[1]])}:{},e.c?{c:[e.c[0],-e.c[1]]}:{}));
+
+/* ── уголок: плита L×W×H1, стенка толщиной T у задней (s=+1) или передней (s=−1) грани до высоты Ht;
+      в стенке — сквозное отверстие ⌀2rh вдоль y (центр x=0, z=zc), в плите — вертикальное ⌀2rv при y=−6s.
+      Координаты детали: x вправо (центр 0), y — от зрителя главного вида, z вверх.
+      Главный вид: X=x, Y=z. Вид сверху (под главным): X=x, Y=y (задняя сторона — к главному виду).
+      Вид слева (справа от главного): зритель при x<0, X=−y, Y=z (задняя сторона — к главному виду). ── */
+function bracket(){
+  const s=pick([1,-1]), L=pick([56,60,64]), W=40, H1=pick([10,12]), Ht=pick([38,42]), T=10, rh=6, rv=5, yv=-6*s, zc=Math.round((H1+Ht)/2)+2, hl=L/2;
+  const M={s,L,W,H1,Ht,T,rh,rv,yv,zc};
+  const yIn=s*(W/2-T), yOut=s*W/2;                              /* грани стенки: внутренняя и наружная */
+  const front=()=>[Pl([[-hl,0],[hl,0],[hl,Ht],[-hl,Ht]]), Ln([-hl,H1],[hl,H1],s>0?'m':'h'),
+    Cr([0,zc],rh), ...cross([0,zc],rh+3), Ln([-rv,0],[-rv,H1],'h'), Ln([rv,0],[rv,H1],'h'), Ln([0,-3],[0,H1+3],'a')];
+  /* top(o): o.mirror — передняя сторона к главному виду; o.vSide — вертикальное отверстие у стенки; o.solid — невидимое сплошной */
+  const top=o=>{ o=o||{}; const yv2=o.vSide?-yv:yv, hs=o.solid?'m':'h';
+    const it=[Pl([[-hl,-W/2],[hl,-W/2],[hl,W/2],[-hl,W/2]]), Ln([-hl,yIn],[hl,yIn]),
+      Ln([-rh,yIn],[-rh,yOut],hs), Ln([rh,yIn],[rh,yOut],hs), Ln([0,yIn-s*3],[0,yOut+s*3],'a'),
+      Cr([0,yv2],rv), ...cross([0,yv2],rv+3)];
+    return o.mirror?flipY(it):it; };
+  /* left(o): X = −y; o.mirror — вид справа на месте вида слева */
+  const left=o=>{ o=o||{}; const X=y=>-y, a=X(yOut), b=X(yIn), xv=X(o.vSide?-yv:yv), hs=o.solid?'m':'h', lo=Math.min(a,b), hi=Math.max(a,b);
+    const it=[Pl([[a,0],[-a,0],[-a,H1],[b,H1],[b,Ht],[a,Ht]]),
+      Ln([a,zc-rh],[b,zc-rh],hs), Ln([a,zc+rh],[b,zc+rh],hs), Ln([lo-3,zc],[hi+3,zc],'a'),
+      Ln([xv-rv,0],[xv-rv,H1],hs), Ln([xv+rv,0],[xv+rv,H1],hs), Ln([xv,-3],[xv,H1+3],'a')];
+    return o.mirror?flipX(it):it; };
+  return {M,front,top,left};
+}
+const ERR_V={
+  mirror:'Это вид справа, а не слева: стенка не с той стороны. На виде слева (и на виде сверху) задняя сторона детали обращена к главному виду.',
+  vSide:'Вертикальное отверстие перенесено не на той глубине: оно в плите со стороны, противоположной стенке, — сверь расстояние по виду сверху.',
+  solid:'Отверстия внутри детали не видны — их контур штриховой линией, а не сплошной основной.'};
+function qLeft(){ const B=bracket(), hh=14+B.M.Ht, gap=12;
+  const given=svgOf([{dx:0,dy:0,it:B.front()},{dx:0,dy:-(B.M.W/2+gap),it:B.top()}],'Главный вид и вид сверху',{pad:6});
+  const ds=shuffle(['mirror','vSide','solid']);
+  const opts=shuffle([{ok:1,o:{}}].concat(ds.map(k=>({k,o:{[k]:1},err:ERR_V[k]}))));
+  return {g:'igL',tag:'views',s:'ig',pic:1,ask:'Даны главный вид и вид сверху. Какой вид слева построен верно?',
+    hint:'Где на виде слева окажется задняя сторона детали? Видны ли отверстия снаружи?',
+    fig:given,
+    opts:opts.map((x,i)=>({svg:svgOf([{dx:0,dy:0,it:B.left(x.o)}],'Вариант '+L4[i],{pad:6,minH:hh*K}),ok:!!x.ok,err:x.err||'',k:x.k||'ok'})),
+    why:'Вид слева — справа от главного, высоты те же. Задняя сторона детали обращена к главному виду: стенка здесь '+(B.M.s>0?'сзади (на виде сверху — вверху), значит, на виде слева она слева, у главного вида':'спереди (на виде сверху — внизу), значит, на виде слева она справа, дальше от главного вида')+'. Отверстия внутри детали — штриховыми, их глубину берут с вида сверху.',
+    meta:B.M}; }
+function qTop(){ const B=bracket(), gap=12;
+  const given=svgOf([{dx:0,dy:0,it:B.front()},{dx:B.M.L/2+gap+B.M.W/2,dy:0,it:B.left()}],'Главный вид и вид слева',{pad:6});
+  const ds=shuffle(['mirror','vSide','solid']);
+  const opts=shuffle([{ok:1,o:{}}].concat(ds.map(k=>({k,o:{[k]:1},err:ERR_V[k]}))));
+  return {g:'igT',tag:'views',s:'ig',pic:1,ask:'Даны главный вид и вид слева. Какой вид сверху построен верно?',
+    hint:'Вид сверху — под главным. Какая сторона детали на нём ближе к главному виду?',
+    fig:given,
+    opts:opts.map((x,i)=>({svg:svgOf([{dx:0,dy:0,it:B.top(x.o)}],'Вариант '+L4[i],{pad:6}),ok:!!x.ok,err:x.err||'',k:x.k||'ok'})),
+    why:'Вид сверху стоит под главным, ширины те же. Задняя сторона детали обращена к главному виду — так же, как на виде слева. Глубину каждого элемента переносят с вида слева.',
+    meta:B.M}; }
+
+/* ── втулка с фланцем: фланец R×(0…h1), ступица r×(h1…h2), сквозное отверстие ⌀2r0, два отверстия ⌀2rf во фланце на x=±xf.
+      Вид сверху — данность; варианты — главный вид: половина вида (слева) + половина разреза (справа) по плоскости симметрии y=0. ── */
+function sleeve(){
+  const R=pick([28,30]), r=pick([15,16]), r0=pick([7,8]), h1=pick([9,10]), h2=pick([34,36]), rf=3, xf=Math.round((R+r)/2);
+  const M={R,r,r0,h1,h2,rf,xf};
+  const topV=()=>[Cr([0,0],R),Cr([0,0],r),Cr([0,0],r0),Cr([xf,0],rf),Cr([-xf,0],rf),Ln([-R-4,0],[R+4,0],'a'),Ln([0,-R-4],[0,R+4],'a'),Ln([xf,-rf-3],[xf,rf+3],'a'),Ln([-xf,-rf-3],[-xf,rf+3],'a')];
+  /* front(o): o.mirror — разрез слева; o.void — штриховка и по пустоте; o.hid — штриховые на половине вида; o.solid — граница сплошной */
+  const front=o=>{ o=o||{};
+    const view=[Pl([[0,0],[-R,0],[-R,h1],[-r,h1],[-r,h2],[0,h2]],'m',false)];
+    const a=xf-rf, b=xf+rf;
+    const s1=[[r0,0],[a,0],[a,h1],[r,h1],[r,h2],[r0,h2]], s2=[[b,0],[R,0],[R,h1],[b,h1]];
+    const sec=o.void?[Hx([[0,0],[R,0],[R,h1],[r,h1],[r,h2],[0,h2]])]:[Hx(s1),Hx(s2)];
+    sec.push(Pl(s1),Pl(s2),Ln([0,0],[r0,0]),Ln([0,h2],[r0,h2]),Ln([a,0],[b,0]),Ln([a,h1],[b,h1]),Ln([xf,-3],[xf,h1+3],'a'));
+    if(o.hid) view.push(Ln([-r0,0],[-r0,h2],'h'),Ln([-a,0],[-a,h1],'h'),Ln([-b,0],[-b,h1],'h'));
+    const mid=o.solid?[Ln([0,0],[0,h2])]:[Ln([0,-4],[0,h2+4],'a')];
+    const it=view.concat(sec,mid);
+    return o.mirror?flipX(it):it; };
+  return {M,topV,front};
+}
+const ERR_S={
+  mirror:'Разрез стоит слева от оси. По ГОСТ 2.305 половину разреза располагают справа от вертикальной оси симметрии.',
+  void:'Заштрихована пустота: секущая плоскость проходит через отверстия — там материала нет, штриховать нельзя.',
+  hid:'На половине вида внутренний контур штриховыми не показывают — он уже виден на половине разреза.',
+  solid:'Граница вида и разреза — ось симметрии (штрихпунктирная), а не сплошная основная линия.'};
+function qHalf(){ const S=sleeve();
+  const given=svgOf([{dx:0,dy:0,it:S.topV()}],'Вид сверху втулки',{pad:6});
+  const ds=shuffle(['mirror','void','hid','solid']).slice(0,3);
+  const opts=shuffle([{ok:1,o:{}}].concat(ds.map(k=>({k,o:{[k]:1},err:ERR_S[k]}))));
+  return {g:'igH',tag:'sec',s:'ig',pic:1,ask:'Втулка с фланцем (дан вид сверху). На главном виде — половина вида и половина разреза. Где верно?',
+    hint:'С какой стороны от оси разрез? Что штрихуют? Нужны ли штриховые на половине вида?',
+    fig:given,
+    opts:opts.map((x,i)=>({svg:svgOf([{dx:0,dy:0,it:S.front(x.o)}],'Вариант '+L4[i],{pad:6}),ok:!!x.ok,err:x.err||'',k:x.k||'ok'})),
+    why:'Деталь симметрична — совмещают половину вида и половину разреза. Разрез — справа от оси, граница — ось. Штрихуют только материал, рассечённый плоскостью: отверстия остаются белыми. На половине вида штриховые не нужны.',
+    meta:S.M}; }
+
+/* ═════ вопросы с выбором ответа (текст) ═════
+   c — индекс верного (перед показом варианты перемешиваются), w — объяснение конкретной ошибки */
+const TQ=[
+/* начерт: задачи билетов */
+{id:'n-h',s:'ng',tag:'par',q:'Билет 1, задача 1: плоскость через A ∥ BCD задают горизонталью h и фронталью f. Как провести h через A?',
+ o:['h″ ∥ x, h′ ∥ горизонтальной проекции горизонтали треугольника BCD','h″ ∥ x, h′ ∥ B′D′','h′ ∥ x, h″ ∥ фронтальной проекции горизонтали BCD','h″ ∥ B″D″, h′ ∥ B′D′'],c:0,
+ w:{1:'B′D′ — проекция стороны, а не горизонтали: BD не параллельна π₁.',2:'У горизонтали ∥ x фронтальная проекция, а не горизонтальная.',3:'Так получится прямая ∥ BD — она лежит в искомой плоскости, но это не горизонталь.'},
+ e:'Сначала строят горизонталь самого треугольника BCD (её h″ ∥ x). У параллельных плоскостей горизонтали параллельны: через A″ — h″ ∥ x, через A′ — h′ ∥ горизонтальной проекции горизонтали BCD.'},
+{id:'n-f',s:'ng',tag:'par',q:'А фронталь f той же плоскости через A?',
+ o:['f′ ∥ x, f″ ∥ фронтальной проекции фронтали треугольника BCD','f″ ∥ x, f′ ∥ горизонтальной проекции фронтали BCD','f′ ⊥ x, f″ ⊥ x','f′ ∥ C′D′, f″ ∥ C″D″'],c:0,
+ w:{1:'Это признаки горизонтали: у фронтали ∥ x горизонтальная проекция.',2:'f′ ⊥ x и f″ ⊥ x — профильная прямая, а не фронталь.',3:'Прямая ∥ CD лежит в искомой плоскости, но фронталью она не будет.'},
+ e:'Фронталь: f′ ∥ x, а f″ ∥ фронтальной проекции фронтали треугольника BCD. Две пересекающиеся прямые h и f задают плоскость, ∥ BCD.'},
+{id:'n-r1',s:'ng',tag:'rot',q:'Билет 1, задача 2: AB вращают вокруг оси i ⊥ π₁ (через B). До какого положения поворачивать, чтобы найти длину AB и угол с π₁?',
+ o:['Пока Ā′B′ не станет ∥ x — AB станет фронталью','Пока Ā″B″ не станет ∥ x','Пока Ā′B′ не станет ⊥ x','Пока A не окажется на оси i'],c:0,
+ w:{1:'При оси ⊥ π₁ высоты точек не меняются: A″ и B″ остаются на своих уровнях, Ā″B″ ∥ x не получится.',2:'Ā′B′ ⊥ x — профильная прямая: длина не видна ни на π₁, ни на π₂.',3:'Точка на оси — это нулевой радиус; отрезок так не повернуть.'},
+ e:'Ось ⊥ π₁ сохраняет угол с π₁. Ставим Ā′B′ ∥ x — AB становится фронталью: на π₂ видны |AB| = |Ā″B″| и угол α между Ā″B″ и осью x.'},
+{id:'n-r2',s:'ng',tag:'rot',q:'При вращении вокруг оси i ⊥ π₁ как движется фронтальная проекция A″?',
+ o:['По прямой ∥ x — высота не меняется','По дуге с центром i″','По линии связи вверх или вниз','Остаётся на месте'],c:0,
+ w:{1:'Дуга — на π₁: окружность вращения лежит в горизонтальной плоскости и на π₁ видна без искажения.',2:'Двигаться по линии связи — значит менять высоту, а она при оси ⊥ π₁ постоянна.',3:'На месте остаются только точки самой оси.'},
+ e:'Точка идёт по окружности в горизонтальной плоскости: на π₁ — дуга с центром i′, на π₂ — отрезок прямой ∥ x.'},
+{id:'n-r3',s:'ng',tag:'rot',q:'Билет 2, задача 2: AB вращают вокруг i ⊥ π₂, чтобы найти длину и угол с π₂. Где их увидишь?',
+ o:['На π₁ — после поворота до Ā″B″ ∥ x: |Ā′B′| и угол Ā′B′ с осью x','На π₂ — |Ā″B″| и угол с осью x','На π₁ сразу, без поворота','Только заменой плоскостей'],c:0,
+ w:{1:'Ось ⊥ π₂ сохраняет угол с π₂, а не показывает его: на π₂ фронтальная проекция просто поворачивается дугой.',2:'Без поворота AB — общего положения: на π₁ длина искажена.',3:'Замена тоже решает, но в задаче сказано: вращением.'},
+ e:'Ось ⊥ π₂: глубины точек не меняются. Поворачиваем до Ā″B″ ∥ x — AB становится горизонталью: на π₁ видны длина и угол β с π₂.'},
+{id:'n-a',s:'ng',tag:'par',q:'Билет 2, задача 1: плоскость ABC ∥ прямой a, B′ не дана. С чего начать?',
+ o:['Через A провести m ∥ a: m″ ∥ a″, m′ ∥ a′','Провести B′ на линии связи на глаз','Сначала замена плоскостей','Через A провести горизонталь треугольника'],c:0,
+ w:{1:'На глаз нельзя: B′ должна лежать в плоскости, ∥ a — её находят построением.',2:'Замена здесь не нужна: в задаче сказано «без преобразования чертежа».',3:'Горизонталь не связывает плоскость с прямой a.'},
+ e:'Плоскость ∥ a, если в ней есть прямая ∥ a. Через A строим m ∥ a — плоскость задана AC и m. Через B″ проводим прямую, пересекающую A″C″ и m″, переносим точки на π₁ — там и B′.'},
+{id:'n-z1',s:'ng',tag:'zam',q:'Сколько замен нужно, чтобы треугольник общего положения увидеть в натуральную величину?',
+ o:['Две','Одну','Три','Ни одной'],c:0,
+ w:{1:'Одна замена делает плоскость только проецирующей (на π₄ — прямая), натуральной величины ещё нет.',2:'Хватает двух: в проецирующую, потом в плоскость уровня.',3:'Плоскость общего положения проецируется с искажением.'},
+ e:'1-я: ось ⊥ h′ (или f″) — плоскость становится проецирующей. 2-я: ось ∥ прямой-проекции — плоскость уровня, треугольник в натуральную величину.'},
+{id:'n-z2',s:'ng',tag:'zam',q:'Заменяем π₂ на π₄. Что откладывают от новой оси x₁₄ по новой линии связи?',
+ o:['Высоту z — расстояние от A″ до старой оси x','Глубину y — расстояние от A′ до оси x','Длину A′A″','Любое удобное расстояние'],c:0,
+ w:{1:'y сохранилась бы при замене π₁. Меняем π₂ — π₁ остаётся, сохраняются расстояния до неё — высоты.',2:'A′A″ — линия связи, а не координата.',3:'Расстояние строго определено: иначе точка не та.'},
+ e:'Меняется π₂ — остаётся π₁, и расстояния точек до π₁ (высоты z) не меняются. От x₁₄ откладываем ровно то, на сколько A″ отстоит от x.'},
+{id:'n-z3',s:'ng',tag:'zam',q:'Для натуральной величины треугольника первая замена: как провести новую ось?',
+ o:['⊥ горизонтальной проекции горизонтали h′','∥ A′B′','⊥ A″B″','∥ оси x'],c:0,
+ w:{1:'Ось ∥ A′B′ сделает AB линией уровня, но плоскость останется общего положения.',2:'Перпендикуляр к проекции стороны общего положения ничего не даёт.',3:'Ось ∥ x — та же система плоскостей, ничего не поменяется.'},
+ e:'Ось ⊥ h′: горизонталь становится проецирующей — и вся плоскость, в которой она лежит, проецирующая (на π₄ — прямая).'},
+{id:'n-p1',s:'ng',tag:'perp',q:'Признак перпендикулярности прямой n и плоскости на чертеже:',
+ o:['n′ ⊥ h′ и n″ ⊥ f″','n′ ⊥ f′ и n″ ⊥ h″','n′ ⊥ A′B′ и n″ ⊥ A″B″','n″ ⊥ x'],c:0,
+ w:{1:'f′ и h″ ∥ x — перпендикуляр к ним просто вертикаль.',2:'Прямой угол со стороной общего положения на чертеже искажён.',3:'Это проецирующая прямая или профильная — к плоскости общего положения не подходит.'},
+ e:'Теорема о проецировании прямого угла: он виден без искажения, если одна сторона ∥ плоскости проекций. Горизонталь ∥ π₁ — n′ ⊥ h′, фронталь ∥ π₂ — n″ ⊥ f″.'},
+/* инжа: виды, разрезы, ГОСТ */
+{id:'i-l',s:'ig',tag:'views',q:'Где по ГОСТ 2.305 располагают вид слева?',
+ o:['Справа от главного вида, на одной высоте с ним','Слева от главного вида','Под главным видом','Где удобно, если подписать'],c:0,
+ w:{1:'Слева от главного стоит вид справа.',2:'Под главным видом — вид сверху.',3:'Вид в проекционной связи не переносят и не подписывают.'},
+ e:'Вид слева — справа от главного, в проекционной связи: высоты точек на обоих видах совпадают.'},
+{id:'i-b',s:'ig',tag:'views',q:'На виде слева и на виде сверху какая сторона детали обращена к главному виду?',
+ o:['Задняя','Передняя','Левая','Зависит от детали'],c:0,
+ w:{1:'Передняя — дальше от главного вида: так и получается «перевёрнутый» вид, самая частая ошибка.',2:'Левая сторона видна на самом виде слева, а не обращена к главному.',3:'Это правило расположения видов, оно одно для всех деталей.'},
+ e:'Европейская система (ГОСТ 2.305): на виде сверху и на виде слева задняя сторона детали — ближе к главному виду.'},
+{id:'i-hv',s:'ig',tag:'sec',q:'Деталь симметрична. Какой разрез обычно делают на месте главного вида?',
+ o:['Половина вида + половина разреза','Только полный разрез','Только вид, без разреза','Местный разрез у каждого отверстия'],c:0,
+ w:{1:'Полный разрез допустим, но тогда пропадёт наружная форма — у симметричной детали её сохраняют половиной вида.',2:'Внутренние полости придётся показывать штриховыми — читать трудно.',3:'Местные разрезы — для мелких элементов, а не для всей внутренней формы.'},
+ e:'Если вид и разрез — симметричные фигуры, их совмещают: половина вида и половина разреза, граница — ось симметрии.'},
+{id:'i-hs',s:'ig',tag:'sec',q:'Половина вида и половина разреза на главном виде. С какой стороны от оси — разрез?',
+ o:['Справа','Слева','Без разницы','Сверху'],c:0,
+ w:{1:'Слева — вид. Так требует ГОСТ 2.305.',2:'Разница есть: место разреза задано стандартом.',3:'Снизу — разрез только при горизонтальной оси симметрии.'},
+ e:'ГОСТ 2.305: разрез — справа от вертикальной оси симметрии или снизу от горизонтальной.'},
+{id:'i-w',s:'ig',tag:'sec',q:'С осью симметрии совпадает ребро (например, у шестигранника). Как отделить вид от разреза?',
+ o:['Волнистой линией, чтобы ребро осталось видно','Осью, как обычно','Сплошной основной линией','Штриховой линией'],c:0,
+ w:{1:'По оси нельзя: ребро на оси пропадёт с чертежа.',2:'Основная линия — это контур, граница вида и разреза так не показывается.',3:'Штриховая — невидимый контур, не граница.'},
+ e:'Границу смещают с оси и проводят сплошной волнистой линией, чтобы ребро осталось на изображении.'},
+{id:'i-x',s:'ig',tag:'gost',q:'Под каким углом проводят штриховку металла в разрезе?',
+ o:['45° к линии рамки (или к оси изображения)','30°','60°','Горизонтально'],c:0,
+ w:{1:'30° и 60° берут, только если линии под 45° совпали бы с контуром или осью.',2:'30° и 60° берут, только если линии под 45° совпали бы с контуром или осью.',3:'Горизонтальная штриховка не применяется.'},
+ e:'ГОСТ 2.306: штриховка металлов — тонкие линии под 45°; на всех разрезах одной детали — в одну сторону и с одним шагом.'},
+{id:'i-m',s:'ig',tag:'gost',q:'В задании: «фигуру увеличить в два раза». Какой масштаб и какие размеры на чертеже?',
+ o:['Масштаб 2:1, размеры — действительные','Масштаб 1:2, размеры — вдвое больше','Масштаб 2:1, размеры — вдвое больше','Масштаб 1:2, размеры — действительные'],c:0,
+ w:{1:'1:2 — уменьшение. И размеры на масштаб не умножают.',2:'Размеры не умножают на масштаб: пишут действительные.',3:'1:2 — уменьшение в два раза.'},
+ e:'Увеличение вдвое — 2:1 (ГОСТ 2.302). Размеры на чертеже всегда действительные, в каком бы масштабе он ни был.'},
+{id:'i-n',s:'ig',tag:'gost',q:'Секущая плоскость совпадает с плоскостью симметрии детали, разрез — в проекционной связи. Обозначать разрез?',
+ o:['Нет, не обозначают','Да: А–А и стрелки','Только стрелкой','Подписать «Разрез»'],c:0,
+ w:{1:'Буквы и стрелки нужны, когда плоскость не совпадает с плоскостью симметрии или разрез не в проекционной связи.',2:'Одной стрелкой разрезы не обозначают.',3:'Слово «Разрез» на чертеже не пишут.'},
+ e:'ГОСТ 2.305: положение такой секущей плоскости не отмечают, разрез не подписывают.'},
+{id:'i-r',s:'ig',tag:'sec',q:'Продольный разрез прошёл вдоль тонкого ребра жёсткости. Как показать ребро?',
+ o:['Не штриховать','Заштриховать вместе со всем','Штриховыми линиями','Не показывать вообще'],c:0,
+ w:{1:'Заштрихованное ребро выглядит как сплошная масса — форму детали прочтут неверно.',2:'Ребро видно — оно не невидимый контур.',3:'Ребро — часть детали, его показывают.'},
+ e:'Рёбра жёсткости, тонкие стенки, спицы при продольном разрезе показывают незаштрихованными (ГОСТ 2.305).'},
+{id:'i-h',s:'ig',tag:'views',q:'На виде без разреза сквозное отверстие не видно. Как его показать?',
+ o:['Штриховыми линиями и осью','Сплошной основной линией','Тонкой сплошной линией','Никак — достаточно другого вида'],c:0,
+ w:{1:'Сплошная основная — видимый контур, а отверстие не видно.',2:'Тонкая сплошная — размерные, выносные линии и штриховка.',3:'Без него вид не передаёт форму: невидимый контур показывают, если нет разреза.'},
+ e:'Невидимый контур — штриховая линия (ГОСТ 2.303); у отверстия — ещё и ось штрихпунктиром.'}
+];
+const tq=x=>{ const ord=shuffle(x.o.map((_,i)=>i));
+  return {g:'t:'+x.id,id:x.id,tag:x.tag,s:x.s,pic:0,ask:x.q,opts:ord.map(i=>({t:x.o[i],ok:i===x.c,err:i===x.c?'':(x.w&&x.w[i])||''})),why:x.e}; };
+
+/* начерт: задания-картинки из генераторов РК2 */
+const NG_PIC={par:'par',perp:'perp',rep:'zam',rot:'rot',trl:'rot'};
+function ngPic(g){ try{ const q=window.RK2&&RK2.GENS[g]&&RK2.GENS[g](); if(!q||!q.opts) return null;
+  return {g:'n:'+g,tag:NG_PIC[g],s:'ng',pic:1,ask:q.ask,hint:q.hint,fig:q.fig?q.fig.replace(/^<div class="sheet r2-fig">|<\/div>$/g,''):'',opts:q.opts.map(o=>({svg:o.svg,t:o.t,ok:!!o.ok,err:o.err||''})),why:q.why}; }catch(e){ return null; } }
+const IG_PIC={igL:qLeft,igT:qTop,igH:qHalf};
+
+/* ── билет ── */
+function build(mode){
+  const ngP=shuffle(Object.keys(NG_PIC)), ngT=shuffle(TQ.filter(x=>x.s==='ng')), igT=shuffle(TQ.filter(x=>x.s==='ig'));
+  const nPic=(k)=>{ const out=[]; for(const g of ngP){ if(out.length>=k) break; if(out.some(q=>q.tag===NG_PIC[g])) continue; const q=ngPic(g); if(q) out.push(q); } return out; };
+  /* сначала — по заданию на каждую ещё не взятую тему, потом — любые */
+  const take=(arr,k,have)=>{ const out=[], seen=new Set(have||[]);
+    arr.forEach(x=>{ if(out.length<k&&!seen.has(x.tag)){ out.push(x); seen.add(x.tag); } });
+    arr.forEach(x=>{ if(out.length<k&&!out.includes(x)) out.push(x); }); return out.map(tq); };
+  let ng=[], ig=[];
+  if(mode!=='ig'){ const tot=mode==='ng'?8:5, pics=nPic(mode==='ng'?4:3); ng=pics.concat(take(ngT,tot-pics.length,pics.map(q=>q.tag))); }
+  if(mode!=='ng'){ const tot=mode==='ig'?8:5, pics=(mode==='ig'?['igL','igH','igT']:[pick(['igL','igT']),'igH']).map(g=>IG_PIC[g]()); ig=pics.concat(take(igT,tot-pics.length,pics.map(q=>q.tag))); }
+  /* начерт и инжа вперемешку; первым — задание с чертежом (он цепляет) */
+  const mix=(a,b)=>{ a=shuffle(a); b=shuffle(b); const out=[]; while(a.length||b.length){ if(a.length) out.push(a.shift()); if(b.length) out.push(b.shift()); } return out; };
+  let qs=mode==='mix'?mix(ng,ig):shuffle(mode==='ng'?ng:ig);
+  const fp=qs.findIndex(q=>q.pic); if(fp>0) qs.unshift(qs.splice(fp,1)[0]);
+  return qs;
+}
+function fillNG(qs,need){ /* добор, если генератор не дал картинку */ const have=new Set(qs.map(q=>q.id)); TQ.filter(x=>x.s==='ng'&&!have.has(x.id)).slice(0,need).forEach(x=>qs.push(tq(x))); return qs; }
+
+/* ── состояние игры ── */
+let G=null, TMR=null;
+const LIM=q=>q.pic?75:45;
+function newGame(mode,first){ let qs=build(mode); const n=MODES[mode].n;
+  if(qs.length<n) qs=fillNG(qs,n-qs.length);
+  qs=qs.slice(0,n);
+  if(first) qs=[first].concat(qs.filter(q=>q.g!==first.g)).slice(0,n);
+  qs.forEach(q=>{ if(q!==first) q.pick=null; });
+  G={mode,qs,i:0,score:0,combo:0,best:0,tk:1+Math.floor(Math.random()*30),el:0,done:false};
+  return G; }
+const mult=c=>c>=5?2:c>=3?1.5:1;
+function answer(q,pick,el){ q.pick=pick; q.el=el; const ok=pick>=0&&!!q.opts[pick].ok; q.ok=ok;
+  if(ok){ G.combo++; G.best=Math.max(G.best,G.combo); const lim=LIM(q), sp=Math.max(0,Math.round(50*(1-el/lim))); q.pts=Math.round((100+sp)*mult(G.combo)); G.score+=q.pts; }
+  else { G.combo=0; q.pts=0; }
+  return ok; }
+function result(){ const W=q=>q.pic?1.5:1; const tot=G.qs.reduce((s,q)=>s+W(q),0), got=G.qs.reduce((s,q)=>s+(q.ok?W(q):0),0);
+  const pc=Math.round(got/tot*100), ok=G.qs.filter(q=>q.ok).length;
+  const by={}; G.qs.forEach(q=>{ const b=by[q.tag]||(by[q.tag]={n:0,ok:0}); b.n++; if(q.ok) b.ok++; });
+  const lv=pc>=80?{k:'g',t:'Сдашь уверенно',d:'Билет тебе по силам. Закрепи на бумаге — пробный РК2 на время.'}
+    :pc>=60?{k:'g',t:'Сдашь',d:'Основа есть. Подтяни темы с ошибками — и будет запас.'}
+    :pc>=40?{k:'a',t:'На грани',d:'Половина билета — пока лотерея. Разбери темы ниже: каждая — 5–10 минут.'}
+    :{k:'r',t:'Пока не сдашь',d:'Не беда: до РК есть время. Начни с первой темы ниже — там коротко и с картинками.'};
+  const rank=pc>=95?'Легенда кафедры':pc>=80?'Мастер эпюра':pc>=60?'Уверенный проекционист':pc>=40?'Чертёжник-стажёр':'Новичок эпюра';
+  return {pc,ok,n:G.qs.length,by,lv,rank}; }
+function save(R){ const d=ST.get('rkg',{}); d.best=d.best||{}; const rec=!(d.best[G.mode]>=G.score); if(rec) d.best[G.mode]=G.score;
+  d.runs=(d.runs||0)+1; const t=day(); d.days=(d.days||[]).filter(x=>x>t-60); if(!d.days.includes(t)) d.days.push(t);
+  d.last={m:G.mode,pc:R.pc,ok:R.ok,n:R.n,sc:G.score,d:t}; ST.set('rkg',d); return rec&&d.runs>1; }
+function streak(d){ const s=new Set((d||ST.get('rkg',{})).days||[]); let t=day(), n=0; if(!s.has(t)) t--; while(s.has(t)){ n++; t--; } return n; }
+
+/* ═════ экраны ═════ */
+const svgI=(p,sz)=>`<svg viewBox="0 0 24 24" width="${sz||18}" height="${sz||18}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const I={fire:'<path d="M12 3c1 3 4 4.5 4 8.5A4 4 0 0 1 8 12c0-1.4.6-2.4 1.3-3.2C9.5 10.5 10.5 11 11 11c0-3 1-5.5 1-8z"/><path d="M12 21a6 6 0 0 0 6-6c0-2-.8-3.6-2-5"/><path d="M6 15a6 6 0 0 0 6 6"/>',
+  clock:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/>', target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/>',
+  share:'<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>', redo:'<path d="M20 11.5A8 8 0 1 0 17.7 17"/><path d="M20 4.5v7h-7"/>'};
+
+function startHTML(mode){ const d=ST.get('rkg',{}), st=streak(d), last=d.last, best=(d.best||{})[mode];
+  return `<section class="rkg-hero" aria-labelledby="rkgH">
+   <div class="rkg-tix" aria-hidden="true"><i></i><i></i><b><span>Билет №</span><em>${1+Math.floor(Math.random()*30)}</em><small>РК2</small></b></div>
+   <p class="rkg-kick">Пробный РК2 · начерт + инжа</p>
+   <h1 id="rkgH" class="rkg-h">Сдашь РК2?</h1>
+   <p class="rkg-sub">Тяни билет: задания как на рубежке — эпюры, виды, разрезы. Минуты через четыре узнаешь, готов ли ты, и что повторить.</p>
+   <div class="rkg-modes" role="radiogroup" aria-label="Билет">${Object.keys(MODES).map(k=>`<button type="button" role="radio" data-mode="${k}" aria-checked="${k===mode}" class="${k===mode?'on':''}"><b>${MODES[k].t}</b><span>${MODES[k].n} заданий · ${MODES[k].sub}</span></button>`).join('')}</div>
+   <button type="button" class="rkg-go" data-go>Тянуть билет<i aria-hidden="true">→</i></button>
+   <ul class="rkg-stats" aria-label="Твои результаты">
+    <li><b>${best!=null?best:'—'}</b><span>рекорд, очки</span></li>
+    <li><b>${d.runs||0}</b><span>${plural(d.runs||0,'билет','билета','билетов')} решено</span></li>
+    <li><b>${st}</b><span>${plural(st,'день','дня','дней')} подряд</span></li>
+   </ul>
+   ${last?`<p class="rkg-last">Прошлый билет: верно ${last.ok} из ${last.n} · ${last.pc}% · ${last.sc} очков</p>`:''}
+  </section>
+  <section class="rkg-rules" aria-label="Правила">
+   <div>${svgI(I.clock,22)}<b>На задание — время</b><span>45 секунд на вопрос, 75 — на чертёж. Быстрее — больше очков.</span></div>
+   <div>${svgI(I.fire,22)}<b>Серия умножает</b><span>Три верных подряд — ×1,5, пять — ×2. Ошибка сбрасывает серию.</span></div>
+   <div>${svgI(I.target,22)}<b>В конце — прогноз</b><span>Сдашь или нет, и какие темы повторить — со ссылками на разбор.</span></div>
+  </section>
+  <p class="rkg-fine">Задания — по билетам РК2: начерт (плоскость ∥ треугольнику, вращение отрезка, замена плоскостей, ∥ и ⊥) и инжа (вид слева, разрезы, ГОСТ). Чертежи каждый раз новые.</p>`; }
+
+function hudHTML(){ const n=G.qs.length;
+  return `<header class="rkg-hud"><span class="rkg-tk">Билет № ${G.tk}</span>
+   <ol class="rkg-pips" aria-label="Задания">${G.qs.map((q,i)=>`<li class="${q.pick!=null?(q.ok?'ok':'no'):i===G.i?'cur':''}" aria-label="Задание ${i+1}${q.pick!=null?(q.ok?': верно':': неверно'):''}"></li>`).join('')}</ol>
+   <span class="rkg-cb${G.combo>=3?' hot':''}" id="rkgCb" title="Серия верных">${svgI(I.fire,16)}<b>${G.combo}</b>${mult(G.combo)>1?`<small>×${String(mult(G.combo)).replace('.',',')}</small>`:''}</span>
+   <span class="rkg-sc" id="rkgSc" title="Очки"><b>${G.score}</b></span></header>`; }
+function qHTML(q,i){ const ans=q.pick!=null, okI=q.opts.findIndex(o=>o.ok);
+  const pics=!!q.opts[0].svg;
+  const opt=(o,k)=>{ const c=ans?(o.ok?' ok':k===q.pick?' no':' lk'):''; return pics
+    ?`<button type="button" class="rkg-po${c}" data-o="${k}"${ans?' disabled':''} aria-label="Вариант ${L4[k]}"><span class="lt">${L4[k]}</span>${o.svg}</button>`
+    :`<button type="button" class="rkg-to${c}" data-o="${k}"${ans?' disabled':''}><span class="lt">${L4[k]}</span><span>${o.t}</span></button>`; };
+  return `<article class="rkg-q" aria-labelledby="rkgQ">
+   <p class="rkg-tag"><span class="${q.s}">${SUBJ[q.s]}</span>${TOP[q.tag].t}<em>${i+1} / ${G.qs.length}</em></p>
+   <h2 id="rkgQ" class="rkg-ask">${q.ask}</h2>
+   ${q.fig?`<div class="rkg-fig">${q.fig}</div>`:''}
+   <div class="${pics?'rkg-pics':'rkg-txts'}" role="group" aria-label="Варианты ответа">${q.opts.map(opt).join('')}</div>
+   ${ans?fbHTML(q,okI):(q.hint?`<details class="rkg-hint"><summary>Подсказка</summary><p>${q.hint}</p></details>`:'')}
+  </article>`; }
+function fbHTML(q,okI){ const last=G.i>=G.qs.length-1, to=q.pick<0;
+  return `<div class="rkg-fb ${q.ok?'ok':'no'}" id="rkgFb" role="status">
+   <b>${q.ok?pick(['Верно!','Точно!','Так и есть!','В точку!']):to?'Время вышло.':'Не то.'}${q.ok?` <span class="rkg-pts">+${q.pts}</span>`:` Верный — ${L4[okI]}.`}</b>
+   ${!q.ok&&!to&&q.opts[q.pick].err?`<p class="rkg-err">${q.opts[q.pick].err}</p>`:''}
+   <p>${q.why}</p>
+   <button type="button" class="rkg-next" data-next-q>${last?'Узнать результат':'Дальше'}<i aria-hidden="true">→</i></button></div>`; }
+function playHTML(){ const q=G.qs[G.i];
+  return `<div class="rkg-play" id="rkgPlay">${hudHTML()}<div class="rkg-timer${q.pick!=null?' stop':''}" aria-hidden="true"><i id="rkgT"></i></div>${qHTML(q,G.i)}</div>`; }
+
+function resHTML(R,rec){ const C=2*Math.PI*52, dash=(R.pc/100*C).toFixed(1);
+  const tags=Object.keys(R.by).sort((a,b)=>(R.by[a].ok/R.by[a].n)-(R.by[b].ok/R.by[b].n));
+  const weak=tags.filter(t=>R.by[t].ok<R.by[t].n);
+  const bad=G.qs.filter(q=>!q.ok);
+  return `<section class="rkg-res" aria-labelledby="rkgRH">
+   <p class="rkg-kick">Билет № ${G.tk} · ${MODES[G.mode].t}</p>
+   <div class="rkg-rt">
+    <div class="rkg-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="bg"/><circle cx="60" cy="60" r="52" class="fg ${R.lv.k}" stroke-dasharray="${dash} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/></svg><div><b>${R.pc}%</b><span>${R.ok} из ${R.n}</span></div></div>
+    <div class="rkg-rd"><h1 id="rkgRH" class="rkg-lv ${R.lv.k}">${R.lv.t}</h1><p>${R.lv.d}</p></div>
+   </div>
+   <ul class="rkg-badges"><li>${svgI(I.trophy,16)}<b>${G.score}</b> очков${rec?' · <em>новый рекорд!</em>':''}</li><li>${svgI(I.fire,16)}лучшая серия <b>${G.best}</b></li><li class="rk">${R.rank}</li></ul>
+   <h2 class="rkg-h2">По темам</h2>
+   <div class="rkg-bars">${tags.map(t=>{ const b=R.by[t], p=Math.round(b.ok/b.n*100), k=p>=80?'g':p>=50?'a':'r'; return `<a href="${TOP[t].h()}" class="rkg-bar"><span><i class="${TOP[t].s}">${SUBJ[TOP[t].s]}</i>${TOP[t].t}</span><span class="rkg-bt ${k}"><i style="width:${Math.max(p,4)}%"></i></span><b>${b.ok}/${b.n}</b></a>`; }).join('')}</div>
+   ${weak.length?`<a class="rkg-cta" href="${TOP[weak[0]].h()}"><span>Начни отсюда</span><b>${SUBJ[TOP[weak[0]].s]}: ${TOP[weak[0]].t}</b><i aria-hidden="true">→</i></a>`:`<a class="rkg-cta" href="${Hh('ng','rk2','mock')}"><span>Следующий уровень</span><b>Пробный РК2 на бумаге, на время</b><i aria-hidden="true">→</i></a>`}
+   <div class="rkg-acts"><button type="button" class="rkg-go sm" data-again>${svgI(I.redo,18)}Ещё билет</button><button type="button" class="rkg-sh" data-share-res>${svgI(I.share,18)}Поделиться</button></div>
+   ${bad.length?`<h2 class="rkg-h2">Разбор ошибок</h2><div class="rkg-mis">${bad.map(q=>{ const okI=q.opts.findIndex(o=>o.ok); return `<details><summary><span class="${q.s}">${SUBJ[q.s]}</span>${q.ask}</summary>${q.fig?`<div class="rkg-fig sm">${q.fig}</div>`:''}<p class="rkg-mk">${q.pick<0?'Время вышло':'Твой ответ — '+L4[q.pick]}. Верный — ${L4[okI]}${q.opts[okI].t?': '+q.opts[okI].t:''}.</p>${q.opts[okI].svg?`<div class="rkg-fig sm">${q.opts[okI].svg}</div>`:''}${q.pick>=0&&q.opts[q.pick].err?`<p class="rkg-err">${q.opts[q.pick].err}</p>`:''}<p>${q.why}</p><a href="${TOP[q.tag].h()}">Разобрать тему «${TOP[q.tag].t}» →</a></details>`; }).join('')}</div>`:''}
+   <p class="rkg-fine">Прогноз — по ${R.n} заданиям, задание с чертежом весит в полтора раза больше. Это ориентир, а не оценка кафедры: на РК задачи решают на бумаге.</p>
+  </section>`; }
+
+/* ── таймер ── */
+function stopT(){ if(TMR){ clearInterval(TMR); TMR=null; } }
+function runT(v){ stopT(); const q=G.qs[G.i]; if(!q||q.pick!=null) return; const lim=LIM(q)*1000; let last=performance.now();
+  TMR=setInterval(()=>{ const bar=document.getElementById('rkgT'); if(!bar||!G||G.qs[G.i]!==q||q.pick!=null){ stopT(); return; }
+    const now=performance.now(); if(!document.hidden) G.el+=now-last; last=now;
+    const left=Math.max(0,1-G.el/lim); bar.style.transform=`scaleX(${left.toFixed(4)})`; bar.parentNode.classList.toggle('low',left<.25);
+    if(left<=0){ stopT(); choose(v,-1); } },100); }
+
+/* ── отрисовка и события ── */
+let VIEW=null;
+function render(v){ VIEW=v; const host=v.querySelector('#rkgHost'); if(!host) return;
+  if(!G){ host.innerHTML=startHTML(MODE); bindStart(v); return; }
+  if(G.done){ host.innerHTML=resHTML(G.R,G.rec); try{ FX.reveal(host); }catch(e){} return; }
+  host.innerHTML=playHTML(); G.el=0; runT(v);
+}
+let MODE='mix';
+function bindStart(v){
+  v.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{ MODE=b.dataset.mode; try{ FX.buzz('tick'); }catch(e){}
+    v.querySelectorAll('[data-mode]').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-checked',on); });
+    const st=ST.get('rkg',{}), best=(st.best||{})[MODE], s=v.querySelector('.rkg-stats b'); if(s) s.textContent=best!=null?best:'—'; }));
+}
+function begin(v){ const tix=v.querySelector('.rkg-tix'); newGame(MODE); try{ FX.buzz('light'); }catch(e){}
+  try{ if(window.TRACK) TRACK('rkg_start',{mode:MODE}); }catch(e){}
+  const go=()=>{ render(v); window.scrollTo(0,0); };
+  if(tix&&!(matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)){ tix.classList.add('pull'); setTimeout(go,420); } else go(); }
+function choose(v,k){ const q=G.qs[G.i]; if(!q||q.pick!=null) return; stopT();
+  const ok=answer(q,k,G.el/1000); try{ FX.buzz(ok?'success':'error'); }catch(e){}
+  const play=v.querySelector('#rkgPlay'); if(!play) return;
+  play.outerHTML=playHTML();
+  const p=v.querySelector('#rkgPlay'); if(!p) return;
+  if(ok&&q.pts){ const sc=p.querySelector('#rkgSc'); if(sc){ sc.classList.add('bump'); const f=document.createElement('span'); f.className='rkg-float'; f.textContent='+'+q.pts; sc.appendChild(f); setTimeout(()=>f.remove(),1100); } }
+  if(!ok){ const a=p.querySelector('.rkg-q'); if(a) a.classList.add('shake'); }
+  if(ok&&G.combo>=3){ const cb=p.querySelector('#rkgCb'); if(cb) cb.classList.add('flare'); }
+  const fb=p.querySelector('#rkgFb'); if(fb){ try{ const r=fb.getBoundingClientRect(); if(r.bottom>window.innerHeight) fb.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){} const nb=fb.querySelector('[data-next-q]'); if(nb) try{ nb.focus({preventScroll:true}); }catch(e){} }
+}
+function nextQ(v){ if(!G) return; if(G.i<G.qs.length-1){ G.i++; render(v); window.scrollTo(0,0); return; }
+  G.done=true; G.R=result(); G.rec=save(G.R); try{ FX.buzz('success'); }catch(e){}
+  try{ if(window.TRACK) TRACK('rkg_done',{mode:G.mode,pc:G.R.pc}); }catch(e){}
+  render(v); window.scrollTo(0,0); }
+function shareRes(b){ const R=G&&G.R; if(!R) return; const url=location.origin+'/rk/';
+  const text='Пробный билет РК2: верно '+R.ok+' из '+R.n+' ('+R.pc+'%), прогноз — «'+R.lv.t.toLowerCase()+'». А ты сдашь?';
+  try{ FX.shareMenu({heading:'Поделиться результатом',title:text,text,url,back:b}); }catch(e){ try{ navigator.clipboard.writeText(text+' '+url); toast('Скопировано'); }catch(_){} } }
+/* нажатия — на контейнере игры (он новый на каждом показе), клавиши — один обработчик на весь сайт */
+function bind(v){ const host=v.querySelector('#rkgHost'); if(!host) return;
+  host.addEventListener('click',e=>{ const t=e.target.closest&&e.target.closest('[data-o],[data-next-q],[data-go],[data-again],[data-share-res]'); if(!t||!host.contains(t)) return;
+    if(t.dataset.o!=null){ if(!t.disabled) choose(v,+t.dataset.o); return; }
+    if(t.hasAttribute('data-next-q')){ nextQ(v); return; }
+    if(t.hasAttribute('data-go')){ begin(v); return; }
+    if(t.hasAttribute('data-again')){ MODE=G?G.mode:MODE; begin(v); return; }
+    if(t.hasAttribute('data-share-res')) shareRes(t); });
+}
+document.addEventListener('keydown',e=>{ const v=VIEW; if(!v||!document.getElementById('rkgPlay')) return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return; const tg=e.target&&e.target.tagName; if(tg==='INPUT'||tg==='TEXTAREA') return;
+  if(!G||G.done) return; const q=G.qs[G.i]; if(!q) return;
+  if(q.pick==null&&/^[1-4]$/.test(e.key)&&+e.key<=q.opts.length){ e.preventDefault(); choose(v,+e.key-1); }
+  else if(q.pick!=null&&e.key==='Enter'&&!(e.target&&e.target.closest&&e.target.closest('button,a'))){ e.preventDefault(); nextQ(v); } });
+function view(v,r){
+  const m=r&&r.tab; if(m&&MODES[m]) MODE=m;
+  if(G&&(G.done||(m&&MODES[m]&&G.mode!==m))) G=null;           /* законченный билет — заново со старта; ссылка на другой режим — тоже */
+  v.innerHTML=`<div class="wrap page rkg-page"><div id="rkgHost"></div></div>`;
+  try{ NEXT=null; }catch(e){}
+  bind(v); render(v);
+  return 'Сдашь РК2? Пробный билет';
+}
+
+/* ── тизер на главной: первое задание билета прямо здесь ── */
+let TZ=null;
+function teaserHTML(){ TZ=ngPic('par')||tq(TQ.find(x=>x.id==='i-b'));
+  const q=TZ, d=ST.get('rkg',{});
+  return `<section class="rkg-tz" aria-labelledby="rkgTzH" id="rkgTz">
+   <div class="rkg-tzh"><span class="rkg-kick">Пробный РК2 · 1 задание из 10</span><h2 id="rkgTzH">Сдашь РК2? Начни с одной задачи</h2></div>
+   <div class="rkg-tzq"><p class="rkg-ask">${q.ask}</p>${q.fig?`<div class="rkg-fig">${q.fig}</div>`:''}
+    <div class="rkg-txts" role="group" aria-label="Варианты ответа">${q.opts.map((o,k)=>`<button type="button" class="rkg-to" data-tz="${k}"><span class="lt">${L4[k]}</span><span>${o.t}</span></button>`).join('')}</div>
+    <div id="rkgTzFb"></div></div>
+   <a class="rkg-tzall" href="#/rk">${d.runs?'Тянуть новый билет':'Сразу весь билет'} · ${d.runs?'рекорд '+((d.best||{}).mix||0):'10 заданий, ≈ 4 минуты'} →</a>
+  </section>`; }
+function bindTeaser(root){ const box=root&&root.querySelector('#rkgTz'); if(!box||!TZ) return; const t0=performance.now();
+  box.addEventListener('click',e=>{ const b=e.target.closest('[data-tz]'); if(!b||TZ.pick!=null) return;
+    const k=+b.dataset.tz, q=TZ; MODE='mix'; newGame('mix',q); answer(q,k,(performance.now()-t0)/1000);
+    try{ FX.buzz(q.ok?'success':'error'); }catch(_){}
+    box.querySelectorAll('[data-tz]').forEach((x,i)=>{ x.disabled=true; x.classList.add(q.opts[i].ok?'ok':i===k?'no':'lk'); });
+    const okI=q.opts.findIndex(o=>o.ok);
+    box.querySelector('#rkgTzFb').innerHTML=`<div class="rkg-fb ${q.ok?'ok':'no'}" role="status"><b>${q.ok?'Верно! <span class="rkg-pts">+'+q.pts+'</span>':'Не то. Верный — '+L4[okI]+'.'}</b>${!q.ok&&q.opts[k].err?`<p class="rkg-err">${q.opts[k].err}</p>`:''}<p>${q.why}</p>
+     <a class="rkg-next" href="#/rk">${q.ok?'Продолжить билет':'Отыграться'}: ещё ${G.qs.length-1} заданий<i aria-hidden="true">→</i></a></div>`;
+    G.i=0; G._tz=true; const al=box.querySelector('.rkg-tzall'); if(al) al.remove();
+    try{ if(window.TRACK) TRACK('rkg_teaser',{ok:q.ok?1:0}); }catch(_){}
+  });
+}
+/* после тизера #/rk открывает билет сразу на втором задании */
+const view0=view;
+function viewRK(v,r){ if(G&&G._tz&&!G.done){ G._tz=false; v.innerHTML=`<div class="wrap page rkg-page"><div id="rkgHost"></div></div>`; try{ NEXT=null; }catch(e){} bind(v); G.i=1; render(v); return 'Сдашь РК2? Пробный билет'; } return view0(v,r); }
+
+return {view:viewRK,teaserHTML,bindTeaser,build,newGame,TQ,TOP,MODES,_:{bracket,sleeve,qLeft,qTop,qHalf,ngPic,svgOf,result,get G(){ return G; }}};
+})();
+
 
 /* ═════════ Печатные заготовки (A4, масштаб 1:1) ═════════
    corner — угол трёх плоскостей проекций из квадрата бумаги. Квадрат = развёрнутый эпюр: π₂ слева сверху, π₁ слева снизу,
@@ -25140,7 +25754,7 @@ function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; retur
   if(r.s==='ng') return r.tab?{tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',dz:'hw',path:'th',cheat:'th',learn:'th',day:'th'}[r.tab]||'nb':'nghome';
   if(r.s==='dz') return subjOf(r)==='ig'?'ihw':'hw';
   if(!r.s||r.s==='home') return 'home';
-  return {epure:'ep',ig:'ig',part:'ig'}[r.s]||''; }
+  return {epure:'ep',ig:'ig',part:'ig',rk:'rk'}[r.s]||''; }
 const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
 /* короткие адреса ДЗ: #/dz — все ДЗ обоих предметов, #/ng4 — ДЗ №4 по начерту, #/ng4/13 — вариант 13, #/ig3/7 — инж. графика.
    HDZ('ng4', 13) → #/ng4/13; HDZ() и HDZ('ng') → #/dz. Прежние #/ng/dz/…, #/ig/dz/…, #/dz/…, #/ig/hw2/… переадресуются */
@@ -25222,7 +25836,7 @@ function parseHash(h){
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
   if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
-  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz','rk'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -25274,6 +25888,7 @@ function render(r){
       case 'ng': title=viewNG(v,r); break;
       case 'ig': title=viewIG(v,r); break;
       case 'dz': title=viewDZ(v,r); break;
+      case 'rk': title=RKG.view(v,r); break;
       case 'kg': title=viewKG(v); break;
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
@@ -25977,6 +26592,7 @@ function viewHome(v){
     ${tg?`<a class="v8-res" href="${attr(tg.href)}"><span>Продолжить</span><b>${attr(short(tg.label,70))}</b>${stepNote?`<small>${attr(stepNote.replace(/ · $/,''))}</small>`:''}<i aria-hidden="true">→</i></a>`:''}
     <ol class="v9-steps" aria-label="Как найти решение"><li><b>1</b>Впиши номер или вопрос</li><li><b>2</b>Открой решение</li><li><b>3</b>Жми «Дальше» — шаг за шагом</li></ol>
    </section>
+   ${window.RKG?RKG.teaserHTML():''}
        <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
    <section class="v8-dirs" aria-labelledby="v8D">
     <h2 id="v8D" class="v8-dh">Или открой раздел</h2>
@@ -25985,6 +26601,7 @@ function viewHome(v){
       ${lnk(H('ng','tasks'),'Тетрадь','все '+nT+' задач с решением по шагам','nb')}
       ${lnk(HDZ('ng'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист','hw')}
       ${lnk(H('ng','rk2'),'РК','билет, 26 вопросов, пробный РК','rk')}
+      ${lnk(H('rk'),'Сдашь РК2?','пробный билет-игра: начерт + инжа, 4 минуты','rk')}
       ${lnk(H('ng','path'),'Теория',nL+' уроков, шпаргалка, 3D-модель','th')}
      </div>
      <div class="v8-col"><h3><i class="v8-dot ig" aria-hidden="true"></i>Инженерная графика</h3>
@@ -25998,6 +26615,7 @@ function viewHome(v){
    </section>
   </div>`;
   NEXT=null;
+  try{ if(window.RKG) RKG.bindTeaser(v); }catch(e){}
   if(window.SEARCH){ const page=$('v8h'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:page,keep:true,noAuto:true,quiet:true,scope:homeScope,ph:'Номер задачи, вариант, тема или вопрос'});
     /* красная «Найти» — куда нажать: открывает первый ответ, а пустая строка просто получает фокус */
     const go=document.createElement('button'); go.type='button'; go.className='v9-go'; go.innerHTML='<span>Найти</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
@@ -26194,7 +26812,7 @@ const dzShareHTML=(h,t,label,sub)=>`<button type="button" class="dzx-share${sub?
 /* адрес для «Поделиться»: у всего, чем делятся, — настоящий адрес без «#» со своей обложкой (nachert1830.ru/ng4/13/,
    /ng/tasks/48/; страницы и обложки делает dz/make-share.js) — мессенджеры не видят то, что после «#», и показали бы обложку
    главной. Хвост (шаг, лист, задача внутри варианта) — ?s=…; пути без своей страницы — как есть. h — «#/…» или полный адрес */
-const SHARE_STUB=/^(dz|ng|ig|epure|ng\/rk2|ng\/path|(ng|ig)\d(\/\d{1,2})?|ng\/tasks\/\d{1,2}|ig\/wb\/\d{1,2})$/;
+const SHARE_STUB=/^(dz|ng|ig|epure|rk|ng\/rk2|ng\/path|(ng|ig)\d(\/\d{1,2})?|ng\/tasks\/\d{1,2}|ig\/wb\/\d{1,2})$/;
 window.SHAREURL=function(h){ h=String(h==null?location.hash:h); const at=h.indexOf('#'); if(at<0&&/^https?:/.test(h)) return h; h=at<0?'':h.slice(at);
   const seg=h.replace(/^#\/?/,'').split('/').filter(Boolean), m=/^t(\d+)$/.exec(seg[2]||'');
   if(seg[0]==='ng'&&seg[1]==='path'&&m) seg.splice(1,2,'tasks',m[1]);   /* задача из теории — та же задача тетради */

@@ -117,6 +117,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   { const rpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('РК2', await require('./rk2.js').rk2Check(rpage,URL)); await rpage.close(); }
 
+  /* 3г″. «Сдашь РК2?» (#/rk): билеты-игры, чертежи ИГ сверяются лучами с телом детали, проход всех режимов и тизер на главной */
+  { const gp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+    report('«Сдашь РК2?»', await require('./rkg.js').rkgCheck(gp,URL)); await gp.close(); }
+
   /* 3в. ДЗ 2 по ИГ: размеры на листах — числа равны расстояниям по модели, выносные линии упираются в контур */
   report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
 
