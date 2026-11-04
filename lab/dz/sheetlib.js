@@ -1,14 +1,35 @@
 /* ═══════════ Общее для конвейера листа (Node и браузер): привязка к условию варианта и чистая цифровая копия (SVG) ═══════════
    fitVariant(text, variant, dz) — точки, выписанные моделью (формат P/S), → задание и вариант, невязка в мм, перспектива;
+     free — безосный эпюр: горизонтальная проекция сдвинута по линии связи на free мм против таблицы варианта;
    svgOf(out) — SVG-копия: подтверждённые линии сплошные, не подтверждённые — оранжевые пунктиром, найденные сверх модели — бледные. */
 (function(){
 const isNode=typeof module!=='undefined'&&module.exports&&typeof require==='function';
 const EY=isNode?require('./eyes.js'):self.LAB.dzEyes, V=isNode?require('../../core/dz-variants.js'):self.CORE.dzVariants;
 /* привязка точек модели к условию: variant — номер или auto (перебор вариантов 1–30 заданий dz); лучший — больше согласных точек, при равенстве — меньше невязка */
-function fitVariant(text,variant,dz){ const dr=EY.parseDigit(text,1).drawings[0]; if(!dr) return null; let best=null;
+/* одна подпись — несколько точек (модель выписала и условие, и точку построения с нечитаемым индексом: A″ и ещё A″): разбор
+   оставил бы последнюю, и привязка падала или уходила к чужому варианту. Поэтому перебираются сочетания (до 64), лучшее — по
+   числу согласных точек, затем по невязке; у результата pick — какие строки P выбраны (номера в тексте) */
+function fitVariant(text,variant,dz){ const lines=String(text||'').split(/\r?\n/), byL=new Map();
+  lines.forEach((l,i)=>{ const m=l.match(/^\s*P\s+(\S+)/); if(!m) return; if(!byL.has(m[1])) byL.set(m[1],[]); byL.get(m[1]).push(i); });
+  const dup=[...byL.values()].filter(a=>a.length>1); if(!dup.length) return fit1(text,variant,dz);
+  let combos=[[]]; dup.forEach(a=>{ combos=combos.flatMap(c=>a.map(i=>c.concat(i))); if(combos.length>64) combos=combos.slice(0,64); });
+  const drop=new Set(dup.flat()); let best=null;
+  combos.forEach(c=>{ const keep=new Set(c), t=lines.filter((l,i)=>!drop.has(i)||keep.has(i)).join('\n'), r=fit1(t,variant,dz); if(!r||r.rmsMm==null) return;
+    if(!best||r.inl>best.inl||(r.inl===best.inl&&r.rmsMm<best.rmsMm)){ best=r; best.pick=c; } });
+  return best||fit1(text,variant,dz); }
+function fit1(text,variant,dz){ const dr=EY.parseDigit(text,1).drawings[0]; if(!dr) return null; let best=null;
   const dzs=dz?[+dz]:[2,3], ns=variant==='auto'?Array.from({length:30},(_,i)=>i+1):[+variant];
-  dzs.forEach(d=>ns.forEach(n=>{ const gv=V.get(d,n); if(!gv) return; const PP=EY.pairs(dr,gv.id,gv.data), b=PP.length>=4?EY.bindAffine(PP,{tol:3}):null; if(!b||b.inl.length<4) return;
-    const r={dz:d,n,inl:b.inl.length,of:PP.length,rmsMm:b.rms/b.s,ppm:b.s,A:b.A,out:(b.out||[]).map(q=>q.l)};
+  dzs.forEach(d=>ns.forEach(n=>{ const gv=V.get(d,n); if(!gv) return; const PP0=EY.pairs(dr,gv.id,gv.data); let PP=PP0, b=PP.length>=4?EY.bindAffine(PP,{tol:3}):null, free=null;
+    /* безосный эпюр: оси x на чертеже нет (или проекции раздвинуты по-своему) — расстояние между ″ и ′ по линии связи свободное.
+       Тогда горизонтальная проекция сдвигается по линии связи на Δ (−40…40 мм); берётся, только если согласных точек больше и их ≥ 6 */
+    { const PF=PP0.filter(q=>q.pr), nh=PF.filter(q=>q.pr==='h').length, nf=PF.length-nh;
+      if(nh>=2&&nf>=2&&PF.length>=5&&(!b||b.inl.length<PF.length)){ const sh=dl=>PF.map(q=>q.pr==='h'?Object.assign({},q,{m:[q.m[0],q.m[1]+dl]}):q); let bf=null;
+        const tryD=dl=>{ const P2=sh(dl), b2=EY.bindAffine(P2,{tol:3}); if(b2&&b2.inl.length>=4&&(!bf||b2.inl.length>bf.b.inl.length||(b2.inl.length===bf.b.inl.length&&b2.rms<bf.b.rms))) bf={b:b2,P:P2,dl}; };
+        for(let dl=-40;dl<=40;dl+=2) tryD(dl); if(bf){ const c=bf.dl; for(let dl=c-1.75;dl<=c+1.75;dl+=0.25) tryD(dl); }
+        /* лишний параметр: 4–5 точек он подгоняет к любому варианту — свободный сдвиг только при ≥ 6 согласных */
+        if(bf&&bf.b.inl.length>=6&&(!b||bf.b.inl.length>b.inl.length)){ b=bf.b; PP=bf.P; free=+bf.dl.toFixed(2); } } }
+    if(!b||b.inl.length<4) return;
+    const r={dz:d,n,inl:b.inl.length,of:PP.length,rmsMm:b.rms/b.s,ppm:b.s,A:b.A,out:(b.out||[]).map(q=>q.l)}; if(free!=null) r.free=free;
     /* перспектива снимка: гомография по согласным точкам условия (как prepareDigit); без неё оси наклонены. Допуск 1,5 мм, нужно ≥ 4 точек */
     try{ const hb=EY.bindHom(PP,1.5*b.s); if(hb&&hb.inl.length>=4){ r.M=hb.M; r.hom={inl:hb.inl.length,rmsMm:hb.rms/b.s}; } }catch(e){} if(!best||r.inl>best.inl||(r.inl===best.inl&&r.rmsMm<best.rmsMm)) best=r; }));
   return best||{inl:0,of:0,rmsMm:null}; }

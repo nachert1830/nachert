@@ -97,7 +97,9 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
     else { const m=mode==='crop2'?checkM:digitM;
       try{ r=await crop(m,mode==='crop2'||m===checkM?55000:80000); }
       /* основная модель не ответила (сбой, пустой ответ, лимит ответа) — тот же кадр второй модели, в оставшееся время функции (120 с) */
-      catch(e){ if(m===checkM||[401,402,403].includes(e.upstream)||e.status===403||Date.now()-t0>95000) throw e;   /* ключ, баланс ProxyAPI — второй модели не поможет */ fallback=m+': '+String(e.message||e).slice(0,120); r=await crop(checkM,Math.max(15000,110000-(Date.now()-t0))); } }
+      /* ключ (401/403) — второй модели не поможет; 402 — ProxyAPI заранее оценивает цену запроса по лимиту ответа и отказывает,
+         если оценка больше остатка баланса: у Opus (9000 токенов) она в разы больше, чем у Sonnet, — тот же кадр Sonnet ещё может пройти */
+      catch(e){ if(m===checkM||[401,403].includes(e.upstream)||e.status===403||Date.now()-t0>95000) throw e; fallback=m+': '+String(e.message||e).slice(0,120); r=await crop(checkM,Math.max(15000,110000-(Date.now()-t0))); } }
     const {c,u}=spend(r);
     return reply(200,{ok:true,text:r.text,model:r.model,mode,fallback,usage:{in:u.prompt_tokens||0,out:u.completion_tokens||0},cost:+c.toFixed(5)},origin); }
   catch(e){ const st=e&&e.status&&e.status<600?e.status:502; return reply(st,{ok:false,error:String(e&&e.message||'Модель не ответила').slice(0,200)},origin); } }

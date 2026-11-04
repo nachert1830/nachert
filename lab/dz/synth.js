@@ -43,13 +43,16 @@ function dzSynth(o){ o=o||{}; const id=o.id||'2', R=rng(o.seed||1), lv=S.LEVELS[
     const zAxis=R()<0.75, zLine=zAxis?[P([0,v0-8]),P([0,v1+8])]:null; if(zAxis) line(zLine[0],zLine[1],pen.thin,pen.dk*0.9);
     labels.push({s:'X',at:v2.add(ax[0],[-3,-1.5])}); if(zAxis){ labels.push({s:'Z',at:P([2,v0-6])},{s:'Y',at:P([2,v1+6])}); }
     /* сцена разбора */
+    /* начерченное (с дрожью руки): где на бумаге вершины и концы отрезков — правда «что нарисовано» для замера копии (digit-eval.js truthOf drawn) */
+    const drawn={pts:{},segs:[]};
     items.forEach(it=>{ const kk=it.k||'main';
       const w=/^(main|res)$/.test(kk)?pen.main:pen.thin, dk=pen.dk*(/^(main|res)$/.test(kk)?1.15:0.85), dash=/d$|^hid$/.test(kk)?[R.r(3,5),R.r(1.2,2),R()*4]:null;
-      if((it.t==='seg'||it.t==='line')&&it.a&&it.b) line(J(it.a),J(it.b),w,dk,dash);
-      if(it.t==='conn'&&it.a&&it.b) line(J(it.a),J(it.b),pen.thin*0.8,pen.dk*0.7);
-      if(it.t==='pt'&&it.at){ if(R()<0.6) sheet.circle(J(it.at),R.r(0.4,0.8),pen.thin,pen.dk,{grain:true},R); if(it.l) labels.push({s:it.l,at:v2.add(J(it.at),[R.r(1,2),R.r(-2.5,-1)])}); }
+      if((it.t==='seg'||it.t==='line')&&it.a&&it.b){ line(J(it.a),J(it.b),w,dk,dash); drawn.segs.push([J(it.a),J(it.b)]); }
+      if(it.t==='conn'&&it.a&&it.b){ line(J(it.a),J(it.b),pen.thin*0.8,pen.dk*0.7); drawn.segs.push([J(it.a),J(it.b)]); }
+      if(it.t==='pt'&&it.at){ if(R()<0.6) sheet.circle(J(it.at),R.r(0.4,0.8),pen.thin,pen.dk,{grain:true},R); if(it.l){ drawn.pts[it.l]=J(it.at); labels.push({s:it.l,at:v2.add(J(it.at),[R.r(1,2),R.r(-2.5,-1)])}); } }
       if(it.t==='sq'&&it.at&&it.p1&&it.p2){ const u=v2.sub(it.p1,it.at), w2=v2.sub(it.p2,it.at), nu=Math.hypot(...u)||1, nw=Math.hypot(...w2)||1, s=2.5, A=v2.add(J(it.at),v2.mul(u,s/nu)), B=v2.add(J(it.at),v2.mul(w2,s/nw)), C=v2.add(A,v2.mul(w2,s/nw)); sheet.stroke([A,C,B],pen.thin,pen.dk*0.8,{grain:true},R); } });
-    return {O,axis:ax,zAxis,zLine}; };
+    drawn.segs.push(ax); if(zLine) drawn.segs.push(zLine);
+    return {O,axis:ax,zAxis,zLine,drawn}; };
   /* o.groups — несколько чертежей на листе (ДЗ №3: четыре части, у каждой своя копия условия): [{items, O (мм листа)}] */
   const groups=o.groups?o.groups.map(gr=>drawGroup(gr.items,gr.O)):null, g1st=groups?groups[0]:drawGroup(ex.items,null), O=g1st.O, ax=g1st.axis, zAxis=g1st.zAxis, zLine=g1st.zLine;
   labels.forEach(l=>{ const s=String(l.s).split('').filter(c=>font.has(c)).join(''); if(!s) return; sheet.text(s,l.at,R.r(3,4.5),Math.min(0.95,pen.dk*1.1),R.r(0.22,0.35),{rot:R.n(0,0.06),shear:R.n(0.12,0.08),jit:0.02,grain:true},R); });
