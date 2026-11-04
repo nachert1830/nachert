@@ -6596,6 +6596,7 @@ return {has,html,bind,SPEC,ans3};
 <script src="dz/ig/2/variants.js"></script>
 <script src="dz/ig/3/variants.js"></script><script src="dz/ig/3/method.js"></script><script src="dz/ig/3/models.js"></script>
 <script src="dz/ig/4/variants.js"></script><script src="dz/ig/4/method.js"></script><script src="dz/ig/4/models.js"></script>
+<script src="dz/ig/5/variants.js"></script><script src="dz/ig/5/method.js"></script><script src="dz/ig/5/models.js"></script>
 <script src="kernel/sheet.js"></script>
 <script>
 
@@ -28320,7 +28321,7 @@ function secMark(Q1,Q2,Km,L,col,which){ col=col||'#111'; const f=v=>Math.round(v
 /* ── лист чертежа: виды в проекционной связи, оси, габариты, сечение, основная надпись; mode 'given' — только данные изображения задания ── */
 function sheetSVG(model,title,sub,task,mode){
   const given=mode==='given', W=900, hz=!given&&model.hz;
-  const GT=model.givenTop, SP=igSpec(model), D=given?{front:IG3.drawing(model,'front0',W),top:IG3.drawing(GT?{tree:GT,box:model.box}:model,'top',W)}:{front:IG3.drawing(model,SP.fk,W,0,SP.xb),left:IG3.drawing(model,SP.lk,W,0,SP.yb),top:IG3.drawing(model,'top',W)}; if(!D.front) return '';
+  const GT=model.givenTop, SP=igSpec(model), D=given?{front:IG3.drawing(model.givenF?{tree:model.givenF,box:model.box}:model,'front0',W),top:IG3.drawing(GT?{tree:GT,box:model.box}:model,'top',W),leftG:model.givenKL?IG3.drawing(model,'left0',W):undefined}:{front:IG3.drawing(model,SP.fk,W,0,SP.xb),left:IG3.drawing(model,SP.lk,W,0,SP.yb),top:IG3.drawing(model,'top',W)}; if(!D.front) return '';
   if(hz) D.cut=IG3.drawing(model,'topcut',W,hz.z);
   const S=480, Y0=20, k=S/W, b=model.box, TOPY=Y0+S-30, C3=model.sec?360:0, hid='igH'+Math.random().toString(36).slice(2,7);
   /* обозначение плоскости слева может выйти за поле — тогда виды сдвигаются вправо */
@@ -28350,6 +28351,9 @@ function sheetSVG(model,title,sub,task,mode){
     +`<image href="${IG3.drawing(model,'topNH',W).url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}a)"/><image href="${D.cut.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}" clip-path="url(#${hid}b)"/>`
     :given&&model.noTop?'':`<image href="${D.top.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"/>`;
   if(D.left) o+=`<image href="${D.left.url}" x="${X0+S}" y="${Y0}" width="${S}" height="${S}"/>`;
+  /* в задании вид слева дан только профилем выреза K (отверстие вдоль x) — остальное достраивают */
+  if(D.leftG){ const q=p=>P(D.leftG,[0,p[0],p[1]],X0+S,Y0), la=P(D.leftG,[0,0,z0-7],X0+S,Y0), lb=P(D.leftG,[0,0,z1+7],X0+S,Y0);
+    o+=`<polygon points="${model.givenKL.map(p=>q(p).map(f).join(',')).join(' ')}" fill="none" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/>`+ln(la,lb,'#111',AX,.8); }
   const fa=P(D.front,[0,0,z0-7],X0,Y0), fb=P(D.front,[0,0,z1+7],X0,Y0); o+=ln(fa,fb,'#111',AX,.8);
   if(D.left){ const la=P(D.left,[0,0,z0-7],X0+S,Y0), lb=P(D.left,[0,0,z1+7],X0+S,Y0); o+=ln(la,lb,'#111',AX,.8); }
   if(!given&&SP.xb) o+=wavy(P(D.front,[SP.xb,0,z0+0.5],X0,Y0),P(D.front,[SP.xb,0,z1-0.5],X0,Y0));
@@ -28376,7 +28380,7 @@ function sheetSVG(model,title,sub,task,mode){
   if(!given&&frL(model)){ const ta=P(D.front,[0,0,z1],X0,Y0), L=frL(model); o+=secMark(P(D.top,[r+3,0,z1],X0,TOPY),P(D.top,[-r-3,0,z1],X0,TOPY),Km,L)+`<text x="${f(ta[0])}" y="${f(ta[1]-16)}" class="igs-let" text-anchor="middle">${L}–${L}</text>`; }
   if(hz&&hzL(model)){ const y=P(D.front,[0,0,hz.z],X0,Y0)[1], xl=P(D.front,[-r-5,0,0],X0,Y0)[0], xr=P(D.front,[r+5,0,0],X0,Y0)[0];
     o+=secMark([xl,y],[xr,y],Km,hzL(model))+`<text x="${f(tc[0]+(prL(model)?24*Km+10:0))}" y="${f(tc[1]-r*Km-30)}" class="igs-let" text-anchor="middle">${hzL(model)}–${hzL(model)}</text>`; }
-  let PW=S+2*X0, PH=TOPY+S+10;
+  let PW=given&&D.leftG?2*S+2*X0:S+2*X0, PH=TOPY+S+10;
   if(!given){
     PW=Math.max(2*S+2*X0,X0+S+185*Km+X0); PH=TOPY+S+20;
     if(model.sec){ const F=secFig(model,model.sec,Km), [bx0,by0,bx9,by9]=F.box, cx=X0+S+S/2-(bx0+bx9)/2, ty=TOPY+40, cy=ty+20-by0;
@@ -28536,7 +28540,7 @@ function stepLines(model,i){ const c=model._sl||(Object.defineProperty(model,'_s
       if(q.h!==s.h) continue; const ux=q.b[0]-q.a[0], uy=q.b[1]-q.a[1], l=Math.hypot(ux,uy)||1e-9, u=((p[0]-q.a[0])*ux+(p[1]-q.a[1])*uy)/(l*l); if(u>-0.02&&u<1.02&&Math.abs((p[0]-q.a[0])*uy-(p[1]-q.a[1])*ux)/l<0.5) return true; } return false; });
   const nw=cur.filter(s=>!was(s)), old=cur.filter(s=>was(s));
   return c[i]={old:IG3.paths(old),cur:IG3.paths(nw),segs:nw}; }
-function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':'Главный вид и вид сверху — из задания.'+(model.givenTop?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду — дальше он уже достроен.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
+function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':(model.givenKL?'Главный вид, вид сверху и профиль выреза K на виде слева — из задания. Вырез K идёт вдоль оси x: на главном виде и на виде сверху его линии достраиваем по профилю.':'Главный вид и вид сверху — из задания.')+(model.givenTop&&!model.givenKL?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду — дальше он уже достроен.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
    ...(model.noTop?[['top','Вид сверху','Вида сверху в задании нет — строим его первым, под главным видом. Ширины переносим с главного вида вертикальными линиями связи; глубины берём из формы тела (у шара и цилиндра контур сверху — окружность того же диаметра). Отверстия, идущие вдоль взгляда (K), видны сверху как линии по их ширине на главном виде; невидимые контуры — штриховыми. Дальше глубины для вида слева берём с этого вида.']]:[]),
    ['axis','Ось симметрии вида слева','Сначала проводим ось симметрии вида слева — от неё будем откладывать глубины. Высоты общие с главным видом.']];
   let first=true;
@@ -28574,7 +28578,9 @@ function stepsSVG(model,st,steps){
   let o='';
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
   if(kind==='given'&&model.givenTop) d.topG=IG3.drawing({tree:model.givenTop,box:model.box},'top',W);   /* «Дано» — вид сверху как в задании (не достроен) */
-  o+=img(cut?'front':'front0',X0,Y0)+(kind==='given'&&model.noTop?'':img(kind==='given'&&d.topG?'topG':'top',X0,TOPY));
+  if(kind==='given'&&model.givenF) d.frG=IG3.drawing({tree:model.givenF,box:model.box},'front0',W);   /* вырез K задан на виде слева — на главном виде в задании его нет */
+  o+=img(cut?'front':kind==='given'&&d.frG?'frG':'front0',X0,Y0)+(kind==='given'&&model.noTop?'':img(kind==='given'&&d.topG?'topG':'top',X0,TOPY));
+  if(kind==='given'&&model.givenKL){ o+=`<polygon points="${model.givenKL.map(p=>LF([0,p[0],p[1]]).map(f).join(',')).join(' ')}" fill="none" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/>`; const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,'#111',AX,.7); }
   if(cut){ o+=img('left',X0+S,Y0);
     /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
     if(sp.xb) o+=wavy(P('front',[sp.xb,0,z0+0.5],X0,Y0),P('front',[sp.xb,0,z1-0.5],X0,Y0)); if(sp.yb) o+=wavy(P('left',[0,sp.yb,z0+0.5],X0+S,Y0),P('left',[0,sp.yb,z1-0.5],X0+S,Y0));
