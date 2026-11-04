@@ -299,8 +299,10 @@ const S={
     const n=k=>{ const m=new RegExp('\\|'+k+'\\|\\s*≈\\s*(\\d+)').exec(strip(t.ans)); return m?+m[1]:null; };
     if(n('AB')&&n('BC')&&n('CA')) h.scaleOK([[ab,n('AB'),1],[bc,n('BC'),1],[ca,n('CA'),1]],'длины сторон в ответе'); },
   /* № 64: расстояние на чертеже = расстояние от A до b в пространстве */
-  64:(h)=>{ const A=h.P('A'), b=h.L('b'); const [p,q]=h.segL('d '); h.eqLen(h.d2(p,q),h.dPL(A,b),'натуральная величина расстояния');
-    const [o1,o2]=h.segL('|OK|'); h.scaleOK([[h.d2(p,q),20,1],[h.d2(o1,o2),16,1]],'числа на чертеже'); },
+  64:(h,t)=>{ const A=h.P('A'), b=h.L('b'); const [p,q]=h.segL('d '); h.eqLen(h.d2(p,q),h.dPL(A,b),'натуральная величина расстояния');
+    const [o1,o2]=h.segL('|OK|'), all=strip(t.ans+' '+(t.steps||[]).map(s=>s.d).join(' '));
+    const md=/d\s*([≈=])\s*(\d+)\s*мм/.exec(strip(t.ans)), mo=/\|OK\|\s*([≈=])\s*(\d+)\s*мм/.exec(all); if(!md||!mo){ h.fail('в тексте нет d или |OK| в мм'); return; }
+    h.scaleOK([[h.d2(p,q),+md[2],md[1]==='≈'?1:0],[h.d2(o1,o2),+mo[2],mo[1]==='≈'?1:0]],'числа на чертеже'); },
   /* № 66: угол прямой a с плоскостью β */
   '66.1':(h,t,pi,p)=>angPhi(h,p,90-h.ang(h.L('a').d,h.planeT('β').n)),
   '66.2':(h,t,pi,p)=>angPhi(h,p,90-h.ang(h.L('a').d,h.planeT('β').n)),
