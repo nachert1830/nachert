@@ -189,6 +189,40 @@ function snapPoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, R=(o.radius||2)
       if(r.t>=-ext/La&&r.t<=1+ext/La&&r.u>=-ext/Lb&&r.u<=1+ext/Lb) cand.push([r.x,r.y]); } }
   return points.map(([l,x,y])=>{ let best=null, bd=R; for(const c of cand){ const d=Math.hypot(c[0]-x,c[1]-y); if(d<bd){ bd=d; best=c; } } return best?[l,best[0],best[1],bd]:[l,x,y,0]; }); }
 
+/* ═══ постановка подписанных точек на перекрёстки уточнённых линий (вместо «ближайший конец или пересечение») ═══
+   Модель ставит точку с промахом 0,3–1 мм (иногда 2–4), а линии после притяжки к карандашу точны до ~0,15 мм поперёк. Вершина
+   чертежа — место, где сходятся несколько линий (рёбра, линии связи, ось), поэтому:
+     1. кандидаты — попарные пересечения уточнённых отрезков (с запасом ext за концами); опора кандидата — сколько линий
+        проходит через него (ближе tol поперёк и в пределах отрезка + ext);
+     2. для точки берутся все догадки (ответ основной модели, второй модели, их среднее): из кандидатов с опорой ≥ 2 в радиусе
+        выбирается тот, у кого меньше «цена» = расстояние до ближайшей догадки − бонус за каждую линию сверх двух; дальний
+        кандидат (до far мм) принимается, только если на нём сходятся ≥ 3 линии;
+     3. положение — пересечение всех опорных линий по МНК (каждая линия — точна поперёк, поэтому три линии лучше двух);
+     4. перекрёстка рядом нет — точка лишь сдвигается поперёк ближайшей линии на неё (вдоль линии модели верим), а на конце
+        отрезка рядом — на конец.
+   placePoints(points [[подпись,x,y]], segs [[x1,y1,x2,y2]] | [{p}], {ppm, alts: Map подпись → [[x,y],…], radius, far, tol}) →
+     [[подпись, x, y, сдвиг px, опора (число линий; 1 — на линии, 0 — не тронута)]] */
+function placePoints(points,segs,o){ o=o||{}; const ppm=o.ppm||7, tol=(o.tol||0.4)*ppm, ext=(o.extend==null?1:o.extend)*ppm, R=(o.radius||1.3)*ppm, FAR=(o.far||2.6)*ppm, alts=o.alts||new Map();
+  const L=segs.map(s=>{ const p=s.p||s, dx=p[2]-p[0], dy=p[3]-p[1], len=Math.hypot(dx,dy)||1; return {p,ux:dx/len,uy:dy/len,len}; }).filter(l=>l.len>=1.5*ppm);
+  const along=(l,x,y)=>(x-l.p[0])*l.ux+(y-l.p[1])*l.uy, perp=(l,x,y)=>(x-l.p[0])*l.uy-(y-l.p[1])*l.ux;
+  const onLine=(l,x,y)=>{ const t=along(l,x,y); return Math.abs(perp(l,x,y))<=tol&&t>=-ext&&t<=l.len+ext; };
+  /* опорные линии: попарно не почти параллельные (иначе это одна линия, нарисованная дважды) */
+  const support=(x,y)=>{ const s=[]; L.forEach((l,i)=>{ if(onLine(l,x,y)&&!s.some(j=>Math.abs(L[j].ux*l.uy-L[j].uy*l.ux)<Math.sin(3*Math.PI/180))) s.push(i); }); return s; };
+  const lsq=(ids,x0,y0)=>{ let a=0,b=0,c=0,r1=0,r2=0; ids.forEach(i=>{ const l=L[i], nx=l.uy, ny=-l.ux, d=nx*l.p[0]+ny*l.p[1]; a+=nx*nx; b+=nx*ny; c+=ny*ny; r1+=nx*d; r2+=ny*d; });
+    const det=a*c-b*b; if(det<0.05*ids.length*ids.length*0.25) return [x0,y0]; return [(c*r1-b*r2)/det,(a*r2-b*r1)/det]; };
+  const cand=[]; for(let i=0;i<L.length;i++) for(let j=i+1;j<L.length;j++){ const A=L[i], B=L[j], den=A.ux*B.uy-A.uy*B.ux; if(Math.abs(den)<Math.sin(3*Math.PI/180)) continue;
+    const t=((B.p[0]-A.p[0])*B.uy-(B.p[1]-A.p[1])*B.ux)/den, x=A.p[0]+A.ux*t, y=A.p[1]+A.uy*t; if(!onLine(A,x,y)||!onLine(B,x,y)) continue;
+    cand.push([x,y]); }
+  /* кандидаты ближе tol — одна вершина: опора и МНК-положение считаются один раз */
+  const V=[]; cand.forEach(([x,y])=>{ if(V.some(v=>Math.hypot(v.x0-x,v.y0-y)<tol)) return; const s=support(x,y); if(s.length<2) return; const q=lsq(s,x,y); V.push({x0:x,y0:y,x:q[0],y:q[1],n:s.length}); });
+  return points.map(([lb,x,y])=>{ const G=[[x,y]].concat(alts.get(lb)||[]);
+    let best=null; V.forEach(v=>{ const d=Math.min(...G.map(g=>Math.hypot(g[0]-v.x,g[1]-v.y))); if(d>(v.n>=3?FAR:R)) return; const cost=d-0.45*ppm*Math.min(2,v.n-2); if(!best||cost<best.cost) best={v,cost,d}; });
+    if(best) return [lb,best.v.x,best.v.y,Math.hypot(best.v.x-x,best.v.y-y),best.v.n];
+    /* на одной линии: поперёк — на неё; у конца отрезка (в 0,8 мм) — на конец */
+    let bl=null; L.forEach(l=>{ const t=along(l,x,y), e=Math.abs(perp(l,x,y)); if(e>0.7*ppm||t<-ext||t>l.len+ext) return; if(!bl||e<bl.e) bl={l,t,e}; });
+    if(bl){ const l=bl.l, t=Math.abs(bl.t)<0.8*ppm?0:Math.abs(bl.t-l.len)<0.8*ppm?l.len:Math.max(0,Math.min(l.len,bl.t)), nx=l.p[0]+l.ux*t, ny=l.p[1]+l.uy*t; return [lb,nx,ny,Math.hypot(nx-x,ny-y),1]; }
+    return [lb,x,y,0,0]; }); }
+
 function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assign({ppm},o)), res=[], dropped=[], inkMin=o.inkMin==null?0.45:o.inkMin;
   const snaps=segs.map((s,i)=>({s,i,r:snap(D,s,{ppm,radius:o.radius,extend:o.extend})}));
   /* фото надёжное, если большинство отрезков модели подтверждено карандашом: тогда отрезок без чернил — выдумка модели («как надо») и отбрасывается;
@@ -225,5 +259,5 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
   if(o.findCircles){ const usedC=new Uint8Array(D.w*D.h); res.forEach(r=>{ const L=Math.hypot(r.p[2]-r.p[0],r.p[3]-r.p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=r.p[0]+(r.p[2]-r.p[0])*k/n, y=r.p[1]+(r.p[3]-r.p[1])*k/n; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) usedC[Y*D.w+X]=1; } } });
     findCircles(D,usedC,{ppm,box:o.region?[o.region[0]-6*ppm,o.region[1]-6*ppm,o.region[2]+6*ppm,o.region[3]+6*ppm]:null,maxFind:o.maxFindCircles}).forEach(c=>{ if(!circ.some(m=>Math.hypot(m.cx-c.cx,m.cy-c.cy)<1.5*ppm&&Math.abs(m.r-c.r)<1.5*ppm)) circ.push(c); }); }
   return {segs:res.concat(found),circles:circ,droppedCircles:droppedC,dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
-put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk,snapPoints});
+put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk,snapPoints,placePoints});
 })();

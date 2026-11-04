@@ -21,7 +21,7 @@ function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refi
 
 function scaled(bmp,side){ const k=Math.min(1,side/Math.max(bmp.width,bmp.height)), c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext('2d').drawImage(bmp,0,0,c.width,c.height); return {c,k}; }
 /* вырезка чертежа: рамка + поле, поворот по часовой на rot, длинная сторона ≤ side; A — (u,v) вырезки → (x,y) фото (как lab/dz/tools/crop.py) */
-function cut(bmp,box,rot,pad,side){ const W=bmp.width,H=bmp.height, X0=Math.max(0,Math.round(box[0]-pad)), Y0=Math.max(0,Math.round(box[1]-pad)), X1=Math.min(W,Math.round(box[2]+pad)), Y1=Math.min(H,Math.round(box[3]+pad)), cw=X1-X0, ch=Y1-Y0;
+function cut(bmp,box,rot,pad,side,view){ const W=bmp.width,H=bmp.height, X0=Math.max(0,Math.round(box[0]-pad)), Y0=Math.max(0,Math.round(box[1]-pad)), X1=Math.min(W,Math.round(box[2]+pad)), Y1=Math.min(H,Math.round(box[3]+pad)), cw=X1-X0, ch=Y1-Y0;
   const sw=(rot===90||rot===270)?ch:cw, sh=(rot===90||rot===270)?cw:ch, r=document.createElement('canvas'); r.width=sw; r.height=sh; const g=r.getContext('2d');
   if(rot===90){ g.translate(ch,0); g.rotate(Math.PI/2); } else if(rot===180){ g.translate(cw,ch); g.rotate(Math.PI); } else if(rot===270){ g.translate(0,cw); g.rotate(-Math.PI/2); }
   g.drawImage(bmp,X0,Y0,cw,ch,0,0,cw,ch); const k=Math.min(1,side/Math.max(sw,sh)), c=document.createElement('canvas'); c.width=Math.round(sw*k); c.height=Math.round(sh*k); c.getContext('2d').drawImage(r,0,0,c.width,c.height);
@@ -29,25 +29,61 @@ function cut(bmp,box,rot,pad,side){ const W=bmp.width,H=bmp.height, X0=Math.max(
   const cg=c.getContext('2d'), im=cg.getImageData(0,0,c.width,c.height), d=im.data, gray=new Float32Array(c.width*c.height);
   /* серый кадр: карандашный чертёж цвета не несёт, а запрос становится меньше на треть — ProxyAPI оценивает цену по размеру запроса в байтах и отклоняет крупные */
   for(let i=0;i<gray.length;i++){ const v=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2]; gray[i]=v; d[i*4]=d[i*4+1]=d[i*4+2]=v; } cg.putImageData(im,0,0);
-  return {c,w:c.width,h:c.height,A,k,gray}; }
+  const cr={c,w:c.width,h:c.height,A,k,gray}; cr.m=view?modelView(cr,view):{c,s:1}; return cr; }
+/* кадр для модели (cr.m = {c, s — px кадра модели на px вырезки}): вырезка остаётся в полном разрешении для притяжки к карандашу,
+   а модель получает свой кадр —
+     размер: длинная сторона до view.side (1568) и площадь до view.area (1,15 Мп — больше модель всё равно уменьшит у себя), в том
+       числе УВЕЛИЧЕНИЕ мелкого чертежа (до view.up ×): модель ставит точки с промахом в долю своего «пикселя зрения», и на 600 px
+       чертежа промах вдвое больше, чем на 1200 px;
+     view.flat — свет выровнен: серое делится на фон (размытие ≈ 4 мм), бледный карандаш и линии в тени становятся контрастнее,
+       тень, блик и серый тон фото уходят. Координаты ответа модели → px вырезки: scaleText(текст, 1/s) в digest. */
+function modelView(cr,view){ const {w,h,gray}=cr, side=view.side||1568, area=view.area||1.15e6, s=Math.max(0.1,Math.min(view.up||2.5,side/Math.max(w,h),Math.sqrt(area/(w*h))));
+  const src=document.createElement('canvas'); src.width=w; src.height=h; const g=src.getContext('2d'), im=g.createImageData(w,h), d=im.data;
+  if(view.flat){ const r=Math.max(8,Math.round(Math.max(w,h)/60)), W=w+1, S=new Float64Array(W*(h+1));
+    for(let y=0;y<h;y++){ let row=0; for(let x=0;x<w;x++){ row+=gray[y*w+x]; S[(y+1)*W+x+1]=S[y*W+x+1]+row; } }
+    for(let y=0;y<h;y++){ const y0=Math.max(0,y-r), y1=Math.min(h,y+r+1); for(let x=0;x<w;x++){ const x0=Math.max(0,x-r), x1=Math.min(w,x+r+1), bg=(S[y1*W+x1]-S[y0*W+x1]-S[y1*W+x0]+S[y0*W+x0])/((x1-x0)*(y1-y0));
+      const dk=Math.max(0,1-gray[y*w+x]/Math.max(30,bg)), v=255*(1-Math.min(1,dk*(view.gain||2.6))), i=4*(y*w+x); d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; } } }
+  else for(let i=0;i<w*h;i++){ d[4*i]=d[4*i+1]=d[4*i+2]=gray[i]; d[4*i+3]=255; }
+  g.putImageData(im,0,0); if(Math.abs(s-1)<0.02&&!view.flat) return {c:cr.c,s:1};
+  const c=document.createElement('canvas'); c.width=Math.round(w*s); c.height=Math.round(h*s); const cg=c.getContext('2d'); cg.imageSmoothingEnabled=true; cg.imageSmoothingQuality='high'; cg.drawImage(src,0,0,c.width,c.height);
+  return {c,s:c.width/w}; }
+/* ответ модели в px её кадра → px вырезки: координаты P/S/C/R/T умножаются на k (углы дуг R — нет) */
+function scaleText(t,k){ if(k===1||t==null) return t; const f=v=>String(Math.round(+v*k*10)/10), num=/^-?\d+(?:[.,]\d+)?$/;
+  return String(t).split(/\r?\n/).map(line=>{ const m=line.match(/^(\s*)([PSCRT])(\s+)(.*)$/); if(!m) return line; const tk=m[4].split(/(\s+)/);   /* токены и пробелы вперемешку */
+    let want={P:[1,2],S:[0,1,2,3],C:[0,1,2],R:[0,1,2],T:[0,1]}[m[2]], n=0; const out=tk.map(x=>{ if(/^\s+$/.test(x)||x==='') return x; const j=n++; return want.includes(j)&&num.test(x)?f(x.replace(',','.')):x; });
+    return m[1]+m[2]+m[3]+out.join(''); }).join('\n'); }
+/* вырезка чертежа для притяжки к карандашу — до 2000 px (раньше 1280: на снимке 12 Мп чертёж терял треть пикселей карандаша);
+   кадр модели — увеличенный до 1,15 Мп. Замер 04.11 (16 чертежей, Sonnet, ответ против «как начерчено»): сырые точки модели
+   0,32 → 0,23 мм, линии в 1 мм: полнота 95 → 97 %, точность 96 → 98 %, точек в 1 мм 146 → 155 из 165 (lab/dz/REPORT.md, 7п) */
+const CUT_SIDE=2000, VIEW={side:1568,area:1.15e6,up:2.5};
 const mapPt=(A,u,v)=>[A[0]*u+A[1]*v+A[2],A[3]*u+A[4]*v+A[5]];
 const fmt=(a,d)=>isFinite(a)?a.toFixed(d==null?2:d).replace('.',','):'—';
 
 /* один чертёж: ответ основной модели tA и, если есть, второй tB (тот же кадр) → копия (px фото и мм листа) и её качество.
    c = {W, H (фото), vSel, dzSel (вариант и задание), rot, d (рамка чертежа)} */
 function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.refine, IMG=L.img, MG=self.SCANMERGE, d=c.d||{};
+  if(cr.m&&cr.m.s!==1){ tA=scaleText(tA,1/cr.m.s); tB=scaleText(tB,1/cr.m.s); }   /* ответ — в px кадра модели */
   const ppm0=Math.max(2,Math.min(c.W,c.H)/210*cr.k); let P=LY.parseDigit(tA), text=tA, mg=null;
   if(tB!=null){ let fA=null; try{ fA=SL.fitVariant(tA,c.vSel,c.dzSel); }catch(e){} mg=MG.merge(P,LY.parseDigit(tB),{ppm:fA&&fA.ppm?fA.ppm:ppm0}); P=mg.P; text=MG.toText(P); }
   let fit=null; try{ fit=SL.fitVariant(text,c.vSel,c.dzSel); }catch(e){}
   const rg=P.pts.length>=4?[Math.min(...P.pts.map(q=>q[1])),Math.min(...P.pts.map(q=>q[2])),Math.max(...P.pts.map(q=>q[1])),Math.max(...P.pts.map(q=>q[2]))]:null;
-  const ppm=ppm0; let rf=RF.refine({w:cr.w,h:cr.h,a:cr.gray},P.segs,{circles:P.circles,findCircles:true,ppm:fit&&fit.ppm?fit.ppm:ppm,region:rg,points:P.pts.map(q=>[q[1],q[2]]),findCap:0.35});
-  if(mg) rf=MG.keepB(rf,mg.nA,P.circles);   /* добавленное второй моделью без карандаша — вон */
-  /* точки — на ближайший конец отрезка или пересечение (в радиусе 1 мм): копия геометрически согласована */
-  const sp=RF.snapPoints(P.pts,rf.segs.map(q=>q.p),{ppm:fit&&fit.ppm?fit.ppm:ppm,radius:1}); P.pts=sp.map(q=>[q[0],q[1],q[2]]);
+  /* притяжка считает в индексах пикселей (значение пикселя i — в его центре), а координаты фото, модели и canvas — от края
+     пикселя (центр пикселя i — i + 0,5): без поправки вся копия сдвигалась на полпикселя влево-вверх (≈ 0,15 мм при 3,3 px/мм) */
+  const HP=0.5, sh=(s,k)=>s.map((v,i)=>i<4?v+k:v), shC=(c,k)=>Object.assign({},c,{cx:c.cx+k,cy:c.cy+k});
+  const ppm=ppm0; let rf=RF.refine({w:cr.w,h:cr.h,a:cr.gray},P.segs.map(s=>sh(s,-HP)),{circles:P.circles.map(c=>shC(c,-HP)),findCircles:true,ppm:fit&&fit.ppm?fit.ppm:ppm,region:rg,points:P.pts.map(q=>[q[1]-HP,q[2]-HP]),findCap:0.35});
+  if(mg) rf=MG.keepB(rf,mg.nA,P.circles.map(c=>shC(c,-HP)));   /* добавленное второй моделью без карандаша — вон */
+  rf=Object.assign({},rf,{segs:rf.segs.map(q=>Object.assign({},q,{p:sh(q.p,HP)})),circles:(rf.circles||[]).map(c=>shC(c,HP))});
+  /* точки — на перекрёсток уточнённых линий (МНК по всем линиям, что через него проходят) или хотя бы на линию: копия
+     геометрически согласована и точнее догадки модели; догадки обеих моделей — кандидаты (refine.placePoints) */
+  const pp=RF.placePoints(P.pts,rf.segs.filter(q=>!q.unverified).map(q=>q.p),{ppm:fit&&fit.ppm?fit.ppm:ppm,alts:mg?mg.alts:null}); P.pts=pp.map(q=>[q[0],q[1],q[2]]);
+  const placed={vertex:pp.filter(q=>q[4]>=2).length,line:pp.filter(q=>q[4]===1).length,free:pp.filter(q=>!q[4]).length};
+  /* привязка к варианту — заново, по уточнённым точкам: невязка честнее, мм копии точнее (не хуже прежней — иначе прежняя) */
+  { let f2=null; try{ f2=SL.fitVariant(MG.toText(P),c.vSel,c.dzSel); }catch(e){} const rmsOf=f=>f&&f.rmsMm!=null?(f.hom?f.hom.rmsMm:f.rmsMm):null;
+    if(f2&&rmsOf(f2)!=null&&f2.inl>=4&&(!fit||rmsOf(fit)==null||(f2.dz===fit.dz&&f2.n===fit.n&&f2.inl>=fit.inl&&rmsOf(f2)<=rmsOf(fit)+0.02))) fit=f2; }
   let toMm=null; if(fit&&fit.M){ const Mi=IMG.H.inv(fit.M); toMm=(x,y)=>IMG.H.apply(Mi,[x,y]); } else if(fit&&fit.A){ const a=fit.A, det=a[0]*a[4]-a[1]*a[3]; if(Math.abs(det)>1e-9) toMm=(x,y)=>{ const X=x-a[2], Y=y-a[5]; return [(a[4]*X-a[1]*Y)/det,(-a[3]*X+a[0]*Y)/det]; }; }
   const mmCopy=toMm?{pts:P.pts.map(q=>[q[0]].concat(toMm(q[1],q[2]).map(v=>+v.toFixed(2)))),txt:P.txt.map(q=>toMm(q[0],q[1]).map(v=>+v.toFixed(2)).concat(q[2])),segs:rf.segs.map(q=>({p:toMm(q.p[0],q.p[1]).concat(toMm(q.p[2],q.p[3])).map(v=>+v.toFixed(2)),src:q.src,unverified:!!q.unverified,dash:!!q.dash}))}:null;
   const circles=(rf.circles||[]).map(c=>{ const poly=SL.arcPoints(c); return {src:c.src,unverified:!!c.unverified,dash:!!c.dash,full:!!c.full,c:[c.cx,c.cy,c.r].map(v=>+v.toFixed(2)),a:c.full?null:[+c.a1.toFixed(1),+c.a2.toFixed(1)],poly:poly.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?poly.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}; });
-  const dr={part:d.part,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length},rf.stats)};
+  const dr={part:d.part,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length,placed},rf.stats)};
   if(mg) dr.merge=mg.info;
   return {dr,q:quality(fit,rf,P)}; }
 /* качество копии: привязалась ли к условию варианта, невязка, доля линий, подтверждённых карандашом, сколько ответа модели не нашлось на бумаге */
@@ -84,13 +120,13 @@ function create(o){ o=o||{};
     const dzSel=sel.dz&&sel.dz!=='auto'?+sel.dz:null, vSel=/^\d+$/.test(String(sel.variant||'').trim())?String(sel.variant).trim():'auto';
     const out={name:String(file.name||'лист').replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]};
     const ctx0={W,H,vSel,dzSel,rot:lay.rot}, prec=sel.precision||'max', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
-    const jobs=lay.drawings.map((d,i)=>async()=>{ const id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),1280), ctx=Object.assign({d},ctx0);
-      let jA; try{ jA=await ask('crop',cr.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return {part:d.part,box:d.box,error:e.message}; } cost+=jA.cost||0; calls++;
+    const jobs=lay.drawings.map((d,i)=>async()=>{ const id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),CUT_SIDE,VIEW), ctx=Object.assign({d},ctx0);
+      let jA; try{ jA=await ask('crop',cr.m.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return {part:d.part,box:d.box,error:e.message}; } cost+=jA.cost||0; calls++;
       const reads=[{mode:'crop',model:jA.model,fallback:jA.fallback||null,cost:jA.cost||0}];
       let R=digest(cr,jA.text,null,ctx);
       /* вторая, независимая оцифровка другой моделью — если первая слабая (или «максимальная точность»); сливаются, карандаш решает */
       if(!jA.fallback&&(prec==='max'||(prec==='auto'&&R.q.weak))){ step(id,nm+': вторая, независимая оцифровка другой моделью'+(R.q.why.length?' ('+R.q.why.join(', ')+')':'')+'…');
-        try{ const jB=await ask('crop2',cr.c); cost+=jB.cost||0; calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
+        try{ const jB=await ask('crop2',cr.m.c); cost+=jB.cost||0; calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
           const M=digest(cr,jA.text,jB.text,ctx); if(better(M.q,R.q)){ R=M; } else R.dr.secondKept=false; }
         catch(e){ R.dr.secondError=e.message; } }
       const dr=R.dr, fit=dr.fit, mg=dr.merge; dr.reads=reads; dr.quality=R.q;
@@ -103,5 +139,5 @@ function create(o){ o=o||{};
 
   return {status,ask,run,cloud:CLOUD,api:API}; }
 
-self.SCANPIPE={LIBS,load,create,scaled,cut,mapPt,digest,quality,better};
+self.SCANPIPE={LIBS,load,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,CUT_SIDE,VIEW};
 })();

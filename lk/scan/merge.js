@@ -8,7 +8,8 @@
    под которыми нет графита («не подтверждено»), отбрасываются — keepB(rf, nA). Так вторая модель может только
    найти пропущенное первой, но не внести выдуманное.
    merge(PA, PB, {ppm}) — PA, PB: разбор lab/dz/layout.js parseDigit ({pts:[[подпись,x,y]], segs:[[x1,y1,x2,y2,d?]], circles, txt}) →
-     {P (то же, объединённое), nA (отрезков A — первые в списке), info:{ptsAvg, ptsAdded, ptsConflict, segsAdded, circlesAdded}} */
+     {P (то же, объединённое), nA (отрезков A — первые в списке), info:{ptsAvg, ptsAdded, ptsConflict, segsAdded, circlesAdded},
+      alts: Map подпись → [[x,y] A, [x,y] B] — обе догадки точки, что есть у обеих (среднее и при конфликте — A — в P; где точка на самом деле, решают линии)} */
 (function(){
 'use strict';
 const lab=s=>String(s).trim().replace(/''|"|ʺ|〃/g,'″').replace(/['’ʹ`]/g,'′').replace(/\s+/g,'');
@@ -21,16 +22,17 @@ function sameSeg(a,b,tol){ const L=len(a); if(L<1e-6||len(b)<1e-6) return false;
   const t0=Math.min(t(b[0],b[1]),t(b[2],b[3])), t1=Math.max(t(b[0],b[1]),t(b[2],b[3])), ov=Math.max(0,Math.min(L+tol,t1)-Math.max(-tol,t0));
   return ov>=0.6*Math.max(1e-6,t1-t0); }
 function merge(PA,PB,o){ o=o||{}; const ppm=o.ppm||5, info={ptsAvg:0,ptsAdded:0,ptsConflict:0,segsAdded:0,circlesAdded:0};
-  const pts=PA.pts.map(q=>q.slice()), at=new Map(pts.map((q,i)=>[lab(q[0]),i]));
+  const pts=PA.pts.map(q=>q.slice()), at=new Map(pts.map((q,i)=>[lab(q[0]),i])), alts=new Map();
   (PB.pts||[]).forEach(q=>{ const k=lab(q[0]), i=at.get(k); if(i==null){ at.set(k,pts.length); pts.push(q.slice()); info.ptsAdded++; return; }
-    const p=pts[i], d=Math.hypot(p[1]-q[1],p[2]-q[2]); if(d<=2*ppm){ p[1]=(p[1]+q[1])/2; p[2]=(p[2]+q[2])/2; info.ptsAvg++; } else info.ptsConflict++; });
+    const p=pts[i], d=Math.hypot(p[1]-q[1],p[2]-q[2]); alts.set(p[0],[[p[1],p[2]],[q[1],q[2]]]);   /* обе догадки — постановке точки на перекрёсток (refine.placePoints): решит карандаш */
+    if(d<=2*ppm){ p[1]=(p[1]+q[1])/2; p[2]=(p[2]+q[2])/2; info.ptsAvg++; } else info.ptsConflict++; });
   const segs=PA.segs.map(s=>s.slice()), nA=segs.length, tol=1.5*ppm;
   (PB.segs||[]).forEach(s=>{ if(len(s)<2*ppm) return; if(segs.some(t=>sameSeg(t,s,tol)||sameSeg(s,t,tol))) return; segs.push(s.slice()); info.segsAdded++; });
   const circles=(PA.circles||[]).map(c=>Object.assign({},c)), nCA=circles.length;
   (PB.circles||[]).forEach(c=>{ if(circles.some(m=>Math.hypot(m.cx-c.cx,m.cy-c.cy)<1.5*ppm&&Math.abs(m.r-c.r)<1.5*ppm)) return; circles.push(Object.assign({fromB:true},c)); info.circlesAdded++; });
   const seen=new Set((PA.txt||[]).map(t=>String(t[2]).trim())), txt=(PA.txt||[]).slice();
   (PB.txt||[]).forEach(t=>{ const k=String(t[2]).trim(); if(!seen.has(k)){ seen.add(k); txt.push(t); } });
-  return {P:{pts,segs,circles,txt,bad:(PA.bad||0)+(PB.bad||0)},nA,nCA,info}; }
+  return {P:{pts,segs,circles,txt,bad:(PA.bad||0)+(PB.bad||0)},nA,nCA,info,alts}; }
 /* после притяжки: добавленное второй моделью без карандаша — вон (своё «не подтверждено» у первой модели остаётся — его решает студент) */
 function keepB(rf,nA,B){ const segs=rf.segs.filter(q=>!(q.src==='model'&&q.i>=nA&&q.unverified)), dropped=rf.segs.length-segs.length;
   const fromB=(B||[]).filter(c=>c.fromB), circles=(rf.circles||[]).filter(c=>!(c.unverified&&c.src==='model'&&fromB.some(m=>Math.hypot(m.cx-c.cx,m.cy-c.cy)<Math.max(3,0.1*m.r))));

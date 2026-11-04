@@ -36,6 +36,21 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
   if(Math.abs(A1[0]-A0[0]-10)>1e-6||Math.abs(A1[1]-A0[1])>1e-6) B('начало O: сдвиг по x',A0+' → '+A1);
   const pA=d3.pts[0].at, px=[d3.ph[0]*pA[0]+d3.ph[1]*pA[1]+d3.ph[2],d3.ph[3]*pA[0]+d3.ph[4]*pA[1]+d3.ph[5]], px0=[ph0[0]*(pA[0]+10)+ph0[1]*pA[1]+ph0[2],ph0[3]*(pA[0]+10)+ph0[4]*pA[1]+ph0[5]];
   if(Math.hypot(px[0]-px0[0],px[1]-px0[1])>1e-6) B('начало O: фото под копией не съезжает',px+' / '+px0);
+  /* постановка подписанных точек (lab/dz/refine.js placePoints): на перекрёсток линий по МНК, обе догадки моделей — кандидаты */
+  { const RF=require(ROOT+'/lab/dz/refine.js'), MG=require(ROOT+'/lk/scan/merge.js'), ppm=5;
+    const segs=[[50,100,150,100],[100,40,100,160],[60,60,140,140],[40,300,200,300],[100,250,100,320]];   /* три линии через (100, 100); две — через (100, 300) */
+    const r=RF.placePoints([['A″',103,98],['B′',104,302],['C″',120,180],['D′',140,301.5],['E″',100+4.5*ppm,100]],segs,{ppm});
+    const at=l=>r.find(q=>q[0]===l), d=(q,x,y)=>Math.hypot(q[1]-x,q[2]-y);
+    if(d(at('A″'),100,100)>0.05||at('A″')[4]!==3) B('точка — на перекрёсток трёх линий (МНК)',at('A″').slice(1).map(v=>+v.toFixed(2)).join(', '));
+    if(d(at('B′'),100,300)>0.05||at('B′')[4]!==2) B('точка — на перекрёсток двух линий',at('B′').slice(1).map(v=>+v.toFixed(2)).join(', '));
+    if(d(at('C″'),120,180)>1e-9) B('точка вдали от линий не трогается',at('C″').join(', '));
+    if(Math.abs(at('D′')[2]-300)>0.05||Math.abs(at('D′')[1]-140)>0.05) B('точка у одной линии — поперёк на неё, вдоль не трогается',at('D′').join(', '));
+    if(d(at('E″'),100,100)<1) B('дальний перекрёсток (4,5 мм) без догадки рядом не берётся',at('E″').join(', '));
+    const r2=RF.placePoints([['E″',100+4.5*ppm,100]],segs,{ppm,alts:new Map([['E″',[[100+4.5*ppm,100],[101,99]]]])});
+    if(d(r2[0],100,100)>0.05) B('догадка второй модели у перекрёстка — точка на нём',r2[0].join(', '));
+    const m=MG.merge({pts:[['A″',10,10]],segs:[]},{pts:[['A″',30,10],["B'",5,5]],segs:[]},{ppm});
+    if(!m.alts.get('A″')||m.alts.get('A″').length!==2||m.P.pts.find(q=>q[0]==='A″')[1]!==10) B('слияние: при споре моделей остаётся первая, обе догадки — в alts',JSON.stringify([...m.alts]));
+  }
   return bad; }
 
 /* синтетический «снимок»: чертёж примера карандашом на белом листе 1500 × 2000 (5 px/мм), без не подтверждённой линии */
@@ -61,9 +76,11 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
   const cp=(u,v)=>{ const p=PX(u,v); return [Math.round(p[0]-X0),Math.round(p[1]-Y0)]; };
   const text=dm.mm.pts.map(q=>'P '+q[0]+' '+cp(q[1],q[2]).join(' ')).concat(dm.mm.segs.filter(s=>s.src!=='found').map(s=>'S '+cp(s.p[0],s.p[1]).concat(cp(s.p[2],s.p[3])).join(' ')+(s.dash?' d':''))).join('\n');
   const calls={layout:0,crop:0,crop2:0}, ans={crop:text,crop2:text};
+  /* ответ — в px кадра модели: вырезка (рамка + поле) у страницы увеличивается для модели (SCANPIPE.VIEW), масштаб — по ширине присланного кадра */
+  const CW=box[2]-box[0]+2*pad, inFrame=(t,w)=>{ const k=w/CW; return String(t).split('\n').map(l=>{ const a=l.split(' '), idx=a[0]==='P'?[2,3]:a[0]==='S'?[1,2,3,4]:[]; idx.forEach(i=>{ a[i]=String(Math.round(+a[i]*k*10)/10); }); return a.join(' '); }).join('\n'); };
   await pg.route(/functions\.yandexcloud\.net/,async r=>{ const q=r.request(); if(q.method()==='GET') return r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"scan":true,"codeOk":true}'});
     const b=JSON.parse(q.postData()||'{}'); calls[b.mode]=(calls[b.mode]||0)+1;
-    const k=800/2000, t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*k)),part:1}]}):ans[b.mode];
+    const k=800/2000, t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*k)),part:1}]}):inFrame(ans[b.mode],b.w);
     return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:t,mode:b.mode,cost:0})}); });
   await pg.evaluate(()=>{ localStorage.setItem('scanCode','тест'); }); await pg.reload(); await pg.waitForTimeout(500); await pg.click('.tab[data-tab="check"]');
   const segs=dm.mm.segs.filter(s=>!s.unverified).map(s=>({a:PX(s.p[0],s.p[1]),b:PX(s.p[2],s.p[3]),dash:s.dash}));
@@ -98,12 +115,29 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
   { ans.crop=text.split('\n').filter(l=>!/^P [BCS]/.test(l)).join('\n'); ans.crop2=text; Object.assign(calls,{layout:0,crop:0,crop2:0}); const r=await scanOnce('auto');
     if(r.err) B('авто: конвейер',r.err.slice(0,240));
     else { if(calls.crop2!==1) B('авто: слабая первая оцифровка → вторая проверка',JSON.stringify(calls)); if(r.dz!==3||r.n!==21) B('авто: после второй проверки — привязка к ДЗ №3 в.21','ДЗ '+r.dz+' в.'+r.n); } }
+  /* 3д. кадр модели и полпикселя: ответ из увеличенного кадра → px вырезки; линия на canvas (координаты от края пикселя) после
+     притяжки к карандашу лежит там, где нарисована, — без сдвига на полпикселя */
+  { const t=await pg.evaluate(()=>{ const P=SCANPIPE, st=P.scaleText('P A″ 10 20\nS 1 2 3 4 d\nR 10 10 5 30 60\nC 2 4 6\nT 8 9 φ=25°',2);
+      const c=document.createElement('canvas'); c.width=700; c.height=500; const g=c.getContext('2d'); g.fillStyle='#f4f2ec'; g.fillRect(0,0,700,500); g.strokeStyle='#333'; g.lineWidth=2.4;
+      const L=[[60,120,640,120],[60,380,640,380],[150,40,150,460],[550,40,550,460],[150,120,550,380]]; L.forEach(q=>{ g.beginPath(); g.moveTo(q[0],q[1]); g.lineTo(q[2],q[3]); g.stroke(); });
+      const cr=P.cut(c,[60,40,640,460],0,40,2000,P.VIEW), s=cr.m.s, off=(x,y)=>[(x-cr.A[2])*s,(y-cr.A[5])*s];
+      const txt=['P A″ 150 120','P B″ 550 120','P A′ 150 380','P B′ 550 380'].map(l=>{ const a=l.split(' '), q=off(+a[2]+1.2,+a[3]-1.1); return a[0]+' '+a[1]+' '+q.join(' '); })
+        .concat(L.map(q=>{ const a=off(q[0]+1,q[1]+1.3), b=off(q[2]-0.8,q[3]+1.2); return 'S '+a.concat(b).join(' '); })).join('\n');
+      const R=P.digest(cr,txt,null,{W:700,H:500,vSel:'auto',dzSel:null,rot:0,d:{box:[60,40,640,460]}});
+      const h=R.dr.segs.filter(q=>Math.abs(q.p[1]-q.p[3])<1).map(q=>(q.p[1]+q.p[3])/2), v=R.dr.segs.filter(q=>Math.abs(q.p[0]-q.p[2])<1).map(q=>(q.p[0]+q.p[2])/2);
+      return {st,s,h,v,pts:R.dr.pts}; });
+    if(t.st!=='P A″ 20 40\nS 2 4 6 8 d\nR 20 20 10 30 60\nC 4 8 12\nT 16 18 φ=25°') B('ответ из кадра модели → px вырезки (углы дуг не масштабируются)',JSON.stringify(t.st));
+    if(!(t.s>1.2)) B('мелкий чертёж увеличен для модели','масштаб '+t.s);
+    const eh=t.h.map(y=>Math.min(Math.abs(y-120),Math.abs(y-380))), ev=t.v.map(x=>Math.min(Math.abs(x-150),Math.abs(x-550)));
+    if(t.h.length<2||t.v.length<2||Math.max(...eh,...ev)>0.25) B('линии после притяжки — на месте, без сдвига на полпикселя','горизонтали '+t.h.map(v=>v.toFixed(2))+'; вертикали '+t.v.map(v=>v.toFixed(2)));
+    const ex={'A″':[150,120],'B″':[550,120],'A′':[150,380],'B′':[550,380]}, ep=t.pts.map(q=>ex[q[0]]?Math.hypot(q[1]-ex[q[0]][0],q[2]-ex[q[0]][1]):0);
+    if(t.pts.length!==4||Math.max(...ep)>0.3) B('точки — на перекрёстках нарисованных линий','промах, px: '+ep.map(v=>v.toFixed(2)).join(', ')); }
   /* 3г. «быстро»: одна модель, даже если слабая */
   { Object.assign(calls,{layout:0,crop:0,crop2:0}); await scanOnce('fast'); if(calls.crop2!==0) B('быстро: без второй проверки',JSON.stringify(calls)); ans.crop=text; ans.crop2=text; }
   /* бета-страница lk/scan/ — на том же конвейере; её результат уходит в «Мои чертежи» кабинета */
   const bp=await browser.newPage(); const be=[]; bp.on('pageerror',e=>be.push(String(e)));
   await bp.route(/functions\.yandexcloud\.net/,async r=>{ const q=r.request(); if(q.method()==='GET') return r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"scan":true}'});
-    const b=JSON.parse(q.postData()||'{}'), t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*0.4)),part:1}]}):text;
+    const b=JSON.parse(q.postData()||'{}'), t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*0.4)),part:1}]}):inFrame(text,b.w);
     return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:t,mode:b.mode,cost:0})}); });
   await bp.goto(URL+'lk/scan/'); await bp.evaluate(()=>localStorage.setItem('scanCode','тест')); await bp.reload(); await bp.waitForTimeout(800); const okb=await bp.evaluate(()=>!!(self.SCANPIPE&&self.LAB&&self.LAB.sheetlib&&self.LAB.refine&&window.__beta));
   if(!okb) B('бета-страница lk/scan/ загрузила конвейер','нет');

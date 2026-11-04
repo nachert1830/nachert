@@ -8,7 +8,8 @@
    оцифровка, притяжка к карандашу, привязка к варианту) и живая облачная функция (ProxyAPI). На каждый чертёж — два ответа:
    Claude Opus 5.5 и Claude Sonnet 5.5 (тот же кадр); из них без новых запросов считаются связки:
      Sonnet · Opus · Opus + Sonnet (слияние, lk/scan/merge.js) · Авто (Opus; слабый — + Sonnet, как в кабинете).
-   Меры — в мм листа против правды (lab/dz/digit-eval.js measure): отрезки — полнота и точность в 1 мм, точки — найдено и
+   Меры — в мм листа против правды «как начерчено» (вершины с дрожью руки студента: копия повторяет бумагу; --ideal=1 — против
+   идеального построения, как до 04.11) (lab/dz/digit-eval.js measure): отрезки — полнота и точность в 1 мм, точки — найдено и
    промах (медиана), привязка к варианту. Предел --limit $ — по оценке цены, которую возвращает функция. */
 const http=require('http'), fs=require('fs'), path=require('path');
 const ROOT=path.join(__dirname,'..','..'), A=Object.fromEntries(process.argv.slice(2).map(s=>s.replace(/^--/,'').split('=')));
@@ -49,20 +50,20 @@ let MOCK=null;   /* имитация функции (--mock=1) */
       let layText=saved&&saved.layout; if(layText==null){ const sm=P.scaled(bmp,800); try{ layText=(await pipe.ask('layout',sm.c)).text; }catch(e){ layText=''; } }
       let lay=L.layout.parseLayout(layText,1/(Math.min(1,800/Math.max(W,H))),W,H); if(!lay.ok) lay={rot:0,drawings:[{box:[0,0,W,H],part:null}]};
       const out={layout:layText,drawings:[]};
-      for(let i=0;i<lay.drawings.length;i++){ const d=lay.drawings[i], cr=P.cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),1280), sv=saved&&saved.drawings[i]||{};
-        const read=async m=>{ if(sv[m]!=null) return sv[m]; try{ return (await pipe.ask('crop',cr.c,{model:m})).text; }catch(e){ return null; } };
+      for(let i=0;i<lay.drawings.length;i++){ const d=lay.drawings[i], cr=saved&&saved.v1?P.cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),1280):P.cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),P.CUT_SIDE,P.VIEW), sv=saved&&saved.drawings[i]||{};
+        const read=async m=>{ if(sv[m]!=null) return sv[m]; try{ return (await pipe.ask('crop',cr.m.c,{model:m})).text; }catch(e){ return null; } };
         const tO=await read('opus'), tS=await read('sonnet'), ctx={W,H,vSel:'auto',dzSel:null,rot:lay.rot,d}, V={};
         const res=R=>R&&{segs:R.dr.segs.map(q=>q.p),unv:R.dr.segs.map(q=>!!q.unverified),pts:R.dr.pts,fit:R.dr.fit&&R.dr.fit.rmsMm!=null?{dz:R.dr.fit.dz,n:R.dr.fit.n,rms:R.dr.fit.hom?R.dr.fit.hom.rmsMm:R.dr.fit.rmsMm}:null,q:R.q};
         const S=tS!=null?P.digest(cr,tS,null,ctx):null, O=tO!=null?P.digest(cr,tO,null,ctx):null, OS=tO!=null&&tS!=null?P.digest(cr,tO,tS,ctx):null;
         V['Sonnet']=res(S); V['Opus']=res(O); V['Opus + Sonnet']=res(OS); V['Авто']=res(O&&O.q.weak&&OS&&P.better(OS.q,O.q)?OS:O); V.autoSecond=!!(O&&O.q.weak);
         out.drawings.push({box:d.box,opus:tO,sonnet:tS,V}); }
-      return out; },[png,REPLAY?null:A.url,REPLAY?(raw.find(r=>r.key===key)||null):null]);
-    if(!REPLAY) raw.push({key,layout:got.layout,drawings:got.drawings.map(d=>({opus:d.opus,sonnet:d.sonnet}))});
+      return out; },[png,REPLAY?null:A.url,REPLAY?((r=>r&&Object.assign({v1:!r.v},r))(raw.find(r=>r.key===key))||null):null]);
+    if(!REPLAY) raw.push({key,v:2,layout:got.layout,drawings:got.drawings.map(d=>({opus:d.opus,sonnet:d.sonnet}))});
     /* чертёж → часть листа (по рамке правды), меры — в мм листа */
     const Hi=IMG.H.inv(s.truth.H), toMM=p=>IMG.H.apply(Hi,p);
     got.drawings.forEach((d,i)=>{ const c=toMM([(d.box[0]+d.box[2])/2,(d.box[1]+d.box[3])/2]); let pi=-1, bd=1e9;
       s.truth.parts.forEach((p,k)=>{ const m=[(p.box[0]+p.box[2])/2,(p.box[1]+p.box[3])/2], e=Math.hypot(m[0]-c[0],m[1]-c[1]); if(e<bd){ bd=e; pi=k; } });
-      const tr=E.truthOf(s,pi); console.log('  чертёж '+(i+1)+' → часть '+tr.part+(d.V.autoSecond?' (авто: слабый — вторая проверка)':''));
+      const tr=E.truthOf(s,pi,null,!A.ideal); console.log('  чертёж '+(i+1)+' → часть '+tr.part+(d.V.autoSecond?' (авто: слабый — вторая проверка)':''));
       VARIANTS.forEach(v=>{ const r=d.V[v]; if(!r){ all.push({sheet:name,part:tr.part,v,miss:true}); return; }
         const m=E.measure(tr,{pts:r.pts,segs:r.segs},toMM);
         all.push({sheet:name,part:tr.part,v,m,fit:r.fit,ok:r.fit&&r.fit.dz===3&&r.fit.n===sh.n});
@@ -76,7 +77,7 @@ let MOCK=null;   /* имитация функции (--mock=1) */
   console.log('\n'+md.join('\n')); if(process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,md.join('\n')+'\n');
   fs.writeFileSync(A.out||'scan-ab.json',JSON.stringify({raw,rows:all,log,spent},null,1)); })().catch(e=>{ console.error(e); process.exit(1); });
 
-/* имитация функции: раскладка — рамки частей листа, оцифровка — правда части в px вырезки (вырезка — как SCANPIPE.cut, без поворота) */
+/* имитация функции: раскладка — рамки частей листа, оцифровка — правда части в px кадра модели (вырезка — как SCANPIPE.cut, без поворота; масштаб — по ширине кадра) */
 function mockFunction(){ const sheets=SHEETS.map(sh=>Q.sheet({n:sh.n,seed:sh.seed,err:sh.err,size:[1500,2000]})); let si=-1, crops=0, boxes=[], R=IMG.rng(5); const n=()=>(R()-0.5)*1.2;
   return new Promise(res=>{ const srv=http.createServer((q,r)=>{ let b=''; q.on('data',d=>b+=d).on('end',()=>{ const j=JSON.parse(b||'{}'), s=sheets[Math.max(0,si)], H=s&&s.truth.H, px=p=>IMG.H.apply(H,p);
       let text='';
@@ -85,6 +86,6 @@ function mockFunction(){ const sheets=SHEETS.map(sh=>Q.sheet({n:sh.n,seed:sh.see
         boxes=bx.map(b=>b.map(v=>v/0.4));   /* вырезка — по тем же рамкам, что ушли в раскладку (как у страницы) */
         text=JSON.stringify({rot:0,drawings:bx.map((b,i)=>({box:b,part:i+1}))}); }
       else { const i=Math.floor(crops/2), sonnet=j.model==='sonnet'; crops++; const d=boxes[i], pad=Math.max(40,0.05*Math.max(d[2]-d[0],d[3]-d[1])), X0=Math.max(0,Math.round(d[0]-pad)), Y0=Math.max(0,Math.round(d[1]-pad)),
-          X1=Math.min(1500,Math.round(d[2]+pad)), Y1=Math.min(2000,Math.round(d[3]+pad)), k=Math.min(1,1280/Math.max(X1-X0,Y1-Y0)), cp=m=>{ const p=px(m); return [Math.round((p[0]-X0)*k+n()),Math.round((p[1]-Y0)*k+n())]; };
-        const tr=E.truthOf(s,i); text=Object.entries(tr.pts).map(([l,p])=>'P '+l+' '+cp(p).join(' ')).concat(tr.segs.filter((_,t)=>!sonnet||t%3).map(([a,b])=>'S '+cp(a).concat(cp(b)).join(' '))).join('\n'); }
+          X1=Math.min(1500,Math.round(d[2]+pad)), Y1=Math.min(2000,Math.round(d[3]+pad)), k=j.w/(X1-X0), cp=m=>{ const p=px(m); return [Math.round((p[0]-X0)*k+n()),Math.round((p[1]-Y0)*k+n())]; };
+        const tr=E.truthOf(s,i,null,true); text=Object.entries(tr.pts).map(([l,p])=>'P '+l+' '+cp(p).join(' ')).concat(tr.segs.filter((_,t)=>!sonnet||t%3).map(([a,b])=>'S '+cp(a).concat(cp(b)).join(' '))).join('\n'); }
       r.writeHead(200,{'content-type':'application/json'}); r.end(JSON.stringify({ok:true,text,model:j.model==='sonnet'?'anthropic/claude-sonnet-5-5':'anthropic/claude-opus-5-5',cost:0})); }); }).listen(0,'127.0.0.1',()=>{ MOCK=srv; res('http://127.0.0.1:'+srv.address().port+'/fn'); }); }); }

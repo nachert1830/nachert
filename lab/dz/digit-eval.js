@@ -48,7 +48,11 @@ function grayPNG(im){ const w=im.width, h=im.height, d=im.data, g=Buffer.alloc((
   return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ih),chunk('IDAT',zlib.deflateSync(g,{level:9})),chunk('IEND',Buffer.alloc(0))]); }
 
 /* правда чертежа в мм листа: отрезки (рёбра, построение, линии связи, оси) и точки с подписями */
-function truthOf(s,i,items){ const g=s.truth.parts[i], O=g.O, P=p=>[O[0]+p[0],O[1]+p[1]], G=s.truth.groups[i];
+/* truthOf(s, i, items, drawn): drawn — правда «как начерчено» (вершины с дрожью руки, synth.js drawn): копия должна повторять бумагу,
+   а не идеальное построение; без drawn — идеальное построение (для «нашла ли модель ошибку студента») */
+function truthOf(s,i,items,drawn){ const g=s.truth.parts[i], O=g.O, P=p=>[O[0]+p[0],O[1]+p[1]], G=s.truth.groups[i];
+  if(drawn&&!items&&G.drawn){ const segs=G.drawn.segs.filter(([a,b])=>Math.hypot(b[0]-a[0],b[1]-a[1])>=3), pts=Object.assign({},G.drawn.pts);
+    return {segs,pts,box:[g.box[0]-6,g.box[1]-6,g.box[2]+6,g.box[3]+6],part:g.part}; }
   const segs=(items||g.items).filter(it=>(it.t==='seg'||it.t==='line'||it.t==='conn')&&it.a&&it.b).map(it=>[P(it.a),P(it.b)]).concat([G.axis],G.zLine?[G.zLine]:[]).filter(([a,b])=>Math.hypot(b[0]-a[0],b[1]-a[1])>=3);
   const pts={}; (items||g.items).forEach(it=>{ if(it.t==='pt'&&it.l) pts[it.l]=P(it.at); });
   return {segs,pts,box:[g.box[0]-6,g.box[1]-6,g.box[2]+6,g.box[3]+6],part:g.part}; }
