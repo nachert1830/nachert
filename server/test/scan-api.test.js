@@ -84,3 +84,41 @@ test('ретранслятор знакомства телефона и ноут
   assert.equal((await F.handler(ev('POST',{queryStringParameters:{sig:ch},body:JSON.stringify({a:'<script>'})}))).statusCode,400);
   assert.equal((await F.handler(ev('GET',{queryStringParameters:{sig:'короткий'}}))).statusCode,400);
   assert.equal((await F.handler({httpMethod:'GET',headers:{origin:'https://evil.example'},queryStringParameters:{sig:ch}})).statusCode,403); });
+
+/* запасной поставщик: ProxyAPI отказал по деньгам или лимиту — тот же запрос в OpenRouter (сеть подменена, настоящих запросов нет) */
+const okJson=(text,usage)=>({ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:text},finish_reason:'stop'}],usage:usage||{prompt_tokens:10,completion_tokens:10}})});
+const pxFails=(log,status,msg)=>async(url,init)=>{ const b=JSON.parse(init.body); log.push({url,model:b.model,auth:init.headers.authorization,b});
+  if(/proxyapi\.ru/.test(url)) return {ok:false,status,text:async()=>JSON.stringify({error:{message:msg}})};
+  return okJson('P A″ 1 2',{prompt_tokens:10,completion_tokens:10,cost:0.0123}); };
+const withOr=async fn=>{ process.env.OPENROUTER_API_KEY='секрет-ключ-openrouter'; try{ await fn(); } finally { delete process.env.OPENROUTER_API_KEY; } };
+const H={origin:OK,'x-scan-code':'виктория'};
+test('ProxyAPI 402 (баланс/бюджет) — тот же запрос той же модели в OpenRouter: 200, provider openrouter, причина в fallback, цена — из usage.cost',()=>withOr(async()=>{
+  const log=[]; F._setFetch(pxFails(log,402,'API Key budget exceeded'));
+  const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})), j=JSON.parse(r.body); assert.equal(r.statusCode,200);
+  assert.deepEqual(log.map(x=>[/openrouter\.ai/.test(x.url)?'or':'px',x.model]),[['px','anthropic/claude-opus-5-5'],['or','anthropic/claude-opus-5.5']]);
+  assert.equal(log[1].auth,'Bearer секрет-ключ-openrouter'); assert.equal(log[1].b.max_tokens,9000,'лимит ответа Opus — тот же');
+  assert.equal(j.provider,'openrouter'); assert.equal(j.model,'anthropic/claude-opus-5.5'); assert.match(j.fallback,/402.*budget.*OpenRouter/); assert.equal(j.cost,0.0123);
+  assert.ok(!r.body.includes('секрет-ключ'));
+  const l=[]; F._setFetch(pxFails(l,402,'Insufficient balance')); const a=await F.handler(ev('POST',{headers:H,body:body()})); assert.equal(a.statusCode,200);
+  assert.equal(JSON.parse(a.body).provider,'openrouter'); assert.equal(l[1].model,'anthropic/claude-haiku-5.5','раскладка — Haiku и в OpenRouter');
+  const l2=[]; F._setFetch(pxFails(l2,402,'Insufficient balance')); const c=await F.handler(ev('POST',{headers:H,body:body({mode:'crop2'})})); assert.equal(c.statusCode,200);
+  assert.equal(l2[1].model,'anthropic/claude-sonnet-5.5'); }));
+test('ProxyAPI 429 (Too many requests) — OpenRouter; ProxyAPI ответил — provider proxyapi, OpenRouter не трогаем',()=>withOr(async()=>{
+  const log=[]; F._setFetch(pxFails(log,429,'Too many requests'));
+  const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})); assert.equal(r.statusCode,200); assert.equal(JSON.parse(r.body).provider,'openrouter'); assert.match(log[1].url,/openrouter\.ai/);
+  const l=[]; F._setFetch(fake(l,'P A″ 1 2')); const ok=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})), j=JSON.parse(ok.body);
+  assert.equal(j.provider,'proxyapi'); assert.equal(j.fallback,null); assert.equal(l.length,1); assert.match(l[0].url,/proxyapi\.ru/); }));
+test('ProxyAPI 401/403 (ключ) — не деньги: в OpenRouter не идём',()=>withOr(async()=>{
+  for(const st of [401,403]){ const log=[]; F._setFetch(pxFails(log,st,'API Key budget exceeded'));
+    const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})); assert.equal(r.statusCode,502); assert.equal(log.length,1); assert.ok(log.every(x=>/proxyapi\.ru/.test(x.url))); } }));
+test('без OPENROUTER_API_KEY — как раньше: 402 на обеих моделях — ошибка, в OpenRouter не ходим',async()=>{ delete process.env.OPENROUTER_API_KEY;
+  const log=[]; F._setFetch(pxFails(log,402,'Insufficient balance')); const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})}));
+  assert.equal(r.statusCode,502); assert.match(JSON.parse(r.body).error,/402/); assert.deepEqual(log.map(x=>x.model),['anthropic/claude-opus-5-5','anthropic/claude-sonnet-5-5']); assert.ok(log.every(x=>/proxyapi\.ru/.test(x.url)));
+  const l=[]; F._setFetch(pxFails(l,429,'Too many requests')); assert.equal((await F.handler(ev('POST',{headers:H,body:body()}))).statusCode,502); assert.equal(l.length,1); });
+test('последний отказ ProxyAPI по деньгам — в статусе только владельцу (GET), студенту — нет',async()=>{ process.env.OWNER_CODE_SHA256=F.sha('мой-личный-код');
+  try{ const get=code=>F.handler(ev('GET',{headers:{origin:OK,'x-scan-code':encodeURIComponent(code)}}));
+    assert.equal(JSON.parse((await get('мой-личный-код')).body).provider.proxyapi.lastError,null);
+    F._setFetch(pxFails([],402,'Insufficient balance to run this request')); const t=Date.now(); await F.handler(ev('POST',{headers:H,body:body()}));
+    const o=await get('мой-личный-код'), j=JSON.parse(o.body); assert.equal(o.statusCode,200); assert.match(j.provider.proxyapi.lastError,/402.*Insufficient balance/); assert.ok(j.provider.proxyapi.at>=t); assert.equal(j.provider.openrouter,false);
+    const s=await get('виктория'); assert.equal(s.statusCode,200); assert.equal(JSON.parse(s.body).provider,undefined); assert.ok(!s.body.includes('balance'));
+  } finally { delete process.env.OWNER_CODE_SHA256; } });

@@ -4,6 +4,7 @@ name: Сканер листа — развёртывание облачной ф
 # в lk/scan/config.js и коммитится в main (страница публикуется GitHub Pages). Нужны секреты: YC_SA_KEY, PROXYAPI_KEY (как у club.yml).
 # Секрет OWNER_CODE (необязательный) — личный код владельца: открывает страницу nachert1830.ru/me/ (сканер + кабинет + 3D + жесты + сайт);
 # в функцию уходит только его SHA-256 (OWNER_CODE_SHA256). Без секрета страница владельца не открывается никому.
+# Секрет OPENROUTER_API_KEY (необязательный) — запасной поставщик: ProxyAPI отказал по деньгам/лимиту (402, 429) — тот же запрос идёт в OpenRouter.
 # Запуск вручную: Actions → «Сканер листа — развёртывание» → Run workflow (ветка main).
 on:
   workflow_dispatch:
@@ -68,8 +69,10 @@ jobs:
           SCAN_DIGIT: ${{ github.event.inputs.digit || 'opus' }}
           SCAN_CHECK: ${{ github.event.inputs.check || 'sonnet' }}
           OWNER_CODE: ${{ secrets.OWNER_CODE }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           echo "::add-mask::$PROXYAPI_KEY"
+          [ -n "$OPENROUTER_API_KEY" ] && echo "::add-mask::$OPENROUTER_API_KEY" || echo "::warning::секрет OPENROUTER_API_KEY не задан — кончится баланс ProxyAPI, сканер встанет (запасного OpenRouter нет)"
           HASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.SCAN_CODE))")
           OHASH=""; [ -n "$OWNER_CODE" ] && OHASH=$(node -e "console.log(require('./server/scan/index.js').sha(process.env.OWNER_CODE))")
           [ -n "$OHASH" ] && [ "$OHASH" = "$HASH" ] && echo "::error::Секрет OWNER_CODE совпадает со студенческим кодом сканера — пульт me/ закрыт для всех. Задайте в OWNER_CODE другой, личный код и запустите развёртывание ещё раз."
@@ -78,7 +81,7 @@ jobs:
           yc serverless function get --name nachert-scan >/dev/null 2>&1 || yc serverless function create --name nachert-scan >/dev/null
           yc serverless function allow-unauthenticated-invoke --name nachert-scan >/dev/null
           yc serverless function version create --function-name nachert-scan --runtime nodejs22 --entrypoint index.handler --memory 256m --execution-timeout 120s --concurrency 16 \
-            --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,OWNER_CODE_SHA256=$OHASH,SCAN_LIMIT_USD=$SCAN_LIMIT,SCAN_DIGIT_MODEL=$SCAN_DIGIT,SCAN_CHECK_MODEL=$SCAN_CHECK,PROXYAPI_KEY=$PROXYAPI_KEY" >/dev/null
+            --source-path scan.zip --environment "SCAN_CODE_SHA256=$HASH,OWNER_CODE_SHA256=$OHASH,SCAN_LIMIT_USD=$SCAN_LIMIT,SCAN_DIGIT_MODEL=$SCAN_DIGIT,SCAN_CHECK_MODEL=$SCAN_CHECK,PROXYAPI_KEY=$PROXYAPI_KEY,OPENROUTER_API_KEY=$OPENROUTER_API_KEY" >/dev/null
           ID=$(yc serverless function get --name nachert-scan --format json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).id))")
           URL="https://functions.yandexcloud.net/$ID"
           echo "SCAN_URL=$URL" >> "$GITHUB_ENV"; echo "Адрес функции: $URL"
