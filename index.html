@@ -2668,6 +2668,43 @@ body.t3d-open{overflow:hidden}
 html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
 .t3d input[type=range]{touch-action:pan-x}
 .t3d{--t3bg:#ffffff;--t3bg2:#efeee9;--t3ink:var(--ink);--t3ink2:#5f5d58}
+/* ═══ SURFLAB: как образуются поверхности ═══ */
+.surfcard{display:flex;align-items:center;gap:14px;margin:0 0 12px;padding:14px 16px;border:1px solid var(--line2);border-radius:16px;background:var(--blue-s);color:var(--ink);text-decoration:none}
+.surfcard svg{flex:none;color:var(--blue)}
+.surfcard span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.surfcard small{color:var(--ink2);font-size:13.5px;line-height:1.45}
+.surfcard i{margin-left:auto;font-style:normal;font-size:20px;color:var(--blue)}
+.surfcard:hover{border-color:var(--blue)}
+.sl-lead{color:var(--ink2);line-height:1.55;max-width:760px}
+.sl-pick{display:flex;flex-direction:column;gap:10px;margin:14px 0 16px}
+.sl-grp>span{display:block;font:600 11.5px var(--sans);color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.sl-grp>div{display:flex;flex-wrap:wrap;gap:6px}
+.sl-main{display:grid;gap:10px;min-width:0}
+.sl-main>*{min-width:0}
+.sl-stage{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surf);touch-action:none;-webkit-user-select:none;user-select:none}
+.sl-cv{display:block;cursor:grab}
+.sl-cv:active{cursor:grabbing}
+.sl-views{position:absolute;top:10px;left:10px;display:flex;gap:2px;background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:3px}
+.sl-views button{font:600 13px var(--sans);padding:7px 10px;border:0;border-radius:8px;background:none;color:var(--ink2);cursor:pointer;min-height:32px}
+.sl-views button.on{background:var(--acc);color:var(--on-acc)}
+.sl-hint{position:absolute;bottom:8px;left:10px;font-size:12px;color:var(--mut);transition:opacity .4s;pointer-events:none}
+.sl-ctl{display:flex;align-items:center;gap:12px}
+.sl-play{width:44px;height:44px;border-radius:50%;border:0;background:var(--acc);color:var(--on-acc);font-size:15px;cursor:pointer;flex:none}
+.sl-rg{flex:1;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mut);min-width:0}
+.sl-rg input{width:100%;touch-action:pan-x}
+.sl-opts{display:flex;flex-wrap:wrap;gap:6px}
+.sl-opts button{font:600 13px var(--sans);padding:8px 12px;border-radius:99px;border:1px solid var(--line2);background:var(--surf);color:var(--ink2);cursor:pointer;min-height:38px}
+.sl-opts button.on{background:var(--blue-s);border-color:var(--blue);color:var(--blue)}
+.sl-info h3{margin:6px 0 8px;font:700 19px var(--disp);color:var(--ink)}
+.sl-info p{margin:0 0 9px;line-height:1.55;color:var(--ink2)}
+.sl-info b{color:var(--ink)}
+.sl-links{font-size:14px;line-height:1.7;color:var(--mut)}
+.sl-links a{color:var(--blue);font-weight:600}
+@media(min-width:980px){.sl-page .sl-main{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);column-gap:22px}.sl-page .sl-info{grid-column:2;grid-row:1 / span 3}}
+.sl-win .sl-wbody{flex:1;min-height:0;overflow:auto;padding:4px 12px 8px;touch-action:pan-y}
+.sl-win .sl-info{padding-bottom:6px}
+.sl-note{margin:0;padding:8px 14px 12px;font-size:13px}
+.sl-note a{color:var(--blue);font-weight:600}
 :root[data-theme=dark] .t3d{--t3bg:var(--surf);--t3bg2:var(--paper);--t3ink:#efeee9;--t3ink2:#9e9c96}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3d{--t3bg:var(--surf);--t3bg2:var(--paper);--t3ink:#efeee9;--t3ink2:#9e9c96}}
 .t3d-box{width:min(880px,100%);height:min(calc(100dvh - 20px),900px);display:flex;flex-direction:column;background:var(--surf);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden}
@@ -4675,6 +4712,39 @@ return { epure };
      профильная            A‴ = P(A) = [ y·S, -z·S]
    Ось x — прямая v = 0; начало O — точка (0,0).
    ============================================================ */
+/* ═════════ SURF3: поверхности в пространстве для окна 3D (TASK3D) и «Как образуются поверхности» (SURFLAB) ═════════
+   Поверхность — сетка треугольников по параметрическому уравнению P(u, v) (мм, x — влево от O, y — к зрителю, z — вверх).
+   Часть задачи может отдать part.surf3() → {meshes:[{tris,col,op}], lines:[{p,k,st,to,proj}], pts:[{nm,p,k,st}]}:
+   st — шаг, на котором элемент появляется (0 — дано), to — последний шаг, на котором он ещё виден; proj — показать
+   проекции линии на π₁ и π₂. Это только 3D: на эпюр, лист и проверки чертежа не влияет. */
+window.SURF3=(function(){
+const ok=p=>p&&isFinite(p[0])&&isFinite(p[1])&&isFinite(p[2]);
+const r1=p=>[Math.round(p[0]*100)/100,Math.round(p[1]*100)/100,Math.round(p[2]*100)/100];
+/* сетка: nu × nv клеток, каждая — два треугольника; клетки с «дырой» (NaN) пропускаем */
+function grid(P,u0,u1,nu,v0,v1,nv){ const G=[], out=[];
+  for(let i=0;i<=nu;i++){ const row=[]; for(let j=0;j<=nv;j++){ let p=null; try{ p=P(u0+(u1-u0)*i/nu,v0+(v1-v0)*j/nv); }catch(e){} row.push(ok(p)?r1(p):null); } G.push(row); }
+  for(let i=0;i<nu;i++) for(let j=0;j<nv;j++){ const a=G[i][j], b=G[i+1][j], c=G[i+1][j+1], d=G[i][j+1];
+    if(a&&b&&c) out.push([a,b,c]); if(a&&c&&d) out.push([a,c,d]); }
+  return out; }
+const curve=(f,a,b,n)=>{ const o=[]; for(let i=0;i<=n;i++){ const p=f(a+(b-a)*i/n); if(ok(p)) o.push(r1(p)); } return o; };
+const lerp3=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+/* окружность с центром c радиуса r в плоскости, ⟂ оси ('x' | 'y' | 'z') */
+const circle=(c,r,ax,a0,a1,n)=>curve(t=>ax==='y'?[c[0]+r*Math.cos(t),c[1],c[2]+r*Math.sin(t)]:ax==='x'?[c[0],c[1]+r*Math.cos(t),c[2]+r*Math.sin(t)]:[c[0]+r*Math.cos(t),c[1]+r*Math.sin(t),c[2]],a0==null?0:a0,a1==null?2*Math.PI:a1,n||64);
+/* поверхность вращения вокруг вертикальной оси через O: меридиан t → [r, z] */
+const rev=(O,mer,t0,t1,nt,a0,a1,na)=>grid((t,a)=>{ const m=mer(t); return [O[0]+m[0]*Math.cos(a),O[1]+m[0]*Math.sin(a),m[1]]; },t0,t1,nt,a0==null?0:a0,a1==null?2*Math.PI:a1,na||48);
+/* линейчатая: образующая от a(t) до b(t), s — доля по образующей (0 — на a, 1 — на b; можно выходить за пределы) */
+const ruled=(a,b,t0,t1,nt,s0,s1,ns)=>grid((t,s)=>lerp3(a(t),b(t),s),t0,t1,nt,s0==null?0:s0,s1==null?1:s1,ns||8);
+/* конус/цилиндр: вершина или направление и кривая-основание */
+const cone=(S,base,t0,t1,nt,ns)=>ruled(()=>S,base,t0,t1,nt||48,0,1,ns||10);
+const cyl=(base,d,t0,t1,nt,ns)=>ruled(base,t=>{ const p=base(t); return [p[0]+d[0],p[1]+d[1],p[2]+d[2]]; },t0,t1,nt||48,0,1,ns||8);
+const sphere=(O,R,nu,nv)=>grid((u,v)=>[O[0]+R*Math.cos(v)*Math.cos(u),O[1]+R*Math.cos(v)*Math.sin(u),O[2]+R*Math.sin(v)],0,2*Math.PI,nu||48,-Math.PI/2,Math.PI/2,nv||24);
+/* плоский четырёхугольник (плоскость параллелизма, посредник) */
+const quad=(a,b,c,d)=>[[r1(a),r1(b),r1(c)],[r1(a),r1(c),r1(d)]];
+/* усечённое тело: оставляем треугольники, центр которых в теле (keep) — сетку для этого берём частую */
+const clip=(tris,keep)=>tris.filter(t=>keep([(t[0][0]+t[1][0]+t[2][0])/3,(t[0][1]+t[1][1]+t[2][1])/3,(t[0][2]+t[1][2]+t[2][2])/3]));
+const COL={body:'#c9b07a',alt:'#8fb0cf',third:'#c99a8a',plane:'#9fb7d9'};
+return {grid,curve,circle,rev,ruled,cone,cyl,sphere,quad,clip,lerp3,COL};
+})();
 const WB3 = { tasks:[], add(t){ this.tasks.push(t); this.tasks.sort((a,b)=>(typeof a.n==='number'&&typeof b.n==='number')?a.n-b.n:0); return t; },
   get(n){ return this.tasks.find(t=>String(t.n)===String(n)); } };
 
@@ -4867,7 +4937,7 @@ function noteShort(h){ if(!h) return ''; const parts=String(h).split(/(?<=[.!?])
 const H3D={}; window.has3D=has3D; function has3D(t){ const k=t.n||t.key; if(k in H3D) return H3D[k]; let r=false; try{ r=!!(window.TASK3D&&partsOf(t).some(p=>TASK3D.has(p))); }catch(e){} return H3D[k]=r; }
 function partsOf(t){
   if(t.parts&&t.parts.length) return t.parts.map((p,i)=>Object.assign({given:t.given||[],l:p.l||String.fromCharCode(1072+i)+')'},p));
-  return [{given:t.given||[],steps:t.steps||[],ans:t.ans,q:null,l:'',_fig:t._fig}];
+  return [{given:t.given||[],steps:t.steps||[],ans:t.ans,q:null,l:'',_fig:t._fig,surf3:t.surf3,form:t.form}];
 }
 function tag(items,g){ return (items||[]).map(it=>Object.assign({},it,{_g:g})); }
 /* прямые достроены до конца: именованная прямая (h″, f′, a″…) продлевается до каждой своей точки —
@@ -5064,7 +5134,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶ Как образуется</b></button>':''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -5185,7 +5255,7 @@ function mount(root,t,opt){
     paper.addEventListener('pointerup',up); paper.addEventListener('pointercancel',e=>{P.delete(e.pointerId);});
     paper.addEventListener('dblclick',e=>{ if(e.target.closest('.pl-zoom')) return; at(Z.s>1.2?1:2.6,e.clientX,e.clientY); });
     paper.querySelectorAll('.pl-zb').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const z=b.dataset.z, r=paper.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
-      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if((z==='3d'||z==='meth')&&S.mode==='try'&&!S.saw3d) ask3d(paper,z); else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); else if(z==='meth'&&window.METHANIM) METHANIM.open(t); }));
+      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if((z==='3d'||z==='meth')&&S.mode==='try'&&!S.saw3d) ask3d(paper,z); else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); else if(z==='meth'&&window.METHANIM) METHANIM.open(t); else if(z==='form'&&window.SURFLAB) SURFLAB.open((partsOf(t)[S.pi]||{}).form); }));
   }
   /* «Решаю сам»: модель — после попытки. Если открыть 3D сразу, студент смотрит, но не тренирует воображение */
   function ask3d(paper,z){ const old=paper.querySelector('.pl-ask3d'); if(old) old.remove();
@@ -6820,6 +6890,7 @@ function buildDocs(){
     add({key:'part:'+d.id,type:'part',grp:'v',label:'Деталь '+d.n,title:d.title,kw:['3d модель детали','разрез детали','вид','чертеж детали'],segs,href:Hh('part'),where:S('ig')+' · Детали · 3D-модель'}); });
   /* инструменты */
   [['epure','3D-модель и эпюр: двигай точки в пространстве и смотри чертёж','v',Hh('epure'),'3D-модель и эпюр','Двигай точки в пространстве и на чертеже, смотри проекции, линии связи, координаты.',['3д эпюр','эпюр онлайн','интерактив']],
+   ['surf','Как образуются поверхности: коноид, геликоид, гиперболоид, тор — образующая движется, поверхность заметается (3D)','v',Hh('ng','surf'),'Поверхности · интерактив','Образующая скользит по направляющим, вращается или движется по винту; проекции на π₁ и π₂, точка на поверхности.',['коноид','геликоид','цилиндроид','косая плоскость','гиперболический параболоид','гиперболоид','поверхность вращения','тор','сфера','образующая','направляющая','плоскость параллелизма','поверхности 3д']],
    ['train','Пробный РК: карточки и экзамен','c',Hh('ng','check','train'),'Подготовка к РК · Пробный РК','Карточки с интервальным повторением, режим экзамен, карта слабых мест.',['карточки','повторить','экзамен']],
    ['quiz','Тест на время по начертательной геометрии','c',Hh('ng','check','quiz'),'Подготовка к РК · Быстрый тест','Короткий тест на время; ошибки разбираются.',['тест онлайн','проверить себя']],
    ['tickets','Билеты РК1 с разбором','c',Hh('ng','check','tickets'),'Подготовка к РК · Билеты','Билеты РК1 с пошаговым разбором.',['билеты','экзамен','рк']],
@@ -18882,7 +18953,14 @@ const pa=(()=>{
   const ellC=pl(-Cm[0],0), rxE=Lh*Math.abs(dh[0])*U, ryE=Lh*U;
   const ellPts=dens(t=>H3(Pc(t)),0,Math.PI,72);
   const H1=H3(H), A1=H3(A), Q1=H3(Q);
-  return { l:'а)', q:'Сфера: построить горизонтальные проекции точек A, B, C, D, E, F, G, H и линий, проходящих через них.',
+  /* 3D: сфера радиуса R; линии на ней — параллель A–B–C, окружность C–D–E (y = const), окружность сечения H–G–F–E */
+  const surf3=()=>{ const W=p=>[p[0]*k,(y0+p[1])*k,(z0+p[2])*k], Q3=SURF3, L3=a=>a.map(W);
+    return { meshes:[ {tris:Q3.sphere(W(O),R*k,40,20),col:Q3.COL.body,op:.62} ],
+      lines:[ {p:Q3.circle(W(O),R*k,'y'),k:'aux',st:1}, {p:Q3.circle(W([0,0,z1]),r1*k,'z'),k:'aux',st:2}, {p:L3(arcA),k:'res',st:2},
+        {p:L3(arcCDE),k:'res',st:3}, {p:Q3.circle(W(O),R*k,'z'),k:'aux',st:4},
+        {p:L3(dens(t=>Pc(t),0,2*Math.PI,96)),k:'aux',st:5}, {p:L3(chordC),k:'res',st:6}, {p:L3(arcHA),k:'res',st:6} ],
+      pts:[ ...[['A',A,1],['H',H,1],['B',B,2],['C',C,2],['D',D,3],['E',E,3],['G',G,4],['F',Fp,4]].map(([nm,q,st])=>({nm,p:W(q),k:'res',st})) ] }; };
+  return { l:'а)', surf3, form:'sphere', q:'Сфера: построить горизонтальные проекции точек A, B, C, D, E, F, G, H и линий, проходящих через них.',
     given:[ axis(), outline, seg(...ax,'dash'), seg(...eq2,'dash'),
       poly([F3(A),F3(C)],'main'), poly(front(arcCDE),'main'), poly([F3(E),F3(H)],'main'), poly(front(arcHA),'main'),
       pt(F3(A),'A″','nw'), pt(F3(B),'B″','n'), pt(F3(C),'C″','ne'), pt(F3(D),'D″','e'), pt(F3(E),'E″','se'), pt(F3(H),'H″','w') ],
@@ -18938,7 +19016,17 @@ const pb=(()=>{
   const front=[...[Rin,Rout].map(rho=>arcQ(rho,'main')), arcQ(rAB,'aux')];
   const c2=arc(O2,Rc*U,0,90,'res');
   const stepsPts=(P)=>[pt(H3t(P),'','n','aux')];
-  return { l:'б)', q:'Тор (ось ⟂ π₂): построить горизонтальные проекции точек A, B, C, D, E и линий: окружность через A и B, горизонтальная очерковая E–C, сечение B–C–D плоскостью z = const, меридиан D–E–A.',
+  /* 3D: четверть тора (ось ⟂ π₂ — вдоль y), передняя половина (y ≥ 0, как на π₁): окружность радиуса r вращается вокруг оси на расстоянии Rц */
+  const surf3=()=>{ const W=p=>[p[0]*k,p[1]*k,p[2]*k], Q3=SURF3, L3=a=>a.map(W);
+    const T=(al,th)=>{ const rho=Rc+r*Math.cos(th); return W([rho*Math.cos(al),r*Math.sin(th),rho*Math.sin(al)]); };
+    const par=(rho,y,a0,a1)=>Q3.curve(al=>W([rho*Math.cos(al),y,rho*Math.sin(al)]),a0,a1,40), ang=q=>Math.atan2(q[2],q[0]);
+    return { meshes:[ {tris:Q3.grid(T,Math.PI/2,Math.PI,36,0,Math.PI,24),col:Q3.COL.body,op:.7} ],
+      lines:[ {p:[W([0,-r-3,0]),W([0,r+3,0])],k:'main'},
+        {p:Q3.curve(th=>W([-Rc+r*Math.cos(th),r*Math.sin(th),0]),0,2*Math.PI,64),k:'res',st:2},
+        {p:par(rAB,A[1],Math.PI/2,ang(B)),k:'res',st:4}, {p:par(Rc,r,Math.PI/2,ang(C)),k:'res',st:5},
+        {p:L3(sec),k:'res',st:7}, {p:Q3.curve(th=>W([0,r*Math.sin(th),Rc+r*Math.cos(th)]),Math.PI,Math.acos((rAB-Rc)/r),40),k:'res',st:7} ],
+      pts:[ ...[['D',D,3],['E',E,3],['A',A,4],['B',B,4],['C',C,5]].map(([nm,q,st])=>({nm,p:W(q),k:'res',st})), ...aux.map((q,i)=>({nm:names[i],p:W(q),k:'aux',st:6})) ] }; };
+  return { l:'б)', surf3, form:'torus', q:'Тор (ось ⟂ π₂): построить горизонтальные проекции точек A, B, C, D, E и линий: окружность через A и B, горизонтальная очерковая E–C, сечение B–C–D плоскостью z = const, меридиан D–E–A.',
     given:[ axis(), seg(fT(0,0),fT(0,Rout+3),'dash'),
       arcQ(Rin,'main'), arcQ(Rout,'main'), arcQ(rAB,'main'), arc(O2,Rc*U,Math.atan2(zp,-C[0])*180/Math.PI,90,'main'),
       seg(F3t(D),F3t(B),'main'), seg(F3t(D),F3t(A),'main'),
@@ -19055,7 +19143,18 @@ const pa=(()=>{
       why:'K′ и K″ лежат на одной вертикальной линии связи ⟂ x.',
       add:[ conn(fr(KU,KZ),pl(KU,yK)), pt(pl(KU,yK),'K′','s','res') ] }
   ];
-  return { l:'а', q:'Коноид: направляющие d₁ (прямая), d₂ (кривая), плоскость параллелизма α ∥ π₂. Построить M″ по M′ и K′ по K″ и фронтальный очерк.', given, steps,
+  /* 3D: коноид — образующие-фронтали от d₁ до d₂ (и продолжение за d₂, где лежит K), плоскость параллелизма α (y = 9) */
+  const surf3=()=>{ const k=U/S, W=(u,y,z)=>[-u*k,y*k,z*k], Q3=SURF3, A3=y=>W(u1(y),y,z1(y)), B3=y=>W(u2(y),y,z2(y));
+    const on=(y,u)=>Q3.lerp3(A3(y),B3(y),(u-u1(y))/(u2(y)-u1(y))), far=y=>Math.max(1,(33-u1(y))/(u2(y)-u1(y)));
+    return { meshes:[ {tris:Q3.ruled(A3,B3,YB,YA,48,0,1,12),col:Q3.COL.body,op:.74},
+        {tris:Q3.grid((y,t)=>Q3.lerp3(A3(y),B3(y),1+(far(y)-1)*t),yK-4,yK+4,8,0,1,6),col:Q3.COL.body,op:.3,st:5},
+        {tris:Q3.quad(W(-60,9,0),W(-42,9,0),W(-42,9,34),W(-60,9,34)),col:Q3.COL.plane,op:.3} ],
+      lines:[ {p:[A3(YA),A3(YB)],k:'main',proj:true}, {p:Q3.curve(B3,YA,YB,60),k:'main',proj:true}, {p:[W(-60,9,0),W(-42,9,0)],k:'main'},
+        ...N.map(i=>({p:[A3(yi(i)),B3(yi(i))],k:'aux',st:2})),
+        {p:envIn.map(e=>W(e.u,e.y,e.z)),k:'res',st:3},
+        {p:[A3(y8),B3(y8)],k:'res',st:4}, {p:[A3(yK),on(yK,KU+4)],k:'res',st:5} ],
+      pts:[ {nm:'M',p:W(uM,y8,zM),k:'res',st:4}, {nm:'K',p:W(KU,yK,KZ),k:'res',st:5} ] }; };
+  return { l:'а', q:'Коноид: направляющие d₁ (прямая), d₂ (кривая), плоскость параллелизма α ∥ π₂. Построить M″ по M′ и K′ по K″ и фронтальный очерк.', given, steps, surf3, form:'conoid',
     ans:'M″ — на фронтальной проекции образующей 8 (M″ на высоте ≈ '+Math.round(zM)+' мм над осью x). K′ — на плане образующей, проходящей через K″, на расстоянии ≈ '+Math.round(yK)+' мм от оси x. Очерк — огибающая фронтальных проекций образующих.' , _dbg:{yK,zM,env:envIn.length} };
 })();
 
@@ -19119,7 +19218,17 @@ const pb=(()=>{
       add:[ lvl(zK,-rK,rK), pt(gF(sK),'K₁″','sw','aux'), conn(gF(sK),gP(sK)), pt(gP(sK),'K₁′','sw','aux'), circ(O,rK*U,'res'),
             conn(fr(uK,zK),pl(uK,yK)), pt(pl(uK,yK),'K′','s','res') ] }
   ];
-  return { l:'б', q:'Поверхность вращения: ось i ⟂ π₁, образующая g. Найти M″ по M′ и K′ по K″; построить фронтальный очерк.', given, steps,
+  /* 3D: поверхность вращения образующей g вокруг i; горло, крайние параллели, главный меридиан, параллели точек M и K */
+  const surf3=()=>{ const k=U/S, W=(u,y,z)=>[-u*k,(y0+y)*k,(z0+z)*k], Q3=SURF3, O=W(0,0,0);
+    const par=(r,z)=>Q3.circle(W(0,0,z),r*k,'z'), g3=s=>W(P(s)[0],P(s)[1],zs(s));
+    return { meshes:[ {tris:Q3.rev(O,s=>[rr(s)*k,(z0+zs(s))*k],s2,s3,24,0,2*Math.PI,48),col:Q3.COL.body,op:.72} ],
+      lines:[ {p:[W(0,0,-2),W(0,0,27)],k:'main'}, {p:Q3.curve(g3,s2,s3,60),k:'main',proj:true},
+        {p:par(d0,zs(0)),k:'res',st:2}, {p:par(rr(s2),zs(s2)),k:'aux',st:3}, {p:par(rr(s3),zs(s3)),k:'aux',st:3},
+        ...sMid.map(s=>({p:par(rr(s),zs(s)),k:'aux',st:4})),
+        {p:Q3.curve(s=>W(-rr(s),0,zs(s)),s2,s3,50),k:'res',st:4}, {p:Q3.curve(s=>W(rr(s),0,zs(s)),s2,s3,50),k:'res',st:4},
+        {p:par(rM,zM1),k:'res',st:5}, {p:par(rM,zM2),k:'res',st:5}, {p:par(rK,zK),k:'res',st:6} ],
+      pts:[ {nm:'M',p:W(M[0],M[1],zM1),k:'res',st:5}, {nm:'M*',p:W(M[0],M[1],zM2),k:'res',st:5}, {nm:'K',p:W(uK,yK,zK),k:'res',st:6} ] }; };
+  return { l:'б', q:'Поверхность вращения: ось i ⟂ π₁, образующая g. Найти M″ по M′ и K′ по K″; построить фронтальный очерк.', given, steps, surf3, form:'rev',
     ans:'Два решения: M″ на высоте ≈ '+Math.round(zM1)+' мм и M*″ на высоте ≈ '+Math.round(zM2)+' мм над осью x; обе невидимы (M′ позади оси). K′ на параллели радиуса ≈ '+Math.round(rK)+' мм перед осью. Очерк — «талия» с радиусом горла ≈ '+d0+' мм.', _dbg:{sM,zM1,zM2,sK,rK,yK} };
 })();
 
@@ -19178,7 +19287,21 @@ const pc=(()=>{
       why:'K лежит в секущей плоскости, значит K′ на плановой проекции линии сечения.',
       add:[ conn(fr(Kp.u,zK),pl(Kp.u,Kp.y)), pt(pl(Kp.u,Kp.y),'K′','se','res') ] }
   ];
-  return { l:'в', q:'Правый косой закрытый геликоид: ось i, образующая AB, шаг p. Найти M″ по M′ и K′ по K″; построить фронтальный очерк.', given, steps,
+  /* 3D: правый косой закрытый геликоид — AB поворачивается вокруг i и поднимается (30° → p/12); винтовая линия точки A,
+     образующие, очерк, сечение z = p/2 (спираль Архимеда) */
+  const surf3=()=>{ const k=U/S, W=(u,y,z)=>[-u*k,(y0+y)*k,z*k], Q3=SURF3, G3=(i,f)=>{ const q=gen(i,f); return W(q.u,q.y,q.z); };
+    const env3=[0,1].map(m=>{ const a0=Math.atan2(1,Math.PI/2)*180/Math.PI/30; return Q3.curve(t=>{ const i=a0+6*m+(3-a0)*t, rho=(2/Math.PI)/Math.tan(w*i); return G3(i,1-rho); },0,1,50); });
+    return { meshes:[ {tris:Q3.grid(G3,0,12,120,0,1,8),col:Q3.COL.body,op:.74},
+        {tris:Q3.quad(W(-R-4,-R-4,zK),W(R+4,-R-4,zK),W(R+4,R+4,zK),W(-R-4,R+4,zK)),col:Q3.COL.plane,op:.22,st:6} ],
+      lines:[ {p:[W(0,0,-2),W(0,0,dz*15+2)],k:'main'}, {p:[G3(0,0),G3(0,1)],k:'main',proj:true},
+        {p:Q3.circle(W(0,0,0),R*k,'z'),k:'thin',st:1},
+        {p:Q3.curve(i=>G3(i,0),0,12,120),k:'aux',st:2,to:3},
+        ...Array.from({length:13},(_,i)=>({p:[G3(i,0),G3(i,1)],k:'aux',st:3})),
+        {p:Q3.curve(i=>G3(i,0),0,12,120),k:'res',st:4}, ...env3.map(a=>({p:a,k:'res',st:4})),
+        {p:[G3(11,0),G3(11,1)],k:'res',st:5},
+        {p:Q3.curve(i=>G3(i,(6-i)/3),3,6,60),k:'res',st:6} ],
+      pts:[ {nm:'A',p:G3(0,0),k:'main'}, {nm:'B',p:G3(0,1),k:'main'}, {nm:'M',p:G3(iM,fM),k:'res',st:5}, {nm:'K',p:W(Kp.u,Kp.y,zK),k:'res',st:7} ] }; };
+  return { l:'в', q:'Правый косой закрытый геликоид: ось i, образующая AB, шаг p. Найти M″ по M′ и K′ по K″; построить фронтальный очерк.', given, steps, surf3, form:'helicoid-oblique',
     ans:'M″ — на A₁₁″B₁₁″ (высота ≈ '+Math.round(Mp.z)+' мм); K′ — на спирали Архимеда сечения на высоте p/2, на расстоянии ≈ '+Math.round(Math.hypot(Kp.u,Kp.y)*10)/10+' мм от оси.' };
 })();
 
@@ -19279,7 +19402,17 @@ const steps=[
 WB3.add({ n:70, sec:'s7', src:'стр. 23', conf:'approx',
   q:'Построить горизонтальные проекции конуса вращения и линии a, принадлежащей его поверхности.',
   intro:'Конус вращения с наклонной осью i ∥ π₂. Линия a на его поверхности задана фронтальной проекцией.',
-  given, steps,
+  given, steps, form:'cone',
+  /* 3D: конус вращения (вершина S, ось i ∥ π₂), вписанная сфера и окружность касания, очерковые для π₁ образующие, линия a */
+  surf3:()=>{ const k=U/S, W=p=>[-p[0]*k,p[1]*k,p[2]*k], Q3=SURF3, L3=a=>a.map(W);
+    const tc=Q3.curve(t=>W(add(Ct,add(mul(w,rho*Math.cos(t)),mul(yh,rho*Math.sin(t))))),0,2*Math.PI,64);
+    return { meshes:[ {tris:Q3.cone(W(Sp),th=>W(Pb(th)),-Math.PI,Math.PI,56,8),col:Q3.COL.body,op:.7},
+        {tris:Q3.sphere(W(O1),rS*k,32,16),col:Q3.COL.alt,op:.4,st:2,to:3} ],
+      lines:[ {p:[W(Sp),W(add(Sp,mul(e,L0*1.3)))],k:'main'}, {p:L3(dens(Pb,-Math.PI,Math.PI,96)),k:'main'},
+        {p:tc,k:'res',st:2,to:3}, {p:[W(Sp),W(A1)],k:'res',st:3}, {p:[W(Sp),W(A2)],k:'res',st:3},
+        ...ths.map(([n,d])=>({p:[W(Sp),W(Pb(d*d2r))],k:'aux',st:5})), ...ths.map(([n,d])=>({p:[W(Sp),W(Pb(-d*d2r))],k:'aux',st:5})),
+        {p:L3(aPts),k:'res',st:6,proj:true} ],
+      pts:[ {nm:'S',p:W(Sp),k:'main'}, {nm:'O',p:W(O),k:'main'}, {nm:'N',p:W(N),k:'res',st:5}, {nm:'1₁',p:W(One2),k:'res',st:5}, {nm:'1₂',p:W(One1),k:'res',st:5} ] }; },
   ans:'Проекция конуса на π₁ — треугольник S′A₁′A₂′ с эллипсом основания (полуоси R sin φ и R). Линия a′ — эллипс, касающийся очерка в точках 1₁′ и 1₂′; её видимая часть — со стороны основания между ними.',
   note:'Размеры условные (наклон оси ≈ 32°, |SO| = 60 мм, R = 25 мм). Не путайте: пересечение линии касания сферы и экватора обозначено E″, а 1″ — точка пересечения a″ с очерковой образующей.'
 });
@@ -19436,6 +19569,9 @@ const pb={ l:'б)', q:'Достроить проекции шара, усечё�
   ],
   ans:'Горизонтальная проекция усечённого шара: дуга окружности 1–2 (горизонтальная плоскость), эллиптическая дуга 2–6 (наклонная плоскость), отрезок 6–7 (профильная плоскость), рёбра 2 и 6, контур — экватор без срезанной части.' };
 
+/* 3D: усечённые тела — сетка без вырезанных частей (remL, remR, remS) */
+pa.surf3=()=>({meshes:[{tris:SURF3.clip(SURF3.cone([cx,cy,h],t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,72,24),p=>!remL(p)&&!remR(p)),col:SURF3.COL.body,op:.6}]}); pa.form='cone';
+pb.surf3=()=>({meshes:[{tris:SURF3.clip(SURF3.sphere(c0,RS,64,32),p=>!remS(p)),col:SURF3.COL.body,op:.6}]}); pb.form='sphere';
 WB3.add({
   n:71, sec:'s8', src:'стр. 24', conf:'approx',
   q:'Достроить проекции конуса и шара, усечённых проецирующими плоскостями.',
@@ -19488,6 +19624,14 @@ const areaPts=[p1,p2b,p3b,p4b,p5b,...arcB.slice(1,-1),p7,...arcF.slice(1,-1),p5f
 let A2=0; for(let i=0;i<areaPts.length;i++){ const [x1,y1]=areaPts[i],[x2,y2]=areaPts[(i+1)%areaPts.length]; A2+=x1*y2-x2*y1; }
 const area=Math.abs(A2)/2;
 WB3.add({
+  /* 3D: цилиндр со срезами y = cy ± dF, пирамида на нём, секущая плоскость α: z = x − 5 */
+  surf3:()=>{ const Q3=SURF3, xs=Math.sqrt(R*R-dF*dF), keep=p=>Math.abs(p[1]-cy)<=dF+1e-6;
+    return { meshes:[ {tris:Q3.clip(Q3.cyl(t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],[0,0,hc],0,2*Math.PI,96,6),keep),col:Q3.COL.body,op:.55},
+      {tris:[...Q3.quad([cx-xs,cy-dF,0],[cx+xs,cy-dF,0],[cx+xs,cy-dF,hc],[cx-xs,cy-dF,hc]),...Q3.quad([cx-xs,cy+dF,0],[cx+xs,cy+dF,0],[cx+xs,cy+dF,hc],[cx-xs,cy+dF,hc])],col:Q3.COL.body,op:.55},
+      {tris:Q3.clip(Q3.grid((t,r)=>[cx+r*Math.cos(t),cy+r*Math.sin(t),hc],0,2*Math.PI,96,0,R,8),keep),col:Q3.COL.body,op:.45},
+      {tris:[[Apx,Lv,Bv],[Apx,Bv,Rv],[Apx,Rv,Fv],[Apx,Fv,Lv]],col:Q3.COL.alt,op:.6},
+      {tris:Q3.quad([q0,cy-R-6,0],[cx+R+4,cy-R-6,cx+R+4-q0],[cx+R+4,cy+R+6,cx+R+4-q0],[q0,cy+R+6,0]),col:Q3.COL.plane,op:.25} ] }; },
+  form:'cyl',
   n:72, sec:'s8', src:'стр. 24', conf:'approx',
   q:'Построить горизонтальную проекцию и натуральный вид сечения заданной геометрической фигуры плоскостью α.',
   intro:'Тело — четырёхугольная пирамида на цилиндре со срезами (две фронтальные плоскости). Плоскость α — фронтально-проецирующая (след f₀α под 45°, h₀α ⟂ x). Нужно построить горизонтальную проекцию сечения и его натуральную величину.',
@@ -19707,6 +19851,13 @@ const pc=(()=>{ const {cx,cy,h,Rc,rho,D0,a,tmax,S3,Ha,dirc,runs}=C_;
   ],
   ans:'Линия пересечения построена по точкам X = SK ∩ (M∥a) — общим точкам образующих конуса и цилиндра в пучке плоскостей γ, проходящих через прямую a.' }; })();
 
+/* 3D: тела задачи — конус и цилиндр / шар / косой цилиндр */
+{ const Q3=SURF3, coneV=(cx,cy,R,h)=>Q3.cone([cx,cy,h],t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,48,8);
+  pa.surf3=()=>{ const {cx,cy,R,h,xc,zc,r,Y}=A_; return {meshes:[{tris:coneV(cx,cy,R,h),col:Q3.COL.body,op:.55},
+    {tris:Q3.grid((f,y)=>[xc+r*Math.cos(f),y,zc+r*Math.sin(f)],0,2*Math.PI,64,cy-Y,cy+Y,8),col:Q3.COL.alt,op:.55}]}; }; pa.form='cone';
+  pb.surf3=()=>{ const {cx,cy,R,h,c,Rs}=B_; return {meshes:[{tris:coneV(cx,cy,R,h),col:Q3.COL.body,op:.55},{tris:Q3.clip(Q3.sphere(c,Rs,40,20),p=>p[2]>=0),col:Q3.COL.alt,op:.55}]}; }; pb.form='sphere';
+  pc.surf3=()=>{ const {cx,cy,h,Rc,rho,D0,a,tmax}=C_; return {meshes:[{tris:coneV(cx,cy,Rc,h),col:Q3.COL.body,op:.55},
+    {tris:Q3.cyl(t=>[D0[0]+rho*Math.cos(t),D0[1]+rho*Math.sin(t),0],v3.mul(a,tmax),0,2*Math.PI,64,10),col:Q3.COL.alt,op:.55}]}; }; pc.form='obl'; }
 WB3.add({
   n:73, sec:'s8', src:'стр. 25', conf:'approx',
   q:'Построить проекции линий пересечения заданных поверхностей: а) конической и цилиндрической; б) конической и сферической; в) конической и цилиндрической.',
@@ -19919,6 +20070,17 @@ const pc=(()=>{ const {O,Rb,k,Rs,rz,zBot,zTop,xh,runs}=C_;
   ],
   ans:'По теореме Монжа линия пересечения — два эллипса в плоскостях A″C″ и B″D″ (⟂ π₂); на π₂ они вырождены в отрезки, на π₁ строятся по точкам с учётом видимости.' }; })();
 
+/* 3D: тела задачи */
+{ const Q3=SURF3;
+  pa.surf3=()=>{ const {O,Rt,rt,cone,L}=A_; return {meshes:[
+    {tris:Q3.grid((al,f)=>{ const q=Rt+rt*Math.cos(f); return [O[0]+q*Math.cos(al),O[1]+q*Math.sin(al),O[2]+rt*Math.sin(f)]; },0,2*Math.PI,48,0,2*Math.PI,20),col:Q3.COL.body,op:.5},
+    {tris:Q3.clip(Q3.grid((t,psi)=>cone(t,psi),0.01,L,12,0,2*Math.PI,40),p=>p[2]>=0),col:Q3.COL.alt,op:.55}]}; }; pa.form='torus';
+  pb.surf3=()=>{ const {cy,zc,xa,tanb,xR,xL,u,w,Q0,b,ay,zTop}=B_;
+    const ec=(f,tau)=>{ const c=b*Math.cos(f), eta=ay*Math.sin(f), s0=(0-Q0[2]-c*w[2])/u[2], s1=(zTop-Q0[2]-c*w[2])/u[2], s_=s0+(s1-s0)*tau; return [Q0[0]+s_*u[0]+c*w[0],cy+eta,Q0[2]+s_*u[2]+c*w[2]]; };
+    return {meshes:[{tris:Q3.grid((x,f)=>{ const r=tanb*(xa-x); return [x,cy+r*Math.cos(f),zc+r*Math.sin(f)]; },xR,xL,10,0,2*Math.PI,40),col:Q3.COL.body,op:.55},
+      {tris:Q3.grid(ec,0,2*Math.PI,40,0,1,6),col:Q3.COL.alt,op:.55}]}; }; pb.form='cone';
+  pc.surf3=()=>{ const {O,Rs,rz,zTop,xh}=C_; return {meshes:[{tris:Q3.rev(O,z=>[rz(z),z],0,zTop,10,0,2*Math.PI,48),col:Q3.COL.body,op:.55},
+    {tris:Q3.grid((x,f)=>[x,O[1]+Rs*Math.cos(f),O[2]+Rs*Math.sin(f)],O[0]-xh,O[0]+xh,6,0,2*Math.PI,40),col:Q3.COL.alt,op:.55}]}; }; pc.form='cone'; }
 WB3.add({
   n:74, sec:'s8', src:'стр. 26', conf:'approx',
   q:'Построить проекции линий пересечения поверхностей: а) конуса вращения и тора; б) эллиптического цилиндра и конуса вращения; в) конуса вращения и цилиндра вращения.',
@@ -20016,6 +20178,10 @@ const pc={ l:'в)', q:'Построить проекции точек перес
   ],
   ans:'K и L: K′, L′ = a′ ∩ m′ (m — окружность радиуса '+R1(rm)+' мм), K″, L″ на a″.' };
 
+/* 3D: конус, цилиндр, шар — сами поверхности */
+pa.surf3=()=>({meshes:[{tris:SURF3.cone([cx,cy,h],t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5}]}); pa.form='cone';
+pb.surf3=()=>({meshes:[{tris:SURF3.cyl(t=>[bc[0]+Rb*Math.cos(t),bc[1]+Rb*Math.sin(t),0],[0,0,hb],0,2*Math.PI,64,8),col:SURF3.COL.body,op:.5}]}); pb.form='cyl';
+pc.surf3=()=>({meshes:[{tris:SURF3.sphere(O,Rs,40,20),col:SURF3.COL.body,op:.5}]}); pc.form='sphere';
 WB3.add({
   n:75, sec:'s9', src:'стр. 27', conf:'approx',
   q:'Построить проекции точек пересечения линии <i>a</i> с заданными поверхностями: а) конус; б) цилиндр; в) сфера.',
@@ -20111,6 +20277,9 @@ const pb={ l:'б)', q:'Построить проекции точек перес
   ],
   ans:'K и L — результат вращения a вокруг фронтали f через центр шара и возврата точек пересечения a₀ с большим кругом.' };
 
+/* 3D: шар */
+pa.surf3=()=>({meshes:[{tris:SURF3.sphere(O,R,40,20),col:SURF3.COL.body,op:.5}]}); pa.form='sphere';
+pb.surf3=()=>({meshes:[{tris:SURF3.sphere(O2,R2,40,20),col:SURF3.COL.body,op:.5}]}); pb.form='sphere';
 WB3.add({
   n:76, sec:'s9', src:'стр. 27', conf:'approx',
   q:'Построить проекции точек пересечения прямой <i>a</i> со сферой: а) применив способ замены плоскостей проекций; б) применив способ вращения вокруг фронтали.',
@@ -20273,6 +20442,10 @@ const pc={ l:'в)', q:'Построить проекции точек перес
   ],
   ans:(KP.length?'K1'+(KP.length>1?', K2':'')+' — пересечение a″ с кривой β ∩ поверхность; K′ ∈ a′ по линиям связи.':'Точки найдены построением.') };
 
+/* 3D: четверть тора (ось i ∥ y), наклонный конус, косая плоскость между направляющими d₁, d₂ */
+pa.surf3=()=>({meshes:[{tris:SURF3.grid((th,f)=>{ const q=Rt+rt*Math.cos(f); return [xA-q*Math.cos(th),yt+rt*Math.sin(f),q*Math.sin(th)]; },0,Math.PI/2,32,0,2*Math.PI,32),col:SURF3.COL.body,op:.5}]}); pa.form='torus';
+pb.surf3=()=>({meshes:[{tris:SURF3.cone(S3,baseP,0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5}]}); pb.form='cone';
+pc.surf3=()=>({meshes:[{tris:SURF3.ruled(t=>genOK(t)[0],t=>genOK(t)[1],tRange[0],tRange[1],30,0,1,16),col:SURF3.COL.body,op:.55}]}); pc.form='hypar';
 WB3.add({
   n:77, sec:'s9', src:'стр. 28', conf:'approx',
   q:'Построить проекции точек пересечения прямой <i>a</i> с заданными поверхностями: а) с поверхностью тора, применив способ вращения вокруг проецирующей прямой; б) с конической поверхностью (без построения лекальных кривых); в) с поверхностью гиперболического параболоида (косой плоскостью), заданной направляющими d₁ и d₂ и плоскостью параллелизма α.',
@@ -20416,6 +20589,11 @@ const pd=part({label:'г)', q:'В точке A поверхности враще
   tail:'Нормаль n проходит через точку N оси, что служит проверкой.',
   ans:'α(h, t), t — касательная к меридиану; n проходит через A и точку N на оси тора.' });
 
+/* 3D: сфера, наклонный цилиндр, наклонный конус, внутренняя часть тора */
+pa.surf3=()=>({meshes:[{tris:SURF3.sphere(O1,R1s,40,20),col:SURF3.COL.body,op:.5}]}); pa.form='sphere';
+pb.surf3=()=>({meshes:[{tris:SURF3.cyl(t=>[cb[0]+rC*Math.cos(t),cb[1]+rC*Math.sin(t),0],v3.sub(topC,cb),0,2*Math.PI,64,8),col:SURF3.COL.body,op:.5}]}); pb.form='obl';
+pc.surf3=()=>({meshes:[{tris:SURF3.cone(Sk,t=>[Cc[0]+Rk*Math.cos(t),Cc[1]+Rk*Math.sin(t),0],0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5}]}); pc.form='cone';
+pd.surf3=()=>({meshes:[{tris:SURF3.rev([ax[0],ax[1],0],z=>[offAt(z),z],0,zc,16,0,2*Math.PI,40),col:SURF3.COL.body,op:.5}]}); pd.form='torus';
 WB3.add({
   n:78, sec:'s10', src:'стр. 29', conf:'approx',
   q:'В точке <i>A</i>, принадлежащей заданной поверхности, построить проекции касательной плоскости и нормали к этой поверхности: а) сфера; б) цилиндрическая поверхность; в) коническая поверхность; г) поверхность вращения (тор).',
@@ -20734,6 +20912,8 @@ const items=(...a)=>a;
 const rotArc=(rho,p0,p1)=>poly(arcH(rho,p0,p1,24),'aux',false);
 
 WB3.add({
+  /* 3D: передняя половина тора (ось ⟂ π₁ через X0) */
+  surf3:()=>({meshes:[{tris:SURF3.grid((ph,f)=>T(R+r*Math.cos(f),ph,zc+r*Math.sin(f)),0,Math.PI,36,0,2*Math.PI,20),col:SURF3.COL.body,op:.5}]}), form:'torus',
   n:83, sec:'s11', src:'стр. 31', conf:'approx',
   q:'Определить расстояние от точки <i>A</i> до поверхности тора.',
   intro:'Дан фрагмент тора (ось вертикальная, экватор трубки на высоте z = '+zc+' мм) и точка A вне тора. Расстояние до поверхности — длина кратчайшего отрезка AB, где B ∈ тора.',
@@ -20792,6 +20972,9 @@ const cone=[ poly([F([Xc+Rb,yc,0]),F(Sv),F([Xc-Rb,yc,0])],'main',false), seg(F([
   seg(F(Cb).map((v,i)=>i?v+0:v),F(Sv),'thin'), seg([Hc[0],Hc[1]-Rb*S-14],[Hc[0],Hc[1]+Rb*S+70],'thin'), seg([Hc[0]-Rb*S-14,Hc[1]],[Hc[0]+Rb*S+80,Hc[1]],'thin') ];
 const sphere=[ circ(F(O),Rr*S,'res'), circ(H(O),Rr*S,'res') ];
 WB3.add({
+  /* 3D: конус и (в ответе) вписанная сфера */
+  surf3:()=>({meshes:[{tris:SURF3.cone(Sv,t=>[Cb[0]+Rb*Math.cos(t),Cb[1]+Rb*Math.sin(t),0],0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5},
+    {tris:SURF3.sphere(O,Rr,40,20),col:SURF3.COL.alt,op:.5,st:-1}]}), form:'cone',
   n:84, sec:'s11', src:'стр. 31', conf:'approx',
   q:'Построить проекции сферы с центром в точке <i>O</i>, касательной к конической поверхности, и проекции точки касания.',
   intro:'Дан прямой круговой конус (ось ⟂ π₁, основание на π₁) и точка O вне конуса. Нужна сфера с центром O, касающаяся конуса, и точка касания A.',
@@ -20905,6 +21088,9 @@ const iA=[Xi,Yi,0], Ci=F([Xi,0,0]);
 const par=(z)=>[F([Xi-rho,0,z]),F([Xi+rho,0,z])];
 const gg=(t)=>v3.lerp(C,D,t);
 WB3.add({
+  /* 3D: однополостный гиперболоид — образующая CD вращается вокруг вертикальной оси i */
+  surf3:()=>{ const rotA=(P,a)=>{ const dx=P[0]-Xi,dy=P[1]-Yi; return [Xi+dx*Math.cos(a)-dy*Math.sin(a),Yi+dx*Math.sin(a)+dy*Math.cos(a),P[2]]; };
+    return {meshes:[{tris:SURF3.grid((a,t)=>v3.lerp(rotA(C,a),rotA(D,a),t),0,2*Math.PI,64,0,1,16),col:SURF3.COL.body,op:.55}]}; }, form:'hyperboloid',
   n:86, sec:'s11', src:'стр. 32', conf:'approx',
   q:'В точке <i>A</i>, принадлежащей поверхности однополостного гиперболоида вращения, заданной осью <i>i</i> и образующей <i>g</i>, построить проекции касательной плоскости и нормали к этой поверхности.',
   intro:'Ось i ⟂ π₁ (i′ — точка), образующая g — фронталь. Точка A лежит на поверхности. Касательная плоскость в A содержит прямолинейную образующую g₁ через A и касательную h к параллели (окружности) в A.',
@@ -21038,6 +21224,8 @@ const cone=[ seg(F(Sv),F([xl,0,0]),'main'), seg(F(Sv),F([xr,0,0]),'main'), seg(F
   circ(cH,rH,'main'), seg(H(Sv),tS[0],'main'), seg(H(Sv),tS[1],'main') ];
 const ex=(a,b,e0,e1)=>[G.along(a,b,a,e0),G.along(b,a,b,e1)];
 WB3.add({
+  /* 3D: наклонный конус */
+  surf3:()=>({meshes:[{tris:SURF3.cone(Sv,t=>[Cc[0]+Rc*Math.cos(t),Cc[1]+Rc*Math.sin(t),0],0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5}]}), form:'cone',
   n:88, sec:'s11', src:'стр. 32', conf:'approx',
   q:'Построить проекции плоскости, касательной к поверхности конуса и параллельной прямой <i>a</i>.',
   intro:'Дан наклонный конус с основанием — окружностью в π₁, вершиной S и прямая a. Касательная плоскость содержит вершину S и касается конуса по образующей, а по условию параллельна a.',
@@ -21103,7 +21291,11 @@ const pa=(()=>{
   const hcv=arr=>curve(arr.map(H),'res');
   const lvLine=z=>seg(F(X(R+8,Yc,z)),F(X(-R-8,Yc,z)),'thin');
   const lvCirc=z=>circ(cH,rho(z)*S,'aux');
-  return { l:'а)', q:'конус и призма',
+  /* 3D: конус и фронтально-проецирующая призма (треугольник 13–1–12, длина 2·hl по y) */
+  const surf3=()=>{ const Q3=SURF3, a=X(xl,Yc-hl,0), b=X(0,Yc-hl,zp), c=X(xr,Yc-hl,0), a2=X(xl,Yc+hl,0), b2=X(0,Yc+hl,zp), c2=X(xr,Yc+hl,0);
+    return {meshes:[{tris:Q3.cone(Sv,t=>[Xc+R*Math.cos(t),Yc+R*Math.sin(t),0],0,2*Math.PI,48,8),col:Q3.COL.body,op:.5},
+      {tris:[...Q3.quad(a,b,b2,a2),...Q3.quad(b,c,c2,b2),[a,b,c],[a2,b2,c2]],col:Q3.COL.alt,op:.55}]}; };
+  return { l:'а)', surf3, form:'cone', q:'конус и призма',
     given:[ axis(), ...cone, prF, prH, ...prEdge,
       pt(F(X(xl,Yc,0)),'13″','sw'), pt(F(X(0,Yc,zp)),'1″','ne'), pt(F(X(xr,Yc,0)),'12″','se'),
       pt(cH,'','n') ],
@@ -21178,7 +21370,12 @@ const pc=(()=>{
   const cone2F=[ seg(F2(T2),F2(E1),'main'), seg(F2(T2),F2(E2),'main'), seg(F2(E1),F2(E2),'main') ];
   const cone2H=[ poly(baseH,'main',true), seg(Tp,pmin,'main'), seg(Tp,pmax,'main') ];
   const axisLn=seg(F2(T2),F2([ -Lb*0.0 + (Q2[0]+ad[0]*8), Q2[1]+ad[1]*8 ]),'thin');
-  return { l:'в)', q:'два конуса вращения',
+  /* 3D: конус 1 (ось вертикальна) и конус 2 с вершиной T, осью в плоскости y = Yc, полууглом dl */
+  const surf3=()=>{ const W3=(xi,eta,z)=>[X1-xi,Yc+eta,z];
+    const c2=(tau,f)=>{ const cx_=T2[0]+ad[0]*Lb*tau, cz=T2[1]+ad[1]*Lb*tau, r=R2*tau; return W3(cx_+r*Math.cos(f)*pd[0],r*Math.sin(f),cz+r*Math.cos(f)*pd[1]); };
+    return {meshes:[{tris:SURF3.cone(W3(0,0,H1),t=>W3(R1*Math.cos(t),R1*Math.sin(t),0),0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5},
+      {tris:SURF3.grid(c2,0,1,10,0,2*Math.PI,40),col:SURF3.COL.alt,op:.55}]}; };
+  return { l:'в)', surf3, form:'cone', q:'два конуса вращения',
     given:[ axis(), ...cone1, ...cone2F, ...cone2H, axisLn, pt(F2(T2),'T″','ne'), pt(Tp,'T′','se'), pt(F2(O2),'O″','se',null,{hollow:true}) ],
     steps:[
       { t:'Идея: общая вписанная сфера',
@@ -21257,7 +21454,10 @@ const lvlPts=(z)=>{ const q=at(z); return q?[[q[0],Y-q[1],z],[q[0],Y+q[1],z]]:nu
 const secItems=(z)=>{ const c=H3(xc(z),Y); const s=Math.sqrt(Math.max(0,1-((z-ze)/b)**2)); return [ seg(F3(xe+a+10,z),F3(xe-a-10,z),'thin'), circ(c,rc(z)*S,'aux'), L.ell(H3(xe,Y),a*s*S,b*s*S,0,'aux') ]; };
 const lv1=13, lvMore=[19,25,31,38,43];
 const item2=(z,nm)=>{ const q=lvlPts(z); return [ pt(F([q[0][0],0,z]),nm+'″','ne','res'), pt(H(q[0]),nm+'′','ne','res'), pt(H(q[1]),'','n','res'), conn(H(q[0]),F([q[0][0],0,z])) ]; };
-return { l:'б)', q:'конус и вытянутый эллипсоид вращения',
+/* 3D: наклонный усечённый конус (центры xc(z), радиусы rc(z)) и эллипсоид вращения (полуоси a по x, b по y и z) */
+const surf3=()=>({meshes:[{tris:SURF3.grid((z,t)=>[xc(z)+rc(z)*Math.cos(t),Y+rc(z)*Math.sin(t),z],0,zt,8,0,2*Math.PI,40),col:SURF3.COL.body,op:.5},
+  {tris:SURF3.grid((u,v)=>[xe+a*Math.cos(v)*Math.cos(u),Y+b*Math.cos(v)*Math.sin(u),ze+b*Math.sin(v)],0,2*Math.PI,36,-Math.PI/2,Math.PI/2,18),col:SURF3.COL.alt,op:.55}]});
+return { l:'б)', surf3, form:'rev', q:'конус и вытянутый эллипсоид вращения',
   given:[ axis(), ellF, ellH, ...cnF, ...cnH, ...axes ],
   steps:[
     { t:'Анализ и выбор посредников',
@@ -23381,7 +23581,17 @@ function model(items,regItems){
   pairUp(cand,segs,seen,key,prof,ctx,nameAt);
   return {pts,segs,polys,flat,dots,prof,meshes};
 }
-function has(part){ try{ const all=PLAYER.scene(part,(part.steps||[]).length).items, m=model(all); return Object.keys(m.pts).length>=2||m.segs.length>=2; }catch(e){ return false; } }
+/* поверхности части задачи (SURF3): сетка, линии на поверхности и точки в пространстве — по шагам */
+const S3C=new WeakMap();
+function surfOf(part){ const f=part&&part.surf3; if(typeof f!=='function') return null; if(S3C.has(f)) return S3C.get(f); let sp=null; try{ sp=f()||null; }catch(e){ console.error(e); } S3C.set(f,sp); return sp; }
+function withSurf(m,part,kk){ const sp=surfOf(part); if(!sp) return m; const last=(part.steps||[]).length, S_=st=>st===-1?last:(st||0);   /* st: −1 — последний шаг (ответ) */
+  const g=st=>S_(st)===kk&&kk>0?'new':'given', on=o=>S_(o.st)<=kk&&(o.to==null||kk<=o.to);
+  (sp.meshes||[]).forEach(o=>{ if(on(o)&&o.tris&&o.tris.length) m.meshes.push({tris:o.tris,col:o.col||'#c9b07a',op:o.op,g:g(o.st)}); });
+  (sp.lines||[]).forEach(o=>{ if(!on(o)||!o.p||o.p.length<2) return; m.polys.push({p:o.p,k:o.k||'main',g:g(o.st),open:true});
+    if(o.proj) m.flat.push({ls:[o.p.map(q=>[q[0],q[1],0]),o.p.map(q=>[q[0],0,q[2]])],k:o.k||'main',g:g(o.st)}); });
+  (sp.pts||[]).forEach(o=>{ if(on(o)) m.pts[o.nm]={p:o.p,k:o.k||'main',g:g(o.st)}; });
+  return m; }
+function has(part){ if(part&&typeof part.surf3==='function') return true; try{ const all=PLAYER.scene(part,(part.steps||[]).length).items, m=model(all); return Object.keys(m.pts).length>=2||m.segs.length>=2; }catch(e){ return false; } }
 /* ── окно ──
    Управление: один палец/мышь — вращать (с инерцией); два пальца — зум и сдвиг; колесо — зум к курсору;
    двойное касание — исходный вид. Кнопки «Объём / Спереди / Сверху» плавно поворачивают модель:
@@ -23391,8 +23601,8 @@ const lerp=(a,b,t)=>a+(b-a)*t, ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 function close(){ if(!S) return; cancelAnimationFrame(S.raf); cancelAnimationFrame(S.anim); S.ro&&S.ro.disconnect(); S.el.remove(); try{ S.unlock&&S.unlock(); }catch(e){} document.removeEventListener('keydown',S.key,true); document.body.classList.remove('t3d-open'); S=null; }
 function open(t,pi,k){
   close(); const parts=PLAYER.partsOf(t), part=parts[pi]||parts[0], n=(part.steps||[]).length;
-  const fullItems=PLAYER.scene(part,n).items, full=model(fullItems), cache={};
-  const M=kk=>cache[kk]||(cache[kk]=model(PLAYER.scene(part,kk).items,fullItems));
+  const fullItems=PLAYER.scene(part,n).items, full=withSurf(model(fullItems),part,n), cache={};
+  const M=kk=>cache[kk]||(cache[kk]=withSurf(model(PLAYER.scene(part,kk).items,fullItems),part,kk));
   /* рамка по всей задаче — при смене шага и вращении масштаб не прыгает */
   const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p),...full.flat.map(o=>[].concat(...o.ls)),full.dots.map(d=>d.p),...full.meshes.map(o=>[].concat(...o.tris)));
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(0,...all.map(p=>p[i])));
@@ -23504,7 +23714,7 @@ function open(t,pi,k){
     /* тела: треугольники от дальних к ближним, освещение — от зрителя и чуть сверху */
     let mesh=''; if(m.meshes.length){ const Lt=(()=>{ const v=[-D[0],-D[1],-D[2]+0.7], l=Math.hypot(...v)||1; return v.map(x=>x/l); })(), T3=[];
       m.meshes.forEach(o=>{ const rgb=[1,3,5].map(i=>parseInt(o.col.slice(i,i+2),16)); o.tris.forEach(t=>{ const q=t.map(P), nr=crs(sub(t[1],t[0]),sub(t[2],t[0])), nl=Math.hypot(...nr)||1;
-        const sh=0.5+0.5*Math.abs(dot(nr,Lt))/nl; T3.push({d:(q[0][2]+q[1][2]+q[2][2])/3,s:`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke-width=".35" fill-opacity=".8" stroke-opacity=".8"/>`}); }); });
+        const sh=0.5+0.5*Math.abs(dot(nr,Lt))/nl; T3.push({d:(q[0][2]+q[1][2]+q[2][2])/3,s:`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke-width=".35" fill-opacity="${o.op||.8}" stroke-opacity="${o.op||.8}"/>`}); }); });
       T3.sort((a,b)=>b.d-a.d); mesh='<g class="t3d-mesh">'+T3.map(x=>x.s).join('')+'</g>'; }
     /* построения на плоскостях проекций (как на эпюре) */
     m.flat.forEach(o=>{ const col=COL[o.k]||COL.main, nw=o.g==='new'; o.ls.forEach(l=>{ for(let i=0;i<l.length-1;i++){ const a=l[i], b=l[i+1], h=hid(mid3(a,b));
@@ -23667,6 +23877,283 @@ function open(t){
   draw(play?0:1); raf=requestAnimationFrame(loop);
 }
 return {has,open,close};
+})();
+/* ═════════ SURFLAB: как образуются поверхности — образующая движется по направляющим, поверхность «заметается» ═════════
+   Страница #/ng/surf (и #/ng/surf/<id>), окно из разбора задачи (кнопка «▶ Как образуется» у частей с полем form).
+   Каждая поверхность — P(t, s): t ∈ [0; 1] — ход движения образующей, s ∈ [0; 1] — точка на образующей.
+   Ползунок «ход» показывает заметённую часть [0; t]; текущая образующая — красная, направляющие — синие,
+   плоскость параллелизма — полупрозрачная. «Проекции» кладут образующие на π₁ и π₂ — так поверхность выглядит на эпюре,
+   «Точка на поверхности» — как точку находят через образующую или параллель. Рисунок — холст 2D, ортогональная проекция. */
+window.SURFLAB=(function(){
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const lerp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+const PI=Math.PI, cos=Math.cos, sin=Math.sin;
+const pts=(f,n,a,b)=>{ a=a==null?0:a; b=b==null?1:b; const o=[]; for(let i=0;i<=n;i++) o.push(f(a+(b-a)*i/n)); return o; };
+const YC=42;   /* все поверхности стоят перед π₂ (y > 0) и над π₁ (z > 0) */
+const TL=(n,href)=>`<a href="${href}">${n}</a>`;
+const WB=n=>'#/ng/tasks/'+n;
+/* ── поверхности ── */
+const LIST=[
+ { id:'cyl', grp:'Линейчатые развёртываемые', name:'Цилиндр вращения', short:'цилиндр',
+   how:'Прямая-образующая скользит по окружности-направляющей, оставаясь параллельной оси i.',
+   det:'Φ (d, i): направляющая d — окружность, образующие ∥ i.',
+   P:(t,s)=>[22*cos(2*PI*t),YC+22*sin(2*PI*t),6+56*s], nt:48, ns:4,
+   guides:[ {p:pts(u=>[22*cos(2*PI*u),YC+22*sin(2*PI*u),6],64),k:'dir',l:'d'}, {p:[[0,YC,0],[0,YC,70]],k:'axis',l:'i'} ],
+   M:[0.62,0.55],
+   txt:['На эпюре цилиндр с осью ⟂ π₁ — окружность на π₁ (вся поверхность проецируется в неё: она горизонтально-проецирующая) и прямоугольник на π₂.',
+        'Точка на цилиндре: её горизонтальная проекция лежит на окружности; фронтальную находят по образующей.'],
+   links:[['№ 73, 74 — пересечение с цилиндром',WB(73)],['№ 75 б',WB(75)],['№ 78 б — касательная плоскость',WB(78)]] },
+ { id:'cone', grp:'Линейчатые развёртываемые', name:'Конус вращения', short:'конус',
+   how:'Прямая проходит через неподвижную вершину S и скользит по окружности-направляющей.',
+   det:'Φ (S, d): вершина S, направляющая d — окружность.',
+   P:(t,s)=>lerp([0,YC,66],[26*cos(2*PI*t),YC+26*sin(2*PI*t),6],s), nt:48, ns:6,
+   guides:[ {p:pts(u=>[26*cos(2*PI*u),YC+26*sin(2*PI*u),6],64),k:'dir',l:'d'}, {p:[[0,YC,0],[0,YC,72]],k:'axis',l:'i'}, {p:[[0,YC,66]],k:'pt',l:'S'} ],
+   M:[0.6,0.6],
+   txt:['На эпюре: на π₁ — окружность основания и точка S′, на π₂ — треугольник (очерковые образующие).',
+        'Точка на конусе — на образующей S1 или на параллели (окружности ⟂ оси). Образующая — прямая, поэтому конус режут плоскостью через вершину.'],
+   links:[['№ 70 — конус и линия на нём',WB(70)],['№ 71 а',WB(71)],['№ 75 а',WB(75)],['ДЗ №5, вар. 1–10','#/ng5/1']] },
+ { id:'obl', grp:'Линейчатые развёртываемые', name:'Наклонный цилиндр', short:'наклонный цилиндр',
+   how:'Образующая скользит по окружности основания и всё время параллельна наклонному направлению s.',
+   det:'Φ (d, s): направляющая d — окружность в плоскости π₁, образующие ∥ s.',
+   P:(t,s)=>add([20*cos(2*PI*t)-14,YC+20*sin(2*PI*t),6],mul([28,-8,54],s)), nt:48, ns:4,
+   guides:[ {p:pts(u=>[20*cos(2*PI*u)-14,YC+20*sin(2*PI*u),6],64),k:'dir',l:'d'}, {p:pts(u=>[20*cos(2*PI*u)+14,YC-8+20*sin(2*PI*u),60],64),k:'thin'}, {p:[[-14,YC,6],[14,YC-8,60]],k:'axis',l:'s'} ],
+   M:[0.35,0.5],
+   txt:['Основания — окружности, параллельные π₁: на π₁ они видны без искажения, на π₂ — отрезки.',
+        'Прямую с ним пересекают плоскостью, параллельной образующим (она режет цилиндр по образующим) — так решается ДЗ №5, варианты 11–20.'],
+   links:[['ДЗ №5, вар. 11–20','#/ng5/11'],['№ 73 в — косой цилиндр',WB(73)]] },
+ { id:'conoid', grp:'С плоскостью параллелизма', name:'Коноид', short:'коноид',
+   how:'Прямая скользит по двум направляющим — прямой d₁ и кривой d₂ — и всё время параллельна плоскости α.',
+   det:'Φ (d₁, d₂, α): d₁ — прямая, d₂ — кривая, образующие ∥ α. В № 68 а α ∥ π₂, поэтому образующие — фронтали.',
+   P:(t,s)=>{ const y=YC-26+52*t; return lerp([-32,y,52],[32,y,8+40*Math.sqrt(Math.max(0,1-((y-YC)/26)**2))],s); }, nt:40, ns:6,
+   guides:[ {p:[[-32,YC-30,52],[-32,YC+30,52]],k:'dir',l:'d₁'}, {p:pts(u=>{ const y=YC-26+52*u; return [32,y,8+40*Math.sqrt(Math.max(0,1-((y-YC)/26)**2))]; },64),k:'dir',l:'d₂'} ],
+   plane:{p:[[-72,YC,0],[-46,YC,0],[-46,YC,56],[-72,YC,56]],l:'α'},
+   M:[0.7,0.45],
+   txt:['Образующие ∥ α ∥ π₂ — фронтали: на π₁ они параллельны оси x, на π₂ видны в натуральную величину.',
+        'Точка на коноиде: на π₁ проводим через неё прямую ∥ x (образующую), находим её концы на d₁′ и d₂′, переносим на π₂ — точка лежит на этой образующей. Очерк на π₂ — огибающая образующих.'],
+   links:[['№ 68 а — коноид',WB(68)]] },
+ { id:'cylindroid', grp:'С плоскостью параллелизма', name:'Цилиндроид', short:'цилиндроид',
+   how:'Прямая скользит по двум кривым направляющим d₁ и d₂ и остаётся параллельной плоскости α.',
+   det:'Φ (d₁, d₂, α): обе направляющие — кривые, образующие ∥ α.',
+   P:(t,s)=>{ const a=PI*t; return lerp([-32,YC+18*cos(a),10+18*sin(a)],[32,YC+18*cos(a),10+40*sin(a)],s); }, nt:40, ns:6,
+   guides:[ {p:pts(u=>[-32,YC+18*cos(PI*u),10+18*sin(PI*u)],48),k:'dir',l:'d₁'}, {p:pts(u=>[32,YC+18*cos(PI*u),10+40*sin(PI*u)],48),k:'dir',l:'d₂'} ],
+   plane:{p:[[-72,YC,0],[-46,YC,0],[-46,YC,56],[-72,YC,56]],l:'α'},
+   M:[0.4,0.6],
+   txt:['То же правило, что у коноида: точки двух направляющих с одинаковой глубиной соединяются образующей-фронталью (α ∥ π₂).',
+        'Коноид — частный случай цилиндроида, у которого одна из направляющих прямая.'],
+   links:[['№ 68 а — коноид (близкий родственник)',WB(68)]] },
+ { id:'hypar', grp:'С плоскостью параллелизма', name:'Косая плоскость (гиперболический параболоид)', short:'гиперболический параболоид',
+   how:'Прямая скользит по двум скрещивающимся прямым d₁ и d₂ параллельно плоскости α.',
+   det:'Φ (d₁, d₂, α): d₁ и d₂ — скрещивающиеся прямые, образующие ∥ α.',
+   P:(t,s)=>{ const y=YC-24+48*t; return lerp([-30,y,10+40*t],[30,y,50-40*t],s); }, nt:30, ns:10,
+   guides:[ {p:[[-30,YC-24,10],[-30,YC+24,50]],k:'dir',l:'d₁'}, {p:[[30,YC-24,50],[30,YC+24,10]],k:'dir',l:'d₂'} ],
+   plane:{p:[[-72,YC,0],[-46,YC,0],[-46,YC,56],[-72,YC,56]],l:'α'},
+   M:[0.3,0.4], second:(t,s)=>{ const x=-30+60*t; return lerp([x,YC-24,10+(x+30)/60*40],[x,YC+24,50-(x+30)/60*40+0],s); },
+   txt:['«Седло»: поверхность прямая во всех направлениях образующих, но не плоская. У неё два семейства прямых — вторая плоскость параллелизма ⟂ первой.',
+        'Прямую с косой плоскостью пересекают через вспомогательную плоскость, в которой лежит прямая: она режет поверхность по кривой — № 77 в.'],
+   links:[['№ 77 в — прямая и косая плоскость',WB(77)]] },
+ { id:'helicoid-right', grp:'Винтовые', name:'Прямой геликоид', short:'прямой геликоид',
+   how:'Прямая, перпендикулярная оси i, пересекает её и совершает винтовое движение: поворачивается и поднимается равномерно.',
+   det:'Φ (i, m, p): ось i, образующая ⟂ i, шаг p. Это ещё и коноид с плоскостью параллелизма π₁.',
+   P:(t,s)=>{ const a=2*PI*1.25*t, r=24*s; return [r*cos(a),YC+r*sin(a),6+44*1.25*t]; }, nt:72, ns:6,
+   guides:[ {p:[[0,YC,0],[0,YC,70]],k:'axis',l:'i'}, {p:pts(u=>[24*cos(2*PI*1.25*u),YC+24*sin(2*PI*1.25*u),6+55*u],96),k:'thin',l:'винтовая'} ],
+   trace:[1],
+   M:[0.55,0.6],
+   txt:['Шаг p — подъём за один оборот. Делим окружность на 12 частей и шаг — на 12: за 30° образующая поднимается на p/12.',
+        'Сечение плоскостью ⟂ оси — прямая; каждая точка образующей описывает винтовую линию (на π₂ — синусоида).'],
+   links:[['№ 68 в — косой геликоид',WB(68)]] },
+ { id:'helicoid-oblique', grp:'Винтовые', name:'Косой закрытый геликоид', short:'косой геликоид',
+   how:'Прямая AB пересекает ось i под постоянным углом и совершает винтовое движение: поворот на 30° — подъём на p/12.',
+   det:'Φ (i, AB, p): ось i, образующая AB (B ∈ i), шаг p; «закрытый» — образующая пересекает ось.',
+   P:(t,s)=>{ const a=2*PI*t, r=24*(1-s); return [-r*cos(a),YC+r*sin(a),4+48*t+16*s]; }, nt:72, ns:6,
+   guides:[ {p:[[0,YC,0],[0,YC,76]],k:'axis',l:'i'}, {p:pts(u=>[-24*cos(2*PI*u),YC+24*sin(2*PI*u),4+48*u],96),k:'thin'} ],
+   trace:[0],
+   M:[0.9,0.5],
+   txt:['Точка A описывает винтовую линию на цилиндре радиуса |AB′|, точка B скользит по оси на p/4 выше A.',
+        'Точка на геликоиде — на образующей (по горизонтальной проекции — радиус) или на сечении плоскостью ⟂ оси: оно — спираль Архимеда.'],
+   links:[['№ 68 в — правый косой закрытый геликоид',WB(68)]] },
+ { id:'rev', grp:'Поверхности вращения', name:'Поверхность вращения', short:'поверхность вращения',
+   how:'Образующая g (здесь — кривая) вращается вокруг оси i; каждая её точка описывает окружность-параллель.',
+   det:'Φ (i, g): ось i и образующая g.',
+   P:(t,s)=>{ const a=2*PI*t, r=8+0.022*(s*56-26)**2, z=6+56*s; const b=0.6; return [r*cos(a+b*(1-s)),YC+r*sin(a+b*(1-s)),z]; }, nt:56, ns:20, gcurve:true,
+   guides:[ {p:[[0,YC,0],[0,YC,70]],k:'axis',l:'i'} ],
+   trace:[0,0.46,1],
+   M:[0.45,0.7],
+   txt:['Параллели — окружности ⟂ оси (горло — наименьшая, экватор — наибольшая); меридианы — сечения плоскостями через ось. Главный меридиан (∥ π₂) — очерк на π₂.',
+        'Точка на поверхности вращения находится по параллели: на π₁ (ось ⟂ π₁) параллель — окружность, на π₂ — отрезок ∥ x.'],
+   links:[['№ 68 б — поверхность вращения',WB(68)],['№ 78 г',WB(78)],['ДЗ №5, вар. 21–30','#/ng5/21']] },
+ { id:'sphere', grp:'Поверхности вращения', name:'Сфера', short:'сфера',
+   how:'Окружность вращается вокруг своего диаметра i.',
+   det:'Φ (i, g): g — окружность, i — её диаметр.',
+   P:(t,s)=>{ const a=2*PI*t, f=PI*(s-0.5); return [26*cos(f)*cos(a),YC+26*cos(f)*sin(a),34+26*sin(f)]; }, nt:48, ns:24, gcurve:true,
+   guides:[ {p:[[0,YC,2],[0,YC,66]],k:'axis',l:'i'} ],
+   trace:[0.5],
+   M:[0.3,0.68],
+   txt:['Очерк на π₁ — экватор, на π₂ — главный меридиан. Линии сферы, параллельные плоскостям проекций, — окружности: по ним и находят точки.'],
+   links:[['№ 69 а — точки и линии на сфере',WB(69)],['№ 71 б, 75 в, 76',WB(76)],['№ 78 а',WB(78)]] },
+ { id:'torus', grp:'Поверхности вращения', name:'Тор', short:'тор',
+   how:'Окружность радиуса r вращается вокруг оси i, лежащей в её плоскости и не проходящей через центр.',
+   det:'Φ (i, g): g — окружность, i в её плоскости на расстоянии R от центра.',
+   P:(t,s)=>{ const a=2*PI*t, f=2*PI*s, R=24, r=10, q=R+r*cos(f); return [q*cos(a),YC+q*sin(a),30+r*sin(f)]; }, nt:56, ns:24, gcurve:true,
+   guides:[ {p:[[0,YC,4],[0,YC,58]],k:'axis',l:'i'} ],
+   trace:[0,0.5],
+   M:[0.35,0.2],
+   txt:['Внешний экватор, внутренний экватор (горло) и средняя окружность — параллели тора. Точку находят по параллели, как у любой поверхности вращения.'],
+   links:[['№ 69 б — тор',WB(69)],['№ 74 а, 77 а, 83',WB(83)]] },
+ { id:'hyperboloid', grp:'Поверхности вращения', name:'Однополостный гиперболоид', short:'гиперболоид',
+   how:'Прямая g, скрещивающаяся с осью i, вращается вокруг неё. Поверхность вращения — и одновременно линейчатая.',
+   det:'Φ (i, g): g скрещивается с i.',
+   P:(t,s)=>{ const a=2*PI*t, p=[12,YC-24+48*s-YC,8+52*s]; const x=p[0], y=p[1]; return [x*cos(a)-y*sin(a),YC+x*sin(a)+y*cos(a),p[2]]; }, nt:56, ns:8,
+   guides:[ {p:[[0,YC,0],[0,YC,68]],k:'axis',l:'i'} ],
+   trace:[0.5],
+   M:[0.4,0.75], second:(t,s)=>{ const a=2*PI*t, p=[12,24-48*s,8+52*s]; return [p[0]*cos(a)-p[1]*sin(a),YC+p[0]*sin(a)+p[1]*cos(a),p[2]]; },
+   txt:['Горло — окружность радиуса, равного расстоянию между g и i. Через каждую точку проходят две прямые поверхности (два семейства).'],
+   links:[['№ 86 — касательная плоскость к гиперболоиду',WB(86)]] }
+];
+const BY={}; LIST.forEach(o=>BY[o.id]=o);
+/* ── рисование ── */
+function css(el,n,d){ try{ const v=getComputedStyle(el).getPropertyValue(n).trim(); return v||d; }catch(e){ return d; } }
+function scene(o){ /* рамка по всей поверхности и направляющим */
+  const all=[]; for(let i=0;i<=o.nt;i+=4) for(let j=0;j<=o.ns;j++) all.push(o.P(i/o.nt,j/o.ns)); o.guides.forEach(g=>all.push(...g.p)); if(o.plane) all.push(...o.plane.p);
+  const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(...all.map(p=>p[i])));
+  mn[0]-=8; mx[0]+=8; mn[1]=Math.min(mn[1],0); mx[1]+=8; mx[2]+=6;
+  return {mn,mx,C:[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2],R:Math.hypot(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2])/2}; }
+function mount(host,id,opt){ opt=opt||{};
+  let o=BY[id]||LIST[0], sc=scene(o);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const S={t:reduce?1:0,play:!reduce,dir:1,hold:0,yaw:0.62,pit:0.38,zoom:1,proj:false,pt:false,two:false,last:0,raf:0,alive:true};
+  host.innerHTML=`<div class="sl">
+    ${opt.picker===false?'':`<div class="sl-pick" role="tablist" aria-label="Поверхность">${[...new Set(LIST.map(x=>x.grp))].map(g=>`<div class="sl-grp"><span>${g}</span><div>${LIST.filter(x=>x.grp===g).map(x=>`<button class="chip${x.id===o.id?' on':''}" role="tab" aria-selected="${x.id===o.id}" data-id="${x.id}">${x.name.replace(/ \(.*\)$/,'')}</button>`).join('')}</div></div>`).join('')}</div>`}
+    <div class="sl-main"><div class="sl-stage"><canvas class="sl-cv" aria-label="Поверхность в пространстве: тяни, чтобы повернуть"></canvas>
+      <div class="sl-views" role="group" aria-label="Вид"><button data-v="home" class="on">Объём</button><button data-v="front">Спереди</button><button data-v="top">Сверху</button></div>
+      <div class="sl-hint">тяни — крутить · колесо или щипок — зум</div></div>
+      <div class="sl-ctl"><button class="sl-play" aria-label="Пауза">❚❚</button><label class="sl-rg"><span>ход образующей</span><input type="range" min="0" max="1000" value="${Math.round(S.t*1000)}" aria-label="Ход образующей"></label></div>
+      <div class="sl-opts"><button data-o="proj" aria-pressed="false">Проекции на π₁ и π₂</button><button data-o="pt" aria-pressed="false">Точка на поверхности</button><button data-o="two" aria-pressed="false" hidden>Второе семейство прямых</button></div>
+      <div class="sl-info"></div></div></div>`;
+  const cv=host.querySelector('.sl-cv'), ctx=cv.getContext('2d'), stage=host.querySelector('.sl-stage'), rg=host.querySelector('input[type=range]'), pb=host.querySelector('.sl-play'), info=host.querySelector('.sl-info');
+  const fillInfo=()=>{ info.innerHTML=`<h3>${o.name}</h3><p class="sl-how"><b>Как образуется.</b> ${o.how}</p><p class="sl-det"><b>Определитель.</b> ${o.det}</p>${o.txt.map(x=>`<p>${x}</p>`).join('')}`
+      +(o.links&&o.links.length?`<div class="sl-links"><span>Где встречается:</span> ${o.links.map(l=>TL(l[0],l[1])).join(' · ')}</div>`:'');
+    const tw=host.querySelector('[data-o="two"]'); tw.hidden=!o.second; if(!o.second){ S.two=false; tw.classList.remove('on'); tw.setAttribute('aria-pressed','false'); } };
+  fillInfo();
+  let W=600, Hh=440, dpr=1;
+  const size=()=>{ const r=stage.getBoundingClientRect(); W=Math.max(280,Math.round(r.width)); Hh=Math.round(Math.min(Math.max(300,window.innerHeight*0.62),W*0.9)); dpr=Math.min(2,window.devicePixelRatio||1);
+    cv.width=W*dpr; cv.height=Hh*dpr; cv.style.width=W+'px'; cv.style.height=Hh+'px'; draw(); };
+  const basis=()=>{ const cy=cos(S.yaw), sy=sin(S.yaw), cp=cos(S.pit), sp=sin(S.pit); const Rv=[-cy,sy,0], D=[-sy*cp,-cy*cp,-sp]; return {Rv,D,U:crs(Rv,D)}; };
+  function draw(){ if(!S.alive) return;
+    const B=basis(), k=Math.min(W,Hh)/(2.05*sc.R)*S.zoom, cx=W/2, cy=Hh/2+6;
+    const P=p=>{ const d=sub(p,sc.C); return [cx+k*dot(d,B.Rv),cy-k*dot(d,B.U),dot(d,B.D)]; };
+    const ink=css(host,'--ink','#0e1c33'), mut=css(host,'--mut','#5d6f8a'), bg=css(host,'--surf','#fff');
+    const dark=/^#(0|1)/.test(bg)||/rgb\(\s*(1?\d|2\d),/.test(bg);
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,Hh); ctx.fillStyle=bg; ctx.fillRect(0,0,W,Hh);
+    const [x0,y0,z0]=sc.mn, [x1,y1,z1]=sc.mx;
+    const poly=(ps,fill,stroke,lw)=>{ ctx.beginPath(); ps.forEach((p,i)=>{ const q=P(p); i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); }); ctx.closePath(); if(fill){ ctx.fillStyle=fill; ctx.fill(); } if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=lw||1; ctx.stroke(); } };
+    const line=(ps,col,lw,dash,alpha)=>{ if(ps.length<2) return; ctx.save(); ctx.globalAlpha=alpha==null?1:alpha; ctx.beginPath(); ps.forEach((p,i)=>{ const q=P(p); i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); }); ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.setLineDash(dash||[]); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke(); ctx.restore(); };
+    /* плоскости проекций и ось x */
+    const p2=()=>poly([[x0,0,z0],[x1,0,z0],[x1,0,z1],[x0,0,z1]],dark?'rgba(80,130,220,.14)':'rgba(53,103,181,.08)','rgba(53,103,181,.45)',1);
+    const p1=()=>poly([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],dark?'rgba(196,176,128,.13)':'rgba(196,176,128,.2)','rgba(138,116,66,.5)',1);
+    if(B.D[1]<0){ p2(); p1(); } else { p1(); p2(); }
+    line([[x1,0,0],[x0,0,0]],ink,1.3); { const q=P([x0,0,0]), r=P([x1,0,0]), l=Math.hypot(q[0]-r[0],q[1]-r[1])||1; ctx.fillStyle=ink; ctx.font='italic 600 15px "Times New Roman",serif'; ctx.fillText('x',q[0]+(q[0]-r[0])/l*10-4,q[1]+(q[1]-r[1])/l*10+5);
+      const a=P([x0,0,z1]), b=P([x0,y1,0]); ctx.fillStyle=mut; ctx.fillText('π₂',a[0]+6,a[1]+18); ctx.fillText('π₁',b[0]+6,b[1]-6); }
+    const T=S.t, nT=Math.max(0,T*o.nt), fam=S.two&&o.second?o.second:null;
+    const G=(f,t,n)=>pts(s=>f(t,s),n||o.ns);
+    /* проекции: образующие (каждая 4-я) и текущая — на π₁ (z = 0) и π₂ (y = 0) */
+    if(S.proj){ const on1=p=>[p[0],p[1],0], on2=p=>[p[0],0,p[2]], c1='#8a7442', c2='#2f5f9e';
+      for(let i=0;i<=Math.floor(nT);i+=Math.max(1,Math.round(o.nt/16))){ const g=G(o.P,i/o.nt); line(g.map(on1),c1,.7,null,.55); line(g.map(on2),c2,.7,null,.55); }
+      const g=G(o.P,T); line(g.map(on1),c1,1.8); line(g.map(on2),c2,1.8);
+      o.guides.forEach(gd=>{ if(gd.p.length>1){ line(gd.p.map(on1),c1,1,gd.k==='axis'?[6,3,1,3]:null,.8); line(gd.p.map(on2),c2,1,gd.k==='axis'?[6,3,1,3]:null,.8); } }); }
+    /* всё объёмное — одним списком по глубине: треугольники, отрезки линий, точки */
+    const L=[]; const base=dark?[201,176,122]:[201,176,122], Lt=(()=>{ const v=[-B.D[0],-B.D[1],-B.D[2]+0.7], l=Math.hypot(...v); return v.map(x=>x/l); })();
+    const tri=(a,b,c,col,al)=>{ const n=crs(sub(b,a),sub(c,a)), nl=Math.hypot(...n)||1, sh=0.52+0.48*Math.abs(dot(n,Lt))/nl, qa=P(a), qb=P(b), qc=P(c);
+      L.push({d:(qa[2]+qb[2]+qc[2])/3,f:()=>{ ctx.beginPath(); ctx.moveTo(qa[0],qa[1]); ctx.lineTo(qb[0],qb[1]); ctx.lineTo(qc[0],qc[1]); ctx.closePath(); const c=`rgba(${col.map(v=>Math.round(v*sh)).join(',')},${al})`; ctx.fillStyle=c; ctx.strokeStyle=c; ctx.lineWidth=.6; ctx.fill(); ctx.stroke(); }}); };
+    const seg=(a,b,col,lw,dash)=>{ const qa=P(a), qb=P(b); L.push({d:(qa[2]+qb[2])/2-0.01,f:()=>{ ctx.beginPath(); ctx.moveTo(qa[0],qa[1]); ctx.lineTo(qb[0],qb[1]); ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.setLineDash(dash||[]); ctx.lineCap='round'; ctx.stroke(); ctx.setLineDash([]); }}); };
+    const pl=(ps,col,lw,dash)=>{ for(let i=1;i<ps.length;i++) seg(ps[i-1],ps[i],col,lw,dash); };
+    /* заметённая часть: клетки [0; t], последняя — дробная */
+    const full=Math.floor(nT), cell=(ta,tb)=>{ for(let j=0;j<o.ns;j++){ const a=o.P(ta,j/o.ns), b=o.P(tb,j/o.ns), c=o.P(tb,(j+1)/o.ns), d=o.P(ta,(j+1)/o.ns); tri(a,b,c,base,.86); tri(a,c,d,base,.86); } };
+    for(let i=0;i<full;i++) cell(i/o.nt,(i+1)/o.nt); if(nT>full+1e-6) cell(full/o.nt,T);
+    /* сетка: каждая 4-я образующая — тонко, чтобы видно было «из чего» сделана поверхность */
+    const gl=dark?'rgba(255,240,210,.35)':'rgba(90,70,30,.35)';
+    for(let i=0;i<=full;i+=Math.max(1,Math.round(o.nt/16))) pl(G(o.P,i/o.nt),gl,.8);
+    if(fam){ for(let i=0;i<=12;i++) pl(G(fam,i/12,8),'#13885a',1.2); }
+    if(o.trace) o.trace.forEach(sv=>pl(pts(t=>o.P(t,sv),Math.max(2,Math.ceil(nT*2)),0,T),'#2f6bd8',1.6));
+    if(o.plane) poly(o.plane.p,dark?'rgba(120,160,230,.16)':'rgba(80,120,200,.12)','rgba(80,120,200,.55)',1);
+    o.guides.forEach(gd=>{ if(gd.k==='pt'){ const q=P(gd.p[0]); L.push({d:q[2]-0.2,f:()=>{ ctx.beginPath(); ctx.arc(q[0],q[1],3.4,0,2*PI); ctx.fillStyle=ink; ctx.fill(); }}); return; }
+      pl(gd.p,gd.k==='axis'?ink:gd.k==='thin'?'rgba(47,107,216,.55)':'#2f6bd8',gd.k==='dir'?2.2:1.2,gd.k==='axis'?[9,4,2,4]:gd.k==='thin'?[4,4]:null); });
+    /* текущая образующая */
+    pl(G(o.P,T,o.gcurve?o.ns*2:o.ns),'#d4322c',3);
+    /* точка на поверхности: её образующая (или параллель) и проекции */
+    if(S.pt){ const [tm,sm]=o.M, M=o.P(tm,sm), via=o.trace&&o.gcurve?pts(t=>o.P(t,sm),64):G(o.P,tm,o.gcurve?o.ns*2:o.ns);
+      pl(via,'#13885a',2.4); const M1=[M[0],M[1],0], M2=[M[0],0,M[2]];
+      seg(M,M1,'rgba(19,136,90,.8)',1,[4,3]); seg(M,M2,'rgba(19,136,90,.8)',1,[4,3]);
+      if(S.proj){ line(via.map(p=>[p[0],p[1],0]),'#13885a',1.6); line(via.map(p=>[p[0],0,p[2]]),'#13885a',1.6); }
+      [[M,'M',4],[M1,'M′',3],[M2,'M″',3]].forEach(([p,l,r])=>{ const q=P(p); L.push({d:q[2]-0.3,f:()=>{ ctx.beginPath(); ctx.arc(q[0],q[1],r,0,2*PI); ctx.fillStyle=l==='M'?'#13885a':bg; ctx.strokeStyle='#13885a'; ctx.lineWidth=1.4; ctx.fill(); ctx.stroke();
+        ctx.font='italic 600 15px "Times New Roman",serif'; ctx.lineWidth=3; ctx.strokeStyle=bg; ctx.strokeText(l,q[0]+6,q[1]-6); ctx.fillStyle='#13885a'; ctx.fillText(l,q[0]+6,q[1]-6); }}); }); }
+    L.sort((a,b)=>b.d-a.d); L.forEach(x=>x.f());
+    /* подписи направляющих и оси — поверх */
+    ctx.font='italic 600 15px "Times New Roman",serif';
+    const lab=(p,l,col)=>{ const q=P(p); ctx.lineWidth=3; ctx.strokeStyle=bg; ctx.strokeText(l,q[0]+6,q[1]-6); ctx.fillStyle=col; ctx.fillText(l,q[0]+6,q[1]-6); };
+    o.guides.forEach(gd=>{ if(gd.l&&gd.k!=='thin') lab(gd.p[gd.k==='axis'?gd.p.length-1:Math.floor(gd.p.length*0.85)],gd.l,gd.k==='axis'||gd.k==='pt'?ink:'#2f6bd8'); });
+    if(o.plane) lab(o.plane.p[3],o.plane.l,'#2f6bd8');
+    lab(G(o.P,T)[o.gcurve?Math.round(o.ns*0.7):o.ns],'g','#d4322c'); }
+  const loop=now=>{ if(!S.alive) return; if(!cv.isConnected){ S.alive=false; try{ ro&&ro.disconnect(); }catch(e){} return; } const dt=S.last?Math.min(50,now-S.last):16; S.last=now;
+    if(S.play){ if(S.hold>0) S.hold-=dt; else { S.t+=S.dir*dt/5200; if(S.t>=1){ S.t=1; S.hold=1600; S.dir=-1; } if(S.t<=0){ S.t=0; S.hold=500; S.dir=1; } rg.value=Math.round(S.t*1000); draw(); } }
+    S.raf=requestAnimationFrame(loop); };
+  const setPlay=v=>{ S.play=v; pb.textContent=v?'❚❚':'▶'; pb.setAttribute('aria-label',v?'Пауза':'Играть'); if(v&&S.t>=1){ S.t=0; S.dir=1; } };
+  pb.addEventListener('click',()=>setPlay(!S.play));
+  rg.addEventListener('input',()=>{ setPlay(false); S.t=rg.value/1000; draw(); });
+  host.querySelectorAll('.sl-opts button').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.o; S[k]=!S[k]; b.classList.toggle('on',S[k]); b.setAttribute('aria-pressed',S[k]);
+    if(k==='pt'&&S.pt){ setPlay(false); S.t=1; rg.value=1000; }   /* точку ищем на готовой поверхности */
+    draw(); }));
+  const views={home:[0.62,0.38],front:[0,0],top:[0,PI/2]};
+  const vb=host.querySelectorAll('.sl-views button');
+  let va=0; const animTo=(yaw,pit)=>{ cancelAnimationFrame(va); const a={y:S.yaw,p:S.pit}, t0=performance.now(); let dy=yaw-a.y; dy=Math.atan2(sin(dy),cos(dy));
+    const st=now=>{ const u=Math.min(1,(now-t0)/450), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2; S.yaw=a.y+dy*e; S.pit=a.p+(pit-a.p)*e; draw(); if(u<1) va=requestAnimationFrame(st); }; va=requestAnimationFrame(st); };
+  vb.forEach(b=>b.addEventListener('click',()=>{ vb.forEach(x=>x.classList.toggle('on',x===b)); const v=views[b.dataset.v]; S.zoom=1; animTo(v[0],v[1]); }));
+  host.querySelectorAll('.sl-pick [data-id]').forEach(b=>b.addEventListener('click',()=>{ o=BY[b.dataset.id]; sc=scene(o); S.t=0; S.dir=1; S.hold=0; setPlay(!reduce); if(reduce){ S.t=1; } rg.value=Math.round(S.t*1000);
+    host.querySelectorAll('.sl-pick [data-id]').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-selected',on); }); fillInfo(); draw(); if(opt.onPick) opt.onPick(o.id); }));
+  /* жесты: тянуть — вращать, два пальца — зум */
+  const ptrs=new Map(); let g=null;
+  cv.addEventListener('pointerdown',e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(_){} ptrs.set(e.pointerId,[e.clientX,e.clientY]); const h=host.querySelector('.sl-hint'); if(h) h.style.opacity=0;
+    if(ptrs.size===2){ const a=[...ptrs.values()]; g={pinch:Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]),z:S.zoom}; } else g={x:e.clientX,y:e.clientY}; });
+  cv.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)||!g) return; ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+    if(g.pinch&&ptrs.size>=2){ const a=[...ptrs.values()]; S.zoom=Math.max(0.5,Math.min(4,g.z*Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])/g.pinch)); draw(); return; }
+    if(g.pinch) return; S.yaw+=(e.clientX-g.x)*0.009; S.pit=Math.max(-0.3,Math.min(PI/2,S.pit+(e.clientY-g.y)*0.009)); g.x=e.clientX; g.y=e.clientY; vb.forEach(x=>x.classList.remove('on')); if(!S.play) draw(); });
+  const up=e=>{ ptrs.delete(e.pointerId); if(!ptrs.size) g=null; else if(ptrs.size===1){ const a=[...ptrs.values()][0]; g={x:a[0],y:a[1]}; } };
+  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); S.zoom=Math.max(0.5,Math.min(4,S.zoom*Math.exp(-e.deltaY*0.0015))); draw(); },{passive:false});
+  cv.addEventListener('dblclick',()=>{ S.zoom=1; animTo(views.home[0],views.home[1]); vb.forEach(x=>x.classList.toggle('on',x.dataset.v==='home')); });
+  let ro=null; try{ ro=new ResizeObserver(()=>size()); ro.observe(stage); }catch(e){ window.addEventListener('resize',size); }
+  size(); S.raf=requestAnimationFrame(loop);
+  return { destroy(){ S.alive=false; cancelAnimationFrame(S.raf); cancelAnimationFrame(va); try{ ro&&ro.disconnect(); }catch(e){} }, get id(){ return o.id; } };
+}
+/* ── окно из разбора задачи ── */
+let W0=null;
+function close(){ if(!W0) return; W0.m.destroy(); W0.el.remove(); W0.unlock(); document.removeEventListener('keydown',W0.key); W0=null; }
+function open(id){ close(); const o=BY[id]; if(!o) return;
+  const el=document.createElement('div'); el.className='t3d sl-win'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Как образуется поверхность');
+  el.innerHTML=`<div class="t3d-box"><div class="t3d-top"><div class="t3d-tt"><b>Как образуется поверхность</b><span>${o.name}</span></div><button class="t3d-x" aria-label="Закрыть">✕</button></div><div class="sl-wbody"></div>
+    <p class="sl-note"><a href="#/ng/surf/${o.id}">Все поверхности: коноид, геликоиды, гиперболоид…</a></p></div>`;
+  document.body.appendChild(el);
+  const lockY=window.scrollY||0, bs=document.body.style, prev={pos:bs.position,top:bs.top,w:bs.width,ov:bs.overflow};
+  bs.position='fixed'; bs.top=(-lockY)+'px'; bs.width='100%'; bs.overflow='hidden';
+  const unlock=()=>{ bs.position=prev.pos; bs.top=prev.top; bs.width=prev.w; bs.overflow=prev.ov; window.scrollTo(0,lockY); };
+  const key=e=>{ if(e.key==='Escape') close(); }; document.addEventListener('keydown',key);
+  const m=mount(el.querySelector('.sl-wbody'),id,{picker:false});
+  W0={el,m,unlock,key};
+  el.querySelector('.t3d-x').addEventListener('click',close); el.addEventListener('click',e=>{ if(e.target===el) close(); });
+  el.querySelector('.sl-note a').addEventListener('click',close);
+}
+const has=p=>!!(p&&p.form&&BY[p.form]);
+/* ── страница #/ng/surf[/id] ── */
+let PG=null;
+function view(v,id){ if(PG){ PG.destroy(); PG=null; }
+  const o=BY[id]||LIST[0];
+  v.innerHTML=`<div class="wrap page sl-page"><div class="ptop">${typeof crumbHTML==='function'?crumbHTML([['Задачи','#/ng/tasks'],['Поверхности']]):''}</div>
+    <div class="eyebrow">Поверхности · интерактив</div><h1>Как образуются поверхности</h1>
+    <p class="sl-lead">Любая поверхность — след движущейся линии: образующая скользит по направляющим (или вращается, или движется по винту). Выбери поверхность и смотри, как она «заметается»; включи проекции — увидишь, откуда берутся линии на эпюре.</p>
+    <div id="slHost"></div></div>`;
+  PG=mount(v.querySelector('#slHost'),o.id);   /* уйдёт со страницы — цикл рисования остановится сам (холст вне документа) */
+  return 'Как образуются поверхности'; }
+return {LIST,BY,has,open,close,view,mount};
 })();
 window.GYM=(function(){
 const $q=(r,s)=>r.querySelector(s);
@@ -26645,6 +27132,7 @@ function viewNG(v,r){
   if(r.tab==='dz') return dzOld('ng',r);
   if(r.tab==='day') return viewDay(v,r);
   if(r.tab==='rk2') return RK2.view(v,r);
+  if(r.tab==='surf') return SURFLAB.view(v,r.item);
   if(!r.tab) return subjHome(v,'ng');
   const tab=['path','tasks','hw','check','cheat','learn','var'].includes(r.tab)?r.tab:null;
   if(!tab) return viewNG(v,{s:'ng',tab:'tasks'});
@@ -27028,6 +27516,8 @@ const SECS=[['Проецирование точки',1,8],['Проецирова
   ['Плоскость. Точка и прямая в плоскости',23,30],['Плоские фигуры',31,34],['Прямая и плоскость. Две плоскости',35,50],
   ['Способы преобразования чертежа',51,67],['Поверхности и их пересечения',68,78],['Задачи повышенной трудности',79,89]];
 function secOf(n){ const s=SECS.find(s=>n>=s[1]&&n<=s[2]); return s?{t:s[0]}:null; }
+/* раздел поверхностей: перед задачами — интерактив «как образуются поверхности» (SURFLAB) */
+const SURFCARD=`<a class="surfcard" href="#/ng/surf"><svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><path d="M8 38 C14 20 20 14 24 10 C28 14 34 20 40 38" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M8 38 L24 10 M16 38 L24 10 M32 38 L24 10 M40 38 L24 10" stroke="currentColor" stroke-width="1.2" opacity=".55"/><path d="M8 38 Q24 46 40 38" fill="none" stroke="#d4322c" stroke-width="2.4"/></svg><span><b>Как образуются поверхности — в 3D</b><small>Коноид, геликоиды, гиперболоид, тор: образующая движется, поверхность «заметается». В задачах раздела — кнопки «3D» и «▶ Как образуется».</small></span><i aria-hidden="true">→</i></a>`;
 let nbFilter='all', nbQuery='';
 function ngTasks(v){
   const all=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number').sort((a,b)=>a-b);
@@ -27069,7 +27559,7 @@ function renderNB(){
         cells+=`<a class="tile s${st}" href="${H('ng','tasks',n)}"><b>${n}${window.has3D&&has3D(t)?'<i class="t3b" title="Можно посмотреть в 3D">3D</i>':''}</b><span>${short(t.q,64)}</span>${st?`<em class="tst">${st===2?'Решено сам':'Разобрано'}</em>`:''}</a>`; cnt++;
       } else if(!q&&nbFilter==='all'){ cells+=`<div class="tile off"><b>${n}</b><span>скоро</span></div>`; cnt++; }
     }
-    if(cnt) html+=`<div class="grp">${s[0]} <i>${have}/${s[2]-s[1]+1}</i></div><div class="tiles">${cells}</div>`;
+    if(cnt) html+=`<div class="grp">${s[0]} <i>${have}/${s[2]-s[1]+1}</i></div>${s[1]===68&&!q?SURFCARD:''}<div class="tiles">${cells}</div>`;
   });
   $('nbList').innerHTML=html||'<div class="empty">Ничего не нашлось.</div>';
 }
