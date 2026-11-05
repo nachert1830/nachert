@@ -10,8 +10,8 @@
         каждый неверный вариант с верным НЕ совпадает (зеркальный, отверстие не на той глубине, невидимое — сплошной);
       • втулка: штриховка половины разреза = материал в плоскости y = 0 (точка заштрихована ⟺ там тело), разрез справа,
         граница — ось; неверные варианты нарушают ровно это.
-   4. Экраны: каждый режим проходится нажатиями до итога без ошибок JS; результат и рекорд сохраняются; тизер на главной
-      засчитывает ответ, и билет продолжается со второго задания.
+   4. Экраны: каждый режим проходится нажатиями до итога без ошибок JS; результат и рекорд сохраняются; превью игры
+      на главной больше нет.
    Запуск: из tests/run.js; отдельно — node tests/rkg.js */
 async function rkgCheck(page,URL){
   const bad=[], add=(name,rule,msg)=>bad.push({name,rule,msg:String(msg).slice(0,200)});
@@ -111,15 +111,10 @@ async function rkgCheck(page,URL){
     await page.evaluate(()=>{ RKG._.G.el=1e7; }); await page.waitForTimeout(300);
     const t=await page.evaluate(()=>{ const q=RKG._.G.qs[0]; return {pick:q.pick,ok:q.ok,fb:!!document.querySelector('#rkgFb')}; });
     if(t.pick!==-1||t.ok||!t.fb) add('игра · время','таймер','по истечении времени ответ не закрыт: '+JSON.stringify(t)); }
-  /* тизер на главной */
+  /* тизер на главной убран (РК2 на главной — плашка и плитки); проверяем, что его там нет и главная без ошибок */
   { const before=errs.length; await page.evaluate(()=>{ location.hash='#/'; }); await page.waitForTimeout(300);
-    const b=await page.$('#rkgTz [data-tz]'); if(!b) add('тизер','главная','нет задания на главной');
-    else { await b.click(); await page.waitForTimeout(60);
-      const fb=await page.$('#rkgTz .rkg-fb'); if(!fb) add('тизер','ответ','нет разбора');
-      await page.click('#rkgTz a.rkg-next'); await page.waitForTimeout(250);
-      const s=await page.evaluate(()=>{ const G=RKG._.G; return G&&{i:G.i,p0:G.qs[0].pick,play:!!document.querySelector('#rkgPlay')}; });
-      if(!s||s.i!==1||s.p0==null||!s.play) add('тизер','продолжение','билет не продолжился со второго задания: '+JSON.stringify(s)); }
-    if(errs.length>before) add('тизер','ошибка JS',errs.slice(before).join(' / ')); }
+    if(await page.$('#rkgTz')) add('главная','тизер','превью игры снова на главной');
+    if(errs.length>before) add('главная','ошибка JS',errs.slice(before).join(' / ')); }
   page.off('pageerror',onErr);
   return bad;
 }
