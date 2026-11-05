@@ -23174,7 +23174,7 @@ window.CHANGES=[
   {v:'4.20',d:'5 ноября 2026',items:['РК2 — на первом месте: на главной горящая плашка «РК2 через N дней», ранг и готовность из 100, кнопки «Готовиться к РК2» и «Проверь себя · 3 мин».',
     'Раздел РК: вкладки РК1 · РК2 · РК3 (РК3 откроется после РК2). Вверху РК2 — сколько осталось, ранг, звёзды и серия дней подряд, одно главное действие.',
     '«Что нужно уметь на РК2» — шесть навыков по билету и списку задач преподавателя: фундамент (точка на объекте, h и f), новая ось (прямая общего положения → прямая уровня, № 52, 53), плоскость в натуральную величину (№ 55–57, задача А), вращение вокруг проецирующей (№ 60, 61, задача Б), вращение вокруг прямой уровня (№ 62–67, задача В), ДЗ №3. У каждого — звёзды ★ понял · ★★ построил сам · ★★★ закрепил и кнопка «Дальше». Финал — билет РК2 и пробный РК на время.',
-    'Ранги: Новичок → Чертёжник → Конструктор → Инженер → Готов к РК2 → Мастер эпюра. «Готов к РК2» — от 75 баллов и ★★ в каждом навыке; новый ранг и новая звезда отмечаются салютом. «Проверь себя» за 3 минуты — 5 заданий, сразу видно, насколько готов.',
+    'Ранги: Новичок → Чертёжник → Конструктор → Инженер → Готов к РК2 → Мастер эпюра. «Готов к РК2» — от 75 баллов и ★★ в каждом навыке; новый ранг и новая звезда отмечаются салютом. «Проверь себя» за 3 минуты — 5 чертежей, ответ одним нажатием, верно — сразу следующий.',
     'Из лекций — прямо в навыках: рис. 5.3 и 5.7 (прямая → уровня → проецирующая), 5.6 и 5.8 (плоскость → проецирующая → уровня), 5.10 (истинный вид и угол к π₁ вращением), 5.12 и 5.13 (расстояния вращением вокруг горизонтали) — алгоритм по шагам и та же задача тетради с разбором.',
     'Срок РК2 — неделя РК по плану семестра (11-я неделя).',
     'Новые цвета — как ремешок часов: белое полотно, тёмно-синяя и красная полосы. Шапка и меню белые с полосой синий · белый · красный, красный — только «горит» и главная кнопка.']},
@@ -25586,6 +25586,8 @@ function iMount(el,Q,onAns){ const {F,H}=LH(), S=LH().S, f=v=>Math.round(v*10)/1
 }
 const GENS={rep:gRep,rot:gRot,par:gPar,perp:gPerp,trl:gTrl,axis:iAxis,irot:iRot};
 const GEN_OF={par:['par'],perp:['perp'],zam:['rep','axis'],rotp:['rot','irot'],rotl:['trl']};
+/* генераторы, где ответ — одно нажатие на вариант (без перетаскивания): для «Проверь себя» */
+const TAP_G=['rep','rot','par','perp','trl'];
 const GEN_NAME={rep:'Новая проекция при замене',rot:'Куда уходит Ā″',par:'Параллельна ли прямая плоскости',perp:'Какой из чертежей — перпендикуляр',trl:'Путь точки при вращении вокруг h',axis:'Поставь ось сам',irot:'Поверни сам'};
 
 /* ── оценка: уверенность (CBM), затухание, слои Знаю / Вижу / Строю, слабое звено ──
@@ -25812,7 +25814,7 @@ function qMapHTML(D){ D=D||snapshot(); const F=FACS[D.fac]||FACS.main;
    <p class="r2-leg"><i class="g"></i>знаю <i class="a"></i>не уверен <i class="r"></i>слабо <i></i>не проверено</p></section>`; }
 function trainHTML(R){ const dz=R&&!R.na?R.danger.length:0;
   return `<section class="r2-tr" aria-labelledby="r2trH"><h2 id="r2trH" class="sp-h2">Тренировки</h2><div class="sp-go">
-   <a class="sp-big pri" href="${H('ng','rk2','t','quick')}"><b>Проверь себя · 3 минуты</b><span>5 заданий — быстро узнаешь, насколько ты готов к РК2.</span><i aria-hidden="true">→</i></a>
+   <a class="sp-big pri" href="${H('ng','rk2','t','quick')}"><b>Проверь себя · 3 минуты</b><span>5 чертежей: нажми на верный — ответ сразу. Узнаешь, насколько ты готов к РК2.</span><i aria-hidden="true">→</i></a>
    <a class="sp-big" href="${H('rk','ng')}"><b>Сдашь РК2? Игра</b><span>8 заданий на время с чертежами — в конце прогноз и что повторить.</span><i aria-hidden="true">→</i></a>
    <a class="sp-big" href="${H('ng','rk2','t','zamer')}"><b>Замер готовности</b><span>15 заданий по всем модулям, ≈ 12 минут. Отвечай и отмечай уверенность.</span><i aria-hidden="true">→</i></a>
    <a class="sp-big" href="${H('ng','rk2','t','mix')}"><b>По слабым местам</b><span>10 заданий: чаще то, где готовность ниже и давно не повторял.</span><i aria-hidden="true">→</i></a>
@@ -25838,7 +25840,7 @@ function heroHTML(big){ const I=RKS.info(2), R=readiness(), SA=skillsAll(), rk=r
       <small>${rk.held?'Для «Готов к РК2» нужны ★★ в: '+rk.weak.map(S=>S.t.toLowerCase()).join(', '):rk.next?'До «'+rk.next+'» — '+rk.toNext+' '+(rk.toNext%10===1&&rk.toNext%100!==11?'балл':rk.toNext%10>=2&&rk.toNext%10<=4&&(rk.toNext%100<12||rk.toNext%100>14)?'балла':'баллов'):'Высший ранг. Держи его до РК.'}</small></div>
      <div class="rkh-side"><div><b>${stars}<i>★</i></b><span>из 18</span></div><div class="${st.n&&!st.today?'warn':''}"><b>${st.n}</b><span>${st.n&&!st.today?'серия сгорит':'дн. подряд'}</span></div></div>
     </div>`:'';
-  const go=R.empty?{href:H('ng','rk2','t','quick'),t:'Проверь себя: 3 минуты',d:'5 коротких заданий из всех навыков — узнаешь, насколько ты готов к РК2. Отвечай и отмечай уверенность — сразу появятся первые баллы и ранг.'}:nx||{href:H('ng','rk2'),t:'Готовиться к РК2',d:''};
+  const go=R.empty?{href:H('ng','rk2','t','quick'),t:'Проверь себя: 3 минуты',d:'5 чертежей — нажимаешь на верный, ответ сразу. Узнаешь, насколько ты готов к РК2, и получишь первые баллы и ранг.'}:nx||{href:H('ng','rk2'),t:'Готовиться к РК2',d:''};
   return `<section class="rkh rkh-${heat}${big?' rkh-big':''}" aria-labelledby="${id}">
    <div class="rkh-top"><span class="rkh-pill${heat==='hot'&&!I.past?' live':''}"><i></i>${pill}</span><span class="rkh-meta">${I.exact?'гр. '+attr(I.group)+' · ':''}${RKS.when(I)}</span></div>
    <div class="rkh-g"><div><${T} id="${id}" class="rkh-t">РК2${big?'':' <span>начерт</span>'}</${T}><div class="rkh-s">${big?'Способы преобразования чертежа: замена плоскостей и два вращения':'Замена плоскостей и вращение · билет из 3 задач'}</div></div>
@@ -25846,7 +25848,7 @@ function heroHTML(big){ const I=RKS.info(2), R=readiness(), SA=skillsAll(), rk=r
    ${rankB}
    <div class="rkh-acts">${big?`<a class="btn white" href="${go.href}">${go.t} →</a>${R.empty?`<a class="btn glass" href="${H('rk','ng')}">Игра «Сдашь РК2?»</a>`:`<a class="btn glass" href="${H('ng','rk2','t','quick')}">Проверь себя · 3 мин</a>`}`
      :`<a class="btn white" href="${H('ng','rk2')}">Готовиться к РК2 →</a><a class="btn glass" href="${H('ng','rk2','t','quick')}">Проверь себя · 3 мин</a>`}</div>
-   <div class="rkh-after">${big?(go.d||'Проверь себя: 5 заданий — сразу увидишь, насколько готов.'):(rk&&!R.empty?'Следующий шаг: <b>'+attr(go.t)+'</b>':'Проверь себя: 5 заданий — и увидишь, сколько баллов из 100 у тебя уже есть.')}</div>
+   <div class="rkh-after">${big?(go.d||'Проверь себя: 5 чертежей, ответ одним нажатием — сразу увидишь, насколько готов.'):(rk&&!R.empty?'Следующий шаг: <b>'+attr(go.t)+'</b>':'Проверь себя: 5 чертежей, ответ одним нажатием — и увидишь, сколько баллов из 100 у тебя уже есть.')}</div>
   </section>`; }
 /* карта навыков: что нужно уметь на РК2 */
 function skillsHTML(SA){ const sum=SA.reduce((z,x)=>z+x.st.stars,0), now=SA.find(x=>x.st.stars<2)||SA.find(x=>x.st.stars<3);
@@ -25980,13 +25982,17 @@ function planFor(kind){ const F=FACS[fac()]||FACS.main, mods=F.mods.length?F.mod
     let q=shuffle(out); for(let t=0;t<40&&clash(q);t++) q=shuffle(out); return q; }
   if(/^m-/.test(kind)){ const m=kind.slice(2); return shuffle(byM(m)).slice(0,10).map(x=>({id:x.id})).concat([{g:GEN_OF[m][0]}]); }
   if(/^v-/.test(kind)){ const g=GEN_OF[kind.slice(2)]||['rep']; return Array.from({length:6},(_,i)=>({g:g[i%g.length]})); }
-  if(kind==='quick') return planFor('mix').slice(0,5);
+  /* «Проверь себя»: только чертежи с ответом одним нажатием — по одному на каждый модуль потока, до 5 */
+  if(kind==='quick'){ const tap=m=>GEN_OF[m].filter(g=>TAP_G.includes(g)), one=shuffle(mods).filter(m=>tap(m).length).map(m=>({g:pick(tap(m))}));
+    while(one.length<5){ const m=pick(mods.filter(m=>tap(m).length)); one.push({g:pick(tap(m))}); } return one.slice(0,5); }
   if(kind==='fix'){ return shuffle(ITEMS.filter(x=>mods.includes(x.m)&&(isDanger(D.items[x.id])||(D.items[x.id]&&!D.items[x.id].slice(-1)[0][1])))).slice(0,12).map(x=>({id:x.id})); }
   /* mix: модули — по недобору готовности, внутри — самые слабые и давно не виденные */
   const ms=mods.map(m=>({m,gap:(1-modScore(m,D).score)*MOD(m).w+2})), tot=ms.reduce((z,x)=>z+x.gap,0), out=[];
   for(let i=0;i<10;i++){ let r=Math.random()*tot, m=ms[0].m; for(const x of ms){ r-=x.gap; if(r<=0){ m=x.m; break; } }
     if(Math.random()<.35) out.push({g:pick(GEN_OF[m])}); else { const c=byM(m).filter(x=>!out.some(o=>o.id===x.id)).map(x=>({x,s:itemScore(D.items[x.id],D.t)+Math.random()*.3})).sort((a,b)=>a.s-b.s)[0]; if(c) out.push({id:c.x.id}); } }
   return out; }
+/* быстрый режим «Проверь себя»: ответ одним нажатием, без шага «уверенность», без наводящих вопросов */
+const FAST=()=>!!SS&&SS.kind==='quick';
 const KIND_T={quick:'Проверь себя · 3 минуты',zamer:'Замер готовности',mix:'По слабым местам',fix:'Уверенные ошибки'};
 function kindTitle(k){ return KIND_T[k]||(/^m-/.test(k)?'Знаю · '+(MOD(k.slice(2))||{}).t:/^v-/.test(k)?'Вижу · '+(MOD(k.slice(2))||{}).t:'Проверка'); }
 function start(kind){ const plan=planFor(kind).filter(Boolean); SS={kind,plan,q:[],i:0,fin:false,before:readiness()}; next0(); }
@@ -26018,6 +26024,7 @@ function tapHint(Q){ const it=Q.src||{};
   if(Q.k==='i') return '<p class="r2-tap"><span aria-hidden="true">👆</span> Тяни красный кружок на чертеже или ползунок под ним</p>';
   if(Q.k==='b'||Q.k==='s'){ const need=(it.k==='b'?it.parts:it.steps).length; return Q.sel.length<need?`<p class="r2-tap"><span aria-hidden="true">👇</span> Нажимай ${it.k==='b'?'кусочки фразы':'шаги'} по порядку — ${Q.sel.length} из ${need}. Ошибся — нажми на кусочек вверху</p>`:`<p class="r2-tap"><span aria-hidden="true">👇</span> Собрано — жми «Готово» внизу</p>`; }
   if(Q.k==='t'&&Q.pick!=null&&Q.rpick==null) return '<p class="r2-tap"><span aria-hidden="true">👇</span> Теперь выбери, <b>почему</b> — варианты под ответом</p>';
+  if(Q.pick==null&&FAST()) return `<p class="r2-tap"><span aria-hidden="true">👇</span> Нажми на ${Q.opts&&Q.opts[0].svg?'верный чертёж':'верный ответ'} — проверка сразу</p>`;
   if(Q.pick==null) return `<p class="r2-tap"><span aria-hidden="true">👇</span> Нажми на ${Q.k==='g'&&Q.opts&&Q.opts[0].svg?'чертёж, который считаешь верным':'вариант ответа'}</p>`;
   return '<p class="r2-tap"><span aria-hidden="true">👇</span> Отметь внизу, насколько уверен</p>'; }
 function dockHTML(Q){ const n=SS.plan.length, it=Q.src||{};
@@ -26032,9 +26039,9 @@ function cardHTML(){ const Q=SS.q[SS.i], n=SS.plan.length, J=Q.done?Q.J:null, M=
    <div class="pbar lk-bar"><i style="width:${(SS.i+(Q.done?1:0))/n*100}%"></i></div>
    <section class="lk-card r2-card" aria-live="polite">
     <div class="lk-ask">${M?M.t:''}${Q.n?' · вопрос '+Q.n:''}${Q.k==='t'?' · ответ + обоснование':Q.k==='b'?' · собери формулировку':Q.k==='s'?' · расставь по порядку':Q.k==='i'?' · сделай сам':Q.k==='g'?' · вижу':''}</div>
-    ${stepsHTML(Q)}
+    ${FAST()?'':stepsHTML(Q)}
     <div class="lk-q">${Q.ask}</div>${fig}
-    ${Q.hint&&Q.k!=='p'?`<p class="sp-hint">${Q.hint}</p>`:''}
+    ${Q.hint&&Q.k!=='p'&&!FAST()?`<p class="sp-hint">${Q.hint}</p>`:''}
     ${tapHint(Q)}
     <div class="r2-ow${Q.pick==null&&!Q.done&&Q.k!=='b'&&Q.k!=='s'&&Q.k!=='i'?' r2-attn':''}${Q.k==='t'&&Q.pick!=null&&Q.rpick==null?' r2-attn2':''}">${optsHTML(Q)}</div>
     ${J?`<div class="lk-exp r2-exp ${J.ok?'ok':'no'}"><b>${J.ok?(Q.conf===1?'Верно — но наугад.':'Верно.'):(Q.conf===3?'Уверенная ошибка.':'Не так.')}</b> ${J.err?J.err+' ':''}${J.why||''}
@@ -26048,7 +26055,7 @@ function resultHTML(){ const q=SS.q.filter(x=>x&&x.done), ok=q.filter(x=>x.J.ok)
   const dv=B&&!B.na&&!R.na?R.val-(B.empty?0:B.val):0;
   return `<section class="lk-res">${typeof CAT==='function'?`<div class="lk-cat">${CAT(ok/Math.max(1,n)>=.7?'happy':'think')}</div>`:''}
    <div class="lk-big ${tone(ok/Math.max(1,n))}">${ok} из ${n}</div>
-   <p>Баллы с учётом уверенности: <b>${pts}</b> из ${mx}.${dz?' Уверенных ошибок: <b>'+dz+'</b> — разбери их первыми.':''}${gs?' Угадано: '+gs+'.':''}</p>
+   ${FAST()?`<p>${ok===n?'Все чертежи — верно.':ok?'Где ошибки — видно по темам ниже: с них и начни.':'Начни с тем ниже: в разделе РК2 у каждой — суть за пару минут.'}</p>`:`<p>Баллы с учётом уверенности: <b>${pts}</b> из ${mx}.${dz?' Уверенных ошибок: <b>'+dz+'</b> — разбери их первыми.':''}${gs?' Угадано: '+gs+'.':''}</p>`}
    ${!R.na?`<div class="r2-delta"><span>Готовность к РК2</span><b>${B&&!B.empty?B.val+' → ':''}${R.val}</b>${dv?`<em class="${dv>0?'up':'dn'}">${dv>0?'+':''}${dv}</em>`:''}</div>`:''}
    <div class="sp-by">${Object.keys(by).map(m=>`<div><b>${by[m][0]}/${by[m][1]}</b><span>${MOD(m).t}</span></div>`).join('')}</div>
    <div class="lk-acts"><a class="btn pri lg" href="${H('ng','rk2')}">К разделу РК2</a>${dz?`<a class="btn lg" href="${H('ng','rk2','t','fix')}">Уверенные ошибки</a>`:`<button type="button" class="btn lg" data-again>Ещё раз</button>`}</div></section>`; }
@@ -26058,6 +26065,8 @@ function testView(v,kind){ const valid=['zamer','mix','fix','quick'].includes(ki
   v.innerHTML=pageHTML({crumbs:[['РК2',H('ng','rk2')],[kindTitle(kind)]],next:null,noBottom:true,cls:'lk-page r2-page',body:`
    <div class="intro r2-ti"><h1>${kindTitle(kind)}</h1>${kind==='fix'?'<p class="lead">Ответь верно хотя бы со «скорее да» — и ошибка закроется.</p>':''}</div><div id="r2T"></div>`});
   const root=$('r2T');
+  const adv=()=>{ if(SS.i<SS.plan.length-1){ SS.i++; next0(); if(SS.i>=SS.plan.length) SS.fin=true; } else SS.fin=true;
+    if(SS.fin){ try{ FX.touch&&FX.touch(); }catch(_){} } draw(); window.scrollTo({top:0,behavior:'instant'}); };
   const draw=()=>{ if(!SS.plan.length){ root.innerHTML=`<div class="empty r2-empty">${kind==='fix'?'Уверенных и просто неверных ответов нет. Отлично — значит, разбирать нечего.':'Заданий нет.'} <a href="${H('ng','rk2')}">К разделу РК2</a></div>`; return; }
     root.innerHTML=SS.fin?resultHTML():cardHTML();
     const Q=SS.q[SS.i]; if(!SS.fin&&Q&&Q.k==='i'&&!Q.done){ iMount($('r2Live'),Q,(ok,err)=>{ Q.done=true; Q.conf=2; Q.J={ok,err:ok?'Отклонение '+err+'°.':'Не то положение: отклонение '+err+'°. Зелёным показано верное.',why:Q.why}; rec(Q.id,ok,2); try{ FX.buzz(ok?'success':'error'); }catch(_){}
@@ -26068,6 +26077,8 @@ function testView(v,kind){ const valid=['zamer','mix','fix','quick'].includes(ki
     if(e.target.closest('[data-again]')){ start(kind); draw(); window.scrollTo({top:0,behavior:'instant'}); return; }
     if(SS.fin) return; const Q=SS.q[SS.i]; if(!Q) return;
     const o=e.target.closest('[data-o]'), r=e.target.closest('[data-r]'), ch=e.target.closest('[data-ch]'), un=e.target.closest('[data-un]'), cf=e.target.closest('[data-cf]');
+    if(o&&!Q.done&&FAST()&&Q.k==='g'){ Q.pick=+o.dataset.o; Q.conf=2; Q.J=judge(Q); Q.done=true; rec(Q.id,Q.J.ok,2); try{ FX.buzz(Q.J.ok?'success':'error'); }catch(_){}
+      draw(); if(Q.J.ok){ const i0=SS.i; setTimeout(()=>{ if(SS&&SS.kind===kind&&!SS.fin&&SS.i===i0&&SS.q[i0]===Q&&root.isConnected) adv(); },900); } return; }
     if(o&&!Q.done){ if(Q.k==='t'&&Q.pick!=null) return; Q.pick=+o.dataset.o; try{ FX.buzz('tick'); }catch(_){} draw(); return; }
     if(r&&!Q.done){ Q.rpick=+r.dataset.r; try{ FX.buzz('tick'); }catch(_){} draw(); return; }
     if(ch&&!Q.done){ const need=(Q.src.k==='b'?Q.src.parts:Q.src.steps).length; if(Q.sel.length<need) Q.sel.push(+ch.dataset.ch); Q.ready=false; draw(); return; }
@@ -26075,8 +26086,7 @@ function testView(v,kind){ const valid=['zamer','mix','fix','quick'].includes(ki
     if(e.target.closest('[data-rd]')){ Q.ready=true; draw(); return; }
     if(cf&&!Q.done){ Q.conf=+cf.dataset.cf; Q.J=judge(Q); Q.done=true; rec(Q.id,Q.J.ok,Q.conf); try{ FX.buzz(Q.J.ok?'success':'error'); }catch(_){}
       draw(); return; }
-    if(e.target.closest('[data-sn]')){ if(SS.i<SS.plan.length-1){ SS.i++; next0(); if(SS.i>=SS.plan.length) SS.fin=true; } else SS.fin=true;
-      if(SS.fin){ try{ FX.touch&&FX.touch(); }catch(_){} } draw(); window.scrollTo({top:0,behavior:'instant'}); }
+    if(e.target.closest('[data-sn]')) adv();
   });
   draw(); return kindTitle(kind)+' · РК2'; }
 
