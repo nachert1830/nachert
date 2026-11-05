@@ -4236,86 +4236,6 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 @media (max-width:380px){.rkg-tix{width:92px;height:108px;right:8px}.rkg-tix b em{font-size:32px}.rkg-hud{gap:7px;padding:7px 9px}.rkg-tk{display:none}.rkg-hud{grid-template-columns:1fr auto auto}}
 @media (prefers-reduced-motion:reduce){.rkg-hero .rkg-go,.rkg-pips li.cur,.rkg-q.shake,.rkg-po.ok,.rkg-to.ok,.rkg-fb,.rkg-ring .fg,.rkg-float,.rkg-sc.bump b,.rkg-cb.flare svg{animation:none}}
 
-/* ═════════ Палитра «часы» · v10 ═════════
-   Глубокий синий циферблат с лучами, сталь корпуса, белый и сигнальный красный ремешка.
-   Один насыщенный синий для действий, красный — только «горит» и главная кнопка; остальное — сталь и белый.
-   Слой идёт последним: поверх прежних, без переименования токенов. */
-:root{
-  --paper:#eef2f8; --surf:#ffffff; --surf2:#f2f5fb; --surf3:#e4eaf5;
-  --ink:#0a1636; --ink2:#2a3a5c; --mut:#55678a; --mut2:#93a2bd;
-  --line:#d6deeb; --line2:#b9c6dc;
-  --blue:#1846d6; --blue-s:#e8eeff; --acc:#1846d6; --acc-h:#123cbf; --acc-d:#0c2a8f; --blue-ink:#1846d6;
-  --navy:#0b1d4f; --navy2:#13347f; --dial:#1a3fa6;
-  --steel:#c9d1dd; --steel2:#8d99ad;
-  --red:#d3202c; --red-s:#fdeaec; --hot:#d3202c; --red-b:#df2531; --red-d:#9a121b;
-  --shadow:0 1px 2px rgba(11,29,79,.06),0 10px 24px -16px rgba(11,29,79,.35);
-  --shadow2:0 2px 4px rgba(11,29,79,.06),0 24px 48px -24px rgba(11,29,79,.45);
-  --dialbg:radial-gradient(120% 120% at 70% 0%,#2f63e0 0%,rgba(47,99,224,0) 55%),linear-gradient(160deg,#081638 0%,#0f2b72 45%,#1a45b8 100%);
-  --dialln:repeating-linear-gradient(0deg,rgba(255,255,255,.045) 0 1px,transparent 1px 5px);
-}
-:root[data-theme="dark"]{
-  --paper:#060d22; --surf:#0d1834; --surf2:#13224a; --surf3:#1a2d5c;
-  --ink:#eaf0fb; --ink2:#c0cde4; --mut:#8c9fc2; --mut2:#5b6f96;
-  --line:#1e3264; --line2:#2b4682;
-  --blue:#86b2ff; --blue-s:#14295a; --acc:#2a5cf0; --acc-h:#3a6bff; --acc-d:#14318f; --blue-ink:#86b2ff;
-  --red:#ff5a63; --red-s:#3a1520; --hot:#ff5a63; --red-b:#e3303b; --red-d:#8e1018;
-}
-body{background:var(--paper)}
-
-/* шапка — тёмный циферблат, под ней ремешок: синий · белый · красный */
-header{background:linear-gradient(100deg,#081638 0%,#0f2b72 60%,#163fa8 100%)!important;border-bottom:0!important;box-shadow:0 6px 18px -12px rgba(8,22,56,.8);
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-header::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;background:linear-gradient(90deg,var(--navy2) 0 42%,#f4f6fb 42% 58%,var(--red) 58% 100%)}
-header .brand b,:root[data-theme=dark] header .brand b{color:#fff!important}
-header .bw i{color:#b9c8ea;border-left-color:rgba(255,255,255,.25)}
-header .brand .logo{box-shadow:0 0 0 2px rgba(255,255,255,.18);border-radius:9px}
-header .icb{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.22)!important;color:#e6ecfb!important}
-header .icb:hover{background:rgba(255,255,255,.16)!important;color:#fff!important}
-header .hprog{color:#dbe4f8}
-header .hbar{background:rgba(255,255,255,.2)}
-header .hbar i{background:#fff}
-header .subj{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.18)!important}
-header .subj a{color:#d5def3!important}
-header .subj a.on{background:#fff!important;color:var(--navy)!important}
-.nav-top a.nv{color:#d5def3!important}
-.nav-top a.nv:not(.on):hover{background:rgba(255,255,255,.12)!important;color:#fff!important}
-.nav-top a.nv.on{background:#fff!important;color:var(--navy)!important;box-shadow:0 2px 0 var(--red) inset,0 6px 14px -8px rgba(0,0,0,.6)!important}
-:root[data-theme=dark] header{background:linear-gradient(100deg,#040a1c 0%,#0a1d4e 60%,#11307f 100%)!important}
-.v6-stripe{display:none!important}
-
-/* нижнее меню — тёмно-синий браслет, где ты — белым с красной меткой */
-.nav-bot{background:linear-gradient(180deg,#0d2260 0%,#081638 100%)!important;border-top:0!important;box-shadow:0 -10px 26px -14px rgba(8,22,56,.7)!important}
-.nav-bot a.nv{color:#9fb1d8!important}
-.nav-bot a.nv.on{color:#fff!important}
-.nav-bot a.nv.on::before{background:var(--red)!important;left:30%!important;right:30%!important;height:3px!important}
-.nav-bot a.nv:not(.nv-home).on svg{filter:drop-shadow(0 0 6px rgba(140,180,255,.6))}
-.nvh-b,.nav-bot a.nv-home.on .nvh-b{background:linear-gradient(150deg,#f0434c,#c8141f)!important;color:#fff!important;box-shadow:0 4px 0 var(--red-d),0 0 0 4px #0b1d4f!important}
-.nav-bot a.nv[data-s="rk"]::after{content:"";position:absolute;top:9px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 2px #0c1f58}
-
-/* поиск на главной — циферблат: лучи и тонкие горизонтальные линии */
-.v9-hero{background:var(--dialln),var(--dialbg)!important;box-shadow:0 26px 54px -30px rgba(8,22,56,.85),inset 0 0 0 1px rgba(255,255,255,.06)!important}
-:root[data-theme=dark] .v9-hero{background:var(--dialln),radial-gradient(120% 120% at 70% 0%,#2a5ad6 0%,rgba(42,90,214,0) 55%),linear-gradient(160deg,#040b22 0%,#0b2363 50%,#173ea6 100%)!important}
-
-/* разделы на главной: стальные карточки, иконка — маленький циферблат */
-.v8-dirs .v8-dh{font:800 24px/1.2 var(--disp)!important;letter-spacing:-.02em;color:var(--ink)}
-.v8-col h3{color:var(--ink)!important}
-.v8-dot{background:var(--acc)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 20%,transparent)}
-.v8-dot.ig{background:var(--red)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 20%,transparent)}
-.v8-l{background:linear-gradient(180deg,#fff 0%,#f6f8fc 100%)!important;border:1.5px solid var(--line)!important;box-shadow:0 4px 0 var(--steel),0 14px 24px -20px rgba(11,29,79,.5)!important;position:relative;overflow:hidden}
-.v8-l:hover{border-color:var(--acc)!important;box-shadow:0 4px 0 var(--acc),0 14px 24px -18px rgba(24,70,214,.5)!important}
-.v9-ic{background:var(--dialln),var(--dialbg)!important;box-shadow:0 3px 0 #061233,inset 0 0 0 1px rgba(255,255,255,.12)!important}
-.v8-col:nth-child(2) .v9-ic{background:linear-gradient(150deg,#ef3d47,#b3111b)!important;box-shadow:0 3px 0 #7d0c13!important}
-.v8-l i{background:var(--blue-s)!important;color:var(--acc)!important}
-.v8-l.hot{background:linear-gradient(150deg,#e8323c 0%,#c4121d 100%)!important;border-color:#b3111b!important;box-shadow:0 4px 0 #7d0c13,0 16px 26px -18px rgba(196,18,29,.7)!important}
-.v8-l.hot b,.v8-l.hot small{color:#fff!important}.v8-l.hot small{opacity:.9}
-.v8-l.hot .v9-ic{background:#fff!important;color:var(--red)!important;box-shadow:0 3px 0 rgba(0,0,0,.2)!important}
-.v8-l.hot i{background:rgba(255,255,255,.2)!important;color:#fff!important}
-.v8-l.hot::after{content:"горит";position:absolute;right:12px;bottom:12px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.2);color:#fff;font:800 10.5px/1.6 var(--sans);letter-spacing:.06em;text-transform:uppercase}
-:root[data-theme=dark] .v8-l{background:linear-gradient(180deg,var(--surf) 0%,var(--surf2) 100%)!important;box-shadow:0 4px 0 #050b1d!important}
-
-/* кнопки — плотнее и насыщеннее */
-.btn.pri,.btn.blue{background:linear-gradient(180deg,#2552e6,#1640c9)!important}
-
 /* ═════════ «Горит»: РК2 на главной и вверху раздела ═════════ */
 .rkh{position:relative;overflow:hidden;isolation:isolate;border-radius:28px;padding:18px 18px 16px;color:#fff;display:flex;flex-direction:column;gap:14px;margin:0 0 18px}
 .rkh::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px);background-size:24px 24px;
@@ -4428,6 +4348,112 @@ a.rkt:hover{background:var(--surf2)}
 @media(max-width:560px){.sk-b{padding-left:14px}.sk-row{grid-template-columns:1fr;gap:2px}.sk-row>span{line-height:1.6}.sk-st{font-size:16px}.sk-c summary{gap:10px;padding:12px}.sk-l::before{left:30px}}
 :root[data-theme=dark] .sk-c{box-shadow:0 4px 0 #050b1d}
 :root[data-theme=dark] .sk-c.s1 .sk-n{background:#4a3510;color:#ffd27a}
+/* ═════════ Палитра «ремешок» · v11 ═════════
+   Как ремешок часов: белое полотно — основа, тёмно-синяя и красная полосы — акценты. Чисто, ярко, без тёмных плашек.
+   Синий — действия и «где ты», красный — «горит» и главная кнопка. Слой идёт последним, токены прежние. */
+:root{
+  --paper:#f7f8fb; --surf:#ffffff; --surf2:#f3f5fa; --surf3:#e8ecf5;
+  --ink:#121a3f; --ink2:#2e3961; --mut:#5c6688; --mut2:#9aa2bd;
+  --line:#e1e5ef; --line2:#c9d0e0;
+  --strap:#1c2a6e; --strap2:#2a3d93;
+  --blue:#1f3fbf; --blue-s:#eaeefc; --acc:#1f3fbf; --acc-h:#1a35a6; --acc-d:#14287f; --blue-ink:#1f3fbf;
+  --navy:#1c2a6e; --navy2:#2a3d93;
+  --steel:#d3d9e6; --steel2:#8f99b0;
+  --red:#d9232c; --red-s:#fdebec; --hot:#d9232c; --red-b:#e0262f; --red-d:#a3141b;
+  --shadow:0 1px 2px rgba(28,42,110,.06),0 10px 24px -18px rgba(28,42,110,.35);
+  --shadow2:0 2px 4px rgba(28,42,110,.06),0 22px 44px -26px rgba(28,42,110,.4);
+  --dialbg:linear-gradient(160deg,#2a3d93 0%,#1c2a6e 100%);
+  --dialln:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px);
+  --weave:repeating-linear-gradient(90deg,rgba(28,42,110,.028) 0 1px,transparent 1px 4px),repeating-linear-gradient(0deg,rgba(28,42,110,.022) 0 1px,transparent 1px 5px);
+  --tri:linear-gradient(90deg,var(--strap) 0 33.3%,#fff 33.3% 66.6%,var(--red) 66.6% 100%);
+}
+:root[data-theme="dark"]{
+  --paper:#0a1024; --surf:#111a36; --surf2:#172246; --surf3:#1e2b57;
+  --ink:#eef1fa; --ink2:#c4cbe2; --mut:#8e98ba; --mut2:#5d6890;
+  --line:#222f5c; --line2:#2f3f78;
+  --blue:#8fa8ff; --blue-s:#18245a; --acc:#3557e0; --acc-h:#4566ee; --acc-d:#1d318f; --blue-ink:#8fa8ff;
+  --red:#ff5b63; --red-s:#3a1520; --hot:#ff5b63; --red-b:#e3303b; --red-d:#8e1018;
+  --weave:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);
+}
+body{background:var(--paper)}
+
+/* шапка — белая, под ней полоса ремешка: синий · белый · красный */
+header{background:rgba(255,255,255,.92)!important;backdrop-filter:saturate(1.4) blur(14px)!important;-webkit-backdrop-filter:saturate(1.4) blur(14px)!important;border-bottom:0!important;box-shadow:0 8px 20px -18px rgba(28,42,110,.6)!important}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;background:var(--tri);box-shadow:inset 0 1px 0 rgba(28,42,110,.08),inset 0 -1px 0 rgba(28,42,110,.08)}
+header .brand b,:root[data-theme=dark] header .brand b{color:var(--strap)!important}
+:root[data-theme=dark] header{background:rgba(10,16,36,.92)!important}
+:root[data-theme=dark] header .brand b{color:#fff!important}
+.nav-top a.nv{color:var(--ink2)!important}
+.nav-top a.nv:not(.on):hover{background:var(--blue-s)!important;color:var(--acc)!important}
+.nav-top a.nv.on{background:var(--strap)!important;color:#fff!important;box-shadow:inset 0 -3px 0 var(--red)!important}
+header .subj a.on{background:var(--strap)!important;color:#fff!important}
+.v6-stripe{display:none!important}
+
+/* нижнее меню — белое полотно; где ты — синим с красной меткой */
+.nav-bot{background:#fff!important;border-top:0!important;box-shadow:0 -1px 0 var(--line),0 -12px 26px -18px rgba(28,42,110,.45)!important}
+.nav-bot::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--tri);opacity:.9}
+.nav-bot a.nv{color:#7a83a3!important}
+.nav-bot a.nv.on{color:var(--strap)!important}
+.nav-bot a.nv.on::before{background:var(--red)!important;left:30%!important;right:30%!important;height:3px!important;top:3px!important}
+.nvh-b,.nav-bot a.nv-home.on .nvh-b{background:linear-gradient(150deg,#ef3a43,#cc1720)!important;color:#fff!important;box-shadow:0 4px 0 var(--red-d),0 0 0 4px #fff!important}
+.nav-bot a.nv[data-s="rk"]::after{content:"";position:absolute;top:10px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 2px #fff}
+:root[data-theme=dark] .nav-bot{background:var(--surf)!important}
+:root[data-theme=dark] .nav-bot a.nv{color:#8e98ba!important}:root[data-theme=dark] .nav-bot a.nv.on{color:#fff!important}
+:root[data-theme=dark] .nvh-b{box-shadow:0 4px 0 var(--red-d),0 0 0 4px var(--surf)!important}
+
+/* поиск на главной — белое плетёное полотно с полосами ремешка слева */
+.v9-hero{background:var(--weave),#fff!important;color:var(--ink)!important;border:1.5px solid var(--line)!important;box-shadow:0 26px 50px -34px rgba(28,42,110,.45)!important;overflow:hidden}
+.v9-hero::before{background:none!important;-webkit-mask:none!important;mask:none!important;content:""!important;inset:0 auto 0 0!important;width:22px!important;
+  background:linear-gradient(90deg,var(--strap) 0 9px,#fff 9px 13px,var(--red) 13px 22px)!important;border-radius:0!important}
+.v9-hero::after{content:"";position:absolute;inset:0 0 0 auto;width:22px;background:linear-gradient(90deg,var(--red) 0 9px,#fff 9px 13px,var(--strap) 13px 22px);pointer-events:none}
+.v9-kick{background:var(--blue-s)!important;color:var(--strap)!important}
+.v9-hero .v8-h{color:var(--strap)!important}
+.v9-hero .v8-sub{color:var(--ink2)!important}
+.v9-hero .v8-scope{background:var(--surf2)!important;border:1px solid var(--line)!important}
+.v9-hero .v8-scope button{color:var(--ink2)!important}
+.v9-hero .v8-scope button.on{background:var(--strap)!important;color:#fff!important}
+.v9-hero .v8-box .sr-form{box-shadow:0 0 0 2px var(--strap),0 16px 30px -18px rgba(28,42,110,.5)!important;animation:none}
+.v9-hero .v8-ex{color:var(--mut)!important}
+.v9-hero .v8-ex button{background:#fff!important;border:1.5px solid var(--line2)!important;color:var(--strap)!important}
+.v9-hero .v8-ex button:hover{background:var(--strap)!important;color:#fff!important;border-color:var(--strap)!important}
+.v9-hero .v8-res{background:var(--blue-s)!important;box-shadow:none!important}
+.v9-steps{color:var(--ink2)!important;border-top-color:var(--line)!important}
+.v9-steps b{background:var(--strap)!important;color:#fff!important}
+.v9-steps li:first-child b{background:var(--red)!important}
+:root[data-theme=dark] .v9-hero{background:var(--weave),var(--surf)!important}
+:root[data-theme=dark] .v9-hero .v8-h{color:#fff!important}
+:root[data-theme=dark] .v9-hero::before{background:linear-gradient(90deg,var(--acc) 0 9px,#fff 9px 13px,var(--red) 13px 22px)!important}
+@media(max-width:560px){.v9-hero::before,.v9-hero::after{width:12px!important}.v9-hero::before{background:linear-gradient(90deg,var(--strap) 0 5px,#fff 5px 7px,var(--red) 7px 12px)!important}.v9-hero::after{background:linear-gradient(90deg,var(--red) 0 5px,#fff 5px 7px,var(--strap) 7px 12px)}}
+
+/* разделы на главной: белые карточки с полосой ремешка сверху */
+.v8-dirs .v8-dh{font:800 24px/1.2 var(--disp)!important;letter-spacing:-.02em;color:var(--strap)}
+.v8-col h3{color:var(--ink)!important}
+.v8-dot{background:var(--strap)!important}.v8-dot.ig{background:var(--red)!important}
+.v8-l{background:#fff!important;border:1.5px solid var(--line)!important;box-shadow:0 3px 0 var(--steel)!important;position:relative;overflow:hidden}
+.v8-l::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--tri);opacity:0;transition:opacity .2s}
+.v8-l:hover{border-color:var(--strap)!important;box-shadow:0 3px 0 var(--strap)!important}.v8-l:hover::before{opacity:1}
+.v9-ic{background:var(--strap)!important;box-shadow:0 3px 0 #0f1847!important}
+.v8-col:nth-child(2) .v9-ic{background:var(--red)!important;box-shadow:0 3px 0 var(--red-d)!important}
+.v8-l i{background:var(--blue-s)!important;color:var(--strap)!important}
+.v8-l.hot{background:var(--red)!important;border-color:var(--red)!important;box-shadow:0 3px 0 var(--red-d)!important}
+.v8-l.hot b,.v8-l.hot small{color:#fff!important}
+.v8-l.hot .v9-ic{background:#fff!important;color:var(--red)!important;box-shadow:none!important}
+.v8-l.hot i{background:rgba(255,255,255,.22)!important;color:#fff!important}
+.v8-l.hot::after{content:"горит";position:absolute;right:12px;bottom:12px;padding:2px 8px;border-radius:99px;background:#fff;color:var(--red);font:800 10.5px/1.6 var(--sans);letter-spacing:.06em;text-transform:uppercase}
+:root[data-theme=dark] .v8-l{background:var(--surf)!important;box-shadow:0 3px 0 #050a1a!important}
+
+.btn.pri,.btn.blue{background:var(--acc)!important}
+
+/* «горит» — чистый красный ремешка; спокойный режим — белый с полосами */
+.rkh-hot{background:linear-gradient(135deg,#e3262f 0%,#cf1922 100%)!important;box-shadow:0 22px 40px -26px rgba(217,35,44,.7)!important}
+.rkh-warm{background:linear-gradient(135deg,#ee5a24 0%,#d9361f 100%)!important}
+.rkh-calm{background:var(--dialbg)!important}
+.rkh-rank{background:rgba(255,255,255,.14)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)!important}
+.rkt.on{background:var(--strap)!important;box-shadow:0 3px 0 var(--red)!important}
+.sk-c.s2 .sk-n,.sk-go{background:var(--strap)!important}
+.sk-go{box-shadow:0 3px 0 #0f1847!important}
+.sk-c.now{border-color:var(--strap)!important;box-shadow:0 4px 0 var(--strap)!important}
+.sk-boss a{background:linear-gradient(135deg,#e3262f,#cf1922)!important}
 </style>
 </head>
 <body>
