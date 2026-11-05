@@ -4004,10 +4004,10 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 /* ═════════ ДЗ (#/dz, #/ng4/13): «мой вариант» — один раз, дальше каждое ДЗ открывается сразу на нём ═════════
    «Ремешок» — белая лента с тёмно-синей и красной полосой (как NATO-ремешок часов) у синей карточки «Мой вариант».
    Лента одинакова в обеих темах: это предмет, а не фон. Красная кнопка — «Поделиться» («нажми сюда», docs/IA.md) */
-:root{--strap:linear-gradient(90deg,#fff 0 16%,var(--navy) 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
-:root[data-theme="dark"]{--strap:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--strap:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}}
-.dzx-strap{display:block;flex:none;width:22px;align-self:stretch;background:var(--strap)}
+:root{--strap-band:linear-gradient(90deg,#fff 0 16%,var(--navy) 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
+:root[data-theme="dark"]{--strap-band:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--strap-band:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}}
+.dzx-strap{display:block;flex:none;width:22px;align-self:stretch;background:var(--strap-band)}
 .dzx .intro{margin-bottom:var(--s3)}
 /* виджет ДЗ: тёмно-синяя карточка (как «Найди свой вариант» на главной ИГ), ДЗ → № → красная «Открыть вариант» */
 .dzw{position:relative;max-width:760px;margin:0 0 var(--s4);padding:20px 18px 18px;border-radius:22px;color:#fff;background:linear-gradient(140deg,var(--navy),var(--navy2));box-shadow:0 26px 50px -30px rgba(20,25,70,.8);overflow:hidden}
@@ -4373,6 +4373,7 @@ a.rkt:hover{background:var(--surf2)}
   --line:#222f5c; --line2:#2f3f78;
   --blue:#8fa8ff; --blue-s:#18245a; --acc:#3557e0; --acc-h:#4566ee; --acc-d:#1d318f; --blue-ink:#8fa8ff;
   --red:#ff5b63; --red-s:#3a1520; --hot:#ff5b63; --red-b:#e3303b; --red-d:#8e1018;
+  --strap:#3557e0; --strap2:#4566ee;
   --weave:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);
 }
 body{background:var(--paper)}
