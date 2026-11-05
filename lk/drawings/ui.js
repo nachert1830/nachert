@@ -103,7 +103,7 @@ async function scanRun(title,again,go){ if(busy) return;
   if(!CLOUD){ progStart('Сканер сейчас недоступен'); step('x','Адрес сервера сканера не задан. Попробуйте пример — он работает без сервера.','err'); return; }
   if(!CODE){ $('#scSet').open=true; $('#scCode').focus(); progStart('Нужен код доступа'); step('x','Введите код доступа в «Настройках сканера» и '+again+'.','err'); return; }
   busy=true; progStart(title);
-  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk5'); step('lib','Сканер загружен','done');
+  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk6'); step('lib','Сканер загружен','done');
     const pipe=self.SCANPIPE.create({cloud:CLOUD,code:CODE});
     const {out,bmps,cover}=await go(pipe);
     const ok=out.drawings.filter(d=>d&&d.segs&&d.segs.length);
