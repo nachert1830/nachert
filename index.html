@@ -4362,6 +4362,19 @@ a.rkt:hover{background:var(--surf2)}
 .sp-by a{display:flex;flex-direction:column;align-items:center;padding:8px 10px;border-radius:12px;background:var(--surf2);color:inherit;text-decoration:none}
 .r2-ready .r2-sub{margin-top:-4px}
 
+/* зажми чертёж — увеличится: значок лупы на варианте, крупный чертёж поверх экрана */
+.sp-o,.rkg-po,.r2-fig,.rkg-fig{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.sp-o:has(svg)::after,.rkg-po:has(svg)::after{content:"";position:absolute;right:7px;top:6px;width:22px;height:22px;border-radius:50%;background:#e5eef8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336405c' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6'/%3E%3Cpath d='M15 15l5 5M10.5 8v5M8 10.5h5'/%3E%3C/svg%3E") center/14px no-repeat;border:1px solid #c1d1e6;pointer-events:none}
+.zm-ov{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;background:rgba(8,12,28,.82);touch-action:none;animation:zmIn .14s ease-out}
+.zm-sheet{position:relative;width:min(96vw,96vh,820px);aspect-ratio:1/1;background:var(--sheet,#fff);border-radius:16px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.zm-sheet svg{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;display:block}
+.zm-lt{position:absolute;left:10px;top:10px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#e5eef8;border:1px solid #c1d1e6;font:800 15px var(--sans);color:#36405c}
+.zm-cap{margin:0;color:#fff;font:600 13px var(--sans);opacity:.85}
+html.zm-on,html.zm-on body{overflow:hidden}
+@keyframes zmIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.zm-ov{animation:none}}
+.zm-tip{margin:6px 0 0;font:600 12.5px var(--sans);color:var(--mut);text-align:center}
+
 /* ═════════ Палитра «ремешок» · v11 ═════════
    Как ремешок часов: белое полотно — основа, тёмно-синяя и красная полосы — акценты. Чисто, ярко, без тёмных плашек.
    Синий — действия и «где ты», красный — «горит» и главная кнопка. Слой идёт последним, токены прежние. */
@@ -23192,6 +23205,7 @@ window.CHANGES=[
     'Из лекций — прямо в навыках: рис. 5.3 и 5.7 (прямая → уровня → проецирующая), 5.6 и 5.8 (плоскость → проецирующая → уровня), 5.10 (истинный вид и угол к π₁ вращением), 5.12 и 5.13 (расстояния вращением вокруг горизонтали) — алгоритм по шагам и та же задача тетради с разбором.',
     'Срок РК2 — неделя РК по плану семестра (11-я неделя).',
     'РК2 проще: один первый шаг — «Проверь себя» (5 чертежей, ответ одним нажатием, верно — сразу следующий), в итоге — кнопка в слабую тему. Плашка без нулей у новичка; в навыках — одна кнопка «Дальше», остальное свёрнуто; билет — три строки; тренировок три вместо шести.',
+    'Чертежи-варианты: <b>зажми</b> чертёж — он откроется на весь экран, отпусти — закроется. На каждом варианте — значок лупы.',
     'Новые цвета — как ремешок часов: белое полотно, тёмно-синяя и красная полосы. Шапка и меню белые с полосой синий · белый · красный, красный — только «горит» и главная кнопка.']},
   {v:'4.19',d:'28 октября 2026',items:['ДЗ — один раздел на оба предмета. Вариант вписываешь один раз — он один на все ДЗ, — и каждое ДЗ открывается сразу на нём: разбор по шагам, чистовик, черновик, как решать, ошибки и защита.','«← Назад» возвращает туда, откуда пришёл.','Красная «Поделиться» — Telegram, ВК, QR или скопировать; отправляется ровно то, что открыто, вплоть до задачи внутри варианта. На экране «ДЗ» — «Скинуть группе».','Короткие адреса: nachert1830.ru/#/ng4/13 — начерт, ДЗ 4, вариант 13; #/ig3/7 — инж. графика. Старые ссылки и закладки работают.','Поиск понимает «дз 4 13» — сразу вариант.']},
   {v:'4.18',d:'26 октября 2026',items:['Новый яркий дизайн: насыщенный синий, белый и красный. Красный — там, куда нажать.','Главная: большой синий блок поиска и красная кнопка «Найти» — впиши номер задачи, вариант или вопрос, и решение откроется первым. Под строкой — три шага: что вписать и куда жать дальше.','Разделы — крупные плитки с иконками; кнопки стали «нажимаемыми»: с бортиком снизу и откликом при нажатии.']},
@@ -25103,6 +25117,28 @@ return {view,today,GEN,MODES,_:{norm,canon,rot,mirror,sameRot,allVis,isoSig,view
 /* ═════════ Сроки РК по плану семестра (как в кабинете lk/: начерт РК1 — 6-я неделя, РК2 — 11-я, РК3 — 15-я) ═════════
    Без группы — понедельник недели РК; группа из кабинета (lk_group) даёт точный день занятия по начерту.
    Выбора группы на плашке нет: кабинет пока закрыт для всех. */
+/* ═════════ Зажми чертёж — увеличится ═════════
+   Варианты-чертежи (тесты РК2 .sp-o, игра «Сдашь РК2?» .rkg-po) и чертёж условия: удержание ≈ 0,3 с открывает чертёж
+   на весь экран, отпустил — закрылся. Короткое нажатие по-прежнему выбирает ответ; после удержания выбор не срабатывает. */
+(function(){
+  const SEL='.sp-o, .rkg-po, .r2-fig, .rkg-fig';
+  let tm=null, el=null, x0=0, y0=0, fired=false, ov=null;
+  const close=()=>{ clearTimeout(tm); tm=null; el=null; if(ov){ ov.remove(); ov=null; document.documentElement.classList.remove('zm-on'); } };
+  function open(t){ const svg=t.querySelector('svg'); if(!svg) return; fired=true;
+    ov=document.createElement('div'); ov.className='zm-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-label','Чертёж крупно');
+    const lt=t.querySelector('.lt'), c=svg.cloneNode(true); c.removeAttribute('width'); c.removeAttribute('height'); c.removeAttribute('style');
+    ov.innerHTML=`<div class="zm-sheet">${lt?`<span class="zm-lt">${lt.textContent}</span>`:''}</div><p class="zm-cap">Отпусти — закроется</p>`;
+    ov.firstChild.appendChild(c); document.body.appendChild(ov); document.documentElement.classList.add('zm-on');
+    try{ FX.buzz('tick'); }catch(_){ try{ navigator.vibrate&&navigator.vibrate(12); }catch(__){} } }
+  document.addEventListener('pointerdown',e=>{ if(e.button>0) return; const t=e.target.closest&&e.target.closest(SEL); if(!t||!t.querySelector('svg')) return;
+    fired=false; el=t; x0=e.clientX; y0=e.clientY; clearTimeout(tm); tm=setTimeout(()=>{ tm=null; if(el===t) open(t); },320); },{passive:true});
+  document.addEventListener('pointermove',e=>{ if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>10){ clearTimeout(tm); tm=null; el=null; } },{passive:true});
+  ['pointerup','pointercancel'].forEach(k=>document.addEventListener(k,()=>{ const was=!!ov; close(); if(was) setTimeout(()=>{ fired=false; },400); },true));
+  window.addEventListener('blur',close); window.addEventListener('hashchange',close);
+  /* после удержания — не выбирать вариант */
+  document.addEventListener('click',e=>{ if(!fired) return; const t=e.target.closest&&e.target.closest(SEL); if(t){ e.preventDefault(); e.stopPropagation(); } fired=false; },true);
+  document.addEventListener('contextmenu',e=>{ if(e.target.closest&&e.target.closest(SEL)) e.preventDefault(); });
+})();
 window.RKS=(function(){
  const DAY=864e5, W1=Math.round(Date.UTC(2026,7,31)/DAY), WEEK={1:6,2:11,3:15};
  const MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'], WD=['вс','пн','вт','ср','чт','пт','сб'];
@@ -26038,8 +26074,8 @@ function tapHint(Q){ const it=Q.src||{};
   if(Q.k==='i') return '<p class="r2-tap"><span aria-hidden="true">👆</span> Тяни красный кружок на чертеже или ползунок под ним</p>';
   if(Q.k==='b'||Q.k==='s'){ const need=(it.k==='b'?it.parts:it.steps).length; return Q.sel.length<need?`<p class="r2-tap"><span aria-hidden="true">👇</span> Нажимай ${it.k==='b'?'кусочки фразы':'шаги'} по порядку — ${Q.sel.length} из ${need}. Ошибся — нажми на кусочек вверху</p>`:`<p class="r2-tap"><span aria-hidden="true">👇</span> Собрано — жми «Готово» внизу</p>`; }
   if(Q.k==='t'&&Q.pick!=null&&Q.rpick==null) return '<p class="r2-tap"><span aria-hidden="true">👇</span> Теперь выбери, <b>почему</b> — варианты под ответом</p>';
-  if(Q.pick==null&&FAST()) return `<p class="r2-tap"><span aria-hidden="true">👇</span> Нажми на ${Q.opts&&Q.opts[0].svg?'верный чертёж':'верный ответ'} — проверка сразу</p>`;
-  if(Q.pick==null) return `<p class="r2-tap"><span aria-hidden="true">👇</span> Нажми на ${Q.k==='g'&&Q.opts&&Q.opts[0].svg?'чертёж, который считаешь верным':'вариант ответа'}</p>`;
+  if(Q.pick==null&&FAST()) return `<p class="r2-tap"><span aria-hidden="true">👇</span> <span>${Q.opts&&Q.opts[0].svg?'Нажми на верный чертёж — проверка сразу. <b>Зажми</b> чертёж — увеличится':'Нажми на верный ответ — проверка сразу'+(Q.fig?'. <b>Зажми</b> чертёж — увеличится':'')}</span></p>`;
+  if(Q.pick==null) return `<p class="r2-tap"><span aria-hidden="true">👇</span> <span>Нажми на ${Q.k==='g'&&Q.opts&&Q.opts[0].svg?'чертёж, который считаешь верным. <b>Зажми</b> чертёж — увеличится':'вариант ответа'}</span></p>`;
   return '<p class="r2-tap"><span aria-hidden="true">👇</span> Отметь внизу, насколько уверен</p>'; }
 function dockHTML(Q){ const n=SS.plan.length, it=Q.src||{};
   if(Q.done){ const J=Q.J; return `<div class="r2-dock done ${J.ok?'ok':'no'}"><span class="r2-verd"><b>${J.ok?(Q.conf===1?'Верно, но наугад':'Верно!'):(Q.conf===3?'Уверенная ошибка':'Не так')}</b><small>разбор — выше ↑</small></span><button type="button" class="btn pri lg r2-go" data-sn>${SS.i<n-1?'Дальше →':'Итог →'}</button></div>`; }
@@ -26483,7 +26519,7 @@ function qHTML(q,i){ const ans=q.pick!=null, okI=q.opts.findIndex(o=>o.ok);
    <p class="rkg-tag"><span class="${q.s}">${SUBJ[q.s]}</span>${TOP[q.tag].t}<em>${i+1} / ${G.qs.length}</em></p>
    <h2 id="rkgQ" class="rkg-ask">${q.ask}</h2>
    ${q.fig?`<div class="rkg-fig">${q.fig}</div>`:''}
-   <div class="${pics?'rkg-pics':'rkg-txts'}" role="group" aria-label="Варианты ответа">${q.opts.map(opt).join('')}</div>
+   <div class="${pics?'rkg-pics':'rkg-txts'}" role="group" aria-label="Варианты ответа">${q.opts.map(opt).join('')}</div>${(pics||q.fig)&&!ans?'<p class="zm-tip">Зажми чертёж — увеличится</p>':''}
    ${ans?fbHTML(q,okI):(q.hint?`<details class="rkg-hint"><summary>Подсказка</summary><p>${q.hint}</p></details>`:'')}
   </article>`; }
 function fbHTML(q,okI){ const last=G.i>=G.qs.length-1, to=q.pick<0;
