@@ -74,7 +74,12 @@ function fromDrawing(d,out){ const f=d.fit&&d.fit.rmsMm!=null?d.fit:null;
   const by={}; P.forEach(q=>{ if(q.L.pr==='f'||q.L.pr==='h') (by[q.L.name]=by[q.L.name]||{})[q.L.pr]=q.p; });
   let sx=0,sy=0; Object.values(by).forEach(b=>{ if(b.f&&b.h){ const dx=b.h[0]-b.f[0], dy=b.h[1]-b.f[1], l=Math.hypot(dx,dy); if(l>1){ sx+=dx/l; sy+=dy/l; } } });
   let ang; if(Math.hypot(sx,sy)>0.5) ang=Math.atan2(sy,sx)-Math.PI/2; else ang=-(d.rot||0)*Math.PI/180;   /* «вниз» — направление X″ → X′ */
-  const ca=Math.cos(-ang), sa=Math.sin(-ang), R=(x,y)=>[(x*ca-y*sa)/ppm,(x*sa+y*ca)/ppm];
+  const ca=Math.cos(-ang), sa=Math.sin(-ang), R0=(x,y)=>[(x*ca-y*sa)/ppm,(x*sa+y*ca)/ppm];
+  /* без привязки к варианту выровнять копию можно только правилом самого эпюра: линии связи X″–X′ перпендикулярны оси x,
+     то есть все вертикальны. Поворот выше ставит их вертикально лишь в среднем, а телефон под углом к листу даёт трапецию
+     (слева линии наклонены в одну сторону, справа — в другую). upright подбирает перспективу и сдвиг, при которых все пары
+     вертикальны (Гаусс — Ньютон; ≥ 4 пар — перспектива, 3 — сдвиг и трапеция, 1–2 — только сдвиг) */
+  const R=upright(Object.values(by).filter(b=>b.f&&b.h&&d2(b.f,b.h)>1).map(b=>[R0(...b.f),R0(...b.h)]),R0);
   const Rp=P.map(q=>R(q.p[0],q.p[1])), Rs=d.segs.map(q=>[R(q.p[0],q.p[1]),R(q.p[2],q.p[3])]);
   /* ось: самый длинный почти горизонтальный отрезок между ″ и ′; иначе — посередине между ними; O — подписанная точка или правее всех */
   const vf=P.map((q,i)=>q.L.pr==='f'?Rp[i][1]:null).filter(v=>v!=null), vh=P.map((q,i)=>q.L.pr==='h'?Rp[i][1]:null).filter(v=>v!=null);
@@ -92,6 +97,22 @@ function fromDrawing(d,out){ const f=d.fit&&d.fit.rmsMm!=null?d.fit:null;
   const M=[], Pp=[]; Rs.forEach(([a,b],i)=>{ const q=d.segs[i].p; M.push(T(a[0],a[1]),T(b[0],b[1])); Pp.push([q[0],q[1]],[q[2],q[3]]); }); P.forEach((q,i)=>{ M.push(T(Rp[i][0],Rp[i][1])); Pp.push(q.p); });
   dr.ph=affine(M,Pp);
   return dr; }
+
+/* выпрямление по линиям связи: pairs [[f, h]] (мм, после поворота) → (x, y) → поправленные мм; не помогло — как было */
+function upright(pairs,R0){ if(!pairs.length) return R0; const all=pairs.flat(), cx=all.reduce((a,p)=>a+p[0],0)/all.length, cy=all.reduce((a,p)=>a+p[1],0)/all.length;
+  const tf=(q,u,v)=>{ const x=u-cx, y=v-cy, w=1+q[2]*x+q[1]*y;   /* q: сдвиг, перспектива по вертикали (трапеция), по горизонтали */ if(w<0.5) return null; const x1=x/w, y1=y/w; return [x1+q[0]*y1+cx,y1+cy]; };
+  const n=pairs.length, np=n>=4?3:n>=3?2:1, reg=300;   /* перспектива телефона — доли процента на мм (трапеция 10° на 80 мм ≈ 0,002/мм): штраф держит её малой, если пар мало или они в одной полосе */
+  const res=q=>{ const r=[]; for(const [f,h] of pairs){ const a=tf(q,...f), b=tf(q,...h); if(!a||!b) return null; r.push((a[0]-b[0])/Math.max(5,Math.abs(a[1]-b[1]))*100); } if(np===3) r.push(q[1]*reg,q[2]*reg); return r; };
+  const E=r=>r?r.reduce((a,v)=>a+v*v,0):1e18; let q=[0,0,0], e=E(res(q)); const e0=e;
+  for(let it=0;it<40;it++){ const r=res(q), J=[]; for(let j=0;j<np;j++){ const d=q.slice(); d[j]+=1e-7; const rj=res(d); if(!rj) return R0; J.push(rj.map((v,i)=>(v-r[i])/1e-7)); }
+    const A=J.map(a=>J.map(b=>a.reduce((s,v,i)=>s+v*b[i],0))), g=J.map(a=>a.reduce((s,v,i)=>s+v*r[i],0));
+    let ok=false; for(let lam=1e-3;lam<1e6&&!ok;lam*=10){ const M=A.map((row,i)=>row.map((v,j)=>v+(i===j?lam*(1+v):0))), dx=solveN(M,g.map(v=>-v)); if(!dx) continue;
+      const qn=q.slice(); dx.forEach((v,i)=>qn[i]+=v); const en=E(res(qn)); if(en<e){ q=qn; e=en; ok=true; } }
+    if(!ok) break; }
+  if(!(e<0.5*e0)) return R0;   /* выигрыша нет — линии связи и так вертикальны (или пары не согласованы) */
+  return (x,y)=>{ const p=R0(x,y), t=tf(q,p[0],p[1]); return t||p; }; }
+function solveN(A,b){ const n=b.length, M=A.map((r,i)=>r.concat([b[i]])); for(let c=0;c<n;c++){ let p=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r; if(Math.abs(M[p][c])<1e-14) return null; [M[c],M[p]]=[M[p],M[c]];
+    for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]/M[c][c]; for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; } } return M.map((r,i)=>r[n]/r[i]); }
 
 /* ── правка ── */
 function movePoint(dr,id,to){ const p=dr.pts.find(q=>q.id===id); if(!p) return; const from=p.at.slice(); p.at=[r2(to[0]),r2(to[1])];
