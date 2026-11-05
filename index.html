@@ -4004,10 +4004,10 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 /* ═════════ ДЗ (#/dz, #/ng4/13): «мой вариант» — один раз, дальше каждое ДЗ открывается сразу на нём ═════════
    «Ремешок» — белая лента с тёмно-синей и красной полосой (как NATO-ремешок часов) у синей карточки «Мой вариант».
    Лента одинакова в обеих темах: это предмет, а не фон. Красная кнопка — «Поделиться» («нажми сюда», docs/IA.md) */
-:root{--strap:linear-gradient(90deg,#fff 0 16%,var(--navy) 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
-:root[data-theme="dark"]{--strap:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--strap:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}}
-.dzx-strap{display:block;flex:none;width:22px;align-self:stretch;background:var(--strap)}
+:root{--strap-band:linear-gradient(90deg,#fff 0 16%,var(--navy) 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
+:root[data-theme="dark"]{--strap-band:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--strap-band:linear-gradient(90deg,#fff 0 16%,#24448f 16% 37%,#fff 37% 56%,var(--red-b) 56% 77%,#fff 77%)}}
+.dzx-strap{display:block;flex:none;width:22px;align-self:stretch;background:var(--strap-band)}
 .dzx .intro{margin-bottom:var(--s3)}
 /* виджет ДЗ: тёмно-синяя карточка (как «Найди свой вариант» на главной ИГ), ДЗ → № → красная «Открыть вариант» */
 .dzw{position:relative;max-width:760px;margin:0 0 var(--s4);padding:20px 18px 18px;border-radius:22px;color:#fff;background:linear-gradient(140deg,var(--navy),var(--navy2));box-shadow:0 26px 50px -30px rgba(20,25,70,.8);overflow:hidden}
@@ -4248,7 +4248,7 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .rkh-pill i{width:8px;height:8px;border-radius:50%;background:#fff}
 .rkh-pill.live i{animation:rkhP 1.4s ease-in-out infinite}
 @keyframes rkhP{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.75)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
-.rkh-meta{color:#fff;font:600 13px var(--sans);opacity:.9;text-decoration:underline;text-underline-offset:3px;text-align:right}
+.rkh-meta{color:#fff;font:600 13px var(--sans);opacity:.9;text-align:right}
 .rkh-g{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
 .rkh-t{margin:0;font:800 44px/1 var(--disp)!important;letter-spacing:-.03em;color:#fff!important}
 .rkh-t span{font:700 17px var(--sans);letter-spacing:0;opacity:.85;vertical-align:middle;margin-left:4px}
@@ -4373,6 +4373,7 @@ a.rkt:hover{background:var(--surf2)}
   --line:#222f5c; --line2:#2f3f78;
   --blue:#8fa8ff; --blue-s:#18245a; --acc:#3557e0; --acc-h:#4566ee; --acc-d:#1d318f; --blue-ink:#8fa8ff;
   --red:#ff5b63; --red-s:#3a1520; --hot:#ff5b63; --red-b:#e3303b; --red-d:#8e1018;
+  --strap:#3557e0; --strap2:#4566ee;
   --weave:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);
 }
 body{background:var(--paper)}
@@ -4454,11 +4455,6 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .sk-go{box-shadow:0 3px 0 #0f1847!important}
 .sk-c.now{border-color:var(--strap)!important;box-shadow:0 4px 0 var(--strap)!important}
 .sk-boss a{background:linear-gradient(135deg,#e3262f,#cf1922)!important}
-button.rkh-meta{background:none;border:0;padding:0;cursor:pointer;font:600 13px var(--sans);color:#fff;text-decoration:underline;text-underline-offset:3px}
-.rkh-gf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;max-width:260px}
-.rkh-gf input{flex:1 1 150px;min-width:0;height:36px;border-radius:10px;border:0;padding:0 10px;font:600 14px var(--sans);color:#121a3f}
-.rkh-gf button{height:36px;padding:0 12px;border-radius:10px;border:0;background:#fff;color:var(--red);font:800 14px var(--sans);cursor:pointer}
-.rkh-gf span{flex-basis:100%;text-align:right;font-size:12px}
 .sk-lecs{flex-direction:column!important;gap:6px!important;width:100%}
 .sk-lec{border:1.5px solid var(--line);border-radius:12px;background:var(--surf2)}
 .sk-lec summary{list-style:none;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;padding:8px 12px;cursor:pointer;min-height:40px}
@@ -23175,12 +23171,12 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'4.20',d:'5 ноября 2026',items:['РК2 — на первом месте: на главной горящая плашка «РК2 через N дней», ранг и готовность из 100, кнопки «Готовиться к РК2» и «Разминка · 3 мин».',
+  {v:'4.20',d:'5 ноября 2026',items:['РК2 — на первом месте: на главной горящая плашка «РК2 через N дней», ранг и готовность из 100, кнопки «Готовиться к РК2» и «Проверь себя · 3 мин».',
     'Раздел РК: вкладки РК1 · РК2 · РК3 (РК3 откроется после РК2). Вверху РК2 — сколько осталось, ранг, звёзды и серия дней подряд, одно главное действие.',
     '«Что нужно уметь на РК2» — шесть навыков по билету и списку задач преподавателя: фундамент (точка на объекте, h и f), новая ось (прямая общего положения → прямая уровня, № 52, 53), плоскость в натуральную величину (№ 55–57, задача А), вращение вокруг проецирующей (№ 60, 61, задача Б), вращение вокруг прямой уровня (№ 62–67, задача В), ДЗ №3. У каждого — звёзды ★ понял · ★★ построил сам · ★★★ закрепил и кнопка «Дальше». Финал — билет РК2 и пробный РК на время.',
-    'Ранги: Новичок → Чертёжник → Конструктор → Инженер → Готов к РК2 → Мастер эпюра. «Готов к РК2» — от 75 баллов и ★★ в каждом навыке; новый ранг и новая звезда отмечаются салютом. Разминка на 3 минуты — 5 заданий из слабых мест.',
+    'Ранги: Новичок → Чертёжник → Конструктор → Инженер → Готов к РК2 → Мастер эпюра. «Готов к РК2» — от 75 баллов и ★★ в каждом навыке; новый ранг и новая звезда отмечаются салютом. «Проверь себя» за 3 минуты — 5 заданий, сразу видно, насколько готов.',
     'Из лекций — прямо в навыках: рис. 5.3 и 5.7 (прямая → уровня → проецирующая), 5.6 и 5.8 (плоскость → проецирующая → уровня), 5.10 (истинный вид и угол к π₁ вращением), 5.12 и 5.13 (расстояния вращением вокруг горизонтали) — алгоритм по шагам и та же задача тетради с разбором.',
-    'Дата РК2 — день занятия по начерту твоей группы на неделе РК. Группу можно указать прямо на плашке (та же, что в кабинете).',
+    'Срок РК2 — неделя РК по плану семестра (11-я неделя).',
     'Новые цвета — как ремешок часов: белое полотно, тёмно-синяя и красная полосы. Шапка и меню белые с полосой синий · белый · красный, красный — только «горит» и главная кнопка.']},
   {v:'4.19',d:'28 октября 2026',items:['ДЗ — один раздел на оба предмета. Вариант вписываешь один раз — он один на все ДЗ, — и каждое ДЗ открывается сразу на нём: разбор по шагам, чистовик, черновик, как решать, ошибки и защита.','«← Назад» возвращает туда, откуда пришёл.','Красная «Поделиться» — Telegram, ВК, QR или скопировать; отправляется ровно то, что открыто, вплоть до задачи внутри варианта. На экране «ДЗ» — «Скинуть группе».','Короткие адреса: nachert1830.ru/#/ng4/13 — начерт, ДЗ 4, вариант 13; #/ig3/7 — инж. графика. Старые ссылки и закладки работают.','Поиск понимает «дз 4 13» — сразу вариант.']},
   {v:'4.18',d:'26 октября 2026',items:['Новый яркий дизайн: насыщенный синий, белый и красный. Красный — там, куда нажать.','Главная: большой синий блок поиска и красная кнопка «Найти» — впиши номер задачи, вариант или вопрос, и решение откроется первым. Под строкой — три шага: что вписать и куда жать дальше.','Разделы — крупные плитки с иконками; кнопки стали «нажимаемыми»: с бортиком снизу и откликом при нажатии.']},
@@ -25090,16 +25086,8 @@ return {view,today,GEN,MODES,_:{norm,canon,rot,mirror,sameRot,allVis,isoSig,view
               'r2m' [{d,r:{A,B,V},sec}] — пробный РК2; 'r2fac' — поток. Задачи — из общего 'wb3'/'rep'. */
 
 /* ═════════ Сроки РК по плану семестра (как в кабинете lk/: начерт РК1 — 6-я неделя, РК2 — 11-я, РК3 — 15-я) ═════════
-   Без группы — понедельник недели РК; группа из кабинета (lk_group) даёт точный день занятия по начерту. */
-/* выбор группы прямо на плашке РК: та же группа, что в кабинете (lk_group) */
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkgrp]'); if(!b) return; e.preventDefault();
-  const f=document.createElement('form'); f.className='rkh-gf'; f.innerHTML='<input list="rkgL" aria-label="Твоя группа" placeholder="Группа, например ИУ5-13Б" autocomplete="off" required><datalist id="rkgL"></datalist><button type="submit">OK</button><span role="status"></span>';
-  b.replaceWith(f); const inp=f.querySelector('input'), msg=f.querySelector('span'); inp.focus(); let G={};
-  fetch('lk/data/groups.json').then(r=>r.json()).then(j=>{ G=j.groups||{}; f.querySelector('datalist').innerHTML=Object.keys(G).filter(k=>G[k].ng).map(k=>'<option value="'+k+'">').join(''); }).catch(()=>{ msg.textContent='Не загрузилось расписание'; });
-  f.addEventListener('submit',ev=>{ ev.preventDefault(); const v=inp.value.trim().toUpperCase().replace(/\s+/g,'').replace(/–|—/g,'-'); const k=Object.keys(G).find(x=>x.toUpperCase()===v);
-    if(!k){ msg.textContent='Нет такой группы в расписании кафедры'; return; } if(!G[k].ng){ msg.textContent='У этой группы нет начерта по расписанию'; return; }
-    try{ localStorage.setItem('lk_group',k); localStorage.setItem('nch2_rkgrp',JSON.stringify({g:k,day:G[k].ng.day,time:G[k].ng.time||''})); }catch(_){}
-    const sy=window.scrollY; if(typeof route==='function'){ try{ CURH=null; }catch(_){} route(); window.scrollTo(0,sy); } }); });
+   Без группы — понедельник недели РК; группа из кабинета (lk_group) даёт точный день занятия по начерту.
+   Выбора группы на плашке нет: кабинет пока закрыт для всех. */
 window.RKS=(function(){
  const DAY=864e5, W1=Math.round(Date.UTC(2026,7,31)/DAY), WEEK={1:6,2:11,3:15};
  const MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'], WD=['вс','пн','вт','ср','чт','пт','сб'];
@@ -25116,7 +25104,7 @@ window.RKS=(function(){
  function when(i){ return i.exact?human(i.date)+(i.time?' в '+i.time.replace(/^0/,''):''):'неделя с '+human(i.start); }
  /* крупное число и подпись под ним */
  function count(i){ if(i.thisWeek||i.left===0) return {b:i.left===0&&i.exact?'Сегодня':'Эта',s:i.left===0&&i.exact?'РК'+i.n+(i.time?' в '+i.time.replace(/^0/,''):''):'неделя — неделя РК'+i.n,word:true};
-   if(i.left===1) return {b:'Завтра',s:human(i.date),word:true}; return {b:String(i.left),s:dw(i.left)+' до '+(i.exact?human(i.date):'недели РК (день — по твоей группе)')}; }
+   if(i.left===1) return {b:'Завтра',s:human(i.date),word:true}; return {b:String(i.left),s:dw(i.left)+' до '+(i.exact?human(i.date):'недели РК'+i.n)}; }
  /* насколько «горит»: hot ≤ 7 дней, warm ≤ 14, иначе calm */
  const heat=i=>i.left<=7?'hot':i.left<=14?'warm':'calm';
  function current(){ return [1,2,3].map(info).find(i=>!i.past)||info(3); }
@@ -25741,7 +25729,7 @@ const LECT={
 const LECT_OF=sk=>Object.keys(LECT).filter(k=>LECT[k].sk===sk);
 
 const READY_AT=75;          /* с этой отметки — «Готов к РК2», если у каждого навыка ★★ */
-const RANKS=[[0,'Новичок','Ещё ничего не проверено. Пройди разминку — 3 минуты, и появится первое число.'],
+const RANKS=[[0,'Новичок','Ещё ничего не проверено. Проверь себя — 3 минуты, и появится первое число.'],
  [20,'Чертёжник','Знаешь, о чём темы. Теперь — суть каждого навыка и задания «Вижу».'],
  [45,'Конструктор','Многое понимаешь, но задачу до конца без разбора пока не доводишь. Решай в «Решаю сам».'],
  [60,'Инженер','Задачи получаются. Закрой ★★ в каждом навыке и разбери уверенные ошибки.'],
@@ -25824,7 +25812,7 @@ function qMapHTML(D){ D=D||snapshot(); const F=FACS[D.fac]||FACS.main;
    <p class="r2-leg"><i class="g"></i>знаю <i class="a"></i>не уверен <i class="r"></i>слабо <i></i>не проверено</p></section>`; }
 function trainHTML(R){ const dz=R&&!R.na?R.danger.length:0;
   return `<section class="r2-tr" aria-labelledby="r2trH"><h2 id="r2trH" class="sp-h2">Тренировки</h2><div class="sp-go">
-   <a class="sp-big pri" href="${H('ng','rk2','t','quick')}"><b>Разминка · 3 минуты</b><span>5 заданий из слабых мест. Лучший способ начать, когда лень.</span><i aria-hidden="true">→</i></a>
+   <a class="sp-big pri" href="${H('ng','rk2','t','quick')}"><b>Проверь себя · 3 минуты</b><span>5 заданий — быстро узнаешь, насколько ты готов к РК2.</span><i aria-hidden="true">→</i></a>
    <a class="sp-big" href="${H('rk','ng')}"><b>Сдашь РК2? Игра</b><span>8 заданий на время с чертежами — в конце прогноз и что повторить.</span><i aria-hidden="true">→</i></a>
    <a class="sp-big" href="${H('ng','rk2','t','zamer')}"><b>Замер готовности</b><span>15 заданий по всем модулям, ≈ 12 минут. Отвечай и отмечай уверенность.</span><i aria-hidden="true">→</i></a>
    <a class="sp-big" href="${H('ng','rk2','t','mix')}"><b>По слабым местам</b><span>10 заданий: чаще то, где готовность ниже и давно не повторял.</span><i aria-hidden="true">→</i></a>
@@ -25850,15 +25838,15 @@ function heroHTML(big){ const I=RKS.info(2), R=readiness(), SA=skillsAll(), rk=r
       <small>${rk.held?'Для «Готов к РК2» нужны ★★ в: '+rk.weak.map(S=>S.t.toLowerCase()).join(', '):rk.next?'До «'+rk.next+'» — '+rk.toNext+' '+(rk.toNext%10===1&&rk.toNext%100!==11?'балл':rk.toNext%10>=2&&rk.toNext%10<=4&&(rk.toNext%100<12||rk.toNext%100>14)?'балла':'баллов'):'Высший ранг. Держи его до РК.'}</small></div>
      <div class="rkh-side"><div><b>${stars}<i>★</i></b><span>из 18</span></div><div class="${st.n&&!st.today?'warn':''}"><b>${st.n}</b><span>${st.n&&!st.today?'серия сгорит':'дн. подряд'}</span></div></div>
     </div>`:'';
-  const go=R.empty?{href:H('ng','rk2','t','quick'),t:'Начать: разминка 3 минуты',d:'5 коротких заданий из всех навыков. Отвечай и отмечай уверенность — сразу появятся первые баллы и ранг.'}:nx||{href:H('ng','rk2'),t:'Готовиться к РК2',d:''};
+  const go=R.empty?{href:H('ng','rk2','t','quick'),t:'Проверь себя: 3 минуты',d:'5 коротких заданий из всех навыков — узнаешь, насколько ты готов к РК2. Отвечай и отмечай уверенность — сразу появятся первые баллы и ранг.'}:nx||{href:H('ng','rk2'),t:'Готовиться к РК2',d:''};
   return `<section class="rkh rkh-${heat}${big?' rkh-big':''}" aria-labelledby="${id}">
-   <div class="rkh-top"><span class="rkh-pill${heat==='hot'&&!I.past?' live':''}"><i></i>${pill}</span>${I.exact?`<a class="rkh-meta" href="/lk/" title="Сменить группу — в кабинете">гр. ${attr(I.group)} · ${RKS.when(I)}</a>`:`<button type="button" class="rkh-meta" data-rkgrp>${I.group?'У гр. '+attr(I.group)+' нет начерта — сменить':'Укажи группу — покажу день РК2'}</button>`}</div>
+   <div class="rkh-top"><span class="rkh-pill${heat==='hot'&&!I.past?' live':''}"><i></i>${pill}</span><span class="rkh-meta">${I.exact?'гр. '+attr(I.group)+' · ':''}${RKS.when(I)}</span></div>
    <div class="rkh-g"><div><${T} id="${id}" class="rkh-t">РК2${big?'':' <span>начерт</span>'}</${T}><div class="rkh-s">${big?'Способы преобразования чертежа: замена плоскостей и два вращения':'Замена плоскостей и вращение · билет из 3 задач'}</div></div>
     ${I.past?'':`<div class="rkh-cnt${c.word?' word':''}"><b>${c.b}</b><span>${c.s}</span></div>`}</div>
    ${rankB}
-   <div class="rkh-acts">${big?`<a class="btn white" href="${go.href}">${go.t} →</a>${R.empty?`<a class="btn glass" href="${H('rk','ng')}">Игра «Сдашь РК2?»</a>`:`<a class="btn glass" href="${H('ng','rk2','t','quick')}">Разминка · 3 мин</a>`}`
-     :`<a class="btn white" href="${H('ng','rk2')}">Готовиться к РК2 →</a><a class="btn glass" href="${H('ng','rk2','t','quick')}">Разминка · 3 мин</a>`}</div>
-   <div class="rkh-after">${big?(go.d||'Начни с разминки: 5 заданий, сразу появятся первые баллы.'):(rk&&!R.empty?'Следующий шаг: <b>'+attr(go.t)+'</b>':'Начни с разминки: 5 заданий — и увидишь, сколько баллов из 100 у тебя уже есть.')}</div>
+   <div class="rkh-acts">${big?`<a class="btn white" href="${go.href}">${go.t} →</a>${R.empty?`<a class="btn glass" href="${H('rk','ng')}">Игра «Сдашь РК2?»</a>`:`<a class="btn glass" href="${H('ng','rk2','t','quick')}">Проверь себя · 3 мин</a>`}`
+     :`<a class="btn white" href="${H('ng','rk2')}">Готовиться к РК2 →</a><a class="btn glass" href="${H('ng','rk2','t','quick')}">Проверь себя · 3 мин</a>`}</div>
+   <div class="rkh-after">${big?(go.d||'Проверь себя: 5 заданий — сразу увидишь, насколько готов.'):(rk&&!R.empty?'Следующий шаг: <b>'+attr(go.t)+'</b>':'Проверь себя: 5 заданий — и увидишь, сколько баллов из 100 у тебя уже есть.')}</div>
   </section>`; }
 /* карта навыков: что нужно уметь на РК2 */
 function skillsHTML(SA){ const sum=SA.reduce((z,x)=>z+x.st.stars,0), now=SA.find(x=>x.st.stars<2)||SA.find(x=>x.st.stars<3);
@@ -25999,7 +25987,7 @@ function planFor(kind){ const F=FACS[fac()]||FACS.main, mods=F.mods.length?F.mod
   for(let i=0;i<10;i++){ let r=Math.random()*tot, m=ms[0].m; for(const x of ms){ r-=x.gap; if(r<=0){ m=x.m; break; } }
     if(Math.random()<.35) out.push({g:pick(GEN_OF[m])}); else { const c=byM(m).filter(x=>!out.some(o=>o.id===x.id)).map(x=>({x,s:itemScore(D.items[x.id],D.t)+Math.random()*.3})).sort((a,b)=>a.s-b.s)[0]; if(c) out.push({id:c.x.id}); } }
   return out; }
-const KIND_T={quick:'Разминка · 3 минуты',zamer:'Замер готовности',mix:'По слабым местам',fix:'Уверенные ошибки'};
+const KIND_T={quick:'Проверь себя · 3 минуты',zamer:'Замер готовности',mix:'По слабым местам',fix:'Уверенные ошибки'};
 function kindTitle(k){ return KIND_T[k]||(/^m-/.test(k)?'Знаю · '+(MOD(k.slice(2))||{}).t:/^v-/.test(k)?'Вижу · '+(MOD(k.slice(2))||{}).t:'Проверка'); }
 function start(kind){ const plan=planFor(kind).filter(Boolean); SS={kind,plan,q:[],i:0,fin:false,before:readiness()}; next0(); }
 function next0(){ while(SS.i<SS.plan.length){ const q=inst(SS.plan[SS.i]); if(q){ SS.q[SS.i]=q; return; } SS.plan.splice(SS.i,1); } }
