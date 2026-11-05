@@ -53,7 +53,7 @@ function inv(A){ const det=A[0]*A[4]-A[1]*A[3]; if(Math.abs(det)<1e-12) return n
 
 /* ── результат сканера → лист ── */
 function fromScan(out,o){ o=o||{}; const sheet={id:uid('s'),name:o.name||out.name||'Лист',created:o.date||Date.now(),photo:o.photo||null,size:out.size||null,cost:out.cost||0,drawings:[]};
-  (out.drawings||[]).forEach((d,i)=>{ if(!d||!d.segs) return; const dr=fromDrawing(d,out); dr.name='Чертёж '+(i+1)+(d.part?' · часть '+d.part:''); dr.idx=i; sheet.drawings.push(dr); });
+  (out.drawings||[]).forEach((d,i)=>{ if(!d||!d.segs) return; const dr=fromDrawing(d,out); dr.name='Чертёж '+(i+1)+(d.part?' · часть '+d.part:''); dr.idx=i; if(d.photo!=null) dr.photo=d.photo; sheet.drawings.push(dr);   /* photo — номер снимка («чертёж за чертежом»): фото под копией — с него */ });
   return sheet; }
 function fromDrawing(d,out){ const f=d.fit&&d.fit.rmsMm!=null?d.fit:null;
   const dr={id:uid('d'),part:d.part||null,dz:f?f.dz:null,n:f?f.n:null,rms:f?r2(f.hom?f.hom.rmsMm:f.rmsMm):null,approx:false,pts:[],segs:[],arcs:[],txt:[],created:Date.now()};
