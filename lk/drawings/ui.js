@@ -283,7 +283,8 @@ function renderFix(){ if(!DR||PANE!=='fix') return; const box=$('#fixList'), is=
   /* проверка по результату — истинные величины копии против эталона варианта (на момент скана) */
   if(DR.verify&&DR.verify.found&&DR.verify.found.length){ const v=DR.verify, fm=x=>Array.isArray(x)?x.map(f1).join(' / '):f1(x);
     h+='<div class="card"><div class="st '+(v.verdict==='верно'?'ok':v.verdict==='расходится с эталоном'?'no':'')+'"><span class="big3">'+(v.verdict==='верно'?ICON.ok:ICON.warn)+'</span><span><b>Проверка по результату: '+esc(v.verdict)+'</b><br><small class="mut">'
-      +v.found.map(f=>esc(f.what)+' — начерчено '+fm(f.got)+' '+f.unit+', по варианту '+fm(f.want)+' '+f.unit+' ('+esc(f.st)+', проекция '+esc(f.from)+')').join('; ')
+      +v.found.map(f=>/^view:/.test(f.k)?'вид '+esc(f.from)+(f.st==='верно'?' согласуется с пирамидой варианта':' почти согласуется с пирамидой варианта')+' (отклонение до '+fm(f.got)+' мм)'
+        :esc(f.what)+' — начерчено '+fm(f.got)+' '+f.unit+', по варианту '+fm(f.want)+' '+f.unit+' ('+esc(f.st)+', проекция '+esc(f.from)+')').join('; ')
       +(v.verdict==='расходится с эталоном'?'. Проверьте построение этой величины.':'')+'</small></span></div></div>'; }
   /* проверка построения — вердикт сканера (на момент скана) */
   if(DR.check){ const c=DR.check, cls=c.verdict==='верно'?'ok':c.verdict==='ошибка'?'no':'', ic=c.verdict==='верно'?ICON.ok:ICON.warn;

@@ -75,7 +75,12 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
       const c=VF.verify(t,LIB.variants.get(3,14).data), d=VF.verify(t.map(q=>q[0]==='C⁗'?[q[0],q[1]+4,q[2]]:q),LIB.variants.get(3,14).data);
       if(c.verdict!=='верно') B('истинный вид ABC (подписи ⁗) — верно',c.verdict);
       if(d.verdict==='расходится с эталоном') B('истинный вид с неверной стороной — «не уверен», не обвинение',d.verdict);
-      if(VF.verify([['A″',0,0],['B″',40,0],['C″',70,0],['S″',30,-r.H]],LIB.variants.get(3,14).data).found.length) B('проекции ″ и ′ — не результат построения','нашлось'); }
+      if(VF.verify([['A″',0,0],['B″',40,0],['C″',70,0],['S″',30,-r.H]],LIB.variants.get(3,14).data).found.length) B('проекции ″ и ′ — не результат построения','нашлось');
+      /* вид построения как проекция пирамиды: точный произвольный вид (подписи ⁗) — «верно»; S сдвинута на 8 мм — не «верно» */
+      const D=LIB.variants.get(3,14).data, th=0.7, ph=1.1, R=[[Math.cos(th),Math.sin(th),0],[-Math.sin(th)*Math.cos(ph),Math.cos(th)*Math.cos(ph),Math.sin(ph)]], pr=x=>[R[0][0]*x[0]+R[0][1]*x[1]+R[0][2]*x[2]+12,R[1][0]*x[0]+R[1][1]*x[1]+R[1][2]*x[2]-30];
+      const vw=['A','B','C','S'].map(k=>[k+'⁗'].concat(pr(D[k]))), g1=VF.verify(vw,D).found.find(f=>/^view:/.test(f.k)), g2=VF.verify(vw.map(q=>q[0]==='S⁗'?[q[0],q[1]+8,q[2]]:q),D).found.find(f=>/^view:/.test(f.k));
+      if(!g1||g1.st!=='верно'||g1.got>0.05) B('вид построения — точная проекция пирамиды → верно',JSON.stringify(g1));
+      if(g2&&g2.st==='верно') B('вид с точкой S не на месте (8 мм) — не «верно»',JSON.stringify(g2)); }
     if(!mg||mg.inl!==8||me>0.5||Math.abs(mg.shift+6)>0.6) B('точки условия по форме (без подписей): 8 из 8, сдвиг проекций −6 мм',JSON.stringify(mg&&{inl:mg.inl,shift:mg.shift,maxErr:me}));
   }
   return bad; }
