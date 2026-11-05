@@ -5,7 +5,9 @@
    SCANPIPE.load(v)         — подгрузить их по одному (кабинет: по требованию, не при открытии);
    SCANPIPE.create(o)       — {cloud: адрес облачной функции | '', api: адрес беты (lab/dz/beta-server.js), code, pass}
      .status()              → ответ сервера о готовности;
-     .run(file, {dz, variant}, step) → {out, bmp}; step(id, текст, 'run'|'done'|'err') — ход работы для страницы.
+     .run(file, {dz, variant, single}, step) → {out, bmp}; step(id, текст, 'run'|'done'|'err') — ход работы для страницы;
+       single — на снимке один чертёж во весь кадр (без раскладки);
+     .runMany(files, sel, step) → {out, bmp, bmps} — «чертёж за чертежом»: по чертежу на снимке, все — один лист (у чертежа photo — номер снимка).
    Формат out — как у кнопки «Скачать JSON» беты: {name, size, layout, drawings:[{part, box, rot, mm, circles, fit, txt, pts, segs, stats}], cost, calls, seconds}. */
 (function(){
 'use strict';
@@ -137,31 +139,51 @@ function create(o){ o=o||{};
     return j; }
 
   async function run(file,sel,step){ sel=sel||{}; step=step||function(){};
-    const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.refine, IMG=L.img; let cost=0, calls=0; const t0=Date.now();
+    const LY=self.LAB.layout, acc={cost:0,calls:0}, t0=Date.now();
     step('l','Читаю фото…'); const bmp=await createImageBitmap(file,{imageOrientation:'from-image'}); const W=bmp.width,H=bmp.height; step('l','Фото '+W+' × '+H+' px','done');
-    step('lay','Нахожу чертежи на листе…'); const sm=scaled(bmp,800); let lay;
-    try{ const j=await ask('layout',sm.c); cost+=j.cost||0; calls++; lay=LY.parseLayout(j.text,1/sm.k,W,H); }
-    catch(e){ if(e.status===401||e.status===403) throw e; lay={ok:false,why:e.message}; }   /* неверный код — дальше идти незачем */
-    if(!lay.ok){ step('lay','Раскладка не помогла ('+lay.why+') — лист как один чертёж','done'); lay={ok:true,rot:0,drawings:[{box:[0,0,W,H],part:null}]}; }
-    else step('lay','Чертежей: '+lay.drawings.length+(lay.rot?', лист повёрнут на '+lay.rot+'°':'')+(lay.drawings.some(d=>d.part)?' (части '+lay.drawings.map(d=>d.part||'?').join(', ')+')':''),'done');
+    let lay;
+    /* один чертёж во весь кадр (снимок вблизи, «чертёж за чертежом»): раскладка не нужна — ни её запрос, ни её ошибки (рамки внахлёст, пропуск бледного) */
+    if(sel.single){ lay={ok:true,rot:0,drawings:[{box:[0,0,W,H],part:null}]}; step('lay','Один чертёж во весь кадр — раскладка не нужна','done'); }
+    else { step('lay','Нахожу чертежи на листе…'); const sm=scaled(bmp,800);
+      try{ const j=await ask('layout',sm.c); acc.cost+=j.cost||0; acc.calls++; lay=LY.parseLayout(j.text,1/sm.k,W,H); }
+      catch(e){ if(e.status===401||e.status===403) throw e; lay={ok:false,why:e.message}; }   /* неверный код — дальше идти незачем */
+      if(!lay.ok){ step('lay','Раскладка не помогла ('+lay.why+') — лист как один чертёж','done'); lay={ok:true,rot:0,drawings:[{box:[0,0,W,H],part:null}]}; }
+      else step('lay','Чертежей: '+lay.drawings.length+(lay.rot?', лист повёрнут на '+lay.rot+'°':'')+(lay.drawings.some(d=>d.part)?' (части '+lay.drawings.map(d=>d.part||'?').join(', ')+')':''),'done'); }
+    const out={name:String(file.name||'лист').replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]}; if(sel.single) out.layout.single=true;
+    await digitize(lay.drawings.map(d=>({bmp,d,rot:lay.rot,W,H})),out,sel,step,acc,true);
+    out.cost=+acc.cost.toFixed(4); out.calls=acc.calls; out.seconds=Math.round((Date.now()-t0)/1000); return {out,bmp}; }
+  /* «чертёж за чертежом»: снимки вблизи, на каждом — один чертёж во весь кадр (≥ 8 px/мм: подписи A‴, A₄ читаются, а раскладка
+     листа с её ошибками не нужна). Все чертежи — в один out, как один лист; у чертежа photo — номер снимка, с которого он.
+     → {out, bmp (первый снимок), bmps} */
+  async function runMany(files,sel,step){ sel=sel||{}; step=step||function(){}; files=Array.from(files||[]); if(!files.length) throw new Error('нет снимков');
+    const acc={cost:0,calls:0}, t0=Date.now(), units=[];
+    for(let i=0;i<files.length;i++){ step('l'+i,'Читаю снимок '+(i+1)+'…'); const bmp=await createImageBitmap(files[i],{imageOrientation:'from-image'}), W=bmp.width, H=bmp.height;
+      units.push({bmp,d:{box:[0,0,W,H],part:null},rot:0,W,H,photo:i}); step('l'+i,'Снимок '+(i+1)+': '+W+' × '+H+' px','done'); }
+    step('lay','Снимков вблизи: '+units.length+' — по чертежу на снимке, раскладка листа не нужна','done');
+    const out={name:String(files[0].name||'лист').replace(/\.[^.]+$/,''),size:[units[0].W,units[0].H],photos:units.map(u=>[u.W,u.H]),layout:{rot:0,n:units.length,single:true,many:true},drawings:[]};
+    /* масштаб (px на мм) у каждого снимка вблизи свой — медиана по ним для поиска точек условия по форме не годится: samePpm = false */
+    await digitize(units,out,sel,step,acc,false);
+    out.cost=+acc.cost.toFixed(4); out.calls=acc.calls; out.seconds=Math.round((Date.now()-t0)/1000); return {out,bmp:units[0].bmp,bmps:units.map(u=>u.bmp)}; }
+  /* оцифровка чертежей, u = {bmp, d (рамка, часть), rot, W, H, photo?} → out.drawings; голос листа, проверка по результату и построения.
+     samePpm — все чертежи с одного фото (общий масштаб листа: точки условия по форме по медиане масштаба) */
+  async function digitize(units,out,sel,step,acc,samePpm){ const L=self.LAB;
     const dzSel=sel.dz&&sel.dz!=='auto'?+sel.dz:null, vSel=/^\d+$/.test(String(sel.variant||'').trim())?String(sel.variant).trim():'auto';
-    const out={name:String(file.name||'лист').replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]};
-    const ctx0={W,H,vSel,dzSel,rot:lay.rot}, prec=sel.precision||'max', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
-    const redo=[];
-    const jobs=lay.drawings.map((d,i)=>async()=>{ const id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(bmp,d.box,lay.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),CUT_SIDE,VIEW), ctx=Object.assign({d},ctx0);
-      let jA; try{ jA=await ask('crop',cr.m.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return {part:d.part,box:d.box,error:e.message}; } cost+=jA.cost||0; calls++;
+    const prec=sel.precision||'max', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
+    const redo=[], tag=(dr,u)=>{ if(dr&&u.photo!=null) dr.photo=u.photo; return dr; };
+    const jobs=units.map((u,i)=>async()=>{ const d=u.d, id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(u.bmp,d.box,u.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),CUT_SIDE,VIEW), ctx={W:u.W,H:u.H,vSel,dzSel,rot:u.rot,d};
+      let jA; try{ jA=await ask('crop',cr.m.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return tag({part:d.part,box:d.box,error:e.message},u); } acc.cost+=jA.cost||0; acc.calls++;
       const reads=[{mode:'crop',model:jA.model,fallback:jA.fallback||null,cost:jA.cost||0}];
       let R=digest(cr,jA.text,null,ctx), tB=null;
       /* вторая, независимая оцифровка другой моделью — если первая слабая (или «максимальная точность»); сливаются, карандаш решает */
       if(!jA.fallback&&(prec==='max'||(prec==='auto'&&R.q.weak))){ step(id,nm+': вторая, независимая оцифровка другой моделью'+(R.q.why.length?' ('+R.q.why.join(', ')+')':'')+'…');
-        try{ const jB=await ask('crop2',cr.m.c); cost+=jB.cost||0; calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
+        try{ const jB=await ask('crop2',cr.m.c); acc.cost+=jB.cost||0; acc.calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
           const M=digest(cr,jA.text,jB.text,ctx); if(better(M.q,R.q)){ R=M; tB=jB.text; } else R.dr.secondKept=false; }
         catch(e){ R.dr.secondError=e.message; } }
       const dr=R.dr, fit=dr.fit, mg=dr.merge; dr.reads=reads; dr.quality=R.q;
-      redo[i]=(n,dz,geoPpm)=>{ const X=digest(cr,jA.text,tB,Object.assign({},ctx,{vSel:String(n),dzSel:dz},geoPpm?{geo:{n,dz,ppm:geoPpm*cr.k}}:{})); X.dr.reads=reads; X.dr.quality=X.q; if(mg) X.dr.merge=X.dr.merge||mg; return X; };   /* те же ответы — другой вариант (голос листа) */
+      redo[i]=(n,dz,geoPpm)=>{ const X=digest(cr,jA.text,tB,Object.assign({},ctx,{vSel:String(n),dzSel:dz},geoPpm?{geo:{n,dz,ppm:geoPpm*cr.k}}:{})); X.dr.reads=reads; X.dr.quality=X.q; if(mg) X.dr.merge=X.dr.merge||mg; tag(X.dr,u); return X; };   /* те же ответы — другой вариант (голос листа) */
       step(id,nm+': '+reads.map(r=>mname(r.model)).join(' + ')+' — точек '+dr.stats.pts+', отрезков '+dr.stats.kept+(dr.circles.length?', окружностей и дуг '+dr.circles.length:'')
         +(mg?' (вторая модель добавила: линий '+Math.max(0,mg.segsAdded-(dr.stats.dropB||0))+', точек '+mg.ptsAdded+')':'')
-        +(fit&&fit.rmsMm!=null?', привязка ДЗ №'+fit.dz+' в.'+fit.n+', невязка '+fmt(fit.hom?fit.hom.rmsMm:fit.rmsMm)+' мм':', к условию не привязался'),'done'); return dr; });
+        +(fit&&fit.rmsMm!=null?', привязка ДЗ №'+fit.dz+' в.'+fit.n+', невязка '+fmt(fit.hom?fit.hom.rmsMm:fit.rmsMm)+' мм':', к условию не привязался'),'done'); return tag(dr,u); });
     /* до двух чертежей одновременно */
     const q=jobs.slice(); await Promise.all([0,1].map(async()=>{ while(q.length){ const job=q.shift(), idx=jobs.indexOf(job); out.drawings[idx]=await job(); } }));
     /* голос листа: на листе — один вариант. Чертёж, привязавшийся к другому (или ни к какому), пересчитывается по варианту
@@ -170,7 +192,7 @@ function create(o){ o=o||{};
       if(sv){ out.variant=sv; out.drawings.forEach((dr,i)=>{ if(!dr||dr.error||!redo[i]) return; const f=dr.fit; if(f&&f.rmsMm!=null&&f.dz===sv.dz&&String(f.n)===String(sv.n)) return;
           const ok=X=>X&&X.q.bound&&X.q.rms<=1&&String(X.dr.fit.n)===String(sv.n);
           let X=null; try{ X=redo[i](sv.n,sv.dz); }catch(e){}
-          if(!ok(X)&&sv.ppm){ try{ X=redo[i](sv.n,sv.dz,sv.ppm); }catch(e){ X=null; } }   /* подписи не помогли — точки условия по форме */
+          if(!ok(X)&&sv.ppm&&samePpm){ try{ X=redo[i](sv.n,sv.dz,sv.ppm); }catch(e){ X=null; } }   /* подписи не помогли — точки условия по форме */
           if(!ok(X)) return;
           X.dr.sheetVote={was:f&&f.rmsMm!=null?{dz:f.dz,n:f.n}:null}; out.drawings[i]=X.dr;
           step('d'+i,'Чертёж '+(i+1)+': '+(f&&f.rmsMm!=null?'был привязан к ДЗ №'+f.dz+' в.'+f.n:'не был привязан')+' — по листу вариант '+sv.n+', невязка '+fmt(X.q.rms)+' мм','done'); }); } }
@@ -182,13 +204,13 @@ function create(o){ o=o||{};
     /* проверка построения (ДЗ №3): мозг сканера (lab/dz/check3.js через gridsheet) по уточнённой копии каждого чертежа.
        Только по запросу (sel.check = true): на 62 настоящих чертежах (REPORT 7с) почти всё — «не могу утверждать» (студенты строят
        не только способом из указания), одно «ошибка в данных» — скорее ложное; студенту такой вердикт показывать рано */
-    if(sel.check===true&&L.dzGridSheet&&out.drawings.some(d=>d&&!d.error&&d.fit&&d.fit.dz===3&&d.fit.rmsMm!=null)){ step('chk','Проверяю построение…'); let img=null;
-      try{ const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.drawImage(bmp,0,0); img=g.getImageData(0,0,W,H); }catch(e){}
-      if(img){ out.drawings.forEach(dr=>{ if(dr&&!dr.error&&dr.fit&&dr.fit.dz===3&&dr.fit.rmsMm!=null) dr.check=checkDrawing(img,dr); });
-        const vs=out.drawings.filter(d=>d&&d.check).map(d=>d.check.verdict); step('chk','Проверка: '+['верно','ошибка','не могу утверждать'].map(v=>[v,vs.filter(x=>x===v).length]).filter(x=>x[1]).map(x=>x[0]+' — '+x[1]).join(', '),'done'); } }
-    out.cost=+cost.toFixed(4); out.calls=calls; out.seconds=Math.round((Date.now()-t0)/1000); return {out,bmp}; }
+    const chk=dr=>dr&&!dr.error&&dr.fit&&dr.fit.dz===3&&dr.fit.rmsMm!=null;
+    if(sel.check===true&&L.dzGridSheet&&out.drawings.some(chk)){ step('chk','Проверяю построение…'); const imgs=new Map();   /* кадр RGBA — один на фото */
+      const imgOf=u=>{ if(imgs.has(u.bmp)) return imgs.get(u.bmp); let img=null; try{ const c=document.createElement('canvas'); c.width=u.W; c.height=u.H; const g=c.getContext('2d'); g.drawImage(u.bmp,0,0); img=g.getImageData(0,0,u.W,u.H); }catch(e){} imgs.set(u.bmp,img); return img; };
+      out.drawings.forEach((dr,i)=>{ if(!chk(dr)) return; const img=imgOf(units[i]); if(img) dr.check=checkDrawing(img,dr); });
+      const vs=out.drawings.filter(d=>d&&d.check).map(d=>d.check.verdict); if(vs.length) step('chk','Проверка: '+['верно','ошибка','не могу утверждать'].map(v=>[v,vs.filter(x=>x===v).length]).filter(x=>x[1]).map(x=>x[0]+' — '+x[1]).join(', '),'done'); } }
 
-  return {status,ask,run,cloud:CLOUD,api:API}; }
+  return {status,ask,run,runMany,cloud:CLOUD,api:API}; }
 
 self.SCANPIPE={LIBS,load,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,sheetVariant,checkDrawing,CUT_SIDE,VIEW};
 })();
