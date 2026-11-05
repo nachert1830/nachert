@@ -255,6 +255,14 @@ function cone(n,D,src,d){ const r=onVariant(5,n,D,src,d), c=r.calc, cert=[], tan
   (c.Ks||[]).forEach((k,i)=>{ if(offLine(k,D.A,D.B)>1e-6) cert.push('K'+(i+1)+' не на AB');
     const v=(k[0]-c.S0[0])**2+(k[1]-c.S0[1])**2-tan2*(c.S0[2]-k[2])**2; if(Math.abs(v)>1e-6) cert.push('K'+(i+1)+' не на конусе: '+v); });
   return {task:r.task,calc:c,oracle:'5',answers:{K:c.Ks},cert}; }
-DZR.def('ng5',{ solve:(n,D,src,d)=>({cone,cyl:cylinder,ogive})[src.kind(n)](n,D,src,d),
+/* 3D (окно «В пространстве»): сама поверхность варианта — сетка SURF3 под построениями; кнопка «▶ Как образуется» (SURFLAB) */
+const TAU=2*Math.PI, FORM={cone:'cone',cyl:'obl',ogive:'rev'};
+const SURF={
+  cone:P=>({meshes:[{tris:SURF3.cone(P.S,t=>[P.O[0]+P.R*Math.cos(t),P.O[1]+P.R*Math.sin(t),P.O[2]],0,TAU,64),col:SURF3.COL.body,op:.5}]}),
+  cyl:P=>({meshes:[{tris:SURF3.cyl(t=>[P.O1[0]+P.R*Math.cos(t),P.O1[1]+P.R*Math.sin(t),P.O1[2]],sub(P.O2,P.O1),0,TAU,64),col:SURF3.COL.body,op:.5}]}),
+  ogive:P=>({meshes:[{tris:SURF3.rev(P.O,z=>[Math.sqrt(Math.max(0,P.R*P.R-z*z))-P.a,z],0,Math.sqrt(P.R*P.R-P.a*P.a),20,0,TAU,48),col:SURF3.COL.body,op:.5}]}) };
+function withSurf(r,kind,P){ if(!r||!r.task||!window.SURF3) return r; const f=()=>SURF[kind](P);
+  (r.task.parts||[r.task]).forEach(p=>{ p.surf3=f; p.form=FORM[kind]; }); return r; }
+DZR.def('ng5',{ solve:(n,D,src,d)=>withSurf(({cone,cyl:cylinder,ogive})[src.kind(n)](n,D,src,d),src.kind(n),src.params(n)),
   examples:{cone:()=>HW.tasks[5],cyl:()=>DZR.solve('ng5',11).task,ogive:()=>DZR.solve('ng5',21).task} });
 })();
