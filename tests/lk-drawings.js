@@ -105,9 +105,10 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
   const calls={layout:0,crop:0,crop2:0}, ans={crop:text,crop2:text};
   /* ответ — в px кадра модели: вырезка (рамка + поле) у страницы увеличивается для модели (SCANPIPE.VIEW), масштаб — по ширине присланного кадра */
   const CW=box[2]-box[0]+2*pad, inFrame=(t,w)=>{ const k=w/CW; return String(t).split('\n').map(l=>{ const a=l.split(' '), idx=a[0]==='P'?[2,3]:a[0]==='S'?[1,2,3,4]:[]; idx.forEach(i=>{ a[i]=String(Math.round(+a[i]*k*10)/10); }); return a.join(' '); }).join('\n'); };
+  let closeAns=null;   /* 3ж: снимки вблизи — ответ по кадру (какой снимок — по пропорциям кадра модели) */
   await pg.route(/functions\.yandexcloud\.net/,async r=>{ const q=r.request(); if(q.method()==='GET') return r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"scan":true,"codeOk":true}'});
     const b=JSON.parse(q.postData()||'{}'); calls[b.mode]=(calls[b.mode]||0)+1;
-    const k=800/2000, t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*k)),part:1}]}):inFrame(ans[b.mode],b.w);
+    const k=800/2000, t=b.mode==='layout'?JSON.stringify({rot:0,drawings:[{box:box.map(v=>Math.round(v*k)),part:1}]}):closeAns?closeAns(b):inFrame(ans[b.mode],b.w);
     return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:t,mode:b.mode,cost:0})}); });
   await pg.evaluate(()=>{ localStorage.setItem('scanCode','тест'); }); await pg.reload(); await pg.waitForTimeout(500); await pg.click('.tab[data-tab="check"]');
   const segs=dm.mm.segs.filter(s=>!s.unverified).map(s=>({a:PX(s.p[0],s.p[1]),b:PX(s.p[2],s.p[3]),dash:s.dash}));
@@ -175,6 +176,31 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
       if(!(t.h>t.w&&t.h<=1000)) B('живой сканер: ровный лист нужного размера',t.w+'×'+t.h); if(t.brown>40) B('живой сканер: на ровном листе нет стола','тёмно-бурых точек '+t.brown); } }
   /* 3г. «быстро»: одна модель, даже если слабая */
   { Object.assign(calls,{layout:0,crop:0,crop2:0}); await scanOnce('fast'); if(calls.crop2!==0) B('быстро: без второй проверки',JSON.stringify(calls)); ans.crop=text; ans.crop2=text; }
+  /* 3ж. «чертёж за чертежом» (pipeline.runMany): два снимка вблизи, на каждом — чертёж во весь кадр (9 и 8 px/мм, разные
+     пропорции); раскладки нет, оба чертежа — к в.21, один лист, у второго чертежа — свой снимок под копией */
+  { const SH=[{W:1500,H:2000,s:9,o:[1100,1000]},{W:1800,H:1400,s:8,o:[1200,700]}], P=(c,u,v)=>[u*c.s+c.o[0],v*c.s+c.o[1]];
+    const txtOf=c=>dm.mm.pts.map(q=>'P '+q[0]+' '+P(c,q[1],q[2]).map(Math.round).join(' ')).concat(dm.mm.segs.filter(s=>s.src!=='found').map(s=>'S '+P(c,s.p[0],s.p[1]).concat(P(c,s.p[2],s.p[3])).map(Math.round).join(' ')+(s.dash?' d':''))).join('\n');
+    closeAns=b=>{ const c=SH.slice().sort((x,y)=>Math.abs(x.W/x.H-b.w/b.h)-Math.abs(y.W/y.H-b.w/b.h))[0]; return inFrame(txtOf(c),b.w*CW/c.W); };   /* вырезка — весь снимок */
+    const shots=SH.map(c=>({W:c.W,H:c.H,segs:dm.mm.segs.filter(s=>!s.unverified).map(s=>({a:P(c,s.p[0],s.p[1]),b:P(c,s.p[2],s.p[3]),dash:s.dash}))}));
+    Object.assign(calls,{layout:0,crop:0,crop2:0});
+    const r=await pg.evaluate(async shots=>{ localStorage.setItem('lk_scanPrec','fast'); document.getElementById('scPrec').value='fast'; const n0=LKSCAN.list().length;
+      const files=await Promise.all(shots.map(async(s,i)=>{ const c=document.createElement('canvas'); c.width=s.W; c.height=s.H; const g=c.getContext('2d'); g.fillStyle='#f4f2ec'; g.fillRect(0,0,s.W,s.H); g.strokeStyle='#3a3a3a'; g.lineWidth=3.5; g.lineCap='round';
+        s.segs.forEach(q=>{ g.setLineDash(q.dash?[24,12]:[]); g.beginPath(); g.moveTo(q.a[0],q.a[1]); g.lineTo(q.b[0],q.b[1]); g.stroke(); });
+        return new File([await new Promise(r=>c.toBlob(r,'image/jpeg',0.9))],'чертёж-'+(i+1)+'.jpg',{type:'image/jpeg'}); }));
+      await LKSCAN.scanMany(files); const sh=LKSCAN.list()[0]; if(LKSCAN.list().length!==n0+1) return {err:document.getElementById('scSteps').textContent};
+      document.querySelector('#dvParts [data-di="1"]').click(); await new Promise(r=>setTimeout(r,500));
+      const one=await SCANPIPE.create({cloud:self.SCAN_API,code:'тест'}).run(files[1],{single:true,precision:'fast'});
+      return {n:sh.drawings.length,v:sh.drawings.map(d=>d.dz+':'+d.n),photo:sh.drawings.map(d=>d.photo),ks:(sh.photoKs||[]).length,ph:sh.drawings.map(d=>!!d.ph),cur:LKSCAN.dr.photo,btn:!document.getElementById('edPhoto').hidden,
+        one:{n:one.out.drawings.length,box:one.out.drawings[0].box,fit:one.out.drawings[0].fit&&one.out.drawings[0].fit.n,single:one.out.layout.single}}; },shots);
+    closeAns=null; await pg.evaluate(()=>{ localStorage.setItem('lk_scanPrec','auto'); document.getElementById('scPrec').value='auto'; });
+    if(r.err) B('чертёж за чертежом: лист сохранён',r.err.slice(0,240));
+    else { if(calls.layout!==0) B('чертёж за чертежом: без запроса раскладки',JSON.stringify(calls));
+      if(calls.crop!==3) B('чертёж за чертежом: по запросу на снимок (2 + 1 для run single)',JSON.stringify(calls));
+      if(r.n!==2||r.v.join()!=='3:21,3:21') B('чертёж за чертежом: два чертежа, оба к ДЗ №3 в.21',r.n+' · '+r.v.join(' '));
+      if(r.photo.join()!=='0,1'||r.ks!==2) B('чертёж за чертежом: у чертежа — номер своего снимка, у листа — масштабы двух миниатюр',r.photo.join()+' · '+r.ks);
+      if(!r.ph.every(Boolean)||r.cur!==1||!r.btn) B('чертёж за чертежом: «фото под копией» у второго чертежа — его снимок',JSON.stringify({ph:r.ph,cur:r.cur,btn:r.btn}));
+      if(r.one.n!==1||r.one.box.join()!=='0,0,1800,1400'||r.one.fit!==21||!r.one.single) B('run(single): один чертёж во весь кадр без раскладки',JSON.stringify(r.one)); }
+    await pg.evaluate(()=>{ const b=document.getElementById('dvBack'); if(document.getElementById('dv').classList.contains('on')) b.click(); }); await pg.waitForTimeout(200); }
   /* бета-страница lk/scan/ — на том же конвейере; её результат уходит в «Мои чертежи» кабинета */
   const bp=await browser.newPage(); const be=[]; bp.on('pageerror',e=>be.push(String(e)));
   await bp.route(/functions\.yandexcloud\.net/,async r=>{ const q=r.request(); if(q.method()==='GET') return r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"scan":true}'});

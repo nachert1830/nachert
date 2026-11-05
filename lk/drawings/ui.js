@@ -91,30 +91,39 @@ const steps=new Map();
 function step(id,text,state){ let li=steps.get(id); if(!li){ li=document.createElement('li'); steps.set(id,li); $('#scSteps').appendChild(li); } li.textContent=text; li.className=state||'run'; }
 function progStart(t){ steps.clear(); $('#scSteps').innerHTML=''; $('#scProgA').innerHTML=''; $('#scProgT').textContent=t; $('#scProg').hidden=false; $('#scProg').scrollIntoView({block:'nearest',behavior:'smooth'}); }
 let busy=false;
-async function scan(file){ if(!file||busy) return;
+const opts=()=>({dz:$('#scDz').value,variant:$('#scVar').value,precision:$('#scPrec').value});
+async function scan(file){ if(!file) return; return scanRun('Сканирую лист…','выберите фото ещё раз',pipe=>pipe.run(file,opts(),step).then(r=>({out:r.out,bmps:[r.bmp]}))); }
+/* «чертёж за чертежом»: снимки вблизи (lk/scan/live.js) — по чертежу на снимке (pipeline.runMany), все — один лист.
+   У чертежа photo — номер снимка: под копией — свой снимок (IndexedDB: id листа, id#1, id#2…; масштаб миниатюры — photoKs[i]) */
+async function scanMany(files,meta){ files=Array.from(files||[]).filter(Boolean); if(!files.length) return;
+  return scanRun('Распознаю чертежи: '+files.length+'…','снимите чертежи ещё раз',async pipe=>{ const r=await pipe.runMany(files,opts(),step); let cover=null;
+    if(meta&&meta.sheet){ try{ cover=await createImageBitmap(meta.sheet); }catch(e){} }   /* миниатюра в списке — весь лист, если его сняли */
+    return {out:r.out,bmps:r.bmps,cover}; }); }
+async function scanRun(title,again,go){ if(busy) return;
   if(!CLOUD){ progStart('Сканер сейчас недоступен'); step('x','Адрес сервера сканера не задан. Попробуйте пример — он работает без сервера.','err'); return; }
-  if(!CODE){ $('#scSet').open=true; $('#scCode').focus(); progStart('Нужен код доступа'); step('x','Введите код доступа в «Настройках сканера» и выберите фото ещё раз.','err'); return; }
-  busy=true; progStart('Сканирую лист…');
-  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk4'); step('lib','Сканер загружен','done');
+  if(!CODE){ $('#scSet').open=true; $('#scCode').focus(); progStart('Нужен код доступа'); step('x','Введите код доступа в «Настройках сканера» и '+again+'.','err'); return; }
+  busy=true; progStart(title);
+  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk5'); step('lib','Сканер загружен','done');
     const pipe=self.SCANPIPE.create({cloud:CLOUD,code:CODE});
-    const {out,bmp}=await pipe.run(file,{dz:$('#scDz').value,variant:$('#scVar').value,precision:$('#scPrec').value},step);
+    const {out,bmps,cover}=await go(pipe);
     const ok=out.drawings.filter(d=>d&&d.segs&&d.segs.length);
     if(!ok.length){ $('#scProgT').textContent='Чертежи не распознались'; step('x','Ни один чертёж не оцифрован. Снимите ближе и ровнее, без тени.','err'); return; }
-    const photo=thumb(bmp,1600), sh=D.fromScan(out,{name:sheetName(out)}); sh.photoK=photo.k;
-    await IDB.put(sh.id,photo.url); sh.thumb=thumb(bmp,160).url;
+    const ph=bmps.map(b=>thumb(b,1600)), sh=D.fromScan(out,{name:sheetName(out)}); sh.photoK=ph[0].k; if(ph.length>1) sh.photoKs=ph.map(p=>p.k);
+    for(let i=0;i<ph.length;i++) await IDB.put(photoKey(sh,i),ph[i].url); sh.thumb=thumb(cover||bmps[0],160).url;
     SHEETS.unshift(sh); save(true); renderList();
     $('#scProgT').textContent='Готово: '+sh.drawings.length+' '+plural(sh.drawings.length,'чертёж','чертежа','чертежей');
     $('#scProgA').innerHTML='<button class="btn sm" id="scOpen">Открыть копию</button>'; $('#scOpen').onclick=()=>openSheet(sh.id);
     openSheet(sh.id); }
   catch(e){ $('#scProgT').textContent='Не получилось'; step('x',/401|Неверный код/.test(e.message)?'Неверный код доступа. Проверьте его в «Настройках сканера».':'Сбой: '+e.message,'err'); }
   finally{ busy=false; } }
+const photoKey=(sh,i)=>i?sh.id+'#'+i:sh.id;
 function sheetName(out){ const d=new Date(), f=(out.drawings||[]).find(x=>x&&x.fit&&x.fit.rmsMm!=null); return (f&&f.fit?'ДЗ №'+f.fit.dz+', вариант '+f.fit.n:'Лист')+' · '+d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0'); }
 function thumb(bmp,side){ const k=Math.min(1,side/Math.max(bmp.width,bmp.height)), c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext('2d').drawImage(bmp,0,0,c.width,c.height); return {url:c.toDataURL('image/jpeg',0.78),k}; }
 const plural=(n,a,b,c)=>{ const m=n%10, h=n%100; return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c; };
 ['#scCam','#scPick'].forEach(s=>$(s).addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; scan(f); }));
 /* «Сканировать» — живой сканер (lk/scan/live.js): видео, контур листа, автоснимок в полном разрешении, ровный лист.
    Камеры в браузере нет (или отказ) — системная камера, как раньше */
-function camera(){ if(self.LIVESCAN&&self.LIVESCAN.supported()&&!busy){ self.LIVESCAN.open({onShot:f=>scan(f)}); return; } $('#scCam').click(); }
+function camera(){ if(self.LIVESCAN&&self.LIVESCAN.supported()&&!busy){ self.LIVESCAN.open({onShot:f=>scan(f),onShots:(fs,m)=>scanMany(fs,m)}); return; } $('#scCam').click(); }
 $('label[for="scCam"]').addEventListener('click',e=>{ if(self.LIVESCAN&&self.LIVESCAN.supported()){ e.preventDefault(); camera(); } });
 $('#scDemo').addEventListener('click',()=>{ const sh=D.fromScan(self.DRAWINGS_DEMO.make(),{name:'Пример · ДЗ №3, вариант 21'}); sh.demo=true; SHEETS.unshift(sh); save(true); renderList(); openSheet(sh.id); });
 
@@ -163,8 +172,11 @@ const cur=()=>DR;
 function openSheet(id,di){ SH=SHEETS.find(s=>s.id===id); if(!SH) return; DR=SH.drawings[di||0]; undo=[]; sel=null; tool='sel'; segA=null; view=null; unfolded=false; PHOTO=null; showPhoto=false;
   $('#dvName').value=SH.name; dv.classList.add('on'); document.body.style.overflow='hidden'; history.pushState({dv:1},'','#scan/d');
   renderParts(); setTool('sel'); $('#edPhoto').hidden=true; $('#edPhoto').classList.remove('on'); pane('copy');
-  IDB.get(SH.id).then(u=>{ if(!SH||SH.id!==id||!u) return; const im=new Image(); im.onload=()=>{ PHOTO={url:u,w:im.width,h:im.height}; $('#edPhoto').hidden=!DR||!DR.ph; renderEd(); }; im.src=u; });
+  loadPhoto();
   lib().then(L=>{ LIB=L; if(SH&&SH.id===id){ renderFix(); renderCount(); if(PANE==='3d') render3d(); } }); }
+/* фото под копией — снимок, с которого чертёж (photo — номер снимка «чертёж за чертежом»; у листа одним фото — 0) */
+function loadPhoto(){ const sh=SH, dr=DR, i=(dr&&dr.photo)||0; if(PHOTO&&PHOTO.i===i){ $('#edPhoto').hidden=!DR||!DR.ph; return; } PHOTO=null; $('#edPhoto').hidden=true; if(!sh) return;
+  IDB.get(photoKey(sh,i)).then(u=>{ if(SH!==sh||DR!==dr||!u) return; const im=new Image(); im.onload=()=>{ if(SH!==sh||DR!==dr) return; PHOTO={url:u,w:im.width,h:im.height,i}; $('#edPhoto').hidden=!DR.ph; renderEd(); }; im.src=u; }); }
 function closeSheet(){ dv.classList.remove('on'); document.body.style.overflow=''; SH=null; DR=null; renderList(); }
 $('#dvBack').onclick=()=>{ if(history.state&&history.state.dv) history.back(); else closeSheet(); };
 addEventListener('popstate',()=>{ if(dv.classList.contains('on')) closeSheet(); });
@@ -172,7 +184,7 @@ document.addEventListener('keydown',e=>{ if(e.key!=='Escape'||!dv.classList.cont
 $('#dvName').addEventListener('change',()=>{ if(!SH) return; SH.name=$('#dvName').value.trim()||SH.name; save(); });
 function renderParts(){ const b=$('#dvParts'); if(SH.drawings.length<2){ b.innerHTML=''; b.style.display='none'; return; } b.style.display='';
   b.innerHTML=SH.drawings.map((d,i)=>'<button class="chipb'+(d===DR?' on':'')+'" data-di="'+i+'">'+esc(d.name||('Чертёж '+(i+1)))+(D.ready(d)?' · 3D':'')+'</button>').join(''); }
-$('#dvParts').addEventListener('click',e=>{ const b=e.target.closest('[data-di]'); if(!b) return; DR=SH.drawings[+b.getAttribute('data-di')]; undo=[]; sel=null; view=null; unfolded=false; renderParts(); $('#edPhoto').hidden=!PHOTO||!DR.ph; pane(PANE); });
+$('#dvParts').addEventListener('click',e=>{ const b=e.target.closest('[data-di]'); if(!b) return; DR=SH.drawings[+b.getAttribute('data-di')]; undo=[]; sel=null; view=null; unfolded=false; renderParts(); loadPhoto(); pane(PANE); });
 $$('.seg3 button',dv).forEach(b=>b.addEventListener('click',()=>pane(b.getAttribute('data-p'))));
 function pane(p){ PANE=p; $$('.seg3 button',dv).forEach(b=>b.classList.toggle('on',b.getAttribute('data-p')===p));
   $('#pCopy').classList.toggle('on',p==='copy'); $('#pFix').classList.toggle('on',p==='fix'); $('#p3d').classList.toggle('on',p==='3d');
@@ -191,7 +203,7 @@ $('#mItems').addEventListener('click',e=>{ const b=e.target.closest('[data-m]');
   if(k==='obj') dl(base+'.obj','text/plain',D.toOBJ(DR));
   if(k==='json') dl(base+'.json','application/json',JSON.stringify(DR,null,1));
   if(k==='png'){ pane('3d'); setTimeout(()=>{ const a=document.createElement('a'); a.href=V3.png(); a.download=base+'.png'; a.click(); },350); }
-  if(k==='del'){ if(!confirm('Удалить «'+SH.name+'» вместе с копиями?')) return; IDB.del(SH.id); SHEETS=SHEETS.filter(s=>s!==SH); save(true); menu.classList.remove('on'); $('#dvBack').click(); return; }
+  if(k==='del'){ if(!confirm('Удалить «'+SH.name+'» вместе с копиями?')) return; (SH.photoKs||[0]).forEach((k,i)=>IDB.del(photoKey(SH,i))); SHEETS=SHEETS.filter(s=>s!==SH); save(true); menu.classList.remove('on'); $('#dvBack').click(); return; }
   menu.classList.remove('on'); });
 function dl(name,type,text){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); }
 
@@ -204,7 +216,7 @@ function px(){ const r=ed.getBoundingClientRect(); return view.w/(r.width||1); }
 function toMm(e){ const r=ed.getBoundingClientRect(); return [view.x+(e.clientX-r.left)*view.w/r.width,view.y+(e.clientY-r.top)*view.h/r.height]; }
 function renderEd(){ if(!DR||PANE!=='copy') return; if(!view) fit(); svg.setAttribute('viewBox',[view.x,view.y,view.w,view.h].join(' '));
   const k=px(), fs=13*k, L=[], sx=v=>v.toFixed(2);
-  if(showPhoto&&PHOTO&&DR.ph){ const K=SH.photoK||1, A=D.inv(DR.ph.map((v,i)=>v*K)); /* мм → px миниатюры = K·(мм → px фото) */
+  if(showPhoto&&PHOTO&&DR.ph){ const K=(SH.photoKs&&SH.photoKs[PHOTO.i])||SH.photoK||1, A=D.inv(DR.ph.map((v,i)=>v*K)); /* мм → px миниатюры = K·(мм → px фото) */
     if(A) L.push('<image href="'+PHOTO.url+'" width="'+PHOTO.w+'" height="'+PHOTO.h+'" opacity="0.55" transform="matrix('+[A[0],A[3],A[1],A[4],A[2],A[5]].join(' ')+')" preserveAspectRatio="none"/>'); }
   L.push('<line x1="'+sx(view.x)+'" y1="0" x2="'+sx(view.x+view.w)+'" y2="0" stroke="#7d8aa3" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="10 3 2 3"/>');
   L.push('<circle cx="0" cy="0" r="'+sx(4*k)+'" fill="none" stroke="#7d8aa3" stroke-width="1.4" vector-effect="non-scaling-stroke"/><text x="'+sx(5*k)+'" y="'+sx(15*k)+'" font-size="'+sx(fs)+'" fill="#7d8aa3" font-weight="600">O</text>');
@@ -338,5 +350,5 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{ if
 if(/^#scan/.test(location.hash)){ if(location.hash!=='#scan') history.replaceState(null,'','#scan'); const t=document.querySelector('.tab[data-tab="check"]'); if(t) setTimeout(()=>t.click(),0); }
 lib().then(L=>{ LIB=L; renderList(); });
 renderList();
-self.LKSCAN={open:openSheet,list:()=>SHEETS,scan,get dr(){ return DR; },get v3(){ return V3; },pane};
+self.LKSCAN={open:openSheet,list:()=>SHEETS,scan,scanMany,get dr(){ return DR; },get v3(){ return V3; },pane};
 })();
