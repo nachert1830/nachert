@@ -1,10 +1,10 @@
-/* ═══════════ ДЗ №4 · картинки тел для карточки на главной и галереи «Все тела в 3D» ═══════════
+/* ═══════════ ДЗ №4 · картинки тел для галереи «Все тела в 3D» ═══════════
    Снимок того же окна 3D (TASK3D.snap — WebGL, прозрачный фон, WebP) для примера каждого чертежа-типа:
-   img/ng4-3d-<тип>.webp — галерея #/ng4/3d, img/ng4-3d.webp — карточка на главной.
+   img/ng4-3d-<тип>.webp — галерея #/ng4/3d.
    Перезапустить после правки тел (dz/ng/4/solver.js): node dz/ng/4/make-pics.js */
 const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..','..','..'), OUT=path.join(ROOT,'img');
-const TYPES={'4a1':3,'4a2':7,'4a3':13,'4b1':18,'4b2':21,'4b3':28}, HOME=21;
+const TYPES={'4a1':3,'4a2':7,'4a3':13,'4b1':18,'4b2':21,'4b3':28};
 const MIME={'.html':'text/html','.js':'text/javascript','.json':'application/json','.png':'image/png','.css':'text/css','.webmanifest':'application/json'};
 (async()=>{
   const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const p=path.join(ROOT,f);
@@ -17,6 +17,5 @@ const MIME={'.html':'text/html','.js':'text/javascript','.json':'application/jso
     if(!url) throw new Error('нет WebGL: снимок варианта '+n+' не получился');
     fs.writeFileSync(path.join(OUT,file),Buffer.from(url.split(',')[1],'base64')); console.log(file+' ← вариант '+n); };
   for(const [code,n] of Object.entries(TYPES)) await shot(n,'ng4-3d-'+code+'.webp');
-  await shot(HOME,'ng4-3d.webp',{pad:0.02});
   await b.close(); srv.close();
 })().catch(e=>{ console.error(e); process.exit(1); });
