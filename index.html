@@ -24540,7 +24540,7 @@ function mount(host,id,opt){ opt=opt||{};
       if(S.proj){ ctx.save(); ctx.strokeStyle='#13885a'; ctx.lineWidth=1.6; [p=>[p[0],p[1],0],p=>[p[0],0,p[2]]].forEach(f=>{ ctx.beginPath(); via.map(f).forEach((p,i)=>{ const q=P(p); i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); }); ctx.stroke(); }); ctx.restore(); }
       Mp=[[M,'M',4],[M1,'M′',3],[M2,'M″',3]]; }
     GLR.scene(surfMesh(T),Ls,{C:sc.C,Rv:B.Rv,U:B.U,D:B.D,sc:k,cx,cy,VW:W,VH:Hh,zr:sc.R*1.6+1},0.2);
-    const c2=octx; c2.setTransform(dpr,0,0,dpr,0,0); c2.clearRect(0,0,W,Hh);
+    const c2=octx; c2.setTransform(dpr,0,0,dpr,0,0); c2.clearRect(0,0,W,Hh); c2.lineJoin='round';
     o.guides.forEach(gd=>{ if(gd.k!=='pt') return; const q=P(gd.p[0]); c2.beginPath(); c2.arc(q[0],q[1],3.4,0,2*PI); c2.fillStyle=ink; c2.fill(); });
     if(Mp) Mp.forEach(([p,l,r])=>{ const q=P(p); c2.beginPath(); c2.arc(q[0],q[1],r,0,2*PI); c2.fillStyle=l==='M'?'#13885a':bg; c2.strokeStyle='#13885a'; c2.lineWidth=1.4; c2.fill(); c2.stroke();
       c2.font='italic 600 15px "Times New Roman",serif'; c2.lineWidth=3; c2.strokeStyle=bg; c2.strokeText(l,q[0]+6,q[1]-6); c2.fillStyle='#13885a'; c2.fillText(l,q[0]+6,q[1]-6); });
