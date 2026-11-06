@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<!-- Скрытая страница-открытка «Свеча и созвездие». На сайте ссылок на неё нет, поисковикам закрыта (noindex);
+     открывается только по прямой ссылке: https://nachert1830.ru/joke/
+     Управление лицом и руками — MediaPipe Tasks Vision прямо в браузере, видео никуда не отправляется. -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#05070d">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<title>Огонёк</title>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════════════════════════════
+   ПАРАМЕТРЫ — меняются здесь.
+   Имя и сообщение можно не править в файле, а передать в ссылке (после #, на сервер не уходит):
+     https://nachert1830.ru/joke/#to=Аня&msg=Пусть%20всё%20сбудется
+   ════════════════════════════════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  name: 'Аня',                                         /* [ИМЯ]; пусто — будет просто «Загадай желание.» */
+  message: 'Пусть всё, что ты сейчас загадала, сбудется — тихо и по-настоящему.',   /* [ФИНАЛЬНОЕ СООБЩЕНИЕ] */
+  stars: 7,                                            /* сколько подмигиваний до финала */
+
+  /* дыхание: blow = 0,65·pucker/funnel + 0,45·cheekPuff + 0,25·jawOpen (после вычета нейтрального лица) */
+  blowOn: 0.42, blowOff: 0.28,                         /* гистерезис «дует / не дует» */
+  blowHoldMs: 300,                                     /* сколько дуть, чтобы погасла */
+
+  /* улыбка: среднее mouthSmileLeft/Right */
+  smileOn: 0.42, smileOff: 0.28,
+  smileHoldMs: 400,                                    /* сколько улыбаться, чтобы загорелась */
+
+  /* подмигивание: один глаз закрыт сильнее winkHi, другой открыт (меньше winkLo) */
+  winkHi: 0.6, winkLo: 0.3,
+  winkMinMs: 150, winkMaxMs: 600, winkCooldownMs: 800,
+
+  /* рука: щепоть = |кончик большого − кончик указательного| / |запястье − основание среднего| */
+  pinchClosed: 0.2, pinchOpen: 0.3,                    /* «пальцы сведены» с гистерезисом */
+  pinchMin: 0.25, pinchMax: 1.25,                      /* этот диапазон растягивается на силу пламени 0,1…1 */
+  pinchOutMs: 500,                                     /* сколько держать сведёнными, чтобы погасла */
+  palmHoldMs: 800,                                     /* открытая ладонь — сброс */
+  handLostMs: 1000,                                    /* рука ушла из кадра — пламя возвращается к норме */
+
+  flameDefault: 0.6,
+  /* цвет пламени: от сердцевины к краю; warm — куда смещается при улыбке */
+  flame: { core: '#fff8e6', yellow: '#ffd66e', orange: '#ff8a2b', red: '#a8240f', blue: '#4f7dff' },
+  flameWarm: { core: '#fff1cf', yellow: '#ffc24d', orange: '#ff6f1a', red: '#b8300c', blue: '#5b6dff' },
+
+  hintAfterMs: 6000,                                   /* подсказка — только если столько нет действий */
+  volume: 0.8,                                         /* общая громкость 0…1 */
+  cameraBackdrop: 0,                                   /* 0 — видео не видно; 0,03–0,08 — лёгкая подложка */
+
+  /* откуда грузить MediaPipe: сначала свои файлы на сайте (быстро и без чужих серверов), не вышло — CDN */
+  mp: {
+    local: { bundle: '../hands/vendor/vision_bundle.mjs', wasm: '../hands/vendor/wasm',
+             face: '../hands/vendor/face_landmarker.task', hand: '../hands/vendor/hand_landmarker_lite.task' },
+    cdn:   { bundle: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.0/vision_bundle.mjs',
+             wasm: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.0/wasm',
+             face: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+             hand: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task' }
+  }
+};
+</script>
+
+<style>
+@font-face{font-family:'Wish';font-style:italic;font-weight:400;font-display:swap;src:url(../fonts/liberation-serif-italic.woff2) format('woff2')}
+@font-face{font-family:'Geologica';font-weight:300 700;font-display:swap;src:url(../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0400-045F,U+0490-0491,U+2116}
+@font-face{font-family:'Geologica';font-weight:300 700;font-display:swap;src:url(../fonts/geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+
+:root{ --bg:#05070d; --ink:#f4e9d8; --pale:rgba(244,233,216,.4); --warm:#ffcf8a; }
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  font-family:Geologica,-apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+/* position:fixed + inset:0 — во весь экран айфона без прыжков 100vh, когда прячется адресная строка */
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 2.6s ease}
+#scene.on{opacity:1}
+/* видео живёт в DOM (иначе Safari может перестать отдавать кадры), но невидимо */
+#cam{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none}
+.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  padding:max(24px,env(safe-area-inset-top)) 28px max(24px,env(safe-area-inset-bottom));text-align:center;
+  background:var(--bg);transition:opacity 1.2s ease;z-index:5}
+.screen.gone{opacity:0;pointer-events:none}
+.screen p{margin:0;max-width:300px;font-size:17px;line-height:1.5;color:rgba(244,233,216,.78);font-weight:300}
+.btn{appearance:none;-webkit-appearance:none;border:1px solid rgba(255,207,138,.45);background:rgba(255,207,138,.06);color:var(--ink);
+  font:400 17px/1 Geologica,-apple-system,system-ui,sans-serif;letter-spacing:.04em;padding:16px 38px;border-radius:999px;cursor:pointer;
+  transition:background .3s,border-color .3s,transform .15s}
+.btn:active{transform:scale(.97);background:rgba(255,207,138,.14)}
+.btn[disabled]{opacity:.4}
+#start .btn{box-shadow:0 0 40px rgba(255,180,90,.12)}
+
+#hint{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 34px);text-align:center;font-size:14px;font-weight:300;
+  letter-spacing:.03em;color:var(--pale);opacity:0;transition:opacity 1.4s ease;pointer-events:none;padding:0 24px;z-index:3}
+#hint.on{opacity:1}
+
+#final{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 26px);display:flex;flex-direction:column;align-items:center;
+  gap:14px;padding:0 26px;text-align:center;pointer-events:none;z-index:4}
+#final .w{font:italic 400 clamp(24px,7vw,34px)/1.25 Wish,Georgia,serif;color:#fff3df;text-shadow:0 0 24px rgba(255,190,110,.35);min-height:1.25em;margin:0}
+#final .m{font:300 clamp(15px,4.2vw,18px)/1.55 Geologica,-apple-system,system-ui,sans-serif;color:rgba(244,233,216,.82);max-width:360px;min-height:1.55em;margin:0}
+#final .btn{pointer-events:auto;opacity:0;transform:translateY(8px);transition:opacity 1.2s ease,transform 1.2s ease;font-size:15px;padding:13px 26px;margin-top:6px}
+#final .btn.on{opacity:1;transform:none}
+
+#jdbg{position:fixed;left:8px;top:calc(env(safe-area-inset-top) + 8px);font:11px/1.35 ui-monospace,Menlo,monospace;color:#9fe3a8;
+  background:rgba(0,0,0,.45);padding:6px 8px;border-radius:6px;white-space:pre;z-index:9;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="vignette"></div>
+<video id="cam" playsinline muted autoplay></video>
+<div id="hint"></div>
+<div id="final" hidden><p class="w"></p><p class="m"></p><button class="btn" id="save" type="button">Сохранить созвездие</button></div>
+
+<div class="screen" id="start"><button class="btn" id="go" type="button">Начать</button></div>
+<div class="screen gone" id="err" hidden><p id="errText"></p><button class="btn" id="retry" type="button">Повторить</button></div>
+
+<script type="module">
+/* ════════════════════════════════════════════════════════════════════════════════════════════════
+   Устройство:
+   1) Сцена — Canvas 2D: небо и туманность (заготовка на отдельном холсте), звёзды — готовые спрайты, свеча, пламя из
+      градиентных контуров, искры и дым — частицы. Спрайты рисуются заранее: на айфоне shadowBlur и большие градиенты
+      каждый кадр — главный тормоз Canvas 2D.
+   2) Распознавание — FaceLandmarker (blendshapes) и HandLandmarker в основном потоке, в том же цикле requestAnimationFrame.
+      На каждый новый кадр камеры — две задачи (лицо, рука); за один кадр экрана тратим не больше ~9 мс, остаток —
+      в следующий кадр. Так экран не дёргается даже там, где обе модели вместе дольше 16 мс.
+   3) Сигналы → фильтр 1€ → калибровка (нейтральное лицо = 0) → гистерезис → машина состояний свечи.
+   Уроки голограммы рук (hands/sensor.js), проверенные на айфоне:
+   — воркер на iOS не запускался → основной поток;
+   — GPU MediaPipe, читая <video> напрямую, временами получает чёрную текстуру → кадр копируем на маленький 2D-холст;
+   — GPU-делегат бывает «слепым» (работает, но ничего не находит) → проверяем тем же кадром на CPU и переключаемся;
+   — первый кадр на GPU компилирует шейдеры секундами → прогрев на пустой картинке, пока человек смотрит на кнопку.
+   ════════════════════════════════════════════════════════════════════════════════════════════════ */
+
+const $ = id => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;    /* easeInOutQuad */
+const easeOut = k => 1 - Math.pow(1 - k, 3);
+const approach = (v, target, rate, dt) => v + (target - v) * (1 - Math.exp(-rate * dt));
+const now = () => performance.now();
+const DEBUG = /[?&#]debug\b/.test(location.search + location.hash);
+
+/* имя и сообщение из ссылки (#to=…&msg=…) */
+{ const h = new URLSearchParams(location.hash.slice(1));
+  if (h.has('to')) CONFIG.name = h.get('to').slice(0, 40);
+  if (h.has('msg')) CONFIG.message = h.get('msg').slice(0, 300); }
+
+/* ───────────────────────────── фильтр 1€ (Casiez и др.): мало дрожи в покое, мало задержки в движении ───────────────── */
+class OneEuro {
+  constructor(minCutoff = 1, beta = 0, dCutoff = 1) { Object.assign(this, { minCutoff, beta, dCutoff, x: null, dx: 0, t: 0 }); }
+  static a(cut, dt) { const r = 2 * Math.PI * cut * dt; return r / (r + 1); }
+  filter(v, t) {
+    if (this.x === null || !isFinite(this.x)) { this.x = v; this.t = t; this.dx = 0; return v; }
+    const dt = Math.max(1e-3, (t - this.t) / 1000); this.t = t;
+    const d = (v - this.x) / dt; this.dx += OneEuro.a(this.dCutoff, dt) * (d - this.dx);
+    const cut = this.minCutoff + this.beta * Math.abs(this.dx);
+    this.x += OneEuro.a(cut, dt) * (v - this.x); return this.x;
+  }
+  reset() { this.x = null; }
+}
+
+/* ═════════════════════════════════════════ ЗВУК (Web Audio, без файлов) ══════════════════════════════════════════ */
+const Sound = {
+  c: null, master: null, wet: null, hiss: null, noise: null, on: false,
+  init() {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC || this.c) return;
+    /* iOS 17+: «playback» — звук слышен и при беззвучном режиме; человек сам нажал «Начать» */
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
+    const c = this.c = new AC({ latencyHint: 'playback' });
+    if (c.state !== 'running') c.resume();
+    /* разблокировка на старых iOS: тишина, проигранная по нажатию */
+    const sb = c.createBufferSource(); sb.buffer = c.createBuffer(1, 1, 22050); sb.connect(c.destination); sb.start(0);
+
+    const comp = c.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3; comp.connect(c.destination);
+    this.master = c.createGain(); this.master.gain.value = 0; this.master.connect(comp);
+    this.master.gain.setTargetAtTime(CONFIG.volume, c.currentTime + .2, 1.4);
+
+    /* «пространство»: задержка с обратной связью через фильтр — мягкий хвост для звона */
+    const dl = c.createDelay(1), fb = c.createGain(), lp = c.createBiquadFilter();
+    dl.delayTime.value = .31; fb.gain.value = .38; lp.type = 'lowpass'; lp.frequency.value = 2400;
+    this.wet = c.createGain(); this.wet.gain.value = .5;
+    this.wet.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(this.master);
+
+    /* шум: 2 с, на нём и воздух, и треск, и дутьё */
+    const nb = this.noise = c.createBuffer(1, c.sampleRate * 2, c.sampleRate), d = nb.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+
+    /* эмбиент: открытая квинта G–D–A–E на синусах, каждая нота медленно дышит */
+    const pad = c.createGain(), plp = c.createBiquadFilter(); pad.gain.value = .9; plp.type = 'lowpass'; plp.frequency.value = 760;
+    pad.connect(plp); plp.connect(this.master);
+    [98, 146.83, 220, 329.63].forEach((f, i) => {
+      [-4, 4].forEach(det => {
+        const o = c.createOscillator(), g = c.createGain(), l = c.createOscillator(), lg = c.createGain();
+        o.type = 'sine'; o.frequency.value = f; o.detune.value = det;
+        g.gain.value = .011 / (1 + i * .35);
+        l.frequency.value = .045 + i * .023 + (det > 0 ? .011 : 0); lg.gain.value = g.gain.value * .8;
+        l.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(pad); o.start(); l.start();
+      });
+    });
+    /* воздух: тихий низкий шум */
+    const air = this.loop(), alp = c.createBiquadFilter(), ag = c.createGain();
+    alp.type = 'lowpass'; alp.frequency.value = 420; ag.gain.value = .012; air.connect(alp); alp.connect(ag); ag.connect(this.master);
+    /* шипение огня: громкость — от силы пламени */
+    const fire = this.loop(), fbp = c.createBiquadFilter(); this.hiss = c.createGain();
+    fbp.type = 'bandpass'; fbp.frequency.value = 1100; fbp.Q.value = .6; this.hiss.gain.value = 0;
+    fire.connect(fbp); fbp.connect(this.hiss); this.hiss.connect(this.master);
+    this.on = true;
+  },
+  loop() { const s = this.c.createBufferSource(); s.buffer = this.noise; s.loop = true; s.loopStart = Math.random(); s.start(0, Math.random() * 1.5); return s; },
+  /* одна щелчок-«искорка» огня */
+  pop(k) {
+    if (!this.on) return; const c = this.c, t = c.currentTime;
+    const s = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain(), dur = .006 + Math.random() * .025;
+    s.buffer = this.noise; s.playbackRate.value = .6 + Math.random() * .9;
+    hp.type = 'highpass'; hp.frequency.value = 1400 + Math.random() * 2200;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((.025 + Math.random() * .07) * (.4 + k), t + .002);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    s.connect(hp); hp.connect(g); g.connect(this.master); s.start(t, Math.random() * 1.8, dur + .02);
+  },
+  /* мягкий звон: колокольные обертоны 1 : 2,76 : 5,4, нота — пентатоника вверх с каждой звездой */
+  chime(i, vol = 1) {
+    if (!this.on) return; const c = this.c, t = c.currentTime;
+    const f = [587.33, 659.25, 739.99, 880, 987.77, 1174.66, 1318.51, 1479.98][i % 8];
+    [[1, .12, 3.2], [2.76, .035, 1.4], [5.4, .015, .7]].forEach(([m, a, dec]) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = f * m;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a * vol, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + dec);
+      o.connect(g); g.connect(this.master); g.connect(this.wet); o.start(t); o.stop(t + dec + .05);
+    });
+  },
+  /* «фу»: шум, у которого фильтр уходит вниз — свеча задута */
+  whoosh() {
+    if (!this.on) return; const c = this.c, t = c.currentTime;
+    const s = c.createBufferSource(), lp = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.noise; lp.type = 'lowpass'; lp.frequency.setValueAtTime(1800, t); lp.frequency.exponentialRampToValueAtTime(220, t + .8);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.09, t + .08); g.gain.exponentialRampToValueAtTime(.0001, t + .95);
+    s.connect(lp); lp.connect(g); g.connect(this.master); s.start(t, Math.random(), 1);
+  },
+  /* чирк: короткий щелчок и мягкое «ф-ф» разгорания */
+  ignite() {
+    if (!this.on) return; const c = this.c, t = c.currentTime;
+    this.pop(1); setTimeout(() => this.pop(.8), 60);
+    const s = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.noise; bp.type = 'bandpass'; bp.Q.value = .8; bp.frequency.setValueAtTime(500, t + .2); bp.frequency.linearRampToValueAtTime(1400, t + .9);
+    g.gain.setValueAtTime(0, t + .2); g.gain.linearRampToValueAtTime(.045, t + .5); g.gain.exponentialRampToValueAtTime(.0001, t + 1.4);
+    s.connect(bp); bp.connect(g); g.connect(this.master); s.start(t + .2, Math.random(), 1.3);
+  },
+  finale() { if (!this.on) return; [0, 2, 4, 6, 3, 5, 7].forEach((n, k) => setTimeout(() => this.chime(n, .7), 400 + k * 230)); },
+  fire(level) { if (this.on) this.hiss.gain.setTargetAtTime(level, this.c.currentTime, .15); },
+  pause() { if (this.c && this.c.state === 'running') this.c.suspend(); },
+  resume() { if (this.c && this.c.state !== 'running') this.c.resume(); }
+};
+
+/* ═══════════════════════════════════════════════ СЦЕНА ════════════════════════════════════════════════════════════ */
+const cv = $('scene'), ctx = cv.getContext('2d', { alpha: false, desynchronized: true });
+let W = 0, H = 0, Q = Math.min(2, window.devicePixelRatio || 1);    /* Q — плотность пикселей рендера (снижается сама) */
+const G = {};                                                        /* геометрия сцены в CSS-пикселях */
+
+/* спрайт: мягкая радиальная точка заданного цвета — рисуем один раз, потом только drawImage */
+function sprite(size, stops) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d'), g = x.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  stops.forEach(([o, col]) => g.addColorStop(o, col)); x.fillStyle = g; x.fillRect(0, 0, size, size); return c;
+}
+const SPR = {
+  starW: sprite(48, [[0, 'rgba(255,255,255,1)'], [.1, 'rgba(255,255,255,.95)'], [.22, 'rgba(230,236,255,.35)'], [.5, 'rgba(200,215,255,.08)'], [1, 'rgba(200,215,255,0)']]),
+  starB: sprite(48, [[0, 'rgba(240,246,255,1)'], [.1, 'rgba(215,228,255,.95)'], [.24, 'rgba(160,190,255,.35)'], [.5, 'rgba(140,170,255,.08)'], [1, 'rgba(140,170,255,0)']]),
+  starY: sprite(48, [[0, 'rgba(255,250,235,1)'], [.1, 'rgba(255,236,200,.95)'], [.24, 'rgba(255,210,150,.33)'], [.5, 'rgba(255,190,120,.07)'], [1, 'rgba(255,190,120,0)']]),
+  her: sprite(96, [[0, 'rgba(255,255,250,1)'], [.07, 'rgba(255,248,225,1)'], [.16, 'rgba(255,225,170,.55)'], [.4, 'rgba(255,190,120,.14)'], [1, 'rgba(255,170,90,0)']]),
+  glow: sprite(256, [[0, 'rgba(255,190,110,.95)'], [.18, 'rgba(255,150,70,.5)'], [.45, 'rgba(230,110,40,.16)'], [.75, 'rgba(160,70,30,.05)'], [1, 'rgba(120,50,20,0)']]),
+  moon: sprite(256, [[0, 'rgba(150,175,235,.5)'], [.4, 'rgba(90,115,190,.16)'], [1, 'rgba(60,80,150,0)']]),
+  spark: sprite(24, [[0, 'rgba(255,250,220,1)'], [.25, 'rgba(255,200,110,.9)'], [.6, 'rgba(255,120,40,.25)'], [1, 'rgba(255,90,20,0)']]),
+  smoke: sprite(64, [[0, 'rgba(190,190,200,.55)'], [.5, 'rgba(160,160,175,.22)'], [1, 'rgba(140,140,160,0)']]),
+  ember: sprite(32, [[0, 'rgba(255,170,90,1)'], [.3, 'rgba(255,90,30,.6)'], [1, 'rgba(180,40,10,0)']])
+};
+
+/* небо и туманность — на отдельном холсте в половинном разрешении (оно и так мягкое), перерисовка только при смене размера */
+const bg = document.createElement('canvas'), bx = bg.getContext('2d');
+function paintSky() {
+  const k = .5, w = bg.width = Math.ceil(W * 1.5 * k), h = bg.height = Math.ceil(H * 1.5 * k);   /* с запасом: параллакс и отъезд камеры */
+  const g = bx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#03050c'); g.addColorStop(.45, '#070b19'); g.addColorStop(.75, '#0c1124'); g.addColorStop(1, '#130f1a');
+  bx.fillStyle = g; bx.fillRect(0, 0, w, h);
+  /* туманность — несколько очень бледных пятен вдоль диагонали */
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 26; i++) {
+    const t = rnd(), x = w * (.1 + .8 * t) + (rnd() - .5) * w * .18, y = h * (.12 + .32 * (1 - t)) + (rnd() - .5) * h * .1, r = (.08 + rnd() * .16) * Math.max(w, h);
+    const gg = bx.createRadialGradient(x, y, 0, x, y, r), hue = rnd() < .5 ? '120,140,220' : '170,130,200';
+    gg.addColorStop(0, `rgba(${hue},${.018 + rnd() * .02})`); gg.addColorStop(1, `rgba(${hue},0)`);
+    bx.fillStyle = gg; bx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+}
+
+/* звёзды: координаты в долях экрана (поле с запасом −0,25…1,25), depth — близость (сила параллакса и отъезда) */
+let STARS = [], HER = [];          /* HER — «её звёзды» в порядке подмигиваний (7 заранее намеченных мест) */
+function makeStars() {
+  STARS = [];
+  const n = Math.round(clamp(W * H / 2600, 110, 340));
+  for (let i = 0; i < n; i++) {
+    const depth = Math.pow(Math.random(), 1.6), big = Math.random() < .06;
+    STARS.push({
+      x: -.25 + Math.random() * 1.5, y: -.25 + Math.random() * (.25 + .62 + .25),   /* звёзды — над «подоконником» */
+      depth, size: (big ? 2.4 : .7 + Math.random() * 1.3) * (.6 + depth * .7),
+      a: .25 + Math.random() * .6 * (.5 + depth * .5), f1: .3 + Math.random() * 1.4, f2: 1.5 + Math.random() * 3.5, ph: Math.random() * 6.28,
+      tw: .15 + Math.random() * .35, spr: Math.random() < .2 ? SPR.starB : Math.random() < .25 ? SPR.starY : SPR.starW,
+      her: -1, litT: 0
+    });
+  }
+  /* места для созвездия: 7 точек на «неровном» эллипсе по углам по порядку — контур без самопересечений,
+     замыкание последней с первой даёт выпуклую-не-правильную фигуру, как у настоящих созвездий */
+  const cnt = CONFIG.stars, start = Math.random() * 6.28, aspect = W / H;
+  const ang = Array.from({ length: cnt }, (_, i) => start + (i + (Math.random() - .5) * .55) / cnt * 6.28);
+  HER = ang.map((a, i) => {
+    const r = .62 + Math.random() * .38;
+    const s = { x: .5 + Math.cos(a) * .33 * r, y: .245 + Math.sin(a) * .115 * r * Math.min(1.4, .55 / aspect), depth: .85, size: 1.5 + Math.random() * .7,
+      a: .55, f1: .4 + Math.random(), f2: 2 + Math.random() * 2, ph: Math.random() * 6.28, tw: .25, spr: SPR.starW, her: i, litT: 0 };
+    STARS.push(s); return s;
+  });
+}
+
+function resize() {
+  const r = cv.getBoundingClientRect(); W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+  cv.width = Math.round(W * Q); cv.height = Math.round(H * Q);
+  const u = Math.min(W, H * .58);
+  Object.assign(G, { u, cx: W / 2, top: H * .6, cw: u * .15, ch: Math.min(u * .4, H * .26) });
+  G.wickY = G.top - u * .028;           /* верх фитиля — основание пламени */
+  G.floor = G.top + G.ch;               /* низ свечи — край «подоконника» */
+  paintSky();
+  if (!STARS.length) makeStars();
+}
+
+/* ═════════════════════════════════════════ СОСТОЯНИЕ СВЕЧИ И ЗВЁЗД ═══════════════════════════════════════════════ */
+const S = {
+  lit: true, flame: CONFIG.flameDefault, target: CONFIG.flameDefault,
+  vis: CONFIG.flameDefault,     /* видимая сила пламени (с учётом разгорания, дутья, угасания) */
+  light: .8, warm: 0, tilt: 0, wobble: 0,
+  igniteT: -1e9, outT: -1e9, resetT: -1e9, resetFrom: 0,
+  stars: 0, finale: false, finT: 0, zoom: 1, zoomTo: .8,
+  head: { x: 0, y: 0 }          /* положение головы для параллакса, −0,5…0,5 */
+};
+const P = { sparks: [], smoke: [] };
+let lastAction = 0, startedAt = 0;
+const did = { blow: 0, smile: 0, wink: 0, pinch: 0, palm: 0 };
+const action = kind => { lastAction = now(); if (kind) did[kind] = 1; hideHint(); };
+
+function extinguish(t) {
+  if (!S.lit || S.finale) return;
+  S.lit = false; S.outT = t; Sound.whoosh();
+  for (let i = 0; i < 26; i++) setTimeout(() => P.smoke.push(newSmoke()), i * 70 + Math.random() * 60);
+}
+function ignite(t) {
+  if (S.lit) return;
+  S.lit = true; S.igniteT = t; S.flame = S.target = CONFIG.flameDefault; S.vis = 0; Sound.ignite();
+  for (let i = 0; i < 9; i++) P.sparks.push(newSpark(1.4));
+}
+function resetFlame(t) {                       /* ладонь: плавно к норме за 1 с, погасшую — зажигаем */
+  if (!S.lit) { ignite(t); return; }
+  S.resetT = t; S.resetFrom = S.flame;
+}
+function newSpark(boost = 1) {
+  const a = -Math.PI / 2 + (Math.random() - .5) * 1.1, v = (40 + Math.random() * 90) * boost;
+  return { x: G.cx + (Math.random() - .5) * 6, y: G.wickY - G.u * .05 * S.vis, vx: Math.cos(a) * v * .5, vy: Math.sin(a) * v, life: 0, max: .6 + Math.random() * .9, s: 1 + Math.random() * 2.2 };
+}
+function newSmoke() {
+  return { x: G.cx + (Math.random() - .5) * 3, y: G.wickY - 2, vx: (Math.random() - .5) * 8, vy: -(18 + Math.random() * 22), life: 0, max: 2.4 + Math.random() * 1.6,
+    r: 4 + Math.random() * 4, ph: Math.random() * 6.28 };
+}
+
+/* добавить её звезду: вспышка (двойное мерцание) и тонкая линия от прошлой */
+function addStar(t) {
+  if (S.finale || S.stars >= CONFIG.stars) return;
+  const s = HER[S.stars]; s.litT = t; S.stars++;
+  Sound.chime(S.stars - 1);
+  if (S.stars >= CONFIG.stars) setTimeout(() => startFinale(now()), 900);
+}
+
+/* ═══════════════════════════════════════════════ РИСОВАНИЕ ════════════════════════════════════════════════════════ */
+const C1 = hexRGB(CONFIG.flame), C2 = hexRGB(CONFIG.flameWarm);
+function hexRGB(o) { const r = {}; for (const k in o) { const h = o[k].replace('#', ''); r[k] = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); } return r; }
+const mixC = (k, name, a = 1) => { const p = C1[name], q = C2[name]; return `rgba(${Math.round(lerp(p[0], q[0], k))},${Math.round(lerp(p[1], q[1], k))},${Math.round(lerp(p[2], q[2], k))},${a})`; };
+
+/* перевод точки сцены с учётом «камеры»: отъезд (zoom к точке фокуса) и параллакс по положению головы */
+function proj(x, y, depth) {
+  const z = 1 + (S.zoom - 1) * (.35 + .65 * depth), fx = W / 2, fy = H * .3;
+  const px = -S.head.x * 22 * depth + Math.sin(T * .05 + depth * 3) * 3 * depth, py = -S.head.y * 14 * depth;
+  return [fx + (x - fx) * z + px, fy + (y - fy) * z + py, z];
+}
+
+let T = 0;   /* время сцены, с */
+function draw(dt) {
+  ctx.setTransform(Q, 0, 0, Q, 0, 0);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  /* небо */
+  { const [x, y, z] = proj(W / 2, H / 2, .08), w = W * 1.5 * z, h = H * 1.5 * z;
+    ctx.drawImage(bg, x - w / 2, y - h / 2, w, h); }
+  if (CONFIG.cameraBackdrop > 0 && grabbed) {               /* по желанию — очень бледная подложка с камеры, зеркально */
+    ctx.save(); ctx.globalAlpha = CONFIG.cameraBackdrop; ctx.translate(W, 0); ctx.scale(-1, 1);
+    const k = Math.max(W / fc.width, H / fc.height); ctx.drawImage(fc, (W - fc.width * k) / 2, (H - fc.height * k) / 2, fc.width * k, fc.height * k); ctx.restore();
+  }
+  const L = S.light, moon = clamp(1 - L * 1.4);
+  /* луна (свет без свечи) — холодное пятно слева сверху */
+  if (moon > .01) { ctx.globalAlpha = moon * .9; const r = Math.max(W, H) * .9, [mx, my] = proj(W * .12, H * .06, .1); ctx.drawImage(SPR.moon, mx - r, my - r, 2 * r, 2 * r); }
+
+  /* звёзды: при ярком пламени слабые чуть тонут в свете — как в жизни */
+  ctx.globalCompositeOperation = 'lighter';
+  const wash = clamp(L - .4) * .35;
+  for (const s of STARS) {
+    if (s.her >= 0 && s.litT) continue;                      /* её звёзды — отдельно, поверх */
+    const [x, y, z] = proj(s.x * W, s.y * H, s.depth);
+    if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+    const tw = 1 - s.tw + s.tw * (.5 + .3 * Math.sin(T * s.f1 + s.ph) + .2 * Math.sin(T * s.f2 + s.ph * 1.7));
+    const a = s.a * tw * (1 - wash * (1 - s.depth)); if (a < .02) continue;
+    const r = s.size * 4.2 * z * (s.her >= 0 ? 1.15 : 1);
+    ctx.globalAlpha = a; ctx.drawImage(s.spr, x - r, y - r, 2 * r, 2 * r);
+  }
+  /* созвездие: линии рисуются от звезды к звезде за 0,9 с; в финале замыкаются и светятся */
+  const fin = S.finale ? clamp((now() - S.finT) / 1000) : 0;
+  if (S.stars) {
+    ctx.lineCap = 'round';
+    const pts = HER.map(s => proj(s.x * W, s.y * H, s.depth));
+    const seg = (i, j, p, a) => { if (p <= 0) return; const [x1, y1] = pts[i], [x2, y2] = pts[j];
+      ctx.globalAlpha = a; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(lerp(x1, x2, p), lerp(y1, y2, p)); ctx.stroke(); };
+    const glow = S.finale ? .55 + .2 * Math.sin(T * 1.6) : .32;
+    ctx.strokeStyle = 'rgba(255,222,170,1)';
+    for (let pass = 0; pass < 2; pass++) {                      /* широкий бледный проход — свечение, узкий — сама линия */
+      ctx.lineWidth = pass ? .9 : 4.5; const k = pass ? 1 : .12;
+      for (let i = 1; i < S.stars; i++) seg(i - 1, i, easeOut(clamp((now() - HER[i].litT) / 900)), glow * k);
+      if (S.finale) seg(S.stars - 1, 0, easeOut(fin), glow * k);
+    }
+    for (let i = 0; i < S.stars; i++) {
+      const s = HER[i], [x, y, z] = pts[i], age = Math.max(0, now() - s.litT) / 1000;
+      /* двойное мерцание в ответ: два коротких всплеска, затем ровный яркий свет */
+      const flash = age < .7 ? Math.max(0, Math.sin(age / .7 * Math.PI * 2)) * (age < .35 ? 1 : .75) : 0;
+      const breathe = .9 + .1 * Math.sin(T * 1.3 + i) + (S.finale ? .25 + .15 * Math.sin(T * 2 + i * .8) : 0);
+      const r = (11 + flash * 22) * z * breathe;
+      ctx.globalAlpha = clamp(.85 + flash * .15); ctx.drawImage(SPR.her, x - r, y - r, 2 * r, 2 * r);
+      if (age < 1.2) { const rr = (8 + age * 60) * z; ctx.globalAlpha = (1 - age / 1.2) * .35; ctx.drawImage(SPR.starY, x - rr, y - rr, 2 * rr, 2 * rr); }
+    }
+  }
+
+  /* отсвет свечи на всей сцене */
+  const [cx, wy, cz] = proj(G.cx, G.wickY, 1);
+  const vis = S.vis, warm = S.warm;
+  if (L > .01) {
+    const r = G.u * (1.1 + 1.3 * vis) * (1 + .2 * warm) * cz * (1 + .03 * Math.sin(T * 9));
+    ctx.globalAlpha = clamp(L * .62); ctx.drawImage(SPR.glow, cx - r, wy - G.u * .08 * cz - r, 2 * r, 2 * r);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  drawCandle(cx, wy, cz, L, moon);
+  /* пламя */
+  ctx.globalCompositeOperation = 'lighter';
+  if (vis > .005) drawFlame(cx, wy, cz, vis, warm);
+  /* уголёк на фитиле после угасания */
+  const em = S.lit ? 0 : Math.exp(-(now() - S.outT) / 1200);
+  if (em > .02) { const r = 7 * cz * (.6 + em); ctx.globalAlpha = em; ctx.drawImage(SPR.ember, cx - r, wy - r * .4 - r, 2 * r, 2 * r); }
+  /* поджиг: сначала искра — короткая яркая вспышка на фитиле */
+  const ig = (now() - S.igniteT) / 1000;
+  if (S.lit && ig < .45) { const k = Math.sin(Math.PI * ig / .45), r = (10 + 26 * k) * cz; ctx.globalAlpha = k; ctx.drawImage(SPR.spark, cx - r, wy - r, 2 * r, 2 * r); }
+  /* искры */
+  for (const p of P.sparks) { const k = 1 - p.life / p.max, r = p.s * 2.4 * cz; ctx.globalAlpha = k; ctx.drawImage(SPR.spark, p.x - r, p.y - r, 2 * r, 2 * r); }
+  /* дым — обычным наложением */
+  ctx.globalCompositeOperation = 'source-over';
+  for (const p of P.smoke) { const k = p.life / p.max, r = p.r * cz; ctx.globalAlpha = Math.sin(Math.PI * Math.min(1, k * 1.3)) * .38 * (1 - k); ctx.drawImage(SPR.smoke, p.x - r, p.y - r, 2 * r, 2 * r); }
+  ctx.globalAlpha = 1;
+}
+
+/* свеча: воск с объёмом (горизонтальный градиент), сверху просвечивает от пламени, подоконник с отблеском */
+function drawCandle(cx, wy, z, L, moon) {
+  const u = G.u * z, w = G.cw * z, h = G.ch * z, [, top] = proj(G.cx, G.top, 1), bot = top + h, x0 = cx - w / 2;
+  /* подоконник — тёмная плоскость до низа экрана с тёплым отблеском у свечи */
+  { const g = ctx.createLinearGradient(0, bot - 2, 0, H);
+    g.addColorStop(0, `rgba(${Math.round(30 + 40 * L)},${Math.round(22 + 22 * L)},${Math.round(24 + 8 * L)},1)`); g.addColorStop(.25, '#0b0a10'); g.addColorStop(1, '#040407');
+    ctx.fillStyle = g; ctx.fillRect(-W, bot - 2, W * 3, H * 2);
+    ctx.globalCompositeOperation = 'lighter';
+    const rx = u * (.9 + .6 * S.vis), ry = u * .12;
+    ctx.globalAlpha = clamp(L * .55); ctx.save(); ctx.translate(cx, bot + 2); ctx.scale(1, ry / rx); ctx.drawImage(SPR.glow, -rx, -rx, 2 * rx, 2 * rx); ctx.restore();
+    ctx.globalAlpha = clamp(L * .35); ctx.fillStyle = 'rgba(255,190,120,1)'; ctx.fillRect(cx - u * .9, bot - 1, u * 1.8, 1);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
+  /* тело свечи */
+  const lit = clamp(L * 1.1), cool = moon * .5;
+  const shade = (k, a) => `rgb(${Math.round(lerp(40, 236, k * lit) + 30 * cool)},${Math.round(lerp(34, 214, k * lit) + 36 * cool)},${Math.round(lerp(38, 182, k * lit) + 52 * cool)})`;
+  const g = ctx.createLinearGradient(x0, 0, x0 + w, 0);
+  g.addColorStop(0, shade(.28)); g.addColorStop(.35, shade(.78)); g.addColorStop(.55, shade(.9)); g.addColorStop(1, shade(.22));
+  ctx.fillStyle = g;
+  const rim = w * .12;
+  ctx.beginPath();
+  ctx.moveTo(x0, top + rim);
+  ctx.quadraticCurveTo(x0 + w * .02, top, x0 + w * .22, top - rim * .1);
+  ctx.lineTo(x0 + w * .78, top - rim * .1); ctx.quadraticCurveTo(x0 + w * .98, top, x0 + w, top + rim);
+  ctx.lineTo(x0 + w, bot); ctx.lineTo(x0, bot); ctx.closePath(); ctx.fill();
+  /* потёк воска справа */
+  ctx.beginPath(); ctx.moveTo(x0 + w * .72, top + rim * .5); ctx.quadraticCurveTo(x0 + w * .8, top + h * .18, x0 + w * .77, top + h * .27);
+  ctx.quadraticCurveTo(x0 + w * .73, top + h * .3, x0 + w * .7, top + h * .24); ctx.quadraticCurveTo(x0 + w * .67, top + h * .12, x0 + w * .64, top + rim * .5);
+  ctx.fillStyle = shade(.85); ctx.fill();
+  /* верх просвечивает тёплым — воск у пламени полупрозрачный */
+  if (L > .02) {
+    ctx.globalCompositeOperation = 'lighter';
+    const sg = ctx.createLinearGradient(0, top, 0, top + h * .45);
+    sg.addColorStop(0, `rgba(255,150,60,${.45 * lit * (.5 + .5 * S.vis)})`); sg.addColorStop(1, 'rgba(255,120,40,0)');
+    ctx.fillStyle = sg; ctx.fillRect(x0, top - rim, w, h * .45 + rim);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  /* лужица воска сверху */
+  ctx.fillStyle = `rgba(${Math.round(lerp(30, 255, lit))},${Math.round(lerp(26, 200, lit))},${Math.round(lerp(30, 140, lit))},${.55})`;
+  ctx.beginPath(); ctx.ellipse(cx, top + rim * .35, w * .36, rim * .45, 0, 0, 6.283); ctx.fill();
+  /* фитиль */
+  ctx.strokeStyle = S.lit ? 'rgba(40,22,14,.95)' : 'rgba(25,20,20,.95)'; ctx.lineWidth = Math.max(1.2, u * .008); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx, top + rim * .3); ctx.quadraticCurveTo(cx + u * .004, (top + wy) / 2, cx + u * .006, wy + u * .004); ctx.stroke();
+}
+
+/* пламя: капля из кривых Безье, слои — внешний (до тёмно-красного), ядро, синее основание; кончик гуляет */
+function drawFlame(cx, wy, z, f, warm) {
+  const u = G.u * z, t = T;
+  const flick = 1 + .05 * Math.sin(t * 13.1) + .035 * Math.sin(t * 7.7 + 1.3) + .025 * Math.sin(t * 23.3) + S.wobble * .25 * Math.sin(t * 31);
+  const h = u * (.05 + .27 * f) * flick * (1 + .12 * warm), w = h * (.2 + .05 * f) * (1 + .04 * Math.sin(t * 11));
+  const sway = Math.sin(t * 1.7) * .04 + Math.sin(t * 3.9 + .5) * .025 + Math.sin(t * 9.1) * .012;
+  const dx = (sway + S.tilt + S.wobble * .3 * Math.sin(t * 17)) * h;
+  const by = wy + w * .15;
+  const path = (k, kw) => {
+    const hh = h * k, ww = w * kw, tx = cx + dx * k, ty = by - hh;
+    ctx.beginPath();
+    ctx.moveTo(cx, by + ww * .55);
+    ctx.bezierCurveTo(cx - ww * 1.35, by + ww * .45, cx - ww * 1.2 + dx * .15, by - hh * .4, cx + dx * .55 * k - ww * .32, by - hh * .72);
+    ctx.quadraticCurveTo(tx - ww * .06, ty + hh * .08, tx, ty);
+    ctx.quadraticCurveTo(tx + ww * .06, ty + hh * .08, cx + dx * .55 * k + ww * .32, by - hh * .72);
+    ctx.bezierCurveTo(cx + ww * 1.2 + dx * .15, by - hh * .4, cx + ww * 1.35, by + ww * .45, cx, by + ww * .55);
+  };
+  /* ореол прямо вокруг пламени */
+  { const r = h * 1.25; ctx.globalAlpha = clamp(.35 + .4 * f); ctx.drawImage(SPR.glow, cx + dx * .4 - r, by - h * .45 - r, 2 * r, 2 * r); }
+  ctx.globalAlpha = 1;
+  /* внешний слой: жёлтый → оранжевый → тёмно-красный к краям и кончику */
+  let g = ctx.createRadialGradient(cx + dx * .15, by - h * .18, 0, cx + dx * .3, by - h * .3, h * .95);
+  g.addColorStop(0, mixC(warm, 'yellow', .95)); g.addColorStop(.3, mixC(warm, 'orange', .85)); g.addColorStop(.62, mixC(warm, 'red', .55)); g.addColorStop(1, mixC(warm, 'red', 0));
+  ctx.fillStyle = g; path(1, 1); ctx.fill();
+  /* ядро: почти белое у фитиля */
+  g = ctx.createRadialGradient(cx + dx * .1, by - h * .12, 0, cx + dx * .2, by - h * .2, h * .55);
+  g.addColorStop(0, mixC(warm, 'core', 1)); g.addColorStop(.45, mixC(warm, 'yellow', .8)); g.addColorStop(1, mixC(warm, 'orange', 0));
+  ctx.fillStyle = g; path(.62, .62); ctx.fill();
+  /* синеватое основание */
+  ctx.globalAlpha = .4 + .2 * f; ctx.fillStyle = mixC(warm, 'blue', .5);
+  ctx.beginPath(); ctx.ellipse(cx, by + w * .2, w * .55, w * .38, 0, 0, 6.283); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+/* ═════════════════════════════════════════════ ОБНОВЛЕНИЕ ════════════════════════════════════════════════════════ */
+let crackleAcc = 0;
+function update(dt, t) {
+  T += dt;
+  /* сброс ладонью: плавно к норме за 1 с */
+  if (t - S.resetT < 1000) { S.flame = S.target = lerp(S.resetFrom, CONFIG.flameDefault, ease((t - S.resetT) / 1000)); }
+  else S.flame = approach(S.flame, S.target, 3.5, dt);
+  /* видимая сила: разгорание после поджига (сначала искра 0,35 с, потом растущее пламя), дутьё прижимает */
+  let want = 0;
+  if (S.lit) {
+    const ig = (t - S.igniteT) / 1000;
+    const k = ig < .35 ? .05 * ig / .35 : ig < 1.6 ? lerp(.05, 1, easeOut((ig - .35) / 1.25)) : 1;
+    want = S.flame * k * (1 - .45 * (S.finale ? 0 : Breath.level));
+  }
+  S.vis = S.lit ? approach(S.vis, want, 9, dt) : approach(S.vis, 0, 22, dt);
+  /* свет сцены: от свечи (улыбка — теплее и ярче) или угасание до лунного за ~1,2 с */
+  const Lt = S.lit ? (.3 + .78 * S.vis) * (1 + .3 * S.warm) : 0;
+  S.light = approach(S.light, Lt, S.lit ? 5 : 1.6, dt);
+  /* наклон и дрожь от дутья */
+  const br = S.finale ? 0 : Breath.level;                                         /* в финале пламя ровное */
+  S.tilt = approach(S.tilt, br * .9 * Breath.dir, 6, dt);
+  S.wobble = approach(S.wobble, br, 8, dt);
+  /* финал: ровное пламя и отъезд камеры */
+  if (S.finale) {
+    const k = clamp((t - S.finT - 900) / 3200);
+    S.zoom = lerp(1, S.zoomTo, ease(k)); S.target = CONFIG.flameDefault;
+  }
+
+  /* искры: пламя больше ~0,75 — летят, тем гуще, чем больше */
+  if (S.lit && S.vis > .74) { const rate = (S.vis - .74) * 60; if (Math.random() < rate * dt) P.sparks.push(newSpark(.8 + S.vis)); }
+  for (const p of P.sparks) { p.life += dt; p.vy += 28 * dt; p.vx += (Math.random() - .5) * 60 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+  P.sparks = P.sparks.filter(p => p.life < p.max);
+  for (const p of P.smoke) { p.life += dt; p.vy *= .995; p.x += (p.vx + Math.sin(T * 1.8 + p.ph) * 10 + S.tilt * 20) * dt; p.y += p.vy * dt; p.r += 11 * dt; }
+  P.smoke = P.smoke.filter(p => p.life < p.max);
+
+  /* звук огня: шипение от силы пламени, редкие щелчки */
+  Sound.fire(S.lit ? .004 + .018 * S.vis * S.vis : 0);
+  if (S.lit && S.vis > .05) { crackleAcc += dt * (1.2 + 9 * S.vis * S.vis); while (crackleAcc > 1) { crackleAcc -= 1; if (Math.random() < .7) Sound.pop(S.vis); } }
+}
+
+/* ═══════════════════════════════════════ УПРАВЛЕНИЕ: ЛИЦО ═════════════════════════════════════════════════════════ */
+/* blendshapes, которые нужны; фильтр 1€ у каждого свой: моргание — быстрый (подмигивание 150 мс — это 4–5 кадров) */
+const BS = {
+  eyeBlinkLeft: new OneEuro(4, .6), eyeBlinkRight: new OneEuro(4, .6),
+  mouthPucker: new OneEuro(2, .4), mouthFunnel: new OneEuro(2, .4), cheekPuff: new OneEuro(2, .4), jawOpen: new OneEuro(2, .4),
+  mouthSmileLeft: new OneEuro(1.2, .3), mouthSmileRight: new OneEuro(1.2, .3)
+};
+const NEUTRAL_CAP = { eyeBlinkLeft: .55, eyeBlinkRight: .55, mouthPucker: .4, mouthFunnel: .35, cheekPuff: .3, jawOpen: .3, mouthSmileLeft: .4, mouthSmileRight: .4 };
+const Calib = { t0: 0, n: 0, sum: {}, done: false, neutral: {} };
+const Face = { seen: 0, v: {}, idx: null, hx: new OneEuro(.8, .3), hy: new OneEuro(.8, .3) };
+const Breath = { level: 0, on: false, onT: 0, dir: 1, f: new OneEuro(1.5, .5) };
+const Smile = { level: 0, on: false, onT: 0 };
+const Wink = { state: 'idle', side: '', t0: 0, last: -1e9, armed: true };
+
+function onFace(res, t) {
+  const bs = res.faceBlendshapes && res.faceBlendshapes[0];
+  if (!bs || !bs.categories || !bs.categories.length) return;
+  const cats = bs.categories;
+  if (!Face.idx) { Face.idx = {}; cats.forEach((c, i) => { if (c.categoryName in BS) Face.idx[c.categoryName] = i; }); }
+  const raw = {};
+  for (const k in BS) { const c = cats[Face.idx[k]]; const v = c ? c.score : 0; if (!isFinite(v)) return; raw[k] = BS[k].filter(v, t); }
+  Face.seen = t;
+  /* голова — для параллакса (кончик носа), зеркально как в зеркале */
+  const nose = res.faceLandmarks && res.faceLandmarks[0] && res.faceLandmarks[0][1];
+  if (nose) { S.head.x = Face.hx.filter(.5 - nose.x, t); S.head.y = Face.hy.filter(nose.y - .45, t); }
+
+  /* калибровка: первые 2 с с лицом в кадре — это «ноль» */
+  if (!Calib.done) {
+    if (!Calib.t0) Calib.t0 = t;
+    for (const k in raw) Calib.sum[k] = (Calib.sum[k] || 0) + raw[k]; Calib.n++;
+    if (t - Calib.t0 >= 2000 && Calib.n >= 8) {
+      for (const k in raw) Calib.neutral[k] = Math.min(NEUTRAL_CAP[k], Calib.sum[k] / Calib.n);
+      Calib.done = true;
+    }
+    return;
+  }
+  /* ноль подстраивается только вниз: если калибровались с улыбкой или прищуром, потом это выправится */
+  const v = Face.v;
+  for (const k in raw) {
+    const n = Calib.neutral[k];
+    if (raw[k] < n) Calib.neutral[k] = approach(n, raw[k], .5, 1 / 30);
+    v[k] = clamp((raw[k] - Calib.neutral[k]) / (1 - Calib.neutral[k]));
+  }
+  faceLogic(v, t, nose);
+}
+
+function faceLogic(v, t, nose) {
+  /* ── дыхание ── */
+  const pk = Math.max(v.mouthPucker, v.mouthFunnel);
+  const blow = clamp(.65 * pk + .45 * v.cheekPuff + .25 * Math.min(v.jawOpen, .6));
+  Breath.level = Breath.f.filter(blow, t);
+  if (nose) { const off = .5 - nose.x; Breath.dir = Math.abs(off) > .06 ? -Math.sign(off) : Breath.dir; }   /* дует слева — пламя клонится вправо */
+  const wasOn = Breath.on;
+  Breath.on = Breath.on ? Breath.level > CONFIG.blowOff : Breath.level > CONFIG.blowOn;
+  if (Breath.on && !wasOn) Breath.onT = t;
+  if (Breath.level > .2) action('blow');
+  const handBusy = Hand.palmMode || Hand.pinchEngaged;          /* ладонь > щепоть > дыхание */
+  if (Breath.on && !handBusy && S.lit && !S.finale && t - Breath.onT >= CONFIG.blowHoldMs && t - S.igniteT > 1700) extinguish(t);
+
+  /* ── улыбка (дыхание важнее) ── */
+  const sm = (v.mouthSmileLeft + v.mouthSmileRight) / 2;
+  Smile.level = sm;
+  const sOn = Smile.on;
+  Smile.on = Smile.on ? sm > CONFIG.smileOff : sm > CONFIG.smileOn;
+  if (Smile.on && !sOn) Smile.onT = t;
+  const smileOk = !Breath.on && !handBusy;
+  S.warm = approach(S.warm, smileOk && S.lit ? sm : 0, 4, 1 / 30);
+  if (sm > .3 && smileOk) action('smile');
+  if (smileOk && Smile.on && !S.lit && t - Smile.onT >= CONFIG.smileHoldMs && t - S.outT > 900) ignite(t);
+
+  /* ── подмигивание: независимо от всего остального ── */
+  winkLogic(v.eyeBlinkLeft, v.eyeBlinkRight, t);
+}
+
+function winkLogic(L, R, t) {
+  const hi = CONFIG.winkHi, lo = CONFIG.winkLo;
+  if (!Wink.armed) { if (L < lo && R < lo) Wink.armed = true; return; }       /* после моргания — ждём, пока оба глаза откроются */
+  if (Wink.state === 'idle') {
+    if (t - Wink.last < CONFIG.winkCooldownMs) return;
+    if (L > hi && R < lo) { Wink.state = 'closed'; Wink.side = 'L'; Wink.t0 = t; }
+    else if (R > hi && L < lo) { Wink.state = 'closed'; Wink.side = 'R'; Wink.t0 = t; }
+    else if (L > hi && R > hi) Wink.armed = false;                               /* обычное моргание — не считается */
+    return;
+  }
+  const self = Wink.side === 'L' ? L : R, other = Wink.side === 'L' ? R : L, dur = t - Wink.t0;
+  if (other > lo + .12) { Wink.state = 'idle'; Wink.armed = false; return; }    /* закрылся и второй — это моргание */
+  if (self < hi - .18) {                                                          /* глаз открылся: проверяем длительность */
+    Wink.state = 'idle';
+    if (dur >= CONFIG.winkMinMs && dur <= CONFIG.winkMaxMs) { Wink.last = t; action('wink'); addStar(t); }
+    return;
+  }
+  if (dur > CONFIG.winkMaxMs) { Wink.state = 'idle'; Wink.armed = false; }       /* держит слишком долго — не подмигивание */
+}
+
+/* ═══════════════════════════════════════ УПРАВЛЕНИЕ: РУКА ═════════════════════════════════════════════════════════ */
+const Hand = { seen: -1e9, first: 0, r: new OneEuro(1.2, .6), ratio: 1, open: false, closed: false, fist: false,
+  palmT: 0, palmFired: false, closedT: 0, lastMoveT: -1e9, lastR: 1, palmMode: false, pinchEngaged: false };
+
+function onHand(res, t, aw, ah) {
+  const lm = res.landmarks && res.landmarks[0];
+  if (!lm) { Hand.palmMode = Hand.pinchEngaged = false; return; }
+  if (t - Hand.seen > 300) { Hand.first = t; Hand.r.reset(); }
+  Hand.seen = t;
+  /* точки в пикселях кадра (x и y нормированы по разным сторонам кадра), глубина — с весом ½: MediaPipe оценивает её грубо */
+  const p = lm.map(q => ({ x: q.x * aw, y: q.y * ah, z: q.z * aw }));
+  const d2 = (a, b) => Math.hypot(p[a].x - p[b].x, p[a].y - p[b].y);
+  const d3 = (a, b) => Math.hypot(p[a].x - p[b].x, p[a].y - p[b].y, (p[a].z - p[b].z) * .5);
+  const palm = d2(0, 9) || 1;
+  const ratio = Hand.ratio = Hand.r.filter(d3(4, 8) / palm, t);
+  /* поза: пальцы прямые — |кончик−запястье| / |пясть−запястье| (как в голограмме: прямая ≈ 1,9, согнутая ≈ 1) */
+  const curl = [[8, 5], [12, 9], [16, 13], [20, 17]].map(([a, b]) => d2(a, 0) / (d2(b, 0) || 1));
+  const cmin = Math.min(...curl), cmax = Math.max(...curl);
+  const thumb = d2(4, 5) / palm, width = d2(5, 17) / palm;
+  Hand.open = Hand.open ? cmin > 1.5 && thumb > .45 : cmin > 1.62 && thumb > .55 && width > .4 && ratio > .9;
+  Hand.fist = cmax < 1.2;
+  handLogic(t);
+}
+
+function handLogic(t) {
+  const stable = t - Hand.first > 200;                                           /* рука только появилась — не дёргаем пламя */
+  Hand.palmMode = stable && Hand.open;
+  /* кулак тоже считается «сведёнными пальцами»: сжал руку — огонёк сжался, это так же понятно */
+  const pinchMode = stable && !Hand.open;
+  /* ── ладонь: удержание 0,8 с — сброс к норме ── */
+  if (Hand.palmMode) {
+    if (!Hand.palmT) Hand.palmT = t;
+    if (!Hand.palmFired && t - Hand.palmT >= CONFIG.palmHoldMs && !S.finale) { Hand.palmFired = true; resetFlame(t); action('palm'); }
+  } else { Hand.palmT = 0; Hand.palmFired = false; }
+  /* ── щепоть ── */
+  const r = Hand.ratio;
+  Hand.closed = Hand.closed ? r < CONFIG.pinchOpen : r < CONFIG.pinchClosed;
+  if (Math.abs(r - Hand.lastR) > .06) { Hand.lastMoveT = t; Hand.lastR = r; }
+  Hand.pinchEngaged = pinchMode && (Hand.closed || t - Hand.lastMoveT < 700);
+  if (!pinchMode || S.finale || !S.lit || t - S.resetT < 1000) { Hand.closedT = 0; return; }
+  if (Hand.closed) {
+    S.target = .04;                                                              /* тонкий огонёк… */
+    if (!Hand.closedT) Hand.closedT = t;
+    if (t - Hand.closedT > CONFIG.pinchOutMs) { extinguish(t); action('pinch'); }   /* …и гаснет */
+  } else {
+    Hand.closedT = 0;
+    if (Hand.pinchEngaged) { S.target = .1 + .9 * clamp((r - CONFIG.pinchMin) / (CONFIG.pinchMax - CONFIG.pinchMin)); action('pinch'); }
+  }
+}
+/* рука ушла дольше 1 с — пламя плавно к норме */
+function handTimeout(t) {
+  if (t - Hand.seen > CONFIG.handLostMs) {
+    Hand.palmMode = Hand.pinchEngaged = false; Hand.palmT = 0; Hand.closedT = 0;
+    if (S.lit) S.target = approach(S.target, CONFIG.flameDefault, 1.2, 1 / 60);
+  }
+}
+
+/* ═════════════════════════════════════════════ ФИНАЛ ═══════════════════════════════════════════════════════════ */
+let pngBlob = null;
+function startFinale(t) {
+  if (S.finale) return;
+  S.finale = true; S.finT = t; hideHint();
+  if (!S.lit) ignite(t);
+  S.resetT = t; S.resetFrom = S.flame;                                           /* ровное пламя */
+  Sound.finale();
+  const box = $('final'), w = box.querySelector('.w'), m = box.querySelector('.m'), btn = $('save');
+  const first = CONFIG.name ? `${CONFIG.name}, загадай желание.` : 'Загадай желание.';
+  /* отъезд камеры подбираем так, чтобы свеча встала над текстом: меряем блок с полным текстом невидимым */
+  box.style.visibility = 'hidden'; box.hidden = false; w.textContent = first; m.textContent = CONFIG.message; btn.classList.add('on');
+  const top = box.getBoundingClientRect().top, fy = H * .3;
+  w.textContent = m.textContent = ''; btn.classList.remove('on'); box.style.visibility = '';
+  S.zoomTo = clamp((top - 22 - fy) / (G.floor - fy), .55, .9);
+  setTimeout(() => type(w, first, 75, () => setTimeout(() => type(m, CONFIG.message, 38, () => {
+    makePNG().then(b => { pngBlob = b; }).catch(e => console.warn(e)).finally(() => btn.classList.add('on'));
+  }), 3000)), 2400);
+}
+/* плавное печатание: по букве, с крошечной случайной паузой — как от руки */
+function type(el, text, ms, done) {
+  let i = 0; const chars = Array.from(text);
+  const step = () => { el.textContent = chars.slice(0, ++i).join(''); if (i < chars.length) setTimeout(step, ms * (.6 + Math.random() * .8) + (/[,.—]/.test(chars[i - 1]) ? ms * 3 : 0)); else done && done(); };
+  step();
+}
+
+/* PNG: созвездие крупно, имя и дата. Готовим заранее — на айфоне «Поделиться» работает только сразу по нажатию */
+async function makePNG() {
+  try { await Promise.all([document.fonts.load('italic 64px Wish'), document.fonts.load('300 30px Geologica')]); } catch (_) {}
+  const w = 1080, h = 1350, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#04060d'); g.addColorStop(.6, '#0a0f20'); g.addColorStop(1, '#151020');
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  x.globalAlpha = .9; x.drawImage(bg, 0, 0, bg.width, bg.height * .62, 0, 0, w, h); x.globalAlpha = 1;
+  x.globalCompositeOperation = 'lighter';
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 260; i++) { const r = .6 + rnd() * 2.2; x.globalAlpha = .15 + rnd() * .5; x.drawImage(rnd() < .2 ? SPR.starB : SPR.starW, rnd() * w - r * 4, rnd() * h * .85 - r * 4, r * 8, r * 8); }
+  /* созвездие вписываем в рамку 760×560 с сохранением пропорций */
+  const pts = HER.map(s => [s.x * W, s.y * H]);
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const bw = Math.max(...xs) - Math.min(...xs) || 1, bh = Math.max(...ys) - Math.min(...ys) || 1;
+  const k = Math.min(760 / bw, 560 / bh), ox = w / 2 - (Math.min(...xs) + bw / 2) * k, oy = 470 - (Math.min(...ys) + bh / 2) * k;
+  const q = pts.map(([a, b]) => [ox + a * k, oy + b * k]);
+  x.strokeStyle = 'rgba(255,222,170,1)'; x.lineCap = 'round';
+  [[10, .1], [2.2, .7]].forEach(([lw, a]) => { x.lineWidth = lw; x.globalAlpha = a; x.beginPath(); q.forEach(([a1, b1], i) => i ? x.lineTo(a1, b1) : x.moveTo(a1, b1)); x.closePath(); x.stroke(); });
+  q.forEach(([a, b]) => { x.globalAlpha = 1; x.drawImage(SPR.her, a - 40, b - 40, 80, 80); x.globalAlpha = .4; x.drawImage(SPR.starY, a - 70, b - 70, 140, 140); });
+  x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.textAlign = 'center';
+  const date = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s*г\.?$/, '');
+  if (CONFIG.name) { x.fillStyle = '#fff1dc'; x.font = 'italic 76px Wish, Georgia, serif'; x.shadowColor = 'rgba(255,180,100,.45)'; x.shadowBlur = 30; x.fillText(CONFIG.name, w / 2, 1060); x.shadowBlur = 0; }
+  x.fillStyle = 'rgba(244,233,216,.62)'; x.font = '300 32px Geologica, -apple-system, sans-serif';
+  x.fillText(date, w / 2, CONFIG.name ? 1130 : 1090);
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('toBlob')), 'image/png'));
+}
+async function savePNG() {
+  const blob = pngBlob || await makePNG(), name = 'sozvezdie.png';
+  const file = new File([blob], name, { type: 'image/png' });
+  /* айфон: системное «Поделиться» → «Сохранить изображение» кладёт в Фото; иначе — обычная загрузка */
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+$('save').addEventListener('click', () => savePNG().catch(e => console.warn(e)));
+
+/* ═══════════════════════════════════════ ПОДСКАЗКИ (только после 6 с тишины) ══════════════════════════════════════ */
+let hintOn = false, hintAt = 0, hintIdx = 0;
+function hideHint() { if (hintOn) { hintOn = false; $('hint').classList.remove('on'); } }
+function hintTick(t) {
+  if (S.finale || !running) return;
+  if (hintOn) { if (t - hintAt > 4500) { hideHint(); lastAction = t; } return; }   /* показали — погасили; следующая — снова через 6 с */
+  if (t - lastAction < CONFIG.hintAfterMs) return;
+  const c = [];
+  if (!ready) c.push('секунду…');
+  else if (t - Face.seen > 2000) c.push('посмотри на огонёк');
+  else {
+    if (!S.lit) c.push('улыбнись — и она снова загорится');
+    if (S.lit && !did.blow) c.push('подуй на свечу');
+    if (S.stars === 0) c.push('подмигни звёздам'); else c.push('подмигни ещё');
+    if (S.lit && !did.pinch) c.push('разведи пальцы — пламя станет выше');
+    if (S.lit && did.pinch && !did.palm) c.push('открытая ладонь — всё как было');
+  }
+  const text = c[hintIdx++ % c.length];
+  const el = $('hint'); el.textContent = text; el.classList.add('on'); hintOn = true; hintAt = t;
+}
+
+/* ═══════════════════════════════════════════ MEDIAPIPE ════════════════════════════════════════════════════════════ */
+let MP = null, fileset = null, faceLmk = null, handLmk = null, delegate = '', ready = false, buffers = null, cpuProbe = null;
+const stamp = { face: 0, hand: 0 };
+
+async function fetchBuf(urls) {
+  let err;
+  for (const u of urls) { try { const r = await fetch(u); if (!r.ok) throw new Error(u + ': ' + r.status); return new Uint8Array(await r.arrayBuffer()); } catch (e) { err = e; } }
+  throw err;
+}
+/* всё, что можно, грузим сразу при открытии страницы — пока человек смотрит на кнопку */
+async function loadMP() {
+  const L = CONFIG.mp.local, Cd = CONFIG.mp.cdn;
+  try { MP = await import(L.bundle); } catch (e) { MP = await import(Cd.bundle); }
+  /* у себя лежит только SIMD-сборка wasm (iOS 16.4+); старым браузерам — с CDN */
+  let wasm = L.wasm; try { if (!(await MP.FilesetResolver.isSimdSupported())) wasm = Cd.wasm; } catch (_) {}
+  fileset = await MP.FilesetResolver.forVisionTasks(new URL(wasm, location.href).href);
+  const [face, hand] = await Promise.all([fetchBuf([L.face, Cd.face]), fetchBuf([L.hand, Cd.hand])]);
+  buffers = { face, hand };
+  await createDetectors('GPU').catch(e => { console.warn('GPU не подошёл:', e); return createDetectors('CPU'); });
+  ready = true;
+}
+async function createDetectors(d) {
+  try { faceLmk && faceLmk.close(); handLmk && handLmk.close(); } catch (_) {}
+  faceLmk = handLmk = null;
+  const base = buf => ({ modelAssetBuffer: buf.slice(), delegate: d });   /* копия: исходник нужен для перехода на CPU */
+  const [f, h] = await Promise.all([
+    MP.FaceLandmarker.createFromOptions(fileset, { baseOptions: base(buffers.face), runningMode: 'VIDEO', numFaces: 1, outputFaceBlendshapes: true,
+      outputFacialTransformationMatrixes: false, minFaceDetectionConfidence: .5, minFacePresenceConfidence: .5, minTrackingConfidence: .5 }),
+    MP.HandLandmarker.createFromOptions(fileset, { baseOptions: base(buffers.hand), runningMode: 'VIDEO', numHands: 1,
+      minHandDetectionConfidence: .5, minHandPresenceConfidence: .5, minTrackingConfidence: .5 })
+  ]);
+  faceLmk = f; handLmk = h; delegate = d;
+  /* прогрев: первый кадр компилирует шейдеры — делаем это на пустой картинке, а не на живом лице */
+  const c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').fillRect(0, 0, 64, 64);
+  f.detectForVideo(c, ++stamp.face); h.detectForVideo(c, ++stamp.hand);
+}
+let switching = false;
+async function setDelegate(d, why) {
+  if (switching || delegate === d) return; switching = true; ready = false; console.warn('→ ' + d + ':', why);
+  try { await createDetectors(d); } finally { stat.face = stat.hand = 0; ready = true; switching = false; }
+}
+const toCPU = why => { Bench.phase = 9; return setDelegate('CPU', why); };   /* GPU сломался или «слеп» — насовсем */
+/* автозамер: GPU через 3 с работы стоит дороже 40 мс на кадр (лицо + рука) — пробуем CPU 3 с, оставляем более быстрый.
+   На встроенной/программной графике CPU-делегат MediaPipe бывает в 3–5 раз быстрее */
+const Bench = { phase: 0, t: 0, gpu: 0 };
+function benchTick(t) {
+  if (!ready || switching || Bench.phase > 2 || !stat.face || !stat.hand) return;
+  if (!Bench.t) Bench.t = t;
+  if (t - Bench.t < 3000) return;
+  const cost = stat.face + stat.hand;
+  if (Bench.phase === 0) {
+    if (delegate === 'GPU' && cost > 40) { Bench.gpu = cost; Bench.phase = 1; setDelegate('CPU', 'GPU медленный: ' + cost.toFixed(0) + ' мс').then(() => { Bench.t = now(); }); }
+    else Bench.phase = 3;
+  } else if (Bench.phase === 1) {
+    Bench.phase = 3;
+    if (cost > Bench.gpu * 1.1) setDelegate('GPU', 'CPU ещё медленнее: ' + cost.toFixed(0) + ' мс');
+  }
+}
+
+/* ═════════════════════════════════════════ КАМЕРА И ЦИКЛ ══════════════════════════════════════════════════════════ */
+const vid = $('cam');
+/* кадр для MediaPipe — копия на маленьком 2D-холсте (длинная сторона 480): на айфоне GPU-делегат, читая <video>
+   напрямую, временами получает чёрную текстуру; заодно меньше пикселей на загрузку в видеокарту */
+const fc = document.createElement('canvas'), fx = fc.getContext('2d', { willReadFrequently: false });
+let stream = null, running = false, grabbed = false, fresh = false, lastCT = -1, lock = null;
+
+async function openCamera() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({ audio: false,
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30, max: 30 } } });
+  vid.srcObject = stream;
+  await vid.play().catch(() => {});
+  if (vid.requestVideoFrameCallback && !openCamera.rvfc) { openCamera.rvfc = 1; const cb = () => { fresh = true; vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
+}
+function grab() {
+  const vw = vid.videoWidth || 640, vh = vid.videoHeight || 480, k = 480 / Math.max(vw, vh);
+  const w = Math.round(vw * k), h = Math.round(vh * k);
+  if (fc.width !== w || fc.height !== h) { fc.width = w; fc.height = h; }
+  fx.drawImage(vid, 0, 0, w, h); grabbed = true;
+}
+function frameIsDark() {
+  const d = fx.getImageData(0, 0, fc.width, fc.height).data; let s = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4 * 97) { s += d[i] + d[i + 1] + d[i + 2]; n++; }
+  return s / n / 3 < 4;
+}
+
+/* задачи распознавания: на каждый новый кадр камеры — лицо и рука; не больше ~9 мс за кадр экрана */
+let jobs = [], handTick = 0, lastHandRun = 0, blindChk = 0;
+const stat = { face: 0, hand: 0, fps: 0, n: 0, t0: 0, rfps: 0, rn: 0 };
+function detectStep(t) {
+  if (!ready || !running || switching || vid.readyState < 2 || (DEBUG && window.__noDetect)) return;
+  if (!vid.requestVideoFrameCallback && vid.currentTime !== lastCT) { lastCT = vid.currentTime; fresh = true; }
+  if (fresh) {
+    fresh = false; grab(); stat.n++;
+    /* рука давно не видна — ищем её реже (поиск ладони по всему кадру — самая дорогая часть HandLandmarker) */
+    const handDue = t - Hand.seen < 1200 || ++handTick % 3 === 0;
+    jobs = handDue ? (t - lastHandRun > 120 ? ['hand', 'face'] : ['face', 'hand']) : ['face'];
+  }
+  const t0 = now();
+  while (jobs.length) {
+    const j = jobs.shift();
+    try { j === 'face' ? runFace(t) : runHand(t); }
+    catch (e) { console.warn(e); if (delegate === 'GPU') { jobs = []; toCPU('ошибка на кадре: ' + (e && e.message)); } return; }
+    if (now() - t0 > 9) break;                         /* остальное — в следующий кадр экрана, экран не ждёт */
+  }
+}
+function runFace(t) {
+  const t1 = now(), ts = stamp.face = Math.max(stamp.face + 1, Math.round(t));
+  const r = faceLmk.detectForVideo(fc, ts), ms = now() - t1; stat.face = stat.face ? .85 * stat.face + .15 * ms : ms;
+  if (r.faceBlendshapes && r.faceBlendshapes.length) onFace(r, t);
+  else {
+    Breath.level = approach(Breath.level, 0, 6, 1 / 30); Breath.on = false; Smile.on = false; S.warm = approach(S.warm, 0, 2, 1 / 30);
+    /* GPU 4 с «не видит» лица — проверяем этот же кадр на CPU; там лицо есть — GPU слепой (бывает на айфоне) */
+    if (delegate === 'GPU' && t - Math.max(Face.seen, startedAt) > 4000 && t - blindChk > 3000) { blindChk = t; probeBlind(); }
+  }
+}
+function runHand(t) {
+  const t1 = now(), ts = stamp.hand = Math.max(stamp.hand + 1, Math.round(t));
+  const r = handLmk.detectForVideo(fc, ts), ms = now() - t1; stat.hand = stat.hand ? .85 * stat.hand + .15 * ms : ms; lastHandRun = t;
+  onHand(r, t, fc.width, fc.height);
+}
+async function probeBlind() {
+  try {
+    if (frameIsDark()) return;
+    if (!cpuProbe) cpuProbe = await MP.FaceLandmarker.createFromOptions(fileset, { baseOptions: { modelAssetBuffer: buffers.face.slice(), delegate: 'CPU' }, runningMode: 'IMAGE', numFaces: 1 });
+    const r = cpuProbe.detect(fc);
+    if (r.faceLandmarks && r.faceLandmarks.length) { cpuProbe.close(); cpuProbe = null; toCPU('GPU не видит лица'); }
+  } catch (e) { console.warn(e); }
+}
+
+/* главный цикл: распознавание, логика, рисование — в одном requestAnimationFrame */
+let prevT = 0, slowT = 0, frameEMA = 16.7;
+function loop(t) {
+  requestAnimationFrame(loop);
+  if (!running) { prevT = t; return; }                 /* до «Начать» сцену не рисуем — батарея целее */
+  const dt = Math.min(.05, prevT ? (t - prevT) / 1000 : .016); prevT = t;
+  detectStep(t);
+  benchTick(t);
+  handTimeout(t);
+  update(dt, t);
+  draw(dt);
+  hintTick(t);
+  /* экран не успевает (> 24 мс на кадр 1,5 с подряд) — снижаем плотность пикселей рендера */
+  frameEMA = .95 * frameEMA + .05 * dt * 1000;
+  if (frameEMA > 24 && Q > 1) { if (!slowT) slowT = t; else if (t - slowT > 1500) { Q = Math.max(1, Q - .25); resize(); slowT = 0; frameEMA = 16.7; } } else slowT = 0;
+  stat.rn++; if (t - stat.t0 > 1000) { stat.fps = stat.n * 1000 / (t - stat.t0); stat.rfps = stat.rn * 1000 / (t - stat.t0); stat.n = stat.rn = 0; stat.t0 = t; if (DEBUG) debugOut(); }
+}
+function debugOut() {
+  const el = $('jdbg') || Object.assign(document.body.appendChild(document.createElement('div')), { id: 'jdbg' }), v = Face.v;
+  el.textContent = `${delegate || '…'}  камера ${stat.fps.toFixed(0)}/с  экран ${stat.rfps.toFixed(0)}/с  q ${Q}\n` +
+    `лицо ${stat.face.toFixed(1)} мс  рука ${stat.hand.toFixed(1)} мс  калибр ${Calib.done ? 'да' : '…'}\n` +
+    `дует ${Breath.level.toFixed(2)}${Breath.on ? '●' : ''}  улыб ${Smile.level.toFixed(2)}${Smile.on ? '●' : ''}\n` +
+    `глаз L ${(v.eyeBlinkLeft || 0).toFixed(2)} R ${(v.eyeBlinkRight || 0).toFixed(2)}  ${Wink.state}${Wink.armed ? '' : ' ×'}\n` +
+    `рука ${now() - Hand.seen < 300 ? Hand.ratio.toFixed(2) : '—'} ${Hand.open ? 'ладонь' : Hand.fist ? 'кулак' : Hand.closed ? 'сведены' : ''}\n` +
+    `пламя ${S.flame.toFixed(2)} → ${S.target.toFixed(2)}  ${S.lit ? 'горит' : 'погасла'}  звёзд ${S.stars}`;
+}
+
+/* ═════════════════════════════════════════════ СТАРТ И ОШИБКИ ═════════════════════════════════════════════════════ */
+function showError(text, retry = true) {
+  const e = $('err'); $('errText').textContent = text; $('retry').hidden = !retry;
+  e.hidden = false; requestAnimationFrame(() => e.classList.remove('gone')); $('start').classList.add('gone');
+}
+function hideError() { const e = $('err'); e.classList.add('gone'); setTimeout(() => { e.hidden = true; }, 1200); }
+
+const supported = window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && typeof WebAssembly === 'object';
+let mpLoad = null;
+if (!supported) {
+  $('go').hidden = true;
+  const s = $('start'), p = document.createElement('p');
+  p.textContent = window.isSecureContext === false ? 'Открой эту страницу по ссылке с https://' : 'Этот браузер не умеет работать с камерой. Открой ссылку в Safari или Chrome.';
+  s.appendChild(p);
+} else {
+  mpLoad = loadMP();
+  mpLoad.catch(e => console.warn('MediaPipe:', e));
+}
+
+async function begin() {
+  const go = $('go'); go.disabled = true;
+  Sound.init();                                         /* звук — только по нажатию (правило iOS) */
+  const t0 = now();
+  try { await openCamera(); }
+  catch (e) {
+    go.disabled = false; console.warn(e);
+    const n = e && e.name;
+    if (n === 'NotAllowedError' || n === 'SecurityError' || n === 'PermissionDeniedError') {
+      /* Safari, однажды получив «Не разрешать», отказывает сразу без вопроса — тогда помогает только перезагрузка */
+      if (begin.denied && now() - t0 < 350) { location.reload(); return; }
+      begin.denied = true; showError('Нужна камера, чтобы всё заработало');
+    } else if (n === 'NotFoundError' || n === 'OverconstrainedError' || n === 'DevicesNotFoundError') showError('Не нашлась фронтальная камера');
+    else if (n === 'NotReadableError') showError('Камера занята другим приложением. Закрой его и попробуй ещё раз');
+    else showError('Этот браузер не пускает к камере. Открой ссылку в Safari или Chrome', false);
+    return;
+  }
+  hideError(); Sound.resume();                          /* iOS прерывает звук на время вопроса о камере */
+  $('start').classList.add('gone'); setTimeout(() => { $('start').hidden = true; }, 1300);
+  cv.classList.add('on');
+  running = true; startedAt = lastAction = now();
+  try { lock = await navigator.wakeLock.request('screen'); } catch (_) {}
+  mpLoad.catch(e => { console.warn(e); retryAction = () => location.reload(); showError('Не получилось загрузиться. Проверь интернет и попробуй ещё раз'); });
+}
+let retryAction = begin;
+$('go').addEventListener('click', begin);
+$('retry').addEventListener('click', () => retryAction());
+
+/* свернули — пауза распознавания и звука; вернулись — проверяем камеру (iOS гасит её в фоне) */
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) { Sound.pause(); return; }
+  Sound.resume(); if (!running) return;
+  try { lock = await navigator.wakeLock.request('screen'); } catch (_) {}
+  const tr = stream && stream.getVideoTracks()[0];
+  if (!tr || tr.readyState === 'ended') { try { await openCamera(); } catch (e) { console.warn(e); } }
+  else vid.play().catch(() => {});
+  prevT = 0;
+});
+window.addEventListener('pagehide', () => { if (stream) stream.getTracks().forEach(t => t.stop()); });
+
+addEventListener('resize', () => resize());
+resize();
+requestAnimationFrame(loop);
+
+/* для отладки (?debug): посмотреть состояние и подложить blendshapes/руку без камеры */
+if (DEBUG) window.__joke = { S, Hand, Face, Calib, Wink, Breath, Smile, stat, get ready() { return ready; }, get delegate() { return delegate; },
+  face: (v, t = now()) => { Face.seen = t; Calib.done = true; for (const k in BS) v[k] = v[k] || 0; Object.assign(Face.v, v); faceLogic(Face.v, t, null); },
+  hand: (lm, t = now()) => onHand({ landmarks: lm ? [lm] : [] }, t, 1, 1), addStar: () => addStar(now()), finale: () => startFinale(now()), makePNG, toCPU };
+</script>
+</body>
+</html>
