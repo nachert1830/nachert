@@ -123,7 +123,7 @@ function vCone(h,o){ o=o||{}; let apex;
   const zS=-apex[1], zb=o.zb||0, R=c.r, ax=[apex[0],c.c[1]];
   return {S:[apex[0],c.c[1],zS], on:(X,what)=>h.eqLen(Math.hypot(X[0]-ax[0],X[1]-ax[1]),R*(zS-X[2])/(zS-zb),what||'точка на конусе')}; }
 /* конус с фронтальной осью: вершина S, очерк на π₂ — две прямые из S″; ось — биссектриса, полуугол — половина угла между ними */
-function fCone(h,Sn){ const Sx=h.P(Sn), s2=h.pt2(Sn+'″'); const ss=h.M.segs.all.filter(q=>q.k==='main'&&(h.d2(q.a,s2)<1.5||h.d2(q.b,s2)<1.5)&&!(Math.abs(q.a[1])<0.5&&Math.abs(q.b[1])<0.5)).map(q=>{ const far=h.d2(q.a,s2)<1.5?q.b:q.a; return unit([far[0]-s2[0],0,-(far[1]-s2[1])]); });
+function fCone(h,Sn){ const Sx=h.P(Sn), s2=h.pt2(Sn+'″'); const ss=h.M.segs.all.filter(q=>(q.k==='main'||q.k==='thin')&&(h.d2(q.a,s2)<1.5||h.d2(q.b,s2)<1.5)&&!(Math.abs(q.a[1])<0.5&&Math.abs(q.b[1])<0.5)).map(q=>{ const far=h.d2(q.a,s2)<1.5?q.b:q.a; return unit([far[0]-s2[0],0,-(far[1]-s2[1])]); });
   if(ss.length<2) throw new Error('не найден очерк конуса из '+Sn+'″'); const [u,w]=ss.sort((x,y)=>h.ang(x,y)); const ax=unit(add(u,w)), al=h.ang(u,w)/2;
   return {S:Sx, on:(X,what)=>h.eqA(h.ang(sub(X,Sx),ax),al,what||'точка на конусе',0.3)}; }
 /* сфера по окружностям-очеркам: одинаковые радиус и абсцисса центра на π₂ и π₁ */
@@ -372,7 +372,7 @@ const S={
     const sOf=P=>(P[0]-G[0][0])*d[0]+(P[1]-G[0][1])*d[1];
     const [a,b,c]=[0,2,4].map(i=>[sOf(G[i]),G[i][2]]); const L3=x=>a[1]*(x-b[0])*(x-c[0])/((a[0]-b[0])*(a[0]-c[0]))+b[1]*(x-a[0])*(x-c[0])/((b[0]-a[0])*(b[0]-c[0]))+c[1]*(x-a[0])*(x-b[0])/((c[0]-a[0])*(c[0]-b[0]));
     ['2','4','M₁','M₂','K₁'].forEach(n=>{ const P=h.P(n); if(Math.abs((P[0]-G[0][0])*d[1]-(P[1]-G[0][1])*d[0])>2*h.E) h.fail(n+'′ не на плане образующей'); h.zero(P[2]-L3(sOf(P)),n+' на образующей g'); });
-    const [i1,i2]=h.segL('i″'), ax=[i1[0],null]; const ip=h.segL('i′'); ax[1]=(ip[0][1]+ip[1][1])/2; const rho=P=>Math.hypot(P[0]-ax[0],P[1]-ax[1]);
+    const [i1,i2]=h.segL('i″'), ax=[i1[0],null]; const ip=(()=>{ try{ return h.segL('i′'); }catch(e){ return null; } })(); ax[1]=ip?(ip[0][1]+ip[1][1])/2:h.pt2('i′')[1];   /* i′ — отрезок или точка (как в тетради) */ const rho=P=>Math.hypot(P[0]-ax[0],P[1]-ax[1]);
     const K=h.P('K'), K1=h.P('K₁'); h.eqLen(rho(K),rho(K1),'K на параллели точки K₁'); h.zero(K[2]-K1[2],'K и K₁ на одной высоте');
     const m1=h.lab('M′'); ['M₁','M₂'].forEach(n=>h.eqLen(Math.hypot(m1[0]-ax[0],m1[1]-ax[1]),rho(h.P(n)),'M на параллели '+n)); },
   /* № 69 а: сфера; A, B, C — одна параллель, C, D, E — одна фронтальная окружность, H, G, F, E — сечение плоскостью ⟂ π₂ */
@@ -392,12 +392,16 @@ const S={
     const P=n=>{ if(h.has(n)) return h.P(n); const p1=h.lab(n+'′'), p2=h.lab(n[0]+'″'); return [p1[0],p1[1],-p2[1]]; };
     nat.forEach(n=>h.inPl(P(n),al,n+' ∈ α')); nat.forEach((n,i)=>{ const m=nat[(i+1)%nat.length]; h.eqLen(h.d2(h.lab(n+'ᴵⱽ'),h.lab(m+'ᴵⱽ')),nrm(sub(P(m),P(n))),'натуральный вид: |'+n+m+'|'); }); },
   /* № 73: конус ∩ цилиндр (ось ⟂ π₂), конус ∩ шар */
-  '73.1':(h)=>{ const cn=vCone(h,{S:'S'}), cy=h.circs().filter(c=>c.pl===2&&c.k==='main').sort((x,y)=>y.r-x.r)[0];
+  '73.1':(h)=>{ const cn=vCone(h,{S:'S'}), cy=h.circs().filter(c=>c.pl===2&&(c.k==='main'||c.k==='thin')).sort((x,y)=>y.r-x.r)[0];   /* очерк цилиндра в условии — тонкая окружность с дугами поверх */
     ['A','B','E'].forEach(n=>{ const X=h.P(n); cn.on(X,n+' на конусе'); h.eqLen(Math.hypot(X[0]-cy.c[0],X[2]+cy.c[1]),cy.r,n+' на цилиндре'); }); },
-  '73.2':(h)=>{ const cn=vCone(h,{}), sp=sphereC(h,'O'); ['1','2','3','4'].forEach(n=>{ cn.on(h.P(n),n+' на конусе'); sp.on(h.P(n),n+' на шаре'); }); },
+  '73.2':(h)=>{ const cn=vCone(h,{S:'S'}), sp=sphereC(h,'O'); ['1','2','3','4'].forEach(n=>{ cn.on(h.P(n),n+' на конусе'); sp.on(h.P(n),n+' на шаре'); }); },
   /* № 74 а: тор (ось ⟂ π₁ через O) ∩ конус с фронтальной осью */
-  '74.1':(h)=>{ const O=h.P('O'), cn=fCone(h,'S');   /* тор-купол: ось ⟂ π₁ через O, образующая — дуга очерка на π₂ (центр Z по другую сторону оси) */
-    const arcs=h.items.filter(i=>i&&i.t==='arc'&&(i.k||'main')==='main'&&i.c&&i.r>5); if(!arcs.length) throw new Error('нет дуги очерка тора');
+  '74.1':(h)=>{ const O=h.P('O'), cn=(()=>{ /* конус: вершина S, ось i″ (штрихпунктир), основание — отрезок ⟂ i″ с серединой на оси (образующие в условии разбиты на тонкие/основные части) */
+      const Sx=h.P('S'), s2=h.pt2('S″'), [i1,i2]=h.segL('i″'), u2=unit([i2[0]-i1[0],i2[1]-i1[1]]);
+      const b=h.M.segs.all.filter(q=>q.k==='main').map(q=>({q,m:[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]})).filter(o=>Math.abs((o.m[0]-s2[0])*u2[1]-(o.m[1]-s2[1])*u2[0])<2*h.E&&Math.abs(((o.q.b[0]-o.q.a[0])*u2[0]+(o.q.b[1]-o.q.a[1])*u2[1]))<0.05*h.d2(o.q.a,o.q.b))[0];
+      if(!b) throw new Error('не найдено основание конуса'); const half=h.d2(b.q.a,b.q.b)/2, Lx=h.d2(b.m,s2), ax=unit([b.m[0]-s2[0],0,-(b.m[1]-s2[1])]), al=deg(Math.atan(half/Lx));
+      return {on:(X,what)=>h.eqA(h.ang(sub(X,Sx),ax),al,what||'точка на конусе',0.3)}; })();   /* тор-купол: ось ⟂ π₁ через O, образующая — дуга очерка на π₂ (центр Z по другую сторону оси) */
+    const arcs=h.items.filter(i=>i&&i.t==='arc'&&/^(main|thin)$/.test(i.k||'main')&&i.c&&i.r>5); if(!arcs.length) throw new Error('нет дуги очерка тора');
     const g=arcs[0], a=Math.abs(g.c[0]-O[0]), Zc=-g.c[1];
     const on=(X,what)=>h.eqLen(Math.hypot(Math.hypot(X[0]-O[0],X[1]-O[1])+a,X[2]-Zc),g.r,what);
     ['A','B','C','11','12','21','22','31','32'].filter(n=>h.has(n)).forEach(n=>{ on(h.P(n),n+' на торе'); cn.on(h.P(n),n+' на конусе'); }); },
