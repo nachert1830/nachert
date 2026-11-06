@@ -18663,7 +18663,10 @@ WB3.add({
 /* Задачи 61–70: вращение вокруг проецирующей прямой и линии уровня; точка и линия на поверхности
    (стр. 18–23; развороты s12, s13, s14) */
 (function(){
-const {seg,pt,conn,sq,ang,txt,tick,circ,arc,poly,curve,ell,vec,axis,nvOnH,nvOnF,v3,G,S} = L;
+const {seg,ln,dim,pt,conn,sq,ang,txt,tick,circ,arc,poly,curve,ell,vec,axis,nvOnH,nvOnF,v3,G,S} = L;
+/* линия обрыва (волнистая, тонкая) от p до q — как в тетради, где вид дан не целиком */
+const waveL=(p,q,amp,n)=>{ n=n||Math.max(6,Math.round(Math.hypot(q[0]-p[0],q[1]-p[1])/22)); const d=[q[0]-p[0],q[1]-p[1]], L0=Math.hypot(d[0],d[1]), nn=[-d[1]/L0,d[0]/L0], o=[];
+  for(let i=0;i<=n*8;i++){ const t=i/(n*8), w=Math.sin(t*n*Math.PI*2)*(amp||2.2); o.push([p[0]+d[0]*t+nn[0]*w,p[1]+d[1]*t+nn[1]*w]); } return curve(o,'thin'); };
 const mk=s=>({F:p=>L.F(p.map(v=>v*s)), H:p=>L.H(p.map(v=>v*s))});
 const ext=(a,b,e0,e1)=>[G.along(a,b,a,e0),G.along(b,a,b,e1)];              // отрезок ab с вылетами за концы
 const LN=(a,b,k,l,la,e0,e1,lat)=>{ const [p,q]=ext(a,b,e0===undefined?10:e0,e1===undefined?10:e1); return seg(p,q,k,l,la,{lat:lat||q}); };
@@ -19249,7 +19252,7 @@ const pa=(()=>{
   const O2=fr(0,0), O1=pl(0,0);
   const outline=circ(O2,R*U,'main');
   const givenCurve=[ poly([F3(A),F3(C)],'thin'), poly(front(arcCDE),'thin'), poly([F3(E),F3(H)],'thin'), poly(front(arcHA),'thin') ];
-  const Q2=F3(Q), ax=[[O2[0],O2[1]-R*U-8],[O2[0],O2[1]+R*U+8]];
+  const Q2=F3(Q), ax=[[O2[0],O2[1]-R*U-8],[O1[0],O1[1]+R*U+8]];
   const eq2=[[O2[0]-R*U-10,O2[1]],[O2[0]+R*U+10,O2[1]]];
   const pl1=[[O1[0]-R*U-10,O1[1]],[O1[0]+R*U+10,O1[1]]];
   const ellC=pl(-Cm[0],0), rxE=Lh*Math.abs(dh[0])*U, ryE=Lh*U;
@@ -19263,14 +19266,16 @@ const pa=(()=>{
         {p:L3(dens(t=>Pc(t),0,2*Math.PI,96)),k:'aux',st:5}, {p:L3(chordC),k:'res',st:6}, {p:L3(arcHA),k:'res',st:6} ],
       pts:[ ...[['A',A,1],['H',H,1],['B',B,2],['C',C,2],['D',D,3],['E',E,3],['G',G,4],['F',Fp,4]].map(([nm,q,st])=>({nm,p:W(q),k:'res',st})) ] }; };
   return { l:'а)', surf3, form:'sphere', q:'Сфера: построить горизонтальные проекции точек A, B, C, D, E, F, G, H и линий, проходящих через них.',
-    given:[ axis(), outline, seg(...ax,'dash'), seg(...eq2,'dash'),
+    /* как в тетради: оси x нет; осевые — штрихпунктир (вертикальная — через обе проекции); на π₁ дана передняя половина очерка с линией обрыва */
+    given:[ outline, seg(...ax,'axis'), seg(...eq2,'axis'), seg(...pl1,'axis'), pt(O2,'','n','thin',{hollow:true}), pt(O1,'','n','thin',{hollow:true}),
+      waveL([O1[0]-R*U*0.99,O1[1]-0.15*R*U],[O1[0]+R*U*0.99,O1[1]-0.15*R*U],2), arc(O1,R*U,180-8.63,360+8.63,'main'),
       poly([F3(A),F3(C)],'main'), poly(front(arcCDE),'main'), poly([F3(E),F3(H)],'main'), poly(front(arcHA),'main'),
-      pt(F3(A),'A″','nw'), pt(F3(B),'B″','n'), pt(F3(C),'C″','ne'), pt(F3(D),'D″','e'), pt(F3(E),'E″','se'), pt(F3(H),'H″','w') ],
+      pt(F3(A),'A″','nw'), pt(F3(B),'B″','n'), pt(F3(C),'C″','ne'), pt(F3(D),'D″','e'), pt(F3(E),'E″','se'), pt(F3(H),'H″','w'), pt(F3(G),'G″','nw'), pt(F3(Fp),'F″','sw') ],
     steps:[
       { t:'Точки A и H на главном меридиане',
         d:'A″ и H″ лежат на очерке сферы — это главный меридиан (фронтальная окружность через центр, y = 0). Значит A и H лежат в плоскости y = 0: их горизонтальные проекции — на диаметре, параллельном оси x.',
         why:'Главный меридиан сферы лежит в плоскости, параллельной π₂ и проходящей через центр; на π₁ он проецируется в диаметр.',
-        add:[ seg(...pl1,'dash'), circ(O1,R*U,'aux'), conn(F3(A),A1), conn(F3(H),H1), pt(A1,'A′','nw','aux'), pt(H1,'H′','nw','aux') ] },
+        add:[ circ(O1,R*U,'aux'), conn(F3(A),A1), conn(F3(H),H1), pt(A1,'A′','nw','aux'), pt(H1,'H′','nw','aux') ] },
       { t:'Параллель через A, B, C',
         d:'Точки A, B, C лежат на горизонтальной окружности (параллели) — её фронтальная проекция A″C″ ∥ x, радиус r₁ равен половине хорды. На π₁ проводим окружность радиуса r₁ с центром O′: A′ — на диаметре, B′ — на оси симметрии (B″ на оси), C′ — на линии связи из C″. Точки на фронтальной проекции видимые, поэтому берём их на передней половине.',
         why:'Точка принадлежит поверхности сферы, если лежит на её параллели; горизонтальная параллель проецируется на π₁ в окружность натуральной величины.',
@@ -19298,8 +19303,9 @@ const pa=(()=>{
 
 /* ===== б) тор с осью ⟂ π₂ ===== */
 const pb=(()=>{
-  const fT=(x,z)=>[-x*U,-z*U], pT=(x,y)=>[-x*U,y*U], F3t=p=>fT(p[0],p[2]), H3t=p=>pT(p[0],p[1]);
-  const Rc=21, r=15.5, Rin=Rc-r, Rout=Rc+r, zp=Rin, rAB=33;   /* плоскость z = zp касается внутреннего экватора: узел D сечения — только при zp = Rc − r */
+  const Rc=21, r=15.5, y0=r+7;   /* вид сверху — ниже фронтального, как в тетради (центр трубки на y0 под уровнем основания) */
+  const fT=(x,z)=>[-x*U,-z*U], pT=(x,y)=>[-x*U,(y+y0)*U], F3t=p=>fT(p[0],p[2]), H3t=p=>pT(p[0],p[1]);
+  const Rin=Rc-r, Rout=Rc+r, zp=Rin, rAB=33;   /* плоскость z = zp касается внутреннего экватора: узел D сечения — только при zp = Rc − r */
   const yOf=rho=>Math.sqrt(Math.max(0,r*r-(rho-Rc)**2));
   const A=[0,yOf(rAB),rAB], B=[-Math.sqrt(rAB*rAB-zp*zp),yOf(rAB),zp], D=[0,0,zp], E=[0,r,Rc], C=[-Math.sqrt(Rc*Rc-zp*zp),r,zp];
   const aux=[-11.2,-15.4,-24.7].map(x=>[x,yOf(Math.hypot(x,zp)),zp]);       // P, K, S
@@ -19329,9 +19335,13 @@ const pb=(()=>{
         {p:L3(sec),k:'res',st:7}, {p:Q3.curve(th=>W([0,r*Math.sin(th),Rc+r*Math.cos(th)]),Math.PI,Math.acos((rAB-Rc)/r),40),k:'res',st:7} ],
       pts:[ ...[['D',D,3],['E',E,3],['A',A,4],['B',B,4],['C',C,5]].map(([nm,q,st])=>({nm,p:W(q),k:'res',st})), ...aux.map((q,i)=>({nm:names[i],p:W(q),k:'aux',st:6})) ] }; };
   return { l:'б)', surf3, form:'torus', q:'Тор (ось ⟂ π₂): построить горизонтальные проекции точек A, B, C, D, E и линий: окружность через A и B, горизонтальная очерковая E–C, сечение B–C–D плоскостью z = const, меридиан D–E–A.',
-    given:[ axis(), seg(fT(0,0),fT(0,Rout+3),'dash'),
-      arcQ(Rin,'main'), arcQ(Rout,'main'), arcQ(rAB,'main'), arc(O2,Rc*U,Math.atan2(zp,-C[0])*180/Math.PI,90,'main'),
-      seg(F3t(D),F3t(B),'main'), seg(F3t(D),F3t(A),'main'),
+    /* как в тетради: оси x нет; на π₂ — левый торец от D″ до верха, нижний торец, средняя окружность (осевая) до низа; на π₁ — передняя половина
+       с линией обрыва: торец x = 0, очерк y = r, полуокружность нижнего торца (левая половина невидима), осевые */
+    given:[ axis(), seg(fT(0,Rout),fT(0,Rout+3),'thin'),
+      arcQ(Rin,'main'), arcQ(Rout,'main'), arcQ(rAB,'main'), arc(O2,Rc*U,0,90,'axis'),
+      seg(F3t(D),F3t(B),'main'), seg(F3t(D),F3t(A),'main'), seg(F3t(A),fT(0,Rout),'main'), seg(fT(-Rin,0),fT(-Rout,0),'main'),
+      waveL(pT(0,-0.35*r),pT(-Rout,-0.35*r),2), seg(pT(0,-0.35*r),pT(0,r),'main'), seg(pT(0,r),pT(-Rc,r),'main'),
+      arc(capC,r*U,-90,20.49,'main'), arc(capC,r*U,159.51,270,'hid'), ln(pT(3,0),pT(-Rout-4,0),'axis',null,null,0,0), ln(fT(-Rc,4),pT(-Rc,r+4),'axis',null,null,0,0),
       pt(F3t(A),'A″','ne'), pt(F3t(E),'E″','ne'), pt(F3t(D),'D″','nw'), pt(F3t(C),'C″','n'), pt(F3t(B),'B″','ne') ],
     steps:[
       { t:'Исходные данные и идея',
@@ -19341,7 +19351,7 @@ const pb=(()=>{
       { t:'Образующая окружность на π₁',
         d:'Тор образован вращением окружности радиуса r с центром на расстоянии R<sub>ц</sub> от оси. Плоскость z = 0 пересекает тор по двум таким окружностям, и на π₁ они видны в натуральную величину. Строим переднюю половину правой окружности: центр на расстоянии R<sub>ц</sub> от оси, радиус r. Она послужит «линейкой» глубин: по расстоянию точки от оси найдём её координату y.',
         why:'Окружность, лежащая в плоскости, параллельной π₁, проецируется на π₁ без искажения.',
-        add:[ cap, seg(pT(0,0),pT(-Rout,0),'dash') ] },
+        add:[ arc(capC,r*U,-90,90,'aux') ] },
       { t:'D и E — по радиусам вращения',
         d:'D″: расстояние от оси ρ<sub>D</sub> = R<sub>вн</sub>. Дугой с центром O″ переносим D″ на ось x и поднимаем линию связи до образующей окружности: y<sub>D</sub> = 0 (это край отверстия). Так как D″ на оси симметрии, D′ лежит на оси. Для E″ ρ = R<sub>ц</sub>: линия связи касается образующей окружности в крайней (самой удалённой от оси x) точке, y<sub>E</sub> = r; E′ на оси на глубине r.',
         why:'Параллель точки — окружность радиуса ρ вокруг оси тора; глубина точки равна y той точки образующей окружности, у которой то же расстояние от оси.',
@@ -19381,14 +19391,16 @@ const bis=(f,a,b)=>{ let fa=f(a); for(let i=0;i<80;i++){ const m=(a+b)/2, fm=f(m
 const pa=(()=>{
   const U=S*1.45;
   const fr=(u,z)=>[u*U,-z*U], pl=(u,y)=>[u*U,y*U];
-  const u1=y=>-20-0.71*(y-16), z1=y=>11.5+1.1*(y-16);
-  const kn=[[43,-4.6],[36.9,7.7],[28.5,13.8],[16,19.2]];
-  const u2=y=>{ let s=0; kn.forEach(([yi,ui],i)=>{ let w=ui; kn.forEach(([yj],j)=>{ if(j!==i) w*=(y-yj)/(yi-yj); }); s+=w; }); return s; };
-  const z2=y=>0.8+0.0716*Math.pow(u2(y)+1.5,2);
-  const YA=44, YB=13;
+  /* направляющие сняты с рисунка тетради (стр. 22, а): d₁ — прямая, d₂ — кривая; на π₂ d₂″ — одна ветвь, поднимающаяся вправо от оси x,
+     на π₁ d₂′ — дуга, уходящая от оси x влево-вниз. Параметр — глубина y (образующие — фронтали) */
+  const lag=pts=>x=>{ let s=0; pts.forEach(([xi,yi],i)=>{ let w=yi; pts.forEach(([xj],j)=>{ if(j!==i) w*=(x-xj)/(xi-xj); }); s+=w; }); return s; };
+  const xOfY=lag([[2.373,34],[24.64,25.33],[46.59,6]]), zOfX=lag([[4.93,1.053],[17.33,20.27],[30.4,50.13]]);
+  const u1=y=>-2.51-0.612*y, z1=y=>-4.03+0.9345*y;
+  const u2=y=>xOfY(y), z2=y=>zOfX(xOfY(y));
+  const YA=46, YB=5;
   const A=y=>fr(u1(y),z1(y)), B=y=>fr(u2(y),z2(y));
   const A1=y=>pl(u1(y),y), B1=y=>pl(u2(y),y);
-  const yi=i=>41-25*(i-1)/7;
+  const yi=i=>41-24.1*(i-1)/7;
   const N=[1,2,3,4,5,6,7,8];
   /* огибающая семейства фронтальных образующих */
   const env=[]; { const h=1e-3;
@@ -19397,14 +19409,14 @@ const pa=(()=>{
       const p0=P(y-h), p1=P(y+h); const dn=[(p1.n[0]-p0.n[0])/(2*h),(p1.n[1]-p0.n[1])/(2*h)], dc=(p1.c-p0.c)/(2*h); const q=P(y);
       const det=q.n[0]*dn[1]-q.n[1]*dn[0]; if(Math.abs(det)<1e-9) continue;
       const u=(q.c*dn[1]-q.n[1]*dc)/det, z=(q.n[0]*dc-dn[0]*q.c)/det; env.push({y,u,z}); } }
-  const envIn=env.filter(e=>e.u>-30&&e.u<26&&e.z>0&&e.z<40);
+  const envIn=env.filter(e=>e.u>-40&&e.u<45&&e.z>0&&e.z<62);
   /* точка M на образующей 8 */
-  const y8=yi(8), uM=-11.5;
+  const y8=yi(8), uM=-3.6;
   const zM=z1(y8)+(z2(y8)-z1(y8))*(uM-u1(y8))/(u2(y8)-u1(y8));
   /* точка K */
-  const KU=29.5, KZ=17;
+  const KU=38.7, KZ=19.6;
   const zAt=y=>z1(y)+(z2(y)-z1(y))*(KU-u1(y))/(u2(y)-u1(y));
-  const yK=bis(y=>zAt(y)-KZ,16,33);
+  const yK=bis(y=>zAt(y)-KZ,20,40);
   const gen=y=>seg(A(y),B(y),'aux');
   const ext=y=>{ const t=x=>G.along(A(y),B(y),A(y),x); return t; };
   const genLine=(y,k,e0,e1)=>{ const a=A(y), b=B(y); const [p,q]=[G.along(a,b,a,e0),G.along(b,a,b,e1)]; return seg(p,q,k); };
@@ -19413,8 +19425,9 @@ const pa=(()=>{
     poly(dens(y=>B(y),YA,YB,50),'main'), txt([B(YA)[0]+12,B(YA)[1]-8],'d₂″','main',{anchor:'start'}),
     seg(A1(YA),A1(YB),'main'), txt([A1(YA)[0]-8,A1(YA)[1]+6],'d₁′','main',{anchor:'end'}),
     poly(dens(y=>B1(y),YA,YB,50),'main'), txt([B1(YA)[0]+10,B1(YA)[1]+4],'d₂′','main',{anchor:'start'}),
-    seg(pl(-58,9),pl(-44,9),'main','h₀α',[0,-6,'start']),
-    pt(pl(uM,y8),'M′','s'), pt(fr(KU,KZ),'K″','ne') ];
+    seg(pl(-37,9.6),pl(-18.5,9.6),'main','h₀α',[0,-6,'start']),
+    pt(pl(uM,y8),'M′','se'), pt(fr(KU,KZ),'K″','ne'),
+    conn(fr(KU,KZ),fr(KU,KZ-11.5)), conn(pl(uM,y8),fr(uM,8.4)) ];   /* в тетради у заданных проекций — начала линий связи */
   const steps=[
     { t:'Что такое коноид',
       d:'Коноид — линейчатая поверхность: образующие скользят по двум направляющим (прямой d₁ и кривой d₂) и всё время параллельны плоскости параллелизма α. Здесь α ∥ π₂ (задан её горизонтальный след h₀α ∥ x), поэтому все образующие — фронтали: на плане они горизонтальны (∥ x).',
@@ -19436,7 +19449,7 @@ const pa=(()=>{
       why:'Точка принадлежит поверхности, если лежит на её образующей. M′ — на образующей 8, значит M″ — на её фронтальной проекции.',
       add:[ seg(A(y8),B(y8),'res'), conn(pl(uM,y8),fr(uM,zM)), pt(fr(uM,zM),'M″','nw','res') ] },
     { t:'Точка K: K″ задана',
-      d:'K″ лежит правее d₂″, на продолжении образующей: поверхность коноида неограниченна вдоль образующих. Находим образующую, фронтальная проекция которой (продолженная за d₂″) проходит через K″, — её концы K₁, K₂ на d₁ и d₂ должны лежать на одной прямой плана ∥ x (одинаковое y). Здесь это образующая 5: K₁ ≡ 5₁, K₂ ≡ 5₂.',
+      d:'K″ лежит правее d₂″, на продолжении образующей: поверхность коноида неограниченна вдоль образующих. Находим образующую, фронтальная проекция которой (продолженная за d₂″) проходит через K″, — её концы K₁, K₂ на d₁ и d₂ должны лежать на одной прямой плана ∥ x (одинаковое y). ',
       why:'Образующая коноида — фронталь, поэтому K′ лежит на её горизонтальной проекции — прямой ∥ x, проходящей через точки на d₁′ и d₂′.',
       add:[ genLine(yK,'res',0,90), seg(A1(yK),pl(KU,yK),'res'), conn(A1(yK),A(yK)), conn(B1(yK),B(yK)),
             pt(A(yK),'K₁″','w','res'), pt(B(yK),'K₂″','s','res'), pt(B1(yK),'K₂′','sw','res') ] },
@@ -19447,11 +19460,11 @@ const pa=(()=>{
   ];
   /* 3D: коноид — образующие-фронтали от d₁ до d₂ (и продолжение за d₂, где лежит K), плоскость параллелизма α (y = 9) */
   const surf3=()=>{ const k=U/S, W=(u,y,z)=>[-u*k,y*k,z*k], Q3=SURF3, A3=y=>W(u1(y),y,z1(y)), B3=y=>W(u2(y),y,z2(y));
-    const on=(y,u)=>Q3.lerp3(A3(y),B3(y),(u-u1(y))/(u2(y)-u1(y))), far=y=>Math.max(1,(33-u1(y))/(u2(y)-u1(y)));
+    const on=(y,u)=>Q3.lerp3(A3(y),B3(y),(u-u1(y))/(u2(y)-u1(y))), far=y=>Math.max(1,(KU+4-u1(y))/(u2(y)-u1(y)));
     return { meshes:[ {tris:Q3.ruled(A3,B3,YB,YA,48,0,1,12),col:Q3.COL.body,op:.74},
         {tris:Q3.grid((y,t)=>Q3.lerp3(A3(y),B3(y),1+(far(y)-1)*t),yK-4,yK+4,8,0,1,6),col:Q3.COL.body,op:.3,st:5},
-        {tris:Q3.quad(W(-60,9,0),W(-42,9,0),W(-42,9,34),W(-60,9,34)),col:Q3.COL.plane,op:.3} ],
-      lines:[ {p:[A3(YA),A3(YB)],k:'main',proj:true}, {p:Q3.curve(B3,YA,YB,60),k:'main',proj:true}, {p:[W(-60,9,0),W(-42,9,0)],k:'main'},
+        {tris:Q3.quad(W(-37,9.6,0),W(-18.5,9.6,0),W(-18.5,9.6,34),W(-37,9.6,34)),col:Q3.COL.plane,op:.3} ],
+      lines:[ {p:[A3(YA),A3(YB)],k:'main',proj:true}, {p:Q3.curve(B3,YA,YB,60),k:'main',proj:true}, {p:[W(-37,9.6,0),W(-18.5,9.6,0)],k:'main'},
         ...N.map(i=>({p:[A3(yi(i)),B3(yi(i))],k:'aux',st:2})),
         {p:envIn.map(e=>W(e.u,e.y,e.z)),k:'res',st:3},
         {p:[A3(y8),B3(y8)],k:'res',st:4}, {p:[A3(yK),on(yK,KU+4)],k:'res',st:5} ],
@@ -19480,10 +19493,12 @@ const pb=(()=>{
   const zK=19.5, uK=-5.8;
   const sK=(0.6655-Math.sqrt(0.6655*0.6655-4*0.01505*(7.6-zK)))/(2*0.01505), rK=rr(sK), yK=Math.sqrt(rK*rK-uK*uK);
   const sMid=[-9,8];
-  const given=[ axis(), seg(fr(0,-2),fr(0,27),'thin','i″',[6,2,'start']), seg(pl(0,-24),pl(0,24),'thin','i′',[6,0,'start']),
+  /* как в тетради: i″ — сплошная над осью x, i′ — точка с осевыми (штрихпунктир) по вертикали и горизонтали; у K″ и M′ — начала линий связи */
+  const given=[ axis(), seg(fr(0,-z0),fr(0,27),'main','i″',[6,2,'end']), ln(pl(0,-y0),pl(0,24),'axis',null,null,0,0), ln(pl(-19,0),pl(19,0),'axis',null,null,0,0), pt(O,'i′','ne'),
     poly(dens(s=>gF(s),s2,s3,60),'main'), txt([gF(s2)[0]+10,gF(s2)[1]-10],'g″','main',{anchor:'end'}),
     seg(gP(s2),gP(s3),'main'), txt([gP(s2)[0]-8,gP(s2)[1]+2],'g′','main',{anchor:'end'}),
-    pt(pl(M[0],M[1]),'M′','ne'), pt(fr(uK,zK),'K″','ne') ];
+    pt(pl(M[0],M[1]),'M′','e'), pt(fr(uK,zK),'K″','ne'),
+    conn(fr(uK,zK),fr(uK,zK-10)), conn(pl(M[0],M[1]),fr(M[0],zM2+4)) ];
   const lvl=(z,u0,u1_)=>seg(fr(u0,z),fr(u1_,z),'auxd');
   const steps=[
     { t:'Как задана поверхность',
@@ -19550,12 +19565,16 @@ const pc=(()=>{
   /* K */
   const iK=4.8, Kp=gen(iK,(6-iK)/3), zK=pp/2;   /* K″ задана на высоте p/2: у образующей i в доле (6−i)/3 высота как раз 6·p/12 */
   const spiral=dens(i=>{ const q=gen(i,(6-i)/3); return pl(q.u,q.y); },3,6,60);
-  const given=[ axis(), seg(fr(0,-2),fr(0,dz*15+2),'thin','i″',[6,0,'start']),
-    circ(pl(0,0),R*U,'main'), pt(pl(0,0),'B′≡i′','ne','main'), pt(pl(uA(0),yA(0)),'A′','w','main'),
+  /* как в тетради (стр. 22, в): на π₂ — сетка: вертикали через проекции 12 точек деления окружности и горизонтали через p/12 (0…15),
+     ось i — штрихпунктир через обе проекции, размер шага p со стрелками; на π₁ — окружность с 12 точками деления и осевыми; оси x нет */
+  const us=[...new Set(idx.map(i=>Math.round(uA(i)*1000)/1000))];
+  const grid=[ ...us.filter(u=>Math.abs(u)>1e-6).map(u=>seg(fr(u,0),fr(u,dz*15),'thin')), ...Array.from({length:16},(_,i)=>seg(fr(-R,dz*i),fr(R,dz*i),'thin')) ];
+  const given=[ ...grid, ln(pl(0,R+4),fr(0,dz*15+5),'axis','i″',[6,0,'end'],0,0), ln(pl(-R-5,0),pl(R+5,0),'axis',null,null,0,0),
+    seg(fr(R,0),fr(R+12,0),'thin'), seg(fr(R,pp),fr(R+12,pp),'thin'), dim(fr(R+9,0),fr(R+9,pp),'p','thin'),
+    circ(pl(0,0),R*U,'thin'), ...idx.slice(1).map(i=>pt(pl(uA(i),yA(i)),'','n','thin',{hollow:true})), pt(pl(0,0),'B′≡i′','ne','main'), pt(pl(uA(0),yA(0)),'A′','w','main'),
     pt(fr(uA(0),0),'A″','w','main'), pt(fr(0,3*dz),'B″','e','main'), seg(fr(uA(0),0),fr(0,3*dz),'main'),
     seg(pl(uA(0),yA(0)),pl(0,0),'main'),
-    seg(fr(R+6,0),fr(R+6,pp),'thin','p',[4,0,'start']),
-    pt(fr(Mp.u,Mp.z),'','n','main',{hidden:true}) ].slice(0,-1).concat([ pt(pl(Mp.u,Mp.y),'M′','ne','main'), pt(fr(Kp.u,zK),'K″','ne','main') ]);
+    pt(pl(Mp.u,Mp.y),'M′','ne','main'), pt(fr(Kp.u,zK),'K″','ne','main'), conn(pl(Mp.u,Mp.y),pl(Mp.u,Mp.y-5)), conn(fr(Kp.u,zK),fr(Kp.u,zK-3)) ];
   const steps=[
     { t:'Как образуется геликоид',
       d:'Прямая AB (A на цилиндре радиуса R, B на оси i) вращается вокруг i и одновременно поднимается вдоль неё: за поворот на 30° — на p/12. Поверхность «правая»: вращение против часовой стрелки при взгляде сверху с подъёмом вверх; «закрытая»: образующая пересекает ось; «косая»: образующая наклонена к оси. Делим окружность на 12 частей: A₀′…A₁₁′; образующие в плане — радиусы B′A<sub>i</sub>′.',
@@ -19564,7 +19583,7 @@ const pc=(()=>{
     { t:'Делим шаг и строим A<sub>i</sub>″',
       d:'Шаг p на фронтальной проекции делим на 12 равных частей: горизонтали на высотах z = i·p/12. Из A<sub>i</sub>′ поднимаем линию связи до горизонтали номера i — точка A<sub>i</sub>″.',
       why:'A<sub>i</sub> получается из A поворотом на 30°·i и подъёмом на i·p/12; поэтому A<sub>i</sub>″ на своей линии связи и на своей горизонтали.',
-      add:[ ...Array.from({length:16},(_,i)=>seg(fr(-R-3,dz*i),fr(R+3,dz*i),'thin')), ...idx.slice(1).map(i=>conn(pl(uA(i),yA(i)),fr(uA(i),dz*i))),
+      add:[ ...idx.slice(1).map(i=>conn(pl(uA(i),yA(i)),fr(uA(i),dz*i))),
             ...idx.slice(1).filter(i=>i%2===0).map(i=>pt(fr(uA(i),dz*i),'A'+SB(i)+'″',(i<6?'w':'e'),'aux')), ...idx.slice(1).filter(i=>i%2).map(i=>pt(fr(uA(i),dz*i),'','w','aux')) ] },
     { t:'B<sub>i</sub>″ и образующие A<sub>i</sub>B<sub>i</sub>',
       d:'B<sub>i</sub> лежит на оси на p/4 (3 деления) выше A<sub>i</sub>: B<sub>i</sub>″ на оси на высоте (i+3)·p/12. Соединяем A<sub>i</sub>″B<sub>i</sub>″ — фронтальные проекции образующих. В плане B<sub>i</sub>′ ≡ B′, образующая — радиус B′A<sub>i</sub>′.',
@@ -19653,19 +19672,25 @@ const split=(f)=>{ const out={v:[],h:[]}; let cur=null, cv=null;
     if(cv!==v){ cur=[]; (v?out.v:out.h).push(cur); cv=v; if(i>0){ const pp=pl(Q(-Math.PI+2*Math.PI*(i-1)/360)); cur.push(pp);} }
     cur.push(p); } return out; };
 const sp=split();
+/* как в тетради (стр. 23): ось i — штрихпунктир на обеих проекциях; тонкая дуга — половина основания, повёрнутая до ∥ π₂ (центр O″, радиус R);
+   линии связи S″S′ и O″O′ (ниже O′ — осевая) */
+const scrAng=(c,q)=>Math.atan2(-(q[1]-c[1]),q[0]-c[0])*180/Math.PI;
+const baseArc=(()=>{ const c=fr(O), a3=scrAng(c,fr(P3)), a2=scrAng(c,fr(P2)), ae=scrAng(c,fr(add(O,mul(e,R)))); let lo=Math.min(a3,a2), hi=Math.max(a3,a2);
+  if(!(ae>lo&&ae<hi)){ const t=lo; lo=hi; hi=t+360; } return arc(c,R*U,lo,hi,'thin'); })();
 const given=[ axis(),
-  seg(fr(Sp),fr(P3),'main'), seg(fr(Sp),fr(P2),'main'), seg(fr(P3),fr(P2),'main'),
-  seg(fr(Sp),fr(add(Sp,mul(e,L0*1.3))),'dash','i″',[0,0,'end']),
-  pt(fr(Sp),'S″','nw','main'), pt(fr(O),'O″','ne','main'), pt(fr(P3),'3″','ne','main'), pt(fr(P2),'2″','se','main'),
-  seg(fr(N),fr(P3),'main','a″',[-6,0,'end']), pt(fr(N),'N″','se','main'),
-  pt(pl(Sp),'S′','w','main'), seg(pl(Sp),pl(add(Sp,mul(e,L0*1.3))),'dash','i′',[0,-4,'end']) ];
+  seg(fr(Sp),fr(P3),'main'), seg(fr(Sp),fr(P2),'main'), seg(fr(P3),fr(P2),'main'), baseArc,
+  ln(fr(add(Sp,mul(e,-7))),fr(add(Sp,mul(e,L0*1.3))),'axis','i″',[0,0,'end'],0,0),
+  pt(fr(Sp),'S″','nw','main'), pt(fr(O),'O″','ne','main'), pt(fr(P3),'','ne','main'), pt(fr(P2),'','se','main'),
+  seg(fr(N),fr(P3),'main','a″',[-6,0,'end']), pt(fr(N),'','se','main'),
+  conn(fr(Sp),pl(Sp)), conn(fr(O),pl(O)), ln(pl(O),pl(add(O,[0,14,0])),'axis',null,null,0,0),
+  pt(pl(Sp),'S′','w','main'), pt(pl(O),'O′','ne','main'), ln(pl(add(Sp,mul(e,-9))),pl(add(Sp,mul(e,L0*1.3))),'axis','i′',[0,-4,'end'],0,0) ];
 /* сегменты для видимости */
 const vh=(pts,k)=>pts.length>1?[poly(pts,k,false)]:[];
 const steps=[
   { t:'Что нужно построить',
     d:'Дан конус вращения с вершиной S и осью i ∥ π₂ (i′ ∥ x); основание — круг в плоскости, перпендикулярной i. Основание на π₂ — отрезок 3″2″. Линия a лежит на поверхности и задана только фронтальной проекцией — отрезком N″3″. Нужно построить горизонтальную проекцию конуса и линии a.',
     why:'Плоскость основания ⟂ i, а i ∥ π₂, значит основание ⟂ π₂ и проецируется на π₂ в отрезок; на π₁ оно даст эллипс.',
-    add:[] },
+    add:[ pt(fr(P3),'3″','ne','aux'), pt(fr(P2),'2″','se','aux'), pt(fr(N),'N″','se','aux') ] },
   { t:'Вписываем сферу в конус',
     d:'Берём на i″ произвольную точку O₁″ и опускаем из неё перпендикуляры на очерковые образующие S″2″ и S″3″. Их длина — радиус сферы r ≈ '+Math.round(rS)+' мм; сфера касается конуса по окружности, перпендикулярной i. Её проекция — отрезок T₁″T₂″ между основаниями перпендикуляров (⟂ i″).',
     why:'Сфера с центром на оси конуса касается его по окружности параллели: эта окружность лежит и на сфере, и на конусе.',
@@ -19726,6 +19751,28 @@ WB3.add({ n:70, sec:'s7', src:'стр. 23', conf:'approx',
 (function(){
 const {F,H,P,point,seg3,poly3,seg,ln,pt,conn,link13,ang,sq,dim,txt,note,tick,circ,arc,ell,poly,curve,vec,hatch,axis,axis3,v3,G,S,nvOnH,nvOnF,table,mm} = L;
 const RAD=Math.PI/180;
+/* условие «как в тетради»: очерк делится на части — внутри другого тела тонкая (видимость ещё не известна), закрытая — штрих, остальное — основная.
+   splitL — отрезок/ломаная на чертеже, circK — окружность (дуги: тонкая окружность под ними, «ластик» под штрихом) */
+const inCirc2=(c,r)=>q=>Math.hypot(q[0]-c[0],q[1]-c[1])<r-0.5;
+const inPoly2=P=>q=>{ let c=false; for(let i=0,j=P.length-1;i<P.length;j=i++){ const [xi,yi]=P[i],[xj,yj]=P[j]; if(((yi>q[1])!==(yj>q[1]))&&(q[0]<(xj-xi)*(q[1]-yi)/(yj-yi)+xi)) c=!c; } return c; };
+const splitL=(pts,cls)=>{ const out=[], d=[]; for(let i=1;i<pts.length;i++){ const a=pts[i-1], b=pts[i]; for(let j=0;j<40;j++) d.push([a[0]+(b[0]-a[0])*j/40,a[1]+(b[1]-a[1])*j/40]); } d.push(pts[pts.length-1]);
+  let run=[d[0]], k=cls([(d[0][0]+d[1][0])/2,(d[0][1]+d[1][1])/2]);
+  const flush=()=>{ if(run.length<2) return; if(k==='hid') out.push(poly(run,'paper',false)); out.push(poly(run,k,false)); };
+  for(let i=1;i<d.length;i++){ const kk=cls([(d[i-1][0]+d[i][0])/2,(d[i-1][1]+d[i][1])/2]); if(kk!==k){ flush(); run=[d[i-1]]; k=kk; } run.push(d[i]); } flush(); return out; };
+const waveL=(p,q,amp,n)=>{ n=n||Math.max(6,Math.round(Math.hypot(q[0]-p[0],q[1]-p[1])/22)); const d=[q[0]-p[0],q[1]-p[1]], L0=Math.hypot(d[0],d[1]), nn=[-d[1]/L0,d[0]/L0], o=[];
+  for(let i=0;i<=n*8;i++){ const t=i/(n*8), w=Math.sin(t*n*Math.PI*2)*(amp||2.2); o.push([p[0]+d[0]*t+nn[0]*w,p[1]+d[1]*t+nn[1]*w]); } return curve(o,'thin'); };
+/* очерк по точкам в пространстве: внутри другого тела — тонкая, закрыт им (луч к наблюдателю) — штрих, иначе основная */
+const outl3=(pts3,proj,inside,dir,L0)=>{ const pr=proj==='F'?F:H, dirv=dir||(proj==='F'?[0,1,0]:[0,0,1]), Lr=L0||160;
+  const cls=q=>{ if(inside(q)) return 'thin'; for(let t=0.4;t<Lr;t+=0.4) if(inside(v3.add(q,v3.mul(dirv,t)))) return 'hid'; return 'main'; };
+  const d=[]; for(let i=1;i<pts3.length;i++) for(let j=0;j<30;j++) d.push(v3.lerp(pts3[i-1],pts3[i],j/30)); d.push(pts3[pts3.length-1]);
+  const out=[]; let run=[d[0]], k=cls(v3.mid(d[0],d[1]));
+  const flush=()=>{ if(run.length<2) return; if(k==='hid') out.push(poly(run.map(pr),'paper',false)); out.push(poly(run.map(pr),k,false)); };
+  for(let i=1;i<d.length;i++){ const kk=cls(v3.mid(d[i-1],d[i])); if(kk!==k){ flush(); run=[d[i-1]]; k=kk; } run.push(d[i]); } flush(); return out; };
+const circK=(c,r,cls)=>{ const out=[circ(c,r,'thin')]; let a0=0, k=null; const kOf=a=>cls([c[0]+r*Math.cos(a*Math.PI/180),c[1]-r*Math.sin(a*Math.PI/180)]);
+  const runs=[]; for(let a=0;a<=360;a+=1){ const kk=kOf(a+0.5); if(k===null){k=kk;a0=a;} else if(kk!==k||a===360){ runs.push([a0,a,k]); a0=a; k=kk; } }
+  if(runs.length>1&&runs[0][2]===runs[runs.length-1][2]){ const l=runs.pop(); runs[0]=[l[0]-360,runs[0][1],l[2]]; }
+  runs.forEach(([x,y,kk])=>{ if(kk==='thin') return; if(kk==='hid') out.push(arc(c,r,x,y,'paper')); out.push(arc(c,r,x,y,kk)); }); return out; };
+
 /* ---- трассировка пространственной кривой с отсечением по keep и делением на видимые/невидимые части ---- */
 function trace(fn,t0,t1,keep,N){ N=N||160; keep=keep||(()=>true);
   const runs=[]; let cur=[], prev=null;
@@ -19767,119 +19814,168 @@ const inPoly=(pt2,poly2)=>{ let c=false; for(let i=0,j=poly2.length-1;i<poly2.le
 (function(){
 const fp=(n,x,z,la,k)=>pt(F([x,0,z]),n+'″',la,k), hp=(n,p,la,k)=>pt(H(p),n+'′',la,k);
 const fs=(a,b,k)=>seg(F([a[0],0,a[1]]),F([b[0],0,b[1]]),k);
-const visT=()=>true;
+/* видимость лучом к наблюдателю: на π₁ — вверх (+z), на π₂ — вперёд (+y); solid(p) — точка внутри тела (границы — пусто) */
+const rayVis=(solid,dir,L)=>p=>{ for(let t=0.25;t<L;t+=0.25){ if(solid([p[0]+dir[0]*t,p[1]+dir[1]*t,p[2]+dir[2]*t])) return false; } return true; };
+const UP=[0,0,1], FWD=[0,1,0];
+/* словами — как видна линия по тому же лучу */
+const VW={f:['видна','невидима'],m:['виден','невидим'],p:['видны','невидимы'],n:['видно','невидимо']};
+const visTxt=(runs,vis,g)=>{ let a=0,b=0; runs.forEach(r=>{ for(let i=1;i<r.length;i++) vis(v3.mid(r[i-1],r[i]))?a++:b++; }); const w=VW[g||'f']; return b===0?w[0]:a===0?w[1]:w[0]+' частично'; };
+/* данные сняты с рисунка тетради (стр. 24). Конус: вершина S, основание R; две фронтальные лыски y = cy ± d (на π₁ — прямые,
+   основание — «бочка»); вырез — фронтально-проецирующие плоскости S1 (через вершину), 12, 23 и горизонтальная 34 (4 — на очерке).
+   Шар: сверху слева срезан плоскостями 12 (горизонтальная), 26 (наклонная) и 67 (профильная); справа — сквозной паз
+   (две фронтальные плоскости y = c ± ys и профильная x = xs; на π₁ — прямые). */
 /* ================= а) конус ================= */
-const cx=45, cy=45, R=42, h=80, CN={c:[cx,cy],R,h}; const rc=z=>R*(1-z/h);
-const V2=[cx+4.9,58], V2b=[cx+4.9+58*0.525,0], V2c=[cx+rc(58),58];
-const T3=[cx-5.5,47.5], T4=[cx-rc(47.5),47.5], T10=[cx-rc(47.5),15];
-const dA=[V2b[0]-V2[0],V2b[1]-V2[1]], nA=[-dA[1],dA[0]], sRefA=(cx+50-V2[0])*nA[0]+(0-V2[1])*nA[1];
-const remL=p=>p[2]<=58+1e-9 && ((p[0]-V2[0])*nA[0]+(p[2]-V2[1])*nA[1])*sRefA>0;
-const remR=p=>inPoly([p[0],p[2]],[T3,T4,T10]);
-const eA=coneEdge(CN,V2,V2b,p=>!remR(p)), eH=coneEdge(CN,V2,V2c,p=>!remR(p));
-const e34=coneEdge(CN,T3,T4), e310=coneEdge(CN,T3,T10), e410=coneEdge(CN,T4,T10);
-const base=trace(t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,p=>!remL(p),360);
-const chord=(V,k)=>{ const r=rc(V[1]), dx=V[0]-cx; if(Math.abs(dx)>=r-1e-6) return null; const y=Math.sqrt(r*r-dx*dx); return seg(H([V[0],cy-y,V[1]]),H([V[0],cy+y,V[1]]),k); };
-const zpt=(x,z,sg)=>{ const dx=x-cx, r=rc(z); return [x,cy+sg*Math.sqrt(Math.max(0,r*r-dx*dx)),z]; };
-const xOnA=z=>V2[0]+(V2[1]-z)*(V2b[0]-V2[0])/V2[1];
-const xOn310=z=>T3[0]+(T3[1]-z)*(T10[0]-T3[0])/(T3[1]-T10[1]);
-const zsA=[58,44,30,16,0], zsG=[47.5,40,32,24,15];
-const cutF=[fs(V2c,V2,'main'),fs(V2,V2b,'main'),fs(T3,T4,'main'),fs(T3,T10,'main'),fs(T4,T10,'main')];
-const bodyF=[fs([cx,h],V2c,'main'),fs(V2b,[cx-R,0],'main'),fs([cx,h],[cx-R,0],'main')];
-const nums=(arr,start)=>arr.map((z,i)=>String(start+i));
-const nmA=['2','5','6','7','8'], nmG=['3','9','11','12','10'];   // имена точек
+const cx=45, cy=45, R=42, h=80, d=32, CN={c:[cx,cy],R,h}; const rc=z=>R*(1-z/h);
+const Sx=[cx,h], P1=[56.5,36], P2=[22.6,15], P3=[37.5,46], P4=[cx-rc(46),46];
+const notch=[Sx,P1,P2,P3,P4];
+const EPS=0.05;
+const solidC=p=>p[2]>EPS&&p[2]<h-EPS&&Math.hypot(p[0]-cx,p[1]-cy)<rc(p[2])-EPS&&Math.abs(p[1]-cy)<d-EPS&&!inPoly([p[0],p[2]],notch);
+const visHC=rayVis(solidC,UP,h+2), visFC=rayVis(solidC,FWD,2*R+2);
+const xf=Math.sqrt(R*R-d*d), zV=h*(1-d/R);                         // лыска: концы на основании и вершина гиперболы
+const hypX=z=>Math.sqrt(Math.max(0,rc(z)**2-d*d));
+const hypF=sg=>{ const o=[]; for(let i=0;i<=60;i++){ const z=zV*i/60; o.push(F([cx+sg*hypX(z),cy+d,z])); } return o; };
+const hyp=[...hypF(1),...hypF(-1).reverse()];
+/* точка конуса на высоте z над x (sg = +1 — передняя, −1 — задняя) */
+const cpt=(x,z,sg)=>{ const dx=x-cx, r=rc(z); return [x,cy+sg*Math.sqrt(Math.max(0,r*r-dx*dx)),z]; };
+const onSeg=(a,b,z)=>a[0]+(b[0]-a[0])*(z-a[1])/(b[1]-a[1]);       // x на следе a–b при высоте z
+const keepD=p=>Math.abs(p[1]-cy)<=d+1e-6;
+const e12=coneEdge(CN,P1,P2,keepD), e23=coneEdge(CN,P2,P3,keepD);
+const e34=trace(t=>[cx+rc(46)*Math.cos(t),cy+rc(46)*Math.sin(t),46],0,2*Math.PI,p=>p[0]<=P3[0]+1e-6,360);
+const genS1=[[cpt(P1[0],P1[1],1),[cx,cy,h]],[cpt(P1[0],P1[1],-1),[cx,cy,h]]];       // плоскость S1 — по двум образующим
+const baseRuns=trace(t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,keepD,360);
+const flatsH=[-1,1].map(sg=>seg(H([cx+xf,cy+sg*d,0]),H([cx-xf,cy+sg*d,0]),'main'));
+const zs12=[20,25,30], zs23=[22,30,38];
+const nm12=['8','9','10'], nm23=['11','12','13'];
+const chordR=V=>{ const A=cpt(V[0],V[1],1), B=cpt(V[0],V[1],-1), o=[]; for(let i=0;i<=40;i++) o.push(v3.lerp(B,A,i/40)); return [o]; };
+const chord=V=>paint(chordR(V),'H',visHC,'res','resd');
 const pa={ l:'а)', q:'Достроить проекции конуса, усечённого проецирующими плоскостями.',
-  given:[ axis(), ...bodyF, ...cutF, circ(H([cx,cy,0]),R*S,'thin'), pt(H([cx,cy,0]),'S′','ne'), pt(F([cx,0,h]),'S″','n'),
-          fp('2',V2[0],V2[1],'nw'), fp('3',T3[0],T3[1],'sw'), fp('4',T4[0],T4[1],'ne'), fp('10',T10[0],T10[1],'se') ],
+  given:[ axis(), fs([cx+R,0],[cx-R,0],'main'), fs([cx+R,0],Sx,'main'), fs([cx-R,0],P4,'main'), fs(P4,Sx,'thin'),
+          fs(Sx,P1,'main'), fs(P1,P2,'main'), fs(P2,P3,'main'), fs(P3,P4,'main'),
+          arc(H([cx,cy,0]),R*S,-Math.asin(d/R)*180/Math.PI,Math.asin(d/R)*180/Math.PI,'main'), arc(H([cx,cy,0]),R*S,180-Math.asin(d/R)*180/Math.PI,180+Math.asin(d/R)*180/Math.PI,'main'), ...flatsH,
+          /* как в тетради: без подписей, осевые — штрихпунктир (вертикальная — через обе проекции), центр основания и вершина — точки */
+          ln(F([cx,0,h+4]),H([cx,cy+R+5,0]),'axis',null,null,0,0), ln(H([cx+R+5,cy,0]),H([cx-R-5,cy,0]),'axis',null,null,0,0),
+          pt(H([cx,cy,0]),'','ne','thin',{hollow:true}), pt(F([cx,0,h]),'','n','thin',{hollow:true}) ],
   steps:[
     { t:'Какие плоскости режут конус',
-      d:'Все секущие плоскости перпендикулярны π₂ — на фронтальной проекции это прямые. Слева: плоскость α ∥ левой образующей (линия от 2″ вниз до основания) и горизонтальная плоскость z = 58 (отрезок от 2″ до контура). Справа: сквозной паз 3″4″10″ из трёх плоскостей — горизонтальной (3″4″), профильной (4″10″) и наклонной (3″10″).',
-      why:'Проецирующая плоскость на «своей» плоскости проекций вырождается в прямую, поэтому одна проекция линии сечения известна сразу (вопрос 9). Остаётся найти горизонтальные проекции.',
-      add:cutF.map(s=>({...s,k:'grn'})) },
-    { t:'Горизонтальные плоскости: окружности',
-      d:'Плоскости z = 58 и z = 47,5 перпендикулярны оси конуса и режут его по окружностям радиусов r = R·(1 − z/h). Радиус берём на π₂ от оси до контура и строим окружность на π₁. Дуга z = 58 ограничена точкой 2′, дуга z = 47,5 — точками 3′ и 4′.',
+      d:'Обозначим вершину S и точки излома выреза 1, 2, 3, 4. На π₁ видны две фронтальные плоскости (лыски) — прямые, параллельные оси x: они перпендикулярны π₁ и срезают конус спереди и сзади. На π₂ — вырез S″1″2″3″4″ из четырёх плоскостей, перпендикулярных π₂: S1 проходит через вершину, 12 и 23 — наклонные, 34 — горизонтальная (точка 4 — на очерковой образующей). Участок образующей от 4″ до S″ срезан — поэтому он тонкий.',
+      why:'Проецирующая плоскость на «своей» плоскости проекций вырождается в прямую, поэтому одна проекция каждой линии среза известна сразу (вопрос 9): у лысок — горизонтальная, у выреза — фронтальная.',
+      add:[ fs(Sx,P1,'grn'), fs(P1,P2,'grn'), fs(P2,P3,'grn'), fs(P3,P4,'grn'), ...flatsH.map(s=>({...s,k:'grn'})),
+            pt(H([cx,cy,0]),'S′','ne','aux'), pt(F([cx,0,h]),'S″','n','aux'), fp('1',P1[0],P1[1],'w','aux'), fp('2',P2[0],P2[1],'e','aux'), fp('3',P3[0],P3[1],'nw','aux'), fp('4',P4[0],P4[1],'e','aux') ] },
+    { t:'Лыски: гипербола на π₂',
+      d:'Фронтальная плоскость параллельна оси конуса и режет его по гиперболе; на π₂ она видна без искажения, передняя и задняя лыски на π₂ совпадают. Опорные точки: 5 и 6 — концы лыски на основании (5″, 6″ на оси x), 7 — вершина гиперболы: на π₁ это точка касания лыски с параллелью радиуса d, её высота z = h·(1 − d/R). Промежуточные: параллель на высоте z = 10 пересекает лыску в точках 14′ и 15′, линиями связи — на горизонтальный след этой параллели на π₂.',
+      why:'Плоскость, параллельная оси конуса (параллельная двум образующим), даёт гиперболу. Точки находим способом вспомогательных горизонтальных плоскостей: параллель ∩ лыска (вопрос 14).',
+      add:[ circ(H([cx,cy,0]),d*S,'aux'), circ(H([cx,cy,0]),rc(10)*S,'aux'), seg(F([cx+rc(10),0,10]),F([cx-rc(10),0,10]),'aux'),
+            hp('5',[cx+xf,cy+d,0],'sw','aux'), hp('6',[cx-xf,cy+d,0],'se','aux'), hp('7',[cx,cy+d,zV],'s','aux'),
+            hp('14',[cx+hypX(10),cy+d,10],'s','aux'), hp('15',[cx-hypX(10),cy+d,10],'s','aux'),
+            conn(H([cx+xf,cy+d,0]),F([cx+xf,cy+d,0])), conn(H([cx-xf,cy+d,0]),F([cx-xf,cy+d,0])), conn(H([cx,cy+d,zV]),F([cx,cy+d,zV])),
+            conn(H([cx+hypX(10),cy+d,10]),F([cx+hypX(10),cy+d,10])), conn(H([cx-hypX(10),cy+d,10]),F([cx-hypX(10),cy+d,10])),
+            fp('5',cx+xf,0,'s','aux'), fp('6',cx-xf,0,'s','aux'), fp('7',cx,zV,'n','aux'), fp('14',cx+hypX(10),10,'w','aux'), fp('15',cx-hypX(10),10,'e','aux'),
+            curve(hyp,'res') ] },
+    { t:'Плоскость S1 — по образующим',
+      d:'Плоскость S1 проходит через вершину, поэтому режет конус по двум образующим. Их нижние концы — точки 1 и 1*: параллель на высоте точки 1″ (радиус — от оси до очерка на π₂) и линия связи из 1″ дают на π₁ точки 1′ (спереди) и 1*′ (сзади). Отрезки S′1′ и S′1*′ — горизонтальные проекции этих образующих.',
+      why:'Плоскость, проходящая через вершину конуса, пересекает его по прямым-образующим — лекальная кривая не нужна.',
+      add:[ circ(H([cx,cy,0]),rc(P1[1])*S,'aux'), seg(F([P1[0],0,P1[1]]),F([cx+rc(P1[1]),0,P1[1]]),'aux'), conn(F([P1[0],0,P1[1]]),H(cpt(P1[0],P1[1],1))),
+            hp('1',cpt(P1[0],P1[1],1),'sw','aux'), hp('1*',cpt(P1[0],P1[1],-1),'nw','aux'), seg(H([cx,cy,h]),H(cpt(P1[0],P1[1],1)),'aux'), seg(H([cx,cy,h]),H(cpt(P1[0],P1[1],-1)),'aux') ] },
+    { t:'Плоскость 34 — дуга окружности',
+      d:'Горизонтальная плоскость 34 перпендикулярна оси и режет конус по параллели радиуса r = R·(1 − z/h) (на π₂ — от оси до точки 4″). На π₁ строим эту окружность и берём её дугу от 3′ до 3*′ через 4′; точка 4′ лежит на горизонтальной оси симметрии, так как 4 — на фронтальном очерке.',
       why:'Плоскость, перпендикулярная оси поверхности вращения, пересекает её по окружности — параллели.',
-      add:[ ...[58,47.5].map(z=>circ(H([cx,cy,0]),rc(z)*S,'aux')), ...onlyH(eH,visT,'aux'), ...onlyH(e34,visT,'auxd','auxd') ] },
-    { t:'Плоскость α: точки параболы',
-      d:'α ∥ образующей — на конусе даёт параболу. Берём горизонтальные плоскости z = 58, 44, 30, 16, 0. Каждая режет конус по окружности r(z), а α — на π₂ в точке X″. Из X″ линия связи даёт на окружности две точки (передняя и задняя): y = ±√(r² − Δx²).',
-      why:'Способ вспомогательных секущих плоскостей: искомая точка лежит и на плоскости α, и на окружности-параллели (вопрос 14).',
-      add:zsA.flatMap((z,i)=>{ const x=xOnA(z); return [ circ(H([cx,cy,0]),rc(z)*S,'aux'), seg(F([x,0,z]),F([cx+rc(z),0,z]),'aux'), conn(F([x,0,z]),H(zpt(x,z,1))),
-            i?pt(F([x,0,z]),nmA[i]+'″','w','aux'):null, hp(nmA[i],zpt(x,z,1),'se','aux'), hp(nmA[i]+'*',zpt(x,z,-1),'ne','aux') ].filter(Boolean); }) },
-    { t:'Парабола на π₁',
-      d:'Соединяем найденные точки плавной кривой: парабола идёт от дуги z = 58 к основанию и выходит на окружность основания в точках с z = 0.',
-      why:'Линия сечения — плавная кривая; на основании она обрывается, дальше конус срезан.',
-      add:onlyH(eA,visT,'res','resd') },
-    { t:'Паз: две гиперболы',
-      d:'Для наклонной плоскости 3″10″ берём горизонтальные плоскости z = 47,5; 40; 32; 24; 15: каждая даёт окружность r(z), а точка X″ на следе плоскости (3″, 9″, 11″, 12″, 10″) — по линии связи две точки. Профильная плоскость 4″10″ (x = const) перпендикулярна π₁, поэтому её сечение проецируется на π₁ в отрезок прямой x = const (он совпадает с ребром 10). Обе кривые паза — гиперболы: профильная плоскость параллельна оси, а наклонная 3″10″ наклонена к оси на меньший угол (≈ 20°), чем образующие (≈ 28°).',
-      why:'Вид конического сечения зависит от угла между секущей плоскостью и осью: если он меньше угла между образующей и осью — гипербола, равен — парабола, больше — эллипс.',
-      add:[ ...zsG.flatMap((z,i)=>{ const x=xOn310(z); return [ circ(H([cx,cy,0]),rc(z)*S,'aux'), seg(F([x,0,z]),F([cx-rc(z),0,z]),'aux'), conn(F([x,0,z]),H(zpt(x,z,1))),
-              (i>0&&i<zsG.length-1)?pt(F([x,0,z]),nmG[i]+'″','e','aux'):null, hp(nmG[i],zpt(x,z,1),'se','aux') ].filter(Boolean); }), ...onlyH(e310,visT,'aux'), ...onlyH(e410,visT,'aux') ] },
-    { t:'Рёбра паза',
-      d:'Плоскости паза пересекаются по прямым, перпендикулярным π₂: ребро 3 (3″4″ ∩ 3″10″) и ребро 10 (3″10″ ∩ 4″10″). На π₁ это отрезки между передней и задней точками кривой. Ребро 3 лежит под «потолком» паза — невидимо (штрих), ребро 10 видно сверху.',
-      why:'Линия пересечения двух фронтально-проецирующих плоскостей проецируется на π₂ в точку, а на π₁ — в отрезок, перпендикулярный оси x.',
-      add:[ chord(T3,'resd'), chord(T10,'res'), chord(V2,'resd') ].filter(Boolean) },
-    { t:'Итог: обводка',
-      d:'Обводим видимый контур: оставшуюся часть основания, параболу, гиперболическую дугу паза и отрезок профильной плоскости (видимы сверху); дуги «потолков» (z = 58 и z = 47,5) — штрихом.',
-      why:'Удалённая часть тела контура не даёт — обводим только оставшееся.',
-      add:[ ...onlyH(base,visT,'main'), ...onlyH(eA,visT,'res'), ...onlyH(eH,visT,'resd'), ...onlyH(e34,visT,'resd'), ...onlyH(e310,visT,'res'), ...onlyH(e410,visT,'res') ] }
+      add:[ circ(H([cx,cy,0]),rc(46)*S,'aux'), conn(F([P3[0],0,P3[1]]),H(cpt(P3[0],P3[1],1))), conn(F([P4[0],0,P4[1]]),H([P4[0],cy,P4[1]])),
+            hp('3',cpt(P3[0],P3[1],1),'sw','aux'), hp('3*',cpt(P3[0],P3[1],-1),'nw','aux'), hp('4',[P4[0],cy,P4[1]],'e','aux'), ...onlyH(e34,()=>true,'aux') ] },
+    { t:'Плоскость 12 — точки кривой',
+      d:'Наклонная плоскость 12 даёт кривую второго порядка. Берём горизонтальные плоскости z = '+zs12.join('; ')+' между 2″ и 1″: каждая режет конус по параллели r(z), а след 1″2″ — в точке X″ (8″, 9″, 10″). Линия связи из X″ даёт на параллели две точки — переднюю и заднюю. Точка 2 — тем же способом на параллели высоты 2″.',
+      why:'Способ вспомогательных секущих плоскостей: точка лежит и на плоскости 12, и на параллели конуса (вопрос 14).',
+      add:[ circ(H([cx,cy,0]),rc(P2[1])*S,'aux'), conn(F([P2[0],0,P2[1]]),H(cpt(P2[0],P2[1],1))), hp('2',cpt(P2[0],P2[1],1),'sw','aux'), hp('2*',cpt(P2[0],P2[1],-1),'nw','aux'),
+            ...zs12.flatMap((z,i)=>{ const x=onSeg(P1,P2,z); return [ circ(H([cx,cy,0]),rc(z)*S,'aux'), conn(F([x,0,z]),H(cpt(x,z,1))), fp(nm12[i],x,z,'n','aux'), hp(nm12[i],cpt(x,z,1),'s','aux') ]; }),
+            ...onlyH(e12,()=>true,'aux') ] },
+    { t:'Плоскость 23 — точки кривой',
+      d:'Так же для плоскости 23: параллели на высотах z = '+zs23.join('; ')+' и точки 11″, 12″, 13″ на следе 2″3″; линиями связи — 11′, 12′, 13′ и симметричные им задние точки. Кривая идёт от 2′ к 3′ (спереди) и от 2*′ к 3*′ (сзади).',
+      why:'Каждая точка линии среза — пересечение параллели конуса со следом секущей плоскости.',
+      add:[ ...zs23.flatMap((z,i)=>{ const x=onSeg(P2,P3,z); return [ circ(H([cx,cy,0]),rc(z)*S,'aux'), conn(F([x,0,z]),H(cpt(x,z,1))), fp(nm23[i],x,z,'e','aux'), hp(nm23[i],cpt(x,z,1),'s','aux') ]; }),
+            ...onlyH(e23,()=>true,'aux') ] },
+    { t:'Рёбра выреза',
+      d:'Соседние плоскости выреза пересекаются по прямым, перпендикулярным π₂: на π₂ это точки 1″, 2″, 3″, на π₁ — отрезки 1′1*′, 2′2*′, 3′3*′, перпендикулярные оси x.',
+      why:'Линия пересечения двух фронтально-проецирующих плоскостей сама перпендикулярна π₂ (вопрос 12).',
+      add:[ seg(H(cpt(P1[0],P1[1],1)),H(cpt(P1[0],P1[1],-1)),'aux'), seg(H(cpt(P2[0],P2[1],1)),H(cpt(P2[0],P2[1],-1)),'aux'), seg(H(cpt(P3[0],P3[1],1)),H(cpt(P3[0],P3[1],-1)),'aux') ] },
+    { t:'Видимость и обводка',
+      d:'На π₁ видно то, над чем нет материала (проверяем лучом вверх от каждой точки линии). Образующие S1 и S1* — '+visTxt(genS1,visHC,'p')+', кривая 1–2 — '+visTxt(e12,visHC)+', кривая 2–3 — '+visTxt(e23,visHC)+', дуга 3–4–3* — '+visTxt(e34,visHC)+'. Рёбра: 1′1*′ — '+visTxt(chordR(P1),visHC,'n')+' (над ним часть конуса левее следа S″1″), 2′2*′ — '+visTxt(chordR(P2),visHC,'n')+' (над ним выступ 2–3–4), 3′3*′ — '+visTxt(chordR(P3),visHC,'n')+'. Сами линии среза лежат на поверхности конуса, над ними тела нет — поэтому они видны, даже когда грань выреза обращена вниз (грань 23). На π₂ гипербола лысок видна.',
+      why:'Видимость на π₁ проверяем лучом вверх от каждой точки: встретил тело — точка закрыта (вопрос 16).',
+      add:[ ...paint(e12,'H',visHC,'res','resd'), ...paint(e23,'H',visHC,'res','resd'), ...paint(e34,'H',visHC,'res','resd'), ...paint(genS1,'H',visHC,'res','resd'),
+            ...chord(P1), ...chord(P2), ...chord(P3), curve(hyp,'res') ] }
   ],
-  ans:'Горизонтальная проекция усечённого конуса: парабола (α ∥ образующей), дуга окружности z = 58 (невидима), в пазу — дуга гиперболы от плоскости 3″10″, дуга окружности z = 47,5 (невидима) и отрезок x = const от профильной плоскости 4″10″ (совпадает с ребром 10); ребро 3 — отрезок (невидим).' };
+  ans:'π₂: лыски дают гиперболу 5–7–6 (передняя и задняя совпадают). π₁: вырез — образующие S′1′, S′1*′ (плоскость S1 через вершину), кривая 1–2 плоскости 12, кривая 2–3 плоскости 23, дуга окружности 3–4–3* (горизонтальная плоскость 34); рёбра 1′1*′ и 2′2*′ невидимы, 3′3*′ видно. Основание с лысками не меняется.' };
 
 /* ================= б) шар ================= */
 const c0=[45,45,40], RS=32, SP={c:c0,R:RS};
-const x2=c0[0]+20, zf=c0[2]-13, x6=c0[0]-10, z6=zf+(x2-x6);
-const g1=[c0[0]+Math.sqrt(RS*RS-169),zf], g2=[x2,zf], g6=[x6,z6], g7=[x6,c0[2]+Math.sqrt(RS*RS-100)];
-const remS=p=>p[0]>x6+1e-9 && p[2]>zf+Math.max(0,x2-p[0])+1e-9;
+const zf=c0[2]-13, x2=c0[0]+18.2, x6=c0[0]-9.6, z6=c0[2]+23.7;              // срез сверху слева
+const xs=c0[0]-16.6, ys=15;                                                   // паз справа: x < xs, |y − c| < ys
+const g1=[c0[0]+Math.sqrt(RS*RS-169),zf], g2=[x2,zf], g6=[x6,z6], g7=[x6,c0[2]+Math.sqrt(RS*RS-(x6-c0[0])**2)];
+const zLine=x=>x>=x2?zf:zf+(x2-x)*(z6-zf)/(x2-x6);
+const remS=p=>p[0]>x6-EPS && p[2]>zLine(p[0])-EPS;
+const slot=p=>p[0]<xs+EPS && Math.abs(p[1]-c0[1])<ys+EPS;
+const solidS=p=>v3.dist(p,c0)<RS-EPS && !remS(p) && !slot(p);
+const visHS=rayVis(solidS,UP,2*RS+2), visFS=rayVis(solidS,FWD,2*RS+2);
 const eS12=sphEdge(SP,g1,g2), eS26=sphEdge(SP,g2,g6), eS67=sphEdge(SP,g6,g7);
-const visS=up=>p=>up||p[2]>=c0[2]-1e-9;
-const chS=(V,k)=>{ const dx=V[0]-c0[0], dz=V[1]-c0[2], q=RS*RS-dx*dx-dz*dz; if(q<=0) return null; const y=Math.sqrt(q); return seg(H([V[0],c0[1]-y,V[1]]),H([V[0],c0[1]+y,V[1]]),k); };
-const eqS=trace(t=>[c0[0]+RS*Math.cos(t),c0[1]+RS*Math.sin(t),c0[2]],0,2*Math.PI,p=>!remS(p),360);
-const mer=trace(t=>[c0[0]+RS*Math.cos(t),c0[1],c0[2]+RS*Math.sin(t)],0,2*Math.PI,p=>!remS(p),360);
-const bodyFS=[ ...paint(mer,'F',()=>true,'main','main'), fs(g1,g2,'main'), fs(g2,g6,'main'), fs(g6,g7,'main') ];
-const sph=(rr,z)=>circ(H([c0[0],c0[1],0]),rr*S,'aux');
+const chS=V=>{ const dx=V[0]-c0[0], dz=V[1]-c0[2], q=RS*RS-dx*dx-dz*dz; if(q<=0) return []; const y=Math.sqrt(q); return paint([[[V[0],c0[1]-y,V[1]],[V[0],c0[1]+y,V[1]]]],'H',visHS,'res','resd'); };
+const eqS=trace(t=>[c0[0]+RS*Math.cos(t),c0[1]+RS*Math.sin(t),c0[2]],0,2*Math.PI,p=>!remS(p)&&!slot(p),720);
+const merAll=t=>[c0[0]+RS*Math.cos(t),c0[1],c0[2]+RS*Math.sin(t)];
+const merKeep=trace(merAll,0,2*Math.PI,p=>!remS(p)&&!slot(p),720), merGiven=trace(merAll,0,2*Math.PI,p=>!remS(p),720), merSlot=trace(merAll,0,2*Math.PI,p=>slot(p),360);
 const rz=z=>Math.sqrt(Math.max(0,RS*RS-(z-c0[2])**2));
 const ptS=(x,z,sg)=>{ const dx=x-c0[0], r=rz(z); return [x,c0[1]+sg*Math.sqrt(Math.max(0,r*r-dx*dx)),z]; };
-const xAtSl=z=>x2-(z-zf);
-const zsS=[zf+2,zf+8,zf+14,z6];
+const xAtSl=z=>x2-(z-zf)*(x2-x6)/(z6-zf);
+const zsS=[zf+5,zf+15,zf+26,z6];          // последняя — сама точка 6 (конец наклонного среза)
+/* паз: фронтальные плоскости y = c ± ys режут шар по окружностям радиуса rf (на π₂ — без искажения), профильная x = xs — по окружности радиуса rp */
+const rf=Math.sqrt(RS*RS-ys*ys), dxs=c0[0]-xs, rp=Math.sqrt(RS*RS-dxs*dxs), zc=Math.sqrt(rf*rf-dxs*dxs);
+const arcF=sg=>trace(t=>[c0[0]-rf*Math.cos(t),c0[1]+sg*ys,c0[2]+rf*Math.sin(t)],-Math.PI/2,Math.PI/2,p=>p[0]<=xs+1e-6,360);
+const profF=trace(t=>[xs,c0[1]+rp*Math.cos(t),c0[2]+rp*Math.sin(t)],0,2*Math.PI,p=>Math.abs(p[1]-c0[1])<=ys+1e-6,720);
+const slotEdge=[[0,1,2,3,4,5,6,7,8,9,10].map(i=>[xs,c0[1]+ys,c0[2]-zc+2*zc*i/10])];   // ребро: стенка x = xs ∩ передняя фронтальная плоскость (заднее на π₂ совпадает)
+const slotH=[ seg(H([xs,c0[1]-ys,c0[2]]),H([xs,c0[1]+ys,c0[2]]),'main'), seg(H([xs,c0[1]-ys,c0[2]]),H([c0[0]-rf,c0[1]-ys,c0[2]]),'main'), seg(H([xs,c0[1]+ys,c0[2]]),H([c0[0]-rf,c0[1]+ys,c0[2]]),'main') ];
 const pb={ l:'б)', q:'Достроить проекции шара, усечённого проецирующими плоскостями.',
-  given:[ axis(), ...bodyFS, circ(H([c0[0],c0[1],0]),RS*S,'thin'), pt(H(c0),'O′','ne'), pt(F([c0[0],0,c0[2]]),'O″','se'),
-          fp('1',g1[0],g1[1],'w'), fp('2',g2[0],g2[1],'s'), fp('6',g6[0],g6[1],'e'), fp('7',g7[0],g7[1],'ne') ],
+  given:[ axis(), circ(F([c0[0],0,c0[2]]),RS*S,'thin'), ...paint(merGiven,'F',()=>true,'main','main'), fs(g1,g2,'main'), fs(g2,g6,'main'), fs(g6,g7,'main'),
+          circ(H([c0[0],c0[1],0]),RS*S,'thin'), ...slotH, pt(H(c0),'','ne','thin',{hollow:true}), pt(F([c0[0],0,c0[2]]),'','se','thin',{hollow:true}),
+          ln(F([c0[0],0,c0[2]+RS+5]),H([c0[0],c0[1]+RS+5,0]),'axis',null,null,0,0), ln(F([c0[0]+RS+5,0,c0[2]]),F([c0[0]-RS-5,0,c0[2]]),'axis',null,null,0,0), ln(H([c0[0]+RS+5,c0[1],0]),H([c0[0]-RS-5,c0[1],0]),'axis',null,null,0,0) ],
   steps:[
     { t:'Плоскости среза',
-      d:'Шар срезан тремя фронтально-проецирующими плоскостями: горизонтальной (отрезок 1″2″), наклонной под 45° (2″6″) и профильной (6″7″). Удалена верхняя левая часть.',
-      why:'Каждая из плоскостей — прямая на π₂, поэтому фронтальная проекция линии сечения известна; шар любая плоскость режет по окружности (вопрос 9).',
-      add:[ fs(g1,g2,'grn'), fs(g2,g6,'grn'), fs(g6,g7,'grn') ] },
+      d:'Обозначим центр O и точки излома среза 1, 2, 6, 7. Сверху слева шар срезан тремя плоскостями, перпендикулярными π₂ (на π₂ — ломаная 1″2″6″7″): горизонтальной 12, наклонной 26 и профильной 67. Справа — сквозной паз из трёх плоскостей, перпендикулярных π₁ (на π₁ — прямые): двух фронтальных и профильной. Тонкие дуги очерка на π₂ — срезанные части.',
+      why:'Каждая плоскость — проецирующая: одна проекция линии среза известна сразу (вопрос 9); шар любая плоскость режет по окружности.',
+      add:[ fs(g1,g2,'grn'), fs(g2,g6,'grn'), fs(g6,g7,'grn'), ...slotH.map(s=>({...s,k:'grn'})),
+            pt(H(c0),'O′','ne','aux'), pt(F([c0[0],0,c0[2]]),'O″','se','aux'), fp('1',g1[0],g1[1],'w','aux'), fp('2',g2[0],g2[1],'s','aux'), fp('6',g6[0],g6[1],'e','aux'), fp('7',g7[0],g7[1],'ne','aux') ] },
     { t:'Горизонтальная плоскость: дуга 1–2',
       d:'Плоскость z = const режет шар по окружности радиуса r = √(R² − Δz²) с центром на оси шара. Строим её на π₁ от O′; 1′ и 2′ — по линиям связи из 1″ и 2″; берём дугу между 1′ и 2′ (спереди и сзади).',
       why:'Сечение шара плоскостью — окружность; горизонтальная плоскость даёт окружность, равную своей проекции на π₁.',
-      add:[ circ(H([c0[0],c0[1],0]),rz(zf)*S,'aux'), ...onlyH(eS12,visS(true),'res'), ...[g1,g2].flatMap((g,i)=>[conn(F([g[0],0,g[1]]),H(ptS(g[0],g[1],1))), hp(String(i===0?1:2),ptS(g[0],g[1],1),'se','aux'), hp(String(i===0?1:2)+'*',ptS(g[0],g[1],-1),'ne','aux')]) ] },
+      add:[ circ(H([c0[0],c0[1],0]),rz(zf)*S,'aux'), ...onlyH(eS12,()=>true,'aux'), ...[g1,g2].flatMap((g,i)=>[conn(F([g[0],0,g[1]]),H(ptS(g[0],g[1],1))), hp(String(i===0?1:2),ptS(g[0],g[1],1),'se','aux'), hp(String(i===0?1:2)+'*',ptS(g[0],g[1],-1),'ne','aux')]) ] },
     { t:'Наклонная плоскость: точки эллипса',
-      d:'Сечение наклонной плоскостью 2″6″ — окружность, но на π₁ она проецируется в эллипс. Берём несколько произвольных горизонтальных плоскостей z между 2″ и 6″: на каждой параллели r(z) находим точки с x, принадлежащим следу 2″6″ (линия связи вниз), y = ±√(r² − Δx²).',
+      d:'Сечение наклонной плоскостью 2″6″ — окружность, на π₁ она проецируется в эллипс. Берём горизонтальные плоскости z между 2″ и 6″: на каждой параллели r(z) находим точки с x, принадлежащим следу 2″6″ (линия связи вниз), y = ±√(r² − Δx²).',
       why:'Способ вспомогательных горизонтальных плоскостей: искомая точка лежит и на параллели шара, и на следе секущей плоскости (вопрос 14).',
       add:zsS.flatMap((z,i)=>{ const x=xAtSl(z); return [ circ(H([c0[0],c0[1],0]),rz(z)*S,'aux'), seg(F([x,0,z]),F([c0[0]+rz(z),0,z]),'aux'), conn(F([x,0,z]),H(ptS(x,z,1))), hp(String(i+3),ptS(x,z,1),'se','aux'), hp(String(i+3)+'*',ptS(x,z,-1),'ne','aux') ]; }) },
-    { t:'Эллиптическая дуга 2–6',
-      d:'Соединяем точки плавной кривой (эллипс — проекция окружности сечения). Ниже экватора шара дуга видна сверху, потому что лежит на грани среза, обращённой вверх.',
-      why:'Видимость на π₁ определяется тем, обращена ли поверхность вверх: грань среза 2″6″ смотрит вверх.',
-      add:onlyH(eS26,visS(true),'res') },
-    { t:'Профильная плоскость: дуга 6–7',
-      d:'Плоскость 6″7″ (x = const) режет шар по окружности, лежащей в профильной плоскости; на π₁ она проецируется в отрезок прямой x = const. Точки от 6′ до 7′ — из горизонталей z = z₆…z₇.',
+    { t:'Эллиптическая дуга 2–6 и отрезок 6–7',
+      d:'Соединяем точки плавной кривой (эллипс — проекция окружности сечения), от 2′ до 6′ спереди и сзади. Профильная плоскость 6″7″ (x = const) режет шар по окружности в профильной плоскости — на π₁ это отрезок прямой x = const между 6′ и 6*′.',
       why:'Окружность, лежащая в плоскости, перпендикулярной π₁, проецируется на π₁ в отрезок.',
-      add:[ ...onlyH(eS67,visS(false),'res') ] },
-    { t:'Рёбра среза и обводка',
-      d:'Рёбра пересечения плоскостей 2 и 6 — прямые, перпендикулярные π₂, на π₁ — отрезки. Оставшийся контур: экватор шара без срезанной части, дуга 1–2, эллиптическая дуга и вертикальный отрезок 6–7.',
-      why:'Рёбра — общие прямые двух плоскостей среза; все они видны сверху, так как срезанное тело выше них удалено.',
-      add:[ chS(g2,'res'), chS(g6,'res'), ...onlyH(eqS,visS(true),'main') ].filter(Boolean) }
+      add:[ ...onlyH(eS26,()=>true,'aux'), ...onlyH(eS67,()=>true,'aux'), conn(F([g6[0],0,g6[1]]),H(ptS(g6[0],g6[1],1))), hp('6',ptS(g6[0],g6[1],1),'se','aux') ] },
+    { t:'Паз на π₂',
+      d:'Фронтальные плоскости паза режут шар по окружностям радиуса r = √(R² − y²) (y — расстояние плоскости от центра, берём на π₁); на π₂ они видны без искажения и совпадают — дуга от 8″ через 12″ (на уровне центра) до нижней точки. Профильная плоскость паза режет шар по окружности, которая на π₂ проецируется в отрезок прямой x = const: от 10″ до симметричной нижней точки (10′ — на середине стенки паза). Точки 8 — углы паза: стенка ∩ фронтальная плоскость; между верхней и нижней точками 8 проходит вертикальное ребро стенки.',
+      why:'Окружность во фронтальной плоскости проецируется на π₂ без искажения, в профильной — в отрезок. Высоты точек 8, 10 — с параллелей шара через 8′ и 10′.',
+      add:[ circ(F([c0[0],0,c0[2]]),rf*S,'aux'), conn(H([xs,c0[1]+ys,c0[2]+zc]),F([xs,c0[1]+ys,c0[2]+zc])), conn(H([xs,c0[1],c0[2]+rp]),F([xs,c0[1],c0[2]+rp])), conn(H([c0[0]-rf,c0[1]+ys,c0[2]]),F([c0[0]-rf,c0[1]+ys,c0[2]])),
+            hp('8',[xs,c0[1]+ys,c0[2]+zc],'sw','aux'), hp('10',[xs,c0[1],c0[2]+rp],'w','aux'), hp('12',[c0[0]-rf,c0[1]+ys,c0[2]],'se','aux'),
+            fp('8',xs,c0[2]+zc,'e','aux'), fp('10',xs,c0[2]+rp,'ne','aux'), fp('12',c0[0]-rf,c0[2],'e','aux'),
+            ...onlyF(arcF(1),()=>true,'aux'), ...onlyF(profF,()=>true,'aux'), ...onlyF(slotEdge,()=>true,'aux') ] },
+    { t:'Видимость и обводка',
+      d:'На π₁ (луч вверх): дуга 1–2 — '+visTxt(eS12,visHS)+', эллипс 2–6 — '+visTxt(eS26,visHS)+', отрезок 6–7 — '+visTxt(eS67,visHS,'m')+'; экватор — очерк, кроме срезанной части слева и участка в пазу. На π₂ (луч вперёд): впереди паза остаётся передняя часть шара, поэтому очерк справа — дуга фронтальной окружности 8–12 ('+visTxt(arcF(1),visFS)+'), а сам паз закрыт: вертикальные рёбра стенки между точками 8 — '+visTxt(slotEdge,visFS,'p')+', дуги стенки от 8 до 10 — '+visTxt(profF,visFS,'p')+'.',
+      why:'Видимость проверяем лучом к наблюдателю: на π₁ — вверх, на π₂ — вперёд; встретил тело — точка закрыта (вопрос 16).',
+      add:[ ...paint(eS12,'H',visHS,'res','resd'), ...paint(eS26,'H',visHS,'res','resd'), ...paint(eS67,'H',visHS,'res','resd'), ...chS(g2), ...chS(g6), ...onlyH(eqS,()=>true,'main'),
+            ...merSlot.flatMap(r=>r.slice(1).map((q,i)=>seg(F(r[i]),F(q),'paper',null,null,{under:true}))),   /* очерк в пазу срезан — стираем его с условия */
+            ...paint(arcF(1),'F',visFS,'res','resd'), ...paint(profF,'F',visFS,'res','resd'), ...paint(slotEdge,'F',visFS,'res','resd'), ...paint(merKeep,'F',()=>true,'main','main') ] }
   ],
-  ans:'Горизонтальная проекция усечённого шара: дуга окружности 1–2 (горизонтальная плоскость), эллиптическая дуга 2–6 (наклонная плоскость), отрезок 6–7 (профильная плоскость), рёбра 2 и 6, контур — экватор без срезанной части.' };
+  ans:'π₁: дуга окружности 1–2, эллиптическая дуга 2–6, отрезок 6–7, рёбра 2 и 6; очерк — экватор без срезанной части и без участка в пазу. π₂: паз даёт дугу фронтальной окружности 8–12–8 (новый очерк справа), дуги стенки 8–10 и вертикальные рёбра стенки между точками 8 (невидимы).' };
 
-/* 3D: усечённые тела — сетка без вырезанных частей (remL, remR, remS) */
-pa.surf3=()=>({meshes:[{tris:SURF3.clip(SURF3.cone([cx,cy,h],t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,72,24),p=>!remL(p)&&!remR(p)),col:SURF3.COL.body,op:.6}]}); pa.form='cone';
-pb.surf3=()=>({meshes:[{tris:SURF3.clip(SURF3.sphere(c0,RS,64,32),p=>!remS(p)),col:SURF3.COL.body,op:.6}]}); pb.form='sphere';
+/* 3D: усечённые тела — сетка без вырезанных частей */
+pa.surf3=()=>({meshes:[{tris:SURF3.clip(SURF3.cone([cx,cy,h],t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,72,24),p=>keepD(p)&&!inPoly([p[0],p[2]],notch)),col:SURF3.COL.body,op:.6}]}); pa.form='cone';
+pb.surf3=()=>({meshes:[{tris:SURF3.clip(SURF3.sphere(c0,RS,64,32),p=>!remS(p)&&!slot(p)),col:SURF3.COL.body,op:.6}]}); pb.form='sphere';
 WB3.add({
-  n:71, sec:'s8', src:'стр. 24', conf:'approx',
+  n:71, sec:'s8', src:'стр. 24', conf:'wb',
   q:'Достроить проекции конуса и шара, усечённых проецирующими плоскостями.',
-  intro:'Два тела (а — конус, б — шар) срезаны плоскостями, перпендикулярными π₂; на π₂ срезы видны как линии. Нужно построить горизонтальную проекцию каждого усечённого тела.',
+  intro:'Два тела (а — конус, б — шар) срезаны проецирующими плоскостями: часть плоскостей перпендикулярна π₂ (видны линиями на π₂), часть — π₁ (видны линиями на π₁). Нужно достроить обе проекции каждого тела.',
   parts:[pa,pb],
-  note:'Размеры условные (конус: R = 42, h = 80 мм; шар: R = 32 мм). Показаны основные срезы и метод построения.'
+  note:'Числовых данных в тетради нет: положение срезов снято с рисунка тетради (конус: R = 42, h = 80 мм, лыски на расстоянии 32 мм от оси; шар: R = 32 мм, паз шириной 30 мм).'
 });
 })();
 /* ---------- № 72 ---------- */
@@ -19937,7 +20033,8 @@ WB3.add({
   n:72, sec:'s8', src:'стр. 24', conf:'approx',
   q:'Построить горизонтальную проекцию и натуральный вид сечения заданной геометрической фигуры плоскостью α.',
   intro:'Тело — четырёхугольная пирамида на цилиндре со срезами (две фронтальные плоскости). Плоскость α — фронтально-проецирующая (след f₀α под 45°, h₀α ⟂ x). Нужно построить горизонтальную проекцию сечения и его натуральную величину.',
-  given:[ ...givenBase ],
+  /* как в тетради: точка схода следов Xα, горизонтальная осевая на π₁ и штрихпунктирная базовая прямая для натурального вида (∥ f₀α) */
+  given:[ ...givenBase, pt(F([q0,0,0]),'','ne','thin',{hollow:true}), ln(H([cx+R+6,cy,0]),H([cx-R-6,cy,0]),'axis',null,null,0,0), {...axisNew,k:'axis'} ],
   steps:[
     { t:'Фронтальная проекция сечения',
       d:'α ⟂ π₂, поэтому сечение на π₂ вырождено в отрезок f₀α, а точки сечения лежат на f₀α. Отмечаем, где след пересекает контуры тела: 1″ — левое ребро пирамиды, 2″ — рёбра пирамиды к передней и задней вершинам основания (совпали на π₂), 3″≡4″ — верхнюю грань цилиндра, 5″ — вертикальные линии перехода плоских срезов в цилиндр, 6″ — промежуточная точка, 7″ — конец следа на оси x (z = 0).',
@@ -20012,12 +20109,19 @@ const pa=(()=>{ const {cx,cy,R,h,rc,xc,zc,r,Y,cyl,rad,pt3,runsF,runsB,visH,rts,c
   const bot=[xc,cy+Math.sqrt(Math.max(0,rc(0)**2-(xc-cx)**2)),0];
   const all=[...runsF,...runsB];
   return { l:'а)', q:'Построить проекции линии пересечения конической и цилиндрической поверхностей.',
-  given:[ axis(), ...coneFrame(cx,cy,R,h), ...cylF, ...cylH, pt(F([cx,0,h]),'S″','n'), pt(H([cx,cy,0]),'S′','ne') ],
+  /* как в тетради (стр. 25, а): части очерков в зоне другого тела — тонкие, основание конуса под цилиндром — штрих; осевые; без подписей */
+  given:(()=>{ const A2=F([cx,0,h]), L2=F([cx+R,0,0]), R2=F([cx-R,0,0]), C2=F([xc,0,zc]), tri=inPoly2([A2,L2,R2]), inC=inCirc2(C2,r*S);
+    const rect=inPoly2([[xc+r,cy-Y,0],[xc+r,cy+Y,0],[xc-r,cy+Y,0],[xc-r,cy-Y,0]].map(H));
+    return [ axis(), seg(L2,A2,'main'), seg(L2,R2,'main'), ...splitL([A2,R2],q=>inC(q)?'thin':'main'),
+      ...circK(C2,r*S,q=>tri(q)?'thin':'main'), ...cylH, ...circK(H([cx,cy,0]),R*S,q=>rect(q)?'hid':'main'),
+      ln(F([cx,0,h+4]),H([cx,cy+R+6,0]),'axis',null,null,0,0), ln(H([cx+R+6,cy,0]),H([xc-r-6,cy,0]),'axis',null,null,0,0),
+      ln(F([xc+r+5,0,zc]),F([xc-r-5,0,zc]),'axis',null,null,0,0), ln(F([xc,0,zc+r+5]),H([xc,cy+Y+5,0]),'axis',null,null,0,0),
+      pt(A2,'','n','thin',{hollow:true}), pt(H([cx,cy,0]),'','ne','thin',{hollow:true}) ]; })(),
   steps:[
     { t:'Цилиндр — проецирующий',
       d:'Ось цилиндра ⟂ π₂, значит его боковая поверхность на π₂ вырождается в окружность. Линия пересечения принадлежит цилиндру, поэтому её фронтальная проекция уже известна — это часть окружности, лежащая внутри контура конуса. Остаётся построить горизонтальную проекцию.',
       why:'Если одна из поверхностей проецирующая, одна проекция линии пересечения совпадает с её вырожденной проекцией (собирательное свойство).',
-      add:[ circ(F([xc,0,zc]),r*S,'grn') ] },
+      add:[ pt(F([cx,0,h]),'S″','n','aux'), pt(H([cx,cy,0]),'S′','ne','aux'),  circ(F([xc,0,zc]),r*S,'grn') ] },
     { t:'Опорные точки на контуре конуса',
       d:'Точки, в которых окружность пересекает очерковые образующие конуса (A″, B″…), лежат во фронтальной плоскости симметрии, проходящей через ось конуса (y = y<sub>S</sub>). Линией связи переносим их на π₁ — на горизонтальную прямую через S′ (∥ x). В них передняя и задняя ветви кривой смыкаются.',
       why:'Очерковая образующая конуса лежит во фронтальной плоскости y = y<sub>S</sub>; её горизонтальная проекция — прямая параллельная x через S′.',
@@ -20062,12 +20166,18 @@ const pb=(()=>{ const {cx,cy,R,h,rc,c,Rs,rs,at,runsF,runsB,d}=B_;
   const zC=okList.length?okList:[];
   const ptsAt=zC.map(z=>at(z,1));
   return { l:'б)', q:'Построить проекции линии пересечения конической и сферической поверхностей.',
-  given:[ axis(), ...coneFrame(cx,cy,R,h), sphF, sphH, pt(F(c),'O″','se'), pt(H(c),'O′','se') ],
+  /* как в тетради (стр. 25, б): шар в зоне конуса — тонкий, основание конуса под шаром — штрих; осевые, центры; без подписей */
+  given:(()=>{ const A2=F([cx,0,h]), L2=F([cx+R,0,0]), R2=F([cx-R,0,0]), tri=inPoly2([A2,L2,R2]), inS=inCirc2(F([c[0],0,c[2]]),Rs*S), inSH=inCirc2(H([c[0],c[1],0]),Rs*S), inB=inCirc2(H([cx,cy,0]),R*S);
+    return [ axis(), seg(L2,A2,'main'), seg(L2,R2,'main'), ...splitL([A2,R2],q=>inS(q)?'thin':'main'),
+      ...circK(F([c[0],0,c[2]]),Rs*S,q=>tri(q)?'thin':'main'), ...circK(H([cx,cy,0]),R*S,q=>inSH(q)?'hid':'main'), ...circK(H([c[0],c[1],0]),Rs*S,q=>inB(q)?'thin':'main'),
+      ln(F([cx,0,h+4]),H([cx,cy+R+6,0]),'axis',null,null,0,0), ln(F([c[0],0,c[2]+Rs+5]),H([c[0],c[1]+Rs+5,0]),'axis',null,null,0,0),
+      ln(F([cx+R+5,0,c[2]]),F([c[0]-Rs-5,0,c[2]]),'axis',null,null,0,0), ln(H([cx+R+6,cy,0]),H([c[0]-Rs-6,cy,0]),'axis',null,null,0,0),
+      pt(A2,'','n','thin',{hollow:true}), pt(F([c[0],0,c[2]]),'','se','thin',{hollow:true}), pt(H([c[0],c[1],0]),'','se','thin',{hollow:true}), pt(H([cx,cy,0]),'','ne','thin',{hollow:true}) ]; })(),
   steps:[
     { t:'Метод параллельных секущих плоскостей',
       d:'Ни одна из поверхностей не проецирующая, но обе — тела вращения с вертикальной осью. Произвольная горизонтальная плоскость γ пересекает конус и шар по окружностям, лежащим в плоскости γ: их проекции на π₂ — отрезки (f₀γ), на π₁ — окружности с центрами S′ и O′. Точки пересечения окружностей принадлежат обеим поверхностям.',
       why:'Горизонтальная плоскость пересекает и конус, и шар по параллелям — окружностям, которые на π₁ проецируются без искажений (вопрос 9: плоскость уровня).',
-      add:[ ...lev(zC[0]||c[2]).slice(2) ] },
+      add:[ pt(F(c),'O″','se','aux'), pt(H(c),'O′','se','aux'), pt(F([cx,0,h]),'S″','n','aux'), pt(H([cx,cy,0]),'S′','ne','aux'),  ...lev(zC[0]||c[2]).slice(2) ] },
     { t:'Первая плоскость f₀γ₁',
       d:'На фронтальной проекции проводим f₀γ₁ ∥ x на произвольной высоте z₁ (в пределах обеих поверхностей). Радиус окружности конуса R<sub>к1</sub> — от оси конуса до контура на f₀γ₁, радиус окружности шара R<sub>ш1</sub> — от оси шара до контура шара. На π₁ строим обе окружности (центры S′ и O′): в пересечении получаем две точки — переднюю и заднюю.',
       why:'Окружности лежат в одной плоскости γ и пересекаются в точках, общих для конуса и шара.',
@@ -20087,85 +20197,96 @@ const pb=(()=>{ const {cx,cy,R,h,rc,c,Rs,rs,at,runsF,runsB,d}=B_;
   ],
   ans:'Фронтальная и горизонтальная проекции линии пересечения построены по точкам, найденным с помощью горизонтальных плоскостей; видимость: на π₂ — передняя половина, на π₁ — часть выше экватора шара.' }; })();
 
-/* ================= в) конус и косой цилиндр ================= */
+/* ================= в) наклонный конус и цилиндрическая поверхность ================= */
+/* данные сняты с рисунка тетради (стр. 25, в): конус с вершиной S и основанием — окружностью на π₁, S′ смещена от центра основания
+   (конус наклонный); цилиндрическая поверхность: направляющая — дуга на π₁, образующие наклонены (на π₂ — параллелограмм
+   с верхним основанием на высоте Hc, на π₁ — две такие же дуги и крайние образующие) */
 const C_=(()=>{
-  const cx=35, cy=45, h=80, Rc=36, rho=32, D0=[cx-16,cy,0], a=[-41,-33,80], tmax=0.85;
-  const S3=[cx,cy,h], Ha=v3.sub(S3,a);                                  // след направляющей a через вершину
-  const dirc=th=>[D0[0]+rho*Math.cos(th),D0[1]+rho*Math.sin(th),0];
-  const gen=th=>{ const M=dirc(th); const X0=M[0]-cx, Y0=M[1]-cy;
-    const A2=a[0]*a[0]+a[1]*a[1]-Rc*Rc, B2=2*(X0*a[0]+Y0*a[1]+Rc*Rc), C2=X0*X0+Y0*Y0-Rc*Rc; const D=B2*B2-4*A2*C2; if(D<0) return [];
-    return [(-B2+Math.sqrt(D))/(2*A2),(-B2-Math.sqrt(D))/(2*A2)].filter(t=>t>=-1e-9&&t<=tmax+1e-9).map(t=>v3.add(M,v3.mul(a,t))); };
-  const branch=k=>trace(th=>{ const g=gen(th); return g[k]||[NaN,NaN,NaN]; },0,2*Math.PI,p=>!isNaN(p[0]),720);
-  const mkRuns=()=>{ // берём обе ветви по t
-    const out=[]; [0,1].forEach(k=>{ const rr=trace(th=>{ const M=dirc(th), X0=M[0]-cx, Y0=M[1]-cy; const A2=a[0]*a[0]+a[1]*a[1]-Rc*Rc, B2=2*(X0*a[0]+Y0*a[1]+Rc*Rc), C2=X0*X0+Y0*Y0-Rc*Rc; const Dd=B2*B2-4*A2*C2;
-        if(Dd<0) return [NaN,NaN,NaN]; const t=k===0?(-B2+Math.sqrt(Dd))/(2*A2):(-B2-Math.sqrt(Dd))/(2*A2); return v3.add(M,v3.mul(a,t)); },0,2*Math.PI,p=>!isNaN(p[0])&&p[2]>=-1e-6&&p[2]<=tmax*a[2]+1e-6,900); out.push(...rr); }); return out; };
-  return {cx,cy,h,Rc,rho,D0,a,tmax,S3,Ha,dirc,gen,runs:mkRuns()};
+  const S3=[95.14,68,95], C=[76.29,68,0], Rc=36.57, h=95, g=[-36.57,-26,80.57];
+  const D0=[22.57,10,0], rd=88.77, th0=13.6*RAD, th1=77.2*RAD;
+  const dirc=th=>[D0[0]+rd*Math.cos(th),D0[1]+rd*Math.sin(th),0];
+  /* точки линии: образующая цилиндра M(θ) + t·g на конусе — квадратное уравнение по t (вершина S, основание C, R) */
+  const root=th=>{ const m=dirc(th), SC=[S3[0]-C[0],S3[1]-C[1]], U=[(m[0]-C[0])*h,(m[1]-C[1])*h], V=[g[0]*h-SC[0]*g[2],g[1]*h-SC[1]*g[2]];
+    const a=V[0]**2+V[1]**2-Rc*Rc*g[2]**2, b=2*(U[0]*V[0]+U[1]*V[1])+2*Rc*Rc*h*g[2], c=U[0]**2+U[1]**2-Rc*Rc*h*h, D=b*b-4*a*c; if(D<0) return null;
+    const ts=[(-b-Math.sqrt(D))/(2*a),(-b+Math.sqrt(D))/(2*a)].filter(t=>t>=-1e-9&&t<=1&&t*g[2]<h); return ts.length?v3.add(m,v3.mul(g,ts[0])):null; };
+  const bis=(f,a,b)=>{ let fa=f(a); for(let i=0;i<60;i++){ const m=(a+b)/2, fm=f(m); if((fa<0)===(fm<0)){a=m;fa=fm;} else b=m; } return (a+b)/2; };
+  const onBase=th=>Math.hypot(dirc(th)[0]-C[0],dirc(th)[1]-C[1])-Rc;          // < 0 — направляющая внутри основания конуса
+  const tA=bis(onBase,th0,45*RAD), tB=bis(onBase,45*RAD,th1);                  // концы линии — на основании (точки 1, 2)
+  const tC=bis(th=>{ const p=root(th); return p?p[1]-C[1]:-1; },45*RAD,tB-1e-6); // точка на фронтальном очерке конуса (y = y_C): граница видимости на π₂
+  const runs=trace(th=>root(th)||[NaN,NaN,NaN],tA,tB,p=>!isNaN(p[0]),400);
+  return {S3,C,Rc,h,g,D0,rd,th0,th1,dirc,root,tA,tB,tC,runs};
 })();
-const pc=(()=>{ const {cx,cy,h,Rc,rho,D0,a,tmax,S3,Ha,dirc,runs}=C_;
-  const top=v3.mul(a,tmax);
-  const cylBase=circ(H(D0),rho*S,'main'), cylTop=circ(H(v3.add(D0,top)),rho*S,'thin');
-  const extF=[ [D0[0]+rho,D0[1],0],[D0[0]-rho,D0[1],0] ];
-  const cylF=[ seg(F(extF[0]),F(v3.add(extF[0],top)),'main'), seg(F(extF[1]),F(v3.add(extF[1],top)),'main'), seg(F(v3.add(extF[0],top)),F(v3.add(extF[1],top)),'main'), seg(F(extF[0]),F(extF[1]),'main') ];
-  const tanH=(()=>{ const s=v3.unit([top[0],top[1],0]), n=[-s[1],s[0],0]; const P1=v3.add(D0,v3.mul(n,rho)), P2=v3.sub(D0,v3.mul(n,rho)); return [seg(H(P1),H(v3.add(P1,top)),'main'),seg(H(P2),H(v3.add(P2,top)),'main')]; })();
-  // секущие плоскости через вершину S, параллельные a: следы — прямые через Ha′ в плоскости z = 0
-  const lineDirs=(()=>{ const rng=(c,r)=>{ const dx=Ha[0]-c[0],dy=Ha[1]-c[1],th=Math.atan2(-dy,-dx)+Math.PI*0, ha=Math.asin(r/Math.hypot(dx,dy)); return [th-ha,th+ha]; };
-    const a1=rng([cx,cy],Rc), a2=rng([D0[0],D0[1]],rho); const lo=Math.max(a1[0],a2[0]), hi=Math.min(a1[1],a2[1]); return [0.06,0.22,0.4,0.6,0.78,0.94].map(f=>lo+(hi-lo)*f); })();                                           // направления h₀γ (угол в рад от оси x)
-  const gens=[]; // для каждого следа: точки пересечения с основанием конуса и с направляющей
-  const circLine=(c,r,dir)=>{ // прямая через Ha с углом dir; пересечение с окружностью
-    const p0=[Ha[0],Ha[1]], u=[-Math.cos(dir),-Math.sin(dir)]; const dx=p0[0]-c[0], dy=p0[1]-c[1]; const B=dx*u[0]+dy*u[1], Cc=dx*dx+dy*dy-r*r, D=B*B-Cc; if(D<0) return [];
-    return [-B+Math.sqrt(D),-B-Math.sqrt(D)].map(t=>[p0[0]+u[0]*t,p0[1]+u[1]*t,0]); };
-  const li=(p1,d1,p2,d2)=>{ // ближайшая точка двух прямых
-    const w=v3.sub(p1,p2), A=v3.dot(d1,d1),B=v3.dot(d1,d2),Cc=v3.dot(d2,d2),Dd=v3.dot(d1,w),E=v3.dot(d2,w); const den=A*Cc-B*B; if(Math.abs(den)<1e-9) return null;
-    const s=(B*E-Cc*Dd)/den; return v3.add(p1,v3.mul(d1,s)); };
-  const hits=[]; let dbg=0;
-  lineDirs.forEach((dir,i)=>{ const K=circLine([cx,cy],Rc,dir), M=circLine([D0[0],D0[1]],rho,dir);
-    K.forEach(k=>M.forEach(m=>{ const X=li(S3,v3.sub(k,S3),m,a); if(!X) return; // точка на образующей конуса S–k и образующей цилиндра
-      const t=v3.dot(v3.sub(X,m),a)/v3.dot(a,a); const s=v3.dot(v3.sub(X,S3),v3.sub(k,S3))/v3.dot(v3.sub(k,S3),v3.sub(k,S3));
-      if(t>=-1e-6&&t<=tmax+1e-6&&s>=-1e-6&&s<=1+1e-6&&v3.dist(X,v3.add(m,v3.mul(a,t)))<0.2) hits.push({i,k,m,X}); })); });
-  /* видимость: точка линии видна, если видимы обе поверхности (внешние нормали смотрят на наблюдателя) */
-  const nCone=p=>[p[0]-cx,p[1]-cy,Rc/h*Math.hypot(p[0]-cx,p[1]-cy)];
-  const nCyl=p=>{ const M=v3.sub(p,v3.mul(a,p[2]/a[2])), r=[M[0]-D0[0],M[1]-D0[1],0]; return v3.sub(r,v3.mul(a,v3.dot(r,a)/v3.dot(a,a))); };
-  const visF=p=>nCone(p)[1]>=-1e-9&&nCyl(p)[1]>=-1e-9, visH=p=>nCone(p)[2]>=-1e-9&&nCyl(p)[2]>=-1e-9;
-  return { l:'в)', q:'Построить проекции линии пересечения конической и цилиндрической (косой) поверхностей.',
-  given:[ axis(), ...coneFrame(cx,cy,Rc,h), cylBase, cylTop, ...cylF, ...tanH, pt(F(S3),'S″','n'), pt(H([cx,cy,0]),'S′','ne'),
-          ln(F(Ha),F(S3),'main','a″',[-8,-4,'end'],0,0), ln(H(Ha),H(S3),'main','a′',[-8,8,'end'],0,0) ],
+const pc=(()=>{ const {S3,C,Rc,h,g,D0,rd,th0,th1,dirc,root,tA,tB,tC,runs}=C_;
+  const Ha=v3.sub(S3,v3.mul(g,S3[2]/g[2]));                                    // след прямой a (через S ∥ образующим) на π₁
+  const E1=dirc(th0), E2=dirc(th1), T1=v3.add(E1,g), T2=v3.add(E2,g);
+  /* тело конуса и лента цилиндра — для видимости лучом */
+  const inCone=p=>{ if(p[2]<=0.05||p[2]>=h-0.05) return false; const k=p[2]/h, c=[C[0]+(S3[0]-C[0])*k,C[1]+(S3[1]-C[1])*k]; return Math.hypot(p[0]-c[0],p[1]-c[1])<Rc*(1-k)-0.05; };
+  const thOf=(x,y)=>{ const a=Math.atan2(y-D0[1],x-D0[0]); return a>=th0-1e-9&&a<=th1+1e-9; };
+  const sheetY=(x,z)=>{ const t=z/g[2]; if(t<0||t>1) return null; const mx=x-t*g[0], c=(mx-D0[0])/rd; if(Math.abs(c)>1) return null; const th=Math.acos(c); if(th<th0||th>th1) return null; return D0[1]+rd*Math.sin(th)+t*g[1]; };
+  const sheetZ=(x,y)=>{ const q=[x-D0[0],y-D0[1]], u=[g[0],g[1]], A=u[0]**2+u[1]**2, B=-2*(q[0]*u[0]+q[1]*u[1]), Cc=q[0]**2+q[1]**2-rd*rd, Dd=B*B-4*A*Cc; if(Dd<0) return [];
+    return [(-B-Math.sqrt(Dd))/(2*A),(-B+Math.sqrt(Dd))/(2*A)].filter(t=>t>=0&&t<=1&&thOf(x-t*g[0],y-t*g[1])).map(t=>t*g[2]); };
+  const visF=p=>{ const ys=sheetY(p[0],p[2]); if(ys!=null&&ys>p[1]+0.3) return false; for(let s=0.3;s<2*Rc+5;s+=0.3) if(inCone([p[0],p[1]+s,p[2]])) return false; return true; };
+  const visH=p=>{ if(sheetZ(p[0],p[1]).some(z=>z>p[2]+0.3)) return false; for(let s=0.3;s<h+2;s+=0.3) if(inCone([p[0],p[1],p[2]+s])) return false; return true; };
+  const L=(a,b,n)=>{ const o=[]; for(let i=0;i<=(n||60);i++) o.push(v3.lerp(a,b,i/(n||60))); return [o]; };
+  const arcR=(off)=>[Array.from({length:121},(_,i)=>v3.add(dirc(th0+(th1-th0)*i/120),off))];
+  const baseC=[Array.from({length:361},(_,i)=>[C[0]+Rc*Math.cos(i*Math.PI/180),C[1]+Rc*Math.sin(i*Math.PI/180),0])];
+  const kF=[C[0]+Rc,C[1],0], kF2=[C[0]-Rc,C[1],0];
+  /* условие: очерки с видимостью (как в тетради) */
+  const outlF=[ ...paint(L(S3,kF),'F',visF,'main','thin'), ...paint(L(S3,kF2),'F',visF,'main','thin'), seg(F(kF),F(kF2),'main'),
+    ...paint(L(E1,T1),'F',visF,'main','hid'), ...paint(L(E2,T2),'F',visF,'main','hid'), ...paint(arcR(g),'F',visF,'main','hid'), seg(F(E1),F(E2),'main') ];
+  const outlH=[ ...paint(baseC,'H',visH,'main','hid'), ...paint(arcR([0,0,0]),'H',visH,'main','hid'), ...paint(arcR(g),'H',visH,'main','hid'),
+    ...paint(L(E1,T1),'H',visH,'main','hid'), ...paint(L(E2,T2),'H',visH,'main','hid') ];
+  /* пучок плоскостей через a: следы через Hₐ′ и точки направляющей */
+  const ths=[0.12,0.3,0.45,0.6,0.75,0.9].map(f=>tA+(tB-tA)*f);
+  const hits=ths.map(th=>{ const M=dirc(th), X=root(th); const K=v3.add(S3,v3.mul(v3.sub(X,S3),h/(h-X[2]))); return {M,X,K}; });
+  const P1=dirc(tA), P2=dirc(tB), P3=root(tC), K3=v3.add(S3,v3.mul(v3.sub(P3,S3),h/(h-P3[2])));
+  const far=(P,k)=>v3.add(Ha,v3.mul(v3.sub(P,Ha),k||1.15));
+  return { l:'в)', q:'Построить проекции линии пересечения конической и цилиндрической поверхностей.',
+  /* как в тетради (стр. 25, в): ось конуса S″C″ — штрихпунктир, линия связи S″S′, осевые основания на π₁; без подписей */
+  given:[ axis(), ...outlF, ...outlH, ln(F(S3),F(C),'axis',null,null,0,0), conn(F(S3),H(S3)), ln(H([S3[0]+6,C[1],0]),H([C[0]-Rc-6,C[1],0]),'axis',null,null,0,0), ln(H([C[0],C[1]-Rc-5,0]),H([C[0],C[1]+Rc+5,0]),'axis',null,null,0,0),
+          pt(F(S3),'','n','main',{hollow:true}), pt(H(S3),'','w','main',{hollow:true}), pt(H(C),'','ne','main',{hollow:true}) ],
   steps:[
-    { t:'Метод непараллельных секущих плоскостей',
-      d:'Ось конуса вертикальна, образующие цилиндра наклонны. Ни одна из проекций линии сразу не видна. Вспомогательные плоскости γ выбираем так, чтобы они пересекали обе поверхности по прямым: конус — по образующим (γ проходит через вершину S), цилиндр — по образующим (γ параллельна образующим цилиндра).',
-      why:'Условие 1: секущая плоскость пересекает конус по прямым, если проходит через его вершину. Условие 2: пересекает цилиндр по прямым, если параллельна его образующим.',
-      add:[ ] },
+    { t:'Метод: плоскости через вершину ∥ образующим цилиндра',
+      d:'Конус наклонный (S′ не в центре основания), образующие цилиндрической поверхности наклонны, основание конуса и направляющая цилиндра лежат на π₁. Ни одна поверхность не проецирующая, поэтому берём вспомогательные плоскости γ, которые режут обе поверхности по прямым: γ проходит через вершину S (конус — по образующим) и параллельна образующим цилиндра (цилиндр — по образующим).',
+      why:'Плоскость пересекает конус по прямым, если проходит через его вершину; цилиндр — если параллельна его образующим.',
+      add:[ pt(F(S3),'S″','n','aux'), pt(H(S3),'S′','w','aux') ] },
     { t:'Прямая a через вершину ∥ образующим',
-      d:'Через вершину S проводим прямую a, параллельную образующим цилиндра. Находим её горизонтальный след H<sub>a</sub> — точку пересечения с π₁ (продолжаем a′ и a″ до оси x и опускаем).',
-      why:'Все плоскости, проходящие через a, содержат вершину S и параллельны образующим цилиндра — то есть удовлетворяют обоим условиям.',
-      add:[ pt(H(Ha),'Hₐ′','se','aux'), pt(F(Ha),'Hₐ″','sw','aux'), conn(F(Ha),H(Ha)) ] },
-    { t:'Пучок плоскостей γ — их горизонтальные следы',
-      d:'Плоскость γ определена прямой a и любой ещё прямой; её горизонтальный след h₀γ проходит через H<sub>a</sub>′. Проводим пучок следов h₀γ₁, h₀γ₂, … через H<sub>a</sub>′ — они пересекают основание конуса и направляющую цилиндра.',
-      why:'γ ∩ π₁ — прямая (след); все следы пучка проходят через одну точку — след прямой a.',
-      add:lineDirs.map((dir,i)=>ln(H(Ha),H([Ha[0]-Math.cos(dir)*140,Ha[1]-Math.sin(dir)*140,0]),'aux','h₀γ'+String.fromCharCode(8321+i),[4,-4,'start'],0,0)) },
-    { t:'Образующие конуса и цилиндра в γ',
-      d:'Для каждого следа: точки K пересечения с основанием конуса дают образующие конуса SK; точки M пересечения с направляющей цилиндра — образующие M∥a. Обе пары лежат в плоскости γ и пересекаются в точке X.',
-      why:'Две прямые одной плоскости (не параллельные) пересекаются — X принадлежит и конусу, и цилиндру (вопрос 16).',
-      add:hits.flatMap(h=>[ seg(H(S3),H(h.k),'aux'), seg(H(h.m),H(h.X),'aux'), pt(H(h.X),'','se','aux'), pt(F(h.X),'','ne','aux'), conn(F(h.X),H(h.X)) ]) },
-    { t:'Линия пересечения',
-      d:'Соединяем найденные точки плавной кривой на π₂ и π₁. Видимость: точка линии видна, только если она лежит на видимых частях обеих поверхностей — на π₂ на передних (обращённых к наблюдателю) половинах конуса и цилиндра, на π₁ — на обращённых вверх. Границы видимости — точки на очерковых образующих. Невидимую часть показываем штрихом.',
-      why:'Для гладких поверхностей линия пересечения — гладкая пространственная кривая; её проекции — гладкие кривые.',
+      d:'Через S проводим прямую a, параллельную образующим цилиндра (a″ ∥ крайним образующим на π₂, a′ — на π₁). Её горизонтальный след H<sub>a</sub> — точка пересечения с π₁: продолжаем a″ до оси x и опускаем линию связи на a′.',
+      why:'Любая плоскость, содержащая a, проходит через S и параллельна образующим цилиндра — подходит сразу под оба условия.',
+      add:[ seg(F(S3),F(Ha),'aux','a″',[6,-4,'start']), seg(H(S3),H(Ha),'aux','a′',[6,-4,'start']), pt(F(Ha),'Hₐ″','s','aux'), pt(H(Ha),'Hₐ′','sw','aux'), conn(F(Ha),H(Ha)) ] },
+    { t:'Опорные точки 1 и 2 — на π₁',
+      d:'Направляющая цилиндра пересекает окружность основания конуса в точках 1′ и 2′: здесь линия пересечения выходит на π₁ (1″ и 2″ — на оси x). Между 1′ и 2′ направляющая проходит внутри основания конуса — эта часть поверхности цилиндра у π₁ находится внутри конуса.',
+      why:'Точки, общие для основания конуса и направляющей цилиндра, принадлежат обеим поверхностям.',
+      add:[ pt(H(P1),'1′','sw','aux'), pt(H(P2),'2′','se','aux'), conn(H(P1),F(P1)), conn(H(P2),F(P2)), pt(F(P1),'1″','s','aux'), pt(F(P2),'2″','s','aux') ] },
+    { t:'Пучок следов h₀γ и точки линии',
+      d:'Через H<sub>a</sub>′ проводим произвольные следы плоскостей γ так, чтобы они пересекали направляющую между 1′ и 2′ (в точках M′) и основание конуса (в точках K′). В каждой плоскости образующая цилиндра M∥a и образующая конуса SK пересекаются в точке X линии: на π₁ X′ = M′X′ ∩ S′K′, X″ — по линии связи на S″K″.',
+      why:'Две прямые одной плоскости пересекаются; точка пересечения образующих лежит на обеих поверхностях (вопрос 14).',
+      add:hits.flatMap(o=>[ seg(H(Ha),H(far(v3.dist(Ha,o.K)>v3.dist(Ha,o.M)?o.K:o.M,1.08)),'aux'), seg(H(S3),H(o.K),'aux'), seg(H(o.M),H(o.X),'aux'), conn(H(o.K),F(o.K)), conn(H(o.M),F(o.M)), seg(F(S3),F(o.K),'aux'), seg(F(o.M),F(o.X),'aux'),
+            pt(H(o.X),'','se','aux'), pt(F(o.X),'','ne','aux'), conn(F(o.X),H(o.X)) ]) },
+    { t:'Точка 3 на очерке конуса',
+      d:'Фронтальный очерк конуса — образующие из S″ в крайние точки основания. Плоскость γ через правую очерковую образующую (её след проходит через H<sub>a</sub>′ и крайнюю точку основания K₃′) даёт точку 3 — на π₂ здесь линия касается очерка и меняет видимость.',
+      why:'Точки на очерковых образующих — границы видимости линии на π₂.',
+      add:[ seg(H(Ha),H(K3),'aux'), seg(H(S3),H(K3),'aux'), seg(H(dirc(tC)),H(P3),'aux'), pt(H(P3),'3′','ne','aux'), conn(H(P3),F(P3)), pt(F(P3),'3″','e','aux') ] },
+    { t:'Линия пересечения и видимость',
+      d:'Соединяем 1, X…, 3, X…, 2 плавной кривой. На π₂ видна часть, лежащая на передней половине конуса (от 3 до 2); от 1 до 3 линия на задней половине — штрихом. На π₁ линия видна вся: над ней нет ни конуса (S′ внутри основания — вся боковая поверхность обращена вверх), ни другой части цилиндра.',
+      why:'Точка линии видна, если её не закрывает ни одна поверхность — проверяем лучом к наблюдателю (вопрос 16).',
       add:[ ...both(runs,visF,visH,'res','resd') ] }
   ],
-  ans:'Линия пересечения построена по точкам X = SK ∩ (M∥a) — общим точкам образующих конуса и цилиндра в пучке плоскостей γ, проходящих через прямую a.' }; })();
+  ans:'Линия пересечения — пространственная кривая от точки 1 до точки 2 на π₁; точки построены как X = SK ∩ (M∥a) в плоскостях пучка через прямую a (a ∋ S, a ∥ образующим цилиндра). На π₂ от 1 до 3 — невидима, от 3 до 2 — видима; на π₁ видима вся.' }; })();
 
 /* 3D: тела задачи — конус и цилиндр / шар / косой цилиндр */
 { const Q3=SURF3, coneV=(cx,cy,R,h)=>Q3.cone([cx,cy,h],t=>[cx+R*Math.cos(t),cy+R*Math.sin(t),0],0,2*Math.PI,48,8);
   pa.surf3=()=>{ const {cx,cy,R,h,xc,zc,r,Y}=A_; return {meshes:[{tris:coneV(cx,cy,R,h),col:Q3.COL.body,op:.55},
     {tris:Q3.grid((f,y)=>[xc+r*Math.cos(f),y,zc+r*Math.sin(f)],0,2*Math.PI,64,cy-Y,cy+Y,8),col:Q3.COL.alt,op:.55}]}; }; pa.form='cone';
   pb.surf3=()=>{ const {cx,cy,R,h,c,Rs}=B_; return {meshes:[{tris:coneV(cx,cy,R,h),col:Q3.COL.body,op:.55},{tris:Q3.clip(Q3.sphere(c,Rs,40,20),p=>p[2]>=0),col:Q3.COL.alt,op:.55}]}; }; pb.form='sphere';
-  pc.surf3=()=>{ const {cx,cy,h,Rc,rho,D0,a,tmax}=C_; return {meshes:[{tris:coneV(cx,cy,Rc,h),col:Q3.COL.body,op:.55},
-    {tris:Q3.cyl(t=>[D0[0]+rho*Math.cos(t),D0[1]+rho*Math.sin(t),0],v3.mul(a,tmax),0,2*Math.PI,64,10),col:Q3.COL.alt,op:.55}]}; }; pc.form='obl'; }
+  pc.surf3=()=>{ const {S3,C,Rc,g,dirc,th0,th1}=C_; return {meshes:[{tris:Q3.cone(S3,t=>[C[0]+Rc*Math.cos(t),C[1]+Rc*Math.sin(t),0],0,2*Math.PI,48,8),col:Q3.COL.body,op:.55},
+    {tris:Q3.cyl(dirc,g,th0,th1,32,10),col:Q3.COL.alt,op:.55}]}; }; pc.form='obl'; }
 WB3.add({
   n:73, sec:'s8', src:'стр. 25', conf:'approx',
   q:'Построить проекции линий пересечения заданных поверхностей: а) конической и цилиндрической; б) конической и сферической; в) конической и цилиндрической.',
   intro:'Три задачи на пересечение поверхностей: а) метод проецирующей поверхности (цилиндр проецирующий), б) метод параллельных секущих плоскостей, в) метод непараллельных плоскостей, проходящих через вершину конуса.',
   parts:[pa,pb,pc],
-  note:'Размеры условные (а: конус R = 40, h = 80, цилиндр r = 34 касается основания; б: шар R = 33; в: косой цилиндр, образующая a через вершину). Видимость определена вычислением.'
+  note:'Размеры условные (а: конус R = 40, h = 80, цилиндр r = 34 касается основания; б: шар R = 33). В в) данные сняты с рисунка тетради: конус наклонный, направляющая цилиндра — дуга на π₁. Видимость определена вычислением.'
 });
 })();
 /* ---------- № 74 ---------- */
@@ -20176,83 +20297,118 @@ const dotsF=(arr,k)=>arr.map(([n,p,l])=>pt(F(p),n+'″',l||'nw',k||'aux'));
 const dotsH=(arr,k)=>arr.map(([n,p,l])=>pt(H(p),n+'′',l||'sw',k||'aux'));
 const nrm=v=>v3.unit(v);
 /* ================= а) конус и тор, концентрические сферы ================= */
+/* данные сняты с рисунка тетради (стр. 26, а). Тор: ось вертикальна (через O), образующая — дуга окружности радиуса R
+   с центром по другую сторону оси и ниже π₁ (на π₂ — дуги очерка, сходящиеся на оси вверху; на π₁ — окружность основания).
+   Конус вращения: вершина S — на основании тора (крайняя правая точка), ось i ∥ π₂ проходит через O. */
 const A_=(()=>{
-  const O=[50,45,30], Rt=35, rt=16, beta=21*RAD, tb=Math.tan(beta), tau=tb*tb, L=95;
-  const kk=v3.unit([50.5,0,29.3]), t0=58.4, Sv=v3.sub(O,v3.mul(kk,t0));
+  const O=[50,45,23.1], rb=40, a=45.6, zc=-9.6, Rm=Math.hypot(rb+a,zc), zT=zc+Math.sqrt(Rm*Rm-a*a);
+  const Sv=[O[0]-rb,O[1],0], kk=v3.unit(v3.sub(O,Sv)), t0=v3.dist(O,Sv), L=79.7, tb=32.2/79.7, beta=Math.atan(tb);
   const e2=[0,1,0], e1=[-kk[2],0,kk[0]];
   const cone=(t,psi)=>{ const C=v3.add(Sv,v3.mul(kk,t)), v=t*tb; return v3.add(C,v3.add(v3.mul(e1,v*Math.cos(psi)),v3.mul(e2,v*Math.sin(psi)))); };
-  const roots=rho=>{ const a=1+tau, b=-2*t0, c=t0*t0-rho*rho, D=b*b-4*a*c; if(D<0) return []; return [(-b+Math.sqrt(D))/(2*a),(-b-Math.sqrt(D))/(2*a)].filter(t=>t>0&&t<=L); };
-  const torR=rho=>(rho*rho+Rt*Rt-rt*rt)/(2*Rt);
-  /* все точки для радиуса сферы rho: массив {p,ri,zs,ys} */
-  const pts=rho=>{ const out=[]; const r=torR(rho); if(r<0||r>rho) return out; const dz=Math.sqrt(rho*rho-r*r);
-    roots(rho).forEach((t,ri)=>{ const C=v3.add(Sv,v3.mul(kk,t)), v=t*tb; [1,-1].forEach(zs=>{ const z0=O[2]+zs*dz; const cs=(z0-C[2])/(v*kk[0]); if(Math.abs(cs)>1) return;
-        [1,-1].forEach(ys=>{ const psi=ys*Math.acos(cs); const p=cone(t,psi); out.push({p,ri,zs,ys}); }); }); });
-    return out; };
-  const rhoMin=Math.max(Rt-rt, t0*Math.sin(Math.atan(tb))*1), rhoMax=Rt+rt;
-  /* нормали: для видимости */
-  const nT=p=>{ const dx=p[0]-O[0],dy=p[1]-O[1],r=Math.hypot(dx,dy); return [dx-Rt*dx/r,dy-Rt*dy/r,p[2]-O[2]]; };
+  const roots=rho=>{ const A=1+tb*tb, b=-2*t0, c=t0*t0-rho*rho, D=b*b-4*A*c; if(D<0) return []; return [(-b+Math.sqrt(D))/(2*A),(-b-Math.sqrt(D))/(2*A)].filter(t=>t>0&&t<=L); };
+  /* параллели тора на сфере ρ: пересечение окружности сферы (центр (0, z_O)) и образующей (центр (−a, z_c), R) в плоскости меридиана */
+  const pars=rho=>{ const dx=-a, dz=zc-O[2], d=Math.hypot(dx,dz); if(d>rho+Rm||d<Math.abs(rho-Rm)) return [];
+    const l=(rho*rho-Rm*Rm+d*d)/(2*d), hh=Math.sqrt(Math.max(0,rho*rho-l*l)), ex=dx/d, ez=dz/d, px=l*ex, pz=O[2]+l*ez;
+    return [[px-hh*ez,pz+hh*ex],[px+hh*ez,pz-hh*ex]].filter(([r,z])=>r>=-1e-9&&z>=-1e-9&&z<=zT+1e-9); };
+  const pts=rho=>{ const out=[]; pars(rho).forEach(([r,z],pi)=>roots(rho).forEach((t,ri)=>{ const C=v3.add(Sv,v3.mul(kk,t)), v=t*tb, cs=(z-C[2])/(v*e1[2]); if(Math.abs(cs)>1) return;
+      [1,-1].forEach(ys=>out.push({p:cone(t,ys*Math.acos(cs)),pi,ri,ys})); })); return out; };
+  /* диапазон сфер: от вписанной в тор (касается его по параллели) до сферы через точку A — пересечение очерков на π₂ */
+  const dC=Math.hypot(a,O[2]-zc), rhoMin=Rm-dC;
+  let rhoMax=rhoMin; for(let r=rhoMin;r<rb+O[2];r+=0.01) if(pts(r).length) rhoMax=r;
+  const inLemon=p=>{ const r=Math.hypot(p[0]-O[0],p[1]-O[1]); return p[2]>0.05&&p[2]<zT-0.05&&Math.hypot(r+a,p[2]-zc)<Rm-0.05; };
+  const inCone=p=>{ const w=v3.sub(p,Sv), t=v3.dot(w,kk); if(t<=0.05||t>=L-0.05) return false; return v3.len(v3.sub(w,v3.mul(kk,t)))<t*tb-0.05; };
+  const nT=p=>{ const dx=p[0]-O[0],dy=p[1]-O[1],r=Math.hypot(dx,dy)||1e-9; return [dx/r*(r+a),dy/r*(r+a),p[2]-zc]; };
   const nC=p=>{ const w=v3.sub(p,Sv), t=v3.dot(w,kk), pv=v3.sub(w,v3.mul(kk,t)); return v3.sub(v3.mul(v3.unit(pv),Math.cos(beta)),v3.mul(kk,Math.sin(beta))); };
-  const visF=p=>nT(p)[1]>=0&&nC(p)[1]>=0, visH=p=>nT(p)[2]>=0&&nC(p)[2]>=0;
-  /* кривые: ветви по (ri,zs,ys) */
-  const branches=[]; for(const ri of [0,1]) for(const zs of [1,-1]) for(const ys of [1,-1]){
-    const rr=trace(rho=>{ const q=pts(rho).find(o=>o.ri===ri&&o.zs===zs&&o.ys===ys); return q?q.p:[NaN,NaN,NaN]; },rhoMin*0.9,rhoMax*1.02,p=>!isNaN(p[0]),500);
+  const visF=p=>nT(p)[1]>=-1e-9&&nC(p)[1]>=-1e-9, visH=p=>nT(p)[2]>=-1e-9&&nC(p)[2]>=-1e-9;
+  const branches=[]; for(const pi of [0,1]) for(const ri of [0,1]) for(const ys of [1,-1]){
+    const rr=trace(rho=>{ const q=pts(rho).find(o=>o.pi===pi&&o.ri===ri&&o.ys===ys); return q?q.p:[NaN,NaN,NaN]; },rhoMin,rhoMax+0.02,p=>!isNaN(p[0]),500);
     branches.push(...rr); }
-  return {O,Rt,rt,beta,tb,kk,t0,Sv,e1,e2,cone,roots,torR,pts,rhoMin,rhoMax,visF,visH,branches,L};
+  return {O,rb,a,zc,Rm,zT,Sv,kk,t0,L,tb,beta,e1,e2,cone,roots,pars,pts,rhoMin,rhoMax,inLemon,inCone,visF,visH,branches};
 })();
-const pa=(()=>{ const {O,Rt,rt,beta,tb,kk,t0,Sv,e1,e2,cone,roots,torR,pts,rhoMin,rhoMax,visF,visH,branches,L}=A_;
-  const Cb=v3.add(Sv,v3.mul(kk,L)), vb=L*tb;
-  const torF=[ circ(F([O[0]+Rt,0,O[2]]),rt*S,'main'), circ(F([O[0]-Rt,0,O[2]]),rt*S,'main'), seg(F([O[0]-Rt,0,O[2]+rt]),F([O[0]+Rt,0,O[2]+rt]),'main'), seg(F([O[0]-Rt,0,O[2]-rt]),F([O[0]+Rt,0,O[2]-rt]),'main') ];
-  const torH=[ circ(H(O),(Rt+rt)*S,'main'), circ(H(O),(Rt-rt)*S,'main'), circ(H(O),Rt*S,'thin') ];
-  const b1=v3.add(Cb,v3.mul(e1,vb)), b2=v3.sub(Cb,v3.mul(e1,vb));
+const pa=(()=>{ const {O,rb,a,zc,Rm,zT,Sv,kk,t0,L,tb,beta,e1,e2,cone,roots,pars,pts,rhoMin,rhoMax,inLemon,inCone,visF,visH,branches}=A_;
+  const Cb=v3.add(Sv,v3.mul(kk,L)), vb=L*tb, b1=v3.add(Cb,v3.mul(e1,vb)), b2=v3.sub(Cb,v3.mul(e1,vb));
+  const DEG=180/Math.PI, aR1=Math.asin(-zc/Rm)*DEG, aR2=Math.acos(a/Rm)*DEG;
+  /* тор на π₂: дуги очерка (правая — с центром слева от оси, левая — симметрично) и основание; на π₁ — окружность основания */
+  const torF=[ arc(F([O[0]+a,0,zc]),Rm*S,aR1,aR2,'main'), arc(F([O[0]-a,0,zc]),Rm*S,180-aR2,180-aR1,'main'), seg(F([O[0]-rb,0,0]),F([O[0]+rb,0,0]),'main') ];
+  const torH=[ circ(H([O[0],O[1],0]),rb*S,'main') ];
   const conF=[ seg(F(Sv),F(b1),'main'), seg(F(Sv),F(b2),'main'), seg(F(b1),F(b2),'main') ];
-  const baseH=[]; for(let i=0;i<=120;i++) baseH.push(H(cone(L,i/120*2*Math.PI)));
-  const sH=H(Sv); let amin=1e9,amax=-1e9,pmin=null,pmax=null; baseH.forEach(q=>{ const a=Math.atan2(q[1]-sH[1],q[0]-sH[0]); if(a<amin){amin=a;pmin=q;} if(a>amax){amax=a;pmax=q;} });
-  const conH=[ poly(baseH,'main',false), seg(sH,pmin,'main'), seg(sH,pmax,'main') ];
-  const axisI=[ ln(F(Sv),F(O),'thin',null,null,0,40) ];
+  const axisI=[ ln(F(Sv),F(Cb),'axis','i″',[6,-4,'end'],0,10), ln(H(Sv),H(Cb),'axis','i′',[6,-4,'end'],0,10) ];
+  /* горизонтальная проекция конуса: эллипс основания и очерковые образующие (касательные из S′) */
+  const baseH=[]; for(let i=0;i<=120;i++) baseH.push(cone(L,i/120*2*Math.PI));
+  const sH=H(Sv); let amin=1e9,amax=-1e9,pmin=null,pmax=null; baseH.forEach(q=>{ const h2=H(q), an=Math.atan2(h2[1]-sH[1],h2[0]-sH[0]); if(an<amin){amin=an;pmin=q;} if(an>amax){amax=an;pmax=q;} });
+  /* очерки с учётом второго тела: внутри него — не рисуем (стираем), за ним — штрих */
+  const L3=(p,q,n)=>Array.from({length:(n||80)+1},(_,i)=>v3.lerp(p,q,i/(n||80)));
+  const merid=sg=>Array.from({length:121},(_,i)=>{ const an=(aR1+(aR2-aR1)*i/120)/DEG, r=-a+Rm*Math.cos(an), z=zc+Rm*Math.sin(an); return [O[0]-sg*r,O[1],z]; });
+  const cls=(other,dir,L0)=>p=>{ if(other(p)) return 'in'; for(let s=0.3;s<L0;s+=0.3) if(other(v3.add(p,v3.mul(dir,s)))) return 'hid'; return 'vis'; };
+  const draw=(pl,proj,c,erase)=>{ const pr=proj==='F'?F:H, out=[]; let run=[pl[0]], k=c(v3.mid(pl[0],pl[1]));
+    const flush=()=>{ if(run.length<2) return; if(k!=='vis'&&erase) for(let i=1;i<run.length;i++) out.push(seg(pr(run[i-1]),pr(run[i]),'paper',null,null,{under:true}));
+      if(k==='hid') out.push(poly(run.map(pr),'hid',false)); if(k==='vis'&&!erase) out.push(poly(run.map(pr),'main',false)); };
+    for(let i=1;i<pl.length;i++){ const kk2=c(v3.mid(pl[i-1],pl[i])); if(kk2!==k){ flush(); run=[pl[i-1]]; k=kk2; } run.push(pl[i]); } flush(); return out; };
+  const FWD=[0,1,0], UP=[0,0,1];
+  const outlF=[ ...draw(merid(1),'F',cls(inCone,FWD,90),true), ...draw(merid(-1),'F',cls(inCone,FWD,90),true),
+    ...draw(L3(Sv,b1),'F',cls(inLemon,FWD,90),true), ...draw(L3(Sv,b2),'F',cls(inLemon,FWD,90),true) ];
+  const circB=Array.from({length:361},(_,i)=>[O[0]+rb*Math.cos(i*Math.PI/180),O[1]+rb*Math.sin(i*Math.PI/180),0]);
+  const outlH=[ ...draw(circB,'H',cls(inCone,UP,90),true), ...draw(baseH,'H',cls(inLemon,UP,90),false), ...draw(L3(Sv,pmin),'H',cls(inLemon,UP,90),false), ...draw(L3(Sv,pmax),'H',cls(inLemon,UP,90),false) ];
   const sph=rho=>circ(F(O),rho*S,'aux');
-  /* группа: сфера ρ — F: окружность, параллели тора, круги конуса; точки пересечения */
-  const group=(rho,tag)=>{ const P=pts(rho), r=torR(rho), dz=Math.sqrt(Math.max(0,rho*rho-r*r)); const it=[ sph(rho) ];
-    [1,-1].forEach(zs=>it.push(seg(F([O[0]-r,0,O[2]+zs*dz]),F([O[0]+r,0,O[2]+zs*dz]),'aux')));
+  const group=(rho,tag)=>{ const P=pts(rho).filter(o=>o.ys===1), it=[ sph(rho) ];
+    pars(rho).forEach(([r,z])=>{ it.push(seg(F([O[0]-r,0,z]),F([O[0]+r,0,z]),'aux'), circ(H(O),r*S,'aux')); });
     roots(rho).forEach(t=>{ const C=v3.add(Sv,v3.mul(kk,t)), v=t*tb; it.push(seg(F(v3.add(C,v3.mul(e1,v))),F(v3.sub(C,v3.mul(e1,v))),'aux')); });
-    P.filter(o=>o.ys===1).forEach((o,i)=>{ it.push(pt(F(o.p),tag+(i+1)+'″','nw','aux'), conn(F(o.p),H(o.p)), pt(H(o.p),tag+(i+1)+'′','sw','aux'), pt(H([o.p[0],2*O[1]-o.p[1],o.p[2]]),tag+(i+1)+'*′','nw','aux')); });
-    it.push(circ(H(O),r*S,'aux'));
+    P.forEach((o,i)=>{ it.push(pt(F(o.p),tag+(i+1)+'″','nw','aux'), conn(F(o.p),H(o.p)), pt(H(o.p),tag+(i+1)+'′','sw','aux'), pt(H([o.p[0],2*O[1]-o.p[1],o.p[2]]),tag+(i+1)+'*′','nw','aux')); });
     return it; };
-  const rm=rhoMin+(rhoMax-rhoMin)*0.06, rmid=rhoMin+(rhoMax-rhoMin)*0.45, rmax=rhoMin+(rhoMax-rhoMin)*0.85;
-  const F0=[...axisI];
+  /* крайние точки: A — на сфере R_max (пересечение очерков на π₂), C — на вписанной в тор сфере R_min (касание по параллели) */
+  /* A и B — где очерковые образующие конуса выходят из тора (в общей плоскости симметрии: пересечение очерков на π₂) */
+  const exitOn=b=>{ let lo=0.05, hi=1; for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(inLemon(v3.lerp(Sv,b,m))) lo=m; else hi=m; } return v3.lerp(Sv,b,(lo+hi)/2); };
+  const pA=exitOn(b2), pB=exitOn(b1), cMin=pts(rhoMin+0.005).filter(o=>o.ys===1);
+  const r1=rhoMin+(rhoMax-rhoMin)*0.25, r2=rhoMin+(rhoMax-rhoMin)*0.55, r3=rhoMin+(rhoMax-rhoMin)*0.85;
   return { l:'а)', q:'Построить проекции линии пересечения поверхностей конуса вращения и тора.',
-  given:[ axis(), ...torF, ...torH, ...conF, ...conH, ...axisI, pt(F(O),'O″','se'), pt(H(O),'O′','se'), pt(F(Sv),'S″','s'), pt(H(Sv),'S′','s') ],
+  /* как в тетради (стр. 26, а): левая дуга тора в зоне конуса и образующие конуса в зоне тора — тонкие; осевые: ось тора через обе проекции,
+     i — штрихпунктир, центр основания конуса на π₁ — осевая ⟂ i′; центры — точки без подписей */
+  given:(()=>{ const triC=inPoly2([F(Sv),F(b1),F(b2)]), domeF=q=>{ const X=-q[0]/S, Z=-q[1]/S, r=Math.abs(X-O[0]); return Z>0.3&&Z<zT&&Math.hypot(r+a,Z-zc)<Rm-0.3; };
+    const mL=merid(-1).map(F), mR=merid(1).map(F);
+    return [ axis(), ...torF.slice(0,2).map(o=>({...o,k:'thin'})), ...splitL(mR,q=>triC(q)?'thin':'main'), ...splitL(mL,q=>triC(q)?'thin':'main'), seg(F([O[0]-rb,0,0]),F([O[0]+rb,0,0]),'main'), ...torH,
+      ...splitL([F(Sv),F(b1)],q=>domeF(q)?'thin':'main'), ...splitL([F(Sv),F(b2)],q=>domeF(q)?'thin':'main'), seg(F(b1),F(b2),'main'),
+      ln(F([O[0],0,zT+4]),H([O[0],O[1]+rb+6,0]),'axis',null,null,0,0), axisI[0], ln(H([O[0]+rb+6,O[1],0]),H([O[0]-rb-6,O[1],0]),'axis','i′',[6,-4,'end'],0,0),
+      ln(H([Cb[0],O[1]-vb-5,0]),H([Cb[0],O[1]+vb+5,0]),'axis',null,null,0,0),
+      pt(F(O),'','se','main',{hollow:true}), pt(H(O),'','se','main',{hollow:true}), pt(F(Cb),'','se','main',{hollow:true}), pt(H(Cb),'','se','main',{hollow:true}),
+      pt(F(Sv),'S″','s'), pt(H(Sv),'S′','ne'),
+      vec(F([O[0]+a,0,zc]),F([O[0]+a-Rm*Math.cos(22*RAD),0,zc+Rm*Math.sin(22*RAD)]),'thin','R') ]; })(),   /* радиус образующей дуги — стрелка от её центра, как в тетради */
   steps:[
     { t:'Выбор метода: концентрические сферы',
-      d:'Оси тора (вертикальная) и конуса (наклонная, параллельна π₂) пересекаются в точке O. Обе поверхности — вращения, поэтому сфера с центром O пересекает каждую по окружностям: тор — по параллелям (плоскости ∥ π₁), конус — по окружностям ⟂ его оси. Возьмём сферы разных радиусов и найдём общие точки этих окружностей.',
-      why:'Способ концентрических сфер: применим, если обе поверхности — тела вращения с пересекающимися осями, параллельными одной плоскости проекций.',
-      add:[ pt(F(O),'O″','se','aux'), ...axisI.map(s=>({...s,k:'aux'})) ] },
+      d:'Тор и конус — поверхности вращения. Ось тора вертикальна, ось конуса i параллельна π₂, и оси пересекаются в точке O. Сфера с центром O пересекает каждую поверхность по окружностям: тор — по параллелям (на π₂ — горизонтальные отрезки), конус — по окружностям, перпендикулярным i (на π₂ — отрезки ⟂ i″). Общие точки этих окружностей принадлежат линии пересечения.',
+      why:'Способ концентрических сфер применим, если обе поверхности — вращения, их оси пересекаются и параллельны одной плоскости проекций (здесь π₂).',
+      add:[ pt(F(O),'O″','se','aux'), pt(H(O),'O′','se','aux') ] },
+    { t:'Горизонтальная проекция конуса',
+      d:'Основание конуса — окружность в плоскости ⟂ i; на π₁ это эллипс: большая ось ⟂ i′ равна диаметру основания, малая — проекция отрезка основания с π₂. Очерк конуса на π₁ — касательные из S′ к эллипсу.',
+      why:'Окружность, плоскость которой наклонена к π₁, проецируется в эллипс; очерковые образующие касаются эллипса основания.',
+      add:[ poly(baseH.map(H),'aux',true), seg(H(Sv),H(pmin),'aux'), seg(H(Sv),H(pmax),'aux'), conn(F(b1),H(b1)), conn(F(b2),H(b2)), axisI[1] ] },
     { t:'Границы радиусов сфер',
-      d:'Наименьшая нужная сфера — бо́льшая из двух вписанных: в конус (радиус t₀·sin β = '+R1(t0*Math.sin(beta))+' мм) и в тор (R<sub>тора</sub> − r = '+R1(Rt-rt)+' мм). Здесь это сфера, вписанная в конус: R<sub>min</sub> = '+R1(rhoMin)+' мм — она касается конуса и пересекает тор. Наибольшая — R<sub>max</sub> = R<sub>тора</sub> + r = '+R1(rhoMax)+' мм (касается внешнего экватора тора). Всё между ними даёт точки.',
-      why:'Если сфера не пересекает одну из поверхностей — общих точек на ней нет. Границы диапазона определяют крайние (характерные) точки линии.',
-      add:[ sph(rhoMin), sph(rhoMax) ] },
-    { t:'Первая группа точек: ρ₁ = '+R1(rm),
-      d:'Строим сферу произвольного радиуса ρ₁ (между R<sub>min</sub> и R<sub>max</sub>) с центром O″. Тор: параллели — горизонтальные отрезки на высоте z<sub>O</sub> ± √(ρ² − r²). Конус: окружности — отрезки, перпендикулярные оси конуса. Пересечения отрезков дают точки на π₂; линиями связи (через окружность параллели тора на π₁) находим их горизонтальные проекции — по две (спереди и сзади).',
-      why:'Точка принадлежит и параллели тора, и окружности конуса, лежащим на одной сфере, поэтому принадлежит обеим поверхностям (вопрос 14).',
-      add:group(rm,'1') },
-    { t:'Вторая группа: ρ₂ = '+R1(rmid),
-      d:'Тем же способом — сфера произвольного радиуса ρ₂ с центром O, отрезки параллелей тора и окружностей конуса, их пересечения и горизонтальные проекции.',
+      d:'Наименьшая сфера — вписанная в тор: она касается его по параллели, R<sub>min</sub> = R − |O″Z″| = '+R1(rhoMin)+' мм (Z — центр дуги-образующей). Её параллель касания пересекает конус — это точки C линии (самые близкие к O). Точки A и B — пересечения очерков тора и конуса на π₂ (нижняя и верхняя очерковые образующие конуса выходят из тора): они лежат в общей плоскости симметрии, A′ и B′ — на i′. Наибольшая сфера проходит через A: R<sub>max</sub> = |O″A″| ≈ '+R1(rhoMax)+' мм.',
+      why:'Если сфера не пересекает одну из поверхностей, общих точек на ней нет; крайние сферы дают характерные точки линии.',
+      add:[ sph(rhoMin), sph(rhoMax), pt(F(pA),'A″','w','res'),conn(F(pA),H(pA)),pt(H(pA),'A′','sw','res'), pt(F(pB),'B″','e','res'),conn(F(pB),H(pB)),pt(H(pB),'B′','se','res'),
+            ...cMin.slice(0,1).flatMap(o=>[pt(F(o.p),'C″','ne','res'),conn(F(o.p),H(o.p)),pt(H(o.p),'C′','se','res')]) ] },
+    { t:'Первая группа точек: ρ₁ = '+R1(r1),
+      d:'Сфера радиуса ρ₁ с центром O″. Тор: её параллели — горизонтальные отрезки (концы — на дугах очерка). Конус: окружности — отрезки, перпендикулярные i″ (концы — на очерковых образующих). Пересечения отрезков — точки на π₂; на π₁ их находим на окружностях-параллелях тора (радиус — половина горизонтального отрезка), по две: спереди и сзади.',
+      why:'Точка принадлежит и параллели тора, и окружности конуса, лежащим на одной сфере, — значит, обеим поверхностям (вопрос 14).',
+      add:group(r1,'1') },
+    { t:'Вторая группа: ρ₂ = '+R1(r2),
+      d:'Тем же способом — сфера ρ₂: отрезки параллелей тора и окружностей конуса, их пересечения и горизонтальные проекции.',
       why:'Каждая новая сфера даёт очередные точки линии; чем больше сфер, тем точнее кривая.',
-      add:group(rmid,'2') },
-    { t:'Третья группа: ρ₃ = '+R1(rmax),
-      d:'Третья сфера — произвольного радиуса ρ₃ ближе к R<sub>max</sub>: сфера всё ближе к внешнему экватору тора: его параллели сближаются, точки идут по внешней части тора.',
-      why:'Сфера R<sub>max</sub> касается тора — её пересечение с тором вырождается в окружность-экватор (граница диапазона).',
-      add:group(rmax,'3') },
+      add:group(r2,'2') },
+    { t:'Третья группа: ρ₃ = '+R1(r3),
+      d:'Сфера ρ₃ ближе к R<sub>max</sub>: точки подходят к A — точке на очерках.',
+      why:'Сфера R<sub>max</sub> проходит через точку пересечения очерков — границу диапазона.',
+      add:group(r3,'3') },
     { t:'Линия пересечения и видимость',
-      d:'Соединяем точки плавной кривой. Видимость на π₂: обе поверхности обращены к зрителю в передней половине (y > y<sub>O</sub>); на π₁ — там, где обе поверхности смотрят вверх. Остальное — штрих.',
-      why:'Линия пересечения видна, только если видимы обе поверхности в её точке.',
-      add:[ ...onlyF(branches,visF,'res',false), ...onlyH(branches,visH,'res','resd') ] }
+      d:'Соединяем A, точки групп, C и B плавной кривой; передняя и задняя половины на π₂ совпадают, на π₁ линия замкнута (A и B — на i′). Точка линии видна, если в ней обе поверхности обращены к наблюдателю. Очерки: часть очерка одной поверхности внутри другой не обводим, закрытую другой поверхностью — штрихом.',
+      why:'Линия пересечения видна, только если видимы обе поверхности в её точке; тела вместе образуют одно целое.',
+      add:[ ...outlF, ...outlH, ...onlyF(branches,visF,'res',false), ...onlyH(branches,visH,'res','resd') ] }
   ],
-  ans:'Линия пересечения конуса и тора построена способом концентрических сфер с центром O = пересечение осей; R<sub>min</sub> ≈ '+R1(rhoMin)+' мм, R<sub>max</sub> ≈ '+R1(rhoMax)+' мм; видимость определена по нормалям поверхностей.' }; })();
+  ans:'Линия пересечения конуса и тора построена способом концентрических сфер с центром O = пересечение осей; R<sub>min</sub> ≈ '+R1(rhoMin)+' мм (сфера, вписанная в тор), R<sub>max</sub> ≈ '+R1(rhoMax)+' мм (через точку A пересечения очерков); видимость определена по нормалям поверхностей.' }; })();
 
 /* ================= б) эллиптический цилиндр и конус ================= */
 const B_=(()=>{
   const cy=45, zc=47, xa=139, tanb=0.30, xR=0, xL=46, tau=tanb*tanb;              // конус: ось ∥ x на высоте zc, вершина в x = xa
-  const u=v3.unit([51,0,86]), w=[u[2],0,-u[0]], Q0=[60,cy,43], b=32, ay=35, zTop=86;
+  const u=v3.unit([51,0,86]), w=[u[2],0,-u[0]], Q0=[60,cy,43], ay=35, b=ay*u[2], zTop=86;   /* горизонтальные сечения цилиндра — окружности радиуса ay (как на π₁ в тетради) */
   const rad=x=>tanb*(xa-x);
   const solve=(eta,cs)=>{ // прямая: Q0 + s u + cs*c w + eta ŷ → пересечение с конусом
     const c=cs*b*Math.sqrt(Math.max(0,1-(eta/ay)**2));
@@ -20265,9 +20421,11 @@ const B_=(()=>{
   const branches=[]; for(const cs of [1,-1]) for(const ri of [0,1]){
     const rr=trace(eta=>{ const q=solve(eta,cs)[ri]; return q||[NaN,NaN,NaN]; },-ay,ay,p=>!isNaN(p[0])&&okP(p),600); branches.push(...rr.map(r=>Object.assign(r,{cs}))); }
   const nC=p=>[0,p[1]-cy,p[2]-zc], nCy=p=>{ const d=Math.hypot(p[1]-cy,p[2]-zc); return [ tanb*d*0+0, (p[1]-cy)/d, (p[2]-zc)/d ]; };
-  return {cy,zc,xa,tanb,xR,xL,u,w,Q0,b,ay,zTop,solve,okP,branches,rad};
+  return {cy,zc,xa,tanb,xR,xL,u,w,Q0,b,ay,zTop,solve,okP,branches,rad,
+    inCyl:p=>{ if(p[2]<=0.05||p[2]>=zTop-0.05) return false; const s=(p[2]-Q0[2])/u[2], c=v3.add(Q0,v3.mul(u,s)); return Math.hypot(p[0]-c[0],p[1]-cy)<ay-0.05; },
+    inCone:p=>p[0]>xR+0.05&&p[0]<xL-0.05&&Math.hypot(p[1]-cy,p[2]-zc)<rad(p[0])-0.05};
 })();
-const pb=(()=>{ const {cy,zc,xa,tanb,xR,xL,u,w,Q0,b,ay,zTop,solve,okP,branches,rad}=B_;
+const pb=(()=>{ const {cy,zc,xa,tanb,xR,xL,u,w,Q0,b,ay,zTop,solve,okP,branches,rad,inCyl,inCone}=B_;
   const visF=r=>p=>p[1]>=cy-1e-9;
   const visH=(p,cs)=>p[2]>=zc-1e-9&&cs<0;
   const drawB=(fn)=>branches.flatMap(r=>fn([r],r.cs));
@@ -20289,7 +20447,22 @@ const pb=(()=>{ const {cy,zc,xa,tanb,xR,xL,u,w,Q0,b,ay,zTop,solve,okP,branches,r
   const group=(eta,tag)=>{ const it=[ seg(H([xmin-6,cy+eta,0]),H([xmax+6,cy+eta,0]),'aux'), ...hyp(eta,'aux'), ...genLines(eta,'aux') ];
     let n=0; [1,-1].forEach(cs=>[0,1].forEach(ri=>{ const p=solve(eta,cs)[ri]; if(p&&okP(p)){ n++; it.push(pt(F(p),tag+n+'″','ne','aux'), conn(F(p),H(p)), pt(H(p),tag+n+'′','se','aux')); } })); return it; };
   return { l:'б)', q:'Построить проекции линии пересечения поверхностей эллиптического цилиндра и конуса вращения.',
-  given:[ axis(), ...coneF, ...cylF, ...coneH, ...bandH ],
+  /* как в тетради (стр. 26, б): на π₁ цилиндр дан с линией обрыва слева, окружностями верхнего и нижнего оснований (горизонтальные сечения — окружности);
+     очерки в зоне другого тела — тонкие, закрытые — штрихом; осевые обоих тел */
+  given:(()=>{ const ax=z=>v3.add(Q0,v3.mul(u,(z-Q0[2])/u[2])), Tc=ax(zTop), Bc=ax(0), xw=Tc[0]+0.35*ay;
+    const edge=(sg,z0,z1)=>[v3.add(ax(z0),[sg*b/u[2],0,0]),v3.add(ax(z1),[sg*b/u[2],0,0])];
+    const gen=(sg)=>{ const P0=[ax(0)[0],cy+sg*ay,0], P1=[ax(zTop)[0],cy+sg*ay,zTop]; return [P0,P1]; };
+    const circ3=(c,a0,a1)=>Array.from({length:91},(_,i)=>{ const t=(a0+(a1-a0)*i/90)*RAD; return [c[0]+ay*Math.cos(t),cy+ay*Math.sin(t),c[2]]; });
+    const coneG=sg=>[[xR,cy,zc+sg*rad(xR)],[xL,cy,zc+sg*rad(xL)]], coneGH=sg=>[[xR,cy+sg*rad(xR),zc],[xL,cy+sg*rad(xL),zc]];
+    const bandEnd=sg=>{ const g=gen(sg), d=v3.sub(g[1],g[0]); const tW=(xw-g[0][0])/d[0]; return [g[0],v3.add(g[0],v3.mul(d,tW))]; };   /* до линии обрыва, как в тетради */
+    return [ axis(),
+      ...outl3(edge(1,0,zTop),'F',inCone), ...outl3(edge(-1,0,zTop),'F',inCone), seg(F(edge(1,0,0)[0]),F(edge(-1,0,0)[0]),'main'), seg(F(edge(1,zTop,zTop)[0]),F(edge(-1,zTop,zTop)[0]),'main'),
+      ...outl3(coneG(1),'F',inCyl), ...outl3(coneG(-1),'F',inCyl), ...outl3([[xR,cy,zc-rad(xR)],[xR,cy,zc+rad(xR)]],'F',inCyl), ...outl3([[xL,cy,zc-rad(xL)],[xL,cy,zc+rad(xL)]],'F',inCyl),
+      ln(F(ax(-6)),F(ax(zTop+6)),'axis',null,null,0,0), ln(F([xR-6,cy,zc]),F([xL+8,cy,zc]),'axis',null,null,0,0),
+      waveL(H([xw,cy-ay,0]),H([xw,cy+ay,0]),2), ...outl3(circ3(Tc,90,270),'H',inCone), ...outl3(circ3(Bc,-180,180),'H',p=>inCyl(p)||inCone(p)),
+      ...outl3(bandEnd(1),'H',inCone), ...outl3(bandEnd(-1),'H',inCone),
+      ...outl3(coneGH(1),'H',inCyl), ...outl3(coneGH(-1),'H',inCyl), ...outl3([[xR,cy-rad(xR),zc],[xR,cy+rad(xR),zc]],'H',inCyl), ...outl3([[xL,cy-rad(xL),zc],[xL,cy+rad(xL),zc]],'H',inCyl),
+      ln(H([xw+3,cy,0]),H([xR-8,cy,0]),'axis',null,null,0,0), ln(H([Tc[0],cy-ay-5,0]),H([Tc[0],cy+ay+5,0]),'axis',null,null,0,0), ln(H([Bc[0],cy-ay-5,0]),H([Bc[0],cy+ay+5,0]),'axis',null,null,0,0) ]; })(),
   steps:[
     { t:'Выбор посредников',
       d:'Образующие цилиндра лежат во фронтальных плоскостях, ось конуса ∥ x. Значит, фронтальная плоскость γ (y = const) пересекает цилиндр по двум прямым образующим, а конус — по гиперболе. Эти линии строятся на π₂ без затруднений, их пересечения — точки искомой линии.',
@@ -20347,12 +20520,19 @@ const pc=(()=>{ const {O,Rb,k,Rs,rz,zBot,zTop,xh,runs}=C_;
     const xs=z=>rz(z); // x−O0 = ±rz
     const zc1=O[2]+Rs, zc2=O[2]-Rs; return { A:[O[0]+rz(zc2),O[1],zc2], B:[O[0]+rz(zc1),O[1],zc1], C:[O[0]-rz(zc1),O[1],zc1], D:[O[0]-rz(zc2),O[1],zc2] }; })();
   return { l:'в)', q:'Построить проекции линий пересечения поверхностей конуса вращения и цилиндра вращения.',
-  given:[ axis(), ...conF, ...cylF, ...conH, ...cylH, pt(F(O),'O″','se'), pt(H(O),'O′','se') ],
+  /* как в тетради (стр. 26, в): образующие конуса в зоне цилиндра — тонкие, основание конуса под цилиндром — штрих; вписанная сфера — тонкая окружность
+     на обеих проекциях; осевые; центр без подписи */
+  given:(()=>{ const rectF=inPoly2([[O[0]+xh,0,O[2]-Rs],[O[0]+xh,0,O[2]+Rs],[O[0]-xh,0,O[2]+Rs],[O[0]-xh,0,O[2]-Rs]].map(F)), rectH=inPoly2([[O[0]+xh,O[1]-Rs,0],[O[0]+xh,O[1]+Rs,0],[O[0]-xh,O[1]+Rs,0],[O[0]-xh,O[1]-Rs,0]].map(H));
+    const side=sg=>splitL([F([O[0]+sg*rz(zBot),0,zBot]),F([O[0]+sg*rz(zTop),0,zTop])],q=>rectF(q)?'thin':'main');
+    return [ axis(), ...side(1), ...side(-1), conF[2], conF[3], ...cylF, circ(F(O),Rs*S,'thin'),
+      ...circK(H([O[0],O[1],0]),rz(zBot)*S,q=>rectH(q)?'hid':'main'), circ(H([O[0],O[1],0]),rz(zTop)*S,'main'), circ(H(O),Rs*S,'thin'), ...cylH,
+      ln(F([O[0],0,zTop+5]),H([O[0],O[1]+rz(zBot)+6,0]),'axis',null,null,0,0), ln(F([O[0]+xh+6,0,O[2]]),F([O[0]-xh-6,0,O[2]]),'axis',null,null,0,0), ln(H([O[0]+xh+6,O[1],0]),H([O[0]-xh-6,O[1],0]),'axis',null,null,0,0),
+      pt(F(O),'','se','main',{hollow:true}), pt(H(O),'','se','main',{hollow:true}) ]; })(),
   steps:[
     { t:'Условия теоремы Монжа',
       d:'Ось конуса вертикальна, ось цилиндра ∥ x, оси пересекаются в точке O. В обе поверхности можно вписать одну сферу с центром O (её радиус равен радиусу цилиндра). Тогда по теореме Монжа линия пересечения распадается на две плоские кривые — эллипсы, плоскости которых проходят через точки пересечения линий касания.',
       why:'Теорема Монжа: если две поверхности 2-го порядка описаны около третьей (или вписаны в неё), то линия их пересечения распадается на две плоские кривые 2-го порядка.',
-      add:[ sphF, sphH ] },
+      add:[ sphF, sphH, pt(F(O),'O″','se','aux'), pt(H(O),'O′','se','aux') ] },
     { t:'Крайние точки A, B, C, D',
       d:'Очерки конуса и цилиндра пересекаются на π₂ в четырёх точках: A″, B″, C″, D″ — это точки линии пересечения в плоскости симметрии.',
       why:'Общая плоскость симметрии (фронтальная, через оси) содержит очерки; их пересечения принадлежат обеим поверхностям.',
@@ -20374,8 +20554,8 @@ const pc=(()=>{ const {O,Rb,k,Rs,rz,zBot,zTop,xh,runs}=C_;
 
 /* 3D: тела задачи */
 { const Q3=SURF3;
-  pa.surf3=()=>{ const {O,Rt,rt,cone,L}=A_; return {meshes:[
-    {tris:Q3.grid((al,f)=>{ const q=Rt+rt*Math.cos(f); return [O[0]+q*Math.cos(al),O[1]+q*Math.sin(al),O[2]+rt*Math.sin(f)]; },0,2*Math.PI,48,0,2*Math.PI,20),col:Q3.COL.body,op:.5},
+  pa.surf3=()=>{ const {O,a,zc,Rm,zT,cone,L}=A_; const a1=Math.asin(-zc/Rm), a2=Math.acos(a/Rm); return {meshes:[
+    {tris:Q3.grid((al,f)=>{ const r=-a+Rm*Math.cos(f); return [O[0]+r*Math.cos(al),O[1]+r*Math.sin(al),zc+Rm*Math.sin(f)]; },0,2*Math.PI,48,a1,a2,20),col:Q3.COL.body,op:.5},
     {tris:Q3.clip(Q3.grid((t,psi)=>cone(t,psi),0.01,L,12,0,2*Math.PI,40),p=>p[2]>=0),col:Q3.COL.alt,op:.55}]}; }; pa.form='torus';
   pb.surf3=()=>{ const {cy,zc,xa,tanb,xR,xL,u,w,Q0,b,ay,zTop}=B_;
     const ec=(f,tau)=>{ const c=b*Math.cos(f), eta=ay*Math.sin(f), s0=(0-Q0[2]-c*w[2])/u[2], s1=(zTop-Q0[2]-c*w[2])/u[2], s_=s0+(s1-s0)*tau; return [Q0[0]+s_*u[0]+c*w[0],cy+eta,Q0[2]+s_*u[2]+c*w[2]]; };
@@ -20388,7 +20568,7 @@ WB3.add({
   q:'Построить проекции линий пересечения поверхностей: а) конуса вращения и тора; б) эллиптического цилиндра и конуса вращения; в) конуса вращения и цилиндра вращения.',
   intro:'Три пары поверхностей: а) тор + конус — метод концентрических сфер; б) эллиптический цилиндр + конус — фронтальные плоскости-посредники (можно и эксцентрическими сферами); в) конус + цилиндр вращения с общей вписанной сферой — теорема Монжа.',
   parts:[pa,pb,pc],
-  note:'Размеры условные, линии пересечения вычислены точно для принятых размеров. В б) можно применить метод эксцентрических сфер; здесь для наглядности и точности применены фронтальные плоскости-посредники — результат тот же. В в) показаны линии касания вписанной сферы и крайние точки.'
+  note:'Размеры условные, линии пересечения вычислены точно для принятых размеров. В а) форма и положение тел сняты с рисунка тетради: тор — купол, образующая которого — дуга радиуса R с центром по другую сторону оси; вершина конуса лежит на основании тора. Размеры условные, линии пересечения вычислены точно для принятых размеров. В б) можно применить метод эксцентрических сфер; здесь для наглядности и точности применены фронтальные плоскости-посредники — результат тот же. В в) показаны линии касания вписанной сферы и крайние точки.'
 });
 })();
 /* ---------- № 75 ---------- */
@@ -20401,7 +20581,10 @@ const rK=21, ang=Math.atan2(19,9.5), Kp=[cx+rK*Math.cos(ang),cy+rK*Math.sin(ang)
 const K=[Kp[0],Kp[1],zK], Mb=[Kp[0],Kp[1],0], Atop=[Kp[0],Kp[1],h+8];
 const pa={ l:'а)', q:'Построить проекции точек пересечения линии a с заданной поверхностью (конус; a ⟂ π₁).',
   given:[ axis(), fs([cx+R,0],[cx,h],'main'), fs([cx-R,0],[cx,h],'main'), fs([cx+R,0],[cx-R,0],'main'), circ(H([cx,cy,0]),R*S,'main'),
-          seg(F([Kp[0],0,-6]),F(Atop),'thin','a″',[-8,-4,'end']), pt(H([Kp[0],Kp[1],0]),'a′','sw'), pt(F([cx,0,h]),'S″','n'), pt(H([cx,cy,0]),'S′','ne') ],
+          /* как в тетради (стр. 27, а): a″ — основная над конусом, внутри очерка — тонкая; от a″ — линия связи к точке a′; осевые конуса */
+          poly([F([Kp[0],0,h*(1-Math.abs(Kp[0]-cx)/R)]),F(Atop)],'main',false), txt([F(Atop)[0]-8,F(Atop)[1]+30],'a″','main',{anchor:'end'}), seg(F([Kp[0],0,0]),F([Kp[0],0,h*(1-Math.abs(Kp[0]-cx)/R)]),'thin'), conn(F([Kp[0],0,0]),H([Kp[0],Kp[1],0])),
+          pt(H([Kp[0],Kp[1],0]),'a′','sw'), pt(F([cx,0,h]),'S″','n'), pt(H([cx,cy,0]),'S′','ne'),
+          ln(F([cx,0,h+4]),H([cx,cy+R+5,0]),'axis',null,null,0,0), ln(H([cx+R+5,cy,0]),H([cx-R-5,cy,0]),'axis',null,null,0,0) ],
   steps:[
     { t:'Прямая a — проецирующая',
       d:'a″ ⟂ x, а a′ — точка: прямая a перпендикулярна π₁. Все её точки проецируются на π₁ в одну точку a′. Значит, точка пересечения с конусом K имеет K′ ≡ a′ — горизонтальная проекция известна сразу.',
@@ -20431,7 +20614,11 @@ const KB=rootsB.map(aCurve);
 const curveA=[]; for(let i=0;i<=40;i++) curveA.push(aCurve(i/40));
 const pb={ l:'б)', q:'Построить проекции точек пересечения кривой a с прямым круговым цилиндром (ось ⟂ π₁).',
   given:[ axis(), fs([bc[0]+Rb,0],[bc[0]+Rb,hb],'main'), fs([bc[0]-Rb,0],[bc[0]-Rb,hb],'main'), fs([bc[0]-Rb,hb],[bc[0]+Rb,hb],'main'), fs([bc[0]+Rb,0],[bc[0]-Rb,0],'main'),
-          circ(H([bc[0],bc[1],0]),Rb*S,'main'), curve(curveA.map(F),'main',{l:'a″'}), curve(curveA.map(H),'main',{l:'a′'}) ],
+          /* как в тетради (стр. 27, б): кривая a в зоне цилиндра — тонкая, вне — основная; осевые */
+          circ(H([bc[0],bc[1],0]),Rb*S,'main'), curve(curveA.map(F),'thin',{l:'a″'}), curve(curveA.map(H),'thin',{l:'a′'}),
+          ...splitL(curveA.map(F),q=>inPoly2([[bc[0]+Rb,0,0],[bc[0]+Rb,0,hb],[bc[0]-Rb,0,hb],[bc[0]-Rb,0,0]].map(F))(q)?'none':'main').filter(o=>o.k!=='none'),
+          ...splitL(curveA.map(H),q=>inCirc2(H([bc[0],bc[1],0]),Rb*S)(q)?'none':'main').filter(o=>o.k!=='none'),
+          ln(F([bc[0],0,hb+5]),H([bc[0],bc[1]+Rb+5,0]),'axis',null,null,0,0), ln(H([bc[0]+Rb+5,bc[1],0]),H([bc[0]-Rb-5,bc[1],0]),'axis',null,null,0,0) ],
   steps:[
     { t:'Цилиндр — проецирующий',
       d:'Боковая поверхность цилиндра ⟂ π₁ проецируется на π₁ в окружность. Значит, все точки, принадлежащие цилиндру, имеют горизонтальные проекции на этой окружности — точки K′, L′ ищем там, где a′ пересекает окружность.',
@@ -20459,6 +20646,7 @@ const foot=P00; const Kc=v3.add(foot,v3.mul(u,-sh)), Lc=v3.add(foot,v3.mul(u,sh)
 const aEnds=[v3.add(foot,v3.mul(u,-55)),v3.add(foot,v3.mul(u,55))];
 const pc={ l:'в)', q:'Построить проекции точек пересечения горизонтальной прямой a со сферой.',
   given:[ axis(), circ(F(O),Rs*S,'main'), circ(H(O),Rs*S,'main'), pt(F(O),'O″','se'), pt(H(O),'O′','se'),
+          ln(F([O[0],0,O[2]+Rs+5]),H([O[0],O[1]+Rs+5,0]),'axis',null,null,0,0), ln(F([O[0]+Rs+5,0,O[2]]),F([O[0]-Rs-5,0,O[2]]),'axis',null,null,0,0), ln(H([O[0]+Rs+5,O[1],0]),H([O[0]-Rs-5,O[1],0]),'axis',null,null,0,0),
           seg(F(aEnds[0]),F(aEnds[1]),'main','a″',[6,-4,'start']), seg(H(aEnds[0]),H(aEnds[1]),'main','a′',[6,-4,'start']) ],
   steps:[
     { t:'Заключаем a в горизонтальную плоскость γ',
@@ -20508,9 +20696,16 @@ const proj3=p=>{ const h=H(p); const t=(h[0]-anchor[0])*eh[0]+(h[1]-anchor[1])*e
 const foot3=p=>{ const h=H(p); const t=(h[0]-anchor[0])*eh[0]+(h[1]-anchor[1])*eh[1]; return [anchor[0]+eh[0]*t,anchor[1]+eh[1]*t]; };
 const O3=proj3(O), axA=[anchor[0]-eh[0]*90*S/3.2*0-eh[0]*130,anchor[1]-eh[1]*130], axB=[anchor[0]+eh[0]*260,anchor[1]+eh[1]*260];
 const inside=p=>0;
+/* прямая a у шара — как в тетради: внутри очерка тонкая, снаружи основная, с выходом за очерк на обеих проекциях; осевые сферы */
+const sphLineGiven=(Oc,Rr,P0,P1)=>{ const d=v3.sub(P1,P0), at=t=>v3.add(P0,v3.mul(d,t)), near=t=>{ const p=at(t); return v3.dist([p[0],0,p[2]],[Oc[0],0,Oc[2]])<Rr*1.22||v3.dist([p[0],p[1],0],[Oc[0],Oc[1],0])<Rr*1.22; };
+  let t0=0,t1=1; for(let t=0;t>-6;t-=0.01) if(near(t)) t0=t; for(let t=1;t<6;t+=0.01) if(near(t)) t1=t;
+  const A=at(t0), B=at(t1), inF=inCirc2(F(Oc),Rr*S), inH=inCirc2(H(Oc),Rr*S);
+  return [ seg(F(A),F(B),'thin','a″',[6,-4,'end']), seg(H(A),H(B),'thin','a′',[6,-4,'end']), seg(F(P0),F(P1),'thin'), seg(H(P0),H(P1),'thin'),
+    ...splitL([F(A),F(B)],q=>inF(q)?'none':'main').filter(o=>o.k!=='none'), ...splitL([H(A),H(B)],q=>inH(q)?'none':'main').filter(o=>o.k!=='none'),
+    ln(F([Oc[0],0,Oc[2]+Rr+5]),H([Oc[0],Oc[1]+Rr+5,0]),'axis',null,null,0,0), ln(F([Oc[0]+Rr+5,0,Oc[2]]),F([Oc[0]-Rr-5,0,Oc[2]]),'axis',null,null,0,0), ln(H([Oc[0]+Rr+5,Oc[1],0]),H([Oc[0]-Rr-5,Oc[1],0]),'axis',null,null,0,0) ]; };
 const pa={ l:'а)', q:'Построить проекции точек пересечения прямой a со сферой, применив способ замены плоскостей проекций.',
   given:[ axis(), circ(F(O),R*S,'main'), circ(H(O),R*S,'main'), pt(F(O),'O″','se'), pt(H(O),'O′','se'),
-          seg(F(Pa),F(Pb),'main','a″',[6,-4,'start']), seg(H(Pa),H(Pb),'main','a′',[6,-4,'start']) ],
+          ...sphLineGiven(O,R,Pa,Pb) ],
   steps:[
     { t:'Вводим π₄ ⟂ π₁, π₄ ∥ a′',
       d:'Выбираем новую плоскость проекций π₄ так, чтобы она была перпендикулярна π₁ (сохраняем высоты z) и параллельна горизонтальной проекции a′. Ось x₁₄ проводим ∥ a′ ниже чертежа.',
@@ -20553,7 +20748,7 @@ const Mf=v3.add(Q1,v3.mul(d2,(O2[1]-Q1[1])/d2[1]));                 // M ∈ a �
 const traj=(p,q)=>seg(F(p),F(q),'aux');
 const pb={ l:'б)', q:'Построить проекции точек пересечения прямой a со сферой, применив способ вращения вокруг фронтали.',
   given:[ axis(), circ(F(O2),R2*S,'main'), circ(H(O2),R2*S,'main'), pt(F(O2),'O″','se'), pt(H(O2),'O′','se'),
-          seg(F(Qa),F(Qb),'main','a″',[6,-4,'start']), seg(H(Qa),H(Qb),'main','a′',[6,-4,'start']) ],
+          ...sphLineGiven(O2,R2,Qa,Qb) ],
   steps:[
     { t:'Плоскость через центр и прямую',
       d:'Через центр шара O и прямую a проводим плоскость β: соединяем O с двумя произвольными точками прямой a. Плоскость пересекает шар по большому кругу радиуса R. Если β сделать параллельной π₂, круг и прямая a изобразятся на π₂ без искажения.',
@@ -20611,19 +20806,24 @@ const Kpov=hits, Kk=Kpov.map(backRot);
 const onTor=p=>{ const dx=p[0]-xA, dz=p[2], dy=p[1]-yt; return Math.abs(Math.hypot(Math.hypot(dx,dz)-Rt,dy)-rt); };
 const nTor=p=>{ const r=Math.hypot(p[0]-xA,p[2]), u=[(p[0]-xA)/r,0,p[2]/r]; return v3.sub(p,v3.add([xA,yt,0],v3.mul(u,Rt))); };
 const arcRing=(r,k)=>{ const pts=[]; for(let i=0;i<=40;i++){ const th=i/40*Math.PI/2; pts.push(F([xA-r*Math.cos(th),0,r*Math.sin(th)])); } return poly(pts,k,false); };
-const torF=[ arcRing(Rt+rt,'main'), arcRing(Rt-rt,'main'), fs([xA-(Rt-rt),0],[xA-(Rt+rt),0],'main'), fs([xA,Rt-rt],[xA,Rt+rt],'main'), arcRing(Rt,'thin') ];
+const torF=[ arcRing(Rt+rt,'main'), arcRing(Rt-rt,'main'), fs([xA-(Rt-rt),0],[xA-(Rt+rt),0],'main'), fs([xA,Rt-rt],[xA,Rt+rt],'main'), arcRing(Rt,'axis'),
+  ln(F([xA-Rt,0,3]),H([xA-Rt,yt+rt+6,0]),'axis',null,null,0,0), ln(H([xA+6,yt,0]),H([xA-Rt-rt-6,yt,0]),'axis',null,null,0,0) ];   /* осевые, как в тетради */
 const torH=[ seg(H([xA,yt-rt,0]),H([xA-Rt,yt-rt,0]),'main'), seg(H([xA,yt+rt,0]),H([xA-Rt,yt+rt,0]),'main'), seg(H([xA,yt-rt,0]),H([xA,yt+rt,0]),'main'),
   arc(H([xA-Rt,yt,0]),rt*S,-90,90,'main'), arc(H([xA-Rt,yt,0]),rt*S,90,270,'hid') ];
-const aH=[ seg(H(v3.add(A,v3.mul(v3.sub(A,B),0.12))),H(v3.add(B,v3.mul(v3.sub(B,A),0.08))),'main','a′',[-8,-4,'end']) ];
-const aF=[ seg(F(v3.add(A,v3.mul(v3.sub(A,B),0.12))),F(v3.add(B,v3.mul(v3.sub(B,A),0.08))),'main','a″',[-8,-4,'end']) ];
-const axI=[ seg(H([xA,yt-rt-14,0]),H([xA,yt+rt+16,0]),'thin','i′',[-14,6,'end']), pt(F([xA,0,0]),'i″≡A″','sw') ];
+/* a — как в тетради: в зоне тора тонкая, вне — основная */
+const aE7=[v3.add(A,v3.mul(v3.sub(A,B),0.12)),v3.add(B,v3.mul(v3.sub(B,A),0.08))];
+const torRegF=q=>{ const X=-q[0]/S, Z=-q[1]/S, r=Math.hypot(X-xA,Z); return X<xA&&Z>0&&r>Rt-rt&&r<Rt+rt; };
+const torRegH=q=>{ const X=-q[0]/S, Y=q[1]/S; return Math.abs(Y-yt)<rt&&X<xA&&(X>xA-Rt||Math.hypot(X-(xA-Rt),Y-yt)<rt); };
+const aH=[ seg(H(aE7[0]),H(aE7[1]),'thin','a′',[-8,-4,'end']), ...splitL([H(aE7[0]),H(aE7[1])],q=>torRegH(q)?'none':'main').filter(o=>o.k!=='none') ];
+const aF=[ seg(F(aE7[0]),F(aE7[1]),'thin','a″',[-8,-4,'end']), ...splitL([F(aE7[0]),F(aE7[1])],q=>torRegF(q)?'none':'main').filter(o=>o.k!=='none') ];
+const axI=[ seg(H([xA,yt-rt-14,0]),H([xA,yt+rt+16,0]),'thin'), pt(F([xA,0,0]),'A″','sw') ];
 const pa={ l:'а)', q:'Построить проекции точек пересечения прямой a с поверхностью тора, применив способ вращения вокруг проецирующей прямой.',
-  given:[ axis(), ...torF, ...torH, ...axI, ...aF, ...aH, pt(H(A),'A′','w'), pt(F(B),'B″','ne'), pt(H(B),'B′','se') ],
+  given:[ axis(), ...torF, ...torH, ...axI, ...aF, ...aH, pt(H(A),'A′','w') ],
   steps:[
     { t:'Выбор оси вращения',
       d:'Ось тора i перпендикулярна π₂ (i″ — точка, i′ ⟂ x) и пересекается с прямой a в точке A. Вращаем a вокруг i так, чтобы она стала параллельна π₁ (лежала в плоскости экватора тора).',
       why:'Тор — поверхность вращения; вращение вокруг его оси переводит тор в себя, поэтому точки пересечения после поворота можно найти и вернуть обратно (задачи 58–60 — вращение вокруг проецирующей прямой).',
-      add:[ pt(F([xA,0,0]),'A″≡i″','sw','aux') ] },
+      add:[ pt(F([xA,0,0]),'i″','nw','aux'), txt(H([xA,yt+rt+16,0]),'i′','aux',{dx:-14,dy:6}), pt(F(B),'B″','ne','aux'), pt(H(B),'B′','se','aux'),  pt(F([xA,0,0]),'A″≡i″','sw','aux') ] },
     { t:'Поворот точки B',
       d:'Точка A лежит на оси и остаётся на месте. B вращается по окружности с центром A″ на π₂ (радиус A″B″) до положения B<sub>пов</sub>″ на оси x; на π₁ она движется по прямой ⟂ i′ (горизонтальной, в плоскости α вр B).',
       why:'Ось i ⟂ π₂: траектории точек — окружности, параллельные π₂; на π₂ они видны без искажения, на π₁ — отрезки ⟂ i′.',
@@ -20649,7 +20849,8 @@ const pa={ l:'а)', q:'Построить проекции точек перес
 
 /* ================= б) косой конус и прямая a: плоскость через вершину ================= */
 const cx=60, cy=50, Rb=40, S3=[cx-Rb,cy,100], Cb=[cx,cy,0];
-const Pa=[cx+32,cy+40,5], Pb=[cx-25,cy-35,62];
+/* прямая a снята с рисунка тетради (стр. 28): a″ поднимается к вершине S″ слева направо, a′ уходит от оси x — вперёд */
+const Pa=[110,59,6.67], Pb=[0,83.7,51.1];
 const da=v3.sub(Pb,Pa);
 const baseP=th=>[cx+Rb*Math.cos(th),cy+Rb*Math.sin(th),0];
 const nAl=v3.cross(da,v3.sub(Pa,S3));                   // нормаль плоскости α = (S, a)
@@ -20669,7 +20870,14 @@ const coneF=[ fs([cx+Rb,0],[S3[0],S3[2]],'main'), fs([cx-Rb,0],[S3[0],S3[2]],'ma
 const ext=(a,b,e0,e1)=>[v3.add(a,v3.mul(v3.unit(v3.sub(a,b)),e0)),v3.add(b,v3.mul(v3.unit(v3.sub(b,a)),e1))];
 const aE=ext(Pa,Pb,10,10);
 const pb={ l:'б)', q:'Построить проекции точек пересечения прямой a с конической поверхностью (без построения лекальных кривых).',
-  given:[ axis(), ...coneF, baseCurveH, pt(F(S3),'S″','ne'), pt(H(S3),'S′','ne'), seg(F(aE[0]),F(aE[1]),'main','a″',[-8,-4,'end']), seg(H(aE[0]),H(aE[1]),'main','a′',[-8,-4,'end']) ],
+  /* как в тетради (стр. 28, б): на π₁ — передняя половина основания с линией обрыва; ось конуса S″C″ и осевые основания — штрихпунктир;
+     a в зоне конуса — тонкая */
+  given:(()=>{ const triF=inPoly2([F(S3),F([cx+Rb,cy,0]),F([cx-Rb,cy,0])]), inB=inCirc2(H(Cb),Rb*S), yw=cy-0.3*Rb, xw=Math.sqrt(Rb*Rb-(0.3*Rb)**2), aw=Math.asin(0.3)*180/Math.PI;
+    return [ axis(), ...coneF, arc(H(Cb),Rb*S,180-aw,360+aw,'main'), waveL(H([cx+xw,yw,0]),H([cx-xw,yw,0]),2),
+      ln(F(S3),F(Cb),'axis',null,null,0,0), ln(F(Cb),H([cx,cy+Rb+6,0]),'axis',null,null,0,0), ln(H([cx+Rb+6,cy,0]),H([cx-Rb-6,cy,0]),'axis',null,null,0,0),
+      pt(F(S3),'S″','ne'), pt(H(S3),'S′','ne'),
+      seg(F(aE[0]),F(aE[1]),'thin','a″',[-8,-4,'end']), seg(H(aE[0]),H(aE[1]),'thin','a′',[-8,-4,'end']),
+      ...splitL([F(aE[0]),F(aE[1])],q=>triF(q)?'none':'main').filter(o=>o.k!=='none'), ...splitL([H(aE[0]),H(aE[1])],q=>inB(q)?'none':'main').filter(o=>o.k!=='none') ]; })(),
   steps:[
     { t:'Плоскость α через вершину S и прямую a',
       d:'Заключаем a в плоскость α, проходящую через вершину S. Для этого берём на a произвольную точку 1 и проводим прямую b = S1. Плоскость α = (a, b) пересекает конус по образующим — то есть по прямым (условие: секущая плоскость проходит через вершину конуса).',
@@ -20695,31 +20903,38 @@ const pb={ l:'б)', q:'Построить проекции точек перес
   ans:'K1, K2 = a ∩ образующие S2, S3 плоскости α (α ∋ S, a); построение без лекальных кривых.' };
 
 /* ================= в) гиперболический параболоид (косая плоскость) ================= */
-const d1o=[85,5,62], u1=v3.unit([-1,0.9,-0.6]), d2o=[85,95,8], u2=v3.unit([-1,-0.9,0.5]);
-const nal=v3.unit(v3.cross(v3.sub(u1,u2),[0.3,0.2,1]));
+/* данные сняты с рисунка тетради (стр. 28): d₁″ и d₂″ поднимаются вправо, a″ опускается вправо к оси x между ними;
+   d₁′ и d₂′ расходятся вниз от оси, a′ — короткая, почти ∥ x. Плоскость параллелизма α — фронтально-проецирующая
+   (h₀α ⟂ x), f₀α полого поднимается влево от точки Xα на оси x справа от чертежа */
+const d1o=[104.9,48.1,2.77], u1=v3.unit([-1,-1.904,1.933]), d2o=[46,4.4,1.85], u2=v3.unit([-1,1.368,1.81]);
+const nal=v3.unit([-3.4,0,17.7]);
 const gen=t=>{ const Aa=v3.add(d1o,v3.mul(u1,t)); const s=v3.dot(nal,v3.sub(Aa,d2o))/v3.dot(nal,u2)*(-1)*(-1); const Bb=v3.add(d2o,v3.mul(u2,s)); return [Aa,Bb]; };
 // подбираем s так, чтобы (B−A)·n = 0: (d2o + u2 s − A)·n = 0
 const genOK=t=>{ const Aa=v3.add(d1o,v3.mul(u1,t)); const s=v3.dot(nal,v3.sub(Aa,d2o))/v3.dot(nal,u2); const Bb=v3.add(d2o,v3.mul(u2,s)); return [Aa,Bb]; };
-const tRange=[0,75];
+const tRange=[14,66.8];
 const gsel=[]; for(let i=0;i<=12;i++) gsel.push(tRange[0]+(tRange[1]-tRange[0])*i/12);
 // прямая a: проходит через внутреннюю точку поверхности
-const Xin=(()=>{ const [Aa,Bb]=genOK(45); return v3.lerp(Aa,Bb,0.5); })();
-const wa=v3.unit([-1,-0.5,-0.45]); const Ap0=v3.add(Xin,v3.mul(wa,-30)), Ap1=v3.add(Xin,v3.mul(wa,50));
+const Ap0=[76.5,14.55,43.5], Ap1=[47.2,9.85,0.25];
+const Xin=Ap0, wa=v3.unit(v3.sub(Ap1,Ap0));
 const distG=t=>{ const [Aa,Bb]=genOK(t); const dd=v3.sub(Bb,Aa); const cr=v3.cross(dd,wa); const l=v3.len(cr); return v3.dot(v3.sub(Xin,Aa),cr)/(l||1); };
 const tK=rootsG(distG,-40,140).filter(t=>{ const [Aa,Bb]=genOK(t); const r=li(Aa,v3.sub(Bb,Aa),Xin,wa); return r&&r.s>=-1e-6&&r.s<=1+1e-6&&v3.dist(r.p,r.q)<0.05; });
 const KP=tK.map(t=>{ const [Aa,Bb]=genOK(t); return li(Aa,v3.sub(Bb,Aa),Xin,wa).p; });
 const ends=(t)=>genOK(t);
-const d1a=[v3.add(d1o,v3.mul(u1,-8)),v3.add(d1o,v3.mul(u1,98))], d2a=(()=>{ const s0=v3.dot(nal,v3.sub(d1a[0],d2o))/v3.dot(nal,u2), s1=v3.dot(nal,v3.sub(d1a[1],d2o))/v3.dot(nal,u2); return [v3.add(d2o,v3.mul(u2,s0-6)),v3.add(d2o,v3.mul(u2,s1+6))]; })();
+const d1a=[d1o,v3.add(d1o,v3.mul(u1,66.8))], d2a=[d2o,v3.add(d2o,v3.mul(u2,65))];
 // точки X_i = пересечение образующих с плоскостью β (β ⟂ π₁ через a): горизонтальные проекции — g′ ∩ a′
 const Xs=gsel.map(t=>{ const [Aa,Bb]=genOK(t); const c=G.cross(H(Aa),H(Bb),H(Xin),H(v3.add(Xin,wa))); if(!c) return null; const dH=[H(Bb)[0]-H(Aa)[0],H(Bb)[1]-H(Aa)[1]]; const l=Math.abs(dH[0])>Math.abs(dH[1])?(c[0]-H(Aa)[0])/dH[0]:(c[1]-H(Aa)[1])/dH[1]; if(l<-0.01||l>1.01) return null; return {t,p:v3.lerp(Aa,Bb,l),c}; }).filter(Boolean);
-const curveX=Xs.length>2?curve(Xs.map(o=>F(o.p)),'res'):null;
+/* кривая проводится плавно — по густому ряду образующих (подписаны только 13 построенных) */
+const Xruns=(()=>{ const runs=[]; let cur=[]; for(let i=0;i<=200;i++){ const t=tRange[0]+(tRange[1]-tRange[0])*i/200; const [Aa,Bb]=genOK(t); const c=G.cross(H(Aa),H(Bb),H(Xin),H(v3.add(Xin,wa))); let l=NaN; if(c){ const dH=[H(Bb)[0]-H(Aa)[0],H(Bb)[1]-H(Aa)[1]]; l=Math.abs(dH[0])>Math.abs(dH[1])?(c[0]-H(Aa)[0])/dH[0]:(c[1]-H(Aa)[1])/dH[1]; }
+  if(l>=0&&l<=1) cur.push(v3.lerp(Aa,Bb,l)); else { if(cur.length>1) runs.push(cur); cur=[]; } } if(cur.length>1) runs.push(cur); return runs; })();
+/* линия β ∩ поверхность может выходить за направляющие и возвращаться — тогда это несколько дуг, их не соединяем */
+const curveXs=Xruns.map(r=>curve(r.map(p=>F(p)),'res'));
 /* плоскость параллелизма α — следами (в условии она задана, без неё образующие не построить): через точку оси x справа от чертежа */
 const Xal=[1,0,0], dhA=(()=>{ const d=v3.unit(v3.cross(nal,[0,0,1])); return d[1]<0?v3.mul(d,-1):d; })(), dfA=(()=>{ const d=v3.unit(v3.cross(nal,[0,1,0])); return d[2]<0?v3.mul(d,-1):d; })();
-const h0A=[Xal,v3.add(Xal,v3.mul(dhA,26))], f0A=[Xal,v3.add(Xal,v3.mul(dfA,26))];
+const h0A=[Xal,v3.add(Xal,v3.mul(dhA,18))], f0A=[Xal,v3.add(Xal,v3.mul(dfA,18))];
 const pc={ l:'в)', q:'Построить проекции точек пересечения прямой a с поверхностью гиперболического параболоида (косой плоскостью), заданной направляющими d₁ и d₂ и плоскостью параллелизма α.',
   given:[ axis(), seg(F(d1a[0]),F(d1a[1]),'main','d₁″',[-4,-4,'end']), seg(H(d1a[0]),H(d1a[1]),'main','d₁′',[-4,10,'end']), seg(F(d2a[0]),F(d2a[1]),'main','d₂″',[4,-4,'start']), seg(H(d2a[0]),H(d2a[1]),'main','d₂′',[4,10,'start']),
           seg(F(Ap0),F(Ap1),'main','a″',[4,-4,'start']), seg(H(Ap0),H(Ap1),'main','a′',[4,10,'start']),
-          seg(H(h0A[0]),H(h0A[1]),'main','h₀α',[4,10,'start']), seg(F(f0A[0]),F(f0A[1]),'main','f₀α',[4,-4,'start']), pt(F(Xal),'Xα','ne',null,{hollow:true}) ],
+          seg(H(h0A[0]),H(h0A[1]),'main','h₀α',[4,10,'start']), seg(F(f0A[0]),F(f0A[1]),'main','f₀α',[4,-4,'start']), pt(F(Xal),'','ne',null,{hollow:true}) ],
   steps:[
     { t:'Как задана косая плоскость',
       d:'Поверхность образуют прямые-образующие, пересекающие обе направляющие d₁ и d₂ и параллельные плоскости параллелизма α (задана следами h₀α, f₀α). Разбиваем d₁ на равные части (точки 1, 2, 3, …). Через каждую точку проводим плоскость, параллельную α (её следы параллельны h₀α и f₀α), и находим её пересечение с d₂ — второй конец образующей.',
@@ -20738,9 +20953,9 @@ const pc={ l:'в)', q:'Построить проекции точек перес
       why:'X<sub>i</sub> лежит и на образующей (значит, на поверхности), и в плоскости β (значит, над a′).',
       add:Xs.flatMap((o,i)=>[pt(H(o.p),String(i+1)+'′','sw','aux'), conn(H(o.p),F(o.p)), pt(F(o.p),String(i+1)+'″','nw','aux')]) },
     { t:'Кривая и точки K',
-      d:'Соединяем X″<sub>i</sub> плавной кривой (это фронтальная проекция линии β ∩ поверхность). Её пересечение с a″ — искомые K″; линией связи находим K′ на a′.',
+      d:'Соединяем X″<sub>i</sub> плавной кривой (это фронтальная проекция линии β ∩ поверхность)'+(Xruns.length>1?'; здесь она из '+Xruns.length+' дуг: между точками '+(()=>{ const i=Xs.findIndex((o,k)=>k>0&&Xs[k].t-Xs[k-1].t>(tRange[1]-tRange[0])/12+1e-6); return i>0?i+' и '+(i+1):''; })()+' линия выходит за пределы поверхности (за направляющую) и дальше идёт по другой части — эти точки не соединяем':'')+'. Её пересечение с a″ — искомые K″; линией связи находим K′ на a′.',
       why:'Точки K принадлежат a и лежат в β на поверхности, поэтому K″ = a″ ∩ (кривая) (вопрос 14).',
-      add:[ ...(curveX?[curveX]:[]), ...KP.flatMap((p,i)=>[conn(F(p),H(p)),pt(F(p),'K'+(i+1)+'″','ne','res'),pt(H(p),'K'+(i+1)+'′','se','res')]) ] }
+      add:[ ...curveXs, ...KP.flatMap((p,i)=>[conn(F(p),H(p)),pt(F(p),'K'+(i+1)+'″','ne','res'),pt(H(p),'K'+(i+1)+'′','se','res')]) ] }
   ],
   ans:(KP.length?'K1'+(KP.length>1?', K2':'')+' — пересечение a″ с кривой β ∩ поверхность; K′ ∈ a′ по линиям связи.':'Точки найдены построением.') };
 
@@ -20749,10 +20964,10 @@ pa.surf3=()=>({meshes:[{tris:SURF3.grid((th,f)=>{ const q=Rt+rt*Math.cos(f); ret
 pb.surf3=()=>({meshes:[{tris:SURF3.cone(S3,baseP,0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5}]}); pb.form='cone';
 pc.surf3=()=>({meshes:[{tris:SURF3.ruled(t=>genOK(t)[0],t=>genOK(t)[1],tRange[0],tRange[1],30,0,1,16),col:SURF3.COL.body,op:.55}]}); pc.form='hypar';
 WB3.add({
-  n:77, sec:'s9', src:'стр. 28', conf:'approx',
+  n:77, sec:'s9', src:'стр. 28', conf:'wb',
   q:'Построить проекции точек пересечения прямой <i>a</i> с заданными поверхностями: а) с поверхностью тора, применив способ вращения вокруг проецирующей прямой; б) с конической поверхностью (без построения лекальных кривых); в) с поверхностью гиперболического параболоида (косой плоскостью), заданной направляющими d₁ и d₂ и плоскостью параллелизма α.',
   parts:[pa,pb,pc],
-  note:'Размеры условные; построения выполнены точно для принятых данных. В в) плоскость параллелизма α задана следами h₀α, f₀α; построено 13 образующих.'
+  note:'Числовых данных в тетради нет: прямые и поверхности сняты с рисунка тетради, построения выполнены точно. В в) плоскость параллелизма α задана следами: h₀α ⟂ x, поэтому α ⟂ π₂ и фронтальные проекции всех образующих параллельны f₀α; построено 13 образующих.'
 });
 })();
 /* ---------- № 78 ---------- */
@@ -20785,8 +21000,11 @@ function part(o){
   const nn=[F(nEnd),H(nEnd)];
   const Fd=(a,b)=>[F(a),F(b)];
   return { l:label, q:q,
-    given:[ axis(), ...surf, ...point('A',A,{l2:'nw',l1:'sw'}) ],
+    /* как в тетради: дана одна проекция A (o.known — 'H' или 'F') с началом линии связи; вторую строим первым шагом */
+    given:[ axis(), ...surf, ...(o.known==='H'?[pt(H(A),'A′','sw'),conn(H(A),[H(A)[0],H(A)[1]-14])]:[pt(F(A),'A″','nw'),conn(F(A),[F(A)[0],F(A)[1]+14])]) ],
     steps:[
+      { t:'Недостающая проекция точки A', d:o.findTxt, why:o.findWhy,
+        add:[ ...o.findItems, conn(F(A),H(A)), o.known==='H'?pt(F(A),'A″','nw','res'):pt(H(A),'A′','sw','res') ] },
       { t:'Условия построения', d:o.d0,
         why:'Касательная плоскость к поверхности в точке A содержит все касательные к линиям поверхности, проходящим через A, — достаточно построить две такие касательные. Нормаль — прямая, перпендикулярная этой плоскости, проходящая через A.',
         add:[ ...(o.aux0||[]) ] },
@@ -20813,8 +21031,13 @@ function part(o){
 const O1=[45,45,40], R1s=36, A1=v3.add(O1,v3.mul(v3.unit([14.5,22,24]),R1s));
 const nA=v3.unit(v3.sub(A1,O1));
 const pa=part({label:'а)', q:'В точке A сферы построить касательную плоскость и нормаль.', A:A1, n:nA, pc:O1,
-  surf:[ circ(F(O1),R1s*S,'main'), circ(H(O1),R1s*S,'main'), pt(F(O1),'O″','se'), pt(H(O1),'O′','se') ],
-  d0:'Сфера с центром O, радиус R. Точка A принадлежит сфере (A″ и A′ заданы). Нормаль к сфере в любой точке проходит через центр: n = OA.',
+  surf:[ circ(F(O1),R1s*S,'main'), circ(H(O1),R1s*S,'main'), pt(F(O1),'O″','se'), pt(H(O1),'O′','se'),
+    ln(F([O1[0],0,O1[2]+R1s+5]),H([O1[0],O1[1]+R1s+5,0]),'axis',null,null,0,0), ln(F([O1[0]+R1s+5,0,O1[2]]),F([O1[0]-R1s-5,0,O1[2]]),'axis',null,null,0,0), ln(H([O1[0]+R1s+5,O1[1],0]),H([O1[0]-R1s-5,O1[1],0]),'axis',null,null,0,0) ],
+  known:'H', findItems:(()=>{ const r=Math.hypot(A1[0]-O1[0],A1[1]-O1[1]), P=[O1[0]+r,O1[1],A1[2]], Pm=[O1[0]-r,O1[1],A1[2]];
+    return [ circ(H(O1),r*S,'aux'), pt(H(P),'P′','nw','aux'), conn(H(P),F(P)), pt(F(P),'','w','aux'), seg(F(P),F(Pm),'aux') ]; })(),
+  findTxt:'Задана A′. Через A проводим параллель сферы: на π₁ — окружность с центром O′ радиуса O′A′. Её точка P на главном меридиане (P′ — на горизонтальной осевой) по линии связи даёт точку на очерке; фронтальная проекция параллели — отрезок через неё ∥ x. Линия связи из A′ пересекает его в A″ (берём верхнюю полусферу — вторая точка симметрична относительно экватора).',
+  findWhy:'Точка принадлежит поверхности, если лежит на линии поверхности — здесь на параллели (вопрос 14).',
+  d0:'Сфера с центром O, радиус R. Точка A принадлежит сфере. Нормаль к сфере в любой точке проходит через центр: n = OA.',
   hTxt:'Через A проводим горизонтальную плоскость — она пересекает сферу по окружности-параллели. Касательная к ней в точке A — горизонталь h: h′ ⟂ O′A′ (радиус ⟂ касательной), h″ ∥ x.',
   hWhy:'Касательная к окружности перпендикулярна радиусу в точке касания; горизонтальная плоскость проецируется на π₁ в окружность без искажения.',
   tTxt:'Вторая касательная — к сечению сферы плоскостью, проходящей через OA. Её направление ⟂ OA и ⟂ h; она задаёт вместе с h всю касательную плоскость (α ⟂ OA).',
@@ -20833,7 +21056,13 @@ const cylF=[ fs([cb[0]+rC,0],[cb[0]-rC,0],'main'), fs([topC[0]+rC,hC],[topC[0]-r
 const cylH=[ circ(H(cb),rC*S,'main'), circ(H(topC),rC*S,'main'), seg(H([cb[0],cb[1]-rC,0]),H([topC[0],cb[1]-rC,0]),'main'), seg(H([cb[0],cb[1]+rC,0]),H([topC[0],cb[1]+rC,0]),'main') ];
 const gA=[v3.add(Ac,v3.mul(uc,-26)),v3.add(Ac,v3.mul(uc,26))];
 const pb=part({label:'б)', q:'В точке A цилиндрической поверхности построить касательную плоскость и нормаль.', A:Ac, n:nC, tline:gA, pc:cenC(zA), axis:[cb,topC],
-  surf:[ ...cylF, ...cylH ],
+  surf:[ ...cylF, circ(H(topC),rC*S,'main'), arc(H(cb),rC*S,90,270,'main'), arc(H(cb),rC*S,-90,90,'hid'), ...cylH.slice(2),
+    ln(F(v3.add(cb,v3.mul(uc,-8))),F(v3.add(topC,v3.mul(uc,8))),'axis',null,null,0,0), ln(H([cb[0]+rC+6,cb[1],0]),H([topC[0]-rC-6,cb[1],0]),'axis',null,null,0,0),
+    ln(H([cb[0],cb[1]-rC-5,0]),H([cb[0],cb[1]+rC+5,0]),'axis',null,null,0,0), ln(H([topC[0],cb[1]-rC-5,0]),H([topC[0],cb[1]+rC+5,0]),'axis',null,null,0,0) ],
+  known:'F', findItems:(()=>{ const M=v3.sub(Ac,v3.mul(uc,Ac[2]/uc[2]));
+    return [ seg(F(M),F(Ac),'aux'), pt(F(M),'M″','s','aux'), conn(F(M),H(M)), pt(H(M),'M′','sw','aux'), seg(H(M),H(Ac),'aux') ]; })(),
+  findTxt:'Задана A″. Через A проводим образующую цилиндра: на π₂ — прямая через A″ ∥ очерковым образующим, до основания (точка M″ на оси x). Линия связи даёт M′ на окружности основания (передняя точка — A видна на π₂). На π₁ образующая — прямая через M′ ∥ очерковым образующим; линия связи из A″ даёт на ней A′.',
+  findWhy:'Точка принадлежит цилиндрической поверхности, если лежит на её образующей.',
   d0:'Косой круговой цилиндр: образующие параллельны π₂ (наклонены), основания — горизонтальные окружности. Точка A принадлежит поверхности. Касательная плоскость касается цилиндра вдоль образующей, проходящей через A.',
   hTxt:'Горизонтальное сечение цилиндра — окружность (равная основанию) с центром O₁ на оси i: горизонтальная плоскость γ через A (f₀γ ∥ x) пересекает ось в O₁ — O₁″ = f₀γ ∩ i″, O₁′ — на i′ по линии связи. Касательная к ней в точке A — горизонталь h: h′ ⟂ O₁′A′ (радиусу сечения), h″ ∥ x.',
   hWhy:'Плоскость z = const пересекает цилиндр по окружности, равной основанию; касательная к ней лежит в касательной плоскости.',
@@ -20843,16 +21072,20 @@ const pb=part({label:'б)', q:'В точке A цилиндрической по
   ans:'α(h, t), t — образующая через A (фронталь), h — касательная к горизонтальному сечению; n′ ⟂ h′, n″ ⟂ t″.' });
 
 /* ---- в) косой конус ---- */
-const Cc=[50,45,0], Rk=50, hk=100, Sk=[Cc[0]+50,Cc[1],hk];
-const lam=41/hk; const Pk0=[(58-lam*Sk[0])/(1-lam),(72-lam*Sk[1])/(1-lam),0], Pku=v3.unit([Pk0[0]-Cc[0],Pk0[1]-Cc[1],0]); const Pk=[Cc[0]+Rk*Pku[0],Cc[1]+Rk*Pku[1],0];
+const Cc=[50,58,0], Rk=50, hk=100, Sk=[Cc[0]+50,Cc[1],hk];   /* вид сверху — ниже оси x, как в тетради */
+const lam=41/hk; const Pk0=[(58-lam*Sk[0])/(1-lam),(85-lam*Sk[1])/(1-lam),0], Pku=v3.unit([Pk0[0]-Cc[0],Pk0[1]-Cc[1],0]); const Pk=[Cc[0]+Rk*Pku[0],Cc[1]+Rk*Pku[1],0];
 const Ak=v3.add(Pk,v3.mul(v3.sub(Sk,Pk),lam));
 const cz=Ak[2]/hk; const cenK=v3.lerp(Cc,Sk,cz); cenK[2]=Ak[2]; const radK=[Ak[0]-cenK[0],Ak[1]-cenK[1],0];
 const gK=v3.sub(Ak,Sk); const hdK=v3.unit(v3.cross(Z,radK)); const nK=outw(v3.unit(v3.cross(hdK,gK)),radK);
 const coneF=[ fs([Cc[0]+Rk,0],[Cc[0]-Rk,0],'main'), fs([Cc[0]+Rk,0],[Sk[0],hk],'main'), fs([Cc[0]-Rk,0],[Sk[0],hk],'main') ];
-const coneH=[ circ(H(Cc),Rk*S,'main'), pt(H(Sk),'S′','w'), pt(F(Sk),'S″','n') ];
+const coneH=[ circ(H(Cc),Rk*S,'main'), pt(H(Sk),'S′','w'), pt(F(Sk),'S″','n'),
+  ln(F(Sk),F(Cc),'axis',null,null,0,0), ln(F(Cc),H([Cc[0],Cc[1]+Rk+5,0]),'axis',null,null,0,0), ln(H([Sk[0]+5,Cc[1],0]),H([Cc[0]-Rk-5,Cc[1],0]),'axis',null,null,0,0), ln(H([Cc[0],Cc[1]-Rk-5,0]),H(Cc),'axis',null,null,0,0) ];
 const tK=[v3.add(Ak,v3.mul(v3.unit(gK),-Math.min(28,v3.dist(Ak,Sk)*0.9))),v3.add(Ak,v3.mul(v3.unit(gK),Math.min(28,v3.dist(Ak,Pk)*0.9)))];
 const pc=part({label:'в)', q:'В точке A конической поверхности построить касательную плоскость и нормаль.', A:Ak, n:nK, tline:tK, pc:cenK, axis:[Cc,Sk],
   surf:[ ...coneF, ...coneH ],
+  known:'F', findItems:[ seg(F(Sk),F(Pk),'aux'), pt(F(Pk),'M″','s','aux'), conn(F(Pk),H(Pk)), pt(H(Pk),'M′','se','aux'), seg(H(Sk),H(Pk),'aux') ],
+  findTxt:'Задана A″. Через A проводим образующую SM: на π₂ — прямая S″A″ до основания (M″ на оси x), линия связи даёт M′ на окружности основания (передняя точка). S′M′ — горизонтальная проекция образующей; линия связи из A″ даёт на ней A′.',
+  findWhy:'Точка принадлежит конической поверхности, если лежит на её образующей.',
   d0:'Косой круговой конус: вершина S находится над точкой окружности основания, горизонтальные сечения — окружности. Точка A принадлежит поверхности. Касательная плоскость касается конуса вдоль образующей SA.',
   hTxt:'Через A проводим горизонтальное сечение конуса — окружность с центром O₁ на оси i (отрезок от центра основания до S): горизонтальная плоскость γ через A (f₀γ ∥ x) пересекает ось в O₁ — O₁″ = f₀γ ∩ i″, O₁′ — на i′ по линии связи. Касательная h к ней в A: h′ ⟂ O₁′A′, h″ ∥ x.',
   hWhy:'Касательная к окружности перпендикулярна радиусу в точке касания; эта горизонталь лежит в касательной плоскости.',
@@ -20868,7 +21101,13 @@ const radD=v3.unit([Ad[0]-ax[0],Ad[1]-ax[1],0]); const Qd=[ax[0]+radD[0]*Rtd,ax[
 const nDraw=v3.unit(v3.sub(Ad,Qd));
 const profR=[],profL=[]; for(let i=0;i<=40;i++){ const z=zc*i/40; profR.push(F([ax[0]-offAt(z),0,z])); profL.push(F([ax[0]+offAt(z),0,z])); }
 const torF=[ poly(profR,'main',false), poly(profL,'main',false), fs([ax[0]-offAt(zc),zc],[ax[0]+offAt(zc),zc],'main'), fs([ax[0]-offAt(0),0],[ax[0]+offAt(0),0],'main') ];
-const torH=[ circ(H([ax[0],ax[1],0]),offAt(0)*S,'main'), circ(H([ax[0],ax[1],0]),offAt(zc)*S,'main'), pt(H([ax[0],ax[1],0]),'N′≡T′','ne') ];
+/* как в тетради: на π₁ — передняя половина с линией обрыва, внутренняя окружность (верхнее основание), вертикальная осевая; на π₂ — ось, размер R
+   образующей дуги от её центра (тонкая выносная — на уровне верха) */
+const rb0=offAt(0), yw0=-0.2*rb0, aw0=Math.asin(0.2)*180/Math.PI, Ql=[ax[0]+Rtd,ax[1],zc];
+const torH=[ arc(H([ax[0],ax[1],0]),rb0*S,180-aw0,360+aw0,'main'), waveL(H([ax[0]+rb0*Math.cos(aw0*RAD),ax[1]+yw0,0]),H([ax[0]-rb0*Math.cos(aw0*RAD),ax[1]+yw0,0]),2),
+  circ(H([ax[0],ax[1],0]),offAt(zc)*S,'main'),
+  ln(F([ax[0],0,zc+5]),H([ax[0],ax[1]+rb0+5,0]),'axis',null,null,0,0),
+  seg(F(Ql),F([ax[0]+offAt(zc),0,zc]),'thin'), dim(F(Ql),F([ax[0]+offAt(zc*0.3),0,zc*0.3]),'R','thin') ];
 const Nn=[ax[0],ax[1],zc-((Ad[2]-zc)*(0)) ];
 // нормаль пересекает ось в точке N
 const tN=(()=>{ const nd=nDraw; const s=-((Ad[0]-ax[0])*nd[0]+(Ad[1]-ax[1])*nd[1])/(nd[0]*nd[0]+nd[1]*nd[1]); return s; })();
@@ -20882,7 +21121,11 @@ const tlD=[v3.add(Ad,v3.mul(tAM,-14)),v3.add(Mt,v3.mul(tAM,8))];
 const aux2D=[ seg(F([ax[0],0,0]),F([ax[0],0,zc]),'aux','i″',[6,-4,'start']), pt(F(Abar),'Ā″','e','aux'), seg(F(Qbar),F(Abar),'aux','ā″',[6,-4,'start']),
   seg(F(v3.add(Abar,v3.mul(tBar,-10))),F(v3.add(Mt,v3.mul(tBar,6))),'aux','t̄″',[6,-4,'start']), pt(F(Mt),'M″','w','aux'), conn(F(Mt),H(Mt)) ];
 const pd=part({label:'г)', q:'В точке A поверхности вращения (внутренняя часть тора) построить касательную плоскость и нормаль.', A:Ad, n:v3.mul(nDraw,-1), pc:[ax[0],ax[1],Ad[2]], tline:tlD, aux2:aux2D,
-  surf:[ ...torF, ...torH, pt(F([ax[0],0,zc]),'T″','n'), pt(F(Qbar),'Q̄″','e') ],
+  surf:[ ...torF, ...torH ],
+  known:'H', findItems:[ circ(H([ax[0],ax[1],0]),offAt(Ad[2])*S,'aux'), pt(H(Abar),'P′','sw','aux'), conn(H(Abar),F(Abar)), pt(F(Abar),'','e','aux'), seg(F(Abar),F([ax[0]+offAt(Ad[2]),0,Ad[2]]),'aux'),
+    pt(F([ax[0],0,zc]),'T″','n','aux'), pt(H([ax[0],ax[1],0]),'N′≡T′','ne','aux'), pt(F(Qbar),'Q̄″','e','aux') ],
+  findTxt:'Задана A′. Через A проводим параллель: на π₁ — окружность с центром на оси радиуса |i′A′|; её точка P на главном меридиане (P′ — на горизонтали через ось) по линии связи даёт точку на очерке. Фронтальная проекция параллели — отрезок через неё ∥ x; линия связи из A′ даёт на нём A″. Отмечаем также верхнюю точку оси T и центр Q̄ дуги очерка — они понадобятся дальше.',
+  findWhy:'Точка принадлежит поверхности вращения, если лежит на её параллели (вопрос 14).',
   d0:'Поверхность образована вращением дуги окружности вокруг вертикальной оси. Нормаль к поверхности вращения в любой точке пересекает ось; в нашей точке нормаль проходит через центр дуги-образующей (N — точка пересечения нормали с осью).',
   hTxt:'Параллель через A — окружность с центром на оси. Касательная h к ней: h′ ⟂ радиусу параллели в A′, h″ ∥ x.',
   hWhy:'Касательная к окружности ⟂ радиусу; лежит в касательной плоскости.',
@@ -20900,7 +21143,7 @@ WB3.add({
   n:78, sec:'s10', src:'стр. 29', conf:'approx',
   q:'В точке <i>A</i>, принадлежащей заданной поверхности, построить проекции касательной плоскости и нормали к этой поверхности: а) сфера; б) цилиндрическая поверхность; в) коническая поверхность; г) поверхность вращения (тор).',
   parts:[pa,pb,pc,pd],
-  note:'Размеры условные. Точки A на π₂ и π₁ заданы для четырёх поверхностей; касательная плоскость всюду задана горизонталью h и второй касательной t, а нормаль построена по теореме о прямом угле.'
+  note:'Размеры условные. Как в тетради, у точки A задана одна проекция (а, г — A′; б, в — A″), вторая строится первым шагом; касательная плоскость всюду задана горизонталью h и второй касательной t, а нормаль построена по теореме о прямом угле.'
 });
 })();
 /* ---------- № 79 ---------- */
@@ -20966,12 +21209,13 @@ WB3.add({
 
 /* ---------- № 80 ---------- */
 (function(){
-const e1=v3.unit([-0.7,-0.4,0.6]), e2=v3.unit(v3.cross(e1,[0.1,0.2,1]));
-const O=[50,40,40], p=30, q=24;
-const Bt=v3.sub(O,v3.mul(e1,p)), Dt=v3.add(O,v3.mul(e1,p)), At=v3.sub(O,v3.mul(e2,q)), Ct=v3.add(O,v3.mul(e2,q));
-const db=v3.unit([-0.8,0.5,-0.5]), dd=v3.unit([-0.5,-0.8,0.7]);
+/* прямые сняты с рисунка тетради (стр. 30): a″ круто вниз вправо, a′ круто вниз вправо; b″ и b′ почти ∥ x
+   (b″ чуть поднимается, b′ чуть приближается к оси); d″ полого вниз вправо, d′ вверх вправо — к оси x */
+const e1=v3.unit([-1,1.6,-2.17]);
+const At=[103.3,13.3,31.8], Bt=[78.9,13.8,37.3], Dt=[66.7,52.7,15.1];
+const db=v3.unit([-1,-0.069,0.147]), dd=v3.unit([-1,-0.864,-0.208]);
 const lineOf=(P,d,t0,t1)=>[v3.add(P,v3.mul(d,t0)),v3.add(P,v3.mul(d,t1))];
-const aL=lineOf(At,e1,-32,42), bL=lineOf(Bt,db,-36,40), dL=lineOf(Dt,dd,-40,32);
+const aL=lineOf(At,e1,-2,40), bL=lineOf(Bt,db,0,38), dL=lineOf(Dt,dd,0,43);
 /* решение по шагам */
 const t1=15, P1=v3.add(Bt,v3.mul(db,t1));                              // точка 1 на b
 const b2=lineOf(P1,e1,-40,60);                                           // b₂ через 1 ∥ a
@@ -20996,7 +21240,7 @@ const line2=(P,Q,e0,e1_)=>{ const d=v3.unit(v3.sub(Q,P)); return [v3.add(P,v3.mu
 const ex=(P,Q,k,l,la)=>[seg(F(P),F(Q),k,l?l+'″':null,la),seg(H(P),H(Q),k,l?l+'′':null,la)];
 const linesGiven=[ ...ex(aL[0],aL[1],'main','a',[6,-4,'start']), ...ex(bL[0],bL[1],'main','b',[6,-4,'start']), ...ex(dL[0],dL[1],'main','d',[6,-4,'start']) ];
 WB3.add({
-  n:80, sec:'s11', src:'стр. 30', conf:'approx',
+  n:80, sec:'s11', src:'стр. 30', conf:'wb',
   q:'Построить проекции ромба <i>ABCD</i>, у которого диагональ <i>BD</i> параллельна прямой <i>a</i>, вершина <i>A</i> лежит на прямой <i>a</i>, вершина <i>B</i> — на прямой <i>b</i>, вершина <i>D</i> — на прямой <i>d</i>.',
   intro:'Даны три прямые a, b, d общего положения. Найти B ∈ b и D ∈ d так, чтобы BD ∥ a; затем A ∈ a так, чтобы AB = AD (A лежит в плоскости, проходящей через середину BD перпендикулярно BD); C симметрична A относительно середины BD.',
   given:[ axis(), ...linesGiven ],
@@ -21006,7 +21250,7 @@ WB3.add({
       why:'Диагональ ромба BD ∥ a, значит a ⟂ плоскости, в которой лежит вторая диагональ AC: A = a ∩ (эта плоскость).',
       add:[] },
     { t:'Плоскость β(b, b₂) ∥ a',
-      d:'Берём на b точку 1 и проводим через неё b₂ ∥ a (b₂′ ∥ a′, b₂″ ∥ a″). Плоскость β = (b, b₂) параллельна a и содержит b.',
+      d:'Берём на b произвольную точку 1 и проводим через неё b₂ ∥ a (b₂′ ∥ a′, b₂″ ∥ a″). Плоскость β = (b, b₂) параллельна a и содержит b.',
       why:'Плоскость параллельна прямой, если содержит прямую, ей параллельную (задача 35).',
       add:[ pt(F(P1),'1″','ne','aux'), pt(H(P1),'1′','se','aux'), conn(F(P1),H(P1)), ...ex(b2[0],b2[1],'aux','b₂',[6,-4,'start']) ] },
     { t:'Пересечение d с β — вершина D',
@@ -21035,7 +21279,7 @@ WB3.add({
       add:[ ...R4, pt(F(Ccc),'C″','ne','res'), pt(H(Ccc),'C′','se','res'), conn(F(Ccc),H(Ccc)) ] }
   ],
   ans:'B = b ∩ (прямая через D ∥ a), D = d ∩ β, β ∋ b, β ∥ a; A = a ∩ γ, γ ⟂ BD через середину O; C — симметрична A относительно O. |AB| = |AD| = '+Math.round(v3.dist(Aa,Bd))+' мм.',
-  note:'Три прямые a, b, d выбраны так, чтобы задача имела решение (в условии данные без числовых значений). Метод: плоскость, проходящая через b ∥ a, и проецирующие плоскости.'
+  note:'Прямые a, b, d сняты с рисунка тетради (числовых значений в условии нет). Метод: плоскость, проходящая через b ∥ a, и проецирующие плоскости.'
 });
 })();
 })();
@@ -21063,7 +21307,7 @@ function meet(P,Q,p0,dv){ // A + s(P-A) = p0 + t*dv (наименьшие ква
 const M2=meet(P2,0,One,bDir), M4=meet(P4,0,One,bDir);
 const chk=v3.dist(v3.add(A,v3.mul(v3.sub(P2,A),1)),P2);
 const ang45=v3.deg(Math.asin(Math.abs(v3.unit(v3.sub(P2,A))[1])));
-const bEnd=[bP(-0.15),bP(1.25)];
+const bEnd=[bP(-0.15),bP(0.9)];   /* как в тетради: b′ не доходит до h₀α */
 const hα=[[H([88,ya,0])[0],H([88,ya,0])[1]],[H([-5,ya,0])[0],H([-5,ya,0])[1]]];
 const lo=(P,M)=>ext(F(A),F(P),0,14);   // прямая AP с небольшим вылетом
 const givenB=()=>[ seg(F(bEnd[0]),F(bEnd[1]),'main','b″','auto2'), seg(H(bEnd[0]),H(bEnd[1]),'main','b′','auto2') ];
@@ -21200,11 +21444,11 @@ const frontDash=[];for(let i=0;i<=40;i++){const t=Math.PI*2*i/40;frontDash.push(
 const given=[ axis(),
   poly(frontOutline,'main',true),
   poly(frontDash,'hid',true),
-  seg([uAx,vC-tubeR-14],[uAx,vC+tubeR+14],'thin'), seg([uAx-20,vC],[uC+tubeR+20,vC],'thin'),
+  seg([uAx,vC-tubeR-14],[uAx,vC+tubeR+14],'axis'), seg([uAx-20,vC],[uC+tubeR+20,vC],'axis'),   /* осевые — штрихпунктир, как в тетради */
   poly(arcH(R+r,0,Math.PI/2,40),'main',false), poly(arcH(r<R?R-r:0,0,Math.PI/2,20),'main',false),
-  poly(arcH(R,0,Math.PI/2,40),'hid',false),
+  poly(arcH(R,0,Math.PI/2,40),'axis',false),
   seg(H(T(R-r,0,0)),H(T(R+r,0,0)),'main'), seg(H(T(R-r,Math.PI/2,0)),H(T(R+r,Math.PI/2,0)),'main'),
-  seg([Oc[0],Oc[1]-10],[Oc[0],Oc[1]+(R+r)*S+16],'thin'),
+  seg([Oc[0],Oc[1]-10],[Oc[0],Oc[1]+(R+r)*S+16],'axis'),
   ...point('A',A,{l2:'ne',l1:'ne'}) ];
 
 const Bm=B, B1m=B1;
@@ -21271,7 +21515,7 @@ const Hc=H(Cb);
 const arcH=(rho,a0,a1,n)=>{const o=[];for(let i=0;i<=n;i++){const p=a0+(a1-a0)*i/n;o.push(H(T(rho,p,0)));}return o;};
 const rotArc=(rho,p0,p1)=>poly(arcH(rho,p0,p1,24),'aux',false);
 const cone=[ poly([F([Xc+Rb,yc,0]),F(Sv),F([Xc-Rb,yc,0])],'main',false), seg(F([Xc+Rb,yc,0]),F([Xc-Rb,yc,0]),'main'), circ(Hc,Rb*S,'main'),
-  seg(F(Cb).map((v,i)=>i?v+0:v),F(Sv),'thin'), seg([Hc[0],Hc[1]-Rb*S-14],[Hc[0],Hc[1]+Rb*S+70],'thin'), seg([Hc[0]-Rb*S-14,Hc[1]],[Hc[0]+Rb*S+80,Hc[1]],'thin') ];
+  seg(F(Cb).map((v,i)=>i?v+0:v),F(Sv),'axis'), seg([Hc[0],Hc[1]-Rb*S-14],[Hc[0],Hc[1]+Rb*S+70],'axis'), seg([Hc[0]-Rb*S-14,Hc[1]],[Hc[0]+Rb*S+80,Hc[1]],'axis'), pt(F(Sv),'','n','main',{hollow:true}), pt(Hc,'','ne','main',{hollow:true}) ];
 const sphere=[ circ(F(O),Rr*S,'res'), circ(H(O),Rr*S,'res') ];
 WB3.add({
   /* 3D: конус и (в ответе) вписанная сфера */
@@ -21334,7 +21578,8 @@ WB3.add({
   n:85, sec:'s11', src:'стр. 32', conf:'approx',
   q:'Определить величину угла между плоскостями треугольников <i>ABC</i> и <i>ABD</i>, применив вращение вокруг прямой <i>i</i>.',
   intro:'Треугольники ABC и ABD имеют общую сторону AB — ребро двугранного угла. Ось вращения i ⟂ π₁ проходит через B (i′ ≡ B′). Ребро AB — горизонталь; повернём её так, чтобы AB стало перпендикулярно π₂.',
-  given:[ axis(), ...tri(A,B,C,'main'), seg(F(B),F(D),'main'), seg(F(A),F(D),'main'), seg(H(B),H(D),'main'), seg(H(A),H(D),'main'),
+  /* как в тетради: на π₂ часть A″D″ закрыта треугольником ABC (он ближе к наблюдателю) — штрих до пересечения с C″B″ */
+  given:[ axis(), ...tri(A,B,C,'main'), seg(F(B),F(D),'main'), ...(()=>{ const X=G.cross(F(A),F(D),F(C),F(B)); return [seg(F(A),X,'hid'), seg(X,F(D),'main')]; })(), seg(H(B),H(D),'main'), seg(H(A),H(D),'main'),
           seg(iBot,iTop,'thin','i″',[6,0,'start']),
           ...point('A',A,{l2:'sw',l1:'nw'}), ...point('C',C,{l2:'nw',l1:'sw'}), ...point('D',D,{l2:'ne',l1:'ne'}), pt(F(B),'B″','se'), pt(H(B),'B′≡i′','se') ],
   steps:[
@@ -21366,7 +21611,7 @@ WB3.add({
 
 /* ---------- № 86 ---------- */
 (function(){
-const {F,H,point,seg,pt,conn,sq,circ,poly,axis,v3,G,S} = L;
+const {F,H,point,seg,ln,pt,conn,sq,circ,poly,axis,v3,G,S} = L;
 const Xi=30, Yi=21.9, yg=9.8;
 const C=[44.7,yg,8.0], D=[15.3,yg,44.4];
 const rho=Math.hypot(D[0]-Xi,D[1]-Yi), d0=Math.abs(Yi-yg);
@@ -21396,14 +21641,15 @@ WB3.add({
   n:86, sec:'s11', src:'стр. 32', conf:'approx',
   q:'В точке <i>A</i>, принадлежащей поверхности однополостного гиперболоида вращения, заданной осью <i>i</i> и образующей <i>g</i>, построить проекции касательной плоскости и нормали к этой поверхности.',
   intro:'Ось i ⟂ π₁ (i′ — точка), образующая g — фронталь. Точка A лежит на поверхности. Касательная плоскость в A содержит прямолинейную образующую g₁ через A и касательную h к параллели (окружности) в A.',
-  given:[ axis(), seg(F([Xi,0,-4]),F([Xi,0,66]),'thin','i″',[6,0,'start']), pt(H([Xi,Yi,0]),'i′','ne'),
+  /* как в тетради (стр. 32): ось i — штрихпунктир через обе проекции, i′ — точка с горизонтальной осевой; дана только A′ (с началом линии связи) */
+  given:[ axis(), ln(F([Xi,0,66]),H([Xi,Yi+Math.max(rho,A[1]-Yi)+8,0]),'axis','i″',[6,0,'end'],0,0), ln(H([Xi+rho+6,Yi,0]),H([Xi-rho-6,Yi,0]),'axis',null,null,0,0), pt(H([Xi,Yi,0]),'i′','ne'),
           seg(F(gg(-0.12)),F(gg(1.12)),'main','g″','auto2'), seg(H(gg(-0.12)),H(gg(1.12)),'main','g′','auto2'),
-          ...point('A',A,{l2:'ne',l1:'sw'}), pt(F(C),'C″','se'), pt(H(C),'C′','nw'), pt(F(D),'D″','ne'), pt(H(D),'D′','ne') ],
+          pt(H(A),'A′','sw'), conn(H(A),[H(A)[0],H(A)[1]-16]) ],
   steps:[
     { t:'Параллель через A',
-      d:'Параллель поверхности, проходящая через A, — окружность с центром i′ и радиусом |i′A′| = '+rho.toFixed(1)+' мм на π₁ (на π₂ — горизонтальная прямая через A″). Точка D образующей g лежит на той же параллели (на той же высоте, что A).',
+      d:'Задана только A′. Параллель поверхности, проходящая через A, — окружность с центром i′ и радиусом |i′A′| = '+rho.toFixed(1)+' мм на π₁ (на π₂ — горизонтальная прямая через A″). Точка D образующей g лежит на той же параллели (на той же высоте, что A): окружность пересекает g′ в D′, по линии связи — D″ на g″. Горизонталь через D″ и линия связи из A′ дают A″.',
       why:'Поверхность вращения пересекается плоскостью, перпендикулярной оси, по окружности — параллели.',
-      add:[ circ(H([Xi,Yi,0]),rho*S,'aux'), seg(...par(A[2]),'aux'), conn(H(D),F(D)) ] },
+      add:[ circ(H([Xi,Yi,0]),rho*S,'aux'), pt(F(C),'C″','se','aux'), pt(H(C),'C′','nw','aux'), pt(F(D),'D″','ne','aux'), pt(H(D),'D′','ne','aux'), seg(...par(A[2]),'aux'), conn(H(D),F(D)), conn(H(A),F(A)), pt(F(A),'A″','ne','res') ] },
     { t:'Образующая g₁ через A',
       d:'Поворачиваем g вокруг i так, чтобы D попала в A (угол D′i′A′). Одновременно C′ переходит в C₁′ по окружности, C₁″ — на высоте C″. Прямая g₁ = AC₁ — образующая (первая прямая на поверхности через A). Её горизонтальная проекция касается окружности горла радиуса '+d0.toFixed(1)+' мм.',
       why:'Однополостный гиперболоид — линейчатая поверхность: получается вращением прямой g вокруг скрещивающейся с ней оси i; через каждую точку проходят две прямолинейные образующие.',
@@ -21471,7 +21717,7 @@ WB3.add({
   n:87, sec:'s11', src:'стр. 32', conf:'approx',
   q:'Построить проекции центра окружности радиуса 15 мм, лежащей в плоскости α и касательной к её следам.',
   intro:'Плоскость α задана следами f₀α и h₀α, сходящимися в точке X на оси x. Окружность лежит в α и касается обоих следов. Её центр — на биссектрисе угла между следами (в плоскости α), но на чертеже этот угол искажён, поэтому развернём α вокруг h₀α до совмещения с π₁.',
-  given:[ axis(), seg(...fT,'main','f₀α',[6,-4,'start'],{lat:fT[1]}), seg(...hT,'main','h₀α',[6,10,'start'],{lat:hT[1]}), pt(F(X),'X','nw',null,{hollow:true}) ],
+  given:[ axis(), seg(...fT,'main','f₀α',[6,-4,'start'],{lat:fT[1]}), seg(...hT,'main','h₀α',[6,10,'start'],{lat:hT[1]}), pt(F(X),'','nw',null,{hollow:true}) ],   /* в тетради точка схода следов без подписи */
   steps:[
     { t:'Точка 2 на f₀α',
       d:'На f₀α берём произвольную точку 2: 2″ ∈ f₀α, 2′ — на оси x (точка следа лежит в π₂).',
@@ -21522,8 +21768,12 @@ const Mid=G.lerp(BH,cH,0.5), rM=G.dist(BH,cH)/2;
 /* образующие силуэта */
 const tS=tang(H(Sv));
 const xl=Cc[0]+Rc, xr=Cc[0]-Rc;
+/* как в тетради (стр. 32): дуга основания под конусом (между точками касания, со стороны S′) — штрих; ось конуса S C и осевые основания — штрихпунктир */
+const angOf=q=>Math.atan2(-(q[1]-cH[1]),q[0]-cH[0])*180/Math.PI, aS=angOf(H(Sv));
+const [hA,hB]=(()=>{ let a0=angOf(tS[0]), a1=angOf(tS[1]); if(a1<a0) [a0,a1]=[a1,a0]; return (aS>a0&&aS<a1)?[[a0,a1],[a1,a0+360]]:[[a1,a0+360],[a0,a1]]; })();
 const cone=[ seg(F(Sv),F([xl,0,0]),'main'), seg(F(Sv),F([xr,0,0]),'main'), seg(F([xl+2,0,0]),F([xr-2,0,0]),'main'),
-  circ(cH,rH,'main'), seg(H(Sv),tS[0],'main'), seg(H(Sv),tS[1],'main') ];
+  circ(cH,rH,'thin'), L.arc(cH,rH,hB[0],hB[1],'main'), L.arc(cH,rH,hA[0],hA[1],'paper'), L.arc(cH,rH,hA[0],hA[1],'hid'), seg(H(Sv),tS[0],'main'), seg(H(Sv),tS[1],'main'),
+  L.ln(F(Sv),F(Cc),'axis',null,null,0,0), L.ln(H(Sv),cH,'axis',null,null,0,0), L.ln(F([Cc[0],0,8]),H([Cc[0],Cc[1]+Rc+5,0]),'axis',null,null,0,0), L.ln(H([Cc[0]+Rc+5,Cc[1],0]),H([Cc[0]-Rc-5,Cc[1],0]),'axis',null,null,0,0) ];
 const ex=(a,b,e0,e1)=>[G.along(a,b,a,e0),G.along(b,a,b,e1)];
 WB3.add({
   /* 3D: наклонный конус */
@@ -21574,10 +21824,10 @@ const pa=(()=>{
   const Sv=[Xc,Yc,Hc];
   const cH=H([Xc,Yc,0]);
   const cone=[ seg(F(X(R,Yc,0)),F(Sv),'main'), seg(F(Sv),F(X(-R,Yc,0)),'main'), seg(F(X(R+3,Yc,0)),F(X(-R-3,Yc,0)),'main'), circ(cH,R*S,'main'),
-    seg([cH[0],F(Sv)[1]-8],[cH[0],cH[1]+R*S+40],'thin'), seg([cH[0]-R*S-14,cH[1]],[cH[0]+R*S+14,cH[1]],'thin') ];
+    seg([cH[0],F(Sv)[1]-8],[cH[0],cH[1]+R*S+40],'axis'), seg([cH[0]-R*S-14,cH[1]],[cH[0]+R*S+14,cH[1]],'axis') ];   /* осевые — штрихпунктир, как в тетради */
   const prF=poly([F(X(xl,Yc,0)),F(X(0,Yc,zp)),F(X(xr,Yc,0))],'main',true);
   const prH=poly([H(X(xl,Yc-hl,0)),H(X(xr,Yc-hl,0)),H(X(xr,Yc+hl,0)),H(X(xl,Yc+hl,0))],'main',true);
-  const prEdge=[ seg(H(X(0,Yc-hl,0)),H(X(0,Yc+hl,0)),'thin') ];
+  const prEdge=[ seg(H(X(0,Yc-hl,0)),H(X(0,Yc+hl,0)),'main') ];   /* верхнее ребро призмы — видимое, как в тетради */
   /* точки */
   const lev=[6,13,20,27];
   const pl=(xx,z,sgn)=>[X(xx,Yc+sgn*Math.sqrt(Math.max(0,rho(z)**2-xx*xx)),z)][0];
@@ -21599,13 +21849,12 @@ const pa=(()=>{
       {tris:[...Q3.quad(a,b,b2,a2),...Q3.quad(b,c,c2,b2),[a,b,c],[a2,b2,c2]],col:Q3.COL.alt,op:.55}]}; };
   return { l:'а)', surf3, form:'cone', q:'конус и призма',
     given:[ axis(), ...cone, prF, prH, ...prEdge,
-      pt(F(X(xl,Yc,0)),'13″','sw'), pt(F(X(0,Yc,zp)),'1″','ne'), pt(F(X(xr,Yc,0)),'12″','se'),
-      pt(cH,'','n') ],
+      pt(cH,'','n','main',{hollow:true}) ],
     steps:[
       { t:'Анализ: грани призмы — проецирующие',
         d:'Ребра призмы перпендикулярны π₂, поэтому её грани фронтально-проецирующие: фронтальная проекция линии пересечения лежит на сторонах треугольника 13″1″12″. Остаётся найти горизонтальные проекции точек — для этого используем горизонтальные секущие плоскости.',
         why:'Горизонтальная плоскость пересекает конус по окружности, а грань призмы — по прямой; их общие точки принадлежат линии пересечения.',
-        add:[ seg(F(X(xl,Yc,0)),F(X(0,Yc,zp)),'grn'), seg(F(X(0,Yc,zp)),F(X(xr,Yc,0)),'grn') ] },
+        add:[ pt(F(X(xl,Yc,0)),'13″','sw','aux'), pt(F(X(0,Yc,zp)),'1″','ne','aux'), pt(F(X(xr,Yc,0)),'12″','se','aux'),  seg(F(X(xl,Yc,0)),F(X(0,Yc,zp)),'grn'), seg(F(X(0,Yc,zp)),F(X(xr,Yc,0)),'grn') ] },
       { t:'Опорные точки 13 и 12',
         d:'Ребро 13 (левое основание призмы, z = 0) касается основания конуса: 13′ — на окружности, на оси симметрии. Ребро 12 (правое, z = 0) пересекает окружность основания в двух точках 12′ (симметричны относительно прямой, проходящей через центр основания параллельно x).',
         why:'Плоскость основания z = 0 пересекает конус по окружности радиуса R; ребро призмы принадлежит этой плоскости и пересекает окружность в точках, где расстояние до центра равно R.',
@@ -21668,22 +21917,23 @@ const pc=(()=>{
   let amin=1e9,amax=-1e9,pmin,pmax; const a0=Math.atan2(cH[1]-Tp[1],cH[0]-Tp[0]);
   baseH.forEach(b=>{let a=Math.atan2(b[1]-Tp[1],b[0]-Tp[0])-a0; while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; if(a<amin){amin=a;pmin=b;} if(a>amax){amax=a;pmax=b;}});
   const cone1=[ seg(F2([-R1,0]),F2([0,H1]),'main'), seg(F2([0,H1]),F2([R1,0]),'main'), seg(F2([-R1-6,0]),F2([R1+6,0]),'main'), circ(cH,R1*S,'main'),
-                seg([cH[0],F2([0,H1])[1]-8],[cH[0],cH[1]+R1*S+30],'thin'), seg([cH[0]-R1*S-16,cH[1]],[cH[0]+R1*S+50,cH[1]],'thin') ];
+                seg([cH[0],F2([0,H1])[1]-8],[cH[0],cH[1]+R1*S+30],'axis'), seg([cH[0]-R1*S-16,cH[1]],[cH[0]+R1*S+50,cH[1]],'axis') ];
   const cone2F=[ seg(F2(T2),F2(E1),'main'), seg(F2(T2),F2(E2),'main'), seg(F2(E1),F2(E2),'main') ];
   const cone2H=[ poly(baseH,'main',true), seg(Tp,pmin,'main'), seg(Tp,pmax,'main') ];
-  const axisLn=seg(F2(T2),F2([ -Lb*0.0 + (Q2[0]+ad[0]*8), Q2[1]+ad[1]*8 ]),'thin');
+  const axisLn=seg(F2(T2),F2([ -Lb*0.0 + (Q2[0]+ad[0]*8), Q2[1]+ad[1]*8 ]),'axis');
   /* 3D: конус 1 (ось вертикальна) и конус 2 с вершиной T, осью в плоскости y = Yc, полууглом dl */
   const surf3=()=>{ const W3=(xi,eta,z)=>[X1-xi,Yc+eta,z];
     const c2=(tau,f)=>{ const cx_=T2[0]+ad[0]*Lb*tau, cz=T2[1]+ad[1]*Lb*tau, r=R2*tau; return W3(cx_+r*Math.cos(f)*pd[0],r*Math.sin(f),cz+r*Math.cos(f)*pd[1]); };
     return {meshes:[{tris:SURF3.cone(W3(0,0,H1),t=>W3(R1*Math.cos(t),R1*Math.sin(t),0),0,2*Math.PI,48,8),col:SURF3.COL.body,op:.5},
       {tris:SURF3.grid(c2,0,1,10,0,2*Math.PI,40),col:SURF3.COL.alt,op:.55}]}; };
   return { l:'в)', surf3, form:'cone', q:'два конуса вращения',
-    given:[ axis(), ...cone1, ...cone2F, ...cone2H, axisLn, pt(F2(T2),'T″','ne'), pt(Tp,'T′','se'), pt(F2(O2),'O″','se',null,{hollow:true}) ],
+    /* как в тетради: вписанная сфера дана тонкими окружностями на обеих проекциях; оси — штрихпунктир; без подписей */
+    given:[ axis(), ...cone1, ...cone2F, ...cone2H, axisLn, circ(F2(O2),r*S,'thin'), circ(cH,r*S,'thin'), pt(F2(T2),'','ne',null,{hollow:true}), pt(Tp,'','se',null,{hollow:true}), pt(F2(O2),'','se',null,{hollow:true}) ],
     steps:[
       { t:'Идея: общая вписанная сфера',
         d:'Оси конусов пересекаются в точке O и параллельны π₂. Впишем в оба конуса сферу с центром O: её очерк на π₂ — окружность, касающаяся образующих обоих конусов (радиус r = '+r.toFixed(1)+' мм). По теореме Монжа линия пересечения двух поверхностей второго порядка, описанных около одной сферы, распадается на две плоские кривые второго порядка, плоскости которых перпендикулярны π₂.',
         why:'Если две поверхности второго порядка описаны около общей сферы, линия их пересечения — две плоские кривые; на π₂ каждая проецируется в отрезок.',
-        add:[ circ(F2(O2),r*S,'aux'), pt(F2(O2),'O″','se','aux') ] },
+        add:[ circ(F2(O2),r*S,'aux'), pt(F2(O2),'O″','se','aux'), pt(F2(T2),'T″','ne','aux'), pt(Tp,'T′','se','aux') ] },
       { t:'Точки A″, B″, C″ пересечения образующих',
         d:'Находим точки пересечения очерков: A″ и C″ — правой образующей конуса 1 с верхней и нижней образующими конуса 2, B″ — левой образующей конуса 1 с верхней образующей конуса 2. Нижняя образующая конуса 2 параллельна левой образующей конуса 1, поэтому четвёртой точки D нет (она «в бесконечности»).',
         why:'Точки очерков — точки линии пересечения, лежащие в общей фронтальной плоскости симметрии.',
@@ -21748,10 +21998,10 @@ const frontCurve=curve(upArr.map(q=>F(q)),'res');
 /* тела */
 const ellF=L.ell(F([xe,0,ze]),a*S,b*S,0,'main'), ellH=L.ell(H([xe,Y,0]),a*S,b*S,0,'main');
 const cnF=[ seg(F3(xt+rt,zt),F3(xt-rt,zt),'main'), seg(F3(xb+rb,0),F3(xb-rb,0),'main'), seg(F3(xt+rt,zt),F3(xb+rb,0),'main'), seg(F3(xt-rt,zt),F3(xb-rb,0),'main'),
-           seg(F3(xt,zt+6),F3(xb+(xb-xt)*0.15,-6),'thin') ];
+           seg(F3(xt,zt+6),F3(xb+(xb-xt)*0.15,-6),'axis') ];
 const tanln=(()=>{ const d=xb-xt, nx=(rt-rb)/d, ny=Math.sqrt(1-nx*nx); const res=[]; for(const s of [1,-1]){ res.push([[xt+rt*nx,Y+s*rt*ny],[xb+rb*nx,Y+s*rb*ny]]); } return res; })();
 const cnH=[ circ(H([xt,Y,0]),rt*S,'main'), circ(H([xb,Y,0]),rb*S,'hid'), ...tanln.map(t=>seg(H3(t[0][0],t[0][1]),H3(t[1][0],t[1][1]),'main')) ];
-const axes=[ seg(F3(xe+a+8,ze),F3(xe-a-8,ze),'thin'), seg(H3(xe+a+8,Y),H3(xe-a-8,Y),'thin'), seg(H3(xe,Y+b+10),H3(xe,Y-b-10),'thin') ];
+const axes=[ seg(F3(xe+a+8,ze),F3(xe-a-8,ze),'axis'), seg(H3(xe+a+8,Y),H3(xe-a-8,Y),'axis'), seg(H3(xe,Y+b+10),H3(xe,Y-b-10),'axis'), seg(F3(xe,ze+b+8),F3(xe,ze-b-8),'axis'), seg(H3(xt,Y+rt+8),H3(xt,Y-rt-8),'axis') ];
 const lvlPts=(z)=>{ const q=at(z); return q?[[q[0],Y-q[1],z],[q[0],Y+q[1],z]]:null; };
 const secItems=(z)=>{ const c=H3(xc(z),Y); const s=Math.sqrt(Math.max(0,1-((z-ze)/b)**2)); return [ seg(F3(xe+a+10,z),F3(xe-a-10,z),'thin'), circ(c,rc(z)*S,'aux'), L.ell(H3(xe,Y),a*s*S,b*s*S,0,'aux') ]; };
 const lv1=13, lvMore=[19,25,31,38,43];
