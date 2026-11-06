@@ -35,9 +35,10 @@ const CONFIG = {
   smileOn: 0.2, smileOff: 0.1,
   smileHoldMs: 350,                                    /* сколько улыбаться, чтобы загорелась */
 
-  /* подмигивание: один глаз закрыт сильнее winkHi, другой открыт (меньше winkLo) */
-  winkHi: 0.6, winkLo: 0.3,
-  winkMinMs: 150, winkMaxMs: 600, winkCooldownMs: 800,
+  /* подмигивание: один глаз закрыт заметно сильнее другого. Считается по разнице глаз — двумя способами
+     (blendshapes eyeBlink и раскрытие век по точкам лица), берётся больший. Моргание обоими — разница ≈ 0 */
+  winkOn: 0.3, winkOff: 0.15,                          /* разница «закрыт − открыт» с гистерезисом */
+  winkMinMs: 120, winkMaxMs: 700, winkCooldownMs: 800,
 
   /* рука: щепоть = |кончик большого − кончик указательного| / |запястье − основание среднего| */
   pinchClosed: 0.2, pinchOpen: 0.3,                    /* «пальцы сведены» с гистерезисом */
@@ -50,7 +51,8 @@ const CONFIG = {
   flame: { core: '#fff8e6', yellow: '#ffd66e', orange: '#ff8a2b', red: '#a8240f', blue: '#4f7dff' },
   flameWarm: { core: '#fff1cf', yellow: '#ffc24d', orange: '#ff6f1a', red: '#b8300c', blue: '#5b6dff' },
 
-  hintAfterMs: 6000,                                   /* подсказка — только если столько нет действий */
+  hintFirstMs: 2500,                                   /* первая подсказка — через столько после начала */
+  hintAfterMs: 4500,                                   /* следующие — если столько нет действий */
   volume: 0.8,                                         /* общая громкость 0…1 */
   cameraBackdrop: 0,                                   /* 0 — видео не видно; 0,03–0,08 — лёгкая подложка */
 
@@ -94,9 +96,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 .btn[disabled]{opacity:.4}
 #start .btn{box-shadow:0 0 40px rgba(255,180,90,.12)}
 
-#hint{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 34px);text-align:center;font-size:14px;font-weight:300;
-  letter-spacing:.03em;color:var(--pale);opacity:0;transition:opacity 1.4s ease;pointer-events:none;padding:0 24px;z-index:3}
-#hint.on{opacity:1}
+#hint{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 30px);display:flex;justify-content:center;
+  opacity:0;transform:translateY(6px);transition:opacity .9s ease,transform .9s ease;pointer-events:none;padding:0 20px;z-index:3}
+#hint.on{opacity:1;transform:none}
+#hint span{font-size:16px;font-weight:400;letter-spacing:.02em;color:rgba(255,240,222,.88);background:rgba(12,10,18,.5);
+  border:1px solid rgba(255,207,138,.18);padding:9px 18px;border-radius:999px;text-align:center;line-height:1.35}
 
 #final{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 26px);display:flex;flex-direction:column;align-items:center;
   gap:14px;padding:0 26px;text-align:center;pointer-events:none;z-index:4}
@@ -113,7 +117,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 <canvas id="scene"></canvas>
 <div class="vignette"></div>
 <video id="cam" playsinline muted autoplay></video>
-<div id="hint"></div>
+<div id="hint"><span></span></div>
 <div id="final" hidden><p class="w"></p><p class="m"></p><button class="btn" id="save" type="button">Сохранить созвездие</button></div>
 
 <div class="screen" id="start"><button class="btn" id="go" type="button">Начать</button></div>
@@ -353,16 +357,19 @@ const S = {
 const P = { sparks: [], smoke: [] };
 let lastAction = 0, startedAt = 0;
 const did = { blow: 0, smile: 0, wink: 0, pinch: 0, palm: 0, hand: 0, tap: 0 };
-const action = kind => { lastAction = now(); if (kind) did[kind] = 1; hideHint(); };
+/* действие человека: отмечаем, что он это уже умеет, и откладываем подсказки; next — что показать сразу как следующий шаг */
+const action = (kind, next) => { lastAction = now(); if (kind) did[kind] = 1; if (next) showHint(next, 3800); else if (hintSoft) hideHint(); };
 
 function extinguish(t) {
   if (!S.lit || S.finale) return;
   S.lit = false; S.outT = t; Sound.whoosh();
+  action('blow'); setTimeout(() => { if (!S.lit && !S.finale) showHint('улыбнись — и свеча зажжётся', 5000); }, 1400);
   for (let i = 0; i < 26; i++) setTimeout(() => P.smoke.push(newSmoke()), i * 70 + Math.random() * 60);
 }
 function ignite(t) {
   if (S.lit) return;
   S.lit = true; S.igniteT = t; S.flame = S.target = CONFIG.flameDefault; S.vis = 0; Sound.ignite();
+  action('smile'); hideHint();
   for (let i = 0; i < 9; i++) P.sparks.push(newSpark(1.4));
 }
 function resetFlame(t) {                       /* ладонь: плавно к норме за 1 с, погасшую — зажигаем */
@@ -385,12 +392,15 @@ function addStar(t) {
   const i = HER.findIndex(s => !s.on); if (i < 0) return;
   const s = HER[i]; s.on = true; s.litT = t; s.offT = -1e9; S.stars++;
   Sound.chime(i);
+  const left = CONFIG.stars - S.stars;
+  action('wink', left ? `звезда загорелась · ещё ${left}` : '');
   if (S.stars >= CONFIG.stars) setTimeout(() => { if (S.stars >= CONFIG.stars) startFinale(now()); }, 900);
 }
 /* нажал на её звезду — она гаснет, линии к ней сходятся между соседями */
 function removeStar(s, t) {
   if (S.finale || !s.on) return;
   s.on = false; s.offT = t; S.stars--; Sound.unchime();
+  action('tap', 'звезда погасла · подмигни, чтобы зажечь');
 }
 /* линии созвездия: между соседними горящими звёздами по порядку мест на «эллипсе» — так контур не перекрещивается.
    Новая линия прорисовывается за 0,9 с от своего появления */
@@ -408,7 +418,7 @@ cv.addEventListener('pointerdown', e => {
   if (!running || S.finale) return;
   let best = null, bd = 38;                                               /* палец толще звезды — ловим в радиусе 38 px */
   HER.forEach(s => { if (!s.on) return; const [x, y] = proj(s.x * W, s.y * H, s.depth), d = Math.hypot(x - e.clientX, y - e.clientY); if (d < bd) { bd = d; best = s; } });
-  if (best) { removeStar(best, now()); action('tap'); }
+  if (best) removeStar(best, now());
 });
 
 /* ═══════════════════════════════════════════════ РИСОВАНИЕ ════════════════════════════════════════════════════════ */
@@ -463,6 +473,10 @@ function draw(dt) {
       ctx.lineWidth = pass ? .9 : 4.5; const k = pass ? 1 : .12;
       segs.forEach(([a, b, born]) => seg(a, b, easeOut(clamp((nowT - born) / 900)), glow * k));
     }
+    /* отклик на подмигивание: следующая звезда разгорается, пока глаз закрывается — видно, что камера это замечает */
+    const nx = HER.findIndex(s => !s.on);
+    if (nx >= 0 && !S.finale) { const k = clamp(Wink.level / CONFIG.winkOn) * (Wink.state === 'closed' ? 1 : .6);
+      if (k > .05) { const [x, y, z] = pts[nx], r = (6 + 10 * k) * z; ctx.globalAlpha = .25 + .6 * k; ctx.drawImage(SPR.her, x - r, y - r, 2 * r, 2 * r); } }
     /* погашенная нажатием: короткий тающий отблеск */
     HER.forEach((s, i) => { const k = (nowT - s.offT) / 700; if (s.on || k < 0 || k > 1) return;
       const [x, y, z] = pts[i], r = 11 * z * (1 - k * .7); ctx.globalAlpha = (1 - k) * .8; ctx.drawImage(SPR.her, x - r, y - r, 2 * r, 2 * r); });
@@ -678,7 +692,7 @@ const MOUTH = { mouthPucker: 1, mouthFunnel: 1, cheekPuff: 1, jawOpen: 1 };
 const Face = { seen: 0, v: {}, idx: null, mwf: new OneEuro(2, .4), narrow: 0, hx: new OneEuro(.8, .3), hy: new OneEuro(.8, .3) };
 const Breath = { level: 0, on: false, onT: 0, dir: 1, f: new OneEuro(1.5, .5) };
 const Smile = { level: 0, on: false, onT: 0, offT: -1e9 };
-const Wink = { state: 'idle', side: '', t0: 0, last: -1e9, armed: true };
+const Wink = { state: 'idle', t0: 0, last: -1e9, armed: true, level: 0 };
 
 function onFace(res, t) {
   const bs = res.faceBlendshapes && res.faceBlendshapes[0];
@@ -694,6 +708,7 @@ function onFace(res, t) {
   /* ширина рта к ширине лица (уголки 61–291 к скулам 234–454): при дутье губы собираются — рот УЖЕ, чем в покое;
      когда улыбка просто уходит, рот возвращается к обычной ширине. Это и отличает дуновение от «перестал улыбаться» */
   const fl = res.faceLandmarks && res.faceLandmarks[0];
+  Face.bl = [raw.eyeBlinkLeft, raw.eyeBlinkRight]; eyes(fl, t);
   let mw = null;
   if (fl && fl[291] && fl[454]) {
     const D = (a, b) => Math.hypot((fl[a].x - fl[b].x) * fc.width, (fl[a].y - fl[b].y) * fc.height);
@@ -743,7 +758,6 @@ function faceLogic(v, t, nose, mw) {
   const wasOn = Breath.on;
   Breath.on = Breath.on ? Breath.level > CONFIG.blowOff : Breath.level > CONFIG.blowOn;
   if (Breath.on && !wasOn) Breath.onT = t;
-  if (Breath.level > .2) action('blow');
   const handBusy = Hand.palmMode || Hand.pinchEngaged;          /* ладонь > щепоть > дыхание */
   /* ещё и пауза 1,5 с после улыбки: лицо «отпускает» улыбку — в это время не гасим */
   if (Breath.on && !handBusy && S.lit && !S.finale && t - Breath.onT >= CONFIG.blowHoldMs && t - S.igniteT > 1700 && t - Smile.offT > 1500) extinguish(t);
@@ -759,31 +773,44 @@ function faceLogic(v, t, nose, mw) {
   if (!Smile.on && sOn) Smile.offT = t;
   const smileOk = !Breath.on && !handBusy;
   S.warm = approach(S.warm, smileOk && S.lit ? sm : 0, 4, 1 / 30);
-  if (sm > .15 && smileOk) action('smile');
   if (smileOk && Smile.on && !S.lit && t - Smile.onT >= CONFIG.smileHoldMs && t - S.outT > 900) ignite(t);
 
   /* ── подмигивание: независимо от всего остального ── */
-  winkLogic(v.eyeBlinkLeft, v.eyeBlinkRight, t);
+  winkLogic(v, t);
 }
 
-function winkLogic(L, R, t) {
-  const hi = CONFIG.winkHi, lo = CONFIG.winkLo;
-  if (!Wink.armed) { if (L < lo && R < lo) Wink.armed = true; return; }       /* после моргания — ждём, пока оба глаза откроются */
+/* подмигивание. Сигнал — насколько один глаз закрыт сильнее другого:
+   по blendshapes (сырые eyeBlink, без вычета «нуля»: разница от него не зависит) и по раскрытию век (точки лица:
+   высота века к ширине глаза относительно своего открытого глаза). Моргание обоими даёт разницу ≈ 0 */
+function winkLogic(v, t) {
+  const L = Face.bl ? Face.bl[0] : v.eyeBlinkLeft, R = Face.bl ? Face.bl[1] : v.eyeBlinkRight;
+  const bs = Math.max(L, R) > .4 ? Math.abs(L - R) : 0;
+  const ea = Eye.ca, eb = Eye.cb, ear = Eye.ok && Math.max(ea, eb) > .45 ? Math.abs(ea - eb) : 0;
+  const w = Wink.level = Math.max(bs, ear);
+  if (!Wink.armed) { if (w < CONFIG.winkOff) Wink.armed = true; return; }
   if (Wink.state === 'idle') {
     if (t - Wink.last < CONFIG.winkCooldownMs) return;
-    if (L > hi && R < lo) { Wink.state = 'closed'; Wink.side = 'L'; Wink.t0 = t; }
-    else if (R > hi && L < lo) { Wink.state = 'closed'; Wink.side = 'R'; Wink.t0 = t; }
-    else if (L > hi && R > hi) Wink.armed = false;                               /* обычное моргание — не считается */
+    if (w > CONFIG.winkOn) { Wink.state = 'closed'; Wink.t0 = t; }
     return;
   }
-  const self = Wink.side === 'L' ? L : R, other = Wink.side === 'L' ? R : L, dur = t - Wink.t0;
-  if (other > lo + .12) { Wink.state = 'idle'; Wink.armed = false; return; }    /* закрылся и второй — это моргание */
-  if (self < hi - .18) {                                                          /* глаз открылся: проверяем длительность */
+  const dur = t - Wink.t0;
+  if (w < CONFIG.winkOff) {                                                      /* глаз открылся: проверяем длительность */
     Wink.state = 'idle';
-    if (dur >= CONFIG.winkMinMs && dur <= CONFIG.winkMaxMs) { Wink.last = t; action('wink'); addStar(t); }
+    if (dur >= CONFIG.winkMinMs && dur <= CONFIG.winkMaxMs) { Wink.last = t; addStar(t); }
     return;
   }
   if (dur > CONFIG.winkMaxMs) { Wink.state = 'idle'; Wink.armed = false; }       /* держит слишком долго — не подмигивание */
+}
+/* раскрытие век по точкам лица: высота (159–145, 386–374) к ширине (33–133, 362–263); «открыто» — своё для каждого глаза */
+const Eye = { a0: 0, b0: 0, ca: 0, cb: 0, ok: false };
+function eyes(fl, t) {
+  if (!fl || !fl[386]) { Eye.ok = false; return; }
+  const D = (a, b) => Math.hypot((fl[a].x - fl[b].x) * fc.width, (fl[a].y - fl[b].y) * fc.height);
+  const ea = D(159, 145) / (D(33, 133) || 1), eb = D(386, 374) / (D(362, 263) || 1);
+  /* открытый глаз — быстро вверх, медленно вниз (чтобы прищур при улыбке не становился «открытым») */
+  Eye.a0 = !Eye.a0 ? ea : ea > Eye.a0 ? approach(Eye.a0, ea, 2, 1 / 30) : approach(Eye.a0, ea, .03, 1 / 30);
+  Eye.b0 = !Eye.b0 ? eb : eb > Eye.b0 ? approach(Eye.b0, eb, 2, 1 / 30) : approach(Eye.b0, eb, .03, 1 / 30);
+  Eye.ca = clamp((Eye.a0 - ea) / (Eye.a0 * .55)); Eye.cb = clamp((Eye.b0 - eb) / (Eye.b0 * .55)); Eye.ok = true;
 }
 
 /* ═══════════════════════════════════════ УПРАВЛЕНИЕ: РУКА ═════════════════════════════════════════════════════════ */
@@ -912,29 +939,38 @@ async function savePNG() {
 $('save').addEventListener('click', () => savePNG().catch(e => console.warn(e)));
 
 /* ═══════════════════════════════════════ ПОДСКАЗКИ (только после 6 с тишины) ══════════════════════════════════════ */
-let hintOn = false, hintAt = 0, hintIdx = 0;
-function hideHint() { if (hintOn) { hintOn = false; $('hint').classList.remove('on'); } }
+let hintOn = false, hintAt = 0, hintDur = 0, hintIdx = 0, hintEnd = 0, hintSoft = false, hintCount = 0;
+/* показать строку подсказки на dur мс. soft — подсказка «от скуки»: её убирает любое действие */
+function showHint(text, dur = 5500, soft = false) {
+  if (S.finale) return;
+  const el = $('hint'); el.firstChild.textContent = text; el.classList.add('on');
+  hintOn = true; hintAt = now(); hintDur = dur; hintSoft = soft;
+}
+function hideHint() { if (hintOn) { hintOn = false; hintEnd = now(); $('hint').classList.remove('on'); } }
 function hintTick(t) {
-  if (S.finale || !running) return;
-  if (hintOn) { if (t - hintAt > 4500) { hideHint(); lastAction = t; } return; }   /* показали — погасили; следующая — снова через 6 с */
-  if (t - lastAction < CONFIG.hintAfterMs) return;
+  if (S.finale || !running) { hideHint(); return; }
+  if (hintOn) { if (t - hintAt > hintDur) hideHint(); return; }
+  /* первая — вскоре после начала, дальше — когда долго ничего не происходит */
+  const wait = hintCount ? CONFIG.hintAfterMs : CONFIG.hintFirstMs;
+  if (t - Math.max(lastAction, hintEnd) < wait) return;
   /* простые подсказки: сначала то, чего человек ещё не делал, потом — по кругу */
   const c = [], todo = [];
   const add = (done, text) => (done ? c : todo).push(text);
   if (!ready) todo.push('секунду…');
-  else if (t - Face.seen > 2000) todo.push('посмотри на свечу');
+  else if (t - Face.seen > 2000) todo.push('посмотри на свечу — камера должна видеть лицо');
+  else if (!Calib.done) return;
   else if (!S.lit) todo.push('улыбнись — и свеча зажжётся');
   else {
-    add(did.wink, S.stars ? 'подмигни — загорится ещё звезда' : 'подмигни — загорится звезда');
-    add(did.blow, 'подуй — и свеча погаснет');
-    add(did.pinch, 'разведи пальцы — огонь станет больше');
-    add(did.palm, 'покажи ладонь — огонь станет как был');
+    add(did.wink, S.stars ? `подмигни — загорится ещё звезда (${S.stars} из ${CONFIG.stars})` : 'подмигни одним глазом — загорится звезда');
+    add(did.blow, 'подуй на свечу — она погаснет');
+    add(did.pinch, 'покажи руку и разведи большой и указательный');
+    add(did.palm, 'покажи открытую ладонь — огонь станет как был');
     if (S.stars) add(did.tap, 'нажми на звезду — она погаснет');
   }
   const pool = todo.length ? todo : c;
   if (!pool.length) return;
-  const text = pool[hintIdx++ % pool.length];
-  const el = $('hint'); el.textContent = text; el.classList.add('on'); hintOn = true; hintAt = t;
+  hintCount++;
+  showHint(pool[hintIdx++ % pool.length], 5500, true);
 }
 
 /* ═══════════════════════════════════════════ MEDIAPIPE ════════════════════════════════════════════════════════════ */
@@ -1126,7 +1162,7 @@ function debugOut() {
   el.textContent = `${delegate || '…'}/${handDelegate || '…'}  камера ${stat.fps.toFixed(0)}/с  экран ${stat.rfps.toFixed(0)}/с  q ${Q}\n` +
     `лицо ${stat.face.toFixed(1)} мс  рука ${stat.hand.toFixed(1)} мс  калибр ${Calib.done ? 'да' : '…'}\n` +
     `дует ${Breath.level.toFixed(2)}${Breath.on ? '●' : ''} рот уже ${Face.narrow.toFixed(2)}  улыб ${Smile.level.toFixed(2)}${Smile.on ? '●' : ''}\n` +
-    `глаз L ${(v.eyeBlinkLeft || 0).toFixed(2)} R ${(v.eyeBlinkRight || 0).toFixed(2)}  ${Wink.state}${Wink.armed ? '' : ' ×'}\n` +
+    `глаз L ${(Face.bl ? Face.bl[0] : 0).toFixed(2)} R ${(Face.bl ? Face.bl[1] : 0).toFixed(2)} веки ${Eye.ca.toFixed(2)}/${Eye.cb.toFixed(2)} подм ${Wink.level.toFixed(2)} ${Wink.state}${Wink.armed ? '' : ' ×'}\n` +
     `рука ${now() - Hand.seen < 300 ? Hand.ratio.toFixed(2) : '—'} ${Hand.open ? 'ладонь' : Hand.fist ? 'кулак' : Hand.closed ? 'сведены' : ''}\n` +
     `пламя ${S.flame.toFixed(2)} → ${S.target.toFixed(2)}  ${S.lit ? 'горит' : 'погасла'}  звёзд ${S.stars}`;
 }
@@ -1196,7 +1232,7 @@ requestAnimationFrame(loop);
 
 /* для отладки (?debug): посмотреть состояние и подложить blendshapes/руку без камеры */
 if (DEBUG) window.__joke = { S, HER: () => HER, Hand, Face, Calib, Wink, Breath, Smile, stat, get ready() { return ready; }, get delegate() { return delegate; },
-  face: (v, t = now(), mw = null) => { Face.seen = t; Calib.done = true; for (const k in BS) v[k] = v[k] || 0; Object.assign(Face.v, v); faceLogic(Face.v, t, null, mw); },
+  face: (v, t = now(), mw = null) => { Face.seen = t; Face.bl = null; Eye.ok = false; Calib.done = true; for (const k in BS) v[k] = v[k] || 0; Object.assign(Face.v, v); faceLogic(Face.v, t, null, mw); },
   hand: (lm, t = now()) => onHand({ landmarks: lm ? [lm] : [] }, t, 1, 1), addStar: () => addStar(now()), finale: () => startFinale(now()), makePNG, toCPU };
 </script>
 </body>
