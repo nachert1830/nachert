@@ -26,13 +26,14 @@ const CONFIG = {
   message: 'Пусть всё, что загадано, сбудется — тихо и по-настоящему.',   /* [ФИНАЛЬНОЕ СООБЩЕНИЕ] */
   stars: 7,                                            /* сколько подмигиваний до финала */
 
-  /* дыхание: blow = 0,65·pucker/funnel + 0,45·cheekPuff + 0,25·jawOpen (после вычета нейтрального лица) */
-  blowOn: 0.42, blowOff: 0.28,                         /* гистерезис «дует / не дует» */
-  blowHoldMs: 300,                                     /* сколько дуть, чтобы погасла */
+  /* дыхание: blow = 0,85·max(pucker, funnel) + 0,4·cheekPuff (после вычета нейтрального лица).
+     Гасит свечу ТОЛЬКО дуновение: губы трубочкой сильнее, чем улыбка; расслабленный рот не считается */
+  blowOn: 0.5, blowOff: 0.32,                          /* гистерезис «дует / не дует» */
+  blowHoldMs: 400,                                     /* сколько дуть, чтобы погасла */
 
-  /* улыбка: среднее mouthSmileLeft/Right */
-  smileOn: 0.42, smileOff: 0.28,
-  smileHoldMs: 400,                                    /* сколько улыбаться, чтобы загорелась */
+  /* улыбка: среднее mouthSmileLeft/Right + немного cheekSquint — так видна и улыбка без зубов */
+  smileOn: 0.2, smileOff: 0.1,
+  smileHoldMs: 350,                                    /* сколько улыбаться, чтобы загорелась */
 
   /* подмигивание: один глаз закрыт сильнее winkHi, другой открыт (меньше winkLo) */
   winkHi: 0.6, winkLo: 0.3,
@@ -41,7 +42,6 @@ const CONFIG = {
   /* рука: щепоть = |кончик большого − кончик указательного| / |запястье − основание среднего| */
   pinchClosed: 0.2, pinchOpen: 0.3,                    /* «пальцы сведены» с гистерезисом */
   pinchMin: 0.25, pinchMax: 1.25,                      /* этот диапазон растягивается на силу пламени 0,1…1 */
-  pinchOutMs: 500,                                     /* сколько держать сведёнными, чтобы погасла */
   palmHoldMs: 800,                                     /* открытая ладонь — сброс */
   handLostMs: 1000,                                    /* рука ушла из кадра — пламя возвращается к норме */
 
@@ -345,7 +345,7 @@ const S = {
 };
 const P = { sparks: [], smoke: [] };
 let lastAction = 0, startedAt = 0;
-const did = { blow: 0, smile: 0, wink: 0, pinch: 0, palm: 0 };
+const did = { blow: 0, smile: 0, wink: 0, pinch: 0, palm: 0, hand: 0 };
 const action = kind => { lastAction = now(); if (kind) did[kind] = 1; hideHint(); };
 
 function extinguish(t) {
@@ -466,7 +466,44 @@ function draw(dt) {
   /* дым — обычным наложением */
   ctx.globalCompositeOperation = 'source-over';
   for (const p of P.smoke) { const k = p.life / p.max, r = p.r * cz; ctx.globalAlpha = Math.sin(Math.PI * Math.min(1, k * 1.3)) * .38 * (1 - k); ctx.drawImage(SPR.smoke, p.x - r, p.y - r, 2 * r, 2 * r); }
+  drawHand(dt);
   ctx.globalAlpha = 1;
+}
+
+/* отклик руки: два тёплых огонька там, где кончики большого и указательного (зеркально, как в зеркале), между ними — нить.
+   Видно, что рука замечена и что расстояние между пальцами — это и есть «ручка» пламени. Ладонь — кольцо набирается 0,8 с */
+const HV = { a: 0, th: { x: 0, y: 0 }, ix: { x: 0, y: 0 }, c: { x: 0, y: 0 }, tips: [], init: false };
+function drawHand(dt) {
+  const seen = now() - Hand.seen < 250 && Hand.pt && !S.finale;
+  HV.a = approach(HV.a, seen ? 1 : 0, seen ? 6 : 3, dt);
+  if (HV.a < .01 || !Hand.pt) return;
+  /* кадр камеры растягиваем на экран с небольшим запасом по краям: до края экрана рука дотягивается раньше края кадра */
+  const map = q => ({ x: W * (1 - (q.x - .08) / .84), y: H * ((q.y - .06) / .88) });
+  const P2 = Hand.pt, k = HV.init ? 1 - Math.exp(-dt * 18) : 1; HV.init = true;
+  const mv = (o, q) => { const m = map(q); o.x += (m.x - o.x) * k; o.y += (m.y - o.y) * k; };
+  mv(HV.th, P2.th); mv(HV.ix, P2.ix); mv(HV.c, P2.c);
+  P2.tips.forEach((q, i) => { HV.tips[i] = HV.tips[i] || { x: 0, y: 0 }; mv(HV.tips[i], q); });
+  ctx.globalCompositeOperation = 'lighter';
+  const A = HV.a * .75;
+  if (Hand.open) {
+    /* ладонь: бледные точки на кончиках и кольцо — сколько осталось держать */
+    const prog = Hand.palmT ? clamp((now() - Hand.palmT) / CONFIG.palmHoldMs) : 0;
+    HV.tips.forEach(p => { const r = 7; ctx.globalAlpha = A * .6; ctx.drawImage(SPR.spark, p.x - r, p.y - r, 2 * r, 2 * r); });
+    const R = 34;
+    ctx.globalAlpha = A * .25; ctx.strokeStyle = 'rgba(255,214,150,1)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(HV.c.x, HV.c.y, R, 0, 6.283); ctx.stroke();
+    if (prog > 0) { ctx.globalAlpha = A * (Hand.palmFired ? .5 + .5 * Math.sin(T * 8) : .9); ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(HV.c.x, HV.c.y, R, -Math.PI / 2, -Math.PI / 2 + prog * 6.283); ctx.stroke(); }
+  } else {
+    /* щепоть: нить ярче, когда пальцы управляют пламенем */
+    const live = Hand.pinchEngaged ? 1 : .55;
+    ctx.globalAlpha = A * .35 * live; ctx.strokeStyle = 'rgba(255,200,130,1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(HV.th.x, HV.th.y); ctx.lineTo(HV.ix.x, HV.ix.y); ctx.stroke();
+    const r = 9 + 5 * S.vis;
+    [HV.th, HV.ix].forEach(p => { ctx.globalAlpha = A * live; ctx.drawImage(SPR.spark, p.x - r, p.y - r, 2 * r, 2 * r);
+      const g = r * 3; ctx.globalAlpha = A * .25 * live; ctx.drawImage(SPR.glow, p.x - g, p.y - g, 2 * g, 2 * g); });
+  }
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 /* свеча: воск с объёмом (горизонтальный градиент), сверху просвечивает от пламени, подоконник с отблеском */
@@ -592,9 +629,15 @@ function update(dt, t) {
 const BS = {
   eyeBlinkLeft: new OneEuro(4, .6), eyeBlinkRight: new OneEuro(4, .6),
   mouthPucker: new OneEuro(2, .4), mouthFunnel: new OneEuro(2, .4), cheekPuff: new OneEuro(2, .4), jawOpen: new OneEuro(2, .4),
-  mouthSmileLeft: new OneEuro(1.2, .3), mouthSmileRight: new OneEuro(1.2, .3)
+  mouthSmileLeft: new OneEuro(1.2, .3), mouthSmileRight: new OneEuro(1.2, .3),
+  cheekSquintLeft: new OneEuro(1.2, .3), cheekSquintRight: new OneEuro(1.2, .3)
 };
-const NEUTRAL_CAP = { eyeBlinkLeft: .55, eyeBlinkRight: .55, mouthPucker: .4, mouthFunnel: .35, cheekPuff: .3, jawOpen: .3, mouthSmileLeft: .4, mouthSmileRight: .4 };
+/* «ноль» не выше этих значений: калибровались с улыбкой — улыбка всё равно будет видна */
+const NEUTRAL_CAP = { eyeBlinkLeft: .55, eyeBlinkRight: .55, mouthPucker: .35, mouthFunnel: .25, cheekPuff: .25, jawOpen: .3,
+  mouthSmileLeft: .15, mouthSmileRight: .15, cheekSquintLeft: .25, cheekSquintRight: .25 };
+/* у этих «ноль» медленно (≈ 25 с) подтягивается и вверх: если у человека рот в покое сам по себе «трубочкой»
+   (так бывает при взгляде на телефон снизу), это перестаёт считаться дутьём; короткое дуновение так не съедается */
+const SLOW_UP = { mouthPucker: .5, mouthFunnel: .45, cheekPuff: .4 };
 const Calib = { t0: 0, n: 0, sum: {}, done: false, neutral: {} };
 const Face = { seen: 0, v: {}, idx: null, hx: new OneEuro(.8, .3), hy: new OneEuro(.8, .3) };
 const Breath = { level: 0, on: false, onT: 0, dir: 1, f: new OneEuro(1.5, .5) };
@@ -628,6 +671,7 @@ function onFace(res, t) {
   for (const k in raw) {
     const n = Calib.neutral[k];
     if (raw[k] < n) Calib.neutral[k] = approach(n, raw[k], .5, 1 / 30);
+    else if (SLOW_UP[k] && !Breath.on) Calib.neutral[k] = Math.min(SLOW_UP[k], approach(n, raw[k], .04, 1 / 30));
     v[k] = clamp((raw[k] - Calib.neutral[k]) / (1 - Calib.neutral[k]));
   }
   faceLogic(v, t, nose);
@@ -636,7 +680,9 @@ function onFace(res, t) {
 function faceLogic(v, t, nose) {
   /* ── дыхание ── */
   const pk = Math.max(v.mouthPucker, v.mouthFunnel);
-  const blow = clamp(.65 * pk + .45 * v.cheekPuff + .25 * Math.min(v.jawOpen, .6));
+  const smRaw = (v.mouthSmileLeft + v.mouthSmileRight) / 2;
+  /* дует — только когда губы вытянуты сильнее, чем растянуты в улыбку; открытый рот (jawOpen) дутьём не считается */
+  const blow = pk > smRaw ? clamp(.85 * pk + .4 * v.cheekPuff) : 0;
   Breath.level = Breath.f.filter(blow, t);
   if (nose) { const off = .5 - nose.x; Breath.dir = Math.abs(off) > .06 ? -Math.sign(off) : Breath.dir; }   /* дует слева — пламя клонится вправо */
   const wasOn = Breath.on;
@@ -647,14 +693,16 @@ function faceLogic(v, t, nose) {
   if (Breath.on && !handBusy && S.lit && !S.finale && t - Breath.onT >= CONFIG.blowHoldMs && t - S.igniteT > 1700) extinguish(t);
 
   /* ── улыбка (дыхание важнее) ── */
-  const sm = (v.mouthSmileLeft + v.mouthSmileRight) / 2;
+  /* улыбка без зубов: уголки губ поднимаются слабее, зато щёки приподнимаются — их добавляем, но не больше самой улыбки */
+  const sq = (v.cheekSquintLeft + v.cheekSquintRight) / 2;
+  const sm = clamp(smRaw + .35 * Math.min(sq, smRaw * 1.5));
   Smile.level = sm;
   const sOn = Smile.on;
   Smile.on = Smile.on ? sm > CONFIG.smileOff : sm > CONFIG.smileOn;
   if (Smile.on && !sOn) Smile.onT = t;
   const smileOk = !Breath.on && !handBusy;
   S.warm = approach(S.warm, smileOk && S.lit ? sm : 0, 4, 1 / 30);
-  if (sm > .3 && smileOk) action('smile');
+  if (sm > .15 && smileOk) action('smile');
   if (smileOk && Smile.on && !S.lit && t - Smile.onT >= CONFIG.smileHoldMs && t - S.outT > 900) ignite(t);
 
   /* ── подмигивание: независимо от всего остального ── */
@@ -689,13 +737,17 @@ function onHand(res, t, aw, ah) {
   const lm = res.landmarks && res.landmarks[0];
   if (!lm) { Hand.palmMode = Hand.pinchEngaged = false; return; }
   if (t - Hand.seen > 300) { Hand.first = t; Hand.r.reset(); }
-  Hand.seen = t;
+  Hand.seen = t; did.hand = 1;
   /* точки в пикселях кадра (x и y нормированы по разным сторонам кадра), глубина — с весом ½: MediaPipe оценивает её грубо */
   const p = lm.map(q => ({ x: q.x * aw, y: q.y * ah, z: q.z * aw }));
   const d2 = (a, b) => Math.hypot(p[a].x - p[b].x, p[a].y - p[b].y);
   const d3 = (a, b) => Math.hypot(p[a].x - p[b].x, p[a].y - p[b].y, (p[a].z - p[b].z) * .5);
   const palm = d2(0, 9) || 1;
+  if (palm < Math.max(aw, ah) * .045) { Hand.palmMode = Hand.pinchEngaged = false; return; }   /* крошечная «рука» — скорее ошибка */
   const ratio = Hand.ratio = Hand.r.filter(d3(4, 8) / palm, t);
+  /* точки для отклика на экране: кончики большого и указательного, центр ладони (нормированные, как в кадре) */
+  const c = [0, 5, 9, 13, 17].reduce((a, i) => ({ x: a.x + lm[i].x / 5, y: a.y + lm[i].y / 5 }), { x: 0, y: 0 });
+  Hand.pt = { th: lm[4], ix: lm[8], c, tips: [4, 8, 12, 16, 20].map(i => lm[i]) };
   /* поза: пальцы прямые — |кончик−запястье| / |пясть−запястье| (как в голограмме: прямая ≈ 1,9, согнутая ≈ 1) */
   const curl = [[8, 5], [12, 9], [16, 13], [20, 17]].map(([a, b]) => d2(a, 0) / (d2(b, 0) || 1));
   const cmin = Math.min(...curl), cmax = Math.max(...curl);
@@ -722,9 +774,7 @@ function handLogic(t) {
   Hand.pinchEngaged = pinchMode && (Hand.closed || t - Hand.lastMoveT < 700);
   if (!pinchMode || S.finale || !S.lit || t - S.resetT < 1000) { Hand.closedT = 0; return; }
   if (Hand.closed) {
-    S.target = .04;                                                              /* тонкий огонёк… */
-    if (!Hand.closedT) Hand.closedT = t;
-    if (t - Hand.closedT > CONFIG.pinchOutMs) { extinguish(t); action('pinch'); }   /* …и гаснет */
+    S.target = .05; action('pinch');                                             /* тонкий огонёк; гасит только дуновение */
   } else {
     Hand.closedT = 0;
     if (Hand.pinchEngaged) { S.target = .1 + .9 * clamp((r - CONFIG.pinchMin) / (CONFIG.pinchMax - CONFIG.pinchMin)); action('pinch'); }
@@ -816,17 +866,18 @@ function hintTick(t) {
   else if (t - Face.seen > 2000) c.push('посмотри на огонёк');
   else {
     if (!S.lit) c.push('улыбнись — и она снова загорится');
+    if (S.lit && !did.hand) c.push('подними руку перед камерой');
+    if (S.lit && did.hand && !did.pinch) c.push('разведи большой и указательный — пламя станет выше');
     if (S.lit && !did.blow) c.push('подуй на свечу');
     if (S.stars === 0) c.push('подмигни звёздам'); else c.push('подмигни ещё');
-    if (S.lit && !did.pinch) c.push('разведи пальцы — пламя станет выше');
-    if (S.lit && did.pinch && !did.palm) c.push('открытая ладонь — всё как было');
+    if (S.lit && did.pinch && !did.palm) c.push('покажи открытую ладонь — всё вернётся');
   }
   const text = c[hintIdx++ % c.length];
   const el = $('hint'); el.textContent = text; el.classList.add('on'); hintOn = true; hintAt = t;
 }
 
 /* ═══════════════════════════════════════════ MEDIAPIPE ════════════════════════════════════════════════════════════ */
-let MP = null, fileset = null, faceLmk = null, handLmk = null, delegate = '', ready = false, buffers = null, cpuProbe = null;
+let MP = null, fileset = null, faceLmk = null, handLmk = null, delegate = '', handDelegate = '', ready = false, buffers = null, cpuProbe = null, cpuHandProbe = null;
 const stamp = { face: 0, hand: 0 };
 
 async function fetchBuf(urls) {
@@ -853,13 +904,23 @@ async function createDetectors(d) {
   const [f, h] = await Promise.all([
     MP.FaceLandmarker.createFromOptions(fileset, { baseOptions: base(buffers.face), runningMode: 'VIDEO', numFaces: 1, outputFaceBlendshapes: true,
       outputFacialTransformationMatrixes: false, minFaceDetectionConfidence: .5, minFacePresenceConfidence: .5, minTrackingConfidence: .5 }),
-    MP.HandLandmarker.createFromOptions(fileset, { baseOptions: base(buffers.hand), runningMode: 'VIDEO', numHands: 1,
-      minHandDetectionConfidence: .5, minHandPresenceConfidence: .5, minTrackingConfidence: .5 })
+    makeHand(d)
   ]);
-  faceLmk = f; handLmk = h; delegate = d;
+  faceLmk = f; handLmk = h; delegate = handDelegate = d;
   /* прогрев: первый кадр компилирует шейдеры — делаем это на пустой картинке, а не на живом лице */
   const c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').fillRect(0, 0, 64, 64);
   f.detectForVideo(c, ++stamp.face); h.detectForVideo(c, ++stamp.hand);
+}
+/* рука: порог поиска 0,6 — реже принимает за руку кусок лица или фона */
+function makeHand(d) {
+  return MP.HandLandmarker.createFromOptions(fileset, { baseOptions: { modelAssetBuffer: buffers.hand.slice(), delegate: d }, runningMode: 'VIDEO', numHands: 1,
+    minHandDetectionConfidence: .6, minHandPresenceConfidence: .5, minTrackingConfidence: .5 });
+}
+/* только руку — на CPU (лицо остаётся на GPU, если там всё в порядке) */
+async function handToCPU(why) {
+  if (switching || handDelegate === 'CPU') return; switching = true; console.warn('рука → CPU:', why);
+  try { const h = await makeHand('CPU'); try { handLmk.close(); } catch (_) {} handLmk = h; handDelegate = 'CPU'; stat.hand = 0; }
+  catch (e) { console.warn(e); } finally { switching = false; }
 }
 let switching = false;
 async function setDelegate(d, why) {
@@ -945,6 +1006,20 @@ function runHand(t) {
   const t1 = now(), ts = stamp.hand = Math.max(stamp.hand + 1, Math.round(t));
   const r = handLmk.detectForVideo(fc, ts), ms = now() - t1; stat.hand = stat.hand ? .85 * stat.hand + .15 * ms : ms; lastHandRun = t;
   onHand(r, t, fc.width, fc.height);
+  /* GPU-рука может быть «слепой» отдельно от лица: человек в кадре, а руки 5 с нет — проверяем кадр на CPU
+     (первую минуту — раз в 4 с, потом раз в 15 с: проверка стоит ~40 мс) */
+  const quiet = t - Math.max(Hand.seen, startedAt);
+  if (handDelegate === 'GPU' && !(r.landmarks && r.landmarks.length) && t - Face.seen < 500 && quiet > 5000 &&
+      t - handChk > (t - startedAt < 60000 ? 4000 : 15000)) { handChk = t; probeHandBlind(); }
+}
+let handChk = 0;
+async function probeHandBlind() {
+  try {
+    if (!cpuHandProbe) cpuHandProbe = await MP.HandLandmarker.createFromOptions(fileset, { baseOptions: { modelAssetBuffer: buffers.hand.slice(), delegate: 'CPU' },
+      runningMode: 'IMAGE', numHands: 1, minHandDetectionConfidence: .6 });
+    const r = cpuHandProbe.detect(fc);
+    if (r.landmarks && r.landmarks.length) { cpuHandProbe.close(); cpuHandProbe = null; handToCPU('GPU не видит руку'); }
+  } catch (e) { console.warn(e); }
 }
 async function probeBlind() {
   try {
@@ -974,7 +1049,7 @@ function loop(t) {
 }
 function debugOut() {
   const el = $('jdbg') || Object.assign(document.body.appendChild(document.createElement('div')), { id: 'jdbg' }), v = Face.v;
-  el.textContent = `${delegate || '…'}  камера ${stat.fps.toFixed(0)}/с  экран ${stat.rfps.toFixed(0)}/с  q ${Q}\n` +
+  el.textContent = `${delegate || '…'}/${handDelegate || '…'}  камера ${stat.fps.toFixed(0)}/с  экран ${stat.rfps.toFixed(0)}/с  q ${Q}\n` +
     `лицо ${stat.face.toFixed(1)} мс  рука ${stat.hand.toFixed(1)} мс  калибр ${Calib.done ? 'да' : '…'}\n` +
     `дует ${Breath.level.toFixed(2)}${Breath.on ? '●' : ''}  улыб ${Smile.level.toFixed(2)}${Smile.on ? '●' : ''}\n` +
     `глаз L ${(v.eyeBlinkLeft || 0).toFixed(2)} R ${(v.eyeBlinkRight || 0).toFixed(2)}  ${Wink.state}${Wink.armed ? '' : ' ×'}\n` +
