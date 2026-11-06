@@ -29831,9 +29831,9 @@ function sheetSVG(model,title,sub,task,mode){
     o+=`<polygon points="${model.givenKL.map(p=>q(p).map(f).join(',')).join(' ')}" fill="none" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/>`+ln(la,lb,'#111',AX,.8); }
   const fa=P(D.front,[0,0,z0-7],X0,Y0), fb=P(D.front,[0,0,z1+7],X0,Y0); o+=ln(fa,fb,'#111',AX,.8);
   if(D.left){ const la=P(D.left,[0,0,z0-7],X0+S,Y0), lb=P(D.left,[0,0,z1+7],X0+S,Y0); o+=ln(la,lb,'#111',AX,.8); }
-  if(!given&&SP.xb) o+=wavy(P(D.front,[SP.xb,0,z0+0.5],X0,Y0),P(D.front,[SP.xb,0,z1-0.5],X0,Y0));
-  if(hz&&D.cut&&SP.H==='half'&&SP.tb) { const [ya,yb]=topSpan(model,SP.tb); o+=wavy(P(D.top,[SP.tb,ya,z1],X0,TOPY),P(D.top,[SP.tb,yb,z1],X0,TOPY)); }
-  if(!given&&SP.yb&&D.left) o+=wavy(P(D.left,[0,SP.yb,z0+0.5],X0+S,Y0),P(D.left,[0,SP.yb,z1-0.5],X0+S,Y0));
+  if(!given&&SP.xb) o+=wavyIn(model,'F',SP.xb,(u,v)=>P(D.front,[u,0,v],X0,Y0)).svg;
+  if(hz&&D.cut&&SP.H==='half'&&SP.tb) o+=wavyIn(model,'T',SP.tb,(u,v)=>P(D.top,[u,v,z1],X0,TOPY)).svg;
+  if(!given&&SP.yb&&D.left) o+=wavyIn(model,'L',SP.yb,(u,v)=>P(D.left,[0,u,v],X0+S,Y0)).svg;
   if(!(given&&model.noTop)) o+=ln([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.8)+ln([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.8);   /* вида сверху в задании нет — и его осей нет */
   /* оси отверстий (ГОСТ 2.303): на виде сверху — центровая окружность и перекрестия, на главном виде и виде слева — оси отверстий */
   if(!given){ const HL=holeAxes(model), done={c:{},x:{},y:{}}; HL.forEach(h=>{ const R=Math.hypot(h.x,h.y), q=P(D.top,[h.x,h.y,z1],X0,TOPY), a=h.r+3;
@@ -29903,6 +29903,48 @@ function creaseTop(model){ if(model._ct!=null) return model._ct; const J=IG3.J, 
 function topSpan(model,x){ const b=model.box, J=IG3.J, T=model.tree; let lo=null, hi=null;
   for(let y=b[0][1];y<=b[1][1];y+=0.25) for(let z=b[0][2]+0.1;z<b[1][2];z+=0.5) if(J(T,x,y,z)<0){ if(lo==null) lo=y; hi=y; break; }
   return lo==null?[b[0][1],b[1][1]]:[lo+0.5,hi-0.5]; }
+/* волнистая граница вида и разреза — только по изображению (ГОСТ 2.305): за контур не выходит и по пустому месту не идёт.
+   view 'F' — главный вид (u = x, v = z), 'L' — вид слева (u = y, v = z), 'T' — вид сверху (u = x, v = y); off — смещение от оси по u.
+   Материал в точке (u, v) изображения — тело на какой-нибудь глубине. Где контур сужается к вершине и смещение не помещается,
+   линия подходит к оси (на половине ширины контура) и доходит до вершины; где на её линии пусто (сквозное окно), а дальше от оси
+   материал есть, — разрыв. Возвращает куски: [[u, v, запас до контура, мм], …] */
+function wavySpan(model,view,off){ const key='_wv'+view+off; if(model[key]) return model[key];
+  const b=model.box, J=IG3.J, T=model.tree, s=Math.sign(off)||1, a=Math.abs(off), iu=view==='L'?1:0, iv=view==='T'?1:2, id=3-iu-iv;
+  const D0=b[0][id], D1=b[1][id], V0=b[0][iv], V1=b[1][iv], Um=Math.max(Math.abs(b[0][iu]),Math.abs(b[1][iu]));
+  const cov1=(u,v)=>{ const p=[0,0,0]; p[iu]=u; p[iv]=v; for(let d=D0+0.1;d<D1;d+=0.5){ p[id]=d; if(J(T,p[0],p[1],p[2])<0) return true; } return false; };
+  const cov=(u,v)=>cov1(u,v)||cov1(u,v+0.03)||cov1(u,v-0.03);   /* уровень стыка двух тел (верх фланца = низ стакана) — не разрыв */
+  const edge=(v,lo,hi)=>{ for(let i=0;i<12;i++){ const m=(lo+hi)/2; if(cov(s*m,v)) lo=m; else hi=m; } return lo; };   /* lo — материал есть, hi — нет */
+  /* точка линии на уровне v: [u, запас] или null; ширина контура w ≥ 2·off — линия на смещении, уже — на половине ширины */
+  const at=v=>{ if(cov(s*a,v)){ if(cov(s*2*a,v)) return [s*a,a]; const w=edge(v,a,2*a); return [s*w/2,w/2]; }
+    for(let u=a+1;u<=Um+0.5;u+=1) if(cov(s*u,v)) return null;   /* дальше от оси материал есть — здесь окно */
+    if(!cov(s*0.05,v)) return null; const w=edge(v,0.05,a); return [s*w/2,w/2]; };
+  const out=[], st=0.5, ins=0.4; let run=null, pv=null;
+  const cut=(vg,vb)=>{ for(let i=0;i<7;i++){ const m=(vg+vb)/2; if(at(m)) vg=m; else vb=m; } return vg; };   /* граница куска между уровнями с линией и без */
+  const close=v1=>{ if(!run) return; const e=v1-ins, q=at(e); if(q&&e>run[0][1]) run.push([q[0],e,q[1]]); if(run[run.length-1][1]-run[0][1]>=2) out.push(run); run=null; };
+  for(let v=V0;v<=V1+1e-9;v+=st){ const vv=Math.min(v,V1), q=at(vv);
+    if(q&&!run){ const v0=pv==null?vv:cut(vv,pv), e=v0+ins, q0=at(e)||q; run=[[q0[0],e,q0[1]]]; if(vv>e) run.push([q[0],vv,q[1]]); }
+    else if(q) run.push([q[0],vv,q[1]]);
+    else if(run) close(cut(pv,vv));
+    pv=vv; }
+  if(run) close(V1);
+  Object.defineProperty(model,key,{value:out}); return out; }
+/* волнистая по кускам wavySpan; M(u, v) → точка листа. Один элемент path: куски — подпути, часть на полном смещении (прямая вдоль оси)
+   и часть, что подходит к оси, — разные подпути (у каждого хорда прямая), самый длинный прямой — первым. Размах волны — не больше
+   запаса до контура и до оси. segs — ломаные (для обхода размерами) */
+function wavyIn(model,view,off,M){ const segs=[], parts=[], a=Math.abs(off);
+  wavySpan(model,view,off).forEach(R=>{ const P=R.map(q=>M(q[0],q[1])), room=R.map(q=>{ const r=Math.min(q[2],Math.abs(q[0])), A=M(q[0],q[1]), B=M(q[0]+r,q[1]); return Math.hypot(B[0]-A[0],B[1]-A[1]); });
+    const cum=[0]; for(let i=1;i<P.length;i++) cum.push(cum[i-1]+Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1])); const L=cum[cum.length-1]; if(L<2) return;
+    const pos=t=>{ let i=1; while(i<cum.length-1&&cum[i]<t) i++; const w=(t-cum[i-1])/((cum[i]-cum[i-1])||1); return {p:[P[i-1][0]+(P[i][0]-P[i-1][0])*w,P[i-1][1]+(P[i][1]-P[i-1][1])*w],r:room[i-1]+(room[i]-room[i-1])*w,full:Math.abs(Math.abs(R[i-1][0])-a)<0.05&&Math.abs(Math.abs(R[i][0])-a)<0.05}; };
+    const n=Math.max(2,Math.round(L/16)), N=[]; for(let i=0;i<=n;i++) N.push(pos(L*i/n).p);
+    let d='', poly=[], full=null;
+    const flush=()=>{ if(d){ parts.push({d,full,len:Math.hypot(poly[poly.length-1][0]-poly[0][0],poly[poly.length-1][1]-poly[0][1])}); segs.push(poly); } d=''; poly=[]; };
+    for(let i=1;i<=n;i++){ const m=pos(L*(i-.5)/n), A=N[i-1], B=N[i], dx=B[0]-A[0], dy=B[1]-A[1], l=Math.hypot(dx,dy)||1, amp=(i%2?1:-1)*Math.min(3.2,1.4*m.r);
+      if(full!==null&&m.full!==full) flush(); full=m.full;
+      if(!d){ d=`M${A[0].toFixed(1)},${A[1].toFixed(1)}`; poly.push(A); }
+      d+=` Q${(m.p[0]-dy/l*amp).toFixed(1)},${(m.p[1]+dx/l*amp).toFixed(1)} ${B[0].toFixed(1)},${B[1].toFixed(1)}`; poly.push(B); }
+    flush(); full=null; });
+  parts.sort((p,q)=>(q.full-p.full)||(q.len-p.len));
+  return {svg:parts.length?`<path d="${parts.map(p=>p.d).join(' ')}" fill="none" stroke="#111" stroke-width="1"/>`:'',segs}; }
 /* симметрия детали относительно плоскости y = 0 ('y') или x = 0 ('x'): 8000 псевдослучайных точек (одинаково при каждом открытии);
    несимметричный объём бывает маленьким (треугольное отверстие), поэтому точек много, а порог — 5 несовпадений */
 function symAx(model,ax){ const key=ax==='y'?'_sy':'_sx'; if(model[key]!=null) return model[key]; const b=model.box, T=model.tree; let asym=0, sd=ax==='y'?12345:777; const rnd=()=>(sd=(sd*1103515245+12345)%2147483648)/2147483648;
@@ -30059,7 +30101,7 @@ function stepsSVG(model,st,steps){
   if(kind==='given'&&model.givenKL){ o+=`<polygon points="${model.givenKL.map(p=>LF([0,p[0],p[1]]).map(f).join(',')).join(' ')}" fill="none" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/>`; const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,'#111',AX,.7); }
   if(cut){ o+=img('left',X0+S,Y0);
     /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
-    if(sp.xb) o+=wavy(P('front',[sp.xb,0,z0+0.5],X0,Y0),P('front',[sp.xb,0,z1-0.5],X0,Y0)); if(sp.yb) o+=wavy(P('left',[0,sp.yb,z0+0.5],X0+S,Y0),P('left',[0,sp.yb,z1-0.5],X0+S,Y0));
+    if(sp.xb) o+=wavyIn(model,'F',sp.xb,(u,v)=>P('front',[u,0,v],X0,Y0)).svg; if(sp.yb) o+=wavyIn(model,'L',sp.yb,(u,v)=>P('left',[0,u,v],X0+S,Y0)).svg;
     /* оси отверстий фланца в разрезах (там, куда отверстия повёрнуты по условности) и обозначения разрезов, если плоскость — не плоскость симметрии */
     const FL=holeAxesFL(model), Km=(P('front',[10,0,0],X0,Y0)[0]-P('front',[0,0,0],X0,Y0)[0])/10, AXs='12 3 2 3', LT=letters(model), rr=Math.max(b[1][0],b[1][1])+4;
     FL.F.forEach(h=>{ o+=L(P('front',[h.x,0,h.z0-4],X0,Y0),P('front',[h.x,0,h.z1+4],X0,Y0),'#111',AXs,.7); }); FL.L.forEach(h=>{ o+=L(P('left',[0,h.y,h.z0-4],X0+S,Y0),P('left',[0,h.y,h.z1+4],X0+S,Y0),'#111',AXs,.7); });
@@ -30426,7 +30468,7 @@ function view(v,r){
   if(r.tab==='nk'&&window.IGNK) return IGNK.view(v,r.item);
   return home(v);
 }
-return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,topSpan,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,holeAxesFL,axDash,axCircle,axLine,secRot,loading,frame,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given'),partPage,sheetSVG};
+return {view,TH,mountViewer,sheetImages,keyPts,mountUnfold,buildBlock,igSpec,wavy,wavyIn,wavySpan,topSpan,secMark,hatchDeg,hasGL,stepLines,letters,fDes,pDes,holeAxes,holeAxesFL,axDash,axCircle,axLine,secRot,loading,frame,sheetSVGgiven:n=>sheetSVG(IG_VARS[n],'','','','given'),partPage,sheetSVG};
 })();
 
 /* ═════════ IGL: обучение — виды, разрезы и сечения на одной детали (ДЗ 2, вариант 5) ═════════
@@ -30602,7 +30644,7 @@ function stepBody(i){ const st=ST[i]; const md=MD(), sp=IGUI.igSpec(md), Ly=layo
   /* на шагах сечения главный вид — с невидимым контуром: след пересекает и внутренние поверхности (рёбра отверстия, отверстия фланца) */
   const iSec=i>=7;
   o+=img(i<iFR||iSec?DR('front0'):DR(sp.fk,0,sp.xb),0,0)+img(DR('top'),0,k*Ly.TY);
-  if(i>=iFR&&!iSec&&sp.xb) o+=IGUI.wavy(FR(sp.xb,0.6),FR(sp.xb,119.4));
+  if(i>=iFR&&!iSec&&sp.xb) o+=IGUI.wavyIn(MD(),'F',sp.xb,FR).svg;
   if(i>=iFR&&!iSec) o+=markB(Ly);
   /* вид слева: по элементам, затем профильный разрез */
   if(i>=1&&i<iPR){ const lv=Math.min(st.lv||3,3), d0=DR('left0'), sw=d0.sw, tr=place(d0,k*Ly.GX,0),
@@ -30688,7 +30730,7 @@ function sheetBody(mode){ const draft=mode==='draft', md=MD(), sp=IGUI.igSpec(md
     const tc=TP(0,0), ring=`M${f(tc[0]-55*k)},${f(tc[1])}a${f(55*k)},${f(55*k)} 0 1,0 ${f(110*k)},0a${f(55*k)},${f(55*k)} 0 1,0 ${f(-110*k)},0Z M${f(tc[0]-40*k)},${f(tc[1])}a${f(40*k)},${f(40*k)} 0 1,1 ${f(80*k)},0a${f(40*k)},${f(40*k)} 0 1,1 ${f(-80*k)},0Z`
       +[45,135,225,315].map(a=>{ const q=TP(HX*Math.sign(Math.cos(a*Math.PI/180)),HX*Math.sign(Math.sin(a*Math.PI/180))); return `M${f(q[0]-5*k)},${f(q[1])}a${f(5*k)},${f(5*k)} 0 1,1 ${f(10*k)},0a${f(5*k)},${f(5*k)} 0 1,1 ${f(-10*k)},0Z`; }).join('');
     col+=`<path d="${ring}" fill="${YL}" fill-opacity=".6" fill-rule="evenodd"/>`; }
-  if(sp.xb) o+=IGUI.wavy(FR(sp.xb,0.6),FR(sp.xb,119.4));
+  if(sp.xb) o+=IGUI.wavyIn(MD(),'F',sp.xb,FR).svg;
   o+=markB(Ly);
   o+=ln(FR(0,-4),FR(0,124),INK,.8,AX)+ln(LF(0,-4),LF(0,124),INK,.8,AX)+IGUI.axLine(TP(-60,0),TP(60,0),[{t:60*k,pr:2},12.5*k,107.5*k],k,INK,.8,LREC)+IGUI.axLine(TP(0,-60),TP(0,60),[{t:60*k,pr:2},12.5*k,107.5*k],k,INK,.8,LREC);
   /* наклонное сечение А–А — на черновике (на чистовике, как на образце, его нет) */
@@ -30843,7 +30885,7 @@ function pex(){ if(pex.c) return pex.c; const L=[], c30=Math.cos(Math.PI/6);
 /* лист варианта 5: главный вид — половина вида и половина разреза (волнистая граница), вид слева — профильный разрез, вид сверху */
 const PBOX=()=>bboxOf([PFR(-72,132),PFR(72,-8),PTP(-72,-64),PTP(72,62),PLF(72,132),PLF(-72,-8)],16);
 function ptBase(){ const Ly={FR:PFR,TP:PTP,LF:PLF}, sp=IGUI.igSpec(MD());
-  return img(DR(sp.fk,0,sp.xb),0,0)+(sp.xb?IGUI.wavy(PFR(sp.xb,0.6),PFR(sp.xb,119.4)):'')+img(DR('top'),0,k*PTY)+img(DR(sp.lk,0,sp.yb),k*PGX,0)
+  return img(DR(sp.fk,0,sp.xb),0,0)+(sp.xb?IGUI.wavyIn(MD(),'F',sp.xb,PFR).svg:'')+img(DR('top'),0,k*PTY)+img(DR(sp.lk,0,sp.yb),k*PGX,0)
     +ln(PFR(0,-4),PFR(0,124),INK,.8,AX)+IGUI.axLine(PTP(-60,0),PTP(60,0),[{t:60*k,pr:2},12.5*k,107.5*k],k,INK,.8,LREC)+IGUI.axLine(PTP(0,-60),PTP(0,60),[{t:60*k,pr:2},12.5*k,107.5*k],k,INK,.8,LREC)+ln(PLF(0,-4),PLF(0,124),INK,.8,AX)
     +marks(Ly,{half:1,prof:1}); }
 /* отметка проекции: выколотая точка (видна) или крестик (не видна) */
@@ -31111,6 +31153,19 @@ function labeler(){ const Q=[]; const fn=(q,t,col,dx,dy)=>{ Q.push({q,t,col,dx,d
    ['lead', p, q, текст, сторона] — выноска: стрелка в точке p, излом в q, полка в сторону ±1;
    ['dia', c, D, угол, вылет, текст, сторона] — диаметр окружности через центр: стрелка на окружности под углом, полка за противоположной стороной;
    ['ang', c, r, a0, a1, текст, {e:[r0,r0]}] — угол между лучами a0 и a1 (град, против часовой от +x), дуга радиуса r; e — откуда начинать выносные */
+/* выносные линии — от контура изображения (ГОСТ 2.307): точку размера, которая висит в воздухе (габарит модели, уровень над вершиной
+   пирамиды, край основания над сужением), переносим вдоль выносной линии до ближайшей видимой линии изображения. Точку не трогаем,
+   если она на линии или между ней и размерной линией есть изображение (центр отверстия, вершина выреза внутри тела).
+   SG[вид] — отрезки видимых линий [u0, v0, u1, v1] в мм вида (F: x, z; L: y, z; T: x, y) */
+function snapDims(list,SG){ const ray=(G,p,ax,sg)=>{ const o=1-ax; let best=null;   /* ax — по какой координате идёт выносная (0 — по u, 1 — по v), sg — в какую сторону */
+    for(const g of G){ const a=[g[0],g[1]], b=[g[2],g[3]], lo=Math.min(a[o],b[o]), hi=Math.max(a[o],b[o]); if(p[o]<lo-0.02||p[o]>hi+0.02) continue;
+      const T=(Math.abs(b[o]-a[o])<0.02?[a[ax],b[ax]]:[a[ax]+(b[ax]-a[ax])*(p[o]-a[o])/(b[o]-a[o])]).map(x=>(x-p[ax])*sg).filter(t=>t>=-0.3);
+      T.forEach(t=>{ if(best==null||t<best) best=t; }); }
+    return best; };
+  const fix=(G,A,ax,at)=>{ const sg=Math.sign(at-A[ax])||1, out=ray(G,A,ax,sg); if(out!=null&&out<=Math.abs(at-A[ax])+0.3) return A;   /* на линии или изображение до размерной линии */
+    const t=ray(G,A,ax,-sg); if(t==null||t<0.3) return A; const q=A.slice(); q[ax]-=sg*t; return q; };
+  return (list||[]).map(d=>{ const G=SG[d[0]]; if(!G||!G.length||(d[1]!=='h'&&d[1]!=='v')) return d; const ax=d[1]==='v'?0:1, q=d.slice();
+    q[2]=fix(G,d[2],ax,d[4]); q[3]=fix(G,d[3],ax,d[4]); return q; }); }
 function dimsSVG(list,M,opt){ let o=''; const W1=.8; opt=opt||{};
   const ar=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*12-dy*2.6)},${f(dy*12+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="${INK}"/>`;
   const tw=t=>[...String(t)].reduce((a,c)=>a+(/[0-9.,]/.test(c)?11:/[ ]/.test(c)?6:13),0);
@@ -31338,10 +31393,9 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
       :`<defs><clipPath id="${id}a"><rect x="-2000" y="-2000" width="4000" height="${f(yc+2000)}"/></clipPath><clipPath id="${id}b"><rect x="-2000" y="${f(yc)}" width="4000" height="2000"/></clipPath></defs>`)
       +`<g clip-path="url(#${id}a)">${img(C,top,0,k*C.TY)}</g><g clip-path="url(#${id}b)">${img(C,cut,0,k*C.TY)}</g>`; }
   else o+=img(C,DR('top'),0,k*C.TY);
-  if(hz&&sp.H==='half'&&sp.tb) { const [ya,yb]=IGUI.topSpan(md,sp.tb); o+=IGUI.wavy(TP(sp.tb,ya),TP(sp.tb,yb)); }   /* граница вида и разреза при ребре на оси */
-  if(sp.xb) o+=IGUI.wavy(FR(sp.xb,C.z0+0.5),FR(sp.xb,C.z1-0.5)); if(sp.yb) o+=IGUI.wavy(LF(sp.yb,C.z0+0.5),LF(sp.yb,C.z1-0.5));
-  /* волнистая — тоже помеха для размерных чисел (полоса шириной в её размах) */
-  if(REC) [[sp.xb,FR],[sp.yb,LF]].forEach(([v,T])=>{ if(!v) return; const a=T(v,C.z0), b=T(v,C.z1); [-4,0,4].forEach(d=>REC.s.push([a[0]+d,a[1],b[0]+d,b[1]])); });
+  /* граница вида и разреза при ребре на оси — волнистая в пределах изображения; она же — помеха для размерных чисел (полоса шириной в её размах) */
+  [[sp.xb,'F',FR],[sp.yb,'L',LF],[hz&&sp.H==='half'?sp.tb:0,'T',TP]].forEach(([v,vw,T])=>{ if(!v) return; const W2=IGUI.wavyIn(md,vw,v,T); o+=W2.svg;
+    if(REC&&vw!=='T') W2.segs.forEach(P=>{ for(let i=1;i<P.length;i++) [-4,0,4].forEach(d=>REC.s.push([P[i-1][0]+d,P[i-1][1],P[i][0]+d,P[i][1]])); }); });
   /* оси симметрии (ГОСТ 2.303): выходят за контур на 2–5 мм */
   const R=Math.max(C.x1,-C.x0,C.y1,-C.y0);
   /* на виде сверху оси пересекают центровые окружности отверстий — там у обеих линий штрих (опоры осей и окружностей) */
@@ -31387,7 +31441,12 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   (C.G.d||[]).forEach(d=>{ if(d[0]!=='F'||d[1]!=='dia'||!(d[8]&&d[8].circ)) return; const R=d[3]/2, c0=FR(d[2][0],d[2][1]);
     c+=`<circle cx="${f(c0[0])}" cy="${f(c0[1])}" r="${f(R*k)}" fill="none" stroke="${INK}" stroke-width=".7"/>`; if(REC) for(let i=0;i<24;i++){ const a=i*Math.PI/12, b=(i+1)*Math.PI/12; REC.s.push([c0[0]+R*k*Math.cos(a),c0[1]+R*k*Math.sin(a),c0[0]+R*k*Math.cos(b),c0[1]+R*k*Math.sin(b)]); }
     o+=IGUI.axLine(FR(d[2][0]-R-3,d[2][1]),FR(d[2][0]+R+3,d[2][1]),[{t:(R+3)*k,pr:2}],k,INK,.7,REC?(a,b)=>REC.s.push([a[0],a[1],b[0],b[1]]):null); });
-  c+=dimsSVG(C.G.d,{F:q=>FR(q[0],q[1]),L:q=>LF(q[0],q[1]),T:q=>TP(q[0],q[1])},{auto:typeof n==='object'});   /* листы заданий 3, 4 — место числа подбирается */
+  /* видимые линии изображений (мм вида) — к ним доводим выносные линии; на виде сверху с разрезом — каждая половина из своего изображения */
+  const SG=(()=>{ const seg=(d,iu,iv,keep)=>(d&&d.lines||[]).filter(L=>!L.h&&L.a3&&L.b3).map(L=>[L.a3[iu],L.a3[iv],L.b3[iu],L.b3[iv]]).filter(g=>!keep||keep(g));
+    let T=seg(DTv,0,1); if(hz&&sp.H==='full') T=seg(DTc,0,1); else if(hz){ const tb=sp.tb||0, D2=sp.H==='halfD', side=g=>D2?(g[1]+g[3])/2:(g[0]+g[2])/2;
+      T=seg(DTv,0,1,g=>D2?side(g)>=-0.05:side(g)<=tb+0.05).concat(seg(DTc,0,1,g=>D2?side(g)<=0.05:side(g)>=tb-0.05)); }
+    return {F:seg(DF,0,2),L:seg(DL,1,2),T}; })();
+  c+=dimsSVG(snapDims(C.G.d,SG),{F:q=>FR(q[0],q[1]),L:q=>LF(q[0],q[1]),T:q=>TP(q[0],q[1])},{auto:typeof n==='object'});   /* листы заданий 3, 4 — место числа подбирается */
   /* диаметр окружности, которой на виде сверху нет линией (многогранник «вписан в Ø…», как в задании): саму окружность — тонкой сплошной, как на образце */
   { const tv=C.DR('top'), mm=(tv.px([10,0,0])[0]-tv.px([0,0,0])[0])/10;
     const HR=IGUI.holeAxes(md).map(h=>Math.hypot(h.x,h.y));
