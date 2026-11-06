@@ -35,7 +35,7 @@ function helper(items,fail){
     /* точка чертежа по любой подписи, в том числе без штриха (A₄, 1₄, Ā″) и в составной «A₅ ≡ B₅» */
     lab(n){ const it=items.find(i=>i&&i.t==='pt'&&i.at&&String(i.l==null?'':i.l).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').split(/\s*[≡=]\s*/).map(x=>x.trim()).includes(n)); if(!it) throw new Error('нет точки '+n); return it.at; },
     /* отрезок по подписи (точно или по началу подписи: «d » найдёт «d ≈ 20 мм») */
-    segL(l){ const it=items.find(i=>i&&(i.t==='seg'||i.t==='line')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim().startsWith(l)); if(!it) throw new Error('нет отрезка '+l); return [it.a,it.b]; },
+    segL(l){ const it=items.find(i=>i&&(i.t==='seg'||i.t==='line'||i.t==='dim')&&i.a&&i.b&&String(i.l==null?'':i.l).replace(/<\/?(?:b|i|u|s|em|strong|sub|sup|br|span|div|p|a|small|code|ul|ol|li|table|tr|td|th|thead|tbody|details|summary|h[1-6]|img|svg|path|g|text|tspan|kbd|mark|abbr|wbr|hr|label|button|input|section|article|nav|header|footer|figure|figcaption|blockquote|pre|dl|dt|dd|caption|col|colgroup)\b[^<>]*>/gi,'').trim().startsWith(l)); if(!it) throw new Error('нет отрезка '+l); return [it.a,it.b]; },
     /* прямая в пространстве по двум подписанным проекциям-отрезкам (для подписей вида h″β, h′β) */
     lineFrom(l2,l1){ const [a2,b2]=H.segL(l2), [a1,b1]=H.segL(l1); const at=x=>{ const t2=(x-a2[0])/(b2[0]-a2[0]), t1=(x-a1[0])/(b1[0]-a1[0]); return [x,a1[1]+t1*(b1[1]-a1[1]),-(a2[1]+t2*(b2[1]-a2[1]))]; };
       const x0=Math.max(Math.min(a2[0],b2[0]),Math.min(a1[0],b1[0])); const p=at(x0), q=at(x0+20); return {p,d:unit(sub(q,p))}; },
@@ -119,11 +119,11 @@ function vCone(h,o){ o=o||{}; let apex;
       const t=((r.a[0]-q.a[0])*d2[1]-(r.a[1]-q.a[1])*d2[0])/den, X=[q.a[0]+d1[0]*t,q.a[1]+d1[1]*t];
       if(bases.some(c=>Math.abs(c.c[0]-X[0])<2*h.E)&&(!best||X[1]<best[1])) best=X; })); apex=best; }
   if(!apex) throw new Error('не найдена вершина конуса');
-  const cs=h.circs().filter(c=>c.pl===1&&Math.abs(c.c[0]-apex[0])<2*h.E).sort((x,y)=>y.r-x.r); if(!cs.length) throw new Error('не найдено основание конуса'); const c=cs[0];
+  const cs=h.circs().concat(h.items.filter(i=>i&&i.t==='arc'&&i.c&&(i.c._pl===1)).map(i=>({c:i.c,r:i.r,k:i.k||'main',pl:1}))).filter(c=>c.pl===1&&Math.abs(c.c[0]-apex[0])<2*h.E).sort((x,y)=>y.r-x.r);   /* основание может быть дано дугами (усечённое) */ if(!cs.length) throw new Error('не найдено основание конуса'); const c=cs[0];
   const zS=-apex[1], zb=o.zb||0, R=c.r, ax=[apex[0],c.c[1]];
   return {S:[apex[0],c.c[1],zS], on:(X,what)=>h.eqLen(Math.hypot(X[0]-ax[0],X[1]-ax[1]),R*(zS-X[2])/(zS-zb),what||'точка на конусе')}; }
 /* конус с фронтальной осью: вершина S, очерк на π₂ — две прямые из S″; ось — биссектриса, полуугол — половина угла между ними */
-function fCone(h,Sn){ const Sx=h.P(Sn), s2=h.pt2(Sn+'″'); const ss=h.M.segs.all.filter(q=>q.k==='main'&&(h.d2(q.a,s2)<1.5||h.d2(q.b,s2)<1.5)).map(q=>{ const far=h.d2(q.a,s2)<1.5?q.b:q.a; return unit([far[0]-s2[0],0,-(far[1]-s2[1])]); });
+function fCone(h,Sn){ const Sx=h.P(Sn), s2=h.pt2(Sn+'″'); const ss=h.M.segs.all.filter(q=>q.k==='main'&&(h.d2(q.a,s2)<1.5||h.d2(q.b,s2)<1.5)&&!(Math.abs(q.a[1])<0.5&&Math.abs(q.b[1])<0.5)).map(q=>{ const far=h.d2(q.a,s2)<1.5?q.b:q.a; return unit([far[0]-s2[0],0,-(far[1]-s2[1])]); });
   if(ss.length<2) throw new Error('не найден очерк конуса из '+Sn+'″'); const [u,w]=ss.sort((x,y)=>h.ang(x,y)); const ax=unit(add(u,w)), al=h.ang(u,w)/2;
   return {S:Sx, on:(X,what)=>h.eqA(h.ang(sub(X,Sx),ax),al,what||'точка на конусе',0.3)}; }
 /* сфера по окружностям-очеркам: одинаковые радиус и абсцисса центра на π₂ и π₁ */
@@ -325,7 +325,7 @@ const S={
   '76.1':(h)=>sphereLine(h),
   '76.2':(h)=>sphereLine(h),
   /* № 77 б: конус S + основание на π₁; K1, K2 на a и на конусе */
-  '77.2':(h)=>{ const Sx=h.P('S'), a=h.L('a'), c=h.circs().filter(o=>o.pl===1&&o.k==='main').sort((x,y)=>y.r-x.r)[0];
+  '77.2':(h)=>{ const Sx=h.P('S'), a=h.L('a'), c=h.circs().concat(h.items.filter(i=>i&&i.t==='arc'&&i.c&&i.c._pl===1).map(i=>({c:i.c,r:i.r,k:i.k||'main',pl:1}))).filter(o=>o.pl===1&&o.k==='main').sort((x,y)=>y.r-x.r)[0];   /* основание может быть дано половиной (дугой) */
     ['K1','K2'].forEach(n=>{ const X=h.P(n); h.on(X,a,n+' ∈ a'); const t=Sx[2]/(Sx[2]-X[2]), P=add(Sx,mul(sub(X,Sx),t)); h.eqLen(h.d2([P[0],P[1]],c.c),c.r,n+' на конусе (образующая S'+n+' доходит до окружности основания)'); }); },
   /* № 78: касательная плоскость и нормаль */
   '78.1':(h)=>{ const A=h.P('A'), O=h.P('O'), c=h.circAt(h.pt2('O′'),1); h.eqLen(nrm(sub(A,O)),c.r,'A на сфере'); const tp=h.tangent(A); h.par(tp.n,sub(A,O),'касательная плоскость ⟂ OA'); },
