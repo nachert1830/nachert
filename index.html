@@ -20357,7 +20357,11 @@ const pa=(()=>{ const {O,rb,a,zc,Rm,zT,Sv,kk,t0,L,tb,beta,e1,e2,cone,roots,pars,
     return it; };
   /* крайние точки: A — на сфере R_max (пересечение очерков на π₂), C — на вписанной в тор сфере R_min (касание по параллели) */
   /* A и B — где очерковые образующие конуса выходят из тора (в общей плоскости симметрии: пересечение очерков на π₂) */
-  const exitOn=b=>{ let lo=0.05, hi=1; for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(inLemon(v3.lerp(Sv,b,m))) lo=m; else hi=m; } return v3.lerp(Sv,b,(lo+hi)/2); };
+  /* точка выхода: идём по образующей от S и берём последний переход «в торе → снаружи», уточняем делением пополам
+     (вершина S лежит на кромке тора — у самой вершины образующая может быть ещё снаружи) */
+  const exitOn=b=>{ const N=400, P=k=>v3.lerp(Sv,b,k/N); let k0=-1; for(let k=1;k<N;k++) if(inLemon(P(k))&&!inLemon(P(k+1))) k0=k;
+    if(k0<0) throw new Error('№ 74 а: очерковая образующая конуса не проходит через тор — вариант вырожден');
+    let lo=k0/N, hi=(k0+1)/N; for(let i=0;i<50;i++){ const m=(lo+hi)/2; if(inLemon(v3.lerp(Sv,b,m))) lo=m; else hi=m; } return v3.lerp(Sv,b,(lo+hi)/2); };
   const pA=exitOn(b2), pB=exitOn(b1), cMin=pts(rhoMin+0.005).filter(o=>o.ys===1);
   const r1=rhoMin+(rhoMax-rhoMin)*0.25, r2=rhoMin+(rhoMax-rhoMin)*0.55, r3=rhoMin+(rhoMax-rhoMin)*0.85;
   return { l:'а)', q:'Построить проекции линии пересечения поверхностей конуса вращения и тора.',
