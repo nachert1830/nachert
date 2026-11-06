@@ -33,8 +33,11 @@ const CONFIG = {
 
   /* подмигивание: один глаз закрыт заметно сильнее другого. Считается по разнице глаз — двумя способами
      (blendshapes eyeBlink и раскрытие век по точкам лица), берётся больший. Моргание обоими — разница ≈ 0 */
-  winkOn: 0.38, winkOff: 0.15,                         /* разница «закрыт − открыт» с гистерезисом */
-  winkMinMs: 180, winkMaxMs: 700, winkCooldownMs: 800, /* обычное моргание короче и обоими глазами — не считается */
+  /* подмигивание — одно «закрытие глаз» целиком: от начала до того, как оба глаза снова открыты.
+     Засчитывается, если за это время один глаз закрылся заметно сильнее другого (на winkDiff).
+     Обычное моргание закрывает оба одинаково — не считается. Быстрое и долгое подмигивание — считаются */
+  winkDiff: 0.3,
+  winkMinMs: 60, winkMaxMs: 1500, winkCooldownMs: 700,
 
   /* рука: щепоть = |кончик большого − кончик указательного| / |запястье − основание среднего| */
   pinchClosed: 0.2, pinchOpen: 0.3,                    /* «пальцы сведены» с гистерезисом */
@@ -470,7 +473,7 @@ function draw(dt) {
     }
     /* отклик на подмигивание: следующая звезда разгорается, пока глаз закрывается — видно, что камера это замечает */
     const nx = HER.findIndex(s => !s.on);
-    if (nx >= 0 && enabled('wink')) { const k = clamp(Wink.level / CONFIG.winkOn) * (Wink.state === 'closed' ? 1 : .6);
+    if (nx >= 0 && enabled('wink')) { const k = clamp(Wink.level / CONFIG.winkDiff) * (Wink.state === 'closed' ? 1 : .6);
       if (k > .05) { const [x, y, z] = pts[nx], r = (6 + 10 * k) * z; ctx.globalAlpha = .25 + .6 * k; ctx.drawImage(SPR.her, x - r, y - r, 2 * r, 2 * r); } }
     /* погашенная нажатием: короткий тающий отблеск */
     HER.forEach((s, i) => { const k = (nowT - s.offT) / 700; if (s.on || k < 0 || k > 1) return;
@@ -687,7 +690,7 @@ const MOUTH = { mouthPucker: 1, mouthFunnel: 1, cheekPuff: 1, jawOpen: 1 };
 const Face = { seen: 0, v: {}, idx: null, mwf: new OneEuro(2, .4), narrow: 0, hx: new OneEuro(.8, .3), hy: new OneEuro(.8, .3) };
 const Breath = { level: 0, on: false, onT: 0, dir: 1, f: new OneEuro(1.5, .5) };
 const Smile = { level: 0, on: false, onT: 0, offT: -1e9 };
-const Wink = { state: 'idle', t0: 0, last: -1e9, armed: true, level: 0 };
+const Wink = { state: 'idle', last: -1e9, level: 0, ep: null, b0: [0, 0] };
 
 function onFace(res, t) {
   const bs = res.faceBlendshapes && res.faceBlendshapes[0];
@@ -703,7 +706,8 @@ function onFace(res, t) {
   /* ширина рта к ширине лица (уголки 61–291 к скулам 234–454): при дутье губы собираются — рот УЖЕ, чем в покое;
      когда улыбка просто уходит, рот возвращается к обычной ширине. Это и отличает дуновение от «перестал улыбаться» */
   const fl = res.faceLandmarks && res.faceLandmarks[0];
-  Face.bl = [raw.eyeBlinkLeft, raw.eyeBlinkRight]; eyes(fl, t);
+  /* для подмигивания — без сглаживания: быстрое подмигивание сглаживание бы «съело» */
+  Face.bl = ['eyeBlinkLeft', 'eyeBlinkRight'].map(k => { const c = cats[Face.idx[k]]; return c ? c.score : 0; }); eyes(fl, t);
   let mw = null;
   if (fl && fl[291] && fl[454]) {
     const D = (a, b) => Math.hypot((fl[a].x - fl[b].x) * fc.width, (fl[a].y - fl[b].y) * fc.height);
@@ -777,28 +781,33 @@ function faceLogic(v, t, nose, mw) {
   winkLogic(v, t);
 }
 
-/* подмигивание. Сигнал — насколько один глаз закрыт сильнее другого:
-   по blendshapes (сырые eyeBlink, без вычета «нуля»: разница от него не зависит) и по раскрытию век (точки лица:
-   высота века к ширине глаза относительно своего открытого глаза). Моргание обоими даёт разницу ≈ 0 */
+/* подмигивание. Два способа смотреть на глаза: blendshapes eyeBlink (относительно своего «покоя» — у каждого глаза
+   свой: когда смотришь на телефон снизу, глаза в покое прикрыты) и раскрытие век по точкам лица.
+   «Эпизод» начинается, когда какой-то глаз закрылся, и кончается, когда оба снова открыты. За эпизод запоминаем,
+   насколько сильно закрывался каждый глаз; в конце решаем: один заметно сильнее другого — подмигивание */
 function winkLogic(v, t) {
-  const L = Face.bl ? Face.bl[0] : v.eyeBlinkLeft, R = Face.bl ? Face.bl[1] : v.eyeBlinkRight;
-  /* строго: один глаз закрыт по-настоящему, второй — открыт. Моргание (оба), прищур, поворот головы — мимо */
-  const bs = Math.max(L, R) > .5 && Math.min(L, R) < .35 ? Math.abs(L - R) : 0;
-  const ea = Eye.ca, eb = Eye.cb, ear = Eye.ok && Math.max(ea, eb) > .6 && Math.min(ea, eb) < .3 ? Math.abs(ea - eb) : 0;
-  const w = Wink.level = Math.max(bs, ear);
-  if (!Wink.armed) { if (w < CONFIG.winkOff) Wink.armed = true; return; }
-  if (Wink.state === 'idle') {
-    if (t - Wink.last < CONFIG.winkCooldownMs) return;
-    if (w > CONFIG.winkOn) { Wink.state = 'closed'; Wink.t0 = t; }
+  const rawL = Face.bl ? Face.bl[0] : v.eyeBlinkLeft, rawR = Face.bl ? Face.bl[1] : v.eyeBlinkRight, E = Wink.ep, b0 = Wink.b0;
+  /* «покой» каждого глаза: быстро вниз, медленно вверх, и не во время эпизода */
+  if (!E) [rawL, rawR].forEach((x, i) => { b0[i] = x < b0[i] || !b0[i] ? approach(b0[i] || x, x, 3, 1 / 30) : Math.min(.5, approach(b0[i], x, .15, 1 / 30)); });
+  const L = clamp((rawL - b0[0]) / (1 - b0[0])), R = clamp((rawR - b0[1]) / (1 - b0[1]));
+  const eo = Eye.ok, ea = Eye.ca, eb = Eye.cb;
+  /* живой уровень — для отклика следующей звезды */
+  Wink.level = Math.max(Math.max(L, R) > .35 ? Math.abs(L - R) : 0, eo && Math.max(ea, eb) > .45 ? Math.abs(ea - eb) : 0);
+  const closed = Math.max(L, R) > .4 || (eo && Math.max(ea, eb) > .5);
+  const open = Math.max(L, R) < .25 && (!eo || Math.max(ea, eb) < .3);
+  if (!E) {
+    if (closed && t - Wink.last > CONFIG.winkCooldownMs) { Wink.ep = { t0: t, L, R, a: ea, b: eb }; Wink.state = 'closed'; }
     return;
   }
-  const dur = t - Wink.t0;
-  if (w < CONFIG.winkOff) {                                                      /* глаз открылся: проверяем длительность */
-    Wink.state = 'idle';
-    if (dur >= CONFIG.winkMinMs && dur <= CONFIG.winkMaxMs && enabled('wink')) { Wink.last = t; addStar(t); }
-    return;
-  }
-  if (dur > CONFIG.winkMaxMs) { Wink.state = 'idle'; Wink.armed = false; }       /* держит слишком долго — не подмигивание */
+  E.L = Math.max(E.L, L); E.R = Math.max(E.R, R); E.a = Math.max(E.a, ea); E.b = Math.max(E.b, eb);
+  const dur = t - E.t0;
+  if (dur > CONFIG.winkMaxMs + 1000) { Wink.ep = null; Wink.state = 'idle'; return; }   /* глаза закрыты очень долго — не подмигивание */
+  if (!open) return;
+  Wink.ep = null; Wink.state = 'idle';
+  const hb = Math.max(E.L, E.R), lb = Math.min(E.L, E.R), he = Math.max(E.a, E.b), le = Math.min(E.a, E.b);
+  const byBs = hb > .45 && hb - lb > CONFIG.winkDiff;
+  const byEar = eo && he > .55 && he - le > CONFIG.winkDiff + .1;
+  if ((byBs || byEar) && dur >= CONFIG.winkMinMs && dur <= CONFIG.winkMaxMs && enabled('wink')) { Wink.last = t; addStar(t); }
 }
 /* раскрытие век по точкам лица: высота (159–145, 386–374) к ширине (33–133, 362–263); «открыто» — своё для каждого глаза */
 const Eye = { a0: 0, b0: 0, ca: 0, cb: 0, ok: false };
@@ -1088,7 +1097,7 @@ function debugOut() {
   el.textContent = `${delegate || '…'}/${handDelegate || '…'}  камера ${stat.fps.toFixed(0)}/с  экран ${stat.rfps.toFixed(0)}/с  q ${Q}\n` +
     `лицо ${stat.face.toFixed(1)} мс  рука ${stat.hand.toFixed(1)} мс  калибр ${Calib.done ? 'да' : '…'}\n` +
     `дует ${Breath.level.toFixed(2)}${Breath.on ? '●' : ''} рот уже ${Face.narrow.toFixed(2)}  улыб ${Smile.level.toFixed(2)}${Smile.on ? '●' : ''}\n` +
-    `глаз L ${(Face.bl ? Face.bl[0] : 0).toFixed(2)} R ${(Face.bl ? Face.bl[1] : 0).toFixed(2)} веки ${Eye.ca.toFixed(2)}/${Eye.cb.toFixed(2)} подм ${Wink.level.toFixed(2)} ${Wink.state}${Wink.armed ? '' : ' ×'}\n` +
+    `глаз L ${(Face.bl ? Face.bl[0] : 0).toFixed(2)} R ${(Face.bl ? Face.bl[1] : 0).toFixed(2)} веки ${Eye.ca.toFixed(2)}/${Eye.cb.toFixed(2)} подм ${Wink.level.toFixed(2)} ${Wink.state}\n` +
     `рука ${now() - Hand.seen < 300 ? Hand.ratio.toFixed(2) : '—'} ${Hand.open ? 'ладонь' : Hand.fist ? 'кулак' : Hand.closed ? 'сведены' : ''}\n` +
     `пламя ${S.flame.toFixed(2)} → ${S.target.toFixed(2)}  ${S.lit ? 'горит' : 'погасла'}  звёзд ${S.stars}`;
 }
@@ -1157,7 +1166,7 @@ resize();
 requestAnimationFrame(loop);
 
 /* для отладки (?debug): посмотреть состояние и подложить blendshapes/руку без камеры */
-if (DEBUG) window.__joke = { S, HER: () => HER, Hand, Face, Calib, Wink, Breath, Smile, stat, get ready() { return ready; }, get delegate() { return delegate; },
+if (DEBUG) window.__joke = { S, HER: () => HER, skipTut: () => { Tut.step = STEPS.length; }, Hand, Face, Calib, Wink, Breath, Smile, stat, get ready() { return ready; }, get delegate() { return delegate; },
   face: (v, t = now(), mw = null) => { Face.seen = t; Face.bl = null; Eye.ok = false; Calib.done = true; for (const k in BS) v[k] = v[k] || 0; Object.assign(Face.v, v); faceLogic(Face.v, t, null, mw); },
   hand: (lm, t = now()) => onHand({ landmarks: lm ? [lm] : [] }, t, 1, 1), addStar: () => addStar(now()), toCPU };
 </script>
