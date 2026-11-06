@@ -18,13 +18,9 @@
 <script>
 /* ════════════════════════════════════════════════════════════════════════════════════════════════
    ПАРАМЕТРЫ — меняются здесь.
-   Имя и сообщение можно не править в файле, а передать в ссылке (после #, на сервер не уходит):
-     https://nachert1830.ru/joke/#to=Имя&msg=Пусть%20всё%20сбудется
    ════════════════════════════════════════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  name: '',                                            /* [ИМЯ] — только на сохранённой картинке; пусто — без имени */
-  message: 'Пусть всё сбудется — тихо и по-настоящему.',   /* [ФИНАЛЬНОЕ СООБЩЕНИЕ] — единственная строка финала */
-  stars: 7,                                            /* сколько подмигиваний до финала */
+  stars: 7,                                            /* сколько звёзд в созвездии (все загорелись — контур замыкается) */
 
   /* дыхание: blow = 0,85·max(pucker, funnel) + 0,4·cheekPuff (после вычета нейтрального лица).
      Гасит свечу ТОЛЬКО дуновение: губы трубочкой сильнее, чем улыбка; расслабленный рот не считается */
@@ -69,7 +65,6 @@ const CONFIG = {
 </script>
 
 <style>
-@font-face{font-family:'Wish';font-style:italic;font-weight:400;font-display:swap;src:url(../fonts/liberation-serif-italic.woff2) format('woff2')}
 @font-face{font-family:'Geologica';font-weight:300 700;font-display:swap;src:url(../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0400-045F,U+0490-0491,U+2116}
 @font-face{font-family:'Geologica';font-weight:300 700;font-display:swap;src:url(../fonts/geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
 
@@ -102,11 +97,6 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 #hint span{font-size:16px;font-weight:400;letter-spacing:.02em;color:rgba(255,240,222,.88);background:rgba(12,10,18,.5);
   border:1px solid rgba(255,207,138,.18);padding:9px 18px;border-radius:999px;text-align:center;line-height:1.35}
 
-#final{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 26px);display:flex;flex-direction:column;align-items:center;
-  gap:14px;padding:0 26px;text-align:center;pointer-events:none;z-index:4}
-#final .m{font:italic 400 clamp(21px,6vw,28px)/1.35 Wish,Georgia,serif;color:#fff3df;text-shadow:0 0 24px rgba(255,190,110,.35);max-width:360px;min-height:1.35em;margin:0;text-wrap:balance}
-#final .btn{pointer-events:auto;opacity:0;transform:translateY(8px);transition:opacity 1.2s ease,transform 1.2s ease;font-size:15px;padding:13px 26px;margin-top:6px}
-#final .btn.on{opacity:1;transform:none}
 
 #jdbg{position:fixed;left:8px;top:calc(env(safe-area-inset-top) + 8px);font:11px/1.35 ui-monospace,Menlo,monospace;color:#9fe3a8;
   background:rgba(0,0,0,.45);padding:6px 8px;border-radius:6px;white-space:pre;z-index:9;pointer-events:none}
@@ -117,7 +107,6 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 <div class="vignette"></div>
 <video id="cam" playsinline muted autoplay></video>
 <div id="hint"><span></span></div>
-<div id="final" hidden><p class="m"></p><button class="btn" id="save" type="button">Сохранить созвездие</button></div>
 
 <div class="screen" id="start"><button class="btn" id="go" type="button">Начать</button></div>
 <div class="screen gone" id="err" hidden><p id="errText"></p><button class="btn" id="retry" type="button">Повторить</button></div>
@@ -148,10 +137,6 @@ const approach = (v, target, rate, dt) => v + (target - v) * (1 - Math.exp(-rate
 const now = () => performance.now();
 const DEBUG = /[?&#]debug\b/.test(location.search + location.hash);
 
-/* имя и сообщение из ссылки (#to=…&msg=…) */
-{ const h = new URLSearchParams(location.hash.slice(1));
-  if (h.has('to')) CONFIG.name = h.get('to').slice(0, 40);
-  if (h.has('msg')) CONFIG.message = h.get('msg').slice(0, 300); }
 
 /* ───────────────────────────── фильтр 1€ (Casiez и др.): мало дрожи в покое, мало задержки в движении ───────────────── */
 class OneEuro {
@@ -260,7 +245,8 @@ const Sound = {
       o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(.06, t + d + .01);
       g.gain.exponentialRampToValueAtTime(.0001, t + d + .9); o.connect(g); g.connect(this.master); g.connect(this.wet); o.start(t + d); o.stop(t + d + 1); });
   },
-  finale() { if (!this.on) return; [0, 2, 4, 6, 3, 5, 7].forEach((n, k) => setTimeout(() => this.chime(n, .7), 400 + k * 230)); },
+  /* созвездие замкнулось: тихий перелив */
+  complete() { if (!this.on) return; [0, 2, 4, 6].forEach((n, k) => setTimeout(() => this.chime(n, .45), 300 + k * 200)); },
   fire(level) { if (this.on) this.hiss.gain.setTargetAtTime(level, this.c.currentTime, .15); },
   pause() { if (this.c && this.c.state === 'running') this.c.suspend(); },
   resume() { if (this.c && this.c.state !== 'running') this.c.resume(); }
@@ -350,7 +336,7 @@ const S = {
   vis: CONFIG.flameDefault,     /* видимая сила пламени (с учётом разгорания, дутья, угасания) */
   light: .8, warm: 0, tilt: 0, wobble: 0,
   igniteT: -1e9, outT: -1e9, resetT: -1e9, resetFrom: 0,
-  stars: 0, finale: false, finT: 0, zoom: 1, zoomTo: .8,
+  stars: 0, full: false, fullT: 0,
   head: { x: 0, y: 0 }          /* положение головы для параллакса, −0,5…0,5 */
 };
 const P = { sparks: [], smoke: [] };
@@ -360,9 +346,9 @@ const did = { blow: 0, smile: 0, wink: 0, pinch: 0, palm: 0, hand: 0, tap: 0 };
 const action = (kind, next) => { lastAction = now(); if (kind) did[kind] = 1; if (next) showHint(next, 3800); else if (hintSoft) hideHint(); };
 
 function extinguish(t) {
-  if (!S.lit || S.finale) return;
+  if (!S.lit) return;
   S.lit = false; S.outT = t; Sound.whoosh();
-  action('blow'); setTimeout(() => { if (!S.lit && !S.finale) showHint('улыбнись — и свеча зажжётся', 5000); }, 1400);
+  action('blow'); setTimeout(() => { if (!S.lit) showHint('улыбнись — и свеча зажжётся', 5000); }, 1400);
   for (let i = 0; i < 26; i++) setTimeout(() => P.smoke.push(newSmoke()), i * 70 + Math.random() * 60);
 }
 function ignite(t) {
@@ -384,22 +370,18 @@ function newSmoke() {
     r: 4 + Math.random() * 4, ph: Math.random() * 6.28 };
 }
 
-/* добавить её звезду: вспышка (двойное мерцание) и тонкая линия от прошлой */
-/* подмигнул — загорается следующая свободная звезда созвездия (погашенная нажатием — снова доступна) */
+/* подмигнул — загорается следующая свободная звезда (вспышка — двойное мерцание — и тонкая линия к соседней).
+   Звёзды — тихая побочная игра: без счёта, без текста. Все загорелись — контур созвездия молча замыкается */
 function addStar(t) {
-  if (S.finale || S.stars >= CONFIG.stars) return;
   const i = HER.findIndex(s => !s.on); if (i < 0) return;
   const s = HER[i]; s.on = true; s.litT = t; s.offT = -1e9; S.stars++;
-  Sound.chime(i);
-  const left = CONFIG.stars - S.stars;
-  action('wink', left ? `звезда загорелась · ещё ${left}` : '');
-  if (S.stars >= CONFIG.stars) setTimeout(() => { if (S.stars >= CONFIG.stars) startFinale(now()); }, 900);
+  Sound.chime(i); action('wink');
+  if (S.stars >= CONFIG.stars) setTimeout(() => { if (S.stars >= CONFIG.stars && !S.full) { S.full = true; S.fullT = now(); Sound.complete(); } }, 900);
 }
-/* нажал на её звезду — она гаснет, линии к ней сходятся между соседями */
+/* нажал на звезду — она гаснет, линии к ней сходятся между соседями */
 function removeStar(s, t) {
-  if (S.finale || !s.on) return;
-  s.on = false; s.offT = t; S.stars--; Sound.unchime();
-  action('tap', 'звезда погасла · подмигни, чтобы зажечь');
+  if (!s.on) return;
+  s.on = false; s.offT = t; S.stars--; S.full = false; Sound.unchime(); action('tap');
 }
 /* линии созвездия: между соседними горящими звёздами по порядку мест на «эллипсе» — так контур не перекрещивается.
    Новая линия прорисовывается за 0,9 с от своего появления */
@@ -407,14 +389,14 @@ const SEG = new Map();
 function segments(t) {
   const on = HER.map((s, i) => s.on ? i : -1).filter(i => i >= 0), out = [];
   for (let k = 1; k < on.length; k++) out.push([on[k - 1], on[k]]);
-  if (S.finale && on.length > 2) out.push([on[on.length - 1], on[0]]);
+  if (S.full && on.length > 2) out.push([on[on.length - 1], on[0]]);
   const keys = new Set(out.map(([a, b]) => a + '-' + b));
   for (const k of SEG.keys()) if (!keys.has(k)) SEG.delete(k);
   out.forEach(([a, b]) => { const k = a + '-' + b; if (!SEG.has(k)) SEG.set(k, Math.max(t, HER[a].litT, HER[b].litT)); });
   return out.map(([a, b]) => [a, b, SEG.get(a + '-' + b)]);
 }
 cv.addEventListener('pointerdown', e => {
-  if (!running || S.finale) return;
+  if (!running) return;
   let best = null, bd = 38;                                               /* палец толще звезды — ловим в радиусе 38 px */
   HER.forEach(s => { if (!s.on) return; const [x, y] = proj(s.x * W, s.y * H, s.depth), d = Math.hypot(x - e.clientX, y - e.clientY); if (d < bd) { bd = d; best = s; } });
   if (best) removeStar(best, now());
@@ -425,11 +407,10 @@ const C1 = hexRGB(CONFIG.flame), C2 = hexRGB(CONFIG.flameWarm);
 function hexRGB(o) { const r = {}; for (const k in o) { const h = o[k].replace('#', ''); r[k] = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); } return r; }
 const mixC = (k, name, a = 1) => { const p = C1[name], q = C2[name]; return `rgba(${Math.round(lerp(p[0], q[0], k))},${Math.round(lerp(p[1], q[1], k))},${Math.round(lerp(p[2], q[2], k))},${a})`; };
 
-/* перевод точки сцены с учётом «камеры»: отъезд (zoom к точке фокуса) и параллакс по положению головы */
+/* перевод точки сцены: лёгкий параллакс по положению головы (ближе — сильнее сдвиг) */
 function proj(x, y, depth) {
-  const z = 1 + (S.zoom - 1) * (.35 + .65 * depth), fx = W / 2, fy = H * .3;
   const px = -S.head.x * 22 * depth + Math.sin(T * .05 + depth * 3) * 3 * depth, py = -S.head.y * 14 * depth;
-  return [fx + (x - fx) * z + px, fy + (y - fy) * z + py, z];
+  return [x + px, y + py, 1];
 }
 
 let T = 0;   /* время сцены, с */
@@ -466,7 +447,7 @@ function draw(dt) {
     const pts = HER.map(s => proj(s.x * W, s.y * H, s.depth));
     const seg = (i, j, p, a) => { if (p <= 0) return; const [x1, y1] = pts[i], [x2, y2] = pts[j];
       ctx.globalAlpha = a; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(lerp(x1, x2, p), lerp(y1, y2, p)); ctx.stroke(); };
-    const glow = S.finale ? .55 + .2 * Math.sin(T * 1.6) : .32;
+    const glow = S.full ? .45 + .12 * Math.sin(T * 1.6) : .32;
     ctx.strokeStyle = 'rgba(255,222,170,1)';
     for (let pass = 0; pass < 2; pass++) {                      /* широкий бледный проход — свечение, узкий — сама линия */
       ctx.lineWidth = pass ? .9 : 4.5; const k = pass ? 1 : .12;
@@ -474,7 +455,7 @@ function draw(dt) {
     }
     /* отклик на подмигивание: следующая звезда разгорается, пока глаз закрывается — видно, что камера это замечает */
     const nx = HER.findIndex(s => !s.on);
-    if (nx >= 0 && !S.finale) { const k = clamp(Wink.level / CONFIG.winkOn) * (Wink.state === 'closed' ? 1 : .6);
+    if (nx >= 0) { const k = clamp(Wink.level / CONFIG.winkOn) * (Wink.state === 'closed' ? 1 : .6);
       if (k > .05) { const [x, y, z] = pts[nx], r = (6 + 10 * k) * z; ctx.globalAlpha = .25 + .6 * k; ctx.drawImage(SPR.her, x - r, y - r, 2 * r, 2 * r); } }
     /* погашенная нажатием: короткий тающий отблеск */
     HER.forEach((s, i) => { const k = (nowT - s.offT) / 700; if (s.on || k < 0 || k > 1) return;
@@ -484,7 +465,7 @@ function draw(dt) {
       const s = HER[i], [x, y, z] = pts[i], age = Math.max(0, nowT - s.litT) / 1000;
       /* двойное мерцание в ответ: два коротких всплеска, затем ровный яркий свет */
       const flash = age < .7 ? Math.max(0, Math.sin(age / .7 * Math.PI * 2)) * (age < .35 ? 1 : .75) : 0;
-      const breathe = .9 + .1 * Math.sin(T * 1.3 + i) + (S.finale ? .25 + .15 * Math.sin(T * 2 + i * .8) : 0);
+      const breathe = .9 + .1 * Math.sin(T * 1.3 + i) + (S.full ? .12 + .08 * Math.sin(T * 2 + i * .8) : 0);
       const r = (11 + flash * 22) * z * breathe;
       ctx.globalAlpha = clamp(.85 + flash * .15); ctx.drawImage(SPR.her, x - r, y - r, 2 * r, 2 * r);
       if (age < 1.2) { const rr = (8 + age * 60) * z; ctx.globalAlpha = (1 - age / 1.2) * .35; ctx.drawImage(SPR.starY, x - rr, y - rr, 2 * rr, 2 * rr); }
@@ -514,42 +495,47 @@ function draw(dt) {
   /* дым — обычным наложением */
   ctx.globalCompositeOperation = 'source-over';
   for (const p of P.smoke) { const k = p.life / p.max, r = p.r * cz; ctx.globalAlpha = Math.sin(Math.PI * Math.min(1, k * 1.3)) * .38 * (1 - k); ctx.drawImage(SPR.smoke, p.x - r, p.y - r, 2 * r, 2 * r); }
-  drawHand(dt);
+  drawHand(dt, cx, wy, cz);
   ctx.globalAlpha = 1;
 }
 
-/* отклик руки: два тёплых огонька там, где кончики большого и указательного (зеркально, как в зеркале), между ними — нить.
-   Видно, что рука замечена и что расстояние между пальцами — это и есть «ручка» пламени. Ладонь — кольцо набирается 0,8 с */
-const HV = { a: 0, th: { x: 0, y: 0 }, ix: { x: 0, y: 0 }, c: { x: 0, y: 0 }, tips: [], init: false };
-function drawHand(dt) {
-  const seen = now() - Hand.seen < 250 && Hand.pt && !S.finale;
-  HV.a = approach(HV.a, seen ? 1 : 0, seen ? 6 : 3, dt);
+/* отклик руки — прямо у пламени, чтобы связь была очевидна: рука в кадре — по бокам огня появляются два тёплых
+   огонька (большой и указательный). Разводишь пальцы — огоньки расходятся, и пламя растёт вместе с ними;
+   сводишь — сходятся, огонь сжимается. Наклон пары повторает наклон пальцев.
+   Открытая ладонь — вокруг огня набирается кольцо (0,8 с), потом пламя возвращается к обычному */
+const HV = { a: 0, sp: .5, ang: 0, ring: 0 };
+function drawHand(dt, cx, wy, z) {
+  const seen = now() - Hand.seen < 300 && Hand.pt;
+  HV.a = approach(HV.a, seen ? 1 : 0, seen ? 7 : 3, dt);
   if (HV.a < .01 || !Hand.pt) return;
-  /* кадр камеры растягиваем на экран с небольшим запасом по краям: до края экрана рука дотягивается раньше края кадра */
-  const map = q => ({ x: W * (1 - (q.x - .08) / .84), y: H * ((q.y - .06) / .88) });
-  const P2 = Hand.pt, k = HV.init ? 1 - Math.exp(-dt * 18) : 1; HV.init = true;
-  const mv = (o, q) => { const m = map(q); o.x += (m.x - o.x) * k; o.y += (m.y - o.y) * k; };
-  mv(HV.th, P2.th); mv(HV.ix, P2.ix); mv(HV.c, P2.c);
-  P2.tips.forEach((q, i) => { HV.tips[i] = HV.tips[i] || { x: 0, y: 0 }; mv(HV.tips[i], q); });
+  const u = G.u * z, h = u * (.05 + .27 * S.vis), fy = wy - h * .45;                 /* середина пламени */
+  const sp = clamp((Hand.ratio - CONFIG.pinchMin) / (CONFIG.pinchMax - CONFIG.pinchMin));
+  HV.sp = approach(HV.sp, Hand.closed ? 0 : sp, 12, dt);
+  /* угол пары — как у пальцев, зеркально (как в зеркале) */
+  const th = Hand.pt.th, ix = Hand.pt.ix, ang = Math.atan2((ix.y - th.y) * fc.height, -(ix.x - th.x) * fc.width);
+  HV.ang = HV.ang + Math.atan2(Math.sin(ang - HV.ang), Math.cos(ang - HV.ang)) * (1 - Math.exp(-dt * 10));
   ctx.globalCompositeOperation = 'lighter';
-  const A = HV.a * .75;
+  const A = HV.a;
   if (Hand.open) {
-    /* ладонь: бледные точки на кончиках и кольцо — сколько осталось держать */
     const prog = Hand.palmT ? clamp((now() - Hand.palmT) / CONFIG.palmHoldMs) : 0;
-    HV.tips.forEach(p => { const r = 7; ctx.globalAlpha = A * .6; ctx.drawImage(SPR.spark, p.x - r, p.y - r, 2 * r, 2 * r); });
-    const R = 34;
-    ctx.globalAlpha = A * .25; ctx.strokeStyle = 'rgba(255,214,150,1)'; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(HV.c.x, HV.c.y, R, 0, 6.283); ctx.stroke();
-    if (prog > 0) { ctx.globalAlpha = A * (Hand.palmFired ? .5 + .5 * Math.sin(T * 8) : .9); ctx.lineWidth = 2.2;
-      ctx.beginPath(); ctx.arc(HV.c.x, HV.c.y, R, -Math.PI / 2, -Math.PI / 2 + prog * 6.283); ctx.stroke(); }
+    HV.ring = approach(HV.ring, prog, 14, dt);
+    const R0 = Math.max(h * .75, u * .12);
+    ctx.strokeStyle = 'rgba(255,214,150,1)'; ctx.lineCap = 'round';
+    ctx.globalAlpha = A * .22; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, fy, R0, 0, 6.283); ctx.stroke();
+    if (HV.ring > .01) { ctx.globalAlpha = A * (Hand.palmFired ? .45 + .35 * Math.sin(T * 9) : .85); ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.arc(cx, fy, R0, -Math.PI / 2, -Math.PI / 2 + HV.ring * 6.283); ctx.stroke(); }
   } else {
-    /* щепоть: нить ярче, когда пальцы управляют пламенем */
-    const live = Hand.pinchEngaged ? 1 : .55;
-    ctx.globalAlpha = A * .35 * live; ctx.strokeStyle = 'rgba(255,200,130,1)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(HV.th.x, HV.th.y); ctx.lineTo(HV.ix.x, HV.ix.y); ctx.stroke();
-    const r = 9 + 5 * S.vis;
-    [HV.th, HV.ix].forEach(p => { ctx.globalAlpha = A * live; ctx.drawImage(SPR.spark, p.x - r, p.y - r, 2 * r, 2 * r);
-      const g = r * 3; ctx.globalAlpha = A * .25 * live; ctx.drawImage(SPR.glow, p.x - g, p.y - g, 2 * g, 2 * g); });
+    HV.ring = 0;
+    const d = u * (.05 + .26 * HV.sp) + h * .3, ca = Math.cos(HV.ang), sa = Math.sin(HV.ang);
+    const p1 = { x: cx - ca * d, y: fy - sa * d }, p2 = { x: cx + ca * d, y: fy + sa * d };
+    const live = Hand.pinchEngaged || Hand.closed ? 1 : .6;
+    /* тонкие дуги от огоньков к пламени — «держишь огонь между пальцами» */
+    ctx.strokeStyle = 'rgba(255,200,130,1)'; ctx.lineWidth = 1;
+    [p1, p2].forEach(p => { ctx.globalAlpha = A * .22 * live; ctx.beginPath(); ctx.moveTo(p.x, p.y);
+      ctx.quadraticCurveTo((p.x + cx) / 2, fy - h * .25, cx, fy - h * .05); ctx.stroke(); });
+    const r = 8 + 4 * HV.sp;
+    [p1, p2].forEach(p => { ctx.globalAlpha = A * .9 * live; ctx.drawImage(SPR.spark, p.x - r, p.y - r, 2 * r, 2 * r);
+      const g = r * 3.2; ctx.globalAlpha = A * .22 * live; ctx.drawImage(SPR.glow, p.x - g, p.y - g, 2 * g, 2 * g); });
   }
   ctx.globalCompositeOperation = 'source-over';
 }
@@ -644,21 +630,16 @@ function update(dt, t) {
   if (S.lit) {
     const ig = (t - S.igniteT) / 1000;
     const k = ig < .35 ? .05 * ig / .35 : ig < 1.6 ? lerp(.05, 1, easeOut((ig - .35) / 1.25)) : 1;
-    want = S.flame * k * (1 - .45 * (S.finale ? 0 : Breath.level));
+    want = S.flame * k * (1 - .45 * Breath.level);
   }
   S.vis = S.lit ? approach(S.vis, want, 9, dt) : approach(S.vis, 0, 22, dt);
   /* свет сцены: от свечи (улыбка — теплее и ярче) или угасание до лунного за ~1,2 с */
   const Lt = S.lit ? (.3 + .78 * S.vis) * (1 + .3 * S.warm) : 0;
   S.light = approach(S.light, Lt, S.lit ? 5 : 1.6, dt);
   /* наклон и дрожь от дутья */
-  const br = S.finale ? 0 : Breath.level;                                         /* в финале пламя ровное */
+  const br = Breath.level;
   S.tilt = approach(S.tilt, br * .9 * Breath.dir, 6, dt);
   S.wobble = approach(S.wobble, br, 8, dt);
-  /* финал: ровное пламя и отъезд камеры */
-  if (S.finale) {
-    const k = clamp((t - S.finT - 900) / 3200);
-    S.zoom = lerp(1, S.zoomTo, ease(k)); S.target = CONFIG.flameDefault;
-  }
 
   /* искры: пламя больше ~0,75 — летят, тем гуще, чем больше */
   if (S.lit && S.vis > .74) { const rate = (S.vis - .74) * 60; if (Math.random() < rate * dt) P.sparks.push(newSpark(.8 + S.vis)); }
@@ -759,7 +740,7 @@ function faceLogic(v, t, nose, mw) {
   if (Breath.on && !wasOn) Breath.onT = t;
   const handBusy = Hand.palmMode || Hand.pinchEngaged;          /* ладонь > щепоть > дыхание */
   /* ещё и пауза 1,5 с после улыбки: лицо «отпускает» улыбку — в это время не гасим */
-  if (Breath.on && !handBusy && S.lit && !S.finale && t - Breath.onT >= CONFIG.blowHoldMs && t - S.igniteT > 1700 && t - Smile.offT > 1500) extinguish(t);
+  if (Breath.on && !handBusy && S.lit && t - Breath.onT >= CONFIG.blowHoldMs && t - S.igniteT > 1700 && t - Smile.offT > 1500) extinguish(t);
 
   /* ── улыбка (дыхание важнее) ── */
   /* улыбка без зубов: уголки губ поднимаются слабее, зато щёки приподнимаются — их добавляем, но не больше самой улыбки */
@@ -848,14 +829,14 @@ function handLogic(t) {
   /* ── ладонь: удержание 0,8 с — сброс к норме ── */
   if (Hand.palmMode) {
     if (!Hand.palmT) Hand.palmT = t;
-    if (!Hand.palmFired && t - Hand.palmT >= CONFIG.palmHoldMs && !S.finale) { Hand.palmFired = true; resetFlame(t); action('palm'); }
+    if (!Hand.palmFired && t - Hand.palmT >= CONFIG.palmHoldMs) { Hand.palmFired = true; resetFlame(t); action('palm'); }
   } else { Hand.palmT = 0; Hand.palmFired = false; }
   /* ── щепоть ── */
   const r = Hand.ratio;
   Hand.closed = Hand.closed ? r < CONFIG.pinchOpen : r < CONFIG.pinchClosed;
   if (Math.abs(r - Hand.lastR) > .06) { Hand.lastMoveT = t; Hand.lastR = r; }
   Hand.pinchEngaged = pinchMode && (Hand.closed || t - Hand.lastMoveT < 700);
-  if (!pinchMode || S.finale || !S.lit || t - S.resetT < 1000) { Hand.closedT = 0; return; }
+  if (!pinchMode || !S.lit || t - S.resetT < 1000) { Hand.closedT = 0; return; }
   if (Hand.closed) {
     S.target = .05; action('pinch');                                             /* тонкий огонёк; гасит только дуновение */
   } else {
@@ -871,109 +852,37 @@ function handTimeout(t) {
   }
 }
 
-/* ═════════════════════════════════════════════ ФИНАЛ ═══════════════════════════════════════════════════════════ */
-let pngBlob = null;
-function startFinale(t) {
-  if (S.finale) return;
-  S.finale = true; S.finT = t; hideHint();
-  if (!S.lit) ignite(t);
-  S.resetT = t; S.resetFrom = S.flame;                                           /* ровное пламя */
-  Sound.finale();
-  const box = $('final'), m = box.querySelector('.m'), btn = $('save');
-  /* отъезд камеры подбираем так, чтобы свеча встала над текстом: меряем блок с полным текстом невидимым */
-  box.style.visibility = 'hidden'; box.hidden = false; m.textContent = CONFIG.message.replace(/(\S)-(?=\S)/g, '$1-\u2060'); btn.classList.add('on');
-  const top = box.getBoundingClientRect().top, fy = H * .3;
-  m.textContent = ''; btn.classList.remove('on'); box.style.visibility = '';
-  S.zoomTo = clamp((top - 22 - fy) / (G.floor - fy), .55, .9);
-  /* слово с дефисом («по-настоящему») не рвём на две строки: после дефиса — невидимый «склеиватель» U+2060 */
-  const msg = CONFIG.message.replace(/(\S)-(?=\S)/g, '$1-\u2060');
-  setTimeout(() => type(m, msg, 55, () => {
-    makePNG().then(b => { pngBlob = b; }).catch(e => console.warn(e)).finally(() => btn.classList.add('on'));
-  }), 2400);
-}
-/* плавное печатание: по букве, с крошечной случайной паузой — как от руки */
-function type(el, text, ms, done) {
-  let i = 0; const chars = Array.from(text);
-  const step = () => { el.textContent = chars.slice(0, ++i).join(''); if (i < chars.length) setTimeout(step, ms * (.6 + Math.random() * .8) + (/[,.—]/.test(chars[i - 1]) ? ms * 3 : 0)); else done && done(); };
-  step();
-}
-
-/* PNG: созвездие крупно, имя и дата. Готовим заранее — на айфоне «Поделиться» работает только сразу по нажатию */
-async function makePNG() {
-  try { await Promise.all([document.fonts.load('italic 64px Wish'), document.fonts.load('300 30px Geologica')]); } catch (_) {}
-  const w = 1080, h = 1350, c = document.createElement('canvas'); c.width = w; c.height = h;
-  const x = c.getContext('2d');
-  const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#04060d'); g.addColorStop(.6, '#0a0f20'); g.addColorStop(1, '#151020');
-  x.fillStyle = g; x.fillRect(0, 0, w, h);
-  x.globalAlpha = .9; x.drawImage(bg, 0, 0, bg.width, bg.height * .62, 0, 0, w, h); x.globalAlpha = 1;
-  x.globalCompositeOperation = 'lighter';
-  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 260; i++) { const r = .6 + rnd() * 2.2; x.globalAlpha = .15 + rnd() * .5; x.drawImage(rnd() < .2 ? SPR.starB : SPR.starW, rnd() * w - r * 4, rnd() * h * .85 - r * 4, r * 8, r * 8); }
-  /* созвездие вписываем в рамку 760×560 с сохранением пропорций */
-  const pts = HER.map(s => [s.x * W, s.y * H]);
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const bw = Math.max(...xs) - Math.min(...xs) || 1, bh = Math.max(...ys) - Math.min(...ys) || 1;
-  const k = Math.min(760 / bw, 560 / bh), ox = w / 2 - (Math.min(...xs) + bw / 2) * k, oy = 470 - (Math.min(...ys) + bh / 2) * k;
-  const q = pts.map(([a, b]) => [ox + a * k, oy + b * k]);
-  x.strokeStyle = 'rgba(255,222,170,1)'; x.lineCap = 'round';
-  [[10, .1], [2.2, .7]].forEach(([lw, a]) => { x.lineWidth = lw; x.globalAlpha = a; x.beginPath(); q.forEach(([a1, b1], i) => i ? x.lineTo(a1, b1) : x.moveTo(a1, b1)); x.closePath(); x.stroke(); });
-  q.forEach(([a, b]) => { x.globalAlpha = 1; x.drawImage(SPR.her, a - 40, b - 40, 80, 80); x.globalAlpha = .4; x.drawImage(SPR.starY, a - 70, b - 70, 140, 140); });
-  x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.textAlign = 'center';
-  const date = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s*г\.?$/, '');
-  if (CONFIG.name) { x.fillStyle = '#fff1dc'; x.font = 'italic 76px Wish, Georgia, serif'; x.shadowColor = 'rgba(255,180,100,.45)'; x.shadowBlur = 30; x.fillText(CONFIG.name, w / 2, 1060); x.shadowBlur = 0; }
-  x.fillStyle = 'rgba(244,233,216,.62)'; x.font = '300 32px Geologica, -apple-system, sans-serif';
-  x.fillText(date, w / 2, CONFIG.name ? 1130 : 1090);
-  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('toBlob')), 'image/png'));
-}
-async function savePNG() {
-  const blob = pngBlob || await makePNG(), name = 'sozvezdie.png';
-  const file = new File([blob], name, { type: 'image/png' });
-  /* айфон: системное «Поделиться» → «Сохранить изображение» кладёт в Фото; иначе — обычная загрузка */
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
-  }
-  const url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-}
-$('save').addEventListener('click', () => savePNG().catch(e => console.warn(e)));
-
-/* ═══════════════════════════════════════ ПОДСКАЗКИ (только после 6 с тишины) ══════════════════════════════════════ */
+/* ═══════════════════════════════════════ ПОДСКАЗКИ: одна строка, по порядку, без повторов ═════════════════════════ */
 let hintOn = false, hintAt = 0, hintDur = 0, hintIdx = 0, hintEnd = 0, hintSoft = false, hintCount = 0;
 const hintShown = {};
 /* показать строку подсказки на dur мс. soft — подсказка «от скуки»: её убирает любое действие */
 function showHint(text, dur = 5500, soft = false) {
-  if (S.finale) return;
   const el = $('hint'); el.firstChild.textContent = text; el.classList.add('on');
   hintOn = true; hintAt = now(); hintDur = dur; hintSoft = soft;
 }
 function hideHint() { if (hintOn) { hintOn = false; hintEnd = now(); $('hint').classList.remove('on'); } }
 function hintTick(t) {
-  if (S.finale || !running) { hideHint(); return; }
+  if (!running) { hideHint(); return; }
   if (hintOn) { if (t - hintAt > hintDur) hideHint(); return; }
   /* первая — вскоре после начала, дальше — когда долго ничего не происходит */
   const wait = hintCount ? CONFIG.hintAfterMs : CONFIG.hintFirstMs;
   if (t - Math.max(lastAction, hintEnd) < wait) return;
-  /* простые подсказки: сначала то, чего человек ещё не делал, потом — по кругу */
-  const c = [], todo = [];
-  const add = (done, text) => (done ? c : todo).push(text);
-  if (!ready) todo.push('секунду…');
-  else if (t - Face.seen > 2000) todo.push('посмотри на свечу — камера должна видеть лицо');
+  /* по порядку, только то, чего ещё не делали; каждая — не больше двух раз (звёзды — один раз), потом молчим */
+  const steps = [];
+  if (!ready) steps.push([0, 'секунду…', 99]);
+  else if (t - Face.seen > 2000) steps.push([0, 'посмотри на свечу', 3]);
   else if (!Calib.done) return;
-  else if (!S.lit) todo.push('улыбнись — и свеча зажжётся');
-  else {
-    /* сначала — свеча, потом — звёзды */
-    add(did.blow, 'подуй на свечу — она погаснет');
-    add(did.pinch, 'покажи руку и разведи большой и указательный — огонь вырастет');
-    add(did.palm, 'покажи открытую ладонь — огонь станет как был');
-    add(did.wink, S.stars ? `подмигни — загорится ещё звезда (${S.stars} из ${CONFIG.stars})` : 'подмигни одним глазом — загорится звезда');
-    if (S.stars) add(did.tap, 'нажми на звезду — она погаснет');
-  }
-  hintCount++;
-  /* по порядку: первый ещё не сделанный шаг; не получается дважды — следующий, чтобы не застрять на одном */
-  let text = todo.find(x => (hintShown[x] || 0) < 2);
-  if (!text) { const pool = todo.length ? todo : c; if (!pool.length) return; text = pool[hintIdx++ % pool.length]; }
-  hintShown[text] = (hintShown[text] || 0) + 1;
+  else if (!S.lit) steps.push([0, 'улыбнись — и свеча зажжётся', 99]);
+  else steps.push(
+    [did.blow, 'подуй на свечу', 2],
+    [did.hand, 'подними руку перед камерой', 2],
+    [did.pinch, 'разведи большой и указательный — пламя вырастет', 2],
+    [did.palm, 'раскрой ладонь и подержи', 2],
+    [did.wink, 'подмигни — загорится звезда', 1]);
+  const step = steps.find(([done, text, max]) => !done && (hintShown[text] || 0) < max);
+  if (!step) return;
+  const text = step[1];
+  hintCount++; hintShown[text] = (hintShown[text] || 0) + 1;
   showHint(text, 5500, true);
 }
 
@@ -1237,7 +1146,7 @@ requestAnimationFrame(loop);
 /* для отладки (?debug): посмотреть состояние и подложить blendshapes/руку без камеры */
 if (DEBUG) window.__joke = { S, HER: () => HER, Hand, Face, Calib, Wink, Breath, Smile, stat, get ready() { return ready; }, get delegate() { return delegate; },
   face: (v, t = now(), mw = null) => { Face.seen = t; Face.bl = null; Eye.ok = false; Calib.done = true; for (const k in BS) v[k] = v[k] || 0; Object.assign(Face.v, v); faceLogic(Face.v, t, null, mw); },
-  hand: (lm, t = now()) => onHand({ landmarks: lm ? [lm] : [] }, t, 1, 1), addStar: () => addStar(now()), finale: () => startFinale(now()), makePNG, toCPU };
+  hand: (lm, t = now()) => onHand({ landmarks: lm ? [lm] : [] }, t, 1, 1), addStar: () => addStar(now()), toCPU };
 </script>
 </body>
 </html>
