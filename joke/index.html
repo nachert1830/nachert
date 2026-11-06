@@ -747,7 +747,10 @@ function faceLogic(v, t, nose, mw) {
   const narrow = Face.narrow = mw == null ? 1 : Calib.mw ? clamp((Calib.mw - mw) / Calib.mw / .12) : 0;
   /* дуновение = трубочка/щёки И (рот сузился ИЛИ щёки надуты); просто расслабленный рот после улыбки — не дуновение */
   const shape = clamp((narrow - .15) / .35 + v.cheekPuff * 1.5);
-  const blow = pk > smRaw ? clamp(.85 * pk + .4 * v.cheekPuff) * shape : 0;
+  /* рука в кадре (или только что была) — дуновения нет вовсе: рука перед лицом закрывает рот, и MediaPipe видит
+     «трубочку» там, где её нет. Свеча от показа руки гаснуть не должна */
+  const handNear = t - Hand.seen < 800;
+  const blow = pk > smRaw && !handNear ? clamp(.85 * pk + .4 * v.cheekPuff) * shape : 0;
   Breath.level = Breath.f.filter(blow, t);
   if (nose) { const off = .5 - nose.x; Breath.dir = Math.abs(off) > .06 ? -Math.sign(off) : Breath.dir; }   /* дует слева — пламя клонится вправо */
   const wasOn = Breath.on;
@@ -932,7 +935,7 @@ async function createDetectors(d) {
 /* рука: порог поиска 0,6 — реже принимает за руку кусок лица или фона */
 function makeHand(d) {
   return MP.HandLandmarker.createFromOptions(fileset, { baseOptions: { modelAssetBuffer: buffers.hand.slice(), delegate: d }, runningMode: 'VIDEO', numHands: 1,
-    minHandDetectionConfidence: .6, minHandPresenceConfidence: .5, minTrackingConfidence: .5 });
+    minHandDetectionConfidence: .5, minHandPresenceConfidence: .5, minTrackingConfidence: .5 });
 }
 /* только руку — на CPU (лицо остаётся на GPU, если там всё в порядке) */
 async function handToCPU(why) {
@@ -1001,8 +1004,10 @@ function detectStep(t) {
     fresh = false; grab(); stat.n++;
     /* рука давно не видна — ищем её реже (поиск ладони по всему кадру — самая дорогая часть HandLandmarker) */
     /* рука: в кадре — через кадр камеры (15 раз/с хватает пальцам, а айфон не захлёбывается), нет — каждый 4-й */
-    const handDue = ++handTick % (t - Hand.seen < 1200 ? 2 : 4) === 0;
-    jobs = handDue ? ['face', 'hand'] : ['face'];
+    /* что не успели на прошлом кадре — первым на этом (иначе на айфоне, где лицо дольше 9 мс, а экран — 30 кадров/с,
+       руку каждый раз вытеснял новый кадр, и она не распознавалась никогда) */
+    const pending = jobs.slice(), handDue = pending.includes('hand') || ++handTick % (t - Hand.seen < 1200 ? 2 : 4) === 0;
+    jobs = [...new Set([...pending, 'face', ...(handDue ? ['hand'] : [])])];
   }
   const t0 = now();
   while (jobs.length) {
