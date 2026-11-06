@@ -22,8 +22,8 @@
      https://nachert1830.ru/joke/#to=Имя&msg=Пусть%20всё%20сбудется
    ════════════════════════════════════════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  name: '',                                            /* [ИМЯ]; пусто — будет просто «Загадай желание.» */
-  message: 'Пусть всё, что загадано, сбудется — тихо и по-настоящему.',   /* [ФИНАЛЬНОЕ СООБЩЕНИЕ] */
+  name: '',                                            /* [ИМЯ] — только на сохранённой картинке; пусто — без имени */
+  message: 'Пусть всё сбудется — тихо и по-настоящему.',   /* [ФИНАЛЬНОЕ СООБЩЕНИЕ] — единственная строка финала */
   stars: 7,                                            /* сколько подмигиваний до финала */
 
   /* дыхание: blow = 0,85·max(pucker, funnel) + 0,4·cheekPuff (после вычета нейтрального лица).
@@ -104,8 +104,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 
 #final{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 26px);display:flex;flex-direction:column;align-items:center;
   gap:14px;padding:0 26px;text-align:center;pointer-events:none;z-index:4}
-#final .w{font:italic 400 clamp(24px,7vw,34px)/1.25 Wish,Georgia,serif;color:#fff3df;text-shadow:0 0 24px rgba(255,190,110,.35);min-height:1.25em;margin:0}
-#final .m{font:300 clamp(15px,4.2vw,18px)/1.55 Geologica,-apple-system,system-ui,sans-serif;color:rgba(244,233,216,.82);max-width:360px;min-height:1.55em;margin:0}
+#final .m{font:italic 400 clamp(21px,6vw,28px)/1.35 Wish,Georgia,serif;color:#fff3df;text-shadow:0 0 24px rgba(255,190,110,.35);max-width:360px;min-height:1.35em;margin:0;text-wrap:balance}
 #final .btn{pointer-events:auto;opacity:0;transform:translateY(8px);transition:opacity 1.2s ease,transform 1.2s ease;font-size:15px;padding:13px 26px;margin-top:6px}
 #final .btn.on{opacity:1;transform:none}
 
@@ -118,7 +117,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 <div class="vignette"></div>
 <video id="cam" playsinline muted autoplay></video>
 <div id="hint"><span></span></div>
-<div id="final" hidden><p class="w"></p><p class="m"></p><button class="btn" id="save" type="button">Сохранить созвездие</button></div>
+<div id="final" hidden><p class="m"></p><button class="btn" id="save" type="button">Сохранить созвездие</button></div>
 
 <div class="screen" id="start"><button class="btn" id="go" type="button">Начать</button></div>
 <div class="screen gone" id="err" hidden><p id="errText"></p><button class="btn" id="retry" type="button">Повторить</button></div>
@@ -880,16 +879,17 @@ function startFinale(t) {
   if (!S.lit) ignite(t);
   S.resetT = t; S.resetFrom = S.flame;                                           /* ровное пламя */
   Sound.finale();
-  const box = $('final'), w = box.querySelector('.w'), m = box.querySelector('.m'), btn = $('save');
-  const first = CONFIG.name ? `${CONFIG.name}, загадай желание.` : 'Загадай желание.';
+  const box = $('final'), m = box.querySelector('.m'), btn = $('save');
   /* отъезд камеры подбираем так, чтобы свеча встала над текстом: меряем блок с полным текстом невидимым */
-  box.style.visibility = 'hidden'; box.hidden = false; w.textContent = first; m.textContent = CONFIG.message; btn.classList.add('on');
+  box.style.visibility = 'hidden'; box.hidden = false; m.textContent = CONFIG.message.replace(/(\S)-(?=\S)/g, '$1-\u2060'); btn.classList.add('on');
   const top = box.getBoundingClientRect().top, fy = H * .3;
-  w.textContent = m.textContent = ''; btn.classList.remove('on'); box.style.visibility = '';
+  m.textContent = ''; btn.classList.remove('on'); box.style.visibility = '';
   S.zoomTo = clamp((top - 22 - fy) / (G.floor - fy), .55, .9);
-  setTimeout(() => type(w, first, 75, () => setTimeout(() => type(m, CONFIG.message, 38, () => {
+  /* слово с дефисом («по-настоящему») не рвём на две строки: после дефиса — невидимый «склеиватель» U+2060 */
+  const msg = CONFIG.message.replace(/(\S)-(?=\S)/g, '$1-\u2060');
+  setTimeout(() => type(m, msg, 55, () => {
     makePNG().then(b => { pngBlob = b; }).catch(e => console.warn(e)).finally(() => btn.classList.add('on'));
-  }), 3000)), 2400);
+  }), 2400);
 }
 /* плавное печатание: по букве, с крошечной случайной паузой — как от руки */
 function type(el, text, ms, done) {
@@ -940,6 +940,7 @@ $('save').addEventListener('click', () => savePNG().catch(e => console.warn(e)))
 
 /* ═══════════════════════════════════════ ПОДСКАЗКИ (только после 6 с тишины) ══════════════════════════════════════ */
 let hintOn = false, hintAt = 0, hintDur = 0, hintIdx = 0, hintEnd = 0, hintSoft = false, hintCount = 0;
+const hintShown = {};
 /* показать строку подсказки на dur мс. soft — подсказка «от скуки»: её убирает любое действие */
 function showHint(text, dur = 5500, soft = false) {
   if (S.finale) return;
@@ -961,16 +962,19 @@ function hintTick(t) {
   else if (!Calib.done) return;
   else if (!S.lit) todo.push('улыбнись — и свеча зажжётся');
   else {
-    add(did.wink, S.stars ? `подмигни — загорится ещё звезда (${S.stars} из ${CONFIG.stars})` : 'подмигни одним глазом — загорится звезда');
+    /* сначала — свеча, потом — звёзды */
     add(did.blow, 'подуй на свечу — она погаснет');
-    add(did.pinch, 'покажи руку и разведи большой и указательный');
+    add(did.pinch, 'покажи руку и разведи большой и указательный — огонь вырастет');
     add(did.palm, 'покажи открытую ладонь — огонь станет как был');
+    add(did.wink, S.stars ? `подмигни — загорится ещё звезда (${S.stars} из ${CONFIG.stars})` : 'подмигни одним глазом — загорится звезда');
     if (S.stars) add(did.tap, 'нажми на звезду — она погаснет');
   }
-  const pool = todo.length ? todo : c;
-  if (!pool.length) return;
   hintCount++;
-  showHint(pool[hintIdx++ % pool.length], 5500, true);
+  /* по порядку: первый ещё не сделанный шаг; не получается дважды — следующий, чтобы не застрять на одном */
+  let text = todo.find(x => (hintShown[x] || 0) < 2);
+  if (!text) { const pool = todo.length ? todo : c; if (!pool.length) return; text = pool[hintIdx++ % pool.length]; }
+  hintShown[text] = (hintShown[text] || 0) + 1;
+  showHint(text, 5500, true);
 }
 
 /* ═══════════════════════════════════════════ MEDIAPIPE ════════════════════════════════════════════════════════════ */
