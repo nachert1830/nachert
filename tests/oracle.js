@@ -385,8 +385,8 @@ const S={
   /* № 70: конус с фронтальной осью; точки линии a — на конусе */
   70:(h)=>{ const cn=fCone(h,'S'); ['2','3','4','5','6','7','8'].forEach(n=>cn.on(h.P(n),n+' на конусе')); },
   /* № 71: усечённые конус и шар — точки срезов на поверхности */
-  '71.1':(h)=>{ const cn=vCone(h,{S:'S'}); ['2','3','5','6','7','8','9','10','11','12'].filter(n=>h.has(n)).forEach(n=>cn.on(h.P(n),n+' на конусе')); },
-  '71.2':(h)=>{ const sp=sphereC(h,'O'); ['1','2','6'].forEach(n=>sp.on(h.P(n),n+' на шаре')); },
+  '71.1':(h)=>{ const cn=vCone(h,{S:'S'}); ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'].filter(n=>h.has(n)).forEach(n=>cn.on(h.P(n),n+' на конусе')); },
+  '71.2':(h)=>{ const sp=sphereC(h,'O'); ['1','2','6','7','8','10','12'].filter(n=>h.has(n)).forEach(n=>sp.on(h.P(n),n+' на шаре')); },
   /* № 72: точки сечения в α, натуральный вид конгруэнтен сечению */
   72:(h)=>{ const al=h.planeT('α'), nat=['1','2₁','3₁','4₁','5₁','6₁','7','6₂','5₂','4₂','3₂','2₂'];
     const P=n=>{ if(h.has(n)) return h.P(n); const p1=h.lab(n+'′'), p2=h.lab(n[0]+'″'); return [p1[0],p1[1],-p2[1]]; };
@@ -396,7 +396,11 @@ const S={
     ['A','B','E'].forEach(n=>{ const X=h.P(n); cn.on(X,n+' на конусе'); h.eqLen(Math.hypot(X[0]-cy.c[0],X[2]+cy.c[1]),cy.r,n+' на цилиндре'); }); },
   '73.2':(h)=>{ const cn=vCone(h,{}), sp=sphereC(h,'O'); ['1','2','3','4'].forEach(n=>{ cn.on(h.P(n),n+' на конусе'); sp.on(h.P(n),n+' на шаре'); }); },
   /* № 74 а: тор (ось ⟂ π₁ через O) ∩ конус с фронтальной осью */
-  '74.1':(h)=>{ const O=h.P('O'), tr=torus(h,{pl:1,c:h.pt2('O′'),z:O[2]}), cn=fCone(h,'S'); ['11','12','13','21','22','23','31','32'].filter(n=>h.has(n)).forEach(n=>{ tr.on(h.P(n),n+' на торе'); cn.on(h.P(n),n+' на конусе'); }); },
+  '74.1':(h)=>{ const O=h.P('O'), cn=fCone(h,'S');   /* тор-купол: ось ⟂ π₁ через O, образующая — дуга очерка на π₂ (центр Z по другую сторону оси) */
+    const arcs=h.items.filter(i=>i&&i.t==='arc'&&(i.k||'main')==='main'&&i.c&&i.r>5); if(!arcs.length) throw new Error('нет дуги очерка тора');
+    const g=arcs[0], a=Math.abs(g.c[0]-O[0]), Zc=-g.c[1];
+    const on=(X,what)=>h.eqLen(Math.hypot(Math.hypot(X[0]-O[0],X[1]-O[1])+a,X[2]-Zc),g.r,what);
+    ['A','B','C','11','12','21','22','31','32'].filter(n=>h.has(n)).forEach(n=>{ on(h.P(n),n+' на торе'); cn.on(h.P(n),n+' на конусе'); }); },
   /* № 77 а: тор (ось ⟂ π₂ через A″) ∩ прямая AB */
   /* тор с осью ⟂ π₂: на π₁ — два одинаковых круга сечения меридианной плоскостью z = 0; Rt — половина расстояния между центрами, rt — их радиус */
   '77.1':(h)=>{ const A=h.P('A'), B=h.P('B'); const cs=h.circs().filter(o=>o.pl===1); let pr=null;
