@@ -3716,6 +3716,9 @@ header#hdr::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height
 .pl-tryb{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .pl-rep{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--blue-s);color:var(--ink);font-size:14px;line-height:1.5;text-align:left}
 .pl-rep a{color:var(--acc);font-weight:700}
+.pl-rep.ask.need{box-shadow:0 0 0 3px var(--red);animation:plNeed .5s ease-in-out 2}
+@keyframes plNeed{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){.pl-rep.ask.need{animation:none}}
 .pl-rep-i{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-weight:700}
 .pl-rep.ask{flex-direction:column;gap:4px;background:var(--surf);border:1.5px solid color-mix(in srgb,var(--acc) 35%,var(--line))}
 .pl-rep.ask b{font:700 16px var(--disp)}.pl-rep.ask>span{color:var(--mut);font-size:13.5px}
@@ -5480,7 +5483,7 @@ function mount(root,t,opt){
   function repHTML(){
     if(!opt.rep) return '';
     if(S.mode==='try'&&S.rated==null){ const nh=Object.keys(S.hint).length;
-      return `<div class="pl-rep ask"><b>Как получилось?</b><span>Честно: от ответа зависит, когда задача вернётся на повтор.${nh?' Подсказок взято: '+nh+'.':''}</span>
+      return `<div class="pl-rep ask"><b>Как получилось?</b><span>${opt.rateFirst?'Отметь честно — от этого зависит следующий шаг.':'Честно: от ответа зависит, когда задача вернётся на повтор.'}${nh?' Подсказок взято: '+nh+'.':''}</span>
         <div class="pl-rates">${[[2,'Решил сам'],[1,'С подсказкой'],[0,'Не смог']].map(([v,l])=>`<button type="button" class="pl-rate v${v}" data-v="${v}">${l}</button>`).join('')}</div></div>`; }
     let info=''; try{ info=opt.rep.info(); }catch(e){}
     return info?`<div class="pl-rep"><span class="pl-rep-i" aria-hidden="true">↻</span><span>${info}</span></div>`:'';
@@ -5517,7 +5520,7 @@ function mount(root,t,opt){
     root.querySelectorAll('.pl-rate[data-v]').forEach(b=>b.addEventListener('click',()=>{ S.rated=+b.dataset.v; try{ opt.rep.rate(S.rated,{hints:Object.keys(S.hint).length}); FX.buzz(S.rated===2?'success':8); }catch(e){} const w=root.querySelector('.pl-rep'); if(w) w.outerHTML=repHTML(); }));
     q('.pl-nextpart')&&q('.pl-nextpart').addEventListener('click',()=>{S.pi++;S.k=0;S.z={s:1,x:0,y:0};render();});
     q('.pl-done')&&q('.pl-done').addEventListener('click',()=>{ if(!S.done) track('task_done'); S.done=true; S.z={s:1,x:0,y:0}; render(); });
-    q('.pl-nextt')&&q('.pl-nextt').addEventListener('click',()=>{ if(opt.onDone) opt.onDone(S.mode); });
+    q('.pl-nextt')&&q('.pl-nextt').addEventListener('click',()=>{ if(opt.rateFirst&&opt.rep&&S.mode==='try'&&S.rated==null){ const a=root.querySelector('.pl-rep.ask'); if(a){ a.classList.remove('need'); void a.offsetWidth; a.classList.add('need'); a.scrollIntoView({behavior:'smooth',block:'center'}); } return; } if(opt.onDone) opt.onDone(S.mode); });
     q('.pl-redo')&&q('.pl-redo').addEventListener('click',()=>{ S.done=false; S.pi=0; S.k=0; S.shown={}; S.hint={}; S.rated=null; S.z={s:1,x:0,y:0}; render(); });
     q('.pl-sh')&&q('.pl-sh').addEventListener('click',e=>shareNow(e.currentTarget));
     q('.pl-share')&&q('.pl-share').addEventListener('click',e=>shareNow(e.currentTarget));
@@ -7194,7 +7197,7 @@ function buildDocs(){
    ['quiz','Тест на время по начертательной геометрии','c',Hh('ng','check','quiz'),'Подготовка к РК · Быстрый тест','Короткий тест на время; ошибки разбираются.',['тест онлайн','проверить себя']],
    ['tickets','Билеты РК1 с разбором','c',Hh('ng','check','tickets'),'Подготовка к РК · Билеты','Билеты РК1 с пошаговым разбором.',['билеты','экзамен','рк']],
    ['rk2','РК2: замена плоскостей и вращение — билет, 26 вопросов, готовность 0–100','c',Hh('ng','rk2'),'Подготовка к РК · РК2','Билет РК2 с разбором по шагам, 26 вопросов теории, задания с оценкой уверенности и готовность к РК2 от 0 до 100.',['рк2','рк 2','рубежный контроль 2','готовность','замена плоскостей проекций','вращение','преобразование чертежа']],
-   ['rkgame','Сдашь РК2? Пробный билет-игра: 10 заданий по начерту и инже на время','c',Hh('rk'),'Подготовка к РК · Сдашь РК2?','Билет-игра: эпюры, виды, разрезы, ГОСТ. Очки, серия, в конце — результат по темам и что повторить.',['сдашь ли рк2','пробный билет','рк2 инжа','рк2 инженерная графика','вид слева','разрез','игра','тест рк2']],
+   ['rkgame','Билет-игра РК2: 10 заданий по начерту и инже на время','c',Hh('rk'),'Подготовка к РК · Билет-игра РК2','Билет-игра: эпюры, виды, разрезы, ГОСТ. Очки, серия, в конце — результат по темам и что повторить.',['сдашь ли рк2','пробный билет','рк2 инжа','рк2 инженерная графика','вид слева','разрез','игра','тест рк2']],
    ['rk2mock','Пробный РК2: три задачи билета на время','c',Hh('ng','rk2','mock'),'Подготовка к РК · РК2','Секундомер, три задачи на бумаге, сверка по контрольным точкам.',['пробный рк2','рк2 на время']],
    ['learn','Тренировка дня: повторение задач, карточки, типы задач вперемешку','c',Hh('ng','learn'),'Учиться самому · Тренировка дня','Разобранные задачи возвращаются через 1, 3, 7, 16, 35 дней — реши по памяти и оцени себя. Почему так учиться: вспоминать, повторять с перерывами, перемешивать.',['как учиться','как запомнить','повторение','тренировка','самостоятельно','методика','как готовиться']],
    ['kind','Узнай тип задачи — какой способ применить','c',Hh('ng','learn','kind'),'Учиться самому · Узнай тип задачи','Задачи из тетради вперемешку: определи тему и способ, не решая до конца.',['какой способ','с чего начать','тип задачи','не знаю как начать','какой метод']],
@@ -23241,7 +23244,7 @@ window.CHANGES=[
   {v:'4.20',d:'5 ноября 2026',items:['РК2 — на первом месте: на главной горящая плашка «РК2 через N дней», ранг и готовность из 100, кнопки «Готовиться к РК2» и «Проверь себя · 3 мин».',
     'Раздел РК: вкладки РК1 · РК2 · РК3 (РК3 откроется после РК2). Вверху РК2 — сколько осталось, ранг, звёзды и серия дней подряд, одно главное действие.',
     '«Что нужно уметь на РК2» — шесть навыков по билету и списку задач преподавателя: фундамент (точка на объекте, h и f), новая ось (прямая общего положения → прямая уровня, № 52, 53), плоскость в натуральную величину (№ 55–57, задача А), вращение вокруг проецирующей (№ 60, 61, задача Б), вращение вокруг прямой уровня (№ 62–67, задача В), ДЗ №3. У каждого — звёзды ★ понял · ★★ построил сам · ★★★ закрепил и кнопка «Дальше». Финал — билет РК2 и пробный РК на время.',
-    'Ранги: Новичок → Чертёжник → Конструктор → Инженер → Готов к РК2 → Мастер эпюра. «Готов к РК2» — от 75 баллов и ★★ в каждом навыке; новый ранг и новая звезда отмечаются салютом. «Проверь себя» за 3 минуты — 5 чертежей, ответ одним нажатием, верно — сразу следующий.',
+    'Ранги: Новичок → Чертёжник → Конструктор → Инженер → Все навыки → Мастер эпюра. «Все навыки» — от 75 баллов и ★★ в каждом навыке; новый ранг и новая звезда отмечаются салютом. «Проверь себя» за 3 минуты — 5 чертежей, ответ одним нажатием, верно — сразу следующий.',
     'Из лекций — прямо в навыках: рис. 5.3 и 5.7 (прямая → уровня → проецирующая), 5.6 и 5.8 (плоскость → проецирующая → уровня), 5.10 (истинный вид и угол к π₁ вращением), 5.12 и 5.13 (расстояния вращением вокруг горизонтали) — алгоритм по шагам и та же задача тетради с разбором.',
     'Срок РК2 — неделя РК по плану семестра (11-я неделя).',
     'РК2 проще: один первый шаг — «Проверь себя» (5 чертежей, ответ одним нажатием, верно — сразу следующий), в итоге — кнопка в слабую тему. Плашка без нулей у новичка; в навыках — одна кнопка «Дальше», остальное свёрнуто; билет — три строки; тренировок три вместо шести.',
@@ -25827,8 +25830,8 @@ const RANKS=[[0,'Новичок','Начало есть. Иди по навык�
  [20,'Чертёжник','Знаешь, о чём темы. Теперь — суть каждого навыка и задания «Вижу».'],
  [45,'Конструктор','Многое понимаешь, но задачу до конца без разбора пока не доводишь. Решай в «Решаю сам».'],
  [60,'Инженер','Задачи получаются. Закрой ★★ в каждом навыке и разбери уверенные ошибки.'],
- [READY_AT,'Готов к РК2','Каждый навык РК2 ты показал сам. Повтори за день до РК, чтобы не забылось.'],
- [90,'Мастер эпюра','Всё, что проверяет РК2, — уверенно, без ошибок и на пробном РК на время.']];
+ [READY_AT,'Все навыки','Каждый навык ты показал сам на сайте. Повтори за день до РК, чтобы не забылось.'],
+ [90,'Мастер эпюра','Все шаги на сайте — без ошибок, и пробный РК на время тоже.']];
 function skillState(S,D){ D=D||snapshot();
   if(S.dz){ const m=ST.get('r2dz3',{}), n=S.dz.filter(p=>m[p[0]]).length; return {stars:n>=4?3:n>=2?2:n?1:0,n,of:S.dz.length,done:m,solved:n}; }
   const ms=S.mods.map(id=>modScore(id,D)), k=ms.reduce((z,x)=>z+x.k,0)/ms.length, v=ms.reduce((z,x)=>z+x.v,0)/ms.length;
@@ -25869,16 +25872,18 @@ const tone=x=>x>=.75?'g':x>=.45?'a':'r';
    «реши сам» — задача билета решена сам (≥ 0,7); пробный РК2 — все три задачи ≥ 75 %. Текущий — первый несделанный.
    После каждого шага главная кнопка — «Следующий шаг» (r2Today). */
 const T3=[{key:'R2-A',m:'zam',L:'А',t:'Замена плоскостей'},{key:'R2-B',m:'rotp',L:'Б',t:'Вращение вокруг проецирующей прямой'},{key:'R2-V',m:'rotl',L:'В',t:'Вращение вокруг прямой уровня'}];
-function t3State(T,D){ D=D||snapshot(); const x=modScore(T.m,D), sol=Math.max(taskCredit(T.key,D),mockBest(D,TK_OF[T.m]))>=.7;
+function t3State(T,D){ D=D||snapshot(); const x=modScore(T.m,D), sol=Math.max(taskCredit(T.key,D),mockBest(D,TK_OF[T.m]))>=.7, rp=D.rep[T.key], tried=!sol&&rp&&rp.r!=null&&rp.r<2;
   const steps=[{t:'Посмотри, как решать',d:'Разбор задачи билета по шагам. Просто листай «Дальше».',href:H('ng','check','tickets',T.key),done:sol||taskState(T.key)>=1},
     {t:'Узнай на чертежах',d:'6 заданий: нажимай на верный чертёж — ответ сразу.',href:H('ng','rk2','t','v-'+T.m),done:sol||x.v>=.5},
-    {t:'Реши сам',d:'Та же задача: на бумаге, потом сверься по шагам и отметь «Решил сам».',href:H('ng','check','tickets',T.key,'try'),done:sol}];
+    {t:tried?'Реши сам — ещё раз':'Реши сам',d:tried?(rp.r===1?'В прошлый раз — с подсказкой. Теперь попробуй без неё: на бумаге, потом сверка.':'В прошлый раз не получилось — это нормально. Подсказки по шагам есть прямо в задаче.'):'Та же задача: на бумаге, потом сверься по шагам и отметь, как получилось.',href:H('ng','check','tickets',T.key,'try'),done:sol}];
   return {T,steps}; }
 function r2Path(){ const D=snapshot(), R=readiness(D), S=T3.map(T=>t3State(T,D)), mockOk=(D.mock||[]).some(z=>['A','B','V'].every(k=>(z.r||{})[k]>=.75));
   const st=[{g:'start',t:'Проверь себя',d:'5 чертежей, ответ одним нажатием. 3 минуты.',href:H('ng','rk2','t','quick'),done:!R.empty}];
   S.forEach(z=>z.steps.forEach(x=>st.push(Object.assign({g:z.T.L},x))));
   st.push({g:'fin',t:'Пробный РК2 на время',d:'Три задачи на бумаге, секундомер, потом сверка.',href:H('ng','rk2','mock'),done:mockOk});
-  st.forEach((x,i)=>x.i=i); const ci=st.findIndex(x=>!x.done);
+  const ids=['quick'].concat(...T3.map(T=>[1,2,3].map(n=>T.key+'-'+n)),['mock']), keep=ST.get('r2path',{}); let add=false;
+  st.forEach((x,i)=>{ x.i=i; x.id=ids[i]; if(keep[x.id]) x.done=true; else if(x.done){ keep[x.id]=day(); add=true; } }); if(add) ST.set('r2path',keep);
+  const ci=st.findIndex(x=>!x.done);
   return {st,ci,n:st.filter(x=>x.done).length,N:st.length}; }
 /* следующий шаг: куда ведёт единственная кнопка */
 function r2Today(){ const P=r2Path();
@@ -25898,7 +25903,7 @@ function simpleHero(big){ const I=RKS.info(2), heat=I.past?'calm':RKS.heat(I), c
   const pill=I.past?'Прошёл':heat==='hot'?'Горит':heat==='warm'?'Скоро':'По плану', T=big?'h1':'h2', id=big?'r2H1':'rkhH';
   return `<section class="rkh rkh-${heat}${big?' rkh-big':''} rkh-s1" aria-labelledby="${id}">
    <div class="rkh-top"><span class="rkh-pill${heat==='hot'&&!I.past?' live':''}"><i></i>${pill}</span><span class="rkh-meta">${I.exact?'гр. '+attr(I.group)+' · ':''}${RKS.when(I)}</span></div>
-   <div class="rkh-g"><div><${T} id="${id}" class="rkh-t">РК2${big?'':' <span>начерт</span>'}</${T}><div class="rkh-s">Три задачи на бумаге: замена плоскостей и два вращения</div></div>
+   <div class="rkh-g"><div><${T} id="${id}" class="rkh-t">РК2${big?'':' <span>начерт</span>'}</${T}><div class="rkh-s">По образцу билета кафедры: замена плоскостей и два вращения</div></div>
     ${I.past?'':`<div class="rkh-cnt${c.word?' word':''}"><b>${c.b}</b><span>${c.s}</span></div>`}</div>
    <div class="rkh-prog"><span>Путь к РК2: <b>${P.n} из ${P.N}</b> шагов</span><span class="rkh-pb"><i style="width:${Math.round(P.n/P.N*100)}%"></i></span></div>
    ${big?'':`<a class="rkh-today" href="${td.href}"><span class="rkh-tk">${td.k}</span><b>${td.t}</b><span>${td.d}</span><i aria-hidden="true">→</i></a>`}
@@ -25908,7 +25913,7 @@ function simpleHub(v){ const f=fac();
     <section class="box warn r2-other"><h4>У твоего потока другой РК2</h4><p>Для ИУ1Б, ИУ3, ИУ5, ИУ6, РК6, МТ9, БМТ1-13Б на РК2 — сечение тела проецирующей плоскостью: горизонтальная и профильная проекции сечения и его истинный вид.</p><p>Что поможет: <a href="${H('ng','tasks',54)}">задача №54</a> — натуральный вид сечения призмы заменой плоскостей; <a href="${H('ng','path',13)}">урок 13</a> — как достроить точку в плоскости.</p></section>
     ${facHTML(true)}`}); bindFac(v,()=>simpleHub(v)); return 'РК2 · Подготовка к РК'; }
   const P=r2Path();
-  v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','rk2')],['РК2']],next:null,noBottom:true,cls:'r2-page',body:`
+  v.innerHTML=pageHTML({crumbs:[['РК2']],next:null,noBottom:true,cls:'r2-page',body:`
    ${tabsHTML(2)}
    ${simpleHero(true)}
    ${P.ci<0?`<a class="rkh-today pth-all" href="${H('ng','rk2','t','mix')}"><span class="rkh-tk">Путь пройден</span><b>Повтори</b><span>10 заданий вперемешку — чтобы не забылось к РК.</span><i aria-hidden="true">→</i></a>`:''}
@@ -25947,7 +25952,7 @@ function modsHTML(R){ if(R.na) return ''; return `<section class="r2-mods" aria-
      ${x===R.weak&&!R.empty?'<i class="r2-wk">слабое звено</i>':''}</a>`; }).join('')}</div></section>`; }
 function ticketHTML(){ const T=TK(); if(!T.length) return '';
   return `<section class="r2-tk" aria-labelledby="r2tH"><h2 id="r2tH" class="sp-h2"><span class="sk-bk">Финал</span>Билет РК2: три задачи</h2>
-   <p class="r2-sub">Три задачи как на РК, по одной на способ. Реши на бумаге и сверься с разбором. Все три выходят сами — <a href="${H('ng','rk2','mock')}">пробный РК2 на время</a>.</p>
+   <p class="r2-sub">Три задачи по образцу билета кафедры, по одной на способ. Реши на бумаге и сверься с разбором. Все три выходят сами — <a href="${H('ng','rk2','mock')}">пробный РК2 на время</a>.</p>
    <div class="r2-tl">${T.map(t=>{ const st=taskState(t.key); return `<div class="r2-tc"><div class="r2-th"><span class="r2-tn">${TKL[t.key]}</span><p>${t.q}</p></div>
      <div class="r2-ta"><a class="btn pri" href="${H('ng','check','tickets',t.key,'try')}">Решаю сам →</a><a class="btn" href="${H('ng','check','tickets',t.key)}">Разбор по шагам</a>${st?`<span class="badge ok">${st===2?'Решено сам':'Разобрано'}</span>`:''}</div></div>`; }).join('')}</div></section>`; }
 function qMapHTML(D){ D=D||snapshot(); const F=FACS[D.fac]||FACS.main;
@@ -25957,7 +25962,7 @@ function qMapHTML(D){ D=D||snapshot(); const F=FACS[D.fac]||FACS.main;
    <p class="r2-leg"><i class="g"></i>знаю <i class="a"></i>не уверен <i class="r"></i>слабо <i></i>не проверено</p></section>`; }
 function trainHTML(R){ const dz=R&&!R.na?R.danger.length:0;
   return `<section class="r2-tr" aria-labelledby="r2trH"><h2 id="r2trH" class="sp-h2">Тренировки</h2><div class="sp-go">
-   <a class="sp-big pri" href="${H('ng','rk2','t','quick')}"><b>Проверь себя · 3 минуты</b><span>5 чертежей: нажми на верный — ответ сразу. Узнаешь, насколько ты готов к РК2.</span><i aria-hidden="true">→</i></a>
+   <a class="sp-big pri" href="${H('ng','rk2','t','quick')}"><b>Проверь себя · 3 минуты</b><span>5 чертежей: нажми на верный — ответ сразу.</span><i aria-hidden="true">→</i></a>
    <a class="sp-big" href="${H('ng','rk2','t','mix')}"><b>Ещё задания</b><span>10 заданий: чаще то, где ты слабее и давно не повторял.</span><i aria-hidden="true">→</i></a>
    ${dz?`<a class="sp-big" href="${H('ng','rk2','t','fix')}"><b>Уверенные ошибки · ${dz}</b><span>Где был уверен, но ошибся. Разбери их первыми.</span><i aria-hidden="true">→</i></a>`:''}
    <a class="sp-big" href="${H('ng','rk2','mock')}"><b>Пробный РК2</b><span>Три задачи билета на бумаге, секундомер, затем сверка по контрольным точкам.</span><i aria-hidden="true">→</i></a>
@@ -25978,11 +25983,11 @@ function heroHTML(big){ const I=RKS.info(2), R=readiness(), SA=skillsAll(), rk=r
   const rankB=rk&&!R.empty?`<div class="rkh-rank">
      <div class="rkh-rg">${ring(R.empty?null:R.val,64)}<b>${R.empty?'—':R.val}</b></div>
      <div class="rkh-rt"><span>Ранг · готовность из 100</span><b>${rk.name}</b><span class="rkh-bar"><i style="width:${Math.round(rk.frac*100)}%"></i></span>
-      <small>${rk.held?'Для «Готов к РК2» нужны ★★ в: '+rk.weak.map(S=>S.t.toLowerCase()).join(', '):rk.next?'До «'+rk.next+'» — '+rk.toNext+' '+(rk.toNext%10===1&&rk.toNext%100!==11?'балл':rk.toNext%10>=2&&rk.toNext%10<=4&&(rk.toNext%100<12||rk.toNext%100>14)?'балла':'баллов'):'Высший ранг. Держи его до РК.'}</small></div>
+      <small>${rk.held?'Для ранга «Все навыки» нужны ★★ в: '+rk.weak.map(S=>S.t.toLowerCase()).join(', '):rk.next?'До «'+rk.next+'» — '+rk.toNext+' '+(rk.toNext%10===1&&rk.toNext%100!==11?'балл':rk.toNext%10>=2&&rk.toNext%10<=4&&(rk.toNext%100<12||rk.toNext%100>14)?'балла':'баллов'):'Высший ранг. Держи его до РК.'}</small></div>
      <div class="rkh-side"><div><b>${stars}<i>★</i></b><span>из 18</span></div></div>
     </div>`:'';
   const now=SA.find(x=>x.st.stars<2)||SA.find(x=>x.st.stars<3), sn=now&&skillNext(now.S,now.st);
-  const go=!R.empty&&!R.na&&!R.danger.length&&sn?{href:sn.href,t:sn.t,d:'Навык «'+now.S.t+'»: '+(now.st.stars?'дальше — построить самому.':'начни с сути — потом задания.')}:R.empty?{href:H('ng','rk2','t','quick'),t:'Проверь себя: 3 минуты',d:'5 чертежей — нажимаешь на верный, ответ сразу. Узнаешь, насколько ты готов к РК2, и получишь первые баллы и ранг.'}:nx||{href:H('ng','rk2'),t:'Готовиться к РК2',d:''};
+  const go=!R.empty&&!R.na&&!R.danger.length&&sn?{href:sn.href,t:sn.t,d:'Навык «'+now.S.t+'»: '+(now.st.stars?'дальше — построить самому.':'начни с сути — потом задания.')}:R.empty?{href:H('ng','rk2','t','quick'),t:'Проверь себя: 3 минуты',d:'5 чертежей — нажимаешь на верный, ответ сразу.'}:nx||{href:H('ng','rk2'),t:'Готовиться к РК2',d:''};
   return `<section class="rkh rkh-${heat}${big?' rkh-big':''}" aria-labelledby="${id}">
    <div class="rkh-top"><span class="rkh-pill${heat==='hot'&&!I.past?' live':''}"><i></i>${pill}</span><span class="rkh-meta">${I.exact?'гр. '+attr(I.group)+' · ':''}${RKS.when(I)}</span></div>
    <div class="rkh-g"><div><${T} id="${id}" class="rkh-t">РК2${big?'':' <span>начерт</span>'}</${T}><div class="rkh-s">${big?'Способы преобразования чертежа: замена плоскостей и два вращения':'Замена плоскостей и вращение · билет из 3 задач'}</div></div>
@@ -26044,17 +26049,17 @@ function grow(v){ const rm=window.matchMedia&&matchMedia('(prefers-reduced-motio
 
 function howView(v){
   v.innerHTML=pageHTML({crumbs:[['РК2',H('ng','rk2')],['Как считается готовность']],next:null,noBottom:true,cls:'r2-page',body:`
-   <div class="intro"><h1>Как считается готовность</h1><p class="lead">Число от 0 до 100 — не прогноз оценки, а доля того, что проверяет РК2, которую ты уже показал на сайте. Всё считается на твоём устройстве.</p></div>
+   <div class="intro"><h1>Как считается готовность</h1><p class="lead">Число от 0 до 100 — не прогноз оценки, а доля заданий и задач на сайте, которые ты уже сделал сам. Всё считается на твоём устройстве.</p></div>
    <ol class="r2-how">
     <li><b>Три слоя в каждом модуле.</b> <i>Знаю</i> — 26 вопросов теории: тесты с уверенностью и «объясни вслух». <i>Вижу</i> — задания-картинки и «сделай сам», каждый раз новые. <i>Строю</i> — задачи тетради и билета в режиме «Решаю сам»: засчитываются две лучшие, задача билета весит в полтора раза больше. Засчитывается только то, что решил сам: «Решил сам» — полностью, «С подсказкой» — 0,4, просмотренный разбор — ноль. «Объясни вслух» даёт не больше 0,6 вопроса: это самооценка.</li>
     <li><b>Вес слоёв зависит от модуля.</b> В модулях преобразований (замена, два вращения) главное — построение: Строю 45–50 %, Вижу 30–35 %, Знаю 20 %. В параллельности и перпендикулярности главное — теория: Знаю 50 %, Вижу 30 %, Строю 20 %.</li>
     <li><b>Уверенность.</b> Верный ответ с отметкой «уверен» — 1, «скорее да» — 0,85, «наугад» — 0,35. Неверный — 0. Неверный с «уверен» — уверенная ошибка: пока не исправлена, готовность не выше 84.</li>
     <li><b>Забывание.</b> Засчитанное со временем теряет вес до 60 %: наполовину за 8 дней, а если верно ответил в два разных дня — за 30. Повторил — вес вернулся.</li>
     <li><b>Модули складываются с весами</b> по билету: замена 25, вращение вокруг прямой уровня 25, вокруг проецирующей 20, параллельность 15, перпендикулярность 15.</li>
-    <li><b>Слабое звено.</b> Итог = 70 % взвешенного среднего + 30 % самого слабого модуля. На РК попадётся и он — провал в одной теме не спрятать за сильными.</li>
+    <li><b>Слабое звено.</b> Итог = 70 % взвешенного среднего + 30 % самого слабого модуля. Провал в одной теме не прячется за сильными.</li>
     <li><b>Потолок без пробного РК.</b> Выше 89 — только после пробного РК2, где все три задачи решены не меньше чем на 75 % контрольных точек.</li>
    </ol>
-   <div class="box tip"><h4>Ранги</h4><p>Ранг «Готов к РК2» — от ${READY_AT} баллов и только если у каждого из шести навыков РК2 есть хотя бы ★★ (задача навыка решена сам). Баллами за одну тему его не набрать.</p><ul class="r2-lvl">${RANKS.map(l=>`<li><b>${l[0]}+ · ${l[1]}</b> — ${l[2]}</li>`).join('')}</ul></div>
+   <div class="box tip"><h4>Ранги</h4><p>Ранг «Все навыки» — от ${READY_AT} баллов и только если у каждого из шести навыков РК2 есть хотя бы ★★ (задача навыка решена сам). Баллами за одну тему его не набрать.</p><ul class="r2-lvl">${RANKS.map(l=>`<li><b>${l[0]}+ · ${l[1]}</b> — ${l[2]}</li>`).join('')}</ul></div>
    <section class="lr-m r2-why"><h2 class="sp-h2">Почему здесь так проверяют</h2>
      <p class="lr-sub"><b>Уверенность в ответе.</b> Угаданный ответ и знание — разные вещи. Отметка «уверен» с ошибкой — самая опасная: на РК её не заметишь. Поэтому уверенная ошибка стоит дорого, а угаданный ответ — треть (certainty-based marking, Gardner-Medwin, UCL). Просто посмотреть разбор — ноль: засчитывается только то, что сделал сам.</p>
      <p class="lr-sub"><b>Ответ и обоснование.</b> В вопросах «ответ обосновать» засчитывается только пара «верный ответ + верная причина»: так ловятся ошибочные представления, которые прячутся за верно угаданным «да/нет» (двухъярусные тесты, Treagust, 1988).</p>
@@ -26272,7 +26277,7 @@ function view(v,r){ const it=r.item;
   if(it) { redir(H('ng','rk2')); return ''; }
   return simpleHub(v); }
 /* для РК1-хаба и главной: короткая строка о готовности */
-function line(){ const R=readiness(); if(R.na) return 'Другой РК2 у твоего потока — см. раздел'; return R.empty?'Узнай, насколько готов: шкала 0–100 — какая часть того, что спросят на РК2, у тебя уже получается сама. Замер — 12 минут':'Готовность '+R.val+' из 100 · '+level(R.val)[1].toLowerCase(); }
+function line(){ const R=readiness(); if(R.na) return 'Другой РК2 у твоего потока — см. раздел'; return R.empty?'Путь РК2 по шагам: одна кнопка, начни с «Проверь себя» — 3 минуты':'Готовность '+R.val+' из 100 · '+level(R.val)[1].toLowerCase(); }
 return {view,next:r2Today,readiness,modScore,snapshot,level,nextStep,line,homeHTML,tabsHTML,skillsAll,rankOf,SKILLS,RANKS,READY_AT,MODS,Q,ITEMS,GENS,GEN_OF,_:{itemScore,genScore,isDanger,decay,taskCredit,planFor,inst,judge,rec,CHECK,iMount}};
 })();
 
@@ -26561,7 +26566,7 @@ function result(){ const W=q=>q.pic?1.5:1; const tot=G.qs.reduce((s,q)=>s+W(q),0
   const pc=Math.round(got/tot*100), ok=G.qs.filter(q=>q.ok).length;
   const by={}; G.qs.forEach(q=>{ const b=by[q.tag]||(by[q.tag]={n:0,ok:0}); b.n++; if(q.ok) b.ok++; });
   const lv=pc>=80?{k:'g',t:'Отличный результат',d:'Эти задания у тебя получаются. Закрепи на бумаге — пробный РК2 на время.'}
-    :pc>=60?{k:'g',t:'Хороший результат',d:'Основа есть. Подтяни темы с ошибками — и будет запас.'}
+    :pc>=60?{k:'g',t:'Хороший результат',d:'Основа есть. Подтяни темы с ошибками.'}
     :pc>=40?{k:'a',t:'Середина',d:'Половина заданий пока не получается. Разбери темы ниже: каждая — 5–10 минут.'}
     :{k:'r',t:'Есть пробелы',d:'Это нормально в начале. Начни с первой темы ниже — там коротко и с картинками.'};
   const rank=pc>=95?'Легенда кафедры':pc>=80?'Мастер эпюра':pc>=60?'Уверенный проекционист':pc>=40?'Чертёжник-стажёр':'Новичок эпюра';
@@ -26582,7 +26587,7 @@ function startHTML(mode){ const d=ST.get('rkg',{}), st=streak(d), last=d.last, b
   return `<section class="rkg-hero" aria-labelledby="rkgH">
    <div class="rkg-tix" aria-hidden="true"><i></i><i></i><b><span>Билет №</span><em>${1+Math.floor(Math.random()*30)}</em><small>РК2</small></b></div>
    <p class="rkg-kick">Пробный РК2 · начерт + инжа</p>
-   <h1 id="rkgH" class="rkg-h">Сдашь РК2?</h1>
+   <h1 id="rkgH" class="rkg-h">Билет-игра РК2</h1>
    <p class="rkg-sub">Тяни билет: задания как на рубежке — эпюры, виды, разрезы. Минуты через четыре узнаешь, готов ли ты, и что повторить.</p>
    <div class="rkg-modes" role="radiogroup" aria-label="Билет">${Object.keys(MODES).map(k=>`<button type="button" role="radio" data-mode="${k}" aria-checked="${k===mode}" class="${k===mode?'on':''}"><b>${MODES[k].t}</b><span>${MODES[k].n} заданий · ${MODES[k].sub}</span></button>`).join('')}</div>
    <button type="button" class="rkg-go" data-go>Тянуть билет<i aria-hidden="true">→</i></button>
@@ -26596,7 +26601,7 @@ function startHTML(mode){ const d=ST.get('rkg',{}), st=streak(d), last=d.last, b
   <section class="rkg-rules" aria-label="Правила">
    <div>${svgI(I.clock,22)}<b>На задание — время</b><span>45 секунд на вопрос, 75 — на чертёж. Быстрее — больше очков.</span></div>
    <div>${svgI(I.fire,22)}<b>Серия умножает</b><span>Три верных подряд — ×1,5, пять — ×2. Ошибка сбрасывает серию.</span></div>
-   <div>${svgI(I.target,22)}<b>В конце — прогноз</b><span>Сдашь или нет, и какие темы повторить — со ссылками на разбор.</span></div>
+   <div>${svgI(I.target,22)}<b>В конце — разбор</b><span>Что получилось по темам и что повторить — со ссылками на разбор.</span></div>
   </section>
   <p class="rkg-fine">Задания — по темам РК2: начерт (параллельность и перпендикулярность, замена плоскостей, вращение) и инжа (виды, разрезы, ГОСТ). Чертежи каждый раз новые.</p>`; }
 
@@ -26642,7 +26647,7 @@ function resHTML(R,rec){ const C=2*Math.PI*52, dash=(R.pc/100*C).toFixed(1);
    ${weak.length?`<a class="rkg-cta" href="${TOP[weak[0]].h()}"><span>Начни отсюда</span><b>${SUBJ[TOP[weak[0]].s]}: ${TOP[weak[0]].t}</b><i aria-hidden="true">→</i></a>`:`<a class="rkg-cta" href="${Hh('ng','rk2','mock')}"><span>Следующий уровень</span><b>Пробный РК2 на бумаге, на время</b><i aria-hidden="true">→</i></a>`}
    <div class="rkg-acts"><button type="button" class="rkg-go sm" data-again>${svgI(I.redo,18)}Ещё билет</button><button type="button" class="rkg-sh" data-share-res>${svgI(I.share,18)}Поделиться</button></div>
    ${bad.length?`<h2 class="rkg-h2">Разбор ошибок</h2><div class="rkg-mis">${bad.map(q=>{ const okI=q.opts.findIndex(o=>o.ok); return `<details><summary><span class="${q.s}">${SUBJ[q.s]}</span>${q.ask}</summary>${q.fig?`<div class="rkg-fig sm">${q.fig}</div>`:''}<p class="rkg-mk">${q.pick<0?'Время вышло':'Твой ответ — '+L4[q.pick]}. Верный — ${L4[okI]}${q.opts[okI].t?': '+q.opts[okI].t:''}.</p>${q.opts[okI].svg?`<div class="rkg-fig sm">${q.opts[okI].svg}</div>`:''}${q.pick>=0&&q.opts[q.pick].err?`<p class="rkg-err">${q.opts[q.pick].err}</p>`:''}<p>${q.why}</p><a href="${TOP[q.tag].h()}">Разобрать тему «${TOP[q.tag].t}» →</a></details>`; }).join('')}</div>`:''}
-   <p class="rkg-fine">Прогноз — по ${R.n} заданиям, задание с чертежом весит в полтора раза больше. Это ориентир, а не оценка кафедры: на РК задачи решают на бумаге.</p>
+   <p class="rkg-fine">Итог — по ${R.n} заданиям этой игры, задание с чертежом весит в полтора раза больше. Это тренировка, а не оценка и не прогноз: на РК задачи решают на бумаге.</p>
   </section>`; }
 
 /* ── таймер ── */
@@ -26685,7 +26690,7 @@ function nextQ(v){ if(!G) return; if(G.i<G.qs.length-1){ G.i++; render(v); windo
   try{ if(window.TRACK) TRACK('rkg_done',{mode:G.mode,pc:G.R.pc}); }catch(e){}
   render(v); window.scrollTo(0,0); }
 function shareRes(b){ const R=G&&G.R; if(!R) return; const url=location.origin+'/rk/';
-  const text='Пробный билет РК2: верно '+R.ok+' из '+R.n+' ('+R.pc+'%), прогноз — «'+R.lv.t.toLowerCase()+'». А ты сдашь?';
+  const text='Билет-игра РК2: верно '+R.ok+' из '+R.n+' ('+R.pc+'%). Попробуй сам:';
   try{ FX.shareMenu({heading:'Поделиться результатом',title:text,text,url,back:b}); }catch(e){ try{ navigator.clipboard.writeText(text+' '+url); toast('Скопировано'); }catch(_){} } }
 /* нажатия — на контейнере игры (он новый на каждом показе), клавиши — один обработчик на весь сайт */
 function bind(v){ const host=v.querySelector('#rkgHost'); if(!host) return;
@@ -26707,7 +26712,7 @@ function view(v,r){
   v.innerHTML=`<div class="wrap page rkg-page"><div id="rkgHost"></div></div>`;
   try{ NEXT=null; }catch(e){}
   bind(v); render(v);
-  return 'Сдашь РК2? Пробный билет';
+  return 'Билет-игра РК2';
 }
 
 /* ── тизер на главной: первое задание билета прямо здесь ── */
@@ -26715,7 +26720,7 @@ let TZ=null;
 function teaserHTML(){ TZ=ngPic('par')||tq(TQ.find(x=>x.id==='i-b'));
   const q=TZ, d=ST.get('rkg',{});
   return `<section class="rkg-tz" aria-labelledby="rkgTzH" id="rkgTz">
-   <div class="rkg-tzh"><span class="rkg-kick">Пробный РК2 · 1 задание из 10</span><h2 id="rkgTzH">Сдашь РК2? Начни с одной задачи</h2></div>
+   <div class="rkg-tzh"><span class="rkg-kick">Пробный РК2 · 1 задание из 10</span><h2 id="rkgTzH">Билет-игра РК2: начни с одной задачи</h2></div>
    <div class="rkg-tzq"><p class="rkg-ask">${q.ask}</p>${q.fig?`<div class="rkg-fig">${q.fig}</div>`:''}
     <div class="rkg-txts" role="group" aria-label="Варианты ответа">${q.opts.map((o,k)=>`<button type="button" class="rkg-to" data-tz="${k}"><span class="lt">${L4[k]}</span><span>${o.t}</span></button>`).join('')}</div>
     <div id="rkgTzFb"></div></div>
@@ -26735,7 +26740,7 @@ function bindTeaser(root){ const box=root&&root.querySelector('#rkgTz'); if(!box
 }
 /* после тизера #/rk открывает билет сразу на втором задании */
 const view0=view;
-function viewRK(v,r){ if(G&&G._tz&&!G.done){ G._tz=false; v.innerHTML=`<div class="wrap page rkg-page"><div id="rkgHost"></div></div>`; try{ NEXT=null; }catch(e){} bind(v); G.i=1; render(v); return 'Сдашь РК2? Пробный билет'; } return view0(v,r); }
+function viewRK(v,r){ if(G&&G._tz&&!G.done){ G._tz=false; v.innerHTML=`<div class="wrap page rkg-page"><div id="rkgHost"></div></div>`; try{ NEXT=null; }catch(e){} bind(v); G.i=1; render(v); return 'Билет-игра РК2'; } return view0(v,r); }
 
 return {view:viewRK,teaserHTML,bindTeaser,build,newGame,TQ,TOP,MODES,_:{bracket,sleeve,qLeft,qTop,qHalf,ngPic,svgOf,result,get G(){ return G; }}};
 })();
@@ -27673,7 +27678,7 @@ function viewHome(v){
       ${lnk(H('ng','tasks'),'Тетрадь','все '+nT+' задач с решением по шагам','nb')}
       ${lnk(HDZ('ng'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист','hw')}
       ${lnk(H('ng','rk2'),'РК2','навыки, ранг готовности, билет','rk').replace('class="v8-l"','class="v8-l hot"')}
-      ${lnk(H('rk'),'Сдашь РК2?','пробный билет-игра: начерт + инжа, 4 минуты','rk')}
+      ${lnk(H('rk'),'Билет-игра РК2','пробный билет-игра: начерт + инжа, 4 минуты','rk')}
       ${lnk(H('ng','path'),'Теория',nL+' уроков, шпаргалка, 3D-модель','th')}
      </div>
      <div class="v8-col"><h3><i class="v8-dot ig" aria-hidden="true"></i>Инженерная графика</h3>
@@ -28198,7 +28203,8 @@ function openTaskView(v,key,ctx,start){
     onPrev:()=>{ if(!prev) return; PL_END=prev.task; nav(prev.href); },
     afterText,
     onLast:(mode)=>{ const m=ST.get('wb3',{}); const val=mode==='try'?2:1; if((m[key]||0)<val){ m[key]=val; ST.set('wb3',m); renderHProg(); } if(window.LEARN) LEARN.seen(key); },
-    onDone:()=>{ let h=after.href; if(after.plan&&window.RK2&&RK2.next){ try{ h=RK2.next().href; }catch(e){} } nav(h); }
+    rateFirst:!!(after&&after.plan),
+    onDone:()=>{ let h=after.href; if(after.plan&&window.RK2&&RK2.next){ try{ h=RK2.next().href; if(h===location.hash) h=H('ng','rk2'); }catch(e){} } nav(h); }
   });
   return isTk?'Билеты РК':tno+' — решение по шагам';
 }
@@ -28262,15 +28268,15 @@ function rkHub(v){
       <div class="rk9-l">${l?`<a href="${H('ng','path',l.id)}">Теория: ${l.title}</a>`:''}${ts.length?`<span>Похожие в тетради: ${ts.map(n=>`<a href="${H('ng','tasks',n)}">№${n}</a>`).join(' ')}</span>`:''}</div></div>`; }).join('');
   v.innerHTML=pageHTML({crumbs:[['Подготовка к РК']],next:null,noBottom:true,body:`
    ${window.RK2?RK2.tabsHTML(1):''}
-   <div class="intro"><h1>Подготовка к РК</h1><p class="lead">На РК1 — задачи по билетам. Все они одного из ${RK_TYPES.length} типов ниже. Реши пример каждого типа — и ты готов к любому билету.</p></div>
+   <div class="intro"><h1>Подготовка к РК</h1><p class="lead">В билетах кафедры к РК1 встречаются задачи ${RK_TYPES.length} типов ниже. Реши пример каждого типа — так потренируешь каждый.</p></div>
    <a class="r2-in" href="${H('ng','rk2')}"><span class="r2-nk">РК2 · способы преобразования</span><b>Замена плоскостей и вращение: билет с разбором, 26 вопросов, тренировки</b><span>${window.RK2?RK2.line():''}</span><i aria-hidden="true">→</i></a>
    <div class="v8-when"><b>Когда РК?</b><button type="button" class="on" data-scroll="#rk9T">Через неделю и больше</button><button type="button" data-scroll="#rkzH">Через 1–3 дня</button></div>
-   <section class="rk9" aria-labelledby="rk9T"><div class="rk9-top"><h2 id="rk9T">Что будет на РК: ${RK_TYPES.length} типов задач</h2><span class="rk9-pc"><b>${done}</b> из ${RK_TYPES.length} решено</span></div>
+   <section class="rk9" aria-labelledby="rk9T"><div class="rk9-top"><h2 id="rk9T">Типы задач из билетов: ${RK_TYPES.length}</h2><span class="rk9-pc"><b>${done}</b> из ${RK_TYPES.length} решено</span></div>
     <div class="rk9-bar"><i style="width:${Math.round(done/RK_TYPES.length*100)}%"></i></div>
     <div class="rk9-l">${cards}</div></section>
    <section class="rk9-all" aria-labelledby="rk9A"><h2 id="rk9A">Проверь себя как на РК</h2>
     <a class="rk9-big" href="${H('ng','check','tickets')}"><b>Все билеты целиком</b><span>${nt} ${plural(nt,'задание','задания','заданий')} из билетов: реши на бумаге, потом сверься с разбором по шагам</span><i>Открыть билеты →</i></a>
-    <a class="rk9-big alt" href="${H('ng','check','train')}"><b>Пробный РК на время</b><span>Задачи из разных разделов и таймер — как на настоящем РК${last?' · прошлый результат: '+last.pct+'%':''}</span><i>Начать пробный РК →</i></a>
+    <a class="rk9-big alt" href="${H('ng','check','train')}"><b>Пробный РК на время</b><span>Задачи из разных разделов и таймер — в формате РК${last?' · прошлый результат: '+last.pct+'%':''}</span><i>Начать пробный РК →</i></a>
     <a class="rk9-big th" href="${H('ng','cheat','th')}"><b>Теория РК1: ${nth} ${plural(nth,'вопрос','вопроса','вопросов')}</b><span>Короткий ответ на каждый вопрос и подробное объяснение</span><i>Читать ответы →</i></a>
     <a class="rk9-big th" href="${H('ng','learn')}"><b>Тренировка дня</b><span>${(window.LEARN&&LEARN.todayLine())?'Сегодня: '+LEARN.todayLine()+'. ':''}Разобранные задачи возвращаются «реши по памяти» через 1, 3, 7, 16 дней; типы задач — вперемешку</span><i>Тренироваться →</i></a>
    </section>
