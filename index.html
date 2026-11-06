@@ -2715,6 +2715,7 @@ html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
 .t3d-stage{position:relative;flex:1;min-height:0;margin:0 10px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--t3bg)}
 .t3d-stage svg{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .t3d-stage svg:active{cursor:grabbing}
+.t3d-stage svg.t3d-back{position:absolute;inset:0;pointer-events:none}.t3d-stage canvas.t3d-gl{position:absolute;pointer-events:none}.t3d-stage svg.t3d-front{position:relative}
 .t3d-views{position:absolute;left:8px;top:8px;display:flex;padding:3px;gap:2px;border-radius:12px;background:color-mix(in srgb,var(--surf) 88%,transparent);border:1px solid var(--line);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .t3d-views button{min-height:34px;padding:0 11px;border:0;border-radius:9px;background:none;color:var(--ink2);font:600 13px var(--sans);cursor:pointer}
 .t3d-views button.on{background:linear-gradient(135deg,#2a5aa6,#3567b5);color:#fff}
@@ -4285,6 +4286,43 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 @media(max-width:380px){.rkh-t{font-size:38px!important}.rkh-cnt b{font-size:54px}.rkh-rank{grid-template-columns:auto minmax(0,1fr)}.rkh-side{grid-column:1/-1;flex-direction:row}.rkh-side>div{flex:1}}
 @media(prefers-reduced-motion:reduce){.rkh-pill.live i{animation:none}}
 .home #rkHome .rkh{margin-left:auto;margin-right:auto}
+/* «Все тела в 3D» (#/ng4/3d) */
+.d3-lead{margin:4px 0 14px;color:var(--ink2);font-size:15px;line-height:1.5;max-width:70ch}
+.d3-my{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 14px;padding:12px 16px;border:0;border-radius:18px;background:linear-gradient(150deg,#1f47d6,#4f8cff);color:#fff;font:600 14px var(--sans);cursor:pointer;text-align:left}
+.d3-my b{font:800 30px/1 var(--disp)}.d3-my i{margin-left:auto;font-style:normal;font-weight:800;white-space:nowrap}
+.d3-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+.d3-c{display:flex;flex-direction:column;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:22px;background:var(--surf)}
+.d3-pic{position:relative;display:block;padding:0;border:0;border-radius:16px;background:radial-gradient(120% 90% at 50% 30%,color-mix(in srgb,var(--acc) 10%,var(--surf)),color-mix(in srgb,var(--acc) 4%,var(--surf)));cursor:pointer;overflow:hidden}
+.d3-pic img{display:block;width:100%;height:auto;aspect-ratio:8/5;object-fit:contain}
+.d3-pic span{position:absolute;right:10px;bottom:10px;height:28px;padding:0 11px;display:inline-flex;align-items:center;border-radius:14px;background:var(--acc);color:#fff;font:800 13px var(--sans)}
+.d3-t{display:flex;flex-direction:column;gap:3px}.d3-k{font:700 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}.d3-t b{font-size:14.5px;line-height:1.35}
+.d3-n{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.d3-n button{min-height:44px;border:1.5px solid var(--line);border-radius:12px;background:var(--surf2,var(--surf));color:var(--ink);font:800 16px var(--sans);cursor:pointer}
+.d3-n button:hover{border-color:var(--acc)}.d3-n button.mine{background:var(--acc);border-color:var(--acc);color:#fff}
+[data-d3].busy{opacity:.55;pointer-events:none}
+/* главная: две карточки рядом — РК2 и «Все тела в 3D» */
+.hcards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:4px 0 14px}
+.hcards>.hc:only-child{grid-column:1/-1}
+.hc{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:212px;padding:14px 14px 13px;border-radius:24px;color:#fff!important;text-decoration:none!important;-webkit-tap-highlight-color:transparent;transition:transform .15s var(--ease)}
+.hc:active{transform:scale(.985)}
+.hc::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(115deg,#000 10%,transparent 70%);mask-image:linear-gradient(115deg,#000 10%,transparent 70%)}
+.hc-3d{background:linear-gradient(150deg,#1f47d6 0%,#2e63f0 55%,#4f8cff 100%);box-shadow:0 22px 40px -24px rgba(36,82,230,.75)}
+.hc-pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;background:rgba(255,255,255,.2);font:800 11.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.hc-pill i{width:7px;height:7px;border-radius:50%;background:#fff}
+.hc-pill.live i{animation:rkhP 1.4s ease-in-out infinite}
+.hc-t{margin-top:8px;font:800 30px/1 var(--disp);letter-spacing:-.03em}
+.hc-3d .hc-t{font-size:22px;line-height:1.08;letter-spacing:-.02em}
+.hc-s{font:600 12.5px/1.3 var(--sans);opacity:.9}
+.hc-cnt{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.hc-cnt b{font:800 52px/.9 var(--disp);letter-spacing:-.04em}
+.hc-cnt.word b{font-size:30px}
+.hc-cnt small{font:600 12.5px/1.2 var(--sans);opacity:.92;max-width:11ch}
+.hc-img{display:block;width:calc(100% + 24px);max-width:none;height:auto;margin:0 -12px -6px;filter:drop-shadow(0 10px 14px rgba(5,20,80,.35))}
+.hc-go{display:inline-flex;align-items:center;margin-top:auto;height:36px;padding:0 14px;border-radius:12px;background:#fff;color:#0a1636;font:800 14px var(--sans);box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.hc-rk .hc-go{margin-top:10px}
+@media(max-width:360px){.hc{padding:12px 11px;border-radius:20px}.hc-t{font-size:26px}.hc-3d .hc-t{font-size:19px}.hc-cnt b{font-size:44px}.hc-go{padding:0 11px;font-size:13px}}
+@media(min-width:760px){.hcards{gap:16px}.hc{min-height:236px;padding:20px 22px 18px}.hc-t{font-size:44px}.hc-3d .hc-t{font-size:30px}.hc-s{font-size:14.5px}.hc-cnt b{font-size:72px}.hc-img{position:absolute;right:8px;bottom:8px;width:52%;margin:0}}
+@media(prefers-reduced-motion:reduce){.hc-pill.live i{animation:none}}
 @media(min-width:1080px){.home #rkHome .rkh{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:28px;align-items:end}.home #rkHome .rkh>*{grid-column:1}.home #rkHome .rkh-top{grid-column:1/-1}.home #rkHome .rkh-rank{grid-column:2;grid-row:2}.home #rkHome .rkh-acts{grid-column:2;grid-row:3}.home #rkHome .rkh-after{grid-column:1/-1}}
 /* поток на РК2 — компактной строкой */
 .r2-page .r2-fac{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;align-items:center;padding-bottom:4px;margin-bottom:18px;scrollbar-width:none}.r2-page .r2-fac::-webkit-scrollbar{display:none}.r2-page .r2-fac .chip{flex:none;min-height:36px;font-size:13px;white-space:nowrap}
@@ -23198,6 +23236,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.21',d:'6 ноября 2026',items:['Главная: сверху две карточки рядом — РК2 (сколько дней осталось, «Готовиться») и «Все тела в 3D»; сразу под ними поиск, ниже счётчик просмотров. Плитка «Сдашь РК2?» с главной убрана (игра по-прежнему в разделе РК).','ДЗ №4 в 3D переделано: тела — гладкие и непрозрачные, со светом и бликом, кромки и линии стыка тел — тонкими чёткими линиями; край поверхности идёт точно по линии пересечения, без «лесенки» и просвечивающей сетки треугольников. Рисует видеокарта (WebGL) — крутится плавно и на телефоне.','«Все тела в 3D» (#/ng4/3d): шесть чертежей-типов ДЗ №4 с картинками, нажал номер варианта — открывается его 3D; «Мой вариант» — одной кнопкой. Ссылка #/ng4/3d/13 — сразу вариант 13 в 3D.']},
   {v:'4.20',d:'5 ноября 2026',items:['РК2 — на первом месте: на главной горящая плашка «РК2 через N дней», ранг и готовность из 100, кнопки «Готовиться к РК2» и «Проверь себя · 3 мин».',
     'Раздел РК: вкладки РК1 · РК2 · РК3 (РК3 откроется после РК2). Вверху РК2 — сколько осталось, ранг, звёзды и серия дней подряд, одно главное действие.',
     '«Что нужно уметь на РК2» — шесть навыков по билету и списку задач преподавателя: фундамент (точка на объекте, h и f), новая ось (прямая общего положения → прямая уровня, № 52, 53), плоскость в натуральную величину (№ 55–57, задача А), вращение вокруг проецирующей (№ 60, 61, задача Б), вращение вокруг прямой уровня (№ 62–67, задача В), ДЗ №3. У каждого — звёзды ★ понял · ★★ построил сам · ★★★ закрепил и кнопка «Дальше». Финал — билет РК2 и пробный РК на время.',
@@ -23816,7 +23855,8 @@ function model(items,regItems){
     if(ls.length) flat.push({ls,k:it.k||'main',g:it._g||'given'}); };
   (items||[]).forEach(it=>{ if(!it) return;
     /* тела задачи — сетка треугольников в пространстве (только для 3D; на эпюре и листе её нет) */
-    if(it.t==='mesh3'){ if(it.tris&&it.tris.length) meshes.push({tris:it.tris,col:it.col||'#b9a77a',g:it._g||'given'}); return; }
+    if(it.t==='mesh3'){ if(typeof it.solid==='function'){ let so=null; try{ so=it.solid(); }catch(e){ console.error(e); } if(so&&so.idx.length) meshes.push({solid:so,col:it.col||'#b9a77a',g:it._g||'given'}); }
+      else if(it.tris&&it.tris.length) meshes.push({tris:it.tris,col:it.col||'#b9a77a',g:it._g||'given'}); return; }
     if(it.k==='ghost'&&it.open3d) return;   /* бледные очерки «дано» — в 3D вместо них сами тела */
     if(it.t==='pt'&&it.at&&it.l){
       if(it.at._3) strip(it.l).split(/\s*≡\s*/).forEach(l=>{ const m=/^\(?([A-ZА-Я0-9Ā-ž][^′″‴()]*)[′″]\)?$/.exec(l.trim()); if(m&&m[1].length<5){ const o=pts[m[1]];
@@ -23864,15 +23904,66 @@ function has(part){ if(part&&typeof part.surf3==='function') return true; try{ c
    Управление: один палец/мышь — вращать (с инерцией); два пальца — зум и сдвиг; колесо — зум к курсору;
    двойное касание — исходный вид. Кнопки «Объём / Спереди / Сверху» плавно поворачивают модель:
    «Спереди» — ровно фронтальная проекция, «Сверху» — горизонтальная. */
+/* ── тела (ДЗ №4) — WebGL: гладкое освещение, буфер глубины, рёбра тонкими линиями с учётом заслонения ──
+   Холст лежит между двумя слоями SVG: сзади — фон, скрытое и плоскости проекций, спереди — построения и подписи.
+   Нет WebGL — тела рисуются в SVG треугольниками, как раньше. */
+const bbCorners=bb=>{ const o=[]; for(const x of [bb[0][0],bb[1][0]]) for(const y of [bb[0][1],bb[1][1]]) for(const z of [bb[0][2],bb[1][2]]) o.push([x,y,z]); return o; };
+function solidTris(so){ if(so._tris) return so._tris; const P=so.pos, I=so.idx, T=[]; for(let k=0;k<I.length;k+=3){ const v=i=>[P[3*I[k+i]],P[3*I[k+i]+1],P[3*I[k+i]+2]]; T.push([v(0),v(1),v(2)]); } return so._tris=T; }
+function T3GL(cv){
+  let gl=null; try{ gl=cv.getContext('webgl',{antialias:true,alpha:true,premultipliedAlpha:true,depth:true})||cv.getContext('experimental-webgl',{antialias:true}); }catch(e){}
+  if(!gl) return null;
+  const u32=!!gl.getExtension('OES_element_index_uint');
+  const head='uniform vec3 C,Rv,U,D;uniform float sc,zr;uniform vec2 c0,vp;vec3 pr(vec3 p){vec3 d=p-C;return vec3(c0.x+sc*dot(d,Rv),c0.y-sc*dot(d,U),dot(d,D));}vec4 clip(vec2 q,float z){return vec4(q.x/vp.x*2.0-1.0,1.0-q.y/vp.y*2.0,z/zr,1.0);}';
+  const prog=(vs,fs)=>{ const mk=(t,src)=>{ const sh=gl.createShader(t); gl.shaderSource(sh,src); gl.compileShader(sh); if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
+    const p=gl.createProgram(); gl.attachShader(p,mk(gl.VERTEX_SHADER,vs)); gl.attachShader(p,mk(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(p); if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p; };
+  let PM,PL; try{
+    PM=prog('precision highp float;attribute vec3 p,n;varying vec3 vn;'+head+'void main(){vec3 q=pr(p);gl_Position=clip(q.xy,q.z);vn=vec3(dot(n,Rv),dot(n,U),-dot(n,D));}',
+      /* освещение: ключевой свет сверху-слева, мягкий заполняющий, блик и затемнение к очерку — форма читается без сетки */
+      'precision mediump float;uniform vec3 col;varying vec3 vn;void main(){vec3 n=normalize(vn);if(n.z<0.0)n=-n;'
+      +'vec3 L=normalize(vec3(-0.45,0.65,0.62));float df=max(dot(n,L),0.0);float fl=max(dot(n,normalize(vec3(0.7,-0.25,0.55))),0.0);'
+      +'float sp=pow(max(dot(n,normalize(L+vec3(0.0,0.0,1.0))),0.0),42.0);float rim=pow(1.0-n.z,2.5);'
+      +'vec3 c=col*(0.36+0.42*df+0.30*n.z+0.12*fl)*(1.0-0.22*rim)+vec3(0.18)*sp;gl_FragColor=vec4(min(c,vec3(1.0)),1.0);}');
+    PL=prog('precision highp float;attribute vec3 a,b;attribute vec2 s;uniform float lw;'+head+'void main(){vec3 A=pr(a),B=pr(b);vec2 d=B.xy-A.xy;float l=length(d);d=l>1e-4?d/l:vec2(1.0,0.0);'
+      +'vec3 P=s.y<0.5?A:B;vec2 q=P.xy+vec2(-d.y,d.x)*s.x*lw*0.5+d*(s.y<0.5?-0.5:0.5)*lw;gl_Position=clip(q,P.z);gl_Position.z-=0.0025;}',
+      'precision mediump float;uniform vec4 lc;void main(){gl_FragColor=vec4(lc.rgb*lc.a,lc.a);}');
+  }catch(e){ console.error(e); return null; }
+  const BUF=new WeakMap();
+  const buf=(data,el)=>{ const b=gl.createBuffer(); gl.bindBuffer(el?gl.ELEMENT_ARRAY_BUFFER:gl.ARRAY_BUFFER,b); gl.bufferData(el?gl.ELEMENT_ARRAY_BUFFER:gl.ARRAY_BUFFER,data,gl.STATIC_DRAW); return b; };
+  const upload=so=>{ if(BUF.has(so)) return BUF.get(so); let pos=so.pos, nrm=so.nrm, idx=so.idx, n=idx.length, flat=false;
+    /* без 32-битных индексов — без индексов вовсе */
+    if(idx instanceof Uint32Array&&!u32){ const P=new Float32Array(n*3), N=new Float32Array(n*3); for(let k=0;k<n;k++) for(let c=0;c<3;c++){ P[3*k+c]=pos[3*idx[k]+c]; N[3*k+c]=nrm[3*idx[k]+c]; } pos=P; nrm=N; flat=true; }
+    const L=[]; (so.edges||[]).forEach(l=>{ for(let k=1;k<l.length;k++){ const a=l[k-1], b=l[k]; if(a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2]) continue;
+      [[-1,0],[1,0],[1,1],[-1,0],[1,1],[-1,1]].forEach(([sd,e])=>L.push(a[0],a[1],a[2],b[0],b[1],b[2],sd,e)); } });
+    const o={vb:buf(pos),nb:buf(nrm),ib:flat?null:buf(idx,true),n,type:idx instanceof Uint32Array?gl.UNSIGNED_INT:gl.UNSIGNED_SHORT,lb:L.length?buf(new Float32Array(L)):null,ln:L.length/8};
+    BUF.set(so,o); return o; };
+  const uni=(p,c)=>{ const u=k=>gl.getUniformLocation(p,k); gl.uniform3fv(u('C'),c.C); gl.uniform3fv(u('Rv'),c.Rv); gl.uniform3fv(u('U'),c.U); gl.uniform3fv(u('D'),c.D);
+    gl.uniform1f(u('sc'),c.sc); gl.uniform1f(u('zr'),c.zr); gl.uniform2f(u('c0'),c.cx,c.cy); gl.uniform2f(u('vp'),c.VW,c.VH); };
+  const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+  const att=(p,k,b,size,stride,off)=>{ const l=gl.getAttribLocation(p,k); if(l<0) return; gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,size,gl.FLOAT,false,stride||0,off||0); };
+  const off=p=>{ for(let i=0;i<4;i++) gl.disableVertexAttribArray(i); };
+  return {
+    size(w,h){ if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; } },
+    clear(){ gl.viewport(0,0,cv.width,cv.height); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT); },
+    draw(meshes,c){ this.clear(); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.CULL_FACE);
+      gl.useProgram(PM); uni(PM,c); gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.5,2); gl.disable(gl.BLEND);
+      meshes.forEach(o=>{ const B=upload(o.solid); off(); att(PM,'p',B.vb,3); att(PM,'n',B.nb,3); gl.uniform3fv(gl.getUniformLocation(PM,'col'),rgb(o.col));
+        if(B.ib){ gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,B.ib); gl.drawElements(gl.TRIANGLES,B.n,B.type,0); } else gl.drawArrays(gl.TRIANGLES,0,B.n); });
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+      /* рёбра: тонкие, цвета тела, темнее; заслонённые телами — не видны */
+      gl.useProgram(PL); uni(PL,c); gl.uniform1f(gl.getUniformLocation(PL,'lw'),c.lw||1.25); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+      meshes.forEach(o=>{ const B=upload(o.solid); if(!B.lb) return; off(); att(PL,'a',B.lb,3,32,0); att(PL,'b',B.lb,3,32,12); att(PL,'s',B.lb,2,32,24);
+        const k=rgb(o.col).map(v=>v*0.42); gl.uniform4f(gl.getUniformLocation(PL,'lc'),k[0],k[1],k[2],0.9); gl.drawArrays(gl.TRIANGLES,0,B.ln); });
+      gl.depthMask(true); gl.disable(gl.BLEND); off(); },
+    dispose(){ try{ const x=gl.getExtension('WEBGL_lose_context'); x&&x.loseContext(); }catch(e){} } }; }
 let S=null;
 const lerp=(a,b,t)=>a+(b-a)*t, ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-function close(){ if(!S) return; cancelAnimationFrame(S.raf); cancelAnimationFrame(S.anim); S.ro&&S.ro.disconnect(); S.el.remove(); try{ S.unlock&&S.unlock(); }catch(e){} document.removeEventListener('keydown',S.key,true); document.body.classList.remove('t3d-open'); S=null; }
+function close(){ if(!S) return; cancelAnimationFrame(S.raf); cancelAnimationFrame(S.anim); S.ro&&S.ro.disconnect(); try{ S.gl&&S.gl.dispose(); }catch(e){} S.el.remove(); try{ S.unlock&&S.unlock(); }catch(e){} document.removeEventListener('keydown',S.key,true); document.body.classList.remove('t3d-open'); S=null; }
 function open(t,pi,k){
   close(); const parts=PLAYER.partsOf(t), part=parts[pi]||parts[0], n=(part.steps||[]).length;
   const fullItems=PLAYER.scene(part,n).items, full=withSurf(model(fullItems),part,n), cache={};
   const M=kk=>cache[kk]||(cache[kk]=withSurf(model(PLAYER.scene(part,kk).items,fullItems),part,kk));
   /* рамка по всей задаче — при смене шага и вращении масштаб не прыгает */
-  const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p),...full.flat.map(o=>[].concat(...o.ls)),full.dots.map(d=>d.p),...full.meshes.map(o=>[].concat(...o.tris)));
+  const all=[].concat(Object.values(full.pts).map(o=>o.p),...full.segs.map(s=>[s.a,s.b]),...full.polys.map(p=>p.p),...full.flat.map(o=>[].concat(...o.ls)),full.dots.map(d=>d.p),...full.meshes.map(o=>o.solid?bbCorners(o.solid.bb):[].concat(...o.tris)));
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(0,...all.map(p=>p[i])));
   const pad=[0,1,2].map(i=>Math.max(6,(mx[i]-mn[i])*0.08)); for(let i=0;i<3;i++){ mn[i]-=pad[i]; mx[i]+=pad[i]; }
   const C=[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];
@@ -23921,11 +24012,18 @@ function open(t,pi,k){
   if(window.matchMedia&&matchMedia('(max-width:699px)').matches){ const ep=el.querySelector('#t3Ep'); if(ep){ stage.appendChild(ep); ep.classList.add('pip'); ep.setAttribute('role','button'); ep.setAttribute('aria-label','Эпюр этого шага: нажми, чтобы увеличить');
     ['pointerdown','touchstart','wheel'].forEach(t=>ep.addEventListener(t,e=>e.stopPropagation(),{passive:true})); ep.addEventListener('click',e=>{ e.stopPropagation(); ep.classList.toggle('big'); }); } }
   S={el,part,n,k:Math.min(k,n),V:Object.assign({},HOME),VW:600,VH:460,raf:0,anim:0,t,unlock,focus:true,allLbl:false,sel:null,hits:[]};
+  /* тела — в WebGL: слой SVG сзади (фон, скрытое, плоскости), холст, слой SVG спереди (построения, подписи) */
+  if(full.meshes.some(o=>o.solid)){ const cv=document.createElement('canvas'); cv.className='t3d-gl'; cv.setAttribute('aria-hidden','true'); const gl=T3GL(cv);
+    if(gl){ const back=document.createElementNS('http://www.w3.org/2000/svg','svg'); back.setAttribute('class','t3d-back'); back.setAttribute('aria-hidden','true');
+      stage.insertBefore(back,svg); stage.insertBefore(cv,svg); svg.classList.add('t3d-front'); S.gl=gl; S.cv=cv; S.back=back;
+      S.zr=Math.max(...corners.map(q=>Math.hypot(...sub(q,C))))*1.15+1; } }
   /* эпюр этого шага под моделью: по умолчанию включён, выбор запоминается */
   try{ S.ep=!(window.ST&&ST.get('t3ep',1)===0); }catch(e){ S.ep=true; } S.epK=-1; el.classList.toggle('t3-ep',S.ep);
   { const eb=el.querySelector('.t3d-opts [data-o="ep"]'); if(eb){ eb.classList.toggle('on',S.ep); eb.setAttribute('aria-pressed',S.ep); } }
   /* размер холста = размер окна (без полей и искажений) */
   const size=()=>{ const r=stage.getBoundingClientRect(); if(!r.width) return; S.VW=Math.round(Math.max(320,Math.min(900,r.width))); S.VH=Math.round(S.VW*Math.max(0.5,Math.min(1.8,r.height/r.width))); svg.setAttribute('viewBox','0 0 '+S.VW+' '+S.VH);
+    if(S.gl){ S.back.setAttribute('viewBox','0 0 '+S.VW+' '+S.VH); const k=Math.min(r.width/S.VW,r.height/S.VH), w=S.VW*k, h=S.VH*k, dpr=Math.min(window.devicePixelRatio||1,2.5), cs=S.cv.style;
+      cs.left=((r.width-w)/2)+'px'; cs.top=((r.height-h)/2)+'px'; cs.width=w+'px'; cs.height=h+'px'; S.gl.size(Math.round(w*dpr),Math.round(h*dpr)); }
     /* поля: сверху — переключатель вида, снизу — врезка эпюра (на телефоне), по бокам — место под подписи */
     const pip=!!el.querySelector('.t3d-ep.pip')&&S.ep, top=56, bot=pip?Math.round(S.VH*0.34)+8:22, side=S.VW<600?22:40;
     const sp=spanC(HOME.yaw,HOME.pit), aw=S.VW-2*side, ah=Math.max(120,S.VH-top-bot); S.sc=Math.min(aw/Math.max(sp.w,1),ah/Math.max(sp.h,1));
@@ -23933,7 +24031,9 @@ function open(t,pi,k){
   const req=()=>{ if(!S.raf) S.raf=requestAnimationFrame(()=>{ S.raf=0; draw(); }); };
   const draw=()=>{ const m=M(S.k);
     el.querySelector('#t3Cap').textContent=S.k===0?'Дано':'Шаг '+S.k+' из '+n+' · '+strip((part.steps[S.k-1]||{}).t||'');
-    el.querySelector('#t3Step').value=S.k; svg.innerHTML=render(m);
+    el.querySelector('#t3Step').value=S.k; const out=render(m);
+    if(typeof out==='string'){ svg.innerHTML=out; if(S.gl){ S.back.innerHTML=''; S.gl.clear(); } }
+    else { S.back.innerHTML=out.back; svg.innerHTML=out.front; try{ S.gl.draw(out.meshes,S.cam); }catch(e){ console.error(e); } }
     if(S.ep&&S.epK!==S.k){ S.epK=S.k; try{ el.querySelector('#t3EpS').innerHTML=DRAW.svg(PLAYER.scene(part,S.k)); }catch(e){} } };
   const render=m=>{ const V=S.V, B=basis(V.yaw,V.pit), Rv=B.Rv, U=B.U, D=B.D, sc=S.sc*V.zoom, cx=S.VW/2+V.px, cy=S.VH/2+V.py+16;
     const P=p=>{ const d=sub(p,C); return [cx+sc*dot(d,Rv),cy-sc*dot(d,U),dot(d,D)]; };
@@ -23980,9 +24080,10 @@ function open(t,pi,k){
       if(o.open){ const nw=o.g==='new', dsh=/d$|^hid$/.test(o.k); for(let i=1;i<o.p.length;i++) seg3(o.p[i-1],o.p[i],{c:col,w:nw?1.7:1.2,d:dsh?'5 3':null},nw); return; }
       const c=o.p.reduce((s,p)=>[s[0]+p[0]/o.p.length,s[1]+p[1]/o.p.length,s[2]+p[2]/o.p.length],[0,0,0]); put(o.g==='new',hid(c),polyS(o.p,col,o.g==='new'?.3:.18,col)); });
     /* тела: треугольники от дальних к ближним, освещение — от зрителя и чуть сверху */
-    let mesh=''; if(m.meshes.length){ const Lt=(()=>{ const v=[-D[0],-D[1],-D[2]+0.7], l=Math.hypot(...v)||1; return v.map(x=>x/l); })(), T3=[];
-      m.meshes.forEach(o=>{ const rgb=[1,3,5].map(i=>parseInt(o.col.slice(i,i+2),16)); o.tris.forEach(t=>{ const q=t.map(P), nr=crs(sub(t[1],t[0]),sub(t[2],t[0])), nl=Math.hypot(...nr)||1;
-        const sh=0.5+0.5*Math.abs(dot(nr,Lt))/nl; T3.push({d:(q[0][2]+q[1][2]+q[2][2])/3,s:`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke-width=".35" fill-opacity="${o.op||.8}" stroke-opacity="${o.op||.8}"/>`}); }); });
+    const glOn=!!(S.gl&&m.meshes.some(o=>o.solid));
+    let mesh=''; if(m.meshes.length&&!glOn){ const Lt=(()=>{ const v=[-D[0],-D[1],-D[2]+0.7], l=Math.hypot(...v)||1; return v.map(x=>x/l); })(), T3=[];
+      m.meshes.forEach(o=>{ const rgb=[1,3,5].map(i=>parseInt(o.col.slice(i,i+2),16)), op=o.solid?1:o.op; (o.tris||solidTris(o.solid)).forEach(t=>{ const q=t.map(P), nr=crs(sub(t[1],t[0]),sub(t[2],t[0])), nl=Math.hypot(...nr)||1;
+        const sh=0.5+0.5*Math.abs(dot(nr,Lt))/nl; T3.push({d:(q[0][2]+q[1][2]+q[2][2])/3,s:`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke-width=".35" fill-opacity="${op||.8}" stroke-opacity="${op||.8}"/>`}); }); });
       T3.sort((a,b)=>b.d-a.d); mesh='<g class="t3d-mesh">'+T3.map(x=>x.s).join('')+'</g>'; }
     /* построения на плоскостях проекций (как на эпюре) */
     m.flat.forEach(o=>{ const col=COL[o.k]||COL.main, nw=o.g==='new'; o.ls.forEach(l=>{ for(let i=0;i<l.length-1;i++){ const a=l[i], b=l[i+1], h=hid(mid3(a,b));
@@ -24022,9 +24123,10 @@ function open(t,pi,k){
       +`<linearGradient id="t3g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c4b080" stop-opacity=".12"/><stop offset="1" stop-color="#c4b080" stop-opacity=".26"/></linearGradient>`
       +`<linearGradient id="t3g3" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1f7a4f" stop-opacity=".09"/><stop offset="1" stop-color="#1f7a4f" stop-opacity=".04"/></linearGradient>`
       +`<radialGradient id="t3bgG" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="var(--t3bg)"/><stop offset="1" stop-color="var(--t3bg)"/></radialGradient></defs>`;
-    return defs+`<rect width="${S.VW}" height="${S.VH}" fill="url(#t3bgG)"/>`
-      +`<g opacity="${(.5*fadeOld).toFixed(2)}">`+Lr.ho+`</g><g opacity=".55">`+Lr.hn+`</g>`
-      +planes+mesh+`<g opacity="${fadeOld}">`+Lr.vo+`</g>`+Lr.vn+sel+labels; };
+    const bg=defs+`<rect width="${S.VW}" height="${S.VH}" fill="url(#t3bgG)"/>`
+      +`<g opacity="${(.5*fadeOld).toFixed(2)}">`+Lr.ho+`</g><g opacity=".55">`+Lr.hn+`</g>`+planes, fr=`<g opacity="${fadeOld}">`+Lr.vo+`</g>`+Lr.vn+sel+labels;
+    if(glOn){ S.cam={C,Rv,U,D,sc,cx,cy,VW:S.VW,VH:S.VH,zr:S.zr}; return {back:bg,front:fr,meshes:m.meshes.filter(o=>o.solid)}; }
+    return bg+mesh+fr; };
   /* плавный переход к виду */
   const cen=(yaw,pit)=>{ const c=spanC(yaw,pit); return {yaw,pit,zoom:1,px:-c.cu*S.sc,py:(S.cy0||0)+c.cv*S.sc}; };
   const views={home:()=>(S.moved=false,HOME),front:()=>cen(0,0),top:()=>cen(0,Math.PI/2)};
@@ -24095,7 +24197,19 @@ function open(t,pi,k){
   if(window.ResizeObserver){ S.ro=new ResizeObserver(size); S.ro.observe(stage); }
   size(); draw();
 }
-return {model,has,open,close};
+/* снимок тел задачи (шаг «Дано») — картинка PNG с прозрачным фоном: для карточек и галереи «Все тела в 3D» */
+function snap(t,w,h,o){ o=o||{}; const part=PLAYER.partsOf(t)[0]; const ms=model(PLAYER.scene(part,0).items).meshes.filter(x=>x.solid); if(!ms.length) return null;
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=T3GL(cv); if(!g) return null;
+  const yaw=o.yaw!=null?o.yaw:0.62, pit=o.pit!=null?o.pit:0.42, cy_=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pit), sp=Math.sin(pit);
+  const Rv=[-cy_,sy,0], D=[-sy*cp,-cy_*cp,-sp], U=crs(Rv,D);
+  const pts=[].concat(...ms.map(x=>bbCorners(x.solid.bb))), C=[0,1,2].map(i=>(Math.min(...pts.map(p=>p[i]))+Math.max(...pts.map(p=>p[i])))/2);
+  /* вписываем по настоящим вершинам (не по рамке): тело занимает картинку */
+  const us=[], vs=[]; ms.forEach(x=>{ const P=x.solid.pos; for(let i=0;i<P.length;i+=9){ const d=[P[i]-C[0],P[i+1]-C[1],P[i+2]-C[2]]; us.push(dot(d,Rv)); vs.push(dot(d,U)); } });
+  const u0=Math.min(...us), u1=Math.max(...us), v0=Math.min(...vs), v1=Math.max(...vs), pad=o.pad==null?0.04:o.pad;
+  const sc=Math.min(w*(1-2*pad)/(u1-u0),h*(1-2*pad)/(v1-v0)), zr=Math.max(...pts.map(q=>Math.hypot(...sub(q,C))))*1.15+1;
+  g.draw(ms,{C,Rv,U,D,sc,cx:w/2-sc*(u0+u1)/2,cy:h/2+sc*(v0+v1)/2,VW:w,VH:h,zr,lw:o.lw||1.25*w/400});
+  let url=null; try{ url=cv.toDataURL(o.type||'image/png',o.q||0.9); }catch(e){} g.dispose(); return url; }
+return {model,has,open,close,snap};
 })();
 
 /* ── анимация способа к задачам тетради: № 51–67 (замена плоскостей, вращение). Тот же сценарий, что в «Теме дня»,
@@ -25823,6 +25937,14 @@ const TKL={'R2-A':'А','R2-B':'Б','R2-V':'В'};
 const pc=x=>Math.round((x||0)*100);
 const tone=x=>x>=.75?'g':x>=.45?'a':'r';
 function homeHTML(){ try{ if(fac()==='sec') return ''; return heroHTML(false); }catch(e){ return ''; } }
+/* главная: маленькая карточка РК2 — половина ширины, рядом с карточкой «Все тела в 3D» */
+function miniHTML(){ try{ if(fac()==='sec') return ''; const I=RKS.info(2), heat=I.past?'calm':RKS.heat(I), c=RKS.count(I);
+  const pill=I.past?'Прошёл':heat==='hot'?'Горит':heat==='warm'?'Скоро':'По плану';
+  return `<a class="hc hc-rk rkh-${heat}" href="${H('ng','rk2')}" aria-label="РК2 по начерту: ${attr(c.b+' '+c.s)}. Готовиться">
+    <span class="hc-pill${heat==='hot'&&!I.past?' live':''}"><i></i>${pill}</span>
+    <span class="hc-t">РК2</span><span class="hc-s">замена плоскостей и вращение</span>
+    ${I.past?'':`<span class="hc-cnt${c.word?' word':''}"><b>${c.b}</b><small>${c.s}</small></span>`}
+    <span class="hc-go">Готовиться →</span></a>`; }catch(e){ return ''; } }
 function swHTML(){ return `<div class="seg modeseg r2-sw" role="tablist" aria-label="Рубежный контроль"><a role="tab" href="${H('ng','check')}" aria-selected="false">РК1</a><a role="tab" href="${H('ng','rk2')}" class="on" aria-selected="true">РК2</a></div>`; }
 function ring(v,sz){ sz=sz||148; const r=sz/2-9, c=2*Math.PI*r, f=v==null?0:Math.max(0,Math.min(100,v))/100;
   return `<svg class="r2-ring" viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" aria-hidden="true"><circle cx="${sz/2}" cy="${sz/2}" r="${r}" class="r2-rb"/>${v==null||!f?'':`<circle cx="${sz/2}" cy="${sz/2}" r="${r}" class="r2-rf ${tone(f)}" stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${sz/2} ${sz/2})"/>`}</svg>`; }
@@ -26178,7 +26300,7 @@ function view(v,r){ const it=r.item;
   return hub(v); }
 /* для РК1-хаба и главной: короткая строка о готовности */
 function line(){ const R=readiness(); if(R.na) return 'Другой РК2 у твоего потока — см. раздел'; return R.empty?'Узнай, насколько готов: шкала 0–100 — какая часть того, что спросят на РК2, у тебя уже получается сама. Замер — 12 минут':'Готовность '+R.val+' из 100 · '+level(R.val)[1].toLowerCase(); }
-return {view,readiness,modScore,snapshot,level,nextStep,line,homeHTML,tabsHTML,skillsAll,rankOf,SKILLS,RANKS,READY_AT,MODS,Q,ITEMS,GENS,GEN_OF,_:{itemScore,genScore,isDanger,decay,taskCredit,planFor,inst,judge,rec,CHECK,iMount}};
+return {view,readiness,modScore,snapshot,level,nextStep,line,homeHTML,miniHTML,tabsHTML,skillsAll,rankOf,SKILLS,RANKS,READY_AT,MODS,Q,ITEMS,GENS,GEN_OF,_:{itemScore,genScore,isDanger,decay,taskCredit,planFor,inst,judge,rec,CHECK,iMount}};
 })();
 
 /* ═════════ «Сдашь РК2?» — пробный билет-игра по начерту и инже (#/rk) ═════════
@@ -27551,6 +27673,13 @@ function quickHits(q,scope){
   if(m&&scope!=='ig'&&window.DZR){ const d=DZR.get('ng'+m[1]); if(d) out.push({tag:'ДЗ · начерт',t:'ДЗ №'+d.num+' — '+short(d.title||'',110),w:'Любой вариант по шагам, методика, лист',h:HDZ(d.id)}); }
   if(m&&scope!=='ng'&&window.DZR){ const d=DZR.get('ig'+m[1]); if(d) out.push({tag:'ДЗ · инж. графика',t:(d.label||'Задание №'+d.num)+' — '+short(d.title||'',110),w:'Найди свой вариант: деталь в 3D и готовый лист',h:HDZ(d.id)}); }
   return out; }
+/* верх главной — две карточки рядом: РК2 и «Все тела ДЗ 4 в 3D» */
+function homeCards(){ const rk=window.RK2?RK2.miniHTML():'';
+  return rk+`<a class="hc hc-3d" href="${HDZ('ng4','3d')}" aria-label="Все тела ДЗ 4 в 3D: 30 вариантов">
+    <span class="hc-pill"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg>3D · ДЗ 4</span>
+    <span class="hc-t">Все тела в 3D</span><span class="hc-s">30 вариантов — крути пальцем</span>
+    <img class="hc-img" src="img/ng4-3d.webp" alt="" width="640" height="400" decoding="async">
+    <span class="hc-go">Смотреть →</span></a>`; }
 function viewHome(v){
   const tg=resumeTarget();
   let stepNote=''; try{ const pp=(JSON.parse(localStorage.getItem('plpos')||'{}')||{})[tg&&tg.href]; if(pp&&pp.k) stepNote='шаг '+pp.k+' · '; }catch(e){}
@@ -27559,7 +27688,7 @@ function viewHome(v){
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
-   <div id="rkHome">${window.RK2?RK2.homeHTML():''}</div>
+   <div class="hcards" id="rkHome">${homeCards()}</div>
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
     <p class="v9-kick">Начерт · инж. графика · МГТУ</p>
     <h1 id="v8H" class="v8-h">Найди решение своей задачи</h1>
@@ -27578,7 +27707,6 @@ function viewHome(v){
       ${lnk(H('ng','tasks'),'Тетрадь','все '+nT+' задач с решением по шагам','nb')}
       ${lnk(HDZ('ng'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист','hw')}
       ${lnk(H('ng','rk2'),'РК2','навыки, ранг готовности, билет','rk').replace('class="v8-l"','class="v8-l hot"')}
-      ${lnk(H('rk'),'Сдашь РК2?','пробный билет-игра: начерт + инжа, 4 минуты','rk')}
       ${lnk(H('ng','path'),'Теория',nL+' уроков, шпаргалка, 3D-модель','th')}
      </div>
      <div class="v8-col"><h3><i class="v8-dot ig" aria-hidden="true"></i>Инженерная графика</h3>
@@ -27593,7 +27721,7 @@ function viewHome(v){
   </div>`;
   NEXT=null;
   try{ if(window.RKG) RKG.bindTeaser(v); }catch(e){}
-  try{ RKS.load(()=>{ const m=$('rkHome'); if(m&&window.RK2) m.innerHTML=RK2.homeHTML(); }); }catch(e){}
+  try{ RKS.load(()=>{ const m=$('rkHome'); if(m) m.innerHTML=homeCards(); }); }catch(e){}
   if(window.SEARCH){ const page=$('v8h'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:page,keep:true,noAuto:true,quiet:true,scope:homeScope,ph:'Номер задачи, вариант, тема или вопрос'});
     /* красная «Найти» — куда нажать: открывает первый ответ, а пустая строка просто получает фокус */
     const go=document.createElement('button'); go.type='button'; go.className='v9-go'; go.innerHTML='<span>Найти</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
@@ -27756,7 +27884,9 @@ function openLesson(id){ nav(H('ng','path',id)); }
    #/ig3/7, #/ig2/5            — инженерная графика.
    «← Назад» — шаг назад по истории (откуда пришёл); если пришёл по ссылке — на «ДЗ».
    Адрес строит HDZ(id, …); прежние #/ng/dz/…, #/ig/dz/…, #/dz/<id>/…, #/ig/hw2/…, #/ng/hw/…, #/ng/var/… переадресуются сюда. */
-const DZ_SECS=[['cond','Условие'],['how','Как решать'],['ex','Пример'],['faq','Ошибки и защита'],['my','Сверить ответы']];
+const DZ_SECS=[['cond','Условие'],['how','Как решать'],['ex','Пример'],['faq','Ошибки и защита'],['my','Сверить ответы'],['3d','Все тела в 3D']];
+/* ДЗ, у которых тела варианта показываются в 3D целиком (галерея #/ng4/3d) */
+const DZ_3D={ng4:1};
 const vesc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const dzCourse=c=>c==='ig'?'Инженерная графика':'Начертательная геометрия';
 const dzSubj=c=>c==='ig'?'Инж. графика':'Начерт';
@@ -27907,11 +28037,33 @@ function dzPills(d,on){ const m=dzMyN(d), ok=m&&DZR.has(d.id,m), ng=d.course==='
   if(ng&&ok){ L.push(['list','Чистовик',HDZ(d.id,m,'list')]); L.push(['draft','Черновик',HDZ(d.id,m,'draft')]); }
   if(d.method){ L.push(['how','Как решать',HDZ(d.id,'how')]); L.push(['faq','Ошибки и защита',HDZ(d.id,'faq')]); }
   if(dzChecks(d).length) L.push(['my','Сверить ответы',HDZ(d.id,'my')]);
+  if(DZ_3D[d.id]) L.push(['3d','Все в 3D',HDZ(d.id,'3d')]);
   return `<nav class="dzx-pills" aria-label="${vesc(d.label)}">${L.map(([k,t,h])=>`<a href="${h}"${k===on?' class="on" aria-current="page"':''}>${t}</a>`).join('')}</nav>`; }
-const dzHasSec=(d,k)=>k==='ex'?!!d.examples:k==='my'?dzChecks(d).length>0:k==='cond'?!!(d.types||d.text||d.sheet):(k==='how'||k==='faq')&&!!d.method;
+const dzHasSec=(d,k)=>k==='3d'?!!DZ_3D[d.id]:k==='ex'?!!d.examples:k==='my'?dzChecks(d).length>0:k==='cond'?!!(d.types||d.text||d.sheet):(k==='how'||k==='faq')&&!!d.method;
+/* «Все тела в 3D» (#/ng4/3d): шесть чертежей-типов, у каждого — картинка тел и номера вариантов; нажал номер — окно 3D
+   этого варианта («Дано», дальше — по шагам). #/ng4/3d/13 — сразу вариант 13 в 3D. Картинки — img/ng4-3d-<тип>.webp
+   (снимок тел из того же окна 3D, TASK3D.snap; пересобрать — node dz/ng/4/make-pics.js). */
+function dz3D(v,d,sub){
+  const my=dzMyN(d), types=dzTypesOf(d), nums=t=>Array.from({length:t.to-t.from+1},(_,i)=>t.from+i);
+  const body=`<p class="d3-lead">Каждое тело ДЗ — объёмная модель по размерам твоего варианта. Крути пальцем, смотри «Спереди» и «Сверху» — это и есть твой эпюр; листай шаги — линии пересечения строятся прямо на телах.</p>
+    ${my&&DZR.has(d.id,my)?`<button type="button" class="d3-my" data-d3="${my}"><span>Мой вариант</span><b>${my}</b><i>Открыть в 3D →</i></button>`:''}
+    <div class="d3-grid">${types.map(t=>`<section class="d3-c" aria-label="Варианты ${t.from}–${t.to}">
+      <button type="button" class="d3-pic" data-d3="${my&&my>=t.from&&my<=t.to?my:t.from}" aria-label="Открыть в 3D: варианты ${t.from}–${t.to}"><img src="img/ng4-3d-${t.code}.webp" alt="" width="640" height="400" loading="lazy" decoding="async"><span>3D</span></button>
+      <div class="d3-t"><span class="d3-k">Варианты ${t.from}–${t.to}</span><b>${vesc(t.name)}</b></div>
+      <div class="d3-n" role="group" aria-label="Вариант">${nums(t).map(n=>`<button type="button" data-d3="${n}"${n===my?' class="mine" title="Мой вариант"':''}>${n}</button>`).join('')}</div></section>`).join('')}</div>`;
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx',body:dzTop(d,vesc(d.label)+' · все тела в 3D')+dzPills(d,'3d')+body});
+  dzPillsScroll(v);
+  const go=n=>{ if(!window.TASK3D||!DZR.has(d.id,n)) return; const b=v.querySelector('.d3-my'), x=[...v.querySelectorAll('[data-d3="'+n+'"]')];
+    x.forEach(e=>e.classList.add('busy')); if(b) b.disabled=true;
+    /* решение варианта — доли секунды: даём кнопке показать «нажато», потом считаем */
+    setTimeout(()=>{ try{ const r=DZR.solve(d.id,n); TASK3D.open(r.task,0,0); }catch(e){ console.error(e); } x.forEach(e=>e.classList.remove('busy')); if(b) b.disabled=false; },30); };
+  v.querySelectorAll('[data-d3]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.d3)));
+  if(sub&&/^\d+$/.test(sub)) setTimeout(()=>go(+sub),60);
+  return d.label+' · все тела в 3D'; }
 /* верхняя строка страницы ДЗ: ← Назад · заголовок · Поделиться */
 function dzTop(d,title,share){ return `<div class="dzx-top">${dzBackHTML(HDZ())}<h1>${title}</h1>${share||''}</div>`; }
 function dzSec(v,d,sec,sub){
+  if(sec==='3d') return dz3D(v,d,sub);
   if(sec==='ex'){ const types=dzTypesOf(d).filter(t=>d.examples&&d.examples[t.code]); const code=sub||(types.length===1?types[0].code:null);
     if(code&&d.examples&&d.examples[code]) return dzExView(v,d,code);
     v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx',body:dzTop(d,vesc(d.label)+' · пример')+dzPills(d,'ex')+
