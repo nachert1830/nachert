@@ -218,7 +218,9 @@ function taskOf(code,D,n,label){
   G.bodies.forEach(b=>{ const s1=Q.scene([b]);
     ['F','H'].forEach(v=>s1.outline(b.id,v,true).forEach(p=>{ if(v==='F'&&p.every(q=>q[2]<0.01)) return; ghost.push(poly(p.map(v==='F'?F:H),'ghost')); }));
     (b.axes||[]).forEach(a=>axes.push(poly(a.p.map(a.v==='F'?F:H),'axis'))); });
-  const given=[axis(), ...G.bodies.map((b,i)=>({t:'mesh3',tris:meshOf(sc,b),col:BODYCOL[i]})), ...ghost, ...axes];
+  /* тела в 3D — лениво: сетка строится, только когда открыли окно «В пространстве»; линии пересечения — у первого тела пары */
+  const solid=G.bodies.map((b,i)=>{ let c=null; return ()=>c||(c=solidOf(sc,b,[].concat(...lines.filter(L=>L.a===b.id).map(L=>L.m.lines.map(l=>l.pts)))));});
+  const given=[axis(), ...G.bodies.map((b,i)=>({t:'mesh3',solid:solid[i],col:BODYCOL[i]})), ...ghost, ...axes];
   /* опорные точки: подписи 1, 2, 3 … по всем линиям */
   let num=0, sig=0; const cx=(box[0]+box[3])/2, cy=(box[1]+box[4])/2;
   const la=p=>({l2:(p[0]>cx?'nw':'ne'),l1:(p[1]>cy?'sw':'nw')});
@@ -304,18 +306,54 @@ function taskOf(code,D,n,label){
 
 const COLS={Dk:'D<sub>к</sub>',dk:'d<sub>к</sub>',Hk:'H<sub>к</sub>',Xk:'X<sub>к</sub>',Yk:'Y<sub>к</sub>',Xc:'X<sub>ц</sub>',Yc:'Y<sub>ц</sub>',Zc:'Z<sub>ц</sub>',Dc:'D<sub>ц</sub>',
   phi:'φ°',alpha:'α°',beta:'β°',Dp:'D<sub>п</sub>',Xp:'X<sub>п</sub>',Yp:'Y<sub>п</sub>',Dt:'D<sub>т</sub>',Rt:'R<sub>т</sub>',Xt:'X<sub>т</sub>',Yt:'Y<sub>т</sub>'};
-/* 3D: поверхность составного тела — треугольники тех клеток сетки, центр которых на его поверхности */
-const BODYCOL=['#c9b07a','#8fb0cf','#c99a8a'];
-function meshOf(sc,b){ const out=[], r=q=>q.map(v=>Math.round(v*10)/10);
-  b.patches.forEach(pc=>{ const na=pc.polar?24:pc.plane?10:24, nb=pc.polar?5:pc.plane?10:10, ua=i=>pc.A[0]+(pc.A[1]-pc.A[0])*i/na, ub=j=>pc.B[0]+(pc.B[1]-pc.B[0])*j/nb;
-    const ok=(a,c)=>{ const p=pc.P(a,c); return sc.onBd(b,pc,p)&&!sc.buried(p,[b.id]); };
-    const quad=(a0,a1,b0,b1)=>{ const p00=r(pc.P(a0,b0)), p10=r(pc.P(a1,b0)), p11=r(pc.P(a1,b1)), p01=r(pc.P(a0,b1)); out.push([p00,p10,p11],[p00,p11,p01]); };
-    for(let i=0;i<na;i++) for(let j=0;j<nb;j++){ const a0=ua(i), a1=ua(i+1), b0=ub(j), b1=ub(j+1), e=1e-3;
-      /* клетка целиком на поверхности — целиком; на границе — делим на 3 × 3 и берём части, центр которых на поверхности */
-      const cs=[ok(a0+(a1-a0)*e,b0+(b1-b0)*e),ok(a1-(a1-a0)*e,b0+(b1-b0)*e),ok(a1-(a1-a0)*e,b1-(b1-b0)*e),ok(a0+(a1-a0)*e,b1-(b1-b0)*e),ok((a0+a1)/2,(b0+b1)/2)];
-      if(cs.every(x=>x)){ quad(a0,a1,b0,b1); continue; } if(!cs.some(x=>x)) continue;
-      for(let k=0;k<3;k++) for(let l=0;l<3;l++){ const s0=a0+(a1-a0)*k/3, s1=a0+(a1-a0)*(k+1)/3, t0=b0+(b1-b0)*l/3, t1=b0+(b1-b0)*(l+1)/3; if(ok((s0+s1)/2,(t0+t1)/2)) quad(s0,s1,t0,t1); } } });
-  return out; }
+/* 3D: поверхность составного тела — гладкая индексированная сетка для окна «В пространстве».
+   Сетка по параметрам куска (шаг — по длине и кривизне), каждая вершина — на поверхности тела и не внутри других тел.
+   Треугольники на границе обрезаются точно: точка границы на ребре сетки ищется делением пополам, поэтому край куска
+   идёт по самой линии пересечения, без «лесенки». Нормали — по градиенту поверхности, наружу (гладкое освещение).
+   Рёбра — заданные телом (кромки, основания) и линии пересечения тел — тонкими линиями поверх.
+   Считается только при открытии 3D (лениво) и запоминается. */
+const BODYCOL=['#d2b26f','#6f9fd0','#cf8f7c'];
+function solidOf(sc,b,cross){
+  const pos=[], nrm=[], idx=[], r=v=>Math.round(v*1000)/1000;
+  const okP=(pc,p)=>sc.onBd(b,pc,p)&&!sc.buried(p,[b.id]);
+  b.patches.forEach(pc=>{
+    const [a0,a1]=pc.A, [b0,b1]=pc.B;
+    /* шаг сетки: по длине (≤ 3,5 мм у плоскости и ≤ 4 мм у кривой) и повороту касательной (≤ 4°) */
+    const res=(dir)=>{ let L=0, T=0; [0.15,0.5,0.85].forEach(f=>{ const Pt=[]; for(let k=0;k<=64;k++){ const u=k/64; Pt.push(dir?pc.P(a0+(a1-a0)*f,b0+(b1-b0)*u):pc.P(a0+(a1-a0)*u,b0+(b1-b0)*f)); }
+        let l=0, t=0; for(let k=1;k<=64;k++){ l+=dist(Pt[k-1],Pt[k]); if(k>1){ const d1=unit(sub(Pt[k-1],Pt[k-2])), d2=unit(sub(Pt[k],Pt[k-1])); t+=Math.acos(Math.max(-1,Math.min(1,dot(d1,d2)))); } }
+        L=Math.max(L,l); T=Math.max(T,t); });
+      return Math.max(1,Math.min(120,Math.ceil(Math.max(L/(pc.plane?3.5:4),T/(4*Math.PI/180))))); };
+    const na=pc.polar?96:res(0), nb=pc.polar?Math.max(4,Math.ceil((b1-b0)/4)):res(1);
+    const ua=i=>a0+(a1-a0)*i/na, ub=j=>b0+(b1-b0)*j/nb, ea=(a1-a0)*1e-4, eb=(b1-b0)*1e-4;
+    /* вершина сетки: признак «на поверхности» — чуть внутри прямоугольника параметров (на краю тело неоднозначно) */
+    const G=[]; for(let i=0;i<=na;i++){ const row=[]; for(let j=0;j<=nb;j++){ const a=ua(i), c=ub(j);
+      row.push({a,b:c,in:okP(pc,pc.P(Math.min(a1-ea,Math.max(a0+ea,a)),Math.min(b1-eb,Math.max(b0+eb,c)))),id:-1}); } G.push(row); }
+    /* нормаль наружу: знак градиента по самому телу (большинство вершин куска) */
+    let sg=0; for(let i=0;i<=na;i+=Math.max(1,na>>3)) for(let j=0;j<=nb;j+=Math.max(1,nb>>3)){ const g=G[i][j]; if(!g.in) continue; const p=pc.P(g.a,g.b), n=unit(Q.grad(pc.f,p));
+      const o=b.inside(add(p,mul(n,0.05))), q=b.inside(sub(p,mul(n,0.05))); if(o!==q) sg+=o?-1:1; }
+    const sgn=sg<0?-1:1;
+    const vert=(a,c)=>{ const p=pc.P(a,c); let n=Q.grad(pc.f,p); const l=len(n); n=l>1e-9?mul(n,sgn/l):[0,0,1];
+      pos.push(r(p[0]),r(p[1]),r(p[2])); nrm.push(r(n[0]),r(n[1]),r(n[2])); return pos.length/3-1; };
+    const V=g=>g.id>=0?g.id:(g.id=vert(g.a,g.b));
+    /* точка границы на ребре сетки (одна на ребро — соседние треугольники сходятся без щелей) */
+    const XC=new Map();
+    const cut=(g,h)=>{ const k=g.a<h.a||(g.a===h.a&&g.b<h.b)?g.a+','+g.b+'|'+h.a+','+h.b:h.a+','+h.b+'|'+g.a+','+g.b;
+      if(XC.has(k)) return XC.get(k); let lo=0, hi=1; const [gi,go]=g.in?[g,h]:[h,g];
+      for(let it=0;it<18;it++){ const m=(lo+hi)/2, a=gi.a+(go.a-gi.a)*m, c=gi.b+(go.b-gi.b)*m; if(okP(pc,pc.P(a,c))) lo=m; else hi=m; }
+      const id=vert(gi.a+(go.a-gi.a)*lo,gi.b+(go.b-gi.b)*lo); XC.set(k,id); return id; };
+    const tri=(A,B2,C)=>{ const T=[A,B2,C], n=T.filter(g=>g.in).length; if(!n) return;
+      if(n===3){ idx.push(V(A),V(B2),V(C)); return; }
+      /* обрезка: обходим треугольник, на смене признака — точка границы */
+      const poly=[]; for(let k=0;k<3;k++){ const g=T[k], h=T[(k+1)%3]; if(g.in) poly.push(V(g)); if(g.in!==h.in) poly.push(cut(g,h)); }
+      for(let k=1;k+1<poly.length;k++) idx.push(poly[0],poly[k],poly[k+1]); };
+    for(let i=0;i<na;i++) for(let j=0;j<nb;j++){ const g00=G[i][j], g10=G[i+1][j], g11=G[i+1][j+1], g01=G[i][j+1];
+      if(!(g00.in||g10.in||g11.in||g01.in)) continue;
+      if((i+j)&1){ tri(g00,g10,g11); tri(g00,g11,g01); } else { tri(g00,g10,g01); tri(g10,g11,g01); } } });
+  /* рёбра тела без утонувших в других телах участков + линии пересечения с другими телами */
+  const edges=[]; (b.edges||[]).forEach(e=>sc.runs({pts:e.pts,closed:false},p=>!sc.buried(p,[b.id])).forEach(q=>edges.push(q.pts.map(p=>p.map(r)))));
+  (cross||[]).forEach(l=>edges.push(l.map(p=>p.map(r))));
+  const mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9]; for(let i=0;i<pos.length;i+=3) for(let k=0;k<3;k++){ mn[k]=Math.min(mn[k],pos[i+k]); mx[k]=Math.max(mx[k],pos[i+k]); }
+  return {pos:new Float32Array(pos),nrm:new Float32Array(nrm),idx:pos.length/3>65535?new Uint32Array(idx):new Uint16Array(idx),edges,bb:[mn,mx]}; }
 /* способ — для пары тел */
 const SECT={
   z:(A,B)=>`Горизонтальная плоскость уровня (z = const) режет ${A.ins} по ${A.secz}, ${B.ins} — по ${B.secz}. На π₁ сечения видны без искажения: их общие точки — точки линии; на π₂ точки лежат на следе плоскости.${A.proj||B.proj?' '+projTxt(A.proj?A:B):''}`,
