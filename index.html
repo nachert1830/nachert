@@ -4375,6 +4375,29 @@ html.zm-on,html.zm-on body{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.zm-ov{animation:none}}
 .zm-tip{margin:6px 0 0;font:600 12.5px var(--sans);color:var(--mut);text-align:center}
 
+/* РК2 · простой план: одна кнопка «Сегодня», три задачи */
+.rkh-today{position:relative;display:flex;flex-direction:column;gap:3px;padding:14px 52px 14px 16px;border-radius:18px;background:#fff;color:#121a3f!important;text-decoration:none;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.rkh-today .rkh-tk{font:700 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--red)}
+.rkh-today b{font:800 22px/1.15 var(--disp)}
+.rkh-today span:not(.rkh-tk){font:500 14px/1.35 var(--sans);color:#3d4668}
+.rkh-today i{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--red);color:#fff;font-style:normal;font-weight:800}
+.rkh-today:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.rkh-all{align-self:center;color:#fff!important;font:700 14px var(--sans);opacity:.92;text-decoration:underline;text-underline-offset:3px;min-height:32px;display:flex;align-items:center}
+.pkh{margin-top:6px}
+.pkl{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:10px}
+.pkr{position:relative;display:flex;align-items:center;gap:12px;padding:14px 14px 14px 12px;border-radius:18px;background:var(--surf);border:1.5px solid var(--line);color:var(--ink);text-decoration:none;box-shadow:var(--shadow)}
+.pkL{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;font:800 18px var(--disp);background:var(--surf3);color:var(--ink)}
+.pkr.g .pkL{background:var(--green,#1f9d55);color:#fff}.pkr.y .pkL{background:#f2b705;color:#1d1a00}.pkr.r .pkL{background:var(--red);color:#fff}
+.pkt{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pkt b{font:700 16px/1.25 var(--sans)}
+.pkd{display:flex;align-items:center;gap:5px}
+.pkd i{width:22px;height:6px;border-radius:3px;background:var(--line2)}.pkd i.on{background:var(--green,#1f9d55)}
+.pkd em{font:600 12.5px var(--sans);font-style:normal;color:var(--mut);margin-left:6px}
+.pkgo{flex:none;font-style:normal;font-weight:800;color:var(--acc)}
+.pkmore{display:flex;flex-direction:column;gap:2px;margin:0 0 16px}
+.pkmore a{display:flex;align-items:center;min-height:44px;padding:0 4px;font:600 15px var(--sans);color:var(--acc);border-bottom:1px solid var(--line)}
+.pkmore a::after{content:"→";margin-left:auto;padding-left:8px}
+
 /* ═════════ Палитра «ремешок» · v11 ═════════
    Как ремешок часов: белое полотно — основа, тёмно-синяя и красная полосы — акценты. Чисто, ярко, без тёмных плашек.
    Синий — действия и «где ты», красный — «горит» и главная кнопка. Слой идёт последним, токены прежние. */
@@ -23205,6 +23228,7 @@ window.CHANGES=[
     'Из лекций — прямо в навыках: рис. 5.3 и 5.7 (прямая → уровня → проецирующая), 5.6 и 5.8 (плоскость → проецирующая → уровня), 5.10 (истинный вид и угол к π₁ вращением), 5.12 и 5.13 (расстояния вращением вокруг горизонтали) — алгоритм по шагам и та же задача тетради с разбором.',
     'Срок РК2 — неделя РК по плану семестра (11-я неделя).',
     'РК2 проще: один первый шаг — «Проверь себя» (5 чертежей, ответ одним нажатием, верно — сразу следующий), в итоге — кнопка в слабую тему. Плашка без нулей у новичка; в навыках — одна кнопка «Дальше», остальное свёрнуто; билет — три строки; тренировок три вместо шести.',
+    'РК2 — одна кнопка: сверху «что делать сейчас», под ней три задачи билета А, Б, В со светофором и тремя шагами (посмотри разбор → узнай на чертежах → реши сам). Кнопка сама ведёт на следующий шаг. Навыки, лекции и 26 вопросов — в «Все материалы».',
     'Чертежи-варианты: <b>зажми</b> чертёж — он откроется на весь экран, отпусти — закроется. На каждом варианте — значок лупы.',
     'Новые цвета — как ремешок часов: белое полотно, тёмно-синяя и красная полосы. Шапка и меню белые с полосой синий · белый · красный, красный — только «горит» и главная кнопка.']},
   {v:'4.19',d:'28 октября 2026',items:['ДЗ — один раздел на оба предмета. Вариант вписываешь один раз — он один на все ДЗ, — и каждое ДЗ открывается сразу на нём: разбор по шагам, чистовик, черновик, как решать, ошибки и защита.','«← Назад» возвращает туда, откуда пришёл.','Красная «Поделиться» — Telegram, ВК, QR или скопировать; отправляется ровно то, что открыто, вплоть до задачи внутри варианта. На экране «ДЗ» — «Скинуть группе».','Короткие адреса: nachert1830.ru/#/ng4/13 — начерт, ДЗ 4, вариант 13; #/ig3/7 — инж. графика. Старые ссылки и закладки работают.','Поиск понимает «дз 4 13» — сразу вариант.']},
@@ -25822,7 +25846,52 @@ const TK=()=>((typeof TK3!=='undefined'?TK3:[]).find(x=>x.rk===2)||{tasks:[]}).t
 const TKL={'R2-A':'А','R2-B':'Б','R2-V':'В'};
 const pc=x=>Math.round((x||0)*100);
 const tone=x=>x>=.75?'g':x>=.45?'a':'r';
-function homeHTML(){ try{ if(fac()==='sec') return ''; return heroHTML(false); }catch(e){ return ''; } }
+/* ═════════ Простой план РК2: три задачи билета × три шага, одна кнопка «Сегодня» ═════════
+   Шаги задачи: посмотри разбор (wb3[key] ≥ 1) → узнай на чертежах (слой «Вижу» модуля ≥ 50 %) → реши сам (задача билета ≥ 0,7).
+   Сегодня: ничего не сделано — «Проверь себя»; иначе — первый несделанный шаг по порядку А → Б → В; всё решено — пробный РК2. */
+const T3=[{key:'R2-A',m:'zam',L:'А',t:'Замена плоскостей'},{key:'R2-B',m:'rotp',L:'Б',t:'Вращение вокруг проецирующей прямой'},{key:'R2-V',m:'rotl',L:'В',t:'Вращение вокруг прямой уровня'}];
+function t3State(T,D){ D=D||snapshot(); const x=modScore(T.m,D), sol=Math.max(taskCredit(T.key,D),mockBest(D,TK_OF[T.m]))>=.7;
+  const steps=[{t:'Посмотри, как решать',d:'Разбор задачи по шагам',href:H('ng','check','tickets',T.key),done:sol||taskState(T.key)>=1},
+    {t:'Узнай на чертежах',d:'Нажимай на верный чертёж — ответ сразу',href:H('ng','rk2','t','v-'+T.m),done:sol||x.v>=.5},
+    {t:'Реши сам',d:'Та же задача: на бумаге, потом сверка по шагам',href:H('ng','check','tickets',T.key,'try'),done:sol}];
+  const n=steps.filter(z=>z.done).length, next=steps.find(z=>!z.done)||null;
+  return {T,steps,n,next,light:sol?'g':n?'y':'r'}; }
+function r2Today(){ const D=snapshot(), R=readiness(D), S=T3.map(T=>t3State(T,D));
+  if(R.empty) return {href:H('ng','rk2','t','quick'),k:'Начни отсюда',t:'Проверь себя',d:'5 чертежей, ответ одним нажатием. 3 минуты.',S};
+  const cur=S.find(z=>z.next);
+  if(cur) return {href:cur.next.href,k:'Задача '+cur.T.L+' · шаг '+(cur.n+1)+' из 3',t:cur.next.t,d:cur.T.t+'. '+cur.next.d+'.',btn:'Задача '+cur.T.L+': '+cur.next.t.toLowerCase(),S};
+  const mockOk=(D.mock||[]).some(z=>['A','B','V'].every(k=>(z.r||{})[k]>=.75));
+  return mockOk?{href:H('ng','rk2','t','mix'),k:'Всё готово',t:'Повтори',d:'10 заданий вперемешку — чтобы не забылось.',S}
+    :{href:H('ng','rk2','mock'),k:'Три задачи решены',t:'Пробный РК2 на время',d:'Три задачи на бумаге, секундомер, потом сверка.',S}; }
+const LIGHT={g:'решаю сам',y:'в процессе',r:'не начато'};
+function t3Rows(S){ return `<ol class="pkl">${S.map(z=>`<li><a class="pkr ${z.light}" href="${(z.next||z.steps[0]).href}">
+   <span class="pkL">${z.T.L}</span><span class="pkt"><b>${z.T.t}</b><span class="pkd">${z.steps.map(x=>`<i class="${x.done?'on':''}"></i>`).join('')}<em>${LIGHT[z.light]}</em></span></span><i class="pkgo" aria-hidden="true">→</i></a></li>`).join('')}</ol>`; }
+/* верх: сколько осталось + одна кнопка. big — страница РК2, иначе — плашка на главной */
+function simpleHero(big){ const I=RKS.info(2), heat=I.past?'calm':RKS.heat(I), c=RKS.count(I), td=r2Today();
+  const pill=I.past?'Прошёл':heat==='hot'?'Горит':heat==='warm'?'Скоро':'По плану', T=big?'h1':'h2', id=big?'r2H1':'rkhH';
+  return `<section class="rkh rkh-${heat}${big?' rkh-big':''} rkh-s1" aria-labelledby="${id}">
+   <div class="rkh-top"><span class="rkh-pill${heat==='hot'&&!I.past?' live':''}"><i></i>${pill}</span><span class="rkh-meta">${I.exact?'гр. '+attr(I.group)+' · ':''}${RKS.when(I)}</span></div>
+   <div class="rkh-g"><div><${T} id="${id}" class="rkh-t">РК2${big?'':' <span>начерт</span>'}</${T}><div class="rkh-s">Три задачи на бумаге: замена плоскостей и два вращения</div></div>
+    ${I.past?'':`<div class="rkh-cnt${c.word?' word':''}"><b>${c.b}</b><span>${c.s}</span></div>`}</div>
+   <a class="rkh-today" href="${td.href}"><span class="rkh-tk">${td.k}</span><b>${td.t}</b><span>${td.d}</span><i aria-hidden="true">→</i></a>
+   ${big?'':`<a class="rkh-all" href="${H('ng','rk2')}">План РК2: задачи А, Б, В →</a>`}
+  </section>`; }
+function simpleHub(v){ const f=fac();
+  if(f==='sec'){ v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','rk2')],['РК2']],next:null,noBottom:true,cls:'r2-page',body:`${tabsHTML(2)}
+    <section class="box warn r2-other"><h4>У твоего потока другой РК2</h4><p>Для ИУ1Б, ИУ3, ИУ5, ИУ6, РК6, МТ9, БМТ1-13Б на РК2 — сечение тела проецирующей плоскостью: горизонтальная и профильная проекции сечения и его истинный вид.</p><p>Что поможет: <a href="${H('ng','tasks',54)}">задача №54</a> — натуральный вид сечения призмы заменой плоскостей; <a href="${H('ng','path',13)}">урок 13</a> — как достроить точку в плоскости.</p></section>
+    ${facHTML()}`}); bindFac(v,()=>simpleHub(v)); return 'РК2 · Подготовка к РК'; }
+  const td=r2Today();
+  v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','rk2')],['РК2']],next:null,noBottom:true,cls:'r2-page',body:`
+   ${tabsHTML(2)}
+   ${simpleHero(true)}
+   <h2 class="sp-h2 pkh">Три задачи билета</h2>
+   <p class="r2-sub">У каждой три шага: посмотри → узнай на чертежах → реши сам.</p>
+   ${t3Rows(td.S)}
+   <nav class="pkmore"><a href="${H('ng','rk2','mock')}">Пробный РК2 на время</a><a href="${H('ng','rk2','t','quick')}">Проверь себя · 3 мин</a><a href="${H('ng','rk2','all')}">Все материалы: теория, лекции, 26 вопросов</a></nav>
+   ${facHTML()}`});
+  bindFac(v,()=>simpleHub(v)); RKS.load(()=>{ if(v.isConnected&&location.hash.replace(/\/$/,'')===H('ng','rk2')) simpleHub(v); });
+  return 'РК2 · Подготовка к РК'; }
+function homeHTML(){ try{ if(fac()==='sec') return ''; return simpleHero(false); }catch(e){ return ''; } }
 function swHTML(){ return `<div class="seg modeseg r2-sw" role="tablist" aria-label="Рубежный контроль"><a role="tab" href="${H('ng','check')}" aria-selected="false">РК1</a><a role="tab" href="${H('ng','rk2')}" class="on" aria-selected="true">РК2</a></div>`; }
 function ring(v,sz){ sz=sz||148; const r=sz/2-9, c=2*Math.PI*r, f=v==null?0:Math.max(0,Math.min(100,v))/100;
   return `<svg class="r2-ring" viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" aria-hidden="true"><circle cx="${sz/2}" cy="${sz/2}" r="${r}" class="r2-rb"/>${v==null||!f?'':`<circle cx="${sz/2}" cy="${sz/2}" r="${r}" class="r2-rf ${tone(f)}" stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${sz/2} ${sz/2})"/>`}</svg>`; }
@@ -25926,9 +25995,8 @@ function cheer(rk,sum){ const pr=ST.get('r2rk',-1), ps=ST.get('r2sk',-1);
   if(rk) ST.set('r2rk',rk.i); ST.set('r2sk',sum); }
 function hub(v){
   const draw=()=>{ const R=readiness(), f=fac(), SA=skillsAll();
-    v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','rk2')],['РК2']],next:null,noBottom:true,cls:'r2-page',body:`
-    ${tabsHTML(2)}
-    ${f==='sec'?'':heroHTML(true)}
+    v.innerHTML=pageHTML({crumbs:[['РК2',H('ng','rk2')],['Все материалы']],next:null,noBottom:true,cls:'r2-page',body:`
+    <div class="intro"><h1>РК2 · все материалы</h1><p class="lead">Навыки, лекции, билет, 26 вопросов теории и готовность. Если не знаешь, с чего начать, — <a href="${H('ng','rk2')}">план РК2</a>, там одна кнопка.</p></div>
     ${facHTML()}
     ${f==='sec'?`<section class="box warn r2-other"><h4>У твоего потока другой РК2</h4><p>Для ИУ1Б, ИУ3, ИУ5, ИУ6, РК6, МТ9, БМТ1-13Б на РК2 — сечение тела проецирующей плоскостью: горизонтальная и профильная проекции сечения и его истинный вид. Этот раздел — про другую тему.</p><p>Что поможет: <a href="${H('ng','tasks',54)}">задача №54</a> — натуральный вид сечения призмы заменой плоскостей; <a href="${H('ng','path',13)}">урок 13</a> — как достроить точку в плоскости; модуль <a href="${H('ng','rk2','m','zam')}">«Замена плоскостей»</a> — для истинного вида.</p></section>`:''}
     ${f==='iu'?`<div class="box tip r2-other"><h4>ИУ1 (специалисты), ИУ2</h4><p>Ваш РК2 — те же способы преобразования, вопросы 1–5 из списка кафедры: расстояния и углы заменой плоскостей, натуральная величина вращением. Готовность считается по трём модулям преобразований. Плоскопараллельное перемещение (через горизонталь) — родственник вращения вокруг проецирующей прямой, только без оси: фигуру двигают параллельно π₁, её горизонтальная проекция переносится без изменения формы и размеров, а высоты точек не меняются.</p></div>`:''}
@@ -26033,8 +26101,8 @@ function planFor(kind){ const F=FACS[fac()]||FACS.main, mods=F.mods.length?F.mod
   if(/^m-/.test(kind)){ const m=kind.slice(2); return shuffle(byM(m)).slice(0,10).map(x=>({id:x.id})).concat([{g:GEN_OF[m][0]}]); }
   if(/^v-/.test(kind)){ const g=GEN_OF[kind.slice(2)]||['rep']; return Array.from({length:6},(_,i)=>({g:g[i%g.length]})); }
   /* «Проверь себя»: только чертежи с ответом одним нажатием — по одному на каждый модуль потока, до 5 */
-  if(kind==='quick'){ const tap=m=>GEN_OF[m].filter(g=>TAP_G.includes(g)), one=shuffle(mods).filter(m=>tap(m).length).map(m=>({g:pick(tap(m))}));
-    while(one.length<5){ const m=pick(mods.filter(m=>tap(m).length)); one.push({g:pick(tap(m))}); } return one.slice(0,5); }
+  if(kind==='quick'){ const qm=['zam','rotp','rotl'], tap=m=>GEN_OF[m].filter(g=>TAP_G.includes(g)), one=shuffle(qm).map(m=>({g:pick(tap(m))}));
+    while(one.length<5) one.push({g:pick(tap(pick(qm)))}); return shuffle(one); }
   if(kind==='fix'){ return shuffle(ITEMS.filter(x=>mods.includes(x.m)&&(isDanger(D.items[x.id])||(D.items[x.id]&&!D.items[x.id].slice(-1)[0][1])))).slice(0,12).map(x=>({id:x.id})); }
   /* mix: модули — по недобору готовности, внутри — самые слабые и давно не виденные */
   const ms=mods.map(m=>({m,gap:(1-modScore(m,D).score)*MOD(m).w+2})), tot=ms.reduce((z,x)=>z+x.gap,0), out=[];
@@ -26106,10 +26174,10 @@ function resultHTML(){ const q=SS.q.filter(x=>x&&x.done), ok=q.filter(x=>x.J.ok)
   const dv=B&&!B.na&&!R.na?R.val-(B.empty?0:B.val):0;
   return `<section class="lk-res">${typeof CAT==='function'?`<div class="lk-cat">${CAT(ok/Math.max(1,n)>=.7?'happy':'think')}</div>`:''}
    <div class="lk-big ${tone(ok/Math.max(1,n))}">${ok} из ${n}</div>
-   ${FAST()?`<p>${ok===n?'Отлично — все чертежи верно.':ok>=3?'Хорошее начало.':'Есть с чего начать — это нормально.'}${weakM?' Слабее всего: <b>'+MOD(weakM).t.toLowerCase()+'</b>.':''}</p>`:`<p>Баллы с учётом уверенности: <b>${pts}</b> из ${mx}.${dz?' Уверенных ошибок: <b>'+dz+'</b> — разбери их первыми.':''}${gs?' Угадано: '+gs+'.':''}</p>`}
-   ${!R.na?`<div class="r2-delta"><span>Готовность к РК2</span><b>${B&&!B.empty?B.val+' → ':''}${R.val}</b>${dv?`<em class="${dv>0?'up':'dn'}">${dv>0?'+':''}${dv}</em>`:''}</div>${FAST()?'<p class="r2-fine">Из 100. Растёт с каждым навыком и задачей, решённой самим.</p>':''}`:''}
-   <div class="sp-by">${Object.keys(by).map(m=>`<a href="${H('ng','rk2','m',m)}"><b>${by[m][0]}/${by[m][1]}</b><span>${MOD(m).t}</span></a>`).join('')}</div>
-   <div class="lk-acts">${FAST()&&weakM?`<a class="btn pri lg" href="${H('ng','rk2','m',weakM)}">Разобрать: ${MOD(weakM).t.toLowerCase()} →</a>`:`<a class="btn pri lg" href="${H('ng','rk2')}">${FAST()?'Готовиться к РК2 →':'К разделу РК2'}</a>`}${FAST()?`<button type="button" class="btn lg" data-again>Ещё раз</button>`:dz?`<a class="btn lg" href="${H('ng','rk2','t','fix')}">Уверенные ошибки</a>`:`<button type="button" class="btn lg" data-again>Ещё раз</button>`}</div></section>`; }
+   ${FAST()?`<p>${ok===n?'Отлично — все чертежи верно.':ok>=3?'Хорошее начало.':'Есть с чего начать — это нормально.'} Дальше — по шагам, задача за задачей.</p>`:`<p>Баллы с учётом уверенности: <b>${pts}</b> из ${mx}.${dz?' Уверенных ошибок: <b>'+dz+'</b> — разбери их первыми.':''}${gs?' Угадано: '+gs+'.':''}</p>`}
+   ${!R.na&&!FAST()?`<div class="r2-delta"><span>Готовность к РК2</span><b>${B&&!B.empty?B.val+' → ':''}${R.val}</b>${dv?`<em class="${dv>0?'up':'dn'}">${dv>0?'+':''}${dv}</em>`:''}</div>`:''}
+   <div class="sp-by">${Object.keys(by).map(m=>`<div><b>${by[m][0]}/${by[m][1]}</b><span>${MOD(m).t}</span></div>`).join('')}</div>
+   <div class="lk-acts">${FAST()?(()=>{ const td=r2Today(); return `<a class="btn pri lg" href="${td.href}">${td.btn||'Дальше: '+td.t.toLowerCase()} →</a>`; })():`<a class="btn pri lg" href="${H('ng','rk2')}">К разделу РК2</a>`}${FAST()?`<button type="button" class="btn lg" data-again>Ещё раз</button>`:dz?`<a class="btn lg" href="${H('ng','rk2','t','fix')}">Уверенные ошибки</a>`:`<button type="button" class="btn lg" data-again>Ещё раз</button>`}</div></section>`; }
 function testView(v,kind){ const valid=['zamer','mix','fix','quick'].includes(kind)||/^m-(par|perp|zam|rotp|rotl)$/.test(kind||'')||/^v-(par|perp|zam|rotp|rotl)$/.test(kind||'');
   if(!valid){ redir(H('ng','rk2')); return ''; }
   if(!SS||SS.kind!==kind||SS.fin) start(kind);
@@ -26174,8 +26242,9 @@ function view(v,r){ const it=r.item;
   if(it==='t') return testView(v,r.sub);
   if(it==='mock') return mockView(v);
   if(it==='how') return howView(v);
+  if(it==='all') return hub(v);
   if(it) { redir(H('ng','rk2')); return ''; }
-  return hub(v); }
+  return simpleHub(v); }
 /* для РК1-хаба и главной: короткая строка о готовности */
 function line(){ const R=readiness(); if(R.na) return 'Другой РК2 у твоего потока — см. раздел'; return R.empty?'Узнай, насколько готов: шкала 0–100 — какая часть того, что спросят на РК2, у тебя уже получается сама. Замер — 12 минут':'Готовность '+R.val+' из 100 · '+level(R.val)[1].toLowerCase(); }
 return {view,readiness,modScore,snapshot,level,nextStep,line,homeHTML,tabsHTML,skillsAll,rankOf,SKILLS,RANKS,READY_AT,MODS,Q,ITEMS,GENS,GEN_OF,_:{itemScore,genScore,isDanger,decay,taskCredit,planFor,inst,judge,rec,CHECK,iMount}};
