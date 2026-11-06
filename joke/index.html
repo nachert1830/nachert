@@ -33,8 +33,8 @@ const CONFIG = {
 
   /* подмигивание: один глаз закрыт заметно сильнее другого. Считается по разнице глаз — двумя способами
      (blendshapes eyeBlink и раскрытие век по точкам лица), берётся больший. Моргание обоими — разница ≈ 0 */
-  winkOn: 0.3, winkOff: 0.15,                          /* разница «закрыт − открыт» с гистерезисом */
-  winkMinMs: 120, winkMaxMs: 700, winkCooldownMs: 800,
+  winkOn: 0.38, winkOff: 0.15,                         /* разница «закрыт − открыт» с гистерезисом */
+  winkMinMs: 180, winkMaxMs: 700, winkCooldownMs: 800, /* обычное моргание короче и обоими глазами — не считается */
 
   /* рука: щепоть = |кончик большого − кончик указательного| / |запястье − основание среднего| */
   pinchClosed: 0.2, pinchOpen: 0.3,                    /* «пальцы сведены» с гистерезисом */
@@ -47,8 +47,7 @@ const CONFIG = {
   flame: { core: '#fff8e6', yellow: '#ffd66e', orange: '#ff8a2b', red: '#a8240f', blue: '#4f7dff' },
   flameWarm: { core: '#fff1cf', yellow: '#ffc24d', orange: '#ff6f1a', red: '#b8300c', blue: '#5b6dff' },
 
-  hintFirstMs: 2500,                                   /* первая подсказка — через столько после начала */
-  hintAfterMs: 4500,                                   /* следующие — если столько нет действий */
+  hintGapMs: 1200,                                     /* пауза между выполненной подсказкой и следующей */
   volume: 0.8,                                         /* общая громкость 0…1 */
   cameraBackdrop: 0,                                   /* 0 — видео не видно; 0,03–0,08 — лёгкая подложка */
 
@@ -343,22 +342,38 @@ const P = { sparks: [], smoke: [] };
 let lastAction = 0, startedAt = 0;
 const did = { blow: 0, smile: 0, wink: 0, pinch: 0, palm: 0, hand: 0, tap: 0 };
 /* действие человека: отмечаем, что он это уже умеет, и откладываем подсказки; next — что показать сразу как следующий шаг */
-const action = (kind, next) => { lastAction = now(); if (kind) did[kind] = 1; if (next) showHint(next, 3800); else if (hintSoft) hideHint(); };
+/* знакомство по шагам: подсказка висит, пока человек не сделает именно это. Пока шаг не пройден, следующие действия
+   выключены — случайное моргание или движение руки ничего не «выдумывает». Улыбка (зажечь погасшую) работает всегда */
+const STEPS = [
+  ['blow',  'подуй на свечу'],
+  ['smile', 'улыбнись — и свеча зажжётся'],
+  ['hand',  'подними руку перед камерой'],
+  ['pinch', 'разведи большой и указательный — пламя вырастет'],
+  ['palm',  'раскрой ладонь и подержи'],
+  ['wink',  'подмигни одним глазом — загорится звезда']
+];
+const Tut = { step: 0, doneT: 0 };
+const learned = () => Tut.step >= STEPS.length;
+const enabled = kind => learned() || STEPS.findIndex(s => s[0] === kind) <= Tut.step;
+const action = kind => {
+  lastAction = now(); if (kind) did[kind] = 1;
+  if (!learned() && STEPS[Tut.step][0] === kind) { Tut.step++; Tut.doneT = now(); hideHint(); }
+};
 
 function extinguish(t) {
   if (!S.lit) return;
   S.lit = false; S.outT = t; Sound.whoosh();
-  action('blow'); setTimeout(() => { if (!S.lit) showHint('улыбнись — и свеча зажжётся', 5000); }, 1400);
+  action('blow');
   for (let i = 0; i < 26; i++) setTimeout(() => P.smoke.push(newSmoke()), i * 70 + Math.random() * 60);
 }
-function ignite(t) {
+function ignite(t, by) {
   if (S.lit) return;
   S.lit = true; S.igniteT = t; S.flame = S.target = CONFIG.flameDefault; S.vis = 0; Sound.ignite();
-  action('smile'); hideHint();
+  action(by || 'smile');
   for (let i = 0; i < 9; i++) P.sparks.push(newSpark(1.4));
 }
 function resetFlame(t) {                       /* ладонь: плавно к норме за 1 с, погасшую — зажигаем */
-  if (!S.lit) { ignite(t); return; }
+  if (!S.lit) { ignite(t, 'palm'); return; }
   S.resetT = t; S.resetFrom = S.flame;
 }
 function newSpark(boost = 1) {
@@ -455,7 +470,7 @@ function draw(dt) {
     }
     /* отклик на подмигивание: следующая звезда разгорается, пока глаз закрывается — видно, что камера это замечает */
     const nx = HER.findIndex(s => !s.on);
-    if (nx >= 0) { const k = clamp(Wink.level / CONFIG.winkOn) * (Wink.state === 'closed' ? 1 : .6);
+    if (nx >= 0 && enabled('wink')) { const k = clamp(Wink.level / CONFIG.winkOn) * (Wink.state === 'closed' ? 1 : .6);
       if (k > .05) { const [x, y, z] = pts[nx], r = (6 + 10 * k) * z; ctx.globalAlpha = .25 + .6 * k; ctx.drawImage(SPR.her, x - r, y - r, 2 * r, 2 * r); } }
     /* погашенная нажатием: короткий тающий отблеск */
     HER.forEach((s, i) => { const k = (nowT - s.offT) / 700; if (s.on || k < 0 || k > 1) return;
@@ -505,7 +520,7 @@ function draw(dt) {
    Открытая ладонь — вокруг огня набирается кольцо (0,8 с), потом пламя возвращается к обычному */
 const HV = { a: 0, sp: .5, ang: 0, ring: 0 };
 function drawHand(dt, cx, wy, z) {
-  const seen = now() - Hand.seen < 300 && Hand.pt;
+  const seen = now() - Hand.seen < 300 && Hand.pt && enabled('hand');
   HV.a = approach(HV.a, seen ? 1 : 0, seen ? 7 : 3, dt);
   if (HV.a < .01 || !Hand.pt) return;
   const u = G.u * z, h = u * (.05 + .27 * S.vis), fy = wy - h * .45;                 /* середина пламени */
@@ -516,7 +531,7 @@ function drawHand(dt, cx, wy, z) {
   HV.ang = HV.ang + Math.atan2(Math.sin(ang - HV.ang), Math.cos(ang - HV.ang)) * (1 - Math.exp(-dt * 10));
   ctx.globalCompositeOperation = 'lighter';
   const A = HV.a;
-  if (Hand.open) {
+  if (Hand.open && enabled('palm')) {
     const prog = Hand.palmT ? clamp((now() - Hand.palmT) / CONFIG.palmHoldMs) : 0;
     HV.ring = approach(HV.ring, prog, 14, dt);
     const R0 = Math.max(h * .75, u * .12);
@@ -764,8 +779,9 @@ function faceLogic(v, t, nose, mw) {
    высота века к ширине глаза относительно своего открытого глаза). Моргание обоими даёт разницу ≈ 0 */
 function winkLogic(v, t) {
   const L = Face.bl ? Face.bl[0] : v.eyeBlinkLeft, R = Face.bl ? Face.bl[1] : v.eyeBlinkRight;
-  const bs = Math.max(L, R) > .4 ? Math.abs(L - R) : 0;
-  const ea = Eye.ca, eb = Eye.cb, ear = Eye.ok && Math.max(ea, eb) > .45 ? Math.abs(ea - eb) : 0;
+  /* строго: один глаз закрыт по-настоящему, второй — открыт. Моргание (оба), прищур, поворот головы — мимо */
+  const bs = Math.max(L, R) > .5 && Math.min(L, R) < .35 ? Math.abs(L - R) : 0;
+  const ea = Eye.ca, eb = Eye.cb, ear = Eye.ok && Math.max(ea, eb) > .6 && Math.min(ea, eb) < .3 ? Math.abs(ea - eb) : 0;
   const w = Wink.level = Math.max(bs, ear);
   if (!Wink.armed) { if (w < CONFIG.winkOff) Wink.armed = true; return; }
   if (Wink.state === 'idle') {
@@ -776,7 +792,7 @@ function winkLogic(v, t) {
   const dur = t - Wink.t0;
   if (w < CONFIG.winkOff) {                                                      /* глаз открылся: проверяем длительность */
     Wink.state = 'idle';
-    if (dur >= CONFIG.winkMinMs && dur <= CONFIG.winkMaxMs) { Wink.last = t; addStar(t); }
+    if (dur >= CONFIG.winkMinMs && dur <= CONFIG.winkMaxMs && enabled('wink')) { Wink.last = t; addStar(t); }
     return;
   }
   if (dur > CONFIG.winkMaxMs) { Wink.state = 'idle'; Wink.armed = false; }       /* держит слишком долго — не подмигивание */
@@ -823,11 +839,12 @@ function onHand(res, t, aw, ah) {
 
 function handLogic(t) {
   const stable = t - Hand.first > 200;                                           /* рука только появилась — не дёргаем пламя */
-  Hand.palmMode = stable && Hand.open;
+  Hand.palmMode = stable && Hand.open && enabled('palm');
   /* кулак тоже считается «сведёнными пальцами»: сжал руку — огонёк сжался, это так же понятно */
-  const pinchMode = stable && !Hand.open;
+  const pinchMode = stable && !Hand.open && enabled('pinch');
+  if (t - Hand.first > 500) action('hand');                                      /* рука полсекунды в кадре — шаг пройден */
   /* ── ладонь: удержание 0,8 с — сброс к норме ── */
-  if (Hand.palmMode) {
+  if (Hand.palmMode && enabled('palm')) {
     if (!Hand.palmT) Hand.palmT = t;
     if (!Hand.palmFired && t - Hand.palmT >= CONFIG.palmHoldMs) { Hand.palmFired = true; resetFlame(t); action('palm'); }
   } else { Hand.palmT = 0; Hand.palmFired = false; }
@@ -838,10 +855,11 @@ function handLogic(t) {
   Hand.pinchEngaged = pinchMode && (Hand.closed || t - Hand.lastMoveT < 700);
   if (!pinchMode || !S.lit || t - S.resetT < 1000) { Hand.closedT = 0; return; }
   if (Hand.closed) {
-    S.target = .05; action('pinch');                                             /* тонкий огонёк; гасит только дуновение */
+    S.target = .05;                                                              /* тонкий огонёк; гасит только дуновение */
   } else {
     Hand.closedT = 0;
-    if (Hand.pinchEngaged) { S.target = .1 + .9 * clamp((r - CONFIG.pinchMin) / (CONFIG.pinchMax - CONFIG.pinchMin)); action('pinch'); }
+    if (Hand.pinchEngaged) { S.target = .1 + .9 * clamp((r - CONFIG.pinchMin) / (CONFIG.pinchMax - CONFIG.pinchMin));
+      if (S.target > .8) action('pinch'); }                                     /* шаг — когда пламя заметно выросло */
   }
 }
 /* рука ушла дольше 1 с — пламя плавно к норме */
@@ -853,37 +871,27 @@ function handTimeout(t) {
 }
 
 /* ═══════════════════════════════════════ ПОДСКАЗКИ: одна строка, по порядку, без повторов ═════════════════════════ */
-let hintOn = false, hintAt = 0, hintDur = 0, hintIdx = 0, hintEnd = 0, hintSoft = false, hintCount = 0;
-const hintShown = {};
-/* показать строку подсказки на dur мс. soft — подсказка «от скуки»: её убирает любое действие */
-function showHint(text, dur = 5500, soft = false) {
-  const el = $('hint'); el.firstChild.textContent = text; el.classList.add('on');
-  hintOn = true; hintAt = now(); hintDur = dur; hintSoft = soft;
+let hintOn = false, hintText = '', hintEnd = 0;
+function showHint(text) {
+  if (hintOn && hintText === text) return;
+  const el = $('hint'); el.firstChild.textContent = text; el.classList.add('on'); hintOn = true; hintText = text;
 }
-function hideHint() { if (hintOn) { hintOn = false; hintEnd = now(); $('hint').classList.remove('on'); } }
+function hideHint() { if (hintOn) { hintOn = false; hintText = ''; hintEnd = now(); $('hint').classList.remove('on'); } }
+/* какую строку показывать сейчас: висит, пока не выполнена; выполнена — короткая пауза, затем следующая */
 function hintTick(t) {
   if (!running) { hideHint(); return; }
-  if (hintOn) { if (t - hintAt > hintDur) hideHint(); return; }
-  /* первая — вскоре после начала, дальше — когда долго ничего не происходит */
-  const wait = hintCount ? CONFIG.hintAfterMs : CONFIG.hintFirstMs;
-  if (t - Math.max(lastAction, hintEnd) < wait) return;
-  /* по порядку, только то, чего ещё не делали; каждая — не больше двух раз (звёзды — один раз), потом молчим */
-  const steps = [];
-  if (!ready) steps.push([0, 'секунду…', 99]);
-  else if (t - Face.seen > 2000) steps.push([0, 'посмотри на свечу', 3]);
-  else if (!Calib.done) return;
-  else if (!S.lit) steps.push([0, 'улыбнись — и свеча зажжётся', 99]);
-  else steps.push(
-    [did.blow, 'подуй на свечу', 2],
-    [did.hand, 'подними руку перед камерой', 2],
-    [did.pinch, 'разведи большой и указательный — пламя вырастет', 2],
-    [did.palm, 'раскрой ладонь и подержи', 2],
-    [did.wink, 'подмигни — загорится звезда', 1]);
-  const step = steps.find(([done, text, max]) => !done && (hintShown[text] || 0) < max);
-  if (!step) return;
-  const text = step[1];
-  hintCount++; hintShown[text] = (hintShown[text] || 0) + 1;
-  showHint(text, 5500, true);
+  let text = '';
+  if (!ready) text = 'секунду…';
+  else if (t - Face.seen > 2000) text = 'посмотри на свечу';
+  else if (!Calib.done) text = '';
+  else if (!S.lit) text = 'улыбнись — и свеча зажжётся';
+  else if (!learned()) {
+    if (STEPS[Tut.step][0] === 'smile') { Tut.step++; Tut.doneT = t; }                 /* уже горит — этот шаг не нужен */
+    text = learned() ? '' : STEPS[Tut.step][1];
+  }
+  if (!text) { hideHint(); return; }
+  if (text !== hintText && t - Math.max(Tut.doneT, hintEnd) < CONFIG.hintGapMs) { hideHint(); return; }
+  showHint(text);
 }
 
 /* ═══════════════════════════════════════════ MEDIAPIPE ════════════════════════════════════════════════════════════ */
