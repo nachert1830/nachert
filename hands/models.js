@@ -1009,6 +1009,16 @@ function creaseTop(model){ if(model._ct!=null) return model._ct; const J=IG3.J, 
   let nv=0, nc=0; for(let y=b[0][1]+0.25;y<b[1][1];y+=0.5){ const zv=hit(y,b[1][2]+1); if(zv!=null&&kink(y,zv)) nv++; const zcut=J(T,0,y,zc)<0?null:hit(y,zc); if(zcut!=null&&kink(y,zcut)) nc++; }
   Object.defineProperty(model,'_ctMix',{value:nv>=12&&nc>=12});   /* ребро видно и сверху, и в разрезе — волнистую линию не сместить, не потеряв одну из частей */
   Object.defineProperty(model,'_ct',{value:nv>=12?1:nc>=12?-1:0}); return model._ct; }   /* ребро — от 6 мм; 1 — наружное (видно сверху), −1 — только в разрезе (внутреннее) */
+/* ребро в плоскости x = 0 на любой глубине — и невидимое сверху, и выше секущей плоскости (конёк выреза K под гранью пирамиды):
+   его проекция на виде сверху совпадает с вертикальной осью — по ГОСТ 2.305 (п. 7.10) граница вида и разреза тогда не ось,
+   а волнистая линия. Само ребро ни на половине вида, ни в разрезе не видно, поэтому границу смещают в сторону разреза: на виде
+   остаются целиком линии, сходящиеся к ребру на оси (концы конька на гранях, рёбра от вершины). Луч вниз по x = 0: изломы на всех
+   переходах материал/пусто */
+function creaseTopHid(model){ if(model._cth!=null) return model._cth; const J=IG3.J, T=model.tree, b=model.box, h=0.05, d=0.35;
+  const kink=(y,z)=>{ const g=k=>{ const a=[d,y,z], c=[d,y,z]; a[k]+=h; c[k]-=h; return (J(T,...a)-J(T,...c))/(2*h); }, n=[g(0),g(1),g(2)]; return Math.abs(n[0])/(Math.hypot(...n)||1)>0.3; };
+  let n=0; for(let y=b[0][1]+0.25;y<b[1][1];y+=0.5){ let prev=null;
+    for(let z=b[1][2]+1;z>b[0][2]-1;z-=0.25){ const v=J(T,0,y,z); if(prev!=null&&(v<0)!==(prev<0)&&kink(y,z)){ n++; break; } prev=v; } }
+  Object.defineProperty(model,'_cth',{value:n>=12}); return model._cth; }   /* ребро — от 6 мм */
 /* волнистая линия на виде сверху при x = const — только в пределах контура детали: крайние y, где есть материал (на любой высоте) */
 function topSpan(model,x){ const b=model.box, J=IG3.J, T=model.tree; let lo=null, hi=null;
   for(let y=b[0][1];y<=b[1][1];y+=0.25) for(let z=b[0][2]+0.1;z<b[1][2];z+=0.5) if(J(T,x,y,z)<0){ if(lo==null) lo=y; hi=y; break; }
@@ -1074,7 +1084,7 @@ function igSpec(model){ if(model._spec) return model._spec; const n=Object.keys(
   /* ребро на вертикальной оси (пирамида ребром к нам): половину вида и половину разреза разделяют волнистой линией (ГОСТ 2.305, п. 7.10) —
      наружное ребро — правее оси (вида больше), внутреннее — левее (разреза больше), чтобы ребро осталось на чертеже */
   if(model.hzForce) sp.H=model.hzForce;   /* ДЗ 5: разрез А–А задан явно (ребро на оси, волнистую линию не сместить) */
-  sp.tb=model.hz&&sp.H==='half'?7*creaseTop(model):0;
+  sp.tb=model.hz&&sp.H==='half'?7*(creaseTop(model)||(creaseTopHid(model)?1:0)):0; sp.tbHid=!!sp.tb&&!creaseTop(model);   /* ребро на оси, которого не видно ни сверху, ни в разрезе, — волнистая в сторону разреза */
   const DL=7; sp.xb=sp.F==='half'||sp.F==='stepH'?-DL*crease(model,'x'):0; sp.yb=sp.L==='half'?DL*crease(model,'y'):0;
   sp.fk={half:'front',view:'front0',full:'frontF',stepH:'frontSH',step:'frontS'}[sp.F]; sp.lk={half:'left',view:'left0',full:'leftF'}[sp.L];
   return model._spec=sp; }
