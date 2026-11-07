@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#08090f">
+<title>Разбор: дуги и ступеньки</title>
+<link rel="icon" href="../../icon-192.png">
+<style>
+@font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../../fonts/geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../../fonts/golos-text-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../../fonts/golos-text-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{
+  --paper:#08090f; --surf:#12141d; --surf2:#1b1e2b; --surf3:#262a3b;
+  --ink:#f4f6fb; --ink2:#c4cadb; --mut:#8b93a9; --line:#252a3a;
+  --acc:#2f6bff; --blue:#7fa9ff; --blue-s:#17224a;
+  --red:#ff5d6c; --green:#34d399; --amber:#ffb020;
+  --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --disp:'Geologica','Golos Text',system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --shadow:0 18px 40px -22px rgba(0,0,0,.85);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){
+  :root{--paper:#f2f3f8; --surf:#fff; --surf2:#f0f2f7; --surf3:#e3e7f0; --ink:#0b0d14; --ink2:#323849; --mut:#646c83; --line:#e2e5ee;
+    --acc:#2457ff; --blue:#1f53f0; --blue-s:#e8eeff; --red:#d11a3a; --green:#0d9461; --amber:#b36b00; --shadow:0 16px 36px -22px rgba(20,30,70,.4); color-scheme:light}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 var(--sans);-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px 90px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--blue);text-decoration:none;font-weight:600;font-size:15px;padding:8px 12px 8px 8px;border-radius:12px}
+.back:active{background:var(--blue-s)}
+h1{font:700 28px/1.15 var(--disp);margin:10px 0 8px;letter-spacing:-.01em}
+.lead{color:var(--ink2);margin:0 0 18px}
+h2{font:700 21px/1.25 var(--disp);margin:0 0 6px}
+h3{font:700 16px/1.3 var(--disp);margin:18px 0 6px}
+p{margin:8px 0}
+.kick{font:700 12px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--amber);margin-bottom:4px}
+section{background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:20px 18px 22px;margin:16px 0;box-shadow:var(--shadow)}
+.note{background:var(--blue-s);border:1px solid color-mix(in srgb,var(--acc) 35%,var(--line));border-radius:14px;padding:11px 14px;margin:12px 0;font-size:15px}
+.warn{background:color-mix(in srgb,var(--red) 11%,var(--surf));border:1px solid color-mix(in srgb,var(--red) 35%,var(--line));border-radius:14px;padding:11px 14px;margin:12px 0;font-size:15px}
+.f{font-family:var(--mono);font-size:.94em;background:var(--surf2);padding:1px 6px;border-radius:7px;white-space:nowrap}
+b.k{color:var(--ink)}
+.paper{background:#fff;border-radius:14px;border:1px solid #cfd3de;padding:4px;margin:10px 0;overflow:hidden}
+.paper svg{display:block;width:100%;height:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
+.cap{font-size:13.5px;color:var(--mut);margin:2px 2px 0}
+.fig svg text{font-family:'Golos Text',system-ui,sans-serif}
+/* ползунок */
+.sl{display:flex;align-items:center;gap:12px;margin:12px 0 4px}
+.sl input[type=range]{flex:1;accent-color:var(--acc);height:34px}
+.sl output{font:700 15px var(--mono);min-width:96px;text-align:right}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px}
+.chip{border:1px solid var(--line);background:var(--surf2);color:var(--ink);border-radius:999px;padding:7px 13px;font:600 14px var(--sans);cursor:pointer}
+.chip:active,.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.calc{font:600 15px/1.6 var(--mono);background:var(--surf2);border-radius:14px;padding:11px 14px;margin:8px 0;overflow-x:auto}
+.calc i{font-style:normal;color:var(--green)} .calc u{text-decoration:none;color:var(--amber)} .calc s{text-decoration:none;color:var(--red)}
+/* таблица */
+.tbl{overflow-x:auto;margin:10px -4px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font:700 12px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+td.n{font-family:var(--mono);font-weight:600;white-space:nowrap}
+/* шаги */
+.stepper{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
+.sbtn{flex:none;width:46px;height:46px;border-radius:50%;border:0;background:var(--acc);color:#fff;font:700 22px var(--sans);cursor:pointer}
+.sbtn[disabled]{background:var(--surf3);color:var(--mut);cursor:default}
+.stitle{flex:1;min-width:0}
+.stitle small{display:block;font:700 12px var(--mono);color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+.stitle b{display:block;font:700 17px/1.25 var(--disp)}
+.dots{display:flex;gap:5px;margin:2px 0 8px}
+.dots i{flex:1;height:5px;border-radius:3px;background:var(--surf3)} .dots i.on{background:var(--acc)}
+/* легенда */
+.leg{display:grid;gap:8px;margin:12px 0 0}
+.leg button{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;text-align:left;width:100%;border:1px solid var(--line);background:var(--surf2);color:var(--ink);border-radius:16px;padding:11px 12px;font:15px/1.45 var(--sans);cursor:pointer}
+.leg button.on{border-color:var(--acc);background:var(--blue-s)}
+.leg .no{width:30px;height:30px;border-radius:50%;background:var(--acc);color:#fff;font:700 15px/30px var(--mono);text-align:center}
+.leg b{display:block;font:700 15.5px/1.3 var(--disp);margin-bottom:2px}
+.leg span{color:var(--ink2);font-size:14.5px}
+.mist{margin:8px 0;padding:0;list-style:none}
+.mist li{padding:10px 12px 10px 38px;position:relative;background:var(--surf2);border-radius:14px;margin:8px 0;font-size:15px}
+.mist li:before{content:"✕";position:absolute;left:13px;top:10px;color:var(--red);font-weight:700}
+.chk li:before{content:"✓";color:var(--green)}
+a.btn{display:inline-flex;align-items:center;gap:8px;margin:6px 8px 0 0;padding:12px 18px;border-radius:14px;background:var(--acc);color:#fff;text-decoration:none;font-weight:700;font-size:15px}
+a.btn.ghost{background:var(--surf2);color:var(--ink);border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="back" href="../">‹ Кабинет</a></div>
+  <div class="kick">Задание №8 · вариант 6 · разбор с нуля</div>
+  <h1>Откуда берутся дуги и ступеньки на виде слева</h1>
+  <p class="lead">Полый шар Ø110 с полостью Ø80 и сквозным отверстием K. На виде сверху в задании нарисован только шар, а на виде слева у тебя вылезают дуги разных радиусов и «ступеньки» между ними. Здесь по шагам, откуда каждая из них, без заучивания. Все числа посчитаны здесь же, по формулам.</p>
+
+  <nav class="chips" aria-label="Разделы">
+    <a class="chip" href="#s1">1 · Что дано</a><a class="chip" href="#s2">2 · Шар режет плоскость</a><a class="chip" href="#s3">3 · Радиус с чертежа</a><a class="chip" href="#s4">4 · Контур = огибающая</a><a class="chip" href="#s5">5 · Строим по шагам</a><a class="chip" href="#s6">6 · Разрез: что где</a><a class="chip" href="#s7">7 · Проверка</a>
+  </nav>
+
+  <!-- ═══════════ 1. ДАНО ═══════════ -->
+  <section id="s1">
+    <div class="kick">Шаг 1</div><h2>Что дано и что нужно получить</h2>
+    <p>Отверстие K идёт вдоль оси <span class="f">y</span> (перпендикулярно главному виду) и видно целиком только на главном виде. Там его контур: паз шириной 20 сверху, круг Ø45 в центре и «пятка» 40 × 15 снизу.</p>
+    <div class="two">
+      <div><div class="paper fig" id="figGivenF"></div><p class="cap">Главный вид: контур K виден целиком</p></div>
+      <div><div class="paper fig" id="figGivenT"></div><p class="cap">Вид сверху в задании: <b class="k">только шар и полость</b>. K на нём нет</p></div>
+    </div>
+    <div class="note"><b>Главный вопрос.</b> Раз на виде сверху нет отверстия, откуда брать глубину <span class="f">y</span> точек для вида слева? Ответ: глубину <b>считают из шара</b>. Любая точка лежит на сфере, поэтому по высоте и ширине глубина находится однозначно. Дальше показано, как.</div>
+  </section>
+
+  <!-- ═══════════ 2. ПЛОСКОСТЬ РЕЖЕТ ШАР ═══════════ -->
+  <section id="s2">
+    <div class="kick">Шаг 2 · главный закон</div><h2>Любая плоскость режет шар по окружности</h2>
+    <p>Каждая грань отверстия K — плоскость. Пусть она на расстоянии <span class="f">d</span> от центра шара. След на шаре — окружность радиуса <span class="f">r = √(R² − d²)</span>. Это теорема Пифагора для треугольника «центр — центр сечения — точка на окружности». Подвигай ползунок.</p>
+    <div class="two">
+      <div><div class="paper fig" id="figCutSide"></div><p class="cap">Шар в разрезе сбоку: плоскость на расстоянии d</p></div>
+      <div><div class="paper fig" id="figCutTrue"></div><p class="cap">След плоскости в натуральную величину</p></div>
+    </div>
+    <div class="sl"><input id="dSl" type="range" min="0" max="60" step="0.5" value="30" aria-label="Расстояние d от центра"><output id="dOut"></output></div>
+    <div class="chips" id="dChips"></div>
+    <div class="calc" id="dCalc"></div>
+    <p>Полость Ø80 — тоже шар (R<sub>п</sub> = 40), и режется тем же законом. Но только если плоскость ближе 40 мм к центру. Грань <span class="f">z = −45</span> проходит мимо полости, а <span class="f">z = −30</span> режет и оболочку, и полость.</p>
+  </section>
+
+  <!-- ═══════════ 3. РАДИУС С ЧЕРТЕЖА ═══════════ -->
+  <section id="s3">
+    <div class="kick">Шаг 3</div><h2>Откуда радиус на чертеже, если сверху «только шар»</h2>
+    <p>Радиус сечения <span class="f">r = √(R² − d²)</span> — это <b>половина хорды</b>. Её можно просто <b>снять с чертежа</b>, считать не обязательно. Как это работает:</p>
+    <ul>
+      <li>Грани <span class="f">x = ±10</span> и <span class="f">x = ±20</span> (стенки паза и «пятки»). Проводишь на виде сверху вертикаль на расстоянии 10 (и 20) от оси. Она пересекает круг Ø110. Половина получившейся хорды и есть радиус дуги на виде слева.</li>
+      <li>Грани <span class="f">z = −30</span> и <span class="f">z = −45</span>. Горизонталь на главном виде и круг Ø110 тем же способом дают радиусы 46,1 и 31,6. Они видны на виде сверху, на виде слева эти грани — просто прямые.</li>
+    </ul>
+    <div class="two">
+      <div><div class="paper fig" id="figChordT"></div><p class="cap">Вид сверху (только шар): вертикали x = ±10 и ±20, половина хорды = радиус дуги на виде слева</p></div>
+      <div><div class="paper fig" id="figChordF"></div><p class="cap">Главный вид: горизонтали z = −30 и −45, радиусы дуг на виде сверху</p></div>
+    </div>
+    <p>Циркулем переносишь снятый радиус на вид слева: игла в центре <b>O‴</b>, раствор — половина хорды.</p>
+    <h3>Все грани отверстия K</h3>
+    <div class="tbl"><table id="faceTbl"></table></div>
+    <div class="note">Круг Ø45 коаксиален шару (оси пересекаются в центре), поэтому два тела вращения пересекаются по <b>окружностям, перпендикулярным оси</b>. Ось — <span class="f">y</span>, значит, окружности лежат в плоскостях <span class="f">y = const</span>. На виде слева они — <b>вертикальные отрезки</b>, на виде сверху — горизонтальные. Положение: <span class="f">y = ±√(R² − 22,5²)</span>.</div>
+  </section>
+
+  <!-- ═══════════ 4. КОНТУР = ОГИБАЮЩАЯ ═══════════ -->
+  <section id="s4">
+    <div class="kick">Шаг 4 · самое важное</div><h2>Контур вида слева — «огибающая» остатка</h2>
+    <p>Смотри на деталь слева. На каждой высоте <span class="f">z</span> от шара осталось что-то своё. Крайние точки этого остатка и рисуют контур. Какие? Те, где <span class="f">|x|</span> минимален: у них самая большая глубина <span class="f">y</span>. Сверху на главном виде ты видишь, где в этой «строке» материал.</p>
+    <div class="two">
+      <div><div class="paper fig" id="figScanF"></div><p class="cap">Главный вид. Линия — высота z. Зелёное: материал, красное: пустота K</p></div>
+      <div><div class="paper fig" id="figScanL"></div><p class="cap">Вид слева. Контур растёт сверху вниз вместе с линией</p></div>
+    </div>
+    <div class="sl"><input id="zSl" type="range" min="-55" max="55" step="0.25" value="40" aria-label="Высота z"><output id="zOut"></output></div>
+    <div class="chips" id="zChips"></div>
+    <div class="calc" id="zCalc"></div>
+    <p>Радиус дуги на высоте <span class="f">z</span> определяет ближайшая к оси стенка K, оставшаяся на этой высоте. Пока полоса материала одна и та же, дуга одна. Там, где профиль K меняет ширину (на высотах <span class="f">z = −30</span> и <span class="f">z = −45</span>), радиус меняется <b>скачком</b>. Это и есть «ступенька».</p>
+  </section>
+
+  <!-- ═══════════ 5. СТРОИМ ПО ШАГАМ ═══════════ -->
+  <section id="s5">
+    <div class="kick">Шаг 5</div><h2>Строим вид слева с нуля</h2>
+    <div class="dots" id="stDots"></div>
+    <div class="stepper"><button class="sbtn" id="stPrev" aria-label="Назад">‹</button><div class="stitle"><small id="stN"></small><b id="stT"></b></div><button class="sbtn" id="stNext" aria-label="Дальше">›</button></div>
+    <div class="paper fig" id="figStep"></div>
+    <div id="stTxt"></div>
+  </section>
+
+  <!-- ═══════════ 6. РАЗРЕЗ ═══════════ -->
+  <section id="s6">
+    <div class="kick">Шаг 6</div><h2>Правая половина — разрез: что откуда</h2>
+    <p>Справа от оси вид слева заменён <b>разрезом</b> (плоскость через ось шара). Внутри ты видишь стенки K и полость. Это <b>тот самый участок с дугами и ступеньками</b>, о котором ты спрашиваешь. Нажимай на пункты. Нужная линия подсветится.</p>
+    <div class="paper fig" id="figCut"></div>
+    <div class="leg" id="leg"></div>
+  </section>
+
+  <!-- ═══════════ 7. ПРОВЕРКА ═══════════ -->
+  <section id="s7">
+    <div class="kick">Шаг 7</div><h2>Проверь себя</h2>
+    <ul class="mist chk">
+      <li>Все дуги — с центром в <b>одной точке</b>, центре шара на виде слева.</li>
+      <li>Дуги разных радиусов (54,1 · 51,2 · 55) сшиты <b>горизонтальными ступеньками</b> на высотах z = −30 и z = −45. Они — продолжение линий связи с главного вида.</li>
+      <li>Вертикальные отрезки на y = ±50,2 заканчиваются на высотах z = ±20,15. Это те места главного вида, где круг Ø45 встречает стенки паза.</li>
+      <li>Штриховой контур полости строится так же, только с радиусом 40 вместо 55 (38,7 · 34,6 · 33,1).</li>
+      <li>Штриховка — только в сечении тела, у тебя это дно под z = −45. Полость и отверстие K не штрихуют.</li>
+    </ul>
+    <h3>Типичные ошибки</h3>
+    <ul class="mist">
+      <li>Рисуют вместо дуги прямую или эллипс. Плоскость режет шар по <b>окружности</b>, а на виде слева окружности, лежащие в плоскостях x = const, видны в натуральную величину.</li>
+      <li>Берут радиус R = 55 для всех дуг. У каждой дуги радиус свой: √(R² − d²), а у шара 55 только внизу, под z = −45.</li>
+      <li>Забывают, что грань z = −45 не режет полость (45 &gt; 40), а грань z = −30 режет.</li>
+      <li>Ступеньку тянут не горизонтально. Она всегда горизонтальна, потому что это след горизонтальной грани z = const, и на виде слева она вырождается в линию.</li>
+    </ul>
+    <p><a class="btn" href="/#/ig8/6">Открыть вариант 6 на сайте →</a><a class="btn ghost" href="../">Назад в кабинет</a></p>
+  </section>
+</div>
+
+<script>
+/* ═════════ геометрия варианта 6 (мм) ═════════ */
+const R=55, RI=40, SH=10, CY=22.5, RH=20, ZL=-30, ZB=-45;
+const ch=(r,d)=>Math.sqrt(Math.max(0,r*r-d*d));
+const ZC=ch(CY,SH);                                  // высота, где круг Ø45 встречает стенку паза
+const r10=ch(R,SH), r20=ch(R,RH), yC=ch(R,CY);       // наружная сфера: стенки x=±10, x=±20, цилиндр
+const q10=ch(RI,SH), q20=ch(RI,RH), yCi=ch(RI,CY);   // полость
+const fm=(v,n=1)=>(Math.round(v*Math.pow(10,n))/Math.pow(10,n)).toFixed(n).replace('.',',').replace('-','−');
+const $=id=>document.getElementById(id);
+const INK='#111', BL='#2a62ff', OR='#e2552a', GR='#119c6a', MG='#b62bd8', GY='#9aa1b5';
+const PX=(a,n)=>a.map(p=>(n==null?p[0].toFixed(1):p[0].toFixed(n))+' '+(n==null?p[1].toFixed(1):p[1].toFixed(n)));
+const poly=(pts,att)=>`<path d="M${PX(pts).join('L')}" fill="none" ${att}/>`;
+const T=(x,y,t,att)=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" ${att||''}>${t}</text>`;
+/* вид слева: центр (cx,cy), масштаб s; y вправо — назад налево, как на листе (передняя сторона справа) */
+function LV(cx,cy,s){ return { s, U:y=>cx-s*y, V:z=>cy-s*z, P:(y,z)=>[cx-s*y,cy-s*z] }; }
+function arcPts(L,r,z0,z1,sg,n){ n=n||40; const out=[]; for(let i=0;i<=n;i++){ const z=z0+(z1-z0)*i/n; out.push(L.P(sg*ch(r,z),z)); } return out; }
+const FRONT=(cx,cy,s)=>({U:x=>cx+s*x,V:z=>cy-s*z,P:(x,z)=>[cx+s*x,cy-s*z],s});
+const AXC='stroke="#111" stroke-width=".7" stroke-dasharray="9 2.5 2 2.5"';
+
+/* ═════════ контур K на главном виде (замкнутая ломаная в мм: x, z) ═════════ */
+function kProfile(zTop){
+  const a=Math.atan2(ZC,SH), pts=[];
+  const arc=(a0,a1,n)=>{ for(let i=0;i<=n;i++){ const t=a0+(a1-a0)*i/n; pts.push([CY*Math.cos(t),CY*Math.sin(t)]); } };
+  pts.push([-SH,zTop],[-SH,ZC]);
+  // левая дуга: от (−10, ZC) через (−22,5; 0) к (−10, −ZC)
+  for(let i=0;i<=24;i++){ const t=Math.PI-a+(2*a)*i/24; pts.push([CY*Math.cos(t),CY*Math.sin(t)]); }
+  pts.push([-SH,ZL],[-RH,ZL],[-RH,ZB],[RH,ZB],[RH,ZL],[SH,ZL],[SH,-ZC]);
+  for(let i=0;i<=24;i++){ const t=-a+(2*a)*i/24; pts.push([CY*Math.cos(t),CY*Math.sin(t)]); }
+  pts.push([SH,zTop]);
+  return pts;
+}
+/* какая часть оси x занята отверстием K на высоте z: |x| < xmin */
+function xmin(z){ if(z<ZB) return 0; if(z<ZL) return RH; let m=SH; if(Math.abs(z)<CY) m=Math.max(m,ch(CY,z)); return m; }
+
+/* ═════════ 1. Дано ═════════ */
+(function(){
+  const s=1.85, F=FRONT(110,110,s);
+  const kp=kProfile(R+4).map(p=>F.P(p[0],p[1]));
+  $('figGivenF').innerHTML=`<svg viewBox="0 0 220 220">
+    <circle cx="110" cy="110" r="${R*s}" fill="#eef1f8" stroke="${INK}" stroke-width="1.6"/>
+    <circle cx="110" cy="110" r="${RI*s}" fill="none" stroke="${INK}" stroke-width=".9" stroke-dasharray="5 3"/>
+    <path d="M${PX(kp).join('L')}Z" fill="#fff" stroke="${INK}" stroke-width="1.6"/>
+    <line x1="110" y1="2" x2="110" y2="218" ${AXC}/>
+    <text x="${110+CY*s+3}" y="${110-CY*s*.2}" font-size="9" fill="${BL}">Ø45</text>
+    <text x="${110+RH*s+3}" y="${110+(-ZB-7)*s+2}" font-size="9" fill="${BL}">40 × 15</text>
+    <text x="${110+SH*s+4}" y="${110-40*s}" font-size="9" fill="${BL}">20</text>
+  </svg>`;
+  
+  $('figGivenT').innerHTML=`<svg viewBox="0 0 220 220">
+    <circle cx="110" cy="110" r="${R*s}" fill="#fff" stroke="${INK}" stroke-width="1.6"/>
+    <circle cx="110" cy="110" r="${RI*s}" fill="none" stroke="${INK}" stroke-width=".9" stroke-dasharray="5 3"/>
+    <line x1="110" y1="2" x2="110" y2="218" ${AXC}/><line x1="2" y1="110" x2="218" y2="110" ${AXC}/>
+    <text x="110" y="${110-R*s-3}" font-size="9" text-anchor="middle" fill="${BL}">Ø110</text>
+    <text x="110" y="${110+RI*s*.62}" font-size="9" text-anchor="middle" fill="${BL}">Ø80 (штриховая)</text>
+  </svg>`;
+})();
+
+/* ═════════ 2. Сечение шара плоскостью ═════════ */
+(function(){
+  const s=1.85, cx=110, cy=110, sl=$('dSl'), out=$('dOut');
+  const chips=[['d = 10',10],['d = 30',30],['d = 45',45],['d = 50',50]];
+  $('dChips').innerHTML=chips.map(c=>`<button class="chip" data-d="${c[1]}">${c[0]}</button>`).join('');
+  function draw(){
+    const d=+sl.value, rO=ch(R,d), rI=ch(RI,d), y=cy+d*s;
+    out.textContent='d = '+fm(d,1);
+    document.querySelectorAll('#dChips .chip').forEach(b=>b.classList.toggle('on',+b.dataset.d===d));
+    $('figCutSide').innerHTML=`<svg viewBox="0 0 220 220">
+      <circle cx="${cx}" cy="${cy}" r="${R*s}" fill="#eef1f8" stroke="${INK}" stroke-width="1.6"/>
+      <circle cx="${cx}" cy="${cy}" r="${RI*s}" fill="#fff" stroke="${INK}" stroke-width="1" stroke-dasharray="5 3"/>
+      <line x1="${cx}" y1="2" x2="${cx}" y2="218" ${AXC}/><line x1="2" y1="${cy}" x2="218" y2="${cy}" ${AXC}/>
+      ${rO>0?`<line x1="${cx-rO*s}" y1="${y}" x2="${cx+rO*s}" y2="${y}" stroke="${BL}" stroke-width="3"/>`:`<line x1="10" y1="${Math.min(y,214)}" x2="210" y2="${Math.min(y,214)}" stroke="${BL}" stroke-width="1.6" stroke-dasharray="4 3"/>`}
+      ${d>0&&d<=R?`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${y}" stroke="${OR}" stroke-width="2"/>${T(cx+4,cy+d*s/2+3,'d',`font-size="10" fill="${OR}"`)}`:''}
+      ${rO>0&&d>0?`<line x1="${cx}" y1="${cy}" x2="${cx+rO*s}" y2="${y}" stroke="${GR}" stroke-width="1.6"/>${T(cx+rO*s/2+3,cy+d*s/2-3,'R',`font-size="10" fill="${GR}"`)}`:''}
+      ${rO>0?`${T(cx+Math.min(rO*s,100)/2-6,y+13,'r',`font-size="10" fill="${BL}"`)}`:''}
+    </svg>`;
+    $('figCutTrue').innerHTML=rO>0?`<svg viewBox="0 0 220 220">
+      <circle cx="${cx}" cy="${cy}" r="${rO*s}" fill="#dfe8ff" stroke="${INK}" stroke-width="1.8"/>
+      ${rI>0?`<circle cx="${cx}" cy="${cy}" r="${rI*s}" fill="#fff" stroke="${INK}" stroke-width="1.4"/>`:''}
+      <line x1="${cx}" y1="${cy}" x2="${cx+rO*s*.707}" y2="${cy-rO*s*.707}" stroke="${BL}" stroke-width="1.6"/>
+      ${T(cx+rO*s*.35+2,cy-rO*s*.45,'r',`font-size="11" fill="${BL}"`)}
+      ${rI>0?`<line x1="${cx}" y1="${cy}" x2="${cx-rI*s*.707}" y2="${cy-rI*s*.707}" stroke="${MG}" stroke-width="1.4"/>${T(cx-rI*s*.5-8,cy-rI*s*.35,'rп',`font-size="10" fill="${MG}"`)}`:''}
+      <line x1="${cx-rO*s-6}" y1="${cy}" x2="${cx+rO*s+6}" y2="${cy}" ${AXC}/><line x1="${cx}" y1="${cy-rO*s-6}" x2="${cx}" y2="${cy+rO*s+6}" ${AXC}/>
+    </svg>`:`<svg viewBox="0 0 220 220">${T(110,105,'плоскость мимо шара',`font-size="12" text-anchor="middle" fill="${GY}"`)}${T(110,122,'(d > 55)',`font-size="12" text-anchor="middle" fill="${GY}"`)}</svg>`;
+    let c=`R = 55,  d = <u>${fm(d,1)}</u><br>`;
+    if(rO<=0) c+=`<s>d &gt; R: плоскость шар не задевает</s>`;
+    else{ c+=`r = √(55² − ${fm(d,1)}²) = <i>${fm(rO,1)}</i>`; c+=rI>0?`<br>rп = √(40² − ${fm(d,1)}²) = <i>${fm(rI,1)}</i> (полость задета)`:`<br><s>d ≥ 40: полость не задета, плоскость идёт только по стенке</s>`; }
+    $('dCalc').innerHTML=c;
+  }
+  sl.addEventListener('input',draw);
+  $('dChips').addEventListener('click',e=>{ const b=e.target.closest('[data-d]'); if(b){ sl.value=b.dataset.d; draw(); } });
+  draw();
+})();
+
+/* ═════════ 3. Хорды и таблица ═════════ */
+(function(){
+  const s=1.8, F=FRONT(110,110,s), Tp=FRONT(110,110,s), vb='viewBox="0 -8 220 246"';
+  const circ=`<circle cx="110" cy="110" r="${R*s}" fill="#fff" stroke="${INK}" stroke-width="1.5"/><circle cx="110" cy="110" r="${RI*s}" fill="none" stroke="${INK}" stroke-width=".8" stroke-dasharray="5 3"/><line x1="110" y1="0" x2="110" y2="220" ${AXC}/><line x1="0" y1="110" x2="220" y2="110" ${AXC}/>`;
+  const hz=(z,c,dy)=>{ const h=ch(R,-z), a=F.P(-h,z), b=F.P(h,z); return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${c}" stroke-width="2.4"/>`
+    +`<line x1="${F.U(0)}" y1="${a[1]-4}" x2="${b[0]}" y2="${b[1]-4}" stroke="${c}" stroke-width="1" opacity=".6"/>`
+    +T(F.U(h/2),a[1]+dy,'½ хорды = '+fm(h),`font-size="9.5" font-weight="700" fill="${c}" text-anchor="middle"`)
+    +T(a[0]+3,a[1]-4,'z = '+fm(z,0),`font-size="9" fill="${c}"`); };
+  const vx=(x,c,lab,dy)=>{ const h=ch(R,x), a=Tp.P(x,h), b=Tp.P(x,-h); return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${c}" stroke-width="2.4"/>`
+    +(lab?T(a[0]+(x>0?3:-3),a[1]+dy,fm(h),`font-size="10.5" font-weight="700" fill="${c}" text-anchor="${x>0?'start':'end'}"`)+T(b[0],b[1]+(Math.abs(x)===10?12:23),'x = '+fm(x,0),`font-size="9" fill="${c}" text-anchor="middle"`):''); };
+  $('figChordT').innerHTML=`<svg ${vb}>${circ}${vx(10,BL,1,-3)}${vx(-10,BL,0)}${vx(20,GR,1,-3)}${vx(-20,GR,0)}</svg>`;
+  $('figChordF').innerHTML=`<svg ${vb}>${circ}${hz(ZL,OR,13)}${hz(ZB,MG,13)}</svg>`;
+  const rows=[
+    ['x = ±10','Стенки паза (шириной 20)',10,'вид слева: дуги','вид сверху и главный: прямые x = ±10'],
+    ['x = ±20','Стенки «пятки» (шириной 40)',20,'вид слева: дуги','вид сверху и главный: прямые x = ±20'],
+    ['z = −30','Уступ: потолок «пятки» и низ паза',30,'вид сверху: дуги','на видах слева и главном — прямая z = −30'],
+    ['z = −45','Дно «пятки»',45,'вид сверху: дуга','на видах слева и главном — прямая z = −45'],
+  ];
+  $('faceTbl').innerHTML=`<tr><th>Грань</th><th>Что это</th><th>d</th><th>r наружная<br>(оболочка)</th><th>r полости</th><th>Где дуга, где прямая</th></tr>`+
+    rows.map(r=>{ const d=r[2], ro=ch(R,d), ri=ch(RI,d); return `<tr><td class="n">${r[0]}</td><td>${r[1]}</td><td class="n">${d}</td><td class="n">${fm(ro)}</td><td class="n">${d<RI?fm(ri):'—<br><small>45 &gt; 40: мимо полости</small>'}</td><td>${r[3]};<br><small>${r[4]}</small></td></tr>`; }).join('')
+    +`<tr><td class="n">цилиндр Ø45</td><td>Круг на главном виде, ось y</td><td class="n">—</td><td class="n">y = ±${fm(yC)}</td><td class="n">y = ±${fm(yCi)}</td><td>вид слева и сверху: отрезки (окружности ⟂ y);<br><small>на главном виде: окружность Ø45</small></td></tr>`;
+})();
+
+/* ═════════ 4. Контур вида слева — сканер по высоте ═════════ */
+function outerBands(){ // полосы контура (сверху вниз): {k:цвет, r, z0, z1} дуга радиуса r  или {vert:y}
+  return [ {c:BL,r:r10,z0:r10,z1:ZC}, {c:OR,vert:yC,z0:ZC,z1:-ZC}, {c:BL,r:r10,z0:-ZC,z1:ZL}, {c:GR,r:r20,z0:ZL,z1:ZB}, {c:MG,r:R,z0:ZB,z1:-R} ]; }
+function silhouette(z){ const m=xmin(z), rr=ch(R,m), y=ch(rr,z); return rr>0&&y>0?y:null; }
+(function(){
+  const s=2.1, W=250;
+  const F=FRONT(125,125,s), L=LV(125,125,s), sl=$('zSl'), out=$('zOut');
+  const chips=[['z = 40',40],['z = 10',10],['z = −25',-25],['z = −38',-38],['z = −50',-50]];
+  $('zChips').innerHTML=chips.map(c=>`<button class="chip" data-z="${c[1]}">${c[0]}</button>`).join('');
+  const kp=kProfile(R+8).map(p=>F.P(p[0],p[1]));
+  // полный контур вида слева (серый) — заранее
+  const full=[], b=outerBands();
+  [1,-1].forEach(sg=>b.forEach(q=>{ if(q.vert!=null) full.push(poly([L.P(sg*q.vert,q.z0),L.P(sg*q.vert,q.z1)],'stroke="#c3c8d6" stroke-width="1.4"')); else full.push(poly(arcPts(L,q.r,q.z0,q.z1,sg,50),'stroke="#c3c8d6" stroke-width="1.4"')); }));
+  [1,-1].forEach(sg=>{ full.push(poly([L.P(sg*ch(r10,-ZL),ZL),L.P(sg*ch(r20,-ZL),ZL)],'stroke="#c3c8d6" stroke-width="1.4"')); full.push(poly([L.P(sg*ch(r20,-ZB),ZB),L.P(sg*ch(R,-ZB),ZB)],'stroke="#c3c8d6" stroke-width="1.4"')); });
+  function trace(zc,sg){ // пройденная часть контура от верха до zc
+    const parts=[]; b.forEach(q=>{ const hi=Math.max(q.z0,q.z1), lo=Math.min(q.z0,q.z1); if(zc>=hi) return; const zEnd=Math.max(zc,lo), zStart=hi;
+      if(q.vert!=null) parts.push(poly([L.P(sg*q.vert,zStart),L.P(sg*q.vert,zEnd)],`stroke="${q.c}" stroke-width="2.6"`));
+      else parts.push(poly(arcPts(L,q.r,zStart,zEnd,sg,50),`stroke="${q.c}" stroke-width="2.6"`)); });
+    // ступеньки
+    [[ZL,45.0,41.5],[ZB,24.4,31.6]].forEach(st=>{ if(zc<=st[0]) parts.push(poly([L.P(sg*ch(st[0]===ZL?r10:r20,st[0]),st[0]),L.P(sg*ch(st[0]===ZL?r20:R,st[0]),st[0])],`stroke="${INK}" stroke-width="2.6"`)); });
+    return parts.join(''); }
+  function draw(){
+    const z=+sl.value, m=xmin(z), hx=ch(R,Math.abs(z)), y=silhouette(z);
+    out.textContent='z = '+fm(z,1);
+    document.querySelectorAll('#zChips .chip').forEach(bn=>bn.classList.toggle('on',+bn.dataset.z===z));
+    // главный вид: шар, K и линия z
+    const py=F.V(z), segs=[];
+    if(hx>0){ if(m<hx){ segs.push([-hx,-m],[m,hx]); } else segs.push([]); }
+    const gx=segs.filter(q=>q.length).map(q=>`<line x1="${F.U(q[0])}" y1="${py}" x2="${F.U(q[1])}" y2="${py}" stroke="${GR}" stroke-width="4.5" stroke-linecap="butt"/>`).join('');
+    const rx=hx>0?`<line x1="${F.U(-Math.min(m,hx))}" y1="${py}" x2="${F.U(Math.min(m,hx))}" y2="${py}" stroke="${OR}" stroke-width="4.5"/>`:'';
+    const mk=(m>0&&m<hx)?[-m,m].map(x=>`<line x1="${F.U(x)}" y1="${py-10}" x2="${F.U(x)}" y2="${py+10}" stroke="${OR}" stroke-width="1.2"/>`).join('')+T(F.U(m)+3,py-12,'x = '+fm(m),`font-size="10" font-weight="700" fill="${OR}"`):'';
+    $('figScanF').innerHTML=`<svg viewBox="0 0 ${W} ${W}">
+      <circle cx="125" cy="125" r="${R*s}" fill="#eef1f8" stroke="${INK}" stroke-width="1.5"/>
+      <path d="M${PX(kp).join('L')}Z" fill="#fff" stroke="${INK}" stroke-width="1.3"/>
+      <line x1="125" y1="2" x2="125" y2="248" ${AXC}/>
+      <line x1="2" y1="${py}" x2="248" y2="${py}" stroke="${BL}" stroke-width="1" stroke-dasharray="4 3"/>
+      ${gx}${rx}${mk}</svg>`;
+    // вид слева
+    const pt=y!=null?[L.P(y,z),L.P(-y,z)]:null;
+    $('figScanL').innerHTML=`<svg viewBox="0 0 ${W} ${W}">
+      ${full.join('')}
+      <circle cx="125" cy="125" r="${R*s}" fill="none" stroke="#e1e4ee" stroke-width="1" stroke-dasharray="3 3"/>
+      ${trace(z,1)}${trace(z,-1)}
+      <line x1="125" y1="2" x2="125" y2="248" ${AXC}/>
+      <line x1="2" y1="${py}" x2="248" y2="${py}" stroke="${BL}" stroke-width="1" stroke-dasharray="4 3"/>
+      ${pt?pt.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4.2" fill="${OR}" stroke="#fff" stroke-width="1.2"/>`).join(''):''}
+    </svg>`;
+    let c;
+    if(hx<=0) c=`<s>z вне шара</s>`;
+    else if(m>=hx) c=`z = <u>${fm(z,1)}</u>: оболочка на этой высоте вся срезана пазом (|x| &lt; ${fm(m)}) — у контура здесь «пусто»`;
+    else{ const why=z<ZB?'отверстия нет (под дном)':z<ZL?'«пятка», стенка x = '+RH:(Math.abs(z)<ZC?'круг Ø45: x = √(22,5² − z²)':'паз, стенка x = '+SH);
+      c=`z = <u>${fm(z,1)}</u>: на этой высоте K занимает |x| &lt; <u>${fm(m)}</u> (${why})<br>ближайший материал: x = ±${fm(m)}<br>r = √(55² − ${fm(m)}²) = <i>${fm(ch(R,m))}</i><br>y = √(${fm(ch(R,m))}² − ${fm(Math.abs(z),1)}²) = <i>${fm(y)}</i>`; }
+    $('zCalc').innerHTML=c;
+  }
+  sl.addEventListener('input',draw);
+  $('zChips').addEventListener('click',e=>{ const bn=e.target.closest('[data-z]'); if(bn){ sl.value=bn.dataset.z; draw(); } });
+  draw();
+})();
+
+/* ═════════ 5. Строим вид слева по шагам ═════════ */
+(function(){
+  const s=3.5, cx=210, cy=215, W=420, H=430, L=LV(cx,cy,s), TH='stroke-width=".9"';
+  const thin=(pts,c,ex)=>poly(pts,`stroke="${c}" stroke-width="1" ${ex||''}`), thick=(pts,c)=>poly(pts,`stroke="${c||INK}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"`);
+  const hline=(z,c,t,d)=>`<line x1="8" y1="${L.V(z)}" x2="${W-8}" y2="${L.V(z)}" stroke="${c||BL}" stroke-width="1"${d===0?'':' stroke-dasharray="6 3"'}/>`+(t?T(W-10,L.V(z)-4,t,`font-size="11" fill="${c||BL}" text-anchor="end" font-weight="700"`):'');
+  const base=()=>`<circle cx="${cx}" cy="${cy}" r="${R*s}" fill="none" stroke="${GY}" stroke-width="1.1"/>
+    <circle cx="${cx}" cy="${cy}" r="${RI*s}" fill="none" stroke="${GY}" stroke-width="1" stroke-dasharray="5 3"/>
+    <line x1="${cx}" y1="6" x2="${cx}" y2="${H-6}" ${AXC}/><line x1="${cx-R*s-10}" y1="${cy}" x2="${cx+R*s+10}" y2="${cy}" ${AXC}/>${T(cx+6,cy-6,'O‴',`font-size="11" fill="${INK}"`)}`;
+  const bands=outerBands();
+  const arcsFull=(r,c)=>`<circle cx="${cx}" cy="${cy}" r="${r*s}" fill="none" stroke="${c}" stroke-width="1"/>`;
+  const contour=(withSteps)=>{ let o=''; [1,-1].forEach(sg=>{ bands.forEach(q=>{ o+= q.vert!=null?thick([L.P(sg*q.vert,q.z0),L.P(sg*q.vert,q.z1)],q.c):thick(arcPts(L,q.r,q.z0,q.z1,sg,60),q.c); });
+    if(withSteps){ o+=thick([L.P(sg*ch(r10,-ZL),ZL),L.P(sg*ch(r20,-ZL),ZL)],INK)+thick([L.P(sg*ch(r20,-ZB),ZB),L.P(sg*ch(R,-ZB),ZB)],INK); } }); return o; };
+  const cav=()=>{ let o=''; const d='stroke="#111" stroke-width="1.5" stroke-dasharray="6 3.5"'; [1,-1].forEach(sg=>{
+      o+=poly(arcPts(L,q10,q10,ZC,sg,40),d)+poly([L.P(sg*yCi,ZC),L.P(sg*yCi,-ZC)],d)+poly(arcPts(L,q10,-ZC,ZL,sg,24),d)
+        +poly([L.P(sg*ch(q10,-ZL),ZL),L.P(sg*ch(q20,-ZL),ZL)],d)+poly(arcPts(L,q20,ZL,-q20,sg,24),d); }); return o; };
+  const lab=(x,y,t,c,a)=>T(x,y,t,`font-size="11.5" font-weight="700" fill="${c}" text-anchor="${a||'start'}"`);
+  const STEPS=[
+    {t:'Ось, шар и полость',
+     svg:()=>base(),
+     txt:`<p>На виде слева шар — окружность <b>Ø110</b> (R = 55) с центром <b>O‴</b>, полость — окружность Ø80, на разрезе штриховая. Рисуй их тонко, это только основа. <b>Высоты</b> берёшь с главного вида на одной горизонтали.</p>
+          <p>Контур детали получится из <b>кусков дуг с тем же центром O‴</b>, но разных радиусов.</p>`},
+    {t:'Радиусы: хорды x = ±10 и ±20',
+     svg:()=>base()+arcsFull(r10,BL)+arcsFull(r20,GR)+lab(cx+r10*s*.72+6,cy-r10*s*.72-6,'r = '+fm(r10),BL)+lab(cx-r20*s*.72-6,cy-r20*s*.72-14,'r = '+fm(r20),GR,'end'),
+     txt:`<p>Снимаем радиусы с виду сверху (см. шаг 3): вертикаль <span class="f">x = 10</span> даёт хорду → r = <b>${fm(r10)}</b>; вертикаль <span class="f">x = 20</span> → r = <b>${fm(r20)}</b>. Проводи обе окружности <b>тонко и целиком</b> с центром O‴. Использовать из них будем только нужные куски.</p>`},
+    {t:'Высоты с главного вида',
+     svg:()=>base()+arcsFull(r10,BL)+arcsFull(r20,GR)+hline(ZC,BL,'z = '+fm(ZC,2))+hline(-ZC,BL,'z = −'+fm(ZC,2))+hline(ZL,OR,'z = −30')+hline(ZB,MG,'z = −45'),
+     txt:`<p>На главном виде отмечаем, где <b>профиль K меняется</b>, и проводим <b>горизонтали</b> на виде слева:</p>
+          <ul><li><span class="f">z = ±${fm(ZC,2)}</span>: точки, где круг Ø45 встречает стенки паза x = ±10 (<span class="f">z = √(22,5² − 10²)</span>);</li><li><span class="f">z = −30</span>: уступ, низ паза и потолок «пятки»;</li><li><span class="f">z = −45</span>: дно «пятки».</li></ul>
+          <p>Эти горизонтали разрежут окружности на куски и покажут, <b>где какая дуга работает</b>.</p>`},
+    {t:'Вертикаль y = ±50,2',
+     svg:()=>base()+arcsFull(r10,BL)+arcsFull(r20,GR)+hline(ZC,BL)+hline(-ZC,BL)+hline(ZL,OR)+hline(ZB,MG)
+       +[1,-1].map(sg=>thick([L.P(sg*yC,ZC),L.P(sg*yC,-ZC)],OR)).join('')+lab(cx-yC*s-8,cy+4,'y = '+fm(yC),OR,'end'),
+     txt:`<p>Между высотами <span class="f">z = ±${fm(ZC,2)}</span> шар с обеих сторон срезан <b>цилиндром Ø45</b>: пустота идёт на всю глубину. Крайняя точка остатка лежит там, где цилиндр выходит на шар, это окружность в плоскости <span class="f">y = √(55² − 22,5²) = ${fm(yC)}</span>. На виде слева она — <b>вертикальный отрезок</b>.</p>
+          <p>Откуда 50,2 графически: горизонталь <span class="f">z = 22,5</span> (верх круга Ø45) до окружности R55 → y = 50,2.</p>`},
+    {t:'Обводим контур и ступеньки',
+     svg:()=>base()+contour(true)+lab(cx+8,cy-r10*s-6,'54,1',BL)+lab(cx+yC*s+8,cy-4,'50,2',OR)+lab(L.U(ch(r20,38))+10,L.V(-38),'51,2',GR)+lab(cx+14,cy+R*s-12,'55',MG)
+       +lab(cx+ch(r20,30)*s-8,L.V(ZL)-9,'ступенька',INK,'end'),
+     txt:`<p>Сверху вниз берём <b>только нужные куски</b>:</p>
+       <ul><li>от верха до <span class="f">z = ${fm(ZC,2)}</span>: дуга r = <b style="color:${BL}">${fm(r10)}</b> (стенка паза);</li><li>вертикаль y = <b style="color:${OR}">${fm(yC)}</b> до <span class="f">z = −${fm(ZC,2)}</span> (цилиндр);</li><li>снова r = ${fm(r10)} до <span class="f">z = −30</span>;</li><li><b>ступенька</b> по горизонтали z = −30 на дугу r = <b style="color:${GR}">${fm(r20)}</b> (от y = ${fm(ch(r10,30))} до ${fm(ch(r20,30))});</li><li>дуга r = ${fm(r20)} до <span class="f">z = −45</span>;</li><li><b>ступенька</b> по горизонтали z = −45 на дугу r = <b style="color:${MG}">55</b> (от y = ${fm(ch(r20,45))} до ${fm(ch(R,45))});</li><li>дальше — обычная окружность R55 вниз до полюса.</li></ul>
+       <p>Вот откуда ступеньки: между двумя дугами разных радиусов остаётся кусок горизонтали, потому что профиль K на этой высоте стал шире.</p>`},
+    {t:'Полость — штрихом, тем же способом',
+     svg:()=>base()+contour(true)+cav()+lab(cx+q10*s*.55,cy-q10*s*.8,fm(q10),INK)+lab(cx+yCi*s+6,cy+4,fm(yCi),INK)+lab(cx+q20*s*.35,cy+q20*s*.62,fm(q20),INK),
+     txt:`<p>Полость Ø80 <b>строится точно так же</b>, но с R<sub>п</sub> = 40: радиусы <b>${fm(q10)}</b> (стенка паза), вертикаль <b>y = ${fm(yCi)}</b> (цилиндр Ø45 уходит в полость), <b>${fm(q20)}</b> (стенка «пятки»). Ниже <span class="f">z = −34,6</span> полость кончается: грань x = 20 ушла за её радиус.</p>
+          <p>На левой половине вида линии штриховые (внутри), а на правой в разрезе те же линии станут <b>сплошными</b>. Разбираем в шаге 6.</p>`}
+  ];
+  let k=0;
+  $('stDots').innerHTML=STEPS.map(()=>'<i></i>').join('');
+  function show(){
+    const st=STEPS[k]; $('stN').textContent=`Шаг ${k+1} из ${STEPS.length}`; $('stT').textContent=st.t;
+    $('figStep').innerHTML=`<svg viewBox="0 0 ${W} ${H}">${st.svg()}</svg>`; $('stTxt').innerHTML=st.txt;
+    [...$('stDots').children].forEach((d,i)=>d.classList.toggle('on',i<=k));
+    $('stPrev').disabled=k===0; $('stNext').disabled=k===STEPS.length-1;
+  }
+  $('stPrev').onclick=()=>{ if(k>0){ k--; show(); } };
+  $('stNext').onclick=()=>{ if(k<STEPS.length-1){ k++; show(); } };
+  show();
+})();
+
+/* ═════════ 6. Разрез на настоящем виде ═════════ */
+(function(){
+  const K=900/154.34; // px/мм в картинках видов (900 px на 154,3 мм)
+  const SC=5.8318209, C0=450;                       // как в отрисовке сайта: 5,83 px/мм, центр (450;450)
+  // правая половина вида слева — передняя сторона (y<0): u = 450 + 5,83·|y|, v = 450 − 5,83·z
+  const P=(y,z)=>[C0+SC*y,C0-SC*z];
+  const ARC=(r,z0,z1,n)=>{ const a=[]; n=n||36; for(let i=0;i<=n;i++){ const z=z0+(z1-z0)*i/n; a.push(P(ch(r,z),z)); } return a; };
+  const ITEMS=[
+    {c:BL,t:'Верхняя дуга полости r = '+fm(q10),d:'Стенка паза x = 10 режет полость Ø80: r = √(40² − 10²). Идёт от оси (z = 38,7) вниз до высоты z = '+fm(ZC,2)+', где паз сменяется кругом Ø45.',
+     pts:ARC(q10,q10,ZC), lab:()=>P(ch(q10,30)-7,30)},
+    {c:OR,t:'Прямоугольник: стенка цилиндра Ø45 между полостью и шаром',d:'Круг Ø45 продолжается вдоль y от полости (y = '+fm(yCi)+') до наружной сферы (y = '+fm(yC)+'). Его верх и низ на этом виде — горизонтали z = ±'+fm(ZC,2)+': здесь цилиндр встречает стенки паза x = ±10.',
+     pts:[P(yCi,ZC),P(yC,ZC),P(yC,-ZC),P(yCi,-ZC),P(yCi,ZC)], lab:()=>P((yCi+yC)/2,0)},
+    {c:GR,t:'Дуга r = '+fm(q10)+' до горизонтали z = −30',d:'Та же стенка паза x = 10 продолжается ниже круга Ø45: тот же радиус, что у верхней дуги, пока паз не закончился на z = −30. Дуга упирается в горизонталь на y = '+fm(ch(q10,30))+'. <b>Это тот «переход» из дуги в горизонталь.</b>',
+     pts:[P(yCi,-ZC),...ARC(q10,-ZC,ZL,18)], lab:()=>P(38,-25)},
+    {c:MG,t:'Горизонталь z = −30: уступ, виден ребром',d:'Горизонтальная грань z = −30 на виде слева вырождается в линию. Её длина — от дуги полости (y = '+fm(ch(q20,30))+' на x = 20) до наружной сферы (y = '+fm(ch(r10,30))+' на x = 10): <b>концы берутся там, где горизонталь пересекает дуги</b>.',
+     pts:[P(ch(q20,30),ZL),P(ch(r10,30),ZL)], lab:()=>P(28,-37)},
+    {c:BL,t:'Короткая дуга r = '+fm(q20)+' влево от горизонтали',d:'Ниже z = −30 в дело вступает стенка «пятки» x = 20, она режет полость по окружности r = √(40² − 20²) = '+fm(q20)+'. Это дуга от горизонтали вниз до оси (z = −'+fm(q20)+'). <b>Тут радиус сменился с '+fm(q10)+' на '+fm(q20)+', потому что паз сменился «пяткой».</b>',
+     pts:ARC(q20,ZL,-q20,24), lab:()=>P(8,-26)},
+    {c:OR,t:'Наружная дуга r = '+fm(r10)+' → ступенька → r = '+fm(r20),d:'От правого нижнего угла прямоугольника (y = '+fm(yC)+', z = −'+fm(ZC,2)+') идёт дуга r = '+fm(r10)+' до z = −30, там ступенька на дугу r = '+fm(r20)+' (стенка «пятки» x = 20). Вот почему контур «ломается» не в одном месте, а в двух.',
+     pts:[...ARC(r10,-ZC,ZL,12),P(ch(r20,30),ZL),...ARC(r20,ZL,ZB,18)], lab:()=>P(57,-26)},
+    {c:GR,t:'Дно z = −45: «крылышко» и штриховка',d:'Ниже z = −45 стенок K уже нет (профиль закончился), и контур возвращается на окружность R55. Ступенька по горизонтали z = −45 (от y = '+fm(ch(r20,45))+' до '+fm(ch(R,45))+'). В самой плоскости разреза остаётся только дно: <b>штриховка под горизонталью z = −45</b> с дугой R55 снизу.',
+     pts:[P(0,ZB),P(ch(R,45),ZB),...ARC(R,ZB,-R,26)], lab:()=>P(14,-50)},
+    {c:MG,t:'Верхний наружный контур r = '+fm(r10),d:'Выше z = '+fm(ZC,2)+' контур идёт по дуге r = '+fm(r10)+' (стенка паза x = 10), а не по R55. Разница около 1 мм, но дуга сидит чуть внутри окружности шара.',
+     pts:ARC(r10,r10,ZC,40), lab:()=>P(ch(r10,44)+7,44)},
+  ];
+  const svg=$('figCut');
+  const hl=i=>{ [...$('leg').children].forEach((b,j)=>b.classList.toggle('on',j===i)); draw(i); };
+  function draw(i){
+    let o=`<image href="img/left.svg" x="0" y="0" width="900" height="900"/>`;
+    // номера на всех пунктах
+    ITEMS.forEach((it,j)=>{ const p=it.lab(); o+=`<g opacity="${i==null||i===j?1:.35}"><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="17" fill="${it.c}" stroke="#fff" stroke-width="2.5"/><text x="${p[0].toFixed(1)}" y="${(p[1]+6.5).toFixed(1)}" font-size="19" font-weight="700" fill="#fff" text-anchor="middle">${j+1}</text></g>`; });
+    if(i!=null){ const it=ITEMS[i]; o+=`<path d="M${PX(it.pts).join('L')}" fill="none" stroke="${it.c}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>`; }
+    svg.innerHTML=`<svg viewBox="430 105 370 690">${o}</svg>`;
+  }
+  $('leg').innerHTML=ITEMS.map((it,j)=>`<button type="button" data-i="${j}"><span class="no" style="background:${it.c}">${j+1}</span><div><b>${it.t}</b><span>${it.d}</span></div></button>`).join('');
+  $('leg').addEventListener('click',e=>{ const b=e.target.closest('[data-i]'); if(b) hl(+b.dataset.i); });
+  draw(null);
+})();
+</script>
+</body>
+</html>
