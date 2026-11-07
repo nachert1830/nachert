@@ -6969,6 +6969,7 @@ return {has,html,bind,SPEC,ans3};
 <script src="dz/ig/3/variants.js"></script><script src="dz/ig/3/method.js"></script><script src="dz/ig/3/models.js"></script>
 <script src="dz/ig/4/variants.js"></script><script src="dz/ig/4/method.js"></script><script src="dz/ig/4/models.js"></script>
 <script src="dz/ig/5/variants.js"></script><script src="dz/ig/5/method.js"></script><script src="dz/ig/5/models.js"></script>
+<script src="dz/ig/8/variants.js"></script><script src="dz/ig/8/method.js"></script><script src="dz/ig/8/models.js"></script>
 <script src="kernel/sheet.js"></script>
 <script>
 
@@ -29844,7 +29845,7 @@ function sheetSVG(model,title,sub,task,mode){
     if(D.left) FL.L.forEach(h=>{ o+=ln(P(D.left,[0,h.y,h.z0-4],X0+S,Y0),P(D.left,[0,h.y,h.z1+4],X0+S,Y0),'#111',AX,.7); }); }
   const arr=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*9-dy*2.6)},${f(dy*9+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="#111"/>`;
   const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+(hz?22*Km+16:26);   /* при горизонтальном разрезе размер — за его штрихом */
-  const noDim=!!(window.IG_WB&&IG_WB.includes(model));   /* рабочая тетрадь: размеры на листе не нужны (в задании их нет) */
+  const noDim=!!(window.IG_WB&&IG_WB.includes(model))||!!model.noGivenDims;   /* рабочая тетрадь: размеры на листе не нужны (в задании их нет); noGivenDims — у шара высота и Ø совпадают, размеры — на листе (задание №8) */
   if(!noDim) o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.7)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.7)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.7)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
     +`<text x="${f(hx-5)}" y="${f((hb[1]+ht[1])/2)}" transform="rotate(-90 ${f(hx-5)} ${f((hb[1]+ht[1])/2)})" class="igs-dim" text-anchor="middle">${Math.round(z1-z0)}</text>`;
   const sx=Math.abs(b[0][0]+b[1][0])<0.5, wl=P(D.front,[sx?-r:b[0][0],0,zw],X0,Y0), wr=P(D.front,[sx?r:b[1][0],0,zw],X0,Y0), wy=P(D.front,[0,0,z0],X0,Y0)[1]+24;   /* несимметричная деталь — по её краям */
