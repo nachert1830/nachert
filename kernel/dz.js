@@ -23,7 +23,7 @@ const DZR={
   def(id,part){ const d=defs[id]||(defs[id]={id}); Object.assign(d,part); prep(d); return d; },
   get(id){ return defs[id]||null; },
   all(){ return Object.values(defs); },
-  list(course){ return Object.values(defs).filter(d=>d.num&&(!course||d.course===course)).sort((a,b)=>(a.course===b.course?0:a.course==='ng'?-1:1)||a.num-b.num); },
+  list(course){ return Object.values(defs).filter(d=>d.num&&!d.hidden&&(!course||d.course===course)).sort((a,b)=>(a.course===b.course?0:a.course==='ng'?-1:1)||a.num-b.num); },
   typeOf(id,n){ const d=defs[id]; return d&&d.types?d.types.find(t=>+n>=t.from&&+n<=t.to)||null:null; },
   /* решено ли: у НГ — решатель по данным варианта (solve), у ИГ — 3D-модель детали (part) */
   has(id,n){ const d=defs[id]; if(!d) return false; if(d.part){ try{ return !!d.part(+n); }catch(e){ return false; } }
