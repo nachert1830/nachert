@@ -88,16 +88,21 @@ function bind(drawn,REF,o){ o=o||{}; const segs=drawn.segs||[], circ=drawn.circl
       const ca=Math.cos(th)*s, sa=Math.sin(th)*s, A=[ca,-sa,0,sa,ca,0]; A[2]=c.cx-(A[0]*rc.c[0]+A[1]*rc.c[1]); A[5]=c.cy-(A[3]*rc.c[0]+A[4]*rc.c[1]);
       hyp.push({A,sc:cover(A,S,1.5*s)}); }));
     hyp.sort((a,b)=>b.sc-a.sc); let best=null;
-    hyp.slice(0,4).forEach(h=>{ let A=icp(h.A,S,[3,2,1.5],'sim'); A=icp(A,S,[1.5,1,1],'aff'); const s=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3])), cv=cover(A,S,1*s);
+    hyp.slice(0,4).forEach(h=>{ let A=icp(h.A,S,[6,4,3,2],'sim'); A=icp(A,S,[3,2,1.5,1],'aff'); const s=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3])), cv=cover(A,S,1*s);
       if(!best||cv>best.cv) best={A,cv,s}; });
     if(best) res.push(Object.assign({n,S},best)); });
-  if(!res.length) return null; res.sort((a,b)=>b.cv-a.cv); const B=res[0], S=B.S, A=B.A, s=B.s;
-  /* невязка и сколько очерков легло (≥ 60 % длины ближе 1 мм); точность — доля начерченного у очерков и линий эталона */
-  const hit=new Map(), tot=new Map(), d2=[], pairs=[]; S.samples.forEach((m,i)=>{ const k=S.ids[i]; tot.set(k,(tot.get(k)||0)+1); const p=apA(A,m), [d,j]=F(p[0],p[1]); if(d<=1*s){ hit.set(k,(hit.get(k)||0)+1); d2.push(d*d); pairs.push([m,PT[j]]); } });
-  const inl=[...tot.keys()].filter(k=>(hit.get(k)||0)>=0.6*tot.get(k)).length, rms=Math.sqrt(d2.reduce((a,v)=>a+v,0)/Math.max(1,d2.length))/s;
-  const r={dz:4,n:B.n,inl,of:tot.size,rmsMm:+rms.toFixed(3),ppm:s,A,cover:+B.cv.toFixed(3),second:res[1]?{n:res[1].n,cover:+res[1].cv.toFixed(3)}:null};
-  /* перспектива снимка: гомография по тем же парам (их сотни) — только если заметно лучше аффинного */
-  try{ if(pairs.length>=40){ const M=IMG.H.fit(pairs.map(q=>q[0]),pairs.map(q=>q[1])); if(M){ let e=0; pairs.forEach(([m,p])=>{ const q=IMG.H.apply(M,m); e+=(q[0]-p[0])**2+(q[1]-p[1])**2; }); const hr=Math.sqrt(e/pairs.length)/s; if(hr<rms-0.02){ r.M=M; r.hom={inl,rmsMm:+hr.toFixed(3)}; } } } }catch(e){}
+  if(!res.length) return null; res.sort((a,b)=>b.cv-a.cv);
+  /* перспектива снимка: три лучших варианта уточняются ICP с гомографией (наклон телефона аффинное не берёт: низ листа
+     уезжает на 1–2 мм) — и только потом сравниваются */
+  const apM=(M,m)=>IMG.H.apply(M,m), stat=(M,S,s)=>{ const hit=new Map(), tot=new Map(), d2=[], pairs=[]; let k1=0;
+    S.samples.forEach((m,i)=>{ const k=S.ids[i]; tot.set(k,(tot.get(k)||0)+1); const p=apM(M,m), [d,j]=F(p[0],p[1]); if(d<=1*s){ k1++; hit.set(k,(hit.get(k)||0)+1); d2.push(d*d); pairs.push([m,PT[j]]); } });
+    return {cv:k1/S.samples.length,inl:[...tot.keys()].filter(k=>(hit.get(k)||0)>=0.6*tot.get(k)).length,of:tot.size,rms:Math.sqrt(d2.reduce((a,v)=>a+v,0)/Math.max(1,d2.length))/s,pairs}; };
+  res.slice(0,3).forEach(b=>{ let M=b.A.concat([0,0,1]); b.st=stat(M,b.S,b.s);
+    for(const t of [3,2,1.5,1,1]){ const P=[]; b.S.samples.forEach(m=>{ const p=apM(M,m), [d,k]=F(p[0],p[1]); if(k>=0&&d<=t*b.s) P.push([m,PT[k]]); }); if(P.length<40) break;
+      let M2=null; try{ M2=IMG.H.fit(P.map(q=>q[0]),P.map(q=>q[1])); }catch(e){} if(!M2) break; const st=stat(M2,b.S,b.s); if(st.cv+1e-9<b.st.cv-0.01) break; M=M2; b.st=st; b.M=M; } });
+  const top=res.slice(0,3).sort((a,b)=>b.st.cv-a.st.cv), B=top[0], st=B.st, second=top[1]||res[1];
+  const r={dz:4,n:B.n,inl:st.inl,of:st.of,rmsMm:+st.rms.toFixed(3),ppm:B.s,A:B.A,cover:+st.cv.toFixed(3),second:second?{n:second.n,cover:+(second.st?second.st.cv:second.cv).toFixed(3)}:null};
+  if(B.M){ r.M=B.M; r.hom={inl:st.inl,rmsMm:+st.rms.toFixed(3)}; }
   return r; }
 
 const api={classify,shapes,bind,dense,plen};
