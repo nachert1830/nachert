@@ -46,13 +46,13 @@ function verify(copy,ref,o){ o=o||{}; const outl={F:[],H:[]}; (ref.outlines||[])
       let bad=null; ink.filter(q=>q.curve).forEach(q=>{ const mine=q.p.filter(p=>{ const dm=Math.min(...Bs.map(x=>x.idx(p[0],p[1],BAD.near))); if(!(dm<=BAD.near)) return false;
           return all.filter(x=>x.li!==li||x.v!==v).every(x=>x.idx(p[0],p[1],dm)>=dm); });
         if(mine.length*0.5<BAD.len) return; const dd=mine.map(p=>Math.min(...Bs.map(x=>x.idx(p[0],p[1],BAD.near)))), far=dd.filter(x=>x>BAD.far).length/dd.length;
-        if(far>=BAD.share&&(!bad||far>bad.far)) bad={far,len:mine.length*0.5,mean:dd.reduce((a,b)=>a+b,0)/dd.length}; });
+        if(far>=BAD.share&&(!bad||far>bad.far)){ const fp=mine.filter((p,i)=>dd[i]>BAD.far), j=fp[fp.length>>1]; bad={far,len:mine.length*0.5,mean:dd.reduce((a,b)=>a+b,0)/dd.length,at:j?[+j[0].toFixed(1),+j[1].toFixed(1)]:null}; } });
       let st='не уверен', why='';
       if(cov>=OK.cov&&med<=OK.med&&p90<=OK.p90){ st='верно'; why='совпадает с эталоном на '+Math.round(cov*100)+' %'; }
       else if(bad&&cov<BAD.cov&&o.weak){ why='кривая идёт в стороне от эталона, но привязка к варианту неточная — не утверждаю'; }
       else if(bad&&cov<BAD.cov){ st='расходится'; why='начерченная кривая ('+Math.round(bad.len)+' мм) идёт в среднем в '+bad.mean.toFixed(1).replace('.',',')+' мм от эталона'; }
       else why=cov<0.2?'линия не найдена на копии':'совпадает с эталоном только на '+Math.round(cov*100)+' %';
-      proj[v]={st,why,cov:+cov.toFixed(3),med:med==null?null:+med.toFixed(2),p90:p90==null?null:+p90.toFixed(2),bad:bad?{far:+bad.far.toFixed(2),len:+bad.len.toFixed(1),mean:+bad.mean.toFixed(2)}:null}; });
+      proj[v]={st,why,cov:+cov.toFixed(3),med:med==null?null:+med.toFixed(2),p90:p90==null?null:+p90.toFixed(2),bad:bad?{far:+bad.far.toFixed(2),len:+bad.len.toFixed(1),mean:+bad.mean.toFixed(2),at:bad.at}:null}; });
     const J=Object.values(proj).filter(x=>x.st!=='на очерке'), st=J.some(x=>x.st==='расходится')?'расходится':J.length&&J.every(x=>x.st==='верно')?'верно':'не уверен';
     const ch=(L.chars||[]).map(c=>['F','H'].map(v=>{ const at=c[v]; return pts.some(p=>Math.hypot(p[0]-at[0],p[1]-at[1])<=TOL); })), found=ch.reduce((a,x)=>a+x.filter(Boolean).length,0);
     const why=st==='верно'?'линия пересечения построена верно':st==='расходится'?'линия пересечения расходится с эталоном':'не уверен';

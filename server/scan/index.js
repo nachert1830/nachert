@@ -19,6 +19,7 @@
 'use strict';
 const crypto=require('crypto');
 const EY=(()=>{ try{ return require('./eyes.js'); }catch(e){ return require('../lib/eyes.js'); } })();
+const SPR=(()=>{ try{ return require('./sheetprompts.js'); }catch(e){ return require('../lib/sheetprompts.js'); } })();
 let doFetch=(...a)=>fetch(...a);
 const ORIGINS=()=>(process.env.SCAN_ORIGINS||'https://nachert1830.ru,https://www.nachert1830.ru').split(',').map(s=>s.trim()).filter(Boolean);
 const norm=s=>String(s||'').trim().toLowerCase().replace(/ё/g,'е'), sha=s=>crypto.createHash('sha256').update(norm(s)).digest('hex');
@@ -102,7 +103,9 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
   const env=process.env, digitM=model(b.model,env.SCAN_DIGIT_MODEL||MODELS.sonnet), checkM=model(env.SCAN_CHECK_MODEL,MODELS.opus), layoutM=model(env.SCAN_LAYOUT_MODEL,MODELS.haiku);
   const cfgOf=m=>EY.eyesFromEnv({PROXYAPI_KEY:key,EYES_BEST_MODEL:'off',EYES_DIGIT_MODEL:m,EYES_LAYOUT_MODEL:layoutM});
   /* OpenRouter сам считает цену в $ (usage.cost) — она точнее нашей оценки по PRICE */
-  const q={image:img,w,h,consent:true}, spend=r=>{ const u=(r&&r.info&&r.info.usage)||{}, pr=PRICE(r&&r.model), c=typeof u.cost==='number'?u.cost:(u.prompt_tokens||0)*pr[0]+(u.completion_tokens||0)*pr[1]; state.spent+=c; return {c,u}; };
+  /* условие задачи (ДЗ и вариант, если выбраны или уже узнаны): только номера — текст подсказки собирает сервер (sheetprompts.taskHint) */
+  const tk=b.task&&typeof b.task==='object'?b.task:null, hint=mode!=='layout'&&tk&&[3,4,5].includes(+tk.dz)?SPR.taskHint(+tk.dz,tk.n):'';
+  const q={image:img,w,h,consent:true,hint}, spend=r=>{ const u=(r&&r.info&&r.info.usage)||{}, pr=PRICE(r&&r.model), c=typeof u.cost==='number'?u.cost:(u.prompt_tokens||0)*pr[0]+(u.completion_tokens||0)*pr[1]; state.spent+=c; return {c,u}; };
   const orKey=env.OPENROUTER_API_KEY||'', orCfg=m=>{ const c=EY.eyesFromEnv({EYES_URL:EY.OR_URL,EYES_MODEL:orModel(m),OPENROUTER_API_KEY:orKey,EYES_BEST_MODEL:'off',EYES_DIGIT_MODEL:'off',EYES_LAYOUT_MODEL:'off'}); return Object.assign(c,{digit:c,layout:c}); };
   const one=(c,m,timeout)=>mode==='layout'?EY.askLayout(c,q,{fetch:doFetch,timeout}):EY.askCrop(c,Object.assign({maxTokens:TOKENS(m)},q),{fetch:doFetch,timeout});
   /* ProxyAPI; отказ по деньгам/лимиту — запоминаем (для пульта владельца) и, если есть ключ, тот же запрос в OpenRouter: отказ приходит

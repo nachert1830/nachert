@@ -12,13 +12,13 @@
 (function(){
 'use strict';
 const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','/lab/font.js','/lab/sheets.js','/lab/rectify.js','/lab/lines.js',
- '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js','/lk/scan/verify.js','/lk/scan/bind4.js','/lk/scan/verify4.js'];
+ '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js','/lk/scan/verify.js','/lk/scan/bind4.js','/lk/scan/verify4.js','/lk/scan/verify5.js','/lk/scan/verdict.js'];
 
 let loading=null, ref4=null;
 /* эталон ДЗ №4 (lk/scan/dz4ref.json, ~0,5 МБ: линии пересечения и очерки 30 вариантов) — только когда он может понадобиться */
 function loadRef4(v){ if(self.SCANREF4) return Promise.resolve(self.SCANREF4); if(ref4) return ref4;
   ref4=fetch('/lk/scan/dz4ref.json?v='+(v||'lk1')).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.v) self.SCANREF4=j.v; return self.SCANREF4||null; }).catch(()=>null).then(x=>{ if(!x) ref4=null; return x; }); return ref4; }
-function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE&&self.SCANVERIFY&&self.SCANBIND4&&self.SCANVERIFY4) return Promise.resolve();
+function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE&&self.SCANVERIFY&&self.SCANBIND4&&self.SCANVERIFY4&&self.SCANVERIFY5&&self.SCANVERDICT) return Promise.resolve();
   if(loading) return loading;
   loading=LIBS.reduce((p,src)=>p.then(()=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src+'?v='+(v||'lk1'); s.async=false;
     s.onload=res; s.onerror=()=>rej(new Error('не загрузился модуль сканера '+src)); document.head.appendChild(s); })),Promise.resolve());
@@ -91,6 +91,15 @@ function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.
     const ok4=f=>f&&f.cover>=(c.dzSel===4?0.4:0.6)&&f.rmsMm<=1;
     let f4=b4(rf); if(ok4(f4)&&Math.abs(f4.ppm/(fit&&fit.ppm?fit.ppm:ppm)-1)>0.2){ const r2=refineAt(f4.ppm), g=b4(r2); if(ok4(g)&&g.n===f4.n){ rf=r2; f4=g; } }
     if(ok4(f4)) fit=f4; }
+  /* ДЗ №5 (lk/scan/verify5.js): поверхность одна на тип вариантов (конус, наклонный цилиндр, поверхность вращения) — привязка
+     по её очеркам и прямой AB тем же bind4 (окружности основания на π₁ дают масштаб и место); вариант внутри типа потом уточняется
+     по AB и подписям A, B (pickVariant, ниже). Пробуется, если задание — ДЗ №5 или «узнать само» и к ДЗ №2–4 чертёж не привязался */
+  const V5=self.SCANVERIFY5;
+  if(V5&&B4&&!(c.geo&&c.geo.dz!==5)&&(c.dzSel===5||(c.dzSel==null&&!bound23&&!(fit&&fit.dz===4)))){ const R5=V5.refs(), ns=c.vSel!=='auto'&&R5[+c.vSel]?+c.vSel:null;
+    const b5=r=>{ try{ const f=B4.bind({segs:r.segs.filter(q=>!q.unverified).map(q=>q.p),circles:(r.circles||[]).filter(q=>!q.unverified),curves:(r.curves||[]).filter(q=>!q.unverified).map(q=>q.p)},R5,{n:ns}); if(f) f.dz=5; return f; }catch(e){ return null; } };
+    const ok5=f=>f&&f.cover>=(c.dzSel===5?0.45:0.7)&&f.rmsMm<=1;
+    let f5=b5(rf); if(ok5(f5)&&Math.abs(f5.ppm/(fit&&fit.ppm?fit.ppm:ppm)-1)>0.2){ const r2=refineAt(f5.ppm), g=b5(r2); if(ok5(g)){ rf=r2; f5=g; } }
+    if(ok5(f5)){ f5.kind=V5.kindOf(f5.n); fit=f5; } }
   /* точки — на перекрёсток уточнённых линий (МНК по всем линиям, что через него проходят) или хотя бы на линию: копия
      геометрически согласована и точнее догадки модели; догадки обеих моделей — кандидаты (refine.placePoints) */
   /* точки условия по форме (голос листа: вариант и масштаб известны, а подписи не прочитаны или перепутаны) — refine.matchGiven */
@@ -100,10 +109,12 @@ function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.
   const pp=RF.placePoints(P.pts,rf.segs.filter(q=>!q.unverified).map(q=>q.p),{ppm:fit&&fit.ppm?fit.ppm:ppm,alts:mg?mg.alts:null}); P.pts=pp.map(q=>[q[0],q[1],q[2]]);
   const placed={vertex:pp.filter(q=>q[4]>=2).length,line:pp.filter(q=>q[4]===1).length,free:pp.filter(q=>!q[4]).length};
   /* привязка к варианту — заново, по уточнённым точкам: невязка честнее, мм копии точнее (не хуже прежней — иначе прежняя) */
-  if(!(fit&&fit.dz===4)){ let f2=null; try{ f2=SL.fitVariant(MG.toText(P),c.vSel,c.dzSel); }catch(e){} const rmsOf=f=>f&&f.rmsMm!=null?(f.hom?f.hom.rmsMm:f.rmsMm):null;
+  if(!(fit&&(fit.dz===4||fit.dz===5))){ let f2=null; try{ f2=SL.fitVariant(MG.toText(P),c.vSel,c.dzSel); }catch(e){} const rmsOf=f=>f&&f.rmsMm!=null?(f.hom?f.hom.rmsMm:f.rmsMm):null;
     if(f2&&rmsOf(f2)!=null&&f2.inl>=4&&(!fit||rmsOf(fit)==null||(f2.dz===fit.dz&&f2.n===fit.n&&f2.inl>=fit.inl&&rmsOf(f2)<=rmsOf(fit)+0.02))) fit=f2; }
   let toMm=null; if(fit&&fit.M){ const Mi=IMG.H.inv(fit.M); toMm=(x,y)=>IMG.H.apply(Mi,[x,y]); } else if(fit&&fit.A){ const a=fit.A, det=a[0]*a[4]-a[1]*a[3]; if(Math.abs(det)>1e-9) toMm=(x,y)=>{ const X=x-a[2], Y=y-a[5]; return [(a[4]*X-a[1]*Y)/det,(-a[3]*X+a[0]*Y)/det]; }; }
   const mmCopy=toMm?{pts:P.pts.map(q=>[q[0]].concat(toMm(q[1],q[2]).map(v=>+v.toFixed(2)))),txt:P.txt.map(q=>toMm(q[0],q[1]).map(v=>+v.toFixed(2)).concat(q[2])),segs:rf.segs.map(q=>({p:toMm(q.p[0],q.p[1]).concat(toMm(q.p[2],q.p[3])).map(v=>+v.toFixed(2)),src:q.src,unverified:!!q.unverified,dash:!!q.dash}))}:null;
+  /* ДЗ №5, вариант «авто»: очерки у вариантов типа общие — вариант по прямой AB и подписям A, B в мм листа */
+  if(fit&&fit.dz===5&&mmCopy&&V5&&c.vSel==='auto'){ const pv=V5.pickVariant({pts:mmCopy.pts,segs:mmCopy.segs.map(q=>({p:q.p,unv:q.unverified}))},fit.kind); if(pv){ fit.pick={n:pv.n,cov:pv.cov,labels:pv.labels,second:pv.second&&{n:pv.second.n,cov:pv.second.cov,labels:pv.second.labels}}; fit.bindN=fit.n; fit.n=pv.n; } }
   const circles=(rf.circles||[]).map(c=>{ const poly=SL.arcPoints(c); return {src:c.src,unverified:!!c.unverified,dash:!!c.dash,full:!!c.full,c:[c.cx,c.cy,c.r].map(v=>+v.toFixed(2)),a:c.full?null:[+c.a1.toFixed(1),+c.a2.toFixed(1)],poly:poly.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?poly.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}; });
   /* кривые (ДЗ №4): ломаные px фото и мм листа — как дуги */
   const curves=(rf.curves||[]).map(q=>({src:q.src,unverified:!!q.unverified,dash:!!q.dash,ink:+(q.ink||0).toFixed(2),poly:q.p.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?q.p.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}));
@@ -190,12 +201,12 @@ function create(o){ o=o||{};
     const redo=[], tag=(dr,u)=>{ if(dr&&u.photo!=null) dr.photo=u.photo; return dr; };
     if(dzSel===4||dzSel==null) await loadRef4();
     const jobs=units.map((u,i)=>async()=>{ const d=u.d, id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(u.bmp,d.box,u.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),CUT_SIDE,VIEW), ctx={W:u.W,H:u.H,vSel,dzSel,rot:u.rot,d};
-      let jA; try{ jA=await ask('crop',cr.m.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return tag({part:d.part,box:d.box,error:e.message},u); } acc.cost+=jA.cost||0; acc.calls++;
+      const task=dzSel?{dz:dzSel,n:vSel==='auto'?null:+vSel}:null; let jA; try{ jA=await ask('crop',cr.m.c,Object.assign({},sel.model?{model:sel.model}:{},task&&sel.hint!==false?{task}:{})); }catch(e){ step(id,nm+': '+e.message,'err'); return tag({part:d.part,box:d.box,error:e.message},u); } acc.cost+=jA.cost||0; acc.calls++;
       const reads=[{mode:'crop',model:jA.model,fallback:jA.fallback||null,cost:jA.cost||0}];
       let R=digest(cr,jA.text,null,ctx), tB=null;
       /* вторая, независимая оцифровка другой моделью — если первая слабая (или «максимальная точность»); сливаются, карандаш решает */
       if(!jA.fallback&&(prec==='max'||(prec==='auto'&&R.q.weak))){ step(id,nm+': вторая, независимая оцифровка другой моделью'+(R.q.why.length?' ('+R.q.why.join(', ')+')':'')+'…');
-        try{ const jB=await ask('crop2',cr.m.c); acc.cost+=jB.cost||0; acc.calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
+        try{ const jB=await ask('crop2',cr.m.c,task&&sel.hint!==false?{task}:null); acc.cost+=jB.cost||0; acc.calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
           const M=digest(cr,jA.text,jB.text,ctx); if(better(M.q,R.q)){ R=M; tB=jB.text; } else R.dr.secondKept=false; }
         catch(e){ R.dr.secondError=e.message; } }
       const dr=R.dr, fit=dr.fit, mg=dr.merge; dr.reads=reads; dr.quality=R.q;
@@ -219,11 +230,19 @@ function create(o){ o=o||{};
        подписями студент ни строил; на офлайн-копии, без запросов */
     if(self.SCANVERIFY&&self.CORE&&self.CORE.dzVariants) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==3||dr.fit.rmsMm==null) return;
       try{ const gv=self.CORE.dzVariants.get(3,+dr.fit.n); if(!gv) return; const v=self.SCANVERIFY.verify(dr.mm.pts,gv.data);
-        if(v.found.length) dr.verify={verdict:v.verdict,found:v.found.map(f=>({k:f.k,what:f.what,got:Array.isArray(f.got)?f.got.map(t=>+t.toFixed(1)):+f.got.toFixed(1),want:Array.isArray(f.want)?f.want.map(t=>+t.toFixed(1)):+f.want.toFixed(1),st:f.st,from:f.from,unit:f.unit}))}; }catch(e){} });
+        dr._v3=v; if(v.found.length) dr.verify={verdict:v.verdict,found:v.found.map(f=>({k:f.k,what:f.what,at:f.at,got:Array.isArray(f.got)?f.got.map(t=>+t.toFixed(1)):+f.got.toFixed(1),want:Array.isArray(f.want)?f.want.map(t=>+t.toFixed(1)):+f.want.toFixed(1),st:f.st,from:f.from,unit:f.unit}))}; }catch(e){} });
     /* ДЗ №4 (lk/scan/verify4.js): линии пересечения копии против эталона варианта — каким бы способом их ни строили */
     if(self.SCANVERIFY4&&self.SCANREF4) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==4) return; const ref=self.SCANREF4[dr.fit.n]; if(!ref) return;
       try{ dr.verify4=self.SCANVERIFY4.verify({curves:(dr.curves||[]).filter(q=>q.mm).map(q=>({p:q.mm,unv:q.unverified})),segs:dr.mm.segs.map(q=>({p:q.p,unv:q.unverified})),
         arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),pts:dr.mm.pts},ref,{weak:!(dr.fit.cover>=0.85&&(dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm)<=0.45)}); }catch(e){} });
+    /* ДЗ №5 (lk/scan/verify5.js): точки пересечения AB с поверхностью, касательная плоскость и нормаль — по результату */
+    if(self.SCANVERIFY5) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==5) return; const V5=self.SCANVERIFY5, R=V5.ref(dr.fit.n); if(!R) return;
+      try{ const copy={pts:dr.mm.pts,segs:dr.mm.segs.map(q=>({p:q.p,unv:q.unverified})),arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),curves:(dr.curves||[]).filter(q=>q.mm).map(q=>({p:q.mm,unv:q.unverified}))};
+        const r0=V5.verify(copy,R,{weak:true}); dr.fit.abCov=r0.abCov; const rms=dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm, weak=!(dr.fit.cover>=0.8&&rms<=0.6&&r0.abCov>=0.7);
+        dr.verify5=weak?r0:V5.verify(copy,R,{weak:false}); dr.verify5.weak=weak; }catch(e){} });
+    /* вердикт по частям (lk/scan/verdict.js): «верно» / «ошибка: где и на сколько» / «не уверен: почему» — для кабинета */
+    if(self.SCANVERDICT) out.drawings.forEach((dr,i)=>{ if(!dr||dr.error||!dr.fit||dr.fit.rmsMm==null) return; try{ const VD=self.SCANVERDICT;
+      dr.verdict=dr.fit.dz===3&&dr._v3?VD.dz3(dr._v3,dr.fit):VD.of(dr); }catch(e){} delete dr._v3; });
     /* проверка построения (ДЗ №3): мозг сканера (lab/dz/check3.js через gridsheet) по уточнённой копии каждого чертежа.
        Только по запросу (sel.check = true): на 62 настоящих чертежах (REPORT 7с) почти всё — «не могу утверждать» (студенты строят
        не только способом из указания), одно «ошибка в данных» — скорее ложное; студенту такой вердикт показывать рано */

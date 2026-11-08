@@ -62,20 +62,20 @@ function verify(pts,data,o){ o=o||{}; const R=ref(data), tolL=o.tolL||1.5, badL=
     /* основание ребром: A, B, C на одной прямой (высота треугольника < 0,8 мм) */
     const flat=span>10&&2*area/span<0.8;
     if(flat&&S&&!proj){ const [P,Q]=ab>=bc&&ab>=ca?[A,B]:bc>=ca?[B,C]:[C,A], u=[(Q[0]-P[0])/d2(P,Q),(Q[1]-P[1])/d2(P,Q)], h=Math.abs((S[0]-P[0])*u[1]-(S[1]-P[1])*u[0]);
-      found.push({k:'H',what:'высота пирамиды',got:h,want:R.H,d:Math.abs(h-R.H),st:st(Math.abs(h-R.H),tolL,badL),from:fam,unit:'мм'});
+      found.push({k:'H',what:'высота пирамиды',got:h,want:R.H,d:Math.abs(h-R.H),st:st(Math.abs(h-R.H),tolL,badL),from:fam,unit:'мм',at:[S.slice(),P.slice(),Q.slice()]});
       /* угол SA с основанием: прямая основания и SA в этой проекции */
       const sa=[S[0]-A[0],S[1]-A[1]], c=Math.abs(sa[0]*u[0]+sa[1]*u[1])/Math.hypot(...sa), phi=Math.acos(Math.min(1,c))*DEG;
-      found.push({k:'phi',what:'угол SA с основанием',got:phi,want:R.phi,d:Math.abs(phi-R.phi),st:st(Math.abs(phi-R.phi),tolA,badA),from:fam,unit:'°',weak:true}); }
+      found.push({k:'phi',what:'угол SA с основанием',got:phi,want:R.phi,d:Math.abs(phi-R.phi),st:st(Math.abs(phi-R.phi),tolA,badA),from:fam,unit:'°',weak:true,at:[S.slice(),A.slice()]}); }
     /* ребро AB точкой: A ≡ B (ближе 1 мм), C и S есть — угол между гранями */
     if(ab<1&&S&&!proj){ const P=[(A[0]+B[0])/2,(A[1]+B[1])/2], vs=[S[0]-P[0],S[1]-P[1]], vc=[C[0]-P[0],C[1]-P[1]];
       const ang=Math.acos(Math.max(-1,Math.min(1,(vs[0]*vc[0]+vs[1]*vc[1])/Math.hypot(...vs)/Math.hypot(...vc))))*DEG;
-      found.push({k:'dih',what:'угол между гранью SAB и основанием',got:ang,want:R.dih,d:Math.abs(ang-R.dih),st:st(Math.abs(ang-R.dih),tolA,badA),from:fam,unit:'°'}); }
+      found.push({k:'dih',what:'угол между гранью SAB и основанием',got:ang,want:R.dih,d:Math.abs(ang-R.dih),st:st(Math.abs(ang-R.dih),tolA,badA),from:fam,unit:'°',at:[P,S.slice(),C.slice()]}); }
     /* истинный вид основания: стороны = истинные длины (каждая ≤ tol); ″ и ′ — не в счёт */
     if(!flat&&!proj&&ab>=1){ const ds=[Math.abs(ab-R.sides.AB),Math.abs(bc-R.sides.BC),Math.abs(ca-R.sides.CA)], dm=Math.max(...ds);
       /* семейство похоже на истинный вид, только если хоть две стороны близки (иначе это промежуточная проекция, не результат) */
       /* «расходится» по истинному виду не говорим: семейство может быть промежуточной проекцией (на настоящих листах ‴ после
          первой замены давало «расхождение» 2–6 мм у верных решений) — только «верно» или «не уверен» */
-      if(ds.filter(x=>x<=badL).length>=2) found.push({k:'true',what:'истинный вид основания ABC',got:[ab,bc,ca],want:[R.sides.AB,R.sides.BC,R.sides.CA],d:dm,st:dm<=tolL?'верно':'не уверен',from:fam,unit:'мм'}); } });
+      if(ds.filter(x=>x<=badL).length>=2) found.push({k:'true',what:'истинный вид основания ABC',got:[ab,bc,ca],want:[R.sides.AB,R.sides.BC,R.sides.CA],d:dm,st:dm<=tolL?'верно':'не уверен',from:fam,unit:'мм',at:[A.slice(),B.slice(),C.slice()]}); } });
   /* вид построения как проекция: любая замена плоскостей даёт ортогональную проекцию настоящей пирамиды в натуральную
      величину — 4 точки семейства подгоняются (поворот + сдвиг, масштаб 1:1). Ошибку построения в 5 мм в одной точке подгонка
      видит в 88 % случаев (3 мм — 56 %), поэтому вид — только подтверждение («согласуется», max ≤ 1 мм), обвинения нет: большой
