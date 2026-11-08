@@ -234,6 +234,12 @@ details.past .rows{margin-top:4px}
 
 /* Занятие */
 .lesson{display:flex;gap:14px;align-items:center}
+/* Мои 3D-модели: решённые детали ИКГ со ссылкой на 3D, построение по шагам и лист на сайте */
+.m3d{display:flex;gap:14px;align-items:center;color:inherit;text-decoration:none}
+.m3d svg.ball{width:64px;height:64px;flex:none}
+.m3d b{display:block;font:700 16px/1.25 var(--disp)}
+.m3d small{display:block;color:var(--mut);font-size:13.5px;margin-top:3px}
+.m3d .go{margin-left:auto;flex:none;font:600 14px var(--sans);color:#2a62ff;white-space:nowrap}
 .lesson .tm{flex:none;width:72px;height:64px;border-radius:18px;background:var(--surf2);display:grid;place-items:center;text-align:center;font:800 20px/1 var(--disp)}
 .lesson .tm small{display:block;font:600 11px var(--sans);color:var(--mut);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
 .lesson b{display:block;font-weight:600}
@@ -400,6 +406,18 @@ details.past .rows{margin-top:4px}
         </div>
         <button class="mine" data-tab-go="check" id="myCnt">Мои чертежи <svg class="i"><use href="#i-chev"/></svg></button>
       </section>
+
+      <div class="sec full"><h2><span class="dotc" style="background:var(--scan)"></span>Мои 3D-модели</h2></div>
+      <a class="card m3d full" href="/#/ig8/6" aria-label="3D-модель: Задание №8, вариант 6 — полый шар со сквозным отверстием">
+        <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="#e8eefc" stroke="#15161a" stroke-width="2.4"/><circle cx="32" cy="32" r="19.6" fill="none" stroke="#3567b5" stroke-width="1.4" stroke-dasharray="3 2.5"/><path d="M28.4 5.2V26a8.2 8.2 0 000 12v6.4h-3.6V50h14.4v-5.6h-3.6V38a8.2 8.2 0 000-12V5.2z" fill="#fff" stroke="#15161a" stroke-width="2.2" stroke-linejoin="round"/></svg>
+        <div><b>Задание №8 · вариант 6</b><small>Полый шар Ø110/Ø80 со сквозным отверстием K: 3D, разрезы по шагам, лист А3</small></div>
+        <span class="go">Открыть 3D →</span>
+      </a>
+      <a class="card m3d full" href="ig8/" aria-label="Гайд: как построить Задание №8, вариант 6 — каждая линия по смыслу">
+        <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 12c14-4 30 0 40 14v10M50 36H30M50 26h-10" fill="none" stroke="#15161a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 52c14 6 30 2 40-10" fill="none" stroke="#3567b5" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 3"/></svg>
+        <div><b>Гайд: как построить вариант 6</b><small>Задание №8: все три вида, каждая линия по смыслу, с подсветкой на соседнем виде</small></div>
+        <span class="go">Открыть →</span>
+      </a>
 
       <div class="sec full"><h2><span class="dotc" style="background:var(--rk)"></span>Подготовка к РК</h2><button class="more" data-tab-go="rk">Всё о РК</button></div>
       <div class="rkrow full" id="rkHome"></div>
@@ -721,11 +739,11 @@ details.past .rows{margin-top:4px}
 })();
 </script>
 <script src="scan/config.js"></script>
-<script src="scan/pipeline.js?v=lk5"></script>
+<script src="scan/pipeline.js?v=lk6"></script>
 <script src="scan/live.js?v=2"></script>
-<script src="drawings/model.js?v=3"></script>
+<script src="drawings/model.js?v=4"></script>
 <script src="drawings/view3d.js?v=1"></script>
 <script src="drawings/demo.js?v=1"></script>
-<script src="drawings/ui.js?v=6"></script>
+<script src="drawings/ui.js?v=7"></script>
 </body>
 </html>

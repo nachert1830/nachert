@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#08090f">
+<title>Гайд: вариант 6</title>
+<link rel="icon" href="../../icon-192.png">
+<style>
+@font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../../fonts/geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../../fonts/golos-text-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../../fonts/golos-text-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{
+  --paper:#08090f; --surf:#12141d; --surf2:#1b1e2b; --surf3:#262a3b;
+  --ink:#f4f6fb; --ink2:#c4cadb; --mut:#8b93a9; --line:#252a3a;
+  --acc:#2f6bff; --blue:#7fa9ff; --blue-s:#17224a;
+  --red:#ff5d6c; --green:#34d399; --amber:#ffb020;
+  --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --disp:'Geologica','Golos Text',system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --shadow:0 18px 40px -22px rgba(0,0,0,.85);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){
+  :root{--paper:#f2f3f8; --surf:#fff; --surf2:#f0f2f7; --surf3:#e3e7f0; --ink:#0b0d14; --ink2:#323849; --mut:#646c83; --line:#e2e5ee;
+    --acc:#2457ff; --blue:#1f53f0; --blue-s:#e8eeff; --red:#d11a3a; --green:#0d9461; --amber:#b36b00; --shadow:0 16px 36px -22px rgba(20,30,70,.4); color-scheme:light}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans);-webkit-text-size-adjust:100%}
+.wrap{max-width:780px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px 90px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--blue);text-decoration:none;font-weight:600;font-size:15px;padding:8px 12px 8px 8px;border-radius:12px}
+h1{font:700 28px/1.15 var(--disp);margin:10px 0 8px;letter-spacing:-.01em}
+.lead{color:var(--ink2);margin:0 0 14px}
+h2{font:700 22px/1.25 var(--disp);margin:0 0 8px}
+h3{font:700 17px/1.3 var(--disp);margin:20px 0 6px}
+p{margin:9px 0} ul,ol{margin:8px 0;padding-left:22px} li{margin:5px 0}
+.kick{font:700 12px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--amber);margin-bottom:4px}
+section{background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:20px 18px 22px;margin:16px 0;box-shadow:var(--shadow)}
+.note{background:var(--blue-s);border:1px solid color-mix(in srgb,var(--acc) 35%,var(--line));border-radius:14px;padding:12px 14px;margin:12px 0}
+.rule{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;background:var(--surf2);border-radius:16px;padding:13px 14px;margin:10px 0}
+.rule .no{width:32px;height:32px;border-radius:50%;background:var(--acc);color:#fff;font:700 15px/32px var(--mono);text-align:center}
+.rule .h{display:block;font:700 16px/1.3 var(--disp);margin-bottom:3px}
+.paper{background:#fff;border-radius:14px;border:1px solid #cfd3de;overflow:hidden;position:relative}
+.paper svg{display:block;width:100%;height:auto}
+.paper .tag{position:absolute;left:8px;top:6px;font:700 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:#6b7280;background:rgba(255,255,255,.85);padding:2px 6px;border-radius:6px}
+.cap{font-size:13.5px;color:var(--mut);margin:4px 2px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
+/* блок вида: большой вид + опорный, линия, описание */
+.vw{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin:12px 0 6px;position:sticky;top:0;z-index:2;background:var(--surf);padding:8px 0 6px}
+.vw .paper{align-self:start}
+@media (max-width:560px){.vw{grid-template-columns:1.25fr 1fr;gap:6px}}
+.nav{display:flex;align-items:center;gap:10px;margin:6px 0 2px}
+.sbtn{flex:none;width:46px;height:46px;border-radius:50%;border:0;background:var(--acc);color:#fff;font:700 22px var(--sans);cursor:pointer}
+.sbtn[disabled]{background:var(--surf3);color:var(--mut);cursor:default}
+.nav .tt{flex:1;min-width:0}
+.nav small{display:block;font:700 12px var(--mono);color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+.nav b{display:block;font:700 17px/1.25 var(--disp)}
+.desc{background:var(--surf2);border-radius:16px;padding:12px 14px;margin:8px 0}
+.desc h4{margin:10px 0 2px;font:700 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--amber)}
+.desc h4:first-child{margin-top:0}
+.desc p{margin:3px 0 6px}
+.list{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 0}
+.list button{border:1px solid var(--line);background:var(--surf2);color:var(--ink);border-radius:999px;padding:7px 12px;font:600 13.5px var(--sans);cursor:pointer}
+.list button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px}
+.chip{border:1px solid var(--line);background:var(--surf2);color:var(--ink);border-radius:999px;padding:7px 13px;font:600 14px var(--sans);text-decoration:none}
+.mist{margin:8px 0;padding:0;list-style:none}
+.mist li{padding:10px 12px 10px 38px;position:relative;background:var(--surf2);border-radius:14px;margin:8px 0;font-size:15px}
+.mist li:before{content:"✕";position:absolute;left:13px;top:10px;color:var(--red);font-weight:700}
+.chk li:before{content:"✓";color:var(--green)}
+a.btn{display:inline-flex;align-items:center;gap:8px;margin:6px 8px 0 0;padding:12px 18px;border-radius:14px;background:var(--acc);color:#fff;text-decoration:none;font-weight:700;font-size:15px}
+a.btn.ghost{background:var(--surf2);color:var(--ink);border:1px solid var(--line)}
+.k{font-weight:700}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">‹ Кабинет</a>
+  <div class="kick">Задание №8 · вариант 6 · полый шар с отверстием K</div>
+  <h1>Как построить вариант: каждая линия по смыслу</h1>
+  <p class="lead">Здесь нет формул и чисел. Цифры возьмёшь из задания, а здесь разбираем, <b>что это за линия и почему она такая</b>. Сначала поймём деталь и пять правил. Потом пройдём главный вид, вид сверху и вид слева линия за линией. Нажимаешь на линию, и она подсвечивается на виде и на соседнем виде, откуда её строят.</p>
+  <nav class="chips">
+    <a class="chip" href="#d">Деталь</a><a class="chip" href="#r">5 правил</a><a class="chip" href="#o">Порядок</a><a class="chip" href="#vf">Главный вид</a><a class="chip" href="#vt">Вид сверху</a><a class="chip" href="#vl">Вид слева</a><a class="chip" href="#c">Проверка</a>
+  </nav>
+
+  <!-- ═══ ДЕТАЛЬ ═══ -->
+  <section id="d">
+    <div class="kick">Сначала</div><h2>Что это вообще за деталь</h2>
+    <p>Представь <b>толстостенный пустой мяч</b>: снаружи шар, внутри шаровая пустота (полость). Его проткнули <b>фигурным пробойником насквозь, спереди назад</b>. Дыра одинаковая по всей глубине, её форма — это и есть отверстие K, которое ты видишь на главном виде.</p>
+    <p>У отверстия K три части:</p>
+    <div class="two">
+      <div class="paper"><span class="tag">главный вид</span><div id="figParts"></div></div>
+      <div>
+        <p><span class="sw" style="background:#2a62ff"></span><b>Паз</b> — узкая щель сверху. Две плоские вертикальные стенки. Прорезает шар сверху до самого низа отверстия.</p>
+        <p><span class="sw" style="background:#e2552a"></span><b>Круглое отверстие</b> — круг в середине. Это труба, которая идёт спереди назад через центр шара.</p>
+        <p><span class="sw" style="background:#119c6a"></span><b>Пятка</b> — широкий прямоугольник внизу. У неё две боковые стенки, плоский потолок (уступ, где пятка шире паза) и плоское дно.</p>
+      </div>
+    </div>
+    <div class="note">Главное, что нужно держать в голове: <b>все стенки K — плоские или круглая труба</b>, и все они идут <b>спереди назад насквозь</b>. Поэтому на главном виде мы видим их «торцом» (просто контур дыры), а на виде сверху и слева видим, как они врезаются в шар. <a href="/#/ig8/6" style="color:var(--blue)">Покрути 3D-модель на сайте →</a></div>
+  </section>
+
+  <!-- ═══ ПРАВИЛА ═══ -->
+  <section id="r">
+    <div class="kick">Теория — всего пять правил</div><h2>Откуда вообще берутся линии</h2>
+    <div class="rule"><span class="no">1</span><div><b class="h">Линия — это ребро или край</b>Линия на чертеже появляется только в двух случаях. <b>Ребро</b>: две поверхности встретились под углом, например стенка паза врезалась в шар. <b>Край (очерк)</b>: поверхность заворачивает от тебя и дальше её не видно, так шар выглядит кругом. Больше линий не бывает. Если линия «ни откуда», она лишняя.</div></div>
+    <div class="rule"><span class="no">2</span><div><b class="h">Плоскость режет шар по окружности</b>Любая плоская стенка, врезанная в шар, оставляет на нём след-<b>окружность</b>. Чем дальше стенка от центра шара, тем окружность <b>меньше</b>. Если стенка проходит через центр, окружность равна шару.</div></div>
+    <div class="paper" style="margin:6px 0 4px"><div id="figRule"></div></div>
+    <p class="cap">Одна и та же окружность-след стенки: если смотреть на стенку с ребра, это прямая; если смотреть на стенку в лоб, это окружность.</p>
+    <div class="rule"><span class="no">3</span><div><b class="h">В лоб — дуга, с ребра — прямая</b>Если на стенку смотришь <b>в лоб</b> (она параллельна листу), её след на шаре виден как есть — <b>дуга окружности</b>. Если стенку видишь <b>с ребра</b> (она идёт прямо от тебя), всё на ней сливается в <b>прямую</b>. Это главное правило всего задания: на каждом виде одни стенки дают дуги, другие — прямые.</div></div>
+    <div class="rule"><span class="no">4</span><div><b class="h">Все дуги — с центром в центре вида</b>Стенки K параллельны осям, поэтому центры всех этих окружностей лежат на одной прямой с центром шара, а на виде попадают в <b>центр вида</b>. Значит, все дуги проводишь циркулем <b>из одной точки</b>, меняется только раствор.</div></div>
+    <div class="rule"><span class="no">5</span><div><b class="h">Труба и шар встречаются по кругу поперёк трубы</b>Круглое отверстие идёт через центр шара. Значит, оно выходит на шар по <b>окружности поперёк трубы</b>. Спереди мы смотрим вдоль трубы и видим круг. Сверху и слева видим эту окружность с ребра, то есть <b>отрезок</b>.</div></div>
+    <h3>Как снять раствор циркуля без вычислений</h3>
+    <p>Чтобы провести дугу стенки, нужен её радиус. Он <b>снимается с соседнего вида</b>, где шар нарисован кругом и стенка видна с ребра. Стенка там — прямая, которая пересекает круг шара и отсекает <b>хорду</b>. <b>Половина хорды и есть раствор циркуля.</b> Именно для этого в задании дан вид сверху, где нарисован <b>только шар</b>. Это не недоработка: это заготовка, с которой ты снимаешь все радиусы.</p>
+    <div class="paper"><div id="figChord"></div></div>
+    <p class="cap">Стенка видна с ребра (прямая) → половина хорды → этим раствором из центра другого вида проводишь дугу.</p>
+    <h3>Сплошная, штриховая, штриховка</h3>
+    <ul>
+      <li><b>Сплошная</b>: ребро видно. <b>Штриховая</b>: ребро закрыто металлом. На половине вида (рядом с разрезом) штриховые <b>не рисуют</b>, потому что внутренность и так показывает разрез.</li>
+      <li><b>Разрез</b>: деталь мысленно распилили по оси симметрии и убрали ближнюю четверть. Всё, что открылось за плоскостью, рисуется сплошными.</li>
+      <li><b>Штриховка</b> — только там, где пила прошла <b>по металлу</b>. В дыры и в полость штриховку не ставят.</li>
+    </ul>
+  </section>
+
+  <!-- ═══ ПОРЯДОК ═══ -->
+  <section id="o">
+    <div class="kick">План</div><h2>Порядок работы</h2>
+    <ol>
+      <li><b>Главный вид.</b> Перечерти шар, полость и контур K из задания. Справа от оси сделай половину разреза.</li>
+      <li><b>Вид сверху.</b> Начни с шара из задания. Опусти вниз вертикальными линиями связи стенки K с главного вида. Проведи дугу дна. Справа — разрез А–А посередине высоты.</li>
+      <li><b>Вид слева.</b> Высоты бери с главного вида горизонтальными линиями связи. Радиусы дуг снимай с вида сверху (половина хорды). Справа — половина разреза.</li>
+      <li><b>Штриховка, оси, размеры.</b></li>
+    </ol>
+    <div class="note">Ниже у каждого вида кнопки — это <b>все</b> его линии. Слева — вид, справа — соседний вид, где эта же линия подсвечена <b>тем же цветом</b>. Так видно, откуда её переносить.</div>
+  </section>
+
+  <!-- ═══ ВИДЫ ═══ -->
+  <section id="vf"><div class="kick">Вид 1</div><h2>Главный вид</h2><p>Это почти копия задания: смотрим на деталь спереди, вдоль дыры. Все стенки K видны с ребра, поэтому контур K — прямые и круг. Новое только одно: правая половина становится разрезом.</p><div data-view="front"></div></section>
+  <section id="vt"><div class="kick">Вид 2</div><h2>Вид сверху</h2><p>Смотрим сверху вниз. Паз виден насквозь, через него видно дно пятки. Стенки паза и пятки вертикальные, сверху мы их видим с ребра, поэтому они прямые. Дно и уступ горизонтальные, их видим в лоб, поэтому их следы на шаре — дуги. Справа — разрез А–А: деталь распилили горизонтально через центр.</p><div data-view="top"></div></section>
+  <section id="vl"><div class="kick">Вид 3 · самое сложное</div><h2>Вид слева</h2><p>Смотрим сбоку, поперёк дыры. Теперь наоборот: <b>стенки паза и пятки видны в лоб</b>, поэтому их следы на шаре — <b>дуги</b>. Дно и уступ видны с ребра, это <b>горизонтальные ступеньки</b>. Отсюда все «переходы»: дуга стенки паза → ступенька уступа → дуга стенки пятки → ступенька дна → край шара.</p><div data-view="left"></div></section>
+
+  <!-- ═══ ПРОВЕРКА ═══ -->
+  <section id="c">
+    <div class="kick">В конце</div><h2>Проверь себя</h2>
+    <ul class="mist chk">
+      <li>Про каждую линию можешь сказать, <b>какие две поверхности</b> там встретились (или что это край шара).</li>
+      <li>Все дуги на виде сверху и слева проведены <b>из центра вида</b>.</li>
+      <li>Стенки, которые на этом виде видны в лоб, дали дуги. Те, что видны с ребра, дали прямые.</li>
+      <li>Каждая точка стыка на виде слева стоит <b>на одной высоте</b> с соответствующей точкой главного вида.</li>
+      <li>На половинах видов нет штриховых. Штриховка только по металлу в плоскости разреза.</li>
+    </ul>
+    <h3>Частые ошибки</h3>
+    <ul class="mist">
+      <li>Контур вида слева рисуют кругом шара целиком. На самом деле настоящий край шара есть только внизу. Выше контур образуют <b>дуги стенок</b>, а они чуть меньше шара.</li>
+      <li>Вместо дуги проводят прямую или наоборот. Перед каждой линией спроси: <b>эту стенку я вижу в лоб или с ребра?</b></li>
+      <li>Ступеньку рисуют наклонной. Это стенка, видимая с ребра, поэтому она строго горизонтальна (или вертикальна).</li>
+      <li>Забывают, что дно пятки проходит ниже полости и в неё не врезается, а уступ врезается и даёт ещё одну линию внутри.</li>
+      <li>Штрихуют дыру или полость.</li>
+    </ul>
+    <p><a class="btn" href="/#/ig8/6">Вариант 6 на сайте: 3D и лист →</a><a class="btn ghost" href="../">В кабинет</a></p>
+  </section>
+</div>
+
+<script src="lines.js"></script>
+<script>
+/* ═════════ основа ═════════ */
+const R=55, RI=40, SH=10, CY=22.5, RH=20, ZL=-30, ZB=-45;
+const ch=(r,d)=>Math.sqrt(Math.max(0,r*r-d*d));
+const ZC=ch(CY,SH);
+const K=5.8318209;                                   // px на мм в картинках видов (900 × 900, центр 450;450)
+const PRJ={ front:p=>[450+K*p[0],450-K*p[2]], top:p=>[450+K*p[0],450-K*p[1]], left:p=>[450-K*p[1],450-K*p[2]] };
+const $=s=>document.querySelector(s);
+const f1=v=>v.toFixed(1);
+const AXC='stroke="#111" stroke-width="1.2" stroke-dasharray="16 4 3 4"';
+/* контур K на главном виде (мм x,z) */
+function kProfile(zTop){ const a=Math.atan2(ZC,SH), p=[[-SH,zTop],[-SH,ZC]];
+  for(let i=0;i<=24;i++){ const t=Math.PI-a+2*a*i/24; p.push([CY*Math.cos(t),CY*Math.sin(t)]); }
+  p.push([-SH,ZL],[-RH,ZL],[-RH,ZB],[RH,ZB],[RH,ZL],[SH,ZL],[SH,-ZC]);
+  for(let i=0;i<=24;i++){ const t=-a+2*a*i/24; p.push([CY*Math.cos(t),CY*Math.sin(t)]); }
+  p.push([SH,zTop]); return p; }
+const FP=(x,z)=>[450+K*x,450-K*z];
+const pathXZ=pts=>'M'+pts.map(q=>FP(q[0],q[1]).map(f1).join(' ')).join('L')+'Z';
+
+/* ═════════ «деталь»: части K ═════════ */
+(function(){
+  const slot=pathXZ([[-SH,58],[SH,58],[SH,ZL],[-SH,ZL]]), heel=pathXZ([[-RH,ZL],[RH,ZL],[RH,ZB],[-RH,ZB]]);
+  const c=FP(0,0);
+  $('#figParts').innerHTML=`<svg viewBox="80 60 740 780"><image href="img/front0.svg" width="900" height="900"/>
+    <path d="${slot}" fill="#2a62ff" opacity=".33"/><circle cx="${c[0]}" cy="${c[1]}" r="${K*CY}" fill="#e2552a" opacity=".38"/><path d="${heel}" fill="#119c6a" opacity=".4"/>
+    <text x="${FP(SH+3,44)[0]}" y="${FP(0,44)[1]}" font-size="30" font-weight="700" fill="#2a62ff">паз</text>
+    <text x="${FP(CY+3,0)[0]}" y="${FP(0,2)[1]}" font-size="30" font-weight="700" fill="#e2552a">круглое</text>
+    <text x="${FP(RH+3,-40)[0]}" y="${FP(0,-40)[1]}" font-size="30" font-weight="700" fill="#119c6a">пятка</text></svg>`;
+})();
+
+/* ═════════ правило: в лоб — окружность, с ребра — прямая ═════════ */
+(function(){
+  const r=70, d=38, rc=Math.sqrt(r*r-d*d);
+  $('#figRule').innerHTML=`<svg viewBox="0 0 520 200" font-family="Golos Text,system-ui,sans-serif">
+    <g transform="translate(130 100)"><circle r="${r}" fill="#eef1f8" stroke="#111" stroke-width="2"/>
+      <line x1="${d}" y1="-92" x2="${d}" y2="92" stroke="#2a62ff" stroke-width="2" stroke-dasharray="6 4"/>
+      <line x1="${d}" y1="${-rc}" x2="${d}" y2="${rc}" stroke="#e2552a" stroke-width="5" stroke-linecap="round"/>
+      <circle r="3" fill="#111"/></g>
+    <text x="130" y="194" font-size="14" text-anchor="middle" fill="#333">стенка с ребра → <tspan fill="#e2552a" font-weight="700">прямая</tspan></text>
+    <g transform="translate(390 100)"><circle r="${r}" fill="#eef1f8" stroke="#111" stroke-width="2"/>
+      <circle r="${rc}" fill="none" stroke="#e2552a" stroke-width="5"/>
+      <circle r="3" fill="#111"/><line x1="0" y1="0" x2="${rc*.71}" y2="${-rc*.71}" stroke="#e2552a" stroke-width="1.5"/></g>
+    <text x="390" y="194" font-size="14" text-anchor="middle" fill="#333">та же стенка в лоб → <tspan fill="#e2552a" font-weight="700">окружность</tspan></text>
+    <text x="260" y="104" font-size="26" text-anchor="middle" fill="#9aa1b5">⇄</text>
+  </svg>`;
+})();
+
+/* ═════════ хорда = радиус ═════════ */
+(function(){
+  const r=78, x=34, h=Math.sqrt(r*r-x*x);
+  $('#figChord').innerHTML=`<svg viewBox="0 0 560 210" font-family="Golos Text,system-ui,sans-serif">
+    <g transform="translate(120 102)"><circle r="${r}" fill="#fff" stroke="#111" stroke-width="2"/>
+      <line x1="-96" y1="0" x2="96" y2="0" ${AXC}/><line x1="0" y1="-96" x2="0" y2="96" ${AXC}/>
+      <line x1="${x}" y1="${-h}" x2="${x}" y2="${h}" stroke="#2a62ff" stroke-width="3"/>
+      <line x1="${x+10}" y1="0" x2="${x+10}" y2="${-h}" stroke="#e2552a" stroke-width="2.5"/><line x1="${x+5}" y1="${-h}" x2="${x+15}" y2="${-h}" stroke="#e2552a" stroke-width="2"/><line x1="${x+5}" y1="0" x2="${x+15}" y2="0" stroke="#e2552a" stroke-width="2"/>
+      <text x="${x+18}" y="${-h/2+5}" font-size="14" font-weight="700" fill="#e2552a">½ хорды</text></g>
+    <text x="120" y="204" font-size="13" text-anchor="middle" fill="#333">стенка с ребра на виде, где шар — круг</text>
+    <path d="M250 102 h60" stroke="#9aa1b5" stroke-width="2.5" marker-end="url(#ah)"/><defs><marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#9aa1b5"/></marker></defs>
+    <text x="280" y="92" font-size="12" text-anchor="middle" fill="#666">циркуль</text>
+    <g transform="translate(430 102)"><circle r="${r}" fill="#fff" stroke="#bbb" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <line x1="-96" y1="0" x2="96" y2="0" ${AXC}/><line x1="0" y1="-96" x2="0" y2="96" ${AXC}/>
+      <path d="M${-h*Math.cos(1.1)} ${-h*Math.sin(1.1)} A${h} ${h} 0 0 1 ${h*Math.cos(1.1)} ${-h*Math.sin(1.1)}" fill="none" stroke="#2a62ff" stroke-width="3.5"/>
+      <line x1="0" y1="0" x2="${h*Math.cos(1.1)}" y2="${-h*Math.sin(1.1)}" stroke="#e2552a" stroke-width="2"/><circle r="3.5" fill="#111"/></g>
+    <text x="430" y="204" font-size="13" text-anchor="middle" fill="#333">дуга стенки из центра вида</text>
+  </svg>`;
+})();
+
+/* ═════════ линии видов ═════════ */
+const COL=['#2a62ff','#e2552a','#119c6a','#b62bd8','#d4a106','#0aa3c2','#e0306e','#6a4cff','#7a8b00','#c2410c'];
+/* штриховка — область в плоскости разреза (маска) */
+function hatchArea(view){
+  const c=450, rO=K*R, rI=K*RI;
+  if(view==='front'){ const k=pathXZ(kProfile(R+3));
+    return `<mask id="mF"><rect width="900" height="900" fill="black"/><path d="M${c} ${c-rO}A${rO} ${rO} 0 0 1 ${c} ${c+rO}Z" fill="white"/><circle cx="${c}" cy="${c}" r="${rI}" fill="black"/><path d="${k}" fill="black"/></mask><rect width="900" height="900" fill="currentColor" mask="url(#mF)"/>`; }
+  if(view==='top') return `<mask id="mT"><rect width="900" height="900" fill="black"/><path d="M${c} ${c-rO}A${rO} ${rO} 0 0 1 ${c} ${c+rO}Z" fill="white"/><circle cx="${c}" cy="${c}" r="${rI}" fill="black"/><rect x="${c}" y="0" width="${K*CY}" height="900" fill="black"/></mask><rect width="900" height="900" fill="currentColor" mask="url(#mT)"/>`;
+  if(view==='left'){ const zb=c-K*ZB; return `<mask id="mL"><rect width="900" height="900" fill="black"/><path d="M${c} ${c-rO}A${rO} ${rO} 0 0 1 ${c} ${c+rO}Z" fill="white"/><rect x="0" y="0" width="900" height="${zb}" fill="black"/></mask><rect width="900" height="900" fill="currentColor" mask="url(#mL)"/>`; }
+  return ''; }
+
+/* Описания: g — группы линий (поверхности + половина вида), why — что это, how — как провести */
+const VIEWS={
+ front:{ ref:'left', base:'<image href="img/front.svg" width="900" height="900"/>', refBase:'<image href="img/left0.svg" width="900" height="900"/>', refName:'вид слева',
+  items:[
+   {t:'Край шара',g:['S+Y0 L','S+Y0 R'],noRef:1,
+    why:'Это <b>очерк</b> шара: шар с любой стороны выглядит кругом. Наверху круг <b>прерывается</b>: там паз прорезал шар насквозь, и края шара в этом месте нет.',
+    how:'Циркулем из центра, радиусом шара из задания. Наверху оборви его на стенках паза.'},
+   {t:'Стенки паза',g:['S+W10 L','S+W10 R','W10+Y0 R','C+W10 R'],
+    why:'Две плоские стенки паза. Мы смотрим спереди, <b>вдоль</b> стенок, то есть видим их <b>с ребра</b>, поэтому это <b>вертикальные прямые</b>. Сверху они начинаются от края шара. В середине их прерывает круглое отверстие. Ниже круга они продолжаются до уступа пятки.',
+    how:'Перечерти из задания. На виде слева эти же стенки дадут <b>дуги</b> (подсвечены справа): там мы смотрим на них в лоб.'},
+   {t:'Круг — круглое отверстие',g:['S+Y L','S+Y R'],
+    why:'Край, где труба круглого отверстия выходит на поверхность шара. Смотрим спереди <b>вдоль трубы</b> и видим её как круг. Посередине сверху и снизу круг съеден пазом: там уже пусто.',
+    how:'Из задания. На виде слева этот же край виден <b>с ребра</b>, поэтому это вертикальный отрезок.'},
+   {t:'Боковые стенки пятки',g:['S+W20 L','S+W20 R'],
+    why:'Пятка шире паза. Её две боковые стенки тоже плоские и тоже видны <b>с ребра</b>, поэтому это вертикальные прямые, короче стенок паза.',
+    how:'Из задания. На виде слева они дадут свои дуги, чуть меньше дуг паза (стенка дальше от центра, значит, окружность меньше).'},
+   {t:'Уступ — потолок пятки',g:['S+F30 L','C+F30 R'],
+    why:'Где пятка становится шире паза, у неё есть плоский горизонтальный «потолок». Спереди он виден с ребра, поэтому это короткая горизонталь. Справа в разрезе видно, как этот потолок упирается в полость.',
+    how:'Из задания. На виде слева этот же потолок станет <b>ступенькой</b>, ради неё он здесь и важен.'},
+   {t:'Дно пятки',g:['S+F45 L','S+F45 R'],
+    why:'Плоское горизонтальное дно. Видно с ребра, поэтому это нижняя горизонталь K. Дно лежит <b>ниже полости</b> и в неё не врезается, только в стенку шара.',
+    how:'Из задания. На виде сверху дно видно в лоб и станет <b>дугой</b>. На виде слева — второй ступенькой.'},
+   {t:'Полость в разрезе',g:['C+Y0 R'],noRef:1,
+    why:'Справа деталь распилена посередине (по плоскости, где лежит ось). Пила прошла по полости, и её край — <b>дуга полости</b> — теперь видна сплошной. До разреза она была штриховой.',
+    how:'Циркулем из центра радиусом полости, только на правой половине и только там, где металл.'},
+   {t:'Штриховка',g:[],hatch:1,
+    why:'Штрихуем только то, по чему прошла пила: <b>кольцо стенки</b> между шаром и полостью. В паз, круглое отверстие, пятку и полость штриховку не ставим: там пусто.',
+    how:'Под 45°, только в правой половине. Граница слева — ось.'} ]},
+ top:{ ref:'front', base:'<defs><clipPath id="cL"><rect width="450" height="900"/></clipPath><clipPath id="cR"><rect x="450" width="450" height="900"/></clipPath></defs><image href="img/topNH.svg" width="900" height="900" clip-path="url(#cL)"/><image href="img/topcut.svg" width="900" height="900" clip-path="url(#cR)"/>', refBase:'<image href="img/front0.svg" width="900" height="900"/>', refName:'главный вид',
+  items:[
+   {t:'Край шара',g:['S+Z0 L','S+Z0 R'],noRef:1,
+    why:'Сверху шар — тоже круг (его «экватор»). Но круг <b>обрывается</b> там, где по экватору проходит круглое отверстие: оно выело кусок спереди и сзади, и края шара там нет.',
+    how:'Это круг из задания. Сотри его между точками, где на главном виде начинается круглое отверстие (вертикальные линии связи вниз от края круга).'},
+   {t:'Края паза',g:['S+W10 L','S+W10 R'],
+    why:'Паз прорезал шар сверху. Его стенки вертикальные, и сверху мы видим их <b>с ребра</b>, поэтому это две <b>прямые во всю длину</b>, от переднего края шара до заднего.',
+    how:'Опусти с главного вида вертикальные линии связи от стенок паза. Длина — до горизонталей выхода круглого отверстия (следующий пункт).'},
+   {t:'Выход круглого отверстия спереди и сзади',g:['S+Y L','S+Y R'],
+    why:'Круглое отверстие выходит на шар спереди и сзади по окружности. Сверху эту окружность видно <b>с ребра</b>, поэтому это <b>короткий горизонтальный отрезок</b> (правило 5). Он замыкает контур между краем паза и краем шара.',
+    how:'Глубину снимаешь с главного вида: проведи там горизонталь через самую верхнюю точку круглого отверстия до круга шара. Половину этой хорды отложи от оси вида сверху вперёд и назад. Длина отрезка — от стенки паза до края шара.'},
+   {t:'Дуга дна, видная сквозь паз',g:['S+F45 L','S+F45 R'],
+    why:'Заглядываешь сверху в паз и видишь внизу плоское <b>дно пятки</b>. Дно горизонтальное, его видно <b>в лоб</b>. Значит, его край с шаром — <b>дуга окружности</b> (правило 3). Видна только полоска между стенками паза: остальное закрыто металлом.',
+    how:'Раствор: на главном виде дно — горизонталь, она отсекает от круга шара хорду. <b>Половина хорды</b> — раствор. Циркуль в центр вида сверху, дугу проводишь между краями паза. <b>Это и есть та «странная» дуга на виде сверху.</b>'},
+   {t:'Разрез А–А: полость',g:['C+Z0 R'],noRef:1,
+    why:'Справа вид сверху заменён разрезом: деталь распилили <b>горизонтально через центр</b> и сняли верх. Пила прошла по полости, её край — дуга полости, сплошная.',
+    how:'Циркулем из центра радиусом полости. Оборви там, где проходит круглое отверстие.'},
+   {t:'Стенка трубы, распиленная вдоль',g:['Y+Z0 R'],
+    why:'Пила прошла и через круглое отверстие, прямо по его оси. Трубу, разрезанную вдоль, видишь как <b>две прямые</b> — её боковые края. Они идут от полости до наружного края шара.',
+    how:'Вертикальная линия связи вниз от крайней (боковой) точки круга на главном виде.'},
+   {t:'Нижняя половина трубы и паз',g:['W10+Y R','S+W10 R','C+W10 R'],
+    why:'Ниже распила ты видишь нижнюю половину трубы. Внизу труба переходит в паз. Линия, где они встречаются, тянется через всю глубину. Сверху это <b>прямая</b> на месте стенки паза.',
+    how:'Вертикальная линия связи от стенки паза на главном виде.'},
+   {t:'Выход трубы в полость',g:['C+Y R'],
+    why:'Труба выходит не только наружу, но и <b>в полость</b>, тоже по окружности поперёк трубы. Сверху это снова <b>отрезок</b>, ближе к центру, чем наружный (полость меньше шара).',
+    how:'Как наружный выход, только хорду берёшь по кругу <b>полости</b>: горизонталь через верх круглого отверстия до круга полости на главном виде, половина хорды — глубина.'},
+   {t:'Уступ внутри полости',g:['C+F30 R','C+W20 R','W20+F45 R'],
+    why:'Под распилом, внутри полости, видно <b>потолок пятки</b> (уступ). Он горизонтальный, видим его в лоб, поэтому его край с полостью — <b>дуги</b>. Это «срезанные уголки» в середине. Прямые рядом — боковые стенки пятки, их видно с ребра.',
+    how:'Раствор для дуг: на главном виде уступ — горизонталь, она отсекает хорду от круга <b>полости</b>. Половина этой хорды — раствор, циркуль в центр.'},
+   {t:'Штриховка',g:[],hatch:1,
+    why:'Пила на высоте центра прошла по кольцу стенки шара. Но на этой высоте насквозь проходит круглое отверстие и разрывает кольцо спереди и сзади. Штрихуем кольцо <b>только там, где металл</b>, а полосу отверстия оставляем пустой.',
+    how:'Только правая половина, под 45°.'} ]},
+ left:{ ref:'front', base:'<image href="img/left.svg" width="900" height="900"/>', refBase:'<image href="img/front0.svg" width="900" height="900"/>', refName:'главный вид',
+  items:[
+   {t:'Главные дуги — края стенок паза',g:['S+W10 L','S+W10 R'],
+    why:'Самое важное. Сбоку мы смотрим на стенки паза <b>в лоб</b>. След стенки на шаре — окружность, и мы видим её как есть, то есть <b>дугой</b>. Стенка паза срезала шар почти по краю, поэтому <b>эта дуга и есть контур</b> вида сверху и сбоку, а не круг шара. Она чуть меньше шара: стенка не проходит через центр.',
+    how:'Раствор: на <b>виде сверху</b> (там шар — круг из задания) стенка паза видна с ребра, вертикальной прямой. Она отсекает от круга хорду. <b>Половина хорды</b> — раствор. Циркуль в центр вида слева. Где дуга начинается и кончается — по высотам с главного вида.'},
+   {t:'Вертикаль — выход круглого отверстия',g:['S+Y L','S+Y R'],
+    why:'В средней части шар по бокам срезан круглым отверстием. Оно выходит на шар по окружности поперёк трубы, а сбоку мы видим её <b>с ребра</b>, поэтому это <b>вертикальный отрезок</b> (правило 5). Он заменяет контур на этом участке.',
+    how:'Где стоит: проведи горизонталь от самой верхней точки круглого отверстия на главном виде. Она встретит круг шара на виде слева, туда и ставь вертикаль. Сверху и снизу отрезок обрывается на высоте, где круг на главном виде встречает стенки паза.'},
+   {t:'Ступенька 1 — уступ',g:['S+F30 L','S+F30 R','W10+F30 R','C+F30 R'],
+    why:'На высоте уступа паз становится пяткой, а пятка шире. Значит, стенка, которая срезает шар, отходит дальше от центра, и её дуга становится <b>меньше</b>. Сам уступ — горизонтальный потолок, мы видим его <b>с ребра</b>, поэтому это <b>горизонталь</b>. Она соединяет большую дугу (стенка паза) с меньшей (стенка пятки). <b>Это и есть «переход».</b>',
+    how:'Горизонтальная линия связи от уступа на главном виде. Концы — там, где она встречает дугу паза и дугу пятки. Справа в разрезе та же горизонталь тянется дальше внутрь, до полости.'},
+   {t:'Дуга боковой стенки пятки',g:['S+W20 L','S+W20 R'],
+    why:'Ниже уступа шар срезает уже <b>стенка пятки</b>. Её тоже видно в лоб, значит, тоже дуга. Радиус меньше, чем у паза: стенка пятки дальше от центра.',
+    how:'Раствор снимаешь так же, с вида сверху: вертикаль на месте стенки пятки, половина хорды. Циркуль из того же центра. Проводишь между уступом и дном.'},
+   {t:'Ступенька 2 — дно пятки',g:['S+F45 L','S+F45 R','W20+F45 R'],
+    why:'Ниже дна дыры уже нет, шар там целый, и контур возвращается на <b>настоящий край шара</b>, он больше дуги пятки. Дно видно с ребра, поэтому это горизонталь. Получается «крылышко»: горизонталь от дуги пятки наружу, к кругу шара.',
+    how:'Горизонтальная линия связи от дна на главном виде, от дуги пятки до круга шара. Справа в разрезе она же — верхняя граница штриховки.'},
+   {t:'Настоящий край шара — только внизу',g:['S+X0 L','S+X0 R'],noRef:1,
+    why:'Круг шара на этом виде — край шара в его средней плоскости. Но середину шара на всю высоту выше дна выел K. Поэтому настоящий край шара остался <b>только внизу, под пяткой</b>.',
+    how:'Циркулем из центра радиусом шара, только ниже дна пятки.'},
+   {t:'Разрез: дуга полости на стенке паза',g:['C+W10 R'],
+    why:'Справа деталь распилена посередине, и видно, что внутри. Стенка паза врезается не только в шар, но и в <b>полость</b>, тоже по окружности, и мы снова видим её в лоб. Это <b>внутренняя дуга</b>. Она меньше, потому что полость меньше шара.',
+    how:'Раствор: на виде сверху стенка паза отсекает хорду от круга <b>полости</b> (штриховая окружность), половина её — раствор. Циркуль из центра. Обрывы — по высотам с главного вида.'},
+   {t:'Разрез: прямоугольник — труба в стенке',g:['C+Y R','W10+Y R'],
+    why:'Круглое отверстие проходит сквозь стенку шара от полости наружу. Внутри видна эта «труба». Вертикали — её выходы в полость и наружу (окружности с ребра). Горизонтали — где труба встречает стенку паза: эта линия идёт поперёк, мы видим её как прямую.',
+    how:'Наружная вертикаль уже есть. Внутренняя ставится так же, только по кругу полости. Горизонтали — линии связи от точек, где круг встречает стенки паза на главном виде.'},
+   {t:'Разрез: дуга полости на стенке пятки',g:['C+W20 R'],
+    why:'Ниже уступа в полость врезается стенка пятки. Это ещё одна внутренняя дуга, ещё меньше. Она спускается от уступа к оси. <b>Это второй переход: «дуга → горизонталь уступа → другая дуга».</b>',
+    how:'Раствор — половина хорды, которую стенка пятки отсекает от круга полости на виде сверху. Циркуль из центра, от горизонтали уступа до оси.'},
+   {t:'Штриховка',g:[],hatch:1,
+    why:'Пила прошла по средней плоскости, а там почти всё выело отверстие K. Металл остался <b>только под дном пятки</b>, это шапочка шара. Её и штрихуем.',
+    how:'Только правая половина: между горизонталью дна и кругом шара.'} ]}
+};
+
+function polys(view,keys,prj){ const D=(window.IG8L||{})[view]||{}; let o=[];
+  keys.forEach(k=>{ (D[k]||[]).forEach(c=>{ const p=c.map(prj); o.push(p); }); }); return o; }
+const pathOf=P=>P.map(p=>{ const L=Math.hypot(p[p.length-1][0]-p[0][0],p[p.length-1][1]-p[0][1]);
+  if(p.length===2&&L<5) return {dot:p[0]}; return {d:'M'+p.map(q=>f1(q[0])+' '+f1(q[1])).join('L')}; });
+
+document.querySelectorAll('[data-view]').forEach(host=>{
+  const v=host.dataset.view, V=VIEWS[v]; let k=0;
+  host.innerHTML=`<div class="vw"><div class="paper"><span class="tag">${v==='front'?'главный вид':v==='top'?'вид сверху · А–А':'вид слева'}</span><div class="m"></div></div><div class="paper"><span class="tag">${V.refName}</span><div class="r"></div></div></div>
+    <div class="nav"><button class="sbtn pv" aria-label="Назад">‹</button><div class="tt"><small></small><b></b></div><button class="sbtn nx" aria-label="Дальше">›</button></div>
+    <div class="desc"></div><div class="list">${V.items.map((it,i)=>`<button data-i="${i}">${i+1}. ${it.t}</button>`).join('')}</div>`;
+  const draw=()=>{
+    const it=V.items[k], col=COL[k%COL.length];
+    const hl=(P,big)=>`<g opacity=".8">`+pathOf(P).map(q=>q.dot?`<circle cx="${f1(q.dot[0])}" cy="${f1(q.dot[1])}" r="${big?13:6.5}" fill="${col}"/>`:`<path d="${q.d}" fill="none" stroke="${col}" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>`).join('')+'</g>';
+    const surf=new Set(it.g.map(q=>q.split(' ')[0])), rv=V.ref+'0', rk=Object.keys((window.IG8L||{})[rv]||{}).filter(q=>surf.has(q.split(' ')[0]));
+    const main=polys(v,it.g,PRJ[v]); let ref=polys(rv,rk,PRJ[V.ref]), refDot=false;
+    if(!ref.length){ ref=polys(v,it.g,PRJ[V.ref]); refDot=true; }   /* на соседнем виде линия вырождается в точку */
+    const hat=it.hatch?`<g style="color:${col}" opacity=".45">${hatchArea(v)}</g>`:'';
+    host.querySelector('.m').innerHTML=`<svg viewBox="80 80 740 740">${V.base}${hat}${hl(main)}</svg>`;
+    host.querySelector('.r').innerHTML=`<svg viewBox="80 80 740 740">${V.refBase}${it.hatch||it.noRef?'':hl(ref,refDot)}</svg>`;
+    host.querySelector('.tt small').textContent=`Линия ${k+1} из ${V.items.length}`;
+    host.querySelector('.tt b').textContent=it.t;
+    host.querySelector('.desc').innerHTML=`<h4>Что это</h4><p>${it.why}</p><h4>Как провести</h4><p>${it.how}</p>`;
+    host.querySelectorAll('.list button').forEach((b,i)=>b.classList.toggle('on',i===k));
+    host.querySelector('.pv').disabled=k===0; host.querySelector('.nx').disabled=k===V.items.length-1;
+  };
+  host.querySelector('.pv').onclick=()=>{ if(k>0){ k--; draw(); } };
+  host.querySelector('.nx').onclick=()=>{ if(k<V.items.length-1){ k++; draw(); } };
+  host.querySelector('.list').addEventListener('click',e=>{ const b=e.target.closest('[data-i]'); if(b){ k=+b.dataset.i; draw(); } });
+  draw();
+});
+</script>
+</body>
+</html>

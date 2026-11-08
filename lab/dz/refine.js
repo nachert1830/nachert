@@ -346,9 +346,13 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
     /* карандаш — слабый контраст; линейка, край стола, чужие предметы — в разы темнее проверенных линий */
     const ref=res.filter(r=>!r.unverified&&r.src==='model').map(r=>meanG(D,r.p)).sort((a,b)=>a-b), med=ref.length?ref[ref.length>>1]:0;
     if(med>0) found=found.filter(f=>meanG(D,f.p)<=(o.maxContrast||2.2)*med);
-    /* линия построения связана с чертежом: хоть один конец у проверенного отрезка или у подписанной точки (штрихи текста висят отдельно) */
-    const touch=res.filter(r=>!r.unverified).map(r=>r.p), tp=(o.points||[]), tol=(o.touch||3)*ppm;
-    found=found.filter(f=>[[f.p[0],f.p[1]],[f.p[2],f.p[3]]].some(e=>touch.some(t=>dSegPt(e,t)<=tol)||tp.some(q=>Math.hypot(q[0]-e[0],q[1]-e[1])<=tol))); }
+    /* линия построения связана с чертежом: хоть один конец — у подписанной точки или у КОНЦА проверенного отрезка (построение
+       начинается и кончается в точках). «Где-то на отрезке» мало: на бумаге в клетку линия клетки пересекает чертёж и проходила
+       бы (настоящее фото 05.11: две клетки внизу листа стали «линиями чертежа»); штрихи текста висят отдельно */
+    const vs=res.filter(r=>!r.unverified).map(r=>r.p), tol=(o.touch||3)*ppm, ends=vs.flatMap(p=>[[p[0],p[1]],[p[2],p[3]]]).concat(o.points||[]);
+    /* и пересечения проверенных отрезков: линия построения часто кончается на пересечении, а не в подписанной точке */
+    for(let i=0;i<vs.length;i++) for(let j=i+1;j<vs.length;j++){ const r=segIntersect(vs[i],vs[j]); if(r&&r.t>=-0.02&&r.t<=1.02&&r.u>=-0.02&&r.u<=1.02) ends.push([r.x,r.y]); }
+    found=found.filter(f=>[[f.p[0],f.p[1]],[f.p[2],f.p[3]]].some(e=>ends.some(q=>Math.hypot(q[0]-e[0],q[1]-e[1])<=tol))); }
   /* слабый отрезок (чернил мало): выдумка модели («как надо»), если рядом найдена настоящая линия, заменяющая его; иначе — бледная настоящая, остаётся как есть */
   const near=(a,b)=>{ const ma=[(a[0]+a[2])/2,(a[1]+a[3])/2], mb=[(b[0]+b[2])/2,(b[1]+b[3])/2], d=Math.min(dSegPt(ma,b),dSegPt(mb,a)); let da=Math.abs(Math.atan2(a[3]-a[1],a[2]-a[0])-Math.atan2(b[3]-b[1],b[2]-b[0]))%Math.PI; da=Math.min(da,Math.PI-da)*180/Math.PI; return d<=(o.replaceDist||3)*ppm&&da<=(o.replaceAng||12); };
   weak.forEach(w=>{ if(w.drop&&(w.ink<(o.emptyInk==null?0.12:o.emptyInk)||found.some(f=>near(w.p,f.p)))) dropped.push({p:w.p,ink:w.ink,why:w.ink<(o.emptyInk==null?0.12:o.emptyInk)?'на бумаге пусто':'на бумаге нет, заменён найденной линией',i:w.i}); else res.push({p:w.p,src:'model',ink:w.ink,moved:0,unverified:true,dash:w.dash,i:w.i}); });

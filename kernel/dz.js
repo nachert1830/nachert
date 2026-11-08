@@ -9,7 +9,7 @@
      DZR.solve('ng1', 17)      — {task — разбор в формате плеера (3D — по нему же), answers, cert — нарушения условия}.
    Решатель: DZR.def('ng2', {solve:(n, D, src, d) → {task, answers, cert}, has:n → решает ли этот тип}); src — помощники
    варианта (kind, text, points, params), D — данные варианта.
-   Идентификаторы: ng1…ng5 — начертательная геометрия, ДЗ №1…№5; ig2…ig4 — инженерная графика, задания 2…4. */
+   Идентификаторы: ng1…ng5 — начертательная геометрия, ДЗ №1…№5; ig2…ig5, ig8 — инженерная графика, задания 2…5 и 8. */
 (function(){
 const defs={};
 /* из таблицы типов и данных — помощники варианта: kind(n) — код типа, text(n) — условие, points(n) — точки таблицы,
@@ -23,7 +23,7 @@ const DZR={
   def(id,part){ const d=defs[id]||(defs[id]={id}); Object.assign(d,part); prep(d); return d; },
   get(id){ return defs[id]||null; },
   all(){ return Object.values(defs); },
-  list(course){ return Object.values(defs).filter(d=>d.num&&(!course||d.course===course)).sort((a,b)=>(a.course===b.course?0:a.course==='ng'?-1:1)||a.num-b.num); },
+  list(course){ return Object.values(defs).filter(d=>d.num&&!d.hidden&&(!course||d.course===course)).sort((a,b)=>(a.course===b.course?0:a.course==='ng'?-1:1)||a.num-b.num); },
   typeOf(id,n){ const d=defs[id]; return d&&d.types?d.types.find(t=>+n>=t.from&&+n<=t.to)||null:null; },
   /* решено ли: у НГ — решатель по данным варианта (solve), у ИГ — 3D-модель детали (part) */
   has(id,n){ const d=defs[id]; if(!d) return false; if(d.part){ try{ return !!d.part(+n); }catch(e){ return false; } }

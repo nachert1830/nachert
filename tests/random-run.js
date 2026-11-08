@@ -47,7 +47,7 @@ async function runVariants(page,seeds){
     const tasks=r[0].tasks;
     /* вариант, на котором построение невозможно (у задачи нет решения), — не ошибка, если таких единицы */
     /* вариант, на котором построение не существует (прямая мимо сферы, пустое пересечение) — вырожденный, не ошибка */
-    const DEG=/reading '0'|of null|of undefined|is not iterable|NaN/;
+    const DEG=/reading '0'|of null|of undefined|is not iterable|NaN|вырожден/;   /* «вырожден» — задача сама сообщает, что на этих данных построения нет */
     const errs=r.slice(1).filter(v=>v.err), degen=errs.every(v=>DEG.test(v.err))&&errs.length<=0.5*(r.length-1);
     const bad={}, info=degen&&errs.length?['вырожденных вариантов '+errs.length+' из '+(r.length-1)]:[];
     /* задачи, выпавшие из варианта из-за ошибки внутри своей задачи: вырожденный вариант, если ошибка «пустое пересечение» */

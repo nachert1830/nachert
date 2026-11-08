@@ -107,6 +107,13 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
     if(g.verdict!=='верно'||g.lines[0].chars.found!==ref.lines[0].chars.length) B('ДЗ №4: верные линии пересечения — «верно», характерные точки — по месту, не по номеру',g.verdict+' '+JSON.stringify(g.lines[0].chars));
     if(bd.verdict!=='расходится с эталоном') B('ДЗ №4: линия сдвинута на 4 мм — «расходится»',bd.verdict);
     if(wk.verdict==='расходится с эталоном') B('ДЗ №4: при неточной привязке — не обвиняет',wk.verdict); }
+  /* без привязки к варианту: лист снят под углом (трапеция) — линии связи после разбора вертикальны (model.js upright) */
+  { const pts=[['A″',20,20],['A′',20,90],['B″',90,25],['B′',90,95],['1″',45,22],['1′',45,85],['2″',70,30],['2′',70,80]], k=4;
+    const warp=([x,y])=>{ const w=1+0.0025*(y-55); return [100+(x-55)/w*k,100+(y-55)*k]; };   /* дальний край листа шире — линии расходятся */
+    const out={size:[800,800],drawings:[{part:null,pts:pts.map(q=>[q[0]].concat(warp([q[1],q[2]]))),segs:pts.filter(q=>/″/.test(q[0])).map(q=>{ const h=pts.find(z=>z[0]===q[0].replace('″','′')); return {p:warp([q[1],q[2]]).concat(warp([h[1],h[2]])),src:'model'}; }),fit:null,ppm:k}]};
+    const dr=D.fromScan(out).drawings[0], P={}; dr.pts.forEach(p=>P[p.l]=p.at);
+    const tilt=['A','B','1','2'].map(n=>Math.abs(Math.atan2(P[n+'′'][0]-P[n+'″'][0],P[n+'′'][1]-P[n+'″'][1])*180/Math.PI));
+    if(!dr.approx||Math.max(...tilt)>0.5) B('без варианта: трапеция съёмки выпрямлена — линии связи вертикальны','наклоны '+tilt.map(v=>v.toFixed(1)).join(', ')+'°'); }
   return bad; }
 
 /* синтетический «снимок»: чертёж примера карандашом на белом листе 1500 × 2000 (5 px/мм), без не подтверждённой линии */
