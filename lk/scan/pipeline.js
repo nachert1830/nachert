@@ -164,6 +164,8 @@ function create(o){ o=o||{};
       try{ const j=await ask('layout',sm.c); acc.cost+=j.cost||0; acc.calls++; lay=LY.parseLayout(j.text,1/sm.k,W,H); }
       catch(e){ if(e.status===401||e.status===403) throw e; lay={ok:false,why:e.message}; }   /* неверный код — дальше идти незачем */
       if(!lay.ok){ step('lay','Раскладка не помогла ('+lay.why+') — лист как один чертёж','done'); lay={ok:true,rot:0,drawings:[{box:[0,0,W,H],part:null}]}; }
+      /* ДЗ №4 — один чертёж на лист (три тела, обе проекции); раскладка же видит в нём два-три «чертежа» (″ и ′ порознь) — объединяем рамки */
+      else if((sel.dz==='4'||sel.dz===4)&&lay.drawings.length>1){ const B=lay.drawings.map(d=>d.box); lay.drawings=[{box:[Math.min(...B.map(b=>b[0])),Math.min(...B.map(b=>b[1])),Math.max(...B.map(b=>b[2])),Math.max(...B.map(b=>b[3]))],part:null}]; step('lay','ДЗ №4: рамки раскладки объединены в один чертёж','done'); }
       else step('lay','Чертежей: '+lay.drawings.length+(lay.rot?', лист повёрнут на '+lay.rot+'°':'')+(lay.drawings.some(d=>d.part)?' (части '+lay.drawings.map(d=>d.part||'?').join(', ')+')':''),'done'); }
     const out={name:String(file.name||'лист').replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]}; if(sel.single) out.layout.single=true;
     await digitize(lay.drawings.map(d=>({bmp,d,rot:lay.rot,W,H})),out,sel,step,acc,true);

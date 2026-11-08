@@ -18,9 +18,15 @@ const dPoly=(p,P)=>{ let m=1e9; for(let i=1;i<P.length;i++){ const a=P[i-1], b=P
   const srv=await new Promise(res=>{ const s=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const p=path.join(ROOT,f);
     if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); } r.writeHead(200,{'Content-Type':T[path.extname(p)]||'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const br=await chromium.launch(), pg=await br.newPage(); pg.on('pageerror',e=>console.log('ошибка страницы: '+e));
-  const FN='https://scan.invalid/fn'; let cur=null;
+  const FN='https://scan.invalid/fn'; let cur=null, spent=0, calls=0;
   await pg.route(u=>String(u).startsWith(FN),async r=>{ const q=r.request(), H={'access-control-allow-origin':'*','access-control-allow-headers':'*'};
     if(q.method()!=='POST') return r.fulfill({status:200,headers:H,contentType:'application/json',body:'{"ok":true,"scan":true,"codeOk":true}'});
+    /* --url: настоящая модель через локальную копию облачной функции (кэш по хэшу запроса, предел $ --limit) */
+    if(A.url){ const body=q.postData()||'', key=require('crypto').createHash('sha1').update(body).digest('hex'), CF=A.cache||path.join(__dirname,'..','private','dz4cache.json'), cache=fs.existsSync(CF)?JSON.parse(fs.readFileSync(CF,'utf8')):{};
+      if(!cache[key]){ if(spent>=+(A.limit||0.4)) return r.fulfill({status:429,headers:H,contentType:'application/json',body:'{"ok":false,"error":"предел замера"}'});
+        const resp=await fetch(A.url,{method:'POST',headers:{'content-type':'application/json','x-scan-code':encodeURIComponent(A.code||'test'),origin:'https://nachert1830.ru'},body}), t=await resp.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
+        if(j&&j.cost) spent+=j.cost; calls++; if(!(resp.ok&&j&&j.ok)) return r.fulfill({status:resp.status,headers:H,contentType:'application/json',body:t}); cache[key]=t; fs.mkdirSync(path.dirname(CF),{recursive:true}); fs.writeFileSync(CF,JSON.stringify(cache)); }
+      const j=JSON.parse(cache[key]); if(j.mode!=='layout'&&cur) cur.raw=cur.raw||{realText:j.text}; return r.fulfill({status:200,headers:H,contentType:'application/json',body:cache[key]}); }
     const b=JSON.parse(q.postData()||'{}'), c=cur; let text;
     if(b.mode==='layout'){ const k=b.w/c.W; text=JSON.stringify({rot:0,drawings:[{box:c.box.map(v=>Math.round(v*k)),part:null}]}); }
     else { const bw=c.box[2]-c.box[0], bh=c.box[3]-c.box[1], pad=Math.max(40,0.05*Math.max(bw,bh)), X0=Math.max(0,Math.round(c.box[0]-pad)), Y0=Math.max(0,Math.round(c.box[1]-pad)), X1=Math.min(c.W,Math.round(c.box[2]+pad)), k=b.w/(X1-X0);
@@ -45,7 +51,7 @@ const dPoly=(p,P)=>{ let m=1e9; for(let i=1;i<P.length;i++){ const a=P[i-1], b=P
     /* кривые: точность по снимку — расстояние точек уточнённой кривой до начерченного (мм) */
     const truthPx=tr.drawn.curves.concat(tr.drawn.outl).map(q=>q.p.map(p=>IMG.H.apply(tr.H,[tr.O[0]+p[0],tr.O[1]+p[1]])));
     const near=p=>Math.min(...truthPx.map(P=>dPoly(p,P)))/ppm, ref=got.curves.filter(q=>!q.unv), eR=[].concat(...ref.map(q=>B4.dense(q.poly,ppm*0.5).map(near)));
-    const raw=require('../../lab/dz/layout.js').parseDigit(cur.raw.text).curves.map(q=>q.p.map(p=>[p[0]/cur.raw.k+cur.raw.X0,p[1]/cur.raw.k+cur.raw.Y0])), eM=[].concat(...raw.map(P=>B4.dense(P,ppm*0.5).map(near)));
+    const raw=!cur.raw||cur.raw.realText?[]:require('../../lab/dz/layout.js').parseDigit(cur.raw.text).curves.map(q=>q.p.map(p=>[p[0]/cur.raw.k+cur.raw.X0,p[1]/cur.raw.k+cur.raw.Y0])), eM=[].concat(...raw.map(P=>B4.dense(P,ppm*0.5).map(near)));
     /* покрытие начерченных линий пересечения уточнёнными кривыми (1 мм) */
     const tc=tr.drawn.curves.map(q=>q.p.map(p=>IMG.H.apply(tr.H,[tr.O[0]+p[0],tr.O[1]+p[1]]))), tcs=[].concat(...tc.map(P=>B4.dense(P,ppm))), cov=tcs.filter(p=>ref.some(q=>dPoly(p,q.poly)<=ppm)).length/Math.max(1,tcs.length);
     const v=got.verify4, row={cs,fit:got.fit,curves:{n:ref.length,unv:got.curves.length-ref.length,mean:eR.reduce((a,b)=>a+b,0)/Math.max(1,eR.length),p95:q95(eR),cov,rawMean:eM.reduce((a,b)=>a+b,0)/Math.max(1,eM.length),rawP95:q95(eM)},verdict:v&&v.verdict,lines:v&&v.lines.map(l=>({st:l.st,proj:Object.fromEntries(Object.entries(l.proj).map(([k,x])=>[k,x.st+(x.cov!=null?' '+Math.round(100*x.cov)+'%':'')]))})),chars:v&&v.chars,copy:A.out?{curves:got.curves.map(q=>q.mm),pts:got.mmPts,segs:got.mmSegs,arcs:got.mmArcs}:null,sec:(Date.now()-t0)/1000};
@@ -53,6 +59,7 @@ const dPoly=(p,P)=>{ let m=1e9; for(let i=1;i<P.length;i++){ const a=P[i-1], b=P
     console.log('в.'+cs.n+(cs.err?' (ошибка: '+cs.err.kind+' линии '+(cs.err.line+1)+')':'')+': '+(got.fit?'ДЗ'+got.fit.dz+' в.'+got.fit.n+(got.fit.dz===4&&got.fit.n===cs.n?'':' ← ЧУЖОЙ')+', невязка '+f2(got.fit.rms)+' мм, покрытие очерков '+f2(got.fit.cover)+(got.fit.second?' (2-й в.'+got.fit.second.n+': '+f2(got.fit.second.cover)+')':''):'не привязан')
       +' · кривых '+ref.length+(row.curves.unv?' (+'+row.curves.unv+' без карандаша)':'')+', ошибка '+f2(row.curves.mean)+' мм (95 % ≤ '+f2(row.curves.p95)+'), у модели '+f2(row.curves.rawMean)+', покрытие '+Math.round(100*cov)+' %'
       +' · проверка: '+(v?v.verdict+' ['+row.lines.map(l=>l.st+' '+JSON.stringify(l.proj)).join(' | ')+'], точек '+v.chars.found+'/'+v.chars.of:'—')+' · '+row.sec.toFixed(0)+' с'); }
+  if(A.url) console.log('настоящая модель: запросов '+calls+', ≈ $'+spent.toFixed(3)+(cur&&cur.raw&&cur.raw.realText?'; кривых L в первом ответе: '+(cur.raw.realText.match(/^L /gm)||[]).length:''));
   await br.close(); srv.close();
   const ok=rows.filter(r=>!r.err), good=ok.filter(r=>!r.cs.err), bad=ok.filter(r=>r.cs.err), cnt=(L,v)=>L.filter(r=>r.verdict===v).length;
   const sum={sheets:rows.length,bound:ok.filter(r=>r.fit&&r.fit.dz===4&&r.fit.n===r.cs.n).length,wrong:ok.filter(r=>r.fit&&!(r.fit.dz===4&&r.fit.n===r.cs.n)).length,rms:med(ok.filter(r=>r.fit).map(r=>r.fit.rms)),
