@@ -339,7 +339,33 @@ function solveN(n){ if(CACHE[n]) return CACHE[n]; const d=DZR.get('ng4'), t=DZR.
   const L=r.R.lines, answers={lines:L.map(x=>({pair:r.R.G.bodies.find(b=>b.id===x.a).nom+' ∩ '+r.R.G.bodies.find(b=>b.id===x.b).nom,branches:x.m.lines.length,closed:x.m.lines.map(l=>l.closed),
     chars:x.chars.map(c=>({n:c.n,p:c.p.map(v=>Math.round(v*10)/10),why:c.why})),dev:x.m.dev}))};
   return CACHE[n]={task:r.task,answers,cert:r.R.cert}; }
+/* эталон для сканера листа (lk/scan/verify4.js, привязка к варианту): линии пересечения и очерки тел в мм эпюра от O —
+   фронтальная проекция X″ = (−x, −z), горизонтальная X′ = (−x, y), как в ДЗ №3 (lab/dz/model.js). Ломаные прорежены
+   (Дуглас — Пекер, 0,05 мм; координаты — до 0,1 мм): кривая на листе точнее не нарисуется, а файл эталона 30 вариантов
+   остаётся небольшим. Ветвь на каждой проекции — участки одной видимости подряд (вместе — вся ветвь).
+   scanRef(n) → {n, code, lines:[{pair, branches:[{closed, F:[{vis, p:[[u,v]]}], H:[…]}], chars:[{n, F, H, why}]}],
+     outlines:[{v:'F'|'H', vis, p:[[u,v]]}], axes:[{v, p}]} */
+function dp(P,tol){ if(P.length<3) return P; const keep=new Uint8Array(P.length); keep[0]=keep[P.length-1]=1; const st=[[0,P.length-1]];
+  while(st.length){ const [a,b]=st.pop(); let m=-1, dm=tol; const ax=P[a][0], ay=P[a][1], dx=P[b][0]-ax, dy=P[b][1]-ay, L=Math.hypot(dx,dy)||1e-9;
+    for(let i=a+1;i<b;i++){ const d=Math.abs((P[i][0]-ax)*dy-(P[i][1]-ay)*dx)/L; if(d>dm){ dm=d; m=i; } } if(m>0){ keep[m]=1; st.push([a,m],[m,b]); } }
+  return P.filter((_,i)=>keep[i]); }
+const pF=p=>[-p[0],-p[2]], pH=p=>[-p[0],p[1]], r1p=q=>[Math.round(q[0]*10)/10,Math.round(q[1]*10)/10];
+const pr2=(pts,v)=>dp(pts.map(v==='F'?pF:pH),0.05).map(r1p);
+function scanRef(n){ const d=DZR.get('ng4'), t=DZR.typeOf('ng4',n), D=d.V[n]; if(!t||!D) return null; const R=solve4(t.code,D), {G,sc}=R, B=sc.B;
+  let num=0; const lines=R.lines.map(L=>({pair:B[L.a].nom+' ∩ '+B[L.b].nom,
+    branches:L.m.lines.map(l=>({closed:!!l.closed,F:sc.visRuns(l.pts,'F').map(r=>({vis:r.vis,p:pr2(r.pts,'F')})),H:sc.visRuns(l.pts,'H').map(r=>({vis:r.vis,p:pr2(r.pts,'H')}))})),
+    chars:L.chars.slice().sort((p,q)=>q.p[2]-p.p[2]).map(c=>({n:++num,F:r1p(pF(c.p)),H:r1p(pH(c.p)),why:c.why}))}));
+  const outlines=[], ground=[];
+  G.bodies.forEach(b=>['F','H'].forEach(v=>sc.outline(b.id,v).forEach(p=>{ if(v==='F'&&p.every(q=>q[2]<0.01)) return; if(v==='H'&&p.every(q=>q[2]<0.01)) ground.push(p);
+    sc.visRuns(p,v).forEach(r=>outlines.push({v,vis:r.vis,body:b.id,p:pr2(r.pts,v)})); })));
+  /* основание на π₂ — по следам тел на π₁ (как в чистовике) */
+  const iv=ground.map(p=>[Math.min(...p.map(q=>q[0])),Math.max(...p.map(q=>q[0]))]).sort((a,b)=>a[0]-b[0]), mg=[];
+  iv.forEach(x=>{ const l=mg[mg.length-1]; if(l&&x[0]<=l[1]+0.5) l[1]=Math.max(l[1],x[1]); else mg.push(x.slice()); });
+  mg.forEach(x=>outlines.push({v:'F',vis:true,body:'base',p:[r1p(pF([x[1],0,0])),r1p(pF([x[0],0,0]))]}));
+  const axes=[]; G.bodies.forEach(b=>(b.axes||[]).forEach(a=>axes.push({v:a.v,p:pr2(a.p,a.v)})));
+  return {n,code:t.code,lines,outlines,axes}; }
 DZR.def('ng4',{
+  scanRef,
   examples:Object.fromEntries(Object.entries(EX).map(([k,n])=>[k,()=>{ const r=solveN(n), t=Object.assign({},r.task); t.n='ДЗ №4 · пример (вариант '+n+')'; return t; }])),
   solve(n){ const r=solveN(n); return {task:r.task,answers:r.answers,cert:r.cert}; },
   _solve4:solve4 });
