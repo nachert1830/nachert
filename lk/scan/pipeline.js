@@ -221,7 +221,7 @@ function create(o){ o=o||{};
     /* ДЗ №4 (lk/scan/verify4.js): линии пересечения копии против эталона варианта — каким бы способом их ни строили */
     if(self.SCANVERIFY4&&self.SCANREF4) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==4) return; const ref=self.SCANREF4[dr.fit.n]; if(!ref) return;
       try{ dr.verify4=self.SCANVERIFY4.verify({curves:(dr.curves||[]).filter(q=>q.mm).map(q=>({p:q.mm,unv:q.unverified})),segs:dr.mm.segs.map(q=>({p:q.p,unv:q.unverified})),
-        arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),pts:dr.mm.pts},ref); }catch(e){} });
+        arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),pts:dr.mm.pts},ref,{weak:!(dr.fit.cover>=0.85&&(dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm)<=0.45)}); }catch(e){} });
     /* проверка построения (ДЗ №3): мозг сканера (lab/dz/check3.js через gridsheet) по уточнённой копии каждого чертежа.
        Только по запросу (sel.check = true): на 62 настоящих чертежах (REPORT 7с) почти всё — «не могу утверждать» (студенты строят
        не только способом из указания), одно «ошибка в данных» — скорее ложное; студенту такой вердикт показывать рано */

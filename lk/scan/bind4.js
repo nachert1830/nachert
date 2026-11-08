@@ -47,7 +47,9 @@ function joinCircles(L,pts){ const G=[]; L.forEach((c,i)=>{ const g=G.find(x=>Ma
 function shapes(ref){ if(CACHE.has(ref)) return CACHE.get(ref); const samples=[], ids=[], circles=[], cp=[];
   (ref.outlines||[]).forEach((o,k)=>{ if(plen(o.p)<2) return; dense(o.p,1).forEach(p=>{ samples.push(p); ids.push(k); });
     const q=classify(o.p,0.2); if(q&&q.t==='C'&&q.span>=25&&q.r>=8&&q.r<=120){ circles.push({c:q.c,r:q.r,span:q.span,v:o.v}); cp.push(o.p); } });
-  const r={samples,ids,nOutl:(ref.outlines||[]).length,circles:joinCircles(circles,cp).filter(c=>c.span>=60)}; CACHE.set(ref,r); return r; }
+  /* оси тел и ось x — тоже на листе (студент их чертит); в подгонку идут, в покрытие очерков — нет (id −1) */
+  const extra=[]; (ref.axes||[]).forEach(a=>dense(a.p,1).forEach(p=>extra.push(p)));
+  const r={samples,ids,extra,nOutl:(ref.outlines||[]).length,circles:joinCircles(circles,cp).filter(c=>c.span>=60)}; CACHE.set(ref,r); return r; }
 
 /* ── карта расстояний до начерченного (с номером ближайшей точки), шаг сетки g px ── */
 function field(pts,W,H,g){ const w=Math.ceil(W/g)+2, h=Math.ceil(H/g)+2, D=new Float32Array(w*h).fill(1e9), I=new Int32Array(w*h).fill(-1);
@@ -79,30 +81,44 @@ function bind(drawn,REF,o){ o=o||{}; const segs=drawn.segs||[], circ=drawn.circl
   const cs=circ.map(c=>{ const full=c.full||c.a1==null; return {c:[c.cx,c.cy],r:c.r,span:full?360:(c.span!=null?c.span:((c.a2-c.a1+360)%360))}; });
   const ppm0=o.ppm||null, ns=o.n?[+o.n]:Object.keys(REF).map(Number), dc=joinCircles(cs,null).filter(c=>c.span>=90&&c.r>3).map(c=>({cx:c.c[0],cy:c.c[1],r:c.r}));
   const cover=(A,S,tolPx)=>{ let k=0; for(const m of S.samples){ const p=apA(A,m); if(F(p[0],p[1])[0]<=tolPx) k++; } return k/S.samples.length; };
-  const icp=(A,S,tolsMm,mode)=>{ for(const t of tolsMm){ const s=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3])), P=[];
-      S.samples.forEach(m=>{ const p=apA(A,m), [d,k]=F(p[0],p[1]); if(k>=0&&d<=t*s) P.push([m,PT[k]]); });
+  /* область растёт от места гипотезы (c0, радиус R мм): на сильно наклонённом снимке подобие верно только рядом с окружностью,
+     с которой начали, — дальние очерки поначалу ловят чужие линии */
+  const icp=(A,S,tolsMm,mode,c0,R)=>{ for(const t of tolsMm){ const s=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3])), P=[];
+      (S.all||(S.all=S.samples.concat(S.extra||[]))).forEach(m=>{ if(c0&&Math.hypot(m[0]-c0[0],m[1]-c0[1])>R) return; const p=apA(A,m), [d,k]=F(p[0],p[1]); if(k>=0&&d<=t*s) P.push([m,PT[k]]); });
+      /* обрезанный ICP: дальние 20 % пар — чужие линии (оси, кривые, построения), их в подгонку не берём */
+      if(P.length>20){ const dd=P.map(q=>{ const p=apA(A,q[0]); return Math.hypot(p[0]-q[1][0],p[1]-q[1][1]); }), lim=dd.slice().sort((a,b)=>a-b)[Math.floor(0.8*dd.length)]; for(let i=P.length-1;i>=0;i--) if(dd[i]>lim) P.splice(i,1); }
       const B=(mode==='aff'?affFit(P):null)||simFit(P); if(!B) break; A=B; } return A; };
+  /* перспектива снимка: наклон телефона аффинное не берёт (низ листа уезжает на 1–5 мм) — ICP с гомографией, тоже обрезанный;
+     шаг принимается, если покрытие очерков (1 мм) не упало */
+  const apM=(M,m)=>IMG.H.apply(M,m), stat=(M,S,s)=>{ const hit=new Map(), tot=new Map(), d2=[]; let k1=0;
+    S.samples.forEach((m,i)=>{ const k=S.ids[i]; tot.set(k,(tot.get(k)||0)+1); const p=apM(M,m), [d]=F(p[0],p[1]); if(d<=1*s){ k1++; hit.set(k,(hit.get(k)||0)+1); d2.push(d*d); } });
+    return {cv:k1/S.samples.length,inl:[...tot.keys()].filter(k=>(hit.get(k)||0)>=0.6*tot.get(k)).length,of:tot.size,rms:Math.sqrt(d2.reduce((a,v)=>a+v,0)/Math.max(1,d2.length))/s}; };
+  const covAt=(M,S,tp)=>{ let k=0; for(const m of S.samples){ const p=apM(M,m); if(F(p[0],p[1])[0]<=tp) k++; } return k/S.samples.length; };
+  const homIcp=(M,S,s,tols,c0,R)=>{ for(const t of tols||[6,5,4,3,2,1.5,1,1]){ const P=[], dd=[]; (S.all||(S.all=S.samples.concat(S.extra||[]))).forEach(m=>{ if(c0&&Math.hypot(m[0]-c0[0],m[1]-c0[1])>R) return; const p=apM(M,m), [d,k]=F(p[0],p[1]); if(k>=0&&d<=t*s){ P.push([m,PT[k]]); dd.push(d); } }); if(P.length<40) break;
+      const lim=c0?Infinity:dd.slice().sort((a,b)=>a-b)[Math.floor(0.9*dd.length)], Q=P.filter((_,i)=>dd[i]<=lim);   /* пока область растёт — без обрезки: дальние пары и есть те, что надо подтянуть */
+      let M2=null; try{ M2=IMG.H.fit(Q.map(q=>q[0]),Q.map(q=>q[1])); }catch(e){} if(!M2||!M2.every(Number.isFinite)) break;
+      if(c0||t>=3||covAt(M2,S,2*s)+1e-9>=covAt(M,S,2*s)-0.01) M=M2; }   /* шаг — если покрытие (при этом допуске, но не шире 2 мм) не упало */
+    return {M,st:stat(M,S,s)}; };
   const res=[];
+  const cand=[];
   ns.forEach(n=>{ const ref=REF[n]; if(!ref) return; const S=shapes(ref); if(!S.samples.length) return; const hyp=[];
     S.circles.forEach(rc=>dc.forEach(c=>{ const s=c.r/rc.r; if(ppm0&&(s<ppm0*0.5||s>ppm0*2)) return; if(s<0.5||s>30) return;
       const ca=Math.cos(th)*s, sa=Math.sin(th)*s, A=[ca,-sa,0,sa,ca,0]; A[2]=c.cx-(A[0]*rc.c[0]+A[1]*rc.c[1]); A[5]=c.cy-(A[3]*rc.c[0]+A[4]*rc.c[1]);
-      hyp.push({A,sc:cover(A,S,1.5*s)}); }));
+      hyp.push({A,sc:cover(A,S,1.5*s),c0:rc.c}); }));
+    /* пары окружностей: подобие по двум центрам (база 50–150 мм — масштаб и поворот точнее, чем по одному радиусу) */
+    for(let a=0;a<S.circles.length;a++) for(let b=0;b<S.circles.length;b++){ if(a===b) continue; const A0=S.circles[a], B0=S.circles[b], Lr=Math.hypot(B0.c[0]-A0.c[0],B0.c[1]-A0.c[1]); if(Lr<20) continue;
+      dc.forEach(c1=>dc.forEach(c2=>{ if(c1===c2) return; const s1=c1.r/A0.r, s2=c2.r/B0.r; if(Math.abs(s1/s2-1)>0.06) return; const Ld=Math.hypot(c2.cx-c1.cx,c2.cy-c1.cy), s=Ld/Lr; if(Math.abs(s/s1-1)>0.08) return;
+        const A=simFit([[A0.c,[c1.cx,c1.cy]],[B0.c,[c2.cx,c2.cy]]]); if(A) hyp.push({A,sc:cover(A,S,1.5*s),c0:[(A0.c[0]+B0.c[0])/2,(A0.c[1]+B0.c[1])/2]}); })); }
     hyp.sort((a,b)=>b.sc-a.sc); let best=null;
-    hyp.slice(0,4).forEach(h=>{ let A=icp(h.A,S,[6,4,3,2],'sim'); A=icp(A,S,[3,2,1.5,1],'aff'); const s=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3])), cv=cover(A,S,1*s);
-      if(!best||cv>best.cv) best={A,cv,s}; });
-    if(best) res.push(Object.assign({n,S},best)); });
-  if(!res.length) return null; res.sort((a,b)=>b.cv-a.cv);
-  /* перспектива снимка: три лучших варианта уточняются ICP с гомографией (наклон телефона аффинное не берёт: низ листа
-     уезжает на 1–2 мм) — и только потом сравниваются */
-  const apM=(M,m)=>IMG.H.apply(M,m), stat=(M,S,s)=>{ const hit=new Map(), tot=new Map(), d2=[], pairs=[]; let k1=0;
-    S.samples.forEach((m,i)=>{ const k=S.ids[i]; tot.set(k,(tot.get(k)||0)+1); const p=apM(M,m), [d,j]=F(p[0],p[1]); if(d<=1*s){ k1++; hit.set(k,(hit.get(k)||0)+1); d2.push(d*d); pairs.push([m,PT[j]]); } });
-    return {cv:k1/S.samples.length,inl:[...tot.keys()].filter(k=>(hit.get(k)||0)>=0.6*tot.get(k)).length,of:tot.size,rms:Math.sqrt(d2.reduce((a,v)=>a+v,0)/Math.max(1,d2.length))/s,pairs}; };
-  res.slice(0,3).forEach(b=>{ let M=b.A.concat([0,0,1]); b.st=stat(M,b.S,b.s);
-    for(const t of [3,2,1.5,1,1]){ const P=[]; b.S.samples.forEach(m=>{ const p=apM(M,m), [d,k]=F(p[0],p[1]); if(k>=0&&d<=t*b.s) P.push([m,PT[k]]); }); if(P.length<40) break;
-      let M2=null; try{ M2=IMG.H.fit(P.map(q=>q[0]),P.map(q=>q[1])); }catch(e){} if(!M2) break; const st=stat(M2,b.S,b.s); if(st.cv+1e-9<b.st.cv-0.01) break; M=M2; b.st=st; b.M=M; } });
-  const top=res.slice(0,3).sort((a,b)=>b.st.cv-a.st.cv), B=top[0], st=B.st, second=top[1]||res[1];
-  const r={dz:4,n:B.n,inl:st.inl,of:st.of,rmsMm:+st.rms.toFixed(3),ppm:B.s,A:B.A,cover:+st.cv.toFixed(3),second:second?{n:second.n,cover:+(second.st?second.st.cv:second.cv).toFixed(3)}:null};
-  if(B.M){ r.M=B.M; r.hom={inl:st.inl,rmsMm:+st.rms.toFixed(3)}; }
+    hyp.slice(0,5).forEach(h=>{ let A=icp(h.A,S,[6,4,3],'sim',h.c0,50); A=icp(A,S,[6,4,3],'sim',h.c0,100); A=icp(A,S,[4,3,2],'aff',h.c0,130); const s=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3]));
+      cand.push({n,S,A,s,c0:h.c0,cv:cover(A,S,2*s)}); }); });
+  /* перспектива — дорогая часть: гомография с растущей областью только для 6 лучших (вариант, гипотеза) после аффинного шага */
+  const seen=new Map(); cand.sort((a,b)=>b.cv-a.cv).forEach(c=>{ const k=seen.get(c.n)||0; if(k<2&&[...seen.values()].reduce((a,b)=>a+b,0)<6){ seen.set(c.n,k+1);
+    let M=c.A.concat([0,0,1]); for(const R of [160,190,220,260,320]) M=homIcp(M,c.S,c.s,[5,4,3,3],c.c0,R).M; const H=homIcp(M,c.S,c.s,[3,2,1.5,1,1]);
+    const b=res.find(x=>x.n===c.n); if(!b) res.push({n:c.n,S:c.S,A:c.A,M:H.M,st:H.st,s:c.s}); else if(H.st.cv>b.st.cv) Object.assign(b,{A:c.A,M:H.M,st:H.st,s:c.s}); } });
+  if(!res.length) return null; res.sort((a,b)=>b.st.cv-a.st.cv); const B=res[0], st=B.st, second=res[1];
+  const r={dz:4,n:B.n,inl:st.inl,of:st.of,rmsMm:+st.rms.toFixed(3),ppm:B.s,A:B.A,cover:+st.cv.toFixed(3),second:second?{n:second.n,cover:+second.st.cv.toFixed(3)}:null};
+  r.M=B.M; r.hom={inl:st.inl,rmsMm:+st.rms.toFixed(3)};
   return r; }
 
 const api={classify,shapes,bind,dense,plen};
