@@ -9,7 +9,12 @@ const OK='https://nachert1830.ru';
 const ev=(method,o)=>Object.assign({httpMethod:method,headers:{origin:OK}},o||{});
 const body=o=>JSON.stringify(Object.assign({img:IMG,w:800,h:600,mode:'layout'},o||{}));
 const fake=(log,text)=>async(url,init)=>{ const b=JSON.parse(init.body); log.push({url,b,auth:init.headers.authorization}); return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:text||'{"rot":0,"drawings":[]}'},finish_reason:'stop'}],usage:{prompt_tokens:1000,completion_tokens:500}})}; };
-test.beforeEach(()=>F._reset());
+/* сценарии ниже писались под связку «Opus оцифровывает, Sonnet — вторая/запасная»: задаём её явно (по умолчанию теперь наоборот — тест «модели по умолчанию») */
+test.beforeEach(()=>{ F._reset(); process.env.SCAN_DIGIT_MODEL='opus'; process.env.SCAN_CHECK_MODEL='sonnet'; });
+test('модели по умолчанию: оцифровка — Sonnet, вторая оцифровка (crop2, режим «максимальная») — Opus',async()=>{ const log=[]; F._setFetch(fake(log)); const h={origin:OK,'x-scan-code':'виктория'};
+  delete process.env.SCAN_DIGIT_MODEL; delete process.env.SCAN_CHECK_MODEL;
+  await F.handler(ev('POST',{headers:h,body:body({mode:'crop'})})); await F.handler(ev('POST',{headers:h,body:body({mode:'crop2'})}));
+  assert.deepEqual(log.map(x=>x.b.model),['anthropic/claude-sonnet-5-5','anthropic/claude-opus-5-5']); });
 
 test('код доступа: «виктория» в любом регистре и с ё/е подходит, другой — 401',()=>{ assert.equal(F.sha('Виктория'),HASH); assert.equal(F.sha(' ВИКТОРИЯ '),HASH); assert.notEqual(F.sha('виктория1'),HASH); });
 test('код с кириллицей приходит из браузера закодированным (в заголовке кириллицы быть не может)',async()=>{ F._setFetch(fake([]));

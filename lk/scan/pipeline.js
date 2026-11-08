@@ -168,7 +168,7 @@ function create(o){ o=o||{};
      samePpm — все чертежи с одного фото (общий масштаб листа: точки условия по форме по медиане масштаба) */
   async function digitize(units,out,sel,step,acc,samePpm){ const L=self.LAB;
     const dzSel=sel.dz&&sel.dz!=='auto'?+sel.dz:null, vSel=/^\d+$/.test(String(sel.variant||'').trim())?String(sel.variant).trim():'auto';
-    const prec=sel.precision||'max', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
+    const prec=sel.precision||'fast', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
     const redo=[], tag=(dr,u)=>{ if(dr&&u.photo!=null) dr.photo=u.photo; return dr; };
     const jobs=units.map((u,i)=>async()=>{ const d=u.d, id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(u.bmp,d.box,u.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),CUT_SIDE,VIEW), ctx={W:u.W,H:u.H,vSel,dzSel,rot:u.rot,d};
       let jA; try{ jA=await ask('crop',cr.m.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return tag({part:d.part,box:d.box,error:e.message},u); } acc.cost+=jA.cost||0; acc.calls++;

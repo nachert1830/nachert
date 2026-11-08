@@ -39,7 +39,7 @@ table{border-collapse:collapse;width:100%;font-size:.92rem}td,th{border-bottom:1
   <div class="row" style="margin-top:10px">
     <label class="f">Задание <select id="dz"><option value="auto">авто</option><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select></label>
     <label class="f">Вариант <input id="variant" type="text" value="авто" size="4" title="число 1–30 или «авто»"></label>
-    <label class="f">Точность <select id="prec"><option value="max">максимальная (Opus + Sonnet)</option><option value="auto">экономная (+ Sonnet при сомнениях)</option><option value="fast">быстро (одна модель)</option></select></label>
+    <label class="f">Точность <select id="prec"><option value="fast">обычная (Sonnet)</option><option value="auto">экономная+ (+ Opus при сомнениях)</option><option value="max">максимальная (Sonnet + Opus)</option></select></label>
     <label class="f hide" id="coderow">Код доступа <input id="code" type="password" autocomplete="off" style="width:10em" placeholder="код"></label>
     <label class="f hide" id="pwrow">Пароль <input id="pw" type="password"></label>
   </div>
@@ -64,9 +64,9 @@ table{border-collapse:collapse;width:100%;font-size:.92rem}td,th{border-bottom:1
 </main>
 
 <script src="config.js"></script>
-<script src="pipeline.js?v=lk6"></script>
+<script src="pipeline.js?v=lk7"></script>
 <script src="../drawings/model.js?v=3"></script>
-<script>SCANPIPE.LIBS.forEach(s=>document.write('<script src="'+s+'?v=beta6"><\/script>'));</script>
+<script>SCANPIPE.LIBS.forEach(s=>document.write('<script src="'+s+'?v=beta7"><\/script>'));</script>
 <script>
 (function(){
 /* конвейер — pipeline.js (тот же, что в кабинете lk/): здесь только страница беты */
