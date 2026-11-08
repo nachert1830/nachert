@@ -17,7 +17,8 @@ function fitVariant(text,variant,dz){ const lines=String(text||'').split(/\r?\n/
   combos.forEach(c=>{ const keep=new Set(c), t=lines.filter((l,i)=>!drop.has(i)||keep.has(i)).join('\n'), r=fit1(t,variant,dz); if(!r||r.rmsMm==null) return;
     if(!best||r.inl>best.inl||(r.inl===best.inl&&r.rmsMm<best.rmsMm)){ best=r; best.pick=c; } });
   return best||fit1(text,variant,dz); }
-function fit1(text,variant,dz){ const dr=EY.parseDigit(text,1).drawings[0]; if(!dr) return null; let best=null;
+function fit1(text,variant,dz){ if(dz&&![2,3].includes(+dz)) return {inl:0,of:0,rmsMm:null};   /* ДЗ №4 — по очеркам тел (lk/scan/bind4.js), не по точкам */
+  const dr=EY.parseDigit(text,1).drawings[0]; if(!dr) return null; let best=null;
   const dzs=dz?[+dz]:[2,3], ns=variant==='auto'?Array.from({length:30},(_,i)=>i+1):[+variant];
   dzs.forEach(d=>ns.forEach(n=>{ const gv=V.get(d,n); if(!gv) return; const PP0=EY.pairs(dr,gv.id,gv.data); let PP=PP0, b=PP.length>=4?EY.bindAffine(PP,{tol:3}):null, free=null;
     /* безосный эпюр: оси x на чертеже нет (или проекции раздвинуты по-своему) — расстояние между ″ и ′ по линии связи свободное.
@@ -38,7 +39,7 @@ function fit1(text,variant,dz){ const dr=EY.parseDigit(text,1).drawings[0]; if(!
 /* точки дуги/окружности в пикселях чертежа (угол растёт по часовой стрелке на экране, y вниз); перспективу даёт отображение каждой точки */
 function arcPoints(c,n){ n=n||72; const full=c.full||c.a1==null, a0=full?0:c.a1, L=full?360:((c.a2-c.a1+360)%360)||360, m=Math.max(8,Math.round(n*L/360)), out=[];
   for(let i=0;i<=m;i++){ const a=(a0+L*i/m)*Math.PI/180; out.push([c.cx+c.r*Math.cos(a),c.cy+c.r*Math.sin(a)]); } return out; }
-function svgOf(out){ const items=out.drawings.filter(d=>d.segs).map(d=>{ const mm=d.mm&&d.mm.segs.length?d.mm:null; return {d,segs:mm?mm.segs:d.segs,pts:mm?mm.pts:d.pts,txt:mm&&mm.txt?mm.txt:(d.txt||[]),mm:!!mm,circles:(d.circles||[]).map(c=>({c,poly:mm&&c.mm?c.mm:c.poly}))}; });
+function svgOf(out){ const items=out.drawings.filter(d=>d.segs).map(d=>{ const mm=d.mm&&d.mm.segs.length?d.mm:null; return {d,segs:mm?mm.segs:d.segs,pts:mm?mm.pts:d.pts,txt:mm&&mm.txt?mm.txt:(d.txt||[]),mm:!!mm,circles:(d.circles||[]).concat(d.curves||[]).map(c=>({c,poly:mm&&c.mm?c.mm:c.poly}))}; });   /* кривые (ДЗ №4) — ломаные, как дуги */
   if(!items.length) return null; const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
   items.forEach(it=>{ let a=1e9,b=1e9,c=-1e9,e=-1e9; it.segs.forEach(q=>{ [[q.p[0],q.p[1]],[q.p[2],q.p[3]]].forEach(([x,y])=>{ a=Math.min(a,x); b=Math.min(b,y); c=Math.max(c,x); e=Math.max(e,y); }); }); it.circles.forEach(k=>(k.poly||[]).forEach(([x,y])=>{ a=Math.min(a,x); b=Math.min(b,y); c=Math.max(c,x); e=Math.max(e,y); })); it.pts.forEach(q=>{ a=Math.min(a,q[1]); b=Math.min(b,q[2]); c=Math.max(c,q[1]); e=Math.max(e,q[2]); }); it.box=[a,b,c,e]; it.sc=it.mm?1:0.25; it.w=(c-a)*it.sc+20; it.h=(e-b)*it.sc+20; });
   const cols=items.length>1?2:1, colW=[], rowH=[]; items.forEach((it,i)=>{ const c=i%cols, r=Math.floor(i/cols); colW[c]=Math.max(colW[c]||0,it.w); rowH[r]=Math.max(rowH[r]||0,it.h+8); });
@@ -46,7 +47,7 @@ function svgOf(out){ const items=out.drawings.filter(d=>d.segs).map(d=>{ const m
   const g=items.map((it,i)=>{ const c=i%cols, r=Math.floor(i/cols), [a,b]=it.box, dx=xs[c]+10-a*it.sc, dy=ys[r]+16-b*it.sc, T=(x,y)=>[(x*it.sc+dx).toFixed(2),(y*it.sc+dy).toFixed(2)];
     const lines=it.segs.map(q=>{ const p1=T(q.p[0],q.p[1]), p2=T(q.p[2],q.p[3]), col=q.src==='found'?'#8aa4c8':q.unverified?'#e07b00':'#111', w=q.src==='found'?0.25:q.unverified?0.3:0.45, dash=q.dash?'1.6 1':(q.unverified?'2 1':'');
       return '<line x1="'+p1[0]+'" y1="'+p1[1]+'" x2="'+p2[0]+'" y2="'+p2[1]+'" stroke="'+col+'" stroke-width="'+w+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+' stroke-linecap="round"/>'; });
-    const arcs=it.circles.filter(k=>k.poly&&k.poly.length>2).map(k=>{ const q=k.c, col=q.src==='found'?'#8aa4c8':q.unverified?'#e07b00':'#111', w=q.src==='found'?0.25:q.unverified?0.3:0.45, dash=q.dash?'1.6 1':(q.unverified?'2 1':''), pts=k.poly.map(([x,y])=>T(x,y).join(',')).join(' ');
+    const arcs=it.circles.filter(k=>k.poly&&k.poly.length>1).map(k=>{ const q=k.c, col=q.src==='found'?'#8aa4c8':q.unverified?'#e07b00':'#111', w=q.src==='found'?0.25:q.unverified?0.3:0.45, dash=q.dash?'1.6 1':(q.unverified?'2 1':''), pts=k.poly.map(([x,y])=>T(x,y).join(',')).join(' ');
       return '<polyline fill="none" points="'+pts+'" stroke="'+col+'" stroke-width="'+w+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+' stroke-linecap="round" stroke-linejoin="round"/>'; });
     /* подписи точек и надписи — крупно и читаемо на телефоне: кегль от размера чертежа, белая обводка поверх линий */
     const fs=Math.max(2.8,0.03*Math.max(it.w,it.h)), halo=' stroke="#fff" stroke-width="'+(fs*0.28).toFixed(2)+'" paint-order="stroke" stroke-linejoin="round"';

@@ -2,7 +2,7 @@
    LAYOUT_PROMPT — шаг 1: где чертежи, какая часть, поворот листа (дешёвая модель, кадр ≤ 800 px).
    DIGIT_PROMPT  — шаг 3: оцифровка ОДНОГО чертежа (Sonnet), формат P / S / S…d / T.
    parseLayout(text, k, W, H) → {rot, drawings:[{box:[x0,y0,x1,y1] в px исходного фото, part}], ok, why}
-   parseDigit(text) → {pts:[[подпись,x,y]], segs:[[x1,y1,x2,y2,dash?]], txt:[[x,y,текст]], bad} */
+   parseDigit(text) → {pts:[[подпись,x,y]], segs:[[x1,y1,x2,y2,dash?]], circles, curves:[{p:[[x,y]…], dash}], txt:[[x,y,текст]], bad} */
 const LAYOUT_PROMPT=`Ты — разметчик листа. На фото — лист с карандашными чертежами по начертательной геометрии (эпюры Монжа).
 Лист может быть повёрнут на 90°/180°, снят с тенью, бликом, с предметами в кадре (линейка, рука, стол).
 Координаты — пиксели ЭТОГО фото: начало — левый верхний угол, x вправо, y вниз, целые числа.
@@ -32,6 +32,7 @@ C <cx> <cy> <r>            — окружность целиком, начерч
 R <cx> <cy> <r> <a1> <a2>  — дуга окружности: от угла a1 до a2 по часовой стрелке на экране, углы в градусах (0° — вправо, 90° — вниз,
                              180° — влево, 270° — вверх). Дуги вращения точек, скругления, части окружностей.
 C … d / R … d              — то же, но штриховая (невидимая) линия.
+L <x1> <y1> <x2> <y2> … [d] — лекальная кривая (линия пересечения поверхностей, эллипс): ломаная по ≥ 5 точкам на самой линии, по порядку.
 T <x> <y> <текст>          — записанные на чертеже ответы и условия (φ=25°, H=28, h″∥X), одна строка на надпись.
 
 Правила точности:
@@ -41,8 +42,8 @@ T <x> <y> <текст>          — записанные на чертеже о�
 3. Бледные тонкие линии связи и построения пиши обязательно, если они видны глазом. Не видны — не пиши. Не выдумывай.
 4. Отрезок, прерванный точкой или пересечением, пиши одним отрезком. Длинный отрезок через весь чертёж — одним.
 5. Не пиши: рамку листа, штамп, таблицу данных, текст условия, края бумаги, линейки и любые предметы, штрихи букв,
-   стрелки размеров, эллипсы и лекальные кривые (кривые пересечения поверхностей): только прямые отрезки, окружности и дуги окружностей.
-   Окружность — только если это настоящая окружность (видна в виде круга), а не эллипс и не набор отрезков.
+   стрелки размеров. Окружность — только если это настоящая окружность (видна в виде круга), а не эллипс и не набор отрезков.
+   Кривую L пиши, только если она действительно начерчена (обычно её нет): прямые, окружности и дуги — не L.
 6. Сначала точки условия: концы заданной прямой (E, F — обычно у краёв чертежа, часто далеко от фигуры) и заданные вершины
    (A, B, C, K, S …) в обеих проекциях (′ и ″). Они обязательны, если подписаны на листе, даже у самого края.
 7. Если не уверен в линии — лучше пропусти, чем придумай: пропущенное код найдёт сам, придуманное испортит копию.`;
@@ -55,12 +56,14 @@ function parseLayout(text,k,W,H){ const a=String(text||''), i=a.indexOf('{'), j=
     if(x1-x0<W*0.08||y1-y0<H*0.08) return; dr.push({box:[x0,y0,x1,y1],part:d.part==null?null:+d.part}); });
   return {ok:dr.length>0,why:dr.length?'':'чертежей не найдено',rot,drawings:dr}; }
 
-function parseDigit(text){ const pts=[], segs=[], txt=[], circles=[]; let bad=0;
+function parseDigit(text){ const pts=[], segs=[], txt=[], circles=[], curves=[]; let bad=0;
   String(text||'').split(/\r?\n/).forEach(l=>{ const L=l.replace(/[*`|]/g,' ').replace(/[(),;]/g,' ').trim(), t=L.split(/\s+/);
     if(t[0]==='S'&&t.length>=5){ const q=t.slice(1,5).map(Number); if(q.every(Number.isFinite)) segs.push(q.concat(t[5]==='d'?[1]:[])); else bad++; }
     else if(t[0]==='P'&&t.length>=4){ const x=+t[2], y=+t[3]; if(isFinite(x)&&isFinite(y)) pts.push([t[1],x,y]); else bad++; }
     else if(t[0]==='C'&&t.length>=4){ const q=t.slice(1,4).map(Number); if(q.every(Number.isFinite)&&q[2]>0) circles.push({cx:q[0],cy:q[1],r:q[2],dash:t[4]==='d'}); else bad++; }
     else if(t[0]==='R'&&t.length>=6){ const q=t.slice(1,6).map(Number); if(q.every(Number.isFinite)&&q[2]>0) circles.push({cx:q[0],cy:q[1],r:q[2],a1:((q[3]%360)+360)%360,a2:((q[4]%360)+360)%360,dash:t[6]==='d'}); else bad++; }
-    else if(t[0]==='T'&&t.length>=4){ const x=+t[1], y=+t[2]; if(isFinite(x)&&isFinite(y)) txt.push([x,y,t.slice(3).join(' ')]); } });
-  return {pts,segs,txt,circles,bad}; }
+    else if(t[0]==='T'&&t.length>=4){ const x=+t[1], y=+t[2]; if(isFinite(x)&&isFinite(y)) txt.push([x,y,t.slice(3).join(' ')]); }
+    /* L x1 y1 x2 y2 … [d] — лекальная кривая (ДЗ №4: линии пересечения, эллипсы): ломаная по порядку; меньше трёх точек — не кривая */
+    else if(t[0]==='L'){ const dash=t[t.length-1]==='d', q=t.slice(1,dash?-1:undefined).map(Number); if(q.length>=6&&q.length%2===0&&q.every(Number.isFinite)){ const p=[]; for(let i=0;i<q.length;i+=2) p.push([q[i],q[i+1]]); curves.push({p,dash}); } else bad++; } });
+  return {pts,segs,txt,circles,curves,bad}; }
 { const api={LAYOUT_PROMPT,DIGIT_PROMPT,parseLayout,parseDigit}; if(typeof module!=='undefined'&&module.exports) module.exports=api; else { self.LAB=self.LAB||{}; self.LAB.layout=api; } }

@@ -176,6 +176,56 @@ function findCircles(D,used,o){ o=o||{}; const {G,thr,w,h}=D, ppm=o.ppm||7, rmin
     out.push({cx:sn.cx,cy:sn.cy,r:sn.r,a1:sn.a1,a2:sn.a2,full:!!sn.full,ink:sn.full?sn.ink:sn.inkRun,span,src:'found'}); }
   return out; }
 
+/* ═══ лекальные кривые (ДЗ №4: линии пересечения поверхностей, эллипсы) ═══
+   Формат модели: L x1 y1 x2 y2 … [d] — ломаная по ≥ 5 точкам на кривой. Модель ставит их с промахом 0,5–2 мм и «скругляет»
+   по-своему, поэтому кривая сначала прорежается в ровный шаг (≈ 0,7 мм), затем 3 прохода с сужением окна (2 → 1 → 0,5 мм):
+   каждая точка ищет гребень тёмности поперёк кривой (нормаль — по соседям), с поправкой на близость к прежнему месту
+   (соседняя параллельная линия не перетянет); сдвиги поперёк — медиана по 5 соседям и среднее по 3 (выброс у пересечения
+   с другой линией не ломает кривую), где гребня нет — сдвиг по соседям. Концы: без чернил — подрезаются (не больше 35 %
+   длины с каждого края), чернила продолжаются — кривая доводится по гребню до 2 мм. ink — доля длины, где под кривой
+   карандаш (как у отрезков: темнее соседних полос). Ничего не выпрямляет и не сглаживает сверх шага: копирует, что нарисовано.
+   snapCurve(D, {p:[[x,y]…]}, {ppm, radius, step}) → {p, ink, moved (средний сдвиг, px), n} | null */
+function polyLen(P){ let s=0; for(let i=1;i<P.length;i++) s+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]); return s; }
+function resample(P,step){ const L=polyLen(P); if(L<1e-6) return P.slice(0,1); const n=Math.max(2,Math.round(L/step)+1), out=[]; let i=1, acc=0, prev=P[0];
+  for(let k=0;k<n;k++){ const s=L*k/(n-1); while(i<P.length-1&&acc+Math.hypot(P[i][0]-prev[0],P[i][1]-prev[1])<s){ acc+=Math.hypot(P[i][0]-prev[0],P[i][1]-prev[1]); prev=P[i]; i++; }
+    const b=P[i], l=Math.hypot(b[0]-prev[0],b[1]-prev[1])||1e-9, t=Math.max(0,Math.min(1,(s-acc)/l)); out.push([prev[0]+(b[0]-prev[0])*t,prev[1]+(b[1]-prev[1])*t]); }
+  return out; }
+/* сплайн Катмулла — Рома (центростремительный) через точки модели: между ними кривая, а не хорда */
+function spline(P,k){ k=k||8; if(P.length<3) return P; const out=[P[0]], at=i=>P[Math.max(0,Math.min(P.length-1,i))];
+  for(let i=0;i<P.length-1;i++){ const p0=at(i-1), p1=at(i), p2=at(i+1), p3=at(i+2), tj=(a,b)=>Math.max(1e-6,Math.sqrt(Math.hypot(b[0]-a[0],b[1]-a[1]))), t1=tj(p0,p1)+(i===0?1e-6:0), t2=t1+tj(p1,p2), t3=t2+tj(p2,p3), t0=0;
+    for(let j=1;j<=k;j++){ const t=t1+(t2-t1)*j/k, L=(a,b,ta,tb)=>{ const f=(t-ta)/(tb-ta||1e-9); return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]; };
+      const A1=i===0?L(p1,p1,t0,t1):L(p0,p1,t0,t1), A2=L(p1,p2,t1,t2), A3=i===P.length-2?L(p2,p2,t2,t3):L(p2,p3,t2,t3), B1=L(A1,A2,t0,t2), B2=L(A2,A3,t1,t3); out.push(L(B1,B2,t1,t2)); } }
+  return out; }
+const normals=P=>P.map((p,i)=>{ const a=P[Math.max(0,i-2)], b=P[Math.min(P.length-1,i+2)], dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1; return [-dy/l,dx/l]; });
+function median5(v,i){ const w=[]; for(let k=i-2;k<=i+2;k++) if(k>=0&&k<v.length&&v[k]!=null) w.push(v[k]); if(!w.length) return null; w.sort((a,b)=>a-b); return w[w.length>>1]; }
+function snapCurve(D,c,o){ o=o||{}; const {G,w,h}=D, ppm=o.ppm||7, thr=D.thr*0.6, step=o.step||Math.max(2,0.7*ppm); if(!c||!c.p||c.p.length<2) return null;
+  let P=resample(spline(c.p),step); if(P.length<5) return null; const P0=P.map(q=>q.slice()); let moved=0;
+  if(!D.G2) D.G2=gauss(G,w,h,Math.max(2.5,0.5*ppm));
+  /* первый проход — по сглаженной карте и в окне 3,5 мм: точки модели между собой соединены сплайном, но на крутом месте кривой он режет её на 2–3 мм */
+  for(const [Rm,GG,th] of [[(o.radius||2)*1.75,D.G2,thr*0.35],[(o.radius||2),G,thr],[1,G,thr],[0.5,G,thr]]){ const R=Rm*ppm, N=normals(P), off=P.map((p,i)=>{ const [nx,ny]=N[i]; let best=-1, sc0=-1, bt=0;
+      for(let t=-R;t<=R;t+=0.5){ const v=bil(GG,w,h,p[0]+nx*t,p[1]+ny*t), sc=v*(1-0.6*Math.abs(t)/R); if(sc>sc0){ sc0=sc; best=v; bt=t; } }
+      if(best<=th) return null; const a=bil(GG,w,h,p[0]+nx*(bt-0.5),p[1]+ny*(bt-0.5)), b=bil(GG,w,h,p[0]+nx*(bt+0.5),p[1]+ny*(bt+0.5)), den=a-2*best+b; return bt+(den<-1e-6?0.25*(a-b)/den:0); });
+    /* медиана по соседям — выбросы (пересечение с другой линией, соседняя кривая) уходят; пропуски — по соседям */
+    let m=off.map((_,i)=>median5(off,i)); for(let i=0;i<m.length;i++) if(m[i]==null){ let a=i-1, b=i+1; while(a>=0&&m[a]==null) a--; while(b<m.length&&m[b]==null) b++; m[i]=a>=0&&b<m.length?(m[a]+m[b])/2:a>=0?m[a]:b<m.length?m[b]:0; }
+    m=m.map((v,i)=>(v+(m[i-1]!=null?m[i-1]:v)+(m[i+1]!=null?m[i+1]:v))/3);
+    P=P.map((p,i)=>[p[0]+N[i][0]*m[i],p[1]+N[i][1]*m[i]]); P=resample(P,step); }
+  /* чернила поперёк итоговой кривой (как along() у отрезков) */
+  const N=normals(P), d1=Math.max(4,0.6*ppm), d2=Math.max(5,0.9*ppm), inkAt=(p,n)=>{ let m=0; for(let t=-1.5;t<=1.5;t+=0.5){ const v=bil(G,w,h,p[0]+n[0]*t,p[1]+n[1]*t); if(v>m) m=v; }
+    const offv=(bil(G,w,h,p[0]+n[0]*d2,p[1]+n[1]*d2)+bil(G,w,h,p[0]-n[0]*d2,p[1]-n[1]*d2)+bil(G,w,h,p[0]+n[0]*d1,p[1]+n[1]*d1)+bil(G,w,h,p[0]-n[0]*d1,p[1]-n[1]*d1))/4; return m>D.thr*0.7&&m>offv*1.6+D.thr*0.25; };
+  let ink=P.map((p,i)=>inkAt(p,N[i])?1:0);
+  /* концы без чернил — модель продлила кривую дальше нарисованного: подрезка (по 3 образца без чернил подряд считаются концом) */
+  const cut=Math.floor(P.length*0.35); let a=0, b=P.length-1; while(a<cut&&!(ink[a]&&ink[a+1])) a++; while(b>P.length-1-cut&&!(ink[b]&&ink[b-1])) b--;
+  if(b-a<4) return {p:P,ink:ink.reduce((s,v)=>s+v,0)/P.length,moved:0,n:P.length,lost:true};
+  P=P.slice(a,b+1); ink=ink.slice(a,b+1);
+  /* продление по гребню: до 2 мм за каждым концом, направление — по последним точкам, поворот не больше 25° */
+  const ext=(o.extend==null?2:o.extend)*ppm, grow=(Q,rev)=>{ const add=[]; let p=Q[Q.length-1], q=Q[Math.max(0,Q.length-4)], dx=p[0]-q[0], dy=p[1]-q[1], l=Math.hypot(dx,dy)||1; const d0=[dx/l,dy/l]; let d=d0.slice();
+    for(let s=step;s<=ext;s+=step){ const c0=[p[0]+d[0]*step,p[1]+d[1]*step], n=[-d[1],d[0]]; let best=-1,bt=0; for(let t=-0.4*ppm;t<=0.4*ppm;t+=0.5){ const v=bil(G,w,h,c0[0]+n[0]*t,c0[1]+n[1]*t); if(v>best){ best=v; bt=t; } }
+      const np=[c0[0]+n[0]*bt,c0[1]+n[1]*bt]; if(!inkAt(np,n)) break; const nd=[np[0]-p[0],np[1]-p[1]], nl=Math.hypot(nd[0],nd[1])||1; d=[nd[0]/nl,nd[1]/nl]; if(d[0]*d0[0]+d[1]*d0[1]<Math.cos(25*Math.PI/180)) break; add.push(np); p=np; }
+    return add; };
+  const tail=grow(P), head=grow(P.slice().reverse()); P=head.reverse().concat(P,tail); const inkN=ink.reduce((s,v)=>s+v,0)+head.length+tail.length;
+  { let k=0; for(const q of P0){ let m=1e9; for(let i=1;i<P.length;i++){ const A=P[i-1], B=P[i], dx=B[0]-A[0], dy=B[1]-A[1], L=dx*dx+dy*dy||1e-9, t=Math.max(0,Math.min(1,((q[0]-A[0])*dx+(q[1]-A[1])*dy)/L)); m=Math.min(m,Math.hypot(q[0]-A[0]-t*dx,q[1]-A[1]-t*dy)); } moved+=m; k++; } moved/=Math.max(1,k); }
+  return {p:resample(P,step),ink:inkN/P.length,moved,n:P.length,len:polyLen(P)}; }
+
 /* ═══ привязка подписанных точек к геометрии ═══
    Модель называет точку с погрешностью в доли миллиметра — в пикселях это 1–3 px. Настоящая точка чертежа — конец отрезка или пересечение двух линий.
    snapPoints(points [[подпись,x,y]], segs [[x1,y1,x2,y2]], {ppm, radius}) → [[подпись,x,y,moved]]: точка переносится на ближайший конец отрезка
@@ -276,6 +326,16 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
   /* занято: пиксели у уже найденных отрезков (дальше 3 px от них — свободны) */
   const used=new Uint8Array(D.w*D.h), mark=p=>{ const L=Math.hypot(p[2]-p[0],p[3]-p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=p[0]+(p[2]-p[0])*k/n, y=p[1]+(p[3]-p[1])*k/n; for(let dy=-3;dy<=3;dy++) for(let dx=-3;dx<=3;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) used[Y*D.w+X]=1; } } };
   res.forEach(r=>mark(r.p));
+  /* кривые (L): по карандашу; без чернил — как отрезки: на надёжном фото выдумка отбрасывается, иначе «не подтверждена». Пиксели кривой заняты:
+     Хаф не находит на ней прямых кусков, а поиск окружностей — дуг */
+  const curves=[], droppedCurves=[];
+  (o.curves||[]).forEach((c,i)=>{ const r=snapCurve(D,c,{ppm,radius:o.radius}); if(!r){ droppedCurves.push({p:c.p,why:'короткая',i}); return; }
+    if(r.lost||r.ink<inkMin){ if(reliable&&r.ink<(o.emptyInk==null?0.12:o.emptyInk)){ droppedCurves.push({p:c.p,ink:r.ink,why:'на бумаге пусто',i}); return; }
+      if(reliable&&r.ink<inkMin){ droppedCurves.push({p:c.p,ink:r.ink,why:'на бумаге нет',i}); return; }
+      curves.push({p:c.p.map(q=>q.slice()),src:'model',ink:r.ink,moved:0,unverified:true,dash:!!c.dash,i,fromB:!!c.fromB}); return; }
+    curves.push({p:r.p,src:'model',ink:r.ink,moved:r.moved,dash:!!c.dash,i,fromB:!!c.fromB}); });
+  const markPoly=(P,M,k)=>{ for(let j=1;j<P.length;j++){ const a=P[j-1], b=P[j], L=Math.hypot(b[0]-a[0],b[1]-a[1]), n=Math.ceil(L); for(let q=0;q<=n;q++){ const x=a[0]+(b[0]-a[0])*q/n, y=a[1]+(b[1]-a[1])*q/n; for(let dy=-k;dy<=k;dy++) for(let dx=-k;dx<=k;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) M[Y*D.w+X]=1; } } } };
+  curves.filter(c=>!c.unverified).forEach(c=>markPoly(c.p,used,3));
   /* искать пропущенное только там, где модель видела чертёж: рамка оставленных отрезков + 6 мм (край бумаги, рамка листа, клетка — не чертёж) */
   let found=[]; if(o.find!==false&&res.length){ const pad=(o.pad==null?6:o.pad)*ppm; let bx;
     if(o.region) bx=[o.region[0]-pad,o.region[1]-pad,o.region[2]+pad,o.region[3]+pad];   /* region — рамка подписанных точек чертежа (px): оси идут через весь лист, а чертёж — нет */
@@ -301,8 +361,8 @@ function refine(g,segs,o){ o=o||{}; const ppm=o.ppm||7, D=darkness(g,Object.assi
   (o.circles||[]).forEach(c=>{ const r=snapCircle(D,c,{ppm,radius:o.radius}); if(!r){ droppedC.push(c); return; }
     const q=r.full?r.ink:(r.inkRun||0); if(q<0.3||(r.span||0)<20){ droppedC.push(Object.assign({ink:q,why:'на бумаге нет'},c)); return; }
     circ.push({cx:r.cx,cy:r.cy,r:r.r,a1:r.a1,a2:r.a2,full:!!r.full,span:r.span,ink:r.ink,src:'model',dash:!!c.dash,unverified:q<0.55}); });
-  if(o.findCircles){ const usedC=new Uint8Array(D.w*D.h); res.forEach(r=>{ const L=Math.hypot(r.p[2]-r.p[0],r.p[3]-r.p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=r.p[0]+(r.p[2]-r.p[0])*k/n, y=r.p[1]+(r.p[3]-r.p[1])*k/n; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) usedC[Y*D.w+X]=1; } } });
+  if(o.findCircles){ const usedC=new Uint8Array(D.w*D.h); curves.filter(c=>!c.unverified).forEach(c=>markPoly(c.p,usedC,2)); res.forEach(r=>{ const L=Math.hypot(r.p[2]-r.p[0],r.p[3]-r.p[1]), n=Math.ceil(L); for(let k=0;k<=n;k++){ const x=r.p[0]+(r.p[2]-r.p[0])*k/n, y=r.p[1]+(r.p[3]-r.p[1])*k/n; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=Math.round(x)+dx, Y=Math.round(y)+dy; if(X>=0&&Y>=0&&X<D.w&&Y<D.h) usedC[Y*D.w+X]=1; } } });
     findCircles(D,usedC,{ppm,box:o.region?[o.region[0]-6*ppm,o.region[1]-6*ppm,o.region[2]+6*ppm,o.region[3]+6*ppm]:null,maxFind:o.maxFindCircles}).forEach(c=>{ if(!circ.some(m=>Math.hypot(m.cx-c.cx,m.cy-c.cy)<1.5*ppm&&Math.abs(m.r-c.r)<1.5*ppm)) circ.push(c); }); }
-  return {segs:res.concat(found),circles:circ,droppedCircles:droppedC,dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr}}; }
-put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk,snapPoints,placePoints,matchGiven});
+  return {segs:res.concat(found),circles:circ,droppedCircles:droppedC,curves,droppedCurves,dropped,stats:{model:segs.length,kept:res.length,unverified:res.filter(r=>r.unverified).length,reliable,dropped:dropped.length,found:found.length,thr:D.thr,curves:curves.length,curvesUnv:curves.filter(c=>c.unverified).length,curvesDropped:droppedCurves.length}}; }
+put({refine,darkness,snap,findMissing,snapCircle,findCircles,ringInk,snapPoints,placePoints,matchGiven,snapCurve,resample,polyLen});
 })();

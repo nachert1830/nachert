@@ -5,7 +5,7 @@
    студент ставит начало O сам.
 
    fromScan(out, o)   — результат сканера → лист {id, name, created, drawings:[чертёж]}; чертёж —
-                        {id, name, part, dz, n, rms, approx, pts:[{id,l,at}], segs:[{id,a,b,dash,unv,src}], arcs:[{id,poly,dash,unv}], txt:[{at,s}]};
+                        {id, name, part, dz, n, rms, approx, pts:[{id,l,at}], segs:[{id,a,b,dash,unv,src}], arcs:[{id,poly,dash,unv,curve?}] (дуги и кривые ДЗ №4), txt:[{at,s}], verify4?};
    parseLabel(s)      — подпись → {name, pr: 'f' (″) | 'h' (′) | 'w' (‴) | 'x' (доп. плоскость) | null};
    space(dr)          — 3D: точки по парам проекций (невязка линии связи), рёбра по отрезкам между подписанными
                         точками одной проекции (в обеих проекциях — подтверждено), грани (треугольники и плоские четырёхугольники);
@@ -57,12 +57,14 @@ function fromScan(out,o){ o=o||{}; const sheet={id:uid('s'),name:o.name||out.nam
   return sheet; }
 function fromDrawing(d,out){ const f=d.fit&&d.fit.rmsMm!=null?d.fit:null;
   const dr={id:uid('d'),part:d.part||null,dz:f?f.dz:null,n:f?f.n:null,rms:f?r2(f.hom?f.hom.rmsMm:f.rmsMm):null,approx:false,pts:[],segs:[],arcs:[],txt:[],created:Date.now()};
-  if(d.check) dr.check=d.check; if(d.verify) dr.verify=d.verify;   /* проверка по результату (lk/scan/verify.js) — на момент скана */   /* вердикт сканера по построению (pipeline.checkDrawing) — на момент скана; правки копии его не меняют */
+  if(d.check) dr.check=d.check; if(d.verify) dr.verify=d.verify; if(d.verify4) dr.verify4=d.verify4;   /* ДЗ №4: линии пересечения против эталона (lk/scan/verify4.js) */   /* проверка по результату (lk/scan/verify.js) — на момент скана */   /* вердикт сканера по построению (pipeline.checkDrawing) — на момент скана; правки копии его не меняют */
   let T;
   if(d.mm&&f&&d.mm.segs){ T=(x,y)=>[x,y];
     d.mm.pts.forEach(q=>dr.pts.push({id:uid('p'),l:String(q[0]),at:[r2(q[1]),r2(q[2])]}));
     d.mm.segs.forEach(q=>dr.segs.push({id:uid('g'),a:[r2(q.p[0]),r2(q.p[1])],b:[r2(q.p[2]),r2(q.p[3])],dash:!!q.dash,unv:!!q.unverified,src:q.src||'model'}));
     (d.circles||[]).forEach(c=>{ if(c.mm&&c.mm.length>2) dr.arcs.push({id:uid('c'),poly:c.mm.map(p=>[r2(p[0]),r2(p[1])]),dash:!!c.dash,unv:!!c.unverified,src:c.src||'model'}); });
+    /* кривые (ДЗ №4: линии пересечения, эллипсы) — тоже ломаные, как дуги; curve — чтобы отличить при показе и проверке */
+    (d.curves||[]).forEach(c=>{ if(c.mm&&c.mm.length>1) dr.arcs.push({id:uid('c'),poly:c.mm.map(p=>[r2(p[0]),r2(p[1])]),dash:!!c.dash,unv:!!c.unverified,src:c.src||'model',curve:true}); });
     (d.mm.txt||[]).forEach(q=>dr.txt.push({at:[r2(q[0]),r2(q[1])],s:String(q[2])}));
     const M=[], Pp=[]; d.mm.pts.forEach((q,i)=>{ if(d.pts[i]){ M.push([q[1],q[2]]); Pp.push([d.pts[i][1],d.pts[i][2]]); } });
     d.mm.segs.forEach((q,i)=>{ const z=d.segs[i]; if(z){ M.push([q.p[0],q.p[1]],[q.p[2],q.p[3]]); Pp.push([z.p[0],z.p[1]],[z.p[2],z.p[3]]); } });
@@ -93,6 +95,7 @@ function fromDrawing(d,out){ const f=d.fit&&d.fit.rmsMm!=null?d.fit:null;
   P.forEach((q,i)=>{ if(q.L.origin) return; dr.pts.push({id:uid('p'),l:q.l,at:T(Rp[i][0],Rp[i][1])}); });
   Rs.forEach(([a,b],i)=>{ const q=d.segs[i]; dr.segs.push({id:uid('g'),a:T(a[0],a[1]),b:T(b[0],b[1]),dash:!!q.dash,unv:!!q.unverified,src:q.src||'model'}); });
   (d.circles||[]).forEach(c=>{ if(c.poly&&c.poly.length>2) dr.arcs.push({id:uid('c'),poly:c.poly.map(p=>{ const q=R(p[0],p[1]); return T(q[0],q[1]); }),dash:!!c.dash,unv:!!c.unverified,src:c.src||'model'}); });
+  (d.curves||[]).forEach(c=>{ if(c.poly&&c.poly.length>1) dr.arcs.push({id:uid('c'),poly:c.poly.map(p=>{ const q=R(p[0],p[1]); return T(q[0],q[1]); }),dash:!!c.dash,unv:!!c.unverified,src:c.src||'model',curve:true}); });
   (d.txt||[]).forEach(q=>{ const p=R(q[0],q[1]); dr.txt.push({at:T(p[0],p[1]),s:String(q[2])}); });
   const M=[], Pp=[]; Rs.forEach(([a,b],i)=>{ const q=d.segs[i].p; M.push(T(a[0],a[1]),T(b[0],b[1])); Pp.push([q[0],q[1]],[q[2],q[3]]); }); P.forEach((q,i)=>{ M.push(T(Rp[i][0],Rp[i][1])); Pp.push(q.p); });
   dr.ph=affine(M,Pp);
@@ -156,7 +159,8 @@ function space(dr){ const {by}=named(dr), pts={};
 const sub3=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 
 /* ── эталон по условию варианта: данные (core/dz-variants.js) + решение (core/dz.js) + тело ответа (lab/dz/model.js) ── */
-function reference(dr,LIB){ if(!dr.dz||!dr.n||!LIB||!LIB.variants) return null; const gv=LIB.variants.get(dr.dz,dr.n); if(!gv) return null;
+function reference(dr,LIB){ if(!dr.dz||!dr.n||!LIB||!LIB.variants||![2,3].includes(+dr.dz)) return null;   /* ДЗ №4: условия-точек нет, эталон — линии (verify4) */
+  const gv=LIB.variants.get(dr.dz,dr.n); if(!gv) return null;
   const pts={}; Object.entries(gv.data).forEach(([k,P])=>pts[k]=P.slice()); let edges=[], sol=null;
   try{ const r=LIB.dz&&LIB.dz.solve(gv.id,gv.data); if(r&&r.ok&&r.sol&&r.sol.length){
       const sp=space(dr).pts, S=r.sol.slice().sort((a,b)=>score(a)-score(b)); function score(s){ let e=0,n=0; Object.entries(s).forEach(([k,P])=>{ const nm=norm(k); if(Array.isArray(P)&&P.length===3&&sp[nm]){ e+=Math.hypot(...sub3(P,sp[nm].P)); n++; } }); return n?e/n:1e9; }
@@ -200,7 +204,7 @@ function apply(dr,fix){ if(!fix) return false; const {by}=named(dr);
   return false; }
 
 /* ── привязка к варианту вручную: точки условия на копии → их места по таблице варианта (аффинно, МНК); копия переводится в точные мм ── */
-function bindVariant(dr,LIB,dz,n){ const gv=LIB&&LIB.variants&&LIB.variants.get(+dz,+n); if(!gv) return {ok:false,why:'нет такого варианта'};
+function bindVariant(dr,LIB,dz,n){ const gv=[2,3].includes(+dz)&&LIB&&LIB.variants&&LIB.variants.get(+dz,+n); if(!gv) return {ok:false,why:'нет такого варианта'};
   const {by}=named(dr), M=[], P=[], who=[];
   Object.entries(gv.data).forEach(([nm,X])=>{ const b=by[nm]; if(!b) return; if(b.f){ M.push(b.f.at); P.push([-X[0],-X[2]]); who.push(nm+'″'); } if(b.h){ M.push(b.h.at); P.push([-X[0],X[1]]); who.push(nm+'′'); } });
   if(M.length<3) return {ok:false,why:'на копии мало точек условия ('+M.length+'), нужно хотя бы 3 с подписями как в условии'};
