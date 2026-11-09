@@ -117,6 +117,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   { const rpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('РК2', await require('./rk2.js').rk2Check(rpage,URL)); await rpage.close(); }
 
+  /* 3г‴. «РК2 за 9 шагов» (#/ng/rk2): ответы генераторов 9 тем пересчитываются по координатам независимо, прогресс 0–100 %, проход тем и пробного РК2 */
+  { const kp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+    report('РК2 за 9 шагов', await require('./rkp.js').rkpCheck(kp,URL)); await kp.close(); }
+
   /* 3г″. «Сдашь РК2?» (#/rk): билеты-игры, чертежи ИГ сверяются лучами с телом детали, проход всех режимов и тизер на главной */
   { const gp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('«Сдашь РК2?»', await require('./rkg.js').rkgCheck(gp,URL)); await gp.close(); }
