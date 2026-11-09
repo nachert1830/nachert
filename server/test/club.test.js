@@ -120,7 +120,7 @@ test('статика: CSP и заголовки безопасности, тол
   assert.doesNotMatch(r.headers['Content-Security-Policy'],/unsafe-inline|unsafe-eval/);
   assert.equal(r.headers['X-Frame-Options'],'DENY'); assert.match(r.headers['Strict-Transport-Security'],/max-age/);
   for(const p of ['/../server/lib/app.js','/tools/build-core.js','/tests/lib.test.js','/README.md','/DEPLOY.md','/lib/../../server/index.js','/core/samples/index.json']) assert.equal((await c.call('GET',p)).status,404,p);
-  assert.equal((await c.call('GET','/core/tasks.json')).status,200); assert.equal((await c.call('GET','/legal/privacy.html')).status,200);
+  assert.equal((await c.call('GET','/app.js')).status,200); assert.equal((await c.call('GET','/legal/privacy.html')).status,200);
   const api=await c.call('GET','/api/config'); assert.equal(api.headers['Cache-Control'],'no-store'); assert.equal(api.data.botId,'777000');
 });
 

@@ -507,3 +507,37 @@ details.past[open] summary::before{content:"▾ "}
 @media (max-width:999px){ .tabs-in{display:flex;max-width:340px} .tabs-in .tab{flex:1} .tabs-in .side-x,.tabs-in .side-foot{display:none} }
 @media (max-width:719px){ .panel{aspect-ratio:auto} }
 .sum .m small b{display:inline;font:inherit;font-weight:800}
+
+/* ═══ Вход ═══ */
+.acc{display:grid;gap:12px}
+.acc h3{font:800 19px var(--disp)}
+.acc p{margin:0;color:var(--ink2);font-size:14.5px}
+.acc .acts{margin:0}
+.acc .who{display:flex;align-items:center;gap:12px}
+.acc .who .ok{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--green-s);color:var(--green);flex:none}
+.acc .who b{display:block;font-weight:800}
+.acc .who small{display:block;color:var(--mut);font-size:13px}
+.acc.in{border-color:color-mix(in srgb,var(--green) 40%,var(--line))}
+.btn.ya{background:#fc3f1d;box-shadow:0 4px 0 #b8280c;color:#fff}
+.btn.ya .yl{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#fff;color:#fc3f1d;font:800 15px var(--disp)}
+.btn.ya:active{box-shadow:0 1px 0 #b8280c}
+.cons{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink2);line-height:1.4;cursor:pointer}
+.cons input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--acc)}
+.cons a{color:var(--blue);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.lstep{display:none;flex-direction:column;gap:10px}
+.lstep.on{display:flex}
+.lstep .or{text-align:center;color:var(--mut);font-size:13px;font-weight:600}
+.field.code{text-align:center;letter-spacing:.4em;font:800 26px var(--disp)}
+.lnk2{color:var(--blue);font:700 14px var(--sans);align-self:center}
+.lerr{color:var(--red);font-weight:700;font-size:14px}
+.lerr:empty{display:none}
+.nudge{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 12px 12px 14px;border-radius:18px;background:var(--surf);border:1.5px solid color-mix(in srgb,var(--acc) 35%,var(--line));box-shadow:var(--shadow);text-align:left;width:100%}
+.nudge .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--blue-s);color:var(--blue);flex:none}
+.nudge .m{flex:1;min-width:0}
+.nudge .m b{display:block;font-weight:800}
+.nudge .m small{display:block;color:var(--mut);font-size:13px}
+.hsw{display:inline-grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;border-radius:14px;background:rgba(0,0,0,.2)}
+.hsw button{height:26px;padding:0 11px;border-radius:11px;font:800 12px var(--sans);letter-spacing:.05em;color:rgba(255,255,255,.8)}
+.hsw button.on{background:#fff;color:#0a1636}
+.hello .nudge small{text-transform:none;letter-spacing:0;font:500 13px var(--sans);color:var(--mut)}
+.acc .acts .btn.sm{flex:0 0 auto}
