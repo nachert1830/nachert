@@ -1,0 +1,9 @@
+body{margin:0;background:#f4f7fb;color:#0e1c33;font:16px/1.6 'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 18px 60px}
+h1{font:800 28px/1.15 system-ui,sans-serif;letter-spacing:-.02em;color:#1b2a6b;margin:18px 0 6px}
+h2{font:800 19px/1.3 system-ui,sans-serif;margin:28px 0 8px}
+.m{color:#5d6f8a;margin:0 0 10px;font-size:14px}
+ul{padding-left:20px}li{margin-bottom:8px}
+a{color:#1a66cc;font-weight:600}
+.back{display:inline-block;text-decoration:none;font-weight:700}
+@media (prefers-color-scheme:dark){body{background:#0a1222;color:#e8eef8}h1{color:#c9d7ff}.m{color:#8aa0c0}a{color:#6fb0ff}}

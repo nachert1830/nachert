@@ -98,6 +98,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
     <small id="helloK"></small>
     <h1 id="helloT">Привет!</h1>
     <p id="helloS"></p>
+    <div id="nudge"></div>
     <div class="chips">
       <button class="chip" id="chG" data-group><svg class="i"><use href="#i-pin"/></svg><span>Группа</span></button>
       <button class="chip" id="chV" data-variant><svg class="i"><use href="#i-hash"/></svg><span>Вариант</span></button>
@@ -139,18 +140,19 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
         </div>
       </section>
 
+      <section class="card acc" id="accBox"></section>
+
       <div class="sec"><h2>Мой прогресс</h2></div>
       <div class="stats" id="meStats"></div>
 
       <section class="card save" id="saveBox">
-        <h3>Сохранение прогресса</h3>
+        <h3>Копия прогресса файлом</h3>
         <p id="saveP">Всё, что ты делаешь в кабинете и на сайте, хранится в этом браузере. Скачай копию — и перенеси прогресс на другой телефон или ноутбук.</p>
         <div class="acts">
           <button class="btn" id="bkSave"><svg class="i"><use href="#i-save"/></svg>Скачать копию</button>
           <label class="btn flat" for="bkFile" style="cursor:pointer"><svg class="i"><use href="#i-upload"/></svg>Восстановить</label>
           <input type="file" id="bkFile" accept="application/json,.json" hidden>
         </div>
-        <div class="soon" id="syncBox"><span class="tag">Скоро</span><span><b>Вход и синхронизация.</b> Войдёшь через Яндекс ID или почту — прогресс будет сам появляться на всех устройствах.</span></div>
       </section>
 
       <section class="card set" aria-label="Настройки">
@@ -195,6 +197,26 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
   <h2>Как тебя зовут?</h2>
   <input class="field" id="nIn" placeholder="Имя" maxlength="40" autocomplete="given-name">
   <button class="btn" id="nOk">Сохранить</button>
+</div></div>
+
+<!-- Вход: Яндекс ID или почта -->
+<div class="sheet" id="lSheet" role="dialog" aria-modal="true" aria-label="Вход"><div class="sheet-in">
+  <h2 id="lT">Войти в кабинет</h2>
+  <p class="note" id="lS">Прогресс сохранится в аккаунте и будет на всех твоих устройствах.</p>
+  <label class="cons"><input type="checkbox" id="lCons"><span>Принимаю <a href="legal/consent.html" target="_blank">условия</a> и даю согласие на <a href="legal/privacy.html" target="_blank">обработку данных</a></span></label>
+  <div class="lstep on" data-l="pick">
+    <button class="btn ya" data-ya><b class="yl">Я</b>Войти с Яндекс ID</button>
+    <div class="or">или по почте</div>
+    <input class="field" id="lMail" type="email" inputmode="email" autocomplete="email" placeholder="почта@example.ru">
+    <button class="btn flat" id="lMailGo">Получить код на почту</button>
+  </div>
+  <div class="lstep" data-l="code">
+    <input class="field code" id="lCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••">
+    <button class="btn" id="lCodeGo">Войти</button>
+    <button class="lnk2" id="lBack">← другая почта</button>
+  </div>
+  <div class="lerr" id="lErr" role="alert"></div>
+  <button class="btn flat" data-close>Закрыть</button>
 </div></div>
 
 <div class="toast" id="toast" role="status"></div>

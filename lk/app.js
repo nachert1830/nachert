@@ -122,7 +122,6 @@ function renderHello(){
   if(wk.length) s.push('На этой неделе: '+wk.map(e=>'<b>'+label(e)+' · '+SUBJ[e.subj]+'</b>').join(' и ')+'.');
   else { const n=ev.filter(e=>!DONE[e.id]&&!isPast(e,t)&&e.kind!=='m')[0]; s.push(n?'Ближайшее — <b>'+label(n)+' · '+SUBJ[n.subj]+'</b> '+inWords(n.date-t)+'.':'Несданного в семестре нет — красота.'); }
   const g0=gdata(), nl=g0&&nextLesson(g0); if(nl&&nl.i<=1) s.push('Пара '+(nl.i===0?'сегодня':'завтра')+' в <b>'+esc(nl.l.t.replace(/^0/,''))+'</b>, ауд. '+esc(nl.l.rooms.join(', '))+'.');
-  const st=LKS.streak(); if(st.n>=2) s.push('Ты занимаешься <b>'+st.n+' '+dWord(st.n)+' подряд</b>.');
   if(!group()) s.push('Выбери группу — сроки встанут по твоим парам.');
   $('#helloS').innerHTML=s.join(' ');
   const g=$('#chG'); g.classList.toggle('need',!group()); g.querySelector('span').innerHTML=group()?'<span class="k">Группа</span> '+esc(group()):'Выбрать группу';
@@ -133,15 +132,17 @@ function renderHello(){
 /* ═══ «Горит» ═══ */
 function renderHot(){
   const t=todayDay(), ev=events(), box=$('#hot');
-  const cand=ev.filter(e=>e.kind==='dz'&&!DONE[e.id]&&!isPast(e,t));
-  const e=cand[0]||ev.filter(x=>!DONE[x.id]&&!isPast(x,t)&&x.kind!=='m')[0];
+  const up=k=>ev.filter(x=>x.kind===k&&!DONE[x.id]&&!isPast(x,t))[0], nDz=up('dz'), nRk=up('rk');
+  let hk=LKS.raw('lk_hotk'); if(hk!=='dz'&&hk!=='rk') hk=nDz&&(!nRk||nDz.date<=nRk.date)?'dz':'rk';
+  const e=(hk==='rk'?nRk||nDz:nDz||nRk)||ev.filter(x=>!DONE[x.id]&&!isPast(x,t)&&x.kind!=='m')[0];
+  const sw=nDz&&nRk?'<span class="hsw" role="tablist" aria-label="Что показать"><button data-hotk="dz" class="'+(e===nDz?'on':'')+'" aria-selected="'+(e===nDz)+'">ДЗ</button><button data-hotk="rk" class="'+(e===nRk?'on':'')+'" aria-selected="'+(e===nRk)+'">РК</button></span>':'';
   if(!e){ box.className='plash ok'; box.innerHTML='<div class="p-top"><span class="pill">'+ico('check')+'Всё сдано</span></div><div style="margin-top:auto"><div class="p-t">Чисто!</div><div class="p-s">Несданных заданий в этом семестре нет. Можно повторить темы к экзамену.</div></div><div class="acts"><a class="btn white" href="/#/ng/learn">Тренировка дня →</a></div>'; return; }
   const d=e.date-t, hz=heat(d), same=ev.filter(x=>x.subj===e.subj&&x.kind===e.kind&&x.date<e.date), from=same.length?same[same.length-1].date:toDay(W1);
   const frac=Math.max(0,Math.min(1,(t-from)/Math.max(1,e.date-from))), nxt=ev.filter(x=>x!==e&&!DONE[x.id]&&!isPast(x,t)&&x.kind!=='m')[0], lk=linkOf(e);
   const pill=hz==='hot'?'<span class="pill live"><i></i>Горит</span>':hz==='warm'?'<span class="pill"><i></i>Скоро</span>':'<span class="pill">'+ico('cal')+'По плану</span>';
   const vtxt=e.kind==='dz'&&variant()&&siteDz(e)?' · <b>вариант '+variant()+'</b>':'';
   box.className='plash '+hz; box.setAttribute('aria-label',label(e)+' '+SUBJ_FULL[e.subj]+', '+inWords(d));
-  box.innerHTML='<div class="p-top">'+pill+'<span class="p-meta">'+(group()?'Неделя '+e.week+' · '+esc(group()):'<button data-group style="text-decoration:underline;text-underline-offset:3px">дата по пн · выбрать группу</button>')+'</span></div>'
+  box.innerHTML='<div class="p-top">'+pill+(sw||'<span class="p-meta">'+(group()?'Неделя '+e.week+' · '+esc(group()):'<button data-group style="text-decoration:underline;text-underline-offset:3px">дата по пн · выбрать группу</button>')+'</span>')+'</div>'
     +'<div class="p-g"><div><div class="p-t">'+label(e)+'</div><div class="p-s">'+SUBJ_FULL[e.subj]+vtxt+'</div></div>'+countHTML(d,e)+'</div>'
     +'<div class="tbar" role="progressbar" aria-label="Прошло времени до срока" aria-valuenow="'+Math.round(frac*100)+'" aria-valuemin="0" aria-valuemax="100"><i data-w="'+Math.round(frac*100)+'%"></i></div>'
     +'<div class="tlbl"><span>прошло '+Math.round(frac*100)+'% времени</span><span>'+(e.time?'сдать до пары':'')+'</span></div>'
@@ -257,11 +258,11 @@ function renderRk(){
 /* ═══ Профиль ═══ */
 function fmtDate(ts){ const x=new Date(ts); return x.getDate()+' '+MONF[x.getMonth()]; }
 function renderMe(){
-  const s=site(), nd=Object.keys(DONE).filter(k=>DONE[k]).length, np=Object.keys(PREPD).reduce((a,k)=>a+Object.keys(PREPD[k]||{}).filter(x=>PREPD[k][x]).length,0), st=LKS.streak();
+  const s=site(), nd=Object.keys(DONE).filter(k=>DONE[k]).length, np=Object.keys(PREPD).reduce((a,k)=>a+Object.keys(PREPD[k]||{}).filter(x=>PREPD[k][x]).length,0);
   $('#meAv').textContent=initials(); $('#meName').textContent=P.name||'Студент';
   $('#meSince').textContent=(group()?'Группа '+group():'Группа не выбрана')+(P.created?' · в кабинете с '+fmtDate(P.created):'');
   $('#kvN').textContent=P.name||'Указать'; $('#kvG').textContent=group()||'Выбрать'; $('#kvV').textContent=variant()||'Выбрать';
-  $('#meStats').innerHTML=[[nd,'сдач отмечено'],[np,'шагов к РК'],[s.rep,plural(s.rep,'задача','задачи','задач')+' в повторении'],[s.lessons,plural(s.lessons,'урок','урока','уроков')+' пройдено'],[s.ex.length,'пробных РК'],[st.n,dWord(st.n)+' — серия']]
+  $('#meStats').innerHTML=[[nd,'сдач отмечено'],[np,'шагов к РК'],[s.rep,plural(s.rep,'задача','задачи','задач')+' в повторении'],[s.lessons,plural(s.lessons,'урок','урока','уроков')+' пройдено'],[s.ex.length,'пробных РК'],[s.sheets,plural(s.sheets,'чертёж','чертежа','чертежей')]]
     .map(a=>'<div><b>'+a[0]+'</b><small>'+a[1]+'</small></div>').join('');
   const bk=LKS.get('lk_backup_at',0);
   $('#saveP').innerHTML='Всё, что ты делаешь в кабинете и на сайте, хранится в этом браузере ('+LKS.sizeKB()+' КБ). Скачай копию — и перенеси прогресс на другой телефон или ноутбук.'+(bk?' Последняя копия — '+fmtDate(bk)+'.':'');
@@ -269,11 +270,51 @@ function renderMe(){
   const th=LKS.get('nch2_theme',null); $$('#theme [data-th]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-th')===(th==='light'||th==='dark'?th:'auto')));
 }
 function renderSync(){
-  const S=LKS.sync.state, box=$('#syncBox');
-  if(!S.on) return;   /* адрес API не задан — остаётся «Скоро» */
-  if(S.user) box.innerHTML='<span class="tag" style="background:var(--green)">Вход</span><span><b>'+esc(S.user.name||'Аккаунт')+'</b> · прогресс синхронизируется'+(S.at?', последний раз '+new Date(S.at).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):'')+(S.err?' · <span style="color:var(--red)">'+esc(S.err)+'</span>':'')+'. <a href="#" data-logout style="color:var(--blue);font-weight:700">Выйти</a></span>';
-  else box.innerHTML='<span class="tag">'+ico('cloud')+'</span><span><b>Войди</b> — прогресс будет на всех устройствах. <a href="#" data-login="yandex" style="color:var(--blue);font-weight:700">Яндекс ID</a></span>';
+  const S=LKS.sync.state, box=$('#accBox'), nd=$('#nudge');
+  if(!S.on){ box.hidden=true; nd.innerHTML=''; return; }
+  box.hidden=false;
+  if(S.user){ const u=S.user, how=[u.yandex&&'Яндекс ID',u.email&&'почта',u.telegram&&'Telegram'].filter(Boolean).join(' и ');
+    box.className='card acc in';
+    box.innerHTML='<div class="who"><span class="ok">'+ico('cloud')+'</span><div><b>Прогресс сохраняется в аккаунте</b><small>'+esc(u.name||'Аккаунт')+(how?' · вход: '+how:'')+(S.at?' · обновлено в '+new Date(S.at).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):'')+'</small></div></div>'
+      +(S.err?'<p style="color:var(--red)">'+esc(S.err)+'</p>':'')
+      +'<div class="acts"><button class="btn flat sm" data-logout>Выйти</button></div>';
+    nd.innerHTML=''; return; }
+  box.className='card acc save';
+  box.innerHTML='<h3>Войди — и прогресс не потеряется</h3><p>Сдачи, подготовка к РК и всё, что ты решал на сайте, будут в аккаунте — на телефоне и ноутбуке сразу.</p>'
+    +'<div class="acts"><button class="btn ya" data-login><b class="yl">Я</b>Яндекс ID</button><button class="btn flat" data-login="mail">Почта</button></div>';
+  const has=Object.keys(DONE).length+Object.keys(PREPD).length+site().rep;
+  nd.innerHTML=S.ready&&has&&!LKS.raw('lk_nudge_x')?'<div class="nudge"><span class="ic">'+ico('cloud')+'</span><button class="m" data-login style="text-align:left"><b>Сохрани прогресс</b><small>Войди через Яндекс или почту — 10 секунд</small></button><button class="ibtn" data-nudge-x aria-label="Скрыть" style="width:34px;height:34px;box-shadow:none">✕</button></div>':'';
 }
+
+/* ═══ Вход ═══ */
+const L={mail:'',busy:false};
+function lStep(k){ $$('#lSheet .lstep').forEach(x=>x.classList.toggle('on',x.getAttribute('data-l')===k)); $('#lErr').textContent=''; }
+function lErr(e){ $('#lErr').textContent=e&&e.message||String(e||''); }
+function consent(){ if($('#lCons').checked) return true; lErr('Отметь согласие — без него аккаунт не создать'); $('#lCons').focus(); return false; }
+function openLogin(how){ SHEETS.l.classList.add('on'); lStep('pick'); $('#lCons').checked=!!LKS.raw('lk_cons'); if(how==='mail') setTimeout(()=>$('#lMail').focus(),60); }
+async function finishLogin(tok){
+  const extra={consent:{terms:true,pd:true},name:P.name||undefined,group:P.group||undefined,variant:variant()||undefined};
+  try{ const j=await LKS.sync.redeem(tok,extra); const u=j.user||{};
+    /* профиль: пустое в кабинете — из аккаунта; иначе кабинет → аккаунт */
+    let ch=false; if(!P.name&&u.name&&u.name!=='Участник'){ P.name=u.name; ch=true; } if(!P.group&&u.group){ P.group=u.group; ch=true; } if(!variant()&&u.variant){ P.variant=u.variant; ch=true; }
+    if(ch) saveP(); else LKS.sync.profile({name:P.name||undefined,group:P.group||'',variant:variant()||0});
+    closeSheets(); reload(); toast(j.isNew?'Аккаунт создан — прогресс сохраняется':'Вход выполнен — прогресс подтянут');
+  }catch(e){ if(e.data&&e.data.needConsent){ openLogin(); lErr('Для нового аккаунта отметь согласие и войди ещё раз'); } else toast(e.message); }
+}
+$('#lCons').addEventListener('change',()=>{ LKS.put('lk_cons',$('#lCons').checked?'1':null); if($('#lCons').checked) $('#lErr').textContent=''; });
+$('[data-ya]').addEventListener('click',()=>{ if(consent()) LKS.sync.yandex(); });
+$('#lMailGo').addEventListener('click',async()=>{ if(L.busy||!consent()) return; const m=$('#lMail').value.trim(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){ lErr('Проверь адрес почты'); return; }
+  L.busy=true; $('#lMailGo').disabled=true;
+  try{ const r=await LKS.sync.emailStart(m); L.mail=m; lStep('code'); $('#lS').textContent='Код отправлен на '+(r.to||m)+'. Действует '+(r.minutes||10)+' минут. Проверь «Спам», если письма нет.'; setTimeout(()=>$('#lCode').focus(),60); }
+  catch(e){ lErr(e); } L.busy=false; $('#lMailGo').disabled=false; });
+async function codeGo(){ if(L.busy) return; const c=$('#lCode').value.replace(/\D/g,''); if(c.length!==6){ lErr('В коде 6 цифр'); return; }
+  L.busy=true; $('#lCodeGo').disabled=true;
+  try{ const tok=await LKS.sync.emailVerify(L.mail,c); await finishLogin(tok); }catch(e){ lErr(e); }
+  L.busy=false; $('#lCodeGo').disabled=false; }
+$('#lCodeGo').addEventListener('click',codeGo);
+$('#lCode').addEventListener('input',()=>{ if($('#lCode').value.replace(/\D/g,'').length===6) codeGo(); });
+$('#lMail').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#lMailGo').click(); });
+$('#lBack').addEventListener('click',()=>{ lStep('pick'); $('#lS').textContent='Прогресс сохранится в аккаунте и будет на всех твоих устройствах.'; });
 
 function renderAll(){ renderHello(); renderHot(); renderDebt(); renderCont(); renderPanels(); renderCal(); renderRk(); renderMe(); }
 
@@ -290,6 +331,8 @@ document.addEventListener('click',ev=>{
   if(b){ debts().forEach(e=>{ DONE[e.id]=Date.now(); }); LKS.set('lk_done',DONE); renderAll(); toast('Прошедшие ДЗ отмечены сданными'); return; }
   b=ev.target.closest('[data-filter]');
   if(b){ FILTER=b.getAttribute('data-filter'); renderCal(); renderRk(); return; }
+  b=ev.target.closest('[data-hotk]');
+  if(b){ ev.preventDefault(); LKS.put('lk_hotk',b.getAttribute('data-hotk')); renderHot(); return; }
   b=ev.target.closest('[data-goto-rk]');
   if(b){ ev.preventDefault(); FILTER='rk'; renderCal(); renderRk(); goTab('cal'); return; }
   b=ev.target.closest('[data-scan="pick"]');
@@ -299,8 +342,9 @@ document.addEventListener('click',ev=>{
   b=ev.target.closest('[data-name]'); if(b){ ev.preventDefault(); openSheet('n'); return; }
   b=ev.target.closest('[data-tab-go]'); if(b){ ev.preventDefault(); goTab(b.getAttribute('data-tab-go')); return; }
   b=ev.target.closest('[data-th]'); if(b){ setTheme(b.getAttribute('data-th')); return; }
-  b=ev.target.closest('[data-login]'); if(b){ ev.preventDefault(); LKS.sync.login(b.getAttribute('data-login')); return; }
-  b=ev.target.closest('[data-logout]'); if(b){ ev.preventDefault(); LKS.sync.logout().then(renderMe); return; }
+  b=ev.target.closest('[data-login]'); if(b){ ev.preventDefault(); openLogin(b.getAttribute('data-login')); return; }
+  b=ev.target.closest('[data-nudge-x]'); if(b){ LKS.put('lk_nudge_x','1'); renderSync(); return; }
+  b=ev.target.closest('[data-logout]'); if(b){ ev.preventDefault(); if(confirm('Выйти из аккаунта? Прогресс в этом браузере останется.')) LKS.sync.logout().then(()=>{ renderMe(); toast('Ты вышел из аккаунта'); }); return; }
 });
 $('#reset').addEventListener('click',()=>{ if(!confirm('Сбросить все отметки сдач и подготовки к РК?')) return; DONE={}; PREPD={}; LKS.set('lk_done',{}); LKS.set('lk_prep',{}); renderAll(); toast('Отметки сброшены'); });
 $('#bkSave').addEventListener('click',()=>{ LKS.download(); renderMe(); toast('Копия прогресса скачана'); });
@@ -309,11 +353,11 @@ $('#bkFile').addEventListener('change',e=>{ const f=e.target.files&&e.target.fil
     LKS.restore(j); reload(); toast('Прогресс восстановлен'); }).catch(err=>toast(err.message)); });
 $('#reOb').addEventListener('click',()=>openOb());
 function setTheme(t){ if(t==='light'||t==='dark'){ LKS.set('nch2_theme',t); document.documentElement.dataset.theme=t; } else { LKS.put('nch2_theme',null); delete document.documentElement.dataset.theme; } renderMe(); }
-function saveP(){ LKS.saveProfile(P); }
+function saveP(){ LKS.saveProfile(P); LKS.sync.profile({name:P.name||undefined,group:P.group||'',variant:variant()||0}); }
 function reload(){ P=LKS.profile(); DONE=LKS.get('lk_done',{})||{}; PREPD=LKS.get('lk_prep',{})||{}; renderAll(); }
 
 /* ═══ Листы: группа, вариант, имя ═══ */
-const SHEETS={g:$('#gSheet'),v:$('#vSheet'),n:$('#nSheet')};
+const SHEETS={g:$('#gSheet'),v:$('#vSheet'),n:$('#nSheet'),l:$('#lSheet')};
 function groupsHTML(q,cur){
   if(!DB) return '<p>Расписание загружается… Если долго — проверь интернет.</p>';
   q=String(q||'').replace(/\s+/g,'').toUpperCase();
@@ -405,6 +449,9 @@ renderAll();
 let framed=false; try{ framed=window.top!==window; }catch(e){ framed=true; }
 if(!P.onb&&!framed&&!/^#scan/.test(location.hash)) openOb();
 fetch('data/groups.json').then(r=>r.json()).then(j=>{ DB=j; if(group()&&!j.groups[group()]){ P.group=''; saveP(); } SELD=null; renderAll(); if(OB.el.classList.contains('on')&&OB.st===1) obShow(); }).catch(()=>renderAll());
-LKS.sync.start().then(()=>renderSync());
+/* вернулся с Яндекса — завершить вход */
+const back=LKS.sync.fromHash();
+if(back&&back.err) setTimeout(()=>toast(back.err),300);
+if(back&&back.token) finishLogin(back.token); else LKS.sync.start().then(()=>renderSync());
 self.LKHOME={events,render:renderAll,profile:()=>P};
 })();
