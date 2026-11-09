@@ -83,20 +83,25 @@ async function pool(items,n,f){ let i=0; const run=async()=>{ while(i<items.leng
       '; задач, где первый исполнившийся план был бы неверным ответом: '+x.tasksLie+'; сертификат отверг верное по независимой формуле: '+x.lieTrue)); }
 
   /* контроль зануды: библиотека ошибок core/cp47.js */
-  const ctl={}, ctlOk={acc:0,tot:0}; let ctlChecks=0;
+  const ctl={}, ctlOk={acc:0,tot:0}, noO7={acc:0,right:0,where:new Set()}; let ctlChecks=0;
   vs.forEach(v=>{ const g=C.given(v.G);
     C.hypotheses().forEach(h=>{ const full=C.program(h.kid,h.nvid);
       /* необязательные шаги (opt) на ответ не влияют; без них ошибочная программа доходит до сертификата */
       const plan={steps:full.steps.filter(s=>h.cls==='ok'||!s.opt).map(s=>({id:s.id,op:s.op,args:s.args}))};
       let res; const va=P.validate(plan);
       if(!va.ok) res='формат: '+va.errors[0].replace(/ \(.*$/,'');
-      else { const ex=P.run(va.prog,g); if(!ex.ok) res='исполнение'; else { ctlChecks++; const c=N.check(v,va.prog,ex.E,{variants:h.cls==='ok'?200:0}); res=c.ok?'ПРИНЯТ':'сертификат: '+c.failed.join(','); } }
+      else { const ex=P.run(va.prog,g); if(!ex.ok) res='исполнение'; else { ctlChecks++;
+        /* полный сертификат — как у агента; отдельно — без O7 (только этот вариант) и сверка с независимой формулой */
+        const c=N.check(v,va.prog,ex.E); res=c.ok?'ПРИНЯТ':'сертификат: '+c.failed.join(',');
+        if(h.cls!=='ok'&&c.failed.length===1&&c.failed[0]==='O7'){ const tr=truthOf(N.deliverable(ex.E),v); noO7.acc++; if(tr&&tr.ok){ noO7.right++; noO7.where.add(v.id); } } } }
       if(h.cls==='ok'){ ctlOk.tot++; if(res==='ПРИНЯТ') ctlOk.acc++; return; }
       const e=ctl[h.cls]=ctl[h.cls]||{tot:0,acc:0,by:{}}; e.tot++; if(res==='ПРИНЯТ') e.acc++; e.by[res]=(e.by[res]||0)+1; }); });
   const ctlTot=Object.values(ctl).reduce((s,e)=>s+e.tot,0), ctlAcc=Object.values(ctl).reduce((s,e)=>s+e.acc,0);
   console.log('\nКонтроль зануды на тех же '+K+' вариантах: ошибочных программ '+ctlTot+', принято '+ctlAcc+'; верных программ '+ctlOk.tot+', принято '+ctlOk.acc);
   console.log('| Ошибка (core/cp47.js) | Программ | Отвергнуто | Чем отвергнуто |\n|---|---|---|---|');
   Object.entries(ctl).forEach(([k,e])=>console.log('| '+k+' | '+e.tot+' | '+(e.tot-e.acc)+' | '+Object.entries(e.by).map(([r,c])=>r+' — '+c).join('; ')+' |'));
+  console.log('Без O7 (только данные своего варианта) прошли бы '+noO7.acc+' ошибочных программ; из них верный ответ по независимой формуле дают '+noO7.right+
+    (noO7.where.size?' (варианты '+[...noO7.where].join(', ')+': на этих данных ошибочный способ случайно совпадает с верным)':''));
 
   /* --examples: три случая из лога — (а) с первой попытки, (б) зануда поймал ошибку, агент исправился, (в) честный отказ */
   if(arg('examples',false)){ const pickEx=f=>out.find(f);
@@ -112,8 +117,8 @@ async function pool(items,n,f){ let i=0; const run=async()=>{ while(i<items.leng
         (a.errors||[]).slice(0,4).forEach(e=>console.log('  ошибка → модели: '+e)); });
       console.log('Итог: '+(r.status==='solved'?'выдано '+r.answer.text+' ('+r.answer.certificate+')':'«не решено»: '+r.reason.text.slice(0,300))); }); }
 
-  const bad=mism.length||ctlAcc||ctlOk.acc!==ctlOk.tot||Object.values(M).some(x=>x.wrong);
-  if(arg('json',false)) fs.writeFileSync(arg('json'),JSON.stringify({seed:SEED,K,maxAttempts:MAXA,models:M,control:{errors:ctl,accepted:ctlAcc,total:ctlTot,correct:ctlOk},mismatches:mism.length,reAttempts},null,1));
+  const bad=mism.length||ctlAcc||noO7.acc!==noO7.right||ctlOk.acc!==ctlOk.tot||Object.values(M).some(x=>x.wrong);
+  if(arg('json',false)) fs.writeFileSync(arg('json'),JSON.stringify({seed:SEED,K,maxAttempts:MAXA,models:M,control:{errors:ctl,accepted:ctlAcc,total:ctlTot,correct:ctlOk,noO7:{acc:noO7.acc,right:noO7.right,where:[...noO7.where]}},mismatches:mism.length,reAttempts},null,1));
   console.log('\n'+(bad?'ЕСТЬ НАРУШЕНИЯ (см. выше)':'Инвариант соблюдён: неверных ответов выдано 0, каждая ошибка библиотеки отвергнута, лог воспроизводится')+' · '+((Date.now()-t0)/1000).toFixed(0)+' с');
   process.exit(bad?1:0);
 })();
