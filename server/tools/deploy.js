@@ -266,6 +266,11 @@ async function main(){
   const spec=fs.readFileSync(path.join(ROOT,'server','apigw.yaml'),'utf8').replace(/\$\{FUNCTION_ID\}/g,fn.api.id).replace(/\$\{SA_ID\}/g,sa.gw.id);
   const specFile=path.join(os.tmpdir(),'club-apigw.yaml'); fs.writeFileSync(specFile,spec);
   let gw=get(['serverless','api-gateway','get','--name',NAMES.gateway]);
+  /* остановленный шлюз — возобновить (пересоздавать нельзя: сменится адрес, на нём — возврат Яндекс ID) */
+  if(gw&&gw.status&&gw.status!=='ACTIVE'){ say('  шлюз в статусе '+gw.status+' — возобновляю');
+    yc(['serverless','api-gateway','resume','--name',NAMES.gateway],{soft:true});
+    for(let i=0;i<24&&gw.status!=='ACTIVE';i++){ await sleep(5000); gw=get(['serverless','api-gateway','get','--name',NAMES.gateway])||gw; }
+    if(gw.status!=='ACTIVE') throw new Error('Шлюз '+NAMES.gateway+' не активен (статус '+gw.status+'). Запустите его в консоли Yandex Cloud: API Gateway → '+NAMES.gateway+' → «Возобновить», потом запустите развёртывание снова.'); }
   gw=gw?yc(['serverless','api-gateway','update','--name',NAMES.gateway,'--spec',specFile]):yc(['serverless','api-gateway','create','--name',NAMES.gateway,'--spec',specFile]);
   const domain=arg('domain')||gw.domain; const origin='https://'+domain; say('  '+origin);
 
