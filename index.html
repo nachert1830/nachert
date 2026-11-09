@@ -129,6 +129,7 @@
 .lv-hero h1{margin:12px 0 8px;font:900 30px/1.02 var(--disp);letter-spacing:-.03em;color:#fff}
 .lv-hero>p{margin:0;font:600 15px/1.4 var(--sans);opacity:.94;max-width:46ch}
 .lv-acts{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin-top:16px;max-width:360px}
+.lv-soon{margin:0;font:700 15px var(--sans);color:var(--pa)}
 .lv-sec{margin:0 0 24px}
 .lv-sec h2{margin:0 0 12px;font:800 21px/1.2 var(--disp);color:var(--ink)}
 .lv-sub{color:var(--mut);font-size:14px;line-height:1.5;margin:0 0 12px}
@@ -28308,12 +28309,13 @@ FX.qrSheet=function(url,title,back){
 const PROMO=(function(){
   const PROMO_BOT='[ИМЯ_БОТА]';            /* например nachert_live_bot */
   const botUrl=src=>'https://t.me/'+PROMO_BOT+'?start='+src;
+  const ready=/^[A-Za-z]\w{3,31}$/.test(PROMO_BOT);   /* пока имя бота не вписано — карточку не показываем (кнопка вела бы в никуда) */
   const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
   const KEY='nch2_promo_hide', HIDE_MS=3*864e5;
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
   function hidden(){ try{ const t=+localStorage.getItem(KEY); return !!t&&Date.now()-t<HIDE_MS; }catch(e){ return false; } }
   function cardHTML(){
-    if(hidden()) return '';
+    if(!ready||hidden()) return '';
     const rk=rk2On();
     const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>`;
     const x=`<button type="button" class="pmn-x" data-promo-hide aria-label="Скрыть"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
@@ -28342,7 +28344,7 @@ const PROMO=(function(){
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
   let HIDE_NOW=false;   /* без localStorage скрытие держится до перезагрузки страницы */
-  return {cardHTML:()=>HIDE_NOW?'':cardHTML(),rk2On,botUrl};
+  return {cardHTML:()=>HIDE_NOW?'':cardHTML(),rk2On,botUrl,ready:()=>ready};
 })();
 const A2HS=(function(){
   let BIP=null;
@@ -32578,7 +32580,7 @@ function viewLive(v){
     <h1 id="lvH">Онлайн-разборы по&nbsp;начерталке</h1>
     <p>Разбираем типы задач РК2 и ДЗ по шагам, вживую. Чертим вместе — можно спрашивать.</p>
     <div class="lv-acts">
-     <a class="pmn-b" href="${attr(PROMO.botUrl('live'))}" target="_blank" rel="noopener" data-lv="live-bot">Записаться в Telegram →</a>
+     ${PROMO.ready()?`<a class="pmn-b" href="${attr(PROMO.botUrl('live'))}" target="_blank" rel="noopener" data-lv="live-bot">Записаться в Telegram →</a>`:`<p class="lv-soon">Запись откроется совсем скоро.</p>`}
     </div>
    </section>
    <section class="lv-sec" aria-labelledby="lvHow"><h2 id="lvHow">Как это проходит</h2>
