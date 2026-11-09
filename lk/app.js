@@ -262,7 +262,7 @@ function renderMe(){
   $('#meAv').textContent=initials(); $('#meName').textContent=P.name||'Студент';
   $('#meSince').textContent=(group()?'Группа '+group():'Группа не выбрана')+(P.created?' · в кабинете с '+fmtDate(P.created):'');
   $('#kvN').textContent=P.name||'Указать'; $('#kvG').textContent=group()||'Выбрать'; $('#kvV').textContent=variant()||'Выбрать';
-  $('#meStats').innerHTML=[[nd,'сдач отмечено'],[np,'шагов к РК'],[s.rep,plural(s.rep,'задача','задачи','задач')+' в повторении'],[s.lessons,plural(s.lessons,'урок','урока','уроков')+' пройдено'],[s.ex.length,'пробных РК'],[s.sheets,plural(s.sheets,'чертёж','чертежа','чертежей')]]
+  $('#meStats').innerHTML=[[nd,'сдач отмечено'],[np,'шагов к РК'],[s.rep,plural(s.rep,'задача','задачи','задач')+' в повторении'],[s.lessons,plural(s.lessons,'урок','урока','уроков')+' пройдено'],[s.ex.length,'пробных РК']]
     .map(a=>'<div><b>'+a[0]+'</b><small>'+a[1]+'</small></div>').join('');
   const bk=LKS.get('lk_backup_at',0);
   $('#saveP').innerHTML='Всё, что ты делаешь в кабинете и на сайте, хранится в этом браузере ('+LKS.sizeKB()+' КБ). Скачай копию — и перенеси прогресс на другой телефон или ноутбук.'+(bk?' Последняя копия — '+fmtDate(bk)+'.':'');
@@ -420,8 +420,8 @@ $('#obGl').addEventListener('click',e=>{ const b=e.target.closest('[data-pick]')
 $('#obV').addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; OB.d.variant=+b.getAttribute('data-v'); $('#obV').innerHTML=vHTML(OB.d.variant); $('#obNext').textContent='Дальше · вариант '+OB.d.variant; });
 
 /* ═══ Вкладки ═══ */
-/* сканер спрятан, пока доводим: вкладка видна по ссылке #scan, с кодом сканера (владелец, пульт) или с lk_scan_on */
-if(/^#scan/.test(location.hash)||LKS.raw('scanCode')||LKS.raw('lk_scan_on')) $('.tab[data-tab="check"]').hidden=false;
+/* сканер спрятан, пока доводим: вкладка видна только в пульте владельца (кабинет во фрейме), по ссылке #scan или с lk_scan_on (тесты) */
+{ let fr=false; try{ fr=window.top!==window; }catch(e){ fr=true; } if(fr||/^#scan/.test(location.hash)||LKS.raw('lk_scan_on')) $('.tab[data-tab="check"]').hidden=false; }
 function goTab(id){ const t=$('.tab[data-tab="'+id+'"]'); if(t) t.click(); }
 $$('.tab').forEach(t=>t.addEventListener('click',()=>{
   const id=t.getAttribute('data-tab');
