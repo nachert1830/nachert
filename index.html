@@ -122,6 +122,63 @@
 :root[data-theme=dark] .ai-k{background:var(--surf3);border-color:var(--line2);box-shadow:none;color:#7cb7ff}
 :root[data-theme=dark] .ai-cb,:root[data-theme=dark] .ai-steps li::before{background:#1668dc}
 @media(min-width:700px){.ai-card{align-items:center}.ai-ct{display:flex;align-items:center;gap:16px}.ai-ct>div{flex:1}.ai-cb{margin-top:0}}
+/* #/live/show — режим эфира (LIVESHOW): всегда светлый, крупно, на весь экран поверх сайта */
+body.liveshow{overflow:hidden}
+.ls{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;background:#fff;color:#0e1c33;font-family:var(--sans)}
+.ls-bar{display:flex;align-items:center;gap:18px;height:52px;padding:0 24px;border-bottom:1px solid #dbe4ef;font:600 16px var(--sans);color:#34465f;flex:none}
+.ls-bar b{font:800 16px var(--disp);color:#1a66cc}
+.ls-bar [data-ls-where]{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0e1c33;font-weight:700}
+.ls-tm{font-variant-numeric:tabular-nums;color:#5d6f8a}
+.ls-prog{display:flex;gap:4px;padding:6px 24px 0;flex:none}
+.ls-prog i{flex:1;height:6px;border-radius:3px;background:#e7eff9}
+.ls-prog i.done{background:#9cc0ef}.ls-prog i.now{background:#1a66cc}
+.ls-main{flex:1;min-height:0;overflow:auto;padding:28px 48px 90px}
+.ls-c{max-width:1500px;margin:0 auto}
+.ls-kick{margin:0 0 10px;font:800 15px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#1a66cc}
+.ls h1{margin:0 0 14px;font:900 clamp(40px,5.2vw,84px)/1 var(--disp);letter-spacing:-.03em;color:#0e1c33}
+.ls h2{margin:0 0 18px;font:800 clamp(28px,3vw,46px)/1.1 var(--disp);color:#0e1c33}
+.ls-lead{margin:0 0 22px;font:500 clamp(20px,1.9vw,30px)/1.4 var(--sans);color:#34465f;max-width:52ch}
+.ls-lead b,.ls-idea b{color:#0e1c33;background:linear-gradient(transparent 60%,#ffe69a 60%)}
+.ls-idea{margin:0;font:500 clamp(24px,2.3vw,38px)/1.45 var(--sans);max-width:46ch}
+.ls-map{list-style:none;margin:0 0 20px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ls-map li{display:flex;gap:14px;align-items:center;padding:14px 18px;border:2px solid #dbe4ef;border-radius:16px}
+.ls-map b,.ls-steps b,.ls-opts b{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#1a66cc;color:#fff;font:800 20px var(--sans)}
+.ls-map span{font:700 clamp(17px,1.4vw,23px)/1.2 var(--sans)}.ls-map small{display:block;font-weight:500;font-size:.78em;color:#5d6f8a;margin-top:2px}
+.ls-paper{font:700 clamp(18px,1.5vw,24px) var(--sans);color:#a15a05}
+.ls-title{display:flex;flex-direction:column;justify-content:center;min-height:60vh}
+.ls-big{font:900 clamp(90px,12vw,200px)/.9 var(--disp);color:#1a66cc}
+.ls-asks{margin-top:10px;padding:18px 22px;border-left:6px solid #ffd666;background:#fffbea;border-radius:0 14px 14px 0;font-size:clamp(18px,1.6vw,26px)}
+.ls-asks p{margin:6px 0 0}
+.ls-steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.ls-steps li{display:flex;gap:18px;align-items:flex-start;padding:14px 18px;border-radius:16px;font:500 clamp(20px,1.9vw,32px)/1.35 var(--sans);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+.ls-steps li.on{opacity:.45;transform:none}.ls-steps li.now{opacity:1;background:#f3f7fc;box-shadow:inset 4px 0 0 #1a66cc}
+.ls-traps{margin:0;padding:0;list-style:none;display:grid;gap:16px}
+.ls-traps li{padding:16px 22px;border-radius:16px;background:#fdeceb;border-left:6px solid #dc2a22;font:500 clamp(20px,1.9vw,30px)/1.4 var(--sans)}
+.ls-q{font:700 clamp(24px,2.4vw,40px)/1.3 var(--sans);margin:0 0 20px;max-width:46ch}
+.ls-opts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1300px}
+.ls-opts li{display:flex;gap:14px;align-items:center;padding:16px 20px;border:2px solid #dbe4ef;border-radius:16px;font:600 clamp(18px,1.7vw,28px)/1.3 var(--sans);transition:opacity .2s}
+.ls-opts li.ok{border-color:#13804e;background:#e6f4ec}.ls-opts li.ok b{background:#13804e}.ls-opts li.dim{opacity:.4}
+.ls-why{margin:20px 0 0;font:500 clamp(18px,1.7vw,28px)/1.45 var(--sans);color:#13804e;max-width:60ch}
+.ls-hint{margin:16px 0 0;font:600 clamp(16px,1.3vw,21px) var(--sans);color:#5d6f8a}
+.ls-draw{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:36px;align-items:start;max-width:none}
+.ls-dw{display:flex;justify-content:center;align-items:flex-start;min-width:0}
+.ls-dw svg{width:100%;height:auto;max-height:calc(100vh - 160px)}
+.ls-task{margin:0 0 6px;font:700 16px var(--sans);color:#5d6f8a}
+.ls-of{margin:0 0 8px;font:800 18px var(--sans);color:#1a66cc}
+.ls-txt{font:500 clamp(19px,1.6vw,28px)/1.45 var(--sans);margin:0}
+.ls-3d{display:inline-block;margin-top:22px;font:700 16px var(--sans);color:#1a66cc}
+.ls-end .ls-after{display:grid;gap:6px;padding:20px 24px;border-radius:18px;background:#ebf3fe;font-size:clamp(19px,1.6vw,26px);max-width:900px;margin-bottom:20px}
+.ls-pen{position:fixed;inset:0;z-index:2;pointer-events:none;touch-action:none}
+.ls.pen .ls-pen{pointer-events:auto;cursor:crosshair}
+.ls.board .ls-main{visibility:hidden}
+.ls-ctl{position:fixed;right:16px;bottom:14px;z-index:3;display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:14px;background:rgba(255,255,255,.94);border:1px solid #dbe4ef;box-shadow:0 8px 24px -12px rgba(7,26,54,.35);opacity:.55;transition:opacity .2s}
+.ls-ctl:hover{opacity:1}
+.ls-ctl button,.ls-ctl a{display:grid;place-items:center;min-width:40px;height:40px;border:0;border-radius:10px;background:none;color:#0e1c33;font:700 20px var(--sans);cursor:pointer;text-decoration:none}
+.ls-ctl button:hover,.ls-ctl a:hover{background:#f3f7fc}.ls-ctl button.on{background:#1a66cc;color:#fff}
+.ls-ctl [data-ls-n]{font:600 13px var(--sans);color:#5d6f8a;min-width:58px;text-align:center}
+.ls-cols{display:flex;gap:4px;padding:0 4px}.ls-cols button{min-width:22px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #c2d1e3}
+.ls-keys{position:fixed;left:24px;bottom:16px;z-index:1;margin:0;font:500 13px var(--sans);color:#9aabc2}
+@media(max-width:900px){.ls-main{padding:18px 16px 110px}.ls-map,.ls-opts{grid-template-columns:1fr}.ls-draw{grid-template-columns:1fr}.ls-keys{display:none}.ls-ctl{left:8px;right:8px;justify-content:center;flex-wrap:wrap}.ls-bar{padding:0 14px;gap:10px}.ls-bar b{display:none}}
 /* #/live — страница онлайн-разборов (viewLive) */
 .lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa:#ffd666;--pa-ink:#14183f;
  background:radial-gradient(70% 55% at 90% 0%,rgba(255,214,102,.3),transparent 60%),linear-gradient(165deg,#0b1030 0%,#1b1f5e 55%,#3a2a8c 100%)}
@@ -27963,6 +28020,7 @@ function teardown(){
   if(typeof PLR!=='undefined'&&PLR&&PLR.destroy){ PLR.destroy(); PLR=null; }
   try{ clearInterval(Qt); }catch(e){}
   document.body.classList.remove('present','inplayer');
+  try{ if(typeof LIVESHOW!=='undefined') LIVESHOW.stop(); }catch(e){}
   try{ const sh=document.getElementById('fxSheet'); if(sh) sh.remove(); }catch(e){}
 }
 function render(r){
@@ -27983,7 +28041,7 @@ function render(r){
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
       case 'about': title=viewAbout(v); break;
-      case 'live': title=viewLive(v); break;
+      case 'live': title=r.tab==='show'?LIVESHOW.view(v):viewLive(v); break;
       case 'me': title=OWNER.view(v,r); break;
       case 'privacy': title=viewDoc(v,'privacy'); break;
       case 'consent': title=viewDoc(v,'consent'); break;
@@ -32571,6 +32629,125 @@ function viewEpure(v){
 }
 
 /* ═════════ О ПРОЕКТЕ ═════════ */
+/* ═════ #/live/show — режим эфира для ведущего: «РК2 за 9 шагов» на весь экран, для демонстрации окна в Телемосте.
+   Слайды строятся из того, что уже есть на сайте: темы RKP.TOPICS (идея, порядок решения каждым способом, ловушки,
+   вопрос) и задачи тетради с пошаговыми чертежами (WB3 + DRAW) — те же, что проверяют tests/. Билеты не показываются.
+   Клавиши: → / пробел — дальше, ← — назад, 1–9 — к шагу, P — перо, C — стереть, B — белая доска, F — полный экран, Esc — выход.
+   На время показа тема сайта — светлая (лучше читается при демонстрации), после выхода возвращается прежняя. ═════ */
+const LIVESHOW=(function(){
+  let S=null;   /* {slides, i, k, pen, board, t0, prevTheme, root, keys, timer} */
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const exOf=T=>{ const e=(T.ex||[]).find(x=>/^#\/ng\/tasks\/\d+$/.test(x[0])); return e?+e[0].split('/').pop():null; };   /* только тетрадь, без билетов */
+  function build(){
+    const TT=(window.RKP&&RKP.TOPICS)||[], MT=(window.RKP&&RKP.MT)||{}, out=[];
+    out.push({kind:'intro'});
+    TT.forEach((T,ti)=>{
+      const top={ti,T};
+      out.push(Object.assign({kind:'title'},top));
+      out.push(Object.assign({kind:'idea'},top));
+      Object.keys(T.m||{}).forEach(mk=>{ const st=T.m[mk]||[]; if(st.length) out.push(Object.assign({kind:'method',mk,mname:(MT[mk]&&MT[mk].s)||mk,steps:st,n:st.length-1},top)); });
+      const n=exOf(T), task=n&&typeof WB3!=='undefined'&&WB3.get(n);
+      if(task){ const parts=task.parts&&task.parts.length?task.parts:[task], P=parts[0], given=(P.given||task.given||[]).slice(), steps=P.steps||[];
+        const all=given.slice(); steps.forEach(s=>all.push(...(s.add||[])));
+        out.push(Object.assign({kind:'draw',tn:n,q:task.q,acc:given.slice(),fit:all,si:0,of:steps.length,step:null},top));
+        let acc=given.slice(); steps.forEach((s,k)=>{ acc=acc.concat(s.add||[]); out.push(Object.assign({kind:'draw',tn:n,q:task.q,acc:acc.slice(),fit:all,si:k+1,of:steps.length,step:s},top)); }); }
+      if((T.traps||[]).length) out.push(Object.assign({kind:'traps'},top));
+      if(T.chk) out.push(Object.assign({kind:'quiz',n:1},top));
+    });
+    out.push({kind:'end'});
+    return out; }
+  const tim=()=>{ const s=Math.floor((Date.now()-S.t0)/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+  function slideHTML(sl,k){
+    const TT=(window.RKP&&RKP.TOPICS)||[];
+    if(sl.kind==='intro') return `<div class="ls-c ls-intro"><p class="ls-kick">Онлайн-разбор · бесплатно</p><h1>РК2 за 9 шагов</h1>
+      <p class="ls-lead">Любая задача билета — один из девяти типов. И почти все решаются одной мыслью: <b>поставить фигуру параллельно плоскости проекций</b> — через горизонталь h и фронталь f, заменой или вращением.</p>
+      <ol class="ls-map">${TT.map((T,i)=>`<li><b>${i+1}</b><span>${esc(T.t)}<small>${esc(T.sub)}</small></span></li>`).join('')}</ol>
+      <p class="ls-paper">✏️ Приготовь листок, карандаш и линейку — чертим вместе</p></div>`;
+    if(sl.kind==='end') return `<div class="ls-c ls-end"><h1>Вопросы?</h1><p class="ls-lead">Пиши в чат или включай микрофон.</p>
+      <div class="ls-after"><b>Сегодня вечером — закрепи сам:</b><span>nachert1830.ru → РК → «РК2 за 9 шагов»: по каждому типу задача с проверкой по шагам</span></div><p class="ls-paper">Удачи на РК! Сайт бесплатный и остаётся бесплатным.</p></div>`;
+    const T=sl.T, head=`<p class="ls-kick">Шаг ${sl.ti+1} из 9 · ${esc(T.t)}</p>`;
+    if(sl.kind==='title') return `<div class="ls-c ls-title"><span class="ls-big">${sl.ti+1}</span><h1>${esc(T.t)}</h1><p class="ls-lead">${esc(T.sub)}</p>
+      <div class="ls-asks"><b>Как звучит задача:</b>${(T.asks||[]).map(a=>`<p>«${esc(a)}»</p>`).join('')}</div></div>`;
+    if(sl.kind==='idea') return `<div class="ls-c">${head}<h2>Идея</h2><p class="ls-idea">${T.idea}</p></div>`;
+    if(sl.kind==='method') return `<div class="ls-c">${head}<h2>Как решать: ${esc(sl.mname)}</h2>
+      <ol class="ls-steps">${sl.steps.map((s,j)=>`<li class="${j<=k?'on':''}${j===k?' now':''}"><b>${j+1}</b><span>${s}</span></li>`).join('')}</ol></div>`;
+    if(sl.kind==='traps') return `<div class="ls-c">${head}<h2>Где ошибаются</h2><ul class="ls-traps">${T.traps.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+    if(sl.kind==='quiz'){ const C=T.chk, L='АБВГДЕ'; return `<div class="ls-c">${head}<h2>Вопрос в чат</h2><p class="ls-q">${C.q}</p>
+      <ol class="ls-opts">${C.o.map((o,j)=>`<li class="${k>=1&&j===C.c?'ok':k>=1?'dim':''}"><b>${L[j]}</b><span>${o}</span></li>`).join('')}</ol>
+      ${k>=1?`<p class="ls-why">${C.e}</p>`:'<p class="ls-hint">Пишите в чат букву — ответ на следующем нажатии</p>'}</div>`; }
+    if(sl.kind==='draw') return `<div class="ls-c ls-draw"><div class="ls-dw" data-ls-dw></div><div class="ls-dt">${head}
+      <p class="ls-task">№ ${sl.tn} из тетради</p>
+      ${sl.si===0?`<h2>Условие</h2><p class="ls-txt">${sl.q}</p><p class="ls-hint">Перечерти данные к себе — дальше строим по шагам</p>`
+        :`<p class="ls-of">Построение · шаг ${sl.si} из ${sl.of}</p><h2>${sl.step.t||''}</h2><p class="ls-txt">${sl.step.d||''}</p>`}
+      <a class="ls-3d" href="#/ng/tasks/${sl.tn}" target="_blank" rel="noopener">Открыть задачу с 3D ↗</a></div></div>`;
+    return ''; }
+  function paint(){ const R=S.root, sl=S.slides[S.i], ti=sl.ti;
+    R.querySelector('[data-ls-main]').innerHTML=slideHTML(sl,S.k);
+    if(sl.kind==='draw'){ const box=R.querySelector('[data-ls-dw]'); try{ box.innerHTML=DRAW.svg({items:sl.acc,fitTo:sl.fit}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); try{ DECLUTTER(svg); }catch(e){} } }catch(e){ box.textContent='Чертёж не построился'; } }
+    R.querySelector('[data-ls-where]').textContent=ti==null?(sl.kind==='intro'?'План эфира':'Финал'):'Шаг '+(ti+1)+' из 9 · '+sl.T.t;
+    R.querySelectorAll('[data-ls-seg]').forEach((g,j)=>{ g.classList.toggle('done',ti!=null?j<ti:sl.kind==='end'); g.classList.toggle('now',j===ti); });
+    R.querySelector('[data-ls-n]').textContent=(S.i+1)+' / '+S.slides.length;
+    clearPen(); }
+  function go(d){ const sl=S.slides[S.i], max=sl.n||0;
+    if(d>0){ if(S.k<max) S.k++; else if(S.i<S.slides.length-1){ S.i++; S.k=0; } }
+    else { if(S.k>0) S.k--; else if(S.i>0){ S.i--; S.k=S.slides[S.i].n||0; } }
+    paint(); }
+  function jump(ti){ const j=S.slides.findIndex(s=>s.kind==='title'&&s.ti===ti); if(j>=0){ S.i=j; S.k=0; paint(); } }
+  /* перо поверх экрана */
+  let cv=null, ctx=null, drawing=false, color='#e5232b';
+  function sizePen(){ if(!cv) return; const r=devicePixelRatio||1; cv.width=innerWidth*r; cv.height=innerHeight*r; ctx=cv.getContext('2d'); ctx.scale(r,r); ctx.lineCap='round'; ctx.lineJoin='round'; }
+  function clearPen(){ if(ctx) ctx.clearRect(0,0,innerWidth,innerHeight); }
+  function setPen(on){ S.pen=on; S.root.classList.toggle('pen',on); S.root.querySelector('[data-ls-pen]').classList.toggle('on',on); }
+  function setBoard(on){ S.board=on; S.root.classList.toggle('board',on); S.root.querySelector('[data-ls-board]').classList.toggle('on',on); if(on) setPen(true); clearPen(); }
+  function fs(){ try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){} }
+  function view(v){
+    stop(); const prevTheme=document.documentElement.dataset.theme||'';
+    try{ if(prevTheme!=='light') applyTheme('light',false); }catch(e){}
+    v.innerHTML=`<div class="ls" data-ls>
+      <header class="ls-bar"><b>Начерт · эфир</b><span data-ls-where></span><span class="ls-tm" data-ls-tm>0:00</span></header>
+      <div class="ls-prog">${Array.from({length:9},(_,j)=>`<i data-ls-seg title="Шаг ${j+1}"></i>`).join('')}</div>
+      <main class="ls-main" data-ls-main></main>
+      <canvas class="ls-pen" data-ls-cv></canvas>
+      <nav class="ls-ctl" aria-label="Управление показом">
+       <button type="button" data-ls-act="prev" title="Назад (←)">‹</button><span data-ls-n></span><button type="button" data-ls-act="next" title="Дальше (→, пробел)">›</button>
+       <button type="button" data-ls-pen data-ls-act="pen" title="Перо (P)">✎</button>
+       <span class="ls-cols">${['#e5232b','#1a66cc','#0e1c33'].map(c=>`<button type="button" data-ls-col="${c}" style="background:${c}" title="Цвет пера"></button>`).join('')}</span>
+       <button type="button" data-ls-act="clear" title="Стереть (C)">⌫</button>
+       <button type="button" data-ls-board data-ls-act="board" title="Белая доска (B)">▢</button>
+       <button type="button" data-ls-act="fs" title="Полный экран (F)">⛶</button>
+       <a href="#/live" title="Выйти (Esc)">✕</a>
+      </nav>
+      <p class="ls-keys">→ дальше · ← назад · 1–9 шаг · P перо · C стереть · B доска · F полный экран</p>
+    </div>`;
+    const root=v.querySelector('[data-ls]');
+    S={slides:build(),i:0,k:0,pen:false,board:false,t0:Date.now(),prevTheme,root};
+    document.body.classList.add('liveshow');
+    cv=root.querySelector('[data-ls-cv]'); sizePen();
+    const pos=e=>[e.clientX,e.clientY];
+    cv.addEventListener('pointerdown',e=>{ if(!S||!S.pen) return; drawing=true; cv.setPointerCapture(e.pointerId); const [x,y]=pos(e); ctx.strokeStyle=color; ctx.lineWidth=e.pointerType==='pen'?3.5:4; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+.1,y+.1); ctx.stroke(); });
+    cv.addEventListener('pointermove',e=>{ if(!drawing) return; const [x,y]=pos(e); ctx.lineTo(x,y); ctx.stroke(); });
+    const up=()=>{ drawing=false; }; cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+    root.addEventListener('click',e=>{ const b=e.target.closest('[data-ls-act],[data-ls-col]'); if(!b) return;
+      if(b.dataset.lsCol){ color=b.dataset.lsCol; setPen(true); return; }
+      const a=b.dataset.lsAct; if(a==='prev') go(-1); else if(a==='next') go(1); else if(a==='pen') setPen(!S.pen); else if(a==='clear') clearPen(); else if(a==='board') setBoard(!S.board); else if(a==='fs') fs(); });
+    S.keys=e=>{ if(e.ctrlKey||e.metaKey||e.altKey) return; const k=e.key;
+      if(k==='ArrowRight'||k===' '||k==='PageDown'){ e.preventDefault(); go(1); }
+      else if(k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); go(-1); }
+      else if(/^[1-9]$/.test(k)) jump(+k-1);
+      else if(k==='p'||k==='P'||k==='з'||k==='З') setPen(!S.pen);
+      else if(k==='c'||k==='C'||k==='с'||k==='С') clearPen();
+      else if(k==='b'||k==='B'||k==='и'||k==='И') setBoard(!S.board);
+      else if(k==='f'||k==='F'||k==='а'||k==='А') fs();
+      else if(k==='Escape'){ if(S.board) setBoard(false); else if(S.pen) setPen(false); else if(!document.fullscreenElement) location.hash='#/live'; } };
+    document.addEventListener('keydown',S.keys); addEventListener('resize',sizePen);
+    S.timer=setInterval(()=>{ const t=root.querySelector('[data-ls-tm]'); if(t) t.textContent=tim(); },1000);
+    paint();
+    return 'Режим эфира';
+  }
+  function stop(){ if(!S) return; document.removeEventListener('keydown',S.keys); removeEventListener('resize',sizePen); clearInterval(S.timer);
+    document.body.classList.remove('liveshow'); try{ if(S.prevTheme&&S.prevTheme!=='light') applyTheme(S.prevTheme,false); }catch(e){} S=null; cv=null; ctx=null; }
+  return {view,stop,_state:()=>S};
+})();
 /* ═════ #/live — бесплатные онлайн-разборы: как записаться, как проходит, план «РК2 за 9 шагов», какие данные и зачем.
    Ссылки на бота и форму — из PROMO (одно место). Сам план эфира — темы RKP.TOPICS (те же 9 типов, что в «РК2 за 9 шагов»);
    билеты не раскрываются — только типы задач и порядок решения. Что настроить владельцу — docs/LIVE.md ═════ */

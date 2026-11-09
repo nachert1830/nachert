@@ -96,7 +96,7 @@ test('вопрос текстом пересылается владельцу; �
 
 test('меню владельца кнопками: добавить эфир (день → время → тема), ссылка, написать, отменить',async()=>{
   const r=rig(), kb=()=>r.last(ADMIN).reply_markup, btn=re=>{ const b=(kb().inline_keyboard||[]).flat().find(x=>re.test(x.text)); assert.ok(b,'нет кнопки '+re); return b.callback_data; };
-  await r.msg(ADMIN,'/start'); assert.ok(kb().keyboard,'внизу — меню владельца'); assert.equal(kb().keyboard[0][1].text,'➕ Добавить эфир');
+  await r.msg(ADMIN,'/start'); assert.ok(kb().keyboard,'внизу — меню владельца'); assert.equal(kb().keyboard[1][1].text,'➕ Добавить эфир');
   await r.msg(ADMIN,'➕ Добавить эфир'); assert.match(r.last(ADMIN).text,/Какой день/);
   await r.tap(ADMIN,btn(/^Сегодня/)); assert.match(r.last(ADMIN).text,/Во сколько/);
   await r.tap(ADMIN,btn(/^20:00$/)); assert.match(r.last(ADMIN).text,/Тема эфира — вт 10\.11 в 20:00/);
@@ -156,4 +156,16 @@ test('расписание из файла: эфир появляется сам
   /* длительность — кнопкой: 1 час → 1,5 → 2 → 1 */
   await bot.onUpdate({callback_query:{id:'q',data:'a:u:10112000',from:{id:ADMIN},message:{chat:{id:ADMIN}}}});
   assert.equal(db.sessions.find(s=>s.id==='10112000').min,90);
+});
+
+test('счётчик: «Сколько придёт», уведомление владельцу о каждой записи и отмене',async()=>{
+  const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2');
+  await r.msg(ADMIN,'👥 Сколько придёт'); assert.match(r.last(ADMIN).text,/вт 10\.11 · 20:00 · РК2 — 0/);
+  await r.msg(11,'/start'); await r.tap(11,'j:10112000');
+  assert.match(r.last(ADMIN).text,/➕ Имя11 записался на вт 10\.11 · 20:00 · РК2\nПридут: 1/);
+  await r.tap(11,'j:10112000'); assert.equal(r.to(ADMIN).filter(x=>/➕/.test(x.body.text)).length,1,'повторное нажатие — без уведомления');
+  await r.msg(12,'/start'); await r.tap(12,'j:10112000'); assert.match(r.last(ADMIN).text,/Придут: 2/);
+  await r.tap(12,'c:10112000'); assert.match(r.last(ADMIN).text,/➖ Имя12 отменил запись.*\nПридут: 1/);
+  await r.msg(ADMIN,'/count'); assert.match(r.last(ADMIN).text,/РК2 — 1 · ⚠️ нет ссылки/);
+  await r.msg(ADMIN,'/start'); assert.equal(r.last(ADMIN).reply_markup.keyboard[0][0].text,'👥 Сколько придёт');
 });
