@@ -18,7 +18,7 @@ const PROMO_BOT='[ИМЯ_БОТА]';            // имя бота без @, н�
 ```
 
 Статистика нажатий (GoatCounter, без cookie): `ev/promo/rk2`, `ev/promo/dz` — кнопка бота на карточке,
-`ev/promo/close` — крестик, `ev/promo/live-bot` — кнопка на `#/live`.
+`ev/promo/live-bot` — кнопка на `#/live`.
 
 ## 1. Бот
 

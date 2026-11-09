@@ -151,7 +151,6 @@
  background:radial-gradient(70% 45% at 88% 6%,color-mix(in srgb,var(--pa) 32%,transparent),transparent 60%),linear-gradient(165deg,#0b1030 0%,#1b1f5e 55%,#3a2a8c 100%);box-shadow:0 22px 40px -24px rgba(40,30,140,.9);transition:opacity .25s,transform .25s}
 .pmn.dz{--pa:#7fe3ff;--pa-ink:#06203a;background:radial-gradient(70% 45% at 88% 6%,rgba(127,227,255,.28),transparent 60%),linear-gradient(165deg,#071a2c 0%,#0f2f5a 55%,#1d4f8c 100%)}
 .pmn::before{content:"";position:absolute;inset:0;z-index:-2;opacity:.75;pointer-events:none;background-image:radial-gradient(1.2px 1.2px at 20% 30%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 70% 18%,#fff 50%,transparent 51%),radial-gradient(1.4px 1.4px at 45% 62%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 85% 55%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 12% 78%,#fff 50%,transparent 51%),radial-gradient(1.2px 1.2px at 60% 40%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 33% 12%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 92% 82%,#fff 50%,transparent 51%)}
-.pmn.out{opacity:0;transform:scale(.97)}
 .pmn-moon{position:absolute;right:16px;top:42px;width:26px;height:26px;border-radius:50%;box-shadow:-7px 4px 0 0 var(--pa);transform:rotate(-20deg);filter:drop-shadow(0 0 8px color-mix(in srgb,var(--pa) 50%,transparent));pointer-events:none}
 .pmn-pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;background:var(--pa);color:var(--pa-ink);font:800 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
 .pmn-pill i{width:7px;height:7px;border-radius:50%;background:#e5232b;animation:pmnP 1.4s ease-in-out infinite}
@@ -165,9 +164,7 @@
 .pmn-sp{flex:1;min-height:12px}
 .pmn p{margin-bottom:0}
 .pmn-b:hover{filter:brightness(1.05)}.pmn-b:active{transform:scale(.97)}
-.pmn-b:focus-visible,.pmn-x:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.pmn-x{position:absolute;top:6px;right:6px;z-index:3;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:#fff;opacity:.75;cursor:pointer}
-.pmn-x:hover{opacity:1;background:rgba(255,255,255,.14)}
+.pmn-b:focus-visible{outline:2px solid #fff;outline-offset:2px}
 :root[data-theme=dark] .pmn{background:radial-gradient(80% 50% at 88% 4%,color-mix(in srgb,var(--pa) 40%,transparent),transparent 62%),radial-gradient(90% 60% at 10% 110%,rgba(122,92,255,.45),transparent 65%),linear-gradient(165deg,#161c52 0%,#262c80 55%,#4a35b0 100%);
  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pa) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(0,0,0,.4),0 18px 50px -18px rgba(110,80,255,.65)}
 :root[data-theme=dark] .pmn.dz{background:radial-gradient(80% 50% at 88% 4%,rgba(127,227,255,.36),transparent 62%),radial-gradient(90% 60% at 10% 110%,rgba(40,140,255,.4),transparent 65%),linear-gradient(165deg,#0b2944 0%,#14427a 55%,#2163a8 100%);box-shadow:inset 0 0 0 1px rgba(127,227,255,.3),inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(0,0,0,.4),0 18px 50px -18px rgba(40,160,255,.55)}
@@ -28318,29 +28315,26 @@ FX.qrSheet=function(url,title,back){
    Стоит в паре верхних карточек вместо РК2; скрыли крестиком — на её месте снова карточка РК2.
    Запись — через бота в Telegram (код бота — server/livebot). PROMO_BOT — имя бота без @: меняется только здесь (его же берёт страница #/live).
    PROMO_RK2_LAST — последний день карточки «РК2 завтра?», дальше — разбор ДЗ (по локальной дате браузера, включительно).
-   Крестик скрывает карточку на 3 дня (localStorage; без него — просто показывается).
-   Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz (бот), ev/promo/close; со страницы #/live — live-bot.
+   Скрыть карточку нельзя (крестика нет) — видна всем посетителям главной.
+   Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz (бот); со страницы #/live — live-bot.
    Как всё устроено и что настроить — docs/LIVE.md. */
 const PROMO=(function(){
   const PROMO_BOT='nachert1830_bot';            /* например nachert_live_bot */
   const botUrl=src=>'https://t.me/'+PROMO_BOT+'?start='+src;
   const ready=/^[A-Za-z]\w{3,31}$/.test(PROMO_BOT);   /* пока имя бота не вписано — карточку не показываем (кнопка вела бы в никуда) */
   const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
-  const KEY='nch2_promo_hide', HIDE_MS=3*864e5;
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
-  function hidden(){ try{ const t=+localStorage.getItem(KEY); return !!t&&Date.now()-t<HIDE_MS; }catch(e){ return false; } }
   function cardHTML(){
-    if(!ready||hidden()) return '';
+    if(!ready) return '';
     const rk=rk2On();
     const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>`;
-    const x=`<button type="button" class="pmn-x" data-promo-hide aria-label="Скрыть"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
-    return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">${x}
+    return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">РК2<span>завтра?</span></h2>
      <p class="pmn-s">Разберём типы задач сегодня в эфире. <b>Бесплатно</b>, можно спрашивать</p>
      <p class="pmn-m">1 час онлайн в Телемосте</p><div class="pmn-sp"></div>
      ${btn('rk2','Я приду →','Записаться на разбор РК2')}</section>`
-    :`<section class="pmn dz" data-promo-card aria-labelledby="pmH">${x}
+    :`<section class="pmn dz" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill">Бесплатно</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">ДЗ 2–3<span>не идёт?</span></h2>
      <p class="pmn-s">Разберём по шагам в эфире. <b>Бесплатно</b>, можно спрашивать</p>
@@ -28348,18 +28342,10 @@ const PROMO=(function(){
      ${btn('dz','Записаться →','Записаться на разбор ДЗ')}</section>`;
   }
   document.addEventListener('click',ev=>{
-    const t=ev.target.closest&&ev.target.closest('[data-promo],[data-promo-hide]'); if(!t) return;
-    if(t.hasAttribute('data-promo-hide')){
-      try{ localStorage.setItem(KEY,String(Date.now())); }catch(e){}
-      HIDE_NOW=true;
-      try{ window.TRACK&&TRACK('promo',{mode:'close'}); }catch(e){}
-      const c=t.closest('[data-promo-card]'); if(c){ c.classList.add('out'); setTimeout(()=>{ const m=c.parentNode; if(m&&m.id==='rkHome'&&typeof homeCards==='function') m.innerHTML=homeCards(); else c.remove(); },260); }
-      return;
-    }
+    const t=ev.target.closest&&ev.target.closest('[data-promo]'); if(!t) return;
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
-  let HIDE_NOW=false;   /* без localStorage скрытие держится до перезагрузки страницы */
-  return {cardHTML:()=>HIDE_NOW?'':cardHTML(),rk2On,botUrl,ready:()=>ready};
+  return {cardHTML,rk2On,botUrl,ready:()=>ready};
 })();
 const A2HS=(function(){
   let BIP=null;
