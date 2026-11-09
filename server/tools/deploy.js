@@ -218,6 +218,8 @@ async function main(){
   step('База данных YDB (serverless, Россия)');
   let db=get(['ydb','database','get','--name',NAMES.db]);
   if(!db){ say('  создаю базу — это займёт пару минут'); db=yc(['ydb','database','create','--name',NAMES.db,'--serverless']); }
+  /* остановленную базу (вручную или после паузы платёжного аккаунта) — запустить */
+  if(db.status==='STOPPED'){ say('  база остановлена — запускаю'); try{ yc(['ydb','database','start','--name',NAMES.db]); }catch(e){ throw new Error('База остановлена и не запускается: '+String(e.message||e).slice(0,300)+'. Проверьте баланс платёжного аккаунта Yandex Cloud.'); } db=yc(['ydb','database','get','--name',NAMES.db]); }
   for(let i=0;i<60&&db.status!=='RUNNING';i++){ await sleep(5000); db=yc(['ydb','database','get','--name',NAMES.db]); }
   if(db.status!=='RUNNING') throw new Error('База не запустилась: статус '+db.status);
   const endpoint=db.document_api_endpoint; say('  готово');
