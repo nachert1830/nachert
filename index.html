@@ -158,9 +158,9 @@
 @keyframes pmnP{0%,100%{box-shadow:0 0 0 0 rgba(229,35,43,.7)}50%{box-shadow:0 0 0 5px rgba(229,35,43,0)}}
 .pmn-t{margin:10px 0 0;font:900 33px/.92 var(--disp);letter-spacing:-.03em;text-transform:uppercase;color:#fff}
 .pmn-t span{display:block;color:var(--pa)}
-.pmn-s{margin-top:9px;font:600 12.5px/1.32 var(--sans);opacity:.95}
+.pmn-s{margin-top:10px;font:600 14.5px/1.3 var(--sans);opacity:.97}
 .pmn-s b{color:var(--pa);font-weight:800}
-.pmn-m{margin-top:7px;font:600 11.5px/1.3 var(--sans);opacity:.78}
+.pmn-m{margin-top:8px;font:700 13px/1.3 var(--sans);opacity:.88}
 .pmn-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:auto;border-radius:12px;background:var(--pa);color:var(--pa-ink)!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.25),0 0 24px -6px color-mix(in srgb,var(--pa) 60%,transparent);-webkit-tap-highlight-color:transparent}
 .pmn-sp{flex:1;min-height:12px}
 .pmn p{margin-bottom:0}
@@ -175,7 +175,7 @@
 @media(prefers-reduced-motion:reduce){.pmn-pill i{animation:none}}
 @media(max-width:759px){.pmn.dz .pmn-moon{display:none}}
 @media(max-width:360px){.pmn{padding:12px 11px}.pmn-t{font-size:28px}}
-@media(min-width:760px){.pmn{min-height:236px;padding:20px 22px 18px}.pmn-t{font-size:58px}.pmn-s{font-size:14.5px;max-width:34ch}.pmn-m{font-size:13px}.pmn-b{width:auto;padding:0 22px}.pmn-moon{right:26px;top:44px;width:34px;height:34px;box-shadow:-9px 5px 0 0 var(--pa)}}
+@media(min-width:760px){.pmn{min-height:236px;padding:20px 22px 18px}.pmn-t{font-size:58px}.pmn-s{font-size:18px;max-width:30ch}.pmn-m{font-size:15px}.pmn-b{width:auto;padding:0 22px}.pmn-moon{right:26px;top:44px;width:34px;height:34px;box-shadow:-9px 5px 0 0 var(--pa)}}
 
 /* ── главная: популярность и «поделиться» ── */
 .hpop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin:0 0 var(--s4);padding:12px 14px;border-radius:18px;background:linear-gradient(120deg,color-mix(in srgb,var(--blue) 10%,var(--surf)),var(--surf));border:1px solid var(--line)}
@@ -28338,13 +28338,13 @@ const PROMO=(function(){
      <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">РК2<span>завтра?</span></h2>
      <p class="pmn-s">Разберём типы задач сегодня в эфире. <b>Бесплатно</b>, можно спрашивать</p>
-     <p class="pmn-m">Онлайн в Телемосте · 1,5 часа</p><div class="pmn-sp"></div>
+     <p class="pmn-m">1,5 часа онлайн в Телемосте</p><div class="pmn-sp"></div>
      ${btn('rk2','Я приду →','Записаться на разбор РК2')}</section>`
     :`<section class="pmn dz" data-promo-card aria-labelledby="pmH">${x}
      <span class="pmn-pill">Бесплатно</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">ДЗ 2–3<span>не идёт?</span></h2>
      <p class="pmn-s">Разберём по шагам в эфире. <b>Бесплатно</b>, можно спрашивать</p>
-     <p class="pmn-m">Онлайн в Телемосте · 1,5 часа</p><div class="pmn-sp"></div>
+     <p class="pmn-m">1,5 часа онлайн в Телемосте</p><div class="pmn-sp"></div>
      ${btn('dz','Записаться →','Записаться на разбор ДЗ')}</section>`;
   }
   document.addEventListener('click',ev=>{
