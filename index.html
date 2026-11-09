@@ -32530,7 +32530,7 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 
 
 </script>
-<!-- снег: с 1 декабря по 14 января (посмотреть раньше — ?snow=1, выключить — кнопка «Снег» в подвале или ?snow=0) -->
+<!-- снег: с 1 ноября по 14 января (посмотреть раньше — ?snow=1, выключить — кнопка «Снег» в подвале или ?snow=0) -->
 <style>
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:55;opacity:0;transition:opacity 1.6s ease}
 #snow.on{opacity:1}
@@ -32542,7 +32542,7 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 (function(){
   var KEY='nch2_snow', W=window, D=document;
   function pref(){ try{ var q=/[?&]snow=(1|0)\b/.exec(location.search); if(q){ localStorage.setItem(KEY,q[1]==='1'?'on':'off'); } return localStorage.getItem(KEY); }catch(e){ return null; } }
-  function season(){ var d=new Date(), m=d.getMonth(), day=d.getDate(); return m===11||(m===0&&day<=14); }
+  function season(){ var d=new Date(), m=d.getMonth(), day=d.getDate(); return m===10||m===11||(m===0&&day<=14); }
   var p=pref(), inSeason=season();
   if(!inSeason&&p!=='on') return;
   var calm=W.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
