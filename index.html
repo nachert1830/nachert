@@ -32530,19 +32530,14 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 
 
 </script>
-<!-- снег: с 1 ноября по 14 января (посмотреть раньше — ?snow=1, выключить — кнопка «Снег» в подвале или ?snow=0) -->
+<!-- снег на карточках главной: с 1 ноября по 14 января (посмотреть в другое время — ?snow=1, выключить — кнопка в подвале или ?snow=0) -->
 <style>
-#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:-1;/* только фон: под карточками и текстом */opacity:0;transition:opacity 1.6s ease}
-#snow.on{opacity:1}
 #foot .snow-tg{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0;border:0;background:none;font:inherit;color:var(--blue-ink);font-weight:600;cursor:pointer}
 #foot .snow-tg:hover{text-decoration:underline}
 /* снег лежит на верхнем крае карточек главной, как на крыше */
 .snowcap{position:absolute;pointer-events:none;z-index:3}
 .snowcap svg{display:block;width:100%;height:100%;overflow:visible}
-.snowcap .sp{animation:snowSp 3.4s ease-in-out infinite}
-@keyframes snowSp{0%,100%{opacity:.15}50%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.snowcap .sp{animation:none;opacity:.7}}
-@media print{#snow,.snowcap{display:none}}
+@media print{.snowcap{display:none}}
 </style>
 <script>
 (function(){
@@ -32551,90 +32546,64 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
   function season(){ var d=new Date(), m=d.getMonth(), day=d.getDate(); return m===10||m===11||(m===0&&day<=14); }
   var p=pref(), inSeason=season();
   if(!inSeason&&p!=='on') return;
-  var calm=W.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-
-  var cv=null, g=null, raf=0, flakes=[], w=0, h=0, dpr=1, last=0, t0=0, wind=0, windT=0, sprite=null, spriteDark=null;
-
-  /* мягкая снежинка: размытый круг, рисуем один раз и штампуем */
-  function mkSprite(core,edge){ var s=64, c=D.createElement('canvas'); c.width=c.height=s; var x=c.getContext('2d'),
-      gr=x.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
-    gr.addColorStop(0,'rgba('+core+',1)'); gr.addColorStop(.4,'rgba('+core+',.9)'); gr.addColorStop(.7,'rgba('+edge+',.35)'); gr.addColorStop(1,'rgba('+edge+',0)');
-    x.fillStyle=gr; x.beginPath(); x.arc(s/2,s/2,s/2,0,7); x.fill(); return c; }
-
-  function flake(top){ var z=Math.random(); z=z*z; /* больше дальних — маленьких и медленных */
-    return { x:Math.random()*w, y:top?Math.random()*h:-10-Math.random()*40,
-      r:.9+z*3.2, vy:12+z*34, a:.3+z*.45, ph:Math.random()*6.28, sw:.4+Math.random()*1.1, amp:6+z*18, z:z }; }
-
-  function size(){ dpr=Math.min(W.devicePixelRatio||1,1.5); w=W.innerWidth; h=W.innerHeight;
-    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); g.setTransform(dpr,0,0,dpr,0,0);
-    var n=Math.round(Math.min(90,Math.max(24,w*h/14000)));
-    while(flakes.length<n) flakes.push(flake(true)); flakes.length=n; }
-
-  function frame(now){ raf=W.requestAnimationFrame(frame);
-    var dt=Math.min(.05,(now-(last||now))/1000); last=now; var t=(now-t0)/1000;
-    /* ветер — редкие плавные порывы */
-    if(now>windT){ windT=now+4000+Math.random()*7000; wind=(Math.random()-.5)*26; }
-    var dark=D.documentElement.dataset.theme==='dark', sp=dark?spriteDark:sprite;
-    g.clearRect(0,0,w,h);
-    for(var i=0;i<flakes.length;i++){ var f=flakes[i];
-      f.y+=f.vy*dt; f.x+=wind*(.3+f.z)*dt;
-      var x=f.x+Math.sin(t*f.sw+f.ph)*f.amp;
-      if(f.y>h+10){ flakes[i]=flake(false); continue; }
-      if(x<-20) f.x+=w+40; else if(x>w+20) f.x-=w+40;
-      var d=f.r*2.4; g.globalAlpha=dark?f.a:Math.min(1,f.a*1.15); g.drawImage(sp,x-d/2,f.y-d/2,d,d); }
-    g.globalAlpha=1; }
-
-  function start(){ if(raf||!cv) return; last=0; raf=W.requestAnimationFrame(frame); }
-  function stop(){ if(raf) W.cancelAnimationFrame(raf); raf=0; }
-
-  function on(){ if(cv) return;
-    cv=D.createElement('canvas'); cv.id='snow'; cv.setAttribute('aria-hidden','true'); g=cv.getContext('2d');
-    if(!g){ cv=null; return; }
-    sprite=sprite||mkSprite('255,255,255','120,150,195'); spriteDark=spriteDark||mkSprite('255,255,255','255,255,255');
-    D.body.appendChild(cv); size(); t0=performance.now(); start(); caps(true);
-    W.requestAnimationFrame(function(){ cv&&cv.classList.add('on'); }); }
-  function off(){ caps(false); if(!cv) return; stop(); cv.remove(); cv=null; flakes=[]; }
+  var shown=false;
+  function on(){ if(shown) return; shown=true; caps(true); }
+  function off(){ if(!shown) return; shown=false; caps(false); }
 
   /* шапки снега: объёмный сугроб лежит на верхнем крае карточки и свисает вниз.
      Рисуем не внутри карточки (у неё overflow:hidden), а рядом, в её родителе — поверх края. */
-  var CAP='.hc,.v9-hero', mo=null, ro=null, list=[], uid=0, E=14;
+  var CAP='.hc,.v9-hero', mo=null, ro=null, list=[], uid=0, E=13;
   function rnd(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
   /* гладкая кривая через точки (Catmull-Rom → Безье) */
   function curve(P){ var d='';
     for(var i=0;i<P.length-1;i++){ var p0=P[i-1]||P[i], p1=P[i], p2=P[i+1], p3=P[i+2]||p2;
       d+='C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+' '+(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '+(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+' '+(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1); }
     return d; }
-  function capSvg(W,R,seed){ var r=rnd(seed), id='sc'+(++uid), H=E+26, x, i;
+  function capSvg(W,R,seed){ var r=rnd(seed), id='sc'+(++uid), H=E+30, x, i, k;
     var corner=function(x){ var d=x<R?R-x:(x>W-R?x-(W-R):0); return d?R-Math.sqrt(Math.max(0,R*R-d*d)):0; };
-    /* бугры сверху: несколько «комьев» разной ширины + мелкая рябь */
-    var lumps=[], n=Math.max(4,Math.round(W/70));
-    for(i=0;i<n;i++) lumps.push([r()*W, 22+r()*50, 2+r()*5]);
-    var h=function(x){ var v=3.5+Math.sin(x*.09+seed)*.8; for(var k=0;k<lumps.length;k++){ var L=lumps[k], q=(x-L[0])/L[1]; v+=L[2]*Math.exp(-q*q); } return v; };
-    var drips=[], nd=Math.max(2,Math.round(W/90));
-    for(i=0;i<nd;i++) drips.push([R+8+r()*(W-2*R-16), 3+r()*5, 4+r()*9]);
-    var hang=function(x){ var v=3+Math.sin(x*.13+seed*2)*1.2; for(var k=0;k<drips.length;k++){ var D2=drips[k], q=(x-D2[0])/D2[1]; v+=D2[2]*Math.exp(-q*q*q*q); } return v; };
-    var x0=R*.18, x1=W-R*.18, step=Math.max(6,W/90), top=[], bot=[];
-    for(x=x0;x<=x1+.1;x+=step){ var xx=Math.min(x,x1), c=corner(xx), t=Math.min(1,Math.min(xx-x0,x1-xx)/(R*.9+6));
-      top.push([xx, E+c-h(xx)*(.25+.75*t)]); bot.push([xx, E+c+hang(xx)*(.35+.65*t)]); }
+    /* рельеф верха в три масштаба: крупные наносы, комья, крупка — как настоящий наст */
+    var G=[]; function add(n,w0,w1,h0,h1){ for(var q=0;q<n;q++) G.push([r()*W, w0+r()*(w1-w0), h0+r()*(h1-h0)]); }
+    add(Math.max(3,W/90),40,110,2.5,6); add(Math.max(6,W/22),9,22,1,3); add(Math.max(12,W/8),3,6,.3,.9);
+    var h=function(x){ var v=4; for(k=0;k<G.length;k++){ var L=G[k], q=(x-L[0])/L[1]; if(q>-3&&q<3) v+=L[2]*Math.exp(-q*q); } return v; };
+    /* нависающий край: мягкие провисания */
+    var S=[]; for(i=0;i<Math.max(3,W/40);i++) S.push([r()*W, 6+r()*16, 1+r()*3.5]);
+    var hang=function(x){ var v=2.2; for(k=0;k<S.length;k++){ var L=S[k], q=(x-L[0])/L[1]; v+=L[2]*Math.exp(-q*q); } return v; };
+    var x0=R*.15, x1=W-R*.15, step=3, top=[], bot=[];
+    for(x=x0;x<=x1+.1;x+=step){ var xx=Math.min(x,x1), c=corner(xx), t=Math.min(1,Math.min(xx-x0,x1-xx)/(R*.8+6)), tt=t*t*(3-2*t);
+      top.push([xx, E+c-h(xx)*(.2+.8*tt)]); bot.push([xx, E+c+hang(xx)*(.3+.7*tt)]); }
     bot.reverse();
     var d='M'+top[0][0].toFixed(1)+' '+top[0][1].toFixed(1)+curve(top)+'L'+bot[0][0].toFixed(1)+' '+bot[0][1].toFixed(1)+curve(bot)+'Z';
-    var rim='M'+top[0][0].toFixed(1)+' '+(top[0][1]+1).toFixed(1)+curve(top.map(function(p){ return [p[0],p[1]+1.2]; }));
-    var sp=''; for(i=0;i<Math.round(W/45);i++){ var sx=x0+r()*(x1-x0), sy=E+corner(sx)-h(sx)*.6+r()*6;
-      sp+='<circle class="sp" cx="'+sx.toFixed(1)+'" cy="'+sy.toFixed(1)+'" r="'+(.5+r()*.8).toFixed(2)+'" fill="#fff" style="animation-delay:-'+(r()*3.4).toFixed(2)+'s"/>'; }
+    /* сосульки: прозрачный лёд, тонкие, разной длины, кучками */
+    var ice='', ni=Math.max(2,Math.round(W/70));
+    for(i=0;i<ni;i++){ var cx=R+6+r()*(W-2*R-12), grp=1+Math.floor(r()*3);
+      for(k=0;k<grp;k++){ var ix=cx+(k-grp/2)*(4+r()*3), y0=E+hang(ix)-1, L=4+r()*(k===0?14:8), w=1.6+r()*2.2;
+        ice+='M'+(ix-w).toFixed(1)+' '+y0.toFixed(1)+'Q'+(ix-w*.5).toFixed(1)+' '+(y0+L*.55).toFixed(1)+' '+(ix+(r()-.5)).toFixed(1)+' '+(y0+L).toFixed(1)+'Q'+(ix+w*.5).toFixed(1)+' '+(y0+L*.55).toFixed(1)+' '+(ix+w).toFixed(1)+' '+y0.toFixed(1)+'Z'; } }
+    /* крошки снега на карточке под краем */
+    var crumbs=''; for(i=0;i<Math.round(W/50);i++){ var cx2=R+r()*(W-2*R); crumbs+='<ellipse cx="'+cx2.toFixed(1)+'" cy="'+(E+hang(cx2)+2+r()*6).toFixed(1)+'" rx="'+(.5+r()*1.1).toFixed(2)+'" ry="'+(.4+r()*.7).toFixed(2)+'"/>'; }
+    var f=id+'f';
     return '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" aria-hidden="true"><defs>'+
-      '<linearGradient id="'+id+'g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".42" stop-color="#f6f9ff"/><stop offset=".62" stop-color="#dde7f5"/><stop offset="1" stop-color="#a9bcd8"/></linearGradient>'+
-      '<filter id="'+id+'n" x="-2%" y="-20%" width="104%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="'+(seed%97)+'" result="t"/>'+
-      '<feColorMatrix in="t" type="matrix" values="0 0 0 0 .62 0 0 0 0 .7 0 0 0 0 .86 0 0 0 -2.2 1.25" result="g"/><feComposite in="g" in2="SourceAlpha" operator="in" result="gi"/>'+
-      '<feGaussianBlur in="SourceAlpha" stdDeviation="1.6" result="b"/><feComposite in="SourceAlpha" in2="b" operator="arithmetic" k2="1" k3="-1" result="edge"/>'+
-      '<feFlood flood-color="#fff" flood-opacity=".9"/><feComposite in2="edge" operator="in" result="glow"/>'+
-      '<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="gi"/><feMergeNode in="glow"/></feMerge></filter>'+
-      '<filter id="'+id+'s" x="-5%" y="-50%" width="110%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter></defs>'+
-      '<path d="'+d+'" fill="rgba(6,18,48,.38)" transform="translate(0 2.5)" filter="url(#'+id+'s)"/>'+
-      '<path d="'+d+'" fill="url(#'+id+'g)" filter="url(#'+id+'n)"/>'+
-      '<path d="'+rim+'" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".95"/>'+sp+'</svg>'; }
+      '<linearGradient id="'+id+'g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfeff"/><stop offset=".45" stop-color="#f3f7fd"/><stop offset=".7" stop-color="#dfe8f4"/><stop offset="1" stop-color="#b8c9e0"/></linearGradient>'+
+      '<linearGradient id="'+id+'i" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef5ff" stop-opacity=".95"/><stop offset=".5" stop-color="#d2e4fb" stop-opacity=".7"/><stop offset="1" stop-color="#bcd6f7" stop-opacity=".25"/></linearGradient>'+
+      /* объём: высота = размытая форма + шум, освещение сверху-слева; блеск — точечные блики */
+      '<filter id="'+f+'" x="-2%" y="-30%" width="104%" height="160%" color-interpolation-filters="sRGB">'+
+        '<feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="hb"/>'+
+        '<feTurbulence type="fractalNoise" baseFrequency=".45" numOctaves="3" seed="'+(seed%89)+'" result="tn"/>'+
+        '<feComposite in="tn" in2="hb" operator="arithmetic" k2=".07" k3="1" result="hm"/>'+
+        '<feDiffuseLighting in="hm" surfaceScale="2" diffuseConstant="1.3" lighting-color="#fff" result="lit"><feDistantLight azimuth="235" elevation="68"/></feDiffuseLighting>'+
+        '<feComposite in="lit" in2="SourceGraphic" operator="arithmetic" k1=".6" k3=".42" result="sh"/>'+
+        '<feTurbulence type="fractalNoise" baseFrequency="2.2" numOctaves="1" seed="'+(seed%71+3)+'" result="gn"/>'+
+        '<feSpecularLighting in="gn" surfaceScale="2" specularConstant="1.1" specularExponent="38" lighting-color="#fff" result="spk"><feDistantLight azimuth="235" elevation="62"/></feSpecularLighting>'+
+        '<feComposite in="spk" in2="SourceAlpha" operator="in" result="spk2"/>'+
+        '<feComposite in="sh" in2="spk2" operator="arithmetic" k2="1" k3=".3" result="m"/>'+
+        '<feComposite in="m" in2="SourceAlpha" operator="in"/></filter>'+
+      '<filter id="'+id+'s" x="-5%" y="-50%" width="110%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>'+
+      '<path d="'+d+'" fill="rgba(6,18,48,.34)" transform="translate(0 3)" filter="url(#'+id+'s)"/>'+
+      (ice?'<path d="'+ice+'" fill="url(#'+id+'i)" stroke="rgba(255,255,255,.7)" stroke-width=".5"/>':'')+
+      '<path d="'+d+'" fill="url(#'+id+'g)" filter="url(#'+f+')"/>'+
+      '<g fill="#f4f8ff" opacity=".9">'+crumbs+'</g></svg>'; }
   function layout(){ list=list.filter(function(o){ if(o.el.isConnected) return true; o.cap.remove(); return false; });
     list.forEach(function(o){ var el=o.el, W=Math.round(el.offsetWidth); if(!W) return;
-      o.cap.style.left=el.offsetLeft+'px'; o.cap.style.top=(el.offsetTop-E)+'px'; o.cap.style.width=W+'px'; o.cap.style.height=(E+26)+'px';
+      o.cap.style.left=el.offsetLeft+'px'; o.cap.style.top=(el.offsetTop-E)+'px'; o.cap.style.width=W+'px'; o.cap.style.height=(E+30)+'px';
       if(o.w!==W){ o.w=W; o.cap.innerHTML=capSvg(W,parseFloat(getComputedStyle(el).borderTopLeftRadius)||20,o.seed); } }); }
   function caps(add){ var v=D.getElementById('view'); if(!v) return;
     if(!add){ if(mo){ mo.disconnect(); mo=null; } if(ro){ ro.disconnect(); ro=null; } list.forEach(function(o){ o.cap.remove(); }); list=[]; return; }
@@ -32648,10 +32617,8 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
     put(); if(!mo){ mo=new MutationObserver(put); mo.observe(v,{childList:true,subtree:true}); }
     W.addEventListener('resize',layout); }
 
-  W.addEventListener('resize',function(){ if(cv) size(); });
-  D.addEventListener('visibilitychange',function(){ if(D.hidden) stop(); else start(); });
 
-  var enabled=calm?p==='on':p!=='off'; /* «меньше движения» в системе — снег только по кнопке */
+  var enabled=p!=='off';
   function btn(){ var r=D.querySelector('#foot .foot-r'); if(!r) return;
     var b=D.createElement('button'); b.type='button'; b.className='snow-tg';
     var set=function(){ b.textContent=enabled?'❄ Выключить снег':'❄ Включить снег'; b.setAttribute('aria-pressed',enabled?'true':'false'); };
