@@ -1,0 +1,20 @@
+# systemd: бот записи на эфиры (docs/LIVE.md, раздел 2). Токен и ID владельца — в /etc/livebot.env (chmod 600).
+[Unit]
+Description=Nachert live bot (запись на онлайн-разборы)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=livebot
+EnvironmentFile=/etc/livebot.env
+ExecStart=/usr/bin/node /opt/livebot/nachert/server/livebot/run.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/livebot/data
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

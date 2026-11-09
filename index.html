@@ -122,6 +122,29 @@
 :root[data-theme=dark] .ai-k{background:var(--surf3);border-color:var(--line2);box-shadow:none;color:#7cb7ff}
 :root[data-theme=dark] .ai-cb,:root[data-theme=dark] .ai-steps li::before{background:#1668dc}
 @media(min-width:700px){.ai-card{align-items:center}.ai-ct{display:flex;align-items:center;gap:16px}.ai-ct>div{flex:1}.ai-cb{margin-top:0}}
+/* #/live — страница онлайн-разборов (viewLive) */
+.lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa:#ffd666;--pa-ink:#14183f;
+ background:radial-gradient(70% 55% at 90% 0%,rgba(255,214,102,.3),transparent 60%),linear-gradient(165deg,#0b1030 0%,#1b1f5e 55%,#3a2a8c 100%)}
+:root[data-theme=dark] .lv-hero{background:radial-gradient(80% 55% at 90% 0%,rgba(255,214,102,.36),transparent 62%),linear-gradient(165deg,#161c52 0%,#262c80 55%,#4a35b0 100%);box-shadow:inset 0 0 0 1px rgba(255,214,102,.28)}
+.lv-hero h1{margin:12px 0 8px;font:900 30px/1.02 var(--disp);letter-spacing:-.03em;color:#fff}
+.lv-hero>p{margin:0;font:600 15px/1.4 var(--sans);opacity:.94;max-width:46ch}
+.lv-acts{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin-top:16px;max-width:360px}
+.lv-form{display:flex;align-items:center;justify-content:center;min-height:40px;color:#fff!important;font:600 13px var(--sans);text-decoration:underline!important;text-underline-offset:3px;opacity:.85}
+.lv-sec{margin:0 0 24px}
+.lv-sec h2{margin:0 0 12px;font:800 21px/1.2 var(--disp);color:var(--ink)}
+.lv-sub{color:var(--mut);font-size:14px;line-height:1.5;margin:0 0 12px}
+.lv-steps,.lv-plan{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.lv-steps li{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surf)}
+.lv-steps b,.lv-plan b{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--acc);color:var(--on-acc);font:800 14px var(--sans)}
+.lv-steps strong{display:block;color:var(--ink);font-size:15px}
+.lv-steps span{display:block;margin-top:3px;color:var(--ink2);font-size:14px;line-height:1.45}
+.lv-need{margin:12px 0 0;color:var(--ink2);font-size:14px}
+.lv-plan a{display:flex;gap:12px;align-items:center;min-height:52px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surf);text-decoration:none!important}
+.lv-plan a:hover{border-color:var(--line2);background:var(--surf2)}
+.lv-plan strong{display:block;color:var(--ink);font-size:15px}
+.lv-plan small{display:block;color:var(--mut);font-size:13px;margin-top:1px}
+.lv-data p{color:var(--ink2);font-size:14px;line-height:1.55;margin:0 0 10px;max-width:70ch}
+@media(min-width:760px){.lv-hero{padding:34px 34px 28px}.lv-hero h1{font-size:48px}.lv-acts{flex-direction:row;align-items:center;max-width:none;gap:16px}.lv-acts .pmn-b{width:auto;padding:0 22px}.lv-plan{grid-template-columns:1fr 1fr}}
 /* карточка-анонс онлайн-занятий (PROMO) — в паре верхних карточек главной вместо РК2: «ночная», луна и звёзды.
    До 13.11 — «РК2 завтра?» (жёлтая), с 14.11 — разбор ДЗ (бирюзовая, .dz). В тёмной теме — светлее край и свечение, чтобы не тонуть в фоне */
 .pmn{--pa:#ffd666;--pa-ink:#14183f;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;min-height:212px;padding:14px 14px 13px;border-radius:24px;color:#fff;
@@ -140,6 +163,8 @@
 .pmn-m{margin-top:7px;font:600 11.5px/1.3 var(--sans);opacity:.78}
 .pmn-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:auto;border-radius:12px;background:var(--pa);color:var(--pa-ink)!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.25),0 0 24px -6px color-mix(in srgb,var(--pa) 60%,transparent);-webkit-tap-highlight-color:transparent}
 .pmn-sp{flex:1;min-height:12px}
+.pmn-f{display:flex;align-items:center;justify-content:center;width:100%;min-height:36px;margin-top:4px;color:#fff!important;opacity:.82;font:600 12px var(--sans);text-decoration:underline!important;text-underline-offset:3px;text-decoration-color:rgba(255,255,255,.45)!important}
+.pmn-f:hover{opacity:1}
 .pmn p{margin-bottom:0}
 .pmn-b:hover{filter:brightness(1.05)}.pmn-b:active{transform:scale(.97)}
 .pmn-b:focus-visible,.pmn-x:focus-visible{outline:2px solid #fff;outline-offset:2px}
@@ -152,7 +177,7 @@
 @media(prefers-reduced-motion:reduce){.pmn-pill i{animation:none}}
 @media(max-width:759px){.pmn.dz .pmn-moon{display:none}}
 @media(max-width:360px){.pmn{padding:12px 11px}.pmn-t{font-size:28px}}
-@media(min-width:760px){.pmn{min-height:236px;padding:20px 22px 18px}.pmn-t{font-size:58px}.pmn-s{font-size:14.5px;max-width:34ch}.pmn-m{font-size:13px}.pmn-b{width:auto;padding:0 22px}.pmn-moon{right:26px;top:44px;width:34px;height:34px;box-shadow:-9px 5px 0 0 var(--pa)}}
+@media(min-width:760px){.pmn-f{width:auto;justify-content:flex-start}.pmn{min-height:236px;padding:20px 22px 18px}.pmn-t{font-size:58px}.pmn-s{font-size:14.5px;max-width:34ch}.pmn-m{font-size:13px}.pmn-b{width:auto;padding:0 22px}.pmn-moon{right:26px;top:44px;width:34px;height:34px;box-shadow:-9px 5px 0 0 var(--pa)}}
 
 /* ── главная: популярность и «поделиться» ── */
 .hpop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin:0 0 var(--s4);padding:12px 14px;border-radius:18px;background:linear-gradient(120deg,color-mix(in srgb,var(--blue) 10%,var(--surf)),var(--surf));border:1px solid var(--line)}
@@ -8184,7 +8209,7 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
   </div>
   <section class="ab-legal" id="legal"><h2>Правовая информация</h2>
    <div class="ab-lg">
-    <div><h4>Статус проекта</h4><p>«Начерт» — авторский учебный проект Андрея Матханова. Сайт бесплатный и остаётся бесплатным. Онлайн-занятия, которые ведёт автор, — его отдельная личная деятельность и к сайту не относятся. Название МГТУ им. Н.Э. Баумана на сайте указывает учебные издания, по которым построен курс (список ниже).</p></div>
+    <div><h4>Статус проекта</h4><p>«Начерт» — авторский учебный проект Андрея Матханова. Сайт бесплатный и остаётся бесплатным. <a href="#/live">Онлайн-разборы</a>, которые ведёт автор, — его отдельная личная деятельность и к сайту не относятся. Название МГТУ им. Н.Э. Баумана на сайте указывает учебные издания, по которым построен курс (список ниже).</p></div>
     <div><h4>Что взято из учебных изданий</h4><p>Условия задач рабочей тетради, формулировки домашних заданий и вопросов рубежного контроля, теория и методика — по учебным изданиям МГТУ (список ниже). Они приводятся в учебных целях со ссылкой на источник (ст. 1274 ГК РФ).</p></div>
     <div><h4>Что сделано для сайта</h4><p>Решения, пошаговые построения, чертежи, пояснения, интерактивные модели, оформление и программный код подготовлены для этого сайта. Разборы домашних заданий показывают метод построения.</p></div>
     <div><h4>Правообладателям</h4><p>Если вы считаете, что какой-то материал размещён неправомерно, напишите${CONTACT?` — <a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:' автору проекта'}: материал будет исправлен или удалён.</p></div>
@@ -27890,7 +27915,7 @@ function parseHash(h){
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
   if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
-  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz','rk'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz','rk','live'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -27947,6 +27972,7 @@ function render(r){
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
       case 'about': title=viewAbout(v); break;
+      case 'live': title=viewLive(v); break;
       case 'me': title=OWNER.view(v,r); break;
       case 'privacy': title=viewDoc(v,'privacy'); break;
       case 'consent': title=viewDoc(v,'consent'); break;
@@ -28277,19 +28303,25 @@ FX.qrSheet=function(url,title,back){
    Telegram распознаём по мосту TelegramWebviewProxy: его встраивают в страницу и iOS-, и Android-версия Telegram. */
 /* Карточка на главной: бесплатные онлайн-разборы (отдельная личная деятельность автора, к сайту не относятся).
    Стоит в паре верхних карточек вместо РК2; скрыли крестиком — на её месте снова карточка РК2.
-   PROMO_FORM — ссылка на форму записи (одна для РК2 и ДЗ). PROMO_RK2_LAST — последний день карточки «РК2 завтра?», дальше — разбор ДЗ
-   (по локальной дате браузера, включительно). Крестик скрывает карточку на 3 дня (localStorage; без него — просто показывается).
-   Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz, ev/promo/close. */
+   Запись двумя способами: бот в Telegram (главная кнопка; код бота — server/livebot) и Яндекс Форма (ссылка «или через форму»).
+   PROMO_BOT — имя бота без @, PROMO_FORM — ссылка на форму: меняются только здесь (их же берёт страница #/live).
+   PROMO_RK2_LAST — последний день карточки «РК2 завтра?», дальше — разбор ДЗ (по локальной дате браузера, включительно).
+   Крестик скрывает карточку на 3 дня (localStorage; без него — просто показывается).
+   Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz (бот), ev/promo/form, ev/promo/close; со страницы #/live — live-bot, live-form.
+   Как всё устроено и что настроить — docs/LIVE.md. */
 const PROMO=(function(){
-  const PROMO_FORM='[ССЫЛКА_НА_ФОРМУ]';
+  const PROMO_BOT='[ИМЯ_БОТА]';            /* например nachert_live_bot */
+  const PROMO_FORM='[ССЫЛКА_НА_ФОРМУ]';    /* https://forms.yandex.ru/u/… */
+  const botUrl=src=>'https://t.me/'+PROMO_BOT+'?start='+src;
   const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
   const KEY='nch2_promo_hide', HIDE_MS=3*864e5;
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
   function hidden(){ try{ const t=+localStorage.getItem(KEY); return !!t&&Date.now()-t<HIDE_MS; }catch(e){ return false; } }
   function cardHTML(){
     if(hidden()) return '';
-    const rk=rk2On(), u=attr(PROMO_FORM);
-    const btn=(k,t,l)=>`<a class="pmn-b" href="${u}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l}">${t}</a>`;
+    const rk=rk2On();
+    const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>
+     <a class="pmn-f" href="${attr(PROMO_FORM)}" target="_blank" rel="noopener" data-promo="form">или через форму</a>`;
     const x=`<button type="button" class="pmn-x" data-promo-hide aria-label="Скрыть"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
     return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">${x}
      <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span><span class="pmn-moon" aria-hidden="true"></span>
@@ -28316,7 +28348,7 @@ const PROMO=(function(){
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
   let HIDE_NOW=false;   /* без localStorage скрытие держится до перезагрузки страницы */
-  return {cardHTML:()=>HIDE_NOW?'':cardHTML(),rk2On};
+  return {cardHTML:()=>HIDE_NOW?'':cardHTML(),rk2On,botUrl,form:PROMO_FORM};
 })();
 const A2HS=(function(){
   let BIP=null;
@@ -32540,6 +32572,43 @@ function viewEpure(v){
 }
 
 /* ═════════ О ПРОЕКТЕ ═════════ */
+/* ═════ #/live — бесплатные онлайн-разборы: как записаться, как проходит, план «РК2 за 9 шагов», какие данные и зачем.
+   Ссылки на бота и форму — из PROMO (одно место). Сам план эфира — темы RKP.TOPICS (те же 9 типов, что в «РК2 за 9 шагов»);
+   билеты не раскрываются — только типы задач и порядок решения. Что настроить владельцу — docs/LIVE.md ═════ */
+function viewLive(v){
+  const T=(window.RKP&&RKP.TOPICS)||[];
+  const step=(n,b,s)=>`<li><b>${n}</b><div><strong>${b}</strong>${s?`<span>${s}</span>`:''}</div></li>`;
+  v.innerHTML=`<div class="wrap page lv">
+   <section class="lv-hero" aria-labelledby="lvH">
+    <span class="pmn-pill">Бесплатно</span>
+    <h1 id="lvH">Онлайн-разборы по&nbsp;начерталке</h1>
+    <p>Разбираем типы задач РК2 и ДЗ по шагам, вживую. Чертим вместе — можно спрашивать.</p>
+    <div class="lv-acts">
+     <a class="pmn-b" href="${attr(PROMO.botUrl('live'))}" target="_blank" rel="noopener" data-lv="live-bot">Записаться в Telegram →</a>
+     <a class="lv-form" href="${attr(PROMO.form)}" target="_blank" rel="noopener" data-lv="live-form">Нет Telegram? Записаться через форму</a>
+    </div>
+   </section>
+   <section class="lv-sec" aria-labelledby="lvHow"><h2 id="lvHow">Как это проходит</h2>
+    <ol class="lv-steps">
+     ${step(1,'Записываешься','В Telegram бот покажет ближайшие эфиры — выбираешь кнопкой. Через форму — оставляешь контакт, ссылку пришлём.')}
+     ${step(2,'Получаешь ссылку','Бот напомнит за 2 часа и пришлёт ссылку на Яндекс Телемост за 15 минут. Не пришла — кнопка «Ссылка на эфир» у бота.')}
+     ${step(3,'Чертишь вместе с нами','1,5 часа. Камеру включать не нужно, вопросы — в чат или голосом. Без записи.')}
+    </ol>
+    <p class="lv-need">Приготовь: листок, карандаш, линейку. Можно открыть Начерт на телефоне рядом.</p>
+   </section>
+   ${T.length?`<section class="lv-sec" aria-labelledby="lvPlan"><h2 id="lvPlan">РК2 за 9 шагов — план эфира</h2>
+    <p class="lv-sub">Любая задача билета РК2 — один из девяти типов. На эфире проходим их по порядку: идея в 3D → построение по шагам → где ошибаются.</p>
+    <ol class="lv-plan">${T.map((t,i)=>`<li><a href="${H('ng','rk2','p',t.id)}"><b>${i+1}</b><span><strong>${t.t}</strong><small>${t.sub}</small></span></a></li>`).join('')}</ol>
+   </section>`:''}
+   <section class="lv-sec lv-data" aria-labelledby="lvData"><h2 id="lvData">Какие данные и зачем</h2>
+    <p><b>Бот в Telegram</b> хранит твоё имя в Telegram и номер чата, <b>форма</b> — то, что ты в ней указал (имя и контакт). Только чтобы прислать напоминание и ссылку на эфир; третьим лицам не передаём.</p>
+    <p>Данные удаляются через 30 дней после эфира. Удалить сразу — команда /delete у бота; записался через форму — напиши боту, удалим вручную. От эфиров остаются только числа: сколько записалось и сколько ответили «помогло».</p>
+    <p class="lv-sub">Онлайн-разборы — отдельная личная деятельность автора и к сайту не относятся. Сайт бесплатный и остаётся бесплатным.</p>
+   </section>
+  </div>`;
+  v.querySelectorAll('[data-lv]').forEach(a=>a.addEventListener('click',()=>{ try{ window.TRACK&&TRACK('promo',{mode:a.dataset.lv}); }catch(e){} }));
+  return 'Онлайн-разборы';
+}
 function viewAbout(v){
   v.innerHTML=`<div class="wrap page"><div class="ptop">${crumbHTML([['О проекте']])}</div><div id="w-about"></div></div>`;
   NEXT=null;
