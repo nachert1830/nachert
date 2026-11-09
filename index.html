@@ -124,34 +124,34 @@
 @media(min-width:700px){.ai-card{align-items:center}.ai-ct{display:flex;align-items:center;gap:16px}.ai-ct>div{flex:1}.ai-cb{margin-top:0}}
 /* #/live/show — режим эфира (LIVESHOW): всегда светлый, крупно, на весь экран поверх сайта */
 body.liveshow{overflow:hidden}
-.ls{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;background:#fff;color:#0e1c33;font-family:var(--sans)}
+.ls{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;background:#fff;color:#0a1733;font-family:var(--sans)}
 .ls-bar{display:flex;align-items:center;gap:18px;height:52px;padding:0 24px;border-bottom:1px solid #dbe4ef;font:600 16px var(--sans);color:#34465f;flex:none}
-.ls-bar b{font:800 16px var(--disp);color:#1a66cc}
-.ls-bar [data-ls-where]{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0e1c33;font-weight:700}
+.ls-bar b{font:800 16px var(--disp);color:#1a5ae0}
+.ls-bar [data-ls-where]{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0a1733;font-weight:700}
 .ls-tm{font-variant-numeric:tabular-nums;color:#5d6f8a}
 .ls-prog{display:flex;gap:4px;padding:6px 24px 0;flex:none}
 .ls-prog i{flex:1;height:6px;border-radius:3px;background:#e7eff9}
-.ls-prog i.done{background:#9cc0ef}.ls-prog i.now{background:#1a66cc}
+.ls-prog i.done{background:#9cc0ef}.ls-prog i.now{background:#1a5ae0}
 .ls-main{flex:1;min-height:0;overflow:auto;padding:28px 48px 90px}
 .ls-c{max-width:1500px;margin:0 auto}
-.ls-kick{margin:0 0 10px;font:800 15px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#1a66cc}
-.ls h1{margin:0 0 14px;font:900 clamp(40px,5.2vw,84px)/1 var(--disp);letter-spacing:-.03em;color:#0e1c33}
-.ls h2{margin:0 0 18px;font:800 clamp(28px,3vw,46px)/1.1 var(--disp);color:#0e1c33}
+.ls-kick{margin:0 0 10px;font:800 15px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#1a5ae0}
+.ls h1{margin:0 0 14px;font:900 clamp(40px,5.2vw,84px)/1 var(--disp);letter-spacing:-.03em;color:#0a1733}
+.ls h2{margin:0 0 18px;font:800 clamp(28px,3vw,46px)/1.1 var(--disp);color:#0a1733}
 .ls-lead{margin:0 0 22px;font:500 clamp(20px,1.9vw,30px)/1.4 var(--sans);color:#34465f;max-width:52ch}
-.ls-lead b,.ls-idea b{color:#0e1c33;background:linear-gradient(transparent 60%,#ffe69a 60%)}
+.ls-lead b,.ls-idea b{color:#0a1733;background:linear-gradient(transparent 60%,#ffe69a 60%)}
 .ls-idea{margin:0;font:500 clamp(24px,2.3vw,38px)/1.45 var(--sans);max-width:46ch}
 .ls-map{list-style:none;margin:0 0 20px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .ls-map li{display:flex;gap:14px;align-items:center;padding:14px 18px;border:2px solid #dbe4ef;border-radius:16px}
-.ls-map b,.ls-steps b,.ls-opts b{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#1a66cc;color:#fff;font:800 20px var(--sans)}
+.ls-map b,.ls-steps b,.ls-opts b{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#1a5ae0;color:#fff;font:800 20px var(--sans)}
 .ls-map span{font:700 clamp(17px,1.4vw,23px)/1.2 var(--sans)}.ls-map small{display:block;font-weight:500;font-size:.78em;color:#5d6f8a;margin-top:2px}
-.ls-paper{font:700 clamp(18px,1.5vw,24px) var(--sans);color:#a15a05}
+.ls-paper{font:700 clamp(18px,1.5vw,24px) var(--sans);color:#0a2463}
 .ls-title{display:flex;flex-direction:column;justify-content:center;min-height:60vh}
-.ls-big{font:900 clamp(90px,12vw,200px)/.9 var(--disp);color:#1a66cc}
-.ls-asks{margin-top:10px;padding:18px 22px;border-left:6px solid #ffd666;background:#fffbea;border-radius:0 14px 14px 0;font-size:clamp(18px,1.6vw,26px)}
+.ls-big{font:900 clamp(90px,12vw,200px)/.9 var(--disp);color:#1a5ae0}
+.ls-asks{margin-top:10px;padding:18px 22px;border-left:6px solid #1a5ae0;background:#e9f0ff;border-radius:0 14px 14px 0;font-size:clamp(18px,1.6vw,26px)}
 .ls-asks p{margin:6px 0 0}
 .ls-steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
 .ls-steps li{display:flex;gap:18px;align-items:flex-start;padding:14px 18px;border-radius:16px;font:500 clamp(20px,1.9vw,32px)/1.35 var(--sans);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
-.ls-steps li.on{opacity:.45;transform:none}.ls-steps li.now{opacity:1;background:#f3f7fc;box-shadow:inset 4px 0 0 #1a66cc}
+.ls-steps li.on{opacity:.45;transform:none}.ls-steps li.now{opacity:1;background:#f3f7fc;box-shadow:inset 4px 0 0 #1a5ae0}
 .ls-traps{margin:0;padding:0;list-style:none;display:grid;gap:16px}
 .ls-traps li{padding:16px 22px;border-radius:16px;background:#fdeceb;border-left:6px solid #dc2a22;font:500 clamp(20px,1.9vw,30px)/1.4 var(--sans)}
 .ls-q{font:700 clamp(24px,2.4vw,40px)/1.3 var(--sans);margin:0 0 20px;max-width:46ch}
@@ -164,29 +164,29 @@ body.liveshow{overflow:hidden}
 .ls-dw{display:flex;justify-content:center;align-items:flex-start;min-width:0}
 .ls-dw svg{width:100%;height:auto;max-height:calc(100vh - 160px)}
 .ls-task{margin:0 0 6px;font:700 16px var(--sans);color:#5d6f8a}
-.ls-of{margin:0 0 8px;font:800 18px var(--sans);color:#1a66cc}
+.ls-of{margin:0 0 8px;font:800 18px var(--sans);color:#1a5ae0}
 .ls-txt{font:500 clamp(19px,1.6vw,28px)/1.45 var(--sans);margin:0}
-.ls-3d{display:inline-block;margin-top:22px;font:700 16px var(--sans);color:#1a66cc}
+.ls-3d{display:inline-block;margin-top:22px;font:700 16px var(--sans);color:#1a5ae0}
 .ls-end .ls-after{display:grid;gap:6px;padding:20px 24px;border-radius:18px;background:#ebf3fe;font-size:clamp(19px,1.6vw,26px);max-width:900px;margin-bottom:20px}
 .ls-pen{position:fixed;inset:0;z-index:2;pointer-events:none;touch-action:none}
 .ls.pen .ls-pen{pointer-events:auto;cursor:crosshair}
 .ls.board .ls-main{visibility:hidden}
 .ls-ctl{position:fixed;right:16px;bottom:14px;z-index:3;display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:14px;background:rgba(255,255,255,.94);border:1px solid #dbe4ef;box-shadow:0 8px 24px -12px rgba(7,26,54,.35);opacity:.55;transition:opacity .2s}
 .ls-ctl:hover{opacity:1}
-.ls-ctl button,.ls-ctl a{display:grid;place-items:center;min-width:40px;height:40px;border:0;border-radius:10px;background:none;color:#0e1c33;font:700 20px var(--sans);cursor:pointer;text-decoration:none}
-.ls-ctl button:hover,.ls-ctl a:hover{background:#f3f7fc}.ls-ctl button.on{background:#1a66cc;color:#fff}
+.ls-ctl button,.ls-ctl a{display:grid;place-items:center;min-width:40px;height:40px;border:0;border-radius:10px;background:none;color:#0a1733;font:700 20px var(--sans);cursor:pointer;text-decoration:none}
+.ls-ctl button:hover,.ls-ctl a:hover{background:#f3f7fc}.ls-ctl button.on{background:#1a5ae0;color:#fff}
 .ls-ctl [data-ls-n]{font:600 13px var(--sans);color:#5d6f8a;min-width:58px;text-align:center}
 .ls-cols{display:flex;gap:4px;padding:0 4px}.ls-cols button{min-width:22px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #c2d1e3}
 .ls-keys{position:fixed;left:24px;bottom:16px;z-index:1;margin:0;font:500 13px var(--sans);color:#9aabc2}
 @media(max-width:900px){.ls-main{padding:18px 16px 110px}.ls-map,.ls-opts{grid-template-columns:1fr}.ls-draw{grid-template-columns:1fr}.ls-keys{display:none}.ls-ctl{left:8px;right:8px;justify-content:center;flex-wrap:wrap}.ls-bar{padding:0 14px;gap:10px}.ls-bar b{display:none}}
 /* #/live — страница онлайн-разборов (viewLive) */
-.lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa:#ffd666;--pa-ink:#14183f;
- background:radial-gradient(70% 55% at 90% 0%,rgba(255,214,102,.3),transparent 60%),linear-gradient(165deg,#0b1030 0%,#1b1f5e 55%,#3a2a8c 100%)}
-:root[data-theme=dark] .lv-hero{background:radial-gradient(80% 55% at 90% 0%,rgba(255,214,102,.36),transparent 62%),linear-gradient(165deg,#161c52 0%,#262c80 55%,#4a35b0 100%);box-shadow:inset 0 0 0 1px rgba(255,214,102,.28)}
+.lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa-ink:#0a2463;
+ background:linear-gradient(135deg,#0a2463 0%,#1a5ae0 100%);box-shadow:0 22px 40px -26px rgba(10,36,99,.7)}
+.lv-hero::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(115deg,#000 10%,transparent 80%);mask-image:linear-gradient(115deg,#000 10%,transparent 80%)}
 .lv-hero h1{margin:12px 0 8px;font:900 30px/1.02 var(--disp);letter-spacing:-.03em;color:#fff}
 .lv-hero>p{margin:0;font:600 15px/1.4 var(--sans);opacity:.94;max-width:46ch}
 .lv-acts{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin-top:16px;max-width:360px}
-.lv-soon{margin:0;font:700 15px var(--sans);color:var(--pa)}
+.lv-soon{margin:0;font:700 15px var(--sans);color:#fff}
 .lv-sec{margin:0 0 24px}
 .lv-sec h2{margin:0 0 12px;font:800 21px/1.2 var(--disp);color:var(--ink)}
 .lv-sub{color:var(--mut);font-size:14px;line-height:1.5;margin:0 0 12px}
@@ -202,35 +202,29 @@ body.liveshow{overflow:hidden}
 .lv-plan small{display:block;color:var(--mut);font-size:13px;margin-top:1px}
 .lv-data p{color:var(--ink2);font-size:14px;line-height:1.55;margin:0 0 10px;max-width:70ch}
 @media(min-width:760px){.lv-hero{padding:34px 34px 28px}.lv-hero h1{font-size:48px}.lv-acts{flex-direction:row;align-items:center;max-width:none;gap:16px}.lv-acts .pmn-b{width:auto;padding:0 22px}.lv-plan{grid-template-columns:1fr 1fr}}
-/* карточка-анонс онлайн-занятий (PROMO) — в паре верхних карточек главной вместо РК2: «ночная», луна и звёзды.
-   До 13.11 — «РК2 завтра?» (жёлтая), с 14.11 — разбор ДЗ (бирюзовая, .dz). В тёмной теме — светлее край и свечение, чтобы не тонуть в фоне */
-.pmn{--pa:#ffd666;--pa-ink:#14183f;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;min-height:212px;padding:14px 14px 13px;border-radius:24px;color:#fff;
- background:radial-gradient(70% 45% at 88% 6%,color-mix(in srgb,var(--pa) 32%,transparent),transparent 60%),linear-gradient(165deg,#0b1030 0%,#1b1f5e 55%,#3a2a8c 100%);box-shadow:0 22px 40px -24px rgba(40,30,140,.9);transition:opacity .25s,transform .25s}
-.pmn.dz{--pa:#7fe3ff;--pa-ink:#06203a;background:radial-gradient(70% 45% at 88% 6%,rgba(127,227,255,.28),transparent 60%),linear-gradient(165deg,#071a2c 0%,#0f2f5a 55%,#1d4f8c 100%)}
-.pmn::before{content:"";position:absolute;inset:0;z-index:-2;opacity:.75;pointer-events:none;background-image:radial-gradient(1.2px 1.2px at 20% 30%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 70% 18%,#fff 50%,transparent 51%),radial-gradient(1.4px 1.4px at 45% 62%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 85% 55%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 12% 78%,#fff 50%,transparent 51%),radial-gradient(1.2px 1.2px at 60% 40%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 33% 12%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 92% 82%,#fff 50%,transparent 51%)}
-.pmn-moon{position:absolute;right:16px;top:42px;width:26px;height:26px;border-radius:50%;box-shadow:-7px 4px 0 0 var(--pa);transform:rotate(-20deg);filter:drop-shadow(0 0 8px color-mix(in srgb,var(--pa) 50%,transparent));pointer-events:none}
-.pmn-pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;background:var(--pa);color:var(--pa-ink);font:800 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
-.pmn-pill i{width:7px;height:7px;border-radius:50%;background:#e5232b;animation:pmnP 1.4s ease-in-out infinite}
-@keyframes pmnP{0%,100%{box-shadow:0 0 0 0 rgba(229,35,43,.7)}50%{box-shadow:0 0 0 5px rgba(229,35,43,0)}}
+/* карточка онлайн-разборов (PROMO) — в паре верхних карточек главной вместо РК2, по цветовой политике (docs/color-policy.md):
+   как карточка РК2 — красная (указатель «РК скоро»), чертёжная сетка, белый текст, белая кнопка с бортиком.
+   С 14.11 — разбор ДЗ (.dz): тёмно-синяя. В тёмной теме цвета те же, что у родных карточек. */
+.pmn{--pa-ink:#c4121d;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;min-height:212px;padding:14px 14px 13px;border-radius:24px;color:#fff;
+ background:linear-gradient(135deg,#e3262f 0%,#cf1922 100%);box-shadow:0 22px 40px -26px rgba(217,35,44,.7)}
+.pmn.dz{--pa-ink:#0a2463;background:linear-gradient(135deg,#0a2463 0%,#1a3f9e 100%);box-shadow:0 22px 40px -26px rgba(10,36,99,.75)}
+.pmn::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(115deg,#000 10%,transparent 75%);mask-image:linear-gradient(115deg,#000 10%,transparent 75%)}
+.pmn-pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;background:rgba(255,255,255,.2);color:#fff;font:800 11.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.pmn-pill i{width:7px;height:7px;border-radius:50%;background:#fff;animation:rkhP 1.4s ease-in-out infinite}
 .pmn-t{margin:10px 0 0;font:900 33px/.92 var(--disp);letter-spacing:-.03em;text-transform:uppercase;color:#fff}
-.pmn-t span{display:block;color:var(--pa)}
-.pmn-s{margin-top:10px;font:600 14.5px/1.3 var(--sans);opacity:.97}
-.pmn-s b{color:var(--pa);font-weight:800}
-.pmn-m{margin-top:9px;font:700 15px/1.3 var(--sans);opacity:.95}
-.pmn-m b{color:var(--pa);font-weight:900}
-.pmn-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:auto;border-radius:12px;background:var(--pa);color:var(--pa-ink)!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.25),0 0 24px -6px color-mix(in srgb,var(--pa) 60%,transparent);-webkit-tap-highlight-color:transparent}
+.pmn-t span{display:block}
+.pmn-s{margin-top:10px;font:600 14.5px/1.3 var(--sans)}
+.pmn-s b{font-weight:800;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.pmn-m{margin-top:9px;font:700 15px/1.3 var(--sans)}
+.pmn-m b{font-weight:900}
+.pmn-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:auto;border-radius:12px;background:#fff;color:var(--pa-ink)!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 4px 0 rgba(0,0,0,.22);transition:transform .08s,box-shadow .08s;-webkit-tap-highlight-color:transparent}
 .pmn-sp{flex:1;min-height:12px}
 .pmn p{margin-bottom:0}
-.pmn-b:hover{filter:brightness(1.05)}.pmn-b:active{transform:scale(.97)}
+.pmn-b:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
 .pmn-b:focus-visible{outline:2px solid #fff;outline-offset:2px}
-:root[data-theme=dark] .pmn{background:radial-gradient(80% 50% at 88% 4%,color-mix(in srgb,var(--pa) 40%,transparent),transparent 62%),radial-gradient(90% 60% at 10% 110%,rgba(122,92,255,.45),transparent 65%),linear-gradient(165deg,#161c52 0%,#262c80 55%,#4a35b0 100%);
- box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pa) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(0,0,0,.4),0 18px 50px -18px rgba(110,80,255,.65)}
-:root[data-theme=dark] .pmn.dz{background:radial-gradient(80% 50% at 88% 4%,rgba(127,227,255,.36),transparent 62%),radial-gradient(90% 60% at 10% 110%,rgba(40,140,255,.4),transparent 65%),linear-gradient(165deg,#0b2944 0%,#14427a 55%,#2163a8 100%);box-shadow:inset 0 0 0 1px rgba(127,227,255,.3),inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(0,0,0,.4),0 18px 50px -18px rgba(40,160,255,.55)}
-:root[data-theme=dark] .pmn::before{opacity:.95}
 @media(prefers-reduced-motion:reduce){.pmn-pill i{animation:none}}
-@media(max-width:759px){.pmn.dz .pmn-moon{display:none}}
 @media(max-width:360px){.pmn{padding:12px 11px}.pmn-t{font-size:28px}}
-@media(min-width:760px){.pmn{min-height:236px;padding:20px 22px 18px}.pmn-t{font-size:58px}.pmn-s{font-size:18px;max-width:30ch}.pmn-m{font-size:18px}.pmn-b{width:auto;padding:0 22px}.pmn-moon{right:26px;top:44px;width:34px;height:34px;box-shadow:-9px 5px 0 0 var(--pa)}}
+@media(min-width:760px){.pmn{min-height:236px;padding:20px 22px 18px}.pmn-t{font-size:58px}.pmn-s{font-size:18px;max-width:30ch}.pmn-m{font-size:18px}.pmn-b{width:auto;padding:0 22px}}
 
 /* ── главная: популярность и «поделиться» ── */
 .hpop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin:0 0 var(--s4);padding:12px 14px;border-radius:18px;background:linear-gradient(120deg,color-mix(in srgb,var(--blue) 10%,var(--surf)),var(--surf));border:1px solid var(--line)}
@@ -28389,13 +28383,13 @@ const PROMO=(function(){
     const rk=rk2On();
     const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>`;
     return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">
-     <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span><span class="pmn-moon" aria-hidden="true"></span>
+     <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span>
      <h2 class="pmn-t" id="pmH">РК2<span>завтра?</span></h2>
      <p class="pmn-s">Разберём типы задач сегодня в эфире. <b>Бесплатно</b>, можно спрашивать</p>
      <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
      ${btn('rk2','Я приду →','Записаться на разбор РК2')}</section>`
     :`<section class="pmn dz" data-promo-card aria-labelledby="pmH">
-     <span class="pmn-pill">Бесплатно</span><span class="pmn-moon" aria-hidden="true"></span>
+     <span class="pmn-pill">Бесплатно</span>
      <h2 class="pmn-t" id="pmH">ДЗ 2–3<span>не идёт?</span></h2>
      <p class="pmn-s">Разберём по шагам в эфире. <b>Бесплатно</b>, можно спрашивать</p>
      <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
