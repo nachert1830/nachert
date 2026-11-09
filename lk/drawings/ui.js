@@ -107,7 +107,9 @@ async function scanRun(title,again,go){ if(busy) return;
     const pipe=self.SCANPIPE.create({cloud:CLOUD,code:CODE});
     const {out,bmps,cover}=await go(pipe);
     const ok=out.drawings.filter(d=>d&&d.segs&&d.segs.length);
-    if(!ok.length){ $('#scProgT').textContent='Чертежи не распознались'; step('x','Ни один чертёж не оцифрован. Снимите ближе и ровнее, без тени.','err'); return; }
+    /* все чертежи упали с ошибкой сервиса модели (не фото): «переснимите» тут неверный совет */
+    const svc=out.drawings.length&&out.drawings.every(d=>d&&d.error&&/HTTP (4\d\d|5\d\d)|облако|модель зрения/i.test(d.error)&&!/код/i.test(d.error));
+    if(!ok.length){ $('#scProgT').textContent=svc?'Сервис распознавания не ответил':'Чертежи не распознались'; step('x',svc?'Фото в порядке — не ответил сервис распознавания. Попробуйте через несколько минут; снимок сохранять заново не нужно.':'Ни один чертёж не оцифрован. Снимите ближе и ровнее, без тени.','err'); return; }
     const ph=bmps.map(b=>thumb(b,1600)), sh=D.fromScan(out,{name:sheetName(out)}); sh.photoK=ph[0].k; if(ph.length>1) sh.photoKs=ph.map(p=>p.k);
     for(let i=0;i<ph.length;i++) await IDB.put(photoKey(sh,i),ph[i].url); sh.thumb=thumb(cover||bmps[0],160).url;
     SHEETS.unshift(sh); save(true); renderList();

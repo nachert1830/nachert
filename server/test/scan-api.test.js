@@ -116,6 +116,10 @@ test('ProxyAPI 429 (Too many requests) — OpenRouter; ProxyAPI ответил �
 test('ProxyAPI 401/403 (ключ) — не деньги: в OpenRouter не идём',()=>withOr(async()=>{
   for(const st of [401,403]){ const log=[]; F._setFetch(pxFails(log,st,'API Key budget exceeded'));
     const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})); assert.equal(r.statusCode,502); assert.equal(log.length,1); assert.ok(log.every(x=>/proxyapi\.ru/.test(x.url))); } }));
+test('ProxyAPI 403 «Access denied by security policy» (ключ цел, ProxyAPI не пускает запрос) — OpenRouter',()=>withOr(async()=>{
+  const log=[]; F._setFetch(pxFails(log,403,'Access denied by security policy.'));
+  const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})), j=JSON.parse(r.body); assert.equal(r.statusCode,200); assert.equal(j.provider,'openrouter'); assert.match(j.fallback,/security policy/);
+  assert.deepEqual(log.map(x=>/openrouter\.ai/.test(x.url)?'or':'px'),['px','or']); }));
 test('без OPENROUTER_API_KEY — как раньше: 402 на обеих моделях — ошибка, в OpenRouter не ходим',async()=>{ delete process.env.OPENROUTER_API_KEY;
   const log=[]; F._setFetch(pxFails(log,402,'Insufficient balance')); const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})}));
   assert.equal(r.statusCode,502); assert.match(JSON.parse(r.body).error,/402/); assert.deepEqual(log.map(x=>x.model),['anthropic/claude-opus-5-5','anthropic/claude-sonnet-5-5']); assert.ok(log.every(x=>/proxyapi\.ru/.test(x.url)));

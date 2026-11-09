@@ -34,6 +34,9 @@ const TOKENS=m=>/opus|fable|mythos/.test(m)?9000:3000;
 const orModel=m=>/^anthropic\/claude-/.test(m||'')?m.replace(/(\d)-(\d)/g,'$1.$2'):m;
 /* отказ ProxyAPI по деньгам или лимиту (не по ключу): тогда есть смысл в OpenRouter; 401/403 — ключ, там то же не поможет */
 const money=e=>!!e&&![401,403].includes(e.upstream)&&([402,429].includes(e.upstream)||/budget|balance|too many requests|insufficient|недостаточно средств/i.test(String(e.message||'')));
+/* отказ ProxyAPI «Access denied by security policy» (403): ключ цел, но ProxyAPI не пускает запрос (политика сервиса: адрес, модель, аккаунт).
+   Сканер при этом лежал у всех студентов — поэтому, как и по деньгам, тот же запрос идёт в OpenRouter (если его ключ задан) */
+const blocked=e=>!!e&&e.upstream===403&&/security policy|access denied/i.test(String(e.message||''));
 const state={spent:0,hour:Date.now(),hourCalls:0,fails:new Map(),sigHits:new Map(),px:{lastError:null,at:0,okAt:0}};
 /* ── общее хранилище связи «телефон ↔ ноутбук»: таблица YDB (Document API) — общая для всех копий функции.
    Копий функции в облаке несколько, и запросы телефона и ноутбука попадают в разные — память одной копии другим не видна.
@@ -112,7 +115,7 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
      сразу, поэтому OpenRouter получает почти всё время попытки, но не больше остатка функции (110 с из 120) */
   const ask=async(m,timeout)=>{ const s=Date.now();
     try{ const r=await one(cfgOf(m),m,timeout); state.px.okAt=Date.now(); return r; }
-    catch(e){ if(!money(e)) throw e; const why=String(e.message||e).replace(/^Модель зрения ответила ошибкой /,'').slice(0,160); state.px.lastError=why; state.px.at=Date.now();
+    catch(e){ if(!money(e)&&!blocked(e)) throw e; const why=String(e.message||e).replace(/^Модель зрения ответила ошибкой /,'').slice(0,160); state.px.lastError=why; state.px.at=Date.now();
       const left=Math.min(timeout-(Date.now()-s),110000-(Date.now()-t0)); if(!orKey||left<10000) throw e;
       return Object.assign(await one(orCfg(m),m,left),{provider:'openrouter',pxWhy:why}); } };
   const t0=Date.now(); let r, fallback=null;
@@ -122,8 +125,8 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
       /* основная модель не ответила (сбой, пустой ответ, лимит ответа) — тот же кадр второй модели, в оставшееся время функции (120 с) */
       /* ключ (401/403) — второй модели не поможет; 402 — ProxyAPI заранее оценивает цену запроса по лимиту ответа и отказывает,
          если оценка больше остатка баланса: у Opus (9000 токенов) она в разы больше, чем у Sonnet, — тот же кадр Sonnet ещё может пройти */
-      catch(e){ if(m===checkM||[401,403].includes(e.upstream)||e.status===403||Date.now()-t0>95000) throw e; fallback=m+': '+String(e.message||e).slice(0,120); r=await ask(checkM,Math.max(15000,110000-(Date.now()-t0))); } }
+      catch(e){ if(m===checkM||([401,403].includes(e.upstream)&&!blocked(e))||e.status===403||Date.now()-t0>95000) throw e; fallback=m+': '+String(e.message||e).slice(0,120); r=await ask(checkM,Math.max(15000,110000-(Date.now()-t0))); } }
     const {c,u}=spend(r), provider=r.provider||'proxyapi'; if(provider==='openrouter') fallback=(fallback?fallback+'; ':'')+'ProxyAPI: '+r.pxWhy+' — ответил OpenRouter';
     return reply(200,{ok:true,text:r.text,model:r.model,mode,provider,fallback,usage:{in:u.prompt_tokens||0,out:u.completion_tokens||0},cost:+c.toFixed(5)},origin); }
   catch(e){ const st=e&&e.status&&e.status<600?e.status:502; return reply(st,{ok:false,error:String(e&&e.message||'Модель не ответила').slice(0,200)},origin); } }
-module.exports={handler,sha,_setFetch:f=>{ doFetch=f; },_reset:()=>{ mem.clear(); state.sigHits.clear(); state.spent=0; state.hour=Date.now(); state.hourCalls=0; state.fails.clear(); state.px={lastError:null,at:0,okAt:0}; }};
+module.exports={handler,sha,_blocked:blocked,_setFetch:f=>{ doFetch=f; },_reset:()=>{ mem.clear(); state.sigHits.clear(); state.spent=0; state.hour=Date.now(); state.hourCalls=0; state.fails.clear(); state.px={lastError:null,at:0,okAt:0}; }};
