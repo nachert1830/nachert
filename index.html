@@ -28630,6 +28630,7 @@ function viewHome(v){
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
    <div class="hcards" id="rkHome">${homeCards()}</div>
+   ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
     <p class="v9-kick">Начерт · инж. графика · МГТУ</p>
     <h1 id="v8H" class="v8-h">Найди решение своей задачи</h1>
@@ -28657,7 +28658,6 @@ function viewHome(v){
       ${lnk(H('ig','theory'),'Теория ЕСКД','форматы, линии, размеры, разрезы','th')}
      </div>
     </div>
-    ${A2HS.cardHTML()}
    </section>
   </div>`;
   NEXT=null;
@@ -32517,6 +32517,6 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 </script>
 <!-- личный кабинет: персонализация сайта для тех, кто настроил кабинет (lk/site.js) -->
 <script src="lk/lib/calendar.js?v=1" defer></script>
-<script src="lk/site.js?v=2" defer></script>
+<script src="lk/site.js?v=4" defer></script>
 </body>
 </html>

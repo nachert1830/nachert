@@ -275,6 +275,7 @@ function renderMe(){
 }
 function renderSync(){
   const S=LKS.sync.state, box=$('#accBox'), nd=$('#nudge');
+  $('#topLogin').hidden=!(S.on&&!S.user);
   if(!S.on){ box.hidden=true; nd.innerHTML=''; return; }
   box.hidden=false;
   if(S.user){ const u=S.user, how=[u.yandex&&'Яндекс ID',u.email&&'почта',u.telegram&&'Telegram'].filter(Boolean).join(' и ');
@@ -302,7 +303,8 @@ async function finishLogin(tok){
     /* профиль: пустое в кабинете — из аккаунта; иначе кабинет → аккаунт */
     let ch=false; if(!P.name&&u.name&&u.name!=='Участник'){ P.name=u.name; ch=true; } if(!P.group&&u.group){ P.group=u.group; ch=true; } if(!variant()&&u.variant){ P.variant=u.variant; ch=true; }
     if(ch) saveP(); else LKS.sync.profile({name:P.name||undefined,group:P.group||'',variant:variant()||0});
-    closeSheets(); reload(); toast(j.isNew?'Аккаунт создан — прогресс сохраняется':'Вход выполнен — прогресс подтянут');
+    closeSheets(); reload(); if(!P.onb){ if(P.group){ P.onb=1; saveP(); } else if(OB.el.classList.contains('on')===false) openOb(); }
+    toast(j.isNew?'Аккаунт создан — прогресс сохраняется':'Вход выполнен — прогресс подтянут');
   }catch(e){ if(e.data&&e.data.needConsent){ openLogin(); lErr('Для нового аккаунта отметь согласие и войди ещё раз'); } else toast(e.message); }
 }
 $('#lCons').addEventListener('change',()=>{ LKS.put('lk_cons',$('#lCons').checked?'1':null); if($('#lCons').checked) $('#lErr').textContent=''; });
@@ -378,7 +380,7 @@ function openSheet(k){
 const closeSheets=()=>Object.keys(SHEETS).forEach(k=>SHEETS[k].classList.remove('on'));
 $('#gq').addEventListener('input',()=>{ $('#glist').innerHTML=groupsHTML($('#gq').value,group()); });
 Object.keys(SHEETS).forEach(k=>SHEETS[k].addEventListener('click',e=>{
-  if(e.target===SHEETS[k]||e.target.closest('[data-close]')){ closeSheets(); return; }
+  if(e.target===SHEETS[k]||e.target.closest('[data-close]')){ closeSheets(); if(k==='l'&&!P.onb&&!LKS.sync.state.user) openOb(); return; }
   const g=e.target.closest('[data-pick]'); if(g){ P.group=g.getAttribute('data-pick'); saveP(); closeSheets(); SELD=null; renderAll(); toast('Группа '+P.group+': сроки по твоим парам'); return; }
   const v=e.target.closest('[data-v]'); if(v){ P.variant=+v.getAttribute('data-v'); saveP(); closeSheets(); renderAll(); toast('Вариант '+P.variant+' — сайт откроет его сам'); }
 }));
@@ -388,7 +390,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheets(); });
 
 /* ═══ Знакомство ═══ */
 const OB={el:$('#ob'),st:0,d:{}};
-function openOb(){ OB.d={name:P.name||'',group:P.group||'',variant:variant()}; OB.st=0; $('#obName').value=OB.d.name; $('#obG').value=''; $('#obHero').insertAdjacentHTML('afterbegin',$('#obHero .p-art')?'':hypArt()); OB.el.classList.add('on'); document.body.style.overflow='hidden'; obShow(); }
+function openOb(){ $('#obLogin').hidden=!LKS.sync.state.on; OB.d={name:P.name||'',group:P.group||'',variant:variant()}; OB.st=0; $('#obName').value=OB.d.name; $('#obG').value=''; $('#obHero').insertAdjacentHTML('afterbegin',$('#obHero .p-art')?'':hypArt()); OB.el.classList.add('on'); document.body.style.overflow='hidden'; obShow(); }
 function obShow(){
   $$('.ob-st').forEach(s=>s.classList.toggle('on',+s.getAttribute('data-st')===OB.st));
   $$('.ob-dots i').forEach((d,i)=>d.classList.toggle('on',i<=OB.st));
@@ -416,6 +418,7 @@ $('#obNext').addEventListener('click',()=>{
   if(OB.st===3){ OB.el.classList.remove('on'); document.body.style.overflow=''; SELD=null; renderAll(); return; }
   OB.st++; obShow();
 });
+$('#obLogin').addEventListener('click',()=>{ OB.el.classList.remove('on'); document.body.style.overflow=''; openLogin(); });
 $('#obBack').addEventListener('click',()=>{ if(OB.st>0){ OB.st--; obShow(); } });
 $('#obName').addEventListener('input',()=>{ $('#obNext').textContent=$('#obName').value.trim()?'Дальше':'Пропустить'; });
 $('#obName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#obNext').click(); });
@@ -451,7 +454,9 @@ LKS.markDay();
 renderAll();
 /* знакомство — не во фрейме (пульт владельца встраивает кабинет) и не по прямой ссылке на сканер */
 let framed=false; try{ framed=window.top!==window; }catch(e){ framed=true; }
-if(!P.onb&&!framed&&!/^#scan/.test(location.hash)) openOb();
+const wantLogin=/^#\/login/.test(location.hash); if(wantLogin){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
+if(wantLogin&&LKS.sync.state.on&&!LKS.raw('lk_tok')) openLogin();
+else if(!P.onb&&!framed&&!/^#scan/.test(location.hash)) openOb();
 fetch('data/groups.json').then(r=>r.json()).then(j=>{ DB=j; if(group()&&!j.groups[group()]){ P.group=''; saveP(); } SELD=null; renderAll(); if(OB.el.classList.contains('on')&&OB.st===1) obShow(); }).catch(()=>renderAll());
 /* вернулся с Яндекса — завершить вход */
 const back=LKS.sync.fromHash();

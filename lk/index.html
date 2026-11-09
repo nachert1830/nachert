@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <script>/* тема — как на сайте (nch2_theme), до отрисовки, чтобы не мигало */
 try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
-<link rel="stylesheet" href="app.css?v=5">
+<link rel="stylesheet" href="app.css?v=6">
 <link rel="stylesheet" href="drawings/ui.css?v=3">
 </head>
 <body>
@@ -61,6 +61,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
       <h2>Как тебя зовут?</h2>
       <p>Имя видишь только ты — так кабинет будет обращаться к тебе.</p>
       <input class="field" id="obName" placeholder="Имя" autocomplete="given-name" maxlength="40" enterkeyhint="next">
+      <button class="oblog" id="obLogin" hidden>Уже есть аккаунт? <b>Войти</b></button>
     </section>
     <section class="ob-st" data-st="1">
       <h2>Твоя группа</h2>
@@ -90,6 +91,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
   <header class="top">
     <span class="brand"><img src="../icon-192.png" alt="">Начерт <i>· кабинет</i></span>
     <span class="sp"></span>
+    <button class="chip need" id="topLogin" data-login hidden>Войти</button>
     <a class="ibtn" href="../" aria-label="На сайт" title="На сайт"><svg class="i"><use href="#i-ext"/></svg></a>
     <button class="av" id="topAv" data-tab-go="me" aria-label="Профиль">Н</button>
   </header>
@@ -223,7 +225,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
 
 <script src="config.js?v=5"></script>
 <script src="store.js?v=5"></script>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 <script src="scan/config.js"></script>
 <script src="scan/pipeline.js?v=lk6"></script>
 <script src="scan/live.js?v=2"></script>

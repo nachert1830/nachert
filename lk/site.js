@@ -9,7 +9,12 @@
 'use strict';
 const J=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return v==null?d:v; }catch(e){ return d; } };
 let P=J('lk_profile',null);
-if(!P||!P.onb||!self.LKCAL) return;
+/* кабинет ещё не настроен — в шапке «Войти»: вход или знакомство в кабинете */
+if(!P||!P.onb){ const put=()=>{ const hr=document.querySelector('#hdr .hright'); if(!hr||document.getElementById('lkMe')) return;
+    const a=document.createElement('a'); a.id='lkMe'; a.className='lkin'; a.href='/lk/#/login'; a.setAttribute('aria-label','Войти в личный кабинет'); a.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1-4 4-5.5 7.5-5.5s6.5 1.5 7.5 5.5"/></svg><span>Войти</span>'; a.title='Личный кабинет: сроки твоей группы, твой вариант, прогресс на всех устройствах'; hr.insertBefore(a,hr.firstChild); };
+  const st=document.createElement('style'); st.textContent='.lkin{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:12px;background:var(--acc);color:#fff!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 3px 0 color-mix(in srgb,var(--acc) 60%,#000)}.lkin{gap:6px}.lkin:active{transform:translateY(2px);box-shadow:none}@media(max-width:440px){#hdr .hright:has(#lkMe) #shareBtn{display:none}}@media(max-width:620px){.lkin span{display:none}.lkin{width:var(--tap,40px);height:var(--tap,40px);padding:0;justify-content:center}}';
+  document.head.appendChild(st); put(); return; }
+if(!self.LKCAL) return;
 const CAL=self.LKCAL, LK='/lk/', DAYMS=864e5;
 const SUBJ={ikg:'ИКГ',ng:'Начерт'}, SUBJF={ikg:'Инженерная графика',ng:'Начертательная геометрия'};
 const SITE_DZ={ng:[1,2,3,4,5],ikg:[2,3,4]}, PREP1={ng:'/#/ng/cheat',ikg:'/#/ig/learn'};
@@ -35,6 +40,7 @@ css.textContent=`
 .lkme{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 4px;border-radius:18px;background:var(--surf);border:1px solid var(--line);color:var(--ink);text-decoration:none!important;font:700 13px var(--sans);white-space:nowrap}
 .lkme i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(150deg,#1f47d6,#4f8cff);color:#fff;font:800 13px var(--sans);font-style:normal}
 @media(max-width:620px){.lkme span{display:none}.lkme{padding:0 4px}}
+@media(max-width:440px){#hdr .hright:has(#lkMe) #shareBtn{display:none}}
 `;
 document.head.appendChild(css);
 
@@ -62,7 +68,7 @@ let FEAT='';
 function render(){ P=J('lk_profile',P)||P; try{ header(); home(); }catch(e){} }
 /* сайт перерисовывает страницу при каждом переходе — после перерисовки вернуть плашку */
 let q=0; const view=document.getElementById('view');
-if(view) new MutationObserver(()=>{ if(!document.getElementById('lkDz')&&document.getElementById('rkHome')){ cancelAnimationFrame(q); q=requestAnimationFrame(home); } }).observe(view,{childList:true});
+if(view) new MutationObserver(()=>{ if(!document.getElementById('lkDz')&&document.getElementById('rkHome')){ cancelAnimationFrame(q); q=requestAnimationFrame(home); } }).observe(view,{childList:true,subtree:true});
 addEventListener('storage',e=>{ if(/^(lk_done|lk_profile|lk_hotk|nch2_dzvar)$/.test(e.key||'')) render(); });
 render();
 if(P.group) fetch('/lk/data/groups.json').then(r=>r.json()).then(j=>{ G=j.groups&&j.groups[P.group]||null; render(); }).catch(()=>{});

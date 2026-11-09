@@ -545,3 +545,7 @@ details.past[open] summary::before{content:"▾ "}
 .chk.mod{border-style:dashed;cursor:default}
 .chk.mod.on{background:var(--green);border:2px solid var(--green);color:#fff}
 .row.k-m .d{color:var(--mut);font-weight:600}
+
+.oblog{align-self:flex-start;color:var(--ink2);font:600 15px var(--sans);padding:6px 2px}
+.oblog b{color:var(--blue);font-weight:800}
+#topLogin{height:42px;box-shadow:var(--shadow)}
