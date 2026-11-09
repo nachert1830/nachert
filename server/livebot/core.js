@@ -12,7 +12,7 @@
 'use strict';
 const TZ_OFF=3*3600e3;                                   /* время эфиров — московское */
 const MIN=60e3, H=60*MIN, DAY=24*H;
-const KEEP=30*DAY, DUR=90*MIN;
+const KEEP=30*DAY, DEF_MIN=60;                          /* длительность эфира по умолчанию — 1 час */
 const WD=['вс','пн','вт','ср','чт','пт','сб'];
 
 const two=n=>String(n).padStart(2,'0');
@@ -29,27 +29,29 @@ function parseWhen(dm,hm,now){ const a=/^(\d{1,2})\.(\d{1,2})(?:\.(\d{4}))?$/.ex
   return msk(t).getUTCDate()===d?t:null; }
 const clean=(s,n)=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim().slice(0,n);
 const okLink=s=>/^https:\/\/[^\s]{4,300}$/.test(s||'');
+const DUR=s=>(s&&s.min||90)*MIN;                         /* у старых записей без min — 1,5 часа, как было */
+const fmtDur=s=>{ const m=s&&s.min||90; return m===60?'1 час':m===90?'1,5 часа':m===120?'2 часа':m+' мин'; };
 
 function emptyState(){ return {v:1,seq:0,sessions:[],users:{},offset:0}; }
 
 function createLiveBot(o){
-  const {api,load,save,now=()=>Date.now(),admins=[],site='https://nachert1830.ru',log=()=>{}}=o;
+  const {api,load,save,now=()=>Date.now(),admins=[],site='https://nachert1830.ru',log=()=>{},schedule=()=>[]}=o;
   const isAdmin=id=>admins.map(String).includes(String(id));
   const S=()=>load()||emptyState();
 
   /* kb: массив — кнопки под сообщением; объект — готовый reply_markup (меню владельца внизу экрана) */
   async function send(chat,text,kb){ const r=await api('sendMessage',Object.assign({chat_id:chat,text,disable_web_page_preview:true},kb?{reply_markup:Array.isArray(kb)?{inline_keyboard:kb}:kb}:{}));
     if(r&&r.ok===false) log('не отправлено',chat,r.error_code||'',r.description||''); return r; }
-  const upcoming=(st,t)=>st.sessions.filter(s=>s.start+DUR>t).sort((a,b)=>a.start-b.start);
+  const upcoming=(st,t)=>st.sessions.filter(s=>s.start+DUR(s)>t).sort((a,b)=>a.start-b.start);
   const label=s=>fmtDay(s.start)+' · '+fmtTime(s.start)+' · '+s.topic;
   const subOf=(s,chat)=>s.subs&&s.subs[String(chat)];
-  const linkOpen=(s,t)=>t>=s.start-30*MIN&&t<s.start+DUR;
+  const linkOpen=(s,t)=>t>=s.start-30*MIN&&t<s.start+DUR(s);
 
   const NOTICE='Записываясь, ты разрешаешь боту хранить твоё имя в Telegram и номер чата — только чтобы прислать напоминание и ссылку. '+
     'Данные удаляются через 30 дней после эфира, /delete — сразу. Подробнее: '+site+'/#/live';
   function startText(st,t,chat){ const U=upcoming(st,t).slice(0,6);
     if(!U.length) return {text:'Привет! Здесь запись на бесплатные онлайн-разборы по начерталке.\n\nБлижайших эфиров пока нет — загляни чуть позже.',kb:null};
-    return {text:'Привет! Здесь запись на бесплатные онлайн-разборы по начерталке: разбираем типы задач по шагам, можно спрашивать. Онлайн в Телемосте, 1,5 часа.\n\nВыбери эфир:\n\n'+NOTICE,
+    return {text:'Привет! Здесь запись на бесплатные онлайн-разборы по начерталке: разбираем типы задач по шагам, можно спрашивать. Онлайн в Телемосте.\n\nВыбери эфир:\n\n'+NOTICE,
       kb:U.map(s=>[{text:(subOf(s,chat)?'✓ ':'')+label(s),callback_data:'j:'+s.id}])}; }
   const joinedKb=s=>[[{text:'Ссылка на эфир',callback_data:'l:'+s.id}],[{text:'Отменить запись',callback_data:'c:'+s.id}]];
 
@@ -62,19 +64,19 @@ function createLiveBot(o){
       const s=st.sessions.find(x=>x.id===id);
       if(!s){ await send(chat,'Этот эфир уже прошёл или отменён. /start — ближайшие.'); return; }
       if(k==='j'){
-        if(s.start+DUR<=t){ await send(chat,'Этот эфир уже закончился. /start — ближайшие.'); return; }
+        if(s.start+DUR(s)<=t){ await send(chat,'Этот эфир уже закончился. /start — ближайшие.'); return; }
         s.subs=s.subs||{}; const was=!!subOf(s,chat);
         if(!was){ s.subs[String(chat)]={name:clean(from.first_name,40),at:t,src:(st.users[String(chat)]||{}).src||''}; s.n=(s.n||0)+1; }
         st.users[String(chat)]=Object.assign(st.users[String(chat)]||{},{seen:t}); save(st);
         const live=linkOpen(s,t)&&s.link;
-        await send(chat,(was?'Ты уже записан':'Записал!')+' '+fmtWhen(s.start)+' — '+s.topic+'. Онлайн в Телемосте, 1,5 часа.\n\n'+
+        await send(chat,(was?'Ты уже записан':'Записал!')+' '+fmtWhen(s.start)+' — '+s.topic+'. '+fmtDur(s)+' онлайн в Телемосте.\n\n'+
           (live?'Эфир скоро или уже идёт — вот ссылка: '+s.link:'За 2 часа напомню, за 15 минут пришлю ссылку. Не пришла — нажми «Ссылка на эфир».')+
           '\n\nПриготовь листок и карандаш: будем чертить вместе.',joinedKb(s));
         return; }
       if(k==='l'){
         if(!subOf(s,chat)){ await send(chat,'Ты не записан на этот эфир. /start — записаться.'); return; }
         if(s.link&&linkOpen(s,t)){ await send(chat,'Ссылка на эфир '+fmtWhen(s.start)+': '+s.link); return; }
-        await send(chat,s.start+DUR<=t?'Эфир уже закончился.':'Ссылка появится за 30 минут до начала ('+fmtWhen(s.start)+'). За 15 минут пришлю её сам.'); return; }
+        await send(chat,s.start+DUR(s)<=t?'Эфир уже закончился.':'Ссылка появится за 30 минут до начала ('+fmtWhen(s.start)+'). За 15 минут пришлю её сам.'); return; }
       if(k==='c'){
         if(subOf(s,chat)){ delete s.subs[String(chat)]; s.n=Math.max(0,(s.n||1)-1); save(st); }
         await send(chat,'Отменил запись на '+fmtWhen(s.start)+'. Передумаешь — /start.'); return; }
@@ -119,9 +121,9 @@ function createLiveBot(o){
     B.list+' — эфиры, кто записан, ссылка, отмена\n'+B.add+' — день → время → тема\n'+B.link+' — ссылка на Телемост\n'+B.say+' — сообщение всем, кто записан\n\n'+
     'Сколько записалось, видишь только ты.',MENU); }
   async function card(st,t,chat,s){ const n=subsN(s);
-    await send(chat,label(s)+'\nЗаписалось: '+(s.n||0)+(n!==(s.n||0)?' (сейчас записаны: '+n+')':'')+'\nСсылка: '+(s.link||'нет — нажми «Ссылка»')+(s.fb?'\nПомогло: '+s.fb.y+' · частично: '+s.fb.p+' · нет: '+s.fb.n:''),
-      [[{text:'👥 Кто записан',callback_data:'a:w:'+s.id},{text:'🔗 Ссылка',callback_data:'a:l:'+s.id}],[{text:'📣 Написать',callback_data:'a:m:'+s.id},{text:'🗑 Отменить эфир',callback_data:'a:x:'+s.id}]]); }
-  async function list(st,t,chat){ const U=upcoming(st,t), P=st.sessions.filter(s=>s.start+DUR<=t).sort((a,b)=>b.start-a.start).slice(0,5);
+    await send(chat,label(s)+' · '+fmtDur(s)+'\nЗаписалось: '+(s.n||0)+(n!==(s.n||0)?' (сейчас записаны: '+n+')':'')+'\nСсылка: '+(s.link||'нет — нажми «Ссылка»')+(s.fb?'\nПомогло: '+s.fb.y+' · частично: '+s.fb.p+' · нет: '+s.fb.n:''),
+      [[{text:'👥 Кто записан',callback_data:'a:w:'+s.id},{text:'🔗 Ссылка',callback_data:'a:l:'+s.id}],[{text:'📣 Написать',callback_data:'a:m:'+s.id},{text:'🗑 Отменить эфир',callback_data:'a:x:'+s.id}],[{text:'⏱ Длительность: '+fmtDur(s)+' (сменить)',callback_data:'a:u:'+s.id}]]); }
+  async function list(st,t,chat){ const U=upcoming(st,t), P=st.sessions.filter(s=>s.start+DUR(s)<=t).sort((a,b)=>b.start-a.start).slice(0,5);
     if(!U.length&&!P.length){ await send(chat,'Эфиров пока нет.',[[{text:B.add,callback_data:'a:add'}]]); return; }
     await send(chat,(U.length?'Ближайшие (нажми — подробности):':'Ближайших нет.')+(P.length?'\n\nПрошедшие:\n'+P.map(s=>'◦ '+label(s)+' — записалось '+(s.n||0)+(s.fb?', помогло '+s.fb.y+' из '+(s.fb.y+s.fb.p+s.fb.n):'')).join('\n'):''),
       U.slice(0,8).map(s=>[{text:label(s)+' · записалось '+(s.n||0)+(s.link?'':' · без ссылки'),callback_data:'a:s:'+s.id}]).concat([[{text:B.add,callback_data:'a:add'}]])); }
@@ -132,9 +134,9 @@ function createLiveBot(o){
     if(when<t-MIN){ await send(chat,'Это время уже прошло: '+fmtWhen(when)); return null; }
     const d=msk(when), id=two(d.getUTCDate())+two(d.getUTCMonth()+1)+two(d.getUTCHours())+two(d.getUTCMinutes());
     if(st.sessions.some(s=>s.id===id)){ await send(chat,'Эфир '+fmtWhen(when)+' уже есть.'); return null; }
-    const s={id,start:when,topic,link:'',subs:{},n:0,sent:{}}; st.sessions.push(s); wait(st,chat,null);
-    await send(chat,'Добавил: '+fmtWhen(when)+' — '+topic+'.\nУченики уже видят его у бота. Ссылку на Телемост можно прислать сейчас или позже (за 15 минут до начала напомню).',
-      [[{text:'🔗 Прислать ссылку',callback_data:'a:l:'+id}],[{text:'➕ Ещё эфир',callback_data:'a:add'}]]); return s; }
+    const s={id,start:when,min:DEF_MIN,topic,link:'',subs:{},n:0,sent:{}}; st.sessions.push(s); st.gone=(st.gone||[]).filter(x=>x!==id); wait(st,chat,null);
+    await send(chat,'Добавил: '+fmtWhen(when)+' — '+topic+', '+fmtDur(s)+'.\nУченики уже видят его у бота. Ссылку на Телемост можно прислать сейчас или позже (за 15 минут до начала напомню).',
+      [[{text:'🔗 Прислать ссылку',callback_data:'a:l:'+id}],[{text:'⏱ Длительность: '+fmtDur(s),callback_data:'a:u:'+id},{text:'➕ Ещё эфир',callback_data:'a:add'}]]); return s; }
   async function doLink(st,chat,s,url){
     if(!okLink(url)){ await send(chat,'Нужна ссылка вида https://telemost.yandex.ru/j/… — пришли ещё раз.',[CANCEL]); return; }
     s.link=url; wait(st,chat,null); await send(chat,'Ссылка для «'+label(s)+'» сохранена. Записанным уйдёт за 15 минут до начала.'); }
@@ -142,8 +144,8 @@ function createLiveBot(o){
     for(const c of all){ const r=await send(c,msg); if(!r||r.ok!==false) n++; }
     wait(st,chat,null); await send(chat,'Отправил: '+n+' из '+all.length+(n<all.length?' (остальные заблокировали бота)':'')); }
   async function doDel(st,t,chat,s){
-    if(s.start+DUR>t) for(const c of Object.keys(s.subs||{})) await send(c,'Эфир '+fmtWhen(s.start)+' отменён. Извини! /start — ближайшие.');
-    st.sessions=st.sessions.filter(x=>x!==s); wait(st,chat,null); await send(chat,'Отменил: '+label(s)); }
+    if(s.start+DUR(s)>t) for(const c of Object.keys(s.subs||{})) await send(c,'Эфир '+fmtWhen(s.start)+' отменён. Извини! /start — ближайшие.');
+    st.sessions=st.sessions.filter(x=>x!==s); st.gone=(st.gone||[]).concat(s.id).slice(-50); wait(st,chat,null); await send(chat,'Отменил: '+label(s)); }
   async function who(chat,s){ const W=Object.values(s.subs||{});
     await send(chat,label(s)+' — записаны '+W.length+':\n'+(W.map(w=>'• '+(w.name||'без имени')+(w.src?' ('+w.src+')':'')).join('\n')||'пока никого')); }
   async function chooseOr(st,t,chat,act,ask){ const U=upcoming(st,t);
@@ -166,6 +168,7 @@ function createLiveBot(o){
     if(act==='M'){ const W=waiting(st,chat), to=W&&st.sessions.find(z=>z.id===W.sid); if(!W||W.w!=='sayok'||!to){ await send(chat,'Нечего отправлять.'); return; } return doSay(st,chat,to,W.text); }
     if(!s){ await send(chat,'Этого эфира уже нет.'); return; }
     if(act==='s') return card(st,t,chat,s);
+    if(act==='u'){ const L=[60,90,120], i=L.indexOf(s.min||90); s.min=L[(i+1)%L.length]; save(st); await send(chat,'Длительность «'+label(s)+'»: '+fmtDur(s)+'.'); return card(st,t,chat,s); }
     if(act==='w') return who(chat,s);
     if(act==='l'){ wait(st,chat,{w:'link',sid:s.id}); await send(chat,'Пришли ссылку на Телемост для «'+label(s)+'»'+(s.link?'\n(сейчас: '+s.link+')':''),[CANCEL]); return; }
     if(act==='m'){ if(!subsN(s)){ await send(chat,'На «'+label(s)+'» пока никто не записан.'); return; }
@@ -210,14 +213,22 @@ function createLiveBot(o){
   /* ── таймер (раз в минуту): напоминания, ссылка, «помогло?», уборка ── */
   async function tick(){
     const st=S(), t=now(); let changed=false; const out={sent:0};
+    /* расписание из файла (schedule.json): добавить эфиры, которых ещё нет; отменённые владельцем не возвращаются */
+    for(const e of (schedule()||[])){ try{
+      const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||''), when=m&&parseWhen(m[3]+'.'+m[2]+'.'+m[1],e.time,t), min=[30,45,60,90,120,150,180].includes(+e.min)?+e.min:DEF_MIN, topic=clean(e.topic,60);
+      if(!when||!topic||when+min*MIN<=t) continue;
+      const d=msk(when), id=two(d.getUTCDate())+two(d.getUTCMonth()+1)+two(d.getUTCHours())+two(d.getUTCMinutes());
+      if(st.sessions.some(s=>s.id===id)||(st.gone||[]).includes(id)) continue;
+      st.sessions.push({id,start:when,min,topic,link:okLink(e.link)?e.link:'',subs:{},n:0,sent:{},from:'schedule'}); changed=true; log('из расписания:',id,topic);
+    }catch(err){ log('ошибка в расписании',err&&err.message); } }
     const mark=(s,k)=>{ s.sent=s.sent||{}; s.sent[k]=t; changed=true; };
     for(const s of st.sessions){ const subs=Object.keys(s.subs||{}); s.sent=s.sent||{};
       if(!s.sent.h2&&t>=s.start-2*H&&t<s.start-15*MIN){ mark(s,'h2');
         for(const c of subs){ await send(c,'Сегодня в '+fmtTime(s.start)+' — разбор: '+s.topic+'. За 15 минут пришлю ссылку. Приготовь листок и карандаш.',[[{text:'Отменить запись',callback_data:'c:'+s.id}]]); out.sent++; } }
-      if(!s.sent.m15&&t>=s.start-15*MIN&&t<s.start+DUR){
+      if(!s.sent.m15&&t>=s.start-15*MIN&&t<s.start+DUR(s)){
         if(s.link){ mark(s,'m15'); for(const c of subs){ await send(c,'Через 15 минут начинаем: '+s.topic+'.\nСсылка: '+s.link+'\n\nКамеру можно не включать, вопросы — в чат или голосом.'); out.sent++; } }
         else if(!s.sent.nolink){ mark(s,'nolink'); for(const a of admins) await send(a,'⚠️ До эфира '+label(s)+' 15 минут, а ссылки нет. Нажми и пришли ссылку:',[[{text:'🔗 Прислать ссылку',callback_data:'a:l:'+s.id}]]); } }
-      if(!s.sent.after&&t>=s.start+DUR){ mark(s,'after');
+      if(!s.sent.after&&t>=s.start+DUR(s)){ mark(s,'after');
         for(const c of subs) if(!s.subs[c].fb){ await send(c,'Спасибо, что был на эфире! Помогло?',[[{text:'Да',callback_data:'f:'+s.id+':y'},{text:'Частично',callback_data:'f:'+s.id+':p'},{text:'Нет',callback_data:'f:'+s.id+':n'}]]); out.sent++; } }
       /* через 30 дней — только числа, без людей */
       if(t>s.start+KEEP&&s.subs&&Object.keys(s.subs).length){ s.subs={}; s.link=''; changed=true; } }

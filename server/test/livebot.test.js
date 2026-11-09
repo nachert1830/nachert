@@ -24,7 +24,7 @@ test('время эфира: «10.11 20:00» — по Москве, год бл�
 test('путь ученика: запись → за 2 часа → за 15 минут ссылка → «помогло?»; число видит только владелец',async()=>{
   const r=rig();
   await r.msg(ADMIN,'/add 10.11 20:00 РК2: типы задач');
-  assert.match(r.last(ADMIN).text,/^Добавил: вт 10\.11 в 20:00 — РК2: типы задач\./);
+  assert.match(r.last(ADMIN).text,/^Добавил: вт 10\.11 в 20:00 — РК2: типы задач, 1 час\./);
 
   await r.msg(1,'/start site');
   const st=r.last(1); assert.match(st.text,/бесплатные онлайн-разборы/); assert.match(st.text,/удаляются через 30 дней/);
@@ -100,13 +100,13 @@ test('меню владельца кнопками: добавить эфир (�
   await r.msg(ADMIN,'➕ Добавить эфир'); assert.match(r.last(ADMIN).text,/Какой день/);
   await r.tap(ADMIN,btn(/^Сегодня/)); assert.match(r.last(ADMIN).text,/Во сколько/);
   await r.tap(ADMIN,btn(/^20:00$/)); assert.match(r.last(ADMIN).text,/Тема эфира — вт 10\.11 в 20:00/);
-  await r.tap(ADMIN,btn(/^РК2$/)); assert.match(r.last(ADMIN).text,/^Добавил: вт 10\.11 в 20:00 — РК2\./);
+  await r.tap(ADMIN,btn(/^РК2$/)); assert.match(r.last(ADMIN).text,/^Добавил: вт 10\.11 в 20:00 — РК2, 1 час\./);
   assert.equal(r.db().sessions.length,1);
   /* своё время и своя тема — текстом */
   await r.msg(ADMIN,'➕ Добавить эфир'); await r.tap(ADMIN,btn(/^Завтра/)); await r.tap(ADMIN,btn(/Другое время/));
   await r.msg(ADMIN,'25:99'); assert.match(r.last(ADMIN).text,/Не понял время/);
   await r.msg(ADMIN,'19:30'); await r.tap(ADMIN,btn(/Своя тема/)); await r.msg(ADMIN,'ДЗ 3: пирамида');
-  assert.match(r.last(ADMIN).text,/^Добавил: ср 11\.11 в 19:30 — ДЗ 3: пирамида\./);
+  assert.match(r.last(ADMIN).text,/^Добавил: ср 11\.11 в 19:30 — ДЗ 3: пирамида, 1 час\./);
   /* ученик видит оба, записывается */
   await r.msg(8,'/start'); assert.equal(r.last(8).reply_markup.inline_keyboard.length,2); await r.tap(8,'j:10112000');
   /* ссылка кнопкой: выбрать эфир → прислать */
@@ -132,4 +132,28 @@ test('кнопки владельца не работают у ученика',a
   await r.tap(9,'a:X:10112000'); await r.tap(9,'a:add'); assert.equal(r.db().sessions.length,1);
   assert.ok(!r.to(9).some(x=>/Какой день/.test(x.body.text)));
   await r.msg(9,'📅 Эфиры'); assert.ok(r.out.some(x=>x.method==='forwardMessage'),'у ученика это просто текст — уходит владельцу вопросом');
+});
+
+test('расписание из файла: эфир появляется сам, длительность своя, отменённый не возвращается',async()=>{
+  const clock={t:Date.parse('2026-11-09T23:30:00Z')}, out=[]; let db=null;                     /* вт 10.11, 02:30 по Москве */
+  let sched=[{date:'2026-11-10',time:'20:00',min:60,topic:'РК2: разбор типов задач'},{date:'2026-11-08',time:'20:00',topic:'прошлый'},{date:'кривая',time:'20:00',topic:'x'}];
+  const api=async(method,body)=>{ out.push({method,body}); return {ok:true}; };
+  const bot=createLiveBot({api,load:()=>db&&JSON.parse(JSON.stringify(db)),save:s=>{ db=JSON.parse(JSON.stringify(s)); },now:()=>clock.t,admins:[ADMIN],schedule:()=>sched});
+  const last=c=>out.filter(x=>x.method==='sendMessage'&&String(x.body.chat_id)===String(c)).pop().body;
+  await bot.tick();
+  assert.equal(db.sessions.length,1,'только будущий и корректный'); assert.equal(db.sessions[0].id,'10112000'); assert.equal(db.sessions[0].min,60);
+  await bot.onUpdate({message:{message_id:1,chat:{id:3,type:'private'},from:{id:3,first_name:'Ваня'},text:'/start'}});
+  assert.match(last(3).reply_markup.inline_keyboard[0][0].text,/вт 10\.11 · 20:00 · РК2: разбор типов задач/);
+  await bot.onUpdate({callback_query:{id:'q',data:'j:10112000',from:{id:3},message:{chat:{id:3}}}});
+  assert.match(last(3).text,/1 час онлайн в Телемосте/);
+  await bot.tick(); assert.equal(db.sessions.length,1,'второй раз не дублирует');
+  /* после конца часового эфира — «помогло?» (а не через 1,5 часа) */
+  clock.t=Date.parse('2026-11-10T18:01:00Z'); await bot.tick(); assert.match(last(3).text,/Помогло\?/);
+  /* владелец отменил — из расписания не вернётся */
+  clock.t=Date.parse('2026-11-09T23:30:00Z'); sched=[{date:'2026-11-11',time:'20:00',topic:'РК2'}]; await bot.tick();
+  await bot.onUpdate({callback_query:{id:'q',data:'a:X:11112000',from:{id:ADMIN},message:{chat:{id:ADMIN}}}});
+  await bot.tick(); assert.ok(!db.sessions.some(s=>s.id==='11112000'));
+  /* длительность — кнопкой: 1 час → 1,5 → 2 → 1 */
+  await bot.onUpdate({callback_query:{id:'q',data:'a:u:10112000',from:{id:ADMIN},message:{chat:{id:ADMIN}}}});
+  assert.equal(db.sessions.find(s=>s.id==='10112000').min,90);
 });

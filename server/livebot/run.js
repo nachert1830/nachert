@@ -24,7 +24,11 @@ async function api(method,body,timeoutMs){
     return j; }
   catch(e){ return {ok:false,description:'нет связи с Telegram ('+(e&&e.cause&&e.cause.code||e&&e.name||'ошибка')+')'}; } }
 
-const bot=createLiveBot({api,load,save,admins:ADMINS,site:process.env.LIVEBOT_SITE||'https://nachert1830.ru',log:(...a)=>console.log(new Date().toISOString(),...a)});
+/* расписание эфиров из репозитория (schedule.json рядом): бот сам добавит эфиры, которых у него ещё нет.
+   Поправил файл → на сервере та же команда установки (git pull + перезапуск). Добавлять можно и кнопками в боте. */
+const SCHED=process.env.LIVEBOT_SCHEDULE||path.join(__dirname,'schedule.json');
+const schedule=()=>{ try{ return JSON.parse(fs.readFileSync(SCHED,'utf8')); }catch(e){ return []; } };
+const bot=createLiveBot({api,load,save,schedule,admins:ADMINS,site:process.env.LIVEBOT_SITE||'https://nachert1830.ru',log:(...a)=>console.log(new Date().toISOString(),...a)});
 /* одна очередь: обновления и таймер не пересекаются (данные — один файл) */
 let chain=Promise.resolve(); const q=fn=>(chain=chain.then(fn).catch(e=>console.error(new Date().toISOString(),'ошибка:',e&&e.stack||e)));
 
