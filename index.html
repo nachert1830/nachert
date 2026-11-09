@@ -32536,7 +32536,12 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 #snow.on{opacity:1}
 #foot .snow-tg{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0;border:0;background:none;font:inherit;color:var(--blue-ink);font-weight:600;cursor:pointer}
 #foot .snow-tg:hover{text-decoration:underline}
-@media print{#snow{display:none}}
+/* снег лежит на верхнем крае карточек главной, как на крыше */
+.snowcap{position:absolute;left:0;right:0;top:0;height:16px;pointer-events:none;z-index:2;filter:drop-shadow(0 2px 2px rgba(20,40,90,.22))}
+.snowcap svg{display:block;width:100%;height:100%}
+.snowcap path{fill:#fff}
+:root[data-theme=dark] .snowcap path{fill:#eef3ff}
+@media print{#snow,.snowcap{display:none}}
 </style>
 <script>
 (function(){
@@ -32585,9 +32590,23 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
     cv=D.createElement('canvas'); cv.id='snow'; cv.setAttribute('aria-hidden','true'); g=cv.getContext('2d');
     if(!g){ cv=null; return; }
     sprite=sprite||mkSprite('255,255,255','120,150,195'); spriteDark=spriteDark||mkSprite('255,255,255','255,255,255');
-    D.body.appendChild(cv); size(); t0=performance.now(); start();
+    D.body.appendChild(cv); size(); t0=performance.now(); start(); caps(true);
     W.requestAnimationFrame(function(){ cv&&cv.classList.add('on'); }); }
-  function off(){ if(!cv) return; stop(); cv.remove(); cv=null; flakes=[]; }
+  function off(){ caps(false); if(!cv) return; stop(); cv.remove(); cv=null; flakes=[]; }
+
+  /* шапки снега: неровный сугроб по верхнему краю, у каждой карточки свой */
+  var CAP='.hc,.v9-hero', mo=null;
+  function capSvg(){ var n=14, y=[], d='M0 0H100V', i;
+    for(i=0;i<=n;i++) y.push(5+Math.random()*6+(i%3===0?Math.random()*4:0));
+    d+=y[n].toFixed(1);
+    for(i=n-1;i>=0;i--){ var x0=(i+1)*100/n, x1=i*100/n, cx=(x0+x1)/2;
+      d+='Q'+cx.toFixed(1)+' '+(Math.max(y[i],y[i+1])+3).toFixed(1)+' '+x1.toFixed(1)+' '+y[i].toFixed(1); }
+    return '<svg viewBox="0 0 100 16" preserveAspectRatio="none"><path d="'+d+'Z"/></svg>'; }
+  function caps(add){ var v=D.getElementById('view'); if(!v) return;
+    if(!add){ if(mo){ mo.disconnect(); mo=null; } D.querySelectorAll('.snowcap').forEach(function(e){ e.remove(); }); return; }
+    var put=function(){ v.querySelectorAll(CAP).forEach(function(el){ if(el.querySelector(':scope>.snowcap')) return;
+      var c=D.createElement('span'); c.className='snowcap'; c.setAttribute('aria-hidden','true'); c.innerHTML=capSvg(); el.insertBefore(c,el.firstChild); }); };
+    put(); if(!mo){ mo=new MutationObserver(put); mo.observe(v,{childList:true,subtree:true}); } }
 
   W.addEventListener('resize',function(){ if(cv) size(); });
   D.addEventListener('visibilitychange',function(){ if(D.hidden) stop(); else start(); });
