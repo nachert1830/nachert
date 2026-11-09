@@ -72,7 +72,10 @@ function countHTML(d,e){
   return '<div class="cnt word"><b>'+(d===1?'Завтра':'Сегодня')+'</b><span>'+esc(human(e.date))+(e.time?' · до '+esc(e.time.replace(/^0/,'')):'')+'</span></div>';
 }
 function prepOf(e){ const st=PREP[e.subj], m=PREPD[e.id]||{}, n=st.filter(s=>m[s.k]).length; return {steps:st,m,n,all:st.length,next:st.filter(s=>!m[s.k])[0]||null}; }
-const debts=()=>{ const t=todayDay(); return events().filter(e=>e.kind==='dz'&&!DONE[e.id]&&isPast(e,t)); };
+/* модуль закрывается сам: отмечены ДЗ и РК с тем же номером по предмету; вручную не отмечается */
+function isDone(e){ return e.kind==='m'?!!(DONE[e.subj+'-dz'+e.n]&&DONE[e.subj+'-rk'+e.n]):!!DONE[e.id]; }
+Object.keys(DONE).forEach(k=>{ if(/-m\d+$/.test(k)) delete DONE[k]; });
+const debts=()=>{ const t=todayDay(); return events().filter(e=>e.kind==='dz'&&!isDone(e)&&isPast(e,t)); };
 function rkUpcoming(){ const t=todayDay(), seen={}; return events().filter(e=>{ if(e.kind!=='rk'||isPast(e,t)||seen[e.subj]) return false; seen[e.subj]=1; return true; }); }
 function lessonsOn(g,d){ const w=wday(d), wk=curWeek(d), par=(wk%2?'чс':'зн'); return g?g.lessons.filter(l=>l.day===w&&(!l.par||l.par===par)).sort((a,b)=>a.t<b.t?-1:1):[]; }
 function nextLesson(g){
@@ -117,10 +120,10 @@ function renderHello(){
   const t=todayDay(), x=new Date(t*DAY), cw=curWeek(t), h=new Date().getHours();
   $('#helloK').textContent=WDF[wday(t)]+', '+x.getUTCDate()+' '+MONF[x.getUTCMonth()]+(cw>=1&&cw<=WEEKS?' · '+cw+'-я неделя':'');
   $('#helloT').textContent=(h<5?'Доброй ночи':h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер')+(P.name?', '+P.name:'')+'!';
-  const ev=events(), ds=debts(), wk=ev.filter(e=>e.week===cw&&!DONE[e.id]&&!isPast(e,t)&&e.kind!=='m'), s=[];
+  const ev=events(), ds=debts(), wk=ev.filter(e=>e.week===cw&&!isDone(e)&&!isPast(e,t)&&e.kind!=='m'), s=[];
   if(ds.length) s.push('<b>'+ds.length+' '+plural(ds.length,'долг','долга','долгов')+'</b> — отметь, если уже сдал.');
   if(wk.length) s.push('На этой неделе: '+wk.map(e=>'<b>'+label(e)+' · '+SUBJ[e.subj]+'</b>').join(' и ')+'.');
-  else { const n=ev.filter(e=>!DONE[e.id]&&!isPast(e,t)&&e.kind!=='m')[0]; s.push(n?'Ближайшее — <b>'+label(n)+' · '+SUBJ[n.subj]+'</b> '+inWords(n.date-t)+'.':'Несданного в семестре нет — красота.'); }
+  else { const n=ev.filter(e=>!isDone(e)&&!isPast(e,t)&&e.kind!=='m')[0]; s.push(n?'Ближайшее — <b>'+label(n)+' · '+SUBJ[n.subj]+'</b> '+inWords(n.date-t)+'.':'Несданного в семестре нет — красота.'); }
   const g0=gdata(), nl=g0&&nextLesson(g0); if(nl&&nl.i<=1) s.push('Пара '+(nl.i===0?'сегодня':'завтра')+' в <b>'+esc(nl.l.t.replace(/^0/,''))+'</b>, ауд. '+esc(nl.l.rooms.join(', '))+'.');
   if(!group()) s.push('Выбери группу — сроки встанут по твоим парам.');
   $('#helloS').innerHTML=s.join(' ');
@@ -132,13 +135,13 @@ function renderHello(){
 /* ═══ «Горит» ═══ */
 function renderHot(){
   const t=todayDay(), ev=events(), box=$('#hot');
-  const up=k=>ev.filter(x=>x.kind===k&&!DONE[x.id]&&!isPast(x,t))[0], nDz=up('dz'), nRk=up('rk');
+  const up=k=>ev.filter(x=>x.kind===k&&!isDone(x)&&!isPast(x,t))[0], nDz=up('dz'), nRk=up('rk');
   let hk=LKS.raw('lk_hotk'); if(hk!=='dz'&&hk!=='rk') hk=nDz&&(!nRk||nDz.date<=nRk.date)?'dz':'rk';
-  const e=(hk==='rk'?nRk||nDz:nDz||nRk)||ev.filter(x=>!DONE[x.id]&&!isPast(x,t)&&x.kind!=='m')[0];
+  const e=(hk==='rk'?nRk||nDz:nDz||nRk)||ev.filter(x=>!isDone(x)&&!isPast(x,t)&&x.kind!=='m')[0];
   const sw=nDz&&nRk?'<span class="hsw" role="tablist" aria-label="Что показать"><button data-hotk="dz" class="'+(e===nDz?'on':'')+'" aria-selected="'+(e===nDz)+'">ДЗ</button><button data-hotk="rk" class="'+(e===nRk?'on':'')+'" aria-selected="'+(e===nRk)+'">РК</button></span>':'';
   if(!e){ box.className='plash ok'; box.innerHTML='<div class="p-top"><span class="pill">'+ico('check')+'Всё сдано</span></div><div style="margin-top:auto"><div class="p-t">Чисто!</div><div class="p-s">Несданных заданий в этом семестре нет. Можно повторить темы к экзамену.</div></div><div class="acts"><a class="btn white" href="/#/ng/learn">Тренировка дня →</a></div>'; return; }
   const d=e.date-t, hz=heat(d), same=ev.filter(x=>x.subj===e.subj&&x.kind===e.kind&&x.date<e.date), from=same.length?same[same.length-1].date:toDay(W1);
-  const frac=Math.max(0,Math.min(1,(t-from)/Math.max(1,e.date-from))), nxt=ev.filter(x=>x!==e&&!DONE[x.id]&&!isPast(x,t)&&x.kind!=='m')[0], lk=linkOf(e);
+  const frac=Math.max(0,Math.min(1,(t-from)/Math.max(1,e.date-from))), nxt=ev.filter(x=>x!==e&&!isDone(x)&&!isPast(x,t)&&x.kind!=='m')[0], lk=linkOf(e);
   const pill=hz==='hot'?'<span class="pill live"><i></i>Горит</span>':hz==='warm'?'<span class="pill"><i></i>Скоро</span>':'<span class="pill">'+ico('cal')+'По плану</span>';
   const vtxt=e.kind==='dz'&&variant()&&siteDz(e)?' · <b>вариант '+variant()+'</b>':'';
   box.className='plash '+hz; box.setAttribute('aria-label',label(e)+' '+SUBJ_FULL[e.subj]+', '+inWords(d));
@@ -189,7 +192,7 @@ const PANELS=[
       +'<span class="tv">'+label(e)+'</span><span class="td">'+SUBJ[e.subj]+' · '+inWords(d)+'<br><b>готов на '+Math.round(p.n/p.all*100)+'%</b></span>'
       +'<span class="tn">'+(p.next?'Шаг '+(p.n+1)+': '+esc(p.next.t):'Все шаги пройдены')+' →</span>'}; },
   /* гайд по ближайшему ДЗ — разбор варианта по шагам на сайте */
-  ()=>{ const t=todayDay(), e=events().filter(x=>x.kind==='dz'&&!DONE[x.id]&&!isPast(x,t))[0]||events().filter(x=>x.kind==='dz'&&!DONE[x.id])[0];
+  ()=>{ const t=todayDay(), e=events().filter(x=>x.kind==='dz'&&!isDone(x)&&!isPast(x,t))[0]||events().filter(x=>x.kind==='dz'&&!isDone(x))[0];
     if(!e) return {cls:'blue',tag:'a',attr:'href="/#/dz"',html:'<span class="tk">'+ico('cube')+'Гайд по ДЗ</span><span class="tv">Все ДЗ</span><span class="td">разборы вариантов по шагам</span><span class="tn">Открыть →</span>'};
     const v=variant(), ok=siteDz(e);
     if(ok&&!v) return {cls:'blue',tag:'button',attr:'data-variant',html:'<span class="tk">'+ico('cube')+'Гайд по ДЗ</span><span class="tv">'+label(e)+'</span><span class="td">'+SUBJ[e.subj]+'<br>выбери вариант — откроем твой</span><span class="tn">Выбрать вариант →</span>'};
@@ -202,10 +205,11 @@ function renderPanels(){
 
 /* ═══ Сдачи ═══ */
 function row(e,t){
-  const past=isPast(e,t), done=!!DONE[e.id], d=e.date-t, debt=past&&!done&&e.kind==='dz', lk=linkOf(e);
-  const right=done?doneWord(e):debt?'долг':past?'прошло':inWords(d);
+  const past=isPast(e,t), done=!!isDone(e), d=e.date-t, debt=past&&!done&&e.kind==='dz', lk=linkOf(e);
+  const right=done?doneWord(e):e.kind==='m'?(past?'ждёт ДЗ '+e.n+' и РК '+e.n:'закроется сам'):debt?'долг':past?'прошло':inWords(d);
   return '<div class="row k-'+e.kind+(done?' done':debt?' debt':past?' pastx':d<=7?' near':'')+'">'
-    +'<button class="chk" data-done="'+e.id+'" aria-pressed="'+done+'" aria-label="'+label(e)+' '+SUBJ[e.subj]+': '+(done?'снять отметку':'отметить — '+doneWord(e))+'">'+ico('check')+'</button>'
+    +(e.kind==='m'?'<span class="chk mod'+(done?' on':'')+'" title="Закроется сам, когда отмечены ДЗ '+e.n+' и РК '+e.n+'">'+ico('check')+'</span>'
+      :'<button class="chk" data-done="'+e.id+'" aria-pressed="'+done+'" aria-label="'+label(e)+' '+SUBJ[e.subj]+': '+(done?'снять отметку':'отметить — '+doneWord(e))+'">'+ico('check')+'</button>')
     +'<div class="m"><b><span class="kd">'+label(e)+'</span>'+SUBJ[e.subj]+'</b><small>'+esc(dateText(e))+'</small></div>'
     +'<div class="d">'+right+'</div>'
     +(lk?'<a class="go" href="'+lk+'" aria-label="Открыть на сайте: '+label(e)+' '+SUBJ[e.subj]+'">'+ico('chev')+'</a>':'<span class="go"></span>')+'</div>';
@@ -214,22 +218,22 @@ function wkName(w,cw){ if(w===cw) return 'Эта неделя'; if(w===cw+1) ret
   return 'Неделя '+w+' · '+a.getUTCDate()+(a.getUTCMonth()!==b.getUTCMonth()?' '+MON[a.getUTCMonth()]:'')+'–'+b.getUTCDate()+' '+MON[b.getUTCMonth()]; }
 function renderCal(){
   const t=todayDay(), cw=curWeek(t), all=events(), f=all.filter(e=>FILTER==='all'||e.kind===FILTER);
-  const main=all.filter(e=>e.kind!=='m'), dn=main.filter(e=>DONE[e.id]).length, ds=debts(), upNot=all.filter(e=>!isPast(e,t)&&!DONE[e.id]);
+  const main=all.filter(e=>e.kind!=='m'), dn=main.filter(e=>isDone(e)).length, ds=debts(), upNot=all.filter(e=>!isPast(e,t)&&!isDone(e)&&e.kind!=='m');
   const fr=dn/Math.max(1,main.length), c=2*Math.PI*36;
   $('#calSum').innerHTML='<div class="ring"><svg viewBox="0 0 86 86"><circle cx="43" cy="43" r="36" fill="none" stroke="var(--surf3)" stroke-width="9"/><circle cx="43" cy="43" r="36" fill="none" stroke="var(--green)" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+(c*(1-fr)).toFixed(1)+'"/></svg><b>'+Math.round(fr*100)+'%</b></div>'
     +'<div class="m"><b>'+dn+' из '+main.length+' сдано</b><small>Долгов: <b style="color:'+(ds.length?'var(--red)':'inherit')+'">'+ds.length+'</b> · впереди: <b>'+upNot.length+'</b>'+(upNot[0]?' · ближайшее — '+label(upNot[0])+' · '+SUBJ[upNot[0].subj]+', '+inWords(upNot[0].date-t):'')+'</small>'
     +(group()?'':'<small><a href="#" data-group style="color:var(--blue);font-weight:700">Выбери группу</a> — даты встанут по твоим парам</small>')+'</div>';
-  let h=''; const debtF=f.filter(e=>e.kind==='dz'&&!DONE[e.id]&&isPast(e,t));
+  let h=''; const debtF=f.filter(e=>e.kind==='dz'&&!isDone(e)&&isPast(e,t));
   if(debtF.length) h+='<div class="wkl" style="color:var(--red)">Долги — отметь, если уже сдал</div>'+debtF.map(e=>row(e,t)).join('')+(debtF.length>1?'<button class="btn flat" data-all-past style="margin-top:2px">Всё прошедшее — сдано</button>':'');
   const up=f.filter(e=>!isPast(e,t)); let lastW=-1;
   up.forEach(e=>{ if(e.week!==lastW){ lastW=e.week; h+='<div class="wkl">'+wkName(e.week,cw)+'</div>'; } h+=row(e,t); });
   if(!up.length) h+='<div class="card mut">Впереди ничего нет.</div>';
-  const past=f.filter(e=>isPast(e,t)&&!(e.kind==='dz'&&!DONE[e.id]));
+  const past=f.filter(e=>isPast(e,t)&&!(e.kind==='dz'&&!isDone(e)));
   if(past.length) h+='<details class="past"><summary>Прошедшие ('+past.length+')</summary><div class="rows">'+past.map(e=>row(e,t)).join('')+'</div></details>';
   h+='<p class="note">'+(group()?'Срок — день твоего занятия на этой неделе, до начала пары. Точный день уточни у преподавателя.':'Точный день сдачи уточни у преподавателя.')+'</p>';
   $('#calList').innerHTML=h;
   $$('.seg [data-filter]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-filter')===FILTER));
-  const n=ds.length+all.filter(e=>!isPast(e,t)&&!DONE[e.id]&&e.date-t<=7).length, b=$('#calBadge'); b.textContent=n; b.hidden=!n;
+  const n=ds.length+all.filter(e=>!isPast(e,t)&&!isDone(e)&&e.date-t<=7).length, b=$('#calBadge'); b.textContent=n; b.hidden=!n;
 }
 
 /* ═══ РК ═══ */
@@ -258,7 +262,7 @@ function renderRk(){
 /* ═══ Профиль ═══ */
 function fmtDate(ts){ const x=new Date(ts); return x.getDate()+' '+MONF[x.getMonth()]; }
 function renderMe(){
-  const s=site(), nd=Object.keys(DONE).filter(k=>DONE[k]).length, np=Object.keys(PREPD).reduce((a,k)=>a+Object.keys(PREPD[k]||{}).filter(x=>PREPD[k][x]).length,0);
+  const s=site(), nd=Object.keys(DONE).filter(k=>DONE[k]&&!/-m\d+$/.test(k)).length, np=Object.keys(PREPD).reduce((a,k)=>a+Object.keys(PREPD[k]||{}).filter(x=>PREPD[k][x]).length,0);
   $('#meAv').textContent=initials(); $('#meName').textContent=P.name||'Студент';
   $('#meSince').textContent=(group()?'Группа '+group():'Группа не выбрана')+(P.created?' · в кабинете с '+fmtDate(P.created):'');
   $('#kvN').textContent=P.name||'Указать'; $('#kvG').textContent=group()||'Выбрать'; $('#kvV').textContent=variant()||'Выбрать';
@@ -321,7 +325,7 @@ function renderAll(){ renderHello(); renderHot(); renderDebt(); renderCont(); re
 /* ═══ Действия ═══ */
 let tt; function toast(s){ const el=$('#toast'); el.textContent=s; el.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('on'),2000); }
 const findEv=id=>events().filter(e=>e.id===id)[0];
-function setDone(id){ const e=findEv(id); if(DONE[id]) delete DONE[id]; else DONE[id]=Date.now(); LKS.set('lk_done',DONE); LKS.markDay(); renderAll(); if(e) toast(DONE[id]?label(e)+' · '+SUBJ[e.subj]+' — '+doneWord(e)+' ✓':'Отметка снята'); }
+function setDone(id){ if(/-m\d+$/.test(id)) return; const e=findEv(id); if(DONE[id]) delete DONE[id]; else DONE[id]=Date.now(); LKS.set('lk_done',DONE); LKS.markDay(); renderAll(); if(e) toast(DONE[id]?label(e)+' · '+SUBJ[e.subj]+' — '+doneWord(e)+' ✓':'Отметка снята'); }
 document.addEventListener('click',ev=>{
   let b=ev.target.closest('[data-done]');
   if(b){ ev.preventDefault(); setDone(b.getAttribute('data-done')); return; }
@@ -397,7 +401,7 @@ function obShow(){
 }
 function obFinish(){
   P.name=OB.d.name; P.group=OB.d.group; P.variant=OB.d.variant||0; P.onb=1; saveP();
-  const t=todayDay(), ev=events(), n=ev.filter(e=>!DONE[e.id]&&!isPast(e,t)&&e.kind!=='m')[0], g=gdata(), nl=g&&nextLesson(g);
+  const t=todayDay(), ev=events(), n=ev.filter(e=>!isDone(e)&&!isPast(e,t)&&e.kind!=='m')[0], g=gdata(), nl=g&&nextLesson(g);
   $('#obDoneT').textContent=P.name?'Готово, '+P.name+'!':'Готово!';
   $('#obDoneS').textContent='Кабинет собран под тебя. Всё сохраняется само.';
   const it=[];

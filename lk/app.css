@@ -541,3 +541,7 @@ details.past[open] summary::before{content:"▾ "}
 .hsw button.on{background:#fff;color:#0a1636}
 .hello .nudge small{text-transform:none;letter-spacing:0;font:500 13px var(--sans);color:var(--mut)}
 .acc .acts .btn.sm{flex:0 0 auto}
+
+.chk.mod{border-style:dashed;cursor:default}
+.chk.mod.on{background:var(--green);border:2px solid var(--green);color:#fff}
+.row.k-m .d{color:var(--mut);font-weight:600}
