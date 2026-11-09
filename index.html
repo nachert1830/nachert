@@ -4495,6 +4495,21 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 :root[data-theme=dark] .v9-hero .v8-h{color:#fff!important}
 :root[data-theme=dark] .v9-hero::before{background:linear-gradient(90deg,var(--acc) 0 9px,#fff 9px 13px,var(--red) 13px 22px)!important}
 @media(max-width:560px){.v9-hero::before,.v9-hero::after{width:12px!important}.v9-hero::before{background:linear-gradient(90deg,var(--strap) 0 5px,#fff 5px 7px,var(--red) 7px 12px)!important}.v9-hero::after{background:linear-gradient(90deg,var(--red) 0 5px,#fff 5px 7px,var(--strap) 7px 12px)}}
+/* поиск скромнее: без полос по бокам, меньше по размеру */
+.v9-hero::before,.v9-hero::after,:root[data-theme=dark] .v9-hero::before{display:none!important}
+.v9-hero{padding:26px 28px 20px!important;border-radius:24px!important;box-shadow:0 14px 30px -26px rgba(28,42,110,.4)!important}
+.v9-kick{margin-bottom:8px;font-size:11px;padding:4px 10px}
+.v9-hero .v8-h{font-size:clamp(24px,3.6vw,32px)!important;margin:2px auto 6px!important}
+.v9-hero .v8-sub{font-size:14.5px!important;margin-bottom:14px!important}
+.v9-hero .v8-box{max-width:600px}
+.v9-hero .v8-box .sr-form{border-radius:16px;box-shadow:0 0 0 1.5px var(--line2),0 8px 20px -16px rgba(28,42,110,.45)!important}
+.v9-hero .v8-box .sr-in{min-height:52px!important;font-size:16px!important;border-radius:16px!important;padding:0 128px 0 46px!important}
+.v9-hero .v8-box .sr-ic{left:16px}
+.v9-hero .v8-box .sr-clr{right:110px}
+.v9-go{height:40px;padding:0 16px;border-radius:12px;font-size:15px;right:6px;box-shadow:0 3px 0 var(--red-d)}
+.v9-hero .v8-ex{margin-top:12px!important}
+.v9-hero .v8-ex button{min-height:34px}
+@media(max-width:640px){.v9-hero{padding:20px 14px 16px!important}.v9-go{width:40px;padding:0}.v9-hero .v8-box .sr-in{min-height:50px!important;padding:0 56px 0 42px!important}.v9-hero .v8-box .sr-clr{right:50px}}
 
 /* разделы на главной: белые карточки с полосой ремешка сверху */
 .v8-dirs .v8-dh{font:800 24px/1.2 var(--disp)!important;letter-spacing:-.02em;color:var(--strap)}
@@ -32514,6 +32529,79 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 
 
 
+</script>
+<!-- снег: с 1 декабря по 14 января (посмотреть раньше — ?snow=1, выключить — кнопка «Снег» в подвале или ?snow=0) -->
+<style>
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:55;opacity:0;transition:opacity 1.6s ease}
+#snow.on{opacity:1}
+#foot .snow-tg{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0;border:0;background:none;font:inherit;color:var(--blue-ink);font-weight:600;cursor:pointer}
+#foot .snow-tg:hover{text-decoration:underline}
+@media print{#snow{display:none}}
+</style>
+<script>
+(function(){
+  var KEY='nch2_snow', W=window, D=document;
+  function pref(){ try{ var q=/[?&]snow=(1|0)\b/.exec(location.search); if(q){ localStorage.setItem(KEY,q[1]==='1'?'on':'off'); } return localStorage.getItem(KEY); }catch(e){ return null; } }
+  function season(){ var d=new Date(), m=d.getMonth(), day=d.getDate(); return m===11||(m===0&&day<=14); }
+  var p=pref(), inSeason=season();
+  if(!inSeason&&p!=='on') return;
+  var calm=W.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  var cv=null, g=null, raf=0, flakes=[], w=0, h=0, dpr=1, last=0, t0=0, wind=0, windT=0, sprite=null, spriteDark=null;
+
+  /* мягкая снежинка: размытый круг, рисуем один раз и штампуем */
+  function mkSprite(core,edge){ var s=64, c=D.createElement('canvas'); c.width=c.height=s; var x=c.getContext('2d'),
+      gr=x.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+    gr.addColorStop(0,'rgba('+core+',1)'); gr.addColorStop(.4,'rgba('+core+',.9)'); gr.addColorStop(.7,'rgba('+edge+',.35)'); gr.addColorStop(1,'rgba('+edge+',0)');
+    x.fillStyle=gr; x.beginPath(); x.arc(s/2,s/2,s/2,0,7); x.fill(); return c; }
+
+  function flake(top){ var z=Math.random(); z=z*z; /* больше дальних — маленьких и медленных */
+    return { x:Math.random()*w, y:top?Math.random()*h:-10-Math.random()*40,
+      r:1.1+z*4.6, vy:16+z*52, a:.4+z*.55, ph:Math.random()*6.28, sw:.4+Math.random()*1.1, amp:6+z*18, z:z }; }
+
+  function size(){ dpr=Math.min(W.devicePixelRatio||1,1.5); w=W.innerWidth; h=W.innerHeight;
+    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); g.setTransform(dpr,0,0,dpr,0,0);
+    var n=Math.round(Math.min(140,Math.max(36,w*h/9000)));
+    while(flakes.length<n) flakes.push(flake(true)); flakes.length=n; }
+
+  function frame(now){ raf=W.requestAnimationFrame(frame);
+    var dt=Math.min(.05,(now-(last||now))/1000); last=now; var t=(now-t0)/1000;
+    /* ветер — редкие плавные порывы */
+    if(now>windT){ windT=now+4000+Math.random()*7000; wind=(Math.random()-.5)*26; }
+    var dark=D.documentElement.dataset.theme==='dark', sp=dark?spriteDark:sprite;
+    g.clearRect(0,0,w,h);
+    for(var i=0;i<flakes.length;i++){ var f=flakes[i];
+      f.y+=f.vy*dt; f.x+=wind*(.3+f.z)*dt;
+      var x=f.x+Math.sin(t*f.sw+f.ph)*f.amp;
+      if(f.y>h+10){ flakes[i]=flake(false); continue; }
+      if(x<-20) f.x+=w+40; else if(x>w+20) f.x-=w+40;
+      var d=f.r*2.4; g.globalAlpha=dark?f.a:Math.min(1,f.a*1.15); g.drawImage(sp,x-d/2,f.y-d/2,d,d); }
+    g.globalAlpha=1; }
+
+  function start(){ if(raf||!cv) return; last=0; raf=W.requestAnimationFrame(frame); }
+  function stop(){ if(raf) W.cancelAnimationFrame(raf); raf=0; }
+
+  function on(){ if(cv) return;
+    cv=D.createElement('canvas'); cv.id='snow'; cv.setAttribute('aria-hidden','true'); g=cv.getContext('2d');
+    if(!g){ cv=null; return; }
+    sprite=sprite||mkSprite('255,255,255','120,150,195'); spriteDark=spriteDark||mkSprite('255,255,255','255,255,255');
+    D.body.appendChild(cv); size(); t0=performance.now(); start();
+    W.requestAnimationFrame(function(){ cv&&cv.classList.add('on'); }); }
+  function off(){ if(!cv) return; stop(); cv.remove(); cv=null; flakes=[]; }
+
+  W.addEventListener('resize',function(){ if(cv) size(); });
+  D.addEventListener('visibilitychange',function(){ if(D.hidden) stop(); else start(); });
+
+  var enabled=calm?p==='on':p!=='off'; /* «меньше движения» в системе — снег только по кнопке */
+  function btn(){ var r=D.querySelector('#foot .foot-r'); if(!r) return;
+    var b=D.createElement('button'); b.type='button'; b.className='snow-tg';
+    var set=function(){ b.textContent=enabled?'❄ Выключить снег':'❄ Включить снег'; b.setAttribute('aria-pressed',enabled?'true':'false'); };
+    b.addEventListener('click',function(){ enabled=!enabled; try{ localStorage.setItem(KEY,enabled?'on':'off'); }catch(e){} enabled?on():off(); set(); });
+    set(); r.appendChild(b); }
+
+  function go(){ btn(); if(enabled) on(); }
+  if(D.readyState==='loading') D.addEventListener('DOMContentLoaded',go); else go();
+})();
 </script>
 <!-- личный кабинет: персонализация сайта для тех, кто настроил кабинет (lk/site.js) -->
 <script src="lk/lib/calendar.js?v=1" defer></script>
