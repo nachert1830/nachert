@@ -12,10 +12,13 @@
 (function(){
 'use strict';
 const LIBS=['/core/dz.js','/core/dz-variants.js','/lab/img.js','/lab/clean.js','/lab/font.js','/lab/sheets.js','/lab/rectify.js','/lab/lines.js',
- '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js','/lk/scan/verify.js'];
+ '/lab/dz/sheet.js','/lab/dz/locate.js','/lab/dz/digitize.js','/lab/dz/model.js','/lab/dz/model3.js','/lab/dz/calib.js','/lab/dz/check2.js','/lab/dz/check3.js','/lab/dz/explain2.js','/lab/dz/report2.js','/lab/dz/check.js','/lab/dz/grid.js','/lab/dz/given.js','/lab/dz/explain3d.js','/lab/dz/report3d.js','/lab/dz/paper.js','/lab/dz/gridsheet.js','/lab/dz/series.js','/lab/dz/refine.js','/lab/dz/eyes.js','/lab/dz/layout.js','/lab/dz/sheetlib.js','/lk/scan/merge.js','/lk/scan/verify.js','/lk/scan/bind4.js','/lk/scan/verify4.js','/lk/scan/verify5.js','/lk/scan/verdict.js'];
 
-let loading=null;
-function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE&&self.SCANVERIFY) return Promise.resolve();
+let loading=null, ref4=null;
+/* эталон ДЗ №4 (lk/scan/dz4ref.json, ~0,5 МБ: линии пересечения и очерки 30 вариантов) — только когда он может понадобиться */
+function loadRef4(v){ if(self.SCANREF4) return Promise.resolve(self.SCANREF4); if(ref4) return ref4;
+  ref4=fetch('/lk/scan/dz4ref.json?v='+(v||'lk1')).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.v) self.SCANREF4=j.v; return self.SCANREF4||null; }).catch(()=>null).then(x=>{ if(!x) ref4=null; return x; }); return ref4; }
+function load(v){ if(self.LAB&&self.LAB.sheetlib&&self.LAB.layout&&self.LAB.refine&&self.SCANMERGE&&self.SCANVERIFY&&self.SCANBIND4&&self.SCANVERIFY4&&self.SCANVERIFY5&&self.SCANVERDICT) return Promise.resolve();
   if(loading) return loading;
   loading=LIBS.reduce((p,src)=>p.then(()=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src+'?v='+(v||'lk1'); s.async=false;
     s.onload=res; s.onerror=()=>rej(new Error('не загрузился модуль сканера '+src)); document.head.appendChild(s); })),Promise.resolve());
@@ -51,8 +54,8 @@ function modelView(cr,view){ const {w,h,gray}=cr, side=view.side||1568, area=vie
   return {c,s:c.width/w}; }
 /* ответ модели в px её кадра → px вырезки: координаты P/S/C/R/T умножаются на k (углы дуг R — нет) */
 function scaleText(t,k){ if(k===1||t==null) return t; const f=v=>String(Math.round(+v*k*10)/10), num=/^-?\d+(?:[.,]\d+)?$/;
-  return String(t).split(/\r?\n/).map(line=>{ const m=line.match(/^(\s*)([PSCRT])(\s+)(.*)$/); if(!m) return line; const tk=m[4].split(/(\s+)/);   /* токены и пробелы вперемешку */
-    let want={P:[1,2],S:[0,1,2,3],C:[0,1,2],R:[0,1,2],T:[0,1]}[m[2]], n=0; const out=tk.map(x=>{ if(/^\s+$/.test(x)||x==='') return x; const j=n++; return want.includes(j)&&num.test(x)?f(x.replace(',','.')):x; });
+  return String(t).split(/\r?\n/).map(line=>{ const m=line.match(/^(\s*)([PSCRTL])(\s+)(.*)$/); if(!m) return line; const tk=m[4].split(/(\s+)/);   /* токены и пробелы вперемешку */
+    let want={P:[1,2],S:[0,1,2,3],C:[0,1,2],R:[0,1,2],T:[0,1]}[m[2]], n=0; const out=tk.map(x=>{ if(/^\s+$/.test(x)||x==='') return x; const j=n++; return (want?want.includes(j):true)&&num.test(x)?f(x.replace(',','.')):x; });   /* L — кривая: все числа — координаты */
     return m[1]+m[2]+m[3]+out.join(''); }).join('\n'); }
 /* вырезка чертежа для притяжки к карандашу — до 2000 px (раньше 1280: на снимке 12 Мп чертёж терял треть пикселей карандаша);
    кадр модели — увеличенный до 1,15 Мп. Замер 04.11 (16 чертежей, Sonnet, ответ против «как начерчено»): сырые точки модели
@@ -74,24 +77,49 @@ function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.
   /* притяжка считает в индексах пикселей (значение пикселя i — в его центре), а координаты фото, модели и canvas — от края
      пикселя (центр пикселя i — i + 0,5): без поправки вся копия сдвигалась на полпикселя влево-вверх (≈ 0,15 мм при 3,3 px/мм) */
   const HP=0.5, sh=(s,k)=>s.map((v,i)=>i<4?v+k:v), shC=(c,k)=>Object.assign({},c,{cx:c.cx+k,cy:c.cy+k});
-  const ppm=c.geo?c.geo.ppm:ppm0; let rf=RF.refine({w:cr.w,h:cr.h,a:cr.gray},P.segs.map(s=>sh(s,-HP)),{circles:P.circles.map(c=>shC(c,-HP)),findCircles:true,ppm:fit&&fit.ppm?fit.ppm:ppm,region:rg,points:P.pts.map(q=>[q[1]-HP,q[2]-HP]),findCap:0.35});
-  if(mg) rf=MG.keepB(rf,mg.nA,P.circles.map(c=>shC(c,-HP)));   /* добавленное второй моделью без карандаша — вон */
-  rf=Object.assign({},rf,{segs:rf.segs.map(q=>Object.assign({},q,{p:sh(q.p,HP)})),circles:(rf.circles||[]).map(c=>shC(c,HP))});
+  const ppm=c.geo?c.geo.ppm:ppm0, shP=(P,k)=>P.map(q=>[q[0]+k,q[1]+k]);
+  const refineAt=pp=>{ let r=RF.refine({w:cr.w,h:cr.h,a:cr.gray},P.segs.map(s=>sh(s,-HP)),{circles:P.circles.map(c=>shC(c,-HP)),curves:(P.curves||[]).map(q=>({p:shP(q.p,-HP),dash:q.dash,fromB:q.fromB})),findCircles:true,ppm:pp,region:rg,points:P.pts.map(q=>[q[1]-HP,q[2]-HP]),findCap:0.35});
+    if(mg) r=MG.keepB(r,mg.nA,P.circles.map(c=>shC(c,-HP)));   /* добавленное второй моделью без карандаша — вон */
+    return Object.assign({},r,{segs:r.segs.map(q=>Object.assign({},q,{p:sh(q.p,HP)})),circles:(r.circles||[]).map(c=>shC(c,HP)),curves:(r.curves||[]).map(q=>Object.assign({},q,{p:shP(q.p,HP)}))}); };
+  let rf=refineAt(fit&&fit.ppm?fit.ppm:ppm);
+  /* ДЗ №4 (lk/scan/bind4.js): подписанных точек условия нет — вариант и масштаб по очеркам тел (окружности, образующие, ось x).
+     Пробуется, если задание — ДЗ №4 или «узнать само», а к ДЗ №2–3 чертёж не привязался. Масштаб до привязки — догадка по
+     размеру фото: если привязка дала другой (> 20 %), притяжка к карандашу повторяется с верным (окна поиска — в мм) */
+  const R4=self.SCANREF4, B4=self.SCANBIND4, bound23=fit&&fit.rmsMm!=null&&fit.inl>=4;
+  if(R4&&B4&&!(c.geo&&c.geo.dz!==4)&&(c.dzSel===4||(c.dzSel==null&&!bound23))){ const ns=c.vSel!=='auto'&&R4[+c.vSel]?+c.vSel:null;
+    const b4=r=>{ try{ return B4.bind({segs:r.segs.filter(q=>!q.unverified).map(q=>q.p),circles:(r.circles||[]).filter(q=>!q.unverified),curves:(r.curves||[]).filter(q=>!q.unverified).map(q=>q.p)},R4,{n:ns}); }catch(e){ return null; } };
+    const ok4=f=>f&&f.cover>=(c.dzSel===4?0.4:0.6)&&f.rmsMm<=1;
+    let f4=b4(rf); if(ok4(f4)&&Math.abs(f4.ppm/(fit&&fit.ppm?fit.ppm:ppm)-1)>0.2){ const r2=refineAt(f4.ppm), g=b4(r2); if(ok4(g)&&g.n===f4.n){ rf=r2; f4=g; } }
+    if(ok4(f4)) fit=f4; }
+  /* ДЗ №5 (lk/scan/verify5.js): поверхность одна на тип вариантов (конус, наклонный цилиндр, поверхность вращения) — привязка
+     по её очеркам и прямой AB тем же bind4 (окружности основания на π₁ дают масштаб и место); вариант внутри типа потом уточняется
+     по AB и подписям A, B (pickVariant, ниже). Пробуется, если задание — ДЗ №5 или «узнать само» и к ДЗ №2–4 чертёж не привязался */
+  const V5=self.SCANVERIFY5; let try5=null;
+  if(V5&&B4&&!(c.geo&&c.geo.dz!==5)&&(c.dzSel===5||(c.dzSel==null&&!bound23&&!(fit&&fit.dz===4)))){ const R5=V5.refs(), ns=c.vSel!=='auto'&&R5[+c.vSel]?+c.vSel:null;
+    const b5=r=>{ try{ const f=B4.bind({segs:r.segs.filter(q=>!q.unverified).map(q=>q.p),circles:(r.circles||[]).filter(q=>!q.unverified),curves:(r.curves||[]).filter(q=>!q.unverified).map(q=>q.p)},R5,{n:ns}); if(f) f.dz=5; else try5={none:true}; return f; }catch(e){ try5={err:String(e&&e.message||e).slice(0,120)}; return null; } };
+    const ok5=f=>f&&f.cover>=(c.dzSel===5?0.55:0.7)&&f.rmsMm<=1;
+    let f5=b5(rf); if(ok5(f5)&&Math.abs(f5.ppm/(fit&&fit.ppm?fit.ppm:ppm)-1)>0.2){ const r2=refineAt(f5.ppm), g=b5(r2); if(ok5(g)){ rf=r2; f5=g; } }
+    if(ok5(f5)){ f5.kind=V5.kindOf(f5.n); fit=f5; } else if(f5) try5={n:f5.n,cover:f5.cover,rmsMm:f5.rmsMm}; }
   /* точки — на перекрёсток уточнённых линий (МНК по всем линиям, что через него проходят) или хотя бы на линию: копия
      геометрически согласована и точнее догадки модели; догадки обеих моделей — кандидаты (refine.placePoints) */
   /* точки условия по форме (голос листа: вариант и масштаб известны, а подписи не прочитаны или перепутаны) — refine.matchGiven */
-  let geo=null; if(c.geo){ const gv=self.CORE&&self.CORE.dzVariants.get(c.geo.dz,c.geo.n), G=gv?L.dzModel.given(gv.id,gv.data).pts.map(q=>({l:q.l,pr:q.pr,at:q.at})):[];
+  let geo=null; if(c.geo&&c.geo.dz!==4){ const gv=self.CORE&&self.CORE.dzVariants.get(c.geo.dz,c.geo.n), G=gv?L.dzModel.given(gv.id,gv.data).pts.map(q=>({l:q.l,pr:q.pr,at:q.at})):[];
     geo=G.length?RF.matchGiven(rf.segs.filter(q=>!q.unverified).map(q=>q.p),G,{ppm:c.geo.ppm}):null;
     if(geo){ const gl=new Set(geo.pts.map(q=>MG.lab(q[0]))); P.pts=P.pts.filter(q=>!gl.has(MG.lab(q[0]))).concat(geo.pts); } }
   const pp=RF.placePoints(P.pts,rf.segs.filter(q=>!q.unverified).map(q=>q.p),{ppm:fit&&fit.ppm?fit.ppm:ppm,alts:mg?mg.alts:null}); P.pts=pp.map(q=>[q[0],q[1],q[2]]);
   const placed={vertex:pp.filter(q=>q[4]>=2).length,line:pp.filter(q=>q[4]===1).length,free:pp.filter(q=>!q[4]).length};
   /* привязка к варианту — заново, по уточнённым точкам: невязка честнее, мм копии точнее (не хуже прежней — иначе прежняя) */
-  { let f2=null; try{ f2=SL.fitVariant(MG.toText(P),c.vSel,c.dzSel); }catch(e){} const rmsOf=f=>f&&f.rmsMm!=null?(f.hom?f.hom.rmsMm:f.rmsMm):null;
+  if(!(fit&&(fit.dz===4||fit.dz===5))){ let f2=null; try{ f2=SL.fitVariant(MG.toText(P),c.vSel,c.dzSel); }catch(e){} const rmsOf=f=>f&&f.rmsMm!=null?(f.hom?f.hom.rmsMm:f.rmsMm):null;
     if(f2&&rmsOf(f2)!=null&&f2.inl>=4&&(!fit||rmsOf(fit)==null||(f2.dz===fit.dz&&f2.n===fit.n&&f2.inl>=fit.inl&&rmsOf(f2)<=rmsOf(fit)+0.02))) fit=f2; }
   let toMm=null; if(fit&&fit.M){ const Mi=IMG.H.inv(fit.M); toMm=(x,y)=>IMG.H.apply(Mi,[x,y]); } else if(fit&&fit.A){ const a=fit.A, det=a[0]*a[4]-a[1]*a[3]; if(Math.abs(det)>1e-9) toMm=(x,y)=>{ const X=x-a[2], Y=y-a[5]; return [(a[4]*X-a[1]*Y)/det,(-a[3]*X+a[0]*Y)/det]; }; }
   const mmCopy=toMm?{pts:P.pts.map(q=>[q[0]].concat(toMm(q[1],q[2]).map(v=>+v.toFixed(2)))),txt:P.txt.map(q=>toMm(q[0],q[1]).map(v=>+v.toFixed(2)).concat(q[2])),segs:rf.segs.map(q=>({p:toMm(q.p[0],q.p[1]).concat(toMm(q.p[2],q.p[3])).map(v=>+v.toFixed(2)),src:q.src,unverified:!!q.unverified,dash:!!q.dash}))}:null;
+  /* ДЗ №5, вариант «авто»: очерки у вариантов типа общие — вариант по прямой AB и подписям A, B в мм листа */
+  if(fit&&fit.dz===5&&mmCopy&&V5&&c.vSel==='auto'){ const pv=V5.pickVariant({pts:mmCopy.pts,segs:mmCopy.segs.map(q=>({p:q.p,unv:q.unverified}))},fit.kind); if(pv){ fit.pick={n:pv.n,cov:pv.cov,labels:pv.labels,second:pv.second&&{n:pv.second.n,cov:pv.second.cov,labels:pv.second.labels}}; fit.bindN=fit.n; fit.n=pv.n; } }
   const circles=(rf.circles||[]).map(c=>{ const poly=SL.arcPoints(c); return {src:c.src,unverified:!!c.unverified,dash:!!c.dash,full:!!c.full,c:[c.cx,c.cy,c.r].map(v=>+v.toFixed(2)),a:c.full?null:[+c.a1.toFixed(1),+c.a2.toFixed(1)],poly:poly.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?poly.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}; });
-  const dr={part:d.part,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length,placed,primesFixed:pf.length},rf.stats)};
+  /* кривые (ДЗ №4): ломаные px фото и мм листа — как дуги */
+  const curves=(rf.curves||[]).map(q=>({src:q.src,unverified:!!q.unverified,dash:!!q.dash,ink:+(q.ink||0).toFixed(2),poly:q.p.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?q.p.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}));
+  const dr={part:d.part,curves,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length,placed,primesFixed:pf.length},rf.stats)};
+  if(try5) dr.try5=try5;   /* ДЗ №5 не привязался: что дала привязка по очеркам (почему — для замера и подсказки) */
   if(mg) dr.merge=mg.info; if(geo) dr.geoGiven={inl:geo.inl,rmsMm:+geo.rmsMm.toFixed(2)};
   return {dr,q:quality(fit,rf,P)}; }
 /* вердикт по одному чертежу: копия (px фото: точки на перекрёстках, линии по карандашу) → разбор как ответ модели → проверка
@@ -148,6 +176,8 @@ function create(o){ o=o||{};
       try{ const j=await ask('layout',sm.c); acc.cost+=j.cost||0; acc.calls++; lay=LY.parseLayout(j.text,1/sm.k,W,H); }
       catch(e){ if(e.status===401||e.status===403) throw e; lay={ok:false,why:e.message}; }   /* неверный код — дальше идти незачем */
       if(!lay.ok){ step('lay','Раскладка не помогла ('+lay.why+') — лист как один чертёж','done'); lay={ok:true,rot:0,drawings:[{box:[0,0,W,H],part:null}]}; }
+      /* ДЗ №4 — один чертёж на лист (три тела, обе проекции); раскладка же видит в нём два-три «чертежа» (″ и ′ порознь) — объединяем рамки */
+      else if((sel.dz==='4'||sel.dz===4)&&lay.drawings.length>1){ const B=lay.drawings.map(d=>d.box); lay.drawings=[{box:[Math.min(...B.map(b=>b[0])),Math.min(...B.map(b=>b[1])),Math.max(...B.map(b=>b[2])),Math.max(...B.map(b=>b[3]))],part:null}]; step('lay','ДЗ №4: рамки раскладки объединены в один чертёж','done'); }
       else step('lay','Чертежей: '+lay.drawings.length+(lay.rot?', лист повёрнут на '+lay.rot+'°':'')+(lay.drawings.some(d=>d.part)?' (части '+lay.drawings.map(d=>d.part||'?').join(', ')+')':''),'done'); }
     const out={name:String(file.name||'лист').replace(/\.[^.]+$/,''),size:[W,H],layout:{rot:lay.rot,n:lay.drawings.length},drawings:[]}; if(sel.single) out.layout.single=true;
     await digitize(lay.drawings.map(d=>({bmp,d,rot:lay.rot,W,H})),out,sel,step,acc,true);
@@ -168,20 +198,21 @@ function create(o){ o=o||{};
      samePpm — все чертежи с одного фото (общий масштаб листа: точки условия по форме по медиане масштаба) */
   async function digitize(units,out,sel,step,acc,samePpm){ const L=self.LAB;
     const dzSel=sel.dz&&sel.dz!=='auto'?+sel.dz:null, vSel=/^\d+$/.test(String(sel.variant||'').trim())?String(sel.variant).trim():'auto';
-    const prec=sel.precision||'max', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
+    const prec=sel.precision||'fast', mname=m=>/opus/.test(m||'')?'Opus':/sonnet/.test(m||'')?'Sonnet':/haiku/.test(m||'')?'Haiku':(m||'?');
     const redo=[], tag=(dr,u)=>{ if(dr&&u.photo!=null) dr.photo=u.photo; return dr; };
+    if(dzSel===4||dzSel==null) await loadRef4();
     const jobs=units.map((u,i)=>async()=>{ const d=u.d, id='d'+i, nm='Чертёж '+(i+1); step(id,nm+': оцифровка…'); const cr=cut(u.bmp,d.box,u.rot,Math.max(40,0.05*Math.max(d.box[2]-d.box[0],d.box[3]-d.box[1])),CUT_SIDE,VIEW), ctx={W:u.W,H:u.H,vSel,dzSel,rot:u.rot,d};
-      let jA; try{ jA=await ask('crop',cr.m.c,sel.model?{model:sel.model}:null); }catch(e){ step(id,nm+': '+e.message,'err'); return tag({part:d.part,box:d.box,error:e.message},u); } acc.cost+=jA.cost||0; acc.calls++;
+      const task=dzSel?{dz:dzSel,n:vSel==='auto'?null:+vSel}:null; let jA; try{ jA=await ask('crop',cr.m.c,Object.assign({},sel.model?{model:sel.model}:{},task&&sel.hint!==false?{task}:{})); }catch(e){ step(id,nm+': '+e.message,'err'); return tag({part:d.part,box:d.box,error:e.message},u); } acc.cost+=jA.cost||0; acc.calls++;
       const reads=[{mode:'crop',model:jA.model,fallback:jA.fallback||null,cost:jA.cost||0}];
       let R=digest(cr,jA.text,null,ctx), tB=null;
       /* вторая, независимая оцифровка другой моделью — если первая слабая (или «максимальная точность»); сливаются, карандаш решает */
       if(!jA.fallback&&(prec==='max'||(prec==='auto'&&R.q.weak))){ step(id,nm+': вторая, независимая оцифровка другой моделью'+(R.q.why.length?' ('+R.q.why.join(', ')+')':'')+'…');
-        try{ const jB=await ask('crop2',cr.m.c); acc.cost+=jB.cost||0; acc.calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
+        try{ const jB=await ask('crop2',cr.m.c,task&&sel.hint!==false?{task}:null); acc.cost+=jB.cost||0; acc.calls++; reads.push({mode:'crop2',model:jB.model,cost:jB.cost||0});
           const M=digest(cr,jA.text,jB.text,ctx); if(better(M.q,R.q)){ R=M; tB=jB.text; } else R.dr.secondKept=false; }
         catch(e){ R.dr.secondError=e.message; } }
       const dr=R.dr, fit=dr.fit, mg=dr.merge; dr.reads=reads; dr.quality=R.q;
       redo[i]=(n,dz,geoPpm)=>{ const X=digest(cr,jA.text,tB,Object.assign({},ctx,{vSel:String(n),dzSel:dz},geoPpm?{geo:{n,dz,ppm:geoPpm*cr.k}}:{})); X.dr.reads=reads; X.dr.quality=X.q; if(mg) X.dr.merge=X.dr.merge||mg; tag(X.dr,u); return X; };   /* те же ответы — другой вариант (голос листа) */
-      step(id,nm+': '+reads.map(r=>mname(r.model)).join(' + ')+' — точек '+dr.stats.pts+', отрезков '+dr.stats.kept+(dr.circles.length?', окружностей и дуг '+dr.circles.length:'')
+      step(id,nm+': '+reads.map(r=>mname(r.model)).join(' + ')+' — точек '+dr.stats.pts+', отрезков '+dr.stats.kept+(dr.circles.length?', окружностей и дуг '+dr.circles.length:'')+(dr.curves&&dr.curves.length?', кривых '+dr.curves.length:'')
         +(mg?' (вторая модель добавила: линий '+Math.max(0,mg.segsAdded-(dr.stats.dropB||0))+', точек '+mg.ptsAdded+')':'')
         +(fit&&fit.rmsMm!=null?', привязка ДЗ №'+fit.dz+' в.'+fit.n+', невязка '+fmt(fit.hom?fit.hom.rmsMm:fit.rmsMm)+' мм':', к условию не привязался'),'done'); return tag(dr,u); });
     /* до двух чертежей одновременно */
@@ -200,7 +231,19 @@ function create(o){ o=o||{};
        подписями студент ни строил; на офлайн-копии, без запросов */
     if(self.SCANVERIFY&&self.CORE&&self.CORE.dzVariants) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==3||dr.fit.rmsMm==null) return;
       try{ const gv=self.CORE.dzVariants.get(3,+dr.fit.n); if(!gv) return; const v=self.SCANVERIFY.verify(dr.mm.pts,gv.data);
-        if(v.found.length) dr.verify={verdict:v.verdict,found:v.found.map(f=>({k:f.k,what:f.what,got:Array.isArray(f.got)?f.got.map(t=>+t.toFixed(1)):+f.got.toFixed(1),want:Array.isArray(f.want)?f.want.map(t=>+t.toFixed(1)):+f.want.toFixed(1),st:f.st,from:f.from,unit:f.unit}))}; }catch(e){} });
+        dr._v3=v; if(v.found.length) dr.verify={verdict:v.verdict,found:v.found.map(f=>({k:f.k,what:f.what,at:f.at,got:Array.isArray(f.got)?f.got.map(t=>+t.toFixed(1)):+f.got.toFixed(1),want:Array.isArray(f.want)?f.want.map(t=>+t.toFixed(1)):+f.want.toFixed(1),st:f.st,from:f.from,unit:f.unit}))}; }catch(e){} });
+    /* ДЗ №4 (lk/scan/verify4.js): линии пересечения копии против эталона варианта — каким бы способом их ни строили */
+    if(self.SCANVERIFY4&&self.SCANREF4) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==4) return; const ref=self.SCANREF4[dr.fit.n]; if(!ref) return;
+      try{ dr.verify4=self.SCANVERIFY4.verify({curves:(dr.curves||[]).filter(q=>q.mm).map(q=>({p:q.mm,unv:q.unverified})),segs:dr.mm.segs.map(q=>({p:q.p,unv:q.unverified})),
+        arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),pts:dr.mm.pts},ref,{weak:!(dr.fit.cover>=0.85&&(dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm)<=0.45)}); }catch(e){} });
+    /* ДЗ №5 (lk/scan/verify5.js): точки пересечения AB с поверхностью, касательная плоскость и нормаль — по результату */
+    if(self.SCANVERIFY5) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==5) return; const V5=self.SCANVERIFY5, R=V5.ref(dr.fit.n); if(!R) return;
+      try{ const copy={pts:dr.mm.pts,txt:dr.mm.txt,segs:dr.mm.segs.map(q=>({p:q.p,unv:q.unverified})),arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),curves:(dr.curves||[]).filter(q=>q.mm).map(q=>({p:q.mm,unv:q.unverified}))};
+        const r0=V5.verify(copy,R,{weak:true}); dr.fit.abCov=r0.abCov; const rms=dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm, weak=!(dr.fit.cover>=0.6&&rms<=0.6&&r0.abCov>=0.8);   /* вариант внутри типа — по AB: она должна лечь целиком */
+        dr.verify5=weak?r0:V5.verify(copy,R,{weak:false}); dr.verify5.weak=weak; }catch(e){} });
+    /* вердикт по частям (lk/scan/verdict.js): «верно» / «ошибка: где и на сколько» / «не уверен: почему» — для кабинета */
+    if(self.SCANVERDICT) out.drawings.forEach((dr,i)=>{ if(!dr||dr.error||!dr.fit||dr.fit.rmsMm==null) return; try{ const VD=self.SCANVERDICT;
+      dr.verdict=dr.fit.dz===3&&dr._v3?VD.dz3(dr._v3,dr.fit):VD.of(dr); }catch(e){} delete dr._v3; });
     /* проверка построения (ДЗ №3): мозг сканера (lab/dz/check3.js через gridsheet) по уточнённой копии каждого чертежа.
        Только по запросу (sel.check = true): на 62 настоящих чертежах (REPORT 7с) почти всё — «не могу утверждать» (студенты строят
        не только способом из указания), одно «ошибка в данных» — скорее ложное; студенту такой вердикт показывать рано */
@@ -212,5 +255,5 @@ function create(o){ o=o||{};
 
   return {status,ask,run,runMany,cloud:CLOUD,api:API}; }
 
-self.SCANPIPE={LIBS,load,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,sheetVariant,checkDrawing,CUT_SIDE,VIEW};
+self.SCANPIPE={LIBS,load,loadRef4,create,scaled,cut,modelView,scaleText,mapPt,digest,quality,better,sheetVariant,checkDrawing,CUT_SIDE,VIEW};
 })();

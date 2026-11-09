@@ -139,11 +139,11 @@ async function askDigit(cfg,q,o){ o=o||{}; if(!cfg.digit) throw Object.assign(ne
 async function askLayout(cfg,q,o){ o=o||{}; if(!cfg.layout) throw Object.assign(new Error('Раскладка листа не подключена.'),{status:503});
   if(!q.consent) throw Object.assign(new Error('Раскладка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
   return ask(cfg.layout,{image:q.image,w:q.w,h:q.h,system:SP.LAYOUT_PROMPT,text:'Размер фото: '+q.w+' × '+q.h+' px.',opts:{max_tokens:2000}},Object.assign({},o,{timeout:o.timeout||40000})); }
-/* askCrop(cfg, {image, w, h, consent}) — оцифровка одного чертежа (шаг 3): строки P/S/T в px присланного кадра → {text, model, info} */
+/* askCrop(cfg, {image, w, h, consent, hint}) — hint: условие задачи (sheetprompts.taskHint) после размера фото; оцифровка одного чертежа (шаг 3): строки P/S/T в px присланного кадра → {text, model, info} */
 async function askCrop(cfg,q,o){ o=o||{}; if(!cfg.digit) throw Object.assign(new Error('Оцифровка моделью не подключена.'),{status:503});
   if(!q.consent) throw Object.assign(new Error('Оцифровка — зарубежной моделью: нужно согласие на отправку фото.'),{status:403});
   /* q.maxTokens — лимит ответа: у Opus 5.5 рассуждение не выключается и идёт в тот же лимит, ему нужно больше */
-  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:SP.DIGIT_PROMPT,text:'Размер фото: '+q.w+' × '+q.h+' px.',opts:{max_tokens:q.maxTokens||3000}},Object.assign({},o,{timeout:o.timeout||55000})); }
+  return ask(cfg.digit,{image:q.image,w:q.w,h:q.h,system:SP.DIGIT_PROMPT,text:'Размер фото: '+q.w+' × '+q.h+' px.'+(q.hint?'\n'+q.hint:''),opts:{max_tokens:q.maxTokens||3000}},Object.assign({},o,{timeout:o.timeout||55000})); }
 
 /* какая модель зрения в каталоге видит картинку: развёртывание (server/tools/deploy.js) пробует по очереди и подключает первую.
    Не все модели AI Studio есть в синхронном режиме (на остальные Yandex отвечает 400/403), а текстовая модель может ответить

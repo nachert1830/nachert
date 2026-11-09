@@ -9,7 +9,12 @@ const OK='https://nachert1830.ru';
 const ev=(method,o)=>Object.assign({httpMethod:method,headers:{origin:OK}},o||{});
 const body=o=>JSON.stringify(Object.assign({img:IMG,w:800,h:600,mode:'layout'},o||{}));
 const fake=(log,text)=>async(url,init)=>{ const b=JSON.parse(init.body); log.push({url,b,auth:init.headers.authorization}); return {ok:true,status:200,text:async()=>JSON.stringify({choices:[{message:{content:text||'{"rot":0,"drawings":[]}'},finish_reason:'stop'}],usage:{prompt_tokens:1000,completion_tokens:500}})}; };
-test.beforeEach(()=>F._reset());
+/* сценарии ниже писались под связку «Opus оцифровывает, Sonnet — вторая/запасная»: задаём её явно (по умолчанию теперь наоборот — тест «модели по умолчанию») */
+test.beforeEach(()=>{ F._reset(); process.env.SCAN_DIGIT_MODEL='opus'; process.env.SCAN_CHECK_MODEL='sonnet'; });
+test('модели по умолчанию: оцифровка — Sonnet, вторая оцифровка (crop2, режим «максимальная») — Opus',async()=>{ const log=[]; F._setFetch(fake(log)); const h={origin:OK,'x-scan-code':'виктория'};
+  delete process.env.SCAN_DIGIT_MODEL; delete process.env.SCAN_CHECK_MODEL;
+  await F.handler(ev('POST',{headers:h,body:body({mode:'crop'})})); await F.handler(ev('POST',{headers:h,body:body({mode:'crop2'})}));
+  assert.deepEqual(log.map(x=>x.b.model),['anthropic/claude-sonnet-5-5','anthropic/claude-opus-5-5']); });
 
 test('код доступа: «виктория» в любом регистре и с ё/е подходит, другой — 401',()=>{ assert.equal(F.sha('Виктория'),HASH); assert.equal(F.sha(' ВИКТОРИЯ '),HASH); assert.notEqual(F.sha('виктория1'),HASH); });
 test('код с кириллицей приходит из браузера закодированным (в заголовке кириллицы быть не может)',async()=>{ F._setFetch(fake([]));
@@ -111,6 +116,10 @@ test('ProxyAPI 429 (Too many requests) — OpenRouter; ProxyAPI ответил �
 test('ProxyAPI 401/403 (ключ) — не деньги: в OpenRouter не идём',()=>withOr(async()=>{
   for(const st of [401,403]){ const log=[]; F._setFetch(pxFails(log,st,'API Key budget exceeded'));
     const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})); assert.equal(r.statusCode,502); assert.equal(log.length,1); assert.ok(log.every(x=>/proxyapi\.ru/.test(x.url))); } }));
+test('ProxyAPI 403 «Access denied by security policy» (ключ цел, ProxyAPI не пускает запрос) — OpenRouter',()=>withOr(async()=>{
+  const log=[]; F._setFetch(pxFails(log,403,'Access denied by security policy.'));
+  const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})})), j=JSON.parse(r.body); assert.equal(r.statusCode,200); assert.equal(j.provider,'openrouter'); assert.match(j.fallback,/security policy/);
+  assert.deepEqual(log.map(x=>/openrouter\.ai/.test(x.url)?'or':'px'),['px','or']); }));
 test('без OPENROUTER_API_KEY — как раньше: 402 на обеих моделях — ошибка, в OpenRouter не ходим',async()=>{ delete process.env.OPENROUTER_API_KEY;
   const log=[]; F._setFetch(pxFails(log,402,'Insufficient balance')); const r=await F.handler(ev('POST',{headers:H,body:body({mode:'crop'})}));
   assert.equal(r.statusCode,502); assert.match(JSON.parse(r.body).error,/402/); assert.deepEqual(log.map(x=>x.model),['anthropic/claude-opus-5-5','anthropic/claude-sonnet-5-5']); assert.ok(log.every(x=>/proxyapi\.ru/.test(x.url)));
