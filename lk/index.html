@@ -4,353 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#08090f">
-<title>Начерт — кабинет</title>
+<meta name="theme-color" content="#f4f7fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1222" media="(prefers-color-scheme: dark)">
+<title>Начерт — личный кабинет</title>
 <link rel="icon" href="../icon-192.png">
-<link rel="stylesheet" href="drawings/ui.css?v=2">
-<style>
-/* Шрифты — из общей папки сайта */
-@font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
-@font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../fonts/geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215}
-@font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../fonts/golos-text-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
-@font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../fonts/golos-text-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215}
-
-/* ═══ Кабинет v2 «Сочный»: тёмная сцена, три ярких акцента по смыслу ═══
-   красно-оранжевый  — «Горит»: ближайшее несданное ДЗ, долги;
-   электрик-синий    — сканер чертежа (карточка и центральная кнопка меню);
-   фиолетовый        — подготовка к РК.
-   Остальное — спокойные карточки. Имена токенов прежние: на них опирается lk/drawings/ui.css. */
-:root{
-  --paper:#08090f; --surf:#12141d; --surf2:#1b1e2b; --surf3:#262a3b;
-  --ink:#f4f6fb; --ink2:#c4cadb; --mut:#8b93a9;
-  --line:#252a3a;
-  --acc:#2f6bff; --acc-d:#1842c4; --blue:#7fa9ff; --blue-s:#17224a;
-  --navy:#0a2463; --navy2:#12357f;
-  --red:#ff5d6c; --red-b:#ff2d55; --red-d:#b3123a;
-  --green:#34d399; --amber:#ffb020;
-  --grid:rgba(255,255,255,.09);
-  --shadow:0 18px 40px -22px rgba(0,0,0,.85);
-  --hot:linear-gradient(140deg,#f0134d 0%,#ff3b30 52%,#ff6b1a 100%);
-  --hot-glow:rgba(255,59,48,.45);
-  --scan:linear-gradient(140deg,#1238e6 0%,#2a62ff 48%,#1597ff 100%);
-  --scan-glow:rgba(42,98,255,.5);
-  --rk:linear-gradient(140deg,#4c1dc9 0%,#7c2df0 55%,#b62bd8 100%);
-  --rk-c:#b18cff; --rk-s:rgba(139,77,255,.16);
-  --glass:rgba(255,255,255,.17);
-  --navbg:rgba(18,20,29,.82);
-  --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-  --disp:'Geologica','Golos Text',system-ui,sans-serif;
-  --r:24px; --tabh:68px;
-  color-scheme:dark;
-}
-@media (prefers-color-scheme:light){
-  :root{
-    --paper:#f2f3f8; --surf:#ffffff; --surf2:#f0f2f7; --surf3:#e3e7f0;
-    --ink:#0b0d14; --ink2:#323849; --mut:#646c83;
-    --line:#e2e5ee;
-    --acc:#2457ff; --acc-d:#1438b8; --blue:#1f53f0; --blue-s:#e8eeff;
-    --red:#e0153d; --red-b:#ff2d55;
-    --green:#0d9461; --amber:#c27a00;
-    --grid:rgba(255,255,255,.12);
-    --shadow:0 16px 36px -22px rgba(20,30,70,.4);
-    --rk-c:#6d28d9; --rk-s:#f1eaff;
-    --navbg:rgba(255,255,255,.86);
-    color-scheme:light;
-  }
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0}
-[hidden]{display:none!important}
-body{background:var(--paper);color:var(--ink);font:16px/1.4 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
-a{color:inherit;text-decoration:none}
-button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
-svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.mut{color:var(--mut)}
-h2{font:700 21px/1.2 var(--disp);margin:0 0 10px;letter-spacing:-.01em}
-
-.app{max-width:1080px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:calc(var(--tabh) + 40px + env(safe-area-inset-bottom))}
-
-/* ── Шапка: где я и какая группа ── */
-.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:linear-gradient(var(--paper) 70%,transparent);backdrop-filter:blur(0)}
-.logo{width:38px;height:38px;border-radius:12px;flex:none;display:block}
-.top-t{margin-right:auto;min-width:0}
-.top-t b{display:block;font:700 19px/1.15 var(--disp);letter-spacing:-.01em}
-.top-t small{display:block;color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gpill{height:40px;border-radius:20px;padding:0 12px 0 14px;background:var(--surf2);display:inline-flex;align-items:center;gap:4px;font:600 14.5px var(--sans);flex:none;border:1px solid var(--line)}
-.gpill svg{width:16px;height:16px;transform:rotate(90deg);color:var(--mut)}
-.gpill.need{background:var(--acc);color:#fff;border-color:transparent}
-.gpill.need svg{color:#fff}
-
-main{padding:4px 12px 0}
-.view{display:none}
-.view.on{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;max-width:640px;margin:0 auto}
-.card{text-align:left;background:var(--surf);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;border:1px solid var(--line)}
-.note{font-size:13.5px;color:var(--mut);margin:0 4px}
-.wk{font:700 12.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:6px 4px 0}
-
-/* Заголовок секции */
-.sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 4px -4px}
-.sec h2{margin:0;display:flex;align-items:center;gap:8px}
-.sec .more{font:600 14.5px var(--sans);color:var(--blue);white-space:nowrap}
-.sec .dotc{width:10px;height:10px;border-radius:5px;flex:none}
-
-/* Кнопки */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 20px;border-radius:16px;font:700 15.5px var(--sans);background:var(--acc);color:#fff;box-shadow:0 4px 0 var(--acc-d);transition:transform .08s,box-shadow .08s;white-space:nowrap}
-.btn svg{width:20px;height:20px}
-.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--acc-d)}
-.btn.white{background:#fff;color:#0b0d14;box-shadow:0 4px 0 rgba(0,0,0,.22)}
-.btn.white:active{box-shadow:0 1px 0 rgba(0,0,0,.22)}
-.btn.glass{background:var(--glass);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);backdrop-filter:blur(6px)}
-.btn.glass:active{transform:scale(.97);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
-.btn.glass.on{background:#fff;color:#0b0d14}
-.btn.flat{background:var(--surf2);color:var(--ink);box-shadow:0 4px 0 var(--line)}
-.btn.flat:active{box-shadow:0 1px 0 var(--line)}
-
-/* Плашка-метка */
-.pill{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px;border-radius:14px;background:rgba(255,255,255,.2);color:#fff;font:700 12.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;backdrop-filter:blur(4px)}
-.pill svg{width:16px;height:16px}
-.pill.live i{width:8px;height:8px;border-radius:4px;background:#fff;animation:pulse 1.4s ease-in-out infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.7)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
-
-/* ═══ Две главные карточки: «Горит» и «Сканер» ═══ */
-.hero{position:relative;overflow:hidden;border-radius:28px;padding:18px 18px 18px;color:#fff;display:flex;flex-direction:column;gap:12px;isolation:isolate}
-.hero::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;mask-image:linear-gradient(115deg,#000 10%,transparent 70%);-webkit-mask-image:linear-gradient(115deg,#000 10%,transparent 70%)}
-.hero .row1{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.hero .meta{font:600 13px var(--sans);opacity:.85}
-
-.hot{background:var(--hot);box-shadow:0 22px 44px -22px var(--hot-glow)}
-.hot-t{font:800 40px/1 var(--disp);letter-spacing:-.02em;margin-top:2px}
-.hot-g{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.hot-g .count{flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
-.hot-g .count span{padding:0;white-space:nowrap}
-.hero .meta{text-align:right;min-width:0}
-.hot .meta button{font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px}
-.hot .tip{font-size:14px;opacity:.92;margin-top:-4px}
-.hot-s{font:600 17px/1.25 var(--sans);opacity:.95}
-.count{display:flex;align-items:flex-end;gap:10px}
-.count b{font:800 64px/.9 var(--disp);letter-spacing:-.04em}
-.count span{font:600 15px/1.25 var(--sans);opacity:.92;padding-bottom:4px}
-.count.word b{font-size:44px}
-.tbar{height:8px;border-radius:4px;background:rgba(255,255,255,.25);overflow:hidden}
-.tbar i{display:block;height:100%;border-radius:4px;background:#fff;transition:width 1s cubic-bezier(.22,.7,.2,1)}
-.tlbl{display:flex;justify-content:space-between;font-size:12.5px;opacity:.85;margin-top:-6px}
-.hint{padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.16);font-size:14.5px;line-height:1.35}
-.acts{display:flex;gap:10px;flex-wrap:wrap}
-.acts .btn{flex:1 1 auto}
-.after{font-size:13.5px;opacity:.88;border-top:1px solid rgba(255,255,255,.22);padding-top:10px}
-.after b{font-weight:700}
-
-.scan{background:var(--scan);box-shadow:0 22px 44px -22px var(--scan-glow);min-height:236px}
-.scan h3{font:800 27px/1.08 var(--disp);letter-spacing:-.02em;margin:0;max-width:64%}
-.scan p{margin:0;font-size:14.5px;opacity:.9;max-width:58%}
-.scan .acts{margin-top:auto;max-width:100%}
-.scan .mine{font:600 14px var(--sans);opacity:.92;display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin-top:-2px}
-.scan .mine svg{width:16px;height:16px}
-.scan-art{position:absolute;right:-6px;top:14px;width:36%;max-width:156px;z-index:-1;pointer-events:none}
-.scan-art .beam{animation:beam 2.6s ease-in-out infinite}
-@keyframes beam{0%,100%{transform:translateY(0)}50%{transform:translateY(96px)}}
-
-/* Долг (просроченное несданное ДЗ) */
-.debt{display:flex;align-items:center;gap:12px;background:var(--surf);border:1.5px solid var(--red-b);border-radius:20px;padding:12px 12px 12px 14px}
-.debt .ic{width:38px;height:38px;border-radius:12px;background:rgba(255,45,85,.16);color:var(--red);display:grid;place-items:center;flex:none}
-.debt .ic svg{width:22px;height:22px}
-.debt .m{flex:1;min-width:0}
-.debt .m b{display:block;font-weight:700}
-.debt .m small{color:var(--mut);font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.debt .m b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.debt .btn{height:40px;padding:0 14px;border-radius:13px;font-size:14px;background:var(--red-b);box-shadow:0 3px 0 var(--red-d)}
-
-/* ═══ Подготовка к РК ═══ */
-.rkrow{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,1fr);gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -12px;padding:2px 12px 4px}
-.rkrow::-webkit-scrollbar{display:none}
-.rkc{scroll-snap-align:start;background:var(--rk);color:#fff;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;text-align:left;position:relative;overflow:hidden;box-shadow:0 18px 36px -22px rgba(124,45,240,.7)}
-.rkc::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;border:16px solid rgba(255,255,255,.08)}
-.rkc .row1{display:flex;justify-content:space-between;align-items:center}
-.rkc .nm{font:800 22px/1.1 var(--disp)}
-.rkc .sj{font-size:14px;opacity:.88}
-.rkc .count b{font-size:46px}
-.rkc .count.word b{font-size:32px}
-.rkc .tbar{height:6px}
-.rkc .nx{display:flex;align-items:center;gap:8px;font:600 14px var(--sans);background:rgba(255,255,255,.16);border-radius:14px;padding:9px 12px}
-.rkc .nx svg{width:18px;height:18px;margin-left:auto}
-
-/* РК — подробно (вкладка «РК») */
-.rkx{display:grid;gap:12px}
-.rkb{display:grid;gap:12px;align-content:start}
-.rkx .hero{background:var(--rk);box-shadow:0 18px 36px -22px rgba(124,45,240,.7)}
-.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.step{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--line);border-radius:18px;padding:10px 10px 10px 10px}
-.step a{flex:1;min-width:0;display:block}
-.step a b{display:block;font-weight:600}
-.step a small{color:var(--mut);font-size:13px}
-.step .go{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:var(--rk-c);background:var(--rk-s);flex:none}
-.step .go svg{width:18px;height:18px}
-.step.on a b{color:var(--mut);text-decoration:line-through;text-decoration-thickness:1.5px}
-
-/* Галочка «сделано» — одна на весь кабинет */
-.chk{width:34px;height:34px;border-radius:12px;flex:none;display:grid;place-items:center;border:2px solid var(--surf3);color:transparent;transition:background .15s,border-color .15s,transform .1s}
-.chk svg{width:20px;height:20px;stroke-width:2.6}
-.chk:active{transform:scale(.9)}
-.chk[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}
-.rkx .chk[aria-pressed="true"],.rkc .chk[aria-pressed="true"]{background:#8b4dff;border-color:#8b4dff}
-
-/* ═══ Сдачи: строки ═══ */
-.rows{display:grid;gap:8px}
-.row{display:flex;gap:12px;align-items:center;background:var(--surf);border:1px solid var(--line);border-radius:18px;padding:10px 10px 10px 10px}
-.row .m{flex:1;min-width:0}
-.row .m b{display:flex;align-items:center;gap:8px;font-weight:600}
-.row .m small{color:var(--mut);font-size:13px}
-.kd{font:800 12.5px var(--disp);border-radius:8px;padding:3px 7px;background:var(--surf2);color:var(--ink2);flex:none}
-.k-dz .kd{background:rgba(255,59,48,.16);color:#ff6a4d}
-.k-rk .kd{background:var(--rk-s);color:var(--rk-c)}
-@media (prefers-color-scheme:light){.k-dz .kd{color:#d6261c;background:#ffece8}}
-.row .d{flex:none;text-align:right;font:700 13.5px var(--sans);color:var(--ink2)}
-.row .go{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--mut);flex:none}
-.row .go svg{width:18px;height:18px}
-.row.near .d{color:#ff6a4d}
-.row.debt{border-color:var(--red-b)}
-.row.debt .d{color:var(--red)}
-.row.done .m b{color:var(--mut)}
-.row.done .d{color:var(--green)}
-.row.pastx{opacity:.6}
-
-/* Сводка сдач */
-.sum{display:grid;gap:10px}
-.sum .r{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
-.sum .big{font:800 34px/1 var(--disp);letter-spacing:-.02em}
-.sum .big small{font:600 16px var(--sans);color:var(--mut)}
-.pbar{height:10px;border-radius:5px;background:var(--surf3);overflow:hidden}
-.pbar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#34d399,#10b981);transition:width .6s}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut)}
-.legend b{color:var(--ink)}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:4px}
-.seg button{height:38px;border-radius:12px;font:600 14.5px var(--sans);color:var(--mut)}
-.seg button.on{background:var(--ink);color:var(--paper)}
-details.past summary{cursor:pointer;color:var(--mut);font-weight:600;padding:8px 4px;list-style:none}
-details.past summary::-webkit-details-marker{display:none}
-details.past summary::before{content:"▸ "}
-details.past[open] summary::before{content:"▾ "}
-details.past .rows{margin-top:4px}
-
-/* Занятие */
-.lesson{display:flex;gap:14px;align-items:center}
-/* Мои 3D-модели: решённые детали ИКГ со ссылкой на 3D, построение по шагам и лист на сайте */
-.m3d{display:flex;gap:14px;align-items:center;color:inherit;text-decoration:none}
-.m3d svg.ball{width:64px;height:64px;flex:none}
-.m3d b{display:block;font:700 16px/1.25 var(--disp)}
-.m3d small{display:block;color:var(--mut);font-size:13.5px;margin-top:3px}
-.m3d .go{margin-left:auto;flex:none;font:600 14px var(--sans);color:#2a62ff;white-space:nowrap}
-.lesson .tm{flex:none;width:72px;height:64px;border-radius:18px;background:var(--surf2);display:grid;place-items:center;text-align:center;font:800 20px/1 var(--disp)}
-.lesson .tm small{display:block;font:600 11px var(--sans);color:var(--mut);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
-.lesson b{display:block;font-weight:600}
-.lesson .mut{font-size:13.5px}
-
-/* Выбор группы — приглашение */
-.ask{display:flex;align-items:center;gap:12px}
-.ask p{margin:0;flex:1;font-size:14.5px;color:var(--ink2)}
-.ask .btn{height:42px;padding:0 16px;font-size:14.5px}
-
-/* ── Нижнее меню: плавающая «таблетка», сканер — в центре ── */
-.tabs{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));z-index:30;padding:0 12px;pointer-events:none}
-.tabs-in{pointer-events:auto;max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;height:var(--tabh);background:var(--navbg);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--line);border-radius:26px;box-shadow:0 14px 40px -14px rgba(0,0,0,.6);padding:0 4px}
-.tab{display:flex;flex-direction:column;align-items:center;gap:3px;height:58px;justify-content:center;font:600 11.5px var(--sans);color:var(--mut);position:relative;border-radius:18px}
-.tab svg{width:25px;height:25px}
-.tab.on{color:var(--ink)}
-.tab.on::before{content:"";position:absolute;inset:4px 6px;border-radius:16px;background:var(--surf3);z-index:-1}
-.tab .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;padding:0 5px;background:var(--red-b);color:#fff;font:700 11px/18px var(--sans);text-align:center;box-shadow:0 0 0 2px var(--surf)}
-.tab .dot{position:absolute;top:8px;left:calc(50% + 8px);width:9px;height:9px;border-radius:5px;background:#a855f7;box-shadow:0 0 0 2px var(--surf)}
-.tab.center{color:#fff}
-.tab.center::before{display:none}
-.tab.center .fab{width:62px;height:62px;border-radius:22px;margin-top:-34px;background:var(--scan);display:grid;place-items:center;box-shadow:0 10px 24px -6px var(--scan-glow),0 0 0 4px var(--paper);transition:transform .1s;position:relative}
-.tab.center .fab::after{content:"";position:absolute;inset:-4px;border-radius:26px;border:2px solid #4d86ff;opacity:0;animation:ring 2.6s ease-out infinite}
-@keyframes ring{0%{opacity:.8;transform:scale(.92)}70%,100%{opacity:0;transform:scale(1.18)}}
-.tab.center .fab svg{width:30px;height:30px}
-.tab.center:active .fab{transform:scale(.93)}
-.tab.center .sm{color:var(--mut);margin-top:2px}
-.tab.center.on .sm{color:var(--ink)}
-
-/* Тост, лист выбора группы */
-.toast{position:fixed;left:50%;bottom:calc(var(--tabh) + 26px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:70;background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:16px;font-weight:600;font-size:15px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;white-space:nowrap}
-.toast.on{opacity:1;transform:translate(-50%,0)}
-.sheet{position:fixed;inset:0;z-index:80;background:rgba(3,5,12,.6);display:none;align-items:flex-end;backdrop-filter:blur(3px)}
-.sheet.on{display:flex}
-.sheet-in{width:100%;max-width:520px;margin:0 auto;background:var(--surf);border-radius:28px 28px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:80vh;display:flex;flex-direction:column;gap:10px}
-.sheet-in h2{margin:0}
-.sheet-in input{height:50px;border-radius:16px;border:2px solid var(--line);background:var(--surf2);color:var(--ink);font:500 17px var(--sans);padding:0 14px;outline:0}
-.sheet-in input:focus{border-color:var(--acc)}
-.glist{overflow:auto;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;min-height:80px}
-.glist button{height:42px;padding:0 14px;border-radius:14px;background:var(--surf2);font-weight:600}
-.glist button.on{background:var(--acc);color:#fff}
-.glist p{color:var(--mut);margin:6px 2px}
-
-/* Профиль */
-.me{display:grid;gap:12px}
-.me .r{display:flex;align-items:center;gap:12px}
-.me .av{width:56px;height:56px;border-radius:18px;background:var(--scan);display:grid;place-items:center;color:#fff;font:800 20px var(--disp);flex:none}
-
-:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:12px}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
-
-/* ═══ Компьютер ═══
-   ≥ 880 px: нижнее меню становится боковой панелью слева, сканер — яркая кнопка вверху панели,
-   окно выбора группы — по центру. ≥ 1180 px: на главной «Горит» и сканер рядом, дальше РК и сроки в две колонки,
-   на вкладке «РК» — предметы рядом. */
-.tab .lg{display:none}
-@media (hover:hover){
-  .btn,.tab,.row,.step,.rkc,.sec .more,.gpill{transition:filter .15s,background .15s,transform .08s,box-shadow .08s}
-  .btn:hover,.rkc:hover,.gpill:hover{filter:brightness(1.08)}
-  .tab:not(.on):not(.center):hover{color:var(--ink);background:var(--surf2)}
-  .row:hover,.step:hover{background:var(--surf2)}
-  .sec .more:hover{text-decoration:underline;text-underline-offset:3px}
-  .chk:hover{border-color:var(--mut)}
-}
-@media (min-width:880px){
-  .app{max-width:none;padding:0 32px 48px 280px}
-  .top{padding:20px 0 14px;max-width:1120px;margin:0 auto}
-  main{padding:4px 0 0}
-  .view.on{max-width:720px}
-  #v-cal.on{max-width:760px}
-  #v-rk.on{max-width:760px}
-  #v-check.on{max-width:720px}
-  /* боковая панель */
-  .tabs{top:16px;bottom:16px;left:16px;right:auto;width:236px;padding:0}
-  .tabs-in{height:100%;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:14px 12px;border-radius:26px;max-width:none}
-  .tab{flex-direction:row;justify-content:flex-start;gap:14px;height:50px;padding:0 14px;font:600 15.5px var(--sans);border-radius:16px}
-  .tab svg{width:24px;height:24px}
-  .tab.on{background:var(--surf3)}
-  .tab.on::before{display:none}
-  .tab .badge,.tab .dot{position:static;margin-left:auto;box-shadow:none}
-  .tab .badge{min-width:22px;height:22px;border-radius:11px;font-size:12px;line-height:22px}
-  .tab.center{order:-1;height:60px;margin:0 0 12px;background:var(--scan);color:#fff;box-shadow:0 14px 30px -14px var(--scan-glow);padding:0 16px}
-  .tab.center .fab{width:auto;height:auto;margin:0;background:none;box-shadow:none;border-radius:0}
-  .tab.center .fab::after{display:none}
-  .tab.center .fab svg{width:26px;height:26px}
-  .tab.center .sm{display:none}
-  .tab.center .lg{display:inline;color:#fff!important;margin:0;font-weight:700}
-  .tab.center.on{background:var(--scan);box-shadow:0 0 0 3px var(--paper),0 0 0 5px #4d86ff}
-  .tab.center:hover{filter:brightness(1.1)}
-  .tab.center:active{transform:scale(.98)}
-  .toast{bottom:28px;left:calc(50% + 124px)}
-  .sheet{align-items:center;justify-content:center;padding:24px}
-  .sheet-in{border-radius:28px;max-height:70vh}
-  .hot-t{font-size:46px}
-}
-@media (min-width:880px) and (max-width:1179px){
-  .scan{min-height:250px}
-  .scan .acts{max-width:calc(100% - 190px)}
-}
-@media (min-width:1180px){
-  #v-home.on{max-width:1120px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:18px}
-  #v-home .full{grid-column:1/-1}
-  #v-home .mini,#v-home #lesson{align-self:start}
-  #v-home:has(#lesson:empty) .mini{grid-column:1/-1}
-  .rkrow{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(0,1fr));overflow:visible;margin:0;padding:0}
-  #v-rk.on{max-width:1120px}
-  #rkList{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:18px}
-  #rkList>.wk,#rkList>.row{grid-column:1/-1}
-  .scan h3{font-size:32px}
-}
-</style>
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<script>/* тема — как на сайте (nch2_theme), до отрисовки, чтобы не мигало */
+try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="drawings/ui.css?v=3">
 </head>
 <body>
 
@@ -365,71 +27,124 @@ details.past .rows{margin-top:4px}
     <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 016.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0120 8.5v8a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 16.5z"/><circle cx="12" cy="12.5" r="3.5"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
     <symbol id="i-ext" viewBox="0 0 24 24"><path d="M8 16L17 7M9 7h8v8"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17.5v.5"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 3l3 3-3 3M4 11V9a3 3 0 013-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 01-3 3H4"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 2.5h5M12 2.5V6"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4.5 9h16M3.5 15h16"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M4.5 17v1.5A1.5 1.5 0 006 20h12a1.5 1.5 0 001.5-1.5V17"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M4.5 17v1.5A1.5 1.5 0 006 20h12a1.5 1.5 0 001.5-1.5V17"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 01-.6-9A6 6 0 0118 10a4 4 0 01-.5 8.5z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></symbol>
   </defs>
 </svg>
 
+<!-- ═══ Знакомство: имя → группа → вариант ═══ -->
+<div class="ob" id="ob" role="dialog" aria-modal="true" aria-label="Настройка кабинета">
+  <div class="ob-in">
+    <div class="ob-hero" id="obHero">
+      <span class="pill" style="align-self:flex-start;margin-bottom:auto"><i></i>Личный кабинет</span>
+      <h1>Твой семестр — на одном экране</h1>
+      <p>Что и когда сдавать твоей группе, твой вариант в один тап и весь прогресс по начерту и ИКГ.</p>
+    </div>
+    <div class="ob-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+
+    <section class="ob-st on" data-st="0">
+      <h2>Как тебя зовут?</h2>
+      <p>Имя видишь только ты — так кабинет будет обращаться к тебе.</p>
+      <input class="field" id="obName" placeholder="Имя" autocomplete="given-name" maxlength="40" enterkeyhint="next">
+    </section>
+    <section class="ob-st" data-st="1">
+      <h2>Твоя группа</h2>
+      <p>По расписанию кафедры РК-1 кабинет посчитает сроки ДЗ и РК — к дню твоей пары.</p>
+      <input class="field" id="obG" type="search" placeholder="Например, АК1-31" autocomplete="off" autocapitalize="characters">
+      <div class="glist" id="obGl"></div>
+    </section>
+    <section class="ob-st" data-st="2">
+      <h2>Твой вариант ДЗ</h2>
+      <p>Разборы на сайте будут сразу открываться на нём. Поменять можно в любой момент.</p>
+      <div class="vgrid" id="obV"></div>
+    </section>
+    <section class="ob-st" data-st="3">
+      <h2 id="obDoneT">Готово!</h2>
+      <p id="obDoneS">Кабинет собран под тебя.</p>
+      <div class="ob-sum" id="obSum"></div>
+    </section>
+
+    <div class="ob-nav">
+      <button class="btn flat" id="obBack" hidden>Назад</button>
+      <button class="btn" id="obNext">Дальше</button>
+    </div>
+  </div>
+</div>
+
 <div class="app">
   <header class="top">
-    <img class="logo" src="../icon-192.png" alt="">
-    <div class="top-t"><b id="topT">Кабинет</b><small id="today"></small></div>
-    <button class="gpill" id="hello" data-group aria-label="Выбрать группу"><span id="helloT">Группа</span><svg class="i"><use href="#i-chev"/></svg></button>
+    <span class="brand"><img src="../icon-192.png" alt="">Начерт <i>· кабинет</i></span>
+    <span class="sp"></span>
+    <a class="ibtn" href="../" aria-label="На сайт" title="На сайт"><svg class="i"><use href="#i-ext"/></svg></a>
+    <button class="av" id="topAv" data-tab-go="me" aria-label="Профиль">Н</button>
   </header>
+
+  <section class="hello" id="hello" aria-live="polite">
+    <small id="helloK"></small>
+    <h1 id="helloT">Привет!</h1>
+    <p id="helloS"></p>
+    <div class="chips">
+      <button class="chip" id="chG" data-group><svg class="i"><use href="#i-pin"/></svg><span>Группа</span></button>
+      <button class="chip" id="chV" data-variant><svg class="i"><use href="#i-hash"/></svg><span>Вариант</span></button>
+    </div>
+  </section>
 
   <main>
     <!-- ═══ Главная ═══ -->
     <section class="view on" id="v-home">
-      <div id="debt" class="full" hidden></div>
-      <div id="hot"></div>
-      <section class="hero scan" aria-labelledby="scanT">
-        <svg class="scan-art" viewBox="0 0 160 190" aria-hidden="true">
-          <g transform="rotate(7 80 95)">
-            <rect x="22" y="14" width="116" height="156" rx="10" fill="rgba(255,255,255,.95)"/>
-            <path d="M34 92h92" stroke="#9dbbe0" stroke-width="2" stroke-dasharray="5 4"/>
-            <path d="M48 76l30-34 30 22zM48 108l30 40 30-30z" fill="none" stroke="#15161a" stroke-width="2.6" stroke-linejoin="round"/>
-            <path d="M48 76v32M78 42v106M108 64v54" stroke="#3567b5" stroke-width="1.4" stroke-dasharray="3 3"/>
-            <circle cx="78" cy="148" r="3.2" fill="#c9302c"/>
-            <g class="beam"><rect x="16" y="24" width="128" height="3" rx="1.5" fill="#00e1ff"/><rect x="16" y="27" width="128" height="22" fill="url(#bm)"/></g>
-            <path d="M14 34V20a8 8 0 018-8h14M124 12h14a8 8 0 018 8v14M146 158v14a8 8 0 01-8 8h-14M36 180H22a8 8 0 01-8-8v-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
-          </g>
-          <defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00e1ff" stop-opacity=".45"/><stop offset="1" stop-color="#00e1ff" stop-opacity="0"/></linearGradient></defs>
-        </svg>
-        <div class="row1"><span class="pill"><svg class="i"><use href="#i-scan"/></svg>Сканер чертежа</span></div>
-        <h3 id="scanT">Сфоткай лист — получи эпюр и 3D</h3>
-        <p>Копия в мм, ошибки до сдачи, тело по проекциям.</p>
-        <div class="acts">
-          <button class="btn white" data-scan="cam"><svg class="i"><use href="#i-camera"/></svg>Сканировать</button>
-          <button class="btn glass" data-scan="pick"><svg class="i"><use href="#i-image"/></svg>Из галереи</button>
-        </div>
-        <button class="mine" data-tab-go="check" id="myCnt">Мои чертежи <svg class="i"><use href="#i-chev"/></svg></button>
+      <div id="debt" hidden></div>
+      <div class="heroes">
+        <section class="plash hot" id="hot" aria-live="polite"></section>
+        <section class="plash blue" id="cont"></section>
+      </div>
+
+      <section class="card week" aria-label="Эта неделя">
+        <div class="wk-h"><b id="wkT">Эта неделя</b><small id="wkS"></small></div>
+        <div class="days" id="days"></div>
+        <div class="wk-d" id="wkD"></div>
       </section>
 
-      <div class="sec full"><h2><span class="dotc" style="background:var(--scan)"></span>Мои 3D-модели</h2></div>
-      <a class="card m3d full" href="/#/ig8/6" aria-label="3D-модель: Задание №8, вариант 6 — полый шар со сквозным отверстием">
-        <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="#e8eefc" stroke="#15161a" stroke-width="2.4"/><circle cx="32" cy="32" r="19.6" fill="none" stroke="#3567b5" stroke-width="1.4" stroke-dasharray="3 2.5"/><path d="M28.4 5.2V26a8.2 8.2 0 000 12v6.4h-3.6V50h14.4v-5.6h-3.6V38a8.2 8.2 0 000-12V5.2z" fill="#fff" stroke="#15161a" stroke-width="2.2" stroke-linejoin="round"/></svg>
-        <div><b>Задание №8 · вариант 6</b><small>Полый шар Ø110/Ø80 со сквозным отверстием K: 3D, разрезы по шагам, лист А3</small></div>
-        <span class="go">Открыть 3D →</span>
-      </a>
-      <a class="card m3d full" href="ig8/" aria-label="Гайд: как построить Задание №8, вариант 6 — каждая линия по смыслу">
-        <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 12c14-4 30 0 40 14v10M50 36H30M50 26h-10" fill="none" stroke="#15161a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 52c14 6 30 2 40-10" fill="none" stroke="#3567b5" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 3"/></svg>
-        <div><b>Гайд: как построить вариант 6</b><small>Задание №8: все три вида, каждая линия по смыслу, с подсветкой на соседнем виде</small></div>
-        <span class="go">Открыть →</span>
-      </a>
+      <div class="bento" id="bento"></div>
 
-      <div class="sec full"><h2><span class="dotc" style="background:var(--rk)"></span>Подготовка к РК</h2><button class="more" data-tab-go="rk">Всё о РК</button></div>
-      <div class="rkrow full" id="rkHome"></div>
+      <div class="sec"><h2>Семестр</h2><button class="more" data-tab-go="cal">Все сдачи</button></div>
+      <section class="card sem" id="sem"></section>
 
-      <div class="mini">
-        <div class="sec"><h2>Сроки</h2><button class="more" data-tab-go="cal">Все сдачи</button></div>
-        <div class="rows" id="mini" style="margin-top:14px"></div>
+      <div class="duo">
+        <div id="lessonBox"></div>
+        <div>
+          <div class="sec" style="margin-top:14px"><h2>Мои материалы</h2></div>
+          <div class="rows" style="margin-top:14px">
+            <a class="card mat" href="/#/ig8/6" aria-label="3D-модель: Задание №8, вариант 6 — полый шар со сквозным отверстием">
+              <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="#e8eefc" stroke="#15161a" stroke-width="2.4"/><circle cx="32" cy="32" r="19.6" fill="none" stroke="#3567b5" stroke-width="1.4" stroke-dasharray="3 2.5"/><path d="M28.4 5.2V26a8.2 8.2 0 000 12v6.4h-3.6V50h14.4v-5.6h-3.6V38a8.2 8.2 0 000-12V5.2z" fill="#fff" stroke="#15161a" stroke-width="2.2" stroke-linejoin="round"/></svg>
+              <div><b>Задание №8 · вариант 6</b><small>Полый шар со сквозным отверстием: 3D, разрезы по шагам, лист А3</small></div>
+              <span class="go">3D →</span>
+            </a>
+            <a class="card mat" href="ig8/" aria-label="Гайд: как построить Задание №8, вариант 6">
+              <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 12c14-4 30 0 40 14v10M50 36H30M50 26h-10" fill="none" stroke="#15161a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 52c14 6 30 2 40-10" fill="none" stroke="#3567b5" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 3"/></svg>
+              <div><b>Гайд: как построить вариант 6</b><small>Все три вида, каждая линия по смыслу</small></div>
+              <span class="go">→</span>
+            </a>
+          </div>
+        </div>
       </div>
-      <div id="lesson"></div>
     </section>
 
-    <!-- ═══ Сдачи: что и когда сдать, отметки «сдал» ═══ -->
+    <!-- ═══ Сдачи ═══ -->
     <section class="view" id="v-cal">
       <div class="sec" style="margin-top:4px"><h2>Сдачи</h2></div>
       <div class="card sum" id="calSum"></div>
@@ -437,25 +152,46 @@ details.past .rows{margin-top:4px}
       <div id="calList" class="rows"></div>
     </section>
 
-    <!-- ═══ РК: подготовка ═══ -->
+    <!-- ═══ РК ═══ -->
     <section class="view" id="v-rk">
       <div class="sec" style="margin-top:4px"><h2><span class="dotc" style="background:var(--rk)"></span>Подготовка к РК</h2></div>
-      <p class="note">Отмечайте пройденные шаги — готовность считается сама. Материалы открываются на сайте.</p>
+      <p class="note">Отмечай пройденные шаги — готовность считается сама. Материалы открываются на сайте.</p>
       <div id="rkList" class="rkx"></div>
+      <div id="exBox"></div>
     </section>
 
     <!-- ═══ Профиль ═══ -->
     <section class="view" id="v-me">
-      <div class="card me">
-        <div class="r"><div class="av" id="meAv">Н</div><div><b style="font:700 19px var(--disp)">Профиль</b><div class="mut" id="meG"></div></div></div>
-        <button class="btn" data-group>Выбрать группу</button>
-      </div>
-      <div class="card me">
-        <b>Отметки</b>
-        <div class="mut" id="meStat" style="font-size:14.5px"></div>
-        <button class="btn flat" id="reset">Сбросить отметки сдач и подготовки</button>
-        <p class="note" style="margin:0">Отметки хранятся только в этом браузере.</p>
-      </div>
+      <section class="idc" aria-label="Профиль">
+        <span class="eb">Начерт · инж. графика · МГТУ</span>
+        <div class="r"><div class="av" id="meAv">Н</div><div style="min-width:0"><h2 id="meName">Студент</h2><small id="meSince"></small></div></div>
+        <div class="kv">
+          <button data-name><small>Имя</small><b id="kvN">—</b></button>
+          <button data-group><small>Группа</small><b id="kvG">—</b></button>
+          <button data-variant><small>Вариант</small><b id="kvV">—</b></button>
+        </div>
+      </section>
+
+      <div class="sec"><h2>Мой прогресс</h2></div>
+      <div class="stats" id="meStats"></div>
+
+      <section class="card save" id="saveBox">
+        <h3>Сохранение прогресса</h3>
+        <p id="saveP">Всё, что ты делаешь в кабинете и на сайте, хранится в этом браузере. Скачай копию — и перенеси прогресс на другой телефон или ноутбук.</p>
+        <div class="acts">
+          <button class="btn" id="bkSave"><svg class="i"><use href="#i-save"/></svg>Скачать копию</button>
+          <label class="btn flat" for="bkFile" style="cursor:pointer"><svg class="i"><use href="#i-upload"/></svg>Восстановить</label>
+          <input type="file" id="bkFile" accept="application/json,.json" hidden>
+        </div>
+        <div class="soon" id="syncBox"><span class="tag">Скоро</span><span><b>Вход и синхронизация.</b> Войдёшь через Яндекс ID или почту — прогресс будет сам появляться на всех устройствах.</span></div>
+      </section>
+
+      <section class="card set" aria-label="Настройки">
+        <div class="it"><span class="ic"><svg class="i"><use href="#i-moon"/></svg></span><div class="m"><b>Тема</b><small>Общая с сайтом</small></div>
+          <div class="tog" id="theme"><button data-th="auto">Авто</button><button data-th="light">Светлая</button><button data-th="dark">Тёмная</button></div></div>
+        <div class="it"><span class="ic"><svg class="i"><use href="#i-play"/></svg></span><div class="m"><b>Знакомство заново</b><small>Имя, группа и вариант по шагам</small></div><button class="btn flat sm" id="reOb">Открыть</button></div>
+        <div class="it"><span class="ic"><svg class="i"><use href="#i-trash"/></svg></span><div class="m"><b>Сбросить отметки</b><small>Сдачи и шаги подготовки к РК</small></div><button class="btn flat sm" id="reset">Сбросить</button></div>
+      </section>
     </section>
 
     <!-- Сканер чертежей и «Мои чертежи» — lk/drawings/ui.js -->
@@ -464,280 +200,42 @@ details.past .rows{margin-top:4px}
 </div>
 
 <nav class="tabs" aria-label="Разделы"><div class="tabs-in">
+  <div class="side-x"><img src="../icon-192.png" alt=""><div>Начерт<small>Личный кабинет</small></div></div>
   <button class="tab on" data-tab="home"><svg class="i"><use href="#i-home"/></svg>Главная</button>
   <button class="tab" data-tab="cal"><svg class="i"><use href="#i-list"/></svg>Сдачи<span class="badge" id="calBadge" hidden></span></button>
   <button class="tab center" data-tab="check" aria-label="Сканер чертежей"><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span class="sm">Скан</span><span class="lg">Сканер чертежа</span></button>
   <button class="tab" data-tab="rk"><svg class="i"><use href="#i-target"/></svg>РК<span class="dot" id="rkDot" hidden></span></button>
   <button class="tab" data-tab="me"><svg class="i"><use href="#i-user"/></svg>Профиль</button>
+  <div class="side-foot">Кабинет в разработке.<br><a href="../">Вернуться на сайт →</a></div>
 </div></nav>
 
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Выбор группы"><div class="sheet-in">
+<!-- Выбор группы -->
+<div class="sheet" id="gSheet" role="dialog" aria-modal="true" aria-label="Выбор группы"><div class="sheet-in">
   <h2>Моя группа</h2>
-  <input id="gq" type="search" placeholder="Например, АК1-31" autocomplete="off" autocapitalize="characters">
+  <p class="note">Сроки сдач — к дню твоей пары по расписанию кафедры.</p>
+  <input class="field" id="gq" type="search" placeholder="Например, АК1-31" autocomplete="off" autocapitalize="characters">
   <div class="glist" id="glist"></div>
-  <button class="btn flat" id="gx">Закрыть</button>
+  <button class="btn flat" data-close>Закрыть</button>
 </div></div>
+<!-- Выбор варианта -->
+<div class="sheet" id="vSheet" role="dialog" aria-modal="true" aria-label="Выбор варианта"><div class="sheet-in">
+  <h2>Мой вариант</h2>
+  <p class="note">Один номер для всех ДЗ. На сайте разборы сразу откроются на нём.</p>
+  <div class="vgrid" id="vgrid"></div>
+  <button class="btn flat" data-close>Закрыть</button>
+</div></div>
+<!-- Имя -->
+<div class="sheet" id="nSheet" role="dialog" aria-modal="true" aria-label="Имя"><div class="sheet-in">
+  <h2>Как тебя зовут?</h2>
+  <input class="field" id="nIn" placeholder="Имя" maxlength="40" autocomplete="given-name">
+  <button class="btn" id="nOk">Сохранить</button>
+</div></div>
+
 <div class="toast" id="toast" role="status"></div>
 
-<script>
-(function(){
-  'use strict';
-  var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
-
-  /* ───── План семестра ─────
-     [предмет, вид, номер, неделя крайнего срока]; день — по занятию группы (без группы — понедельник, самый ранний). */
-  var DAY=864e5, W1='2026-08-31';   /* понедельник 1-й учебной недели */
-  var TABLE=[['ikg','dz',1,4],['ikg','rk',1,5],['ikg','m',1,6],['ikg','dz',2,9],['ikg','rk',2,10],['ikg','m',2,11],['ikg','dz',3,14],['ikg','rk',3,15],['ikg','m',3,16],
-             ['ng','dz',1,5],['ng','rk',1,6],['ng','m',1,7],['ng','dz',2,10],['ng','rk',2,11],['ng','m',2,12],['ng','dz',3,14],['ng','rk',3,15],['ng','m',3,16]];
-  var SUBJ={ikg:'ИКГ',ng:'Начерт'}, SUBJ_FULL={ikg:'Инженерная графика',ng:'Начертательная геометрия'};
-  /* разборы ДЗ на сайте: #/ng1…#/ng5, #/ig2…#/ig4; остальное — общий раздел #/dz */
-  var SITE_DZ={ng:[1,2,3,4,5],ikg:[2,3,4]};
-  /* Подготовка к РК: шаги ведут в разделы сайта */
-  var PREP={
-    ng:[{k:'cheat',t:'Шпаргалка',s:'формулы и правила на одном экране',h:'/#/ng/cheat'},
-        {k:'q',t:'Вопросы и билет с разбором',s:'теория РК и готовность 0–100',h:'/#/ng/rk2'},
-        {k:'path',t:'Повторить темы',s:'уроки по порядку',h:'/#/ng/path'},
-        {k:'mock',t:'Пробный РК на время',s:'три задачи билета с секундомером',h:'/#/ng/rk2/mock'}],
-    ikg:[{k:'learn',t:'Виды, разрезы, сечения',s:'один вариант по шагам',h:'/#/ig/learn'},
-         {k:'points',t:'Защита точек',s:'две недостающие проекции точки',h:'/#/ig/points'},
-         {k:'theory',t:'Теория ЕСКД',s:'форматы, линии, размеры, штриховка',h:'/#/ig/theory'},
-         {k:'wb',t:'Рабочая тетрадь',s:'тела с отверстиями',h:'/#/ig/wb'}]
-  };
-
-  var MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'], MONF=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'], WDN=['','пн','вт','ср','чт','пт','сб','вс'];
-  function p2(n){return (n<10?'0':'')+n}
-  function toDay(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);return Math.round(Date.UTC(+m[1],+m[2]-1,+m[3])/DAY)}
-  function todayDay(){var x=new Date();return Math.round(Date.UTC(x.getFullYear(),x.getMonth(),x.getDate())/DAY)}
-  function wday(d){return ((new Date(d*DAY).getUTCDay()+6)%7)+1}
-  function human(d){var x=new Date(d*DAY);return WDN[wday(d)]+', '+x.getUTCDate()+' '+MON[x.getUTCMonth()]}
-  function plural(n,a,b,c){var m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c}
-  function dWord(n){return plural(n,'день','дня','дней')}
-  function inWords(k){if(k<0)return (-k)+' '+dWord(-k)+' назад';if(k===0)return 'сегодня';if(k===1)return 'завтра';if(k===2)return 'послезавтра';return 'через '+k+' '+dWord(k)}
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-  function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
-  function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-  function jget(k){try{var v=JSON.parse(lsGet(k)||'{}');return v&&typeof v==='object'?v:{}}catch(e){return {}}}
-
-  var DB=null, group=lsGet('lk_group')||'';
-  var DONE=jget('lk_done'), PREPD=jget('lk_prep'), FILTER='all';
-  function gdata(){return DB&&group&&DB.groups[group]||null}
-  function curWeek(t){return Math.floor((t-toDay(W1))/7)+1}
-
-  function events(){
-    var g=gdata(), subs=g?['ikg','ng'].filter(function(k){return g[k]}):['ikg','ng'], w1=toDay(W1);
-    return TABLE.filter(function(r){return subs.indexOf(r[0])>=0}).map(function(r){
-      var start=w1+7*(r[3]-1), cd=g&&g[r[0]]?g[r[0]].day:1, tm=g&&g[r[0]]?g[r[0]].time:'';
-      return {id:r[0]+'-'+r[1]+r[2],subj:r[0],kind:r[1],n:r[2],week:r[3],start:start,date:start+cd-1,time:tm};
-    }).sort(function(a,b){return a.date-b.date||a.subj.localeCompare(b.subj)});
-  }
-  function label(e){return (e.kind==='m'?'М':e.kind==='dz'?'ДЗ':'РК')+' '+e.n}
-  function titleOf(e){return e.kind==='m'?'Модуль '+e.n:e.kind==='dz'?'Домашнее задание '+e.n:'Рубежный контроль '+e.n}
-  function nowHM(){var x=new Date();return p2(x.getHours())+':'+p2(x.getMinutes())}
-  function isPast(e,t){return e.date<t||(e.date===t&&!!e.time&&e.time<nowHM())}
-  function dateText(e){return human(e.date)+(e.time?' до '+e.time.replace(/^0/,''):'')}
-  function linkOf(e){
-    if(e.kind==='dz') return SITE_DZ[e.subj].indexOf(e.n)>=0?'/#/'+(e.subj==='ikg'?'ig':'ng')+e.n:'/#/dz';
-    if(e.kind==='rk') return PREP[e.subj][0].h;
-    return null;
-  }
-  function doneWord(e){return e.kind==='dz'?'сдано':e.kind==='rk'?'написал':'закрыт'}
-  function hintFor(e,d){
-    if(e.kind==='rk') return d>=9?'Время есть: начните со шпаргалки и вопросов — увидите слабые темы.':d>=3?'По 2–3 задачи в день из слабых тем, вперемешку.':d>=1?'Пробный РК на время и лёгкое повторение.':'РК сегодня. Удачи!';
-    if(e.kind==='dz') return d>=14?'Прочитайте условие и выберите способ решения.':d>=7?'Сделайте черновик, потом чистовик.':d>=3?'Чистовик, сверка по ГОСТ и скан листа — найдёт ошибки до сдачи.':'Оставьте запас на проверку: отсканируйте лист сейчас.';
-    return 'Закройте долги по ДЗ и РК до конца недели.';
-  }
-  /* большой счётчик: число дней или слово */
-  function countHTML(d,e){
-    if(d>=2) return '<div class="count"><b>'+d+'</b><span>'+dWord(d)+'<br>до '+esc(human(e.date))+'</span></div>';
-    return '<div class="count word"><b>'+(d===1?'Завтра':'Сегодня')+'</b><span>'+esc(human(e.date))+(e.time?'<br>до '+esc(e.time.replace(/^0/,'')):'')+'</span></div>';
-  }
-  function prepOf(e){var st=PREP[e.subj], m=PREPD[e.id]||{}, n=st.filter(function(s){return m[s.k]}).length;return {steps:st,m:m,n:n,all:st.length,next:st.filter(function(s){return !m[s.k]})[0]||null}}
-
-  /* ───── Главная ───── */
-  function renderHot(){
-    var t=todayDay(), ev=events(), box=$('#hot');
-    var cand=ev.filter(function(e){return e.kind==='dz'&&!DONE[e.id]&&!isPast(e,t)});
-    var e=cand[0]||ev.filter(function(x){return !DONE[x.id]&&!isPast(x,t)})[0];
-    if(!e){ box.className='hero hot'; box.innerHTML='<div class="row1"><span class="pill"><svg class="i"><use href="#i-check"/></svg>Всё сдано</span></div><div class="hot-t">Чисто!</div><div class="hot-s">Несданных заданий в этом семестре нет.</div>'; return; }
-    var d=e.date-t, same=ev.filter(function(x){return x.subj===e.subj&&x.kind===e.kind&&x.date<e.date}), from=same.length?same[same.length-1].date:toDay(W1);
-    var frac=Math.max(0,Math.min(1,(t-from)/Math.max(1,e.date-from))), nxt=cand.filter(function(x){return x!==e})[0], lk=linkOf(e);
-    box.className='hero hot'; box.setAttribute('aria-label','Горит: '+label(e)+' '+SUBJ_FULL[e.subj]);
-    box.innerHTML='<div class="row1"><span class="pill live"><i></i>Горит</span><span class="meta">'+(group?'Неделя '+e.week:'<button data-group>дата по пн · моя группа</button>')+'</span></div>'
-      +'<div class="hot-g"><div><div class="hot-t">'+label(e)+'</div><div class="hot-s">'+SUBJ_FULL[e.subj]+'</div></div>'+countHTML(d,e)+'</div>'
-      +'<div class="tbar" role="progressbar" aria-label="Прошло времени до срока" aria-valuenow="'+Math.round(frac*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:0" data-w="'+Math.round(frac*100)+'%"></i></div>'
-      +'<div class="tlbl"><span>прошло '+Math.round(frac*100)+'% времени</span><span>'+(e.time?'сдать до пары':'')+'</span></div>'
-      +'<div class="tip">'+esc(hintFor(e,d))+'</div>'
-      +'<div class="acts">'+(lk?'<a class="btn white" href="'+lk+'">Разбор на сайте<svg class="i"><use href="#i-ext"/></svg></a>':'')
-      +'<button class="btn glass" data-done="'+e.id+'"><svg class="i"><use href="#i-check"/></svg>Сдал</button></div>'
-      +(nxt?'<div class="after">Следом: <b>'+label(nxt)+' · '+SUBJ[nxt.subj]+'</b> — '+inWords(nxt.date-t)+', '+esc(human(nxt.date))+'</div>':'');
-    requestAnimationFrame(function(){requestAnimationFrame(function(){var i=$('.tbar i',box); if(i) i.style.width=i.getAttribute('data-w');})});
-  }
-  function debts(){var t=todayDay();return events().filter(function(e){return e.kind==='dz'&&!DONE[e.id]&&isPast(e,t)})}
-  function renderDebt(){
-    var ds=debts(), box=$('#debt'), t=todayDay();
-    if(!ds.length){ box.hidden=true; box.innerHTML=''; return; }
-    var e=ds[ds.length-1]; box.hidden=false;
-    box.innerHTML='<div class="debt"><span class="ic"><svg class="i"><use href="#i-alert"/></svg></span><div class="m"><b>'+(ds.length>1?ds.length+' ДЗ без отметки':label(e)+' · '+SUBJ[e.subj]+' — срок прошёл')+'</b><small>'
-      +(ds.length>1?'Срок прошёл. Сдали? Отметьте':'Срок был '+inWords(e.date-t)+'. Сдали? Отметьте')+'</small></div>'
-      +(ds.length>1?'<button class="btn" data-tab-go="cal">Отметить</button>':'<button class="btn" data-done="'+e.id+'">Сдал</button>')+'</div>';
-  }
-  function rkUpcoming(){
-    var t=todayDay(), seen={};
-    return events().filter(function(e){ if(e.kind!=='rk'||isPast(e,t)||seen[e.subj]) return false; seen[e.subj]=1; return true; });
-  }
-  function renderRkHome(){
-    var t=todayDay(), rs=rkUpcoming(), box=$('#rkHome');
-    if(!rs.length){ box.innerHTML='<div class="card"><b>РК в этом семестре позади</b></div>'; return; }
-    box.innerHTML=rs.map(function(e){ var d=e.date-t, p=prepOf(e);
-      return '<button class="rkc" data-tab-go="rk" aria-label="'+label(e)+' '+SUBJ[e.subj]+': подготовка">'
-        +'<div class="row1"><div><div class="nm">'+label(e)+'</div><div class="sj">'+SUBJ_FULL[e.subj]+'</div></div><span class="pill">'+(d<=7?'скоро':'нед. '+e.week)+'</span></div>'
-        +countHTML(d,e)
-        +'<div class="tbar"><i style="width:'+Math.round(p.n/p.all*100)+'%"></i></div>'
-        +'<div class="nx">'+(p.next?'Шаг '+(p.n+1)+' из '+p.all+': '+esc(p.next.t):'Готов: все шаги пройдены')+'<svg class="i"><use href="#i-chev"/></svg></div></button>';
-    }).join('');
-  }
-  function row(e,t){
-    var past=isPast(e,t), done=!!DONE[e.id], d=e.date-t, debt=past&&!done&&e.kind==='dz', lk=linkOf(e);
-    var right=done?doneWord(e):debt?'долг':past?'прошло':inWords(d);
-    return '<div class="row k-'+e.kind+(done?' done':debt?' debt':past?' pastx':d<=7?' near':'')+'">'
-      +'<button class="chk" data-done="'+e.id+'" aria-pressed="'+done+'" aria-label="'+label(e)+' '+SUBJ[e.subj]+': '+(done?'снять отметку':'отметить — '+doneWord(e))+'"><svg class="i"><use href="#i-check"/></svg></button>'
-      +'<div class="m"><b><span class="kd">'+label(e)+'</span>'+SUBJ[e.subj]+'</b><small>'+esc(dateText(e))+'</small></div>'
-      +'<div class="d">'+right+'</div>'
-      +(lk?'<a class="go" href="'+lk+'" aria-label="Открыть на сайте: '+label(e)+' '+SUBJ[e.subj]+'"><svg class="i"><use href="#i-chev"/></svg></a>':'<span class="go"></span>')+'</div>';
-  }
-  function renderMini(){
-    var t=todayDay(), hotId=($('#hot [data-done]')||{getAttribute:function(){return ''}}).getAttribute('data-done');
-    var up=events().filter(function(e){return !isPast(e,t)&&!DONE[e.id]&&e.id!==hotId&&e.kind!=='m'}).slice(0,4);
-    $('#mini').innerHTML=up.length?up.map(function(e){return row(e,t)}).join(''):'<div class="card mut">Больше несданного нет.</div>';
-  }
-  function nextLesson(g){
-    var t=todayDay(), hm=nowHM(), w1=toDay(W1);
-    for(var i=0;i<14;i++){ var d=t+i, w=wday(d); if(w>6) continue; var wk=Math.floor((d-w1)/7)+1, par=(wk%2?'чс':'зн');
-      var ls=g.lessons.filter(function(l){return l.day===w&&(!l.par||l.par===par)&&(i>0||l.t>=hm)}).sort(function(a,b){return a.t<b.t?-1:1});
-      if(ls.length) return {l:ls[0],date:d,i:i}; }
-    return null;
-  }
-  function renderLesson(){
-    var box=$('#lesson'), g=gdata();
-    if(!g){ box.innerHTML=''; return; }
-    var n=nextLesson(g);
-    if(!n){ box.innerHTML='<div class="sec"><h2>Пара</h2></div><div class="card mut" style="margin-top:14px">В ближайшие две недели занятий нет.</div>'; return; }
-    var l=n.l, day=n.i===0?'Сегодня':n.i===1?'Завтра':human(n.date);
-    box.innerHTML='<div class="sec"><h2>Следующая пара</h2></div><div class="card lesson" style="margin-top:14px"><div class="tm">'+esc(l.t.replace(/^0/,''))+'<small>'+esc(day)+'</small></div><div><b>'+SUBJ_FULL[l.subj]+'</b>'
-      +'<div class="mut">ауд. '+esc(l.rooms.join(', '))+(l.par?' · '+(l.par==='чс'?'числитель':'знаменатель'):'')+((l.who&&l.who.length)?' · '+esc(l.who.join('; ')):'')+(l.unsure?' · сверьте с расписанием':'')+'</div></div></div>';
-  }
-  function renderScanCnt(){
-    var n=0; try{ var a=JSON.parse(lsGet('lk_sheets')||'[]'); n=Array.isArray(a)?a.length:0; }catch(e){}
-    $('#myCnt').innerHTML=(n?'Мои чертежи · '+n:'Мои чертежи и пример')+' <svg class="i"><use href="#i-chev"/></svg>';
-  }
-
-  /* ───── Сдачи ───── */
-  function wkName(w,cw){ if(w===cw) return 'Эта неделя'; if(w===cw+1) return 'Следующая неделя'; var s=toDay(W1)+7*(w-1), a=new Date(s*DAY), b=new Date((s+6)*DAY);
-    return 'Неделя '+w+' · '+a.getUTCDate()+(a.getUTCMonth()!==b.getUTCMonth()?' '+MON[a.getUTCMonth()]:'')+'–'+b.getUTCDate()+' '+MON[b.getUTCMonth()]; }
-  function renderCal(){
-    var t=todayDay(), cw=curWeek(t), all=events(), f=all.filter(function(e){return FILTER==='all'||e.kind===FILTER});
-    var dz=all.filter(function(e){return e.kind==='dz'}), dzDone=dz.filter(function(e){return DONE[e.id]}).length, ds=debts();
-    var upNot=all.filter(function(e){return !isPast(e,t)&&!DONE[e.id]});
-    $('#calSum').innerHTML='<div class="r"><div class="big">'+dzDone+'<small> из '+dz.length+' ДЗ сдано</small></div></div>'
-      +'<div class="pbar"><i style="width:'+Math.round(dzDone/Math.max(1,dz.length)*100)+'%"></i></div>'
-      +'<div class="legend"><span>Долгов: <b style="color:'+(ds.length?'var(--red)':'inherit')+'">'+ds.length+'</b></span><span>Впереди: <b>'+upNot.length+'</b></span>'+(upNot[0]?'<span>Ближайшее: <b>'+label(upNot[0])+' · '+SUBJ[upNot[0].subj]+'</b>, '+inWords(upNot[0].date-t)+'</span>':'')+'</div>'
-      +(group?'':'<div class="note" style="margin:0">Группа не выбрана: даты — по понедельникам. <a href="#" data-group style="color:var(--blue);font-weight:600">Выбрать группу</a></div>');
-    var h='', debtF=f.filter(function(e){return e.kind==='dz'&&!DONE[e.id]&&isPast(e,t)});
-    if(debtF.length) h+='<div class="wk" style="color:var(--red)">Долги — отметьте, если уже сдали</div>'+debtF.map(function(e){return row(e,t)}).join('')
-      +(debtF.length>1?'<button class="btn flat" data-all-past style="margin-top:2px">Всё прошедшее — сдано</button>':'');
-    var up=f.filter(function(e){return !isPast(e,t)}), lastW=-1;
-    up.forEach(function(e){ if(e.week!==lastW){ lastW=e.week; h+='<div class="wk">'+wkName(e.week,cw)+'</div>'; } h+=row(e,t); });
-    if(!up.length) h+='<div class="card mut">Впереди ничего нет.</div>';
-    var past=f.filter(function(e){return isPast(e,t)&&!(e.kind==='dz'&&!DONE[e.id])});
-    if(past.length) h+='<details class="past"><summary>Прошедшие ('+past.length+')</summary><div class="rows">'+past.map(function(e){return row(e,t)}).join('')+'</div></details>';
-    h+='<p class="note">'+(group?'Срок — день вашего занятия на этой неделе, до начала пары. Точный день уточните у преподавателя.':'Точный день сдачи уточните у преподавателя.')+'</p>';
-    $('#calList').innerHTML=h;
-    $$('.seg [data-filter]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-filter')===FILTER)});
-    var n=ds.length+all.filter(function(e){return !isPast(e,t)&&!DONE[e.id]&&e.date-t<=7}).length, b=$('#calBadge'); b.textContent=n; b.hidden=!n;
-  }
-
-  /* ───── РК ───── */
-  function renderRk(){
-    var t=todayDay(), rs=events().filter(function(e){return e.kind==='rk'&&!isPast(e,t)});
-    $('#rkDot').hidden=!rs.some(function(e){return e.date-t<=14});
-    if(!rs.length){ $('#rkList').innerHTML='<div class="card"><b>РК в этом семестре позади</b></div>'; return; }
-    var first={}, mains=[], later=[];
-    rs.forEach(function(e){ (first[e.subj]?later:mains).push(e); first[e.subj]=1; });
-    $('#rkList').innerHTML=mains.concat(later).map(function(e){ var d=e.date-t, p=prepOf(e), main=mains.indexOf(e)>=0;
-      if(!main) return (e===later[0]?'<div class="wk">Позже</div>':'')+'<div class="row k-rk"><div class="m"><b><span class="kd">'+label(e)+'</span>'+SUBJ[e.subj]+'</b><small>'+esc(dateText(e))+'</small></div><div class="d">'+inWords(d)+'</div><span class="go"></span></div>';
-      return '<div class="rkb"><section class="hero" aria-label="'+label(e)+' '+SUBJ_FULL[e.subj]+'"><div class="row1"><span class="pill">'+(d<=7?'<i style="width:8px;height:8px;border-radius:4px;background:#fff;animation:pulse 1.4s infinite"></i>Скоро':'Неделя '+e.week)+'</span><span class="meta">готовность '+Math.round(p.n/p.all*100)+'%</span></div>'
-        +'<div><div class="hot-t" style="font-size:34px">'+label(e)+' · '+SUBJ[e.subj]+'</div><div class="hot-s">'+SUBJ_FULL[e.subj]+'</div></div>'
-        +countHTML(d,e)+'<div class="tbar"><i style="width:'+Math.round(p.n/p.all*100)+'%"></i></div>'
-        +'<div class="hint">'+esc(hintFor(e,d))+'</div>'
-        +(p.next?'<div class="acts"><a class="btn white" href="'+p.next.h+'">'+esc(p.next.t)+'<svg class="i"><use href="#i-ext"/></svg></a></div>':'')+'</section>'
-        +'<ol class="steps">'+p.steps.map(function(s,i){ var on=!!p.m[s.k];
-          return '<li class="step'+(on?' on':'')+'"><button class="chk" data-prep="'+e.id+'|'+s.k+'" aria-pressed="'+on+'" aria-label="'+esc(s.t)+': '+(on?'снять отметку':'отметить — пройдено')+'"><svg class="i"><use href="#i-check"/></svg></button>'
-            +'<a href="'+s.h+'"><b>'+(i+1)+'. '+esc(s.t)+'</b><small>'+esc(s.s)+'</small></a><a class="go" href="'+s.h+'" aria-label="Открыть: '+esc(s.t)+'"><svg class="i"><use href="#i-ext"/></svg></a></li>'; }).join('')+'</ol></div>';
-    }).join('');
-  }
-
-  function renderTop(){
-    var t=todayDay(), x=new Date(t*DAY), cw=curWeek(t);
-    $('#today').textContent=['','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][wday(t)]+', '+x.getUTCDate()+' '+MONF[x.getUTCMonth()]+(cw>=1&&cw<=18?' · '+cw+'-я неделя':'');
-    $('#helloT').textContent=group||'Группа'; $('#hello').classList.toggle('need',!group);
-    $('#meG').textContent=group?'Группа '+group:'Группа не выбрана';
-    $('#meAv').textContent=group?group.replace(/[^А-ЯA-Z]/g,'').slice(0,2)||'Н':'Н';
-    var nd=Object.keys(DONE).filter(function(k){return DONE[k]}).length, np=Object.keys(PREPD).reduce(function(a,k){return a+Object.keys(PREPD[k]).filter(function(s){return PREPD[k][s]}).length},0);
-    $('#meStat').textContent='Отмечено сдач: '+nd+' · шагов подготовки к РК: '+np;
-  }
-  function renderAll(){ renderTop(); renderHot(); renderDebt(); renderRkHome(); renderMini(); renderLesson(); renderScanCnt(); renderCal(); renderRk(); }
-
-  /* ───── Отметки ───── */
-  var toastEl=$('#toast'), tt;
-  function toast(s){ toastEl.textContent=s; toastEl.classList.add('on'); clearTimeout(tt); tt=setTimeout(function(){toastEl.classList.remove('on')},1900); }
-  function findEv(id){return events().filter(function(e){return e.id===id})[0]}
-  document.addEventListener('click',function(ev){
-    var b=ev.target.closest('[data-done]');
-    if(b){ ev.preventDefault(); var id=b.getAttribute('data-done'), e=findEv(id); if(DONE[id]) delete DONE[id]; else DONE[id]=Date.now(); lsSet('lk_done',JSON.stringify(DONE)); renderAll();
-      if(e) toast(DONE[id]?label(e)+' · '+SUBJ[e.subj]+' — '+doneWord(e)+' ✓':'Отметка снята'); return; }
-    b=ev.target.closest('[data-prep]');
-    if(b){ ev.preventDefault(); var pk=b.getAttribute('data-prep').split('|'), m=PREPD[pk[0]]||(PREPD[pk[0]]={}); if(m[pk[1]]) delete m[pk[1]]; else m[pk[1]]=Date.now(); lsSet('lk_prep',JSON.stringify(PREPD)); renderAll(); if(m[pk[1]]) toast('Шаг пройден ✓'); return; }
-    b=ev.target.closest('[data-all-past]');
-    if(b){ debts().forEach(function(e){DONE[e.id]=Date.now()}); lsSet('lk_done',JSON.stringify(DONE)); renderAll(); toast('Прошедшие ДЗ отмечены сданными'); return; }
-    b=ev.target.closest('[data-filter]');
-    if(b){ FILTER=b.getAttribute('data-filter'); renderCal(); return; }
-    b=ev.target.closest('[data-scan="pick"]');
-    if(b){ var p=$('#scPick'); if(p) p.click(); }
-  });
-  $('#reset').addEventListener('click',function(){ if(!confirm('Сбросить все отметки сдач и подготовки к РК?')) return; DONE={}; PREPD={}; lsSet('lk_done','{}'); lsSet('lk_prep','{}'); renderAll(); toast('Отметки сброшены'); });
-
-  /* ───── Выбор группы ───── */
-  var sheet=$('#sheet'), gq=$('#gq'), glist=$('#glist');
-  function fillGroups(){
-    if(!DB){ glist.innerHTML='<p>Расписание не загрузилось. Проверьте интернет и откройте окно снова.</p>'; return; }
-    var q=gq.value.replace(/\s+/g,'').toUpperCase(), ks=Object.keys(DB.groups).filter(function(k){return !q||k.toUpperCase().indexOf(q)>=0}).slice(0,60);
-    glist.innerHTML=ks.length?ks.map(function(k){return '<button type="button" data-pick="'+esc(k)+'"'+(k===group?' class="on"':'')+'>'+esc(k)+'</button>'}).join(''):'<p>Такой группы нет в расписании. Проверьте запись, например «АК1-31».</p>';
-  }
-  function openSheet(){ sheet.classList.add('on'); gq.value=''; fillGroups(); setTimeout(function(){gq.focus()},50); }
-  function closeSheet(){ sheet.classList.remove('on'); }
-  gq.addEventListener('input',fillGroups);
-  $('#gx').addEventListener('click',closeSheet);
-  sheet.addEventListener('click',function(e){ if(e.target===sheet) closeSheet(); var b=e.target.closest('[data-pick]'); if(b){ group=b.getAttribute('data-pick'); lsSet('lk_group',group); closeSheet(); renderAll(); toast('Группа '+group+': сроки по вашим парам'); } });
-  document.addEventListener('click',function(e){ var b=e.target.closest('[data-group]'); if(b){ e.preventDefault(); openSheet(); } });
-  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&sheet.classList.contains('on')) closeSheet(); });
-
-  /* ───── Вкладки ───── */
-  function goTab(id){ var t=$('.tab[data-tab="'+id+'"]'); if(t) t.click(); }
-  document.addEventListener('click',function(e){ var b=e.target.closest('[data-tab-go]'); if(b){ e.preventDefault(); goTab(b.getAttribute('data-tab-go')); } });
-  $$('.tab').forEach(function(t){ t.addEventListener('click',function(){
-    var id=t.getAttribute('data-tab');
-    $$('.tab').forEach(function(x){x.classList.toggle('on',x===t); if(x===t) x.setAttribute('aria-current','page'); else x.removeAttribute('aria-current');});
-    $$('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+id)});
-    if(id==='home') renderScanCnt();
-    window.scrollTo(0,0);
-  }); });
-  addEventListener('storage',function(e){ if(e.key==='lk_sheets') renderScanCnt(); if(e.key==='lk_done'||e.key==='lk_prep'){ DONE=jget('lk_done'); PREPD=jget('lk_prep'); renderAll(); } });
-
-  renderAll();
-  fetch('data/groups.json').then(function(r){return r.json()}).then(function(j){ DB=j; if(group&&!j.groups[group]){ group=''; lsSet('lk_group',''); } renderAll(); }).catch(function(){ renderAll(); });
-  self.LKHOME={events:events,render:renderAll};
-})();
-</script>
+<script src="config.js?v=1"></script>
+<script src="store.js?v=1"></script>
+<script src="app.js?v=1"></script>
 <script src="scan/config.js"></script>
 <script src="scan/pipeline.js?v=lk6"></script>
 <script src="scan/live.js?v=2"></script>

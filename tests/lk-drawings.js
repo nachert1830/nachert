@@ -95,7 +95,7 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
 /* синтетический «снимок»: чертёж примера карандашом на белом листе 1500 × 2000 (5 px/мм), без не подтверждённой линии */
 async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои чертежи (кабинет)',rule,msg:String(msg)});
   const pg=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const errs=[]; pg.on('pageerror',e=>errs.push(String(e)));
-  await pg.goto(URL+'lk/'); await pg.evaluate(()=>{ try{ localStorage.removeItem('lk_sheets'); }catch(e){} }); await pg.reload(); await pg.waitForTimeout(600);
+  await pg.goto(URL+'lk/'); await pg.evaluate(()=>{ try{ localStorage.removeItem('lk_sheets'); localStorage.setItem('lk_profile',JSON.stringify({onb:1})); }catch(e){} });   /* без окна знакомства */ await pg.reload(); await pg.waitForTimeout(600);
   await pg.click('.tab[data-tab="check"]'); await pg.waitForSelector('#scDemo');
   await pg.click('#scDemo'); await pg.waitForSelector('#dv.on'); await pg.waitForTimeout(200);
   const n0=await pg.evaluate(()=>document.querySelectorAll('#edSvg circle').length); if(n0<8) B('копия нарисована','точек на копии '+n0);
