@@ -122,6 +122,26 @@
 :root[data-theme=dark] .ai-k{background:var(--surf3);border-color:var(--line2);box-shadow:none;color:#7cb7ff}
 :root[data-theme=dark] .ai-cb,:root[data-theme=dark] .ai-steps li::before{background:#1668dc}
 @media(min-width:700px){.ai-card{align-items:center}.ai-ct{display:flex;align-items:center;gap:16px}.ai-ct>div{flex:1}.ai-cb{margin-top:0}}
+/* плашка-анонс личных онлайн-занятий автора (PROMO): тише поиска — светлая карточка, одна акцентная кнопка */
+.pm-card{position:relative;margin:0 0 var(--s4,16px);padding:15px 40px 15px 16px;border-radius:18px;background:var(--surf);border:1px solid var(--line2);box-shadow:var(--shadow);transition:opacity .25s,transform .25s;overflow-wrap:anywhere}
+.pm-card.out{opacity:0;transform:scale(.97)}
+.pm-h{margin:0;font:700 16px/1.25 var(--disp);color:var(--ink);letter-spacing:-.01em}
+.pm-l{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:5px}
+.pm-l li{position:relative;padding-left:16px;font-size:13.5px;line-height:1.4;color:var(--ink2)}
+.pm-l li::before{content:"";position:absolute;left:3px;top:.55em;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.pm-l li b{color:var(--ink);font-weight:700}
+.pm-l li.pm-g{color:var(--green);font-weight:600}
+.pm-l li.pm-g::before{background:var(--green)}
+.pm-a{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pm-b{display:inline-flex;align-items:center;justify-content:center;flex:1 1 180px;min-height:44px;padding:0 16px;border-radius:12px;font:700 14px var(--sans);text-decoration:none!important;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pm-b.pm-p{background:var(--acc);color:var(--on-acc)!important;box-shadow:0 8px 18px -12px var(--acc)}
+.pm-b.pm-2{background:var(--surf2);color:var(--ink)!important;border:1px solid var(--line2)}
+.pm-b:hover{filter:brightness(1.06)}.pm-b:active{transform:scale(.97)}
+.pm-b:focus-visible,.pm-x:focus-visible{outline:none;box-shadow:var(--ring)}
+.pm-s{margin:10px 0 0;font-size:11.5px;line-height:1.4;color:var(--mut)}
+.pm-x{position:absolute;top:6px;right:6px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--mut2);cursor:pointer}
+.pm-x:hover{background:var(--surf2);color:var(--ink)}
+@media(min-width:700px){.pm-card{padding:18px 48px 16px 22px}.pm-b{flex:0 1 auto}}
 
 /* ── главная: популярность и «поделиться» ── */
 .hpop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin:0 0 var(--s4);padding:12px 14px;border-radius:18px;background:linear-gradient(120deg,color-mix(in srgb,var(--blue) 10%,var(--surf)),var(--surf));border:1px solid var(--line)}
@@ -8153,7 +8173,7 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
   </div>
   <section class="ab-legal" id="legal"><h2>Правовая информация</h2>
    <div class="ab-lg">
-    <div><h4>Статус проекта</h4><p>«Начерт» — авторский некоммерческий учебный проект Андрея Матханова. Название МГТУ им. Н.Э. Баумана на сайте указывает учебные издания, по которым построен курс (список ниже).</p></div>
+    <div><h4>Статус проекта</h4><p>«Начерт» — авторский учебный проект Андрея Матханова. Сайт бесплатный и остаётся бесплатным. Платные онлайн-занятия, которые ведёт автор, — его отдельная личная деятельность и к сайту не относятся. Название МГТУ им. Н.Э. Баумана на сайте указывает учебные издания, по которым построен курс (список ниже).</p></div>
     <div><h4>Что взято из учебных изданий</h4><p>Условия задач рабочей тетради, формулировки домашних заданий и вопросов рубежного контроля, теория и методика — по учебным изданиям МГТУ (список ниже). Они приводятся в учебных целях со ссылкой на источник (ст. 1274 ГК РФ).</p></div>
     <div><h4>Что сделано для сайта</h4><p>Решения, пошаговые построения, чертежи, пояснения, интерактивные модели, оформление и программный код подготовлены для этого сайта. Разборы домашних заданий показывают метод построения.</p></div>
     <div><h4>Правообладателям</h4><p>Если вы считаете, что какой-то материал размещён неправомерно, напишите${CONTACT?` — <a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:' автору проекта'}: материал будет исправлен или удалён.</p></div>
@@ -28244,6 +28264,44 @@ FX.qrSheet=function(url,title,back){
    · другие встроенные браузеры (VK, Instagram…) — так же, через «Открыть в браузере»;
    · компьютер без установки — QR-код: навёл телефон — и продолжил там.
    Telegram распознаём по мосту TelegramWebviewProxy: его встраивают в страницу и iOS-, и Android-версия Telegram. */
+/* Плашка на главной: личные платные онлайн-занятия автора (отдельно от сайта, сайт бесплатный).
+   PROMO_FORM — ссылка на форму записи, одна на обе кнопки. PROMO_RK2_LAST — последний день строки и кнопки про РК2
+   (по локальной дате браузера, включительно). Крестик скрывает плашку на 3 дня (localStorage, без него — просто показывается).
+   Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz, ev/promo/close. */
+const PROMO=(function(){
+  const PROMO_FORM='[ССЫЛКА_НА_ФОРМУ]';
+  const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
+  const KEY='nch2_promo_hide', HIDE_MS=3*864e5;
+  const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
+  function hidden(){ try{ const t=+localStorage.getItem(KEY); return !!t&&Date.now()-t<HIDE_MS; }catch(e){ return false; } }
+  function cardHTML(){
+    if(hidden()) return '';
+    const rk=rk2On(), u=attr(PROMO_FORM), a=(k,cls,t)=>`<a class="pm-b ${cls}" href="${u}" target="_blank" rel="noopener" data-promo="${k}">${t}</a>`;
+    return `<section class="pm-card" data-promo-card aria-labelledby="pmH">
+     <h2 class="pm-h" id="pmH">Не понимаешь начерталку? Разберу вживую</h2>
+     <ul class="pm-l">
+      ${rk?'<li><b>РК2</b> — каждый вечер этой недели, накануне твоего РК</li>':''}
+      <li><b>ДЗ № 2–3</b> — разбор по шагам, отвечу на вопросы</li>
+      <li>490 ₽ за занятие · онлайн в Телемосте · 1,5 часа</li>
+      <li class="pm-g">Не помогло — верну деньги</li>
+     </ul>
+     <div class="pm-a">${rk?a('rk2','pm-p','Записаться на РК2')+a('dz','pm-2','Записаться на разбор ДЗ'):a('dz','pm-p','Записаться на разбор ДЗ')}</div>
+     <p class="pm-s">Занятия ведёт автор сайта. Сам сайт бесплатный.</p>
+     <button type="button" class="pm-x" data-promo-hide aria-label="Скрыть"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </section>`;
+  }
+  document.addEventListener('click',ev=>{
+    const t=ev.target.closest&&ev.target.closest('[data-promo],[data-promo-hide]'); if(!t) return;
+    if(t.hasAttribute('data-promo-hide')){
+      try{ localStorage.setItem(KEY,String(Date.now())); }catch(e){}
+      try{ window.TRACK&&TRACK('promo',{mode:'close'}); }catch(e){}
+      const c=t.closest('[data-promo-card]'); if(c){ c.classList.add('out'); setTimeout(()=>c.remove(),260); }
+      return;
+    }
+    try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
+  });
+  return {cardHTML,rk2On};
+})();
 const A2HS=(function(){
   let BIP=null;
   window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); BIP=e; paint(); });   /* своя кнопка вместо системной плашки */
@@ -28630,6 +28688,7 @@ function viewHome(v){
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
    <div class="hcards" id="rkHome">${homeCards()}</div>
+   ${PROMO.cardHTML()}
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
     <p class="v9-kick">Начерт · инж. графика · МГТУ</p>
