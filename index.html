@@ -122,26 +122,25 @@
 :root[data-theme=dark] .ai-k{background:var(--surf3);border-color:var(--line2);box-shadow:none;color:#7cb7ff}
 :root[data-theme=dark] .ai-cb,:root[data-theme=dark] .ai-steps li::before{background:#1668dc}
 @media(min-width:700px){.ai-card{align-items:center}.ai-ct{display:flex;align-items:center;gap:16px}.ai-ct>div{flex:1}.ai-cb{margin-top:0}}
-/* плашка-анонс личных онлайн-занятий автора (PROMO): тише поиска — светлая карточка, одна акцентная кнопка */
-.pm-card{position:relative;margin:0 0 var(--s4,16px);padding:15px 40px 15px 16px;border-radius:18px;background:var(--surf);border:1px solid var(--line2);box-shadow:var(--shadow);transition:opacity .25s,transform .25s;overflow-wrap:anywhere}
-.pm-card.out{opacity:0;transform:scale(.97)}
-.pm-h{margin:0;font:700 16px/1.25 var(--disp);color:var(--ink);letter-spacing:-.01em}
-.pm-l{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:5px}
-.pm-l li{position:relative;padding-left:16px;font-size:13.5px;line-height:1.4;color:var(--ink2)}
-.pm-l li::before{content:"";position:absolute;left:3px;top:.55em;width:6px;height:6px;border-radius:50%;background:var(--acc)}
-.pm-l li b{color:var(--ink);font-weight:700}
-.pm-l li.pm-g{color:var(--green);font-weight:600}
-.pm-l li.pm-g::before{background:var(--green)}
-.pm-a{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.pm-b{display:inline-flex;align-items:center;justify-content:center;flex:1 1 180px;min-height:44px;padding:0 16px;border-radius:12px;font:700 14px var(--sans);text-decoration:none!important;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.pm-b.pm-p{background:var(--acc);color:var(--on-acc)!important;box-shadow:0 8px 18px -12px var(--acc)}
-.pm-b.pm-2{background:var(--surf2);color:var(--ink)!important;border:1px solid var(--line2)}
-.pm-b:hover{filter:brightness(1.06)}.pm-b:active{transform:scale(.97)}
-.pm-b:focus-visible,.pm-x:focus-visible{outline:none;box-shadow:var(--ring)}
-.pm-s{margin:10px 0 0;font-size:11.5px;line-height:1.4;color:var(--mut)}
-.pm-x{position:absolute;top:6px;right:6px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--mut2);cursor:pointer}
-.pm-x:hover{background:var(--surf2);color:var(--ink)}
-@media(min-width:700px){.pm-card{padding:18px 48px 16px 22px}.pm-b{flex:0 1 auto}}
+/* карточка-анонс онлайн-занятий автора (PROMO) — в паре верхних карточек главной вместо РК2; стиль .hc, свой цвет */
+.hc.hc-pm{background:linear-gradient(150deg,#0b7a52 0%,#119464 55%,#27b37b 100%);box-shadow:0 22px 40px -24px rgba(17,148,100,.75);gap:3px;transition:opacity .25s,transform .25s}
+:root[data-theme=dark] .hc.hc-pm{background:linear-gradient(150deg,#075a3d 0%,#0c7a52 55%,#16996a 100%)}
+.hc-pm.out{opacity:0;transform:scale(.97)}
+.hc-pm .hc-k{margin-top:8px;font:600 12.5px/1.25 var(--sans);opacity:.92}
+.hc-pm .hc-t{margin-top:1px;font-size:22px;line-height:1.05;letter-spacing:-.02em}
+.pm-l{margin:7px 0 0;padding:0;list-style:none;display:grid;gap:4px}
+.pm-l li{font:500 12.5px/1.3 var(--sans);opacity:.95}
+.pm-l li b{font-weight:800}
+.pm-m{font:500 11.5px/1.3 var(--sans);opacity:.85;margin-top:4px}
+.pm-a{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-top:auto;padding-top:10px}
+.pm-a>span{flex-basis:100%;font:700 12px var(--sans);opacity:.9}
+.pm-b{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border-radius:12px;background:#fff;color:#0a1636!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.2);-webkit-tap-highlight-color:transparent}
+.pm-b:active{transform:scale(.97)}
+.pm-b:focus-visible,.pm-x:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.pm-x{position:absolute;top:6px;right:6px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:#fff;opacity:.8;cursor:pointer}
+.pm-x:hover{opacity:1;background:rgba(255,255,255,.16)}
+@media(max-width:360px){.hc-pm .hc-t{font-size:19px}.pm-b{padding:0 8px;font-size:13px}}
+@media(min-width:760px){.hc-pm .hc-k{font-size:14.5px}.hc-pm .hc-t{font-size:34px;max-width:12ch}.pm-l li{font-size:14.5px}.pm-m{font-size:13px}.pm-a{width:auto}.pm-b{flex:0 0 auto;padding:0 16px}}
 
 /* ── главная: популярность и «поделиться» ── */
 .hpop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin:0 0 var(--s4);padding:12px 14px;border-radius:18px;background:linear-gradient(120deg,color-mix(in srgb,var(--blue) 10%,var(--surf)),var(--surf));border:1px solid var(--line)}
@@ -8173,7 +8172,7 @@ window.PANES.about={title:'О проекте',order:9,at:99,render(root){
   </div>
   <section class="ab-legal" id="legal"><h2>Правовая информация</h2>
    <div class="ab-lg">
-    <div><h4>Статус проекта</h4><p>«Начерт» — авторский учебный проект Андрея Матханова. Сайт бесплатный и остаётся бесплатным. Платные онлайн-занятия, которые ведёт автор, — его отдельная личная деятельность и к сайту не относятся. Название МГТУ им. Н.Э. Баумана на сайте указывает учебные издания, по которым построен курс (список ниже).</p></div>
+    <div><h4>Статус проекта</h4><p>«Начерт» — авторский учебный проект Андрея Матханова. Сайт бесплатный и остаётся бесплатным. Онлайн-занятия, которые ведёт автор, — его отдельная личная деятельность и к сайту не относятся. Название МГТУ им. Н.Э. Баумана на сайте указывает учебные издания, по которым построен курс (список ниже).</p></div>
     <div><h4>Что взято из учебных изданий</h4><p>Условия задач рабочей тетради, формулировки домашних заданий и вопросов рубежного контроля, теория и методика — по учебным изданиям МГТУ (список ниже). Они приводятся в учебных целях со ссылкой на источник (ст. 1274 ГК РФ).</p></div>
     <div><h4>Что сделано для сайта</h4><p>Решения, пошаговые построения, чертежи, пояснения, интерактивные модели, оформление и программный код подготовлены для этого сайта. Разборы домашних заданий показывают метод построения.</p></div>
     <div><h4>Правообладателям</h4><p>Если вы считаете, что какой-то материал размещён неправомерно, напишите${CONTACT?` — <a href="${CONTACT_HREF}">${escH(CONTACT)}</a>`:' автору проекта'}: материал будет исправлен или удалён.</p></div>
@@ -28264,9 +28263,10 @@ FX.qrSheet=function(url,title,back){
    · другие встроенные браузеры (VK, Instagram…) — так же, через «Открыть в браузере»;
    · компьютер без установки — QR-код: навёл телефон — и продолжил там.
    Telegram распознаём по мосту TelegramWebviewProxy: его встраивают в страницу и iOS-, и Android-версия Telegram. */
-/* Плашка на главной: личные платные онлайн-занятия автора (отдельно от сайта, сайт бесплатный).
+/* Карточка на главной: онлайн-занятия автора (пока бесплатно; отдельная личная деятельность автора, к сайту не относятся).
+   Стоит в паре верхних карточек вместо РК2; скрыли крестиком — на её месте снова карточка РК2.
    PROMO_FORM — ссылка на форму записи, одна на обе кнопки. PROMO_RK2_LAST — последний день строки и кнопки про РК2
-   (по локальной дате браузера, включительно). Крестик скрывает плашку на 3 дня (localStorage, без него — просто показывается).
+   (по локальной дате браузера, включительно). Крестик скрывает карточку на 3 дня (localStorage; без него — просто показывается).
    Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz, ev/promo/close. */
 const PROMO=(function(){
   const PROMO_FORM='[ССЫЛКА_НА_ФОРМУ]';
@@ -28276,31 +28276,33 @@ const PROMO=(function(){
   function hidden(){ try{ const t=+localStorage.getItem(KEY); return !!t&&Date.now()-t<HIDE_MS; }catch(e){ return false; } }
   function cardHTML(){
     if(hidden()) return '';
-    const rk=rk2On(), u=attr(PROMO_FORM), a=(k,cls,t)=>`<a class="pm-b ${cls}" href="${u}" target="_blank" rel="noopener" data-promo="${k}">${t}</a>`;
-    return `<section class="pm-card" data-promo-card aria-labelledby="pmH">
-     <h2 class="pm-h" id="pmH">Не понимаешь начерталку? Разберу вживую</h2>
+    const rk=rk2On(), u=attr(PROMO_FORM), a=(k,t,l)=>`<a class="pm-b" href="${u}" target="_blank" rel="noopener" data-promo="${k}"${l?` aria-label="${l}"`:''}>${t}</a>`;
+    return `<section class="hc hc-pm" data-promo-card aria-labelledby="pmH">
+     <span class="hc-pill"><i aria-hidden="true"></i>Бесплатно</span>
+     <span class="hc-k">Не понимаешь начерталку?</span>
+     <h2 class="hc-t" id="pmH">Разберу вживую</h2>
      <ul class="pm-l">
       ${rk?'<li><b>РК2</b> — каждый вечер этой недели, накануне твоего РК</li>':''}
-      <li><b>ДЗ № 2–3</b> — разбор по шагам, отвечу на вопросы</li>
-      <li>490 ₽ за занятие · онлайн в Телемосте · 1,5 часа</li>
-      <li class="pm-g">Не помогло — верну деньги</li>
+      <li><b>ДЗ № 2–3</b> — по шагам, отвечу на вопросы</li>
      </ul>
-     <div class="pm-a">${rk?a('rk2','pm-p','Записаться на РК2')+a('dz','pm-2','Записаться на разбор ДЗ'):a('dz','pm-p','Записаться на разбор ДЗ')}</div>
-     <p class="pm-s">Занятия ведёт автор сайта. Сам сайт бесплатный.</p>
-     <button type="button" class="pm-x" data-promo-hide aria-label="Скрыть"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+     <span class="pm-m">Онлайн в Телемосте · 1,5 часа · ведёт автор сайта</span>
+     <div class="pm-a">${rk?'<span>Записаться:</span>'+a('rk2','РК2','Записаться на РК2')+a('dz','ДЗ','Записаться на разбор ДЗ'):a('dz','Записаться','Записаться на разбор ДЗ')}</div>
+     <button type="button" class="pm-x" data-promo-hide aria-label="Скрыть"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </section>`;
   }
   document.addEventListener('click',ev=>{
     const t=ev.target.closest&&ev.target.closest('[data-promo],[data-promo-hide]'); if(!t) return;
     if(t.hasAttribute('data-promo-hide')){
       try{ localStorage.setItem(KEY,String(Date.now())); }catch(e){}
+      HIDE_NOW=true;
       try{ window.TRACK&&TRACK('promo',{mode:'close'}); }catch(e){}
-      const c=t.closest('[data-promo-card]'); if(c){ c.classList.add('out'); setTimeout(()=>c.remove(),260); }
+      const c=t.closest('[data-promo-card]'); if(c){ c.classList.add('out'); setTimeout(()=>{ const m=c.parentNode; if(m&&m.id==='rkHome'&&typeof homeCards==='function') m.innerHTML=homeCards(); else c.remove(); },260); }
       return;
     }
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
-  return {cardHTML,rk2On};
+  let HIDE_NOW=false;   /* без localStorage скрытие держится до перезагрузки страницы */
+  return {cardHTML:()=>HIDE_NOW?'':cardHTML(),rk2On};
 })();
 const A2HS=(function(){
   let BIP=null;
@@ -28673,7 +28675,7 @@ function surfArt(){ if(SURFART) return SURFART;
     <polyline points="${ell(h)}" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="1.1"/>
     <line class="hc-g" x1="${f(hi.A[0])}" y1="${f(hi.A[1])}" x2="${f(hi.B[0])}" y2="${f(hi.B[1])}" stroke="#ffd34d" stroke-width="2.6" stroke-linecap="round" pathLength="1"/>
   </svg>`; return SURFART; }
-function homeCards(){ const rk=window.RK2?RK2.miniHTML():'';
+function homeCards(){ const pm=PROMO.cardHTML(), rk=pm||(window.RK2?RK2.miniHTML():'');
   return rk+`<a class="hc hc-3d" href="#/ng/surf" aria-label="Как образуются поверхности: коноид, геликоид, гиперболоид в 3D">
     <span class="hc-pill"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg>3D</span>
     <span class="hc-t">Как образуются поверхности</span><span class="hc-s">коноид, геликоид, гиперболоид</span>
@@ -28688,7 +28690,6 @@ function viewHome(v){
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
    <div class="hcards" id="rkHome">${homeCards()}</div>
-   ${PROMO.cardHTML()}
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
     <p class="v9-kick">Начерт · инж. графика · МГТУ</p>
