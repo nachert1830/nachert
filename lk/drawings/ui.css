@@ -120,3 +120,10 @@
 
 .menu .sheet-in button.mi{height:50px;border-radius:14px;background:var(--surf2);text-align:left;padding:0 14px;font-weight:600;display:flex;align-items:center;gap:10px}
 .menu .sheet-in button.mi.red{color:var(--red)}
+/* вердикт по частям (lk/scan/verdict.js) */
+.card.verdict{display:grid;gap:10px}
+.vpart{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:8px 0;border-top:1px solid var(--line)}
+.vpart small{color:var(--ink2);font-size:14px}.vpart i{color:var(--ink2)}
+.vpart .vic{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font-weight:700;color:#fff;background:#9aa3b2}
+.vpart.ok .vic{background:#16a34a}.vpart.no .vic{background:var(--red)}.vpart.un .vic{background:#e3a018}
+.vpart .btn{margin-top:6px}

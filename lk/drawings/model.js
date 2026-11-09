@@ -5,7 +5,7 @@
    студент ставит начало O сам.
 
    fromScan(out, o)   — результат сканера → лист {id, name, created, drawings:[чертёж]}; чертёж —
-                        {id, name, part, dz, n, rms, approx, pts:[{id,l,at}], segs:[{id,a,b,dash,unv,src}], arcs:[{id,poly,dash,unv,curve?}] (дуги и кривые ДЗ №4), txt:[{at,s}], verify4?};
+                        {id, name, part, dz, n, rms, approx, pts:[{id,l,at}], segs:[{id,a,b,dash,unv,src}], arcs:[{id,poly,dash,unv,curve?}] (дуги и кривые ДЗ №4), txt:[{at,s}], verify4?, verdict?};
    parseLabel(s)      — подпись → {name, pr: 'f' (″) | 'h' (′) | 'w' (‴) | 'x' (доп. плоскость) | null};
    space(dr)          — 3D: точки по парам проекций (невязка линии связи), рёбра по отрезкам между подписанными
                         точками одной проекции (в обеих проекциях — подтверждено), грани (треугольники и плоские четырёхугольники);
@@ -57,7 +57,7 @@ function fromScan(out,o){ o=o||{}; const sheet={id:uid('s'),name:o.name||out.nam
   return sheet; }
 function fromDrawing(d,out){ const f=d.fit&&d.fit.rmsMm!=null?d.fit:null;
   const dr={id:uid('d'),part:d.part||null,dz:f?f.dz:null,n:f?f.n:null,rms:f?r2(f.hom?f.hom.rmsMm:f.rmsMm):null,approx:false,pts:[],segs:[],arcs:[],txt:[],created:Date.now()};
-  if(d.check) dr.check=d.check; if(d.verify) dr.verify=d.verify; if(d.verify4) dr.verify4=d.verify4;   /* ДЗ №4: линии пересечения против эталона (lk/scan/verify4.js) */   /* проверка по результату (lk/scan/verify.js) — на момент скана */   /* вердикт сканера по построению (pipeline.checkDrawing) — на момент скана; правки копии его не меняют */
+  if(d.check) dr.check=d.check; if(d.verify) dr.verify=d.verify; if(d.verify4) dr.verify4=d.verify4; if(d.verdict) dr.verdict=d.verdict;   /* вердикт по частям (lk/scan/verdict.js): верно / ошибка: где / не уверен — на момент скана, места — в мм листа */   /* ДЗ №4: линии пересечения против эталона (lk/scan/verify4.js) */   /* проверка по результату (lk/scan/verify.js) — на момент скана */   /* вердикт сканера по построению (pipeline.checkDrawing) — на момент скана; правки копии его не меняют */
   let T;
   if(d.mm&&f&&d.mm.segs){ T=(x,y)=>[x,y];
     d.mm.pts.forEach(q=>dr.pts.push({id:uid('p'),l:String(q[0]),at:[r2(q[1]),r2(q[2])]}));

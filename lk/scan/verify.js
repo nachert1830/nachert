@@ -55,7 +55,13 @@ function parse(l){ const s=String(l).trim().replace(/\^?IV/,'⁗').replace(/''''
   return {L:m[1].toUpperCase(),fam}; }
 const d2=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
 function verify(pts,data,o){ o=o||{}; const R=ref(data), tolL=o.tolL||1.5, badL=o.badL||3, tolA=o.tolA||2, badA=o.badA||4, fams=new Map();
-  (pts||[]).forEach(([l,x,y])=>{ const q=parse(l); if(!q) return; if(!fams.has(q.fam)) fams.set(q.fam,{}); const F=fams.get(q.fam); if(!F[q.L]) F[q.L]=[x,y]; });
+  /* составная подпись совпавших точек: A₅≡B₅, A₅=B₅ — обе точки в одном месте */
+  const P2=[]; (pts||[]).forEach(([l,x,y])=>{ const m=String(l).replace(/\s+/g,'').match(/^([ABCS][^≡=,]*)[≡=,]([ABCS].*)$/); if(m){ P2.push([m[1],x,y],[m[2],x,y]); } else P2.push([l,x,y]); });
+  P2.forEach(([l,x,y])=>{ const q=parse(l); if(!q) return; if(!fams.has(q.fam)) fams.set(q.fam,{}); const F=fams.get(q.fam); if(!F[q.L]) F[q.L]=[x,y]; });
+  /* ребро AB точкой, а подписана одна из A, B (вторая совпадает и не подписана): вид узнаётся по расстояниям — |A C| и |A S| на нём равны
+     истинным расстояниям от C и S до прямой AB (± 1,5 мм); тогда это он, и угол между гранями мерится. Не сошлось — вида нет (не обвиняем) */
+  fams.forEach((F,fam)=>{ if(fam==='″'||fam==='′'||!F.C||!F.S||(F.A&&F.B)||(!F.A&&!F.B)) return; const P=F.A||F.B, e=sub(data.B,data.A), dl=X=>len(cross(sub(X,data.A),e))/len(e);
+    if(Math.abs(d2(P,F.C)-dl(data.C))<=1.5&&Math.abs(d2(P,F.S)-dl(data.S))<=1.5){ F.A=P; F.B=P; F.abPoint=true; } });
   const found=[], st=(d,tol,bad)=>d<=tol?'верно':d>=bad?'расходится':'не уверен';
   fams.forEach((F,fam)=>{ const {A,B,C,S}=F; if(!A||!B||!C) return; const proj=fam==='″'||fam==='′';
     const ab=d2(A,B), bc=d2(B,C), ca=d2(C,A), area=Math.abs((B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0]))/2, span=Math.max(ab,bc,ca);

@@ -167,9 +167,9 @@ document.body.appendChild(dv);
 const menu=document.createElement('div'); menu.className='sheet menu'; menu.id='dvMenu'; menu.innerHTML='<div class="sheet-in"><h2 id="mTitle">Лист</h2><div style="display:grid;gap:8px" id="mItems"></div><button class="btn sec" id="mX">Закрыть</button></div>'; document.body.appendChild(menu);
 menu.addEventListener('click',e=>{ if(e.target===menu||e.target.id==='mX') menu.classList.remove('on'); });
 
-let SH=null, DR=null, PANE='copy', undo=[], sel=null, tool='sel', segA=null, view=null, PHOTO=null, showPhoto=false, V3=null, unfolded=false;
+let SH=null, DR=null, PANE='copy', undo=[], sel=null, tool='sel', segA=null, view=null, PHOTO=null, showPhoto=false, V3=null, unfolded=false, VMARK=null;   /* VMARK — место из вердикта, подсвеченное на копии */
 const cur=()=>DR;
-function openSheet(id,di){ SH=SHEETS.find(s=>s.id===id); if(!SH) return; DR=SH.drawings[di||0]; undo=[]; sel=null; tool='sel'; segA=null; view=null; unfolded=false; PHOTO=null; showPhoto=false;
+function openSheet(id,di){ SH=SHEETS.find(s=>s.id===id); if(!SH) return; DR=SH.drawings[di||0]; undo=[]; sel=null; tool='sel'; segA=null; view=null; unfolded=false; VMARK=null; PHOTO=null; showPhoto=false;
   $('#dvName').value=SH.name; dv.classList.add('on'); document.body.style.overflow='hidden'; history.pushState({dv:1},'','#scan/d');
   renderParts(); setTool('sel'); $('#edPhoto').hidden=true; $('#edPhoto').classList.remove('on'); pane('copy');
   loadPhoto();
@@ -184,7 +184,7 @@ document.addEventListener('keydown',e=>{ if(e.key!=='Escape'||!dv.classList.cont
 $('#dvName').addEventListener('change',()=>{ if(!SH) return; SH.name=$('#dvName').value.trim()||SH.name; save(); });
 function renderParts(){ const b=$('#dvParts'); if(SH.drawings.length<2){ b.innerHTML=''; b.style.display='none'; return; } b.style.display='';
   b.innerHTML=SH.drawings.map((d,i)=>'<button class="chipb'+(d===DR?' on':'')+'" data-di="'+i+'">'+esc(d.name||('Чертёж '+(i+1)))+(D.ready(d)?' · 3D':'')+'</button>').join(''); }
-$('#dvParts').addEventListener('click',e=>{ const b=e.target.closest('[data-di]'); if(!b) return; DR=SH.drawings[+b.getAttribute('data-di')]; undo=[]; sel=null; view=null; unfolded=false; renderParts(); loadPhoto(); pane(PANE); });
+$('#dvParts').addEventListener('click',e=>{ const b=e.target.closest('[data-di]'); if(!b) return; DR=SH.drawings[+b.getAttribute('data-di')]; undo=[]; sel=null; view=null; unfolded=false; VMARK=null; renderParts(); loadPhoto(); pane(PANE); });
 $$('.seg3 button',dv).forEach(b=>b.addEventListener('click',()=>pane(b.getAttribute('data-p'))));
 function pane(p){ PANE=p; $$('.seg3 button',dv).forEach(b=>b.classList.toggle('on',b.getAttribute('data-p')===p));
   $('#pCopy').classList.toggle('on',p==='copy'); $('#pFix').classList.toggle('on',p==='fix'); $('#p3d').classList.toggle('on',p==='3d');
@@ -226,6 +226,10 @@ function renderEd(){ if(!DR||PANE!=='copy') return; if(!view) fit(); svg.setAttr
   const sp=D.space(DR), in3=new Set(); Object.values(sp.pts).forEach(p=>{ in3.add(p.f); in3.add(p.h); });
   DR.pts.forEach(p=>{ const on=sel===p.id||segA&&segA.id===p.id; L.push('<circle cx="'+sx(p.at[0])+'" cy="'+sx(p.at[1])+'" r="'+sx((on?6:3.6)*k)+'" fill="'+(on?'#e0252c':in3.has(p.id)?'#c0005a':'#fff')+'" stroke="#c0005a" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'
     +'<text x="'+sx(p.at[0]+5*k)+'" y="'+sx(p.at[1]-5*k)+'" font-size="'+sx(fs)+'" font-weight="600" font-style="italic" fill="#a1004a" stroke="#fbfaf6" stroke-width="'+sx(3*k)+'" paint-order="stroke">'+esc(p.l)+'</text>'); });
+  /* место из вердикта: красное — начерчено с ошибкой, синее — где должно быть по варианту, зелёное — проверено и верно */
+  if(VMARK) VMARK.at.forEach(m=>{ const c=VMARK.st==='ошибка'?(m.want?'#1a5ae0':'#e0252c'):VMARK.st==='верно'?'#16a34a':'#e07b00';
+    if(m.p) L.push('<circle cx="'+sx(m.p[0])+'" cy="'+sx(m.p[1])+'" r="'+sx(11*k)+'" fill="none" stroke="'+c+'" stroke-width="3" vector-effect="non-scaling-stroke" opacity="0.85"/>');
+    if(m.seg) L.push('<line x1="'+sx(m.seg[0][0])+'" y1="'+sx(m.seg[0][1])+'" x2="'+sx(m.seg[1][0])+'" y2="'+sx(m.seg[1][1])+'" stroke="'+c+'" stroke-width="5" opacity="0.45" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'); });
   if(segA&&!segA.id) L.push('<circle cx="'+sx(segA.at[0])+'" cy="'+sx(segA.at[1])+'" r="'+sx(5*k)+'" fill="#e0252c"/>');
   svg.innerHTML=L.join('');
   const hint=$('#edHint'), H={pt:'Коснитесь места, где поставить точку',seg:segA?'Коснитесь второго конца отрезка':'Коснитесь первого конца отрезка (у точки — притянется к ней)',o:'Коснитесь начала O — пересечения оси x с линией отсчёта'}[tool];
@@ -292,14 +296,22 @@ function renderFix(){ if(!DR||PANE!=='fix') return; const box=$('#fixList'), is=
   let h='<div class="card"><div class="st '+(ok?'ok':'no')+'"><span class="big3">'+(ok?ICON.ok:ICON.warn)+'</span><span><b>'+(ok?(big.length?'3D уже можно смотреть':'Копия доведена'):'Пока не хватает для 3D')+'</b><br><small class="mut">'+(big.length?'Осталось поправить: '+big.length:'Замечаний нет')+'</small></span></div>'
     +'<div class="nums"><div><b>'+Object.keys(sp.pts).length+'</b><small>точек в 3D</small></div><div><b>'+sp.edges.length+'</b><small>рёбер</small></div><div><b>'+sp.faces.length+'</b><small>граней</small></div></div>'
     +(ok?'<button class="btn" style="width:100%;margin-top:12px" data-go3d>'+ICON.cube+'Смотреть в 3D</button>':'')+'</div>';
+  /* вердикт по частям задания (lk/scan/verdict.js, на момент скана): по каждой части — верно / ошибка: где и на сколько / не уверен: почему.
+     «Ошибка» сканер говорит только при доказательстве; «Показать» — место на копии (красное — начерчено, синее — где должно быть) */
+  if(DR.verdict&&DR.verdict.parts&&DR.verdict.parts.length){ const V=DR.verdict, cls=V.verdict==='верно'?'ok':V.verdict==='ошибка'?'no':'';
+    const head=V.verdict==='верно'?'Всё верно':V.verdict==='ошибка'?'Есть ошибка':'Проверено не всё';
+    h+='<div class="card verdict"><div class="st '+cls+'"><span class="big3">'+(V.verdict==='верно'?ICON.ok:ICON.warn)+'</span><span><b>'+head+'</b><br><small class="mut">ДЗ №'+V.dz+(V.n?', вариант '+V.n:'')+' — проверяется результат, а не способ: любое верное построение засчитывается.</small></span></div>'
+      +V.parts.map((p,i)=>'<div class="vpart '+(p.st==='верно'?'ok':p.st==='ошибка'?'no':'un')+'"><span class="vic">'+(p.st==='верно'?'✓':p.st==='ошибка'?'✗':'?')+'</span><span><b>Часть '+esc(p.id)+': '+esc(p.name)+' — '+esc(p.st)+'</b><br><small>'+esc(p.why||'')+(p.hint&&p.st!=='верно'?'<br><i>'+esc(p.hint)+'</i>':'')+'</small>'
+        +((p.at||[]).some(a=>a.p||a.seg)?'<br><button class="btn sm sec" data-vshow="'+i+'">Показать на копии</button>':'')+'</span></div>').join('')
+      +(V.verdict!=='верно'&&!V.sure&&V.sureWhy?'<small class="mut">Привязка к варианту неуверенная ('+esc(V.sureWhy)+') — поэтому сканер не обвиняет. Снимите чертёж крупнее и ровнее.</small>':'')+'</div>'; }
   /* проверка по результату — истинные величины копии против эталона варианта (на момент скана) */
-  if(DR.verify&&DR.verify.found&&DR.verify.found.length){ const v=DR.verify, fm=x=>Array.isArray(x)?x.map(f1).join(' / '):f1(x);
+  if(!DR.verdict&&DR.verify&&DR.verify.found&&DR.verify.found.length){ const v=DR.verify, fm=x=>Array.isArray(x)?x.map(f1).join(' / '):f1(x);
     h+='<div class="card"><div class="st '+(v.verdict==='верно'?'ok':v.verdict==='расходится с эталоном'?'no':'')+'"><span class="big3">'+(v.verdict==='верно'?ICON.ok:ICON.warn)+'</span><span><b>Проверка по результату: '+esc(v.verdict)+'</b><br><small class="mut">'
       +v.found.map(f=>/^view:/.test(f.k)?'вид '+esc(f.from)+(f.st==='верно'?' согласуется с пирамидой варианта':' почти согласуется с пирамидой варианта')+' (отклонение до '+fm(f.got)+' мм)'
         :esc(f.what)+' — начерчено '+fm(f.got)+' '+f.unit+', по варианту '+fm(f.want)+' '+f.unit+' ('+esc(f.st)+', проекция '+esc(f.from)+')').join('; ')
       +(v.verdict==='расходится с эталоном'?'. Проверьте построение этой величины.':'')+'</small></span></div></div>'; }
   /* ДЗ №4: линии пересечения против эталона варианта (lk/scan/verify4.js, на момент скана) — по результату, способ не важен */
-  if(DR.verify4&&DR.verify4.lines&&DR.verify4.lines.length){ const v=DR.verify4, pr={F:'″',H:'′'}, pc=x=>Math.round(100*x)+' %';
+  if(!DR.verdict&&DR.verify4&&DR.verify4.lines&&DR.verify4.lines.length){ const v=DR.verify4, pr={F:'″',H:'′'}, pc=x=>Math.round(100*x)+' %';
     h+='<div class="card"><div class="st '+(v.verdict==='верно'?'ok':v.verdict==='расходится с эталоном'?'no':'')+'"><span class="big3">'+(v.verdict==='верно'?ICON.ok:ICON.warn)+'</span><span><b>Линии пересечения: '+esc(v.verdict)+'</b><br><small class="mut">'
       +v.lines.map(l=>esc(l.pair)+' — '+esc(l.why)+' ('+Object.entries(l.proj).map(([k,x])=>pr[k]+': '+(x.st==='на очерке'?'на очерке тела':esc(x.st)+(x.cov!=null?', совпало '+pc(x.cov):'')+(x.med!=null&&x.cov>0?', отклонение '+f1(x.med)+' мм':''))).join('; ')+')').join('. ')
       +'. Характерных точек на местах: '+v.chars.found+' из '+v.chars.of+' (номера — ваши, сверяется положение).'
@@ -308,7 +320,7 @@ function renderFix(){ if(!DR||PANE!=='fix') return; const box=$('#fixList'), is=
   if(DR.check){ const c=DR.check, cls=c.verdict==='верно'?'ok':c.verdict==='ошибка'?'no':'', ic=c.verdict==='верно'?ICON.ok:ICON.warn;
     h+='<div class="card"><div class="st '+cls+'"><span class="big3">'+ic+'</span><span><b>Проверка построения: '+esc(c.verdict)+'</b><br><small class="mut">'+(c.partName?'Часть '+esc(c.partName)+'. ':'')+esc((c.why||[]).join('. '))+(c.verdict==='не могу утверждать'?' Сканер говорит «ошибка», только когда уверен: доведите копию или снимите чертёж крупнее.':'')+'</small></span></div></div>'; }
   /* привязка к варианту */
-  h+='<div class="card bind">'+(DR.dz&&DR.n?'<b>ДЗ №'+DR.dz+', вариант '+DR.n+'</b><small class="mut">'+(DR.rms!=null?(DR.dz==4?'Очерки тел совпали с размерами варианта':'Точки условия совпали с таблицей варианта')+', расхождение '+f1(DR.rms)+' мм. ':'')+'Копия — в точных миллиметрах листа.</small>'
+  h+='<div class="card bind">'+(DR.dz&&DR.n?'<b>ДЗ №'+DR.dz+', вариант '+DR.n+'</b><small class="mut">'+(DR.rms!=null?(DR.dz==4?'Очерки тел совпали с размерами варианта':DR.dz==5?'Очерк поверхности и прямая AB совпали с вариантом':'Точки условия совпали с таблицей варианта')+', расхождение '+f1(DR.rms)+' мм. ':'')+'Копия — в точных миллиметрах листа.</small>'
       :'<b>Вариант не определён</b><small class="mut">Укажите задание и вариант — копия пересчитается в точные мм по точкам условия, и «Доводка» сверит их с таблицей.</small>')
     +'<div class="r"><select class="sc-in" id="bDz" style="flex:1"><option value="3"'+(DR.dz==2?'':' selected')+'>ДЗ №3</option><option value="2"'+(DR.dz==2?' selected':'')+'>ДЗ №2</option></select><input class="sc-in" id="bN" inputmode="numeric" placeholder="вариант" style="flex:1" value="'+(DR.n||'')+'"><button class="btn sm" id="bGo">'+(DR.n?'Сменить':'Привязать')+'</button></div></div>';
   const auto=is.filter(i=>i.fix&&['rename','snapGiven','align','addGiven'].includes(i.fix.k));
@@ -327,6 +339,8 @@ function renderFix(){ if(!DR||PANE!=='fix') return; const box=$('#fixList'), is=
   $$('[data-show]',box).forEach(b=>b.onclick=()=>{ sel=b.getAttribute('data-show'); const p=DR.pts.find(q=>q.id===sel); pane('copy'); if(p&&view){ view.x=p.at[0]-view.w/2; view.y=p.at[1]-view.h/2; } renderEd(); renderPanel(); });
   const a=$('[data-auto]',box); if(a) a.onclick=()=>{ snap(); auto.forEach(i=>D.apply(DR,i.fix)); D.issues(DR,LIB).filter(i=>i.fix&&i.fix.k==='align').forEach(i=>D.apply(DR,i.fix)); changed(); renderFix(); toast('Исправлено: '+auto.length); };
   const g=$('[data-go3d]',box); if(g) g.onclick=()=>pane('3d');
+  $$('[data-vshow]',box).forEach(b=>b.onclick=()=>{ const p=DR.verdict.parts[+b.getAttribute('data-vshow')]; VMARK={st:p.st,at:p.at||[]}; const q=(p.at||[]).find(a=>a.p)||(p.at||[]).find(a=>a.seg);
+    pane('copy'); const c=q&&(q.p||q.seg[0]); if(c&&view){ view.x=c[0]-view.w/2; view.y=c[1]-view.h/2; } renderEd(); });
   $('#bGo').onclick=async()=>{ const L=LIB||await lib(); if(!L){ toast('Таблица вариантов не загрузилась'); return; } snap(); const r=D.bindVariant(DR,L,$('#bDz').value,$('#bN').value);
     if(!r.ok){ undo.pop(); toast(r.why); return; } view=null; changed(); renderFix(); toast('Привязано: расхождение '+f1(r.rms)+' мм'); }; }
 

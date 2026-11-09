@@ -15,7 +15,7 @@ const rmsOf=f=>f?(f.hom&&f.hom.rmsMm!=null?f.hom.rmsMm:f.rmsMm):null;
 function sureFit(f){ if(!f||rmsOf(f)==null) return {sure:false,why:'чертёж не привязан к варианту'};
   const r=rmsOf(f);
   if(f.dz===4) return f.cover>=0.85&&r<=0.45?{sure:true}:{sure:false,why:'очерки тел легли на копию не точно (покрытие '+Math.round(100*(f.cover||0))+' %, невязка '+fmt(r,2)+' мм)'};
-  if(f.dz===5) return f.cover>=0.8&&r<=0.6&&f.abCov>=0.7?{sure:true}:{sure:false,why:'очерк поверхности и прямая AB легли на копию не точно (покрытие '+Math.round(100*(f.cover||0))+' %, AB '+Math.round(100*(f.abCov||0))+' %, невязка '+fmt(r,2)+' мм)'};
+  if(f.dz===5) return f.cover>=0.6&&r<=0.6&&f.abCov>=0.8?{sure:true}:{sure:false,why:'очерк поверхности и прямая AB легли на копию не точно (покрытие '+Math.round(100*(f.cover||0))+' %, AB '+Math.round(100*(f.abCov||0))+' %, невязка '+fmt(r,2)+' мм)'};
   if(!(f.inl>=4)) return {sure:false,why:'мало точек условия ('+(f.inl||0)+')'};
   if(r>1) return {sure:false,why:'невязка привязки '+fmt(r,2)+' мм'};
   return {sure:true}; }
@@ -33,7 +33,7 @@ const P3=[{id:'1',k:'H',name:'высота пирамиды',hint:'провер�
   {id:'4',k:'phi',name:'угол между ребром SA и основанием',hint:'проверьте вращение ребра SA до положения прямой уровня'}];
 const FAM=f=>f==='″'||f==='′'?'проекции '+f:'виде '+(f||'?');
 function dz3(v,fit){ const sure=sureFit(fit), all=(v&&v.all)||(v&&v.found)||[], best={};
-  all.forEach(f=>{ if(!best[f.k]||f.d<best[f.k].d) best[f.k]=f; });
+  all.forEach(f=>{ if(f.weak&&f.st!=='верно') return; if(!best[f.k]||f.d<best[f.k].d) best[f.k]=f; });   /* угол SA по виду «основание ребром» — только подтверждение */
   const parts=P3.map(q=>{ const f=best[q.k], p={id:q.id,name:q.name,st:'не уверен'};
     if(!f){ p.why='на копии не найдено вида, где это видно в натуральную величину'; p.hint='подпишите точки построения (A₄, B₄, S₄ …) и снимите чертёж крупнее'; return p; }
     const g=Array.isArray(f.got)?f.got:null, at=(f.at||[]).map(x=>({p:x}));

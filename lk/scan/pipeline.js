@@ -94,12 +94,12 @@ function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.
   /* ДЗ №5 (lk/scan/verify5.js): поверхность одна на тип вариантов (конус, наклонный цилиндр, поверхность вращения) — привязка
      по её очеркам и прямой AB тем же bind4 (окружности основания на π₁ дают масштаб и место); вариант внутри типа потом уточняется
      по AB и подписям A, B (pickVariant, ниже). Пробуется, если задание — ДЗ №5 или «узнать само» и к ДЗ №2–4 чертёж не привязался */
-  const V5=self.SCANVERIFY5;
+  const V5=self.SCANVERIFY5; let try5=null;
   if(V5&&B4&&!(c.geo&&c.geo.dz!==5)&&(c.dzSel===5||(c.dzSel==null&&!bound23&&!(fit&&fit.dz===4)))){ const R5=V5.refs(), ns=c.vSel!=='auto'&&R5[+c.vSel]?+c.vSel:null;
-    const b5=r=>{ try{ const f=B4.bind({segs:r.segs.filter(q=>!q.unverified).map(q=>q.p),circles:(r.circles||[]).filter(q=>!q.unverified),curves:(r.curves||[]).filter(q=>!q.unverified).map(q=>q.p)},R5,{n:ns}); if(f) f.dz=5; return f; }catch(e){ return null; } };
-    const ok5=f=>f&&f.cover>=(c.dzSel===5?0.45:0.7)&&f.rmsMm<=1;
+    const b5=r=>{ try{ const f=B4.bind({segs:r.segs.filter(q=>!q.unverified).map(q=>q.p),circles:(r.circles||[]).filter(q=>!q.unverified),curves:(r.curves||[]).filter(q=>!q.unverified).map(q=>q.p)},R5,{n:ns}); if(f) f.dz=5; else try5={none:true}; return f; }catch(e){ try5={err:String(e&&e.message||e).slice(0,120)}; return null; } };
+    const ok5=f=>f&&f.cover>=(c.dzSel===5?0.55:0.7)&&f.rmsMm<=1;
     let f5=b5(rf); if(ok5(f5)&&Math.abs(f5.ppm/(fit&&fit.ppm?fit.ppm:ppm)-1)>0.2){ const r2=refineAt(f5.ppm), g=b5(r2); if(ok5(g)){ rf=r2; f5=g; } }
-    if(ok5(f5)){ f5.kind=V5.kindOf(f5.n); fit=f5; } }
+    if(ok5(f5)){ f5.kind=V5.kindOf(f5.n); fit=f5; } else if(f5) try5={n:f5.n,cover:f5.cover,rmsMm:f5.rmsMm}; }
   /* точки — на перекрёсток уточнённых линий (МНК по всем линиям, что через него проходят) или хотя бы на линию: копия
      геометрически согласована и точнее догадки модели; догадки обеих моделей — кандидаты (refine.placePoints) */
   /* точки условия по форме (голос листа: вариант и масштаб известны, а подписи не прочитаны или перепутаны) — refine.matchGiven */
@@ -119,6 +119,7 @@ function digest(cr,tA,tB,c){ const L=self.LAB, LY=L.layout, SL=L.sheetlib, RF=L.
   /* кривые (ДЗ №4): ломаные px фото и мм листа — как дуги */
   const curves=(rf.curves||[]).map(q=>({src:q.src,unverified:!!q.unverified,dash:!!q.dash,ink:+(q.ink||0).toFixed(2),poly:q.p.map(([u,v])=>mapPt(cr.A,u,v).map(t=>+t.toFixed(1))),mm:toMm?q.p.map(([u,v])=>toMm(u,v).map(t=>+t.toFixed(2))):null}));
   const dr={part:d.part,curves,box:d.box,rot:c.rot,ppm:fit&&fit.ppm?fit.ppm/cr.k:ppm/cr.k,mm:mmCopy,circles,fit,txt:P.txt.map(q=>mapPt(cr.A,q[0],q[1]).concat(q[2])),pts:P.pts.map(q=>[q[0]].concat(mapPt(cr.A,q[1],q[2]))),segs:rf.segs.map(q=>({p:mapPt(cr.A,q.p[0],q.p[1]).concat(mapPt(cr.A,q.p[2],q.p[3])),src:q.src,unverified:!!q.unverified,dash:!!q.dash})),stats:Object.assign({model:P.segs.length,bad:P.bad,pts:P.pts.length,placed,primesFixed:pf.length},rf.stats)};
+  if(try5) dr.try5=try5;   /* ДЗ №5 не привязался: что дала привязка по очеркам (почему — для замера и подсказки) */
   if(mg) dr.merge=mg.info; if(geo) dr.geoGiven={inl:geo.inl,rmsMm:+geo.rmsMm.toFixed(2)};
   return {dr,q:quality(fit,rf,P)}; }
 /* вердикт по одному чертежу: копия (px фото: точки на перекрёстках, линии по карандашу) → разбор как ответ модели → проверка
@@ -237,8 +238,8 @@ function create(o){ o=o||{};
         arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),pts:dr.mm.pts},ref,{weak:!(dr.fit.cover>=0.85&&(dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm)<=0.45)}); }catch(e){} });
     /* ДЗ №5 (lk/scan/verify5.js): точки пересечения AB с поверхностью, касательная плоскость и нормаль — по результату */
     if(self.SCANVERIFY5) out.drawings.forEach(dr=>{ if(!dr||dr.error||!dr.mm||!dr.fit||dr.fit.dz!==5) return; const V5=self.SCANVERIFY5, R=V5.ref(dr.fit.n); if(!R) return;
-      try{ const copy={pts:dr.mm.pts,segs:dr.mm.segs.map(q=>({p:q.p,unv:q.unverified})),arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),curves:(dr.curves||[]).filter(q=>q.mm).map(q=>({p:q.mm,unv:q.unverified}))};
-        const r0=V5.verify(copy,R,{weak:true}); dr.fit.abCov=r0.abCov; const rms=dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm, weak=!(dr.fit.cover>=0.8&&rms<=0.6&&r0.abCov>=0.7);
+      try{ const copy={pts:dr.mm.pts,txt:dr.mm.txt,segs:dr.mm.segs.map(q=>({p:q.p,unv:q.unverified})),arcs:(dr.circles||[]).filter(q=>q.mm).map(q=>({poly:q.mm,unv:q.unverified})),curves:(dr.curves||[]).filter(q=>q.mm).map(q=>({p:q.mm,unv:q.unverified}))};
+        const r0=V5.verify(copy,R,{weak:true}); dr.fit.abCov=r0.abCov; const rms=dr.fit.hom?dr.fit.hom.rmsMm:dr.fit.rmsMm, weak=!(dr.fit.cover>=0.6&&rms<=0.6&&r0.abCov>=0.8);   /* вариант внутри типа — по AB: она должна лечь целиком */
         dr.verify5=weak?r0:V5.verify(copy,R,{weak:false}); dr.verify5.weak=weak; }catch(e){} });
     /* вердикт по частям (lk/scan/verdict.js): «верно» / «ошибка: где и на сколько» / «не уверен: почему» — для кабинета */
     if(self.SCANVERDICT) out.drawings.forEach((dr,i)=>{ if(!dr||dr.error||!dr.fit||dr.fit.rmsMm==null) return; try{ const VD=self.SCANVERDICT;
