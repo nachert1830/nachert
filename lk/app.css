@@ -485,3 +485,25 @@ details.past[open] summary::before{content:"▾ "}
 
 @media (max-width:719px){ .tl .mk:not(.m){width:17px;height:17px;margin-left:-8.5px;top:8.5px;border-radius:6px;font-size:8px;border-width:2px} .plash.blue .p-t.long{font-size:22px} }
 @media (min-width:720px){ .plash.blue .p-t.long{font-size:28px} }
+
+/* ═══ Панельки главной: две квадратные в ряд ═══ */
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.panel{position:relative;overflow:hidden;isolation:isolate;aspect-ratio:1/1;min-height:176px;display:flex;flex-direction:column;gap:6px;padding:15px;border-radius:24px;color:#fff;text-align:left;transition:transform .12s var(--ease),filter .15s}
+.panel:active{transform:scale(.97)}
+.panel::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px;-webkit-mask-image:linear-gradient(125deg,#000 0%,transparent 75%);mask-image:linear-gradient(125deg,#000 0%,transparent 75%)}
+.panel.vio{background:var(--rk);box-shadow:0 18px 36px -22px var(--rk-glow)}
+.panel.blue{background:var(--scan);box-shadow:0 18px 36px -22px var(--scan-glow)}
+.panel .tk{display:flex;align-items:center;gap:6px;font:800 11px var(--sans);letter-spacing:.07em;text-transform:uppercase;opacity:.9}
+.panel .tk svg{width:15px;height:15px}
+.panel .tv{font:800 34px/1 var(--disp);letter-spacing:-.035em;margin-top:auto}
+.panel .td{font-size:13px;line-height:1.35;opacity:.92}
+.panel .td b{font-weight:800}
+.panel .tn{display:block;margin-top:4px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.18);font:700 12.5px/1.25 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.panel .ring{position:absolute;right:12px;top:36px;width:52px;height:52px}
+@media (hover:hover){ .panel:hover{filter:brightness(1.07)} }
+@media (min-width:720px){ .panels{gap:16px} .panel{aspect-ratio:auto;min-height:230px;padding:20px} .panel .tv{font-size:46px} .panel .td{font-size:14.5px} .panel .tn{font-size:14px;padding:10px 12px;align-self:flex-start} .panel .ring{width:72px;height:72px;top:20px;right:20px} }
+@media (max-width:370px){ .panel{padding:12px} .panel .tv{font-size:28px} .panel .td{font-size:12px} }
+
+@media (max-width:999px){ .tabs-in{display:flex;max-width:340px} .tabs-in .tab{flex:1} .tabs-in .side-x,.tabs-in .side-foot{display:none} }
+@media (max-width:719px){ .panel{aspect-ratio:auto} }
+.sum .m small b{display:inline;font:inherit;font-weight:800}

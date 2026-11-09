@@ -113,35 +113,8 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
         <section class="plash blue" id="cont"></section>
       </div>
 
-      <section class="card week" aria-label="Эта неделя">
-        <div class="wk-h"><b id="wkT">Эта неделя</b><small id="wkS"></small></div>
-        <div class="days" id="days"></div>
-        <div class="wk-d" id="wkD"></div>
-      </section>
-
-      <div class="bento" id="bento"></div>
-
-      <div class="sec"><h2>Семестр</h2><button class="more" data-tab-go="cal">Все сдачи</button></div>
-      <section class="card sem" id="sem"></section>
-
-      <div class="duo">
-        <div id="lessonBox"></div>
-        <div>
-          <div class="sec" style="margin-top:14px"><h2>Мои материалы</h2></div>
-          <div class="rows" style="margin-top:14px">
-            <a class="card mat" href="/#/ig8/6" aria-label="3D-модель: Задание №8, вариант 6 — полый шар со сквозным отверстием">
-              <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="#e8eefc" stroke="#15161a" stroke-width="2.4"/><circle cx="32" cy="32" r="19.6" fill="none" stroke="#3567b5" stroke-width="1.4" stroke-dasharray="3 2.5"/><path d="M28.4 5.2V26a8.2 8.2 0 000 12v6.4h-3.6V50h14.4v-5.6h-3.6V38a8.2 8.2 0 000-12V5.2z" fill="#fff" stroke="#15161a" stroke-width="2.2" stroke-linejoin="round"/></svg>
-              <div><b>Задание №8 · вариант 6</b><small>Полый шар со сквозным отверстием: 3D, разрезы по шагам, лист А3</small></div>
-              <span class="go">3D →</span>
-            </a>
-            <a class="card mat" href="ig8/" aria-label="Гайд: как построить Задание №8, вариант 6">
-              <svg class="ball" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 12c14-4 30 0 40 14v10M50 36H30M50 26h-10" fill="none" stroke="#15161a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 52c14 6 30 2 40-10" fill="none" stroke="#3567b5" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 3"/></svg>
-              <div><b>Гайд: как построить вариант 6</b><small>Все три вида, каждая линия по смыслу</small></div>
-              <span class="go">→</span>
-            </a>
-          </div>
-        </div>
-      </div>
+      <!-- панельки: две в ряд, содержимое — PANELS в app.js -->
+      <div class="panels" id="panels"></div>
     </section>
 
     <!-- ═══ Сдачи ═══ -->
@@ -149,15 +122,9 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
       <div class="sec" style="margin-top:4px"><h2>Сдачи</h2></div>
       <div class="card sum" id="calSum"></div>
       <div class="seg" role="tablist" aria-label="Фильтр"><button data-filter="all" class="on">Все</button><button data-filter="dz">ДЗ</button><button data-filter="rk">РК</button></div>
+      <div id="rkList" class="rkx" hidden></div>
       <div id="calList" class="rows"></div>
-    </section>
-
-    <!-- ═══ РК ═══ -->
-    <section class="view" id="v-rk">
-      <div class="sec" style="margin-top:4px"><h2><span class="dotc" style="background:var(--rk)"></span>Подготовка к РК</h2></div>
-      <p class="note">Отмечай пройденные шаги — готовность считается сама. Материалы открываются на сайте.</p>
-      <div id="rkList" class="rkx"></div>
-      <div id="exBox"></div>
+      <div id="exBox" hidden></div>
     </section>
 
     <!-- ═══ Профиль ═══ -->
@@ -203,8 +170,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
   <div class="side-x"><img src="../icon-192.png" alt=""><div>Начерт<small>Личный кабинет</small></div></div>
   <button class="tab on" data-tab="home"><svg class="i"><use href="#i-home"/></svg>Главная</button>
   <button class="tab" data-tab="cal"><svg class="i"><use href="#i-list"/></svg>Сдачи<span class="badge" id="calBadge" hidden></span></button>
-  <button class="tab center" data-tab="check" aria-label="Сканер чертежей"><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span class="sm">Скан</span><span class="lg">Сканер чертежа</span></button>
-  <button class="tab" data-tab="rk"><svg class="i"><use href="#i-target"/></svg>РК<span class="dot" id="rkDot" hidden></span></button>
+  <button class="tab center" data-tab="check" aria-label="Сканер чертежей" hidden><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span class="sm">Скан</span><span class="lg">Сканер чертежа</span></button>
   <button class="tab" data-tab="me"><svg class="i"><use href="#i-user"/></svg>Профиль</button>
   <div class="side-foot">Кабинет в разработке.<br><a href="../">Вернуться на сайт →</a></div>
 </div></nav>
