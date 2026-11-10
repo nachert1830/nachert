@@ -194,9 +194,12 @@ body.liveshow{overflow:hidden}
 .l3-st{height:calc(100vh - 200px);min-height:360px;border:1px solid #e3eaf3;border-radius:18px;background:#fbfcfe;cursor:grab;touch-action:none;overflow:hidden}
 .l3-st:active{cursor:grabbing}
 .l3-st svg{display:block;width:100%;height:100%}
-.l3 text{font-family:var(--sans);paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
-.l3-lb{font-weight:800;font-size:21px}.l3-sm{font-weight:700;font-size:14px}.l3-ll{font-weight:800;font-size:17px}.l3-pl{font-weight:900;font-size:24px;font-family:var(--disp)}
-.l3-big{font-weight:900;font-size:25px}.l3-ax{font-weight:800;font-size:20px}
+.l3 text{font-family:var(--sans);paint-order:stroke;stroke:#fff;stroke-width:calc(4px*var(--u,1));stroke-linejoin:round}
+.ls .dwg text.lbl{font-size:var(--lf,15px)!important;font-weight:700!important;stroke-width:calc(var(--lf,15px)*.3)!important}
+.ls .dwg{max-width:none!important}.ls-dw svg,.ls-exd svg{width:100%!important;height:100%!important}
+.ls-dw{height:calc(100vh - 170px)}.ls-exd{height:calc(100vh - 470px);min-height:260px}
+.l3-lb{font-weight:800;font-size:calc(18px*var(--u,1))}.l3-sm{font-weight:700;font-size:calc(13px*var(--u,1))}.l3-ll{font-weight:800;font-size:calc(15px*var(--u,1))}.l3-pl{font-weight:900;font-size:calc(19px*var(--u,1));font-family:var(--disp)}
+.l3-big{font-weight:900;font-size:calc(21px*var(--u,1))}.l3-ax{font-weight:800;font-size:calc(17px*var(--u,1))}
 .l3-bar{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
 .l3-bar button{min-width:40px;height:36px;padding:0 10px;border:1px solid #dbe4ef;border-radius:10px;background:#fff;color:#0a1733;font:700 15px var(--sans);cursor:pointer}
 .l3-bar button.on{background:#e9f0ff;border-color:#9cc0ef;color:#1a5ae0}
@@ -204,7 +207,7 @@ body.liveshow{overflow:hidden}
 .l3-hint{margin:4px 0 0;font:500 13px var(--sans);color:#9aabc2}
 .ls .l3-hint{display:none}
 /* 3D рядом с текстом на каждом слайде темы */
-.ls-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px;align-items:start;max-width:none}
+.ls-split{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr);gap:28px;align-items:start;max-width:none}
 .ls-split .ls-c{max-width:none;margin:0}
 .ls-split .ls-title{min-height:0;padding-top:4vh}
 .ls-split .ls-big{font-size:clamp(70px,8vw,140px)}
@@ -237,7 +240,7 @@ body.liveshow{overflow:hidden}
 .ls-tkm2{margin:8px 0 0;font:600 clamp(15px,1.2vw,20px)/1.35 var(--sans);color:#34465f}
 .ls-exd{margin-top:12px;display:flex;justify-content:center}.ls-exd svg{width:100%;height:auto;max-height:calc(100vh - 470px)}
 .ls-v3s .l3-st{height:min(34vh,330px);margin-top:16px}.ls-v3s .l3-bar{display:none}
-@media(max-width:900px){.ls-split{grid-template-columns:1fr}.ls-sv{position:static}.ls-sv .l3-st{height:50vh}}
+@media(max-width:900px){.ls-split{grid-template-columns:1fr}.ls-sv{position:static}.ls-sv .ls-ep{height:70vh}.ls-sv .l3-st{height:55vh}.ls-dw{height:70vh}.ls-exd{height:60vh}.ls-d3r .l3-st{height:55vh}.ls-main{padding:12px 8px 110px}.ls-ep{padding:2px;border-radius:12px}}
 .ls-d3l{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;max-height:calc(100vh - 330px);overflow:auto}
 .ls-d3l li{display:flex;gap:12px;align-items:flex-start;padding:8px 12px;border-radius:12px;opacity:.38;transition:opacity .2s,background .2s}
 .ls-d3l li.on{opacity:.6}.ls-d3l li.now{opacity:1;background:#f3f7fc;box-shadow:inset 4px 0 0 #1a5ae0}
@@ -33234,6 +33237,12 @@ const CACHE={};
 function scene(id,mk){ const key=id+'/'+mk; if(CACHE[key]) return CACHE[key]; const f=SCN[id]&&SCN[id][mk]; if(!f) return null; return CACHE[key]=f(); }
 const has=(id,mk)=>!!(SCN[id]&&SCN[id][mk]);
 
+/* крупно на любом экране: толщины линий, точки и подписи — в пикселях экрана, а не чертежа (телефон, проектор) */
+function big(svg,W,H,box,o){ if(!svg||!svg.getBoundingClientRect) return; o=o||{}; const r=(box||svg).getBoundingClientRect(); if(!r.width||!r.height) return;
+  const sc=Math.min(r.width/W,r.height/H), k=1/Math.max(sc,.05), m=o.m||1;
+  svg.style.setProperty('--u',k); svg.style.setProperty('--lf',((o.fs||15)*k)+'px');
+  svg.querySelectorAll('[stroke-width]').forEach(e=>{ if(e.tagName==='text') return; const w=+e.getAttribute('stroke-width'); if(w>0) e.setAttribute('stroke-width',(Math.max(w,1.1)*m*k).toFixed(2)); });
+  svg.querySelectorAll('circle').forEach(e=>{ const rr=+e.getAttribute('r'); if(rr>0&&rr<8) e.setAttribute('r',(rr*Math.min(m*k,6)).toFixed(2)); }); }
 /* ── плеер: шаги, анимация внутри шага, камера, мышь ── */
 function mount(host,SC,o){ o=o||{};
   host.innerHTML=`<div class="l3-st" data-l3-st></div>
@@ -33243,7 +33252,7 @@ function mount(host,SC,o){ o=o||{};
    <p class="l3-hint">тяни мышью — повернуть · колесо — масштаб · двойной щелчок — вид шага</p>`;
   const st=host.querySelector('[data-l3-st]'), rg=host.querySelector('[data-l3="u"]');
   const V={yaw:HOME.yaw,pit:HOME.pit,z:1,fit:SC.fits[0],opt:{proj:true,newPlanes:true}}, A={si:0,u:1,raf:0,anim:null,cam:null};
-  const draw=()=>{ st.innerHTML=svg(SC,A.si,A.u,{W:1000,H:640,yaw:V.yaw,pit:V.pit,z:V.z,fit:V.fit,opt:V.opt}); rg.value=Math.round(A.u*1000); };
+  const draw=()=>{ st.innerHTML=svg(SC,A.si,A.u,{W:1000,H:640,yaw:V.yaw,pit:V.pit,z:V.z,fit:V.fit,opt:V.opt}); rg.value=Math.round(A.u*1000); big(st.firstChild,1000,640,st); };
   const tick=now=>{ A.raf=0; let more=false;
     if(A.cam){ const t=Math.min(1,(now-A.cam.t0)/A.cam.dur), e=ease(t); let dy=A.cam.to.yaw-A.cam.from.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); V.yaw=A.cam.from.yaw+dy*e; V.pit=A.cam.from.pit+(A.cam.to.pit-A.cam.from.pit)*e; V.z=A.cam.from.z+(1-A.cam.from.z)*e; const F0=A.cam.from.fit, F1=A.cam.to.fit; V.fit={k:F0.k+(F1.k-F0.k)*e,ou:F0.ou+(F1.ou-F0.ou)*e,ov:F0.ov+(F1.ov-F0.ov)*e}; if(t<1) more=true; else A.cam=null; }
     if(A.anim){ const t=Math.min(1,(now-A.anim.t0)/A.anim.dur); A.u=ease(t); if(t<1) more=true; else A.anim=null; }
@@ -33278,7 +33287,7 @@ function mount(host,SC,o){ o=o||{};
   go(o.start||0,true); if(o.mode) setMode(o.mode);
   return {go,replay,setMode,host,view:()=>camTo(Object.assign({fit:SC.fits[A.si]},SC.steps[A.si].cam)),get si(){ return A.si; },n:SC.steps.length,stop:()=>{ cancelAnimationFrame(A.raf); setMode(''); }}; }
 
-return {scene,has,mount,svg,example,epure:epStep,epAll,_:{zamPlane,zamLine,rotProj,rotLevel,F_ang,F_incl,F_nv,F_bis,F_dll,F_dllR,F_dpp,F_dih,F_tri,F_sq,F_tkA,F_tkB,F_tkV,levelAng,rotA,SCN}};
+return {scene,has,mount,svg,example,big,epure:epStep,epAll,_:{zamPlane,zamLine,rotProj,rotLevel,F_ang,F_incl,F_nv,F_bis,F_dll,F_dllR,F_dpp,F_dih,F_tri,F_sq,F_tkA,F_tkB,F_tkV,levelAng,rotA,SCN}};
 })();
 /* ═════ #/live/show — режим эфира для ведущего: «РК2 за 9 шагов» на весь экран, для демонстрации окна в Телемосте.
    Слайды строятся из того, что уже есть на сайте: темы RKP.TOPICS (идея, порядок решения каждым способом, ловушки,
@@ -33366,7 +33375,7 @@ const LIVESHOW=(function(){
       R.querySelector('[data-ls-n]').textContent=(S.i+1)+' / '+S.slides.length; };
     /* тот же 3D-слайд — только следующий шаг сцены, без перерисовки (камера и анимация идут плавно) */
     if(sl.kind==='d3'&&S.d3&&S.d3.i===S.i){ S.d3.p.go(S.k); R.querySelectorAll('[data-ls-d3i]').forEach((li,j)=>{ li.classList.toggle('on',j<S.k); li.classList.toggle('now',j===S.k); });
-      const nw=R.querySelector('[data-ls-d3i].now'); if(nw) try{ nw.scrollIntoView({block:'nearest'}); }catch(e){} meta(); clearPen(); return; }
+      const nw=R.querySelector('[data-ls-d3i].now'); if(nw) try{ const ol=nw.parentNode; if(ol.scrollHeight>ol.clientHeight+4) ol.scrollTop=nw.offsetTop-ol.offsetTop-8; }catch(e){} meta(); clearPen(); return; }
     /* 3D рядом с текстом: тот же слайд — меняем только текст и шаг сцены */
     const V3=sl.v3, sc3=V3&&typeof L3D!=='undefined'?L3D.scene(V3.id,V3.mk):null;
     if(sc3&&S.d3&&S.d3.i===S.i&&S.d3.key===V3.id+'/'+V3.mk){ const tx=R.querySelector('[data-ls-txt]'); if(tx) tx.innerHTML=slideHTML(sl,S.k); v3sync(sl,sc3); meta(); clearPen(); return; }
@@ -33381,8 +33390,8 @@ const LIVESHOW=(function(){
         if(S.d3) v3sync(sl,sc3); } }
     else if(keep) keep.p.stop();
     if(sl.kind==='d3'){ const host=R.querySelector('[data-ls-d3]'); try{ S.d3={i:S.i,p:L3D.mount(host,sl.sc,{start:S.k,onStep:j=>paintEp(sl.sc,j)}),key:'full'}; }catch(e){ host.textContent='3D не построилось'; } paintEp(sl.sc,S.k); }
-    if(sl.kind==='ex'){ const box=R.querySelector('[data-ls-exd]'); if(box&&sl.ex.items) try{ box.innerHTML=DRAW.svg({items:sl.ex.items,fitTo:sl.ex.items}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); } }catch(e){ box.textContent=''; } }
-    if(sl.kind==='draw'){ const box=R.querySelector('[data-ls-dw]'); try{ box.innerHTML=DRAW.svg({items:sl.acc,fitTo:sl.fit}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); try{ DECLUTTER(svg); }catch(e){} } }catch(e){ box.textContent='Чертёж не построился'; } }
+    if(sl.kind==='ex'){ const box=R.querySelector('[data-ls-exd]'); if(box&&sl.ex.items) try{ box.innerHTML=DRAW.svg({items:sl.ex.items,fitTo:sl.ex.items}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); bigDw(svg,box); } }catch(e){ box.textContent=''; } }
+    if(sl.kind==='draw'){ const box=R.querySelector('[data-ls-dw]'); try{ box.innerHTML=DRAW.svg({items:sl.acc,fitTo:sl.fit}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); try{ DECLUTTER(svg); }catch(e){} bigDw(svg,box); } }catch(e){ box.textContent='Чертёж не построился'; } }
     meta(); clearPen(); }
   /* какой шаг 3D-сцены показать рядом с текстом */
   function v3idx(sl,sc){ const n=sc.steps.length, md=sl.v3.mode;
@@ -33394,7 +33403,8 @@ const LIVESHOW=(function(){
   /* эпюр того же шага сцены: развёрнутые π₄, π₅, оси, дуги вращения — то, что чертят на бумаге */
   function paintEp(sc,j){ const box=S&&S.root.querySelector('[data-ls-ep]'); if(!box||typeof L3D==='undefined') return; let it=null; try{ it=L3D.epure(sc,j); }catch(e){}
     if(!it){ box.hidden=true; return; } box.hidden=false;
-    try{ box.innerHTML=DRAW.svg({items:it,fitTo:L3D.epAll(sc),alt:'Эпюр: '+(sc.steps[j]&&sc.steps[j].t||'')}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); } }catch(e){ box.textContent='Эпюр не построился'; } }
+    try{ box.innerHTML=DRAW.svg({items:it,fitTo:L3D.epAll(sc),alt:'Эпюр: '+(sc.steps[j]&&sc.steps[j].t||'')}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); bigDw(svg,box); } }catch(e){ box.textContent='Эпюр не построился'; } }
+  function bigDw(svg,box){ const vb=svg.viewBox&&svg.viewBox.baseVal; if(!vb||!vb.width) return; const go=()=>L3D.big(svg,vb.width,vb.height,box||svg.parentNode,{fs:17,m:1.35}); go(); requestAnimationFrame(go); }
   function v3sync(sl,sc){ const p=S.d3.p, md=sl.v3.mode; p.setMode(md==='auto'?'auto':md==='final'||md==='given'?'spin':''); if(md!=='auto') p.go(v3idx(sl,sc)); paintEp(sc,p.si);
     const c=S.root.querySelector('[data-ls-v3c]'); if(c) c.textContent=(p.si+1)+'. '+sc.steps[p.si].t; }
   function go(d){ const sl=S.slides[S.i], max=sl.n||0;
