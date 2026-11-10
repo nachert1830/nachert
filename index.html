@@ -228,6 +228,7 @@ body.liveshow{overflow:hidden}
 .ls-ep{overflow:hidden}.ls-ep svg{display:block;width:100%!important;height:100%!important;max-height:none!important}
 .ls-d3r{min-width:0;display:flex;flex-direction:column;gap:12px}.ls-d3r .l3-st{height:40vh;min-height:240px}.ls-d3r .ls-d3l{max-height:calc(60vh - 300px)}
 .ls-d3r h2{font-size:clamp(22px,2vw,32px);margin-bottom:6px}
+.ls-dq{margin:0 0 6px;padding:10px 14px;border:2px dashed #9cc0ef;border-radius:12px;background:#f6f9ff;font:700 clamp(15px,1.25vw,20px)/1.35 var(--sans);color:#0a1733}
 .ls-v3c{margin:6px 0 0;font:700 15px var(--sans);color:#1a5ae0}
 .ls-rk .rkp-rk h2{margin:0 0 6px;font:800 clamp(28px,3vw,46px)/1.1 var(--disp);color:#0a1733}
 .ls-rk .rkp-rks{font-size:clamp(16px,1.3vw,21px);margin-bottom:14px}
@@ -33385,8 +33386,7 @@ const LIVESHOW=(function(){
     /* коротко: по каждой теме — задача как на РК, её решение по шагам (эпюр + 3D) каждым способом, где ошибаются */
     TT.forEach((T,ti)=>{
       const top={ti,T}, m0=typeof L3D!=='undefined'&&Object.keys(T.m||{}).find(m=>L3D.has(T.id,m)), vz=md=>m0?{id:T.id,mk:m0,mode:md}:null;
-      { const E=m0&&L3D.example(T.id); if(E&&E.ask) out.push(Object.assign({kind:'ex',ex:E,ms:Object.keys(T.m||{}).filter(m=>L3D.has(T.id,m)),v3:vz('given')},top)); else out.push(Object.assign({kind:'title'},top)); }
-      if(m0) d3(out,T.id,m0,(MT[m0]&&MT[m0].s)||m0,top);   /* одно решение на тему — основным способом */
+      { const E=m0&&L3D.example(T.id); if(m0) d3(out,T.id,m0,(MT[m0]&&MT[m0].s)||m0,Object.assign({ask:E&&E.ask},top)); else out.push(Object.assign({kind:'title'},top)); }   /* одна задача на тему: условие + решение по шагам */
       if((T.traps||[]).length) out.push(Object.assign({kind:'traps',v3:vz('final')},top));
     });
     /* разбор билета РК2: условие → 3D → построение по шагам */
@@ -33394,7 +33394,7 @@ const LIVESHOW=(function(){
     if(tks.length){ const top={ti:9,T:{t:'Разбор билета РК2',sub:'задачи А, Б, В'}};
       out.push(Object.assign({kind:'tktitle',tks},top));
       tks.forEach(x=>{ const dr=[], s3=[]; draws(dr,x.t,top,'Билет РК2 · задача '+x.t.idx,'#/ng/check/tickets/'+x.k,{id:x.k,mk:x.mk,mode:'sync2'}); d3(s3,x.k,x.mk,(MT[x.mk]&&MT[x.mk].s)||x.mk,top);
-        out.push(dr[0],...(s3.length?s3:dr.slice(1))); }); }   /* условие и решение по шагам (эпюр + 3D) */
+        if(s3.length){ s3[0].ask=String(x.t.q||'').replace(/<[^>]+>/g,''); out.push(...s3); } else out.push(...dr); }); }   /* условие и решение по шагам (эпюр + 3D) */
     out.push({kind:'end'});
     return out; }
   /* 3D-слайд способа: шаги сцены L3D — подшаги слайда */
@@ -33419,7 +33419,7 @@ const LIVESHOW=(function(){
     if(sl.kind==='tktitle') return `<div class="ls-c ls-title"><span class="ls-big">РК2</span><h1>Разбор билета</h1><p class="ls-lead">Три задачи — три способа преобразования. Каждую: условие → смотрим в 3D → строим на эпюре по шагам.</p>
       <ol class="ls-map ls-tkm">${sl.tks.map(x=>`<li><b>${esc(x.t.idx)}</b><span>${esc(String(x.t.q||'').replace(/<[^>]+>/g,''))}<small>${esc((MT3[x.mk]||x.mk))}</small></span></li>`).join('')}</ol></div>`;
     if(sl.kind==='d3'){ const st=sl.sc.steps; return `<div class="ls-c ls-d3"><div class="ls-ep" data-ls-ep></div><div class="ls-d3r"><div class="ls-d3s" data-ls-d3></div><div class="ls-dt">${head}
-      <h2>${sl.ti<9?'Решаем пример':'В 3D'}: ${esc(sl.mname)}</h2><p class="ls-task">${esc(sl.sc.title)}</p>
+      <h2>${sl.ti<9?'Задача как на РК':esc(sl.sc.title.split(':')[0])}</h2>${sl.ask?`<p class="ls-dq">${esc(sl.ask)} Способ: ${esc(sl.mname)}.</p>`:`<p class="ls-task">${esc(sl.sc.title)}</p>`}
       <ol class="ls-d3l">${st.map((x,j)=>`<li class="${j<k?'on':''}${j===k?' now':''}" data-ls-d3i="${j}"><b>${j+1}</b><span><strong>${x.t}</strong><em>${x.e||x.d||''}</em></span></li>`).join('')}</ol></div></div></div>`; }
     if(sl.kind==='title') return `<div class="ls-c ls-title"><span class="ls-big">${sl.ti+1}</span><h1>${esc(T.t)}</h1><p class="ls-lead">${esc(T.sub)}</p>
       <div class="ls-asks"><b>Как звучит задача:</b>${(T.asks||[]).map(a=>`<p>«${esc(a)}»</p>`).join('')}</div></div>`;
