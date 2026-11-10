@@ -70,6 +70,12 @@ async function liveCheck(page,URL){
   for(let ti=0;ti<3;ti++){ await page.evaluate(i=>document.querySelectorAll('[data-epx-t]')[i].click(),ti);
     for(let k=0;k<14;k++){ const nb=await page.$('[data-epx-go="1"]:not([disabled])'); if(!nb) break; await nb.click(); } }
   if(!(await page.$('.hc-rot'))){ await page.goto(URL); await page.waitForTimeout(800); if(!(await page.$('.hc-rot'))) add('главная','карточка','нет карточки «Способ вращения»'); }
+  /* ДЗ №3 «Как на листе»: пять задач пирамиды на всех 30 вариантах сходятся с пространством; страница варианта открывается */
+  await page.goto(URL+'#/ng3/12/sheet'); await page.waitForTimeout(1200);
+  const pyr=await page.evaluate(()=>{ const out=[], d=DZR.get?DZR.get('ng3'):null, V=(d&&d.V)||{};
+    Object.keys(V).forEach(n=>{ try{ PYR(V[n]).forEach(t=>{ if(t.ok===false) out.push('вариант '+n+': задача «'+t.t+'» не сошлась'); }); }catch(e){ out.push('вариант '+n+': '+e.message); } });
+    if(!Object.keys(V).length) out.push('нет данных вариантов ДЗ №3'); if(!document.querySelector('#dzSheetPl svg')) out.push('нет чертежа на странице варианта'); return out; });
+  pyr.forEach(m=>add('ДЗ №3 как на листе','сверка',m));
   errs.forEach(e=>add('эфир','ошибка JS',e));
   return out; }
 module.exports={liveCheck};
