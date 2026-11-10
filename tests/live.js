@@ -69,7 +69,7 @@ async function liveCheck(page,URL){
   rot.forEach(m=>add('вращение','сверка',m));
   for(let ti=0;ti<3;ti++){ await page.evaluate(i=>document.querySelectorAll('[data-epx-t]')[i].click(),ti);
     for(let k=0;k<14;k++){ const nb=await page.$('[data-epx-go="1"]:not([disabled])'); if(!nb) break; await nb.click(); } }
-  if(!(await page.$('.hc-rot'))){ await page.goto(URL); await page.waitForTimeout(800); if(!(await page.$('.hc-rot'))) add('главная','карточка','нет карточки «Способ вращения»'); }
+  /* карточка «Способ вращения» на главной — временно снята (раздел пересобирается) */
   /* ДЗ №3 «Как на листе»: пять задач пирамиды на всех 30 вариантах сходятся с пространством; страница варианта открывается */
   await page.goto(URL+'#/ng3/12/sheet'); await page.waitForTimeout(1200);
   const pyr=await page.evaluate(()=>{ const out=[], d=DZR.get?DZR.get('ng3'):null, V=(d&&d.V)||{};

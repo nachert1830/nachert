@@ -29018,12 +29018,18 @@ function surfArt(){ if(SURFART) return SURFART;
     <line class="hc-g" x1="${f(hi.A[0])}" y1="${f(hi.A[1])}" x2="${f(hi.B[0])}" y2="${f(hi.B[1])}" stroke="#ffd34d" stroke-width="2.6" stroke-linecap="round" pathLength="1"/>
   </svg>`; return SURFART; }
 function homeCards(){ const pm=PROMO.cardHTML(), rk=pm||(window.RK2?RK2.miniHTML():'');
-  /* вторая карточка — раздел «Вращение» (вместо фичи; кабинет её не подменяет — у неё нет класса hc-3d) */
-  return rk+`<a class="hc hc-rot" href="#/ng/rot" aria-label="Способ вращения: как крутить и до какого момента">
-    <span class="hc-pill"><i></i>Тема РК2</span>
-    <span class="hc-t">Способ вращения</span><span class="hc-s">как крутить и до какого момента</span>
-    ${ROT.art('hc-art hc-rart')}
-    <span class="hc-go">Разобраться →</span></a>`; }
+  /* вторая карточка — «РК2 за 9 шагов» (временно, пока раздел «Вращение» пересобирается) */
+  return rk+`<a class="hc hc-rot" href="#/ng/rk2" aria-label="РК2 за 9 шагов: все типы задач билета по шагам">
+    <span class="hc-pill"><i></i>Подготовка к РК2</span>
+    <span class="hc-t">РК2 за 9 шагов</span><span class="hc-s">все типы задач билета по шагам</span>
+    <svg class="hc-art hc-rart" viewBox="0 0 220 170" aria-hidden="true" font-family="Golos Text,system-ui,sans-serif" font-weight="700" font-size="11" fill="#fff">
+      <path d="M8 86H212" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"/><text x="10" y="80" fill-opacity=".8">x</text>
+      <path d="M40 30V140M120 70V120M190 18V148" stroke="#fff" stroke-opacity=".3" stroke-width="1"/>
+      <path d="M40 30L190 18L120 70Z" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M40 140L190 148L120 120Z" fill="#ffd34d" fill-opacity=".18" stroke="#ffd34d" stroke-width="2.4" stroke-linejoin="round"/>
+      <g fill="#1f47d6" stroke="#fff" stroke-width="1.6"><circle cx="40" cy="30" r="3"/><circle cx="190" cy="18" r="3"/><circle cx="120" cy="70" r="3"/><circle cx="40" cy="140" r="3"/><circle cx="190" cy="148" r="3"/><circle cx="120" cy="120" r="3"/></g>
+      <text x="22" y="28">A″</text><text x="196" y="22">B″</text><text x="124" y="84">C″</text><text x="22" y="150">A′</text><text x="196" y="160">B′</text><text x="114" y="112">C′</text></svg>
+    <span class="hc-go">Начать →</span></a>`; }
 function viewHome(v){
   const tg=resumeTarget();
   let stepNote=''; try{ const pp=(JSON.parse(localStorage.getItem('plpos')||'{}')||{})[tg&&tg.href]; if(pp&&pp.k) stepNote='шаг '+pp.k+' · '; }catch(e){}
