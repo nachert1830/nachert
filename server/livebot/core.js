@@ -2,7 +2,7 @@
    Отдельно от кабинета: свой токен, своё хранилище (JSON-файл), запуск — run.js (long polling, без вебхука и домена).
    Как развернуть — server/livebot/README.md; что это и зачем — docs/LIVE.md.
 
-   Ученик: /start → выбор эфира кнопкой → «Записал». За 2 часа — напоминание, за 15 минут — ссылка на Телемост,
+   Ученик: /start → выбор эфира кнопкой → «Записал». За 2 часа — напоминание, за 15 минут — ссылка на VK Встречи,
    после эфира — «Помогло?». Кнопка «Ссылка на эфир» отдаёт ссылку сама, если напоминание не дошло. /my, /delete.
    Владелец (ADMIN_IDS): /add, /link, /del, /list, /say — расписание и ссылка задаются командами, без правки кода.
    Число записавшихся видит только владелец (/list) — публичного счётчика нигде нет.
@@ -57,7 +57,7 @@ function createLiveBot(o){
     const f=U[0], live=f.start<=t, me=!!subOf(f,chat);
     const top=me?{text:'🔗 Ссылка на эфир',callback_data:'l:'+f.id}:{text:'✅ Я приду',callback_data:'j:'+f.id};
     const more=U.slice(1,4).map(s=>({text:(subOf(s,chat)?'✓ ':'')+fmtDay(s.start),callback_data:'j:'+s.id}));
-    return {text:'Бесплатный разбор РК2 в Телемосте.\n\n'+(live?'🔴 Эфир идёт — ':'📅 ')+cap(when(f,t))+' МСК'+(me?'\n✅ Ты записан — ссылку пришлю за 15 минут.':'')+
+    return {text:'Бесплатный разбор РК2 в VK Встречах.\n\n'+(live?'🔴 Эфир идёт — ':'📅 ')+cap(when(f,t))+' МСК'+(me?'\n✅ Ты записан — ссылку пришлю за 15 минут.':'')+
       '\n\n'+NOTICE,
       kb:[[top]].concat(more.length?[more]:[])}; }
   /* приветствие: с картинкой, если она есть (file_id запоминаем после первой загрузки); не вышло — просто текстом */
@@ -129,7 +129,7 @@ function createLiveBot(o){
   const subsN=s=>Object.keys(s.subs||{}).length;
   const pick=(st,t,act)=>upcoming(st,t).slice(0,8).map(s=>[{text:label(s)+' · '+subsN(s),callback_data:'a:'+act+':'+s.id}]);
 
-  async function menu(chat,txt){ await send(chat,txt||'Меню внизу 👇\n'+B.count+' — сколько записалось\n'+B.link+' — ссылка на Телемост\n'+B.say+' — сообщение всем записанным',MENU); }
+  async function menu(chat,txt){ await send(chat,txt||'Меню внизу 👇\n'+B.count+' — сколько записалось\n'+B.link+' — ссылка на VK Встречи\n'+B.say+' — сообщение всем записанным',MENU); }
   async function card(st,t,chat,s){ const W=Object.values(s.subs||{});
     await send(chat,label(s)+' · '+fmtDur(s)+'\nЗаписались ('+W.length+'): '+(W.map(w=>w.name||'без имени').join(', ')||'пока никого')+'\nСсылка: '+(s.link||'нет')+(s.fb?'\nПомогло: '+s.fb.y+' · частично: '+s.fb.p+' · нет: '+s.fb.n:''),
       [[{text:'🔗 Ссылка',callback_data:'a:l:'+s.id},{text:'📣 Написать',callback_data:'a:m:'+s.id}],[{text:'⏱ '+fmtDur(s),callback_data:'a:u:'+s.id},{text:'🗑 Отменить',callback_data:'a:x:'+s.id}]]); }
@@ -149,7 +149,7 @@ function createLiveBot(o){
     await send(chat,'Добавил: '+fmtWhen(when)+' — '+topic+', '+fmtDur(s)+'.',
       [[{text:'🔗 Прислать ссылку',callback_data:'a:l:'+id}],[{text:'⏱ Длительность: '+fmtDur(s),callback_data:'a:u:'+id},{text:'➕ Ещё эфир',callback_data:'a:add'}]]); return s; }
   async function doLink(st,chat,s,url){
-    if(!okLink(url)){ await send(chat,'Нужна ссылка вида https://telemost.yandex.ru/j/… — пришли ещё раз.',[CANCEL]); return; }
+    if(!okLink(url)){ await send(chat,'Нужна ссылка вида https://vk.com/call/join/… — пришли ещё раз.',[CANCEL]); return; }
     s.link=url; wait(st,chat,null); await send(chat,'Ссылка для «'+label(s)+'» сохранена. Записанным уйдёт за 15 минут до начала.'); }
   async function doSay(st,chat,s,msg){ let n=0; const all=Object.keys(s.subs||{});
     for(const c of all){ const r=await send(c,msg); if(!r||r.ok!==false) n++; }
@@ -181,7 +181,7 @@ function createLiveBot(o){
     if(act==='s') return card(st,t,chat,s);
     if(act==='u'){ const L=[60,90,120], i=L.indexOf(s.min||90); s.min=L[(i+1)%L.length]; save(st); await send(chat,'Длительность «'+label(s)+'»: '+fmtDur(s)+'.'); return card(st,t,chat,s); }
     if(act==='w') return who(chat,s);
-    if(act==='l'){ wait(st,chat,{w:'link',sid:s.id}); await send(chat,'Пришли ссылку на Телемост для «'+label(s)+'»'+(s.link?'\n(сейчас: '+s.link+')':''),[CANCEL]); return; }
+    if(act==='l'){ wait(st,chat,{w:'link',sid:s.id}); await send(chat,'Пришли ссылку на VK Встречи для «'+label(s)+'»'+(s.link?'\n(сейчас: '+s.link+')':''),[CANCEL]); return; }
     if(act==='m'){ if(!subsN(s)){ await send(chat,'На «'+label(s)+'» пока никто не записан.'); return; }
       wait(st,chat,{w:'say',sid:s.id}); await send(chat,'Напиши сообщение — получат все записанные на «'+label(s)+'» ('+subsN(s)+')',[CANCEL]); return; }
     if(act==='x'){ await send(chat,'Отменить «'+label(s)+'»?'+(subsN(s)?' Записанным ('+subsN(s)+') придёт сообщение об отмене.':''),[[{text:'Да, отменить',callback_data:'a:X:'+s.id}],CANCEL]); return; }
