@@ -220,6 +220,13 @@ body.liveshow{overflow:hidden}
 .ls-sv{position:sticky;top:0}
 .ls-sv .l3-st{height:calc(100vh - 250px)}
 .ls-v3c{margin:6px 0 0;font:700 15px var(--sans);color:#1a5ae0}
+.ls-rk .rkp-rk h2{margin:0 0 6px;font:800 clamp(28px,3vw,46px)/1.1 var(--disp);color:#0a1733}
+.ls-rk .rkp-rks{font-size:clamp(16px,1.3vw,21px);margin-bottom:14px}
+.ls-rk .rkp-rkg{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ls-rk .rkp-rkc{grid-template-columns:minmax(0,230px) minmax(0,1fr);border-color:#dbe4ef;background:#fff}
+.ls-rk .rkp-rkt b{font-size:clamp(16px,1.25vw,20px)}.ls-rk .rkp-rkt{font-size:clamp(14px,1.05vw,17px)}
+.ls-rk .rkp-rkn{font-size:14px}.ls-rk .rkp-rkf svg{max-height:30vh;width:auto;max-width:100%;margin:0 auto}.ls-rk .rkp-rkc{padding:8px}
+@media(max-width:900px){.ls-rk .rkp-rkg{grid-template-columns:1fr}}
 .ls-tkc{padding:16px 20px;border:2px dashed #9cc0ef;border-radius:16px;background:#f6f9ff}
 .ls-tkk{display:inline-block;margin-bottom:6px;font:800 13px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:#d1281f}
 .ls-tkq{margin:0;font:700 clamp(18px,1.6vw,27px)/1.35 var(--sans);color:#0a1733}
@@ -4781,7 +4788,17 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-step h2 i{margin-left:auto;font:700 12.5px var(--sans);font-style:normal;color:var(--green)}
 .rkp-idea{margin:0 0 12px;font-size:15.5px;line-height:1.55}
 .rkp-asks{font-size:13.5px;color:var(--ink2);background:var(--surf2);border-radius:12px;padding:8px 12px;margin:0 0 12px}
-.rkp-asks span{font-weight:700;color:var(--mut)}.rkp-asks ul{margin:4px 0 0;padding-left:18px}.rkp-asks li+li{margin-top:3px}
+.rkp-asks span{font-weight:700;color:var(--mut)}
+.rkp-rk{margin:0 0 18px}.rkp-rks{margin:0 0 10px;font-size:14px;color:var(--ink2)}
+.rkp-rkg{display:grid;gap:10px}
+.rkp-rkc{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:12px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surf)}
+.rkp-rkf{border-radius:10px;overflow:hidden}.rkp-rkf svg{display:block;width:100%;height:auto}
+.rkp-rkt{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:14px}
+.rkp-rkt b{font-size:14.5px;line-height:1.3;color:var(--ink)}
+.rkp-rkn{align-self:flex-start;padding:2px 8px;border-radius:999px;background:#fde8e7;color:#b3261e;font:800 12px var(--sans)}
+.rkp-rkd{color:var(--ink2)}.rkp-rkm{color:var(--mut);font-size:13px}
+.rkp-rkb{align-self:flex-start;margin-top:4px}
+@media(max-width:560px){.rkp-rkc{grid-template-columns:1fr}}.rkp-asks ul{margin:4px 0 0;padding-left:18px}.rkp-asks li+li{margin-top:3px}
 .rkp-chk p{margin:0 0 8px;font-size:14.5px}
 .rkp-os{display:flex;flex-direction:column;gap:7px}
 .rkp-o{text-align:left;padding:10px 12px;min-height:44px;border-radius:12px;border:1.5px solid var(--line2);background:var(--surf);font:inherit;font-size:14.5px;color:var(--ink);cursor:pointer}
@@ -23797,7 +23814,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'4.23',d:'10 ноября 2026',items:['Онлайн-разборы, режим эфира (#/live/show): каждая из 9 тем РК2 начинается с «Задачи как на РК» — условие в формулировке билета (числа свои), эпюр «Дано» и та же задача в 3D. Дальше этот пример решается по шагам в 3D каждым способом: видны новые плоскости π₄, π₅ и оси x₁₄, x₄₅, ось вращения i и горизонталь h, пути точек. 3D стоит рядом с текстом на каждом слайде темы. В конце — разбор билета РК2 (задачи А, Б, В): эпюр по шагам и 3D синхронно.']},
+  {v:'4.23',d:'10 ноября 2026',items:['РК2 за 9 шагов: в начале каждой темы — «Так это бывает на РК2»: все виды условий этого типа по 30 билетам (90 задач), сколько раз встречается каждый и каким способом велят решать. К каждому виду — свой чертёж со своими числами и кнопка «Своя задача такого вида». То же — слайдом в режиме эфира.','Онлайн-разборы, режим эфира (#/live/show): каждая из 9 тем РК2 начинается с «Задачи как на РК» — условие в формулировке билета (числа свои), эпюр «Дано» и та же задача в 3D. Дальше этот пример решается по шагам в 3D каждым способом: видны новые плоскости π₄, π₅ и оси x₁₄, x₄₅, ось вращения i и горизонталь h, пути точек. 3D стоит рядом с текстом на каждом слайде темы. В конце — разбор билета РК2 (задачи А, Б, В): эпюр по шагам и 3D синхронно.']},
   {v:'4.22',d:'9 ноября 2026',items:['РК2 стал проще: «РК2 за 9 шагов». Все задачи билета РК2 сведены к девяти типам — угол между прямыми, угол наклона плоскости, натуральная величина треугольника, биссектриса, расстояние между прямыми, расстояние до плоскости, угол между плоскостями, треугольник на прямой, квадрат и окружность на прямой. Каждая тема — путь из трёх шагов: «Пойми» (суть и вопрос), «Как решать» (порядок построения каждым способом, где ошибаются, разборы по шагам), «Реши сам» (новая задача с координатами, ответ числом, решение красным на чертеже).',
     'Шкала прогресса 0–100 %: тема — 10 %, девять тем — 90 % и зелёная шкала; последние 10 % — финал, пробный РК2. Шкала краснеет внизу и зеленеет к 90 %.',
     'Пробный РК2 (#/ng/rk2/x): каждый раз новый билет из трёх задач А, Б, В, варианты чуть сложнее настоящих (скрещивающиеся прямые, плоскости парами прямых, параллельные плоскости, центр вписанной окружности), у каждой — свой способ. Секундомер, ответ числом, разбор после сдачи.',
@@ -27253,6 +27270,50 @@ GEN.sq=(seed,hard)=>figTask(seed,hard,'sq',hard?['sqIn','sqD','p50']:['sq','sqD'
 function make(type,seed,hard,method){ const q=GEN[type](seed,hard); if(!q) return null; const T=TOP(type), ms=Object.keys(T.m);
   q.method=q.method||(method&&(ms.includes(method)||method==='any')?method:ms[0]); q.mtext=q.mtext||MT[q.method].t; return q; }
 
+/* ── как это бывает на РК2: виды условий по 30 билетам кафедры (90 задач), сколько раз и каким способом велят решать.
+   Чертежи билетов не копируем: к каждому виду — своя задача того же вида (генератор темы, свои числа). ── */
+const RK2V={
+ ang:[{t:'Определить натуральную величину угла между пересекающимися прямыми a и b',g:'Две пересекающиеся прямые; часто одна выходит из точки на оси x',n:7,m:{zam:3,rotl:2,any:2},hard:false,ok:q=>!q.meta.skew},
+      {t:'Определить величину угла между прямыми a и b',g:'Прямые скрещиваются: общей точки нет — сначала через точку одной проводят прямую ∥ другой',n:4,m:{zam:3,rotl:1},hard:true,ok:q=>!!q.meta.skew}],
+ incl:[{t:'Определить угол наклона плоскости, заданной треугольником, к π₁ или π₂',g:'Треугольник ABC (BCD); к π₁ — 3 раза, к π₂ — 4',n:7,m:{rotp:5,zam:2},hard:false,ok:q=>/треугольник/.test(q.q)},
+       {t:'Определить угол наклона плоскости, заданной параллельными прямыми, к π₁ или π₂',g:'Две параллельные прямые, обычно от оси x',n:4,m:{rotp:3,any:1},hard:true,ok:q=>/параллельн/.test(q.q)},
+       {t:'Определить угол наклона плоскости, заданной прямой a и точкой A, к π₁ или π₂',g:'Прямая и точка вне её; к π₂ — 2 раза, к π₁ — 1',n:3,m:{zam:2,rotp:1},hard:true,ok:q=>/точкой/.test(q.q)},
+       {t:'Определить угол наклона плоскости, заданной пересекающимися прямыми, к π₁',g:'Две прямые из одной точки на оси x',n:2,m:{rotp:2},hard:false,ok:q=>/пересекающ/.test(q.q)}],
+ nv:[{t:'Определить натуральную величину треугольника ABC (BCD)',g:'Треугольник общего положения',n:7,m:{rotl:5,any:2},hard:false,ok:q=>q.kind==='ang'},
+     {t:'Построить центр окружности, описанной около треугольника ABC',g:'Ответ — точка O на обеих проекциях',n:1,m:{any:1},hard:false,ok:q=>q.kind==='R'}],
+ bis:[{t:'Построить проекции биссектрисы угла между пересекающимися прямыми a и b — вращением вокруг фронтали',g:'Две пересекающиеся прямые',n:3,m:{rotl:3},hard:false,ok:q=>q.ax==='f'},
+      {t:'Построить проекции биссектрисы угла между пересекающимися прямыми a и b — вращением вокруг горизонтали',g:'Две пересекающиеся прямые',n:2,m:{rotl:2},hard:false,ok:q=>q.ax==='h'}],
+ dll:[{t:'Определить расстояние между прямыми a и b (прямые параллельны)',g:'a′ ∥ b′ и a″ ∥ b″',n:7,m:{rotl:5,any:2},hard:false,ok:q=>!q.meta.skew},
+      {t:'Определить расстояние между скрещивающимися прямыми a и b',g:'Прямые не пересекаются и не параллельны',n:6,m:{zam:3,any:3},hard:true,ok:q=>!!q.meta.skew}],
+ dpp:[{t:'Определить расстояние от точки A до плоскости, заданной треугольником BCD',g:'Точка отдельно, треугольник рядом',n:4,m:{zam:4},hard:false,ok:q=>q.kind==='pt'},
+      {t:'Определить расстояние между параллельными плоскостями, заданными треугольниками ABC и DEF',g:'Два треугольника, стороны попарно параллельны',n:2,m:{zam:2},hard:true,ok:q=>q.kind==='pl'}],
+ dih:[{t:'Определить натуральную величину угла между плоскостями, заданными треугольниками ACB и ADB',g:'Два треугольника с общей стороной AB (ребро)',n:7,m:{zam:4,rotl:1,any:2},hard:false,ok:q=>!q.hard},
+      {t:'Определить угол между плоскостями: одна задана параллельными прямыми, другая — пересекающимися',g:'Плоскости нарисованы порознь — общего ребра на чертеже нет',n:2,m:{zam:2},hard:true,ok:q=>!!q.hard}],
+ tri:[{t:'Построить натуральную величину равностороннего треугольника ABC с вершиной в точке A и стороной BC на прямой a',g:'Точка A и прямая a общего положения',n:3,m:{rotl:1,zam:1,any:1},hard:false,ok:q=>q.kind==='eq'},
+      {t:'Построить натуральную величину равностороннего треугольника BCD со стороной BC на прямой a, если A — центр вписанной окружности',g:'Точка A и прямая a; A внутри треугольника',n:2,m:{zam:1,any:1},hard:true,ok:q=>q.kind==='eqIn'},
+      {t:'Построить натуральную величину равнобедренного треугольника ABC с вершиной A и основанием BC на прямой a, боковые стороны — 40 мм',g:'Точка A и прямая a',n:2,m:{rotl:1,any:1},hard:false,ok:q=>q.kind==='iso'},
+      {t:'Построить натуральную величину равнобедренного прямоугольного треугольника ABC с прямым углом при B и катетом BC на прямой a',g:'Точка A и прямая a',n:1,m:{rotl:1},hard:false,ok:q=>q.kind==='rt'}],
+ sq:[{t:'Построить натуральную величину квадрата BCDE со стороной BC на прямой a, если A — центр вписанной окружности',g:'Точка A и прямая a',n:5,m:{zam:2,rotl:1,any:2},hard:true,ok:q=>q.kind==='sqIn'},
+     {t:'Построить натуральную величину квадрата ABCD с диагональю BD на прямой a',g:'Точка A и прямая a',n:3,m:{rotl:1,zam:1,any:1},hard:true,ok:q=>q.kind==='sqD'},
+     {t:'Построить окружность с центром в точке A, касающуюся прямой a; построить проекции точки касания',g:'Точка A и прямая a',n:3,m:{rotl:2,any:1},hard:false,ok:q=>q.kind==='cir'},
+     {t:'Построить натуральную величину квадрата ABCD со стороной BC на прямой a',g:'Точка A и прямая a',n:2,m:{rotl:1,any:1},hard:false,ok:q=>q.kind==='sq'},
+     {t:'На прямой a найти точки, удалённые от точки A на 50 мм',g:'Точка A и прямая a',n:1,m:{any:1},hard:true,ok:q=>q.kind==='p50'}]};
+/* способ для своей задачи: как на РК — чаще всего тот, что в билетах этого вида */
+function rkMethod(id,V){ const ms=Object.keys(TOP(id).m), w=[]; Object.keys(V.m).forEach(k=>{ for(let i=0;i<V.m[k];i++) w.push(k); });
+  const k=w[Math.floor(Math.random()*w.length)]; return k==='any'||ms.includes(k)?k:ms[0]; }
+function variantTask(id,vi,seed0,method){ const V=(RK2V[id]||[])[vi]; if(!V) return null; let sd=seed0||newSeed();
+  for(let i=0;i<400;i++,sd=1+(sd*7919+13)%99998){ const q=make(id,sd,V.hard,method||rkMethod(id,V)); if(q&&V.ok(q)){ q.rkv=vi; return q; } } return null; }
+const RKS_={};   /* образцы видов для мини-чертежей: детерминированно, один раз */
+function rkSample(id,vi){ const k=id+'/'+vi; if(!(k in RKS_)){ const V=RK2V[id][vi], ms=Object.keys(TOP(id).m); let m=Object.keys(V.m).sort((a,b)=>V.m[b]-V.m[a])[0]; if(m!=='any'&&!ms.includes(m)) m=ms[0]; RKS_[k]=variantTask(id,vi,1009+vi*7717,m); } return RKS_[k]; }
+const mtN=k=>({zam:'замена плоскостей',rotp:'вращение вокруг проецирующей',rotl:'вращение вокруг линии уровня',any:'любой способ («способ преобразования чертежа»)'})[k]||k;
+function rkHTML(id,o){ o=o||{}; const C=RK2V[id]; if(!C) return ''; const tot=C.reduce((s,V)=>s+V.n,0);
+  return `<section class="rkp-rk" aria-labelledby="rkpRK"><h2 id="rkpRK" class="sp-h2">Так это бывает на РК2</h2>
+   <p class="rkp-rks">В 30 билетах РК2 этот тип — <b>${tot} ${tot%10===1&&tot!==11?'задача':tot%10>=2&&tot%10<=4&&(tot<12||tot>14)?'задачи':'задач'} из 90</b>. Все виды условий, как часто встречаются и каким способом велят решать. Чертежи — наши, со своими числами: суть та же, что в билете.</p>
+   <div class="rkp-rkg">${C.map((V,i)=>{ const q=rkSample(id,i); return `<div class="rkp-rkc"><div class="rkp-rkf sheet">${q?figHTML(q,false):''}</div><div class="rkp-rkt">
+     <span class="rkp-rkn">${V.n} из 90</span><b>${V.t}.</b><span class="rkp-rkd">${V.g}</span>
+     <span class="rkp-rkm">В билетах: ${Object.keys(V.m).sort((a,b)=>V.m[b]-V.m[a]).map(k=>mtN(k)+' — '+V.m[k]).join(' · ')}</span>
+     ${o.nobtn?'':`<button type="button" class="btn rkp-rkb" data-rkv="${i}">Своя задача такого вида →</button>`}</div></div>`; }).join('')}</div></section>`; }
+
 /* ── прогресс ── */
 const KEY='rkp';
 const getS=()=>{ const s=ST.get(KEY,null)||{}; s.t=s.t||{}; s.x=s.x||{best:0,h:[]}; return s; };
@@ -27337,6 +27398,7 @@ function topicView(v,id){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return
     const tab=CUR.tab||ms[0];
     v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Тема '+(idx+1)]],next:null,noBottom:true,cls:'rkp-page',body:`
      <div class="rkp-th"><span class="rkp-dot big">${k>=3?'✓':idx+1}</span><div><h1>${T.t}</h1><p>${T.sub} · ${STARS(k)} · тема ${idx+1} из 9</p></div></div>
+     ${rkHTML(id)}
      <section class="rkp-step${st.u?' done':''}" aria-labelledby="rkpS1"><h2 id="rkpS1"><span>1</span>Пойми ${st.u?'<i>★ есть</i>':''}</h2>
       <p class="rkp-idea">${T.idea}</p>
       <div class="rkp-asks"><span>Как это звучит в билете:</span><ul>${T.asks.map(a=>`<li>${a}.</li>`).join('')}</ul></div>
@@ -27360,6 +27422,8 @@ function topicView(v,id){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return
       if(CUR.pick===T.chk.c&&!st.u){ st.u=1; setS(s); try{ FX.buzz('success'); }catch(_){} } else { try{ FX.buzz(CUR.pick===T.chk.c?'success':'error'); }catch(_){} } keep(draw,'#rkpChk'); }));
     const re=v.querySelector('[data-reo]'); if(re) re.addEventListener('click',()=>{ CUR.pick=null; CUR.ord=null; keep(draw,'#rkpChk'); });
     v.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ CUR.tab=b.dataset.tab; keep(draw,'#rkpS2'); }));
+    v.querySelectorAll('[data-rkv]').forEach(b=>b.addEventListener('click',()=>{ const q=variantTask(id,+b.dataset.rkv); if(!q) return; CUR.q=q; CUR.tab=q.method==='any'?Object.keys(T.m)[0]:q.method;
+      draw(); const el=$('rkpT'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); const inp=v.querySelector('[data-ans]'); if(inp) try{ inp.focus({preventScroll:true}); }catch(_){} }));
     v.querySelectorAll('[data-new]').forEach(b=>b.addEventListener('click',()=>{ const s=getS(), st=tState(s,id), ms=Object.keys(T.m);
       const m=ms.find(x=>!st.ok.includes(x))||ms[Math.floor(Math.random()*ms.length)];
       const hard=st.n>=2&&Math.random()<.4; let q=null; for(let i=0;i<6&&!q;i++) q=make(id,newSeed(),hard,m); CUR.q=q; CUR.tab=q?q.method:CUR.tab;
@@ -27413,7 +27477,7 @@ function examView(v){
 
 /* строка для главной */
 function mini(){ try{ const P=progress(); return P.val?'пройдено '+P.val+' %':'9 тем · пробный РК2'; }catch(e){ return ''; } }
-return {TOPICS,GEN,MT,make,ticket,progress,hue,check,parseNum,hubView,topicView,examView,mini,cur:()=>CUR&&CUR.q?CUR.q.ans:null,_:{stars,pts,getS,setS,KEY}};
+return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,progress,hue,check,parseNum,hubView,topicView,examView,mini,cur:()=>CUR&&CUR.q?CUR.q.ans:null,_:{stars,pts,getS,setS,KEY}};
 })();
 
 /* ═════════ «Сдашь РК2?» — пробный билет-игра по начерту и инже (#/rk) ═════════
@@ -33144,6 +33208,7 @@ const LIVESHOW=(function(){
     TT.forEach((T,ti)=>{
       const top={ti,T}, m0=typeof L3D!=='undefined'&&Object.keys(T.m||{}).find(m=>L3D.has(T.id,m)), vz=md=>m0?{id:T.id,mk:m0,mode:md}:null;
       out.push(Object.assign({kind:'title',v3:vz('final')},top));
+      if(window.RKP&&RKP.RK2V&&RKP.RK2V[T.id]) out.push(Object.assign({kind:'rk'},top));
       { const E=m0&&L3D.example(T.id); if(E&&E.ask) out.push(Object.assign({kind:'ex',ex:E,ms:Object.keys(T.m||{}).filter(m=>L3D.has(T.id,m)),v3:vz('given')},top)); }
       out.push(Object.assign({kind:'idea',v3:vz('auto')},top));
       Object.keys(T.m||{}).forEach(mk=>{ const st=T.m[mk]||[]; const mname=(MT[mk]&&MT[mk].s)||mk; if(st.length) out.push(Object.assign({kind:'method',mk,mname,steps:st,n:st.length-1,v3:typeof L3D!=='undefined'&&L3D.has(T.id,mk)?{id:T.id,mk,mode:'sync'}:vz('final')},top));
@@ -33187,6 +33252,7 @@ const LIVESHOW=(function(){
       <ol class="ls-d3l">${st.map((x,j)=>`<li class="${j<k?'on':''}${j===k?' now':''}" data-ls-d3i="${j}"><b>${j+1}</b><span><strong>${x.t}</strong><em>${x.d||''}</em></span></li>`).join('')}</ol></div></div>`; }
     if(sl.kind==='title') return `<div class="ls-c ls-title"><span class="ls-big">${sl.ti+1}</span><h1>${esc(T.t)}</h1><p class="ls-lead">${esc(T.sub)}</p>
       <div class="ls-asks"><b>Как звучит задача:</b>${(T.asks||[]).map(a=>`<p>«${esc(a)}»</p>`).join('')}</div></div>`;
+    if(sl.kind==='rk'){ let h=''; try{ h=RKP.rkHTML(T.id,{nobtn:1}); }catch(e){} return `<div class="ls-c ls-rk">${head}${h}</div>`; }
     if(sl.kind==='ex'){ const ms=sl.ms.map(m=>MT3[m]||m); return `<div class="ls-c">${head}<h2>Задача как на РК</h2>
       <div class="ls-tkc"><span class="ls-tkk">Пример · тип ${sl.ti+1} · числа свои, не из билета</span><p class="ls-tkq">${esc(sl.ex.ask)}</p>
        <p class="ls-tkm2">Применить ${ms.length>1?'способ '+ms[0]+' — и вторым способом: '+ms.slice(1).join(', '):'способ '+ms[0]}.</p></div>
