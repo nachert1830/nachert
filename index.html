@@ -33382,25 +33382,19 @@ const LIVESHOW=(function(){
   function build(){
     const TT=(window.RKP&&RKP.TOPICS)||[], MT=(window.RKP&&RKP.MT)||{}, out=[];
     out.push({kind:'intro'});
+    /* коротко: по каждой теме — задача как на РК, её решение по шагам (эпюр + 3D) каждым способом, где ошибаются */
     TT.forEach((T,ti)=>{
       const top={ti,T}, m0=typeof L3D!=='undefined'&&Object.keys(T.m||{}).find(m=>L3D.has(T.id,m)), vz=md=>m0?{id:T.id,mk:m0,mode:md}:null;
-      out.push(Object.assign({kind:'title',v3:vz('final')},top));
-      if(window.RKP&&RKP.RK2V&&RKP.RK2V[T.id]) out.push(Object.assign({kind:'rk'},top));
-      { const E=m0&&L3D.example(T.id); if(E&&E.ask) out.push(Object.assign({kind:'ex',ex:E,ms:Object.keys(T.m||{}).filter(m=>L3D.has(T.id,m)),v3:vz('given')},top)); }
-      out.push(Object.assign({kind:'idea',v3:vz('auto')},top));
-      Object.keys(T.m||{}).forEach(mk=>{ const st=T.m[mk]||[]; const mname=(MT[mk]&&MT[mk].s)||mk; if(st.length) out.push(Object.assign({kind:'method',mk,mname,steps:st,n:st.length-1,v3:typeof L3D!=='undefined'&&L3D.has(T.id,mk)?{id:T.id,mk,mode:'sync'}:vz('final')},top));
-        d3(out,T.id,mk,mname,top); });
-      const n=exOf(T), task=n&&typeof WB3!=='undefined'&&WB3.get(n);
-      if(task) draws(out,task,top,'№ '+n+' из тетради','#/ng/tasks/'+n);
+      { const E=m0&&L3D.example(T.id); if(E&&E.ask) out.push(Object.assign({kind:'ex',ex:E,ms:Object.keys(T.m||{}).filter(m=>L3D.has(T.id,m)),v3:vz('given')},top)); else out.push(Object.assign({kind:'title'},top)); }
+      if(m0) d3(out,T.id,m0,(MT[m0]&&MT[m0].s)||m0,top);   /* одно решение на тему — основным способом */
       if((T.traps||[]).length) out.push(Object.assign({kind:'traps',v3:vz('final')},top));
-      if(T.chk) out.push(Object.assign({kind:'quiz',n:1,v3:vz('quiz')},top));
     });
     /* разбор билета РК2: условие → 3D → построение по шагам */
     const tks=[['R2-A','zam'],['R2-B','rotp'],['R2-V','rotl']].map(([k,mk])=>({k,mk,t:typeof taskByKey==='function'&&taskByKey(k)})).filter(x=>x.t);
     if(tks.length){ const top={ti:9,T:{t:'Разбор билета РК2',sub:'задачи А, Б, В'}};
       out.push(Object.assign({kind:'tktitle',tks},top));
       tks.forEach(x=>{ const dr=[], s3=[]; draws(dr,x.t,top,'Билет РК2 · задача '+x.t.idx,'#/ng/check/tickets/'+x.k,{id:x.k,mk:x.mk,mode:'sync2'}); d3(s3,x.k,x.mk,(MT[x.mk]&&MT[x.mk].s)||x.mk,top);
-        out.push(dr[0],...s3,...dr.slice(1)); }); }   /* условие, 3D, шаги построения */
+        out.push(dr[0],...(s3.length?s3:dr.slice(1))); }); }   /* условие и решение по шагам (эпюр + 3D) */
     out.push({kind:'end'});
     return out; }
   /* 3D-слайд способа: шаги сцены L3D — подшаги слайда */
@@ -33432,8 +33426,8 @@ const LIVESHOW=(function(){
     if(sl.kind==='rk'){ let h=''; try{ h=RKP.rkHTML(T.id,{nobtn:1}); }catch(e){} return `<div class="ls-c ls-rk">${head}${h}</div>`; }
     if(sl.kind==='ex'){ const ms=sl.ms.map(m=>MT3[m]||m); return `<div class="ls-c">${head}<h2>Задача как на РК</h2>
       <div class="ls-tkc"><span class="ls-tkk">Задача · тип ${sl.ti+1}</span><p class="ls-tkq">${esc(sl.ex.ask)}</p>
-       <p class="ls-tkm2">Применить ${ms.length>1?'способ '+ms[0]+' — и вторым способом: '+ms.slice(1).join(', '):'способ '+ms[0]}.</p></div>
-      <div class="ls-exd" data-ls-exd></div></div>`; }
+       <p class="ls-tkm2">Применить способ ${ms[0]}.</p></div>
+      ${sl.v3?'':'<div class="ls-exd" data-ls-exd></div>'}</div>`; }
     if(sl.kind==='idea') return `<div class="ls-c">${head}<h2>Идея</h2><p class="ls-idea">${T.idea}</p></div>`;
     if(sl.kind==='method') return `<div class="ls-c">${head}<h2>Как решать: ${esc(sl.mname)}</h2>
       <ol class="ls-steps">${sl.steps.map((s,j)=>`<li class="${j<=k?'on':''}${j===k?' now':''}"><b>${j+1}</b><span>${s}</span></li>`).join('')}</ol></div>`;
@@ -33489,7 +33483,7 @@ const LIVESHOW=(function(){
     if(d>0){ if(S.k<max) S.k++; else if(S.i<S.slides.length-1){ S.i++; S.k=0; } }
     else { if(S.k>0) S.k--; else if(S.i>0){ S.i--; S.k=S.slides[S.i].n||0; } }
     paint(); }
-  function jump(ti){ const j=S.slides.findIndex(s=>(s.kind==='title'||s.kind==='tktitle')&&s.ti===ti); if(j>=0){ S.i=j; S.k=0; paint(); } }
+  function jump(ti){ const j=S.slides.findIndex(s=>s.ti===ti); if(j>=0){ S.i=j; S.k=0; paint(); } }
   /* перо поверх экрана */
   let cv=null, ctx=null, drawing=false, color='#e5232b';
   function sizePen(){ if(!cv) return; const r=devicePixelRatio||1; cv.width=innerWidth*r; cv.height=innerHeight*r; ctx=cv.getContext('2d'); ctx.scale(r,r); ctx.lineCap='round'; ctx.lineJoin='round'; }
