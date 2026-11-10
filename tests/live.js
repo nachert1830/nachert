@@ -1,23 +1,26 @@
-/* Режим эфира #/live/show (LIVESHOW): разбор пирамиды SABC.
-   1) ответы на слайдах пересчитываются независимо — по координатам вершин, без кода построения
-      (высота — расстояние до плоскости, двугранный угол — по нормалям, стороны, радиус описанной окружности, угол ребра);
-   2) каждая задача сама сверяет построенный чертёж с пространством (флаг ok: H′, H″ — основание перпендикуляра,
-      K ≡ H, M — равноудалена от A, B, C и лежит в плоскости, C̄ — на расстоянии натурального радиуса);
+/* Режим эфира #/live/show (LIVESHOW): «РК2 за 9 шагов» — 9 задач RK9 в формате А/Б/В; раздел «Способ вращения» (#/ng/rot).
+   1) ответы на слайдах пересчитываются независимо — по координатам из условия, без кода построения
+      (угол между прямыми, угол наклона плоскости, расстояния, двугранный угол);
+   2) каждая задача сама сверяет построенный чертёж с пространством (флаг ok: натуральная величина, точки после обратного перехода,
+      равные стороны построенных фигур, общий перпендикуляр);
    3) все шаги всех задач проходятся стрелкой без ошибок, у каждого шага задачи — чертёж и строчка «На чертеже»;
-   4) подписи на чертеже не налезают друг на друга и не выходят за край (экран 1600×900);
-   5) карточка эфира на главной: ближайший эфир и перенос (PROMO.next).
+   4) подписи на чертеже не налезают друг на друга и не обрезаны краем (экран 1600×900);
+   5) карточка эфира на главной: ближайший эфир и перенос (PROMO.next); 6) раздел «Вращение».
    Отдельно: node tests/live.js */
 'use strict';
-const P={A:[80,0,20],B:[0,30,30],C:[60,50,0],S:[40,35,50]};
 const sub=(a,b)=>a.map((v,i)=>v-b[i]), dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0), len=a=>Math.hypot(...a);
 const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], unit=a=>a.map(v=>v/len(a));
 const fm=v=>(Math.round(v*10)/10).toFixed(1).replace('.',',');
-function expected(){ const {A,B,C,S}=P, n=unit(crs(sub(B,A),sub(C,A))), H=Math.abs(dot(sub(S,A),n));
-  const e=unit(sub(B,A)), pr=X=>{ const w=sub(X,A); return unit(sub(w,e.map(v=>v*dot(w,e)))); };      /* перпендикуляры к AB в гранях */
-  const dih=Math.acos(dot(pr(C),pr(S)))*180/Math.PI;                                                   /* двугранный угол при AB */
-  const a=len(sub(B,C)), b=len(sub(C,A)), c=len(sub(A,B)), s=(a+b+c)/2, R=a*b*c/(4*Math.sqrt(s*(s-a)*(s-b)*(s-c)));
-  const phi=Math.asin(H/len(sub(S,A)))*180/Math.PI;
-  return {h:'H = |S₄H₄| = '+fm(H)+' мм',dih:'φ = '+fm(dih)+'°',nv:[fm(c),fm(a),fm(b),fm(R)],phi:fm(phi)+'°'}; }
+const deg=x=>x*180/Math.PI, angV=(u,v)=>deg(Math.acos(Math.max(-1,Math.min(1,dot(unit(u),unit(v))))));
+/* условия — те же числа, что в RK9 (index.html); ответы считаем по определению */
+function expected(){ const E={};
+  { const K=[54,44,2],L=[94,10,50],M=[14,12,46], a=angV(sub(L,K),sub(M,K)); E.ang='φ = '+fm(Math.min(a,180-a)<a?a:a)+'°'; }
+  { const A=[92,12,12],B=[52,48,46],C=[18,14,28], n=unit(crs(sub(B,A),sub(C,A))); E.incl='α = '+fm(deg(Math.acos(Math.abs(n[2]))))+'°'; }
+  { const A=[96,10,14],B=[40,42,44],C=[75,4,40],D=[15,40,14], n=crs(sub(B,A),sub(D,C)); E.dll='d = '+fm(Math.abs(dot(sub(C,A),n))/len(n))+' мм'; }
+  { const A=[92,40,12],B=[54,8,36],C=[16,30,18],S=[46,52,58], n=unit(crs(sub(B,A),sub(C,A))); E.dpp='d = '+fm(Math.abs(dot(sub(S,A),n)))+' мм'; }
+  { const A=[94,14,12],B=[30,36,40],C=[70,52,48],D=[48,4,52], e=unit(sub(B,A)), pr=X=>{ const w=sub(X,A); return sub(w,e.map(v=>v*dot(w,e))); }; E.dih='φ = '+fm(angV(pr(C),pr(D)))+'°'; }
+  { const A=[95,12,12],B=[55,52,48],C=[20,18,26]; E.nv=[fm(len(sub(A,B))),fm(len(sub(B,C))),fm(len(sub(C,A)))]; }
+  return E; }
 
 async function liveCheck(page,URL){
   const out=[], add=(name,rule,msg)=>out.push({name,rule,msg});
@@ -29,10 +32,9 @@ async function liveCheck(page,URL){
   tasks.forEach(t=>{ if(t.ok===false) add('эфир: задача '+t.id,'сверка с пространством','построенный чертёж не совпал с пространством');
     if(!t.v) add('эфир: задача '+t.id,'шаги','у шага нет заголовка, пояснения или строчки «На чертеже»'); });
   const ans=id=>(tasks.find(t=>t.id===id)||{}).ans||'';
-  if(!ans('h').includes(E.h)) add('эфир: высота','ответ','ждали «'+E.h+'», на слайде «'+ans('h')+'»');
-  if(!ans('dih').includes(E.dih)) add('эфир: угол граней','ответ','ждали «'+E.dih+'», на слайде «'+ans('dih')+'»');
-  E.nv.forEach(x=>{ if(!ans('nv').includes(x)) add('эфир: истинный вид','ответ','нет числа '+x+' в «'+ans('nv')+'»'); });
-  if(!ans('phi').endsWith(E.phi)) add('эфир: угол SA','ответ','ждали φ = '+E.phi+', на слайде «'+ans('phi')+'»');
+  if(tasks.length!==9) add('эфир','задачи','ждали 9 задач, есть '+tasks.length);
+  ['ang','incl','dll','dpp','dih'].forEach(id=>{ if(!ans(id).includes(E[id])) add('эфир: '+id,'ответ','ждали «'+E[id]+'», на слайде «'+ans(id)+'»'); });
+  E.nv.forEach(x=>{ if(!ans('nv').includes(x)) add('эфир: nv','ответ','нет числа '+x+' в «'+ans('nv')+'»'); });
   /* все слайды стрелкой: на каждом шаге задачи — чертёж, подписи не налезают и не выходят за край */
   const total=await page.evaluate(()=>{ const S=LIVESHOW._state(); return S.slides.reduce((n,s)=>n+(s.n||0)+1,0); });
   for(let i=0;i<total;i++){
