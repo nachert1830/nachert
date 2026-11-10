@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+<!-- Исходник картинки-приветствия бота (welcome.jpg): открыть в Chromium 1280×720 и сохранить снимок. Шрифты — из fonts/ сайта. -->
+@font-face{font-family:G;src:url(file:///home/user/nachert/fonts/geologica-cyrillic.woff2)}
+@font-face{font-family:G;src:url(file:///home/user/nachert/fonts/geologica-latin.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:T;src:url(file:///home/user/nachert/fonts/golos-text-cyrillic.woff2)}
+@font-face{font-family:T;src:url(file:///home/user/nachert/fonts/golos-text-latin.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:M;src:url(file:///home/user/nachert/fonts/ibm-plex-mono-cyrillic-500.woff2)}
+@font-face{font-family:M;src:url(file:///home/user/nachert/fonts/ibm-plex-mono-latin-500.woff2);unicode-range:U+0000-00FF}
+html,body{margin:0}
+.c{position:relative;width:1280px;height:720px;overflow:hidden;background:radial-gradient(70% 80% at 85% 30%,#dfe9ff 0%,rgba(223,233,255,0) 60%),#f6f8fd;font-family:T}
+.c::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(26,90,224,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(26,90,224,.07) 1px,transparent 1px);background-size:32px 32px;-webkit-mask-image:linear-gradient(100deg,transparent 30%,#000 75%)}
+.brand{position:absolute;left:80px;top:70px;display:flex;align-items:center;gap:20px;font:800 44px G;color:#0a2463}
+.brand svg{width:84px;height:84px;border-radius:20px;box-shadow:0 14px 30px -14px rgba(26,90,224,.7)}
+.pill{position:absolute;left:80px;top:205px;display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 18px;border-radius:22px;background:#e0252c;color:#fff;font:800 20px T;letter-spacing:.08em;text-transform:uppercase}
+.pill i{width:11px;height:11px;border-radius:50%;background:#fff}
+h1{position:absolute;left:76px;top:262px;margin:0;font:900 132px/.95 G;letter-spacing:-.04em;color:#0a2463}
+.sub{position:absolute;left:80px;top:540px;font:800 40px G;color:#d9222a;letter-spacing:-.01em}
+.when{position:absolute;left:80px;top:598px;font:600 28px T;color:#2c3f5f}
+.sheet{position:absolute;right:70px;top:70px;width:470px;height:560px;background:#fff;border-radius:28px;box-shadow:0 30px 60px -30px rgba(10,36,99,.45),0 0 0 1px #dbe4ef}
+.tri{position:absolute;left:0;right:0;bottom:0;height:16px;background:linear-gradient(90deg,#0a2463 0 40%,#fff 40% 60%,#d9222a 60% 100%)}
+</style></head><body><div class="c">
+<div class="brand"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1e6fd9"/><circle cx="12.5" cy="16" r="6.5" fill="#fff"/><circle cx="19.5" cy="16" r="6.5" fill="none" stroke="#e8392b" stroke-width="3"/></svg>Начерт</div>
+<div class="pill"><i></i>Эфир · бесплатно</div>
+<h1>Разбор<br>РК2</h1>
+<div class="sub">по шагам, вместе</div>
+<div class="when">Каждый вечер в 20:00 МСК · Телемост</div>
+<div class="sheet"><svg id="ep" viewBox="0 0 470 560" width="470" height="560"></svg></div>
+<div class="tri"></div>
+</div>
+<script>
+/* эпюр треугольника ABC: x — вдоль оси, z — высота (фронтальная проекция над осью), y — глубина (горизонтальная под осью) */
+const P={A:[80,70,150],B:[230,170,40],C:[380,40,95]}, X0=280, sc=1;
+const F=k=>[P[k][0],X0-P[k][2]], H=k=>[P[k][0],X0+P[k][1]];
+const s=document.getElementById('ep'); let h='';
+const L=(a,b,st)=>h+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" ${st}/>`;
+h+=`<text x="40" y="${X0-12}" font-family="M" font-size="22" font-style="italic" fill="#15161a">x</text>`;
+L([30,X0],[440,X0],'stroke="#15161a" stroke-width="2"');
+['A','B','C'].forEach(k=>L(F(k),H(k),'stroke="#9dbbe0" stroke-width="2" stroke-dasharray="8 7"'));
+const tri=(f,st)=>h+=`<polygon points="${['A','B','C'].map(k=>f(k).join(',')).join(' ')}" ${st}/>`;
+tri(F,'fill="rgba(26,90,224,.06)" stroke="#15161a" stroke-width="3" stroke-linejoin="round"');
+tri(H,'fill="rgba(26,90,224,.06)" stroke="#15161a" stroke-width="3" stroke-linejoin="round"');
+L(F('A'),F('C'),'stroke="#c9302c" stroke-width="5" stroke-linecap="round"'); L(H('A'),H('C'),'stroke="#c9302c" stroke-width="5" stroke-linecap="round"');
+['A','B','C'].forEach(k=>{ const f=F(k),g=H(k); h+=`<circle cx="${f[0]}" cy="${f[1]}" r="6" fill="#15161a"/><circle cx="${g[0]}" cy="${g[1]}" r="6" fill="#15161a"/>`;
+ const dx=k==='C'?14:-34; h+=`<text x="${f[0]+dx}" y="${f[1]-12}" font-family="M" font-size="26" font-style="italic" fill="#15161a">${k}″</text><text x="${g[0]+dx}" y="${g[1]+(k==='B'?-14:34)}" font-family="M" font-size="26" font-style="italic" fill="#15161a">${k}′</text>`; });
+s.innerHTML=h;
+</script></body></html>
