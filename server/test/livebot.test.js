@@ -27,7 +27,7 @@ test('путь ученика: запись → за 2 часа → за 15 ми
   assert.match(r.last(ADMIN).text,/^Добавил: вт 10\.11 в 20:00 — РК2: типы задач, 1 час\./);
 
   await r.msg(1,'/start site');
-  const st=r.last(1); assert.match(st.text,/^Бесплатный разбор РК2 в Телемосте\.\n\n📅 Сегодня в 20:00 МСК/); assert.match(st.text,/\/delete — удалить/);
+  const st=r.last(1); assert.match(st.text,/^Бесплатный разбор РК2 в VK Встречах\.\n\n📅 Сегодня в 20:00 МСК/); assert.match(st.text,/\/delete — удалить/);
   assert.equal(st.reply_markup.inline_keyboard[0][0].callback_data,'j:10112000');
   assert.doesNotMatch(st.text,/записал(ось|ись)\s*\d/i,'ученик не видит, сколько записалось');
   await r.tap(1,'j:10112000');
@@ -45,10 +45,10 @@ test('путь ученика: запись → за 2 часа → за 15 ми
   r.clock.t=Date.parse('2026-11-10T16:45:00Z'); await r.bot.tick();          /* 19:45, ссылки нет → тревога владельцу */
   assert.match(r.last(ADMIN).text,/ссылки нет/);
   assert.equal(r.to(1).length,n,'без ссылки ученику ничего');
-  await r.msg(ADMIN,'/link https://telemost.yandex.ru/j/123');
+  await r.msg(ADMIN,'/link https://vk.com/call/join/123');
   r.clock.t+=MIN; await r.bot.tick();
-  assert.equal(r.last(1).text,'Начинаем через 15 минут 👉 https://telemost.yandex.ru/j/123');
-  await r.tap(1,'l:10112000'); assert.match(r.last(1).text,/https:\/\/telemost\.yandex\.ru\/j\/123/,'ссылка по кнопке — если напоминание не дошло');
+  assert.equal(r.last(1).text,'Начинаем через 15 минут 👉 https://vk.com/call/join/123');
+  await r.tap(1,'l:10112000'); assert.match(r.last(1).text,/https:\/\/vk\.com\/call\/join\/123/,'ссылка по кнопке — если напоминание не дошло');
 
   await r.msg(ADMIN,'/list'); assert.match(r.last(ADMIN).reply_markup.inline_keyboard[0][0].text,/записалось 1/);
   await r.msg(1,'/list'); assert.doesNotMatch(r.last(1).text,/записалось/,'ученику /list недоступен');
@@ -112,7 +112,7 @@ test('меню владельца кнопками: добавить эфир (�
   /* ссылка кнопкой: выбрать эфир → прислать */
   await r.msg(ADMIN,'🔗 Ссылка'); assert.match(r.last(ADMIN).text,/Для какого эфира/);
   await r.tap(ADMIN,btn(/вт 10\.11/)); await r.msg(ADMIN,'не ссылка'); assert.match(r.last(ADMIN).text,/Нужна ссылка/);
-  await r.msg(ADMIN,'https://telemost.yandex.ru/j/555'); assert.match(r.last(ADMIN).text,/сохранена/); assert.equal(r.db().sessions[0].link,'https://telemost.yandex.ru/j/555');
+  await r.msg(ADMIN,'https://vk.com/call/join/555'); assert.match(r.last(ADMIN).text,/сохранена/); assert.equal(r.db().sessions[0].link,'https://vk.com/call/join/555');
   /* написать записанным: текст → подтверждение → отправка */
   await r.msg(ADMIN,'📣 Написать'); await r.tap(ADMIN,btn(/вт 10\.11/)); await r.msg(ADMIN,'Начинаем через 5 минут!');
   assert.match(r.last(ADMIN).text,/Отправить 1 записанным/); assert.ok(!r.to(8).some(x=>/через 5 минут/.test(x.body.text)),'до подтверждения не отправляет');
