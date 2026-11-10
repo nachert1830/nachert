@@ -28404,13 +28404,13 @@ const PROMO=(function(){
     return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">РК2<span>завтра?</span></h2>
-     <p class="pmn-s">Разберём типы задач сегодня в эфире. <b>Бесплатно</b>, можно спрашивать</p>
+     <p class="pmn-s">Бесплатный разбор в эфире</p>
      <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
      ${btn('rk2','Я приду →','Записаться на разбор РК2')}</section>`
     :`<section class="pmn dz" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill">Бесплатно</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">ДЗ 2–3<span>не идёт?</span></h2>
-     <p class="pmn-s">Разберём по шагам в эфире. <b>Бесплатно</b>, можно спрашивать</p>
+     <p class="pmn-s">Бесплатный разбор в эфире</p>
      <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
      ${btn('dz','Записаться →','Записаться на разбор ДЗ')}</section>`;
   }
@@ -28418,15 +28418,15 @@ const PROMO=(function(){
     const t=ev.target.closest&&ev.target.closest('[data-promo]'); if(!t) return;
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
-  /* полоса под шапкой на всех страницах, кроме главной (там карточка) и режима эфира:
+  /* полоса под шапкой на всех страницах, кроме главной (там карточка) и #/live (там своя кнопка и режим эфира):
      до начала — «Сегодня в 20:00 МСК — бесплатный эфир по РК2 · Записаться», во время — «Эфир идёт · Подключиться», потом пропадает */
   function paintBar(r){ const el=document.getElementById('liveBar'); if(!el) return;
     const m=new Date(Date.now()+3*36e5), day=m.toISOString().slice(0,10), [hh,mm]=PROMO_TIME.split(':').map(Number);
     const start=Date.UTC(m.getUTCFullYear(),m.getUTCMonth(),m.getUTCDate(),hh,mm)-3*36e5, now=Date.now();
-    const show=ready&&PROMO_DATES.includes(day)&&now<start+PROMO_MIN*6e4&&r&&r.s!=='home'&&!(r.s==='live'&&r.tab==='show');
+    const show=ready&&PROMO_DATES.includes(day)&&now<start+PROMO_MIN*6e4&&r&&r.s!=='home'&&r.s!=='live';   /* на главной — карточка, на #/live — своя кнопка */
     el.hidden=!show; if(!show){ el.innerHTML=''; return; }
     const live=now>=start;
-    el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${live?'<b>Эфир идёт</b> — разбираем типы задач РК2, бесплатно':`<b>Сегодня в ${PROMO_TIME} МСК</b> — бесплатный эфир по РК2: разбираем типы задач`}</span>
+    el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${live?'<b>Эфир идёт</b> — бесплатный разбор РК2':`<b>Сегодня в ${PROMO_TIME} МСК</b> — бесплатный эфир по РК2`}</span>
       <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${live?'Подключиться →':'Записаться →'}</a></div>`; }
   return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar};
 })();
@@ -32781,27 +32781,24 @@ function viewLive(v){
    <section class="lv-hero" aria-labelledby="lvH">
     <span class="pmn-pill">Бесплатно</span>
     <h1 id="lvH">Онлайн-разборы по&nbsp;начерталке</h1>
-    <p>Разбираем типы задач РК2 и ДЗ по шагам, вживую. Чертим вместе — можно спрашивать.</p>
+    <p>Разбираем задачи РК2 по шагам. Каждый вечер в 20:00 МСК, бесплатно.</p>
     <div class="lv-acts">
      ${PROMO.ready()?`<a class="pmn-b" href="${attr(PROMO.botUrl('live'))}" target="_blank" rel="noopener" data-lv="live-bot">Записаться в Telegram →</a>`:`<p class="lv-soon">Запись откроется совсем скоро.</p>`}
     </div>
    </section>
    <section class="lv-sec" aria-labelledby="lvHow"><h2 id="lvHow">Как это проходит</h2>
     <ol class="lv-steps">
-     ${step(1,'Записываешься','В Telegram бот покажет ближайшие эфиры — выбираешь кнопкой.')}
-     ${step(2,'Получаешь ссылку','Бот напомнит за 2 часа и пришлёт ссылку на Яндекс Телемост за 15 минут. Не пришла — кнопка «Ссылка на эфир» у бота.')}
-     ${step(3,'Чертишь вместе с нами','1 час. Камеру включать не нужно, вопросы — в чат или голосом. Без записи.')}
+     ${step(1,'Жмёшь «Записаться»','Откроется бот в Telegram.')}
+     ${step(2,'Получаешь ссылку','Бот пришлёт её за 15 минут до начала.')}
+     ${step(3,'Чертим вместе','1 час в Телемосте. Возьми листок и карандаш.')}
     </ol>
-    <p class="lv-need">Приготовь: листок, карандаш, линейку. Можно открыть Начерт на телефоне рядом.</p>
    </section>
-   ${T.length?`<section class="lv-sec" aria-labelledby="lvPlan"><h2 id="lvPlan">РК2 за 9 шагов — план эфира</h2>
-    <p class="lv-sub">Любая задача билета РК2 — один из девяти типов. На эфире проходим их по порядку: идея в 3D → построение по шагам → где ошибаются.</p>
+   ${T.length?`<section class="lv-sec" aria-labelledby="lvPlan"><h2 id="lvPlan">План: РК2 за 9 шагов</h2>
     <ol class="lv-plan">${T.map((t,i)=>`<li><a href="${H('ng','rk2','p',t.id)}"><b>${i+1}</b><span><strong>${t.t}</strong><small>${t.sub}</small></span></a></li>`).join('')}</ol>
    </section>`:''}
-   <section class="lv-sec lv-data" aria-labelledby="lvData"><h2 id="lvData">Какие данные и зачем</h2>
-    <p><b>Бот в Telegram</b> хранит твоё имя в Telegram и номер чата — только чтобы прислать напоминание и ссылку на эфир; третьим лицам не передаём.</p>
-    <p>Данные удаляются через 30 дней после эфира. Удалить сразу — команда /delete у бота. От эфиров остаются только числа: сколько записалось и сколько ответили «помогло».</p>
-    <p class="lv-sub">Онлайн-разборы — отдельная личная деятельность автора и к сайту не относятся. Сайт бесплатный и остаётся бесплатным.</p>
+   <section class="lv-sec lv-data" aria-labelledby="lvData"><h2 id="lvData">Данные</h2>
+    <p>Бот хранит только имя в Telegram и номер чата — чтобы прислать ссылку. Третьим лицам не передаём, через 30 дней удаляем; /delete у бота — сразу.</p>
+    <p class="lv-sub">Разборы — личная деятельность автора, к сайту не относятся. Сайт бесплатный.</p>
    </section>
   </div>`;
   v.querySelectorAll('[data-lv]').forEach(a=>a.addEventListener('click',()=>{ try{ window.TRACK&&TRACK('promo',{mode:a.dataset.lv}); }catch(e){} }));
