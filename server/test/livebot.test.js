@@ -122,7 +122,7 @@ test('меню владельца кнопками: добавить эфир (�
   await r.tap(ADMIN,btn(/Отменить эфир/)); assert.equal(r.db().sessions.length,2,'без подтверждения не отменяет');
   await r.tap(ADMIN,btn(/Да, отменить/)); assert.equal(r.db().sessions.length,1);
   /* «Как видят ученики» и отмена ввода */
-  await r.msg(ADMIN,'👀 Как видят ученики'); assert.match(r.last(ADMIN).text,/Выбери эфир/);
+  await r.msg(ADMIN,'👀 Как видят ученики'); assert.match(r.last(ADMIN).text,/Ближайший эфир/);
   await r.msg(ADMIN,'🔗 Ссылка на эфир'); assert.match(r.last(ADMIN).text,/Пришли ссылку/,'один эфир — сразу просит ссылку'); await r.tap(ADMIN,'a:c');
   await r.msg(ADMIN,'просто текст'); assert.match(r.last(ADMIN).text,/Выбери кнопку/);
 });
@@ -143,7 +143,7 @@ test('расписание из файла: эфир появляется сам
   await bot.tick();
   assert.equal(db.sessions.length,1,'только будущий и корректный'); assert.equal(db.sessions[0].id,'10112000'); assert.equal(db.sessions[0].min,60);
   await bot.onUpdate({message:{message_id:1,chat:{id:3,type:'private'},from:{id:3,first_name:'Ваня'},text:'/start'}});
-  assert.match(last(3).reply_markup.inline_keyboard[0][0].text,/вт 10\.11 · 20:00 · РК2: разбор типов задач/);
+  assert.match(last(3).reply_markup.inline_keyboard[0][0].text,/^✅ Я приду — сегодня в 20:00$/); assert.match(last(3).text,/Ближайший эфир — сегодня в 20:00 по МСК: РК2: разбор типов задач/);
   await bot.onUpdate({callback_query:{id:'q',data:'j:10112000',from:{id:3},message:{chat:{id:3}}}});
   assert.match(last(3).text,/1 час онлайн в Телемосте/);
   await bot.tick(); assert.equal(db.sessions.length,1,'второй раз не дублирует');
@@ -168,4 +168,30 @@ test('счётчик: «Сколько придёт», уведомление в
   await r.tap(12,'c:10112000'); assert.match(r.last(ADMIN).text,/➖ Имя12 отменил запись.*\nПридут: 1/);
   await r.msg(ADMIN,'/count'); assert.match(r.last(ADMIN).text,/РК2 — 1 · ⚠️ нет ссылки/);
   await r.msg(ADMIN,'/start'); assert.equal(r.last(ADMIN).reply_markup.keyboard[0][0].text,'👥 Сколько придёт');
+});
+
+test('«✅ Я приду» — одна кнопка на ближайший эфир; после записи — «Ты записан»; завтра/день недели',async()=>{
+  const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2'); await r.msg(ADMIN,'/add 11.11 20:00 РК2'); await r.msg(ADMIN,'/add 13.11 20:00 ДЗ');
+  await r.msg(21,'/start'); const k=r.last(21).reply_markup.inline_keyboard;
+  assert.deepEqual(k[0][0],{text:'✅ Я приду — сегодня в 20:00',callback_data:'j:10112000'});
+  assert.equal(k.length,3); assert.match(k[1][0].text,/ср 11\.11 · 20:00/);
+  await r.tap(21,k[0][0].callback_data); assert.match(r.last(21).text,/^Записал!/);
+  await r.msg(21,'/start'); assert.equal(r.last(21).reply_markup.inline_keyboard[0][0].text,'✓ Ты записан — сегодня в 20:00 · ссылка');
+  assert.match(r.last(21).text,/Ты уже записан/);
+  r.clock.t=Date.parse('2026-11-10T19:00:00Z'); await r.msg(22,'/start');                              /* эфир прошёл — ближайший завтра */
+  assert.equal(r.last(22).reply_markup.inline_keyboard[0][0].text,'✅ Я приду — завтра в 20:00');
+});
+
+test('картинка-приветствие: первый раз загрузка файла, дальше по file_id; не отправилась — текстом',async()=>{
+  const clock={t:Date.parse('2026-11-10T09:00:00Z')}, out=[]; let db=null, fail=false;
+  const api=async(method,body)=>{ out.push({method,body}); if(method==='sendPhoto') return fail?{ok:false,description:'плохая картинка'}:{ok:true,result:{photo:[{file_id:'small'},{file_id:'BIG'}]}}; return {ok:true}; };
+  const bot=createLiveBot({api,load:()=>db&&JSON.parse(JSON.stringify(db)),save:s=>{ db=JSON.parse(JSON.stringify(s)); },now:()=>clock.t,admins:[ADMIN],welcome:true});
+  const start=c=>bot.onUpdate({message:{message_id:1,chat:{id:c,type:'private'},from:{id:c,first_name:'А'},text:'/start'}});
+  await bot.onUpdate({message:{message_id:1,chat:{id:ADMIN,type:'private'},from:{id:ADMIN},text:'/add 10.11 20:00 РК2'}});
+  await start(31); let ph=out.filter(x=>x.method==='sendPhoto');
+  assert.deepEqual(ph[0].body.photo,{upload:true}); assert.match(ph[0].body.caption,/Я приду/); assert.equal(ph[0].body.reply_markup.inline_keyboard[0][0].callback_data,'j:10112000');
+  assert.equal(db.wid,'BIG','запомнили самую большую');
+  await start(32); ph=out.filter(x=>x.method==='sendPhoto'); assert.equal(ph[1].body.photo,'BIG','второй раз — без загрузки');
+  fail=true; await start(33); const m=out.filter(x=>x.method==='sendMessage'&&x.body.chat_id===33);
+  assert.equal(m.length,1,'не отправилась картинка — приветствие текстом'); assert.equal(db.wid,undefined,'испорченный file_id забыт');
 });

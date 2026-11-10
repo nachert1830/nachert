@@ -35,7 +35,7 @@ const fmtDur=s=>{ const m=s&&s.min||90; return m===60?'1 час':m===90?'1,5 ч�
 function emptyState(){ return {v:1,seq:0,sessions:[],users:{},offset:0}; }
 
 function createLiveBot(o){
-  const {api,load,save,now=()=>Date.now(),admins=[],site='https://nachert1830.ru',log=()=>{},schedule=()=>[]}=o;
+  const {api,load,save,now=()=>Date.now(),admins=[],site='https://nachert1830.ru',log=()=>{},schedule=()=>[],welcome=false}=o;   /* welcome — есть картинка-приветствие (run.js загрузит её сам) */
   const isAdmin=id=>admins.map(String).includes(String(id));
   const S=()=>load()||emptyState();
 
@@ -49,10 +49,23 @@ function createLiveBot(o){
 
   const NOTICE='Записываясь, ты разрешаешь боту хранить твоё имя в Telegram и номер чата — только чтобы прислать напоминание и ссылку. '+
     'Данные удаляются через 30 дней после эфира, /delete — сразу. Подробнее: '+site+'/#/live';
+  /* «сегодня в 20:00» / «завтра в 20:00» / «чт 12.11 в 20:00» — по Москве */
+  const when=(s,t)=>{ const d=Math.round((Date.UTC(msk(s.start).getUTCFullYear(),msk(s.start).getUTCMonth(),msk(s.start).getUTCDate())-Date.UTC(msk(t).getUTCFullYear(),msk(t).getUTCMonth(),msk(t).getUTCDate()))/DAY);
+    return (d===0?'сегодня в ':d===1?'завтра в ':fmtDay(s.start)+' в ')+fmtTime(s.start); };
   function startText(st,t,chat){ const U=upcoming(st,t).slice(0,6);
     if(!U.length) return {text:'Привет! Здесь запись на бесплатные онлайн-разборы по начерталке.\n\nБлижайших эфиров пока нет — загляни чуть позже.',kb:null};
-    return {text:'Привет! Здесь запись на бесплатные онлайн-разборы по начерталке: разбираем типы задач по шагам, можно спрашивать. Онлайн в Телемосте.\n\nВыбери эфир:\n\n'+NOTICE,
-      kb:U.map(s=>[{text:(subOf(s,chat)?'✓ ':'')+label(s),callback_data:'j:'+s.id}])}; }
+    const f=U[0], live=f.start<=t, me=!!subOf(f,chat);
+    const top=me?{text:'✓ Ты записан — '+when(f,t)+' · ссылка',callback_data:'l:'+f.id}:{text:'✅ Я приду — '+when(f,t),callback_data:'j:'+f.id};
+    return {text:'Привет! Здесь запись на бесплатные онлайн-разборы по начерталке: разбираем типы задач по шагам, можно спрашивать. Онлайн в Телемосте.\n\n'+
+      (live?'Эфир уже идёт: ':'Ближайший эфир — ')+when(f,t)+' по МСК: '+f.topic+'.\n'+(me?'Ты уже записан — ссылку пришлю за 15 минут.':'Придёшь? Жми «✅ Я приду» — за 15 минут до начала пришлю ссылку.')+
+      (U.length>1?'\n\nДругие эфиры — ниже.':'')+'\n\n'+NOTICE,
+      kb:[[top]].concat(U.slice(1).map(s=>[{text:(subOf(s,chat)?'✓ ':'')+label(s),callback_data:'j:'+s.id}]))}; }
+  /* приветствие: с картинкой, если она есть (file_id запоминаем после первой загрузки); не вышло — просто текстом */
+  async function sendStart(st,t,chat){ const r=startText(st,t,chat);
+    if(welcome){ const res=await api('sendPhoto',Object.assign({chat_id:chat,photo:st.wid||{upload:true},caption:r.text},r.kb?{reply_markup:{inline_keyboard:r.kb}}:{}));
+      if(res&&res.ok){ const ph=res.result&&res.result.photo; if(!st.wid&&ph&&ph.length){ st.wid=ph[ph.length-1].file_id; save(st); } return; }
+      if(st.wid){ delete st.wid; save(st); } log('картинка-приветствие не отправилась',res&&res.description||''); }
+    await send(chat,r.text,r.kb); }
   const joinedKb=s=>[[{text:'Ссылка на эфир',callback_data:'l:'+s.id}],[{text:'Отменить запись',callback_data:'c:'+s.id}]];
 
   /* ── обновление от Telegram ── */
@@ -95,7 +108,7 @@ function createLiveBot(o){
     if(isAdmin(from.id)&&await adminText(st,t,chat,cmd,rest,text)!==false) return;
     if(cmd==='/start'){ const src=clean(rest[0],16).replace(/[^\w-]/g,'');
       const me=st.users[String(chat)]=Object.assign(st.users[String(chat)]||{},{seen:t}); if(src&&!me.src) me.src=src; save(st);
-      const r=startText(st,t,chat); await send(chat,r.text,r.kb); return; }
+      return sendStart(st,t,chat); }
     if(cmd==='/my'){ const mine=upcoming(st,t).filter(s=>subOf(s,chat));
       await send(chat,mine.length?'Твои записи:\n'+mine.map(s=>'• '+label(s)).join('\n'):'Записей нет. /start — выбрать эфир.',mine.length?mine.map(s=>[{text:'Ссылка: '+label(s),callback_data:'l:'+s.id}]):null); return; }
     if(cmd==='/delete'){ let n=0; st.sessions.forEach(s=>{ if(subOf(s,chat)){ delete s.subs[String(chat)]; s.n=Math.max(0,(s.n||1)-1); n++; } }); delete st.users[String(chat)]; save(st);
@@ -191,7 +204,7 @@ function createLiveBot(o){
     if(text===B.add) return dayPicker(chat,t);
     if(text===B.link) return chooseOr(st,t,chat,'l','Для какого эфира ссылка?');
     if(text===B.say) return chooseOr(st,t,chat,'m','Кому написать?');
-    if(text===B.student){ const r=startText(st,t,chat); await send(chat,'Так ученики видят /start:'); await send(chat,r.text,r.kb); return; }
+    if(text===B.student){ await send(chat,'Так ученики видят /start:'); return sendStart(st,t,chat); }
     const find=id=>id?st.sessions.find(s=>s.id===id):upcoming(st,t)[0];
     if(cmd==='/add'){ if(!rest.length) return dayPicker(chat,t);
       const when=parseWhen(rest[0],rest[1],t), topic=clean(rest.slice(2).join(' '),60);
