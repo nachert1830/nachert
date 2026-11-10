@@ -27341,8 +27341,8 @@ function rkHTML(id,o){ o=o||{}; const C=RK2V[id]; if(!C) return '';
 function solHTML(id){ if(typeof L3D==='undefined') return ''; const ms=Object.keys(TOP(id).m).filter(m=>L3D.has(id,m)); if(!ms.length) return '';
   if(!CUR.sol||!ms.includes(CUR.sol.mk)) CUR.sol={mk:ms[0],i:0,d3:false}; const S_=CUR.sol, sc=L3D.scene(id,S_.mk), n=sc.steps.length; S_.i=Math.max(0,Math.min(n-1,S_.i)); const st=sc.steps[S_.i], E=L3D.example(id)||{};
   return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с решением по шагам</h2>
-   <div class="rkp-solq"><b>Задача.</b> ${E.ask||''} ${ms.length>1?'Решим двумя способами — выбери вкладку.':'Способ: '+MT[ms[0]].s+'.'}</div>
-   ${ms.length>1?`<div class="seg rkp-tabs" role="tablist">${ms.map(m=>`<button type="button" role="tab" aria-selected="${m===S_.mk}" class="${m===S_.mk?'on':''}" data-solm="${m}">${MT[m].s}</button>`).join('')}</div>`:''}
+   ${ms.length>1?`<div class="seg rkp-tabs" role="tablist">${ms.map((m,k)=>`<button type="button" role="tab" aria-selected="${m===S_.mk}" class="${m===S_.mk?'on':''}" data-solm="${m}">Задача ${k+1}: ${MT[m].s}</button>`).join('')}</div>`:''}
+   <div class="rkp-solq"><b>Задача.</b> ${sc.F.ask||E.ask||''} Способ: ${MT[S_.mk].s}.</div>
    <div class="rkp-solbar"><span class="rkp-soln">Шаг ${S_.i+1} из ${n}</span><span class="rkp-sold">${Array.from({length:n},(_,j)=>`<i class="${j<S_.i?'d':j===S_.i?'n':''}"></i>`).join('')}</span></div>
    <div class="rkp-solv${S_.d3?' two':''}"><div class="rkp-solep sheet" id="rkpSolEp" role="img" aria-label="Эпюр: ${attr(st.t)}"></div>${S_.d3?'<div class="rkp-sol3" id="rkpSol3"></div>':''}</div>
    <div class="rkp-solt"><b>${st.t}</b><p>${st.e||st.d||''}</p></div>
@@ -33130,7 +33130,7 @@ function epRotL(st,c){ const {F,H1,H2,M,O,R0,back}=c, M1=M(1), names=F.show||Obj
   st.forEach((sp,i)=>{ sp.e=E[i]; sp.ep=()=>{ const it=epInit(); eFig(it,F,F.pts); if(i>=1) hL(it);
     if(i===2||i===3){ it.push(L.pt(Op,'O′','sw','aux')); it.push(L.seg(Rp,R0p,'aux','Δz','e'),L.seg(Op,R0p,'aux','R','e')); try{ it.push(L.sq(Rp,Op,R0p,'aux')); }catch(e){} tr(it,R0,M1(R0)); }
     if(i===3){ arc2(it,Op,R0p,Rb,'aux'); names.filter(n=>!fx.includes(n)&&n!==F.ref).forEach(n=>tr(it,F.pts[n],M1(F.pts[n]))); }
-    if(i===3||i===4) eFig(it,F,mapPts(F,M1),{fs:[[eH,'′']],k:i===4?'main':'aux',bar:1,fixed:fx});
+    if(i===3||i===4) eFig(it,F,mapPts(F,M1),{fs:[[eH,'′']],k:i===4?(F.con?'main':'res'):'aux',bar:1,fixed:fx});
     if(i===4) eCon(it,F.con,M1,mapPts(F,M1),{fs:[[eH,'′']],lab:1,bar:1,fixed:fx});
     if(i===5&&F.con){ eFig(it,F,mapPts(F,M1),{fs:[[eH,'′']],k:'aux',bar:1,fixed:fx,nolab:1}); Object.values(F.con.pts||{}).forEach(p=>tr(it,p,M1(p))); eCon(it,F.con,M1,mapPts(F,M1),{fs:[[eH,'′']],bar:1,ang:false,fixed:fx,nocirc:1}); eCon(it,F.con,p=>p,F.pts,{fs:[[eH,'′']],ang:false,nocirc:1}); }
     if(i===6&&F.con) eCon(it,F.con,p=>p,F.pts,{fs:[[eF,'″'],[eH,'′']],ang:false,conn:1,nocirc:1});
@@ -33298,17 +33298,36 @@ function epure(F){ const it=[L.axis()], Fp=p=>L.F(p), Hp=p=>L.H(p), sg=F.segs||[
   return it; }
 const FIG={ang:F_ang,incl:F_incl,nv:F_nv,bis:F_bis,dll:F_dll,dpp:F_dpp,dih:F_dih,tri:F_tri,sq:F_sq};
 const example=id=>{ const f=FIG[id]; if(!f) return null; const F=f(); let items=null; try{ items=epure(F); }catch(e){} return {ask:F.ask,given:F.given,items}; };
+/* вторые задачи тем — для второго способа: другие данные, чтобы не было одной задачи дважды */
+function F_ang2(){ const K=[58,12,50], A1=[80,50,22], B2=[24,20,22], phi=angOf(K,A1,B2);
+  return {ask:'Определить натуральную величину угла между пересекающимися прямыми c и d.',gv:['K'],title:'Угол между прямыми c и d',pts:{K,'1':A1,'2':B2},segs:[['K','1',.1,.3,'c'],['K','2',.1,.3,'d']],tri:['K','1','2'],lvl:['1','2'],ref:'K',
+    given:'Прямые c и d пересекаются в точке K, обе общего положения.',con:{pts:{},ang:[['K','1','2',16,'φ = '+fmt(phi)+'°']]},resTxt:'Плоскость угла ∥ π₁ — угол без искажения: φ = '+fmt(phi)+'°.'}; }
+function F_incl2(){ const A=[28,50,12], B=[70,8,30], C=[92,40,55], I=lerp(A,C,(B[2]-A[2])/(C[2]-A[2])), n=unit(crs(sub(B,A),sub(C,A))), al=Math.acos(Math.abs(n[2]))*DEG;
+  return {ask:'Определить угол наклона плоскости, заданной треугольником ABC, к горизонтальной плоскости проекций.',gv:['A','B','C'],title:'Угол наклона плоскости к π₁',pts:{A,B,C,'1':I},show:['A','B','C','1'],segs:[['A','B',0],['B','C',0],['C','A',0]],polys:[['A','B','C']],tri:['A','B','C'],lvl:['B','1'],i:'B',alpha:al,
+    given:'Треугольник ABC общего положения.'}; }
+function F_nv2(){ const B=[20,30,30], C=[55,58,5], D=[92,10,58], I=lerp(C,D,(B[2]-C[2])/(D[2]-C[2])), an=angOf(B,C,D);
+  return {ask:'Определить натуральную величину треугольника BCD.',gv:['B','C','D'],title:'Натуральная величина треугольника BCD',pts:{B,C,D,'1':I},show:['B','C','D','1'],segs:[['B','C',0],['C','D',0],['D','B',0]],polys:[['B','C','D']],tri:['B','C','D'],lvl:['B','1'],ref:'C',
+    given:'Треугольник BCD общего положения.',con:null,resTxt:'Плоскость треугольника ∥ π₁: на π₁ — натуральная величина BCD (угол при B = '+fmt(an)+'°).'}; }
+function F_dll2(){ const P=[20,10,10], d=[50,20,35], w=[10,32,-6], P2=add(P,d), Q=add(P,w), Q2=add(Q,d), z0=25, t1=(z0-P[2])/d[2], t2=(z0-Q[2])/d[2], I1=lerp(P,P2,t1), I2=lerp(Q,Q2,t2), Fq=foot(I1,Q,Q2);
+  return {ask:'Определить расстояние между параллельными прямыми c и d.',gv:[],title:'Расстояние между параллельными прямыми',pts:{A:P,B:P2,C:Q,D:Q2,'1':I1,'2':I2},show:['A','B','C','D','1','2'],segs:[['A','B',.1,.1,'c'],['C','D',.1,.1,'d']],lvl:['1','2'],ref:'A',tri:['A','B','C'],
+    given:'Прямые c ∥ d общего положения.',con:{pts:{K:Fq},segs:[['1','K','δ']],sq:[['K','1','D']]},resTxt:'Плоскость прямых ∥ π₁: перпендикуляр между ними — расстояние δ = '+fmt(dist(I1,Fq))+' мм.'}; }
+function F_tri2(){ const A=[40,48,15], P1=[20,8,48], P2=[95,20,5], T=triOnLine(A,P1,P2,'tri');
+  return {ask:'Построить проекции равностороннего треугольника ABC с вершиной в точке A и стороной BC на прямой a.',gv:['A'],gs:[0],title:'Равносторонний треугольник со стороной на прямой a',pts:{A,'1':T.I,'2':P1,P:P2},show:['A','1','2'],segs:[['2','P',.12,.12,'a'],['A','1',0,0]],lvl:['A','1'],ref:'2',back:1,tri:['A','1','2'],
+    given:'Точка A и прямая a общего положения.',con:{pts:T.pts,polys:T.polys},resTxt:'Плоскость (A, a) — в натуральную величину. Высота из A на a — d = '+fmt(T.d)+' мм; сторона = 2d/√3 = '+fmt(T.side)+' мм.'}; }
+function F_sq2(){ const A=[80,12,40], P1=[90,40,10], P2=[15,55,52], T=triOnLine(A,P1,P2,'sq');
+  return {ask:'Построить проекции квадрата ABCD с вершиной A и стороной BC на прямой a.',gv:['A'],gs:[0],title:'Квадрат со стороной на прямой a',pts:{A,'1':T.I,'2':P1,P:P2},show:['A','1','2'],segs:[['2','P',.12,.12,'a'],['A','1',0,0]],lvl:['A','1'],ref:'2',back:1,tri:['A','1','2'],
+    given:'Точка A и прямая a.',con:{pts:T.pts,polys:T.polys},resTxt:'Плоскость (A, a) — в натуральную величину. AB ⟂ a: сторона = расстояние от A до a = '+fmt(T.d)+' мм.'}; }
 /* тема → сцены по способам (ключи способов — как в RKP.TOPICS[i].m) */
 const SCN={
- ang:{zam:()=>zamPlane(F_ang()),rotl:()=>rotLevel(F_ang())},
- incl:{zam:()=>zamPlane(F_incl()),rotp:()=>rotProj(F_incl())},
- nv:{zam:()=>zamPlane(F_nv()),rotl:()=>rotLevel(F_nv())},
+ ang:{zam:()=>zamPlane(F_ang()),rotl:()=>rotLevel(F_ang2())},
+ incl:{zam:()=>zamPlane(F_incl()),rotp:()=>rotProj(F_incl2())},
+ nv:{zam:()=>zamPlane(F_nv()),rotl:()=>rotLevel(F_nv2())},
  bis:{rotl:()=>rotLevel(F_bis())},
- dll:{zam:()=>zamLine(F_dll()),rotl:()=>rotLevel(F_dllR())},
+ dll:{zam:()=>zamLine(F_dll()),rotl:()=>rotLevel(F_dll2())},
  dpp:{zam:()=>zamPlane(F_dpp())},
  dih:{zam:()=>zamLine(F_dih())},
- tri:{rotl:()=>rotLevel(F_tri()),zam:()=>zamPlane(F_tri())},
- sq:{rotl:()=>rotLevel(F_sq()),zam:()=>zamPlane(F_sq())},
+ tri:{rotl:()=>rotLevel(F_tri()),zam:()=>zamPlane(F_tri2())},
+ sq:{rotl:()=>rotLevel(F_sq()),zam:()=>zamPlane(F_sq2())},
  'R2-A':{zam:()=>zamPlane(F_tkA())},'R2-B':{rotp:()=>rotProj(F_tkB())},'R2-V':{rotl:()=>rotLevel(F_tkV())}};
 const CACHE={};
 function scene(id,mk){ const key=id+'/'+mk; if(CACHE[key]) return CACHE[key]; const f=SCN[id]&&SCN[id][mk]; if(!f) return null; return CACHE[key]=f(); }
@@ -33386,7 +33405,8 @@ const LIVESHOW=(function(){
     /* коротко: по каждой теме — задача как на РК, её решение по шагам (эпюр + 3D) каждым способом, где ошибаются */
     TT.forEach((T,ti)=>{
       const top={ti,T}, m0=typeof L3D!=='undefined'&&Object.keys(T.m||{}).find(m=>L3D.has(T.id,m)), vz=md=>m0?{id:T.id,mk:m0,mode:md}:null;
-      { const E=m0&&L3D.example(T.id); if(m0) d3(out,T.id,m0,(MT[m0]&&MT[m0].s)||m0,Object.assign({ask:E&&E.ask},top)); else out.push(Object.assign({kind:'title'},top)); }   /* одна задача на тему: условие + решение по шагам */
+      { const ms=Object.keys(T.m||{}).filter(m=>typeof L3D!=='undefined'&&L3D.has(T.id,m)); if(!ms.length) out.push(Object.assign({kind:'title'},top));
+        ms.forEach((mk,k)=>{ let a=''; try{ a=L3D.scene(T.id,mk).F.ask; }catch(e){} d3(out,T.id,mk,(MT[mk]&&MT[mk].s)||mk,Object.assign({ask:a,qn:ms.length>1?k+1:0},top)); }); }   /* на каждый способ — своя задача: условие + решение по шагам */
       if((T.traps||[]).length) out.push(Object.assign({kind:'traps',v3:vz('final')},top));
     });
     /* разбор билета РК2: условие → 3D → построение по шагам */
@@ -33419,7 +33439,7 @@ const LIVESHOW=(function(){
     if(sl.kind==='tktitle') return `<div class="ls-c ls-title"><span class="ls-big">РК2</span><h1>Разбор билета</h1><p class="ls-lead">Три задачи — три способа преобразования. Каждую: условие → смотрим в 3D → строим на эпюре по шагам.</p>
       <ol class="ls-map ls-tkm">${sl.tks.map(x=>`<li><b>${esc(x.t.idx)}</b><span>${esc(String(x.t.q||'').replace(/<[^>]+>/g,''))}<small>${esc((MT3[x.mk]||x.mk))}</small></span></li>`).join('')}</ol></div>`;
     if(sl.kind==='d3'){ const st=sl.sc.steps; return `<div class="ls-c ls-d3"><div class="ls-ep" data-ls-ep></div><div class="ls-d3r"><div class="ls-d3s" data-ls-d3></div><div class="ls-dt">${head}
-      <h2>${sl.ti<9?'Задача как на РК':esc(sl.sc.title.split(':')[0])}</h2>${sl.ask?`<p class="ls-dq">${esc(sl.ask)} Способ: ${esc(sl.mname)}.</p>`:`<p class="ls-task">${esc(sl.sc.title)}</p>`}
+      <h2>${sl.ti<9?'Задача как на РК'+(sl.qn?' · '+sl.qn:''):esc(sl.sc.title.split(':')[0])}</h2>${sl.ask?`<p class="ls-dq">${esc(sl.ask)} Способ: ${esc(sl.mname)}.</p>`:`<p class="ls-task">${esc(sl.sc.title)}</p>`}
       <ol class="ls-d3l">${st.map((x,j)=>`<li class="${j<k?'on':''}${j===k?' now':''}" data-ls-d3i="${j}"><b>${j+1}</b><span><strong>${x.t}</strong><em>${x.e||x.d||''}</em></span></li>`).join('')}</ol></div></div></div>`; }
     if(sl.kind==='title') return `<div class="ls-c ls-title"><span class="ls-big">${sl.ti+1}</span><h1>${esc(T.t)}</h1><p class="ls-lead">${esc(T.sub)}</p>
       <div class="ls-asks"><b>Как звучит задача:</b>${(T.asks||[]).map(a=>`<p>«${esc(a)}»</p>`).join('')}</div></div>`;
