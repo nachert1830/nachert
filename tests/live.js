@@ -58,6 +58,16 @@ async function liveCheck(page,URL){
   if(!pm[0]||pm[0].rel!=='завтра'||pm[0].time!=='18:00'||pm[0].moved!=='20:00') add('карточка эфира','перенос','10.11 вечером ближайший — завтра в 18:00 (перенос с 20:00): '+JSON.stringify(pm[0]));
   if(!pm[1]||!pm[1].live) add('карточка эфира','идёт','11.11 в 18:30 эфир идёт: '+JSON.stringify(pm[1]));
   if(!pm[2]||pm[2].day!=='2026-11-12') add('карточка эфира','после','после эфира 11.11 ближайший — 12.11: '+JSON.stringify(pm[2]));
+  /* раздел «Вращение» (#/ng/rot): задачи сверены с пространством, «Покрути сам» доходит до цели, шаги проходятся без ошибок */
+  await page.goto(URL+'#/ng/rot'); await page.waitForTimeout(900);
+  const rot=await page.evaluate(()=>{ const out=[]; ROT.T.forEach(t=>{ if(t.ok!==true) out.push('задача «'+t.t+'»: чертёж не совпал с пространством'); });
+    Object.entries(ROT.MODES).forEach(([k,M])=>{ const m=M.miss(M.at(M.target)); if(!(m<0.6)) out.push('«Покрути сам» ('+k+'): в цели осталось '+m.toFixed(2)+'°'); });
+    if(Math.abs(ROT.MODES.i.miss(ROT.MODES.i.at(0))-0)<1) out.push('«Покрути сам» (i): цель достигнута уже без поворота');
+    return out; });
+  rot.forEach(m=>add('вращение','сверка',m));
+  for(let ti=0;ti<3;ti++){ await page.evaluate(i=>document.querySelectorAll('[data-epx-t]')[i].click(),ti);
+    for(let k=0;k<14;k++){ const nb=await page.$('[data-epx-go="1"]:not([disabled])'); if(!nb) break; await nb.click(); } }
+  if(!(await page.$('.hc-rot'))){ await page.goto(URL); await page.waitForTimeout(800); if(!(await page.$('.hc-rot'))) add('главная','карточка','нет карточки «Способ вращения»'); }
   errs.forEach(e=>add('эфир','ошибка JS',e));
   return out; }
 module.exports={liveCheck};
