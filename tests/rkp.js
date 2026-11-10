@@ -93,10 +93,13 @@ async function rkpCheck(page,URL){
   r.forEach(x=>add(x[0],x[1],x[2]));
   /* 4. экраны */
   const wide=async nm=>{ const w=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth); if(w>1) add(nm,'ширина','прокрутка вбок на '+w+' px'); };
-  await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(400);
+  /* ссылки страницы ведут по адресам сайта (H, перекрытая проекцией L.H, давала href="NaN,NaN" — кнопки не работали) */
+  const links=async nm=>{ const b=await page.evaluate(()=>[...document.querySelectorAll('.rkp-page a[href]')].map(a=>a.getAttribute('href')).filter(h=>!/^#\/[\w\/%.-]*$/.test(h)));
+    if(b.length) add(nm,'ссылки','не адрес: '+b.slice(0,3).join(' · ')); };
+  await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(400); await links('путь');
   const nodes=await page.$$eval('.rkp-path .rkp-n',x=>x.length); if(nodes!==10) add('путь','узлы','узлов '+nodes+' вместо 10'); await wide('путь');
   for(const T of await page.evaluate(()=>RKP.TOPICS.map(t=>({id:t.id,ms:Object.keys(t.m)})))){
-    await page.evaluate(id=>{ location.hash='#/ng/rk2/p/'+id; },T.id); await page.waitForTimeout(250); await wide('тема '+T.id);
+    await page.evaluate(id=>{ location.hash='#/ng/rk2/p/'+id; },T.id); await page.waitForTimeout(250); await wide('тема '+T.id); await links('тема '+T.id);
     const c=await page.evaluate(id=>RKP.TOPICS.find(t=>t.id===id).chk.c,T.id); await page.click('.rkp-o[data-o="'+c+'"]');
     /* неверный ответ не засчитывается */
     await page.click('[data-new]'); await page.waitForSelector('[data-ans]');
@@ -110,7 +113,7 @@ async function rkpCheck(page,URL){
     if(!st||!st.u||st.n!==2||st.w!==1) add('тема '+T.id,'сохранение',JSON.stringify(st));
   }
   const pv=await page.evaluate(()=>RKP.progress().topics); if(pv!==90) add('путь','все темы','после прохождения всех тем '+pv+' %');
-  await page.evaluate(()=>{ location.hash='#/ng/rk2/x'; }); await page.waitForTimeout(250); await page.click('[data-go]'); await page.waitForTimeout(200); await wide('пробный РК2');
+  await page.evaluate(()=>{ location.hash='#/ng/rk2/x'; }); await page.waitForTimeout(250); await page.click('[data-go]'); await page.waitForTimeout(200); await wide('пробный РК2'); await links('пробный РК2');
   const seed=await page.evaluate(()=>+document.querySelector('.rkp-xh h1').textContent.replace(/\D/g,''));
   const ans=await page.evaluate(sd=>RKP.ticket(sd).map(q=>q.ans),seed);
   const ins=await page.$$('[data-ans]'); for(let i=0;i<ins.length;i++) await ins[i].fill(String(ans[i]).replace('.',','));
