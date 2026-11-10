@@ -195,3 +195,40 @@ test('картинка-приветствие: первый раз загруз�
   fail=true; await start(33); const m=out.filter(x=>x.method==='sendMessage'&&x.body.chat_id===33);
   assert.equal(m.length,1,'не отправилась картинка — приветствие текстом'); assert.equal(db.wid,undefined,'испорченный file_id забыт');
 });
+
+test('перенос по расписанию (moved_from): записи сохраняются, записанным — сообщение, напоминания по новому времени',async()=>{
+  const clock={t:Date.parse('2026-11-10T19:30:00Z')}, out=[]; let db=null;                   /* вт 10.11, 22:30 по Москве */
+  let sched=[{date:'2026-11-11',time:'20:00',min:60,topic:'РК2'}];
+  const api=async(method,body)=>{ out.push({method,body}); return {ok:true}; };
+  const bot=createLiveBot({api,load:()=>db&&JSON.parse(JSON.stringify(db)),save:s=>{ db=JSON.parse(JSON.stringify(s)); },now:()=>clock.t,admins:[ADMIN],schedule:()=>sched});
+  const to=c=>out.filter(x=>x.method==='sendMessage'&&String(x.body.chat_id)===String(c)), last=c=>to(c).pop().body;
+  await bot.tick();
+  await bot.onUpdate({callback_query:{id:'q',data:'j:11112000',from:{id:3,first_name:'Ваня'},message:{chat:{id:3}}}});
+  await bot.onUpdate({callback_query:{id:'q',data:'j:11112000',from:{id:4,first_name:'Оля'},message:{chat:{id:4}}}});
+  sched=[{date:'2026-11-11',time:'18:00',moved_from:'20:00',min:60,topic:'РК2'}];
+  await bot.tick();
+  assert.equal(db.sessions.length,1,'не два эфира, а перенесённый'); const s=db.sessions[0];
+  assert.equal(s.id,'11111800'); assert.equal(s.start,Date.parse('2026-11-11T15:00:00Z')); assert.deepEqual(Object.keys(s.subs).sort(),['3','4']);
+  assert.match(last(3).text,/^⏰ Эфир перенесли: завтра в 18:00 МСК \(вместо 20:00\)\./); assert.equal(last(3).reply_markup.inline_keyboard[0][1].callback_data,'c:11111800');
+  assert.match(last(ADMIN).text,/⏰ Перенёс: ср 11\.11 в 20:00 → ср 11\.11 в 18:00\. Записанным \(2\)/);
+  const n=to(3).length; await bot.tick(); assert.equal(to(3).length,n,'второй раз не переносит и не пишет');
+  /* старая кнопка из сообщения «Готово, ты записан» ведёт на перенесённый эфир */
+  await bot.onUpdate({callback_query:{id:'q',data:'l:11112000',from:{id:3},message:{chat:{id:3}}}});
+  assert.match(last(3).text,/Ссылка придёт за 15 минут/);
+  /* напоминание за 2 часа — от нового времени (16:00 МСК), в 18:00 старого — ничего лишнего */
+  clock.t=Date.parse('2026-11-11T13:05:00Z'); await bot.tick(); assert.match(last(3).text,/^Сегодня в 18:00 МСК разбор РК2/);
+  /* новый ученик видит 18:00 */
+  await bot.onUpdate({message:{message_id:1,chat:{id:5,type:'private'},from:{id:5},text:'/start'}});
+  assert.match(last(5).text,/📅 Сегодня в 18:00 МСК/);
+});
+
+test('перенос владельцем: кнопка «⏰ Перенести» и /move',async()=>{
+  const r=rig(); await r.msg(ADMIN,'/add 11.11 20:00 РК2'); await r.tap(7,'j:11112000');
+  await r.tap(ADMIN,'a:s:11112000'); assert.ok(r.last(ADMIN).reply_markup.inline_keyboard.flat().some(b=>b.callback_data==='a:v:11112000'));
+  await r.tap(ADMIN,'a:v:11112000'); assert.match(r.last(ADMIN).text,/На когда перенести/);
+  await r.msg(ADMIN,'18:00'); assert.match(r.last(ADMIN).text,/Перенёс: ср 11\.11 в 20:00 → ср 11\.11 в 18:00/);
+  assert.match(r.last(7).text,/Эфир перенесли: завтра в 18:00 МСК \(вместо 20:00\)/);
+  await r.msg(ADMIN,'/move 12.11 19:00'); assert.equal(r.db().sessions[0].id,'12111900');
+  assert.match(r.last(7).text,/Эфир перенесли: с ср 11\.11 в 18:00 на чт 12\.11 в 19:00 МСК/);
+  await r.tap(9,'a:v:12111900'); assert.ok(!r.to(9).some(x=>/перенести/.test(x.body.text)),'ученику кнопка владельца не работает');
+});

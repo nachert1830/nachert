@@ -296,6 +296,7 @@ body.liveshow .t3d{z-index:100010}
 .pmn-s b{color:var(--pa);font-weight:800}
 .pmn-m{margin-top:9px;font:700 15px/1.3 var(--sans);opacity:.95}
 .pmn-m b{color:var(--pa);font-weight:900}
+.pmn-mv{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.16);font:700 13px/1.3 var(--sans)}
 .pmn-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:auto;border-radius:12px;background:var(--pa);color:var(--pa-ink)!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.25),0 0 24px -6px color-mix(in srgb,var(--pa) 60%,transparent);-webkit-tap-highlight-color:transparent}
 .pmn-sp{flex:1;min-height:12px}
 .pmn p{margin-bottom:0}
@@ -28554,25 +28555,40 @@ const PROMO=(function(){
   const botUrl=src=>'https://t.me/'+PROMO_BOT+'?start='+src;
   const ready=/^[A-Za-z]\w{3,31}$/.test(PROMO_BOT);   /* пока имя бота не вписано — карточку не показываем (кнопка вела бы в никуда) */
   const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
-  const PROMO_TIME='20:00';            /* время эфира по Москве — строка на карточке и в полосе */
-  const PROMO_DATES=['2026-11-10','2026-11-11','2026-11-12','2026-11-13'];    /* дни эфиров (по Москве): в эти дни под шапкой — полоса «Сегодня в 20:00 — эфир · Записаться» */
-  const PROMO_MIN=60;                  /* длительность: после конца эфира полоса пропадает */
+  /* эфиры по Москве: день → время. MOVED — перенесённые (день → прежнее время): на карточке и в полосе — «перенесли с …».
+     Это же расписание — у бота в server/livebot/schedule.json (поле moved_from). Менять в обоих местах. */
+  const PROMO_DAYS={'2026-11-10':'20:00','2026-11-11':'18:00','2026-11-12':'20:00','2026-11-13':'20:00'};
+  const PROMO_MOVED={'2026-11-11':'20:00'};
+  const PROMO_MIN=60;                  /* длительность: после конца эфира он больше не «ближайший» */
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
+  const WDN=['вс','пн','вт','ср','чт','пт','сб'];
+  const mskDay=t=>new Date(t+3*36e5).toISOString().slice(0,10);
+  const startOf=(day,hm)=>{ const [y,mo,d]=day.split('-').map(Number), [hh,mm]=hm.split(':').map(Number); return Date.UTC(y,mo-1,d,hh,mm)-3*36e5; };
+  /* ближайший эфир, который ещё не закончился: {day, time, start, live, rel:'сегодня'|'завтра'|'чт 12.11', moved:'20:00'|''} */
+  function next(now){ now=now||Date.now(); const today=mskDay(now), tomorrow=mskDay(now+864e5);
+    const d=Object.keys(PROMO_DAYS).sort().find(k=>startOf(k,PROMO_DAYS[k])+PROMO_MIN*6e4>now); if(!d) return null;
+    const start=startOf(d,PROMO_DAYS[d]), [y,mo,dd]=d.split('-').map(Number), wd=new Date(Date.UTC(y,mo-1,dd)).getUTCDay();
+    return {day:d,time:PROMO_DAYS[d],start,live:now>=start,moved:PROMO_MOVED[d]||'',
+      rel:d===today?'сегодня':d===tomorrow?'завтра':WDN[wd]+' '+String(dd).padStart(2,'0')+'.'+String(mo).padStart(2,'0')}; }
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
   function cardHTML(){
     if(!ready) return '';
-    const rk=rk2On();
+    const rk=rk2On(), n=next(), tm=n?n.time:'20:00';
+    const pill=n?(n.live?'<i aria-hidden="true"></i>Идёт':(n.rel==='сегодня'?'<i aria-hidden="true"></i>':'')+cap(n.rel)):'Бесплатно';
+    const when=n?`<p class="pmn-m">${n.live?'Эфир идёт · ':cap(n.rel)+' в '}<b>${n.live?'подключайся':tm}</b>${n.live?'':' по МСК'}</p>${n.moved&&!n.live?`<p class="pmn-mv">Перенос с ${n.moved}</p>`:''}`
+      :`<p class="pmn-m">В <b>${tm}</b> по МСК</p>`;
     const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>`;
     return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">
-     <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span><span class="pmn-moon" aria-hidden="true"></span>
+     <span class="pmn-pill">${pill}</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">РК2<span>завтра?</span></h2>
      <p class="pmn-s">Бесплатный разбор в эфире</p>
-     <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
+     ${when}<div class="pmn-sp"></div>
      ${btn('rk2','Я приду →','Записаться на разбор РК2')}</section>`
     :`<section class="pmn dz" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill">Бесплатно</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">ДЗ 2–3<span>не идёт?</span></h2>
      <p class="pmn-s">Бесплатный разбор в эфире</p>
-     <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
+     ${when}<div class="pmn-sp"></div>
      ${btn('dz','Записаться →','Записаться на разбор ДЗ')}</section>`;
   }
   document.addEventListener('click',ev=>{
@@ -28580,16 +28596,14 @@ const PROMO=(function(){
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
   /* полоса под шапкой на всех страницах, кроме главной (там карточка) и #/live (там своя кнопка и режим эфира):
-     до начала — «Сегодня в 20:00 МСК — бесплатный эфир по РК2 · Записаться», во время — «Эфир идёт · Подключиться», потом пропадает */
+     в день эфира до начала — «Сегодня в 18:00 МСК — бесплатный эфир по РК2 · Записаться» (если перенесли — «перенесли с 20:00»),
+     во время — «Эфир идёт · Подключиться», потом пропадает */
   function paintBar(r){ const el=document.getElementById('liveBar'); if(!el) return;
-    const m=new Date(Date.now()+3*36e5), day=m.toISOString().slice(0,10), [hh,mm]=PROMO_TIME.split(':').map(Number);
-    const start=Date.UTC(m.getUTCFullYear(),m.getUTCMonth(),m.getUTCDate(),hh,mm)-3*36e5, now=Date.now();
-    const show=ready&&PROMO_DATES.includes(day)&&now<start+PROMO_MIN*6e4&&r&&r.s!=='home'&&r.s!=='live';   /* на главной — карточка, на #/live — своя кнопка */
+    const n=next(), show=ready&&n&&n.rel==='сегодня'&&r&&r.s!=='home'&&r.s!=='live';   /* на главной — карточка, на #/live — своя кнопка */
     el.hidden=!show; if(!show){ el.innerHTML=''; return; }
-    const live=now>=start;
-    el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${live?'<b>Эфир идёт</b> — бесплатный разбор РК2':`<b>Сегодня в ${PROMO_TIME} МСК</b> — бесплатный эфир по РК2`}</span>
-      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${live?'Подключиться →':'Записаться →'}</a></div>`; }
-  return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar};
+    el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${n.live?'<b>Эфир идёт</b> — бесплатный разбор РК2':`<b>Сегодня в ${n.time} МСК</b> — бесплатный эфир по РК2${n.moved?` (перенесли с ${n.moved})`:''}`}</span>
+      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${n.live?'Подключиться →':'Записаться →'}</a></div>`; }
+  return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar,next};
 })();
 const A2HS=(function(){
   let BIP=null;
@@ -33575,7 +33589,7 @@ function viewLive(v){
    <section class="lv-hero" aria-labelledby="lvH">
     <span class="pmn-pill">Бесплатно</span>
     <h1 id="lvH">Онлайн-разборы по&nbsp;начерталке</h1>
-    <p>Разбираем задачи РК2 по шагам. Каждый вечер в 20:00 МСК, бесплатно.</p>
+    <p>Разбираем задачи РК2 по шагам, бесплатно. ${(n=>n?(n.live?'<b>Эфир идёт прямо сейчас.</b>':`Ближайший эфир — <b>${n.rel} в ${n.time} МСК</b>${n.moved?` (перенесли с ${n.moved})`:''}.`):'Новые эфиры — скоро.')(PROMO.next())}</p>
     <div class="lv-acts">
      ${PROMO.ready()?`<a class="pmn-b" href="${attr(PROMO.botUrl('live'))}" target="_blank" rel="noopener" data-lv="live-bot">Записаться в Telegram →</a>`:`<p class="lv-soon">Запись откроется совсем скоро.</p>`}
     </div>

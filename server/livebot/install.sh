@@ -3,6 +3,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/nachert1830/nachert/main/server/livebot/install.sh | bash
 # Спросит токен от @BotFather и твой Telegram ID, поставит Node.js, скачает код и запустит бота как службу.
 # Повторный запуск — обновляет код и перезапускает бота (токен не спрашивает, если он уже есть).
+# Ставит и автообновление: раз в 10 минут бот сам забирает свежий код и расписание (schedule.json) из ветки и перезапускается.
 set -euo pipefail
 BRANCH="${LIVEBOT_BRANCH:-main}"
 REPO="https://github.com/nachert1830/nachert"
@@ -41,8 +42,23 @@ else say "4/5 Настройки уже есть ($ENVF) — оставляю"; 
 
 say "5/5 Запускаю бота…"
 cp "$DIR/nachert/server/livebot/livebot.service" /etc/systemd/system/livebot.service
-systemctl daemon-reload; systemctl enable -q livebot; systemctl restart livebot; sleep 4
+# автообновление: каждые 10 минут бот сам забирает свежий код и расписание из ветки $BRANCH и перезапускается, если они изменились
+cat > /usr/local/bin/livebot-update <<UPD
+#!/usr/bin/env bash
+set -eu
+cd "$DIR/nachert"
+sudo -u livebot git fetch -q --depth 1 origin "$BRANCH"
+[ "\$(sudo -u livebot git rev-parse HEAD)" = "\$(sudo -u livebot git rev-parse FETCH_HEAD)" ] && exit 0
+sudo -u livebot git reset -q --hard FETCH_HEAD
+cp server/livebot/livebot.service /etc/systemd/system/livebot.service && systemctl daemon-reload
+systemctl restart livebot && echo "livebot обновлён до \$(sudo -u livebot git rev-parse --short HEAD)"
+UPD
+chmod 755 /usr/local/bin/livebot-update
+printf '[Unit]\nDescription=Nachert live bot: update from GitHub\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/livebot-update\n' > /etc/systemd/system/livebot-update.service
+printf '[Unit]\nDescription=Nachert live bot: update every 10 minutes\n[Timer]\nOnBootSec=2min\nOnUnitActiveSec=10min\n[Install]\nWantedBy=timers.target\n' > /etc/systemd/system/livebot-update.timer
+systemctl daemon-reload; systemctl enable -q livebot; systemctl enable -q --now livebot-update.timer; systemctl restart livebot; sleep 4
 if journalctl -u livebot -n 30 --no-pager | grep -q 'запущен'; then
   journalctl -u livebot -n 30 --no-pager | grep 'запущен' | tail -1
   say "Готово! Напиши своему боту в Telegram /admin — он покажет команды."
+  echo "Бот сам обновляется из ветки $BRANCH каждые 10 минут (журнал: journalctl -u livebot-update)."
 else echo "Бот не запустился. Последние строки журнала:"; journalctl -u livebot -n 20 --no-pager; exit 1; fi
