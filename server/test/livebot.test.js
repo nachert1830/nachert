@@ -27,19 +27,19 @@ test('путь ученика: запись → за 2 часа → за 15 ми
   assert.match(r.last(ADMIN).text,/^Добавил: вт 10\.11 в 20:00 — РК2: типы задач, 1 час\./);
 
   await r.msg(1,'/start site');
-  const st=r.last(1); assert.match(st.text,/бесплатные онлайн-разборы/); assert.match(st.text,/удаляются через 30 дней/);
+  const st=r.last(1); assert.match(st.text,/^Бесплатный разбор РК2 в Телемосте\.\n\n📅 Сегодня в 20:00 МСК/); assert.match(st.text,/\/delete — удалить/);
   assert.equal(st.reply_markup.inline_keyboard[0][0].callback_data,'j:10112000');
   assert.doesNotMatch(st.text,/записал(ось|ись)\s*\d/i,'ученик не видит, сколько записалось');
   await r.tap(1,'j:10112000');
-  assert.match(r.last(1).text,/^Записал! вт 10\.11 в 20:00/);
+  assert.match(r.last(1).text,/^Готово, ты записан ✅\nСегодня в 20:00 МСК\. Ссылку пришлю за 15 минут\./);
   await r.tap(1,'j:10112000'); assert.match(r.last(1).text,/^Ты уже записан/);
   assert.equal(r.db().sessions[0].n,1,'повторное нажатие не удваивает');
   assert.equal(r.db().sessions[0].subs['1'].src,'site');
 
-  await r.tap(1,'l:10112000'); assert.match(r.last(1).text,/Ссылка появится за 30 минут/);
+  await r.tap(1,'l:10112000'); assert.match(r.last(1).text,/^Ссылка придёт за 15 минут до начала\.$/);
 
   r.clock.t=Date.parse('2026-11-10T15:05:00Z'); await r.bot.tick();          /* 18:05 — за 2 часа */
-  assert.match(r.last(1).text,/Сегодня в 20:00 — разбор/);
+  assert.match(r.last(1).text,/^Сегодня в 20:00 МСК разбор РК2\. Ссылка придёт за 15 минут\.$/);
   const n=r.to(1).length; await r.bot.tick(); assert.equal(r.to(1).length,n,'дважды не напоминает');
 
   r.clock.t=Date.parse('2026-11-10T16:45:00Z'); await r.bot.tick();          /* 19:45, ссылки нет → тревога владельцу */
@@ -47,7 +47,7 @@ test('путь ученика: запись → за 2 часа → за 15 ми
   assert.equal(r.to(1).length,n,'без ссылки ученику ничего');
   await r.msg(ADMIN,'/link https://telemost.yandex.ru/j/123');
   r.clock.t+=MIN; await r.bot.tick();
-  assert.match(r.last(1).text,/Через 15 минут начинаем.*\nСсылка: https:\/\/telemost\.yandex\.ru\/j\/123/);
+  assert.equal(r.last(1).text,'Начинаем через 15 минут 👉 https://telemost.yandex.ru/j/123');
   await r.tap(1,'l:10112000'); assert.match(r.last(1).text,/https:\/\/telemost\.yandex\.ru\/j\/123/,'ссылка по кнопке — если напоминание не дошло');
 
   await r.msg(ADMIN,'/list'); assert.match(r.last(ADMIN).reply_markup.inline_keyboard[0][0].text,/записалось 1/);
@@ -67,8 +67,8 @@ test('путь ученика: запись → за 2 часа → за 15 ми
 test('/delete стирает всё о человеке; отмена записи; закончившийся эфир не записывает',async()=>{
   const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2'); await r.msg(ADMIN,'/add 11.11 20:00 РК2');
   await r.msg(2,'/start'); await r.tap(2,'j:10112000'); await r.tap(2,'j:11112000');
-  await r.tap(2,'c:11112000'); assert.match(r.last(2).text,/Отменил/); assert.equal(r.db().sessions[1].n,0);
-  await r.msg(2,'/delete'); assert.match(r.last(2).text,/Удалил всё/);
+  await r.tap(2,'c:11112000'); assert.match(r.last(2).text,/^Запись отменена/); assert.equal(r.db().sessions[1].n,0);
+  await r.msg(2,'/delete'); assert.match(r.last(2).text,/^Удалил твои данные/);
   assert.ok(r.db().sessions.every(s=>!s.subs['2'])); assert.equal(r.db().users['2'],undefined);
   r.clock.t=Date.parse('2026-11-10T19:00:00Z'); await r.tap(3,'j:10112000'); assert.match(r.last(3).text,/закончился/);
 });
@@ -96,34 +96,34 @@ test('вопрос текстом пересылается владельцу; �
 
 test('меню владельца кнопками: добавить эфир (день → время → тема), ссылка, написать, отменить',async()=>{
   const r=rig(), kb=()=>r.last(ADMIN).reply_markup, btn=re=>{ const b=(kb().inline_keyboard||[]).flat().find(x=>re.test(x.text)); assert.ok(b,'нет кнопки '+re); return b.callback_data; };
-  await r.msg(ADMIN,'/start'); assert.ok(kb().keyboard,'внизу — меню владельца'); assert.equal(kb().keyboard[1][1].text,'➕ Добавить эфир');
-  await r.msg(ADMIN,'➕ Добавить эфир'); assert.match(r.last(ADMIN).text,/Какой день/);
+  await r.msg(ADMIN,'/start'); assert.ok(kb().keyboard,'внизу — меню владельца'); assert.deepEqual(kb().keyboard.map(r=>r.map(b=>b.text)),[['👥 Кто придёт'],['🔗 Ссылка','📣 Написать'],['➕ Эфир']]);
+  await r.msg(ADMIN,'➕ Эфир'); assert.match(r.last(ADMIN).text,/Какой день/);
   await r.tap(ADMIN,btn(/^Сегодня/)); assert.match(r.last(ADMIN).text,/Во сколько/);
   await r.tap(ADMIN,btn(/^20:00$/)); assert.match(r.last(ADMIN).text,/Тема эфира — вт 10\.11 в 20:00/);
   await r.tap(ADMIN,btn(/^РК2$/)); assert.match(r.last(ADMIN).text,/^Добавил: вт 10\.11 в 20:00 — РК2, 1 час\./);
   assert.equal(r.db().sessions.length,1);
   /* своё время и своя тема — текстом */
-  await r.msg(ADMIN,'➕ Добавить эфир'); await r.tap(ADMIN,btn(/^Завтра/)); await r.tap(ADMIN,btn(/Другое время/));
+  await r.msg(ADMIN,'➕ Эфир'); await r.tap(ADMIN,btn(/^Завтра/)); await r.tap(ADMIN,btn(/Другое время/));
   await r.msg(ADMIN,'25:99'); assert.match(r.last(ADMIN).text,/Не понял время/);
   await r.msg(ADMIN,'19:30'); await r.tap(ADMIN,btn(/Своя тема/)); await r.msg(ADMIN,'ДЗ 3: пирамида');
   assert.match(r.last(ADMIN).text,/^Добавил: ср 11\.11 в 19:30 — ДЗ 3: пирамида, 1 час\./);
   /* ученик видит оба, записывается */
-  await r.msg(8,'/start'); assert.equal(r.last(8).reply_markup.inline_keyboard.length,2); await r.tap(8,'j:10112000');
+  await r.msg(8,'/start'); assert.deepEqual(r.last(8).reply_markup.inline_keyboard.map(r=>r.map(b=>b.text)),[['✅ Я приду'],['ср 11.11']]); await r.tap(8,'j:10112000');
   /* ссылка кнопкой: выбрать эфир → прислать */
-  await r.msg(ADMIN,'🔗 Ссылка на эфир'); assert.match(r.last(ADMIN).text,/Для какого эфира/);
+  await r.msg(ADMIN,'🔗 Ссылка'); assert.match(r.last(ADMIN).text,/Для какого эфира/);
   await r.tap(ADMIN,btn(/вт 10\.11/)); await r.msg(ADMIN,'не ссылка'); assert.match(r.last(ADMIN).text,/Нужна ссылка/);
   await r.msg(ADMIN,'https://telemost.yandex.ru/j/555'); assert.match(r.last(ADMIN).text,/сохранена/); assert.equal(r.db().sessions[0].link,'https://telemost.yandex.ru/j/555');
   /* написать записанным: текст → подтверждение → отправка */
-  await r.msg(ADMIN,'📣 Написать записанным'); await r.tap(ADMIN,btn(/вт 10\.11/)); await r.msg(ADMIN,'Начинаем через 5 минут!');
+  await r.msg(ADMIN,'📣 Написать'); await r.tap(ADMIN,btn(/вт 10\.11/)); await r.msg(ADMIN,'Начинаем через 5 минут!');
   assert.match(r.last(ADMIN).text,/Отправить 1 записанным/); assert.ok(!r.to(8).some(x=>/через 5 минут/.test(x.body.text)),'до подтверждения не отправляет');
   await r.tap(ADMIN,'a:M'); assert.match(r.last(8).text,/Начинаем через 5 минут!/); assert.match(r.last(ADMIN).text,/Отправил: 1 из 1/);
   /* эфиры → карточка → отменить с подтверждением */
-  await r.msg(ADMIN,'📅 Эфиры'); await r.tap(ADMIN,btn(/ср 11\.11/)); assert.match(r.last(ADMIN).text,/Записалось: 0/);
-  await r.tap(ADMIN,btn(/Отменить эфир/)); assert.equal(r.db().sessions.length,2,'без подтверждения не отменяет');
+  await r.msg(ADMIN,'👥 Кто придёт'); await r.tap(ADMIN,btn(/ср 11\.11/)); assert.match(r.last(ADMIN).text,/Записались \(0\): пока никого/);
+  await r.tap(ADMIN,btn(/Отменить/)); assert.equal(r.db().sessions.length,2,'без подтверждения не отменяет');
   await r.tap(ADMIN,btn(/Да, отменить/)); assert.equal(r.db().sessions.length,1);
   /* «Как видят ученики» и отмена ввода */
-  await r.msg(ADMIN,'👀 Как видят ученики'); assert.match(r.last(ADMIN).text,/Ближайший эфир/);
-  await r.msg(ADMIN,'🔗 Ссылка на эфир'); assert.match(r.last(ADMIN).text,/Пришли ссылку/,'один эфир — сразу просит ссылку'); await r.tap(ADMIN,'a:c');
+  await r.msg(ADMIN,'/preview'); assert.match(r.last(ADMIN).text,/Бесплатный разбор РК2/);
+  await r.msg(ADMIN,'🔗 Ссылка'); assert.match(r.last(ADMIN).text,/Пришли ссылку/,'один эфир — сразу просит ссылку'); await r.tap(ADMIN,'a:c');
   await r.msg(ADMIN,'просто текст'); assert.match(r.last(ADMIN).text,/Выбери кнопку/);
 });
 
@@ -143,9 +143,9 @@ test('расписание из файла: эфир появляется сам
   await bot.tick();
   assert.equal(db.sessions.length,1,'только будущий и корректный'); assert.equal(db.sessions[0].id,'10112000'); assert.equal(db.sessions[0].min,60);
   await bot.onUpdate({message:{message_id:1,chat:{id:3,type:'private'},from:{id:3,first_name:'Ваня'},text:'/start'}});
-  assert.match(last(3).reply_markup.inline_keyboard[0][0].text,/^✅ Я приду — сегодня в 20:00$/); assert.match(last(3).text,/Ближайший эфир — сегодня в 20:00 по МСК: РК2: разбор типов задач/);
+  assert.equal(last(3).reply_markup.inline_keyboard[0][0].text,'✅ Я приду'); assert.match(last(3).text,/📅 Сегодня в 20:00 МСК/);
   await bot.onUpdate({callback_query:{id:'q',data:'j:10112000',from:{id:3},message:{chat:{id:3}}}});
-  assert.match(last(3).text,/1 час онлайн в Телемосте/);
+  assert.match(last(3).text,/Готово, ты записан/);
   await bot.tick(); assert.equal(db.sessions.length,1,'второй раз не дублирует');
   /* после конца часового эфира — «помогло?» (а не через 1,5 часа) */
   clock.t=Date.parse('2026-11-10T18:01:00Z'); await bot.tick(); assert.match(last(3).text,/Помогло\?/);
@@ -160,26 +160,26 @@ test('расписание из файла: эфир появляется сам
 
 test('счётчик: «Сколько придёт», уведомление владельцу о каждой записи и отмене',async()=>{
   const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2');
-  await r.msg(ADMIN,'👥 Сколько придёт'); assert.match(r.last(ADMIN).text,/вт 10\.11 · 20:00 · РК2 — 0/);
+  await r.msg(ADMIN,'👥 Кто придёт'); assert.match(r.last(ADMIN).text,/вт 10\.11 20:00 — 0 · нет ссылки/);
   await r.msg(11,'/start'); await r.tap(11,'j:10112000');
-  assert.match(r.last(ADMIN).text,/➕ Имя11 записался на вт 10\.11 · 20:00 · РК2\nПридут: 1/);
+  assert.equal(r.last(ADMIN).text,'➕ Имя11 · вт 10.11 20:00 · всего 1');
   await r.tap(11,'j:10112000'); assert.equal(r.to(ADMIN).filter(x=>/➕/.test(x.body.text)).length,1,'повторное нажатие — без уведомления');
-  await r.msg(12,'/start'); await r.tap(12,'j:10112000'); assert.match(r.last(ADMIN).text,/Придут: 2/);
-  await r.tap(12,'c:10112000'); assert.match(r.last(ADMIN).text,/➖ Имя12 отменил запись.*\nПридут: 1/);
-  await r.msg(ADMIN,'/count'); assert.match(r.last(ADMIN).text,/РК2 — 1 · ⚠️ нет ссылки/);
-  await r.msg(ADMIN,'/start'); assert.equal(r.last(ADMIN).reply_markup.keyboard[0][0].text,'👥 Сколько придёт');
+  await r.msg(12,'/start'); await r.tap(12,'j:10112000'); assert.match(r.last(ADMIN).text,/всего 2$/);
+  await r.tap(12,'c:10112000'); assert.equal(r.last(ADMIN).text,'➖ Имя12 · вт 10.11 20:00 · всего 1');
+  await r.msg(ADMIN,'/count'); assert.match(r.last(ADMIN).text,/вт 10\.11 20:00 — 1 · нет ссылки/);
+  await r.msg(ADMIN,'/start'); assert.equal(r.last(ADMIN).reply_markup.keyboard[0][0].text,'👥 Кто придёт');
 });
 
 test('«✅ Я приду» — одна кнопка на ближайший эфир; после записи — «Ты записан»; завтра/день недели',async()=>{
   const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2'); await r.msg(ADMIN,'/add 11.11 20:00 РК2'); await r.msg(ADMIN,'/add 13.11 20:00 ДЗ');
   await r.msg(21,'/start'); const k=r.last(21).reply_markup.inline_keyboard;
-  assert.deepEqual(k[0][0],{text:'✅ Я приду — сегодня в 20:00',callback_data:'j:10112000'});
-  assert.equal(k.length,3); assert.match(k[1][0].text,/ср 11\.11 · 20:00/);
-  await r.tap(21,k[0][0].callback_data); assert.match(r.last(21).text,/^Записал!/);
-  await r.msg(21,'/start'); assert.equal(r.last(21).reply_markup.inline_keyboard[0][0].text,'✓ Ты записан — сегодня в 20:00 · ссылка');
-  assert.match(r.last(21).text,/Ты уже записан/);
+  assert.deepEqual(k[0][0],{text:'✅ Я приду',callback_data:'j:10112000'}); assert.match(r.last(21).text,/📅 Сегодня в 20:00 МСК/);
+  assert.deepEqual(k[1].map(b=>b.text),['ср 11.11','пт 13.11'],'другие дни — в один ряд');
+  await r.tap(21,k[0][0].callback_data); assert.match(r.last(21).text,/^Готово, ты записан/);
+  await r.msg(21,'/start'); assert.equal(r.last(21).reply_markup.inline_keyboard[0][0].text,'🔗 Ссылка на эфир');
+  assert.match(r.last(21).text,/✅ Ты записан/);
   r.clock.t=Date.parse('2026-11-10T19:00:00Z'); await r.msg(22,'/start');                              /* эфир прошёл — ближайший завтра */
-  assert.equal(r.last(22).reply_markup.inline_keyboard[0][0].text,'✅ Я приду — завтра в 20:00');
+  assert.equal(r.last(22).reply_markup.inline_keyboard[0][0].text,'✅ Я приду'); assert.match(r.last(22).text,/📅 Завтра в 20:00 МСК/);
 });
 
 test('картинка-приветствие: первый раз загрузка файла, дальше по file_id; не отправилась — текстом',async()=>{
@@ -189,7 +189,7 @@ test('картинка-приветствие: первый раз загруз�
   const start=c=>bot.onUpdate({message:{message_id:1,chat:{id:c,type:'private'},from:{id:c,first_name:'А'},text:'/start'}});
   await bot.onUpdate({message:{message_id:1,chat:{id:ADMIN,type:'private'},from:{id:ADMIN},text:'/add 10.11 20:00 РК2'}});
   await start(31); let ph=out.filter(x=>x.method==='sendPhoto');
-  assert.deepEqual(ph[0].body.photo,{upload:true}); assert.match(ph[0].body.caption,/Я приду/); assert.equal(ph[0].body.reply_markup.inline_keyboard[0][0].callback_data,'j:10112000');
+  assert.deepEqual(ph[0].body.photo,{upload:true}); assert.match(ph[0].body.caption,/Бесплатный разбор РК2/); assert.equal(ph[0].body.reply_markup.inline_keyboard[0][0].callback_data,'j:10112000');
   assert.equal(db.wid,'BIG','запомнили самую большую');
   await start(32); ph=out.filter(x=>x.method==='sendPhoto'); assert.equal(ph[1].body.photo,'BIG','второй раз — без загрузки');
   fail=true; await start(33); const m=out.filter(x=>x.method==='sendMessage'&&x.body.chat_id===33);
