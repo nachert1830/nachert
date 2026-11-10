@@ -4798,6 +4798,19 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-idea{margin:0 0 12px;font-size:15.5px;line-height:1.55}
 .rkp-asks{font-size:13.5px;color:var(--ink2);background:var(--surf2);border-radius:12px;padding:8px 12px;margin:0 0 12px}
 .rkp-asks span{font-weight:700;color:var(--mut)}
+.rkp-sol{margin:0 0 22px}
+.rkp-solq{padding:12px 14px;border:1.5px dashed #9cc0ef;border-radius:14px;background:var(--surf);font-size:15px;line-height:1.45;margin:0 0 10px}
+.rkp-solbar{display:flex;align-items:center;gap:10px;margin:10px 0 8px}.rkp-soln{font:800 13px var(--sans);color:var(--acc,#1a5ae0);white-space:nowrap}
+.rkp-sold{display:flex;gap:4px;flex:1}.rkp-sold i{flex:1;height:5px;border-radius:3px;background:var(--line)}.rkp-sold i.d{background:#9cc0ef}.rkp-sold i.n{background:#1a5ae0}
+.rkp-solv{display:grid;gap:10px}.rkp-solv.two{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.rkp-solep{height:min(72vh,600px);display:flex;align-items:center;justify-content:center;padding:6px;border-radius:14px;overflow:hidden}
+.rkp-solep svg{display:block;width:100%!important;height:100%!important;max-width:none!important}
+.rkp-solep svg.dwg text.lbl{font-size:var(--lf,14px)!important;font-weight:600!important;stroke-width:calc(var(--lf,14px)*.22)!important}
+.rkp-sol3 .l3-st{height:min(72vh,600px)}.rkp-sol3 .l3-hint{font-size:12px;color:var(--mut)}
+.rkp-solt{margin:10px 0 0;padding:12px 14px;border-radius:14px;background:var(--surf2);border-left:4px solid #1a5ae0}
+.rkp-solt b{display:block;font-size:16px;margin-bottom:4px}.rkp-solt p{margin:0;font-size:15px;line-height:1.5;color:var(--ink2)}
+.rkp-solnav{margin-top:10px}
+@media(max-width:700px){.rkp-solv.two{grid-template-columns:1fr}.rkp-solep{height:62vh}.rkp-sol3 .l3-st{height:50vh}}
 .rkp-rk{margin:0 0 18px}.rkp-rks{margin:0 0 10px;font-size:14px;color:var(--ink2)}
 .rkp-rkg{display:grid;gap:10px}
 .rkp-rkc{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:12px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surf)}
@@ -27323,6 +27336,20 @@ function rkHTML(id,o){ o=o||{}; const C=RK2V[id]; if(!C) return '';
      <span class="rkp-rkm">Решают: ${Object.keys(V.m).sort((a,b)=>V.m[b]-V.m[a]).map(mtN).join(', ')}</span>
      ${o.nobtn?'':`<button type="button" class="btn rkp-rkb" data-rkv="${i}">Решить такую же →</button>`}</div></div>`; }).join('')}</div></section>`; }
 
+/* ── задача темы с решением по шагам: эпюр шага (крупно, аккуратно) + текст «что чертим», 3D — по кнопке ── */
+function solHTML(id){ if(typeof L3D==='undefined') return ''; const ms=Object.keys(TOP(id).m).filter(m=>L3D.has(id,m)); if(!ms.length) return '';
+  if(!CUR.sol||!ms.includes(CUR.sol.mk)) CUR.sol={mk:ms[0],i:0,d3:false}; const S_=CUR.sol, sc=L3D.scene(id,S_.mk), n=sc.steps.length; S_.i=Math.max(0,Math.min(n-1,S_.i)); const st=sc.steps[S_.i], E=L3D.example(id)||{};
+  return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с решением по шагам</h2>
+   <div class="rkp-solq"><b>Задача.</b> ${E.ask||''} ${ms.length>1?'Решим двумя способами — выбери вкладку.':'Способ: '+MT[ms[0]].s+'.'}</div>
+   ${ms.length>1?`<div class="seg rkp-tabs" role="tablist">${ms.map(m=>`<button type="button" role="tab" aria-selected="${m===S_.mk}" class="${m===S_.mk?'on':''}" data-solm="${m}">${MT[m].s}</button>`).join('')}</div>`:''}
+   <div class="rkp-solbar"><span class="rkp-soln">Шаг ${S_.i+1} из ${n}</span><span class="rkp-sold">${Array.from({length:n},(_,j)=>`<i class="${j<S_.i?'d':j===S_.i?'n':''}"></i>`).join('')}</span></div>
+   <div class="rkp-solv${S_.d3?' two':''}"><div class="rkp-solep sheet" id="rkpSolEp" role="img" aria-label="Эпюр: ${attr(st.t)}"></div>${S_.d3?'<div class="rkp-sol3" id="rkpSol3"></div>':''}</div>
+   <div class="rkp-solt"><b>${st.t}</b><p>${st.e||st.d||''}</p></div>
+   <div class="rkp-acts rkp-solnav"><button type="button" class="btn" data-sols="-1"${S_.i?'':' disabled'}>← Назад</button><button type="button" class="btn pri" data-sols="1"${S_.i<n-1?'':' disabled'}>Дальше →</button><button type="button" class="btn ghost" data-sol3>${S_.d3?'Скрыть 3D':'Показать в 3D'}</button></div></section>`; }
+function solPaint(v,id){ const box=v.querySelector('#rkpSolEp'); if(!box||!CUR.sol) return; const sc=L3D.scene(id,CUR.sol.mk);
+  try{ box.innerHTML=DRAW.svg({items:L3D.epure(sc,CUR.sol.i),fitTo:L3D.epAll(sc),alt:'Эпюр'}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); const vb=svg.viewBox.baseVal, go=()=>L3D.big(svg,vb.width,vb.height,box,{fs:14,m:1.3}); go(); requestAnimationFrame(go); } }catch(e){ box.textContent='Эпюр не построился'; }
+  const b3=v.querySelector('#rkpSol3'); if(b3) try{ L3D.mount(b3,sc,{start:CUR.sol.i}); }catch(e){} }
+
 /* ── прогресс ── */
 const KEY='rkp';
 const getS=()=>{ const s=ST.get(KEY,null)||{}; s.t=s.t||{}; s.x=s.x||{best:0,h:[]}; return s; };
@@ -27407,6 +27434,7 @@ function topicView(v,id){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return
     const tab=CUR.tab||ms[0];
     v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Тема '+(idx+1)]],next:null,noBottom:true,cls:'rkp-page',body:`
      <div class="rkp-th"><span class="rkp-dot big">${k>=3?'✓':idx+1}</span><div><h1>${T.t}</h1><p>${T.sub} · ${STARS(k)} · тема ${idx+1} из 9</p></div></div>
+     ${solHTML(id)}
      ${rkHTML(id)}
      <section class="rkp-step${st.u?' done':''}" aria-labelledby="rkpS1"><h2 id="rkpS1"><span>1</span>Пойми ${st.u?'<i>★ есть</i>':''}</h2>
       <p class="rkp-idea">${T.idea}</p>
@@ -27431,6 +27459,10 @@ function topicView(v,id){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return
       if(CUR.pick===T.chk.c&&!st.u){ st.u=1; setS(s); try{ FX.buzz('success'); }catch(_){} } else { try{ FX.buzz(CUR.pick===T.chk.c?'success':'error'); }catch(_){} } keep(draw,'#rkpChk'); }));
     const re=v.querySelector('[data-reo]'); if(re) re.addEventListener('click',()=>{ CUR.pick=null; CUR.ord=null; keep(draw,'#rkpChk'); });
     v.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ CUR.tab=b.dataset.tab; keep(draw,'#rkpS2'); }));
+    solPaint(v,id);
+    v.querySelectorAll('[data-solm]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol={mk:b.dataset.solm,i:0,d3:CUR.sol&&CUR.sol.d3}; keep(draw,'#rkpSol'); }));
+    v.querySelectorAll('[data-sols]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol.i+=+b.dataset.sols; keep(draw,'#rkpSol'); }));
+    v.querySelectorAll('[data-sol3]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol.d3=!CUR.sol.d3; keep(draw,'#rkpSol'); }));
     v.querySelectorAll('[data-rkv]').forEach(b=>b.addEventListener('click',()=>{ const q=variantTask(id,+b.dataset.rkv); if(!q) return; CUR.q=q; CUR.tab=q.method==='any'?Object.keys(T.m)[0]:q.method;
       draw(); const el=$('rkpT'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); const inp=v.querySelector('[data-ans]'); if(inp) try{ inp.focus({preventScroll:true}); }catch(_){} }));
     v.querySelectorAll('[data-new]').forEach(b=>b.addEventListener('click',()=>{ const s=getS(), st=tState(s,id), ms=Object.keys(T.m);
@@ -32863,6 +32895,20 @@ function risen(O,w,lie,up,a,w0,w1,Hh){ const v=add(mul(lie,Math.cos(a*Math.PI/2)
   return [Q(w0,0),Q(w1,0),Q(w1,Hh),Q(w0,Hh)]; }
 const spanOn=(ps,O,w)=>{ const s=ps.map(p=>dot(sub(p,O),w)); return [Math.min(...s)-14,Math.max(...s)+14]; };
 
+/* стороны новых плоскостей π₄, π₅ — так, чтобы на эпюре их поля не налезали на исходные проекции */
+const GAP=22;
+function pickSigns(ps,n4b,n5b,base,isF,two){ const bb=a=>{ const x=a.map(p=>p[0]), y=a.map(p=>p[1]); return [Math.min(...x),Math.min(...y),Math.max(...x),Math.max(...y)]; };
+  const ov=(a,b)=>Math.max(0,Math.min(a[2],b[2])-Math.max(a[0],b[0]))*Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1])), ar=a=>(a[2]-a[0])*(a[3]-a[1]);
+  let best=null; for(const s4 of [1,-1]) for(const s5 of (two?[1,-1]:[1])){ const n4=mul(n4b,s4), n5=mul(n5b,s5);
+    const s0=Math.min(...ps.map(p=>dot(p,n4)))-GAP, O4=mul(n4,s0), w4=unit(crs(base,n4)), q4=p=>sub(p,mul(n4,dot(p,n4)-s0)), old=isF?L.F:L.H;
+    const U4=q=>old(sub(add(O4,mul(w4,dot(sub(q,O4),w4))),mul(n4,dot(q,base))));
+    const orig=[].concat(...ps.map(p=>[L.F(p),L.H(p)])), A4=ps.map(p=>U4(q4(p)));
+    let sc=ov(bb(orig),bb(A4))*4, all=orig.concat(A4);
+    if(two){ const d5=Math.max(...ps.map(p=>dot(p,n5)))+GAP, q5=p=>add(p,mul(n5,d5-dot(p,n5))), ctr=mul(ps.reduce((a,p)=>add(a,p),[0,0,0]),1/ps.length);
+      const B5=add(q4(ctr),mul(n5,d5-dot(q4(ctr),n5))), u5=unit(crs(n5,n4)), U5=q=>U4(add(add(B5,mul(u5,dot(sub(q,B5),u5))),mul(n5,dot(sub(q,B5),n4))));
+      const A5=ps.map(p=>U5(q5(p))); sc+=ov(bb(orig.concat(A4)),bb(A5))*4; all=all.concat(A5); }
+    sc+=ar(bb(all))*.15; if(!best||sc<best.sc) best={sc,n4,n5}; }
+  return best; }
 /* ═══ способ 1: ЗАМЕНА ПЛОСКОСТЕЙ — плоскость → проецирующая (π₄ ⟂ h или ⟂ f) → уровня (π₅ ∥ плоскости) ═══
    F.lv: 'h' (π₄ ⟂ π₁, ось x₁₄ ⟂ h′, сохраняются высоты z) или 'f' (π₄ ⟂ π₂, ось x₂₄ ⟂ f″, сохраняются глубины y).
    F.stop: 1 — только первая замена (угол наклона, расстояние до плоскости). */
@@ -32870,13 +32916,12 @@ function zamPlane(F){
   const isF=F.lv==='f', base=isF?Y:Z, oldN=isF?'π₂':'π₁', keepN=isF?'π₁':'π₂', ax1=isF?'x₂₄':'x₁₄', lvl=isF?'f':'h', mes=isF?'глубины y':'высоты z';
   const H1=F.pts[F.lvl[0]], H2=F.pts[F.lvl[1]]; let n4=unit(sub(H2,H1));
   const nT=unit(crs(sub(F.pts[F.tri[1]],F.pts[F.tri[0]]),sub(F.pts[F.tri[2]],F.pts[F.tri[0]]))), HM=bestHome(F.stop?[n4]:[n4,nT]), EH=camOf(HM.yaw,HM.pit).E;
-  if(dot(n4,EH)<0) n4=mul(n4,-1);  /* π₄ — за фигурой */
-  const ps=allPts(F).concat(F.con?Object.values(F.con.pts||{}):[]);
-  const s0=Math.min(...ps.map(p=>dot(p,n4)))-16, O4=mul(n4,s0), w4=unit(crs(base,n4)), [a0,a1]=spanOn(ps,O4,w4), H4=Math.max(...ps.map(p=>dot(p,base)))+14;
+  const ps=allPts(F).concat(F.con?Object.values(F.con.pts||{}):[]), PS=pickSigns(ps,n4,nT,base,isF,!F.stop); n4=PS.n4;
+  const s0=Math.min(...ps.map(p=>dot(p,n4)))-GAP, O4=mul(n4,s0), w4=unit(crs(base,n4)), [a0,a1]=spanOn(ps,O4,w4), H4=Math.max(...ps.map(p=>dot(p,base)))+14;
   const q4=p=>sub(p,mul(n4,dot(p,n4)-s0));
   const ctr=mul(ps.reduce((s,p)=>add(s,p),[0,0,0]),1/ps.length);
-  let n5=nT; if(dot(n5,EH)>0) n5=mul(n5,-1);   /* π₅ — за фигурой */
-  const d5=Math.max(...ps.map(p=>dot(p,n5)))+16, q5=p=>add(p,mul(n5,d5-dot(p,n5)));
+  let n5=PS.n5;
+  const d5=Math.max(...ps.map(p=>dot(p,n5)))+GAP, q5=p=>add(p,mul(n5,d5-dot(p,n5)));
   const B5=add(q4(ctr),mul(n5,d5-dot(q4(ctr),n5))), u5=unit(crs(n5,n4)), [b0,b1]=spanOn(ps.map(q4),B5,u5);
   const T5=Math.max(...ps.map(p=>dot(sub(p,B5),n4)))+14;
   const look4=camE(n4), look5=camE(mul(n5,-1));
@@ -32917,11 +32962,11 @@ const mapPts=(F,M)=>{ const P={}; Object.keys(F.pts).forEach(n=>P[n]=M(F.pts[n])
 /* ═══ способ 1′: ЗАМЕНА — прямая → уровня (π₄ ∥ прямой) → проецирующая (π₅ ⟂ прямой, видна точкой) ═══ */
 function zamLine(F){
   const P0=F.pts[F.ln[0]], Q0=F.pts[F.ln[1]], d=unit(sub(Q0,P0));
-  let n4=unit(crs(Z,[d[0],d[1],0])); const HM=bestHome([n4,d]), EH=camOf(HM.yaw,HM.pit).E; if(dot(n4,EH)<0) n4=mul(n4,-1);
-  const ps=allPts(F), s0=Math.min(...ps.map(p=>dot(p,n4)))-16, O4=mul(n4,s0), w4=unit(crs(Z,n4)), [a0,a1]=spanOn(ps,O4,w4), H4=Math.max(...ps.map(p=>p[2]))+14;
+  let n4=unit(crs(Z,[d[0],d[1],0])); const HM=bestHome([n4,d]), EH=camOf(HM.yaw,HM.pit).E;
+  const ps=allPts(F), PS=pickSigns(ps,n4,d,Z,false,true); n4=PS.n4; const s0=Math.min(...ps.map(p=>dot(p,n4)))-GAP, O4=mul(n4,s0), w4=unit(crs(Z,n4)), [a0,a1]=spanOn(ps,O4,w4), H4=Math.max(...ps.map(p=>p[2]))+14;
   const q4=p=>sub(p,mul(n4,dot(p,n4)-s0));
-  let n5=d; if(dot(n5,EH)>0) n5=mul(n5,-1);
-  const d5=Math.max(...ps.map(p=>dot(p,n5)))+14, q5=p=>add(p,mul(n5,d5-dot(p,n5)));
+  let n5=PS.n5;
+  const d5=Math.max(...ps.map(p=>dot(p,n5)))+GAP, q5=p=>add(p,mul(n5,d5-dot(p,n5)));
   const ctr=mul(ps.reduce((s,p)=>add(s,p),[0,0,0]),1/ps.length), B5=add(q4(ctr),mul(n5,d5-dot(q4(ctr),n5))), u5=unit(crs(n5,n4));
   const [b0,b1]=spanOn(ps.map(q4),B5,u5), T5=Math.max(...ps.map(p=>dot(sub(p,B5),n4)))+14;
   const pi4=a=>risen(O4,w4,mul(n4,-1),Z,a,a0,a1,H4), pi5=a=>risen(B5,u5,n5,n4,a,b0,b1,T5);
@@ -33039,13 +33084,31 @@ function epZam(st,c){ const {F,n4,O4,w4,base,isF,n5,B5,u5,a0,a1,b0,b1,kind}=c, q
   const S={ax4:0,pr4:0,ax5:0,pr5:0,con:0,back:0,lvl:0,stop1:0};
   const stage=kind==='plane'?[{},{lvl:1},{lvl:1,ax4:1},{lvl:1,ax4:1,pr4:1},{lvl:1,ax4:1,pr4:1,stop1:1},{lvl:1,ax4:1,pr4:1,ax5:1},{lvl:1,ax4:1,pr4:1,ax5:1,pr5:1},{lvl:1,ax4:1,pr4:1,ax5:1,pr5:1,con:1},{lvl:1,ax4:1,pr4:1,ax5:1,pr5:1,con:1,back:1}]
                             :[{},{ax4:1},{ax4:1,pr4:1},{ax4:1,pr4:1,ax5:1},{ax4:1,pr4:1,ax5:1,pr5:1},{ax4:1,pr4:1,ax5:1,pr5:1,con:1}];
-  st.forEach((sp,i)=>{ const g=Object.assign({},S,stage[i]||stage[stage.length-1]); sp.ep=()=>{ const it=epInit();
-    eFig(it,F,F.pts); if(g.lvl) lvl(it);
+  const lv=isF?'f':'h', lvP=isF?'″':'′', ms=isF?'глубины y (расстояния от точек до оси x на π₁)':'высоты z (расстояния от точек до оси x на π₂)', ln=F.ln?F.ln.join(''):'';
+  const E=kind==='plane'?[
+    'Перечерти обе проекции. '+(F.given||''),
+    isF?'Фронталь f: f′ ∥ x, затем f″ по линиям связи. Через неё плоскость станет проецирующей.':'Горизонталь h: h″ ∥ x, затем h′ по линиям связи. Через неё плоскость станет проецирующей.',
+    'Новая ось '+ax1+' ⟂ '+lv+lvP+' — в свободном месте чертежа.',
+    'Из каждой точки — линия связи ⟂ '+ax1+'. От '+ax1+' откладываем '+ms+'. Все точки плоскости легли на одну прямую.',
+    F.stop?(F.res1||''):'Плоскость на π₄ — прямая: она стала проецирующей. Половина пути пройдена.',
+    'Ось x₄₅ ∥ этой прямой, на любом удобном расстоянии.',
+    'Из точек π₄ — линии связи ⟂ x₄₅. От x₄₅ откладываем расстояния от точек на старом поле до '+ax1+'.',
+    F.resTxt||'',
+    'Точки ответа возвращаем по линиям связи: π₅ → π₄ → '+(isF?'π₂ → π₁':'π₁ → π₂')+', расстояния переносим те же.']
+   :['Перечерти обе проекции. '+(F.given||''),
+    'Первая замена: ось x₁₄ ∥ '+F.ln.map(n=>n+'′').join('')+'.',
+    'Линии связи ⟂ x₁₄, от оси откладываем высоты z (с π₂). '+ln+'₄ — натуральная величина отрезка '+ln+'.',
+    'Вторая замена: ось x₄₅ ⟂ '+F.ln.map(n=>n+'₄').join('')+'.',
+    'Линии связи ⟂ x₄₅, откладываем расстояния от точек на π₁ до x₁₄. Прямая '+ln+' проецируется в точку.',
+    F.resTxt||''];
+  st.forEach((sp,i)=>{ sp.e=E[i]; const g=Object.assign({},S,stage[i]||stage[stage.length-1]); sp.ep=()=>{ const it=epInit();
+    const i4=stage.findIndex(x=>x.pr4), i5=stage.findIndex(x=>x.pr5);
+    eFig(it,F,F.pts); if(g.lvl&&(i5<0||i<i5)) lvl(it);
     if(g.ax4) it.push(L.seg(X14[0],X14[1],'main',ax1,'e'));
-    if(g.pr4){ names.forEach(n=>{ const p=F.pts[n]; it.push(L.conn(old(p),U4(q4(p)))); }); fig4(it,p=>U4(q4(p)),'₄'); }
+    if(g.pr4){ if(i===i4||i===i4+1) names.forEach(n=>{ const p=F.pts[n]; it.push(L.conn(old(p),U4(q4(p)))); }); fig4(it,p=>U4(q4(p)),'₄'); }
     if(g.stop1&&c.ep1) c.ep1(it,U4);
     if(g.ax5) it.push(L.seg(X45[0],X45[1],'main','x₄₅','e'));
-    if(g.pr5){ names.forEach(n=>{ const p=F.pts[n]; it.push(L.conn(U4(q4(p)),U5(q5(p)))); }); fig4(it,p=>U5(q5(p)),'₅',g.con?'main':'aux'); }
+    if(g.pr5){ if(i===i5) names.forEach(n=>{ const p=F.pts[n]; it.push(L.conn(U4(q4(p)),U5(q5(p)))); }); fig4(it,p=>U5(q5(p)),'₅',g.con?'main':'aux'); }
     if(g.con) eCon(it,F.con,q5,mapPts(F,q5),{fs:[[U5,'₅']],lab:1});
     if(g.back&&F.con){ Object.values(F.con.pts||{}).forEach(p=>{ it.push(L.conn(U5(q5(p)),U4(q4(p))),L.conn(U4(q4(p)),old(p))); }); eCon(it,F.con,p=>p,F.pts,{fs:[[eF,'″'],[eH,'′']],ang:false,conn:1,nocirc:1}); }
     return it; }; }); }
@@ -33056,22 +33119,33 @@ function epRotL(st,c){ const {F,H1,H2,M,O,R0,back}=c, M1=M(1), names=F.show||Obj
   const hL=it=>{ const a=lerp(H1,H2,-.45), b=lerp(H1,H2,1.45); it.push(L.seg(eF(a),eF(b),'aux','h″','e'),L.seg(eH(a),eH(b),'aux','h′','e')); };
   const tr=(it,X,Y)=>{ const p=eH(X), q=eH(Y||X); const t0=dot2(s2(p,p),pp); it.push(L.seg(a2(p,m2(pp,-14)),a2(q,m2(pp,14)),'auxd')); };
   const Op=eH(O), Rp=eH(R0), dz=Math.abs(R0[2]-O[2])*L.S, Rr=u2(s2(Rp,Op)), R0p=a2(Rp,m2([-Rr[1],Rr[0]],dz)), Rb=eH(M1(R0));
-  st.forEach((sp,i)=>{ sp.ep=()=>{ const it=epInit(); eFig(it,F,F.pts); if(i>=1) hL(it);
-    if(i>=2){ it.push(L.pt(Op,'O′','sw','aux'),L.pt(eF(O),'O″','nw','aux'),L.conn(eF(O),Op)); it.push(L.seg(Rp,R0p,'aux','Δz','e'),L.seg(Op,R0p,'res','R','e')); try{ it.push(L.sq(Rp,Op,R0p,'aux')); }catch(e){} tr(it,R0); }
-    if(i>=3){ arc2(it,Op,R0p,Rb,'aux'); names.filter(n=>!fx.includes(n)).forEach(n=>tr(it,F.pts[n],M1(F.pts[n])));
-      eFig(it,F,mapPts(F,M1),{fs:[[eH,'′']],k:i>=4?'main':'aux',bar:1,fixed:fx}); }
-    if(i>=4&&!(back&&i>=5)) eCon(it,F.con,M1,mapPts(F,M1),{fs:[[eH,'′']],lab:1,bar:1,fixed:fx});
-    if(back&&i>=5&&F.con){ Object.values(F.con.pts||{}).forEach(p=>tr(it,p,M1(p))); eCon(it,F.con,M1,mapPts(F,M1),{fs:[[eH,'′']],bar:1,ang:false,fixed:fx});
-      eCon(it,F.con,p=>p,F.pts,{fs:i>=6?[[eF,'″'],[eH,'′']]:[[eH,'′']],ang:false,conn:i>=6,nocirc:1}); }
+  const R_=F.ref, E=['Перечерти обе проекции. '+(F.given||''),
+    'Горизонталь h через '+F.lvl[0]+': h″ ∥ x, точка '+F.lvl[1]+' — на пересечении, h′ по линии связи. h — ось вращения: точки '+F.lvl.join(' и ')+' не двигаются.',
+    'Из '+R_+'′ — перпендикуляр к h′: след плоскости вращения, на h′ — центр O′. Радиус: катет O′'+R_+'′, второй катет — Δz (разность высот '+R_+' и h, берём с π₂), гипотенуза R — натуральный радиус.',
+    'Дугой R из O′ отмечаем '+R_+'̄′ на следе. Остальные точки плоскости идут по своим перпендикулярам к h′. Горизонтальная проекция теперь — натуральная величина.',
+    F.resTxt||'',
+    'Обратный поворот: каждую точку ответа ведём по перпендикуляру к h′ до исходной проекции.',
+    (F.ansTxt||'Ответ на обеих проекциях.')+' Фронтальные проекции — по линиям связи.'];
+  st.forEach((sp,i)=>{ sp.e=E[i]; sp.ep=()=>{ const it=epInit(); eFig(it,F,F.pts); if(i>=1) hL(it);
+    if(i===2||i===3){ it.push(L.pt(Op,'O′','sw','aux')); it.push(L.seg(Rp,R0p,'aux','Δz','e'),L.seg(Op,R0p,'aux','R','e')); try{ it.push(L.sq(Rp,Op,R0p,'aux')); }catch(e){} tr(it,R0,M1(R0)); }
+    if(i===3){ arc2(it,Op,R0p,Rb,'aux'); names.filter(n=>!fx.includes(n)&&n!==F.ref).forEach(n=>tr(it,F.pts[n],M1(F.pts[n]))); }
+    if(i===3||i===4) eFig(it,F,mapPts(F,M1),{fs:[[eH,'′']],k:i===4?'main':'aux',bar:1,fixed:fx});
+    if(i===4) eCon(it,F.con,M1,mapPts(F,M1),{fs:[[eH,'′']],lab:1,bar:1,fixed:fx});
+    if(i===5&&F.con){ eFig(it,F,mapPts(F,M1),{fs:[[eH,'′']],k:'aux',bar:1,fixed:fx,nolab:1}); Object.values(F.con.pts||{}).forEach(p=>tr(it,p,M1(p))); eCon(it,F.con,M1,mapPts(F,M1),{fs:[[eH,'′']],bar:1,ang:false,fixed:fx,nocirc:1}); eCon(it,F.con,p=>p,F.pts,{fs:[[eH,'′']],ang:false,nocirc:1}); }
+    if(i===6&&F.con) eCon(it,F.con,p=>p,F.pts,{fs:[[eF,'″'],[eH,'′']],ang:false,conn:1,nocirc:1});
     return it; }; }); }
 const dot2=(a,b)=>a[0]*b[0]+a[1]*b[1];
 
 /* вращение вокруг проецирующей i ⟂ π₁: дуги на π₁ вокруг i′, на π₂ точки идут по горизонталям */
 function epRotP(st,c){ const {F,A,M,H1,H2,zT}=c, M1=M(1), names=F.show||Object.keys(F.pts);
   const hL=(it,m,k,b)=>{ const a=m(lerp(H1,H2,-.35)), e=m(lerp(H1,H2,1.35)); it.push(L.seg(eF(a),eF(e),k,'h'+(b?'̄':'')+'″','e'),L.seg(eH(a),eH(e),k,'h'+(b?'̄':'')+'′','e')); };
-  st.forEach((sp,i)=>{ sp.ep=()=>{ const it=epInit(); eFig(it,F,F.pts); if(i>=1){ hL(it,p=>p,'aux'); it.push(L.pt(eH(A),'i′','sw','aux'),L.seg(eF([A[0],0,-2]),eF([A[0],0,zT]),'aux','i″','e')); }
-    if(i>=2){ names.forEach(n=>{ const p=F.pts[n]; if(dist(pr1(p),pr1(A))<.3) return; arc2(it,eH(A),eH(p),eH(M1(p)),'aux'); it.push(L.seg(eF(p),eF(M1(p)),'auxd')); });
-      eFig(it,F,mapPts(F,M1),{k:'aux',bar:1,fixed:[F.i]}); hL(it,M1,'aux',1); }
+  const E=['Перечерти обе проекции. '+(F.given||''),
+    'Горизонталь h: h″ ∥ x, h′ по линии связи. Ось i ⟂ π₁ через '+F.i+': i′ совпадает с '+F.i+'′, i″ ⟂ x.',
+    'Поворачиваем горизонтальную проекцию вокруг i′ — все точки на один угол, дугами — до h̄′ ⟂ x. Фигура на π₁ не искажается. Фронтальные проекции точек идут по горизонталям: высоты не меняются.',
+    'Фронтальная проекция легла в прямую: плоскость стала фронтально-проецирующей. Угол этой прямой с осью x — α = '+fmt(F.alpha)+'°.'];
+  st.forEach((sp,i)=>{ sp.e=E[i]; sp.ep=()=>{ const it=epInit(); eFig(it,F,F.pts); if(i>=1){ hL(it,p=>p,'aux'); it.push(L.pt(eH(A),'i′','sw','aux'),L.seg(eF([A[0],0,-2]),eF([A[0],0,zT]),'aux','i″','e')); }
+    if(i===2) names.forEach(n=>{ const p=F.pts[n]; if(dist(pr1(p),pr1(A))<.3) return; arc2(it,eH(A),eH(p),eH(M1(p)),'aux'); it.push(L.seg(eF(p),eF(M1(p)),'auxd')); });
+    if(i>=2){ eFig(it,F,mapPts(F,M1),{k:i===3?'main':'aux',bar:1,fixed:[F.i],conn:i===2}); hL(it,M1,'aux',1); }
     if(i>=3){ const ps=names.map(n=>eF(M1(F.pts[n]))).sort((a,b)=>a[1]-b[1]), hi=ps[0], lo=ps[ps.length-1], X=x2(lo,hi,[0,0],[1,0]);
       if(X){ const far=l2(s2(hi,X))>l2(s2(lo,X))?hi:lo, ref=[X[0]+(far[0]>X[0]?40:-40),0]; it.push(L.seg(X,far,'res')); try{ it.push(L.ang(X,ref,far,'α = '+fmt(F.alpha)+'°','res',26)); }catch(e){} } }
     return it; }; }); }
@@ -33150,8 +33224,8 @@ function F_nv(){ const A=[82,40,14], B=[50,10,52], C=[16,34,26], t=(C[2]-A[2])/(
   const ps=[]; const u=unit(sub(A,Oc)), v=unit(crs(unit(n),u)); for(let i=0;i<48;i++){ const t=i/48*2*Math.PI; ps.push(add(Oc,add(mul(u,Rc*Math.cos(t)),mul(v,Rc*Math.sin(t))))); }
   return {ask:'Определить натуральную величину треугольника ABC и построить центр описанной около него окружности.',gv:['A','B','C'],title:'Натуральная величина треугольника и центр описанной окружности',pts:{A,B,C,'1':I},show:['A','B','C','1'],segs:[['A','B',0],['B','C',0],['C','A',0]],polys:[['A','B','C']],tri:['A','B','C'],lvl:['C','1'],ref:'B',back:1,
     given:'Треугольник ABC общего положения. Нужна его натуральная величина и центр описанной окружности.',
-    con:{pts:{O:Oc},segs:[['O','A'],['O','B'],['O','C']],circ:[{ps}]},resTxt:'Треугольник в натуральную величину. Центр описанной окружности O — пересечение серединных перпендикуляров, R = '+fmt(Rc)+' мм.',
-    backTxt:'Центр O возвращаем на исходный треугольник — и получаем O′, O″ по линиям связи.'}; }
+    con:{pts:{M:Oc},segs:[['M','A'],['M','B'],['M','C']],circ:[{ps}]},resTxt:'Треугольник в натуральную величину. Центр описанной окружности M — пересечение серединных перпендикуляров к сторонам; радиус '+fmt(Rc)+' мм.',
+    backTxt:'Центр M возвращаем на исходный треугольник — и получаем M′, M″ по линиям связи.',ansTxt:'Центр описанной окружности M: M′ и M″ на проекциях треугольника.'}; }
 function F_bis(){ const K=[30,46,10], A1=[76,32,44], B2=[14,10,44];
   const ua=unit(sub(A1,K)), ub=unit(sub(B2,K)), bd=unit(add(ua,ub)), d=sub(B2,A1);
   /* M = K + bd·s на прямой 1–2 */
@@ -33160,13 +33234,13 @@ function F_bis(){ const K=[30,46,10], A1=[76,32,44], B2=[14,10,44];
     given:'Прямые a и b пересекаются в K. Делить угол пополам на проекциях нельзя — он искажён.',
     con:{pts:{M:Mb},segs:[['K','M','ℓ']],ang:[['K','1','M',13,'½φ'],['K','M','2',17,'½φ']]},resTxt:'В натуральной величине делим угол пополам: биссектриса KM. Точка M лежит на h — на оси вращения, она не двигается!',
     backTxt:'Обратно поворачивается только K: M на оси — стоит на месте. Биссектриса — KM.'}; }
-function F_dll(){ const d=[-50,20,30], P=[82,10,8], Q=[92,46,2], P2=add(P,d), Q2=add(Q,d);
+function F_dll(){ const d=[-50,20,30], P=[82,10,20], Q=[72,40,5], P2=add(P,d), Q2=add(Q,d);
   const Fq=foot(P,Q,Q2), dd=dist(P,Fq);
   return {ask:'Определить расстояние между параллельными прямыми a и b.',gv:[],title:'Расстояние между параллельными прямыми',pts:{A:P,B:P2,C:Q,D:Q2},segs:[['A','B',.1,.1,'a'],['C','D',.1,.1,'b']],ln:['A','B'],
     given:'Прямые a ∥ b (a′ ∥ b′ и a″ ∥ b″), обе общего положения. Расстояние между ними на чертеже не видно.',
     res5:'И b — тоже: параллельные прямые стали двумя точками.',
     con:{pts:{K:Fq},segs:[['A','K','d']]},resTxt:'Обе прямые — точки. Расстояние между точками a₅ и b₅ — расстояние между прямыми: d = '+fmt(dd)+' мм.'}; }
-function F_dllR(){ const F=F_dll(), A=F.pts.A, B=F.pts.B, C=F.pts.C, D=F.pts.D, z0=20, t1=(z0-A[2])/(B[2]-A[2]), t2=(z0-C[2])/(D[2]-C[2]);
+function F_dllR(){ const F=F_dll(), A=F.pts.A, B=F.pts.B, C=F.pts.C, D=F.pts.D, z0=28, t1=(z0-A[2])/(B[2]-A[2]), t2=(z0-C[2])/(D[2]-C[2]);
   const I1=lerp(A,B,t1), I2=lerp(C,D,t2), Fq=foot(I1,C,D);
   return Object.assign(F,{pts:{A,B,C,D,'1':I1,'2':I2},lvl:['1','2'],ref:'A',show:['A','B','C','D','1','2'],
     con:{pts:{K:Fq},segs:[['1','K','d']],sq:[['K','1','D']]},resTxt:'Плоскость прямых ∥ π₁: видим a и b без искажения. Перпендикуляр между ними — расстояние d = '+fmt(dist(I1,Fq))+' мм.'}); }
@@ -33352,7 +33426,7 @@ const LIVESHOW=(function(){
       <ol class="ls-map ls-tkm">${sl.tks.map(x=>`<li><b>${esc(x.t.idx)}</b><span>${esc(String(x.t.q||'').replace(/<[^>]+>/g,''))}<small>${esc((MT3[x.mk]||x.mk))}</small></span></li>`).join('')}</ol></div>`;
     if(sl.kind==='d3'){ const st=sl.sc.steps; return `<div class="ls-c ls-d3"><div class="ls-ep" data-ls-ep></div><div class="ls-d3r"><div class="ls-d3s" data-ls-d3></div><div class="ls-dt">${head}
       <h2>${sl.ti<9?'Решаем пример':'В 3D'}: ${esc(sl.mname)}</h2><p class="ls-task">${esc(sl.sc.title)}</p>
-      <ol class="ls-d3l">${st.map((x,j)=>`<li class="${j<k?'on':''}${j===k?' now':''}" data-ls-d3i="${j}"><b>${j+1}</b><span><strong>${x.t}</strong><em>${x.d||''}</em></span></li>`).join('')}</ol></div></div></div>`; }
+      <ol class="ls-d3l">${st.map((x,j)=>`<li class="${j<k?'on':''}${j===k?' now':''}" data-ls-d3i="${j}"><b>${j+1}</b><span><strong>${x.t}</strong><em>${x.e||x.d||''}</em></span></li>`).join('')}</ol></div></div></div>`; }
     if(sl.kind==='title') return `<div class="ls-c ls-title"><span class="ls-big">${sl.ti+1}</span><h1>${esc(T.t)}</h1><p class="ls-lead">${esc(T.sub)}</p>
       <div class="ls-asks"><b>Как звучит задача:</b>${(T.asks||[]).map(a=>`<p>«${esc(a)}»</p>`).join('')}</div></div>`;
     if(sl.kind==='rk'){ let h=''; try{ h=RKP.rkHTML(T.id,{nobtn:1}); }catch(e){} return `<div class="ls-c ls-rk">${head}${h}</div>`; }
