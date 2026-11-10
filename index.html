@@ -1467,6 +1467,45 @@ body.inplayer footer{display:none}
 /* панель: пункты, режим, показ */
 .pl-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s3);margin-bottom:var(--s3)}
 .pl-bar .pl-parts{margin:0;display:flex;gap:6px;flex-wrap:wrap}
+/* ═══ ABV — «Как оформить в тетради»: лист в клетку, А словами · Б пространство · В чертёж ═══ */
+.pl-rec{margin:12px 0 4px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--acc) 6%,transparent);border:1px dashed color-mix(in srgb,var(--acc) 35%,transparent)}
+.pl-rec-h{font:700 12px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
+.pl-rec-r{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:baseline;margin:4px 0;font:500 15px/1.5 var(--sans);color:var(--ink)}
+.pl-rec-r i{display:grid;place-items:center;width:22px;height:22px;border:1.5px solid var(--acc);border-radius:50%;font:700 11.5px var(--sans);font-style:normal;color:var(--acc)}
+.pl-plan{margin:12px 0 0;padding:8px 12px;border-radius:12px;background:var(--surf2);border:1px solid var(--line)}
+.pl-plan summary{cursor:pointer;font:600 14px var(--sans);color:var(--acc);padding:4px 0}
+.pl-plan p{margin:6px 0;font-size:14.5px}.pl-plan ol{margin:6px 0;padding-left:22px;font-size:14.5px;line-height:1.5}.pl-plan li{margin:3px 0}
+.pl-plan .pl-plan-n{color:var(--mut);font-size:13px}
+.pl-abva{display:inline-flex;align-items:center;gap:7px;margin:10px 0 0;padding:6px 2px;border:0;background:none;color:var(--acc);font:600 14px var(--sans);cursor:pointer;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--acc) 35%,transparent);text-underline-offset:4px}
+.pl-abva small{font-weight:500;color:var(--mut);letter-spacing:.04em}
+.pl-abva:hover,.pl-abva:focus-visible{text-decoration-color:currentColor}
+.abv-ov{--ink-b:#1d2f86;--ink-r:#9b2335;--grid:#c9d8ec;position:fixed;inset:0;z-index:320;display:flex;flex-direction:column;background:rgba(8,11,18,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+body.abv-open{overflow:hidden}
+.abv-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surf);border-bottom:1px solid var(--line);color:var(--ink)}
+.abv-bt{flex:1;min-width:0;display:flex;flex-direction:column}.abv-bt b{font:700 16px var(--sans)}.abv-bt span{font:500 12.5px var(--sans);color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.abv-btn{flex:none;min-width:44px;min-height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font:600 14px var(--sans);cursor:pointer}
+.abv-sc{flex:1;overflow:auto;padding:18px 16px 40px;outline:none}
+.abv-pg{max-width:880px;margin:0 auto 22px;padding:22px 26px 26px;border-radius:6px;color:var(--ink-b);box-shadow:0 14px 40px -18px rgba(0,0,0,.6);
+  background-color:#fffffb;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:18px 18px;background-position:-1px -1px;font:500 16px/1.62 var(--sans)}
+.abv-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--ink-b)}
+.abv-no{font:800 22px var(--disp,var(--sans))}.abv-pl{font:700 17px var(--sans)}.abv-q{flex-basis:100%;font:500 15px/1.45 var(--sans);color:#33406e}
+.abv-s{display:grid;grid-template-columns:132px minmax(0,1fr);gap:4px 14px;padding:10px 0;border-bottom:1px dashed #9fb3d6}
+.abv-lab{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.abv-lab i{display:grid;place-items:center;width:38px;height:38px;border:2px solid var(--ink-b);border-radius:50%;font:700 19px var(--sans);font-style:normal}
+.abv-lab span{font:600 14px/1.25 var(--sans);color:#33406e}
+.abv-def{margin:0 0 6px;font-weight:500;font-style:italic}.abv-alg{margin:0;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.abv-ol{margin:2px 0 0;padding-left:28px}.abv-ol li{margin:3px 0;padding-left:2px}.abv-ol li::marker{font-weight:700}
+.abv-ol li>span{display:block}
+.abv-sym .abv-ol{font:500 17px/1.6 var(--sans);font-variant-numeric:tabular-nums}
+.abv-sym .abv-ol li>span+span{padding-left:14px}
+.abv-ok{color:var(--ink-r);font-weight:700}
+.abv-fig{margin:14px 0 6px;padding:8px;border:1px solid #9fb3d6;border-radius:6px;background:#fff}
+.abv-fig svg{display:block;width:100%;height:auto;max-height:78vh}
+.abv-ans{margin:10px 0 0;color:var(--ink-r);font-weight:600}.abv-ans b{color:var(--ink-r)}
+.abv-foot{max-width:880px;margin:0 auto;color:#e9eef8;font:500 13.5px/1.5 var(--sans);text-align:center}
+@media (max-width:640px){.abv-pg{padding:16px 14px 18px;font-size:15px}.abv-s{grid-template-columns:1fr}.abv-lab{flex-direction:row;align-items:center;gap:10px}.abv-lab span br{display:none}.abv-sym .abv-ol{font-size:15.5px}.abv-ol{padding-left:24px}.abv-bt span{display:none}}
+@media print{body.abv-open>*:not(#abvOv){display:none!important}.abv-ov{position:static;background:none;backdrop-filter:none;display:block}.abv-bar,.abv-foot{display:none}.abv-sc{overflow:visible;padding:0}.abv-pg{box-shadow:none;break-after:page;max-width:none}}
+
 .pl-part{min-height:var(--tap);min-width:var(--tap);padding:0 16px;font-size:14px}
 .pl-modes{display:inline-flex;margin:0 0 0 auto;width:auto;max-width:100%}
 .pl-mode{min-height:40px;padding:0 14px}
@@ -5558,7 +5597,7 @@ function noteShort(h){ if(!h) return ''; const parts=String(h).split(/(?<=[.!?])
 const H3D={}; window.has3D=has3D; function has3D(t){ const k=t.n||t.key; if(k in H3D) return H3D[k]; let r=false; try{ r=!!(window.TASK3D&&partsOf(t).some(p=>TASK3D.has(p))); }catch(e){} return H3D[k]=r; }
 function partsOf(t){
   if(t.parts&&t.parts.length) return t.parts.map((p,i)=>Object.assign({given:t.given||[],l:p.l||String.fromCharCode(1072+i)+')'},p));
-  return [{given:t.given||[],steps:t.steps||[],ans:t.ans,q:null,l:'',_fig:t._fig,surf3:t.surf3,form:t.form}];
+  return [{given:t.given||[],steps:t.steps||[],ans:t.ans,q:null,l:'',_fig:t._fig,surf3:t.surf3,form:t.form,abv:t.abv}];
 }
 function tag(items,g){ return (items||[]).map(it=>Object.assign({},it,{_g:g})); }
 /* прямые достроены до конца: именованная прямая (h″, f′, a″…) продлевается до каждой своей точки —
@@ -5656,7 +5695,51 @@ function allStepsHTML(t){
     });
     h+=`<div class="pp-ans"><b>Ответ.</b> ${p.ans||''}</div>`;
   });
+  if(hasABV(t)) h+=`<div class="pp-step"><div class="pp-h">Оформление в тетради</div>${abvHTML(t)}</div>`;
   return h;
+}
+
+/* ---------- «Как оформить в тетради»: эталон записи решения ----------
+   part.abv = { def, a:[…], b:[…], v:[строка | [строки]], ans? } — как на листе тетради:
+   (А) определение и алгоритм словами, (Б) пространство — алгоритм символами, (В) чертёж — алгоритм символами, затем итоговый чертёж и ответ. */
+function abvList(arr){ return '<ol class="abv-ol">'+(arr||[]).map(x=>'<li>'+(Array.isArray(x)?x.map(s=>'<span>'+s+'</span>').join(''):'<span>'+x+'</span>')+'</li>').join('')+'</ol>'; }
+/* итоговый чертёж без подсветки «нового шага»: в тетради все построения равноправны */
+function abvFig(p,n){ if(p._fig) return p._fig(n); const sc=scene(p,n); sc.items.forEach(it=>{ if(it._g==='new') it._g='old'; }); sc.alt='Итоговый чертёж'; return ((p.given&&p.given.length)||n)?DRAW.svg(sc):''; }
+/* пошагово: на шаге, где пункт алгоритма закончен, — его строчки Б и В («в тетрадь»); на «Дано» — свёрнутый план (А) */
+function abvLine(x){ return Array.isArray(x)?x.join('<br>'):x; }
+function recHTML(p,k){ const A=p.abv; if(!A||!A.at||k<1) return ''; const at=A.at, i=at[k-1]; if(!i||(k<at.length&&at[k]===i)) return '';
+  const prev=Math.max(0,...at.slice(0,k-1).filter(x=>x&&x<i)), ids=[]; for(let j=prev+1;j<=i;j++) ids.push(j); if(!ids.length) return '';
+  return `<div class="pl-rec"><div class="pl-rec-h"><span aria-hidden="true">✎</span> В тетрадь · ${ids.length>1?'пункты '+ids.join('–'):'пункт '+i} из ${A.a.length}</div>${ids.map(j=>`<div class="pl-rec-r"><i title="Пространство">Б</i><span>${ids.length>1?j+') ':''}${abvLine(A.b[j-1]||'')}</span></div><div class="pl-rec-r"><i title="Чертёж">В</i><span>${ids.length>1?j+') ':''}${abvLine(A.v[j-1]||'')}</span></div>`).join('')}</div>`; }
+function planHTML(p){ const A=p.abv; return `<details class="pl-plan"><summary>План решения — как в тетради</summary>${A.def?`<p>${A.def}</p>`:''}<ol>${A.a.map(x=>'<li>'+x+'</li>').join('')}</ol><p class="pl-plan-n">По шагам разбора появятся строчки записи: Б — в пространстве, В — на чертеже.</p></details>`; }
+function hasABV(t){ try{ return partsOf(t).some(p=>p.abv); }catch(e){ return false; } }
+function abvHTML(t){
+  const ps=partsOf(t), no=/^\d/.test(String(t.n))?String(t.n):'';
+  return ps.map((p,i)=>{ if(!p.abv) return ''; const A=p.abv, n=(p.steps||[]).length;
+    return `<article class="abv-pg" data-p="${i}">
+      <div class="abv-hd">${no?`<span class="abv-no">№ ${no}</span>`:''}${p.l?`<span class="abv-pl">${escH(String(p.l).replace(/<[^>]+>/g,''))}</span>`:''}<span class="abv-q">${p.q||t.q||''}</span></div>
+      <section class="abv-s"><div class="abv-lab"><i>А</i><span>Словами</span></div><div class="abv-bd">${A.def?`<p class="abv-def">${A.def}</p>`:''}<p class="abv-alg">Алгоритм:</p>${abvList(A.a)}</div></section>
+      <section class="abv-s"><div class="abv-lab"><i>Б</i><span>Пространство<br>алгоритм</span></div><div class="abv-bd abv-sym">${abvList(A.b)}</div></section>
+      <section class="abv-s"><div class="abv-lab"><i>В</i><span>Чертёж<br>алгоритм</span></div><div class="abv-bd abv-sym">${abvList(A.v)}</div></section>
+      <figure class="abv-fig">${abvFig(p,n)}</figure>
+      <p class="abv-ans"><b>Ответ:</b> ${A.ans||p.ans||''}</p>
+    </article>`; }).join('');
+}
+function abvOpen(t,pi,back){
+  try{ const old=document.getElementById('abvOv'); if(old) old.remove();
+    const w=document.createElement('div'); w.id='abvOv'; w.className='abv-ov'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true');
+    const ttl=(/^\d/.test(String(t.n))?'Задача №'+t.n:String(t.n||'Задача'));
+    w.setAttribute('aria-label','Оформление в тетради · '+ttl);
+    w.innerHTML=`<div class="abv-bar"><div class="abv-bt"><b>Оформление в тетради</b><span>${escH(ttl)} · А — словами, Б — в пространстве, В — на чертеже</span></div><button class="abv-btn abv-print" type="button">Печать</button><button class="abv-btn abv-x" type="button" aria-label="Закрыть">✕</button></div>
+      <div class="abv-sc" tabindex="-1">${abvHTML(t)}<p class="abv-foot">Так записывают решение в тетради и на листе: сначала словами, потом символами в пространстве, потом — по проекциям; номера пунктов в Б и В совпадают с номерами в А.</p></div>`;
+    const close=()=>{ document.removeEventListener('keydown',kd); document.body.classList.remove('abv-open'); w.remove(); try{ if(back&&back.focus) back.focus({preventScroll:true}); }catch(e){} };
+    const kd=e=>{ if(e.key==='Escape') close(); };
+    w.querySelector('.abv-x').addEventListener('click',close);
+    w.querySelector('.abv-print').addEventListener('click',()=>{ try{ window.print(); }catch(e){} });
+    document.body.appendChild(w); document.body.classList.add('abv-open'); document.addEventListener('keydown',kd);
+    const sc=w.querySelector('.abv-sc'), pg=pi?w.querySelector('.abv-pg[data-p="'+pi+'"]'):null;
+    requestAnimationFrame(()=>{ if(pg) sc.scrollTop=pg.offsetTop-8; try{ sc.focus({preventScroll:true}); }catch(e){} });
+    return {close};
+  }catch(e){ console.error(e); return null; }
 }
 
 /* ---------- интерактивный плеер ----------
@@ -5707,14 +5790,15 @@ function mount(root,t,opt){
         <div class="pl-title">${st.t||''}</div>
         <div class="pl-text">${chipify(st.d||'',scene(p,k).items)}</div>
         ${st.why?`<div class="pl-why"><span>Почему</span>${chipify(st.why,scene(p,k).items)}</div>`:''}
-        ${st.tbl||''}
+        ${st.tbl||''}${recHTML(p,k)}
         <button class="pl-stuckbtn" type="button" aria-expanded="${S.help?'true':'false'}">${S.help?'Понятно':'Не понял шаг'}</button>${S.help?helpHTML(st,k,p):''}`;
     }
+    if(k===0&&p.abv) card+=planHTML(p);
     const last = k===n && !tryHid;
     let ans='';
     if(last){
       const more = pi<parts.length-1 ? 'Дальше — пункт '+parts[pi+1].l : (opt.afterText||'');
-      ans=`<div class="pl-ans"><div class="pl-kicker">Ответ</div>${p.ans||''}</div>${more?`<div class="pl-after">${more}</div>`:''}`;
+      ans=`<div class="pl-ans"><div class="pl-kicker">Ответ</div>${p.ans||''}</div>${p.abv?'<button class="pl-abvb pl-abva" type="button" title="А — словами, Б — в пространстве, В — на чертеже"><span aria-hidden="true">✎</span> Как записать в тетради <small>А · Б · В</small></button>':''}${more?`<div class="pl-after">${more}</div>`:''}`;
     }
     /* финальный чертёж — отметкой над текстом, а не плашкой поверх рисунка: чертёж ответа виден целиком */
     const fin=last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:'';
@@ -5788,7 +5872,7 @@ function mount(root,t,opt){
     try{ if(window.FX) FX.buzz('success'); }catch(e){} setTimeout(()=>{ const b=root.querySelector('.pl-nextt'); if(b){ b.disabled=false; b.classList.remove('wait'); } },900);
     const tl=(/^\d/.test(String(t.n))?'Задача №':'')+t.n;
     return `<div class="pl-donev"><div class="pl-cat">${typeof CAT==='function'?CAT('happy'):''}<span class="pl-ok" aria-hidden="true">✓</span></div><div class="pl-dk">Конец разбора</div><h2>${escH(tl)} разобрана</h2><div class="pl-win" hidden></div>
-      <div class="pl-ans"><div class="pl-kicker">Ответ</div>${p.ans||''}</div>${opt.rep?repHTML():''}
+      <div class="pl-ans"><div class="pl-kicker">Ответ</div>${p.ans||''}</div>${hasABV(t)?'<button class="pl-abvb pl-abva" type="button" title="А — словами, Б — в пространстве, В — на чертеже"><span aria-hidden="true">✎</span> Как записать в тетради <small>А · Б · В</small></button>':''}${opt.rep?repHTML():''}
       <div class="pl-donebtns">
         ${opt.afterText&&opt.onDone?`<button class="btn pri pl-nextt wait" disabled>${opt.afterText.replace(/^Дальше:\s*/,'Следующая: ')} →</button>`:''}
         <button class="btn pl-redo">↺ Повторить с начала</button>
@@ -5844,6 +5928,7 @@ function mount(root,t,opt){
     q('.pl-sh')&&q('.pl-sh').addEventListener('click',e=>shareNow(e.currentTarget));
     q('.pl-share')&&q('.pl-share').addEventListener('click',e=>shareNow(e.currentTarget));
     q('.pl-peek')&&q('.pl-peek').addEventListener('click',()=>{ S.peek=!S.peek; render(); });
+    root.querySelectorAll('.pl-abvb').forEach(b=>b.addEventListener('click',e=>{ track('task_abv'); abvOpen(t,S.pi,e.currentTarget); }));
     root.querySelectorAll('.pl-dot').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.k)));
     root.querySelectorAll('.pl-part').forEach(b=>b.addEventListener('click',()=>{S.pi=+b.dataset.p;S.k=0;S.z={s:1,x:0,y:0};render();}));
     root.querySelectorAll('.pl-mode[data-m]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.m;S.shown={};S.hint={};S.rated=null;S.saw3d=0;render(); track('task_mode'); if(opt.onMode) opt.onMode(S.mode);}));
@@ -5909,7 +5994,7 @@ function mount(root,t,opt){
 }
 function plural(n,a,b,c){ const m=n%10,h=n%100; return (m===1&&h!==11)?a:(m>=2&&m<=4&&(h<12||h>14))?b:c; }
 
-return { mount, allStepsHTML, scene, partsOf };
+return { mount, allStepsHTML, scene, partsOf, abvHTML, abvOpen, hasABV };
 })();
 
 window.PANES=window.PANES||{};
@@ -17895,6 +17980,22 @@ const pc=(()=>{ const {F,H}=mk(1.4);
         why:'На π₁ видна точка с большей высотой z.',
         add:[ pt(H(P3),'3′≡Q′','se','grn'), conn(H(P3),F(P3)), pt(F(P3),'3″','n','grn'), pt(F(Q),'Q″','e','grn',{hollow:true}), ...r1 ] }
     ],
+    abv:{ at:[1,2,2,3,4,4],
+      def:'Точка пересечения — это общая точка прямой и плоскости треугольника.',
+      a:[ 'Заключаем прямую во вспомогательную проецирующую плоскость γ;',
+          'Строим линию пересечения 12 вспомогательной плоскости γ с заданной плоскостью (ΔABC);',
+          'Находим точку K пересечения построенной линии и заданной прямой;',
+          'Определяем видимость участков прямой методом конкурирующих точек.' ],
+      b:[ 'a ⊂ γ ⊥ π₂;',
+          '12 = γ ∩ (ΔABC);',
+          'K = 12 ∩ a;',
+          [ '1 ∈ AB, Z ∈ a; 1Z ⊥ π₂; '+(hid2?'y₁ > y<sub>Z</sub> ⇒ (1K) — невидимый участок на π₂;':'y<sub>Z</sub> > y₁ ⇒ (1K) — видимый участок на π₂;'),
+            '3 ∈ AB, Q ∈ a; 3Q ⊥ π₁; '+(hid1?'z₃ > z<sub>Q</sub> ⇒ (3K) — невидимый участок на π₁.':'z<sub>Q</sub> > z₃ ⇒ (QK) — видимый участок на π₁.') ] ],
+      v:[ 'f₀γ ≡ a″, h₀γ ⊥ x;',
+          [ '1″ = a″ ∩ A″B″; 1′ ∈ A′B′;', '2″ = a″ ∩ B″C″; 2′ ∈ B′C′;', 'l′ = 1′2′;' ],
+          'K′ = 1′2′ ∩ a′; K″ ∈ a″;',
+          [ '1″ ≡ Z″; 1′ ∈ A′B′, Z′ ∈ a′ ⇒ '+(hid2?'y₁ > y<sub>Z</sub> ⇒ K″1″ — невидимый участок;':'y<sub>Z</sub> > y₁ ⇒ K″1″ — видимый участок;'),
+            '3′ ≡ Q′; 3″ ∈ A″B″, Q″ ∈ a″ ⇒ '+(hid1?'z₃ > z<sub>Q</sub> ⇒ K′3′ — невидимый участок.':'z<sub>Q</sub> > z₃ ⇒ K′Q′ — видимый участок.') ] ] },
     ans:'Прямая a заключена во фронтально-проецирующую плоскость γ; l = γ ∩ (ABC) = 12; K′ = a′ ∩ l′, K″ ∈ a″. Видимость: на π₂ невидим участок a″ от 1″ до K″, на π₁ — от 3′ до K′.' }; })();
 
 WB3.add({
@@ -18976,6 +19077,19 @@ WB3.add({
       why:'Фигура, лежащая в плоскости, параллельной плоскости проекций, проецируется на неё без искажения (вопрос 10).',
       add:[ poly([Ab1,B1,Cb1],'res',true), pt(Ab1,'Ā′','se','res'), pt(Cb1,'C̄′','se','res'), pt(B1,'B′','sw','res'), seg(Ab2,B2,'res') ] }
   ],
+  abv:{ at:[2,3,3,3,4], def:'Истинный вид фигуры — её изображение без искажения. Он получается на той плоскости проекций, которой плоскость фигуры параллельна.',
+    a:[ 'Выбираем ось вращения i ⊥ π₂ через вершину B — точка B останется неподвижной;',
+        'Задаём граничное условие: плоскость треугольника после поворота должна стать параллельной π₁;',
+        'Поворачиваем вершины A и C вокруг оси i до граничного условия и находим их новые проекции;',
+        'Соединяем новые проекции — на π₁ получаем истинный вид треугольника.' ],
+    b:[ 'i ⊥ π₂; B ∈ i;',
+        'α(ΔABC) ⊥ π₂; ᾱ ∥ π₁ — гр. усл.;',
+        ['A → Ā, C → C̄ вокруг i: |iA| = |iĀ|, |iC| = |iC̄|; B ≡ B̄;'],
+        'ΔĀBC̄ ⊂ ᾱ ∥ π₁ ⇒ ΔĀ′B′C̄′ — истинный вид ΔABC.' ],
+    v:[ 'i″ ≡ B″; i′ ⊥ x, B′ ∈ i′;',
+        'гр. усл.: ᾱ″ ∥ x, B″ ∈ ᾱ″;',
+        [ 'Ā″ ∈ гр. усл., |B″Ā″| = |B″A″|; C̄″ ∈ гр. усл., |B″C̄″| = |B″C″|;', 'A′Ā′ ∥ x, C′C̄′ ∥ x;', 'Ā′ — на линии связи с Ā″; C̄′ — на линии связи с C̄″;' ],
+        [ 'Ā′B′C̄′ — истинный вид ΔABC;', '|AB| ≈ '+Math.round(ab)+' мм, |BC| ≈ '+Math.round(bc)+' мм, |CA| ≈ '+Math.round(ca)+' мм.' ] ] },
   ans:'Треугольник Ā′B′C̄′ — истинный вид ABC: |AB| ≈ '+Math.round(ab)+' мм, |BC| ≈ '+Math.round(bc)+' мм, |CA| ≈ '+Math.round(ca)+' мм.',
   note:'Размеры условные. Точки A″, C″, B″ лежат на одной прямой (плоскость ⟂ π₂). Поворот — на 135° по часовой стрелке через верх; можно повернуть и на 45° против часовой, треугольник получится зеркальным.'
 });
@@ -19066,6 +19180,19 @@ WB3.add({
       why:'Для фронтально-проецирующей плоскости угол её фронтального следа с осью x равен углу наклона к π₁ (вопрос 22).',
       add:[ LN(Xbar,Bf,'res','f̄₀α',[6,-4,'start'],0,32,null), ang(Xbar,[Xbar[0]+50,Xbar[1]],Bf,'φ = '+deg(phi)+'°','res',34), pt(Xbar,'X̄α','nw','res') ] }
   ],
+  abv:{ at:[null,1,1,2,3,3,3,4], def:'Угол наклона плоскости к π₁ — угол между плоскостью и π₁. Он виден на π₂ без искажения, когда плоскость фронтально-проецирующая: это угол между её фронтальным следом и осью x.',
+    a:[ 'Находим точку B, в которой ось i пересекает плоскость α (через горизонталь h<sub>B</sub>) — она при вращении неподвижна;',
+        'На следе h₀α берём точку A, ближайшую к оси: радиус вращения i′A′ ⊥ h₀α;',
+        'Поворачиваем α вокруг i, пока она не станет фронтально-проецирующей (граничное условие: h̄₀α ⊥ x);',
+        'Через X̄α и B″ проводим повёрнутый фронтальный след f̄₀α — его угол с осью x и есть φ.' ],
+    b:[ 'h<sub>B</sub> ⊂ α, h<sub>B</sub> ∥ h₀α; B = h<sub>B</sub> ∩ i;',
+        'A ∈ h₀α; R<sub>вр</sub> = |iA|, iA ⊥ h₀α;',
+        'α → ᾱ вокруг i ⊥ π₁: ᾱ ⊥ π₂ — гр. усл.; B ≡ B̄;',
+        'φ = ∠(ᾱ, π₁) = ∠(f̄₀α, x).' ],
+    v:[ [ 'h′<sub>B</sub> ∥ h₀α, i′ ∈ h′<sub>B</sub>; 1′ = h′<sub>B</sub> ∩ x; 1″ ∈ f₀α;', 'h″<sub>B</sub> ∥ x, 1″ ∈ h″<sub>B</sub>; B″ = h″<sub>B</sub> ∩ i″; B′ ≡ i′;' ],
+        'A′ ∈ h₀α, i′A′ ⊥ h₀α; A″ ∈ x;',
+        [ 'гр. усл.: i′Ā′ ∥ x; |i′Ā′| = |i′A′|;', 'h̄₀α ⊥ x, Ā′ ∈ h̄₀α; X̄α = h̄₀α ∩ x;' ],
+        'f̄₀α = X̄αB″; φ = ∠(f̄₀α, x) ≈ '+deg(phi)+'°.' ] },
   ans:'Угол наклона плоскости α к π₁: φ ≈ '+deg(phi)+'°.',
   note:'Размеры условные: f₀α — вверх-вправо, h₀α — вниз-вправо, ось i справа от X. Ход: A ∈ h₀α, B = α ∩ i, поворот A вокруг i′ до положения h₀α ⟂ x.'
 });
@@ -19137,6 +19264,19 @@ WB3.add({
       why:'Точки оси вращения неподвижны; B ∈ h ⇒ B″ ∈ h″ на одной линии связи с B′ (вопрос 14).',
       add:[ conn(Bh,B2), pt(B2,'B″','ne','res'), seg(Ah,Bh,'res'), seg(F(A),B2,'res'), pt(F(A),'A″','ne','res'), pt(Ah,'A′','ne','res') ] }
   ],
+  abv:{ at:[1,2,2,3,3,4,4], def:'Биссектриса угла делит его пополам. Строить её можно только на натуральной величине угла — поэтому плоскость угла поворачиваем до положения, параллельного π₁.',
+    a:[ 'В плоскости угла проводим горизонталь h — ось вращения; точки 1 ∈ a и 2 ∈ b лежат на оси и неподвижны;',
+        'Через A проводим плоскость вращения ⊥ h, находим центр O и радиус вращения |AO| (натуральная величина);',
+        'Поворачиваем A, пока плоскость угла не станет параллельной π₁, — угол 1Ā2 виден в натуральную величину;',
+        'Делим угол Ā пополам, находим основание биссектрисы B на оси h и возвращаем биссектрису на проекции.' ],
+    b:[ 'h ⊂ (a, b), h ∥ π₁; 1 = h ∩ a, 2 = h ∩ b;',
+        'A ∈ α<sub>вр</sub> ⊥ h; O = α<sub>вр</sub> ∩ h; R<sub>вр</sub> = |AO|;',
+        'A → Ā, |OĀ| = R<sub>вр</sub>; (ā, b̄) ∥ π₁ ⇒ ∠1Ā2 = н.в. ∠A;',
+        'ĀB — биссектриса ∠1Ā2, B ∈ h ⇒ B неподвижна; AB — биссектриса ∠A.' ],
+    v:[ [ 'h″ ∥ x; 1″ = h″ ∩ a″, 2″ = h″ ∩ b″;', '1′ ∈ a′, 2′ ∈ b′; h′ = 1′2′;' ],
+        [ 'α<sub>вр</sub>′ ⊥ h′, A′ ∈ α<sub>вр</sub>′; O′ = α<sub>вр</sub>′ ∩ h′; O″ ∈ h″;', 'R<sub>вр</sub> = |O′A₀| = |OA| (катеты O′A′ и Δz);' ],
+        [ 'Ā′ ∈ α<sub>вр</sub>′, |O′Ā′| = R<sub>вр</sub>;', '∠1′Ā′2′ = ∠A ≈ '+deg(angT)+'°;' ],
+        [ 'Ā′M — биссектриса (дуга: P, Q; M — середина PQ);', 'B′ = Ā′M ∩ h′; B″ ∈ h″;', 'A′B′, A″B″ — проекции биссектрисы.' ] ] },
   ans:'Биссектриса AB: A′B′ и A″B″, где B — точка горизонтали h, делящая отрезок 12 в отношении |A1| : |A2|. Угол между a и b ≈ '+deg(angT)+'°.',
   note:'Размеры условные. Ход: h — горизонталь, α<sub>вр</sub> ⟂ h, радиус |AO| найден треугольником, биссектриса Ā′B′ проведена в повёрнутом положении. Контроль вычислением: положение B на 1–2 совпадает с делением в отношении сторон ('+(ok<0.01?'совпало':'ошибка')+').'
 });
@@ -19196,6 +19336,19 @@ WB3.add({
       why:'Фигура, параллельная π₂, проецируется на π₂ без искажения.',
       add:[ seg(Ab,F(P1),'res'), seg(Ab,F(P2),'res'), ang(Ab,F(P1),F(P2),deg(phi0)+'°','res',34) ] }
   ],
+  abv:{ at:[1,2,3,3,3,4], def:'Угол между скрещивающимися прямыми — угол между пересекающимися прямыми, проведёнными параллельно им через одну точку.',
+    a:[ 'Берём точку A на прямой b и проводим через неё a₁ ∥ a — получаем пересекающиеся прямые a₁ и b;',
+        'В плоскости (a₁, b) проводим фронталь f — ось вращения; точки 1 и 2 на ней неподвижны;',
+        'Находим центр и радиус вращения точки A и поворачиваем её, пока плоскость (a₁, b) не станет параллельной π₂;',
+        'Угол при Ā″ — натуральная величина угла между a и b (из двух смежных берём острый).' ],
+    b:[ 'A ∈ b; a₁ ∋ A, a₁ ∥ a;',
+        'f ⊂ (a₁, b), f ∥ π₂; 1 = f ∩ a₁, 2 = f ∩ b;',
+        'A ∈ α<sub>вр</sub> ⊥ f; O = α<sub>вр</sub> ∩ f; R<sub>вр</sub> = |AO|; A → Ā; (ā₁, b̄) ∥ π₂;',
+        'φ = ∠(a, b) = ∠(a₁, b) = ∠1Ā2.' ],
+    v:[ [ 'A′ = a′ ∩ b′, A″ ∈ b″;', 'a₁″ ∥ a″, A″ ∈ a₁″; a₁′ ≡ a′;' ],
+        [ 'f′ ∥ x; 1′ = f′ ∩ a₁′, 2′ = f′ ∩ b′;', '1″ ∈ a₁″, 2″ ∈ b″; f″ = 1″2″;' ],
+        [ 'α<sub>вр</sub>″ ⊥ f″, A″ ∈ α<sub>вр</sub>″; O″ = α<sub>вр</sub>″ ∩ f″; O′ ∈ f′;', 'R<sub>вр</sub> = |O″A₀| = |OA| (катеты O″A″ и Δy);', 'Ā″ ∈ α<sub>вр</sub>″, |O″Ā″| = R<sub>вр</sub>;' ],
+        'φ = ∠1″Ā″2″ ≈ '+deg(phi)+'°.' ] },
   ans:'Угол между скрещивающимися прямыми a и b: φ ≈ '+deg(phi)+'°.',
   note:'Ход: a ∸ b, вспомогательная a₁ ∥ a через точку A = a′ ∩ b′ ∈ b, фронталь f плоскости (a₁,b). Размеры условные. Контроль вычислением: угол между направляющими векторами a и b = '+deg(chk)+'°.'
 });
@@ -19249,6 +19402,19 @@ WB3.add({
       why:'Расстояние от точки до прямой — длина перпендикуляра; в плоскости, параллельной π₁, он проецируется без искажения (вопрос 18).',
       add:[ seg(Ah,Fo,'res','d '+(Math.abs(dist-Math.round(dist))<0.05?'=':'≈')+' '+Math.round(dist)+' мм',[-6,10,'end']), sq(Fo,Ah,h1,'res'), pt(Ah,'A′','sw','res') ] }
   ],
+  abv:{ at:[1,2,2,3,3,4], def:'Расстояние от точки до прямой — длина перпендикуляра, опущенного из точки на прямую.',
+    a:[ 'Через A проводим горизонталь h плоскости (A, b) — ось вращения; A и точка 1 = h ∩ b неподвижны;',
+        'Берём на b точку K и находим центр O и радиус её вращения вокруг h;',
+        'Поворачиваем K, пока плоскость (A, b) не станет параллельной π₁; повёрнутая прямая b̄ проходит через 1 и K̄;',
+        'Опускаем из A′ перпендикуляр на b̄′ — его длина и есть расстояние d.' ],
+    b:[ 'h ∋ A, h ∥ π₁; 1 = h ∩ b;',
+        'K ∈ b; K ∈ α<sub>вр</sub> ⊥ h; O = α<sub>вр</sub> ∩ h; R<sub>вр</sub> = |KO|;',
+        'K → K̄, |OK̄| = R<sub>вр</sub>; b̄ = 1K̄; (A, b̄) ∥ π₁;',
+        'AM ⊥ b̄, M ∈ b̄ ⇒ d = |AM|.' ],
+    v:[ [ 'h″ ∥ x, A″ ∈ h″; 1″ = h″ ∩ b″;', '1′ ∈ b′; h′ = A′1′;' ],
+        [ 'K′ ∈ b′; α<sub>вр</sub>′ ⊥ h′, K′ ∈ α<sub>вр</sub>′;', 'O′ = α<sub>вр</sub>′ ∩ h′; O″ ∈ h″;', 'R<sub>вр</sub> = |O′K₀| = |OK| (катеты O′K′ и Δz);' ],
+        'K̄′ ∈ α<sub>вр</sub>′, |O′K̄′| = R<sub>вр</sub>; b̄′ = 1′K̄′;',
+        'из A′ — перпендикуляр к b̄′; d = его длина '+(Math.abs(dist-Math.round(dist))<0.05?'=':'≈')+' '+Math.round(dist)+' мм.' ] },
   ans:'Расстояние от точки A до прямой b равно длине перпендикуляра из A′ на b̄′: d '+(Math.abs(dist-Math.round(dist))<0.05?'=':'≈')+' '+Math.round(dist)+' мм.',
   note:'Размеры условные. Проверено вычислением по 3D-координатам: расстояние от A до b = '+deg(chk)+' мм.'
 });
@@ -19333,6 +19499,19 @@ WB3.add({
       why:'Точка, принадлежащая прямой, имеет проекции на одноимённых проекциях прямой, лежащие на одной линии связи (вопрос 14).',
       add:[ conn(T2,T1), pt(T1,'T′','nw','aux'), seg(T1,H(B),'aux'), conn(O2,O1), pt(O1,'O′','ne','res') ] }
   ],
+  abv:{ at:[1,2,2,2,2,3,4,4], def:'Центр описанной окружности — точка пересечения серединных перпендикуляров к сторонам треугольника. Строят его на натуральной величине треугольника, а потом возвращают на проекции.',
+    a:[ 'Через C проводим фронталь f плоскости ABC — ось вращения; C и точка 1 = f ∩ AB неподвижны;',
+        'Находим центры и радиусы вращения вершин A и B и поворачиваем их, пока треугольник не станет параллельным π₂;',
+        'В натуральном треугольнике строим серединные перпендикуляры — центр Ō;',
+        'Возвращаем центр: прямая B̄Ō пересекает ось в неподвижной точке T, значит O лежит на TB.' ],
+    b:[ 'f ∋ C, f ⊂ (ABC), f ∥ π₂; 1 = f ∩ AB;',
+        [ 'A ∈ α<sub>вр1</sub> ⊥ f, O₁ = α<sub>вр1</sub> ∩ f, R₁ = |AO₁|; B ∈ α<sub>вр2</sub> ⊥ f, O₂ = α<sub>вр2</sub> ∩ f, R₂ = |BO₂|;', 'A → Ā, B → B̄; ΔĀB̄C ∥ π₂;' ],
+        'Ō: |ŌĀ| = |ŌB̄| = |ŌC|;',
+        'T = B̄Ō ∩ f — неподвижна ⇒ O ∈ TB; O = TB ∩ (плоскость вращения Ō ⊥ f).' ],
+    v:[ [ 'f′ ∥ x, C′ ∈ f′; 1′ = f′ ∩ A′B′;', '1″ ∈ A″B″; f″ = C″1″;' ],
+        [ 'α″<sub>вр1</sub> ⊥ f″, A″ ∈ α″<sub>вр1</sub>, O₁″ = α″<sub>вр1</sub> ∩ f″; α″<sub>вр2</sub> ⊥ f″, B″ ∈ α″<sub>вр2</sub>, O₂″ = α″<sub>вр2</sub> ∩ f″;', 'R₁ = |O₁A| (катеты O₁″A″ и Δy), R₂ = |O₂B| (катеты O₂″B″ и Δy);', '|O₁″Ā″| = R₁, |O₂″B̄″| = R₂; контроль: 1″ ∈ Ā″B̄″;' ],
+        'серединные перпендикуляры к Ā″B̄″ и B̄″C″ ⇒ Ō″;',
+        [ 'T″ = B̄″Ō″ ∩ f″; O″ = T″B″ ∩ (⊥ f″ через Ō″);', 'T′ ∈ f′; O′ = T′B′ ∩ (линия связи из O″).' ] ] },
   ans:'Центр O описанной окружности: O″ = T″B″ ∩ (перпендикуляр к f″ через Ō″), O′ ∈ T′B′ на линии связи с O″; (O — точка плоскости ABC, равноудалённая от A, B, C).',
   note:'Размеры условные. Фронталь проведена через C с точкой 1 на продолжении AB. Результат проверен вычислением: центр, найденный вращением, совпадает с описанным центром в пространстве (расхождение '+(err<0.05?'< 0,05':'ОШИБКА '+err)+' ед. чертежа).'
 });
@@ -19391,6 +19570,19 @@ const pa=(()=>{ const sc=2.2, {F,H}=mk(sc);
         why:'Фигура в плоскости, параллельной π₁, проецируется на π₁ без искажения.',
         add:[ seg(Ah,Nh,'res'), seg(Nh,Kb,'res'), seg(Ah,Kb,'res'), sq(Nh,Ah,Kb,'res'), ang(Kb,Nh,Ah,'φ = '+deg(phi)+'°','res',34) ] }
     ],
+    abv:{ at:[1,2,2,3,3,4], def:'Угол между прямой и плоскостью — угол между прямой и её проекцией на эту плоскость.',
+      a:[ 'Находим точку K, в которой прямая a пересекает β: β горизонтально-проецирующая, K′ сразу видна на h₀β;',
+          'Из точки A ∈ a опускаем на β перпендикуляр n, его основание N; NK — проекция a на β, φ = ∠AKN;',
+          'Нормаль n ∥ π₁ — горизонталь: вращаем треугольник ANK вокруг n до положения, параллельного π₁ (K → K̄);',
+          'В натуральном треугольнике A′N′K̄′ угол при K̄′ — искомый φ.' ],
+      b:[ 'K = a ∩ β;',
+          'n ∋ A, n ⊥ β; N = n ∩ β; ∠(a, β) = ∠AKN;',
+          'n — ось вращения; центр вращения K — точка N (NK ⊥ n); R<sub>вр</sub> = |NK|; K → K̄; ΔANK̄ ∥ π₁;',
+          'φ = ∠AK̄N.' ],
+      v:[ 'K′ = a′ ∩ h₀β; K″ ∈ a″;',
+          [ 'n′ ⊥ h₀β, A′ ∈ n′; n″ ∥ x, A″ ∈ n″;', 'N′ = n′ ∩ h₀β; N″ ∈ n″;' ],
+          [ 'R<sub>вр</sub> = |N′K₀| = |NK| (катеты N′K′ и Δz);', 'K̄′ ∈ h₀β, |N′K̄′| = R<sub>вр</sub>;' ],
+          'φ = ∠A′K̄′N′ ≈ '+deg(phi)+'°.' ] },
     ans:'Угол между прямой a и плоскостью β: φ ≈ '+deg(phi)+'° (контроль по 3D-координатам: '+deg(chk)+'°).' }; })();
 
 /* ===== б) β общего положения: ось вращения — фронталь f плоскости (a, n) ===== */
@@ -19450,6 +19642,19 @@ const pb=(()=>{ const sc=4, {F,H}=mk(sc);
         why:'В прямоугольном треугольнике острые углы в сумме дают 90°: φ = 90° − δ.',
         add:[ ang(Ab,F(P1),F(P2),'δ = '+deg(delta)+'°','res',30), seg(F(P1),Kb,'res'), sq(F(P1),Ab,Kb,'res'), pt(Kb,'K̄','se','res'), ang(Kb,F(P1),Ab,'φ = '+deg(phi)+'°','res',28) ] }
     ],
+    abv:{ at:[1,1,2,3,3,3,4], def:'Угол между прямой и плоскостью дополняет до 90° угол между прямой и перпендикуляром (нормалью) к плоскости: φ = 90° − δ.',
+      a:[ 'Из точки A ∈ a опускаем нормаль n к плоскости β; ищем угол δ между a и n;',
+          'В плоскости (a, n) проводим фронталь f — ось вращения; точки 1 и 2 на ней неподвижны;',
+          'Находим центр и радиус вращения A и поворачиваем её, пока плоскость (a, n) не станет параллельной π₂, — δ в натуральную величину;',
+          'Достраиваем прямоугольный треугольник: угол при K̄ равен φ = 90° − δ.' ],
+      b:[ 'n ∋ A, n ⊥ β; δ = ∠(a, n);',
+          'f ⊂ (a, n), f ∥ π₂; 1 = f ∩ n, 2 = f ∩ a;',
+          'A ∈ α<sub>вр</sub> ⊥ f; O = α<sub>вр</sub> ∩ f; R<sub>вр</sub> = |AO|; A → Ā; (ā, n̄) ∥ π₂;',
+          'δ = ∠1Ā2; φ = 90° − δ.' ],
+      v:[ 'n″ ⊥ f₀β, n′ ⊥ h₀β; A″ ∈ n″, A′ ∈ n′;',
+          [ 'f′ ∥ x; 1′ = f′ ∩ n′, 2′ = f′ ∩ a′;', '1″ ∈ n″, 2″ ∈ a″; f″ = 1″2″;' ],
+          [ 'α<sub>вр</sub>″ ⊥ f″, A″ ∈ α<sub>вр</sub>″; O″ = α<sub>вр</sub>″ ∩ f″; O′ ∈ f′;', 'R<sub>вр</sub> = |O″A₀| = |OA| (катеты O″A″ и Δy);', '|O″Ā″| = R<sub>вр</sub>; n̄″ = Ā″1″, ā″ = Ā″2″;' ],
+          [ 'δ = ∠1″Ā″2″ ≈ '+deg(delta)+'°;', '1″K̄ ⊥ n̄″, K̄ ∈ ā″; φ = 90° − δ ≈ '+deg(phi)+'°.' ] ] },
     ans:'Угол между прямой a и плоскостью β: δ ≈ '+deg(delta)+'° между a и нормалью, φ = 90° − δ ≈ '+deg(phi)+'° (контроль по 3D-координатам: '+deg(chk)+'°).' }; })();
 
 WB3.add({
@@ -19528,6 +19733,19 @@ WB3.add({
       why:'Между нормалями и плоскостями: δ + φ = 180° (четырёхугольник с двумя прямыми углами).',
       add:[ txt([Ab[0]+20,Ab[1]+30],'φ = 180° − δ = '+deg(phi)+'°','res',{anchor:'start'}) ] }
   ],
+  abv:{ at:[1,1,2,3,3,3,4], def:'Угол между плоскостями — линейный угол двугранного угла. Его находят через нормали: угол δ между перпендикулярами к плоскостям дополняет двугранный угол до 180°.',
+    a:[ 'Из произвольной точки A опускаем нормали n₁ ⊥ α и n₂ ⊥ β;',
+        'В плоскости (n₁, n₂) проводим горизонталь h — ось вращения; точки 1 и 2 на ней неподвижны;',
+        'Находим центр и радиус вращения A и поворачиваем её, пока плоскость (n₁, n₂) не станет параллельной π₁, — δ в натуральную величину;',
+        'Двугранный угол φ = 180° − δ.' ],
+    b:[ 'A ∉ α, A ∉ β; n₁ ∋ A, n₁ ⊥ α; n₂ ∋ A, n₂ ⊥ β;',
+        'h ⊂ (n₁, n₂), h ∥ π₁; 1 = h ∩ n₁, 2 = h ∩ n₂;',
+        'A ∈ α<sub>вр</sub> ⊥ h; O = α<sub>вр</sub> ∩ h; R<sub>вр</sub> = |AO|; A → Ā; (n̄₁, n̄₂) ∥ π₁;',
+        'δ = ∠1Ā2; φ = 180° − δ.' ],
+    v:[ [ 'n₁″ ⊥ f₀α, n₁′ ⊥ h₀α;', 'n₂″ ⊥ f″<sub>β</sub>, n₂′ ⊥ h′<sub>β</sub>; A ∈ n₁, n₂;' ],
+        [ 'h″ ∥ x; 1″ = h″ ∩ n₁″, 2″ = h″ ∩ n₂″;', '1′ ∈ n₁′, 2′ ∈ n₂′; h′ = 1′2′;' ],
+        [ 'α<sub>вр</sub>′ ⊥ h′, A′ ∈ α<sub>вр</sub>′; O′ = α<sub>вр</sub>′ ∩ h′; O″ ∈ h″;', 'R<sub>вр</sub> = |O′A₀| = |OA| (катеты O′A′ и Δz);', '|O′Ā′| = R<sub>вр</sub>;' ],
+        [ 'δ = ∠1′Ā′2′ ≈ '+deg(delta)+'°;', 'φ = 180° − δ ≈ '+deg(phi)+'° (острый угол ≈ '+deg(acute)+'°).' ] ] },
   ans:'δ = ∠(n₁, n₂) ≈ '+deg(delta)+'°, двугранный угол φ = 180° − δ ≈ '+deg(phi)+'° (острый угол между плоскостями ≈ '+deg(acute)+'°).',
   note:'Плоскость β задана двумя пересекающимися прямыми h<sub>β</sub> и f<sub>β</sub>. Размеры условные. Ход решения: нормали, горизонталь плоскости (n₁, n₂), φ = 180° − δ. Контроль по 3D: угол между нормалями = '+deg(chk)+'°.'
 });
@@ -23816,6 +24034,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.25',d:'10 ноября 2026',items:['«Как записать в тетради» — эталон оформления решения, как на листе: А — определение и алгоритм словами, Б — в пространстве символами, В — на чертеже символами, итоговый чертёж и ответ. Открывается ссылкой под ответом (печать — с листа). Есть у задачи №45 в) (точка пересечения прямой с треугольником), задач №60–67 (вращение) и четырёх задач ДЗ №3 — с именами точек своего варианта.','Пошагово: на «Дано» — свёрнутый план решения (А), а на шаге, где пункт алгоритма закончен, — его запись «в тетрадь»: строчка Б (пространство) и строчка В (чертёж).']},
   {v:'4.24',d:'10 ноября 2026',items:['Режим эфира (#/live/show) сделан заново: разбор пирамиды SABC (ДЗ №3) — видимость, высота заменой плоскостей, проверка высоты пересечением прямой с плоскостью, угол между гранями двумя заменами, истинный вид основания и центр описанной окружности вращением вокруг фронтали, угол ребра с основанием вращением вокруг горизонтали. Каждая задача — как решение на листе: А — алгоритм словами, Б — в пространстве, В — на чертеже символьно, по строчке на шаг; чертёж на клетке строится по шагам, новое на шаге — цветом, равные отрезки — штрихами. Обратный переход (π₄ → π₁ → π₂, повёрнутая точка → исходная) — отдельными шагами.','Онлайн-разборы: на главной — ближайший эфир и перенос («Завтра в 18:00 · перенос с 20:00»); бот переносит эфир со всеми записями и сообщает записанным.']},
   {v:'4.23',d:'10 ноября 2026',items:['РК2 за 9 шагов: в начале каждой темы — «Какие задачи бывают»: все виды условий темы, к каждому — пример с чертежом и кнопка «Решить такую же» (новые числа, ответ проверяется). То же — слайдом в режиме эфира.','Онлайн-разборы, режим эфира (#/live/show): каждая из 9 тем РК2 начинается с «Задачи как на РК» — условие, эпюр «Дано» и та же задача в 3D. Дальше этот пример решается по шагам каждым способом — эпюр и 3D рядом и синхронно: видны новые плоскости π₄, π₅ и оси x₁₄, x₄₅, ось вращения i и горизонталь h, пути точек. 3D стоит рядом с текстом на каждом слайде темы. В конце — разбор билета РК2 (задачи А, Б, В): эпюр по шагам и 3D синхронно.']},
   {v:'4.22',d:'9 ноября 2026',items:['РК2 стал проще: «РК2 за 9 шагов». Все задачи билета РК2 сведены к девяти типам — угол между прямыми, угол наклона плоскости, натуральная величина треугольника, биссектриса, расстояние между прямыми, расстояние до плоскости, угол между плоскостями, треугольник на прямой, квадрат и окружность на прямой. Каждая тема — путь из трёх шагов: «Пойми» (суть и вопрос), «Как решать» (порядок построения каждым способом, где ошибаются, разборы по шагам), «Реши сам» (новая задача с координатами, ответ числом, решение красным на чертеже).',
