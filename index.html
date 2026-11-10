@@ -122,6 +122,15 @@
 :root[data-theme=dark] .ai-k{background:var(--surf3);border-color:var(--line2);box-shadow:none;color:#7cb7ff}
 :root[data-theme=dark] .ai-cb,:root[data-theme=dark] .ai-steps li::before{background:#1668dc}
 @media(min-width:700px){.ai-card{align-items:center}.ai-ct{display:flex;align-items:center;gap:16px}.ai-ct>div{flex:1}.ai-cb{margin-top:0}}
+/* полоса «Сегодня в 20:00 — эфир» под шапкой (PROMO.paintBar) — тёмно-синяя, как фирменная полоса */
+#liveBar{background:#0a2463;color:#fff}
+#liveBar .lb-in{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;max-width:var(--maxw);margin:0 auto;padding:9px 16px;font:600 14px/1.35 var(--sans)}
+#liveBar .lb-t{flex:1 1 220px;min-width:0;font:600 14px/1.35 var(--sans)!important;letter-spacing:0!important;text-transform:none!important}
+#liveBar .lb-t b{font-weight:800}
+#liveBar .lb-dot{flex:none;width:9px;height:9px;border-radius:50%;background:#e0252c;animation:rkhP 1.4s ease-in-out infinite}
+#liveBar .lb-go{flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:10px;background:#fff;color:#0a2463!important;font:800 14px var(--sans);text-decoration:none!important;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+#liveBar .lb-go:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+@media(prefers-reduced-motion:reduce){#liveBar .lb-dot{animation:none}}
 /* #/live/show — режим эфира (LIVESHOW): всегда светлый, крупно, на весь экран поверх сайта */
 body.liveshow{overflow:hidden}
 .ls{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;background:#fff;color:#0a1733;font-family:var(--sans)}
@@ -4795,6 +4804,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
   </div>
  </div>
 </header>
+<div id="liveBar" hidden></div>
 
 <main id="view" tabindex="-1"></main>
 
@@ -28054,6 +28064,7 @@ function render(r){
   try{ if(title&&!v.querySelector('h1')){ const h1=document.createElement('h1'); h1.className='sr-only'; h1.textContent=title; v.prepend(h1); } }catch(e){}
   try{ catPerch(v,r); }catch(e){}
   renderHProg();
+  try{ PROMO.paintBar(r); }catch(e){}
   try{ v.classList.remove('vin'); void v.offsetWidth; v.classList.add('vin'); FX.reveal(v); }catch(e){}
   try{ FX.loadViews(); }catch(e){}
   try{ let f=document.getElementById('shareFab'); if(!f){ f=document.createElement('button'); f.id='shareFab'; f.type='button'; f.className='sharefab'; f.setAttribute('aria-label','Поделиться этой страницей'); f.innerHTML='<span aria-hidden="true">↗</span> Поделиться'; f.onclick=()=>FX.share(document.title); document.body.appendChild(f); } f.hidden=true; }catch(e){}
@@ -28382,7 +28393,9 @@ const PROMO=(function(){
   const botUrl=src=>'https://t.me/'+PROMO_BOT+'?start='+src;
   const ready=/^[A-Za-z]\w{3,31}$/.test(PROMO_BOT);   /* пока имя бота не вписано — карточку не показываем (кнопка вела бы в никуда) */
   const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
-  const PROMO_TIME='20:00';            /* время эфира по Москве — строка на карточке */
+  const PROMO_TIME='20:00';            /* время эфира по Москве — строка на карточке и в полосе */
+  const PROMO_DATES=['2026-11-10'];    /* дни эфиров (по Москве): в эти дни под шапкой — полоса «Сегодня в 20:00 — эфир · Записаться» */
+  const PROMO_MIN=60;                  /* длительность: после конца эфира полоса пропадает */
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
   function cardHTML(){
     if(!ready) return '';
@@ -28405,7 +28418,17 @@ const PROMO=(function(){
     const t=ev.target.closest&&ev.target.closest('[data-promo]'); if(!t) return;
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
-  return {cardHTML,rk2On,botUrl,ready:()=>ready};
+  /* полоса под шапкой на всех страницах, кроме главной (там карточка) и режима эфира:
+     до начала — «Сегодня в 20:00 МСК — бесплатный эфир по РК2 · Записаться», во время — «Эфир идёт · Подключиться», потом пропадает */
+  function paintBar(r){ const el=document.getElementById('liveBar'); if(!el) return;
+    const m=new Date(Date.now()+3*36e5), day=m.toISOString().slice(0,10), [hh,mm]=PROMO_TIME.split(':').map(Number);
+    const start=Date.UTC(m.getUTCFullYear(),m.getUTCMonth(),m.getUTCDate(),hh,mm)-3*36e5, now=Date.now();
+    const show=ready&&PROMO_DATES.includes(day)&&now<start+PROMO_MIN*6e4&&r&&r.s!=='home'&&!(r.s==='live'&&r.tab==='show');
+    el.hidden=!show; if(!show){ el.innerHTML=''; return; }
+    const live=now>=start;
+    el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${live?'<b>Эфир идёт</b> — разбираем типы задач РК2, бесплатно':`<b>Сегодня в ${PROMO_TIME} МСК</b> — бесплатный эфир по РК2: разбираем типы задач`}</span>
+      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${live?'Подключиться →':'Записаться →'}</a></div>`; }
+  return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar};
 })();
 const A2HS=(function(){
   let BIP=null;
