@@ -194,11 +194,11 @@ body.liveshow{overflow:hidden}
 .l3-st{height:calc(100vh - 200px);min-height:360px;border:1px solid #e3eaf3;border-radius:18px;background:#fbfcfe;cursor:grab;touch-action:none;overflow:hidden}
 .l3-st:active{cursor:grabbing}
 .l3-st svg{display:block;width:100%;height:100%}
-.l3 text{font-family:var(--sans);paint-order:stroke;stroke:#fff;stroke-width:calc(4px*var(--u,1));stroke-linejoin:round}
-.ls .dwg text.lbl{font-size:var(--lf,15px)!important;font-weight:700!important;stroke-width:calc(var(--lf,15px)*.3)!important}
+.l3 text{font-family:var(--sans);paint-order:stroke;stroke:#fff;stroke-width:calc(3px*var(--u,1));stroke-linejoin:round}
+.ls .ls-ep svg.dwg text.lbl,.ls .ls-dw svg.dwg text.lbl,.ls .ls-exd svg.dwg text.lbl,.ls .dwg text.lbl{font-size:var(--lf,15px)!important;font-weight:600!important;stroke-width:calc(var(--lf,15px)*.22)!important;letter-spacing:.01em}
 .ls .dwg{max-width:none!important}.ls-dw svg,.ls-exd svg{width:100%!important;height:100%!important}
 .ls-dw{height:calc(100vh - 170px)}.ls-exd{height:calc(100vh - 470px);min-height:260px}
-.l3-lb{font-weight:800;font-size:calc(18px*var(--u,1))}.l3-sm{font-weight:700;font-size:calc(13px*var(--u,1))}.l3-ll{font-weight:800;font-size:calc(15px*var(--u,1))}.l3-pl{font-weight:900;font-size:calc(19px*var(--u,1));font-family:var(--disp)}
+.l3-lb{font-weight:700;font-size:calc(19px*var(--u,1))}.l3-sm{font-weight:600;font-size:calc(14px*var(--u,1))}.l3-ll{font-weight:700;font-size:calc(16px*var(--u,1))}.l3-pl{font-weight:900;font-size:calc(19px*var(--u,1));font-family:var(--disp)}
 .l3-big{font-weight:900;font-size:calc(21px*var(--u,1))}.l3-ax{font-weight:800;font-size:calc(17px*var(--u,1))}
 .l3-bar{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
 .l3-bar button{min-width:40px;height:36px;padding:0 10px;border:1px solid #dbe4ef;border-radius:10px;background:#fff;color:#0a1733;font:700 15px var(--sans);cursor:pointer}
@@ -33241,10 +33241,12 @@ const has=(id,mk)=>!!(SCN[id]&&SCN[id][mk]);
 
 /* крупно на любом экране: толщины линий, точки и подписи — в пикселях экрана, а не чертежа (телефон, проектор) */
 function big(svg,W,H,box,o){ if(!svg||!svg.getBoundingClientRect) return; o=o||{}; const r=(box||svg).getBoundingClientRect(); if(!r.width||!r.height) return;
-  const sc=Math.min(r.width/W,r.height/H), k=1/Math.max(sc,.05), m=o.m||1;
-  svg.style.setProperty('--u',k); svg.style.setProperty('--lf',((o.fs||15)*k)+'px');
-  svg.querySelectorAll('[stroke-width]').forEach(e=>{ if(e.tagName==='text') return; const w=+e.getAttribute('stroke-width'); if(w>0) e.setAttribute('stroke-width',(Math.max(w,1.1)*m*k).toFixed(2)); });
-  svg.querySelectorAll('circle').forEach(e=>{ const rr=+e.getAttribute('r'); if(rr>0&&rr<8) e.setAttribute('r',(rr*Math.min(m*k,6)).toFixed(2)); }); }
+  const sc=Math.min(r.width/W,r.height/H), k=1/Math.max(sc,.05), m=o.m||1, ph=r.width<620, fs=(o.fs||15)*(ph?.75:1);
+  svg.style.setProperty('--u',k*(ph?.85:1)); svg.style.setProperty('--lf',(fs*k)+'px');
+  /* линии — тонко и ровно, как на чертеже: основные ~1,6 px, вспомогательные ~1 px, линии связи ~0,8 px */
+  svg.querySelectorAll('[stroke-width]').forEach(e=>{ if(e.tagName==='text'||e.tagName==='circle') return; const w=+e.getAttribute('stroke-width'); if(w>0) e.setAttribute('stroke-width',(Math.min(Math.max(w*m,.8),3)*k).toFixed(3)); });
+  /* точки — маленькие: радиус ~2,2 px на экране */
+  svg.querySelectorAll('circle').forEach(e=>{ const rr=+e.getAttribute('r'); if(rr>0&&rr<8){ e.setAttribute('r',(3.1*k*(ph?.85:1)).toFixed(3)); if(e.getAttribute('stroke-width')) e.setAttribute('stroke-width',(.8*k).toFixed(3)); } }); }
 /* ── плеер: шаги, анимация внутри шага, камера, мышь ── */
 function mount(host,SC,o){ o=o||{};
   host.innerHTML=`<div class="l3-st" data-l3-st></div>
@@ -33406,7 +33408,7 @@ const LIVESHOW=(function(){
   function paintEp(sc,j){ const box=S&&S.root.querySelector('[data-ls-ep]'); if(!box||typeof L3D==='undefined') return; let it=null; try{ it=L3D.epure(sc,j); }catch(e){}
     if(!it){ box.hidden=true; return; } box.hidden=false;
     try{ box.innerHTML=DRAW.svg({items:it,fitTo:L3D.epAll(sc),alt:'Эпюр: '+(sc.steps[j]&&sc.steps[j].t||'')}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); bigDw(svg,box); } }catch(e){ box.textContent='Эпюр не построился'; } }
-  function bigDw(svg,box){ const vb=svg.viewBox&&svg.viewBox.baseVal; if(!vb||!vb.width) return; const go=()=>L3D.big(svg,vb.width,vb.height,box||svg.parentNode,{fs:17,m:1.35}); go(); requestAnimationFrame(go); }
+  function bigDw(svg,box){ const vb=svg.viewBox&&svg.viewBox.baseVal; if(!vb||!vb.width) return; const go=()=>L3D.big(svg,vb.width,vb.height,box||svg.parentNode,{fs:18,m:1.4}); go(); requestAnimationFrame(go); }
   function v3sync(sl,sc){ const p=S.d3.p, md=sl.v3.mode; p.setMode(md==='auto'?'auto':md==='final'||md==='given'?'spin':''); if(md!=='auto') p.go(v3idx(sl,sc)); paintEp(sc,p.si);
     const c=S.root.querySelector('[data-ls-v3c]'); if(c) c.textContent=(p.si+1)+'. '+sc.steps[p.si].t; }
   function go(d){ const sl=S.slides[S.i], max=sl.n||0;
