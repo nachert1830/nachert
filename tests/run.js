@@ -121,6 +121,11 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   { const kp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('РК2 за 9 шагов', await require('./rkp.js').rkpCheck(kp,URL)); await kp.close(); }
 
+  /* 3г⁗. режим эфира (#/live/show): ответы пересчитываются по координатам, чертёж каждого шага сверен с пространством,
+     подписи не налезают, все шаги проходятся; карточка эфира на главной — ближайший эфир и перенос */
+  { const lp=await browser.newPage({viewport:{width:1600,height:900},deviceScaleFactor:1});
+    report('Режим эфира', await require('./live.js').liveCheck(lp,URL)); await lp.close(); }
+
   /* 3г″. «Сдашь РК2?» (#/rk): билеты-игры, чертежи ИГ сверяются лучами с телом детали, проход всех режимов и тизер на главной */
   { const gp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('«Сдашь РК2?»', await require('./rkg.js').rkgCheck(gp,URL)); await gp.close(); }

@@ -46,6 +46,9 @@ function createLiveBot(o){
   const label=s=>fmtDay(s.start)+' · '+fmtTime(s.start)+' · '+s.topic;
   const subOf=(s,chat)=>s.subs&&s.subs[String(chat)];
   const linkOpen=(s,t)=>t>=s.start-30*MIN&&t<s.start+DUR(s);
+  /* эфир по номеру; после переноса старый номер (кнопки в старых сообщениях) ведёт на тот же эфир */
+  const byId=(st,id)=>st.sessions.find(x=>x.id===id)||st.sessions.find(x=>(x.was||[]).includes(id));
+  const idOf=when=>{ const d=msk(when); return two(d.getUTCDate())+two(d.getUTCMonth()+1)+two(d.getUTCHours())+two(d.getUTCMinutes()); };
 
   const NOTICE='Бот хранит только твоё имя и чат — чтобы прислать ссылку. /delete — удалить.';
   /* «сегодня в 20:00» / «завтра в 20:00» / «чт 12.11 в 20:00» — по Москве */
@@ -74,7 +77,7 @@ function createLiveBot(o){
     if(u.callback_query){ const q=u.callback_query, from=q.from||{}, chat=(q.message&&q.message.chat&&q.message.chat.id)||from.id, [k,id,arg]=String(q.data||'').split(':');
       await api('answerCallbackQuery',{callback_query_id:q.id});
       if(k==='a'){ if(isAdmin(from.id)) await adminTap(st,t,chat,String(q.data).split(':').slice(1)); return; }
-      const s=st.sessions.find(x=>x.id===id);
+      const s=byId(st,id);
       if(!s){ await send(chat,'Этого эфира уже нет. /start — ближайшие.'); return; }
       if(k==='j'){
         if(s.start+DUR(s)<=t){ await send(chat,'Эфир уже закончился. /start — ближайшие.'); return; }
@@ -129,10 +132,10 @@ function createLiveBot(o){
   const subsN=s=>Object.keys(s.subs||{}).length;
   const pick=(st,t,act)=>upcoming(st,t).slice(0,8).map(s=>[{text:label(s)+' · '+subsN(s),callback_data:'a:'+act+':'+s.id}]);
 
-  async function menu(chat,txt){ await send(chat,txt||'Меню внизу 👇\n'+B.count+' — сколько записалось\n'+B.link+' — ссылка на VK Встречи\n'+B.say+' — сообщение всем записанным',MENU); }
+  async function menu(chat,txt){ await send(chat,txt||'Меню внизу 👇\n'+B.count+' — сколько записалось\n'+B.link+' — ссылка на VK Встречи\n'+B.say+' — сообщение всем записанным\nПеренести эфир — нажми на него в «'+B.count+'» → «⏰ Перенести» (или /move 18:00)',MENU); }
   async function card(st,t,chat,s){ const W=Object.values(s.subs||{});
     await send(chat,label(s)+' · '+fmtDur(s)+'\nЗаписались ('+W.length+'): '+(W.map(w=>w.name||'без имени').join(', ')||'пока никого')+'\nСсылка: '+(s.link||'нет')+(s.fb?'\nПомогло: '+s.fb.y+' · частично: '+s.fb.p+' · нет: '+s.fb.n:''),
-      [[{text:'🔗 Ссылка',callback_data:'a:l:'+s.id},{text:'📣 Написать',callback_data:'a:m:'+s.id}],[{text:'⏱ '+fmtDur(s),callback_data:'a:u:'+s.id},{text:'🗑 Отменить',callback_data:'a:x:'+s.id}]]); }
+      [[{text:'🔗 Ссылка',callback_data:'a:l:'+s.id},{text:'📣 Написать',callback_data:'a:m:'+s.id}],[{text:'⏰ Перенести',callback_data:'a:v:'+s.id},{text:'⏱ '+fmtDur(s),callback_data:'a:u:'+s.id}],[{text:'🗑 Отменить',callback_data:'a:x:'+s.id}]]); }
 
   async function list(st,t,chat){ const U=upcoming(st,t), P=st.sessions.filter(s=>s.start+DUR(s)<=t).sort((a,b)=>b.start-a.start).slice(0,5);
     if(!U.length&&!P.length){ await send(chat,'Эфиров пока нет.',[[{text:B.add,callback_data:'a:add'}]]); return; }
@@ -154,6 +157,24 @@ function createLiveBot(o){
   async function doSay(st,chat,s,msg){ let n=0; const all=Object.keys(s.subs||{});
     for(const c of all){ const r=await send(c,msg); if(!r||r.ok!==false) n++; }
     wait(st,chat,null); await send(chat,'Отправил: '+n+' из '+all.length+(n<all.length?' (остальные заблокировали бота)':'')); }
+  /* перенос эфира на другое время: записи сохраняются, напоминания отправятся заново по новому времени,
+     записанным — сообщение о переносе. chat — кто перенёс (владелец) или null (по расписанию). */
+  async function doMove(st,t,chat,s,to){
+    if(to<t-MIN){ if(chat) await send(chat,'Это время уже прошло: '+fmtWhen(to)); return null; }
+    const nid=idOf(to), old=s.start, oid=s.id;
+    if(nid===oid){ if(chat) await send(chat,'Эфир и так '+fmtWhen(to)+'.'); return null; }
+    const other=st.sessions.find(x=>x.id===nid&&x!==s);
+    if(other){ /* на новое время уже есть эфир — сливаем записи в него */
+      other.subs=Object.assign({},s.subs||{},other.subs||{}); other.n=Object.keys(other.subs).length; other.was=(other.was||[]).concat(oid,s.was||[]);
+      if(!other.link&&s.link) other.link=s.link; st.sessions=st.sessions.filter(x=>x!==s); s=other; }
+    else { s.id=nid; s.start=to; s.sent={}; s.was=(s.was||[]).concat(oid); }
+    st.gone=(st.gone||[]).filter(x=>x!==nid).concat(oid).slice(-50); if(chat) wait(st,chat,null); save(st);
+    const subs=Object.keys(s.subs||{}), sameDay=fmtDay(old)===fmtDay(to);
+    const msg='⏰ Эфир перенесли: '+(sameDay?'':'с '+fmtWhen(old)+' ')+(sameDay?when(s,t)+' МСК (вместо '+fmtTime(old)+')':'на '+when(s,t)+' МСК')+'.\nТы записан — ссылку пришлю за 15 минут. Не получается — нажми «Отменить».';
+    let n=0; for(const c of subs){ const r=await send(c,msg,joinedKb(s)); if(!r||r.ok!==false) n++; }
+    const rep='⏰ Перенёс: '+fmtWhen(old)+' → '+fmtWhen(to)+'. Записанным ('+subs.length+') отправил сообщение'+(n<subs.length?' ('+n+' дошло)':'')+'.';
+    if(chat) await send(chat,rep); else for(const a of admins) await send(a,rep+' (по расписанию)');
+    log('перенос:',oid,'→',s.id,'записаны',subs.length); return s; }
   async function doDel(st,t,chat,s){
     if(s.start+DUR(s)>t) for(const c of Object.keys(s.subs||{})) await send(c,'Эфир '+fmtWhen(s.start)+' отменён. Извини! /start — ближайшие.');
     st.sessions=st.sessions.filter(x=>x!==s); st.gone=(st.gone||[]).concat(s.id).slice(-50); wait(st,chat,null); await send(chat,'Отменил: '+label(s)); }
@@ -165,7 +186,7 @@ function createLiveBot(o){
     await send(chat,ask,pick(st,t,act).concat([CANCEL])); }
 
   /* нажатие кнопки владельца: a:<действие>:<параметры> */
-  async function adminTap(st,t,chat,P){ const [act,x,y]=P, s=x&&st.sessions.find(z=>z.id===x);
+  async function adminTap(st,t,chat,P){ const [act,x,y]=P, s=x&&byId(st,x);
     if(act==='c'){ wait(st,chat,null); await send(chat,'Отменил.'); return; }
     if(act==='add') return dayPicker(chat,t);
     if(act==='d'&&/^\d{8}$/.test(x||'')){ const row=TIMES.map(h=>({text:h,callback_data:'a:t:'+x+':'+h.replace(':','')}));
@@ -181,6 +202,7 @@ function createLiveBot(o){
     if(act==='s') return card(st,t,chat,s);
     if(act==='u'){ const L=[60,90,120], i=L.indexOf(s.min||90); s.min=L[(i+1)%L.length]; save(st); await send(chat,'Длительность «'+label(s)+'»: '+fmtDur(s)+'.'); return card(st,t,chat,s); }
     if(act==='w') return who(chat,s);
+    if(act==='v'){ wait(st,chat,{w:'move',sid:s.id}); await send(chat,'На когда перенести «'+label(s)+'»? Напиши время (тот же день), например 18:00, или день и время: 12.11 18:00.\nЗаписанным придёт сообщение о переносе.',[CANCEL]); return; }
     if(act==='l'){ wait(st,chat,{w:'link',sid:s.id}); await send(chat,'Пришли ссылку на VK Встречи для «'+label(s)+'»'+(s.link?'\n(сейчас: '+s.link+')':''),[CANCEL]); return; }
     if(act==='m'){ if(!subsN(s)){ await send(chat,'На «'+label(s)+'» пока никто не записан.'); return; }
       wait(st,chat,{w:'say',sid:s.id}); await send(chat,'Напиши сообщение — получат все записанные на «'+label(s)+'» ('+subsN(s)+')',[CANCEL]); return; }
@@ -211,6 +233,12 @@ function createLiveBot(o){
     if(cmd==='/who'){ const s=find(rest[0]); if(!s){ await send(chat,'Нет такого эфира.'); return; } return who(chat,s); }
     if(cmd==='/say'){ const s=st.sessions.find(x=>x.id===rest[0]), msg=clean((s?rest.slice(1):rest).join(' '),1000), to=s||upcoming(st,t)[0];
       if(!to||!msg){ await send(chat,'Формат: /say текст — или кнопка «'+B.say+'»'); return; } return doSay(st,chat,to,msg); }
+    if(cmd==='/move'){ /* /move 18:00 — ближайший эфир на 18:00 того же дня; /move 12.11 18:00; /move <номер> 12.11 18:00 */
+      const hasId=rest.length===3||(rest.length===2&&/^\d{8}$/.test(rest[0])), s=hasId?byId(st,rest[0]):upcoming(st,t)[0], a=hasId?rest.slice(1):rest;
+      if(!s){ await send(chat,'Нет такого эфира.'); return; }
+      const to=a.length===1?parseWhen(fmtDay(s.start).split(' ')[1],a[0],t):parseWhen(a[0],a[1],t);
+      if(!to){ await send(chat,'Формат: /move 18:00 — ближайший эфир на 18:00; /move 12.11 18:00 — на другой день.'); return; }
+      return doMove(st,t,chat,s,to); }
     if(cmd==='/del'){ const s=st.sessions.find(x=>x.id===rest[0]); if(!s){ await send(chat,'Отменить эфир — «'+B.list+'» → эфир → «Отменить».'); return; } return doDel(st,t,chat,s); }
     if(cmd.startsWith('/')) return false;
     /* ответ на вопрос бота */
@@ -218,7 +246,9 @@ function createLiveBot(o){
     if(W.w==='time'){ const when=parseWhen(dmy(W.day),text,t); if(!when){ await send(chat,'Не понял время. Напиши так: 19:30',[CANCEL]); return; }
       wait(st,chat,{w:'topic',when}); await send(chat,'Тема эфира — '+fmtWhen(when)+'?',[TOPICS.map((p,i)=>({text:p,callback_data:'a:p:'+i})),[{text:'Своя тема',callback_data:'a:p:x'}],CANCEL]); return; }
     if(W.w==='topicText'){ const topic=clean(text,60); if(topic.length<2){ await send(chat,'Напиши тему словами.',[CANCEL]); return; } return doAdd(st,t,chat,W.when,topic); }
-    const s=st.sessions.find(z=>z.id===W.sid); if(!s){ wait(st,chat,null); await send(chat,'Этого эфира уже нет.'); return; }
+    const s=byId(st,W.sid); if(!s){ wait(st,chat,null); await send(chat,'Этого эфира уже нет.'); return; }
+    if(W.w==='move'){ const a=text.split(/\s+/), to=a.length===1?parseWhen(fmtDay(s.start).split(' ')[1],a[0],t):parseWhen(a[0],a[1],t);
+      if(!to){ await send(chat,'Не понял. Напиши так: 18:00 или 12.11 18:00',[CANCEL]); return; } return doMove(st,t,chat,s,to); }
     if(W.w==='link') return doLink(st,chat,s,text);
     if(W.w==='say'){ const msg=clean(text,1000); wait(st,chat,{w:'sayok',sid:s.id,text:msg});
       await send(chat,'Отправить '+subsN(s)+' записанным на «'+label(s)+'»?\n\n'+msg,[[{text:'📣 Отправить',callback_data:'a:M'}],CANCEL]); return; }
@@ -232,7 +262,10 @@ function createLiveBot(o){
     for(const e of (schedule()||[])){ try{
       const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||''), when=m&&parseWhen(m[3]+'.'+m[2]+'.'+m[1],e.time,t), min=[30,45,60,90,120,150,180].includes(+e.min)?+e.min:DEF_MIN, topic=clean(e.topic,60);
       if(!when||!topic||when+min*MIN<=t) continue;
-      const d=msk(when), id=two(d.getUTCDate())+two(d.getUTCMonth()+1)+two(d.getUTCHours())+two(d.getUTCMinutes());
+      const id=idOf(when);
+      /* перенос: moved_from — прежнее время того же дня. Эфир на прежнее время переезжает со всеми записями, записанным — сообщение */
+      const was=e.moved_from&&parseWhen(m[3]+'.'+m[2]+'.'+m[1],e.moved_from,t), wid=was&&idOf(was), prev=wid&&st.sessions.find(s=>s.id===wid);
+      if(prev&&!st.sessions.some(s=>s.id===id&&s!==prev)&&!(st.gone||[]).includes(id)){ await doMove(st,t,null,prev,when); changed=true; continue; }
       if(st.sessions.some(s=>s.id===id)||(st.gone||[]).includes(id)) continue;
       st.sessions.push({id,start:when,min,topic,link:okLink(e.link)?e.link:'',subs:{},n:0,sent:{},from:'schedule'}); changed=true; log('из расписания:',id,topic);
     }catch(err){ log('ошибка в расписании',err&&err.message); } }

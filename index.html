@@ -131,73 +131,103 @@
 #liveBar .lb-go{flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:10px;background:#fff;color:#0a2463!important;font:800 14px var(--sans);text-decoration:none!important;box-shadow:0 3px 0 rgba(0,0,0,.25)}
 #liveBar .lb-go:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
 @media(prefers-reduced-motion:reduce){#liveBar .lb-dot{animation:none}}
-/* #/live/show — режим эфира (LIVESHOW): всегда светлый, крупно, на весь экран поверх сайта */
+/* #/live/show — режим эфира (LIVESHOW): всегда светлый, на весь экран поверх сайта. Слева чертёж на клетке, справа А/Б/В */
 body.liveshow{overflow:hidden}
-.ls{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;background:#fff;color:#0a1733;font-family:var(--sans)}
-.ls-bar{display:flex;align-items:center;gap:18px;height:52px;padding:0 24px;border-bottom:1px solid #dbe4ef;font:600 16px var(--sans);color:#34465f;flex:none}
-.ls-bar b{font:800 16px var(--disp);color:#1a5ae0}
-.ls-bar [data-ls-where]{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0a1733;font-weight:700}
-.ls-tm{font-variant-numeric:tabular-nums;color:#5d6f8a}
-.ls-prog{display:flex;gap:4px;padding:6px 24px 0;flex:none}
-.ls-prog i{flex:1;height:6px;border-radius:3px;background:#e7eff9}
-.ls-prog i.done{background:#9cc0ef}.ls-prog i.now{background:#1a5ae0}
-.ls-main{flex:1;min-height:0;overflow:auto;padding:28px 48px 90px}
-.ls-c{max-width:1500px;margin:0 auto}
-.ls-kick{margin:0 0 10px;font:800 15px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#1a5ae0}
-.ls h1{margin:0 0 14px;font:900 clamp(40px,5.2vw,84px)/1 var(--disp);letter-spacing:-.03em;color:#0a1733}
-.ls h2{margin:0 0 18px;font:800 clamp(28px,3vw,46px)/1.1 var(--disp);color:#0a1733}
-.ls-lead{margin:0 0 22px;font:500 clamp(20px,1.9vw,30px)/1.4 var(--sans);color:#34465f;max-width:52ch}
-.ls-lead b,.ls-idea b{color:#0a1733;background:linear-gradient(transparent 60%,#ffe69a 60%)}
-.ls-idea{margin:0;font:500 clamp(24px,2.3vw,38px)/1.45 var(--sans);max-width:46ch}
-.ls-map{list-style:none;margin:0 0 20px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.ls-map li{display:flex;gap:14px;align-items:center;padding:14px 18px;border:2px solid #dbe4ef;border-radius:16px}
-.ls-map b,.ls-steps b,.ls-opts b{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#1a5ae0;color:#fff;font:800 20px var(--sans)}
-.ls-map span{font:700 clamp(17px,1.4vw,23px)/1.2 var(--sans)}.ls-map small{display:block;font-weight:500;font-size:.78em;color:#5d6f8a;margin-top:2px}
-.ls-paper{font:700 clamp(18px,1.5vw,24px) var(--sans);color:#0a2463}
-.ls-title{display:flex;flex-direction:column;justify-content:center;min-height:60vh}
-.ls-big{font:900 clamp(90px,12vw,200px)/.9 var(--disp);color:#1a5ae0}
-.ls-asks{margin-top:10px;padding:18px 22px;border-left:6px solid #1a5ae0;background:#e9f0ff;border-radius:0 14px 14px 0;font-size:clamp(18px,1.6vw,26px)}
-.ls-asks p{margin:6px 0 0}
-.ls-steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
-.ls-steps li{display:flex;gap:18px;align-items:flex-start;padding:14px 18px;border-radius:16px;font:500 clamp(20px,1.9vw,32px)/1.35 var(--sans);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
-.ls-steps li.on{opacity:.45;transform:none}.ls-steps li.now{opacity:1;background:#f3f7fc;box-shadow:inset 4px 0 0 #1a5ae0}
-.ls-traps{margin:0;padding:0;list-style:none;display:grid;gap:16px}
-.ls-traps li{padding:16px 22px;border-radius:16px;background:#fdeceb;border-left:6px solid #dc2a22;font:500 clamp(20px,1.9vw,30px)/1.4 var(--sans)}
-.ls-q{font:700 clamp(24px,2.4vw,40px)/1.3 var(--sans);margin:0 0 20px;max-width:46ch}
-.ls-opts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1300px}
-.ls-opts li{display:flex;gap:14px;align-items:center;padding:16px 20px;border:2px solid #dbe4ef;border-radius:16px;font:600 clamp(18px,1.7vw,28px)/1.3 var(--sans);transition:opacity .2s}
-.ls-opts li.ok{border-color:#13804e;background:#e6f4ec}.ls-opts li.ok b{background:#13804e}.ls-opts li.dim{opacity:.4}
-.ls-why{margin:20px 0 0;font:500 clamp(18px,1.7vw,28px)/1.45 var(--sans);color:#13804e;max-width:60ch}
-.ls-hint{margin:16px 0 0;font:600 clamp(16px,1.3vw,21px) var(--sans);color:#5d6f8a}
-.ls-draw{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:36px;align-items:start;max-width:none}
-.ls-dw{display:flex;justify-content:center;align-items:flex-start;min-width:0}
-.ls-dw svg{width:100%;height:auto;max-height:calc(100vh - 160px)}
-.ls-task{margin:0 0 6px;font:700 16px var(--sans);color:#5d6f8a}
-.ls-of{margin:0 0 8px;font:800 18px var(--sans);color:#1a5ae0}
-.ls-txt{font:500 clamp(19px,1.6vw,28px)/1.45 var(--sans);margin:0}
-.ls-3d{display:inline-block;margin-top:22px;font:700 16px var(--sans);color:#1a5ae0}
-.ls-end .ls-after{display:grid;gap:6px;padding:20px 24px;border-radius:18px;background:#ebf3fe;font-size:clamp(19px,1.6vw,26px);max-width:900px;margin-bottom:20px}
-.ls-pen{position:fixed;inset:0;z-index:2;pointer-events:none;touch-action:none}
-.ls.pen .ls-pen{pointer-events:auto;cursor:crosshair}
-.ls.board .ls-main{visibility:hidden}
-.ls-ctl{position:fixed;right:16px;bottom:14px;z-index:3;display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:14px;background:rgba(255,255,255,.94);border:1px solid #dbe4ef;box-shadow:0 8px 24px -12px rgba(7,26,54,.35);opacity:.55;transition:opacity .2s}
-.ls-ctl:hover{opacity:1}
-.ls-ctl button,.ls-ctl a{display:grid;place-items:center;min-width:40px;height:40px;border:0;border-radius:10px;background:none;color:#0a1733;font:700 20px var(--sans);cursor:pointer;text-decoration:none}
-.ls-ctl button:hover,.ls-ctl a:hover{background:#f3f7fc}.ls-ctl button.on{background:#1a5ae0;color:#fff}
-.ls-ctl [data-ls-n]{font:600 13px var(--sans);color:#5d6f8a;min-width:58px;text-align:center}
-.ls-cols{display:flex;gap:4px;padding:0 4px}.ls-cols button{min-width:22px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #c2d1e3}
-.ls-keys{position:fixed;left:24px;bottom:16px;z-index:1;margin:0;font:500 13px var(--sans);color:#9aabc2}
-.ls-prog i.tk{flex:1.4;background:#fde8e7}.ls-prog i.tk.now{background:#d1281f}
-/* 3D-слайд (L3D): сцена слева, шаги справа */
-.ls-d3{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr);gap:24px;align-items:start;max-width:none}
-.ls-d3s{position:relative;min-width:0}
+.lx{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;background:#eef2f8;color:#0d1b2e;font-family:var(--sans)}
+.lx sub{font-size:.7em;line-height:0}
+.lx-ov{text-decoration:overline;text-decoration-thickness:.08em}
+.lx-bar{position:relative;z-index:2;display:flex;align-items:center;gap:14px;height:56px;padding:0 14px;background:#0a2463;color:#fff;flex:none}
+.lx-brand{font:800 16px var(--disp);white-space:nowrap;letter-spacing:-.01em}
+.lx-secs{display:flex;gap:4px;flex:none}
+.lx-secs button{height:32px;padding:0 11px;border:0;border-radius:9px;background:rgba(255,255,255,.09);color:#b9cdf2;font:700 13px var(--sans);cursor:pointer;white-space:nowrap}
+.lx-secs button:hover{background:rgba(255,255,255,.18);color:#fff}
+.lx-secs button.done{color:#fff}
+.lx-secs button.now{background:#fff;color:#0a2463}
+.lx-where{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 14px var(--sans);color:#b9cdf2}
+.lx-ctl{display:flex;align-items:center;gap:4px;flex:none}
+.lx-ctl button,.lx-ctl a{display:grid;place-items:center;min-width:32px;height:32px;padding:0 6px;border:0;border-radius:8px;background:rgba(255,255,255,.09);color:#fff;font:700 16px var(--sans);cursor:pointer;text-decoration:none}
+.lx-ctl button:hover,.lx-ctl a:hover{background:rgba(255,255,255,.2)}
+.lx-ctl button.on{background:#ff6a00}
+.lx-ctl [data-lx-n]{min-width:86px;text-align:center;font:700 13px var(--sans);color:#dbe7ff}
+.lx-ctl .lx-col{min-width:18px;width:18px;height:18px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.85)}
+.lx-tm{font:600 14px var(--sans);font-variant-numeric:tabular-nums;color:#b9cdf2;min-width:44px;text-align:right}
+.lx-main{flex:1;min-height:0;padding:12px;overflow:hidden}
+.lx-split{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(400px,1fr);gap:12px;height:100%}
+.lx-ep{min-width:0;min-height:0;overflow:hidden;background:#fff;border:1px solid #d6e0ec;border-radius:16px;box-shadow:0 10px 30px -22px rgba(10,36,99,.45)}
+.lx-ep svg{display:block}
+.lx-side{min-height:0;overflow:auto;background:#fff;border:1px solid #d6e0ec;border-radius:16px;padding:18px 20px 22px;box-shadow:0 10px 30px -22px rgba(10,36,99,.45)}
+.lx-full{height:100%;overflow:auto;background:#fff;border:1px solid #d6e0ec;border-radius:16px;padding:clamp(22px,3vw,48px) clamp(22px,4vw,64px)}
+.lx-kick{margin:0 0 6px;font:800 12.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#1f63d6}
+.lx-pn h2{margin:0 0 14px;font:800 clamp(22px,1.75vw,31px)/1.15 var(--disp);letter-spacing:-.015em;color:#0a1733}
+.lx-cond{margin:0 0 4px;padding:12px 14px;border-radius:12px;background:#f2f6fc;border-left:4px solid #0a2463;font:600 clamp(15px,1.1vw,18.5px)/1.42 var(--sans)}
+.lx-cond span,.lx-ans span{display:block;margin-bottom:3px;font:800 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#5d6f8a}
+.lx-al{margin-top:16px}
+.lx-al h3{display:flex;align-items:center;gap:9px;margin:0 0 8px;font:800 13px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#34465f}
+.lx-al h3 b{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;border:2px solid #0a2463;color:#0a2463;font:800 14px var(--sans);letter-spacing:0}
+.lx-al ol,.lx-al ul{margin:0;padding-left:24px;font:500 clamp(15px,1.06vw,18px)/1.42 var(--sans)}
+.lx-al li{margin:4px 0;padding-left:2px}
+.lx-sym ol li{font-weight:650;color:#0a2463}
+.lx-now{padding:14px 16px 15px;border-radius:14px;background:#fff5ec;border:2px solid #ffbf8f}
+.lx-now.bk{background:#f6f1ff;border-color:#c4adf7}
+.lx-sn{display:block;font:800 12px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:#c2410c}
+.lx-now.bk .lx-sn{color:#6d28d9}
+.lx-now h3{margin:4px 0 6px;font:800 clamp(19px,1.45vw,26px)/1.2 var(--disp);color:#0a1733}
+.lx-now p{margin:0;font:500 clamp(15px,1.1vw,18.5px)/1.48 var(--sans);color:#24344d}
+.lx-v ol{list-style:none;padding:0;counter-reset:v}
+.lx-v li{counter-increment:v;display:flex;gap:10px;align-items:flex-start;margin:2px 0;padding:7px 10px;border-radius:10px;font:650 clamp(14.5px,1.02vw,17.5px)/1.42 var(--sans);color:#4a5d78}
+.lx-v li::before{content:counter(v);flex:none;display:grid;place-items:center;width:22px;height:22px;margin-top:1px;border-radius:50%;background:#e6edf6;color:#34465f;font:800 12px var(--sans)}
+.lx-v li.bk::before{content:"↩";background:#ede5ff;color:#6d28d9}
+.lx-v li[hidden]{display:none}.lx-v li.on{color:#0d1b2e}
+.lx-v li.now{background:#fff1e6;color:#0a1733;box-shadow:inset 3px 0 0 #ff6a00}
+.lx-v li.now::before{background:#ff6a00;color:#fff}
+.lx-v li.now.bk{background:#f3edff;box-shadow:inset 3px 0 0 #7c3aed}.lx-v li.now.bk::before{background:#7c3aed;color:#fff}
+.lx-ans{padding:16px 18px;border-radius:14px;background:#fff0f4;border:2px solid #f5a8c0}
+.lx-ans b{display:block;font:800 clamp(22px,1.8vw,32px)/1.25 var(--disp);color:#c0174f}
+.lx-ans i{display:block;margin-top:6px;font:700 14px var(--sans);color:#b45309}
+.lx-bks h3 b{border-color:#7c3aed;color:#7c3aed}.lx-bks li{color:#2a1a52}
+.lx-er h3 b{border-color:#e0245e;color:#e0245e}
+.lx-cover{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.9fr);gap:clamp(24px,4vw,64px);align-items:center;min-height:100%}
+.lx-cover h1{margin:0 0 18px;font:900 clamp(38px,4.6vw,78px)/1.02 var(--disp);letter-spacing:-.035em;color:#0a1733}
+.lx-lead{margin:0 0 18px;max-width:52ch;font:500 clamp(18px,1.5vw,26px)/1.45 var(--sans);color:#34465f}
+.lx-lead b{color:#0a1733;background:linear-gradient(transparent 62%,#ffe1b8 62%)}
+.lx-paper{margin:0;font:700 clamp(16px,1.25vw,21px) var(--sans);color:#0a2463}
+.lx-cv2{padding:20px 22px;border-radius:18px;background:#f4f7fc;border:1px solid #dbe4ef}
+.lx-cv2 h3{margin:0 0 8px;font:800 13px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:#5d6f8a}
+.lx-tb{border-collapse:collapse;margin:0 0 16px;font:700 clamp(16px,1.2vw,20px) var(--sans);font-variant-numeric:tabular-nums}
+.lx-tb th,.lx-tb td{padding:5px 14px;border:1px solid #cbd7e6;text-align:center;background:#fff}
+.lx-tb thead th{background:#e9f0fa;color:#34465f}.lx-tb tbody th{color:#1f63d6}
+.lx-plan{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.lx-plan li,.lx-ans2 li{display:flex;gap:12px;align-items:center}
+.lx-plan b,.lx-ans2 b{flex:none;display:grid;place-items:center;min-width:34px;height:34px;padding:0 6px;border-radius:17px;background:#0a2463;color:#fff;font:800 15px var(--sans)}
+.lx-plan span,.lx-ans2 span{font:700 clamp(15px,1.12vw,18.5px)/1.25 var(--sans)}
+.lx-plan small,.lx-ans2 small{display:block;font-weight:500;font-size:.82em;color:#5d6f8a}
+.lx-leg h2{margin:0 0 20px;font:800 clamp(28px,2.6vw,44px)/1.1 var(--disp);color:#0a1733}
+.lx-lg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 28px}
+.lx-lg section,.lx-bkg section{padding:16px 20px;border-radius:16px;background:#f6f9fd;border:1px solid #dfe7f1}
+.lx-lg h3,.lx-bkg h3{margin:0 0 10px;font:800 14px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#1f63d6}
+.lx-lg dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font:500 clamp(15px,1.1vw,18.5px)/1.35 var(--sans)}
+.lx-lg dt{font-weight:800;color:#0a2463;white-space:nowrap}.lx-lg dd{margin:0;color:#34465f}
+.lx-cl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;font:500 clamp(14px,1vw,17px)/1.3 var(--sans)}
+.lx-cl li{display:flex;align-items:center;gap:9px}.lx-cl i{flex:none;width:26px;height:5px;border-radius:3px}.lx-cl i.ln{height:2px}
+.lx-tks,.lx-bk{flex:none;min-width:26px;font:800 15px var(--sans);text-align:center}.lx-bk{color:#7c3aed}
+.lx-bkg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.lx-bkg ol{margin:0;padding-left:22px;font:500 clamp(16px,1.2vw,20px)/1.48 var(--sans)}.lx-bkg li{margin:6px 0}
+.lx-bkg b{color:#0a1733;background:linear-gradient(transparent 62%,#e7dcff 62%)}
+.lx-f{margin:12px 0 0;padding:10px 12px;border-radius:10px;background:#fff;border:1px dashed #b79cf5;font:700 clamp(14px,1.05vw,17px)/1.45 var(--sans);color:#4c1d95}
+.lx-ans2{list-style:none;margin:0 0 24px;padding:0;display:grid;gap:12px;max-width:1100px}
+.lx-ans2 li{padding:12px 16px;border-radius:14px;background:#f6f9fd;border:1px solid #dfe7f1}
+.lx-ans2 span{flex:1}.lx-ans2 em{font:800 clamp(17px,1.35vw,23px)/1.3 var(--sans);font-style:normal;color:#c0174f;text-align:right}
+.lx-pen{position:fixed;inset:0;z-index:1;pointer-events:none}
+.lx.pen .lx-pen{pointer-events:auto;cursor:crosshair}
+.lx.board .lx-main{visibility:hidden}
+@media(max-width:1700px){.lx-where{display:none}}@media(max-width:1500px){.lx-brand{display:none}.lx-bar{gap:10px}}@media(max-width:1300px){.lx-secs button{padding:0 7px;font-size:12px}.lx-tm{display:none}}
+@media(max-width:900px){.lx-bar{height:auto;flex-wrap:wrap;padding:8px 10px;gap:8px}.lx-secs{order:3;width:100%;overflow-x:auto}.lx-main{overflow:auto}
+ .lx-split{grid-template-columns:1fr;height:auto}.lx-ep{height:62vh}.lx-cover,.lx-lg,.lx-bkg{grid-template-columns:1fr}.lx-cl{grid-template-columns:1fr}.lx-pen{display:none}}
+/* 3D-сцены L3D (страницы тем РК2) */
 .l3-st{height:calc(100vh - 200px);min-height:360px;border:1px solid #e3eaf3;border-radius:18px;background:#fbfcfe;cursor:grab;touch-action:none;overflow:hidden}
 .l3-st:active{cursor:grabbing}
 .l3-st svg{display:block;width:100%;height:100%}
 .l3 text{font-family:var(--sans);paint-order:stroke;stroke:#fff;stroke-width:calc(3px*var(--u,1));stroke-linejoin:round}
-.ls .ls-ep svg.dwg text.lbl,.ls .ls-dw svg.dwg text.lbl,.ls .ls-exd svg.dwg text.lbl,.ls .dwg text.lbl{font-size:var(--lf,15px)!important;font-weight:600!important;stroke-width:calc(var(--lf,15px)*.22)!important;letter-spacing:.01em}
-.ls .dwg{max-width:none!important}.ls-dw svg,.ls-exd svg{width:100%!important;height:100%!important}
-.ls-dw{height:calc(100vh - 170px)}.ls-exd{height:calc(100vh - 470px);min-height:260px}
 .l3-lb{font-weight:700;font-size:calc(19px*var(--u,1))}.l3-sm{font-weight:600;font-size:calc(14px*var(--u,1))}.l3-ll{font-weight:700;font-size:calc(16px*var(--u,1))}.l3-pl{font-weight:900;font-size:calc(19px*var(--u,1));font-family:var(--disp)}
 .l3-big{font-weight:900;font-size:calc(21px*var(--u,1))}.l3-ax{font-weight:800;font-size:calc(17px*var(--u,1))}
 .l3-bar{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -205,58 +235,6 @@ body.liveshow{overflow:hidden}
 .l3-bar button.on{background:#e9f0ff;border-color:#9cc0ef;color:#1a5ae0}
 .l3-bar input[type=range]{flex:1;min-width:120px;accent-color:#1a5ae0}
 .l3-hint{margin:4px 0 0;font:500 13px var(--sans);color:#9aabc2}
-.ls .l3-hint{display:none}
-/* 3D рядом с текстом на каждом слайде темы */
-.ls-split{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr);gap:28px;align-items:start;max-width:none}
-.ls-split .ls-c{max-width:none;margin:0}
-.ls-split .ls-title{min-height:0;padding-top:4vh}
-.ls-split .ls-big{font-size:clamp(70px,8vw,140px)}
-.ls-split h1{font-size:clamp(34px,3.6vw,62px)}
-.ls-split h2{font-size:clamp(24px,2.3vw,38px)}
-.ls-split .ls-lead,.ls-split .ls-asks{font-size:clamp(17px,1.4vw,23px)}
-.ls-split .ls-idea{font-size:clamp(19px,1.65vw,29px)}
-.ls-split .ls-steps li,.ls-split .ls-traps li{font-size:clamp(16px,1.35vw,23px);padding:10px 14px}
-.ls-split .ls-q{font-size:clamp(20px,1.8vw,30px)}
-.ls-split .ls-opts{grid-template-columns:1fr}
-.ls-split .ls-opts li{font-size:clamp(16px,1.35vw,22px);padding:10px 14px}
-.ls-split .ls-why{font-size:clamp(16px,1.35vw,22px)}
-.ls-sv{position:sticky;top:0}
-.ls-sv .ls-ep{height:calc(60vh - 70px);margin-bottom:10px}.ls-sv .l3-st{height:calc(40vh - 160px);min-height:170px}
-@media(min-width:901px){.ls-split{grid-template-columns:minmax(0,.62fr) minmax(0,1.38fr)}.ls-sv{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;align-items:start}
- .ls-sv .ls-ep{height:calc(100vh - 200px);margin:0}.ls-sv .l3-st{height:calc(100vh - 200px)}.ls-sv .ls-v3c{grid-column:1/-1}}.ls-sv .l3-bar{display:none}
-.ls-ep{display:flex;align-items:center;justify-content:center;min-width:0;height:calc(100vh - 170px);padding:8px;border:1px solid #e3eaf3;border-radius:18px;background:#fff}
-.ls-ep{overflow:hidden}.ls-ep svg{display:block;width:100%!important;height:100%!important;max-height:none!important}
-.ls-d3r{min-width:0;display:flex;flex-direction:column;gap:12px}.ls-d3r .l3-st{height:40vh;min-height:240px}.ls-d3r .ls-d3l{max-height:calc(60vh - 300px)}
-.ls-d3r h2{font-size:clamp(22px,2vw,32px);margin-bottom:6px}
-.ls-dq{margin:0 0 6px;padding:10px 14px;border:2px dashed #9cc0ef;border-radius:12px;background:#f6f9ff;font:700 clamp(15px,1.25vw,20px)/1.35 var(--sans);color:#0a1733}
-.ls-v3c{margin:6px 0 0;font:700 15px var(--sans);color:#1a5ae0}
-.ls-rk .rkp-rk h2{margin:0 0 6px;font:800 clamp(28px,3vw,46px)/1.1 var(--disp);color:#0a1733}
-.ls-rk .rkp-rks{font-size:clamp(16px,1.3vw,21px);margin-bottom:14px}
-.ls-rk .rkp-rkg{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.ls-rk .rkp-rkc{grid-template-columns:minmax(0,230px) minmax(0,1fr);border-color:#dbe4ef;background:#fff}
-.ls-rk .rkp-rkt b{font-size:clamp(16px,1.25vw,20px)}.ls-rk .rkp-rkt{font-size:clamp(14px,1.05vw,17px)}
-.ls-rk .rkp-rkn{font-size:14px}.ls-rk .rkp-rkf svg{max-height:30vh;width:auto;max-width:100%;margin:0 auto}.ls-rk .rkp-rkc{padding:8px}
-@media(max-width:900px){.ls-rk .rkp-rkg{grid-template-columns:1fr}}
-.ls-tkc{padding:16px 20px;border:2px dashed #9cc0ef;border-radius:16px;background:#f6f9ff}
-.ls-tkk{display:inline-block;margin-bottom:6px;font:800 13px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:#d1281f}
-.ls-tkq{margin:0;font:700 clamp(18px,1.6vw,27px)/1.35 var(--sans);color:#0a1733}
-.ls-tkm2{margin:8px 0 0;font:600 clamp(15px,1.2vw,20px)/1.35 var(--sans);color:#34465f}
-.ls-exd{margin-top:12px;display:flex;justify-content:center}.ls-exd svg{width:100%;height:auto;max-height:calc(100vh - 470px)}
-.ls-v3s .l3-st{height:min(34vh,330px);margin-top:16px}.ls-v3s .l3-bar{display:none}
-@media(max-width:900px){.ls-split{grid-template-columns:1fr}.ls-sv{position:static}.ls-sv .ls-ep{height:70vh}.ls-sv .l3-st{height:55vh}.ls-dw{height:70vh}.ls-exd{height:60vh}.ls-d3r .l3-st{height:55vh}.ls-main{padding:12px 8px 110px}.ls-ep{padding:2px;border-radius:12px}}
-.ls-d3l{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;max-height:calc(100vh - 330px);overflow:auto}
-.ls-d3l li{display:flex;gap:12px;align-items:flex-start;padding:8px 12px;border-radius:12px;opacity:.38;transition:opacity .2s,background .2s}
-.ls-d3l li.on{opacity:.6}.ls-d3l li.now{opacity:1;background:#f3f7fc;box-shadow:inset 4px 0 0 #1a5ae0}
-.ls-d3l b{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#1a5ae0;color:#fff;font:800 15px var(--sans)}
-.ls-d3l strong{display:block;font:800 clamp(17px,1.4vw,22px)/1.25 var(--sans)}
-.ls-d3l em{display:none;font-style:normal;font:500 clamp(16px,1.3vw,21px)/1.4 var(--sans);color:#34465f;margin-top:4px}
-.ls-d3l li.now em{display:block}
-.ls-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px}.ls-acts .ls-3d{margin-top:0}
-.ls-3db{min-height:42px;padding:0 16px;border:0;border-radius:12px;background:#1a5ae0;color:#fff;font:800 16px var(--sans);cursor:pointer}
-.ls-tkm{grid-template-columns:1fr}.ls-tkm span{font-weight:600}
-body.liveshow .t3d{z-index:100010}
-@media(max-width:900px){.ls-d3{grid-template-columns:1fr}.l3-st{height:56vh}.ls-d3l{max-height:none}.ls-ep{height:60vh}}
-@media(max-width:900px){.ls-main{padding:18px 16px 110px}.ls-map,.ls-opts{grid-template-columns:1fr}.ls-draw{grid-template-columns:1fr}.ls-keys{display:none}.ls-ctl{left:8px;right:8px;justify-content:center;flex-wrap:wrap}.ls-bar{padding:0 14px;gap:10px}.ls-bar b{display:none}}
 /* #/live — страница онлайн-разборов (viewLive) */
 .lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa:#fff;--pa-ink:#0a2463;
  background:linear-gradient(135deg,#0a2463 0%,#1a5ae0 100%);box-shadow:0 22px 40px -26px rgba(10,36,99,.7)}
@@ -296,6 +274,7 @@ body.liveshow .t3d{z-index:100010}
 .pmn-s b{color:var(--pa);font-weight:800}
 .pmn-m{margin-top:9px;font:700 15px/1.3 var(--sans);opacity:.95}
 .pmn-m b{color:var(--pa);font-weight:900}
+.pmn-mv{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.16);font:700 13px/1.3 var(--sans)}
 .pmn-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:auto;border-radius:12px;background:var(--pa);color:var(--pa-ink)!important;font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.25),0 0 24px -6px color-mix(in srgb,var(--pa) 60%,transparent);-webkit-tap-highlight-color:transparent}
 .pmn-sp{flex:1;min-height:12px}
 .pmn p{margin-bottom:0}
@@ -23837,6 +23816,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.24',d:'10 ноября 2026',items:['Режим эфира (#/live/show) сделан заново: разбор пирамиды SABC (ДЗ №3) — видимость, высота заменой плоскостей, проверка высоты пересечением прямой с плоскостью, угол между гранями двумя заменами, истинный вид основания и центр описанной окружности вращением вокруг фронтали, угол ребра с основанием вращением вокруг горизонтали. Каждая задача — как решение на листе: А — алгоритм словами, Б — в пространстве, В — на чертеже символьно, по строчке на шаг; чертёж на клетке строится по шагам, новое на шаге — цветом, равные отрезки — штрихами. Обратный переход (π₄ → π₁ → π₂, повёрнутая точка → исходная) — отдельными шагами.','Онлайн-разборы: на главной — ближайший эфир и перенос («Завтра в 18:00 · перенос с 20:00»); бот переносит эфир со всеми записями и сообщает записанным.']},
   {v:'4.23',d:'10 ноября 2026',items:['РК2 за 9 шагов: в начале каждой темы — «Какие задачи бывают»: все виды условий темы, к каждому — пример с чертежом и кнопка «Решить такую же» (новые числа, ответ проверяется). То же — слайдом в режиме эфира.','Онлайн-разборы, режим эфира (#/live/show): каждая из 9 тем РК2 начинается с «Задачи как на РК» — условие, эпюр «Дано» и та же задача в 3D. Дальше этот пример решается по шагам каждым способом — эпюр и 3D рядом и синхронно: видны новые плоскости π₄, π₅ и оси x₁₄, x₄₅, ось вращения i и горизонталь h, пути точек. 3D стоит рядом с текстом на каждом слайде темы. В конце — разбор билета РК2 (задачи А, Б, В): эпюр по шагам и 3D синхронно.']},
   {v:'4.22',d:'9 ноября 2026',items:['РК2 стал проще: «РК2 за 9 шагов». Все задачи билета РК2 сведены к девяти типам — угол между прямыми, угол наклона плоскости, натуральная величина треугольника, биссектриса, расстояние между прямыми, расстояние до плоскости, угол между плоскостями, треугольник на прямой, квадрат и окружность на прямой. Каждая тема — путь из трёх шагов: «Пойми» (суть и вопрос), «Как решать» (порядок построения каждым способом, где ошибаются, разборы по шагам), «Реши сам» (новая задача с координатами, ответ числом, решение красным на чертеже).',
     'Шкала прогресса 0–100 %: тема — 10 %, девять тем — 90 % и зелёная шкала; последние 10 % — финал, пробный РК2. Шкала краснеет внизу и зеленеет к 90 %.',
@@ -28554,25 +28534,40 @@ const PROMO=(function(){
   const botUrl=src=>'https://t.me/'+PROMO_BOT+'?start='+src;
   const ready=/^[A-Za-z]\w{3,31}$/.test(PROMO_BOT);   /* пока имя бота не вписано — карточку не показываем (кнопка вела бы в никуда) */
   const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
-  const PROMO_TIME='20:00';            /* время эфира по Москве — строка на карточке и в полосе */
-  const PROMO_DATES=['2026-11-10','2026-11-11','2026-11-12','2026-11-13'];    /* дни эфиров (по Москве): в эти дни под шапкой — полоса «Сегодня в 20:00 — эфир · Записаться» */
-  const PROMO_MIN=60;                  /* длительность: после конца эфира полоса пропадает */
+  /* эфиры по Москве: день → время. MOVED — перенесённые (день → прежнее время): на карточке и в полосе — «перенесли с …».
+     Это же расписание — у бота в server/livebot/schedule.json (поле moved_from). Менять в обоих местах. */
+  const PROMO_DAYS={'2026-11-10':'20:00','2026-11-11':'18:00','2026-11-12':'20:00','2026-11-13':'20:00'};
+  const PROMO_MOVED={'2026-11-11':'20:00'};
+  const PROMO_MIN=60;                  /* длительность: после конца эфира он больше не «ближайший» */
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
+  const WDN=['вс','пн','вт','ср','чт','пт','сб'];
+  const mskDay=t=>new Date(t+3*36e5).toISOString().slice(0,10);
+  const startOf=(day,hm)=>{ const [y,mo,d]=day.split('-').map(Number), [hh,mm]=hm.split(':').map(Number); return Date.UTC(y,mo-1,d,hh,mm)-3*36e5; };
+  /* ближайший эфир, который ещё не закончился: {day, time, start, live, rel:'сегодня'|'завтра'|'чт 12.11', moved:'20:00'|''} */
+  function next(now){ now=now||Date.now(); const today=mskDay(now), tomorrow=mskDay(now+864e5);
+    const d=Object.keys(PROMO_DAYS).sort().find(k=>startOf(k,PROMO_DAYS[k])+PROMO_MIN*6e4>now); if(!d) return null;
+    const start=startOf(d,PROMO_DAYS[d]), [y,mo,dd]=d.split('-').map(Number), wd=new Date(Date.UTC(y,mo-1,dd)).getUTCDay();
+    return {day:d,time:PROMO_DAYS[d],start,live:now>=start,moved:PROMO_MOVED[d]||'',
+      rel:d===today?'сегодня':d===tomorrow?'завтра':WDN[wd]+' '+String(dd).padStart(2,'0')+'.'+String(mo).padStart(2,'0')}; }
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
   function cardHTML(){
     if(!ready) return '';
-    const rk=rk2On();
+    const rk=rk2On(), n=next(), tm=n?n.time:'20:00';
+    const pill=n?(n.live?'<i aria-hidden="true"></i>Идёт':(n.rel==='сегодня'?'<i aria-hidden="true"></i>':'')+cap(n.rel)):'Бесплатно';
+    const when=n?`<p class="pmn-m">${n.live?'Эфир идёт · ':cap(n.rel)+' в '}<b>${n.live?'подключайся':tm}</b>${n.live?'':' по МСК'}</p>${n.moved&&!n.live?`<p class="pmn-mv">Перенос с ${n.moved}</p>`:''}`
+      :`<p class="pmn-m">В <b>${tm}</b> по МСК</p>`;
     const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>`;
     return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">
-     <span class="pmn-pill"><i aria-hidden="true"></i>Сегодня</span><span class="pmn-moon" aria-hidden="true"></span>
+     <span class="pmn-pill">${pill}</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">РК2<span>завтра?</span></h2>
      <p class="pmn-s">Бесплатный разбор в эфире</p>
-     <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
+     ${when}<div class="pmn-sp"></div>
      ${btn('rk2','Я приду →','Записаться на разбор РК2')}</section>`
     :`<section class="pmn dz" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill">Бесплатно</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">ДЗ 2–3<span>не идёт?</span></h2>
      <p class="pmn-s">Бесплатный разбор в эфире</p>
-     <p class="pmn-m">В <b>${PROMO_TIME}</b> по МСК</p><div class="pmn-sp"></div>
+     ${when}<div class="pmn-sp"></div>
      ${btn('dz','Записаться →','Записаться на разбор ДЗ')}</section>`;
   }
   document.addEventListener('click',ev=>{
@@ -28580,16 +28575,14 @@ const PROMO=(function(){
     try{ window.TRACK&&TRACK('promo',{mode:t.getAttribute('data-promo')}); }catch(e){}
   });
   /* полоса под шапкой на всех страницах, кроме главной (там карточка) и #/live (там своя кнопка и режим эфира):
-     до начала — «Сегодня в 20:00 МСК — бесплатный эфир по РК2 · Записаться», во время — «Эфир идёт · Подключиться», потом пропадает */
+     в день эфира до начала — «Сегодня в 18:00 МСК — бесплатный эфир по РК2 · Записаться» (если перенесли — «перенесли с 20:00»),
+     во время — «Эфир идёт · Подключиться», потом пропадает */
   function paintBar(r){ const el=document.getElementById('liveBar'); if(!el) return;
-    const m=new Date(Date.now()+3*36e5), day=m.toISOString().slice(0,10), [hh,mm]=PROMO_TIME.split(':').map(Number);
-    const start=Date.UTC(m.getUTCFullYear(),m.getUTCMonth(),m.getUTCDate(),hh,mm)-3*36e5, now=Date.now();
-    const show=ready&&PROMO_DATES.includes(day)&&now<start+PROMO_MIN*6e4&&r&&r.s!=='home'&&r.s!=='live';   /* на главной — карточка, на #/live — своя кнопка */
+    const n=next(), show=ready&&n&&n.rel==='сегодня'&&r&&r.s!=='home'&&r.s!=='live';   /* на главной — карточка, на #/live — своя кнопка */
     el.hidden=!show; if(!show){ el.innerHTML=''; return; }
-    const live=now>=start;
-    el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${live?'<b>Эфир идёт</b> — бесплатный разбор РК2':`<b>Сегодня в ${PROMO_TIME} МСК</b> — бесплатный эфир по РК2`}</span>
-      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${live?'Подключиться →':'Записаться →'}</a></div>`; }
-  return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar};
+    el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${n.live?'<b>Эфир идёт</b> — бесплатный разбор РК2':`<b>Сегодня в ${n.time} МСК</b> — бесплатный эфир по РК2${n.moved?` (перенесли с ${n.moved})`:''}`}</span>
+      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${n.live?'Подключиться →':'Записаться →'}</a></div>`; }
+  return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar,next};
 })();
 const A2HS=(function(){
   let BIP=null;
@@ -33387,183 +33380,512 @@ function mount(host,SC,o){ o=o||{};
 
 return {scene,has,mount,svg,example,big,epure:epStep,epAll,_:{zamPlane,zamLine,rotProj,rotLevel,F_ang,F_incl,F_nv,F_bis,F_dll,F_dllR,F_dpp,F_dih,F_tri,F_sq,F_tkA,F_tkB,F_tkV,levelAng,rotA,SCN}};
 })();
-/* ═════ #/live/show — режим эфира для ведущего: «РК2 за 9 шагов» на весь экран, для демонстрации окна в Телемосте.
-   Слайды строятся из того, что уже есть на сайте: темы RKP.TOPICS (идея, порядок решения каждым способом, ловушки,
-   вопрос), 3D-сцены способов L3D (π₄, π₅, оси x₁₄/x₄₅, оси вращения i, h — по шагам, с анимацией) и задачи тетради
-   с пошаговыми чертежами (WB3 + DRAW). В конце — разбор билета РК2 (задачи А, Б, В): условие, 3D, построение по шагам.
-   Клавиши: → / пробел — дальше, ← — назад, 1–9 — к теме, 0 — к билету, P — перо, C — стереть, B — белая доска, F — полный экран,
-   R — повторить анимацию 3D, V — вид 3D по умолчанию, Esc — выход. Адрес #/live/show/<1–9> — сразу к теме, #/live/show/10 — к билету.
-   На время показа тема сайта — светлая (лучше читается при демонстрации), после выхода возвращается прежняя. ═════ */
+/* ═════ #/live/show — режим эфира для ведущего: разбор пирамиды SABC (ДЗ №3, вариант 7 — тот, что на листах студентов).
+   Пять задач на одной пирамиде: видимость, высота (замена), проверка высоты пересечением прямой с плоскостью,
+   угол между гранями (две замены), истинный вид основания и центр описанной окружности (вращение вокруг h,
+   обратный поворот), угол ребра с основанием (вращение вокруг горизонтали).
+   Каждая задача — как эталонное решение на листе: А — алгоритм словами, Б — в пространстве (символьно),
+   В — на чертеже (символьно, строчка на каждый шаг) и чертёж на клетчатом листе, который строится по шагам.
+   Все точки чертежа вычислены (проверка — в tests/run.js: те же числа, что даёт пространство).
+   Обратный переход (π₄ → π₁ → π₂, повёрнутое → исходное) — отдельными шагами со значком ↩.
+   Клавиши: → / пробел — дальше, ← — назад, 1–6 — к задаче, 0 — к началу, P — перо, C — стереть, B — доска,
+   F — полный экран, Esc — выход. Адрес #/live/show/<1–6> — сразу к задаче.
+   На время показа тема сайта — светлая, после выхода возвращается прежняя. ═════ */
 const LIVESHOW=(function(){
-  let S=null;   /* {slides, i, k, pen, board, t0, prevTheme, root, keys, timer} */
-  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const MT3={zam:'замена плоскостей проекций',rotp:'вращение вокруг проецирующей прямой',rotl:'вращение вокруг линии уровня'};
-  const exOf=T=>{ const e=(T.ex||[]).find(x=>/^#\/ng\/tasks\/\d+$/.test(x[0])); return e?+e[0].split('/').pop():null; };   /* только тетрадь, без билетов */
-  function build(){
-    const TT=(window.RKP&&RKP.TOPICS)||[], MT=(window.RKP&&RKP.MT)||{}, out=[];
-    out.push({kind:'intro'});
-    /* коротко: по каждой теме — задача как на РК, её решение по шагам (эпюр + 3D) каждым способом, где ошибаются */
-    TT.forEach((T,ti)=>{
-      const top={ti,T}, m0=typeof L3D!=='undefined'&&Object.keys(T.m||{}).find(m=>L3D.has(T.id,m)), vz=md=>m0?{id:T.id,mk:m0,mode:md}:null;
-      { const ms=Object.keys(T.m||{}).filter(m=>typeof L3D!=='undefined'&&L3D.has(T.id,m)); if(!ms.length) out.push(Object.assign({kind:'title'},top));
-        ms.forEach((mk,k)=>{ let a=''; try{ a=L3D.scene(T.id,mk).F.ask; }catch(e){} d3(out,T.id,mk,(MT[mk]&&MT[mk].s)||mk,Object.assign({ask:a,qn:ms.length>1?k+1:0},top)); }); }   /* на каждый способ — своя задача: условие + решение по шагам */
-      if((T.traps||[]).length) out.push(Object.assign({kind:'traps',v3:vz('final')},top));
+  let S=null;
+  /* ── счёт ── */
+  const s3=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], a3=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], m3=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+  const d3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], c3=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const l3=a=>Math.hypot(a[0],a[1],a[2]), u3=a=>m3(a,1/(l3(a)||1)), lp3=(a,b,t)=>a3(a,m3(s3(b,a),t));
+  const s2=(a,b)=>[a[0]-b[0],a[1]-b[1]], a2=(a,b)=>[a[0]+b[0],a[1]+b[1]], m2=(a,k)=>[a[0]*k,a[1]*k], dt=(a,b)=>a[0]*b[0]+a[1]*b[1];
+  const l2=a=>Math.hypot(a[0],a[1]), u2=a=>m2(a,1/(l2(a)||1)), pp=a=>[-a[1],a[0]], ds=(a,b)=>l2(s2(a,b)), lp2=(a,b,t)=>a2(a,m2(s2(b,a),t));
+  const ft=(p,a,d)=>{ d=u2(d); return a2(a,m2(d,dt(s2(p,a),d))); };                      /* основание перпендикуляра из p на прямую (a, d) */
+  const X2=(p,d,q,e)=>{ const den=d[0]*e[1]-d[1]*e[0], t=((q[0]-p[0])*e[1]-(q[1]-p[1])*e[0])/den; return a2(p,m2(d,t)); };   /* пересечение прямых */
+  const DEG=180/Math.PI, ang2=(v,p,q)=>Math.acos(Math.max(-1,Math.min(1,dt(u2(s2(p,v)),u2(s2(q,v))))))*DEG;
+  const fm=v=>(Math.round(v*10)/10).toFixed(1).replace('.',',').replace('-','−');
+  /* эпюр: x влево от O, на π₂ z вверх, на π₁ y вниз (координаты рисунка — мм, ось Y экрана вниз) */
+  const F=P=>[-P[0],-P[2]], Hp=P=>[-P[0],P[1]];
+  const P3={A:[80,0,20],B:[0,30,30],C:[60,50,0],S:[40,35,50]};
+  const {A,B,C}=P3, Sv=P3.S;
+
+  /* ── чертёж: элементы с номером шага (st), до какого шага видны (till) ── */
+  function Dw(){ const it=[]; let at=0;
+    const add=o=>{ if(o.st==null) o.st=at; it.push(o); return o; };
+    const D={it,
+      at:k=>{ at=k; return D; },
+      seg:(p,q,c,o)=>add(Object.assign({k:'seg',p,q,c:c||'main'},o)),
+      line:(p,q,c,e0,e1,o)=>{ const d=u2(s2(q,p)); return add(Object.assign({k:'seg',p:a2(p,m2(d,-(e0||0))),q:a2(q,m2(d,e1||0)),c:c||'aux'},o)); },
+      pt:(p,l,c,o)=>add(Object.assign({k:'pt',p,l,c:c||'main'},o)),
+      lab:(p,l,c,o)=>add(Object.assign({k:'lab',p,l,c:c||'main'},o)),
+      sq:(v,p,q,c,o)=>add(Object.assign({k:'sq',v,p,q,c:c||'aux'},o)),
+      tick:(p,q,n,c,o)=>add(Object.assign({k:'tick',p,q,n,c:c||'tk'},o)),
+      arc:(o_,r,p,q,c,o)=>add(Object.assign({k:'arc',o:o_,r,p,q,c:c||'aux'},o)),
+      ang:(v,p,q,r,l,c,o)=>add(Object.assign({k:'ang',v,p,q,r,l,c:c||'res'},o)),
+      poly:(ps,c,o)=>add(Object.assign({k:'poly',ps,c:c||'fill'},o)),
+      circ:(o_,r,c,o)=>add(Object.assign({k:'circ',o:o_,r,c:c||'thin'},o)) };
+    return D; }
+  /* исходные данные: ось x₁₂, проекции вершин, рёбра (видимость: на π₂ ребро AB закрыто ребром SC) */
+  function given(D,vis,opt){ D.at(0); opt=opt||{}; const has=n=>!opt.only||opt.only.includes(n);
+    D.seg([-98,0],[14,0],'ax'); D.lab([-98,0],'x_{12}','ax',{pos:'nw'}); D.pt([0,0],'O','ax',{pos:'ne',r:0});
+    D.lab([-98,-3],'π_2','pl',{pos:'nw',dy:-14}); D.lab([-98,3],'π_1','pl',{pos:'sw',dy:14});
+    ['A','B','C','S'].filter(has).forEach(n=>{ D.seg(F(P3[n]),Hp(P3[n]),'link'); });
+    const E=[['S','A'],['S','B'],['S','C'],['A','B'],['B','C'],['C','A']].filter(([p,q])=>has(p)&&has(q));
+    E.forEach(([p,q])=>{ const hid=vis!==false&&p+q==='AB'&&has('S'), cx=(opt.ctx||[]).includes(p+q);
+      D.seg(F(P3[p]),F(P3[q]),vis===false?'thin':cx?(hid?'ctxh':'ctx'):hid?'hid':'main',vis===false?{st:1,till:3}:{});
+      D.seg(Hp(P3[p]),Hp(P3[q]),vis===false?'thin':cx?'ctx':'main',vis===false?{st:1,till:4}:{}); });
+    ['A','B','C','S'].filter(has).forEach(n=>{ D.pt(F(P3[n]),n+'″'); D.pt(Hp(P3[n]),n+'′'); }); }
+
+  /* ── задачи ── */
+  const nrm=u3(c3(s3(B,A),s3(C,A))), Hh=Math.abs(d3(s3(Sv,A),nrm)), Hft=s3(Sv,m3(nrm,d3(s3(Sv,A),nrm)));   /* основание высоты */
+  const Dp=lp3(B,C,1/3);                                   /* D ∈ BC, z_D = z_A = 20 — горизонталь h = AD */
+  const Ep=lp3(A,C,0.6);                                   /* E ∈ AC, y_E = y_B = 30 — фронталь f = BE */
+  const T=[];
+
+  /* 0. Видимость */
+  T.push((()=>{ const D=Dw(); given(D,false);
+    /* конкурирующие на π₂: S″C″ ∩ A″B″ */
+    const k2=X2(F(Sv),s2(F(C),F(Sv)),F(A),s2(F(B),F(A))), t1=(k2[0]-F(Sv)[0])/(F(C)[0]-F(Sv)[0]), t2=(k2[0]-F(A)[0])/(F(B)[0]-F(A)[0]);
+    const p1=lp3(Sv,C,t1), p2=lp3(A,B,t2);
+    D.at(2); D.pt(k2,'1″≡2″','aux',{pos:'s'});
+    D.at(3); D.seg(k2,Hp(p2),'link'); D.seg(Hp(p2),Hp(p1),'link'); D.pt(Hp(p2),'2′','aux',{pos:'ne'}); D.pt(Hp(p1),'1′','aux',{pos:'sw'});
+    D.at(4); D.seg(F(Sv),F(C),'main'); D.seg(F(A),F(B),'hid'); D.seg(F(Sv),F(A),'main'); D.seg(F(Sv),F(B),'main'); D.seg(F(B),F(C),'main'); D.seg(F(C),F(A),'main');
+    D.at(5); [['S','A'],['S','B'],['S','C'],['A','B'],['B','C'],['C','A']].forEach(([p,q])=>D.seg(Hp(P3[p]),Hp(P3[q]),'main'));
+    return {id:'vis',n:0,sh:'Видимость',t:'Видимость рёбер',m:'метод конкурирующих точек',D,
+      cond:'Определить видимость рёбер пирамиды SABC на π₁ и π₂.',
+      A:['Строим проекции вершин и рёбер — пока тонко.','Ищем на π₂ точку, где пересекаются проекции <b>скрещивающихся</b> рёбер.','Это две конкурирующие точки: 1 на одном ребре, 2 на другом. Находим их на π₁.','Видна та, что ближе к нам: на π₂ — у кого больше y, на π₁ — у кого больше z.'],
+      Bs:['1 ∈ SC, 2 ∈ AB','12 ⟂ π₂ (на одном луче взгляда)','y₁ &gt; y₂ ⇒ SC перед AB'],
+      steps:[
+        {t:'Проекции вершин и рёбер',v:'A′(x; y), A″(x; z);  A′A″ ⟂ x₁₂',
+         s:'x — влево от O, y — вниз на π₁, z — вверх на π₂. Рёбра — пока тонкими: видимость ещё не знаем.'},
+        {t:'Конкурирующие точки на π₂',v:'1″ ≡ 2″ = S″C″ ∩ A″B″;  1 ∈ SC, 2 ∈ AB',
+         s:'В пространстве SC и AB скрещиваются, а на π₂ их проекции пересеклись. Значит, это две разные точки на одном луче взгляда.'},
+        {t:'Находим их на π₁',v:'1′ ∈ S′C′,  2′ ∈ A′B′  (линия связи ⟂ x₁₂)',
+         s:'Линия связи из 1″ ≡ 2″ вниз: на S′C′ — точка 1′, на A′B′ — 2′.'},
+        {t:'Кто ближе — тот видим (π₂)',v:`y₁ = ${fm(p1[1])} &gt; y₂ = ${fm(p2[1])} ⇒ S″C″ видна, A″B″ — штрих`,
+         s:'На π₂ смотрим спереди: ближе к нам точка с большим y. 1′ дальше от оси, чем 2′, — ребро SC закрывает AB.'},
+        {t:'π₁: все рёбра видны',v:'S′ ∈ △A′B′C′,  z_S = 50 — максимум ⇒ на π₁ всё видно',
+         s:'Сверху первой видна самая высокая точка. S выше основания и проецируется внутрь него — боковые рёбра сверху, стороны основания — контур.'}],
+      ans:'π₂: A″B″ — невидима (штрих), остальное видно.<br>π₁: видны все рёбра.',
+      err:['Сравнивают не ту координату: для π₂ — глубина y, для π₁ — высота z.','Ищут конкурирующие точки там, где у рёбер общая вершина: там точка одна, сравнивать нечего.']}; })());
+
+  /* 1. Высота — замена π₂ → π₄ */
+  T.push((()=>{ const D=Dw(); given(D);
+    const a=Hp(A), d=Hp(Dp), u=u2(s2(d,a)), e=pp(u);
+    const t0=Math.max(...['A','B','C','S'].map(n=>dt(s2(Hp(P3[n]),a),u)))+14, O4=a2(a,m2(u,t0));
+    const img=P=>a2(ft(Hp(P),O4,e),m2(u,P[2])), fo=P=>ft(Hp(P),O4,e);
+    const A4=img(A),B4=img(B),C4=img(C),S4=img(Sv);
+    const ext=[...['A','B','C','S'].map(n=>dt(s2(Hp(P3[n]),O4),e))], e0=Math.min(...ext)-14, e1=Math.max(...ext)+14;
+    const H4=ft(S4,A4,s2(B4,A4)), zH=dt(s2(H4,ft(H4,O4,e)),u);
+    const Hh1=X2(H4,u,Hp(Sv),e), Hf=[Hh1[0],-zH];
+    D.at(1); D.line(F(A),F(Dp),'aux',6,10); D.lab(a2(F(Dp),[10,0]),'h″','aux',{pos:'e'}); D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux',{pos:'ne'}); D.pt(d,'D′','aux',{pos:'sw'}); D.line(a,d,'aux',6,10); D.lab(a2(d,m2(u,10)),'h′','aux',{pos:'se'});
+    D.at(2); D.seg(a2(O4,m2(e,e0)),a2(O4,m2(e,e1)),'ax2'); D.lab(a2(O4,m2(e,e0)),'x_{14}','ax2',{pos:'auto'}); D.sq(ft(d,O4,e),a2(O4,m2(e,e1)),a,'ax2');
+    D.lab(a2(a2(O4,m2(e,e1-4)),m2(u,-5)),'π_1','pl',{pos:'c'}); D.lab(a2(a2(O4,m2(e,e1-4)),m2(u,5)),'π_4','pl4',{pos:'c'});
+    D.at(3); [['A',A4,1],['B',B4,2],['C',C4,0]].forEach(([n,p,tk])=>{ D.seg(Hp(P3[n]),p,'link'); D.pt(p,n+'_4','v4'); if(tk){ D.tick(F(P3[n]),[F(P3[n])[0],0],tk,'tk',{till:3}); D.tick(fo(P3[n]),p,tk,'tk',{till:3}); } });
+    D.line(C4,B4,'v4',8,8); D.lab(lp2(C4,B4,1.05),'(ABC)_4','v4',{pos:'auto'});
+    D.at(4); D.seg(Hp(Sv),S4,'link'); D.pt(S4,'S_4','v4'); D.tick(F(Sv),[F(Sv)[0],0],3); D.tick(fo(Sv),S4,3);
+    D.at(5); D.seg(S4,H4,'res'); D.sq(H4,S4,B4,'res'); D.pt(H4,'H_4','res'); D.lab(lp2(S4,H4,.5),'H = '+fm(Hh)+' мм','res',{pos:'auto',big:1});
+    D.at(6); D.seg(H4,Hh1,'link',{back:1}); D.line(Hp(Sv),Hh1,'aux',0,10,{back:1}); D.pt(Hh1,'H′','res'); D.seg(Hp(Sv),Hh1,'res');
+    D.at(7); D.seg(Hh1,Hf,'link'); D.pt(Hf,'H″','res'); D.seg(F(Sv),Hf,'res'); D.tick(ft(H4,O4,e),H4,4); D.tick([Hf[0],0],Hf,4);
+    const okH=ds(Hh1,Hp(Hft))<0.05&&ds(Hf,F(Hft))<0.05;
+    return {id:'h',n:1,sh:'Высота',t:'Высота пирамиды',m:'замена плоскостей проекций',D,ok:okH,
+      cond:'Определить высоту пирамиды SABC способом замены плоскостей проекций.',
+      A:['В основании ABC проводим горизонталь h.','Ставим новую плоскость π₄ ⟂ h — ось x₁₄ ⟂ h′.','Переносим A, B, C на π₄ — основание станет прямой.','Переносим вершину S.','Высота — перпендикуляр из S₄ к этой прямой.','<b>Обратный переход:</b> возвращаем основание высоты H с π₄ на π₁ и π₂.'],
+      Bs:['h ⊂ (ABC),  h ∥ π₁','π₄ ⟂ π₁,  π₄ ⟂ h  ⇒  (ABC) ⟂ π₄','SH ⟂ (ABC)  ⇒  SH ∥ π₄  ⇒  |S₄H₄| = |SH|'],
+      steps:[
+        {t:'Горизонталь h в основании',v:'h″ ∥ x₁₂, A″ ∈ h″;  D″ = h″ ∩ B″C″;  D′ ∈ B′C′;  h′ = A′D′',
+         s:'Через A — она средняя по высоте (z = 20). На π₂ h″ идёт параллельно оси до B″C″, точку D опускаем линией связи на B′C′.'},
+        {t:'Новая ось x₁₄ ⟂ h′',v:'π₄ ⟂ π₁,  π₄ ⟂ h  ⇒  x₁₄ ⟂ h′',
+         s:'Ось ставим в свободном месте, чтобы новый вид не налез на старые. Прямой угол с h′ — отмечаем.'},
+        {t:'A, B, C на π₄',v:'A′A₄ ⟂ x₁₄,  |A₄x₁₄| = |A″x₁₂| = z_A  (так же B, C)',
+         s:'Заменили π₂ — значит, сохраняется высота z. Берём циркулем на π₂ расстояние от A″ до x₁₂ и откладываем от x₁₄. A₄, B₄, C₄ легли на одну прямую: D₄ ≡ A₄ — горизонталь видна точкой.'},
+        {t:'Вершина S на π₄',v:'S′S₄ ⟂ x₁₄,  |S₄x₁₄| = |S″x₁₂| = 50',
+         s:'Так же: линия связи ⟂ x₁₄, расстояние — с π₂ (штрихи ||| — равные отрезки).'},
+        {t:'Высота на π₄',v:`S₄H₄ ⟂ (ABC)₄  ⇒  H = |S₄H₄| = ${fm(Hh)} мм`,
+         s:'Основание — проецирующая плоскость: перпендикуляр к ней виден в натуральную величину, и прямой угол виден тоже.'},
+        {t:'Обратно на π₁: H′',back:1,v:'H₄H′ ⟂ x₁₄;  SH ∥ π₄ ⇒ S′H′ ∥ x₁₄;  H′ = (H₄H′) ∩ (S′H′)',
+         s:'H′ лежит на линии связи из H₄. Где именно на ней? SH ∥ π₄, а прямая, параллельная π₄, на π₁ идёт параллельно x₁₄. Из S′ — прямая ∥ x₁₄; пересечение и есть H′.'},
+        {t:'Обратно на π₂: H″',back:1,v:'H′H″ ⟂ x₁₂,  |H″x₁₂| = |H₄x₁₄| = z_H',
+         s:'Из H′ — линия связи вверх. Высоту H берём там, где она видна: на π₄ от H₄ до x₁₄ (штрихи ||||), и откладываем от x₁₂. S′H′, S″H″ — проекции высоты.'}],
+      ans:`H = |S₄H₄| = ${fm(Hh)} мм`,
+      back:['Назад — так же, как вперёд: линия связи ⟂ оси и то же расстояние (сохраняется z — его и возвращаем).','Второе место для точки даёт свойство прямой: SH ∥ π₄ ⇒ S′H′ ∥ x₁₄.'],
+      err:['Откладывают от x₁₄ не z, а y — путают, какая плоскость заменена.','Опускают перпендикуляр из S₄ на ось x₁₄, а не на прямую основания.','Ставят H″ «на глаз», без переноса |H₄x₁₄|.']}; })());
+
+  /* 1*. Та же точка H — пересечение перпендикуляра n с плоскостью ABC (эталонный алгоритм) */
+  const nLine=(D,len1,len2)=>{ /* n′ ⟂ h′, n″ ⟂ f″ — направления на эпюре */
+    const dh=u2(s2(Hp(Dp),Hp(A))), df=u2(s2(F(Ep),F(B))); return {n1:pp(dh),n2:pp(df)}; };
+  T.push((()=>{ const D=Dw(); given(D);
+    const {n1,n2}=nLine();
+    /* куда пересекает β″ ≡ n″ стороны основания на π₂ */
+    const hits=[['A','B'],['B','C'],['C','A']].map(([p,q])=>{ const P=X2(F(Sv),n2,F(P3[p]),s2(F(P3[q]),F(P3[p]))), t=(P[0]-F(P3[p])[0])/(F(P3[q])[0]-F(P3[p])[0]); return {p,q,P,t,X:lp3(P3[p],P3[q],t)}; }).filter(h=>h.t>-1e-9&&h.t<1+1e-9);
+    const [h1,h2]=hits, K1=X2(Hp(h1.X),s2(Hp(h2.X),Hp(h1.X)),Hp(Sv),n1), K2=X2([K1[0],-200],[0,1],F(Sv),n2);
+    D.at(1); D.line(F(A),F(Dp),'aux',6,8); D.lab(a2(F(Dp),[8,0]),'h″','aux',{pos:'e'}); D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(Hp(Dp),'D′','aux'); D.line(Hp(A),Hp(Dp),'aux',4,8); D.lab(lp2(Hp(A),Hp(Dp),1.12),'h′','aux');
+      D.line(Hp(B),Hp(Ep),'aux',6,8); D.lab(a2(Hp(Ep),[-8,0]),'f′','aux',{pos:'w'}); D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(F(Ep),'E″','aux'); D.line(F(B),F(Ep),'aux',4,8); D.lab(lp2(F(B),F(Ep),1.1),'f″','aux');
+    D.at(2); D.line(Hp(Sv),K1,'aux',8,10); D.lab(a2(K1,m2(u2(s2(K1,Hp(Sv))),10)),'n′','aux',{pos:'auto'}); D.sq(X2(Hp(Sv),n1,Hp(A),s2(Hp(Dp),Hp(A))),Hp(Sv),Hp(Dp),'aux');
+      D.line(F(Sv),K2,'aux',8,12); D.lab(a2(K2,m2(u2(s2(K2,F(Sv))),12)),'n″','aux',{pos:'auto'}); D.sq(X2(F(Sv),n2,F(B),s2(F(Ep),F(B))),F(Sv),F(B),'aux');
+    D.at(3); D.lab(a2(F(Sv),m2(u2(s2(F(Sv),K2)),8)),'β″ ≡ n″','aux',{pos:'auto'});
+    D.at(4); [h1,h2].forEach((h,i)=>{ D.pt(F(h.X),(i+1)+'″','aux'); D.seg(F(h.X),Hp(h.X),'link'); D.pt(Hp(h.X),(i+1)+'′','aux',i?{}:{pos:'n'}); }); D.seg(Hp(h1.X),Hp(h2.X),'aux');
+    D.at(5); D.pt(K1,'K′','res',{pos:'e'}); D.seg(K1,K2,'link'); D.pt(K2,'K″','res');
+    D.at(6); D.seg(Hp(Sv),K1,'hidr'); D.seg(F(Sv),K2,'hidr');
+    const ok=ds(K1,Hp(Hft))<0.05&&ds(K2,F(Hft))<0.05, E1=h1.p+h1.q, E2=h2.p+h2.q;
+    return {id:'k',n:'1*',sh:'Проверка H',t:'Проверка: H — точка пересечения прямой и плоскости',m:'без новых плоскостей',D,ok,
+      cond:'Найти основание высоты H как точку пересечения перпендикуляра n из S с плоскостью основания ABC. Сверить с задачей 1.',
+      A:['Из S проводим перпендикуляр n к плоскости ABC.','Заключаем прямую n во вспомогательную фронтально-проецирующую плоскость β.','Строим линию пересечения 12 плоскости β с плоскостью ABC.','Находим точку пересечения K линии 12 и прямой n.','Определяем видимость участков прямой.'],
+      Bs:['n ∋ S,  n ⟂ α(△ABC)','n ⊂ β,  β ⟂ π₂','12 = β ∩ α(△ABC)','K = 12 ∩ n'],
+      steps:[
+        {t:'Горизонталь h и фронталь f',v:'h′ = A′D′ (как в задаче 1);  f′ ∥ x₁₂, B′ ∈ f′, E′ = f′ ∩ A′C′;  f″ = B″E″',
+         s:'Фронталь — через B (средняя по глубине, y = 30): на π₁ f′ ∥ оси до A′C′, E″ — линией связи на A″C″.'},
+        {t:'Перпендикуляр n из S',v:'n′ ∋ S′, n′ ⟂ h′;   n″ ∋ S″, n″ ⟂ f″',
+         s:'Прямая ⟂ плоскости, если она ⟂ её горизонтали и фронтали. На π₁ прямой угол с h не искажается, на π₂ — с f.'},
+        {t:'Вспомогательная плоскость β',v:'n ⊂ β,  β ⟂ π₂  ⇒  β″ ≡ n″',
+         s:'Фронтально-проецирующая плоскость на π₂ — прямая. Проводим её прямо по n″: всё, что лежит в β, на π₂ — на этой прямой.'},
+        {t:'Линия пересечения 12',v:`1″ = β″ ∩ ${E1[0]}″${E1[1]}″, 1′ ∈ ${E1[0]}′${E1[1]}′;   2″ = β″ ∩ ${E2[0]}″${E2[1]}″, 2′ ∈ ${E2[0]}′${E2[1]}′`,
+         s:'На π₂ точки 1″ и 2″ видны сразу — где β″ режет стороны. На π₁ — по линиям связи на тех же сторонах.'},
+        {t:'Точка K',v:'K′ = 1′2′ ∩ n′;   K″ ∈ n″ (линия связи)',
+         s:'K лежит и на n, и на линии 12 — значит, и в плоскости ABC.'},
+        {t:'Видимость и сверка',v:'SK — внутри пирамиды ⇒ штрих;   K ≡ H ✓',
+         s:'Отрезок SK идёт внутри тела — его закрывают грани, на обеих проекциях он штриховой. K′ и K″ совпали с H′ и H″ из задачи 1 — два способа дали одну точку.'}],
+      ans:'K ≡ H: H′ и H″ совпали с найденными заменой плоскостей',
+      err:['На π₂ строят прямой угол с горизонталью — а сохраняется он только с фронталью: n″ ⟂ f″.','β берут не проецирующей — тогда линию 12 не построить по линиям связи.']}; })());
+
+  /* 2. Угол между гранью SAB и основанием — две замены */
+  T.push((()=>{ const D=Dw(); given(D);
+    const a=Hp(A), b=Hp(B), e=u2(s2(b,a)); let n=pp(e); if(dt(s2(Hp(C),a),n)<0) n=m2(n,-1);
+    const s0=Math.max(...['A','B','C','S'].map(k=>dt(s2(Hp(P3[k]),a),n)))+12, O4=a2(a,m2(n,s0));
+    const img4=P=>a2(ft(Hp(P),O4,e),m2(n,P[2])), dist14=P=>dt(s2(O4,Hp(P)),n);
+    const Q4={}; ['A','B','C','S'].forEach(k=>Q4[k]=img4(P3[k]));
+    const tt=['A','B','C','S'].flatMap(k=>[dt(s2(Hp(P3[k]),O4),e),dt(s2(Q4[k],O4),e)]), t0=Math.min(...tt)-12, t1=Math.max(...tt)+10;
+    const n5=u2(s2(Q4.B,Q4.A)), e5=pp(n5), O5=a2(Q4.A,m2(n5,Math.max(...['A','B','C','S'].map(k=>dt(s2(Q4[k],Q4.A),n5)))+12));   /* x₄₅ ⟂ A₄B₄ — за B₄, π₅ дальше */
+    const img5=P=>a2(ft(Q4[Object.keys(P3).find(k=>P3[k]===P)],O5,e5),m2(n5,dist14(P)));
+    const Q5={}; ['A','B','C','S'].forEach(k=>Q5[k]=img5(P3[k]));
+    const dih=ang2(Q5.A,Q5.C,Q5.S);
+    D.at(1); D.seg(a2(O4,m2(e,t0)),a2(O4,m2(e,t1)),'ax2'); D.lab(a2(O4,m2(e,t0)),'x_{14}','ax2',{pos:'auto'});
+      D.lab(a2(a2(O4,m2(e,t0+8)),m2(n,-5)),'π_1','pl',{pos:'c'}); D.lab(a2(a2(O4,m2(e,t0+8)),m2(n,5)),'π_4','pl4',{pos:'c'}); D.lab(lp2(a,b,.5),'∥','ax2',{pos:'auto'});
+    D.at(2); ['A','B','C','S'].forEach((k,i)=>{ D.seg(Hp(P3[k]),Q4[k],'link'); D.pt(Q4[k],k+'_4','v4'); });
+      [['A','B'],['A','C'],['B','C'],['S','A'],['S','B'],['S','C']].forEach(([p,q])=>D.seg(Q4[p],Q4[q],p+q==='AB'?'res':'v4'));
+      D.tick(F(A),[F(A)[0],0],1,'tk',{till:2}); D.tick(ft(a,O4,e),Q4.A,1,'tk',{till:2}); D.tick(F(B),[F(B)[0],0],2,'tk',{till:2}); D.tick(ft(b,O4,e),Q4.B,2,'tk',{till:2});
+      D.lab(lp2(Q4.A,Q4.B,.5),'|AB| = '+fm(l3(s3(A,B))),'res',{pos:'auto'});
+    D.at(3); D.seg(a2(O5,m2(e5,-6)),a2(O5,m2(e5,Math.max(...['A','B','C','S'].map(k=>dt(s2(Q4[k],O5),e5)))+10)),'ax2'); D.lab(a2(O5,m2(e5,-6)),'x_{45}','ax3',{pos:'auto'});
+      D.seg(Q4.B,a2(ft(Q4.B,O5,e5),m2(n5,4)),'link'); D.sq(ft(Q4.B,O5,e5),O5,Q4.A,'ax2');
+      { const t5=Math.max(...['A','B','C','S'].map(k=>dt(s2(Q4[k],O5),e5)))+6; D.lab(a2(a2(O5,m2(e5,t5)),m2(n5,-5)),'π_4','pl4',{pos:'c'}); D.lab(a2(a2(O5,m2(e5,t5)),m2(n5,5)),'π_5','pl4',{pos:'c'}); }
+    D.at(4); ['A','C','S'].forEach(k=>{ D.seg(Q4[k],Q5[k],'link'); }); D.pt(Q5.A,'A_5≡B_5','v5'); D.pt(Q5.C,'C_5','v5'); D.pt(Q5.S,'S_5','v5');
+      D.seg(Q5.A,Q5.C,'v5'); D.seg(Q5.A,Q5.S,'v5'); D.seg(Q5.S,Q5.C,'v5',{thin:1});
+      D.tick(Hp(C),ft(Hp(C),O4,e),1,'tk',{till:4}); D.tick(ft(Q4.C,O5,e5),Q5.C,1,'tk',{till:4}); D.tick(Hp(Sv),ft(Hp(Sv),O4,e),2,'tk',{till:4}); D.tick(ft(Q4.S,O5,e5),Q5.S,2,'tk',{till:4});
+    D.at(5); D.ang(Q5.A,Q5.C,Q5.S,14,'φ = '+fm(dih)+'°','res');
+    return {id:'dih',n:2,sh:'Угол граней',t:'Угол между гранью SAB и основанием',m:'замена плоскостей — дважды',D,ok:Math.abs(dih-83.2335)<0.05,
+      cond:'Определить угол между гранью SAB и основанием ABC способом замены плоскостей проекций.',
+      A:['Общее ребро граней — AB. Делаем его прямой уровня: π₄ ∥ AB.','Переносим точки на π₄ — AB в натуральную величину.','Делаем AB проецирующей: π₅ ⟂ AB.','На π₅ ребро — точка, обе грани — прямые. Угол между ними — искомый.'],
+      Bs:['π₄ ⟂ π₁,  π₄ ∥ AB  ⇒  |A₄B₄| = |AB|','π₅ ⟂ π₄,  π₅ ⟂ AB  ⇒  A₅ ≡ B₅','(SAB) ⟂ π₅,  (ABC) ⟂ π₅  ⇒  φ = ∠S₅A₅C₅'],
+      steps:[
+        {t:'Ось x₁₄ ∥ A′B′',v:'π₄ ⟂ π₁,  π₄ ∥ AB  ⇒  x₁₄ ∥ A′B′',
+         s:'Новая плоскость стоит вертикально (⟂ π₁) и параллельно ребру. На π₁ её ось — параллельно A′B′, в стороне от чертежа.'},
+        {t:'Все точки на π₄',v:'P′P₄ ⟂ x₁₄,  |P₄x₁₄| = |P″x₁₂| = z_P   (P = A, B, C, S)',
+         s:'Заменили π₂ — сохраняется z: берём с π₂, откладываем от x₁₄. Ребро AB на π₄ — в натуральную величину.'},
+        {t:'Ось x₄₅ ⟂ A₄B₄',v:'π₅ ⟂ π₄,  π₅ ⟂ AB  ⇒  x₄₅ ⟂ A₄B₄',
+         s:'Ребро — прямая уровня для π₄. Плоскость, перпендикулярная ему, увидит его точкой.'},
+        {t:'Все точки на π₅',v:'P₄P₅ ⟂ x₄₅,  |P₅x₄₅| = |P′x₁₄|;   A₅ ≡ B₅',
+         s:'Теперь заменяем π₁: сохраняется расстояние до π₄, а его видно на π₁ — от P′ до x₁₄. A и B на одном расстоянии — слились в точку.'},
+        {t:'Угол между гранями',v:`φ = ∠S₅A₅C₅ = ${fm(dih)}°`,
+         s:'Обе грани проходят через ребро-точку — они проецирующие, видны прямыми A₅S₅ и A₅C₅. Угол между ними — без искажения.'}],
+      ans:`φ = ${fm(dih)}°`,
+      err:['На π₅ откладывают z с π₂. При второй замене берут расстояние с той плоскости, которую заменяют, — с π₁ до x₁₄.','A₅ и B₅ не совпали — ошибка в x₄₅ (она ⟂ A₄B₄) или в отложенных расстояниях.']}; })());
+
+  /* 3. Истинный вид основания и центр описанной окружности — вращение вокруг фронтали f = BE.
+     Вокруг f, а не h: основание наклонено к π₂ на 63° (к π₁ — всего на 32°), поэтому при обратном повороте точки
+     заметно смещаются — переход назад виден на чертеже, а не теряется в толщине линии. */
+  const rotH=(P,O0,u,zh)=>{ const p=Hp(P), o=ft(p,O0,u), r1=ds(p,o), dz=P[2]-zh, R=Math.hypot(r1,dz), w=u2(s2(p,o)); return {p,o,r1,dz,R,w,bar:a2(o,m2(w,R))}; };
+  const rotF=(P,O0,u,yf)=>{ const p=F(P), o=ft(p,O0,u), r1=ds(p,o), dy=P[1]-yf, R=Math.hypot(r1,dy), w=u2(s2(p,o)); return {p,o,r1,dy,R,w,bar:a2(o,m2(w,R))}; };
+  T.push((()=>{ const D=Dw(); given(D,true,{only:['A','B','C']});
+    const b=F(B), e=F(Ep), u=u2(s2(e,b)), yf=B[1];
+    const rA=rotF(A,b,u,yf), Ab=rA.bar, ctr=ft(F(C),b,u);
+    const Cb=X2(Ab,s2(e,Ab),F(C),s2(F(C),ctr)), Astar=a2(rA.p,m2(u,-rA.dy));
+    const bH=p=>[p[0],yf];
+    /* центр описанной окружности в истинном виде */
+    const mBA=lp2(b,Ab,.5), mBC=lp2(b,Cb,.5), Mb=X2(mBA,pp(s2(Ab,b)),mBC,pp(s2(Cb,b))), Rc=ds(Mb,b);
+    const Nb=X2(b,s2(Mb,b),Ab,s2(Cb,Ab)), Nf=X2(Nb,pp(u),F(A),s2(F(C),F(A))), tN=(Nf[0]-F(A)[0])/(F(C)[0]-F(A)[0]), N3=lp3(A,C,tN);
+    const Mf=X2(b,s2(Nf,b),Mb,pp(u)), tM=ds(Mf,b)/ds(Nf,b), M3=lp3(B,N3,tM);
+    const okM=Math.abs(l3(s3(M3,A))-l3(s3(M3,B)))<0.05&&Math.abs(l3(s3(M3,A))-l3(s3(M3,C)))<0.05&&Math.abs(d3(s3(M3,A),nrm))<0.05;
+    const okC=Math.abs(ds(Cb,ctr)-Math.hypot(ds(F(C),ctr),C[1]-yf))<0.05;
+    const xl=Math.min(Ab[0],Cb[0],Hp(Ep)[0])-8;
+    D.at(1); D.line(Hp(B),[xl,yf],'rot',6,0); D.lab([xl,yf],'f′ ≡ i′','rot',{pos:'w'}); D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(e,'E″','aux');
+      D.line(b,e,'rot',6,40); D.lab(a2(e,m2(u,40)),'f″ ≡ i″','rot',{pos:'auto'});
+    D.at(2); D.line(rA.o,rA.p,'tr',4,10); D.sq(rA.o,rA.p,b,'aux'); D.pt(rA.o,'O_A″','aux',{pos:'auto'});
+    D.at(3); D.seg(rA.p,Astar,'aux'); D.sq(rA.p,Astar,rA.o,'aux'); D.lab(lp2(rA.p,Astar,.5),'Δy = '+fm(Math.abs(rA.dy)),'aux',{pos:'auto',sm:1}); D.seg(rA.o,Astar,'res'); D.lab(lp2(rA.o,Astar,.55),'R_A','res',{pos:'auto'});
+    D.at(4); D.arc(rA.o,rA.R,Astar,Ab,'res'); D.line(rA.p,Ab,'tr',0,0); D.pt(Ab,'~A″','bar'); D.seg(bH(Ab),Ab,'link'); D.pt(bH(Ab),'~A′','bar',{pos:'s'});
+    D.at(5); D.line(ctr,F(C),'tr',4,4); D.sq(ctr,F(C),b,'aux'); D.line(Ab,e,'bar',0,ds(e,Cb)+4); D.pt(Cb,'~C″','bar'); D.seg(bH(Cb),Cb,'link'); D.pt(bH(Cb),'~C′','bar',{pos:'s'});
+    D.at(6); D.poly([b,Ab,Cb],'fill'); D.seg(b,Ab,'bar'); D.seg(Ab,Cb,'bar'); D.seg(Cb,b,'bar'); D.lab(lp2(b,Ab,.5),fm(l3(s3(A,B))),'bar',{pos:'auto',sm:1}); D.lab(lp2(b,Cb,.5),fm(l3(s3(B,C))),'bar',{pos:'auto',sm:1}); D.lab(lp2(Cb,Ab,.5),fm(l3(s3(C,A))),'bar',{pos:'auto',sm:1});
+    D.at(7); const pb=(m,dir)=>{ const w=u2(pp(dir)), sg=dt(s2(Mb,m),w)>0?1:-1; D.line(a2(m,m2(w,-6*sg)),a2(m,m2(w,(ds(Mb,m)+8)*sg)),'thin2',0,0); D.sq(m,a2(m,m2(w,10*sg)),a2(m,u2(dir)),'aux'); };
+      pb(mBA,s2(Ab,b)); pb(mBC,s2(Cb,b)); D.tick(b,mBA,1,'tk'); D.tick(mBA,Ab,1,'tk'); D.tick(b,mBC,2,'tk'); D.tick(mBC,Cb,2,'tk'); D.circ(Mb,Rc,'ctxh'); D.pt(Mb,'~M″','res');
+    D.at(8); D.line(b,Nb,'aux',0,4); D.pt(Nb,'~N″','bar');
+    D.at(9); D.line(Nb,Nf,'tr',3,3); D.pt(Nf,'N″','aux');
+    D.at(10); D.seg(Nf,Hp(N3),'link'); D.pt(Hp(N3),'N′','aux');
+    D.at(11); D.line(Mb,Mf,'tr',3,3); D.seg(b,Nf,'aux'); D.pt(Mf,'M″','res');
+    D.at(12); D.seg(Hp(B),Hp(N3),'aux'); D.seg(Mf,Hp(M3),'link'); D.pt(Hp(M3),'M′','res');
+    const R={id:'nv',n:3,sh:'Истинный вид',t:'Истинный вид основания ABC и центр окружности',m:'вращение вокруг фронтали',D,ok:okM&&okC,
+      cond:'Определить истинный вид основания ABC способом вращения вокруг прямой уровня. В истинном виде найти центр M описанной окружности и вернуть его на π₁ и π₂.',
+      A:['Ось вращения i — фронталь f = BE основания. B и E на оси — стоят на месте.','Каждая точка движется по окружности в плоскости ⟂ f; на π₂ — по прямой ⟂ f″ (след).','Натуральный радиус — гипотенуза: катеты — проекция радиуса на π₂ и Δy.','Поворачиваем A, затем C — через неподвижную E.','△ĀBC̄ — истинный вид. В нём строим центр M̄.','<b>Обратный поворот:</b> M̄ возвращаем через прямую, проходящую через неподвижную точку оси.'],
+      Bs:['i ≡ f ⊂ (ABC),  f ∥ π₂','поворот вокруг i до (ABC) ∥ π₂  ⇒  △ĀBC̄ — натуральная величина','B ∈ i, E ∈ i  ⇒  B̄ ≡ B,  Ē ≡ E','прямая через точку оси после поворота проходит через неё же'],
+      steps:[
+        {t:'Ось вращения i ≡ f = BE',v:'f′ ∥ x₁₂, B′ ∈ f′;  E′ = f′ ∩ A′C′;  E″ ∈ A″C″;  f″ = B″E″ ≡ i″',
+         s:'Фронталь через B — она средняя по глубине (y = 30). Можно и вокруг h, но основание наклонено к π₁ всего на 32°: точки сдвинутся на 1–2 мм. К π₂ — на 63°, сдвиги большие, всё видно.'},
+        {t:'След плоскости вращения A',v:'A″O_A″ ⟂ f″,  O_A″ ∈ f″ — центр окружности',
+         s:'A движется в плоскости ⟂ f. Она фронтально-проецирующая — на π₂ это прямая через A″ ⟂ f″. Центр O_A — на оси.'},
+        {t:'Натуральный радиус R_A',v:`R_A = √(|O_A″A″|² + Δy²),  Δy = y_f − y_A = ${fm(Math.abs(rA.dy))}`,
+         s:'Радиус O_A A — отрезок общего положения. Прямоугольный треугольник: катет |O_A″A″|, второй катет Δy (разность глубин) под прямым углом в A″. Гипотенуза — натуральный радиус.'},
+        {t:'Ā — A после поворота',v:'|O_A″Ā″| = R_A (дуга на след);  Ā′ ∈ f′',
+         s:'Дугой R_A из O_A″ — на след. После поворота плоскость ∥ π₂, все её точки на глубине оси: Ā′ — на f′.'},
+        {t:'C̄ — через неподвижную E',v:'E ∈ AC, E ∈ i ⇒ Ē ≡ E;   C̄″ = (Ā″E″) ∩ (C″ … ⟂ f″)',
+         s:'Радиус C считать не надо: C лежит на прямой AE, а E не двигается. Значит, C̄ — на прямой ĀE, и на своём следе ⟂ f″.'},
+        {t:'Истинный вид △ABC',v:`△Ā″B″C̄″:  |AB| = ${fm(l3(s3(A,B)))},  |BC| = ${fm(l3(s3(B,C)))},  |CA| = ${fm(l3(s3(C,A)))} мм`,
+         s:'Плоскость ∥ π₂ — треугольник на π₂ без искажений. На π₁ он — отрезок на f′.'},
+        {t:'Центр M̄ в истинном виде',v:'M̄″ = (серединный ⟂ к B″Ā″) ∩ (серединный ⟂ к B″C̄″)',
+         s:'Центр описанной окружности — пересечение серединных перпендикуляров. Строить их можно только в натуральной величине: на π₁, π₂ середины и прямые углы искажены.'},
+        {t:'Прямая через неподвижную точку',back:1,v:'N̄″ = B″M̄″ ∩ Ā″C̄″',
+         s:'Сразу вернуть M̄ нельзя: на своём следе она может быть где угодно. Берём прямую через M̄ и точку оси B — она пересекает сторону ĀC̄ в N̄. Прямая BN и после обратного поворота пройдёт через B.'},
+        {t:'N″ — N на исходном месте',back:1,v:'N̄″N″ ⟂ f″,  N″ ∈ A″C″',
+         s:'N̄ возвращается по своему следу ⟂ f″ до стороны A″C″ — ведь N лежит на AC.'},
+        {t:'N′ на π₁',back:1,v:'N″N′ ⟂ x₁₂,  N′ ∈ A′C′',
+         s:'Точка на ребре — на проекции ребра: линия связи вниз до A′C′.'},
+        {t:'M″ — на прямой B″N″',back:1,v:'M″ = B″N″ ∩ (M̄″ … ⟂ f″)',
+         s:'M лежит на прямой BN — она проходит через неподвижную B и уже возвращённую N. Сама M идёт по своему следу ⟂ f″. Пересечение — M″.'},
+        {t:'M′ — на прямой B′N′',back:1,v:'M″M′ ⟂ x₁₂,  M′ ∈ B′N′',
+         s:'Линия связи вниз до B′N′. Готово: центр окружности на обеих проекциях. Проверка — |MA| = |MB| = |MC| = R.'}],
+      ans:`|AB| = ${fm(l3(s3(A,B)))}, |BC| = ${fm(l3(s3(B,C)))}, |CA| = ${fm(l3(s3(C,A)))} мм;  R = ${fm(Rc)} мм`,
+      back:['Точка возвращается по своему следу ⟂ оси (на π₂ — прямая ⟂ f″).','Где именно на следе — даёт прямая через неподвижную точку оси (или через уже возвращённую точку): она до и после поворота проходит через ту же точку.','На другую проекцию — линией связи на соответствующую прямую.'],
+      err:['Откладывают на следе проекцию радиуса |O″A″| вместо натурального R.','Возвращают M̄ «на глаз» по следу, без прямой через точку оси.','Строят серединные перпендикуляры на π₂ — до поворота, в искажённом треугольнике.']};
+    const z2=[b,Ab,Cb,F(A),F(C),Astar,rA.o]; [1,2,3,4,5,6,7,8,10].forEach(i=>R.steps[i].f=z2);
+    return R; })());
+
+  /* 4. Угол ребра SA с основанием — вращение вокруг горизонтали AT */
+  T.push((()=>{ const D=Dw(); given(D,true,{ctx:['SB','SC','AB','BC','CA']});
+    const {n1,n2}=nLine(), zh=A[2];
+    const T2=X2(F(Sv),n2,[0,-zh],[1,0]), T1=X2([T2[0],-200],[0,1],Hp(Sv),n1), a=Hp(A), u=u2(s2(T1,a));
+    const T3=[-T1[0],T1[1],zh];
+    const rS=rotH(Sv,a,u,zh), Sb=rS.bar, Sstar=a2(rS.p,m2(u,-rS.dz));
+    const psi=ang2(Sb,a,T1), phi=90-psi, phiT=Math.asin(Hh/l3(s3(Sv,A)))*DEG;
+    D.at(1); D.line(F(A),F(Dp),'aux',6,8); D.lab(a2(F(Dp),[8,0]),'h″','aux',{pos:'e'}); D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(Hp(Dp),'D′','aux'); D.line(a,Hp(Dp),'aux',4,8); D.lab(lp2(a,Hp(Dp),1.12),'h′','aux');
+      D.line(Hp(B),Hp(Ep),'aux',6,8); D.lab(a2(Hp(Ep),[-8,0]),'f′','aux',{pos:'w'}); D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(F(Ep),'E″','aux'); D.line(F(B),F(Ep),'aux',4,8); D.lab(lp2(F(B),F(Ep),1.1),'f″','aux');
+    D.at(2); D.line(Hp(Sv),T1,'aux',10,12); D.lab(a2(T1,m2(u2(s2(T1,Hp(Sv))),12)),'n′','aux',{pos:'auto'}); D.sq(X2(Hp(Sv),n1,a,s2(Hp(Dp),a)),Hp(Sv),Hp(Dp),'aux');
+      D.line(F(Sv),T2,'aux',8,10); D.lab(a2(F(Sv),m2(u2(s2(F(Sv),T2)),8)),'n″','aux',{pos:'auto'}); D.sq(X2(F(Sv),n2,F(B),s2(F(Ep),F(B))),F(Sv),F(B),'aux');
+    D.at(3); D.line(F(A),T2,'thin',0,6); D.pt(T2,'T″','aux'); D.seg(T2,T1,'link'); D.pt(T1,'T′','aux');
+    D.at(4); D.line(a,T1,'rot',8,22); D.lab(lp2(a,T1,1.2),'i′','rot',{pos:'auto'}); D.seg(F(A),T2,'rot');
+    D.at(5); D.line(rS.o,rS.p,'tr',4,12); D.sq(rS.o,rS.p,a,'aux'); D.pt(rS.o,'O_S′','aux',{pos:'auto'}); D.seg(rS.p,Sstar,'aux'); D.sq(rS.p,Sstar,rS.o,'aux'); D.lab(lp2(rS.p,Sstar,.5),'Δz = '+fm(rS.dz),'aux',{pos:'auto',sm:1}); D.seg(rS.o,Sstar,'res'); D.lab(lp2(rS.o,Sstar,.55),'R_S','res',{pos:'auto'});
+    D.at(6); D.arc(rS.o,rS.R,Sstar,Sb,'res'); D.pt(Sb,'~S′','bar'); D.poly([a,Sb,T1],'fill'); D.seg(Sb,a,'bar'); D.seg(Sb,T1,'bar');
+    D.at(7); D.ang(Sb,a,T1,16,'ψ = '+fm(psi)+'°','res');
+    const R={id:'phi',n:4,sh:'Угол SA',t:'Угол ребра SA с основанием',m:'вращение вокруг горизонтали',D,ok:Math.abs(phi-phiT)<0.05,
+      cond:'Определить угол между ребром SA и основанием ABC способом вращения вокруг прямой уровня.',
+      A:['Угол прямой с плоскостью: φ = 90° − ψ, где ψ — угол между прямой и перпендикуляром n к плоскости.','Из S проводим n ⟂ (ABC): n′ ⟂ h′, n″ ⟂ f″.','На n берём точку T на высоте A — тогда AT горизонталь плоскости (S, A, T).','Вращаем S вокруг AT до положения ∥ π₁ — △AST в натуральную величину.','Измеряем ψ = ∠AS̄T, φ = 90° − ψ.'],
+      Bs:['n ⟂ (ABC)  ⇒  φ = 90° − ∠(SA, n)','T ∈ n,  z_T = z_A  ⇒  AT ∥ π₁ — ось вращения i','поворот вокруг i  ⇒  △AS̄T ∥ π₁  ⇒  ψ = ∠AS̄T без искажения'],
+      steps:[
+        {t:'Горизонталь h и фронталь f основания',v:'h′ = A′D′ (как в задаче 1);   f′ ∥ x₁₂, B′ ∈ f′,  f″ = B″E″',
+         s:'Они нужны, чтобы провести перпендикуляр к плоскости: на π₁ прямой угол виден с h, на π₂ — с f.'},
+        {t:'Перпендикуляр n из S',v:'n′ ∋ S′, n′ ⟂ h′;   n″ ∋ S″, n″ ⟂ f″',
+         s:'Не ищем, где n пересекает основание: для угла достаточно направления n.'},
+        {t:'Точка T на высоте A',v:'T″ = n″ ∩ (z = z_A = 20);   T′ ∈ n′',
+         s:'Проводим на π₂ уровень A (прямая ∥ x₁₂ через A″) до n″ — это T″. T′ — линией связи на n′.'},
+        {t:'Ось вращения i = AT',v:'A″T″ ∥ x₁₂  ⇒  AT ∥ π₁ — горизонталь плоскости (S, A, T)',
+         s:'A и T на оси — останутся на месте. Вращаем одну точку S.'},
+        {t:'Натуральный радиус S',v:`S′O_S′ ⟂ A′T′;   R_S = √(|O_S′S′|² + Δz²),  Δz = z_S − z_A = ${fm(rS.dz)}`,
+         s:'След плоскости вращения S — прямая через S′ ⟂ i′. Радиус — гипотенуза: катет |O_S′S′| и катет Δz.'},
+        {t:'S̄ после поворота',v:'|O_S′S̄′| = R_S;   △A′S̄′T′ — натуральная величина',
+         s:'Дугой R_S — на след. Треугольник AS̄T лежит ∥ π₁ — его углы видны без искажения.'},
+        {t:'Угол ψ и ответ',v:`ψ = ∠A′S̄′T′ = ${fm(psi)}°;   φ = 90° − ψ = ${fm(phi)}°`,
+         s:'ψ — угол при S̄ между S̄A и S̄T (это n). Угол с плоскостью дополняет его до 90°.'}],
+      ans:`φ = 90° − ${fm(psi)}° = ${fm(phi)}°`,
+      err:['Измеряют угол при A или при T — нужен угол при S̄ между S̄A и S̄T.','Забывают «90° −»: ψ — угол с перпендикуляром, а не с плоскостью.','На π₂ строят прямой угол с горизонталью — а сохраняется он только с фронталью: n″ ⟂ f″.']}; const zS=[rS.o,rS.p,Sstar,Sb,a,T1]; [4,5].forEach(i=>R.steps[i].f=zS); R.steps[6].f=[a,Sb,T1,rS.p]; return R; })());
+
+  /* ── подписи: разметка «_{14}», «_4» — индекс, «~B» — черта сверху ── */
+  const toks=l=>{ const out=[]; let i=0; while(i<l.length){ const ch=l[i];
+      if(ch==='~'&&i+1<l.length){ out.push({o:l[i+1]}); i+=2; continue; }
+      if(ch==='_'){ if(l[i+1]==='{'){ const j=l.indexOf('}',i); out.push({s:l.slice(i+2,j)}); i=j+1; continue; } const m=/^_([0-9]+|[A-Za-zА-я])/.exec(l.slice(i)); if(m){ out.push({s:m[1]}); i+=m[0].length; continue; } }
+      out.push({t:ch}); i++; }
+    return out; };
+  const escH=s=>String(s).replace(/&(?!(?:[a-z]+|#\d+);)/g,'&amp;').replace(/</g,'&lt;');
+  const lblHTML=l=>toks(l).map(x=>x.o?`<span class="lx-ov">${escH(x.o)}</span>`:x.s?`<sub>${escH(x.s)}</sub>`:escH(x.t)).join('');
+  const lblSVG=(l,fs)=>{ let h='', sub=false; toks(l).forEach(x=>{ if(x.s){ h+=`<tspan font-size="${(fs*.68).toFixed(3)}" dy="${(fs*.28).toFixed(3)}">${escH(x.s)}</tspan>`; sub=true; return; }
+      const dy=sub?` dy="${(-fs*.28).toFixed(3)}"`:''; sub=false; h+=x.o?`<tspan text-decoration="overline"${dy}>${escH(x.o)}</tspan>`:`<tspan${dy}>${escH(x.t)}</tspan>`; }); return h; };
+  const lblW=l=>toks(l).reduce((w,x)=>w+(x.s?x.s.length*.42:x.t&&/[′″]/.test(x.t)?.28:x.t===' '?.3:.62),0);
+  /* текст панели: формулы с индексами «z_A», «O_B′» → <sub> */
+  const mk=s=>String(s).replace(/([A-Za-zА-я])_\{([^}]+)\}/g,'$1<sub>$2</sub>').replace(/([A-Za-zΔ])_([A-Za-z0-9]+)/g,'$1<sub>$2</sub>').replace(/~([A-Z])/g,'<span class="lx-ov">$1</span>').replace(/([A-Z])̄/g,'<span class="lx-ov">$1</span>');
+
+  /* ── отрисовка чертежа: размеры линий и шрифта — в пикселях экрана, чертёж — во весь блок ── */
+  const CL={main:['#0d1b2e',2.4],hid:['#0d1b2e',1.8,'9 6'],thin:['#0d1b2e',1.1],link:['#97abc6',1],ax:['#0d1b2e',1.5],ax2:['#0b8457',2],ax3:['#0b8457',2],
+    aux:['#1f63d6',1.7],rot:['#1f63d6',2,'16 4 3 4'],tr:['#c2410c',1.3,'7 5'],v4:['#0b8457',2.2],v5:['#0b8457',2.4],bar:['#7c3aed',2.4],res:['#e0245e',3],ctx:['#8d9bb0',1.2],ctxh:['#8d9bb0',1.1,'7 5'],thin2:['#5b7bb5',1,'5 4'],hidr:['#e0245e',2.4,'9 6'],tk:['#0d1b2e',1.4],fill:['none',0],pl:['#7a8aa3',0],pl4:['#0b8457',0]};
+  const LBC={hidr:'#e0245e',main:'#0d1b2e',ax:'#0d1b2e',ax2:'#0b8457',ax3:'#0b8457',aux:'#1f63d6',rot:'#1f63d6',tr:'#c2410c',v4:'#0b8457',v5:'#0b8457',bar:'#7c3aed',res:'#e0245e',pl:'#7a8aa3',pl4:'#0b8457',tk:'#0d1b2e',thin:'#0d1b2e'};
+  let CUR='#ff6a00';
+  function bbox(it){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const P=p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); };
+    it.forEach(o=>{ if(o.k==='seg'){ P(o.p); P(o.q); } else if(o.k==='pt'||o.k==='lab') P(o.p); else if(o.k==='circ'||o.k==='arc'){ P(a2(o.o,[-o.r,-o.r])); P(a2(o.o,[o.r,o.r])); } else if(o.k==='poly') o.ps.forEach(P); });
+    return [x0,y0,x1,y1]; }
+  const segD=(p,a,b)=>{ const d=s2(b,a), L=dt(d,d)||1, t=Math.max(0,Math.min(1,dt(s2(p,a),d)/L)); return ds(p,a2(a,m2(d,t))); };
+  const DIRS={e:[1,0],ne:[.75,-.75],n:[0,-1],nw:[-.75,-.75],w:[-1,0],sw:[-.75,.75],s:[0,1],se:[.75,.75]};
+  /* подписи ставим один раз на задачу (по итоговому чертежу) — между шагами они не прыгают */
+  function placeLabels(it,u,fs){ const segs=it.filter(o=>o.k==='seg').map(o=>[o.p,o.q]), pts=it.filter(o=>o.k==='pt').map(o=>o.p), boxes=[];
+    const score=(c,w,h)=>{ const r=Math.min(w,h)/2; let m=1e9; segs.forEach(([a,b])=>{ m=Math.min(m,segD(c,a,b)-r); }); pts.forEach(p=>{ m=Math.min(m,ds(c,p)-r-4*u); });
+      boxes.forEach(b=>{ const dx=Math.max(0,Math.abs(c[0]-b[0])-(w+b[2])/2), dy=Math.max(0,Math.abs(c[1]-b[1])-(h+b[3])/2); m=Math.min(m,Math.hypot(dx,dy)-2*u); }); return m; };
+    it.filter(o=>(o.k==='pt'&&o.l)||o.k==='lab'||(o.k==='ang'&&o.l)).forEach(o=>{
+      const f=(o.big?1.15:o.sm?.82:1)*fs*u, w=lblW(o.l)*f+4*u, h=f*1.05; let best=null;
+      if(o.k==='ang'){ const m=u2(a2(u2(s2(o.p,o.v)),u2(s2(o.q,o.v)))); const c=a2(o.v,m2(m,o.r*2.6*u+Math.abs(m[0])*w/2+Math.abs(m[1])*h/2+6*u)); o.lp=c; boxes.push([c[0],c[1],w,h]); return; }
+      const cand=o.pos&&o.pos!=='auto'?[o.pos]:Object.keys(DIRS);
+      cand.forEach((k,i)=>{ if(k==='c'){ best={c:o.p,s:1}; return; } const d=DIRS[k], g=(o.k==='pt'?7:5)*u, c=[o.p[0]+d[0]*(w/2+g)+(o.dx||0)*u,o.p[1]+d[1]*(h/2+g)+(o.dy||0)*u];
+        const s=score(c,w,h)-i*0.02*u; if(!best||s>best.s) best={c,s}; });
+      o.lp=best.c; boxes.push([best.c[0],best.c[1],w,h]); }); }
+  function render(box,task,k,full){
+    const W=box.clientWidth, Hh_=box.clientHeight; if(!W||!Hh_) return;
+    const it=task.D.it, st=!full&&k>0&&task.steps[k-1], fc=st&&st.f?st.f:task.f0, bb=fc?(()=>{ const b=bbox(fc.map(p=>({k:'pt',p}))); return [b[0]-14,b[1]-14,b[2]+14,b[3]+14]; })():task.bb||(task.bb=bbox(it)), pad=10;
+    const bw=bb[2]-bb[0]+2*pad, bh=bb[3]-bb[1]+2*pad, kp=Math.min(W/bw,Hh_/bh), u=1/kp, fs=Math.max(14,Math.min(19,W/58));
+    if(task._u!==u){ placeLabels(it,u,fs); task._u=u; }   /* при приближении подписи ставятся заново под новый масштаб */
+    const vw=W*u, vh=Hh_*u, x0=bb[0]-pad-(vw-bw)/2, y0=bb[1]-pad-(vh-bh)/2;
+    const vis=it.filter(o=>o.st<=k&&(o.till==null||k<=o.till)).sort((a,b)=>(a.c==='link'?0:1)-(b.c==='link'?0:1)), cur=o=>!full&&k>0&&o.st===k;   /* линии связи — под линиями чертежа */
+    CUR=k>0&&task.steps[k-1]&&task.steps[k-1].back?'#7c3aed':'#ff6a00';   /* обратный переход — фиолетовым */
+    const n=v=>v.toFixed(3), P=p=>n(p[0])+' '+n(p[1]);
+    const sw=(c,o)=>{ const s=CL[o.c2&&!cur(o)?o.c2:c]||CL.aux; return s; };
+    let g='', glow='', top='', lab='';
+    const stroke=(o,path)=>{ const s=sw(o.c,o), c=cur(o), w=(s[1]+(c?.8:0))*u, dash=s[2]?` stroke-dasharray="${s[2].split(' ').map(x=>n(x*u)).join(' ')}"`:'';
+      if(c) glow+=`<path d="${path}" fill="none" stroke="${CUR}" stroke-opacity=".22" stroke-width="${n(w+9*u)}" stroke-linecap="round"/>`;
+      return `<path d="${path}" fill="none" stroke="${c?CUR:s[0]}" stroke-width="${n(w)}"${dash} stroke-linecap="round" stroke-linejoin="round"/>`; };
+    vis.forEach(o=>{
+      if(o.k==='poly') g=`<path d="M${o.ps.map(P).join('L')}Z" fill="${cur(o)?'rgba(255,106,0,.10)':'rgba(124,58,237,.08)'}"/>`+g;
+      else if(o.k==='seg') g+=stroke(o,`M${P(o.p)}L${P(o.q)}`);
+      else if(o.k==='circ') g+=stroke(o,`M${P([o.o[0]+o.r,o.o[1]])}A${n(o.r)} ${n(o.r)} 0 1 1 ${P([o.o[0]-o.r,o.o[1]])}A${n(o.r)} ${n(o.r)} 0 1 1 ${P([o.o[0]+o.r,o.o[1]])}`);
+      else if(o.k==='arc'){ const a0=Math.atan2(o.p[1]-o.o[1],o.p[0]-o.o[0]), a1=Math.atan2(o.q[1]-o.o[1],o.q[0]-o.o[0]); let da=a1-a0; while(da>Math.PI) da-=2*Math.PI; while(da<-Math.PI) da+=2*Math.PI;
+        const q=a2(o.o,[o.r*Math.cos(a1),o.r*Math.sin(a1)]), p0=a2(o.o,[o.r*Math.cos(a0),o.r*Math.sin(a0)]); g+=stroke(o,`M${P(p0)}A${n(o.r)} ${n(o.r)} 0 0 ${da>0?1:0} ${P(q)}`); }
+      else if(o.k==='sq'){ const s=10*u, d1=u2(s2(o.p,o.v)), d2=u2(s2(o.q,o.v)); g+=stroke(Object.assign({},o,{c:o.c}),`M${P(a2(o.v,m2(d1,s)))}L${P(a2(a2(o.v,m2(d1,s)),m2(d2,s)))}L${P(a2(o.v,m2(d2,s)))}`); }
+      else if(o.k==='tick'){ const m=lp2(o.p,o.q,.5), d=u2(s2(o.q,o.p)), w=pp(d); let h=''; for(let i=0;i<o.n;i++){ const c=a2(m,m2(d,(i-(o.n-1)/2)*3.2*u)); h+=`M${P(a2(c,m2(w,-6*u)))}L${P(a2(c,m2(w,6*u)))}`; } g+=stroke(o,h); }
+      else if(o.k==='ang'){ const a0=Math.atan2(o.p[1]-o.v[1],o.p[0]-o.v[0]), a1=Math.atan2(o.q[1]-o.v[1],o.q[0]-o.v[0]); let da=a1-a0; while(da>Math.PI) da-=2*Math.PI; while(da<-Math.PI) da+=2*Math.PI; const r=o.r*u*2.6;
+        const p0=a2(o.v,[r*Math.cos(a0),r*Math.sin(a0)]), p1=a2(o.v,[r*Math.cos(a1),r*Math.sin(a1)]); g+=stroke(o,`M${P(p0)}A${n(r)} ${n(r)} 0 0 ${da>0?1:0} ${P(p1)}`); }
     });
-    /* разбор билета РК2: условие → 3D → построение по шагам */
-    const tks=[['R2-A','zam'],['R2-B','rotp'],['R2-V','rotl']].map(([k,mk])=>({k,mk,t:typeof taskByKey==='function'&&taskByKey(k)})).filter(x=>x.t);
-    if(tks.length){ const top={ti:9,T:{t:'Разбор билета РК2',sub:'задачи А, Б, В'}};
-      out.push(Object.assign({kind:'tktitle',tks},top));
-      tks.forEach(x=>{ const dr=[], s3=[]; draws(dr,x.t,top,'Билет РК2 · задача '+x.t.idx,'#/ng/check/tickets/'+x.k,{id:x.k,mk:x.mk,mode:'sync2'}); d3(s3,x.k,x.mk,(MT[x.mk]&&MT[x.mk].s)||x.mk,top);
-        if(s3.length){ s3[0].ask=String(x.t.q||'').replace(/<[^>]+>/g,''); out.push(...s3); } else out.push(...dr); }); }   /* условие и решение по шагам (эпюр + 3D) */
-    out.push({kind:'end'});
-    return out; }
-  /* 3D-слайд способа: шаги сцены L3D — подшаги слайда */
-  function d3(out,id,mk,mname,top){ if(typeof L3D==='undefined'||!L3D.has(id,mk)) return; let sc=null; try{ sc=L3D.scene(id,mk); }catch(e){ return; }
-    if(sc) out.push(Object.assign({kind:'d3',id,mk,mname,sc,n:sc.steps.length-1},top)); }
-  /* 2D-построение задачи по шагам (как в тетради): условие и каждый шаг */
-  function draws(out,task,top,lab,href,tk){ const parts=task.parts&&task.parts.length?task.parts:[task], P=parts[0], given=(P.given||task.given||[]).slice(), steps=P.steps||[];
-    const all=given.slice(); steps.forEach(s=>all.push(...(s.add||[])));
-    const base={task,lab,href,tk:!!tk,v3:tk&&tk.id?tk:null,q:task.q,fit:all,of:steps.length,tn:task.n};
-    out.push(Object.assign({kind:'draw',acc:given.slice(),si:0,step:null},base,top));
-    let acc=given.slice(); steps.forEach((s,k)=>{ acc=acc.concat(s.add||[]); out.push(Object.assign({kind:'draw',acc:acc.slice(),si:k+1,step:s},base,top)); }); }
-  const tim=()=>{ const s=Math.floor((Date.now()-S.t0)/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+    vis.forEach(o=>{ if(o.k==='pt'&&o.r!==0){ const c=cur(o), col=c?CUR:LBC[o.c]||'#0d1b2e'; top+=`<circle cx="${n(o.p[0])}" cy="${n(o.p[1])}" r="${n((c?4.4:3.6)*u)}" fill="${col}" stroke="#fff" stroke-width="${n(1.4*u)}"/>`; } });
+    vis.forEach(o=>{ if(!o.l||!o.lp) return; const c=cur(o), col=c?CUR:LBC[o.c]||'#0d1b2e', f=(o.big?1.15:o.sm?.82:1)*fs*u;
+      const w=o.c==='pl'||o.c==='pl4'?600:700;
+      lab+=`<text x="${n(o.lp[0])}" y="${n(o.lp[1]+f*.36)}" text-anchor="middle" font-size="${n(f)}" font-weight="${w}" fill="${col}" stroke="#fff" stroke-width="${n(f*.24)}" paint-order="stroke" stroke-linejoin="round"${o.c==='pl'||o.c==='pl4'?' font-style="italic"':''}>${lblSVG(o.l,f)}</text>`; });
+    /* клетка 5 мм, как на листе; линии клетки привязаны к O */
+    const gx0=Math.floor(x0/5)*5, gy0=Math.floor(y0/5)*5; let grid='';
+    for(let x=gx0;x<=x0+vw;x+=5) grid+=`M${n(x)} ${n(y0)}V${n(y0+vh)}`; for(let y=gy0;y<=y0+vh;y+=5) grid+=`M${n(x0)} ${n(y)}H${n(x0+vw)}`;
+    box.innerHTML=`<svg viewBox="${n(x0)} ${n(y0)} ${n(vw)} ${n(vh)}" width="${W}" height="${Hh_}" role="img" aria-label="Эпюр: ${escH(task.t)}" font-family="'Golos Text',system-ui,sans-serif">
+      <path d="${grid}" stroke="#e6edf6" stroke-width="${n(1*u)}" fill="none"/>${glow}${g}${top}${lab}</svg>`; }
+
+  /* ── слайды ── */
+  const SECT=[{n:0,id:'start',t:'Начало'}].concat(T.map((t,i)=>({n:i+1,id:t.id,t:t.n+' · '+t.sh})),[{n:T.length+1,id:'end',t:'Итог'}]);
+  function build(){ const out=[{kind:'cover',sec:0},{kind:'legend',sec:0}];
+    T.forEach((t,i)=>out.push({kind:'task',sec:i+1,task:t,n:t.steps.length+1}));
+    out.push({kind:'back',sec:T.length+1},{kind:'end',sec:T.length+1}); return out; }
+  const table=()=>`<table class="lx-tb"><thead><tr><th></th><th>x</th><th>y</th><th>z</th></tr></thead><tbody>${['A','B','C','S'].map(k=>`<tr><th>${k}</th>${P3[k].map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   function slideHTML(sl,k){
-    const TT=(window.RKP&&RKP.TOPICS)||[];
-    if(sl.kind==='intro') return `<div class="ls-c ls-intro"><p class="ls-kick">Онлайн-разбор · бесплатно</p><h1>РК2 за 9 шагов</h1>
-      <p class="ls-lead">Любая задача билета — один из девяти типов. И почти все решаются одной мыслью: <b>поставить фигуру параллельно плоскости проекций</b> — через горизонталь h и фронталь f, заменой или вращением.</p>
-      <ol class="ls-map">${TT.map((T,i)=>`<li><b>${i+1}</b><span>${esc(T.t)}<small>${esc(T.sub)}</small></span></li>`).join('')}</ol>
-      <p class="ls-paper">✏️ Приготовь листок, карандаш и линейку — чертим вместе</p></div>`;
-    if(sl.kind==='end') return `<div class="ls-c ls-end"><h1>Вопросы?</h1><p class="ls-lead">Пиши в чат или включай микрофон.</p>
-      <div class="ls-after"><b>Сегодня вечером — закрепи сам:</b><span>nachert1830.ru → РК → «РК2 за 9 шагов»: по каждому типу задача с проверкой по шагам</span></div><p class="ls-paper">Удачи на РК! Сайт бесплатный и остаётся бесплатным.</p></div>`;
-    const T=sl.T, head=`<p class="ls-kick">${sl.ti<9?`Шаг ${sl.ti+1} из 9 · `:''}${esc(T.t)}</p>`;
-    if(sl.kind==='tktitle') return `<div class="ls-c ls-title"><span class="ls-big">РК2</span><h1>Разбор билета</h1><p class="ls-lead">Три задачи — три способа преобразования. Каждую: условие → смотрим в 3D → строим на эпюре по шагам.</p>
-      <ol class="ls-map ls-tkm">${sl.tks.map(x=>`<li><b>${esc(x.t.idx)}</b><span>${esc(String(x.t.q||'').replace(/<[^>]+>/g,''))}<small>${esc((MT3[x.mk]||x.mk))}</small></span></li>`).join('')}</ol></div>`;
-    if(sl.kind==='d3'){ const st=sl.sc.steps; return `<div class="ls-c ls-d3"><div class="ls-ep" data-ls-ep></div><div class="ls-d3r"><div class="ls-d3s" data-ls-d3></div><div class="ls-dt">${head}
-      <h2>${sl.ti<9?'Задача как на РК'+(sl.qn?' · '+sl.qn:''):esc(sl.sc.title.split(':')[0])}</h2>${sl.ask?`<p class="ls-dq">${esc(sl.ask)} Способ: ${esc(sl.mname)}.</p>`:`<p class="ls-task">${esc(sl.sc.title)}</p>`}
-      <ol class="ls-d3l">${st.map((x,j)=>`<li class="${j<k?'on':''}${j===k?' now':''}" data-ls-d3i="${j}"><b>${j+1}</b><span><strong>${x.t}</strong><em>${x.e||x.d||''}</em></span></li>`).join('')}</ol></div></div></div>`; }
-    if(sl.kind==='title') return `<div class="ls-c ls-title"><span class="ls-big">${sl.ti+1}</span><h1>${esc(T.t)}</h1><p class="ls-lead">${esc(T.sub)}</p>
-      <div class="ls-asks"><b>Как звучит задача:</b>${(T.asks||[]).map(a=>`<p>«${esc(a)}»</p>`).join('')}</div></div>`;
-    if(sl.kind==='rk'){ let h=''; try{ h=RKP.rkHTML(T.id,{nobtn:1}); }catch(e){} return `<div class="ls-c ls-rk">${head}${h}</div>`; }
-    if(sl.kind==='ex'){ const ms=sl.ms.map(m=>MT3[m]||m); return `<div class="ls-c">${head}<h2>Задача как на РК</h2>
-      <div class="ls-tkc"><span class="ls-tkk">Задача · тип ${sl.ti+1}</span><p class="ls-tkq">${esc(sl.ex.ask)}</p>
-       <p class="ls-tkm2">Применить способ ${ms[0]}.</p></div>
-      ${sl.v3?'':'<div class="ls-exd" data-ls-exd></div>'}</div>`; }
-    if(sl.kind==='idea') return `<div class="ls-c">${head}<h2>Идея</h2><p class="ls-idea">${T.idea}</p></div>`;
-    if(sl.kind==='method') return `<div class="ls-c">${head}<h2>Как решать: ${esc(sl.mname)}</h2>
-      <ol class="ls-steps">${sl.steps.map((s,j)=>`<li class="${j<=k?'on':''}${j===k?' now':''}"><b>${j+1}</b><span>${s}</span></li>`).join('')}</ol></div>`;
-    if(sl.kind==='traps') return `<div class="ls-c">${head}<h2>Где ошибаются</h2><ul class="ls-traps">${T.traps.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
-    if(sl.kind==='quiz'){ const C=T.chk, L='АБВГДЕ'; return `<div class="ls-c">${head}<h2>Вопрос в чат</h2><p class="ls-q">${C.q}</p>
-      <ol class="ls-opts">${C.o.map((o,j)=>`<li class="${k>=1&&j===C.c?'ok':k>=1?'dim':''}"><b>${L[j]}</b><span>${o}</span></li>`).join('')}</ol>
-      ${k>=1?`<p class="ls-why">${C.e}</p>`:'<p class="ls-hint">Пишите в чат букву — ответ на следующем нажатии</p>'}</div>`; }
-    if(sl.kind==='draw') return `<div class="ls-c ls-draw"><div class="ls-dw" data-ls-dw></div><div class="ls-dt">${head}
-      <p class="ls-task">${esc(sl.lab)}</p>
-      ${sl.si===0?`<h2>Условие</h2><p class="ls-txt">${sl.q}</p><p class="ls-hint">Перечерти данные к себе — дальше строим по шагам</p>`
-        :`<p class="ls-of">Построение · шаг ${sl.si} из ${sl.of}</p><h2>${sl.step.t||''}</h2><p class="ls-txt">${sl.step.d||''}</p>`}
-      <div class="ls-acts">${typeof TASK3D!=='undefined'?`<button type="button" class="ls-3db" data-ls-act="t3d">3D этого шага · D</button>`:''}<a class="ls-3d" href="${sl.href}" target="_blank" rel="noopener">Открыть на сайте ↗</a></div></div></div>`;
-    return ''; }
-  function paint(){ const R=S.root, sl=S.slides[S.i], ti=sl.ti;
-    const meta=()=>{ R.querySelector('[data-ls-where]').textContent=ti==null?(sl.kind==='intro'?'План эфира':'Финал'):ti===9?'Разбор билета РК2':'Шаг '+(ti+1)+' из 9 · '+sl.T.t;
-      R.querySelectorAll('[data-ls-seg]').forEach((g,j)=>{ g.classList.toggle('done',ti!=null?j<ti:sl.kind==='end'); g.classList.toggle('now',j===ti); });
-      R.querySelector('[data-ls-n]').textContent=(S.i+1)+' / '+S.slides.length; };
-    /* тот же 3D-слайд — только следующий шаг сцены, без перерисовки (камера и анимация идут плавно) */
-    if(sl.kind==='d3'&&S.d3&&S.d3.i===S.i){ S.d3.p.go(S.k); R.querySelectorAll('[data-ls-d3i]').forEach((li,j)=>{ li.classList.toggle('on',j<S.k); li.classList.toggle('now',j===S.k); });
-      const nw=R.querySelector('[data-ls-d3i].now'); if(nw) try{ const ol=nw.parentNode; if(ol.scrollHeight>ol.clientHeight+4) ol.scrollTop=nw.offsetTop-ol.offsetTop-8; }catch(e){} meta(); clearPen(); return; }
-    /* 3D рядом с текстом: тот же слайд — меняем только текст и шаг сцены */
-    const V3=sl.v3, sc3=V3&&typeof L3D!=='undefined'?L3D.scene(V3.id,V3.mk):null;
-    if(sc3&&S.d3&&S.d3.i===S.i&&S.d3.key===V3.id+'/'+V3.mk){ const tx=R.querySelector('[data-ls-txt]'); if(tx) tx.innerHTML=slideHTML(sl,S.k); v3sync(sl,sc3); meta(); clearPen(); return; }
-    let keep=null; if(S.d3){ if(sc3&&S.d3.key===V3.id+'/'+V3.mk&&S.d3.host){ keep=S.d3; keep.host.remove(); } else S.d3.p.stop(); S.d3=null; }
-    let html=slideHTML(sl,S.k);
-    if(sc3&&sl.kind!=='draw') html=`<div class="ls-c ls-split"><div class="ls-sx" data-ls-txt>${html}</div><div class="ls-sv"><div class="ls-ep ls-eps" data-ls-ep></div><div class="ls-v3" data-ls-v3></div><p class="ls-v3c" data-ls-v3c></p></div></div>`;
-    R.querySelector('[data-ls-main]').innerHTML=html;
-    if(sc3&&sl.kind==='draw'){ const dt=R.querySelector('.ls-dt'); if(dt) dt.insertAdjacentHTML('beforeend','<div class="ls-v3 ls-v3s" data-ls-v3></div><p class="ls-v3c" data-ls-v3c></p>'); }
-    if(sc3){ const slot=R.querySelector('[data-ls-v3]');
-      if(slot){ if(keep){ slot.replaceWith(keep.host); keep.host.setAttribute('data-ls-v3',''); keep.host.className=slot.className; S.d3=Object.assign(keep,{i:S.i}); }
-        else { try{ const p=L3D.mount(slot,sc3,{start:v3idx(sl,sc3),onStep:j=>{ const c=R.querySelector('[data-ls-v3c]'); if(c) c.textContent=(j+1)+'. '+sc3.steps[j].t; paintEp(sc3,j); }}); S.d3={i:S.i,p,host:slot,key:V3.id+'/'+V3.mk}; }catch(e){ slot.textContent='3D не построилось'; } }
-        if(S.d3) v3sync(sl,sc3); } }
-    else if(keep) keep.p.stop();
-    if(sl.kind==='d3'){ const host=R.querySelector('[data-ls-d3]'); try{ S.d3={i:S.i,p:L3D.mount(host,sl.sc,{start:S.k,onStep:j=>paintEp(sl.sc,j)}),key:'full'}; }catch(e){ host.textContent='3D не построилось'; } paintEp(sl.sc,S.k); }
-    if(sl.kind==='ex'){ const box=R.querySelector('[data-ls-exd]'); if(box&&sl.ex.items) try{ box.innerHTML=DRAW.svg({items:sl.ex.items,fitTo:sl.ex.items}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); bigDw(svg,box); } }catch(e){ box.textContent=''; } }
-    if(sl.kind==='draw'){ const box=R.querySelector('[data-ls-dw]'); try{ box.innerHTML=DRAW.svg({items:sl.acc,fitTo:sl.fit}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); try{ DECLUTTER(svg); }catch(e){} bigDw(svg,box); } }catch(e){ box.textContent='Чертёж не построился'; } }
-    meta(); clearPen(); }
-  /* какой шаг 3D-сцены показать рядом с текстом */
-  function v3idx(sl,sc){ const n=sc.steps.length, md=sl.v3.mode;
-    if(md==='sync') return Math.max(0,Math.min(n-1,Math.round((S.k+1)/(sl.n+1)*(n-1))));
-    if(md==='sync2') return Math.round((sl.si||0)/Math.max(1,sl.of)*(n-1));
-    if(md==='auto'||md==='given') return 0;
-    if(md==='quiz') return S.k>=1?n-1:0;
-    return n-1; }
-  /* эпюр того же шага сцены: развёрнутые π₄, π₅, оси, дуги вращения — то, что чертят на бумаге */
-  function paintEp(sc,j){ const box=S&&S.root.querySelector('[data-ls-ep]'); if(!box||typeof L3D==='undefined') return; let it=null; try{ it=L3D.epure(sc,j); }catch(e){}
-    if(!it){ box.hidden=true; return; } box.hidden=false;
-    try{ box.innerHTML=DRAW.svg({items:it,fitTo:L3D.epAll(sc),alt:'Эпюр: '+(sc.steps[j]&&sc.steps[j].t||'')}); const svg=box.querySelector('svg'); if(svg){ svg.classList.add('dwg'); svg.removeAttribute('width'); svg.removeAttribute('height'); bigDw(svg,box); } }catch(e){ box.textContent='Эпюр не построился'; } }
-  function bigDw(svg,box){ const vb=svg.viewBox&&svg.viewBox.baseVal; if(!vb||!vb.width) return; const go=()=>L3D.big(svg,vb.width,vb.height,box||svg.parentNode,{fs:18,m:1.4}); go(); requestAnimationFrame(go); }
-  function v3sync(sl,sc){ const p=S.d3.p, md=sl.v3.mode; p.setMode(md==='auto'?'auto':md==='final'||md==='given'?'spin':''); if(md!=='auto') p.go(v3idx(sl,sc)); paintEp(sc,p.si);
-    const c=S.root.querySelector('[data-ls-v3c]'); if(c) c.textContent=(p.si+1)+'. '+sc.steps[p.si].t; }
+    if(sl.kind==='cover') return `<div class="lx-cover"><div class="lx-cv1"><p class="lx-kick">Онлайн-разбор · РК2 · ДЗ №3</p><h1>Пирамида SABC:<br>замена плоскостей и&nbsp;вращение</h1>
+      <p class="lx-lead">Одна пирамида — пять задач. Решаем как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, шаг за шагом. Отдельно — как <b>возвращать точки назад</b>.</p>
+      <p class="lx-paper">✏️ Лист в клетку, карандаш, линейка, циркуль — чертим вместе</p></div>
+      <div class="lx-cv2"><h3>Дано (мм)</h3>${table()}<ol class="lx-plan">${T.map(t=>`<li><b>${t.n}</b><span>${escH(t.t)}<small>${escH(t.m)}</small></span></li>`).join('')}</ol></div></div>`;
+    if(sl.kind==='legend') return `<div class="lx-leg"><p class="lx-kick">Перед началом</p><h2>Обозначения</h2><div class="lx-lg">
+      <section><h3>Проекции точки</h3><dl>
+        <dt>A′</dt><dd>на π₁ — горизонтальная (вид сверху)</dd><dt>A″</dt><dd>на π₂ — фронтальная (вид спереди)</dd>
+        <dt>A<sub>4</sub>, A<sub>5</sub></dt><dd>на новых плоскостях π₄, π₅</dd><dt><span class="lx-ov">A</span>′</dt><dd>точка после поворота</dd>
+        <dt>x<sub>12</sub>, x<sub>14</sub>, x<sub>45</sub></dt><dd>оси: между π₁ и π₂, π₁ и π₄, π₄ и π₅</dd></dl></section>
+      <section><h3>Прямые</h3><dl><dt>h</dt><dd>горизонталь: h ∥ π₁, h″ ∥ x₁₂</dd><dt>f</dt><dd>фронталь: f ∥ π₂, f′ ∥ x₁₂</dd><dt>n</dt><dd>перпендикуляр к плоскости</dd><dt>i</dt><dd>ось вращения</dd></dl></section>
+      <section><h3>Знаки</h3><dl><dt>∈ ⊂</dt><dd>принадлежит (точка, прямая)</dd><dt>∩</dt><dd>пересечение</dd><dt>⟂ ∥</dt><dd>перпендикулярно, параллельно</dd><dt>≡</dt><dd>совпадают</dd><dt>|AB|</dt><dd>натуральная величина</dd><dt>⇒</dt><dd>следовательно</dd></dl></section>
+      <section><h3>Цвета на чертеже</h3><ul class="lx-cl">
+        <li><i style="background:#0d1b2e"></i>данные</li><li><i class="ln" style="background:#97abc6"></i>линии связи</li><li><i style="background:#1f63d6"></i>построения (h, f, n, оси вращения)</li>
+        <li><i style="background:#0b8457"></i>новые плоскости π₄, π₅</li><li><i style="background:#7c3aed"></i>после поворота</li><li><i class="ln" style="background:#c2410c"></i>след плоскости вращения</li>
+        <li><i style="background:#ff6a00"></i>то, что чертим на этом шаге</li><li><i style="background:#e0245e"></i>ответ</li><li><b class="lx-tks">| ||</b>равные отрезки (переносим циркулем)</li><li><b class="lx-bk">↩</b>обратный переход</li></ul></section></div></div>`;
+    if(sl.kind==='back') return `<div class="lx-leg"><p class="lx-kick">Главное за эфир</p><h2>Как возвращать точку назад</h2><div class="lx-bkg">
+      <section><h3>После замены плоскостей</h3><ol>
+        <li>Из точки на новой плоскости — <b>линия связи ⟂ новой оси</b> обратно на старую плоскость.</li>
+        <li>Где именно на ней — по свойству прямой: <b>SH ∥ π₄ ⇒ S′H′ ∥ x₁₄</b> (или по принадлежности: точка на ребре — на проекции ребра).</li>
+        <li>На вторую проекцию — линия связи ⟂ x₁₂ и <b>то же расстояние</b>, что сохранялось при замене: |H″x₁₂| = |H₄x₁₄|.</li></ol>
+        <p class="lx-f">H₄ → H′: &nbsp;H₄H′ ⟂ x₁₄, S′H′ ∥ x₁₄ &nbsp;·&nbsp; H′ → H″: &nbsp;|H″x₁₂| = |H₄x₁₄|</p></section>
+      <section><h3>После вращения</h3><ol>
+        <li>Точка возвращается <b>по своему следу ⟂ оси</b> (вокруг f — на π₂ прямая ⟂ f″, вокруг h — на π₁ прямая ⟂ h′).</li>
+        <li>Где на следе — даёт <b>прямая через неподвижную точку оси</b>: B̄M̄ ∩ ĀC̄ = N̄ → N на AC → M на BN.</li>
+        <li>Другая проекция — линией связи на ту же прямую: M′ ∈ B′N′.</li></ol>
+        <p class="lx-f">N̄″ = B″M̄″ ∩ Ā″C̄″ &nbsp;·&nbsp; N″ ∈ A″C″ &nbsp;·&nbsp; M″ = B″N″ ∩ (след M̄)</p></section></div></div>`;
+    if(sl.kind==='end') return `<div class="lx-leg"><p class="lx-kick">Итог</p><h2>Ответы — сверь со своим листом</h2>
+      <ol class="lx-ans2">${T.filter(t=>t.id!=='k'&&t.id!=='vis').map(t=>`<li><b>${t.n}</b><span>${escH(t.t)}<small>${escH(t.m)}</small></span><em>${mk(t.ans)}</em></li>`).join('')}</ol>
+      <p class="lx-lead">Вопросы — в чат или голосом. Закрепи сам: <b>nachert1830.ru → ДЗ → ДЗ №3</b> — разбор по шагам и сверка ответов для своего варианта.</p></div>`;
+    const t=sl.task, n=t.steps.length;
+    const head=`<p class="lx-kick">Задача ${t.n} · ${escH(t.m)}</p><h2>${escH(t.t)}</h2>`;
+    if(k===0) return `<div class="lx-pn">${head}<div class="lx-cond"><span>Условие</span>${escH(t.cond)}</div>
+      <section class="lx-al"><h3><b>А</b>Алгоритм словами</h3><ol>${t.A.map(x=>`<li>${mk(x)}</li>`).join('')}</ol></section>
+      <section class="lx-al lx-sym"><h3><b>Б</b>В пространстве</h3><ol>${t.Bs.map(x=>`<li>${mk(x)}</li>`).join('')}</ol></section></div>`;
+    if(k>n) return `<div class="lx-pn">${head}<div class="lx-ans"><span>Ответ</span><b>${mk(t.ans)}</b>${t.ok===false?'<i>⚠ проверка не сошлась</i>':''}</div>
+      ${t.back?`<section class="lx-al lx-bks"><h3><b>↩</b>Обратный переход</h3><ul>${t.back.map(x=>`<li>${mk(x)}</li>`).join('')}</ul></section>`:''}
+      <section class="lx-al lx-er"><h3><b>!</b>Где ошибаются</h3><ul>${t.err.map(x=>`<li>${mk(x)}</li>`).join('')}</ul></section></div>`;
+    const st=t.steps[k-1];
+    return `<div class="lx-pn">${head}
+      <div class="lx-now${st.back?' bk':''}"><span class="lx-sn">${st.back?'↩ Обратный переход · ':''}Шаг ${k} из ${n}</span><h3>${mk(st.t)}</h3><p>${mk(st.s)}</p></div>
+      <section class="lx-al lx-sym lx-v"><h3><b>В</b>На чертеже</h3><ol>${t.steps.map((x,j)=>`<li class="${j<k-1?'on':''}${j===k-1?' now':''}${x.back?' bk':''}"${j>k-1?' hidden':''}><span>${mk(x.v)}</span></li>`).join('')}</ol></section></div>`; }
+  const where=sl=>sl.kind==='task'?`Задача ${sl.task.n} · ${sl.task.t}`:sl.kind==='cover'?'Пирамида SABC':sl.kind==='legend'?'Обозначения':sl.kind==='back'?'Как возвращать точку назад':'Итог';
+  function paint(){ const R=S.root, sl=S.slides[S.i], main=R.querySelector('[data-lx-main]');
+    const same=S.cur===S.i&&sl.kind==='task';
+    if(!same){ main.innerHTML=sl.kind==='task'?`<div class="lx-split"><div class="lx-ep" data-lx-ep></div><div class="lx-side" data-lx-side></div></div>`:`<div class="lx-full" data-lx-side></div>`; S.cur=S.i;
+      const ep=main.querySelector('[data-lx-ep]'); if(S.ro) S.ro.disconnect(); S.ro=null; if(ep&&window.ResizeObserver){ S.ro=new ResizeObserver(()=>onResize()); S.ro.observe(ep); } }
+    R.querySelector('[data-lx-side]').innerHTML=slideHTML(sl,S.k);
+    if(sl.kind==='task'){ const box=R.querySelector('[data-lx-ep]'), n=sl.task.steps.length; render(box,sl.task,Math.min(S.k,n),S.k>n);
+      const now=R.querySelector('.lx-v li.now'); if(now) try{ now.scrollIntoView({block:'nearest'}); }catch(e){} }
+    R.querySelector('[data-lx-where]').textContent=where(sl);
+    R.querySelectorAll('[data-lx-sec]').forEach(b=>{ const j=+b.dataset.lxSec; b.classList.toggle('now',j===sl.sec); b.classList.toggle('done',j<sl.sec); });
+    R.querySelector('[data-lx-n]').textContent=sl.kind==='task'?(S.k===0?'условие':S.k>sl.n-1?'ответ':'шаг '+S.k+'/'+(sl.n-1)):(S.i+1)+'/'+S.slides.length;
+    clearPen(); }
   function go(d){ const sl=S.slides[S.i], max=sl.n||0;
     if(d>0){ if(S.k<max) S.k++; else if(S.i<S.slides.length-1){ S.i++; S.k=0; } }
     else { if(S.k>0) S.k--; else if(S.i>0){ S.i--; S.k=S.slides[S.i].n||0; } }
     paint(); }
-  function jump(ti){ const j=S.slides.findIndex(s=>s.ti===ti); if(j>=0){ S.i=j; S.k=0; paint(); } }
+  function jump(sec){ const j=S.slides.findIndex(s=>s.sec===sec); if(j>=0){ S.i=j; S.k=0; paint(); } }
+  /* клавиша 0–4 и адрес #/live/show/<0–4> — к задаче с этим номером (1* — стрелкой после задачи 1) */
+  function jumpTask(n){ const j=S.slides.findIndex(s=>s.task&&s.task.n===n); if(j>=0){ S.i=j; S.k=0; paint(); } }
   /* перо поверх экрана */
   let cv=null, ctx=null, drawing=false, color='#e5232b';
   function sizePen(){ if(!cv) return; const r=devicePixelRatio||1; cv.width=innerWidth*r; cv.height=innerHeight*r; ctx=cv.getContext('2d'); ctx.scale(r,r); ctx.lineCap='round'; ctx.lineJoin='round'; }
   function clearPen(){ if(ctx) ctx.clearRect(0,0,innerWidth,innerHeight); }
-  function setPen(on){ S.pen=on; S.root.classList.toggle('pen',on); S.root.querySelector('[data-ls-pen]').classList.toggle('on',on); }
-  function setBoard(on){ S.board=on; S.root.classList.toggle('board',on); S.root.querySelector('[data-ls-board]').classList.toggle('on',on); if(on) setPen(true); clearPen(); }
+  function setPen(on){ S.pen=on; S.root.classList.toggle('pen',on); S.root.querySelector('[data-lx-pen]').classList.toggle('on',on); }
+  function setBoard(on){ S.board=on; S.root.classList.toggle('board',on); S.root.querySelector('[data-lx-board]').classList.toggle('on',on); if(on) setPen(true); clearPen(); }
   function fs(){ try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){} }
+  const tim=()=>{ const s=Math.floor((Date.now()-S.t0)/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+  function onResize(){ sizePen(); if(S){ const sl=S.slides[S.i]; if(sl.kind==='task'){ const box=S.root.querySelector('[data-lx-ep]'), n=sl.task.steps.length; if(box) render(box,sl.task,Math.min(S.k,n),S.k>n); } } }
   function view(v,start){
     stop(); const prevTheme=document.documentElement.dataset.theme||'';
     try{ if(prevTheme!=='light') applyTheme('light',false); }catch(e){}
-    v.innerHTML=`<div class="ls" data-ls>
-      <header class="ls-bar"><b>Начерт · эфир</b><span data-ls-where></span><span class="ls-tm" data-ls-tm>0:00</span></header>
-      <div class="ls-prog">${Array.from({length:10},(_,j)=>`<i data-ls-seg title="${j<9?'Шаг '+(j+1):'Билет РК2'}"${j===9?' class="tk"':''}></i>`).join('')}</div>
-      <main class="ls-main" data-ls-main></main>
-      <canvas class="ls-pen" data-ls-cv></canvas>
-      <nav class="ls-ctl" aria-label="Управление показом">
-       <button type="button" data-ls-act="prev" title="Назад (←)">‹</button><span data-ls-n></span><button type="button" data-ls-act="next" title="Дальше (→, пробел)">›</button>
-       <button type="button" data-ls-pen data-ls-act="pen" title="Перо (P)">✎</button>
-       <span class="ls-cols">${['#e5232b','#1a66cc','#0e1c33'].map(c=>`<button type="button" data-ls-col="${c}" style="background:${c}" title="Цвет пера"></button>`).join('')}</span>
-       <button type="button" data-ls-act="clear" title="Стереть (C)">⌫</button>
-       <button type="button" data-ls-board data-ls-act="board" title="Белая доска (B)">▢</button>
-       <button type="button" data-ls-act="fs" title="Полный экран (F)">⛶</button>
-       <a href="#/live" title="Выйти (Esc)">✕</a>
-      </nav>
-      <p class="ls-keys">→ дальше · ← назад · 1–9 тема · 0 билет · D 3D задачи · R анимация · V вид · P перо · B доска · F экран</p>
+    v.innerHTML=`<div class="lx" data-lx>
+      <div class="lx-bar" role="banner"><b class="lx-brand">Начерт · эфир</b>
+       <nav class="lx-secs" aria-label="Задачи">${SECT.map(s=>`<button type="button" data-lx-sec="${s.n}">${escH(s.t)}</button>`).join('')}</nav>
+       <span class="lx-where" data-lx-where></span>
+       <span class="lx-ctl"><button type="button" data-lx-act="prev" title="Назад (←)">‹</button><span data-lx-n></span><button type="button" data-lx-act="next" title="Дальше (→, пробел)">›</button>
+        <button type="button" data-lx-pen data-lx-act="pen" title="Перо (P)">✎</button>${['#e5232b','#1a66cc','#0e1c33'].map(c=>`<button type="button" class="lx-col" data-lx-col="${c}" style="background:${c}" title="Цвет пера"></button>`).join('')}
+        <button type="button" data-lx-act="clear" title="Стереть (C)">⌫</button><button type="button" data-lx-board data-lx-act="board" title="Белая доска (B)">▢</button>
+        <button type="button" data-lx-act="fs" title="Полный экран (F)">⛶</button><a href="#/live" title="Выйти (Esc)">✕</a></span>
+       <span class="lx-tm" data-lx-tm>0:00</span></div>
+      <main class="lx-main" data-lx-main></main>
+      <canvas class="lx-pen" data-lx-cv></canvas>
     </div>`;
-    const root=v.querySelector('[data-ls]');
-    S={slides:build(),i:0,k:0,pen:false,board:false,t0:Date.now(),prevTheme,root};
+    const root=v.querySelector('[data-lx]');
+    S={slides:build(),i:0,k:0,cur:-1,pen:false,board:false,t0:Date.now(),prevTheme,root};
     document.body.classList.add('liveshow');
-    cv=root.querySelector('[data-ls-cv]'); sizePen();
+    cv=root.querySelector('[data-lx-cv]'); sizePen();
     const pos=e=>[e.clientX,e.clientY];
     cv.addEventListener('pointerdown',e=>{ if(!S||!S.pen) return; drawing=true; cv.setPointerCapture(e.pointerId); const [x,y]=pos(e); ctx.strokeStyle=color; ctx.lineWidth=e.pointerType==='pen'?3.5:4; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+.1,y+.1); ctx.stroke(); });
     cv.addEventListener('pointermove',e=>{ if(!drawing) return; const [x,y]=pos(e); ctx.lineTo(x,y); ctx.stroke(); });
     const up=()=>{ drawing=false; }; cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
-    root.addEventListener('click',e=>{ const b=e.target.closest('[data-ls-act],[data-ls-col]'); if(!b) return;
-      if(b.dataset.lsCol){ color=b.dataset.lsCol; setPen(true); return; }
-      const a=b.dataset.lsAct; if(a==='t3d'){ const sl=S.slides[S.i]; try{ TASK3D.open(sl.task,0,sl.si); }catch(err){} return; }
-      if(a==='prev') go(-1); else if(a==='next') go(1); else if(a==='pen') setPen(!S.pen); else if(a==='clear') clearPen(); else if(a==='board') setBoard(!S.board); else if(a==='fs') fs(); });
+    root.addEventListener('click',e=>{ const b=e.target.closest('[data-lx-act],[data-lx-col],[data-lx-sec]'); if(!b) return;
+      if(b.dataset.lxSec!=null){ jump(+b.dataset.lxSec); return; }
+      if(b.dataset.lxCol){ color=b.dataset.lxCol; setPen(true); return; }
+      const a=b.dataset.lxAct; if(a==='prev') go(-1); else if(a==='next') go(1); else if(a==='pen') setPen(!S.pen); else if(a==='clear') clearPen(); else if(a==='board') setBoard(!S.board); else if(a==='fs') fs(); });
     S.keys=e=>{ if(e.ctrlKey||e.metaKey||e.altKey) return; const k=e.key;
       if(k==='ArrowRight'||k===' '||k==='PageDown'){ e.preventDefault(); go(1); }
       else if(k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); go(-1); }
-      else if(/^[1-9]$/.test(k)) jump(+k-1);
-      else if(k==='0') jump(9);
-      else if(k==='d'||k==='D'||k==='в'||k==='В'){ const sl=S.slides[S.i]; if(sl.kind==='draw'&&typeof TASK3D!=='undefined') try{ TASK3D.open(sl.task,0,sl.si); }catch(err){} }
-      else if(k==='r'||k==='R'||k==='к'||k==='К'){ if(S.d3) S.d3.p.replay(); }
-      else if(k==='v'||k==='V'||k==='м'||k==='М'){ if(S.d3) S.d3.p.view(); }
+      else if(/^[0-9]$/.test(k)) jumpTask(+k);
+      else if(k==='Home') jump(0); else if(k==='End') jump(SECT.length-1);
       else if(k==='p'||k==='P'||k==='з'||k==='З') setPen(!S.pen);
       else if(k==='c'||k==='C'||k==='с'||k==='С') clearPen();
       else if(k==='b'||k==='B'||k==='и'||k==='И') setBoard(!S.board);
       else if(k==='f'||k==='F'||k==='а'||k==='А') fs();
       else if(k==='Escape'){ if(S.board) setBoard(false); else if(S.pen) setPen(false); else if(!document.fullscreenElement) location.hash='#/live'; } };
-    document.addEventListener('keydown',S.keys); addEventListener('resize',sizePen);
-    S.timer=setInterval(()=>{ const t=root.querySelector('[data-ls-tm]'); if(t) t.textContent=tim(); },1000);
+    document.addEventListener('keydown',S.keys); addEventListener('resize',onResize);
+    S.timer=setInterval(()=>{ const t=root.querySelector('[data-lx-tm]'); if(t) t.textContent=tim(); },1000);
     paint();
-    const st=parseInt(start,10); if(st>=1&&st<=10) jump(st-1);
+    if(/^[0-9]$/.test(start||'')) jumpTask(+start);
+    if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ if(S&&S.root===root){ T.forEach(t=>t._u=null); onResize(); } });
     return 'Режим эфира';
   }
-  function stop(){ if(!S) return; if(S.d3){ S.d3.p.stop(); S.d3=null; } document.removeEventListener('keydown',S.keys); removeEventListener('resize',sizePen); clearInterval(S.timer);
+  function stop(){ if(!S) return; if(S.ro) S.ro.disconnect(); document.removeEventListener('keydown',S.keys); removeEventListener('resize',onResize); clearInterval(S.timer);
     document.body.classList.remove('liveshow'); try{ if(S.prevTheme&&S.prevTheme!=='light') applyTheme(S.prevTheme,false); }catch(e){} S=null; cv=null; ctx=null; }
-  return {view,stop,_state:()=>S};
+  return {view,stop,_state:()=>S,_tasks:T};
 })();
 /* ═════ #/live — бесплатные онлайн-разборы: как записаться, как проходит, план «РК2 за 9 шагов», какие данные и зачем.
    Ссылки на бота и форму — из PROMO (одно место). Сам план эфира — темы RKP.TOPICS (те же 9 типов, что в «РК2 за 9 шагов»);
@@ -33575,7 +33897,7 @@ function viewLive(v){
    <section class="lv-hero" aria-labelledby="lvH">
     <span class="pmn-pill">Бесплатно</span>
     <h1 id="lvH">Онлайн-разборы по&nbsp;начерталке</h1>
-    <p>Разбираем задачи РК2 по шагам. Каждый вечер в 20:00 МСК, бесплатно.</p>
+    <p>Разбираем задачи РК2 по шагам, бесплатно. ${(n=>n?(n.live?'<b>Эфир идёт прямо сейчас.</b>':`Ближайший эфир — <b>${n.rel} в ${n.time} МСК</b>${n.moved?` (перенесли с ${n.moved})`:''}.`):'Новые эфиры — скоро.')(PROMO.next())}</p>
     <div class="lv-acts">
      ${PROMO.ready()?`<a class="pmn-b" href="${attr(PROMO.botUrl('live'))}" target="_blank" rel="noopener" data-lv="live-bot">Записаться в Telegram →</a>`:`<p class="lv-soon">Запись откроется совсем скоро.</p>`}
     </div>
@@ -33584,7 +33906,7 @@ function viewLive(v){
     <ol class="lv-steps">
      ${step(1,'Жмёшь «Записаться»','Откроется бот в Telegram.')}
      ${step(2,'Получаешь ссылку','Бот пришлёт её за 15 минут до начала.')}
-     ${step(3,'Чертим вместе','1 час в Телемосте. Возьми листок и карандаш.')}
+     ${step(3,'Чертим вместе','1 час в VK Встречах. Возьми листок в клетку, карандаш и линейку.')}
     </ol>
    </section>
    ${T.length?`<section class="lv-sec" aria-labelledby="lvPlan"><h2 id="lvPlan">План: РК2 за 9 шагов</h2>
