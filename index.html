@@ -26897,6 +26897,8 @@ return {view,facHTML,bindFac,readiness,modScore,snapshot,level,nextStep,line,hom
    Хранилище 'rkp': {t:{<тема>:{u:1,ok:[способ…],n,w}}, x:{best,h:[{d,s,sec}]}} — только на устройстве. */
 window.RKP=(function(){
 const {F,H,seg,pt,conn,axis,v3}=L, S=L.S;
+/* H здесь — проекция на π₁ (из L), она перекрывает адрес-функцию H; адреса страниц — HR */
+const HR=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.map(x=>encodeURIComponent(x)).join('/'):'#/'; };
 const {add,sub,mul,dot,cross,len,unit,dist,foot}=v3;
 const DEG=180/Math.PI, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const angDeg=(u,w)=>Math.acos(clamp(dot(unit(u),unit(w)),-1,1))*DEG;
@@ -27218,7 +27220,7 @@ function status(P){ const v=P.val, left=9-P.done;
   if(v>=50) return 'Больше половины пути. Осталось тем: '+left+'.';
   if(v>=15) return 'Идёшь по пути. Каждая тема — плюс 10 %.';
   return 'Начни с темы 1 — она занимает минут 15.'; }
-function nextHref(P){ return P.now?H('ng','rk2','p',P.now.T.id):H('ng','rk2','x'); }
+function nextHref(P){ return P.now?HR('ng','rk2','p',P.now.T.id):HR('ng','rk2','x'); }
 
 /* ── шкала ── */
 function meterHTML(P,big){ const v=P.val, h=hue(v);
@@ -27230,11 +27232,11 @@ const STARS=k=>`<span class="rkp-st" aria-label="${k} из 3 звёзд">${[1,2,
 
 /* ── экран «путь» ── */
 function hubView(v){ const P=progress(), I=RKS.info(2), c=RKS.count(I), s=getS();
-  const node=(x,i)=>{ const isNow=P.now&&P.now.T===x.T; return `<li class="rkp-n s${x.k}${isNow?' now':''}"><a href="${H('ng','rk2','p',x.T.id)}">
+  const node=(x,i)=>{ const isNow=P.now&&P.now.T===x.T; return `<li class="rkp-n s${x.k}${isNow?' now':''}"><a href="${HR('ng','rk2','p',x.T.id)}">
      <span class="rkp-dot">${x.k>=3?'✓':i+1}</span><span class="rkp-tt"><b>${x.T.t}</b><small>${x.T.sub}</small></span>
      <span class="rkp-r">${isNow?'<em>ты здесь</em>':''}${STARS(x.k)}</span></a></li>`; };
-  const boss=`<li class="rkp-n boss${P.done===9?' now':''}${s.x.best>=3?' s3':''}"><a href="${H('ng','rk2','x')}"><span class="rkp-dot">⚑</span><span class="rkp-tt"><b>Финал: пробный РК2</b><small>три задачи билета, чуть сложнее настоящих · +10 %</small></span><span class="rkp-r">${s.x.best?`<em class="sc">${s.x.best} из 3</em>`:''}</span></a></li>`;
-  v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',H('ng','rk2')],['РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
+  const boss=`<li class="rkp-n boss${P.done===9?' now':''}${s.x.best>=3?' s3':''}"><a href="${HR('ng','rk2','x')}"><span class="rkp-dot">⚑</span><span class="rkp-tt"><b>Финал: пробный РК2</b><small>три задачи билета, чуть сложнее настоящих · +10 %</small></span><span class="rkp-r">${s.x.best?`<em class="sc">${s.x.best} из 3</em>`:''}</span></a></li>`;
+  v.innerHTML=pageHTML({crumbs:[['Подготовка к РК',HR('ng','rk2')],['РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
    ${RK2.tabsHTML(2)}
    <section class="rkp-hero">
     <div class="rkp-k"><span>РК2 · начертательная геометрия</span>${I.past?'':`<span class="rkp-when"><b>${c.b}</b> ${c.s}</span>`}</div>
@@ -27247,7 +27249,7 @@ function hubView(v){ const P=progress(), I=RKS.info(2), c=RKS.count(I), s=getS()
    <section class="rkp-how"><h2 class="sp-h2">Как проходить тему</h2>
     <ol><li><b>★ Пойми</b> — суть в трёх строках и один вопрос. <i>+3 %</i></li><li><b>★★ Реши задачу</b> — на бумаге, ответ числом: сайт проверит. <i>+4 %</i></li><li><b>★★★ Реши другим способом</b> — на РК в условии сказано, каким способом решать. <i>+3 %</i></li></ol>
     <p class="r2-fine">Это не прогноз оценки: решать на РК придётся самому. Шкала показывает, сколько типов задач ты уже умеешь решать сам. Всё хранится только в этом браузере.</p></section>
-   <section class="rkp-more"><a href="${H('ng','rk2','q')}">26 вопросов теории кафедры</a><a href="${H('ng','rk2','all')}">Все тренировки РК2 (модули, «Вижу», готовность)</a><a href="${H('ng','check','tickets')}">Билеты с разбором по шагам</a></section>
+   <section class="rkp-more"><a href="${HR('ng','rk2','q')}">26 вопросов теории кафедры</a><a href="${HR('ng','rk2','all')}">Все тренировки РК2 (модули, «Вижу», готовность)</a><a href="${HR('ng','check','tickets')}">Билеты с разбором по шагам</a></section>
    <div class="rkp-fac">${RK2.facHTML()}</div>`});
   RK2.bindFac(v,()=>RK2.view(v,{}));   /* сменили поток: у ИУ1Б, ИУ3… — прежний раздел с объяснением */
   RKS.load(()=>{ if(v.isConnected&&/^#\/ng\/rk2\/?$/.test(location.hash)) hubView(v); });
@@ -27274,13 +27276,13 @@ function resHTML(q){ const r=q.res;
     <p>${r.gave?'':`Твой ответ: ${fmt(r.val)} ${q.u}. `}Ответ: <b>${q.sym} = ${fmt(q.ans)} ${q.u}</b>${r.gave?'':` (допуск ± ${fmt(q.tol)})`}.${r.ok&&r.isAlt?' Это тупой угол — на РК пиши острый, смежный.':''}</p>
     <p class="rkp-how2">${q.how}</p>
     ${r.ok?'':`<p class="rkp-tip">Сверь построение с порядком шагов темы. Частые причины: радиус вращения взят с чертежа, а не гипотенузой; во второй замене расстояния взяты от старой оси.</p>`}</div>`; }
-function topicView(v,id){ const T=TOP(id); if(!T){ redir(H('ng','rk2')); return ''; }
+function topicView(v,id){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
   const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1];
   const draw=()=>{ const s=getS(), st=tState(s,id), k=stars(st,T), ms=Object.keys(T.m);
     if(!CUR||CUR.id!==id) CUR={id,q:null,m:ms[0]};
     if(!CUR.ord) CUR.ord=shuf(T.chk.o.map((o,i)=>i));
     const tab=CUR.tab||ms[0];
-    v.innerHTML=pageHTML({crumbs:[['РК2',H('ng','rk2')],['Тема '+(idx+1)]],next:null,noBottom:true,cls:'rkp-page',body:`
+    v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Тема '+(idx+1)]],next:null,noBottom:true,cls:'rkp-page',body:`
      <div class="rkp-th"><span class="rkp-dot big">${k>=3?'✓':idx+1}</span><div><h1>${T.t}</h1><p>${T.sub} · ${STARS(k)} · тема ${idx+1} из 9</p></div></div>
      <section class="rkp-step${st.u?' done':''}" aria-labelledby="rkpS1"><h2 id="rkpS1"><span>1</span>Пойми ${st.u?'<i>★ есть</i>':''}</h2>
       <p class="rkp-idea">${T.idea}</p>
@@ -27297,9 +27299,9 @@ function topicView(v,id){ const T=TOP(id); if(!T){ redir(H('ng','rk2')); return 
      <section class="rkp-step" aria-labelledby="rkpS3"><h2 id="rkpS3"><span>3</span>Реши сам <i>${st.n?`решено ${st.n}`:''}</i></h2>
       <p class="r2-sub">${st.n===0?'Реши на бумаге и введи ответ числом — сайт сверит с точным. Каждая задача новая.':ms.length>1&&new Set(st.ok).size<2?'Теперь тем же типом, но другим способом: <b>'+MT[ms.find(m=>!st.ok.includes(m))].s+'</b>. На РК способ задан в условии.':'Тема закрыта. Можно решать ещё — для уверенности.'}</p>
       <div id="rkpT">${CUR.q?taskCardHTML(CUR.q,st):`<button type="button" class="btn pri lg" data-new>Дать задачу</button>`}</div>
-      ${CUR.q&&CUR.q.res?`<div class="rkp-acts"><button type="button" class="btn pri lg" data-new>Ещё задача</button>${nxt?`<a class="btn" href="${H('ng','rk2','p',nxt.id)}">Тема ${idx+2}: ${nxt.t.toLowerCase()} →</a>`:`<a class="btn" href="${H('ng','rk2','x')}">Финал: пробный РК2 →</a>`}</div>`:''}
+      ${CUR.q&&CUR.q.res?`<div class="rkp-acts"><button type="button" class="btn pri lg" data-new>Ещё задача</button>${nxt?`<a class="btn" href="${HR('ng','rk2','p',nxt.id)}">Тема ${idx+2}: ${nxt.t.toLowerCase()} →</a>`:`<a class="btn" href="${HR('ng','rk2','x')}">Финал: пробный РК2 →</a>`}</div>`:''}
      </section>
-     <nav class="rkp-nav">${idx?`<a href="${H('ng','rk2','p',TOPICS[idx-1].id)}">← ${TOPICS[idx-1].t}</a>`:`<a href="${H('ng','rk2')}">← Путь</a>`}${nxt?`<a href="${H('ng','rk2','p',nxt.id)}">${nxt.t} →</a>`:`<a href="${H('ng','rk2','x')}">Пробный РК2 →</a>`}</nav>`});
+     <nav class="rkp-nav">${idx?`<a href="${HR('ng','rk2','p',TOPICS[idx-1].id)}">← ${TOPICS[idx-1].t}</a>`:`<a href="${HR('ng','rk2')}">← Путь</a>`}${nxt?`<a href="${HR('ng','rk2','p',nxt.id)}">${nxt.t} →</a>`:`<a href="${HR('ng','rk2','x')}">Пробный РК2 →</a>`}</nav>`});
     bind(); };
   const bind=()=>{ v.querySelectorAll('[data-o]').forEach(b=>b.addEventListener('click',()=>{ CUR.pick=+b.dataset.o; const s=getS(), st=tState(s,id);
       if(CUR.pick===T.chk.c&&!st.u){ st.u=1; setS(s); try{ FX.buzz('success'); }catch(_){} } else { try{ FX.buzz(CUR.pick===T.chk.c?'success':'error'); }catch(_){} } keep(draw,'#rkpChk'); }));
@@ -27332,7 +27334,7 @@ function ticket(seed){ const g=mk(seed), ta=g.pk(POOL.A), tb=g.pk(POOL.B.filter(
 let EX=null;
 function examView(v){
   const draw=()=>{ const s=getS(), last=s.x.h.slice(-5).reverse();
-    if(!EX){ v.innerHTML=pageHTML({crumbs:[['РК2',H('ng','rk2')],['Пробный РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
+    if(!EX){ v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Пробный РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
       <div class="rkp-th"><span class="rkp-dot big boss">⚑</span><div><h1>Пробный РК2</h1><p>финал пути · +10 % за три верные задачи</p></div></div>
       <div class="rkp-rules"><p>Три задачи, как в билете: А, Б и В, у каждой — свой способ решения. Варианты <b>чуть сложнее настоящих</b>: скрещивающиеся прямые, плоскости, заданные парами прямых, центр вписанной окружности, параллельные плоскости.</p>
        <ul><li>Бумага, карандаш, линейка, циркуль, транспортир.</li><li>Ответ — числом. Одна попытка, без подсказок; разбор — после сдачи.</li><li>Секундомер — для себя.</li></ul></div>
@@ -27341,11 +27343,11 @@ function examView(v){
       v.querySelector('[data-go]').addEventListener('click',()=>{ const seed=newSeed(); EX={seed,t0:Date.now(),qs:ticket(seed)}; draw(); window.scrollTo({top:0,behavior:'instant'}); });
       return; }
     const fin=!!EX.t1, sc=fin?EX.qs.filter(q=>q.res&&q.res.ok).length:0;
-    v.innerHTML=pageHTML({crumbs:[['РК2',H('ng','rk2')],['Пробный РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
+    v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Пробный РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
      <div class="rkp-xh"><div><h1>Билет № ${EX.seed}</h1><p>Пробный РК2 · 1 семестр</p></div><div class="rkp-clock" id="rkpClk" aria-live="off">00:00</div></div>
      ${fin?`<div class="rkp-xres ${sc===3?'ok':sc?'mid':'no'}"><b>${sc} из 3</b><p>${sc===3?'Пробный РК2 решён полностью. Это вариант сложнее настоящего — хороший знак.':sc?'Посмотри разбор задач с ошибкой и пройди их тему ещё раз.':'Пока не сходится. Вернись к темам — там всё по шагам.'}</p></div>`:''}
-     ${EX.qs.map(q=>`<section class="rkp-xq" data-q="${q.L}">${taskCardHTML(q,null,'Задача '+q.L)}${fin&&!(q.res&&q.res.ok)?`<p class="rkp-ex"><span>Повтори тему:</span><a href="${H('ng','rk2','p',q.type)}">${TOP(q.type).t}</a></p>`:''}</section>`).join('')}
-     <div class="rkp-acts">${fin?`<button type="button" class="btn pri lg" data-again>Новый билет</button><a class="btn" href="${H('ng','rk2')}">К пути</a>`:`<button type="button" class="btn pri lg" data-fin>Сдать работу</button>`}</div>`});
+     ${EX.qs.map(q=>`<section class="rkp-xq" data-q="${q.L}">${taskCardHTML(q,null,'Задача '+q.L)}${fin&&!(q.res&&q.res.ok)?`<p class="rkp-ex"><span>Повтори тему:</span><a href="${HR('ng','rk2','p',q.type)}">${TOP(q.type).t}</a></p>`:''}</section>`).join('')}
+     <div class="rkp-acts">${fin?`<button type="button" class="btn pri lg" data-again>Новый билет</button><a class="btn" href="${HR('ng','rk2')}">К пути</a>`:`<button type="button" class="btn pri lg" data-fin>Сдать работу</button>`}</div>`});
     const clk=$('rkpClk'), tick=()=>{ const sec=Math.round(((EX.t1||Date.now())-EX.t0)/1000); if(clk) clk.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0'); };
     tick(); if(!fin){ const tm=setInterval(()=>{ if(!clk.isConnected||!EX||EX.t1){ clearInterval(tm); return; } tick(); },1000); }
     const fb=v.querySelector('[data-fin]'); if(fb) fb.addEventListener('click',()=>{ const vals=EX.qs.map(q=>parseNum((v.querySelector('[data-q="'+q.L+'"] [data-ans]')||{}).value));
