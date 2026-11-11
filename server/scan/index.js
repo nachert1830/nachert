@@ -4,9 +4,9 @@
    Доступ — по коду: заголовок x-scan-code, сверка по SHA-256 (SCAN_CODE_SHA256; личный код владельца — OWNER_CODE_SHA256, он же открывает me/), перебор кода ограничен (10 неудач за 10 минут на адрес).
    Браузер: CORS только для SCAN_ORIGINS (по умолчанию nachert1830.ru). Расход ограничен: SCAN_LIMIT_USD на экземпляр функции и
    SCAN_HOURLY запросов в час — это страховка, а не бухгалтерия (счётчики живут, пока жив экземпляр); баланс ProxyAPI — главный предел.
-   Модели (переменные функции; по умолчанию — лучшая связка по замеру lab/dz/REPORT.md, «Opus + проверка Sonnet»):
-     SCAN_DIGIT_MODEL — оцифровка чертежа (crop), по умолчанию Claude Opus 5.5; сбой или пустой ответ — тот же кадр Sonnet;
-     SCAN_CHECK_MODEL — вторая, независимая оцифровка (crop2), по умолчанию Claude Sonnet 5.5: страница просит её, только если
+   Модели (переменные функции; по умолчанию — Sonnet: по замерам lab/dz/REPORT.md 7о и 7у Opus не точнее, а дороже в 3–4 раза):
+     SCAN_DIGIT_MODEL — оцифровка чертежа (crop), по умолчанию Claude Sonnet 5.5; сбой или пустой ответ — тот же кадр второй модели;
+     SCAN_CHECK_MODEL — вторая, независимая оцифровка (crop2), по умолчанию Claude Opus 5.5 (только режим «максимальная»): страница просит её, только если
        первая слабая (не привязалась к варианту, много линий без карандаша), и сливает ответы — что настоящее, решает карандаш;
      SCAN_LAYOUT_MODEL — раскладка листа (layout), по умолчанию Claude Haiku 5.5.
    Тело может назвать модель явно: model: 'opus' | 'sonnet' (только они — для замера A/B, lab/dz/scan-ab.js).
@@ -99,7 +99,7 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
   if(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/.test(img)) return reply(400,{ok:false,error:'Нужно фото (JPEG, PNG или WebP)'},origin);
   if(!(w>=200&&h>=200&&w<=4096&&h<=4096)) return reply(400,{ok:false,error:'Размер кадра — от 200 до 4096 px'},origin);
   state.hourCalls++;
-  const env=process.env, digitM=model(b.model,env.SCAN_DIGIT_MODEL||MODELS.opus), checkM=model(env.SCAN_CHECK_MODEL,MODELS.sonnet), layoutM=model(env.SCAN_LAYOUT_MODEL,MODELS.haiku);
+  const env=process.env, digitM=model(b.model,env.SCAN_DIGIT_MODEL||MODELS.sonnet), checkM=model(env.SCAN_CHECK_MODEL,MODELS.opus), layoutM=model(env.SCAN_LAYOUT_MODEL,MODELS.haiku);
   const cfgOf=m=>EY.eyesFromEnv({PROXYAPI_KEY:key,EYES_BEST_MODEL:'off',EYES_DIGIT_MODEL:m,EYES_LAYOUT_MODEL:layoutM});
   /* OpenRouter сам считает цену в $ (usage.cost) — она точнее нашей оценки по PRICE */
   const q={image:img,w,h,consent:true}, spend=r=>{ const u=(r&&r.info&&r.info.usage)||{}, pr=PRICE(r&&r.model), c=typeof u.cost==='number'?u.cost:(u.prompt_tokens||0)*pr[0]+(u.completion_tokens||0)*pr[1]; state.spent+=c; return {c,u}; };

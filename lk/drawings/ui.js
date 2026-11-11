@@ -64,9 +64,9 @@ root.innerHTML=`
   <div class="card" id="scProg" hidden><b id="scProgT" style="font:600 17px var(--disp)">Сканирую лист…</b><ul class="sc-steps" id="scSteps"></ul><div id="scProgA" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div></div>
   <details class="card sc-set" id="scSet"><summary>Настройки сканера</summary>
     <div class="fl">
-      <label>Задание<select class="sc-in" id="scDz"><option value="auto">Узнать само</option><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option></select></label>
+      <label>Задание<select class="sc-in" id="scDz"><option value="auto">Узнать само</option><option value="2">ДЗ №2</option><option value="3">ДЗ №3</option><option value="4">ДЗ №4</option></select></label>
       <label>Вариант<input class="sc-in" id="scVar" inputmode="numeric" placeholder="авто" autocomplete="off"></label>
-      <label style="grid-column:1/-1">Точность<select class="sc-in" id="scPrec"><option value="max">Максимальная: Opus + Sonnet, две независимые оцифровки</option><option value="auto">Экономная: вторая модель — только при сомнениях</option><option value="fast">Быстро: одна модель</option></select></label>
+      <label style="grid-column:1/-1">Точность<select class="sc-in" id="scPrec"><option value="fast">Обычная: Sonnet (по замерам не хуже двух моделей)</option><option value="auto">Экономная+: вторая модель (Opus) — только при сомнениях</option><option value="max">Максимальная: Sonnet + Opus, две независимые оцифровки (дороже в 3–4 раза)</option></select></label>
       <label style="grid-column:1/-1">Код доступа к сканеру<input class="sc-in" id="scCode" type="password" autocomplete="off" placeholder="выдаёт преподаватель или автор сайта"></label>
     </div>
     <p class="note" style="margin:10px 0 0">Кадры чертежей отправляются модели Claude (через ProxyAPI) только для оцифровки и не сохраняются. Копии и фото хранятся в этом браузере.</p>
@@ -84,7 +84,7 @@ const CLOUD=String(self.SCAN_API||'').trim();
 let CODE=ls.get('scanCode')||'';
 $('#scCode').value=CODE; $('#scCode').addEventListener('change',()=>{ CODE=$('#scCode').value.trim(); ls.set('scanCode',CODE); });
 $('#scVar').value=ls.get('lk_scanVar')||''; $('#scVar').addEventListener('change',()=>ls.set('lk_scanVar',$('#scVar').value.trim()));
-$('#scPrec').value=ls.get('lk_scanPrec')||'max';   /* замер lab/dz/REPORT.md 7о: две модели — точки на 20 % точнее */ $('#scPrec').addEventListener('change',()=>ls.set('lk_scanPrec',$('#scPrec').value));
+$('#scPrec').value=ls.get('lk_scanPrec')||'fast';   /* по умолчанию одна модель (Sonnet): на 20 настоящих листах (REPORT 7у) 57 из 60 к своему варианту; две модели — дороже в 3–4 раза */ $('#scPrec').addEventListener('change',()=>ls.set('lk_scanPrec',$('#scPrec').value));
 $('#scDz').value=ls.get('lk_scanDz')||'auto'; $('#scDz').addEventListener('change',()=>ls.set('lk_scanDz',$('#scDz').value));
 
 const steps=new Map();
@@ -103,7 +103,7 @@ async function scanRun(title,again,go){ if(busy) return;
   if(!CLOUD){ progStart('Сканер сейчас недоступен'); step('x','Адрес сервера сканера не задан. Попробуйте пример — он работает без сервера.','err'); return; }
   if(!CODE){ $('#scSet').open=true; $('#scCode').focus(); progStart('Нужен код доступа'); step('x','Введите код доступа в «Настройках сканера» и '+again+'.','err'); return; }
   busy=true; progStart(title);
-  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk6'); step('lib','Сканер загружен','done');
+  try{ step('lib','Загружаю сканер…'); await self.SCANPIPE.load('lk7'); step('lib','Сканер загружен','done');
     const pipe=self.SCANPIPE.create({cloud:CLOUD,code:CODE});
     const {out,bmps,cover}=await go(pipe);
     const ok=out.drawings.filter(d=>d&&d.segs&&d.segs.length);
@@ -284,7 +284,7 @@ function renderPanel(focus){ const box=$('#edPanel'); if(!DR) return;
     $('#pDel').onclick=()=>{ snap(); D.remove(DR,o.id); sel=null; changed(); renderEd(); renderPanel(); }; return; }
   const isSeg=!!o.a, len=isSeg?Math.hypot(o.b[0]-o.a[0],o.b[1]-o.a[1]):0;
   box.innerHTML='<div class="r">'+(isSeg?'<button class="btn sm '+(o.dash?'sec':'')+'" data-k="main">Основная</button><button class="btn sm '+(o.dash?'':'sec')+'" data-k="dash">Штриховая</button>':'')+(o.unv?'<button class="btn sm" data-k="ok">Подтвердить</button>':'')+'<button class="btn sm red" data-k="del">Удалить</button></div>'
-    +'<small>'+(isSeg?'Отрезок '+f1(len)+' мм':'Дуга')+(o.unv?' · модель видит линию, а карандаш под ней не нашёлся — проверьте по фото':o.src==='found'?' · найден по карандашу сверх того, что выписала модель':o.src==='hand'?' · добавлен вами':'')+'.</small>';
+    +'<small>'+(isSeg?'Отрезок '+f1(len)+' мм':o.curve?'Кривая':'Дуга')+(o.unv?' · модель видит линию, а карандаш под ней не нашёлся — проверьте по фото':o.src==='found'?' · найден по карандашу сверх того, что выписала модель':o.src==='hand'?' · добавлен вами':'')+'.</small>';
   $$('[data-k]',box).forEach(b=>b.onclick=()=>{ snap(); const k=b.getAttribute('data-k'); if(k==='main') o.dash=false; if(k==='dash') o.dash=true; if(k==='ok') o.unv=false; if(k==='del'){ D.remove(DR,o.id); sel=null; } changed(); renderEd(); renderPanel(); }); }
 
 /* ═════ Доводка ═════ */
@@ -298,11 +298,17 @@ function renderFix(){ if(!DR||PANE!=='fix') return; const box=$('#fixList'), is=
       +v.found.map(f=>/^view:/.test(f.k)?'вид '+esc(f.from)+(f.st==='верно'?' согласуется с пирамидой варианта':' почти согласуется с пирамидой варианта')+' (отклонение до '+fm(f.got)+' мм)'
         :esc(f.what)+' — начерчено '+fm(f.got)+' '+f.unit+', по варианту '+fm(f.want)+' '+f.unit+' ('+esc(f.st)+', проекция '+esc(f.from)+')').join('; ')
       +(v.verdict==='расходится с эталоном'?'. Проверьте построение этой величины.':'')+'</small></span></div></div>'; }
+  /* ДЗ №4: линии пересечения против эталона варианта (lk/scan/verify4.js, на момент скана) — по результату, способ не важен */
+  if(DR.verify4&&DR.verify4.lines&&DR.verify4.lines.length){ const v=DR.verify4, pr={F:'″',H:'′'}, pc=x=>Math.round(100*x)+' %';
+    h+='<div class="card"><div class="st '+(v.verdict==='верно'?'ok':v.verdict==='расходится с эталоном'?'no':'')+'"><span class="big3">'+(v.verdict==='верно'?ICON.ok:ICON.warn)+'</span><span><b>Линии пересечения: '+esc(v.verdict)+'</b><br><small class="mut">'
+      +v.lines.map(l=>esc(l.pair)+' — '+esc(l.why)+' ('+Object.entries(l.proj).map(([k,x])=>pr[k]+': '+(x.st==='на очерке'?'на очерке тела':esc(x.st)+(x.cov!=null?', совпало '+pc(x.cov):'')+(x.med!=null&&x.cov>0?', отклонение '+f1(x.med)+' мм':''))).join('; ')+')').join('. ')
+      +'. Характерных точек на местах: '+v.chars.found+' из '+v.chars.of+' (номера — ваши, сверяется положение).'
+      +(v.verdict==='расходится с эталоном'?' Проверьте построение этой линии.':v.verdict==='не уверен'?' «Расходится» сканер говорит, только когда уверен: доведите копию или снимите чертёж крупнее.':'')+'</small></span></div></div>'; }
   /* проверка построения — вердикт сканера (на момент скана) */
   if(DR.check){ const c=DR.check, cls=c.verdict==='верно'?'ok':c.verdict==='ошибка'?'no':'', ic=c.verdict==='верно'?ICON.ok:ICON.warn;
     h+='<div class="card"><div class="st '+cls+'"><span class="big3">'+ic+'</span><span><b>Проверка построения: '+esc(c.verdict)+'</b><br><small class="mut">'+(c.partName?'Часть '+esc(c.partName)+'. ':'')+esc((c.why||[]).join('. '))+(c.verdict==='не могу утверждать'?' Сканер говорит «ошибка», только когда уверен: доведите копию или снимите чертёж крупнее.':'')+'</small></span></div></div>'; }
   /* привязка к варианту */
-  h+='<div class="card bind">'+(DR.dz&&DR.n?'<b>ДЗ №'+DR.dz+', вариант '+DR.n+'</b><small class="mut">'+(DR.rms!=null?'Точки условия совпали с таблицей варианта, расхождение '+f1(DR.rms)+' мм. ':'')+'Копия — в точных миллиметрах листа.</small>'
+  h+='<div class="card bind">'+(DR.dz&&DR.n?'<b>ДЗ №'+DR.dz+', вариант '+DR.n+'</b><small class="mut">'+(DR.rms!=null?(DR.dz==4?'Очерки тел совпали с размерами варианта':'Точки условия совпали с таблицей варианта')+', расхождение '+f1(DR.rms)+' мм. ':'')+'Копия — в точных миллиметрах листа.</small>'
       :'<b>Вариант не определён</b><small class="mut">Укажите задание и вариант — копия пересчитается в точные мм по точкам условия, и «Доводка» сверит их с таблицей.</small>')
     +'<div class="r"><select class="sc-in" id="bDz" style="flex:1"><option value="3"'+(DR.dz==2?'':' selected')+'>ДЗ №3</option><option value="2"'+(DR.dz==2?' selected':'')+'>ДЗ №2</option></select><input class="sc-in" id="bN" inputmode="numeric" placeholder="вариант" style="flex:1" value="'+(DR.n||'')+'"><button class="btn sm" id="bGo">'+(DR.n?'Сменить':'Привязать')+'</button></div></div>';
   const auto=is.filter(i=>i.fix&&['rename','snapGiven','align','addGiven'].includes(i.fix.k));

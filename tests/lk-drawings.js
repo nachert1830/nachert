@@ -83,6 +83,30 @@ function logic(){ const bad=[], B=(rule,msg)=>bad.push({name:'Мои черте�
       if(g2&&g2.st==='верно') B('вид с точкой S не на месте (8 мм) — не «верно»',JSON.stringify(g2)); }
     if(!mg||mg.inl!==8||me>0.5||Math.abs(mg.shift+6)>0.6) B('точки условия по форме (без подписей): 8 из 8, сдвиг проекций −6 мм',JSON.stringify(mg&&{inl:mg.inl,shift:mg.shift,maxErr:me}));
   }
+  /* ДЗ №4: кривые L (разбор, слияние двух моделей, притяжка к карандашу), привязка по очеркам тел, проверка линий пересечения */
+  { const LY=require(ROOT+'/lab/dz/layout.js'), MG=require(ROOT+'/lk/scan/merge.js'), RF=require(ROOT+'/lab/dz/refine.js'), B4=require(ROOT+'/lk/scan/bind4.js'), V4=require(ROOT+'/lk/scan/verify4.js'), REF=require(ROOT+'/lk/scan/dz4ref.json').v;
+    const q=LY.parseDigit('L 10 20 30 25 50 27 70 25 90 20 d\nL 1 2 3 4\nS 0 0 10 0'); if(q.curves.length!==1||!q.curves[0].dash||q.curves[0].p.length!==5||q.bad!==1||q.segs.length!==1) B('разбор кривой L (≥ 3 точки, d — штриховая)',JSON.stringify(q));
+    const c0=[[0,0],[20,8],[40,12],[60,12],[80,8],[100,0]], m2=MG.merge({pts:[],segs:[],curves:[{p:c0}]},{pts:[],segs:[],curves:[{p:c0.map(p=>[p[0]+1.5,p[1]+2])},{p:c0.map(p=>[p[0],p[1]+30])}]},{ppm:5});
+    if(m2.P.curves.length!==2||!m2.P.curves[1].fromB||!/^L /m.test(MG.toText(m2.P))) B('слияние кривых двух моделей: повтор (≈ 2 мм) — одна, другая — добавлена',m2.P.curves.length);
+    /* холст 600 × 400, 5 px/мм: дуга эллипса карандашом и прямая поперёк; «модель» — 8 точек с промахом до 2 мм */
+    const W=600,Hh=400,ppm=5,a=new Float32Array(W*Hh).fill(235); let sd=5; const rnd=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647; }, gn=()=>Math.sqrt(-2*Math.log(rnd()+1e-12))*Math.cos(6.283*rnd());
+    const ell=t=>[300+220*Math.cos(t),330-234*Math.sin(t)], tru=[]; for(let i=0;i<=400;i++) tru.push(ell(0.15+(Math.PI-0.3)*i/400));
+    const ink=(x,y)=>{ for(let yy=Math.floor(y-3);yy<=y+3;yy++) for(let xx=Math.floor(x-3);xx<=x+3;xx++){ if(xx<0||yy<0||xx>=W||yy>=Hh) continue; const c=Math.max(0,Math.min(1,1.2-Math.hypot(xx+0.5-x,yy+0.5-y)+0.5)); a[yy*W+xx]=Math.min(a[yy*W+xx],235-110*c); } };
+    for(let i=1;i<tru.length;i++) for(let k=0;k<=4;k++) ink(tru[i-1][0]+(tru[i][0]-tru[i-1][0])*k/4,tru[i-1][1]+(tru[i][1]-tru[i-1][1])*k/4); for(let x=40;x<560;x+=0.5) ink(x,200); for(let i=0;i<a.length;i++) a[i]+=gn()*3;
+    const model=[]; for(let i=0;i<=7;i++){ const p=ell(0.17+(Math.PI-0.3)*i/7); model.push([p[0]+gn()*1.2*ppm,p[1]+gn()*1.2*ppm]); }
+    const dP=(p,P)=>{ let m=1e9; for(let i=1;i<P.length;i++){ const A=P[i-1],Bq=P[i],dx=Bq[0]-A[0],dy=Bq[1]-A[1],L=dx*dx+dy*dy,t=Math.max(0,Math.min(1,((p[0]-A[0])*dx+(p[1]-A[1])*dy)/L)); m=Math.min(m,Math.hypot(p[0]-A[0]-t*dx,p[1]-A[1]-t*dy)); } return m; };
+    const rf=RF.refine({w:W,h:Hh,a},[[40,200,560,200]],{ppm,curves:[{p:model},{p:[[100,60],[200,40],[300,30],[400,40],[500,60]]}],find:false}), cv=rf.curves.filter(c=>!c.unverified);
+    const e=cv.length?cv[0].p.map(p=>dP(p,tru)/ppm):[9], em=e.reduce((s,v)=>s+v,0)/e.length;
+    if(cv.length!==1||em>0.2||Math.max(...e)>0.8) B('кривая притянута к карандашу (средн. ≤ 0,2 мм), выдуманная — отброшена','кривых '+cv.length+', ошибка '+em.toFixed(3)+' / '+Math.max(...e).toFixed(2)+' мм, отброшено '+rf.droppedCurves.length);
+    /* привязка: копия очерков в.13 (подобие, px), среди 30 вариантов; проверка — верная и сдвинутая на 4 мм линия */
+    const ref=REF[13], k=4.2, P=m=>[k*m[0]+1100+gn()*0.6,k*m[1]+700+gn()*0.6], d={segs:[],circles:[],curves:[]};
+    ref.outlines.forEach(o=>{ const c=B4.classify(o.p.map(P),1.5); if(c.t==='S') d.segs.push(c.a.concat(c.b)); else if(c.t==='C') d.circles.push({cx:c.c[0],cy:c.c[1],r:c.r,a1:c.a1,a2:c.a2,full:c.full,span:c.span}); else d.curves.push(c.p); });
+    const f=B4.bind(d,REF,{}); if(!f||f.n!==13||f.rmsMm>0.4||Math.abs(f.ppm/k-1)>0.01) B('ДЗ №4: привязка по очеркам — вариант 13 среди 30',JSON.stringify(f&&{n:f.n,rms:f.rmsMm,ppm:f.ppm,cover:f.cover}));
+    const copy=sh=>({arcs:ref.outlines.map(o=>({poly:o.p})),curves:[].concat(...ref.lines.map((l,li)=>l.branches.map(b=>['F','H'].map(v=>({p:[].concat(...b[v].map(r=>r.p)).map(p=>li===0?[p[0]+sh,p[1]+sh*0.75]:p)}))).flat())).flat(),pts:ref.lines[0].chars.map(c=>['7″',c.F[0],c.F[1]])});
+    const g=V4.verify(copy(0),ref), bd=V4.verify(copy(3.2),ref), wk=V4.verify(copy(3.2),ref,{weak:true});
+    if(g.verdict!=='верно'||g.lines[0].chars.found!==ref.lines[0].chars.length) B('ДЗ №4: верные линии пересечения — «верно», характерные точки — по месту, не по номеру',g.verdict+' '+JSON.stringify(g.lines[0].chars));
+    if(bd.verdict!=='расходится с эталоном') B('ДЗ №4: линия сдвинута на 4 мм — «расходится»',bd.verdict);
+    if(wk.verdict==='расходится с эталоном') B('ДЗ №4: при неточной привязке — не обвиняет',wk.verdict); }
   /* без привязки к варианту: лист снят под углом (трапеция) — линии связи после разбора вертикальны (model.js upright) */
   { const pts=[['A″',20,20],['A′',20,90],['B″',90,25],['B′',90,95],['1″',45,22],['1′',45,85],['2″',70,30],['2′',70,80]], k=4;
     const warp=([x,y])=>{ const w=1+0.0025*(y-55); return [100+(x-55)/w*k,100+(y-55)*k]; };   /* дальний край листа шире — линии расходятся */
@@ -174,6 +198,8 @@ async function ui(browser,URL){ const bad=[], B=(rule,msg)=>bad.push({name:'Мо
     if(t.pts.length!==4||Math.max(...ep)>0.3) B('точки — на перекрёстках нарисованных линий','промах, px: '+ep.map(v=>v.toFixed(2)).join(', '));
     /* голос листа: три чертежа за вариант 18 — победитель с масштабом листа; один чертёж ничего не решает */
     const sv=await pg.evaluate(()=>{ const f=(n,inl,rms,ppm)=>({fit:{dz:3,n,inl,rmsMm:rms},ppm}); return [SCANPIPE.sheetVariant([f(17,4,0.2,2.4),f(18,8,0.4,2.4),f(18,8,0.3,2.7),f(18,8,0.3,2.7)]),SCANPIPE.sheetVariant([f(5,8,0.4,2.5),f(8,4,0.1,2.5),{error:'x'}])]; });
+    const l4=await pg.evaluate(()=>({st:SCANPIPE.scaleText('L 1 2 3 4 5 6 d',2),opt:!!document.querySelector('#scDz option[value="4"]'),b4:!!(self.SCANBIND4&&self.SCANVERIFY4)}));
+    if(l4.st!=='L 2 4 6 8 10 12 d'||!l4.opt||!l4.b4) B('ДЗ №4 в кабинете: кривая L из кадра модели, «ДЗ №4» в настройках, модули загружены',JSON.stringify(l4));
     if(!sv[0]||sv[0].n!==18||Math.abs(sv[0].ppm-2.7)>1e-9||sv[1]!==null) B('голос листа: вариант большинства и масштаб; один чертёж — не голос',JSON.stringify(sv)); }
   /* 3е. живой сканер (lk/scan/live.js) без камеры: лист на столе под углом — углы уточняются до пикселей, ровный лист без стола */
   { const t=await pg.evaluate(async()=>{ if(!self.LIVESCAN) return {err:'нет LIVESCAN'}; await LIVESCAN.load();
