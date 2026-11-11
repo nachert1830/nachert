@@ -282,6 +282,7 @@ body.liveshow{overflow:hidden}
 .rt-ep{height:min(70vh,640px);min-height:340px}
 .rt-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-top:1px solid #e3e9f1;background:#fafcff}
 .rt-nav span{font:700 14px var(--sans);color:#33415c}.rt-nav .btn{min-height:40px}
+.rt-nav .btn.ghost{background:#fff;color:#0a2463;border:1.5px solid #c3d0e2}.rt-nav .btn.ghost:disabled{color:#a3b1c6;border-color:#e1e8f1}
 .rt-side{padding:2px 2px 0}
 .rt-m{margin:0 0 4px;font:800 11.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#1f47d6}
 .rt-h{margin:0 0 10px;font:800 20px/1.2 var(--disp);letter-spacing:-.01em}
@@ -23889,6 +23890,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.28',d:'11 ноября 2026',items:['Одно оформление чертежей во «Вращении», «РК2 за 9 шагов», режиме эфира и ДЗ №3 — как на листе: данные чёрным, построения тонко, новые проекции и повёрнутое синим, ответ красным; радиус и дуга поворота — тонкие, не красные. Вращение вокруг проецирующей прямой: угол поворота φ отмечен, остальные точки переносятся засечками (дуга из оси + засечка из повёрнутой точки горизонтали). Линии уровня доведены до новых осей и до центра вращения O′, прямая a продлена до возвращённых вершин, подписи не обрезаются краем, кнопка «← Назад» видна в тёмной теме.']},
   {v:'4.27',d:'11 ноября 2026',items:['Раздел «Способ вращения» (#/ng/rot) собран заново. Два способа на маленьких чертежах (вокруг проецирующей прямой и вокруг линии уровня), таблица «что спрашивают — вокруг чего — до какого момента» и семь разобранных задач по типам билетов РК2: угол наклона плоскости к π₁ и к π₂, натуральная величина треугольника, расстояние между параллельными прямыми, биссектриса угла, равносторонний треугольник и квадрат на прямой с обратным поворотом. Чертёж как на листе: данные — чёрным, повёрнутое — синим, ответ — красным; каждая задача сверена с пространством. Карточка раздела снова на главной.']},
   {v:'4.26',d:'11 ноября 2026',items:['ДЗ №3 — новая вкладка «Как на листе»: пять задач пирамиды своего варианта (видимость, высота заменой с возвратом основания высоты, проверка высоты пересечением прямой с плоскостью, угол между гранями, истинный вид основания с центром окружности и обратным поворотом, угол ребра с основанием) в формате А / Б / В, чертёж по шагам. Работает для всех 30 вариантов.','«РК2 за 9 шагов» как на листе: в каждой из 9 тем — задача с решением по шагам в формате А (словами) / Б (в пространстве) / В (на чертеже), чертёж на клетке строится по шагам. Обратный переход — отдельными шагами: точка с π₅ на π₁ и π₂, общий перпендикуляр скрещивающихся прямых, точки фигуры после поворота (на прямой — сразу, вне прямой — через неподвижный центр). Эти же 9 задач — в режиме эфира.']},
   {v:'4.25',d:'11 ноября 2026',items:['Новый раздел «Способ вращения» (#/ng/rot, карточка на главной): как крутить, до какого момента и как вернуть точку назад. «Покрути сам» — ползунок поворачивает треугольник по-настоящему и говорит, сколько осталось до цели. Три разобранные задачи с чертежом как на листе (А — словами, Б — в пространстве, В — на чертеже): натуральная величина вращением вокруг горизонтали, обратный поворот центра описанной окружности, угол наклона плоскости к π₁ вращением вокруг проецирующей прямой.']},
@@ -27397,7 +27399,7 @@ function rkHTML(id,o){ o=o||{}; const C=RK2V[id]; if(!C) return '';
 function solHTML(id){
   /* задача темы — как на листе (RK9, EPX): А / Б / В и чертёж по шагам */
   if(typeof RK9!=='undefined'&&RK9.byId(id)) return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с решением по шагам</h2>
-   <p class="rkp-solq">Как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Новое на шаге — оранжевым, обратный переход — фиолетовым.</p><div id="rkpEpx"></div></section>`;
+   <p class="rkp-solq">Как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Чёрным — данные, синим — новые проекции и повёрнутое, красным — ответ; новое на шаге — оранжевым, обратный переход — фиолетовым.</p><div id="rkpEpx"></div></section>`;
   if(typeof L3D==='undefined') return ''; const ms=Object.keys(TOP(id).m).filter(m=>L3D.has(id,m)); if(!ms.length) return '';
   if(!CUR.sol||!ms.includes(CUR.sol.mk)) CUR.sol={mk:ms[0],i:0,d3:false}; const S_=CUR.sol, sc=L3D.scene(id,S_.mk), n=sc.steps.length; S_.i=Math.max(0,Math.min(n-1,S_.i)); const st=sc.steps[S_.i], E=L3D.example(id)||{};
   return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с решением по шагам</h2>
@@ -29470,7 +29472,7 @@ function dzVariant(v,d,n,extra){
   const head=dzTop(d,dzVarTitle(d,n),dzShareHTML(mode==='steps'&&pi?HDZ(d.id,n,DZ_PL[pi]):HDZ(d.id,n,...(mode==='steps'?[]:[extra])),d.label+', вариант '+n+' — разбор по шагам'))+pills;
   /* «Как на листе» (ДЗ №3): пять задач пирамиды своего варианта — А / Б / В и чертёж по шагам (PYR, EPX) */
   if(mode==='sheet'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzx dzx-varp',body:`${head}
-      <p class="var-note">Решение как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Новое на шаге — оранжевым, обратный переход (точку — назад на π₁ и π₂) — фиолетовым. Данные — твоего варианта ${n}.</p>
+      <p class="var-note">Решение как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Чёрным — данные, синим — новые проекции и повёрнутое, красным — ответ; новое на шаге — оранжевым, обратный переход (точку — назад на π₁ и π₂) — фиолетовым. Данные — твоего варианта ${n}.</p>
       <div id="dzSheetPl"></div>`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
@@ -33525,10 +33527,13 @@ const EPX=(function(){
   /* ── отрисовка чертежа: размеры линий и шрифта — в пикселях экрана, чертёж — во весь блок ── */
   /* линии — как на листе: пунктир только у невидимого (hid, ctxh, hidr); остальное различается цветом и толщиной:
      данные — толсто, ответ и повёрнутая фигура — толще всех, построения — тонко синим, след вращения — тонко оранжевым, связь — тонко серым */
-  const CL={main:['#0d1b2e',2.6],hid:['#0d1b2e',1.8,'9 6'],thin:['#0d1b2e',1.1],link:['#9db0c9',.9],ax:['#0d1b2e',1.4],ax2:['#0b8457',1.8],ax3:['#0b8457',1.8],
-    aux:['#1f63d6',1.4],rot:['#1f63d6',2],tr:['#d9590f',1.2],v4:['#0b8457',2.4],v5:['#0b8457',2.6],bar:['#7c3aed',2.8],res:['#e0245e',3],ctx:['#93a2b8',1.1],ctxh:['#93a2b8',1,'7 5'],circ:['#93a2b8',1],thin2:['#6f86b3',1],hidr:['#e0245e',2.4,'9 6'],ok:['#1c9a5e',1.6],tk:['#0d1b2e',1.4],trc:['#d9590f',1],dim:['#1f63d6',1.1],fill:['none',0],pl:['#7a8aa3',0],pl4:['#0b8457',0]};
-  const LBC={ok:'#1c9a5e',tr:'#d9590f',dim:'#1f63d6',hidr:'#e0245e',main:'#0d1b2e',ax:'#0d1b2e',ax2:'#0b8457',ax3:'#0b8457',aux:'#1f63d6',rot:'#1f63d6',tr:'#c2410c',v4:'#0b8457',v5:'#0b8457',bar:'#7c3aed',res:'#e0245e',pl:'#7a8aa3',pl4:'#0b8457',tk:'#0d1b2e',thin:'#0d1b2e'};
-  let CUR='#ff6a00';
+  /* одна палитра на весь сайт (раздел «Вращение», РК2, эфир, ДЗ №3) — как на листе: данные — чёрным карандашом, построения — тонко,
+     линии связи — светло, новые проекции и повёрнутое — синим, ответ — красным, текущий шаг — оранжевым, обратный переход — фиолетовым.
+     Пунктир — только у невидимого (hid, ctxh, hidr). */
+  const CL={main:['#111827',2.5],hid:['#111827',1.6,'8 5'],thin:['#374151',1.05],link:['#a9b6c8',.85],ax:['#111827',1.3],ax2:['#111827',1.3],ax3:['#111827',1.3],
+    aux:['#374151',1.05],rot:['#111827',1.5],tr:['#4b5563',1],v4:['#1d4ed8',2.2],v5:['#1d4ed8',2.5],bar:['#1d4ed8',2.5],bth:['#1d4ed8',1.1],res:['#dc2626',2.7],ctx:['#9ca3af',1.1],ctxh:['#9ca3af',1,'7 5'],circ:['#6b7280',1],thin2:['#4b5563',1],hidr:['#dc2626',2.2,'8 5'],ok:['#15803d',1.6],tk:['#111827',1.3],trc:['#4b5563',1],dim:['#374151',1],fill:['none',0],pl:['#6b7280',0],pl4:['#6b7280',0]};
+  const LBC={ok:'#15803d',tr:'#111827',dim:'#374151',hidr:'#dc2626',main:'#111827',ax:'#111827',ax2:'#111827',ax3:'#111827',aux:'#111827',rot:'#111827',v4:'#1d4ed8',v5:'#1d4ed8',bar:'#1d4ed8',bth:'#1d4ed8',res:'#dc2626',pl:'#6b7280',pl4:'#6b7280',tk:'#111827',thin:'#111827'};
+  let CUR='#ea580c';
   function bbox(it){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const P=p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); };
     it.forEach(o=>{ if(o.k==='seg'||o.k==='dim'){ P(o.p); P(o.q); } else if(o.k==='pt'||o.k==='lab') P(o.p); else if(o.k==='circ'||o.k==='arc'){ P(a2(o.o,[-o.r,-o.r])); P(a2(o.o,[o.r,o.r])); } else if(o.k==='poly') o.ps.forEach(P); });
     return [x0,y0,x1,y1]; }
@@ -33551,20 +33556,26 @@ const EPX=(function(){
   function render(box,task,k,full){
     const W=box.clientWidth, Hh_=box.clientHeight; if(!W||!Hh_) return;
     const CLx=task.pal?Object.assign({},CL,task.pal):CL, LBx=task.lpal?Object.assign({},LBC,task.lpal):LBC;   /* своя палитра задачи (раздел «Вращение» — как на листе) */
-    const it=task.D.it, st=!full&&k>0&&task.steps[k-1], fc=st&&st.f?st.f:task.f0, bb=fc?(()=>{ const b=bbox(fc.map(p=>({k:'pt',p}))); return [b[0]-14,b[1]-14,b[2]+14,b[3]+14]; })():task.bb||(task.bb=bbox(it)), pad=10;
-    const bw=bb[2]-bb[0]+2*pad, bh=bb[3]-bb[1]+2*pad, kp=Math.min(W/bw,Hh_/bh), u=1/kp, fs=task.fs?task.fs(W):Math.max(14,Math.min(19,W/58));
-    if(task._u!==u){ placeLabels(it,u,fs); task._u=u; }   /* при приближении подписи ставятся заново под новый масштаб */
+    const it=task.D.it, st=!full&&k>0&&task.steps[k-1], fc=st&&st.f?st.f:task.f0, pad=10, fs=task.fs?task.fs(W):Math.max(14,Math.min(19,W/58));
+    let bb=fc?(()=>{ const b=bbox(fc.map(p=>({k:'pt',p}))); return [b[0]-14,b[1]-14,b[2]+14,b[3]+14]; })():task.bb||(task.bb=bbox(it)), bw, bh, u;
+    /* подписи не должны выходить за край: если подпись у края, кадр расширяем и ставим подписи заново (не больше двух раз) */
+    for(let pass=0;pass<3;pass++){ bw=bb[2]-bb[0]+2*pad; bh=bb[3]-bb[1]+2*pad; u=1/Math.min(W/bw,Hh_/bh);
+      if(task._u!==u){ placeLabels(it,u,fs); task._u=u; }   /* при приближении подписи ставятся заново под новый масштаб */
+      if(fc) break;
+      let e=bb.slice(); it.forEach(o=>{ if(!o.l||!o.lp) return; const f=(o.big?1.15:o.sm?.82:1)*fs*u, w=lblW(o.l)*f/2+2*u, h=f*.6;
+        e=[Math.min(e[0],o.lp[0]-w+pad),Math.min(e[1],o.lp[1]-h+pad),Math.max(e[2],o.lp[0]+w-pad),Math.max(e[3],o.lp[1]+h-pad)]; });
+      if(e[0]>=bb[0]-.01&&e[1]>=bb[1]-.01&&e[2]<=bb[2]+.01&&e[3]<=bb[3]+.01) break; bb=e; }
     const vw=W*u, vh=Hh_*u, x0=bb[0]-pad-(vw-bw)/2, y0=bb[1]-pad-(vh-bh)/2;
     const vis=it.filter(o=>o.st<=k&&(o.till==null||k<=o.till)).sort((a,b)=>(a.c==='link'?0:1)-(b.c==='link'?0:1)), cur=o=>!full&&k>0&&o.st===k;   /* линии связи — под линиями чертежа */
-    CUR=k>0&&task.steps[k-1]&&task.steps[k-1].back?(task.curB||'#7c3aed'):(task.cur||'#ff6a00');   /* обратный переход — фиолетовым */
+    CUR=k>0&&task.steps[k-1]&&task.steps[k-1].back?(task.curB||'#7c3aed'):(task.cur||'#ea580c');   /* обратный переход — фиолетовым */
     const n=v=>v.toFixed(3), P=p=>n(p[0])+' '+n(p[1]);
     const sw=(c,o)=>{ const s=CLx[o.c2&&!cur(o)?o.c2:c]||CLx.aux; return s; };
     let g='', glow='', top='', lab='';
     const stroke=(o,path)=>{ const s=sw(o.c,o), c=cur(o), w=(s[1]+(c?.8:0))*u, dash=s[2]?` stroke-dasharray="${s[2].split(' ').map(x=>n(x*u)).join(' ')}"`:'';
-      if(c&&!task.noglow) glow+=`<path d="${path}" fill="none" stroke="${CUR}" stroke-opacity=".22" stroke-width="${n(w+9*u)}" stroke-linecap="round"/>`;
+      if(c&&task.glow) glow+=`<path d="${path}" fill="none" stroke="${CUR}" stroke-opacity=".22" stroke-width="${n(w+9*u)}" stroke-linecap="round"/>`;
       return `<path d="${path}" fill="none" stroke="${c?CUR:s[0]}" stroke-width="${n(w)}"${dash} stroke-linecap="round" stroke-linejoin="round"/>`; };
     vis.forEach(o=>{
-      if(o.k==='poly') g=`<path d="M${o.ps.map(P).join('L')}Z" fill="${o.fl||(cur(o)?'rgba(255,106,0,.10)':'rgba(124,58,237,.08)')}"/>`+g;
+      if(o.k==='poly') g=`<path d="M${o.ps.map(P).join('L')}Z" fill="${o.fl||(cur(o)?'rgba(234,88,12,.10)':'rgba(29,78,216,.07)')}"/>`+g;
       else if(o.k==='seg') g+=stroke(o,`M${P(o.p)}L${P(o.q)}`);
       else if(o.k==='circ') g+=stroke(o,`M${P([o.o[0]+o.r,o.o[1]])}A${n(o.r)} ${n(o.r)} 0 1 1 ${P([o.o[0]-o.r,o.o[1]])}A${n(o.r)} ${n(o.r)} 0 1 1 ${P([o.o[0]+o.r,o.o[1]])}`);
       else if(o.k==='arc'){ const a0=Math.atan2(o.p[1]-o.o[1],o.p[0]-o.o[0]), a1=Math.atan2(o.q[1]-o.o[1],o.q[0]-o.o[0]); let da=a1-a0; while(da>Math.PI) da-=2*Math.PI; while(da<-Math.PI) da+=2*Math.PI;
@@ -33674,12 +33685,12 @@ const PYR=function(P3){
   /* 0. Видимость — по виду π₂ и π₁: конкурирующие точки или вершина внутри треугольника остальных */
   T.push((()=>{ const D=Dw(); given(D,false);
     const L=e=>e[0]+'″'+e[1]+'″', Lh=e=>e[0]+'′'+e[1]+'′';
-    const part=(V,isF,st)=>{ const pr=isF?F:Hp, ot=isF?Hp:F, k=isF?'″':'′', ko=isF?'′':'″', cd=isF?'y':'z', st0=st;
-      if(V.comp){ const c=V.comp; D.at(st0); D.pt(c.P,'1'+k+'≡2'+k,'aux',{pos:'auto'}); D.seg(c.P,ot(c.X),'link'); D.seg(ot(c.X),ot(c.Y),'link'); D.pt(ot(c.X),'1'+ko,'aux'); D.pt(ot(c.Y),'2'+ko,'aux');
+    const part=(V,isF,st)=>{ const pr=isF?F:Hp, ot=isF?Hp:F, k=isF?'″':'′', ko=isF?'′':'″', cd=isF?'y':'z', st0=st, n1=isF?'1':'3', n2=isF?'2':'4';
+      if(V.comp){ const c=V.comp; D.at(st0); D.pt(c.P,n1+k+'≡'+n2+k,'aux',{pos:'auto'}); D.seg(c.P,ot(c.X),'link'); D.seg(ot(c.X),ot(c.Y),'link'); D.pt(ot(c.X),n1+ko,'aux'); D.pt(ot(c.Y),n2+ko,'aux');
         const iF=c.front===c.e1, cX=isF?c.X[1]:c.X[2], cY=isF?c.Y[1]:c.Y[2];
-        return [{t:'Конкурирующие точки на '+(isF?'π₂':'π₁'),v:`1${k} ≡ 2${k} = ${c.e1[0]}${k}${c.e1[1]}${k} ∩ ${c.e2[0]}${k}${c.e2[1]}${k};  1 ∈ ${c.e1}, 2 ∈ ${c.e2};  1${ko}, 2${ko} — по линии связи`,
+        return [{t:'Конкурирующие точки на '+(isF?'π₂':'π₁'),v:`${n1}${k} ≡ ${n2}${k} = ${c.e1[0]}${k}${c.e1[1]}${k} ∩ ${c.e2[0]}${k}${c.e2[1]}${k};  ${n1} ∈ ${c.e1}, ${n2} ∈ ${c.e2};  ${n1}${ko}, ${n2}${ko} — по линии связи`,
           s:`Рёбра ${c.e1} и ${c.e2} скрещиваются, а на ${isF?'π₂':'π₁'} их проекции пересеклись — это две разные точки на одном луче взгляда. Находим их на ${isF?'π₁':'π₂'} линией связи.`},
-          {t:'Кто ближе — тот видим ('+(isF?'π₂':'π₁')+')',v:`${cd}₁ = ${fm(cX)}  ${cX>cY?'&gt;':'&lt;'}  ${cd}₂ = ${fm(cY)}  ⇒  ${c.front} видно, ${c.back} — штрих`,
+          {t:'Кто ближе — тот видим ('+(isF?'π₂':'π₁')+')',v:`${cd}_${n1} = ${fm(cX)}  ${cX>cY?'&gt;':'&lt;'}  ${cd}_${n2} = ${fm(cY)}  ⇒  ${c.front} видно, ${c.back} — штрих`,
           s:isF?'На π₂ смотрим спереди: ближе к нам точка с большим y (дальше от оси на π₁).':'На π₁ смотрим сверху: ближе к нам точка с большим z (выше на π₂).'}]; }
       const I=V.inner; D.at(st0); D.pt(pr(P3[I.V]),'','res',{r:0});
       return [{t:'Вершина внутри — '+(isF?'π₂':'π₁'),v:`${I.V}${k} ∈ △${I.O.map(o=>o+k).join('')};  сравниваем ${cd}_${I.V} с ${cd} грани ${I.O.join('')}`,
@@ -33707,8 +33718,8 @@ const PYR=function(P3){
     const ext=[...['A','B','C','S'].map(n=>dt(s2(Hp(P3[n]),O4),e))], e0=Math.min(...ext)-14, e1=Math.max(...ext)+14;
     const Q4={A:A4,B:B4,C:C4}, fp=far3(Q4), H4=ft(S4,Q4[fp[0]],s2(Q4[fp[1]],Q4[fp[0]])), zH=dt(s2(H4,ft(H4,O4,e)),u);
     const Hh1=X2(H4,u,Hp(Sv),e), Hf=[Hh1[0],-zH];
-    D.at(1); D.line(F(HA),F(Dp),'aux',6,10); D.lab(a2(F(Dp),[10*Math.sign(F(Dp)[0]-F(HA)[0]||1),0]),'h″ ∥ x_{12}','aux',{pos:'auto'}); if(!hz.tie){ D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(d,'D′','aux'); } D.line(a,d,'aux',6,10); D.lab(a2(d,m2(u,10)),'h′','aux',{pos:'auto'});
-    D.at(2); D.seg(a2(O4,m2(e,e0)),a2(O4,m2(e,e1)),'ax2'); D.lab(a2(O4,m2(e,e0)),'x_{14}','ax2',{pos:'auto'}); D.sq(ft(d,O4,e),a2(O4,m2(e,e1)),a,'ax2');
+    D.at(1); D.line(F(HA),F(Dp),'aux',6,10); D.lab(a2(F(Dp),[11*Math.sign(F(Dp)[0]-F(HA)[0]||1),0]),'h″ ∥ x_{12}','aux',{pos:Math.sign(F(Dp)[0]-F(HA)[0]||1)>0?'e':'w'}); if(!hz.tie){ D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(d,'D′','aux'); } D.line(a,d,'aux',6,10); D.lab(a2(d,m2(u,10)),'h′','aux',{pos:'auto'});
+    D.at(2); D.seg(a2(O4,m2(e,e0)),a2(O4,m2(e,e1)),'ax2'); D.lab(a2(O4,m2(e,e0)),'x_{14}','ax2',{pos:'auto'}); D.seg(d,ft(d,O4,e),'thin'); D.sq(ft(d,O4,e),a2(O4,m2(e,e1)),a,'ax2');
     D.lab(a2(a2(O4,m2(e,e1-4)),m2(u,-5)),'π_1','pl',{pos:'c'}); D.lab(a2(a2(O4,m2(e,e1-4)),m2(u,5)),'π_4','pl4',{pos:'c'});
     D.at(3); [['A',A4,1],['B',B4,2],['C',C4,3]].forEach(([n,p,tk])=>{ D.seg(Hp(P3[n]),p,'link'); D.pt(p,n+'_4','v4'); if(P3[n][2]>0.5){ D.tick(F(P3[n]),[F(P3[n])[0],0],tk,'tk',{till:3}); D.tick(fo(P3[n]),p,tk,'tk',{till:3}); } });
     D.line(Q4[fp[0]],Q4[fp[1]],'v4',8,8); D.lab(lp2(Q4[fp[0]],Q4[fp[1]],1.08),'(ABC)_4','v4',{pos:'auto'});
@@ -33748,8 +33759,8 @@ const PYR=function(P3){
     /* куда пересекает β″ ≡ n″ стороны основания на π₂ */
     const hits=[['A','B'],['B','C'],['C','A']].map(([p,q])=>{ const P=X2(F(Sv),n2,F(P3[p]),s2(F(P3[q]),F(P3[p]))), t=(P[0]-F(P3[p])[0])/(F(P3[q])[0]-F(P3[p])[0]); return {p,q,P,t,X:lp3(P3[p],P3[q],t)}; }).filter(h=>h.t>-1e-9&&h.t<1+1e-9);
     const [h1,h2]=hits, K1=X2(Hp(h1.X),s2(Hp(h2.X),Hp(h1.X)),Hp(Sv),n1), K2=X2([K1[0],-200],[0,1],F(Sv),n2);
-    D.at(1); D.line(F(HA),F(Dp),'aux',6,8); D.lab(a2(F(Dp),[8*Math.sign(F(Dp)[0]-F(HA)[0]||1),0]),'h″','aux',{pos:'auto'}); if(!hz.tie){ D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(Hp(Dp),'D′','aux'); } D.line(Hp(HA),Hp(Dp),'aux',4,8); D.lab(lp2(Hp(HA),Hp(Dp),1.12),'h′','aux');
-      D.line(Hp(FB),Hp(Ep),'aux',6,8); D.lab(a2(Hp(Ep),[8*Math.sign(Hp(Ep)[0]-Hp(FB)[0]||1),0]),'f′','aux',{pos:'auto'}); if(!fr.tie){ D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(F(Ep),'E″','aux'); } D.line(F(FB),F(Ep),'aux',4,8); D.lab(lp2(F(FB),F(Ep),1.1),'f″','aux');
+    D.at(1); D.line(F(HA),F(Dp),'aux',6,8); D.lab(a2(F(Dp),[9*Math.sign(F(Dp)[0]-F(HA)[0]||1),0]),'h″','aux',{pos:Math.sign(F(Dp)[0]-F(HA)[0]||1)>0?'e':'w'}); if(!hz.tie){ D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(Hp(Dp),'D′','aux'); } D.line(Hp(HA),Hp(Dp),'aux',4,8); D.lab(lp2(Hp(HA),Hp(Dp),1.12),'h′','aux');
+      D.line(Hp(FB),Hp(Ep),'aux',6,8); D.lab(a2(Hp(Ep),[9*Math.sign(Hp(Ep)[0]-Hp(FB)[0]||1),0]),'f′','aux',{pos:Math.sign(Hp(Ep)[0]-Hp(FB)[0]||1)>0?'e':'w'}); if(!fr.tie){ D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(F(Ep),'E″','aux'); } D.line(F(FB),F(Ep),'aux',4,8); D.lab(lp2(F(FB),F(Ep),1.1),'f″','aux');
     D.at(2); D.line(Hp(Sv),K1,'aux',8,10); D.lab(a2(K1,m2(u2(s2(K1,Hp(Sv))),10)),'n′','aux',{pos:'auto'}); D.sq(X2(Hp(Sv),n1,Hp(HA),s2(Hp(Dp),Hp(HA))),Hp(Sv),Hp(Dp),'aux');
       D.line(F(Sv),K2,'aux',8,12); D.lab(a2(K2,m2(u2(s2(K2,F(Sv))),12)),'n″','aux',{pos:'auto'}); D.sq(X2(F(Sv),n2,F(FB),s2(F(Ep),F(FB))),F(Sv),F(FB),'aux');
     D.at(3); D.lab(a2(F(Sv),m2(u2(s2(F(Sv),K2)),8)),'β″ ≡ n″','aux',{pos:'auto'});
@@ -33844,8 +33855,8 @@ const PYR=function(P3){
     D.at(1); D.line(Hp(B),[xl,yf],'rot',6,0); D.lab([xl,yf],'f′ ≡ i′','rot',{pos:'w'}); D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(e,'E″','aux');
       D.line(b,e,'rot',6,40); D.lab(a2(e,m2(u,40)),'f″ ≡ i″','rot',{pos:'auto'});
     D.at(2); D.line(rA.o,rA.p,'tr',4,10); D.sq(rA.o,rA.p,b,'aux'); D.pt(rA.o,'O_A″','aux',{pos:'auto'});
-    D.at(3); D.seg(rA.p,Astar,'aux'); D.sq(rA.p,Astar,rA.o,'aux'); D.lab(lp2(rA.p,Astar,.5),'Δy = '+fm(Math.abs(rA.dy)),'aux',{pos:'auto',sm:1}); D.seg(rA.o,Astar,'res'); D.lab(lp2(rA.o,Astar,.55),'R_A','res',{pos:'auto'});
-    D.at(4); D.arc(rA.o,rA.R,Astar,Ab,'res'); D.line(rA.p,Ab,'tr',0,0); D.pt(Ab,'~A″','bar'); D.seg(bH(Ab),Ab,'link'); D.pt(bH(Ab),'~A′','bar',{pos:'s'});
+    D.at(3); D.seg(rA.p,Astar,'aux'); D.sq(rA.p,Astar,rA.o,'aux'); D.lab(lp2(rA.p,Astar,.5),'Δy = '+fm(Math.abs(rA.dy)),'aux',{pos:'auto',sm:1}); D.seg(rA.o,Astar,'thin'); D.lab(lp2(rA.o,Astar,.55),'R_A','thin',{pos:'auto'});
+    D.at(4); D.arc(rA.o,rA.R,Astar,Ab,'thin'); D.line(rA.p,Ab,'tr',0,0); D.pt(Ab,'~A″','bar'); D.seg(bH(Ab),Ab,'link'); D.pt(bH(Ab),'~A′','bar',{pos:'s'});
     D.at(5); D.line(ctr,F(C),'tr',4,4); D.sq(ctr,F(C),b,'aux'); D.line(Ab,e,'bar',0,ds(e,Cb)+4); D.pt(Cb,'~C″','bar'); D.seg(bH(Cb),Cb,'link'); D.pt(bH(Cb),'~C′','bar',{pos:'s'});
     D.at(6); D.poly([b,Ab,Cb],'fill'); D.seg(b,Ab,'bar'); D.seg(Ab,Cb,'bar'); D.seg(Cb,b,'bar'); D.lab(lp2(b,Ab,.5),fm(l3(s3(A,B))),'bar',{pos:'auto',sm:1}); D.lab(lp2(b,Cb,.5),fm(l3(s3(B,C))),'bar',{pos:'auto',sm:1}); D.lab(lp2(Cb,Ab,.5),fm(l3(s3(C,A))),'bar',{pos:'auto',sm:1});
     D.at(7); const pb=(m,dir)=>{ const w=u2(pp(dir)), sg=dt(s2(Mb,m),w)>0?1:-1; D.line(a2(m,m2(w,-6*sg)),a2(m,m2(w,(ds(Mb,m)+8)*sg)),'thin2',0,0); D.sq(m,a2(m,m2(w,10*sg)),a2(m,u2(dir)),'aux'); };
@@ -33903,14 +33914,14 @@ const PYR=function(P3){
     const T3=[-T1[0],T1[1],zh];
     const rS=rotH(Sv,a,u,zh), Sb=rS.bar, Sstar=a2(rS.p,m2(u,-rS.dz));
     const psi0=ang2(Sb,a,T1), psi=Math.min(psi0,180-psi0), phi=90-psi, phiT=Math.asin(Hh/l3(s3(Sv,A)))*DEG;   /* ψ — угол между прямыми SA и n (острый) */
-    D.at(1); D.line(F(HA),F(Dp),'aux',6,8); D.lab(a2(F(Dp),[8*Math.sign(F(Dp)[0]-F(HA)[0]||1),0]),'h″','aux',{pos:'auto'}); if(!hz.tie){ D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(Hp(Dp),'D′','aux'); } D.line(Hp(HA),Hp(Dp),'aux',4,8); D.lab(lp2(Hp(HA),Hp(Dp),1.12),'h′','aux');
-      D.line(Hp(FB),Hp(Ep),'aux',6,8); D.lab(a2(Hp(Ep),[8*Math.sign(Hp(Ep)[0]-Hp(FB)[0]||1),0]),'f′','aux',{pos:'auto'}); if(!fr.tie){ D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(F(Ep),'E″','aux'); } D.line(F(FB),F(Ep),'aux',4,8); D.lab(lp2(F(FB),F(Ep),1.1),'f″','aux');
+    D.at(1); D.line(F(HA),F(Dp),'aux',6,8); D.lab(a2(F(Dp),[9*Math.sign(F(Dp)[0]-F(HA)[0]||1),0]),'h″','aux',{pos:Math.sign(F(Dp)[0]-F(HA)[0]||1)>0?'e':'w'}); if(!hz.tie){ D.seg(F(Dp),Hp(Dp),'link'); D.pt(F(Dp),'D″','aux'); D.pt(Hp(Dp),'D′','aux'); } D.line(Hp(HA),Hp(Dp),'aux',4,8); D.lab(lp2(Hp(HA),Hp(Dp),1.12),'h′','aux');
+      D.line(Hp(FB),Hp(Ep),'aux',6,8); D.lab(a2(Hp(Ep),[9*Math.sign(Hp(Ep)[0]-Hp(FB)[0]||1),0]),'f′','aux',{pos:Math.sign(Hp(Ep)[0]-Hp(FB)[0]||1)>0?'e':'w'}); if(!fr.tie){ D.seg(Hp(Ep),F(Ep),'link'); D.pt(Hp(Ep),'E′','aux'); D.pt(F(Ep),'E″','aux'); } D.line(F(FB),F(Ep),'aux',4,8); D.lab(lp2(F(FB),F(Ep),1.1),'f″','aux');
     D.at(2); D.line(Hp(Sv),T1,'aux',10,12); D.lab(a2(T1,m2(u2(s2(T1,Hp(Sv))),12)),'n′','aux',{pos:'auto'}); D.sq(X2(Hp(Sv),n1,Hp(HA),s2(Hp(Dp),Hp(HA))),Hp(Sv),Hp(Dp),'aux');
       D.line(F(Sv),T2,'aux',8,10); D.lab(a2(F(Sv),m2(u2(s2(F(Sv),T2)),8)),'n″','aux',{pos:'auto'}); D.sq(X2(F(Sv),n2,F(FB),s2(F(Ep),F(FB))),F(Sv),F(FB),'aux');
     D.at(3); D.line(F(A),T2,'thin',0,6); D.pt(T2,'T″','aux'); D.seg(T2,T1,'link'); D.pt(T1,'T′','aux');
     D.at(4); D.line(a,T1,'rot',8,22); D.lab(lp2(a,T1,1.2),'i′','rot',{pos:'auto'}); D.seg(F(A),T2,'rot');
-    D.at(5); D.line(rS.o,rS.p,'tr',4,12); D.sq(rS.o,rS.p,a,'aux'); D.pt(rS.o,'O_S′','aux',{pos:'auto'}); D.seg(rS.p,Sstar,'aux'); D.sq(rS.p,Sstar,rS.o,'aux'); D.lab(lp2(rS.p,Sstar,.5),'Δz = '+fm(rS.dz),'aux',{pos:'auto',sm:1}); D.seg(rS.o,Sstar,'res'); D.lab(lp2(rS.o,Sstar,.55),'R_S','res',{pos:'auto'});
-    D.at(6); D.arc(rS.o,rS.R,Sstar,Sb,'res'); D.pt(Sb,'~S′','bar'); D.poly([a,Sb,T1],'fill'); D.seg(Sb,a,'bar'); D.seg(Sb,T1,'bar');
+    D.at(5); D.line(rS.o,rS.p,'tr',4,12); D.sq(rS.o,rS.p,a,'aux'); D.pt(rS.o,'O_S′','aux',{pos:'auto'}); D.seg(rS.p,Sstar,'aux'); D.sq(rS.p,Sstar,rS.o,'aux'); D.lab(lp2(rS.p,Sstar,.5),'Δz = '+fm(rS.dz),'aux',{pos:'auto',sm:1}); D.seg(rS.o,Sstar,'thin'); D.lab(lp2(rS.o,Sstar,.55),'R_S','thin',{pos:'auto'});
+    D.at(6); D.arc(rS.o,rS.R,Sstar,Sb,'thin'); D.pt(Sb,'~S′','bar'); D.poly([a,Sb,T1],'fill'); D.seg(Sb,a,'bar'); D.seg(Sb,T1,'bar');
     D.at(7); D.ang(Sb,a,psi0>90?a2(Sb,s2(Sb,T1)):T1,16,'ψ = '+fm(psi)+'°','res');
     const R={id:'phi',n:4,sh:'Угол SA',t:'Угол ребра SA с основанием',m:'вращение вокруг горизонтали',D,ok:Math.abs(phi-phiT)<0.05,
       cond:'Определить угол между ребром SA и основанием ABC способом вращения вокруг прямой уровня.',
@@ -33969,12 +33980,13 @@ const ROT=(function(){
   /* построение радиуса одной точки (как на листе): след ⟂ h′, центр O′, Δz на π₂ размером, катет Δz от X′ вдоль h′, гипотенуза R, дуга R до следа */
   function radius(D,L,X,nm,st,o){ o=o||{}; const I=L.info(X), sg=o.sg||1, X0=a2(I.p,m2(L.ud,sg*Math.abs(I.dz)));
     const td=u2(s2(I.b,I.o)), e0=a2(I.p,m2(u2(s2(I.p,I.o)),5)), e1=a2(I.b,m2(td,5));
-    D.at(st); D.seg(e0,e1,'tr'); D.sq(I.o,I.p,a2(I.o,L.ud),'thin'); D.pt(I.o,'O′','thin',{pos:o.opos||'auto'});
+    D.at(st); D.seg(L.a,a2(I.o,m2(u2(s2(I.o,L.a)),6)),'rot'); D.seg(e0,e1,'tr'); D.sq(I.o,I.p,a2(I.o,L.ud),'thin'); D.pt(I.o,'O′','thin',{pos:o.opos||'auto'});
     D.at(st+1); const xd=F(X)[0]+(o.dx||-9); const sx=Math.sign(o.dx||-9); D.seg(F(X),[xd+2*sx,F(X)[1]],'thin'); D.seg([F(X)[0],-L.zh],[xd+2*sx,-L.zh],'thin'); D.dim([xd,-X[2]],[xd,-L.zh],'Δz','dim',{pos:o.dzpos||'auto'});
-      D.seg(I.p,X0,'thin'); D.sq(I.p,X0,I.o,'thin'); D.tick(I.p,X0,2); D.tick([xd,-X[2]],[xd,-L.zh],2); D.seg(I.o,X0,'thin'); D.lab(lp2(I.o,X0,.55),'R','thin',{pos:o.rpos||'auto'});
+      D.seg(I.p,X0,'thin'); D.sq(I.p,X0,I.o,'thin'); D.tick(I.p,X0,2); D.tick([xd,-X[2]],lp2([xd,-X[2]],[xd,-L.zh],.45),2); D.seg(I.o,X0,'thin'); D.lab(lp2(I.o,X0,.55),'R','thin',{pos:o.rpos||'auto'});
     D.at(st+2); D.arc(I.o,I.R,X0,I.b,'thin'); D.pt(I.b,'~'+nm+'′','bar',{pos:o.bpos||'auto'});
     return I; }
 
+  const nick=(D,c,r,t,cl)=>{ const a=Math.atan2(t[1]-c[1],t[0]-c[0]), w=Math.min(.35,9/r); D.arc(c,r,a2(c,[r*Math.cos(a-w),r*Math.sin(a-w)]),a2(c,[r*Math.cos(a+w),r*Math.sin(a+w)]),cl||'tr'); };
   const T=[];
 
   /* ═══ 1. Угол наклона плоскости ABC к π₁ — вращение вокруг i ⟂ π₁ ═══ */
@@ -33991,8 +34003,11 @@ const ROT=(function(){
       D.line(c,Hp(Dp),'thin',4,8); D.lab(a2(Hp(Dp),m2(u2(hd),10)),'h′','thin',{pos:'auto'});
     D.at(2); D.lab(c,'i′','thin',{pos:'se',dx:4}); D.line([F(C)[0],-C[2]-18],[F(C)[0],0],'thin',0,0); D.lab([F(C)[0],-C[2]-18],'i″','thin',{pos:'n'});
     D.at(3); D.arc(c,ds(c,Hp(Dp)),Hp(Dp),Hp(Db),'tr'); D.seg(c,Hp(Db),'bth'); D.sq(Hp(Db),[Hp(Db)[0]-6,Hp(Db)[1]],c,'thin'); D.pt(Hp(Db),'~1′','bar');
-      D.lab(a2(Hp(Db),[0,-12]),'~h′ ⟂ x_{12}','bar',{pos:'e'});
+      D.lab(a2(Hp(Db),[0,-12]),'~h′ ⟂ x_{12}','bar',{pos:'e'}); D.ang(c,Hp(Dp),Hp(Db),7,'φ','bar');
     D.at(4); D.arc(c,ds(c,Hp(A)),Hp(A),Hp(Ab),'tr'); D.arc(c,ds(c,Hp(B)),Hp(B),Hp(Bb),'tr'); D.tick(Hp(A),c,1); D.tick(c,Hp(Ab),1); D.tick(Hp(B),c,2); D.tick(c,Hp(Bb),2);
+      /* засечки из 1̄′: |1̄′Ā′| = |1′A′|, |1̄′B̄′| = |1′B′| — так все точки поворачиваются на тот же угол φ */
+      D.seg(Hp(Dp),Hp(A),'thin'); D.seg(Hp(Dp),Hp(B),'thin'); nick(D,Hp(Db),ds(Hp(Dp),Hp(A)),Hp(Ab)); nick(D,Hp(Db),ds(Hp(Dp),Hp(B)),Hp(Bb));
+      D.tick(Hp(Dp),Hp(A),3); D.tick(Hp(Db),Hp(Ab),3,'tk',{}); D.seg(Hp(Db),Hp(Ab),'thin'); D.seg(Hp(Db),Hp(Bb),'thin');
       D.seg(Hp(Ab),Hp(Bb),'bar'); D.seg(Hp(Bb),c,'bar'); D.seg(c,Hp(Ab),'bar'); D.pt(Hp(Ab),'~A′','bar'); D.pt(Hp(Bb),'~B′','bar'); D.pt(c,'C′ ≡ ~C′','bar');
     D.at(5); D.line(F(A),[-Ab[0],-A[2]],'tr',2,2); D.line(F(B),[-Bb[0],-B[2]],'tr',2,2);
       D.seg(Hp(Ab),F(Ab),'link'); D.seg(Hp(Bb),F(Bb),'link'); D.pt(F(Ab),'~A″','bar'); D.pt(F(Bb),'~B″','bar');
@@ -34007,8 +34022,8 @@ const ROT=(function(){
       steps:[
         {t:'Горизонталь плоскости',s:'h″ ∥ x₁₂ через C″, до стороны A″B″ — точка 1″. По линии связи 1′ на A′B′. h′ = C′1′.'},
         {t:'Ось вращения i ⟂ π₁ через C',s:'i′ — точка C′, i″ — вертикаль через C″. C на оси — не двигается.'},
-        {t:'Поворачиваем h до h̄′ ⟂ x₁₂',s:'Дуга радиуса |C′1′| из C′ до вертикали: 1̄′. Это и есть «до какого момента» — горизонталь стала фронтально-проецирующей.'},
-        {t:'Поворачиваем A и B на тот же угол',s:'На π₁ треугольник поворачивается без искажений: |C′Ā′| = |C′A′|, |C′B̄′| = |C′B′| (засечки), Ā′B̄′ = A′B′.'},
+        {t:'Поворачиваем h до h̄′ ⟂ x₁₂',s:'Дуга радиуса |C′1′| из C′ до вертикали: 1̄′. Угол φ = ∠1′C′1̄′ — угол поворота, он один для всех точек. Это и есть «до какого момента» — горизонталь стала фронтально-проецирующей.'},
+        {t:'Поворачиваем A и B на тот же угол φ',s:'Угол транспортиром не меряем. Треугольник C1A на π₁ поворачивается целиком, без искажений, — переносим его засечками: Ā′ — пересечение дуги из C′ радиусом |C′A′| (путь точки A) и засечки из 1̄′ радиусом |1′A′|. Так же B̄′: |C′B̄′| = |C′B′|, |1̄′B̄′| = |1′B′|. Получилось — значит, A и B повернулись ровно на φ.'},
         {t:'Фронтальные проекции',s:'Высоты не меняются: Ā″ — на прямой ∥ x₁₂ через A″ и линии связи из Ā′. Так же B̄″.'},
         {t:'Угол α',s:'Ā″, C″, B̄″ — на одной прямой: плоскость стала ⟂ π₂. Угол этой прямой с x₁₂ — искомый.'}],
       ans:`α = ${fm(alpha)}°`,
@@ -34027,8 +34042,8 @@ const ROT=(function(){
     D.at(1); D.line(Hp(A),Hp(P1),'thin',6,8); D.lab(a2(Hp(P1),[-12,0]),'f′','thin',{pos:'n'}); D.pt(Hp(P1),'1′','thin',{pos:'s'}); D.seg(Hp(P1),F(P1),'link'); D.pt(F(P1),'1″','thin');
       D.line(a,F(P1),'thin',4,8); D.lab(a2(F(P1),m2(u2(fd),10)),'f″','thin',{pos:'auto'});
     D.at(2); D.pt(a,'A″ ≡ i″','main'); D.line([a[0],0],[a[0],A[1]+16],'thin',0,0); D.lab([a[0],A[1]+16],'i′','thin',{pos:'s'});
-    D.at(3); D.arc(a,ds(a,F(P1)),F(P1),F(P1b),'tr'); D.seg(a,F(P1b),'bth'); D.pt(F(P1b),'~1″','bar'); D.lab(lp2(a,F(P1b),.4),'~f″ ⟂ x_{12}','bar',{pos:'w'});
-    D.at(4); [[K,Kb,'K'],[L,Lb,'L']].forEach(([X,Xb,nm],j)=>{ D.arc(a,ds(a,F(X)),F(X),F(Xb),'tr'); D.pt(F(X),nm+'″','thin'); D.pt(F(Xb),'~'+nm+'″','bar'); });
+    D.at(3); D.arc(a,ds(a,F(P1)),F(P1),F(P1b),'tr'); D.seg(a,F(P1b),'bth'); D.pt(F(P1b),'~1″','bar'); D.lab(lp2(a,F(P1b),.4),'~f″ ⟂ x_{12}','bar',{pos:'w'}); D.ang(a,F(P1),F(P1b),7,'φ','bar');
+    D.at(4); [[K,Kb,'K'],[L,Lb,'L']].forEach(([X,Xb,nm],j)=>{ D.arc(a,ds(a,F(X)),F(X),F(Xb),'tr'); nick(D,F(P1b),ds(F(P1),F(X)),F(Xb)); D.pt(F(X),nm+'″','thin'); D.pt(F(Xb),'~'+nm+'″','bar'); });
       D.line(F(Kb),F(Lb),'bar',4,4); D.lab(lp2(F(Kb),F(Lb),.2),'~a″','bar',{pos:'auto'});
     D.at(5); [[K,Kb,'K'],[L,Lb,'L']].forEach(([X,Xb,nm])=>{ D.pt(Hp(X),nm+'′','thin'); D.line(Hp(X),Hp(Xb),'tr',2,2); D.seg(F(Xb),Hp(Xb),'link'); D.pt(Hp(Xb),'~'+nm+'′','bar'); });
       D.pt(Hp(A),'A′ ≡ ~A′','bar');
@@ -34043,8 +34058,8 @@ const ROT=(function(){
       steps:[
         {t:'Фронталь плоскости',s:'f′ ∥ x₁₂ через A′, до a′ — точка 1′. По линии связи 1″ на a″. f″ = A″1″.'},
         {t:'Ось i ⟂ π₂ через A',s:'i″ — точка A″, i′ — вертикаль через A′. A на оси — не двигается.'},
-        {t:'Поворачиваем f до f̄″ ⟂ x₁₂',s:'Дуга радиуса |A″1″| из A″ до вертикали — 1̄″. Фронталь стала горизонтально-проецирующей.'},
-        {t:'Прямая a — на тот же угол',s:'Берём на a две точки K и L и поворачиваем их фронтальные проекции вокруг A″ на тот же угол (засечки |A″K″|, |A″L″|). ā″ = K̄″L̄″, и она проходит через 1̄″.'},
+        {t:'Поворачиваем f до f̄″ ⟂ x₁₂',s:'Дуга радиуса |A″1″| из A″ до вертикали — 1̄″. Угол φ = ∠1″A″1̄″ — угол поворота для всех точек. Фронталь стала горизонтально-проецирующей.'},
+        {t:'Прямая a — на тот же угол φ',s:'Берём на a две точки K и L. Угол не меряем — переносим засечками: K̄″ — пересечение дуги из A″ радиусом |A″K″| и засечки из 1̄″ радиусом |1″K″|. Так же L̄″. ā″ = K̄″L̄″, и она проходит через 1̄″ (1 лежит на a).'},
         {t:'Горизонтальные проекции',s:'Глубина не меняется: K̄′ — на прямой ∥ x₁₂ через K′ и линии связи из K̄″. Так же L̄′.'},
         {t:'Угол β',s:'Ā′ = A′, K̄′, L̄′ — на одной прямой: плоскость ⟂ π₁. Её угол с x₁₂ — угол наклона к π₂.'}],
       ans:`β = ${fm(beta)}°`,
@@ -34158,8 +34173,10 @@ const ROT=(function(){
     /* назад: B̄′ → по следу ⟂ h′ до a′; B″ — по связи на a″ */
     const bk=Xb=>X2(Xb,pp(L.ud),Hp(K),s2(Hp(Lq),Hp(K)));
     const Bh=bk(Bb), Ch=bk(Cb);
-    D.at(8); [[Bb,Bh,'B'],[Cb,Ch,'C']].forEach(([Xb,Xh,nm])=>{ D.line(Xb,Xh,'tr',3,3); D.pt(Xh,nm+'′','res'); });
-    D.at(9); [[B,'B'],[C,'C']].forEach(([X,nm])=>{ D.seg(Hp(X),F(X),'link'); D.pt(F(X),nm+'″','res'); });
+    const extA=(st,Xs)=>{ D.at(st); const d=dA, far=Xs.reduce((m,X)=>d3(s3(X,K),d)>d3(s3(m,K),d)?X:m,Lq), nr=Xs.reduce((m,X)=>d3(s3(X,K),d)<d3(s3(m,K),d)?X:m,K);
+      if(far!==Lq){ D.line(Hp(Lq),Hp(far),'main',0,5); } if(nr!==K){ D.line(Hp(K),Hp(nr),'main',0,5); } return [far,nr]; };
+    D.at(8); [[Bb,Bh,'B'],[Cb,Ch,'C']].forEach(([Xb,Xh,nm])=>{ D.line(Xb,Xh,'tr',3,3); D.pt(Xh,nm+'′','res'); }); extA(8,[B,C]);
+    D.at(9); [[B,'B'],[C,'C']].forEach(([X,nm])=>{ D.seg(Hp(X),F(X),'link'); D.pt(F(X),nm+'″','res'); }); { const fr=[B,C].reduce((m,X)=>d3(s3(X,K),dA)>d3(s3(m,K),dA)?X:m,Lq); if(fr!==Lq) D.line(F(Lq),F(fr),'main',0,5); }
       both(D,A,B,'res'); both(D,A,C,'res'); both(D,B,C,'res');
     const ok=I.ok&&ds(Bh,Hp(B))<.05&&ds(Ch,Hp(C))<.05&&near(l3(s3(A,B)),sd)&&near(l3(s3(A,C)),sd)&&near(l3(s3(B,C)),sd)&&ds(Hp(L.rot(B)),Bb)<.05&&ds(Hp(L.rot(C)),Cb)<.05;
     return {id:'tri',n:6,sh:'Треугольник на прямой',t:'Равносторонний треугольник ABC со стороной BC на прямой a',m:'Вращение вокруг линии уровня + обратный поворот',D,ok,
@@ -34197,6 +34214,7 @@ const ROT=(function(){
     const bk=Xb=>X2(Xb,pp(L.ud),Hp(K),s2(Hp(Lq),Hp(K)));
     const Bh=bk(Bb), Ch=bk(Cb);
     D.at(7); [[Bb,Bh,'B'],[Cb,Ch,'C']].forEach(([Xb,Xh,nm])=>{ D.line(Xb,Xh,'tr',3,3); D.pt(Xh,nm+'′','res'); });
+      { const fr=[B,C].reduce((m,X)=>d3(s3(X,K),dA)>d3(s3(m,K),dA)?X:m,Lq); if(fr!==Lq){ D.line(Hp(Lq),Hp(fr),'main',0,5); D.at(9); D.line(F(Lq),F(fr),'main',0,5); } }
     /* D — не на прямой a: AD ∥ a ⇒ D′ на прямой через A′ ∥ a′, на следе D̄′ */
     const Dh=X2(Db,pp(L.ud),Hp(A),s2(Hp(Lq),Hp(K)));
     D.at(8); D.line(Hp(A),Dh,'thin',6,8); D.line(Db,Dh,'tr',3,3); D.pt(Dh,'D′','res');
@@ -34261,7 +34279,7 @@ const ROT=(function(){
     function paint(){ const t=T[ti], n=t.steps.length;
       el.innerHTML=`<div class="rt-tabs" role="tablist">${T.map((x,j)=>`<button type="button" role="tab" aria-selected="${j===ti}" class="${j===ti?'on':''}" data-rt-t="${j}"><b>${x.n}</b>${escH(x.sh)}</button>`).join('')}</div>
         <div class="rt-g"><div class="rt-sheet"><div class="rt-ep" data-rt-ep></div>
-          <div class="rt-nav"><button type="button" class="btn ghost" data-rt-go="-1"${k===0?' disabled':''}>←</button><span>${k===0?'Дано':k>n?'Ответ':'Шаг '+k+' из '+n}</span><button type="button" class="btn" data-rt-go="1"${k>n?' disabled':''}>${k===0?'Решать →':k===n?'Ответ →':'Дальше →'}</button></div></div>
+          <div class="rt-nav"><button type="button" class="btn ghost" data-rt-go="-1"${k===0?' disabled':''}>← Назад</button><span>${k===0?'Дано':k>n?'Ответ':'Шаг '+k+' из '+n}</span><button type="button" class="btn" data-rt-go="1"${k>n?' disabled':''}>${k===0?'Решать →':k===n?'Ответ →':'Дальше →'}</button></div></div>
           <div class="rt-side">${side(t)}</div></div>`;
       const box=el.querySelector('[data-rt-ep]'); render(box,t,Math.min(k,n),k>n);
       if(ro) ro.disconnect(); if(window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(box.isConnected) render(box,t,Math.min(k,n),k>n); }); ro.observe(box); } }
@@ -34351,14 +34369,14 @@ const RK9=(function(){
     D.seg(P0,P1,c||'ax2'); D.lab(La,lab,c||'ax2',{pos:'auto'});
     D.lab(a2(a2(Pl,m2(X.e,4*sg)),m2(X.n,-5)),pa,'pl',{pos:'c'}); D.lab(a2(a2(Pl,m2(X.e,4*sg)),m2(X.n,5)),pb,'pl4',{pos:'c'}); return [P0,P1]; }
   /* горизонталь h плоскости (P, Q, R): через вершину P (средняя высота) до QR */
-  function drawH(D,P,E,names,c,ext){ const [p,e]=names; D.line(F(P),F(E),c||'aux',6,ext||10); D.lab(a2(F(E),[ext||10,0]),'h″ ∥ x_{12}',c||'aux',{pos:'e'});
+  function drawH(D,P,E,names,c,ext){ const [p,e]=names, sg=Math.sign(F(E)[0]-F(P)[0])||1; D.line(F(P),F(E),c||'aux',6,ext||10); D.lab(a2(F(E),[sg*((ext||10)+1),0]),'h″ ∥ x_{12}',c||'aux',{pos:sg>0?'e':'w'});
     D.seg(F(E),Hp(E),'link'); D.pt(F(E),e+'″','aux'); D.pt(Hp(E),e+'′','aux'); D.line(Hp(P),Hp(E),c||'aux',8,ext||12); D.lab(a2(Hp(E),m2(u2(s2(Hp(E),Hp(P))),ext||12)),c==='rot'?'h′ ≡ i′':'h′',c||'aux',{pos:'auto'}); }
   /* поворот опорной точки X вокруг h: след, центр, Δz размером на π₂, катет, гипотенуза-радиус, дуга, новое место */
   function drawRot(D,Rt,X,n,st,o){ o=o||{}; const I=Rt.info(X), w=u2(s2(I.p,I.o)), hd=Rt.hd, sg=o.legSide||1, Xs=a2(I.p,m2(hd,sg*Math.abs(I.dz)));
-    D.at(st); D.line(I.o,I.p,'tr',4,o.trExt||14); D.sq(I.o,I.p,a2(I.o,hd),'aux'); D.pt(I.o,'O_'+n+'′','aux',{pos:'auto'});
+    D.at(st); D.seg(Rt.h1,a2(I.o,m2(u2(s2(I.o,Rt.h1)),6)),'rot'); D.line(I.o,I.p,'tr',4,o.trExt||14); D.sq(I.o,I.p,a2(I.o,hd),'thin'); D.pt(I.o,'O_'+n+'′','aux',{pos:'auto'});
     D.at(st+1); const xd=F(X)[0]+(o.dimDx||-9); D.dim([xd,-X[2]],[xd,-Rt.zh],'Δz','dim'); D.seg(F(X),[xd-3*Math.sign(o.dimDx||-9),-X[2]],'link');
-      D.seg(I.p,Xs,'aux'); D.sq(I.p,Xs,I.o,'aux'); D.tick(I.p,Xs,2); D.tick([xd,-X[2]],[xd,-Rt.zh],2); D.seg(I.o,Xs,'res'); D.lab(lp2(I.o,Xs,.55),'R_'+n,'res',{pos:'auto'});
-    D.at(st+2); D.arc(I.o,I.R,Xs,I.bar,'res'); D.pt(I.bar,'~'+n+'′','bar'); D.seg(I.bar,[I.bar[0],-Rt.zh],'link'); D.pt([I.bar[0],-Rt.zh],'~'+n+'″','bar',{pos:'n'});
+      D.seg(I.p,Xs,'thin'); D.sq(I.p,Xs,I.o,'thin'); D.tick(I.p,Xs,2); D.tick([xd,-X[2]],lp2([xd,-X[2]],[xd,-Rt.zh],.45),2); D.seg(I.o,Xs,'thin'); D.lab(lp2(I.o,Xs,.55),'R_'+n,'thin',{pos:'auto'});
+    D.at(st+2); D.arc(I.o,I.R,Xs,I.bar,'thin'); D.pt(I.bar,'~'+n+'′','bar'); D.seg(I.bar,[I.bar[0],-Rt.zh],'link'); D.pt([I.bar[0],-Rt.zh],'~'+n+'″','bar',{pos:'n'});
     return I; }
   const rotSteps=(n,h,ax)=>[
     {t:'След и центр вращения '+n,v:`${n}′O_${n}′ ⟂ ${h}′,  O_${n}′ ∈ ${h}′`,s:`${n} вращается по окружности в плоскости ⟂ ${h}. На π₁ эта плоскость — прямая через ${n}′ ⟂ ${h}′ (след), центр O_${n} — на оси.`},
@@ -34369,7 +34387,7 @@ const RK9=(function(){
   /* 1. Угол между пересекающимися прямыми — вращение вокруг горизонтали */
   T.push((()=>{ const P={K:[54,44,2],L:[94,10,50],M:[14,12,46]}, zh=38, E1=atZ(P.K,P.L,zh), E2=atZ(P.K,P.M,zh);
     const D=Dw(); base(D,P,['K'],[['K','L','main','a'],['K','M','main','b']]);
-    D.at(1); D.line(F(E1),F(E2),'rot',10,10); D.lab(a2(F(E2),[-10,0]),'h″ ∥ x_{12}','rot',{pos:'w'}); [[E1,'1'],[E2,'2']].forEach(([X,n])=>{ D.seg(F(X),Hp(X),'link'); D.pt(F(X),n+'″','aux'); D.pt(Hp(X),n+'′','aux'); });
+    D.at(1); D.line(F(E1),F(E2),'rot',10,10); { const sg=Math.sign(F(E2)[0]-F(E1)[0])||1; D.lab(a2(F(E2),[sg*11,0]),'h″ ∥ x_{12}','rot',{pos:sg>0?'e':'w'}); } [[E1,'1'],[E2,'2']].forEach(([X,n])=>{ D.seg(F(X),Hp(X),'link'); D.pt(F(X),n+'″','aux'); D.pt(Hp(X),n+'′','aux'); });
       D.line(Hp(E1),Hp(E2),'rot',12,12); D.lab(a2(Hp(E2),m2(u2(s2(Hp(E2),Hp(E1))),12)),'h′ ≡ i′','rot',{pos:'auto'});
     const Rt=rotH(E1,E2,P.K), I=drawRot(D,Rt,P.K,'K',2,{dimDx:9});
     D.at(5); D.seg(Hp(E1),I.bar,'bar'); D.seg(Hp(E2),I.bar,'bar'); const phi=ang2(I.bar,Hp(E1),Hp(E2)); D.ang(I.bar,Hp(E1),Hp(E2),12,'φ = '+fm(phi)+'°','res');
@@ -34386,16 +34404,20 @@ const RK9=(function(){
 
   /* 2. Угол наклона плоскости к π₁ — замена плоскостей (x₁₄ ⟂ h′) */
   T.push((()=>{ const P={A:[92,12,12],B:[52,48,46],C:[18,14,28]}, E=atZ(P.A,P.B,P.C[2]);
-    const D=Dw(); base(D,P,['A','B','C'],[['A','B'],['B','C'],['C','A']]);
+    const D=Dw(); base(D,P,['A','B','C'],[['A','B'],['B','C'],['C','A']],{x0:-100});
     D.at(1); drawH(D,P.C,E,['C','1']);
-    const hd=u2(s2(Hp(E),Hp(P.C))), pts=['A','B','C'].map(n=>Hp(P[n])), X=axisAway(pts,pp(hd),14,hd);
-    D.at(2); drawAxis(D,X,'x_{14} ⟂ h′','π_1','π_4',['A','B','C'].map(n=>img(X,Hp(P[n]),P[n][2])),'ax2',true); D.sq(footOn(Hp(E),X),Hp(E),a2(footOn(Hp(E),X),X.e),'ax2');
+    const hd=u2(s2(Hp(E),Hp(P.C))), pts=['A','B','C'].map(n=>Hp(P[n])), X=axisAway(pts,pp(hd),24,hd);
+    const Q0={}; ['A','B','C'].forEach(n=>Q0[n]=img(X,Hp(P[n]),P[n][2]));
+    const far0=[['A','B'],['B','C'],['A','C']].sort((p,q)=>ds(Q0[q[0]],Q0[q[1]])-ds(Q0[p[0]],Q0[p[1]]))[0], Xp0=X2(Q0[far0[0]],s2(Q0[far0[1]],Q0[far0[0]]),X.O,X.e);
+    const ends=[X.t0,X.t1], swapA=Math.abs(dt(Xp0,X.e)-Math.min(...ends.map(t=>t)))<Math.abs(dt(Xp0,X.e)-Math.max(...ends));   /* подпись оси — на конце, дальнем от угла α */
+    D.at(2); drawAxis(D,X,'x_{14} ⟂ h′','π_1','π_4',[...['A','B','C'].map(n=>Q0[n]),Xp0],'ax2',swapA); D.seg(Hp(E),footOn(Hp(E),X),'thin'); D.sq(footOn(Hp(E),X),Hp(E),a2(footOn(Hp(E),X),X.e),'ax2');
     const Q={}; ['A','B','C'].forEach(n=>Q[n]=img(X,Hp(P[n]),P[n][2]));
     D.at(3); ['A','B','C'].forEach((n,i)=>{ D.seg(Hp(P[n]),Q[n],'link'); D.pt(Q[n],n+'_4','v4'); D.tick([F(P[n])[0],0],F(P[n]),i+1,'tk',{till:3}); D.tick(footOn(Hp(P[n]),X),Q[n],i+1,'tk',{till:3}); });
       const far=[['A','B'],['B','C'],['A','C']].sort((p,q)=>ds(Q[q[0]],Q[q[1]])-ds(Q[p[0]],Q[p[1]]))[0]; D.line(Q[far[0]],Q[far[1]],'v4',6,6); D.lab(lp2(Q[far[0]],Q[far[1]],1.08),'(ABC)_4','v4',{pos:'auto'});
     const L0=Q[far[0]], L1=Q[far[1]], Xp=X2(L0,s2(L1,L0),X.O,X.e), al=ang2(Xp,a2(Xp,u2(s2(L1,L0))),a2(Xp,X.e)), alpha=Math.min(al,180-al);
     const tip=dt(s2(L1,Xp),u2(s2(L1,L0)))>0?L1:L0, axDir=dt(s2(footOn(tip,X),Xp),X.e)>=0?X.e:m2(X.e,-1);
-    D.at(4); D.ang(Xp,tip,a2(Xp,m2(axDir,30)),14,'α = '+fm(alpha)+'°','res');
+    D.at(4); { const near_=dt(s2(L0,Xp),u2(s2(L1,L0)))*dt(s2(L1,Xp),u2(s2(L1,L0)))>0?(ds(L0,Xp)<ds(L1,Xp)?L0:L1):null; if(near_) D.seg(near_,Xp,'v4'); }
+      D.ang(Xp,tip,a2(Xp,m2(axDir,30)),16,'α','res'); D.pt(Xp,'','res',{r:0});
     const nrm=u3(c3(s3(P.B,P.A),s3(P.C,P.A))), ok=near(alpha,Math.acos(Math.abs(nrm[2]))*DEG);
     return {id:'incl',n:2,sh:'Наклон плоскости',t:'Угол наклона плоскости ABC к π₁',m:'замена плоскостей проекций',D,ok,
       cond:'Определить угол наклона плоскости треугольника ABC к горизонтальной плоскости проекций π₁.',
@@ -34404,7 +34426,7 @@ const RK9=(function(){
       steps:[{t:'Горизонталь h',v:'h″ ∥ x₁₂, C″ ∈ h″;  1″ = h″ ∩ A″B″;  1′ ∈ A′B′;  h′ = C′1′',s:'Через C — она средняя по высоте, поэтому h пересекает противоположную сторону AB внутри треугольника.'},
         {t:'Новая ось x₁₄ ⟂ h′',v:'π₄ ⟂ π₁,  π₄ ⟂ h  ⇒  x₁₄ ⟂ h′',s:'Ось — в свободном месте. Прямой угол с h′ отмечаем.'},
         {t:'Точки на π₄',v:'P′P₄ ⟂ x₁₄,  |P₄x₁₄| = |P″x₁₂| = z_P  (P = A, B, C)',s:'Заменили π₂ — сохраняется высота z: берём циркулем на π₂ (от точки до x₁₂) и откладываем от x₁₄ (штрихи — равные отрезки). Три точки легли на одну прямую — горизонталь видна точкой.'},
-        {t:'Угол наклона',v:`α = ∠((ABC)₄, x₁₄) = ${fm(alpha)}°`,s:'Ось x₁₄ — это след π₁ на π₄. Угол между прямой (ABC)₄ и x₁₄ — угол плоскости с π₁.'}],
+        {t:'Угол наклона',v:`α = ∠((ABC)₄, x₁₄) = ${fm(alpha)}°  (продлеваем прямую до оси)`,s:'Ось x₁₄ — это след π₁ на π₄. Угол между прямой (ABC)₄ и x₁₄ — угол плоскости с π₁.'}],
       ans:`α = ${fm(alpha)}°`,
       err:['Ставят x₁₄ ∥ h′ — тогда плоскость не станет проецирующей.','Откладывают от x₁₄ y вместо z: при замене π₂ сохраняется высота.','Меряют угол не с осью x₁₄, а с x₁₂.']}; })());
 
@@ -34414,7 +34436,7 @@ const RK9=(function(){
     D.at(1); drawH(D,P.C,E,['C','1']);
     const hd=u2(s2(Hp(E),Hp(P.C))), N=['A','B','C'], X=axisAway(N.map(n=>Hp(P[n])),pp(hd),12,hd), Q={};
     N.forEach(n=>Q[n]=img(X,Hp(P[n]),P[n][2]));
-    D.at(2); drawAxis(D,X,'x_{14} ⟂ h′','π_1','π_4',N.map(n=>Q[n])); D.sq(footOn(Hp(E),X),Hp(E),a2(footOn(Hp(E),X),X.e),'ax2');
+    D.at(2); drawAxis(D,X,'x_{14} ⟂ h′','π_1','π_4',N.map(n=>Q[n])); D.seg(Hp(E),footOn(Hp(E),X),'thin'); D.sq(footOn(Hp(E),X),Hp(E),a2(footOn(Hp(E),X),X.e),'ax2');
     D.at(3); N.forEach(n=>{ D.seg(Hp(P[n]),Q[n],'link'); D.pt(Q[n],n+'_4','v4'); });
     const far=[['A','B'],['B','C'],['A','C']].sort((p,q)=>ds(Q[q[0]],Q[q[1]])-ds(Q[p[0]],Q[p[1]]))[0], ld=u2(s2(Q[far[1]],Q[far[0]])); D.line(Q[far[0]],Q[far[1]],'v4',5,5);
     /* x₄₅ ∥ (ABC)₄ — с другой стороны от π₁ */
@@ -34511,10 +34533,10 @@ const RK9=(function(){
   /* 6. Расстояние от точки до плоскости — замена π₁ → π₄ ⟂ f, основание перпендикуляра назад */
   T.push((()=>{ const P={A:[92,40,12],B:[54,8,36],C:[16,30,18],S:[46,52,58]}, E=atY(P.B,P.C,P.A[1]);
     const D=Dw(); base(D,P,['A','B','C','S'],[['A','B'],['B','C'],['C','A']]);
-    D.at(1); D.line(Hp(P.A),Hp(E),'aux',6,10); D.lab(a2(Hp(E),[-10,0]),'f′ ∥ x_{12}','aux',{pos:'w'}); D.seg(Hp(E),F(E),'link'); D.pt(Hp(E),'1′','aux'); D.pt(F(E),'1″','aux');
+    D.at(1); D.line(Hp(P.A),Hp(E),'aux',6,10); { const sg=Math.sign(Hp(E)[0]-Hp(P.A)[0])||1; D.lab(a2(Hp(E),[sg*11,0]),'f′ ∥ x_{12}','aux',{pos:sg>0?'e':'w'}); } D.seg(Hp(E),F(E),'link'); D.pt(Hp(E),'1′','aux'); D.pt(F(E),'1″','aux');
       D.line(F(P.A),F(E),'aux',8,12); D.lab(a2(F(E),m2(u2(s2(F(E),F(P.A))),12)),'f″','aux',{pos:'auto'});
     const fd=u2(s2(F(E),F(P.A))), N=['A','B','C','S'], X=axisAway(N.map(n=>F(P[n])),pp(fd),12,[-fd[1]*0,-1]), Q={}; N.forEach(n=>Q[n]=img(X,F(P[n]),P[n][1]));
-    D.at(2); drawAxis(D,X,'x_{24} ⟂ f″','π_2','π_4',N.map(n=>Q[n])); D.sq(footOn(F(E),X),F(E),a2(footOn(F(E),X),X.e),'ax2');
+    D.at(2); drawAxis(D,X,'x_{24} ⟂ f″','π_2','π_4',N.map(n=>Q[n])); D.seg(F(E),footOn(F(E),X),'thin'); D.sq(footOn(F(E),X),F(E),a2(footOn(F(E),X),X.e),'ax2');
     D.at(3); ['A','B','C'].forEach((n,i)=>{ D.seg(F(P[n]),Q[n],'link'); D.pt(Q[n],n+'_4','v4'); D.tick([F(P[n])[0],0],Hp(P[n]),i+1,'tk',{till:3}); D.tick(footOn(F(P[n]),X),Q[n],i+1,'tk',{till:3}); });
       const far=[['A','B'],['B','C'],['A','C']].sort((p,q)=>ds(Q[q[0]],Q[q[1]])-ds(Q[p[0]],Q[p[1]]))[0]; D.line(Q[far[0]],Q[far[1]],'v4',6,6);
     D.at(4); D.seg(F(P.S),Q.S,'link'); D.pt(Q.S,'S_4','v4'); D.tick([F(P.S)[0],0],Hp(P.S),4); D.tick(footOn(F(P.S),X),Q.S,4);
@@ -34567,7 +34589,7 @@ const RK9=(function(){
   /* 8. Равносторонний треугольник с вершиной A и стороной BC на прямой a — вращение, B и C назад на a */
   T.push((()=>{ const P={A:[66,10,40],M:[100,26,6],Nn:[14,52,52]}, E=atZ(P.M,P.Nn,P.A[2]);
     const D=Dw(); base(D,P,['A'],[['M','Nn','main','a']]);
-    D.at(1); D.line(F(P.A),F(E),'rot',8,12); D.lab(a2(F(E),[12,0]),'h″ ∥ x_{12}','rot',{pos:'e'}); D.seg(F(E),Hp(E),'link'); D.pt(F(E),'1″','aux'); D.pt(Hp(E),'1′','aux');
+    D.at(1); D.line(F(P.A),F(E),'rot',8,12); { const sg=Math.sign(F(E)[0]-F(P.A)[0])||1; D.lab(a2(F(E),[sg*13,0]),'h″ ∥ x_{12}','rot',{pos:sg>0?'e':'w'}); } D.seg(F(E),Hp(E),'link'); D.pt(F(E),'1″','aux'); D.pt(Hp(E),'1′','aux');
       D.line(Hp(P.A),Hp(E),'rot',8,14); D.lab(a2(Hp(E),m2(u2(s2(Hp(E),Hp(P.A))),14)),'h′ ≡ i′','rot',{pos:'auto'});
     const Rt=rotH(P.A,E,P.M), I=drawRot(D,Rt,P.M,'M',2,{dimDx:-8}), e=Hp(E), a=Hp(P.A);
     D.at(5); D.line(I.bar,e,'bar',4,30); D.lab(lp2(I.bar,e,1.35),'~a′','bar',{pos:'auto'});
@@ -34595,7 +34617,7 @@ const RK9=(function(){
   /* 9. Квадрат: A — центр, сторона на прямой a — вращение, вершины назад (две — по a, две — через центр A) */
   T.push((()=>{ const P={A:[70,16,40],M:[100,30,6],Nn:[16,56,50]}, E=atZ(P.M,P.Nn,P.A[2]);
     const D=Dw(); base(D,P,['A'],[['M','Nn','main','a']]);
-    D.at(1); D.line(F(P.A),F(E),'rot',8,12); D.lab(a2(F(E),[12,0]),'h″ ∥ x_{12}','rot',{pos:'e'}); D.seg(F(E),Hp(E),'link'); D.pt(F(E),'1″','aux'); D.pt(Hp(E),'1′','aux');
+    D.at(1); D.line(F(P.A),F(E),'rot',8,12); { const sg=Math.sign(F(E)[0]-F(P.A)[0])||1; D.lab(a2(F(E),[sg*13,0]),'h″ ∥ x_{12}','rot',{pos:sg>0?'e':'w'}); } D.seg(F(E),Hp(E),'link'); D.pt(F(E),'1″','aux'); D.pt(Hp(E),'1′','aux');
       D.line(Hp(P.A),Hp(E),'rot',8,14); D.lab(a2(Hp(E),m2(u2(s2(Hp(E),Hp(P.A))),14)),'h′ ≡ i′','rot',{pos:'auto'});
     const Rt=rotH(P.A,E,P.M), I=drawRot(D,Rt,P.M,'M',2,{dimDx:-8}), e=Hp(E), a=Hp(P.A);
     D.at(5); D.line(I.bar,e,'bar',4,30); D.lab(lp2(I.bar,e,1.35),'~a′','bar',{pos:'auto'});
@@ -34657,9 +34679,9 @@ const LIVESHOW=(function(){
       <section><h3>Прямые</h3><dl><dt>h</dt><dd>горизонталь: h ∥ π₁, h″ ∥ x₁₂</dd><dt>f</dt><dd>фронталь: f ∥ π₂, f′ ∥ x₁₂</dd><dt>n</dt><dd>перпендикуляр к плоскости</dd><dt>i</dt><dd>ось вращения</dd></dl></section>
       <section><h3>Знаки</h3><dl><dt>∈ ⊂</dt><dd>принадлежит (точка, прямая)</dd><dt>∩</dt><dd>пересечение</dd><dt>⟂ ∥</dt><dd>перпендикулярно, параллельно</dd><dt>≡</dt><dd>совпадают</dd><dt>|AB|</dt><dd>натуральная величина</dd><dt>⇒</dt><dd>следовательно</dd></dl></section>
       <section><h3>Цвета на чертеже</h3><ul class="lx-cl">
-        <li><i style="background:#0d1b2e"></i>данные</li><li><i class="ln" style="background:#97abc6"></i>линии связи</li><li><i style="background:#1f63d6"></i>построения (h, f, n, оси вращения)</li>
-        <li><i style="background:#0b8457"></i>новые плоскости π₄, π₅</li><li><i style="background:#7c3aed"></i>после поворота</li><li><i class="ln" style="background:#c2410c"></i>след плоскости вращения</li>
-        <li><i style="background:#ff6a00"></i>то, что чертим на этом шаге</li><li><i style="background:#e0245e"></i>ответ</li><li><b class="lx-tks">| ||</b>равные отрезки (переносим циркулем)</li><li><b class="lx-bk">↩</b>обратный переход</li></ul></section></div></div>`;
+        <li><i style="background:#111827"></i>данные — толсто</li><li><i class="ln" style="background:#a9b6c8"></i>линии связи</li><li><i class="ln" style="background:#374151"></i>построения — тонко (h, f, оси, следы)</li>
+        <li><i style="background:#1d4ed8"></i>новые проекции и повёрнутое</li><li><i style="background:#ea580c"></i>то, что чертим на этом шаге</li><li><i style="background:#7c3aed"></i>шаг обратного перехода</li>
+        <li><i style="background:#dc2626"></i>ответ</li><li><b class="lx-tks">| ||</b>равные отрезки (переносим циркулем)</li><li><b class="lx-bk">↩</b>обратный переход</li></ul></section></div></div>`;
     if(sl.kind==='back') return `<div class="lx-leg"><p class="lx-kick">Главное за эфир</p><h2>Как возвращать точку назад</h2><div class="lx-bkg">
       <section><h3>После замены плоскостей</h3><ol>
         <li>Из точки на новой плоскости — <b>линия связи ⟂ новой оси</b> обратно.</li>
