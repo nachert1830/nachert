@@ -60,16 +60,23 @@ async function liveCheck(page,URL){
   if(!pm[0]||pm[0].rel!=='завтра'||pm[0].time!=='18:00'||pm[0].moved!=='20:00') add('карточка эфира','перенос','10.11 вечером ближайший — завтра в 18:00 (перенос с 20:00): '+JSON.stringify(pm[0]));
   if(!pm[1]||!pm[1].live) add('карточка эфира','идёт','11.11 в 18:30 эфир идёт: '+JSON.stringify(pm[1]));
   if(!pm[2]||pm[2].day!=='2026-11-12') add('карточка эфира','после','после эфира 11.11 ближайший — 12.11: '+JSON.stringify(pm[2]));
-  /* раздел «Вращение» (#/ng/rot): задачи сверены с пространством, «Покрути сам» доходит до цели, шаги проходятся без ошибок */
+  /* раздел «Способ вращения» (#/ng/rot): 7 задач сверены с пространством, ответы пересчитаны независимо, все шаги проходятся */
   await page.goto(URL+'#/ng/rot'); await page.waitForTimeout(900);
-  const rot=await page.evaluate(()=>{ const out=[]; ROT.T.forEach(t=>{ if(t.ok!==true) out.push('задача «'+t.t+'»: чертёж не совпал с пространством'); });
-    Object.entries(ROT.MODES).forEach(([k,M])=>{ const m=M.miss(M.at(M.target)); if(!(m<0.6)) out.push('«Покрути сам» ('+k+'): в цели осталось '+m.toFixed(2)+'°'); });
-    if(Math.abs(ROT.MODES.i.miss(ROT.MODES.i.at(0))-0)<1) out.push('«Покрути сам» (i): цель достигнута уже без поворота');
+  const rot=await page.evaluate(()=>{ const out=[], T=ROT.T; if(T.length!==7) out.push('задач '+T.length+', нужно 7');
+    T.forEach(t=>{ if(t.ok!==true) out.push('задача «'+t.t+'»: чертёж не совпал с пространством'); });
+    const D=Math.PI/180, sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], L=a=>Math.hypot(...a), num=s=>+String(s).replace(/[^0-9,]/g,' ').trim().split(/\s+/)[0].replace(',','.');
+    /* независимо: угол наклона ABC к π₁ и плоскости (a, A) к π₂, расстояние между a ∥ b */
+    const n1=cr(sub([70,50,50],[105,20,15]),sub([40,10,30],[105,20,15])), a1=Math.acos(Math.abs(n1[2])/L(n1))/D;
+    const n2=cr(sub([105,45,15],[30,25,10]),sub([60,15,45],[30,25,10])), a2=Math.acos(Math.abs(n2[1])/L(n2))/D;
+    const dd=[-42,38,-36], d4=L(cr(sub([60,6,60],[106,8,66]),dd))/L(dd);
+    [[0,a1],[1,a2],[3,d4]].forEach(([i,v])=>{ if(Math.abs(num(T[i].ans)-v)>0.06) out.push('ответ задачи '+(i+1)+': '+T[i].ans+' ≠ '+v.toFixed(1)); });
+    if(ROT.schemeH().ok!==true) out.push('схема «вокруг линии уровня» не совпала с пространством');
     return out; });
   rot.forEach(m=>add('вращение','сверка',m));
-  for(let ti=0;ti<3;ti++){ await page.evaluate(i=>document.querySelectorAll('[data-epx-t]')[i].click(),ti);
-    for(let k=0;k<14;k++){ const nb=await page.$('[data-epx-go="1"]:not([disabled])'); if(!nb) break; await nb.click(); } }
-  /* карточка «Способ вращения» на главной — временно снята (раздел пересобирается) */
+  for(let ti=0;ti<7;ti++){ await page.evaluate(i=>document.querySelectorAll('[data-rt-t]')[i].click(),ti);
+    for(let k=0;k<14;k++){ const nb=await page.$('[data-rt-go="1"]:not([disabled])'); if(!nb) break; await nb.click(); } }
+  if(!(await page.$('.rt-ans.show'))) add('вращение','ответ','после всех шагов ответ не показан');
+  if(!(await page.$('.hc-rot[href="#/ng/rot"]'))){ await page.goto(URL); await page.waitForTimeout(800); if(!(await page.$('.hc-rot[href="#/ng/rot"]'))) add('главная','карточка','нет карточки «Способ вращения»'); }
   /* ДЗ №3 «Как на листе»: пять задач пирамиды на всех 30 вариантах сходятся с пространством; страница варианта открывается */
   await page.goto(URL+'#/ng3/12/sheet'); await page.waitForTimeout(1200);
   const pyr=await page.evaluate(()=>{ const out=[], d=DZR.get?DZR.get('ng3'):null, V=(d&&d.V)||{};
