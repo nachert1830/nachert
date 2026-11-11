@@ -83,6 +83,18 @@ async function liveCheck(page,URL){
     Object.keys(V).forEach(n=>{ try{ PYR(V[n]).forEach(t=>{ if(t.ok===false) out.push('вариант '+n+': задача «'+t.t+'» не сошлась'); }); }catch(e){ out.push('вариант '+n+': '+e.message); } });
     if(!Object.keys(V).length) out.push('нет данных вариантов ДЗ №3'); if(!document.querySelector('#dzSheetPl svg')) out.push('нет чертежа на странице варианта'); return out; });
   pyr.forEach(m=>add('ДЗ №3 как на листе','сверка',m));
+  /* прямые углы доведены: у каждого знака ⊾ на каждом шаге обе стороны угла нарисованы видимыми линиями до самой вершины
+     (раздел «Вращение», 9 задач РК2/эфира, ДЗ №3 на всех 30 вариантах) */
+  const sqBad=await page.evaluate(()=>{ const s2=(a,b)=>[a[0]-b[0],a[1]-b[1]], l2=a=>Math.hypot(a[0],a[1]), u2=a=>{ const L=l2(a)||1; return [a[0]/L,a[1]/L]; }, dt=(a,b)=>a[0]*b[0]+a[1]*b[1];
+    const covers=(segs,v,dir)=>segs.some(([p,q])=>{ const d=u2(s2(q,p)), L=l2(s2(q,p)); if(Math.abs(Math.abs(dt(d,dir))-1)>2e-3) return false;
+      const t=dt(s2(v,p),d), off=l2(s2(s2(v,p),[d[0]*t,d[1]*t])); if(off>.15) return false; const reach=dt(d,dir)>0?L-t:t; return t>-.2&&t<L+.2&&reach>3; });
+    const out=new Set(), chk=(name,t)=>{ const it=t.D.it, n=t.steps.length;
+      for(let k=0;k<=n;k++){ const vis=it.filter(o=>o.st<=k&&(o.till==null||k<=o.till)), segs=vis.filter(o=>o.k==='seg'&&o.c!=='link').map(o=>[o.p,o.q]);
+        vis.filter(o=>o.k==='sq').forEach(o=>['p','q'].forEach(w=>{ if(!covers(segs,o.v,u2(s2(o[w],o.v)))) out.add(name+': знак прямого угла без стороны (шаг '+k+')'); })); } };
+    ROT.T.forEach(t=>chk('вращение '+t.n,t)); RK9.T.forEach(t=>chk('РК2 '+t.n,t));
+    const V=(DZR.get('ng3')||{}).V||{}; Object.keys(V).forEach(nv=>PYR(V[nv]).forEach(t=>chk('ДЗ №3 в.'+nv+' задача '+t.n,t)));
+    return [...out]; });
+  sqBad.forEach(m=>add('чертёж','прямой угол',m));
   errs.forEach(e=>add('эфир','ошибка JS',e));
   return out; }
 module.exports={liveCheck};
