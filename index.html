@@ -308,6 +308,13 @@ body.liveshow{overflow:hidden}
 .hcards .hc.hc-rot{border:0;background:linear-gradient(150deg,#1f47d6 0%,#2e63f0 55%,#4f8cff 100%);box-shadow:0 22px 40px -24px rgba(36,82,230,.75)}
 .hcards .hc-rot .hc-t{font-size:19px;line-height:1.1;letter-spacing:-.02em}
 .hcards .hc-rart{max-width:150px}
+/* «РК2 за 9 шагов» на главной — подсвечена: золотая рамка и мягкое свечение */
+.hcards .hc.hc-rk9{background:linear-gradient(150deg,#b91c1c 0%,#e0352b 50%,#f97316 100%);box-shadow:0 0 0 3px #ffd34d,0 22px 44px -18px rgba(224,53,43,.75);animation:rk9Glow 2.6s ease-in-out infinite}
+.hcards .hc-rk9 .hc-pill{background:#ffd34d;color:#7f1d1d}.hcards .hc-rk9 .hc-pill i{background:#b91c1c}
+.hcards .hc-rk9 .hc-go{color:#991b1b}
+@media(min-width:760px){.hcards .hc-rk9 .hc-s{max-width:48%}}
+@keyframes rk9Glow{0%,100%{box-shadow:0 0 0 3px #ffd34d,0 22px 44px -18px rgba(224,53,43,.75)}50%{box-shadow:0 0 0 3px #ffd34d,0 0 34px 2px rgba(255,180,60,.6)}}
+@media(prefers-reduced-motion:reduce){.hcards .hc.hc-rk9{animation:none}}
 @media(min-width:760px){.hcards .hc-rot .hc-t{font-size:30px;max-width:11ch}.hcards .hc-rart{width:50%;max-width:300px}}
 /* #/live — страница онлайн-разборов (viewLive) */
 .lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa:#fff;--pa-ink:#0a2463;
@@ -28620,6 +28627,8 @@ const PROMO=(function(){
      Это же расписание — у бота в server/livebot/schedule.json (поле moved_from). Менять в обоих местах. */
   const PROMO_DAYS={'2026-11-10':'20:00','2026-11-11':'18:00','2026-11-12':'20:00','2026-11-13':'20:00'};
   const PROMO_MOVED={'2026-11-11':'20:00'};
+  /* консультации: на карточке и в полосе — «Консультация и ответы на вопросы», без времени (время пришлёт бот) */
+  const PROMO_QA={'2026-11-12':1,'2026-11-13':1};
   const PROMO_MIN=60;                  /* длительность: после конца эфира он больше не «ближайший» */
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
   const WDN=['вс','пн','вт','ср','чт','пт','сб'];
@@ -28629,7 +28638,7 @@ const PROMO=(function(){
   function next(now){ now=now||Date.now(); const today=mskDay(now), tomorrow=mskDay(now+864e5);
     const d=Object.keys(PROMO_DAYS).sort().find(k=>startOf(k,PROMO_DAYS[k])+PROMO_MIN*6e4>now); if(!d) return null;
     const start=startOf(d,PROMO_DAYS[d]), [y,mo,dd]=d.split('-').map(Number), wd=new Date(Date.UTC(y,mo-1,dd)).getUTCDay();
-    return {day:d,time:PROMO_DAYS[d],start,live:now>=start,moved:PROMO_MOVED[d]||'',
+    return {day:d,time:PROMO_DAYS[d],start,live:now>=start,moved:PROMO_MOVED[d]||'',qa:!!PROMO_QA[d],
       rel:d===today?'сегодня':d===tomorrow?'завтра':WDN[wd]+' '+String(dd).padStart(2,'0')+'.'+String(mo).padStart(2,'0')}; }
   const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
   function cardHTML(){
@@ -28639,6 +28648,12 @@ const PROMO=(function(){
     const when=n?`<p class="pmn-m">${n.live?'Эфир идёт · ':cap(n.rel)+' в '}<b>${n.live?'подключайся':tm}</b>${n.live?'':' по МСК'}</p>${n.moved&&!n.live?`<p class="pmn-mv">Перенос с ${n.moved}</p>`:''}`
       :`<p class="pmn-m">В <b>${tm}</b> по МСК</p>`;
     const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>`;
+    if(rk&&n&&n.qa) return `<section class="pmn" data-promo-card aria-labelledby="pmH">
+     <span class="pmn-pill">${n.live?'<i aria-hidden="true"></i>Идёт':'Бесплатно'}</span><span class="pmn-moon" aria-hidden="true"></span>
+     <h2 class="pmn-t" id="pmH">РК2<span>${n.rel==='завтра'?'завтра?':'скоро?'}</span></h2>
+     <p class="pmn-s">Консультация и ответы на&nbsp;вопросы</p>
+     <p class="pmn-m">Разберём то, что непонятно <b>тебе</b></p><div class="pmn-sp"></div>
+     ${btn('rk2','Задать вопрос →','Записаться на консультацию по РК2')}</section>`;
     return rk?`<section class="pmn" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill">${pill}</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">РК2<span>завтра?</span></h2>
@@ -28662,6 +28677,8 @@ const PROMO=(function(){
   function paintBar(r){ const el=document.getElementById('liveBar'); if(!el) return;
     const n=next(), show=ready&&n&&n.rel==='сегодня'&&r&&r.s!=='home'&&r.s!=='live';   /* на главной — карточка, на #/live — своя кнопка */
     el.hidden=!show; if(!show){ el.innerHTML=''; return; }
+    if(n.qa){ el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t"><b>${n.live?'Консультация идёт':'Консультация по РК2'}</b> — ответы на вопросы, бесплатно</span>
+      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${n.live?'Подключиться →':'Задать вопрос →'}</a></div>`; return; }
     el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${n.live?'<b>Эфир идёт</b> — бесплатный разбор РК2':`<b>Сегодня в ${n.time} МСК</b> — бесплатный эфир по РК2${n.moved?` (перенесли с ${n.moved})`:''}`}</span>
       <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${n.live?'Подключиться →':'Записаться →'}</a></div>`; }
   return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar,next};
@@ -29039,11 +29056,12 @@ function surfArt(){ if(SURFART) return SURFART;
   </svg>`; return SURFART; }
 function homeCards(){ const pm=PROMO.cardHTML(), rk=pm||(window.RK2?RK2.miniHTML():'');
   /* вторая карточка — раздел «Способ вращения»: рисунок — настоящий чертёж задачи 3 (поворот вокруг горизонтали до ∥ π₁) */
-  return rk+`<a class="hc hc-rot" href="#/ng/rot" aria-label="Способ вращения: все задачи РК2 на вращение по шагам">
-    <span class="hc-pill"><i></i>Тема РК2</span>
-    <span class="hc-t">Способ вращения</span><span class="hc-s">7 задач РК2 по шагам</span>
+  /* справа — подготовка к РК2 на сайте (подсвечена): 9 типов задач с решением как на листе */
+  return rk+`<a class="hc hc-rot hc-rk9" href="#/ng/rk2" aria-label="РК2 за 9 шагов: подготовься к РК2 на сайте">
+    <span class="hc-pill live"><i></i>Готовься здесь</span>
+    <span class="hc-t">РК2 за 9&nbsp;шагов</span><span class="hc-s">все типы задач билета — решение как на листе, вращение, пробный РК2</span>
     ${ROT.art('hc-art hc-rart')}
-    <span class="hc-go">Разобраться →</span></a>`; }
+    <span class="hc-go">Готовиться →</span></a>`; }
 function viewHome(v){
   const tg=resumeTarget();
   let stepNote=''; try{ const pp=(JSON.parse(localStorage.getItem('plpos')||'{}')||{})[tg&&tg.href]; if(pp&&pp.k) stepNote='шаг '+pp.k+' · '; }catch(e){}
@@ -34808,7 +34826,7 @@ function viewLive(v){
    <section class="lv-hero" aria-labelledby="lvH">
     <span class="pmn-pill">Бесплатно</span>
     <h1 id="lvH">Онлайн-разборы по&nbsp;начерталке</h1>
-    <p>Разбираем задачи РК2 по шагам, бесплатно. ${(n=>n?(n.live?'<b>Эфир идёт прямо сейчас.</b>':`Ближайший эфир — <b>${n.rel} в ${n.time} МСК</b>${n.moved?` (перенесли с ${n.moved})`:''}.`):'Новые эфиры — скоро.')(PROMO.next())}</p>
+    <p>Разбираем задачи РК2 по шагам, бесплатно. ${(n=>n?(n.live?'<b>Эфир идёт прямо сейчас.</b>':n.qa?`Ближайшая — <b>консультация и ответы на вопросы</b> (${n.rel}). Подготовиться можно уже сейчас: <a href="#/ng/rk2">РК2 за 9 шагов</a>.`:`Ближайший эфир — <b>${n.rel} в ${n.time} МСК</b>${n.moved?` (перенесли с ${n.moved})`:''}.`):'Новые эфиры — скоро.')(PROMO.next())}</p>
     <div class="lv-acts">
      ${PROMO.ready()?`<a class="pmn-b" href="${attr(PROMO.botUrl('live'))}" target="_blank" rel="noopener" data-lv="live-bot">Записаться в Telegram →</a>`:`<p class="lv-soon">Запись откроется совсем скоро.</p>`}
     </div>
