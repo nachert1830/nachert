@@ -292,6 +292,9 @@ function renderSync(){
 }
 
 /* ═══ Вход ═══ */
+/* вход начат с сайта (например, «Спроси автора») — после входа вернуться туда: lk_ret = адрес на этом сайте */
+function goRet(){ const r=LKS.raw('lk_ret'); if(!r) return false; LKS.put('lk_ret',null); if(!/^\/(#\/[\w\/-]*)?$/.test(r)) return false;
+  if(!P.onb){ P.onb=1; saveP(); } location.href=r; return true; }
 const L={mail:'',busy:false};
 function lStep(k){ $$('#lSheet .lstep').forEach(x=>x.classList.toggle('on',x.getAttribute('data-l')===k)); $('#lErr').textContent=''; }
 function lErr(e){ $('#lErr').textContent=e&&e.message||String(e||''); }
@@ -304,6 +307,7 @@ async function finishLogin(tok){
     let ch=false; if(!P.name&&u.name&&u.name!=='Участник'){ P.name=u.name; ch=true; } if(!P.group&&u.group){ P.group=u.group; ch=true; } if(!variant()&&u.variant){ P.variant=u.variant; ch=true; }
     if(ch) saveP(); else LKS.sync.profile({name:P.name||undefined,group:P.group||'',variant:variant()||0});
     closeSheets(); reload(); if(!P.onb){ if(P.group){ P.onb=1; saveP(); } else if(OB.el.classList.contains('on')===false) openOb(); }
+    if(goRet()) return;
     toast(j.isNew?'Аккаунт создан — прогресс сохраняется':'Вход выполнен — прогресс подтянут');
   }catch(e){ if(e.data&&e.data.needConsent){ openLogin(); lErr('Для нового аккаунта отметь согласие и войди ещё раз'); } else toast(e.message); }
 }
@@ -455,7 +459,8 @@ renderAll();
 /* знакомство — не во фрейме (пульт владельца встраивает кабинет) и не по прямой ссылке на сканер */
 let framed=false; try{ framed=window.top!==window; }catch(e){ framed=true; }
 const wantLogin=/^#\/login/.test(location.hash); if(wantLogin){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
-if(wantLogin&&LKS.sync.state.on&&!LKS.raw('lk_tok')) openLogin();
+if(wantLogin&&LKS.raw('lk_tok')&&goRet()){ /* уже вошёл — сразу назад */ }
+else if(wantLogin&&LKS.sync.state.on&&!LKS.raw('lk_tok')) openLogin();
 else if(!P.onb&&!framed&&!/^#scan/.test(location.hash)) openOb();
 fetch('data/groups.json').then(r=>r.json()).then(j=>{ DB=j; if(group()&&!j.groups[group()]){ P.group=''; saveP(); } SELD=null; renderAll(); if(OB.el.classList.contains('on')&&OB.st===1) obShow(); }).catch(()=>renderAll());
 /* вернулся с Яндекса — завершить вход */

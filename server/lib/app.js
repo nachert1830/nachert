@@ -365,13 +365,14 @@ function createApp(o){
     return H.json(200,{requests:l.sort((a,b)=>b.ts-a.ts).map(f=>({ts:f.ts,text:f.text,reply:f.reply||null,replyAt:f.replyAt||null}))}); };
   A['GET /api/me/export']=async(req,S)=>{ await limit('export',S.user.id,10,3600); const u=S.user;
     const [ids,prog,ses,logs,fb]=await Promise.all([store.scan('identities',x=>x.userId===u.id),store.get('progress',u.id),store.scan('sessions',x=>x.userId===u.id),
-      store.query('loginlog',u.id),store.scan('feedback',x=>x.userId===u.id)]);
+      store.query('loginlog',u.id),store.scan('feedback',x=>x.userId===u.id)]), qs=await store.scan('ask',x=>x.userId===u.id);
     const out={exportedAt:new Date(now()).toISOString(),about:'Все данные, которые личный кабинет Начерта хранит о вас (nachert1830.ru).',
       user:{id:u.id,name:u.name,group:u.group||null,variant:u.variant||null,role:u.role,method:u.method,telegramId:u.tgId||null,createdAt:u.createdAt,lastLogin:u.lastLogin||null,consent:u.consent,reminders:u.reminders,blocked:!!u.blocked},
       identities:ids.map(i=>({type:i.type,key:i.id,createdAt:i.createdAt})),
       progress:prog?{data:prog.data,updatedAt:prog.updatedAt}:null,
       sessions:ses.map(s=>({createdAt:s.createdAt,lastSeen:s.lastSeen,expiresAt:s.expiresAt,current:s.id===S.h})),
-      loginLog:logs.map(x=>({ts:x.ts,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip})),feedback:fb.map(f=>({ts:f.ts,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null}))};
+      loginLog:logs.map(x=>({ts:x.ts,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip})),feedback:fb.map(f=>({ts:f.ts,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null})),
+      questions:qs.map(q=>({createdAt:q.createdAt,src:q.src,messages:q.msgs.map(m=>({from:m.from==='a'?'автор':'вы',text:m.text,photo:!!m.img,ts:m.ts}))}))};
     return H.json(200,out,{'Content-Disposition':'attachment; filename="nachert-club-my-data.json"'}); };
 
   A['POST /api/me/delete']=async(req,S)=>{ const b=body(req); if(b.confirm!=='УДАЛИТЬ') fail(400,'Подтвердите удаление словом УДАЛИТЬ.');
@@ -400,6 +401,45 @@ function createApp(o){
     const t=now(); await store.put('feedback',{id:new Date(t).toISOString()+'#'+C.token(4),userId:S.user.id,name:S.user.name,feature,mood,text,ts:t,ver:String(b.ver||'').slice(0,20)});
     return H.json(200,{ok:true}); };
 
+  /* ── вопросы автору: переписка внутри сайта (таблицы ask — ветки, askimg — фото) ──
+     Писать может только вошедший. Ветка: {id, userId, имя/группа/вариант на момент вопроса, src — откуда спросили,
+     msgs:[{id, from:'u'|'a', text, img?, ts}], seenU / seenA — когда ученик / автор последний раз открывали, closed}.
+     Фото — отдельной записью (до ~280 КБ JPEG/WebP), в ветке только его id; открыть фото может хозяин ветки или админ. */
+  const ASK_MAX_MSGS=80, ASK_IMG=280*1024, ASK_TEXT=3000;
+  const askText=s=>String(s||'').replace(/\u0000/g,'').replace(/\r\n?/g,'\n').replace(/\n{4,}/g,'\n\n\n').trim().slice(0,ASK_TEXT);
+  const askSrc=s=>String(s||'').replace(/[^\w\/#.-]/g,'').slice(0,80);
+  async function askImg(b,threadId){ if(!b.img) return null; const img=String(b.img);
+    if(img.length>ASK_IMG||!/^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+\/]+=*$/.test(img)) fail(400,'Фото не подошло: нужен снимок до 200 КБ (сайт сжимает сам).');
+    const id='i'+now().toString(36)+C.token(6); await store.put('askimg',{id,threadId,data:img,ts:now()}); return id; }
+  const lastOf=t=>t.msgs[t.msgs.length-1]||{};
+  const askBrief=(t,who)=>{ const L=lastOf(t), seen=who==='a'?(t.seenA||0):(t.seenU||0), other=who==='a'?'u':'a';
+    return {id:t.id,title:t.title,src:t.src||'',where:t.where||'',createdAt:t.createdAt,updatedAt:t.updatedAt,closed:!!t.closed,n:t.msgs.length,
+      last:{from:L.from,text:String(L.text||'').slice(0,140),img:!!L.img,ts:L.ts},
+      unread:t.msgs.filter(m=>m.from===other&&m.ts>seen).length,
+      answered:t.msgs.some(m=>m.from==='a'),waiting:L.from==='u'&&!t.closed}; };
+  const askFull=(t,who)=>Object.assign(askBrief(t,who),{msgs:t.msgs.map(m=>({id:m.id,from:m.from,text:m.text,img:m.img||null,ts:m.ts}))});
+  const askMsg=(from,text,img)=>({id:now().toString(36)+C.token(3),from,text,...(img?{img}:{}),ts:now()});
+  async function askAppend(t,m,patch){ for(let i=0;i<5;i++){ const cur=await store.get('ask',t.id); if(!cur) fail(404,'Нет такого вопроса.');
+      if(cur.msgs.length>=ASK_MAX_MSGS) fail(409,'В этой переписке уже много сообщений — задай новый вопрос.');
+      const msgs=cur.msgs.concat([m]), r=await store.update('ask',t.id,Object.assign({msgs,updatedAt:m.ts,ver:(cur.ver||0)+1},patch||{}),{ifEq:{ver:cur.ver==null?null:cur.ver}});
+      if(r) return r; }
+    fail(409,'Не получилось сохранить — попробуй ещё раз.'); }
+  async function myThread(req,S){ const t=await store.get('ask',String((req.query&&req.query.id)||'')); if(!t||t.userId!==S.user.id) fail(404,'Нет такого вопроса.'); return t; }
+  A['GET /api/ask']=async(req,S)=>{ const l=await store.scan('ask',x=>x.userId===S.user.id), br=l.sort((a,b)=>b.updatedAt-a.updatedAt).map(t=>askBrief(t,'u'));
+    return H.json(200,{threads:br,unread:br.reduce((n,t)=>n+t.unread,0)}); };
+  A['GET /api/ask/t']=async(req,S)=>{ const t=await myThread(req,S); const r=await store.update('ask',t.id,{seenU:now()})||t; return H.json(200,{thread:askFull(r,'u')}); };
+  A['POST /api/ask']=async(req,S)=>{ const b=body(req); await limit('ask',S.user.id,12,3600);
+    const text=askText(b.text); if(text.length<2&&!b.img) fail(400,'Напиши вопрос — хотя бы пару слов.');
+    const t0=now(), id='q'+t0.toString(36)+C.token(4), img=await askImg(b,id), u=S.user;
+    const th={id,userId:u.id,name:u.name,group:u.group||'',variant:u.variant||0,src:askSrc(b.src),where:cleanName(b.where),title:(text||'Фото').split('\n')[0].slice(0,90),
+      msgs:[askMsg('u',text,img)],createdAt:t0,updatedAt:t0,seenU:t0,seenA:0,closed:false,ver:0};
+    await store.put('ask',th); await logAct(u.id,'ask',{n:1}); return H.json(200,{thread:askFull(th,'u')}); };
+  A['POST /api/ask/msg']=async(req,S)=>{ const b=body(req); await limit('askm',S.user.id,60,3600);
+    const t=await myThread({query:{id:b.id}},S), text=askText(b.text); if(!text&&!b.img) fail(400,'Пустое сообщение.');
+    const r=await askAppend(t,askMsg('u',text,await askImg(b,t.id)),{seenU:now(),closed:false}); return H.json(200,{thread:askFull(r,'u')}); };
+  A['GET /api/ask/img']=async(req,S)=>{ const im=await store.get('askimg',String((req.query&&req.query.id)||'')); if(!im) fail(404,'Нет фото.');
+    if(S.user.role!=='admin'){ const t=await store.get('ask',im.threadId); if(!t||t.userId!==S.user.id) fail(404,'Нет фото.'); }
+    return H.json(200,{data:im.data},{'Cache-Control':'private, max-age=86400'}); };
   /* — что делают участники: короткие события из кабинета и «я сейчас здесь» (для живого пульта владельца) — */
   const ACT_TYPES=new Set(['task','check','train','diag','mock','plan','skill','scan']), VIEWS=/^[a-z]{0,12}$/;
   const actClean=d=>{ const o={}; if(!d||typeof d!=='object') return o; for(const k of Object.keys(d).slice(0,6)){ if(!/^[a-z]{1,8}$/.test(k)) continue; const v=d[k];
@@ -461,12 +501,23 @@ function createApp(o){
     if(u.id===S.user.id) fail(409,'Нельзя заблокировать себя.'); await store.update('users',u.id,{blocked:b.blocked===true});
     if(b.blocked===true){ const all=await store.scan('sessions',x=>x.userId===u.id); for(const s of all) await store.del('sessions',s.id); }
     return H.json(200,{ok:true}); };
-  /* ответ на обращение: виден участнику в клубе и уходит в Telegram, если он привязан */
+  /* ответ на обращение: виден участнику в кабинете */
   D['POST /api/admin/reply']=async(req)=>{ const b=body(req), text=String(b.text||'').replace(/\u0000/g,'').trim().slice(0,2000); if(!text) fail(400,'Пустой ответ.');
     const f=await store.get('feedback',String(b.id||'')); if(!f||f.feature!=='privacy') fail(404,'Нет такого обращения.');
-    await store.update('feedback',f.id,{reply:text,replyAt:now()}); const u=await store.get('users',f.userId); let tg=false;
-    if(u&&u.tgId){ const r=await o.bot.send(u.tgId,'Ответ Начерта на ваше обращение:\n\n'+text); tg=!!(r&&r.ok); }
-    return H.json(200,{ok:true,telegram:tg}); };
+    await store.update('feedback',f.id,{reply:text,replyAt:now()});
+    return H.json(200,{ok:true}); };
+  /* вопросы: все ветки — автору; ответ, закрыть / открыть снова */
+  D['GET /api/admin/ask']=async()=>{ const l=await store.scan('ask'), us=await store.scan('users'), U={}; us.forEach(u=>{ U[u.id]=u; });
+    const br=l.sort((a,b)=>b.updatedAt-a.updatedAt).map(t=>Object.assign(askBrief(t,'a'),{user:{id:t.userId,name:(U[t.userId]&&U[t.userId].name)||t.name,group:(U[t.userId]&&U[t.userId].group)||t.group||'',variant:(U[t.userId]&&U[t.userId].variant)||t.variant||0}}));
+    return H.json(200,{threads:br,unread:br.reduce((n,t)=>n+t.unread,0),waiting:br.filter(t=>t.waiting).length}); };
+  D['GET /api/admin/ask/t']=async(req)=>{ const t=await store.get('ask',String((req.query&&req.query.id)||'')); if(!t) fail(404,'Нет такого вопроса.');
+    const r=await store.update('ask',t.id,{seenA:now()})||t, u=await store.get('users',t.userId);
+    return H.json(200,{thread:Object.assign(askFull(r,'a'),{user:{id:t.userId,name:(u&&u.name)||t.name,group:(u&&u.group)||t.group||'',variant:(u&&u.variant)||t.variant||0}})}); };
+  D['POST /api/admin/ask/msg']=async(req)=>{ const b=body(req), t=await store.get('ask',String(b.id||'')); if(!t) fail(404,'Нет такого вопроса.');
+    const text=askText(b.text); if(!text&&!b.img) fail(400,'Пустой ответ.');
+    const r=await askAppend(t,askMsg('a',text,await askImg(b,t.id)),{seenA:now()}); return H.json(200,{thread:askFull(r,'a')}); };
+  D['POST /api/admin/ask/close']=async(req)=>{ const b=body(req), t=await store.get('ask',String(b.id||'')); if(!t) fail(404,'Нет такого вопроса.');
+    const r=await store.update('ask',t.id,{closed:b.closed!==false}); return H.json(200,{thread:askFull(r,'a')}); };
   D['POST /api/admin/flags']=async(req)=>{ const b=body(req), cur=await flagsRaw();
     Object.keys(b.flags||{}).forEach(k=>{ if(FEAT.ids.includes(k)&&FEAT.MODES.includes(b.flags[k])) cur[k]=b.flags[k]; });
     await store.put('config',{id:'flags',values:cur}); return H.json(200,{flags:cur}); };
@@ -480,6 +531,7 @@ function createApp(o){
     const fb=await store.scan('feedback',x=>x.userId===id); for(const x of fb) await store.del('feedback',x.id);
     const inv=await store.scan('invites',x=>x.usedBy===id); for(const x of inv) await store.update('invites',x.id,{usedBy:'удалён'});
     const ac=await store.scan('activity',x=>x.userId===id); for(const x of ac) await store.del('activity',x.id);
+    const qs=await store.scan('ask',x=>x.userId===id); for(const q of qs){ for(const m of q.msgs||[]) if(m.img) await store.del('askimg',m.img); await store.del('ask',q.id); }
     await store.del('progress',id); await store.del('users',id); }
 
   /* ── бот: /start, /pause, /resume, /stop и кнопка «Пауза» ── */

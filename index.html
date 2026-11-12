@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Начерт — начертательная геометрия по шагам</title>
 <meta name="description" content="Начертательная геометрия по шагам: решённая тетрадь (89 задач), подготовка к РК, разборы ДЗ №1–5 и интерактивная 3D-модель с эпюром. Чертёж растёт построение за построением.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://*.goatcounter.com; connect-src 'self' https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://*.goatcounter.com; connect-src 'self' https://*.apigw.yandexcloud.net https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* тема до первой отрисовки, чтобы не было вспышки светлой */try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
@@ -5088,7 +5088,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
    <span class="foot-books"><button type="button" class="foot-book" data-book="tb"><b>Учебник</b><i>Жирных, Серёгин, Шарикян · 2015</i></button><button type="button" class="foot-book" data-book="wb" style="--bk:#3a7a55"><b>Рабочая тетрадь</b><i>Жирных, Новоселова</i></button><button type="button" class="foot-book" data-book="mu" style="--bk:#b45309"><b>Методические указания</b><i>Камзолов и др. · 1986</i></button></span>
    <span class="foot-src">Оформление — по ЕСКД. Решения, чертежи и пояснения подготовлены для этого сайта. <a href="#/about/legal">Правовая информация</a> · <a href="#/about/changes" id="footVer">Что нового</a></span>
   </div>
-  <div class="foot-r"><span class="foot-au">Автор — <b>Андрей Матханов</b></span><a href="#/live" class="foot-ask" id="stuckAsk">Задать вопрос автору</a><a href="#/about">О проекте</a><a href="#/privacy">Политика обработки данных</a><a href="#/consent">Согласие на обработку данных</a><span id="footViews"></span></div>
+  <div class="foot-r"><span class="foot-au">Автор — <b>Андрей Матханов</b></span><a href="#/ask" class="foot-ask" id="stuckAsk">Задать вопрос автору</a><a href="#/about">О проекте</a><a href="#/privacy">Политика обработки данных</a><a href="#/consent">Согласие на обработку данных</a><span id="footViews"></span></div>
  </div>
 </div></footer>
 
@@ -24017,6 +24017,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
 window.CHANGES=[
   {v:'4.31',d:'12 ноября 2026',items:['РК2 за 9 шагов проще: в теме три шага — «Как решать» (суть, как звучит в билете, способ), «Разбор по шагам», «Задачи билета». Вопрос-проверка и звёзды убраны: тема пройдена, когда досмотрен разбор.','«Задачи билета» — только условия и чертежи, по задаче на каждый вид, и яркая кнопка «Распечатать задачи» (по листу А4 на задачу). Без ответов, решений и координат.','Пробный РК2: координаты убраны, ответ — в целых градусах и миллиметрах с допуском, без лишних десятых.']},
   {v:'4.30',d:'12 ноября 2026',items:['РК2 за 9 шагов: каждая тема — пять шагов сверху (Суть → Способ → Разбор задачи → Виды в билете → Решить ещё), открыт один, внизу кнопка «Дальше». Ловушки свёрнуты, виды задач — компактные карточки. «Решить ещё» — лист задач как в билете, по одной на каждый вид, ответ и решение под спойлером, «Новые задачи» — новые числа.','Убрана проверка вводом чисел (углы, расстояния): тема засчитывается за вопрос на суть, разбор задачи и пройденные шаги. Пробный РК2: решаешь на бумаге, открываешь ответы и отмечаешь «сошлось / не сошлось».']},
+  {v:'4.30',d:'12 ноября 2026',items:['«Спроси автора» — прямо на сайте. Кнопка «Спросить» в шапке на любой странице: пишешь, что не получается, можно с фото чертежа — автор отвечает лично, ответ приходит сюда же. Новый ответ видно на кнопке, все вопросы — в «Моих вопросах».']},
   {v:'4.29',d:'12 ноября 2026',items:['РК2 за 9 шагов, тема «Угол наклона плоскости» (#/ng/rk2/p/incl/pi2): вторая задача с решением по шагам — угол наклона плоскости к π₂ способом замены плоскостей проекций. Фронталь f, новая ось x₂₄ ⟂ f″, перенос глубин y с π₁, плоскость на π₄ — прямая, угол β с осью x₂₄. Вкладки «Наклон к π₁» и «Наклон к π₂».','Задачи по шагам (РК2, «Вращение», ДЗ №3): понятное управление — яркая кнопка «Смотреть решение → / Дальше →», полоска шагов (можно нажать на любой), нажатие на чертёж — следующий шаг. Панель всегда на виду: на компьютере закреплена сверху, на телефоне — внизу, под большим пальцем.']},
   {v:'4.28',d:'11 ноября 2026',items:['Одно оформление чертежей во «Вращении», «РК2 за 9 шагов», режиме эфира и ДЗ №3 — как на листе: данные чёрным, построения тонко, новые проекции и повёрнутое синим, ответ красным; радиус и дуга поворота — тонкие, не красные. Вращение вокруг проецирующей прямой: угол поворота φ отмечен, остальные точки переносятся засечками (дуга из оси + засечка из повёрнутой точки горизонтали). Линии уровня доведены до новых осей и до центра вращения O′, прямая a продлена до возвращённых вершин, подписи не обрезаются краем, кнопка «← Назад» видна в тёмной теме.']},
   {v:'4.27',d:'11 ноября 2026',items:['Раздел «Способ вращения» (#/ng/rot) собран заново. Два способа на маленьких чертежах (вокруг проецирующей прямой и вокруг линии уровня), таблица «что спрашивают — вокруг чего — до какого момента» и семь разобранных задач по типам билетов РК2: угол наклона плоскости к π₁ и к π₂, натуральная величина треугольника, расстояние между параллельными прямыми, биссектриса угла, равносторонний треугольник и квадрат на прямой с обратным поворотом. Чертёж как на листе: данные — чёрным, повёрнутое — синим, ответ — красным; каждая задача сверена с пространством. Карточка раздела снова на главной.']},
@@ -27649,7 +27650,7 @@ function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); ret
     if(k==='sol') return solHTML(id);
     return `${moreHTML(id)}
       ${T.ex.length?`<p class="rkp-ex"><span>Ещё разборы:</span>${T.ex.map(e=>`<a href="${e[0]}">${e[1]}</a>`).join('')}</p>`:''}
-      ${PROMO.askHTML('rk2-'+id,'Остался вопрос?','Напиши в Telegram — отвечу лично, можно с фото чертежа.')}`; };
+      ${PROMO.askHTML('rk2-'+id,'Остался вопрос?','Отвечу лично, прямо здесь. Можно с фото чертежа.')}`; };
   const draw=()=>{ const s=getS(), st=tState(s,id), k=stars(st), i=CUR.stg, key=STG[i][0], last=i===STG.length-1;
     const nextBtn=!last?`<button type="button" class="btn pri lg rkp-fw" data-go="${i+1}"><small>Дальше</small>${STG[i+1][1]} →</button>`
       :`<button type="button" class="btn pri lg rkp-fw" data-fin>${nxt?`<small>Тема понятна</small>Тема ${idx+2}: ${nxt.t.toLowerCase()} →`:'<small>Все темы пройдены</small>Пробный РК2 →'}</button>`;
@@ -28382,7 +28383,7 @@ function parseHash(h){
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
   if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
-  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz','rk','live'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz','rk','live','ask'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -28413,10 +28414,8 @@ try{ history.scrollRestoration='manual'; }catch(e){}   /* прокруткой �
 window.addEventListener('popstate',()=>{ POP=((location.hash||'#/')!==CURH); });
 window.addEventListener('hashchange',route);
 { const sb=document.getElementById('stuckBtn'); if(sb) sb.addEventListener('click',()=>{ if(window.SEARCH) SEARCH.open(''); });
-  /* «Спросить автора» — бот в Telegram; в параметре — раздел страницы (rk2-<тема>, rot, dz3-<вариант>…) */
-  const sa=document.getElementById('stuckAsk'); if(sa) sa.addEventListener('click',ev=>{ if(!PROMO.ready()) return; ev.preventDefault(); const h=location.hash, m=/^#\/ng\/rk2\/p\/(\w+)/.exec(h), d=/^#\/ng3\/(\d+)/.exec(h);
-    const src=m?'rk2-'+m[1]:/^#\/ng\/rk2/.test(h)?'rk2':/^#\/ng\/rot/.test(h)?'rot':d?'dz3-'+d[1]:/^#\/live/.test(h)?'live':'site';
-    try{ window.TRACK&&TRACK('promo',{mode:'ask-foot'}); }catch(e){} window.open(PROMO.askUrl(src),'_blank','noopener'); }); }
+  /* «Задать вопрос автору» — страница #/ask (lk/ask.js): откуда спросили, она запоминает сама */
+}
 try{ history.scrollRestoration='manual'; }catch(e){}
 
 function teardown(){
@@ -28445,6 +28444,7 @@ function render(r){
       case 'epure': title=viewEpure(v); break;
       case 'about': title=viewAbout(v); break;
       case 'live': title=r.tab==='show'?LIVESHOW.view(v,r.item):viewLive(v); break;
+      case 'ask': title=viewLive(v,r.tab); break;
       case 'me': title=OWNER.view(v,r); break;
       case 'privacy': title=viewDoc(v,'privacy'); break;
       case 'consent': title=viewDoc(v,'consent'); break;
@@ -28776,21 +28776,21 @@ FX.qrSheet=function(url,title,back){
    Telegram распознаём по мосту TelegramWebviewProxy: его встраивают в страницу и iOS-, и Android-версия Telegram. */
 /* Карточка на главной: бесплатные онлайн-разборы (отдельная личная деятельность автора, к сайту не относятся).
    Стоит в паре верхних карточек вместо РК2; скрыли крестиком — на её месте снова карточка РК2.
-   Запись — через бота в Telegram (код бота — server/livebot). PROMO_BOT — имя бота без @: меняется только здесь (его же берёт страница #/live).
+   Кнопки ведут на страницу вопросов сайта #/ask (lk/ask.js).
    PROMO_RK2_LAST — последний день карточки «РК2 завтра?», дальше — разбор ДЗ (по локальной дате браузера, включительно).
    Скрыть карточку нельзя (крестика нет) — видна всем посетителям главной.
-   Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz (бот); со страницы #/live — live-bot.
+   Нажатия считаются через TRACK → GoatCounter: ev/promo/rk2, ev/promo/dz.
    Как всё устроено и что настроить — docs/LIVE.md. */
 const PROMO=(function(){
-  const PROMO_BOT='nachert1830_bot';            /* например nachert_live_bot */
-  const botUrl=src=>'https://t.me/'+PROMO_BOT+'?start='+src;
-  const ready=/^[A-Za-z]\w{3,31}$/.test(PROMO_BOT);   /* пока имя бота не вписано — карточку не показываем (кнопка вела бы в никуда) */
+  /* запись и вопросы — на сайте: страница #/ask (lk/ask.js) */
+  const botUrl=()=>'#/ask';
+  const ready=true;
   const PROMO_RK2_LAST=[2026,11,13];   /* год, месяц (1–12), день */
   /* эфиры по Москве: день → время. MOVED — перенесённые (день → прежнее время): на карточке и в полосе — «перенесли с …».
-     Это же расписание — у бота в server/livebot/schedule.json (поле moved_from). Менять в обоих местах. */
-  const PROMO_DAYS={'2026-11-10':'20:00','2026-11-11':'18:00'};   /* эфиров пока нет: 12 и 13.11 отменены (бот разослал записанным ссылку на «РК2 за 9 шагов») */
+*/
+  const PROMO_DAYS={'2026-11-10':'20:00','2026-11-11':'18:00'};   /* эфиров пока нет: 12 и 13.11 отменены  */
   const PROMO_MOVED={'2026-11-11':'20:00'};
-  /* консультации: на карточке и в полосе — «Консультация и ответы на вопросы», без времени (время пришлёт бот) */
+  /* консультации: на карточке и в полосе — «Консультация и ответы на вопросы», без времени */
   const PROMO_QA={};
   const PROMO_MIN=60;                  /* длительность: после конца эфира он больше не «ближайший» */
   const rk2On=()=>{ const [y,m,d]=PROMO_RK2_LAST; return Date.now()<new Date(y,m-1,d+1).getTime(); };
@@ -28811,7 +28811,7 @@ const PROMO=(function(){
     const pill=n?(n.live?'<i aria-hidden="true"></i>Идёт':(n.rel==='сегодня'?'<i aria-hidden="true"></i>':'')+cap(n.rel)):'Бесплатно';
     const when=n?`<p class="pmn-m">${n.live?'Эфир идёт · ':cap(n.rel)+' в '}<b>${n.live?'подключайся':tm}</b>${n.live?'':' по МСК'}</p>${n.moved&&!n.live?`<p class="pmn-mv">Перенос с ${n.moved}</p>`:''}`
       :`<p class="pmn-m">В <b>${tm}</b> по МСК</p>`;
-    const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" target="_blank" rel="noopener" data-promo="${k}" aria-label="${l} в Telegram">${t}</a>`;
+    const btn=(k,t,l)=>`<a class="pmn-b" href="${attr(botUrl('site'))}" data-promo="${k}" aria-label="${l}">${t}</a>`;
     if(rk&&n&&n.qa) return `<section class="pmn" data-promo-card aria-labelledby="pmH">
      <span class="pmn-pill">${n.live?'<i aria-hidden="true"></i>Идёт':'Бесплатно'}</span><span class="pmn-moon" aria-hidden="true"></span>
      <h2 class="pmn-t" id="pmH">РК2<span>${n.rel==='завтра'?'завтра?':'скоро?'}</span></h2>
@@ -28842,13 +28842,13 @@ const PROMO=(function(){
     const n=next(), show=ready&&n&&n.rel==='сегодня'&&r&&r.s!=='home'&&r.s!=='live';   /* на главной — карточка, на #/live — своя кнопка */
     el.hidden=!show; if(!show){ el.innerHTML=''; return; }
     if(n.qa){ el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t"><b>${n.live?'Консультация идёт':'Консультация по РК2'}</b> — ответы на вопросы, бесплатно</span>
-      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${n.live?'Подключиться →':'Задать вопрос →'}</a></div>`; return; }
+      <a class="lb-go" href="${attr(botUrl('bar'))}" data-promo="bar">${n.live?'Подключиться →':'Задать вопрос →'}</a></div>`; return; }
     el.innerHTML=`<div class="lb-in"><span class="lb-dot" aria-hidden="true"></span><span class="lb-t">${n.live?'<b>Эфир идёт</b> — бесплатный разбор РК2':`<b>Сегодня в ${n.time} МСК</b> — бесплатный эфир по РК2${n.moved?` (перенесли с ${n.moved})`:''}`}</span>
-      <a class="lb-go" href="${attr(botUrl('bar'))}" target="_blank" rel="noopener" data-promo="bar">${n.live?'Подключиться →':'Записаться →'}</a></div>`; }
-  /* «Задать вопрос автору»: бот в Telegram, параметр q-<откуда> — бот покажет автору, с какой страницы вопрос */
-  const askUrl=src=>botUrl('q-'+String(src||'site').replace(/[^\w-]/g,'').slice(0,28));
-  const askHTML=(src,title,sub)=>ready?`<aside class="askb" aria-label="Задать вопрос автору"><div class="askb-t"><b>${title||'Остался вопрос?'}</b><span>${sub||'Напиши его в Telegram — отвечу лично. Можно с фото своего чертежа.'}</span></div>
-    <a class="askb-go" href="${attr(askUrl(src))}" target="_blank" rel="noopener" data-promo="ask-${attr(src||'site')}">Задать вопрос →</a></aside>`:'';
+      <a class="lb-go" href="${attr(botUrl('bar'))}" data-promo="bar">${n.live?'Подключиться →':'Записаться →'}</a></div>`; }
+  /* «Задать вопрос автору»: страница #/ask — с какой страницы спросили, она запоминает сама */
+  const askUrl=()=>'#/ask';
+  const askHTML=(src,title,sub)=>ready?`<aside class="askb" aria-label="Задать вопрос автору"><div class="askb-t"><b>${title||'Остался вопрос?'}</b><span>${sub||'Отвечу лично, прямо здесь. Можно с фото чертежа.'}</span></div>
+    <a class="askb-go" href="${attr(askUrl(src))}" data-promo="ask-${attr(src||'site')}">Задать вопрос →</a></aside>`:'';
   return {cardHTML,rk2On,botUrl,ready:()=>ready,paintBar,next,askUrl,askHTML};
 })();
 const A2HS=(function(){
@@ -29304,6 +29304,7 @@ function viewHome(v){
     ${tg?`<a class="v8-res" href="${attr(tg.href)}"><span>Продолжить</span><b>${attr(short(tg.label,70))}</b>${stepNote?`<small>${attr(stepNote.replace(/ · $/,''))}</small>`:''}<i aria-hidden="true">→</i></a>`:''}
     <ol class="v9-steps" aria-label="Как найти решение"><li><b>1</b>Впиши номер или вопрос</li><li><b>2</b>Открой решение</li><li><b>3</b>Жми «Дальше» — шаг за шагом</li></ol>
    </section>
+   <div data-ask-home></div>
        <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
    <section class="v8-dirs" aria-labelledby="v8D">
     <h2 id="v8D" class="v8-dh">Или открой раздел</h2>
@@ -29713,7 +29714,7 @@ function dzVariant(v,d,n,extra){
   /* «Как на листе» (ДЗ №3): пять задач пирамиды своего варианта — А / Б / В и чертёж по шагам (PYR, EPX) */
   if(mode==='sheet'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzx dzx-varp',body:`${head}
       <p class="var-note">Решение как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Чёрным — данные, синим — новые проекции и повёрнутое, красным — ответ; новое на шаге — оранжевым, обратный переход (точку — назад на π₁ и π₂) — фиолетовым. Данные — твоего варианта ${n}.</p>
-      <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Напиши вопрос в Telegram — отвечу лично. Приложи фото листа.')}`});
+      <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Приложи фото листа — отвечу лично, прямо здесь.')}`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
   if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}<div id="dzPl"></div>`});
@@ -34570,7 +34571,7 @@ const ROT=(function(){
       <section class="rt-sec" id="rotTasks"><h2>Разобранные задачи</h2><p class="rt-lead">Данные свои, типы — как в билетах. Нажми «Решать» или на любой шаг справа. Чёрным — данные и построения, <span class="rt-b">синим</span> — повёрнутое положение, <span class="rt-r">красным</span> — ответ, <span class="rt-o">оранжевым</span> — что чертим на этом шаге.</p>
         <div data-rot-pl></div></section>
 
-      ${PROMO.askHTML('rot','Не получается повернуть?','Напиши вопрос в Telegram — отвечу лично. Можно приложить фото своего чертежа.')}
+      ${PROMO.askHTML('rot','Не получается повернуть?','Отвечу лично, прямо здесь. Можно с фото чертежа.')}
       <section class="rt-sec"><h2>Обратный поворот — три приёма</h2><ol class="rt-3">
         <li><b>Точка на оси</b><span>не двигается: Ā ≡ A. Прямая, пересекающая ось, возвращается через эту точку.</span></li>
         <li><b>Точка на заданной прямой a</b><span>идёт назад по своему следу ⟂ h′ до a′, потом по связи на a″.</span></li>
@@ -35074,38 +35075,12 @@ const LIVESHOW=(function(){
   return {view,stop,_state:()=>S,_tasks:T};
 })();
 
-/* ═════ #/live — бесплатные онлайн-разборы: как записаться, как проходит, план «РК2 за 9 шагов», какие данные и зачем.
-   Ссылки на бота и форму — из PROMO (одно место). Сам план эфира — темы RKP.TOPICS (те же 9 типов, что в «РК2 за 9 шагов»);
-   билеты не раскрываются — только типы задач и порядок решения. Что настроить владельцу — docs/LIVE.md ═════ */
-function viewLive(v){
-  const T=(window.RKP&&RKP.TOPICS)||[], n=PROMO.next();
-  const step=(k,b,t)=>`<li><b>${k}</b><div><strong>${b}</strong>${t?`<span>${t}</span>`:''}</div></li>`;
-  /* эфиров нет — запись закрыта; вместо неё — вопросы автору через бота и весь материал на сайте */
-  v.innerHTML=`<div class="wrap page lv">
-   <section class="lv-hero" aria-labelledby="lvH">
-    <h1 id="lvH">Задать вопрос</h1>
-    <p>${n?(n.live?'<b>Эфир идёт прямо сейчас.</b> ':'')+'':'Эфиров пока нет. '}Есть вопрос — задай его автору в Telegram, отвечу лично. Весь материал с эфиров — на сайте: <a href="#/ng/rk2"><b>РК2 за 9 шагов</b></a> и <a href="#/ng/rot"><b>Способ вращения</b></a>.</p>
-    <div class="lv-acts">
-     ${PROMO.ready()?`<a class="pmn-b" href="${attr(PROMO.askUrl('live'))}" target="_blank" rel="noopener" data-lv="live-ask">Задать вопрос →</a>`:''}
-    </div>
-   </section>
-   <section class="lv-sec" aria-labelledby="lvHow"><h2 id="lvHow">Как задать вопрос</h2>
-    <ol class="lv-steps">
-     ${step(1,'Жмёшь «Задать вопрос»','Откроется бот в Telegram.')}
-     ${step(2,'Пишешь вопрос','Одним сообщением, можно с фото своего чертежа.')}
-     ${step(3,'Получаешь ответ','Автор отвечает лично, в этом же чате.')}
-    </ol>
-   </section>
-   ${T.length?`<section class="lv-sec" aria-labelledby="lvPlan"><h2 id="lvPlan">Материал: РК2 за 9 шагов</h2>
-    <ol class="lv-plan">${T.map((t,i)=>`<li><a href="${H('ng','rk2','p',t.id)}"><b>${i+1}</b><span><strong>${t.t}</strong><small>${t.sub}</small></span></a></li>`).join('')}</ol>
-   </section>`:''}
-   <section class="lv-sec lv-data" aria-labelledby="lvData"><h2 id="lvData">Данные</h2>
-    <p>Бот хранит только имя в Telegram, номер чата и твои вопросы — чтобы ответить. Третьим лицам не передаём, через 30 дней удаляем; /delete у бота — сразу.</p>
-    <p class="lv-sub">Ответы на вопросы — личная деятельность автора, к сайту не относятся. Сайт бесплатный.</p>
-   </section>
-  </div>`;
-  v.querySelectorAll('[data-lv]').forEach(a=>a.addEventListener('click',()=>{ try{ window.TRACK&&TRACK('promo',{mode:a.dataset.lv}); }catch(e){} }));
-  return 'Задать вопрос';
+/* ═════ #/ask — «Спроси автора»: вопросы и ответы внутри сайта (lk/ask.js заполняет [data-ask-root]).
+   #/ask — форма и «Мои вопросы», #/ask/<id> — переписка; старый адрес #/live — та же страница. ═════ */
+function viewLive(v,id){
+  id=/^q[\w]{4,40}$/.test(id||'')?id:'';
+  v.innerHTML=`<div data-ask-root="${id}"></div>`;
+  return id?'Мой вопрос':'Спроси автора';
 }
 function viewAbout(v){
   v.innerHTML=`<div class="wrap page"><div class="ptop">${crumbHTML([['О проекте']])}</div><div id="w-about"></div></div>`;
@@ -35159,5 +35134,8 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 <!-- личный кабинет: персонализация сайта для тех, кто настроил кабинет (lk/site.js) -->
 <script src="lk/lib/calendar.js?v=1" defer></script>
 <script src="lk/site.js?v=4" defer></script>
+<!-- «Спроси автора»: вопросы и ответы на сайте (lk/ask.js), адрес сервера — lk/config.js -->
+<script src="lk/config.js?v=2" defer></script>
+<script src="lk/ask.js?v=1" defer></script>
 </body>
 </html>

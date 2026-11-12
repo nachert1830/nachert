@@ -1,0 +1,41 @@
+/* Вопросы автору внутри сайта: пишет только вошедший, автор видит все ветки и отвечает, ученик видит ответ и «новое». */
+'use strict';
+const test=require('node:test'), assert=require('node:assert/strict');
+const {club}=require('./helpers');
+const IMG='data:image/jpeg;base64,'+Buffer.from('фото чертежа').toString('base64');
+
+test('вопрос → ответ автора → «новое» у ученика; чужое не видно; без входа — нельзя',async()=>{
+  const c=club({cfg:{openSignup:true}}); await c.owner();
+  await c.yandex({id:'7001',first_name:'Аня'},{who:'a'}); await c.call('POST','/api/me/profile',{group:'РК6-31Б',variant:8},{as:'a'});
+  await c.yandex({id:'7002',first_name:'Боря'},{who:'b'});
+  assert.equal((await c.call('POST','/api/ask',{text:'Как найти НВ?'},{as:'nobody'})).status,401,'без входа писать нельзя');
+  assert.equal((await c.call('POST','/api/ask',{text:' '},{as:'a'})).status,400,'пустой вопрос — отказ');
+  const q=await c.call('POST','/api/ask',{text:'Как найти натуральную величину?\nВариант 8',src:'#/ng3/8',img:IMG},{as:'a'});
+  assert.equal(q.status,200); const id=q.data.thread.id; assert.equal(q.data.thread.title,'Как найти натуральную величину?');
+  assert.equal((await c.call('GET','/api/ask/t?id='+id,undefined,{as:'b'})).status,404,'чужой вопрос не открыть');
+  assert.equal((await c.call('GET','/api/ask',undefined,{as:'b'})).data.threads.length,0);
+  const imgId=q.data.thread.msgs[0].img; assert.ok(imgId);
+  assert.equal((await c.call('GET','/api/ask/img?id='+imgId,undefined,{as:'b'})).status,404,'чужое фото не открыть');
+  assert.equal((await c.call('GET','/api/ask/img?id='+imgId,undefined,{as:'owner'})).data.data,IMG,'автор видит фото');
+  assert.equal((await c.call('GET','/api/admin/ask',undefined,{as:'a'})).status,403,'список всех — только автору');
+  const L=(await c.call('GET','/api/admin/ask',undefined,{as:'owner'})).data;
+  assert.equal(L.waiting,1); assert.equal(L.unread,1); assert.equal(L.threads[0].user.name,'Аня'); assert.equal(L.threads[0].user.group,'РК6-31Б'); assert.equal(L.threads[0].src,'#/ng3/8');
+  c.clock.t+=60e3;
+  const T=(await c.call('GET','/api/admin/ask/t?id='+id,undefined,{as:'owner'})).data.thread; assert.equal(T.msgs.length,1);
+  assert.equal((await c.call('GET','/api/admin/ask',undefined,{as:'owner'})).data.unread,0,'открыл — прочитано');
+  c.clock.t+=60e3;
+  assert.equal((await c.call('POST','/api/admin/ask/msg',{id,text:'Заменой плоскостей: π₄ ∥ AB.'},{as:'owner'})).status,200);
+  const my=(await c.call('GET','/api/ask',undefined,{as:'a'})).data; assert.equal(my.unread,1,'у ученика — новый ответ'); assert.ok(my.threads[0].answered); assert.ok(!my.threads[0].waiting);
+  const t2=(await c.call('GET','/api/ask/t?id='+id,undefined,{as:'a'})).data.thread; assert.equal(t2.msgs[1].from,'a'); assert.equal(t2.msgs[1].text,'Заменой плоскостей: π₄ ∥ AB.');
+  assert.equal((await c.call('GET','/api/ask',undefined,{as:'a'})).data.unread,0,'прочитал ответ');
+  c.clock.t+=60e3;
+  assert.equal((await c.call('POST','/api/ask/msg',{id,text:'Спасибо! А угол?'},{as:'a'})).status,200);
+  assert.equal((await c.call('POST','/api/ask/msg',{id,text:'влезть в чужое'},{as:'b'})).status,404);
+  assert.equal((await c.call('GET','/api/admin/ask',undefined,{as:'owner'})).data.waiting,1,'уточнение — снова ждёт ответа');
+  assert.equal((await c.call('POST','/api/admin/ask/close',{id},{as:'owner'})).data.thread.closed,true);
+  assert.equal((await c.call('GET','/api/admin/ask',undefined,{as:'owner'})).data.waiting,0,'закрытый не ждёт');
+  assert.equal((await c.call('POST','/api/ask',{text:'x',img:'data:text/html;base64,AAAA'},{as:'a'})).status,400,'не картинка — отказ');
+  const ex=(await c.call('GET','/api/me/export',undefined,{as:'a'})).data; assert.equal(ex.questions[0].messages.length,3,'вопросы — в выгрузке своих данных');
+  assert.equal((await c.call('POST','/api/me/delete',{confirm:'УДАЛИТЬ'},{as:'a'})).status,200);
+  assert.equal((await c.store.scan('ask')).length,0,'удалил аккаунт — вопросы удалены'); assert.equal((await c.store.scan('askimg')).length,0);
+});

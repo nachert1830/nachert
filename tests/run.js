@@ -242,6 +242,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
      кабинет · сканер · 3D · голограмма · сайт на одной странице */
   { const bad=await require('./me-hub.js').runMe(browser,URL); info.push('Пульт владельца: '+bad.length+' замечаний'); report('Пульт владельца (me/)',bad); }
 
+  /* 3л. «Спроси автора» (tests/ask.js): вопрос с сайта (гость → вход → черновик уходит сам, фото) → ответ в пульте → ученик видит ответ;
+     настоящий сервер кабинета с базой в памяти */
+  { const bad=await require('./ask.js').runAsk(browser); info.push('Спроси автора: '+bad.length+' замечаний'); report('Спроси автора (#/ask, пульт)',bad); }
+
   /* 4. теория */
   const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
   report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));
