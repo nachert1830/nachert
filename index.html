@@ -23907,6 +23907,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.29',d:'12 ноября 2026',items:['РК2 за 9 шагов, тема «Угол наклона плоскости» (#/ng/rk2/p/incl/pi2): вторая задача с решением по шагам — угол наклона плоскости к π₂ способом замены плоскостей проекций. Фронталь f, новая ось x₂₄ ⟂ f″, перенос глубин y с π₁, плоскость на π₄ — прямая, угол β с осью x₂₄. Вкладки «Наклон к π₁» и «Наклон к π₂».']},
   {v:'4.28',d:'11 ноября 2026',items:['Одно оформление чертежей во «Вращении», «РК2 за 9 шагов», режиме эфира и ДЗ №3 — как на листе: данные чёрным, построения тонко, новые проекции и повёрнутое синим, ответ красным; радиус и дуга поворота — тонкие, не красные. Вращение вокруг проецирующей прямой: угол поворота φ отмечен, остальные точки переносятся засечками (дуга из оси + засечка из повёрнутой точки горизонтали). Линии уровня доведены до новых осей и до центра вращения O′, прямая a продлена до возвращённых вершин, подписи не обрезаются краем, кнопка «← Назад» видна в тёмной теме.']},
   {v:'4.27',d:'11 ноября 2026',items:['Раздел «Способ вращения» (#/ng/rot) собран заново. Два способа на маленьких чертежах (вокруг проецирующей прямой и вокруг линии уровня), таблица «что спрашивают — вокруг чего — до какого момента» и семь разобранных задач по типам билетов РК2: угол наклона плоскости к π₁ и к π₂, натуральная величина треугольника, расстояние между параллельными прямыми, биссектриса угла, равносторонний треугольник и квадрат на прямой с обратным поворотом. Чертёж как на листе: данные — чёрным, повёрнутое — синим, ответ — красным; каждая задача сверена с пространством. Карточка раздела снова на главной.']},
   {v:'4.26',d:'11 ноября 2026',items:['ДЗ №3 — новая вкладка «Как на листе»: пять задач пирамиды своего варианта (видимость, высота заменой с возвратом основания высоты, проверка высоты пересечением прямой с плоскостью, угол между гранями, истинный вид основания с центром окружности и обратным поворотом, угол ребра с основанием) в формате А / Б / В, чертёж по шагам. Работает для всех 30 вариантов.','«РК2 за 9 шагов» как на листе: в каждой из 9 тем — задача с решением по шагам в формате А (словами) / Б (в пространстве) / В (на чертеже), чертёж на клетке строится по шагам. Обратный переход — отдельными шагами: точка с π₅ на π₁ и π₂, общий перпендикуляр скрещивающихся прямых, точки фигуры после поворота (на прямой — сразу, вне прямой — через неподвижный центр). Эти же 9 задач — в режиме эфира.']},
@@ -27046,7 +27047,7 @@ function view(v,r){ const it=r.item;
   if(it==='mock') return mockView(v);
   if(it==='how') return howView(v);
   if(it==='all') return hub(v);
-  if(it==='p') return RKP.topicView(v,r.sub);
+  if(it==='p') return RKP.topicView(v,r.sub,r.extra);
   if(it==='x') return RKP.examView(v);
   if(it) { redir(H('ng','rk2')); return ''; }
   if(fac()==='sec') return hub(v);          /* у ИУ1Б, ИУ3… другой РК2 — прежний раздел объясняет это */
@@ -27506,7 +27507,7 @@ function resHTML(q){ const r=q.res;
     <p>${r.gave?'':`Твой ответ: ${fmt(r.val)} ${q.u}. `}Ответ: <b>${q.sym} = ${fmt(q.ans)} ${q.u}</b>${r.gave?'':` (допуск ± ${fmt(q.tol)})`}.${r.ok&&r.isAlt?' Это тупой угол — на РК пиши острый, смежный.':''}</p>
     <p class="rkp-how2">${q.how}</p>
     ${r.ok?'':`<p class="rkp-tip">Сверь построение с порядком шагов темы. Частые причины: радиус вращения взят с чертежа, а не гипотенузой; во второй замене расстояния взяты от старой оси.</p>`}</div>`; }
-function topicView(v,id){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
+function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
   const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1];
   const draw=()=>{ const s=getS(), st=tState(s,id), k=stars(st,T), ms=Object.keys(T.m);
     if(!CUR||CUR.id!==id) CUR={id,q:null,m:ms[0]};
@@ -27540,7 +27541,9 @@ function topicView(v,id){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return
       if(CUR.pick===T.chk.c&&!st.u){ st.u=1; setS(s); try{ FX.buzz('success'); }catch(_){} } else { try{ FX.buzz(CUR.pick===T.chk.c?'success':'error'); }catch(_){} } keep(draw,'#rkpChk'); }));
     const re=v.querySelector('[data-reo]'); if(re) re.addEventListener('click',()=>{ CUR.pick=null; CUR.ord=null; keep(draw,'#rkpChk'); });
     v.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ CUR.tab=b.dataset.tab; keep(draw,'#rkpS2'); }));
-    { const el=v.querySelector('#rkpEpx'); if(el&&typeof RK9!=='undefined'&&RK9.byId(id)){ CUR.epk=CUR.epk||0; EPX.player(el,[RK9.byId(id)],{k0:CUR.epk,onStep:k=>{ CUR.epk=k; }}); } else solPaint(v,id); }
+    { const el=v.querySelector('#rkpEpx'); if(el&&typeof RK9!=='undefined'&&RK9.byId(id)){ CUR.epk=CUR.epk||0; const L_=RK9.all(id), want=ex==='pi2'&&L_.length>1?1:null; if(want!=null&&CUR.ept==null){ CUR.ept=want; CUR.epk=0; }
+      const pl=EPX.player(el,L_,{k0:CUR.epk,onStep:k=>{ CUR.epk=k; },onTab:j=>{ CUR.ept=j; CUR.epk=0; }}); if(CUR.ept){ const k0=CUR.epk; pl.tab(CUR.ept); if(k0) pl.go(k0); }
+      if(want!=null&&!CUR.epScr){ CUR.epScr=1; setTimeout(()=>{ try{ v.querySelector('#rkpSol').scrollIntoView({block:'start'}); }catch(_){} },60); } } else solPaint(v,id); }
     v.querySelectorAll('[data-solm]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol={mk:b.dataset.solm,i:0,d3:CUR.sol&&CUR.sol.d3}; keep(draw,'#rkpSol'); }));
     v.querySelectorAll('[data-sols]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol.i+=+b.dataset.sols; keep(draw,'#rkpSol'); }));
     v.querySelectorAll('[data-sol3]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol.d3=!CUR.sol.d3; keep(draw,'#rkpSol'); }));
@@ -34525,6 +34528,36 @@ const RK9=(function(){
       ans:`α = ${fm(alpha)}°`,
       err:['Ставят x₁₄ ∥ h′ — тогда плоскость не станет проецирующей.','Откладывают от x₁₄ y вместо z: при замене π₂ сохраняется высота.','Меряют угол не с осью x₁₄, а с x₁₂.']}; })());
 
+  /* 2б. Угол наклона плоскости к π₂ — замена плоскостей (x₂₄ ⟂ f″): вторая вкладка темы «Угол наклона плоскости» (#/ng/rk2/p/incl/pi2) */
+  const EXTRA={};
+  EXTRA.incl=[(()=>{ const P={A:[92,22,12],B:[54,58,50],C:[16,36,22]}, E=atY(P.A,P.B,P.C[1]);
+    const D=Dw(); base(D,P,['A','B','C'],[['A','B'],['B','C'],['C','A']],{x0:-100});
+    /* фронталь f через C (средняя глубина): f′ ∥ x₁₂, 1 = f ∩ AB */
+    D.at(1); { const sg=Math.sign(Hp(E)[0]-Hp(P.C)[0])||1; D.line(Hp(P.C),Hp(E),'aux',6,10); D.lab(a2(Hp(E),[sg*11,0]),'f′ ∥ x_{12}','aux',{pos:sg>0?'e':'w'});
+      D.seg(F(E),Hp(E),'link'); D.pt(Hp(E),'1′','aux'); D.pt(F(E),'1″','aux'); D.line(F(P.C),F(E),'aux',8,12); D.lab(a2(F(E),m2(u2(s2(F(E),F(P.C))),12)),'f″','aux',{pos:'auto'}); }
+    const N=['A','B','C'], fd=u2(s2(F(E),F(P.C))), X=axisAway(N.map(n=>F(P[n])),pp(fd),24,fd), Q={};
+    N.forEach(n=>Q[n]=img(X,F(P[n]),P[n][1]));
+    const far=[['A','B'],['B','C'],['A','C']].sort((p,q)=>ds(Q[q[0]],Q[q[1]])-ds(Q[p[0]],Q[p[1]]))[0], L0=Q[far[0]], L1=Q[far[1]], Xp=X2(L0,s2(L1,L0),X.O,X.e);
+    const swapA=Math.abs(dt(Xp,X.e)-X.t0)<Math.abs(dt(Xp,X.e)-X.t1);
+    D.at(2); drawAxis(D,X,'x_{24} ⟂ f″','π_2','π_4',[...N.map(n=>Q[n]),Xp],'ax2',swapA); D.seg(F(E),footOn(F(E),X),'thin'); D.sq(footOn(F(E),X),F(E),a2(footOn(F(E),X),X.e),'ax2');
+    D.at(3); N.forEach((n,i)=>{ D.seg(F(P[n]),Q[n],'link'); D.pt(Q[n],n+'_4','v4'); D.tick([Hp(P[n])[0],0],Hp(P[n]),i+1,'tk',{till:3}); D.tick(footOn(F(P[n]),X),Q[n],i+1,'tk',{till:3}); });
+      D.line(L0,L1,'v4',6,6); D.lab(lp2(L0,L1,1.08),'(ABC)_4','v4',{pos:'auto'});
+    const al=ang2(Xp,a2(Xp,u2(s2(L1,L0))),a2(Xp,X.e)), beta=Math.min(al,180-al);
+    const tip=dt(s2(L1,Xp),u2(s2(L1,L0)))>0?L1:L0, axDir=dt(s2(footOn(tip,X),Xp),X.e)>=0?X.e:m2(X.e,-1);
+    D.at(4); { const near_=dt(s2(L0,Xp),u2(s2(L1,L0)))*dt(s2(L1,Xp),u2(s2(L1,L0)))>0?(ds(L0,Xp)<ds(L1,Xp)?L0:L1):null; if(near_) D.seg(near_,Xp,'v4'); }
+      D.ang(Xp,tip,a2(Xp,m2(axDir,30)),16,'β','res'); D.pt(Xp,'','res',{r:0});
+    const nrm=u3(c3(s3(P.B,P.A),s3(P.C,P.A))), ok=near(beta,Math.acos(Math.abs(nrm[1]))*DEG);
+    return {id:'incl',n:2,sh:'Наклон к π₂',t:'Угол наклона плоскости ABC к π₂',m:'замена плоскостей проекций',D,ok,
+      cond:'Определить угол наклона плоскости треугольника ABC к фронтальной плоскости проекций π₂.',
+      A:['Угол плоскости с π₂ виден, когда плоскость становится проецирующей для новой плоскости π₄ ⟂ π₂.','Проводим фронталь f. Новую ось ставим x₂₄ ⟂ f″ — тогда f ⟂ π₄.','Заменяем π₁ на π₄: переносим A, B, C (сохраняется глубина y) — треугольник становится прямой.','Угол между этой прямой и x₂₄ — искомый β.'],
+      Bs:['f ⊂ (ABC),  f ∥ π₂','π₄ ⟂ π₂,  π₄ ⟂ f  ⇒  (ABC) ⟂ π₄','(ABC)₄ — прямая;  β = ∠((ABC)₄, x₂₄)'],
+      steps:[{t:'Фронталь f',v:'f′ ∥ x₁₂, C′ ∈ f′;  1′ = f′ ∩ A′B′;  1″ ∈ A″B″;  f″ = C″1″',s:'Через C — она средняя по глубине y, поэтому f пересекает противоположную сторону AB внутри треугольника. Точку 1 поднимаем линией связи на A″B″.'},
+        {t:'Новая ось x₂₄ ⟂ f″',v:'π₄ ⟂ π₂,  π₄ ⟂ f  ⇒  x₂₄ ⟂ f″',s:'Остаётся фронтальная проекция, заменяем π₁. Ось — в свободном месте, перпендикулярно f″; прямой угол отмечаем.'},
+        {t:'Точки на π₄',v:'P″P₄ ⟂ x₂₄,  |P₄x₂₄| = |P′x₁₂| = y_P  (P = A, B, C)',s:'Заменили π₁ — сохраняется глубина y: берём циркулем на π₁ (от горизонтальной проекции до x₁₂) и откладываем от x₂₄ (штрихи — равные отрезки). Три точки легли на одну прямую — фронталь видна точкой.'},
+        {t:'Угол наклона',v:`β = ∠((ABC)₄, x₂₄) = ${fm(beta)}°  (продлеваем прямую до оси)`,s:'Ось x₂₄ — это след π₂ на π₄. Угол между прямой (ABC)₄ и x₂₄ — угол плоскости с π₂.'}],
+      ans:`β = ${fm(beta)}°`,
+      err:['Берут горизонталь вместо фронтали — получится угол с π₁, а не с π₂.','Ставят x₂₄ ∥ f″ — тогда плоскость не станет проецирующей.','Откладывают от x₂₄ высоты z вместо глубин y: при замене π₁ сохраняется y.','Меряют угол не с осью x₂₄, а с x₁₂.']}; })()];
+
   /* 3. Натуральная величина треугольника и центр описанной окружности — две замены, точка назад через π₅ → π₄ → π₁ → π₂ */
   T.push((()=>{ const P={A:[95,12,12],B:[55,52,48],C:[20,18,26]}, E=atZ(P.A,P.B,P.C[2]);
     const D=Dw(); base(D,P,['A','B','C'],[['A','B'],['B','C'],['C','A']],{x0:-118});
@@ -34754,7 +34787,8 @@ const RK9=(function(){
       ans:'B′C′D′E′, B″C″D″E″ — проекции квадрата',back:['Точка на прямой — сразу на её проекцию.','Точка вне прямой — по прямой через неподвижную точку оси (здесь диагональ через центр A).'],
       err:['Возвращают D̄ «на глаз» по следу — без диагонали через A место не определено.','Берут сторону = |ĀP̄|, а это половина стороны.']}; })());
 
-  return {T,byId:id=>T.find(t=>t.id===id)};
+  /* all(id) — задачи темы для страницы: основная + дополнительные (у «Угла наклона» — к π₁ и к π₂) */
+  return {T,EXTRA,byId:id=>T.find(t=>t.id===id),all:id=>{ const t=T.find(x=>x.id===id); if(!t) return []; const ex=EXTRA[id]||[]; return ex.length?[t].concat(ex).map((x,i)=>Object.assign({},x,{n:null,sh:i?x.sh:(id==='incl'?'Наклон к π₁':x.sh)})):[t]; }};
 })();
 
 /* ═════ #/live/show — режим эфира для ведущего: «РК2 за 9 шагов» — 9 задач RK9 (по одной на тип), каждая как решение на листе:
