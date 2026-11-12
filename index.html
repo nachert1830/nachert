@@ -27614,12 +27614,12 @@ function resHTML(q){ const r=q.res;
 const STG=[['idea','Суть'],['how','Способ'],['sol','Разбор задачи'],['kinds','Виды в билете'],['more','Решить ещё']];
 function stgDone(st,k){ return k==='idea'?!!st.u:k==='how'?!!st.h:k==='sol'?!!(st.sol||st.n):k==='kinds'?!!(st.k||st.d):!!st.d; }
 /* «Решить ещё»: по задаче на каждый вид условия темы, новые числа по кнопке. Лист задач (#rkpMore) — без ввода ответа,
-   ответ и решение — под спойлером; разметка готова к печати (data-print). */
+   ответ и решение — под спойлером; разметка готова к печати (data-sheet; не data-print — тот перехватывает клик и открывает заготовку угла плоскостей). */
 function moreTasks(id,seed){ const C=RK2V[id]||[]; const out=[]; C.forEach((V,i)=>{ const q=variantTask(id,i,1+((seed*31+i*7717)%99998)); if(q) out.push(q); }); return out; }
 function moreHTML(id){ const T=TOP(id); if(!CUR.more) CUR.more={seed:newSeed()}; if(!CUR.more.qs) CUR.more.qs=moreTasks(id,CUR.more.seed);
   const qs=CUR.more.qs;
   return `<div class="rkp-mh"><p>Задачи как в билете — по одной на каждый вид. Реши на бумаге, ответ — под задачей.</p><button type="button" class="btn" data-more>Новые задачи ↻</button></div>
-   <div class="rkp-more-l" id="rkpMore" data-print="rk2-${id}" data-title="${attr(T.t)}">${qs.map((q,i)=>`<article class="rkp-mt-c">
+   <div class="rkp-more-l" id="rkpMore" data-sheet="rk2-${id}" data-title="${attr(T.t)}">${qs.map((q,i)=>`<article class="rkp-mt-c">
      <div class="rkp-mt-h"><span>Задача ${i+1}</span><small>${MT[q.method].s}</small></div>
      <p class="rkp-mt-q">${q.q}. Применить при решении задачи ${q.mtext}.</p>
      <div class="sheet rkp-fig">${figHTML(q,false)}</div>
