@@ -5002,18 +5002,20 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-xsteps span{font-size:13.5px;color:var(--mut)}
 .rkp-xq{margin:0 0 18px}
 .rkp-p-more{padding-top:14px}
-.rkp-mh{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}.rkp-mh p{margin:0;font-size:14.5px;color:var(--ink2)}
+.rkp-mh{display:flex;margin:0 0 16px}
+.rkp-print{display:inline-flex;align-items:center;gap:12px;min-height:56px;padding:0 28px 0 12px;border:0;border-radius:16px;cursor:pointer;font:800 17px/1 var(--sans);color:#fff;letter-spacing:.01em;
+ background:linear-gradient(135deg,#ff6a2b 0%,#ff2d6f 55%,#c026d3 100%);box-shadow:0 10px 24px -8px rgba(255,45,111,.65),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .15s,box-shadow .15s,filter .15s}
+.rkp-print span{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.22);font-size:20px}
+.rkp-print:hover{transform:translateY(-2px);filter:saturate(1.15);box-shadow:0 14px 30px -8px rgba(255,45,111,.8),inset 0 1px 0 rgba(255,255,255,.35)}
+.rkp-print:active{transform:translateY(1px) scale(.98)}
+.rkp-print:focus-visible{outline:3px solid #ffb4c9;outline-offset:3px}
+@media(max-width:520px){.rkp-print{width:100%;justify-content:center}}
 .rkp-more-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
 @media(max-width:420px){.rkp-more-l{grid-template-columns:1fr}}
 .rkp-mt-c{border:1.5px solid var(--line);border-radius:14px;padding:12px;background:var(--surf);display:flex;flex-direction:column;break-inside:avoid}
 .rkp-mt-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}
 .rkp-mt-h span{font:800 12px/1.8 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--navy,#0a2463);padding:0 9px;border-radius:99px}
-.rkp-mt-h small{font-size:12.5px;color:var(--mut)}
 .rkp-mt-q{margin:0 0 10px;font-size:14.5px;line-height:1.45;font-weight:600}
-.rkp-mt-c .rkp-co{margin:8px 0 4px}
-.rkp-mt-a{margin-top:auto;border-top:1px solid var(--line);padding-top:4px}
-.rkp-mt-a summary{cursor:pointer;min-height:40px;display:flex;align-items:center;font-weight:700;color:var(--blue)}
-.rkp-mt-a .rkp-how2{font-size:14px;line-height:1.5;color:var(--ink2)}
 .rkp-nav{display:flex;justify-content:space-between;gap:12px;margin:18px 0 6px;font-size:14px}
 .rkp-nav a:last-child{text-align:right;margin-left:auto}
 .rkp-rules{border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 14px;font-size:14.5px;line-height:1.5}
@@ -5041,6 +5043,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .prn-m{margin:0 0 3mm;font-weight:700;color:#2a5aa6}
 .prn-fig{flex:1 1 auto;min-height:0;border:.35mm solid #15161a;display:flex;align-items:center;justify-content:center;padding:3mm;overflow:hidden}
 .prn-fig svg{display:block;max-width:100%;max-height:100%}
+.prn-fill svg{width:100%;height:100%}
 .prn-ans{margin:4mm 0 0;font-size:11pt;display:flex;gap:2mm;align-items:baseline}.prn-ans i{flex:1;border-bottom:.3mm solid #15161a;height:4mm}
 .prn-f{display:flex;justify-content:space-between;align-items:flex-end;gap:5mm;margin-top:4mm;font-size:8.5pt;color:#5f6168}
 .prn-f>div{display:flex;flex-direction:column;gap:.5mm}.prn-f b{font-size:10pt;color:#15161a}
@@ -27613,19 +27616,26 @@ function resHTML(q){ const r=q.res;
 /* ── экран темы: 4 шага, виден один; внизу — кнопка к следующему ── */
 const STG=[['idea','Суть'],['how','Способ'],['sol','Разбор задачи'],['kinds','Виды в билете'],['more','Решить ещё']];
 function stgDone(st,k){ return k==='idea'?!!st.u:k==='how'?!!st.h:k==='sol'?!!(st.sol||st.n):k==='kinds'?!!(st.k||st.d):!!st.d; }
-/* «Решить ещё»: по задаче на каждый вид условия темы, новые числа по кнопке. Лист задач (#rkpMore) — без ввода ответа,
-   ответ и решение — под спойлером; разметка готова к печати (data-sheet; не data-print — тот перехватывает клик и открывает заготовку угла плоскостей). */
+/* «Решить ещё»: по задаче на каждый вид условия темы. Только условие и чертёж «дано» — без ответов, решений и координат
+   (точные числа не нужны: чертят по чертежу). Кнопка печатает эти же задачи. Не ставить на лист data-print — его ловит
+   обработчик заготовки угла плоскостей и перехватывает клики. */
 function moreTasks(id,seed){ const C=RK2V[id]||[]; const out=[]; C.forEach((V,i)=>{ const q=variantTask(id,i,1+((seed*31+i*7717)%99998)); if(q) out.push(q); }); return out; }
 function moreHTML(id){ const T=TOP(id); if(!CUR.more) CUR.more={seed:newSeed()}; if(!CUR.more.qs) CUR.more.qs=moreTasks(id,CUR.more.seed);
   const qs=CUR.more.qs;
-  return `<div class="rkp-mh"><p>Задачи как в билете — по одной на каждый вид. Реши на бумаге, ответ — под задачей.</p><button type="button" class="btn" data-more>Новые задачи ↻</button></div>
-   <div class="rkp-more-l" id="rkpMore" data-sheet="rk2-${id}" data-title="${attr(T.t)}">${qs.map((q,i)=>`<article class="rkp-mt-c">
-     <div class="rkp-mt-h"><span>Задача ${i+1}</span><small>${MT[q.method].s}</small></div>
+  return `<div class="rkp-mh"><button type="button" class="rkp-print" data-rkmore="${id}"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg></span>Распечатать задачи</button></div>
+   <div class="rkp-more-l" id="rkpMore">${qs.map((q,i)=>`<article class="rkp-mt-c">
+     <div class="rkp-mt-h"><span>Задача ${i+1}</span></div>
      <p class="rkp-mt-q">${q.q}. Применить при решении задачи ${q.mtext}.</p>
      <div class="sheet rkp-fig">${figHTML(q,false)}</div>
-     ${coordsHTML(q)}
-     <details class="rkp-mt-a"><summary>Ответ и решение</summary><p class="rkp-ans">Ответ: <b>${q.sym} = ${fmt(q.ans)} ${q.u}</b></p><p class="rkp-how2">${q.how}</p><div class="sheet rkp-fig">${figHTML(q,true)}</div></details>
     </article>`).join('')}</div>`; }
+/* печать «Решить ещё»: те же задачи, что на экране, — по одной на лист А4, место под построения и строка для ответа */
+function prnMoreHTML(id){ const T=TOP(id), qs=(CUR&&CUR.id===id&&CUR.more&&CUR.more.qs)||moreTasks(id,newSeed()), N=qs.length, url=PSITE+'/#/ng/rk2/p/'+id, E=EPX.escH,
+    qr=(QR.svg('https://'+url,64)||'').replace(/\swidth="\d+"\sheight="\d+"/,'');
+  return qs.map((q,i)=>`<section class="prn-pg"><div class="prn-h"><span>Начертательная геометрия · РК2</span><span>Тема ${TOPICS.indexOf(T)+1} из 9 · ${E(T.t)}</span></div>
+     <h2>Задача ${i+1}</h2><div class="prn-c"><p>${q.q}. Применить при решении задачи ${q.mtext}.</p></div>
+     <div class="prn-fig prn-fill">${figHTML(q,false)}</div>
+     <p class="prn-ans">Ответ: <i></i></p>
+     <div class="prn-f"><div><b>${PAUTH}</b><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`).join(''); }
 function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
   const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1], prv=TOPICS[idx-1], ms=Object.keys(T.m);
   if(!CUR||CUR.id!==id){ const st0=tState(getS(),id); CUR={id,stg:ex==='pi2'?2:Math.max(0,STG.findIndex(x=>!stgDone(st0,x[0])))}; }
@@ -27662,7 +27672,6 @@ function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); ret
     CUR.stg=j; draw(); const n=$('rkpStp'); if(n&&n.getBoundingClientRect().top<0) n.scrollIntoView({block:'start'}); };
   const bind=()=>{
     v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.go)));
-    const mb=v.querySelector('[data-more]'); if(mb) mb.addEventListener('click',()=>{ CUR.more={seed:newSeed()}; draw(); });
     const fin=v.querySelector('[data-fin]'); if(fin) fin.addEventListener('click',()=>{ mark('d'); location.hash=nxt?HR('ng','rk2','p',nxt.id):HR('ng','rk2','x'); });
     v.querySelectorAll('[data-o]').forEach(b=>b.addEventListener('click',()=>{ CUR.pick=+b.dataset.o;
       if(CUR.pick===T.chk.c) mark('u'); else try{ FX.buzz('error'); }catch(_){} keep(draw,'#rkpChk'); }));
@@ -27735,12 +27744,13 @@ function prnHTML(ids){ const L=prnTasks(ids), N=L.length, E=EPX.escH;
      <p class="prn-ans">Ответ: <i></i></p>
      <div class="prn-f"><div><b>${PAUTH}</b><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`; }).join(''); }
 function prnOff(){ document.body.classList.remove('prn-on'); ['prnOut','prnPage'].forEach(i=>{ const e=document.getElementById(i); if(e) e.remove(); }); if(prnOff.t!=null){ document.title=prnOff.t; prnOff.t=null; } }
-function prnBuild(ids){ prnOff(); const out=document.createElement('div'); out.id='prnOut'; out.innerHTML=prnHTML(ids); document.body.appendChild(out);
+function prnBuild(ids,html){ prnOff(); const out=document.createElement('div'); out.id='prnOut'; out.innerHTML=html||prnHTML(ids); document.body.appendChild(out);
   const st=document.createElement('style'); st.id='prnPage'; st.textContent='@page{size:A4 portrait;margin:0}'; document.head.appendChild(st);
   document.body.classList.add('prn-on'); prnOff.t=document.title; document.title='РК2 — условия задач · '+PAUTH; return out; }
 function prnPrint(ids){ prnBuild(ids); setTimeout(()=>{ try{ window.print(); }catch(e){} },60); }   /* убираем документ после печати (afterprint) или при переходе; на экране он скрыт */
 window.addEventListener('afterprint',()=>setTimeout(prnOff,0));
 window.addEventListener('hashchange',prnOff);
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkmore]'); if(!b) return; e.preventDefault(); prnBuild(null,prnMoreHTML(b.dataset.rkmore)); setTimeout(()=>{ try{ window.print(); }catch(_){} },60); });
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkprint]'); if(!b) return; e.preventDefault(); prnPrint(b.dataset.rkprint?b.dataset.rkprint.split(','):null); });
 
 /* строка для главной */
