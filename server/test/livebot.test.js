@@ -90,13 +90,13 @@ test('вопрос текстом пересылается владельцу; �
   const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2\u0000\u0007 тема');
   assert.equal(r.db().sessions[0].topic,'РК2 тема');
   await r.msg(5,'А как найти угол между плоскостями?');
-  assert.ok(r.out.some(x=>x.method==='forwardMessage'&&x.body.chat_id===ADMIN&&x.body.from_chat_id===5));
-  assert.match(r.last(5).text,/Передал вопрос/);
+  assert.match(r.last(ADMIN).text,/^❓ Вопрос №1 · Имя5[\s\S]*А как найти угол между плоскостями\?/);
+  assert.match(r.last(5).text,/Получил вопрос ✅/);
 });
 
 test('меню владельца кнопками: добавить эфир (день → время → тема), ссылка, написать, отменить',async()=>{
   const r=rig(), kb=()=>r.last(ADMIN).reply_markup, btn=re=>{ const b=(kb().inline_keyboard||[]).flat().find(x=>re.test(x.text)); assert.ok(b,'нет кнопки '+re); return b.callback_data; };
-  await r.msg(ADMIN,'/start'); assert.ok(kb().keyboard,'внизу — меню владельца'); assert.deepEqual(kb().keyboard.map(r=>r.map(b=>b.text)),[['👥 Кто придёт'],['🔗 Ссылка','📣 Написать'],['➕ Эфир']]);
+  await r.msg(ADMIN,'/start'); assert.ok(kb().keyboard,'внизу — меню владельца'); assert.deepEqual(kb().keyboard.map(r=>r.map(b=>b.text)),[['❓ Вопросы','👀 Как видят ученики'],['🔓 Запись открыта · закрыть','📣 Всем ученикам'],['👥 Кто придёт','➕ Эфир','🔗 Ссылка']]);
   await r.msg(ADMIN,'➕ Эфир'); assert.match(r.last(ADMIN).text,/Какой день/);
   await r.tap(ADMIN,btn(/^Сегодня/)); assert.match(r.last(ADMIN).text,/Во сколько/);
   await r.tap(ADMIN,btn(/^20:00$/)); assert.match(r.last(ADMIN).text,/Тема эфира — вт 10\.11 в 20:00/);
@@ -122,7 +122,7 @@ test('меню владельца кнопками: добавить эфир (�
   await r.tap(ADMIN,btn(/Отменить/)); assert.equal(r.db().sessions.length,2,'без подтверждения не отменяет');
   await r.tap(ADMIN,btn(/Да, отменить/)); assert.equal(r.db().sessions.length,1);
   /* «Как видят ученики» и отмена ввода */
-  await r.msg(ADMIN,'/preview'); assert.match(r.last(ADMIN).text,/Бесплатный разбор РК2/);
+  await r.msg(ADMIN,'/preview'); assert.ok(r.to(ADMIN).some(x=>/Бесплатный разбор РК2/.test(x.body.text)),'видно /start ученика'); assert.ok(r.to(ADMIN).some(x=>/Задать вопрос|Напиши свой вопрос/.test(x.body.text)),'видно, как задают вопрос');
   await r.msg(ADMIN,'🔗 Ссылка'); assert.match(r.last(ADMIN).text,/Пришли ссылку/,'один эфир — сразу просит ссылку'); await r.tap(ADMIN,'a:c');
   await r.msg(ADMIN,'просто текст'); assert.match(r.last(ADMIN).text,/Выбери кнопку/);
 });
@@ -131,7 +131,7 @@ test('кнопки владельца не работают у ученика',a
   const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2');
   await r.tap(9,'a:X:10112000'); await r.tap(9,'a:add'); assert.equal(r.db().sessions.length,1);
   assert.ok(!r.to(9).some(x=>/Какой день/.test(x.body.text)));
-  await r.msg(9,'📅 Эфиры'); assert.ok(r.out.some(x=>x.method==='forwardMessage'),'у ученика это просто текст — уходит владельцу вопросом');
+  await r.msg(9,'📅 Эфиры'); assert.ok(r.to(ADMIN).some(x=>/^❓ Вопрос/.test(x.body.text)),'у ученика это просто текст — уходит владельцу вопросом');
 });
 
 test('расписание из файла: эфир появляется сам, длительность своя, отменённый не возвращается',async()=>{
@@ -167,7 +167,7 @@ test('счётчик: «Сколько придёт», уведомление в
   await r.msg(12,'/start'); await r.tap(12,'j:10112000'); assert.match(r.last(ADMIN).text,/всего 2$/);
   await r.tap(12,'c:10112000'); assert.equal(r.last(ADMIN).text,'➖ Имя12 · вт 10.11 20:00 · всего 1');
   await r.msg(ADMIN,'/count'); assert.match(r.last(ADMIN).text,/вт 10\.11 20:00 — 1 · нет ссылки/);
-  await r.msg(ADMIN,'/start'); assert.equal(r.last(ADMIN).reply_markup.keyboard[0][0].text,'👥 Кто придёт');
+  await r.msg(ADMIN,'/start'); assert.equal(r.last(ADMIN).reply_markup.keyboard[2][0].text,'👥 Кто придёт');
 });
 
 test('«✅ Я приду» — одна кнопка на ближайший эфир; после записи — «Ты записан»; завтра/день недели',async()=>{
@@ -246,4 +246,60 @@ test('отмена по расписанию (cancel): записанным — 
   await bot.onUpdate({message:{message_id:1,chat:{id:5,type:'private'},from:{id:5},text:'/start'}});
   assert.match(to(5).pop().body.text,/Эфиров пока не будет[\s\S]*#\/ng\/rk2/);
   await bot.onUpdate({callback_query:{id:'q',data:'j:12112000',from:{id:6},message:{chat:{id:6}}}}); assert.match(to(6).pop().body.text,/Этого эфира уже нет/);
+});
+
+test('вопросы: с сайта (/start q-rk2-ang), ответ владельца свайпом и кнопкой, фото, «без ответа», /delete',async()=>{
+  const r=rig(); let mid=900; const api0=r.bot;
+  /* rig не отдаёт message_id — свой стенд: api возвращает message_id */
+  const out=[]; let db=null; const clock={t:Date.parse('2026-11-12T09:00:00Z')};
+  const api=async(method,body)=>{ out.push({method,body}); return {ok:true,result:{message_id:++mid}}; };
+  const bot=createLiveBot({api,load:()=>db&&JSON.parse(JSON.stringify(db)),save:s=>{ db=JSON.parse(JSON.stringify(s)); },now:()=>clock.t,admins:[ADMIN],startClosed:true});
+  const msg=(from,text,extra)=>bot.onUpdate({message:Object.assign({message_id:++mid,chat:{id:from,type:'private'},from:{id:from,first_name:'Имя'+from},text},extra||{})});
+  const tap=(from,data)=>bot.onUpdate({callback_query:{id:'q',data,from:{id:from},message:{chat:{id:from}}}});
+  const to=c=>out.filter(x=>(x.method==='sendMessage'||x.method==='copyMessage')&&String(x.body.chat_id)===String(c));
+  await msg(7,'/start q-rk2-ang'); assert.match(to(7).pop().body.text,/Вопрос по разделу: РК2 за 9 шагов, тема «Угол между прямыми»/);
+  await msg(7,'Почему x₁₄ перпендикулярна h′?');
+  const card=out.filter(x=>x.method==='sendMessage'&&x.body.chat_id===ADMIN).pop(); assert.match(card.body.text,/❓ Вопрос №1 · Имя7 · РК2 за 9 шагов, тема «Угол между прямыми»/);
+  assert.match(to(7).pop().body.text,/Получил вопрос ✅/);
+  /* ответ свайпом: reply_to_message — карточка вопроса */
+  const cardId=out.indexOf(card)+901; const amid=db.qs[0].amid[0];
+  await msg(ADMIN,'Потому что тогда горизонталь видна точкой.',{reply_to_message:{message_id:amid}});
+  const got=to(7); assert.match(got[got.length-2].body.text,/^💬 Ответ на твой вопрос «Почему x₁₄/); assert.equal(got[got.length-1].method,'copyMessage'); assert.equal(got[got.length-1].body.from_chat_id,ADMIN);
+  assert.match(out.filter(x=>x.body.chat_id===ADMIN).pop().body.text,/Отправил ответ на вопрос №1/); assert.ok(db.qs[0].ans);
+  /* фото-вопрос и ответ кнопкой */
+  await msg(8,undefined,{photo:[{file_id:'x'}],caption:'вот мой чертёж'}); assert.ok(out.some(x=>x.method==='forwardMessage'&&x.body.from_chat_id===8));
+  await msg(ADMIN,'❓ Вопросы'); assert.ok(out.some(x=>x.body.chat_id===ADMIN&&/^№2 · Имя8[\s\S]*вот мой чертёж/.test(x.body.text||'')));
+  await tap(ADMIN,'a:qa:2'); await msg(ADMIN,'Ось не там.'); assert.equal(to(8).pop().method,'copyMessage');
+  /* «без ответа» */
+  await msg(9,'спасибо!'); await tap(ADMIN,'a:qd:3'); await msg(ADMIN,'❓ Вопросы'); assert.match(out.filter(x=>x.body.chat_id===ADMIN).pop().body.text,/Новых вопросов нет/);
+  /* запись закрыта: /start без кнопки «Я приду», «Я приду» по старой кнопке не записывает */
+  await msg(ADMIN,'/add 12.11 20:00 РК2'); await msg(10,'/start'); const st=to(10).pop(); assert.match(st.body.text,/запись закрыта/); assert.equal(st.body.reply_markup.inline_keyboard[0][0].callback_data,'q:');
+  await tap(10,'j:12112000'); assert.match(to(10).pop().body.text,/Запись на эфиры пока закрыта/); assert.equal(Object.keys(db.sessions[0].subs).length,0);
+  /* владелец открывает запись */
+  await msg(ADMIN,'🔒 Запись закрыта · открыть'); assert.match(out.filter(x=>x.body.chat_id===ADMIN).pop().body.text,/Запись на эфиры открыта/);
+  await msg(10,'/start'); assert.equal(to(10).pop().body.reply_markup.inline_keyboard[0][0].text,'✅ Я приду');
+  /* /delete стирает вопросы */
+  await msg(7,'/delete'); assert.ok(!db.qs.some(q=>q.chat===7));
+});
+
+test('📣 Всем ученикам: с подтверждением, всем, кто писал боту',async()=>{
+  const r=rig(); await r.msg(11,'/start'); await r.msg(12,'/start');
+  await r.msg(ADMIN,'📣 Всем ученикам'); await r.msg(ADMIN,'Эфиров пока не будет, весь материал на сайте.');
+  assert.match(r.last(ADMIN).text,/Отправить всем, кто писал боту \(2\)/); await r.tap(ADMIN,'a:AL');
+  assert.equal(r.last(11).text,'Эфиров пока не будет, весь материал на сайте.'); assert.match(r.last(ADMIN).text,/Отправил: 2 из 2/);
+});
+
+test('разовое сообщение после отмены: тем, кому ушла отмена, один раз, с кнопкой «Задать вопрос»',async()=>{
+  const clock={t:Date.parse('2026-11-11T20:00:00Z')}, out=[]; let db=null;
+  let sched=[{date:'2026-11-12',time:'20:00',min:60,topic:'РК2'}];
+  const api=async(method,body)=>{ out.push({method,body}); return {ok:true}; };
+  const bot=createLiveBot({api,load:()=>db&&JSON.parse(JSON.stringify(db)),save:s=>{ db=JSON.parse(JSON.stringify(s)); },now:()=>clock.t,admins:[ADMIN],schedule:()=>sched});
+  const to=c=>out.filter(x=>x.method==='sendMessage'&&String(x.body.chat_id)===String(c));
+  await bot.tick(); await bot.onUpdate({callback_query:{id:'q',data:'j:12112000',from:{id:3,first_name:'Ваня'},message:{chat:{id:3}}}});
+  await bot.onUpdate({message:{message_id:1,chat:{id:4,type:'private'},from:{id:4},text:'/start'}});
+  sched=[{date:'2026-11-12',time:'20:00',min:60,topic:'РК2',cancel:true,note:'Эфиров не будет.'},{notice:'ask1',to:'cancelled',ask:true,text:'Вопросы — здесь.'}];
+  await bot.tick();
+  const m3=to(3); assert.equal(m3[m3.length-2].body.text,'Эфиров не будет.'); assert.equal(m3[m3.length-1].body.text,'Вопросы — здесь.'); assert.equal(m3[m3.length-1].body.reply_markup.inline_keyboard[0][0].callback_data,'q:');
+  assert.ok(!to(4).some(x=>x.body.text==='Вопросы — здесь.'),'не записанным — не пишем');
+  const n=to(3).length; await bot.tick(); assert.equal(to(3).length,n,'второй раз не шлёт');
 });
