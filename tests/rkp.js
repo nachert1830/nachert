@@ -103,12 +103,15 @@ async function rkpCheck(page,URL){
   for(const T of await page.evaluate(()=>RKP.TOPICS.map(t=>({id:t.id,ms:Object.keys(t.m)})))){
     await page.evaluate(id=>{ location.hash='#/ng/rk2/p/'+id; },T.id); await page.waitForTimeout(250); await wide('тема '+T.id); await links('тема '+T.id);
     /* тема по шагам: 4 вкладки, «Дальше» ведёт к следующей; ввода чисел нет */
-    const tabs=await page.$$eval('.rkp-stp [data-go]',x=>x.length); if(tabs!==4) add('тема '+T.id,'шаги','вкладок '+tabs);
+    const tabs=await page.$$eval('.rkp-stp [data-go]',x=>x.length); if(tabs!==5) add('тема '+T.id,'шаги','вкладок '+tabs);
     if(await page.$('[data-ans]')) add('тема '+T.id,'ввод','на странице темы осталось поле ввода ответа');
     await page.click('.rkp-stp [data-go="0"]'); await page.waitForTimeout(80);
     const c=await page.evaluate(id=>RKP.TOPICS.find(t=>t.id===id).chk.c,T.id); await page.click('.rkp-o[data-o="'+c+'"]');
-    for(let k=1;k<4;k++){ await page.click('.rkp-fwd [data-go="'+k+'"]'); await page.waitForTimeout(150);
+    for(let k=1;k<5;k++){ await page.click('.rkp-fwd [data-go="'+k+'"]'); await page.waitForTimeout(150);
       const on=await page.$eval('.rkp-stp button.on',b=>+b.dataset.go); if(on!==k) add('тема '+T.id,'дальше','после «Дальше» открыт шаг '+(on+1)+' вместо '+(k+1)); }
+    const nm=await page.$$eval('#rkpMore .rkp-mt-c',x=>x.length), nk=await page.evaluate(id=>RKP.RK2V[id].length,T.id);
+    if(nm!==nk) add('тема '+T.id,'решить ещё','задач '+nm+' из '+nk+' видов');
+    if(await page.$('[data-ans]')) add('тема '+T.id,'ввод','в «Решить ещё» поле ввода ответа');
     await page.click('[data-fin]'); await page.waitForTimeout(250);
     const st=await page.evaluate(id=>{ const s=JSON.parse(localStorage.getItem('nch2_rkp')||'{}'); return s.t&&s.t[id]; },T.id);
     if(!st||!st.u||!st.h||!st.sol||!st.d) add('тема '+T.id,'сохранение',JSON.stringify(st));
