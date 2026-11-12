@@ -94,9 +94,30 @@ $('#side').addEventListener('click', async e => {
   w.LKSCAN.open(b.getAttribute('data-open')); w.LKSCAN.pane(b.getAttribute('data-p'));
   if (innerWidth <= 900) side(false);
 });
-function side(on) { $('#side').hidden = !on; $('#sideBtn').classList.toggle('on', on); $('#sideBtn').setAttribute('aria-pressed', on); if (on) renderSide(); ls.set('me_side', on ? '1' : '0'); }
+/* ───────── пользователи: сколько вошло в кабинет (API клуба, GET /api/admin/live — только для админа) ─────────
+   Пульт берёт сессию кабинета этого браузера (localStorage lk_tok, общий с lk/): войти в «Кабинет» аккаунтом владельца. */
+const CLUB = String(self.CLUB_API || '').replace(/\/$/, '');
+let usersT = 0;
+async function renderUsers() {
+  const el = $('#users'); if (!el) return; clearTimeout(usersT);
+  const tok = ls.get('lk_tok'), login = '<div class="row" style="display:flex;gap:6px"><button class="btn sm" data-act="lk">Войти в кабинет</button></div>';
+  if (!CLUB) { el.innerHTML = '<span>Сервер кабинета не задан (lk/config.js).</span>'; return; }
+  if (!tok) { el.innerHTML = '<span>Чтобы видеть пользователей, войдите в «Кабинет» аккаунтом владельца.</span>' + login; return; }
+  let r, j = {};
+  try { r = await fetch(CLUB + '/api/admin/live', { headers: { authorization: 'Bearer ' + tok }, cache: 'no-store' }); j = await r.json().catch(() => ({})); }
+  catch (e) { el.innerHTML = '<span>Сервер кабинета не отвечает.</span>'; usersT = setTimeout(renderUsers, 60e3); return; }
+  if (r.status === 401) { el.innerHTML = '<span>Сессия кабинета истекла — войдите снова.</span>' + login; return; }
+  if (r.status === 403) { el.innerHTML = '<span>Этот аккаунт кабинета — не админ: счётчик видит только владелец.</span>'; return; }
+  if (!r.ok || !j.kpi) { el.innerHTML = '<span>' + esc(j.error || ('Сервер ответил ' + r.status)) + '</span>'; usersT = setTimeout(renderUsers, 60e3); return; }
+  const k = j.kpi, on = (j.online || []).slice(0, 8);
+  el.innerHTML = '<span>Авторизованных всего: <b>' + k.total + '</b>' + (k.newToday ? ' · новых сегодня: <b>' + k.newToday + '</b>' : '') + '</span>'
+    + '<span>Сейчас онлайн: <b>' + k.online + '</b> · сегодня: <b>' + k.today + '</b> · за неделю: <b>' + k.week + '</b></span>'
+    + (on.length ? '<span>' + on.map(u => esc(u.name) + (u.group ? ' (' + esc(u.group) + ')' : '')).join(', ') + '</span>' : '');
+  usersT = setTimeout(() => { if (!$('#side').hidden) renderUsers(); }, 60e3);
+}
+function side(on) { $('#side').hidden = !on; $('#sideBtn').classList.toggle('on', on); $('#sideBtn').setAttribute('aria-pressed', on); if (on) { renderSide(); renderUsers(); } ls.set('me_side', on ? '1' : '0'); }
 $('#sideBtn').addEventListener('click', () => side($('#side').hidden));
-addEventListener('storage', e => { if (e.key === 'lk_sheets' && !$('#side').hidden) renderSide(); });   /* кабинет сохранил лист */
+addEventListener('storage', e => { if ($('#side').hidden) return; if (e.key === 'lk_sheets') renderSide(); if (e.key === 'lk_tok') renderUsers(); });   /* кабинет сохранил лист */
 
 /* ───────── клавиши (и внутри разделов) ───────── */
 function keys(e) {
@@ -195,4 +216,4 @@ function start() { if (started) return; started = true; side(ls.get('me_side') =
 addEventListener('hashchange', () => { const id = location.hash.slice(1); if (started && PANE_OF[id] && id !== cur) go(id); });
 const saved = ls.get('ownerCode');
 if (saved) unlock(saved, true); else $('#code').focus();
-self.ME = { go, side, startHands, stopHands, act, deepAt, get cur() { return cur; } };   /* для проверки tests/me-hub.js */
+self.ME = { go, side, renderUsers, startHands, stopHands, act, deepAt, get cur() { return cur; } };   /* для проверки tests/me-hub.js */

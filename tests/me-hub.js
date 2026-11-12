@@ -60,6 +60,14 @@ async function ui(browser, URL) {
     await lk.locator('.tab[data-tab="check"].on').waitFor({ timeout: 15000 }).catch(() => B('вкладка «Скан» кабинета открыта', 'нет'));
     if (await page.evaluate(() => ME.cur) !== 'scan' || await page.$('.panes.split')) B('по умолчанию — сканер на весь экран', await page.evaluate(() => ME.cur));
     if (await page.evaluate(() => localStorage.getItem('scanCode')) !== OWNER) B('сканер кабинета получил код владельца', 'нет');
+    /* пользователи: без сессии кабинета — подсказка войти; с сессией админа — счётчик из /api/admin/live */
+    await page.evaluate(() => ME.side(true)); await page.waitForTimeout(200);
+    if (!/войдите/i.test(await page.textContent('#users'))) B('пользователи без входа в кабинет — подсказка', await page.textContent('#users'));
+    await ctx.route(/apigw\.yandexcloud\.net\/api\/admin\/live/, r => r.fulfill({ status: /Bearer adm/.test(r.request().headers().authorization || '') ? 200 : 403, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization' },
+      body: JSON.stringify({ online: [{ name: 'Аня', group: 'ИУ5-11Б' }], kpi: { total: 42, online: 1, today: 5, week: 17, newToday: 2 } }) }));
+    await page.evaluate(() => { localStorage.setItem('lk_tok', 'adm'); return ME.renderUsers(); });
+    { const t = await page.textContent('#users'); if (!/всего:\s*42/.test(t) || !/онлайн:\s*1/.test(t) || !/Аня/.test(t)) B('пульт показывает, сколько авторизованных', t); }
+    await page.evaluate(() => { localStorage.removeItem('lk_tok'); });
     /* пример из кабинета → «Мои чертежи» сбоку → 3D */
     await lk.locator('#scDemo').click(); await page.waitForTimeout(500);
     await lk.locator('#dvBack').click().catch(() => {}); await page.waitForTimeout(300);
