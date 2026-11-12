@@ -321,6 +321,7 @@ body.liveshow{overflow:hidden}
 @media(prefers-reduced-motion:reduce){.hcards .hc.hc-rk9{animation:none}}
 @media(min-width:760px){.hcards .hc-rot .hc-t{font-size:30px;max-width:11ch}.hcards .hc-rart{width:46%;max-width:280px;max-height:84%}}
 /* #/live — страница онлайн-разборов (viewLive) */
+.lv .lv-hero p a,.lv .lv-hero p a b{color:#ffd34d!important;text-decoration:underline;text-decoration-color:rgba(255,211,77,.6);text-underline-offset:3px}
 .lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa:#fff;--pa-ink:#0a2463;
  background:linear-gradient(135deg,#0a2463 0%,#1a5ae0 100%);box-shadow:0 22px 40px -26px rgba(10,36,99,.7)}
 .lv-hero::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(115deg,#000 10%,transparent 80%);mask-image:linear-gradient(115deg,#000 10%,transparent 80%)}
@@ -34899,8 +34900,7 @@ function viewLive(v){
   /* эфиров нет — запись закрыта; вместо неё — вопросы автору через бота и весь материал на сайте */
   v.innerHTML=`<div class="wrap page lv">
    <section class="lv-hero" aria-labelledby="lvH">
-    <span class="pmn-pill">Бесплатно</span>
-    <h1 id="lvH">Вопросы по&nbsp;начерталке</h1>
+    <h1 id="lvH">Задать вопрос</h1>
     <p>${n?(n.live?'<b>Эфир идёт прямо сейчас.</b> ':'')+'':'Эфиров пока нет. '}Есть вопрос — задай его автору в Telegram, отвечу лично. Весь материал с эфиров — на сайте: <a href="#/ng/rk2"><b>РК2 за 9 шагов</b></a> и <a href="#/ng/rot"><b>Способ вращения</b></a>.</p>
     <div class="lv-acts">
      ${PROMO.ready()?`<a class="pmn-b" href="${attr(PROMO.askUrl('live'))}" target="_blank" rel="noopener" data-lv="live-ask">Задать вопрос →</a>`:''}
@@ -34922,7 +34922,7 @@ function viewLive(v){
    </section>
   </div>`;
   v.querySelectorAll('[data-lv]').forEach(a=>a.addEventListener('click',()=>{ try{ window.TRACK&&TRACK('promo',{mode:a.dataset.lv}); }catch(e){} }));
-  return 'Вопросы по начерталке';
+  return 'Задать вопрос';
 }
 function viewAbout(v){
   v.innerHTML=`<div class="wrap page"><div class="ptop">${crumbHTML([['О проекте']])}</div><div id="w-about"></div></div>`;

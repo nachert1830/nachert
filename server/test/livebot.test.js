@@ -90,7 +90,7 @@ test('вопрос текстом пересылается владельцу; �
   const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2\u0000\u0007 тема');
   assert.equal(r.db().sessions[0].topic,'РК2 тема');
   await r.msg(5,'А как найти угол между плоскостями?');
-  assert.match(r.last(ADMIN).text,/^❓ Вопрос №1 · Имя5[\s\S]*А как найти угол между плоскостями\?/);
+  assert.match(r.last(ADMIN).text,/^❓ <b>Вопрос №1<\/b>\n👤 <a href="tg:\/\/user\?id=5">Имя5<\/a>[\s\S]*А как найти угол между плоскостями\?/); assert.equal(r.last(ADMIN).parse_mode,'HTML');
   assert.match(r.last(5).text,/Получил вопрос ✅/);
 });
 
@@ -131,7 +131,7 @@ test('кнопки владельца не работают у ученика',a
   const r=rig(); await r.msg(ADMIN,'/add 10.11 20:00 РК2');
   await r.tap(9,'a:X:10112000'); await r.tap(9,'a:add'); assert.equal(r.db().sessions.length,1);
   assert.ok(!r.to(9).some(x=>/Какой день/.test(x.body.text)));
-  await r.msg(9,'📅 Эфиры'); assert.ok(r.to(ADMIN).some(x=>/^❓ Вопрос/.test(x.body.text)),'у ученика это просто текст — уходит владельцу вопросом');
+  await r.msg(9,'📅 Эфиры'); assert.ok(r.to(ADMIN).some(x=>/Вопрос №/.test(x.body.text)),'у ученика это просто текст — уходит владельцу вопросом');
 });
 
 test('расписание из файла: эфир появляется сам, длительность своя, отменённый не возвращается',async()=>{
@@ -259,7 +259,7 @@ test('вопросы: с сайта (/start q-rk2-ang), ответ владел�
   const to=c=>out.filter(x=>(x.method==='sendMessage'||x.method==='copyMessage')&&String(x.body.chat_id)===String(c));
   await msg(7,'/start q-rk2-ang'); assert.match(to(7).pop().body.text,/Вопрос по разделу: РК2 за 9 шагов, тема «Угол между прямыми»/);
   await msg(7,'Почему x₁₄ перпендикулярна h′?');
-  const card=out.filter(x=>x.method==='sendMessage'&&x.body.chat_id===ADMIN).pop(); assert.match(card.body.text,/❓ Вопрос №1 · Имя7 · РК2 за 9 шагов, тема «Угол между прямыми»/);
+  const card=out.filter(x=>x.method==='sendMessage'&&x.body.chat_id===ADMIN).pop(); assert.match(card.body.text,/Вопрос №1[\s\S]*Имя7[\s\S]*📍 РК2 за 9 шагов, тема «Угол между прямыми»/);
   assert.match(to(7).pop().body.text,/Получил вопрос ✅/);
   /* ответ свайпом: reply_to_message — карточка вопроса */
   const cardId=out.indexOf(card)+901; const amid=db.qs[0].amid[0];
@@ -268,7 +268,7 @@ test('вопросы: с сайта (/start q-rk2-ang), ответ владел�
   assert.match(out.filter(x=>x.body.chat_id===ADMIN).pop().body.text,/Отправил ответ на вопрос №1/); assert.ok(db.qs[0].ans);
   /* фото-вопрос и ответ кнопкой */
   await msg(8,undefined,{photo:[{file_id:'x'}],caption:'вот мой чертёж'}); assert.ok(out.some(x=>x.method==='forwardMessage'&&x.body.from_chat_id===8));
-  await msg(ADMIN,'❓ Вопросы'); assert.ok(out.some(x=>x.body.chat_id===ADMIN&&/^№2 · Имя8[\s\S]*вот мой чертёж/.test(x.body.text||'')));
+  await msg(ADMIN,'❓ Вопросы'); assert.ok(out.some(x=>x.body.chat_id===ADMIN&&/^<b>№2<\/b> · <a href="tg:\/\/user\?id=8">Имя8<\/a>[\s\S]*вот мой чертёж/.test(x.body.text||'')));
   await tap(ADMIN,'a:qa:2'); await msg(ADMIN,'Ось не там.'); assert.equal(to(8).pop().method,'copyMessage');
   /* «без ответа» */
   await msg(9,'спасибо!'); await tap(ADMIN,'a:qd:3'); await msg(ADMIN,'❓ Вопросы'); assert.match(out.filter(x=>x.body.chat_id===ADMIN).pop().body.text,/Новых вопросов нет/);
@@ -302,4 +302,13 @@ test('разовое сообщение после отмены: тем, ком�
   const m3=to(3); assert.equal(m3[m3.length-2].body.text,'Эфиров не будет.'); assert.equal(m3[m3.length-1].body.text,'Вопросы — здесь.'); assert.equal(m3[m3.length-1].body.reply_markup.inline_keyboard[0][0].callback_data,'q:');
   assert.ok(!to(4).some(x=>x.body.text==='Вопросы — здесь.'),'не записанным — не пишем');
   const n=to(3).length; await bot.tick(); assert.equal(to(3).length,n,'второй раз не шлёт');
+});
+
+test('профиль ученика в карточке вопроса: имя-ссылка, @username, кнопка «Профиль», HTML экранируется',async()=>{
+  const out=[]; let db=null; const api=async(method,body)=>{ out.push({method,body}); return {ok:true,result:{message_id:out.length}}; };
+  const bot=createLiveBot({api,load:()=>db&&JSON.parse(JSON.stringify(db)),save:s=>{ db=JSON.parse(JSON.stringify(s)); },now:()=>Date.parse('2026-11-12T09:00:00Z'),admins:[ADMIN],startClosed:true});
+  await bot.onUpdate({message:{message_id:1,chat:{id:42,type:'private'},from:{id:42,first_name:'Аня',last_name:'Петрова',username:'anya_p'},text:'а <b> как?'}});
+  const c=out.filter(x=>x.method==='sendMessage'&&x.body.chat_id===ADMIN).pop().body;
+  assert.match(c.text,/<a href="tg:\/\/user\?id=42">Аня Петрова<\/a> · <a href="https:\/\/t.me\/anya_p">@anya_p<\/a>/); assert.match(c.text,/а &lt;b&gt; как\?/);
+  assert.deepEqual(c.reply_markup.inline_keyboard[1][0],{text:'👤 Профиль @anya_p',url:'https://t.me/anya_p'});
 });
