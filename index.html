@@ -236,7 +236,7 @@ body.liveshow{overflow:hidden}
 .l3-bar input[type=range]{flex:1;min-width:120px;accent-color:#1a5ae0}
 .l3-hint{margin:4px 0 0;font:500 13px var(--sans);color:#9aabc2}
 /* EPX — чертёж «как на листе» на страницах сайта (раздел «Вращение», ДЗ №3): лист белый в обеих темах */
-.epx{display:block;outline:none}
+.epx{display:flex;flex-direction:column;outline:none}
 .epx sub{font-size:.7em;line-height:0}
 .epx-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
 .epx-tabs button{display:flex;align-items:center;gap:8px;min-height:42px;padding:0 13px 0 8px;border:1px solid var(--line);border-radius:13px;background:var(--surf);color:var(--ink);font:700 14px var(--sans);cursor:pointer}
@@ -247,9 +247,19 @@ body.liveshow{overflow:hidden}
 .epx-ep svg{display:block}
 .epx-side{max-height:min(78vh,740px);overflow:auto;background:#fff;color:#0d1b2e;border:1px solid #d6e0ec;border-radius:16px;padding:16px 18px 18px}
 .epx-side .lx-pn h2{font-size:clamp(20px,1.6vw,26px)}
-.epx-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}
-.epx-nav .btn{min-width:120px}
-.epx-n{font:700 14px var(--sans);color:var(--mut)}
+.epx-nav{position:sticky;top:calc(var(--hh) + 8px);z-index:8;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:8px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--paper) 90%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 10px 24px -16px rgba(10,36,99,.45)}
+.epx-nav .btn{min-width:120px;min-height:48px}
+.epx-nav .epx-next{min-width:190px;font-size:16px;font-weight:800}
+.epx-nav .epx-next[disabled]{opacity:.45}
+.epx-mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.epx-n{font:800 14px var(--sans);color:var(--ink)}
+.epx-dots{display:flex;gap:4px;width:100%;max-width:340px}
+.epx-dots button{flex:1;height:8px;min-width:8px;padding:0;border:0;border-radius:4px;background:var(--line);cursor:pointer}
+.epx-dots button.on{background:var(--acc)}.epx-dots button.now{background:#ea580c}
+.epx-hint{font:500 12px var(--sans);color:var(--mut)}
+.epx-ep{cursor:pointer}
+@media(max-width:900px){.epx-nav{order:3;top:auto;bottom:calc(var(--tabh,64px) + env(safe-area-inset-bottom,0px) + 8px);margin:10px 0 0}.epx-nav .btn{min-width:0;padding:0 14px}.epx-nav .epx-next{min-width:0;flex:0 0 auto}.epx-hint{display:none}}
+@media(max-width:480px){.epx-bk{display:none}.epx-nav .epx-next{font-size:15px;padding:0 12px}}
 @media(max-width:900px){.epx-g{grid-template-columns:1fr}.epx-ep{height:min(64vh,560px);min-height:300px}.epx-side{max-height:none}}
 /* раздел «Способ вращения» (ROT, #/ng/rot): строго, как на листе — белый лист с клеткой, чёрный карандаш, синее — повёрнутое, красное — ответ */
 .rt{max-width:1240px}
@@ -23907,7 +23917,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'4.29',d:'12 ноября 2026',items:['РК2 за 9 шагов, тема «Угол наклона плоскости» (#/ng/rk2/p/incl/pi2): вторая задача с решением по шагам — угол наклона плоскости к π₂ способом замены плоскостей проекций. Фронталь f, новая ось x₂₄ ⟂ f″, перенос глубин y с π₁, плоскость на π₄ — прямая, угол β с осью x₂₄. Вкладки «Наклон к π₁» и «Наклон к π₂».']},
+  {v:'4.29',d:'12 ноября 2026',items:['РК2 за 9 шагов, тема «Угол наклона плоскости» (#/ng/rk2/p/incl/pi2): вторая задача с решением по шагам — угол наклона плоскости к π₂ способом замены плоскостей проекций. Фронталь f, новая ось x₂₄ ⟂ f″, перенос глубин y с π₁, плоскость на π₄ — прямая, угол β с осью x₂₄. Вкладки «Наклон к π₁» и «Наклон к π₂».','Задачи по шагам (РК2, «Вращение», ДЗ №3): понятное управление — яркая кнопка «Смотреть решение → / Дальше →», полоска шагов (можно нажать на любой), нажатие на чертёж — следующий шаг. Панель всегда на виду: на компьютере закреплена сверху, на телефоне — внизу, под большим пальцем.']},
   {v:'4.28',d:'11 ноября 2026',items:['Одно оформление чертежей во «Вращении», «РК2 за 9 шагов», режиме эфира и ДЗ №3 — как на листе: данные чёрным, построения тонко, новые проекции и повёрнутое синим, ответ красным; радиус и дуга поворота — тонкие, не красные. Вращение вокруг проецирующей прямой: угол поворота φ отмечен, остальные точки переносятся засечками (дуга из оси + засечка из повёрнутой точки горизонтали). Линии уровня доведены до новых осей и до центра вращения O′, прямая a продлена до возвращённых вершин, подписи не обрезаются краем, кнопка «← Назад» видна в тёмной теме.']},
   {v:'4.27',d:'11 ноября 2026',items:['Раздел «Способ вращения» (#/ng/rot) собран заново. Два способа на маленьких чертежах (вокруг проецирующей прямой и вокруг линии уровня), таблица «что спрашивают — вокруг чего — до какого момента» и семь разобранных задач по типам билетов РК2: угол наклона плоскости к π₁ и к π₂, натуральная величина треугольника, расстояние между параллельными прямыми, биссектриса угла, равносторонний треугольник и квадрат на прямой с обратным поворотом. Чертёж как на листе: данные — чёрным, повёрнутое — синим, ответ — красным; каждая задача сверена с пространством. Карточка раздела снова на главной.']},
   {v:'4.26',d:'11 ноября 2026',items:['ДЗ №3 — новая вкладка «Как на листе»: пять задач пирамиды своего варианта (видимость, высота заменой с возвратом основания высоты, проверка высоты пересечением прямой с плоскостью, угол между гранями, истинный вид основания с центром окружности и обратным поворотом, угол ребра с основанием) в формате А / Б / В, чертёж по шагам. Работает для всех 30 вариантов.','«РК2 за 9 шагов» как на листе: в каждой из 9 тем — задача с решением по шагам в формате А (словами) / Б (в пространстве) / В (на чертеже), чертёж на клетке строится по шагам. Обратный переход — отдельными шагами: точка с π₅ на π₁ и π₂, общий перпендикуляр скрещивающихся прямых, точки фигуры после поворота (на прямой — сразу, вне прямой — через неподвижный центр). Эти же 9 задач — в режиме эфира.']},
@@ -33715,15 +33725,19 @@ const EPX=(function(){
     el.classList.add('epx'); el.tabIndex=-1;
     function paint(){ const L=get(), t=L[ti], n=t.steps.length;
       el.innerHTML=`${L.length>1?`<div class="epx-tabs" role="tablist">${L.map((x,j)=>`<button type="button" role="tab" aria-selected="${j===ti}" class="${j===ti?'on':''}" data-epx-t="${j}"><b>${escH(x.n!=null?x.n:j+1)}</b>${escH(x.sh||x.t)}</button>`).join('')}</div>`:''}
-<div class="epx-nav"><button type="button" class="btn ghost" data-epx-go="-1"${k===0?' disabled':''}>← Назад</button>
-         <span class="epx-n">${k===0?'условие':k>n?'ответ':'шаг '+k+' из '+n}</span>
-         <button type="button" class="btn" data-epx-go="1"${k>n?' disabled':''}>${k===0?'Решать →':k===n?'Ответ →':'Дальше →'}</button></div>
+<div class="epx-nav"><button type="button" class="btn ghost" data-epx-go="-1"${k===0?' disabled':''} aria-label="Предыдущий шаг">←<span class="epx-bk"> Назад</span></button>
+         <div class="epx-mid"><span class="epx-n">${k===0?'Условие':k>n?'Ответ':'Шаг '+k+' из '+n}</span>
+          <div class="epx-dots" role="group" aria-label="Шаги решения">${Array.from({length:n+2},(_,j)=>`<button type="button" data-epx-k="${j}" class="${j<k?'on':''}${j===k?' now':''}" aria-label="${j===0?'Условие':j>n?'Ответ':'Шаг '+j}" title="${j===0?'Условие':j>n?'Ответ':'Шаг '+j}"></button>`).join('')}</div>
+          <span class="epx-hint">или нажми на чертёж · клавиши ← →</span></div>
+         <button type="button" class="btn pri epx-next" data-epx-go="1"${k>n?' disabled':''}>${k===0?'Смотреть решение →':k===n?'Ответ →':k>n?'Готово ✓':'Дальше →'}</button></div>
         <div class="epx-g"><div class="epx-ep" data-epx-ep></div><div class="epx-side">${panel(t,k,{nohead:o.nohead})}</div></div>`;
       const box=el.querySelector('[data-epx-ep]'); render(box,t,Math.min(k,n),k>n);
       if(ro) ro.disconnect(); if(window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(box.isConnected) render(box,t,Math.min(k,n),k>n); }); ro.observe(box); }
       const now=el.querySelector('.lx-v li.now'); if(now&&o.scroll!==false) try{ const s=now.closest('.epx-side'); if(s&&s.scrollHeight>s.clientHeight) s.scrollTop=now.offsetTop-s.offsetTop-40; }catch(e){} }
     function go(d){ const n=get()[ti].steps.length; k=Math.max(0,Math.min(n+1,k+d)); paint(); if(o.onStep) o.onStep(k); }
-    el.addEventListener('click',e=>{ const b=e.target.closest('[data-epx-go],[data-epx-t]'); if(!b) return;
+    el.addEventListener('click',e=>{ const kd=e.target.closest('[data-epx-k]'); if(kd){ k=+kd.dataset.epxK; paint(); if(o.onStep) o.onStep(k); return; }
+      if(e.target.closest('[data-epx-ep]')){ if(k<=get()[ti].steps.length) go(1); return; }
+      const b=e.target.closest('[data-epx-go],[data-epx-t]'); if(!b) return;
       if(b.dataset.epxT!=null){ ti=+b.dataset.epxT; k=0; paint(); if(o.onTab) o.onTab(ti); return; }
       go(+b.dataset.epxGo); try{ el.querySelector('[data-epx-go="'+(+b.dataset.epxGo>0?1:-1)+'"]').focus({preventScroll:true}); }catch(err){} });
     el.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'){ e.preventDefault(); go(1); } else if(e.key==='ArrowLeft'){ e.preventDefault(); go(-1); } });
