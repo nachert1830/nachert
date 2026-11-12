@@ -39,10 +39,10 @@ $('#lockForm').addEventListener('submit', e => { e.preventDefault(); const c = $
 $('#lockBtn').addEventListener('click', () => { ls.set('ownerCode', null); stopHands(); location.replace(location.pathname); });
 
 /* ───────── разделы ───────── */
-const PANE_OF = { scan: 'lk', lk: 'lk', holo: 'holo', site: 'site' };
+const PANE_OF = { scan: 'lk', lk: 'lk', holo: 'holo', site: 'site', ask: 'ask' };
 let cur = '', prevPane = '', split = false, splitUser = false, started = false;
 const frame = p => $('.pane[data-pane="' + p + '"]');
-function load(p) { const f = frame(p); if (!f.getAttribute('src') || f.getAttribute('src') === 'about:blank') { f.onload = () => patch(f); f.src = SRC[p]; } return f; }
+function load(p) { const f = frame(p); if (p === 'ask') { qaStart(); return f; } if (!f.getAttribute('src') || f.getAttribute('src') === 'about:blank') { f.onload = () => patch(f); f.src = SRC[p]; } return f; }
 function lkReady(f, ms) { return new Promise(res => { const t0 = Date.now(); (function poll() { let w = null; try { w = f.contentWindow; } catch (e) {}
   if (w && w.LKSCAN && w.document.readyState !== 'loading') return res(w); if (Date.now() - t0 > (ms || 15000)) return res(null); setTimeout(poll, 120); })(); }); }
 async function lkTab(id) { const w = await lkReady(load('lk')); if (!w) return null; const t = w.document.querySelector('.tab[data-tab="' + id + '"]'); if (t) t.click(); return w; }
@@ -119,10 +119,70 @@ function side(on) { $('#side').hidden = !on; $('#sideBtn').classList.toggle('on'
 $('#sideBtn').addEventListener('click', () => side($('#side').hidden));
 addEventListener('storage', e => { if ($('#side').hidden) return; if (e.key === 'lk_sheets') renderSide(); if (e.key === 'lk_tok') renderUsers(); });   /* кабинет сохранил лист */
 
+/* ───────── вопросы учеников: все ветки, ответ, фото, закрыть (API клуба /api/admin/ask*, сессия кабинета lk_tok) ─────────
+   Ученики пишут на сайте (#/ask, lk/ask.js); число ждущих ответа — на вкладке и в заголовке окна, проверка раз в 30 с. */
+const QA = { list: null, cur: null, f: 'wait', t: 0, pic: null, sig: '' };
+async function qreq(m, p, b) { const h = { authorization: 'Bearer ' + (ls.get('lk_tok') || '') }; if (b) h['content-type'] = 'application/json';
+  const r = await fetch(CLUB + p, { method: m, headers: h, body: b ? JSON.stringify(b) : undefined, cache: 'no-store' }); const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || ('Сервер ответил ' + r.status)); e.status = r.status; throw e; } return j; }
+const qwhen = t => { const d = new Date(t), n = new Date(), hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  return d.toDateString() === n.toDateString() ? hm : d.getDate() + '.' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + hm; };
+function qaGate(msg, login) { $('#qaItems').innerHTML = ''; $('#qaTh').innerHTML = '<div class="qa-gate"><b>' + esc(msg) + '</b>' + (login ? 'Вопросы видит только владелец: войдите в «Кабинет» своим аккаунтом (Яндекс ID или почта).<p><button class="btn sm" data-act="lk">Войти в кабинет</button></p>' : '') + '</div>'; }
+async function qaPoll() { clearTimeout(QA.t); QA.t = setTimeout(qaPoll, 30e3);
+  if (!CLUB || !ls.get('lk_tok')) { badge(0); if (cur === 'ask') qaGate('Нужен вход в кабинет', true); return; }
+  try { const j = await qreq('GET', '/api/admin/ask'); QA.list = j.threads; badge(j.waiting); if (cur === 'ask') { qaPaintList(); if (QA.cur) qaOpen(QA.cur, true); } }
+  catch (e) { if (cur !== 'ask') return; if (e.status === 401) qaGate('Сессия кабинета истекла', true); else if (e.status === 403) qaGate('Этот аккаунт кабинета — не админ', true); else qaGate(e.message || 'Сервер кабинета не отвечает'); } }
+function badge(n) { const b = $('#askBadge'); b.hidden = !n; b.textContent = n || ''; document.title = (n ? '(' + n + ') ' : '') + 'Начерт — пульт'; }
+function qaStart() { if (!QA.started) { QA.started = true; } qaPaintList(); qaPoll(); }
+function qaPaintList() { if (!QA.list) return; const L = QA.f === 'wait' ? QA.list.filter(t => t.waiting) : QA.list;
+  $$('.qa-f button').forEach(b => { const w = b.getAttribute('data-qf') === 'wait'; b.classList.toggle('on', b.getAttribute('data-qf') === QA.f); if (w) b.textContent = 'Ждут ответа' + (QA.list.filter(t => t.waiting).length ? ' · ' + QA.list.filter(t => t.waiting).length : ''); });
+  $('#qaItems').innerHTML = L.length ? L.map(t => '<button class="qa-it' + (t.waiting ? ' wait' : '') + (t.id === QA.cur ? ' on' : '') + '" data-q="' + esc(t.id) + '"><span class="h"><b>' + esc(t.title) + '</b><time>' + qwhen(t.updatedAt) + '</time></span>'
+    + '<p>' + (t.last.from === 'a' ? 'Вы: ' : '') + esc(t.last.text || 'Фото') + '</p><small>' + esc(t.user.name) + (t.user.group ? ' · ' + esc(t.user.group) : '') + (t.user.variant ? ' · в.' + t.user.variant : '') + (t.closed ? ' · закрыт' : '') + '</small></button>').join('')
+    : '<p class="empty" style="padding:12px">' + (QA.f === 'wait' ? 'Все вопросы отвечены 🎉' : 'Вопросов пока нет') + '</p>';
+  if (!QA.cur && !$('#qaTh .qa-hd') && !$('#qaTh .qa-gate')) $('#qaTh').innerHTML = '<p class="qa-none">Выберите вопрос слева</p>'; }
+const QIMG = {};
+async function qaImg(id) { if (QIMG[id]) return QIMG[id]; const j = await qreq('GET', '/api/ask/img?id=' + encodeURIComponent(id)); return QIMG[id] = j.data; }
+async function qaOpen(id, quiet) { QA.cur = id; $('.pane.qa').classList.add('open'); if (!quiet) qaPaintList();
+  let t; try { t = (await qreq('GET', '/api/admin/ask/t?id=' + encodeURIComponent(id))).thread; } catch (e) { if (!quiet) toast(e.message); return; }
+  if (QA.cur !== id) return; const sig = id + t.msgs.map(m => m.id).join() + t.closed; if (quiet && sig === QA.sig) return; QA.sig = sig;
+  const lt = QA.list && QA.list.find(x => x.id === id); if (lt) { lt.unread = 0; }
+  const keep = $('#qaTxt') && QA.cur === id ? $('#qaTxt').value : '', u = t.user || {};
+  const srcL = t.src ? '<a href="#" data-src="' + esc(t.src) + '">' + esc(t.where || t.src) + '</a>' : '';
+  $('#qaTh').innerHTML = '<div class="qa-hd"><button class="btn sm qa-back" data-qback>←</button><h2>' + esc(t.title) + '</h2>'
+    + '<button class="btn sm" data-qclose="' + (t.closed ? '0' : '1') + '">' + (t.closed ? 'Открыть снова' : 'Закрыть вопрос') + '</button>'
+    + '<div class="who"><b>' + esc(u.name || '') + '</b>' + (u.group ? ' · ' + esc(u.group) : '') + (u.variant ? ' · вариант ' + u.variant : '') + (srcL ? ' · со страницы ' + srcL : '') + ' · ' + qwhen(t.createdAt) + '</div></div>'
+    + '<div class="qa-msgs" id="qaMsgs">' + t.msgs.map(m => '<div class="qa-m ' + (m.from === 'a' ? 'a' : 'u') + '">' + (m.img ? '<img data-qimg="' + esc(m.img) + '" alt="Фото">' : '') + (m.text ? '<div class="bb">' + esc(m.text) + '</div>' : '') + '<time>' + (m.from === 'a' ? 'вы · ' : '') + qwhen(m.ts) + '</time></div>').join('') + '</div>'
+    + '<form class="qa-cp" id="qaCp"><div class="qa-pv" id="qaPv"></div><textarea id="qaTxt" placeholder="Ответ… (Ctrl+Enter — отправить)"></textarea><div class="row"><label class="btn sm">📷 Фото<input type="file" accept="image/*" id="qaFile"></label><span class="sp"></span><button class="btn pri sm" type="submit" style="flex:none">Ответить</button></div></form>';
+  $('#qaTxt').value = keep; qaPv();
+  $$('#qaMsgs [data-qimg]').forEach(async im => { try { im.src = await qaImg(im.getAttribute('data-qimg')); } catch (e) { im.alt = 'Фото не загрузилось'; } });
+  const box = $('#qaMsgs'); box.scrollTop = box.scrollHeight; if (!quiet && innerWidth > 900) $('#qaTxt').focus(); }
+function qaPv() { const p = $('#qaPv'); if (!p) return; p.innerHTML = QA.pic ? '<img src="' + QA.pic + '" alt="Фото к ответу"> <button type="button" class="btn sm" data-qpicx>Убрать</button>' : ''; }
+function qshrink(file) { return new Promise((ok, no) => { const url = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(url); let k = Math.min(1, 1400 / Math.max(im.naturalWidth, im.naturalHeight));
+  const cv = document.createElement('canvas'), cx = cv.getContext('2d'); for (let i = 0; i < 8; i++) { cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(im, 0, 0, cv.width, cv.height);
+    for (const q of [.8, .66]) { const d = cv.toDataURL('image/jpeg', q); if (d.length <= 270 * 1024) return ok(d); } k *= .78; } no(new Error('Фото слишком большое')); }; im.onerror = () => no(new Error('Фото не открылось')); im.src = url; }); }
+async function qaSend() { const ta = $('#qaTxt'), text = ta.value.trim(); if (!text && !QA.pic) { ta.focus(); return; } const btn = $('#qaCp [type=submit]'); btn.disabled = true;
+  try { await qreq('POST', '/api/admin/ask/msg', { id: QA.cur, text, img: QA.pic || undefined }); ta.value = ''; QA.pic = null; QA.sig = ''; toast('Ответ отправлен'); await qaPoll(); await qaOpen(QA.cur, true); }
+  catch (e) { toast(e.message); } btn.disabled = false; }
+$('.pane.qa').addEventListener('click', async e => {
+  const f = e.target.closest('[data-qf]'); if (f) { QA.f = f.getAttribute('data-qf'); qaPaintList(); return; }
+  const q = e.target.closest('[data-q]'); if (q) { QA.sig = ''; qaOpen(q.getAttribute('data-q')); return; }
+  if (e.target.closest('[data-qback]')) { QA.cur = null; $('.pane.qa').classList.remove('open'); qaPaintList(); return; }
+  const c = e.target.closest('[data-qclose]'); if (c) { try { await qreq('POST', '/api/admin/ask/close', { id: QA.cur, closed: c.getAttribute('data-qclose') === '1' }); QA.sig = ''; await qaPoll(); qaOpen(QA.cur, true); } catch (er) { toast(er.message); } return; }
+  const s = e.target.closest('[data-src]'); if (s) { e.preventDefault(); const f2 = frame('site'); f2.onload = () => patch(f2); f2.src = '../' + s.getAttribute('data-src'); go('site'); return; }
+  if (e.target.closest('[data-qpicx]')) { QA.pic = null; qaPv(); return; }
+  const im = e.target.closest('[data-qimg]'); if (im && im.src) { const d = document.createElement('div'); d.className = 'qa-lb'; d.innerHTML = '<img alt="Фото" src="' + im.src + '">'; d.onclick = () => d.remove(); document.body.appendChild(d); return; }
+  const a = e.target.closest('[data-act]'); if (a) go(a.getAttribute('data-act'));
+});
+$('.pane.qa').addEventListener('submit', e => { e.preventDefault(); qaSend(); });
+$('.pane.qa').addEventListener('keydown', e => { if (e.target.id === 'qaTxt' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); qaSend(); } });
+$('.pane.qa').addEventListener('change', async e => { if (e.target.id !== 'qaFile') return; const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { QA.pic = await qshrink(f); qaPv(); } catch (er) { toast(er.message); } });
+addEventListener('storage', e => { if (e.key === 'lk_tok') qaPoll(); });
+
 /* ───────── клавиши (и внутри разделов) ───────── */
 function keys(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey) return;
-  const k = e.code, map = { Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site' };
+  const k = e.code, map = { Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site', Digit5: 'ask' };
   if (map[k]) { e.preventDefault(); go(map[k]); }
   else if (k === 'KeyD') { e.preventDefault(); side($('#side').hidden); }
   else if (k === 'KeyS') { e.preventDefault(); $('#splitBtn').click(); }
@@ -212,8 +272,8 @@ function back() { const f = frame(PANE_OF[cur]); let w; try { w = f.contentWindo
 document.addEventListener('visibilitychange', () => { if (document.hidden && HANDS.on) stopHands(true); else if (!document.hidden && HANDS.resume) { HANDS.resume = false; startHands(); } });
 
 /* ───────── старт ───────── */
-function start() { if (started) return; started = true; side(ls.get('me_side') === '1' || (ls.get('me_side') == null && innerWidth > 900)); go((location.hash || '').slice(1) || 'scan'); }
+function start() { if (started) return; started = true; qaPoll(); side(ls.get('me_side') === '1' || (ls.get('me_side') == null && innerWidth > 900)); go((location.hash || '').slice(1) || 'scan'); }
 addEventListener('hashchange', () => { const id = location.hash.slice(1); if (started && PANE_OF[id] && id !== cur) go(id); });
 const saved = ls.get('ownerCode');
 if (saved) unlock(saved, true); else $('#code').focus();
-self.ME = { go, side, renderUsers, startHands, stopHands, act, deepAt, get cur() { return cur; } };   /* для проверки tests/me-hub.js */
+self.ME = { go, side, renderUsers, qaPoll, qaOpen, startHands, stopHands, act, deepAt, get cur() { return cur; } };   /* для проверки tests/me-hub.js */

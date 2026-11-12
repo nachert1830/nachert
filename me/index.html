@@ -85,6 +85,50 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 #camv{position:fixed;right:12px;bottom:12px;width:160px;border-radius:12px;transform:scaleX(-1);border:1px solid var(--line);z-index:40;opacity:.85;box-shadow:var(--shadow)}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--surf3);color:var(--ink);padding:10px 16px;border-radius:12px;box-shadow:var(--shadow);z-index:60;font-size:14px;max-width:calc(100% - 32px)}
 
+/* ── вопросы учеников ── */
+.tbadge{display:inline-block;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:99px;background:var(--red-b);color:#fff;font:800 11px/18px var(--sans);text-align:center}
+.pane.qa{overflow:hidden}
+.pane.qa.on{display:grid;grid-template-columns:340px 1fr}
+.qa-list{border-right:1px solid var(--line);overflow:auto;background:var(--surf);padding:12px 10px}
+.qa-f{display:flex;gap:6px;margin:0 0 10px}
+.qa-f button{flex:1;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surf2);font-weight:700;font-size:13px}
+.qa-f button.on{background:var(--blue-s);border-color:var(--blue);color:var(--blue)}
+.qa-it{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--surf2);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.qa-it.on{border-color:var(--blue);background:var(--blue-s)}
+.qa-it .h{display:flex;gap:8px;align-items:baseline}.qa-it .h b{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qa-it time{color:var(--mut);font-size:12px;white-space:nowrap}
+.qa-it p{margin:3px 0 0;color:var(--ink2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qa-it small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+.qa-it.wait .h::before{content:'';flex:none;width:9px;height:9px;border-radius:50%;background:var(--red-b);align-self:center}
+.qa-th{display:flex;flex-direction:column;min-width:0;min-height:0}
+.qa-none{margin:auto;color:var(--mut)}
+.qa-hd{flex:none;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surf)}
+.qa-hd h2{flex:1;min-width:200px;margin:0;font:700 17px/1.25 var(--disp);overflow-wrap:anywhere}
+.qa-hd .who{width:100%;color:var(--mut);font-size:13px}.qa-hd .who b{color:var(--ink)}
+.qa-hd a{color:var(--blue)}
+.qa-back{display:none}
+.qa-msgs{flex:1;min-height:0;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.qa-m{max-width:min(620px,86%);display:flex;flex-direction:column;gap:3px}
+.qa-m.a{align-self:flex-end;align-items:flex-end}
+.qa-m .bb{padding:10px 14px;border-radius:18px;background:var(--surf2);border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+.qa-m.a .bb{background:var(--acc);border-color:var(--acc);color:#fff}
+.qa-m time{font-size:11.5px;color:var(--mut);padding:0 6px}
+.qa-m img{display:block;max-width:min(340px,70vw);max-height:320px;border-radius:14px;border:1px solid var(--line);cursor:zoom-in;background:#fff}
+.qa-cp{flex:none;border-top:1px solid var(--line);background:var(--surf);padding:10px 12px;display:grid;gap:8px}
+.qa-cp textarea{width:100%;min-height:64px;max-height:40vh;resize:vertical;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:10px 12px;font:15px/1.45 var(--sans);color:var(--ink)}
+.qa-cp .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qa-cp .sp{flex:1}
+.qa-cp label.btn{display:inline-flex;align-items:center;gap:6px}.qa-cp input[type=file]{display:none}
+.qa-pv img{max-height:80px;border-radius:10px;border:1px solid var(--line)}
+.qa-lb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:16px;cursor:zoom-out}.qa-lb img{max-width:100%;max-height:100%;border-radius:8px;background:#fff}
+.qa-gate{margin:auto;text-align:center;color:var(--mut);padding:24px;max-width:420px}.qa-gate b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+@media (max-width:900px){
+  .pane.qa.on{grid-template-columns:1fr}
+  .pane.qa.open .qa-list{display:none}
+  .pane.qa:not(.open) .qa-th{display:none}
+  .qa-back{display:inline-flex}
+}
+
 @media (max-width:900px){
   .tab kbd,#splitBtn{display:none}
   #side{position:absolute;inset:0 auto 0 0;z-index:20;width:min(320px,88%);box-shadow:var(--shadow)}
@@ -120,6 +164,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
       <button class="tab" role="tab" data-go="lk">Кабинет<kbd>Alt 2</kbd></button>
       <button class="tab" role="tab" data-go="holo">3D · жесты<kbd>Alt 3</kbd></button>
       <button class="tab" role="tab" data-go="site">Сайт<kbd>Alt 4</kbd></button>
+      <button class="tab" role="tab" data-go="ask">Вопросы<b class="tbadge" id="askBadge" hidden></b><kbd>Alt 5</kbd></button>
     </nav>
     <div class="tools">
       <a class="btn sm" id="holoTab" href="../hands/" target="_blank" rel="noopener" title="Голограмма с жестами — отдельной вкладкой браузера, на весь экран">3D ↗</a>
@@ -142,6 +187,13 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
       <iframe class="pane" data-pane="lk" title="Кабинет и сканер" allow="camera; fullscreen"></iframe>
       <iframe class="pane" data-pane="holo" title="3D-голограмма под управлением рук" allow="camera; fullscreen"></iframe>
       <iframe class="pane" data-pane="site" title="Сайт Начерта" allow="fullscreen"></iframe>
+      <section class="pane qa" data-pane="ask" aria-label="Вопросы учеников">
+        <div class="qa-list" id="qaList">
+          <div class="qa-f" role="tablist"><button class="on" data-qf="wait">Ждут ответа</button><button data-qf="all">Все</button></div>
+          <div id="qaItems"></div>
+        </div>
+        <div class="qa-th" id="qaTh"><p class="qa-none">Выберите вопрос слева</p></div>
+      </section>
     </div>
   </main>
 </div>
