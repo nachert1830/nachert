@@ -82,6 +82,8 @@ async function rkpCheck(page,URL){
     if(P({t:{ang:{u:1,ok:['zam'],n:1,w:0}},x:{best:0,h:[]}}).val!==7) A('прогресс','одна задача','не 7 %');
     if(P({t:{ang:{u:1,ok:['zam'],n:3,w:0}},x:{best:0,h:[]}}).val!==7) A('прогресс','один способ','тема с двумя способами закрыта одним');
     if(P({t:{bis:{u:1,ok:['rotl'],n:2,w:0}},x:{best:0,h:[]}}).val!==10) A('прогресс','один способ','тема с одним способом не закрыта двумя задачами');
+    if(P({t:{ang:{u:1,sol:1}},x:{best:0,h:[]}}).val!==7) A('прогресс','разбор','суть + разбор задачи не 7 %');
+    if(P({t:{ang:{u:1,h:1,sol:1,d:1}},x:{best:0,h:[]}}).val!==10) A('прогресс','тема','пройденная по шагам тема не 10 %');
     if(P(full()).val!==90) A('прогресс','9 тем','не 90 %: '+P(full()).val);
     const f3=full(); f3.x.best=3; if(P(f3).val!==100) A('прогресс','финал','не 100 %');
     if(RKP.hue(15)!==0||RKP.hue(90)!==130) A('прогресс','цвет','15 % не красный или 90 % не зелёный');
@@ -100,24 +102,24 @@ async function rkpCheck(page,URL){
   const nodes=await page.$$eval('.rkp-path .rkp-n',x=>x.length); if(nodes!==10) add('путь','узлы','узлов '+nodes+' вместо 10'); await wide('путь');
   for(const T of await page.evaluate(()=>RKP.TOPICS.map(t=>({id:t.id,ms:Object.keys(t.m)})))){
     await page.evaluate(id=>{ location.hash='#/ng/rk2/p/'+id; },T.id); await page.waitForTimeout(250); await wide('тема '+T.id); await links('тема '+T.id);
+    /* тема по шагам: 4 вкладки, «Дальше» ведёт к следующей; ввода чисел нет */
+    const tabs=await page.$$eval('.rkp-stp [data-go]',x=>x.length); if(tabs!==4) add('тема '+T.id,'шаги','вкладок '+tabs);
+    if(await page.$('[data-ans]')) add('тема '+T.id,'ввод','на странице темы осталось поле ввода ответа');
+    await page.click('.rkp-stp [data-go="0"]'); await page.waitForTimeout(80);
     const c=await page.evaluate(id=>RKP.TOPICS.find(t=>t.id===id).chk.c,T.id); await page.click('.rkp-o[data-o="'+c+'"]');
-    /* неверный ответ не засчитывается */
-    await page.click('[data-new]'); await page.waitForSelector('[data-ans]');
-    await page.fill('[data-ans]','9999'); await page.click('[data-chk]'); await page.waitForTimeout(80);
-    for(let k=0;k<2;k++){ await page.click('[data-new]'); await page.waitForSelector('[data-ans]');
-      const ans=await page.evaluate(()=>RKP.cur());   /* точный ответ показанной задачи */
-      if(ans==null){ add('тема '+T.id,'проход','нет доступа к текущей задаче'); break; }
-      await page.fill('[data-ans]',String(ans).replace('.',',')); await page.click('[data-chk]'); await page.waitForTimeout(80);
-      const ok=await page.$('.rkp-res.ok'); if(!ok) add('тема '+T.id,'проход','верный ответ не принят'); }
+    for(let k=1;k<4;k++){ await page.click('.rkp-fwd [data-go="'+k+'"]'); await page.waitForTimeout(150);
+      const on=await page.$eval('.rkp-stp button.on',b=>+b.dataset.go); if(on!==k) add('тема '+T.id,'дальше','после «Дальше» открыт шаг '+(on+1)+' вместо '+(k+1)); }
+    await page.click('[data-fin]'); await page.waitForTimeout(250);
     const st=await page.evaluate(id=>{ const s=JSON.parse(localStorage.getItem('nch2_rkp')||'{}'); return s.t&&s.t[id]; },T.id);
-    if(!st||!st.u||st.n!==2||st.w!==1) add('тема '+T.id,'сохранение',JSON.stringify(st));
+    if(!st||!st.u||!st.h||!st.sol||!st.d) add('тема '+T.id,'сохранение',JSON.stringify(st));
   }
   const pv=await page.evaluate(()=>RKP.progress().topics); if(pv!==90) add('путь','все темы','после прохождения всех тем '+pv+' %');
   await page.evaluate(()=>{ location.hash='#/ng/rk2/x'; }); await page.waitForTimeout(250); await page.click('[data-go]'); await page.waitForTimeout(200); await wide('пробный РК2'); await links('пробный РК2');
   const seed=await page.evaluate(()=>+document.querySelector('.rkp-xh h1').textContent.replace(/\D/g,''));
   const ans=await page.evaluate(sd=>RKP.ticket(sd).map(q=>q.ans),seed);
-  const ins=await page.$$('[data-ans]'); for(let i=0;i<ins.length;i++) await ins[i].fill(String(ans[i]).replace('.',','));
-  await page.click('[data-fin]'); await page.waitForTimeout(200);
+  if(ans.length!==3) add('пробный РК2','билет','задач '+ans.length);
+  await page.click('[data-open]'); await page.waitForTimeout(200);
+  for(const L of ['А','Б','В']){ await page.click('[data-q="'+L+'"] [data-self="1"]'); await page.waitForTimeout(150); }
   const x=await page.evaluate(()=>({t:(document.querySelector('.rkp-xres b')||{}).textContent,v:RKP.progress().val}));
   if(x.t!=='3 из 3'||x.v!==100) add('пробный РК2','итог',JSON.stringify(x));
   await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(300);

@@ -4942,6 +4942,65 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-res>b{font:800 17px var(--sans)}.rkp-res.ok>b{color:var(--green)}.rkp-res.no>b{color:var(--red)}
 .rkp-res p{margin:6px 0 0;font-size:14.5px;line-height:1.5}
 .rkp-tip{color:var(--ink2)}
+/* 4.30: тема по шагам — видна одна часть, кнопка «Дальше» */
+.rkp-th{margin:4px 0 14px}.rkp-th p{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rkp-dot.big.done{background:var(--green);border-color:var(--green);color:#fff}
+.rkp-stp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 12px;padding:5px;border-radius:16px;background:var(--surf2);position:sticky;top:calc(var(--hdr,64px) + 6px);z-index:5;scroll-margin-top:calc(var(--hdr,64px) + 12px)}
+.rkp-stp button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:6px 8px;border:0;border-radius:12px;background:transparent;font:inherit;color:var(--mut);cursor:pointer;text-align:left}
+.rkp-stp button:hover{color:var(--ink)}
+.rkp-stp button span{flex:0 0 auto;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2px solid currentColor;font:800 12px var(--sans)}
+.rkp-stp button b{font:700 14px/1.15 var(--sans)}
+.rkp-stp button.d{color:var(--green)}.rkp-stp button.d span{background:var(--green);border-color:var(--green);color:#fff}
+.rkp-stp button.on{background:var(--surf);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.rkp-stp button.on span{background:var(--acc);border-color:var(--acc);color:#fff}
+@media(max-width:620px){.rkp-stp{gap:3px;padding:4px}.rkp-stp button{flex-direction:column;gap:3px;min-height:54px;padding:6px 2px;text-align:center}.rkp-stp button b{font-size:11.5px}}
+.rkp-pane{border:1.5px solid var(--line);border-radius:18px;padding:18px 18px 20px;background:var(--surf);min-height:220px}
+.rkp-pane.rkp-p-sol{padding:0;border:0;background:none}
+.rkp-pane .rkp-sol{margin:0}
+.rkp-idea{font-size:16.5px;line-height:1.55;margin:0 0 16px}
+.rkp-asks{margin:0 0 18px;padding:10px 14px;font-size:14px}
+.rkp-asks span{display:block;font:700 11.5px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+.rkp-asks ul{margin:6px 0 0;padding-left:18px;color:var(--ink)}
+.rkp-chk{border-top:1px solid var(--line);padding-top:14px}
+.rkp-os{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.rkp-alg{list-style:none;counter-reset:a;padding:0;margin:4px 0 14px}
+.rkp-alg li{counter-increment:a;position:relative;padding:10px 12px 10px 48px;border-radius:12px;background:var(--surf2);font-size:15px;line-height:1.5}
+.rkp-alg li+li{margin-top:8px}
+.rkp-alg li::before{content:counter(a);position:absolute;left:12px;top:10px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font:800 13px var(--sans)}
+.rkp-traps{border:1.5px solid color-mix(in srgb,#e8a500 45%,var(--line));border-radius:12px;padding:0 12px;background:color-mix(in srgb,#e8a500 7%,var(--surf))}
+.rkp-traps summary{cursor:pointer;min-height:42px;display:flex;align-items:center;font-weight:700;font-size:14px}
+.rkp-traps ul{margin:0 0 12px}
+.rkp-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 2px 0;font-size:12.5px;color:var(--mut)}
+.rkp-leg i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle;background:#111}
+.rkp-leg i.b{background:#1a5ae0}.rkp-leg i.o{background:#f08a00}.rkp-leg i.r{background:#e3262f}
+:root[data-theme=dark] .rkp-leg i.k{background:#ddd}
+.rkp-rkg{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:0 0 14px}
+.rkp-rkc{display:flex;flex-direction:column;gap:8px;padding:8px 8px 12px}
+.rkp-rkf{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#fff}.rkp-rkf svg{width:100%!important;height:100%!important}
+.rkp-rkt{padding:0 4px;gap:6px}.rkp-rkt b{font-size:14px;font-weight:600}
+.rkp-rkn{display:grid;place-items:center;width:22px;height:22px;padding:0;border-radius:50%;background:var(--surf2);color:var(--ink2)}
+.rkp-p-kinds .rkp-ex{margin:0 0 14px}
+.rkp-fwd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px}
+.rkp-fw{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin-left:auto;padding:10px 22px;min-height:56px;text-align:left}
+.rkp-fw small{font:600 12px var(--sans);opacity:.8}
+.rkp-nav{display:flex;justify-content:space-between;gap:10px;margin:18px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px}
+.rkp-how{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:4px 0 16px;font-size:13.5px;color:var(--mut)}
+.rkp-how b{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:99px;background:var(--surf2);color:var(--ink);font-weight:600}
+.rkp-how b i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--acc);color:#fff;font:800 11px var(--sans);font-style:normal}
+.rkp-how em{font-style:normal}
+.rkp-more{flex-direction:row;flex-wrap:wrap;gap:8px}
+.rkp-more a{padding:8px 14px;border-radius:99px;border:1.5px solid var(--line);text-decoration:none;font-weight:600}
+.rkp-more a:hover{border-color:var(--acc)}
+.rkp-ans{font-size:16px!important;margin:0!important}
+.rkp-self{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}.rkp-self span{font-weight:700;margin-right:4px}
+.rkp-self .ok-b{background:var(--green);border-color:var(--green);color:#fff}
+.rkp-selfr{font-weight:700}.rkp-res.ok .rkp-selfr{color:var(--green)}.rkp-res.no .rkp-selfr{color:var(--red)}
+.rkp-res{background:var(--surf2);border-color:var(--line)}
+.rkp-xsteps{list-style:none;counter-reset:x;padding:0;margin:0 0 16px;display:grid;gap:8px}
+.rkp-xsteps li{counter-increment:x;position:relative;padding:10px 12px 10px 50px;border-radius:14px;background:var(--surf2);display:flex;flex-direction:column}
+.rkp-xsteps li::before{content:counter(x);position:absolute;left:12px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;font:800 14px var(--sans)}
+.rkp-xsteps span{font-size:13.5px;color:var(--mut)}
+.rkp-xq{margin:0 0 18px}
 .rkp-nav{display:flex;justify-content:space-between;gap:12px;margin:18px 0 6px;font-size:14px}
 .rkp-nav a:last-child{text-align:right;margin-left:auto}
 .rkp-rules{border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 14px;font-size:14.5px;line-height:1.5}
@@ -23917,6 +23976,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.30',d:'12 ноября 2026',items:['РК2 за 9 шагов: каждая тема — четыре шага сверху (Суть → Способ → Разбор задачи → Виды в билете), открыт один, внизу кнопка «Дальше». Ловушки свёрнуты, виды задач — компактные карточки.','Убрана проверка вводом чисел (углы, расстояния): тема засчитывается за вопрос на суть, разбор задачи и пройденные шаги. Пробный РК2: решаешь на бумаге, открываешь ответы и отмечаешь «сошлось / не сошлось».']},
   {v:'4.29',d:'12 ноября 2026',items:['РК2 за 9 шагов, тема «Угол наклона плоскости» (#/ng/rk2/p/incl/pi2): вторая задача с решением по шагам — угол наклона плоскости к π₂ способом замены плоскостей проекций. Фронталь f, новая ось x₂₄ ⟂ f″, перенос глубин y с π₁, плоскость на π₄ — прямая, угол β с осью x₂₄. Вкладки «Наклон к π₁» и «Наклон к π₂».','Задачи по шагам (РК2, «Вращение», ДЗ №3): понятное управление — яркая кнопка «Смотреть решение → / Дальше →», полоска шагов (можно нажать на любой), нажатие на чертёж — следующий шаг. Панель всегда на виду: на компьютере закреплена сверху, на телефоне — внизу, под большим пальцем.']},
   {v:'4.28',d:'11 ноября 2026',items:['Одно оформление чертежей во «Вращении», «РК2 за 9 шагов», режиме эфира и ДЗ №3 — как на листе: данные чёрным, построения тонко, новые проекции и повёрнутое синим, ответ красным; радиус и дуга поворота — тонкие, не красные. Вращение вокруг проецирующей прямой: угол поворота φ отмечен, остальные точки переносятся засечками (дуга из оси + засечка из повёрнутой точки горизонтали). Линии уровня доведены до новых осей и до центра вращения O′, прямая a продлена до возвращённых вершин, подписи не обрезаются краем, кнопка «← Назад» видна в тёмной теме.']},
   {v:'4.27',d:'11 ноября 2026',items:['Раздел «Способ вращения» (#/ng/rot) собран заново. Два способа на маленьких чертежах (вокруг проецирующей прямой и вокруг линии уровня), таблица «что спрашивают — вокруг чего — до какого момента» и семь разобранных задач по типам билетов РК2: угол наклона плоскости к π₁ и к π₂, натуральная величина треугольника, расстояние между параллельными прямыми, биссектриса угла, равносторонний треугольник и квадрат на прямой с обратным поворотом. Чертёж как на листе: данные — чёрным, повёрнутое — синим, ответ — красным; каждая задача сверена с пространством. Карточка раздела снова на главной.']},
@@ -27416,18 +27476,14 @@ const RKS_={};   /* образцы видов для мини-чертежей: 
 function rkSample(id,vi){ const k=id+'/'+vi; if(!(k in RKS_)){ const V=RK2V[id][vi], ms=Object.keys(TOP(id).m); let m=Object.keys(V.m).sort((a,b)=>V.m[b]-V.m[a])[0]; if(m!=='any'&&!ms.includes(m)) m=ms[0]; RKS_[k]=variantTask(id,vi,1009+vi*7717,m); } return RKS_[k]; }
 const mtN=k=>({zam:'замена плоскостей',rotp:'вращение вокруг проецирующей',rotl:'вращение вокруг линии уровня',any:'любой способ на выбор'})[k]||k;
 function rkHTML(id,o){ o=o||{}; const C=RK2V[id]; if(!C) return '';
-  return `<section class="rkp-rk" aria-labelledby="rkpRK"><h2 id="rkpRK" class="sp-h2">Какие задачи бывают</h2>
-   <p class="rkp-rks">Все виды условий этой темы. У каждого — пример с чертежом${o.nobtn?'':' и кнопка «Решить такую же» (каждый раз новые числа, ответ проверяется)'}.</p>
-   <div class="rkp-rkg">${C.map((V,i)=>{ const q=rkSample(id,i); return `<div class="rkp-rkc"><div class="rkp-rkf sheet">${q?figHTML(q,false):''}</div><div class="rkp-rkt">
-     <span class="rkp-rkn">Вид ${i+1}</span><b>${V.t}.</b><span class="rkp-rkd">${V.g}</span>
-     <span class="rkp-rkm">Решают: ${Object.keys(V.m).sort((a,b)=>V.m[b]-V.m[a]).map(mtN).join(', ')}</span>
-     ${o.nobtn?'':`<button type="button" class="btn rkp-rkb" data-rkv="${i}">Решить такую же →</button>`}</div></div>`; }).join('')}</div></section>`; }
-
+  return `<div class="rkp-rkg">${C.map((V,i)=>{ const q=rkSample(id,i); return `<div class="rkp-rkc"><div class="rkp-rkf sheet">${q?figHTML(q,false):''}</div><div class="rkp-rkt">
+     <span class="rkp-rkn">${i+1}</span><b>${V.t}</b>
+     <span class="rkp-rkm">${Object.keys(V.m).sort((a,b)=>V.m[b]-V.m[a]).map(mtN).join(' · ')}</span></div></div>`; }).join('')}</div>`; }
 /* ── задача темы с решением по шагам: эпюр шага (крупно, аккуратно) + текст «что чертим», 3D — по кнопке ── */
 function solHTML(id){
   /* задача темы — как на листе (RK9, EPX): А / Б / В и чертёж по шагам */
-  if(typeof RK9!=='undefined'&&RK9.byId(id)) return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с решением по шагам</h2>
-   <p class="rkp-solq">Как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Чёрным — данные, синим — новые проекции и повёрнутое, красным — ответ; новое на шаге — оранжевым, обратный переход — фиолетовым.</p><div id="rkpEpx"></div></section>`;
+  if(typeof RK9!=='undefined'&&RK9.byId(id)) return `<section class="rkp-sol" id="rkpSol"><div id="rkpEpx"></div>
+   <p class="rkp-leg"><span><i class="k"></i>дано</span><span><i class="b"></i>построено</span><span><i class="o"></i>новое на шаге</span><span><i class="r"></i>ответ</span></p></section>`;
   if(typeof L3D==='undefined') return ''; const ms=Object.keys(TOP(id).m).filter(m=>L3D.has(id,m)); if(!ms.length) return '';
   if(!CUR.sol||!ms.includes(CUR.sol.mk)) CUR.sol={mk:ms[0],i:0,d3:false}; const S_=CUR.sol, sc=L3D.scene(id,S_.mk), n=sc.steps.length; S_.i=Math.max(0,Math.min(n-1,S_.i)); const st=sc.steps[S_.i], E=L3D.example(id)||{};
   return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с решением по шагам</h2>
@@ -27446,10 +27502,11 @@ const KEY='rkp';
 const getS=()=>{ const s=ST.get(KEY,null)||{}; s.t=s.t||{}; s.x=s.x||{best:0,h:[]}; return s; };
 const setS=s=>ST.set(KEY,s);
 function tState(s,id){ return s.t[id]||(s.t[id]={u:0,ok:[],n:0,w:0}); }
-/* звёзды: ★ понял суть, ★★ решил задачу, ★★★ решил другим способом (у темы с одним способом — вторую задачу) */
-function stars(st,T){ const ms=Object.keys(T.m);
-  const two=ms.length>1?new Set(st.ok).size>=2:st.n>=2; return (st.u?1:0)+(st.n>=1?1:0)+(st.n>=1&&two?1:0); }
-function pts(st,T){ const ms=Object.keys(T.m), two=ms.length>1?new Set(st.ok).size>=2:st.n>=2; return (st.u?3:0)+(st.n>=1?4:0)+(st.n>=1&&two?3:0); }
+/* звёзды: ★ суть (вопрос), ★★ разобрал задачу по шагам, ★★★ прошёл тему до конца (виды задач билета).
+   Старые записи (n, ok — задачи с вводом числа, до 4.30) тоже засчитываются. */
+function two_(st,T){ const ms=Object.keys(T.m); return ms.length>1?new Set(st.ok||[]).size>=2:st.n>=2; }
+function stars(st,T){ return (st.u?1:0)+((st.sol||st.n>=1)?1:0)+((st.d||(st.n>=1&&two_(st,T)))?1:0); }
+function pts(st,T){ return (st.u?3:0)+((st.sol||st.n>=1)?4:0)+((st.d||(st.n>=1&&two_(st,T)))?3:0); }
 function progress(s){ s=s||getS(); const per=TOPICS.map(T=>{ const st=tState(s,T.id); return {T,st,p:pts(st,T),k:stars(st,T)}; });
   const topics=per.reduce((z,x)=>z+x.p,0), boss=Math.round(10*Math.min(3,s.x.best||0)/3);
   const now=per.find(x=>x.k<3)||null; return {per,topics,boss,val:topics+boss,now,done:per.filter(x=>x.k>=3).length}; }
@@ -27487,10 +27544,8 @@ function hubView(v){ const P=progress(), I=RKS.info(2), c=RKS.count(I), s=getS()
     <a class="btn pri lg rkp-go" href="${nextHref(P)}">${P.val===0?'Начать: '+TOPICS[0].t.toLowerCase():P.now?'Продолжить: '+P.now.T.t.toLowerCase():'Пробный РК2'} →</a>
    </section>
    <ol class="rkp-path" aria-label="Путь: 9 тем и финал">${P.per.map(node).join('')}${boss}</ol>
-   <section class="rkp-how"><h2 class="sp-h2">Как проходить тему</h2>
-    <ol><li><b>★ Пойми</b> — суть в трёх строках и один вопрос. <i>+3 %</i></li><li><b>★★ Реши задачу</b> — на бумаге, ответ числом: сайт проверит. <i>+4 %</i></li><li><b>★★★ Реши другим способом</b> — на РК в условии сказано, каким способом решать. <i>+3 %</i></li></ol>
-    <p class="r2-fine">Это не прогноз оценки: решать на РК придётся самому. Шкала показывает, сколько типов задач ты уже умеешь решать сам. Всё хранится только в этом браузере.</p></section>
-   <section class="rkp-more"><a href="${HR('ng','rk2','q')}">26 вопросов теории кафедры</a><a href="${HR('ng','rk2','all')}">Все тренировки РК2 (модули, «Вижу», готовность)</a><a href="${HR('ng','check','tickets')}">Билеты с разбором по шагам</a></section>
+   <section class="rkp-how" aria-label="Как устроена тема"><span>В каждой теме</span>${STG.map((x,i)=>`<b><i>${i+1}</i>${x[1]}</b>`).join('<em aria-hidden="true">→</em>')}</section>
+   <section class="rkp-more"><a href="${HR('ng','rk2','q')}">26 вопросов теории</a><a href="${HR('ng','check','tickets')}">Билеты с разбором</a><a href="${HR('ng','rk2','all')}">Все тренировки</a></section>
    <div class="rkp-fac">${RK2.facHTML()}</div>`});
   RK2.bindFac(v,()=>RK2.view(v,{}));   /* сменили поток: у ИУ1Б, ИУ3… — прежний раздел с объяснением */
   RKS.load(()=>{ if(v.isConnected&&/^#\/ng\/rk2\/?$/.test(location.hash)) hubView(v); });
@@ -27504,73 +27559,68 @@ function figHTML(q,withSol){ let items=scene(q);
 function coordsHTML(q){ return `<details class="rkp-co"><summary>Координаты, мм — начертить на бумаге</summary><table><thead><tr><th></th><th>x</th><th>y</th><th>z</th></tr></thead><tbody>${Object.keys(q.coords).map(k=>{ const p=q.coords[k]; return `<tr><th>${k}</th><td>${p.map(x=>fmt(x,Math.abs(x-Math.round(x))<1e-9?0:1)).join('</td><td>')}</td></tr>`; }).join('')}</tbody></table><p>Ось x — влево от точки 0, как в тетради.</p></details>`; }
 function check(q,val){ const cands=[q.ans].concat(q.alt||[]); const best=cands.reduce((b,c)=>Math.abs(val-c)<Math.abs(val-b)?c:b,q.ans); return {ok:Math.abs(val-best)<=q.tol,near:best,isAlt:best!==q.ans}; }
 function parseNum(s){ s=String(s||'').trim().replace(/\s/g,'').replace(',','.').replace(/[°мm]+$/i,''); if(!/^-?\d+(\.\d+)?$/.test(s)) return null; return +s; }
-function taskCardHTML(q,st,exam){ const r=q.res;
-  return `<div class="rkp-task${r?(r.ok?' ok':' no'):''}">
+function taskCardHTML(q,exam){ const r=q.res;
+  return `<div class="rkp-task${r&&r.self!=null?(r.self?' ok':' no'):''}">
    <div class="rkp-tq">${exam?`<span class="rkp-tl">${exam}</span>`:''}<p>${q.q}. Применить при решении задачи ${q.mtext}.</p></div>
    <div class="sheet rkp-fig">${figHTML(q,!!r)}</div>
    ${coordsHTML(q)}
-   ${r?resHTML(q):`<label class="rkp-in"><span>${q.ask}</span><span class="rkp-inw"><input type="text" inputmode="decimal" autocomplete="off" data-ans placeholder="например, 42,5" aria-label="${attr(q.ask)}"><em>${q.u}</em></span></label>
-     ${exam?'':`<div class="rkp-acts"><button type="button" class="btn pri lg" data-chk>Проверить</button><button type="button" class="btn ghost" data-give>Не знаю — покажи решение</button></div>`}`}
+   ${r?resHTML(q):''}
   </div>`; }
 function resHTML(q){ const r=q.res;
-  return `<div class="rkp-res ${r.ok?'ok':'no'}" role="status"><b>${r.gave?'Решение':r.ok?'Верно!':'Не сходится'}</b>
-    <p>${r.gave?'':`Твой ответ: ${fmt(r.val)} ${q.u}. `}Ответ: <b>${q.sym} = ${fmt(q.ans)} ${q.u}</b>${r.gave?'':` (допуск ± ${fmt(q.tol)})`}.${r.ok&&r.isAlt?' Это тупой угол — на РК пиши острый, смежный.':''}</p>
+  return `<div class="rkp-res${r.self==null?'':r.self?' ok':' no'}" role="status">
+    <p class="rkp-ans">Ответ: <b>${q.sym} = ${fmt(q.ans)} ${q.u}</b></p>
     <p class="rkp-how2">${q.how}</p>
-    ${r.ok?'':`<p class="rkp-tip">Сверь построение с порядком шагов темы. Частые причины: радиус вращения взят с чертежа, а не гипотенузой; во второй замене расстояния взяты от старой оси.</p>`}</div>`; }
+    ${r.self==null?`<div class="rkp-self"><span>У тебя так же?</span><button type="button" class="btn ok-b" data-self="1">Сошлось</button><button type="button" class="btn" data-self="0">Не сошлось</button></div>`
+      :`<p class="rkp-selfr">${r.self?'✓ Сошлось':'✗ Не сошлось — повтори тему'}</p>`}</div>`; }
+
+/* ── экран темы: 4 шага, виден один; внизу — кнопка к следующему ── */
+const STG=[['idea','Суть'],['how','Способ'],['sol','Разбор задачи'],['kinds','Виды в билете']];
+function stgDone(st,k){ return k==='idea'?!!st.u:k==='how'?!!st.h:k==='sol'?!!(st.sol||st.n):!!st.d; }
 function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
-  const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1];
-  const draw=()=>{ const s=getS(), st=tState(s,id), k=stars(st,T), ms=Object.keys(T.m);
-    if(!CUR||CUR.id!==id) CUR={id,q:null,m:ms[0]};
-    if(!CUR.ord) CUR.ord=shuf(T.chk.o.map((o,i)=>i));
-    const tab=CUR.tab||ms[0];
-    v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Тема '+(idx+1)]],next:null,noBottom:true,cls:'rkp-page',body:`
-     <div class="rkp-th"><span class="rkp-dot big">${k>=3?'✓':idx+1}</span><div><h1>${T.t}</h1><p>${T.sub} · ${STARS(k)} · тема ${idx+1} из 9</p></div></div>
-     ${solHTML(id)}
-     ${PROMO.askHTML('rk2-'+id,'Остался вопрос по этой теме?','Напиши его в Telegram — отвечу лично. Можно приложить фото своего чертежа.')}
-     ${rkHTML(id)}
-     <section class="rkp-step${st.u?' done':''}" aria-labelledby="rkpS1"><h2 id="rkpS1"><span>1</span>Пойми ${st.u?'<i>★ есть</i>':''}</h2>
-      <p class="rkp-idea">${T.idea}</p>
-      <div class="rkp-asks"><span>Как это звучит в билете:</span><ul>${T.asks.map(a=>`<li>${a}.</li>`).join('')}</ul></div>
-      <div class="rkp-chk" id="rkpChk"><p><b>Проверь себя:</b> ${T.chk.q}</p><div class="rkp-os">${CUR.ord.map(i=>`<button type="button" class="rkp-o${CUR.pick!=null?(i===T.chk.c?' ok':i===CUR.pick?' no':''):''}" data-o="${i}"${CUR.pick!=null?' disabled':''}>${T.chk.o[i]}</button>`).join('')}</div>
-       ${CUR.pick!=null?`<p class="rkp-e ${CUR.pick===T.chk.c?'ok':'no'}"><b>${CUR.pick===T.chk.c?'Верно. ★':'Не так.'}</b> ${T.chk.e}${CUR.pick===T.chk.c?'':' <button type="button" class="lnk" data-reo>Ещё раз</button>'}</p>`:''}</div>
-     </section>
-     <section class="rkp-step" aria-labelledby="rkpS2"><h2 id="rkpS2"><span>2</span>Как решать</h2>
-      ${ms.length>1?`<div class="seg rkp-tabs" role="tablist">${ms.map(m=>`<button type="button" role="tab" aria-selected="${m===tab}" class="${m===tab?'on':''}" data-tab="${m}">${MT[m].s}</button>`).join('')}</div>`:`<p class="rkp-one">Способ: <b>${id==='bis'?'вращение вокруг горизонтали или фронтали':MT[ms[0]].s}</b></p>`}
+  const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1], prv=TOPICS[idx-1], ms=Object.keys(T.m);
+  if(!CUR||CUR.id!==id){ const st0=tState(getS(),id); CUR={id,stg:ex==='pi2'?2:Math.max(0,STG.findIndex(x=>!stgDone(st0,x[0])))}; }
+  if(ex==='pi2'&&!CUR.pi2){ CUR.pi2=1; CUR.stg=2; }
+  const pane=(k,st)=>{
+    if(k==='idea') return `<p class="rkp-idea">${T.idea}</p>
+      <div class="rkp-asks"><span>В билете звучит так</span><ul>${T.asks.map(a=>`<li>${a}</li>`).join('')}</ul></div>
+      <div class="rkp-chk" id="rkpChk"><p><b>Проверь себя.</b> ${T.chk.q}</p><div class="rkp-os">${CUR.ord.map(i=>`<button type="button" class="rkp-o${CUR.pick!=null?(i===T.chk.c?' ok':i===CUR.pick?' no':''):''}" data-o="${i}"${CUR.pick!=null?' disabled':''}>${T.chk.o[i]}</button>`).join('')}</div>
+       ${CUR.pick!=null?`<p class="rkp-e ${CUR.pick===T.chk.c?'ok':'no'}"><b>${CUR.pick===T.chk.c?'Верно.':'Не так.'}</b> ${T.chk.e}${CUR.pick===T.chk.c?'':' <button type="button" class="lnk" data-reo>Ещё раз</button>'}</p>`:''}</div>`;
+    if(k==='how'){ const tab=CUR.tab&&ms.includes(CUR.tab)?CUR.tab:ms[0];
+      return `${ms.length>1?`<div class="seg rkp-tabs" role="tablist">${ms.map(m=>`<button type="button" role="tab" aria-selected="${m===tab}" class="${m===tab?'on':''}" data-tab="${m}">${MT[m].s}</button>`).join('')}</div>`:`<p class="rkp-one">Способ: <b>${id==='bis'?'вращение вокруг горизонтали или фронтали':MT[ms[0]].s}</b></p>`}
       <ol class="rkp-alg">${T.m[tab].map(x=>`<li>${x}</li>`).join('')}</ol>
-      <div class="box warn rkp-traps"><h4>Где ошибаются</h4><ul>${T.traps.map(x=>`<li>${x}</li>`).join('')}</ul></div>
-      <p class="rkp-ex"><span>Разбор по шагам:</span>${T.ex.map(e=>`<a href="${e[0]}">${e[1]}</a>`).join('')}</p>
-     </section>
-     <section class="rkp-step" aria-labelledby="rkpS3"><h2 id="rkpS3"><span>3</span>Реши сам <i>${st.n?`решено ${st.n}`:''}</i></h2>
-      <p class="r2-sub">${st.n===0?'Реши на бумаге и введи ответ числом — сайт сверит с точным. Каждая задача новая.':ms.length>1&&new Set(st.ok).size<2?'Теперь тем же типом, но другим способом: <b>'+MT[ms.find(m=>!st.ok.includes(m))].s+'</b>. На РК способ задан в условии.':'Тема закрыта. Можно решать ещё — для уверенности.'}</p>
-      <div id="rkpT">${CUR.q?taskCardHTML(CUR.q,st):`<button type="button" class="btn pri lg" data-new>Дать задачу</button>`}</div>
-      ${CUR.q&&CUR.q.res?`<div class="rkp-acts"><button type="button" class="btn pri lg" data-new>Ещё задача</button>${nxt?`<a class="btn" href="${HR('ng','rk2','p',nxt.id)}">Тема ${idx+2}: ${nxt.t.toLowerCase()} →</a>`:`<a class="btn" href="${HR('ng','rk2','x')}">Финал: пробный РК2 →</a>`}</div>`:''}
-     </section>
-     <nav class="rkp-nav">${idx?`<a href="${HR('ng','rk2','p',TOPICS[idx-1].id)}">← ${TOPICS[idx-1].t}</a>`:`<a href="${HR('ng','rk2')}">← Путь</a>`}${nxt?`<a href="${HR('ng','rk2','p',nxt.id)}">${nxt.t} →</a>`:`<a href="${HR('ng','rk2','x')}">Пробный РК2 →</a>`}</nav>`});
+      <details class="rkp-traps"><summary>Где ошибаются · ${T.traps.length}</summary><ul>${T.traps.map(x=>`<li>${x}</li>`).join('')}</ul></details>`; }
+    if(k==='sol') return solHTML(id);
+    return `${rkHTML(id)}
+      ${T.ex.length?`<p class="rkp-ex"><span>Ещё разборы:</span>${T.ex.map(e=>`<a href="${e[0]}">${e[1]}</a>`).join('')}</p>`:''}
+      ${PROMO.askHTML('rk2-'+id,'Остался вопрос?','Напиши в Telegram — отвечу лично, можно с фото чертежа.')}`; };
+  const draw=()=>{ const s=getS(), st=tState(s,id), k=stars(st,T), i=CUR.stg, key=STG[i][0], last=i===STG.length-1;
+    if(!CUR.ord) CUR.ord=shuf(T.chk.o.map((o,j)=>j));
+    const nextBtn=!last?`<button type="button" class="btn pri lg rkp-fw" data-go="${i+1}"><small>Дальше</small>${STG[i+1][1]} →</button>`
+      :`<button type="button" class="btn pri lg rkp-fw" data-fin>${nxt?`<small>Тема понятна</small>Тема ${idx+2}: ${nxt.t.toLowerCase()} →`:'<small>Все темы пройдены</small>Пробный РК2 →'}</button>`;
+    v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Тема '+(idx+1)]],next:null,noBottom:true,cls:'rkp-page',body:`
+     <div class="rkp-th"><span class="rkp-dot big${k>=3?' done':''}">${k>=3?'✓':idx+1}</span><div><h1>${T.t}</h1><p>${T.sub} · ${STARS(k)}</p></div></div>
+     <nav class="rkp-stp" id="rkpStp" role="tablist" aria-label="Шаги темы">${STG.map((x,j)=>{ const d=stgDone(st,x[0]);
+       return `<button type="button" role="tab" aria-selected="${j===i}" class="${j===i?'on':''}${d?' d':''}" data-go="${j}"><span>${d&&j!==i?'✓':j+1}</span><b>${x[1]}</b></button>`; }).join('')}</nav>
+     <section class="rkp-pane rkp-p-${key}" role="tabpanel" aria-label="${STG[i][1]}">${pane(key,st)}</section>
+     <div class="rkp-fwd">${i?`<button type="button" class="btn ghost" data-go="${i-1}">← ${STG[i-1][1]}</button>`:'<span></span>'}${nextBtn}</div>
+     <nav class="rkp-nav">${prv?`<a href="${HR('ng','rk2','p',prv.id)}">← ${prv.t}</a>`:`<a href="${HR('ng','rk2')}">← Все темы</a>`}${nxt?`<a href="${HR('ng','rk2','p',nxt.id)}">${nxt.t} →</a>`:`<a href="${HR('ng','rk2','x')}">Пробный РК2 →</a>`}</nav>`});
     bind(); };
-  const bind=()=>{ v.querySelectorAll('[data-o]').forEach(b=>b.addEventListener('click',()=>{ CUR.pick=+b.dataset.o; const s=getS(), st=tState(s,id);
-      if(CUR.pick===T.chk.c&&!st.u){ st.u=1; setS(s); try{ FX.buzz('success'); }catch(_){} } else { try{ FX.buzz(CUR.pick===T.chk.c?'success':'error'); }catch(_){} } keep(draw,'#rkpChk'); }));
+  const mark=(f)=>{ const s=getS(), st=tState(s,id), k0=stars(st,T); if(st[f]) return; st[f]=1; setS(s); const k1=stars(st,T);
+    if(k1>k0){ try{ FX.buzz('success'); if(k1>=3&&FX.confetti) FX.confetti(); }catch(_){} toast(k1>=3?'Тема пройдена · +10 %':'Звезда получена'); } };
+  const go=j=>{ const from=STG[CUR.stg][0]; if(j>CUR.stg){ if(from==='how') mark('h'); if(from==='sol') mark('sol'); }
+    CUR.stg=j; draw(); const n=$('rkpStp'); if(n&&n.getBoundingClientRect().top<0) n.scrollIntoView({block:'start'}); };
+  const bind=()=>{
+    v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.go)));
+    const fin=v.querySelector('[data-fin]'); if(fin) fin.addEventListener('click',()=>{ mark('d'); location.hash=nxt?HR('ng','rk2','p',nxt.id):HR('ng','rk2','x'); });
+    v.querySelectorAll('[data-o]').forEach(b=>b.addEventListener('click',()=>{ CUR.pick=+b.dataset.o;
+      if(CUR.pick===T.chk.c) mark('u'); else try{ FX.buzz('error'); }catch(_){} keep(draw,'#rkpChk'); }));
     const re=v.querySelector('[data-reo]'); if(re) re.addEventListener('click',()=>{ CUR.pick=null; CUR.ord=null; keep(draw,'#rkpChk'); });
-    v.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ CUR.tab=b.dataset.tab; keep(draw,'#rkpS2'); }));
-    { const el=v.querySelector('#rkpEpx'); if(el&&typeof RK9!=='undefined'&&RK9.byId(id)){ CUR.epk=CUR.epk||0; const L_=RK9.all(id), want=ex==='pi2'&&L_.length>1?1:null; if(want!=null&&CUR.ept==null){ CUR.ept=want; CUR.epk=0; }
-      const pl=EPX.player(el,L_,{k0:CUR.epk,onStep:k=>{ CUR.epk=k; },onTab:j=>{ CUR.ept=j; CUR.epk=0; }}); if(CUR.ept){ const k0=CUR.epk; pl.tab(CUR.ept); if(k0) pl.go(k0); }
-      if(want!=null&&!CUR.epScr){ CUR.epScr=1; setTimeout(()=>{ try{ v.querySelector('#rkpSol').scrollIntoView({block:'start'}); }catch(_){} },60); } } else solPaint(v,id); }
+    v.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ CUR.tab=b.dataset.tab; draw(); }));
+    if(STG[CUR.stg][0]==='sol'){ const el=v.querySelector('#rkpEpx'); if(el&&typeof RK9!=='undefined'&&RK9.byId(id)){ CUR.epk=CUR.epk||0; const L_=RK9.all(id), want=ex==='pi2'&&L_.length>1?1:null; if(want!=null&&CUR.ept==null){ CUR.ept=want; CUR.epk=0; }
+      const pl=EPX.player(el,L_,{k0:CUR.epk,onStep:k=>{ CUR.epk=k; },onTab:j=>{ CUR.ept=j; CUR.epk=0; }}); if(CUR.ept){ const k0=CUR.epk; pl.tab(CUR.ept); if(k0) pl.go(k0); } } else solPaint(v,id); }
     v.querySelectorAll('[data-solm]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol={mk:b.dataset.solm,i:0,d3:CUR.sol&&CUR.sol.d3}; keep(draw,'#rkpSol'); }));
     v.querySelectorAll('[data-sols]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol.i+=+b.dataset.sols; keep(draw,'#rkpSol'); }));
-    v.querySelectorAll('[data-sol3]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol.d3=!CUR.sol.d3; keep(draw,'#rkpSol'); }));
-    v.querySelectorAll('[data-rkv]').forEach(b=>b.addEventListener('click',()=>{ const q=variantTask(id,+b.dataset.rkv); if(!q) return; CUR.q=q; CUR.tab=q.method==='any'?Object.keys(T.m)[0]:q.method;
-      draw(); const el=$('rkpT'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); const inp=v.querySelector('[data-ans]'); if(inp) try{ inp.focus({preventScroll:true}); }catch(_){} }));
-    v.querySelectorAll('[data-new]').forEach(b=>b.addEventListener('click',()=>{ const s=getS(), st=tState(s,id), ms=Object.keys(T.m);
-      const m=ms.find(x=>!st.ok.includes(x))||ms[Math.floor(Math.random()*ms.length)];
-      const hard=st.n>=2&&Math.random()<.4; let q=null; for(let i=0;i<6&&!q;i++) q=make(id,newSeed(),hard,m); CUR.q=q; CUR.tab=q?q.method:CUR.tab;
-      draw(); const el=$('rkpT'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); const inp=v.querySelector('[data-ans]'); if(inp) try{ inp.focus({preventScroll:true}); }catch(_){} }));
-    const inp=v.querySelector('[data-ans]'); if(inp) inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const c=v.querySelector('[data-chk]'); if(c) c.click(); } });
-    const ck=v.querySelector('[data-chk]'); if(ck) ck.addEventListener('click',()=>{ const q=CUR.q, val=parseNum(inp&&inp.value);
-      if(val==null){ inp.classList.add('bad'); inp.setAttribute('aria-invalid','true'); try{ inp.focus(); }catch(_){} return; }
-      const r=check(q,val); q.res={ok:r.ok,val,isAlt:r.isAlt}; const s=getS(), st=tState(s,id);
-      if(r.ok){ st.n++; if(!st.ok.includes(q.method)) st.ok.push(q.method); } else st.w++; setS(s);
-      const k2=stars(st,T); try{ FX.buzz(r.ok?'success':'error'); if(r.ok&&k2>=3&&FX.confetti) FX.confetti(); }catch(_){}
-      if(r.ok) toast(k2>=3?'Тема закрыта: ★★★ · +10 %':'Верно! Звезда получена'); keep(draw,'#rkpT'); });
-    const gv=v.querySelector('[data-give]'); if(gv) gv.addEventListener('click',()=>{ CUR.q.res={ok:false,gave:true}; keep(draw,'#rkpT'); }); };
+    v.querySelectorAll('[data-sol3]').forEach(b=>b.addEventListener('click',()=>{ CUR.sol.d3=!CUR.sol.d3; keep(draw,'#rkpSol'); })); };
   draw(); return T.t+' · РК2 за 9 шагов'; }
 const shuf=a=>{ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 /* перерисовать и остаться у того же блока */
@@ -27584,35 +27634,35 @@ function ticket(seed){ const g=mk(seed), ta=g.pk(POOL.A), tb=g.pk(POOL.B.filter(
     const m=(ms.length?g.pk(ms):g.pk(all)); used.add(m); let q=null; for(let k=0;k<8&&!q;k++) q=make(ty,seed*7+i*131+k*17,true,m); if(q){ q.L=l; out.push(q); } });
   return out; }
 let EX=null;
+/* пробный РК2: решаешь на бумаге, потом открываешь ответы и отмечаешь, что сошлось */
 function examView(v){
   const draw=()=>{ const s=getS(), last=s.x.h.slice(-5).reverse();
     if(!EX){ v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Пробный РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
-      <div class="rkp-th"><span class="rkp-dot big boss">⚑</span><div><h1>Пробный РК2</h1><p>финал пути · +10 % за три верные задачи</p></div></div>
-      <div class="rkp-rules"><p>Три задачи, как в билете: А, Б и В, у каждой — свой способ решения. Варианты <b>чуть сложнее настоящих</b>: скрещивающиеся прямые, плоскости, заданные парами прямых, центр вписанной окружности, параллельные плоскости.</p>
-       <ul><li>Бумага, карандаш, линейка, циркуль, транспортир.</li><li>Ответ — числом. Одна попытка, без подсказок; разбор — после сдачи.</li><li>Секундомер — для себя.</li></ul></div>
-      <button type="button" class="btn pri lg" data-go>Взять билет</button>
+      <div class="rkp-th"><span class="rkp-dot big boss">⚑</span><div><h1>Пробный РК2</h1><p>три задачи билета · +10 %</p></div></div>
+      <ol class="rkp-xsteps"><li><b>Возьми билет</b><span>задачи А, Б, В — чуть сложнее настоящих</span></li><li><b>Реши на бумаге</b><span>линейка, циркуль, транспортир; секундомер идёт</span></li><li><b>Открой ответы</b><span>сверь и отметь, что сошлось</span></li></ol>
+      <button type="button" class="btn pri lg rkp-fw" data-go>Взять билет →</button>
       ${last.length?`<section><h2 class="sp-h2">Прошлые попытки</h2><ul class="rkp-hist">${last.map(z=>`<li><b>${z.s} из 3</b><span>${new Date(z.d*864e5).toISOString().slice(8,10)}.${new Date(z.d*864e5).toISOString().slice(5,7)}${z.sec?' · '+Math.round(z.sec/60)+' мин':''}</span></li>`).join('')}</ul></section>`:''}`});
       v.querySelector('[data-go]').addEventListener('click',()=>{ const seed=newSeed(); EX={seed,t0:Date.now(),qs:ticket(seed)}; draw(); window.scrollTo({top:0,behavior:'instant'}); });
       return; }
-    const fin=!!EX.t1, sc=fin?EX.qs.filter(q=>q.res&&q.res.ok).length:0;
+    const open=!!EX.t1, marked=EX.qs.every(q=>q.res&&q.res.self!=null), sc=EX.qs.filter(q=>q.res&&q.res.self).length;
     v.innerHTML=pageHTML({crumbs:[['РК2',HR('ng','rk2')],['Пробный РК2']],next:null,noBottom:true,cls:'rkp-page',body:`
-     <div class="rkp-xh"><div><h1>Билет № ${EX.seed}</h1><p>Пробный РК2 · 1 семестр</p></div><div class="rkp-clock" id="rkpClk" aria-live="off">00:00</div></div>
-     ${fin?`<div class="rkp-xres ${sc===3?'ok':sc?'mid':'no'}"><b>${sc} из 3</b><p>${sc===3?'Пробный РК2 решён полностью. Это вариант сложнее настоящего — хороший знак.':sc?'Посмотри разбор задач с ошибкой и пройди их тему ещё раз.':'Пока не сходится. Вернись к темам — там всё по шагам.'}</p></div>`:''}
-     ${EX.qs.map(q=>`<section class="rkp-xq" data-q="${q.L}">${taskCardHTML(q,null,'Задача '+q.L)}${fin&&!(q.res&&q.res.ok)?`<p class="rkp-ex"><span>Повтори тему:</span><a href="${HR('ng','rk2','p',q.type)}">${TOP(q.type).t}</a></p>`:''}</section>`).join('')}
-     <div class="rkp-acts">${fin?`<button type="button" class="btn pri lg" data-again>Новый билет</button><a class="btn" href="${HR('ng','rk2')}">К пути</a>`:`<button type="button" class="btn pri lg" data-fin>Сдать работу</button>`}</div>`});
+     <div class="rkp-xh"><div><h1>Билет № ${EX.seed}</h1><p>${open?(marked?'Итог':'Сверь ответы и отметь каждую задачу'):'Реши на бумаге, потом открой ответы'}</p></div><div class="rkp-clock" id="rkpClk" aria-live="off">00:00</div></div>
+     ${marked?`<div class="rkp-xres ${sc===3?'ok':sc?'mid':'no'}"><b>${sc} из 3</b><p>${sc===3?'Всё сошлось — а вариант сложнее настоящего.':sc?'Повтори темы задач, где не сошлось.':'Повтори темы этих задач и возьми новый билет.'}</p></div>`:''}
+     ${EX.qs.map(q=>`<section class="rkp-xq" data-q="${q.L}">${taskCardHTML(q,'Задача '+q.L)}${q.res&&q.res.self===false?`<p class="rkp-ex"><span>Повтори тему:</span><a href="${HR('ng','rk2','p',q.type)}">${TOP(q.type).t}</a></p>`:''}</section>`).join('')}
+     <div class="rkp-acts">${open?`<button type="button" class="btn${marked?' pri':''} lg" data-again>Новый билет</button><a class="btn" href="${HR('ng','rk2')}">Все темы</a>`:`<button type="button" class="btn pri lg rkp-fw" data-open>Открыть ответы</button>`}</div>`});
     const clk=$('rkpClk'), tick=()=>{ const sec=Math.round(((EX.t1||Date.now())-EX.t0)/1000); if(clk) clk.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0'); };
-    tick(); if(!fin){ const tm=setInterval(()=>{ if(!clk.isConnected||!EX||EX.t1){ clearInterval(tm); return; } tick(); },1000); }
-    const fb=v.querySelector('[data-fin]'); if(fb) fb.addEventListener('click',()=>{ const vals=EX.qs.map(q=>parseNum((v.querySelector('[data-q="'+q.L+'"] [data-ans]')||{}).value));
-      if(vals.some(x=>x==null)&&!fb.dataset.sure){ fb.dataset.sure=1; fb.textContent='Не все ответы — сдать как есть?'; return; }
-      EX.qs.forEach((q,i)=>{ const val=vals[i]; if(val==null){ q.res={ok:false,gave:true}; return; } const r=check(q,val); q.res={ok:r.ok,val,isAlt:r.isAlt}; });
-      EX.t1=Date.now(); const s=getS(), n=EX.qs.filter(q=>q.res.ok).length; s.x.best=Math.max(s.x.best||0,n); s.x.h.push({d:day(),s:n,sec:Math.round((EX.t1-EX.t0)/1000)}); s.x.h=s.x.h.slice(-12); setS(s);
-      try{ FX.buzz(n===3?'success':'tick'); if(n===3&&FX.confetti) FX.confetti(); }catch(_){} draw(); window.scrollTo({top:0,behavior:'instant'}); });
+    tick(); if(!open){ const tm=setInterval(()=>{ if(!clk.isConnected||!EX||EX.t1){ clearInterval(tm); return; } tick(); },1000); }
+    const ob=v.querySelector('[data-open]'); if(ob) ob.addEventListener('click',()=>{ EX.t1=Date.now(); EX.qs.forEach(q=>{ q.res={self:null}; }); draw(); });
+    v.querySelectorAll('[data-self]').forEach(b=>b.addEventListener('click',()=>{ const q=EX.qs.find(z=>z.L===b.closest('[data-q]').dataset.q); q.res.self=b.dataset.self==='1';
+      if(EX.qs.every(z=>z.res.self!=null)){ const s=getS(), n=EX.qs.filter(z=>z.res.self).length; s.x.best=Math.max(s.x.best||0,n); s.x.h.push({d:day(),s:n,sec:Math.round((EX.t1-EX.t0)/1000)}); s.x.h=s.x.h.slice(-12); setS(s);
+        try{ FX.buzz(n===3?'success':'tick'); if(n===3&&FX.confetti) FX.confetti(); }catch(_){} draw(); window.scrollTo({top:0,behavior:'instant'}); }
+      else keep(draw,'[data-q="'+q.L+'"]'); }));
     const ag=v.querySelector('[data-again]'); if(ag) ag.addEventListener('click',()=>{ EX=null; draw(); window.scrollTo({top:0,behavior:'instant'}); }); };
   draw(); return 'Пробный РК2 · РК2 за 9 шагов'; }
 
 /* строка для главной */
 function mini(){ try{ const P=progress(); return P.val?'пройдено '+P.val+' %':'9 тем · пробный РК2'; }catch(e){ return ''; } }
-return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,progress,hue,check,parseNum,hubView,topicView,examView,mini,cur:()=>CUR&&CUR.q?CUR.q.ans:null,_:{stars,pts,getS,setS,KEY}};
+return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,progress,hue,check,parseNum,hubView,topicView,examView,mini,STG,_:{stars,pts,getS,setS,KEY}};
 })();
 
 /* ═════════ «Сдашь РК2?» — пробный билет-игра по начерту и инже (#/rk) ═════════
