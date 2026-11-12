@@ -40,7 +40,7 @@ function createLiveBot(o){
   const S=()=>load()||emptyState();
 
   /* kb: массив — кнопки под сообщением; объект — готовый reply_markup (меню владельца внизу экрана) */
-  async function send(chat,text,kb){ const r=await api('sendMessage',Object.assign({chat_id:chat,text,disable_web_page_preview:true},kb?{reply_markup:Array.isArray(kb)?{inline_keyboard:kb}:kb}:{}));
+  async function send(chat,text,kb,html){ const r=await api('sendMessage',Object.assign({chat_id:chat,text,disable_web_page_preview:true},html?{parse_mode:'HTML'}:{},kb?{reply_markup:Array.isArray(kb)?{inline_keyboard:kb}:kb}:{}));
     if(r&&r.ok===false) log('не отправлено',chat,r.error_code||'',r.description||''); return r; }
   const upcoming=(st,t)=>st.sessions.filter(s=>s.start+DUR(s)>t).sort((a,b)=>a.start-b.start);
   const label=s=>fmtDay(s.start)+' · '+fmtTime(s.start)+' · '+s.topic;
@@ -143,13 +143,20 @@ function createLiveBot(o){
 
   /* ── вопросы ── */
   const findQ=(st,f)=>(st.qs||[]).find(f);
+  /* профиль ученика для владельца: имя — ссылка на профиль (tg://user), @username — ссылка t.me; кнопка «👤 Профиль», если есть username */
+  const hx=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const who_=q=>'<a href="tg://user?id='+encodeURIComponent(q.chat)+'">'+hx(q.full||q.name||'без имени')+'</a>'+(q.user?' · <a href="https://t.me/'+hx(q.user)+'">@'+hx(q.user)+'</a>':' · без @username');
+  const qKb=q=>[[{text:'✍️ Ответить',callback_data:'a:qa:'+q.id},{text:'✓ Без ответа',callback_data:'a:qd:'+q.id}]].concat(q.user?[[{text:'👤 Профиль @'+q.user,url:'https://t.me/'+q.user}]]:[]);
   function askMode(st,chat,src,t){ const me=st.users[String(chat)]=Object.assign(st.users[String(chat)]||{},{seen:t}); me.ask=src||me.ask||''; save(st); }
   async function question(st,t,chat,from,m,text,media){
     const me=st.users[String(chat)]=Object.assign(st.users[String(chat)]||{},{seen:t}), src=me.ask||me.src||'';
-    st.qseq=(st.qseq||0)+1; const q={id:st.qseq,chat,name:clean(from.first_name,40)||'',src,text:clean(text,600),at:t,amid:[]};
+    st.qseq=(st.qseq||0)+1; const full=clean([from.first_name,from.last_name].filter(Boolean).join(' '),60), user=clean(from.username,40).replace(/[^\w]/g,'');
+    const q={id:st.qseq,chat,name:clean(from.first_name,40)||'',full,user,src,text:clean(text,600),at:t,amid:[]};
+    me.full=full; me.user=user;   /* для «Как видят» и списков владельца */
     st.qs=(st.qs||[]).concat(q).slice(-300); save(st);
-    const head='❓ Вопрос №'+q.id+' · '+(q.name||'без имени')+(srcName(src)?' · '+srcName(src):'')+'\n\n'+(q.text||(media?'(фото / файл — ниже)':''))+'\n\n↩️ Ответь на это сообщение свайпом — ответ уйдёт ученику.';
-    for(const a of admins){ const r=await send(a,head,[[{text:'✍️ Ответить',callback_data:'a:qa:'+q.id},{text:'✓ Без ответа',callback_data:'a:qd:'+q.id}]]);
+    const prev=(st.qs||[]).filter(x=>String(x.chat)===String(chat)).length-1;
+    const head='❓ <b>Вопрос №'+q.id+'</b>\n👤 '+who_(q)+(prev>0?' · уже спрашивал: '+prev:'')+(srcName(src)?'\n📍 '+hx(srcName(src)):'')+'\n\n'+hx(q.text||(media?'(фото / файл — ниже)':''))+'\n\n↩️ Ответь на это сообщение свайпом — ответ уйдёт ученику.';
+    for(const a of admins){ const r=await send(a,head,qKb(q),true);
       if(r&&r.result&&r.result.message_id) q.amid.push(r.result.message_id);
       if(media){ const f=await api('forwardMessage',{chat_id:a,from_chat_id:chat,message_id:m.message_id}); if(f&&f.result&&f.result.message_id) q.amid.push(f.result.message_id); } }
     save(st);
@@ -163,7 +170,7 @@ function createLiveBot(o){
   async function questions(st,t,chat){ const Q=(st.qs||[]).filter(x=>!x.ans&&!x.skip).slice(-10), all=(st.qs||[]).length;
     if(!Q.length){ await send(chat,'Новых вопросов нет ✅'+(all?' Всего было: '+all+'.':'')+'\n\nКогда ученик пишет боту, вопрос приходит сюда — ответь на него свайпом «Ответить».'); return; }
     await send(chat,'❓ Без ответа: '+Q.length+(all>Q.length?' (всего вопросов '+all+')':'')+'\nНажми «Ответить» — и следующим сообщением напиши ответ.');
-    for(const q of Q){ const r=await send(chat,'№'+q.id+' · '+(q.name||'без имени')+' · '+fmtDay(q.at)+' '+fmtTime(q.at)+(srcName(q.src)?' · '+srcName(q.src):'')+'\n\n'+(q.text||'(фото / файл)'),[[{text:'✍️ Ответить',callback_data:'a:qa:'+q.id},{text:'✓ Без ответа',callback_data:'a:qd:'+q.id}]]);
+    for(const q of Q){ const r=await send(chat,'<b>№'+q.id+'</b> · '+who_(q)+' · '+fmtDay(q.at)+' '+fmtTime(q.at)+(srcName(q.src)?'\n📍 '+hx(srcName(q.src)):'')+'\n\n'+hx(q.text||'(фото / файл)'),qKb(q),true);
       if(r&&r.result&&r.result.message_id){ q.amid=(q.amid||[]).concat(r.result.message_id).slice(-6); } }
     save(st); }
 
