@@ -56,7 +56,7 @@ function createLiveBot(o){
     return (d===0?'сегодня в ':d===1?'завтра в ':fmtDay(s.start)+' в ')+fmtTime(s.start); };
   const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
   function startText(st,t,chat){ const U=upcoming(st,t).slice(0,6);
-    if(!U.length) return {text:'Привет! Ближайших эфиров пока нет — загляни позже.',kb:null};
+    if(!U.length) return {text:'Привет! Эфиров пока не будет.\n\nВесь материал с эфира — на сайте: «РК2 за 9 шагов», каждый тип задачи билета решён по шагам, как на листе 👉 '+site+'/#/ng/rk2\nСпособ вращения подробно 👉 '+site+'/#/ng/rot',kb:null};
     const f=U[0], live=f.start<=t, me=!!subOf(f,chat);
     const top=me?{text:'🔗 Ссылка на эфир',callback_data:'l:'+f.id}:{text:'✅ Я приду',callback_data:'j:'+f.id};
     const more=U.slice(1,4).map(s=>({text:(subOf(s,chat)?'✓ ':'')+fmtDay(s.start),callback_data:'j:'+s.id}));
@@ -263,6 +263,14 @@ function createLiveBot(o){
       const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||''), when=m&&parseWhen(m[3]+'.'+m[2]+'.'+m[1],e.time,t), min=[30,45,60,90,120,150,180].includes(+e.min)?+e.min:DEF_MIN, topic=clean(e.topic,60);
       if(!when||!topic||when+min*MIN<=t) continue;
       const id=idOf(when);
+      /* отмена: cancel — эфира не будет. Записанным — note (один раз), эфир убирается и из расписания больше не вернётся */
+      if(e.cancel){ const s0=st.sessions.find(s=>s.id===id);
+        if(s0){ const note=clean(e.note,900)||('Эфир '+fmtWhen(s0.start)+' отменён.');
+          for(const c of Object.keys(s0.subs||{})){ await send(c,note); out.sent++; }
+          for(const a of admins) await send(a,'🗑 По расписанию отменён эфир '+label(s0)+'. Записанным ('+Object.keys(s0.subs||{}).length+') отправил сообщение.');
+          st.sessions=st.sessions.filter(x=>x!==s0); log('отмена по расписанию:',id); }
+        if(!(st.gone||[]).includes(id)){ st.gone=(st.gone||[]).concat(id).slice(-50); changed=true; }
+        changed=true; continue; }
       /* перенос: moved_from — прежнее время того же дня. Эфир на прежнее время переезжает со всеми записями, записанным — сообщение */
       const was=e.moved_from&&parseWhen(m[3]+'.'+m[2]+'.'+m[1],e.moved_from,t), wid=was&&idOf(was), prev=wid&&st.sessions.find(s=>s.id===wid);
       if(prev&&!st.sessions.some(s=>s.id===id&&s!==prev)&&!(st.gone||[]).includes(id)){ await doMove(st,t,null,prev,when); changed=true; continue; }

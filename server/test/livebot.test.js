@@ -232,3 +232,18 @@ test('перенос владельцем: кнопка «⏰ Перенести
   assert.match(r.last(7).text,/Эфир перенесли: с ср 11\.11 в 18:00 на чт 12\.11 в 19:00 МСК/);
   await r.tap(9,'a:v:12111900'); assert.ok(!r.to(9).some(x=>/перенести/.test(x.body.text)),'ученику кнопка владельца не работает');
 });
+
+test('отмена по расписанию (cancel): записанным — сообщение один раз, эфир убран и не возвращается, /start — ссылка на сайт',async()=>{
+  const clock={t:Date.parse('2026-11-11T20:00:00Z')}, out=[]; let db=null;
+  let sched=[{date:'2026-11-12',time:'20:00',min:60,topic:'РК2'}];
+  const api=async(method,body)=>{ out.push({method,body}); return {ok:true}; };
+  const bot=createLiveBot({api,load:()=>db&&JSON.parse(JSON.stringify(db)),save:s=>{ db=JSON.parse(JSON.stringify(s)); },now:()=>clock.t,admins:[ADMIN],schedule:()=>sched});
+  const to=c=>out.filter(x=>x.method==='sendMessage'&&String(x.body.chat_id)===String(c));
+  await bot.tick(); await bot.onUpdate({callback_query:{id:'q',data:'j:12112000',from:{id:3,first_name:'Ваня'},message:{chat:{id:3}}}});
+  sched=[{date:'2026-11-12',time:'20:00',min:60,topic:'РК2',cancel:true,note:'Эфиров не будет. Материал: https://nachert1830.ru/#/ng/rk2'}];
+  await bot.tick(); assert.equal(to(3).pop().body.text,'Эфиров не будет. Материал: https://nachert1830.ru/#/ng/rk2'); assert.equal(db.sessions.length,0);
+  const n=to(3).length; await bot.tick(); assert.equal(to(3).length,n,'второй раз не пишет'); assert.equal(db.sessions.length,0,'не возвращается');
+  await bot.onUpdate({message:{message_id:1,chat:{id:5,type:'private'},from:{id:5},text:'/start'}});
+  assert.match(to(5).pop().body.text,/Эфиров пока не будет[\s\S]*#\/ng\/rk2/);
+  await bot.onUpdate({callback_query:{id:'q',data:'j:12112000',from:{id:6},message:{chat:{id:6}}}}); assert.match(to(6).pop().body.text,/Этого эфира уже нет/);
+});

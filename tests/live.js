@@ -59,7 +59,7 @@ async function liveCheck(page,URL){
   const pm=await page.evaluate(()=>[PROMO.next(Date.parse('2026-11-10T19:30:00Z')),PROMO.next(Date.parse('2026-11-11T15:30:00Z')),PROMO.next(Date.parse('2026-11-11T16:30:00Z'))]);
   if(!pm[0]||pm[0].rel!=='завтра'||pm[0].time!=='18:00'||pm[0].moved!=='20:00') add('карточка эфира','перенос','10.11 вечером ближайший — завтра в 18:00 (перенос с 20:00): '+JSON.stringify(pm[0]));
   if(!pm[1]||!pm[1].live) add('карточка эфира','идёт','11.11 в 18:30 эфир идёт: '+JSON.stringify(pm[1]));
-  if(!pm[2]||pm[2].day!=='2026-11-12') add('карточка эфира','после','после эфира 11.11 ближайший — 12.11: '+JSON.stringify(pm[2]));
+  if(pm[2]) add('карточка эфира','после','после эфира 11.11 эфиров нет (12 и 13.11 отменены), а next() вернул: '+JSON.stringify(pm[2]));
   /* раздел «Способ вращения» (#/ng/rot): 7 задач сверены с пространством, ответы пересчитаны независимо, все шаги проходятся */
   await page.goto(URL+'#/ng/rot'); await page.waitForTimeout(900);
   const rot=await page.evaluate(()=>{ const out=[], T=ROT.T; if(T.length!==7) out.push('задач '+T.length+', нужно 7');
