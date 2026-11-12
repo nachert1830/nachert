@@ -5028,6 +5028,30 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-xres b{font:800 28px var(--sans)}.rkp-xres p{margin:4px 0 0;font-size:14.5px}
 .rkp-xres.ok{background:var(--green-s)}.rkp-xres.ok b{color:var(--green)}
 .rkp-xres.mid b{color:var(--amber)}.rkp-xres.no{background:var(--red-s)}.rkp-xres.no b{color:var(--red)}
+
+/* ═════════ Печать условий задач РК2 (кнопка «Распечатать условия») ═════════ */
+.rkp-prn{font:inherit;font-weight:700;color:var(--blue,#1a5ae0);background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.rkp-prn:hover{text-decoration:underline}
+.rkp-prnw{margin:0 0 10px;font-size:15px}
+#prnOut{display:none}
+.prn-pg{width:210mm;height:297mm;padding:12mm 14mm 10mm;box-sizing:border-box;background:#fff;color:#15161a;overflow:hidden;display:flex;flex-direction:column;font:10.5pt/1.4 'Golos Text',Arial,sans-serif}
+.prn-h{display:flex;justify-content:space-between;gap:6mm;font-size:8.5pt;color:#5f6168;border-bottom:.3mm solid #c9ccd3;padding-bottom:1.5mm;margin-bottom:4mm}
+.prn-pg h2{font:800 14pt/1.25 'Golos Text',Arial,sans-serif;margin:0 0 2.5mm;color:#15161a}
+.prn-c{font-size:11pt;margin:0 0 1.5mm}.prn-c p{margin:0}
+.prn-m{margin:0 0 3mm;font-weight:700;color:#2a5aa6}
+.prn-fig{flex:1 1 auto;min-height:0;border:.35mm solid #15161a;display:flex;align-items:center;justify-content:center;padding:3mm;overflow:hidden}
+.prn-fig svg{display:block;max-width:100%;max-height:100%}
+.prn-ans{margin:4mm 0 0;font-size:11pt;display:flex;gap:2mm;align-items:baseline}.prn-ans i{flex:1;border-bottom:.3mm solid #15161a;height:4mm}
+.prn-f{display:flex;justify-content:space-between;align-items:flex-end;gap:5mm;margin-top:4mm;font-size:8.5pt;color:#5f6168}
+.prn-f>div{display:flex;flex-direction:column;gap:.5mm}.prn-f b{font-size:10pt;color:#15161a}
+.prn-qr svg{display:block;width:16mm;height:16mm}
+@media print{
+  body.prn-on{background:#fff!important}
+  body.prn-on>*:not(#prnOut){display:none!important}
+  body.prn-on #prnOut{display:block}
+  body.prn-on .prn-pg{break-after:page;page-break-after:always}
+  body.prn-on .prn-pg:last-child{break-after:auto;page-break-after:auto}
+}
 </style>
 </head>
 <body>
@@ -27495,7 +27519,7 @@ function rkHTML(id,o){ o=o||{}; const C=RK2V[id]; if(!C) return '';
 /* ── задача темы с решением по шагам: эпюр шага (крупно, аккуратно) + текст «что чертим», 3D — по кнопке ── */
 function solHTML(id){
   /* задача темы — как на листе (RK9, EPX): А / Б / В и чертёж по шагам */
-  if(typeof RK9!=='undefined'&&RK9.byId(id)) return `<section class="rkp-sol" id="rkpSol"><div id="rkpEpx"></div>
+  if(typeof RK9!=='undefined'&&RK9.byId(id)) return `<section class="rkp-sol" id="rkpSol"><p class="rkp-prnw"><button type="button" class="rkp-prn" data-rkprint="${id}">⎙ Распечатать условие</button></p><div id="rkpEpx"></div>
    <p class="rkp-leg"><span><i class="k"></i>дано</span><span><i class="b"></i>построено</span><span><i class="o"></i>новое на шаге</span><span><i class="r"></i>ответ</span></p></section>`;
   if(typeof L3D==='undefined') return ''; const ms=Object.keys(TOP(id).m).filter(m=>L3D.has(id,m)); if(!ms.length) return '';
   if(!CUR.sol||!ms.includes(CUR.sol.mk)) CUR.sol={mk:ms[0],i:0,d3:false}; const S_=CUR.sol, sc=L3D.scene(id,S_.mk), n=sc.steps.length; S_.i=Math.max(0,Math.min(n-1,S_.i)); const st=sc.steps[S_.i], E=L3D.example(id)||{};
@@ -27558,7 +27582,7 @@ function hubView(v){ const P=progress(), I=RKS.info(2), c=RKS.count(I), s=getS()
    </section>
    <ol class="rkp-path" aria-label="Путь: 9 тем и финал">${P.per.map(node).join('')}${boss}</ol>
    <section class="rkp-how" aria-label="Как устроена тема"><span>В каждой теме</span>${STG.map((x,i)=>`<b><i>${i+1}</i>${x[1]}</b>`).join('<em aria-hidden="true">→</em>')}</section>
-   <section class="rkp-more"><a href="${HR('ng','rk2','q')}">26 вопросов теории</a><a href="${HR('ng','check','tickets')}">Билеты с разбором</a><a href="${HR('ng','rk2','all')}">Все тренировки</a></section>
+   <section class="rkp-more"><button type="button" class="rkp-prn" data-rkprint="">⎙ Распечатать условия всех 9 тем</button><a href="${HR('ng','rk2','q')}">26 вопросов теории</a><a href="${HR('ng','check','tickets')}">Билеты с разбором</a><a href="${HR('ng','rk2','all')}">Все тренировки</a></section>
    <div class="rkp-fac">${RK2.facHTML()}</div>`});
   RK2.bindFac(v,()=>RK2.view(v,{}));   /* сменили поток: у ИУ1Б, ИУ3… — прежний раздел с объяснением */
   RKS.load(()=>{ if(v.isConnected&&/^#\/ng\/rk2\/?$/.test(location.hash)) hubView(v); });
@@ -27688,9 +27712,40 @@ function examView(v){
     const ag=v.querySelector('[data-again]'); if(ag) ag.addEventListener('click',()=>{ EX=null; draw(); window.scrollTo({top:0,behavior:'instant'}); }); };
   draw(); return 'Пробный РК2 · РК2 за 9 шагов'; }
 
+/* ═══ Печать условий задач «РК2 за 9 шагов» (кнопка на пути РК2 и на странице темы) ═══
+   По кнопке собирается документ А4 — по задаче на лист: тема, условие, способ и чертёж «дано» (RK9, шаг 0; кадр — как у
+   полного решения, чтобы на листе осталось место для построений), строка для ответа. Решений, шагов и ответов в документе
+   нет — их смотрят на сайте. Внизу каждого листа — автор задач и ссылка на тему. Документ живёт в #prnOut только на время
+   печати; на экране сайт не меняется. */
+const PAUTH='Матханов Андрей Михайлович', PSITE='nachert1830.ru';
+function prnTasks(ids){ const out=[]; (ids&&ids.length?ids:TOPICS.map(T=>T.id)).forEach(id=>{ const T=TOP(id); if(!T||typeof RK9==='undefined') return; RK9.all(id).forEach(t=>out.push({T,t,id})); }); return out; }
+/* чертёж «дано»: рисуем в невидимом блоке размером с кадр в мм (96 dpi), чтобы линии и подписи на бумаге были как на экране */
+function prnFig(t){ const bb=EPX.bbox(t.D.it), PX=96/25.4, box=document.createElement('div');
+  box.style.cssText='position:absolute;left:-10000px;top:0;width:'+Math.round((bb[2]-bb[0]+20)*PX)+'px;height:'+Math.round((bb[3]-bb[1]+20)*PX)+'px';
+  document.body.appendChild(box); let s=''; try{ EPX.render(box,t,0); s=box.innerHTML; }catch(e){} box.remove();
+  const vb=(s.match(/viewBox="([^"]+)"/)||[])[1]; if(!vb) return '';
+  const d=vb.split(/\s+/).map(Number);
+  return s.replace(/\swidth="[^"]*"\sheight="[^"]*"/,` style="width:${d[2].toFixed(1)}mm;height:${d[3].toFixed(1)}mm"`); }
+function prnHTML(ids){ const L=prnTasks(ids), N=L.length, E=EPX.escH;
+  return L.map(({T,t,id},i)=>{ const url=PSITE+'/#/ng/rk2/p/'+id, qr=(QR.svg('https://'+url,64)||'').replace(/\swidth="\d+"\sheight="\d+"/,'');
+    return `<section class="prn-pg"><div class="prn-h"><span>Начертательная геометрия · РК2</span><span>Тема ${TOPICS.indexOf(T)+1} из 9 · ${E(T.t)}</span></div>
+     <h2>Задача ${i+1}. ${E(t.t)}</h2>
+     <div class="prn-c">${EPX.mk(t.cond)}</div><p class="prn-m">Способ решения: ${E(t.m)}.</p>
+     <div class="prn-fig">${prnFig(t)}</div>
+     <p class="prn-ans">Ответ: <i></i></p>
+     <div class="prn-f"><div><b>${PAUTH}</b><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`; }).join(''); }
+function prnOff(){ document.body.classList.remove('prn-on'); ['prnOut','prnPage'].forEach(i=>{ const e=document.getElementById(i); if(e) e.remove(); }); if(prnOff.t!=null){ document.title=prnOff.t; prnOff.t=null; } }
+function prnBuild(ids){ prnOff(); const out=document.createElement('div'); out.id='prnOut'; out.innerHTML=prnHTML(ids); document.body.appendChild(out);
+  const st=document.createElement('style'); st.id='prnPage'; st.textContent='@page{size:A4 portrait;margin:0}'; document.head.appendChild(st);
+  document.body.classList.add('prn-on'); prnOff.t=document.title; document.title='РК2 — условия задач · '+PAUTH; return out; }
+function prnPrint(ids){ prnBuild(ids); setTimeout(()=>{ try{ window.print(); }catch(e){} },60); }   /* убираем документ после печати (afterprint) или при переходе; на экране он скрыт */
+window.addEventListener('afterprint',()=>setTimeout(prnOff,0));
+window.addEventListener('hashchange',prnOff);
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkprint]'); if(!b) return; e.preventDefault(); prnPrint(b.dataset.rkprint?b.dataset.rkprint.split(','):null); });
+
 /* строка для главной */
 function mini(){ try{ const P=progress(); return P.val?'пройдено '+P.val+' %':'9 тем · пробный РК2'; }catch(e){ return ''; } }
-return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,progress,hue,check,parseNum,hubView,topicView,examView,mini,STG,_:{stars,pts,getS,setS,KEY}};
+return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,prnHTML,prnBuild,prnOff,prnTasks,progress,hue,check,parseNum,hubView,topicView,examView,mini,STG,_:{stars,pts,getS,setS,KEY}};
 })();
 
 /* ═════════ «Сдашь РК2?» — пробный билет-игра по начерту и инже (#/rk) ═════════
