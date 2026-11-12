@@ -11,6 +11,8 @@
       не меньше двух разных способов, варианты усложнённые.
    4. Экраны: путь (9 тем и финал), тема — вопрос «Пойми», задача решается верным ответом двумя способами до ★★★,
       неверный ответ не засчитывается; пробный РК2 — верные ответы дают 3 из 3 и 100 %. Без ошибок JS и прокрутки вбок.
+   5. Печать условий: по листу на задачу, условие и чертёж «дано» без шагов и ответа, имя автора и ссылка на каждом листе,
+      при печати видны только листы, на экране документа нет.
    Запуск: из tests/run.js; отдельно — node tests/rkp.js */
 async function rkpCheck(page,URL){
   const bad=[], add=(name,rule,msg)=>bad.push({name,rule,msg:String(msg).slice(0,220)});
@@ -127,6 +129,32 @@ async function rkpCheck(page,URL){
   if(x.t!=='3 из 3'||x.v!==100) add('пробный РК2','итог',JSON.stringify(x));
   await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(300);
   const meter=await page.evaluate(()=>(document.querySelector('.rkp-mt b')||{}).textContent); if(!/^100/.test(meter||'')) add('путь','шкала','после всего '+meter);
+  /* 5. Печать условий: по листу на задачу RK2 9 тем, на листе — условие и чертёж «дано», без шагов и ответа; имя автора и ссылка */
+  await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(300);
+  await page.evaluate(()=>{ window.__print=window.print; window.print=()=>{ window.__printed=(window.__printed||0)+1; }; });
+  await page.click('[data-rkprint]'); await page.waitForTimeout(300);
+  await page.emulateMedia({media:'print'});
+  const pr=await page.evaluate(()=>{ const out=[], L=RKP.prnTasks(), pg=[...document.querySelectorAll('#prnOut .prn-pg')];
+    if(!window.__printed) out.push('кнопка не вызвала печать');
+    if(pg.length!==L.length||L.length<9) out.push('листов '+pg.length+', задач '+L.length);
+    pg.forEach((g,i)=>{ const t=L[i]&&L[i].t, tx=g.textContent, cs=e=>e&&getComputedStyle(e).display!=='none';
+      if(!/Матханов Андрей Михайлович/.test(tx)) out.push('лист '+(i+1)+': нет имени автора');
+      if(!/nachert1830\.ru\/#\/ng\/rk2\/p\//.test(tx)) out.push('лист '+(i+1)+': нет ссылки на тему');
+      if(!cs(g.querySelector('.prn-f'))||!cs(g.querySelector('.prn-h'))) out.push('лист '+(i+1)+': шапка или подпись скрыты при печати');
+      if(!g.querySelector('.prn-fig svg path')) out.push('лист '+(i+1)+': нет чертежа');
+      if(g.scrollHeight>g.clientHeight+1) out.push('лист '+(i+1)+': не влезает в А4');
+      const fb=g.querySelector('.prn-fig').getBoundingClientRect(), sb=g.querySelector('.prn-fig svg').getBoundingClientRect(); if(sb.right>fb.right+1||sb.bottom>fb.bottom+1) out.push('лист '+(i+1)+': чертёж за рамкой');
+      if(t){ const ans=String(t.ans||'').replace(/<[^>]+>/g,'').trim(); if(ans&&tx.includes(ans)) out.push('лист '+(i+1)+': в документе ответ «'+ans+'»');
+        (t.steps||[]).forEach(st=>{ if(st.v&&st.v.length>12&&tx.includes(st.v)) out.push('лист '+(i+1)+': в документе шаг решения «'+st.t+'»'); }); } });
+    if([...document.body.children].some(e=>e.id!=='prnOut'&&e.tagName!=='SCRIPT'&&e.tagName!=='STYLE'&&getComputedStyle(e).display!=='none')) out.push('при печати видна страница сайта');
+    return out; });
+  pr.forEach(m=>add('печать условий','документ',m));
+  await page.emulateMedia({media:'screen'});
+  if(await page.evaluate(()=>{ const e=document.getElementById('prnOut'); return !!e&&getComputedStyle(e).display!=='none'; })) add('печать условий','экран','документ виден на экране');
+  await page.evaluate(()=>{ window.print=window.__print; location.hash='#/ng/rk2/p/ang'; }); await page.waitForTimeout(300);
+  if(await page.evaluate(()=>!!document.getElementById('prnOut')||document.body.classList.contains('prn-on'))) add('печать условий','выход','документ остался после перехода');
+  for(let k=0;k<4&&!(await page.$('[data-rkprint="ang"]'));k++){ await page.evaluate(()=>{ const b=[...document.querySelectorAll('[data-go]')].find(x=>x.dataset.go==='2')||document.querySelector('.rkp-fw[data-go]'); if(b) b.click(); }); await page.waitForTimeout(250); }
+  if(!(await page.$('[data-rkprint="ang"]'))) add('печать условий','тема','нет кнопки «Распечатать условие» на странице темы');
   await page.evaluate(()=>{ try{ localStorage.removeItem('nch2_rkp'); }catch(e){} });
   if(errs.length) add('РК2 за 9 шагов','ошибка JS',errs.join(' / '));
   page.off('pageerror',onErr);
