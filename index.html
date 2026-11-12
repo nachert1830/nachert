@@ -4945,7 +4945,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 /* 4.30: тема по шагам — видна одна часть, кнопка «Дальше» */
 .rkp-th{margin:4px 0 14px}.rkp-th p{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rkp-dot.big.done{background:var(--green);border-color:var(--green);color:#fff}
-.rkp-stp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 12px;padding:5px;border-radius:16px;background:var(--surf2);position:sticky;top:calc(var(--hdr,64px) + 6px);z-index:5;scroll-margin-top:calc(var(--hdr,64px) + 12px)}
+.rkp-stp{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 12px;padding:5px;border-radius:16px;background:var(--surf2);position:sticky;top:calc(var(--hdr,64px) + 6px);z-index:5;scroll-margin-top:calc(var(--hdr,64px) + 12px)}
 .rkp-stp button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:6px 8px;border:0;border-radius:12px;background:transparent;font:inherit;color:var(--mut);cursor:pointer;text-align:left}
 .rkp-stp button:hover{color:var(--ink)}
 .rkp-stp button span{flex:0 0 auto;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2px solid currentColor;font:800 12px var(--sans)}
@@ -5001,6 +5001,19 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-xsteps li::before{content:counter(x);position:absolute;left:12px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;font:800 14px var(--sans)}
 .rkp-xsteps span{font-size:13.5px;color:var(--mut)}
 .rkp-xq{margin:0 0 18px}
+.rkp-p-more{padding-top:14px}
+.rkp-mh{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}.rkp-mh p{margin:0;font-size:14.5px;color:var(--ink2)}
+.rkp-more-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+@media(max-width:420px){.rkp-more-l{grid-template-columns:1fr}}
+.rkp-mt-c{border:1.5px solid var(--line);border-radius:14px;padding:12px;background:var(--surf);display:flex;flex-direction:column;break-inside:avoid}
+.rkp-mt-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}
+.rkp-mt-h span{font:800 12px/1.8 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--navy,#0a2463);padding:0 9px;border-radius:99px}
+.rkp-mt-h small{font-size:12.5px;color:var(--mut)}
+.rkp-mt-q{margin:0 0 10px;font-size:14.5px;line-height:1.45;font-weight:600}
+.rkp-mt-c .rkp-co{margin:8px 0 4px}
+.rkp-mt-a{margin-top:auto;border-top:1px solid var(--line);padding-top:4px}
+.rkp-mt-a summary{cursor:pointer;min-height:40px;display:flex;align-items:center;font-weight:700;color:var(--blue)}
+.rkp-mt-a .rkp-how2{font-size:14px;line-height:1.5;color:var(--ink2)}
 .rkp-nav{display:flex;justify-content:space-between;gap:12px;margin:18px 0 6px;font-size:14px}
 .rkp-nav a:last-child{text-align:right;margin-left:auto}
 .rkp-rules{border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 14px;font-size:14.5px;line-height:1.5}
@@ -23976,7 +23989,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'4.30',d:'12 ноября 2026',items:['РК2 за 9 шагов: каждая тема — четыре шага сверху (Суть → Способ → Разбор задачи → Виды в билете), открыт один, внизу кнопка «Дальше». Ловушки свёрнуты, виды задач — компактные карточки.','Убрана проверка вводом чисел (углы, расстояния): тема засчитывается за вопрос на суть, разбор задачи и пройденные шаги. Пробный РК2: решаешь на бумаге, открываешь ответы и отмечаешь «сошлось / не сошлось».']},
+  {v:'4.30',d:'12 ноября 2026',items:['РК2 за 9 шагов: каждая тема — пять шагов сверху (Суть → Способ → Разбор задачи → Виды в билете → Решить ещё), открыт один, внизу кнопка «Дальше». Ловушки свёрнуты, виды задач — компактные карточки. «Решить ещё» — лист задач как в билете, по одной на каждый вид, ответ и решение под спойлером, «Новые задачи» — новые числа.','Убрана проверка вводом чисел (углы, расстояния): тема засчитывается за вопрос на суть, разбор задачи и пройденные шаги. Пробный РК2: решаешь на бумаге, открываешь ответы и отмечаешь «сошлось / не сошлось».']},
   {v:'4.29',d:'12 ноября 2026',items:['РК2 за 9 шагов, тема «Угол наклона плоскости» (#/ng/rk2/p/incl/pi2): вторая задача с решением по шагам — угол наклона плоскости к π₂ способом замены плоскостей проекций. Фронталь f, новая ось x₂₄ ⟂ f″, перенос глубин y с π₁, плоскость на π₄ — прямая, угол β с осью x₂₄. Вкладки «Наклон к π₁» и «Наклон к π₂».','Задачи по шагам (РК2, «Вращение», ДЗ №3): понятное управление — яркая кнопка «Смотреть решение → / Дальше →», полоска шагов (можно нажать на любой), нажатие на чертёж — следующий шаг. Панель всегда на виду: на компьютере закреплена сверху, на телефоне — внизу, под большим пальцем.']},
   {v:'4.28',d:'11 ноября 2026',items:['Одно оформление чертежей во «Вращении», «РК2 за 9 шагов», режиме эфира и ДЗ №3 — как на листе: данные чёрным, построения тонко, новые проекции и повёрнутое синим, ответ красным; радиус и дуга поворота — тонкие, не красные. Вращение вокруг проецирующей прямой: угол поворота φ отмечен, остальные точки переносятся засечками (дуга из оси + засечка из повёрнутой точки горизонтали). Линии уровня доведены до новых осей и до центра вращения O′, прямая a продлена до возвращённых вершин, подписи не обрезаются краем, кнопка «← Назад» видна в тёмной теме.']},
   {v:'4.27',d:'11 ноября 2026',items:['Раздел «Способ вращения» (#/ng/rot) собран заново. Два способа на маленьких чертежах (вокруг проецирующей прямой и вокруг линии уровня), таблица «что спрашивают — вокруг чего — до какого момента» и семь разобранных задач по типам билетов РК2: угол наклона плоскости к π₁ и к π₂, натуральная величина треугольника, расстояние между параллельными прямыми, биссектриса угла, равносторонний треугольник и квадрат на прямой с обратным поворотом. Чертёж как на листе: данные — чёрным, повёрнутое — синим, ответ — красным; каждая задача сверена с пространством. Карточка раздела снова на главной.']},
@@ -27574,8 +27587,21 @@ function resHTML(q){ const r=q.res;
       :`<p class="rkp-selfr">${r.self?'✓ Сошлось':'✗ Не сошлось — повтори тему'}</p>`}</div>`; }
 
 /* ── экран темы: 4 шага, виден один; внизу — кнопка к следующему ── */
-const STG=[['idea','Суть'],['how','Способ'],['sol','Разбор задачи'],['kinds','Виды в билете']];
-function stgDone(st,k){ return k==='idea'?!!st.u:k==='how'?!!st.h:k==='sol'?!!(st.sol||st.n):!!st.d; }
+const STG=[['idea','Суть'],['how','Способ'],['sol','Разбор задачи'],['kinds','Виды в билете'],['more','Решить ещё']];
+function stgDone(st,k){ return k==='idea'?!!st.u:k==='how'?!!st.h:k==='sol'?!!(st.sol||st.n):k==='kinds'?!!(st.k||st.d):!!st.d; }
+/* «Решить ещё»: по задаче на каждый вид условия темы, новые числа по кнопке. Лист задач (#rkpMore) — без ввода ответа,
+   ответ и решение — под спойлером; разметка готова к печати (data-print). */
+function moreTasks(id,seed){ const C=RK2V[id]||[]; const out=[]; C.forEach((V,i)=>{ const q=variantTask(id,i,1+((seed*31+i*7717)%99998)); if(q) out.push(q); }); return out; }
+function moreHTML(id){ const T=TOP(id); if(!CUR.more) CUR.more={seed:newSeed()}; if(!CUR.more.qs) CUR.more.qs=moreTasks(id,CUR.more.seed);
+  const qs=CUR.more.qs;
+  return `<div class="rkp-mh"><p>Задачи как в билете — по одной на каждый вид. Реши на бумаге, ответ — под задачей.</p><button type="button" class="btn" data-more>Новые задачи ↻</button></div>
+   <div class="rkp-more-l" id="rkpMore" data-print="rk2-${id}" data-title="${attr(T.t)}">${qs.map((q,i)=>`<article class="rkp-mt-c">
+     <div class="rkp-mt-h"><span>Задача ${i+1}</span><small>${MT[q.method].s}</small></div>
+     <p class="rkp-mt-q">${q.q}. Применить при решении задачи ${q.mtext}.</p>
+     <div class="sheet rkp-fig">${figHTML(q,false)}</div>
+     ${coordsHTML(q)}
+     <details class="rkp-mt-a"><summary>Ответ и решение</summary><p class="rkp-ans">Ответ: <b>${q.sym} = ${fmt(q.ans)} ${q.u}</b></p><p class="rkp-how2">${q.how}</p><div class="sheet rkp-fig">${figHTML(q,true)}</div></details>
+    </article>`).join('')}</div>`; }
 function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
   const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1], prv=TOPICS[idx-1], ms=Object.keys(T.m);
   if(!CUR||CUR.id!==id){ const st0=tState(getS(),id); CUR={id,stg:ex==='pi2'?2:Math.max(0,STG.findIndex(x=>!stgDone(st0,x[0])))}; }
@@ -27590,6 +27616,7 @@ function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); ret
       <ol class="rkp-alg">${T.m[tab].map(x=>`<li>${x}</li>`).join('')}</ol>
       <details class="rkp-traps"><summary>Где ошибаются · ${T.traps.length}</summary><ul>${T.traps.map(x=>`<li>${x}</li>`).join('')}</ul></details>`; }
     if(k==='sol') return solHTML(id);
+    if(k==='more') return moreHTML(id);
     return `${rkHTML(id)}
       ${T.ex.length?`<p class="rkp-ex"><span>Ещё разборы:</span>${T.ex.map(e=>`<a href="${e[0]}">${e[1]}</a>`).join('')}</p>`:''}
       ${PROMO.askHTML('rk2-'+id,'Остался вопрос?','Напиши в Telegram — отвечу лично, можно с фото чертежа.')}`; };
@@ -27607,10 +27634,11 @@ function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); ret
     bind(); };
   const mark=(f)=>{ const s=getS(), st=tState(s,id), k0=stars(st,T); if(st[f]) return; st[f]=1; setS(s); const k1=stars(st,T);
     if(k1>k0){ try{ FX.buzz('success'); if(k1>=3&&FX.confetti) FX.confetti(); }catch(_){} toast(k1>=3?'Тема пройдена · +10 %':'Звезда получена'); } };
-  const go=j=>{ const from=STG[CUR.stg][0]; if(j>CUR.stg){ if(from==='how') mark('h'); if(from==='sol') mark('sol'); }
+  const go=j=>{ const from=STG[CUR.stg][0]; if(j>CUR.stg){ if(from==='how') mark('h'); if(from==='sol') mark('sol'); if(from==='kinds') mark('k'); }
     CUR.stg=j; draw(); const n=$('rkpStp'); if(n&&n.getBoundingClientRect().top<0) n.scrollIntoView({block:'start'}); };
   const bind=()=>{
     v.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.go)));
+    const mb=v.querySelector('[data-more]'); if(mb) mb.addEventListener('click',()=>{ CUR.more={seed:newSeed()}; draw(); });
     const fin=v.querySelector('[data-fin]'); if(fin) fin.addEventListener('click',()=>{ mark('d'); location.hash=nxt?HR('ng','rk2','p',nxt.id):HR('ng','rk2','x'); });
     v.querySelectorAll('[data-o]').forEach(b=>b.addEventListener('click',()=>{ CUR.pick=+b.dataset.o;
       if(CUR.pick===T.chk.c) mark('u'); else try{ FX.buzz('error'); }catch(_){} keep(draw,'#rkpChk'); }));
