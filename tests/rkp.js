@@ -9,8 +9,8 @@
       Цвет шкалы: 15 % — красный, 90 % — зелёный.
    3. Билет пробного РК2: три задачи, А и Б разных типов, В — фигура на прямой или угол между плоскостями,
       не меньше двух разных способов, варианты усложнённые.
-   4. Экраны: путь (9 тем и финал), тема — вопрос «Пойми», задача решается верным ответом двумя способами до ★★★,
-      неверный ответ не засчитывается; пробный РК2 — верные ответы дают 3 из 3 и 100 %. Без ошибок JS и прокрутки вбок.
+   4. Экраны: путь (9 тем и финал), тема — 3 шага (Как решать → Разбор по шагам → Задачи билета), в задачах только условия и кнопка печати;
+      пройденная тема даёт 10 %; пробный РК2 — «сошлось» по всем трём даёт 3 из 3 и 100 %. Без ошибок JS и прокрутки вбок.
    5. Печать условий: по листу на задачу, условие и чертёж «дано» без шагов и ответа, имя автора и ссылка на каждом листе,
       при печати видны только листы, на экране документа нет.
    Запуск: из tests/run.js; отдельно — node tests/rkp.js */
@@ -80,11 +80,9 @@ async function rkpCheck(page,URL){
     const T=RKP.TOPICS, P=s=>RKP.progress(s), full=()=>({t:Object.fromEntries(T.map(x=>[x.id,{u:1,ok:Object.keys(x.m),n:2,w:0}])),x:{best:0,h:[]}});
     if(T.length!==9) A('прогресс','темы','тем '+T.length);
     if(P({t:{},x:{best:0,h:[]}}).val!==0) A('прогресс','пусто','не 0');
-    if(P({t:{ang:{u:1,ok:[],n:0,w:0}},x:{best:0,h:[]}}).val!==3) A('прогресс','понял','не 3 %');
-    if(P({t:{ang:{u:1,ok:['zam'],n:1,w:0}},x:{best:0,h:[]}}).val!==7) A('прогресс','одна задача','не 7 %');
-    if(P({t:{ang:{u:1,ok:['zam'],n:3,w:0}},x:{best:0,h:[]}}).val!==7) A('прогресс','один способ','тема с двумя способами закрыта одним');
-    if(P({t:{bis:{u:1,ok:['rotl'],n:2,w:0}},x:{best:0,h:[]}}).val!==10) A('прогресс','один способ','тема с одним способом не закрыта двумя задачами');
-    if(P({t:{ang:{u:1,sol:1}},x:{best:0,h:[]}}).val!==7) A('прогресс','разбор','суть + разбор задачи не 7 %');
+    if(P({t:{ang:{u:1,h:1}},x:{best:0,h:[]}}).val!==0) A('прогресс','способ','прочитать способ — ещё не пройдена тема');
+    if(P({t:{ang:{h:1,sol:1}},x:{best:0,h:[]}}).val!==10) A('прогресс','разбор','досмотренный разбор не закрывает тему (10 %)');
+    if(P({t:{ang:{u:1,ok:['zam'],n:1,w:0}},x:{best:0,h:[]}}).val!==10) A('прогресс','старые записи','решённая раньше задача не засчитана');
     if(P({t:{ang:{u:1,h:1,sol:1,d:1}},x:{best:0,h:[]}}).val!==10) A('прогресс','тема','пройденная по шагам тема не 10 %');
     if(P(full()).val!==90) A('прогресс','9 тем','не 90 %: '+P(full()).val);
     const f3=full(); f3.x.best=3; if(P(f3).val!==100) A('прогресс','финал','не 100 %');
@@ -104,19 +102,20 @@ async function rkpCheck(page,URL){
   const nodes=await page.$$eval('.rkp-path .rkp-n',x=>x.length); if(nodes!==10) add('путь','узлы','узлов '+nodes+' вместо 10'); await wide('путь');
   for(const T of await page.evaluate(()=>RKP.TOPICS.map(t=>({id:t.id,ms:Object.keys(t.m)})))){
     await page.evaluate(id=>{ location.hash='#/ng/rk2/p/'+id; },T.id); await page.waitForTimeout(250); await wide('тема '+T.id); await links('тема '+T.id);
-    /* тема по шагам: 4 вкладки, «Дальше» ведёт к следующей; ввода чисел нет */
-    const tabs=await page.$$eval('.rkp-stp [data-go]',x=>x.length); if(tabs!==5) add('тема '+T.id,'шаги','вкладок '+tabs);
+    /* тема по шагам: 3 вкладки (Как решать → Разбор по шагам → Задачи билета), «Дальше» ведёт к следующей; ввода чисел нет */
+    const tabs=await page.$$eval('.rkp-stp [data-go]',x=>x.length); if(tabs!==3) add('тема '+T.id,'шаги','вкладок '+tabs);
     if(await page.$('[data-ans]')) add('тема '+T.id,'ввод','на странице темы осталось поле ввода ответа');
     await page.click('.rkp-stp [data-go="0"]'); await page.waitForTimeout(80);
-    const c=await page.evaluate(id=>RKP.TOPICS.find(t=>t.id===id).chk.c,T.id); await page.click('.rkp-o[data-o="'+c+'"]');
-    for(let k=1;k<5;k++){ await page.click('.rkp-fwd [data-go="'+k+'"]'); await page.waitForTimeout(150);
+    for(let k=1;k<3;k++){ await page.click('.rkp-fwd [data-go="'+k+'"]'); await page.waitForTimeout(150);
       const on=await page.$eval('.rkp-stp button.on',b=>+b.dataset.go); if(on!==k) add('тема '+T.id,'дальше','после «Дальше» открыт шаг '+(on+1)+' вместо '+(k+1)); }
     const nm=await page.$$eval('#rkpMore .rkp-mt-c',x=>x.length), nk=await page.evaluate(id=>RKP.RK2V[id].length,T.id);
     if(nm!==nk) add('тема '+T.id,'решить ещё','задач '+nm+' из '+nk+' видов');
-    if(await page.$('[data-ans]')) add('тема '+T.id,'ввод','в «Решить ещё» поле ввода ответа');
+    if(await page.$('[data-ans]')) add('тема '+T.id,'ввод','в «Задачах билета» поле ввода ответа');
+    if(await page.$('#rkpMore details, #rkpMore .rkp-ans')) add('тема '+T.id,'задачи билета','остались ответы или координаты');
+    if(!await page.$('[data-rkmore]')) add('тема '+T.id,'задачи билета','нет кнопки печати');
     await page.click('[data-fin]'); await page.waitForTimeout(250);
     const st=await page.evaluate(id=>{ const s=JSON.parse(localStorage.getItem('nch2_rkp')||'{}'); return s.t&&s.t[id]; },T.id);
-    if(!st||!st.u||!st.h||!st.sol||!st.d) add('тема '+T.id,'сохранение',JSON.stringify(st));
+    if(!st||!st.h||!st.sol||!st.d) add('тема '+T.id,'сохранение',JSON.stringify(st));
   }
   const pv=await page.evaluate(()=>RKP.progress().topics); if(pv!==90) add('путь','все темы','после прохождения всех тем '+pv+' %');
   await page.evaluate(()=>{ location.hash='#/ng/rk2/x'; }); await page.waitForTimeout(250); await page.click('[data-go]'); await page.waitForTimeout(200); await wide('пробный РК2'); await links('пробный РК2');
@@ -153,7 +152,7 @@ async function rkpCheck(page,URL){
   if(await page.evaluate(()=>{ const e=document.getElementById('prnOut'); return !!e&&getComputedStyle(e).display!=='none'; })) add('печать условий','экран','документ виден на экране');
   await page.evaluate(()=>{ window.print=window.__print; location.hash='#/ng/rk2/p/ang'; }); await page.waitForTimeout(300);
   if(await page.evaluate(()=>!!document.getElementById('prnOut')||document.body.classList.contains('prn-on'))) add('печать условий','выход','документ остался после перехода');
-  for(let k=0;k<4&&!(await page.$('[data-rkprint="ang"]'));k++){ await page.evaluate(()=>{ const b=[...document.querySelectorAll('[data-go]')].find(x=>x.dataset.go==='2')||document.querySelector('.rkp-fw[data-go]'); if(b) b.click(); }); await page.waitForTimeout(250); }
+  for(let k=0;k<4&&!(await page.$('[data-rkprint="ang"]'));k++){ await page.evaluate(()=>{ const b=[...document.querySelectorAll('[data-go]')].find(x=>x.dataset.go==='1')||document.querySelector('.rkp-fw[data-go]'); if(b) b.click(); }); await page.waitForTimeout(250); }
   if(!(await page.$('[data-rkprint="ang"]'))) add('печать условий','тема','нет кнопки «Распечатать условие» на странице темы');
   await page.evaluate(()=>{ try{ localStorage.removeItem('nch2_rkp'); }catch(e){} });
   if(errs.length) add('РК2 за 9 шагов','ошибка JS',errs.join(' / '));
