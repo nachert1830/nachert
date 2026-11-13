@@ -121,6 +121,13 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 .qa-cp label.btn{display:inline-flex;align-items:center;gap:6px}.qa-cp input[type=file]{display:none}
 .qa-pv img{max-height:80px;border-radius:10px;border:1px solid var(--line)}
 .qa-lb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:16px;cursor:zoom-out}.qa-lb img{max-width:100%;max-height:100%;border-radius:8px;background:#fff}
+.pane.rep{overflow:auto;padding:20px 16px}
+.rep-list{max-width:760px;margin:0 auto;display:grid;gap:12px}
+.rep-list h2{margin:0 0 4px;font:700 20px/1.25 var(--disp)}
+.rep-it{display:block;border:1px solid var(--line);background:var(--surf2);border-radius:14px;padding:14px 16px;color:var(--ink);text-decoration:none}
+.rep-it:hover{border-color:var(--blue)}
+.rep-it b{display:block;font-size:16px}.rep-it time{color:var(--mut);font-size:12.5px}.rep-it p{margin:6px 0 0;color:var(--ink2);font-size:14px;line-height:1.45}
+.rep-note{color:var(--mut);font-size:13px;margin:4px 0 0}
 .qa-gate{margin:auto;text-align:center;color:var(--mut);padding:24px;max-width:420px}.qa-gate b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
 @media (max-width:900px){
   .pane.qa.on{grid-template-columns:1fr}
@@ -165,6 +172,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
       <button class="tab" role="tab" data-go="holo">3D · жесты<kbd>Alt 3</kbd></button>
       <button class="tab" role="tab" data-go="site">Сайт<kbd>Alt 4</kbd></button>
       <button class="tab" role="tab" data-go="ask">Вопросы<b class="tbadge" id="askBadge" hidden></b><kbd>Alt 5</kbd></button>
+      <button class="tab" role="tab" data-go="reports">Отчёты<kbd>Alt 6</kbd></button>
     </nav>
     <div class="tools">
       <a class="btn sm" id="holoTab" href="../hands/" target="_blank" rel="noopener" title="Голограмма с жестами — отдельной вкладкой браузера, на весь экран">3D ↗</a>
@@ -194,6 +202,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
         </div>
         <div class="qa-th" id="qaTh"><p class="qa-none">Выберите вопрос слева</p></div>
       </section>
+      <section class="pane rep" data-pane="reports" aria-label="Отчёты владельцу"><div class="rep-list" id="repList"></div></section>
     </div>
   </main>
 </div>

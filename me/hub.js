@@ -39,10 +39,10 @@ $('#lockForm').addEventListener('submit', e => { e.preventDefault(); const c = $
 $('#lockBtn').addEventListener('click', () => { ls.set('ownerCode', null); stopHands(); location.replace(location.pathname); });
 
 /* ───────── разделы ───────── */
-const PANE_OF = { scan: 'lk', lk: 'lk', holo: 'holo', site: 'site', ask: 'ask' };
+const PANE_OF = { scan: 'lk', lk: 'lk', holo: 'holo', site: 'site', ask: 'ask', reports: 'reports' };
 let cur = '', prevPane = '', split = false, splitUser = false, started = false;
 const frame = p => $('.pane[data-pane="' + p + '"]');
-function load(p) { const f = frame(p); if (p === 'ask') { qaStart(); return f; } if (!f.getAttribute('src') || f.getAttribute('src') === 'about:blank') { f.onload = () => patch(f); f.src = SRC[p]; } return f; }
+function load(p) { const f = frame(p); if (p === 'ask') { qaStart(); return f; } if (p === 'reports') { repRender(); return f; } if (!f.getAttribute('src') || f.getAttribute('src') === 'about:blank') { f.onload = () => patch(f); f.src = SRC[p]; } return f; }
 function lkReady(f, ms) { return new Promise(res => { const t0 = Date.now(); (function poll() { let w = null; try { w = f.contentWindow; } catch (e) {}
   if (w && w.LKSCAN && w.document.readyState !== 'loading') return res(w); if (Date.now() - t0 > (ms || 15000)) return res(null); setTimeout(poll, 120); })(); }); }
 async function lkTab(id) { const w = await lkReady(load('lk')); if (!w) return null; const t = w.document.querySelector('.tab[data-tab="' + id + '"]'); if (t) t.click(); return w; }
@@ -182,7 +182,7 @@ addEventListener('storage', e => { if (e.key === 'lk_tok') qaPoll(); });
 /* ───────── клавиши (и внутри разделов) ───────── */
 function keys(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey) return;
-  const k = e.code, map = { Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site', Digit5: 'ask' };
+  const k = e.code, map = { Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site', Digit5: 'ask', Digit6: 'reports' };
   if (map[k]) { e.preventDefault(); go(map[k]); }
   else if (k === 'KeyD') { e.preventDefault(); side($('#side').hidden); }
   else if (k === 'KeyS') { e.preventDefault(); $('#splitBtn').click(); }
@@ -276,4 +276,16 @@ function start() { if (started) return; started = true; qaPoll(); side(ls.get('m
 addEventListener('hashchange', () => { const id = location.hash.slice(1); if (started && PANE_OF[id] && id !== cur) go(id); });
 const saved = ls.get('ownerCode');
 if (saved) unlock(saved, true); else $('#code').focus();
+/* ───────── отчёты владельцу: сам текст лежит приватным документом на claude.ai (открывается только из аккаунта владельца),
+   здесь — только ссылки; список рисуется после входа по коду владельца ───────── */
+const REPORTS = [
+  { title: 'Гайд: максимум выгоды и рост в ИИ', date: '2026-11-13', url: 'https://claude.ai/artifact/FNYvS8wys7psttsUprXss6',
+    about: 'Почему сайт сильный, исторические примеры учителей и школ, как получить выгоду, куда расти в ИИ и план до Нового года.' },
+];
+function repRender() {
+  const d = s => s.split('-').reverse().join('.');
+  $('#repList').innerHTML = '<h2>Отчёты</h2><p class="rep-note">Документы открываются в новой вкладке, только из вашего аккаунта Claude.</p>' +
+    REPORTS.map(r => '<a class="rep-it" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer"><b>' + esc(r.title) + '</b><time>' + esc(d(r.date)) + '</time><p>' + esc(r.about) + '</p></a>').join('');
+}
+
 self.ME = { go, side, renderUsers, qaPoll, qaOpen, startHands, stopHands, act, deepAt, get cur() { return cur; } };   /* для проверки tests/me-hub.js */

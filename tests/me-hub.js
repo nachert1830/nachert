@@ -91,6 +91,11 @@ async function ui(browser, URL) {
       if (g.w < 1280 - 2 || g.side !== 'none') B('голограмма — на весь экран, без боковой панели', JSON.stringify(g)); }
     await page.keyboard.press('Alt+1'); await page.waitForTimeout(200);
     if (await page.$eval('.pane[data-pane="holo"]', f => f.getAttribute('src')) !== 'about:blank') B('ушли с голограммы — выгружена (камера свободна)', 'осталась');
+    /* «Отчёты» (Alt 6): карточки со ссылками на приватные документы, открываются в новой вкладке */
+    await page.keyboard.press('Alt+6'); await page.waitForTimeout(200);
+    { const n = await page.$$eval('.pane.rep.on .rep-it', a => a.filter(x => /^https:\/\/claude\.ai\//.test(x.href) && x.target === '_blank' && /noopener/.test(x.rel)).length);
+      if (!n) B('«Отчёты» — список ссылок на приватные документы', 'пусто'); }
+    await page.keyboard.press('Alt+1'); await page.waitForTimeout(200);
     /* «Рядом»: два раздела */
     await page.click('#splitBtn'); await page.waitForTimeout(200);
     if ((await page.$$('.pane.on, .pane.prev')).length < 2 || !(await page.$('.panes.split'))) B('«Рядом» — два раздела', 'один');
