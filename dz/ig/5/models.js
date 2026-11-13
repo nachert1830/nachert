@@ -8,8 +8,8 @@
 let cache=null;
 function build(){
   const {P}=IG3, S=P.S, U=P.U, I=P.I, E=0.6;
-  /* вырез K: выпуклый многоугольник на главном виде [[x, z], …] против часовой, протянутый вдоль y насквозь */
-  const K=pts=>{ const xs=pts.map(p=>p[0]), zs=pts.map(p=>p[1]), hs=pts.map((A,i)=>{ const B=pts[(i+1)%pts.length], dx=B[0]-A[0], dz=B[1]-A[1]; return P.hp([dz,0,-dx],[A[0],0,A[1]]); });
+  /* вырез K: выпуклый многоугольник на главном виде [[x, z], …] (обход любой — приводится к «против часовой»), протянутый вдоль y насквозь */
+  const K=pts0=>{ const pts=ccw(pts0), xs=pts.map(p=>p[0]), zs=pts.map(p=>p[1]), hs=pts.map((A,i)=>{ const B=pts[(i+1)%pts.length], dx=B[0]-A[0], dz=B[1]-A[1]; return P.hp([dz,0,-dx],[A[0],0,A[1]]); });
     return Object.assign(I(P.box(Math.max(...xs)-Math.min(...xs)+2*E,400,Math.min(...zs)-E,Math.max(...zs)+E,{x:(Math.max(...xs)+Math.min(...xs))/2}),...hs),{pts}); };
   /* правильная n-угольная пирамида/призма по диаметру описанной окружности; a — угол первой вершины (град от +x) */
   const R2s=(n,D)=>D*Math.cos(Math.PI/n);                          /* «под ключ» (2·апофема) по описанному диаметру */
