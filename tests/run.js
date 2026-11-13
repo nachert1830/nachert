@@ -121,6 +121,10 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   { const kp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('РК2 за 9 шагов', await require('./rkp.js').rkpCheck(kp,URL)); await kp.close(); }
 
+  /* 3г⁗′. подготовка к ДЗ №4 (#/ng4/prep): точки мини-задач на поверхностях, крайние точки — независимым перебором, экраны и вопросы */
+  { const pp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+    report('Подготовка к ДЗ №4', await require('./prep.js').prepCheck(pp,URL)); await pp.close(); }
+
   /* 3г⁗. режим эфира (#/live/show): ответы пересчитываются по координатам, чертёж каждого шага сверен с пространством,
      подписи не налезают, все шаги проходятся; карточка эфира на главной — ближайший эфир и перенос */
   { const lp=await browser.newPage({viewport:{width:1600,height:900},deviceScaleFactor:1});

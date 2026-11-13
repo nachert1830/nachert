@@ -4820,6 +4820,55 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .sk-lec p{margin:8px 12px 10px;font-size:13.5px;color:var(--mut)}
 :root[data-theme=dark] .sk-lec summary b{color:var(--blue)}
 
+/* ═════════ Подготовка к ДЗ (#/ng4/prep): путь шагов и шаг — правило, чертёж, вопрос ═════════ */
+:root{--prp-ok:#16864a;--prp-ok-s:#e7f5ec}
+:root[data-theme="dark"]{--prp-ok:#4fd08a;--prp-ok-s:#123a27}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--prp-ok:#4fd08a;--prp-ok-s:#123a27}}
+.prp-pc{font-style:normal;font:700 11px var(--mono);margin-left:6px;opacity:.7}
+.prp-lead{max-width:640px;margin:4px 0 14px;font-size:16px;line-height:1.5;color:var(--ink2)}
+.prp-bar{display:block;height:6px;border-radius:99px;background:var(--surf3);overflow:hidden}.prp-bar i{display:block;height:100%;border-radius:inherit;background:var(--prp-ok);transition:width .4s}
+.prp-prog{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 0 14px}.prp-prog .prp-bar{flex:1}.prp-prog b{font:700 13px var(--mono);color:var(--mut);white-space:nowrap}
+.prp-my{display:grid;gap:2px;max-width:640px;margin:0 0 16px;padding:12px 14px;border-radius:14px;background:var(--blue-s);color:var(--ink)}
+.prp-my span{font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--blue)}.prp-my b{font-size:16px}.prp-my small{font-size:14px;color:var(--ink2);line-height:1.4}
+.prp-path{list-style:none;margin:0 0 18px;padding:0;max-width:640px;display:grid;gap:8px;counter-reset:none}
+.prp-st{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--surf);border:1px solid var(--line);color:var(--ink);text-decoration:none;box-shadow:var(--shadow)}
+.prp-st:hover{border-color:var(--line2)}
+.prp-n{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--surf3);font:800 15px var(--disp);color:var(--ink2)}
+.prp-st.done .prp-n{background:var(--prp-ok);color:#fff}
+.prp-st.skip{opacity:.55}
+.prp-t{flex:1;min-width:0;display:grid;gap:1px}.prp-t b{font-size:16px;line-height:1.25}.prp-t small{font-size:13.5px;color:var(--mut)}
+.prp-tag{flex:0 1 auto;min-width:0;font-style:normal;font:700 11px var(--mono);padding:3px 8px;border-radius:99px;background:var(--surf3);color:var(--mut);text-align:center}
+.prp-st{min-width:0}
+.prp-arr{flex:none;font-size:22px;color:var(--mut2)}
+.prp-go,.prp-card{display:grid;gap:3px;max-width:640px;padding:16px 18px;border-radius:18px;color:#fff;text-decoration:none;background:linear-gradient(140deg,var(--navy),var(--navy2));box-shadow:0 20px 40px -26px rgba(20,25,70,.8)}
+.prp-go span,.prp-card-k{font:700 11.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:#ffb4ad}.prp-go b,.prp-card b{font:800 18px/1.25 var(--disp)}
+.prp-card{margin:0 0 18px}.prp-card small{color:rgba(255,255,255,.8);font-size:14px}.prp-card .prp-bar{margin-top:8px;background:rgba(255,255,255,.18)}
+.prp-note{display:block;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:var(--red-s);color:var(--ink);font-size:14.5px;text-decoration:none}.prp-note u{color:var(--red);font-weight:700}
+.prp-hd{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:4px 0 2px}
+.prp-k{font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--blue);text-decoration:none}
+.prp-dots{display:flex;gap:4px}.prp-dots i{width:16px;height:5px;border-radius:99px;background:var(--surf3)}.prp-dots i.ok{background:var(--prp-ok)}.prp-dots i.on{background:var(--blue)}
+.prp-h{margin:2px 0 10px;font:800 clamp(22px,4.6vw,28px)/1.15 var(--disp);color:var(--ink)}
+.prp-rule{max-width:760px;margin:0 0 14px;padding:12px 16px;border-left:4px solid var(--blue);border-radius:4px 14px 14px 4px;background:var(--surf);font-size:16px;line-height:1.5;color:var(--ink);box-shadow:var(--shadow)}
+.prp-rule summary{cursor:pointer;font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--blue);list-style:none}.prp-rule summary::-webkit-details-marker{display:none}
+.prp-rule summary::after{content:" · правило ▾"}.prp-rule[open] summary::after{content:" · правило ▴"}.prp-rule summary+div{margin-top:4px}
+body.inplayer .prp-play .dzx-top,body.inplayer .prp-play .prp-hd,body.inplayer .prp-play .prp-rule{flex:none}
+body.inplayer .prp-play .prp-rule{margin:4px 0 8px;padding:8px 14px;font-size:15px;max-width:none}
+body.inplayer .prp-play #dzPl{flex:1;min-height:0;display:flex;flex-direction:column}
+.prp-q{max-width:760px;margin:18px 0 12px;padding:16px;border-radius:16px;background:var(--surf);border:1.5px solid var(--line)}
+.prp-q.ok{border-color:var(--prp-ok)}
+.prp-q h3{margin:0 0 4px;font:800 13px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--blue)}.prp-q.ok h3{color:var(--prp-ok)}.prp-q.ok h3::after{content:" · пройдено"}
+.prp-q p{margin:0 0 10px;font-size:16px;line-height:1.45;color:var(--ink)}
+.prp-o{display:grid;gap:8px}
+.prp-o button{min-height:46px;padding:10px 14px;text-align:left;border-radius:12px;border:1.5px solid var(--line2);background:var(--surf2);color:var(--ink);font:600 15px/1.35 var(--sans);cursor:pointer}
+.prp-o button:hover{border-color:var(--blue)}
+.prp-o button.y{border-color:var(--prp-ok);background:var(--prp-ok-s)}.prp-o button.n{border-color:var(--red);background:var(--red-s)}
+.prp-q .prp-e{margin:10px 0 0;font-size:15px;color:var(--ink2)}
+.prp-trap,.prp-wb{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;max-width:760px;margin:0 0 10px;padding:10px 14px;border-radius:12px;font-size:15px;line-height:1.45}
+.prp-trap{background:var(--red-s);color:var(--ink)}.prp-trap b,.prp-wb b{font:700 11.5px var(--mono);text-transform:uppercase;letter-spacing:.05em}.prp-trap b{color:var(--red)}
+.prp-wb{background:var(--surf2)}.prp-wb b{color:var(--mut)}.prp-wb a{color:var(--blue);font-weight:700}
+.prp-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:760px;margin:16px 0 8px}
+.prp-nav a{color:var(--blue);font-weight:700;text-decoration:none}
+.prp-nx{padding:12px 18px;border-radius:14px;background:var(--acc);color:#fff!important;box-shadow:0 4px 0 var(--acc-d)}
 /* ═════════ RKP: «РК2 за 9 шагов» — шкала, путь, тема, задача, пробный РК2 ═════════ */
 .rkp-page h1{margin:0}
 .rkp-hero{margin:6px 0 18px;padding:18px 16px 18px;border-radius:20px;background:linear-gradient(160deg,#0a2463 0%,#1a5ae0 100%);color:#fff;box-shadow:0 18px 36px -24px rgba(10,36,99,.8)}
@@ -7479,6 +7528,7 @@ return {has,html,bind,SPEC,ans3};
 <script src="dz/ng/4/method.js"></script>
 <script src="dz/ng/4/surf.js"></script>
 <script src="dz/ng/4/solver.js"></script>
+<script src="dz/ng/4/prep.js"></script>
 <script src="dz/ng/5/variants.js"></script>
 <script src="dz/ng/5/method.js"></script>
 <script src="dz/ng/5/solver-cone.js"></script>
@@ -24015,6 +24065,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.32',d:'13 ноября 2026',items:['ДЗ №4: новая вкладка «Подготовка» — 8 шагов перед своим вариантом: точка на поверхности, сечение плоскостью уровня, посредник, высшая и низшая точки (плоскостью симметрии и её поворотом), очерки и видимость, проецирующая поверхность, концентрические и эксцентрические сферы.','В каждом шаге — правило в две строки, мини-чертёж по шагам с точным построением (и 3D), один вопрос «Проверь себя», частая ошибка и задачи тетради. Для своего варианта видно, какие шаги нужны.']},
   {v:'4.31',d:'12 ноября 2026',items:['РК2 за 9 шагов проще: в теме три шага — «Как решать» (суть, как звучит в билете, способ), «Разбор по шагам», «Задачи билета». Вопрос-проверка и звёзды убраны: тема пройдена, когда досмотрен разбор.','«Задачи билета» — только условия и чертежи, по задаче на каждый вид, и яркая кнопка «Распечатать задачи» (по листу А4 на задачу). Без ответов, решений и координат.','Пробный РК2: координаты убраны, ответ — в целых градусах и миллиметрах с допуском, без лишних десятых.']},
   {v:'4.30',d:'12 ноября 2026',items:['РК2 за 9 шагов: каждая тема — пять шагов сверху (Суть → Способ → Разбор задачи → Виды в билете → Решить ещё), открыт один, внизу кнопка «Дальше». Ловушки свёрнуты, виды задач — компактные карточки. «Решить ещё» — лист задач как в билете, по одной на каждый вид, ответ и решение под спойлером, «Новые задачи» — новые числа.','Убрана проверка вводом чисел (углы, расстояния): тема засчитывается за вопрос на суть, разбор задачи и пройденные шаги. Пробный РК2: решаешь на бумаге, открываешь ответы и отмечаешь «сошлось / не сошлось».']},
   {v:'4.30',d:'12 ноября 2026',items:['«Спроси автора» — прямо на сайте. Кнопка «Спросить» в шапке на любой странице: пишешь, что не получается, можно с фото чертежа — автор отвечает лично, ответ приходит сюда же. Новый ответ видно на кнопке, все вопросы — в «Моих вопросах».']},
@@ -29490,7 +29541,7 @@ function openLesson(id){ nav(H('ng','path',id)); }
    #/ig3/7, #/ig2/5            — инженерная графика.
    «← Назад» — шаг назад по истории (откуда пришёл); если пришёл по ссылке — на «ДЗ».
    Адрес строит HDZ(id, …); прежние #/ng/dz/…, #/ig/dz/…, #/dz/<id>/…, #/ig/hw2/…, #/ng/hw/…, #/ng/var/… переадресуются сюда. */
-const DZ_SECS=[['cond','Условие'],['how','Как решать'],['ex','Пример'],['faq','Ошибки и защита'],['my','Сверить ответы'],['3d','Все тела в 3D']];
+const DZ_SECS=[['prep','Подготовка'],['cond','Условие'],['how','Как решать'],['ex','Пример'],['faq','Ошибки и защита'],['my','Сверить ответы'],['3d','Все тела в 3D']];
 /* ДЗ, у которых тела варианта показываются в 3D целиком (галерея #/ng4/3d) */
 const DZ_3D={ng4:1};
 const vesc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -29589,7 +29640,7 @@ function dzPick(v,d){
   const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
   const grid=`<div class="dzx-nums c6">${range(1,N).map(num).join('')}</div>`;
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(d.beta?dzBetaNote():'')+
-   `<h2 class="dzx-h">Какой у тебя вариант?</h2><p class="dzx-note">Номер один на все ДЗ — нажми его один раз, дальше каждое ДЗ откроется сразу на нём.</p>${grid}
+   (d.prep?prepCard(d):'')+`<h2 class="dzx-h">Какой у тебя вариант?</h2><p class="dzx-note">Номер один на все ДЗ — нажми его один раз, дальше каждое ДЗ откроется сразу на нём.</p>${grid}
    ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}" data-setvar="${n}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}</b></a>`).join('')}</div></details>`:''}`});
   /* номер выбран — выбор номера больше не нужен: заменяем его вариантом, и «Назад» из варианта ведёт туда, откуда открыл ДЗ */
   v.querySelectorAll('[data-setvar]').forEach(a=>a.addEventListener('click',e=>{ if(e.ctrlKey||e.metaKey) return; e.preventDefault(); dzSetVar(+a.dataset.setvar); redir(a.getAttribute('href')); }));
@@ -29639,6 +29690,7 @@ function dzMy(d){ return `<p class="lead">Выбери свой вариант �
 
 /* вкладки ДЗ — одни и те же в варианте и в «Как решать»: Разбор · Чистовик · Черновик · Как решать · Ошибки и защита · Сверить ответы */
 function dzPills(d,on){ const m=dzMyN(d), ok=m&&DZR.has(d.id,m), ng=d.course==='ng', L=[];
+  if(d.prep){ const pg=prepProg(d); L.push(['prep',`Подготовка <i class="prp-pc">${pg.k}/${pg.n}</i>`,HDZ(d.id,'prep')]); }
   L.push(['',ng?'Разбор по шагам':'Решение',ok?HDZ(d.id,m):HDZ(d.id)]);
   if(ng&&ok&&d.id==='ng3') L.push(['sheet','Как на листе',HDZ(d.id,m,'sheet')]);
   if(ng&&ok){ L.push(['list','Чистовик',HDZ(d.id,m,'list')]); L.push(['draft','Черновик',HDZ(d.id,m,'draft')]); }
@@ -29646,7 +29698,7 @@ function dzPills(d,on){ const m=dzMyN(d), ok=m&&DZR.has(d.id,m), ng=d.course==='
   if(dzChecks(d).length) L.push(['my','Сверить ответы',HDZ(d.id,'my')]);
   if(DZ_3D[d.id]) L.push(['3d','Все в 3D',HDZ(d.id,'3d')]);
   return `<nav class="dzx-pills" aria-label="${vesc(d.label)}">${L.map(([k,t,h])=>`<a href="${h}"${k===on?' class="on" aria-current="page"':''}>${t}</a>`).join('')}</nav>`; }
-const dzHasSec=(d,k)=>k==='3d'?!!DZ_3D[d.id]:k==='ex'?!!d.examples:k==='my'?dzChecks(d).length>0:k==='cond'?!!(d.types||d.text||d.sheet):(k==='how'||k==='faq')&&!!d.method;
+const dzHasSec=(d,k)=>k==='prep'?!!d.prep:k==='3d'?!!DZ_3D[d.id]:k==='ex'?!!d.examples:k==='my'?dzChecks(d).length>0:k==='cond'?!!(d.types||d.text||d.sheet):(k==='how'||k==='faq')&&!!d.method;
 /* «Все тела в 3D» (#/ng4/3d): шесть чертежей-типов, у каждого — картинка тел и номера вариантов; нажал номер — окно 3D
    этого варианта («Дано», дальше — по шагам). #/ng4/3d/13 — сразу вариант 13 в 3D. Картинки — img/ng4-3d-<тип>.webp
    (снимок тел из того же окна 3D, TASK3D.snap; пересобрать — node dz/ng/4/make-pics.js). */
@@ -29669,7 +29721,8 @@ function dz3D(v,d,sub){
   return d.label+' · все тела в 3D'; }
 /* верхняя строка страницы ДЗ: ← Назад · заголовок · Поделиться */
 function dzTop(d,title,share){ return `<div class="dzx-top">${dzBackHTML(HDZ())}<h1>${title}</h1>${share||''}</div>`; }
-function dzSec(v,d,sec,sub){
+function dzSec(v,d,sec,sub,extra){
+  if(sec==='prep') return dzPrep(v,d,sub,extra);
   if(sec==='3d') return dz3D(v,d,sub);
   if(sec==='ex'){ const types=dzTypesOf(d).filter(t=>d.examples&&d.examples[t.code]); const code=sub||(types.length===1?types[0].code:null);
     if(code&&d.examples&&d.examples[code]) return dzExView(v,d,code);
@@ -29685,6 +29738,69 @@ function dzSec(v,d,sec,sub){
   v.querySelectorAll('[data-jump]').forEach(a=>a.addEventListener('click',e=>{ const el=document.getElementById(a.dataset.jump); if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); } }));
   setLast({s:d.course,kind:'dz',id:d.id+'/'+sec,href:HDZ(d.id,sec),label:d.label+'. '+t,sub:dzCourse(d.course)+' · ДЗ'});
   return d.label+' · '+t; }
+/* ═════ Подготовка к ДЗ (#/ng4/prep, #/ng4/prep/3): сначала навыки по одному, потом свой вариант.
+   Данные — d.prep (dz/ng/4/prep.js): steps [{id, t, sub, rule, task(), check{q,o,c,e}, trap, wb, types}], plan по типам.
+   Шаг: правило → мини-чертёж по шагам (плеер) → один вопрос → ошибка → задачи тетради. Ответил верно — шаг пройден.
+   Структура общая: ДЗ №5 и РК3 получат её, как только в их описании появится prep (docs/PREP.md). ═════ */
+const prepSt=d=>ST.get('prep_'+d.id,{})||{};
+function prepProg(d){ const s=prepSt(d), n=d.prep.steps.length; return {k:d.prep.steps.filter(x=>s[x.id]).length,n}; }
+/* шаги, нужные для варианта n (по типу) */
+function prepNeed(d,n){ const t=n&&DZR.typeOf(d.id,n); return t?d.prep.steps.map((s,i)=>(!s.types||s.types.includes(t.code))?i+1:0).filter(Boolean):null; }
+const prepRange=a=>{ const o=[]; a.forEach(x=>{ const l=o[o.length-1]; if(l&&x===l[1]+1) l[1]=x; else o.push([x,x]); }); return o.map(([a,b])=>a===b?a:a+'–'+b).join(', '); };
+function prepCard(d){ const g=prepProg(d), P=d.prep;
+  return `<a class="prp-card" href="${HDZ(d.id,'prep')}"><span class="prp-card-k">Сначала — подготовка</span><b>${vesc(P.title)}: ${g.n} шагов</b><small>${g.k?`пройдено ${g.k} из ${g.n}`:'по одному навыку: правило, мини-чертёж, вопрос'}</small><span class="prp-bar"><i style="width:${Math.round(g.k/g.n*100)}%"></i></span></a>`; }
+function prepNote(d){ const g=prepProg(d); if(g.k>=g.n) return '';
+  return `<a class="prp-note" href="${HDZ(d.id,'prep')}"><b>Не начинай с ответа.</b> Подготовка: ${g.k} из ${g.n} шагов — <u>пройти</u></a>`; }
+function dzPrep(v,d,sub,extra){
+  const P=d.prep, N=P.steps.length, st=prepSt(d), my=dzMyN(d), need=prepNeed(d,my), ty=my&&DZR.typeOf(d.id,my);
+  const i=/^\d+$/.test(sub||'')?+sub:0;
+  if(sub&&!(i>=1&&i<=N)){ setTimeout(()=>redir(HDZ(d.id,'prep')),0); return P.title; }
+  const top=dzTop(d,vesc(d.label)+' · подготовка')+dzPills(d,'prep');
+  const tag=s=>s.types&&s.types.length<Object.keys(P.typeName||{}).length?`<i class="prp-tag">вар. ${s.types.map(c=>String(P.typeName[c]).replace(/^вар\.\s*/,'')).join(', ')}</i>`:'';
+  if(!i){ const g=prepProg(d);
+    const myBox=my&&ty?`<div class="prp-my"><span>Твой вариант ${my}</span><b>Нужны шаги ${prepRange(need)}</b>${P.plan&&P.plan[ty.code]?`<small>${P.plan[ty.code]}</small>`:''}</div>`:'';
+    const go=my&&DZR.has(d.id,my)?`<a class="prp-go" href="${HDZ(d.id,my)}"><span>${g.k>=g.n?'Готов':'Когда пройдёшь'}</span><b>Мой вариант ${my} — разбор по шагам →</b></a>`:`<a class="prp-go" href="${HDZ(d.id)}"><span>Когда пройдёшь</span><b>Выбрать свой вариант →</b></a>`;
+    v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx prp',body:top+`
+      <p class="prp-lead">${P.lead}</p>
+      <div class="prp-prog"><span class="prp-bar"><i style="width:${Math.round(g.k/g.n*100)}%"></i></span><b>${g.k} из ${g.n}</b></div>${myBox}
+      <ol class="prp-path">${P.steps.map((s,k)=>{ const nd=!need||need.includes(k+1);
+        return `<li><a class="prp-st${st[s.id]?' done':''}${nd?'':' skip'}" href="${HDZ(d.id,'prep',k+1)}"><span class="prp-n">${st[s.id]?'✓':k+1}</span><span class="prp-t"><b>${s.t}</b><small>${s.sub}</small></span>${tag(s)}<span class="prp-arr" aria-hidden="true">›</span></a></li>`; }).join('')}</ol>${go}`});
+    dzPillsScroll(v); setLast({s:d.course,kind:'dz',id:d.id+'/prep',href:HDZ(d.id,'prep'),label:P.title,sub:dzCourse(d.course)+' · ДЗ'});
+    return P.title; }
+  const s=P.steps[i-1], ck=s.check, order=ck.o.map((_,k)=>k).sort((a,b)=>((a*7+i*3)%5)-((b*7+i*3)%5)||a-b);
+  const nx=i<N?{h:HDZ(d.id,'prep',i+1),t:'Шаг '+(i+1)+': '+P.steps[i].t}:my&&DZR.has(d.id,my)?{h:HDZ(d.id,my),t:'Мой вариант '+my}:{h:HDZ(d.id,'prep'),t:'К списку шагов'};
+  const hd=`<div class="prp-hd"><a href="${HDZ(d.id,'prep')}" class="prp-k">Шаг ${i} из ${N}</a><span class="prp-dots" aria-hidden="true">${P.steps.map((x,k)=>`<i class="${k+1===i?'on':st[x.id]?'ok':''}"></i>`).join('')}</span>${tag(s)}</div>`;
+  const title=P.title+' · шаг '+i+'. '+s.t;
+  setLast({s:d.course,kind:'dz',id:d.id+'/prep/'+i,href:HDZ(d.id,'prep',i),label:P.title+' · шаг '+i,sub:s.t});
+  /* экран 1: правило и мини-чертёж по шагам (плеер на весь экран); последний шаг ведёт к вопросу */
+  if(extra!=='q'){
+    v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx prp prp-play',body:dzTop(d,vesc(d.label)+' · подготовка')+hd+
+      `<details class="prp-rule"${innerWidth>700?' open':''}><summary>${s.t}</summary><div>${s.rule}</div></details><div id="dzPl"></div>`});
+    let task=null; try{ task=s.task(); WB3.ruDec(task); }catch(e){ console.error(e); }
+    if(!task){ $('dzPl').innerHTML='<div class="box warn">Чертёж не построился. Обнови страницу.</div>'; return title; }
+    document.body.classList.add('inplayer');
+    PLR=PLAYER.mount($('dzPl'),task,{backHref:HDZ(d.id,'prep'),backLabel:'К подготовке',afterText:'Проверь себя',
+      onDone:()=>nav(HDZ(d.id,'prep',i,'q'))});
+    return title; }
+  /* экран 2: проверь себя → где ошибаются → тетрадь → дальше */
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx prp',body:dzTop(d,vesc(d.label)+' · подготовка')+dzPills(d,'prep')+hd+`
+    <h2 class="prp-h">${s.t}</h2>
+    <div class="prp-rule"><div>${s.rule}</div></div>
+    <section class="prp-q${st[s.id]?' ok':''}" aria-label="Проверь себя"><h3>Проверь себя</h3><p>${ck.q}</p>
+      <div class="prp-o">${order.map(k=>`<button type="button" data-o="${k}">${ck.o[k]}</button>`).join('')}</div>
+      <p class="prp-e"${st[s.id]?'':' hidden'}>${ck.e}</p></section>
+    <div class="prp-trap"><b>Где ошибаются</b><span>${s.trap}</span></div>
+    ${s.wb&&s.wb.length?`<div class="prp-wb"><b>Закрепи в тетради</b>${s.wb.map(([n,t])=>`<a href="${H('ng','tasks',n)}">${t}</a>`).join('')}</div>`:''}
+    <nav class="prp-nav"><a href="${HDZ(d.id,'prep',i)}">↺ Чертёж ещё раз</a><a class="prp-nx" href="${nx.h}">${nx.t} →</a></nav>`});
+  dzPillsScroll(v);
+  const q=v.querySelector('.prp-q');
+  q.querySelectorAll('[data-o]').forEach(b=>b.addEventListener('click',()=>{ const k=+b.dataset.o, ok=k===ck.c;
+    b.classList.add(ok?'y':'n'); q.querySelector('.prp-e').hidden=false;
+    if(ok){ q.classList.add('ok'); const m=prepSt(d); m[s.id]=1; ST.set('prep_'+d.id,m);
+      const dots=v.querySelectorAll('.prp-dots i'); if(dots[i-1]) dots[i-1].classList.add('ok');
+      const pc=v.querySelector('.prp-pc'); if(pc){ const g=prepProg(d); pc.textContent=g.k+'/'+g.n; }
+      try{ FX.buzz('ok'); }catch(e){} } }));
+  return title+' · проверь себя'; }
 function dzPillsScroll(v){ const tb=v.querySelector('.dzx-pills'), on=tb&&tb.querySelector('a.on'); if(on) tb.scrollLeft=Math.max(0,on.offsetLeft-tb.offsetLeft-16); }
 
 function dzExView(v,d,code){ const task=dzExample(d,code), t=(d.types||[]).find(x=>x.code===code)||{name:''};
@@ -29717,7 +29833,7 @@ function dzVariant(v,d,n,extra){
       <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Приложи фото листа — отвечу лично, прямо здесь.')}`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
-  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}<div id="dzPl"></div>`});
+  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}${d.prep?prepNote(d):''}<div id="dzPl"></div>`});
     document.body.classList.add('inplayer');
     /* открыт пункт б) — адрес #/ng3/7/b: им и делятся */
     const onPart=k=>{ const x=k&&parts.length>1?[DZ_PL[k]]:[], h=HDZ(d.id,n,...x), lbl=parts.length>1&&parts[k]&&parts[k].l?', задача '+parts[k].l:'';
@@ -29751,7 +29867,7 @@ function dzView(v,r){
   if(!r.tab) return dzHub(v);
   const d=DZR.get(r.tab); if(!d||!d.num){ setTimeout(()=>redir(HDZ()),0); return 'ДЗ'; }
   if(r.item&&/^\d+$/.test(r.item)) return dzVariant(v,d,+r.item,r.sub);
-  if(r.item&&dzHasSec(d,r.item)) return dzSec(v,d,r.item,r.sub);
+  if(r.item&&dzHasSec(d,r.item)) return dzSec(v,d,r.item,r.sub,r.extra);
   if(r.item){ setTimeout(()=>redir(HDZ(d.id)),0); return d.label; }
   const m=dzMyN(d); if(m&&DZR.has(d.id,m)){ setTimeout(()=>redir(HDZ(d.id,m)),0); return d.label; }
   return dzPick(v,d); }
