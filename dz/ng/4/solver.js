@@ -209,6 +209,13 @@ function solve4(code,D){
 
 /* ── разбор: шаги, чертёж ── */
 const SUB=n=>String(n).split('').map(c=>'₀₁₂₃₄₅₆₇₈₉'[+c]).join('');
+/* у каждого посредника свой цвет: посредник, сечения тел, линии связи и точки — одним цветом (красный — только линия пересечения) */
+const MCOL=['#1f6fd1','#e07b00','#1f9d55','#8e44ad','#0f9fb5','#c2185b','#8d6e00'];
+const tint=(items,c)=>items.map(it=>it?Object.assign(it,{col:c}):it);
+/* тело симметрично относительно фронтальной плоскости y = Y0 (через оси и вершины) — по выборке точек */
+function symF(b,box){ let n=0; for(let i=0;i<400;i++){ const r=k=>{ const x=Math.sin(i*12.9898+k*78.233)*43758.5453; return x-Math.floor(x); };
+  const p=[box[0]+(box[3]-box[0])*r(1),box[1]+(box[4]-box[1])*r(2),box[2]+(box[5]-box[2])*r(3)], q=[p[0],2*Y0-p[1],p[2]];
+  if(b.inside(p)!==b.inside(q)) n++; } return n<=2; }
 function taskOf(code,D,n,label){
   const R=solve4(code,D), {G,sc,lines}=R, B=sc.B, box=sc.box();
   const pf=(pts,k)=>poly(pts.map(F),k), ph=(pts,k)=>poly(pts.map(H),k);
@@ -240,11 +247,24 @@ function taskOf(code,D,n,label){
     principle:'Точку линии пересечения находят посредником — поверхностью, которая режет оба тела по простым линиям (окружностям, прямым). Общие точки этих линий принадлежат обоим телам.',
     step:`Тела: ${bl}. Посредники: ${pairTxt}.${extra}`,
     full:TYPE_TXT[code](D)},[]));
+  const bx=sc.box(), symAll=G.bodies.map(b=>symF(b,[bx[0]-5,bx[1]-5,bx[2]-5,bx[3]+5,bx[4]+5,bx[5]+5]));
   lines.forEach(L=>{ const A=B[L.a], Bb=B[L.b], fam=L.fam, nm=A.nom+' ∩ '+Bb.nom;
     const charItems=[], charTxt=[];
-    L.chars.sort((p,q)=>q.p[2]-p.p[2]).forEach(c=>{ num++; c.n=num; const aux=fam.through(c.p);
-      if(!fam.ok||fam.ok(aux)) charItems.push(...fam.draw(aux,null,[c.p]));
-      charItems.push(conn(F(c.p),H(c.p)));
+    /* точки в общей плоскости симметрии (фронтальной, через вершины / оси обоих тел) находят этой плоскостью: она режет
+       оба тела по очеркам на π₂, точка — пересечение очерков. Так строят высшую и низшую точки */
+    const iA=G.bodies.findIndex(b=>b.id===L.a), iB=G.bodies.findIndex(b=>b.id===L.b);
+    const symOK=fam.kind!=='y'&&symAll[iA]&&symAll[iB], vt=A.apex&&Bb.apex?'через вершины обоих конусов':A.apex||Bb.apex?'через вершину конуса и ось второго тела':'через оси обоих тел';
+    let phiDone=false, ci=0;
+    L.chars.sort((p,q)=>q.p[2]-p.p[2]).forEach(c=>{ num++; c.n=num;
+      if(symOK&&Math.abs(c.p[1]-Y0)<0.6){ const col=MCOL[0];
+        if(!phiDone){ phiDone=true; const g=p=>p[1]-Y0;
+          charItems.push(...tint([ln(H([bx[3]+5,Y0,0]),H([bx[0]-5,Y0,0]),'aux','Φ′','ne',0,0)],col));
+          [L.a,L.b].forEach(id=>sc.section(id,g).forEach(pp=>charItems.push(...tint([poly(pp.map(F),'aux')],col)))); }
+        charItems.push(...tint([conn(F(c.p),H(c.p))],col));
+        charTxt.push(`${num} ${co(c.p)} — ${whyOf(c,L)}; посредник: фронтальная плоскость Φ ${vt} (их общая плоскость симметрии) — режет оба тела по очеркам на π₂, точка — пересечение очерков`); return; }
+      const aux=fam.through(c.p), col=MCOL[(++ci)%MCOL.length];
+      if(!fam.ok||fam.ok(aux)) charItems.push(...tint(fam.draw(aux,null,[c.p]),col));
+      charItems.push(...tint([conn(F(c.p),H(c.p))],col));
       charTxt.push(`${num} ${co(c.p)} — ${whyOf(c,L)}; посредник: ${fam.txt(aux)}`); });
     /* подписи: совпавшие проекции — одной подписью «3″≡4″» (конкурирующие точки) */
     [['F','″'],['H','′']].forEach(([v,mk])=>{ const pr=v==='F'?F:H, grp=[];
@@ -254,7 +274,7 @@ function taskOf(code,D,n,label){
     steps.push(STEP('Линия «'+nm+'»: опорные точки',{check:'Каждая опорная точка лежит на обеих поверхностях; обе её проекции — на одной линии связи.',
       hint:'С каких точек начать? С тех, где линия касается очерков тел, и с самой высокой и самой низкой.',
       principle:how,
-      step:`Строим опорные точки ${L.chars.map(c=>c.n).join(', ')}: для каждой — свой посредник (${fam.name}) через точку. Точки на очерках важны: в них линия меняет видимость.`,
+      step:`Строим опорные точки ${L.chars.map(c=>c.n).join(', ')}: для каждой — свой посредник (${fam.name}) через точку${phiDone?`; точки в общей плоскости симметрии — фронтальной плоскостью Φ ${vt}: она режет оба тела по очеркам, и на π₂ эти точки — пересечения очерков (так находят высшую и низшую точки)`:''}. У каждого посредника свой цвет — по нему видно, откуда какая линия. Точки на очерках важны: в них линия меняет видимость.`,
       full:charTxt.join('<br>')},charItems));
     /* промежуточные: 3 посредника между опорными */
     const ts=[].concat(...L.m.lines.map(l=>l.pts.map(fam.t))), t0=Math.min(...ts), t1=Math.max(...ts), ct=L.chars.map(c=>fam.t(c.p));
@@ -263,9 +283,10 @@ function taskOf(code,D,n,label){
     const midItems=[], midTxt=[];
     sel.forEach((s,k)=>{ const aux=fam.at(s.t), g=fam.g(aux), lab=fam.kind==='z'||fam.kind==='y'||fam.kind==='pa'?'Σ'+SUB(++sig):null;
       const got=[]; L.m.lines.forEach(l=>{ const P=l.pts; for(let i=1;i<P.length;i++){ const ga=g(P[i-1]), gb=g(P[i]); if((ga<0)!==(gb<0)){ let lo=0,hi=1; for(let it=0;it<30;it++){ const mm=(lo+hi)/2; if((g(Q.lerp(P[i-1],P[i],mm))<0)===(ga<0)) lo=mm; else hi=mm; } got.push(Q.lerp(P[i-1],P[i],(lo+hi)/2)); } } });
-      midItems.push(...fam.draw(aux,lab,got));
-      [L.a,L.b].forEach(id=>sc.section(id,g).forEach(p=>midItems.push(poly(p.map(fam.view==='F'?F:H),'aux'))));
-      got.forEach(p=>midItems.push(conn(F(p),H(p)), pt(F(p),'','ne','res',{r:2.2}), pt(H(p),'','ne','res',{r:2.2})));
+      const col=MCOL[(k+1)%MCOL.length];
+      midItems.push(...tint(fam.draw(aux,lab,got),col));
+      [L.a,L.b].forEach(id=>sc.section(id,g).forEach(p=>midItems.push(...tint([poly(p.map(fam.view==='F'?F:H),'aux')],col))));
+      got.forEach(p=>midItems.push(...tint([conn(F(p),H(p)), pt(F(p),'','ne','res',{r:2.2}), pt(H(p),'','ne','res',{r:2.2})],col)));
       midTxt.push(`${lab||'Посредник '+(k+1)} (${fam.txt(aux)}): ${got.length} ${got.length===1?'точка':got.length<5?'точки':'точек'}${got.length?' — '+got.map(co).join(', '):''}`); });
     steps.push(STEP('Линия «'+nm+'»: промежуточные точки',{check:'Сечения обоих тел построены одним и тем же посредником; точки — только там, где сечения пересекаются.',
       hint:'Между опорными точками кривую не провести — нужны ещё точки. Возьми посредники между ними.',

@@ -8,6 +8,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://*.goatcounter.com; connect-src 'self' https://*.apigw.yandexcloud.net https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* тема до первой отрисовки, чтобы не было вспышки светлой */try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script>/* вариант оформления чертежей на выбор (a — по умолчанию, b, c): ?ds=b запоминается */try{var m=/[?&]ds=([abc])/.exec(location.search),d=m?m[1]:localStorage.getItem('nch_ds');if(m)localStorage.setItem('nch_ds',d);if(d&&d!=='a')document.documentElement.setAttribute('data-ds',d);}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1424" media="(prefers-color-scheme: dark)">
@@ -834,6 +835,17 @@ footer{border-top:1px solid var(--line);padding:28px 0 44px;color:var(--mut);fon
 svg.dwg text.lbl.g{fill:#1b6b45}
 svg.dwg text.lbl.pt{font-size:12px}
 svg.dwg .g-old{opacity:.92}
+/* свой цвет у каждого посредника: сам посредник, сечения тел, линии связи и точки — одним цветом (DRAW: it.col → g.mc) */
+svg.dwg .mc :is(line,path,polyline,polygon,ellipse){stroke:var(--mc)!important}
+svg.dwg .mc circle{stroke:var(--mc)!important;fill:var(--mc)!important}
+svg.dwg .mc text.lbl{fill:var(--mc)!important}
+svg.dwg .g-old .mc{opacity:.5}
+/* варианты оформления чертежа (на выбор; ?ds=b|c или localStorage nch_ds): b — «лист»: чертёжный курсив, без жёлтого маркера,
+   прошлые посредники серые; c — «один цвет»: все посредники синие, прошлое серое */
+:root[data-ds=b] svg.dwg text.lbl{font-family:'NchSerif','Times New Roman',serif!important;font-style:italic;font-weight:400!important;font-size:calc(var(--lf,11.5px)*1.18)!important}
+:root[data-ds=b] svg.dwg .halo{display:none}
+:root[data-ds=b] svg.dwg .g-old .mc,:root[data-ds=c] svg.dwg .g-old .mc{--mc:#a7aebb!important;opacity:1}
+:root[data-ds=c] svg.dwg .mc{--mc:#3567b5!important}
 svg.dwg .g-new{animation:gnew .6s var(--ease) both}
 @keyframes gnew{from{opacity:0}to{opacity:1}}
 svg.dwg .halo{animation:ghalo 1.6s ease-out both}
@@ -5054,6 +5066,21 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
   body.prn-on .prn-pg{break-after:page;page-break-after:always}
   body.prn-on .prn-pg:last-child{break-after:auto;page-break-after:auto}
 }
+/* панель кнопок чертежа: внизу справа одной строкой, не закрывает верх чертежа; «весь чертёж» — только когда приближено,
+   ＋/－ на сенсорных экранах не нужны (щипок и двойное касание) */
+.pl-zoom,body.inplayer .pl-zoom,body.plfull .pl-zoom{top:auto!important;bottom:8px!important;right:8px!important;flex-direction:row!important;align-items:center!important;gap:5px!important;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 16px)}
+body.plfull .pl-zoom{bottom:calc(8px + env(safe-area-inset-bottom))!important}
+.pl-zb,body.inplayer .pl-zb{width:34px!important;height:34px!important;border-radius:10px!important;font-size:16px}
+.pl-zb.wide,body.inplayer .pl-zb.wide,body .pl-zoom .pl-zb.t3btn{width:auto!important;height:34px!important;padding:0 11px!important;font:700 13px var(--sans)!important}
+.pl-paper:not(.zoomed) .pl-zb.zreset{display:none}
+@media (pointer:coarse){.pl-zb.zin{display:none!important}}
+body .pl-zoom .pl-zb.past{font:700 12.5px var(--sans)!important;width:auto!important;padding:0 10px!important;gap:6px;display:inline-flex!important;align-items:center;white-space:nowrap;background:rgba(255,255,255,.94)!important;color:#15161a!important;border:1px solid #cbd1de!important;opacity:1!important}
+@media (max-width:600px){body .pl-zoom .pl-zb.past b,body .pl-zoom .lbx{display:none}}
+/* под кнопки — своя полоса внизу карточки чертежа: кнопки не лежат на линиях */
+.pl-paper:has(.pl-zoom),body.inplayer .pl-paper:has(.pl-zoom){padding-bottom:48px!important}
+@media (max-width:600px){.pl-zb,body.inplayer .pl-zb,.pl-zb.wide,body.inplayer .pl-zb.wide,body .pl-zoom .pl-zb.t3btn,body .pl-zoom .pl-zb.past{height:32px!important}.pl-zb,body.inplayer .pl-zb{width:32px!important}}
+body .pl-zoom .pl-zb.past i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;display:inline-block;flex:none}
+body .pl-zoom .pl-zb.past.on i{background:currentColor}
 </style>
 </head>
 <body>
@@ -5193,7 +5220,7 @@ function svg(scene){
   /* 2) маркер под новыми элементами */
   const halo=[];
   const ctxH = { T, out:halo, scene:scn, halo:true };
-  items.forEach(it=>{ if(it._g==='new' && it.t!=='hatch' && it.t!=='txt' && it.t!=='note' && it.t!=='axis' && it.t!=='axis3' && it.t!=='conn' && it.t!=='hconn' && it.t!=='ext'){
+  items.forEach(it=>{ if(it._g==='new' && !it.col && it.t!=='hatch' && it.t!=='txt' && it.t!=='note' && it.t!=='axis' && it.t!=='axis3' && it.t!=='conn' && it.t!=='hconn' && it.t!=='ext'){
       const f=RENDER[it.t]; if(f) f(it,ctxH); } });
   /* 3) сами элементы, сгруппированные по состоянию */
   let cur=null;
@@ -5202,7 +5229,9 @@ function svg(scene){
     const g = it._g||'given';
     if(g!==cur){ if(cur!==null) out.push('</g>'); out.push('<g class="g-'+g+'">'); cur=g; }
     if(it.t==='hatch') return;
-    const f=RENDER[it.t]; if(f) f(it,ctx);
+    /* col — свой цвет построения (посредник и всё, что от него: сечения, линии связи, точки) — видно, откуда какая линия */
+    const f=RENDER[it.t]; if(!f) return;
+    if(it.col){ out.push('<g class="mc" style="--mc:'+esc(it.col)+'">'); f(it,ctx); out.push('</g>'); } else f(it,ctx);
   });
   if(cur!==null) out.push('</g>');
   const VW=W0+pad*2, VH=H0+pad*2;
@@ -5819,12 +5848,17 @@ function scene(part,k){
   const given=part.given||[], st=part.steps||[];
   let items=tag(given,'given');
   for(let i=0;i<k;i++) items=items.concat(tag(st[i].add, i===k-1?'new':'old'));
+  /* «Прошлые шаги: скрыть» — от прошлых шагов остаётся только результат: обводка, искомые линии и точки;
+     посредники, сечения, линии связи и вспомогательные точки уходят */
+  if(PASTHIDE()){ const keepK=/^(main|res|resd|hid|grn|grnd|thin|ghost|axis|paper|dash)$/;
+    items=items.filter(it=>it._g!=='old'||(!it.col&&it.t!=='conn'&&it.t!=='hconn'&&it.t!=='ext'&&(it.t==='axis'||it.t==='hatch'||keepK.test(it.k||'main')))); }
   /* одна прямая — одна подпись: если ту же прямую позже обвели с той же подписью, ранняя подпись снимается */
   const lineOn=(u,v)=>{ const dx=u.b[0]-u.a[0], dy=u.b[1]-u.a[1], L=Math.hypot(dx,dy)||1, d=p=>Math.abs((p[0]-u.a[0])*dy-(p[1]-u.a[1])*dx)/L; return d(v.a)<1&&d(v.b)<1; };
   items.forEach((it,i)=>{ if(it.t!=='seg'||!it.l||!it.a) return; if(items.some((o,j)=>j>i&&o.t==='seg'&&o.l===it.l&&o.a&&lineOn(it,o))) it.l=undefined; });
   let all=given.slice(); st.forEach(s=>{ all=all.concat(s.add||[]); });
   return {items, fitTo:all, alt:'Чертёж: шаг '+k};
 }
+function PASTHIDE(){ try{ return localStorage.getItem('nch_past')==='hide'; }catch(e){ return false; } }
 function drawingHTML(part,k){
   if(part._fig) return part._fig(k);
   const hasDraw=(part.given&&part.given.length)||(part.steps||[]).some(s=>s.add&&s.add.length);
@@ -5954,7 +5988,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶ Как образуется</b></button>':''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶<span class="lbx"> Поверхность</span></b></button>':''}${k>1&&!p._fig?`<button class="pl-zb past${PASTHIDE()?'':' on'}" data-z="past" aria-pressed="${!PASTHIDE()}" title="${PASTHIDE()?'Показать построения прошлых шагов':'Оставить от прошлых шагов только результат'}"><i aria-hidden="true"></i>Прошлые<b>&nbsp;шаги</b></button>`:''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -6075,7 +6109,7 @@ function mount(root,t,opt){
     paper.addEventListener('pointerup',up); paper.addEventListener('pointercancel',e=>{P.delete(e.pointerId);});
     paper.addEventListener('dblclick',e=>{ if(e.target.closest('.pl-zoom')) return; at(Z.s>1.2?1:2.6,e.clientX,e.clientY); });
     paper.querySelectorAll('.pl-zb').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const z=b.dataset.z, r=paper.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
-      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if((z==='3d'||z==='meth')&&S.mode==='try'&&!S.saw3d) ask3d(paper,z); else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); else if(z==='meth'&&window.METHANIM) METHANIM.open(t); else if(z==='form'&&window.SURFLAB) SURFLAB.open((partsOf(t)[S.pi]||{}).form); }));
+      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if(z==='past'){ try{ localStorage.setItem('nch_past',PASTHIDE()?'show':'hide'); }catch(_){} render(); } else if((z==='3d'||z==='meth')&&S.mode==='try'&&!S.saw3d) ask3d(paper,z); else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); else if(z==='meth'&&window.METHANIM) METHANIM.open(t); else if(z==='form'&&window.SURFLAB) SURFLAB.open((partsOf(t)[S.pi]||{}).form); }));
   }
   /* «Решаю сам»: модель — после попытки. Если открыть 3D сразу, студент смотрит, но не тренирует воображение */
   function ask3d(paper,z){ const old=paper.querySelector('.pl-ask3d'); if(old) old.remove();
