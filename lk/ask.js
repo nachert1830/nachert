@@ -128,7 +128,6 @@ css.textContent=`
 .akb{position:relative;display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:12px;border:1.5px solid var(--acc);color:var(--acc)!important;background:var(--surf);font:800 14px var(--sans);text-decoration:none!important;white-space:nowrap}
 .akb:hover{background:var(--blue-s)}
 .akb u{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--red);color:#fff;font:800 11.5px/20px var(--sans);text-align:center;text-decoration:none;box-shadow:0 0 0 2px var(--surf)}
-@media(max-width:440px){#hdr .hright:has(#akBtn) #theme{display:none}}
 @media(max-width:620px){.akb span{display:none}.akb{width:var(--tap,40px);height:var(--tap,40px);padding:0;justify-content:center}}
 /* главная: строка «Спроси автора» */
 .akh{display:flex;align-items:center;gap:14px;margin:18px 0 0;padding:14px 14px 14px 18px;border-radius:22px;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;text-decoration:none!important;box-shadow:0 22px 44px -30px rgba(20,25,70,.8)}
