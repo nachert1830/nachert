@@ -4570,22 +4570,47 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 [data-d3].busy{opacity:.55;pointer-events:none}
 /* главная: две карточки рядом — РК2 и «Все тела в 3D» */
 .hcards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:4px 0 14px}
-/* автор — наверху главной: имя крупно и кнопка на страницу #/author */
-.au-strip{display:flex;align-items:center;gap:14px;margin:4px 0 14px;padding:14px 16px;border:1.5px solid var(--line);border-radius:20px;background:var(--surf)}
-.au-ava{flex:none;width:52px;height:52px;border-radius:50%;background:url(img/author-1.webp) 35% 12%/380% auto no-repeat;box-shadow:0 0 0 3px var(--blue-s)}
-.au-txt{display:flex;flex-direction:column;min-width:0;flex:1}
-.au-txt small{font:700 11px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
-.au-txt b{font:800 22px/1.15 var(--disp);color:var(--ink)}
-.au-btn{flex:none;display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 16px;border-radius:12px;background:var(--acc);color:#fff;font-weight:700;text-decoration:none;white-space:nowrap}
-.au-btn:hover{filter:brightness(1.08)}
-@media(max-width:520px){.au-strip{flex-wrap:wrap}.au-txt b{font-size:20px}.au-btn{width:100%;justify-content:center}}
-.au-page h1{font:800 34px/1.1 var(--disp);margin:6px 0 4px}
-.au-page .au-lead{color:var(--mut);margin:0 0 18px}
-.au-gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px;align-items:start}
-.au-gal figure{margin:0;border:1.5px solid var(--line);border-radius:20px;overflow:hidden;background:var(--surf)}
-.au-gal img{display:block;width:100%;height:auto}
-.au-gal figcaption{padding:10px 14px;text-align:left;font-size:14px;color:var(--ink2)}
-.au-gal figcaption em{font-style:normal;color:var(--mut)}
+/* автор — плашка над карточками главной, открывает шторку AUTHOR (как предпросмотр в Telegram) */
+.au-pillw{display:flex;justify-content:center;margin:2px 0 12px}
+.au-pill{display:inline-flex;align-items:center;gap:9px;padding:4px 14px 4px 4px;border:1px solid var(--line);border-radius:99px;background:var(--surf);color:var(--ink2);font:500 14px/1 var(--sans);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
+.au-pill:hover{transform:translateY(-1px);border-color:var(--acc);box-shadow:0 8px 22px -12px rgba(26,90,224,.55)}
+.au-pill b{color:var(--ink);font-weight:700}.au-pill .au-go{color:var(--acc);font-weight:700}
+.au-face{flex:none;display:block;border-radius:50%;background:url(img/author-1.webp) 35% 12%/380% auto no-repeat}
+.au-pill .au-face{width:28px;height:28px}
+/* шторка */
+.aus{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
+.aus-bg{position:absolute;inset:0;background:rgba(4,10,26,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .35s}
+.aus.on{pointer-events:auto}.aus.on .aus-bg{opacity:1}
+.aus-sh{--h:min(560px,66dvh);position:relative;width:min(540px,100%);height:var(--h);display:flex;flex-direction:column;background:var(--surf);color:var(--ink);border-radius:26px 26px 0 0;box-shadow:0 -20px 60px -20px rgba(0,0,0,.55);transform:translateY(105%);transition:transform .45s cubic-bezier(.2,.9,.25,1),height .5s cubic-bezier(.2,.9,.25,1),border-radius .5s;overflow:hidden;padding-bottom:env(safe-area-inset-bottom);touch-action:none}
+.aus.on .aus-sh{transform:translateY(var(--dy,0px))}
+.aus.full .aus-sh{--h:min(900px,calc(100dvh - 18px))}
+.aus.drag .aus-sh{transition:none}
+@media(min-width:600px){.aus-sh{margin-bottom:16px;border-radius:26px}.aus.full .aus-sh{--h:min(860px,calc(100dvh - 48px))}}
+.aus-grab{flex:none;height:22px;display:grid;place-items:center;cursor:grab}.aus-grab i{width:40px;height:5px;border-radius:9px;background:var(--line)}
+.aus-hd{flex:none;display:flex;align-items:center;gap:12px;padding:0 18px 14px}
+.aus-hd .au-face{width:46px;height:46px;box-shadow:0 0 0 2px var(--surf),0 0 0 4px var(--acc)}
+.aus-hd div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.aus-hd b{font:800 19px/1.15 var(--disp)}.aus-hd small{font-size:13px;color:var(--mut)}
+.aus-x{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:var(--surf2);color:var(--ink2);display:grid;place-items:center;cursor:pointer}
+.aus-x:hover{background:var(--line)}
+.aus-vp{flex:1;min-height:0;overflow:hidden}
+.aus-tr{display:flex;height:100%;transition:transform .5s cubic-bezier(.2,.9,.25,1)}
+.aus.full .aus-tr{transform:translateX(-100%)}
+.aus-sl{flex:0 0 100%;min-width:0;height:100%;display:flex;flex-direction:column;padding:0 14px}
+.aus-ph{position:relative;flex:1;min-height:0;border-radius:20px;overflow:hidden;background:#0b1224}
+.aus-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.06);transition:transform 1.2s cubic-bezier(.2,.9,.25,1)}
+.aus.on .aus-sl.cur .aus-ph img{transform:scale(1)}
+.aus-ph::after{content:"";position:absolute;inset:auto 0 0;height:45%;background:linear-gradient(transparent,rgba(3,8,22,.78));pointer-events:none}
+.aus-tag{position:absolute;z-index:1;left:12px;top:12px;padding:5px 10px;border-radius:99px;background:rgba(10,16,34,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font:700 11px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase}
+.aus-cap{position:absolute;z-index:1;left:16px;right:16px;bottom:14px;color:#fff;font:700 17px/1.3 var(--disp);text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.aus-ft{flex:none;display:flex;align-items:center;gap:10px;padding:14px 18px 16px}
+.aus-dots{display:flex;gap:6px;margin-right:auto}.aus-dots i{width:7px;height:7px;border-radius:9px;background:var(--line);transition:width .35s,background .35s}
+.aus-dots i.on{width:22px;background:var(--acc)}
+.aus-b{height:46px;padding:0 22px;border-radius:14px;border:0;font:700 15px var(--sans);cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:transform .15s,filter .2s}
+.aus-b:active{transform:scale(.97)}
+.aus-b.pri{background:var(--acc);color:#fff;box-shadow:0 10px 24px -12px var(--acc)}.aus-b.pri:hover{filter:brightness(1.08)}
+.aus-b.gh{background:var(--surf2);color:var(--ink)}.aus-b[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.aus-sh,.aus-tr,.aus-ph img,.aus-bg{transition:none!important}}
 .hcards>.hc:only-child{grid-column:1/-1}
 .hc{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:212px;padding:14px 14px 13px;border-radius:24px;color:#fff!important;text-decoration:none!important;-webkit-tap-highlight-color:transparent;transition:transform .15s var(--ease)}
 .hc:active{transform:scale(.985)}
@@ -5104,7 +5129,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
    <span class="foot-books"><button type="button" class="foot-book" data-book="tb"><b>Учебник</b><i>Жирных, Серёгин, Шарикян · 2015</i></button><button type="button" class="foot-book" data-book="wb" style="--bk:#3a7a55"><b>Рабочая тетрадь</b><i>Жирных, Новоселова</i></button><button type="button" class="foot-book" data-book="mu" style="--bk:#b45309"><b>Методические указания</b><i>Камзолов и др. · 1986</i></button></span>
    <span class="foot-src">Оформление — по ЕСКД. Решения, чертежи и пояснения подготовлены для этого сайта. <a href="#/about/legal">Правовая информация</a> · <a href="#/about/changes" id="footVer">Что нового</a></span>
   </div>
-  <div class="foot-r"><span class="foot-au">Автор — <b>Андрей Матханов</b></span><a href="#/ask" class="foot-ask" id="stuckAsk">Задать вопрос автору</a><a href="#/about">О проекте</a><a href="#/privacy">Политика обработки данных</a><a href="#/consent">Согласие на обработку данных</a><span id="footViews"></span></div>
+  <div class="foot-r"><span class="foot-au" data-author role="button" tabindex="0" style="cursor:pointer">Автор — <b>Андрей Матханов</b></span><a href="#/ask" class="foot-ask" id="stuckAsk">Задать вопрос автору</a><a href="#/about">О проекте</a><a href="#/privacy">Политика обработки данных</a><a href="#/consent">Согласие на обработку данных</a><span id="footViews"></span></div>
  </div>
 </div></footer>
 
@@ -28459,7 +28484,7 @@ function render(r){
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
       case 'about': title=viewAbout(v); break;
-      case 'author': title=viewAuthor(v); break;
+      case 'author': title=viewHome(v); setTimeout(()=>AUTHOR.open(),300); break;
       case 'live': title=r.tab==='show'?LIVESHOW.view(v,r.item):viewLive(v); break;
       case 'ask': title=viewLive(v,r.tab); break;
       case 'me': title=OWNER.view(v,r); break;
@@ -29309,7 +29334,7 @@ function viewHome(v){
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
-   <section class="au-strip" aria-label="Автор сайта"><span class="au-ava" aria-hidden="true"></span><span class="au-txt"><small>Автор проекта</small><b>Андрей Матханов</b></span><a class="au-btn" href="#/author">Познакомиться →</a></section>
+   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Автор — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
    <div class="hcards" id="rkHome">${homeCards()}</div>
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
@@ -35106,18 +35131,52 @@ function viewAbout(v){
   if(PANES.about&&PANES.about.render) PANES.about.render($('w-about'));
   return 'О проекте';
 }
-/* Об авторе (#/author) — имя и две шуточные фотографии */
-function viewAuthor(v){
-  v.innerHTML=`<div class="wrap page au-page"><div class="ptop">${crumbHTML([['О проекте','#/about'],['Автор']])}</div>
-   <h1>Андрей Матханов</h1>
-   <p class="au-lead">Автор Начерта: решения, чертежи, пояснения и код сайта.</p>
-   <div class="au-gal">
-    <figure><img src="img/author-1.webp" width="1738" height="905" alt="Андрей Матханов и Лионель Месси — шуточный фотомонтаж" loading="lazy"><figcaption>Обсуждаем, где у мяча фронтальная проекция. <em>Шуточный фотомонтаж.</em></figcaption></figure>
-    <figure><img src="img/author-2.webp" width="1254" height="1254" alt="Андрей Матханов и Илон Маск — шуточный фотомонтаж" loading="lazy"><figcaption>Объясняю, почему ракету проще строить по эпюру. <em>Шуточный фотомонтаж.</em></figcaption></figure>
-   </div></div>`;
-  NEXT=null;
-  return 'Автор';
-}
+/* Об авторе — шторка снизу, как предпросмотр в Telegram: полэкрана с фото №1, «Далее» разворачивает её на весь экран с фото №2.
+   Открывается плашкой [data-author] на главной и ссылкой #/author. Тянется за ручку: вниз — свернуть/закрыть, вверх — развернуть. */
+const AUTHOR=(()=>{
+  let el=null, back=null;
+  const slide=(src,w,h,pos,alt,cap)=>`<div class="aus-sl"><div class="aus-ph"><img src="${src}" width="${w}" height="${h}" style="object-position:${pos}" alt="${alt}" decoding="async"><span class="aus-tag">Шуточный фотомонтаж</span><span class="aus-cap">${cap}</span></div></div>`;
+  function build(){
+    el=document.createElement('div'); el.className='aus'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Об авторе');
+    el.innerHTML=`<div class="aus-bg" data-x></div><div class="aus-sh">
+      <div class="aus-grab" aria-hidden="true"><i></i></div>
+      <div class="aus-hd"><span class="au-face" aria-hidden="true"></span><div><b>Андрей Матханов</b><small>автор Начерта</small></div>
+        <button type="button" class="aus-x" data-x aria-label="Закрыть"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <div class="aus-vp"><div class="aus-tr">
+        ${slide('img/author-2.webp',1254,1254,'50% 30%','Андрей Матханов и Илон Маск — шуточный фотомонтаж','Объясняю, почему ракету проще строить по&nbsp;эпюру')}
+        ${slide('img/author-1.webp',1738,905,'49% 30%','Андрей Матханов и Лионель Месси — шуточный фотомонтаж','Обсуждаем, где у&nbsp;мяча фронтальная проекция')}
+      </div></div>
+      <div class="aus-ft"><span class="aus-dots" aria-hidden="true"><i class="on"></i><i></i></span>
+        <button type="button" class="aus-b gh" data-back hidden>Назад</button>
+        <button type="button" class="aus-b pri" data-next>Далее<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></div>
+    </div>`;
+    document.body.appendChild(el);
+    el.addEventListener('click',e=>{ if(e.target.closest('[data-x]')) close(); else if(e.target.closest('[data-next]')) (el.classList.contains('full')?close():stage(2)); else if(e.target.closest('[data-back]')) stage(1); });
+    /* перетаскивание за ручку и шапку */
+    const sh=el.querySelector('.aus-sh'); let y0=null, dy=0, t0=0;
+    const zone=e=>e.target.closest('.aus-grab,.aus-hd')&&!e.target.closest('button');
+    sh.addEventListener('pointerdown',e=>{ if(!zone(e)) return; y0=e.clientY; dy=0; t0=performance.now(); el.classList.add('drag'); sh.setPointerCapture(e.pointerId); });
+    sh.addEventListener('pointermove',e=>{ if(y0==null) return; dy=e.clientY-y0; sh.style.setProperty('--dy',(dy>0?dy:dy/4)+'px'); });
+    const up=()=>{ if(y0==null) return; y0=null; el.classList.remove('drag'); sh.style.removeProperty('--dy');
+      const fast=Math.abs(dy)/(performance.now()-t0)>.6;
+      if(dy>110||(fast&&dy>30)) (el.classList.contains('full')?stage(1):close());
+      else if(dy<-60||(fast&&dy<-20)) stage(2); };
+    sh.addEventListener('pointerup',up); sh.addEventListener('pointercancel',up);
+    document.addEventListener('keydown',e=>{ if(!el.classList.contains('on')) return; if(e.key==='Escape') close(); if(e.key==='ArrowRight') stage(2); if(e.key==='ArrowLeft') stage(1); });
+  }
+  function stage(n){ const f=n===2; el.classList.toggle('full',f);
+    el.querySelectorAll('.aus-sl').forEach((x,i)=>x.classList.toggle('cur',i===n-1));
+    el.querySelectorAll('.aus-dots i').forEach((x,i)=>x.classList.toggle('on',i===n-1));
+    el.querySelector('[data-back]').hidden=!f;
+    el.querySelector('[data-next]').firstChild.textContent=f?'Готово':'Далее'; }
+  function open(){ if(!el) build(); back=document.activeElement; stage(1); document.documentElement.style.overflow='hidden';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.classList.add('on'); el.querySelector('[data-next]').focus({preventScroll:true}); })); }
+  function close(){ if(!el) return; el.classList.remove('on'); document.documentElement.style.overflow='';
+    if(/^#\/author\b/.test(location.hash)) try{ history.replaceState(history.state,'','#/'); }catch(e){}
+    try{ back&&back.focus({preventScroll:true}); }catch(e){} }
+  document.addEventListener('click',e=>{ if(e.target.closest('[data-author]')){ e.preventDefault(); open(); } });
+  return {open,close};
+})();
 /* Политика обработки ПДн (#/privacy) и согласие (#/consent) — тексты в PANES.privacy / PANES.consent */
 function viewDoc(v,id){
   const P=PANES[id];
