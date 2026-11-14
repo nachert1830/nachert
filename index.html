@@ -4600,9 +4600,6 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .aus-ph{position:relative;flex:1;min-height:0;border-radius:20px;overflow:hidden;background:#0b1224}
 .aus-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.06);transition:transform 1.2s cubic-bezier(.2,.9,.25,1)}
 .aus.on .aus-sl.cur .aus-ph img{transform:scale(1)}
-.aus-ph::after{content:"";position:absolute;inset:auto 0 0;height:45%;background:linear-gradient(transparent,rgba(3,8,22,.78));pointer-events:none}
-.aus-tag{position:absolute;z-index:1;left:12px;top:12px;padding:5px 10px;border-radius:99px;background:rgba(10,16,34,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font:700 11px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase}
-.aus-cap{position:absolute;z-index:1;left:16px;right:16px;bottom:14px;color:#fff;font:700 17px/1.3 var(--disp);text-shadow:0 1px 8px rgba(0,0,0,.4)}
 .aus-ft{flex:none;display:flex;align-items:center;gap:10px;padding:14px 18px 16px}
 .aus-dots{display:flex;gap:6px;margin-right:auto}.aus-dots i{width:7px;height:7px;border-radius:9px;background:var(--line);transition:width .35s,background .35s}
 .aus-dots i.on{width:22px;background:var(--acc)}
@@ -35135,7 +35132,7 @@ function viewAbout(v){
    Открывается плашкой [data-author] на главной и ссылкой #/author. Тянется за ручку: вниз — свернуть/закрыть, вверх — развернуть. */
 const AUTHOR=(()=>{
   let el=null, back=null;
-  const slide=(src,w,h,pos,alt,cap)=>`<div class="aus-sl"><div class="aus-ph"><img src="${src}" width="${w}" height="${h}" style="object-position:${pos}" alt="${alt}" decoding="async"><span class="aus-tag">Шуточный фотомонтаж</span><span class="aus-cap">${cap}</span></div></div>`;
+  const slide=(src,w,h,pos,alt)=>`<div class="aus-sl"><div class="aus-ph"><img src="${src}" width="${w}" height="${h}" style="object-position:${pos}" alt="${alt}" decoding="async"></div></div>`;
   function build(){
     el=document.createElement('div'); el.className='aus'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Об авторе');
     el.innerHTML=`<div class="aus-bg" data-x></div><div class="aus-sh">
@@ -35143,15 +35140,15 @@ const AUTHOR=(()=>{
       <div class="aus-hd"><span class="au-face" aria-hidden="true"></span><div><b>Андрей Матханов</b><small>автор Начерта</small></div>
         <button type="button" class="aus-x" data-x aria-label="Закрыть"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div class="aus-vp"><div class="aus-tr">
-        ${slide('img/author-2.webp',1254,1254,'50% 30%','Андрей Матханов и Илон Маск — шуточный фотомонтаж','Объясняю, почему ракету проще строить по&nbsp;эпюру')}
-        ${slide('img/author-1.webp',1738,905,'49% 30%','Андрей Матханов и Лионель Месси — шуточный фотомонтаж','Обсуждаем, где у&nbsp;мяча фронтальная проекция')}
+        ${slide('img/author-2.webp',1254,1254,'50% 30%','Андрей Матханов и Илон Маск')}
+        ${slide('img/author-1.webp',1738,905,'49% 30%','Андрей Матханов и Лионель Месси')}
       </div></div>
       <div class="aus-ft"><span class="aus-dots" aria-hidden="true"><i class="on"></i><i></i></span>
         <button type="button" class="aus-b gh" data-back hidden>Назад</button>
         <button type="button" class="aus-b pri" data-next>Далее<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></div>
     </div>`;
     document.body.appendChild(el);
-    el.addEventListener('click',e=>{ if(e.target.closest('[data-x]')) close(); else if(e.target.closest('[data-next]')) (el.classList.contains('full')?close():stage(2)); else if(e.target.closest('[data-back]')) stage(1); });
+    el.addEventListener('click',e=>{ if(e.target.closest('[data-x]')) close(); else if(e.target.closest('[data-next]')) stage(2); else if(e.target.closest('[data-back]')) stage(1); });
     /* перетаскивание за ручку и шапку */
     const sh=el.querySelector('.aus-sh'); let y0=null, dy=0, t0=0;
     const zone=e=>e.target.closest('.aus-grab,.aus-hd')&&!e.target.closest('button');
@@ -35168,7 +35165,7 @@ const AUTHOR=(()=>{
     el.querySelectorAll('.aus-sl').forEach((x,i)=>x.classList.toggle('cur',i===n-1));
     el.querySelectorAll('.aus-dots i').forEach((x,i)=>x.classList.toggle('on',i===n-1));
     el.querySelector('[data-back]').hidden=!f;
-    el.querySelector('[data-next]').firstChild.textContent=f?'Готово':'Далее'; }
+    el.querySelector('[data-next]').hidden=f; }
   function open(){ if(!el) build(); back=document.activeElement; stage(1); document.documentElement.style.overflow='hidden';
     requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.classList.add('on'); el.querySelector('[data-next]').focus({preventScroll:true}); })); }
   function close(){ if(!el) return; el.classList.remove('on'); document.documentElement.style.overflow='';
