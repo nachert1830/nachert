@@ -4572,7 +4572,7 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .hcards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:4px 0 14px}
 /* автор — плашка над карточками главной, открывает шторку AUTHOR (как предпросмотр в Telegram) */
 .au-pillw{display:flex;justify-content:center;margin:2px 0 12px}
-.au-pill{display:inline-flex;align-items:center;gap:9px;padding:4px 14px 4px 4px;border:1px solid var(--line);border-radius:99px;background:var(--surf);color:var(--ink2);font:500 14px/1 var(--sans);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
+.au-pill{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;max-width:100%;padding:4px 14px 4px 4px;border:1px solid var(--line);border-radius:99px;background:var(--surf);color:var(--ink2);font:500 14px/1 var(--sans);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
 .au-pill:hover{transform:translateY(-1px);border-color:var(--acc);box-shadow:0 8px 22px -12px rgba(26,90,224,.55)}
 .au-pill b{color:var(--ink);font-weight:700}.au-pill .au-go{color:var(--acc);font-weight:700}
 .au-face{flex:none;display:grid;place-items:center;border-radius:50%;background:radial-gradient(120% 120% at 25% 15%,#4f8bff 0%,#1a5ae0 45%,#0d2f8a 100%);color:#fff;font-family:var(--disp);font-weight:600;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
@@ -29332,7 +29332,7 @@ function viewHome(v){
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
-   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Автор — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
+   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
    <div class="hcards" id="rkHome">${homeCards()}</div>
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
