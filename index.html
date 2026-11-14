@@ -330,7 +330,7 @@ body.liveshow{overflow:hidden}
 @keyframes rk9Glow{0%,100%{box-shadow:0 0 0 3px #ffd34d,0 22px 44px -18px rgba(224,53,43,.75)}50%{box-shadow:0 0 0 3px #ffd34d,0 0 34px 2px rgba(255,180,60,.6)}}
 @media(prefers-reduced-motion:reduce){.hcards .hc.hc-rk9{animation:none}}
 /* ДЗ 4 ИГ — ночной чертёж: тёмно-синяя, свечение за фигурой, блик проходит по карточке, снизу полоса цветов сайта */
-.hcards .hc.hc-ig{border:0;background:linear-gradient(90deg,#fff 0 33.4%,#4f8cff 33.4% 66.7%,#e0252c 66.7%) bottom/100% 4px no-repeat,radial-gradient(55% 75% at 80% 50%,rgba(86,148,255,.6),transparent 72%),linear-gradient(150deg,#071331 0%,#0d2766 50%,#1a44c4 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 46px -22px rgba(8,26,84,.85)}
+.hcards .hc.hc-ig{border:0;background:radial-gradient(55% 75% at 80% 50%,rgba(86,148,255,.6),transparent 72%),linear-gradient(150deg,#071331 0%,#0d2766 50%,#1a44c4 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 46px -22px rgba(8,26,84,.85)}
 .hcards .hc-ig::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);transform:translateX(-130%);animation:igSweep 6s ease-in-out infinite}
 @keyframes igSweep{0%,58%{transform:translateX(-130%)}88%,100%{transform:translateX(130%)}}
 .hcards .hc-ig .hc-pill{background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
@@ -4784,7 +4784,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 
 /* нижнее меню — белое полотно; где ты — синим с красной меткой */
 .nav-bot{background:#fff!important;border-top:0!important;box-shadow:0 -1px 0 var(--line),0 -12px 26px -18px rgba(28,42,110,.45)!important}
-.nav-bot::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--tri);opacity:.9}
+.nav-bot::before{content:none}
 .nav-bot a.nv{color:#7a83a3!important}
 .nav-bot a.nv.on{color:var(--strap)!important}
 .nav-bot a.nv.on::before{background:var(--red)!important;left:30%!important;right:30%!important;height:3px!important;top:3px!important}
@@ -4832,6 +4832,11 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .v9-hero .v8-ex{margin-top:12px!important}
 .v9-hero .v8-ex button{min-height:34px}
 @media(max-width:640px){.v9-hero{padding:20px 14px 16px!important}.v9-go{width:40px;padding:0}.v9-hero .v8-box .sr-in{min-height:50px!important;padding:0 56px 0 42px!important}.v9-hero .v8-box .sr-clr{right:50px}}
+#hsearch.v9-hero{border:1px solid color-mix(in srgb,var(--acc) 22%,var(--line))!important;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 18px 40px -30px rgba(28,42,110,.55)!important}
+#hsearch .v8-box .sr-form{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--acc) 35%,var(--line2)),0 10px 24px -18px rgba(28,42,110,.5)!important}
+#hsearch .v8-box .sr-form:focus-within{box-shadow:0 0 0 2px var(--acc),0 0 0 6px color-mix(in srgb,var(--acc) 14%,transparent)!important}
+#hdr .akb{border:1px solid var(--bd,var(--line))!important;background:var(--surf)!important;color:var(--acc)!important}
+#hdr .akb:hover{border-color:var(--acc)!important;background:var(--blue-s)!important}
 
 /* разделы на главной: белые карточки с полосой ремешка сверху */
 .v8-dirs .v8-dh{font:800 24px/1.2 var(--disp)!important;letter-spacing:-.02em;color:var(--strap)}
@@ -5138,8 +5143,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 <footer id="foot"><div class="wrap"><button type="button" class="foot-cat" id="footCat" aria-label="Кошка-талисман"></button>
  <div class="foot-in">
   <div class="foot-l">
-   <span>Авторский учебный проект: каждое построение вычислено по данным условия и проверено автоматически при каждом обновлении сайта.</span>
-   <span class="foot-src">Условия задач, теория и методика — по учебным изданиям МГТУ (нажми, чтобы открыть):</span>
+   <span class="foot-src">Источники — учебные издания МГТУ:</span>
    <span class="foot-books"><button type="button" class="foot-book" data-book="tb"><b>Учебник</b><i>Жирных, Серёгин, Шарикян · 2015</i></button><button type="button" class="foot-book" data-book="wb" style="--bk:#3a7a55"><b>Рабочая тетрадь</b><i>Жирных, Новоселова</i></button><button type="button" class="foot-book" data-book="mu" style="--bk:#b45309"><b>Методические указания</b><i>Камзолов и др. · 1986</i></button></span>
    <span class="foot-src">Оформление — по ЕСКД. Решения, чертежи и пояснения подготовлены для этого сайта. <a href="#/about/legal">Правовая информация</a> · <a href="#/about/changes" id="footVer">Что нового</a></span>
   </div>
@@ -6634,7 +6638,7 @@ function syncTbl(){ // обновить значения полей без пе�
   S.p.forEach(q=>{ ['x','y','z'].forEach(a=>{ const i=q$(`input[data-f="${a}"][data-n="${q.n}"]`); if(i&&document.activeElement!==i) i.value=q[a]; }); const o=q$(`[data-oc="${q.n}"]`); if(o) o.textContent=oct(q); });
   q$('#e3O').innerHTML=octsHTML(); edSync(); }
 function struct(){ cvDirty=1; q$('#e3Ed').innerHTML=edHTML(); q$('#e3P').innerHTML=pillsHTML(); q$('#e3O').innerHTML=octsHTML();
-  const h=q$('#e3H'); h.textContent=S.sel.length?'Выбрано: '+S.sel.join(', '):'Кликни по точке, чтобы выбрать её';
+  const h=q$('#e3H'); h.textContent=S.sel.length?'Выбрано: '+S.sel.join(', '):'';
   q$('[data-act="seg"]').disabled=S.sel.length<2; q$('[data-act="tri"]').disabled=S.sel.length<3;
   q$('#e3Fold').value=Math.round(S.t*1000); playTxt(); q$('#e3Fv').textContent=fvT();
   host.querySelectorAll('[data-pre]').forEach(b=>b.classList.toggle('on',b.dataset.pre===S.pre));
@@ -6681,7 +6685,7 @@ function play(){ if(S.play){ S.play=0; struct(); return; } const from=S.t>=.999?
 function html(){
   return `<div class="eyebrow">Эпюр Монжа · интерактив</div>
   <h1 style="margin-bottom:6px">3D-модель и эпюр</h1>
-  <p class="lead e3-lead">Тяни точки на эпюре или меняй координаты — 3D-сцена повторяет всё сразу. Ползунок под 3D складывает π₁ и π₃ в π₂.</p>
+  <p class="lead e3-lead">Двигай точки — 3D повторяет эпюр.</p>
   <div class="e3-cat" id="e3Cat" role="group" aria-label="Типовые случаи">${catHTML()}</div>
   <div class="e3-case" id="e3C" aria-live="polite"></div>
   <div class="e3-bar"><div class="e3-tools"><button class="btn sm" data-act="seg" title="Соединить две выбранные точки">＋ Отрезок</button><button class="btn sm" data-act="tri" title="Три выбранные точки">＋ Треугольник</button><button class="btn sm juicy e3-share" data-act="share" title="Отправить ссылку именно на эту сцену"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться сценой</button></div></div>
@@ -27640,7 +27644,7 @@ function hubView(v){ const P=progress(), I=RKS.info(2), c=RKS.count(I), s=getS()
     <a class="btn pri lg rkp-go" href="${nextHref(P)}">${P.val===0?'Начать: '+TOPICS[0].t.toLowerCase():P.now?'Продолжить: '+P.now.T.t.toLowerCase():'Пробный РК2'} →</a>
    </section>
    <ol class="rkp-path" aria-label="Путь: 9 тем и финал">${P.per.map(node).join('')}${boss}</ol>
-   <section class="rkp-how" aria-label="Как устроена тема"><span>В каждой теме</span>${STG.map((x,i)=>`<b><i>${i+1}</i>${x[1]}</b>`).join('<em aria-hidden="true">→</em>')}</section>
+   
    <section class="rkp-more"><button type="button" class="rkp-prn" data-rkprint="">⎙ Распечатать условия всех 9 тем</button><a href="${HR('ng','rk2','q')}">26 вопросов теории</a><a href="${HR('ng','check','tickets')}">Билеты с разбором</a><a href="${HR('ng','rk2','all')}">Все тренировки</a></section>
    <div class="rkp-fac">${RK2.facHTML()}</div>`});
   RK2.bindFac(v,()=>RK2.view(v,{}));   /* сменили поток: у ИУ1Б, ИУ3… — прежний раздел с объяснением */
@@ -29164,7 +29168,7 @@ document.addEventListener('visibilitychange',viewsTick); window.addEventListener
 
 /* ── «Задача №…» — самый частый сценарий: студент знает номер задачи из тетради ── */
 function tnumHTML(cls){ const all=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number'), mx=Math.max(...all);
-  return `<form class="tnum ${cls||''}" data-tnum novalidate><label for="tn_${cls||'x'}"><b>Задача из тетради</b><span>знаешь номер — открой решение</span></label>
+  return `<form class="tnum ${cls||''}" data-tnum novalidate><label for="tn_${cls||'x'}"><b>Задача из тетради</b></label>
    <div class="tnum-f"><span class="tnum-no" aria-hidden="true">№</span><input id="tn_${cls||'x'}" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="1–${mx}" aria-label="Номер задачи"><button type="submit" class="btn pri">Открыть →</button></div></form>`; }
 document.addEventListener('submit',e=>{ const f=e.target.closest&&e.target.closest('[data-tnum]'); if(!f) return; e.preventDefault();
   const i=f.querySelector('input'), n=parseInt((i.value||'').replace(/\D/g,''),10);
@@ -29470,8 +29474,6 @@ function ngPath(v){
   v.innerHTML=pageHTML({crumbs:[['Теория']],next:null,noBottom:true,body:`
    <div class="intro">
     <h1>Теория</h1>
-    <p class="lead">Короткие уроки с картинками — по порядку курса. Ниже — разбор по типам задач: как решать и где ошибаются.</p>
-    ${guideHTML('Как разобраться',['Открой отмеченный урок или найди тему поиском','Прочитай урок — 10–15 минут','Реши задачи к уроку — они в конце'])}
     <div class="thq"><a href="${H('ng','cheat')}"><b>Шпаргалка</b><span>формулы и правила на одной странице</span></a><a href="${H('ng','cheat','th')}"><b>22 вопроса РК1</b><span>ответы на теорию к рубежному</span></a></div>
    </div>
    ${html}
@@ -29621,10 +29623,10 @@ function dzWidget(c){ const L=DZR.list(c); if(!L.length) return ''; const m=dzVa
     <div class="dzw-dz" role="radiogroup" aria-label="Какое ДЗ" style="--n:${L.length}">${L.map(d=>`<button type="button" role="radio" data-id="${d.id}" aria-checked="${d===sel}" class="${d===sel?'on':''}">ДЗ ${d.num}</button>`).join('')}</div>
     <p class="dzw-t">${vesc(sel.title)}${dzBeta(sel)}</p>
     <div class="dzw-go"><input inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="№" autocomplete="off" value="${m||''}" aria-label="Мой вариант (один на все ДЗ)"><button type="button" class="btn dzw-open">Открыть вариант</button></div>
-    <div class="dzw-l">${m?`<span class="dzw-mine">★ Мой вариант ${m}</span>`:'<span class="dzw-hint">номер один на все ДЗ — впиши один раз</span>'}${sel.method?`<a href="${HDZ(sel.id,'how')}">Как решать →</a>`:''}</div></section>`; }
+    <div class="dzw-l">${m?`<span class="dzw-mine">★ Мой вариант ${m}</span>`:''}${sel.method?`<a href="${HDZ(sel.id,'how')}">Как решать →</a>`:''}</div></section>`; }
 function dzWidgetBind(v){ v.querySelectorAll('.dzw').forEach(w=>{ const c=w.dataset.c, inp=w.querySelector('input'), cur=()=>DZR.get(w.querySelector('.dzw-dz .on').dataset.id);
   const foot=()=>{ const d=cur(), n=dzVar(); w.querySelector('.dzw-t').innerHTML=vesc(d.title)+dzBeta(d);
-    w.querySelector('.dzw-l').innerHTML=(n?`<span class="dzw-mine">★ Мой вариант ${n}</span>`:'<span class="dzw-hint">номер один на все ДЗ — впиши один раз</span>')+(d.method?`<a href="${HDZ(d.id,'how')}">Как решать →</a>`:''); };
+    w.querySelector('.dzw-l').innerHTML=(n?`<span class="dzw-mine">★ Мой вариант ${n}</span>`:'')+(d.method?`<a href="${HDZ(d.id,'how')}">Как решать →</a>`:''); };
   w.querySelectorAll('.dzw-dz button').forEach(b=>b.addEventListener('click',()=>{ w.querySelectorAll('.dzw-dz button').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-checked',on); }); ST.set('dzw_'+c,b.dataset.id); foot(); try{ FX.buzz('tick'); }catch(e){} }));
   /* вписал номер — он мой во всех ДЗ (и во втором виджете на экране) */
   inp.addEventListener('input',()=>{ const n=parseInt(inp.value,10); if(n>=1&&n<=30){ dzSetVar(n); v.querySelectorAll('.dzw input').forEach(x=>{ if(x!==inp) x.value=n; }); v.querySelectorAll('.dzw').forEach(x=>x.__foot&&x.__foot()); } });
@@ -29664,8 +29666,8 @@ function dzPick(v,d){
   const num=n=>has(n)?`<a href="${HDZ(d.id,n)}" data-setvar="${n}">${n}</a>`:`<span class="off" title="решение этого типа готовится">${n}</span>`;
   const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
   const grid=`<div class="dzx-nums c6">${range(1,N).map(num).join('')}</div>`;
-  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(d.beta?dzBetaNote():'')+
-   `<h2 class="dzx-h">Какой у тебя вариант?</h2><p class="dzx-note">Номер один на все ДЗ — нажми его один раз, дальше каждое ДЗ откроется сразу на нём.</p>${grid}
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+
+   `<h2 class="dzx-h">Какой у тебя вариант?</h2>${grid}
    ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}" data-setvar="${n}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}</b></a>`).join('')}</div></details>`:''}`});
   /* номер выбран — выбор номера больше не нужен: заменяем его вариантом, и «Назад» из варианта ведёт туда, откуда открыл ДЗ */
   v.querySelectorAll('[data-setvar]').forEach(a=>a.addEventListener('click',e=>{ if(e.ctrlKey||e.metaKey) return; e.preventDefault(); dzSetVar(+a.dataset.setvar); redir(a.getAttribute('href')); }));
@@ -29814,7 +29816,7 @@ function dzVariant(v,d,n,extra){
 function dzPart(v,d,n){ let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
   if(!m||!window.IGUI){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'igx dzwrap dzx',body:dzTop(d,vesc(d.label)+' · вариант '+n)+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. <a href="${HDZ()}">Впиши свой вариант</a>.</div>`}); return d.label+' · вариант '+n; }
   IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — решение по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):''),
-    crumbs:null,title:'Вариант '+n,back:[HDZ(),'Все ДЗ'],docTitle:d.label+' · вариант '+n,beta:d.beta?dzBetaNote():'',
+    crumbs:null,title:'Вариант '+n,back:[HDZ(),'Все ДЗ'],docTitle:d.label+' · вариант '+n,beta:'',
     img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:d.text,
     sheet:d.id==='ig2'?null:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
     bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')});
@@ -29855,8 +29857,7 @@ function ngTasks(v){
   const next = nx!=null? {label:'Задача №'+nx,sub:short(WB3.get(nx).q,90),href:H('ng','tasks',nx)} : {label:'Подготовка к РК',sub:'билеты, вопросы теории, пробный РК',href:H('ng','check')};
   v.innerHTML=pageHTML({crumbs:[['Тетрадь']],next:null,noBottom:true,body:`
    <div class="intro"><h1>Решённая тетрадь</h1>
-    <p class="lead">Все задачи рабочей тетради с решением по шагам: чертёж строится на глазах, к каждому шагу — пояснение.</p></div>
-   ${guideHTML('Как найти решение',['Впиши номер своей задачи','Жми «Дальше» — решение идёт по шагам','«Решаю сам» — проверь, что понял'])}
+    </div>
    ${tnumHTML('big hl')}
    <div class="resume2"><div class="rs-t"><div class="rs-k">${done?'Продолжить':'Начать'}</div><b>${next.label}</b>${next.sub?`<small>${next.sub}</small>`:''}</div>
     <div class="rs-p"><div class="pbar"><i style="width:${all.length?Math.round(done/all.length*100):0}%"></i></div><span>${done} из ${all.length} разобрано</span></div>
@@ -30008,7 +30009,7 @@ function rkHub(v){
       <div class="rk9-l">${l?`<a href="${H('ng','path',l.id)}">Теория: ${l.title}</a>`:''}${ts.length?`<span>Похожие в тетради: ${ts.map(n=>`<a href="${H('ng','tasks',n)}">№${n}</a>`).join(' ')}</span>`:''}</div></div>`; }).join('');
   v.innerHTML=pageHTML({crumbs:[['Подготовка к РК']],next:null,noBottom:true,body:`
    ${window.RK2?RK2.tabsHTML(1):''}
-   <div class="intro"><h1>Подготовка к РК</h1><p class="lead">На РК1 — задачи по билетам. Все они одного из ${RK_TYPES.length} типов ниже. Реши пример каждого типа — и ты готов к любому билету.</p></div>
+   <div class="intro"><h1>Подготовка к РК</h1></div>
    <a class="r2-in" href="${H('ng','rk2')}"><span class="r2-nk">РК2 · способы преобразования</span><b>Замена плоскостей и вращение: билет с разбором, 26 вопросов, тренировки</b><span>${window.RK2?RK2.line():''}</span><i aria-hidden="true">→</i></a>
    <div class="v8-when"><b>Когда РК?</b><button type="button" class="on" data-scroll="#rk9T">Через неделю и больше</button><button type="button" data-scroll="#rkzH">Через 1–3 дня</button></div>
    <section class="rk9" aria-labelledby="rk9T"><div class="rk9-top"><h2 id="rk9T">Что будет на РК: ${RK_TYPES.length} типов задач</h2><span class="rk9-pc"><b>${done}</b> из ${RK_TYPES.length} решено</span></div>
@@ -30062,7 +30063,7 @@ function renderTK(){
 function ngCheat(v,mode,focus){
   v.innerHTML=pageHTML({crumbs:[['Теория',H('ng','path')],[mode==='th'?'22 вопроса РК1':'Шпаргалка']],
    next:{label:'Подготовка к РК',sub:'тест, билеты и тренинг',href:H('ng','check')},body:`
-   <div class="intro"><h1>Шпаргалка</h1><p class="lead">Сюда заходишь, когда что-то забыл.</p></div>
+   <div class="intro"><h1>Шпаргалка</h1></div>
    <div class="seg modeseg" role="tablist"><a role="tab" href="${H('ng','cheat')}" class="${mode==='sg'?'on':''}">Формулы и правила</a><a role="tab" href="${H('ng','cheat','th')}" class="${mode==='th'?'on':''}">22 вопроса РК1</a></div>
    ${mode==='sg'?`<div class="gap" style="margin:16px 0"><button class="btn sm" onclick="window.print()">Печать / PDF</button></div><div class="sg" id="sgList"></div>`
     :`<div class="tools"><div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="thq" type="search" aria-label="Поиск по вопросам" placeholder="Искать: «прямой угол», «горизонталь», «НВ»…" value="${attr(thQuery)}"></div></div><div id="thList"></div>`}`});
@@ -31067,7 +31068,7 @@ return L;
 })();
 
 /* плашка раздела ИГ: что гарантирует проверка листов (нормоконтроль по ГОСТ и сверка с моделью) */
-window.IGBETA=()=>`<div class="igx-beta" role="note"><i>ГОСТ</i><span><b>Каждый лист проходит нормоконтроль.</b> При каждом обновлении сайта листы проверяются по ГОСТ 2.301–2.307 и 2.104, а каждый вид сверяется с 3D-моделью детали. Раздел растёт каждый день; нашёл расхождение с заданием — напиши, оно будет разобрано.</span></div>`;
+window.IGBETA=()=>'';   /* плашка про нормоконтроль убрана с экранов — проверка по ГОСТ описана на странице «О проекте» */
 window.IGUI=(function(){
 const N=30, $=(r,s)=>r.querySelector(s);
 const hasGL=(()=>{ try{ const c=document.createElement('canvas'); return !!(c.getContext('webgl')); }catch(e){ return false; } })();
@@ -31746,7 +31747,7 @@ function partPage(v,o){
 /* ── тетрадь и теория ИГ ── */
 function wbList(v){
   v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['Тетрадь']],next:null,noBottom:true,cls:'igx',body:`
-   <div class="intro"><h1>Рабочая тетрадь · раздел 5</h1><p class="lead">«Изображение геометрических фигур с построением линий пересечения проецирующими плоскостями». Найди задание по номеру рисунка — на карточке то, что дано в тетради. Решение откроется внутри.</p></div>${IGBETA()}
+   <div class="intro"><h1>Рабочая тетрадь · раздел 5</h1><p class="lead">Изображение фигур с линиями пересечения проецирующими плоскостями.</p></div>${IGBETA()}
    <div class="igx-wbl">${IG_WB.map(t=>`<a class="igx-wbc" href="${H('ig','wb',t.n)}"><span class="igx-wbn"><b>Рис. ${t.fig}</b><i>стр. ${t.page}</i></span><span class="igx-wbi"><img alt="" data-w="${t.n}"></span><span class="igx-wbt"><b>${t.n}. ${t.title}</b><small>${t.q}</small></span></a>`).join('')}</div>
 `});
   if(hasGL){ let i=0; const step=()=>{ if(i>=IG_WB.length||!v.isConnected) return; const t=IG_WB[i++];
@@ -32130,7 +32131,7 @@ function planeOverlay(st,M,get){ const svg=document.createElementNS('http://www.
     svg.innerHTML=s; };
   const od=M.v.draw; M.v.draw=sc=>{ od(sc); paint(); }; if(window.ResizeObserver) new ResizeObserver(paint).observe(st); return {paint}; }
 const MODES=[['part','Деталь'],['fa','Фронтальный разрез'],['pr','Профильный разрез'],['pl','Плоскость А–А'],['sec','Сечение А–А']];
-const CAP={part:'Деталь целиком. Тяни — вращать, двумя пальцами или колесом — приблизить, двойной клик — вернуть ракурс.',
+const CAP={part:'Деталь целиком.',
   fa:'Фронтальный разрез на главном виде: убрана передняя правая четверть. Слева — вид, справа — разрез; штриховка — там, где прошла плоскость.',
   pr:'Профильный разрез: убрана левая половина по плоскости симметрии x = 0. Так выглядит вид слева.',
   pl:'Наклонная плоскость А–А. Красные стрелки — направление взгляда: сверху-слева, перпендикулярно плоскости.',
@@ -32425,7 +32426,7 @@ const RULES=[
 function page(v){
   v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['Обучение']],next:null,noBottom:true,cls:'igx igl',body:`
    <div class="igl-head"><span class="igx-k">ДЗ 2 «Построение изображений» · вариант 5</span><h1>Виды, разрезы и сечения</h1>
-    <p class="lead">Деталь в 3D — целиком и в разрезах — и её чертёж по шагам: что строим и почему именно так, по ГОСТ 2.305 и 2.306. Листай шаги кнопкой «Дальше» — 3D повернётся и разрежется само; кнопки над 3D переключают разрезы вручную.</p>${IGBETA()}</div>
+    <p class="lead">Деталь в 3D и её чертёж по шагам — по ГОСТ 2.305 и 2.306.</p>${IGBETA()}</div>
    <section class="igl-main">
     <div class="igl-3d">
      <div class="igl-modes" id="iglModes" role="tablist" aria-label="Что показать в 3D">${MODES.map(m=>`<button role="tab" data-m="${m[0]}">${m[1]}</button>`).join('')}</div>
@@ -35258,6 +35259,6 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 <script src="lk/site.js?v=4" defer></script>
 <!-- «Спроси автора»: вопросы и ответы на сайте (lk/ask.js), адрес сервера — lk/config.js -->
 <script src="lk/config.js?v=2" defer></script>
-<script src="lk/ask.js?v=2" defer></script>
+<script src="lk/ask.js?v=3" defer></script>
 </body>
 </html>
