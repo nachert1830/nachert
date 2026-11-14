@@ -8028,11 +8028,11 @@ function emptyHTML(){
 
 
 /* самонабирающиеся примеры запросов в пустой строке */
-const TYPE_EX=['как повернуть плоскость вокруг оси','как понять, видна точка или нет','где провести новую ось при замене плоскостей','как вращением найти натуральную величину треугольника','какая из конкурирующих точек видна','не понимаю, что такое след плоскости','как найти натуральную величину отрезка','как построить вид слева по двум видам','что штриховать на разрезе','как найти точку пересечения прямой с плоскостью','как обозначается резьба М12','чем болт отличается от шпильки','как построить линию пересечения поверхностей','зачем нужна замена плоскостей проекций'];
+const TYPE_EX=['задача 47','вариант 12','ДЗ 3','замена плоскостей','как построить разрез','как повернуть плоскость вокруг оси','как понять, видна точка или нет','где провести новую ось при замене плоскостей','как вращением найти натуральную величину треугольника','какая из конкурирующих точек видна','не понимаю, что такое след плоскости','как найти натуральную величину отрезка','как построить вид слева по двум видам','что штриховать на разрезе','как найти точку пересечения прямой с плоскостью','как обозначается резьба М12','чем болт отличается от шпильки','как построить линию пересечения поверхностей','зачем нужна замена плоскостей проекций'];
 function typer(inp){
   const base=inp.getAttribute('placeholder')||'';
   if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches){ inp.placeholder=TYPE_EX[0]; return; }
-  let i=Math.floor(Math.random()*TYPE_EX.length),c=0,dir=1,t=null;
+  let i=0,c=0,dir=1,t=null;   /* сначала — короткие примеры: номер, вариант, ДЗ, тема */
   const wait=ms=>{ t=setTimeout(tick,ms); };
   function tick(){
     if(!document.body.contains(inp)) return;
@@ -29372,14 +29372,9 @@ function viewHome(v){
    <div class="hcards" id="rkHome">${homeCards()}</div>
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
-    <p class="v9-kick">Начерт · инж. графика · МГТУ</p>
     <h1 id="v8H" class="v8-h">Найди решение своей задачи</h1>
-    <p class="v8-sub">Впиши номер задачи, вариант или вопрос своими словами — решение откроется по шагам</p>
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
-    <p class="v8-ex"><span>Например:</span>${ex.map(x=>`<button type="button" data-hq="${attr(x[1])}">${x[0]}</button>`).join('')}</p>
-    ${tg?`<a class="v8-res" href="${attr(tg.href)}"><span>Продолжить</span><b>${attr(short(tg.label,70))}</b>${stepNote?`<small>${attr(stepNote.replace(/ · $/,''))}</small>`:''}<i aria-hidden="true">→</i></a>`:''}
-    <ol class="v9-steps" aria-label="Как найти решение"><li><b>1</b>Впиши номер или вопрос</li><li><b>2</b>Открой решение</li><li><b>3</b>Жми «Дальше» — шаг за шагом</li></ol>
    </section>
        <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
    <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
