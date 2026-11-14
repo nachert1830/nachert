@@ -4570,6 +4570,22 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 [data-d3].busy{opacity:.55;pointer-events:none}
 /* главная: две карточки рядом — РК2 и «Все тела в 3D» */
 .hcards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:4px 0 14px}
+/* автор — наверху главной: имя крупно и кнопка на страницу #/author */
+.au-strip{display:flex;align-items:center;gap:14px;margin:4px 0 14px;padding:14px 16px;border:1.5px solid var(--line);border-radius:20px;background:var(--surf)}
+.au-ava{flex:none;width:52px;height:52px;border-radius:50%;background:url(img/author-1.webp) 35% 12%/380% auto no-repeat;box-shadow:0 0 0 3px var(--blue-s)}
+.au-txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.au-txt small{font:700 11px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.au-txt b{font:800 22px/1.15 var(--disp);color:var(--ink)}
+.au-btn{flex:none;display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 16px;border-radius:12px;background:var(--acc);color:#fff;font-weight:700;text-decoration:none;white-space:nowrap}
+.au-btn:hover{filter:brightness(1.08)}
+@media(max-width:520px){.au-strip{flex-wrap:wrap}.au-txt b{font-size:20px}.au-btn{width:100%;justify-content:center}}
+.au-page h1{font:800 34px/1.1 var(--disp);margin:6px 0 4px}
+.au-page .au-lead{color:var(--mut);margin:0 0 18px}
+.au-gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px;align-items:start}
+.au-gal figure{margin:0;border:1.5px solid var(--line);border-radius:20px;overflow:hidden;background:var(--surf)}
+.au-gal img{display:block;width:100%;height:auto}
+.au-gal figcaption{padding:10px 14px;text-align:left;font-size:14px;color:var(--ink2)}
+.au-gal figcaption em{font-style:normal;color:var(--mut)}
 .hcards>.hc:only-child{grid-column:1/-1}
 .hc{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:212px;padding:14px 14px 13px;border-radius:24px;color:#fff!important;text-decoration:none!important;-webkit-tap-highlight-color:transparent;transition:transform .15s var(--ease)}
 .hc:active{transform:scale(.985)}
@@ -28383,7 +28399,7 @@ function parseHash(h){
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
   if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
-  const s=['ng','ig','kg','epure','part','about','privacy','consent','topic','me','dz','rk','live','ask'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','author','privacy','consent','topic','me','dz','rk','live','ask'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -28443,6 +28459,7 @@ function render(r){
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
       case 'about': title=viewAbout(v); break;
+      case 'author': title=viewAuthor(v); break;
       case 'live': title=r.tab==='show'?LIVESHOW.view(v,r.item):viewLive(v); break;
       case 'ask': title=viewLive(v,r.tab); break;
       case 'me': title=OWNER.view(v,r); break;
@@ -29292,6 +29309,7 @@ function viewHome(v){
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
+   <section class="au-strip" aria-label="Автор сайта"><span class="au-ava" aria-hidden="true"></span><span class="au-txt"><small>Автор проекта</small><b>Андрей Матханов</b></span><a class="au-btn" href="#/author">Познакомиться →</a></section>
    <div class="hcards" id="rkHome">${homeCards()}</div>
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
@@ -35087,6 +35105,18 @@ function viewAbout(v){
   NEXT=null;
   if(PANES.about&&PANES.about.render) PANES.about.render($('w-about'));
   return 'О проекте';
+}
+/* Об авторе (#/author) — имя и две шуточные фотографии */
+function viewAuthor(v){
+  v.innerHTML=`<div class="wrap page au-page"><div class="ptop">${crumbHTML([['О проекте','#/about'],['Автор']])}</div>
+   <h1>Андрей Матханов</h1>
+   <p class="au-lead">Автор Начерта: решения, чертежи, пояснения и код сайта.</p>
+   <div class="au-gal">
+    <figure><img src="img/author-1.webp" width="1738" height="905" alt="Андрей Матханов и Лионель Месси — шуточный фотомонтаж" loading="lazy"><figcaption>Обсуждаем, где у мяча фронтальная проекция. <em>Шуточный фотомонтаж.</em></figcaption></figure>
+    <figure><img src="img/author-2.webp" width="1254" height="1254" alt="Андрей Матханов и Илон Маск — шуточный фотомонтаж" loading="lazy"><figcaption>Объясняю, почему ракету проще строить по эпюру. <em>Шуточный фотомонтаж.</em></figcaption></figure>
+   </div></div>`;
+  NEXT=null;
+  return 'Автор';
 }
 /* Политика обработки ПДн (#/privacy) и согласие (#/consent) — тексты в PANES.privacy / PANES.consent */
 function viewDoc(v,id){
