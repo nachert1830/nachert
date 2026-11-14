@@ -8,7 +8,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://*.goatcounter.com; connect-src 'self' https://*.apigw.yandexcloud.net https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* тема до первой отрисовки, чтобы не было вспышки светлой */try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
-<script>/* вариант оформления чертежей на выбор (a — по умолчанию, b, c): ?ds=b запоминается */try{var m=/[?&]ds=([abc])/.exec(location.search),d=m?m[1]:localStorage.getItem('nch_ds');if(m)localStorage.setItem('nch_ds',d);if(d&&d!=='a')document.documentElement.setAttribute('data-ds',d);}catch(e){}</script>
+<script>/* вариант оформления чертежей на выбор (a — по умолчанию, b, c): ?ds=b запоминается */try{var m=/[?&]ds=(a|b|c|ink|soft)\b/.exec(location.search),d=m?m[1]:localStorage.getItem('nch_ds');if(m)localStorage.setItem('nch_ds',d);if(d&&d!=='a')document.documentElement.setAttribute('data-ds',d);}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1424" media="(prefers-color-scheme: dark)">
@@ -5090,7 +5090,7 @@ body .pl-zoom .pl-zb.past.on i{background:currentColor}
    • жёлтого маркера нет: новое — цветом и толщиной, прошлое — тише. */
 svg.dwg text.lbl{font-family:'NchGost','NchSerif','Times New Roman',serif;font-weight:700;font-style:normal;letter-spacing:.02em}
 svg.dwg text.lbl{font-size:13px}svg.dwg text.lbl.pt{font-size:14px}
-body.inplayer .pl-paper svg.dwg text.lbl{font-size:calc(var(--lf,11.5px)*1.16);font-weight:700;stroke-width:calc(var(--lf,11.5px)*.38)}
+body.inplayer .pl-paper svg.dwg text.lbl{font-size:var(--lf,11.5px);font-weight:700;stroke-width:calc(var(--lf,11.5px)*.38)}
 body.inplayer .pl-paper svg.dwg text.lbl.s,body.inplayer .pl-paper svg.dwg text.lbl.note{font-size:calc(var(--lf,11.5px)*.96)}
 svg.dwg :is(line,path,polyline,polygon,ellipse,circle){vector-effect:non-scaling-stroke}
 /* новое на шаге — толще; прошлые построения — тише (контур, данные и искомое не трогаем) */
@@ -5170,6 +5170,28 @@ sup.ri{font-size:.68em;line-height:0;vertical-align:.55em;letter-spacing:.02em}
   body:has(.var-sheet) .var-sheet{page:nchA3;display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;overflow:hidden!important;width:297mm!important;height:420mm!important;break-inside:avoid}
   body:has(.var-sheet) .var-sheet svg{display:block!important;width:297mm!important;height:420mm!important;max-width:none!important;max-height:none!important;margin:0!important}
 }
+
+/* ═════ варианты стиля на выбор (?ds=ink | soft; по умолчанию — цвет) ═════
+   ink  «Тушь» — как плакат кафедры: всё чёрным, построения серые тонкие, линии связи едва видны, красное — только искомое;
+   soft «Приглушённый» — у посредников свой цвет, но бледный; подписи тёмно-серые, красное — только искомое. */
+:root[data-ds=ink] svg.dwg .mc{--mc:#9298a3!important}
+:root[data-ds=ink] svg.dwg [stroke="#3567b5"]{stroke:#9298a3}
+:root[data-ds=ink] svg.dwg [fill="#3567b5"]{fill:#15161a}
+:root[data-ds=ink] svg.dwg [stroke="#9dbbe0"],:root[data-ds=ink] svg.dwg .mc [stroke="#9dbbe0"]{stroke:#cfd2d8!important}
+:root[data-ds=ink] svg.dwg [stroke="#1f7a4f"]{stroke:#15161a}
+:root[data-ds=ink] svg.dwg .mc circle{fill:#15161a!important;stroke:#15161a!important}
+:root[data-ds=ink] svg.dwg text.lbl,:root[data-ds=ink] svg.dwg .mc text.lbl{fill:#15161a!important}
+:root[data-ds=ink] svg.dwg text.lbl.r,:root[data-ds=ink] svg.dwg text.lbl.ang{fill:#b02a26!important}
+:root[data-ds=ink] svg.dwg text.lbl.s,:root[data-ds=ink] svg.dwg text.lbl.note{fill:#6b707a!important}
+:root[data-ds=soft] svg.dwg .mc :is(line,path,ellipse,polyline){stroke-opacity:.5}
+:root[data-ds=soft] svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.35}
+:root[data-ds=soft] svg.dwg [stroke="#3567b5"]{stroke:#7b8fae}
+:root[data-ds=soft] svg.dwg [stroke="#9dbbe0"]{stroke:#d5dbe4}
+:root[data-ds=soft] svg.dwg text.lbl,:root[data-ds=soft] svg.dwg .mc text.lbl{fill:#2b2f36!important}
+:root[data-ds=soft] svg.dwg text.lbl.r,:root[data-ds=soft] svg.dwg text.lbl.ang{fill:#b02a26!important}
+:root[data-ds=soft] svg.dwg .mc circle{fill:#2b2f36!important;stroke:#2b2f36!important}
+/* подложка под подписью — тоньше: подпись стоит на свободном месте и не стирает линии */
+body.inplayer .pl-paper svg.dwg text.lbl{stroke-width:calc(var(--lf,11.5px)*.2)}
 </style>
 </head>
 <body>
@@ -5367,7 +5389,7 @@ function text(ctx,p,s,cls,dx,dy,anchor){
   if(ctx.halo) return;
   const P=ctx.T(p);
   ctx.out.push(el('text',{x:N(P[0]+(dx||0)),y:N(P[1]+(dy||0)),class:cls||'lbl',
-    'text-anchor':anchor||'start'}, lblMarkup(s,ctx.scene&&ctx.scene.rom)));
+    'text-anchor':anchor||'start','data-ax':N(P[0]),'data-ay':N(P[1])}, lblMarkup(s,ctx.scene&&ctx.scene.rom)));
 }
 const K = { main:[PAL.ink,null,W.main], thin:[PAL.thin,null,W.thin],
   aux:[PAL.aux,null,W.aux], auxd:[PAL.aux,'5 3',W.aux], res:[PAL.res,null,W.res],
@@ -6210,7 +6232,9 @@ function mount(root,t,opt){
     const Z=S.z, MAXS=8;
     const clamp=()=>{ Z.s=Math.max(1,Math.min(MAXS,Z.s)); const r=paper.getBoundingClientRect(), mx=(Z.s-1)*r.width/2, my=(Z.s-1)*r.height/2;
       if(Z.s===1){ Z.x=0; Z.y=0; } else { Z.x=Math.max(-mx,Math.min(mx,Z.x)); Z.y=Math.max(-my,Math.min(my,Z.y)); } };
-    const lblScale=()=>{ try{ const vb=svg.viewBox.baseVal; if(!vb||!vb.width) return; const u=Math.min(svg.clientWidth/vb.width,svg.clientHeight/vb.height)||1; const px=window.innerWidth<900?14:15.5; svg.style.setProperty('--lf',Math.min(px/(u*Z.s),11.5*2.3)+'px'); }catch(e){} };
+    const lblScale=()=>{ try{ const vb=svg.viewBox.baseVal; if(!vb||!vb.width) return; const u=Math.min(svg.clientWidth/vb.width,svg.clientHeight/vb.height)||1; const px=window.innerWidth<900?11:12; const lf=Math.min(px/(u*Z.s),11.5*2.3); svg.style.setProperty('--lf',lf+'px');
+      /* подписи заново расставляются под новый размер (при увеличении им просторнее) */
+      if(svg._lf&&Math.abs(lf/svg._lf-1)>0.08&&window.DECLUTTER){ clearTimeout(svg._lft); svg._lft=setTimeout(()=>{ svg._lf=lf; delete svg.dataset.dc; DECLUTTER(svg); },160); } else if(!svg._lf) svg._lf=lf; }catch(e){} };
     const apply=()=>{ clamp(); lblScale(); svg.style.transformOrigin='50% 50%'; svg.style.transform=Z.s===1?'':'translate('+Z.x+'px,'+Z.y+'px) scale('+Z.s+')'; paper.classList.toggle('zoomed',Z.s>1); };
     const at=(ns,cx,cy)=>{ const r=paper.getBoundingClientRect(), px=cx-r.left-r.width/2, py=cy-r.top-r.height/2; ns=Math.max(1,Math.min(MAXS,ns)); const f=ns/Z.s; Z.x=px-f*(px-Z.x); Z.y=py-f*(py-Z.y); Z.s=ns; apply(); };
     apply();
@@ -28809,25 +28833,56 @@ const LOGO={
 (function(){
   const hit=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
   const area=(a,b)=>Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
+  /* Расстановка подписей (редизайн, п. 4): у каждой подписи — точка привязки (data-ax/ay). Перебираются 8 позиций вокруг
+     точки на трёх расстояниях; цена позиции — сколько линий чертежа под подписью (толстые и искомые дороже, линии связи
+     дешевле), наложение на другие подписи и точки (почти запрещено), выход за край и удаление от точки. Берётся самая дешёвая. */
+  function segsOf(svg){
+    const S=[]; const add=(x1,y1,x2,y2,w)=>{ if(isFinite(x1+y1+x2+y2)) S.push([x1,y1,x2,y2,w]); };
+    const wOf=e=>{ const sw=parseFloat(e.getAttribute('stroke-width'))||1, st=(e.getAttribute('stroke')||'').toLowerCase();
+      if(st==='none'||st==='#ffffff') return 0; if(st==='#9dbbe0') return .35; return Math.max(.5,Math.min(3,sw)); };
+    svg.querySelectorAll('line').forEach(e=>{ const w=wOf(e); if(w) add(+e.getAttribute('x1'),+e.getAttribute('y1'),+e.getAttribute('x2'),+e.getAttribute('y2'),w); });
+    svg.querySelectorAll('path').forEach(e=>{ if(e.closest('.back')) return; const w=wOf(e); if(!w) return; const d=e.getAttribute('d')||'';
+      if(/^[ML0-9.,\s\-Z]+$/i.test(d)&&!/[A]/i.test(d)){ const n=d.match(/-?\d*\.?\d+(e-?\d+)?/g).map(Number); for(let i=2;i+1<n.length;i+=2) add(n[i-2],n[i-1],n[i],n[i+1],w); return; }
+      try{ const L=e.getTotalLength(), k=Math.min(200,Math.max(4,Math.ceil(L/5))); let p=e.getPointAtLength(0); for(let i=1;i<=k;i++){ const q=e.getPointAtLength(L*i/k); add(p.x,p.y,q.x,q.y,w); p=q; } }catch(_){} });
+    svg.querySelectorAll('circle,ellipse').forEach(e=>{ const r=+e.getAttribute('r')||0, rx=+e.getAttribute('rx')||r, ry=+e.getAttribute('ry')||r; if(Math.max(rx,ry)<=6) return; const w=wOf(e); if(!w) return;
+      const cx=+e.getAttribute('cx'), cy=+e.getAttribute('cy'); let px=cx+rx, py=cy; for(let i=1;i<=48;i++){ const a=i/48*2*Math.PI, qx=cx+rx*Math.cos(a), qy=cy+ry*Math.sin(a); add(px,py,qx,qy,w); px=qx; py=qy; } });
+    return S;
+  }
+  /* длина отрезка внутри прямоугольника (Лиана — Барски) */
+  function clipLen(s,r){ let t0=0,t1=1; const dx=s[2]-s[0], dy=s[3]-s[1];
+    const P=[-dx,dx,-dy,dy], Q=[s[0]-r.x,r.x+r.w-s[0],s[1]-r.y,r.y+r.h-s[1]];
+    for(let i=0;i<4;i++){ if(P[i]===0){ if(Q[i]<0) return 0; } else { const t=Q[i]/P[i]; if(P[i]<0){ if(t>t1) return 0; if(t>t0) t0=t; } else { if(t<t0) return 0; if(t<t1) t1=t; } } }
+    return (t1-t0)*Math.hypot(dx,dy); }
   function declutter(svg){
-    if(!svg||svg.dataset.dc) return; const T=[...svg.querySelectorAll('text.lbl')]; if(T.length<2){ svg.dataset.dc=1; return; }
+    if(!svg||svg.dataset.dc) return; const T=[...svg.querySelectorAll('text.lbl')]; if(!T.length){ svg.dataset.dc=1; return; }
     let bb0; try{ bb0=T[0].getBBox(); }catch(e){ return; } if(!bb0||(!bb0.width&&!bb0.height)) return;   // ещё не на экране — попробуем позже
     svg.dataset.dc=1;
-    const dots=[...svg.querySelectorAll('circle')].map(c=>{ const r=+c.getAttribute('r')||0; if(r>6) return null; const x=+c.getAttribute('cx'), y=+c.getAttribute('cy'); return {x:x-r-.5,y:y-r-.5,w:2*r+1,h:2*r+1}; }).filter(Boolean);
-    const L=T.map((t,i)=>{ const b=t.getBBox(); return {t,i,b:{x:b.x-1,y:b.y,w:b.width+2,h:b.height},len:(t.textContent||'').length}; }).filter(o=>o.b.w>0);
-    L.sort((a,b)=>(a.len>4)-(b.len>4)||a.i-b.i);           // короткие имена точек — в приоритете, длинные пояснения уступают
+    T.forEach(t=>{ if(t.dataset.x0===undefined){ t.dataset.x0=t.getAttribute('x'); t.dataset.y0=t.getAttribute('y'); } else { t.setAttribute('x',t.dataset.x0); t.setAttribute('y',t.dataset.y0); } });
+    const vb=svg.viewBox&&svg.viewBox.baseVal, VB=vb&&vb.width?{x:vb.x,y:vb.y,w:vb.width,h:vb.height}:null;
+    const dots=[...svg.querySelectorAll('circle')].map(c=>{ const r=+c.getAttribute('r')||0; if(r>6) return null; const x=+c.getAttribute('cx'), y=+c.getAttribute('cy'); return {x:x-r-1,y:y-r-1,w:2*r+2,h:2*r+2}; }).filter(Boolean);
+    const segs=segsOf(svg), G=24, grid=new Map();
+    segs.forEach((s,i)=>{ const x0=Math.floor(Math.min(s[0],s[2])/G), x1=Math.floor(Math.max(s[0],s[2])/G), y0=Math.floor(Math.min(s[1],s[3])/G), y1=Math.floor(Math.max(s[1],s[3])/G);
+      for(let gx=x0;gx<=x1;gx++) for(let gy=y0;gy<=y1;gy++){ const k=gx+','+gy; (grid.get(k)||grid.set(k,[]).get(k)).push(i); } });
+    const lineCost=r=>{ const seen=new Set(); let c=0; for(let gx=Math.floor(r.x/G);gx<=Math.floor((r.x+r.w)/G);gx++) for(let gy=Math.floor(r.y/G);gy<=Math.floor((r.y+r.h)/G);gy++){ const L=grid.get(gx+','+gy); if(L) L.forEach(i=>{ if(seen.has(i)) return; seen.add(i); c+=clipLen(segs[i],r)*segs[i][4]; }); } return c; };
+    const L=T.map((t,i)=>{ const b=t.getBBox(); const ax=parseFloat(t.dataset.ax), ay=parseFloat(t.dataset.ay); return {t,i,b:{x:b.x,y:b.y,w:b.width,h:b.height},ax,ay,len:(t.textContent||'').length,pt:t.classList.contains('pt')}; }).filter(o=>o.b.w>0);
+    L.sort((a,b)=>(b.pt-a.pt)||(a.len>4)-(b.len>4)||a.i-b.i);   // имена точек — первыми, длинные пояснения уступают
     const placed=[];
-    L.forEach(o=>{ const h=Math.max(8,o.b.h), base=o.b;
-      const bad=r=>placed.some(p=>hit(r,p))||dots.some(d=>hit(r,d));
-      if(!bad(base)){ placed.push(base); return; }
-      let best=null, bs=1e9;
-      search: for(const k of [.75,1.2,1.7,2.3]){ for(const [dx,dy] of [[0,-1],[0,1],[1,0],[-1,0],[1,-1],[-1,-1],[1,1],[-1,1]]){
-        const mx=dx*k*h*(dx&&!dy?1.1:1), my=dy*k*h, r={x:base.x+mx,y:base.y+my,w:base.w,h:base.h};
-        const sc=placed.reduce((a,p)=>a+area(r,p),0)+dots.reduce((a,d)=>a+area(r,d)*2,0);
-        const cost=sc*10+Math.hypot(mx,my);
-        if(sc===0){ best={mx,my,r}; bs=0; break search; } if(cost<bs){ bs=cost; best={mx,my,r}; } } }
-      if(best&&(bs===0||bs<1e8)){ ['x','y'].forEach((a,j)=>{ const v=parseFloat(o.t.getAttribute(a))||0; o.t.setAttribute(a,(v+(j?best.my:best.mx)).toFixed(2)); }); placed.push(best.r); }
-      else placed.push(base); });
+    L.forEach(o=>{ const {w,h}=o.b, pad=Math.max(1,h*.08);
+      const cands=[{dx:0,dy:0,pen:0}];
+      if(isFinite(o.ax)&&isFinite(o.ay)){ const r0=Math.max(3,h*.28);
+        [[1,-1,0],[1,0,.6],[-1,-1,.3],[1,1,.5],[0,-1,.4],[-1,0,.7],[-1,1,.8],[0,1,.6]].forEach(([ux,uy,pr])=>[1,1.9,3].forEach((k,ki)=>{ const r=r0*k+(ki?h*.35*ki:0);
+          const left=ux>0?o.ax+r*(uy?0.75:1):ux<0?o.ax-r*(uy?0.75:1)-w:o.ax-w/2, top=uy<0?o.ay-r*(ux?0.75:1)-h:uy>0?o.ay+r*(ux?0.75:1):o.ay-h/2;
+          cands.push({dx:left-o.b.x,dy:top-o.b.y,pen:pr+ki*2.2}); })); }
+      else [.75,1.2,1.7,2.3].forEach((k,ki)=>[[0,-1],[0,1],[1,0],[-1,0],[1,-1],[-1,-1],[1,1],[-1,1]].forEach(([dx,dy])=>cands.push({dx:dx*k*h*(dx&&!dy?1.1:1),dy:dy*k*h,pen:1+ki*2})));
+      let best=null, bs=1e18;
+      for(const c of cands){ const r={x:o.b.x+c.dx+pad,y:o.b.y+c.dy+h*.12,w:w-2*pad,h:h*.76};
+        let cost=lineCost(r)*1.0+c.pen*h*.6+Math.hypot(c.dx,c.dy)*.04;
+        for(const p of placed){ const a=area(r,p); if(a) cost+=200+a*4; }
+        for(const d of dots){ const a=area(r,d); if(a) cost+=150+a*4; }
+        if(VB&&(r.x<VB.x||r.y<VB.y||r.x+r.w>VB.x+VB.w||r.y+r.h>VB.y+VB.h)) cost+=400;
+        if(cost<bs){ bs=cost; best={c,r}; } }
+      if(best&&(best.c.dx||best.c.dy)){ ['x','y'].forEach((a,j)=>{ const v=parseFloat(o.t.getAttribute(a))||0; o.t.setAttribute(a,(v+(j?best.c.dy:best.c.dx)).toFixed(2)); }); }
+      placed.push(best?best.r:o.b); });
   }
   const run=root=>{ (root.matches&&root.matches('svg.dwg')?[root]:[...(root.querySelectorAll?root.querySelectorAll('svg.dwg:not([data-dc])'):[])]).forEach(declutter); };
   window.DECLUTTER=declutter;
