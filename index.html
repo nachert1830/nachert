@@ -329,6 +329,18 @@ body.liveshow{overflow:hidden}
 @media(min-width:760px){.hcards .hc-rk9 .hc-s{max-width:48%}}
 @keyframes rk9Glow{0%,100%{box-shadow:0 0 0 3px #ffd34d,0 22px 44px -18px rgba(224,53,43,.75)}50%{box-shadow:0 0 0 3px #ffd34d,0 0 34px 2px rgba(255,180,60,.6)}}
 @media(prefers-reduced-motion:reduce){.hcards .hc.hc-rk9{animation:none}}
+/* ДЗ 4 ИГ — ночной чертёж: тёмно-синяя, свечение за фигурой, блик проходит по карточке, снизу полоса цветов сайта */
+.hcards .hc.hc-ig{border:0;background:linear-gradient(90deg,#fff 0 33.4%,#4f8cff 33.4% 66.7%,#e0252c 66.7%) bottom/100% 4px no-repeat,radial-gradient(55% 75% at 80% 50%,rgba(86,148,255,.6),transparent 72%),linear-gradient(150deg,#071331 0%,#0d2766 50%,#1a44c4 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 46px -22px rgba(8,26,84,.85)}
+.hcards .hc-ig::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);transform:translateX(-130%);animation:igSweep 6s ease-in-out infinite}
+@keyframes igSweep{0%,58%{transform:translateX(-130%)}88%,100%{transform:translateX(130%)}}
+.hcards .hc-ig .hc-pill{background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.hcards .hc-ig .hc-pill i{background:#ff5a5f;box-shadow:0 0 0 3px rgba(255,90,95,.28);animation:igDot 1.8s ease-in-out infinite}
+@keyframes igDot{50%{box-shadow:0 0 0 6px rgba(255,90,95,0)}}
+.hcards .hc-ig .hc-t{text-shadow:0 2px 18px rgba(86,148,255,.55)}
+.hcards .hc-ig .hc-go{color:#0d2766}
+.hcards .hc-ig:hover{transform:translateY(-2px)}
+@media(min-width:760px){.hcards .hc-ig .hc-s{max-width:48%}}
+@media(prefers-reduced-motion:reduce){.hcards .hc-ig::after,.hcards .hc-ig .hc-pill i{animation:none}}
 @media(min-width:760px){.hcards .hc-rot .hc-t{font-size:30px;max-width:11ch}.hcards .hc-rart{width:46%;max-width:280px;max-height:84%}}
 /* #/live — страница онлайн-разборов (viewLive) */
 .lv .lv-hero p a,.lv .lv-hero p a b{color:#ffd34d!important;text-decoration:underline;text-decoration-color:rgba(255,211,77,.6);text-underline-offset:3px}
@@ -29320,7 +29332,7 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
   const el=.5, ce=Math.cos(el), se=Math.sin(el), NF=72, T=14;
   const P=(x,y,z,th)=>{ x-=W/2; y-=D/2; z-=25; const c=Math.cos(th), s=Math.sin(th), X=x*c-y*s, Y=x*s+y*c; return [X, -z*ce+Y*se]; };
   const ths=[]; for(let i=0;i<=NF;i++) ths.push(-.7+2*Math.PI*i/NF);
-  const all=[]; ths.forEach(th=>prof.forEach(([x,z])=>[0,D].forEach(y=>all.push(P(x,y,z,th)))));
+  const all=[]; ths.forEach(th=>prof.forEach(([x,z])=>[0,D].forEach(y=>all.push(P(x,y,z,th))))); { const rr=Math.hypot(W,D)/2+6, c=P(W/2,D/2,-6,0); all.push([c[0]-rr,c[1]+rr*se+2],[c[0]+rr,c[1]-rr*se],P(W/2,D/2,64,0)); }
   const x0=Math.min(...all.map(p=>p[0]))-4, x1=Math.max(...all.map(p=>p[0]))+4, y0=Math.min(...all.map(p=>p[1]))-4, y1=Math.max(...all.map(p=>p[1]))+4;
   const pts=(q,th)=>q.map(([x,y,z])=>{ const p=P(x,y,z,th); return f(p[0])+','+f(p[1]); }).join(' ');
   const anim=q=>`<animate attributeName="points" dur="${T}s" repeatCount="indefinite" values="${ths.map(th=>pts(q,th)).join(';')}"/>`;
@@ -29329,9 +29341,12 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
   const cut=new Set([3,4,5]);   /* стенки и дно выреза */
   let g=poly(back,'#fff',.06,'#fff',.9,' stroke-opacity=".45"');
   prof.forEach(([x,z],i)=>{ const [u,w]=prof[(i+1)%prof.length], q=[[x,0,z],[u,0,w],[u,D,w],[x,D,z]];
-    g+=cut.has(i)?poly(q,'#ffd34d',.32,'#ffd34d',1.4):poly(q,'#fff',.07,'#fff',1,' stroke-opacity=".75"'); });
+    g+=cut.has(i)?poly(q,'#ffd34d',.34,'#ffd34d',1.5,' filter="url(#i4Gw)"'):poly(q,'#fff',.07,'#fff',1,' stroke-opacity=".75"'); });
   g+=poly(front,'#fff',.14,'#fff',2);
-  IG4ART=`<svg class="hc-art hc-rart" viewBox="${f(x0)} ${f(y0)} ${f(x1-x0)} ${f(y1-y0)}" aria-hidden="true"><defs><radialGradient id="i4Gl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+  { const fl=P(W/2,D/2,-6,0), r=Math.hypot(W,D)/2+6, top=P(W/2,D/2,64,0), bot=P(W/2,D/2,-14,0);
+    g=`<ellipse cx="${f(fl[0])}" cy="${f(fl[1])}" rx="${f(r)}" ry="${f(r*se)}" fill="#000" fill-opacity=".22"/><ellipse cx="${f(fl[0])}" cy="${f(fl[1])}" rx="${f(r)}" ry="${f(r*se)}" fill="none" stroke="#9cc2ff" stroke-opacity=".5" stroke-width=".8" stroke-dasharray="3 4"/>`+g
+      +`<line x1="${f(top[0])}" y1="${f(top[1])}" x2="${f(bot[0])}" y2="${f(bot[1])}" stroke="#fff" stroke-opacity=".7" stroke-width="1" stroke-dasharray="10 3 2 3"/>`; }
+  IG4ART=`<svg class="hc-art hc-rart" viewBox="${f(x0)} ${f(y0)} ${f(x1-x0)} ${f(y1-y0)}" aria-hidden="true"><defs><radialGradient id="i4Gl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><filter id="i4Gw" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     <ellipse cx="${f((x0+x1)/2)}" cy="${f((y0+y1)/2)}" rx="${f((x1-x0)/1.7)}" ry="${f((y1-y0)/1.7)}" fill="url(#i4Gl)"/>${g}</svg>`;
   return IG4ART; }
 function homeCards(){ const pm=PROMO.cardHTML();
@@ -29341,7 +29356,7 @@ function homeCards(){ const pm=PROMO.cardHTML();
     <span class="hc-t">Как образуются поверхности</span><span class="hc-s">гиперболоид, коноид, геликоид — в 3D</span>
     ${surfArt().replace('class="hc-art"','class="hc-art hc-rart"')}
     <span class="hc-go">Смотреть →</span></a>`;
-  return left+`<a class="hc hc-rot hc-rk9" href="${HDZ('ig4')}" aria-label="ДЗ 4 по инженерной графике: тело с вырезом, три вида и разрезы">
+  return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig4')}" aria-label="ДЗ 4 по инженерной графике: тело с вырезом, три вида и разрезы">
     <span class="hc-pill live"><i></i>Инж. графика</span>
     <span class="hc-t">ДЗ&nbsp;4</span><span class="hc-s">тело с вырезом: три вида и разрезы — любой вариант</span>
     ${ig4CardArt()}
