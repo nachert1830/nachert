@@ -4575,8 +4575,9 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .au-pill{display:inline-flex;align-items:center;gap:9px;padding:4px 14px 4px 4px;border:1px solid var(--line);border-radius:99px;background:var(--surf);color:var(--ink2);font:500 14px/1 var(--sans);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
 .au-pill:hover{transform:translateY(-1px);border-color:var(--acc);box-shadow:0 8px 22px -12px rgba(26,90,224,.55)}
 .au-pill b{color:var(--ink);font-weight:700}.au-pill .au-go{color:var(--acc);font-weight:700}
-.au-face{flex:none;display:block;border-radius:50%;background:url(img/author-1.webp) 35% 12%/380% auto no-repeat}
-.au-pill .au-face{width:28px;height:28px}
+.au-face{flex:none;display:grid;place-items:center;border-radius:50%;background:radial-gradient(120% 120% at 25% 15%,#4f8bff 0%,#1a5ae0 45%,#0d2f8a 100%);color:#fff;font-family:var(--disp);font-weight:600;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.au-face::before{content:"a";transform:translateY(-.06em);text-shadow:0 1px 6px rgba(0,0,0,.25)}
+.au-pill .au-face{width:28px;height:28px;font-size:18px}
 /* шторка */
 .aus{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
 .aus-bg{position:absolute;inset:0;background:rgba(4,10,26,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .35s}
@@ -4588,7 +4589,7 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 @media(min-width:600px){.aus-sh{margin-bottom:16px;border-radius:26px}}
 .aus-grab{flex:none;height:22px;display:grid;place-items:center;cursor:grab}.aus-grab i{width:40px;height:5px;border-radius:9px;background:var(--line)}
 .aus-hd{flex:none;display:flex;align-items:center;gap:12px;padding:0 18px 14px}
-.aus-hd .au-face{width:46px;height:46px;box-shadow:0 0 0 2px var(--surf),0 0 0 4px var(--acc)}
+.aus-hd .au-face{width:46px;height:46px;font-size:29px;box-shadow:0 0 0 2px var(--surf),0 0 0 4px var(--acc)}
 .aus-hd div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .aus-hd b{font:800 19px/1.15 var(--disp)}.aus-hd small{font-size:13px;color:var(--mut)}
 .aus-x{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:var(--surf2);color:var(--ink2);display:grid;place-items:center;cursor:pointer}
@@ -35137,7 +35138,7 @@ const AUTHOR=(()=>{
     el=document.createElement('div'); el.className='aus'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Об авторе');
     el.innerHTML=`<div class="aus-bg" data-x></div><div class="aus-sh">
       <div class="aus-grab" aria-hidden="true"><i></i></div>
-      <div class="aus-hd"><span class="au-face" aria-hidden="true"></span><div><b>Андрей Матханов</b><small>автор Начерта</small></div>
+      <div class="aus-hd"><span class="au-face" aria-hidden="true"></span><div><b>Андрей Матханов</b><small>владелец сайта</small></div>
         <button type="button" class="aus-x" data-x aria-label="Закрыть"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div class="aus-vp"><div class="aus-tr">
         ${slide('img/author-2.webp',1254,1254,'50% 30%','Андрей Матханов и Илон Маск')}
