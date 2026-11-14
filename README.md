@@ -11,4 +11,4 @@
 
 Цифры надёжности проверки с привязкой к версии кода — `docs/THESIS.md` (сырые данные — `docs/thesis.json`).
 
-Шрифты (Golos Text, Geologica, IBM Plex Mono) лежат в папке `fonts/`, лицензия SIL Open Font License 1.1.
+Шрифты (Golos Text, Geologica, IBM Plex Mono, Liberation Serif Italic) лежат в папке `fonts/`, лицензия SIL Open Font License 1.1; подписи чертежей — osifont (наклонный чертёжный шрифт по ISO 3098 / ГОСТ 2.304 тип Б, GPL с исключением для шрифтов, `fonts/osifont-LICENSE.txt`).

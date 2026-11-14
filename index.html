@@ -32,6 +32,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
 /* шрифты лежат рядом с сайтом (папка fonts/, лицензия SIL OFL 1.1) */
+@font-face{font-family:'NchGost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/osifont-italic.woff2) format('woff2')}   /* подписи чертежей: osifont — наклонный шрифт по ISO 3098 / ГОСТ 2.304 тип Б (GPL с исключением для шрифтов, fonts/osifont-LICENSE.txt); штрихи ′ ″ — из NchSerif */
 @font-face{font-family:'NchSerif';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/liberation-serif-italic.woff2) format('woff2')}   /* чертёжный шрифт листов ИГ: Liberation Serif (метрика Times New Roman, SIL OFL) — лист одинаков на всех устройствах */
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-greek.woff2) format('woff2');unicode-range:U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF}
@@ -5081,6 +5082,94 @@ body .pl-zoom .pl-zb.past{font:700 12.5px var(--sans)!important;width:auto!impor
 @media (max-width:600px){.pl-zb,body.inplayer .pl-zb,.pl-zb.wide,body.inplayer .pl-zb.wide,body .pl-zoom .pl-zb.t3btn,body .pl-zoom .pl-zb.past{height:32px!important}.pl-zb,body.inplayer .pl-zb{width:32px!important}}
 body .pl-zoom .pl-zb.past i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;display:inline-block;flex:none}
 body .pl-zoom .pl-zb.past.on i{background:currentColor}
+
+/* ═════════ ЧЕРТЁЖ v5 (редизайн, docs/REDESIGN-PROMPT.md): лист как плакат кафедры ═════════
+   • подписи — чертёжный шрифт тип Б (osifont, наклонный), один размер на всех чертежах, подложка цвета бумаги;
+   • толщины линий — в экранных пикселях, не зависят от масштаба: контур ≈ 2,3 px, построения ≈ 1 px, линии связи ≈ 0,7 px (ГОСТ 2.303: s и s/3);
+   • бумага всегда белая и чистая (без клетки) — в обеих темах;
+   • жёлтого маркера нет: новое — цветом и толщиной, прошлое — тише. */
+svg.dwg text.lbl{font-family:'NchGost','NchSerif','Times New Roman',serif;font-weight:700;font-style:normal;letter-spacing:.02em}
+svg.dwg text.lbl{font-size:13px}svg.dwg text.lbl.pt{font-size:14px}
+body.inplayer .pl-paper svg.dwg text.lbl{font-size:calc(var(--lf,11.5px)*1.16);font-weight:700;stroke-width:calc(var(--lf,11.5px)*.38)}
+body.inplayer .pl-paper svg.dwg text.lbl.s,body.inplayer .pl-paper svg.dwg text.lbl.note{font-size:calc(var(--lf,11.5px)*.96)}
+svg.dwg :is(line,path,polyline,polygon,ellipse,circle){vector-effect:non-scaling-stroke}
+/* новое на шаге — толще; прошлые построения — тише (контур, данные и искомое не трогаем) */
+:root svg.dwg .g-new :is(line,path)[stroke="#3567b5"]{stroke-width:1.6}
+:root svg.dwg .g-new .mc :is(line,path,ellipse){stroke-width:1.6}
+:root svg.dwg .g-new .mc :is(line,path)[stroke="#9dbbe0"]{stroke-width:.9}
+:root svg.dwg .g-old :is(line,path)[stroke="#3567b5"]{stroke:#9aa6b8}
+:root svg.dwg .g-old text.lbl.a{fill:#7d8899}
+svg.dwg .halo{display:none}
+.pl-paper,body.inplayer .pl-paper{background:#ffffff!important;background-image:none!important}
+:root[data-theme="dark"] body.inplayer .pl-paper{box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+
+/* ═════════ ТЕЛЕФОН v5: чертёж — главный (≥ 60 % высоты), пояснение — шторка ═════════
+   Шапка сайта в разборе спрятана (в шапке ДЗ есть «Назад»), счётчик шагов, «Условие» и «Смотрю / Решаю сам» — одной строкой. */
+@media(max-width:899px) and (orientation:portrait){
+  body.inplayer{--hh:0px}
+  body.inplayer #hdr{display:none!important}
+  body.inplayer .dzx-top{min-height:40px;margin:2px 0 4px;gap:8px}
+  body.inplayer .dzx-back{height:38px;padding:0 10px 0 6px;font-size:14px}
+  body.inplayer .dzx-top h1{font-size:17px!important;line-height:1.1}
+  body.inplayer .dzx-top h1 .dzx-tl{font-size:11px}
+  body.inplayer .dzx-share{height:38px;width:42px;padding:0;justify-content:center}
+  body.inplayer .dzx-share span{display:none}
+  body.inplayer .dzx-pills{margin:0 0 4px;gap:6px}
+  body.inplayer .dzx-pills a{min-height:30px!important;height:30px;padding:0 12px!important;font-size:13px!important;display:inline-flex;align-items:center}
+  body.inplayer .pl{grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto minmax(0,1fr) auto auto;
+    grid-template-areas:"top cond bar" "paper paper paper" "side side side" "ctrl ctrl ctrl";gap:6px 6px;padding:4px 8px 0}
+  body.inplayer .pl-top{min-height:34px;gap:8px}
+  .dzx body.inplayer .pl-top .pl-back,body.inplayer .dzx .pl-top .pl-back,body.inplayer .dzx .pl-top .pl-sh{display:none}
+  body.inplayer .pl-mt{font-size:11px;margin-bottom:4px}
+  body.inplayer .pl-segs i{height:6px}
+  body.inplayer .pl:not(.cond-open) .pl-cond{align-self:center;height:34px;padding:0 12px!important;display:flex;align-items:center;border-radius:99px;overflow:hidden;cursor:pointer}
+  body.inplayer .pl:not(.cond-open) .pl-cond>*{display:none!important}
+  body.inplayer .pl:not(.cond-open) .pl-cond::before{content:'Условие';font:700 13px var(--sans);color:var(--ink)}
+  body.inplayer .pl.cond-open .pl-cond{position:fixed!important;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 96px);max-height:62dvh;overflow:auto;z-index:60;box-shadow:0 22px 50px -18px rgba(8,11,18,.55)}
+  body.inplayer .pl-bar{align-self:center}
+  body.inplayer .pl-bar .pl-modes{width:auto!important}
+  body.inplayer .pl-bar .pl-mode{padding:0 10px!important;font-size:12.5px!important}
+  body.inplayer .pl-paper{border-radius:14px;padding:2px!important}
+  body.inplayer .pl-side{max-height:none}
+  body.inplayer .pl.peek .pl-side{max-height:58px}
+  body.inplayer .pl-side.up{box-shadow:0 -14px 30px -18px rgba(8,11,18,.45)}
+  body.inplayer .pl-ctrl{padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important}
+  /* без шапки ДЗ (тетрадь, РК): «назад», шаги и «поделиться» — первой строкой, «Условие» и режим — второй */
+  body.inplayer :not(.dzx)>.pl-anc>.pl,body.inplayer #plMount>.pl{grid-template-areas:"top top top" "cond bar bar" "paper paper paper" "side side side" "ctrl ctrl ctrl";grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto minmax(0,1fr) auto auto}
+  body.inplayer .dzx .pl{grid-template-areas:"top cond bar" "paper paper paper" "side side side" "ctrl ctrl ctrl"!important;grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-rows:auto minmax(0,1fr) auto auto!important}
+  body.inplayer .pl-bar{justify-self:end}
+  /* задача из пунктов (а, б, в): пункты и режим — своей строкой под счётчиком */
+  body.inplayer .pl.pl:has(.pl-parts){grid-template-areas:"top top cond" "bar bar bar" "paper paper paper" "side side side" "ctrl ctrl ctrl"!important;grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-rows:auto auto minmax(0,1fr) auto auto!important}
+  body.inplayer .pl:has(.pl-parts) .pl-bar{justify-self:stretch}
+  body.inplayer .pl-scroll .pl-kicker{display:none}
+  body.inplayer .pl-scroll{padding:8px 14px!important}
+}
+
+/* шаг ДЗ: сначала одна фраза «что делаем», остальное — кнопками в строку («Почему так?», «Намёк», «Числа», «Проверь себя») */
+.hw-ladder{display:flex!important;flex-wrap:wrap;gap:6px}
+.hw-l.l3{width:100%;border:0!important;background:none!important}
+.hw-l.l3>summary{display:none}
+.hw-l.l3>div{padding:0;font-size:inherit;line-height:1.55}
+.hw-l:not(.l3):not([open]){border-radius:99px}
+.hw-l:not(.l3)>summary{min-height:32px;padding:4px 12px;font:600 13px var(--sans);letter-spacing:0;list-style:none}
+.hw-l:not(.l3)>summary::-webkit-details-marker{display:none}
+.hw-l:not(.l3)[open]{width:100%}
+
+sup.ri{font-size:.68em;line-height:0;vertical-align:.55em;letter-spacing:.02em}
+.lchip sup.ri{font-size:.7em}
+
+.lchip{font-family:'NchGost','NchSerif',serif!important;font-weight:700;letter-spacing:.02em;font-size:1em!important}
+
+/* печать прямо со страницы листа (Ctrl+P, «Печать» в меню телефона): только лист А3, белый фон в любой теме, ровно одна страница */
+@page nchA3{size:297mm 420mm;margin:0}
+@media print{
+  :root:has(.var-sheet),:root:has(.var-sheet) body:has(.var-sheet){background:#fff!important;background-image:none!important;color-scheme:light;height:auto!important;overflow:visible!important}
+  body:has(.var-sheet)>*:not(#view){display:none!important}
+  body:has(.var-sheet) #view :not(.var-sheet):not(.var-sheet *):not(:has(.var-sheet)){display:none!important}
+  body:has(.var-sheet) #view,body:has(.var-sheet) #view :has(.var-sheet){display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;height:auto!important;min-height:0!important;max-width:none!important;width:auto!important;overflow:visible!important;animation:none!important}
+  body:has(.var-sheet) .var-sheet{page:nchA3;display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;overflow:hidden!important;width:297mm!important;height:420mm!important;break-inside:avoid}
+  body:has(.var-sheet) .var-sheet svg{display:block!important;width:297mm!important;height:420mm!important;max-width:none!important;max-height:none!important;margin:0!important}
+}
 </style>
 </head>
 <body>
@@ -5143,7 +5232,8 @@ const PAL = {
   ghost:'#cfd2d8',      // подложка
   halo:'#ffd23f'        // маркер нового шага — жёлтый текстовыделитель (по этому цвету плеер рисует новые линии «от руки»)
 };
-const W = { main:1.55, thin:0.7, aux:1.25, res:2.2, conn:0.7, dim:0.8 };
+/* толщины — экранные пиксели (svg.dwg рисует линии с vector-effect:non-scaling-stroke): ГОСТ 2.303 — основная s, тонкая s/3…s/2 */
+const W = { main:2.3, thin:0.85, aux:1.1, res:2.5, conn:0.7, dim:0.8 };
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -5212,7 +5302,7 @@ function svg(scene){
     const u=src.filter(it=>it&&it.under); if(!u.length) return src;
     const rest=src.filter(it=>!(it&&it.under)); let k=-1; rest.forEach((it,i)=>{ if(it&&it.k==='thin'&&(it._g||'given')==='given') k=i; });
     return k<0?src:[...rest.slice(0,k+1),...u,...rest.slice(k+1)]; })(scene.items);
-  const scn = {w:W0,h:H0,ox,oy};
+  const scn = {w:W0,h:H0,ox,oy,rom:scene.rom!==undefined?scene.rom:romScene(scene.fitTo||scene.items)};
   /* 1) подложки (hatch, fill) */
   const back=[], out=[];
   const ctxB = { T, out:back, scene:scn };
@@ -5220,7 +5310,7 @@ function svg(scene){
   /* 2) маркер под новыми элементами */
   const halo=[];
   const ctxH = { T, out:halo, scene:scn, halo:true };
-  items.forEach(it=>{ if(it._g==='new' && !it.col && it.t!=='hatch' && it.t!=='txt' && it.t!=='note' && it.t!=='axis' && it.t!=='axis3' && it.t!=='conn' && it.t!=='hconn' && it.t!=='ext'){
+  if(scene.halo) items.forEach(it=>{ if(it._g==='new' && !it.col && it.t!=='hatch' && it.t!=='txt' && it.t!=='note' && it.t!=='axis' && it.t!=='axis3' && it.t!=='conn' && it.t!=='hconn' && it.t!=='ext'){
       const f=RENDER[it.t]; if(f) f(it,ctxH); } });
   /* 3) сами элементы, сгруппированные по состоянию */
   let cur=null;
@@ -5257,16 +5347,32 @@ function path(ctx,d,style,dash,width,fill){
   if(ctx.halo){ ctx.out.push(el('path',{d,fill:'none',stroke:PAL.halo,'stroke-width':7,'stroke-linecap':'round','stroke-linejoin':'round','stroke-opacity':.55})); return; }
   ctx.out.push(el('path',{d,fill:fill||'none',stroke:style,'stroke-width':width,'stroke-dasharray':dash,'stroke-linecap':'round','stroke-linejoin':'round'}));
 }
+/* подпись чертежа: цифровые индексы — настоящим нижним индексом (цифры чертёжного шрифта, а не знаки ₁₂ из запасного шрифта);
+   на чертежах с заменой плоскостей проекции на π₄, π₅, π₆ — верхним римским индексом: A₄ → A^IV, B₅ → B^V (как на плакатах кафедры).
+   π₄, x₁₄, x₄₅ остаются арабскими. Данные сцены не меняются — только вид. */
+const SUBD='₀₁₂₃₄₅₆₇₈₉', ROMI={'₄':'IV','₅':'V','₆':'VI'};
+function romIdx(s){ return String(s).replace(/([A-Za-zА-Яа-яЁё0-9])([₄₅₆])(?![₀-₉])/g,(m,a,d)=>a+'\u0001'+ROMI[d]+'\u0002'); }
+function lblMarkup(s,rom){
+  s=String(s); if(rom) s=romIdx(s);
+  if(!/[\u0001₀-₉]/.test(s)) return esc(s);
+  let out='', back=0;
+  s.split(/(\u0001[IVX]+\u0002|[₀-₉]+)/).forEach(part=>{ if(!part) return;
+    if(part[0]==='\u0001'){ out+='<tspan class="ri" font-size="68%" dy="'+N(-0.62-back/0.68)+'em">'+part.slice(1,-1)+'</tspan>'; back=-0.42; return; }
+    if(SUBD.indexOf(part[0])>=0){ out+='<tspan class="si" font-size="70%" dy="'+N(0.46-back/0.7)+'em">'+[...part].map(c=>SUBD.indexOf(c)).join('')+'</tspan>'; back=0.32; return; }
+    out+=back?'<tspan dy="'+N(-back)+'em">'+esc(part)+'</tspan>':esc(part); back=0; });
+  return out;
+}
+function romScene(items){ return (items||[]).some(it=>it&&/π[₄₅₆]|x[₁₂₃₄₅₆][₄₅₆]|[₄₅₆]\/π|π[₁₂₃]\/π[₄₅₆]/.test(String(it.l||'')+' '+String(it.s||''))); }
 function text(ctx,p,s,cls,dx,dy,anchor){
   if(ctx.halo) return;
   const P=ctx.T(p);
   ctx.out.push(el('text',{x:N(P[0]+(dx||0)),y:N(P[1]+(dy||0)),class:cls||'lbl',
-    'text-anchor':anchor||'start'}, esc(s)));
+    'text-anchor':anchor||'start'}, lblMarkup(s,ctx.scene&&ctx.scene.rom)));
 }
 const K = { main:[PAL.ink,null,W.main], thin:[PAL.thin,null,W.thin],
   aux:[PAL.aux,null,W.aux], auxd:[PAL.aux,'5 3',W.aux], res:[PAL.res,null,W.res],
   resd:[PAL.res,'5 3',W.res], grn:[PAL.grn,null,W.res], grnd:[PAL.grn,'5 3',W.res],
-  ghost:[PAL.ghost,null,W.main], dash:[PAL.ink,'6 3',W.thin], hid:[PAL.ink,'5 3',W.main*0.8],
+  ghost:[PAL.ghost,null,1.3], dash:[PAL.ink,'6 3',W.thin], hid:[PAL.ink,'6 3.5',1.35],
   axis:[PAL.ink,'14 3 2 3',W.thin], conn:[PAL.conn,'7 2.5 1.5 2.5',W.conn],
   paper:['#ffffff',null,W.main+1.8] };   /* «ластик»: закрывает линию условия, которая на ответе оказалась невидимой */
 const LC = { res:'r', resd:'r', aux:'a', auxd:'a', grn:'g', grnd:'g' };
@@ -5430,7 +5536,7 @@ note(it,ctx){ if(ctx.halo) return; const P=ctx.T(it.at);
   const w=(String(it.s).length*6.0)+14, h=19;
   ctx.out.push(el('rect',{x:N(P[0]-w/2),y:N(P[1]-h/2),width:N(w),height:h,rx:5,
     fill:'#fff',stroke:PAL.aux,'stroke-width':0.8}));
-  ctx.out.push(el('text',{x:N(P[0]),y:N(P[1]+4),class:'lbl note','text-anchor':'middle'},esc(it.s))); },
+  ctx.out.push(el('text',{x:N(P[0]),y:N(P[1]+4),class:'lbl note','text-anchor':'middle'},lblMarkup(it.s,ctx.scene&&ctx.scene.rom))); },
 
 hatch(){ /* рисуется в подложке */ }
 };
@@ -5497,7 +5603,9 @@ const G = {
     return [(-B-s)/(2*A),(-B+s)/(2*A)].map(t=>[a[0]+d[0]*t,a[1]+d[1]*t]); }
 };
 
-return { svg, measure, G, PAL, arcPts, ellPts };
+/* то же в тексте (HTML): A₄ → A<sup>IV</sup>, только в текстовых узлах */
+function romHTML(html){ return String(html).split(/(<[^>]*>)/).map(t=>t[0]==='<'?t:t.replace(/([A-Za-zА-Яа-яЁё0-9])([₄₅₆])(?![₀-₉])/g,(m,a,d)=>a+'<sup class="ri">'+ROMI[d]+'</sup>')).join(''); }
+return { svg, measure, G, PAL, arcPts, ellPts, romScene, romHTML };
 })();
 
 /* ============================================================
@@ -5774,6 +5882,17 @@ return { S,F,H,P,mm,len2,v3,G, pt,seg,ln,conn,txt,note,dim,sq,ang,tick,circ,arc,
    новое подсвечено маркером, прежнее остаётся.
    ============================================================ */
 const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* новое на шаге появляется «от руки»: сплошные линии прорисовываются, штриховые и точки — проявляются; после анимации стиль снимается */
+function DRAWIN(els,stagger){
+  [...els].slice(0,40).forEach((e,i)=>{ try{
+    const t=e.tagName, d=i*(stagger||100);
+    if((t==='line'||t==='path'||t==='polyline')&&!e.getAttribute('stroke-dasharray')){ let L=e.getTotalLength?e.getTotalLength():0; if(!(L>0)) return;
+      const m=e.getScreenCTM&&e.getScreenCTM(); L*=Math.max(1,m?Math.hypot(m.a,m.b):1);   /* штрих при non-scaling-stroke — в экранных пикселях */
+      e.animate([{strokeDasharray:L+' '+L,strokeDashoffset:L},{strokeDasharray:L+' '+L,strokeDashoffset:0}],{duration:1000,delay:d,easing:'cubic-bezier(.3,.7,.2,1)',fill:'backwards'}); }
+    else if(t==='circle'){ e.style.transformBox='fill-box'; e.style.transformOrigin='center'; e.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:700,delay:d,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}); }
+    else e.animate([{opacity:0},{opacity:1}],{duration:700,delay:d,fill:'backwards'});
+  }catch(_){} });
+}
 const PLAYER = (function(){
 
 /* заметка к задаче — только по делу: частая ошибка, несколько решений, оговорка к условию. Масштаб, «пропорции приблизительные», повтор ответа — убираем */
@@ -5923,6 +6042,9 @@ function mount(root,t,opt){
 
   /* содержимое окна с текстом шага (без рамки): карточка + ответ на последнем шаге */
   function cardInner(p,k,tryHid,pi){
+    if(p._rom===undefined){ let all=(p.given||[]).slice(); (p.steps||[]).forEach(s=>{ all=all.concat(s.add||[]); }); p._rom=DRAW.romScene(all); }
+    const h=cardInner0(p,k,tryHid,pi); return p._rom?DRAW.romHTML(h):h; }
+  function cardInner0(p,k,tryHid,pi){
     const n=(p.steps||[]).length, st=k>0?p.steps[k-1]:null;
     let card;
     if(k===0){
@@ -6011,7 +6133,7 @@ function mount(root,t,opt){
   function measure(){ try{
     const paper=root.querySelector('.pl-paper'), sc=root.querySelector('.pl-scroll'), side=root.querySelector('.pl-side'); if(!paper||!sc||!side) return;
     const mob=window.innerWidth<900&&document.body.classList.contains('inplayer')&&!S.full&&!S.peek;
-    if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(H*0.34,Math.min(H*0.56,need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
+    if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(Math.min(96,need),Math.min(H*(S.sheet?0.62:0.24),need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
     else { side.style.maxHeight=''; side.style.height=''; }
     const more=()=>{ if(side) side.classList.toggle('more',sc.scrollHeight-sc.clientHeight-sc.scrollTop>6); };
     more(); if(!sc._more){ sc._more=1; sc.addEventListener('scroll',more,{passive:true}); }
@@ -6045,17 +6167,13 @@ function mount(root,t,opt){
     const fwd=S.k>lastK&&lastK>=0; lastK=S.k; if(!fwd) return;
     if(matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches) return;
     const svg=root.querySelector('.pl-paper svg'); if(!svg) return;
-    svg.querySelectorAll('[stroke="#ffd23f"]').forEach((e,i)=>{
-      const t=e.tagName;
-      if(t==='line'||t==='path'||t==='polyline'){ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset 1.15s cubic-bezier(.3,.7,.2,1) '+(i*110)+'ms'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }
-      else { e.style.transformBox='fill-box'; e.style.transformOrigin='center'; e.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:800,delay:i*110,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}); }
-    });
+    DRAWIN(svg.querySelectorAll('.g-new :is(line,path,polyline), .g-new circle'),110);
   }
   function helpHTML(st,k,p){
     let g=[]; try{ g=GLOSS.find((st.t||'')+' '+(st.d||'')+' '+(st.why||''),3); }catch(e){}
     const prev=k>1?((p.steps[k-2]||{}).t||''):'';
     return `<div class="pl-help" role="region" aria-label="Пояснение к шагу">`+
-      (g.length?g.map(x=>`<div class="hl-t"><b>${x.t}.</b> ${x.d}</div>`).join(''):`<div class="hl-t">Посмотри на чертёж: жёлтым подсвечено то, что добавилось на этом шаге. Если непонятно, откуда оно взялось, вернись на шаг назад.</div>`)+
+      (g.length?g.map(x=>`<div class="hl-t"><b>${x.t}.</b> ${x.d}</div>`).join(''):`<div class="hl-t">Посмотри на чертёж: цветом и толщиной выделено то, что добавилось на этом шаге. Если непонятно, откуда оно взялось, вернись на шаг назад.</div>`)+
       `<div class="hl-b">${k>0?'<button type="button" class="btn ghost hl-back">← Шаг назад'+(prev?': '+prev:'')+'</button>':''}<button type="button" class="btn ghost hl-find">Найти объяснение</button></div></div>`;
   }
   function go(k){ S.help=false; try{ if(window.FX&&k!==S.k) FX.buzz(8); }catch(e){} S.k=Math.max(0,Math.min(N(),k)); S.done=false; posSet(); render(); if(opt.onStep) opt.onStep(S); }
@@ -6076,7 +6194,9 @@ function mount(root,t,opt){
     q('.pl-redo')&&q('.pl-redo').addEventListener('click',()=>{ S.done=false; S.pi=0; S.k=0; S.shown={}; S.hint={}; S.rated=null; S.z={s:1,x:0,y:0}; render(); });
     q('.pl-sh')&&q('.pl-sh').addEventListener('click',e=>shareNow(e.currentTarget));
     q('.pl-share')&&q('.pl-share').addEventListener('click',e=>shareNow(e.currentTarget));
-    q('.pl-peek')&&q('.pl-peek').addEventListener('click',()=>{ S.peek=!S.peek; render(); });
+    q('.pl-peek')&&q('.pl-peek').addEventListener('click',()=>{ if(S.sheet){ S.sheet=false; render(); return; } S.peek=!S.peek; render(); });
+    /* телефон: шторка пояснения — касание «дальше ↓» поднимает её выше, «скрыть» опускает до заголовка */
+    q('.pl-side')&&q('.pl-side').addEventListener('click',e=>{ const sd=e.currentTarget; if(window.innerWidth>=900||S.peek||S.sheet||!sd.classList.contains('more')) return; const r=sd.getBoundingClientRect(); if(e.clientY<r.bottom-44||e.target.closest('button,a,input,summary,details')) return; S.sheet=true; measure(); sd.classList.add('up'); });
     root.querySelectorAll('.pl-dot').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.k)));
     root.querySelectorAll('.pl-part').forEach(b=>b.addEventListener('click',()=>{S.pi=+b.dataset.p;S.k=0;S.z={s:1,x:0,y:0};render();}));
     root.querySelectorAll('.pl-mode[data-m]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.m;S.shown={};S.hint={};S.rated=null;S.saw3d=0;render(); track('task_mode'); if(opt.onMode) opt.onMode(S.mode);}));
@@ -24049,6 +24169,12 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.32',d:'14 ноября 2026',items:['Чертёж — главный на экране. На телефоне он занимает около 60 % высоты (было около 20 %): шапка сайта в разборе спрятана, шаги, «Условие» и «Смотрю / Решаю сам» — одной строкой, пояснение — шторкой снизу.',
+    'Подписи на чертежах — чертёжным шрифтом тип Б (наклонный, как на плакатах кафедры), один размер на всех чертежах.',
+    'Новые плоскости при замене — римскими индексами сверху: A<sup>IV</sup>, B<sup>V</sup> — на чертеже и в тексте шага. Оси — x₁₄, x₄₅.',
+    'Линии по ГОСТ 2.303: контур толстый, построения тонкие, линии связи самые светлые — толщина не меняется при увеличении. Жёлтого маркера больше нет: новое на шаге — цветом и толщиной, прошлое — тише.',
+    'Шаг ДЗ — одна фраза «что делаем»; «Почему так?», «Намёк», «Числа» и «Проверь себя» — кнопками под ней.',
+    'Печать листа прямо со страницы — ровно одна белая страница А3 в любой теме.']},
   {v:'4.31',d:'12 ноября 2026',items:['РК2 за 9 шагов проще: в теме три шага — «Как решать» (суть, как звучит в билете, способ), «Разбор по шагам», «Задачи билета». Вопрос-проверка и звёзды убраны: тема пройдена, когда досмотрен разбор.','«Задачи билета» — только условия и чертежи, по задаче на каждый вид, и яркая кнопка «Распечатать задачи» (по листу А4 на задачу). Без ответов, решений и координат.','Пробный РК2: координаты убраны, ответ — в целых градусах и миллиметрах с допуском, без лишних десятых.']},
   {v:'4.30',d:'12 ноября 2026',items:['РК2 за 9 шагов: каждая тема — пять шагов сверху (Суть → Способ → Разбор задачи → Виды в билете → Решить ещё), открыт один, внизу кнопка «Дальше». Ловушки свёрнуты, виды задач — компактные карточки. «Решить ещё» — лист задач как в билете, по одной на каждый вид, ответ и решение под спойлером, «Новые задачи» — новые числа.','Убрана проверка вводом чисел (углы, расстояния): тема засчитывается за вопрос на суть, разбор задачи и пройденные шаги. Пробный РК2: решаешь на бумаге, открываешь ответы и отмечаешь «сошлось / не сошлось».']},
   {v:'4.30',d:'12 ноября 2026',items:['«Спроси автора» — прямо на сайте. Кнопка «Спросить» в шапке на любой странице: пишешь, что не получается, можно с фото чертежа — автор отвечает лично, ответ приходит сюда же. Новый ответ видно на кнопке, все вопросы — в «Моих вопросах».']},
@@ -29181,7 +29307,7 @@ function dayPlay(){
   const pic=card.querySelector('.hday-pic'), cap=card.querySelector('.hday-cap');
   const show=()=>{ const old=pic.querySelector('svg'); const tmp=document.createElement('div'); tmp.innerHTML=dayFrame(D,s); const nw=tmp.firstElementChild;
     if(old&&nw){ old.replaceWith(nw); } cap.textContent=s?('Шаг '+s+' из '+D.n+(D.P.steps[s-1]&&D.P.steps[s-1].t?' · '+D.P.steps[s-1].t:'')):'Дано';
-    nw&&nw.querySelectorAll('[stroke="#ffd23f"]').forEach(e=>{ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset 1.3s ease'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }); };
+    nw&&DRAWIN(nw.querySelectorAll('.g-new :is(line,path,polyline), .g-new circle'),90); };
   const loop=()=>{ if(!card.isConnected){ clearTimeout(tm); return; } if(vis){ s=s>=D.n?0:s+1; show(); } tm=setTimeout(loop,s>=D.n?3200:1700); };
   if('IntersectionObserver' in window){ const io=new IntersectionObserver(es=>{ vis=es[0].isIntersecting; },{threshold:.35}); io.observe(card); }
   tm=setTimeout(loop,1400);
