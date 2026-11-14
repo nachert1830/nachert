@@ -76,8 +76,9 @@ async function liveCheck(page,URL){
   for(let ti=0;ti<7;ti++){ await page.evaluate(i=>document.querySelectorAll('[data-rt-t]')[i].click(),ti);
     for(let k=0;k<14;k++){ const nb=await page.$('[data-rt-go="1"]:not([disabled])'); if(!nb) break; await nb.click(); } }
   if(!(await page.$('.rt-ans.show'))) add('вращение','ответ','после всех шагов ответ не показан');
-  /* главная: справа — подсвеченная карточка «РК2 за 9 шагов» (раздел «Вращение» открывается из неё и по адресу #/ng/rot) */
-  { await page.goto(URL); await page.waitForTimeout(800); if(!(await page.$('.hc-rk9[href="#/ng/rk2"]'))) add('главная','карточка','нет карточки «РК2 за 9 шагов»'); }
+  /* главная: две верхние карточки — «Как образуются поверхности» (если нет эфира) и подсвеченная «ДЗ 4 · инж. графика» */
+  { await page.goto(URL); await page.waitForTimeout(800); if(!(await page.$('.hc-ig[href="#/ig4"]'))) add('главная','карточка','нет карточки «ДЗ 4»');
+    if(!(await page.$('#rkHome a[href="#/ng/surf"], #rkHome .hc-live, #rkHome [data-live]'))&&!(await page.$('#rkHome a[href^="#/live"]'))) add('главная','карточка','нет карточки «Как образуются поверхности»'); }
   /* ДЗ №3 «Как на листе»: пять задач пирамиды на всех 30 вариантах сходятся с пространством; страница варианта открывается */
   await page.goto(URL+'#/ng3/12/sheet'); await page.waitForTimeout(1200);
   const pyr=await page.evaluate(()=>{ const out=[], d=DZR.get?DZR.get('ng3'):null, V=(d&&d.V)||{};

@@ -27,6 +27,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
     <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 016.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0120 8.5v8a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 16.5z"/><circle cx="12" cy="12.5" r="3.5"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
     <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
     <symbol id="i-ext" viewBox="0 0 24 24"><path d="M8 16L17 7M9 7h8v8"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
@@ -50,6 +51,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
 <!-- ═══ Знакомство: имя → группа → вариант ═══ -->
 <div class="ob" id="ob" role="dialog" aria-modal="true" aria-label="Настройка кабинета">
   <div class="ob-in">
+    <a class="back ob-back" href="../" data-site><svg class="i"><use href="#i-back"/></svg>На сайт</a>
     <div class="ob-hero" id="obHero">
       <span class="pill" style="align-self:flex-start;margin-bottom:auto"><i></i>Личный кабинет</span>
       <h1>Твой семестр — на одном экране</h1>
@@ -89,10 +91,10 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
 
 <div class="app">
   <header class="top">
-    <span class="brand"><img src="../icon-192.png" alt="">Начерт <i>· кабинет</i></span>
+    <a class="back" href="../" data-site><svg class="i"><use href="#i-back"/></svg>На сайт</a>
+    <span class="brand"><img src="../icon-192.png" alt="">Кабинет</span>
     <span class="sp"></span>
     <button class="chip need" id="topLogin" data-login hidden>Войти</button>
-    <a class="ibtn" href="../" aria-label="На сайт" title="На сайт"><svg class="i"><use href="#i-ext"/></svg></a>
     <button class="av" id="topAv" data-tab-go="me" aria-label="Профиль">Н</button>
   </header>
 
@@ -176,7 +178,7 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
   <button class="tab" data-tab="cal"><svg class="i"><use href="#i-list"/></svg>Сдачи<span class="badge" id="calBadge" hidden></span></button>
   <button class="tab center" data-tab="check" aria-label="Сканер чертежей" hidden><span class="fab"><svg class="i"><use href="#i-scan"/></svg></span><span class="sm">Скан</span><span class="lg">Сканер чертежа</span></button>
   <button class="tab" data-tab="me"><svg class="i"><use href="#i-user"/></svg>Профиль</button>
-  <div class="side-foot">Кабинет в разработке.<br><a href="../">Вернуться на сайт →</a></div>
+  <div class="side-foot">Кабинет в разработке.<br><a href="../" data-site>Вернуться на сайт →</a></div>
 </div></nav>
 
 <!-- Выбор группы -->
@@ -233,5 +235,8 @@ try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'|
 <script src="drawings/view3d.js?v=1"></script>
 <script src="drawings/demo.js?v=1"></script>
 <script src="drawings/ui.js?v=7"></script>
+<script>/* «На сайт» — туда, откуда пришёл: сайт запоминает свой адрес (site_last в sessionStorage, index.html → render) */
+(function(){ let to='../'; try{ const h=sessionStorage.getItem('site_last'); if(h&&/^#\/[^]*$/.test(h)&&!/^#\/me\b/.test(h)) to='../'+h; }catch(e){}
+  document.querySelectorAll('[data-site]').forEach(a=>a.setAttribute('href',to)); })();</script>
 </body>
 </html>
