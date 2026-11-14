@@ -4,7 +4,7 @@
    2) вошёл — черновик на месте; вопрос с фото уходит, открывается переписка;
    3) пульт владельца: число ждущих на вкладке «Вопросы», имя ученика, страница, фото; ответ — ждущих 0;
    4) ученик: в шапке — число новых ответов, в «Моих вопросах» — «Ответ», в переписке — ответ автора;
-   5) телефон: без горизонтальной прокрутки, шапка помещается; главная — строка «Спроси автора»; без ошибок JS.
+   5) телефон: без горизонтальной прокрутки, шапка помещается; без ошибок JS.
    node tests/ask.js — отдельно; в node tests/run.js — тот же прогон. */
 const http = require('http'), fs = require('fs'), path = require('path'), ROOT = path.join(__dirname, '..');
 const { createApp } = require(ROOT + '/server/lib/app'), { memoryStore } = require(ROOT + '/server/lib/store/memory'), { botClient } = require(ROOT + '/server/lib/telegram'), { fromEvent } = require(ROOT + '/server/lib/http');
@@ -73,7 +73,7 @@ async function runAsk(browser) {
     await pg.goto(SITE + '/#/'); await pg.waitForTimeout(300); if (/\d/.test(await pg.textContent('#akBtn'))) B('прочитал ответ — число пропало', await pg.textContent('#akBtn'));
     /* 5) телефон */
     const ph = await page({ viewport: { width: 390, height: 800 }, isMobile: true, hasTouch: true }, 'телефон');
-    for (const h of ['#/ask', '#/']) { await ph.goto(SITE + '/' + h); await ph.waitForSelector(h === '#/' ? '.akh' : '.ak-box', { timeout: 10000 }).catch(() => B('телефон ' + h, 'не отрисовалось')); await ph.waitForTimeout(300);
+    for (const h of ['#/ask', '#/']) { await ph.goto(SITE + '/' + h); await ph.waitForSelector(h === '#/' ? '.au-pill' : '.ak-box', { timeout: 10000 }).catch(() => B('телефон ' + h, 'не отрисовалось')); await ph.waitForTimeout(300);
       const o = await ph.evaluate(() => [document.documentElement.scrollWidth - innerWidth, (h => h.scrollWidth - h.clientWidth)(document.querySelector('#hdr .hin'))]);
       if (o[0] > 0 || o[1] > 0) B('телефон ' + h + ': без прокрутки вбок, шапка помещается', JSON.stringify(o)); }
   } catch (e) { B('прогон', e.message); }

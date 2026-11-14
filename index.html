@@ -4571,7 +4571,7 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 /* главная: две карточки рядом — РК2 и «Все тела в 3D» */
 .hcards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:4px 0 14px}
 /* автор — плашка над карточками главной, открывает шторку AUTHOR (как предпросмотр в Telegram) */
-.au-pillw{display:flex;justify-content:center;margin:2px 0 12px}
+.au-pillw{display:flex;justify-content:center;margin:12px 0 18px}
 .au-pill{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;max-width:100%;padding:4px 14px 4px 4px;border:1px solid var(--line);border-radius:99px;background:var(--surf);color:var(--ink2);font:500 14px/1 var(--sans);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}
 .au-pill:hover{transform:translateY(-1px);border-color:var(--acc);box-shadow:0 8px 22px -12px rgba(26,90,224,.55)}
 .au-pill b{color:var(--ink);font-weight:700}.au-pill .au-go{color:var(--acc);font-weight:700}
@@ -29332,7 +29332,6 @@ function viewHome(v){
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
-   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
    <div class="hcards" id="rkHome">${homeCards()}</div>
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
@@ -29345,8 +29344,8 @@ function viewHome(v){
     ${tg?`<a class="v8-res" href="${attr(tg.href)}"><span>Продолжить</span><b>${attr(short(tg.label,70))}</b>${stepNote?`<small>${attr(stepNote.replace(/ · $/,''))}</small>`:''}<i aria-hidden="true">→</i></a>`:''}
     <ol class="v9-steps" aria-label="Как найти решение"><li><b>1</b>Впиши номер или вопрос</li><li><b>2</b>Открой решение</li><li><b>3</b>Жми «Дальше» — шаг за шагом</li></ol>
    </section>
-   <div data-ask-home></div>
        <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
+   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
    <section class="v8-dirs" aria-labelledby="v8D">
     <h2 id="v8D" class="v8-dh">Или открой раздел</h2>
     <div class="v8-cols">
@@ -35141,8 +35140,8 @@ const AUTHOR=(()=>{
       <div class="aus-hd"><span class="au-face" aria-hidden="true"></span><div><b>Андрей Матханов</b><small>владелец сайта</small></div>
         <button type="button" class="aus-x" data-x aria-label="Закрыть"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div class="aus-vp"><div class="aus-tr">
-        ${slide('img/author-2.webp',1254,1254,'50% 30%','Андрей Матханов и Илон Маск')}
         ${slide('img/author-1.webp',1738,905,'49% 30%','Андрей Матханов и Лионель Месси')}
+        ${slide('img/author-2.webp',1254,1254,'50% 30%','Андрей Матханов и Илон Маск')}
       </div></div>
       <div class="aus-ft"><span class="aus-dots" aria-hidden="true"><i class="on"></i><i></i></span>
         <button type="button" class="aus-b gh" data-back hidden>Назад</button>
