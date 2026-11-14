@@ -244,6 +244,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
 
   /* 3л′. печать листов (tests/print.js): страниц PDF ровно столько, сколько листов, фон белый в светлой и тёмной теме */
   report('Печать листов', await require('./print.js').printCheck(browser,URL));
+  /* цвета чертежа (tests/colors.js): контраст ≥ 3:1, различимость при цветовой слепоте */
+  report('Цвета чертежа', require('./colors.js').check());
 
   /* 3л. «Спроси автора» (tests/ask.js): вопрос с сайта (гость → вход → черновик уходит сам, фото) → ответ в пульте → ученик видит ответ;
      настоящий сервер кабинета с базой в памяти */

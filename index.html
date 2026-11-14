@@ -5192,6 +5192,15 @@ sup.ri{font-size:.68em;line-height:0;vertical-align:.55em;letter-spacing:.02em}
 :root[data-ds=soft] svg.dwg .mc circle{fill:#2b2f36!important;stroke:#2b2f36!important}
 /* подложка под подписью — тоньше: подпись стоит на свободном месте и не стирает линии */
 body.inplayer .pl-paper svg.dwg text.lbl{stroke-width:calc(var(--lf,11.5px)*.2)}
+
+/* ═════ ЦВЕТ ЧЕРТЕЖА v10 (docs/color-policy.md, «Наука»): цвет — только у того, что строим на этом шаге ═════
+   прошлые шаги — серые (#a3a9b4), контур — тушь, искомое — красное; у каждого посредника текущего шага свой цвет
+   из четырёх различимых при цветовой слепоте; линии связи посредника — его цветом, но бледнее */
+:root:not([data-ds]) svg.dwg .g-old .mc,:root[data-ds=a] svg.dwg .g-old .mc{--mc:#a3a9b4!important;opacity:1}
+:root:not([data-ds]) svg.dwg .g-old .mc text.lbl{fill:#6b707a!important}
+:root:not([data-ds]) svg.dwg .g-old .mc circle{fill:#6b707a!important;stroke:#6b707a!important}
+:root:not([data-ds]) svg.dwg .g-old [stroke="#9dbbe0"]{stroke:#d3d6dc}
+svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 </style>
 </head>
 <body>
@@ -6011,7 +6020,7 @@ const KCOL={main:'#14181f',thin:'#14181f',aux:'#3f74b8',res:'#9b2335',grn:'#3a7a
 function chipify(html,items){
   if(!html) return html;
   const col={}; (items||[]).forEach(it=>{ if(!it||!it.l||typeof it.l!=='string') return;
-    const c=KCOL[it.k]||(it._g==='new'?'#9b2335':'#14181f');
+    const c=it.col||KCOL[it.k]||(it._g==='new'?'#9b2335':'#14181f');
     it.l.split(/≡|\s+/).map(x=>x.trim()).filter(x=>x.length>=2&&/[″′‴]/.test(x)||x.length>=2&&/^[a-zA-Z][a-zA-Z0-9₀-₉ₐ-ₜ]*$/.test(x)).forEach(x=>{ if(!col[x]||it._g==='new') col[x]=c; }); });
   const keys=Object.keys(col).sort((a,b)=>b.length-a.length); if(!keys.length) return html;
   const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
