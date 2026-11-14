@@ -148,7 +148,7 @@ try{ S.seen=JSON.parse(LS.get('nch2_ask_seen')||'{}')||{}; }catch(e){}
 /* ── шапка: кнопка «Спросить» и число новых ответов ── */
 function header(){ const hr=$('#hdr .hright'); if(!hr) return; let a=$('#akBtn');
   if(!a){ a=document.createElement('a'); a.id='akBtn'; a.className='akb'; a.href='#/ask'; a.title='Спросить автора'; hr.insertBefore(a,hr.firstChild); }
-  const n=S.unread; a.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1v.5"/><circle cx="12" cy="16.6" r=".6" fill="currentColor"/></svg><span>Спросить</span>'+(n?'<u>'+n+'</u>':'');
+  const n=S.unread; a.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4.5h12a2.5 2.5 0 0 1 2.5 2.5v8a2.5 2.5 0 0 1-2.5 2.5h-5l-4.5 3.2v-3.2H6A2.5 2.5 0 0 1 3.5 15V7A2.5 2.5 0 0 1 6 4.5z"/><path d="M10 9.2a2 2 0 1 1 2.7 1.9c-.45.18-.7.55-.7 1v.3"/><circle cx="12" cy="14.6" r="1" fill="currentColor" stroke="none"/></svg><span>Спросить</span>'+(n?'<u>'+n+'</u>':'');
   a.setAttribute('aria-label',n?'Спросить автора — новых ответов: '+n:'Спросить автора'); }
 
 /* ── опрос сервера: новые ответы ── */
