@@ -549,3 +549,11 @@ details.past[open] summary::before{content:"▾ "}
 .oblog{align-self:flex-start;color:var(--ink2);font:600 15px var(--sans);padding:6px 2px}
 .oblog b{color:var(--blue);font-weight:800}
 #topLogin{height:42px;box-shadow:var(--shadow)}
+
+/* «На сайт» — кнопка назад в шапке и на экране знакомства */
+.back{display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 14px 0 8px;border-radius:18px;background:var(--surf);border:1px solid var(--line);box-shadow:var(--shadow);font:700 14px var(--sans);color:var(--ink);text-decoration:none;white-space:nowrap;flex:none}
+.back svg.i{width:18px;height:18px;stroke-width:2.6}
+.back:hover{border-color:var(--blue)}
+.back:active{transform:scale(.97)}
+.ob-back{align-self:flex-start;margin-bottom:12px}
+@media (max-width:460px){ .top .brand{display:none} .top{gap:8px} .top .back{margin-right:auto} }
