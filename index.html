@@ -27922,8 +27922,7 @@ function taskCardHTML(q,exam){ const r=q.res;
   </div>`; }
 function resHTML(q){ const r=q.res;
   return `<div class="rkp-res${r.self==null?'':r.self?' ok':' no'}" role="status">
-    <p class="rkp-ans">Ответ: <b>${q.sym} ≈ ${Math.round(q.ans)}${q.u==='°'?'°':' '+q.u}</b></p>
-    <p class="rkp-how2">На бумаге точность — ±${Math.max(1,Math.round(q.tol||2))}${q.u==='°'?'°':' мм'}: если твой ответ в этих пределах, сошлось. Красным на чертеже — решение.</p>
+    <p class="rkp-how2">Красным на чертеже — решение. Сравни со своим построением.</p>
     ${r.self==null?`<div class="rkp-self"><span>У тебя так же?</span><button type="button" class="btn ok-b" data-self="1">Сошлось</button><button type="button" class="btn" data-self="0">Не сошлось</button></div>`
       :`<p class="rkp-selfr">${r.self?'✓ Сошлось':'✗ Не сошлось — повтори тему'}</p>`}</div>`; }
 
