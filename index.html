@@ -5133,7 +5133,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-prn:hover{text-decoration:underline}
 .rkp-prnw{margin:0 0 10px;font-size:15px}
 #prnOut{display:none}
-.prn-pg{width:210mm;height:297mm;padding:12mm 14mm 10mm;box-sizing:border-box;background:#fff;color:#15161a;overflow:hidden;display:flex;flex-direction:column;font:10.5pt/1.4 'Golos Text',Arial,sans-serif}
+.prn-pg{width:100%;max-width:210mm;height:283mm;margin:0 auto;padding:10mm 14mm 6mm;break-inside:avoid;page-break-inside:avoid;box-sizing:border-box;background:#fff;color:#15161a;overflow:hidden;display:flex;flex-direction:column;font:10.5pt/1.4 'Golos Text',Arial,sans-serif}
 .prn-h{display:flex;justify-content:space-between;gap:6mm;font-size:8.5pt;color:#5f6168;border-bottom:.3mm solid #c9ccd3;padding-bottom:1.5mm;margin-bottom:4mm}
 .prn-pg h2{font:800 14pt/1.25 'Golos Text',Arial,sans-serif;margin:0 0 2.5mm;color:#15161a}
 .prn-c{font-size:11pt;margin:0 0 1.5mm}.prn-c p{margin:0}
@@ -5145,6 +5145,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .prn-f{display:flex;justify-content:space-between;align-items:flex-end;gap:5mm;margin-top:4mm;font-size:8.5pt;color:#5f6168}
 .prn-f>div{display:flex;flex-direction:column;gap:.5mm}.prn-f b{font-size:10pt;color:#15161a}
 .prn-qr svg{display:block;width:16mm;height:16mm}
+.prn-logo{display:block;height:5mm;width:auto;margin-bottom:1mm}
 @media print{
   body.prn-on{background:#fff!important}
   body.prn-on>*:not(#prnOut){display:none!important}
@@ -27944,7 +27945,7 @@ function prnMoreHTML(id){ const T=TOP(id), qs=(CUR&&CUR.id===id&&CUR.more&&CUR.m
      <h2>Задача ${i+1}</h2><div class="prn-c"><p>${q.q}. Применить при решении задачи ${q.mtext}.</p></div>
      <div class="prn-fig prn-fill">${figHTML(q,false)}</div>
      <p class="prn-ans">Ответ: <i></i></p>
-     <div class="prn-f"><div><b>${PAUTH}</b><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`).join(''); }
+     <div class="prn-f"><div><img class="prn-logo" src="img/logo-mathanov-b.webp" alt="mathanov."><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`).join(''); }
 function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
   const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1], prv=TOPICS[idx-1], ms=Object.keys(T.m);
   if(!CUR||CUR.id!==id){ const st0=tState(getS(),id); CUR={id,stg:ex==='pi2'?1:Math.max(0,STG.findIndex(x=>!stgDone(st0,x[0])))}; }
@@ -28044,15 +28045,17 @@ function prnHTML(ids){ const L=prnTasks(ids), N=L.length, E=EPX.escH;
      <div class="prn-c">${EPX.mk(t.cond)}</div><p class="prn-m">Способ решения: ${E(t.m)}.</p>
      <div class="prn-fig">${prnFig(t)}</div>
      <p class="prn-ans">Ответ: <i></i></p>
-     <div class="prn-f"><div><b>${PAUTH}</b><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`; }).join(''); }
+     <div class="prn-f"><div><img class="prn-logo" src="img/logo-mathanov-b.webp" alt="mathanov."><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`; }).join(''); }
 function prnOff(){ document.body.classList.remove('prn-on'); ['prnOut','prnPage'].forEach(i=>{ const e=document.getElementById(i); if(e) e.remove(); }); if(prnOff.t!=null){ document.title=prnOff.t; prnOff.t=null; } }
 function prnBuild(ids,html){ prnOff(); const out=document.createElement('div'); out.id='prnOut'; out.innerHTML=html||prnHTML(ids); document.body.appendChild(out);
   const st=document.createElement('style'); st.id='prnPage'; st.textContent='@page{size:A4 portrait;margin:0}'; document.head.appendChild(st);
-  document.body.classList.add('prn-on'); prnOff.t=document.title; document.title='РК2 — условия задач · '+PAUTH; return out; }
-function prnPrint(ids){ prnBuild(ids); setTimeout(()=>{ try{ window.print(); }catch(e){} },60); }   /* убираем документ после печати (afterprint) или при переходе; на экране он скрыт */
+  document.body.classList.add('prn-on'); prnOff.t=document.title; document.title='РК2 — условия задач · Начерт'; return out; }
+/* печать — когда загрузились картинки листа (логотип), иначе на бумаге пустое место */
+function prnGo(out){ const im=[...out.querySelectorAll('img')]; Promise.all(im.map(i=>i.complete?1:new Promise(r=>{ i.onload=i.onerror=r; }))).then(()=>setTimeout(()=>{ try{ window.print(); }catch(e){} },60)); }
+function prnPrint(ids){ prnGo(prnBuild(ids)); }   /* убираем документ после печати (afterprint) или при переходе; на экране он скрыт */
 window.addEventListener('afterprint',()=>setTimeout(prnOff,0));
 window.addEventListener('hashchange',prnOff);
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkmore]'); if(!b) return; e.preventDefault(); prnBuild(null,prnMoreHTML(b.dataset.rkmore)); setTimeout(()=>{ try{ window.print(); }catch(_){} },60); });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkmore]'); if(!b) return; e.preventDefault(); prnGo(prnBuild(null,prnMoreHTML(b.dataset.rkmore))); });
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkprint]'); if(!b) return; e.preventDefault(); prnPrint(b.dataset.rkprint?b.dataset.rkprint.split(','):null); });
 
 /* строка для главной */

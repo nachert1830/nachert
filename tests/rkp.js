@@ -11,7 +11,7 @@
       не меньше двух разных способов, варианты усложнённые.
    4. Экраны: путь (9 тем и финал), тема — 3 шага (Как решать → Разбор по шагам → Задачи билета), в задачах только условия и кнопка печати;
       пройденная тема даёт 10 %; пробный РК2 — «сошлось» по всем трём даёт 3 из 3 и 100 %. Без ошибок JS и прокрутки вбок.
-   5. Печать условий: по листу на задачу, условие и чертёж «дано» без шагов и ответа, имя автора и ссылка на каждом листе,
+   5. Печать условий: по листу на задачу, условие и чертёж «дано» без шагов и ответа, логотип и ссылка на каждом листе,
       при печати видны только листы, на экране документа нет.
    Запуск: из tests/run.js; отдельно — node tests/rkp.js */
 async function rkpCheck(page,URL){
@@ -128,7 +128,7 @@ async function rkpCheck(page,URL){
   if(x.t!=='3 из 3'||x.v!==100) add('пробный РК2','итог',JSON.stringify(x));
   await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(300);
   const meter=await page.evaluate(()=>(document.querySelector('.rkp-mt b')||{}).textContent); if(!/^100/.test(meter||'')) add('путь','шкала','после всего '+meter);
-  /* 5. Печать условий: по листу на задачу RK2 9 тем, на листе — условие и чертёж «дано», без шагов и ответа; имя автора и ссылка */
+  /* 5. Печать условий: по листу на задачу RK2 9 тем, на листе — условие и чертёж «дано», без шагов и ответа; логотип и ссылка */
   await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(300);
   await page.evaluate(()=>{ window.__print=window.print; window.print=()=>{ window.__printed=(window.__printed||0)+1; }; });
   await page.click('[data-rkprint]'); await page.waitForTimeout(300);
@@ -137,7 +137,7 @@ async function rkpCheck(page,URL){
     if(!window.__printed) out.push('кнопка не вызвала печать');
     if(pg.length!==L.length||L.length<9) out.push('листов '+pg.length+', задач '+L.length);
     pg.forEach((g,i)=>{ const t=L[i]&&L[i].t, tx=g.textContent, cs=e=>e&&getComputedStyle(e).display!=='none';
-      if(!/Матханов Андрей Михайлович/.test(tx)) out.push('лист '+(i+1)+': нет имени автора');
+      if(!g.querySelector('.prn-f img.prn-logo')) out.push('лист '+(i+1)+': нет логотипа');
       if(!/nachert1830\.ru\/#\/ng\/rk2\/p\//.test(tx)) out.push('лист '+(i+1)+': нет ссылки на тему');
       if(!cs(g.querySelector('.prn-f'))||!cs(g.querySelector('.prn-h'))) out.push('лист '+(i+1)+': шапка или подпись скрыты при печати');
       if(!g.querySelector('.prn-fig svg path')) out.push('лист '+(i+1)+': нет чертежа');
