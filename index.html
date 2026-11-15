@@ -4981,9 +4981,9 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-solbar{display:flex;align-items:center;gap:10px;margin:10px 0 8px}.rkp-soln{font:800 13px var(--sans);color:var(--acc,#1a5ae0);white-space:nowrap}
 .rkp-sold{display:flex;gap:4px;flex:1}.rkp-sold i{flex:1;height:5px;border-radius:3px;background:var(--line)}.rkp-sold i.d{background:#9cc0ef}.rkp-sold i.n{background:#1a5ae0}
 .rkp-solv{display:grid;gap:10px}.rkp-solv.two{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
-.rkp-solep{height:min(72vh,600px);display:flex;align-items:center;justify-content:center;padding:6px;border-radius:14px;overflow:hidden}
+.rkp-solep{background:#fff!important;background-image:none!important;height:min(72vh,600px);display:flex;align-items:center;justify-content:center;padding:6px;border-radius:14px;overflow:hidden}
 .rkp-solep svg{display:block;width:100%!important;height:100%!important;max-width:none!important}
-.rkp-solep svg.dwg text.lbl{font-size:var(--lf,14px)!important;font-weight:600!important;stroke-width:calc(var(--lf,14px)*.22)!important}
+.rkp-solep svg.dwg text.lbl{font-size:var(--lf,14px)!important;stroke-width:calc(var(--lf,14px)*.2)!important}   /* шрифт и толщина — как на всём сайте */
 .rkp-sol3 .l3-st{height:min(72vh,600px)}.rkp-sol3 .l3-hint{font-size:12px;color:var(--mut)}
 .rkp-solt{margin:10px 0 0;padding:12px 14px;border-radius:14px;background:var(--surf2);border-left:4px solid #1a5ae0}
 .rkp-solt b{display:block;font-size:16px;margin-bottom:4px}.rkp-solt p{margin:0;font-size:15px;line-height:1.5;color:var(--ink2)}
@@ -5069,7 +5069,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-traps ul{margin:0 0 12px}
 .rkp-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 2px 0;font-size:12.5px;color:var(--mut)}
 .rkp-leg i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle;background:#111}
-.rkp-leg i.b{background:#1a5ae0}.rkp-leg i.o{background:#f08a00}.rkp-leg i.r{background:#e3262f}
+.rkp-leg i.k{background:#15161a}.rkp-leg i.b{background:#3567b5;height:2px}.rkp-leg i.o{background:#3567b5;height:4px}.rkp-leg i.r{background:#c9302c}
 :root[data-theme=dark] .rkp-leg i.k{background:#ddd}
 .rkp-rkg{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:0 0 14px}
 .rkp-rkc{display:flex;flex-direction:column;gap:8px;padding:8px 8px 12px}
@@ -34086,9 +34086,10 @@ function big(svg,W,H,box,o){ if(!svg||!svg.getBoundingClientRect) return; o=o||{
   const sc=Math.min(r.width/W,r.height/H), k=1/Math.max(sc,.05), m=o.m||1, ph=r.width<620, fs=(o.fs||15)*(ph?.75:1);
   svg.style.setProperty('--u',k*(ph?.85:1)); svg.style.setProperty('--lf',(fs*k)+'px');
   /* линии — тонко и ровно, как на чертеже: основные ~1,6 px, вспомогательные ~1 px, линии связи ~0,8 px */
-  svg.querySelectorAll('[stroke-width]').forEach(e=>{ if(e.tagName==='text'||e.tagName==='circle') return; const w=+e.getAttribute('stroke-width'); if(w>0) e.setAttribute('stroke-width',(Math.min(Math.max(w*m,.8),3)*k).toFixed(3)); });
+  /* чертёж DRAW (svg.dwg) — толщины уже экранные (non-scaling-stroke), как на всём сайте: не трогаем */
+  if(!svg.classList.contains('dwg')) svg.querySelectorAll('[stroke-width]').forEach(e=>{ if(e.tagName==='text'||e.tagName==='circle') return; const w=+e.getAttribute('stroke-width'); if(w>0) e.setAttribute('stroke-width',(Math.min(Math.max(w*m,.8),3)*k).toFixed(3)); });
   /* точки — маленькие: радиус ~2,2 px на экране */
-  svg.querySelectorAll('circle').forEach(e=>{ const rr=+e.getAttribute('r'); if(rr>0&&rr<8){ e.setAttribute('r',(3.1*k*(ph?.85:1)).toFixed(3)); if(e.getAttribute('stroke-width')) e.setAttribute('stroke-width',(.8*k).toFixed(3)); } }); }
+  svg.querySelectorAll('circle').forEach(e=>{ const rr=+e.getAttribute('r'); if(rr>0&&rr<8){ e.setAttribute('r',(2.6*k*(ph?.85:1)).toFixed(3)); if(e.getAttribute('stroke-width')&&!svg.classList.contains('dwg')) e.setAttribute('stroke-width',(.8*k).toFixed(3)); } }); }
 /* ── плеер: шаги, анимация внутри шага, камера, мышь ── */
 function mount(host,SC,o){ o=o||{};
   host.innerHTML=`<div class="l3-st" data-l3-st></div>
@@ -34183,8 +34184,13 @@ const EPX=(function(){
       out.push({t:ch}); i++; }
     return out; };
   const escH=s=>String(s).replace(/&(?!(?:[a-z]+|#\d+);)/g,'&amp;').replace(/</g,'&lt;');
-  const lblHTML=l=>toks(l).map(x=>x.o?`<span class="lx-ov">${escH(x.o)}</span>`:x.s?`<sub>${escH(x.s)}</sub>`:escH(x.t)).join('');
-  const lblSVG=(l,fs)=>{ let h='', sub=false; toks(l).forEach(x=>{ if(x.s){ h+=`<tspan font-size="${(fs*.68).toFixed(3)}" dy="${(fs*.28).toFixed(3)}">${escH(x.s)}</tspan>`; sub=true; return; }
+  /* новые плоскости π₄, π₅, π₆ — верхним римским индексом, как на всём сайте: A₄ → A^IV (оси x₂₄, x₄₅ — двузначные, остаются) */
+  const ROMS={'4':'IV','5':'V','6':'VI'};
+  const romT=l=>{ const T=toks(l); T.forEach((x,i)=>{ if(x.s&&ROMS[x.s]&&!(i&&/π$/.test(T[i-1].t||''))) x.r=ROMS[x.s]; }); return T; };   /* π₄ — арабская */
+  const lblHTML=l=>romT(l).map(x=>x.o?`<span class="lx-ov">${escH(x.o)}</span>`:x.r?`<sup class="ri">${x.r}</sup>`:x.s?`<sub>${escH(x.s)}</sub>`:escH(x.t)).join('');
+  const lblSVG=(l,fs)=>{ let h='', sub=false; romT(l).forEach(x=>{ if(x.r){ h+=`<tspan font-size="${(fs*.66).toFixed(3)}" dy="${(-fs*.4).toFixed(3)}">${x.r}</tspan>`; sub=-1; return; }
+      if(sub===-1){ sub=false; if(!x.s){ const dy=` dy="${(fs*.4).toFixed(3)}"`; h+=x.o?`<tspan text-decoration="overline"${dy}>${escH(x.o)}</tspan>`:`<tspan${dy}>${escH(x.t)}</tspan>`; return; } }
+      if(x.s){ h+=`<tspan font-size="${(fs*.68).toFixed(3)}" dy="${(fs*.28).toFixed(3)}">${escH(x.s)}</tspan>`; sub=true; return; }
       const dy=sub?` dy="${(-fs*.28).toFixed(3)}"`:''; sub=false; h+=x.o?`<tspan text-decoration="overline"${dy}>${escH(x.o)}</tspan>`:`<tspan${dy}>${escH(x.t)}</tspan>`; }); return h; };
   const lblW=l=>toks(l).reduce((w,x)=>w+(x.s?x.s.length*.42:x.t&&/[′″]/.test(x.t)?.28:x.t===' '?.3:.62),0);
   /* текст панели: формулы с индексами «z_A», «O_B′» → <sub> */
@@ -34196,10 +34202,11 @@ const EPX=(function(){
   /* одна палитра на весь сайт (раздел «Вращение», РК2, эфир, ДЗ №3) — как на листе: данные — чёрным карандашом, построения — тонко,
      линии связи — светло, новые проекции и повёрнутое — синим, ответ — красным, текущий шаг — оранжевым, обратный переход — фиолетовым.
      Пунктир — только у невидимого (hid, ctxh, hidr). */
-  const CL={main:['#111827',2.5],hid:['#111827',1.6,'8 5'],thin:['#374151',1.05],link:['#a9b6c8',.85],ax:['#111827',1.3],ax2:['#111827',1.3],ax3:['#111827',1.3],
-    aux:['#374151',1.05],rot:['#111827',1.5],tr:['#4b5563',1],v4:['#1d4ed8',2.2],v5:['#1d4ed8',2.5],bar:['#1d4ed8',2.5],bth:['#1d4ed8',1.1],res:['#dc2626',2.7],ctx:['#9ca3af',1.1],ctxh:['#9ca3af',1,'7 5'],circ:['#6b7280',1],thin2:['#4b5563',1],hidr:['#dc2626',2.2,'8 5'],ok:['#15803d',1.6],tk:['#111827',1.3],trc:['#4b5563',1],dim:['#374151',1],fill:['none',0],pl:['#6b7280',0],pl4:['#6b7280',0]};
-  const LBC={ok:'#15803d',tr:'#111827',dim:'#374151',hidr:'#dc2626',main:'#111827',ax:'#111827',ax2:'#111827',ax3:'#111827',aux:'#111827',rot:'#111827',v4:'#1d4ed8',v5:'#1d4ed8',bar:'#1d4ed8',bth:'#1d4ed8',res:'#dc2626',pl:'#6b7280',pl4:'#6b7280',tk:'#111827',thin:'#111827'};
-  let CUR='#ea580c';
+  /* цвета и толщины — как у всех чертежей сайта (DRAW, docs/color-policy.md): тушь, синий карандаш, светлые линии связи, красное искомое */
+  const CL={main:['#15161a',2.3],hid:['#15161a',1.35,'6 3.5'],thin:['#15161a',.85],link:['#9dbbe0',.7],ax:['#15161a',1.3],ax2:['#15161a',1.3],ax3:['#15161a',1.3],
+    aux:['#3567b5',1.1],rot:['#3567b5',1.4],tr:['#3567b5',1],v4:['#15161a',2.3],v5:['#15161a',2.3],bar:['#15161a',2.3],bth:['#3567b5',1.1],res:['#c9302c',2.5],ctx:['#a3a9b4',1.1],ctxh:['#a3a9b4',1,'6 3.5'],circ:['#3567b5',1],thin2:['#3567b5',1],hidr:['#c9302c',2,'6 3.5'],ok:['#1f7a4f',1.6],tk:['#15161a',1.1],trc:['#3567b5',1],dim:['#3567b5',.85],fill:['none',0],pl:['#5f6168',0],pl4:['#5f6168',0]};
+  const LBC={ok:'#1f7a4f',tr:'#2a5aa6',dim:'#2a5aa6',hidr:'#b02a26',main:'#15161a',ax:'#15161a',ax2:'#15161a',ax3:'#15161a',aux:'#2a5aa6',rot:'#2a5aa6',v4:'#15161a',v5:'#15161a',bar:'#15161a',bth:'#2a5aa6',res:'#b02a26',pl:'#5f6168',pl4:'#5f6168',tk:'#15161a',thin:'#15161a'};
+  let CUR='#3567b5';
   function bbox(it){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const P=p=>{ x0=Math.min(x0,p[0]); y0=Math.min(y0,p[1]); x1=Math.max(x1,p[0]); y1=Math.max(y1,p[1]); };
     it.forEach(o=>{ if(o.k==='seg'||o.k==='dim'){ P(o.p); P(o.q); } else if(o.k==='pt'||o.k==='lab') P(o.p); else if(o.k==='circ'||o.k==='arc'){ P(a2(o.o,[-o.r,-o.r])); P(a2(o.o,[o.r,o.r])); } else if(o.k==='poly') o.ps.forEach(P); });
     return [x0,y0,x1,y1]; }
@@ -34233,7 +34240,7 @@ const EPX=(function(){
       if(e[0]>=bb[0]-.01&&e[1]>=bb[1]-.01&&e[2]<=bb[2]+.01&&e[3]<=bb[3]+.01) break; bb=e; }
     const vw=W*u, vh=Hh_*u, x0=bb[0]-pad-(vw-bw)/2, y0=bb[1]-pad-(vh-bh)/2;
     const vis=it.filter(o=>o.st<=k&&(o.till==null||k<=o.till)).sort((a,b)=>(a.c==='link'?0:1)-(b.c==='link'?0:1)), cur=o=>!full&&k>0&&o.st===k;   /* линии связи — под линиями чертежа */
-    CUR=k>0&&task.steps[k-1]&&task.steps[k-1].back?(task.curB||'#7c3aed'):(task.cur||'#ea580c');   /* обратный переход — фиолетовым */
+    CUR=k>0&&task.steps[k-1]&&task.steps[k-1].back?(task.curB||'#6633dd'):(task.cur||'#3567b5');   /* новое на шаге — синим карандашом и толще, как на всём сайте */   /* обратный переход — фиолетовым */
     const n=v=>v.toFixed(3), P=p=>n(p[0])+' '+n(p[1]);
     const sw=(c,o)=>{ const s=CLx[o.c2&&!cur(o)?o.c2:c]||CLx.aux; return s; };
     let g='', glow='', top='', lab='';
@@ -34253,15 +34260,14 @@ const EPX=(function(){
       else if(o.k==='ang'){ const a0=Math.atan2(o.p[1]-o.v[1],o.p[0]-o.v[0]), a1=Math.atan2(o.q[1]-o.v[1],o.q[0]-o.v[0]); let da=a1-a0; while(da>Math.PI) da-=2*Math.PI; while(da<-Math.PI) da+=2*Math.PI; const r=o.r*u*2.6;
         const p0=a2(o.v,[r*Math.cos(a0),r*Math.sin(a0)]), p1=a2(o.v,[r*Math.cos(a1),r*Math.sin(a1)]); g+=stroke(o,`M${P(p0)}A${n(r)} ${n(r)} 0 0 ${da>0?1:0} ${P(p1)}`); }
     });
-    vis.forEach(o=>{ if(o.k==='pt'&&o.r!==0){ const c=cur(o), col=c?CUR:LBx[o.c]||'#0d1b2e'; top+=`<circle cx="${n(o.p[0])}" cy="${n(o.p[1])}" r="${n((c?4.6:3.8)*u)}" fill="#fff" stroke="${col}" stroke-width="${n((c?2.2:1.7)*u)}"/><circle cx="${n(o.p[0])}" cy="${n(o.p[1])}" r="${n(1.25*u)}" fill="${col}"/>`; if(0) top+=`<circle cx="${n(o.p[0])}" cy="${n(o.p[1])}" r="${n((c?4.4:3.6)*u)}" fill="${col}" stroke="#fff" stroke-width="${n(1.4*u)}"/>`; } });
+    vis.forEach(o=>{ if(o.k==='pt'&&o.r!==0){ const c=cur(o), col=c?CUR:LBx[o.c]||'#0d1b2e'; top+=`<circle cx="${n(o.p[0])}" cy="${n(o.p[1])}" r="${n((c?3:2.6)*u)}" fill="${col}"/>`; if(0) top+=`<circle cx="${n(o.p[0])}" cy="${n(o.p[1])}" r="${n((c?4.4:3.6)*u)}" fill="${col}" stroke="#fff" stroke-width="${n(1.4*u)}"/>`; } });
     vis.forEach(o=>{ if(!o.l||!o.lp) return; const c=cur(o), col=c?CUR:LBx[o.c]||'#0d1b2e', f=(o.big?1.15:o.sm?.82:1)*fs*u;
-      const w=o.c==='pl'||o.c==='pl4'?600:700;
-      lab+=`<text x="${n(o.lp[0])}" y="${n(o.lp[1]+f*.36)}" text-anchor="middle" font-size="${n(f)}" font-weight="${w}" fill="${col}" stroke="#fff" stroke-width="${n(f*.24)}" paint-order="stroke" stroke-linejoin="round"${o.c==='pl'||o.c==='pl4'?' font-style="italic"':''}>${lblSVG(o.l,f)}</text>`; });
+      const w=700;
+      lab+=`<text x="${n(o.lp[0])}" y="${n(o.lp[1]+f*.36)}" text-anchor="middle" font-size="${n(f*.92)}" font-weight="${w}" fill="${col}" stroke="#fff" stroke-width="${n(f*.18)}" paint-order="stroke" stroke-linejoin="round">${lblSVG(o.l,f)}</text>`; });
     /* клетка 5 мм, как на листе; линии клетки привязаны к O */
     const gx0=Math.floor(x0/5)*5, gy0=Math.floor(y0/5)*5; let grid='';
     for(let x=gx0;x<=x0+vw;x+=5) grid+=`M${n(x)} ${n(y0)}V${n(y0+vh)}`; for(let y=gy0;y<=y0+vh;y+=5) grid+=`M${n(x0)} ${n(y)}H${n(x0+vw)}`;
-    box.innerHTML=`<svg viewBox="${n(x0)} ${n(y0)} ${n(vw)} ${n(vh)}" width="${W}" height="${Hh_}" role="img" aria-label="Эпюр: ${escH(task.t)}" font-family="'Golos Text',system-ui,sans-serif">
-      <path d="${grid}" stroke="#e6edf6" stroke-width="${n(1*u)}" fill="none"/>${glow}${g}${top}${lab}</svg>`; }
+    box.innerHTML=`<svg viewBox="${n(x0)} ${n(y0)} ${n(vw)} ${n(vh)}" width="${W}" height="${Hh_}" role="img" aria-label="Эпюр: ${escH(task.t)}" font-family="'NchGost','NchSerif',serif">${glow}${g}${top}${lab}</svg>`; }   /* без клетки — бумага чистая, как на всём сайте */
 
   /* панель задачи на шаге k: 0 — условие, А и Б; 1…n — шаг и строчки В; n+1 — ответ, обратный переход, ошибки */
   function panel(t,k,o){ o=o||{}; const n=t.steps.length;
