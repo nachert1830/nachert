@@ -2666,6 +2666,9 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:480px){.subj a{padding:0 9px;font-size:13px}.subj a i{display:none}.brand .bw{display:none}}
 @media(max-width:400px){.hin{gap:6px;padding:0 10px}.hright{gap:4px}.icb{width:38px;height:38px}.subj{padding:2px}.subj a{padding:0 8px;font-size:12.5px;min-height:34px}}
 @media(max-width:339px){#shareBtn{display:none}}
+/* подвал — одна тихая строка; источники, правовая информация и «что нового» — на странице «О проекте» */
+.foot-mini{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 16px;padding:14px 0 6px;font-size:13px;color:var(--mut)}
+.foot-mini a{color:var(--mut)!important;text-decoration:none;font-weight:600}.foot-mini a:hover{color:var(--acc)!important}
 /* телефон: кнопка темы всегда в шапке — кнопки чуть меньше, вкладки предметов плотнее, на самых узких без логотипа */
 @media(max-width:440px){#hdr .hin{gap:6px;padding:0 10px}#hdr .hright{gap:4px}#hdr .hright>.icb,#hdr .hright>#akBtn,#hdr .hright>#lkMe{width:38px;height:38px;min-width:38px;min-height:38px;padding:0;justify-content:center}#hdr #theme{display:grid!important}#hdr .subj a{padding:0 7px;font-size:12.5px}}
 @media(max-width:374px){#hdr .brand{display:none}}
@@ -5141,14 +5144,7 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 <div class="stuck" id="stuck"><div class="wrap"><b>Не нашёл свой вопрос?</b><span>Напиши, что не получается, своими словами</span><button type="button" id="stuckBtn">Найти на сайте →</button></div></div>
 
 <footer id="foot"><div class="wrap"><button type="button" class="foot-cat" id="footCat" aria-label="Кошка-талисман"></button>
- <div class="foot-in">
-  <div class="foot-l">
-   <span class="foot-src">Источники — учебные издания МГТУ:</span>
-   <span class="foot-books"><button type="button" class="foot-book" data-book="tb"><b>Учебник</b><i>Жирных, Серёгин, Шарикян · 2015</i></button><button type="button" class="foot-book" data-book="wb" style="--bk:#3a7a55"><b>Рабочая тетрадь</b><i>Жирных, Новоселова</i></button><button type="button" class="foot-book" data-book="mu" style="--bk:#b45309"><b>Методические указания</b><i>Камзолов и др. · 1986</i></button></span>
-   <span class="foot-src">Оформление — по ЕСКД. Решения, чертежи и пояснения подготовлены для этого сайта. <a href="#/about/legal">Правовая информация</a> · <a href="#/about/changes" id="footVer">Что нового</a></span>
-  </div>
-  <div class="foot-r"><span class="foot-au" data-author role="button" tabindex="0" style="cursor:pointer">Автор — <b>Андрей Матханов</b></span><a href="#/ask" class="foot-ask" id="stuckAsk">Задать вопрос автору</a><a href="#/about">О проекте</a><a href="#/privacy">Политика обработки данных</a><a href="#/consent">Согласие на обработку данных</a><span id="footViews"></span></div>
- </div>
+ <div class="foot-mini"><span>© Начерт</span><a href="#/about">О проекте</a><a href="#/privacy">Политика данных</a><a href="#/consent">Согласие</a></div>
 </div></footer>
 
 <nav class="nav nav-bot" id="navBot" aria-label="Разделы"></nav>
