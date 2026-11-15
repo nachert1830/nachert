@@ -5262,6 +5262,9 @@ sup.ri{font-size:.68em;line-height:0;vertical-align:.55em;letter-spacing:.02em}
   body:has(.var-sheet)>*:not(#view){display:none!important}
   body:has(.var-sheet) #view :not(.var-sheet):not(.var-sheet *):not(:has(.var-sheet)){display:none!important}
   body:has(.var-sheet) #view,body:has(.var-sheet) #view :has(.var-sheet){display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;height:auto!important;min-height:0!important;max-width:none!important;width:auto!important;overflow:visible!important;animation:none!important}
+  /* та же именованная страница у корня и всех обёрток листа: Chromium до ~131 не переносит имя страницы с листа на предков — первая страница
+     выходила обычной, смена типа страницы ставила разрыв, и лист уезжал на вторую (в CI — Playwright 1.47) */
+  :root:has(.var-sheet),body:has(.var-sheet),body:has(.var-sheet) #view,body:has(.var-sheet) #view :has(.var-sheet){page:nchA3}
   body:has(.var-sheet) .var-sheet{page:nchA3;display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;overflow:hidden!important;width:297mm!important;height:420mm!important;break-inside:avoid}
   body:has(.var-sheet) .var-sheet svg{display:block!important;width:297mm!important;height:420mm!important;max-width:none!important;max-height:none!important;margin:0!important}
 }
