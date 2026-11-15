@@ -2666,6 +2666,22 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:480px){.subj a{padding:0 9px;font-size:13px}.subj a i{display:none}.brand .bw{display:none}}
 @media(max-width:400px){.hin{gap:6px;padding:0 10px}.hright{gap:4px}.icb{width:38px;height:38px}.subj{padding:2px}.subj a{padding:0 8px;font-size:12.5px;min-height:34px}}
 @media(max-width:339px){#shareBtn{display:none}}
+.happs{display:grid;gap:12px;margin-top:18px}
+@media(min-width:760px){.happs{grid-template-columns:1fr 1fr;gap:16px}}
+.hap{padding:16px 14px 16px;border-radius:26px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 20px 40px -26px rgba(10,20,60,.7)}
+.hap-ng{background:linear-gradient(150deg,#0d2766,#1f47d6 60%,#3b74f5)}
+.hap-ig{background:linear-gradient(150deg,#5a0f16,#b3141c 60%,#e8383f)}
+.hap h3{margin:0 0 14px 4px;font:800 17px var(--disp);color:#fff}
+.hap-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hap-g a{display:flex;flex-direction:column;align-items:center;gap:7px;color:#fff!important;text-decoration:none!important;font:700 12.5px/1.15 var(--sans);text-align:center}
+.hap-ic{position:relative;width:60px;height:60px;border-radius:19px;display:grid;place-items:center;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.24),inset 0 1px 0 rgba(255,255,255,.3);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .15s,background .2s}
+.hap-g a:hover .hap-ic{background:rgba(255,255,255,.24)}.hap-g a:active .hap-ic{transform:scale(.94)}
+.hap-ic svg{width:30px;height:30px}.hap-ic .f{fill:currentColor;fill-opacity:.2}
+.hap-ic b{position:absolute;top:-5px;right:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:#fff;color:#0d2766;font:800 11px/20px var(--sans);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.hap-ig .hap-ic b{color:#8c1018}
+.hap-ic i{position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px #fff}
+@media(max-width:360px){.hap-ic{width:52px;height:52px;border-radius:16px}.hap-ic svg{width:26px;height:26px}}
+.foot-logo img{height:15px!important}
 /* подвал — одна тихая строка; источники, правовая информация и «что нового» — на странице «О проекте» */
 .foot-mini{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 0 8px;font-size:13px;color:var(--mut)}
 .foot-logo{border:0;background:none;padding:4px;cursor:pointer;opacity:.85;transition:opacity .2s,transform .2s}.foot-logo:hover{opacity:1;transform:translateY(-1px)}
@@ -29370,6 +29386,19 @@ function homeCards(){ const pm=PROMO.cardHTML();
     <span class="hc-t">ДЗ&nbsp;4</span><span class="hc-s">тело с вырезом: три вида и разрезы — любой вариант</span>
     ${ig4CardArt()}
     <span class="hc-go">Открыть →</span></a>`; }
+/* разделы на главной — «папки» как на рабочем столе телефона: карточка предмета, внутри стеклянные иконки */
+const APPIC={
+  nb:'<rect class="f" x="6" y="3" width="13.5" height="18" rx="2.5"/><path d="M10 8h6M10 12h6M10 16h3.5"/><path d="M4 7.5h3.5M4 12h3.5M4 16.5h3.5"/>',
+  hw:'<path class="f" d="M6.5 3h7.5l5 5v11a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="m8.6 14.2 2.3 2.3 4.6-4.8"/>',
+  rk:'<circle class="f" cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.6M10 2.8h4M12 2.8V6M18.6 6.9l1.4-1.4"/>',
+  th:'<path class="f" d="M3 5.6c3-1.1 6-.9 9 1.1 3-2 6-2.2 9-1.1v13c-3-1.1-6-.9-9 1.1-3-2-6-2.2-9-1.1z"/><path d="M12 6.7v13"/>',
+  grid:'<rect class="f" x="6" y="3" width="13.5" height="18" rx="2.5"/><path d="M4 7.5h3.5M4 12h3.5M4 16.5h3.5"/><path d="M10 8.5h6v6.5h-6zM13 8.5V15M10 11.75h6"/>',
+  sheet:'<rect class="f" x="3" y="4" width="18" height="16" rx="2"/><path d="M12.5 20v-5H21M12.5 17.5H21M16.5 15v5"/><path d="M6.5 7.5h4.5v4.5H6.5z"/>',
+  cube:'<path class="f" d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/>',
+  square:'<path class="f" d="M4 20V4.5L19.5 20z"/><path d="M8 16.2v-3.6l3.6 3.6z"/><path d="M4 9h2.2M4 12.5h2.2M4 16h2.2"/>'
+};
+function appsHTML(c,title,items){
+  return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}${hot?'<i></i>':''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
   const tg=resumeTarget();
   let stepNote=''; try{ const pp=(JSON.parse(localStorage.getItem('plpos')||'{}')||{})[tg&&tg.href]; if(pp&&pp.k) stepNote='шаг '+pp.k+' · '; }catch(e){}
@@ -29387,22 +29416,9 @@ function viewHome(v){
    </section>
        <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
    <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
-   <section class="v8-dirs" aria-labelledby="v8D">
-    <h2 id="v8D" class="v8-dh">Или открой раздел</h2>
-    <div class="v8-cols">
-     <div class="v8-col"><h3><i class="v8-dot ng" aria-hidden="true"></i>Начертательная геометрия</h3>
-      ${lnk(H('ng','tasks'),'Тетрадь','все '+nT+' задач с решением по шагам','nb')}
-      ${lnk(HDZ('ng'),'ДЗ','№ '+(hw.length?hw.map(d=>d.num).join(', '):'1–5')+' · любой вариант по шагам, методика, лист','hw')}
-      ${lnk(H('ng','rk2'),'РК2','навыки, ранг готовности, билет','rk').replace('class="v8-l"','class="v8-l hot"')}
-      ${lnk(H('ng','path'),'Теория',nL+' уроков, шпаргалка, 3D-модель','th')}
-     </div>
-     <div class="v8-col"><h3><i class="v8-dot ig" aria-hidden="true"></i>Инженерная графика</h3>
-      ${lnk(H('ig','wb'),'Тетрадь',nIW?nIW+' заданий: тела с отверстиями':'тела с отверстиями','nb')}
-      ${lnk(HDZ('ig'),'ДЗ','задания '+(nIG.length?nIG.map(d=>d.num).join(', '):'2–4')+': деталь в 3D и готовый лист','hw')}
-      ${lnk(H('ig','learn'),'Учиться','виды, разрезы, сечения; защита точек','lr')}
-      ${lnk(H('ig','theory'),'Теория ЕСКД','форматы, линии, размеры, разрезы','th')}
-     </div>
-    </div>
+   <section class="v8-dirs happs" aria-label="Разделы">
+    ${appsHTML('ng','Начертательная геометрия',[[H('ng','tasks'),'Тетрадь','nb',nT],[HDZ('ng'),'ДЗ','hw'],[H('ng','rk2'),'РК2','rk',0,1],[H('ng','path'),'Теория','th']])}
+    ${appsHTML('ig','Инженерная графика',[[H('ig','wb'),'Тетрадь','grid',nIW],[HDZ('ig'),'ДЗ','sheet'],[H('ig','learn'),'Учиться','cube'],[H('ig','theory'),'ЕСКД','square']])}
    </section>
   </div>`;
   NEXT=null;
