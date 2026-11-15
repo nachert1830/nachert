@@ -130,6 +130,11 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   { const gp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('«Сдашь РК2?»', await require('./rkg.js').rkgCheck(gp,URL)); await gp.close(); }
 
+  /* 3г‴. ДЗ 4 по ИГ: решение по шагам — покрытие линий точками с линиями связи 100 %, состав шагов, подписи, плеер
+     (выборка вариантов; все 30 — node tests/ig4-steps.js) */
+  { const ip=await browser.newPage({viewport:{width:1400,height:1000},deviceScaleFactor:1});
+    report('ДЗ 4: шаги', await require('./ig4-steps.js').ig4StepsCheck(ip,URL,{only:QUICK?[7]:[1,7,13,18,24,30]})); await ip.close(); }
+
   /* 3в. ДЗ 2 по ИГ: размеры на листах — числа равны расстояниям по модели, выносные линии упираются в контур */
   report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
 
