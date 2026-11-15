@@ -2680,6 +2680,9 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:480px){.subj a{padding:0 9px;font-size:13px}.subj a i{display:none}.brand .bw{display:none}}
 @media(max-width:400px){.hin{gap:6px;padding:0 10px}.hright{gap:4px}.icb{width:38px;height:38px}.subj{padding:2px}.subj a{padding:0 8px;font-size:12.5px;min-height:34px}}
 @media(max-width:339px){#shareBtn{display:none}}
+.rkp-mt-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rkp-ansb{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surf);color:var(--acc);font:700 13px var(--sans);cursor:pointer;white-space:nowrap}
+.rkp-ansb[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
 #prnSh{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:90;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:18px;background:var(--surf);color:var(--ink);border:1px solid var(--line);box-shadow:0 18px 40px -16px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap;font-size:14px}
 #prnSh.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 #prnSh .prn-go{height:40px;padding:0 14px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:700 14px var(--sans)}
@@ -27937,10 +27940,14 @@ function moreHTML(id){ const T=TOP(id); if(!CUR.more) CUR.more={seed:newSeed()};
   const qs=CUR.more.qs;
   return `<div class="rkp-mh"><button type="button" class="rkp-print" data-rkmore="${id}"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg></span>Распечатать задачи</button></div>
    <div class="rkp-more-l" id="rkpMore">${qs.map((q,i)=>`<article class="rkp-mt-c">
-     <div class="rkp-mt-h"><span>Задача ${i+1}</span></div>
+     <div class="rkp-mt-h"><span>Билет № ${TOPICS.indexOf(T)+1}.${i+1}</span><button type="button" class="rkp-ansb" data-mans="${i}" aria-pressed="false">Показать ответ</button></div>
      <p class="rkp-mt-q">${q.q}. Применить при решении задачи ${q.mtext}.</p>
      <div class="sheet rkp-fig">${figHTML(q,false)}</div>
     </article>`).join('')}</div>`; }
+/* ответ к билету: решение красным поверх «дано» — сверить с тем, что построил на листе */
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-mans]'); if(!b||!CUR||!CUR.more||!CUR.more.qs) return; const q=CUR.more.qs[+b.dataset.mans]; if(!q) return;
+  const on=b.getAttribute('aria-pressed')!=='true', f=b.closest('.rkp-mt-c').querySelector('.rkp-fig'); f.innerHTML=figHTML(q,on);
+  b.setAttribute('aria-pressed',on); b.textContent=on?'Скрыть ответ':'Показать ответ'; });
 /* печать «Решить ещё»: те же задачи, что на экране, — по одной на лист А4, место под построения и строка для ответа */
 function prnMoreItems(id){ const T=TOP(id), qs=(CUR&&CUR.id===id&&CUR.more&&CUR.more.qs)||moreTasks(id,newSeed());
   return qs.map((q,i)=>({num:(TOPICS.indexOf(T)+1)+'.'+(i+1),cond:q.q+'. Применить при решении задачи '+q.mtext+'.',fig:prnFigQ(q),url:PSITE+'/#/ng/rk2/p/'+id})); }
@@ -28046,7 +28053,6 @@ function prnFig(t){ const bb=EPX.bbox(t.D.it), PX=96/25.4, box=document.createEl
 function prnPage(o){ return `<section class="prn-pg"><div class="prn-h"><span><b>Рубежный контроль № 2</b> · Начертательная геометрия</span><span>Билет № ${o.num}</span></div>
    <div class="prn-c"><p><b>Задача.</b> ${o.cond}</p></div>
    <div class="prn-fig">${o.fig}</div>
-   <p class="prn-ans">Ответ: <i></i></p>
    <div class="prn-f"><img class="prn-logo" src="img/logo-mathanov-b.webp" alt="mathanov."><span class="prn-site">${PSITE}${prnQR()}</span></div></section>`; }
 /* ═══ PDF билетов: страница A4 рисуется на холсте (200 dpi) и кладётся в PDF картинкой. Так лист ровно A4, без серых строк
    браузера (адрес, дата, «стр. 1 из 8»), которые Safari на iPhone печатает поверх HTML, и без лишних страниц.
@@ -28057,10 +28063,10 @@ function prnText(h){ const sub={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄
   h=String(h).replace(/<sub>([^<]*)<\/sub>/g,(m,x)=>x.split('').map(c=>sub[c]||c).join('')).replace(/<br\s*\/?>/g,' ').replace(/<[^>]+>/g,'');
   const t=document.createElement('textarea'); t.innerHTML=h; return t.value.replace(/\s+/g,' ').trim(); }
 function prnImg(src){ return new Promise(r=>{ const i=new Image(); i.onload=()=>r(i); i.onerror=()=>r(null); i.src=src; }); }
-function prnSvgImg(svg,w,h){ let s=svg.replace(/\sstyle="width:[^"]*mm;height:[^"]*mm"/,'').replace(/<svg([^>]*?)\swidth="[^"]*"/,'<svg$1').replace(/<svg([^>]*?)\sheight="[^"]*"/,'<svg$1');
-  if(!/xmlns=/.test(s.slice(0,400))) s=s.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
-  s=s.replace('<svg','<svg width="'+Math.round(w)+'" height="'+Math.round(h)+'"');
-  return prnImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)); }
+function prnSvgClean(svg,w,h){ const m=svg.match(/<svg\b[^>]*>/); if(!m) return svg; const tag=m[0], vb=(tag.match(/viewBox="([^"]+)"/)||[])[1], ff=(tag.match(/font-family="([^"]+)"/)||[])[1];
+  const nt='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'+(vb?' viewBox="'+vb+'"':'')+' width="'+Math.round(w)+'" height="'+Math.round(h)+'" preserveAspectRatio="xMidYMid meet" font-family="'+(ff?ff.replace(/"/g,"'"):'Arial,Helvetica,sans-serif')+'">';
+  return svg.replace(tag,nt); }
+function prnSvgImg(svg,w,h){ return prnImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(prnSvgClean(svg,w,h))); }
 function prnWrap(c,words,maxw){ const out=[]; let line=[]; words.forEach(w=>{ const tr=line.concat([w]); if(line.length&&c.measureText(tr.map(x=>x.t).join(' ')).width>maxw){ out.push(line); line=[w]; } else line=tr; }); if(line.length) out.push(line); return out; }
 async function prnCanvasPage(o,logo,qr){ const P=PDFP, k=P.dpi/25.4, cv=document.createElement('canvas'); cv.width=Math.round(P.W*k); cv.height=Math.round(P.H*k);
   const c=cv.getContext('2d'), X=mm=>mm*k, pt=v=>v*0.3528*k, F='"Golos Text",Arial,sans-serif', cw=P.W-P.ml-P.mr;
@@ -28074,13 +28080,12 @@ async function prnCanvasPage(o,logo,qr){ const P=PDFP, k=P.dpi/25.4, cv=document
   const words=[{t:'Задача.',b:1}].concat(prnText(o.cond).split(' ').map(t=>({t})));
   prnWrap(c,words,X(cw)).forEach(line=>{ let x=X(P.ml); line.forEach((w,j)=>{ c.font=(w.b?'800 ':'400 ')+fs+'px '+F; const t=(j?' ':'')+w.t; c.fillText(t,x,X(y)); x+=c.measureText(t).width; }); y+=lh; });
   /* низ: «Ответ», логотип, сайт, QR */
-  const yF=P.H-P.mb, yA=yF-22;
-  c.font='400 '+pt(11)+'px '+F; c.fillText('Ответ:',X(P.ml),X(yA)); const wa=c.measureText('Ответ: ').width; c.fillRect(X(P.ml)+wa,X(yA+.6),X(cw)-wa,Math.max(1,X(.3)));
+  const yF=P.H-P.mb, yA=yF-14;
   if(logo){ const lh2=4.2, lw=lh2*logo.naturalWidth/logo.naturalHeight; c.drawImage(logo,X(P.ml),X(yF-lh2-3.4),X(lw),X(lh2)); }
   const q=14; if(qr) c.drawImage(qr,X(P.W-P.mr-q),X(yF-q),X(q),X(q));
   c.font='700 '+pt(10)+'px '+F; c.textAlign='right'; c.fillText(PSITE,X(P.W-P.mr-q-3),X(yF-q/2+1.2)); c.textAlign='left';
   /* поле для решения */
-  const top=y+2, bot=yA-9, fh=bot-top, vb=((o.fig||'').match(/viewBox="([^"]+)"/)||[])[1];
+  const top=y+2, bot=yA-4, fh=bot-top, vb=((o.fig||'').match(/viewBox="([^"]+)"/)||[])[1];
   if(vb&&fh>20){ const d=vb.split(/\s+/).map(Number), s=Math.min(1,cw/d[2],fh/d[3]), w=d[2]*s, h=d[3]*s;
     const im=await prnSvgImg(o.fig,X(w),X(h)); if(im) c.drawImage(im,X(P.ml+(cw-w)/2),X(top+(fh-h)/2),X(w),X(h)); }
   return cv; }
@@ -28099,7 +28104,7 @@ function prnPdfBytes(jpegs,wpx,hpx){ const enc=new TextEncoder(), parts=[], off=
   put('trailer\n<< /Size '+n+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
   return new Blob(parts,{type:'application/pdf'}); }
 async function prnPDF(items){ try{ await document.fonts.load('400 40px "Golos Text"'); await document.fonts.load('800 40px "Golos Text"'); }catch(e){}
-  const logo=await prnImg('img/logo-mathanov-b.webp'), q=prnQR(), qr=q?await prnImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(q.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"').replace(/xmlns="[^"]*"\s+xmlns=/,'xmlns='))):null;
+  const logo=await prnImg('img/logo-mathanov-b.webp'), q=prnQR(), qr=q?await prnSvgImg(q,330,330):null;
   const jp=[]; let W=0,Hh=0;
   for(const o of items){ const cv=await prnCanvasPage(o,logo,qr); W=cv.width; Hh=cv.height; const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.93)); jp.push(new Uint8Array(await b.arrayBuffer())); cv.width=cv.height=0; }   /* холст сразу освобождаем: у iPhone мало памяти под холсты */
   return prnPdfBytes(jp,W,Hh); }
