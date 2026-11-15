@@ -27938,8 +27938,9 @@ function moreHTML(id){ const T=TOP(id); if(!CUR.more) CUR.more={seed:newSeed()};
      <div class="sheet rkp-fig">${figHTML(q,false)}</div>
     </article>`).join('')}</div>`; }
 /* печать «Решить ещё»: те же задачи, что на экране, — по одной на лист А4, место под построения и строка для ответа */
-function prnMoreHTML(id){ const T=TOP(id), qs=(CUR&&CUR.id===id&&CUR.more&&CUR.more.qs)||moreTasks(id,newSeed()), N=qs.length;
-  return qs.map((q,i)=>prnPage({num:(TOPICS.indexOf(T)+1)+'.'+(i+1),cond:q.q+'. Применить при решении задачи '+q.mtext+'.',fig:prnFigQ(q),url:PSITE+'/#/ng/rk2/p/'+id,i,N})).join(''); }
+function prnMoreItems(id){ const T=TOP(id), qs=(CUR&&CUR.id===id&&CUR.more&&CUR.more.qs)||moreTasks(id,newSeed());
+  return qs.map((q,i)=>({num:(TOPICS.indexOf(T)+1)+'.'+(i+1),cond:q.q+'. Применить при решении задачи '+q.mtext+'.',fig:prnFigQ(q),url:PSITE+'/#/ng/rk2/p/'+id})); }
+function prnMoreHTML(id){ const L=prnMoreItems(id), N=L.length; return L.map((o,i)=>prnPage(Object.assign({i,N},o))).join(''); }
 /* чертёж «дано» варианта в кадре полного решения: место под построения остаётся там, где оно понадобится; масштаб 1:1 мм, если влезает */
 function prnFigQ(q){ const full=figHTML(q,true), giv=figHTML(q,false), vb=(full.match(/viewBox="([^"]+)"/)||[])[1];
   if(!vb) return giv; const d=vb.split(/\s+/).map(Number);
@@ -28039,15 +28040,74 @@ function prnFig(t){ const bb=EPX.bbox(t.D.it), PX=96/25.4, box=document.createEl
     .replace(/\swidth="[^"]*"\sheight="[^"]*"/,` style="width:${d[2].toFixed(1)}mm;height:${d[3].toFixed(1)}mm"`); }
 /* один лист = одна задача, как билет РК: шапка, поля, условие, поле для построений (кадр — как у полного решения), ответ, логотип */
 function prnPage(o){ return `<section class="prn-pg"><div class="prn-h"><span><b>Рубежный контроль № 2</b> · Начертательная геометрия</span><span>Билет № ${o.num}</span></div>
-   <div class="prn-who"><span>ФИО <i></i></span><span>Группа <i></i></span><span>Дата <i></i></span></div>
    <div class="prn-c"><p><b>Задача.</b> ${o.cond}</p></div>
    <div class="prn-fig">${o.fig}</div>
    <p class="prn-ans">Ответ: <i></i></p>
    <div class="prn-f"><img class="prn-logo" src="img/logo-mathanov-b.webp" alt="mathanov."><span class="prn-site">${PSITE}${prnQR()}</span></div></section>`; }
+/* ═══ PDF билетов: страница A4 рисуется на холсте (200 dpi) и кладётся в PDF картинкой. Так лист ровно A4, без серых строк
+   браузера (адрес, дата, «стр. 1 из 8»), которые Safari на iPhone печатает поверх HTML, и без лишних страниц.
+   Чертёж: кадр полного решения вписывается в свободное поле листа по центру — «дано» смещено туда, где останется место под
+   построения; масштаб 1:1 (мм), уменьшается, только если решение не помещается. ═══ */
+const PDFP={dpi:200,W:210,H:297,ml:16,mr:16,mt:14,mb:12};
+function prnText(h){ const sub={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+  h=String(h).replace(/<sub>([^<]*)<\/sub>/g,(m,x)=>x.split('').map(c=>sub[c]||c).join('')).replace(/<br\s*\/?>/g,' ').replace(/<[^>]+>/g,'');
+  const t=document.createElement('textarea'); t.innerHTML=h; return t.value.replace(/\s+/g,' ').trim(); }
+function prnImg(src){ return new Promise(r=>{ const i=new Image(); i.onload=()=>r(i); i.onerror=()=>r(null); i.src=src; }); }
+function prnSvgImg(svg,w,h){ let s=svg.replace(/\sstyle="width:[^"]*mm;height:[^"]*mm"/,'').replace(/<svg([^>]*?)\swidth="[^"]*"/,'<svg$1').replace(/<svg([^>]*?)\sheight="[^"]*"/,'<svg$1');
+  if(!/xmlns=/.test(s.slice(0,400))) s=s.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
+  s=s.replace('<svg','<svg width="'+Math.round(w)+'" height="'+Math.round(h)+'"');
+  return prnImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)); }
+function prnWrap(c,words,maxw){ const out=[]; let line=[]; words.forEach(w=>{ const tr=line.concat([w]); if(line.length&&c.measureText(tr.map(x=>x.t).join(' ')).width>maxw){ out.push(line); line=[w]; } else line=tr; }); if(line.length) out.push(line); return out; }
+async function prnCanvasPage(o,logo,qr){ const P=PDFP, k=P.dpi/25.4, cv=document.createElement('canvas'); cv.width=Math.round(P.W*k); cv.height=Math.round(P.H*k);
+  const c=cv.getContext('2d'), X=mm=>mm*k, pt=v=>v*0.3528*k, F='"Golos Text",Arial,sans-serif', cw=P.W-P.ml-P.mr;
+  c.fillStyle='#fff'; c.fillRect(0,0,cv.width,cv.height); c.fillStyle='#111'; c.textBaseline='alphabetic';
+  /* шапка */
+  let y=P.mt+3.5; c.font='800 '+pt(9.5)+'px '+F; const h1='Рубежный контроль № 2'; c.fillText(h1,X(P.ml),X(y)); const w1=c.measureText(h1).width;
+  c.font='400 '+pt(9.5)+'px '+F; c.fillText(' · Начертательная геометрия',X(P.ml)+w1,X(y)); c.textAlign='right'; c.font='700 '+pt(9.5)+'px '+F; c.fillText('Билет № '+o.num,X(P.W-P.mr),X(y)); c.textAlign='left';
+  y+=2.4; c.fillRect(X(P.ml),X(y),X(cw),Math.max(1,X(.3)));
+  /* условие: «Задача.» жирным и текст с переносами */
+  y+=8; const fs=pt(11.5), lh=11.5*0.3528*1.45; c.font='400 '+fs+'px '+F;
+  const words=[{t:'Задача.',b:1}].concat(prnText(o.cond).split(' ').map(t=>({t})));
+  prnWrap(c,words,X(cw)).forEach(line=>{ let x=X(P.ml); line.forEach((w,j)=>{ c.font=(w.b?'800 ':'400 ')+fs+'px '+F; const t=(j?' ':'')+w.t; c.fillText(t,x,X(y)); x+=c.measureText(t).width; }); y+=lh; });
+  /* низ: «Ответ», логотип, сайт, QR */
+  const yF=P.H-P.mb, yA=yF-22;
+  c.font='400 '+pt(11)+'px '+F; c.fillText('Ответ:',X(P.ml),X(yA)); const wa=c.measureText('Ответ: ').width; c.fillRect(X(P.ml)+wa,X(yA+.6),X(cw)-wa,Math.max(1,X(.3)));
+  if(logo){ const lh2=4.2, lw=lh2*logo.naturalWidth/logo.naturalHeight; c.drawImage(logo,X(P.ml),X(yF-lh2-3.4),X(lw),X(lh2)); }
+  const q=14; if(qr) c.drawImage(qr,X(P.W-P.mr-q),X(yF-q),X(q),X(q));
+  c.font='700 '+pt(10)+'px '+F; c.textAlign='right'; c.fillText(PSITE,X(P.W-P.mr-q-3),X(yF-q/2+1.2)); c.textAlign='left';
+  /* поле для решения */
+  const top=y+2, bot=yA-9, fh=bot-top, vb=((o.fig||'').match(/viewBox="([^"]+)"/)||[])[1];
+  if(vb&&fh>20){ const d=vb.split(/\s+/).map(Number), s=Math.min(1,cw/d[2],fh/d[3]), w=d[2]*s, h=d[3]*s;
+    const im=await prnSvgImg(o.fig,X(w),X(h)); if(im) c.drawImage(im,X(P.ml+(cw-w)/2),X(top+(fh-h)/2),X(w),X(h)); }
+  return cv; }
+function prnPdfBytes(jpegs,wpx,hpx){ const enc=new TextEncoder(), parts=[], off=[]; let len=0;
+  const put=x=>{ const b=typeof x==='string'?enc.encode(x):x; parts.push(b); len+=b.length; };
+  const obj=(n,body)=>{ off[n]=len; put(n+' 0 obj\n'); body(); put('\nendobj\n'); };
+  const N=jpegs.length, kids=[]; for(let i=0;i<N;i++) kids.push((3+i*3)+' 0 R');
+  put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  obj(1,()=>put('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2,()=>put('<< /Type /Pages /Count '+N+' /Kids ['+kids.join(' ')+'] >>'));
+  jpegs.forEach((j,i)=>{ const p=3+i*3, cs='q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+    obj(p,()=>put('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 '+(p+2)+' 0 R >> >> /Contents '+(p+1)+' 0 R >>'));
+    obj(p+1,()=>{ put('<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream'); });
+    obj(p+2,()=>{ put('<< /Type /XObject /Subtype /Image /Width '+wpx+' /Height '+hpx+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+j.length+' >>\nstream\n'); put(j); put('\nendstream'); }); });
+  const xref=len, n=3+N*3; put('xref\n0 '+n+'\n0000000000 65535 f \n'); for(let i=1;i<n;i++) put(String(off[i]).padStart(10,'0')+' 00000 n \n');
+  put('trailer\n<< /Size '+n+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
+  return new Blob(parts,{type:'application/pdf'}); }
+async function prnPDF(items){ try{ await document.fonts.load('400 40px "Golos Text"'); await document.fonts.load('800 40px "Golos Text"'); }catch(e){}
+  const logo=await prnImg('img/logo-mathanov-b.webp'), q=prnQR(), qr=q?await prnImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(q.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"').replace(/xmlns="[^"]*"\s+xmlns=/,'xmlns='))):null;
+  const jp=[]; let W=0,Hh=0;
+  for(const o of items){ const cv=await prnCanvasPage(o,logo,qr); W=cv.width; Hh=cv.height; const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.93)); jp.push(new Uint8Array(await b.arrayBuffer())); }
+  return prnPdfBytes(jp,W,Hh); }
+/* по кнопке: окно открываем сразу (иначе Safari заблокирует), PDF подставляем, когда соберётся; без окна — скачивание */
+function prnOpenPDF(items,name){ const w=window.open('','_blank'); try{ if(w) w.document.write('<p style="font:16px sans-serif;padding:24px">Готовлю PDF…</p>'); }catch(e){}
+  prnPDF(items).then(b=>{ const u=URL.createObjectURL(b); if(w&&!w.closed) w.location.href=u; else { const a=document.createElement('a'); a.href=u; a.download=name+'.pdf'; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(()=>URL.revokeObjectURL(u),120000); })
+    .catch(()=>{ try{ w&&w.close(); }catch(e){} prnPrint(null); }); }
 function prnQR(){ if(prnQR.s==null) prnQR.s=(typeof QR!=='undefined'&&QR.svg('https://'+PSITE,64)||'').replace(/\swidth="\d+"\sheight="\d+"/,''); return prnQR.s; }
-function prnHTML(ids){ const L=prnTasks(ids), N=L.length, E=EPX.escH;
-  const k={}; return L.map(({T,t,id},i)=>{ k[id]=(k[id]||0)+1; const cond=EPX.mk(t.cond).replace(/^\s*<p>|<\/p>\s*$/g,'');
-    return prnPage({num:(TOPICS.indexOf(T)+1)+'.'+k[id],cond:cond+' Применить при решении задачи '+E(t.m)+'.',fig:prnFig(t),url:PSITE+'/#/ng/rk2/p/'+id,i,N}); }).join(''); }
+function prnItems(ids){ const L=prnTasks(ids), E=EPX.escH, k={};
+  return L.map(({T,t,id})=>{ k[id]=(k[id]||0)+1; const cond=EPX.mk(t.cond).replace(/^\s*<p>|<\/p>\s*$/g,'');
+    return {num:(TOPICS.indexOf(T)+1)+'.'+k[id],cond:cond+' Применить при решении задачи '+E(t.m)+'.',fig:prnFig(t),url:PSITE+'/#/ng/rk2/p/'+id}; }); }
+function prnHTML(ids){ const L=prnItems(ids), N=L.length; return L.map((o,i)=>prnPage(Object.assign({i,N},o))).join(''); }
 function prnOff(){ document.body.classList.remove('prn-on'); ['prnOut','prnPage'].forEach(i=>{ const e=document.getElementById(i); if(e) e.remove(); }); if(prnOff.t!=null){ document.title=prnOff.t; prnOff.t=null; } }
 function prnBuild(ids,html){ prnOff(); const out=document.createElement('div'); out.id='prnOut'; out.innerHTML=html||prnHTML(ids); document.body.appendChild(out);
   const st=document.createElement('style'); st.id='prnPage'; st.textContent='@page{size:A4 portrait;margin:0}'; document.head.appendChild(st);
@@ -28057,12 +28117,12 @@ function prnGo(out){ const im=[...out.querySelectorAll('img')]; Promise.all(im.m
 function prnPrint(ids){ prnGo(prnBuild(ids)); }   /* убираем документ после печати (afterprint) или при переходе; на экране он скрыт */
 window.addEventListener('afterprint',()=>setTimeout(prnOff,0));
 window.addEventListener('hashchange',prnOff);
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkmore]'); if(!b) return; e.preventDefault(); prnGo(prnBuild(null,prnMoreHTML(b.dataset.rkmore))); });
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkprint]'); if(!b) return; e.preventDefault(); prnPrint(b.dataset.rkprint?b.dataset.rkprint.split(','):null); });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkmore]'); if(!b) return; e.preventDefault(); prnOpenPDF(prnMoreItems(b.dataset.rkmore),'РК2 — билеты'); });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkprint]'); if(!b) return; e.preventDefault(); prnOpenPDF(prnItems(b.dataset.rkprint?b.dataset.rkprint.split(','):null),'РК2 — билеты'); });
 
 /* строка для главной */
 function mini(){ try{ const P=progress(); return P.val?'пройдено '+P.val+' %':'9 тем · пробный РК2'; }catch(e){ return ''; } }
-return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,prnHTML,prnMoreHTML,prnBuild,prnOff,prnTasks,progress,hue,check,parseNum,hubView,topicView,examView,mini,STG,_:{stars,pts,getS,setS,KEY}};
+return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,prnHTML,prnMoreHTML,prnItems,prnMoreItems,prnPDF,prnBuild,prnOff,prnTasks,progress,hue,check,parseNum,hubView,topicView,examView,mini,STG,_:{stars,pts,getS,setS,KEY}};
 })();
 
 /* ═════════ «Сдашь РК2?» — пробный билет-игра по начерту и инже (#/rk) ═════════
