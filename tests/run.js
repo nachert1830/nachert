@@ -242,6 +242,11 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
      кабинет · сканер · 3D · голограмма · сайт на одной странице */
   { const bad=await require('./me-hub.js').runMe(browser,URL); info.push('Пульт владельца: '+bad.length+' замечаний'); report('Пульт владельца (me/)',bad); }
 
+  /* 3л′. печать листов (tests/print.js): страниц PDF ровно столько, сколько листов, фон белый в светлой и тёмной теме */
+  report('Печать листов', await require('./print.js').printCheck(browser,URL));
+  /* цвета чертежа (tests/colors.js): контраст ≥ 3:1, различимость при цветовой слепоте */
+  report('Цвета чертежа', require('./colors.js').check());
+
   /* 3л. «Спроси автора» (tests/ask.js): вопрос с сайта (гость → вход → черновик уходит сам, фото) → ответ в пульте → ученик видит ответ;
      настоящий сервер кабинета с базой в памяти */
   { const bad=await require('./ask.js').runAsk(browser); info.push('Спроси автора: '+bad.length+' замечаний'); report('Спроси автора (#/ask, пульт)',bad); }

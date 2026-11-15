@@ -4,3 +4,8 @@ SIL Open Font License 1.1: https://openfontlicense.org
 Шрифт Liberation Serif Italic (fonts/liberation-serif-italic.woff2 — подмножество: латиница, кириллица, знаки чертежа)
 распространяется по лицензии SIL Open Font License 1.1. Copyright (c) 2012 Red Hat, Inc. Liberation is a trademark of Red Hat, Inc.
 Используется для надписей на листах инженерной графики: метрически совпадает с Times New Roman.
+
+Шрифт osifont (fonts/osifont-italic.woff2 — подмножество: латиница, кириллица, греческий) — подписи на чертежах сайта.
+Copyright 2015-2023 Zefram Cochrane. Лицензия GPL-3 / LGPL-3 / GPL-2 с исключением для шрифтов (font exception):
+встраивание шрифта в документ не делает документ подпадающим под GPL. Полный текст — fonts/osifont-LICENSE.txt.
+Источник: https://github.com/hikikomori82/osifont (пакет Debian fonts-osifont).

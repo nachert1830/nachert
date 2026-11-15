@@ -8,6 +8,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://*.goatcounter.com; connect-src 'self' https://*.apigw.yandexcloud.net https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* тема до первой отрисовки, чтобы не было вспышки светлой */try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script>try{if(/[?&]ds=b[123]\b/.test(location.search)||/^b[123]$/.test(localStorage.getItem('nch_ds')||''))window.LBLW=3;}catch(e){}</script>
+<script>/* вариант оформления чертежей на выбор (a — по умолчанию, b, c): ?ds=b запоминается */try{var m=/[?&]ds=(a|b|c|ink|soft|b1|b2|b3)\b/.exec(location.search),d=m?m[1]:localStorage.getItem('nch_ds');if(m)localStorage.setItem('nch_ds',d);if(d&&d!=='a')document.documentElement.setAttribute('data-ds',d);}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1424" media="(prefers-color-scheme: dark)">
@@ -31,6 +33,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
 /* шрифты лежат рядом с сайтом (папка fonts/, лицензия SIL OFL 1.1) */
+@font-face{font-family:'NchGost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/osifont-italic.woff2) format('woff2')}   /* подписи чертежей: osifont — наклонный шрифт по ISO 3098 / ГОСТ 2.304 тип Б (GPL с исключением для шрифтов, fonts/osifont-LICENSE.txt); штрихи ′ ″ — из NchSerif */
 @font-face{font-family:'NchSerif';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/liberation-serif-italic.woff2) format('woff2')}   /* чертёжный шрифт листов ИГ: Liberation Serif (метрика Times New Roman, SIL OFL) — лист одинаков на всех устройствах */
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/geologica-greek.woff2) format('woff2');unicode-range:U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF}
@@ -846,6 +849,17 @@ footer{border-top:1px solid var(--line);padding:28px 0 44px;color:var(--mut);fon
 svg.dwg text.lbl.g{fill:#1b6b45}
 svg.dwg text.lbl.pt{font-size:12px}
 svg.dwg .g-old{opacity:.92}
+/* свой цвет у каждого посредника: сам посредник, сечения тел, линии связи и точки — одним цветом (DRAW: it.col → g.mc) */
+svg.dwg .mc :is(line,path,polyline,polygon,ellipse){stroke:var(--mc)!important}
+svg.dwg .mc circle{stroke:var(--mc)!important;fill:var(--mc)!important}
+svg.dwg .mc text.lbl{fill:var(--mc)!important}
+svg.dwg .g-old .mc{opacity:.5}
+/* варианты оформления чертежа (на выбор; ?ds=b|c или localStorage nch_ds): b — «лист»: чертёжный курсив, без жёлтого маркера,
+   прошлые посредники серые; c — «один цвет»: все посредники синие, прошлое серое */
+:root[data-ds=b] svg.dwg text.lbl{font-family:'NchSerif','Times New Roman',serif!important;font-style:italic;font-weight:400!important;font-size:calc(var(--lf,11.5px)*1.18)!important}
+:root[data-ds=b] svg.dwg .halo{display:none}
+:root[data-ds=b] svg.dwg .g-old .mc,:root[data-ds=c] svg.dwg .g-old .mc{--mc:#a7aebb!important;opacity:1}
+:root[data-ds=c] svg.dwg .mc{--mc:#3567b5!important}
 svg.dwg .g-new{animation:gnew .6s var(--ease) both}
 @keyframes gnew{from{opacity:0}to{opacity:1}}
 svg.dwg .halo{animation:ghalo 1.6s ease-out both}
@@ -5135,6 +5149,178 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
   body.prn-on .prn-pg{break-after:page;page-break-after:always}
   body.prn-on .prn-pg:last-child{break-after:auto;page-break-after:auto}
 }
+/* панель кнопок чертежа: внизу справа одной строкой, не закрывает верх чертежа; «весь чертёж» — только когда приближено,
+   ＋/－ на сенсорных экранах не нужны (щипок и двойное касание) */
+.pl-zoom,body.inplayer .pl-zoom,body.plfull .pl-zoom{top:auto!important;bottom:8px!important;right:8px!important;flex-direction:row!important;align-items:center!important;gap:5px!important;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 16px)}
+body.plfull .pl-zoom{bottom:calc(8px + env(safe-area-inset-bottom))!important}
+.pl-zb,body.inplayer .pl-zb{width:34px!important;height:34px!important;border-radius:10px!important;font-size:16px}
+.pl-zb.wide,body.inplayer .pl-zb.wide,body .pl-zoom .pl-zb.t3btn{width:auto!important;height:34px!important;padding:0 11px!important;font:700 13px var(--sans)!important}
+.pl-paper:not(.zoomed) .pl-zb.zreset{display:none}
+@media (pointer:coarse){.pl-zb.zin{display:none!important}}
+body .pl-zoom .pl-zb.past{font:700 12.5px var(--sans)!important;width:auto!important;padding:0 10px!important;gap:6px;display:inline-flex!important;align-items:center;white-space:nowrap;background:rgba(255,255,255,.94)!important;color:#15161a!important;border:1px solid #cbd1de!important;opacity:1!important}
+@media (max-width:600px){body .pl-zoom .pl-zb.past b,body .pl-zoom .lbx{display:none}}
+/* под кнопки — своя полоса внизу карточки чертежа: кнопки не лежат на линиях */
+.pl-paper:has(.pl-zoom),body.inplayer .pl-paper:has(.pl-zoom){padding-bottom:48px!important}
+@media (max-width:600px){.pl-zb,body.inplayer .pl-zb,.pl-zb.wide,body.inplayer .pl-zb.wide,body .pl-zoom .pl-zb.t3btn,body .pl-zoom .pl-zb.past{height:32px!important}.pl-zb,body.inplayer .pl-zb{width:32px!important}}
+body .pl-zoom .pl-zb.past i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;display:inline-block;flex:none}
+body .pl-zoom .pl-zb.past.on i{background:currentColor}
+
+/* ═════════ ЧЕРТЁЖ v5 (редизайн, docs/REDESIGN-PROMPT.md): лист как плакат кафедры ═════════
+   • подписи — чертёжный шрифт тип Б (osifont, наклонный), один размер на всех чертежах, подложка цвета бумаги;
+   • толщины линий — в экранных пикселях, не зависят от масштаба: контур ≈ 2,3 px, построения ≈ 1 px, линии связи ≈ 0,7 px (ГОСТ 2.303: s и s/3);
+   • бумага всегда белая и чистая (без клетки) — в обеих темах;
+   • жёлтого маркера нет: новое — цветом и толщиной, прошлое — тише. */
+svg.dwg text.lbl{font-family:'NchGost','NchSerif','Times New Roman',serif;font-weight:700;font-style:normal;letter-spacing:.02em}
+svg.dwg text.lbl{font-size:13px}svg.dwg text.lbl.pt{font-size:14px}
+body.inplayer .pl-paper svg.dwg text.lbl{font-size:var(--lf,11.5px);font-weight:700;stroke-width:calc(var(--lf,11.5px)*.38)}
+body.inplayer .pl-paper svg.dwg text.lbl.s,body.inplayer .pl-paper svg.dwg text.lbl.note{font-size:calc(var(--lf,11.5px)*.96)}
+svg.dwg :is(line,path,polyline,polygon,ellipse,circle){vector-effect:non-scaling-stroke}
+/* новое на шаге — толще; прошлые построения — тише (контур, данные и искомое не трогаем) */
+:root svg.dwg .g-new :is(line,path)[stroke="#3567b5"]{stroke-width:1.6}
+:root svg.dwg .g-new .mc :is(line,path,ellipse){stroke-width:1.6}
+:root svg.dwg .g-new .mc :is(line,path)[stroke="#9dbbe0"]{stroke-width:.9}
+:root svg.dwg .g-old :is(line,path)[stroke="#3567b5"]{stroke:#9aa6b8}
+:root svg.dwg .g-old text.lbl.a{fill:#7d8899}
+svg.dwg .halo{display:none}
+.pl-paper,body.inplayer .pl-paper{background:#ffffff!important;background-image:none!important}
+:root[data-theme="dark"] body.inplayer .pl-paper{box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+
+/* ═════════ ТЕЛЕФОН v5: чертёж — главный (≥ 60 % высоты), пояснение — шторка ═════════
+   Шапка сайта в разборе спрятана (в шапке ДЗ есть «Назад»), счётчик шагов, «Условие» и «Смотрю / Решаю сам» — одной строкой. */
+@media(max-width:899px) and (orientation:portrait){
+  body.inplayer{--hh:0px}
+  body.inplayer #hdr{display:none!important}
+  body.inplayer .dzx-top{min-height:40px;margin:2px 0 4px;gap:8px}
+  body.inplayer .dzx-back{height:38px;padding:0 10px 0 6px;font-size:14px}
+  body.inplayer .dzx-top h1{font-size:17px!important;line-height:1.1}
+  body.inplayer .dzx-top h1 .dzx-tl{font-size:11px}
+  body.inplayer .dzx-share{height:38px;width:42px;padding:0;justify-content:center}
+  body.inplayer .dzx-share span{display:none}
+  body.inplayer .dzx-pills{margin:0 0 4px;gap:6px}
+  body.inplayer .dzx-pills a{min-height:30px!important;height:30px;padding:0 12px!important;font-size:13px!important;display:inline-flex;align-items:center}
+  body.inplayer .pl{grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto minmax(0,1fr) auto auto;
+    grid-template-areas:"top cond bar" "paper paper paper" "side side side" "ctrl ctrl ctrl";gap:6px 6px;padding:4px 8px 0}
+  body.inplayer .pl-top{min-height:34px;gap:8px}
+  .dzx body.inplayer .pl-top .pl-back,body.inplayer .dzx .pl-top .pl-back,body.inplayer .dzx .pl-top .pl-sh{display:none}
+  body.inplayer .pl-mt{font-size:11px;margin-bottom:4px}
+  body.inplayer .pl-segs i{height:6px}
+  body.inplayer .pl:not(.cond-open) .pl-cond{align-self:center;height:34px;padding:0 12px!important;display:flex;align-items:center;border-radius:99px;overflow:hidden;cursor:pointer}
+  body.inplayer .pl:not(.cond-open) .pl-cond>*{display:none!important}
+  body.inplayer .pl:not(.cond-open) .pl-cond::before{content:'Условие';font:700 13px var(--sans);color:var(--ink)}
+  body.inplayer .pl.cond-open .pl-cond{position:fixed!important;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 96px);max-height:62dvh;overflow:auto;z-index:60;box-shadow:0 22px 50px -18px rgba(8,11,18,.55)}
+  body.inplayer .pl-bar{align-self:center}
+  body.inplayer .pl-bar .pl-modes{width:auto!important}
+  body.inplayer .pl-bar .pl-mode{padding:0 10px!important;font-size:12.5px!important}
+  body.inplayer .pl-paper{border-radius:14px;padding:2px!important}
+  body.inplayer .pl-side{max-height:none}
+  body.inplayer .pl.peek .pl-side{max-height:58px}
+  body.inplayer .pl-side.up{box-shadow:0 -14px 30px -18px rgba(8,11,18,.45)}
+  body.inplayer .pl-ctrl{padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important}
+  /* без шапки ДЗ (тетрадь, РК): «назад», шаги и «поделиться» — первой строкой, «Условие» и режим — второй */
+  body.inplayer :not(.dzx)>.pl-anc>.pl,body.inplayer #plMount>.pl{grid-template-areas:"top top top" "cond bar bar" "paper paper paper" "side side side" "ctrl ctrl ctrl";grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto minmax(0,1fr) auto auto}
+  body.inplayer .dzx .pl{grid-template-areas:"top cond bar" "paper paper paper" "side side side" "ctrl ctrl ctrl"!important;grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-rows:auto minmax(0,1fr) auto auto!important}
+  body.inplayer .pl-bar{justify-self:end}
+  /* задача из пунктов (а, б, в): пункты и режим — своей строкой под счётчиком */
+  body.inplayer .pl.pl:has(.pl-parts){grid-template-areas:"top top cond" "bar bar bar" "paper paper paper" "side side side" "ctrl ctrl ctrl"!important;grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-rows:auto auto minmax(0,1fr) auto auto!important}
+  body.inplayer .pl:has(.pl-parts) .pl-bar{justify-self:stretch}
+  body.inplayer .pl-scroll .pl-kicker{display:none}
+  body.inplayer .pl-scroll{padding:8px 14px!important}
+}
+
+/* шаг ДЗ: сначала одна фраза «что делаем», остальное — кнопками в строку («Почему так?», «Намёк», «Числа», «Проверь себя») */
+.hw-ladder{display:flex!important;flex-wrap:wrap;gap:6px}
+.hw-l.l3{width:100%;border:0!important;background:none!important}
+.hw-l.l3>summary{display:none}
+.hw-l.l3>div{padding:0;font-size:inherit;line-height:1.55}
+.hw-l:not(.l3):not([open]){border-radius:99px}
+.hw-l:not(.l3)>summary{min-height:32px;padding:4px 12px;font:600 13px var(--sans);letter-spacing:0;list-style:none}
+.hw-l:not(.l3)>summary::-webkit-details-marker{display:none}
+.hw-l:not(.l3)[open]{width:100%}
+
+sup.ri{font-size:.68em;line-height:0;vertical-align:.55em;letter-spacing:.02em}
+.lchip sup.ri{font-size:.7em}
+
+.lchip{font-family:'NchGost','NchSerif',serif!important;font-weight:700;letter-spacing:.02em;font-size:1em!important}
+
+/* печать прямо со страницы листа (Ctrl+P, «Печать» в меню телефона): только лист А3, белый фон в любой теме, ровно одна страница */
+@page nchA3{size:297mm 420mm;margin:0}
+@media print{
+  :root:has(.var-sheet),:root:has(.var-sheet) body:has(.var-sheet){background:#fff!important;background-image:none!important;color-scheme:light;height:auto!important;overflow:visible!important}
+  body:has(.var-sheet)>*:not(#view){display:none!important}
+  body:has(.var-sheet) #view :not(.var-sheet):not(.var-sheet *):not(:has(.var-sheet)){display:none!important}
+  body:has(.var-sheet) #view,body:has(.var-sheet) #view :has(.var-sheet){display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;height:auto!important;min-height:0!important;max-width:none!important;width:auto!important;overflow:visible!important;animation:none!important}
+  body:has(.var-sheet) .var-sheet{page:nchA3;display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;overflow:hidden!important;width:297mm!important;height:420mm!important;break-inside:avoid}
+  body:has(.var-sheet) .var-sheet svg{display:block!important;width:297mm!important;height:420mm!important;max-width:none!important;max-height:none!important;margin:0!important}
+}
+
+/* ═════ варианты стиля на выбор (?ds=ink | soft; по умолчанию — цвет) ═════
+   ink  «Тушь» — как плакат кафедры: всё чёрным, построения серые тонкие, линии связи едва видны, красное — только искомое;
+   soft «Приглушённый» — у посредников свой цвет, но бледный; подписи тёмно-серые, красное — только искомое. */
+:root[data-ds=ink] svg.dwg .mc{--mc:#9298a3!important}
+:root[data-ds=ink] svg.dwg [stroke="#3567b5"]{stroke:#9298a3}
+:root[data-ds=ink] svg.dwg [fill="#3567b5"]{fill:#15161a}
+:root[data-ds=ink] svg.dwg [stroke="#9dbbe0"],:root[data-ds=ink] svg.dwg .mc [stroke="#9dbbe0"]{stroke:#cfd2d8!important}
+:root[data-ds=ink] svg.dwg [stroke="#1f7a4f"]{stroke:#15161a}
+:root[data-ds=ink] svg.dwg .mc circle{fill:#15161a!important;stroke:#15161a!important}
+:root[data-ds=ink] svg.dwg text.lbl,:root[data-ds=ink] svg.dwg .mc text.lbl{fill:#15161a!important}
+:root[data-ds=ink] svg.dwg text.lbl.r,:root[data-ds=ink] svg.dwg text.lbl.ang{fill:#b02a26!important}
+:root[data-ds=ink] svg.dwg text.lbl.s,:root[data-ds=ink] svg.dwg text.lbl.note{fill:#6b707a!important}
+:root[data-ds=soft] svg.dwg .mc :is(line,path,ellipse,polyline){stroke-opacity:.5}
+:root[data-ds=soft] svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.35}
+:root[data-ds=soft] svg.dwg [stroke="#3567b5"]{stroke:#7b8fae}
+:root[data-ds=soft] svg.dwg [stroke="#9dbbe0"]{stroke:#d5dbe4}
+:root[data-ds=soft] svg.dwg text.lbl,:root[data-ds=soft] svg.dwg .mc text.lbl{fill:#2b2f36!important}
+:root[data-ds=soft] svg.dwg text.lbl.r,:root[data-ds=soft] svg.dwg text.lbl.ang{fill:#b02a26!important}
+:root[data-ds=soft] svg.dwg .mc circle{fill:#2b2f36!important;stroke:#2b2f36!important}
+/* подложка под подписью — тоньше: подпись стоит на свободном месте и не стирает линии */
+body.inplayer .pl-paper svg.dwg text.lbl{stroke-width:calc(var(--lf,11.5px)*.2)}
+
+/* ═════ ЦВЕТ ЧЕРТЕЖА v10 (docs/color-policy.md, «Наука»): цвет — только у того, что строим на этом шаге ═════
+   прошлые шаги — серые (#a3a9b4), контур — тушь, искомое — красное; у каждого посредника текущего шага свой цвет
+   из четырёх различимых при цветовой слепоте; линии связи посредника — его цветом, но бледнее */
+:root:not([data-ds]) svg.dwg .g-old .mc,:root[data-ds=a] svg.dwg .g-old .mc{--mc:#a3a9b4!important;opacity:1}
+:root:not([data-ds]) svg.dwg .g-old .mc text.lbl{fill:#6b707a!important}
+:root:not([data-ds]) svg.dwg .g-old .mc circle{fill:#6b707a!important;stroke:#6b707a!important}
+:root:not([data-ds]) svg.dwg .g-old [stroke="#9dbbe0"]{stroke:#d3d6dc}
+svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
+
+/* ═════ варианты «Б» (на выбор владельцу): цвета сайта вместо чёрного, линии важнее букв ═════
+   общее: подпись без белой подложки (не стирает линию), обычной толщины, на свободном месте; точки меньше */
+:root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg text.lbl{stroke:none!important;font-weight:400!important}
+:root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) body.inplayer .pl-paper svg.dwg text.lbl{font-weight:400!important}
+/* Б1 «Чернила сайта»: контур — тёмно-синие чернила текста сайта #0a1733, подписи #2c3f5f; посредники v10 */
+:root[data-ds=b1] svg.dwg [stroke="#15161a"]{stroke:#0a1733}
+:root[data-ds=b1] svg.dwg [fill="#15161a"]{fill:#0a1733}
+:root[data-ds=b1] svg.dwg text.lbl{fill:#2c3f5f}
+/* Б2 «Синька»: контур — фирменный тёмно-синий #0a2463, построения — голубой сайта, бумага чуть голубая;
+   посредники: сине-зелёный, голубой, фиолетовый, розовый (винный путается с тёмно-синим при протанопии) */
+:root[data-ds=b2] svg.dwg [stroke="#15161a"]{stroke:#0a2463}
+:root[data-ds=b2] svg.dwg [fill="#15161a"]{fill:#0a2463}
+:root[data-ds=b2] svg.dwg text.lbl{fill:#0a2463}
+:root[data-ds=b2] svg.dwg [stroke="#3567b5"]{stroke:#4a7fe0}
+:root[data-ds=b2] svg.dwg .mc[style*="#117788"]{--mc:#008877!important}
+:root[data-ds=b2] svg.dwg .mc[style*="#6633dd"]{--mc:#6622ee!important}
+:root[data-ds=b2] svg.dwg .mc[style*="#aa2266"]{--mc:#e8307e!important}
+:root[data-ds=b2] svg.dwg .mc[style*="#3388ee"]{--mc:#4488ff!important}
+:root[data-ds=b2] .pl-paper,:root[data-ds=b2] body.inplayer .pl-paper{background:#f7f9ff!important}
+:root[data-ds=b2] svg.dwg text.lbl{stroke:none}
+/* Б3 «Триколор»: контур — синий сайта #1a5ae0, ответ — красный; посредники только тёплые и зелёные
+   (с синим контуром различимы лишь 3: сине-зелёный, оливковый, винный) */
+:root[data-ds=b3] svg.dwg [stroke="#15161a"]{stroke:#1a5ae0}
+:root[data-ds=b3] svg.dwg [fill="#15161a"]{fill:#1a5ae0}
+:root[data-ds=b3] svg.dwg text.lbl{fill:#0a2463}
+:root[data-ds=b3] svg.dwg [stroke="#3567b5"]{stroke:#7a8fb3}
+:root[data-ds=b3] svg.dwg .mc[style*="#117788"]{--mc:#117777!important}
+:root[data-ds=b3] svg.dwg .mc[style*="#6633dd"]{--mc:#669977!important}
+:root[data-ds=b3] svg.dwg .mc[style*="#aa2266"]{--mc:#aa1155!important}
+:root[data-ds=b3] svg.dwg .mc[style*="#3388ee"]{--mc:#117777!important}
+
+:root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg text.lbl.r,:root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg text.lbl.ang{fill:#c9302c}
+:root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg text.lbl.a{fill:#3567b5}
+:root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg text.lbl.s{fill:#7d8596}
+:root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg .mc text.lbl{fill:var(--mc)!important}
+
+.pl.peek .pl-side.more::after{display:none}
 </style>
 </head>
 <body>
@@ -5190,7 +5376,8 @@ const PAL = {
   ghost:'#cfd2d8',      // подложка
   halo:'#ffd23f'        // маркер нового шага — жёлтый текстовыделитель (по этому цвету плеер рисует новые линии «от руки»)
 };
-const W = { main:1.55, thin:0.7, aux:1.25, res:2.2, conn:0.7, dim:0.8 };
+/* толщины — экранные пиксели (svg.dwg рисует линии с vector-effect:non-scaling-stroke): ГОСТ 2.303 — основная s, тонкая s/3…s/2 */
+const W = { main:2.3, thin:0.85, aux:1.1, res:2.5, conn:0.7, dim:0.8 };
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -5259,7 +5446,7 @@ function svg(scene){
     const u=src.filter(it=>it&&it.under); if(!u.length) return src;
     const rest=src.filter(it=>!(it&&it.under)); let k=-1; rest.forEach((it,i)=>{ if(it&&it.k==='thin'&&(it._g||'given')==='given') k=i; });
     return k<0?src:[...rest.slice(0,k+1),...u,...rest.slice(k+1)]; })(scene.items);
-  const scn = {w:W0,h:H0,ox,oy};
+  const scn = {w:W0,h:H0,ox,oy,rom:scene.rom!==undefined?scene.rom:romScene(scene.fitTo||scene.items)};
   /* 1) подложки (hatch, fill) */
   const back=[], out=[];
   const ctxB = { T, out:back, scene:scn };
@@ -5267,7 +5454,7 @@ function svg(scene){
   /* 2) маркер под новыми элементами */
   const halo=[];
   const ctxH = { T, out:halo, scene:scn, halo:true };
-  items.forEach(it=>{ if(it._g==='new' && it.t!=='hatch' && it.t!=='txt' && it.t!=='note' && it.t!=='axis' && it.t!=='axis3' && it.t!=='conn' && it.t!=='hconn' && it.t!=='ext'){
+  if(scene.halo) items.forEach(it=>{ if(it._g==='new' && !it.col && it.t!=='hatch' && it.t!=='txt' && it.t!=='note' && it.t!=='axis' && it.t!=='axis3' && it.t!=='conn' && it.t!=='hconn' && it.t!=='ext'){
       const f=RENDER[it.t]; if(f) f(it,ctxH); } });
   /* 3) сами элементы, сгруппированные по состоянию */
   let cur=null;
@@ -5276,7 +5463,9 @@ function svg(scene){
     const g = it._g||'given';
     if(g!==cur){ if(cur!==null) out.push('</g>'); out.push('<g class="g-'+g+'">'); cur=g; }
     if(it.t==='hatch') return;
-    const f=RENDER[it.t]; if(f) f(it,ctx);
+    /* col — свой цвет построения (посредник и всё, что от него: сечения, линии связи, точки) — видно, откуда какая линия */
+    const f=RENDER[it.t]; if(!f) return;
+    if(it.col){ out.push('<g class="mc" style="--mc:'+esc(it.col)+'">'); f(it,ctx); out.push('</g>'); } else f(it,ctx);
   });
   if(cur!==null) out.push('</g>');
   const VW=W0+pad*2, VH=H0+pad*2;
@@ -5302,16 +5491,32 @@ function path(ctx,d,style,dash,width,fill){
   if(ctx.halo){ ctx.out.push(el('path',{d,fill:'none',stroke:PAL.halo,'stroke-width':7,'stroke-linecap':'round','stroke-linejoin':'round','stroke-opacity':.55})); return; }
   ctx.out.push(el('path',{d,fill:fill||'none',stroke:style,'stroke-width':width,'stroke-dasharray':dash,'stroke-linecap':'round','stroke-linejoin':'round'}));
 }
+/* подпись чертежа: цифровые индексы — настоящим нижним индексом (цифры чертёжного шрифта, а не знаки ₁₂ из запасного шрифта);
+   на чертежах с заменой плоскостей проекции на π₄, π₅, π₆ — верхним римским индексом: A₄ → A^IV, B₅ → B^V (как на плакатах кафедры).
+   π₄, x₁₄, x₄₅ остаются арабскими. Данные сцены не меняются — только вид. */
+const SUBD='₀₁₂₃₄₅₆₇₈₉', ROMI={'₄':'IV','₅':'V','₆':'VI'};
+function romIdx(s){ return String(s).replace(/([A-Za-zА-Яа-яЁё0-9])([₄₅₆])(?![₀-₉])/g,(m,a,d)=>a+'\u0001'+ROMI[d]+'\u0002'); }
+function lblMarkup(s,rom){
+  s=String(s); if(rom) s=romIdx(s);
+  if(!/[\u0001₀-₉]/.test(s)) return esc(s);
+  let out='', back=0;
+  s.split(/(\u0001[IVX]+\u0002|[₀-₉]+)/).forEach(part=>{ if(!part) return;
+    if(part[0]==='\u0001'){ out+='<tspan class="ri" font-size="68%" dy="'+N(-0.62-back/0.68)+'em">'+part.slice(1,-1)+'</tspan>'; back=-0.42; return; }
+    if(SUBD.indexOf(part[0])>=0){ out+='<tspan class="si" font-size="70%" dy="'+N(0.46-back/0.7)+'em">'+[...part].map(c=>SUBD.indexOf(c)).join('')+'</tspan>'; back=0.32; return; }
+    out+=back?'<tspan dy="'+N(-back)+'em">'+esc(part)+'</tspan>':esc(part); back=0; });
+  return out;
+}
+function romScene(items){ return (items||[]).some(it=>it&&/π[₄₅₆]|x[₁₂₃₄₅₆][₄₅₆]|[₄₅₆]\/π|π[₁₂₃]\/π[₄₅₆]/.test(String(it.l||'')+' '+String(it.s||''))); }
 function text(ctx,p,s,cls,dx,dy,anchor){
   if(ctx.halo) return;
   const P=ctx.T(p);
   ctx.out.push(el('text',{x:N(P[0]+(dx||0)),y:N(P[1]+(dy||0)),class:cls||'lbl',
-    'text-anchor':anchor||'start'}, esc(s)));
+    'text-anchor':anchor||'start','data-ax':N(P[0]),'data-ay':N(P[1])}, lblMarkup(s,ctx.scene&&ctx.scene.rom)));
 }
 const K = { main:[PAL.ink,null,W.main], thin:[PAL.thin,null,W.thin],
   aux:[PAL.aux,null,W.aux], auxd:[PAL.aux,'5 3',W.aux], res:[PAL.res,null,W.res],
   resd:[PAL.res,'5 3',W.res], grn:[PAL.grn,null,W.res], grnd:[PAL.grn,'5 3',W.res],
-  ghost:[PAL.ghost,null,W.main], dash:[PAL.ink,'6 3',W.thin], hid:[PAL.ink,'5 3',W.main*0.8],
+  ghost:[PAL.ghost,null,1.3], dash:[PAL.ink,'6 3',W.thin], hid:[PAL.ink,'6 3.5',1.35],
   axis:[PAL.ink,'14 3 2 3',W.thin], conn:[PAL.conn,'7 2.5 1.5 2.5',W.conn],
   paper:['#ffffff',null,W.main+1.8] };   /* «ластик»: закрывает линию условия, которая на ответе оказалась невидимой */
 const LC = { res:'r', resd:'r', aux:'a', auxd:'a', grn:'g', grnd:'g' };
@@ -5475,7 +5680,7 @@ note(it,ctx){ if(ctx.halo) return; const P=ctx.T(it.at);
   const w=(String(it.s).length*6.0)+14, h=19;
   ctx.out.push(el('rect',{x:N(P[0]-w/2),y:N(P[1]-h/2),width:N(w),height:h,rx:5,
     fill:'#fff',stroke:PAL.aux,'stroke-width':0.8}));
-  ctx.out.push(el('text',{x:N(P[0]),y:N(P[1]+4),class:'lbl note','text-anchor':'middle'},esc(it.s))); },
+  ctx.out.push(el('text',{x:N(P[0]),y:N(P[1]+4),class:'lbl note','text-anchor':'middle'},lblMarkup(it.s,ctx.scene&&ctx.scene.rom))); },
 
 hatch(){ /* рисуется в подложке */ }
 };
@@ -5542,7 +5747,9 @@ const G = {
     return [(-B-s)/(2*A),(-B+s)/(2*A)].map(t=>[a[0]+d[0]*t,a[1]+d[1]*t]); }
 };
 
-return { svg, measure, G, PAL, arcPts, ellPts };
+/* то же в тексте (HTML): A₄ → A<sup>IV</sup>, только в текстовых узлах */
+function romHTML(html){ return String(html).split(/(<[^>]*>)/).map(t=>t[0]==='<'?t:t.replace(/([A-Za-zА-Яа-яЁё0-9])([₄₅₆])(?![₀-₉])/g,(m,a,d)=>a+'<sup class="ri">'+ROMI[d]+'</sup>')).join(''); }
+return { svg, measure, G, PAL, arcPts, ellPts, romScene, romHTML };
 })();
 
 /* ============================================================
@@ -5819,6 +6026,17 @@ return { S,F,H,P,mm,len2,v3,G, pt,seg,ln,conn,txt,note,dim,sq,ang,tick,circ,arc,
    новое подсвечено маркером, прежнее остаётся.
    ============================================================ */
 const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* новое на шаге появляется «от руки»: сплошные линии прорисовываются, штриховые и точки — проявляются; после анимации стиль снимается */
+function DRAWIN(els,stagger){
+  [...els].slice(0,40).forEach((e,i)=>{ try{
+    const t=e.tagName, d=i*(stagger||100);
+    if((t==='line'||t==='path'||t==='polyline')&&!e.getAttribute('stroke-dasharray')){ let L=e.getTotalLength?e.getTotalLength():0; if(!(L>0)) return;
+      const m=e.getScreenCTM&&e.getScreenCTM(); L*=Math.max(1,m?Math.hypot(m.a,m.b):1);   /* штрих при non-scaling-stroke — в экранных пикселях */
+      e.animate([{strokeDasharray:L+' '+L,strokeDashoffset:L},{strokeDasharray:L+' '+L,strokeDashoffset:0}],{duration:1000,delay:d,easing:'cubic-bezier(.3,.7,.2,1)',fill:'backwards'}); }
+    else if(t==='circle'){ e.style.transformBox='fill-box'; e.style.transformOrigin='center'; e.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:700,delay:d,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}); }
+    else e.animate([{opacity:0},{opacity:1}],{duration:700,delay:d,fill:'backwards'});
+  }catch(_){} });
+}
 const PLAYER = (function(){
 
 /* заметка к задаче — только по делу: частая ошибка, несколько решений, оговорка к условию. Масштаб, «пропорции приблизительные», повтор ответа — убираем */
@@ -5893,12 +6111,17 @@ function scene(part,k){
   const given=part.given||[], st=part.steps||[];
   let items=tag(given,'given');
   for(let i=0;i<k;i++) items=items.concat(tag(st[i].add, i===k-1?'new':'old'));
+  /* «Прошлые шаги: скрыть» — от прошлых шагов остаётся только результат: обводка, искомые линии и точки;
+     посредники, сечения, линии связи и вспомогательные точки уходят */
+  if(PASTHIDE()){ const keepK=/^(main|res|resd|hid|grn|grnd|thin|ghost|axis|paper|dash)$/;
+    items=items.filter(it=>it._g!=='old'||(!it.col&&it.t!=='conn'&&it.t!=='hconn'&&it.t!=='ext'&&(it.t==='axis'||it.t==='hatch'||keepK.test(it.k||'main')))); }
   /* одна прямая — одна подпись: если ту же прямую позже обвели с той же подписью, ранняя подпись снимается */
   const lineOn=(u,v)=>{ const dx=u.b[0]-u.a[0], dy=u.b[1]-u.a[1], L=Math.hypot(dx,dy)||1, d=p=>Math.abs((p[0]-u.a[0])*dy-(p[1]-u.a[1])*dx)/L; return d(v.a)<1&&d(v.b)<1; };
   items.forEach((it,i)=>{ if(it.t!=='seg'||!it.l||!it.a) return; if(items.some((o,j)=>j>i&&o.t==='seg'&&o.l===it.l&&o.a&&lineOn(it,o))) it.l=undefined; });
   let all=given.slice(); st.forEach(s=>{ all=all.concat(s.add||[]); });
   return {items, fitTo:all, alt:'Чертёж: шаг '+k};
 }
+function PASTHIDE(){ try{ return localStorage.getItem('nch_past')==='hide'; }catch(e){ return false; } }
 function drawingHTML(part,k){
   if(part._fig) return part._fig(k);
   const hasDraw=(part.given&&part.given.length)||(part.steps||[]).some(s=>s.add&&s.add.length);
@@ -5910,7 +6133,7 @@ const KCOL={main:'#14181f',thin:'#14181f',aux:'#3f74b8',res:'#9b2335',grn:'#3a7a
 function chipify(html,items){
   if(!html) return html;
   const col={}; (items||[]).forEach(it=>{ if(!it||!it.l||typeof it.l!=='string') return;
-    const c=KCOL[it.k]||(it._g==='new'?'#9b2335':'#14181f');
+    const c=it.col||KCOL[it.k]||(it._g==='new'?'#9b2335':'#14181f');
     it.l.split(/≡|\s+/).map(x=>x.trim()).filter(x=>x.length>=2&&/[″′‴]/.test(x)||x.length>=2&&/^[a-zA-Z][a-zA-Z0-9₀-₉ₐ-ₜ]*$/.test(x)).forEach(x=>{ if(!col[x]||it._g==='new') col[x]=c; }); });
   const keys=Object.keys(col).sort((a,b)=>b.length-a.length); if(!keys.length) return html;
   const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -5941,7 +6164,7 @@ function mount(root,t,opt){
   const parts=partsOf(t);
   /* обезличенная статистика режимов (docs/ANALYTICS.md): уходит, только если посетитель согласился на cookie (TRACK) */
   const track=ev=>{ try{ window.TRACK&&TRACK(ev,{mode:S.mode,task:String(t.n),src:location.hash.replace(/^#\/?/,'').split('/').slice(0,2).join('/')}); }catch(e){} };
-  const S={pi:0,k:0,mode:opt.mode||'watch',shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:false};
+  const S={pi:0,k:0,mode:opt.mode||'watch',shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:window.innerWidth<900};
   const PK='plpos', posKey=opt.posKey||location.hash.replace(/\/(?:p\d+)?s\d+$/,'');
   const posGet=()=>{ try{ return (JSON.parse(localStorage.getItem(PK)||'{}')||{})[posKey]; }catch(e){ return null; } };
   const posSet=()=>{ try{ const o=JSON.parse(localStorage.getItem(PK)||'{}')||{}; const ks=Object.keys(o); if(ks.length>60) delete o[ks[0]]; o[posKey]={pi:S.pi,k:S.k,t:Date.now()}; localStorage.setItem(PK,JSON.stringify(o)); }catch(e){} };
@@ -5963,6 +6186,9 @@ function mount(root,t,opt){
 
   /* содержимое окна с текстом шага (без рамки): карточка + ответ на последнем шаге */
   function cardInner(p,k,tryHid,pi){
+    if(p._rom===undefined){ let all=(p.given||[]).slice(); (p.steps||[]).forEach(s=>{ all=all.concat(s.add||[]); }); p._rom=DRAW.romScene(all); }
+    const h=cardInner0(p,k,tryHid,pi); return p._rom?DRAW.romHTML(h):h; }
+  function cardInner0(p,k,tryHid,pi){
     const n=(p.steps||[]).length, st=k>0?p.steps[k-1]:null;
     let card;
     if(k===0){
@@ -5991,7 +6217,7 @@ function mount(root,t,opt){
     }
     /* финальный чертёж — отметкой над текстом, а не плашкой поверх рисунка: чертёж ответа виден целиком */
     const fin=last?`<div class="pl-fin" role="status"><b>✓ Финальный чертёж</b><span>${pi<parts.length-1?'конец пункта '+escH(p.l)+' — дальше следующий пункт':'это ответ, дальше построений нет'}</span></div>`:'';
-    return `${fin}<div class="pl-card" aria-live="polite">${card}</div>${ans}`;
+    return `<div class="pl-card" aria-live="polite">${card}</div>${ans}`;   /* плашку «Финальный чертёж» убрали по просьбе автора */
   }
 
   function render(){
@@ -6028,7 +6254,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶ Как образуется</b></button>':''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶<span class="lbx"> Поверхность</span></b></button>':''}${k>1&&!p._fig?`<button class="pl-zb past${PASTHIDE()?'':' on'}" data-z="past" aria-pressed="${!PASTHIDE()}" title="${PASTHIDE()?'Показать построения прошлых шагов':'Оставить от прошлых шагов только результат'}"><i aria-hidden="true"></i>Прошлые<b>&nbsp;шаги</b></button>`:''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -6051,7 +6277,7 @@ function mount(root,t,opt){
   function measure(){ try{
     const paper=root.querySelector('.pl-paper'), sc=root.querySelector('.pl-scroll'), side=root.querySelector('.pl-side'); if(!paper||!sc||!side) return;
     const mob=window.innerWidth<900&&document.body.classList.contains('inplayer')&&!S.full&&!S.peek;
-    if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(H*0.34,Math.min(H*0.56,need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
+    if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(Math.min(96,need),Math.min(H*(S.sheet?0.62:0.24),need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
     else { side.style.maxHeight=''; side.style.height=''; }
     const more=()=>{ if(side) side.classList.toggle('more',sc.scrollHeight-sc.clientHeight-sc.scrollTop>6); };
     more(); if(!sc._more){ sc._more=1; sc.addEventListener('scroll',more,{passive:true}); }
@@ -6085,17 +6311,13 @@ function mount(root,t,opt){
     const fwd=S.k>lastK&&lastK>=0; lastK=S.k; if(!fwd) return;
     if(matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches) return;
     const svg=root.querySelector('.pl-paper svg'); if(!svg) return;
-    svg.querySelectorAll('[stroke="#ffd23f"]').forEach((e,i)=>{
-      const t=e.tagName;
-      if(t==='line'||t==='path'||t==='polyline'){ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset 1.15s cubic-bezier(.3,.7,.2,1) '+(i*110)+'ms'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }
-      else { e.style.transformBox='fill-box'; e.style.transformOrigin='center'; e.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:800,delay:i*110,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}); }
-    });
+    DRAWIN(svg.querySelectorAll('.g-new :is(line,path,polyline), .g-new circle'),110);
   }
   function helpHTML(st,k,p){
     let g=[]; try{ g=GLOSS.find((st.t||'')+' '+(st.d||'')+' '+(st.why||''),3); }catch(e){}
     const prev=k>1?((p.steps[k-2]||{}).t||''):'';
     return `<div class="pl-help" role="region" aria-label="Пояснение к шагу">`+
-      (g.length?g.map(x=>`<div class="hl-t"><b>${x.t}.</b> ${x.d}</div>`).join(''):`<div class="hl-t">Посмотри на чертёж: жёлтым подсвечено то, что добавилось на этом шаге. Если непонятно, откуда оно взялось, вернись на шаг назад.</div>`)+
+      (g.length?g.map(x=>`<div class="hl-t"><b>${x.t}.</b> ${x.d}</div>`).join(''):`<div class="hl-t">Посмотри на чертёж: цветом и толщиной выделено то, что добавилось на этом шаге. Если непонятно, откуда оно взялось, вернись на шаг назад.</div>`)+
       `<div class="hl-b">${k>0?'<button type="button" class="btn ghost hl-back">← Шаг назад'+(prev?': '+prev:'')+'</button>':''}<button type="button" class="btn ghost hl-find">Найти объяснение</button></div></div>`;
   }
   function go(k){ S.help=false; try{ if(window.FX&&k!==S.k) FX.buzz(8); }catch(e){} S.k=Math.max(0,Math.min(N(),k)); S.done=false; posSet(); render(); if(opt.onStep) opt.onStep(S); }
@@ -6116,7 +6338,9 @@ function mount(root,t,opt){
     q('.pl-redo')&&q('.pl-redo').addEventListener('click',()=>{ S.done=false; S.pi=0; S.k=0; S.shown={}; S.hint={}; S.rated=null; S.z={s:1,x:0,y:0}; render(); });
     q('.pl-sh')&&q('.pl-sh').addEventListener('click',e=>shareNow(e.currentTarget));
     q('.pl-share')&&q('.pl-share').addEventListener('click',e=>shareNow(e.currentTarget));
-    q('.pl-peek')&&q('.pl-peek').addEventListener('click',()=>{ S.peek=!S.peek; render(); });
+    q('.pl-peek')&&q('.pl-peek').addEventListener('click',()=>{ if(S.sheet){ S.sheet=false; render(); return; } S.peek=!S.peek; render(); });
+    /* телефон: шторка пояснения — касание «дальше ↓» поднимает её выше, «скрыть» опускает до заголовка */
+    q('.pl-side')&&q('.pl-side').addEventListener('click',e=>{ const sd=e.currentTarget; if(window.innerWidth>=900||S.peek||S.sheet||!sd.classList.contains('more')) return; const r=sd.getBoundingClientRect(); if(e.clientY<r.bottom-44||e.target.closest('button,a,input,summary,details')) return; S.sheet=true; measure(); sd.classList.add('up'); });
     root.querySelectorAll('.pl-dot').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.k)));
     root.querySelectorAll('.pl-part').forEach(b=>b.addEventListener('click',()=>{S.pi=+b.dataset.p;S.k=0;S.z={s:1,x:0,y:0};render();}));
     root.querySelectorAll('.pl-mode[data-m]').forEach(b=>b.addEventListener('click',()=>{S.mode=b.dataset.m;S.shown={};S.hint={};S.rated=null;S.saw3d=0;render(); track('task_mode'); if(opt.onMode) opt.onMode(S.mode);}));
@@ -6130,7 +6354,9 @@ function mount(root,t,opt){
     const Z=S.z, MAXS=8;
     const clamp=()=>{ Z.s=Math.max(1,Math.min(MAXS,Z.s)); const r=paper.getBoundingClientRect(), mx=(Z.s-1)*r.width/2, my=(Z.s-1)*r.height/2;
       if(Z.s===1){ Z.x=0; Z.y=0; } else { Z.x=Math.max(-mx,Math.min(mx,Z.x)); Z.y=Math.max(-my,Math.min(my,Z.y)); } };
-    const lblScale=()=>{ try{ const vb=svg.viewBox.baseVal; if(!vb||!vb.width) return; const u=Math.min(svg.clientWidth/vb.width,svg.clientHeight/vb.height)||1; const px=window.innerWidth<900?14:15.5; svg.style.setProperty('--lf',Math.min(px/(u*Z.s),11.5*2.3)+'px'); }catch(e){} };
+    const lblScale=()=>{ try{ const vb=svg.viewBox.baseVal; if(!vb||!vb.width) return; const u=Math.min(svg.clientWidth/vb.width,svg.clientHeight/vb.height)||1; const px=window.innerWidth<900?11:12; const lf=Math.min(px/(u*Z.s),11.5*2.3); svg.style.setProperty('--lf',lf+'px');
+      /* подписи заново расставляются под новый размер (при увеличении им просторнее) */
+      if(svg._lf&&Math.abs(lf/svg._lf-1)>0.08&&window.DECLUTTER){ clearTimeout(svg._lft); svg._lft=setTimeout(()=>{ svg._lf=lf; delete svg.dataset.dc; DECLUTTER(svg); },160); } else if(!svg._lf) svg._lf=lf; }catch(e){} };
     const apply=()=>{ clamp(); lblScale(); svg.style.transformOrigin='50% 50%'; svg.style.transform=Z.s===1?'':'translate('+Z.x+'px,'+Z.y+'px) scale('+Z.s+')'; paper.classList.toggle('zoomed',Z.s>1); };
     const at=(ns,cx,cy)=>{ const r=paper.getBoundingClientRect(), px=cx-r.left-r.width/2, py=cy-r.top-r.height/2; ns=Math.max(1,Math.min(MAXS,ns)); const f=ns/Z.s; Z.x=px-f*(px-Z.x); Z.y=py-f*(py-Z.y); Z.s=ns; apply(); };
     apply();
@@ -6149,7 +6375,7 @@ function mount(root,t,opt){
     paper.addEventListener('pointerup',up); paper.addEventListener('pointercancel',e=>{P.delete(e.pointerId);});
     paper.addEventListener('dblclick',e=>{ if(e.target.closest('.pl-zoom')) return; at(Z.s>1.2?1:2.6,e.clientX,e.clientY); });
     paper.querySelectorAll('.pl-zb').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const z=b.dataset.z, r=paper.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
-      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if((z==='3d'||z==='meth')&&S.mode==='try'&&!S.saw3d) ask3d(paper,z); else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); else if(z==='meth'&&window.METHANIM) METHANIM.open(t); else if(z==='form'&&window.SURFLAB) SURFLAB.open((partsOf(t)[S.pi]||{}).form); }));
+      if(z==='in') at(Z.s*1.5,cx,cy); else if(z==='out') at(Z.s/1.5,cx,cy); else if(z==='reset'){ Z.s=1;Z.x=0;Z.y=0; apply(); } else if(z==='full'){ S.full=!S.full; S.ftext=false; Z.s=1;Z.x=0;Z.y=0; render(); } else if(z==='text'){ S.ftext=!S.ftext; render(); } else if(z==='past'){ try{ localStorage.setItem('nch_past',PASTHIDE()?'show':'hide'); }catch(_){} render(); } else if((z==='3d'||z==='meth')&&S.mode==='try'&&!S.saw3d) ask3d(paper,z); else if(z==='3d'&&window.TASK3D) TASK3D.open(t,S.pi,S.k); else if(z==='meth'&&window.METHANIM) METHANIM.open(t); else if(z==='form'&&window.SURFLAB) SURFLAB.open((partsOf(t)[S.pi]||{}).form); }));
   }
   /* «Решаю сам»: модель — после попытки. Если открыть 3D сразу, студент смотрит, но не тренирует воображение */
   function ask3d(paper,z){ const old=paper.querySelector('.pl-ask3d'); if(old) old.remove();
@@ -24089,6 +24315,12 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
+  {v:'4.32',d:'14 ноября 2026',items:['Чертёж — главный на экране. На телефоне он занимает около 60 % высоты (было около 20 %): шапка сайта в разборе спрятана, шаги, «Условие» и «Смотрю / Решаю сам» — одной строкой, пояснение — шторкой снизу.',
+    'Подписи на чертежах — чертёжным шрифтом тип Б (наклонный, как на плакатах кафедры), один размер на всех чертежах.',
+    'Новые плоскости при замене — римскими индексами сверху: A<sup>IV</sup>, B<sup>V</sup> — на чертеже и в тексте шага. Оси — x₁₄, x₄₅.',
+    'Линии по ГОСТ 2.303: контур толстый, построения тонкие, линии связи самые светлые — толщина не меняется при увеличении. Жёлтого маркера больше нет: новое на шаге — цветом и толщиной, прошлое — тише.',
+    'Шаг ДЗ — одна фраза «что делаем»; «Почему так?», «Намёк», «Числа» и «Проверь себя» — кнопками под ней.',
+    'Печать листа прямо со страницы — ровно одна белая страница А3 в любой теме.']},
   {v:'4.31',d:'12 ноября 2026',items:['РК2 за 9 шагов проще: в теме три шага — «Как решать» (суть, как звучит в билете, способ), «Разбор по шагам», «Задачи билета». Вопрос-проверка и звёзды убраны: тема пройдена, когда досмотрен разбор.','«Задачи билета» — только условия и чертежи, по задаче на каждый вид, и яркая кнопка «Распечатать задачи» (по листу А4 на задачу). Без ответов, решений и координат.','Пробный РК2: координаты убраны, ответ — в целых градусах и миллиметрах с допуском, без лишних десятых.']},
   {v:'4.30',d:'12 ноября 2026',items:['РК2 за 9 шагов: каждая тема — пять шагов сверху (Суть → Способ → Разбор задачи → Виды в билете → Решить ещё), открыт один, внизу кнопка «Дальше». Ловушки свёрнуты, виды задач — компактные карточки. «Решить ещё» — лист задач как в билете, по одной на каждый вид, ответ и решение под спойлером, «Новые задачи» — новые числа.','Убрана проверка вводом чисел (углы, расстояния): тема засчитывается за вопрос на суть, разбор задачи и пройденные шаги. Пробный РК2: решаешь на бумаге, открываешь ответы и отмечаешь «сошлось / не сошлось».']},
   {v:'4.30',d:'12 ноября 2026',items:['«Спроси автора» — прямо на сайте. Кнопка «Спросить» в шапке на любой странице: пишешь, что не получается, можно с фото чертежа — автор отвечает лично, ответ приходит сюда же. Новый ответ видно на кнопке, все вопросы — в «Моих вопросах».']},
@@ -28725,25 +28957,56 @@ const LOGO={
 (function(){
   const hit=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
   const area=(a,b)=>Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
+  /* Расстановка подписей (редизайн, п. 4): у каждой подписи — точка привязки (data-ax/ay). Перебираются 8 позиций вокруг
+     точки на трёх расстояниях; цена позиции — сколько линий чертежа под подписью (толстые и искомые дороже, линии связи
+     дешевле), наложение на другие подписи и точки (почти запрещено), выход за край и удаление от точки. Берётся самая дешёвая. */
+  function segsOf(svg){
+    const S=[]; const add=(x1,y1,x2,y2,w)=>{ if(isFinite(x1+y1+x2+y2)) S.push([x1,y1,x2,y2,w]); };
+    const wOf=e=>{ const sw=parseFloat(e.getAttribute('stroke-width'))||1, st=(e.getAttribute('stroke')||'').toLowerCase();
+      if(st==='none'||st==='#ffffff') return 0; if(st==='#9dbbe0') return .35; return Math.max(.5,Math.min(3,sw)); };
+    svg.querySelectorAll('line').forEach(e=>{ const w=wOf(e); if(w) add(+e.getAttribute('x1'),+e.getAttribute('y1'),+e.getAttribute('x2'),+e.getAttribute('y2'),w); });
+    svg.querySelectorAll('path').forEach(e=>{ if(e.closest('.back')) return; const w=wOf(e); if(!w) return; const d=e.getAttribute('d')||'';
+      if(/^[ML0-9.,\s\-Z]+$/i.test(d)&&!/[A]/i.test(d)){ const n=d.match(/-?\d*\.?\d+(e-?\d+)?/g).map(Number); for(let i=2;i+1<n.length;i+=2) add(n[i-2],n[i-1],n[i],n[i+1],w); return; }
+      try{ const L=e.getTotalLength(), k=Math.min(200,Math.max(4,Math.ceil(L/5))); let p=e.getPointAtLength(0); for(let i=1;i<=k;i++){ const q=e.getPointAtLength(L*i/k); add(p.x,p.y,q.x,q.y,w); p=q; } }catch(_){} });
+    svg.querySelectorAll('circle,ellipse').forEach(e=>{ const r=+e.getAttribute('r')||0, rx=+e.getAttribute('rx')||r, ry=+e.getAttribute('ry')||r; if(Math.max(rx,ry)<=6) return; const w=wOf(e); if(!w) return;
+      const cx=+e.getAttribute('cx'), cy=+e.getAttribute('cy'); let px=cx+rx, py=cy; for(let i=1;i<=48;i++){ const a=i/48*2*Math.PI, qx=cx+rx*Math.cos(a), qy=cy+ry*Math.sin(a); add(px,py,qx,qy,w); px=qx; py=qy; } });
+    return S;
+  }
+  /* длина отрезка внутри прямоугольника (Лиана — Барски) */
+  function clipLen(s,r){ let t0=0,t1=1; const dx=s[2]-s[0], dy=s[3]-s[1];
+    const P=[-dx,dx,-dy,dy], Q=[s[0]-r.x,r.x+r.w-s[0],s[1]-r.y,r.y+r.h-s[1]];
+    for(let i=0;i<4;i++){ if(P[i]===0){ if(Q[i]<0) return 0; } else { const t=Q[i]/P[i]; if(P[i]<0){ if(t>t1) return 0; if(t>t0) t0=t; } else { if(t<t0) return 0; if(t<t1) t1=t; } } }
+    return (t1-t0)*Math.hypot(dx,dy); }
   function declutter(svg){
-    if(!svg||svg.dataset.dc) return; const T=[...svg.querySelectorAll('text.lbl')]; if(T.length<2){ svg.dataset.dc=1; return; }
+    if(!svg||svg.dataset.dc) return; const T=[...svg.querySelectorAll('text.lbl')]; if(!T.length){ svg.dataset.dc=1; return; }
     let bb0; try{ bb0=T[0].getBBox(); }catch(e){ return; } if(!bb0||(!bb0.width&&!bb0.height)) return;   // ещё не на экране — попробуем позже
     svg.dataset.dc=1;
-    const dots=[...svg.querySelectorAll('circle')].map(c=>{ const r=+c.getAttribute('r')||0; if(r>6) return null; const x=+c.getAttribute('cx'), y=+c.getAttribute('cy'); return {x:x-r-.5,y:y-r-.5,w:2*r+1,h:2*r+1}; }).filter(Boolean);
-    const L=T.map((t,i)=>{ const b=t.getBBox(); return {t,i,b:{x:b.x-1,y:b.y,w:b.width+2,h:b.height},len:(t.textContent||'').length}; }).filter(o=>o.b.w>0);
-    L.sort((a,b)=>(a.len>4)-(b.len>4)||a.i-b.i);           // короткие имена точек — в приоритете, длинные пояснения уступают
+    T.forEach(t=>{ if(t.dataset.x0===undefined){ t.dataset.x0=t.getAttribute('x'); t.dataset.y0=t.getAttribute('y'); } else { t.setAttribute('x',t.dataset.x0); t.setAttribute('y',t.dataset.y0); } });
+    const vb=svg.viewBox&&svg.viewBox.baseVal, VB=vb&&vb.width?{x:vb.x,y:vb.y,w:vb.width,h:vb.height}:null;
+    const dots=[...svg.querySelectorAll('circle')].map(c=>{ const r=+c.getAttribute('r')||0; if(r>6) return null; const x=+c.getAttribute('cx'), y=+c.getAttribute('cy'); return {x:x-r-1,y:y-r-1,w:2*r+2,h:2*r+2}; }).filter(Boolean);
+    const segs=segsOf(svg), G=24, grid=new Map();
+    segs.forEach((s,i)=>{ const x0=Math.floor(Math.min(s[0],s[2])/G), x1=Math.floor(Math.max(s[0],s[2])/G), y0=Math.floor(Math.min(s[1],s[3])/G), y1=Math.floor(Math.max(s[1],s[3])/G);
+      for(let gx=x0;gx<=x1;gx++) for(let gy=y0;gy<=y1;gy++){ const k=gx+','+gy; (grid.get(k)||grid.set(k,[]).get(k)).push(i); } });
+    const lineCost=r=>{ const seen=new Set(); let c=0; for(let gx=Math.floor(r.x/G);gx<=Math.floor((r.x+r.w)/G);gx++) for(let gy=Math.floor(r.y/G);gy<=Math.floor((r.y+r.h)/G);gy++){ const L=grid.get(gx+','+gy); if(L) L.forEach(i=>{ if(seen.has(i)) return; seen.add(i); c+=clipLen(segs[i],r)*segs[i][4]; }); } return c; };
+    const L=T.map((t,i)=>{ const b=t.getBBox(); const ax=parseFloat(t.dataset.ax), ay=parseFloat(t.dataset.ay); return {t,i,b:{x:b.x,y:b.y,w:b.width,h:b.height},ax,ay,len:(t.textContent||'').length,pt:t.classList.contains('pt')}; }).filter(o=>o.b.w>0);
+    L.sort((a,b)=>(b.pt-a.pt)||(a.len>4)-(b.len>4)||a.i-b.i);   // имена точек — первыми, длинные пояснения уступают
     const placed=[];
-    L.forEach(o=>{ const h=Math.max(8,o.b.h), base=o.b;
-      const bad=r=>placed.some(p=>hit(r,p))||dots.some(d=>hit(r,d));
-      if(!bad(base)){ placed.push(base); return; }
-      let best=null, bs=1e9;
-      search: for(const k of [.75,1.2,1.7,2.3]){ for(const [dx,dy] of [[0,-1],[0,1],[1,0],[-1,0],[1,-1],[-1,-1],[1,1],[-1,1]]){
-        const mx=dx*k*h*(dx&&!dy?1.1:1), my=dy*k*h, r={x:base.x+mx,y:base.y+my,w:base.w,h:base.h};
-        const sc=placed.reduce((a,p)=>a+area(r,p),0)+dots.reduce((a,d)=>a+area(r,d)*2,0);
-        const cost=sc*10+Math.hypot(mx,my);
-        if(sc===0){ best={mx,my,r}; bs=0; break search; } if(cost<bs){ bs=cost; best={mx,my,r}; } } }
-      if(best&&(bs===0||bs<1e8)){ ['x','y'].forEach((a,j)=>{ const v=parseFloat(o.t.getAttribute(a))||0; o.t.setAttribute(a,(v+(j?best.my:best.mx)).toFixed(2)); }); placed.push(best.r); }
-      else placed.push(base); });
+    L.forEach(o=>{ const {w,h}=o.b, pad=Math.max(1,h*.08);
+      const cands=[{dx:0,dy:0,pen:0}];
+      if(isFinite(o.ax)&&isFinite(o.ay)){ const r0=Math.max(3,h*.28);
+        [[1,-1,0],[1,0,.6],[-1,-1,.3],[1,1,.5],[0,-1,.4],[-1,0,.7],[-1,1,.8],[0,1,.6]].forEach(([ux,uy,pr])=>[1,1.9,3,4.2].forEach((k,ki)=>{ const r=r0*k+(ki?h*.35*ki:0);
+          const left=ux>0?o.ax+r*(uy?0.75:1):ux<0?o.ax-r*(uy?0.75:1)-w:o.ax-w/2, top=uy<0?o.ay-r*(ux?0.75:1)-h:uy>0?o.ay+r*(ux?0.75:1):o.ay-h/2;
+          cands.push({dx:left-o.b.x,dy:top-o.b.y,pen:pr+ki*2.2}); })); }
+      else [.75,1.2,1.7,2.3].forEach((k,ki)=>[[0,-1],[0,1],[1,0],[-1,0],[1,-1],[-1,-1],[1,1],[-1,1]].forEach(([dx,dy])=>cands.push({dx:dx*k*h*(dx&&!dy?1.1:1),dy:dy*k*h,pen:1+ki*2})));
+      let best=null, bs=1e18;
+      for(const c of cands){ const r={x:o.b.x+c.dx+pad,y:o.b.y+c.dy+h*.12,w:w-2*pad,h:h*.76};
+        let cost=lineCost(r)*(window.LBLW||1)+c.pen*h*.6+Math.hypot(c.dx,c.dy)*.04;
+        for(const p of placed){ const a=area(r,p); if(a) cost+=200+a*4; }
+        for(const d of dots){ const a=area(r,d); if(a) cost+=150+a*4; }
+        if(VB&&(r.x<VB.x||r.y<VB.y||r.x+r.w>VB.x+VB.w||r.y+r.h>VB.y+VB.h)) cost+=400;
+        if(cost<bs){ bs=cost; best={c,r}; } }
+      if(best&&(best.c.dx||best.c.dy)){ ['x','y'].forEach((a,j)=>{ const v=parseFloat(o.t.getAttribute(a))||0; o.t.setAttribute(a,(v+(j?best.c.dy:best.c.dx)).toFixed(2)); }); }
+      placed.push(best?best.r:o.b); });
   }
   const run=root=>{ (root.matches&&root.matches('svg.dwg')?[root]:[...(root.querySelectorAll?root.querySelectorAll('svg.dwg:not([data-dc])'):[])]).forEach(declutter); };
   window.DECLUTTER=declutter;
@@ -29223,7 +29486,7 @@ function dayPlay(){
   const pic=card.querySelector('.hday-pic'), cap=card.querySelector('.hday-cap');
   const show=()=>{ const old=pic.querySelector('svg'); const tmp=document.createElement('div'); tmp.innerHTML=dayFrame(D,s); const nw=tmp.firstElementChild;
     if(old&&nw){ old.replaceWith(nw); } cap.textContent=s?('Шаг '+s+' из '+D.n+(D.P.steps[s-1]&&D.P.steps[s-1].t?' · '+D.P.steps[s-1].t:'')):'Дано';
-    nw&&nw.querySelectorAll('[stroke="#ffd23f"]').forEach(e=>{ try{ const L=e.getTotalLength?e.getTotalLength():0; if(L>0){ e.style.strokeDasharray=L; e.style.strokeDashoffset=L; e.style.transition='stroke-dashoffset 1.3s ease'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.strokeDashoffset=0; })); } }catch(_){} }); };
+    nw&&DRAWIN(nw.querySelectorAll('.g-new :is(line,path,polyline), .g-new circle'),90); };
   const loop=()=>{ if(!card.isConnected){ clearTimeout(tm); return; } if(vis){ s=s>=D.n?0:s+1; show(); } tm=setTimeout(loop,s>=D.n?3200:1700); };
   if('IntersectionObserver' in window){ const io=new IntersectionObserver(es=>{ vis=es[0].isIntersecting; },{threshold:.35}); io.observe(card); }
   tm=setTimeout(loop,1400);
