@@ -59,7 +59,7 @@ function build(){
      hzRight — разрез А–А справа от вертикальной оси (вид слева), волнистой линией, если на оси ребро; снизу — только если тело
      несимметрично слева направо */
   /* full — вид сверху в условии — с линиями выреза K (иначе — только наружный контур тела: его «достраивают») */
-  const add=(n,o)=>{ const outer=o.outer, tree=S(outer,...o.cut); V[n]=Object.assign({n},o,{tree,hz:{L:'А',z:o.hz},spec:{F:o.fsec?'half':'view',L:'half'},hzRight:true,givenTop:o.top||(o.full?undefined:outer)}); V[n].dims=o.dims||autoDims(o,o.cut.map(c=>c.pts).filter(Boolean)); delete V[n].top; delete V[n].cut; };
+  const add=(n,o)=>{ const outer=o.outer, tree=S(outer,...o.cut); V[n]=Object.assign({n},o,{tree,kp:o.cut.map(c=>c.pts).filter(Boolean),hz:{L:'А',z:o.hz},spec:{F:o.fsec?'half':'view',L:'half'},hzRight:true,givenTop:o.top||(o.full?undefined:outer)}); V[n].dims=o.dims||autoDims(o,o.cut.map(c=>c.pts).filter(Boolean)); delete V[n].top; delete V[n].cut; };
 
   /* 1 — шестигранная пирамида (Ø120, высота 120, вершины основания спереди и сзади); K — трапеция z 20…65, нижнее
         основание 60, боковые стороны направлены в вершину пирамиды */
