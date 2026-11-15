@@ -12,7 +12,7 @@ window.IG4S=(function(){
 const W=900, S=420, k0=S/W, X0=20, Y0=16, TOPY=Y0+S-20, PW=2*S+2*X0, PH=TOPY+S+6;
 /* палитра — проверенная tests/colors.js: тушь, прошлые шаги, посредники MED, красный — стираем */
 const INK='#15161a', PAST='#a3a9b4', RED='#c9302c', C_BODY='#117788', C_K='#aa2266', C_SEC='#6633dd', C_AA='#3388ee';
-const f=v=>Math.round(v*10)/10, mm=v=>String(Math.round(Math.abs(v)*10)/10).replace('.',','), esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const f=v=>Math.round(v*10)/10, sx=v=>(v<-0.05?'−':'')+mm(v), mm=v=>String(Math.round(Math.abs(v)*10)/10).replace('.',','), esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const DR=(md,v,off,bnd)=>IG3.drawing(md,v,W,off||0,bnd||0);
 
 /* ── линии вида → цепочки → отрезки и кривые ──
@@ -37,7 +37,7 @@ function elements(lines){ const out=[];
     const cut=[0]; for(let j=1;j<V.length-1;j++) if(turn(j)>12) cut.push(j); cut.push(V.length-1);
     for(let c=0;c+1<cut.length;c++){ const a=cut[c], b=cut[c+1], path=L.slice(ix[a],ix[b]+1).map(o=>o.p);
       if(Math.hypot(V[b].p[0]-V[a].p[0],V[b].p[1]-V[a].p[1])<1.5&&b-a<2) continue;
-      if(b-a>=3){ const n=Math.min(6,b-a), key=[]; for(let t=0;t<=n;t++) key.push(V[a+Math.round(t*(b-a)/n)].q);   /* кривая: концы и точки через равные доли */
+      if(b-a>=3){ let ln=0; for(let j=a;j<b;j++) ln+=Math.hypot(V[j+1].p[0]-V[j].p[0],V[j+1].p[1]-V[j].p[1]); const n=Math.min(b-a,Math.max(2,Math.min(4,Math.round(ln/70)))), key=[]; for(let t=0;t<=n;t++) key.push(V[a+Math.round(t*(b-a)/n)].q);   /* кривая: концы и точки через равные доли */
         out.push({h,curve:1,key,path}); }
       else for(let j=a;j<b;j++){ if(Math.hypot(V[j+1].p[0]-V[j].p[0],V[j+1].p[1]-V[j].p[1])<1.5) continue; out.push({h,curve:0,key:[V[j].q,V[j+1].q],path:L.slice(ix[j],ix[j+1]+1).map(o=>o.p)}); } } }));
   return out; }
@@ -69,23 +69,24 @@ function plan(model){ if(model._ig4s) return model._ig4s;
   /* реестр точек: одна точка пространства — один номер на всех шагах */
   const R=[], reg=p=>{ let o=R.find(q=>Math.hypot(q.p[0]-p[0],q.p[1]-p[1],q.p[2]-p[2])<0.45); if(!o){ o={n:R.length+1,p:p.map(v=>Math.abs(v-Math.round(v))<0.16?Math.round(v):Math.round(v*10)/10)}; R.push(o); } return o; };
   const uniq=(P,pr)=>{ const out=[]; P.forEach(p=>{ if(!out.some(q=>Math.hypot(q[0]-p[0],q[1]-p[1],q[2]-p[2])<0.45)) out.push(p); }); return out; };
-  let aEl0=null; const ST=[], tName=model.title||'Тело', K=(model.kp||[])[0]||[];
+  let aEl0=null; const ST=[], tName=model.title||'Тело', KA=model.kp||[], K=KA[0]||[], multi=KA.length>1;
   const kName=n=>({3:'треугольник',4:'четырёхугольник',5:'пятиугольник',6:'шестиугольник'}[n]||n+'-угольник');
   const isTrap=K.length===4&&(Math.abs(K[0][1]-K[1][1])<0.1&&Math.abs(K[2][1]-K[3][1])<0.1);
   const isRect=isTrap&&Math.abs(K[0][0]-K[3][0])<0.1&&Math.abs(K[1][0]-K[2][0])<0.1;
-  const kTitle=isRect?'прямоугольник':isTrap?'трапеция':kName(K.length);
-  const zs=K.map(p=>p[1]), kz0=Math.min(...zs), kz1=Math.max(...zs);
+  const titleOf=K=>{ const tr=K.length===4&&Math.abs(K[0][1]-K[1][1])<0.1&&Math.abs(K[2][1]-K[3][1])<0.1, rc=tr&&Math.abs(K[0][0]-K[3][0])<0.1&&Math.abs(K[1][0]-K[2][0])<0.1; return rc?'прямоугольник':tr?'трапеция':kName(K.length); };
+  const kTitle=multi?KA.map(titleOf).join(' и '):titleOf(K);
+  const zs=[].concat(...KA.map(k=>k.map(p=>p[1]))), kz0=Math.min(...zs), kz1=Math.max(...zs);
   const elK=els=>els;   /* для читаемости */
 
   /* 1. Дано */
   ST.push({id:'given',t:'Дано и задача',d:(model.givenTop?'Дан главный вид и вид сверху тела без выреза K':'Даны главный вид и вид сверху')+'. Построить вид слева, профильный разрез, горизонтальный разрез А–А и нанести размеры.',
-    more:`<p>${esc(tName)}: высота ${mm(z1-z0)} мм. Сквозной вырез K задан на главном виде — ${kTitle}${K.length?' от z = '+mm(kz0)+' до z = '+mm(kz1)+' мм':''}.</p>`+(model.givenTop?'<p>На виде сверху выреза K в задании нет — его линии появятся по ходу построения, как и весь вид слева.</p>':'')+'<p>Вид слева строим справа от главного вида, на одной высоте с ним; вид сверху — под главным видом. Это и есть проекционная связь.</p>',
+    more:`<p>${esc(tName)}: высота ${mm(z1-z0)} мм. ${multi?'Сквозные вырезы K заданы на главном виде — '+kTitle:'Сквозной вырез K задан на главном виде — '+kTitle}${K.length?' от z = '+mm(kz0)+' до z = '+mm(kz1)+' мм':''}.</p>`+(model.givenTop?'<p>На виде сверху выреза K в задании нет — его линии появятся по ходу построения, как и весь вид слева.</p>':'')+'<p>Вид слева строим справа от главного вида, на одной высоте с ним; вид сверху — под главным видом. Это и есть проекционная связь.</p>',
     F:{k:'given'},T:{k:'given'},L:{k:'none'}});
   /* 2. Анализ формы */
-  { const kv=K.map((p,i)=>'('+mm(p[0]*1)+'; '+mm(p[1])+')').join(', ');
-    ST.push({id:'anal',t:'Анализ формы',d:esc(tName)+' и вырез K — '+kTitle+' на главном виде, протянутый насквозь от передней грани до задней.',
+  { const kvOf=K=>K.map(p=>'('+(p[0]<0?'−':'')+mm(p[0])+'; '+mm(p[1])+')').join(', ');
+    ST.push({id:'anal',t:'Анализ формы',d:esc(tName)+(multi?' и два сквозных выреза K — '+kTitle:' и вырез K — '+kTitle)+' на главном виде, протянутые насквозь от передней поверхности до задней.',
       more:`<p><b>Тело:</b> ${esc(tName)} — габарит ${mm(b[1][0]-b[0][0])} × ${mm(b[1][1]-b[0][1])} × ${mm(z1-z0)} мм (ширина × глубина × высота).</p>`
-        +`<p><b>Вырез K</b> — ${kTitle} с вершинами ${kv} (x; z, мм). Каждая сторона K — плоскость, перпендикулярная фронтальной плоскости π₂: на главном виде она видна линией, поэтому контур K на главном виде уже готов. На виде сверху и слева линию выреза строим по точкам — там, где эти плоскости режут грани и рёбра тела.</p>`
+        +KA.map((k,i)=>`<p><b>Вырез K${multi?' '+(i+1):''}</b> — ${titleOf(k)} с вершинами ${kvOf(k)} (x; z, мм).</p>`).join('')+`<p> Каждая сторона K — плоскость, перпендикулярная фронтальной плоскости π₂: на главном виде она видна линией, поэтому контур K на главном виде уже готов. На виде сверху и слева линию выреза строим по точкам — там, где эти плоскости режут грани и рёбра тела.</p>`
         +'<p>Отсюда план: сначала тело целиком на виде слева, потом характерные точки K на трёх видах, потом разрезы и размеры.</p>',
       F:{k:'given',kHL:1},T:{k:'given'},L:{k:'none'}}); }
   /* 3. Оси и габарит вида слева */
@@ -99,9 +100,10 @@ function plan(model){ if(model._ig4s) return model._ig4s;
     /* на виде слева совпадающие точки (одинаковые y, z) — одна; берём ближнюю к нам (наименьшая x) */
     const byL=[]; P.forEach(p=>{ const q=byL.find(o=>Math.abs(o[1]-p[1])<0.5&&Math.abs(o[2]-p[2])<0.5); if(!q) byL.push(p); else if(p[0]<q[0]){ q[0]=p[0]; } });
     byL.sort((p,q)=>q[2]-p[2]||p[1]-q[1]).forEach(p=>bodyPts.push(reg(p))); }
-  const chunk=(A,n)=>{ const out=[]; for(let i=0;i<A.length;i+=n) out.push(A.slice(i,i+n)); return out; };
+  /* группы поровну: 16 точек при пределе 14 — 8 + 8, а не 14 + 2 */
+  const chunk=(A,n)=>{ const k=Math.max(1,Math.ceil(A.length/n)), m=Math.ceil(A.length/k), out=[]; for(let i=0;i<A.length;i+=m) out.push(A.slice(i,i+m)); return out; };
   const ptT=o=>{ const p=o.p; return o.n+' ('+'z = '+mm(p[2])+', глубина '+(Math.abs(p[1])<0.3?'0 — на оси':mm(p[1])+' мм '+(p[1]<0?'вперёд':'назад'))+')'; };
-  const BG=chunk(bodyPts,8);
+  const BG=chunk(bodyPts,12);
   BG.forEach((g,i)=>{ const last=i===BG.length-1;
     ST.push({id:'body',t:'Тело на виде слева'+(BG.length>1?' ('+(i+1)+' из '+BG.length+')':''),d:'Каждая вершина: высота — горизонтальной линией связи с главного вида, глубина — с вида сверху от оси (засечки). Соединяем точки по рёбрам.',
       more:'<p>Точки '+g.map(ptT).join('; ')+'.</p><p>Для точки k: k″ на главном виде даёт высоту, k′ на виде сверху — глубину (расстояние от горизонтальной оси). Откладываем ту же глубину от оси вида слева — получаем k‴.</p>'+(last?'<p>Соединяем точки так же, как соединены рёбра тела. Видимые рёбра — сплошной основной линией, невидимые — штриховой.</p>':''),
@@ -115,12 +117,14 @@ function plan(model){ if(model._ig4s) return model._ig4s;
   const cutEnds=[].concat(endsOf(eLe).filter(p=>near(p,Lend,'L')&&!bodyPts.some(o=>Math.hypot(o.p[1]-p[1],o.p[2]-p[2])<0.6)),endsOf(eTe).filter(p=>near(p,Tend,'T')));
   let KP=uniq([].concat(...kLe.map(e=>e.key),...kTe.map(e=>e.key),cutEnds));
   /* порядок обхода контура K на главном виде: по углу вокруг центра K, спереди — раньше, чем сзади */
-  const kc=K.length?[K.reduce((s,p)=>s+p[0],0)/K.length,K.reduce((s,p)=>s+p[1],0)/K.length]:[0,(z0+z1)/2];
-  KP.sort((p,q)=>{ const a=Math.atan2(p[2]-kc[1],p[0]-kc[0]), c=Math.atan2(q[2]-kc[1],q[0]-kc[0]); return Math.abs(a-c)>0.02?c-a:p[1]-q[1]; });
+  const segD=(p,a,c)=>{ const ux=c[0]-a[0], uz=c[1]-a[1], l2=ux*ux+uz*uz||1e-9, t=Math.max(0,Math.min(1,((p[0]-a[0])*ux+(p[2]-a[1])*uz)/l2)); return Math.hypot(a[0]+ux*t-p[0],a[1]+uz*t-p[2]); };
+  const polyOf=p=>{ let bi=0, bd=1e9; KA.forEach((k,i)=>k.forEach((v,j)=>{ const d=segD(p,v,k[(j+1)%k.length]); if(d<bd){ bd=d; bi=i; } })); return bi; };
+  const ctr=k=>k.length?[k.reduce((s,p)=>s+p[0],0)/k.length,k.reduce((s,p)=>s+p[1],0)/k.length]:[0,(z0+z1)/2];
+  KP.sort((p,q)=>{ const ip=polyOf(p), iq=polyOf(q); if(ip!==iq) return ip-iq; const kc=ctr(KA[ip]||[]), a=Math.atan2(p[2]-kc[1],p[0]-kc[0]), c=Math.atan2(q[2]-kc[1],q[0]-kc[0]); return Math.abs(a-c)>0.02?c-a:p[1]-q[1]; });
   const kPts=KP.map(reg);
   /* как найти точку на виде сверху: на ребре; грань ⟂ π₁ (её след на виде сверху — линия); грань ⟂ π₃ (линия на виде слева); иначе — параллель; внутри тела — конкурирующая точка */
   kPts.forEach(o=>{ const p=o.p;
-    const isV=K.some(v=>Math.abs(v[0]-p[0])<0.4&&Math.abs(v[1]-p[2])<0.4);
+    const isV=[].concat(...KA).some(v=>Math.abs(v[0]-p[0])<0.4&&Math.abs(v[1]-p[2])<0.4);
     o.kv=isV;
     if(!onOuter(p)){ const q=kPts.find(r=>r!==o&&onOuter(r.p)&&Math.abs(r.p[1]-p[1])<0.4&&r.p[2]>p[2]+0.5)||kPts.find(r=>r!==o&&Math.abs(r.p[1]-p[1])<0.4&&r.p[2]>p[2]+0.5); o.how='vis'; o.by=q; return; }
     const e=onEdge(p); if(e){ o.how='edge'; o.edge=e; return; }
@@ -135,21 +139,18 @@ function plan(model){ if(model._ig4s) return model._ig4s;
     if(o.how==='T') return t+' на '+(side?side+' ':'')+'поверхности, перпендикулярной π₁ (на виде сверху она — линия)';
     if(o.how==='L') return t+' на '+(side?side+' ':'')+'грани, перпендикулярной π₃ (на виде слева она — линия)';
     return t+' на '+(side?side+' ':'')+'поверхности тела'; };
-  ST.push({id:'kF',t:'Вырез K: точки на главном виде',d:'Нумеруем характерные точки выреза: вершины K и точки, где стороны K выходят на грани и рёбра тела — спереди и сзади.',
-    more:'<p>На главном виде передняя и задняя точки совпадают (конкурирующие): видимая подписана первой, невидимая — в скобках.</p><ul>'+kPts.map(o=>`<li><b>${o.n}</b> — ${where(o)}; x = ${mm(o.p[0])}, z = ${mm(o.p[2])}.</li>`).join('')+'</ul>',
-    F:{k:'given',kHL:1},T:{k:'given'},L:{k:'body'},pts:kPts.map(o=>({o,col:C_K,how:'F'}))});
-  const viaL=kPts.filter(o=>o.how==='L'), viaT=kPts.filter(o=>o.how!=='L');
-  ST.push({id:'kT',t:'Вырез K: точки на виде сверху',d:(viaT.length?'Точки на рёбрах и вертикальных гранях — вертикальной линией связи с главного вида. ':'')+(viaL.length?'Точки на гранях ⟂ π₃ — сначала на виде слева (грань там — линия), глубину переносим на вид сверху.':''),
-    more:'<ul>'+['edge','T','L','P','vis'].map(h=>{ const g=kPts.filter(o=>o.how===h); if(!g.length) return ''; const nm=g.map(o=>o.n+'′').join(', '), dp=g.map(o=>o.n+' — '+(Math.abs(o.p[1])<0.3?'0':mm(o.p[1]))).join('; ');
+  const KG=[]; KA.forEach((k,ip)=>chunk(kPts.filter(o=>polyOf(o.p)===ip),14).forEach(g=>KG.push({g,ip})));
+  KG.forEach(({g:kG,ip},gi)=>{ const part=KG.length>1?' ('+(gi+1)+' из '+KG.length+')':'', kn=multi?' '+(ip+1):'';
+  const viaL=kG.filter(o=>o.how==='L');
+  ST.push({id:'kP',t:'Вырез K'+kn+': точки '+(kG.length>1?kG[0].n+'–'+kG[kG.length-1].n:kG[0].n)+part,d:'На главном виде точки выреза уже видны: вершины K и места, где стороны K выходят на поверхность тела. Переносим их на вид сверху и вид слева по линиям связи; глубину — засечками от оси.'+(viaL.length?' Точки на гранях ⟂ π₃ сначала находим на виде слева (грань там — линия), потом глубину переносим на вид сверху.':''),
+    more:'<p><b>Что за точки</b> (передняя и задняя совпадают на главном виде: видимая подписана первой, невидимая — в скобках):</p><ul>'+(()=>{ const G=[]; kG.forEach(o=>{ const w=where(o), g=G.find(q=>q.w===w); if(g) g.L.push(o); else G.push({w,L:[o]}); }); return G.map(g=>`<li><b>${g.L.map(o=>o.n).join(', ')}</b> — ${g.w} (${g.L.map(o=>o.n+': x = '+sx(o.p[0])+', z = '+mm(o.p[2])).join('; ')}).</li>`).join(''); })()+'</ul><p><b>Как найти</b> на виде сверху:</p>'+'<ul>'+['edge','T','L','P','vis'].map(h=>{ const g=kG.filter(o=>o.how===h); if(!g.length) return ''; const nm=g.map(o=>o.n+'′').join(', '), dp=g.map(o=>o.n+' — '+(Math.abs(o.p[1])<0.3?'0':mm(o.p[1]))).join('; ');
       if(h==='edge') return `<li><b>${nm}</b> — на рёбрах тела: вертикальная линия связи от k″ до проекции ребра на виде сверху.</li>`;
       if(h==='T') return `<li><b>${nm}</b> — на поверхности ⟂ π₁: сверху она видна линией, вертикальная линия связи от k″ упирается в неё.</li>`;
       if(h==='L') return `<li><b>${nm}</b> — на гранях ⟂ π₃: горизонтальная линия связи от k″ до линии грани на виде слева даёт k‴; глубину от оси вида слева откладываем от оси вида сверху и опускаем вертикальную линию связи от k″. Глубины, мм: ${dp}.</li>`;
       if(h==='P') return `<li><b>${nm}</b> — на поверхности общего положения: через точку проводим параллель (горизонтальное сечение тела на её высоте) — на виде сверху это контур сечения; k′ — на нём, на вертикальной линии связи от k″.</li>`;
-      return '<li><b>'+nm+'</b> — точки смены видимости: вертикальная линия связи от k″, глубина — как у точки над ней ('+g.map(o=>o.n+' — как '+(o.by?o.by.n:'?')).join('; ')+').</li>'; }).join('')+'</ul>',
-    F:{k:'given',kHL:1},T:{k:'given'},L:{k:'body'},pts:kPts.map(o=>({o,col:C_K,how:o.how==='L'?'FLT':'FT',par:o.how==='P'}))});
-  ST.push({id:'kL',t:'Вырез K: точки на виде слева',d:'Высота — горизонтальной линией связи с главного вида, глубина — с вида сверху от оси (засечки).',
-    more:'<p>'+viaT.map(o=>o.n+'‴ — глубина '+(Math.abs(o.p[1])<0.3?'0':mm(o.p[1])+' мм')).join('; ')+(viaL.length?'. Точки '+viaL.map(o=>o.n).join(', ')+' на виде слева уже есть — их строили первыми.':'')+'</p>',
-    F:{k:'given',kHL:1},T:{k:'given'},L:{k:'body'},pts:viaT.map(o=>({o,col:C_K,how:'TL'}))});
+      return '<li><b>'+nm+'</b> — точки смены видимости: вертикальная линия связи от k″, глубина — как у точки над ней ('+g.map(o=>o.n+' — как '+(o.by?o.by.n:'?')).join('; ')+').</li>'; }).join('')+'</ul>'+'<p>На виде слева: высота — горизонтальной линией связи с главного вида, глубина — та же, что на виде сверху, от оси.</p>',
+    F:{k:'given',kHL:1},T:{k:'given'},L:{k:'body'},pts:kG.map(o=>({o,col:C_K,how:o.how==='L'?'FLT':'FTL',par:o.how==='P'}))});
+  });
   /* 8. Линии выреза */
   const hidK=kLe.some(e=>e.h), visK=kLe.some(e=>!e.h);
   ST.push({id:'kLines',t:'Вырез K: соединяем точки',d:'Соединяем точки в порядке обхода контура K на виде слева и на виде сверху.'+(hidK?' Невидимые участки — штриховой.':''),
@@ -166,7 +167,9 @@ function plan(model){ if(model._ig4s) return model._ig4s;
   ST.push({id:'secL',t:full?'Профильный разрез':'Профильный разрез: фигура сечения',d:'Секущая плоскость — профильная плоскость симметрии (через ось). Строим фигуру сечения по точкам и штрихуем под 45°.',
     more:`<p>Разрез нужен: вырез K внутри тела, на виде слева он виден только штриховыми. ${full?'Деталь несимметрична спереди назад — разрез полный (ГОСТ 2.305).':'Деталь симметрична спереди назад — соединяем половину вида и половину разреза, граница — ось симметрии'+(sp.yb?' (на ось попадает ребро — граница волнистой линией, ребро остаётся на изображении)':'')+'; разрез — справа от оси.'}</p>`
       +'<p>Точки фигуры сечения — пересечения секущей плоскости с рёбрами тела и с плоскостями выреза: '+secPts.map(o=>o.n).join(', ')+'. На главном виде они на оси, на виде сверху — на горизонтальной оси… по линиям связи, как раньше.</p><p>Всё, что попало в секущую плоскость, — штриховка 45° (ГОСТ 2.306); линии выреза за секущей плоскостью теперь видны — обводим основной линией.</p>',
-    F:{k:'sec'},T:{k:'given',add:kTe,col:INK},L:{k:'img',d:LS,hl:secEl,col:C_SEC},pts:secPts.map(o=>({o,col:C_SEC,how:'FTL'}))});
+    F:{k:'sec'},T:{k:'given',add:kTe,col:INK},L:{k:'img',d:LS,hl:secEl,col:C_SEC},pts:[]});
+  { const sec0=ST[ST.length-1], SG=chunk(secPts,14); SG.forEach((g,gi)=>{ if(!gi){ sec0.pts=g.map(o=>({o,col:C_SEC,how:'FTL'})); if(SG.length>1) sec0.t+=' (1 из '+SG.length+')'; return; }
+    ST.push(Object.assign({},sec0,{t:sec0.t.replace(/ \(1 из \d+\)$/,'')+' ('+(gi+1)+' из '+SG.length+')',d:'Продолжаем: остальные точки фигуры сечения — так же, высота с главного вида, глубина с вида сверху.',more:'<p>Точки '+g.map(o=>o.n).join(', ')+'.</p>',pts:g.map(o=>({o,col:C_SEC,how:'FTL'}))})); }); }
   const lostL=elements(diff(D.L.lines.filter(s=>s.h),LS.lines));
   if(!full&&lostL.length) ST.push({id:'secV',t:'Профильный разрез: половина вида',d:'На половине вида невидимый контур (штриховые) не проводим — внутреннее устройство уже показано разрезом.',
     more:'<p>Перечёркнутые штриховые остаются только на месте разреза — там они стали видимыми линиями. ГОСТ 2.305: если вид и разрез симметричны, на половине вида линии невидимого контура не показывают.</p>',
@@ -175,7 +178,9 @@ function plan(model){ if(model._ig4s) return model._ig4s;
   if(hz!=null){ const TC=DR(model,'topcut',0,0), TCz=IG3.drawing(model,'topcut',W,hz), aEl=elements(secPieces(model,[0,0,hz],[1,0,0],[0,1,0],[b[0][0]-2,b[1][0]+2,b[0][1]-2,b[1][1]+2],sp.H==='half'?p=>(sp.tb||0)-p[0]:sp.H==='halfD'?p=>p[1]:null,D.T.px)), aPts=uniq([].concat(...aEl.map(e=>e.key))).map(reg), L0=(model.hz.L||'А'); aEl0=aEl;
     ST.push({id:'aa',t:'Разрез '+L0+'–'+L0+': фигура сечения',d:'Горизонтальная секущая плоскость на высоте '+mm(hz)+' мм. Точки фигуры — где её след на главном виде пересекает контур тела и выреза; глубины — с вида слева.',
       more:'<p>Положение плоскости — по середине выреза K: так разрез показывает вырез. На главном виде — разомкнутая линия со стрелками (направление взгляда — сверху вниз) и буквами '+L0+'.</p><p>Точки '+aPts.map(o=>o.n).join(', ')+': x — с главного вида (вертикальная линия связи вниз), глубина — с вида слева на той же высоте '+mm(hz)+' мм (засечки от оси).</p>',
-      F:{k:'given',aa:hz},T:{k:'given',add:kTe,col:INK,hl:aEl,hlc:C_AA},L:{k:'img',d:LS,hz},pts:aPts.map(o=>({o,col:C_AA,how:'FLT'}))});
+      F:{k:'given',aa:hz},T:{k:'given',add:kTe,col:INK,hl:aEl,hlc:C_AA},L:{k:'img',d:LS,hz},pts:[]});
+    { const a0=ST[ST.length-1], AG=chunk(aPts,14); AG.forEach((g,gi)=>{ if(!gi){ a0.pts=g.map(o=>({o,col:C_AA,how:'FLT'})); if(AG.length>1) a0.t+=' (1 из '+AG.length+')'; return; }
+      ST.push(Object.assign({},a0,{t:a0.t.replace(/ \(1 из \d+\)$/,'')+' ('+(gi+1)+' из '+AG.length+')',d:'Продолжаем: остальные точки фигуры — x с главного вида, глубина с вида слева на той же высоте.',more:'<p>Точки '+g.map(o=>o.n).join(', ')+'.</p>',pts:g.map(o=>({o,col:C_AA,how:'FLT'}))})); }); }
     const H=sp.H, hTxt=H==='half'?'слева от вертикальной оси — половина вида, справа — половина разреза':H==='halfD'?'сверху от горизонтальной оси — половина вида, снизу — половина разреза (слева направо деталь несимметрична или на вертикальной оси ребро)':'полный разрез — половину вида с половиной разреза здесь соединить нельзя';
     ST.push({id:'aa2',t:'Разрез '+L0+'–'+L0+' на месте вида сверху',d:'На месте вида сверху: '+hTxt+'. Штриховка 45°, над изображением — «'+L0+'–'+L0+'».',
       more:'<p>Горизонтальный разрез не совпадает с плоскостью симметрии детали — его обозначают: след на главном виде со стрелками и буквами и надпись «'+L0+'–'+L0+'» над разрезом (ГОСТ 2.305). На половине вида невидимый контур не проводим.</p>',
@@ -187,8 +192,8 @@ function plan(model){ if(model._ig4s) return model._ig4s;
         if(zs.some(z=>Math.abs(z-hi)<0.6)||zs.some(z=>Math.abs(z-lo)<0.6)) return 'уровень выреза K: положение его горизонтальной стороны или вершины по высоте';
         return 'высота ступени тела'; }
       if(v==='T') return 'размер тела в плане — виден только на виде сверху';
-      const xs=K.map(p=>p[0]), za=a[1];
-      if(K.some(p=>Math.abs(p[1]-za)<0.6)&&(xs.some(x=>Math.abs(x-a[0])<0.6)||xs.some(x=>Math.abs(x-c[0])<0.6))) return 'ширина выреза K на этом уровне';
+      const AK=[].concat(...KA), xs=AK.map(p=>p[0]), za=a[1];
+      if(AK.some(p=>Math.abs(p[1]-za)<0.6)&&(xs.some(x=>Math.abs(x-a[0])<0.6)||xs.some(x=>Math.abs(x-c[0])<0.6))) return 'ширина выреза K на этом уровне';
       return 'размер тела на главном виде'; };
     ST.push({id:'dims',t:'Размеры',d:'Ставим размеры тела и выреза K — каждый один раз, на том виде, где он виден лучше (ГОСТ 2.307).',
       more:'<ul>'+DM.map(d=>`<li><b>${esc(d[5])}</b> — ${why(d)}.</li>`).join('')+'</ul><p>Размеры выреза — от баз тела: высоты от основания, ширины от оси симметрии. Верх выреза, стороны которого направлены в вершину, не образмеривают — он уже определён (лишний размер).</p>',
@@ -212,7 +217,7 @@ function svg(model,PL,i,opt){ opt=opt||{}; const ST=PL.ST, st=ST[i], D=PL.D, sp=
   const cross=(e,ox,oy)=>{ const m=e.path[Math.floor(e.path.length/2)], q=[ox+m[0]*k0,oy+m[1]*k0], r=6; return L([q[0]-r,q[1]-r],[q[0]+r,q[1]+r],RED,2)+L([q[0]-r,q[1]+r],[q[0]+r,q[1]-r],RED,2); };
   let o='', aux='', top='';
   /* главный вид */
-  const kOutline=()=>{ const K=(model.kp||[])[0]; if(!K) return ''; return `<polygon points="${K.map(p=>FR([p[0],b[0][1],p[1]]).map(f).join(',')).join(' ')}" fill="${C_K}" fill-opacity=".08" stroke="${C_K}" stroke-width="2.6" stroke-linejoin="round"/>`; };
+  const kOutline=()=>(model.kp||[]).map(K=>`<polygon points="${K.map(p=>FR([p[0],b[0][1],p[1]]).map(f).join(',')).join(' ')}" fill="${C_K}" fill-opacity=".08" stroke="${C_K}" stroke-width="2.6" stroke-linejoin="round"/>`).join('');
   if(st.F.k==='sec'){ const d=IG3.drawing(model,sp.fk,W,0,sp.xb); o+=`<image href="${d.url}" x="${X0}" y="${Y0}" width="${S}" height="${S}"/>`; if(sp.xb) o+=IGUI.wavyIn(model,'F',sp.xb,(u,v)=>FR([u,0,v])).svg; }
   else o+=grp(X0,Y0,lines(D.F,INK));
   if(st.F.kHL) o+=kOutline();
@@ -256,7 +261,7 @@ function svg(model,PL,i,opt){ opt=opt||{}; const ST=PL.ST, st=ST[i], D=PL.D, sp=
     if(hasD&&(how==='FTL'||how==='FLT'||how==='TL')){ const T0=TP([p[0],0,p[2]]), L0=LF([0,0,p[2]]); g+=L(T0,A1,cl,cur?1.8:1,null,op)+L(L0,A3,cl,cur?1.8:1,null,op); if(cur) g+=tick2(T0,A1,cl)+tick2(L0,A3,cl); }
     if(cur&&q.par){ const sec=parallel(model,PL,p[2]); g+=grp(X0,TOPY,sec.map(e=>pathEl(e,cl,.55)).join('')); }
     return g; };
-  let pa=''; ST.slice(0,idx).forEach(s=>(s.pts||[]).forEach(q=>{ if(!opt.hidePast) pa+=draw(q,false); }));   /* под линиями вида */
+  let pa=''; ST.slice(0,idx).forEach(s=>(s.pts||[]).forEach(q=>{ if(opt.hidePast===false) pa+=draw(q,false); }));   /* под линиями вида */
   (st.pts||[]).forEach(q=>{ aux+=draw(q,true); });
   /* подписи: текущий шаг — цветом; «все номера» — и прошлые (серым) */
   const labs=[]; const want=(q,cur)=>{ const p=q.o.p, how=q.how, v=[];
@@ -265,6 +270,8 @@ function svg(model,PL,i,opt){ opt=opt||{}; const ST=PL.ST, st=ST[i], D=PL.D, sp=
     v.forEach(w=>labs.push({w,o:q.o,cl:cur?q.col:PAST,cur})); };
   (st.pts||[]).forEach(q=>want(q,true));
   if(opt.allNums){ const seen=new Set((st.pts||[]).map(q=>q.o.n)); ST.slice(0,idx).forEach(s=>(s.pts||[]).forEach(q=>{ if(!seen.has(q.o.n)){ seen.add(q.o.n); want(q,false); } })); }
+  /* подсветка точек по запросу (наставник: «смотри на точку 5») — жёлтый маркер на всех трёх проекциях */
+  if(opt.focus&&opt.focus.length){ opt.focus.forEach(n=>{ const r=PL.R.find(o=>o.n===n); if(!r) return; [FR,TP,LF].forEach(V=>{ const q=V(r.p); aux+=`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="11" fill="#ffd23f" fill-opacity=".45" stroke="#e0a800" stroke-width="1.5"/>`; }); }); }
   top+=labelsSVG(labs,{FR,TP,LF},PL,st,LB);
   o+=aux+top;
   return `<svg class="igs-sheet igs-steps ig4s" viewBox="0 0 ${PW} ${f(PH)}" role="img" aria-label="Построение по шагам: ${esc(st.t)}"><rect x="2" y="2" width="${PW-4}" height="${f(PH-4)}" fill="#fff" stroke="#111" stroke-width="1"/>${pa}${o}</svg>`; }
@@ -295,17 +302,17 @@ function labelsSVG(labs,M,PL,st,LB){ const V={F:M.FR,T:M.TP,L:M.LF}, mark={F:'�
   return s; }
 
 /* ── плеер шагов ── */
-function block(host,model,o){ o=o||{}; let PL=null, k=1, hidePast=false, allNums=false;
-  const pref=()=>{ try{ hidePast=localStorage.getItem('nch_past')==='hide'; }catch(e){} }; pref();
+function block(host,model,o){ o=o||{}; let PL=null, k=1, hidePast=false, allNums=false, focus=[];
+  hidePast=true;   /* точки и линии связи сделали своё — на следующем шаге их нет, остаётся результат; вернуть можно кнопкой */
   host.innerHTML=`<div class="igb-ctl"><button class="igb-b" id="igbPrev" aria-label="Назад">‹</button><div class="igb-t"><small id="igbN"></small><b id="igbTt"></b></div><button class="igb-b pri" id="igbNext" aria-label="Дальше">›</button></div>
    <div class="igb-nums" role="tablist" id="ig4Nums"></div>
    <div class="igb-pic ig4-pic" id="igbPic"></div>
-   <div class="ig4-tools"><button class="ig4-tg" id="ig4Past" aria-pressed="false">Прошлые шаги: скрыть</button><button class="ig4-tg" id="ig4All" aria-pressed="false">Все номера</button></div>
+   <div class="ig4-tools"><button class="ig4-tg" id="ig4Past" aria-pressed="false">Показать прошлые построения</button><button class="ig4-tg" id="ig4All" aria-pressed="false">Все номера</button></div>
    <p class="igb-d" id="igbD"></p><details class="ig4-more" id="ig4More"><summary>Подробнее: как и почему</summary><div id="ig4MoreB"></div></details>`;
   const $=s=>host.querySelector(s), pic=$('#igbPic');
-  const syncBtns=()=>{ const p=$('#ig4Past'), a=$('#ig4All'); p.textContent=hidePast?'Прошлые шаги: показать':'Прошлые шаги: скрыть'; p.setAttribute('aria-pressed',String(hidePast)); a.setAttribute('aria-pressed',String(allNums)); a.classList.toggle('on',allNums); };
+  const syncBtns=()=>{ const p=$('#ig4Past'), a=$('#ig4All'); p.textContent=hidePast?'Показать прошлые построения':'Скрыть прошлые построения'; p.setAttribute('aria-pressed',String(hidePast)); a.setAttribute('aria-pressed',String(allNums)); a.classList.toggle('on',allNums); };
   const paint=()=>{ const st=PL.ST[k-1]; let s='';
-    try{ s=st.sheet?(o.sheet?o.sheet('clean'):''):svg(model,PL,k-1,{hidePast,allNums}); }catch(e){ console.error(e); }
+    try{ s=st.sheet?(o.sheet?o.sheet('clean'):''):svg(model,PL,k-1,{hidePast,allNums,focus}); }catch(e){ console.error(e); }
     pic.innerHTML=s||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>'; $('.ig4-tools').hidden=!!st.sheet; };
   const show=()=>{ const N=PL.ST.length, st=PL.ST[k-1];
     $('#igbN').textContent='Шаг '+k+' из '+N; $('#igbTt').textContent=st.t; $('#igbD').innerHTML=st.d; $('#ig4MoreB').innerHTML=st.more||''; $('#ig4More').hidden=!st.more;
@@ -314,10 +321,13 @@ function block(host,model,o){ o=o||{}; let PL=null, k=1, hidePast=false, allNums
   const start=()=>{ try{ PL=plan(model); }catch(e){ console.error(e); pic.innerHTML='<div class="igx-given-l">Не удалось построить шаги.</div>'; return; }
     $('#ig4Nums').innerHTML=PL.ST.map((s,i)=>`<button data-k="${i+1}" aria-label="Шаг ${i+1}: ${esc(s.t)}"></button>`).join('');
     host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ k=+b.dataset.k; show(); }));
-    syncBtns(); show(); };
-  $('#igbPrev').addEventListener('click',()=>{ if(!PL) return; k=Math.max(1,k-1); show(); });
-  $('#igbNext').addEventListener('click',()=>{ if(!PL) return; k=Math.min(PL.ST.length,k+1); show(); });
-  $('#ig4Past').addEventListener('click',()=>{ hidePast=!hidePast; try{ localStorage.setItem('nch_past',hidePast?'hide':'show'); }catch(e){} syncBtns(); if(PL) paint(); });
+    syncBtns(); show();
+    /* управление для наставника (чат-бот): открыть шаг, подсветить точки */
+    player={model,go:n=>{ k=Math.max(1,Math.min(PL.ST.length,n|0)); focus=[]; show(); host.scrollIntoView({behavior:'smooth',block:'start'}); return k; },
+      current:()=>k, highlight:nums=>{ focus=(nums||[]).map(Number); paint(); }, steps:()=>tutor(model)}; };
+  $('#igbPrev').addEventListener('click',()=>{ if(!PL) return; k=Math.max(1,k-1); focus=[]; show(); });
+  $('#igbNext').addEventListener('click',()=>{ if(!PL) return; k=Math.min(PL.ST.length,k+1); focus=[]; show(); });
+  $('#ig4Past').addEventListener('click',()=>{ hidePast=!hidePast; syncBtns(); if(PL) paint(); });
   $('#ig4All').addEventListener('click',()=>{ allNums=!allNums; syncBtns(); if(PL) paint(); });
   pic.innerHTML='<div class="igx-ld soft" role="status"><div class="igx-ld-c"><span class="igx-ld-sp" aria-hidden="true"></span><b>Строю шаги…</b></div></div>';
   (IGUI.frame?IGUI.frame():Promise.resolve()).then(start);
@@ -338,5 +348,14 @@ function coverage(model){ const PL=plan(model), D=PL.D, built=[]; PL.ST.forEach(
   sets.forEach(([nm,els,v])=>els.forEach(e=>{ all++; const good=e.curve?hasIn(e.key[0],v)&&hasIn(e.key[e.key.length-1],v)&&onCurve(e.key):e.key.every(p=>hasIn(p,v)); if(good) ok++; else miss.push(nm+': '+e.key.map(p=>'('+p.map(x=>x.toFixed(1)).join('; ')+')').join(' — ')); }));
   return {all,ok,miss,steps:PL.ST.map(s=>s.id)}; }
 
-return {plan,svg,block,coverage,elements,diff};
+/* ── для чат-бота-наставника: решение шагами без вёрстки ──
+   IG4S.tutor(n) → {variant, title, steps:[{k, id, title, short, more, points:[{n, x, y, z, how, front, top, left}]}]}
+   how: edge — на ребре; T — на поверхности ⟂ π₁; L — на грани ⟂ π₃ (сначала вид слева); P — через параллель; vis — смена видимости.
+   IG4S.player (когда открыт плеер шагов): go(k), current(), highlight([номера точек]), steps(). Числа — из модели, их и называть. */
+function tutor(n){ const model=typeof n==='object'?n:DZR.get('ig4').part(n); if(!model) return null; const PL=plan(model);
+  const txt=h=>String(h||'').replace(/<li>/g,'\n• ').replace(/<\/p>\s*<p>/g,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').trim();
+  return {variant:model.n,title:model.title,steps:PL.ST.map((s,i)=>({k:i+1,id:s.id,title:s.t,short:txt(s.d),more:txt(s.more),
+    points:(s.pts||[]).map(q=>{ const p=q.o.p; return {n:q.o.n,x:p[0],y:p[1],z:p[2],how:q.o.how||null,front:q.o.n+'″',top:q.o.n+'′',left:q.o.n+'‴'}; })}))}; }
+let player=null;
+return {plan,svg,block,coverage,elements,diff,tutor,get player(){ return player; }};
 })();
