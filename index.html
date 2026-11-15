@@ -5133,19 +5133,18 @@ header .subj a.on{background:var(--strap)!important;color:#fff!important}
 .rkp-prn:hover{text-decoration:underline}
 .rkp-prnw{margin:0 0 10px;font-size:15px}
 #prnOut{display:none}
-.prn-pg{width:100%;max-width:210mm;height:283mm;margin:0 auto;padding:10mm 14mm 6mm;break-inside:avoid;page-break-inside:avoid;box-sizing:border-box;background:#fff;color:#15161a;overflow:hidden;display:flex;flex-direction:column;font:10.5pt/1.4 'Golos Text',Arial,sans-serif}
-.prn-h{display:flex;justify-content:space-between;gap:6mm;font-size:8.5pt;color:#5f6168;border-bottom:.3mm solid #c9ccd3;padding-bottom:1.5mm;margin-bottom:4mm}
-.prn-pg h2{font:800 14pt/1.25 'Golos Text',Arial,sans-serif;margin:0 0 2.5mm;color:#15161a}
-.prn-c{font-size:11pt;margin:0 0 1.5mm}.prn-c p{margin:0}
-.prn-m{margin:0 0 3mm;font-weight:700;color:#2a5aa6}
-.prn-fig{flex:1 1 auto;min-height:0;border:.35mm solid #15161a;display:flex;align-items:center;justify-content:center;padding:3mm;overflow:hidden}
+.prn-pg{width:100%;max-width:210mm;height:252mm;margin:0 auto;padding:4mm 10mm 2mm;break-inside:avoid;page-break-inside:avoid;box-sizing:border-box;background:#fff;color:#111;overflow:hidden;display:flex;flex-direction:column;font:10.5pt/1.45 'Golos Text',Arial,sans-serif}
+/* билет: строка «РК2 · билет», поля ФИО/группа, условие, свободное поле с чертежом «дано» в кадре полного решения, ответ, логотип */
+.prn-h{display:flex;justify-content:space-between;align-items:baseline;gap:6mm;font-size:9pt;color:#111;border-bottom:.35mm solid #111;padding-bottom:1.5mm}
+.prn-h b{font-weight:800;letter-spacing:.02em}
+.prn-who{display:flex;gap:6mm;margin:3mm 0 4mm;font-size:9pt;color:#444}.prn-who span{display:flex;gap:2mm;align-items:baseline;flex:1}.prn-who span:first-child{flex:2.4}.prn-who i{flex:1;border-bottom:.25mm solid #999;height:3.5mm}
+.prn-c{font-size:11pt;margin:0}.prn-c p{margin:0}.prn-c b{font-weight:800}
+.prn-fig{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;margin:3mm 0 0;overflow:hidden}
 .prn-fig svg{display:block;max-width:100%;max-height:100%}
-.prn-fill svg{width:100%;height:100%}
-.prn-ans{margin:4mm 0 0;font-size:11pt;display:flex;gap:2mm;align-items:baseline}.prn-ans i{flex:1;border-bottom:.3mm solid #15161a;height:4mm}
-.prn-f{display:flex;justify-content:space-between;align-items:flex-end;gap:5mm;margin-top:4mm;font-size:8.5pt;color:#5f6168}
-.prn-f>div{display:flex;flex-direction:column;gap:.5mm}.prn-f b{font-size:10pt;color:#15161a}
-.prn-qr svg{display:block;width:16mm;height:16mm}
-.prn-logo{display:block;height:5mm;width:auto;margin-bottom:1mm}
+.prn-ans{margin:2mm 0 0;font-size:11pt;display:flex;gap:2mm;align-items:baseline}.prn-ans i{flex:1;border-bottom:.3mm solid #111;height:4mm}
+.prn-f{display:flex;justify-content:space-between;align-items:center;gap:5mm;margin-top:4mm;padding-top:2mm;border-top:.25mm solid #d5d7dc;font-size:8pt;color:#777}
+.prn-logo{display:block;height:3.6mm;width:auto}
+.prn-site{display:flex;align-items:center;gap:3mm;font-size:9pt;font-weight:700;color:#111}.prn-site svg{display:block;width:13mm;height:13mm}
 @media print{
   body.prn-on{background:#fff!important}
   body.prn-on>*:not(#prnOut){display:none!important}
@@ -27939,13 +27938,12 @@ function moreHTML(id){ const T=TOP(id); if(!CUR.more) CUR.more={seed:newSeed()};
      <div class="sheet rkp-fig">${figHTML(q,false)}</div>
     </article>`).join('')}</div>`; }
 /* печать «Решить ещё»: те же задачи, что на экране, — по одной на лист А4, место под построения и строка для ответа */
-function prnMoreHTML(id){ const T=TOP(id), qs=(CUR&&CUR.id===id&&CUR.more&&CUR.more.qs)||moreTasks(id,newSeed()), N=qs.length, url=PSITE+'/#/ng/rk2/p/'+id, E=EPX.escH,
-    qr=(QR.svg('https://'+url,64)||'').replace(/\swidth="\d+"\sheight="\d+"/,'');
-  return qs.map((q,i)=>`<section class="prn-pg"><div class="prn-h"><span>Начертательная геометрия · РК2</span><span>Тема ${TOPICS.indexOf(T)+1} из 9 · ${E(T.t)}</span></div>
-     <h2>Задача ${i+1}</h2><div class="prn-c"><p>${q.q}. Применить при решении задачи ${q.mtext}.</p></div>
-     <div class="prn-fig prn-fill">${figHTML(q,false)}</div>
-     <p class="prn-ans">Ответ: <i></i></p>
-     <div class="prn-f"><div><img class="prn-logo" src="img/logo-mathanov-b.webp" alt="mathanov."><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`).join(''); }
+function prnMoreHTML(id){ const T=TOP(id), qs=(CUR&&CUR.id===id&&CUR.more&&CUR.more.qs)||moreTasks(id,newSeed()), N=qs.length;
+  return qs.map((q,i)=>prnPage({num:(TOPICS.indexOf(T)+1)+'.'+(i+1),cond:q.q+'. Применить при решении задачи '+q.mtext+'.',fig:prnFigQ(q),url:PSITE+'/#/ng/rk2/p/'+id,i,N})).join(''); }
+/* чертёж «дано» варианта в кадре полного решения: место под построения остаётся там, где оно понадобится; масштаб 1:1 мм, если влезает */
+function prnFigQ(q){ const full=figHTML(q,true), giv=figHTML(q,false), vb=(full.match(/viewBox="([^"]+)"/)||[])[1];
+  if(!vb) return giv; const d=vb.split(/\s+/).map(Number);
+  return giv.replace(/viewBox="[^"]+"/,'viewBox="'+vb+'"').replace(/<svg([^>]*?)\swidth="[^"]*"/,'<svg$1').replace(/<svg([^>]*?)\sheight="[^"]*"/,'<svg$1').replace(/<svg/,'<svg style="width:'+d[2].toFixed(1)+'mm;height:'+d[3].toFixed(1)+'mm"'); }
 function topicView(v,id,ex){ const T=TOP(id); if(!T){ redir(HR('ng','rk2')); return ''; }
   const idx=TOPICS.indexOf(T), nxt=TOPICS[idx+1], prv=TOPICS[idx-1], ms=Object.keys(T.m);
   if(!CUR||CUR.id!==id){ const st0=tState(getS(),id); CUR={id,stg:ex==='pi2'?1:Math.max(0,STG.findIndex(x=>!stgDone(st0,x[0])))}; }
@@ -28029,7 +28027,7 @@ function examView(v){
    полного решения, чтобы на листе осталось место для построений), строка для ответа. Решений, шагов и ответов в документе
    нет — их смотрят на сайте. Внизу каждого листа — автор задач и ссылка на тему. Документ живёт в #prnOut только на время
    печати; на экране сайт не меняется. */
-const PAUTH='Матханов Андрей Михайлович', PSITE='nachert1830.ru';
+const PSITE='nachert1830.ru';
 function prnTasks(ids){ const out=[]; (ids&&ids.length?ids:TOPICS.map(T=>T.id)).forEach(id=>{ const T=TOP(id); if(!T||typeof RK9==='undefined') return; RK9.all(id).forEach(t=>out.push({T,t,id})); }); return out; }
 /* чертёж «дано»: рисуем в невидимом блоке размером с кадр в мм (96 dpi), чтобы линии и подписи на бумаге были как на экране */
 function prnFig(t){ const bb=EPX.bbox(t.D.it), PX=96/25.4, box=document.createElement('div');
@@ -28037,15 +28035,19 @@ function prnFig(t){ const bb=EPX.bbox(t.D.it), PX=96/25.4, box=document.createEl
   document.body.appendChild(box); let s=''; try{ EPX.render(box,t,0); s=box.innerHTML; }catch(e){} box.remove();
   const vb=(s.match(/viewBox="([^"]+)"/)||[])[1]; if(!vb) return '';
   const d=vb.split(/\s+/).map(Number);
-  return s.replace(/\swidth="[^"]*"\sheight="[^"]*"/,` style="width:${d[2].toFixed(1)}mm;height:${d[3].toFixed(1)}mm"`); }
+  return s.replace(/<path d="(?:M-?[\d.]+ -?[\d.]+[VH]-?[\d.]+)+"[^>]*?(?:\/>|><\/path>)/g,'')   /* без клетки: на билете чистое поле */
+    .replace(/\swidth="[^"]*"\sheight="[^"]*"/,` style="width:${d[2].toFixed(1)}mm;height:${d[3].toFixed(1)}mm"`); }
+/* один лист = одна задача, как билет РК: шапка, поля, условие, поле для построений (кадр — как у полного решения), ответ, логотип */
+function prnPage(o){ return `<section class="prn-pg"><div class="prn-h"><span><b>Рубежный контроль № 2</b> · Начертательная геометрия</span><span>Билет № ${o.num}</span></div>
+   <div class="prn-who"><span>ФИО <i></i></span><span>Группа <i></i></span><span>Дата <i></i></span></div>
+   <div class="prn-c"><p><b>Задача.</b> ${o.cond}</p></div>
+   <div class="prn-fig">${o.fig}</div>
+   <p class="prn-ans">Ответ: <i></i></p>
+   <div class="prn-f"><img class="prn-logo" src="img/logo-mathanov-b.webp" alt="mathanov."><span class="prn-site">${PSITE}${prnQR()}</span></div></section>`; }
+function prnQR(){ if(prnQR.s==null) prnQR.s=(typeof QR!=='undefined'&&QR.svg('https://'+PSITE,64)||'').replace(/\swidth="\d+"\sheight="\d+"/,''); return prnQR.s; }
 function prnHTML(ids){ const L=prnTasks(ids), N=L.length, E=EPX.escH;
-  return L.map(({T,t,id},i)=>{ const url=PSITE+'/#/ng/rk2/p/'+id, qr=(QR.svg('https://'+url,64)||'').replace(/\swidth="\d+"\sheight="\d+"/,'');
-    return `<section class="prn-pg"><div class="prn-h"><span>Начертательная геометрия · РК2</span><span>Тема ${TOPICS.indexOf(T)+1} из 9 · ${E(T.t)}</span></div>
-     <h2>Задача ${i+1}. ${E(t.t)}</h2>
-     <div class="prn-c">${EPX.mk(t.cond)}</div><p class="prn-m">Способ решения: ${E(t.m)}.</p>
-     <div class="prn-fig">${prnFig(t)}</div>
-     <p class="prn-ans">Ответ: <i></i></p>
-     <div class="prn-f"><div><img class="prn-logo" src="img/logo-mathanov-b.webp" alt="mathanov."><span>Задачи с разбором по шагам — на сайте ${PSITE}</span><span>${E(url)} · лист ${i+1} из ${N}</span></div>${qr?`<span class="prn-qr">${qr}</span>`:''}</div></section>`; }).join(''); }
+  const k={}; return L.map(({T,t,id},i)=>{ k[id]=(k[id]||0)+1; const cond=EPX.mk(t.cond).replace(/^\s*<p>|<\/p>\s*$/g,'');
+    return prnPage({num:(TOPICS.indexOf(T)+1)+'.'+k[id],cond:cond+' Применить при решении задачи '+E(t.m)+'.',fig:prnFig(t),url:PSITE+'/#/ng/rk2/p/'+id,i,N}); }).join(''); }
 function prnOff(){ document.body.classList.remove('prn-on'); ['prnOut','prnPage'].forEach(i=>{ const e=document.getElementById(i); if(e) e.remove(); }); if(prnOff.t!=null){ document.title=prnOff.t; prnOff.t=null; } }
 function prnBuild(ids,html){ prnOff(); const out=document.createElement('div'); out.id='prnOut'; out.innerHTML=html||prnHTML(ids); document.body.appendChild(out);
   const st=document.createElement('style'); st.id='prnPage'; st.textContent='@page{size:A4 portrait;margin:0}'; document.head.appendChild(st);
@@ -28060,7 +28062,7 @@ document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closes
 
 /* строка для главной */
 function mini(){ try{ const P=progress(); return P.val?'пройдено '+P.val+' %':'9 тем · пробный РК2'; }catch(e){ return ''; } }
-return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,prnHTML,prnBuild,prnOff,prnTasks,progress,hue,check,parseNum,hubView,topicView,examView,mini,STG,_:{stars,pts,getS,setS,KEY}};
+return {TOPICS,GEN,MT,make,RK2V,variantTask,rkSample,rkHTML,figHTML,ticket,prnHTML,prnMoreHTML,prnBuild,prnOff,prnTasks,progress,hue,check,parseNum,hubView,topicView,examView,mini,STG,_:{stars,pts,getS,setS,KEY}};
 })();
 
 /* ═════════ «Сдашь РК2?» — пробный билет-игра по начерту и инже (#/rk) ═════════
