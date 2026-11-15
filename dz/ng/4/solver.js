@@ -40,18 +40,23 @@ function bodiesOf(code,D,xs){
     return {bodies:[T,K,C],pairs:[['T','C','y'],['T','K','ecc'],['K','C','z']],
       ecc:{T:{c:M(0,0,0)},K:{u:-Xk}},M,size:{u:[-Xk-Dk/2,Math.max(100,Xc+40)],z:110}}; }
   if(code==='4a2'){ const {Dk,dk,Xk,Yk,Xc,Yc}=D, rk=z=>Dk/2+(dk-Dk)/2*z/100, rf=Math.sqrt(80*80-60*60), sa=Math.asin(60/80);
+    /* vax — вертикальная ось тела на π₁ (u, w), prof(z) — радиус параллели, zr — высоты; piv — тело, вокруг оси которого
+       поворачивают плоскость Γ через оси двух тел (у сферы сечение любой плоскостью через ось — её очерк) */
     const Sph={id:'S',nom:'полусфера',gen:'полусферы',ins:'полусферу',secz:'окружности',secy:'окружности',
+      vax:[0,0],prof:z=>Math.sqrt(Math.max(0,6400-z*z)),zr:[0,80],piv:true,mer:'очерк сферы (окружность R80)',
       inside:p=>{ const [u,w]=uw(p); return p[2]>=0&&Math.abs(w)<60&&Math.hypot(u,w,p[2])<80; },
       patches:[Q.sphere(M(0,0,0),80), ...[-60,60].map(w=>Q.plane(M(0,w,0),DU,DZ,[-80,80],[0,80]))],
       edges:[{only:'H',pts:ring(M(0,0,0),DU,DW,80,-sa,sa,40)},{only:'H',pts:ring(M(0,0,0),DU,DW,80,Math.PI-sa,Math.PI+sa,40)},
         ...[-60,60].map(w=>({pts:ring(M(0,w,0),DU,DZ,rf,0,Math.PI,72)})), ...[-60,60].map(w=>({only:'H',pts:line(M(-rf,w,0),M(rf,w,0))}))],
-      axes:[{v:'F',p:[M(0,0,-6),M(0,0,88)]},{v:'H',p:[M(0,-68,0),M(0,68,0)]}]};
+      axes:[{v:'F',p:[M(0,0,-6),M(0,0,88)]},{v:'H',p:[M(0,-68,0),M(0,68,0)]},{v:'H',p:[M(-88,0,0),M(88,0,0)]}]};
     const K={id:'K',nom:'усечённый конус',gen:'конуса',ins:'конус',secz:'окружности',secy:'гиперболе',
+      vax:[Xk,Yk],prof:rk,zr:[0,100],mer:'две образующие конуса',
       inside:inRev([Xk,Yk],rk,0,100),
       patches:[Q.cone(M(Xk,Yk,0),DZ,Dk/2,dk/2,0,100), disc(M(Xk,Yk,100),DU,DW,dk/2)],
       edges:[{pts:ring(M(Xk,Yk,100),DU,DW,dk/2)},{only:'H',pts:ring(M(Xk,Yk,0),DU,DW,Dk/2)}],
       axes:vaxis(Xk,Yk,-5,105,Dk/2+4)};
     const C={id:'C',nom:'цилиндр',gen:'цилиндра',ins:'цилиндр',secz:'окружности, совпадающей с его проекцией на π₁',secy:'двум образующим',proj:'H',
+      vax:[-Xc,Yc],prof:()=>30,zr:[0,100],mer:'две вертикальные образующие цилиндра',
       inside:inRev([-Xc,Yc],()=>30,0,100),
       patches:[Q.cylinder(M(-Xc,Yc,0),DZ,30,0,100), disc(M(-Xc,Yc,100),DU,DW,30)],
       edges:[{pts:ring(M(-Xc,Yc,100),DU,DW,30)},{only:'H',pts:ring(M(-Xc,Yc,0),DU,DW,30)}],
@@ -226,7 +231,7 @@ function taskOf(code,D,n,label){
   const ghost=[], axes=[];
   G.bodies.forEach(b=>{ const s1=Q.scene([b]);
     ['F','H'].forEach(v=>s1.outline(b.id,v,true).forEach(p=>{ if(v==='F'&&p.every(q=>q[2]<0.01)) return; ghost.push(poly(p.map(v==='F'?F:H),'ghost')); }));
-    (b.axes||[]).forEach(a=>axes.push(poly(a.p.map(a.v==='F'?F:H),'axis'))); });
+    (b.axes||[]).forEach(a=>axes.push(poly(a.p.map(a.v==='F'?F:H),'axis',false,{body:b.nom,view:a.v}))); });   /* body — для разметки листа А3 */
   /* тела в 3D — лениво: сетка строится, только когда открыли окно «В пространстве»; линии пересечения — у первого тела пары */
   const solid=G.bodies.map((b,i)=>{ let c=null; return ()=>c||(c=solidOf(sc,b,[].concat(...lines.filter(L=>L.a===b.id).map(L=>L.m.lines.map(l=>l.pts)))));});
   const given=[axis(), ...G.bodies.map((b,i)=>({t:'mesh3',solid:solid[i],col:BODYCOL[i]})), ...ghost, ...axes];
@@ -257,7 +262,38 @@ function taskOf(code,D,n,label){
     const iA=G.bodies.findIndex(b=>b.id===L.a), iB=G.bodies.findIndex(b=>b.id===L.b);
     const symOK=fam.kind!=='y'&&symAll[iA]&&symAll[iB], vt=A.apex&&Bb.apex?'через вершины обоих конусов':A.apex||Bb.apex?'через вершину конуса и ось второго тела':'через оси обоих тел';
     let phiDone=false, ci=0;
+    /* высшая (и низшая) точка двух тел вращения с вертикальными осями — в их общей плоскости симметрии Γ: вертикальной
+       плоскости через обе оси. Γ ⟂ π₁, на π₁ она — прямая через центры. Повернём Γ вокруг оси сферы до положения ∥ π₂:
+       сфера режется по своему очерку, второе тело — по образующей (меридиану); их пересечение на π₂ — повёрнутая точка,
+       обратным поворотом (по дуге на π₁, по горизонтали на π₂ — высота при повороте не меняется) получаем саму точку */
+    const piv=A.piv?A:Bb.piv?Bb:null, oth=piv===A?Bb:A, M=G.M, xs=R.xs, uwOf=p=>[xs-p[0],p[1]-Y0];
+    let gam=null;
+    if(piv&&oth.vax&&Math.abs(oth.vax[1]-piv.vax[1])>0.5){ const du=oth.vax[0]-piv.vax[0], dw=oth.vax[1]-piv.vax[1], d=Math.hypot(du,dw); gam={e:[du/d,dw/d],d,s:du<0?-1:1}; }
+    const gRel=p=>{ const q=uwOf(p); return [q[0]-piv.vax[0],q[1]-piv.vax[1]]; };
+    const inGam=c=>gam&&(c.whys.includes('top')||c.whys.includes('bot'))&&Math.abs(gRel(c.p)[0]*gam.e[1]-gRel(c.p)[1]*gam.e[0])<0.8&&gRel(c.p)[0]*gam.e[0]+gRel(c.p)[1]*gam.e[1]>0;
+    const gamItems=[], gamTxt=[], gamSet=new Set();
+    if(gam&&L.chars.some(inGam)){ const col=MCOL[0], [pu,pw]=piv.vax, e=gam.e, L1=14, L2=gam.d+14;   /* Γ′ — от центра сферы чуть за центр второго тела */
+      gamItems.push(...tint([ln(H(M(pu-e[0]*L1,pw-e[1]*L1,0)),H(M(pu+e[0]*L2,pw+e[1]*L2,0)),'aux','Γ′','ne',0,0)],col));
+      /* очерк сферы на π₂ на стороне поворота — это и есть её сечение плоскостью Γ после поворота */
+      const zs=k=>Array.from({length:k+1},(_,i)=>piv.zr[0]+(piv.zr[1]-piv.zr[0])*i/k);
+      gamItems.push(...tint([poly(zs(48).map(z=>F(M(pu+gam.s*piv.prof(z),pw,z))),'aux')],col)); }
     L.chars.sort((p,q)=>q.p[2]-p.p[2]).forEach(c=>{ num++; c.n=num;
+      if(inGam(c)){ const col=MCOL[0], [pu,pw]=piv.vax, rel=gRel(c.p), r=Math.hypot(rel[0],rel[1]), far=r>gam.d, sd=gam.s;
+        gamSet.add(c);
+        const Pb=M(pu+sd*r,pw,c.p[2]);
+        /* дуга поворота на π₁ (центр — ось сферы), короткой дорогой */
+        let a0=Math.atan2(rel[1],rel[0]), a1=sd>0?0:Math.PI; while(a1-a0>Math.PI) a1-=2*Math.PI; while(a0-a1>Math.PI) a1+=2*Math.PI;
+        const arc=Array.from({length:41},(_,i)=>{ const a=a0+(a1-a0)*i/40; return H(M(pu+r*Math.cos(a),pw+r*Math.sin(a),0)); });
+        /* повёрнутая образующая второго тела на π₂ */
+        const z0=Math.max(oth.zr[0],c.p[2]-30), z1=Math.min(oth.zr[1],c.p[2]+12), zk=Array.from({length:21},(_,i)=>z0+(z1-z0)*i/20);   /* участок образующей у точки */
+        const gen=zk.map(z=>F(M(pu+sd*(gam.d+(far?1:-1)*oth.prof(z)),pw,z)));
+        gamItems.push(...tint([poly(arc,'aux'), poly(gen,'aux'), seg(F(Pb),F(c.p),'aux'), conn(F(Pb),H(Pb)), conn(F(c.p),H(c.p)),
+          pt(F(Pb),c.n+'₀″',sd>0?'nw':'ne','aux'), pt(H(Pb),c.n+'₀′',sd>0?'sw':'se','aux')],col));
+        const what=c.whys.includes('top')?'высшая точка':'низшая точка';
+        gamTxt.push(`${c.n} ${co(c.p)} — ${what} (${whyOf(c,L)}). Плоскость Γ через оси: на π₁ — прямая через центры, расстояние между осями ${fmt(gam.d)} мм. `+
+          `После поворота вокруг оси ${piv.gen} ${piv.mer} пересекается с ${far?'дальней':'ближней'} образующей ${oth.gen} в точке ${c.n}₀″ на высоте z = ${fmt(c.p[2])} мм; `+
+          `${c.n}₀′ — на расстоянии ${fmt(r)} мм от центра. Возвращаем: ${c.n}′ — по дуге радиуса ${fmt(r)} мм на прямую Γ′, ${c.n}″ — по горизонтали из ${c.n}₀″ до линии связи.`);
+        return; }
       if(symOK&&Math.abs(c.p[1]-Y0)<0.6){ const col=MCOL[0];
         if(!phiDone){ phiDone=true; const g=p=>p[1]-Y0;
           charItems.push(...tint([ln(H([bx[3]+5,Y0,0]),H([bx[0]-5,Y0,0]),'aux','Φ′','ne',0,0)],col));
@@ -271,12 +307,18 @@ function taskOf(code,D,n,label){
     /* подписи: совпавшие проекции — одной подписью «3″≡4″» (конкурирующие точки) */
     [['F','″'],['H','′']].forEach(([v,mk])=>{ const pr=v==='F'?F:H, grp=[];
       L.chars.forEach(c=>{ const q=pr(c.p), g=grp.find(x=>Math.hypot(x.q[0]-q[0],x.q[1]-q[1])<0.8*S); if(g) g.c.push(c); else grp.push({q,c:[c]}); });
-      grp.forEach(g=>{ const l=la(g.c[0].p); charItems.push(pt(g.q,g.c.map(c=>c.n+mk).join('≡'),v==='F'?l.l2:l.l1,'res')); }); });
+      grp.forEach(g=>{ const l=la(g.c[0].p); (g.c.every(c=>gamSet.has(c))?gamItems:charItems).push(pt(g.q,g.c.map(c=>c.n+mk).join('≡'),v==='F'?l.l2:l.l1,'res')); }); });
     const how=SECT[fam.kind](A,Bb,G);
+    if(gamSet.size){ const gl=[...gamSet].map(c=>c.n).join(', ');
+      steps.push(STEP('Линия «'+nm+'»: высшая точка — плоскостью-посредником Γ',{check:'Γ′ проходит через центры обоих тел на π₁; дуга поворота — с центром на оси сферы; повёрнутая и найденная точки на π₂ — на одной горизонтали.',
+        hint:'Горизонтальную плоскость через высшую точку не провести — высота точки ещё неизвестна. В какой плоскости обязательно лежит высшая точка двух тел вращения?',
+        principle:`${A.nom[0].toUpperCase()+A.nom.slice(1)} и ${Bb.nom} — тела вращения с вертикальными осями. Плоскость Γ через обе оси — их общая плоскость симметрии, поэтому высшая точка линии лежит в Γ. Γ ⟂ π₁ (горизонтально-проецирующая): на π₁ она — прямая через центры. Сечения в ней видны в натуральную величину, если повернуть Γ вокруг оси сферы до положения ∥ π₂: тогда ${piv.mer} — сечение сферы, а сечение ${oth.gen} — ${oth.mer}. Точка их пересечения — повёрнутая высшая точка.`,
+        step:`Проводим Γ′ через центры. Поворачиваем Γ вокруг оси ${piv.gen} в положение ∥ π₂: ось ${oth.gen} уходит на расстояние ${fmt(gam.d)} мм от оси сферы, и его образующая пересекает очерк сферы в точке ${[...gamSet].map(c=>c.n+'₀″').join(', ')}. Возвращаем обратным поворотом: на π₁ — по дуге до Γ′, на π₂ — по горизонтали (высота не меняется). Получаем точку ${gl}.`,
+        full:gamTxt.join('<br>')},gamItems)); }
     steps.push(STEP('Линия «'+nm+'»: опорные точки',{check:'Каждая опорная точка лежит на обеих поверхностях; обе её проекции — на одной линии связи.',
       hint:'С каких точек начать? С тех, где линия касается очерков тел, и с самой высокой и самой низкой.',
       principle:how,
-      step:`Строим опорные точки ${L.chars.map(c=>c.n).join(', ')}: для каждой — свой посредник (${fam.name}) через точку${phiDone?`; точки в общей плоскости симметрии — фронтальной плоскостью Φ ${vt}: она режет оба тела по очеркам, и на π₂ эти точки — пересечения очерков (так находят высшую и низшую точки)`:''}. У каждого посредника свой цвет — по нему видно, откуда какая линия. Точки на очерках важны: в них линия меняет видимость.`,
+      step:`Строим ${gamSet.size?'остальные ':''}опорные точки ${L.chars.filter(c=>!gamSet.has(c)).map(c=>c.n).join(', ')}: для каждой — свой посредник (${fam.name}) через точку${phiDone?`; точки в общей плоскости симметрии — фронтальной плоскостью Φ ${vt}: она режет оба тела по очеркам, и на π₂ эти точки — пересечения очерков (так находят высшую и низшую точки)`:''}. У каждого посредника свой цвет — по нему видно, откуда какая линия. Точки на очерках важны: в них линия меняет видимость.`,
       full:charTxt.join('<br>')},charItems));
     /* промежуточные: 3 посредника между опорными */
     const ts=[].concat(...L.m.lines.map(l=>l.pts.map(fam.t))), t0=Math.min(...ts), t1=Math.max(...ts), ct=L.chars.map(c=>fam.t(c.p));
@@ -303,16 +345,17 @@ function taskOf(code,D,n,label){
       principle:'Точки соединяем в порядке, в каком они идут по поверхности (по параллелям, образующим). Участок линии видим, если он лежит на видимой части обеих поверхностей; видимость меняется в точках на очерках.',
       step:`Проводим ${ntot>1?ntot+' ветви линии':'линию'} плавно через опорные и промежуточные точки. ${vf?'На π₂ часть линии невидима — штрихом.':'На π₂ линия видима.'} ${vh?'На π₁ часть линии невидима — штрихом.':'На π₁ линия видима.'}`,
       full:`Линия ${L.m.lines.every(l=>l.closed)?'замкнутая':'разомкнутая'}${ntot>1?' (ветвей: '+ntot+')':''}; высота от ${fmt(Math.min(...zs))} до ${fmt(Math.max(...zs))} мм. Опорные точки: ${L.chars.map(c=>c.n).join(', ')}.`},crv)); });
-  /* очерки с учётом видимости */
+  /* очерки с учётом видимости: видимые — основной линией, закрытые другими телами — тонкой сплошной (штрих на этом
+     листе — только у невидимых участков линий пересечения, чтобы их было видно сразу) */
   const outl=[], ground=[];
-  G.bodies.forEach(b=>['F','H'].forEach(v=>sc.outline(b.id,v).forEach(p=>{ if(v==='F'&&p.every(q=>q[2]<0.01)) return; if(v==='H'&&p.every(q=>q[2]<0.01)) ground.push(p); outl.push(...visPoly(p,v,'main','hid')); })));
+  G.bodies.forEach(b=>['F','H'].forEach(v=>sc.outline(b.id,v).forEach(p=>{ if(v==='F'&&p.every(q=>q[2]<0.01)) return; if(v==='H'&&p.every(q=>q[2]<0.01)) ground.push(p); outl.push(...visPoly(p,v,'main','thin')); })));
   /* основание на π₂ — по следам тел на π₁ */
   const iv=ground.map(p=>[Math.min(...p.map(q=>q[0])),Math.max(...p.map(q=>q[0]))]).sort((a,b)=>a[0]-b[0]), mg=[];
   iv.forEach(x=>{ const l=mg[mg.length-1]; if(l&&x[0]<=l[1]+0.5) l[1]=Math.max(l[1],x[1]); else mg.push(x.slice()); });
   mg.forEach(x=>outl.push(seg(F([x[0],0,0]),F([x[1],0,0]),'main')));
-  steps.push(STEP('Обводка очерков',{check:'Контуры внутри соседних тел удалены; закрытые участки — штриховые; оси — штрихпунктирные.',
+  steps.push(STEP('Обводка очерков',{check:'Контуры внутри соседних тел удалены; видимые очерки — основной линией, закрытые участки — тонкой; оси — штрихпунктирные.',
     hint:'Тела слились в одно — какие контуры теперь внутри и пропадают?',
-    principle:'Очерк остаётся только там, где он на поверхности составного тела. Участки, закрытые другими телами, — штриховой линией.',
+    principle:'Очерк остаётся только там, где он на поверхности составного тела. Видимый очерк обводим основной линией; участки, закрытые другими телами, оставляем тонкими — штрих на этом листе только у невидимых участков линий пересечения.',
     step:'Обводим очерки всех тел с учётом видимости: на π₂ взгляд спереди, на π₁ — сверху.',
     full:'Видимость каждой линии проверена лучом от точки к наблюдателю.'},outl));
   const rng=a=>a.length>2&&a[a.length-1]-a[0]===a.length-1?a[0]+'–'+a[a.length-1]:a.join(', ');

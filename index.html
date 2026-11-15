@@ -2093,7 +2093,8 @@ html.ovs-open,html.ovs-open body{overflow:hidden}
 .var-nums a:hover{border-color:var(--acc);color:var(--acc)}
 .var-nums .off{opacity:.38;cursor:default}
 .var-sheet{overflow:auto;border:1px solid var(--bd);border-radius:12px;background:#fff;padding:6px;margin:var(--s3) 0}
-.var-acts{margin:var(--s3) 0}.var-note{color:var(--mut);margin:6px 0}
+.var-acts{margin:var(--s3) 0;display:flex;flex-wrap:wrap;gap:8px}.var-note{color:var(--mut);margin:6px 0}
+.var-mark{border:1px solid var(--bd);border-left:4px solid #1f5fd6;border-radius:12px;padding:10px 14px;margin:var(--s3) 0;line-height:1.5}.var-mark p{margin:0 0 6px}.var-mark ol{margin:0;padding-left:1.3em}.var-mark li{margin:3px 0}
 .hw-nav a{min-height:var(--tap);display:inline-flex;align-items:center;padding:0 14px;border-radius:99px;border:1px solid var(--bd);text-decoration:none;color:var(--ink2);font-weight:600;font-size:14px}
 .hw-dim{font-size:13.5px;color:var(--mut);margin:8px 0 0}
 /* лесенка подсказок в карточке шага */
@@ -30086,12 +30087,17 @@ function dzVariant(v,d,n,extra){
       if(location.hash!==h){ try{ history.replaceState(history.state,'',h); CURH=location.hash; }catch(e){} }
       dzLinkSet(v.querySelector('.dzx-top .dzx-share'),h,d.label+', вариант '+n+lbl+' — разбор по шагам'); };
     PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(),backLabel:'Ко всем ДЗ',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
-  else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
+  else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik'), mk=mode==='draft'?null:SHEET.markup(sh),
+      fit=svg=>svg.replace(/width="297mm" height="420mm"/,'width="100%" style="height:auto;max-width:900px;display:block;margin:0 auto;background:#fff"');
     v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap varwrap dzx dzx-varp',body:`${head}
-      <p class="var-note">${mode==='draft'?'Черновик':'Чистовик'} листа: формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — видно, что откуда взялось; так проверяют ход решения.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.'}</p>
-      <div class="var-acts"><button class="btn pri" type="button" id="varPrint">Открыть для печати (А3, 100 %)</button></div>
-      <div class="var-sheet">${sh.svg.replace(/width="297mm" height="420mm"/,'width="100%" style="height:auto;max-width:900px;display:block;margin:0 auto;background:#fff"')}</div>`});
-    const b=$('varPrint'); if(b) b.addEventListener('click',()=>SHEET.print(sh.svg,meta.title+' · вариант '+n,fname)); }
+      <p class="var-note">${mode==='draft'?'Черновик':'Чистовик'} листа: формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — видно, что откуда взялось; так проверяют ход решения.':(d.id==='ng4'?'Линии по ГОСТ 2.303: видимый контур и линии пересечения — основной, построения и закрытые очерки — тонкой, штриховой — только невидимые участки линий пересечения. Шрифт — чертёжный, тип Б.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.')}</p>
+      <div class="var-acts"><button class="btn pri" type="button" id="varPrint">Открыть для печати (А3, 100 %)</button>${mk?`<button class="btn" type="button" id="varMark" aria-pressed="false">Разметка листа (мм)</button>`:''}</div>
+      ${mk?`<div class="var-mark" id="varMarkTx" hidden><p><b>Как разметить чистый лист А3</b> (книжный, 297 × 420 мм). Все размеры — от линий рамки, масштаб ${sh.scale}. Сначала рамка и основная надпись, потом ось x и точка O, потом оси тел — и только после этого очерки.</p><ol>${mk.rows.map(r=>`<li><b>${r.t}.</b> ${r.v}</li>`).join('')}</ol></div>`:''}
+      <div class="var-sheet" id="varSheet">${fit(sh.svg)}</div>`});
+    let cur=sh.svg; const b=$('varPrint'); if(b) b.addEventListener('click',()=>SHEET.print(cur,meta.title+' · вариант '+n,fname+(cur===sh.svg?'':'-razmetka')));
+    /* «Разметка листа»: поверх чистовика — синие размеры до оси x, точки O и осей тел; включена — так и печатается */
+    const bm=$('varMark'); if(bm) bm.addEventListener('click',()=>{ const on=bm.getAttribute('aria-pressed')!=='true'; bm.setAttribute('aria-pressed',String(on)); bm.classList.toggle('pri',on);
+      cur=on?mk.svg:sh.svg; $('varSheet').innerHTML=fit(cur); $('varMarkTx').hidden=!on; }); }
   dzPillsScroll(v);
   setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:base,label:meta.title+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
   return meta.title+' · вариант '+n+(mode==='steps'?'':mode==='final'?' · чистовик':' · черновик'); }

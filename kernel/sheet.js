@@ -3,9 +3,10 @@
    • формат и рамка — ГОСТ 2.301: рамка 20 мм слева, 5 мм с остальных сторон; граница формата — тонкой, рамка — основной;
    • основная надпись — ГОСТ 2.104, форма 1 (185 × 55) в правом нижнем углу; масштаб — в своей графе;
    • масштаб — ГОСТ 2.302: 1:1, если чертёж помещается в поле листа, иначе ближайший уменьшения (1:2; 1:2,5; 1:4; 1:5);
-   • линии — ГОСТ 2.303: данное и найденное — сплошная основная s = 0,7 мм; построения, линии связи, выносные — сплошная
+   • линии — ГОСТ 2.303: данное и найденное — сплошная основная s = 0,8 мм; построения, линии связи, выносные — сплошная
      тонкая s/3; невидимое — штриховая (штрих 4, промежуток 1,5); оси — штрихпунктирная тонкая;
-   • шрифт — ГОСТ 2.304: обозначения точек 5 мм, пояснения 3,5 мм (наклонный);
+   • шрифт — ГОСТ 2.304 тип Б наклонный (osifont, папка fonts/): обозначения точек 5 мм, пояснения 3,5 мм; при печати и в
+     скачанном SVG шрифт вложен в лист, чтобы лист выглядел одинаково на любом компьютере;
    • таблица координат заданных точек — слева от основной надписи; условие — вверху; ответ — над таблицей.
    Черновик — то же построение в цвете (синим — построения, красным — результат, зелёным — второй способ), как на сайте:
    по нему удобно проверять ход решения. Единицы чертежа ядра: L.S на 1 мм. */
@@ -17,7 +18,7 @@ const strip=s=>String(s==null?'':s).replace(/<sub>(.*?)<\/sub>/g,(m,a)=>a.split(
 const INK='#111';
 /* стили линий: [цвет, толщина мм, штрих] */
 const ST={
-  final:{ main:[INK,.7], res:[INK,.7], grn:[INK,.25], aux:[INK,.25], thin:[INK,.25], dim:[INK,.25], conn:[INK,.25],
+  final:{ main:[INK,.8], res:[INK,.8], grn:[INK,.25], aux:[INK,.25], thin:[INK,.25], dim:[INK,.25], conn:[INK,.25],
     hid:[INK,.35,'4 1.5'], dash:[INK,.35,'4 1.5'], resd:[INK,.35,'4 1.5'], grnd:[INK,.35,'4 1.5'], auxd:[INK,.25,'4 1.5'],
     axis:[INK,.25,'14 1.5 0.5 1.5'], paper:['#fff',1.4] },
   draft:{ main:[INK,.6], res:['#d4322c',.6], grn:['#13885a',.45], aux:['#2f6bd8',.3], thin:['#555',.25], dim:['#2f6bd8',.25], conn:['#8fb0e3',.25],
@@ -83,7 +84,7 @@ function labels(lab,T,mode,occ){ const out=[], boxes=[], DIR={ne:[1,-1],nw:[-1,-
       x=best.x; y=best.y; anchor='start'; }
     const b=anchor==='middle'?[x-w/2,y-h,x+w/2,y]:anchor==='end'?[x-w,y-h,x,y]:[x,y-h,x+w,y]; boxes.push(b);
     const c=mode==='draft'?(o.k==='res'||o.k==='resd'?'#d4322c':o.k==='aux'||o.k==='auxd'||o.k==='dim'?'#2f6bd8':o.k==='grn'?'#13885a':INK):INK;
-    out.push(`<text x="${f(x)}" y="${f(y)}" font-size="${o.sz}" fill="${c}" font-style="italic" text-anchor="${anchor}">${esc(txt)}</text>`); });
+    out.push(`<text x="${f(x)}" y="${f(y)}" font-size="${o.sz}" fill="${c}" text-anchor="${anchor}">${esc(txt)}</text>`); });
   return out.join(''); }
 
 /* габарит сцены в единицах чертежа */
@@ -94,7 +95,7 @@ function bboxOf(items){ const B=[1e9,1e9,-1e9,-1e9], add=p=>{ if(!p||!isFinite(p
 
 /* основная надпись, форма 1 (185 × 55), правый нижний угол рамки (x1, y1) */
 function stamp(x1,y1,m){ const x0=x1-185, y0=y1-55, X=v=>f(x0+v), Y=v=>f(y0+v), Lr=(a,b,c,d,w)=>`<line x1="${X(a)}" y1="${Y(b)}" x2="${X(c)}" y2="${Y(d)}" stroke="${INK}" stroke-width="${w||.25}"/>`;
-  const T=(x,y,t,sz,anc)=>`<text x="${X(x)}" y="${Y(y)}" font-size="${sz||2.5}" font-style="italic" fill="${INK}"${anc?` text-anchor="${anc}"`:''}>${esc(t)}</text>`;
+  const T=(x,y,t,sz,anc)=>`<text x="${X(x)}" y="${Y(y)}" font-size="${sz||2.5}" fill="${INK}"${anc?` text-anchor="${anc}"`:''}>${esc(t)}</text>`;
   let o=`<rect x="${X(0)}" y="${Y(0)}" width="185" height="55" fill="#fff" stroke="${INK}" stroke-width=".7"/>`;
   o+=Lr(7,0,7,30); [17,40,55].forEach(x=>o+=Lr(x,0,x,55,x===55?.7:.25)); o+=Lr(65,0,65,55,.7);
   for(let r=1;r<11;r++) o+=Lr(0,r*5,65,r*5,r===5||r===6?.7:.25);
@@ -109,7 +110,7 @@ function stamp(x1,y1,m){ const x0=x1-185, y0=y1-55, X=v=>f(x0+v), Y=v=>f(y0+v), 
 
 /* таблица координат заданных точек: столбец на точку, строки x, y, z (как на листах заданий) */
 function dataTable(x0,y0,names,D){ const cw=12, w0=8, rh=7; let o=''; const Wt=w0+cw*names.length, Ht=rh*4;
-  const T=(x,y,t,sz)=>`<text x="${f(x)}" y="${f(y)}" font-size="${sz||3.5}" font-style="italic" fill="${INK}" text-anchor="middle">${esc(t)}</text>`;
+  const T=(x,y,t,sz)=>`<text x="${f(x)}" y="${f(y)}" font-size="${sz||3.5}" fill="${INK}" text-anchor="middle">${esc(t)}</text>`;
   o+=`<rect x="${f(x0)}" y="${f(y0)}" width="${f(Wt)}" height="${Ht}" fill="#fff" stroke="${INK}" stroke-width=".5"/>`;
   for(let r=1;r<4;r++) o+=`<line x1="${f(x0)}" y1="${f(y0+r*rh)}" x2="${f(x0+Wt)}" y2="${f(y0+r*rh)}" stroke="${INK}" stroke-width=".25"/>`;
   for(let c=0;c<names.length;c++) o+=`<line x1="${f(x0+w0+c*cw)}" y1="${f(y0)}" x2="${f(x0+w0+c*cw)}" y2="${f(y0+Ht)}" stroke="${INK}" stroke-width=".25"/>`;
@@ -128,19 +129,21 @@ function scenesOf(task){ const parts=PLAYER.partsOf(task), sc=p=>PLAYER.scene(p,
   if(task.n&&/ДЗ №5/.test(task.n)){ const a=sc(parts[0]), b=[].concat(...parts.slice(1).map(p=>(p.steps||[]).flatMap(s=>s.add||[]))); return [a.concat(b)]; }
   return parts.map(sc); }
 
-SH.ng=function(r,meta,mode){ mode=mode==='draft'?'draft':'final'; const task=r.task, scenes=scenesOf(task);
+SH.ng=function(r,meta,mode){ if(typeof window!=='undefined') loadFont(); SH._lay=null; mode=mode==='draft'?'draft':'final'; const task=r.task, scenes=scenesOf(task);
   const W=297, H=420, fx0=20, fy0=5, fx1=292, fy1=415, sx1=fx1, sy1=fy1;
   let o=`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff" stroke="${INK}" stroke-width=".25"/><rect x="${fx0}" y="${fy0}" width="${fx1-fx0}" height="${fy1-fy0}" fill="none" stroke="${INK}" stroke-width=".7"/>`;
   /* условие */
   const cond=wrap(strip(task.q).replace(/^ДЗ №\d+\S* · вариант \d+\.\s*/,''),fx1-fx0-12,3.5), cy0=fy0+4, ch=cond.length*5+4;
-  o+=`<rect x="${fx0+4}" y="${cy0}" width="${fx1-fx0-8}" height="${ch}" fill="none" stroke="${INK}" stroke-width=".25"/>`+cond.map((t,i)=>`<text x="${fx0+7}" y="${f(cy0+5.2+i*5)}" font-size="3.5" font-style="italic" fill="${INK}">${esc(t)}</text>`).join('');
+  o+=`<rect x="${fx0+4}" y="${cy0}" width="${fx1-fx0-8}" height="${ch}" fill="none" stroke="${INK}" stroke-width=".25"/>`+cond.map((t,i)=>`<text x="${fx0+7}" y="${f(cy0+5.2+i*5)}" font-size="3.5" fill="${INK}">${esc(t)}</text>`).join('');
   /* таблица и ответ */
   const names=meta.points||[], tb=names.length?dataTable(fx0+3,sy1-55+(55-28)-3,names,meta.data):{svg:'',w:0,h:0};
   o+=tb.svg;
-  const ansLines=strip(task.ans||(PLAYER.partsOf(task).map(p=>((/^\S+\)/.exec(strip(p.l||''))||[''])[0]+' '+strip(p.ans||'')).trim()).filter(Boolean).join('\n'))).split(/\n+/).flatMap(s=>wrap(s.trim(),fx1-fx0-14,3.5)).filter(Boolean).slice(0,12);
+  /* ДЗ №4: ответ — сами линии на чертеже, строки «Ответ» на листе нет (как на листах кафедры) */
+  const noAns=/ДЗ №4/.test(task.n||'');
+  const ansLines=noAns?[]:strip(task.ans||(PLAYER.partsOf(task).map(p=>((/^\S+\)/.exec(strip(p.l||''))||[''])[0]+' '+strip(p.ans||'')).trim()).filter(Boolean).join('\n'))).split(/\n+/).flatMap(s=>wrap(s.trim(),fx1-fx0-14,3.5)).filter(Boolean).slice(0,12);
   /* поле чертежа: от условия до блока ответа; ответ — над основной надписью во всю ширину; таблица — слева от надписи */
-  const ay=sy1-55-4-ansLines.length*4.8;
-  o+=`<line x1="${fx0}" y1="${f(ay-1)}" x2="${fx1}" y2="${f(ay-1)}" stroke="${INK}" stroke-width=".25"/>`+ansLines.map((t,i)=>`<text x="${fx0+4}" y="${f(ay+3.6+i*4.8)}" font-size="3.5" font-style="italic" fill="${INK}">${esc(i===0?'Ответ: '+t:t)}</text>`).join('');
+  const ay=noAns?sy1-55:sy1-55-4-ansLines.length*4.8;
+  if(ansLines.length) o+=`<line x1="${fx0}" y1="${f(ay-1)}" x2="${fx1}" y2="${f(ay-1)}" stroke="${INK}" stroke-width=".25"/>`+ansLines.map((t,i)=>`<text x="${fx0+4}" y="${f(ay+3.6+i*4.8)}" font-size="3.5" fill="${INK}">${esc(i===0?'Ответ: '+t:t)}</text>`).join('');
   const area=[fx0+3,cy0+ch+4,fx1-3,ay-3];
   /* клетки под части */
   const n=scenes.length, cols=n>1?2:1, rows=Math.ceil(n/cols), cw=(area[2]-area[0])/cols, chh=(area[3]-area[1])/rows;
@@ -160,17 +163,69 @@ SH.ng=function(r,meta,mode){ mode=mode==='draft'?'draft':'final'; const task=r.t
       labs.push({abs:[xl+1,y0-1.5],l:'x',sz:5,anchor:'start',k:'main'},{abs:[O[0]+1.2,y0-1.5],l:'O',sz:5,anchor:'start',k:'main'},{abs:[O[0]+1.2,y0-11],l:'z',sz:5,anchor:'start',k:'main'},{abs:[O[0]+1.2,y0+14],l:'y',sz:5,anchor:'start',k:'main'});
       occ.segs.push([[xl,y0],[xr,y0]]); }
     if(n>1){ const t=strip(PLAYER.partsOf(task)[i].l||''); if(t) labs.push({abs:[cx+2,cy+4],l:t+(scs[i][1]!==sc[1]?'   М '+scs[i][1]:''),sz:3.5,anchor:'start',k:'main'}); }
+    /* разметка листа: где на А3 ось x, точка O и оси тел — в мм от линий рамки (для кнопки «Разметка листа») */
+    if(n===1&&items.some(it=>it&&it.t==='axis')){ const O=T([0,0]), Bm=[T([B[0],B[1]]),T([B[2],B[3]])], ax=[];
+      items.forEach(it=>{ if(!it||it.k!=='axis'||it.t!=='poly'||!it.p||it.p.length!==2) return; const P=it.p.map(T), dx=Math.abs(P[1][0]-P[0][0]), dy=Math.abs(P[1][1]-P[0][1]);
+        if(dx<0.05) ax.push({v:'x',at:P[0][0],lo:Math.min(P[0][1],P[1][1]),hi:Math.max(P[0][1],P[1][1]),body:it.body||'',view:it.view});
+        else if(dy<0.05) ax.push({v:'y',at:P[0][1],lo:Math.min(P[0][0],P[1][0]),hi:Math.max(P[0][0],P[1][0]),body:it.body||'',view:it.view}); });
+      const merge=v=>{ const o2=[]; ax.filter(a=>a.v===v).sort((a,b)=>a.at-b.at).forEach(a=>{ const l=o2[o2.length-1]; if(l&&Math.abs(l.at-a.at)<0.3){ if(a.body&&!l.bodies.includes(a.body)) l.bodies.push(a.body); l.lo=Math.min(l.lo,a.lo); l.hi=Math.max(l.hi,a.hi); } else o2.push({at:a.at,lo:a.lo,hi:a.hi,bodies:a.body?[a.body]:[]}); }); return o2; };
+      SH._lay={frame:[fx0,fy0,fx1,fy1],stamp:[sx1-185,sy1-55,sx1,sy1],xAxis:{y:O[1],x1:T([B[0],0])[0],x2:T([B[2],0])[0]},O,box:[Bm[0][0],Bm[0][1],Bm[1][0],Bm[1][1]],vert:merge('x'),hor:merge('y').filter(a=>a.at>O[1]+1),scale:s0}; }
     const d=draw(items.filter(it=>it&&it.t!=='axis'),T,s0,mode,occ); o+=d.svg; d.lab.forEach(l=>{ l.T=T; labs.push(l); }); });
   /* подписи — после всех линий (знают, где линии) */
   const byT=new Map(); labs.forEach(l=>{ const k=l.T||(q=>q); if(!byT.has(k)) byT.set(k,[]); byT.get(k).push(l); });
   byT.forEach((ls,T)=>{ o+=labels(ls,T,mode,occ); });
   o+=stamp(sx1,sy1,{course:'Начертательная геометрия',title:meta.title,sub:meta.sub,n:meta.n,scale:sc[1]});
-  o+=`<text x="${fx1}" y="${H-1.2}" font-size="2.5" font-style="italic" fill="${INK}" text-anchor="end">Формат А3</text>`;
-  if(mode==='draft') o+=`<text x="${fx1-4}" y="${f(cy0+ch+4)}" font-size="3.5" fill="#2f6bd8" font-style="italic" text-anchor="end">Черновик — построения в цвете</text>`;
-  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm" font-family="'Golos Text',Arial,sans-serif">${o}</svg>`,scale:sc[1],format:'А3'}; };
+  o+=`<text x="${fx1}" y="${H-1.2}" font-size="2.5" fill="${INK}" text-anchor="end">Формат А3</text>`;
+  if(mode==='draft') o+=`<text x="${fx1-4}" y="${f(cy0+ch+4)}" font-size="3.5" fill="#2f6bd8" text-anchor="end">Черновик — построения в цвете</text>`;
+  /* в osifont буква «Э» испорчена (сплошной параллелограмм) — её берём из запасного шрифта */
+  o=o.replace(/Э/g,`<tspan font-family="'NchSerif',serif" font-style="italic">Э</tspan>`);
+  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm" font-family="'NchGost','NchSerif',serif">${o}</svg>`,scale:sc[1],format:'А3',layout:SH._lay}; };
+
+/* ── разметка листа: поверх чистовика синим — размеры в мм от линий рамки до оси x, точки O и осей тел ──
+   (как разметить чистый лист А3 до построения). Возвращает {svg, rows}: rows — те же числа списком для текста страницы */
+const r05=v=>Math.round(v*2)/2, mm=v=>String(r05(v)).replace('.',',');
+SH.markup=function(sh){ const Lm=sh.layout; if(!Lm) return null; const C='#1f5fd6', [fx0,fy0,fx1,fy1]=Lm.frame, out=[], rows=[];
+  const tx=(x,y,t,anc,sz)=>{ sz=sz||3.2; const w=[...String(t)].length*sz*0.52+1.6, x0=anc==='middle'?x-w/2:anc==='end'?x-w:x; out.push(`<rect x="${f(x0)}" y="${f(y-sz*0.85)}" width="${f(w)}" height="${f(sz*1.15)}" rx=".6" fill="#fff" fill-opacity=".92"/><text x="${f(x0+0.8)}" y="${f(y)}" font-size="${sz}" fill="${C}">${esc(t)}</text>`); };
+  const ar=(P,d)=>{ const n=[-d[1],d[0]], q=[P[0]-d[0]*2.2,P[1]-d[1]*2.2]; return `<path d="M${f(P[0])} ${f(P[1])} L${f(q[0]+n[0]*.55)} ${f(q[1]+n[1]*.55)} L${f(q[0]-n[0]*.55)} ${f(q[1]-n[1]*.55)} Z" fill="${C}"/>`; };
+  const L2=(a,b,w,da)=>out.push(`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="${C}" stroke-width="${w||.25}"${da?` stroke-dasharray="${da}"`:''}/>`);
+  /* горизонтальный размер от x1 до x2 на высоте y; vertical — от y1 до y2 на абсциссе x */
+  const dimH=(x1,x2,y,t)=>{ L2([x1,y],[x2,y]); const d=x2>x1?1:-1; out.push(ar([x2,y],[d,0])+ar([x1,y],[-d,0])); tx((x1+x2)/2,y-1,t,'middle'); };
+  const dimV=(y1,y2,x,t)=>{ L2([x,y1],[x,y2]); const d=y2>y1?1:-1; out.push(ar([x,y2],[0,d])+ar([x,y1],[0,-d])); const ym=(y1+y2)/2; out.push(`<g transform="rotate(-90 ${f(x-1)} ${f(ym)})">`); tx(x-1,ym,t,'middle'); out.push('</g>'); };
+  /* рамка и надпись */
+  dimH(0,fx0,fy0+40,'20'); L2([fx0+40,0],[fx0+40,fy0]); out.push(ar([fx0+40,fy0],[0,1])+ar([fx0+40,0],[0,-1])); tx(fx0+41.5,fy0-0.6,'5','start',3);
+  const [s0x,s0y]=Lm.stamp; L2([s0x,s0y-0.01],[fx1,s0y-0.01],.5); tx(s0x+92.5,s0y-2.5,'основная надпись 185 × 55','middle');
+  rows.push({t:'Рамка',v:'слева 20 мм от края листа, сверху, справа и снизу — 5 мм. Поле внутри рамки — 272 × 410 мм.'});
+  rows.push({t:'Основная надпись',v:'185 × 55 мм в правом нижнем углу рамки (ГОСТ 2.104, форма 1).'});
+  /* ось x и точка O */
+  const X=Lm.xAxis, O=Lm.O, xl=fx0+9;
+  L2([fx0,X.y],[X.x1,X.y],.25,'1.2 1'); dimV(fy0,X.y,xl,mm(X.y-fy0));
+  rows.push({t:'Ось x',v:`${mm(X.y-fy0)} мм ниже верхней линии рамки; от ${mm(X.x1-fx0)} до ${mm(X.x2-fx0)} мм от левой линии рамки (длина ${mm(X.x2-X.x1)} мм).`});
+  L2([O[0],X.y+14],[O[0],X.y+26],.25,'1.2 1'); dimH(O[0],fx1,X.y+24,mm(fx1-O[0]));
+  rows.push({t:'Точка O',v:`на оси x, ${mm(fx1-O[0])} мм от правой линии рамки (${mm(O[0]-fx0)} мм от левой).`});
+  /* оси тел: вертикальные — цепочкой сверху, от левой линии рамки */
+  const ytop=Math.max(Lm.box[1]-4,fy0+14);
+  Lm.vert.forEach((a,i)=>{ const y=ytop-i*5.2; L2([a.at,y-1],[a.at,a.lo],.2,'1.2 1'); L2([fx0,y-1],[fx0,y+1]); dimH(fx0,a.at,y,mm(a.at-fx0));
+    rows.push({t:'Вертикальная ось'+(a.bodies.length?' — '+a.bodies.join(', '):''),v:`${mm(a.at-fx0)} мм от левой линии рамки (на π₂ и на π₁ — одна прямая).`}); });
+  /* горизонтальные оси на π₁ — от оси x вниз */
+  Lm.hor.forEach((a,i)=>{ const x=xl+7+i*7; L2([x-1,a.at],[a.lo,a.at],.2,'1.2 1'); dimV(X.y,a.at,x,mm(a.at-X.y));
+    rows.push({t:'Горизонтальная ось на π₁'+(a.bodies.length?' — '+a.bodies.join(', '):''),v:`${mm(a.at-X.y)} мм ниже оси x (это координата y центра).`}); });
+  /* габарит чертежа */
+  const bw=Lm.box[2]-Lm.box[0], bh=Lm.box[3]-Lm.box[1];
+  rows.push({t:'Габарит изображения',v:`${mm(bw)} × ${mm(bh)} мм; слева до рамки ${mm(Lm.box[0]-fx0)} мм, справа ${mm(fx1-Lm.box[2])} мм.`});
+  const svg=sh.svg.replace(/<\/svg>$/,`<g class="markup">${out.join('')}</g></svg>`);
+  return {svg,rows}; };
+
+/* чертёжный шрифт внутрь листа: страница печати и скачанный SVG живут отдельно от сайта, без его @font-face.
+   Шрифт (21 КБ) подгружается заранее, при первом листе, и вкладывается data-адресом; пока не загрузился — ссылкой на сайт */
+let FONT=null;
+const fontUrl=()=>{ try{ return new URL('fonts/osifont-italic.woff2',location.href).href; }catch(e){ return 'fonts/osifont-italic.woff2'; } };
+function loadFont(){ if(FONT||typeof fetch!=='function'||typeof FileReader!=='function') return; FONT='pending';
+  fetch(fontUrl()).then(r=>r.ok?r.blob():Promise.reject()).then(b=>{ const fr=new FileReader(); fr.onload=()=>{ FONT=fr.result; }; fr.readAsDataURL(b); }).catch(()=>{ FONT=null; }); }
+const withFont=svg=>svg.replace(/^<svg([^>]*)>/,(m,a)=>`<svg${a}><defs><style>@font-face{font-family:'NchGost';src:url(${FONT&&FONT!=='pending'?FONT:fontUrl()}) format('woff2')}</style></defs>`);
+SH.loadFont=loadFont;
 
 /* открыть лист для печати в масштабе 100 % (как печатные заготовки сайта) */
-SH.print=function(svg,title,fname){ const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
+SH.print=function(svg,title,fname){ svg=withFont(svg); const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
 <style>@page{size:A3 portrait;margin:0}html,body{margin:0;background:#fff}svg{display:block;width:297mm;height:420mm;margin:0 auto}.bar{position:fixed;top:10px;right:10px;font:15px Arial,sans-serif;display:flex;gap:8px}.bar button,.bar a{font:inherit;padding:10px 16px;border-radius:10px;border:0;background:#1f47b8;color:#fff;cursor:pointer;text-decoration:none}@media print{.bar{display:none}}@media screen and (max-width:900px){svg{width:100%;height:auto}}</style></head>
 <body><div class="bar"><button onclick="print()">Печать (А3, 100 %)</button><a download="${esc(fname||'list')}.svg" href="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}">Скачать SVG</a></div>${svg}</body></html>`;
   try{ const u=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'})); const w=window.open(u,'_blank'); if(!w){ const a=document.createElement('a'); a.href=u; a.download=(fname||'list')+'.html'; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(()=>URL.revokeObjectURL(u),60000); }catch(e){} };
