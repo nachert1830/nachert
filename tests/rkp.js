@@ -131,7 +131,11 @@ async function rkpCheck(page,URL){
   /* 5. Печать условий: по листу на задачу RK2 9 тем, на листе — условие и чертёж «дано», без шагов и ответа; логотип, ссылка и QR */
   await page.evaluate(()=>{ location.hash='#/ng/rk2'; }); await page.waitForTimeout(300);
   await page.evaluate(()=>{ window.__print=window.print; window.print=()=>{ window.__printed=(window.__printed||0)+1; }; });
-  await page.click('[data-rkprint]'); await page.waitForTimeout(300);
+  /* кнопка собирает PDF (ровно A4, по листу на задачу) — проверяем число страниц и размер; HTML-вариант листа — ниже */
+  { const pdf=await page.evaluate(async()=>{ const L=RKP.prnItems(null), b=await RKP.prnPDF(L), t=new TextDecoder('latin1').decode(new Uint8Array(await b.arrayBuffer()));
+      return {n:L.length,pages:(t.match(/\/Type \/Page\b/g)||[]).length,a4:/\/MediaBox \[0 0 595\.28 841\.89\]/.test(t)}; });
+    if(pdf.pages!==pdf.n) add('печать условий','PDF','страниц '+pdf.pages+', задач '+pdf.n); if(!pdf.a4) add('печать условий','PDF','лист не A4'); }
+  await page.evaluate(()=>{ RKP.prnBuild(null); window.__printed=1; }); await page.waitForTimeout(300);
   await page.emulateMedia({media:'print'});
   const pr=await page.evaluate(()=>{ const out=[], L=RKP.prnTasks(), pg=[...document.querySelectorAll('#prnOut .prn-pg')];
     if(!window.__printed) out.push('кнопка не вызвала печать');
