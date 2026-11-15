@@ -2680,6 +2680,11 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 @media(max-width:480px){.subj a{padding:0 9px;font-size:13px}.subj a i{display:none}.brand .bw{display:none}}
 @media(max-width:400px){.hin{gap:6px;padding:0 10px}.hright{gap:4px}.icb{width:38px;height:38px}.subj{padding:2px}.subj a{padding:0 8px;font-size:12.5px;min-height:34px}}
 @media(max-width:339px){#shareBtn{display:none}}
+#prnSh{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:90;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:18px;background:var(--surf);color:var(--ink);border:1px solid var(--line);box-shadow:0 18px 40px -16px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap;font-size:14px}
+#prnSh.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+#prnSh .prn-go{height:40px;padding:0 14px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:700 14px var(--sans)}
+#prnSh .prn-x{width:32px;height:32px;border:0;border-radius:50%;background:var(--surf2);color:var(--ink2);font-size:18px;line-height:1}
+.prn-spin{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--acc);animation:prnSp .8s linear infinite}@keyframes prnSp{to{transform:rotate(360deg)}}
 /* нижняя панель: «Главная» аккуратнее — меньше, ниже, мягкая тень вместо толстой ступеньки */
 .nav-bot .nvh-b,.nav-bot a.nv-home.on .nvh-b{width:44px!important;height:44px!important;margin-top:-12px!important;border-radius:15px!important;box-shadow:0 6px 14px -6px rgba(204,23,32,.6),0 0 0 3px var(--surf)!important}
 .nav-bot .nvh-b svg{width:21px;height:21px}
@@ -28097,12 +28102,35 @@ function prnPdfBytes(jpegs,wpx,hpx){ const enc=new TextEncoder(), parts=[], off=
 async function prnPDF(items){ try{ await document.fonts.load('400 40px "Golos Text"'); await document.fonts.load('800 40px "Golos Text"'); }catch(e){}
   const logo=await prnImg('img/logo-mathanov-b.webp'), q=prnQR(), qr=q?await prnImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(q.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"').replace(/xmlns="[^"]*"\s+xmlns=/,'xmlns='))):null;
   const jp=[]; let W=0,Hh=0;
-  for(const o of items){ const cv=await prnCanvasPage(o,logo,qr); W=cv.width; Hh=cv.height; const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.93)); jp.push(new Uint8Array(await b.arrayBuffer())); }
+  for(const o of items){ const cv=await prnCanvasPage(o,logo,qr); W=cv.width; Hh=cv.height; const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.93)); jp.push(new Uint8Array(await b.arrayBuffer())); cv.width=cv.height=0; }   /* холст сразу освобождаем: у iPhone мало памяти под холсты */
   return prnPdfBytes(jp,W,Hh); }
-/* по кнопке: окно открываем сразу (иначе Safari заблокирует), PDF подставляем, когда соберётся; без окна — скачивание */
-function prnOpenPDF(items,name){ const w=window.open('','_blank'); try{ if(w) w.document.write('<p style="font:16px sans-serif;padding:24px">Готовлю PDF…</p>'); }catch(e){}
-  prnPDF(items).then(b=>{ const u=URL.createObjectURL(b); if(w&&!w.closed) w.location.href=u; else { const a=document.createElement('a'); a.href=u; a.download=name+'.pdf'; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(()=>URL.revokeObjectURL(u),120000); })
-    .catch(()=>{ try{ w&&w.close(); }catch(e){} prnPrint(null); }); }
+/* выдача PDF. Телефон: сразу системное меню «Поделиться» с файлом — там «Напечатать» и «Сохранить в Файлы» (без вкладки
+   Safari с белой панелью и чёрным фоном вокруг листа). Меню открывается только по нажатию, поэтому PDF собирается заранее,
+   пока человек смотрит страницу; не успел — появляется карточка «PDF готов». Компьютер: PDF в новой вкладке. */
+const PRNC={};
+function prnKey(items){ return items.map(o=>o.num+'|'+o.cond).join('#'); }
+function prnGet(items){ const k=prnKey(items); if(!PRNC[k]) PRNC[k]=prnPDF(items).catch(e=>{ delete PRNC[k]; throw e; }); return PRNC[k]; }
+const prnTouch=()=>{ try{ return matchMedia('(pointer:coarse)').matches; }catch(e){ return false; } };
+function prnFile(b){ try{ return new File([b],'РК2 — билеты.pdf',{type:'application/pdf'}); }catch(e){ return null; } }
+function prnCanShare(f){ try{ return !!(f&&navigator.canShare&&navigator.canShare({files:[f]})); }catch(e){ return false; } }
+function prnSheet(st,b){ let el=document.getElementById('prnSh'); if(!el){ el=document.createElement('div'); el.id='prnSh'; document.body.appendChild(el); }
+  el.innerHTML=st==='wait'?'<span class="prn-spin"></span><b>Готовлю PDF…</b>':'<b>PDF готов</b><button type="button" class="prn-go">Напечатать или сохранить</button><button type="button" class="prn-x" aria-label="Закрыть">×</button>';
+  el.className='on'; if(b){ el.querySelector('.prn-go').onclick=()=>{ prnDeliver(b); el.className=''; }; el.querySelector('.prn-x').onclick=()=>{ el.className=''; }; } }
+function prnDeliver(b){ const f=prnFile(b);
+  if(prnTouch()&&prnCanShare(f)){ navigator.share({files:[f]}).catch(()=>{}); return; }
+  const u=URL.createObjectURL(b), w=window.open(u,'_blank');
+  if(!w){ const a=document.createElement('a'); a.href=u; a.download='РК2 — билеты.pdf'; document.body.appendChild(a); a.click(); a.remove(); }
+  setTimeout(()=>URL.revokeObjectURL(u),120000); }
+function prnOpenPDF(items){ const k=prnKey(items), ready=PRNC[k]&&PRNC[k].done;
+  if(ready){ prnDeliver(ready); return; }
+  if(!prnTouch()){ const w=window.open('','_blank'); try{ w&&w.document.write('<p style="font:16px sans-serif;padding:24px">Готовлю PDF…</p>'); }catch(e){}
+    prnGet(items).then(b=>{ const u=URL.createObjectURL(b); if(w&&!w.closed) w.location.href=u; else prnDeliver(b); setTimeout(()=>URL.revokeObjectURL(u),120000); }).catch(()=>{ try{ w&&w.close(); }catch(e){} prnPrint(null); }); return; }
+  prnSheet('wait'); prnGet(items).then(b=>{ PRNC[k].done=b; prnSheet('ready',b); }).catch(()=>{ const el=document.getElementById('prnSh'); if(el) el.className=''; prnPrint(null); }); }
+/* заранее: на странице с кнопкой печати PDF собирается в фоне, чтобы по нажатию меню открылось сразу */
+function prnWarm(){ if(!prnTouch()) return; const bt=document.querySelector('#view [data-rkprint],#view [data-rkmore]'); if(!bt||bt.dataset.warm) return; bt.dataset.warm='1';
+  setTimeout(()=>{ if(!bt.isConnected) return; const items=bt.dataset.rkmore!=null?prnMoreItems(bt.dataset.rkmore):prnItems(bt.dataset.rkprint?bt.dataset.rkprint.split(','):null), k=prnKey(items);
+    prnGet(items).then(b=>{ if(PRNC[k]) PRNC[k].done=b; }).catch(()=>{}); },1500); }
+{ const vw=document.getElementById('view'); if(vw) new MutationObserver(()=>{ clearTimeout(prnWarm.t); prnWarm.t=setTimeout(prnWarm,400); }).observe(vw,{childList:true,subtree:true}); }
 function prnQR(){ if(prnQR.s==null) prnQR.s=(typeof QR!=='undefined'&&QR.svg('https://'+PSITE,64)||'').replace(/\swidth="\d+"\sheight="\d+"/,''); return prnQR.s; }
 function prnItems(ids){ const L=prnTasks(ids), E=EPX.escH, k={};
   return L.map(({T,t,id})=>{ k[id]=(k[id]||0)+1; const cond=EPX.mk(t.cond).replace(/^\s*<p>|<\/p>\s*$/g,'');
@@ -28117,8 +28145,8 @@ function prnGo(out){ const im=[...out.querySelectorAll('img')]; Promise.all(im.m
 function prnPrint(ids){ prnGo(prnBuild(ids)); }   /* убираем документ после печати (afterprint) или при переходе; на экране он скрыт */
 window.addEventListener('afterprint',()=>setTimeout(prnOff,0));
 window.addEventListener('hashchange',prnOff);
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkmore]'); if(!b) return; e.preventDefault(); prnOpenPDF(prnMoreItems(b.dataset.rkmore),'РК2 — билеты'); });
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkprint]'); if(!b) return; e.preventDefault(); prnOpenPDF(prnItems(b.dataset.rkprint?b.dataset.rkprint.split(','):null),'РК2 — билеты'); });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkmore]'); if(!b) return; e.preventDefault(); prnOpenPDF(prnMoreItems(b.dataset.rkmore)); });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rkprint]'); if(!b) return; e.preventDefault(); prnOpenPDF(prnItems(b.dataset.rkprint?b.dataset.rkprint.split(','):null)); });
 
 /* строка для главной */
 function mini(){ try{ const P=progress(); return P.val?'пройдено '+P.val+' %':'9 тем · пробный РК2'; }catch(e){ return ''; } }
