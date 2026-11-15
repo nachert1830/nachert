@@ -214,7 +214,9 @@ function svg(model,PL,i,opt){ opt=opt||{}; const ST=PL.ST, st=ST[i], D=PL.D, sp=
   const pathEl=(e,cl,w)=>`<path d="${e.path.map((p,j)=>(j?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')}" fill="none" stroke="${cl}" stroke-width="${f(e.h?sw*(w||1)*(cl===INK?0.5:0.75):sw*(w||1))}"${e.h?` stroke-dasharray="${dsh}"`:''} stroke-linecap="round" stroke-linejoin="round"/>`;
   const grp=(ox,oy,inner)=>`<g transform="translate(${ox} ${oy}) scale(${k0})">${inner}</g>`;
   const lines=(d,cl)=>{ const pp=IG3.paths(d.lines||d); return (pp.h?`<path d="${pp.h}" fill="none" stroke="${cl}" stroke-width="${f(sw*0.5)}" stroke-dasharray="${dsh}"/>`:'')+(pp.v?`<path d="${pp.v}" fill="none" stroke="${cl}" stroke-width="${f(sw)}" stroke-linecap="round" stroke-linejoin="round"/>`:''); };
-  const cross=(e,ox,oy)=>{ const m=e.path[Math.floor(e.path.length/2)], q=[ox+m[0]*k0,oy+m[1]*k0], r=6; return L([q[0]-r,q[1]-r],[q[0]+r,q[1]+r],RED,2)+L([q[0]-r,q[1]+r],[q[0]+r,q[1]-r],RED,2); };
+  /* крестик — только на заметном участке и не вплотную к соседнему (короткие обрезки рядом сливались в пятно) */
+  const XS=[], cross=(e,ox,oy)=>{ let ln=0; for(let j=1;j<e.path.length;j++) ln+=Math.hypot(e.path[j][0]-e.path[j-1][0],e.path[j][1]-e.path[j-1][1]); if(ln*k0<10) return '';
+    const m=e.path[Math.floor(e.path.length/2)], q=[ox+m[0]*k0,oy+m[1]*k0], r=6; if(XS.some(p=>Math.hypot(p[0]-q[0],p[1]-q[1])<18)) return ''; XS.push(q); return L([q[0]-r,q[1]-r],[q[0]+r,q[1]+r],RED,2)+L([q[0]-r,q[1]+r],[q[0]+r,q[1]-r],RED,2); };
   let o='', aux='', top='';
   /* главный вид */
   const kOutline=()=>(model.kp||[]).map(K=>`<polygon points="${K.map(p=>FR([p[0],b[0][1],p[1]]).map(f).join(',')).join(' ')}" fill="${C_K}" fill-opacity=".08" stroke="${C_K}" stroke-width="2.6" stroke-linejoin="round"/>`).join('');
