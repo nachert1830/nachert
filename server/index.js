@@ -9,12 +9,13 @@ const {ydbStore}=require('./lib/store/ydb');
 const {botClient}=require('./lib/telegram');
 const {postbox}=require('./lib/mail');
 const {eyesFromEnv}=require('./lib/eyes');
+const {tutorFromEnv}=require('./lib/tutor');
 /* IAM-токен сервисного аккаунта функции (Yandex Cloud кладёт его в context.token) — для модели зрения в AI Studio */
 let app=null, iam='';
 function get(){ if(app) return app; const cfg=fromEnv(process.env);
   app=createApp({cfg,store:ydbStore(cfg.ydb),bot:botClient({token:cfg.botToken}),
     mail:postbox({from:process.env.MAIL_FROM||'',accessKeyId:cfg.ydb.accessKeyId,secretAccessKey:cfg.ydb.secretAccessKey}),
-    eyes:eyesFromEnv(process.env),iamToken:()=>iam}); return app; }
+    eyes:eyesFromEnv(process.env),tutor:tutorFromEnv(process.env),iamToken:()=>iam}); return app; }
 /* прямой вызов «yc serverless function invoke … --data {"club":"owner-login"}» → одноразовая ссылка входа владельца.
    Запросы через шлюз всегда приходят с httpMethod, поэтому из интернета сюда не попасть. */
 exports.handler=async(event,context)=>{ if(context&&context.token&&context.token.access_token) iam=context.token.access_token;

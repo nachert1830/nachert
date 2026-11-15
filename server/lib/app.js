@@ -19,6 +19,7 @@ const CAL=require('../../lk/lib/calendar.js');
 const REM=require('../../lk/lib/reminder.js');
 const SRS=require('../../lk/lib/srs.js');
 const EYES=require('./eyes');
+const TUTOR=require('./tutor');
 
 const DOCS_VERSION='2026-10-25';
 const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024, EYES_BODY=3*1024*1024;
@@ -377,6 +378,20 @@ function createApp(o){
 
   A['POST /api/me/delete']=async(req,S)=>{ const b=body(req); if(b.confirm!=='УДАЛИТЬ') fail(400,'Подтвердите удаление словом УДАЛИТЬ.');
     await removeUser(S.user.id); log.log&&log.log('аккаунт удалён',S.user.id); return {resp:H.json(200,{ok:true}),cookie:clearCookie()}; };
+
+  /* ИИ-наставник (server/lib/tutor.js, docs/TUTOR.md): вопрос о шаге задачи → модель с инструментами; каждое её утверждение
+     о чертеже проверено ядром (kernel/tutor-core.js). Модель зарубежная — только с согласием; лимит на студента в день и
+     общий бюджет в день: превышен — отказ 429, шторка в браузере продолжает подсказками ядра. Вопрос и ответ не хранятся */
+  A['POST /api/tutor']=async(req,S)=>{ const tc=o.tutor; if(!tc||!tc.on) fail(503,'Наставник на сервере пока не подключён — работают подсказки ядра.');
+    const b=body(req,MAX_BODY); if(b.consent!==true) fail(403,'Модель зарубежная: нужно согласие на отправку вопроса.',{needConsent:true});
+    const day=new Date(now()).toISOString().slice(0,10), dayEnd=Date.parse(day+'T00:00:00Z')+DAY;
+    const spent=await store.get('ratelimit','tutorusd:'+day); if(spent&&(spent.n||0)/1e6>=tc.dayUsd){ log.error('наставник: дневной бюджет исчерпан',day); fail(429,'Наставник на сегодня устал — дальше подсказки ядра. Завтра снова.',{retry:Math.ceil((dayEnd-now())/1000)}); }
+    await limit('tutor',S.user.id,tc.daily,86400);
+    try{ const r=await TUTOR.ask(tc,{ctx:b.ctx,q:b.q,history:b.history,level:b.level},{fetch:http});
+      await store.incr('ratelimit','tutorusd:'+day,'n',Math.round((r.usd||0)*1e6),{exp:dayEnd+DAY});
+      log.log&&log.log('наставник',JSON.stringify({model:r.model,calls:r.calls,fixed:r.fixed,usd:Math.round((r.usd||0)*1e4)/1e4}));
+      return H.json(200,r); }
+    catch(e){ if(e instanceof HttpError) throw e; log.error('наставник',e&&e.message); fail(e&&e.status===400?400:502,e&&e.status===400?e.message:'Модель не ответила — вот подсказка ядра.'); } };
 
   /* глаза сканера: фото чертежа → модель со зрением → подписи точек (server/lib/eyes.js). Фото не сохраняется */
   A['POST /api/eyes']=async(req,S)=>{ const ec=o.eyes; if(!ec||!ec.on) fail(503,'ИИ-зрение пока не подключено.');

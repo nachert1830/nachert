@@ -19,6 +19,7 @@ const {botClient}=require('./lib/telegram');
 const {devMail}=require('./lib/mail');
 const C=require('./lib/crypto');
 const {eyesFromEnv}=require('./lib/eyes');
+const {tutorFromEnv}=require('./lib/tutor');
 
 const arg=(k,d)=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.split('=')[1]:true):d; };
 const SITE=+arg('site-port',0)||0, PORT=+arg('port',process.env.PORT||8787), MEM=!!arg('memory'), TEST=!!arg('test'), QUIET=!!arg('quiet');
@@ -43,7 +44,7 @@ const outbox=[]; let offset=0;
 const log=QUIET?{log(){},error:(...a)=>console.error(...a)}:console;
 const store=memoryStore(MEM?null:DBF);
 /* ИИ-зрение — как в облаке, из переменных EYES_URL, EYES_KEY, EYES_MODEL (по умолчанию выключено: нет ключа) */
-const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox}),mail:devMail(outbox),eyes:eyesFromEnv(process.env)});
+const app=createApp({cfg,store,clock:()=>Date.now()+offset,log,bot:botClient({dev:true,outbox}),mail:devMail(outbox),eyes:eyesFromEnv(process.env),tutor:tutorFromEnv(process.env)});
 
 async function newInvite(label,days){ const code=C.token(16), t=Date.now()+offset;
   await store.put('invites',{id:C.sha256(code),label:label||'эмуляция',role:'member',createdAt:t,expiresAt:t+(days||14)*864e5,createdBy:'dev'});

@@ -5332,6 +5332,39 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 :root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg .mc text.lbl{fill:var(--mc)!important}
 
 .pl.peek .pl-side.more::after{display:none}
+
+/* ═══ TUTOR — шторка наставника под чертежом (kernel/tutor.js, docs/TUTOR.md) ═══ */
+.tu{margin-top:8px;border:1.5px solid var(--line2,#d5ddeb);border-radius:16px;background:var(--surf,#fff);overflow:hidden;box-shadow:0 2px 0 var(--line,#e3e9f3)}
+.tu-h{display:flex;align-items:center;gap:10px;padding:10px 10px 8px 12px;border-bottom:1px solid var(--line,#e3e9f3)}
+.tu-av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--navy,#0a2463);color:#fff;font:700 14px/1 inherit;box-shadow:inset 0 0 0 2px #fff,0 0 0 2px #e8392b}
+.tu-who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}.tu-who b{font-size:14px;color:var(--ink)}.tu-who small{font-size:12px;color:var(--mut)}
+.tu-ic{flex:none;width:44px;height:44px;border:0;border-radius:12px;background:var(--surf2,#f1f5fd);color:var(--ink);font-size:17px;cursor:pointer}.tu-ic.on{background:#e8392b;color:#fff}
+.tu-lad{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;scrollbar-width:none}.tu-lad::-webkit-scrollbar{display:none}
+.tu-l{flex:none;min-height:34px;padding:0 11px;border-radius:999px;border:1.5px solid var(--line2,#d5ddeb);background:none;color:var(--ink2);font:600 13px/1 inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.tu-l.on{background:var(--blue-s,#e9f0ff);border-color:var(--acc,#1a5ae0);color:var(--acc,#1a5ae0)}
+.tu-log{max-height:min(42vh,340px);overflow-y:auto;padding:4px 10px 8px;display:flex;flex-direction:column;gap:8px}
+.tu-m{max-width:92%;padding:9px 12px;border-radius:14px;font-size:15px;line-height:1.42;color:var(--ink)}
+.tu-m.ai{align-self:flex-start;background:var(--surf2,#f1f5fd);border-top-left-radius:4px}.tu-m.me{align-self:flex-end;background:var(--acc,#1a5ae0);color:#fff;border-top-right-radius:4px}
+.tu-ask{margin-top:6px;font-weight:600}.tu-ok{margin-top:6px;font-size:12px;color:var(--green,#13804e)}
+.tu-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.tu-o{min-height:38px;padding:0 12px;border-radius:12px;border:1.5px solid var(--acc,#1a5ae0);background:var(--surf,#fff);color:var(--acc,#1a5ae0);font:600 14px/1.2 inherit;font-family:inherit;cursor:pointer}
+.tu-auth{margin-top:8px}
+.tu-wait{display:flex;gap:4px}.tu-wait i{width:7px;height:7px;border-radius:50%;background:var(--mut);animation:tuw 1s infinite ease-in-out}.tu-wait i:nth-child(2){animation-delay:.15s}.tu-wait i:nth-child(3){animation-delay:.3s}
+@keyframes tuw{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.tu-tapbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 10px 8px;padding:8px 10px;border-radius:12px;background:#fdecea;color:#a5141a;font-size:14px}
+:root[data-theme=dark] .tu-tapbar{background:#3a1416;color:#ff8f8f}
+.tu-in{display:flex;gap:6px;padding:8px 10px 10px;border-top:1px solid var(--line,#e3e9f3)}
+.tu-in input{flex:1;min-width:0;min-height:44px;padding:0 12px;border-radius:12px;border:1.5px solid var(--line2,#d5ddeb);background:var(--paper,#fff);color:var(--ink);font:16px/1.2 inherit;font-family:inherit}
+.tu-in .btn{min-width:48px;min-height:44px;padding:0}
+.tu-cons,.tu-note{display:block;padding:0 12px 10px;font-size:12.5px;line-height:1.4;color:var(--mut)}.tu-cons input{vertical-align:-2px;margin-right:4px}
+svg.dwg .tu-ov.tu-hl :is(line,path,polyline,circle,ellipse){stroke-width:3.4!important;filter:drop-shadow(0 0 2.5px rgba(232,57,43,.55))}
+svg.dwg .tu-ov.tu-hl{animation:tupl 1.6s ease-in-out 2}
+svg.dwg .tu-ov.tu-tmp line{stroke-dasharray:6 4;stroke-width:1.6!important}
+svg.dwg .tu-ov.tu-rv{animation:gnew .6s ease both}
+@keyframes tupl{50%{opacity:.45}}
+.pl-paper.tu-tapmode{cursor:crosshair;outline:2.5px dashed #e8392b;outline-offset:-4px}
+.tu-cap{position:absolute;left:10px;top:10px;max-width:calc(100% - 20px);padding:6px 10px;border-radius:10px;background:var(--navy,#0a2463);color:#fff;font:600 13px/1.3 inherit;pointer-events:none;z-index:3}
+@media (prefers-reduced-motion:reduce){svg.dwg .tu-ov{animation:none!important}.tu-wait i{animation:none}}
+@media (max-width:899px){.tu-log{max-height:none;overflow:visible}.tu{margin-top:4px}}
 </style>
 </head>
 <body>
@@ -6208,17 +6241,20 @@ function mount(root,t,opt){
         <div class="pl-text">${p.intro||t.intro||(S.mode==='try'?'Перерисуй чертёж в тетрадь и строй решение сам. На каждом шаге сначала подумай, что делать; не выходит — возьми подсказку, потом сверься с построением.':'Посмотри на исходный чертёж: что задано и что нужно найти. Дальше — '+n+' '+plural(n,'шаг','шага','шагов')+' построения.')}</div>${S.mode==='try'?'<div class="pl-sp"><b>Сначала — пространство</b>Набросай от руки, как это выглядит в пространстве (30 секунд), и скажи одной фразой план: что ищем и через что. Только потом — чертёж.</div>':''}${noteShort(t.note)&&pi===0?`<div class="pl-note"><b>Заметка</b>${noteShort(t.note)}</div>`:''}`;
     } else if(tryHid){
       const hon=!!S.hint[pi+':'+k];   /* лесенка: сначала думаешь сам → подсказка (что делать) → построение */
-      card=`<div class="pl-kicker">Шаг ${k} из ${n} · твой ход</div>
+      if(S.help&&window.TUTOR) card=`<div class="pl-kicker">Шаг ${k} из ${n} · твой ход · наставник</div><div class="pl-title">${hon?(st.t||''):'Что сделать на этом шаге?'}</div><div class="tu-host"></div><div class="pl-tryb"><button class="btn pl-reveal" type="button">Показать построение</button></div>`;
+      else card=`<div class="pl-kicker">Шаг ${k} из ${n} · твой ход</div>
         <div class="pl-title">${hon?(st.t||''):'Что сделать на этом шаге?'}</div>
         <div class="pl-text muted">${hon?'Это подсказка: что делаем. Дострой шаг на бумаге, потом сверься.':'Подумай и сделай шаг на бумаге сам. Не выходит — возьми подсказку.'}</div>
-        <div class="pl-tryb">${hon?'':'<button class="btn ghost pl-hint" type="button">Подсказка</button>'}<button class="btn pl-reveal" type="button">Показать построение</button></div>`;
+        <div class="pl-tryb">${hon?'':'<button class="btn ghost pl-hint" type="button">Подсказка</button>'}<button class="btn pl-reveal" type="button">Показать построение</button></div>
+        ${window.TUTOR?`<button class="pl-stuckbtn" type="button" aria-expanded="${S.help?'true':'false'}">${S.help?'Понятно':'Не понимаю'}</button>${S.help?'<div class="tu-host"></div>':''}`:''}`;
     } else {
-      card=`<div class="pl-kicker">Шаг ${k} из ${n}</div>
+      if(S.help&&window.TUTOR) card=`<div class="pl-kicker">Шаг ${k} из ${n} · наставник</div><div class="pl-title">${st.t||''}</div><div class="tu-host"></div>`;
+      else card=`<div class="pl-kicker">Шаг ${k} из ${n}</div>
         <div class="pl-title">${st.t||''}</div>
         <div class="pl-text">${chipify(st.d||'',scene(p,k).items)}</div>
         ${st.why?`<div class="pl-why"><span>Почему</span>${chipify(st.why,scene(p,k).items)}</div>`:''}
         ${st.tbl||''}
-        <button class="pl-stuckbtn" type="button" aria-expanded="${S.help?'true':'false'}">${S.help?'Понятно':'Не понял шаг'}</button>${S.help?helpHTML(st,k,p):''}`;
+        <button class="pl-stuckbtn" type="button" aria-expanded="${S.help?'true':'false'}">${S.help?'Понятно':window.TUTOR?'Не понимаю':'Не понял шаг'}</button>${S.help?(window.TUTOR?'<div class="tu-host"></div>':helpHTML(st,k,p)):''}`;
     }
     const last = k===n && !tryHid;
     let ans='';
@@ -6275,6 +6311,8 @@ function mount(root,t,opt){
         </div></div>
       </div>`;
     bind(); zoomBind(); posSet(); try{ glowNew(); FX.touch(); }catch(e){} document.body.classList.toggle('plfull',S.full);
+    /* наставник (kernel/tutor.js): шторка и подсветка на чертеже — после каждой отрисовки */
+    try{ if(window.TUTOR) TUTOR.afterRender(api); }catch(e){ console.error(e); }
     if(opt.onPart&&S.pi!==S.lastPi){ S.lastPi=S.pi; try{ opt.onPart(S.pi); }catch(e){ console.error(e); } }
     if(S.h) applyH(); else measure();
     if(fk){ const el=root.querySelector(fk)||root.querySelector('.pl-main'); if(el&&!el.disabled) try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); } }
@@ -6288,7 +6326,7 @@ function mount(root,t,opt){
   function measure(){ try{
     const paper=root.querySelector('.pl-paper'), sc=root.querySelector('.pl-scroll'), side=root.querySelector('.pl-side'); if(!paper||!sc||!side) return;
     const mob=window.innerWidth<900&&document.body.classList.contains('inplayer')&&!S.full&&!S.peek;
-    if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(Math.min(96,need),Math.min(H*(S.sheet?0.62:0.24),need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
+    if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(Math.min(96,need),Math.min(H*(S.sheet?0.62:S.help&&window.TUTOR?0.5:0.24),need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
     else { side.style.maxHeight=''; side.style.height=''; }
     const more=()=>{ if(side) side.classList.toggle('more',sc.scrollHeight-sc.clientHeight-sc.scrollTop>6); };
     more(); if(!sc._more){ sc._more=1; sc.addEventListener('scroll',more,{passive:true}); }
@@ -6337,7 +6375,7 @@ function mount(root,t,opt){
     q('.pl-prev')&&q('.pl-prev').addEventListener('click',()=>{ if(q('.pl-prevt')){ if(opt.onPrev) opt.onPrev(); return; } if(S.k===0&&S.pi>0){ S.pi--; S.k=(part().steps||[]).length; render(); return; } go(S.k-1); });
     q('.pl-next')&&S.k===0&&q('.pl-next').addEventListener('click',()=>{ try{ if(window.ST) ST.set('coach',ST.get('coach',0)+1); }catch(e){} });
     q('.pl-next')&&q('.pl-next').addEventListener('click',()=>{ if(hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; render(); } else go(S.k+1); });
-    q('.pl-stuckbtn')&&q('.pl-stuckbtn').addEventListener('click',()=>{ S.help=!S.help; if(S.help){ try{ const m=ST.get('stuck',{}); m[posKey]=(m[posKey]||0)+1; ST.set('stuck',m); }catch(e){} } render(); });
+    q('.pl-stuckbtn')&&q('.pl-stuckbtn').addEventListener('click',()=>{ if(window.TUTOR){ if(S.help) TUTOR.close(api); else { try{ const m=ST.get('stuck',{}); m[posKey]=(m[posKey]||0)+1; ST.set('stuck',m); }catch(e){} TUTOR.open(api); } return; } S.help=!S.help; if(S.help){ try{ const m=ST.get('stuck',{}); m[posKey]=(m[posKey]||0)+1; ST.set('stuck',m); }catch(e){} } render(); });
     q('.hl-back')&&q('.hl-back').addEventListener('click',()=>go(S.k-1));
     q('.hl-find')&&q('.hl-find').addEventListener('click',()=>{ const st=part().steps[S.k-1]||{}; if(window.SEARCH) SEARCH.open(st.t||''); });
     q('.pl-reveal')&&q('.pl-reveal').addEventListener('click',()=>{S.shown[S.pi+':'+S.k]=1;render();});
@@ -6411,6 +6449,8 @@ function mount(root,t,opt){
   let ro=null, lastW=0;
   function destroy(){ document.removeEventListener('keydown',key); if(ro) ro.disconnect(); document.body.classList.remove('present'); document.body.classList.remove('plfull'); }
   document.addEventListener('keydown',key);
+  /* что плеер отдаёт наставнику: шаг, переход, перерисовка */
+  const api={go,state:S,part,parts,t,root,render:()=>render()}; root._pl=api;
   if(window.ResizeObserver){ ro=new ResizeObserver(()=>{ const w=root.clientWidth; if(w&&w!==lastW){ const first=!lastW; lastW=w; if(!first){ S.h=0; measure(); } } }); ro.observe(root); }
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ if(document.body.contains(root)) measure(); });
   render();
@@ -7776,6 +7816,9 @@ return {has,html,bind,SPEC,ans3};
 </script>
 <!-- ДЗ: реестр, данные вариантов, методики и решатели — по папкам dz/<курс>/<номер>/ (оглавление — dz/README.md) -->
 <script src="kernel/dz.js"></script>
+<!-- ИИ-наставник: геометрическое ядро (общее с сервером) и шторка в плеере — docs/TUTOR.md -->
+<script src="kernel/tutor-core.js"></script>
+<script src="kernel/tutor.js"></script>
 <script src="dz/ng/lib.js"></script>
 <script src="dz/ng/1/variants.js"></script>
 <script src="dz/ng/1/method.js"></script>
@@ -24962,7 +25005,7 @@ function model(items,regItems){
         const pr=[pa,pb].sort().join(''), a=path[0], b=path[1], t=pr==='23'?(0-a[0])/(b[0]-a[0]):pr==='12'?(0-a[1])/(b[1]-a[1]):NaN;
         if(!(t>=0&&t<=1)) return; const c=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]; ls=[[map(a,pa),map(c,pa)],[map(c,pb),map(b,pb)]]; }
       else { const pl=planeOf(it,path); if(!pl) return; ls=fixed(path,pl); } }
-    if(ls.length) flat.push({ls,k:it.k||'main',g:it._g||'given'}); };
+    if(ls.length) flat.push({ls,k:it.k||'main',g:it._g||'given',col:it.col}); };
   (items||[]).forEach(it=>{ if(!it) return;
     /* тела задачи — сетка треугольников в пространстве (только для 3D; на эпюре и листе её нет) */
     if(it.t==='mesh3'){ if(typeof it.solid==='function'){ let so=null; try{ so=it.solid(); }catch(e){ console.error(e); } if(so&&so.idx.length) meshes.push({solid:so,col:it.col||'#b9a77a',g:it._g||'given'}); }
@@ -24982,12 +25025,12 @@ function model(items,regItems){
       const ta=T(it.a), tb=ta&&T(it.b);
       if(ta&&tb&&ta.pl===tb.pl&&it.t!=='conn'&&it.t!=='dim'){ const a=ta.p,b=tb.p; if(Math.hypot(...sub(a,b))<0.3) return;
         const k=key(a,b); if(seen.has(k)) { if(it._g==='new'){ const s=segs.find(x=>x.key===k); if(s){ s.g='new'; s.k=it.k||s.k; } } return; } seen.add(k);
-        segs.push({a,b,k:it.k||'main',g:it._g||'given',key:k}); return; }
+        segs.push({a,b,k:it.k||'main',g:it._g||'given',key:k,col:it.col}); return; }
       if(it.t==='conn'&&ta&&tb) return;   /* линия связи между проекциями одной точки — в 3D уже есть проецирующие лучи */
       const pth=it.t==='line'?extendP(it.a,it.b,it.e0===undefined?14:it.e0,it.e1===undefined?14:it.e1):[it.a,it.b];
       if((it.t==='seg'||it.t==='line')&&/^(main|hid|res|resd|grn|grnd)$/.test(it.k||'main')) cand.push({a:pth[0],b:pth[1],k:it.k||'main',g:it._g||'given',l:strip(it.l||'').trim()});
       F(it,pth); return; }
-    if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)){ polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill,open:!!it.open3d}); return; }
+    if(it.t==='poly'&&it.p&&it.p.length>2){ const tp=it.p.map(T); if(tp.every(Boolean)&&tp.every(q=>q.pl===tp[0].pl)){ polys.push({p:tp.map(q=>q.p),k:it.k||'main',g:it._g||'given',fill:it.fill,open:!!it.open3d,col:it.col}); return; }
       F(it,it.p,it.close!==false); return; }
     if(it.t==='curve'&&it.p) F(it,it.p,false);
     else if(it.t==='arc'&&it.c) F(it,arcP(it),false);
@@ -25209,7 +25252,7 @@ function open(t,pi,k){
       put(nw,hid(mid3([s.a[0],s.a[1],0],[s.b[0],s.b[1],0])),ln([s.a[0],s.a[1],0],[s.b[0],s.b[1],0],{c:col,w:.9,o:.5}));
       put(nw,hid(mid3([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]])),ln([s.a[0],0,s.a[2]],[s.b[0],0,s.b[2]],{c:col,w:.9,o:.5})); });
     /* грани */
-    m.polys.forEach(o=>{ const col=COL[o.k]||COL.main;
+    m.polys.forEach(o=>{ const col=o.col||COL[o.k]||COL.main;
       /* открытая линия в пространстве (кривая пересечения, очерк) — ломаной, без заливки */
       if(o.open){ const nw=o.g==='new', dsh=/d$|^hid$/.test(o.k); for(let i=1;i<o.p.length;i++) seg3(o.p[i-1],o.p[i],{c:col,w:nw?1.7:1.2,d:dsh?'5 3':null},nw); return; }
       const c=o.p.reduce((s,p)=>[s[0]+p[0]/o.p.length,s[1]+p[1]/o.p.length,s[2]+p[2]/o.p.length],[0,0,0]); put(o.g==='new',hid(c),polyS(o.p,col,o.g==='new'?.3:.18,col)); });
@@ -25220,14 +25263,14 @@ function open(t,pi,k){
         const sh=0.5+0.5*Math.abs(dot(nr,Lt))/nl; T3.push({d:(q[0][2]+q[1][2]+q[2][2])/3,s:`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke="rgb(${rgb.map(c=>Math.round(c*sh)).join(',')})" stroke-width=".35" fill-opacity="${op||.8}" stroke-opacity="${op||.8}"/>`}); }); });
       T3.sort((a,b)=>b.d-a.d); mesh='<g class="t3d-mesh">'+T3.map(x=>x.s).join('')+'</g>'; }
     /* построения на плоскостях проекций (как на эпюре) */
-    m.flat.forEach(o=>{ const col=COL[o.k]||COL.main, nw=o.g==='new'; o.ls.forEach(l=>{ for(let i=0;i<l.length-1;i++){ const a=l[i], b=l[i+1], h=hid(mid3(a,b));
+    m.flat.forEach(o=>{ const col=o.col||COL[o.k]||COL.main, nw=o.g==='new'; o.ls.forEach(l=>{ for(let i=0;i<l.length-1;i++){ const a=l[i], b=l[i+1], h=hid(mid3(a,b));
       put(nw,h,ln(a,b,{c:col,w:nw?1.15:.8,o:nw?1:.65})); } }); });
     m.dots.forEach(d=>{ const isP=d.k==='grn3', col=isP?'#3a7a55':d.k==='res'?COL.res:d.k==='grn'?COL.grn:COL[d.k]||'var(--t3ink)', q=P(d.p), nw=d.g==='new', h=hid(d.p);
       if(d.base&&m.pts[d.base]) seg3(m.pts[d.base].p,d.p,{c:'#3a7a55',w:1.1,d:'4 4',o:.75},nw);
       put(nw,h,`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="${nw?2.2:1.8}" fill="var(--t3bg)" stroke="${col}" stroke-width="1"/>`);
       if(d.nm){ lbs.push({nm:d.nm,q,col,g:d.g,pr:nw?1:4,sm:1,hid:h}); hits.push({kind:'dot',nm:d.nm,q,col}); } });
     /* отрезки в пространстве */
-    m.segs.forEach(s=>{ const col=COL[s.k]||COL.main, nw=s.g==='new'; seg3(s.a,s.b,{c:col,w:nw?(s.k==='res'||s.k==='grn'?1.6:1.4):1.05,d:s.k==='aux'?'5 3':null,halo:true},nw); });
+    m.segs.forEach(s=>{ const col=s.col||COL[s.k]||COL.main, nw=s.g==='new'; seg3(s.a,s.b,{c:col,w:nw?(s.k==='res'||s.k==='grn'?1.6:1.4):1.05,d:s.k==='aux'?'5 3':null,halo:true},nw); });
     /* точки: лучи на плоскости, проекции (пустые кружки — как на эпюре), сама точка */
     Object.entries(m.pts).forEach(([nm,o])=>{ const p=o.p, a1=[p[0],p[1],0], a2=[p[0],0,p[2]], ax=[p[0],0,0], nw=o.g==='new';
       const col=o.k==='res'?COL.res:o.k==='grn'?COL.grn:'var(--t3ink)';

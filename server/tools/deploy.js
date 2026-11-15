@@ -99,7 +99,9 @@ function packageFiles(){ const out=[];
   const walk=(dir,rel)=>{ for(const f of fs.readdirSync(dir).sort()){ const p=path.join(dir,f), r=rel?rel+'/'+f:f;
     if(/^(\.data|\.deploy|test|tests|tools|node_modules)$/.test(f)||/\.md$/.test(f)||f.startsWith('.')) continue;
     if(fs.statSync(p).isDirectory()) walk(p,r); else out.push([r,fs.readFileSync(p)]); } };
-  walk(path.join(ROOT,'server'),'server'); walk(path.join(ROOT,'lk'),'lk'); return out; }
+  walk(path.join(ROOT,'server'),'server'); walk(path.join(ROOT,'lk'),'lk');
+  /* ядро наставника — общее с сайтом (server/lib/tutor.js → kernel/tutor-core.js) */
+  out.push(['kernel/tutor-core.js',fs.readFileSync(path.join(ROOT,'kernel','tutor-core.js'))]); return out; }
 
 /* YDB Document API — создание таблиц */
 async function docapi(endpoint,cred,op,body){ const b=JSON.stringify(body);
@@ -289,7 +291,9 @@ async function main(){
     /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
     EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:eyes.model||E('EYES_MODEL'),EYES_OPTS:eyes.opts||'',EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES'),EYES_BEST_MODEL:E('EYES_BEST_MODEL'),
     /* на время тестов: лучшая (зарубежная) модель — только владельцу и без отметки «лист мой»; для всех — vars EYES_BEST_FOR=all, EYES_BEST_DEFAULT=0 */
-    EYES_BEST_FOR:E('EYES_BEST_FOR')||'all',EYES_BEST_DEFAULT:E('EYES_BEST_DEFAULT')||'1'};
+    EYES_BEST_FOR:E('EYES_BEST_FOR')||'all',EYES_BEST_DEFAULT:E('EYES_BEST_DEFAULT')||'1',
+    /* ИИ-наставник (docs/TUTOR.md): ключ — тот же PROXYAPI_KEY; модель, лимиты и бюджет — vars репозитория */
+    TUTOR:E('TUTOR'),TUTOR_MODEL:E('TUTOR_MODEL'),TUTOR_FAST_MODEL:E('TUTOR_FAST_MODEL'),TUTOR_EFFORT:E('TUTOR_EFFORT'),TUTOR_DAILY:E('TUTOR_DAILY'),TUTOR_DAY_USD:E('TUTOR_DAY_USD')};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
   const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY','PROXYAPI_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){

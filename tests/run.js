@@ -52,6 +52,13 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   info.push('«Евклид»: проверено задач '+(await page.evaluate(()=>WB3.tasks.filter(t=>!EUCLID_TODO.includes(t.n)).length))+' из 89 и ДЗ №2 (2а–2в), №3; кривые поверхности — в работе: №'+(await page.evaluate(()=>EUCLID_TODO.join(', №'))));
   report('Арифметика в тексте', await page.evaluate(()=>ARITH_CHECK()));
   report('ДЗ-оракул (ДЗ №2, №3)', await page.evaluate(()=>DZ_CHECK()));
+  /* ИИ-наставник (docs/TUTOR.md): ядро на каждом шаге каждой задачи и ДЗ, мутации (порог 99 %), сценарии в браузере */
+  { await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,'tutor.js'),'utf8')}); const tu=await page.evaluate(()=>TUTOR_CHECK()), m=tu.stats.mut;
+    report('Наставник (ядро)',tu.problems); M.tutor=tu.stats;
+    const caught=Object.values(m).reduce((a,x)=>a+x[0],0), total=Object.values(m).reduce((a,x)=>a+x[1],0);
+    info.push('Наставник: шагов '+tu.stats.steps+', подсказок ядра '+tu.stats.ladders+', пар проекций на линии связи '+tu.stats.linkOk+' из '+tu.stats.links+'; подсаженных ошибок поймано '+caught+' из '+total);
+    if(!total||caught/total<0.99) fail.push('Наставник ослаб: ядро ловит '+Math.round(100*caught/Math.max(1,total))+'% подсаженных ошибок');
+    const TU=await require('./tutor-run.js').run(browser,URL); TU.info.forEach(x=>info.push(x)); TU.fail.forEach(x=>fail.push(x)); }
   { const dpage=await browser.newPage(); await dpage.goto(URL); await dpage.waitForTimeout(1200);
     for(const f of ['geometry','euclid','arith','dz']) await dpage.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
     const DR=require('./dz-run.js'), N=QUICK?10:40, v=await DR.runDzVariants(dpage,N);

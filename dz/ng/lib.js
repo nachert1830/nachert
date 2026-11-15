@@ -89,7 +89,8 @@ function ladder(o){
   return `<div class="hw-ladder">${blk('l3','Шаг',step,true)}${blk('l2','Почему так?',o.principle)}${blk('l1','Намёк',o.hint)}${blk('l4','Числа',o.full)}${blk('l5','Проверь себя',o.check)}</div>`;
 }
 /* шаг плеера: t — заголовок, o — {hint,principle,step,full}, add — элементы чертежа */
-const STEP = (t,o,add) => ({ t, d:'', why:'', tbl:ladder(o), add:add||[] });
+/* lad — те же поля лесенки данными: по ним наставник (kernel/tutor-core.js) ведёт подсказки */
+const STEP = (t,o,add) => ({ t, d:'', why:'', tbl:ladder(o), lad:o, add:add||[] });
 
 /* ---- преобразование чертежа (2D, в плоскости чертежа) ----
    Новая ось: точка O (на оси), единичный e вдоль оси, nrm — единичная нормаль в сторону исходного вида.

@@ -16,6 +16,8 @@ function club(opt){ opt=opt||{};
     /* поддельная модель зрения: ответ задаёт тест (ya.eyes(body) → {status, json}) */
     if(opt.eyes&&opt.eyes.best&&url===opt.eyes.best.url){ const a=ya.best?ya.best(JSON.parse(o.body)):{status:500,json:{error:{message:'нет'}}}; ya.calls.push({url,headers:o.headers}); return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
     if(opt.eyes&&url===opt.eyes.url){ const a=ya.eyes?ya.eyes(JSON.parse(o.body)):{status:200,json:{choices:[{message:{content:'{"drawings":[]}'}}]}}; return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
+    /* поддельная модель наставника: ответ задаёт тест (ya.tutor(body) → {status, json}) */
+    if(opt.tutor&&url===opt.tutor.url){ const a=ya.tutor?ya.tutor(JSON.parse(o.body)):{status:500,json:{error:{message:'нет'}}}; ya.calls.push({url,body:o.body}); return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
     if(ya.down) throw new Error('нет сети');
     const res=(st,j)=>({ok:st<300,status:st,json:async()=>j});
     if(url==='https://oauth.yandex.ru/token'){ const b=new URLSearchParams(o.body);
@@ -25,7 +27,7 @@ function club(opt){ opt=opt||{};
       return p?res(200,Object.assign({client_id:'ya-client'},p)):res(401,{}); }
     if(url==='https://oauth.yandex.ru/revoke_token') return res(200,{status:'ok'});
     return res(404,{}); }
-  const app=createApp({cfg,store,clock:()=>clock.t,log:{log(){},error:(...a)=>process.env.DEBUG&&console.error(...a)},bot:botClient({dev:true,outbox}),fetch:yaFetch,eyes:opt.eyes,iamToken:()=>opt.iam||''});
+  const app=createApp({cfg,store,clock:()=>clock.t,log:{log(){},error:(...a)=>process.env.DEBUG&&console.error(...a)},bot:botClient({dev:true,outbox}),fetch:yaFetch,eyes:opt.eyes,tutor:opt.tutor,iamToken:()=>opt.iam||''});
   const jar={};
   async function call(method,path,body,o){ o=o||{}; const who=o.as||'default', c=jar[who]||(jar[who]={cookie:'',csrf:''});
     const headers=Object.assign({'content-type':'application/json',origin:cfg.origin,'user-agent':'test'},o.headers||{});
