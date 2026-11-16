@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Штаб CEO</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1c2230;--mut:#6b7385;--ac:#2f6fed;--ok:#1f9d55;--run:#d98a00;--bd:#e1e5ec}
+@media (prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1f2a;--tx:#e8ecf4;--mut:#8f98ab;--ac:#6b9bff;--ok:#42c27c;--run:#f0b43c;--bd:#2a3140}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:22px;margin:8px 0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
+input,textarea{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px}
+textarea{min-height:120px;resize:vertical}
+button{font:inherit;border:0;border-radius:10px;padding:12px 16px;background:var(--ac);color:#fff;cursor:pointer}
+button.alt{background:var(--bd);color:var(--tx)}
+button:disabled{opacity:.5}
+.row{display:flex;gap:8px;margin-top:10px}.row button:first-child{flex:1}
+.msg{color:var(--mut);font-size:14px;margin-top:8px;min-height:20px}
+.it{display:flex;gap:10px;justify-content:space-between;padding:10px 0;border-top:1px solid var(--bd)}
+.it:first-child{border-top:0}
+.it a{color:var(--tx);text-decoration:none;word-break:break-word}
+.st{white-space:nowrap;font-size:14px;font-weight:600}
+.st.run{color:var(--run)}.st.ok{color:var(--ok)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Штаб CEO</h1>
+
+  <section class="card" id="login">
+    <input id="code" type="password" placeholder="Личный код" autocomplete="current-password">
+    <div class="row"><button id="enter">Войти</button></div>
+    <div class="msg" id="lmsg"></div>
+  </section>
+
+  <div id="app" hidden>
+    <section class="card">
+      <textarea id="idea" placeholder="Напишите или надиктуйте идею обычными словами"></textarea>
+      <div class="row">
+        <button id="send">Отправить сотрудникам</button>
+        <button class="alt" id="mic" title="Диктовка">🎤</button>
+      </div>
+      <div class="msg" id="smsg"></div>
+    </section>
+    <section class="card">
+      <b>Задачи</b>
+      <div id="list"><div class="msg">Загрузка…</div></div>
+    </section>
+  </div>
+</main>
+<script src="config.js"></script>
+<script>
+(function(){
+  var API = window.CEO_API || "", $ = function(i){ return document.getElementById(i); }, code = "", timer;
+  try { code = sessionStorage.getItem("ceo") || ""; } catch(e) {}
+  function call(method, body){
+    return fetch(API, { method: method, headers: { "content-type": "application/json", "x-ceo-code": encodeURIComponent(code) }, body: body ? JSON.stringify(body) : undefined })
+      .then(function(r){ return r.json().then(function(j){ j.status = r.status; return j; }); });
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]; }); }
+  function load(){
+    return call("GET").then(function(j){
+      if (!j.ok) { return j; }
+      var h = j.items.map(function(i){
+        return '<div class="it"><a href="' + esc(i.url) + '" target="_blank" rel="noopener">' + esc(i.t) + '</a>' +
+          '<span class="st ' + (i.done ? "ok" : "run") + '">' + (i.done ? "✔ готово" : "⏳ в работе") + '</span></div>';
+      }).join("");
+      $("list").innerHTML = h || '<div class="msg">Пока пусто</div>';
+      return j;
+    });
+  }
+  function show(){ $("login").hidden = true; $("app").hidden = false; clearInterval(timer); timer = setInterval(load, 20000); }
+  function enter(){
+    code = $("code").value || code; $("lmsg").textContent = "Проверяю…";
+    if (!API) { $("lmsg").textContent = "Функция ещё не развёрнута (нет config.js)"; return; }
+    load().then(function(j){
+      if (j && j.ok) { try { sessionStorage.setItem("ceo", code); } catch(e) {} show(); }
+      else { $("lmsg").textContent = (j && j.error) || "Ошибка"; code = ""; }
+    }).catch(function(){ $("lmsg").textContent = "Нет связи с функцией"; });
+  }
+  $("enter").onclick = enter;
+  $("code").onkeydown = function(e){ if (e.key === "Enter") enter(); };
+  $("send").onclick = function(){
+    var t = $("idea").value.trim(); if (!t) return;
+    $("send").disabled = true; $("smsg").textContent = "Отправляю…";
+    call("POST", { text: t }).then(function(j){
+      $("smsg").textContent = j.ok ? "Принято, задача №" + j.n + ". Сотрудники приступили." : (j.error || "Ошибка");
+      if (j.ok) { $("idea").value = ""; load(); }
+    }).catch(function(){ $("smsg").textContent = "Нет связи"; }).then(function(){ $("send").disabled = false; });
+  };
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("mic").hidden = true; }
+  else {
+    var rec = new SR(), on = false; rec.lang = "ru-RU"; rec.interimResults = false; rec.continuous = true;
+    rec.onresult = function(e){ for (var i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) $("idea").value += (($("idea").value ? " " : "") + e.results[i][0].transcript.trim()); };
+    rec.onend = function(){ on = false; $("mic").textContent = "🎤"; };
+    $("mic").onclick = function(){ if (on) { rec.stop(); } else { try { rec.start(); on = true; $("mic").textContent = "⏹"; } catch(e) {} } };
+  }
+  if (code && API) { load().then(function(j){ if (j && j.ok) show(); }).catch(function(){}); }
+})();
+</script>
+</body>
+</html>
