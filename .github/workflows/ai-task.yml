@@ -13,38 +13,41 @@ jobs:
     if: github.event.label.name == 'ai-task'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      ISSUE_BODY: ${{ github.event.issue.body }}
+      ISSUE_NUM: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with:
+          node-version: 20
 
       - name: AI agent
         env:
           PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
         run: node tools/agent.js
 
       - name: Tests
         id: tests
-        run: node tests/run.js 2>&1 | tee test.log; exit ${PIPESTATUS[0]}
+        run: node tests/run.js > /tmp/test.log 2>&1
         continue-on-error: true
 
       - name: Open PR if green
         if: steps.tests.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BR="ai/issue-${{ github.event.issue.number }}"
-          git config user.name "ai-bot"; git config user.email "ai-bot@users.noreply.github.com"
+          BR="ai/issue-$ISSUE_NUM"
+          git config user.name "ai-bot"
+          git config user.email "ai-bot@users.noreply.github.com"
           git checkout -b "$BR"
-          git add -A && git commit -m "AI: ${{ github.event.issue.title }}"
+          git add -A
+          git commit -m "AI: $ISSUE_TITLE"
           git push origin "$BR"
-          gh pr create --title "AI: ${{ github.event.issue.title }}" \
-            --body "Closes #${{ github.event.issue.number }}" --base main
+          gh pr create --title "AI: $ISSUE_TITLE" --body "Closes #$ISSUE_NUM" --base main
 
       - name: Report failure
         if: steps.tests.outcome != 'success'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh issue comment ${{ github.event.issue.number }} --body "Тесты красные:\n$(tail -30 test.log)"
+        run: |
+          { echo "Тесты красные, правка не отправлена. Конец лога:"; echo '```'; tail -30 /tmp/test.log; echo '```'; } > /tmp/comment.md
+          gh issue comment "$ISSUE_NUM" --body-file /tmp/comment.md
