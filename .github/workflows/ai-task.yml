@@ -1,0 +1,50 @@
+name: AI task
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  run:
+    if: github.event.label.name == 'ai-task'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: AI agent
+        env:
+          PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node tools/agent.js
+
+      - name: Tests
+        id: tests
+        run: node tests/run.js 2>&1 | tee test.log; exit ${PIPESTATUS[0]}
+        continue-on-error: true
+
+      - name: Open PR if green
+        if: steps.tests.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BR="ai/issue-${{ github.event.issue.number }}"
+          git config user.name "ai-bot"; git config user.email "ai-bot@users.noreply.github.com"
+          git checkout -b "$BR"
+          git add -A && git commit -m "AI: ${{ github.event.issue.title }}"
+          git push origin "$BR"
+          gh pr create --title "AI: ${{ github.event.issue.title }}" \
+            --body "Closes #${{ github.event.issue.number }}" --base main
+
+      - name: Report failure
+        if: steps.tests.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh issue comment ${{ github.event.issue.number }} --body "Тесты красные:\n$(tail -30 test.log)"
