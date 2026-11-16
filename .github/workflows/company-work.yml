@@ -1,0 +1,53 @@
+name: Цех разработки
+on:
+  issues:
+    types: [labeled]
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: company-work
+  cancel-in-progress: false
+jobs:
+  work:
+    if: github.event.label.name == 'в работу'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Установка Aider
+        run: pip install aider-chat
+      - name: Разработчик пишет код
+        env:
+          TASK_TITLE: ${{ github.event.issue.title }}
+          TASK_BODY: ${{ github.event.issue.body }}
+          OPENAI_API_KEY: ${{ secrets.PROXYAPI_KEY }}
+          OPENAI_API_BASE: https://openai.api.proxyapi.ru/v1
+          AIDER_MODEL: openai/gpt-4.1-mini
+        run: |
+          git config user.name "company-bot"
+          git config user.email "company-bot@users.noreply.github.com"
+          printf '%s\n\n%s\n' "$TASK_TITLE" "$TASK_BODY" > /tmp/task.txt
+          aider --model "$AIDER_MODEL" --yes-always --no-auto-commits \
+            --message-file /tmp/task.txt
+          git add -A && git commit -m "Цех: $TASK_TITLE" || echo "изменений нет"
+      - name: Приёмка (автотесты)
+        run: node tests/run.js
+      - name: Влить в main
+        run: git push origin HEAD:main
+      - name: Отчёт в Issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS: ${{ job.status }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} --body "Результат цеха: $STATUS. Подробности: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          [ "$STATUS" = "success" ] && gh issue close ${{ github.event.issue.number }}
