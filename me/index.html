@@ -6,152 +6,213 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#07112a">
-<title>Начерт — пульт CEO</title>
+<title>Начерт — пульт</title>
 <link rel="icon" href="../icon-192.png">
 <style>
 @font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Geologica';font-weight:400 700;font-display:swap;src:url(../fonts/geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
 @font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../fonts/golos-text-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Golos Text';font-weight:400 700;font-display:swap;src:url(../fonts/golos-text-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+/* Токены — как у кабинета lk/ («Триколор»), по умолчанию тёмный */
 :root{
-  --paper:#07112a; --surf:#0e1c3a; --surf2:#14264a; --surf3:#1b3260;
-  --ink:#e8eef8; --ink2:#bccbe0; --mut:#8aa0c0; --line:#22355a;
-  --acc:#2563eb; --blue:#7fb0ff; --blue-s:#132a55; --red:#ff6b6b; --red-b:#e0252c; --green:#5fd191; --run:#f0b43c;
-  --shadow:0 10px 30px -14px rgba(0,0,0,.7);
-  --sans:'Golos Text',system-ui,-apple-system,sans-serif;
-  --disp:'Geologica','Golos Text',system-ui,sans-serif;
-  --barh:56px;
+  --paper:#07112a; --surf:#0e1c3a; --surf2:#14264a; --surf3:#1b3260;
+  --ink:#e8eef8; --ink2:#bccbe0; --mut:#8aa0c0; --line:#22355a;
+  --acc:#2563eb; --blue:#7fb0ff; --blue-s:#132a55; --red:#ff6b6b; --red-b:#e0252c; --green:#5fd191;
+  --shadow:0 10px 30px -14px rgba(0,0,0,.7);
+  --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --disp:'Geologica','Golos Text',system-ui,sans-serif;
+  --barh:56px;
 }
 @media (prefers-color-scheme:light){
-  :root{ --paper:#eef3fc; --surf:#fff; --surf2:#f1f5fd; --surf3:#e3ecfb; --ink:#0a1733; --ink2:#2c3f5f; --mut:#56688a; --line:#d5e0f2;
-    --acc:#1a5ae0; --blue:#1a5ae0; --blue-s:#e9f0ff; --red:#d9222a; --green:#13804e; --shadow:0 10px 30px -16px rgba(10,23,51,.35); }
+  :root{ --paper:#eef3fc; --surf:#fff; --surf2:#f1f5fd; --surf3:#e3ecfb; --ink:#0a1733; --ink2:#2c3f5f; --mut:#56688a; --line:#d5e0f2;
+    --acc:#1a5ae0; --blue:#1a5ae0; --blue-s:#e9f0ff; --red:#d9222a; --green:#13804e; --shadow:0 10px 30px -16px rgba(10,23,51,.35); }
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font:15px/1.45 var(--sans);-webkit-text-size-adjust:100%}
-button,input,textarea{font:inherit;color:inherit}
+button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
 
+/* ── вход ── */
 #lock{min-height:100%;display:grid;place-items:center;padding:24px 16px}
 .lockc{width:min(380px,100%);background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:28px 22px;box-shadow:var(--shadow)}
 .lockc h1{font:700 22px/1.2 var(--disp);margin:0 0 6px}
 .lockc p{margin:0 0 18px;color:var(--mut);font-size:14px}
 .lockc input{width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:0 14px}
 .lockc .row{display:flex;gap:8px;margin-top:12px}
-.btn{height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--surf2);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
+.btn{height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--surf2);font-weight:600;white-space:nowrap}
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;flex:1}
 .btn.sm{height:34px;padding:0 12px;font-size:13px;border-radius:10px}
-.btn.alt{background:var(--surf3);border-color:var(--line)}
+a.btn{display:inline-flex;align-items:center;text-decoration:none}
+.btn.on{background:var(--blue-s);border-color:var(--blue);color:var(--blue)}
 .err{color:var(--red);font-size:14px;margin-top:12px;min-height:1.4em}
 
+/* ── пульт ── */
 #hub{height:100%;display:flex;flex-direction:column}
 .bar{height:var(--barh);flex:none;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--surf)}
 .brand{font:700 16px var(--disp);white-space:nowrap}
 .brand i{font-style:normal;color:var(--red)}
 .tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
 .tab{height:38px;padding:0 14px;border-radius:10px;border:0;background:none;color:var(--ink2);font-weight:600;white-space:nowrap}
 .tab.on{background:var(--blue-s);color:var(--blue)}
+.tab kbd{font:500 11px var(--sans);color:var(--mut);margin-left:6px}
 .tools{display:flex;gap:6px;flex:none}
 .stage{flex:1;min-height:0;display:flex;position:relative}
+#side{width:300px;flex:none;border-right:1px solid var(--line);background:var(--surf);overflow:auto;padding:14px 12px}
+#side h2{font:700 14px var(--disp);margin:0 0 10px;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em}
+.stat{font-size:13px;color:var(--mut);margin:0 0 14px;display:grid;gap:4px}
+.stat b{color:var(--ink)}
+.sheet{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px;background:var(--surf2)}
+.sheet b{display:block;font-size:14px;overflow-wrap:anywhere}
+.sheet small{color:var(--mut);font-size:12px}
+.sheet .row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.empty{color:var(--mut);font-size:14px}
+.panes{flex:1;min-width:0;display:grid;grid-template-columns:1fr;position:relative}
+.pane{display:none;border:0;width:100%;height:100%;background:var(--paper);grid-row:1;grid-column:1}
+.pane.on{display:block}
+.panes.split{grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+.panes.split .pane.prev{display:block;grid-column:2}
+.stage.full #side{display:none}
+.cue{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);pointer-events:none;font-size:14px}
 
-/* Секция Штаба CEO */
-.pane.ceo-pane{overflow:auto;padding:20px;display:none;width:100%;height:100%}
-.pane.ceo-pane.on{display:block}
-.ceo-container{max-width:800px;margin:0 auto;display:grid;gap:20px}
-.card{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
-.card h2{font:700 18px var(--disp);margin:0 0 12px;color:var(--ink)}
-textarea.ceo-input{width:100%;min-height:100px;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:12px;resize:vertical;color:var(--ink)}
-.row{display:flex;gap:10px;margin-top:10px}
-.msg{color:var(--mut);font-size:14px;margin-top:8px;min-height:20px}
-.it{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}
-.it:first-child{border-top:0}
-.it a{color:var(--ink);text-decoration:none;font-weight:500;word-break:break-word}
-.it a:hover{color:var(--blue)}
-.st{white-space:nowrap;font-size:13px;font-weight:700;padding:4px 8px;border-radius:6px;background:var(--surf2)}
-.st.run{color:var(--run)}.st.ok{color:var(--green)}
+/* курсор руки */
+#cursor{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;pointer-events:none;z-index:50;
+  border:3px solid var(--red-b);box-shadow:0 0 0 2px rgba(255,255,255,.8),0 0 18px rgba(224,37,44,.6);transition:width .12s,height .12s,margin .12s;
+  background:conic-gradient(rgba(224,37,44,.45) calc(var(--p,0)*360deg),transparent 0)}
+#cursor.pin{width:22px;height:22px;margin:-11px 0 0 -11px;background:rgba(224,37,44,.55)}
+#camv{position:fixed;right:12px;bottom:12px;width:160px;border-radius:12px;transform:scaleX(-1);border:1px solid var(--line);z-index:40;opacity:.85;box-shadow:var(--shadow)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--surf3);color:var(--ink);padding:10px 16px;border-radius:12px;box-shadow:var(--shadow);z-index:60;font-size:14px;max-width:calc(100% - 32px)}
+
+/* ── вопросы учеников ── */
+.tbadge{display:inline-block;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:99px;background:var(--red-b);color:#fff;font:800 11px/18px var(--sans);text-align:center}
+.pane.qa{overflow:hidden}
+.pane.qa.on{display:grid;grid-template-columns:340px 1fr}
+.qa-list{border-right:1px solid var(--line);overflow:auto;background:var(--surf);padding:12px 10px}
+.qa-f{display:flex;gap:6px;margin:0 0 10px}
+.qa-f button{flex:1;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surf2);font-weight:700;font-size:13px}
+.qa-f button.on{background:var(--blue-s);border-color:var(--blue);color:var(--blue)}
+.qa-it{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--surf2);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.qa-it.on{border-color:var(--blue);background:var(--blue-s)}
+.qa-it .h{display:flex;gap:8px;align-items:baseline}.qa-it .h b{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qa-it time{color:var(--mut);font-size:12px;white-space:nowrap}
+.qa-it p{margin:3px 0 0;color:var(--ink2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qa-it small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+.qa-it.wait .h::before{content:'';flex:none;width:9px;height:9px;border-radius:50%;background:var(--red-b);align-self:center}
+.qa-th{display:flex;flex-direction:column;min-width:0;min-height:0}
+.qa-none{margin:auto;color:var(--mut)}
+.qa-hd{flex:none;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surf)}
+.qa-hd h2{flex:1;min-width:200px;margin:0;font:700 17px/1.25 var(--disp);overflow-wrap:anywhere}
+.qa-hd .who{width:100%;color:var(--mut);font-size:13px}.qa-hd .who b{color:var(--ink)}
+.qa-hd a{color:var(--blue)}
+.qa-back{display:none}
+.qa-msgs{flex:1;min-height:0;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.qa-m{max-width:min(620px,86%);display:flex;flex-direction:column;gap:3px}
+.qa-m.a{align-self:flex-end;align-items:flex-end}
+.qa-m .bb{padding:10px 14px;border-radius:18px;background:var(--surf2);border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+.qa-m.a .bb{background:var(--acc);border-color:var(--acc);color:#fff}
+.qa-m time{font-size:11.5px;color:var(--mut);padding:0 6px}
+.qa-m img{display:block;max-width:min(340px,70vw);max-height:320px;border-radius:14px;border:1px solid var(--line);cursor:zoom-in;background:#fff}
+.qa-cp{flex:none;border-top:1px solid var(--line);background:var(--surf);padding:10px 12px;display:grid;gap:8px}
+.qa-cp textarea{width:100%;min-height:64px;max-height:40vh;resize:vertical;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:10px 12px;font:15px/1.45 var(--sans);color:var(--ink)}
+.qa-cp .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qa-cp .sp{flex:1}
+.qa-cp label.btn{display:inline-flex;align-items:center;gap:6px}.qa-cp input[type=file]{display:none}
+.qa-pv img{max-height:80px;border-radius:10px;border:1px solid var(--line)}
+.qa-lb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:16px;cursor:zoom-out}.qa-lb img{max-width:100%;max-height:100%;border-radius:8px;background:#fff}
+.pane.rep{overflow:auto;padding:20px 16px}
+.rep-list{max-width:760px;margin:0 auto;display:grid;gap:12px}
+.rep-list h2{margin:0 0 4px;font:700 20px/1.25 var(--disp)}
+.rep-it{display:block;border:1px solid var(--line);background:var(--surf2);border-radius:14px;padding:14px 16px;color:var(--ink);text-decoration:none}
+.rep-it:hover{border-color:var(--blue)}
+.rep-it b{display:block;font-size:16px}.rep-it time{color:var(--mut);font-size:12.5px}.rep-it p{margin:6px 0 0;color:var(--ink2);font-size:14px;line-height:1.45}
+.rep-note{color:var(--mut);font-size:13px;margin:4px 0 0}
+.qa-gate{margin:auto;text-align:center;color:var(--mut);padding:24px;max-width:420px}.qa-gate b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+@media (max-width:900px){
+  .pane.qa.on{grid-template-columns:1fr}
+  .pane.qa.open .qa-list{display:none}
+  .pane.qa:not(.open) .qa-th{display:none}
+  .qa-back{display:inline-flex}
+}
+
+@media (max-width:900px){
+  .tab kbd,#splitBtn{display:none}
+  #side{position:absolute;inset:0 auto 0 0;z-index:20;width:min(320px,88%);box-shadow:var(--shadow)}
+  .panes.split{grid-template-columns:1fr}
+  .panes.split .pane.prev{display:none}
+}
+@media (max-width:560px){
+  .bar{height:auto;flex-wrap:wrap;gap:6px;padding:8px}
+  .brand{flex:1}
+  .tabs{order:3;flex-basis:100%}
+  .tab{flex:1;padding:0 6px}
+  .tools .btn.sm{padding:0 9px}
+}
 </style>
 </head>
 <body>
 <section id="lock">
-  <form class="lockc" id="lockForm" autocomplete="off">
-    <h1>Пульт Начерта</h1>
-    <p>Личная страница владельца. Вход по коду OWNER_CODE.</p>
-    <input id="code" type="password" autocomplete="current-password" placeholder="Код владельца" required>
-    <div class="row"><button class="btn pri" id="enter" type="submit">Войти</button></div>
-    <div class="err" id="lockErr" role="alert"></div>
-  </form>
+  <form class="lockc" id="lockForm" autocomplete="off">
+    <h1>Пульт Начерта</h1>
+    <p>Личная страница владельца: сканер, кабинет, 3D с жестами и сайт в одном окне. Код проверяет сервер.</p>
+    <label for="code" class="empty">Код владельца</label>
+    <input id="code" type="password" autocomplete="current-password" required>
+    <div class="row"><button class="btn pri" id="enter" type="submit">Войти</button></div>
+    <div class="err" id="lockErr" role="alert"></div>
+  </form>
 </section>
 
 <div id="hub" hidden>
-  <header class="bar">
-    <div class="brand">Начерт<i>·</i><span>пульт</span></div>
-    <nav class="tabs" role="tablist" aria-label="Разделы">
-      <button class="tab on" data-go="ceo">Штаб CEO</button>
-      <button class="tab" data-go="scan">Скан</button>
-      <button class="tab" data-go="lk">Кабинет</button>
-      <button class="tab" data-go="site">Сайт</button>
-    </nav>
-    <div class="tools">
-      <button class="btn sm" id="lockBtn">Выйти</button>
-    </div>
-  </header>
-
-  <main class="stage">
-    <div class="panes" id="panes" style="width:100%">
-      <!-- Вкладка Штаб CEO -->
-      <section class="pane ceo-pane on" data-pane="ceo">
-        <div class="ceo-container">
-          <div class="card">
-            <h2>🧠 Новая идея для компании</h2>
-            <textarea id="ceoIdea" class="ceo-input" placeholder="Опишите задачу простыми словами..."></textarea>
-            <div class="row">
-              <button class="btn pri" id="ceoSend">Отправить в Цех</button>
-              <button class="btn alt" id="ceoMic" title="Диктовка">🎤</button>
-            </div>
-            <div class="msg" id="ceoMsg"></div>
-          </div>
-
-          <div class="card">
-            <h2>📋 Текущие задачи цеха</h2>
-            <div id="ceoList"><div class="msg">Загрузка задач…</div></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Остальные фреймы -->
-      <iframe class="pane" data-pane="lk" title="Кабинет" allow="camera; fullscreen"></iframe>
-      <iframe class="pane" data-pane="site" title="Сайт" allow="fullscreen"></iframe>
-    </div>
-  </main>
+  <header class="bar">
+    <div class="brand">Начерт<i>·</i><span>пульт</span></div>
+    <nav class="tabs" role="tablist" aria-label="Разделы">
+      <button class="tab" role="tab" data-go="scan">Скан<kbd>Alt 1</kbd></button>
+      <button class="tab" role="tab" data-go="lk">Кабинет<kbd>Alt 2</kbd></button>
+      <button class="tab" role="tab" data-go="holo">3D · жесты<kbd>Alt 3</kbd></button>
+      <button class="tab" role="tab" data-go="site">Сайт<kbd>Alt 4</kbd></button>
+      <button class="tab" role="tab" data-go="ask">Вопросы<b class="tbadge" id="askBadge" hidden></b><kbd>Alt 5</kbd></button>
+      <button class="tab" role="tab" data-go="reports">Отчёты<kbd>Alt 6</kbd></button>
+    </nav>
+    <div class="tools">
+      <a class="btn sm" id="holoTab" href="../hands/" target="_blank" rel="noopener" title="Голограмма с жестами — отдельной вкладкой браузера, на весь экран">3D ↗</a>
+      <button class="btn sm" id="sideBtn" aria-pressed="false" title="Мои чертежи (Alt D)">Чертежи</button>
+      <button class="btn sm" id="splitBtn" aria-pressed="false" title="Два раздела рядом (Alt S)">Рядом</button>
+      <button class="btn sm" id="gestBtn" aria-pressed="false" title="Управлять всем пультом рукой (Alt G)">✋ Руки</button>
+      <button class="btn sm" id="lockBtn" title="Забыть код на этом устройстве">Выйти</button>
+    </div>
+  </header>
+  <main class="stage">
+    <aside id="side" hidden aria-label="Мои чертежи">
+      <h2>Сканер</h2>
+      <div class="stat" id="stat"></div>
+      <h2>Пользователи</h2>
+      <div class="stat" id="users"></div>
+      <h2>Мои чертежи</h2>
+      <div id="sheets"></div>
+    </aside>
+    <div class="panes" id="panes">
+      <iframe class="pane" data-pane="lk" title="Кабинет и сканер" allow="camera; fullscreen"></iframe>
+      <iframe class="pane" data-pane="holo" title="3D-голограмма под управлением рук" allow="camera; fullscreen"></iframe>
+      <iframe class="pane" data-pane="site" title="Сайт Начерта" allow="fullscreen"></iframe>
+      <section class="pane qa" data-pane="ask" aria-label="Вопросы учеников">
+        <div class="qa-list" id="qaList">
+          <div class="qa-f" role="tablist"><button class="on" data-qf="wait">Ждут ответа</button><button data-qf="all">Все</button></div>
+          <div id="qaItems"></div>
+        </div>
+        <div class="qa-th" id="qaTh"><p class="qa-none">Выберите вопрос слева</p></div>
+      </section>
+      <section class="pane rep" data-pane="reports" aria-label="Отчёты владельцу"><div class="rep-list" id="repList"></div></section>
+    </div>
+  </main>
 </div>
 
-<script src="config.js"></script>
-<script>
-(function(){
-  var API = window.CEO_API || "", $ = function(i){ return document.getElementById(i); }, code = "", timer;
-  try { code = sessionStorage.getItem("ceo") || ""; } catch(e) {}
+<div id="cursor" hidden></div>
+<video id="camv" hidden playsinline muted></video>
+<div id="toast" hidden role="status"></div>
 
-  function call(method, body){
-    return fetch(API, {
-      method: method,
-      headers: { "content-type": "application/json", "x-ceo-code": encodeURIComponent(code) },
-      body: body ? JSON.stringify(body) : undefined
-    }).then(function(r){ return r.json().then(function(j){ j.status = r.status; return j; }); });
-  }
-
-  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]; }); }
-
-  function load(){
-    if (!API) { $("ceoList").innerHTML = '<div class="msg">Не задан API эндпоинт (отсутствует config.js)</div>'; return Promise.resolve(); }
-    return call("GET").then(function(j){
-      if (!j || !j.ok) { return j; }
-      var h = (j.items || []).map(function(i){
-        return '<div class="it"><a href="' + esc(i.url) + '" target="_blank" rel="noopener">#' + i.n + ' ' + esc(i.t) + '</a>' +
-          '<span class="st ' + (i.done ? "ok" : "run") + '">' + (i.done ? "✔ в проде" : "⏳ цех работает") + '</span></div>';
-      }).join("");
-      $("ceoList").innerHTML = h || '<div class="msg">Задач пока нет</div>';
-      return j;
-    });
-  }
-
-  function showHub(){
-    $("lock").
+<script src="../lk/scan/config.js"></script>
+<script src="../lk/config.js"></script>
+<script type="module" src="hub.js"></script>
+</body>
+</html>
