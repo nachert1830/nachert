@@ -13,6 +13,8 @@ function club(opt){ opt=opt||{};
   /* поддельный Яндекс ID: код → профиль; записывает, что у него спрашивали */
   const ya={codes:{},calls:[],down:false,eyes:null};
   async function yaFetch(url,o){ o=o||{}; ya.calls.push({url,body:o.body,auth:o.headers&&(o.headers.Authorization||o.headers.authorization),headers:o.headers});
+    /* прочая сеть (Штаб: ProxyAPI, GitHub) — ответ задаёт тест: opt.net(url, o) → {status, json} или null */
+    if(opt.net){ const a=await opt.net(url,o); if(a) return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
     /* поддельная модель зрения: ответ задаёт тест (ya.eyes(body) → {status, json}) */
     if(opt.eyes&&opt.eyes.best&&url===opt.eyes.best.url){ const a=ya.best?ya.best(JSON.parse(o.body)):{status:500,json:{error:{message:'нет'}}}; ya.calls.push({url,headers:o.headers}); return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }
     if(opt.eyes&&url===opt.eyes.url){ const a=ya.eyes?ya.eyes(JSON.parse(o.body)):{status:200,json:{choices:[{message:{content:'{"drawings":[]}'}}]}}; return {ok:a.status<300,status:a.status,text:async()=>JSON.stringify(a.json),json:async()=>a.json}; }

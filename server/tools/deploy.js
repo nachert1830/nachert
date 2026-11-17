@@ -19,7 +19,7 @@ const ROOT=path.join(__dirname,'..','..');
 const arg=k=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.slice(a.indexOf('=')+1):true):null; };
 const YC=process.env.YC_BIN||'yc';
 const NAMES={fn:'club-fn',gw:'club-gw',db:'club',secret:'club-secrets',api:'nachert-club-api',remind:'nachert-club-remind',gateway:'nachert-club',trigger:'club-remind'};
-const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent','activity','ask','askimg'];
+const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent','activity','ask','askimg','hqnodes','hqdumps'];
 
 const say=s=>console.log(s), step=s=>console.log('\n▶ '+s);
 /* сеть до облака бывает нестабильной (VPN, Wi-Fi общежития): при сетевой ошибке — до 3 попыток с паузой */
@@ -240,6 +240,8 @@ async function main(){
   /* лучшая модель зрения через ProxyAPI (только с согласием студента; запасная — Qwen в Yandex), server/lib/eyes.js;
      ключ OpenRouter кабинету больше не нужен — убираем из сейфа */
   if(E('PROXYAPI_KEY')) payload.PROXYAPI_KEY=E('PROXYAPI_KEY');
+  /* Штаб: токен GitHub для Цеха и картинок (Issues + contents), lib/hq */
+  if(E('GH_HQ_TOKEN')) payload.GH_HQ_TOKEN=E('GH_HQ_TOKEN');
   delete payload.OPENROUTER_API_KEY;
   if(yaId&&!payload.YANDEX_CLIENT_SECRET) need('YANDEX_CLIENT_SECRET','Добавьте секрет YANDEX_CLIENT_SECRET (Client secret приложения на oauth.yandex.ru) в GitHub.');
   const changed=JSON.stringify(payload)!==before||JSON.stringify(payload)!==payloadBefore;
@@ -283,7 +285,7 @@ async function main(){
   say('  страница кабинета: '+front+' ('+probe.text+')');
   if(!probe.ok) say('::warning::У nachert1830.ru не работает HTTPS (нет сертификата для домена). GitHub → Settings → Pages → Custom domain → Enforce HTTPS (DEPLOY.md). Пока ссылки ведут на http://');
   const envs={ORIGIN:origin,TG_BOT_NAME:me.username,ADMIN_TG_IDS:owner,ADMIN_YA_LOGINS:yaOwner,YANDEX_CLIENT_ID:yaId,FRONT_ORIGINS:SITE_ORIGIN+' http://nachert1830.ru',FRONT_URL:front,
-    YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',
+    YDB_DOCAPI_ENDPOINT:endpoint,MAIN_URL:'https://nachert1830.ru',GH_REPO:E('GITHUB_REPOSITORY')||'nachert1830/nachert',
     /* вход по почте: адрес отправителя на домене, подтверждённом в Postbox (DEPLOY.md, «Вход по почте») */
     MAIL_FROM:mailFrom,
     /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
@@ -291,7 +293,7 @@ async function main(){
     /* на время тестов: лучшая (зарубежная) модель — только владельцу и без отметки «лист мой»; для всех — vars EYES_BEST_FOR=all, EYES_BEST_DEFAULT=0 */
     EYES_BEST_FOR:E('EYES_BEST_FOR')||'all',EYES_BEST_DEFAULT:E('EYES_BEST_DEFAULT')||'1'};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
-  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY','PROXYAPI_KEY'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
+  const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY','PROXYAPI_KEY','GH_HQ_TOKEN'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){
     yc(['serverless','function','version','create','--function-id',fn[k].id,'--runtime','nodejs22','--entrypoint',entry,'--memory','256m','--execution-timeout',timeout,
       '--service-account-id',sa.fn.id,'--source-path',zf,'--environment',env].concat(secrets)); say('  '+NAMES[k]+': новая версия'); }

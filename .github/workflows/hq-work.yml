@@ -1,0 +1,108 @@
+name: Цех — исполнители Штаба
+# Задача кода из Штаба (lk/hq/): Issue с меткой «цех» и «исп:<модель>» (server/lib/hq). Прежние пути — метки «в работу» (страница /ceo/)
+# и «ai-task» — идут сюда же с исполнителем по умолчанию.
+# Порядок: исполнитель правит код в ветке hq/issue-N → быстрые тесты → красные — следующая по силе модель (не больше 3 попыток)
+# → зелёные — PR → Ревизор сверяет дифф с ТЗ → метка «автовыкатка» и полный прогон тестов зелёный — слияние в main.
+# В main без зелёных тестов код не попадает никогда. Отчёт и стоимость — комментарием в Issue (<!-- hq:{…} --> читает Штаб).
+on:
+  issues:
+    types: [labeled]
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+concurrency:
+  group: hq-work
+  cancel-in-progress: false
+
+jobs:
+  work:
+    if: github.event.label.name == 'цех' || github.event.label.name == 'в работу' || github.event.label.name == 'ai-task'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      N: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+      PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Задача и исполнитель
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          test -n "$PROXYAPI_KEY" || { echo "::error::Нет секрета PROXYAPI_KEY"; exit 1; }
+          printf '# %s\n\n%s\n' "$TITLE" "$BODY" > /tmp/hq-task.md
+          M=$(echo "$LABELS" | tr ',' '\n' | sed -n 's/^исп://p' | head -1)
+          echo "MODEL=${M:-deepseek}" >> "$GITHUB_ENV"
+          case ",$LABELS," in *,автовыкатка,*) echo "AUTO=1" >> "$GITHUB_ENV";; *) echo "AUTO=0" >> "$GITHUB_ENV";; esac
+          gh issue edit "$N" --remove-label "готово" --remove-label "провал" --remove-label "на-проверку" >/dev/null 2>&1 || true
+          echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
+      - name: Браузер для тестов
+        run: |
+          npm install --no-save --no-package-lock playwright@1.47.2 acorn@8
+          npx playwright install --with-deps chromium
+      - name: Исполнители (с эскалацией)
+        id: work
+        run: |
+          set +e
+          git config user.name "hq-bot"; git config user.email "hq-bot@users.noreply.github.com"
+          m="$MODEL"; tries=0; ok=0; : > /tmp/hq-log.md
+          while [ -n "$m" ] && [ $tries -lt 3 ]; do
+            tries=$((tries+1)); echo "::group::Попытка $tries — $m"
+            git checkout -q -B "hq/issue-$N" origin/main; git clean -fdq -e node_modules
+            if node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/agent.log 2>&1; then
+              cat /tmp/agent.log
+              if node tests/run.js --quick > /tmp/test.log 2>&1; then ok=1; echo "::endgroup::"; break; fi
+              echo "- **$m**: правка есть, быстрые тесты красные" >> /tmp/hq-log.md
+              tail -40 /tmp/test.log
+            else
+              cat /tmp/agent.log; echo "- **$m**: $(tail -1 /tmp/agent.log | cut -c1-200)" >> /tmp/hq-log.md
+            fi
+            echo "::endgroup::"
+            m=$(node -e "console.log(require('./server/lib/hq/roster.js').ESCALATE[process.argv[1]]||'')" "$m")
+          done
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"; echo "model=$m" >> "$GITHUB_OUTPUT"
+      - name: PR, ревизор, выкатка
+        if: steps.work.outputs.ok == '1'
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          M: ${{ steps.work.outputs.model }}
+        run: |
+          set +e
+          git add -A
+          git commit -q -m "Цех: $TITLE" -m "Исполнитель: $M. Задача #$N."
+          git push -q -f origin "hq/issue-$N"
+          git diff origin/main...HEAD > /tmp/hq.diff
+          PR=$(gh pr list --head "hq/issue-$N" --json url -q '.[0].url')
+          [ -n "$PR" ] || PR=$(gh pr create --head "hq/issue-$N" --base main --title "Цех: $TITLE" --body "Задача #$N. Исполнитель: **$M**. $(cat /tmp/hq-done.txt 2>/dev/null)")
+          echo "PR=$PR" >> "$GITHUB_ENV"
+          REV=$(node tools/hq-review.js --model sonnet --task /tmp/hq-task.md --diff /tmp/hq.diff); RC=$?
+          NOTES=$(echo "$REV" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const v=JSON.parse(s);console.log((v.notes||[]).map(x=>'- '+x).join('\n'))}catch(e){console.log('- ревизор не ответил')}})")
+          STATUS="на-проверку"; MSG="🔍 **Готово, ждёт твоего решения.** PR: $PR"
+          if [ "$RC" = 0 ] && [ "$AUTO" = 1 ]; then
+            if node tests/run.js > /tmp/full.log 2>&1; then
+              gh pr merge "$PR" --squash --delete-branch && STATUS="готово" && MSG="✅ **Выкачено на сайт.** PR: $PR"
+            else MSG="⚠️ Быстрые тесты зелёные, полный прогон — красный, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
+          fi
+          RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
+          printf '%s\n\nИсполнитель: **%s**. Стоимость: ~%s ₽.\n\nРевизор:\n%s\n\nПопытки:\n%s\n<!-- hq:{"rub":%s,"model":"%s","pr":"%s"} -->\n' \
+            "$MSG" "$M" "$RUB" "$NOTES" "$(cat /tmp/hq-log.md)" "$RUB" "$M" "$PR" > /tmp/c.md
+          gh issue comment "$N" --body-file /tmp/c.md
+          gh issue edit "$N" --add-label "$STATUS" >/dev/null 2>&1 || { gh label create "$STATUS" >/dev/null 2>&1; gh issue edit "$N" --add-label "$STATUS"; }
+          [ "$STATUS" = "готово" ] && gh issue close "$N" || true
+      - name: Не получилось
+        if: steps.work.outputs.ok != '1'
+        run: |
+          RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)" 2>/dev/null || echo 0)
+          { echo "❌ **Не получилось** — ни один исполнитель не прошёл тесты. В main ничего не попало."; echo; echo "Попытки:"; cat /tmp/hq-log.md; echo;
+            echo "Конец лога тестов:"; echo '```'; tail -25 /tmp/test.log 2>/dev/null; echo '```'; echo "Стоимость: ~$RUB ₽. Уточни ТЗ в Штабе или смени исполнителя и перезапусти.";
+            echo "<!-- hq:{\"rub\":$RUB,\"model\":\"$MODEL\"} -->"; } > /tmp/c.md
+          gh issue comment "$N" --body-file /tmp/c.md
+          gh issue edit "$N" --add-label "провал" >/dev/null 2>&1 || { gh label create "провал" >/dev/null 2>&1; gh issue edit "$N" --add-label "провал"; }
