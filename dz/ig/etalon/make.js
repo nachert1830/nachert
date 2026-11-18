@@ -54,7 +54,18 @@ function linesOf([ID,N]){
       const pl=sf.find(o=>o.k==='px'||o.k==='py'||o.k==='pz'), sp=sf.find(o=>o.k==='sph');
       if(e.curve&&pl&&sp){ const d=pl.c; how.rad={r:r1(Math.sqrt(Math.max(0,sp.r*sp.r-d*d))),R:sp.r,d,trace:pl.n,src:pl.k==='py'?'T':'F'}; } }
     lines.push({id:'l'+(++id),v,vis:e.h?0:1,t:e.curve?'a':'s',p:(e.curve?[K[0],K[K.length>>1],K[K.length-1]]:ends).map(q=>q.map(r1)),fe,s:sf.map(o=>o.n),step,how}); }); });
-  return {v:1,dz:ID,n:N,title:m.title||'',box:b,views:{F:'главный вид',T:'вид сверху',L:'вид слева'},
+  /* разрезы: контур фигуры сечения — линии, лежащие в секущей плоскости (фронтальной y = 0, профильной x = 0, горизонтальной z = hz) */
+  const sp=IGUI.igSpec(m), SEC=[];
+  if(sp.F!=='view') SEC.push(['Fs',IG3.drawing(m,sp.fk,W,0,sp.xb),1,0,'фронтальная секущая плоскость y = 0','Фронтальный разрез']);
+  if(sp.L!=='view') SEC.push(['Ls',IG3.drawing(m,sp.lk,W,0,sp.yb),0,0,'профильная секущая плоскость x = 0','Профильный разрез']);
+  if(m.hz) SEC.push(['Ts',IG3.drawing(m,'topcut',W,m.hz.z),2,m.hz.z,'горизонтальная секущая плоскость z = '+fm(m.hz.z)+' ('+(m.hz.L||'А')+'–'+(m.hz.L||'А')+')','Разрез '+(m.hz.L||'А')+'–'+(m.hz.L||'А')]);
+  SEC.forEach(([v,Dv,ax,c,pn,stp])=>{ IG4S.elements(Dv.lines.filter(q=>q.c)).forEach(e=>{ const K=e.key; if(K.length<2) return;   /* c — кусок контура фигуры сечения */
+    const KQ=e.curve?K:K.concat([[0,1,2].map(j=>(K[0][j]+K[K.length-1][j])/2)]);
+    let fe=0; for(let i=FT.length-1;i>=0;i--) if(KQ.every(q=>JF[i](q)<0.35)){ fe=i; break; }
+    const sf=[]; FS.forEach(L=>L.forEach(S0=>{ if(KQ.every(q=>S0.d(q)<0.4)&&!sf.some(o=>o.n===S0.n)) sf.push(S0); }));
+    lines.push({id:'l'+(++id),v,vis:1,t:e.curve?'a':'s',p:(e.curve?[K[0],K[K.length>>1],K[K.length-1]]:[K[0],K[K.length-1]]).map(q=>q.map(r1)),fe,s:sf.map(o=>o.n).concat([pn]),step:stp,
+      how:{sec:pn,hatch:1}}); }); });
+  return {v:1,dz:ID,n:N,title:m.title||'',box:b,views:{F:'главный вид',T:'вид сверху',L:'вид слева',Fs:'фронтальный разрез',Ls:'профильный разрез',Ts:'разрез на месте вида сверху'},
     feats:FT.map((f,i)=>({i,name:f.name,kind:f.kind==='add'?'тело':'отверстие'})),lines}; }
 
 (async()=>{
