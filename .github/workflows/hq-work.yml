@@ -22,8 +22,9 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+# очередь — своя у каждой задачи: общая группа держит один ожидающий запуск и молча отменяет остальные
 concurrency:
-  group: hq-work
+  group: hq-${{ github.event.issue.number || inputs.issue }}
   cancel-in-progress: false
 
 jobs:
@@ -43,6 +44,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Кэш браузера
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
       - name: Ответ
         env:
           TITLE: ${{ github.event.issue.title }}
@@ -52,7 +60,7 @@ jobs:
           set +e
           printf '%s\n\n%s\n' "$TITLE" "$BODY" > /tmp/hq-task.md; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
           M=$(echo "$LABELS" | tr ',' '\n' | sed -n 's/^исп://p' | head -1)
-          npm install --no-save --no-package-lock playwright@1.47.2 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          { [ -d node_modules/playwright ] || npm install --no-save --no-package-lock playwright@1.47.2 acorn@8; npx playwright install --with-deps chromium; } >/dev/null 2>&1
           if node tools/hq-agent.js --ask --model "${M:-sonnet}" --task /tmp/hq-task.md; then
             RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
             { cat /tmp/hq-answer.md; echo; echo "_Ответил: ${M:-sonnet}, ~$RUB ₽._ <!-- hq-answer --> <!-- hq:{\"rub\":$RUB,\"model\":\"${M:-sonnet}\"} -->"; } > /tmp/c.md
@@ -79,6 +87,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Кэш браузера
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
       - name: Откатить
         run: |
           set +e
@@ -87,7 +102,7 @@ jobs:
           PR=$(gh issue view "$N" --json comments -q '.comments[].body' | grep -o '"pr":"[^"]*"' | tail -1 | cut -d'"' -f4)
           SHA=$([ -n "$PR" ] && gh pr view "$PR" --json mergeCommit -q .mergeCommit.oid)
           if [ -z "$SHA" ]; then gh issue comment "$N" --body "⚠️ Откат: не нашёл слитый PR этой задачи."; gh issue edit "$N" --remove-label "откат"; exit 1; fi
-          npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 >/dev/null && npx playwright install --with-deps chromium >/dev/null
+          { [ -d node_modules/playwright ] || npm install --no-save --no-package-lock playwright@1.47.2 acorn@8; npx playwright install --with-deps chromium; } >/dev/null 2>&1
           if git revert --no-edit "$SHA" && node tests/run.js --quick $(o=$(node tests/impact.js HEAD~1 --only); [ "$o" != "all" ] && [ "$o" != "none" ] && echo "--only=$o") > /tmp/test.log 2>&1 && git push origin HEAD:main; then
             gh workflow run check.yml --ref main || true
             gh issue comment "$N" --body "↩️ **Откачено**${WHY:+ автоматически ($WHY)}: $PR отменён, тесты зелёные, сайт как до выкатки. <!-- hq:{\"rub\":0} -->"
@@ -126,9 +141,16 @@ jobs:
           case ",$LABELS," in *,автовыкатка,*) echo "AUTO=1" >> "$GITHUB_ENV";; *) echo "AUTO=0" >> "$GITHUB_ENV";; esac
           gh issue edit "$N" --remove-label "готово" --remove-label "провал" --remove-label "на-проверку" >/dev/null 2>&1 || true
           echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
+      - name: Кэш браузера
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
       - name: Браузер для тестов
         run: |
-          npm install --no-save --no-package-lock playwright@1.47.2 acorn@8
+          [ -d node_modules/playwright ] || npm install --no-save --no-package-lock playwright@1.47.2 acorn@8
           npx playwright install --with-deps chromium
       - name: Исполнители (с эскалацией)
         id: work
@@ -138,7 +160,7 @@ jobs:
           m="$MODEL"; tries=0; ok=0; : > /tmp/hq-log.md
           while [ -n "$m" ] && [ $tries -lt 3 ]; do
             tries=$((tries+1)); echo "::group::Попытка $tries — $m"
-            git checkout -q -B "hq/issue-$N" origin/main; git clean -fdq -e node_modules
+            git checkout -q -B "hq/issue-$N" origin/main && git reset -q --hard origin/main && git clean -fdq -e node_modules   # с чистого листа: правки прошлой попытки не переходят
             # дешёвая модель на первой попытке — две попытки параллельно в отдельных копиях, берётся первая зелёная
             # (две попытки DeepSeek стоят копейки, а шанс сделать с первого раза выше; Opus подключается реже)
             if [ $tries -eq 1 ] && echo "$m" | grep -qE '^(deepseek|dsv4|haiku|flash)$'; then
@@ -187,7 +209,8 @@ jobs:
           if [ "$RC" = 0 ] && [ "$AUTO" = 1 ]; then
             ONLY=$(node tests/impact.js origin/main --only)
             if [ "$ONLY" = "none" ] || node tests/run.js $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/full.log 2>&1; then
-              gh pr merge "$PR" --squash --delete-branch && STATUS="готово" && MSG="✅ **Выкачено на сайт.** PR: $PR"
+              if gh pr merge "$PR" --squash --delete-branch; then STATUS="готово"; MSG="✅ **Выкачено на сайт.** PR: $PR"
+              else MSG="⚠️ Тесты и ревизор — зелёные, но влить не вышло (конфликт с main — другая задача правила то же место, или защита ветки). PR: $PR. Перезапусти задачу — исполнитель начнёт со свежего main."; fi
               gh workflow run check.yml --ref main || true   # полная проверка main; красная → Issue «main красный»
             else MSG="⚠️ Быстрые тесты зелёные, проверка перед выкаткой — красная, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
           fi

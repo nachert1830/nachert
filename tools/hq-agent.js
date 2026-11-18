@@ -32,7 +32,7 @@ if (mark) { try { const x = JSON.parse(mark[1]); if (x.key === key && x.id) M = 
 if (!M) { console.error('Нет такой модели в штате: ' + key); process.exit(1); }
 const RATE = mark ? (JSON.parse(mark[1]).rate || 110) : 110;
 const CLAUDE = /^anthropic\//.test(M.id), VISION = /^(anthropic|google)\//.test(M.id);
-const BRIGADE = process.argv.includes('--brigade') || (!process.argv.includes('--solo') && /^(sonnet|opus|gpro)$/.test(key));
+const BRIGADE = process.argv.includes('--brigade') || (!process.argv.includes('--solo') && /^(sonnet|opus|gpro|gpt5)$/.test(key));
 
 /* ── карта проекта: без содержимого файлов ── */
 function walk(dir, out) {
