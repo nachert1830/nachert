@@ -20,10 +20,15 @@ const MODELS = {
   'dsv4':     {id: 'deepseek/deepseek-v4-pro',    name: 'DeepSeek V4 Pro',   vendor: 'DeepSeek', in: 0.55, out: 2.2, cache: 0.07, ok: false,
                about: 'DeepSeek посильнее (имя из документации ProxyAPI): код средней сложности дёшево'},
   /* Gemini — длинный контекст, много текста */
-  'flash':    {id: 'google/gemini-2.5-flash',     name: 'Gemini Flash',      vendor: 'Google', in: 0.30, out: 2.50, cache: 0.03, ok: false,
+  'flash':    {id: 'google/gemini-2.5-flash',     name: 'Gemini Flash',      vendor: 'Google', in: 0.30, out: 2.50, cache: 0.03, ok: true,
                about: 'дёшево и много текста: разбор длинных монологов, конспекты'},
   'gpro':     {id: 'google/gemini-2.5-pro',       name: 'Gemini Pro',        vendor: 'Google', in: 1.25, out: 10, cache: 0.125, ok: false,
                about: 'длинные тексты и исследования с рассуждением'},
+  /* GPT — имя openai/gpt-5-mini есть в документации ProxyAPI */
+  'gpt5mini': {id: 'openai/gpt-5-mini',           name: 'GPT-5 mini',        vendor: 'OpenAI', in: 0.25, out: 2, cache: 0.025, ok: true,
+               about: 'дёшево и толково: код и тексты средней сложности, разбор, диспетчер'},
+  'gpt5':     {id: 'openai/gpt-5',                name: 'GPT-5',             vendor: 'OpenAI', in: 1.25, out: 10, cache: 0.125, ok: false,
+               about: 'сильный GPT: сложный код и рассуждение, второе мнение рядом с Opus'},
   /* Картинки */
   'qimage':   {id: 'qwen/qwen-image-3',           name: 'Qwen Image 3',      vendor: 'Qwen', image: 'images', perImage: 0.03, ok: false,
                about: 'картинки дёшево (пример из документации ProxyAPI)'},
@@ -59,7 +64,7 @@ const STAFF = {
 };
 
 /* Цех: если тесты красные — следующий по силе */
-const ESCALATE = {deepseek: 'dsv4', dsv4: 'sonnet', haiku: 'sonnet', flash: 'sonnet', gpro: 'opus', sonnet: 'opus', opus: null};
+const ESCALATE = {deepseek: 'dsv4', dsv4: 'sonnet', gpt5mini: 'sonnet', gpt5: 'opus', haiku: 'sonnet', flash: 'sonnet', gpro: 'opus', sonnet: 'opus', opus: null};
 
 const DEFAULTS = () => ({
   roles: Object.fromEntries(Object.keys(ROLES).map(k => [k, ROLES[k].def])),
