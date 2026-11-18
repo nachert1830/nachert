@@ -7,7 +7,18 @@ name: Цех — исполнители Штаба
 on:
   issues:
     types: [labeled]
+  # автооткат: check.yml (полная проверка main красная сразу после выкатки Цеха) запускает откат напрямую —
+  # метки, поставленные встроенным токеном Actions, другие workflow не запускают
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: 'Номер Issue задачи Цеха, чью выкатку откатить'
+        required: true
+      why:
+        description: 'Причина'
+        required: false
 permissions:
+  actions: write
   contents: write
   issues: write
   pull-requests: write
@@ -16,12 +27,83 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  answer:
+    # Вопрос про код из Штаба: метка «вопрос» → исполнитель только читает код → ответ комментарием (<!-- hq-answer -->) → метка «ответ»
+    if: github.event.label.name == 'вопрос'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      N: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+      PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Ответ
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          set +e
+          printf '%s\n\n%s\n' "$TITLE" "$BODY" > /tmp/hq-task.md; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
+          M=$(echo "$LABELS" | tr ',' '\n' | sed -n 's/^исп://p' | head -1)
+          npm install --no-save --no-package-lock playwright@1.47.2 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          if node tools/hq-agent.js --ask --model "${M:-sonnet}" --task /tmp/hq-task.md; then
+            RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
+            { cat /tmp/hq-answer.md; echo; echo "_Ответил: ${M:-sonnet}, ~$RUB ₽._ <!-- hq-answer --> <!-- hq:{\"rub\":$RUB,\"model\":\"${M:-sonnet}\"} -->"; } > /tmp/c.md
+            gh issue comment "$N" --body-file /tmp/c.md; gh label create "ответ" >/dev/null 2>&1; gh issue edit "$N" --add-label "ответ"; gh issue close "$N"
+          else
+            RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)" 2>/dev/null || echo 0)
+            gh issue comment "$N" --body "Не нашёл ответ за 20 шагов. <!-- hq:{\"rub\":$RUB} -->"; gh label create "провал" >/dev/null 2>&1; gh issue edit "$N" --add-label "провал"
+          fi
+
+  rollback:
+    # Откат выкатки из Штаба: метка «откат» → revert слитого PR → быстрые тесты → main → метка «откачено»
+    if: github.event.label.name == 'откат' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      N: ${{ github.event.issue.number || inputs.issue }}
+      WHY: ${{ inputs.why }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Откатить
+        run: |
+          set +e
+          git config user.name "hq-bot"; git config user.email "hq-bot@users.noreply.github.com"
+          if gh issue view "$N" --json labels -q '.labels[].name' | grep -qx "откачено"; then echo "уже откачено"; exit 0; fi
+          PR=$(gh issue view "$N" --json comments -q '.comments[].body' | grep -o '"pr":"[^"]*"' | tail -1 | cut -d'"' -f4)
+          SHA=$([ -n "$PR" ] && gh pr view "$PR" --json mergeCommit -q .mergeCommit.oid)
+          if [ -z "$SHA" ]; then gh issue comment "$N" --body "⚠️ Откат: не нашёл слитый PR этой задачи."; gh issue edit "$N" --remove-label "откат"; exit 1; fi
+          npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 >/dev/null && npx playwright install --with-deps chromium >/dev/null
+          if git revert --no-edit "$SHA" && node tests/run.js --quick $(o=$(node tests/impact.js HEAD~1 --only); [ "$o" != "all" ] && [ "$o" != "none" ] && echo "--only=$o") > /tmp/test.log 2>&1 && git push origin HEAD:main; then
+            gh workflow run check.yml --ref main || true
+            gh issue comment "$N" --body "↩️ **Откачено**${WHY:+ автоматически ($WHY)}: $PR отменён, тесты зелёные, сайт как до выкатки. <!-- hq:{\"rub\":0} -->"
+            gh label create "откачено" >/dev/null 2>&1; gh issue edit "$N" --add-label "откачено" --remove-label "откат" --remove-label "готово"
+          else
+            { echo "⚠️ Откат не удался — сайт не трогал. Конец лога:"; echo '```'; tail -25 /tmp/test.log; echo '```'; } > /tmp/c.md
+            gh issue comment "$N" --body-file /tmp/c.md; gh issue edit "$N" --remove-label "откат"; exit 1
+          fi
+
   work:
     if: github.event.label.name == 'цех' || github.event.label.name == 'в работу' || github.event.label.name == 'ai-task'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       N: ${{ github.event.issue.number }}
+      HQ_ISSUE: ${{ github.event.issue.number }}
       GH_TOKEN: ${{ github.token }}
       PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
     steps:
@@ -57,9 +139,25 @@ jobs:
           while [ -n "$m" ] && [ $tries -lt 3 ]; do
             tries=$((tries+1)); echo "::group::Попытка $tries — $m"
             git checkout -q -B "hq/issue-$N" origin/main; git clean -fdq -e node_modules
-            if node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/agent.log 2>&1; then
+            # дешёвая модель на первой попытке — две попытки параллельно в отдельных копиях, берётся первая зелёная
+            # (две попытки DeepSeek стоят копейки, а шанс сделать с первого раза выше; Opus подключается реже)
+            if [ $tries -eq 1 ] && echo "$m" | grep -qE '^(deepseek|dsv4|haiku|flash)$'; then
+              for a in 1 2; do rm -rf /tmp/a$a; git worktree add -q -f /tmp/a$a HEAD; ln -s "$PWD/node_modules" /tmp/a$a/node_modules; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/c$a.json; done
+              (cd /tmp/a1 && HQ_COST_FILE=/tmp/c1.json HQ_DONE_FILE=/tmp/d1.txt node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/a1.log 2>&1; echo $? > /tmp/a1.rc) &
+              (cd /tmp/a2 && HQ_COST_FILE=/tmp/c2.json HQ_DONE_FILE=/tmp/d2.txt node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/a2.log 2>&1; echo $? > /tmp/a2.rc) &
+              wait
+              node -e "const f=require('fs'),r=p=>{try{return JSON.parse(f.readFileSync(p))}catch(e){return {rub:0,calls:0,models:{}}}},t=r('/tmp/hq-cost.json');for(const p of ['/tmp/c1.json','/tmp/c2.json']){const c=r(p);t.rub=Math.round((t.rub+c.rub)*100)/100;t.calls+=c.calls;for(const k in c.models)t.models[k]=Math.round(((t.models[k]||0)+c.models[k])*100)/100}f.writeFileSync('/tmp/hq-cost.json',JSON.stringify(t))"
+              PICK=""; for a in 1 2; do if [ "$(cat /tmp/a$a.rc)" = 0 ] && [ -z "$PICK" ]; then PICK=$a; fi; done
+              if [ -n "$PICK" ]; then (cd /tmp/a$PICK && git add -A && git diff --cached --binary HEAD) > /tmp/pick.patch; git apply --index /tmp/pick.patch && git reset -q; cp /tmp/a$PICK.log /tmp/agent.log; cp /tmp/d$PICK.txt /tmp/hq-done.txt 2>/dev/null; echo "Взята попытка $PICK из двух"; AGENT_OK=1
+              else cat /tmp/a1.log > /tmp/agent.log; AGENT_OK=0; fi
+              for a in 1 2; do git worktree remove --force /tmp/a$a; done
+            else
+              node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/agent.log 2>&1 && AGENT_OK=1 || AGENT_OK=0
+            fi
+            if [ "$AGENT_OK" = 1 ]; then
               cat /tmp/agent.log
-              if node tests/run.js --quick > /tmp/test.log 2>&1; then ok=1; echo "::endgroup::"; break; fi
+              ONLY=$(node tests/impact.js origin/main --only); echo "Задето: $ONLY"
+              if [ "$ONLY" = "none" ] || node tests/run.js --quick $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/test.log 2>&1; then ok=1; echo "::endgroup::"; break; fi
               echo "- **$m**: правка есть, быстрые тесты красные" >> /tmp/hq-log.md
               tail -40 /tmp/test.log
             else
@@ -87,9 +185,11 @@ jobs:
           NOTES=$(echo "$REV" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const v=JSON.parse(s);console.log((v.notes||[]).map(x=>'- '+x).join('\n'))}catch(e){console.log('- ревизор не ответил')}})")
           STATUS="на-проверку"; MSG="🔍 **Готово, ждёт твоего решения.** PR: $PR"
           if [ "$RC" = 0 ] && [ "$AUTO" = 1 ]; then
-            if node tests/run.js > /tmp/full.log 2>&1; then
+            ONLY=$(node tests/impact.js origin/main --only)
+            if [ "$ONLY" = "none" ] || node tests/run.js $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/full.log 2>&1; then
               gh pr merge "$PR" --squash --delete-branch && STATUS="готово" && MSG="✅ **Выкачено на сайт.** PR: $PR"
-            else MSG="⚠️ Быстрые тесты зелёные, полный прогон — красный, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
+              gh workflow run check.yml --ref main || true   # полная проверка main; красная → Issue «main красный»
+            else MSG="⚠️ Быстрые тесты зелёные, проверка перед выкаткой — красная, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
           fi
           RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
           printf '%s\n\nИсполнитель: **%s**. Стоимость: ~%s ₽.\n\nРевизор:\n%s\n\nПопытки:\n%s\n<!-- hq:{"rub":%s,"model":"%s","pr":"%s"} -->\n' \

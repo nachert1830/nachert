@@ -11,8 +11,8 @@
 const crypto = require('crypto');
 const RO = require('./roster'), P = require('./prompts'), L = require('./llm');
 
-const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise'];
-const STATUS = ['new', 'talk', 'ready', 'assigned', 'running', 'review', 'done', 'failed', 'archived'];
+const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise', 'question'];
+const STATUS = ['new', 'talk', 'ready', 'assigned', 'running', 'review', 'done', 'failed', 'rolled', 'archived'];
 const id = p => p + crypto.randomBytes(6).toString('base64url');
 const clean = (s, n) => String(s == null ? '' : s).replace(/\u0000/g, '').trim().slice(0, n || 400);
 const month = t => new Date(t).toISOString().slice(0, 7);
@@ -44,6 +44,29 @@ function register(D, o) {
     const t = await r.text(); if (!r.ok) fail(502, 'GitHub ' + r.status + ': ' + t.slice(0, 160)); return t ? JSON.parse(t) : {};
   }
 
+  /* ── память Штаба: правила владельца («запомни: …») — всегда; уроки (провалы, откаты, замечания ревизора) и сделанное —
+     по похожести на задачу. Подмешивается в ТЗ Цеха и в разговор с продактом: без вызовов моделей, по совпадению слов. */
+  const words = t => new Set(String(t || '').toLowerCase().replace(/ё/g, 'е').match(/[a-zа-я0-9]{4,}/g) || []);
+  async function memory() { const m = await store.get('config', 'hqmemory'); return (m && m.items) || []; }
+  async function memAdd(kind, title, text) {
+    const items = await memory(); items.push({at: now(), kind, title: clean(title, 120), text: clean(text, 600)});
+    const rules = items.filter(x => x.kind === 'правило'), rest = items.filter(x => x.kind !== 'правило').slice(-200);
+    await store.put('config', {id: 'hqmemory', items: rules.slice(-30).concat(rest)});
+  }
+  async function memFor(text, n) {
+    const items = await memory(), w = words(text);
+    const scored = items.filter(x => x.kind !== 'правило').map(x => { let k = 0; words(x.title + ' ' + x.text).forEach(t => { if (w.has(t)) k++; }); return [k, x]; })
+      .filter(([k]) => k >= 2).sort((a, b) => b[0] - a[0] || b[1].at - a[1].at).slice(0, n || 6).map(([, x]) => x);
+    const rules = items.filter(x => x.kind === 'правило');
+    if (!rules.length && !scored.length) return '';
+    return (rules.length ? '\n## Правила владельца\n' + rules.map(x => '- ' + x.text).join('\n') : '') +
+      (scored.length ? '\n## Уроки прошлых задач\n' + scored.map(x => '- [' + x.kind + '] «' + x.title + '»: ' + x.text).join('\n') : '');
+  }
+  R['POST /api/hq/memory'] = async req => { const b = body(req);
+    if (b.op === 'add') await memAdd(b.kind === 'урок' ? 'урок' : 'правило', b.title || 'правило', b.text);
+    if (b.op === 'del') { const items = await memory(); items.splice(+b.i, 1); await store.put('config', {id: 'hqmemory', items}); }
+    return {ok: true, memory: await memory()}; };
+
   const nodes = async () => (await store.scan('hqnodes')).filter(n => n.status !== 'archived').sort((a, b) => a.at - b.at);
   const getNode = async nid => { const n = await store.get('hqnodes', String(nid || '')); if (!n) fail(404, 'Нет такого узла.'); return n; };
   const save = n => store.put('hqnodes', n);
@@ -52,9 +75,9 @@ function register(D, o) {
     model: n.model || null, at: n.at, rub: n.rub || 0, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null});
 
   R['GET /api/hq'] = async () => {
-    const [st, s, ns, ds] = await Promise.all([settings(), spent(), nodes(), store.scan('hqdumps')]);
+    const [st, s, ns, ds, mem] = await Promise.all([settings(), spent(), nodes(), store.scan('hqdumps'), memory()]);
     const models = RO.catalog(st);
-    return {ok: true, settings: st, spent: s, models, roles: RO.ROLES, kinds: RO.KINDS, levels: RO.LEVELS, keys: {proxy: !!env.key, github: !!(env.ghToken && env.ghRepo)},
+    return {ok: true, settings: st, spent: s, models, roles: RO.ROLES, kinds: RO.KINDS, levels: RO.LEVELS, keys: {proxy: !!env.key, github: !!(env.ghToken && env.ghRepo)}, memory: mem,
       nodes: ns.map(brief), dumps: ds.sort((a, b) => b.at - a.at).slice(0, 30).map(d => ({id: d.id, at: d.at, summary: d.summary, rub: d.rub, model: d.model, questions: d.questions || [], len: (d.text || '').length}))};
   };
   R['GET /api/hq/node'] = async req => ({ok: true, node: await getNode(req.query && req.query.id)});
@@ -127,7 +150,7 @@ function register(D, o) {
     const all = await nodes(), byId = Object.fromEntries(all.map(x => [x.id, x]));
     const chain = []; for (let p = byId[n.parent], i = 0; p && i < 4; p = byId[p.parent], i++) chain.push('[' + p.type + '] ' + p.title + (p.text ? ' — ' + p.text : ''));
     const ctx = 'Задача: ' + n.title + (n.text ? '\n' + n.text : '') + (chain.length ? '\nВыше по карте:\n' + chain.join('\n') : '') +
-      (n.spec ? '\nТекущее ТЗ:\n' + JSON.stringify(n.spec) : '');
+      (n.spec ? '\nТекущее ТЗ:\n' + JSON.stringify(n.spec) : '') + await memFor(n.title + ' ' + (n.text || ''), 4);
     const hist = (n.chat || []).slice(-12).map(m => ({role: m.r === 'u' ? 'user' : 'assistant', content: m.t}));
     const first = !hist.length;
     const msgs = [{role: 'user', content: ctx + '\n\n' + (text || (first ? 'Сформулируй ТЗ; спроси, если что-то неясно.' : 'Продолжай.'))}];
@@ -165,7 +188,7 @@ function register(D, o) {
     const kind = n.kind || 'code', k = n.model || st.staff[kind][n.level || 'medium'], m = pick(st, k);
     const spec = P.specText(n.spec) || ('# ' + n.title + (n.text ? '\n\n' + n.text : ''));
     if (kind === 'text' || kind === 'research') {
-      const r = await ask(st, k, {system: P.WRITER, max: 8000, timeout: 55000, effort: kind === 'research' ? 'medium' : 'low', messages: [{role: 'user', content: spec}]});
+      const r = await ask(st, k, {system: P.WRITER, max: 8000, timeout: 55000, effort: kind === 'research' ? 'medium' : 'low', messages: [{role: 'user', content: spec + await memFor(spec, 4)}]});
       n.result = clean(r.text, 60000); n.status = 'review'; n.rub = Math.round(((n.rub || 0) + r.rub) * 100) / 100; n.model = k; await save(n);
       return {ok: true, node: n, rub: r.rub, spent: await spent()};
     }
@@ -181,7 +204,8 @@ function register(D, o) {
     /* код → Цех */
     await guard(st);
     const labels = ['цех', 'исп:' + k].concat(st.autoMerge ? ['автовыкатка'] : []);
-    const bodyMd = spec + '\n\n---\nИсполнитель: **' + m.name + '** (`' + m.id + '`). Если тесты не пройдут — задача уйдёт сильнее: ' +
+    const mem = await memFor(spec, 6);
+    const bodyMd = spec + (mem ? '\n' + mem : '') + '\n\n---\nИсполнитель: **' + m.name + '** (`' + m.id + '`). Если тесты не пройдут — задача уйдёт сильнее: ' +
       (RO.ESCALATE[k] ? RO.model(st, RO.ESCALATE[k]).name : 'дальше некому, сообщу владельцу') + '.\n<!-- hq-node:' + n.id + ' -->' +
       '\n<!-- hq-model:' + JSON.stringify({key: k, id: m.id, name: m.name, in: m.in, out: m.out, cache: m.cache, rate: st.rate}) + ' -->';
     if (n.issue && b.restart) {
@@ -205,28 +229,184 @@ function register(D, o) {
     if (!n.result) fail(400, 'Нечего проверять.');
     const r = await askJson(st, st.roles.reviewer, {system: P.REVIEWER, max: 1500, messages: [{role: 'user', content: 'ТЗ:\n' + P.specText(n.spec) + '\n\nРезультат:\n' + n.result}]});
     n.review = {ok: !!r.data.ok, notes: (r.data.notes || []).slice(0, 10).map(x => clean(x, 300)), m: r.model};
+    if (!n.review.ok && n.review.notes.length) await memAdd('урок', n.title, 'ревизор: ' + n.review.notes.join('; ').slice(0, 400));
     n.rub = Math.round(((n.rub || 0) + r.rub) * 100) / 100; await save(n);
     return {ok: true, node: n, rub: r.rub, spent: await spent()};
   };
 
   /* 5. Статусы Цеха */
   R['POST /api/hq/sync'] = async () => {
-    const run = (await nodes()).filter(n => n.issue && ['running', 'failed', 'review'].includes(n.status));
+    const run = (await nodes()).filter(n => n.issue && (['running', 'failed', 'review'].includes(n.status) || n.rollback || n.status === 'done' && n.pr && now() - (n.doneAt || 0) < 3 * 864e5));   /* выкаченные за 3 дня — вдруг автооткат */
     const out = [];
     for (const n of run.slice(0, 15)) {
       const [i, cs] = await Promise.all([gh('/issues/' + n.issue), gh('/issues/' + n.issue + '/comments?per_page=50')]);
-      const names = (i.labels || []).map(l => l.name || l);
+      const names = (i.labels || []).map(l => l.name || l), was = n.status;
       n.counted = n.counted || [];
       for (const c of cs) { const m = /<!-- hq:(\{[\s\S]*?\}) -->/.exec(c.body || ''); if (!m || n.counted.includes(c.id)) continue;
         try { const x = JSON.parse(m[1]); const rub = +x.rub || 0; await spend(rub); n.rub = Math.round(((n.rub || 0) + rub) * 100) / 100; if (x.pr) n.pr = String(x.pr).slice(0, 200); if (x.model) n.model = x.model; } catch (e) {}
         n.counted.push(c.id); }
       const last = cs.filter(c => !/^Перезапуск/.test(c.body || '')).slice(-1)[0];
       n.log = last ? clean((last.body || '').replace(/<!--[\s\S]*?-->/g, ''), 1500) : n.log;
-      if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
+      if (n.type === 'question') { if (names.includes('ответ')) { const a = cs.filter(c => /<!-- hq-answer -->/.test(c.body || '')).slice(-1)[0]; n.result = a ? clean(a.body.replace(/<!--[\s\S]*?-->/g, ''), 8000) : n.log; n.status = 'done'; } else if (names.includes('провал')) n.status = 'failed'; }
+      else if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; }
+      else if (n.rollback) {}
+      else if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
+      if (n.status === 'done' && was !== 'done') n.doneAt = now();
       await save(n); out.push(brief(n));
+      if (n.status !== was) await feedStatus(n);
     }
+    await alarms();
     return {ok: true, nodes: out, spent: await spent()};
   };
+  /* «Сайт просит»: красная полная проверка main (Issue «main-красный» из check.yml) → в ленту с кнопкой «Починить» — один раз на Issue */
+  async function alarms() {
+    if (!env.ghToken || !env.ghRepo) return;
+    let list = []; try { list = await gh('/issues?labels=' + encodeURIComponent('main-красный') + '&state=open&per_page=5'); } catch (e) { return; }
+    const seen = ((await store.get('config', 'hqseen')) || {ids: []}).ids;
+    for (const i of list.filter(x => !x.pull_request && !seen.includes(x.number))) {
+      await feed('hq', '🚨 Сайт просит: полная проверка main красная.\n' + clean((i.body || '').split('```')[1] || i.body, 600), {acts: [A('🛠 Починить', 'fixmain', {issue: i.number}, true)], links: [{l: 'подробно', u: i.html_url}]});
+      seen.push(i.number); }
+    await store.put('config', {id: 'hqseen', ids: seen.slice(-200)});
+  }
+  /* ── Разговор: лента, Секретарь, действия ─────────────────────────────────────────────────────────────────────────
+     Владелец говорит в одну ленту. Секретарь (дешёвая модель) понимает, что сказано: новые мысли → Аналитик; ответ на вопрос
+     продакта → Продакт этой задачи; «запускай» → Диспетчер и исполнитель; «что там» → статусы Цеха; «откати» → откат выкатки.
+     Ответы Штаба — записи ленты с кнопками (op), кнопки идут в POST /api/hq/act. Лента — таблица hqfeed. */
+  const inner = (k, b, q) => R[k]({body: JSON.stringify(b || {}), headers: {'content-type': 'application/json'}, query: q || {}});
+  let seq = 0;
+  async function feed(who, text, x) {
+    const t = now(), f = Object.assign({id: 'f' + String(t).padStart(15, '0') + '-' + (seq++ % 1000).toString().padStart(3, '0'), at: t, who, text: clean(text, 4000)}, x || {});
+    await store.put('hqfeed', f); return f;
+  }
+  const A = (l, op, a, main) => ({l, op, a: a || {}, main: !!main});
+  /* оценка цены задачи кода до запуска: ~60 тыс. токенов входа (часть — из кэша) и ~8 тыс. выхода; это ориентир, не счёт */
+  function estimate(st, k, kind) { const m = RO.model(st, k); if (!m) return 0;
+    if (m.image) return Math.round(m.perImage * st.rate * 100) / 100;
+    const [i, out] = kind === 'code' ? [60000, 8000] : [4000, 3000];
+    return Math.round(((i * (m.in || 0) * (kind === 'code' ? 0.4 : 1)) + out * (m.out || 0)) / 1e6 * st.rate * 100) / 100; }
+  const runActs = (st, n) => [A('▶ Запустить', 'run', {id: n.id}, true), A('Сменить исполнителя', 'open', {id: n.id})];
+  async function feedReady(st, n) {
+    const k = n.model || st.staff[n.kind || 'code'][n.level || 'medium'];
+    return feed('hq', 'ТЗ готово: «' + (n.spec && n.spec.title || n.title) + '». ' + RO.KINDS[n.kind || 'code'] + ', ' + RO.LEVELS[n.level || 'medium'] +
+      '. Исполнитель — ' + RO.model(st, k).name + ', оценка ~' + estimate(st, k, n.kind || 'code') + ' ₽.', {node: n.id, acts: runActs(st, n)});
+  }
+  async function feedStatus(n) {
+    if (n.type === 'task') {
+      if (n.status === 'failed') await memAdd('урок', n.title, 'не вышло (' + (n.model || '?') + '): ' + String(n.log || '').replace(/\s+/g, ' ').slice(0, 400));
+      else if (n.status === 'rolled') await memAdd('урок', n.title, 'выкатку пришлось откатить — сломала сайт; ' + String(n.log || '').replace(/\s+/g, ' ').slice(0, 300));
+      else if (n.status === 'done') await memAdd('сделано', n.title, (n.spec && n.spec.what ? n.spec.what.slice(0, 200) + '; ' : '') + 'исполнитель ' + (n.model || '?') + ', ' + (n.rub || 0) + ' ₽');
+    }
+    if (n.type === 'question') {
+      if (n.status === 'done') return feed('hq', '💡 Ответ на «' + n.title + '»:\n' + (n.result || ''), {node: n.id, acts: [A('Сделать задачей', 'totask', {id: n.id}, true)], links: [n.url && {l: 'подробно', u: n.url}].filter(Boolean)});
+      if (n.status === 'failed') return feed('hq', '❌ Не нашёл ответ на «' + n.title + '». ' + (n.log || ''), {node: n.id});
+      return; }
+    const T = {done: '✅ Готово: «' + n.title + '»' + (n.pr ? ' — на сайте.' : '.'), failed: '❌ Не получилось: «' + n.title + '». ' + (n.log ? n.log.split('\n')[0] : ''),
+      review: '🔍 Проверь: «' + n.title + '».', rolled: '↩️ Откатил: «' + n.title + '». Сайт как до выкатки.', running: '⚙️ В работе: «' + n.title + '».'};
+    if (!T[n.status]) return;
+    const acts = n.status === 'failed' ? [A('↻ Перезапустить сильнее', 'run', {id: n.id, stronger: true}, true), A('Открыть', 'open', {id: n.id})]
+      : n.status === 'done' && n.pr ? [A('↩️ Откатить', 'rollback', {id: n.id})] : n.status === 'review' ? [A('Принять ✓', 'accept', {id: n.id}, true), A('Открыть', 'open', {id: n.id})] : [];
+    await feed('hq', T[n.status] + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, acts, links: [n.url && {l: 'задача', u: n.url}, n.pr && {l: 'PR', u: n.pr}].filter(Boolean)});
+  }
+
+  R['GET /api/hq/feed'] = async req => {
+    const after = String((req.query && req.query.after) || ''), all = await store.scan('hqfeed', f => !after || f.id > after);
+    return {ok: true, feed: all.sort((a, b) => a.id < b.id ? -1 : 1).slice(-200), spent: await spent()};
+  };
+
+  /* действия кнопок и Секретаря: одно место, где шаги конвейера пишут в ленту */
+  async function act(op, a) {
+    const st = await settings();
+    if (op === 'discuss') { const r = await inner('POST /api/hq/chat', {id: a.id, text: a.text || ''}); const n = r.node;
+      await feed('hq', (n.chat || []).slice(-1)[0].t, {node: n.id, from: 'product', acts: r.suggested && r.suggested.length ? [A('Разбить на подзадачи', 'split', {id: n.id})] : []});
+      if (n.ready) await feedReady(st, n); return r; }
+    if (op === 'split') { const r = await inner('POST /api/hq/chat', {id: a.id, text: 'Разбей на подзадачи, как предложил.', split: true});
+      await feed('hq', 'Разбил на ' + r.subtasks.length + ': ' + r.subtasks.map(x => '«' + x.title + '»').join(', ') + '.', {node: a.id, acts: r.subtasks.slice(0, 6).map(x => A('Обсудить «' + x.title.slice(0, 30) + '»', 'discuss', {id: x.id}))}); return r; }
+    if (op === 'run') { let n = await getNode(a.id);
+      if (a.stronger && n.model) { const up = RO.ESCALATE[n.model]; if (up) n.model = up; }
+      if (!n.kind || !n.level || !n.model) { await inner('POST /api/hq/assign', {id: n.id, ask: !n.kind || !n.level}); n = await getNode(n.id); }
+      const r = await inner('POST /api/hq/run', {id: n.id, model: a.model || n.model, restart: !!n.issue}); const m = RO.model(st, r.node.model);
+      if ((n.kind || 'code') === 'code') await feed('hq', '⚙️ Отправил в Цех: «' + n.title + '». Исполнитель — ' + m.name + '. Напишу, когда будет готово.', {node: n.id, links: [{l: 'задача', u: r.node.url}]});
+      else await feed('hq', (r.node.img ? '🖼 Нарисовал' : '📝 Написал') + ': «' + n.title + '» (' + m.name + ', ' + r.rub + ' ₽).', {node: n.id, img: r.node.img || null, result: r.node.result ? r.node.result.slice(0, 3000) : null,
+        acts: [A('Принять ✓', 'accept', {id: n.id}, true), A('Ревизор, проверь', 'review', {id: n.id}), A('↻ Ещё раз', 'run', {id: n.id})]});
+      return r; }
+    if (op === 'review') { const r = await inner('POST /api/hq/review', {id: a.id}); const v = r.node.review;
+      await feed('hq', 'Ревизор: ' + (v.ok ? '✅ соответствует ТЗ.' : '⚠️ ' + v.notes.join('; ')), {node: a.id, acts: [A('Принять ✓', 'accept', {id: a.id}, true)]}); return r; }
+    if (op === 'accept') { const r = await inner('POST /api/hq/review', {id: a.id, accept: true}); await feed('hq', '✅ Принято: «' + r.node.title + '».', {node: a.id}); return r; }
+    if (op === 'sync') { const r = await inner('POST /api/hq/sync', {}); if (!r.nodes.length) await feed('hq', 'В Цехе сейчас пусто.'); return r; }
+    if (op === 'rollback') { const n = await getNode(a.id); if (!n.issue || !n.pr) fail(400, 'Откатывать нечего: задача ещё не выкатывалась.');
+      await gh('/issues/' + n.issue + '/comments', {method: 'POST', body: JSON.stringify({body: 'Откат по просьбе владельца: ' + n.pr})});
+      await gh('/issues/' + n.issue, {method: 'PATCH', body: JSON.stringify({state: 'open'})});
+      await gh('/issues/' + n.issue + '/labels', {method: 'POST', body: JSON.stringify({labels: ['откат']})});
+      n.rollback = now(); await save(n); await feed('hq', '↩️ Откатываю «' + n.title + '»: Цех вернёт сайт как было и прогонит тесты.', {node: n.id}); return {ok: true}; }
+    if (op === 'ask') {   /* вопрос про код → исполнитель только читает (hq-work.yml, задание answer) */
+      const k = a.model && RO.model(st, a.model) ? a.model : st.staff.research.medium, m = RO.model(st, k);
+      const n = {id: id('q'), type: 'question', title: clean(a.text, 120), text: clean(a.text, 4000), status: 'running', at: now(), chat: [], model: k};
+      const i = await gh('/issues', {method: 'POST', body: JSON.stringify({title: 'Вопрос: ' + n.title.slice(0, 100), body: n.text + '\n\n---\nОтвечает: **' + m.name + '** (только читает код).\n<!-- hq-node:' + n.id + ' -->\n<!-- hq-model:' + JSON.stringify({key: k, id: m.id, name: m.name, in: m.in, out: m.out, cache: m.cache, rate: st.rate}) + ' -->', labels: ['исп:' + k]})});
+      await gh('/issues/' + i.number + '/labels', {method: 'POST', body: JSON.stringify({labels: ['вопрос']})});
+      n.issue = i.number; n.url = i.html_url; n.counted = []; await save(n);
+      await feed('hq', '🔎 Ищу ответ в коде (' + m.name + '). Напишу сюда, обычно 2–5 минут.', {node: n.id, links: [{l: 'вопрос', u: i.html_url}]}); return {ok: true, node: n}; }
+    if (op === 'relay') {   /* реплика владельца по задаче в работе → комментарий в Issue; исполнитель читает их между шагами */
+      const n = await getNode(a.id); if (!n.issue) fail(400, 'Задача не в Цехе.');
+      await gh('/issues/' + n.issue + '/comments', {method: 'POST', body: JSON.stringify({body: '💬 Владелец: ' + clean(a.text, 2000)})});
+      await feed('hq', 'Передал исполнителю «' + n.title + '» — учтёт на следующем шаге.', {node: n.id}); return {ok: true, node: n}; }
+    if (op === 'totask') { const q = await getNode(a.id);
+      const r = await inner('POST /api/hq/node', {op: 'add', type: 'task', title: q.title.replace(/^почему\s+/i, 'Починить: ').slice(0, 120), text: 'Вопрос: ' + q.text + '\n\nЧто нашлось в коде:\n' + (q.result || '').slice(0, 3000)});
+      return act('discuss', {id: r.node.id}); }
+    if (op === 'fixmain') { const i = await gh('/issues/' + (+a.issue));
+      const r = await inner('POST /api/hq/node', {op: 'add', type: 'task', title: 'Починить красную проверку main', text: clean(i.body, 3800)});
+      await inner('POST /api/hq/node', {id: r.node.id, kind: 'code', level: 'complex'});
+      const n = await getNode(r.node.id); n.spec = {title: 'Починить красную проверку main', what: 'Полная проверка сайта на main красная. Найди причину по логу и исправь код (не тесты и не baseline, если ошибка настоящая).\n\n' + clean(i.body, 3000), where: 'по логу проверки', done: ['node tests/run.js на затронутых блоках зелёный'], not: ['не отключать и не ослаблять проверки']};
+      n.ready = true; n.status = 'ready'; await save(n); await feedReady(st, n); return {ok: true, node: n}; }
+    if (op === 'archive') { await inner('POST /api/hq/node', {id: a.id, op: 'archive'}); await feed('hq', 'Убрал в архив.', {node: a.id}); return {ok: true}; }
+    fail(400, 'Нет такого действия.');
+  }
+  R['POST /api/hq/act'] = async req => { const b = body(req); const r = await act(String(b.op || ''), b.a || {}); return {ok: true, node: r && r.node ? brief(r.node) : null, spent: await spent()}; };
+
+  /* Секретарь: одно высказывание владельца → что делать */
+  R['POST /api/hq/talk'] = async req => {
+    const b = body(req, 200 * 1024), text = clean(b.text, 60000), st = await settings();
+    if (text.length < 2) fail(400, 'Скажи что-нибудь.');
+    await feed('me', text);
+    const ns = await nodes(), tasks = ns.filter(n => n.type === 'task');
+    const line = n => n.id + ' «' + n.title + '»';
+    const open = tasks.filter(n => n.status === 'talk' && (n.chat || []).length && n.chat[n.chat.length - 1].r === 'a').slice(-6).map(n => line(n) + ' — продакт спросил: ' + n.chat[n.chat.length - 1].t.slice(0, 300));
+    const ready = tasks.filter(n => ['ready', 'assigned'].includes(n.status)).slice(-8).map(line);
+    const running = tasks.filter(n => n.status === 'running').slice(-8).map(line);
+    const review = tasks.filter(n => n.status === 'review').slice(-6).map(line);
+    const done = tasks.filter(n => n.status === 'done' && n.pr).slice(-6).map(line);
+    const other = tasks.filter(n => ['new', 'talk'].includes(n.status)).slice(-12).map(line);
+    const lastF = (await store.scan('hqfeed', f => f.who === 'hq' && f.node)).sort((x, y) => x.id < y.id ? 1 : -1)[0];
+    const cur = lastF && tasks.find(n => n.id === lastF.node);
+    const state = ['Последняя задача в разговоре (к ней относятся «да», «давай», уточнения без названия задачи):\n' + (cur ? line(cur) + ' — статус: ' + cur.status : 'нет'), 'Ждут ответа владельца:\n' + (open.join('\n') || 'нет'), 'ТЗ готово, не запущены:\n' + (ready.join('\n') || 'нет'), 'В работе:\n' + (running.join('\n') || 'нет'),
+      'Ждут проверки владельцем:\n' + (review.join('\n') || 'нет'), 'Выкачены (можно откатить):\n' + (done.join('\n') || 'нет'), 'Прочие задачи:\n' + (other.join('\n') || 'нет')].join('\n\n');
+    let dec;
+    if (text.length > 1500) dec = {intent: 'thoughts'};     /* длинный монолог — сразу Аналитику, Секретарь не нужен */
+    else { const r = await askJson(st, b.model || st.roles.secretary, {system: P.SECRETARY, max: 600, messages: [{role: 'user', content: state + '\n\nВладелец сказал:\n' + text}]}); dec = r.data || {}; }
+    const known = id => tasks.some(n => n.id === id);
+    const say = async t => t && feed('hq', t);
+    try {
+      const running = id => tasks.some(n => n.id === id && n.status === 'running' && n.issue);
+      if ((dec.intent === 'answer' || dec.intent === 'discuss') && running(dec.node)) { await act('relay', {id: dec.node, text: dec.text || text}); }
+      else if (dec.intent === 'answer' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || text}); }
+      else if (dec.intent === 'discuss' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || ''}); }
+      else if (dec.intent === 'remember') { await memAdd('правило', 'правило', dec.text || text); await say('Запомнил: ' + (dec.text || text)); }
+      else if (dec.intent === 'ask') { await act('ask', {text: dec.text || text, model: dec.model}); }
+      else if (dec.intent === 'run' && known(dec.node)) { await say(dec.reply); await act('run', {id: dec.node, model: RO.model(st, dec.model) ? dec.model : undefined}); }
+      else if (dec.intent === 'accept' && known(dec.node)) { await act('accept', {id: dec.node}); }
+      else if (dec.intent === 'rollback' && known(dec.node)) { await act('rollback', {id: dec.node}); }
+      else if (dec.intent === 'archive' && known(dec.node)) { await act('archive', {id: dec.node}); }
+      else if (dec.intent === 'status') { await say(dec.reply); await act('sync', {}); }
+      else if (dec.intent === 'reply') { await say(dec.reply || 'Понял.'); }
+      else {
+        const r = await inner('POST /api/hq/dump', {text}); const ts = r.nodes.filter(n => n.type === 'task');
+        const c = t => r.nodes.filter(n => n.type === t).length;
+        await feed('hq', (r.dump.summary ? r.dump.summary + '\n' : '') + 'Разложил: стратегия ' + c('strategy') + ', цели ' + c('goal') + ', задачи ' + ts.length + ', идеи ' + c('idea') + ', балабольство ' + c('noise') + '.' +
+          (r.dump.questions.length ? '\n❓ ' + r.dump.questions.join('\n❓ ') : ''), {dump: r.dump.id, acts: [A('🗺 Карта', 'map', {})].concat(ts.slice(0, 6).map((n, i) => A('Обсудить «' + n.title.slice(0, 34) + '»', 'discuss', {id: n.id}, i === 0)))});
+      }
+    } catch (e) { await feed('hq', '⚠️ ' + (e.message || 'Ошибка')); if (!(e.status >= 400 && e.status < 500)) throw e; }
+    return {ok: true, spent: await spent()};
+  };
+
   /* ответы — JSON в формате сервера клуба */
   Object.keys(R).forEach(k => { D[k] = async (req, S) => o.json(200, await R[k](req, S)); });
 }

@@ -74,6 +74,30 @@ main{max-width:1280px;margin:0 auto;padding:10px 16px 80px}
 .dumps .it{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:12px;font-size:14px}
 .dumps .it small{color:var(--mut);white-space:nowrap}
 
+/* разговор */
+#v-chat{display:flex;flex-direction:column;min-height:calc(100vh - 150px)}
+#v-chat[hidden]{display:none!important}
+.feed{flex:1;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
+.fi{max-width:min(720px,92%);padding:10px 14px;border-radius:16px;font-size:15px;white-space:pre-wrap;word-wrap:break-word;box-shadow:var(--shadow)}
+.fi.me{align-self:flex-end;background:var(--acc);color:#fff;border-bottom-right-radius:4px}
+.fi.hq{align-self:flex-start;background:var(--surf);border:1px solid var(--line);border-bottom-left-radius:4px}
+.fi.hq.prod{border-left:4px solid var(--c-goal)}
+.fi .who{display:block;font-size:11px;color:var(--mut);margin-bottom:3px;font-weight:600}
+.fi .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;white-space:normal}
+.fi .acts button{padding:7px 12px;font-size:14px}
+.fi .lnk{margin-top:6px;font-size:13px}.fi .lnk a{color:var(--acc);margin-right:10px}
+.fi .res{margin-top:8px;padding:10px;background:var(--surf2);border-radius:10px;font-size:14px;max-height:320px;overflow:auto}
+.fi img{max-width:100%;border-radius:10px;margin-top:8px}
+.fi time{display:block;font-size:11px;opacity:.55;margin-top:4px;text-align:right}
+.fi.wait{color:var(--mut);font-style:italic}
+.composer{position:sticky;bottom:0;background:var(--paper);padding:10px 0 calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.composer textarea{font-size:16px;min-height:52px}
+.crow{display:flex;align-items:center;gap:8px;margin-top:8px}
+.crow .hint{flex:1;margin:0}
+.crow .mic{padding:12px 18px}
+.feedEmpty{margin:auto;text-align:center;color:var(--mut);max-width:440px;padding:30px 10px}
+.feedEmpty b{display:block;color:var(--ink);font-size:18px;margin-bottom:8px}
+
 /* карта */
 .maptools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 .map{position:relative;display:grid;grid-template-columns:1fr 1.2fr 1.5fr;gap:56px;align-items:start}
@@ -116,6 +140,11 @@ th{color:var(--mut);font-weight:600;font-size:13px}
 .cat small{color:var(--mut)}
 .ok{color:var(--green)}.chk{color:var(--amber)}
 details.add{margin-top:12px}details.add summary{cursor:pointer;color:var(--acc);font-weight:600}
+
+.mem{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:420px;overflow:auto}
+.mem .mi{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;background:var(--surf2);border-radius:10px;font-size:14px}
+.mem .mi span{flex:1}.mem .mi b{font-size:12px;color:var(--mut);white-space:nowrap}
+.mem .mi.r{border-left:3px solid var(--acc)}.mem .mi.l{border-left:3px solid var(--amber)}.mem .mi.d{border-left:3px solid var(--green)}
 
 /* карточка задачи */
 .scrim{position:fixed;inset:0;background:rgba(5,12,25,.35);z-index:9}

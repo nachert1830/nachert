@@ -1,11 +1,20 @@
 /* ═══════════ Полная проверка сайта перед публикацией ═══════════
    node tests/run.js            — всё (≈1–2 мин)
    node tests/run.js --quick    — без обхода всех страниц
+   node tests/run.js --only=rkp,me — только эти блоки (какие задеты правкой — node tests/impact.js; список блоков — GROUPS ниже)
    Код выхода 0 — ошибок нет; 1 — есть новые ошибки (их список выводится).
    Уже разобранные вручную случаи лежат в tests/baseline.json вместе с объяснением, почему это не ошибка. */
 const http=require('http'), fs=require('fs'), path=require('path');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const ROOT=path.join(__dirname,'..'), QUICK=process.argv.includes('--quick');
+/* блоки проверки: --only=a,b — только они (выборочная проверка Цеха и PR; полная — на main после слияния) */
+const GROUPS=['core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
+const ONLY=(a=>a?new Set(a.slice(7).split(',').map(x=>x.trim()).filter(Boolean)):null)(process.argv.find(a=>a.startsWith('--only=')));
+if(ONLY){ const bad=[...ONLY].filter(g=>!GROUPS.includes(g)); if(bad.length){ console.error('Нет таких блоков: '+bad.join(', ')+'. Есть: '+GROUPS.join(', ')); process.exit(2); } }
+/* время каждого блока — для раскладки потоков CI по времени (строка «Время блоков» в конце) */
+const TIME={}; let curG=null, curT=0;
+const mark=g=>{ const t=Date.now(); if(curG) TIME[curG]=(TIME[curG]||0)+(t-curT); curG=g; curT=t; };
+const on=g=>{ if(ONLY&&!ONLY.has(g)) return false; mark(g); return true; };
 /* --json=файл — все замеры одной записью (для тезисов и отчётов: каждое число — с коммитом, на котором оно получено) */
 const JSONOUT=(process.argv.find(a=>a.startsWith('--json='))||'').slice(7), M={};
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.webmanifest':'application/manifest+json','.txt':'text/plain'};
@@ -26,6 +35,9 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
   const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto(URL); await page.waitForTimeout(1500);
+  /* выборочная проверка: главная открывается без ошибок JS всегда (полный обход страниц — блок crawl) */
+  if(ONLY&&errs.length) fail.push('Главная · ошибка JS при открытии · '+errs[0].slice(0,200));
+  if(on('core')){
   for(const f of ['geometry','render','mutate','oracle']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
   report('Чертежи (3D-модель)', await page.evaluate(()=>GEOM_CHECK()));
   report('Отрисовка (подписи)', await page.evaluate(()=>RENDER_CHECK()));
@@ -52,7 +64,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   info.push('«Евклид»: проверено задач '+(await page.evaluate(()=>WB3.tasks.filter(t=>!EUCLID_TODO.includes(t.n)).length))+' из 89 и ДЗ №2 (2а–2в), №3; кривые поверхности — в работе: №'+(await page.evaluate(()=>EUCLID_TODO.join(', №'))));
   report('Арифметика в тексте', await page.evaluate(()=>ARITH_CHECK()));
   report('ДЗ-оракул (ДЗ №2, №3)', await page.evaluate(()=>DZ_CHECK()));
-  { const dpage=await browser.newPage(); await dpage.goto(URL); await dpage.waitForTimeout(1200);
+  }
+  if(on('dzvar')) { const dpage=await browser.newPage(); await dpage.goto(URL); await dpage.waitForTimeout(1200);
     for(const f of ['geometry','euclid','arith','dz']) await dpage.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
     const DR=require('./dz-run.js'), N=QUICK?10:40, v=await DR.runDzVariants(dpage,N);
     M.dzVar={n:N,checked:v.checked,skipped:v.skipped,bad:Object.keys(v.bad).length}; info.push('ДЗ №2 и №3 на случайных вариантах: '+N+' × 4 разбора, проверено '+v.checked+', вырожденных отброшено '+v.skipped);
@@ -63,7 +76,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     await dpage.close(); }
 
   /* 3б″. все варианты заданий (dz/): решатели строят разбор каждого, и он проходит те же проверки, что примеры */
-  { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
+  if(on('variants')) { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
     const VR=require('./variants-run.js'); await VR.loadAll(vpage);
     const r=await VR.runVariants(vpage), list=VR.dataCheck().concat(r.list), bad=VR.fresh(list);
     M.variants={checked:r.checked,remarks:list.length,fresh:bad.length};
@@ -72,20 +85,20 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     await vpage.close(); }
 
   /* 3б′. трассировка происхождения (O4 «по построению»): каждая точка и линия — с того поля, которое указывает подпись */
-  { const ppage=await browser.newPage(); await ppage.goto(URL); await ppage.waitForTimeout(1200);
+  if(on('prov')) { const ppage=await browser.newPage(); await ppage.goto(URL); await ppage.waitForTimeout(1200);
     const {issues,stats}=await require('./provenance-run.js').runProvenance(ppage);
     info.push('Происхождение: прослежено точек '+stats.traced+' из '+stats.pts+', отрезков '+stats.segTraced+' из '+stats.segs);
     report('Происхождение точек',issues); await ppage.close(); }
 
   /* 3б″. сертификаты (tests/certified): два исполнения протокола совпадают по шагам, ответ = решение условия,
      опубликованный чертёж и число в ответе = доказанная модель */
-  { const cpage=await browser.newPage(); await cpage.goto(URL); await cpage.waitForTimeout(1200);
+  if(on('cert')) { const cpage=await browser.newPage(); await cpage.goto(URL); await cpage.waitForTimeout(1200);
     const certs=await require('./certified/run.js').runCertificates(cpage,{variants:QUICK?50:200});
     certs.forEach(c=>{ if(!c.ok) Object.entries(c.O).filter(([k,o])=>!o.ok).forEach(([k,o])=>fail.push('Сертификат №'+c.n+' · '+k+': '+o.detail)); });
     info.push('Сертификаты: выдано '+certs.filter(c=>c.ok).length+' из '+certs.length+' (№'+certs.map(c=>c.n).join(', №')+')'); await cpage.close(); }
 
   /* 3б‴. проверка проверки на мутациях КОДА задач (O8): порог для подмены поля и для задач с сертификатом */
-  if(!QUICK){ const apage=await browser.newPage(); await apage.goto(URL); await apage.waitForTimeout(1200);
+  if(!QUICK&&on('adequacy')){ const apage=await browser.newPage(); await apage.goto(URL); await apage.waitForTimeout(1200);
     const ad=await require('./adequacy.js').runAdequacy(apage,{per:2,seed:5}), fh=ad.by['F↔H'], ct=ad.cby['всего'];
     M.code={by:ad.by,kinds:ad.kinds,total:ad.total,equiv:ad.equiv,crashed:ad.crashed,cert:ad.cby}; info.push('Мутации кода: поймано '+ad.by['всего'].all+' из '+ad.by['всего'].n+', с «Евклидом» и арифметикой — '+ad.by['всего'].euc+(fh?'; подмена поля F↔H — '+fh.all+' из '+fh.n:'')+(ct?'; в задачах с сертификатом — '+ct.cert+' из '+ct.n:''));
     if(fh&&fh.all/fh.n<0.75) fail.push('Проверка ослабла: подмена поля F↔H ловится в '+Math.round(100*fh.all/fh.n)+'% случаев');
@@ -93,7 +106,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     await apage.close(); }
 
   /* 3в. случайные варианты: каждая задача заново строится на искажённых данных и проходит 3D-проверку и оракул */
-  { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
+  if(on('random')) { const vpage=await browser.newPage(); await vpage.goto(URL); await vpage.waitForTimeout(1200);
     const N=QUICK?10:30, res=await require('./random-run.js').runVariants(vpage,N), list=[]; let deg=0;
     res.forEach(b=>{ Object.entries(b.bad).forEach(([k,v])=>{ const [n,rule]=k.split('|'); list.push({name:n,rule:'вариант: '+rule,msg:v[0].msg.slice(0,160)+' ('+v.length+' из '+N+')'}); });
       (b.info||[]).forEach(x=>{ const m=/вырожденных вариантов (\d+)/.exec(x); if(m) deg+=+m[1]; }); });
@@ -103,7 +116,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
 
   /* 3г. тренажёр: генератор на сайте ищет блоки задач так же, как контрольный разбор (acorn); список допущенных задач
      совпадает с расчётом; каждый режим работает на каждой задаче */
-  { const gpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await gpage.goto(URL); await gpage.waitForTimeout(1200);
+  if(on('gym')) { const gpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await gpage.goto(URL); await gpage.waitForTimeout(1200);
     const ref=require('./random.js').blocks().map(b=>b.src.trim()), got=await gpage.evaluate(()=>GEN.blocks().map(x=>x.trim()));
     const diff=ref.filter((b,i)=>b!==got[i]).length+Math.abs(ref.length-got.length);
     if(diff) fail.push('Тренажёр: разбор кода на сайте расходится с контрольным разбором в '+diff+' блоках');
@@ -114,34 +127,34 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     report('Тренажёр',gy.bad); await gpage.close(); }
 
   /* 3г′. РК2: банк заданий, генераторы «Вижу» с независимой проверкой ответа, модель готовности, проход всех режимов */
-  { const rpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+  if(on('rk2')) { const rpage=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('РК2', await require('./rk2.js').rk2Check(rpage,URL)); await rpage.close(); }
 
   /* 3г‴. «РК2 за 9 шагов» (#/ng/rk2): ответы генераторов 9 тем пересчитываются по координатам независимо, прогресс 0–100 %, проход тем и пробного РК2 */
-  { const kp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+  if(on('rkp')) { const kp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('РК2 за 9 шагов', await require('./rkp.js').rkpCheck(kp,URL)); await kp.close(); }
 
   /* 3г⁗. режим эфира (#/live/show): ответы пересчитываются по координатам, чертёж каждого шага сверен с пространством,
      подписи не налезают, все шаги проходятся; карточка эфира на главной — ближайший эфир и перенос */
-  { const lp=await browser.newPage({viewport:{width:1600,height:900},deviceScaleFactor:1});
+  if(on('live')) { const lp=await browser.newPage({viewport:{width:1600,height:900},deviceScaleFactor:1});
     report('Режим эфира', await require('./live.js').liveCheck(lp,URL)); await lp.close(); }
 
   /* 3г″. «Сдашь РК2?» (#/rk): билеты-игры, чертежи ИГ сверяются лучами с телом детали, проход всех режимов и тизер на главной */
-  { const gp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+  if(on('rkg')) { const gp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
     report('«Сдашь РК2?»', await require('./rkg.js').rkgCheck(gp,URL)); await gp.close(); }
 
   /* 3г‴. ДЗ 4 по ИГ: решение по шагам — покрытие линий точками с линиями связи 100 %, состав шагов, подписи, плеер
      (выборка вариантов; все 30 — node tests/ig4-steps.js) */
-  { const ip=await browser.newPage({viewport:{width:1400,height:1000},deviceScaleFactor:1});
+  if(on('ig4')) { const ip=await browser.newPage({viewport:{width:1400,height:1000},deviceScaleFactor:1});
     report('ДЗ 4: шаги', await require('./ig4-steps.js').ig4StepsCheck(ip,URL,{only:QUICK?[7]:[1,7,13,18,24,30]})); await ip.close(); }
 
   /* 3в. ДЗ 2 по ИГ: размеры на листах — числа равны расстояниям по модели, выносные линии упираются в контур */
-  report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
+  if(on('igs')) report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
 
   /* 3д. нормоконтроль листов ИГ (tests/normo.js, normo-model.js): ГОСТ 2.301–2.307 и 2.104 по готовому SVG листа и сверка
      каждого вида с 3D-моделью лучами. Проверка проверки (normo-mutate.js): нарушения тренажёра «Нормоконтроль» подсаживаются
      в настоящие листы и должны ловиться там, где тренажёр их показывает, — без лишних замечаний */
-  { const npage=await browser.newPage(); await npage.goto(URL); await npage.waitForTimeout(1200);
+  if(on('normo')) { const npage=await browser.newPage(); await npage.goto(URL); await npage.waitForTimeout(1200);
     /* ИГ задания 3 и 4 — выборка вариантов (все 30 — node tests/normo-run.js --set=ig3 | ig4): общий прогон укладывается в CI */
     const nr=await require('./normo-run.js').runNormo(npage,{nomodel:QUICK,igSample:[1,7,13,18,24,30]});
     info.push('Нормоконтроль ИГ: листов '+nr.stat.sheets+(QUICK?' (без сверки с моделью)':', виды сверены с 3D-моделью')+', '+Math.round(nr.stat.ms/1000)+' с');
@@ -168,7 +181,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
      написан текст шага (exp: главный вид, вид сверху, вид слева), совпадает с видимостью по модели на изображениях листа (луч к глазу,
      разрезы — как на листе), и сверена с эталонным лучом (шаг 0,01 мм, любой материал — крестик); чертёж каждого шага строится. Тренажёр нажатиями: верное место и верная отметка засчитываются;
      перепутанные перёд и зад или не та отметка (выколотая точка ↔ крестик) — нет */
-  { const tp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const te=[]; tp.on('pageerror',e=>te.push(String(e)));
+  if(on('points')) { const tp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const te=[]; tp.on('pageerror',e=>te.push(String(e)));
     await tp.goto(URL+'#/ig/points'); await tp.waitForTimeout(1500);
     const out=await tp.evaluate(()=>{ const bad=[], J=IG3.jc(IG_VARS[5].tree), M={F:'″',T:'′',L:'‴'};
       IGL.PEX().forEach(E=>{ const name='точка '+E.n, j=J(...E.p); if(E.cutp?!(j<-0.05&&Math.abs(E.p[E.cutp==='L'?0:1])<1e-9):Math.abs(j)>0.05) bad.push({name,rule:E.cutp?'точка в штриховке: в материале, в секущей плоскости':'точка на поверхности',msg:'J = '+j.toFixed(3)});
@@ -201,7 +214,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   /* 3з. ДЗ №3, «Сверь свой лист»: таблица 30 вариантов задания. Ответы пересчитываются здесь независимо (нормаль, проекция на ребро AB,
      угол ребра с плоскостью), выбор варианта подставляет его данные и показывает те же числа; варианты-«зеркала» дают равные ответы;
      ответы варианта, вписанные как свои, проходят проверку */
-  { const hp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const he=[]; hp.on('pageerror',e=>he.push(String(e)));
+  if(on('ng3')) { const hp=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); const he=[]; hp.on('pageerror',e=>he.push(String(e)));
     await hp.goto(URL+'#/ng3/my'); await hp.waitForTimeout(1500);
     const out=await hp.evaluate(async()=>{ const bad=[], S=HWCHECK.SPEC['3'], V=S.vars, sub=(a,b)=>a.map((v,i)=>v-b[i]), dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], ln=a=>Math.sqrt(dt(a,a)), D=r=>r*180/Math.PI;
       const keys=Object.keys(V); if(keys.length!==30) bad.push({name:'ДЗ №3',rule:'30 вариантов',msg:'в таблице '+keys.length});
@@ -227,7 +240,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
 
   /* 3е. обезличенная статистика режимов (docs/ANALYTICS.md): события уходят в TRACK — он сам отправляет их, только если посетитель
      согласился на cookie. Здесь TRACK подменяется записью в список: открыть задачу, сменить режим, дойти до ответа */
-  { const apage=await browser.newPage({viewport:{width:390,height:844}}); await apage.goto(URL+'#/ng/tasks/12'); await apage.waitForTimeout(1200);
+  if(on('track')) { const apage=await browser.newPage({viewport:{width:390,height:844}}); await apage.goto(URL+'#/ng/tasks/12'); await apage.waitForTimeout(1200);
     await apage.evaluate(()=>{ window.__EV=[]; window.TRACK=(n,p)=>__EV.push(n+':'+(p&&p.mode||'')+':'+(p&&p.task||'')); location.hash='#/ng/path/t12'; });
     await apage.waitForSelector('.pl-mode[data-m="try"]',{timeout:5000}).catch(()=>{});
     await apage.click('.pl-mode[data-m="try"]').catch(()=>{}); await apage.click('.pl-mode[data-m="watch"]').catch(()=>{});
@@ -239,29 +252,29 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
 
   /* 3и. кабинет: сканер → «Мои чертежи» → доводка → 3D (tests/lk-drawings.js): логика восстановления по двум проекциям,
      путь студента в кабинете и настоящий конвейер сканера на синтетическом фото (облако подменено ответами модели) */
-  { const {bad,res}=await require('./lk-drawings.js').runLk(browser,URL);
+  if(on('lk')) { const {bad,res}=await require('./lk-drawings.js').runLk(browser,URL);
     info.push('Мои чертежи: '+bad.length+' замечаний'+(res&&!res.err?' (конвейер на синтетическом фото: ДЗ №'+res.dz+' в.'+res.n+', невязка '+res.rms+' мм, рёбер '+res.edges+')':''));
     report('Мои чертежи (сканер в кабинете)',bad); }
 
   /* 3к. пульт владельца me/ (tests/me-hub.js): рука как мышь (me/pointer.js), вход только по коду владельца,
      кабинет · сканер · 3D · голограмма · сайт на одной странице */
-  { const bad=await require('./me-hub.js').runMe(browser,URL); info.push('Пульт владельца: '+bad.length+' замечаний'); report('Пульт владельца (me/)',bad); }
+  if(on('me')) { const bad=await require('./me-hub.js').runMe(browser,URL); info.push('Пульт владельца: '+bad.length+' замечаний'); report('Пульт владельца (me/)',bad); }
 
   /* 3л′. печать листов (tests/print.js): страниц PDF ровно столько, сколько листов, фон белый в светлой и тёмной теме */
-  report('Печать листов', await require('./print.js').printCheck(browser,URL));
+  if(on('print')) report('Печать листов', await require('./print.js').printCheck(browser,URL));
   /* цвета чертежа (tests/colors.js): контраст ≥ 3:1, различимость при цветовой слепоте */
-  report('Цвета чертежа', require('./colors.js').check());
+  if(on('colors')) report('Цвета чертежа', require('./colors.js').check());
 
   /* 3л. «Спроси автора» (tests/ask.js): вопрос с сайта (гость → вход → черновик уходит сам, фото) → ответ в пульте → ученик видит ответ;
      настоящий сервер кабинета с базой в памяти */
-  { const bad=await require('./ask.js').runAsk(browser); info.push('Спроси автора: '+bad.length+' замечаний'); report('Спроси автора (#/ask, пульт)',bad); }
+  if(on('ask')) { const bad=await require('./ask.js').runAsk(browser); info.push('Спроси автора: '+bad.length+' замечаний'); report('Спроси автора (#/ask, пульт)',bad); }
 
   /* 4. теория */
-  const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
-  report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg})));
+  if(on('theory')){ const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text}));
+  report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg}))); }
 
   /* 5. обход сайта: каждая страница на телефоне — без ошибок JS, без горизонтальной прокрутки, не пустая */
-  if(!QUICK){
+  if(!QUICK&&on('crawl')){
     const seen=new Set(), queue=['#/'], bad=[]; let n=0;
     while(queue.length&&n<700){ const h=queue.shift(); if(seen.has(h)) continue; seen.add(h); n++;
       const before=errs.length; await page.evaluate(h=>{ location.hash=h; },h); await page.waitForTimeout(60);
@@ -293,6 +306,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     let commit=process.env.GITHUB_SHA||''; try{ if(!commit) commit=require('child_process').execSync('git rev-parse HEAD',{cwd:ROOT}).toString().trim(); }catch(e){}
     fs.writeFileSync(JSONOUT,JSON.stringify({commit,date:new Date().toISOString(),quick:QUICK,info,fail,M},null,1)); }
   await browser.close(); srv.close();
+  if(ONLY) info.unshift('Выборочная проверка: '+[...ONLY].join(', '));
+  mark(null); info.push('Время блоков, с: '+Object.entries(TIME).sort((a,b)=>b[1]-a[1]).map(([g,ms])=>g+' '+Math.round(ms/1000)).join(', '));
   console.log(info.join('\n'));
   /* длинный список одного раздела — первые 25 строк и число остальных: лог CI обрезается, и иначе не видно других разделов */
   if(fail.length){ const by={}; fail.forEach(f=>{ const g=f.split(' · ')[0]; (by[g]=by[g]||[]).push(f); });
