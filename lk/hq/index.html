@@ -78,6 +78,7 @@
 
   <section class="view" id="v-tasks" hidden>
     <div class="row"><button class="ghost" id="sync">↻ Обновить статусы Цеха</button><span class="msg" id="sMsg"></span></div>
+    <div class="epics" id="epics"></div>
     <div class="board" id="board"></div>
   </section>
 
@@ -153,11 +154,11 @@
     <div class="msg" id="dMsg"></div>
     <div id="dResult"></div>
   </div>
-  <div class="row foot"><button class="ghost danger" id="dArch">В архив</button></div>
+  <div class="row foot"><button class="ghost" id="dEpic" title="Большая цель: Главный инженер разобьёт её на задачи">🧭 Сделать эпиком</button><button class="ghost danger" id="dArch">В архив</button></div>
 </aside>
 <div class="scrim" id="scrim" hidden></div>
 
 <script src="../config.js"></script>
-<script src="hq.js?v=4"></script>
+<script src="hq.js?v=5"></script>
 </body>
 </html>

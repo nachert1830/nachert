@@ -4,14 +4,15 @@
    3. POST /api/hq/assign: Диспетчер оценивает вид и сложность → исполнитель из штатного расписания (владелец может сменить).
    4. POST /api/hq/run: текст и исследование — пишет модель здесь же; картинка — генератор, файл кладётся в репозиторий (img/hq/);
       код — Issue с метками «цех» и «исп:<модель>» → Цех (.github/workflows/hq-work.yml): ветка, тесты, эскалация, PR, выкатка.
-   5. POST /api/hq/sync: статусы задач Цеха и их стоимость из комментариев (<!-- hq:{…} -->).
+   5. POST /api/hq/sync: статусы задач Цеха и их стоимость из комментариев (<!-- hq:{…} -->); планы эпиков и тик планировщика (epic.js).
+   6. Эпики (epic.js): цель → план Главного инженера → утверждение → задачи по одной → разбор провала → приёмка. tick() — из таймера сервера.
    Хранение (закрыто, YDB): config/hq — настройки, config/hqspend-ГГГГ-ММ — траты месяца, hqdumps — монологи, hqnodes — узлы карты.
    В публичный GitHub уходит только утверждённое ТЗ задачи кода (без монолога). Подробно — docs/HQ.md. */
 'use strict';
 const crypto = require('crypto');
-const RO = require('./roster'), P = require('./prompts'), L = require('./llm');
+const RO = require('./roster'), P = require('./prompts'), L = require('./llm'), EPIC = require('./epic');
 
-const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise', 'question'];
+const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise', 'question', 'epic'];
 const STATUS = ['new', 'talk', 'ready', 'assigned', 'running', 'review', 'done', 'failed', 'rolled', 'archived'];
 const id = p => p + crypto.randomBytes(6).toString('base64url');
 const clean = (s, n) => String(s == null ? '' : s).replace(/\u0000/g, '').trim().slice(0, n || 400);
@@ -72,7 +73,9 @@ function register(D, o) {
   const save = n => store.put('hqnodes', n);
   /* узел для ответа: без длинных полей, кроме выбранного */
   const brief = n => ({id: n.id, type: n.type, title: n.title, text: n.text, parent: n.parent || null, status: n.status, kind: n.kind || null, level: n.level || null,
-    model: n.model || null, at: n.at, rub: n.rub || 0, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null});
+    model: n.model || null, at: n.at, rub: n.rub || 0, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null,
+    epic: n.epic || null, ekey: n.ekey || null, eorder: n.eorder || 0, core: !!n.core, deps: n.deps || [], pr: n.pr || null,
+    budgetRub: n.type === 'epic' ? n.budgetRub || 0 : undefined, spentRub: n.type === 'epic' ? n.spentRub || 0 : undefined});
 
   R['GET /api/hq'] = async () => {
     const [st, s, ns, ds, mem] = await Promise.all([settings(), spent(), nodes(), store.scan('hqdumps'), memory()]);
@@ -236,7 +239,7 @@ function register(D, o) {
 
   /* 5. Статусы Цеха */
   R['POST /api/hq/sync'] = async () => {
-    const run = (await nodes()).filter(n => n.issue && (['running', 'failed', 'review'].includes(n.status) || n.rollback || n.status === 'done' && n.pr && now() - (n.doneAt || 0) < 3 * 864e5));   /* выкаченные за 3 дня — вдруг автооткат */
+    const run = (await nodes()).filter(n => n.issue && n.type !== 'epic' && (['running', 'failed', 'review'].includes(n.status) || n.rollback || n.status === 'done' && n.pr && now() - (n.doneAt || 0) < 3 * 864e5));   /* выкаченные за 3 дня — вдруг автооткат */
     const out = [];
     for (const n of run.slice(0, 15)) {
       const [i, cs] = await Promise.all([gh('/issues/' + n.issue), gh('/issues/' + n.issue + '/comments?per_page=50')]);
@@ -247,6 +250,7 @@ function register(D, o) {
         n.counted.push(c.id); }
       const last = cs.filter(c => !/^Перезапуск/.test(c.body || '')).slice(-1)[0];
       n.log = last ? clean((last.body || '').replace(/<!--[\s\S]*?-->/g, ''), 1500) : n.log;
+      const rep = last && /^Отчёт: (.+)$/m.exec(last.body || ''); if (rep) n.report = clean(rep[1], 400);
       if (n.type === 'question') { if (names.includes('ответ')) { const a = cs.filter(c => /<!-- hq-answer -->/.test(c.body || '')).slice(-1)[0]; n.result = a ? clean(a.body.replace(/<!--[\s\S]*?-->/g, ''), 8000) : n.log; n.status = 'done'; } else if (names.includes('провал')) n.status = 'failed'; }
       else if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; }
       else if (n.rollback) {}
@@ -256,7 +260,8 @@ function register(D, o) {
       if (n.status !== was) await feedStatus(n);
     }
     await alarms();
-    return {ok: true, nodes: out, spent: await spent()};
+    const epics = await EP.tick();
+    return {ok: true, nodes: out, epics, spent: await spent()};
   };
   /* «Сайт просит»: красная полная проверка main (Issue «main-красный» из check.yml) → в ленту с кнопкой «Починить» — один раз на Issue */
   async function alarms() {
@@ -303,6 +308,8 @@ function register(D, o) {
     const T = {done: '✅ Готово: «' + n.title + '»' + (n.pr ? ' — на сайте.' : '.'), failed: '❌ Не получилось: «' + n.title + '». ' + (n.log ? n.log.split('\n')[0] : ''),
       review: '🔍 Проверь: «' + n.title + '».', rolled: '↩️ Откатил: «' + n.title + '». Сайт как до выкатки.', running: '⚙️ В работе: «' + n.title + '».'};
     if (!T[n.status]) return;
+    if (n.epic && (n.status === 'failed' || n.status === 'rolled'))
+      return feed('hq', T[n.status] + ' Это задача эпика — Главный инженер разберёт причину.' + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, links: [n.url && {l: 'задача', u: n.url}].filter(Boolean)});
     const acts = n.status === 'failed' ? [A('↻ Перезапустить сильнее', 'run', {id: n.id, stronger: true}, true), A('Открыть', 'open', {id: n.id})]
       : n.status === 'done' && n.pr ? [A('↩️ Откатить', 'rollback', {id: n.id})] : n.status === 'review' ? [A('Принять ✓', 'accept', {id: n.id}, true), A('Открыть', 'open', {id: n.id})] : [];
     await feed('hq', T[n.status] + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, acts, links: [n.url && {l: 'задача', u: n.url}, n.pr && {l: 'PR', u: n.pr}].filter(Boolean)});
@@ -357,6 +364,15 @@ function register(D, o) {
       await inner('POST /api/hq/node', {id: r.node.id, kind: 'code', level: 'complex'});
       const n = await getNode(r.node.id); n.spec = {title: 'Починить красную проверку main', what: 'Полная проверка сайта на main красная. Найди причину по логу и исправь код (не тесты и не baseline, если ошибка настоящая).\n\n' + clean(i.body, 3000), where: 'по логу проверки', done: ['node tests/run.js на затронутых блоках зелёный'], not: ['не отключать и не ослаблять проверки']};
       n.ready = true; n.status = 'ready'; await save(n); await feedReady(st, n); return {ok: true, node: n}; }
+    if (op === 'epic') return {ok: true, node: await EP.create({title: a.title || clean(a.text, 100), text: a.text || a.title})};
+    if (op === 'mkepic') {   /* «Сделать эпиком»: цель или задача карты, или разбор монолога */
+      if (a.dump) { const d = await store.get('hqdumps', String(a.dump)); if (!d) fail(404, 'Нет такой записи.');
+        const g = (await nodes()).find(x => (d.made || []).includes(x.id) && x.type === 'goal');
+        return {ok: true, node: await EP.create({title: g ? g.title : clean(d.summary, 100), text: (g && g.text ? g.text + '\n' : '') + d.summary, parent: g ? g.id : null})}; }
+      const n = await getNode(a.id), all = await nodes(), byId = Object.fromEntries(all.map(x => [x.id, x]));
+      const chain = []; for (let p = byId[n.parent], i = 0; p && i < 4; p = byId[p.parent], i++) chain.push(p.title + (p.text ? ' — ' + p.text.slice(0, 300) : ''));
+      return {ok: true, node: await EP.create({title: n.spec && n.spec.title || n.title, text: [n.text, n.spec && n.spec.what].filter(Boolean).join('\n') || n.title, parent: n.id, context: chain.length ? 'Выше по карте:\n' + chain.join('\n') : ''})}; }
+    if (/^epic(ok|replan|cancel|budget|stop|resume)$/.test(op)) return {ok: true, node: await EP.act(op, a)};
     if (op === 'archive') { await inner('POST /api/hq/node', {id: a.id, op: 'archive'}); await feed('hq', 'Убрал в архив.', {node: a.id}); return {ok: true}; }
     fail(400, 'Нет такого действия.');
   }
@@ -397,18 +413,32 @@ function register(D, o) {
       else if (dec.intent === 'archive' && known(dec.node)) { await act('archive', {id: dec.node}); }
       else if (dec.intent === 'status') { await say(dec.reply); await act('sync', {}); }
       else if (dec.intent === 'reply') { await say(dec.reply || 'Понял.'); }
+      else if (dec.intent === 'epic') { await say(dec.reply); await act('epic', {text: clean(dec.text, 3000) || clean(text, 300)}); }
       else {
         const r = await inner('POST /api/hq/dump', {text}); const ts = r.nodes.filter(n => n.type === 'task');
         const c = t => r.nodes.filter(n => n.type === t).length;
         await feed('hq', (r.dump.summary ? r.dump.summary + '\n' : '') + 'Разложил: стратегия ' + c('strategy') + ', цели ' + c('goal') + ', задачи ' + ts.length + ', идеи ' + c('idea') + ', балабольство ' + c('noise') + '.' +
-          (r.dump.questions.length ? '\n❓ ' + r.dump.questions.join('\n❓ ') : ''), {dump: r.dump.id, acts: [A('🗺 Карта', 'map', {})].concat(ts.slice(0, 6).map((n, i) => A('Обсудить «' + n.title.slice(0, 34) + '»', 'discuss', {id: n.id}, i === 0)))});
+          (r.dump.questions.length ? '\n❓ ' + r.dump.questions.join('\n❓ ') : ''), {dump: r.dump.id, acts: [A('🗺 Карта', 'map', {})].concat(ts.slice(0, 6).map((n, i) => A('Обсудить «' + n.title.slice(0, 34) + '»', 'discuss', {id: n.id}, i === 0)),
+            ts.length >= 3 || c('goal') ? [A('🧭 Сделать эпиком', 'mkepic', {dump: r.dump.id})] : [])});
       }
     } catch (e) { await feed('hq', '⚠️ ' + (e.message || 'Ошибка')); if (!(e.status >= 400 && e.status < 500)) throw e; }
     return {ok: true, spent: await spent()};
   };
 
+  /* эпики: планировщик и кнопки (epic.js) */
+  const EP = EPIC.epics({store, now, settings, askJson, gh, feed, A, inner, getNode, save, estimate, memFor, fail, id, spend});
+  /* таймер сервера (remind раз в 15 минут): статусы Цеха, планы и шаги эпиков — даже когда ЛК закрыт */
+  async function tick() {
+    if (!env.ghToken || !env.ghRepo) return {skip: 'нет токена GitHub'};
+    const busy = await store.scan('hqnodes', n => n.type === 'epic' && ['planning', 'running'].includes(n.status) || n.type === 'task' && n.status === 'running' && n.issue);
+    if (!busy.length) return {skip: 'нечего делать'};
+    const r = await R['POST /api/hq/sync']();
+    return {nodes: r.nodes.length, epics: r.epics};
+  }
+
   /* ответы — JSON в формате сервера клуба */
   Object.keys(R).forEach(k => { D[k] = async (req, S) => o.json(200, await R[k](req, S)); });
+  return {tick};
 }
 
 module.exports = {register};

@@ -12,7 +12,7 @@ test('RUN: запрещённые команды отклоняются до з�
     'gh pr list': /gh/, 'curl https://example.com': /сеть/, 'wget https://example.com': /сеть/, 'echo hi | nc example.com 80': /сеть/,
     'ssh user@host': /ssh/, 'scp a host:b': /ssh/, 'sudo ls': /sudo/, 'rm -rf /': /rm -rf/, 'rm -rf ~': /rm -rf/, 'rm -rf ~/': /rm -rf/,
     'npm publish': /npm publish/, 'printenv PROXYAPI_KEY': /ключ/, 'env | grep TOKEN': /ключ/, 'echo $GH_TOKEN': /ключ/,
-    'cat /proc/self/environ': /environ/, 'cat /proc/1/environ': /environ/,
+    'cat /proc/self/environ': /environ/, 'cat /proc/1/environ': /environ/, 'cat .git/config': /git/, 'grep -r extraheader .': /git/,
     'echo x > .github/workflows/check.yml': /workflows/, 'sed -i s/a/b/ .github/workflows/hq-work.yml': /workflows/,
     'echo {} > tests/baseline.json': /baseline/, 'cp /tmp/b.json tests/baseline.json': /baseline/,
     'echo x > /etc/passwd': /вне репозитория/, 'ls >> ../out.txt': /вне репозитория/, 'ls | tee /home/x.txt': /вне репозитория/

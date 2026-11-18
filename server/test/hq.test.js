@@ -9,12 +9,14 @@ function net(){ const n={calls:[],replies:[],issues:{},labels:[]};
     if(url==='https://api.proxyapi.ru/v1/chat/completions'){ const r=n.replies.shift(); if(!r) return {status:500,json:{error:{message:'нет ответа'}}};
       return {status:200,json:{choices:[{message:{content:typeof r==='string'?r:JSON.stringify(r)},finish_reason:'stop'}],usage:{prompt_tokens:10000,completion_tokens:2000}}}; }
     const m=/^https:\/\/api\.github\.com\/repos\/nachert1830\/nachert(\/.*)$/.exec(url); if(!m) return null;
-    mm0=/^\/issues\/(\d+)$/.exec(m[1]); if(mm0&&o.method==='PATCH'){ return {status:200,json:n.issues[mm0[1]]}; }
+    mm0=/^\/issues\/(\d+)$/.exec(m[1]); if(mm0&&o.method==='PATCH'){ const i=n.issues[mm0[1]]; if(i&&b){ if(b.body!=null) i.body=b.body; if(b.labels) i.labels=b.labels.map(x=>({name:x})); if(b.state) i.state=b.state; } return {status:200,json:i}; }
     if(m[1]==='/issues'&&o.method==='POST'){ const num=200+Object.keys(n.issues).length; n.issues[num]={number:num,body:b.body,labels:b.labels.map(x=>({name:x})),state:'open'};
       return {status:201,json:{number:num,html_url:'https://github.com/nachert1830/nachert/issues/'+num}}; }
     if(/^\/issues\?labels=/.test(m[1])) return {status:200,json:n.alarms||[]};
     let mm=/^\/issues\/(\d+)\/labels$/.exec(m[1]); if(mm){ n.issues[mm[1]].labels.push(...b.labels.map(x=>({name:x}))); return {status:200,json:[]}; }
-    mm=/^\/issues\/(\d+)\/comments/.exec(m[1]); if(mm) return {status:200,json:n.comments||[]};
+    mm=/^\/issues\/(\d+)\/comments/.exec(m[1]); if(mm) return {status:200,json:(n.commentsBy&&n.commentsBy[mm[1]])||n.comments||[]};
+    if(/^\/actions\/workflows\/check\.yml\/runs/.test(m[1])) return {status:200,json:{workflow_runs:n.runs||[]}};
+    if(m[1]==='/actions/workflows/check.yml/dispatches'){ n.dispatched=(n.dispatched||0)+1; return {status:204,json:{}}; }
     mm=/^\/issues\/(\d+)$/.exec(m[1]); if(mm) return {status:200,json:n.issues[mm[1]]};
     return {status:404,json:{}}; };
   return n; }
@@ -168,3 +170,143 @@ test('Штаб: память — «запомни» → правило в каж
   const b3=n.issues[Object.keys(n.issues)[2]].body; assert.match(b3,/на «ты»/); assert.doesNotMatch(b3,/Уроки прошлых задач/);
   /* удалить правило */
   const r=await c.call('POST','/api/hq/memory',{op:'del',i:0},{as:'owner'}); assert.ok(!r.data.memory.some(x=>x.kind==='правило')); });
+
+/* ── эпики: главный инженер, план, планировщик ── */
+const EPIC=require('../lib/hq/epic');
+const T=(key,o)=>Object.assign({key,title:'Задача '+key,what:'сделать '+key,where:'me/index.html',done:['готово '+key],not:[],kind:'code',level:'simple',core:false,deps:[],test:'node tests/run.js --only=me'},o||{});
+const PLAN=()=>({summary:'Панель здоровья в пульте',architecture:'данные запусков — сервер\nпанель — me/',tasks:[T('t1'),T('t2',{level:'medium',deps:['t1']}),T('t3',{core:true,level:'medium',deps:['t1']}),T('t4',{deps:['t2','t3']})],risks:['лимит API'],questions:['Показывать красные первыми?']});
+const planComment=(id,plan,rub)=>({id,body:'🧭 План\n\n<!-- hq-plan -->\n```json\n'+JSON.stringify(plan)+'\n```\n<!-- /hq-plan -->\n<!-- hq:{"rub":'+(rub||12.5)+',"model":"opus"} -->'});
+const nodesOf=async c=>(await c.call('GET','/api/hq',undefined,{as:'owner'})).data.nodes;
+const feedOf=async c=>(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed;
+const sync=c=>c.call('POST','/api/hq/sync',{},{as:'owner'});
+const issueOf=(n,node)=>n.issues[node.issue];
+/* задача в Цехе завершилась: метка и комментарий с отчётом */
+function finish(n,node,ok,o){ o=o||{}; n.commentsBy=n.commentsBy||{}; const i=issueOf(n,node);
+  n.commentsBy[node.issue]=[{id:1000+node.issue,body:(ok?'✅ Выкачено.\n\nОтчёт: '+(o.report||'сделал '+node.ekey):'❌ Не получилось: тесты красные в блоке me')+'\n<!-- hq:{"rub":'+(o.rub||1)+',"model":"deepseek"'+(ok?',"pr":"https://github.com/x/pull/'+node.issue+'"':'')+'} -->'}];
+  i.labels=i.labels.filter(l=>!['готово','провал'].includes(l.name)).concat([{name:ok?'готово':'провал'}]); }
+async function epicReady(c,n,plan){
+  const r=await c.call('POST','/api/hq/act',{op:'epic',a:{text:'Панель «Здоровье сайта» в пульте'}},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const e=(await nodesOf(c)).find(x=>x.type==='epic'); n.commentsBy=n.commentsBy||{}; n.commentsBy[e.issue]=[planComment(50,plan||PLAN())];
+  await sync(c); return (await nodesOf(c)).find(x=>x.id===e.id); }
+async function epicRunning(c,n,plan){ const e=await epicReady(c,n,plan);
+  const r=await c.call('POST','/api/hq/act',{op:'epicok',a:{id:e.id}},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const ns=await nodesOf(c); return {e:ns.find(x=>x.id===e.id),tasks:ns.filter(x=>x.epic===e.id).sort((a,b)=>a.eorder-b.eorder)}; }
+const byKey=async(c,e)=>Object.fromEntries((await nodesOf(c)).filter(x=>x.epic===e.id).map(x=>[x.ekey,x]));
+
+test('Эпик: Секретарь «epic» → эпик planning, Issue «эпик» без монолога владельца', async()=>{ const {c,n}=await setup();
+  n.replies.push({intent:'epic',text:'Панель «Здоровье сайта» в пульте: последние 5 запусков проверки main',reply:'Это большая цель — отдаю Главному инженеру.'});
+  const r=await c.call('POST','/api/hq/talk',{text:'ну короче блин устал, хочу в пульте панель здоровья сайта, последние запуски проверки main, ну ты понял'},{as:'owner'});
+  assert.equal(r.status,200,JSON.stringify(r.data));
+  const e=(await nodesOf(c)).find(x=>x.type==='epic'); assert.ok(e,'эпик создан'); assert.equal(e.status,'planning');
+  const iss=n.issues[e.issue]; assert.ok(iss); assert.deepEqual(iss.labels.map(l=>l.name).sort(),['исп:opus','эпик'].sort());
+  assert.match(iss.body,/Панель «Здоровье сайта»/); assert.doesNotMatch(iss.body,/ну короче|устал|ты понял/,'монолог владельца в публичный Issue не попадает');
+  assert.match(iss.body,/hq-model:\{"key":"opus"/);
+  const f=await feedOf(c); assert.match(f[f.length-1].text,/Главный инженер.*пишет план/);
+  assert.equal(RO.ROLES.chief.def,'opus'); assert.equal((await c.call('GET','/api/hq',undefined,{as:'owner'})).data.settings.roles.chief,'opus'); });
+
+test('Эпик: validatePlan — цикл, битый dep, нет test, > 30 % сложных, < 3 задач отклоняются; верный принимается', ()=>{
+  assert.equal(EPIC.validatePlan(PLAN()).ok,true);
+  const bad=(f,re)=>{ const p=PLAN(); f(p); const v=EPIC.validatePlan(p); assert.equal(v.ok,false); assert.ok(v.errors.some(x=>re.test(x)),v.errors.join(' | ')); };
+  bad(p=>{ p.tasks[0].deps=['t4']; },/цикл/);
+  bad(p=>{ p.tasks[1].deps=['t9']; },/несуществующей/);
+  bad(p=>{ delete p.tasks[2].test; },/нет test/);
+  bad(p=>{ p.tasks[0].done=[]; },/нет done/);
+  bad(p=>{ p.tasks[3].where=''; },/нет where/);
+  bad(p=>{ p.tasks[0].level='complex'; p.tasks[1].level='complex'; },/30 %/);
+  bad(p=>{ p.tasks=p.tasks.slice(0,2); p.tasks[1].deps=['t1']; },/не меньше 3/);
+  bad(p=>{ p.tasks=Array.from({length:31},(_,i)=>T('k'+i)); },/не больше 30/); });
+
+test('Эпик: план из комментария → review, карточка с оценкой; «Утвердить» → running; задачи по одной по deps; блок эпика в ТЗ; ядро — Главный инженер; приёмка', async()=>{ const {c,n}=await setup();
+  const e=await epicReady(c,n);
+  assert.equal(e.status,'review');
+  let f=await feedOf(c), card=f.find(x=>/План эпика/.test(x.text)); assert.ok(card,'карточка плана в ленте');
+  assert.match(card.text,/Задачи \(4\)/); assert.match(card.text,/Оценка: ~[\d.]+ ₽, бюджет эпика с запасом — [\d.]+ ₽/); assert.match(card.text,/Claude Opus 5\.5, средняя, ядро \(после 1\)/); assert.match(card.text,/❓ Показывать красные/);
+  assert.deepEqual(card.acts.map(a=>a.op),['epicok','epicreplan','epiccancel']);
+  /* оценка: DeepSeek 1,11 + Sonnet 14,08 + Opus 28,16 (t3 — ядро: Opus, хоть и medium) + DeepSeek 1,11 = 44,46 ₽ × 1,5 */
+  assert.equal(e.budgetRub,66.69);
+  /* утвердить → первая задача в Цехе, остальные ждут */
+  const r=await c.call('POST','/api/hq/act',{op:'epicok',a:card.acts[0].a},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  let k=await byKey(c,e); assert.equal((await nodesOf(c)).find(x=>x.id===e.id).status,'running');
+  assert.equal(k.t1.status,'running'); assert.equal(k.t2.status,'ready'); assert.equal(k.t3.status,'ready');
+  const b1=issueOf(n,k.t1).body; assert.match(b1,/## Эпик: /); assert.match(b1,/Что уже сделано: это первая задача/); assert.match(b1,/\*\*Проверка:\*\* node tests\/run\.js --only=me/);
+  assert.ok(issueOf(n,k.t1).labels.some(l=>l.name==='исп:deepseek'));
+  /* задача в работе — тик ничего не запускает */
+  const before=Object.keys(n.issues).length; await sync(c); assert.equal(Object.keys(n.issues).length,before);
+  /* t1 готова → следующая t2 (deps готовы), в её ТЗ — что уже сделано */
+  finish(n,k.t1,true,{report:'добавил данные запусков в /api/health'}); await sync(c); k=await byKey(c,e);
+  assert.equal(k.t1.status,'done'); assert.equal(k.t2.status,'running'); assert.equal(k.t4.status,'ready');
+  assert.match(issueOf(n,k.t2).body,/Что уже сделано: \n- Задача t1: добавил данные запусков/); assert.ok(issueOf(n,k.t2).labels.some(l=>l.name==='исп:sonnet'));
+  /* t2 готова → t3 «ядро» → исполнитель роли chief */
+  finish(n,k.t2,true); await sync(c); k=await byKey(c,e); assert.equal(k.t3.status,'running'); assert.equal(k.t3.model,'opus'); assert.ok(issueOf(n,k.t3).labels.some(l=>l.name==='исп:opus'));
+  finish(n,k.t3,true); await sync(c); k=await byKey(c,e); assert.equal(k.t4.status,'running');
+  /* все готовы → полная проверка main ещё не прошла: Штаб её запрашивает и ждёт */
+  finish(n,k.t4,true); await sync(c); assert.equal((await nodesOf(c)).find(x=>x.id===e.id).status,'running'); assert.equal(n.dispatched,1);
+  /* проверка зелёная → Главный инженер сверяет → эпик готов, итог в ленте с ценой и PR */
+  n.runs=[{id:9,status:'completed',conclusion:'success',created_at:new Date(c.clock.t).toISOString(),html_url:'https://github.com/x/actions/runs/9'}];
+  n.replies.push({ok:true,summary:'В пульте есть панель здоровья сайта',missing:[]});
+  await sync(c); const done=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(done.status,'done');
+  f=await feedOf(c); const fin=f[f.length-1]; assert.match(fin.text,/🏁 Эпик «.*» готов/); assert.match(fin.text,/Стоило [\d.]+ ₽ \(план 12\.5/); assert.match(fin.text,/панель здоровья/);
+  /* план 12,5 + задачи 4 × 1 + сверка Opus (10000 вх × 4 + 2000 вых × 20 = $0,08 × 110 = 8,8) */
+  assert.equal(fin.links.length,4); assert.equal(done.spentRub,25.3);
+  assert.equal(n.calls.filter(x=>x.url.includes('proxyapi')).length,1,'Opus на сервере — только приёмка (план — в Цехе)'); });
+
+test('Эпик: провал → разбор Главного инженера → split с теми же deps; лимит разборов → пауза и вопрос', async()=>{ const {c,n}=await setup();
+  const {e}=await epicRunning(c,n); let k=await byKey(c,e);
+  finish(n,k.t1,true); await sync(c); k=await byKey(c,e); assert.equal(k.t2.status,'running');
+  /* t2 провалилась → Главный инженер: split на 2 */
+  n.replies.push({decision:'split',why:'задача слишком большая',tasks:[T('a',{title:'Данные панели'}),T('b',{title:'Вид панели',deps:['a']})]});
+  finish(n,k.t2,false); await sync(c);
+  const ns=(await nodesOf(c)).filter(x=>x.epic===e.id); k=Object.fromEntries(ns.map(x=>[x.ekey,x]));
+  assert.ok(!k.t2,'разбитая задача — в архиве'); const a=k['t2.1'], b=k['t2.2']; assert.ok(a&&b,'две новые задачи');
+  assert.ok(a.deps.includes(k.t1.id),'части сохраняют deps исходной'); assert.ok(b.deps.includes(a.id)&&b.deps.includes(k.t1.id));
+  assert.ok(k.t4.deps.includes(a.id)&&k.t4.deps.includes(b.id),'кто ждал исходную — ждёт части');
+  const chiefCall=n.calls.filter(x=>x.url.includes('proxyapi')).slice(-1)[0]; assert.equal(chiefCall.body.model,'anthropic/claude-opus-5-5'); assert.match(chiefCall.body.messages[0].content,/главный инженер/i);
+  let f=await feedOf(c); assert.ok(f.some(x=>/Разбил на 2/.test(x.text)));
+  /* следующий тик — первая часть; лимит: у неё уже 2 разбора → пауза и вопрос владельцу */
+  await sync(c); k=await byKey(c,e); assert.equal(k['t2.1'].status,'running');
+  await c.store.update('hqnodes',k['t2.1'].id,{fixes:2});
+  finish(n,k['t2.1'],false); await sync(c);
+  const ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'paused');
+  f=await feedOf(c); const q=f[f.length-1]; assert.match(q.text,/Нужна твоя помощь/); assert.deepEqual(q.acts.map(x=>x.op),['epicresume','epicstop']);
+  assert.equal(n.calls.filter(x=>x.url.includes('proxyapi')).length,1,'сверх лимита Главный инженер не вызывается');
+  /* владелец отвечает → задача снова готова, эпик идёт */
+  const r=await c.call('POST','/api/hq/act',{op:'epicresume',a:{id:e.id,text:'бери данные из check.yml'}},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  k=await byKey(c,e); assert.equal(k['t2.1'].status,'running'); assert.match(issueOf(n,k['t2.1']).body,/Ответ владельца: бери данные из check\.yml/); });
+
+test('Эпик: лимит разборов на эпик и вопрос Главного инженера → пауза', async()=>{ const {c,n}=await setup();
+  const {e}=await epicRunning(c,n); let k=await byKey(c,e);
+  n.replies.push({decision:'ask',why:'неясно',question:'Брать данные из GitHub API или из Issue? (A/B)'});
+  finish(n,k.t1,false); await sync(c);
+  let ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'paused'); let f=await feedOf(c); assert.match(f[f.length-1].text,/Брать данные из GitHub API/);
+  await c.call('POST','/api/hq/act',{op:'epicresume',a:{id:e.id,text:'A'}},{as:'owner'}); k=await byKey(c,e); assert.equal(k.t1.status,'running');
+  await c.store.update('hqnodes',e.id,{fixes:5}); finish(n,k.t1,false); await sync(c);
+  ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'paused'); f=await feedOf(c); assert.match(f[f.length-1].text,/разборов на эпик уже 5/);
+  /* недопустимый переход отклоняется */
+  assert.equal((await c.call('POST','/api/hq/act',{op:'epicok',a:{id:e.id}},{as:'owner'})).status,409); });
+
+test('Эпик: бюджет исчерпан → пауза с кнопками «Добавить 50 %» и «Остановить»', async()=>{ const {c,n}=await setup();
+  const {e}=await epicRunning(c,n); let k=await byKey(c,e);
+  finish(n,k.t1,true,{rub:e.budgetRub+1}); await sync(c);
+  let ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'paused'); k=await byKey(c,e); assert.equal(k.t2.status,'ready','дальше не запускает');
+  const f=await feedOf(c), last=f[f.length-1]; assert.match(last.text,/бюджет эпика исчерпан/); assert.deepEqual(last.acts.map(x=>x.op),['epicbudget','epicstop']);
+  /* +50 % — и снова идёт, пока потрачено меньше */
+  await c.call('POST','/api/hq/act',{op:'epicbudget',a:last.acts[0].a},{as:'owner'});
+  ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.budgetRub,Math.round(e.budgetRub*1.5*100)/100);
+  await c.call('POST','/api/hq/act',{op:'epicstop',a:{id:e.id}},{as:'owner'}).then(r=>assert.ok([200,409].includes(r.status))); });
+
+test('Эпик: план с ошибками — пауза и вопрос; переплан — замечание в Issue', async()=>{ const {c,n}=await setup();
+  const r=await c.call('POST','/api/hq/act',{op:'epic',a:{text:'Панель здоровья'}},{as:'owner'}); const e=r.data.node;
+  n.commentsBy={[e.issue]:[{id:70,body:'⚠️ План не прошёл проверку дважды:\n- цикл в deps: t1 → t2 → t1\n<!-- hq-plan-fail --> <!-- hq:{"rub":20} -->'}]};
+  await sync(c); let ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'paused');
+  let f=await feedOf(c); assert.match(f[f.length-1].text,/дважды написал план с ошибками[\s\S]*цикл/);
+  await c.call('POST','/api/hq/act',{op:'epicreplan',a:{id:e.id,text:'сделай без серверной части'}},{as:'owner'});
+  ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'planning'); assert.match(n.issues[e.issue].body,/Замечание владельца к прошлому плану\nсделай без серверной части/); });
+
+test('Эпик: таймер сервера (remind) двигает эпик без открытого ЛК', async()=>{ const {c,n}=await setup();
+  const r=await c.call('POST','/api/hq/act',{op:'epic',a:{text:'Панель «Здоровье сайта» в пульте'}},{as:'owner'}); const e=r.data.node;
+  n.commentsBy={[e.issue]:[planComment(50,PLAN())]};
+  c.clock.t+=15*60e3; const out=await c.app.remind(); assert.ok(out.hq&&!out.hq.error,JSON.stringify(out.hq));
+  assert.equal((await nodesOf(c)).find(x=>x.id===e.id).status,'review','план забран по таймеру');
+  await c.call('POST','/api/hq/act',{op:'epicok',a:{id:e.id}},{as:'owner'}); let k=await byKey(c,e);
+  finish(n,k.t1,true); c.clock.t+=15*60e3; await c.app.remind(); k=await byKey(c,e);
+  assert.equal(k.t1.status,'done'); assert.equal(k.t2.status,'running','следующая задача запущена таймером'); });
