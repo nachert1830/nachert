@@ -30,12 +30,14 @@
     return req('GET', '/api/hq').then(d => { S.data = d; $('gate').hidden = true; spent(d.spent); renderAll(); show(S.tab); })
       .catch(e => gate(e.status === 401 ? 'Сессия истекла. <a href="../#/login">Войти снова →</a>' : e.status === 403 ? 'Штаб — только для владельца.' : esc(e.message)));
   }
-  function gate(html) { $('gate').hidden = false; $('gate').innerHTML = html; document.querySelectorAll('.view').forEach(v => { v.hidden = true; }); }
+  function gate(html) { document.body.classList.remove('chat'); $('gate').hidden = false; $('gate').innerHTML = html; document.querySelectorAll('.view').forEach(v => { v.hidden = true; }); }
   function show(tab) { S.tab = tab; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'v-' + tab || !S.data; });
     try { localStorage.setItem('lk_hq_tab', tab); } catch (e) {}
     if (tab === 'map') requestAnimationFrame(links);
+    document.body.classList.toggle('chat', tab === 'chat' && !!S.data);
     if (tab === 'chat') pull(true); }
+  const toBottom = () => { const f = $('feed'); f.scrollTop = f.scrollHeight; };
   function renderAll() { fillModels(); renderDumps(); renderMap(); renderBoard(); renderStaff(); renderMem(); }
 
   function opts(filter, cur, extra) {
@@ -111,12 +113,12 @@
     if (!S.data) return Promise.resolve();
     return req('GET', '/api/hq/feed' + (S.last ? '?after=' + encodeURIComponent(S.last) : '')).then(j => {
       if (j.feed.length) { S.feed = S.feed.concat(j.feed).slice(-300); S.last = j.feed[j.feed.length - 1].id; }
-      spent(j.spent); if (j.feed.length || scroll) { drawFeed(); window.scrollTo(0, document.body.scrollHeight); }
+      spent(j.spent); if (j.feed.length || scroll) { drawFeed(); toBottom(); }
     }).catch(() => {});
   }
   function talk() {
     const text = $('say').value.trim(); if (!text || S.wait) return;
-    $('say').value = ''; S.feed.push({id: 'tmp', who: 'me', text, at: Date.now()}); S.wait = 'Штаб думает…'; drawFeed(); window.scrollTo(0, document.body.scrollHeight);
+    $('say').value = ''; S.feed.push({id: 'tmp', who: 'me', text, at: Date.now()}); S.wait = 'Штаб думает…'; drawFeed(); toBottom();
     req('POST', '/api/hq/talk', {text}).then(() => {}).catch(e => { S.feed.push({id: 'tmp', who: 'hq', text: '⚠️ ' + e.message, at: Date.now()}); })
       .then(() => { S.feed = S.feed.filter(f => f.id !== 'tmp'); S.wait = null; return pull(true); }).then(() => reload().catch(() => {}));
   }
