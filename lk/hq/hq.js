@@ -104,6 +104,7 @@
       (f.who === 'hq' ? '<span class="who">' + (f.from === 'product' ? 'Продакт' : f.from === 'session' ? 'Сеанс' : 'Штаб') + '</span>' : '') + esc(f.text) +
       (f.result ? '<div class="res">' + esc(f.result) + '</div>' : '') +
       (f.img ? '<img alt="" src="https://raw.githubusercontent.com/nachert1830/nachert/main/' + esc(f.img) + '">' : '') +
+      ((f.shots || []).length ? '<div class="shots">' + f.shots.map((u, i) => '<figure><img alt="" loading="lazy" src="' + esc(u) + '"><figcaption>' + ['было · телефон', 'стало · телефон', 'было · компьютер', 'стало · компьютер'][i] + '</figcaption></figure>').join('') + '</div>' : '') +
       ((f.links || []).length ? '<div class="lnk">' + f.links.map(l => '<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.l) + ' ↗</a>').join('') + '</div>' : '') +
       (acts ? '<div class="acts">' + acts + '</div>' : '') + '<time>' + tm(f.at) + '</time></div>';
   }
@@ -135,6 +136,7 @@
     if (op === 'rollback' && !confirm('Откатить выкатку? Сайт вернётся к состоянию до неё.')) return;
     if (op === 'epicreplan') { const t = prompt('Что поправить в плане? Главный инженер перепишет его с этим замечанием.'); if (t == null) return; a.text = t; }
     if (op === 'epicresume') { const t = prompt('Ответ или уточнение для Главного инженера (можно пусто):', ''); if (t == null) return; a.text = t; }
+    if (op === 'merge' && !confirm('Влить на сайт? Это увидят студенты.')) return;
     if ((op === 'epicstop' || op === 'epiccancel') && !confirm(op === 'epicstop' ? 'Остановить эпик? Сделанное останется на сайте.' : 'Отменить эпик?')) return;
     b.disabled = true; S.wait = {discuss: 'Продакт думает…', run: 'Запускаю…', review: 'Ревизор проверяет…', split: 'Разбиваю…', mkepic: 'Отдаю Главному инженеру…', epicok: 'Запускаю эпик…'}[op] || '…'; drawFeed();
     req('POST', '/api/hq/act', {op, a}).catch(e => S.feed.push({id: 'tmp', who: 'hq', text: '⚠️ ' + e.message, at: Date.now()}))
@@ -308,12 +310,15 @@
     $('dModel').innerHTML = opts(kind === 'image' ? isImg : isText, cur);
     $('dRun').textContent = n.issue || n.result || n.img ? '↻ Перезапустить' : '▶ Запустить';
     let r = '';
-    if (n.issue) r += '<div class="result">Цех: <a href="' + esc(n.url) + '" target="_blank" rel="noopener">задача №' + n.issue + '</a>' + (n.pr ? ' · <a href="' + esc(n.pr) + '" target="_blank" rel="noopener">PR</a>' : '') + (n.log ? '\n\n' + esc(n.log) : '\n\nИсполнитель работает. Статус обновится сам раз в минуту.') + '</div>';
+    if (n.issue) r += '<div class="result">Цех: <a href="' + esc(n.url) + '" target="_blank" rel="noopener">задача №' + n.issue + '</a>' + (n.pr ? ' · <a href="' + esc(n.pr) + '" target="_blank" rel="noopener">PR</a>' : '') + (n.preview ? ' · <a href="' + esc(n.preview) + '" target="_blank" rel="noopener">👀 предпросмотр</a>' : '') + (n.log ? '\n\n' + esc(n.log) : '\n\nИсполнитель работает. Статус обновится сам раз в минуту.') + '</div>';
     if (n.img) r += '<div class="result"><img alt="" src="https://raw.githubusercontent.com/' + 'nachert1830/nachert/main/' + esc(n.img) + '"><div class="hint">' + esc(n.img) + '</div></div>';
     if (n.result) r += '<div class="result">' + esc(n.result) + '</div>';
     if (n.review) r += '<div class="result">Ревизор: ' + (n.review.ok ? '✅ соответствует ТЗ' : '⚠️ есть замечания') + (n.review.notes || []).map(x => '\n• ' + esc(x)).join('') + '</div>';
+    if (n.issue && n.pr && n.status === 'review') r += '<div class="row"><button class="ghost" id="dRej">✖ Отклонить</button><button class="primary" id="dMerge">✅ Влить</button></div>';
     if ((n.result || n.img) && n.status !== 'done') r += '<div class="row">' + (n.result ? '<button class="ghost" id="dRev">Ревизор, проверь</button>' : '') + '<button class="primary" id="dOk">Принять ✓</button></div>';
     $('dResult').innerHTML = r;
+    if ($('dMerge')) $('dMerge').onclick = () => { if (confirm('Влить на сайт? Это увидят студенты.')) act($('dMerge'), 'act', {op: 'merge', a: {id: n.id}}, 'Вливаю…'); };
+    if ($('dRej')) $('dRej').onclick = () => act($('dRej'), 'act', {op: 'reject', a: {id: n.id}}, '…');
     if ($('dRev')) $('dRev').onclick = () => act($('dRev'), 'review', {id: n.id}, 'Проверяет…');
     if ($('dOk')) $('dOk').onclick = () => act($('dOk'), 'review', {id: n.id, accept: true});
   }

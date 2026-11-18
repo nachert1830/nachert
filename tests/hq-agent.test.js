@@ -162,3 +162,13 @@ test('Сеанс: потолок цены — пауза и вопрос; «ст
     assert.ok(f.st.comments.some(c => /Потолок сеанса 0\.01 ₽ исчерпан/.test(c.body))); assert.match(f.st.comments[f.st.comments.length - 1].body, /Сеанс закрыт: владелец сказал «стоп»/); }
   finally { f.srv.close(); }
 });
+
+test('Предпросмотр: страница из ТЗ и адрес на ветке preview', () => {
+  const P = require('../tools/hq-preview.js');
+  assert.equal(P.pageOf('Кнопка внизу разбора #/ng3/8, без лишнего'), '#/ng3/8');
+  assert.equal(P.pageOf('Панель в пульте me/ — вкладка «Здоровье»'), 'me/');
+  assert.equal(P.pageOf('Поменять шрифт'), '#/');
+  assert.equal(P.pageUrl('https://raw.githack.com/o/r/preview', '#/ng3/8'), 'https://raw.githack.com/o/r/preview/index.html#/ng3/8');
+  assert.equal(P.pageUrl('https://preview.nachert1830.ru/', 'me/'), 'https://preview.nachert1830.ru/me/index.html');
+  assert.equal(P.pageUrl('https://p.ru', 'lk/#/ask'), 'https://p.ru/lk/index.html#/ask');
+});

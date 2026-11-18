@@ -350,3 +350,33 @@ test('Сеанс: кнопка «Сеанс» с выбором исполнит
   const r=await c.call('POST','/api/hq/session',{text:'Посмотрим пульт',model:'sonnet'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
   assert.equal(r.data.node.model,'sonnet'); assert.equal(r.data.node.ceil,120); assert.match(n.issues[r.data.node.issue].body,/"ceil":120/);
   const l=(await c.call('GET','/api/hq/session',undefined,{as:'owner'})).data.sessions; assert.equal(l.length,1); });
+
+/* ── предпросмотр: задача ждёт «влить», ссылка и скриншоты в ленте ── */
+test('Предпросмотр: на проверке — ссылка и «было → стало» в ленте; «Влить» и «Отклонить» → метки Цеху', async()=>{ const {c,n}=await setup();
+  await c.call('POST','/api/hq/settings',{settings:{autoMerge:false}},{as:'owner'});
+  const t=(await c.call('POST','/api/hq/node',{op:'add',type:'task',title:'Кнопка в пульте'},{as:'owner'})).data.node;
+  await c.call('POST','/api/hq/node',{id:t.id,kind:'code',level:'simple'},{as:'owner'});
+  let r=await c.call('POST','/api/hq/run',{id:t.id},{as:'owner'}); const num=r.data.node.issue, iss=n.issues[num];
+  assert.ok(!iss.labels.some(l=>l.name==='автовыкатка'),'без автовыкатки');
+  const raw='https://raw.githubusercontent.com/nachert1830/nachert/abc123/_preview/';
+  n.commentsBy={[num]:[{id:9,body:'🔍 Готово, ждёт твоего решения.\n<!-- hq:'+JSON.stringify({rub:1.1,model:'deepseek',pr:'https://github.com/x/pull/5',preview:'https://raw.githack.com/nachert1830/nachert/preview/me/index.html',
+    shots:[raw+'before-phone.png',raw+'after-phone.png','https://evil.example/x.png']})+' -->'}]};
+  iss.labels.push({name:'на-проверку'});
+  await sync(c);
+  let f=await feedOf(c), card=f[f.length-1];
+  assert.match(card.text,/Посмотри, как будет: «Кнопка в пульте»/); assert.deepEqual(card.acts.map(a=>a.op),['merge','reject','open']);
+  assert.deepEqual(card.shots,[raw+'before-phone.png',raw+'after-phone.png'],'чужие адреса картинок отброшены');
+  assert.equal(card.links[0].u,'https://raw.githack.com/nachert1830/nachert/preview/me/index.html');
+  /* «Влить» → метка «влить» (вливает Цех, проверив PR) */
+  r=await c.call('POST','/api/hq/act',{op:'merge',a:{id:t.id}},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  assert.ok(iss.labels.some(l=>l.name==='влить'));
+  /* Цех влил → готово */
+  n.commentsBy[num].push({id:10,body:'✅ Выкачено на сайт по твоему «влить». <!-- hq:{"rub":0,"pr":"https://github.com/x/pull/5"} -->'}); iss.labels.push({name:'готово'});
+  await sync(c); assert.equal((await nodesOf(c)).find(x=>x.id===t.id).status,'done');
+  assert.equal((await c.call('POST','/api/hq/act',{op:'merge',a:{id:t.id}},{as:'owner'})).status,409,'второй раз — нечего');
+  /* другая задача: «Отклонить» → метка, задача снова к обсуждению */
+  const t2=(await c.call('POST','/api/hq/node',{op:'add',type:'task',title:'Другая'},{as:'owner'})).data.node;
+  await c.call('POST','/api/hq/node',{id:t2.id,kind:'code',level:'simple'},{as:'owner'}); r=await c.call('POST','/api/hq/run',{id:t2.id},{as:'owner'});
+  const n2=r.data.node.issue; n.commentsBy[n2]=[{id:20,body:'<!-- hq:{"rub":1,"pr":"https://github.com/x/pull/6"} -->'}]; n.issues[n2].labels.push({name:'на-проверку'}); await sync(c);
+  await c.call('POST','/api/hq/act',{op:'reject',a:{id:t2.id}},{as:'owner'});
+  assert.ok(n.issues[n2].labels.some(l=>l.name==='отклонить')); assert.equal((await nodesOf(c)).find(x=>x.id===t2.id).status,'ready'); });
