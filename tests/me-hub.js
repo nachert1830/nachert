@@ -114,8 +114,43 @@ async function ui(browser, URL) {
   await ctx.close(); return bad;
 }
 
-async function runMe(browser, URL) { return (await logic()).concat(await ui(browser, URL)); }
-module.exports = { runMe, logic };
+async function healthLogic() {
+  const bad = [], B = (rule, msg) => bad.push({ name: 'Пульт (здоровье)', rule, msg: String(msg) });
+  let H; try { H = await import(path.join(ROOT, 'me/health.js')); } catch (e) { B('импорт me/health.js', e.message); return bad; }
+  const { REPO, WORKFLOW, LABEL, pickRuns, runningRun, pickIssues, fmtDur, fmtWhen } = H;
+  if (!/^[\w.-]+\/[\w.-]+$/.test(REPO)) B('REPO — «владелец/репо»', REPO);
+  if (WORKFLOW !== 'check.yml' || LABEL !== 'main-красный') B('WORKFLOW и LABEL', WORKFLOW + ' ' + LABEL);
+  const T0 = Date.parse('2026-10-18T10:00:00Z');
+  const run = (id, o) => Object.assign({ id, head_branch: 'main', event: 'push', status: 'completed', conclusion: 'success',
+    run_started_at: new Date(T0 - id * 3600e3).toISOString(), updated_at: new Date(T0 - id * 3600e3 + id * 60e3 + 12e3).toISOString(),
+    html_url: 'https://github.com/o/r/actions/runs/' + id, head_sha: 'abcdef0123456789' + id, display_title: 'Коммит ' + id + '\nподробности' }, o);
+  const runs = [run(1, { event: 'pull_request' }), run(2, { conclusion: 'cancelled' }), run(3, { status: 'in_progress', conclusion: null }),
+    run(4), run(5, { head_branch: 'dev' }), run(6, { conclusion: 'failure' }), run(7), run(8), run(9)];
+  const got = pickRuns(runs);
+  if (got.map(r => r.id).join() !== '4,6,7,8,9') B('pickRuns: 5 нужных по порядку', got.map(r => r.id).join());
+  const r6 = got.find(r => r.id === 6) || {};
+  if (r6.ok !== false || got[0].ok !== true) B('pickRuns: ok', JSON.stringify(got.map(r => r.ok)));
+  if (r6.ms !== 6 * 60e3 + 12e3) B('pickRuns: ms = updated_at − начало', r6.ms);
+  if (r6.sha !== 'abcdef0' || r6.title !== 'Коммит 6' || r6.url !== 'https://github.com/o/r/actions/runs/6' || r6.at !== runs[5].run_started_at) B('pickRuns: sha, title, url, at', JSON.stringify(r6));
+  const c = pickRuns([run(1, { run_started_at: undefined, created_at: new Date(T0).toISOString(), updated_at: new Date(T0 + 5e3).toISOString(), display_title: undefined, head_commit: { message: 'Из коммита\nещё' } })])[0] || {};
+  if (c.ms !== 5000 || c.title !== 'Из коммита') B('pickRuns: created_at и head_commit', JSON.stringify(c));
+  if (pickRuns(runs, 2).length !== 2) B('pickRuns: n', pickRuns(runs, 2).length);
+  if (!Array.isArray(pickRuns(undefined)) || pickRuns(undefined).length) B('pickRuns(undefined) — []', JSON.stringify(pickRuns(undefined)));
+  const rr = runningRun(runs);
+  if (!rr || rr.url !== runs[2].html_url || rr.at !== runs[2].run_started_at) B('runningRun: незавершённый', JSON.stringify(rr));
+  if (runningRun(runs.filter(r => r.status === 'completed')) !== null || runningRun(undefined) !== null) B('runningRun: нет — null', 'не null');
+  const iss = pickIssues([{ number: 7, title: 'main красный', html_url: 'https://github.com/o/r/issues/7' }, { number: 8, title: 'PR', html_url: 'u', pull_request: {} }]);
+  if (JSON.stringify(iss) !== JSON.stringify([{ n: 7, title: 'main красный', url: 'https://github.com/o/r/issues/7' }])) B('pickIssues', JSON.stringify(iss));
+  if (pickIssues(undefined).length !== 0) B('pickIssues(undefined) — []', 'не пусто');
+  [[492000, '8 мин 12 с'], [45000, '45 с'], [3900000, '1 ч 5 мин'], [NaN, '—'], [-1, '—']].forEach(([ms, s]) => { if (fmtDur(ms) !== s) B('fmtDur(' + ms + ')', fmtDur(ms)); });
+  const now = new Date(2026, 9, 18, 15, 30), today = new Date(2026, 9, 18, 9, 5).toISOString(), past = new Date(2026, 8, 3, 14, 7).toISOString();
+  if (fmtWhen(today, now) !== '09:05') B('fmtWhen: сегодня — ЧЧ:ММ', fmtWhen(today, now));
+  if (fmtWhen(past, now) !== '3.09 14:07') B('fmtWhen: другой день — Д.ММ ЧЧ:ММ', fmtWhen(past, now));
+  return bad;
+}
+
+async function runMe(browser, URL) { return (await logic()).concat(await healthLogic(), await ui(browser, URL)); }
+module.exports = { runMe, logic, healthLogic };
 
 if (require.main === module) { const http = require('http'), fs = require('fs');
   const T = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.wasm': 'application/wasm' };
