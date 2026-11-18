@@ -61,6 +61,7 @@ jobs:
           EYES: ${{ vars.EYES }}
           EYES_KEY: ${{ secrets.EYES_KEY }}
           PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+          GH_HQ_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN }}
           EYES_BEST_MODEL: ${{ vars.EYES_BEST_MODEL }}
         run: node server/tools/deploy.js --write-front
       - name: Адрес API — в страницу клуба на сайте

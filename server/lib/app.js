@@ -586,6 +586,9 @@ function createApp(o){
       const old=await store.scan(tb,f); for(const x of old) await store.del(tb,x.id); }
     const logs=await store.scan('loginlog',x=>x.ts<t-LOG_DAYS*DAY); for(const x of logs) await store.del('loginlog',{h:x.h,r:x.r}); }
 
+  /* Штаб владельца (lib/hq, docs/HQ.md): диктовка → карта целей → ТЗ → исполнители. Только админ. */
+  require('./hq').register(D,{store,now,http,fail,body,json:H.json,env:cfg.hq||{}});
+
   /* ── маршрутизация ── */
   async function handle(req){ let res, cookie=null;
     try{
