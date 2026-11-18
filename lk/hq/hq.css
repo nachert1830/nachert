@@ -136,6 +136,9 @@ body.chat main{flex:1;min-height:0;display:flex;flex-direction:column;padding-bo
 .lane{background:var(--surf2);border-radius:var(--r);padding:10px;min-height:80px}
 .lane h4{margin:2px 4px 10px;font-size:13px;color:var(--mut)}
 .lane .node{margin-bottom:8px}
+.shead{gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}.shead select{max-width:min(320px,100%)}
+.fi.hq.sess{border-left:4px solid var(--violet)}
+#v-session .crow{flex-wrap:wrap}#v-session .crow .hint{flex-basis:100%;order:9}
 .epics{display:grid;gap:12px;margin-top:12px}.epics:empty{display:none}
 .epic{background:var(--surf2);border-radius:var(--r);padding:12px}
 .epic h4{margin:0 0 6px;font-size:15px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}

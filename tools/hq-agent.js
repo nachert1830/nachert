@@ -135,7 +135,7 @@ async function callAs(k, m, system, messages, o) {
         if (r.status === 400 && body.output_config && /output_config|effort/i.test(t)) { delete o.effort; continue; }
         throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 200)); }
       const j = JSON.parse(t);
-      if (j.usage) account(k, m, j.usage);
+      if (j.usage) { account(k, m, j.usage); if (o.onUsage) o.onUsage(j.usage); }
       const text = isClaude(m) ? (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('') : (j.choices[0].message.content || '');
       return String(text).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     } catch (e) { if (e.fatal || i === 2) throw e; console.error('повтор: ' + e.message); await new Promise(s => setTimeout(s, 3000 * (i + 1))); }
@@ -175,7 +175,7 @@ async function shot(hash) {
 const ISSUE = process.env.HQ_ISSUE, GHT = process.env.GH_TOKEN, REPO = process.env.GITHUB_REPOSITORY; let seenC = null;
 async function owner() {
   if (!ISSUE || !GHT || !REPO) return '';
-  try { const r = await fetch('https://api.github.com/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100', {headers: {authorization: 'Bearer ' + GHT, accept: 'application/vnd.github+json', 'user-agent': 'hq-agent'}});
+  try { const r = await fetch((process.env.HQ_GH_API || 'https://api.github.com') + '/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100', {headers: {authorization: 'Bearer ' + GHT, accept: 'application/vnd.github+json', 'user-agent': 'hq-agent'}});
     const cs = (await r.json()).filter(c => /^💬 Владелец:/.test(c.body || ''));
     if (seenC === null) { seenC = new Set(cs.map(c => c.id)); return ''; }   /* старые — уже в ТЗ при запуске */
     const fresh = cs.filter(c => !seenC.has(c.id)); fresh.forEach(c => seenC.add(c.id));
@@ -381,10 +381,183 @@ async function answer(q) {
   return 1;
 }
 
+/* ── сеанс с владельцем (--session, задание session в hq-work.yml): живой диалог в Issue «сеанс» ──
+   Реплики владельца — комментарии «💬 Владелец: …» (опрос GitHub раз в HQ_POLL_MS, 8 с); 20 минут тишины (HQ_IDLE_MS) — итог и выход.
+   Ход агента — команды до SAY/ASK; ответ — комментарий <!-- hq-say --> с ценой хода <!-- hq:{"rub":…,"total":…} -->.
+   Экономия: Claude с кэшем (системный промпт + карта проекта), поиск — SCOUT (Haiku), история > HQ_COMPRESS_TOKENS (120 тыс.) — сводка Haiku.
+   PR — ветка hq/session-N токеном владельца (HQ_PR_TOKEN); MERGE — только после «влей» владельца в этом сеансе и зелёной проверки PR. */
+const GH_API = process.env.HQ_GH_API || 'https://api.github.com';
+async function ghApi(method, p, body, token) {
+  const r = await fetch(GH_API + p, {method, headers: {authorization: 'Bearer ' + (token || GHT), accept: 'application/vnd.github+json', 'user-agent': 'hq-agent', 'content-type': 'application/json'},
+    body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(30000)});
+  const t = await r.text(); let j = null; try { j = t ? JSON.parse(t) : {}; } catch (e) {}
+  if (!r.ok) throw new Error('GitHub ' + r.status + ': ' + SH.redact(t, process.env).slice(0, 200));
+  return j;
+}
+/* разведчик: команды GREP/READ/NOTE/PACK, пакет кода не больше maxLines строк */
+async function scoutRun(system, intro, maxLines) {
+  const [sk, sm] = cheap('haiku'), msgs = [{role: 'user', content: intro + '\n\n' + map()}], notes = []; let summary = '', lines = 0;
+  for (let step = 1; step <= 25 && lines < maxLines; step++) {
+    const reply = await callAs(sk, sm, system, msgs, {max: 2000}); msgs.push({role: 'assistant', content: reply || '(пусто)'});
+    const head = (reply.split('\n').find(l => /^(GREP|READ|NOTE|PACK):/i.test(l.trim())) || '').trim(); let res;
+    try {
+      if (/^GREP:/i.test(head)) res = grep(head.slice(5)); else if (/^READ:/i.test(head)) res = read(head.slice(5));
+      else if (/^NOTE:/i.test(head)) { const m = /^NOTE:\s*(\S+)\s+(\d+)\s+(\d+)\s*(?:—|-)?\s*(.*)$/i.exec(head);
+        if (m) { const b = Math.min(+m[3], +m[2] + 250, +m[2] + maxLines - lines); notes.push({f: m[1], a: +m[2], b, why: m[4]}); lines += b - +m[2] + 1; res = 'В пакете: ' + notes.length + ', строк ' + lines + ' из ' + maxLines; } else res = 'Формат: NOTE: путь начало конец — зачем'; }
+      else if (/^PACK:/i.test(head)) { summary = head.slice(5).trim(); break; }
+      else res = 'Одна команда: GREP, READ, NOTE или PACK.';
+    } catch (e) { res = 'ОШИБКА: ' + e.message; }
+    console.log('  разведчик ' + step + ': ' + head.slice(0, 120)); msgs.push({role: 'user', content: String(res).slice(0, 10000)});
+  }
+  const pack = notes.map(n => { try { return '### ' + n.f + ' ' + n.a + '–' + n.b + (n.why ? ' — ' + n.why : '') + '\n' + read(n.f + ' ' + n.a + ' ' + n.b); } catch (e) { return ''; } }).join('\n\n');
+  return {summary, pack, notes};
+}
+const SESSION = `Ты — инженер-разработчик сайта nachert1830.ru и работаешь вместе с владельцем в живом диалоге, как в Claude Code: он говорит — ты делаешь, показываешь, спрашиваешь. Сайт — учебный, по начертательной геометрии и инженерной графике: index.html (35 тыс. строк, без сборки, модули window.ИМЯ), личный кабинет lk/, облачные функции server/, проверки tests/run.js (по блокам, карта влияния tests/impact.js). Владелец — не программист: отвечай по-русски, коротко, на «ты», со ссылками файл:строка.
+На каждом шаге — ОДНА команда, без пояснений вокруг:
+GREP: выражение [в папка/]   — поиск (до 40 строк)
+READ: путь начало конец       — строки файла (≤ 200)
+SCOUT: что найти              — дешёвый разведчик сам найдёт и соберёт нужные куски кода (для большого поиска — дешевле, чем читать самому)
+EDIT: путь                    — правка блоками
+<<<<<<< SEARCH
+точный старый код (без номеров строк, ровно один раз в файле)
+=======
+новый код
+>>>>>>> REPLACE
+RUN: команда                  — команда в корне проекта (bash, до 10 мин): node tests/run.js --only=…, node --test …, git diff, временные скрипты в /tmp. Сеть, git push, ключи — запрещены
+CHECK                         — автотесты, задетые правками
+CI: номер_запуска             — конец лога упавших заданий GitHub Actions
+` + (VISION ? `SHOT: #/адрес                — скриншот страницы на телефоне
+` : '') + `PR: заголовок                 — закоммитить правки в ветку сеанса и открыть или обновить PR
+MERGE                         — влить PR в main (только если владелец в этом сеансе написал «влей» и проверка PR зелёная)
+SAY: текст                    — ответить владельцу и ждать следующей реплики (конец хода)
+ASK: вопрос                   — спросить владельца и ждать ответа (конец хода)
+Правила:
+- Ход заканчивается SAY или ASK. Не тяни: на простой вопрос — пара команд и SAY.
+- Правь минимально, в стиле соседнего кода. После правок — CHECK; PR — когда владелец просит или правка готова и проверена.
+- Упал тест или проверка — сначала разберись: RUN нужной проверки, прочитай вывод, найди причину, потом правь. Не гадай.
+- Нельзя отключать, ослаблять или пропускать проверки, править tests/baseline.json.
+- MERGE — только по слову владельца «влей». Не уверен — ASK.`;
+
+async function session() {
+  if (!ISSUE || !GHT || !REPO) { console.error('Сеанс: нет HQ_ISSUE, GH_TOKEN или GITHUB_REPOSITORY'); return 1; }
+  const POLL = +process.env.HQ_POLL_MS || 8000, IDLE = +process.env.HQ_IDLE_MS || 20 * 60000, SQUEEZE = +process.env.HQ_COMPRESS_TOKENS || 120000;
+  const PRT = process.env.HQ_PR_TOKEN || GHT, branch = 'hq/session-' + ISSUE, owner = REPO.split('/')[0];
+  const sm = /<!-- hq-session:(\{[^\n]*?\}) -->/.exec(task); let ceil = 300; try { if (sm) ceil = +JSON.parse(sm[1]).ceil || 300; } catch (e) {}
+  const system = SESSION + '\n\n' + map(), messages = [], start = cost.rub;
+  let mergeOk = false, prUrl = '', lastIn = 0, seen = new Set();
+  const total = () => Math.round((cost.rub - start) * 100) / 100;
+  const isOwner = c => /^💬 Владелец:/.test(c.body || '');
+  const textOf = c => String(c.body || '').replace(/^💬 Владелец:\s*/, '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  const isStop = c => /<!-- hq-stop -->/.test(c.body || '') || /^стоп[.!]?$/i.test(textOf(c));
+  async function comments() { let all = []; for (let p = 1; p <= 10; p++) { const a = await ghApi('GET', '/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100&page=' + p); all = all.concat(a); if (a.length < 100) break; } return all; }
+  const post = body => ghApi('POST', '/repos/' + REPO + '/issues/' + ISSUE + '/comments', {body});
+  async function fresh() { const cs = await comments(), out = cs.filter(c => !seen.has(c.id) && isOwner(c)); cs.forEach(c => seen.add(c.id)); return out; }
+  async function waitOwner() { const t0 = Date.now(); for (;;) { const f = await fresh().catch(e => { console.error('опрос: ' + e.message); return []; }); if (f.length) return f; if (Date.now() - t0 > IDLE) return null; await new Promise(r => setTimeout(r, POLL)); } }
+  async function say(text, from, extra) {
+    const rub = Math.round((cost.rub - from) * 100) / 100;
+    await post(text.trim() + '\n\n_Ход ~' + rub + ' ₽ · сеанс ~' + total() + ' ₽_\n<!-- hq-say -->' + (extra || '') + ' <!-- hq:' + JSON.stringify({rub, total: total(), pr: prUrl || undefined, model: key}) + ' -->');
+    console.log('--- SAY (' + rub + ' ₽): ' + text.split('\n')[0].slice(0, 120));
+  }
+  async function end(why) { await post('Сеанс закрыт: ' + why + '. Итого ~' + total() + ' ₽.' + (prUrl ? ' PR: ' + prUrl : '') + '\n<!-- hq-say --> <!-- hq-session-end --> <!-- hq:' + JSON.stringify({rub: 0, total: total(), pr: prUrl || undefined}) + ' -->'); return 0; }
+  /* сжатие истории: старые ходы → сводка Haiku (что сделано, решения, открытые вопросы) */
+  async function squeeze() {
+    if (lastIn <= SQUEEZE || messages.length < 6) return;
+    let cut = messages.length - 4; while (cut > 0 && messages[cut].role !== 'user') cut--;
+    if (cut < 2) return;
+    const old = messages.slice(0, cut).map(m => (m.role === 'user' ? 'ВЛАДЕЛЕЦ/ИНСТРУМЕНТ: ' : 'АГЕНТ: ') + (typeof m.content === 'string' ? m.content : m.content.map(x => x.text || '[картинка]').join(' ')).slice(0, 4000)).join('\n\n');
+    const [hk, hm] = cheap('haiku');
+    const sum = await callAs(hk, hm, 'Ты сжимаешь историю рабочего сеанса разработчика с владельцем сайта. Напиши сводку: что сделано (файлы, правки, PR), принятые решения, открытые вопросы, что владелец просил. До 40 строк, по-русски.', [{role: 'user', content: old.slice(-150000)}], {max: 3000});
+    messages.splice(0, cut, {role: 'user', content: 'СВОДКА ПРОШЛЫХ ХОДОВ СЕАНСА:\n' + sum}, {role: 'assistant', content: 'Понял, продолжаю с этого места.'});
+    console.log('  история сжата: ' + cut + ' сообщений → сводка'); lastIn = 0;
+  }
+  const g = args => require('child_process').execFileSync('git', args, {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'});
+  async function openPr() {
+    const pulls = await ghApi('GET', '/repos/' + REPO + '/pulls?state=open&head=' + encodeURIComponent(owner + ':' + branch), null, PRT);
+    return (pulls || [])[0] || null;
+  }
+  async function pr(title) {
+    title = title.trim() || 'правки сеанса';
+    g(['checkout', '-q', '-B', branch]); g(['add', '-A']);
+    if (g(['status', '--porcelain']).trim()) g(['-c', 'user.name=hq-bot', '-c', 'user.email=hq-bot@users.noreply.github.com', 'commit', '-q', '-m', 'Сеанс: ' + title, '-m', 'Сеанс #' + ISSUE + ', исполнитель ' + key + '.']);
+    let ahead = '1'; try { ahead = g(['rev-list', '--count', 'origin/main..HEAD']).trim(); } catch (e) {}
+    if (ahead === '0') return 'Нечего отправлять: правок нет.';
+    if (process.env.HQ_GIT_PUSH !== '0') {
+      try { g(['-c', 'http.extraheader=AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + PRT).toString('base64'), 'push', '-q', '-f', 'origin', 'HEAD:refs/heads/' + branch]); }
+      catch (e) { return 'ОШИБКА пуша: ' + SH.redact(String(e.stderr || e.message), process.env).slice(0, 300); }
+    }
+    let p = await openPr();
+    if (!p) p = await ghApi('POST', '/repos/' + REPO + '/pulls', {title: 'Сеанс: ' + title.slice(0, 100), head: branch, base: 'main', body: 'Сеанс с владельцем #' + ISSUE + '. Исполнитель: ' + key + '.'}, PRT);
+    prUrl = p.html_url || prUrl; return 'PR: ' + prUrl + ' (ветка ' + branch + '). Проверка сайта на PR запустится сама; MERGE — после «влей» владельца.';
+  }
+  async function merge() {
+    if (!mergeOk) return 'ОТКАЗ: владелец в этом сеансе не писал «влей». Спроси его (ASK).';
+    const p = await openPr(); if (!p) return 'ОТКАЗ: открытого PR сеанса нет — сначала PR.';
+    const runs = ((await ghApi('GET', '/repos/' + REPO + '/commits/' + p.head.sha + '/check-runs?per_page=100', null, PRT)) || {}).check_runs || [];
+    const wait = runs.filter(r => r.status !== 'completed'), red = runs.filter(r => r.status === 'completed' && !['success', 'skipped', 'neutral'].includes(r.conclusion));
+    if (!runs.length || wait.length) return 'ОТКАЗ: проверка PR ещё идёт (' + (wait.map(r => r.name).join(', ') || 'не началась') + '). Подожди и скажи владельцу.';
+    if (red.length) return 'ОТКАЗ: проверка PR красная: ' + red.map(r => r.name + ' — ' + r.conclusion).join('; ') + '. Вливать нельзя — разберись (CI: номер запуска из ' + (red[0].html_url || '') + ').';
+    await ghApi('PUT', '/repos/' + REPO + '/pulls/' + p.number + '/merge', {merge_method: 'squash'}, PRT);
+    try { await ghApi('POST', '/repos/' + REPO + '/actions/workflows/check.yml/dispatches', {ref: 'main'}, PRT); } catch (e) {}
+    return 'Влито в main: ' + p.html_url + '. Полная проверка main запущена.';
+  }
+  async function exec(head, reply) {
+    if (/^GREP:/i.test(head)) return grep(head.replace(/^GREP:\s*/i, ''));
+    if (/^READ:/i.test(head)) return read(head.replace(/^READ:\s*/i, ''));
+    if (/^EDIT:/i.test(head)) return edit(head, reply.slice(reply.indexOf(head)));
+    if (/^RUN:/i.test(head)) return runCmd(head.replace(/^RUN:\s*/i, ''));
+    if (/^CHECK/i.test(head)) return check();
+    if (/^CI:/i.test(head)) return ciLog(head.replace(/^CI:\s*/i, ''));
+    if (/^SCOUT:/i.test(head)) { const s = await scoutRun(SCOUT, 'ЧТО НАЙТИ:\n' + head.replace(/^SCOUT:\s*/i, ''), 600); return 'Пакет разведчика (' + s.notes.length + ' кусков). ' + (s.summary || '') + '\n\n' + (s.pack || 'ничего не нашёл'); }
+    if (/^PR:/i.test(head)) return pr(head.replace(/^PR:\s*/i, ''));
+    if (/^MERGE/i.test(head)) return merge();
+    return 'Неверный формат. Одна команда: GREP, READ, SCOUT, EDIT, RUN, CHECK, CI' + (VISION ? ', SHOT' : '') + ', PR, MERGE, SAY или ASK.';
+  }
+
+  console.log('Сеанс #' + ISSUE + ': ' + (M.name || key) + ', потолок ' + ceil + ' ₽');
+  /* реплики, на которые ещё нет ответа: владелец после последнего hq-say */
+  const first = await comments(); first.forEach(c => seen.add(c.id));
+  let lastSay = -1; first.forEach((c, i) => { if (/<!-- hq-say -->/.test(c.body || '')) lastSay = i; });
+  let pending = first.slice(lastSay + 1).filter(isOwner);
+  for (;;) {
+    const got = pending.length ? pending : await waitOwner(); pending = [];
+    if (!got) return end('20 минут тишины');
+    if (got.some(isStop)) return end('владелец сказал «стоп»');
+    if (got.some(c => /(^|[^а-яё])влей([^а-яё]|$)/i.test(textOf(c)))) mergeOk = true;
+    messages.push({role: 'user', content: 'ВЛАДЕЛЕЦ: ' + got.map(textOf).join('\n')});
+    const from = cost.rub; let done = false;
+    for (let step = 1; step <= 25 && !done; step++) {
+      await squeeze();
+      const reply = await callAs(key, M, system, messages, {max: 8000, onUsage: u => { lastIn = (u.input_tokens || u.prompt_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0); }});
+      messages.push({role: 'assistant', content: reply || '(пусто)'});
+      const head = (reply.split('\n').find(l => /^(GREP|READ|SCOUT|EDIT|RUN|CHECK|CI|SHOT|PR|MERGE|SAY|ASK)\b:?/i.test(l.trim())) || reply.split('\n')[0] || '').trim();
+      console.log('--- ход, шаг ' + step + ': ' + head.slice(0, 140));
+      if (/^(SAY|ASK):/i.test(head)) { const t = reply.slice(reply.indexOf(head)).replace(/^(SAY|ASK):\s*/i, ''); await say(t, from, /^ASK/i.test(head) ? ' <!-- hq-ask -->' : ''); done = true; break; }
+      if (/^SHOT/i.test(head) && VISION) { const s = await shot(head.replace(/^SHOT:?\s*/i, '')).catch(e => ({note: 'ОШИБКА: ' + e.message})); messages.push({role: 'user', content: s.png ? [{text: s.note}, {image: s.png}] : s.note}); continue; }
+      let res; try { res = await exec(head, reply); } catch (e) { res = 'ОШИБКА: ' + e.message; }
+      /* реплики владельца посреди хода — сразу в работу */
+      const mid = await fresh().catch(() => []);
+      if (mid.some(isStop)) return end('владелец сказал «стоп»');
+      if (mid.some(c => /(^|[^а-яё])влей([^а-яё]|$)/i.test(textOf(c)))) mergeOk = true;
+      if (mid.length) res += '\n\n[ВЛАДЕЛЕЦ НАПИСАЛ ПО ХОДУ:]\n' + mid.map(textOf).join('\n');
+      if (step === 22) res += '\n\n[осталось 3 шага хода — заканчивай SAY]';
+      messages.push({role: 'user', content: String(res).slice(0, 14000)});
+    }
+    if (!done) await say('Не уложился в 25 шагов хода — остановился. Скажи, продолжать ли.', from);
+    /* потолок сеанса → пауза и вопрос */
+    if (total() >= ceil) {
+      await post('⏸ Потолок сеанса ' + ceil + ' ₽ исчерпан (потрачено ~' + total() + ' ₽). Напиши «продолжай» — подниму потолок на 50 %, или «стоп».\n<!-- hq-say --> <!-- hq-ceiling --> <!-- hq:{"rub":0,"total":' + total() + '} -->');
+      const ans = await waitOwner(); if (!ans) return end('потолок цены и тишина');
+      if (ans.some(isStop)) return end('владелец сказал «стоп»');
+      ceil = Math.round(ceil * 1.5); pending = ans.filter(c => !/^продолжай[.!]?$/i.test(textOf(c)));
+      if (!pending.length) { await post('Потолок — ' + ceil + ' ₽. Продолжаю: что дальше?\n<!-- hq-say --> <!-- hq:{"rub":0,"total":' + total() + '} -->'); }
+    }
+  }
+}
+
 (async () => {
   if (!KEY) { console.error('Нет PROXYAPI_KEY'); process.exit(1); }
   const spec = task.replace(/<!--[\s\S]*?-->/g, '').trim();
-  const code = process.argv.includes('--plan') ? await plan(spec) : process.argv.includes('--ask') ? await answer(spec) : BRIGADE ? await brigade(spec) : await solo(spec);
+  const code = process.argv.includes('--session') ? await session() : process.argv.includes('--plan') ? await plan(spec) : process.argv.includes('--ask') ? await answer(spec) : BRIGADE ? await brigade(spec) : await solo(spec);
   console.log('Стоимость всего: ' + cost.rub + ' ₽ (' + Object.entries(cost.models).map(([k, v]) => k + ' ' + v).join(', ') + ')');
   if (srv) srv.close(); process.exit(code);
 })().catch(e => { console.error(e.message || e); process.exit(1); });

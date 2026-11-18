@@ -85,3 +85,80 @@ test('CI: упавшие задания запуска — конец лога, 
   assert.equal(calls.length, 2); assert.equal(calls[0].h.authorization, 'Bearer tok');
   assert.match(await SH.ci('abc', {repo: 'o/r', token: 't', http}), /Формат/);
 });
+
+/* ── сеанс (--session) на поддельном ProxyAPI и поддельном GitHub ── */
+const http = require('http'), fs = require('fs'), os = require('os'), {spawn} = require('child_process');
+/* один сервер: /v1/messages и /v1/chat/completions — ответы модели по очереди; /repos/o/r/… — Issue, PR, проверки */
+function fake(o) {
+  const st = {px: [], gh: [], comments: (o.comments || []).map((b, i) => ({id: i + 1, body: b})), next: 100, merged: false, replies: o.replies.slice(), queue: (o.queue || []).slice()};
+  const srv = http.createServer((q, r) => { let b = ''; q.on('data', d => b += d).on('end', () => {
+    const j = b ? JSON.parse(b) : null, send = (code, x) => { r.writeHead(code, {'content-type': 'application/json'}); r.end(JSON.stringify(x)); };
+    if (q.url.startsWith('/v1/')) { st.px.push({url: q.url, body: j}); const haiku = /haiku/.test(j.model);
+      const t = haiku && o.haiku ? o.haiku : st.replies.shift() || 'SAY: (ответы кончились)';
+      return send(200, q.url.endsWith('/messages') ? {content: [{type: 'text', text: t}], usage: {input_tokens: o.inTok || 1000, output_tokens: 50}} : {choices: [{message: {content: t}}], usage: {prompt_tokens: 1000, completion_tokens: 50}}); }
+    st.gh.push({method: q.method, url: q.url, body: j});
+    if (/\/issues\/7\/comments/.test(q.url)) {
+      if (q.method === 'POST') { st.comments.push({id: st.next++, body: j.body}); if (/hq-say/.test(j.body) && st.queue.length) st.comments.push({id: st.next++, body: '💬 Владелец: ' + st.queue.shift()}); return send(201, {}); }
+      return send(200, /page=1/.test(q.url) ? st.comments : []); }
+    if (/\/pulls\?state=open/.test(q.url)) return send(200, o.pulls || []);
+    if (/\/check-runs/.test(q.url)) return send(200, {check_runs: o.checks || []});
+    if (/\/pulls\/\d+\/merge$/.test(q.url)) { st.merged = true; return send(200, {merged: true}); }
+    send(404, {message: 'нет'}); }); });
+  return new Promise(res => srv.listen(0, '127.0.0.1', () => res({st, srv, port: srv.address().port})));
+}
+function agent(port, extra) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hq-sess-')), taskF = path.join(dir, 'task.md'), costF = path.join(dir, 'cost.json');
+  fs.writeFileSync(taskF, '# Сеанс: тест\n\nСеанс с владельцем.\n<!-- hq-session:{"ceil":' + ((extra && extra.ceil) || 300) + '} -->\n');
+  const env = Object.assign({}, process.env, {PROXYAPI_KEY: 'px-test', HQ_PX: 'http://127.0.0.1:' + port + '/v1', HQ_GH_API: 'http://127.0.0.1:' + port, GH_TOKEN: 'gh-test-token',
+    GITHUB_REPOSITORY: 'o/r', HQ_ISSUE: '7', HQ_POLL_MS: '40', HQ_IDLE_MS: '600', HQ_COST_FILE: costF, HQ_GIT_PUSH: '0'}, (extra && extra.env) || {});
+  return new Promise(res => { let out = ''; const p = spawn(process.execPath, [path.join(ROOT, 'tools/hq-agent.js'), '--session', '--model', 'sonnet', '--task', taskF], {cwd: ROOT, env});
+    p.stdout.on('data', d => out += d); p.stderr.on('data', d => out += d); p.on('close', code => res({code, out})); });
+}
+const says = st => st.comments.filter(c => /<!-- hq-say -->/.test(c.body));
+
+test('Сеанс: реплика владельца → GREP → SAY с ценой хода; тишина → итог и выход', async () => {
+  const f = await fake({comments: ['💬 Владелец: где живёт командная строка исполнителя?'], replies: ['GREP: forbidden\\(cmd в tools/', 'SAY: В tools/hq-run.js — функция forbidden проверяет команды.']});
+  try {
+    const r = await agent(f.port); assert.equal(r.code, 0, r.out);
+    const s = says(f.st); assert.equal(s.length, 2, 'ответ и итог');
+    assert.match(s[0].body, /^В tools\/hq-run\.js/); assert.match(s[0].body, /Ход ~[\d.]+ ₽ · сеанс ~[\d.]+ ₽/); assert.match(s[0].body, /<!-- hq:\{"rub":[\d.]+,"total":[\d.]+/);
+    assert.match(s[1].body, /Сеанс закрыт: 20 минут тишины/); assert.match(s[1].body, /hq-session-end/);
+    /* второй вызов модели видит результат GREP; Claude — через /v1/messages с кэшем системного промпта (в нём карта проекта) */
+    const second = f.st.px[1]; assert.equal(second.url, '/v1/messages'); assert.match(JSON.stringify(second.body.messages), /tools\/hq-run\.js:\d+/);
+    assert.equal(second.body.system[0].cache_control.type, 'ephemeral'); assert.match(second.body.system[0].text, /ОГЛАВЛЕНИЕ index\.html/);
+    assert.doesNotMatch(JSON.stringify(f.st.px), /gh-test-token|px-test/, 'ключи модели не видит');
+  } finally { f.srv.close(); }
+});
+
+test('Сеанс: MERGE без «влей» — отказ; «влей» при красной проверке — отказ, PR не вливается', async () => {
+  const pulls = [{number: 5, html_url: 'https://github.com/o/r/pull/5', head: {sha: 'abc'}}];
+  let f = await fake({comments: ['💬 Владелец: посмотри PR'], replies: ['MERGE', 'SAY: Без твоего «влей» не вливаю.'], pulls, checks: [{name: 'check (1)', status: 'completed', conclusion: 'success'}]});
+  try { const r = await agent(f.port); assert.equal(r.code, 0, r.out); assert.equal(f.st.merged, false); assert.match(JSON.stringify(f.st.px[1].body.messages), /ОТКАЗ: владелец в этом сеансе не писал «влей»/); }
+  finally { f.srv.close(); }
+  f = await fake({comments: ['💬 Владелец: влей'], replies: ['MERGE', 'SAY: Проверка красная — не вливаю.'], pulls, checks: [{name: 'check (2)', status: 'completed', conclusion: 'failure', html_url: 'https://github.com/o/r/actions/runs/9/job/1'}]});
+  try { const r = await agent(f.port); assert.equal(r.code, 0, r.out); assert.equal(f.st.merged, false, 'красная проверка — не вливаем');
+    assert.match(JSON.stringify(f.st.px[1].body.messages), /ОТКАЗ: проверка PR красная: check \(2\) — failure/); }
+  finally { f.srv.close(); }
+  /* «влей» и зелёная проверка — вливает */
+  f = await fake({comments: ['💬 Владелец: влей'], replies: ['MERGE', 'SAY: Влито.'], pulls, checks: [{name: 'check (1)', status: 'completed', conclusion: 'success'}, {name: 'server', status: 'completed', conclusion: 'skipped'}]});
+  try { const r = await agent(f.port); assert.equal(r.code, 0, r.out); assert.equal(f.st.merged, true); assert.ok(f.st.gh.some(x => x.method === 'PUT' && /\/pulls\/5\/merge$/.test(x.url))); }
+  finally { f.srv.close(); }
+});
+
+test('Сеанс: история больше порога — старые ходы заменяются сводкой Haiku', async () => {
+  const f = await fake({comments: ['💬 Владелец: первое'], queue: ['второе', 'третье'], inTok: 5000, haiku: 'Сводка: смотрели hq-run.js, решили ничего не менять.',
+    replies: ['GREP: forbidden в tools/', 'SAY: раз', 'READ: tools/hq-run.js 1 5', 'SAY: два', 'SAY: три']});
+  try {
+    const r = await agent(f.port, {env: {HQ_COMPRESS_TOKENS: '3000'}}); assert.equal(r.code, 0, r.out);
+    const hk = f.st.px.filter(x => /haiku/.test(x.body.model)); assert.ok(hk.length >= 1, 'Haiku вызван для сводки'); assert.match(JSON.stringify(hk[0].body), /сжимаешь историю/);
+    const after = f.st.px.filter(x => !/haiku/.test(x.body.model)).slice(-1)[0]; assert.match(JSON.stringify(after.body.messages[0]), /СВОДКА ПРОШЛЫХ ХОДОВ СЕАНСА/);
+    assert.match(r.out, /история сжата/); assert.equal(says(f.st).length, 4);
+  } finally { f.srv.close(); }
+});
+
+test('Сеанс: потолок цены — пауза и вопрос; «стоп» — выход', async () => {
+  const f = await fake({comments: ['💬 Владелец: начни'], queue: ['стоп'], replies: ['SAY: начал']});
+  try { const r = await agent(f.port, {ceil: 0.01}); assert.equal(r.code, 0, r.out);
+    assert.ok(f.st.comments.some(c => /Потолок сеанса 0\.01 ₽ исчерпан/.test(c.body))); assert.match(f.st.comments[f.st.comments.length - 1].body, /Сеанс закрыт: владелец сказал «стоп»/); }
+  finally { f.srv.close(); }
+});

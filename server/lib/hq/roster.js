@@ -73,7 +73,8 @@ const DEFAULTS = () => ({
   custom: {},            /* свои модели: ключ → {id, name, in, out, image?} */
   budgetRub: 1000,       /* потолок трат за месяц */
   rate: 110,             /* ₽ за $ с наценкой ProxyAPI */
-  autoMerge: true        /* Цех: зелёные тесты + ревизор → сразу в main */
+  autoMerge: true,       /* Цех: зелёные тесты + ревизор → сразу в main */
+  sessionRub: 300        /* потолок одного сеанса с исполнителем */
 });
 
 /* настройки из базы поверх умолчаний; неизвестные ключи моделей отбрасываются */
@@ -93,6 +94,7 @@ function settings(saved) {
   if (+s.budgetRub >= 0 && +s.budgetRub <= 1e6) d.budgetRub = +s.budgetRub;
   if (+s.rate > 0 && +s.rate < 1000) d.rate = +s.rate;
   if (typeof s.autoMerge === 'boolean') d.autoMerge = s.autoMerge;
+  if (+s.sessionRub > 0 && +s.sessionRub <= 1e5) d.sessionRub = +s.sessionRub;
   return d;
 }
 

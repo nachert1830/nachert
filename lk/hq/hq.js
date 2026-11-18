@@ -9,7 +9,7 @@
   const TYPE = {strategy: 'Стратегия', goal: 'Цель', task: 'Задача', idea: 'Идея', noise: 'Балабольство'};
   const STATUS = {new: 'новая', talk: 'обсуждаем', ready: 'ТЗ готово', assigned: 'назначена', running: 'в работе', review: 'проверить', done: 'готово', failed: 'не вышло', rolled: 'откачено'};
   const ESTATUS = {draft: 'черновик', planning: 'пишет план', review: 'ждёт утверждения', running: 'идёт', paused: 'пауза', done: 'готов', failed: 'остановлен'};
-  const S = {data: null, sel: null, node: null, tab: 'chat', last: '', feed: []};
+  const S = {data: null, sel: null, node: null, tab: 'chat', last: '', feed: [], sess: null, sMsgs: [], sBusy: false};
 
   function req(method, path, body) {
     const h = {authorization: 'Bearer ' + tok()}; if (body) h['content-type'] = 'application/json';
@@ -36,8 +36,9 @@
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'v-' + tab || !S.data; });
     try { localStorage.setItem('lk_hq_tab', tab); } catch (e) {}
     if (tab === 'map') requestAnimationFrame(links);
-    document.body.classList.toggle('chat', tab === 'chat' && !!S.data);
-    if (tab === 'chat') pull(true); }
+    document.body.classList.toggle('chat', (tab === 'chat' || tab === 'session') && !!S.data);
+    if (tab === 'chat') pull(true);
+    if (tab === 'session') sessList(); }
   const toBottom = () => { const f = $('feed'); f.scrollTop = f.scrollHeight; };
   function renderAll() { fillModels(); renderDumps(); renderMap(); renderBoard(); renderStaff(); renderMem(); }
 
@@ -100,7 +101,7 @@
   function item(f) {
     const acts = (f.acts || []).map(a => '<button class="' + (a.main ? 'primary' : 'ghost') + '" data-op="' + esc(a.op) + '" data-a="' + esc(JSON.stringify(a.a || {})) + '">' + esc(a.l) + '</button>').join('');
     return '<div class="fi ' + f.who + (f.from === 'product' ? ' prod' : '') + '" data-fid="' + esc(f.id) + '">' +
-      (f.who === 'hq' ? '<span class="who">' + (f.from === 'product' ? 'Продакт' : 'Штаб') + '</span>' : '') + esc(f.text) +
+      (f.who === 'hq' ? '<span class="who">' + (f.from === 'product' ? 'Продакт' : f.from === 'session' ? 'Сеанс' : 'Штаб') + '</span>' : '') + esc(f.text) +
       (f.result ? '<div class="res">' + esc(f.result) + '</div>' : '') +
       (f.img ? '<img alt="" src="https://raw.githubusercontent.com/nachert1830/nachert/main/' + esc(f.img) + '">' : '') +
       ((f.links || []).length ? '<div class="lnk">' + f.links.map(l => '<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.l) + ' ↗</a>').join('') + '</div>' : '') +
@@ -129,6 +130,7 @@
     const b = e.target.closest('[data-op]'); if (!b) return; e.stopPropagation();
     const op = b.dataset.op, a = JSON.parse(b.dataset.a || '{}');
     if (op === 'map') return show('map');
+    if (op === 'opensession') { S.sess = a.id; return show('session'); }
     if (op === 'open') return openNode(a.id);
     if (op === 'rollback' && !confirm('Откатить выкатку? Сайт вернётся к состоянию до неё.')) return;
     if (op === 'epicreplan') { const t = prompt('Что поправить в плане? Главный инженер перепишет его с этим замечанием.'); if (t == null) return; a.text = t; }
@@ -141,6 +143,52 @@
   /* новое в ленте — раз в 15 с; задачи в Цехе — статус раз в минуту (смена статуса сама пишет в ленту) */
   setInterval(() => { if (!document.hidden && S.tab === 'chat' && !S.wait) pull(false); }, 15000);
   setInterval(() => { if (!document.hidden && S.data && S.data.nodes.some(n => n.status === 'running' || n.status === 'review' || n.type === 'epic' && n.status === 'planning')) req('POST', '/api/hq/sync', {}).then(() => pull(false)).catch(() => {}); }, 60000);
+
+  /* ── сеанс: живой диалог с исполнителем (Issue «сеанс»); ответы — опросом раз в 5 с, пока вкладка открыта ── */
+  const SSTATE = {running: 'идёт', paused: 'пауза: потолок цены', done: 'закрыт'};
+  dictate($('sMic'), $('sSay'), on => { $('sMic').classList.toggle('on', on); $('sMicTxt').textContent = on ? 'Стоп' : 'Говорить'; });
+  function sessList() {
+    if (!S.data) return;
+    $('sModel').innerHTML = opts(isText, S.data.settings.roles.chief || 'opus');
+    return req('GET', '/api/hq/session').then(j => {
+      const l = j.sessions || []; if (!S.sess && l.length && l[0].status !== 'done') S.sess = l[0].id;
+      $('sList').innerHTML = '<option value="">— новый сеанс —</option>' + l.map(s => '<option value="' + esc(s.id) + '"' + (s.id === S.sess ? ' selected' : '') + '>' + esc(s.title) + ' · ' + esc(SSTATE[s.status] || s.status) + '</option>').join('');
+      return sessPull(true);
+    }).catch(e => say('sHint', e.message, true));
+  }
+  function sessDraw(node) {
+    const f = $('sFeed');
+    f.innerHTML = S.sess ? S.sMsgs.map(m => '<div class="fi ' + (m.who === 'me' ? 'me' : 'hq sess') + '">' + (m.who === 'hq' ? '<span class="who">Исполнитель' + (m.rub ? ' · ход ' + rub(m.rub) : '') + '</span>' : '') + esc(m.text) +
+      (m.at ? '<time>' + tm(m.at) + '</time>' : '') + '</div>').join('') + (node && node.status === 'running' && (!S.sMsgs.length || S.sMsgs[S.sMsgs.length - 1].who === 'me') ? '<div class="fi hq wait">Исполнитель думает…</div>' : '')
+      : '<div class="feedEmpty"><b>Сеанс с исполнителем</b>Как в Claude Code: говоришь — он ищет в коде, показывает строки, правит, гоняет проверки, открывает PR и вливает по твоему «влей». Напиши первую фразу — сеанс начнётся.</div>';
+    f.scrollTop = f.scrollHeight;
+    $('sState').hidden = $('sCost').hidden = !node; $('sMerge').hidden = $('sStop').hidden = !node || node.status === 'done'; $('sModel').hidden = $('sNew').hidden = !!node && node.status !== 'done';
+    if (node) { $('sState').textContent = (SSTATE[node.status] || node.status) + ' · ' + mName(node.model); $('sState').className = 'pill s-' + (node.status === 'done' ? 'done' : node.status === 'paused' ? 'paused' : 'running');
+      $('sCost').textContent = rub(node.rub) + ' из ' + rub(node.ceil || 0);
+      $('sLinks').innerHTML = (node.pr ? '<a href="' + esc(node.pr) + '" target="_blank" rel="noopener">PR ↗</a> ' : '') + (node.url ? '<a href="' + esc(node.url) + '" target="_blank" rel="noopener">Issue ↗</a>' : ''); }
+    else $('sLinks').innerHTML = '';
+  }
+  function sessPull(force) {
+    if (!S.sess) { S.sMsgs = []; sessDraw(null); return Promise.resolve(); }
+    return req('GET', '/api/hq/session?id=' + encodeURIComponent(S.sess)).then(j => {
+      const grew = j.msgs.length !== S.sMsgs.length; S.sMsgs = j.msgs; S.sNode = j.node; spent(j.spent); if (grew || force) sessDraw(j.node); else sessDraw(j.node);
+    }).catch(e => say('sHint', e.message, true));
+  }
+  function sessSend(op) {
+    const text = $('sSay').value.trim(); if (S.sBusy) return;
+    if (!op && !text) return;
+    if (op === 'stop' && !confirm('Закончить сеанс? Исполнитель напишет итог и отключится.')) return;
+    S.sBusy = true; say('sHint', S.sess ? 'Отправляю…' : 'Открываю сеанс…');
+    const p = S.sess ? req('POST', '/api/hq/session', {id: S.sess, text, op}) : req('POST', '/api/hq/session', {text, model: $('sModel').value});
+    p.then(j => { $('sSay').value = ''; if (!S.sess) S.sess = j.node.id; say('sHint', op === 'merge' ? 'Передал «влей» — вольёт, если проверка PR зелёная.' : op === 'stop' ? 'Передал «стоп».' : '');
+      if (text && !op) S.sMsgs.push({who: 'me', text, at: Date.now()}); sessDraw(j.node); return sessList(); })
+      .catch(e => say('sHint', e.message, true)).then(() => { S.sBusy = false; });
+  }
+  $('sSend').onclick = () => sessSend(); $('sMerge').onclick = () => sessSend('merge'); $('sStop').onclick = () => sessSend('stop');
+  $('sSay').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sessSend(); } };
+  $('sList').onchange = () => { S.sess = $('sList').value || null; S.sMsgs = []; sessPull(true); };
+  $('sNew').onclick = () => { S.sess = null; S.sMsgs = []; $('sList').value = ''; sessDraw(null); $('sSay').focus(); };
+  setInterval(() => { if (!document.hidden && S.tab === 'session' && S.sess && !S.sBusy && (!S.sNode || S.sNode.status !== 'done')) sessPull(false); }, 5000);
 
   /* ── разбор монолога ── */
   $('parse').onclick = () => {
@@ -300,7 +348,7 @@
       opts(r === 'stenographer' ? m => !!m.stt : isText, st.roles[r]) + '</select></label>').join('');
     $('staffT').innerHTML = '<tr><th></th>' + Object.keys(d.levels).map(l => '<th>' + esc(d.levels[l]) + '</th>').join('') + '</tr>' +
       Object.keys(d.kinds).map(k => '<tr><th>' + esc(d.kinds[k]) + '</th>' + Object.keys(d.levels).map(l => '<td><select data-k="' + k + '" data-l="' + l + '">' + opts(k === 'image' ? isImg : isText, st.staff[k][l]) + '</select></td>').join('') + '</tr>').join('');
-    $('budgetIn').value = st.budgetRub; $('rateIn').value = st.rate; $('autoIn').checked = !!st.autoMerge;
+    $('budgetIn').value = st.budgetRub; $('rateIn').value = st.rate; $('sessIn').value = st.sessionRub; $('autoIn').checked = !!st.autoMerge;
     $('keys').innerHTML = (d.keys.proxy ? '✅ ключ ProxyAPI на сервере' : '❌ нет ключа ProxyAPI (секрет PROXYAPI_KEY)') + ' · ' + (d.keys.github ? '✅ токен GitHub — Цех и картинки работают' : '❌ нет токена GitHub (секрет GH_HQ_TOKEN) — Цех и картинки недоступны');
     $('catT').innerHTML = '<tr><th>Сотрудник</th><th>Цена, $ за 1 млн токенов</th><th>Для чего</th></tr>' + Object.keys(d.models).map(k => { const m = d.models[k];
       const price = m.image ? '~$' + m.perImage + ' за картинку' : m.stt ? '~$' + m.perMin + ' за минуту' : m.in + ' / ' + m.out + (m.cache != null ? ' · кэш ' + m.cache : '');
@@ -313,7 +361,7 @@
   }
   $('memAdd').onclick = () => { const t = $('memIn').value.trim(); if (!t) return; req('POST', '/api/hq/memory', {op: 'add', text: t}).then(j => { $('memIn').value = ''; S.data.memory = j.memory; renderMem(); }); };
   $('memList').onclick = e => { const b = e.target.closest('[data-mdel]'); if (b) req('POST', '/api/hq/memory', {op: 'del', i: +b.dataset.mdel}).then(j => { S.data.memory = j.memory; renderMem(); }); };
-  $('saveS').onclick = () => { const st = {roles: {}, staff: {}, budgetRub: +$('budgetIn').value, rate: +$('rateIn').value, autoMerge: $('autoIn').checked};
+  $('saveS').onclick = () => { const st = {roles: {}, staff: {}, budgetRub: +$('budgetIn').value, rate: +$('rateIn').value, sessionRub: +$('sessIn').value, autoMerge: $('autoIn').checked};
     document.querySelectorAll('[data-role]').forEach(s => { st.roles[s.dataset.role] = s.value; });
     document.querySelectorAll('[data-k]').forEach(s => { (st.staff[s.dataset.k] = st.staff[s.dataset.k] || {})[s.dataset.l] = s.value; });
     busy($('saveS'), true); req('POST', '/api/hq/settings', {settings: st}).then(() => { say('stMsg', 'Сохранено'); return reload(); }).catch(e => say('stMsg', e.message, true)).then(() => busy($('saveS'), false)); };
