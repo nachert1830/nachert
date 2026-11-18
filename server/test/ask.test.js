@@ -39,3 +39,18 @@ test('вопрос → ответ автора → «новое» у учени�
   assert.equal((await c.call('POST','/api/me/delete',{confirm:'УДАЛИТЬ'},{as:'a'})).status,200);
   assert.equal((await c.store.scan('ask')).length,0,'удалил аккаунт — вопросы удалены'); assert.equal((await c.store.scan('askimg')).length,0);
 });
+
+test('«Не сходится с условием?»: гость и вошедший — ветка во «Вопросах» автора и сообщение автору в Telegram',async()=>{
+  const c=club({cfg:{openSignup:true}}); await c.owner();
+  c.outbox.length=0;
+  const g=await c.call('POST','/api/report',{dz:'ig5',n:25,where:'Инж. графика · ДЗ №5 · вариант 25',src:'#/ig5/25',text:'Вершина — не конус'},{as:'guest'});
+  assert.equal(g.status,200);
+  const L=(await c.call('GET','/api/admin/ask',undefined,{as:'owner'})).data;
+  assert.equal(L.waiting,1); const t=L.threads[0];
+  assert.equal(t.title,'Не сходится с условием · Инж. графика · ДЗ №5 · вариант 25'); assert.equal(t.src,'#/ig5/25'); assert.equal(t.user.name,'Гость');
+  const sent=c.outbox.map(m=>m.body||{}).filter(m=>String(m.chat_id)==='1000001'&&/Не сходится с условием/.test(m.text||''));
+  assert.equal(sent.length,1,'автору ушло сообщение в Telegram'); assert.match(sent[0].text,/https:\/\/nachert1830\.ru\/#\/ig5\/25/);
+  assert.equal((await c.call('POST','/api/report',{n:3},{as:'guest'})).status,400,'без ДЗ — отказ');
+  for(let i=0;i<8;i++) await c.call('POST','/api/report',{dz:'ig4',n:i+1},{as:'guest',ip:'10.9.9.9'});
+  assert.equal((await c.call('POST','/api/report',{dz:'ig4',n:9},{as:'guest',ip:'10.9.9.9'})).status,429,'не больше 8 в час с адреса');
+});

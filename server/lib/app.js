@@ -440,6 +440,21 @@ function createApp(o){
   A['GET /api/ask/img']=async(req,S)=>{ const im=await store.get('askimg',String((req.query&&req.query.id)||'')); if(!im) fail(404,'Нет фото.');
     if(S.user.role!=='admin'){ const t=await store.get('ask',im.threadId); if(!t||t.userId!==S.user.id) fail(404,'Нет фото.'); }
     return H.json(200,{data:im.data},{'Cache-Control':'private, max-age=86400'}); };
+  /* «Не сходится с условием?» — кнопка у варианта ДЗ: чертёж сайта не совпадает с заданием кафедры. Писать может и гость
+     (без входа — аноним, 8 в час с адреса). Сообщение ложится веткой во «Вопросы» пульта (kind:'cond', ждёт ответа)
+     и уходит автору в Telegram (ADMIN_TG_IDS), если бот может ему писать. */
+  R['POST /api/report']=async(req)=>{ const b=body(req); await limit('rep',maskIp(req.ip),8,3600);
+    const dz=String(b.dz||'').replace(/[^a-z0-9]/g,'').slice(0,8), n=Math.max(0,Math.min(99,parseInt(b.n,10)||0));
+    if(!dz) fail(400,'Не указано, какое ДЗ.');
+    let u=null; try{ const S=await session(req); if(S) u=S.user; }catch(e){ u=null; }
+    const where=cleanName(b.where)||dz+(n?' · вариант '+n:''), what=askText(b.text).slice(0,1500);
+    const text='Не сходится с условием: '+where+(what?'\n\n'+what:''), t0=now(), id='r'+t0.toString(36)+C.token(4);
+    const th={id,userId:u?u.id:'guest',name:u?u.name:'Гость',group:u&&u.group||'',variant:n||(u&&u.variant)||0,kind:'cond',dz,n,src:askSrc(b.src),where,
+      title:('Не сходится с условием · '+where).slice(0,90),msgs:[askMsg('u',text,null)],createdAt:t0,updatedAt:t0,seenU:t0,seenA:0,closed:false,ver:0};
+    await store.put('ask',th);
+    const link=cfg.mainUrl+'/'+(th.src?th.src.replace(/^\/?/,''):'');
+    for(const chat of cfg.adminTg||[]){ try{ await o.bot.send(chat,'⚠️ '+text+'\n'+(u?'От: '+u.name+(u.group?', '+u.group:''):'От гостя')+'\n'+link); }catch(e){ log.error('report tg',e&&e.message); } }
+    return H.json(200,{ok:true,id}); };
   /* — что делают участники: короткие события из кабинета и «я сейчас здесь» (для живого пульта владельца) — */
   const ACT_TYPES=new Set(['task','check','train','diag','mock','plan','skill','scan']), VIEWS=/^[a-z]{0,12}$/;
   const actClean=d=>{ const o={}; if(!d||typeof d!=='object') return o; for(const k of Object.keys(d).slice(0,6)){ if(!/^[a-z]{1,8}$/.test(k)) continue; const v=d[k];
