@@ -21,6 +21,14 @@ function build(){
   /* половина кольца между цилиндрами r1 < r2 вдоль y; n — сторона, которую убираем (полупространство dot(n, p) ≤ 0 оставляем) */
   const ring=(r2,r1,n)=>I(S(Cy(r2),Cy(r1)),P.hp(n,[0,0,0]));
   const FR=[-E,0], BK=[0,E];                                           /* передняя и задняя стенки */
+  /* контур отверстия вдоль y на главном виде [[x, z]…] (обход против часовой) — для шагов IG4S; конус — не профиль K */
+  const arcP=(r,a0,a1,cx=0,cz=0)=>{ const n=Math.max(4,Math.round(Math.abs(a1-a0)/15)), o=[]; for(let i=0;i<=n;i++){ const t=(a0+(a1-a0)*i/n)*Math.PI/180; o.push([cx+r*Math.cos(t),cz+r*Math.sin(t)]); } return o; };
+  const cut=(P0,R)=>P0.map(p=>[Math.max(-R-2,Math.min(R+2,p[0])),Math.max(-R-2,Math.min(R+2,p[1]))]);
+  function kpoly(nd){ if(nd.t==='box') return cut([[nd.x-nd.sx/2,nd.z0],[nd.x+nd.sx/2,nd.z0],[nd.x+nd.sx/2,nd.z1],[nd.x-nd.sx/2,nd.z1]],57);
+    if(nd.t==='hcyl'&&nd.ax==='y') return arcP(nd.r,0,360,nd.cx,nd.cz).slice(0,-1);
+    if(nd.t==='i'&&nd.k[0].t==='s'){ const r2=nd.k[0].a.r, r1=nd.k[0].k[0].r, n=nd.k[1].n, a=Math.atan2(n[2],n[0])*180/Math.PI+90;   /* полукольцо: оставлено dot(n,p) ≤ 0 */
+      return arcP(r2,a,a+180).concat(arcP(r1,a+180,a)); }
+    return null; }
   const fm=v=>String(Math.round(v*10)/10).replace('.',',');
   /* грани K — плоскости уровня; каждая режет сферу по окружности r = √(R² − d²) */
   function why(o){ const R=o.R, r=o.r, out=[], seen=new Set();
@@ -37,6 +45,7 @@ function build(){
     const F=o.F||[], T=o.T||[], X=o.X||[];
     V[n]={n,title:o.title||(o.r?'Полый шар со сквозным отверстием K':'Шар со сквозным отверстием K'),H:2*R,box:[[-R,-R,-R],[R,R,R]],
       tree:S(...base,...F,...T,...X),givenF:S(...base,...F),givenTop:S(...base,...T),noGivenDims:true,
+      outer:S(...base,...T,...X),kp:F.map(kpoly).filter(Boolean),   /* для подробных шагов (dz/ig/4/steps.js): тело без K и контуры K на главном виде */
       hz:{L:'А',z:o.hz||0},spec:{F:'half',L:'half'},hzRight:true,why:why({R,r:o.r,pl:o.pl}),note:o.note,
       dims:[['T','dia',[0,0],2*R,-30,12,'Сфера Ø'+fm(2*R),-1]].concat(o.r&&!o.cav?[['T','dia',[0,0],2*o.r,30,30,'Сфера Ø'+fm(2*o.r),-1]]:[]).concat(lv(o.dims||[],R))};
     /* штрих А–А — за последней размерной линией справа и слева от главного вида, на 12 мм дальше (за размерным числом) */
