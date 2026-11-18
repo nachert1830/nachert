@@ -20,7 +20,7 @@ async function runMutations(page,o){ o=o||{}; await require('./normo-run.js').in
     return out; },{per:o.per||3,FAM:Object.fromEntries(Object.entries(FAM).map(([k,v])=>[k,v.source])),MODEL:[...MODEL],seed:o.seed||1}); }
 /* тренажёр на странице: лист строится, нажатие в цель засчитывается, мимо — нет; после ответа — объяснение и верный лист */
 async function nkUi(page,URL){ const bad=[], add=(n,r,m)=>bad.push({name:'Нормоконтроль '+n,rule:r,msg:m});
-  for(const key of ['8-11','3-5']){ await page.goto(URL+'#/ig/nk/'+key); await page.waitForTimeout(400);
+  for(const key of ['8-11','3-5']){ await page.goto(URL+'#/ig/nk/'+key); await require('./ready.js')(page);
     let ok=false; for(const until=Date.now()+90000; Date.now()<until; ){   /* опрос сам: waitForFunction в CI обрывался ошибкой раньше срока */
       ok=await page.evaluate(()=>{ const s=document.querySelector('#nkSheet svg'); return !!(s&&!document.querySelector('#nkSheet .igx-ld:not(.out)')); }).catch(()=>false); if(ok) break; await page.waitForTimeout(250); }
     if(!ok){ add(key,'лист не построился','нет листа за 90 с'); continue; }
@@ -40,7 +40,7 @@ async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Чит
   page.on('console',onc); page.on('pageerror',one);
   /* сразу на вкладке «Лист», как страница восстанавливает последнюю вкладку: 3D не запускается (в CI WebGL программный, и лист ждал за ним) */
   await page.evaluate(()=>{ try{ sessionStorage.setItem('igsol:#/ig2/8','1'); sessionStorage.setItem('igsol:#/ig2/8:t','sheet'); }catch(e){} });
-  await page.goto(URL+'#/ig2/8'); await page.waitForTimeout(800);
+  await page.goto(URL+'#/ig2/8'); await require('./ready.js')(page);
   if(!await page.$('#igSheetBox:not([hidden])')){ await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200); await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{}); }
   /* панель загрузки — только у самого листа: вкладка 3D могла ещё считаться (в CI WebGL программный и медленный) */
   /* опрос сам, а не waitForFunction: в CI он обрывался ошибкой через несколько секунд, и тест считал, что листа нет (прогоны 150–157);

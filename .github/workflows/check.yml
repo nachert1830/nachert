@@ -26,6 +26,7 @@ jobs:
     outputs:
       only: ${{ steps.p.outputs.only }}
       server: ${{ steps.p.outputs.server }}
+      matrix: ${{ steps.s.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,6 +41,25 @@ jobs:
           node tests/impact.js "origin/${{ github.base_ref }}"
           echo "only=$(node tests/impact.js "origin/${{ github.base_ref }}" --only)" >> "$GITHUB_OUTPUT"
           echo "server=$(node tests/impact.js "origin/${{ github.base_ref }}" --server)" >> "$GITHUB_OUTPUT"
+      # замеры времени: свежие — из кэша последней полной проверки main (обновляются после каждой), иначе — tests/timings.json
+      - name: Замеры времени
+        uses: actions/cache/restore@v4
+        with:
+          path: timings-latest.json
+          key: timings-${{ github.run_id }}
+          restore-keys: timings-
+      - id: s
+        name: Раскладка по потокам
+        run: |
+          T=tests/timings.json; [ -s timings-latest.json ] && T=timings-latest.json
+          # PR — меньше потоков на задачу (цель 5 мин), main — цель 8 мин с запасом
+          TARGET=200; [ "${{ github.event_name }}" = "pull_request" ] && TARGET=170
+          node tests/shards.js --only="${{ steps.p.outputs.only }}" --shards=auto --jobs=3 --target=$TARGET --timings=$T --out=plan.json
+          echo "matrix=$(node -e "process.stdout.write(JSON.stringify(require('./plan.json').matrix))")" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plan
+          path: plan.json
 
   server:
     needs: plan
@@ -59,29 +79,21 @@ jobs:
     needs: plan
     if: needs.plan.outputs.only != 'none'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Блоки этого потока
-        id: s
-        env:
-          ONLY: ${{ needs.plan.outputs.only }}
-        run: |
-          S1=core,dzvar,variants,prov,cert,adequacy; S2=random,gym,rk2,rkp,live,rkg,ig4,theory; S3=igs,normo,points,ng3,print; S4=smoke,track,lk,me,colors,ask,crawl
-          eval "MINE=\$S${{ matrix.shard }}"
-          if [ "$ONLY" = "all" ]; then G="$MINE"; else G=$(node -e "const a=process.argv[1].split(','),m=process.argv[2].split(',');process.stdout.write(a.filter(x=>m.includes(x)).join(','))" "$ONLY" "$MINE"); fi
-          echo "groups=$G" >> "$GITHUB_OUTPUT"; echo "Поток ${{ matrix.shard }}: ${G:-нечего проверять}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: plan
       - uses: actions/setup-node@v4
-        if: steps.s.outputs.groups != ''
         with:
           node-version: 20
       # браузер и пакеты — из кэша (скачиваются один раз на версию, а не в каждом потоке каждого запуска)
       - name: Кэш браузера
-        if: steps.s.outputs.groups != ''
         id: pw
         uses: actions/cache@v4
         with:
@@ -90,35 +102,70 @@ jobs:
             node_modules
           key: pw-1.47.2-acorn8-${{ runner.os }}
       - name: Браузер для проверки
-        if: steps.s.outputs.groups != ''
         run: |
           if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then npx playwright install-deps chromium >/dev/null
           else npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 && npx playwright install --with-deps chromium; fi
-      - name: Проверка
-        if: steps.s.outputs.groups != ''
-        run: node tests/run.js --only=${{ steps.s.outputs.groups }} 2>&1 | tee /tmp/check.log; exit ${PIPESTATUS[0]}
+      - name: Проверка (поток ${{ matrix.shard }})
+        run: |
+          node -e "const p=require('./plan.json');console.log('Поток ${{ matrix.shard }}: '+p.shards[${{ matrix.shard }}].map(s=>s.join(', ')).join(' | ')+' — расчёт '+p.est[${{ matrix.shard }}]+' с')"
+          node tests/run.js --plan=plan.json --shard=${{ matrix.shard }} --jobs=3 --out=part-${{ matrix.shard }}.json $([ "${{ matrix.shard }}" = 0 ] && [ "${{ needs.plan.outputs.only }}" = all ] && echo --site=1) 2>&1 | tee /tmp/check.log; exit ${PIPESTATUS[0]}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: part-${{ matrix.shard }}
+          path: part-${{ matrix.shard }}.json
+
+  merge:
+    # итог: пороги, отчёт и код выхода — по всем элементам всех потоков (нет результата элемента — красная)
+    name: Итог блоков
+    needs: [plan, check]
+    if: always() && needs.plan.outputs.only != 'none' && needs.plan.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v4
-        if: failure() && github.ref == 'refs/heads/main'
         with:
           fetch-depth: 2
-          path: head
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+      - name: Итог
+        run: |
+          mkdir -p parts; cp art/part-*/part-*.json parts/ 2>/dev/null || true
+          node tests/run.js --merge=parts --plan=art/plan/plan.json --json=metrics.json --timings=timings-new.json 2>&1 | tee /tmp/check.log; exit ${PIPESTATUS[0]}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metrics
+          path: |
+            metrics.json
+            timings-new.json
+      # замеры времени обновляются автоматически после каждой полной проверки main (кэш читает задание plan)
+      - name: Свежие замеры времени
+        if: always() && github.ref == 'refs/heads/main' && needs.plan.outputs.only == 'all'
+        run: |
+          [ -s timings-new.json ] && node -e "const f=require('fs'),n=JSON.parse(f.readFileSync('timings-new.json'));let o={};try{o=JSON.parse(f.readFileSync('tests/timings.json'))}catch(e){};for(const g in o.elements||{})for(const k in o.elements[g])if(!(n.elements[g]||{})[k])(n.elements[g]=n.elements[g]||{})[k]=o.elements[g][k];f.writeFileSync('timings-latest.json',JSON.stringify(n,null,1))"
+      - uses: actions/cache/save@v4
+        if: always() && github.ref == 'refs/heads/main' && needs.plan.outputs.only == 'all' && hashFiles('timings-latest.json') != ''
+        with:
+          path: timings-latest.json
+          key: timings-${{ github.run_id }}
       # автооткат: красный коммит — выкатка Цеха («Цех: …», «Задача #N.») → откатить её сразу, не дожидаясь владельца
       - name: Автооткат выкатки Цеха
         if: failure() && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          MSG=$(git -C head log -1 --format=%B)
+          MSG=$(git log -1 --format=%B)
           N=$(echo "$MSG" | grep -o 'Задача #[0-9]*' | head -1 | tr -dc 0-9)
           if echo "$MSG" | head -1 | grep -q '^Цех:' && [ -n "$N" ]; then
-            gh workflow run hq-work.yml --ref main -f issue="$N" -f why="полная проверка main красная, поток ${{ matrix.shard }}" && echo "Автооткат задачи #$N запущен"
+            gh workflow run hq-work.yml --ref main -f issue="$N" -f why="полная проверка main красная" && echo "Автооткат задачи #$N запущен"
           fi
       - name: main красный — Issue для Штаба
         if: failure() && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          { echo "Полная проверка на main красная (поток ${{ matrix.shard }}, коммит ${GITHUB_SHA::7})."; echo; echo '```'; tail -40 /tmp/check.log; echo '```';
+          { echo "Полная проверка на main красная (коммит ${GITHUB_SHA::7})."; echo; echo '```'; tail -40 /tmp/check.log; echo '```';
             echo "Лог: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"; } > /tmp/b.md
           N=$(gh issue list --label "main-красный" --state open --json number -q '.[0].number')
           if [ -n "$N" ]; then gh issue comment "$N" --body-file /tmp/b.md; else gh label create "main-красный" >/dev/null 2>&1; gh issue create --title "main красный: проверка сайта" --label "main-красный" --body-file /tmp/b.md; fi
@@ -127,7 +174,7 @@ jobs:
     # одна обязательная проверка перед слиянием: красная, если хоть одно задание упало или отменено;
     # пропуск законен, только когда план так решил (одни документы — блоков нет; нет серверных правок — тестов сервера нет)
     name: Итог проверки
-    needs: [plan, server, check]
+    needs: [plan, server, check, merge]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -135,7 +182,7 @@ jobs:
         run: |
           echo "plan=${{ needs.plan.result }} server=${{ needs.server.result }} check=${{ needs.check.result }} (блоки: ${{ needs.plan.outputs.only }}, сервер: ${{ needs.plan.outputs.server }})"
           [ "${{ needs.plan.result }}" = success ] || { echo "План не выполнен"; exit 1; }
-          for r in "${{ needs.server.result }}" "${{ needs.check.result }}"; do case "$r" in success|skipped) ;; *) echo "Задание: $r"; exit 1;; esac; done
-          if [ "${{ needs.plan.outputs.only }}" != none ] && [ "${{ needs.check.result }}" != success ]; then echo "Блоки выбраны, а проверка не прошла"; exit 1; fi
+          for r in "${{ needs.server.result }}" "${{ needs.check.result }}" "${{ needs.merge.result }}"; do case "$r" in success|skipped) ;; *) echo "Задание: $r"; exit 1;; esac; done
+          if [ "${{ needs.plan.outputs.only }}" != none ] && { [ "${{ needs.check.result }}" != success ] || [ "${{ needs.merge.result }}" != success ]; }; then echo "Блоки выбраны, а проверка не прошла"; exit 1; fi
           if [ "${{ needs.plan.outputs.server }}" = 1 ] && [ "${{ needs.server.result }}" != success ]; then echo "Тесты сервера выбраны, а не прошли"; exit 1; fi
           echo "Итог: зелёная"

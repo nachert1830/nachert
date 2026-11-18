@@ -65,12 +65,12 @@ async function runAsk(browser) {
     await me.fill('#qaTxt', 'Замени π₂ на π₄ ∥ S′A′ — на π₄ ребро в натуральную величину.'); await me.click('#qaCp [type=submit]'); await me.waitForTimeout(700);
     if (!(await me.$('#askBadge[hidden]'))) B('пульт: после ответа ждущих нет', await me.textContent('#askBadge'));
     /* 4) ученик видит ответ */
-    await pg.goto(SITE + '/#/ng/rk2'); await pg.waitForTimeout(300); await pg.evaluate(() => ASK.refresh());
+    await pg.goto(SITE + '/#/ng/rk2'); await require('./ready.js')(pg); await pg.evaluate(() => ASK.refresh());
     if (!/1/.test(await pg.textContent('#akBtn'))) B('шапка: число новых ответов', await pg.textContent('#akBtn'));
     await pg.click('#akBtn'); await pg.waitForSelector('.ak-it.new', { timeout: 5000 }).catch(() => B('«Мои вопросы»: пометка «Ответ»', 'нет'));
     await pg.click('.ak-it'); await pg.waitForSelector('.ak-m.a', { timeout: 8000 }).catch(() => B('переписка: ответ автора', 'нет'));
     if (!/π₄/.test(await pg.textContent('.ak-m.a .ak-bb').catch(() => ''))) B('ответ автора — текстом', 'нет');
-    await pg.goto(SITE + '/#/'); await pg.waitForTimeout(300); if (/\d/.test(await pg.textContent('#akBtn'))) B('прочитал ответ — число пропало', await pg.textContent('#akBtn'));
+    await pg.goto(SITE + '/#/'); await require('./ready.js')(pg); if (/\d/.test(await pg.textContent('#akBtn'))) B('прочитал ответ — число пропало', await pg.textContent('#akBtn'));
     /* 5) телефон */
     const ph = await page({ viewport: { width: 390, height: 800 }, isMobile: true, hasTouch: true }, 'телефон');
     for (const h of ['#/ask', '#/']) { await ph.goto(SITE + '/' + h); await ph.waitForSelector(h === '#/' ? '.au-pill' : '.ak-box', { timeout: 10000 }).catch(() => B('телефон ' + h, 'не отрисовалось')); await ph.waitForTimeout(300);

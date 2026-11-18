@@ -58,7 +58,7 @@ if(require.main===module)(async()=>{
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
     r.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
-  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await page.waitForTimeout(1500);
+  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await require('./ready.js')(page);
   const r=await falsePositives(page,{perm:+(arg('perm')||3),seed:+(arg('seed')||1)});
   console.log('1. Эталоны: чертежей '+r.ref.drawings+' (шагов '+r.ref.steps+'), с замечанием «ошибка» — '+r.ref.flaggedDrawings+' ('+(100*r.ref.flaggedDrawings/r.ref.drawings).toFixed(1)+' %); замечаний '+r.ref.issues+', из них разобраны в baseline.json — '+r.ref.inBaseline);
   r.ref.list.forEach(x=>console.log('   '+x));

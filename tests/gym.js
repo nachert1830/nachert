@@ -4,14 +4,14 @@
    • «Найди ошибку»: для каждой задачи готовится задание; нажатие на ошибку → «Нашёл», мимо → «Здесь всё верно». */
 async function gymCheck(page,base,opt){
   opt=opt||{}; const bad=[], info={};
-  await page.goto(base+'#/ng/check/gym'); await page.waitForTimeout(1500);
+  await page.goto(base+'#/ng/check/gym'); await require('./ready.js')(page);
   const hideBars=()=>page.addStyleTag({content:'.ckn{display:none!important}'}).catch(()=>{});
   await page.evaluate(()=>GEN.checkers());
   const L=await page.evaluate(()=>GYM.lists());
   /* скрытые функции не видны обычному посетителю; #/me без ключа ведёт на главную */
   if(await page.evaluate(()=>FLAGS.owner())) bad.push({name:'Режим владельца',rule:'включён у посетителя',msg:''});
   if(await page.$$eval('.gy-card',a=>a.length)!==2) bad.push({name:'Тренажёр',rule:'посетитель видит скрытую карточку',msg:''});
-  await page.goto(base+'#/me'); await page.waitForTimeout(400);
+  await page.goto(base+'#/me'); await require('./ready.js')(page);
   if(await page.evaluate(()=>location.hash)!=='#/') bad.push({name:'Режим владельца',rule:'#/me открылся без ключа',msg:''});
   /* варианты: каждая задача из GEN_OK, два семени */
   const vr=await page.evaluate(list=>{ const out=[]; list.forEach(n=>[11,503].forEach(sd=>{ const v=GEN.variant(n,sd); if(!v) out.push({n,sd}); })); return out; },L.gen);
@@ -27,10 +27,10 @@ async function gymCheck(page,base,opt){
       return [r.left+(pt[0])*r.width/vb.width, r.top+(pt[1])*r.height/vb.height]; },pt);
     await page.mouse.move(box[0],box[1]); await page.mouse.down(); await page.mouse.up(); await page.waitForTimeout(60); };
   /* «Построй сам» временно убран с сайта: адрес …/build/… ведёт на вариант задачи */
-  await page.goto(base+'#/ng/check/gym/build/'+(L.gen[0])+'-5'); await page.waitForTimeout(600);
+  await page.goto(base+'#/ng/check/gym/build/'+(L.gen[0])+'-5'); await require('./ready.js')(page);
   if(!/\/gym\/var\//.test(await page.evaluate(()=>location.hash))) bad.push({name:'Тренажёр · построй сам',rule:'старый адрес не перенаправлен',msg:''});
   for(const n of (opt.all?L.bug:L.bug.slice(0,10))){
-    await page.goto(base+'#/ng/check/gym/bug/'+n+'-41'); await page.waitForTimeout(700);
+    await page.goto(base+'#/ng/check/gym/bug/'+n+'-41'); await require('./ready.js')(page);
     const at=await page.evaluate(()=>{ const m=/bug\/(\d+)-(\d+)/.exec(location.hash); if(!m) return null; const r=GYM.make(+m[1],+m[2]), B=GYM.bugMake(r.task,+m[2]); if(!B) return null; const fr=GYM.frame(B.items); return [B.at[0]+10+fr.ox,B.at[1]+10+fr.oy]; });
     if(!at||!(await page.$('#gySheet svg'))){ bad.push({name:'Тренажёр · найди ошибку №'+n,rule:'задание не открылось',msg:await page.evaluate(()=>(document.querySelector('#gyHost')||document.body).textContent.slice(0,120))}); continue; }
     const far=await page.$eval('#gySheet svg',(svg,at)=>{ const vb=svg.viewBox.baseVal; const c=[[6,6],[vb.width-6,6],[6,vb.height-6],[vb.width-6,vb.height-6]]; return c.sort((p,q)=>Math.hypot(q[0]-at[0],q[1]-at[1])-Math.hypot(p[0]-at[0],p[1]-at[1]))[0]; },at);
@@ -42,7 +42,7 @@ async function gymCheck(page,base,opt){
   }
   /* 3D к задачам — у любого посетителя */
   /* 3D к задачам: кнопка есть, окно открывается, шаги листаются */
-  await page.goto(base+'#/ng/tasks/47'); await page.waitForTimeout(900);
+  await page.goto(base+'#/ng/tasks/47'); await require('./ready.js')(page);
   if(!(await page.$('.pl-zb[data-z="3d"]'))) bad.push({name:'3D к задачам №47',rule:'нет кнопки 3D',msg:''});
   else { await page.click('.pl-zb[data-z="3d"]'); await page.waitForTimeout(200); for(let i=0;i<12;i++) await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(100); const n=await page.$$eval('#t3Svg circle',a=>a.length), cap=await page.$eval('#t3Cap',e=>e.textContent);
