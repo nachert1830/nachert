@@ -146,6 +146,44 @@ async function healthLogic() {
   const now = new Date(2026, 9, 18, 15, 30), today = new Date(2026, 9, 18, 9, 5).toISOString(), past = new Date(2026, 8, 3, 14, 7).toISOString();
   if (fmtWhen(today, now) !== '09:05') B('fmtWhen: сегодня — ЧЧ:ММ', fmtWhen(today, now));
   if (fmtWhen(past, now) !== '3.09 14:07') B('fmtWhen: другой день — Д.ММ ЧЧ:ММ', fmtWhen(past, now));
+  // loadHealth с подменным fetch
+  const { loadHealth, healthHtml } = H;
+  if (typeof loadHealth !== 'function' || typeof healthHtml !== 'function') { B('экспорт loadHealth/healthHtml', typeof loadHealth + ' ' + typeof healthHtml); return bad; }
+  const resp = (status, body, hdr = {}) => ({ ok: status >= 200 && status < 300, status, headers: { get: k => (k.toLowerCase() in hdr ? hdr[k.toLowerCase()] : null) }, json: async () => body });
+  const calls = [], fake = (rs, is) => async (u, o) => { calls.push([u, o]); return /\/issues\?/.test(u) ? is : rs; };
+  const okIss = [{ number: 7, title: 'main красный', html_url: 'https://github.com/o/r/issues/7' }, { number: 8, title: 'PR', html_url: 'u', pull_request: {} }];
+  try {
+    const d = await loadHealth(fake(resp(200, { workflow_runs: runs }), resp(200, okIss)), 'o/r');
+    const urls = calls.map(c => c[0]);
+    if (!urls.some(u => u.includes('workflows/check.yml/runs') && u.includes('branch=main'))) B('loadHealth: адрес запусков', urls.join(' '));
+    if (!urls.some(u => u.includes(encodeURIComponent('main-красный')))) B('loadHealth: адрес задач с меткой', urls.join(' '));
+    if (calls.length !== 2) B('loadHealth: два запроса', calls.length);
+    if (calls.some(c => JSON.stringify((c[1] || {}).headers || {}).toLowerCase().includes('authorization'))) B('loadHealth: без authorization', JSON.stringify(calls.map(c => c[1])));
+    if (!d.ok || !Array.isArray(d.runs) || d.runs.length !== 5 || !Array.isArray(d.issues) || d.issues.length !== 1) B('loadHealth: успех', JSON.stringify(d).slice(0, 300));
+    const lim = await loadHealth(fake(resp(403, {}, { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': String(T0 / 1000) }), resp(200, [])), 'o/r');
+    if (lim.ok !== false || !/Лимит/.test(lim.why || '') || lim.retryAt !== T0) B('loadHealth: 403 лимит', JSON.stringify(lim));
+    const thr = await loadHealth(async () => { throw new Error('net'); }, 'o/r');
+    if (thr.ok !== false || !/не отвечает/.test(thr.why || '')) B('loadHealth: исключение', JSON.stringify(thr));
+    const nf = await loadHealth(fake(resp(404, {}), resp(404, {})), 'o/r');
+    if (nf.ok !== false || !/не найден/.test(nf.why || '')) B('loadHealth: 404', JSON.stringify(nf));
+    const oth = await loadHealth(fake(resp(500, {}), resp(200, [])), 'o/r');
+    if (oth.ok !== false || !/500/.test(oth.why || '')) B('loadHealth: другой статус', JSON.stringify(oth));
+  } catch (e) { B('loadHealth: прогон', e.message); }
+  // healthHtml: экранирование и ссылки
+  const XSS = '<img src=x onerror=alert(1)>';
+  const hh = healthHtml({ ok: true, running: { at: today, url: 'https://github.com/o/r/actions/runs/3' },
+    runs: [{ id: 1, ok: true, at: today, ms: 5000, url: 'https://github.com/o/r/actions/runs/1', sha: 'abc', title: XSS },
+      { id: 2, ok: false, at: past, ms: 492000, url: 'javascript:alert(1)', sha: 'def', title: 'x' }],
+    issues: [{ n: 7, title: XSS, url: 'https://github.com/o/r/issues/7' }, { n: 8, title: 't', url: 'javascript:alert(1)' }] }, now);
+  if (hh.includes('<img')) B('healthHtml: экранирование', hh);
+  if (/href="javascript:/i.test(hh) || (hh.match(/href="([^"]*)"/g) || []).some(m => !m.startsWith('href="https://github.com/'))) B('healthHtml: только github.com в href', hh);
+  const as = hh.match(/<a\b[^>]*>/g) || [];
+  if (!as.length || as.some(a => !a.includes('rel="noopener noreferrer"') || !a.includes('target="_blank"'))) B('healthHtml: rel и target у ссылок', as.join(' '));
+  if (!hh.includes('hl-run ok') || !hh.includes('hl-run bad') || !hh.includes('class="hl-now"') || !hh.includes('шла 8 мин 12 с')) B('healthHtml: строки запусков', hh);
+  const he = healthHtml({ ok: false, why: 'GitHub ответил <b>500</b>' }, now);
+  if (!he.includes('class="hl-err"') || !he.includes('data-hrefresh') || he.includes('<b>500')) B('healthHtml: ошибка', he);
+  const h0 = healthHtml({ ok: true, runs: [], issues: [] }, now);
+  if (!h0.includes('Завершённых проверок main пока нет') || !h0.includes('Открытых задач нет')) B('healthHtml: пусто', h0);
   return bad;
 }
 
