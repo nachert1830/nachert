@@ -1,8 +1,11 @@
 name: Проверка сайта
 # Как в больших компаниях:
-# • PR — выборочная проверка: tests/impact.js выбирает блоки, задетые правкой (не уверен — всё); сервер — свои тесты.
-# • main (пуш, ручной запуск, Цех после слияния) — полная проверка, 4 параллельных потока (~8–10 мин вместо ~25).
+# • PR — выборочная проверка: tests/impact.js выбирает блоки, задетые правкой. «Ничего» — только если изменены одни документы
+#   (*.md, docs/**); файл не из карты влияния — полная проверка. Карта сама проверяется (tests/impact.test.js) в задании plan.
+# • main (пуш, ручной запуск, Цех после слияния) — полная проверка, параллельные потоки.
 #   Красная — Issue «main красный» с концом лога: Штаб покажет его владельцу.
+# • «Итог проверки» (задание gate) — одна обязательная проверка перед слиянием (docs/REQUIRED-CHECK.md):
+#   зелёная, только если все задания прошли или законно пропущены (одни документы); красная или отменённая — не вливать.
 on:
   push:
     branches: [main]
@@ -13,8 +16,10 @@ permissions:
   contents: read
   issues: write
 concurrency:
-  group: check-${{ github.ref }}
-  cancel-in-progress: true
+  # новый пуш в PR отменяет устаревшую проверку того же PR; проверки main не отменяются никогда:
+  # каждый коммит main получает свою полную проверку (у каждого прогона main — своя группа)
+  group: check-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -25,6 +30,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Карта влияния сама проверена
+        run: node tests/impact.test.js
       - id: p
         name: Что задето
         run: |
@@ -32,7 +39,7 @@ jobs:
           git fetch -q origin "${{ github.base_ref }}"
           node tests/impact.js "origin/${{ github.base_ref }}"
           echo "only=$(node tests/impact.js "origin/${{ github.base_ref }}" --only)" >> "$GITHUB_OUTPUT"
-          echo "server=$(node -e "process.stdout.write(JSON.parse(require('child_process').execSync('node tests/impact.js origin/${{ github.base_ref }}')).server?'1':'0')")" >> "$GITHUB_OUTPUT"
+          echo "server=$(node tests/impact.js "origin/${{ github.base_ref }}" --server)" >> "$GITHUB_OUTPUT"
 
   server:
     needs: plan
@@ -64,7 +71,7 @@ jobs:
         env:
           ONLY: ${{ needs.plan.outputs.only }}
         run: |
-          S1=core,dzvar,variants,prov,cert,adequacy; S2=random,gym,rk2,rkp,live,rkg,ig4,theory; S3=igs,normo,points,ng3,print; S4=track,lk,me,colors,ask,crawl
+          S1=core,dzvar,variants,prov,cert,adequacy; S2=random,gym,rk2,rkp,live,rkg,ig4,theory; S3=igs,normo,points,ng3,print; S4=smoke,track,lk,me,colors,ask,crawl
           eval "MINE=\$S${{ matrix.shard }}"
           if [ "$ONLY" = "all" ]; then G="$MINE"; else G=$(node -e "const a=process.argv[1].split(','),m=process.argv[2].split(',');process.stdout.write(a.filter(x=>m.includes(x)).join(','))" "$ONLY" "$MINE"); fi
           echo "groups=$G" >> "$GITHUB_OUTPUT"; echo "Поток ${{ matrix.shard }}: ${G:-нечего проверять}"
@@ -115,3 +122,20 @@ jobs:
             echo "Лог: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"; } > /tmp/b.md
           N=$(gh issue list --label "main-красный" --state open --json number -q '.[0].number')
           if [ -n "$N" ]; then gh issue comment "$N" --body-file /tmp/b.md; else gh label create "main-красный" >/dev/null 2>&1; gh issue create --title "main красный: проверка сайта" --label "main-красный" --body-file /tmp/b.md; fi
+
+  gate:
+    # одна обязательная проверка перед слиянием: красная, если хоть одно задание упало или отменено;
+    # пропуск законен, только когда план так решил (одни документы — блоков нет; нет серверных правок — тестов сервера нет)
+    name: Итог проверки
+    needs: [plan, server, check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Все задания зелёные
+        run: |
+          echo "plan=${{ needs.plan.result }} server=${{ needs.server.result }} check=${{ needs.check.result }} (блоки: ${{ needs.plan.outputs.only }}, сервер: ${{ needs.plan.outputs.server }})"
+          [ "${{ needs.plan.result }}" = success ] || { echo "План не выполнен"; exit 1; }
+          for r in "${{ needs.server.result }}" "${{ needs.check.result }}"; do case "$r" in success|skipped) ;; *) echo "Задание: $r"; exit 1;; esac; done
+          if [ "${{ needs.plan.outputs.only }}" != none ] && [ "${{ needs.check.result }}" != success ]; then echo "Блоки выбраны, а проверка не прошла"; exit 1; fi
+          if [ "${{ needs.plan.outputs.server }}" = 1 ] && [ "${{ needs.server.result }}" != success ]; then echo "Тесты сервера выбраны, а не прошли"; exit 1; fi
+          echo "Итог: зелёная"

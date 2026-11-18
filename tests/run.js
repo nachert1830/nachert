@@ -8,7 +8,7 @@ const http=require('http'), fs=require('fs'), path=require('path');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const ROOT=path.join(__dirname,'..'), QUICK=process.argv.includes('--quick');
 /* блоки проверки: --only=a,b — только они (выборочная проверка Цеха и PR; полная — на main после слияния) */
-const GROUPS=['core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
+const GROUPS=['smoke','core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
 const ONLY=(a=>a?new Set(a.slice(7).split(',').map(x=>x.trim()).filter(Boolean)):null)(process.argv.find(a=>a.startsWith('--only=')));
 if(ONLY){ const bad=[...ONLY].filter(g=>!GROUPS.includes(g)); if(bad.length){ console.error('Нет таких блоков: '+bad.join(', ')+'. Есть: '+GROUPS.join(', ')); process.exit(2); } }
 /* время каждого блока — для раскладки потоков CI по времени (строка «Время блоков» в конце) */

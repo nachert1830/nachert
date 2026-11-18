@@ -100,7 +100,8 @@ jobs:
             gh issue comment "$N" --body "⚠️ Не вливаю: проверка PR ещё идёт или красная ($BAD из $ALL не зелёные). Нажми «Влить» позже. PR: $PR <!-- hq:{\"rub\":0} -->"
             gh issue edit "$N" --remove-label "влить"; exit 0
           fi
-          if gh pr merge "$PR" --squash --delete-branch; then
+          # обязательная проверка «Итог проверки» (docs/REQUIRED-CHECK.md): если она ещё идёт, слияние ставится в очередь (--auto)
+          if gh pr merge "$PR" --squash --delete-branch || gh pr merge "$PR" --squash --delete-branch --auto; then
             gh workflow run check.yml --ref main || true
             gh issue comment "$N" --body "✅ **Выкачено на сайт** по твоему «влить». PR: $PR <!-- hq:{\"rub\":0,\"pr\":\"$PR\"} -->"
             gh label create "готово" >/dev/null 2>&1; gh issue edit "$N" --add-label "готово" --remove-label "влить" --remove-label "на-проверку"; gh issue close "$N"
@@ -338,6 +339,7 @@ jobs:
             ONLY=$(node tests/impact.js origin/main --only)
             if [ "$ONLY" = "none" ] || node tests/run.js $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/full.log 2>&1; then
               if gh pr merge "$PR" --squash --delete-branch; then STATUS="готово"; MSG="✅ **Выкачено на сайт.** PR: $PR"
+              elif gh pr merge "$PR" --squash --delete-branch --auto; then STATUS="готово"; MSG="✅ **Поставлено в очередь:** вольётся само, когда обязательная проверка PR станет зелёной. PR: $PR"
               else MSG="⚠️ Тесты и ревизор — зелёные, но влить не вышло (конфликт с main — другая задача правила то же место, или защита ветки). PR: $PR. Перезапусти задачу — исполнитель начнёт со свежего main."; fi
               gh workflow run check.yml --ref main || true   # полная проверка main; красная → Issue «main красный»
             else MSG="⚠️ Быстрые тесты зелёные, проверка перед выкаткой — красная, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
