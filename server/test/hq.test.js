@@ -286,8 +286,10 @@ test('Эпик: лимит разборов на эпик и вопрос Гла
 
 test('Эпик: бюджет исчерпан → пауза с кнопками «Добавить 50 %» и «Остановить»', async()=>{ const {c,n}=await setup();
   const {e}=await epicRunning(c,n); let k=await byKey(c,e);
-  finish(n,k.t1,true,{rub:e.budgetRub+1}); await sync(c);
-  let ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'paused'); k=await byKey(c,e); assert.equal(k.t2.status,'ready','дальше не запускает');
+  finish(n,k.t1,true,{rub:Math.round((e.budgetRub-1)*100)/100}); await sync(c);
+  k=await byKey(c,e); assert.equal(k.t2.status,'running','план (12,5 ₽) в бюджет задач не входит');
+  finish(n,k.t2,true,{rub:2}); await sync(c);
+  let ep=(await nodesOf(c)).find(x=>x.id===e.id); assert.equal(ep.status,'paused'); k=await byKey(c,e); assert.equal(k.t3.status,'ready','дальше не запускает');
   const f=await feedOf(c), last=f[f.length-1]; assert.match(last.text,/бюджет эпика исчерпан/); assert.deepEqual(last.acts.map(x=>x.op),['epicbudget','epicstop']);
   /* +50 % — и снова идёт, пока потрачено меньше */
   await c.call('POST','/api/hq/act',{op:'epicbudget',a:last.acts[0].a},{as:'owner'});

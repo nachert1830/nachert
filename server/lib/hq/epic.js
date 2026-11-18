@@ -167,6 +167,13 @@ function epics(ctx) {
       '\nЧто уже сделано: ' + (done.length ? '\n' + done.map(t => '- ' + t.title + ': ' + String(t.report || (t.log || '').split('\n')[0] || 'влито').replace(/\s+/g, ' ').slice(0, 160)).join('\n') : 'это первая задача эпика.');
   }
 
+  /* сбой шага — владельцу в ленту (одна и та же ошибка — не чаще раза в час), а не молча */
+  async function warn(e, err) {
+    const msg = str(err && err.message || err, 300);
+    if (e.lastErr === msg && now() - (e.lastErrAt || 0) < 3600e3) return;
+    e.lastErr = msg; e.lastErrAt = now(); await save(e).catch(() => {});
+    await feed('hq', '⚠️ Эпик «' + e.title + '»: шаг не удался — ' + msg + '. Попробую снова через 15 минут.', {node: e.id}).catch(() => {});
+  }
   async function pause(e, why, text, acts) {
     setStatus(e, 'paused', why); await save(e);
     await feed('hq', '⏸ Эпик «' + e.title + '»: ' + text, {node: e.id, acts: acts || [A('▶ Продолжить', 'epicresume', {id: e.id}, true), A('Остановить', 'epicstop', {id: e.id})]});
@@ -176,10 +183,12 @@ function epics(ctx) {
   async function tick() {
     const all = await store.scan('hqnodes', n => n.type === 'epic');
     const out = [];
-    for (const e of all.filter(x => x.status === 'planning' && x.issue)) { try { await syncPlan(e); } catch (err) { out.push(e.id + ': ' + err.message); } }
+    for (const e of all.filter(x => x.status === 'planning' && x.issue)) { try { await syncPlan(e); } catch (err) { out.push(e.id + ': ' + err.message); await warn(e, err); } }
     for (const e0 of all.filter(x => x.status === 'running')) {
       const e = await getNode(e0.id);
-      try { out.push(e.id + ': ' + await step(e)); } catch (err) { out.push(e.id + ': ' + err.message); if (err.status === 402) await pause(e, 'лимит месяца', err.message, [A('▶ Продолжить', 'epicresume', {id: e.id}, true)]); }
+      try { out.push(e.id + ': ' + await step(e)); } catch (err) { out.push(e.id + ': ' + err.message);
+        if (err.status === 402) await pause(e, 'лимит месяца', err.message, [A('▶ Продолжить', 'epicresume', {id: e.id}, true)]);
+        else await warn(e, err); }
     }
     return out;
   }
@@ -187,8 +196,10 @@ function epics(ctx) {
     const st = await settings(), tasks = await tasksOf(e);
     e.spentRub = r2((e.planRub || 0) + (e.chiefRub || 0) + tasks.reduce((s, t) => s + (t.rub || 0), 0));
     /* 1. бюджет */
-    if (e.budgetRub && e.spentRub >= e.budgetRub) {
-      await pause(e, 'бюджет', 'бюджет эпика исчерпан — потрачено ' + e.spentRub + ' ₽ из ' + e.budgetRub + ' ₽. Готово ' + tasks.filter(t => t.status === 'done').length + ' из ' + tasks.length + '.',
+    /* бюджет — на задачи и разборы (оценка задач × 1,5); план уже оплачен до утверждения и в бюджет не входит */
+    const work = r2(e.spentRub - (e.planRub || 0));
+    if (e.budgetRub && work >= e.budgetRub) {
+      await pause(e, 'бюджет', 'бюджет эпика исчерпан — на задачи потрачено ' + work + ' ₽ из ' + e.budgetRub + ' ₽ (план — ещё ' + r2(e.planRub) + ' ₽). Готово ' + tasks.filter(t => t.status === 'done').length + ' из ' + tasks.length + '.',
         [A('Добавить 50 %', 'epicbudget', {id: e.id}, true), A('Остановить', 'epicstop', {id: e.id})]);
       return 'бюджет';
     }
