@@ -8,6 +8,7 @@ on:
   issues:
     types: [labeled]
 permissions:
+  actions: write
   contents: write
   issues: write
   pull-requests: write
@@ -40,7 +41,8 @@ jobs:
           SHA=$([ -n "$PR" ] && gh pr view "$PR" --json mergeCommit -q .mergeCommit.oid)
           if [ -z "$SHA" ]; then gh issue comment "$N" --body "⚠️ Откат: не нашёл слитый PR этой задачи."; gh issue edit "$N" --remove-label "откат"; exit 1; fi
           npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 >/dev/null && npx playwright install --with-deps chromium >/dev/null
-          if git revert --no-edit "$SHA" && node tests/run.js --quick > /tmp/test.log 2>&1 && git push origin HEAD:main; then
+          if git revert --no-edit "$SHA" && node tests/run.js --quick $(o=$(node tests/impact.js HEAD~1 --only); [ "$o" != "all" ] && [ "$o" != "none" ] && echo "--only=$o") > /tmp/test.log 2>&1 && git push origin HEAD:main; then
+            gh workflow run check.yml --ref main || true
             gh issue comment "$N" --body "↩️ **Откачено**: $PR отменён, тесты зелёные, сайт как до выкатки. <!-- hq:{\"rub\":0} -->"
             gh label create "откачено" >/dev/null 2>&1; gh issue edit "$N" --add-label "откачено" --remove-label "откат" --remove-label "готово"
           else
@@ -91,7 +93,8 @@ jobs:
             git checkout -q -B "hq/issue-$N" origin/main; git clean -fdq -e node_modules
             if node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/agent.log 2>&1; then
               cat /tmp/agent.log
-              if node tests/run.js --quick > /tmp/test.log 2>&1; then ok=1; echo "::endgroup::"; break; fi
+              ONLY=$(node tests/impact.js origin/main --only); echo "Задето: $ONLY"
+              if [ "$ONLY" = "none" ] || node tests/run.js --quick $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/test.log 2>&1; then ok=1; echo "::endgroup::"; break; fi
               echo "- **$m**: правка есть, быстрые тесты красные" >> /tmp/hq-log.md
               tail -40 /tmp/test.log
             else
@@ -119,9 +122,11 @@ jobs:
           NOTES=$(echo "$REV" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const v=JSON.parse(s);console.log((v.notes||[]).map(x=>'- '+x).join('\n'))}catch(e){console.log('- ревизор не ответил')}})")
           STATUS="на-проверку"; MSG="🔍 **Готово, ждёт твоего решения.** PR: $PR"
           if [ "$RC" = 0 ] && [ "$AUTO" = 1 ]; then
-            if node tests/run.js > /tmp/full.log 2>&1; then
+            ONLY=$(node tests/impact.js origin/main --only)
+            if [ "$ONLY" = "none" ] || node tests/run.js $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/full.log 2>&1; then
               gh pr merge "$PR" --squash --delete-branch && STATUS="готово" && MSG="✅ **Выкачено на сайт.** PR: $PR"
-            else MSG="⚠️ Быстрые тесты зелёные, полный прогон — красный, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
+              gh workflow run check.yml --ref main || true   # полная проверка main; красная → Issue «main красный»
+            else MSG="⚠️ Быстрые тесты зелёные, проверка перед выкаткой — красная, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
           fi
           RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
           printf '%s\n\nИсполнитель: **%s**. Стоимость: ~%s ₽.\n\nРевизор:\n%s\n\nПопытки:\n%s\n<!-- hq:{"rub":%s,"model":"%s","pr":"%s"} -->\n' \

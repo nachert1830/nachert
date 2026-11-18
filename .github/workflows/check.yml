@@ -1,21 +1,88 @@
 name: Проверка сайта
+# Как в больших компаниях:
+# • PR — выборочная проверка: tests/impact.js выбирает блоки, задетые правкой (не уверен — всё); сервер — свои тесты.
+# • main (пуш, ручной запуск, Цех после слияния) — полная проверка, 4 параллельных потока (~8–10 мин вместо ~25).
+#   Красная — Issue «main красный» с концом лога: Штаб покажет его владельцу.
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  check:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    outputs:
+      only: ${{ steps.p.outputs.only }}
+      server: ${{ steps.p.outputs.server }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: p
+        name: Что задето
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then echo "only=all" >> "$GITHUB_OUTPUT"; echo "server=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git fetch -q origin "${{ github.base_ref }}"
+          node tests/impact.js "origin/${{ github.base_ref }}"
+          echo "only=$(node tests/impact.js "origin/${{ github.base_ref }}" --only)" >> "$GITHUB_OUTPUT"
+          echo "server=$(node -e "process.stdout.write(JSON.parse(require('child_process').execSync('node tests/impact.js origin/${{ github.base_ref }}')).server?'1':'0')")" >> "$GITHUB_OUTPUT"
+
+  server:
+    needs: plan
+    if: needs.plan.outputs.server == '1'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
+          node-version: 22
+      - name: Тесты сервера и кабинета
+        run: cd server && npm test
+
+  check:
+    needs: plan
+    if: needs.plan.outputs.only != 'none'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Блоки этого потока
+        id: s
+        env:
+          ONLY: ${{ needs.plan.outputs.only }}
+        run: |
+          S1=core,dzvar,variants,prov,cert,adequacy; S2=random,gym,rk2,rkp,live,rkg,ig4,theory; S3=igs,normo,points,ng3,print; S4=track,lk,me,colors,ask,crawl
+          eval "MINE=\$S${{ matrix.shard }}"
+          if [ "$ONLY" = "all" ]; then G="$MINE"; else G=$(node -e "const a=process.argv[1].split(','),m=process.argv[2].split(',');process.stdout.write(a.filter(x=>m.includes(x)).join(','))" "$ONLY" "$MINE"); fi
+          echo "groups=$G" >> "$GITHUB_OUTPUT"; echo "Поток ${{ matrix.shard }}: ${G:-нечего проверять}"
+      - uses: actions/setup-node@v4
+        if: steps.s.outputs.groups != ''
+        with:
           node-version: 20
       - name: Браузер для проверки
+        if: steps.s.outputs.groups != ''
         run: |
           npm install --no-save --no-package-lock playwright@1.47.2 acorn@8
           npx playwright install --with-deps chromium
-      - name: Чертежи, теория, все страницы и задачи
-        run: node tests/run.js
+      - name: Проверка
+        if: steps.s.outputs.groups != ''
+        run: node tests/run.js --only=${{ steps.s.outputs.groups }} 2>&1 | tee /tmp/check.log; exit ${PIPESTATUS[0]}
+      - name: main красный — Issue для Штаба
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "Полная проверка на main красная (поток ${{ matrix.shard }}, коммит ${GITHUB_SHA::7})."; echo; echo '```'; tail -40 /tmp/check.log; echo '```';
+            echo "Лог: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"; } > /tmp/b.md
+          N=$(gh issue list --label "main-красный" --state open --json number -q '.[0].number')
+          if [ -n "$N" ]; then gh issue comment "$N" --body-file /tmp/b.md; else gh label create "main-красный" >/dev/null 2>&1; gh issue create --title "main красный: проверка сайта" --label "main-красный" --body-file /tmp/b.md; fi
