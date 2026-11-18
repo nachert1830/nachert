@@ -9,7 +9,7 @@
 <title>Штаб</title>
 <link rel="icon" href="../../icon-192.png">
 <script>try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
-<link rel="stylesheet" href="hq.css?v=2">
+<link rel="stylesheet" href="hq.css?v=3">
 </head>
 <body>
 <header class="top">
@@ -102,6 +102,12 @@
       <p class="hint" id="keys"></p>
     </div>
     <div class="card">
+      <h3>🧠 Память Штаба</h3>
+      <p class="hint">Правила — в каждой задаче. Уроки (что не вышло, что откатили, что заметил ревизор) и сделанное — в похожих задачах. В разговоре можно сказать «запомни: …».</p>
+      <div class="row"><input id="memIn" placeholder="Новое правило: например, «тексты для студентов — на ты»" style="flex:1"><button class="primary" id="memAdd">Запомнить</button></div>
+      <div id="memList" class="mem"></div>
+    </div>
+    <div class="card">
       <h3>Все сотрудники</h3>
       <div class="tblwrap"><table class="cat" id="catT"></table></div>
       <details class="add"><summary>+ Своя модель</summary>
@@ -152,6 +158,6 @@
 <div class="scrim" id="scrim" hidden></div>
 
 <script src="../config.js"></script>
-<script src="hq.js?v=2"></script>
+<script src="hq.js?v=3"></script>
 </body>
 </html>

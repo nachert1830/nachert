@@ -68,7 +68,7 @@ for (const f of files) {
   else if (/^dz\/ig\//.test(f)) add(f, 'normo', 'igs', 'print');
   else if (/^dz\//.test(f)) add(f, 'dzvar', 'variants', 'core');
   else if (/^(core|kernel)\//.test(f)) add(f, 'variants', 'cert', 'dzvar', 'core', 'normo');
-  else if (/\.md$|^docs\/|^\.github\/(workflows|scripts)\/|^tools\/hq-|^ceo\/|^lab\/|^server\/tools\/|^(robots\.txt|CNAME|views\.json|eyes-eval\.json|ceo-deploy\.yml|index\.js|\.nojekyll)$/.test(f)) add(f + ' (сайт не затронут)');
+  else if (/\.md$|^docs\/|^\.github\/(workflows|scripts)\/|^tools\/hq-|^ceo\/|^lab\/|^server\/tools\/|^(robots\.txt|CNAME|\.gitignore|views\.json|eyes-eval\.json|ceo-deploy\.yml|index\.js|\.nojekyll)$/.test(f)) add(f + ' (сайт не затронут)');
   else if (/^(sw\.js|404\.html|manifest\.webmanifest|fonts\/|img\/|og\/|app\/|(ig|ng)\d?\/|club\/|epure\/|joke\/|rk\/|[\w-]+\.(png|jpg))/.test(f)) add(f, 'crawl');
   else ALL(f + ' (нет в карте влияния)');
 }

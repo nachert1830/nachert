@@ -36,7 +36,7 @@
     try { localStorage.setItem('lk_hq_tab', tab); } catch (e) {}
     if (tab === 'map') requestAnimationFrame(links);
     if (tab === 'chat') pull(true); }
-  function renderAll() { fillModels(); renderDumps(); renderMap(); renderBoard(); renderStaff(); }
+  function renderAll() { fillModels(); renderDumps(); renderMap(); renderBoard(); renderStaff(); renderMem(); }
 
   function opts(filter, cur, extra) {
     const ms = S.data.models; return (extra || '') + Object.keys(ms).filter(k => filter(ms[k])).map(k => '<option value="' + esc(k) + '"' + (k === cur ? ' selected' : '') + '>' + esc(ms[k].name) + '</option>').join(''); }
@@ -289,6 +289,12 @@
       return '<tr><td><b>' + esc(m.name) + '</b><br><small>' + esc(m.id) + '</small> ' + (m.ok ? '<small class="ok">✓ проверена</small>' : '<small class="chk" title="Имя из каталога ProxyAPI, проверится первым вызовом">проверить</small>') +
         (d.settings.custom[k] ? ' <button class="ghost mini" data-del="' + esc(k) + '">убрать</button>' : '') + '</td><td>' + esc(price) + '</td><td>' + esc(m.about) + '</td></tr>'; }).join('');
   }
+  function renderMem() {
+    const m = (S.data.memory || []).map((x, i) => [x, i]).reverse();
+    $('memList').innerHTML = m.map(([x, i]) => '<div class="mi ' + (x.kind === 'правило' ? 'r' : x.kind === 'урок' ? 'l' : 'd') + '"><b>' + esc(x.kind) + '</b><span>' + (x.kind === 'правило' ? '' : '«' + esc(x.title) + '»: ') + esc(x.text) + '</span><button class="ghost mini" data-mdel="' + i + '" title="Забыть">✕</button></div>').join('') || '<div class="hint">Пока пусто.</div>';
+  }
+  $('memAdd').onclick = () => { const t = $('memIn').value.trim(); if (!t) return; req('POST', '/api/hq/memory', {op: 'add', text: t}).then(j => { $('memIn').value = ''; S.data.memory = j.memory; renderMem(); }); };
+  $('memList').onclick = e => { const b = e.target.closest('[data-mdel]'); if (b) req('POST', '/api/hq/memory', {op: 'del', i: +b.dataset.mdel}).then(j => { S.data.memory = j.memory; renderMem(); }); };
   $('saveS').onclick = () => { const st = {roles: {}, staff: {}, budgetRub: +$('budgetIn').value, rate: +$('rateIn').value, autoMerge: $('autoIn').checked};
     document.querySelectorAll('[data-role]').forEach(s => { st.roles[s.dataset.role] = s.value; });
     document.querySelectorAll('[data-k]').forEach(s => { (st.staff[s.dataset.k] = st.staff[s.dataset.k] || {})[s.dataset.l] = s.value; });

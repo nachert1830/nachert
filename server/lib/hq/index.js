@@ -44,6 +44,29 @@ function register(D, o) {
     const t = await r.text(); if (!r.ok) fail(502, 'GitHub ' + r.status + ': ' + t.slice(0, 160)); return t ? JSON.parse(t) : {};
   }
 
+  /* ── память Штаба: правила владельца («запомни: …») — всегда; уроки (провалы, откаты, замечания ревизора) и сделанное —
+     по похожести на задачу. Подмешивается в ТЗ Цеха и в разговор с продактом: без вызовов моделей, по совпадению слов. */
+  const words = t => new Set(String(t || '').toLowerCase().replace(/ё/g, 'е').match(/[a-zа-я0-9]{4,}/g) || []);
+  async function memory() { const m = await store.get('config', 'hqmemory'); return (m && m.items) || []; }
+  async function memAdd(kind, title, text) {
+    const items = await memory(); items.push({at: now(), kind, title: clean(title, 120), text: clean(text, 600)});
+    const rules = items.filter(x => x.kind === 'правило'), rest = items.filter(x => x.kind !== 'правило').slice(-200);
+    await store.put('config', {id: 'hqmemory', items: rules.slice(-30).concat(rest)});
+  }
+  async function memFor(text, n) {
+    const items = await memory(), w = words(text);
+    const scored = items.filter(x => x.kind !== 'правило').map(x => { let k = 0; words(x.title + ' ' + x.text).forEach(t => { if (w.has(t)) k++; }); return [k, x]; })
+      .filter(([k]) => k >= 2).sort((a, b) => b[0] - a[0] || b[1].at - a[1].at).slice(0, n || 6).map(([, x]) => x);
+    const rules = items.filter(x => x.kind === 'правило');
+    if (!rules.length && !scored.length) return '';
+    return (rules.length ? '\n## Правила владельца\n' + rules.map(x => '- ' + x.text).join('\n') : '') +
+      (scored.length ? '\n## Уроки прошлых задач\n' + scored.map(x => '- [' + x.kind + '] «' + x.title + '»: ' + x.text).join('\n') : '');
+  }
+  R['POST /api/hq/memory'] = async req => { const b = body(req);
+    if (b.op === 'add') await memAdd(b.kind === 'урок' ? 'урок' : 'правило', b.title || 'правило', b.text);
+    if (b.op === 'del') { const items = await memory(); items.splice(+b.i, 1); await store.put('config', {id: 'hqmemory', items}); }
+    return {ok: true, memory: await memory()}; };
+
   const nodes = async () => (await store.scan('hqnodes')).filter(n => n.status !== 'archived').sort((a, b) => a.at - b.at);
   const getNode = async nid => { const n = await store.get('hqnodes', String(nid || '')); if (!n) fail(404, 'Нет такого узла.'); return n; };
   const save = n => store.put('hqnodes', n);
@@ -52,9 +75,9 @@ function register(D, o) {
     model: n.model || null, at: n.at, rub: n.rub || 0, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null});
 
   R['GET /api/hq'] = async () => {
-    const [st, s, ns, ds] = await Promise.all([settings(), spent(), nodes(), store.scan('hqdumps')]);
+    const [st, s, ns, ds, mem] = await Promise.all([settings(), spent(), nodes(), store.scan('hqdumps'), memory()]);
     const models = RO.catalog(st);
-    return {ok: true, settings: st, spent: s, models, roles: RO.ROLES, kinds: RO.KINDS, levels: RO.LEVELS, keys: {proxy: !!env.key, github: !!(env.ghToken && env.ghRepo)},
+    return {ok: true, settings: st, spent: s, models, roles: RO.ROLES, kinds: RO.KINDS, levels: RO.LEVELS, keys: {proxy: !!env.key, github: !!(env.ghToken && env.ghRepo)}, memory: mem,
       nodes: ns.map(brief), dumps: ds.sort((a, b) => b.at - a.at).slice(0, 30).map(d => ({id: d.id, at: d.at, summary: d.summary, rub: d.rub, model: d.model, questions: d.questions || [], len: (d.text || '').length}))};
   };
   R['GET /api/hq/node'] = async req => ({ok: true, node: await getNode(req.query && req.query.id)});
@@ -127,7 +150,7 @@ function register(D, o) {
     const all = await nodes(), byId = Object.fromEntries(all.map(x => [x.id, x]));
     const chain = []; for (let p = byId[n.parent], i = 0; p && i < 4; p = byId[p.parent], i++) chain.push('[' + p.type + '] ' + p.title + (p.text ? ' — ' + p.text : ''));
     const ctx = 'Задача: ' + n.title + (n.text ? '\n' + n.text : '') + (chain.length ? '\nВыше по карте:\n' + chain.join('\n') : '') +
-      (n.spec ? '\nТекущее ТЗ:\n' + JSON.stringify(n.spec) : '');
+      (n.spec ? '\nТекущее ТЗ:\n' + JSON.stringify(n.spec) : '') + await memFor(n.title + ' ' + (n.text || ''), 4);
     const hist = (n.chat || []).slice(-12).map(m => ({role: m.r === 'u' ? 'user' : 'assistant', content: m.t}));
     const first = !hist.length;
     const msgs = [{role: 'user', content: ctx + '\n\n' + (text || (first ? 'Сформулируй ТЗ; спроси, если что-то неясно.' : 'Продолжай.'))}];
@@ -165,7 +188,7 @@ function register(D, o) {
     const kind = n.kind || 'code', k = n.model || st.staff[kind][n.level || 'medium'], m = pick(st, k);
     const spec = P.specText(n.spec) || ('# ' + n.title + (n.text ? '\n\n' + n.text : ''));
     if (kind === 'text' || kind === 'research') {
-      const r = await ask(st, k, {system: P.WRITER, max: 8000, timeout: 55000, effort: kind === 'research' ? 'medium' : 'low', messages: [{role: 'user', content: spec}]});
+      const r = await ask(st, k, {system: P.WRITER, max: 8000, timeout: 55000, effort: kind === 'research' ? 'medium' : 'low', messages: [{role: 'user', content: spec + await memFor(spec, 4)}]});
       n.result = clean(r.text, 60000); n.status = 'review'; n.rub = Math.round(((n.rub || 0) + r.rub) * 100) / 100; n.model = k; await save(n);
       return {ok: true, node: n, rub: r.rub, spent: await spent()};
     }
@@ -181,7 +204,8 @@ function register(D, o) {
     /* код → Цех */
     await guard(st);
     const labels = ['цех', 'исп:' + k].concat(st.autoMerge ? ['автовыкатка'] : []);
-    const bodyMd = spec + '\n\n---\nИсполнитель: **' + m.name + '** (`' + m.id + '`). Если тесты не пройдут — задача уйдёт сильнее: ' +
+    const mem = await memFor(spec, 6);
+    const bodyMd = spec + (mem ? '\n' + mem : '') + '\n\n---\nИсполнитель: **' + m.name + '** (`' + m.id + '`). Если тесты не пройдут — задача уйдёт сильнее: ' +
       (RO.ESCALATE[k] ? RO.model(st, RO.ESCALATE[k]).name : 'дальше некому, сообщу владельцу') + '.\n<!-- hq-node:' + n.id + ' -->' +
       '\n<!-- hq-model:' + JSON.stringify({key: k, id: m.id, name: m.name, in: m.in, out: m.out, cache: m.cache, rate: st.rate}) + ' -->';
     if (n.issue && b.restart) {
@@ -205,13 +229,14 @@ function register(D, o) {
     if (!n.result) fail(400, 'Нечего проверять.');
     const r = await askJson(st, st.roles.reviewer, {system: P.REVIEWER, max: 1500, messages: [{role: 'user', content: 'ТЗ:\n' + P.specText(n.spec) + '\n\nРезультат:\n' + n.result}]});
     n.review = {ok: !!r.data.ok, notes: (r.data.notes || []).slice(0, 10).map(x => clean(x, 300)), m: r.model};
+    if (!n.review.ok && n.review.notes.length) await memAdd('урок', n.title, 'ревизор: ' + n.review.notes.join('; ').slice(0, 400));
     n.rub = Math.round(((n.rub || 0) + r.rub) * 100) / 100; await save(n);
     return {ok: true, node: n, rub: r.rub, spent: await spent()};
   };
 
   /* 5. Статусы Цеха */
   R['POST /api/hq/sync'] = async () => {
-    const run = (await nodes()).filter(n => n.issue && (['running', 'failed', 'review'].includes(n.status) || n.rollback));
+    const run = (await nodes()).filter(n => n.issue && (['running', 'failed', 'review'].includes(n.status) || n.rollback || n.status === 'done' && n.pr && now() - (n.doneAt || 0) < 3 * 864e5));   /* выкаченные за 3 дня — вдруг автооткат */
     const out = [];
     for (const n of run.slice(0, 15)) {
       const [i, cs] = await Promise.all([gh('/issues/' + n.issue), gh('/issues/' + n.issue + '/comments?per_page=50')]);
@@ -223,8 +248,10 @@ function register(D, o) {
       const last = cs.filter(c => !/^Перезапуск/.test(c.body || '')).slice(-1)[0];
       n.log = last ? clean((last.body || '').replace(/<!--[\s\S]*?-->/g, ''), 1500) : n.log;
       if (n.type === 'question') { if (names.includes('ответ')) { const a = cs.filter(c => /<!-- hq-answer -->/.test(c.body || '')).slice(-1)[0]; n.result = a ? clean(a.body.replace(/<!--[\s\S]*?-->/g, ''), 8000) : n.log; n.status = 'done'; } else if (names.includes('провал')) n.status = 'failed'; }
-      else if (n.rollback) { if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; } }
+      else if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; }
+      else if (n.rollback) {}
       else if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
+      if (n.status === 'done' && was !== 'done') n.doneAt = now();
       await save(n); out.push(brief(n));
       if (n.status !== was) await feedStatus(n);
     }
@@ -264,6 +291,11 @@ function register(D, o) {
       '. Исполнитель — ' + RO.model(st, k).name + ', оценка ~' + estimate(st, k, n.kind || 'code') + ' ₽.', {node: n.id, acts: runActs(st, n)});
   }
   async function feedStatus(n) {
+    if (n.type === 'task') {
+      if (n.status === 'failed') await memAdd('урок', n.title, 'не вышло (' + (n.model || '?') + '): ' + String(n.log || '').replace(/\s+/g, ' ').slice(0, 400));
+      else if (n.status === 'rolled') await memAdd('урок', n.title, 'выкатку пришлось откатить — сломала сайт; ' + String(n.log || '').replace(/\s+/g, ' ').slice(0, 300));
+      else if (n.status === 'done') await memAdd('сделано', n.title, (n.spec && n.spec.what ? n.spec.what.slice(0, 200) + '; ' : '') + 'исполнитель ' + (n.model || '?') + ', ' + (n.rub || 0) + ' ₽');
+    }
     if (n.type === 'question') {
       if (n.status === 'done') return feed('hq', '💡 Ответ на «' + n.title + '»:\n' + (n.result || ''), {node: n.id, acts: [A('Сделать задачей', 'totask', {id: n.id}, true)], links: [n.url && {l: 'подробно', u: n.url}].filter(Boolean)});
       if (n.status === 'failed') return feed('hq', '❌ Не нашёл ответ на «' + n.title + '». ' + (n.log || ''), {node: n.id});
@@ -357,6 +389,7 @@ function register(D, o) {
       if ((dec.intent === 'answer' || dec.intent === 'discuss') && running(dec.node)) { await act('relay', {id: dec.node, text: dec.text || text}); }
       else if (dec.intent === 'answer' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || text}); }
       else if (dec.intent === 'discuss' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || ''}); }
+      else if (dec.intent === 'remember') { await memAdd('правило', 'правило', dec.text || text); await say('Запомнил: ' + (dec.text || text)); }
       else if (dec.intent === 'ask') { await act('ask', {text: dec.text || text, model: dec.model}); }
       else if (dec.intent === 'run' && known(dec.node)) { await say(dec.reply); await act('run', {id: dec.node, model: RO.model(st, dec.model) ? dec.model : undefined}); }
       else if (dec.intent === 'accept' && known(dec.node)) { await act('accept', {id: dec.node}); }

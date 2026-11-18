@@ -19,7 +19,7 @@ const RO = require('../server/lib/hq/roster.js');
 
 const ARG = k => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : ''; };
 const KEY = process.env.PROXYAPI_KEY, PX = process.env.HQ_PX || 'https://api.proxyapi.ru/v1';
-const MAX_STEPS = +process.env.HQ_MAX_STEPS || 30, COST_FILE = process.env.HQ_COST_FILE || '/tmp/hq-cost.json';
+const MAX_STEPS = +process.env.HQ_MAX_STEPS || 30, COST_FILE = process.env.HQ_COST_FILE || '/tmp/hq-cost.json', DONE_FILE = process.env.HQ_DONE_FILE || '/tmp/hq-done.txt';
 const ROOT = path.join(__dirname, '..');
 const SKIP = /^(\.git|node_modules|ig[2-9]|ng[1-9]|og|fonts|img|app|\.github\/scripts)$/;
 const TEXT = /\.(html|js|mjs|css|json|md|txt|svg|yml|yaml)$/i;
@@ -213,7 +213,7 @@ async function solo(spec) {
       else if (/^CHECK/i.test(head)) { res = check(); checked = /✅|нечего/.test(res); console.log(res.split('\n')[0]); }
       else if (/^SHOT/i.test(head) && VISION) { const s = await shot(head.replace(/^SHOT:?\s*/i, '')); messages.push({role: 'user', content: [{text: s.note}, {image: s.png}]}); continue; }
       else if (/^DONE:/i.test(head)) {
-        fs.writeFileSync('/tmp/hq-done.txt', head.replace(/^DONE:\s*/i, ''));
+        fs.writeFileSync(DONE_FILE, head.replace(/^DONE:\s*/i, ''));
         if (/НЕ СДЕЛАНО/i.test(head) || !edits) { console.error(head); return 1; }
         if (!checked && step < MAX_STEPS - 1) { res = 'Сначала CHECK: DONE — только после зелёной проверки.'; }
         else { console.log(head); return 0; }
@@ -292,7 +292,7 @@ async function brigade(spec) {
     if (errs.length) { aMsgs.push({role: 'user', content: 'Не легли правки:\n' + errs.join('\n') + '\nПрочитай нужное через NEED или перепиши блоки точнее.'}); continue; }
     if (!edits) { aMsgs.push({role: 'user', content: 'Правок нет. Напиши блоки EDIT или DONE: НЕ СДЕЛАНО — причина.'}); continue; }
     const c = check(); console.log('  ' + c.split('\n')[0]);
-    if (/✅|нечего/.test(c)) { fs.writeFileSync('/tmp/hq-done.txt', done.replace(/^DONE:\s*/i, '') || 'сделано'); console.log(done); return 0; }
+    if (/✅|нечего/.test(c)) { fs.writeFileSync(DONE_FILE, done.replace(/^DONE:\s*/i, '') || 'сделано'); console.log(done); return 0; }
     if (++fixes > 2) { console.error('Проверка красная после 2 починок'); return 1; }
     aMsgs.push({role: 'user', content: c + '\n\nИсправь: блоки EDIT по текущему коду (NEED — если надо перечитать).'});
   }

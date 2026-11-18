@@ -9,6 +9,7 @@ on:
   pull_request:
   workflow_dispatch:
 permissions:
+  actions: write
   contents: read
   issues: write
 concurrency:
@@ -87,6 +88,22 @@ jobs:
       - name: Проверка
         if: steps.s.outputs.groups != ''
         run: node tests/run.js --only=${{ steps.s.outputs.groups }} 2>&1 | tee /tmp/check.log; exit ${PIPESTATUS[0]}
+      - uses: actions/checkout@v4
+        if: failure() && github.ref == 'refs/heads/main'
+        with:
+          fetch-depth: 2
+          path: head
+      # автооткат: красный коммит — выкатка Цеха («Цех: …», «Задача #N.») → откатить её сразу, не дожидаясь владельца
+      - name: Автооткат выкатки Цеха
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MSG=$(git -C head log -1 --format=%B)
+          N=$(echo "$MSG" | grep -o 'Задача #[0-9]*' | head -1 | tr -dc 0-9)
+          if echo "$MSG" | head -1 | grep -q '^Цех:' && [ -n "$N" ]; then
+            gh workflow run hq-work.yml --ref main -f issue="$N" -f why="полная проверка main красная, поток ${{ matrix.shard }}" && echo "Автооткат задачи #$N запущен"
+          fi
       - name: main красный — Issue для Штаба
         if: failure() && github.ref == 'refs/heads/main'
         env:

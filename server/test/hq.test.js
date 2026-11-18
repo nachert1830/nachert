@@ -147,3 +147,24 @@ test('Штаб: вопрос про код → исполнитель читае
   f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; const al=f.filter(x=>/Сайт просит/.test(x.text)); assert.equal(al.length,1); assert.match(al[0].text,/прокрутка 40 px/);
   r=await c.call('POST','/api/hq/act',{op:'fixmain',a:al[0].acts[0].a},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
   f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; assert.match(f[f.length-1].text,/ТЗ готово: «Починить красную проверку main».*Claude Opus 5\.5/s); });
+
+test('Штаб: память — «запомни» → правило в каждом ТЗ; провал → урок для похожей задачи', async()=>{ const {c,n}=await setup();
+  n.replies.push({intent:'remember',text:'тексты для студентов — на «ты»'});
+  await c.call('POST','/api/hq/talk',{text:'запомни: тексты для студентов на ты'},{as:'owner'});
+  let st=(await c.call('GET','/api/hq',undefined,{as:'owner'})).data; assert.equal(st.memory[0].kind,'правило');
+  /* провал задачи «кнопка поделиться на разборе» → урок */
+  const t=(await c.call('POST','/api/hq/node',{op:'add',type:'task',title:'Кнопка поделиться на разборе задачи'},{as:'owner'})).data.node;
+  await c.call('POST','/api/hq/node',{id:t.id,kind:'code',level:'simple'},{as:'owner'});
+  await c.call('POST','/api/hq/run',{id:t.id},{as:'owner'}); const n1=Object.keys(n.issues)[0];
+  n.comments=[{id:5,body:'❌ Не получилось: плеер разбора перерисовывает шапку, кнопка пропадает <!-- hq:{"rub":1} -->'}]; n.issues[n1].labels.push({name:'провал'});
+  await c.call('POST','/api/hq/act',{op:'sync'},{as:'owner'});
+  st=(await c.call('GET','/api/hq',undefined,{as:'owner'})).data; assert.ok(st.memory.some(x=>x.kind==='урок'&&/плеер разбора/.test(x.text)));
+  /* похожая задача → в ТЗ Цеха правило и урок; непохожая — только правило */
+  const t2=(await c.call('POST','/api/hq/node',{op:'add',type:'task',title:'Кнопка копировать ссылку на разборе задачи'},{as:'owner'})).data.node;
+  await c.call('POST','/api/hq/node',{id:t2.id,kind:'code',level:'simple'},{as:'owner'}); await c.call('POST','/api/hq/run',{id:t2.id},{as:'owner'});
+  const b2=n.issues[Object.keys(n.issues)[1]].body; assert.match(b2,/Правила владельца[\s\S]*на «ты»/); assert.match(b2,/Уроки прошлых задач[\s\S]*плеер разбора/);
+  const t3=(await c.call('POST','/api/hq/node',{op:'add',type:'task',title:'Новый шрифт заголовков'},{as:'owner'})).data.node;
+  await c.call('POST','/api/hq/node',{id:t3.id,kind:'code',level:'simple'},{as:'owner'}); await c.call('POST','/api/hq/run',{id:t3.id},{as:'owner'});
+  const b3=n.issues[Object.keys(n.issues)[2]].body; assert.match(b3,/на «ты»/); assert.doesNotMatch(b3,/Уроки прошлых задач/);
+  /* удалить правило */
+  const r=await c.call('POST','/api/hq/memory',{op:'del',i:0},{as:'owner'}); assert.ok(!r.data.memory.some(x=>x.kind==='правило')); });
