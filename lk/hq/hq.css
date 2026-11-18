@@ -41,13 +41,16 @@ label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)
 label input,label select{color:var(--ink);font-size:15px}
 label.tog{flex-direction:row;align-items:center;gap:8px;color:var(--ink2);font-size:14px;margin:10px 0}
 
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px 6px;max-width:1280px;margin:0 auto}
-.brand b{font-size:22px;letter-spacing:-.01em}.brand .sub{color:var(--mut);margin-left:10px;font-size:13px}
+.top{display:flex;flex:none;width:100%;justify-content:space-between;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 6px;max-width:1280px;margin:0 auto}
+.brand{display:block;line-height:0}.logo{height:30px;width:auto}
+.lg-d{display:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lg-l{display:none}:root:not([data-theme="light"]) .lg-d{display:inline}}
+:root[data-theme="dark"] .lg-l{display:none}:root[data-theme="dark"] .lg-d{display:inline}
 .budget{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:13px;color:var(--mut);min-width:150px}
 .budget i{display:block;width:150px;height:6px;border-radius:3px;background:var(--surf3);overflow:hidden}
 .budget i b{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
 .budget.warn i b{background:var(--amber)}.budget.over i b{background:var(--red)}
-.tabs{display:flex;gap:6px;padding:6px 16px;max-width:1280px;margin:0 auto;overflow-x:auto;position:sticky;top:0;background:var(--paper);z-index:5}
+.tabs{display:flex;gap:6px;padding:6px 16px;max-width:1280px;width:100%;margin:0 auto;overflow-x:auto;flex:none;position:sticky;top:env(safe-area-inset-top);background:var(--paper);z-index:5}
 .tabs button{background:transparent;white-space:nowrap;color:var(--mut);font-weight:600}
 .tabs button.on{background:var(--surf);color:var(--ink);box-shadow:var(--shadow)}
 main{max-width:1280px;margin:0 auto;padding:10px 16px 80px}
@@ -75,9 +78,12 @@ main{max-width:1280px;margin:0 auto;padding:10px 16px 80px}
 .dumps .it small{color:var(--mut);white-space:nowrap}
 
 /* разговор */
-#v-chat{display:flex;flex-direction:column;min-height:calc(100vh - 150px)}
+/* экран — как мессенджер: шапка и поле ввода на месте, прокручивается только лента (шапку не уносит под адресную строку) */
+body.chat{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden}
+body.chat main{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:0;width:100%}
+#v-chat{display:flex;flex-direction:column;flex:1;min-height:0}
 #v-chat[hidden]{display:none!important}
-.feed{flex:1;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
+.feed{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding:6px 2px 12px}
 .fi{max-width:min(720px,92%);padding:10px 14px;border-radius:16px;font-size:15px;white-space:pre-wrap;word-wrap:break-word;box-shadow:var(--shadow)}
 .fi.me{align-self:flex-end;background:var(--acc);color:#fff;border-bottom-right-radius:4px}
 .fi.hq{align-self:flex-start;background:var(--surf);border:1px solid var(--line);border-bottom-left-radius:4px}
@@ -90,7 +96,7 @@ main{max-width:1280px;margin:0 auto;padding:10px 16px 80px}
 .fi img{max-width:100%;border-radius:10px;margin-top:8px}
 .fi time{display:block;font-size:11px;opacity:.55;margin-top:4px;text-align:right}
 .fi.wait{color:var(--mut);font-style:italic}
-.composer{position:sticky;bottom:0;background:var(--paper);padding:10px 0 calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.composer{flex:none;background:var(--paper);padding:10px 0 calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
 .composer textarea{font-size:16px;min-height:52px}
 .crow{display:flex;align-items:center;gap:8px;margin-top:8px}
 .crow .hint{flex:1;margin:0}
@@ -148,7 +154,7 @@ details.add{margin-top:12px}details.add summary{cursor:pointer;color:var(--acc);
 
 /* карточка задачи */
 .scrim{position:fixed;inset:0;background:rgba(5,12,25,.35);z-index:9}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--paper);z-index:10;overflow-y:auto;padding:16px;box-shadow:-10px 0 40px rgba(0,0,0,.2)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--paper);z-index:10;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top)) 16px 16px;box-shadow:-10px 0 40px rgba(0,0,0,.2)}
 .dhead{display:flex;gap:8px;align-items:center}
 .dtitle{flex:1;font-size:18px;font-weight:700;background:transparent;border-color:transparent}
 .dtitle:focus{border-color:var(--line2)}
@@ -177,6 +183,6 @@ details.add{margin-top:12px}details.add summary{cursor:pointer;color:var(--acc);
   .links{display:none}
   .col[data-col=goal] .node{margin-left:14px}.col[data-col=task] .node{margin-left:28px}
   .shelves{grid-template-columns:1fr}
-  .brand .sub{display:none}
+  .logo{height:24px}
   .budget,.budget i{min-width:0;width:110px}
 }
