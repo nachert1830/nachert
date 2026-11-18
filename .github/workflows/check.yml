@@ -45,6 +45,8 @@ jobs:
           node-version: 22
       - name: Тесты сервера и кабинета
         run: cd server && npm test
+      - name: Тесты исполнителя Цеха (командная строка RUN/CI)
+        run: node --test tests/hq-agent.test.js
 
   check:
     needs: plan

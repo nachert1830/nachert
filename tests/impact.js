@@ -62,6 +62,7 @@ for (const f of files) {
   else if (/^lk\/(site|ask)\.js$/.test(f)) add(f + ' (подключён к сайту)', 'ask', 'lk', 'crawl');
   else if (/^lk\/(scan|drawings)\//.test(f)) add(f, 'lk', 'me');
   else if (/^lk\//.test(f)) add(f, 'lk', 'me', 'ask');
+  else if (/^tools\/hq-|^tests\/hq-agent\.test\.js$/.test(f)) { out.server = true; add(f + ' (Цех — тесты исполнителя в задании server)'); }
   else if (/^server\/lib\/hq\/|^server\/test\/hq/.test(f)) { out.server = true; add(f + ' (тесты сервера)'); }
   else if (/^server\//.test(f)) { out.server = true; add(f + ' (тесты сервера)', 'ask', 'lk'); }
   else if (/^dz\/ig\/4\//.test(f)) add(f, 'ig4', 'normo');

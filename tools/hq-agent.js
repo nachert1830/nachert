@@ -12,10 +12,13 @@
      которые не легли на код. Дорогая модель не тратит ни рубля на поиск.
    • CHECK — исполнитель сам гоняет задетые блоки проверки (tests/impact.js → tests/run.js --quick --only) и чинит по выжимке ошибок.
    • SHOT #/адрес — скриншот страницы на телефоне; модель видит картинку (Claude, Gemini).
+   • RUN: команда — команда в копии репозитория (bash, до 10 мин, без секретов в окружении, с запретами — tools/hq-run.js);
+     CI: номер — конец лога упавших заданий запуска GitHub Actions (только чтение, токен модель не видит).
    Выход: 0 — правка сделана, 1 — не сделано. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const RO = require('../server/lib/hq/roster.js');
+const SH = require('./hq-run.js');
 
 const ARG = k => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : ''; };
 const KEY = process.env.PROXYAPI_KEY, PX = process.env.HQ_PX || 'https://api.proxyapi.ru/v1';
@@ -61,6 +64,8 @@ function map() {
 }
 
 /* ── инструменты ── */
+const runCmd = async c => (await SH.run(c, {root: ROOT})).text;
+const ciLog = n => SH.ci(n).catch(e => 'CI: ошибка ' + e.message);
 const inRoot = f => { const p = path.resolve(ROOT, String(f || '').trim()); if (!p.startsWith(ROOT + path.sep)) throw new Error('путь вне проекта'); return p; };
 function grep(arg) {
   const m = /^(.*?)(?:\s+в\s+(\S+))?$/.exec(arg.trim()), pat = m[1], where = m[2] || '';
@@ -188,12 +193,15 @@ EDIT: путь                    — правка; дальше один или
 новый код
 >>>>>>> REPLACE
 CHECK                          — прогнать автотесты, задетые правкой (минуты); ответ — ошибки или «ошибок нет»
+RUN: команда                   — команда в корне проекта (bash, до 10 мин): node tests/run.js --only=…, node --test …, git diff, ls, временные скрипты в /tmp; ответ — код выхода и конец вывода. Сеть, git push, ключи — запрещены
+CI: номер_запуска              — конец лога упавших заданий запуска GitHub Actions
 ` + (VISION ? `SHOT: #/адрес              — скриншот страницы сайта на телефоне (ты увидишь картинку)
 ` : '') + `DONE: что сделано (1–3 предложения)
 
 Правила:
 - Сначала найди место по оглавлению и GREP, прочитай его, потом правь. Правь минимально, не трогай лишнее, не переформатируй.
 - После правки — CHECK; ошибки — исправь. DONE — только после зелёного CHECK.` + (VISION ? ' Правка внешнего вида — посмотри SHOT.' : '') + `
+- Упал тест или проверка — сначала разберись: RUN нужной проверки, прочитай вывод, найди причину, потом правь. Не гадай.
 - Следуй стилю соседнего кода (модули window.ИМЯ, цвета — токены CSS). Тексты для студентов — по-русски, коротко.
 - Новый файл: EDIT: путь и один блок с пустым SEARCH.
 - Задача невыполнима или ТЗ противоречиво — ответь «DONE: НЕ СДЕЛАНО — причина».`;
@@ -207,7 +215,7 @@ async function solo(spec) {
     await withOwner(messages);
     const reply = await call(SYSTEM, messages);
     messages.push({role: 'assistant', content: reply || '(пусто)'});
-    const head = (reply.split('\n').find(l => /^(GREP|READ|EDIT|CHECK|SHOT|DONE)\b:?/i.test(l.trim())) || reply.split('\n')[0] || '').trim();
+    const head = (reply.split('\n').find(l => /^(GREP|READ|EDIT|CHECK|RUN|CI|SHOT|DONE)\b:?/i.test(l.trim())) || reply.split('\n')[0] || '').trim();
     console.log('--- шаг ' + step + ': ' + head.slice(0, 140));
     let res;
     try {
@@ -217,13 +225,15 @@ async function solo(spec) {
       else if (/^CHECK/i.test(head)) { res = check(); checked = /✅|нечего/.test(res); console.log(res.split('\n')[0]);
         if (!checked && lastFail === res && !editedSince) { checked = true; res += '\n\nПроверка падает ОДИНАКОВО без твоих новых правок — значит, не из-за правки (окружение или нестабильный тест). Не ищи дальше: напиши DONE — Цех перепроверит сам.'; }
         lastFail = checked ? null : res; editedSince = false; }
+      else if (/^RUN:/i.test(head)) res = await runCmd(head.replace(/^RUN:\s*/i, ''));
+      else if (/^CI:/i.test(head)) res = await ciLog(head.replace(/^CI:\s*/i, ''));
       else if (/^SHOT/i.test(head) && VISION) { const s = await shot(head.replace(/^SHOT:?\s*/i, '')); messages.push({role: 'user', content: [{text: s.note}, {image: s.png}]}); continue; }
       else if (/^DONE:/i.test(head)) {
         fs.writeFileSync(DONE_FILE, head.replace(/^DONE:\s*/i, ''));
         if (/НЕ СДЕЛАНО/i.test(head) || !edits) { console.error(head); return 1; }
         if (!checked && step < MAX_STEPS - 1) { res = 'Сначала CHECK: DONE — только после зелёной проверки.'; }
         else { console.log(head); return 0; }
-      } else res = 'Неверный формат. Ответь одной командой: GREP, READ, EDIT, CHECK' + (VISION ? ', SHOT' : '') + ' или DONE.';
+      } else res = 'Неверный формат. Ответь одной командой: GREP, READ, EDIT, CHECK, RUN, CI' + (VISION ? ', SHOT' : '') + ' или DONE.';
     } catch (e) { res = 'ОШИБКА: ' + e.message; }
     if (step === MAX_STEPS - 3) res += '\n\n[осталось 3 шага — заканчивай и пиши DONE]';
     messages.push({role: 'user', content: String(res).slice(0, 12000)});
@@ -243,7 +253,8 @@ EDIT: путь
 =======
 новый код
 >>>>>>> REPLACE
-Не хватает кода — вместо правок ответь строками «NEED: путь начало конец — зачем» (не больше 3). В конце правок — строка «DONE: что сделано». Невыполнимо — «DONE: НЕ СДЕЛАНО — причина».`;
+Не хватает кода — вместо правок ответь строками «NEED: путь начало конец — зачем» (не больше 3). Нужно запустить проверку или посмотреть вывод — вместо правок строки «RUN: команда» (bash в корне проекта, до 3; сеть, git push, ключи запрещены) или «CI: номер_запуска» (конец лога упавших заданий).
+Упал тест или проверка — сначала разберись: RUN нужной проверки, прочитай вывод, найди причину, потом правь. Не гадай. В конце правок — строка «DONE: что сделано». Невыполнимо — «DONE: НЕ СДЕЛАНО — причина».`;
 const MASON = `Ты — монтажник. Блок правки SEARCH/REPLACE не лёг на файл: SEARCH не совпал с текстом. Тебе дают блок и настоящий кусок файла. Перепиши SEARCH так, чтобы он ТОЧНО совпадал с текстом файла (без номеров строк), а REPLACE — тот же смысл правки. Ответ — только исправленный блок EDIT в том же формате.`;
 
 const cheap = k => [k, RO.model(null, k)];
@@ -281,6 +292,9 @@ async function brigade(spec) {
     await withOwner(aMsgs);
     const reply = await call(ARCH, aMsgs, {max: 12000, effort: key === 'opus' ? 'medium' : undefined}); aMsgs.push({role: 'assistant', content: reply || '(пусто)'});
     const need = [...reply.matchAll(/^NEED:\s*(\S+)\s+(\d+)\s+(\d+)/gim)];
+    const runs = [...reply.matchAll(/^(RUN|CI):\s*(.+)$/gim)];
+    if (runs.length && !/^EDIT:/im.test(reply)) { const out = []; for (const m of runs.slice(0, 3)) out.push('### ' + m[1].toUpperCase() + ': ' + m[2] + '\n' + (/^RUN$/i.test(m[1]) ? await runCmd(m[2]) : await ciLog(m[2])));
+      aMsgs.push({role: 'user', content: out.join('\n\n').slice(0, 16000)}); console.log('  архитектор: команд ' + runs.length); continue; }
     if (need.length && !/^EDIT:/im.test(reply)) { aMsgs.push({role: 'user', content: need.slice(0, 3).map(m => '### ' + m[1] + ' ' + m[2] + '–' + m[3] + '\n' + read(m[1] + ' ' + m[2] + ' ' + m[3])).join('\n\n')}); console.log('  архитектор просит ещё ' + need.length); continue; }
     const done = (/^DONE:.*$/im.exec(reply) || [''])[0];
     if (/НЕ СДЕЛАНО/i.test(done)) { console.error(done); return 1; }
