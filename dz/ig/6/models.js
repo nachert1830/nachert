@@ -45,7 +45,7 @@ function build(){
     const F=o.F||[], T=o.T||[], X=o.X||[];
     V[n]={n,title:o.title||(o.r?'Полый шар со сквозным отверстием K':'Шар со сквозным отверстием K'),H:2*R,box:[[-R,-R,-R],[R,R,R]],
       tree:S(...base,...F,...T,...X),givenF:S(...base,...F),givenTop:S(...base,...T),noGivenDims:true,
-      outer:S(...base,...T,...X),kp:F.map(kpoly).filter(Boolean),   /* для подробных шагов (dz/ig/4/steps.js): тело без K и контуры K на главном виде */
+      outer:S(...base,...T,...X),kp:F.map(kpoly).filter(Boolean),sph:{R,r:o.cav?0:(o.r||0)},   /* для подробных шагов (dz/ig/4/steps.js): тело без K и контуры K на главном виде */
       hz:{L:'А',z:o.hz||0},spec:{F:'half',L:'half'},hzRight:true,why:why({R,r:o.r,pl:o.pl}),note:o.note,
       dims:[['T','dia',[0,0],2*R,-30,12,'Сфера Ø'+fm(2*R),-1]].concat(o.r&&!o.cav?[['T','dia',[0,0],2*o.r,30,30,'Сфера Ø'+fm(2*o.r),-1]]:[]).concat(lv(o.dims||[],R))};
     /* штрих А–А — за последней размерной линией справа и слева от главного вида, на 12 мм дальше (за размерным числом) */
