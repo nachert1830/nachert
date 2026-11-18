@@ -14,6 +14,9 @@
    • SHOT #/адрес — скриншот страницы на телефоне; модель видит картинку (Claude, Gemini).
    • RUN: команда — команда в копии репозитория (bash, до 10 мин, без секретов в окружении, с запретами — tools/hq-run.js);
      CI: номер — конец лога упавших заданий запуска GitHub Actions (только чтение, токен модель не видит).
+   • --plan — план эпика: Разведчик (Haiku) собирает пакет кода до 1200 строк, Главный инженер (эта модель, effort high) пишет план
+     JSON по схеме server/lib/hq/epic.js; план проверяется validatePlan, при ошибках — один повтор с их текстом. План — в /tmp/hq-plan.json,
+     ошибки — в /tmp/hq-plan-errors.txt.
    Выход: 0 — правка сделана, 1 — не сделано. */
 'use strict';
 const fs = require('fs'), path = require('path');
@@ -66,7 +69,8 @@ function map() {
 /* ── инструменты ── */
 const runCmd = async c => (await SH.run(c, {root: ROOT})).text;
 const ciLog = n => SH.ci(n).catch(e => 'CI: ошибка ' + e.message);
-const inRoot = f => { const p = path.resolve(ROOT, String(f || '').trim()); if (!p.startsWith(ROOT + path.sep)) throw new Error('путь вне проекта'); return p; };
+const inRoot = f => { const p = path.resolve(ROOT, String(f || '').trim()); if (!p.startsWith(ROOT + path.sep)) throw new Error('путь вне проекта');
+  if (p === path.join(ROOT, '.git') || p.startsWith(path.join(ROOT, '.git') + path.sep)) throw new Error('.git/ закрыт'); return p; };
 function grep(arg) {
   const m = /^(.*?)(?:\s+в\s+(\S+))?$/.exec(arg.trim()), pat = m[1], where = m[2] || '';
   let re; try { re = new RegExp(pat, 'i'); } catch (e) { re = new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); }
@@ -319,6 +323,43 @@ async function brigade(spec) {
   return edits ? 0 : 1;
 }
 
+/* ── план эпика: Разведчик → Главный инженер → проверка плана ── */
+const SCOUT_PLAN = `Ты — разведчик в Цехе сайта nachert1830.ru. Ты НЕ правишь код. Главный инженер будет разбивать цель владельца на задачи — собери ему пакет: где в коде то, что затронет цель; похожие существующие функции (образец, как здесь принято); как устроены проверки рядом (tests/, tests/impact.js).
+Команды (одна за шаг): GREP: выражение [в папка/] · READ: путь начало конец (≤ 200 строк) · NOTE: путь начало конец — зачем (добавить кусок в пакет) · PACK: краткая сводка (закончить).
+Собирай только нужное: обычно 5–12 кусков, всего не больше 1200 строк. Начни с оглавления.`;
+async function plan(goal) {
+  const EP = require('../server/lib/hq/epic.js'), PR = require('../server/lib/hq/prompts.js'), LL = require('../server/lib/hq/llm.js');
+  const PLAN_FILE = process.env.HQ_PLAN_FILE || '/tmp/hq-plan.json', ERR_FILE = process.env.HQ_PLAN_ERRORS || '/tmp/hq-plan-errors.txt';
+  const [sk, sm] = cheap('haiku');
+  console.log('План эпика: разведчик ' + sm.name + ' → главный инженер ' + (M.name || key));
+  const sMsgs = [{role: 'user', content: 'ЦЕЛЬ:\n' + goal + '\n\n' + map()}], notes = []; let summary = '', lines = 0;
+  for (let step = 1; step <= 30 && lines < 1200; step++) {
+    const reply = await callAs(sk, sm, SCOUT_PLAN, sMsgs, {max: 2000}); sMsgs.push({role: 'assistant', content: reply || '(пусто)'});
+    const head = (reply.split('\n').find(l => /^(GREP|READ|NOTE|PACK):/i.test(l.trim())) || '').trim(); let res;
+    try {
+      if (/^GREP:/i.test(head)) res = grep(head.slice(5)); else if (/^READ:/i.test(head)) res = read(head.slice(5));
+      else if (/^NOTE:/i.test(head)) { const m = /^NOTE:\s*(\S+)\s+(\d+)\s+(\d+)\s*(?:—|-)?\s*(.*)$/i.exec(head);
+        if (m) { const b = Math.min(+m[3], +m[2] + 250, +m[2] + 1200 - lines); notes.push({f: m[1], a: +m[2], b, why: m[4]}); lines += b - +m[2] + 1; res = 'В пакете: ' + notes.length + ', строк ' + lines + ' из 1200'; } else res = 'Формат: NOTE: путь начало конец — зачем'; }
+      else if (/^PACK:/i.test(head)) { summary = head.slice(5).trim(); break; }
+      else res = 'Одна команда: GREP, READ, NOTE или PACK.';
+    } catch (e) { res = 'ОШИБКА: ' + e.message; }
+    console.log('  разведчик ' + step + ': ' + head.slice(0, 120)); sMsgs.push({role: 'user', content: String(res).slice(0, 10000)});
+  }
+  const pack = notes.map(n => { try { return '### ' + n.f + ' ' + n.a + '–' + n.b + (n.why ? ' — ' + n.why : '') + '\n' + read(n.f + ' ' + n.a + ' ' + n.b); } catch (e) { return ''; } }).join('\n\n');
+  const doc = (f, n) => { try { return fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n').slice(0, n || 1e9).map(l => l.slice(0, 400)).join('\n'); } catch (e) { return ''; } };
+  const msgs = [{role: 'user', content: 'ЦЕЛЬ ВЛАДЕЛЬЦА:\n' + goal + '\n\nСводка разведчика: ' + (summary || '—') + '\n\nПАКЕТ КОДА:\n' + (pack || 'пусто') +
+    '\n\ndocs/ARCHITECTURE.md:\n' + doc('docs/ARCHITECTURE.md') + '\n\ntests/README.md (оглавление, первые 60 строк):\n' + doc('tests/README.md', 60)}];
+  let errors = [];
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const reply = await call(PR.CHIEF_PLAN, msgs, {max: 16000, effort: 'high'}); msgs.push({role: 'assistant', content: reply || '(пусто)'});
+    let raw = null; try { raw = LL.json(reply); } catch (e) { errors = ['ответ не JSON']; }
+    if (raw) { const v = EP.validatePlan(raw); if (v.ok) { fs.writeFileSync(PLAN_FILE, JSON.stringify(v.plan, null, 1)); console.log('План: задач ' + v.plan.tasks.length); return 0; } errors = v.errors; }
+    console.log('  план не прошёл проверку (' + attempt + '): ' + errors.join('; ').slice(0, 300));
+    msgs.push({role: 'user', content: 'План не прошёл проверку Штаба:\n- ' + errors.join('\n- ') + '\nИсправь и пришли план целиком, ТОЛЬКО JSON.'});
+  }
+  fs.writeFileSync(ERR_FILE, errors.join('\n')); return 1;
+}
+
 /* ── вопрос про код: только читает (GREP, READ, SHOT), ответ со ссылками на файл:строку ── */
 const ASK = `Ты — инженер, который знает код сайта nachert1830.ru (учебный сайт по начертательной геометрии; index.html — 35 тыс. строк без сборки, lk/ — кабинет, server/ — облачные функции, tests/ — проверки, .github/workflows/ — автоматика). Владелец задал вопрос. Найди ответ в коде; ничего не правь.
 Команды (одна за шаг): GREP: выражение [в папка/] · READ: путь начало конец (≤ 200 строк)` + (VISION ? ' · SHOT: #/адрес (скриншот страницы на телефоне)' : '') + ` · ANSWER: ответ (закончить).
@@ -343,7 +384,7 @@ async function answer(q) {
 (async () => {
   if (!KEY) { console.error('Нет PROXYAPI_KEY'); process.exit(1); }
   const spec = task.replace(/<!--[\s\S]*?-->/g, '').trim();
-  const code = process.argv.includes('--ask') ? await answer(spec) : BRIGADE ? await brigade(spec) : await solo(spec);
+  const code = process.argv.includes('--plan') ? await plan(spec) : process.argv.includes('--ask') ? await answer(spec) : BRIGADE ? await brigade(spec) : await solo(spec);
   console.log('Стоимость всего: ' + cost.rub + ' ₽ (' + Object.entries(cost.models).map(([k, v]) => k + ' ' + v).join(', ') + ')');
   if (srv) srv.close(); process.exit(code);
 })().catch(e => { console.error(e.message || e); process.exit(1); });

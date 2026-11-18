@@ -7,7 +7,8 @@
   const $ = id => document.getElementById(id), esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
   const tok = () => { try { return localStorage.getItem('lk_tok') || ''; } catch (e) { return ''; } };
   const TYPE = {strategy: 'Стратегия', goal: 'Цель', task: 'Задача', idea: 'Идея', noise: 'Балабольство'};
-  const STATUS = {new: 'новая', talk: 'обсуждаем', ready: 'ТЗ готово', assigned: 'назначена', running: 'в работе', review: 'проверить', done: 'готово', failed: 'не вышло'};
+  const STATUS = {new: 'новая', talk: 'обсуждаем', ready: 'ТЗ готово', assigned: 'назначена', running: 'в работе', review: 'проверить', done: 'готово', failed: 'не вышло', rolled: 'откачено'};
+  const ESTATUS = {draft: 'черновик', planning: 'пишет план', review: 'ждёт утверждения', running: 'идёт', paused: 'пауза', done: 'готов', failed: 'остановлен'};
   const S = {data: null, sel: null, node: null, tab: 'chat', last: '', feed: []};
 
   function req(method, path, body) {
@@ -130,13 +131,16 @@
     if (op === 'map') return show('map');
     if (op === 'open') return openNode(a.id);
     if (op === 'rollback' && !confirm('Откатить выкатку? Сайт вернётся к состоянию до неё.')) return;
-    b.disabled = true; S.wait = {discuss: 'Продакт думает…', run: 'Запускаю…', review: 'Ревизор проверяет…', split: 'Разбиваю…'}[op] || '…'; drawFeed();
+    if (op === 'epicreplan') { const t = prompt('Что поправить в плане? Главный инженер перепишет его с этим замечанием.'); if (t == null) return; a.text = t; }
+    if (op === 'epicresume') { const t = prompt('Ответ или уточнение для Главного инженера (можно пусто):', ''); if (t == null) return; a.text = t; }
+    if ((op === 'epicstop' || op === 'epiccancel') && !confirm(op === 'epicstop' ? 'Остановить эпик? Сделанное останется на сайте.' : 'Отменить эпик?')) return;
+    b.disabled = true; S.wait = {discuss: 'Продакт думает…', run: 'Запускаю…', review: 'Ревизор проверяет…', split: 'Разбиваю…', mkepic: 'Отдаю Главному инженеру…', epicok: 'Запускаю эпик…'}[op] || '…'; drawFeed();
     req('POST', '/api/hq/act', {op, a}).catch(e => S.feed.push({id: 'tmp', who: 'hq', text: '⚠️ ' + e.message, at: Date.now()}))
       .then(() => { S.feed = S.feed.filter(f => f.id !== 'tmp'); S.wait = null; return pull(true); }).then(() => reload().catch(() => {}));
   });
   /* новое в ленте — раз в 15 с; задачи в Цехе — статус раз в минуту (смена статуса сама пишет в ленту) */
   setInterval(() => { if (!document.hidden && S.tab === 'chat' && !S.wait) pull(false); }, 15000);
-  setInterval(() => { if (!document.hidden && S.data && S.data.nodes.some(n => n.status === 'running' || n.status === 'review')) req('POST', '/api/hq/sync', {}).then(() => pull(false)).catch(() => {}); }, 60000);
+  setInterval(() => { if (!document.hidden && S.data && S.data.nodes.some(n => n.status === 'running' || n.status === 'review' || n.type === 'epic' && n.status === 'planning')) req('POST', '/api/hq/sync', {}).then(() => pull(false)).catch(() => {}); }, 60000);
 
   /* ── разбор монолога ── */
   $('parse').onclick = () => {
@@ -200,7 +204,16 @@
 
   /* ── задачи: доска по статусам ── */
   const LANES = [['Обсуждаем', ['new', 'talk']], ['Готово к запуску', ['ready', 'assigned']], ['В работе', ['running']], ['Проверить', ['review']], ['Готово', ['done']], ['Не вышло', ['failed']]];
+  function renderEpics() {
+    const es = S.data.nodes.filter(n => n.type === 'epic');
+    $('epics').innerHTML = es.map(e => { const ts = S.data.nodes.filter(n => n.epic === e.id).sort((a, b) => a.eorder - b.eorder), done = ts.filter(n => n.status === 'done').length;
+      return '<div class="epic"><h4>🧭 ' + esc(e.title) + ' <span class="pill s-' + e.status + '">' + esc(ESTATUS[e.status] || e.status) + '</span>' +
+        (ts.length ? '<span class="pill">' + done + ' / ' + ts.length + '</span>' : '') + '<span class="pill cost">' + rub(e.spentRub) + (e.budgetRub ? ' из ' + rub(e.budgetRub) : '') + '</span>' +
+        (e.url ? '<a href="' + esc(e.url) + '" target="_blank" rel="noopener">план ↗</a>' : '') + '</h4>' +
+        (ts.length ? '<div class="prog"><b style="width:' + Math.round(done / ts.length * 100) + '%"></b></div><div class="steps">' + ts.map(card).join('') + '</div>' : '<div class="hint">' + esc(e.text || '') + '</div>') + '</div>'; }).join('');
+  }
   function renderBoard() {
+    renderEpics();
     const ts = S.data.nodes.filter(n => n.type === 'task');
     $('board').innerHTML = LANES.map(([name, st]) => { const l = ts.filter(n => st.includes(n.status));
       return '<div class="lane"><h4>' + name + ' · ' + l.length + '</h4>' + l.map(card).join('') + '</div>'; }).join('');
@@ -242,6 +255,7 @@
     $('dChat').innerHTML = (n.chat || []).map(m => '<div class="bub ' + m.r + '">' + esc(m.t) + (m.m ? '<small>' + esc(mName(m.m)) + '</small>' : '') + '</div>').join('') ||
       (task ? '<div class="hint">Нажми «Обсудить с продактом» — он задаст вопросы и напишет ТЗ. Можно сразу написать, что важно.</div>' : '');
     document.querySelector('.chatin').hidden = document.querySelector('.exec').hidden = !task;
+    $('dEpic').hidden = !(task || n.type === 'goal') || !!n.epic;
     const kind = n.kind || 'code', cur = n.model || d.settings.staff[kind][n.level || 'medium'];
     $('dModel').innerHTML = opts(kind === 'image' ? isImg : isText, cur);
     $('dRun').textContent = n.issue || n.result || n.img ? '↻ Перезапустить' : '▶ Запустить';
@@ -265,6 +279,8 @@
   $('dType').onchange = () => patch({type: $('dType').value}); $('dParent').onchange = () => patch({parent: $('dParent').value || null});
   $('dKind').onchange = () => patch({kind: $('dKind').value}); $('dLevel').onchange = () => patch({level: $('dLevel').value});
   $('dModel').onchange = () => patch({model: $('dModel').value});
+  $('dEpic').onclick = () => { if (!confirm('Сделать эпиком? Главный инженер изучит код и разобьёт цель на задачи — план придёт в «Разговор» на утверждение.')) return;
+    req('POST', '/api/hq/act', {op: 'mkepic', a: {id: S.node.id}}).then(() => { $('dClose').onclick(); show('chat'); return reload(); }).catch(e => say('dMsg', e.message, true)); };
   $('dArch').onclick = () => { if (confirm('Убрать в архив?')) req('POST', '/api/hq/node', {id: S.node.id, op: 'archive'}).then(() => { $('dClose').onclick(); reload(); }); };
   $('dSend').onclick = () => { const text = $('dSay').value.trim();
     act($('dSend'), 'chat', {id: S.node.id, text, model: $('dPm').value}, 'Продакт думает…').then(j => { if (!j) return; $('dSay').value = '';

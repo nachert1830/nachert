@@ -19,7 +19,10 @@ function cleanEnv(env) {
 /* значения секретов из окружения исполнителя — не длиннее 6 символов не трогаем (ложные совпадения) */
 function redact(text, env) {
   let t = String(text || '');
-  for (const [k, v] of Object.entries(env || {})) if (SECRET.test(k) && v && String(v).length > 6) t = t.split(String(v)).join('***');
+  for (const [k, v] of Object.entries(env || {})) if (SECRET.test(k) && v && String(v).length > 6) {
+    t = t.split(String(v)).join('***');
+    const b = Buffer.from('x-access-token:' + v).toString('base64'); t = t.split(b).join('***');   /* git http.extraheader */
+  }
   return t;
 }
 
@@ -49,6 +52,7 @@ const RULES = [
   [/\b(printenv|env|export|set|declare)\b[^;&\n]*(KEY|TOKEN|SECRET|PASSWORD|GH_)/i, 'вывод ключей запрещён'],
   [/\$\{?\w*(KEY|TOKEN|SECRET|PASSWORD|GH_)\w*/i, 'обращение к ключам запрещено'],
   [/\/proc\/[^\s]*\/environ/, '/proc/*/environ запрещён'],
+  [/(^|[\s'"=\/(])\.git\/(config|credentials)|\.git-credentials|extraheader/, 'настройки и ключи git закрыты'],
 ];
 
 /* причина отказа или '' — команда разрешена */

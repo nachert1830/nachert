@@ -578,6 +578,8 @@ function createApp(o){
       await store.update('users',u.id,{reminders:Object.assign({},u.reminders,{lastSent:d.date})});
       const r=await o.bot.send(u.tgId,text,{reply_markup:{inline_keyboard:[[{text:'Открыть кабинет',url:cfg.frontUrl}],[{text:'Пауза',callback_data:'pause'}]]}});
       if(r&&r.ok) out.sent++; else if(r&&r.error_code===403) await store.update('users',u.id,{reminders:Object.assign({},u.reminders,{lastSent:d.date,canWrite:false})}); }
+    /* Штаб: эпики идут и без открытого ЛК — шаг планировщика каждые 15 минут */
+    try{ out.hq=await hq.tick(); }catch(e){ log.error('штаб',e&&e.message); out.hq={error:String(e&&e.message||e).slice(0,200)}; }
     await maintain(t); return out; }
 
   /* уборка: просроченные сессии, ссылки, лимиты, старый журнал входов */
@@ -587,7 +589,7 @@ function createApp(o){
     const logs=await store.scan('loginlog',x=>x.ts<t-LOG_DAYS*DAY); for(const x of logs) await store.del('loginlog',{h:x.h,r:x.r}); }
 
   /* Штаб владельца (lib/hq, docs/HQ.md): диктовка → карта целей → ТЗ → исполнители. Только админ. */
-  require('./hq').register(D,{store,now,http,fail,body,json:H.json,env:cfg.hq||{}});
+  const hq=require('./hq').register(D,{store,now,http,fail,body,json:H.json,env:cfg.hq||{}});
 
   /* ── маршрутизация ── */
   async function handle(req){ let res, cookie=null;
