@@ -33060,7 +33060,8 @@ function ctx(n){ const RQ=typeof n==='object'?n:null, md=RQ?RQ.md:IG_VARS[n], sp
   (G.d||[]).forEach(ex);
   /* штрих, стрелка и буква обозначения плоскости А у правого конца следа — между главным видом и видом слева: место под них тоже */
   if(md.sec){ const [[xa,za],[xb,zb]]=md.sec.p, th=Math.atan2(zb-za,xb-xa); fR=Math.max(fR,xb+14*Math.cos(th)+10*Math.abs(Math.sin(th))+8-x1); }
-  if(md.step&&IGUI.letters(md).p) tA=Math.max(tA,22);   /* штрих Б–Б над видом сверху со стрелкой и буквой — до 22 мм над контуром */
+  if(md.step&&IGUI.letters(md).p) tA=Math.max(tA,22);
+  if(md.hzOff) fR=Math.max(fR,md.hzOff+28);   /* штрихи А–А за размерными линиями (ДЗ 6): место под штрих, стрелку и букву */   /* штрих Б–Б над видом сверху со стрелкой и буквой — до 22 мм над контуром */
   const gapF=G.gapF||Math.max(24,-fB+Math.max(0,tA)+12+(md.hz?10:0))   /* при горизонтальном разрезе над видом сверху — надпись «Б–Б» */, gapL=G.gapL||Math.max(46,Math.max(0,fR)+Math.max(0,lL)+20);
   const TY=y1+z0*0+gapF+(G.below||0), GX=x1+y1+gapL;
   const FR=(x,z)=>[k*x,-k*z], TP=(x,y)=>[k*x,k*(TY-y)], LF=(y,z)=>[k*(GX-y),-k*z];
@@ -33210,7 +33211,7 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   if(LT.f&&md.step){ o+=stepMark(md.step,[C.x0,C.x1],LT.f,TP)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   else if(LT.f){ o+=IGUI.secMark(TP(C.x1+4,0),TP(C.x0-4,0),k,LT.f)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   if(LT.p){ o+=IGUI.secMark(TP(0,C.y0-4),TP(0,C.y1+4),k,LT.p)   /* штрихи — у контура вида сверху по его глубине (у вытянутой детали R — по длине, штрих ушёл бы на главный вид) */+lb([LF(0,0)[0],yLb],LT.p); }
-  if(hz&&LT.h){ const y=FR(0,hz.z)[1]; o+=IGUI.secMark([FR(C.x0-6,0)[0],y],[FR(C.x1+6,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,Math.max(C.y1,...(C.G.d||[]).filter(d=>d[0]==='T'&&d[1]==='dia').map(d=>d[2][1]+d[3]/2)))[1]-24],LT.h); }   /* над описанной окружностью, если она выше контура */
+  if(hz&&LT.h){ const y=FR(0,hz.z)[1]; const ho=md.hzOff||6; o+=IGUI.secMark([FR(C.x0-ho,0)[0],y],[FR(C.x1+ho,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,Math.max(C.y1,...(C.G.d||[]).filter(d=>d[0]==='T'&&d[1]==='dia').map(d=>d[2][1]+d[3]/2)))[1]-24],LT.h); }   /* над описанной окружностью, если она выше контура */
   pts.push(FR(C.x0-8,C.z1+8),FR(C.x1,C.z0-6),LF(C.y1+6,C.z1+8),LF(C.y0-8,C.z0-6),TP(C.x0-8,C.y0-6),TP(C.x1+8,C.y1+6));   /* поля вокруг видов (размеры и подписи добавляют свои точки сами) */
   /* размеры из задания */
   /* буквы обозначений разрезов (А, Б…) и надписи над видами — место занято: размерные числа их обходят */
