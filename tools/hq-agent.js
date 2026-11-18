@@ -158,6 +158,19 @@ async function shot(hash) {
   finally { await b.close(); }
 }
 
+/* ── реплики владельца на ходу: комментарии «💬 Владелец: …» в Issue задачи (Штаб → relay); читаются перед каждым шагом ── */
+const ISSUE = process.env.HQ_ISSUE, GHT = process.env.GH_TOKEN, REPO = process.env.GITHUB_REPOSITORY; let seenC = null;
+async function owner() {
+  if (!ISSUE || !GHT || !REPO) return '';
+  try { const r = await fetch('https://api.github.com/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100', {headers: {authorization: 'Bearer ' + GHT, accept: 'application/vnd.github+json', 'user-agent': 'hq-agent'}});
+    const cs = (await r.json()).filter(c => /^💬 Владелец:/.test(c.body || ''));
+    if (seenC === null) { seenC = new Set(cs.map(c => c.id)); return ''; }   /* старые — уже в ТЗ при запуске */
+    const fresh = cs.filter(c => !seenC.has(c.id)); fresh.forEach(c => seenC.add(c.id));
+    return fresh.map(c => c.body).join('\n'); } catch (e) { return ''; }
+}
+const withOwner = async messages => { const o = await owner(); if (o) { console.log('  реплика владельца: ' + o.slice(0, 120)); const last = messages[messages.length - 1];
+  if (typeof last.content === 'string') last.content += '\n\n[ВЛАДЕЛЕЦ ПО ХОДУ РАБОТЫ — учти:]\n' + o; else last.content.push({text: '[ВЛАДЕЛЕЦ ПО ХОДУ РАБОТЫ — учти:]\n' + o}); } };
+
 /* ── одиночный исполнитель (простые задачи, дешёвые модели) ── */
 const SYSTEM = `Ты — разработчик в Цехе сайта nachert1830.ru: учебный сайт по начертательной геометрии и инженерной графике. Сайт — один файл index.html (35 тыс. строк, без сборки), плюс личный кабинет lk/, облачные функции server/, данные ДЗ dz/ и ядро core/ kernel/. Автотесты — tests/run.js.
 Файлы большие — целиком их не читай. Работай по шагам; на каждом шаге — ОДНА команда, без пояснений вокруг:
@@ -185,7 +198,9 @@ async function solo(spec) {
   const messages = [{role: 'user', content: 'ТЗ:\n' + spec + '\n\n' + map()}];
   let edits = 0, checked = false;
   console.log('Исполнитель: ' + (M.name || key) + ' (' + M.id + ')' + (CLAUDE ? ', кэш Claude включён' : ''));
+  await owner();
   for (let step = 1; step <= MAX_STEPS; step++) {
+    await withOwner(messages);
     const reply = await call(SYSTEM, messages);
     messages.push({role: 'assistant', content: reply || '(пусто)'});
     const head = (reply.split('\n').find(l => /^(GREP|READ|EDIT|CHECK|SHOT|DONE)\b:?/i.test(l.trim())) || reply.split('\n')[0] || '').trim();
@@ -255,7 +270,9 @@ async function brigade(spec) {
   /* 2. архитектор (1–3 хода) → 3. монтаж и проверка (до 2 починок) */
   const aMsgs = [{role: 'user', content: 'ТЗ:\n' + spec + '\n\nСводка разведчика: ' + summary + '\n\nПАКЕТ:\n' + pack()}];
   let edits = 0, fixes = 0;
+  await owner();
   for (let turn = 1; turn <= 6; turn++) {
+    await withOwner(aMsgs);
     const reply = await call(ARCH, aMsgs, {max: 12000, effort: key === 'opus' ? 'medium' : undefined}); aMsgs.push({role: 'assistant', content: reply || '(пусто)'});
     const need = [...reply.matchAll(/^NEED:\s*(\S+)\s+(\d+)\s+(\d+)/gim)];
     if (need.length && !/^EDIT:/im.test(reply)) { aMsgs.push({role: 'user', content: need.slice(0, 3).map(m => '### ' + m[1] + ' ' + m[2] + '–' + m[3] + '\n' + read(m[1] + ' ' + m[2] + ' ' + m[3])).join('\n\n')}); console.log('  архитектор просит ещё ' + need.length); continue; }
@@ -282,10 +299,31 @@ async function brigade(spec) {
   return edits ? 0 : 1;
 }
 
+/* ── вопрос про код: только читает (GREP, READ, SHOT), ответ со ссылками на файл:строку ── */
+const ASK = `Ты — инженер, который знает код сайта nachert1830.ru (учебный сайт по начертательной геометрии; index.html — 35 тыс. строк без сборки, lk/ — кабинет, server/ — облачные функции, tests/ — проверки, .github/workflows/ — автоматика). Владелец задал вопрос. Найди ответ в коде; ничего не правь.
+Команды (одна за шаг): GREP: выражение [в папка/] · READ: путь начало конец (≤ 200 строк)` + (VISION ? ' · SHOT: #/адрес (скриншот страницы на телефоне)' : '') + ` · ANSWER: ответ (закончить).
+ANSWER — по-русски, простыми словами для владельца (он не программист): суть в 1–3 предложениях, затем где это в коде (файл:строка), и если что-то сломано — что предлагаешь сделать. До 15 строк.`;
+async function answer(q) {
+  const messages = [{role: 'user', content: 'ВОПРОС:\n' + q + '\n\n' + map()}];
+  for (let step = 1; step <= 20; step++) {
+    const reply = await call(ASK, messages, {max: 3000}); messages.push({role: 'assistant', content: reply || '(пусто)'});
+    const head = (reply.split('\n').find(l => /^(GREP|READ|SHOT|ANSWER)\b:?/i.test(l.trim())) || '').trim(); console.log('--- шаг ' + step + ': ' + head.slice(0, 120));
+    if (/^ANSWER:/i.test(head)) { fs.writeFileSync('/tmp/hq-answer.md', reply.slice(reply.indexOf(head) + 7).trim()); return 0; }
+    let res; try {
+      if (/^GREP:/i.test(head)) res = grep(head.slice(5)); else if (/^READ:/i.test(head)) res = read(head.slice(5));
+      else if (/^SHOT/i.test(head) && VISION) { const sh = await shot(head.replace(/^SHOT:?\s*/i, '')); messages.push({role: 'user', content: [{text: sh.note}, {image: sh.png}]}); continue; }
+      else res = 'Одна команда: GREP, READ' + (VISION ? ', SHOT' : '') + ' или ANSWER.';
+    } catch (e) { res = 'ОШИБКА: ' + e.message; }
+    if (step === 17) res += '\n\n[осталось 3 шага — пиши ANSWER]';
+    messages.push({role: 'user', content: String(res).slice(0, 12000)});
+  }
+  return 1;
+}
+
 (async () => {
   if (!KEY) { console.error('Нет PROXYAPI_KEY'); process.exit(1); }
   const spec = task.replace(/<!--[\s\S]*?-->/g, '').trim();
-  const code = BRIGADE ? await brigade(spec) : await solo(spec);
+  const code = process.argv.includes('--ask') ? await answer(spec) : BRIGADE ? await brigade(spec) : await solo(spec);
   console.log('Стоимость всего: ' + cost.rub + ' ₽ (' + Object.entries(cost.models).map(([k, v]) => k + ' ' + v).join(', ') + ')');
   if (srv) srv.close(); process.exit(code);
 })().catch(e => { console.error(e.message || e); process.exit(1); });

@@ -11,7 +11,7 @@
 const crypto = require('crypto');
 const RO = require('./roster'), P = require('./prompts'), L = require('./llm');
 
-const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise'];
+const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise', 'question'];
 const STATUS = ['new', 'talk', 'ready', 'assigned', 'running', 'review', 'done', 'failed', 'rolled', 'archived'];
 const id = p => p + crypto.randomBytes(6).toString('base64url');
 const clean = (s, n) => String(s == null ? '' : s).replace(/\u0000/g, '').trim().slice(0, n || 400);
@@ -222,13 +222,25 @@ function register(D, o) {
         n.counted.push(c.id); }
       const last = cs.filter(c => !/^Перезапуск/.test(c.body || '')).slice(-1)[0];
       n.log = last ? clean((last.body || '').replace(/<!--[\s\S]*?-->/g, ''), 1500) : n.log;
-      if (n.rollback) { if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; } }
+      if (n.type === 'question') { if (names.includes('ответ')) { const a = cs.filter(c => /<!-- hq-answer -->/.test(c.body || '')).slice(-1)[0]; n.result = a ? clean(a.body.replace(/<!--[\s\S]*?-->/g, ''), 8000) : n.log; n.status = 'done'; } else if (names.includes('провал')) n.status = 'failed'; }
+      else if (n.rollback) { if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; } }
       else if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
       await save(n); out.push(brief(n));
       if (n.status !== was) await feedStatus(n);
     }
+    await alarms();
     return {ok: true, nodes: out, spent: await spent()};
   };
+  /* «Сайт просит»: красная полная проверка main (Issue «main-красный» из check.yml) → в ленту с кнопкой «Починить» — один раз на Issue */
+  async function alarms() {
+    if (!env.ghToken || !env.ghRepo) return;
+    let list = []; try { list = await gh('/issues?labels=' + encodeURIComponent('main-красный') + '&state=open&per_page=5'); } catch (e) { return; }
+    const seen = ((await store.get('config', 'hqseen')) || {ids: []}).ids;
+    for (const i of list.filter(x => !x.pull_request && !seen.includes(x.number))) {
+      await feed('hq', '🚨 Сайт просит: полная проверка main красная.\n' + clean((i.body || '').split('```')[1] || i.body, 600), {acts: [A('🛠 Починить', 'fixmain', {issue: i.number}, true)], links: [{l: 'подробно', u: i.html_url}]});
+      seen.push(i.number); }
+    await store.put('config', {id: 'hqseen', ids: seen.slice(-200)});
+  }
   /* ── Разговор: лента, Секретарь, действия ─────────────────────────────────────────────────────────────────────────
      Владелец говорит в одну ленту. Секретарь (дешёвая модель) понимает, что сказано: новые мысли → Аналитик; ответ на вопрос
      продакта → Продакт этой задачи; «запускай» → Диспетчер и исполнитель; «что там» → статусы Цеха; «откати» → откат выкатки.
@@ -252,6 +264,10 @@ function register(D, o) {
       '. Исполнитель — ' + RO.model(st, k).name + ', оценка ~' + estimate(st, k, n.kind || 'code') + ' ₽.', {node: n.id, acts: runActs(st, n)});
   }
   async function feedStatus(n) {
+    if (n.type === 'question') {
+      if (n.status === 'done') return feed('hq', '💡 Ответ на «' + n.title + '»:\n' + (n.result || ''), {node: n.id, acts: [A('Сделать задачей', 'totask', {id: n.id}, true)], links: [n.url && {l: 'подробно', u: n.url}].filter(Boolean)});
+      if (n.status === 'failed') return feed('hq', '❌ Не нашёл ответ на «' + n.title + '». ' + (n.log || ''), {node: n.id});
+      return; }
     const T = {done: '✅ Готово: «' + n.title + '»' + (n.pr ? ' — на сайте.' : '.'), failed: '❌ Не получилось: «' + n.title + '». ' + (n.log ? n.log.split('\n')[0] : ''),
       review: '🔍 Проверь: «' + n.title + '».', rolled: '↩️ Откатил: «' + n.title + '». Сайт как до выкатки.', running: '⚙️ В работе: «' + n.title + '».'};
     if (!T[n.status]) return;
@@ -290,6 +306,25 @@ function register(D, o) {
       await gh('/issues/' + n.issue, {method: 'PATCH', body: JSON.stringify({state: 'open'})});
       await gh('/issues/' + n.issue + '/labels', {method: 'POST', body: JSON.stringify({labels: ['откат']})});
       n.rollback = now(); await save(n); await feed('hq', '↩️ Откатываю «' + n.title + '»: Цех вернёт сайт как было и прогонит тесты.', {node: n.id}); return {ok: true}; }
+    if (op === 'ask') {   /* вопрос про код → исполнитель только читает (hq-work.yml, задание answer) */
+      const k = a.model && RO.model(st, a.model) ? a.model : st.staff.research.medium, m = RO.model(st, k);
+      const n = {id: id('q'), type: 'question', title: clean(a.text, 120), text: clean(a.text, 4000), status: 'running', at: now(), chat: [], model: k};
+      const i = await gh('/issues', {method: 'POST', body: JSON.stringify({title: 'Вопрос: ' + n.title.slice(0, 100), body: n.text + '\n\n---\nОтвечает: **' + m.name + '** (только читает код).\n<!-- hq-node:' + n.id + ' -->\n<!-- hq-model:' + JSON.stringify({key: k, id: m.id, name: m.name, in: m.in, out: m.out, cache: m.cache, rate: st.rate}) + ' -->', labels: ['исп:' + k]})});
+      await gh('/issues/' + i.number + '/labels', {method: 'POST', body: JSON.stringify({labels: ['вопрос']})});
+      n.issue = i.number; n.url = i.html_url; n.counted = []; await save(n);
+      await feed('hq', '🔎 Ищу ответ в коде (' + m.name + '). Напишу сюда, обычно 2–5 минут.', {node: n.id, links: [{l: 'вопрос', u: i.html_url}]}); return {ok: true, node: n}; }
+    if (op === 'relay') {   /* реплика владельца по задаче в работе → комментарий в Issue; исполнитель читает их между шагами */
+      const n = await getNode(a.id); if (!n.issue) fail(400, 'Задача не в Цехе.');
+      await gh('/issues/' + n.issue + '/comments', {method: 'POST', body: JSON.stringify({body: '💬 Владелец: ' + clean(a.text, 2000)})});
+      await feed('hq', 'Передал исполнителю «' + n.title + '» — учтёт на следующем шаге.', {node: n.id}); return {ok: true, node: n}; }
+    if (op === 'totask') { const q = await getNode(a.id);
+      const r = await inner('POST /api/hq/node', {op: 'add', type: 'task', title: q.title.replace(/^почему\s+/i, 'Починить: ').slice(0, 120), text: 'Вопрос: ' + q.text + '\n\nЧто нашлось в коде:\n' + (q.result || '').slice(0, 3000)});
+      return act('discuss', {id: r.node.id}); }
+    if (op === 'fixmain') { const i = await gh('/issues/' + (+a.issue));
+      const r = await inner('POST /api/hq/node', {op: 'add', type: 'task', title: 'Починить красную проверку main', text: clean(i.body, 3800)});
+      await inner('POST /api/hq/node', {id: r.node.id, kind: 'code', level: 'complex'});
+      const n = await getNode(r.node.id); n.spec = {title: 'Починить красную проверку main', what: 'Полная проверка сайта на main красная. Найди причину по логу и исправь код (не тесты и не baseline, если ошибка настоящая).\n\n' + clean(i.body, 3000), where: 'по логу проверки', done: ['node tests/run.js на затронутых блоках зелёный'], not: ['не отключать и не ослаблять проверки']};
+      n.ready = true; n.status = 'ready'; await save(n); await feedReady(st, n); return {ok: true, node: n}; }
     if (op === 'archive') { await inner('POST /api/hq/node', {id: a.id, op: 'archive'}); await feed('hq', 'Убрал в архив.', {node: a.id}); return {ok: true}; }
     fail(400, 'Нет такого действия.');
   }
@@ -318,8 +353,11 @@ function register(D, o) {
     const known = id => tasks.some(n => n.id === id);
     const say = async t => t && feed('hq', t);
     try {
-      if (dec.intent === 'answer' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || text}); }
+      const running = id => tasks.some(n => n.id === id && n.status === 'running' && n.issue);
+      if ((dec.intent === 'answer' || dec.intent === 'discuss') && running(dec.node)) { await act('relay', {id: dec.node, text: dec.text || text}); }
+      else if (dec.intent === 'answer' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || text}); }
       else if (dec.intent === 'discuss' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || ''}); }
+      else if (dec.intent === 'ask') { await act('ask', {text: dec.text || text, model: dec.model}); }
       else if (dec.intent === 'run' && known(dec.node)) { await say(dec.reply); await act('run', {id: dec.node, model: RO.model(st, dec.model) ? dec.model : undefined}); }
       else if (dec.intent === 'accept' && known(dec.node)) { await act('accept', {id: dec.node}); }
       else if (dec.intent === 'rollback' && known(dec.node)) { await act('rollback', {id: dec.node}); }

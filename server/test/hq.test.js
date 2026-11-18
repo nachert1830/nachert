@@ -12,6 +12,7 @@ function net(){ const n={calls:[],replies:[],issues:{},labels:[]};
     mm0=/^\/issues\/(\d+)$/.exec(m[1]); if(mm0&&o.method==='PATCH'){ return {status:200,json:n.issues[mm0[1]]}; }
     if(m[1]==='/issues'&&o.method==='POST'){ const num=200+Object.keys(n.issues).length; n.issues[num]={number:num,body:b.body,labels:b.labels.map(x=>({name:x})),state:'open'};
       return {status:201,json:{number:num,html_url:'https://github.com/nachert1830/nachert/issues/'+num}}; }
+    if(/^\/issues\?labels=/.test(m[1])) return {status:200,json:n.alarms||[]};
     let mm=/^\/issues\/(\d+)\/labels$/.exec(m[1]); if(mm){ n.issues[mm[1]].labels.push(...b.labels.map(x=>({name:x}))); return {status:200,json:[]}; }
     mm=/^\/issues\/(\d+)\/comments/.exec(m[1]); if(mm) return {status:200,json:n.comments||[]};
     mm=/^\/issues\/(\d+)$/.exec(m[1]); if(mm) return {status:200,json:n.issues[mm[1]]};
@@ -119,3 +120,30 @@ test('Штаб: разговор — лимит бюджета пишется в
   n.replies.push({intent:'thoughts'});
   const r=await c.call('POST','/api/hq/talk',{text:'хочу новую главную страницу'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
   const f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; assert.match(f[f.length-1].text,/Лимит месяца/); });
+
+test('Штаб: вопрос про код → исполнитель читает → ответ в ленте → «Сделать задачей»; реплика к задаче в работе; тревога main', async()=>{ const {c,n}=await setup();
+  n.replies.push({intent:'ask',text:'почему не печатается лист ДЗ №3?'});
+  let r=await c.call('POST','/api/hq/talk',{text:'слушай, а почему не печатается лист ДЗ 3?'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const num=Object.keys(n.issues)[0], iss=n.issues[num]; assert.deepEqual(iss.labels.map(l=>l.name).sort(),['вопрос','исп:gpro'].sort()); assert.match(iss.body,/только читает/);
+  let f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; assert.match(f[f.length-1].text,/Ищу ответ/);
+  /* ответ пришёл */
+  n.comments=[{id:11,body:'Печать ломает стиль @page в index.html:1234. <!-- hq-answer --> <!-- hq:{"rub":0.7} -->'}]; iss.labels.push({name:'ответ'});
+  await c.call('POST','/api/hq/act',{op:'sync'},{as:'owner'});
+  f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; const ans=f[f.length-1];
+  assert.match(ans.text,/Ответ.*@page/s); assert.equal(ans.acts[0].op,'totask');
+  n.replies.push({reply:'Чинить стиль @page?',spec:{title:'Починить печать листа ДЗ №3',what:'стиль @page'},ready:false});
+  r=await c.call('POST','/api/hq/act',{op:'totask',a:ans.acts[0].a},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const task=(await c.call('GET','/api/hq',undefined,{as:'owner'})).data.nodes.find(x=>x.type==='task'); assert.match(task.title,/Починить/);
+  /* задача в работе + реплика на ходу → комментарий в Issue */
+  await c.call('POST','/api/hq/node',{id:task.id,kind:'code',level:'simple'},{as:'owner'});
+  await c.call('POST','/api/hq/run',{id:task.id},{as:'owner'});
+  const before=n.calls.filter(x=>/\/comments$/.test(x.url)&&x.method==='POST').length;
+  n.replies.push({intent:'discuss',node:task.id,text:'и проверь в тёмной теме'});
+  await c.call('POST','/api/hq/talk',{text:'и проверь в тёмной теме'},{as:'owner'});
+  const posted=n.calls.filter(x=>/\/comments$/.test(x.url)&&x.method==='POST'); assert.equal(posted.length,before+1); assert.match(posted[posted.length-1].body.body,/💬 Владелец: и проверь в тёмной теме/);
+  /* тревога: полная проверка main красная → один раз в ленте с «Починить» → ТЗ готово */
+  n.alarms=[{number:77,body:'Полная проверка красная\n```\n- Пульт · телефон: прокрутка 40 px\n```',html_url:'https://github.com/x/issues/77'}];
+  await c.call('POST','/api/hq/act',{op:'sync'},{as:'owner'}); await c.call('POST','/api/hq/act',{op:'sync'},{as:'owner'});
+  f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; const al=f.filter(x=>/Сайт просит/.test(x.text)); assert.equal(al.length,1); assert.match(al[0].text,/прокрутка 40 px/);
+  r=await c.call('POST','/api/hq/act',{op:'fixmain',a:al[0].acts[0].a},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; assert.match(f[f.length-1].text,/ТЗ готово: «Починить красную проверку main».*Claude Opus 5\.5/s); });

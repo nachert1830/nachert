@@ -17,6 +17,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  answer:
+    # Вопрос про код из Штаба: метка «вопрос» → исполнитель только читает код → ответ комментарием (<!-- hq-answer -->) → метка «ответ»
+    if: github.event.label.name == 'вопрос'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      N: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+      PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Ответ
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          set +e
+          printf '%s\n\n%s\n' "$TITLE" "$BODY" > /tmp/hq-task.md; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
+          M=$(echo "$LABELS" | tr ',' '\n' | sed -n 's/^исп://p' | head -1)
+          npm install --no-save --no-package-lock playwright@1.47.2 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          if node tools/hq-agent.js --ask --model "${M:-sonnet}" --task /tmp/hq-task.md; then
+            RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
+            { cat /tmp/hq-answer.md; echo; echo "_Ответил: ${M:-sonnet}, ~$RUB ₽._ <!-- hq-answer --> <!-- hq:{\"rub\":$RUB,\"model\":\"${M:-sonnet}\"} -->"; } > /tmp/c.md
+            gh issue comment "$N" --body-file /tmp/c.md; gh label create "ответ" >/dev/null 2>&1; gh issue edit "$N" --add-label "ответ"; gh issue close "$N"
+          else
+            RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)" 2>/dev/null || echo 0)
+            gh issue comment "$N" --body "Не нашёл ответ за 20 шагов. <!-- hq:{\"rub\":$RUB} -->"; gh label create "провал" >/dev/null 2>&1; gh issue edit "$N" --add-label "провал"
+          fi
+
   rollback:
     # Откат выкатки из Штаба: метка «откат» → revert слитого PR → быстрые тесты → main → метка «откачено»
     if: github.event.label.name == 'откат'
@@ -56,6 +91,7 @@ jobs:
     timeout-minutes: 120
     env:
       N: ${{ github.event.issue.number }}
+      HQ_ISSUE: ${{ github.event.issue.number }}
       GH_TOKEN: ${{ github.token }}
       PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
     steps:
