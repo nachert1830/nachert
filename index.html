@@ -31836,9 +31836,21 @@ function stepLines(model,i){ const c=model._sl||(Object.defineProperty(model,'_s
       if(q.h!==s.h) continue; const ux=q.b[0]-q.a[0], uy=q.b[1]-q.a[1], l=Math.hypot(ux,uy)||1e-9, u=((p[0]-q.a[0])*ux+(p[1]-q.a[1])*uy)/(l*l); if(u>-0.02&&u<1.02&&Math.abs((p[0]-q.a[0])*uy-(p[1]-q.a[1])*ux)/l<0.5) return true; } return false; });
   const nw=cur.filter(s=>!was(s)), old=cur.filter(s=>was(s));
   return c[i]={old:IG3.paths(old),cur:IG3.paths(nw),segs:nw}; }
-function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':(model.givenKL?'Главный вид, вид сверху и профиль выреза K на виде слева — из задания. Вырез K идёт вдоль оси x: на главном виде и на виде сверху его линии достраиваем по профилю.':'Главный вид и вид сверху — из задания.')+(model.givenTop&&!model.givenKL?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду — дальше он уже достроен.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
+/* что элемент добавляет на виде сверху сверх данного в задании (вид сверху дан не полностью): новые отрезки по шагам элементов */
+function topLines(model,i){ const c=model._tl||(Object.defineProperty(model,'_tl',{value:{}}),model._tl); if(c[i]) return c[i];
+  const pm=j=>c['m'+j]||(c['m'+j]=j<0?[]:IG3.drawing(IG3.partial(model,j),'top',900).lines), G0=c.g||(c.g=IG3.drawing({tree:model.givenTop,box:model.box},'top',900).lines);
+  const idx=L=>{ const G=new Map(); L.forEach(s=>{ const m=[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2]; const k=Math.floor(m[0]/3)+','+Math.floor(m[1]/3); if(!G.has(k)) G.set(k,[]); G.get(k).push(s); }); return G; };
+  const inL=(G,s)=>{ const m=[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2]; for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) for(const q of G.get((Math.floor(m[0]/3)+dx)+','+(Math.floor(m[1]/3)+dy))||[]){ const qm=[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]; if(q.h===s.h&&Math.hypot(qm[0]-m[0],qm[1]-m[1])<1.2) return true; } return false; };
+  const gi=c.gi||(c.gi=idx(G0)), pv=idx(pm(i-1)), fin=c.fin||(c.fin=idx(IG3.drawing(model,'top',900).lines));
+  const nw=pm(i).filter(s=>!inL(gi,s)&&!inL(pv,s)&&inL(fin,s));
+  return c[i]={cur:IG3.paths(nw),segs:nw}; }
+function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':(model.givenKL?'Главный вид, вид сверху и профиль выреза K на виде слева — из задания. Вырез K идёт вдоль оси x: на главном виде и на виде сверху его линии достраиваем по профилю.':'Главный вид и вид сверху — из задания.')+(model.givenTop&&!model.givenKL?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
    ...(model.noTop?[['top','Вид сверху','Вида сверху в задании нет — строим его первым, под главным видом. Ширины переносим с главного вида вертикальными линиями связи; глубины берём из формы тела (у шара и цилиндра контур сверху — окружность того же диаметра). Отверстия, идущие вдоль взгляда (K), видны сверху как линии по их ширине на главном виде; невидимые контуры — штриховыми. Дальше глубины для вида слева берём с этого вида.']]:[]),
    ['axis','Ось симметрии вида слева','Сначала проводим ось симметрии вида слева — от неё будем откладывать глубины. Высоты общие с главным видом.']];
+  /* вид сверху дан не полностью: достраиваем его по элементам — до вида слева */
+  if(model.givenTop&&!model.givenKL&&!model.noTop){ const TK=[]; const GK=(model.givenTop&&model.givenTop.k)||[]; FT.forEach((f,i)=>{ if((f.nds||[]).length&&f.nds.every(n=>GK.includes(n))) return;   /* элемент дан на виде сверху — достраивать нечего */
+    if(topLines(model,i).segs.length) TK.push(['topk','Вид сверху: '+f.name.charAt(0).toLowerCase()+f.name.slice(1),'Ширины — с главного вида вертикальными линиями связи.',i]); });
+    out.splice(out.length-1,0,...TK); }
   let first=true;
   FT.forEach((f,i)=>{ const u=stepLines(model,i); if(!u.segs.length) return;   /* элемент не добавляет линий на виде слева — шаг не нужен */
     const hid=u.segs.every(q=>q.h), vis=u.segs.every(q=>!q.h);
@@ -31846,10 +31858,13 @@ function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дан�
       :'Точки — так же: высота с главного вида, глубина с вида сверху от оси.';
     out.push(['feat',f.name,how+(hid?' Элемент внутри детали — его линии невидимы, проводим штриховой.':vis?'':' Видимые части — сплошной линией, невидимые — штриховой.'),i]); first=false; });
   { const LT=letters(model), hl=holeAxes(model).length, sp=igSpec(model);
-    out.push(['cut','Разрезы','Внутреннюю форму показываем разрезами. Симметричное изображение — половина вида и половина разреза, граница по оси (если на ось попадает ребро — волнистой линией: внутреннее ребро остаётся в разрезе, наружное — на виде). Несимметричное изображение — полный разрез. В секущей плоскости — штриховка 45°. На половине вида невидимый контур (штриховые) не проводят — внутреннее устройство уже показано разрезом.'
+    out.push([model.hz&&!model.sec?'cutF':'cut',model.hz&&!model.sec?'Фронтальный разрез':'Разрезы','Внутреннюю форму показываем разрезами. Симметричное изображение — половина вида и половина разреза, граница по оси (если на ось попадает ребро — волнистой линией: внутреннее ребро остаётся в разрезе, наружное — на виде). Несимметричное изображение — полный разрез. В секущей плоскости — штриховка 45°. На половине вида невидимый контур (штриховые) не проводят — внутреннее устройство уже показано разрезом.'
       +(hl?' Отверстия на круглом фланце в секущую плоскость не попали, но по ГОСТ 2.305 их показывают в разрезе как попавшие в неё: мысленно поворачиваем отверстие вокруг оси детали до плоскости разреза — оно встаёт на свой радиус (не на проекцию).':'')
       +(LT.f?' Фронтальная плоскость здесь — не плоскость симметрии детали (спереди и сзади деталь разная), поэтому разрез обозначают: на виде сверху — разомкнутая линия со стрелками и буквами '+LT.f+', над главным видом — «'+LT.f+'–'+LT.f+'».':'')
       +(sp.F!=='view'&&!LT.f||sp.L!=='view'&&!LT.p?' Разрез, плоскость которого — плоскость симметрии детали и который стоит в проекционной связи, не обозначают.':'')]); }
+  if(model.hz&&!model.sec){ const sp=igSpec(model);
+    out.push(['cutL','Профильный разрез',sp.L==='half'?'Вид слева — так же: половина вида и половина профильного разреза.':'Вид слева — полный профильный разрез.'],
+      ['aa','Разрез '+(model.hz.L||'А')+'–'+(model.hz.L||'А'),'Горизонтальный разрез — на уровне, показанном на главном виде; строим его на месте вида сверху.']); }
   if(model.sec) out.push(['sec','Сечение '+secL(model)+'–'+secL(model),'Наклонная плоскость задана следом на главном виде. Точки контура переносим перпендикулярно следу — фигура строится в натуральную величину, со штриховкой.']);
   out.push(['sheet','Готовый лист','Все изображения на листе в проекционной связи, с осями'+(window.IG_WB&&IG_WB.includes(model)?'':', размерами')+' и основной надписью.']);
   return out; }
@@ -31870,14 +31885,20 @@ function stepsSVG(model,st,steps){
   const FR=q=>P('front0',q,X0,Y0), TP=q=>P('top',q,X0,TOPY), LF=q=>P('left0',q,X0+S,Y0);
   const L=(a,c,cl,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${cl}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
   const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="3.6" fill="${cl}"/>`, LB=[], lab=(q,t,cl,dx,dy)=>{ let x=q[0]+dx, y=q[1]+dy; while(LB.some(z=>Math.abs(z[0]-x)<24&&Math.abs(z[1]-y)<14)) y+=14; LB.push([x,y]); return `<text x="${f(x)}" y="${f(y)}" class="igs-k" fill="${cl}">${t}</text>`; };
-  const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2], cut=kind==='cut'||kind==='sec';
+  const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2], cut=['cut','sec','cutF','cutL','aa'].includes(kind);
   let o='';
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
-  if(kind==='given'&&model.givenTop) d.topG=IG3.drawing({tree:model.givenTop,box:model.box},'top',W);   /* «Дано» — вид сверху как в задании (не достроен) */
+  if((kind==='given'||kind==='topk')&&model.givenTop) d.topG=IG3.drawing({tree:model.givenTop,box:model.box},'top',W);   /* «Дано» — вид сверху как в задании (не достроен) */
   if(kind==='given'&&model.givenF) d.frG=IG3.drawing({tree:model.givenF,box:model.box},'front0',W);   /* вырез K задан на виде слева — на главном виде в задании его нет */
-  o+=img(cut?'front':kind==='given'&&d.frG?'frG':'front0',X0,Y0)+(kind==='given'&&model.noTop?'':img(kind==='given'&&d.topG?'topG':'top',X0,TOPY));
+  const hzA=kind==='aa'&&model.hz, sp0=sp;
+  o+=img(cut?'front':kind==='given'&&d.frG?'frG':'front0',X0,Y0)+(kind==='given'&&model.noTop||hzA?'':img((kind==='given'||kind==='topk')&&d.topG?'topG':'top',X0,TOPY));
+  /* разрез А–А на месте вида сверху — как на листе: половина вида и половина разреза (или полный) */
+  if(hzA){ const cutD=IG3.drawing(model,'topcut',W,model.hz.z), nh=IG3.drawing(model,'topNH',W), tc0=P('top',[0,0,z1],X0,TOPY), id='igsA'+Math.random().toString(36).slice(2,7), im=(dd,cp)=>`<image href="${dd.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"${cp?` clip-path="url(#${cp})"`:''}/>`;
+    o+=sp0.H==='full'?im(cutD):sp0.H==='halfD'?`<defs><clipPath id="${id}a"><rect x="${X0}" y="${TOPY}" width="${S}" height="${f(tc0[1]-TOPY)}"/></clipPath><clipPath id="${id}b"><rect x="${X0}" y="${f(tc0[1])}" width="${S}" height="${S}"/></clipPath></defs>${im(nh,id+'a')}${im(cutD,id+'b')}`
+      :(()=>{ const xc=P('top',[sp0.tb||0,0,z1],X0,TOPY)[0]; return `<defs><clipPath id="${id}a"><rect x="${X0}" y="${TOPY}" width="${f(xc-X0)}" height="${S}"/></clipPath><clipPath id="${id}b"><rect x="${f(xc)}" y="${TOPY}" width="${S}" height="${S}"/></clipPath></defs>${im(nh,id+'a')}${im(cutD,id+'b')}`; })();
+    if(sp0.H==='half'&&sp0.tb) o+=wavyIn(model,'T',sp0.tb,(u,v)=>P('top',[u,v,z1],X0,TOPY)).svg; }
   if(kind==='given'&&model.givenKL){ o+=`<polygon points="${model.givenKL.map(p=>LF([0,p[0],p[1]]).map(f).join(',')).join(' ')}" fill="none" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/>`; const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,'#111',AX,.7); }
-  if(cut){ o+=img('left',X0+S,Y0);
+  if(cut){ o+=img(kind==='cutF'?'left0':'left',X0+S,Y0);
     /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
     if(sp.xb) o+=wavyIn(model,'F',sp.xb,(u,v)=>P('front',[u,0,v],X0,Y0)).svg; if(sp.yb) o+=wavyIn(model,'L',sp.yb,(u,v)=>P('left',[0,u,v],X0+S,Y0)).svg;
     /* оси отверстий фланца в разрезах (там, куда отверстия повёрнуты по условности) и обозначения разрезов, если плоскость — не плоскость симметрии */
@@ -31885,7 +31906,9 @@ function stepsSVG(model,st,steps){
     FL.F.forEach(h=>{ o+=L(P('front',[h.x,0,h.z0-4],X0,Y0),P('front',[h.x,0,h.z1+4],X0,Y0),'#111',AXs,.7); }); FL.L.forEach(h=>{ o+=L(P('left',[0,h.y,h.z0-4],X0+S,Y0),P('left',[0,h.y,h.z1+4],X0+S,Y0),'#111',AXs,.7); });
     const lbl=(q,t)=>`<text x="${f(q[0])}" y="${f(q[1])}" class="igs-let" text-anchor="middle">${t}–${t}</text>`;
     if(LT.f) o+=secMark(P('top',[rr,0,z1],X0,TOPY),P('top',[-rr,0,z1],X0,TOPY),Km,LT.f)+lbl([P('front',[0,0,z1],X0,Y0)[0],P('front',[0,0,z1],X0,Y0)[1]-12],LT.f);
-    if(LT.p) o+=secMark(P('top',[0,-rr,z1],X0,TOPY),P('top',[0,rr,z1],X0,TOPY),Km,LT.p)+lbl([P('left',[0,0,z1],X0+S,Y0)[0],P('left',[0,0,z1],X0+S,Y0)[1]-12],LT.p); }
+    if(LT.p&&kind!=='cutF') o+=secMark(P('top',[0,-rr,z1],X0,TOPY),P('top',[0,rr,z1],X0,TOPY),Km,LT.p)+lbl([P('left',[0,0,z1],X0+S,Y0)[0],P('left',[0,0,z1],X0+S,Y0)[1]-12],LT.p);
+    if(hzA&&LT.h){ const y=P('front',[0,0,model.hz.z],X0,Y0)[1], xl=P('front',[b[0][0]-5,0,0],X0,Y0)[0], xr=P('front',[b[1][0]+5,0,0],X0,Y0)[0], tc1=P('top',[0,0,z1],X0,TOPY), yTop=P('top',[0,b[1][1],z1],X0,TOPY)[1];
+      o+=secMark([xl,y],[xr,y],Km,LT.h,HL)+`<text x="${f(tc1[0]+(LT.p?24*Km+10:0))}" y="${f(yTop-14)}" class="igs-let" text-anchor="middle">${LT.h}–${LT.h}</text>`; } }   /* как на листе: правее штриха профильного разреза */
   /* вид слева по элементам: построенные раньше — чёрным, текущий — цветом */
   let view='';
   if(kind==='feat'){ const u=stepLines(model,st[3]), sw=d.left0.sw, g=(pp,cl)=>(pp.h?`<path d="${pp.h}" fill="none" stroke="${cl}" stroke-width="${f(sw*(cl==='#111'?0.45:0.65))}" stroke-dasharray="${f(2.5*d.left0.mm)} ${f(1.1*d.left0.mm)}"/>`:'')+(pp.v?`<path d="${pp.v}" fill="none" stroke="${cl}" stroke-width="${f(sw)}" stroke-linecap="round" stroke-linejoin="round"/>`:'');
@@ -31894,7 +31917,7 @@ function stepsSVG(model,st,steps){
   const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
   const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0], noT=kind==='given'&&model.noTop; if(!noT) o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
   if(kind==='top') [b[0][0],b[1][0]].forEach(x=>{ o+=L(FR([x,0,z0]),TP([x,b[1][1],z1]),AC,null,1); });   /* построение вида сверху: ширины — вертикальными линиями связи */
-  if(kind!=='given'&&kind!=='top'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
+  if(kind!=='given'&&kind!=='top'&&kind!=='topk'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
   /* как в задании: оси отверстий и центровая окружность на виде сверху, след плоскости А на главном виде — с первого шага */
   { const Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10, dn={};
     if(!noT) holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), q=TP([h.x,h.y,z1]), a=h.r+3, ux=h.x/R, uy=h.y/R;
@@ -31903,7 +31926,16 @@ function stepsSVG(model,st,steps){
     if(model.sec&&kind!=='sec'){ const [[x1,za],[x2,zb]]=model.sec.p; o+=secMark(FR([x1,0,za]),FR([x2,0,zb]),Km,secL(model)); } }
   /* точки текущего элемента: P″ на главном виде, P′ на виде сверху, P‴ на виде слева.
      Высота — горизонтальной линией связи; глубина |y| — от оси вида сверху до P′, тот же отрезок — от оси вида слева до P‴ (засечки — равные отрезки) */
-  if(kind==='feat'){ const pts=featPts(stepLines(model,st[3]).segs); let n0=0; steps.slice(0,steps.indexOf(st)).forEach(q=>{ if(q[0]==='feat') n0+=featPts(stepLines(model,q[3]).segs).length; });
+  /* достраиваем вид сверху: построенное раньше — чёрным, текущий элемент — цветом; ширины — вертикальными линиями связи с главного вида */
+  const topPts=segs=>{ const P0=[]; segs.forEach(q=>P0.push(q.a3,q.b3)); if(!P0.length) return []; const xs=[...new Set(P0.map(p=>Math.round(p[0]*10)/10))].sort((a,c)=>a-c), X=[xs[0],xs[xs.length-1]].filter((v,i,a)=>a.indexOf(v)===i);
+    return X.map(x=>P0.filter(p=>Math.abs(p[0]-x)<0.06).sort((a,c)=>a[1]-c[1])[0]); };
+  const nBefore=()=>{ let n=0; steps.slice(0,steps.indexOf(st)).forEach(q=>{ if(q[0]==='feat') n+=featPts(stepLines(model,q[3]).segs).length; if(q[0]==='topk') n+=topPts(topLines(model,q[3]).segs).length; }); return n; };
+  if(kind==='topk'){ const sw=d.top.sw, g=(pp,cl)=>(pp.h?`<path d="${pp.h}" fill="none" stroke="${cl}" stroke-width="${f(sw*(cl==='#111'?0.45:0.65))}" stroke-dasharray="${f(2.5*d.top.mm)} ${f(1.1*d.top.mm)}"/>`:'')+(pp.v?`<path d="${pp.v}" fill="none" stroke="${cl}" stroke-width="${f(sw)}" stroke-linecap="round"/>`:'');
+    let old=''; steps.slice(0,steps.indexOf(st)).forEach(q=>{ if(q[0]==='topk') old+=g(topLines(model,q[3]).cur,'#111'); });
+    const u=topLines(model,st[3]), pts=topPts(u.segs), n0=nBefore(); let gl='', t='';
+    pts.forEach((p,i)=>{ const n=n0+i+1, A2=FR(p), A1=TP(p); gl+=L(A2,A1,AC,null,.8); t+=dot(A2,'#111')+dot(A1,HL)+lab(A2,n+'″','#111',5,-6)+lab(A1,n+'′',HL,6,14); });
+    o+=gl+`<g transform="translate(${X0} ${TOPY}) scale(${k0})">${old}${g(u.cur,HL)}</g>`+t; }
+  if(kind==='feat'){ const pts=featPts(stepLines(model,st[3]).segs); const n0=nBefore();
     const tick=(a,c)=>{ const dx=c[0]-a[0], dy=c[1]-a[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*4, ny=dx/l*4; return [a,c].map(q=>L([q[0]-nx,q[1]-ny],[q[0]+nx,q[1]+ny],AC,null,1.2)).join(''); };
     let g='', t='';
     pts.forEach((p,i)=>{ const n=n0+i+1, A2=FR(p), A1=TP(p), A3=LF(p), T0=TP([p[0],0,p[2]]), L0=LF([0,0,p[2]]);
