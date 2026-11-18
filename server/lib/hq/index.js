@@ -74,7 +74,7 @@ function register(D, o) {
   const save = n => store.put('hqnodes', n);
   /* узел для ответа: без длинных полей, кроме выбранного */
   const brief = n => ({id: n.id, type: n.type, title: n.title, text: n.text, parent: n.parent || null, status: n.status, kind: n.kind || null, level: n.level || null,
-    model: n.model || null, at: n.at, rub: n.rub || 0, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null,
+    model: n.model || null, at: n.at, rub: n.rub || 0, preview: n.preview || null, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null,
     epic: n.epic || null, ekey: n.ekey || null, eorder: n.eorder || 0, core: !!n.core, deps: n.deps || [], pr: n.pr || null,
     budgetRub: n.type === 'epic' ? n.budgetRub || 0 : undefined, spentRub: n.type === 'epic' ? n.spentRub || 0 : undefined, ceil: n.type === 'session' ? n.ceil : undefined});
 
@@ -249,13 +249,15 @@ function register(D, o) {
       const names = (i.labels || []).map(l => l.name || l), was = n.status;
       n.counted = n.counted || [];
       for (const c of cs) { const m = /<!-- hq:(\{[\s\S]*?\}) -->/.exec(c.body || ''); if (!m || n.counted.includes(c.id)) continue;
-        try { const x = JSON.parse(m[1]); const rub = +x.rub || 0; await spend(rub); n.rub = Math.round(((n.rub || 0) + rub) * 100) / 100; if (x.pr) n.pr = String(x.pr).slice(0, 200); if (x.model) n.model = x.model; } catch (e) {}
+        try { const x = JSON.parse(m[1]); const rub = +x.rub || 0; await spend(rub); n.rub = Math.round(((n.rub || 0) + rub) * 100) / 100; if (x.pr) n.pr = String(x.pr).slice(0, 200); if (x.model) n.model = x.model;
+          if (x.preview) n.preview = String(x.preview).slice(0, 300); if (Array.isArray(x.shots)) n.shots = x.shots.filter(u => /^https:\/\/raw\.githubusercontent\.com\//.test(u)).slice(0, 4).map(u => String(u).slice(0, 300)); } catch (e) {}
         n.counted.push(c.id); }
       const last = cs.filter(c => !/^Перезапуск/.test(c.body || '')).slice(-1)[0];
       n.log = last ? clean((last.body || '').replace(/<!--[\s\S]*?-->/g, ''), 1500) : n.log;
       const rep = last && /^Отчёт: (.+)$/m.exec(last.body || ''); if (rep) n.report = clean(rep[1], 400);
       if (n.type === 'question') { if (names.includes('ответ')) { const a = cs.filter(c => /<!-- hq-answer -->/.test(c.body || '')).slice(-1)[0]; n.result = a ? clean(a.body.replace(/<!--[\s\S]*?-->/g, ''), 8000) : n.log; n.status = 'done'; } else if (names.includes('провал')) n.status = 'failed'; }
       else if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; }
+      else if (names.includes('отклонено') && n.status === 'review') { n.status = 'ready'; n.pr = null; n.preview = null; n.shots = null; }
       else if (n.rollback) {}
       else if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
       if (n.status === 'done' && was !== 'done') n.doneAt = now();
@@ -313,6 +315,11 @@ function register(D, o) {
     if (!T[n.status]) return;
     if (n.epic && (n.status === 'failed' || n.status === 'rolled'))
       return feed('hq', T[n.status] + ' Это задача эпика — Главный инженер разберёт причину.' + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, links: [n.url && {l: 'задача', u: n.url}].filter(Boolean)});
+    if (n.status === 'review' && n.pr) {   /* код на проверке: предпросмотр и решение владельца */
+      return feed('hq', '👀 Посмотри, как будет: «' + n.title + '».' + (n.preview ? ' Предпросмотр — по ссылке, ниже — было → стало.' : '') + ' На сайте ничего не изменится, пока не нажмёшь «Влить».' + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''),
+        {node: n.id, shots: n.shots || null, acts: [A('✅ Влить', 'merge', {id: n.id}, true), A('✖ Отклонить', 'reject', {id: n.id}), A('Открыть', 'open', {id: n.id})],
+          links: [n.preview && {l: 'предпросмотр', u: n.preview}, n.pr && {l: 'PR', u: n.pr}].filter(Boolean)});
+    }
     const acts = n.status === 'failed' ? [A('↻ Перезапустить сильнее', 'run', {id: n.id, stronger: true}, true), A('Открыть', 'open', {id: n.id})]
       : n.status === 'done' && n.pr ? [A('↩️ Откатить', 'rollback', {id: n.id})] : n.status === 'review' ? [A('Принять ✓', 'accept', {id: n.id}, true), A('Открыть', 'open', {id: n.id})] : [];
     await feed('hq', T[n.status] + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, acts, links: [n.url && {l: 'задача', u: n.url}, n.pr && {l: 'PR', u: n.pr}].filter(Boolean)});
@@ -367,6 +374,13 @@ function register(D, o) {
       await inner('POST /api/hq/node', {id: r.node.id, kind: 'code', level: 'complex'});
       const n = await getNode(r.node.id); n.spec = {title: 'Починить красную проверку main', what: 'Полная проверка сайта на main красная. Найди причину по логу и исправь код (не тесты и не baseline, если ошибка настоящая).\n\n' + clean(i.body, 3000), where: 'по логу проверки', done: ['node tests/run.js на затронутых блоках зелёный'], not: ['не отключать и не ослаблять проверки']};
       n.ready = true; n.status = 'ready'; await save(n); await feedReady(st, n); return {ok: true, node: n}; }
+    if (op === 'merge' || op === 'reject') {   /* решение владельца после предпросмотра: метка → Цех (задание merge) вливает или закрывает PR */
+      const n = await getNode(a.id); if (!n.issue || !n.pr || n.status !== 'review') fail(409, 'Решать нечего: задача не ждёт проверки.');
+      await gh('/issues/' + n.issue + '/labels', {method: 'POST', body: JSON.stringify({labels: [op === 'merge' ? 'влить' : 'отклонить']})});
+      if (op === 'reject') { n.status = 'ready'; n.pr = null; n.preview = null; n.shots = null; await save(n);
+        await feed('hq', '✖ Отклонил «' + n.title + '»: PR закроется, на сайт ничего не попадёт. Уточни ТЗ у продакта и запусти снова.', {node: n.id, acts: [A('Обсудить', 'discuss', {id: n.id}, true)]}); }
+      else await feed('hq', '⏳ Вливаю «' + n.title + '»: Цех проверит, что проверка PR зелёная, и выкатит. Напишу, когда будет на сайте.', {node: n.id});
+      return {ok: true, node: n}; }
     if (op === 'session') return {ok: true, node: await sessionStart(a)};
     if (op === 'epic') return {ok: true, node: await EP.create({title: a.title || clean(a.text, 100), text: a.text || a.title})};
     if (op === 'mkepic') {   /* «Сделать эпиком»: цель или задача карты, или разбор монолога */

@@ -138,6 +138,8 @@ body.chat main{flex:1;min-height:0;display:flex;flex-direction:column;padding-bo
 .lane .node{margin-bottom:8px}
 .shead{gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}.shead select{max-width:min(320px,100%)}
 .fi.hq.sess{border-left:4px solid var(--violet)}
+.fi .shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px;white-space:normal}.fi .shots figure{margin:0}
+.fi .shots img{width:100%;border:1px solid var(--line);border-radius:8px;display:block}.fi .shots figcaption{font-size:11px;color:var(--mut);margin-top:2px}
 #v-session .crow{flex-wrap:wrap}#v-session .crow .hint{flex-basis:100%;order:9}
 .epics{display:grid;gap:12px;margin-top:12px}.epics:empty{display:none}
 .epic{background:var(--surf2);border-radius:var(--r);padding:12px}
