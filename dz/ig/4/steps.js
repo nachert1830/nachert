@@ -74,20 +74,17 @@ function plan(model){ if(model._ig4s) return model._ig4s;
   const isTrap=K.length===4&&(Math.abs(K[0][1]-K[1][1])<0.1&&Math.abs(K[2][1]-K[3][1])<0.1);
   const isRect=isTrap&&Math.abs(K[0][0]-K[3][0])<0.1&&Math.abs(K[1][0]-K[2][0])<0.1;
   const titleOf=K=>{ const tr=K.length===4&&Math.abs(K[0][1]-K[1][1])<0.1&&Math.abs(K[2][1]-K[3][1])<0.1, rc=tr&&Math.abs(K[0][0]-K[3][0])<0.1&&Math.abs(K[1][0]-K[2][0])<0.1; return rc?'прямоугольник':tr?'трапеция':kName(K.length); };
-  /* шар: контуры K обрезаны по сфере — называем их с пределами, иначе «прямоугольник и прямоугольник» не различить */
-  const spanOf=K=>{ const R0=model.sph?model.sph.R:1e9, xs=K.map(p=>Math.max(-R0,Math.min(R0,p[0]))), zs=K.map(p=>Math.max(-R0,Math.min(R0,p[1]))); return ' (x от '+sx(Math.min(...xs))+' до '+sx(Math.max(...xs))+', z от '+sx(Math.min(...zs))+' до '+sx(Math.max(...zs))+')'; };
-  const kName2=K=>K.length>12?'дуга (цилиндр)':titleOf(K);
-  const kTitle=model.sph?KA.map(k=>kName2(k)+spanOf(k)).join('; '):multi?KA.map(titleOf).join(' и '):titleOf(K);
+  const kTitle=multi?KA.map(titleOf).join(' и '):titleOf(K);
   const zs=[].concat(...KA.map(k=>k.map(p=>p[1]))), kz0=Math.min(...zs), kz1=Math.max(...zs);
   const elK=els=>els;   /* для читаемости */
 
   /* 1. Дано */
-  ST.push({id:'given',t:'Дано и задача',d:(model.sph?'Даны главный вид (на нём профиль отверстия K) и вид сверху':model.givenTop?'Дан главный вид и вид сверху тела без выреза K':'Даны главный вид и вид сверху')+'. Построить вид слева, профильный разрез, горизонтальный разрез А–А и нанести размеры.',
+  ST.push({id:'given',t:'Дано и задача',d:(model.givenTop?'Дан главный вид и вид сверху тела без выреза K':'Даны главный вид и вид сверху')+'. Построить вид слева, профильный разрез, горизонтальный разрез А–А и нанести размеры.',
     more:`<p>${esc(tName)}: высота ${mm(z1-z0)} мм. ${multi?'Сквозные вырезы K заданы на главном виде — '+kTitle:'Сквозной вырез K задан на главном виде — '+kTitle}${K.length?' от z = '+mm(kz0)+' до z = '+mm(kz1)+' мм':''}.</p>`+(model.givenTop?'<p>На виде сверху выреза K в задании нет — его линии появятся по ходу построения, как и весь вид слева.</p>':'')+'<p>Вид слева строим справа от главного вида, на одной высоте с ним; вид сверху — под главным видом. Это и есть проекционная связь.</p>',
     F:{k:'given'},T:{k:'given'},L:{k:'none'}});
   /* 2. Анализ формы */
   { const kvOf=K=>K.map(p=>'('+(p[0]<0?'−':'')+mm(p[0])+'; '+mm(p[1])+')').join(', ');
-    ST.push({id:'anal',t:'Анализ формы',d:esc(tName)+(multi?' и '+(['','','два','три','четыре','пять','шесть'][KA.length]||KA.length)+' сквозных выреза K — '+kTitle:' и вырез K — '+kTitle)+(model.sph?' на главном виде (сквозные вдоль глубины). Каждая сторона K — плоскость уровня: шар она режет по окружности.':' на главном виде, протянутые насквозь от передней поверхности до задней.'),
+    ST.push({id:'anal',t:'Анализ формы',d:esc(tName)+(multi?' и два сквозных выреза K — '+kTitle:' и вырез K — '+kTitle)+' на главном виде, протянутые насквозь от передней поверхности до задней.',
       more:`<p><b>Тело:</b> ${esc(tName)} — габарит ${mm(b[1][0]-b[0][0])} × ${mm(b[1][1]-b[0][1])} × ${mm(z1-z0)} мм (ширина × глубина × высота).</p>`
         +KA.map((k,i)=>`<p><b>Вырез K${multi?' '+(i+1):''}</b> — ${titleOf(k)} с вершинами ${kvOf(k)} (x; z, мм).</p>`).join('')+`<p> Каждая сторона K — плоскость, перпендикулярная фронтальной плоскости π₂: на главном виде она видна линией, поэтому контур K на главном виде уже готов. На виде сверху и слева линию выреза строим по точкам — там, где эти плоскости режут грани и рёбра тела.</p>`
         +'<p>Отсюда план: сначала тело целиком на виде слева, потом характерные точки K на трёх видах, потом разрезы и размеры.</p>',
@@ -108,7 +105,7 @@ function plan(model){ if(model._ig4s) return model._ig4s;
   const ptT=o=>{ const p=o.p; return o.n+' ('+'z = '+mm(p[2])+', глубина '+(Math.abs(p[1])<0.3?'0 — на оси':mm(p[1])+' мм '+(p[1]<0?'вперёд':'назад'))+')'; };
   const BG=chunk(bodyPts,12);
   BG.forEach((g,i)=>{ const last=i===BG.length-1;
-    ST.push({id:'body',t:'Тело на виде слева'+(BG.length>1?' ('+(i+1)+' из '+BG.length+')':''),d:model.sph?'Шар на любом виде — окружность того же диаметра с центром на оси; полость — штриховая окружность. Отверстия, данные на виде сверху, переносим по точкам: высота — горизонтальной линией связи с главного вида, глубина — с вида сверху от оси (засечки).':'Каждая вершина: высота — горизонтальной линией связи с главного вида, глубина — с вида сверху от оси (засечки). Соединяем точки по рёбрам.',
+    ST.push({id:'body',t:'Тело на виде слева'+(BG.length>1?' ('+(i+1)+' из '+BG.length+')':''),d:'Каждая вершина: высота — горизонтальной линией связи с главного вида, глубина — с вида сверху от оси (засечки). Соединяем точки по рёбрам.',
       more:'<p>Точки '+g.map(ptT).join('; ')+'.</p><p>Для точки k: k″ на главном виде даёт высоту, k′ на виде сверху — глубину (расстояние от горизонтальной оси). Откладываем ту же глубину от оси вида слева — получаем k‴.</p>'+(last?'<p>Соединяем точки так же, как соединены рёбра тела. Видимые рёбра — сплошной основной линией, невидимые — штриховой.</p>':''),
       F:{k:'given'},T:{k:'given'},L:{k:'body',cur:last?bodyEl:[]},pts:g.map(o=>({o,col:C_BODY,how:'FTL'}))}); });
   /* 5–7. Вырез K: характерные точки */
@@ -142,54 +139,17 @@ function plan(model){ if(model._ig4s) return model._ig4s;
     if(o.how==='T') return t+' на '+(side?side+' ':'')+'поверхности, перпендикулярной π₁ (на виде сверху она — линия)';
     if(o.how==='L') return t+' на '+(side?side+' ':'')+'грани, перпендикулярной π₃ (на виде слева она — линия)';
     return t+' на '+(side?side+' ':'')+'поверхности тела'; };
-  /* ── шаги выреза K — по граням (стандарт docs/IG-STEPS-STANDARD.md): один шаг — одна грань K: её точки, её линии на виде
-     сверху и слева и текст про эту грань (какая плоскость, чем режет тело). Короткие стороны подряд (дуга контура) — одна
-     цилиндрическая грань. Грань без точек (сторона K вне тела) пропускается. */
-  const FACES=[]; KA.forEach((K0,ip)=>{ const n=K0.length, side=j=>[K0[j],K0[(j+1)%n]], len=j=>{ const [a,c]=side(j); return Math.hypot(c[0]-a[0],c[1]-a[1]); };
-    let j0=0; while(j0<n&&len(j0)<8&&len((j0+n-1)%n)<8) j0++; if(j0===n) j0=0;   /* начать не с середины дуги */
-    for(let t=0;t<n;){ const j=(j0+t)%n; if(len(j)>=8){ FACES.push({ip,S:[side(j)],arc:false}); t++; continue; }
-      const S0=[]; while(t<n&&len((j0+t)%n)<8){ S0.push(side((j0+t)%n)); t++; } FACES.push({ip,S:S0,arc:true}); } });
-  const onFace=(F0,p,tol)=>F0.S.some(([a,c])=>segD(p,a,c)<(tol||0.45));
-  const inPlane=(F0,p)=>F0.arc?onFace(F0,p,0.8):(()=>{ const [a,c]=F0.S[0], ux=c[0]-a[0], uz=c[1]-a[1], l=Math.hypot(ux,uz)||1; return Math.abs((p[0]-a[0])*uz-(p[2]-a[1])*ux)/l<0.5; })();
-  const SPH=model.sph, fn=v=>mm(v), rr=(R,d)=>Math.sqrt(Math.max(0,R*R-d*d));
-  const faceTxt=F0=>{ if(F0.arc){ const A=F0.S[0][0], B=F0.S[F0.S.length>>1][0], C=F0.S[F0.S.length-1][1], dd=2*(A[0]*(B[1]-C[1])+B[0]*(C[1]-A[1])+C[0]*(A[1]-B[1]))||1e-9, q2=v=>v[0]*v[0]+v[1]*v[1],
-        c=[(q2(A)*(B[1]-C[1])+q2(B)*(C[1]-A[1])+q2(C)*(A[1]-B[1]))/dd,(q2(A)*(C[0]-B[0])+q2(B)*(A[0]-C[0])+q2(C)*(B[0]-A[0]))/dd];   /* центр дуги — по трём точкам */
-      return {t:'цилиндрическая поверхность K',d:'Дуга контура K — цилиндр, перпендикулярный π₂: на главном виде он — эта дуга, на виде сверху и виде слева его линии строим по точкам.'+(SPH&&Math.hypot(c[0],c[1])<0.5?' Ось цилиндра проходит через центр шара — цилиндр выходит на сферу по окружности, на виде сверху и слева это отрезок.':'')}; }
-    const [a,c]=F0.S[0], vx=Math.abs(a[0]-c[0])<0.05, hz=Math.abs(a[1]-c[1])<0.05;
-    if(vx){ const d=a[0]; return {t:'грань x = '+sx(d),d:'Грань x = '+sx(d)+' — профильная плоскость: на виде сверху и на главном виде она — прямая, на виде слева видна в натуральную величину.'+(SPH?' Шар она режет по окружности радиуса √('+fn(SPH.R)+'² − '+fn(Math.abs(d))+'²) = '+fn(rr(SPH.R,d))+(SPH.r&&Math.abs(d)<SPH.r?', полость — радиуса '+fn(rr(SPH.r,d)):', полость не задевает')+': на виде слева — дуги этих радиусов из центра.':'')}; }
-    if(hz){ const d=a[1]; return {t:'грань z = '+sx(d),d:'Грань z = '+sx(d)+' — горизонтальная плоскость: на главном виде и виде слева она — прямая на высоте '+sx(d)+', на виде сверху видна в натуральную величину.'+(SPH?' Шар она режет по окружности радиуса √('+fn(SPH.R)+'² − '+fn(Math.abs(d))+'²) = '+fn(rr(SPH.R,d))+(SPH.r&&Math.abs(d)<SPH.r?', полость — радиуса '+fn(rr(SPH.r,d)):', полость не задевает')+': на виде сверху — дуги этих радиусов из центра.':'')}; }
-    return {t:'наклонная грань K',d:'Грань ⟂ π₂: на главном виде она — прямая (сторона K), на виде сверху и слева — фигура, которую строим по точкам.'}; };
-  /* шар: дугу среза проводят циркулем из центра известным радиусом — точки нужны только на её концах */
-  const ENDS=endsOf(kLe.concat(kTe)), isEnd=p=>!SPH||ENDS.some(q=>Math.hypot(q[0]-p[0],q[1]-p[1],q[2]-p[2])<0.45);
-  kPts.forEach(o=>{ if(!isEnd(o.p)) o.fg=1; });
-  /* конец линии грани — где она упирается в другую линию; стык двух кусков одной линии (степень 2 на этом виде) — не конец */
-  const deg=(E,p)=>E.reduce((c,e)=>c+[e.key[0],e.key[e.key.length-1]].filter(q=>Math.hypot(q[0]-p[0],q[1]-p[1],q[2]-p[2])<0.45).length,0);
-  const sphPts=F0=>{ const [a,c]=F0.S[0], C=[], R=SPH.R, r=SPH.r||0, P0=[];
-    [a,c].forEach(v=>{ if(Math.hypot(v[0],v[1])<R-0.05) C.push(v); });
-    [R,r].filter(Q=>Q>0).forEach(Q=>{ const dx=c[0]-a[0], dz=c[1]-a[1], A=dx*dx+dz*dz, B=2*(a[0]*dx+a[1]*dz), Cc=a[0]*a[0]+a[1]*a[1]-Q*Q, D0=B*B-4*A*Cc; if(D0<0) return;
-      [(-B-Math.sqrt(D0))/(2*A),(-B+Math.sqrt(D0))/(2*A)].forEach(t=>{ if(t>-1e-6&&t<1+1e-6) P0.push([a[0]+dx*t,0,a[1]+dz*t]); }); });   /* сторона K выходит на очерк сферы — одна точка на оси y = 0 */
-    C.forEach(v=>{ const rho=Math.hypot(v[0],v[1]); [R,r].filter(Q=>Q>=rho-0.05&&Q>0).forEach(Q=>{ const y=Math.sqrt(Math.max(0,Q*Q-rho*rho)); (y<0.3?[0]:[-y,y]).forEach(yy=>P0.push([v[0],yy,v[1]])); }); });
-    return uniq(P0).filter(p=>Math.abs(Jm(...p))<0.35).sort((p,q)=>(p[1]-q[1])||(q[2]-p[2])).map(p=>{ const o=reg(p); o.how=o.how||(Math.abs(p[1])<0.3?'T':(F0.S[0][0][0]===F0.S[0][1][0]?'L':'T')); o.kv=true; return o; }); };
-  const KG=[]; FACES.forEach(F0=>{ const fL=kLe.filter(e=>e.key.every(p=>inPlane(F0,p))), fT=kTe.filter(e=>e.key.every(p=>inPlane(F0,p)));
-    const keep=o=>!SPH||o.kv||[fL,fT].some(E=>{ const d=deg(E,o.p); return d===1||d>2; })||!fL.concat(fT).some(e=>e.key.some(q=>Math.hypot(q[0]-o.p[0],q[1]-o.p[1],q[2]-o.p[2])<0.45));
-    let all=kPts.filter(o=>onFace(F0,o.p)&&isEnd(o.p)&&keep(o)); kPts.filter(o=>onFace(F0,o.p)).forEach(o=>o.fg=1);
-    if(SPH&&!F0.arc) all=sphPts(F0);   /* шар: точки — где рёбра K (линии вдоль y через концы стороны) протыкают сферу и полость */
-    const g=all.filter(o=>!o.gs); all.forEach(o=>o.gs=1); if(!g.length&&!fL.length&&!fT.length) return;
-    KG.push({g,all,F0}); });
-  kPts.filter(o=>!o.fg).forEach(o=>{ const q=KG.find(G=>G.F0.ip===polyOf(o.p)); if(q){ q.g.push(o); q.all.push(o); } else KG.push({g:[o],all:[o],F0:FACES[0]||{ip:0,S:[]}}); });
-  const pastL=[], pastT=[];
-  KG.forEach(({g:kG,all,F0},gi)=>{ const ip=F0.ip, kn=multi?' '+(ip+1):'', ft=faceTxt(F0), fL=kLe.filter(e=>e.key.every(p=>inPlane(F0,p))), fT=kTe.filter(e=>e.key.every(p=>inPlane(F0,p)));
+  const KG=[]; KA.forEach((k,ip)=>chunk(kPts.filter(o=>polyOf(o.p)===ip),14).forEach(g=>KG.push({g,ip})));
+  KG.forEach(({g:kG,ip},gi)=>{ const part=KG.length>1?' ('+(gi+1)+' из '+KG.length+')':'', kn=multi?' '+(ip+1):'';
   const viaL=kG.filter(o=>o.how==='L');
-  ST.push({id:'kP',t:'Вырез K'+kn+': '+ft.t+' — точки '+all.map(o=>o.n).sort((a,c)=>a-c).join(', '),d:ft.d+' Точки '+all.map(o=>o.n).sort((a,c)=>a-c).join(', ')+' — концы её линий: переносим их по линиям связи и соединяем'+(fL.some(e=>e.h)||fT.some(e=>e.h)?' (невидимое — штриховой)':'')+'.',
-    kSide:F0.S,
+  ST.push({id:'kP',t:'Вырез K'+kn+': точки '+(kG.length>1?kG[0].n+'–'+kG[kG.length-1].n:kG[0].n)+part,d:'На главном виде точки выреза уже видны: вершины K и места, где стороны K выходят на поверхность тела. Переносим их на вид сверху и вид слева по линиям связи; глубину — засечками от оси.'+(viaL.length?' Точки на гранях ⟂ π₃ сначала находим на виде слева (грань там — линия), потом глубину переносим на вид сверху.':''),
     more:'<p><b>Что за точки</b> (передняя и задняя совпадают на главном виде: видимая подписана первой, невидимая — в скобках):</p><ul>'+(()=>{ const G=[]; kG.forEach(o=>{ const w=where(o), g=G.find(q=>q.w===w); if(g) g.L.push(o); else G.push({w,L:[o]}); }); return G.map(g=>`<li><b>${g.L.map(o=>o.n).join(', ')}</b> — ${g.w} (${g.L.map(o=>o.n+': x = '+sx(o.p[0])+', z = '+mm(o.p[2])).join('; ')}).</li>`).join(''); })()+'</ul><p><b>Как найти</b> на виде сверху:</p>'+'<ul>'+['edge','T','L','P','vis'].map(h=>{ const g=kG.filter(o=>o.how===h); if(!g.length) return ''; const nm=g.map(o=>o.n+'′').join(', '), dp=g.map(o=>o.n+' — '+(Math.abs(o.p[1])<0.3?'0':mm(o.p[1]))).join('; ');
       if(h==='edge') return `<li><b>${nm}</b> — на рёбрах тела: вертикальная линия связи от k″ до проекции ребра на виде сверху.</li>`;
       if(h==='T') return `<li><b>${nm}</b> — на поверхности ⟂ π₁: сверху она видна линией, вертикальная линия связи от k″ упирается в неё.</li>`;
       if(h==='L') return `<li><b>${nm}</b> — на гранях ⟂ π₃: горизонтальная линия связи от k″ до линии грани на виде слева даёт k‴; глубину от оси вида слева откладываем от оси вида сверху и опускаем вертикальную линию связи от k″. Глубины, мм: ${dp}.</li>`;
       if(h==='P') return `<li><b>${nm}</b> — на поверхности общего положения: через точку проводим параллель (горизонтальное сечение тела на её высоте) — на виде сверху это контур сечения; k′ — на нём, на вертикальной линии связи от k″.</li>`;
       return '<li><b>'+nm+'</b> — точки смены видимости: вертикальная линия связи от k″, глубина — как у точки над ней ('+g.map(o=>o.n+' — как '+(o.by?o.by.n:'?')).join('; ')+').</li>'; }).join('')+'</ul>'+'<p>На виде слева: высота — горизонтальной линией связи с главного вида, глубина — та же, что на виде сверху, от оси.</p>',
-    F:{k:'given',kHL:1},T:{k:'given',addP:pastT.slice(),add:fT,col:C_K},L:{k:'body',addP:pastL.slice(),add:fL,col:C_K},pts:kG.map(o=>({o,col:C_K,how:o.how==='L'?'FLT':'FTL',par:o.how==='P'}))});
-  pastL.push(...fL); pastT.push(...fT);
+    F:{k:'given',kHL:1},T:{k:'given'},L:{k:'body'},pts:kG.map(o=>({o,col:C_K,how:o.how==='L'?'FLT':'FTL',par:o.how==='P'}))});
   });
   /* 8. Линии выреза */
   const hidK=kLe.some(e=>e.h), visK=kLe.some(e=>!e.h);
@@ -259,12 +219,10 @@ function svg(model,PL,i,opt){ opt=opt||{}; const ST=PL.ST, st=ST[i], D=PL.D, sp=
     const m=e.path[Math.floor(e.path.length/2)], q=[ox+m[0]*k0,oy+m[1]*k0], r=6; if(XS.some(p=>Math.hypot(p[0]-q[0],p[1]-q[1])<18)) return ''; XS.push(q); return L([q[0]-r,q[1]-r],[q[0]+r,q[1]+r],RED,2)+L([q[0]-r,q[1]+r],[q[0]+r,q[1]-r],RED,2); };
   let o='', aux='', top='';
   /* главный вид */
-  const kOutline0=()=>(model.kp||[]).map(K=>`<polygon points="${K.map(p=>FR([p[0],b[0][1],p[1]]).map(f).join(',')).join(' ')}" fill="${C_K}" fill-opacity=".08" stroke="${C_K}" stroke-width="2.6" stroke-linejoin="round"/>`).join('')
-  const kOutline=()=>model.sph?`<defs><clipPath id="ig4kc${i}"><circle cx="${f(FR([0,0,0])[0])}" cy="${f(FR([0,0,0])[1])}" r="${f(model.sph.R*Km)}"/></clipPath></defs><g clip-path="url(#ig4kc${i})">${kOutline0()}</g>`:kOutline0();   /* шар: контур K — только в пределах шара */
+  const kOutline=()=>(model.kp||[]).map(K=>`<polygon points="${K.map(p=>FR([p[0],b[0][1],p[1]]).map(f).join(',')).join(' ')}" fill="${C_K}" fill-opacity=".08" stroke="${C_K}" stroke-width="2.6" stroke-linejoin="round"/>`).join('');
   if(st.F.k==='sec'){ const d=IG3.drawing(model,sp.fk,W,0,sp.xb); o+=`<image href="${d.url}" x="${X0}" y="${Y0}" width="${S}" height="${S}"/>`; if(sp.xb) o+=IGUI.wavyIn(model,'F',sp.xb,(u,v)=>FR([u,0,v])).svg; }
   else o+=grp(X0,Y0,lines(D.F,INK));
   if(st.F.kHL) o+=kOutline();
-  if(st.kSide) o+=st.kSide.map(([a2,c2])=>L(FR([a2[0],b[0][1],a2[1]]),FR([c2[0],b[0][1],c2[1]]),C_K,5)).join('');   /* грань текущего шага — толстой линией */
   o+=L(FR([0,0,z0-6]),FR([0,0,z1+6]),INK,.7,AX);
   if(st.F.aa!=null){ const xs=[b[0][0]-6,b[1][0]+6]; o+=IGUI.secMark(FR([xs[1],0,st.F.aa]),FR([xs[0],0,st.F.aa]),Km,(model.hz&&model.hz.L)||'А',st.id==='aa'?C_AA:INK); }
   /* вид сверху */
@@ -276,7 +234,7 @@ function svg(model,PL,i,opt){ opt=opt||{}; const ST=PL.ST, st=ST[i], D=PL.D, sp=
       +(H==='full'?img(cut):`<g clip-path="url(#${id}a)">${img(top0)}</g><g clip-path="url(#${id}b)">${img(cut)}</g>`);
     if(sp.tb) o+=IGUI.wavyIn(model,'T',sp.tb,(u,v)=>TP([u,v,z1])).svg;
     const L0=(model.hz.L||'А'), yTop=Math.min(TP([0,b[1][1],z1])[1],TP([0,b[0][1],z1])[1]); o+=`<text x="${f(tc[0])}" y="${f(yTop-12)}" class="igs-let" text-anchor="middle">${L0}–${L0}</text>`; }
-  else { o+=grp(X0,TOPY,lines(PL.D.GT,INK)); if(st.T.addP) o+=grp(X0,TOPY,st.T.addP.map(e=>pathEl(e,INK)).join('')); if(st.T.add) o+=grp(X0,TOPY,st.T.add.map(e=>pathEl(e,st.T.col||INK)).join(''));
+  else { o+=grp(X0,TOPY,lines(PL.D.GT,INK)); if(st.T.add) o+=grp(X0,TOPY,st.T.add.map(e=>pathEl(e,st.T.col||INK)).join(''));
     if(st.T.er) o+=grp(X0,TOPY,st.T.er.map(e=>pathEl(e,PAST)).join(''))+st.T.er.map(e=>cross(e,X0,TOPY)).join('');
     if(st.T.hl) o+=grp(X0,TOPY,st.T.hl.map(e=>pathEl(e,st.T.hlc,1.15)).join('')); }
   o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],INK,.7,AX)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],INK,.7,AX);
@@ -289,7 +247,6 @@ function svg(model,PL,i,opt){ opt=opt||{}; const ST=PL.ST, st=ST[i], D=PL.D, sp=
     [a,c,a0,c0].forEach(q=>{ aux+=`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="3" fill="${C_BODY}"/>`; }); }
   if(Lk==='body'){ const idx=ST.indexOf(st), built=ST.slice(0,idx).some(s=>s.id==='body'&&s.L.cur&&s.L.cur.length);
     const cur=st.L.cur&&st.L.cur.length; if(built||cur) o+=grp(X0+S,Y0,PL.bodyEl.map(e=>pathEl(e,cur&&!built?C_BODY:INK)).join(''));
-    if(st.L.addP) o+=grp(X0+S,Y0,st.L.addP.map(e=>pathEl(e,INK)).join(''));
     if(st.L.add) o+=grp(X0+S,Y0,st.L.add.map(e=>pathEl(e,st.L.col||INK)).join(''));
     if(st.L.er) o+=grp(X0+S,Y0,st.L.er.map(e=>pathEl(e,PAST)).join(''))+st.L.er.map(e=>cross(e,X0+S,Y0)).join(''); }
   if(Lk==='img'){ o+=`<image href="${st.L.d.url}" x="${X0+S}" y="${Y0}" width="${S}" height="${S}"/>`; if(sp.yb) o+=IGUI.wavyIn(model,'L',sp.yb,(u,v)=>LF([0,u,v])).svg;

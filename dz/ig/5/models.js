@@ -85,8 +85,7 @@ function build(){
   /* тело + вырезы K; hz — уровень разреза А–А; vk — K виден на виде сверху (на данном виде сверху он уже есть), kl — на виде слева (дан профиль K) */
   const add=(n,o)=>{ const body=o.body, tree=S(body,...o.cut), H=o.H;
     V[n]=Object.assign({n},o,{tree,hz:{L:'А',z:o.hz},spec:{F:o.sf||'half',L:o.sl||'half'},hzRight:!o.hzFull,givenTop:o.vk?undefined:body});
-    if(o.kl){ V[n].givenKL=o.cut[0].ptsL; V[n].givenF=o.body; }
-    if(!o.kl&&!o.vk){ V[n].outer=body; V[n].kp=o.cut.map(c=>c.pts).filter(Boolean); }   /* подробные шаги ДЗ 4 (dz/ig/4/steps.js): тело без K и контуры K на главном виде */   /* на виде слева в задании дан только профиль K */
+    if(o.kl){ V[n].givenKL=o.cut[0].ptsL; V[n].givenF=o.body; }   /* на виде слева в задании дан только профиль K */
     V[n].dims=o.dims||autoDims(Object.assign({skipTop:o.skipTop},o),o.cut.map(c=>c.pts).filter(Boolean));
     delete V[n].body; delete V[n].cut; delete V[n].kl; delete V[n].vk; };
   const Kf=(pts)=>K(pts);
