@@ -110,6 +110,48 @@ jobs:
           gh issue comment "$N" --body-file /tmp/c.md
           gh issue edit "$N" --remove-label "эпик" >/dev/null 2>&1 || true   # следующий переплан снова поставит метку и запустит план
 
+  session:
+    # Сеанс владельца с исполнителем (Штаб → вкладка «Сеанс»): метка «сеанс» → tools/hq-agent.js --session ждёт реплик «💬 Владелец: …»
+    # в Issue, отвечает комментариями <!-- hq-say -->, делает правки, PR (ветка hq/session-N) и «влей» по слову владельца.
+    # 20 минут тишины — итог и выход. Очередь — своя у каждого Issue (concurrency выше).
+    if: github.event.label.name == 'сеанс'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      HQ_ISSUE: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+      # PR и слияние — токеном владельца (встроенному токену Actions создавать PR запрещено); в окружение RUN он не попадает
+      HQ_PR_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN || github.token }}
+      PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false   # токен не лежит в .git/config: исполнитель (READ, RUN) его не увидит
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Кэш браузера
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
+      - name: Сеанс
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          test -n "$PROXYAPI_KEY" || { echo "::error::Нет секрета PROXYAPI_KEY"; exit 1; }
+          printf '# %s\n\n%s\n' "$TITLE" "$BODY" > /tmp/hq-task.md; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
+          M=$(echo "$LABELS" | tr ',' '\n' | sed -n 's/^исп://p' | head -1)
+          { [ -d node_modules/playwright ] || npm install --no-save --no-package-lock playwright@1.47.2 acorn@8; npx playwright install --with-deps chromium; } >/dev/null 2>&1
+          node tools/hq-agent.js --session --model "${M:-opus}" --task /tmp/hq-task.md || {
+            gh issue comment "$HQ_ISSUE" --body "⚠️ Сеанс оборвался — смотри лог задания. Начни новый сеанс в Штабе. <!-- hq-say --> <!-- hq-session-end --> <!-- hq:{\"rub\":0} -->"; exit 1; }
+          gh issue close "$HQ_ISSUE" >/dev/null 2>&1 || true
+
   rollback:
     # Откат выкатки из Штаба: метка «откат» → revert слитого PR → быстрые тесты → main → метка «откачено»
     if: github.event.label.name == 'откат' || github.event_name == 'workflow_dispatch'

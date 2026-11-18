@@ -310,3 +310,43 @@ test('Эпик: таймер сервера (remind) двигает эпик б�
   await c.call('POST','/api/hq/act',{op:'epicok',a:{id:e.id}},{as:'owner'}); let k=await byKey(c,e);
   finish(n,k.t1,true); c.clock.t+=15*60e3; await c.app.remind(); k=await byKey(c,e);
   assert.equal(k.t1.status,'done'); assert.equal(k.t2.status,'running','следующая задача запущена таймером'); });
+
+/* ── сеанс с исполнителем ── */
+test('Сеанс: Секретарь «session» → Issue «сеанс» с первой репликой; реплика → комментарий; ответ → лента с ценой; потолок → пауза', async()=>{ const {c,n}=await setup();
+  n.replies.push({intent:'session',text:'Почему не печатается лист ДЗ 3? Давай разберёмся',reply:'Открываю сеанс.'});
+  let r=await c.call('POST','/api/hq/talk',{text:'давай поработаем вместе: почему не печатается лист ДЗ 3? давай разберёмся'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const s=(await nodesOf(c)).find(x=>x.type==='session'); assert.ok(s,'сеанс создан'); assert.equal(s.status,'running'); assert.equal(s.model,'opus','по умолчанию — Главный инженер'); assert.equal(s.ceil,300);
+  const iss=n.issues[s.issue]; assert.match(iss.body,/hq-session:\{"ceil":300\}/); assert.deepEqual(iss.labels.map(l=>l.name).sort(),['исп:opus','сеанс'].sort());
+  const posts=()=>n.calls.filter(x=>x.method==='POST'&&new RegExp('/issues/'+s.issue+'/comments$').test(x.url)).map(x=>x.body.body);
+  assert.equal(posts()[0],'💬 Владелец: Почему не печатается лист ДЗ 3? Давай разберёмся');
+  /* метка «сеанс» ставится после первой реплики */
+  const iLabel=n.calls.findIndex(x=>new RegExp('/issues/'+s.issue+'/labels$').test(x.url)), iFirst=n.calls.findIndex(x=>x.method==='POST'&&new RegExp('/issues/'+s.issue+'/comments$').test(x.url)); assert.ok(iFirst<iLabel);
+  let f=await feedOf(c); assert.equal(f[f.length-1].acts[0].op,'opensession');
+  /* реплика из вкладки «Сеанс» → комментарий в Issue; «Влей» и «Стоп» — тоже */
+  r=await c.call('POST','/api/hq/session',{id:s.id,text:'и покажи строку'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  await c.call('POST','/api/hq/session',{id:s.id,op:'merge'},{as:'owner'});
+  assert.deepEqual(posts().slice(1),['💬 Владелец: и покажи строку','💬 Владелец: влей']);
+  /* ответ исполнителя → в чате сеанса и в ленте с ценой хода и сеанса; цена считается один раз */
+  n.commentsBy={[s.issue]:[{id:1,body:'💬 Владелец: Почему не печатается лист ДЗ 3?'},{id:2,body:'Лист ломает @page в index.html:1234.\n\n_Ход ~4.2 ₽ · сеанс ~4.2 ₽_\n<!-- hq-say --> <!-- hq:{"rub":4.2,"total":4.2,"pr":"https://github.com/x/pull/77"} -->'}]};
+  const before=(await c.call('GET','/api/hq',undefined,{as:'owner'})).data.spent;
+  r=await c.call('GET','/api/hq/session?id='+s.id,undefined,{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  assert.deepEqual(r.data.msgs.map(m=>m.who),['me','hq']); assert.equal(r.data.msgs[1].text,'Лист ломает @page в index.html:1234.'); assert.equal(r.data.node.rub,4.2); assert.equal(r.data.node.pr,'https://github.com/x/pull/77');
+  await c.call('GET','/api/hq/session?id='+s.id,undefined,{as:'owner'}); assert.equal(Math.round(((await c.call('GET','/api/hq',undefined,{as:'owner'})).data.spent-before)*100)/100,4.2);
+  f=await feedOf(c); assert.match(f[f.length-1].text,/Сеанс «.*»: Лист ломает @page[\s\S]*Ход ~4\.2 ₽, сеанс ~4\.2 ₽/); assert.equal(f.filter(x=>/Лист ломает/.test(x.text)).length,1);
+  /* потолок: сеанс дороже 300 ₽ → пауза и вопрос; «продолжай» → снова идёт, потолок +50 % */
+  n.commentsBy[s.issue].push({id:3,body:'Сделал правку.\n<!-- hq-say --> <!-- hq:{"rub":300,"total":304.2} -->'});
+  r=await c.call('GET','/api/hq/session?id='+s.id,undefined,{as:'owner'}); assert.equal(r.data.node.status,'paused');
+  f=await feedOf(c); assert.match(f[f.length-1].text,/потолок 300 ₽ исчерпан/);
+  r=await c.call('POST','/api/hq/session',{id:s.id,text:'продолжай'},{as:'owner'}); assert.equal(r.data.node.status,'running'); assert.equal(r.data.node.ceil,450);
+  /* итог сеанса → закрыт */
+  n.commentsBy[s.issue].push({id:4,body:'Сеанс закрыт: 20 минут тишины. <!-- hq-say --> <!-- hq-session-end --> <!-- hq:{"rub":0,"total":304.2} -->'});
+  await sync(c); assert.equal((await nodesOf(c)).find(x=>x.id===s.id).status,'done');
+  assert.equal((await c.call('POST','/api/hq/session',{id:s.id,text:'ещё'},{as:'owner'})).status,409);
+  /* только владелец */
+  await c.member(4004); assert.equal((await c.call('GET','/api/hq/session?id='+s.id,undefined,{as:'m4004'})).status,403); });
+
+test('Сеанс: кнопка «Сеанс» с выбором исполнителя и потолок из «Сотрудников»', async()=>{ const {c,n}=await setup();
+  await c.call('POST','/api/hq/settings',{settings:{sessionRub:120}},{as:'owner'});
+  const r=await c.call('POST','/api/hq/session',{text:'Посмотрим пульт',model:'sonnet'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  assert.equal(r.data.node.model,'sonnet'); assert.equal(r.data.node.ceil,120); assert.match(n.issues[r.data.node.issue].body,/"ceil":120/);
+  const l=(await c.call('GET','/api/hq/session',undefined,{as:'owner'})).data.sessions; assert.equal(l.length,1); });
