@@ -11,7 +11,10 @@ const ROOT=path.join(__dirname,'..'), QUICK=process.argv.includes('--quick');
 const GROUPS=['core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
 const ONLY=(a=>a?new Set(a.slice(7).split(',').map(x=>x.trim()).filter(Boolean)):null)(process.argv.find(a=>a.startsWith('--only=')));
 if(ONLY){ const bad=[...ONLY].filter(g=>!GROUPS.includes(g)); if(bad.length){ console.error('Нет таких блоков: '+bad.join(', ')+'. Есть: '+GROUPS.join(', ')); process.exit(2); } }
-const on=g=>!ONLY||ONLY.has(g);
+/* время каждого блока — для раскладки потоков CI по времени (строка «Время блоков» в конце) */
+const TIME={}; let curG=null, curT=0;
+const mark=g=>{ const t=Date.now(); if(curG) TIME[curG]=(TIME[curG]||0)+(t-curT); curG=g; curT=t; };
+const on=g=>{ if(ONLY&&!ONLY.has(g)) return false; mark(g); return true; };
 /* --json=файл — все замеры одной записью (для тезисов и отчётов: каждое число — с коммитом, на котором оно получено) */
 const JSONOUT=(process.argv.find(a=>a.startsWith('--json='))||'').slice(7), M={};
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.webmanifest':'application/manifest+json','.txt':'text/plain'};
@@ -304,6 +307,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     fs.writeFileSync(JSONOUT,JSON.stringify({commit,date:new Date().toISOString(),quick:QUICK,info,fail,M},null,1)); }
   await browser.close(); srv.close();
   if(ONLY) info.unshift('Выборочная проверка: '+[...ONLY].join(', '));
+  mark(null); info.push('Время блоков, с: '+Object.entries(TIME).sort((a,b)=>b[1]-a[1]).map(([g,ms])=>g+' '+Math.round(ms/1000)).join(', '));
   console.log(info.join('\n'));
   /* длинный список одного раздела — первые 25 строк и число остальных: лог CI обрезается, и иначе не видно других разделов */
   if(fail.length){ const by={}; fail.forEach(f=>{ const g=f.split(' · ')[0]; (by[g]=by[g]||[]).push(f); });

@@ -69,11 +69,21 @@ jobs:
         if: steps.s.outputs.groups != ''
         with:
           node-version: 20
+      # браузер и пакеты — из кэша (скачиваются один раз на версию, а не в каждом потоке каждого запуска)
+      - name: Кэш браузера
+        if: steps.s.outputs.groups != ''
+        id: pw
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
       - name: Браузер для проверки
         if: steps.s.outputs.groups != ''
         run: |
-          npm install --no-save --no-package-lock playwright@1.47.2 acorn@8
-          npx playwright install --with-deps chromium
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then npx playwright install-deps chromium >/dev/null
+          else npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 && npx playwright install --with-deps chromium; fi
       - name: Проверка
         if: steps.s.outputs.groups != ''
         run: node tests/run.js --only=${{ steps.s.outputs.groups }} 2>&1 | tee /tmp/check.log; exit ${PIPESTATUS[0]}
