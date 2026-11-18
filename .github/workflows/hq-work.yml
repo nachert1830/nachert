@@ -165,8 +165,8 @@ jobs:
             # (две попытки DeepSeek стоят копейки, а шанс сделать с первого раза выше; Opus подключается реже)
             if [ $tries -eq 1 ] && echo "$m" | grep -qE '^(deepseek|dsv4|haiku|flash)$'; then
               for a in 1 2; do rm -rf /tmp/a$a; git worktree add -q -f /tmp/a$a HEAD; ln -s "$PWD/node_modules" /tmp/a$a/node_modules; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/c$a.json; done
-              (cd /tmp/a1 && HQ_COST_FILE=/tmp/c1.json HQ_DONE_FILE=/tmp/d1.txt node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/a1.log 2>&1; echo $? > /tmp/a1.rc) &
-              (cd /tmp/a2 && HQ_COST_FILE=/tmp/c2.json HQ_DONE_FILE=/tmp/d2.txt node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/a2.log 2>&1; echo $? > /tmp/a2.rc) &
+              (cd /tmp/a1 && HQ_CHECK_LOCK=/tmp/hq-check.lock HQ_COST_FILE=/tmp/c1.json HQ_DONE_FILE=/tmp/d1.txt node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/a1.log 2>&1; echo $? > /tmp/a1.rc) &
+              (cd /tmp/a2 && HQ_CHECK_LOCK=/tmp/hq-check.lock HQ_COST_FILE=/tmp/c2.json HQ_DONE_FILE=/tmp/d2.txt node tools/hq-agent.js --model "$m" --task /tmp/hq-task.md > /tmp/a2.log 2>&1; echo $? > /tmp/a2.rc) &
               wait
               node -e "const f=require('fs'),r=p=>{try{return JSON.parse(f.readFileSync(p))}catch(e){return {rub:0,calls:0,models:{}}}},t=r('/tmp/hq-cost.json');for(const p of ['/tmp/c1.json','/tmp/c2.json']){const c=r(p);t.rub=Math.round((t.rub+c.rub)*100)/100;t.calls+=c.calls;for(const k in c.models)t.models[k]=Math.round(((t.models[k]||0)+c.models[k])*100)/100}f.writeFileSync('/tmp/hq-cost.json',JSON.stringify(t))"
               PICK=""; for a in 1 2; do if [ "$(cat /tmp/a$a.rc)" = 0 ] && [ -z "$PICK" ]; then PICK=$a; fi; done
@@ -192,6 +192,9 @@ jobs:
       - name: PR, ревизор, выкатка
         if: steps.work.outputs.ok == '1'
         env:
+          # PR создаёт и вливает токен владельца: встроенному токену Actions запрещено создавать PR (настройки репозитория);
+          # PR от него запускает и проверку сайта на PR
+          GH_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN || github.token }}
           TITLE: ${{ github.event.issue.title }}
           M: ${{ steps.work.outputs.model }}
         run: |
@@ -201,7 +204,8 @@ jobs:
           git push -q -f origin "hq/issue-$N"
           git diff origin/main...HEAD > /tmp/hq.diff
           PR=$(gh pr list --head "hq/issue-$N" --json url -q '.[0].url')
-          [ -n "$PR" ] || PR=$(gh pr create --head "hq/issue-$N" --base main --title "Цех: $TITLE" --body "Задача #$N. Исполнитель: **$M**. $(cat /tmp/hq-done.txt 2>/dev/null)")
+          [ -n "$PR" ] || PR=$(gh pr create --head "hq/issue-$N" --base main --title "Цех: $TITLE" --body "Задача #$N. Исполнитель: **$M**. $(cat /tmp/hq-done.txt 2>/dev/null)" 2>/tmp/pr.err)
+          [ -n "$PR" ] || echo "- PR не создан: $(head -c 300 /tmp/pr.err)" >> /tmp/hq-log.md
           echo "PR=$PR" >> "$GITHUB_ENV"
           REV=$(node tools/hq-review.js --model sonnet --task /tmp/hq-task.md --diff /tmp/hq.diff); RC=$?
           NOTES=$(echo "$REV" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const v=JSON.parse(s);console.log((v.notes||[]).map(x=>'- '+x).join('\n'))}catch(e){console.log('- ревизор не ответил')}})")

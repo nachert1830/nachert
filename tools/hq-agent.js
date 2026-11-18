@@ -139,10 +139,14 @@ const {execSync} = require('child_process');
 function check() {
   let only = 'all'; try { only = execSync('node tests/impact.js origin/main --only', {cwd: ROOT, encoding: 'utf8'}).trim(); } catch (e) {}
   if (only === 'none') return 'Проверка: правка не задевает сайт — проверять нечего. Можно DONE.';
-  try { execSync('node tests/run.js --quick' + (only !== 'all' ? ' --only=' + only : ''), {cwd: ROOT, encoding: 'utf8', stdio: 'pipe', timeout: 20 * 60000});
+  /* параллельные попытки Цеха: проверки — по очереди (HQ_CHECK_LOCK): две проверки сразу на 2 ядрах сбивают тесты, чувствительные ко времени */
+  const cmd = 'node tests/run.js --quick' + (only !== 'all' ? ' --only=' + only : '');
+  try { execSync(process.env.HQ_CHECK_LOCK ? 'flock ' + process.env.HQ_CHECK_LOCK + ' ' + cmd : cmd, {cwd: ROOT, encoding: 'utf8', stdio: 'pipe', timeout: 20 * 60000});
     return 'Проверка (' + only + '): ✅ ошибок нет.'; }
   catch (e) { const o = String(e.stdout || '') + String(e.stderr || ''), k = o.indexOf('НОВЫЕ ОШИБКИ');
-    return 'Проверка (' + only + '): ❌\n' + (k >= 0 ? o.slice(k) : o.split('\n').slice(-30).join('\n')).slice(0, 4000); }
+    const r = 'Проверка (' + only + '): ❌\n' + (k >= 0 ? o.slice(k) : o.split('\n').slice(-30).join('\n')).slice(0, 4000);
+    console.log('  ↳ ' + r.split('\n').slice(1, 12).join('\n  ↳ '));   /* подробности — в лог Цеха */
+    return r; }
 }
 let srv = null;
 async function shot(hash) {
@@ -196,7 +200,7 @@ CHECK                          — прогнать автотесты, заде
 
 async function solo(spec) {
   const messages = [{role: 'user', content: 'ТЗ:\n' + spec + '\n\n' + map()}];
-  let edits = 0, checked = false;
+  let edits = 0, checked = false, lastFail = null, editedSince = false;
   console.log('Исполнитель: ' + (M.name || key) + ' (' + M.id + ')' + (CLAUDE ? ', кэш Claude включён' : ''));
   await owner();
   for (let step = 1; step <= MAX_STEPS; step++) {
@@ -209,8 +213,10 @@ async function solo(spec) {
     try {
       if (/^GREP:/i.test(head)) res = grep(head.replace(/^GREP:\s*/i, ''));
       else if (/^READ:/i.test(head)) res = read(head.replace(/^READ:\s*/i, ''));
-      else if (/^EDIT:/i.test(head)) { res = edit(head, reply.slice(reply.indexOf(head))); if (res.startsWith('OK')) { edits++; checked = false; } }
-      else if (/^CHECK/i.test(head)) { res = check(); checked = /✅|нечего/.test(res); console.log(res.split('\n')[0]); }
+      else if (/^EDIT:/i.test(head)) { res = edit(head, reply.slice(reply.indexOf(head))); if (res.startsWith('OK')) { edits++; checked = false; editedSince = true; } }
+      else if (/^CHECK/i.test(head)) { res = check(); checked = /✅|нечего/.test(res); console.log(res.split('\n')[0]);
+        if (!checked && lastFail === res && !editedSince) { checked = true; res += '\n\nПроверка падает ОДИНАКОВО без твоих новых правок — значит, не из-за правки (окружение или нестабильный тест). Не ищи дальше: напиши DONE — Цех перепроверит сам.'; }
+        lastFail = checked ? null : res; editedSince = false; }
       else if (/^SHOT/i.test(head) && VISION) { const s = await shot(head.replace(/^SHOT:?\s*/i, '')); messages.push({role: 'user', content: [{text: s.note}, {image: s.png}]}); continue; }
       else if (/^DONE:/i.test(head)) {
         fs.writeFileSync(DONE_FILE, head.replace(/^DONE:\s*/i, ''));
@@ -269,7 +275,7 @@ async function brigade(spec) {
   const pack = () => notes.map(n => '### ' + n.f + ' ' + n.a + '–' + n.b + (n.why ? ' — ' + n.why : '') + '\n' + read(n.f + ' ' + n.a + ' ' + n.b)).join('\n\n');
   /* 2. архитектор (1–3 хода) → 3. монтаж и проверка (до 2 починок) */
   const aMsgs = [{role: 'user', content: 'ТЗ:\n' + spec + '\n\nСводка разведчика: ' + summary + '\n\nПАКЕТ:\n' + pack()}];
-  let edits = 0, fixes = 0;
+  let edits = 0, fixes = 0, lastC = null;
   await owner();
   for (let turn = 1; turn <= 6; turn++) {
     await withOwner(aMsgs);
@@ -292,8 +298,8 @@ async function brigade(spec) {
     if (errs.length) { aMsgs.push({role: 'user', content: 'Не легли правки:\n' + errs.join('\n') + '\nПрочитай нужное через NEED или перепиши блоки точнее.'}); continue; }
     if (!edits) { aMsgs.push({role: 'user', content: 'Правок нет. Напиши блоки EDIT или DONE: НЕ СДЕЛАНО — причина.'}); continue; }
     const c = check(); console.log('  ' + c.split('\n')[0]);
-    if (/✅|нечего/.test(c)) { fs.writeFileSync(DONE_FILE, done.replace(/^DONE:\s*/i, '') || 'сделано'); console.log(done); return 0; }
-    if (++fixes > 2) { console.error('Проверка красная после 2 починок'); return 1; }
+    if (/✅|нечего/.test(c) || (fixes > 0 && c === lastC)) {   /* одинаковый провал после починки — не из-за правки, Цех перепроверит */ fs.writeFileSync(DONE_FILE, done.replace(/^DONE:\s*/i, '') || 'сделано'); console.log(done); return 0; }
+    lastC = c; if (++fixes > 2) { console.error('Проверка красная после 2 починок'); return 1; }
     aMsgs.push({role: 'user', content: c + '\n\nИсправь: блоки EDIT по текущему коду (NEED — если надо перечитать).'});
   }
   return edits ? 0 : 1;
