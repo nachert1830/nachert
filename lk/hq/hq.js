@@ -8,7 +8,7 @@
   const tok = () => { try { return localStorage.getItem('lk_tok') || ''; } catch (e) { return ''; } };
   const TYPE = {strategy: 'Стратегия', goal: 'Цель', task: 'Задача', idea: 'Идея', noise: 'Балабольство'};
   const STATUS = {new: 'новая', talk: 'обсуждаем', ready: 'ТЗ готово', assigned: 'назначена', running: 'в работе', review: 'проверить', done: 'готово', failed: 'не вышло'};
-  const S = {data: null, sel: null, node: null, tab: 'talk'};
+  const S = {data: null, sel: null, node: null, tab: 'chat', last: '', feed: []};
 
   function req(method, path, body) {
     const h = {authorization: 'Bearer ' + tok()}; if (body) h['content-type'] = 'application/json';
@@ -34,7 +34,8 @@
   function show(tab) { S.tab = tab; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'v-' + tab || !S.data; });
     try { localStorage.setItem('lk_hq_tab', tab); } catch (e) {}
-    if (tab === 'map') requestAnimationFrame(links); }
+    if (tab === 'map') requestAnimationFrame(links);
+    if (tab === 'chat') pull(true); }
   function renderAll() { fillModels(); renderDumps(); renderMap(); renderBoard(); renderStaff(); }
 
   function opts(filter, cur, extra) {
@@ -64,27 +65,76 @@
   if (!SR) say('micHint', 'В этом браузере нет живой диктовки — используй «Запись файлом» или клавиатуру.');
 
   /* запись файлом: куски по 4 минуты → Стенограф (ProxyAPI, распознавание речи) */
-  let mr = null, chunkT = null, recOn = false;
-  $('rec').onclick = async () => {
-    if (recOn) { recOn = false; clearTimeout(chunkT); mr && mr.state !== 'inactive' && mr.stop(); $('rec').classList.remove('on'); $('rec').textContent = '⏺ Запись файлом'; return; }
-    if (!window.MediaRecorder) return say('micHint', 'Запись в этом браузере недоступна', true);
-    let stream; try { stream = await navigator.mediaDevices.getUserMedia({audio: true}); } catch (e) { return say('micHint', 'Нет доступа к микрофону', true); }
-    recOn = true; $('rec').classList.add('on'); $('rec').textContent = '⏹ Остановить запись';
-    const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
-    const piece = () => { const parts = [], t0 = Date.now();
-      mr = new MediaRecorder(stream, Object.assign({audioBitsPerSecond: 32000}, mime ? {mimeType: mime} : {}));
-      mr.ondataavailable = e => e.data.size && parts.push(e.data);
-      mr.onstop = () => { const blob = new Blob(parts, {type: mr.mimeType || 'audio/webm'}); if (recOn) piece(); else stream.getTracks().forEach(t => t.stop());
-        send(blob, (Date.now() - t0) / 1000); };
-      mr.start(); chunkT = setTimeout(() => mr.state !== 'inactive' && mr.stop(), 4 * 60 * 1000); };
-    piece(); say('micHint', 'Пишу… Стенограф распознает кусками по 4 минуты');
-  };
-  function send(blob, sec) {
-    const fr = new FileReader(); fr.onload = () => { const b64 = String(fr.result).split(',')[1] || ''; say('micHint', 'Распознаю ' + Math.round(sec) + ' с…');
-      req('POST', '/api/hq/listen', {b64, mime: blob.type, sec}).then(j => { $('mono').value = ($('mono').value ? $('mono').value.replace(/\s*$/, '\n') : '') + j.text; spent(j.spent); say('micHint', 'Распознано (' + rub(j.rub) + ')'); })
-        .catch(e => say('micHint', e.message, true)); };
-    fr.readAsDataURL(blob);
+  function recorder(btn, area, hint, idle, busyTxt) {
+    let mr = null, chunkT = null, on = false;
+    btn.onclick = async () => {
+      if (on) { on = false; clearTimeout(chunkT); mr && mr.state !== 'inactive' && mr.stop(); btn.classList.remove('on'); btn.textContent = idle; return; }
+      if (!window.MediaRecorder) return say(hint, 'Запись в этом браузере недоступна', true);
+      let stream; try { stream = await navigator.mediaDevices.getUserMedia({audio: true}); } catch (e) { return say(hint, 'Нет доступа к микрофону', true); }
+      on = true; btn.classList.add('on'); btn.textContent = busyTxt;
+      const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+      const piece = () => { const parts = [], t0 = Date.now();
+        mr = new MediaRecorder(stream, Object.assign({audioBitsPerSecond: 32000}, mime ? {mimeType: mime} : {}));
+        mr.ondataavailable = e => e.data.size && parts.push(e.data);
+        mr.onstop = () => { const blob = new Blob(parts, {type: mr.mimeType || 'audio/webm'}); if (on) piece(); else stream.getTracks().forEach(t => t.stop()); send(blob, (Date.now() - t0) / 1000); };
+        mr.start(); chunkT = setTimeout(() => mr.state !== 'inactive' && mr.stop(), 4 * 60 * 1000); };
+      piece(); say(hint, 'Пишу… Стенограф распознает кусками по 4 минуты');
+    };
+    function send(blob, sec) {
+      const fr = new FileReader(); fr.onload = () => { const b64 = String(fr.result).split(',')[1] || ''; say(hint, 'Распознаю ' + Math.round(sec) + ' с…');
+        req('POST', '/api/hq/listen', {b64, mime: blob.type, sec}).then(j => { area.value = (area.value ? area.value.replace(/\s*$/, '\n') : '') + j.text; spent(j.spent); say(hint, 'Распознано (' + rub(j.rub) + ')'); })
+          .catch(e => say(hint, e.message, true)); };
+      fr.readAsDataURL(blob);
+    }
   }
+  recorder($('rec'), $('mono'), 'micHint', '⏺ Запись файлом', '⏹ Остановить запись');
+  recorder($('cRec'), $('say'), 'cHint', '⏺', '⏹');
+
+  /* ── разговор: лента, Секретарь, кнопки ── */
+  dictate($('cMic'), $('say'), on => { $('cMic').classList.toggle('on', on); $('cMic').setAttribute('aria-pressed', on); $('cMicTxt').textContent = on ? 'Стоп' : 'Говорить';
+    say('cHint', on ? 'Слушаю…' : ''); });
+  const tm = t => new Date(t).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+  function item(f) {
+    const acts = (f.acts || []).map(a => '<button class="' + (a.main ? 'primary' : 'ghost') + '" data-op="' + esc(a.op) + '" data-a="' + esc(JSON.stringify(a.a || {})) + '">' + esc(a.l) + '</button>').join('');
+    return '<div class="fi ' + f.who + (f.from === 'product' ? ' prod' : '') + '" data-fid="' + esc(f.id) + '">' +
+      (f.who === 'hq' ? '<span class="who">' + (f.from === 'product' ? 'Продакт' : 'Штаб') + '</span>' : '') + esc(f.text) +
+      (f.result ? '<div class="res">' + esc(f.result) + '</div>' : '') +
+      (f.img ? '<img alt="" src="https://raw.githubusercontent.com/nachert1830/nachert/main/' + esc(f.img) + '">' : '') +
+      ((f.links || []).length ? '<div class="lnk">' + f.links.map(l => '<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.l) + ' ↗</a>').join('') + '</div>' : '') +
+      (acts ? '<div class="acts">' + acts + '</div>' : '') + '<time>' + tm(f.at) + '</time></div>';
+  }
+  function drawFeed() {
+    $('feed').innerHTML = S.feed.length ? S.feed.map(item).join('') : '<div class="feedEmpty"><b>Говори — Штаб разберётся</b>Мысли, планы, идеи — разложу по карте. Ответы на вопросы продакта, «запускай», «что там с задачами?», «откати» — тоже сюда.</div>';
+    if (S.wait) $('feed').insertAdjacentHTML('beforeend', '<div class="fi hq wait">' + esc(S.wait) + '</div>');
+  }
+  function pull(scroll) {
+    if (!S.data) return Promise.resolve();
+    return req('GET', '/api/hq/feed' + (S.last ? '?after=' + encodeURIComponent(S.last) : '')).then(j => {
+      if (j.feed.length) { S.feed = S.feed.concat(j.feed).slice(-300); S.last = j.feed[j.feed.length - 1].id; }
+      spent(j.spent); if (j.feed.length || scroll) { drawFeed(); window.scrollTo(0, document.body.scrollHeight); }
+    }).catch(() => {});
+  }
+  function talk() {
+    const text = $('say').value.trim(); if (!text || S.wait) return;
+    $('say').value = ''; S.feed.push({id: 'tmp', who: 'me', text, at: Date.now()}); S.wait = 'Штаб думает…'; drawFeed(); window.scrollTo(0, document.body.scrollHeight);
+    req('POST', '/api/hq/talk', {text}).then(() => {}).catch(e => { S.feed.push({id: 'tmp', who: 'hq', text: '⚠️ ' + e.message, at: Date.now()}); })
+      .then(() => { S.feed = S.feed.filter(f => f.id !== 'tmp'); S.wait = null; return pull(true); }).then(() => reload().catch(() => {}));
+  }
+  $('cSend').onclick = talk;
+  $('say').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); talk(); } };
+  $('feed').addEventListener('click', e => {
+    const b = e.target.closest('[data-op]'); if (!b) return; e.stopPropagation();
+    const op = b.dataset.op, a = JSON.parse(b.dataset.a || '{}');
+    if (op === 'map') return show('map');
+    if (op === 'open') return openNode(a.id);
+    if (op === 'rollback' && !confirm('Откатить выкатку? Сайт вернётся к состоянию до неё.')) return;
+    b.disabled = true; S.wait = {discuss: 'Продакт думает…', run: 'Запускаю…', review: 'Ревизор проверяет…', split: 'Разбиваю…'}[op] || '…'; drawFeed();
+    req('POST', '/api/hq/act', {op, a}).catch(e => S.feed.push({id: 'tmp', who: 'hq', text: '⚠️ ' + e.message, at: Date.now()}))
+      .then(() => { S.feed = S.feed.filter(f => f.id !== 'tmp'); S.wait = null; return pull(true); }).then(() => reload().catch(() => {}));
+  });
+  /* новое в ленте — раз в 15 с; задачи в Цехе — статус раз в минуту (смена статуса сама пишет в ленту) */
+  setInterval(() => { if (!document.hidden && S.tab === 'chat' && !S.wait) pull(false); }, 15000);
+  setInterval(() => { if (!document.hidden && S.data && S.data.nodes.some(n => n.status === 'running' || n.status === 'review')) req('POST', '/api/hq/sync', {}).then(() => pull(false)).catch(() => {}); }, 60000);
 
   /* ── разбор монолога ── */
   $('parse').onclick = () => {

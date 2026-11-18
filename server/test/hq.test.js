@@ -5,10 +5,11 @@ const {club}=require('./helpers');
 const RO=require('../lib/hq/roster');
 
 function net(){ const n={calls:[],replies:[],issues:{},labels:[]};
-  n.fn=async(url,o)=>{ const b=o&&o.body?JSON.parse(o.body):null; n.calls.push({url,body:b,method:o&&o.method});
+  n.fn=async(url,o)=>{ let mm0; const b=o&&o.body?JSON.parse(o.body):null; n.calls.push({url,body:b,method:o&&o.method});
     if(url==='https://api.proxyapi.ru/v1/chat/completions'){ const r=n.replies.shift(); if(!r) return {status:500,json:{error:{message:'нет ответа'}}};
       return {status:200,json:{choices:[{message:{content:typeof r==='string'?r:JSON.stringify(r)},finish_reason:'stop'}],usage:{prompt_tokens:10000,completion_tokens:2000}}}; }
     const m=/^https:\/\/api\.github\.com\/repos\/nachert1830\/nachert(\/.*)$/.exec(url); if(!m) return null;
+    mm0=/^\/issues\/(\d+)$/.exec(m[1]); if(mm0&&o.method==='PATCH'){ return {status:200,json:n.issues[mm0[1]]}; }
     if(m[1]==='/issues'&&o.method==='POST'){ const num=200+Object.keys(n.issues).length; n.issues[num]={number:num,body:b.body,labels:b.labels.map(x=>({name:x})),state:'open'};
       return {status:201,json:{number:num,html_url:'https://github.com/nachert1830/nachert/issues/'+num}}; }
     let mm=/^\/issues\/(\d+)\/labels$/.exec(m[1]); if(mm){ n.issues[mm[1]].labels.push(...b.labels.map(x=>({name:x}))); return {status:200,json:[]}; }
@@ -79,3 +80,42 @@ test('Штаб: свои модели и настройки проверяютс
   const s=RO.settings({roles:{analyst:'nope',product:'opus'},custom:{'my-ds':{id:'deepseek/deepseek-r2',in:1,out:2}},staff:{code:{simple:'my-ds'}},budgetRub:-5});
   assert.equal(s.roles.analyst,'flash'); assert.equal(s.roles.product,'opus'); assert.equal(s.staff.code.simple,'my-ds'); assert.equal(s.budgetRub,1000);
   assert.equal(RO.cost(RO.MODELS.opus,{prompt_tokens:1e6,completion_tokens:0,prompt_tokens_details:{cached_tokens:9e5}},100),58); });
+
+test('Штаб: разговор — мысли → разбор в ленте; ответ продакту; «запускай» → Цех; статус и откат', async()=>{ const {c,n}=await setup();
+  /* 1. мысли: Секретарь → thoughts → Аналитик */
+  n.replies.push({intent:'thoughts'});
+  n.replies.push({summary:'Нужна кнопка поделиться',tasks:[{key:'t1',title:'Кнопка «Поделиться»',kind:'code',level:'simple'}],noise:['ну короче']});
+  let r=await c.call('POST','/api/hq/talk',{text:'ну короче нужна кнопка поделиться на разборах'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  let f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; assert.equal(f.length,2); assert.equal(f[0].who,'me'); assert.match(f[1].text,/задачи 1/);
+  const disc=f[1].acts.find(a=>a.op==='discuss'); assert.ok(disc&&disc.main); assert.equal(n.calls[0].body.model,'anthropic/claude-haiku-5-5');
+  /* 2. кнопка «Обсудить» → вопрос продакта в ленте */
+  n.replies.push({reply:'Внизу или в шапке?',spec:{title:'Кнопка «Поделиться»',what:'кнопка'},ready:false});
+  r=await c.call('POST','/api/hq/act',{op:'discuss',a:disc.a},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  /* 3. голосом ответ → Секретарь узнаёт, к какой задаче → продакт → ТЗ готово с кнопкой «Запустить» */
+  n.replies.push({intent:'answer',node:disc.a.id,text:'внизу'});
+  n.replies.push({reply:'Готово.',spec:{title:'Кнопка «Поделиться» внизу',what:'внизу',done:['копирует ссылку'],kind:'code',level:'simple'},ready:true});
+  r=await c.call('POST','/api/hq/talk',{text:'внизу давай'},{as:'owner'}); assert.equal(r.status,200);
+  assert.match(n.calls[n.calls.length-2].body.messages[1].content,new RegExp(disc.a.id),'Секретарь видит открытый вопрос и id задачи');
+  f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; const last=f[f.length-1];
+  assert.match(last.text,/ТЗ готово.*DeepSeek V3\.2, оценка ~\d/); assert.equal(last.acts[0].op,'run');
+  /* 4. «запускай» → диспетчер не нужен (вид и сложность из ТЗ) → Issue */
+  n.replies.push({intent:'run',node:disc.a.id,reply:'Запускаю.'});
+  r=await c.call('POST','/api/hq/talk',{text:'запускай'},{as:'owner'}); assert.equal(r.status,200);
+  const num=Object.keys(n.issues)[0]; assert.ok(num,'Issue создан');
+  f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; assert.match(f[f.length-1].text,/Отправил в Цех/);
+  /* 5. Цех выкатил → sync → «Готово» с кнопкой «Откатить» */
+  n.comments=[{id:7,body:'✅ <!-- hq:{"rub":2,"model":"deepseek","pr":"https://github.com/x/pull/3"} -->'}]; n.issues[num].labels.push({name:'готово'});
+  await c.call('POST','/api/hq/act',{op:'sync'},{as:'owner'});
+  f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; const done=f[f.length-1]; assert.match(done.text,/Готово.*на сайте/); assert.equal(done.acts[0].op,'rollback');
+  /* 6. откат → метка «откат» на Issue */
+  r=await c.call('POST','/api/hq/act',{op:'rollback',a:done.acts[0].a},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  assert.ok(n.issues[num].labels.some(l=>l.name==='откат'));
+  /* лента — только владельцу; after — только новое */
+  await c.member(3003); assert.equal((await c.call('GET','/api/hq/feed',undefined,{as:'m3003'})).status,403);
+  const tail=(await c.call('GET','/api/hq/feed?after='+encodeURIComponent(f[f.length-2].id),undefined,{as:'owner'})).data.feed; assert.ok(tail.length>=2); });
+
+test('Штаб: разговор — лимит бюджета пишется в ленту, а не роняет запрос', async()=>{ const {c,n}=await setup();
+  await c.call('POST','/api/hq/settings',{settings:{budgetRub:0.01}},{as:'owner'});
+  n.replies.push({intent:'thoughts'});
+  const r=await c.call('POST','/api/hq/talk',{text:'хочу новую главную страницу'},{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const f=(await c.call('GET','/api/hq/feed',undefined,{as:'owner'})).data.feed; assert.match(f[f.length-1].text,/Лимит месяца/); });

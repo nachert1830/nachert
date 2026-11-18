@@ -9,7 +9,7 @@
 <title>Штаб</title>
 <link rel="icon" href="../../icon-192.png">
 <script>try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
-<link rel="stylesheet" href="hq.css?v=1">
+<link rel="stylesheet" href="hq.css?v=2">
 </head>
 <body>
 <header class="top">
@@ -17,13 +17,27 @@
   <div class="budget" id="budget" title="Траты на ИИ в этом месяце"><span id="bTxt">—</span><i><b id="bBar"></b></i></div>
 </header>
 <nav class="tabs" id="tabs" role="tablist">
-  <button data-tab="talk" class="on" role="tab">🎙 Диктовка</button>
+  <button data-tab="chat" class="on" role="tab">💬 Разговор</button>
+  <button data-tab="talk" role="tab">🎙 Диктовка</button>
   <button data-tab="map" role="tab">🗺 Карта</button>
   <button data-tab="tasks" role="tab">📋 Задачи</button>
   <button data-tab="staff" role="tab">👥 Сотрудники</button>
 </nav>
 <main id="main">
   <div class="gate" id="gate">Загрузка…</div>
+
+  <section class="view" id="v-chat" hidden>
+    <div class="feed" id="feed"></div>
+    <div class="composer">
+      <textarea id="say" rows="2" placeholder="Говори или пиши: мысли, ответы продакту, «запускай», «что там с задачами?», «откати»…"></textarea>
+      <div class="crow">
+        <button class="mic" id="cMic" aria-pressed="false" title="Говорить"><span class="dot"></span><span id="cMicTxt">Говорить</span></button>
+        <button class="ghost mini" id="cRec" title="Длинный монолог: запись файлом">⏺</button>
+        <span class="hint" id="cHint"></span>
+        <button class="primary" id="cSend">Отправить</button>
+      </div>
+    </div>
+  </section>
 
   <section class="view" id="v-talk" hidden>
     <div class="card talk">
@@ -138,6 +152,6 @@
 <div class="scrim" id="scrim" hidden></div>
 
 <script src="../config.js"></script>
-<script src="hq.js?v=1"></script>
+<script src="hq.js?v=2"></script>
 </body>
 </html>

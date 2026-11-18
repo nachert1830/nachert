@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const RO = require('./roster'), P = require('./prompts'), L = require('./llm');
 
 const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise'];
-const STATUS = ['new', 'talk', 'ready', 'assigned', 'running', 'review', 'done', 'failed', 'archived'];
+const STATUS = ['new', 'talk', 'ready', 'assigned', 'running', 'review', 'done', 'failed', 'rolled', 'archived'];
 const id = p => p + crypto.randomBytes(6).toString('base64url');
 const clean = (s, n) => String(s == null ? '' : s).replace(/\u0000/g, '').trim().slice(0, n || 400);
 const month = t => new Date(t).toISOString().slice(0, 7);
@@ -211,22 +211,131 @@ function register(D, o) {
 
   /* 5. Статусы Цеха */
   R['POST /api/hq/sync'] = async () => {
-    const run = (await nodes()).filter(n => n.issue && ['running', 'failed', 'review'].includes(n.status));
+    const run = (await nodes()).filter(n => n.issue && (['running', 'failed', 'review'].includes(n.status) || n.rollback));
     const out = [];
     for (const n of run.slice(0, 15)) {
       const [i, cs] = await Promise.all([gh('/issues/' + n.issue), gh('/issues/' + n.issue + '/comments?per_page=50')]);
-      const names = (i.labels || []).map(l => l.name || l);
+      const names = (i.labels || []).map(l => l.name || l), was = n.status;
       n.counted = n.counted || [];
       for (const c of cs) { const m = /<!-- hq:(\{[\s\S]*?\}) -->/.exec(c.body || ''); if (!m || n.counted.includes(c.id)) continue;
         try { const x = JSON.parse(m[1]); const rub = +x.rub || 0; await spend(rub); n.rub = Math.round(((n.rub || 0) + rub) * 100) / 100; if (x.pr) n.pr = String(x.pr).slice(0, 200); if (x.model) n.model = x.model; } catch (e) {}
         n.counted.push(c.id); }
       const last = cs.filter(c => !/^Перезапуск/.test(c.body || '')).slice(-1)[0];
       n.log = last ? clean((last.body || '').replace(/<!--[\s\S]*?-->/g, ''), 1500) : n.log;
-      if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
+      if (n.rollback) { if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; } }
+      else if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
       await save(n); out.push(brief(n));
+      if (n.status !== was) await feedStatus(n);
     }
     return {ok: true, nodes: out, spent: await spent()};
   };
+  /* ── Разговор: лента, Секретарь, действия ─────────────────────────────────────────────────────────────────────────
+     Владелец говорит в одну ленту. Секретарь (дешёвая модель) понимает, что сказано: новые мысли → Аналитик; ответ на вопрос
+     продакта → Продакт этой задачи; «запускай» → Диспетчер и исполнитель; «что там» → статусы Цеха; «откати» → откат выкатки.
+     Ответы Штаба — записи ленты с кнопками (op), кнопки идут в POST /api/hq/act. Лента — таблица hqfeed. */
+  const inner = (k, b, q) => R[k]({body: JSON.stringify(b || {}), headers: {'content-type': 'application/json'}, query: q || {}});
+  let seq = 0;
+  async function feed(who, text, x) {
+    const t = now(), f = Object.assign({id: 'f' + String(t).padStart(15, '0') + '-' + (seq++ % 1000).toString().padStart(3, '0'), at: t, who, text: clean(text, 4000)}, x || {});
+    await store.put('hqfeed', f); return f;
+  }
+  const A = (l, op, a, main) => ({l, op, a: a || {}, main: !!main});
+  /* оценка цены задачи кода до запуска: ~60 тыс. токенов входа (часть — из кэша) и ~8 тыс. выхода; это ориентир, не счёт */
+  function estimate(st, k, kind) { const m = RO.model(st, k); if (!m) return 0;
+    if (m.image) return Math.round(m.perImage * st.rate * 100) / 100;
+    const [i, out] = kind === 'code' ? [60000, 8000] : [4000, 3000];
+    return Math.round(((i * (m.in || 0) * (kind === 'code' ? 0.4 : 1)) + out * (m.out || 0)) / 1e6 * st.rate * 100) / 100; }
+  const runActs = (st, n) => [A('▶ Запустить', 'run', {id: n.id}, true), A('Сменить исполнителя', 'open', {id: n.id})];
+  async function feedReady(st, n) {
+    const k = n.model || st.staff[n.kind || 'code'][n.level || 'medium'];
+    return feed('hq', 'ТЗ готово: «' + (n.spec && n.spec.title || n.title) + '». ' + RO.KINDS[n.kind || 'code'] + ', ' + RO.LEVELS[n.level || 'medium'] +
+      '. Исполнитель — ' + RO.model(st, k).name + ', оценка ~' + estimate(st, k, n.kind || 'code') + ' ₽.', {node: n.id, acts: runActs(st, n)});
+  }
+  async function feedStatus(n) {
+    const T = {done: '✅ Готово: «' + n.title + '»' + (n.pr ? ' — на сайте.' : '.'), failed: '❌ Не получилось: «' + n.title + '». ' + (n.log ? n.log.split('\n')[0] : ''),
+      review: '🔍 Проверь: «' + n.title + '».', rolled: '↩️ Откатил: «' + n.title + '». Сайт как до выкатки.', running: '⚙️ В работе: «' + n.title + '».'};
+    if (!T[n.status]) return;
+    const acts = n.status === 'failed' ? [A('↻ Перезапустить сильнее', 'run', {id: n.id, stronger: true}, true), A('Открыть', 'open', {id: n.id})]
+      : n.status === 'done' && n.pr ? [A('↩️ Откатить', 'rollback', {id: n.id})] : n.status === 'review' ? [A('Принять ✓', 'accept', {id: n.id}, true), A('Открыть', 'open', {id: n.id})] : [];
+    await feed('hq', T[n.status] + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, acts, links: [n.url && {l: 'задача', u: n.url}, n.pr && {l: 'PR', u: n.pr}].filter(Boolean)});
+  }
+
+  R['GET /api/hq/feed'] = async req => {
+    const after = String((req.query && req.query.after) || ''), all = await store.scan('hqfeed', f => !after || f.id > after);
+    return {ok: true, feed: all.sort((a, b) => a.id < b.id ? -1 : 1).slice(-200), spent: await spent()};
+  };
+
+  /* действия кнопок и Секретаря: одно место, где шаги конвейера пишут в ленту */
+  async function act(op, a) {
+    const st = await settings();
+    if (op === 'discuss') { const r = await inner('POST /api/hq/chat', {id: a.id, text: a.text || ''}); const n = r.node;
+      await feed('hq', (n.chat || []).slice(-1)[0].t, {node: n.id, from: 'product', acts: r.suggested && r.suggested.length ? [A('Разбить на подзадачи', 'split', {id: n.id})] : []});
+      if (n.ready) await feedReady(st, n); return r; }
+    if (op === 'split') { const r = await inner('POST /api/hq/chat', {id: a.id, text: 'Разбей на подзадачи, как предложил.', split: true});
+      await feed('hq', 'Разбил на ' + r.subtasks.length + ': ' + r.subtasks.map(x => '«' + x.title + '»').join(', ') + '.', {node: a.id, acts: r.subtasks.slice(0, 6).map(x => A('Обсудить «' + x.title.slice(0, 30) + '»', 'discuss', {id: x.id}))}); return r; }
+    if (op === 'run') { let n = await getNode(a.id);
+      if (a.stronger && n.model) { const up = RO.ESCALATE[n.model]; if (up) n.model = up; }
+      if (!n.kind || !n.level || !n.model) { await inner('POST /api/hq/assign', {id: n.id, ask: !n.kind || !n.level}); n = await getNode(n.id); }
+      const r = await inner('POST /api/hq/run', {id: n.id, model: a.model || n.model, restart: !!n.issue}); const m = RO.model(st, r.node.model);
+      if ((n.kind || 'code') === 'code') await feed('hq', '⚙️ Отправил в Цех: «' + n.title + '». Исполнитель — ' + m.name + '. Напишу, когда будет готово.', {node: n.id, links: [{l: 'задача', u: r.node.url}]});
+      else await feed('hq', (r.node.img ? '🖼 Нарисовал' : '📝 Написал') + ': «' + n.title + '» (' + m.name + ', ' + r.rub + ' ₽).', {node: n.id, img: r.node.img || null, result: r.node.result ? r.node.result.slice(0, 3000) : null,
+        acts: [A('Принять ✓', 'accept', {id: n.id}, true), A('Ревизор, проверь', 'review', {id: n.id}), A('↻ Ещё раз', 'run', {id: n.id})]});
+      return r; }
+    if (op === 'review') { const r = await inner('POST /api/hq/review', {id: a.id}); const v = r.node.review;
+      await feed('hq', 'Ревизор: ' + (v.ok ? '✅ соответствует ТЗ.' : '⚠️ ' + v.notes.join('; ')), {node: a.id, acts: [A('Принять ✓', 'accept', {id: a.id}, true)]}); return r; }
+    if (op === 'accept') { const r = await inner('POST /api/hq/review', {id: a.id, accept: true}); await feed('hq', '✅ Принято: «' + r.node.title + '».', {node: a.id}); return r; }
+    if (op === 'sync') { const r = await inner('POST /api/hq/sync', {}); if (!r.nodes.length) await feed('hq', 'В Цехе сейчас пусто.'); return r; }
+    if (op === 'rollback') { const n = await getNode(a.id); if (!n.issue || !n.pr) fail(400, 'Откатывать нечего: задача ещё не выкатывалась.');
+      await gh('/issues/' + n.issue + '/comments', {method: 'POST', body: JSON.stringify({body: 'Откат по просьбе владельца: ' + n.pr})});
+      await gh('/issues/' + n.issue, {method: 'PATCH', body: JSON.stringify({state: 'open'})});
+      await gh('/issues/' + n.issue + '/labels', {method: 'POST', body: JSON.stringify({labels: ['откат']})});
+      n.rollback = now(); await save(n); await feed('hq', '↩️ Откатываю «' + n.title + '»: Цех вернёт сайт как было и прогонит тесты.', {node: n.id}); return {ok: true}; }
+    if (op === 'archive') { await inner('POST /api/hq/node', {id: a.id, op: 'archive'}); await feed('hq', 'Убрал в архив.', {node: a.id}); return {ok: true}; }
+    fail(400, 'Нет такого действия.');
+  }
+  R['POST /api/hq/act'] = async req => { const b = body(req); const r = await act(String(b.op || ''), b.a || {}); return {ok: true, node: r && r.node ? brief(r.node) : null, spent: await spent()}; };
+
+  /* Секретарь: одно высказывание владельца → что делать */
+  R['POST /api/hq/talk'] = async req => {
+    const b = body(req, 200 * 1024), text = clean(b.text, 60000), st = await settings();
+    if (text.length < 2) fail(400, 'Скажи что-нибудь.');
+    await feed('me', text);
+    const ns = await nodes(), tasks = ns.filter(n => n.type === 'task');
+    const line = n => n.id + ' «' + n.title + '»';
+    const open = tasks.filter(n => n.status === 'talk' && (n.chat || []).length && n.chat[n.chat.length - 1].r === 'a').slice(-6).map(n => line(n) + ' — продакт спросил: ' + n.chat[n.chat.length - 1].t.slice(0, 300));
+    const ready = tasks.filter(n => ['ready', 'assigned'].includes(n.status)).slice(-8).map(line);
+    const running = tasks.filter(n => n.status === 'running').slice(-8).map(line);
+    const review = tasks.filter(n => n.status === 'review').slice(-6).map(line);
+    const done = tasks.filter(n => n.status === 'done' && n.pr).slice(-6).map(line);
+    const other = tasks.filter(n => ['new', 'talk'].includes(n.status)).slice(-12).map(line);
+    const lastF = (await store.scan('hqfeed', f => f.who === 'hq' && f.node)).sort((x, y) => x.id < y.id ? 1 : -1)[0];
+    const cur = lastF && tasks.find(n => n.id === lastF.node);
+    const state = ['Последняя задача в разговоре (к ней относятся «да», «давай», уточнения без названия задачи):\n' + (cur ? line(cur) + ' — статус: ' + cur.status : 'нет'), 'Ждут ответа владельца:\n' + (open.join('\n') || 'нет'), 'ТЗ готово, не запущены:\n' + (ready.join('\n') || 'нет'), 'В работе:\n' + (running.join('\n') || 'нет'),
+      'Ждут проверки владельцем:\n' + (review.join('\n') || 'нет'), 'Выкачены (можно откатить):\n' + (done.join('\n') || 'нет'), 'Прочие задачи:\n' + (other.join('\n') || 'нет')].join('\n\n');
+    let dec;
+    if (text.length > 1500) dec = {intent: 'thoughts'};     /* длинный монолог — сразу Аналитику, Секретарь не нужен */
+    else { const r = await askJson(st, b.model || st.roles.secretary, {system: P.SECRETARY, max: 600, messages: [{role: 'user', content: state + '\n\nВладелец сказал:\n' + text}]}); dec = r.data || {}; }
+    const known = id => tasks.some(n => n.id === id);
+    const say = async t => t && feed('hq', t);
+    try {
+      if (dec.intent === 'answer' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || text}); }
+      else if (dec.intent === 'discuss' && known(dec.node)) { await act('discuss', {id: dec.node, text: dec.text || ''}); }
+      else if (dec.intent === 'run' && known(dec.node)) { await say(dec.reply); await act('run', {id: dec.node, model: RO.model(st, dec.model) ? dec.model : undefined}); }
+      else if (dec.intent === 'accept' && known(dec.node)) { await act('accept', {id: dec.node}); }
+      else if (dec.intent === 'rollback' && known(dec.node)) { await act('rollback', {id: dec.node}); }
+      else if (dec.intent === 'archive' && known(dec.node)) { await act('archive', {id: dec.node}); }
+      else if (dec.intent === 'status') { await say(dec.reply); await act('sync', {}); }
+      else if (dec.intent === 'reply') { await say(dec.reply || 'Понял.'); }
+      else {
+        const r = await inner('POST /api/hq/dump', {text}); const ts = r.nodes.filter(n => n.type === 'task');
+        const c = t => r.nodes.filter(n => n.type === t).length;
+        await feed('hq', (r.dump.summary ? r.dump.summary + '\n' : '') + 'Разложил: стратегия ' + c('strategy') + ', цели ' + c('goal') + ', задачи ' + ts.length + ', идеи ' + c('idea') + ', балабольство ' + c('noise') + '.' +
+          (r.dump.questions.length ? '\n❓ ' + r.dump.questions.join('\n❓ ') : ''), {dump: r.dump.id, acts: [A('🗺 Карта', 'map', {})].concat(ts.slice(0, 6).map((n, i) => A('Обсудить «' + n.title.slice(0, 34) + '»', 'discuss', {id: n.id}, i === 0)))});
+      }
+    } catch (e) { await feed('hq', '⚠️ ' + (e.message || 'Ошибка')); if (!(e.status >= 400 && e.status < 500)) throw e; }
+    return {ok: true, spent: await spent()};
+  };
+
   /* ответы — JSON в формате сервера клуба */
   Object.keys(R).forEach(k => { D[k] = async (req, S) => o.json(200, await R[k](req, S)); });
 }
