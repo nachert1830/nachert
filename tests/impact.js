@@ -11,14 +11,15 @@ const base = process.argv.slice(2).find(a => !a.startsWith('--')) || 'origin/mai
 const sh = c => execSync(c, {cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20});
 
 const out = {all: false, groups: new Set(), server: false, why: []};
-const add = (why, ...g) => { g.forEach(x => out.groups.add(x)); out.why.push(why + ' → ' + (g.join(', ') || '—')); };
+const add = (why, ...g) => { if (g.includes('normo')) g = g.concat('normom');   /* нормоконтроль и его проверка — вместе */
+  g.forEach(x => out.groups.add(x)); out.why.push(why + ' → ' + (g.join(', ') || '—')); };
 const ALL = why => { out.all = true; out.why.push(why + ' → всё'); };
 
 /* файлы проверок → свой блок */
 const TESTS = {geometry: ['core', 'dzvar'], render: ['core'], mutate: ['core'], oracle: ['core'], euclid: ['core', 'dzvar'], arith: ['core', 'dzvar'], dz: ['core', 'dzvar'],
   'dz-run': ['dzvar'], 'variants-run': ['variants'], provenance: ['prov'], 'provenance-run': ['prov'], adequacy: ['adequacy'], random: ['random', 'gym'], 'random-run': ['random'],
   'gen-check': ['gym'], gym: ['gym'], rk2: ['rk2'], rkp: ['rkp'], live: ['live'], rkg: ['rkg'], 'ig4-steps': ['ig4'], normo: ['normo'], 'normo-model': ['normo'], 'normo-run': ['normo'],
-  'normo-mutate': ['normo'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'], colors: ['colors'], ask: ['ask'], theory: ['theory']};
+  'normo-mutate': ['normom'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'], colors: ['colors'], ask: ['ask'], theory: ['theory']};
 /* модули index.html → блоки (неизвестный модуль — всё) */
 const MODS = [[/^RKP\b/, ['rkp']], [/^RK2\b|^RKG\b/, ['rk2', 'rkg']], [/^LIVE/, ['live']], [/^IGL\b/, ['points']], [/^IGS\b/, ['igs', 'normo']],
   [/^(IGNK|IGREAD)\b/, ['normo']], [/^HWCHECK\b/, ['ng3', 'dzvar']], [/^(GEN|GYM)\b/, ['gym']], [/^(TRACK|VIEWS_PROBE)\b/, ['track']],
