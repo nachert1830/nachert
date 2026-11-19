@@ -1,0 +1,143 @@
+name: Ночная глубокая проверка
+# Каждую ночь (и вручную):
+# • вся проверка сайта трижды на одном коде — разный вердикт блока при одинаковом коде = «нестабильный тест» (tests/flaky.js);
+# • глубже, чем на PR и main: случайные варианты задач и ДЗ — по 100 на задачу (random-run, dz-run --seeds=100),
+#   мутации кода — полный замер (adequacy --per=4), числа на чертежах — полный перебор (MUTATE_SIZES, порог 95 %),
+#   «Защита точек» — 300 новых случайных точек (на PR и main — фиксированное семя, вердикт стабилен).
+# Красная — Issue «ночная проверка красная» с концом лога.
+on:
+  schedule:
+    - cron: '17 1 * * *'   # 04:17 по Москве
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+  actions: read
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.s.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: timings-latest.json
+          key: timings-${{ github.run_id }}
+          restore-keys: timings-
+      - id: s
+        run: |
+          T=tests/timings.json; [ -s timings-latest.json ] && T=timings-latest.json
+          node tests/shards.js --only=all --shards=auto --jobs=3 --target=300 --timings=$T --out=plan.json
+          echo "matrix=$(node -e "const p=require('./plan.json');process.stdout.write(JSON.stringify(p.matrix))")" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plan
+          path: plan.json
+
+  repeat:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        rep: [1, 2, 3]
+        shard: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: plan
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: pw
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
+      - run: |
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then node -e "require('playwright').chromium.launch().then(b=>b.close())" 2>/dev/null && echo "браузер запускается — системные пакеты не нужны" || npx playwright install-deps chromium >/dev/null
+          else npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 && npx playwright install --with-deps chromium; fi
+      - name: Повтор ${{ matrix.rep }}, поток ${{ matrix.shard }}
+        run: node tests/run.js --plan=plan.json --shard=${{ matrix.shard }} --jobs=3 --out=part-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rep${{ matrix.rep }}-part-${{ matrix.shard }}
+          path: part-${{ matrix.shard }}.json
+
+  deep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        what: [random, dz, adequacy, sizes, points]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: pw
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
+      - run: |
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then node -e "require('playwright').chromium.launch().then(b=>b.close())" 2>/dev/null && echo "браузер запускается — системные пакеты не нужны" || npx playwright install-deps chromium >/dev/null
+          else npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 && npx playwright install --with-deps chromium; fi
+      - name: ${{ matrix.what }}
+        run: |
+          set -o pipefail
+          case "${{ matrix.what }}" in
+            random)   node tests/random-run.js --seeds=100 ;;
+            dz)       node tests/dz-run.js --seeds=100 && node tests/dz-run.js --mutate ;;
+            adequacy) node tests/adequacy.js --per=4 --out=adequacy.json && node tests/nightly-check.js adequacy adequacy.json ;;
+            sizes)    node tests/nightly-check.js sizes ;;
+            points)   S=$(date +%s); echo "семя точек: $S (повторить: POINTS_SEED=$S node tests/run.js --only=points)"; POINTS_SEED=$S node tests/run.js --only=points ;;
+          esac 2>&1 | tee /tmp/deep.log
+      - name: Конец лога
+        if: failure()
+        run: tail -60 /tmp/deep.log > deep-${{ matrix.what }}.txt
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: deep-${{ matrix.what }}
+          path: deep-${{ matrix.what }}.txt
+
+  verdict:
+    name: Итог ночной проверки
+    needs: [plan, repeat, deep]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+      - name: Стабильность и итог
+        run: |
+          set +e
+          for r in 1 2 3; do mkdir -p rep$r; cp art/rep$r-part-*/part-*.json rep$r/ 2>/dev/null; done
+          node tests/flaky.js rep1 rep2 rep3 --plan=art/plan/plan.json 2>&1 | tee /tmp/n.log; F=${PIPESTATUS[0]}
+          for f in art/deep-*/deep-*.txt; do [ -f "$f" ] && { echo; echo "── $f"; cat "$f"; } >> /tmp/n.log; done
+          echo "plan=${{ needs.plan.result }} repeat=${{ needs.repeat.result }} deep=${{ needs.deep.result }} flaky=$F"
+          [ "$F" = 0 ] && [ "${{ needs.plan.result }}" = success ] && [ "${{ needs.repeat.result }}" = success ] && [ "${{ needs.deep.result }}" = success ]
+      - name: Красная — Issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "Ночная проверка красная (коммит ${GITHUB_SHA::7})."; echo; echo '```'; tail -80 /tmp/n.log; echo '```';
+            echo "Лог: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"; } > /tmp/b.md
+          N=$(gh issue list --label "ночь-красная" --state open --json number -q '.[0].number')
+          if [ -n "$N" ]; then gh issue comment "$N" --body-file /tmp/b.md; else gh label create "ночь-красная" >/dev/null 2>&1; gh issue create --title "Ночная проверка красная" --label "ночь-красная" --body-file /tmp/b.md; fi

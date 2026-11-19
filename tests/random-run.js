@@ -1,6 +1,7 @@
 /* node tests/random-run.js [--seeds N] — прогон случайных вариантов отдельно (в run.js он тоже есть) */
 const http=require('http'), fs=require('fs'), path=require('path');
-let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
+/* браузер — только для отдельного запуска: run.js и tests/shards.js (задание plan в CI, без Playwright) берут отсюда функции */
+const pw=()=>{ try{ return require('playwright').chromium; }catch(e){ return require('/opt/node-tools/node_modules/playwright').chromium; } };
 const R=require('./random.js'), ROOT=path.join(__dirname,'..');
 const SEEDS=+((process.argv.find(a=>/^--seeds=/.test(a))||'').split('=')[1]||12);
 function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html';
@@ -16,10 +17,15 @@ function isolate(src){
   const parts=fn.body.body.filter(iife); if(parts.length<2) return src;
   let out='', at=0; parts.forEach(n=>{ out+=src.slice(at,n.start)+'try{'+src.slice(n.start,n.end)+'}catch(e){ (window.__RVERR=window.__RVERR||[]).push(String(e&&e.message||e)); }'; at=n.end; });
   return out+src.slice(at); }
-async function runVariants(page,seeds){
-  for(const f of ['geometry','oracle']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+/* ключ блока (для раскладки по потокам и tests/timings.json) — 'n' + первый номер задачи блока; opts.elements — только эти блоки */
+function blockKeys(){ const seen={}; return R.blocks().map((b,i)=>{ const m=/\bn:(\d+)/.exec(b.src); let key=m?'n'+m[1]:'b'+i; if(seen[key]) key+='_'+i; seen[key]=1; return key; }); }
+async function runVariants(page,seeds,opts){
+  opts=opts||{}; const EL=opts.elements?new Set(opts.elements):null, KEYS=blockKeys();
+  if(!(await page.evaluate(()=>!!window.__RND_READY))){
+    for(const f of ['geometry','oracle']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+    await page.evaluate(()=>{ window.__RND_READY=1; }); }
   const res=[];
-  for(const b of R.blocks()){
+  for(const [bi,b] of R.blocks().entries()){ if(EL&&!EL.has(KEYS[bi])) continue;
     const variants=[{seed:0,src:isolate(b.src)}].concat(Array.from({length:seeds},(_,i)=>({seed:i+1,src:isolate(R.perturb(b.src,1000+i*7919).src)})));
     const r=await page.evaluate(vs=>{
       const keep=WB3.tasks.slice(), old=new Set(keep), out=[];
@@ -63,15 +69,15 @@ async function runVariants(page,seeds){
       if(moved>=Math.max(2,tot/2)&&same===moved){ const k='Задача №'+n0.key.split('|')[0]+'|число набрано вручную'; (bad[k]=bad[k]||[]).push({seed:0,msg:'«'+n0.l+'» не меняется, хотя подписанный элемент меняется'}); } });
     const still=tasks.filter(n=>!r.slice(1).some(v=>!v.err&&v.sig&&Math.abs((v.sig[n]||0)-(r[0].sig[n]||0))>1));
     if(still.length) info.push('не искажаются: '+still.join(', '));
-    res.push({line:b.line,tasks,base:[...base],bad,info,still});
+    res.push({key:KEYS[bi],line:b.line,tasks,base:[...base],bad,info,still});
   }
   return res;
 }
-module.exports={runVariants,isolate};
+module.exports={runVariants,isolate,blockKeys};
 if(require.main===module)(async()=>{
   const srv=await serve(), URL='http://127.0.0.1:'+srv.address().port+'/';
-  const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
-  const page=await browser.newPage(); await page.goto(URL); await page.waitForTimeout(1500);
+  const browser=await pw().launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
+  const page=await browser.newPage(); await page.goto(URL); await require('./ready.js')(page);
   const res=await runVariants(page,SEEDS);
   let clean=0, total=0;
   res.forEach(b=>{ total+=b.tasks.length; const ks=Object.keys(b.bad); if(b.info.length) console.log('  (задачи '+b.tasks.join(', ')+': '+b.info.join('; ')+')'); if(!ks.length){ clean+=b.tasks.length; return; }
@@ -80,4 +86,6 @@ if(require.main===module)(async()=>{
   const st=res.reduce((a,b)=>a.concat(b.still||[]),[]);
   console.log('\nЗадач в блоках без замечаний на всех вариантах: '+clean+' из '+total+'; не искажаются (данные не числами): '+(st.join(', ')||'нет'));
   await browser.close(); srv.close();
-})();
+  /* код выхода: 1 — есть замечания (ночная проверка, .github/workflows/nightly.yml) */
+  process.exit(clean<total?1:0);
+})().catch(e=>{ console.error(e); process.exit(2); });

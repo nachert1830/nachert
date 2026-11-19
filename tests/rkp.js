@@ -18,7 +18,7 @@ async function rkpCheck(page,URL){
   const bad=[], add=(name,rule,msg)=>bad.push({name,rule,msg:String(msg).slice(0,220)});
   const errs=[]; const onErr=e=>errs.push(String(e)); page.on('pageerror',onErr);
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto(URL+'#/'); await page.waitForTimeout(800);
+  await page.goto(URL+'#/'); await require('./ready.js')(page);
   await page.evaluate(()=>{ try{ localStorage.removeItem('nch2_rkp'); }catch(e){} });
   const r=await page.evaluate(()=>{ const out=[], A=(n,r,m)=>out.push([n,r,m]);
     /* своя линейная алгебра — не из сайта */

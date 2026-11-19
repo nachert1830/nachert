@@ -61,7 +61,7 @@ if(require.main===module)(async()=>{
     r.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':p.endsWith('.js')?'text/javascript':'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
   const page=await browser.newPage(); const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
-  await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await page.waitForTimeout(1500);
+  await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await require('./ready.js')(page);
   await loadAll(page);
   const r=await runVariants(page,{only,n:nn}); r.list=dataCheck().concat(r.list); const all=r.list.length; r.list=fresh(r.list);
   const by={}; r.list.forEach(x=>{ (by[x.name]=by[x.name]||[]).push(x); });

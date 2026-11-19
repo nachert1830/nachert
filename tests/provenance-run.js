@@ -29,7 +29,7 @@ if(require.main===module)(async()=>{
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
     r.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
-  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await page.waitForTimeout(1500);
+  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await require('./ready.js')(page);
   const {issues,stats}=await runProvenance(page);
   issues.forEach(o=>console.log(o.name+' | '+o.rule+' | '+o.msg));
   console.log('\nПроисхождение: точек с подписью '+stats.pts+', прослежено '+stats.traced+' ('+Math.round(100*stats.traced/Math.max(1,stats.pts))+'%); отрезков '+stats.segs+', прослежено '+stats.segTraced+' ('+Math.round(100*stats.segTraced/Math.max(1,stats.segs))+'%); замечаний '+issues.length);

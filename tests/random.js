@@ -10,7 +10,10 @@ const SRC=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 
 /* блоки верхнего уровня скриптов страницы, в которых добавляются задачи тетради (разбор — acorn) */
 let acorn; try{ acorn=require('acorn'); }catch(e){ acorn=require('/opt/node-tools/node_modules/acorn'); }
-function blocks(){
+/* разбор один на процесс: блоки нужны каждому элементу проверки (tests/run.js), а разбор страницы занимает ~0,5 с */
+let _blocks=null;
+function blocks(){ if(_blocks) return _blocks.map(b=>Object.assign({},b)); _blocks=blocks0(); return blocks(); }
+function blocks0(){
   const out=[], re=/<script>([\s\S]*?)<\/script>/g; let m;
   while((m=re.exec(SRC))){ const code=m[1], base=SRC.slice(0,m.index+8).split('\n').length;
     let ast; try{ ast=acorn.parse(code,{ecmaVersion:'latest'}); }catch(e){ continue; }

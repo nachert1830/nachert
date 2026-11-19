@@ -11,7 +11,7 @@ async function rk2Check(page,URL){
   const bad=[], add=(name,rule,msg)=>bad.push({name,rule,msg:String(msg).slice(0,200)});
   const errs=[]; const onErr=e=>errs.push(String(e)); page.on('pageerror',onErr);
   await page.emulateMedia({reducedMotion:'reduce'});   /* анимации «куда нажать» бесконечные — для нажатий в тесте их выключаем, как у пользователей с этой настройкой */
-  await page.goto(URL+'#/'); await page.waitForTimeout(800);
+  await page.goto(URL+'#/'); await require('./ready.js')(page);
   const r=await page.evaluate(()=>{ const out=[], A=(n,r,m)=>out.push([n,r,m]);
     const {MODS,Q,ITEMS,GENS}=RK2;
     /* 1. банк */

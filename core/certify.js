@@ -61,10 +61,10 @@ function certify(task,opts){
   O.O6={ok:run.minSin2>=SIN2_MIN,detail:'самое острое пересечение на эпюре '+deg.toFixed(1)+'° («'+run.minAt+'»)'};
   /* O4, O5 — опубликованное совпадает с моделью */
   if(opts.site){ const k=q(task.k), S=opts.site, miss=[];
-    Object.entries(task.site.points).forEach(([lab,nm])=>{ const pl=lab.endsWith('″')?2:1, s=S.points[lab];
+    Object.entries(task.site.points).forEach(([lab,nm])=>{ const pl=/″/.test(lab)?2:1, s=S.points[lab];
       if(!s){ miss.push('на сайте нет '+lab); return; } const m=V.num(PR[pl](run.M[nm],k)), d=Math.hypot(s[0]-m[0],s[1]-m[1]);
       if(!(d<=1e-6*Math.max(1,Math.hypot(...m)))) miss.push(lab+' сдвинута на '+(isFinite(d)?d.toFixed(3):'∞ (не число)')+' ед. чертежа'); });
-    Object.entries(task.site.lines||{}).forEach(([lab,v])=>{ const [nm,pl]=Array.isArray(v)?v:[v,lab.endsWith('″')?2:1], s=S.lines[lab]; if(!s){ miss.push('на сайте нет прямой '+lab); return; }
+    Object.entries(task.site.lines||{}).forEach(([lab,v])=>{ const [nm,pl]=Array.isArray(v)?v:[v,/″/.test(lab)?2:1], s=S.lines[lab]; if(!s){ miss.push('на сайте нет прямой '+lab); return; }
       const L=run.M[nm], p=V.num(PR[pl](L.p,k)), d=V.num(PR['dir'+pl](L.d,k)), n=Math.hypot(...d);
       s.forEach(e=>{ const off=Math.abs((e[0]-p[0])*d[1]-(e[1]-p[1])*d[0])/n; if(!(off<=1e-6*Math.max(1,Math.hypot(...e)))) miss.push('конец '+lab+' не на прямой '+nm+' ('+(isFinite(off)?off.toFixed(3):'не число')+')'); });
       /* прямая доведена до всех своих точек: каждая подписанная точка, которая по модели лежит на этой прямой, —
@@ -74,7 +74,7 @@ function certify(task,opts){
       const tp=e=>((e[0]-p[0])*d[0]+(e[1]-p[1])*d[1])/(n*n), offOf=e=>Math.abs((e[0]-p[0])*d[1]-(e[1]-p[1])*d[0])/n;
       const pieces=[[Math.min(...s.map(tp)),Math.max(...s.map(tp))]].concat((S.segs||[]).filter(g=>offOf(g.a)<1e-6*Math.max(1,n)&&offOf(g.b)<1e-6*Math.max(1,n)).map(g=>[Math.min(tp(g.a),tp(g.b)),Math.max(tp(g.a),tp(g.b))]));
       const lo=Math.min(...pieces.map(x=>x[0])), hi=Math.max(...pieces.map(x=>x[1]));
-      Object.entries(task.site.points).forEach(([pl2,pn])=>{ const pp=pl2.endsWith('″')?2:1; if(pp!==pl||!run.M[pn]||!Array.isArray(run.M[pn])) return;
+      Object.entries(task.site.points).forEach(([pl2,pn])=>{ const pp=/″/.test(pl2)?2:1; if(pp!==pl||!run.M[pn]||!Array.isArray(run.M[pn])) return;
         if(!K3.on(run.M[pn],L)&&!(task.site.on&&task.site.on[pl2+'|'+lab])) return;
         const m=V.num(PR[pl](run.M[pn],k)), t=((m[0]-p[0])*d[0]+(m[1]-p[1])*d[1])/(n*n);
         if(!pieces.some(([u,v])=>t>=u-1e-9&&t<=v+1e-9)) miss.push(lab+' не доведена до своей точки '+pl2+' (не хватает '+(Math.min(Math.abs(t-lo),Math.abs(t-hi))*n).toFixed(1)+' ед.)'); }); });

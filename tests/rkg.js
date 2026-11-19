@@ -17,7 +17,7 @@ async function rkgCheck(page,URL){
   const bad=[], add=(name,rule,msg)=>bad.push({name,rule,msg:String(msg).slice(0,200)});
   const errs=[]; const onErr=e=>errs.push(String(e)); page.on('pageerror',onErr);
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto(URL+'#/about'); await page.waitForTimeout(800);
+  await page.goto(URL+'#/about'); await require('./ready.js')(page);
   const r=await page.evaluate(()=>{ const out=[], A=(n,r,m)=>out.push([n,r,m]);
     const {TQ,TOP,MODES,build,_:X}=RKG;
     /* 1. вопросы */

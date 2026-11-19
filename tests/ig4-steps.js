@@ -7,7 +7,7 @@
 const NEED=['given','anal','axis','body','kP','kLines','secL','aa','aa2','dims','sheet'];
 async function ig4StepsCheck(page,URL,opt){ opt=opt||{}; const bad=[], add=(n,r,m)=>bad.push({name:'ДЗ 4 · шаги · в. '+n,rule:r,msg:m});
   const errs=[], onErr=e=>errs.push(String(e)); page.on('pageerror',onErr);
-  await page.goto(URL+'#/ig/dz/4/7'); await page.waitForTimeout(1500);
+  await page.goto(URL+'#/ig/dz/4/7'); await require('./ready.js')(page);
   const list=opt.only||Array.from({length:30},(_,i)=>i+1);
   for(const n of list){
     const r=await page.evaluate(n=>{ try{ const m=DZR.get('ig4').part(n), c=IG4S.coverage(m), PL=IG4S.plan(m), lab=[];
@@ -21,7 +21,7 @@ async function ig4StepsCheck(page,URL,opt){ opt=opt||{}; const bad=[], add=(n,r,
     if(r.lab.length) add(n,'подписи налезают',r.lab.slice(0,4).join('; '));
   }
   /* плеер: «Показать решение» → «По шагам» → все шаги кнопкой, «Прошлые шаги», «Все номера» */
-  { const before=errs.length; await page.goto(URL+'#/ig/dz/4/7'); await page.waitForTimeout(1200);
+  { const before=errs.length; await page.goto(URL+'#/ig/dz/4/7'); await require('./ready.js')(page);
     await page.click('#igShow'); await page.waitForTimeout(300); await page.click('button[data-t=steps]');
     await page.waitForSelector('#igbPic svg',{timeout:60000});
     let k=0; for(;k<40;k++){ const dis=await page.$eval('#igbNext',b=>b.disabled); if(dis) break; await page.click('#igbNext'); await page.waitForTimeout(80); }

@@ -7,7 +7,7 @@ async function printCheck(browser,URL){
   for(const theme of ['light','dark']) for(const h of LISTS){
     const ctx=await browser.newContext({viewport:{width:1400,height:1000},colorScheme:theme});
     const pg=await ctx.newPage(); await pg.addInitScript(t=>{ try{ localStorage.setItem('nch_theme',t); }catch(e){} },theme);
-    await pg.goto(URL+h); await pg.waitForTimeout(1800);
+    await pg.goto(URL+h); await require('./ready.js')(pg);
     const n=await pg.evaluate(()=>document.querySelectorAll('.var-sheet svg').length);
     const name='Печать '+h+' ('+(theme==='dark'?'тёмная':'светлая')+' тема)';
     if(!n){ bad.push({name,rule:'лист не найден',msg:'на странице нет .var-sheet svg'}); await ctx.close(); continue; }

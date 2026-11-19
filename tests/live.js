@@ -26,7 +26,7 @@ async function liveCheck(page,URL){
   const out=[], add=(name,rule,msg)=>out.push({name,rule,msg});
   const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.setViewportSize({width:1600,height:900});
-  await page.goto(URL+'#/live/show'); await page.waitForTimeout(1200);
+  await page.goto(URL+'#/live/show'); await require('./ready.js')(page);
   const tasks=await page.evaluate(()=>LIVESHOW._tasks.map(t=>({id:t.id,ok:t.ok,ans:t.ans,n:t.steps.length,v:t.steps.every(s=>s.v&&s.t&&s.s)})));
   const E=expected();
   tasks.forEach(t=>{ if(t.ok===false) add('эфир: задача '+t.id,'сверка с пространством','построенный чертёж не совпал с пространством');
@@ -61,7 +61,7 @@ async function liveCheck(page,URL){
   if(!pm[1]||!pm[1].live) add('карточка эфира','идёт','11.11 в 18:30 эфир идёт: '+JSON.stringify(pm[1]));
   if(pm[2]) add('карточка эфира','после','после эфира 11.11 эфиров нет (12 и 13.11 отменены), а next() вернул: '+JSON.stringify(pm[2]));
   /* раздел «Способ вращения» (#/ng/rot): 7 задач сверены с пространством, ответы пересчитаны независимо, все шаги проходятся */
-  await page.goto(URL+'#/ng/rot'); await page.waitForTimeout(900);
+  await page.goto(URL+'#/ng/rot'); await require('./ready.js')(page);
   const rot=await page.evaluate(()=>{ const out=[], T=ROT.T; if(T.length!==7) out.push('задач '+T.length+', нужно 7');
     T.forEach(t=>{ if(t.ok!==true) out.push('задача «'+t.t+'»: чертёж не совпал с пространством'); });
     const D=Math.PI/180, sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], L=a=>Math.hypot(...a), num=s=>+String(s).replace(/[^0-9,]/g,' ').trim().split(/\s+/)[0].replace(',','.');
@@ -77,10 +77,10 @@ async function liveCheck(page,URL){
     for(let k=0;k<14;k++){ const nb=await page.$('[data-rt-go="1"]:not([disabled])'); if(!nb) break; await nb.click(); } }
   if(!(await page.$('.rt-ans.show'))) add('вращение','ответ','после всех шагов ответ не показан');
   /* главная: две верхние карточки — «Как образуются поверхности» (если нет эфира) и подсвеченная «ДЗ 4 · инж. графика» */
-  { await page.goto(URL); await page.waitForTimeout(800); if(!(await page.$('.hc-ig[href="#/ig4"]'))) add('главная','карточка','нет карточки «ДЗ 4»');
+  { await page.goto(URL); await require('./ready.js')(page); if(!(await page.$('.hc-ig[href="#/ig4"]'))) add('главная','карточка','нет карточки «ДЗ 4»');
     if(!(await page.$('#rkHome a[href="#/ng/surf"], #rkHome .hc-live, #rkHome [data-live]'))&&!(await page.$('#rkHome a[href^="#/live"]'))) add('главная','карточка','нет карточки «Как образуются поверхности»'); }
   /* ДЗ №3 «Как на листе»: пять задач пирамиды на всех 30 вариантах сходятся с пространством; страница варианта открывается */
-  await page.goto(URL+'#/ng3/12/sheet'); await page.waitForTimeout(1200);
+  await page.goto(URL+'#/ng3/12/sheet'); await require('./ready.js')(page);
   const pyr=await page.evaluate(()=>{ const out=[], d=DZR.get?DZR.get('ng3'):null, V=(d&&d.V)||{};
     Object.keys(V).forEach(n=>{ try{ PYR(V[n]).forEach(t=>{ if(t.ok===false) out.push('вариант '+n+': задача «'+t.t+'» не сошлась'); }); }catch(e){ out.push('вариант '+n+': '+e.message); } });
     if(!Object.keys(V).length) out.push('нет данных вариантов ДЗ №3'); if(!document.querySelector('#dzSheetPl svg')) out.push('нет чертежа на странице варианта'); return out; });

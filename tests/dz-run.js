@@ -57,7 +57,7 @@ if(require.main===module&&!process.argv.includes("--mutate"))(async()=>{
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
     r.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
-  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await page.waitForTimeout(1500);
+  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await require('./ready.js')(page);
   await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,'dz.js'),'utf8')});
   const r=await runDzVariants(page,n);
   console.log('Вариантов: '+n+' × 4 разбора; проверено '+r.checked+', отброшено как вырожденные '+r.skipped);
@@ -113,7 +113,7 @@ if(require.main===module&&process.argv.includes('--mutate'))(async()=>{
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
     r.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
-  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await page.waitForTimeout(1500);
+  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await require('./ready.js')(page);
   for(const f of ['geometry','dz','euclid','arith']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
   const per=+((process.argv.find(a=>a.startsWith('--per='))||'').split('=')[1]||12);
   const r=await runDzMutations(page,{per}), pc=(a,n)=>a+'/'+n+' ('+Math.round(100*a/Math.max(1,n))+'%)';

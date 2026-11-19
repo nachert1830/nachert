@@ -36,10 +36,19 @@ function sites(src,rnd){
   return out;
 }
 
+/* блоки задач для мутаций: ключ элемента (для раскладки по потокам и tests/timings.json) — 'n' + первый номер задачи блока */
+function adequacyBlocks(only){ const seen={};
+  return R.blocks().map((b,i)=>{ const m=/\bn:(\d+)/.exec(b.src); let key=m?'n'+m[1]:'b'+i; if(seen[key]) key+='_'+i; seen[key]=1; return {i,key,b}; })
+    .filter(x=>!only||only.some(n=>new RegExp('n:'+n+'\\b').test(x.b.src))); }
+/* opts.elements — ключи блоков, которые выполнить (остальные только «проматываются»: генератор случайных чисел расходуется
+   так же, как при полном прогоне, — без браузера, по коду блока; поэтому части дают ровно тех же мутантов, что полный прогон).
+   Результат — по блокам (blocks[key]); mergeAdequacy складывает их в порядке блоков. Без elements — все блоки и сразу итог. */
 async function runAdequacy(page,opts){
   opts=opts||{}; const PER=opts.per||4; let seed=opts.seed||5; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);
-  for(const f of ['geometry','oracle','provenance','euclid','arith']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
-  await page.evaluate(()=>PROV_INSTRUMENT());
+  const EL=opts.elements?new Set(opts.elements):null;
+  if(!(await page.evaluate(()=>!!window.__ADQ_READY))){
+    for(const f of ['geometry','oracle','provenance','euclid','arith']) await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,f+'.js'),'utf8')});
+    await page.evaluate(()=>{ PROV_INSTRUMENT(); window.__ADQ_READY=1; }); }
   /* задачи с сертификатом (tests/certified): опубликованный чертёж каждого мутанта сверяется с доказанной моделью */
   const {certify}=require('./certified/certify.js'), CERT={}; require('./certified/run.js').TASKS.forEach(T=>CERT[T.n]=T);
   await page.evaluate(ns=>{ window.__CERT_N=ns; },Object.keys(CERT).map(Number));
@@ -77,11 +86,18 @@ async function runAdequacy(page,opts){
       res.push({n:t.n,vis:vis.join('\n'),geo:geo.sort().join('\n'),giv:giv.sort().join('\n'),old,prov,euc,site}); });
     WB3.tasks.length=0; keep.forEach(t=>WB3.tasks.push(t));
     return {err,res}; },src);
-  const by={}, survivors=[], kinds={}; let total=0, equiv=0, crashed=0;
-  const bump=(k,a,b,e)=>{ const o=by[k]=by[k]||{n:0,old:0,all:0,euc:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||e) o.euc++; };
-  const cby={}, csurv=[]; const cbump=(k,a,b,c)=>{ const o=cby[k]=cby[k]||{n:0,old:0,all:0,cert:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||c) o.cert++; };
-  for(const b of R.blocks().filter(b=>!opts.only||opts.only.some(n=>new RegExp('n:'+n+'\\b').test(b.src)))){
-    const src0=isolate(b.src), base=await run(src0); if(base.err) continue;
+  const blocks={};
+  /* состояние генератора на начало каждого блока — один проход по коду, дальше из кэша (иначе каждый элемент заново
+     разбирает все предыдущие блоки: квадратичная работа, которая к тому же держит Node и тормозит параллельные страницы) */
+  const ST=EL?seedStates(PER,opts.seed||5,opts.only):null;
+  for(const {key,b} of adequacyBlocks(opts.only)){
+    if(EL&&!EL.has(key)) continue;
+    if(ST) seed=ST[key];
+    const src0=isolate(b.src);
+    const by={}, survivors=[], kinds={}; let total=0, equiv=0, crashed=0;
+    const bump=(k,a,b,e)=>{ const o=by[k]=by[k]||{n:0,old:0,all:0,euc:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||e) o.euc++; };
+    const cby={}, csurv=[]; const cbump=(k,a,b,c)=>{ const o=cby[k]=cby[k]||{n:0,old:0,all:0,cert:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||c) o.cert++; };
+    const base=await run(src0); if(base.err){ blocks[key]={baseErr:base.err}; continue; }
     const B={}; base.res.forEach(r=>B[r.n]=r);
     const all=sites(src0,rnd), ops=[...new Set(all.map(s=>s.op))], DATA=R.dataSpans(src0);
     for(const op of ops){ const pool=all.filter(s=>s.op===op);
@@ -100,10 +116,27 @@ async function runAdequacy(page,opts){
              те же, другие только длины отрезков (эквивалентный); «пропуск» — изменилось построение, а проверка молчит */
           const cls=op==='число'&&DATA.some(([s0,e0])=>S.start>=s0&&S.end<=e0)?'данные':r.giv!==b0.giv?'условие':r.geo===b0.geo?'оформление':'пропуск';
           if(!a&&!p&&!eu){ const o=kinds[op]=kinds[op]||{}; o[cls]=(o[cls]||0)+1; const t=kinds['всего']=kinds['всего']||{}; t[cls]=(t[cls]||0)+1; }
-          if(!a&&!p&&!eu&&survivors.length<1000) survivors.push({task:'№'+r.n,op,cls,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }); } } }
-  return {by,cby,csurv,survivors,kinds,total,equiv,crashed};
+          if(!a&&!p&&!eu) survivors.push({task:'№'+r.n,op,cls,ctx:(src0.slice(Math.max(0,S.start-60),S.start)+'⟦'+src0.slice(S.start,S.end)+'→'+S.to+'⟧'+src0.slice(S.end,S.end+35)).replace(/\s+/g,' ')}); }); } }
+    blocks[key]={by,cby,csurv,survivors,kinds,total,equiv,crashed}; }
+  return opts.elements?{blocks}:mergeAdequacy(blocks,opts.only);
 }
-module.exports={runAdequacy,sites};
+/* промотка генератора: семя на начало каждого блока при полном прогоне (без браузера — расход зависит только от кода) */
+const _ST={};
+function seedStates(PER,seed0,only){ const id=PER+'|'+seed0+'|'+(only||[]).join(','); if(_ST[id]) return _ST[id];
+  let seed=seed0; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647), out={};
+  for(const {key,b} of adequacyBlocks(only)){ out[key]=seed; const all=sites(isolate(b.src),rnd), ops=[...new Set(all.map(s=>s.op))];
+    for(const op of ops){ const pool=all.filter(s=>s.op===op); for(let k=0;k<PER&&pool.length;k++) pool.splice(Math.floor(rnd()*pool.length),1); } }
+  return (_ST[id]=out); }
+/* сложить результаты блоков в порядке блоков (так же, как их считал бы один последовательный прогон) */
+function mergeAdequacy(blocks,only){
+  const by={}, cby={}, kinds={}, survivors=[], csurv=[], baseErr=[]; let total=0, equiv=0, crashed=0;
+  const addTo=(dst,src)=>Object.entries(src||{}).forEach(([k,o])=>{ const d=dst[k]=dst[k]||{}; Object.entries(o).forEach(([f,v])=>{ d[f]=(d[f]||0)+v; }); });
+  for(const {key} of adequacyBlocks(only)){ const x=blocks[key]; if(!x) continue; if(x.baseErr){ baseErr.push(key+': '+x.baseErr); continue; }
+    addTo(by,x.by); addTo(cby,x.cby); addTo(kinds,x.kinds); survivors.push(...x.survivors); csurv.push(...x.csurv); total+=x.total; equiv+=x.equiv; crashed+=x.crashed; }
+  /* порядок полей как у последовательного прогона: всего — после видов */
+  return {by,cby,csurv,survivors:survivors.slice(0,1000),kinds,total,equiv,crashed,baseErr};
+}
+module.exports={runAdequacy,mergeAdequacy,adequacyBlocks,sites};
 
 if(require.main===module)(async()=>{
   const http=require('http'); let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
@@ -113,7 +146,7 @@ if(require.main===module)(async()=>{
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
     r.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
-  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await page.waitForTimeout(1500);
+  const page=await browser.newPage(); await page.goto('http://127.0.0.1:'+srv.address().port+'/'); await require('./ready.js')(page);
   const r=await runAdequacy(page,{per:+(arg('per')||4),seed:+(arg('seed')||5),only:arg('only')?arg('only').split(',').map(Number):null});
   const pc=(a,n)=>a+'/'+n+' ('+Math.round(100*a/Math.max(1,n))+'%)';
   console.log('Мутантов '+r.total+': не выполнились '+r.crashed+', эквивалентных (ничего не изменилось) '+r.equiv);

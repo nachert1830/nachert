@@ -4,23 +4,23 @@
      поймано    — есть замечание нужного правила внутри цели тренажёра;
      лишнее     — замечание вне целей: подсадка задела что-то ещё или проверка шумит.
    Так проверяются сразу обе стороны: нормоконтроль ловит настоящие ошибки, а тренажёр не выдаёт за ошибку то, что ей не является.
-   runMutations(page,{per:N}) — N вариантов на тип (по кругу), результат {тип:{поймано, всего, лишнее, пример}}. */
+   runMutations(page,{per:N, types:[…]}) — N вариантов на тип (по кругу), только эти типы (по умолчанию все), результат {тип:{поймано, всего, лишнее, пример}}. */
 const FAM={link:/проекционная связь/,hidsolid:/модель/,thin:/одна толщина основной линии/,hdir:/наклон штриховки/,hstep:/шаг штриховки/,nohatch:/штриховка — там, где сечение|модель/,
   numline:/размерное число не пересекают/,letter:/обозначение разреза|буква у штриха/,axis:/осевая выходит за контур|штрихпунктирная/,missing:/все рёбра детали|модель/,stamp:/основная надпись/,font:/2\.304|шрифт|размерные числа/,value:/масштаб 1:1/};
 const MODEL=new Set(['hidsolid','nohatch','missing']);
 async function runMutations(page,o){ o=o||{}; await require('./normo-run.js').inject(page);
-  return page.evaluate(async({per,FAM,MODEL,seed})=>{ const fam={}; Object.keys(FAM).forEach(k=>fam[k]=new RegExp(FAM[k])); const out={}, pause=()=>new Promise(r=>setTimeout(r,0));
-    for(const T of IGNK.TYPES){ const r=out[T.id]={поймано:0,всего:0,лишнее:0,пример:''}; let tried=0;
+  return page.evaluate(async({per,FAM,MODEL,seed,types})=>{ const fam={}; Object.keys(FAM).forEach(k=>fam[k]=new RegExp(FAM[k])); const out={}, pause=()=>new Promise(r=>setTimeout(r,0));
+    for(const T of IGNK.TYPES){ if(types&&!types.includes(T.id)) continue; const r=out[T.id]={поймано:0,всего:0,лишнее:0,пример:''}; let tried=0;
       for(let i=0;r.всего<per&&tried<30;i++){ const n=1+((i*7+T.id.length*3+seed)%30); tried++; let P=null; try{ P=IGNK.make(n,seed+i,T.id); }catch(e){ r.пример=r.пример||('ошибка подсадки: '+e); } if(!P) continue;
         r.всего++; const k=3, res=NORMO.check(P.svg,{model:MODEL.includes(T.id)?IG_VARS[n]:null});
         const inT=a=>a&&P.targets.some(b=>a[0]*k>=b[0]-6*k&&a[0]*k<=b[2]+6*k&&a[1]*k>=b[1]-6*k&&a[1]*k<=b[3]+6*k);
         const ok=res.issues.some(x=>fam[T.id].test('ГОСТ '+x.gost+' · '+x.rule)&&(inT(x.at)||!x.at)); if(ok) r.поймано++; else r.пример=r.пример||('вар. '+n+': '+(res.issues.map(x=>x.rule+' '+JSON.stringify(x.at)).join('; ')||'замечаний нет'));
         const extra=res.issues.filter(x=>x.at&&!inT(x.at)); if(extra.length){ r.лишнее++; r.пример=r.пример||('вар. '+n+' лишнее: '+extra.map(x=>x.rule+': '+x.msg).join('; ')); }
         await pause(); } }
-    return out; },{per:o.per||3,FAM:Object.fromEntries(Object.entries(FAM).map(([k,v])=>[k,v.source])),MODEL:[...MODEL],seed:o.seed||1}); }
+    return out; },{per:o.per||3,FAM:Object.fromEntries(Object.entries(FAM).map(([k,v])=>[k,v.source])),MODEL:[...MODEL],seed:o.seed||1,types:o.types||null}); }
 /* тренажёр на странице: лист строится, нажатие в цель засчитывается, мимо — нет; после ответа — объяснение и верный лист */
 async function nkUi(page,URL){ const bad=[], add=(n,r,m)=>bad.push({name:'Нормоконтроль '+n,rule:r,msg:m});
-  for(const key of ['8-11','3-5']){ await page.goto(URL+'#/ig/nk/'+key); await page.waitForTimeout(400);
+  for(const key of ['8-11','3-5']){ await page.goto(URL+'#/ig/nk/'+key); await require('./ready.js')(page);
     let ok=false; for(const until=Date.now()+90000; Date.now()<until; ){   /* опрос сам: waitForFunction в CI обрывался ошибкой раньше срока */
       ok=await page.evaluate(()=>{ const s=document.querySelector('#nkSheet svg'); return !!(s&&!document.querySelector('#nkSheet .igx-ld:not(.out)')); }).catch(()=>false); if(ok) break; await page.waitForTimeout(250); }
     if(!ok){ add(key,'лист не построился','нет листа за 90 с'); continue; }
@@ -40,7 +40,7 @@ async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Чит
   page.on('console',onc); page.on('pageerror',one);
   /* сразу на вкладке «Лист», как страница восстанавливает последнюю вкладку: 3D не запускается (в CI WebGL программный, и лист ждал за ним) */
   await page.evaluate(()=>{ try{ sessionStorage.setItem('igsol:#/ig2/8','1'); sessionStorage.setItem('igsol:#/ig2/8:t','sheet'); }catch(e){} });
-  await page.goto(URL+'#/ig2/8'); await page.waitForTimeout(800);
+  await page.goto(URL+'#/ig2/8'); await require('./ready.js')(page);
   if(!await page.$('#igSheetBox:not([hidden])')){ await page.click('#igShow').catch(()=>{}); await page.waitForTimeout(200); await page.click('.igx-tabs button[data-t="sheet"]').catch(()=>{}); }
   /* панель загрузки — только у самого листа: вкладка 3D могла ещё считаться (в CI WebGL программный и медленный) */
   /* опрос сам, а не waitForFunction: в CI он обрывался ошибкой через несколько секунд, и тест считал, что листа нет (прогоны 150–157);
@@ -67,13 +67,14 @@ async function readUi(page,URL){ const bad=[], add=(r,m)=>bad.push({name:'Чит
    смещённой так, чтобы ребро было видно. В каждый лист, где граница волнистая, подсаживаются две ошибки генератора:
    волнистая смещена в другую сторону (flip) и граница — сама ось (axis). Обе должны ловиться нормоконтролем со сверкой
    с моделью; заодно — список мест «для проверки человеком» (волнистая выходит за контур изображения). */
-async function wavyMutations(page){ await require('./normo-run.js').inject(page);
-  return page.evaluate(()=>{ const res={всего:0,поймано:0,пропуски:[],review:[]};
-    for(let n=1;n<=30;n++){ const M=window.IG_VARS&&IG_VARS[n]; if(!M) continue; const sp=IGUI.igSpec(M);
+/* o.only — номера вариантов (tests/run.js делит перебор на элементы по 5 вариантов); без него — все 30 */
+async function wavyMutations(page,o){ await require('./normo-run.js').inject(page);
+  return page.evaluate(only=>{ const res={всего:0,поймано:0,пропуски:[],review:[]};
+    for(let n=1;n<=30;n++){ if(only&&!only.includes(n)) continue; const M=window.IG_VARS&&IG_VARS[n]; if(!M) continue; const sp=IGUI.igSpec(M);
       (NORMO.check(IGS.sheet(n,'clean'),{}).review||[]).forEach(x=>res.review.push('вар. '+n+': '+x.msg));
       ['xb','yb'].filter(k=>sp[k]).forEach(key=>{ const keep=sp[key];
         ['flip','axis'].forEach(mut=>{ sp[key]=mut==='flip'?-keep:0; IGS.forget(n); let r; try{ r=NORMO.check(IGS.sheet(n,'clean'),{model:M,spec:sp}); }catch(e){ r={issues:[]}; }
           sp[key]=keep; IGS.forget(n); res.всего++;
           if(r.issues.some(i=>/ребро на оси|волнистая граница/.test(i.rule))) res.поймано++; else res.пропуски.push('вар. '+n+' '+key+' '+mut); }); }); }
-    return res; }); }
+    return res; },o&&o.only||null); }
 module.exports={runMutations,nkUi,readUi,wavyMutations,FAM};
