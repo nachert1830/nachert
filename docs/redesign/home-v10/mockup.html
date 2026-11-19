@@ -1,0 +1,224 @@
+<title>Начерт: цвет</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: слева тема и палитра, справа телефон. Фон — белый/чёрный; опора экрана — поиск (инверсный блок);
+   плитки — сплошной яркий цвет и технический рисунок белыми линиями по смыслу раздела */
+:root{color-scheme:dark;--page:#0e0e10;--ink:#f5f5f7;--mut:#8e8e93;--o:#fa4b00;--sans:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font:15px/1.4 var(--sans);overflow-x:hidden}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:start}
+@media (max-width:820px){.wrap{grid-template-columns:1fr;justify-items:center}}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--o);outline-offset:3px}
+.side{width:100%;max-width:420px;display:flex;flex-direction:column;gap:26px}
+.side h1{margin:0;font:800 30px/1.05 var(--sans);letter-spacing:-.02em}
+.lbl{font:600 12px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
+.seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:#1c1c1e}
+.seg button{flex:1;border:0;background:none;border-radius:10px;padding:10px 8px;font-weight:600;color:var(--mut)}
+.seg button[aria-pressed=true]{background:#f5f5f7;color:#111}
+.pal{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:0;font-size:12px;color:var(--mut)}
+.sw i{width:100%;aspect-ratio:1;border-radius:16px;background:var(--c);display:block;transition:transform .15s}
+.sw[aria-pressed=true] i{box-shadow:0 0 0 2px var(--page),0 0 0 4px #f5f5f7}
+.hint{color:var(--mut);font-size:14px}.hint b{color:var(--ink)}
+
+/* ── телефон ── */
+.phone{--bg:#fff;--fg:#111113;--fm:#8a8a8f;--card:#f4f4f5;--ln:#ececee;--inv:#111113;--invfg:#fff;--invmut:rgba(255,255,255,.6);
+  width:360px;max-width:100%;height:760px;border-radius:48px;overflow:hidden;background:var(--bg);color:var(--fg);box-shadow:0 0 0 1px #2a2a2e,0 0 0 9px #050506,0 0 0 10px #2a2a2e;position:relative}
+.phone.dark{--bg:#000;--fg:#f5f5f7;--fm:#8e8e93;--card:#1c1c1e;--ln:#232326;--inv:#f5f5f7;--invfg:#111113;--invmut:rgba(17,17,19,.55)}
+.scr{height:100%;overflow-y:auto;padding:14px 16px 112px;scrollbar-width:none}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:4px 2px}
+.brand{display:flex;align-items:center;gap:9px;font:800 17px var(--sans)}
+.brand svg{width:30px;height:30px}
+.phone.dark .brand svg rect{stroke:#2c2c2e;stroke-width:1}
+.hd .ic{width:38px;height:38px;border-radius:50%;background:var(--card);display:grid;place-items:center}
+.hd .ic svg{width:17px;height:17px;stroke:var(--fg);fill:none;stroke-width:2;stroke-linecap:round}
+.top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+
+/* поиск — опорная точка экрана: инверсный блок (чёрный на белом, белый на чёрном) */
+.srch{margin-top:12px;border-radius:26px;padding:20px 16px 16px;background:var(--inv);color:var(--invfg)}
+.srch h2{margin:0 0 4px;font:800 24px/1.1 var(--sans);letter-spacing:-.02em;text-align:center;text-wrap:balance}
+.srch p{margin:0 0 14px;text-align:center;color:var(--invmut);font-size:13.5px}
+.scope{display:flex;gap:4px;padding:4px;border-radius:12px;background:color-mix(in srgb,var(--invfg) 10%,transparent);margin-bottom:10px}
+.scope span{flex:1 1 auto;text-align:center;padding:7px 6px;border-radius:9px;font-weight:600;font-size:13px;color:var(--invmut);white-space:nowrap}
+.scope span.on{background:var(--invfg);color:var(--inv)}
+.field{display:flex;align-items:center;gap:8px;height:54px;border-radius:16px;background:#fff;color:#8a8a8f;padding:0 6px 0 14px}
+.phone.dark .field{background:#ececef}
+.field svg{width:19px;height:19px;stroke:#8a8a8f;fill:none;stroke-width:2;stroke-linecap:round;flex:none}
+.field span{flex:1;font-size:15px}
+.field em{height:42px;padding:0 16px;border-radius:12px;background:var(--o);color:#fff;display:flex;align-items:center;font-style:normal;font-weight:700}
+
+/* владелец и просмотры */
+.own{display:flex;align-items:center;gap:14px;margin-top:12px;padding:18px 16px 18px 20px;border-radius:24px;background:var(--card)}
+.own .v{flex:1;min-width:0}
+.own .v small,.own .n small{display:block;font:500 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--fm)}
+.own .v strong{font:800 30px/1.05 var(--sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.own .n{margin-top:8px}.own .n b{font:700 15px var(--sans);white-space:nowrap}
+.share{flex:none;display:flex;align-items:center;gap:8px;height:48px;padding:0 18px 0 16px;border:0;border-radius:99px;background:var(--o);color:#fff;font:700 14.5px var(--sans);box-shadow:0 8px 20px -8px rgba(250,75,0,.7);position:relative;overflow:hidden}
+.share svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.share::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%);transform:translateX(-120%);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{60%,100%{transform:translateX(120%)}}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px;align-items:start}
+.col{display:flex;flex-direction:column;gap:10px}
+.col h3{margin:0 0 0 2px;font:800 16px var(--sans)}
+
+/* плитка — сплошной цвет и белый технический рисунок */
+.cd{position:relative;overflow:hidden;isolation:isolate;border:0;border-radius:22px;padding:14px;background:var(--c);color:#fff;text-align:left;display:flex;flex-direction:column;min-height:112px;cursor:pointer;transition:transform .15s}
+.cd.dk{color:#1a1400}
+.cd:active{transform:scale(.97)}
+.cd.sel{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--fg)}
+.cd b{font:700 16px/1.15 var(--sans);position:relative;z-index:2}
+.cd small{font:500 12px/1.25 var(--sans);opacity:.78;margin-top:2px;max-width:13ch;position:relative;z-index:2}
+.cd.m{min-height:152px}.cd.l{min-height:210px}.cd.hero{min-height:236px}
+.cd.hero b{font-size:19px;max-width:10ch}.cd.hero small{max-width:15ch}
+.cd svg.art{position:absolute;z-index:1;right:-6%;bottom:-6%;width:78%;height:auto;overflow:visible}
+.cd.s svg.art{width:58%;right:-4%;bottom:-10%}
+.cd.l svg.art{width:96%;right:-10%;bottom:-2%}
+.cd.hero svg.art{width:96%;right:-14%;bottom:-2%}
+.art .w{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.art .t{fill:none;stroke:currentColor;stroke-width:1;opacity:.55}
+.art .b{fill:none;stroke:currentColor;stroke-width:1;opacity:.22}
+.art .d{fill:none;stroke:currentColor;stroke-width:1.2;stroke-dasharray:5 4;opacity:.75}
+.art .x{fill:none;stroke:currentColor;stroke-width:1;stroke-dasharray:9 3 2 3;opacity:.5}
+.art .h{fill:none;stroke:#ffd84a;stroke-width:2.6;stroke-linecap:round}
+.cd.dk .art .h{stroke:#1a1400}
+.art .y{fill:#ffd84a;fill-opacity:.85;stroke:#ffd84a;stroke-width:1.2}
+.cd.dk .art .y{fill:#fff;stroke:#1a1400}
+.art .f{fill:currentColor;fill-opacity:.12}
+.art .p{fill:currentColor}
+.art .tx{fill:currentColor;font:italic 600 12px Georgia,'Times New Roman',serif}
+
+/* нижнее меню: плавающая капсула */
+.tabs{position:absolute;left:12px;right:12px;bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:6px;border-radius:999px;
+  background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--ln);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 12px 30px -14px rgba(0,0,0,.45)}
+.tb{display:flex;align-items:center;justify-content:center;gap:7px;height:46px;min-width:46px;flex:none;padding:0;border:0;border-radius:999px;background:color-mix(in srgb,var(--fg) 6%,transparent);color:var(--fm);font:600 14px var(--sans);transition:background .25s,color .25s,padding .3s cubic-bezier(.2,.8,.2,1)}
+.tb svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tb span{flex:none;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;transition:max-width .3s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.tb.on{padding:0 18px 0 15px;background:var(--o);color:#fff}
+.tb.on span{max-width:120px;opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<main class="wrap">
+  <div class="side">
+    <h1>Опора — поиск,<br>цвет — в плашках</h1>
+    <div><div class="lbl">Тема</div>
+      <div class="seg" id="theme"><button type="button" data-t="light" aria-pressed="true">Белая</button><button type="button" data-t="dark" aria-pressed="false">Чёрная</button></div></div>
+    <div><div class="lbl">Цвет выбранной плитки</div><div class="pal" id="pal"></div></div>
+    <p class="hint" id="hint"></p>
+  </div>
+  <div class="phone" id="phone">
+    <div class="scr" id="scr"></div>
+    <nav class="tabs" id="tabs" aria-label="Разделы">
+      <button type="button" class="tb on"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5h-6v5.5H5.5A1.5 1.5 0 0 1 4 19z"/></svg><span>Главная</span></button>
+      <button type="button" class="tb"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Тетрадь</span></button>
+      <button type="button" class="tb"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M9 14l2 2 4-4"/></svg><span>ДЗ</span></button>
+      <button type="button" class="tb"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V10M10 2.5h4M18.5 6.5l1.5-1.5"/></svg><span>РК</span></button>
+      <button type="button" class="tb"><svg viewBox="0 0 24 24"><path d="M3 5.5c3-1 6-.6 9 1.4V20c-3-2-6-2.4-9-1.4zM21 5.5c-3-1-6-.6-9 1.4V20c3-2 6-2.4 9-1.4z"/></svg><span>Теория</span></button>
+    </nav>
+  </div>
+</main>
+
+<script>
+(function(){
+  var f=function(n){return Math.round(n*10)/10;};
+  var C30=Math.cos(Math.PI/6),S30=.5;
+  /* изометрия: x вправо-вниз, y влево-вниз, z вверх; видны грани верх, +x, +y */
+  function iso(o,k){return function(x,y,z){return [f(o[0]+(x-y)*C30*k),f(o[1]+(x+y)*S30*k-z*k)];};}
+  function poly(P,cls){return '<path class="'+cls+'" d="M'+P.map(function(p){return p.join(' ');}).join('L')+'z"/>';}
+  function line(a,b,cls){return '<line class="'+cls+'" x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'"/>';}
+  var ART={};
+  /* гиперболоид: образующие между двумя окружностями со сдвигом; задние бледнее, одна выделена */
+  ART.hyp=(function(){var cx=120,rx=54,ry=14,y1=20,y2=150,n=32,tw=2.3,fr='',bk='';
+    for(var i=0;i<n;i++){var a=i/n*2*Math.PI,b=a+tw,p=[f(cx+rx*Math.cos(a)),f(y1+ry*Math.sin(a))],q=[f(cx+rx*Math.cos(b)),f(y2+ry*Math.sin(b))];
+      if(Math.sin(a)+Math.sin(b)>0) fr+=line(p,q,'t'); else bk+=line(p,q,'b');}
+    var a0=.9;return line([cx,4],[cx,166],'x')+bk+'<ellipse class="w" cx="'+cx+'" cy="'+y1+'" rx="'+rx+'" ry="'+ry+'"/>'+fr+'<ellipse class="w" cx="'+cx+'" cy="'+y2+'" rx="'+rx+'" ry="'+ry+'"/>'+
+      line([f(cx+rx*Math.cos(a0)),f(y1+ry*Math.sin(a0))],[f(cx+rx*Math.cos(a0+tw)),f(y2+ry*Math.sin(a0+tw))],'h');})();
+  /* брусок с прямоугольным вырезом сверху; грани выреза жёлтые */
+  ART.body=(function(){var P=iso([96,60],1.15),W=80,D=50,H=40,a=28,b=52,zc=20,s='';
+    s+=poly([P(0,0,H),P(a,0,H),P(a,D,H),P(0,D,H)],'f w');
+    s+=poly([P(b,0,H),P(W,0,H),P(W,D,H),P(b,D,H)],'f w');
+    s+=poly([P(a,0,zc),P(b,0,zc),P(b,D,zc),P(a,D,zc)],'y');
+    s+=poly([P(a,0,zc),P(a,D,zc),P(a,D,H),P(a,0,H)],'y');
+    s+=poly([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'f w');
+    s+=poly([P(0,D,0),P(W,D,0),P(W,D,H),P(b,D,H),P(b,D,zc),P(a,D,zc),P(a,D,H),P(0,D,H)],'f w');
+    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+26),'x');})();
+  /* эпюр: ось x, отрезок AB в двух проекциях, линии связи */
+  ART.epure='<line class="w" x1="20" y1="86" x2="196" y2="86"/><text class="tx" x="182" y="80">x</text>'+
+    line([80,30],[80,138],'d')+line([150,48],[150,124],'d')+'<path class="h" d="M80 30L150 48M80 138L150 124"/>'+
+    '<circle class="p" cx="80" cy="30" r="3.2"/><circle class="p" cx="150" cy="48" r="3.2"/><circle class="p" cx="80" cy="138" r="3.2"/><circle class="p" cx="150" cy="124" r="3.2"/>'+
+    '<text class="tx" x="60" y="28">A″</text><text class="tx" x="156" y="46">B″</text><text class="tx" x="60" y="152">A′</text><text class="tx" x="156" y="140">B′</text>';
+  /* пересечение конуса и цилиндра: очерки и линия пересечения */
+  ART.inter='<path class="f w" d="M60 140 110 24 160 140z"/><ellipse class="t" cx="110" cy="140" rx="50" ry="10"/><rect class="f w" x="40" y="88" width="140" height="34" rx="2"/><ellipse class="t" cx="40" cy="105" rx="6" ry="17"/>'+
+    '<path class="h" d="M82 88C92 100 92 112 80 122M138 88C128 100 128 112 140 122"/>'+line([110,14],[110,152],'x')+line([30,105],[190,105],'x');
+  /* циферблат РК: деления и оси */
+  ART.clock=(function(){var cx=118,cy=96,r=56,s='<circle class="f w" cx="'+cx+'" cy="'+cy+'" r="'+r+'"/><rect class="w" x="'+(cx-10)+'" y="'+(cy-r-14)+'" width="20" height="9" rx="3"/>';
+    for(var i=0;i<60;i++){var a=i/60*2*Math.PI,l=i%5?4:9;s+=line([f(cx+(r-3)*Math.sin(a)),f(cy-(r-3)*Math.cos(a))],[f(cx+(r-3-l)*Math.sin(a)),f(cy-(r-3-l)*Math.cos(a))],i%5?'t':'w');}
+    return s+line([cx-r-10,cy],[cx+r+10,cy],'x')+line([cx,cy-r-6],[cx,cy+r+10],'x')+'<path class="h" d="M'+cx+' '+cy+'L'+(cx+30)+' '+(cy-30)+'"/><circle class="p" cx="'+cx+'" cy="'+cy+'" r="4"/>';})();
+  /* теория: плоскости проекций π1, π2 и проецирование точки */
+  ART.planes=(function(){var P=iso([118,72],1),s='';
+    s+=poly([P(0,0,0),P(90,0,0),P(90,0,70),P(0,0,70)],'f w');
+    s+=poly([P(0,0,0),P(90,0,0),P(90,70,0),P(0,70,0)],'f w');
+    var A=P(50,35,40),A2=P(50,0,40),A1=P(50,35,0),Ax=P(50,0,0);
+    s+=line(A,A2,'d')+line(A,A1,'d')+line(A2,Ax,'t')+line(A1,Ax,'t');
+    s+='<circle class="p" cx="'+A[0]+'" cy="'+A[1]+'" r="3.4"/><circle class="p" cx="'+A2[0]+'" cy="'+A2[1]+'" r="2.8"/><circle class="p" cx="'+A1[0]+'" cy="'+A1[1]+'" r="2.8"/>';
+    var t=P(80,0,60),t2=P(80,60,0);return s+'<text class="tx" x="'+t[0]+'" y="'+t[1]+'">π₂</text><text class="tx" x="'+t2[0]+'" y="'+t2[1]+'">π₁</text>';})();
+  /* три вида детали: главный, сверху, слева, линии связи */
+  ART.views='<path class="f w" d="M30 30h60v20H70v20H30z"/><path class="f w" d="M30 96h60v40H30z"/><path class="d" d="M70 96v40"/><path class="f w" d="M120 30h40v40h-40z"/><path class="w" d="M120 50h20v20"/>'+
+    line([96,40],[114,40],'t')+line([96,60],[114,60],'t')+line([30,74],[30,92],'t')+line([90,74],[90,92],'t');
+  /* ДЗ ИГ: деталь в изометрии с четвертным вырезом и штриховкой */
+  ART.part=(function(){var P=iso([100,66],1.05),W=86,D=60,H=46,s='';
+    s+=poly([P(0,0,H),P(W,0,H),P(W,D/2,H),P(W/2,D/2,H),P(W/2,D,H),P(0,D,H)],'f w');
+    s+=poly([P(W,0,0),P(W,D/2,0),P(W,D/2,H),P(W,0,H)],'f w');
+    s+=poly([P(0,D,0),P(W/2,D,0),P(W/2,D,H),P(0,D,H)],'f w');
+    s+=poly([P(W/2,D/2,0),P(W,D/2,0),P(W,D/2,H),P(W/2,D/2,H)],'y');
+    s+=poly([P(W/2,D/2,0),P(W/2,D,0),P(W/2,D,H),P(W/2,D/2,H)],'y');
+    for(var i=1;i<6;i++){s+=line(P(W/2+i*7,D/2,0),P(W/2+i*7-12,D/2,H),'t');}
+    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+24),'x');})();
+  /* учиться: куб и секущая плоскость */
+  ART.cube=(function(){var P=iso([108,64],1.05),a=64;
+    return poly([P(0,0,a),P(a,0,a),P(a,a,a),P(0,a,a)],'f w')+poly([P(a,0,0),P(a,a,0),P(a,a,a),P(a,0,a)],'f w')+poly([P(0,a,0),P(a,a,0),P(a,a,a),P(0,a,a)],'f w')+poly([P(a,0,a*.25),P(a,a,a*.75),P(0,a,a*.75)],'y');})();
+  /* ЕСКД: основная надпись */
+  ART.stamp='<rect class="f w" x="20" y="40" width="170" height="90" rx="2"/><path class="t" d="M20 62h170M20 84h90M20 106h90M60 40v90M110 40v90M150 84v46M110 84h80"/><text class="tx" x="118" y="58">ГОСТ 2.104</text>';
+
+  var P=[['blue','Синий','#2f5bff'],['violet','Фиолетовый','#6b3cf5'],['rose','Малиновый','#f0305a'],['amber','Янтарный','#ffb000',1],
+         ['green','Зелёный','#0aa36a'],['orange','Оранжевый','#fa4b00'],['cyan','Голубой','#00a6d6'],['graphite','Графит','#2c2c30']];
+  var C={};P.forEach(function(p){C[p[0]]=p;});
+  var TILES=[
+    {id:'h1',t:'Как образуются поверхности',s:'гиперболоид, коноид, геликоид — в 3D',c:'blue',k:'hero',top:1,a:'hyp',vb:'0 0 230 172'},
+    {id:'h2',t:'ДЗ 4',s:'тело с вырезом: три вида и разрезы',c:'orange',k:'hero',top:1,a:'body',vb:'0 0 200 160'},
+    {id:'n1',t:'Тетрадь',s:'89 задач по шагам',c:'violet',k:'l',col:0,a:'epure'},
+    {id:'n2',t:'ДЗ',s:'твой вариант',c:'rose',k:'s',col:0,a:'inter'},
+    {id:'n3',t:'РК2',s:'билеты и пробный РК',c:'graphite',k:'m',col:0,a:'clock'},
+    {id:'n4',t:'Теория',s:'уроки и шпаргалка',c:'amber',k:'s',col:0,a:'planes'},
+    {id:'i1',t:'Тетрадь',s:'11 рисунков',c:'cyan',k:'s',col:1,a:'views'},
+    {id:'i2',t:'ДЗ',s:'листы, виды, разрезы',c:'green',k:'l',col:1,a:'part'},
+    {id:'i3',t:'Учиться',s:'виды и разрезы',c:'blue',k:'s',col:1,a:'cube'},
+    {id:'i4',t:'ЕСКД',s:'нормы оформления',c:'graphite',k:'m',col:1,a:'stamp'}];
+  var S={t:'light',sel:'n1'};
+  try{var sv=JSON.parse(localStorage.getItem('nch-color3')||'null');if(sv){S.t=sv.t||S.t;(sv.c||[]).forEach(function(x){var T=TILES.find(function(y){return y.id===x[0];});if(T&&C[x[1]])T.c=x[1];});}}catch(e){}
+  function save(){try{localStorage.setItem('nch-color3',JSON.stringify({t:S.t,c:TILES.map(function(x){return [x.id,x.c];})}));}catch(e){}}
+  var LOGO='<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#111113"/><circle cx="12.5" cy="16" r="6.5" fill="#fff"/><circle cx="19.5" cy="16" r="6.5" fill="none" stroke="#e8392b" stroke-width="3"/></svg>';
+  function card(T){var p=C[T.c];return '<button type="button" class="cd '+T.k+(p[3]?' dk':'')+(S.sel===T.id?' sel':'')+'" data-id="'+T.id+'" style="--c:'+p[2]+'"><svg class="art" viewBox="'+(T.vb||'0 0 210 160')+'" aria-hidden="true">'+ART[T.a]+'</svg><b>'+T.t+'</b>'+(T.s?'<small>'+T.s+'</small>':'')+'</button>';}
+  function draw(){
+    document.getElementById('phone').classList.toggle('dark',S.t==='dark');
+    var h='<div class="hd"><span class="brand">'+LOGO+'Начерт</span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span></div>';
+    h+='<div class="top">'+TILES.filter(function(x){return x.top;}).map(card).join('')+'</div>';
+    h+='<section class="srch"><h2>Найди решение своей задачи</h2><p>Номер задачи, вариант ДЗ или тема</p><div class="scope"><span class="on">Везде</span><span>Начерт</span><span>Инж. графика</span></div><div class="field"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>задача 47</span><em>Найти →</em></div></section>';
+    h+='<div class="own"><div class="v"><small>Просмотров</small><strong>141 295</strong><div class="n"><small>Владелец</small><b>Андрей Матханов</b></div></div><button type="button" class="share"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div>';
+    h+='<div class="cols">'+[0,1].map(function(c){return '<div class="col"><h3>'+(c?'Инж. графика':'Начерт')+'</h3>'+TILES.filter(function(x){return x.col===c&&!x.top;}).map(card).join('')+'</div>';}).join('')+'</div>';
+    document.getElementById('scr').innerHTML=h;
+    var T=TILES.find(function(x){return x.id===S.sel;});
+    document.getElementById('pal').innerHTML=P.map(function(p){return '<button type="button" class="sw" data-c="'+p[0]+'" style="--c:'+p[2]+'" aria-pressed="'+(T&&p[0]===T.c)+'"><i></i>'+p[1]+'</button>';}).join('');
+    document.getElementById('hint').innerHTML=T?'Выбрана <b>«'+T.t+'»</b>. Нажмите цвет — она перекрасится. Другую плитку — касанием в телефоне.':'';
+    document.querySelectorAll('#theme button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.t===S.t));});
+  }
+  document.getElementById('scr').addEventListener('click',function(e){var b=e.target.closest('.cd');if(!b)return;S.sel=b.dataset.id;draw();});
+  document.getElementById('pal').addEventListener('click',function(e){var b=e.target.closest('.sw');if(!b)return;var T=TILES.find(function(x){return x.id===S.sel;});if(T){T.c=b.dataset.c;save();draw();}});
+  document.getElementById('theme').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;S.t=b.dataset.t;save();draw();});
+  document.getElementById('tabs').addEventListener('click',function(e){var b=e.target.closest('.tb');if(!b)return;document.querySelectorAll('#tabs .tb').forEach(function(x){x.classList.toggle('on',x===b);});});
+  draw();
+})();
+</script>
