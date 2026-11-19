@@ -293,7 +293,7 @@ function renderSync(){
 
 /* ═══ Вход ═══ */
 /* вход начат с сайта (например, «Спроси автора») — после входа вернуться туда: lk_ret = адрес на этом сайте */
-function goRet(){ const r=LKS.raw('lk_ret'); if(!r) return false; LKS.put('lk_ret',null); if(!/^\/(#\/[\w\/-]*)?$/.test(r)) return false;
+function goRet(){ const r=LKS.raw('lk_ret'); if(!r) return false; LKS.put('lk_ret',null); if(!/^\/(new\/)?(#\/[\w\/-]*)?$/.test(r)) return false;
   if(!P.onb){ P.onb=1; saveP(); } location.href=r; return true; }
 const L={mail:'',busy:false};
 function lStep(k){ $$('#lSheet .lstep').forEach(x=>x.classList.toggle('on',x.getAttribute('data-l')===k)); $('#lErr').textContent=''; }
