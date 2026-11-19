@@ -5404,6 +5404,46 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 :root.nu .nav-bot a.nv.on .nbi,:root.nu .nav-bot a.nv-home.on .nbi{fill:#3c8cf6}
 :root.nu .nav-bot a.nv.on,:root.nu .nav-bot a.nv-home.on{color:#3c8cf6!important}
 :root.nu .nav-bot a.nv::before,:root.nu .nav-bot a.nv.on::before{display:none!important}
+/* ═══ пробный стиль (?new=1): минимализм — белый (светлая) или чёрный (тёмная) фон, один акцент — оранжевый логотипа #FA4B00.
+   Без свечений и градиентов: цвет дают только плашки и плитки разделов ═══ */
+:root.nu{--o:#fa4b00;--o-d:#c23a00;
+  --acc:var(--o);--acc-h:#ff6420;--acc-d:var(--o-d);--on-acc:#fff;--blue:var(--o);--blue-ink:var(--o);--blue-s:#fff1ea;
+  --red:var(--o);--red-b:var(--o);--red-d:var(--o-d);--navy:#111113;--navy2:#1c1c1e;
+  --paper:#ffffff;--surf:#ffffff;--surf2:#f4f4f5;--surf3:#ebebed;--line:#ececee;--line2:#dcdce0;
+  --ink:#111113;--ink2:#3a3a3f;--mut:#8a8a8f;--mut2:#b4b4b9;--tri-w:transparent;--tri:linear-gradient(var(--line),var(--line))}
+:root.nu[data-theme=dark]{--blue-s:#2a160c;--paper:#000;--surf:#1c1c1e;--surf2:#2c2c2e;--surf3:#3a3a3c;--line:#1f1f22;--line2:#38383a;
+  --ink:#f5f5f7;--ink2:#d1d1d6;--mut:#8e8e93;--mut2:#5c5c61;--tri:linear-gradient(var(--line),var(--line))}
+:root.nu body{background:var(--paper)}
+:root.nu header#hdr::after,:root.nu header::after{height:1px!important;bottom:0!important;box-shadow:none!important}
+/* верхние плашки — плоские: оранжевая и чёрная */
+:root.nu .hcards .hc.hc-rot{background:var(--o)!important;box-shadow:none!important}
+:root.nu .hcards .hc.hc-ig{background:#111113!important;box-shadow:none!important}
+:root.nu[data-theme=dark] .hcards .hc.hc-ig{background:#1c1c1e!important}
+:root.nu .hcards .hc-ig::after{display:none}
+:root.nu .hcards .hc-ig .hc-t{text-shadow:none}
+:root.nu .hcards .hc-pill{background:rgba(255,255,255,.18)!important;box-shadow:none!important}
+:root.nu .hcards .hc-pill i{background:#fff!important;box-shadow:none!important}
+:root.nu .hcards .hc-go{color:#111113!important;box-shadow:none!important}
+/* поиск — простая карточка без заливки */
+:root.nu .v8-hero.v9-hero{background:var(--surf)!important;color:var(--ink);border:1px solid var(--line)!important;box-shadow:none!important}
+:root.nu .v9-hero::before{display:none!important}
+:root.nu .v9-hero .v8-h{color:var(--ink)!important}
+:root.nu .v9-hero .v8-scope{background:var(--surf2)!important;border:0!important}
+:root.nu .v9-hero .v8-scope button{color:var(--ink2)}
+:root.nu .v9-hero .v8-scope button.on{background:var(--ink)!important;color:var(--paper)!important}
+:root.nu .v9-go{background:var(--o)!important;color:#fff!important;box-shadow:none!important}
+:root.nu .subj a.on{background:var(--ink)!important;color:var(--paper)!important;box-shadow:none!important}
+:root.nu .nav-bot a.nv.on .nbi,:root.nu .nav-bot a.nv-home.on .nbi{fill:var(--o)}
+:root.nu .nav-bot a.nv.on,:root.nu .nav-bot a.nv-home.on{color:var(--o)!important}
+:root.nu[data-theme=dark] .nav-bot{background:color-mix(in srgb,#000 90%,transparent)!important}
+:root.nu .au-face{background:var(--o)!important;box-shadow:none!important}
+:root.nu [data-a2hs-card] [data-a2hs]{background:var(--ink)!important;color:var(--paper)!important;box-shadow:none!important}
+:root.nu #hdr{background:color-mix(in srgb,var(--paper) 92%,transparent)!important;border-bottom:1px solid var(--line)!important}
+:root.nu #hdr .hright a:not(.hprog),:root.nu #hdr .hright button{background:var(--surf)!important;color:var(--ink)!important;border:1px solid var(--line2)!important;box-shadow:none!important}
+:root.nu #hsearch.v8-hero{border:1px solid var(--line)!important;box-shadow:none!important;outline:0!important}
+:root.nu .v8-hero::before,:root.nu .v8-hero::after{display:none!important}
+:root.nu .hown .vc,:root.nu[data-theme=dark] .hown .vc{background:none!important;color:var(--ink)!important;box-shadow:none!important}
+:root.nu .hown{border-color:var(--line)}
 </style>
 </head>
 <body>
