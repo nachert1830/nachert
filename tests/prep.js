@@ -209,8 +209,10 @@ const CHECK={
         if(yc<-1||yq<-1||Math.abs(yc-yq)>3) { v.push('точка на обеих поверхностях'); break; } } } return v; },
   f4a(V,S){ const v=[]; const x1=z=>V.xa+(V.xb-V.xa)*(z-V.za)/(V.zb-V.za);
     E(S,'g2').forEach(e=>{ const a=e.a; if(Math.abs(a[1]-a[3])>TOL||Math.abs(a[0]-x1(-a[1]))>TOL) v.push('образующая ∥ π₁ между точками одной высоты'); });
-    E(S,'g1').forEach(e=>{ if(Math.abs(e.a[3]-V.yq)>TOL) v.push('конец — на d₂′'); }); return v; },
-  f4b(V,S){ const v=[]; E(S,'d2').forEach((e,k)=>{ if(Math.abs(-e.a[1]-V.p*k/V.n)>TOL) v.push('равные подъёмы'); }); return v.slice(0,1); },
+    const g2=E(S,'g2'); E(S,'g1').forEach((e,i)=>{ if(Math.abs(e.a[3]-V.yq)>TOL) v.push('конец — на d₂′'); if(g2[i]&&Math.abs(e.a[0]-g2[i].a[0])>TOL) v.push('линия связи'); }); return v; },
+  f4b(V,S){ const v=[]; E(S,'d2').forEach((e,k)=>{ if(Math.abs(-e.a[1]-V.p*k/V.n)>TOL) v.push('равные подъёмы'); });
+    E(S,'d1').forEach((e,k)=>{ const a=2*Math.PI*k/V.n; if(Math.hypot(e.a[0]-V.R*Math.cos(a),e.a[1]-V.Y0-V.R*Math.sin(a))>TOL) v.push('равные части окружности'); });
+    const hx=E(S,'hx')[0].p; hx.forEach((q,k)=>{ if(Math.abs(q[0]-V.R*Math.cos(2*Math.PI*k/V.n))>TOL||Math.abs(-q[1]-V.p*k/V.n)>TOL) v.push('точка k — на k-й линии связи и k-м уровне'); }); return [...new Set(v)]; },
   f1(V,S){ const v=[]; const b=E(S,'b1')[0]; if(b.t!=='circ'||Math.abs(b.a[2]-V.R)>TOL||Math.abs(b.a[0])>TOL) v.push('основание на π₁ — окружность радиуса R');
     const oL=E(S,'oL')[0].a, oR=E(S,'oR')[0].a; if(Math.abs(oL[0])>TOL||Math.abs(oR[0])>TOL) v.push('вершина на оси');
     if(Math.abs(oL[2]+V.R)>TOL||Math.abs(oR[2]-V.R)>TOL) v.push('очерк — крайние образующие'); return v; }
@@ -231,6 +233,7 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const geo=e=>({t:e.t,a:e.a&&e.a.map(x=>Math.round(x*1e3)),p:e.p&&e.p.map(q=>q.map(x=>Math.round(x*1e3))),dash:!!e.dash});
 for(const [id,T] of Object.entries(PREP.TOPICS)){
   if(!CHECK[id]){ bad(`тема ${id}: нет независимой проверки в tests/prep.js`); continue; }
+  if(Object.keys(T.traps).length<3) bad(`тема ${id}: меньше трёх ловушек`);
   for(const k of Object.keys(T.traps)){
     let made=0, okFail=0, badPass=0, extra=0;
     for(let i=0;i<N;i++){

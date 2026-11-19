@@ -48,7 +48,8 @@ PREP.topic('s4',{
     let h0=[X1[0],X1[1],...(dot(sub(ha1,[X1[0],0]),[1,0])<dot(sub(hb1,[X1[0],0]),[1,0])?ha1:hb1)];
     const ext=(P,Q,k)=>[Q[0]+(Q[0]-P[0])*k,Q[1]+(Q[1]-P[1])*k];
     const hFar=[ha1,hb1].sort((p,q)=>Math.hypot(q[0]-X1[0],q[1])-Math.hypot(p[0]-X1[0],p[1]))[0], fFar=fpts.slice().sort((p,q)=>Math.hypot(q[0]-X2[0],q[1])-Math.hypot(p[0]-X2[0],p[1]))[0];
-    const hE=ext([X1[0],0],hFar,.15), fE=ext([X2[0],0],fFar,.15);
+    let hE=ext([X1[0],0],hFar,.15), fE=ext([X2[0],0],fFar,.15);
+    if(trap==='Hh') hE=[ha1[0]<hb1[0]?Math.min(ha1[0],hb1[0])-8:Math.max(ha1[0],hb1[0])+8,0];   /* h₀α провели через H″ — по оси x */
     const E=[Pt('Ha1',ha1[0],ha1[1],'H′ₐ',-1,{c:'o'}),Pt('Hb1',hb1[0],hb1[1],'H′ᵦ',-1,{c:'o'}),Pt('Fa2',fa2[0],fa2[1],'F″ₐ',-1,{c:'o'}),Pt('Fb2',fb2[0],fb2[1],'F″ᵦ',-1,{c:'o'}),
       L('h0','a',X1[0],0,hE[0],hE[1]),Tx('h0t',hE[0]-1,hE[1]+4,'h₀α','end'),L('f0','c',X2[0],0,fE[0],fE[1]),Tx('f0t',fE[0]-1,fE[1]-1.5,'f₀α','end'),Pt('X',X2[0],0,'Xα',1,{c:'o',up:false})];
     const base=[];
@@ -60,7 +61,8 @@ PREP.topic('s4',{
   fair(V,k,ok,bad){ return true; },
   traps:{
     Lk:{b0:-.8,say:'H′ — на линии связи со своей H″ на оси',src:'Ж с. 41, 46',hl:['Hb1','h0','h0t']},
-    Xm:{b0:.4,say:'Следы плоскости пересекаются на оси x — в одной точке Xα',src:'Ж с. 41',hl:['Fa2','Fb2','f0','f0t','X']}}
+    Xm:{b0:.4,say:'Следы плоскости пересекаются на оси x — в одной точке Xα',src:'Ж с. 41',hl:['Fa2','Fb2','f0','f0t','X']},
+    Hh:{b0:.3,say:'h₀α — через горизонтальные проекции H′, а не через H″ на оси',src:'Ж с. 41, 46',hl:['h0','h0t']}}
 });
 
 /* ══ m8 · фигура по условиям: «точка на прямой a, равноудалённая от A и B» = a ∩ (плоскость ⟂ AB через середину) ══ */

@@ -65,15 +65,17 @@ PREP.topic('m5',{
     if(hits.length!==2) return null; hits.sort((a,b)=>a.x-b.x);
     let pts=hits.map(hh=>{ const T=lerp(hh.P,hh.Q,(hh.x-hh.P[0])/(hh.Q[0]-hh.P[0])); return {f:f2(T),h:h1(T)}; });
     if(trap==='Wp'){ const o=sides.find(([P,Q])=>!hits.some(hh=>hh.P===P&&hh.Q===Q)); const xx=hits[1].x; if((xx-o[0][0])*(xx-o[1][0])>0) return null; const T=lerp(o[0],o[1],(xx-o[0][0])/(o[1][0]-o[0][0])); pts[1].h=h1(T); }
+    if(trap==='Ln'){ const d=sgn()*rnd(6,9); pts=pts.map(q=>({f:[q.f[0],q.f[1]+d],h:q.h})); }   /* линия пересечения на π₂ — «своя», не на следе */
     if(trap==='Lk'){ const hh=hits[1], xs=hh.x+sgn()*rnd(7,10); if((xs-hh.P[0])*(xs-hh.Q[0])>0) return null; const T=lerp(hh.P,hh.Q,(xs-hh.P[0])/(hh.Q[0]-hh.P[0])); pts[1].h=h1(T); }
     const E=[Pt('p1f',...pts[0].f,'1″',-1,{c:'o'}),Pt('p2f',...pts[1].f,'2″',1,{c:'o'}),L('l1','lk',...pts[0].f,...pts[0].h),L('l2','lk',...pts[1].f,...pts[1].h),Pt('p1h',...pts[0].h,'1′',-1),Pt('p2h',...pts[1].h,'2′',1),L('s1','crv',...pts[0].h,...pts[1].h)];
     const a2=f2(A),b2=f2(B),c2=f2(C),a1=h1(A),b1=h1(B),c1=h1(C);
     const base=[PL('','o',[a2,b2,c2,a2]),PL('','o',[a1,b1,c1,a1]),L('','lk',...a2,...a1),L('','lk',...b2,...b1),L('','lk',...c2,...c1),L('','c',...tr),Tx('',56,-zf(56)-2,'f₀β','end'),
       Pt('',a2[0],a2[1],'A″',-1,{c:'o',r:.9}),Pt('',b2[0],b2[1],'B″',1,{c:'o',r:.9}),Pt('',c2[0],c2[1],'C″',1,{c:'o',r:.9}),Pt('',a1[0],a1[1],'A′',-1,{c:'o',r:.9}),Pt('',b1[0],b1[1],'B′',1,{c:'o',r:.9}),Pt('',c1[0],c1[1],'C′',1,{c:'o',r:.9})];
     const b=bbox([a2,b2,c2,a1,b1,c1,[-60,0],[60,0]]); return {box:b,axis:0,base,E}; },
-  fair(V,k,ok,bad){ return far(ptOf(ok,'p2h'),ptOf(bad,'p2h'),4); },
+  fair(V,k,ok,bad){ return far(ptOf(ok,'p2h'),ptOf(bad,'p2h'),4)||far(ptOf(ok,'p2f'),ptOf(bad,'p2f'),4); },
   traps:{
     Lk:{b0:-1,say:'2′ — на линии связи с 2″',src:'Ж §36',hl:['l2','p2h','s1']},
+    Ln:{b0:.2,say:'На π₂ линия пересечения лежит на следе f₀β',src:'Ж с. 97, 104',hl:['p1f','p2f','l1','l2']},
     Wp:{b0:.5,say:'2′ — на той же стороне, на которой лежит 2″',src:'Ж §36',hl:['l2','p2h','s1']}}
 });
 
@@ -122,7 +124,7 @@ PREP.topic('t9',{
     /* расстояние — со знаком: центр тупоугольного треугольника может лежать по другую сторону оси (вне фигуры) */
     const F2=foot(O4,Q2,e2), toP4=nrm(sub(P4[0],foot(P4[0],Q2,e2))); let sd=dot(sub(O4,F2),toP4);
     if(trap==='Dw') sd=Math.abs(dot(sub(O3,Q),n));
-    const F1=foot(O3,Q,e), toP1=nrm(sub(P1[0],foot(P1[0],Q,e))), O1=add(F1,mul(toP1,sd));
+    const F1=foot(O3,Q,e), toP1=nrm(sub(P1[0],foot(P1[0],Q,e))), O1=add(F1,mul(toP1,trap==='Sd'?-sd:sd));
     const ax1=axisAround(Q,e,P1.concat(P3),8), ax2=axisAround(Q2,e2,P3.concat(P4),10);
     const E=[L('l3','lk',...O4,...O3),Pt('O3',...O3,'O‴',1),L('l1','lk',...O3,...O1),Pt('O1',...O1,'O′',1)];
     const base=[PL('','o',[P1[0],P1[1],P1[2],P1[0]]),L('','ax',...ax1),Tx('',ax1[2]+1,ax1[3]-1.5,'x₁'),L('','ax',...ax2),Tx('',ax2[2]+1,ax2[3]+4,'x₂'),...P1.map((p,i)=>L('','lk',...p,...P3[i])),L('','o',...lo,...hi),
@@ -134,7 +136,8 @@ PREP.topic('t9',{
   fair(V,k,ok,bad){ return far(ptOf(ok,'O1'),ptOf(bad,'O1'),4); },
   traps:{
     Lk:{b0:-.3,say:'Обратная линия связи ⟂ x₂',src:'Ж с. 52–53',hl:['l3','O3','l1','O1']},
-    Dw:{b0:.6,say:'Расстояние до x₁ — от Oᴵⱽ до x₂, а не от O‴',src:'Ж с. 52–53; М с. 39–41',hl:['l1','O1']}}
+    Dw:{b0:.6,say:'Расстояние до x₁ — от Oᴵⱽ до x₂, а не от O‴',src:'Ж с. 52–53; М с. 39–41',hl:['l1','O1']},
+    Sd:{b0:.4,say:'Сторона от x₁ — та же, что у Oᴵⱽ относительно x₂ (со знаком)',src:'Ж с. 52–53',hl:['l1','O1']}}
 });
 
 /* ══ x5m · теорема Монжа: конус и цилиндр описаны около одной сферы ⇒ линия — две плоские кривые: на π₂ — отрезки ══ */
@@ -149,6 +152,7 @@ PREP.topic('x5m',{
     const P=[]; for(const [a,b] of cone) for(const [c,d] of cyl){ const X=lineX([...a,...b],[...c,c[0]+d[0],c[1]+d[1]]); if(!X||X[2]<0||X[2]>1) return null; P.push([X[0],X[1]]); }
     /* P: [конус-лев ∩ цил+, конус-лев ∩ цил−, конус-прав ∩ цил+, конус-прав ∩ цил−]; кривые — «крест-накрест» */
     let s1=[P[0],P[3]], s2=[P[1],P[2]]; if(trap==='Ad'){ s1=[P[0],P[1]]; s2=[P[2],P[3]]; }
+    if(trap==='Ep') s1=[P[0],add(P[3],mul(u,sgn()*rnd(7,9)))];   /* конец — не в точке пересечения очерков */
     const mid=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
     const E=[trap==='Cv'?PL('m1','crv',Array.from({length:17},(_,i)=>{ const t=i/16, p=lerp(s1[0],s1[1],t), k=Math.sin(Math.PI*t)*7; return add(p,mul(n,k)); })):L('m1','crv',...s1[0],...s1[1]),L('m2','crv',...s2[0],...s2[1])];
     const end=add(O,mul(u,70)), beg=add(O,mul(u,-70));
@@ -159,7 +163,8 @@ PREP.topic('x5m',{
   },
   traps:{
     Cv:{b0:-.2,say:'Плоская кривая ⟂ π₂ проецируется в отрезок',src:'Ж §38.1, с. 125',hl:['m1']},
-    Ad:{b0:.5,say:'Отрезки соединяют противоположные точки очерков — «крест-накрест»',src:'Ж §38.1, рис. 205–207',hl:['m1','m2']}}
+    Ad:{b0:.5,say:'Отрезки соединяют противоположные точки очерков — «крест-накрест»',src:'Ж §38.1, рис. 205–207',hl:['m1','m2']},
+    Ep:{b0:.3,say:'Концы отрезков — точки пересечения очерков',src:'Ж §38.1, с. 125',hl:['m1']}}
 });
 
 /* ══ f4a · поверхность с плоскостью параллелизма π₁: образующие горизонтальны (на π₂ ∥ x); каждая — между точками
@@ -174,7 +179,7 @@ PREP.topic('f4a',{
     const x1=z=>V.xa+(V.xb-V.xa)*(z-V.za)/(V.zb-V.za), E=[];
     const pts=[]; for(let i=1;i<=V.n;i++){ const a=Math.PI*i/(V.n+1); pts.push([V.cx+V.R*Math.cos(a),V.cz+V.R*Math.sin(a)-V.R*.5]); }
     pts.forEach((p,i)=>{ let z1=p[1]; if(trap==='Hz'&&i===2) z1=p[1]+sgn()*rnd(6,9); E.push(L('g2','b',x1(z1),-z1,p[0],-p[1])); });
-    pts.forEach((p,i)=>{ let q=[p[0],V.yq]; if(trap==='Wd'&&i===2) q=[p[0],V.y1]; E.push(L('g1','c',x1(p[1]),V.y1,...q)); });
+    pts.forEach((p,i)=>{ let q=[p[0],V.yq]; if(trap==='Wd'&&i===2) q=[p[0],V.y1]; let x0=x1(p[1]); if(trap==='Lk'&&i===2) x0+=sgn()*rnd(5,7); E.push(L('g1','c',x0,V.y1,...q)); });
     const arc=Array.from({length:25},(_,i)=>{ const a=Math.PI*i/24; return [V.cx+V.R*Math.cos(a),-(V.cz+V.R*Math.sin(a)-V.R*.5)]; });
     const base=[L('','o',V.xa,-V.za,V.xb,-V.zb),Tx('',V.xb+1,-V.zb-1,'d₁″'),PL('','o',arc),Tx('',V.cx+V.R+1,-(V.cz-V.R*.5),'d₂″'),
       L('','o',V.xa,V.y1,V.xb,V.y1),Tx('',V.xa-1,V.y1+1,'d₁′','end'),L('','o',V.cx-V.R-4,V.yq,V.cx+V.R+4,V.yq),Tx('',V.cx+V.R+5,V.yq+1,'d₂′')];
@@ -182,7 +187,8 @@ PREP.topic('f4a',{
   },
   traps:{
     Hz:{b0:-.2,say:'Образующие ∥ π₁ — на π₂ параллельны оси x',src:'Ж с. 83, 92; М с. 12–13',hl:['g2']},
-    Wd:{b0:.4,say:'Конец образующей — на своей направляющей d₂',src:'Ж с. 83; М с. 13',hl:['g1']}}
+    Wd:{b0:.4,say:'Конец образующей — на своей направляющей d₂',src:'Ж с. 83; М с. 13',hl:['g1']},
+    Lk:{b0:-.8,say:'Концы образующей на π₁ и π₂ — на одной линии связи',src:'Ж с. 83',hl:['g1']}}
 });
 
 /* ══ f4b · винтовая линия: равные углы на π₁ ⇔ равные подъёмы на π₂ (шаг делим как окружность) ══ */
@@ -190,11 +196,15 @@ PREP.topic('f4b',{
   make(){ return {R:rnd(18,24),p:rnd(60,80),Y0:rnd(40,48),n:12}; },
   watch:{steps:[{cap:'Окружность на π₁ делим на 12 равных частей',roles:['d1']},{cap:'Шаг на π₂ делим на 12 равных частей',roles:['d1','d2']},{cap:'Точка k — на k-й линии связи и k-м уровне: гелиса',roles:['d1','d2','hx']}]},
   scene(V,trap){ const {R,p,Y0,n}=V, P1=[], P2=[];
-    for(let k=0;k<=n;k++){ const a=2*Math.PI*k/n; let z=p*k/n; if(trap==='Uq'&&k>0&&k<n) z=p*Math.pow(k/n,1.35); P1.push([R*Math.cos(a),Y0+R*Math.sin(a)]); P2.push([R*Math.cos(a),-z]); }
+    for(let k=0;k<=n;k++){ const a=2*Math.PI*(trap==='Ck'&&k>0&&k<n?Math.pow(k/n,1.3):k/n); let z=p*k/n; if(trap==='Uq'&&k>0&&k<n) z=p*Math.pow(k/n,1.35); P1.push([R*Math.cos(a),Y0+R*Math.sin(a)]); P2.push([R*Math.cos(a),-z]); }
+    if(trap==='Lk'){ const k=3+(Math.random()*5|0); P2[k]=[P1[k+1][0],P2[k][1]]; }   /* точку снесли не со своей линии связи */
     const E=[...P1.map((q,k)=>Pt('d1',...q,null,1,{c:'o',r:.8})),...P2.map((q,k)=>L('d2','lk',-R-6,q[1],R+6,q[1])),PL('hx','crv',P2)];
     const base=[C('','o',0,Y0,R),L('','cl',0,-p-6,0,Y0+R+4),L('','o',-R,0,-R,-p),L('','o',R,0,R,-p),L('','cl',-R-4,Y0,R+4,Y0),Tx('',R+2,-p/2,'шаг p')];
     return {box:bbox([[-R-8,-p-8],[R+12,Y0+R+6]]),axis:0,base,E};
   },
-  traps:{Uq:{b0:.2,say:'Равномерное вращение — равномерный подъём: шаг делят на равные части',src:'Ж с. 75, 92',hl:['d2','hx']}}
+  traps:{
+    Lk:{b0:-.5,say:'Точка k — на k-й линии связи',src:'Ж с. 75',hl:['hx']},
+    Ck:{b0:.1,say:'Окружность делят на равные части',src:'Ж с. 75, 92',hl:['d1','hx']},
+    Uq:{b0:.2,say:'Равномерное вращение — равномерный подъём: шаг делят на равные части',src:'Ж с. 75, 92',hl:['d2','hx']}}
 });
 })();
