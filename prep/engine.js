@@ -83,7 +83,11 @@ function shape(e,g,cls){
 }
 function label(e,g){ if(e.t!=='pt'||!e.lab) return null;
   const side=e.side||1, up=e.up!=null?e.up:e.a[1]<0;
-  const t=el('text',{x:fmt(e.a[0]+(side<0?-2.6:2.6)),y:fmt(e.a[1]+(up?-2.8:7.4)),'text-anchor':side<0?'end':'start'},g); t.textContent=e.lab; return t; }
+  const t=el('text',{x:fmt(e.a[0]+(side<0?-2.6:2.6)),y:fmt(e.a[1]+(up?-2.8:7.4)),'text-anchor':side<0?'end':'start'},g);
+  /* «A^IV» — римский индекс новой плоскости надстрочно, как в учебнике */
+  if(e.lab.includes('^')){ e.lab.split(/(\^[IVX]+)/).filter(Boolean).forEach(part=>{ const sup=part[0]==='^';
+      const ts=el('tspan',sup?{dy:'-2.4','font-size':'4.6'}:{dy:t.childNodes.length&&t.lastChild.dataset.sup?'2.4':'0'},t); ts.textContent=sup?part.slice(1):part; if(sup) ts.dataset.sup=1; }); }
+  else t.textContent=e.lab; return t; }
 /* scene → svg; show — какие роли видны (null — все); anim — роли, которые появляются по очереди */
 function draw(svg,S,show,anim){
   svg.innerHTML=''; svg.setAttribute('viewBox',S.box.join(' ')); svg.setAttribute('preserveAspectRatio','xMidYMid meet');
