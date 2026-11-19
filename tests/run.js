@@ -11,11 +11,12 @@
    Код выхода 0 — ошибок нет; 1 — есть новые ошибки (их список выводится); 2 — сбой самой проверки.
    Уже разобранные вручную случаи лежат в tests/baseline.json вместе с объяснением, почему это не ошибка. */
 const http=require('http'), fs=require('fs'), path=require('path'), os=require('os');
-let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
+/* браузер — только когда он нужен: tests/shards.js и задание plan в CI подключают run.js без Playwright */
+const pw=()=>{ try{ return require('playwright').chromium; }catch(e){ return require('/opt/node-tools/node_modules/playwright').chromium; } };
 const ROOT=path.join(__dirname,'..'), ARGV=process.argv.slice(2), QUICK=ARGV.includes('--quick');
 const arg=k=>{ const a=ARGV.find(x=>x.startsWith('--'+k+'=')); return a==null?null:a.slice(k.length+3); };
 /* блоки проверки: --only=a,b — только они (выборочная проверка Цеха и PR; полная — на main после слияния). smoke — главная открывается без ошибок JS */
-const GROUPS=['smoke','core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
+const GROUPS=['smoke','prep','core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
 let ONLY=(a=>a?new Set(a.split(',').map(x=>x.trim()).filter(Boolean)):null)(arg('only'));
 /* --quick без --only — быстрая локальная проверка: только блоки, задетые правкой относительно origin/main (та же карта
    влияния, что на PR; не уверена — всё), с выборками вариантов. --quick --all — все блоки. Полная проверка (CI) не меняется. */
@@ -255,6 +256,15 @@ B.me={el:async c=>{ const bad=await require('./me-hub.js').runMe(c.browser,c.URL
 B.print={el:async c=>c.report('Печать листов', await require('./print.js').printCheck(c.browser,c.URL))};
 B.colors={el:async c=>c.report('Цвета чертежа', require('./colors.js').check())};
 B.ask={el:async c=>{ const bad=await require('./ask.js').runAsk(c.browser); c.info('Спроси автора: '+bad.length+' замечаний'); c.report('Спроси автора (#/ask, пульт)',bad); }};
+/* «Подготовка» (#/prep, docs/prep/README.md): node tests/prep.js как есть — программа, карточки дуэлей (100 % верных проходят,
+   каждая ловушка проваливается, лишних отличий нет), модель освоения (знает ≤ 17 пар, угадывает < 1 % и < 1,5 % на каждой теме),
+   экраны. Экраны обязательны: если tests/prep.js их пропустил (нет Playwright) — красная */
+B.prep={el:async c=>{ const r=require('child_process').spawnSync(process.execPath,[path.join(__dirname,'prep.js')],{cwd:ROOT,encoding:'utf8',maxBuffer:64<<20,timeout:20*60000});
+  const out=(r.stdout||'')+(r.stderr||''), lines=out.split('\n');
+  lines.filter(l=>/^\s*Модель|^\s*Экраны|^Подготовка:/.test(l)).forEach(l=>c.info('Подготовка · '+l.trim()));
+  lines.filter(l=>/^\s*✗ /.test(l)).forEach(l=>c.fail('Подготовка · '+l.trim().slice(2)));
+  if(/пропущено/.test(out)) c.fail('Подготовка · экраны в браузере не проверены (tests/prep.js пропустил их)');
+  if(r.status!==0&&!lines.some(l=>/^\s*✗ /.test(l))) c.fail('Подготовка · tests/prep.js завершился с кодом '+r.status+': '+out.trim().split('\n').slice(-5).join(' / ').slice(0,400)); }};
 B.theory={el:async c=>{ const th=require('./theory.js').run().map(o=>({name:'строка '+o.line,rule:o.fact,msg:o.text})); c.report('Теория',th.map(o=>({name:'теория',rule:o.rule,msg:o.msg}))); }};
 
 /* «Дальше» до ответа: после нажатия плеер перерисовывает шаг — ждём, пока старая кнопка уйдёт из документа (вместо паузы 60 мс; медленный кадр — до 2 с) */
@@ -403,7 +413,7 @@ if(require.main===module)(async()=>{
   }
   const items=planItems(), K=+(arg('jobs')||Math.max(1,Math.min(4,os.cpus().length)));
   const srv=await serve(), URL='http://127.0.0.1:'+srv.address().port+'/';
-  const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
+  const chromium=pw(); const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
   /* долгие элементы — первыми (по замерам tests/timings.json): так параллельные страницы кончают почти одновременно */
   let tm={}; try{ tm=JSON.parse(fs.readFileSync(path.join(__dirname,'timings.json'),'utf8')).elements||{}; }catch(e){}
   items.sort((a,b)=>(((tm[b.g]||{})[b.k])||0)-(((tm[a.g]||{})[a.k])||0));

@@ -28,7 +28,7 @@ const TESTS = {geometry: ['core', 'dzvar'], render: ['core'], mutate: ['core'], 
   dz: ['core', 'dzvar', 'variants'], 'dz-run': ['dzvar', 'variants'], 'variants-run': ['variants'], provenance: ['prov', 'adequacy'], 'provenance-run': ['prov'], adequacy: ['adequacy'],
   random: ['random', 'gym', 'adequacy'], 'random-run': ['random', 'adequacy'], 'gen-check': ['gym'], gym: ['gym'], rk2: ['rk2'], rkp: ['rkp'], live: ['live'], rkg: ['rkg'],
   'ig4-steps': ['ig4'], normo: ['normo'], 'normo-model': ['normo'], 'normo-run': ['normo'], 'normo-mutate': ['normo'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'],
-  colors: ['colors'], ask: ['ask'], theory: ['theory'], 'false-positives': ['core']};
+  colors: ['colors'], ask: ['ask'], theory: ['theory'], prep: ['prep'], 'false-positives': ['core']};
 /* модули index.html → блоки (неизвестный модуль — всё) */
 const MODS = [[/^RKP\b/, ['rkp']], [/^RK2\b|^RKG\b/, ['rk2', 'rkg']], [/^LIVE/, ['live']], [/^IGL\b/, ['points']], [/^IGS\b/, ['igs', 'normo']],
   [/^(IGNK|IGREAD)\b/, ['normo']], [/^HWCHECK\b/, ['ng3', 'dzvar']], [/^(GEN|GYM)\b/, ['gym']], [/^(TRACK|VIEWS_PROBE)\b/, ['track']],
@@ -60,6 +60,7 @@ const RULES = [
   [/^dz\/ng\//, {g: NG_DZ}, 'ДЗ по начерту: решатели, данные, методики (загружает index.html)'],
   [/^dz\/ig\//, {g: IG_DZ}, 'ДЗ по ИГ: модели, листы, шаги (загружает index.html)'],
   [/^dz\//, {g: [...NG_DZ, ...IG_DZ]}, 'общее для ДЗ'],
+  [/^kernel\/prep\.js$|^prep\//, {g: ['prep', CRAWL]}, '«Подготовка» (#/prep): программа, карточки, модель освоения — tests/prep.js'],
   [/^kernel\//, {g: KERNEL}, 'ядро ДЗ (реестр DZR, листы SHEET; загружает index.html)'],
   [/^core\//, {g: ['core', 'dzvar', 'variants', 'cert', 'adequacy', 'lk']}, 'ядро: сертификаты, расшифровка ДЗ, модель'],
   [/^lk\/hq\//, {server: true}, 'Штаб — тесты сервера'],

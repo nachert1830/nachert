@@ -59,6 +59,7 @@ function groupRoots() {
     const r = roots[m.g] = roots[m.g] || new Set();
     for (const x of seg.matchAll(/require\('\.\/([\w\/.-]+?)(?:\.js)?'\)/g)) r.add('tests/' + x[1] + '.js');
     for (const x of seg.matchAll(/\bT\('([\w-]+)'\)/g)) r.add('tests/' + x[1] + '.js');
+    for (const x of seg.matchAll(/path\.join\(__dirname,\s*'([\w-]+)\.js'\)/g)) r.add('tests/' + x[1] + '.js');   /* проверка отдельным процессом (prep) */
     /* списки подключаемых проверок: ['geometry','euclid',…] и CORE_JS */
     for (const x of seg.matchAll(/\[\s*((?:'[\w-]+'\s*,?\s*)+)\]/g)) x[1].match(/[\w-]+/g).forEach(w => { if (exists(path.join(__dirname, w + '.js'))) r.add('tests/' + w + '.js'); });
     if (/CORE_JS/.test(seg)) { const cj = /const CORE_JS=\[([^\]]+)\]/.exec(RUN); if (cj) cj[1].match(/[\w-]+/g).forEach(w => r.add('tests/' + w + '.js')); }

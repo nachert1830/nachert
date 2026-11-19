@@ -40,6 +40,7 @@ const CASES = [
   [['tools/hq-run.js'], ['server']], [['.github/workflows/club.yml'], ['smoke']], [['sw.js'], ['crawl']], [['views.json'], ['crawl']],
   [['og/ng2-17.jpg'], ['crawl']], [['ig4/7/index.html'], ['crawl']],
   [['README.md', 'tests/geometry.js'], ['core']],
+  [['kernel/prep.js'], ['prep', 'crawl']], [['prep/engine.js'], ['prep', 'crawl']], [['tests/prep.js'], ['prep']], [['docs/prep/README.md'], 'none'],
 ];
 for (const [files, want] of CASES) {
   const r = impact(files);
