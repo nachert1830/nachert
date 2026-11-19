@@ -5354,22 +5354,25 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 
 .pl.peek .pl-side.more::after{display:none}
 /* ═══ главная v10: низ «чистое поле» — разделы двумя оглавлениями, «Поделиться» одной тихой строкой ═══ */
-.hcr{display:grid;gap:22px;margin-top:26px}
-.hcr-r h3{margin:0 0 12px 2px;font:800 17px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
-.hcr-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.hcr-g a{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink)!important;text-decoration:none!important;font:600 13px/1.15 var(--sans);text-align:center;-webkit-tap-highlight-color:transparent}
-.hcr-c{position:relative;width:68px;height:68px;border-radius:50%;display:grid;place-items:center;background:var(--cc);color:#fff;box-shadow:0 8px 18px -10px var(--cc);transition:transform .15s var(--ease),box-shadow .2s}
-.hcr-c svg{width:32px;height:32px;fill:currentColor}
-.hcr-c .k{fill:var(--cc)}.hcr-c .ks{fill:none;stroke:var(--cc);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.hcr-g a.lt .hcr-c{color:#141821}
-.hcr-g a:hover .hcr-c{transform:translateY(-2px);box-shadow:0 12px 22px -10px var(--cc)}
-.hcr-g a:active .hcr-c{transform:scale(.93)}
-.hcr-g a:focus-visible{outline:none}.hcr-g a:focus-visible .hcr-c{outline:3px solid var(--acc);outline-offset:3px}
-.hcr-c b{position:absolute;top:-3px;right:-5px;min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:var(--surf);color:var(--ink);font:800 11.5px/22px var(--sans);box-shadow:0 0 0 2px var(--paper),0 2px 6px rgba(0,0,0,.18)}
-.hcr-c i{position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#ffd34d;box-shadow:0 0 0 2.5px var(--paper)}
-:root[data-theme=dark] .hcr-g a[style*="#141821"] .hcr-c{background:#2a3144}:root[data-theme=dark] .hcr-g a[style*="#141821"] .hcr-c .k{fill:#2a3144}
-@media(min-width:760px){.hcr{grid-template-columns:1fr 1fr;gap:28px}.hcr-c{width:76px;height:76px}.hcr-c svg{width:36px;height:36px}.hcr-g a{font-size:14px}}
-@media(max-width:350px){.hcr-c{width:58px;height:58px}.hcr-c svg{width:28px;height:28px}}
+.hsv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px;align-items:start}
+.hsv-c{display:flex;flex-direction:column;gap:10px;min-width:0}
+.hsv-c h3{margin:0 0 2px 4px;font:800 17px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
+.hsv-t{position:relative;display:flex;flex-direction:column;overflow:hidden;isolation:isolate;padding:13px 14px;border-radius:22px;background:var(--tc);color:#fff!important;text-decoration:none!important;-webkit-tap-highlight-color:transparent;transition:transform .15s var(--ease),filter .2s}
+.hsv-t::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(255,255,255,.18),transparent 55%)}
+.hsv-t b{font:700 16px/1.15 var(--sans);letter-spacing:-.01em}
+.hsv-t small{margin-top:3px;max-width:13ch;font:500 12.5px/1.25 var(--sans);opacity:.88}
+.hsv-t svg{position:absolute;right:-6px;bottom:-4px;width:62%;max-width:150px;height:auto;color:var(--tc);z-index:-1}
+.hsv-s{min-height:118px}.hsv-m{min-height:146px}.hsv-l{min-height:184px}
+.hsv-l svg{width:78%}
+.hsv-hot{position:absolute;top:12px;right:12px;padding:3px 8px;border-radius:99px;background:#ffdd2d;color:#222;font:700 11px/1.2 var(--sans);font-style:normal}
+.hsv-t:hover{filter:brightness(1.05)}.hsv-t:active{transform:scale(.97)}
+.hsv-t:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+@media(min-width:760px){.hsv{gap:24px}.hsv-c{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hsv-c h3{grid-column:1/-1}.hsv-t{padding:16px 18px;border-radius:24px}.hsv-t b{font-size:18px}.hsv-t small{font-size:13.5px;max-width:16ch}.hsv-s,.hsv-m,.hsv-l{min-height:168px}.hsv-t svg,.hsv-l svg{width:58%}}
+/* нижнее меню как в банковском приложении: пять равных вкладок, «Главная» первая, выбранная — цветом, без выпирающей кнопки */
+.nav-bot .nvh-b,.nav-bot a.nv-home.on .nvh-b{width:auto!important;height:auto!important;margin:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:inherit!important;transform:none!important}
+.nav-bot .nvh-b svg{width:22px!important;height:22px!important}
+.nav-bot a.nv-home{color:var(--mut)!important}
+.nav-bot a.nv-home.on{color:var(--acc)!important}
 .v8h .v8-meta{border:0!important;background:none!important;padding:0!important;margin:14px auto 0!important;justify-content:center!important}
 .v8h .v8-meta .v8-ma{width:auto!important;justify-content:center!important;gap:6px!important;flex-wrap:nowrap!important}
 .v8h .v8-meta .vc{min-height:40px!important;padding:0 6px!important}
@@ -28780,12 +28783,12 @@ function buildNav(sj){
     const IGO=[NAV_IG[2],NAV_IG[1],NAV_IG[0],NAV_IG[3]];
     $('navTop').innerHTML=IGO.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.ic)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
     const one=n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.ic)}<span class="ns">${n.short}</span></a>`;
-    $('navBot').innerHTML=one(IGO[0])+one(IGO[1])+homeB('#/','home')+one(IGO[2])+one(IGO[3]);
+    $('navBot').innerHTML=homeB('#/','home')+one(IGO[0])+one(IGO[1])+one(IGO[2])+one(IGO[3]);
   } else {
     const NG=NAVS.filter(n=>n.id!=='ig'&&!n.hide);
     $('navTop').innerHTML=NG.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
     const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="ns">${n.short}</span></a>`; };
-    $('navBot').innerHTML=one('nb')+one('hw')+homeB('#/','home')+one('rk')+one('th');
+    $('navBot').innerHTML=homeB('#/','home')+one('nb')+one('hw')+one('rk')+one('th');
   }
   /* предмет: Начерт и инженерная графика — два отдельных раздела; переключатель виден, пока ИГ открыта */
   const bar=$('subjBar'); if(bar){ if(IGON()){ bar.hidden=false;
@@ -29818,10 +29821,21 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "sheet":"<rect x=\"2.5\" y=\"3.5\" width=\"19\" height=\"17\" rx=\"3\"/><rect class=\"k\" x=\"12.5\" y=\"14\" width=\"7\" height=\"4.6\" rx=\"1\"/><rect x=\"15.6\" y=\"14\" width=\"1\" height=\"4.6\"/><rect x=\"12.5\" y=\"15.9\" width=\"7\" height=\".9\"/><rect class=\"k\" x=\"5.5\" y=\"6.5\" width=\"5.5\" height=\"5.5\" rx=\"1\"/><rect x=\"7\" y=\"8\" width=\"2.5\" height=\"2.5\" rx=\".4\"/>",
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
-/* разделы на главной — ряд круглых цветных кнопок на чистом фоне (как витрина магазинов в банковском приложении):
-   у каждого раздела свой яркий цвет, белый значок; число задач — меткой на круге; light — светлый круг с тёмным значком */
-function circHTML(title,items){
-  return `<nav class="hcr-r" aria-label="${title}"><h3>${title}</h3><div class="hcr-g">${items.map(([h,t,ic,col,n,hot,light])=>`<a href="${h}" style="--cc:${col}"${light?' class="lt"':''}><span class="hcr-c"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:hot?'<i aria-label="скоро"></i>':''}</span>${t}</a>`).join('')}</div></nav>`; }
+/* разделы на главной — «сервисы» двумя столбцами (слева начерт, справа ИГ): цветные плитки разной высоты,
+   название, короткая подпись и минималистичная объёмная картинка в углу. Картинки — белые грани разной прозрачности,
+   поэтому подходят к любому цвету плитки и обеим темам */
+const SVCART={
+  nb:'<ellipse cx="62" cy="74" rx="30" ry="4" fill="#000" opacity=".12"/><g transform="rotate(-10 60 44)"><rect x="38" y="14" width="44" height="56" rx="6" fill="#fff" opacity=".9"/><rect x="38" y="14" width="10" height="56" rx="4" fill="#fff" opacity=".55"/><rect x="54" y="26" width="20" height="4" rx="2" fill="currentColor" opacity=".35"/><rect x="54" y="35" width="20" height="4" rx="2" fill="currentColor" opacity=".35"/><rect x="54" y="44" width="13" height="4" rx="2" fill="currentColor" opacity=".35"/></g>',
+  hw:'<ellipse cx="60" cy="74" rx="28" ry="4" fill="#000" opacity=".12"/><path d="M40 12h28l14 14v42a4 4 0 0 1-4 4H40a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z" fill="#fff" opacity=".9"/><path d="M68 12v10a4 4 0 0 0 4 4h10z" fill="#fff" opacity=".5"/><path d="m48 46 7 7 14-15" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>',
+  rk:'<ellipse cx="60" cy="74" rx="26" ry="4" fill="#000" opacity=".12"/><rect x="54" y="6" width="12" height="7" rx="3" fill="#fff" opacity=".7"/><circle cx="60" cy="42" r="26" fill="#fff" opacity=".9"/><circle cx="60" cy="42" r="19" fill="#fff" opacity=".55"/><path d="M60 42V29" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".55"/><circle cx="60" cy="42" r="4" fill="currentColor" opacity=".55"/>',
+  th:'<ellipse cx="60" cy="72" rx="32" ry="4" fill="#000" opacity=".12"/><path d="M60 26c-9-7-19-8-30-5v42c11-3 21-2 30 5z" fill="#fff" opacity=".9"/><path d="M60 26c9-7 19-8 30-5v42c-11-3-21-2-30 5z" fill="#fff" opacity=".6"/>',
+  grid:'<ellipse cx="60" cy="74" rx="30" ry="4" fill="#000" opacity=".12"/><g transform="rotate(8 60 42)"><rect x="34" y="14" width="52" height="56" rx="5" fill="#fff" opacity=".9"/><path d="M42 26h36M42 36h36M42 46h36M42 56h36M52 22v42M64 22v42M76 22v42" stroke="currentColor" stroke-width="1.6" opacity=".3"/><path d="M46 58 58 30l14 22z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" opacity=".6"/></g>',
+  sheet:'<ellipse cx="60" cy="74" rx="32" ry="4" fill="#000" opacity=".12"/><rect x="28" y="18" width="64" height="50" rx="5" fill="#fff" opacity=".9"/><rect x="64" y="52" width="24" height="12" rx="2" fill="currentColor" opacity=".3"/><path d="M38 46V30h14v8h10v8z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".6"/>',
+  cube:'<ellipse cx="60" cy="74" rx="28" ry="5" fill="#000" opacity=".14"/><path d="M60 12 86 26 60 40 34 26z" fill="#fff" opacity=".95"/><path d="M34 26 60 40v30L34 56z" fill="#fff" opacity=".7"/><path d="M86 26 60 40v30l26-14z" fill="#fff" opacity=".45"/>',
+  square:'<ellipse cx="60" cy="74" rx="30" ry="4" fill="#000" opacity=".12"/><path d="M34 14c0-3 3-4 5-2l46 46c2 2 1 6-2 6H38a4 4 0 0 1-4-4z" fill="#fff" opacity=".9"/><path d="M45 37v14c0 1 1 2 2 2h14c1 0 2-2 1-3L48 36c-1-1-3 0-3 1z" fill="currentColor" opacity=".35"/>'
+};
+function svcHTML(title,items){
+  return `<nav class="hsv-c" aria-label="${title}"><h3>${title}</h3>${items.map(([h,t,sub,ic,col,sz,hot])=>`<a href="${h}" class="hsv-t hsv-${sz}" style="--tc:${col}"><b>${t}</b><small>${sub}</small>${hot?'<i class="hsv-hot">скоро</i>':''}<svg viewBox="0 0 120 80" aria-hidden="true">${SVCART[ic]}</svg></a>`).join('')}</nav>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
@@ -29839,9 +29853,9 @@ function viewHome(v){
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
-   <section class="v8-dirs hcr" aria-label="Разделы">
-    ${circHTML('Начерт',[[H('ng','tasks'),'Тетрадь','nb','#1a5ae0',nT],[HDZ('ng'),'ДЗ','hw','#7b4dff'],[H('ng','rk2'),'РК2','rk','#e0252c',0,1],[H('ng','path'),'Теория','th','#0fa3c4']])}
-    ${circHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','grid','#ff6a13',nIW],[HDZ('ig'),'ДЗ','sheet','#12a05c'],[H('ig','learn'),'Учиться','cube','#141821'],[H('ig','theory'),'ЕСКД','square','#ffc21a',0,0,1]])}
+   <section class="v8-dirs hsv" aria-label="Разделы">
+    ${svcHTML('Начерт',[[H('ng','tasks'),'Тетрадь',nT+' задач по шагам','nb','#3f7bea','l'],[HDZ('ng'),'ДЗ','твой вариант по шагам','hw','#8a6cf0','s'],[H('ng','rk2'),'РК2','билеты и пробный РК','rk','#e2566a','m'],[H('ng','path'),'Теория','уроки и шпаргалка','th','#3fb0c9','s']])}
+    ${svcHTML('Инж. графика',[[H('ig','wb'),'Тетрадь',nIW+' рисунков','grid','#f08a4b','s'],[HDZ('ig'),'ДЗ','листы, виды, разрезы','sheet','#4aa978','l'],[H('ig','learn'),'Учиться','виды и разрезы по шагам','cube','#6f7f9c','s'],[H('ig','theory'),'ЕСКД','нормы оформления','square','#d9a94a','m']])}
    </section>
    <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
    <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
