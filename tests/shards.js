@@ -35,7 +35,9 @@ function plan(o) {
   const K = o.jobs || 3, items = weights(groups, o.timings || {}), total = items.reduce((a, b) => a + b.ms, 0);
   /* накладные расходы потока (браузер, страница) — в оценку */
   let N = o.shards;
-  if (!N || N === 'auto') { N = 1; while (N < 8) { const S = lpt(items, N * K), est = Math.max(...S.map(s => s.ms)); if (est <= (o.target || 240) * 1000) break; N++; } }
+  /* auto: добавляем поток, пока расчётное время выше цели и новый поток его сокращает (упор в один долгий элемент — не раздуваем) */
+  if (!N || N === 'auto') { N = 1; let est = Math.max(0, ...lpt(items, K).map(s => s.ms));
+    while (N < 8 && est > (o.target || 240) * 1000) { const e2 = Math.max(0, ...lpt(items, (N + 1) * K).map(s => s.ms)); if (e2 >= est * 0.97) break; N++; est = e2; } }
   N = Math.max(1, Math.min(+N, Math.max(1, Math.ceil(items.length / K))));
   const S = lpt(items, N * K), shards = [];
   for (let i = 0; i < N; i++) shards.push(S.slice(i * K, (i + 1) * K).map(s => s.items.map(x => x.id)).filter(x => x.length));

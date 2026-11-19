@@ -268,20 +268,27 @@ async function walkTask(p){
 const WALKN=4;
 B.crawl={els:q=>q?[]:['pages',...Array.from({length:WALKN},(_,i)=>'walk'+i)], el:async(c,k)=>{ const page=await c.page('crawl'), errs=page.__errs;
   const bad=[];
-  if(k==='pages'){ const seen=new Set(), queue=['#/']; let n=0;
-    while(queue.length&&n<700){ const h=queue.shift(); if(seen.has(h)) continue; seen.add(h); n++;
-      const before=errs.length; await page.evaluate(h=>{ location.hash=h; },h);
-      /* роутер отрисовал адрес (смена страниц может идти через View Transition) и прошли два кадра */
-      await page.waitForFunction(h=>CURH===h&&!(window.__vtN>0),h,{timeout:5000,polling:'raf'}).catch(()=>{}); await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,16)))));
-      const st=await page.evaluate(()=>({ w:document.documentElement.scrollWidth, iw:window.innerWidth, txt:(document.getElementById('view')||document.body).innerText.length,
-        /* элемент страницы, растянутый на весь экран чужим стилем (так плитка главной однажды получила стиль окна 3D) */
-        huge:[...document.querySelectorAll('#view *')].filter(e=>{ const c=getComputedStyle(e); return c.position==='fixed'&&e.getBoundingClientRect().height>window.innerHeight*0.6; }).map(e=>e.tagName+'.'+String(e.className).slice(0,40)),
-        links:[...document.querySelectorAll('a[href^="#/"]')].map(a=>a.getAttribute('href')) }));
-      if(errs.length>before) bad.push({name:h,rule:'ошибка JS',msg:errs.slice(before).join(' / ').slice(0,200)});
-      if(st.w>st.iw+1) bad.push({name:h,rule:'горизонтальная прокрутка',msg:'ширина '+st.w+' при экране '+st.iw});
-      if(st.huge.length) bad.push({name:h,rule:'элемент на весь экран',msg:st.huge.slice(0,3).join(', ')});
-      if(st.txt<40) bad.push({name:h,rule:'пустая страница',msg:'текста '+st.txt+' символов'});
-      st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)&&!/^#\/(ng|ig)\d\/(?!1(\/|$))\d+/.test(l)) queue.push(l); }); }   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js; варианты ДЗ — tests/variants-run.js (здесь — первый вариант каждого задания) */
+  if(k==='pages'){ /* обход по ссылкам — тремя страницами на общей очереди (набор страниц тот же: замыкание по ссылкам от «#/») */
+    const seen=new Set(), queue=['#/']; let n=0, busy=0;
+    const crawler=async page=>{ const errs=page.__errs;
+      for(;;){ if(n>=700) return; const h=queue.shift(); if(h==null){ if(!busy) return; await new Promise(r=>setTimeout(r,20)); continue; }
+        if(seen.has(h)) continue; seen.add(h); n++; busy++;
+        try{
+          const before=errs.length; await page.evaluate(h=>{ location.hash=h; },h);
+          /* роутер отрисовал адрес (смена страниц может идти через View Transition) и прошли два кадра */
+          await page.waitForFunction(h=>CURH===h&&!(window.__vtN>0),h,{timeout:5000,polling:'raf'}).catch(()=>{}); await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,16)))));
+          const st=await page.evaluate(()=>({ w:document.documentElement.scrollWidth, iw:window.innerWidth, txt:(document.getElementById('view')||document.body).innerText.length,
+            /* элемент страницы, растянутый на весь экран чужим стилем (так плитка главной однажды получила стиль окна 3D) */
+            huge:[...document.querySelectorAll('#view *')].filter(e=>{ const c=getComputedStyle(e); return c.position==='fixed'&&e.getBoundingClientRect().height>window.innerHeight*0.6; }).map(e=>e.tagName+'.'+String(e.className).slice(0,40)),
+            links:[...document.querySelectorAll('a[href^="#/"]')].map(a=>a.getAttribute('href')) }));
+          if(errs.length>before) bad.push({name:h,rule:'ошибка JS',msg:errs.slice(before).join(' / ').slice(0,200)});
+          if(st.w>st.iw+1) bad.push({name:h,rule:'горизонтальная прокрутка',msg:'ширина '+st.w+' при экране '+st.iw});
+          if(st.huge.length) bad.push({name:h,rule:'элемент на весь экран',msg:st.huge.slice(0,3).join(', ')});
+          if(st.txt<40) bad.push({name:h,rule:'пустая страница',msg:'текста '+st.txt+' символов'});
+          st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)&&!/^#\/(ng|ig)\d\/(?!1(\/|$))\d+/.test(l)) queue.push(l); });   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js; варианты ДЗ — tests/variants-run.js (здесь — первый вариант каждого задания) */
+        } finally { busy--; } } };
+    const extra=[await c.fresh({viewport:VIEW.phone}),await c.fresh({viewport:VIEW.phone})];
+    await Promise.all([page,...extra].map(crawler));
     return {n,bad}; }
   const w=+k.slice(4), tasks=(await page.evaluate(()=>WB3.tasks.map(t=>t.n))).filter((t,i)=>i%WALKN===w);
   for(const t of tasks){ const before=errs.length; await page.evaluate(n=>{ location.hash='#/ng/path/t'+n; },t); await ready(page).catch(()=>{}); await page.waitForSelector('.pl-next,.pl-nextpart,.pl-done',{timeout:3000}).catch(()=>{});
