@@ -6,15 +6,15 @@
       точка восстанавливается по двум проекциям и проверяется в пространстве (лежит на обеих поверхностях, на плоскости,
       линия связи ⟂ оси x, видимость — по положению точки относительно половин поверхностей).
       Верная карточка проходит все правила; неверная проваливает хотя бы одно; элементы вне «отличия» ловушки (hl) совпадают.
-   3. Модель освоения (Эло + правило 85 % + BKT): «знает» (92 % верно) осваивает в среднем ≤ 15 пар; «угадывает» (50 %) получает
-      ложное «освоено» реже чем в 1 % из 10 000 прогонов.
+   3. Модель освоения (Эло + правило 85 % + BKT): «знает» (92 % верно) осваивает в среднем ≤ 17 пар; «угадывает» (50 %) получает
+      ложное «освоено» реже чем в 1 % из 10 000 прогонов, и на каждой теме — меньше 1,5 % из 4000 (с запасом на разброс).
    4. Экраны в браузере: программа, каждая тема («Смотри» до конца, дуэль, ответ), ДЗ №4 — карточка подготовки и «Решаю сам». */
 'use strict';
 const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
@@ -134,10 +134,36 @@ const CHECK={
     /* перпендикуляр: направление — нормаль плоскости; его проекции: (nx, ny) на π₁, (nx, −nz) на π₂ */
     const d1=un(L1(S,'n1')), d2=un(L1(S,'n2')), p1=[nr[0],nr[1]], p2=[nr[0],-nr[2]];
     if(Math.abs(cr(d1,[p1[0]/Math.hypot(...p1),p1[1]/Math.hypot(...p1)]))>.003) v.push('n′ ⟂ h′'); if(Math.abs(cr(d2,[p2[0]/Math.hypot(...p2),p2[1]/Math.hypot(...p2)]))>.003) v.push('n″ ⟂ f″'); return v; },
+  /* ── база: точка, прямая ── */
+  p1(V,S){ const v=[]; const [x,y,z]=V.A, A2=PL(S,'A″'), A1=PL(S,'A′'); if(!A2||!A1) return ['обе проекции'];
+    if(Math.hypot(A2[0]+x,A2[1]+z)>TOL) v.push('A″: x влево, высота z'); if(Math.hypot(A1[0]+x,A1[1]-y)>TOL) v.push('A′: x влево, глубина y'); return v; },
+  p2(V,S){ const v=[]; const [x]=V.A, sx=L1(S,'sx'); if(Math.abs(sx[2]+x)>TOL) v.push('x — влево от O');
+    if(!/^z/.test(TX(S,'tz'))||!/^y/.test(TX(S,'ty'))) v.push('до A″ — z, до A′ — y'); return v; },
+  p3(V,S){ const v=[]; const [,y,z]=V.A, A3=P(S,'A3'); if(Math.hypot(A3[0]-y,A3[1]+z)>TOL) v.push('A‴: справа от z на y, высота z'); return v; },
+  p4(V,S){ return CHECK.p1(V,S); },
+  p5(V,S){ const {A,B,kind}=V, top=kind==='h'?(A[2]>B[2]?'A':'B'):(A[1]>B[1]?'A':'B'); const lab=S.E.find(e=>e.role==='P').lab; return lab[0]===top?[]:['видна ближняя к глазу']; },
+  l1(V,S){ const a=L1(S,'ab2'), b=L1(S,'ab1'), eq=(u,w)=>Math.abs(u-w)<TOL;
+    const ok={h:eq(a[1],a[3]),f:eq(b[1],b[3]),hp:eq(b[0],b[2])&&eq(b[1],b[3]),fp:eq(a[0],a[2])&&eq(a[1],a[3])}[V.kind]; return ok?[]:['признак типа прямой']; },
+  l2(V,S){ const v=[]; const {A,B,r}=V, t=r[0]/(r[0]+r[1]), K2=P(S,'K2'), K1=P(S,'K1'); if(Math.abs(K2[0]-K1[0])>TOL) v.push('одна линия связи');
+    const s2=(K2[0]-A[0])/(B[0]-A[0]); if(Math.abs(s2-t)>.01||Math.abs(-K2[1]-(A[2]+(B[2]-A[2])*s2))>TOL) v.push('K″ делит A″B″ в отношении');
+    const s1=(K1[0]-A[0])/(B[0]-A[0]); if(Math.abs(K1[1]-(A[1]+(B[1]-A[1])*s1))>TOL) v.push('K′ на A′B′'); return v; },
+  l3(V,S){ const v=[]; const {A,B}=V, at=t=>[A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t];
+    const tH=A[2]/(A[2]-B[2]), H=at(tH), tF=A[1]/(A[1]-B[1]), Fp=at(tF);
+    if(Math.hypot(P(S,'H2')[0]-H[0],P(S,'H2')[1])>TOL||Math.hypot(P(S,'H1')[0]-H[0],P(S,'H1')[1]-H[1])>TOL) v.push('H: z = 0'); if(Math.hypot(P(S,'F1')[0]-Fp[0],P(S,'F1')[1])>TOL||Math.hypot(P(S,'F2')[0]-Fp[0],P(S,'F2')[1]+Fp[2])>TOL) v.push('F: y = 0'); return v; },
+  l4(V,S){ const v=[]; const a1=[V.A[0],V.A[1]], b1=[V.B[0],V.B[1]], B0=P(S,'B0'); if(Math.abs(Math.hypot(B0[0]-a1[0],B0[1]-a1[1])-Math.hypot(V.A[0]-V.B[0],V.A[1]-V.B[1],V.A[2]-V.B[2]))>TOL) v.push('гипотенуза = |AB|');
+    if(Math.abs((B0[0]-b1[0])*(b1[0]-a1[0])+(B0[1]-b1[1])*(b1[1]-a1[1]))/Math.hypot(b1[0]-a1[0],b1[1]-a1[1])>TOL) v.push('катет ⟂ A′B′'); return v; },
+  l4u(V,S){ const v=[]; const a1=[V.A[0],V.A[1]], b1=[V.B[0],V.B[1]], lg=L1(S,'leg'); if(Math.hypot(lg[0]-b1[0],lg[1]-b1[1])>TOL||Math.abs(Math.hypot(lg[2]-lg[0],lg[3]-lg[1])-Math.abs(V.B[2]-V.A[2]))>TOL) v.push('треугольник на A′B′ с Δz');
+    const p0=E(S,'arc').find(e=>e.t==='poly').p[0]; if(Math.abs(Math.hypot(p0[0]-a1[0],p0[1]-a1[1])-12)>.5) v.push('α — при A′'); return v; },
+  l5(V,S){ const v=[]; const {A,B}=V, K1=P(S,'K1'), s=(K1[0]-A[0])/(B[0]-A[0]), K=[A[0]+(B[0]-A[0])*s,A[1]+(B[1]-A[1])*s,A[2]+(B[2]-A[2])*s];
+    if(Math.abs(K1[1]-K[1])>TOL) v.push('K′ на A′B′'); if(Math.abs(Math.hypot(K[0]-A[0],K[1]-A[1],K[2]-A[2])-V.l)>TOL) v.push('|AK| = ℓ'); return v; },
+  l6(V,S){ const K2=P(S,'K2'), K1=P(S,'K1'); return Math.abs(K2[0]-K1[0])>TOL?['пересечение — на одной линии связи']:[]; },
+  l7(V,S){ const K1=P(S,'K1'), K=[K1[0],K1[1],V.h0[2]], d=[V.h1[0]-V.h0[0],V.h1[1]-V.h0[1],0], w=[K[0]-V.A[0],K[1]-V.A[1],K[2]-V.A[2]];
+    return Math.abs(d[0]*w[0]+d[1]*w[1])/Math.hypot(...d)/Math.hypot(...w)>.01?['AK ⟂ h в пространстве']:[]; },
   f1(V,S){ const v=[]; const b=E(S,'b1')[0]; if(b.t!=='circ'||Math.abs(b.a[2]-V.R)>TOL||Math.abs(b.a[0])>TOL) v.push('основание на π₁ — окружность радиуса R');
     const oL=E(S,'oL')[0].a, oR=E(S,'oR')[0].a; if(Math.abs(oL[0])>TOL||Math.abs(oR[0])>TOL) v.push('вершина на оси');
     if(Math.abs(oL[2]+V.R)>TOL||Math.abs(oR[2]-V.R)>TOL) v.push('очерк — крайние образующие'); return v; }
 };
+const PL=(S,lab)=>{ const e=S.E.find(x=>x.t==='pt'&&x.lab===lab); return e?e.a:null; }, TX=(S,r)=>(S.E.find(e=>e.role===r&&e.t==='txt')||{}).s||'';
 const L1=(S,r)=>E(S,r).find(e=>e.t==='line').a, un=l=>{ const d=[l[2]-l[0],l[3]-l[1]], k=Math.hypot(...d); return [d[0]/k,d[1]/k]; }, cr=(a,b)=>a[0]*b[1]-a[1]*b[0];
 const d3=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 /* новая проекция N от P: линия связи ⟂ оси, расстояние до оси = dist, по другую сторону от P */
@@ -169,12 +195,17 @@ for(const [id,T] of Object.entries(PREP.TOPICS)){
 }
 
 /* ── 3. модель освоения на смоделированных студентах ── */
+{ for(const id of Object.keys(PREP.TOPICS)){ const T=PREP.TOPICS[id], M=PREP.Model(T,null); try{ for(let i=0;i<30;i++){ const k=M.next(); if(!T.traps[k]) throw new Error('выбрана несуществующая ловушка «'+k+'»'); M.last=k; M.answer(k,i%5!==0,3000); } }catch(e){ bad(`модель, тема ${id}: ${e.message}`); } } }
 { const T=PREP.TOPICS.x3, runs=10000;
   const sim=(pRight,cap)=>{ const M=PREP.Model(T,null); for(let n=1;n<=cap;n++){ const k=M.next(); M.last=k; M.answer(k,Math.random()<pRight,4000); if(M.mastered()) return n; } return 0; };
   let sum=0, cnt=0; for(let i=0;i<2000;i++){ const n=sim(.92,60); if(n){ sum+=n; cnt++; } }
-  const avg=sum/cnt; if(avg>15) bad(`модель: «знает» осваивает в среднем за ${avg.toFixed(1)} пар (> 15)`);
+  const avg=sum/cnt; if(avg>17) bad(`модель: «знает» осваивает в среднем за ${avg.toFixed(1)} пар (> 17)`);
   let fake=0; for(let i=0;i<runs;i++) if(sim(.5,40)) fake++;
   if(fake/runs>=.01) bad(`модель: «угадывает» получает «освоено» в ${(fake/runs*100).toFixed(2)} % прогонов (≥ 1 %)`);
+  /* то же на каждой теме: у тем разное число ловушек и разная их сложность */
+  let worst=['',0]; for(const [id,TT] of Object.entries(PREP.TOPICS)){ let f=0; const n=4000; for(let i=0;i<n;i++){ const M=PREP.Model(TT,null); for(let j=1;j<=40;j++){ const k=M.next(); M.last=k; M.answer(k,Math.random()<.5,4000); if(M.mastered()){ f++; break; } } }
+    if(f/n>worst[1]) worst=[id,f/n]; if(f/n>=.015) bad(`модель, тема ${id}: «угадывает» получает «освоено» в ${(f/n*100).toFixed(2)} %`); }
+  info.push(`Модель по темам: худшая — ${worst[0]}, ложное «освоено» ${(worst[1]*100).toFixed(2)} %`);
   info.push(`Модель: «знает» — в среднем ${avg.toFixed(1)} пар (освоили ${cnt} из 2000), «угадывает» — ложное «освоено» ${(fake/runs*100).toFixed(2)} %`); }
 
 /* ── 4. экраны ── */
