@@ -1,0 +1,257 @@
+<title>Архитектура Начерта v9</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Схема «что где», а не дизайн: серые блоки в рамках телефонов, оранжевым — то, что зависит от того, кто зашёл */
+:root{--bg:#f6f6f4;--paper:#fff;--fg:#141416;--mut:#6f6f75;--ln:#e2e2e0;--blk:#ececea;--blk2:#dcdcda;--o:#fa4b00;--osoft:#fff1ea;
+  --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f0f10;--paper:#18181a;--fg:#f2f2f4;--mut:#9a9aa0;--ln:#2a2a2d;--blk:#232326;--blk2:#2f2f33;--o:#ff6a26;--osoft:#2a1a12;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f0f10;--paper:#18181a;--fg:#f2f2f4;--mut:#9a9aa0;--ln:#2a2a2d;--blk:#232326;--blk2:#2f2f33;--o:#ff6a26;--osoft:#2a1a12;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15.5px/1.55 var(--sans)}
+.w{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+h1{font:800 clamp(30px,5vw,44px)/1.05 var(--sans);letter-spacing:-.025em;margin:0 0 12px;text-wrap:balance}
+h2{font:800 26px/1.15 var(--sans);letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance}
+h3{font:700 17px/1.3 var(--sans);margin:0 0 6px}
+p{margin:0 0 12px;max-width:68ch}
+.lead{font-size:18px;color:var(--mut);max-width:62ch}
+.lbl{font:600 11.5px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+code{font:500 .86em var(--mono);background:var(--blk);padding:1px 5px;border-radius:5px}
+section{margin-top:56px;display:flex;flex-direction:column;gap:14px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+nav.toc a{color:var(--fg);text-decoration:none;border:1px solid var(--ln);background:var(--paper);border-radius:99px;padding:6px 13px;font-weight:600;font-size:14px}
+nav.toc a:hover{border-color:var(--fg)}
+.key{display:flex;flex-wrap:wrap;gap:16px;font-size:14px;color:var(--mut)}
+.key span{display:inline-flex;align-items:center;gap:7px}
+.key i{width:14px;height:14px;border-radius:4px;background:var(--blk2);display:inline-block}
+.key i.o{background:var(--osoft);box-shadow:inset 0 0 0 1.5px var(--o)}
+
+/* три состояния */
+.states{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.states{grid-template-columns:1fr}}
+.st{background:var(--paper);border:1px solid var(--ln);border-radius:18px;padding:16px 18px;min-width:0}
+.st b{display:block;font:700 17px var(--sans);margin-bottom:4px}
+.st p{font-size:14.5px;color:var(--mut);margin:0}
+
+/* телефоны-схемы */
+.phones{display:flex;gap:18px;overflow-x:auto;padding:4px 2px 14px;scroll-snap-type:x proximity}
+.ph{flex:none;width:268px;scroll-snap-align:start}
+.ph>.cap{font:700 15px var(--sans);margin:0 0 8px 4px}
+.ph>.cap small{display:block;font:500 13px var(--sans);color:var(--mut)}
+.scr{background:var(--paper);border:1px solid var(--ln);border-radius:30px;padding:14px 12px 12px;display:flex;flex-direction:column;gap:7px;box-shadow:0 10px 30px -22px rgba(0,0,0,.35)}
+.b{background:var(--blk);border-radius:12px;padding:8px 10px;font:600 12.5px/1.3 var(--sans);min-width:0}
+.b small{display:block;font-weight:500;font-size:11.5px;color:var(--mut);margin-top:1px}
+.b.o{background:var(--osoft);box-shadow:inset 0 0 0 1.5px var(--o)}
+.b.inv{background:var(--fg);color:var(--paper)}.b.inv small{color:color-mix(in srgb,var(--paper) 65%,transparent)}
+.b.ghost{background:none;border:1.5px dashed var(--ln);color:var(--mut)}
+.row{display:flex;gap:7px}.row>*{flex:1}
+.hd{display:flex;align-items:center;justify-content:space-between;font:800 14px var(--sans);padding:0 2px 2px}
+.hd span{display:flex;gap:5px}
+.hd em{font-style:normal;font:600 11px var(--sans);background:var(--blk);border-radius:99px;padding:4px 8px}
+.hd em.o{background:var(--o);color:#fff}
+.tall{min-height:64px}.mid{min-height:44px}
+.tabs{display:flex;justify-content:space-between;gap:4px;background:var(--blk);border-radius:99px;padding:4px;margin-top:4px}
+.tabs i{font-style:normal;flex:1;text-align:center;font:600 10.5px var(--sans);padding:6px 0;border-radius:99px;color:var(--mut)}
+.tabs i.on{background:var(--fg);color:var(--paper)}
+.seg{display:flex;gap:3px;background:var(--blk);border-radius:9px;padding:3px}
+.seg i{font-style:normal;flex:1;text-align:center;font:600 11px var(--sans);padding:4px 0;border-radius:7px;color:var(--mut)}
+.seg i.on{background:var(--paper);color:var(--fg)}
+
+/* таблицы */
+.tw{overflow-x:auto;border:1px solid var(--ln);border-radius:16px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-top:1px solid var(--ln)}
+thead th{border-top:0;font:600 11.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);background:color-mix(in srgb,var(--blk) 50%,transparent)}
+td:first-child{font-weight:700;white-space:nowrap}
+td.same{color:var(--mut)}
+.bars{display:flex;height:34px;border-radius:10px;overflow:hidden;font:700 13px var(--sans);color:#fff;max-width:720px}
+.bars div{display:flex;align-items:center;padding:0 10px;white-space:nowrap;min-width:0}
+.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.rules{grid-template-columns:1fr}}
+.rule{background:var(--paper);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;min-width:0}
+.rule p{font-size:14.5px;margin:0;color:var(--mut)}
+.dec{display:flex;flex-direction:column;gap:10px;counter-reset:d}
+.dec li{list-style:none;background:var(--paper);border:1px solid var(--ln);border-radius:16px;padding:14px 16px 14px 52px;position:relative;counter-increment:d}
+.dec li::before{content:counter(d);position:absolute;left:16px;top:14px;width:24px;height:24px;border-radius:50%;background:var(--fg);color:var(--paper);font:700 13px/24px var(--sans);text-align:center}
+.dec li p{margin:2px 0 0;font-size:14.5px;color:var(--mut)}
+.dec li b.rec{color:var(--o);font-weight:700}
+.tree{font:500 13.5px/1.7 var(--mono);background:var(--paper);border:1px solid var(--ln);border-radius:16px;padding:14px 18px;overflow-x:auto;white-space:pre;margin:0}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="w">
+  <div class="lbl">Начерт · информационная архитектура · v9 · 19 ноября 2026</div>
+  <h1>Что где лежит и кому что показываем</h1>
+  <p class="lead">Сначала раскладываем содержимое по экранам, дизайн и анимации — потом, поверх этой схемы. Серые блоки — общие для всех. Оранжевые — меняются в зависимости от того, кто зашёл.</p>
+  <nav class="toc"><a href="#who">Кто заходит</a><a href="#home">Главная</a><a href="#subj">Начерт и ИГ</a><a href="#lk">Кабинет</a><a href="#data">Откуда данные</a><a href="#decide">Решить</a></nav>
+
+  <section id="who">
+    <h2>Кто заходит: три состояния</h2>
+    <p>Персонализация идёт ступенями. Каждая следующая ступень что-то добавляет, ничего не ломая на предыдущей.</p>
+    <div class="states">
+      <div class="st"><b>Гость</b><p>Ничего о нём не знаем. ДЗ показываем «по очереди» — следующее по общему плану семестра. Сроки — недели семестра.</p></div>
+      <div class="st"><b>Гость с вариантом</b><p>Вписал номер варианта на сайте (уже работает, <code>nch2_dzvar</code>). ДЗ всё ещё по очереди, но любая карточка открывает сразу его вариант.</p></div>
+      <div class="st"><b>Студент в кабинете</b><p>Вошёл и указал группу. Знаем предметы группы, день и время занятий, отметки «сдано». ДЗ — его ближайшее несданное, срок — день его занятия.</p></div>
+    </div>
+  </section>
+
+  <section id="home">
+    <h2>Главная: порядок блоков</h2>
+    <div class="key"><span><i></i>одинаково для всех</span><span><i class="o"></i>зависит от состояния</span></div>
+    <div class="phones">
+      <div class="ph"><p class="cap">Гость<small>впервые, в браузере</small></p>
+        <div class="scr">
+          <div class="hd">Начерт<span><em>Спросить</em><em>Войти</em></span></div>
+          <div class="row"><div class="b o tall">ДЗ сейчас: Задание 4<small>по очереди · 13-я неделя</small></div><div class="b o tall">До РК3 — 18 дней<small>неделя по плану</small></div></div>
+          <div class="b o ghost">Войди — будут сроки твоей группы →</div>
+          <div class="b inv mid">Поиск<small>номер задачи, ДЗ, тема</small></div>
+          <div class="b o">План на сегодня<small>повтори 3 задачи · 12 мин</small></div>
+          <div class="b o">Установить как приложение<small>иконка на экране, работает без сети</small></div>
+          <div class="b mid">Просмотры + Поделиться</div>
+          <div class="seg"><i class="on">Начерт</i><i>Инж. графика</i></div>
+          <div class="row"><div class="b mid">Тетрадь<small>34 из 89</small></div><div class="b mid">3D-эпюр</div></div>
+          <div class="row"><div class="b">РК2</div><div class="b">Теория</div></div>
+          <div class="tabs"><i class="on">Главная</i><i>Тетрадь</i><i>ДЗ</i><i>РК</i><i>Теория</i></div>
+        </div></div>
+      <div class="ph"><p class="cap">Гость с вариантом<small>уже был, вписал вариант 17</small></p>
+        <div class="scr">
+          <div class="hd">Начерт<span><em>Спросить</em><em>Войти</em></span></div>
+          <div class="row"><div class="b o tall">Задание 4 · в. 17<small>по очереди · сразу разбор</small></div><div class="b o tall">До РК3 — 18 дней<small>неделя по плану</small></div></div>
+          <div class="b o ghost">Войди — будут сроки твоей группы →</div>
+          <div class="b inv mid">Поиск<small>номер задачи, ДЗ, тема</small></div>
+          <div class="b o">Продолжить<small>задача 47, шаг 3 из 6</small></div>
+          <div class="b o">План на сегодня<small>повтори 3 задачи · 12 мин</small></div>
+          <div class="b o">Установить как приложение</div>
+          <div class="b mid">Просмотры + Поделиться</div>
+          <div class="seg"><i class="on">Начерт</i><i>Инж. графика</i></div>
+          <div class="row"><div class="b mid">Тетрадь</div><div class="b mid">3D-эпюр</div></div>
+          <div class="tabs"><i class="on">Главная</i><i>Тетрадь</i><i>ДЗ</i><i>РК</i><i>Теория</i></div>
+        </div></div>
+      <div class="ph"><p class="cap">Студент в кабинете<small>группа ИУ1-11, оба предмета</small></p>
+        <div class="scr">
+          <div class="hd">Начерт<span><em>Спросить</em><em class="o">ИП</em></span></div>
+          <div class="row"><div class="b o tall">Задание 4 · в. 17<small>сдать в чт, 26 нояб · занятие группы</small></div><div class="b o tall">РК3 — чт, 10 дек<small>готовность 62%</small></div></div>
+          <div class="b inv mid">Поиск<small>номер задачи, ДЗ, тема</small></div>
+          <div class="b o">Продолжить<small>ДЗ 4, чистовик</small></div>
+          <div class="b o">Сегодня: шаг 2 из 5 к ДЗ 4<small>весь план — в кабинете →</small></div>
+          <div class="b mid">Просмотры + Поделиться</div>
+          <div class="seg"><i class="on">Начерт</i><i>Инж. графика</i></div>
+          <div class="row"><div class="b mid">Тетрадь</div><div class="b mid">3D-эпюр</div></div>
+          <div class="row"><div class="b">РК2</div><div class="b">Теория</div></div>
+          <div class="tabs"><i class="on">Главная</i><i>Тетрадь</i><i>ДЗ</i><i>РК</i><i>Теория</i></div>
+        </div></div>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Блок</th><th>Гость</th><th>Гость с вариантом</th><th>Студент в кабинете</th></tr></thead>
+      <tbody>
+        <tr><td>Шапка</td><td>Лого · Спросить · Войти</td><td class="same">так же</td><td>Лого · Спросить · аватар (вход в кабинет)</td></tr>
+        <tr><td>ДЗ сейчас</td><td>Следующее ДЗ по общему плану. Тап — экран ДЗ на этой карточке</td><td>То же, тап — сразу разбор варианта</td><td>Ближайшее несданное ДЗ его предметов, срок — день занятия группы. Тап — его вариант</td></tr>
+        <tr><td>До РК</td><td>Дни до недели РК по плану</td><td class="same">так же</td><td>Точный день РК в группе + готовность из раздела РК</td></tr>
+        <tr><td>Войди в кабинет</td><td>Пунктирная строка под плашками</td><td class="same">так же</td><td>Нет</td></tr>
+        <tr><td>Поиск</td><td colspan="3" class="same">Одинаковый для всех, по обоим предметам, фильтр «Везде · Начерт · ИГ»</td></tr>
+        <tr><td>Продолжить</td><td>Нет (пока нечего)</td><td colspan="2">Последнее открытое: задача и шаг, ДЗ и вкладка (<code>nch2_last</code>)</td></tr>
+        <tr><td>План на сегодня</td><td colspan="2">Повторение задач (уже есть на сайте, <code>#/ng/day</code>)</td><td>Шаг плана к ближайшей сдаче из кабинета, ссылка «весь план»</td></tr>
+        <tr><td>Установить приложение</td><td colspan="2">Только в браузере, если ещё не установлено. «Не сейчас» прячет на 14 дней</td><td>Переезжает в профиль кабинета</td></tr>
+        <tr><td>Просмотры + Поделиться</td><td colspan="3" class="same">Одинаково для всех</td></tr>
+        <tr><td>Разделы</td><td colspan="3" class="same">Переключатель предмета, под ним живые плитки: Тетрадь (решено N из 89), 3D-эпюр, РК, Теория. У студента с одним предметом переключателя нет</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section id="subj">
+    <h2>Как переключаться между начертом и инженерной графикой</h2>
+    <p>Расписание кафедры (<code>lk/data/groups.json</code>, 303 группы) показывает, что двум третям групп переключатель вообще не нужен в течение семестра, а у трети он нужен постоянно:</p>
+    <div class="bars" role="img" aria-label="Из 303 групп: 140 с обоими предметами, 94 только инженерная графика, 69 только начерт">
+      <div style="flex:140;background:#2c2c30">Оба · 140</div><div style="flex:94;background:#0aa36a">Только ИГ · 94</div><div style="flex:69;background:#2f5bff">Только начерт · 69</div>
+    </div>
+    <div class="rules">
+      <div class="rule"><h3>Один выбор на весь сайт</h3><p>«Мой предмет» хранится один раз и действует везде. Меню у обоих предметов одинаковое: Тетрадь, ДЗ, РК, Теория. Меняется содержимое, а не меню. У ИГ пункт «РК» называется «Учиться».</p></div>
+      <div class="rule"><h3>Студенту выбирает группа</h3><p>Группа с одним предметом — переключатель скрыт везде, чужого предмета на сайте как будто нет. Группа с двумя — переключатель есть.</p></div>
+      <div class="rule"><h3>Где стоит переключатель</h3><p>На главной — над плитками разделов. В разделах Тетрадь, РК и Теория — капсула «Начерт ⇄ ИГ» в шапке. В нижнем меню его нет.</p></div>
+      <div class="rule"><h3>Что от предмета не зависит</h3><p>Поиск, экран ДЗ (колода по сроку из обоих предметов, с фильтром) и плашки «ДЗ сейчас» и «До РК». Ближайший срок важнее, чем по какому он предмету.</p></div>
+      <div class="rule"><h3>Гость</h3><p>По умолчанию начерт, ничего не спрашиваем. Открыл раздел ИГ по ссылке или переключил сам — предмет запомнился.</p></div>
+      <div class="rule"><h3>Ссылки</h3><p>Адрес всегда содержит предмет (<code>#/ig/wb</code>, <code>#/ng/tasks</code>), поэтому ссылка от одногруппника открывает нужный предмет и переключает его.</p></div>
+    </div>
+  </section>
+
+  <section id="lk">
+    <h2>Кабинет: сайт — «что делать», кабинет — «про меня»</h2>
+    <p>Когда главная сайта сама показывает ДЗ и РК студента, главная кабинета её дублирует. Поэтому делим так: на сайте всё учебное содержимое, в кабинете — мои сроки, отметки, чертежи и настройки. Вход один — аватар в шапке сайта.</p>
+    <div class="phones">
+      <div class="ph"><p class="cap">Сегодня<small>что делать к ближайшей сдаче</small></p>
+        <div class="scr">
+          <div class="hd">Кабинет<span><em>← Сайт</em></span></div>
+          <div class="b o tall">Ближайшая сдача: ДЗ 4<small>чт, 26 нояб · через 7 дней</small></div>
+          <div class="b">План по дням<small>шаг 2 из 5 · сегодня: чистовик</small></div>
+          <div class="b">Отметить «сдано»</div>
+          <div class="b mid">Следующее занятие<small>чт 11:50 · ауд. 1125 · преподаватель</small></div>
+          <div class="b">Открыть мой вариант на сайте →</div>
+          <div class="tabs"><i class="on">Сегодня</i><i>Сдачи</i><i>Профиль</i></div>
+        </div></div>
+      <div class="ph"><p class="cap">Сдачи<small>семестр по неделям</small></p>
+        <div class="scr">
+          <div class="hd">Сдачи<span><em>← Сайт</em></span></div>
+          <div class="seg"><i class="on">Все</i><i>Начерт</i><i>ИГ</i></div>
+          <div class="b">11-я неделя · РК2 начерт<small>сдано ✓</small></div>
+          <div class="b">11-я неделя · ДЗ 4 ИГ<small>сдано ✓</small></div>
+          <div class="b o">13-я неделя · ДЗ 4 начерт<small>сейчас</small></div>
+          <div class="b">14-я неделя · ДЗ 5 ИГ</div>
+          <div class="b">15-я неделя · РК3 начерт</div>
+          <div class="b">Модули: 2 из 3 закрыты</div>
+          <div class="tabs"><i>Сегодня</i><i class="on">Сдачи</i><i>Профиль</i></div>
+        </div></div>
+      <div class="ph"><p class="cap">Профиль<small>я и настройки</small></p>
+        <div class="scr">
+          <div class="hd">Профиль<span><em>← Сайт</em></span></div>
+          <div class="b mid">Иван · ИУ1-11<small>предметы группы: начерт, ИГ</small></div>
+          <div class="b">Вариант 17<small>один на все ДЗ, общий с сайтом</small></div>
+          <div class="b">Вход: Яндекс ID / почта</div>
+          <div class="b">Напоминания о сроках</div>
+          <div class="b o">Установить как приложение</div>
+          <div class="b">Тема · копия прогресса · выйти</div>
+          <div class="tabs"><i>Сегодня</i><i>Сдачи</i><i class="on">Профиль</i></div>
+        </div></div>
+      <div class="ph"><p class="cap">Мои чертежи<small>сканер — когда откроем всем</small></p>
+        <div class="scr">
+          <div class="hd">Чертежи<span><em>← Сайт</em></span></div>
+          <div class="b inv tall">Сфотографировать лист<small>или выбрать из галереи</small></div>
+          <div class="b">ДЗ 3 · в. 21<small>копия · доводка · 3D</small></div>
+          <div class="b">ДЗ 2 · в. 17</div>
+          <div class="b ghost">Пока скрыт: вкладка появится в меню по центру</div>
+          <div class="tabs"><i>Сегодня</i><i>Сдачи</i><i class="on">Скан</i><i>Профиль</i></div>
+        </div></div>
+    </div>
+    <pre class="tree">Кабинет (вход — аватар в шапке сайта; гость видит «Войти»)
+├─ Знакомство (один раз): имя → группа → вариант     ← группа даёт предметы, дни и время занятий
+├─ Сегодня     ближайшая сдача (ДЗ или РК), план по дням, «сдано», следующее занятие
+├─ Сдачи       все ДЗ и РК моих предметов по неделям, отметки, модули
+├─ Скан        мои чертежи (пока скрыт)
+└─ Профиль     группа, вариант, вход, напоминания, установить приложение, тема, копия, выход</pre>
+  </section>
+
+  <section id="data">
+    <h2>Откуда берутся данные для персонализации</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Что показываем</th><th>Откуда</th><th>Есть сейчас?</th></tr></thead>
+      <tbody>
+        <tr><td>Группа, имя, вариант</td><td><code>lk_profile</code>, <code>nch2_dzvar</code></td><td>Да</td></tr>
+        <tr><td>Предметы группы, день и время</td><td><code>lk/data/groups.json</code></td><td>Да, 303 группы</td></tr>
+        <tr><td>Отметки «сдано»</td><td><code>lk_done</code></td><td>Да</td></tr>
+        <tr><td>Сроки РК</td><td><code>RKS</code> в <code>index.html</code>: недели 6, 11, 15</td><td>Да</td></tr>
+        <tr><td>Сроки ДЗ</td><td>Нужно вписать неделю каждого ДЗ в реестр: <code>DZR.def('ng4',{week:13})</code></td><td><b>Нет</b>, в макете черновые</td></tr>
+        <tr><td>Продолжить</td><td><code>nch2_last</code></td><td>Да</td></tr>
+        <tr><td>Мой предмет</td><td>Новый ключ <code>nch2_course</code>; у студента — из группы</td><td>Нет</td></tr>
+        <tr><td>Приложение установлено?</td><td><code>display-mode: standalone</code>, кнопка уже есть (<code>#/install</code>)</td><td>Да</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section id="decide">
+    <h2>Что нужно решить, прежде чем рисовать</h2>
+    <ol class="dec">
+      <li><b>Сроки ДЗ по неделям.</b><p>Без них «ДЗ по очереди» и «ближайшее ДЗ» не работают. Нужна неделя сдачи каждого ДЗ по плану кафедры.</p></li>
+      <li><b>Кабинет — отдельное приложение или раздел сайта?</b><p>А: как сейчас, <code>/lk/</code> со своим меню. Б: открывается по аватару внутри сайта, файлы остаются в <code>lk/</code>. <b class="rec">Рекомендую Б:</b> для студента одно приложение, одна установка, одно меню.</p></li>
+      <li><b>Гостю спрашивать предмет при первом входе?</b><p><b class="rec">Рекомендую не спрашивать:</b> начерт по умолчанию, предмет запоминается сам по ссылкам и переключателю.</p></li>
+      <li><b>«Сдано» отмечает сам студент?</b><p>Так работает сейчас (<code>lk_done</code>). Сданное ДЗ уходит из «ДЗ сейчас» даже до срока.</p></li>
+      <li><b>Строка «Установить как приложение» — над карточкой «Просмотры + Поделиться»?</b><p>Видна, но не спорит с поиском. После установки исчезает, у студента переезжает в профиль.</p></li>
+    </ol>
+  </section>
+</div>
