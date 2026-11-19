@@ -16,7 +16,12 @@ const ROOT=path.join(__dirname,'..'), ARGV=process.argv.slice(2), QUICK=ARGV.inc
 const arg=k=>{ const a=ARGV.find(x=>x.startsWith('--'+k+'=')); return a==null?null:a.slice(k.length+3); };
 /* блоки проверки: --only=a,b — только они (выборочная проверка Цеха и PR; полная — на main после слияния). smoke — главная открывается без ошибок JS */
 const GROUPS=['smoke','core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
-const ONLY=(a=>a?new Set(a.split(',').map(x=>x.trim()).filter(Boolean)):null)(arg('only'));
+let ONLY=(a=>a?new Set(a.split(',').map(x=>x.trim()).filter(Boolean)):null)(arg('only'));
+/* --quick без --only — быстрая локальная проверка: только блоки, задетые правкой относительно origin/main (та же карта
+   влияния, что на PR; не уверена — всё), с выборками вариантов. --quick --all — все блоки. Полная проверка (CI) не меняется. */
+let QUICK_WHY='';
+if(QUICK&&!ONLY&&!ARGV.includes('--all')&&require.main===module&&!arg('plan')&&!arg('items')&&!arg('merge')){ try{ const I=require('./impact.js'), c=I.changedFiles('origin/main'), r=I.impact(c.files,{indexLines:c.indexLines});
+  if(!r.all){ ONLY=new Set(['smoke',...r.groups.filter(g=>GROUPS.includes(g))]); QUICK_WHY='задето правкой: '+[...ONLY].join(', ')+' (все блоки — --quick --all)'; } }catch(e){} }
 if(require.main===module&&ONLY){ const bad=[...ONLY].filter(g=>!GROUPS.includes(g)); if(bad.length){ console.error('Нет таких блоков: '+bad.join(', ')+'. Есть: '+GROUPS.join(', ')); process.exit(2); } }
 const JSONOUT=arg('json')||'', TIMINGS=arg('timings')||'';
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2','.webmanifest':'application/manifest+json','.txt':'text/plain'};
@@ -60,7 +65,7 @@ B.core={els:()=>['geom','render','mutate','sizes','oracle','omut','euclid','arit
   c.report('Оракул (ответы задач)',D.oracle.r);
   const om=D.omut.r; M.answer={geom:om.геометрия,oracle:om.сОракулом,total:om.всего}; info('Сдвиг точки ответа: ловит 3D-проверка '+om.геометрия+' из '+om.всего+', вместе с оракулом '+om.сОракулом+' из '+om.всего+' (задач с оракулом: '+D.omut.specs+')');
   if(om.сОракулом/om.всего<0.85) fail('Оракул ослаб: ловит '+Math.round(100*om.сОракулом/om.всего)+'% сдвигов ответа');
-  c.report('Построимость («Евклид»)',D.euclid.r);
+  c.report('Построимость («Евклид»)',D.euclid.r); M.euclid={tasks:D.euclid.n,todo:D.euclid.todo};
   info('«Евклид»: проверено задач '+D.euclid.n+' из 89 и ДЗ №2 (2а–2в), №3'+(D.euclid.todo?'; кривые поверхности — в работе: №'+D.euclid.todo:''));
   c.report('Арифметика в тексте',D.arith.r); c.report('ДЗ-оракул (ДЗ №2, №3)',D.dz.r); }};
 
@@ -99,6 +104,7 @@ B.cert={els:()=>CERT_N(), el:async(c,k)=>{ const p=await c.page('cert'), CR=requ
   const {certify}=require('./certified/certify.js'); const r=certify(Tk,{site:await CR.siteData(p,Tk.n),variants:QUICK?50:200}); return {n:r.n,ok:r.ok,O:r.O}; },
  finish:(c,D)=>{ const certs=CERT_N().map(k=>D[k]);
   certs.forEach(x=>{ if(!x.ok) Object.entries(x.O).filter(([k,o])=>!o.ok).forEach(([k,o])=>c.fail('Сертификат №'+x.n+' · '+k+': '+o.detail)); });
+  c.M.cert={ok:certs.filter(x=>x.ok).length,n:certs.length,tasks:certs.map(x=>x.n)};
   c.info('Сертификаты: выдано '+certs.filter(x=>x.ok).length+' из '+certs.length+' (№'+certs.map(x=>x.n).join(', №')+')'); }};
 
 /* 3б‴. проверка проверки на мутациях КОДА задач (O8). Элемент — блок задач; генератор случайных чисел проматывается, мутанты те же */
@@ -141,34 +147,38 @@ const IG4N=q=>q?[7]:[1,7,13,18,24,30];
 B.ig4={els:q=>IG4N(q).map(n=>'v'+n), el:async(c,k)=>{ const p=await c.fresh({viewport:{width:1400,height:1000}}); return require('./ig4-steps.js').ig4StepsCheck(p,c.URL,{only:[+k.slice(1)]}); },
  finish:(c,D)=>c.report('ДЗ 4: шаги',IG4N(QUICK).flatMap(n=>D['v'+n]))};
 /* ДЗ 2 по ИГ: размеры на листах (IGS.checkAll по вариантам). Элемент — 5 вариантов */
-B.igs={els:()=>[0,1,2,3,4,5].map(i=>'v'+(i*5+1)+'-'+(i*5+5)), el:async(c,k)=>{ const p=await c.page('main'), [a,b]=k.slice(1).split('-').map(Number);
+const IGS_ELS=()=>QUICK?IGSAMPLE.map(n=>'v'+n+'-'+n):[0,1,2,3,4,5].map(i=>'v'+(i*5+1)+'-'+(i*5+5));
+B.igs={els:()=>IGS_ELS(), el:async(c,k)=>{ const p=await c.page('main'), [a,b]=k.slice(1).split('-').map(Number);
   return p.evaluate(([a,b])=>{ if(!window.IGS) return []; const out=[]; for(let n=a;n<=b;n++) if(window.IG_DIMS&&IG_DIMS[n]) try{ out.push(...IGS.checkDims(n)); }catch(e){ out.push({name:'Вариант '+n,rule:'ошибка проверки',msg:String(e).slice(0,120)}); } return out; },[a,b]); },
- finish:(c,D)=>c.report('ИГ: размеры на листах',[0,1,2,3,4,5].flatMap(i=>D['v'+(i*5+1)+'-'+(i*5+5)]))};
+ finish:(c,D)=>c.report('ИГ: размеры на листах',IGS_ELS().flatMap(k=>D[k]))};
 
 /* 3д. нормоконтроль листов ИГ. Элементы — наборы листов (ДЗ 2, задания 3–8), проверка проверки, тренажёры */
-const NSETS=['dz2','ig3','ig4','ig5','ig6','ig8'], IGSAMPLE=[1,7,13,18,24,30];
+const NSETS=['dz2','ig3','ig4','ig5','ig6','ig8'], IGSAMPLE0=[1,7,13,18,24,30], IGSAMPLE=QUICK?[1,18]:IGSAMPLE0;   /* быстрая — два варианта на набор */
 /* элементы листов: ДЗ 2 — по 5 вариантов и лист урока; задания 3–6 — по варианту выборки; задание 8 — целиком */
-const SHEET_ELS=()=>[...[0,1,2,3,4,5].map(i=>'sheets:dz2:'+(i*5+1)+'-'+(i*5+5)),...['ig3','ig4','ig5','ig6'].flatMap(s=>IGSAMPLE.map(n=>'sheets:'+s+':'+n)),'sheets:ig8','sheets:dz2:lesson'];
-B.normo={els:q=>[...SHEET_ELS(),'mut',...(q?[]:['wavy']),'read'], el:async(c,k)=>{ const NR=require('./normo-run.js'), NM=require('./normo-mutate.js');
+const SHEET_ELS=()=>[...(QUICK?IGSAMPLE.map(n=>'sheets:dz2:'+n):[0,1,2,3,4,5].map(i=>'sheets:dz2:'+(i*5+1)+'-'+(i*5+5))),...['ig3','ig4','ig5','ig6'].flatMap(s=>IGSAMPLE.map(n=>'sheets:'+s+':'+n)),'sheets:ig8','sheets:dz2:lesson'];
+const WAVY_ELS=()=>[0,1,2,3,4,5].map(i=>'wavy:'+(i*5+1)+'-'+(i*5+5));
+const MUT_ELS=()=>Object.keys(require('./normo-mutate.js').FAM).map(t=>'mut:'+t);
+B.normo={els:q=>[...SHEET_ELS(),...MUT_ELS(),'nk',...(q?[]:WAVY_ELS()),'read'], el:async(c,k)=>{ const NR=require('./normo-run.js'), NM=require('./normo-mutate.js');
   if(k.startsWith('sheets:')){ const p=await c.page('normo'), [,set,part]=k.split(':'), o={nomodel:QUICK,igSample:IGSAMPLE}; NSETS.forEach(s=>{ o[s]=s===set; });
     if(part==='lesson'){ o.only=[]; o.lesson=true; } else if(part&&part.includes('-')){ const [a,b]=part.split('-').map(Number); o.only=Array.from({length:b-a+1},(_,i)=>a+i); o.lesson=false; } else if(part) o.only=[+part];
     const nr=await NR.runNormo(p,o); return {issues:nr.issues.map(i=>({name:i.name,rule:i.rule,msg:i.msg})),stat:nr.stat}; }
-  if(k==='mut'){ const p=await c.page('normo'), mu=await NM.runMutations(p,{per:QUICK?1:2});
-    /* «Нормоконтроль» — на той же странице, где листы уже построены: на медленном раннере CI с холодного кэша лист не успевал построиться за 90 с */
-    return {mu,nk:await NM.nkUi(p,c.URL)}; }
-  if(k==='wavy'){ const p=await c.page('normo'); return NM.wavyMutations(p); }
+  if(k.startsWith('mut:')){ const p=await c.page('normo'); return NM.runMutations(p,{per:QUICK?1:2,types:[k.slice(4)]}); }
+  /* «Нормоконтроль» — на странице нормоконтроля этого исполнителя (листы там уже строились); заодно — список типов тренажёра */
+  if(k==='nk'){ const p=await c.page('normo'); await require('./normo-run.js').inject(p); return {nk:await NM.nkUi(p,c.URL),types:await p.evaluate(()=>IGNK.TYPES.map(t=>t.id))}; }
+  if(k.startsWith('wavy:')){ const p=await c.page('normo'), [a,b]=k.slice(5).split('-').map(Number); return NM.wavyMutations(p,{only:Array.from({length:b-a+1},(_,i)=>a+i)}); }
   if(k==='read'){ /* «Читаю чертёж» — на свежей вкладке на переднем плане */
     const p=await c.fresh({viewport:VIEW.phone}); await p.bringToFront(); await p.goto(c.URL); await ready(p); return NM.readUi(p,c.URL); } },
  finish:(c,D)=>{ const {info,fail}=c; let sheets=0, ms=0, issues=[]; SHEET_ELS().forEach(k=>{ const x=D[k]; sheets+=x.stat.sheets; ms+=x.stat.ms; issues=issues.concat(x.issues); });
   info('Нормоконтроль ИГ: листов '+sheets+(QUICK?' (без сверки с моделью)':', виды сверены с 3D-моделью')+', '+Math.round(ms/1000)+' с');
   c.report('ИГ: нормоконтроль листов',issues);
-  const mu=D.mut.mu, tot=Object.values(mu).reduce((a,x)=>[a[0]+x.поймано,a[1]+x.всего,a[2]+x.лишнее],[0,0,0]);
+  const mu={}; D.nk.types.forEach(t=>{ const x=D['mut:'+t]; if(x&&x[t]) mu[t]=x[t]; else fail('Нормоконтроль, проверка проверки: тип тренажёра «'+t+'» не проверен (нет элемента mut:'+t+' — добавь его в FAM в normo-mutate.js)'); });
+  const tot=Object.values(mu).reduce((a,x)=>[a[0]+x.поймано,a[1]+x.всего,a[2]+x.лишнее],[0,0,0]);
   info('Нормоконтроль, проверка проверки: поймано '+tot[0]+' из '+tot[1]+' подсаженных нарушений ('+Object.keys(mu).length+' типов тренажёра), лишних замечаний — '+tot[2]);
   Object.entries(mu).forEach(([t,x])=>{ if(!x.всего) fail('Тренажёр «Нормоконтроль»: нарушение «'+t+'» не подсаживается ни в один лист');
     else if(x.поймано<x.всего) fail('Нормоконтроль не ловит «'+t+'»: '+x.поймано+' из '+x.всего+' — '+x.пример);
     if(x.лишнее) fail('Нормоконтроль: подсадка «'+t+'» даёт лишние замечания — '+x.пример); });
-  c.report('Тренажёр «Нормоконтроль»',D.mut.nk);
-  if(!QUICK){ const wm=D.wavy; info('Сторона волнистой линии (ГОСТ 2.305): поймано '+wm.поймано+' из '+wm.всего+' подсаженных ошибок'+(wm.review.length?'; для проверки человеком: '+wm.review.join('; '):''));
+  c.report('Тренажёр «Нормоконтроль»',D.nk.nk);
+  if(!QUICK){ const wm={всего:0,поймано:0,пропуски:[],review:[]}; WAVY_ELS().forEach(k=>{ const x=D[k]; wm.всего+=x.всего; wm.поймано+=x.поймано; wm.пропуски.push(...x.пропуски); wm.review.push(...x.review); }); info('Сторона волнистой линии (ГОСТ 2.305): поймано '+wm.поймано+' из '+wm.всего+' подсаженных ошибок'+(wm.review.length?'; для проверки человеком: '+wm.review.join('; '):''));
     if(wm.поймано<wm.всего) fail('Нормоконтроль не ловит сторону волнистой линии: '+wm.пропуски.join(', ')); }
   c.report('Читаю чертёж',D.read); }};
 
@@ -249,7 +259,7 @@ B.theory={el:async c=>{ const th=require('./theory.js').run().map(o=>({name:'с�
 
 /* «Дальше» до ответа: после нажатия плеер перерисовывает шаг — ждём, пока старая кнопка уйдёт из документа (вместо паузы 60 мс; медленный кадр — до 2 с) */
 async function walkTask(p){
-  for(let k=0;k<40;k++){ const b=await p.$('.pl-next,.pl-nextpart'); if(!b) break;
+  for(let k=0;k<120;k++){ const b=await p.$('.pl-next,.pl-nextpart'); if(!b) break;   /* длинные разборы — больше 40 нажатий (раньше — второй круг) */
     await b.click().catch(()=>{});
     await p.waitForFunction(el=>!el.isConnected,b,{timeout:2000,polling:'raf'}).catch(()=>{}); } }
 
@@ -262,7 +272,7 @@ B.crawl={els:q=>q?[]:['pages',...Array.from({length:WALKN},(_,i)=>'walk'+i)], el
     while(queue.length&&n<700){ const h=queue.shift(); if(seen.has(h)) continue; seen.add(h); n++;
       const before=errs.length; await page.evaluate(h=>{ location.hash=h; },h);
       /* роутер отрисовал адрес (смена страниц может идти через View Transition) и прошли два кадра */
-      await page.waitForFunction(h=>CURH===h,h,{timeout:5000,polling:'raf'}).catch(()=>{}); await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,16)))));
+      await page.waitForFunction(h=>CURH===h&&!(window.__vtN>0),h,{timeout:5000,polling:'raf'}).catch(()=>{}); await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,16)))));
       const st=await page.evaluate(()=>({ w:document.documentElement.scrollWidth, iw:window.innerWidth, txt:(document.getElementById('view')||document.body).innerText.length,
         /* элемент страницы, растянутый на весь экран чужим стилем (так плитка главной однажды получила стиль окна 3D) */
         huge:[...document.querySelectorAll('#view *')].filter(e=>{ const c=getComputedStyle(e); return c.position==='fixed'&&e.getBoundingClientRect().height>window.innerHeight*0.6; }).map(e=>e.tagName+'.'+String(e.className).slice(0,40)),
@@ -274,7 +284,7 @@ B.crawl={els:q=>q?[]:['pages',...Array.from({length:WALKN},(_,i)=>'walk'+i)], el
       st.links.forEach(l=>{ if(!seen.has(l)&&!/^#\/ng\/check\/gym\/./.test(l)&&!/^#\/ig\/nk\/./.test(l)&&!/^#\/(ng|ig)\d\/(?!1(\/|$))\d+/.test(l)) queue.push(l); }); }   /* варианты тренажёров бесконечны — их проверяют tests/gym.js и tests/normo-mutate.js; варианты ДЗ — tests/variants-run.js (здесь — первый вариант каждого задания) */
     return {n,bad}; }
   const w=+k.slice(4), tasks=(await page.evaluate(()=>WB3.tasks.map(t=>t.n))).filter((t,i)=>i%WALKN===w);
-  for(const t of tasks){ const before=errs.length; await page.evaluate(n=>{ location.hash='#/ng/path/t'+n; },t); await page.waitForSelector('.pl-next,.pl-nextpart,.pl-done',{timeout:3000}).catch(()=>{});
+  for(const t of tasks){ const before=errs.length; await page.evaluate(n=>{ location.hash='#/ng/path/t'+n; },t); await ready(page).catch(()=>{}); await page.waitForSelector('.pl-next,.pl-nextpart,.pl-done',{timeout:3000}).catch(()=>{});
     await walkTask(page);
     const done=await page.waitForSelector('.pl-done',{timeout:2000}).catch(()=>null);
     if(errs.length>before) bad.push({name:'Задача №'+t,rule:'ошибка JS в разборе',msg:errs.slice(before).join(' / ').slice(0,200)});
@@ -331,14 +341,26 @@ function finish(results,plan){
   return {info,fail,M,TIME,EL};
 }
 
-function print(R,extra){ const {info,fail,TIME}=R;
-  if(ONLY) info.unshift('Выборочная проверка: '+[...ONLY].join(', '));
+/* одна строка итога (для журнала CI, Штаба и docs/THESIS.md): вердикт и главные цифры надёжности */
+function summaryLine(R,wallMs){ const M=R.M, pc=(a,n)=>n?a+'/'+n+' ('+Math.round(100*a/n)+' %)':'—', parts=[];
+  const mu=M.mutate||{}; if(mu['линия связи']) parts.push('линии связи '+pc(mu['линия связи'].поймано,mu['линия связи'].всего));
+  if(mu['подписи местами']) parts.push('подписи '+pc(mu['подписи местами'].поймано,mu['подписи местами'].всего));
+  if(M.sizes) parts.push('размеры '+pc(M.sizes.caught,M.sizes.total));
+  if(M.answer) parts.push('ответ с оракулом '+pc(M.answer.oracle,M.answer.total));
+  if(M.code&&M.code.by&&M.code.by['всего']) parts.push('мутации кода '+pc(M.code.by['всего'].euc,M.code.by['всего'].n));
+  if(M.cert) parts.push('сертификатов '+M.cert.ok+' из '+M.cert.n);
+  if(M.euclid) parts.push('«Евклид» '+M.euclid.tasks+' из 89');
+  return 'ИТОГ: '+(R.fail.length?'✗ новых ошибок '+R.fail.length:'✓ ошибок нет')+' · '+(parts.join(' · ')||'—')+(wallMs?' · '+Math.floor(wallMs/60000)+' мин '+Math.round(wallMs/1000)%60+' с':''); }
+function print(R,extra,wallMs){ const {info,fail,TIME}=R;
+  if(ONLY) info.unshift(QUICK_WHY?'Быстрая проверка, '+QUICK_WHY:'Выборочная проверка: '+[...ONLY].join(', '));
   info.push('Время блоков, с: '+Object.entries(TIME).sort((a,b)=>b[1]-a[1]).map(([g,ms])=>g+' '+Math.round(ms/1000)).join(', ')+(extra||''));
   console.log(info.join('\n'));
   /* длинный список одного раздела — первые 25 строк и число остальных: лог CI обрезается, и иначе не видно других разделов */
   if(fail.length){ const by={}; fail.forEach(f=>{ const g=f.split(' · ')[0]; (by[g]=by[g]||[]).push(f); });
     console.log('\nНОВЫЕ ОШИБКИ ('+fail.length+'):'); Object.values(by).forEach(L=>{ console.log('- '+L.slice(0,25).join('\n- ')+(L.length>25?'\n  …и ещё '+(L.length-25)+' в этом разделе':'')); }); }
   else console.log('\nОшибок нет.');
+  const line=summaryLine(R,wallMs); console.log(line); R.summary=line;
+  if(process.env.GITHUB_STEP_SUMMARY) try{ fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,line+'\n'); }catch(e){}
   return fail.length?1:0; }
 
 function commitId(){ let c=process.env.GITHUB_SHA||''; try{ if(!c) c=require('child_process').execSync('git rev-parse HEAD',{cwd:ROOT}).toString().trim(); }catch(e){} return c; }
@@ -349,7 +371,7 @@ async function siteStats(browser,URL){ const P=await open(browser,URL);
   const s=await P.evaluate(()=>{ let st=0, why=0, parts=0; WB3.tasks.forEach(t=>PLAYER.partsOf(t).forEach(p=>{ parts++; (p.steps||[]).forEach(s=>{ st++; if(s.why&&String(s.why).replace(/<[^>]+>/g,'').trim()) why++; }); }));
     return {tasks:WB3.tasks.length,parts,steps:st,why,approx:WB3.tasks.filter(t=>t.conf==='approx').length,euclidTasks:WB3.tasks.filter(t=>!EUCLID_TODO.includes(t.n)).length,oracleParts:(window.ORACLE_SPECS||[]).length}; });
   await P.close(); return s; }
-function writeJson(file,R){ fs.writeFileSync(file,JSON.stringify({commit:commitId(),date:new Date().toISOString(),quick:QUICK,info:R.info,fail:R.fail,M:R.M},null,1)); }
+function writeJson(file,R){ fs.writeFileSync(file,JSON.stringify({commit:commitId(),date:new Date().toISOString(),quick:QUICK,summary:R.summary||summaryLine(R),wallMs:R.wallMs||null,blocksMs:R.TIME,info:R.info,fail:R.fail,M:R.M},null,1)); }
 
 /* план элементов: --plan=plan.json --shard=i (поток CI) или --items=g:k,… ; иначе — все элементы выбранных блоков */
 function planItems(){
@@ -367,8 +389,10 @@ if(require.main===module)(async()=>{
     const results=[]; for(const f of fs.readdirSync(dir).filter(f=>/\.json$/.test(f))) results.push(...JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).results);
     const R=finish(results,all); if(plan.site) R.M.site=plan.site; const parts=fs.readdirSync(dir).filter(f=>/\.json$/.test(f)).map(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')));
     const site=parts.map(p=>p.site).find(Boolean); if(site) R.M.site=site;
-    if(JSONOUT) writeJson(JSONOUT,R); if(TIMINGS) writeTimings(TIMINGS,R,Math.max(...parts.map(p=>p.wallMs||0)));
-    process.exit(print(R,'; потоков '+parts.length+', самый долгий '+Math.round(Math.max(...parts.map(p=>p.wallMs||0))/1000)+' с'));
+    const wall=Math.max(...parts.map(p=>p.wallMs||0)); R.wallMs=wall;
+    const code=print(R,'; потоков '+parts.length+', самый долгий '+Math.round(wall/1000)+' с',wall);
+    if(JSONOUT) writeJson(JSONOUT,R); if(TIMINGS) writeTimings(TIMINGS,R,wall);
+    process.exit(code);
   }
   const items=planItems(), K=+(arg('jobs')||Math.max(1,Math.min(4,os.cpus().length)));
   const srv=await serve(), URL='http://127.0.0.1:'+srv.address().port+'/';
@@ -386,6 +410,7 @@ if(require.main===module)(async()=>{
   if(JSONOUT) R.M.site=await siteStats(browser,URL);
   await browser.close(); srv.close();
   const wall=Date.now()-t0;
+  R.wallMs=wall; const code=print(R,'; всего '+Math.round(wall/1000)+' с на '+K+' страницах',wall);
   if(JSONOUT) writeJson(JSONOUT,R); if(TIMINGS) writeTimings(TIMINGS,R,wall);
-  process.exit(print(R,'; всего '+Math.round(wall/1000)+' с на '+K+' страницах'));
+  process.exit(code);
 })().catch(e=>{ console.error(e); process.exit(2); });

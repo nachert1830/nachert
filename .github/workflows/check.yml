@@ -132,10 +132,12 @@ jobs:
         run: |
           mkdir -p parts; cp art/part-*/part-*.json parts/ 2>/dev/null || true
           node tests/run.js --merge=parts --plan=art/plan/plan.json --json=metrics.json --timings=timings-new.json 2>&1 | tee /tmp/check.log; exit ${PIPESTATUS[0]}
+      # метрики на коммит (как docs/thesis.json): одна строка итога — в сводке запуска, JSON — артефакт metrics-<коммит>
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: metrics
+          name: metrics-${{ github.sha }}
+          retention-days: 90
           path: |
             metrics.json
             timings-new.json
