@@ -138,10 +138,11 @@ const CHECK={
   p1(V,S){ const v=[]; const [x,y,z]=V.A, A2=PL(S,'A″'), A1=PL(S,'A′'); if(!A2||!A1) return ['обе проекции'];
     if(Math.hypot(A2[0]+x,A2[1]+z)>TOL) v.push('A″: x влево, высота z'); if(Math.hypot(A1[0]+x,A1[1]-y)>TOL) v.push('A′: x влево, глубина y'); return v; },
   p2(V,S){ const v=[]; const [x]=V.A, sx=L1(S,'sx'); if(Math.abs(sx[2]+x)>TOL) v.push('x — влево от O');
-    if(!/^z/.test(TX(S,'tz'))||!/^y/.test(TX(S,'ty'))) v.push('до A″ — z, до A′ — y'); return v; },
+    if(!/^z/.test(TX(S,'tz'))||!/^y/.test(TX(S,'ty'))) v.push('до A″ — z, до A′ — y'); const A1=P(S,'A1'); if(Math.abs(A1[1]-V.A[1])>TOL) v.push('y > 0 — A′ под осью'); return v; },
   p3(V,S){ const v=[]; const [,y,z]=V.A, A3=P(S,'A3'); if(Math.hypot(A3[0]-y,A3[1]+z)>TOL) v.push('A‴: справа от z на y, высота z'); return v; },
   p4(V,S){ return CHECK.p1(V,S); },
-  p5(V,S){ const {A,B,kind}=V, top=kind==='h'?(A[2]>B[2]?'A':'B'):(A[1]>B[1]?'A':'B'); const lab=S.E.find(e=>e.role==='P').lab; return lab[0]===top?[]:['видна ближняя к глазу']; },
+  p5(V,S){ const v=[]; const {A,B,kind}=V, top=kind==='h'?(A[2]>B[2]?'A':'B'):(A[1]>B[1]?'A':'B'); const lab=S.E.find(e=>e.role==='P').lab; if(lab[0]!==top) v.push('видна ближняя к глазу'); if(!/\(/.test(lab)) v.push('невидимая — в скобках');
+    const q=P(S,'Q'), r=P(S,'R'), qa=kind==='h'?[A[0],-A[2]]:[A[0],A[1]], qb=kind==='h'?[B[0],-B[2]]:[B[0],B[1]]; if(Math.hypot(q[0]-qa[0],q[1]-qa[1])>TOL||Math.hypot(r[0]-qb[0],r[1]-qb[1])>TOL) v.push('другие проекции — на своих местах'); return v; },
   l1(V,S){ const a=L1(S,'ab2'), b=L1(S,'ab1'), eq=(u,w)=>Math.abs(u-w)<TOL;
     const ok={h:eq(a[1],a[3]),f:eq(b[1],b[3]),hp:eq(b[0],b[2])&&eq(b[1],b[3]),fp:eq(a[0],a[2])&&eq(a[1],a[3])}[V.kind]; return ok?[]:['признак типа прямой']; },
   l2(V,S){ const v=[]; const {A,B,r}=V, t=r[0]/(r[0]+r[1]), K2=P(S,'K2'), K1=P(S,'K1'); if(Math.abs(K2[0]-K1[0])>TOL) v.push('одна линия связи');
@@ -155,9 +156,11 @@ const CHECK={
   l4u(V,S){ const v=[]; const a1=[V.A[0],V.A[1]], b1=[V.B[0],V.B[1]], lg=L1(S,'leg'); if(Math.hypot(lg[0]-b1[0],lg[1]-b1[1])>TOL||Math.abs(Math.hypot(lg[2]-lg[0],lg[3]-lg[1])-Math.abs(V.B[2]-V.A[2]))>TOL) v.push('треугольник на A′B′ с Δz');
     const c=arcC(E(S,'arc').find(e=>e.t==='poly').p); if(!c||Math.hypot(c[0]-a1[0],c[1]-a1[1])>.5) v.push('α — при A′'); return v; },
   l5(V,S){ const v=[]; const {A,B}=V, K1=P(S,'K1'), s=(K1[0]-A[0])/(B[0]-A[0]), K=[A[0]+(B[0]-A[0])*s,A[1]+(B[1]-A[1])*s,A[2]+(B[2]-A[2])*s];
-    if(Math.abs(K1[1]-K[1])>TOL) v.push('K′ на A′B′'); if(Math.abs(Math.hypot(K[0]-A[0],K[1]-A[1],K[2]-A[2])-V.l)>TOL) v.push('|AK| = ℓ'); return v; },
-  l6(V,S){ const K2=P(S,'K2'), K1=P(S,'K1'); return Math.abs(K2[0]-K1[0])>TOL?['пересечение — на одной линии связи']:[]; },
-  l7(V,S){ const K1=P(S,'K1'), K=[K1[0],K1[1],V.h0[2]], d=[V.h1[0]-V.h0[0],V.h1[1]-V.h0[1],0], w=[K[0]-V.A[0],K[1]-V.A[1],K[2]-V.A[2]];
+    if(Math.abs(K1[1]-K[1])>TOL) v.push('K′ на A′B′'); if(Math.abs(Math.hypot(K[0]-A[0],K[1]-A[1],K[2]-A[2])-V.l)>TOL) v.push('|AK| = ℓ'); const K2=P(S,'K2'); if(Math.abs(K2[0]-K1[0])>TOL||Math.abs(-K2[1]-K[2])>TOL) v.push('K″ на линии связи, на A″B″'); return v; },
+  l6(V,S){ const c2=L1(S,'cd2'), c1=L1(S,'cd1'), a2=[V.A[0],-V.A[2],V.B[0],-V.B[2]], a1=[V.A[0],V.A[1],V.B[0],V.B[1]], par=(p,q)=>Math.abs(cr(un(p),un(q)))<.003;
+    if(V.kind==='p') return par(c2,a2)&&par(c1,a1)?[]:['параллельны обе проекции'];
+    const K2=P(S,'K2'), K1=P(S,'K1'); return Math.abs(K2[0]-K1[0])>TOL?['пересечение — на одной линии связи']:[]; },
+  l7(V,S){ const K1=P(S,'K1'), K2=P(S,'K2'); if(Math.abs(K1[0]-K2[0])>TOL) return ['линия связи']; const K=[K1[0],K1[1],V.h0[2]], d=[V.h1[0]-V.h0[0],V.h1[1]-V.h0[1],0], w=[K[0]-V.A[0],K[1]-V.A[1],K[2]-V.A[2]];
     return Math.abs(d[0]*w[0]+d[1]*w[1])/Math.hypot(...d)/Math.hypot(...w)>.01?['AK ⟂ h в пространстве']:[]; },
   /* ── плоскость, прямая и плоскость ── */
   s1(V,S){ const p2=E(S,'t2')[0].p, p1=E(S,'t1')[0].p, col=q=>Math.abs((q[1][0]-q[0][0])*(q[2][1]-q[0][1])-(q[2][0]-q[0][0])*(q[1][1]-q[0][1]))<1, flat=q=>Math.abs(q[0][1]-q[1][1])<TOL&&Math.abs(q[0][1]-q[2][1])<TOL;
