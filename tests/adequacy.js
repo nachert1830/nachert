@@ -87,10 +87,13 @@ async function runAdequacy(page,opts){
     WB3.tasks.length=0; keep.forEach(t=>WB3.tasks.push(t));
     return {err,res}; },src);
   const blocks={};
+  /* состояние генератора на начало каждого блока — один проход по коду, дальше из кэша (иначе каждый элемент заново
+     разбирает все предыдущие блоки: квадратичная работа, которая к тому же держит Node и тормозит параллельные страницы) */
+  const ST=EL?seedStates(PER,opts.seed||5,opts.only):null;
   for(const {key,b} of adequacyBlocks(opts.only)){
+    if(EL&&!EL.has(key)) continue;
+    if(ST) seed=ST[key];
     const src0=isolate(b.src);
-    if(EL&&!EL.has(key)){ const all=sites(src0,rnd), ops=[...new Set(all.map(s=>s.op))];   /* промотка: тот же расход генератора */
-      for(const op of ops){ const pool=all.filter(s=>s.op===op); for(let k=0;k<PER&&pool.length;k++) pool.splice(Math.floor(rnd()*pool.length),1); } continue; }
     const by={}, survivors=[], kinds={}; let total=0, equiv=0, crashed=0;
     const bump=(k,a,b,e)=>{ const o=by[k]=by[k]||{n:0,old:0,all:0,euc:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||e) o.euc++; };
     const cby={}, csurv=[]; const cbump=(k,a,b,c)=>{ const o=cby[k]=cby[k]||{n:0,old:0,all:0,cert:0}; o.n++; if(a) o.old++; if(a||b) o.all++; if(a||b||c) o.cert++; };
@@ -117,6 +120,13 @@ async function runAdequacy(page,opts){
     blocks[key]={by,cby,csurv,survivors,kinds,total,equiv,crashed}; }
   return opts.elements?{blocks}:mergeAdequacy(blocks,opts.only);
 }
+/* промотка генератора: семя на начало каждого блока при полном прогоне (без браузера — расход зависит только от кода) */
+const _ST={};
+function seedStates(PER,seed0,only){ const id=PER+'|'+seed0+'|'+(only||[]).join(','); if(_ST[id]) return _ST[id];
+  let seed=seed0; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647), out={};
+  for(const {key,b} of adequacyBlocks(only)){ out[key]=seed; const all=sites(isolate(b.src),rnd), ops=[...new Set(all.map(s=>s.op))];
+    for(const op of ops){ const pool=all.filter(s=>s.op===op); for(let k=0;k<PER&&pool.length;k++) pool.splice(Math.floor(rnd()*pool.length),1); } }
+  return (_ST[id]=out); }
 /* сложить результаты блоков в порядке блоков (так же, как их считал бы один последовательный прогон) */
 function mergeAdequacy(blocks,only){
   const by={}, cby={}, kinds={}, survivors=[], csurv=[], baseErr=[]; let total=0, equiv=0, crashed=0;
