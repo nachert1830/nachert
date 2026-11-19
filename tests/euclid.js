@@ -110,6 +110,17 @@ function audit(name,part,out,textAll,condText){
       A.forEach(a=>{ if(a.kind==='line') noteRatio(a.c.a,a.c.b); });
       K.forEach(p=>axisLines.forEach(x=>lens.add(offC(p,x))));
       return; }
+    /* деление построенной прямой на равные части («разбиваем d₁ на равные части»): концы новых отрезков, лежащие на одной
+       построенной прямой, — не меньше трёх и через равные промежутки — построенные точки (одну подогнанную точку так не провести) */
+    if(/равн\S*\s+част/i.test(stText[si])){ const ends=[]; A.forEach(a=>{ if(a.kind==='line') ends.push(a.c.a,a.c.b); });
+      lines.forEach(c=>{ const on=ends.filter(p=>offC(p,c)<TP).map(p=>({p,t:dot(sub(p,c.p),c.d)})).sort((x,y)=>x.t-y.t);
+        const u=[]; on.forEach(o=>{ if(!u.length||o.t-u[u.length-1].t>TP) u.push(o); });
+        if(u.length<3) return; const st=u[1].t-u[0].t; if(st<1) return;
+        if(u.every((o,i)=>!i||Math.abs(o.t-u[i-1].t-st)<TL*4)) u.forEach(o=>addK(o.p)); }); }
+    /* «по линиям связи» без нарисованной связи: конец нового отрезка на построенной прямой и на одной вертикали с известной
+       точкой другого поля (по другую сторону оси x) — построен линией связи; шаг так и говорит */
+    if(/лини\S*\s+связи/i.test(stText[si])){ A.forEach(a=>{ if(a.kind!=='line') return; [a.c.a,a.c.b].forEach(e=>{ if(known(e)) return;
+      if(lines.some(c=>c!==a.c&&offC(e,c)<TP)&&K.some(q=>Math.abs(q[0]-e[0])<TP&&q[1]*e[1]<0)) addK(e); }); }); }
     /* стадия шага: элементы, которые не удаётся вывести сразу, ждут — их может обосновать элемент того же шага */
     if(arr.some(it=>it&&it.t==='axis')&&!axisLines.length){ const c={p:[0,0],d:[1,0],src:{t:'axis'}}; addLines(c); axisLines.push(c); }
     let pend=A.filter(a=>a.kind==='line'||a.kind==='circ'||a.kind==='pt'||a.kind==='curve'), changed=true; const labCount0=labPts.length;
@@ -171,6 +182,8 @@ function audit(name,part,out,textAll,condText){
       { const on=K.filter(q=>Math.abs(d2(q,o.c)-o.r)<TP); if(on.some(a=>on.some(b=>d2(mul(add(a,b),0.5),o.c)<TP&&Math.abs(d2(a,b)-2*o.r)<TP*2))) return true; }
       if(!known(o.c)&&!okPt1(o.c)) return false;   /* центр — известная или построенная точка */  if(K.some(q=>Math.abs(d2(q,o.c)-o.r)<TP)) return true; if(lenKnown(o.r)) return true;
       if(lines.some(c=>Math.abs(offC(o.c,c)-o.r)<TP)) return true;   /* касается построенной прямой (радиус — перпендикуляр из центра) */
+      /* касается построенной окружности (дуги): центр известен, точка касания — на прямой центров, радиус = |d ± R| */
+      if(known(o.c)&&circs.some(c=>{ const d=d2(o.c,c.c); return d>TP&&(Math.abs(Math.abs(d-c.r)-o.r)<TL||Math.abs(d+c.r-o.r)<TL); })) return true;
       /* параллель поверхности вращения с вертикальной осью: центр — горизонтальная проекция оси (S′, O′, i′…), радиус снят
          на π₂ от оси (S″, O″…) до точки очерка по горизонтали */
       { const ax1=labNames.find(q=>d2(q.p,o.c)<TP&&/′$/.test(q.l)); if(ax1){ const base=ax1.l.replace(/′$/,'').split(/≡/)[0], ax2=labNames.find(q=>q.l.split(/≡/).some(x=>x===base+'″'));
@@ -214,8 +227,14 @@ function audit(name,part,out,textAll,condText){
     /* одна и та же точка дважды на одном шаге */
     { const ps=A.filter(a=>a.kind==='pt'); ps.forEach((a,i)=>{ if(ps.some((b,j)=>j<i&&d2(a.p,b.p)<TP&&strip(a.it.l)===strip(b.it.l))) out.push({name:where,rule:'построимость',msg:'точка'+(strip(a.it.l)?' '+strip(a.it.l):' без подписи')+' поставлена дважды',lvl:'ошибка'}); }); }
     /* засечка (дуга окружности): на ней лежит построенная точка — ради неё дугу и проводили */
+    /* точка должна быть новой — поставленной на этом шаге или позже: засечка через уже известную точку ничего не строит
+       (так дуга из центра на другом поле случайно проходит через старую вершину и выглядит законной) */
+    /* (или на следующих шагах этого пункта: дугу-траекторию проводят, а точку на ней ставят шагом позже) */
+    const stepPts=[]; stages.slice(si).flat().forEach(it=>{ if(!it) return; if(it.t==='pt'&&fin(it.at)) stepPts.push(it.at);
+      /* и неподписанные точки: концы отрезков (засечка «в точках P и Q» — концы отрезка PQ) */
+      if((it.t==='seg'||it.t==='conn'||it.t==='line')&&fin(it.a)&&fin(it.b)) stepPts.push(it.a,it.b); });
     A.filter(a=>a.kind==='circ'&&a.it.t==='arc'&&!pend.includes(a)).forEach(a=>{ const it=a.it, lo=Math.min(it.a1,it.a2)-2, hi=Math.max(it.a1,it.a2)+2;
-      const hit=K.some(q=>{ if(Math.abs(d2(q,it.c)-it.r)>=TP) return false; let g=Math.atan2(-(q[1]-it.c[1]),q[0]-it.c[0])*180/Math.PI; for(let k=-2;k<=2;k++){ const x=g+360*k; if(x>=lo&&x<=hi) return true; } return false; });
+      const hit=stepPts.some(q=>{ if(Math.abs(d2(q,it.c)-it.r)>=TP) return false; let g=Math.atan2(-(q[1]-it.c[1]),q[0]-it.c[0])*180/Math.PI; for(let k=-2;k<=2;k++){ const x=g+360*k; if(x>=lo&&x<=hi) return true; } return false; });
       if(!hit) out.push({name:where,rule:'построимость',msg:'дуга (засечка) не проходит ни через одну построенную точку',lvl:'ошибка'}); });
     /* размер: концы — в построенных точках или на выносных (перпендикуляр к размерной линии через известную точку) */
     arr.filter(it=>it&&it.t==='dim'&&fin(it.a)&&fin(it.b)&&d2(it.a,it.b)>1).forEach(it=>{ const u=unit(sub(it.b,it.a));
@@ -246,7 +265,7 @@ function audit(name,part,out,textAll,condText){
 
 /* кривые поверхности (сечения, развёртки, пересечения поверхностей): кривые строятся по точкам, и правила для них
    (точка на образующей, на параллели, на очерке) ещё не записаны — эти задачи «Евклид» пока не проверяет */
-window.EUCLID_TODO=[74,77];
+window.EUCLID_TODO=[74];
 window.EUCLID_CHECK=function(opts){ opts=opts||{}; const out=[];
   const TX=o=>[o&&o.q,o&&o.intro,o&&o.ans,o&&o.note,o&&o.data].concat(((o&&o.steps)||[]).map(s=>[s.t,s.d,s.why,s.tbl].join(' '))).filter(x=>typeof x==='string').join(' ');
   const run=(name,t)=>{ try{ PLAYER.partsOf(t).forEach((p,pi)=>{ try{ window.LINEFIX&&LINEFIX(p); window.DMARK&&DMARK(p); }catch(e){} audit(name+(pi?' п.'+(pi+1):''),p,out,TX(t)+' '+TX(p),[t.q,t.data,p.q].filter(x=>typeof x==='string').join(' ')); }); }catch(e){ out.push({name,rule:'сбой проверки',msg:String(e&&e.stack||e).slice(0,200),lvl:'ошибка'}); } };

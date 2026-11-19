@@ -6,7 +6,7 @@
 /* работает и в Node (require), и на странице сайта (глобальный CERT) */
 const need=n=>(typeof module!=='undefined'&&module.exports&&typeof require==='function')?require('./'+n+'.js'):self.CERT[n];
 const put=(n,v)=>{ if(typeof module!=='undefined'&&module.exports) module.exports=v; else { self.CERT=self.CERT||{}; self.CERT[n]=v; if(v&&v.n) (self.CERT.tasks=self.CERT.tasks||{})[v.n]=v; } };
-const {q,V}=need('exact');
+const {q,V,R2}=need('exact');
 const Z=[q(0),q(1),q(0)], UP=[q(0),q(0),q(1)];
 
 const K3={
@@ -46,6 +46,14 @@ const K2={
   on:(P,L)=>V.cross2(V.sub(P,L.p),L.d).isZero(),
   same:(L1,L2)=>V.cross2(L1.d,L2.d).isZero()&&V.cross2(V.sub(L2.p,L1.p),L1.d).isZero(),
   dist2:(A,B)=>{ const v=V.sub(B,A); return V.dot(v,v); },
+  /* точка, симметричная P относительно C: окружность из C радиусом |CP| пересекает прямую PC второй раз (циркуль и линейка) */
+  reflect:(P,C)=>V.sub(V.mul(C,q(2)),P),
+  /* деление отрезка PQ в отношении m : n (теорема Фалеса: параллельные через m + n равных частей вспомогательного луча) */
+  divide:(P,Qp,m,n)=>V.add(P,V.mul(V.sub(Qp,P),q(m).div(q(m).add(q(n))))),
+  /* отложить от P по прямой L длину, квадрат которой len2 (циркулем), в сторону L.d (sg = −1 — в обратную): точное значение в Q(√r) */
+  along:(P,L,len2,sg)=>{ const dd=V.dot(L.d,L.d), s=R2.ratSqrt(len2);
+    /* длина — рациональная (координата, снятая циркулем): t = s/|d| — корень зависит только от направления, у всех точек он один */
+    const t=s?R2.sqrt(q(1).div(dd)).mul(s):R2.sqrt(len2.div(dd)); return V.add(P,V.mul(L.d,sg<0?t.neg():t)); },
   /* sin² угла между прямыми (для O6: пересечение под острым углом на бумаге неточно) */
   sin2:(L1,L2)=>{ const c=V.cross2(L1.d,L2.d); return c.mul(c).div(V.dot(L1.d,L1.d).mul(V.dot(L2.d,L2.d))); },
 };
