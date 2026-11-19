@@ -1,7 +1,7 @@
 name: Проверка сайта
 # Как в больших компаниях:
 # • PR — выборочная проверка: tests/impact.js выбирает блоки, задетые правкой (не уверен — всё); сервер — свои тесты.
-# • main (пуш, ручной запуск, Цех после слияния) — полная проверка, 4 параллельных потока (~8–10 мин вместо ~25).
+# • main (пуш, ручной запуск, Цех после слияния) — полная проверка, 6 параллельных потоков (~8 мин вместо ~27).
 #   Красная — Issue «main красный» с концом лога: Штаб покажет его владельцу.
 on:
   push:
@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v4
       - name: Блоки этого потока
@@ -64,7 +64,8 @@ jobs:
         env:
           ONLY: ${{ needs.plan.outputs.only }}
         run: |
-          S1=core,dzvar,variants,prov,cert,adequacy; S2=random,gym,rk2,rkp,live,rkg,ig4,theory; S3=igs,normo,points,ng3,print; S4=track,lk,me,colors,ask,crawl
+          # раскладка по замерам CI («Время блоков»): normo ~6 мин, normom ~4, поток 2 ~5,8, остальные по ~3 — потоки кончаются почти вместе
+          S1=core,dzvar,variants,prov,cert,adequacy; S2=random,gym,rk2,rkp,live,rkg,ig4,theory; S3=normo; S4=normom,igs,ng3; S5=normow,points,print; S6=track,lk,me,colors,ask,crawl
           eval "MINE=\$S${{ matrix.shard }}"
           if [ "$ONLY" = "all" ]; then G="$MINE"; else G=$(node -e "const a=process.argv[1].split(','),m=process.argv[2].split(',');process.stdout.write(a.filter(x=>m.includes(x)).join(','))" "$ONLY" "$MINE"); fi
           echo "groups=$G" >> "$GITHUB_OUTPUT"; echo "Поток ${{ matrix.shard }}: ${G:-нечего проверять}"

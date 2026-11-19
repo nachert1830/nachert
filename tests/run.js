@@ -8,7 +8,7 @@ const http=require('http'), fs=require('fs'), path=require('path');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const ROOT=path.join(__dirname,'..'), QUICK=process.argv.includes('--quick');
 /* блоки проверки: --only=a,b — только они (выборочная проверка Цеха и PR; полная — на main после слияния) */
-const GROUPS=['core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
+const GROUPS=['core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','normom','normow','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
 const ONLY=(a=>a?new Set(a.slice(7).split(',').map(x=>x.trim()).filter(Boolean)):null)(process.argv.find(a=>a.startsWith('--only=')));
 if(ONLY){ const bad=[...ONLY].filter(g=>!GROUPS.includes(g)); if(bad.length){ console.error('Нет таких блоков: '+bad.join(', ')+'. Есть: '+GROUPS.join(', ')); process.exit(2); } }
 /* время каждого блока — для раскладки потоков CI по времени (строка «Время блоков» в конце) */
@@ -159,14 +159,23 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     const nr=await require('./normo-run.js').runNormo(npage,{nomodel:QUICK,igSample:[1,7,13,18,24,30]});
     info.push('Нормоконтроль ИГ: листов '+nr.stat.sheets+(QUICK?' (без сверки с моделью)':', виды сверены с 3D-моделью')+', '+Math.round(nr.stat.ms/1000)+' с');
     report('ИГ: нормоконтроль листов',nr.issues.map(i=>({name:i.name,rule:i.rule,msg:i.msg})));
+    /* «Нормоконтроль» — здесь, пока листы в кэше после нормоконтроля всех листов: на медленном раннере CI с холодного кэша
+       лист не успевал построиться за 90 с */
+    report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(npage,URL));
+    await npage.close(); }
+
+  /* 3д′. проверка проверки нормоконтроля — отдельный блок normom (свой поток CI: нормоконтроль целиком шёл 10 мин из 12):
+     подсаженные нарушения тренажёра, сторона волнистой линии, «Читаю чертёж» */
+  if(on('normom')) { const npage=await browser.newPage(); await npage.goto(URL); await npage.waitForTimeout(1200);
     const mu=await require('./normo-mutate.js').runMutations(npage,{per:QUICK?1:2}), tot=Object.values(mu).reduce((a,x)=>[a[0]+x.поймано,a[1]+x.всего,a[2]+x.лишнее],[0,0,0]);
     info.push('Нормоконтроль, проверка проверки: поймано '+tot[0]+' из '+tot[1]+' подсаженных нарушений ('+Object.keys(mu).length+' типов тренажёра), лишних замечаний — '+tot[2]);
     Object.entries(mu).forEach(([t,x])=>{ if(!x.всего) fail.push('Тренажёр «Нормоконтроль»: нарушение «'+t+'» не подсаживается ни в один лист');
       else if(x.поймано<x.всего) fail.push('Нормоконтроль не ловит «'+t+'»: '+x.поймано+' из '+x.всего+' — '+x.пример);
       if(x.лишнее) fail.push('Нормоконтроль: подсадка «'+t+'» даёт лишние замечания — '+x.пример); });
-    /* «Нормоконтроль» — здесь, пока листы в кэше после нормоконтроля всех листов: на медленном раннере CI с холодного кэша
-       лист не успевал построиться за 90 с */
-    report('Тренажёр «Нормоконтроль»',await require('./normo-mutate.js').nkUi(npage,URL));
+    await npage.close(); }
+
+  /* 3д″. сторона волнистой линии и «Читаю чертёж» — блок normow (свой поток CI: вместе с normom шло 12 мин) */
+  if(on('normow')) { const npage=await browser.newPage(); await npage.goto(URL); await npage.waitForTimeout(1200);
     if(!QUICK){ const wm=await require('./normo-mutate.js').wavyMutations(npage);
       info.push('Сторона волнистой линии (ГОСТ 2.305): поймано '+wm.поймано+' из '+wm.всего+' подсаженных ошибок'+(wm.review.length?'; для проверки человеком: '+wm.review.join('; '):''));
       if(wm.поймано<wm.всего) fail.push('Нормоконтроль не ловит сторону волнистой линии: '+wm.пропуски.join(', ')); }

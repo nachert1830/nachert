@@ -163,6 +163,21 @@ details.add{margin-top:12px}details.add summary{cursor:pointer;color:var(--acc);
 .mem .mi span{flex:1}.mem .mi b{font-size:12px;color:var(--mut);white-space:nowrap}
 .mem .mi.r{border-left:3px solid var(--acc)}.mem .mi.l{border-left:3px solid var(--amber)}.mem .mi.d{border-left:3px solid var(--green)}
 
+/* люди */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow)}
+.kpi b{display:block;font-size:24px;line-height:1.1}.kpi span{color:var(--mut);font-size:13px}
+.pbar{margin:14px 0 8px}.pbar input{flex:1;min-width:140px}
+.seg{display:inline-flex;background:var(--surf2);border-radius:12px;padding:3px}
+.seg button{background:transparent;padding:7px 12px;border-radius:9px;color:var(--mut);font-weight:600}.seg button.on{background:var(--surf);color:var(--ink);box-shadow:var(--shadow)}
+.people{display:flex;flex-direction:column;gap:6px}
+.pr{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:12px}
+.pr .dot{width:10px;height:10px;border-radius:50%;background:var(--line2);flex:none}
+.pr.on .dot{background:var(--green);box-shadow:0 0 0 3px var(--green-s)}.pr.td .dot{background:var(--acc)}
+.pr .nm{flex:1;min-width:0}.pr .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pr .nm small{color:var(--mut)}
+.pr .tm{color:var(--mut);font-size:13px;text-align:right;white-space:nowrap}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+
 /* карточка задачи */
 .scrim{position:fixed;inset:0;background:rgba(5,12,25,.35);z-index:9}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--paper);z-index:10;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top)) 16px 16px;box-shadow:-10px 0 40px rgba(0,0,0,.2)}
