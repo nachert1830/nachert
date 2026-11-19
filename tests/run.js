@@ -185,7 +185,10 @@ B.normo={els:q=>[...SHEET_ELS(),...MUT_ELS(),'nk',...(q?[]:WAVY_ELS()),'read'], 
 
 /* 3ж. «Научись защищать точки» (#/ig/points) */
 B.points={el:async c=>{ const tp=await c.fresh({viewport:VIEW.phone,hash:'#/ig/points'}); const te=tp.__errs;
-  const out=await tp.evaluate(()=>{ const bad=[], J=IG3.jc(IG_VARS[5].tree), M={F:'″',T:'′',L:'‴'};
+  /* 300 точек тренажёра — по семени: на PR и main одно и то же (стабильный вердикт), ночью — новое случайное (POINTS_SEED), семя в отчёте */
+  const seed=+(process.env.POINTS_SEED||20261119)>>>0;
+  const out=await tp.evaluate(seed=>{ let x=seed||1; const rnd=()=>{ x^=x<<13; x>>>=0; x^=x>>17; x^=x<<5; x>>>=0; return x/4294967296; };
+    const bad=[], J=IG3.jc(IG_VARS[5].tree), M={F:'″',T:'′',L:'‴'};
     IGL.PEX().forEach(E=>{ const name='точка '+E.n, j=J(...E.p); if(E.cutp?!(j<-0.05&&Math.abs(E.p[E.cutp==='L'?0:1])<1e-9):Math.abs(j)>0.05) bad.push({name,rule:E.cutp?'точка в штриховке: в материале, в секущей плоскости':'точка на поверхности',msg:'J = '+j.toFixed(3)});
       IGL.ptSVG(E,0); const got=['F','T','L'].map(v=>E.vis[v]).join('');
       if(got!==E.exp) bad.push({name,rule:'видимость в тексте = видимость по модели',msg:'текст: '+E.exp+', модель: '+got+' (v — видна, h — закрыта, r — убрана разрезом)'});
@@ -195,10 +198,10 @@ B.points={el:async c=>{ const tp=await c.fresh({viewport:VIEW.phone,hash:'#/ig/p
     /* видимость — сверка с эталонным лучом: шаг 0,01 мм, любой материал на пути к глазу — крестик (точки разбора и 300 случайных точек тренажёра) */
     const {stOn,imJ,PSF,PVD}=IGL.ptVis, ref=(p,n,v)=>{ const d=PVD[v], q=p.map((c,i)=>c+n[i]*.06); for(let s=0.01;s<200;s+=0.01) if(imJ(v,[q[0]+d[0]*s,q[1]+d[1]*s,q[2]+d[2]*s])<-1e-4) return 'h'; return 'v'; };
     const vchk=(p,n,tag)=>['F','T','L'].forEach(v=>{ const a=stOn(p,n,v); if(a!=='r'&&a!==ref(p,n,v)) bad.push({name:tag,rule:'видимость = эталонный луч',msg:v+' '+p.map(x=>x.toFixed(2)).join(', ')+': на сайте '+a}); });
-    IGL.PEX().forEach(E=>vchk(E.p,E.nr,'точка '+E.n)); for(let i=0;i<300;i++){ const s=PSF[i%PSF.length], G=s.g(Math.random); if(!s.ok||s.ok(G.p)) vchk(G.p,G.n,'тренажёр: '+s.t); }
+    IGL.PEX().forEach(E=>vchk(E.p,E.nr,'точка '+E.n)); for(let i=0;i<300;i++){ const s=PSF[i%PSF.length], G=s.g(rnd); if(!s.ok||s.ok(G.p)) vchk(G.p,G.n,'тренажёр: '+s.t); }
     /* у самого очерка конуса: на долю градуса за очерком точка уже за материалом — крестик, на долю градуса перед ним — видна */
     const rC=z=>40-(z-25)*10/95; [40,70,100].forEach(z=>[0.5,1,2,4].forEach(dg=>[1,-1].forEach(sg=>{ const r=rC(z), a=Math.PI-sg*dg*Math.PI/180, c=Math.cos(a), sn=Math.sin(a); vchk([r*c,r*sn,z],[c,sn,0.1],'конус у очерка'); })));
-    return bad; });
+    return bad; },seed);
   const cnt={ok:0,n:0,mir:0,sym:0};
   for(let t=0;t<18;t++){ const mode=t%3; await tp.click('#igpTrNext'); await tp.evaluate(()=>document.getElementById('igpTrPic').scrollIntoView({block:'center'}));
     const w=await tp.evaluate(mir=>{ const E=document.getElementById('igpTr').igpTask(), k=3, p=E.p, P={F:q=>[k*q[0],-k*q[2]],T:q=>[k*q[0],k*(84-q[1])],L:q=>[k*(168-q[1]),-k*q[2]]}, m=document.querySelector('#igpTrPic svg').getScreenCTM();
@@ -210,7 +213,7 @@ B.points={el:async c=>{ const tp=await c.fresh({viewport:VIEW.phone,hash:'#/ig/p
     else if(mode===1){ if(Math.abs(w.y)>=1){ if(!yes) cnt.mir++; else out.push({name:'тренажёр',rule:'перёд и зад перепутаны — не засчитано',msg:w.t+' — '+res.slice(0,140)}); } }
     else { if(!yes) cnt.sym++; else out.push({name:'тренажёр',rule:'не та отметка видимости — не засчитано',msg:w.t+' — '+res.slice(0,140)}); } }
   te.forEach(e=>out.push({name:'#/ig/points',rule:'ошибка JS',msg:e.slice(0,200)}));
-  c.info('Защита точек: '+out.length+' замечаний; тренажёр — верных засчитано '+cnt.ok+' из '+cnt.n+', перепутанных перёд/зад отклонено '+cnt.mir+', неверных отметок отклонено '+cnt.sym);
+  c.info('Защита точек (семя '+seed+'): '+out.length+' замечаний; тренажёр — верных засчитано '+cnt.ok+' из '+cnt.n+', перепутанных перёд/зад отклонено '+cnt.mir+', неверных отметок отклонено '+cnt.sym);
   c.report('ИГ: защита точек',out); }};
 
 /* 3з. ДЗ №3, «Сверь свой лист»: таблица 30 вариантов задания */
