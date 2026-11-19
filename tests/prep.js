@@ -14,7 +14,7 @@ const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js')); require(path.join(ROOT,'prep/rest.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js')); require(path.join(ROOT,'prep/rest.js')); require(path.join(ROOT,'prep/space.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
@@ -138,10 +138,11 @@ const CHECK={
   p1(V,S){ const v=[]; const [x,y,z]=V.A, A2=PL(S,'A″'), A1=PL(S,'A′'); if(!A2||!A1) return ['обе проекции'];
     if(Math.hypot(A2[0]+x,A2[1]+z)>TOL) v.push('A″: x влево, высота z'); if(Math.hypot(A1[0]+x,A1[1]-y)>TOL) v.push('A′: x влево, глубина y'); return v; },
   p2(V,S){ const v=[]; const [x]=V.A, sx=L1(S,'sx'); if(Math.abs(sx[2]+x)>TOL) v.push('x — влево от O');
-    if(!/^z/.test(TX(S,'tz'))||!/^y/.test(TX(S,'ty'))) v.push('до A″ — z, до A′ — y'); return v; },
+    if(!/^z/.test(TX(S,'tz'))||!/^y/.test(TX(S,'ty'))) v.push('до A″ — z, до A′ — y'); const A1=P(S,'A1'); if(Math.abs(A1[1]-V.A[1])>TOL) v.push('y > 0 — A′ под осью'); return v; },
   p3(V,S){ const v=[]; const [,y,z]=V.A, A3=P(S,'A3'); if(Math.hypot(A3[0]-y,A3[1]+z)>TOL) v.push('A‴: справа от z на y, высота z'); return v; },
   p4(V,S){ return CHECK.p1(V,S); },
-  p5(V,S){ const {A,B,kind}=V, top=kind==='h'?(A[2]>B[2]?'A':'B'):(A[1]>B[1]?'A':'B'); const lab=S.E.find(e=>e.role==='P').lab; return lab[0]===top?[]:['видна ближняя к глазу']; },
+  p5(V,S){ const v=[]; const {A,B,kind}=V, top=kind==='h'?(A[2]>B[2]?'A':'B'):(A[1]>B[1]?'A':'B'); const lab=S.E.find(e=>e.role==='P').lab; if(lab[0]!==top) v.push('видна ближняя к глазу'); if(!/\(/.test(lab)) v.push('невидимая — в скобках');
+    const q=P(S,'Q'), r=P(S,'R'), qa=kind==='h'?[A[0],-A[2]]:[A[0],A[1]], qb=kind==='h'?[B[0],-B[2]]:[B[0],B[1]]; if(Math.hypot(q[0]-qa[0],q[1]-qa[1])>TOL||Math.hypot(r[0]-qb[0],r[1]-qb[1])>TOL) v.push('другие проекции — на своих местах'); return v; },
   l1(V,S){ const a=L1(S,'ab2'), b=L1(S,'ab1'), eq=(u,w)=>Math.abs(u-w)<TOL;
     const ok={h:eq(a[1],a[3]),f:eq(b[1],b[3]),hp:eq(b[0],b[2])&&eq(b[1],b[3]),fp:eq(a[0],a[2])&&eq(a[1],a[3])}[V.kind]; return ok?[]:['признак типа прямой']; },
   l2(V,S){ const v=[]; const {A,B,r}=V, t=r[0]/(r[0]+r[1]), K2=P(S,'K2'), K1=P(S,'K1'); if(Math.abs(K2[0]-K1[0])>TOL) v.push('одна линия связи');
@@ -155,13 +156,16 @@ const CHECK={
   l4u(V,S){ const v=[]; const a1=[V.A[0],V.A[1]], b1=[V.B[0],V.B[1]], lg=L1(S,'leg'); if(Math.hypot(lg[0]-b1[0],lg[1]-b1[1])>TOL||Math.abs(Math.hypot(lg[2]-lg[0],lg[3]-lg[1])-Math.abs(V.B[2]-V.A[2]))>TOL) v.push('треугольник на A′B′ с Δz');
     const c=arcC(E(S,'arc').find(e=>e.t==='poly').p); if(!c||Math.hypot(c[0]-a1[0],c[1]-a1[1])>.5) v.push('α — при A′'); return v; },
   l5(V,S){ const v=[]; const {A,B}=V, K1=P(S,'K1'), s=(K1[0]-A[0])/(B[0]-A[0]), K=[A[0]+(B[0]-A[0])*s,A[1]+(B[1]-A[1])*s,A[2]+(B[2]-A[2])*s];
-    if(Math.abs(K1[1]-K[1])>TOL) v.push('K′ на A′B′'); if(Math.abs(Math.hypot(K[0]-A[0],K[1]-A[1],K[2]-A[2])-V.l)>TOL) v.push('|AK| = ℓ'); return v; },
-  l6(V,S){ const K2=P(S,'K2'), K1=P(S,'K1'); return Math.abs(K2[0]-K1[0])>TOL?['пересечение — на одной линии связи']:[]; },
-  l7(V,S){ const K1=P(S,'K1'), K=[K1[0],K1[1],V.h0[2]], d=[V.h1[0]-V.h0[0],V.h1[1]-V.h0[1],0], w=[K[0]-V.A[0],K[1]-V.A[1],K[2]-V.A[2]];
+    if(Math.abs(K1[1]-K[1])>TOL) v.push('K′ на A′B′'); if(Math.abs(Math.hypot(K[0]-A[0],K[1]-A[1],K[2]-A[2])-V.l)>TOL) v.push('|AK| = ℓ'); const K2=P(S,'K2'); if(Math.abs(K2[0]-K1[0])>TOL||Math.abs(-K2[1]-K[2])>TOL) v.push('K″ на линии связи, на A″B″'); return v; },
+  l6(V,S){ const c2=L1(S,'cd2'), c1=L1(S,'cd1'), a2=[V.A[0],-V.A[2],V.B[0],-V.B[2]], a1=[V.A[0],V.A[1],V.B[0],V.B[1]], par=(p,q)=>Math.abs(cr(un(p),un(q)))<.003;
+    if(V.kind==='p') return par(c2,a2)&&par(c1,a1)?[]:['параллельны обе проекции'];
+    const K2=P(S,'K2'), K1=P(S,'K1'); return Math.abs(K2[0]-K1[0])>TOL?['пересечение — на одной линии связи']:[]; },
+  l7(V,S){ const K1=P(S,'K1'), K2=P(S,'K2'); if(Math.abs(K1[0]-K2[0])>TOL) return ['линия связи']; const K=[K1[0],K1[1],V.h0[2]], d=[V.h1[0]-V.h0[0],V.h1[1]-V.h0[1],0], w=[K[0]-V.A[0],K[1]-V.A[1],K[2]-V.A[2]];
     return Math.abs(d[0]*w[0]+d[1]*w[1])/Math.hypot(...d)/Math.hypot(...w)>.01?['AK ⟂ h в пространстве']:[]; },
   /* ── плоскость, прямая и плоскость ── */
   s1(V,S){ const p2=E(S,'t2')[0].p, p1=E(S,'t1')[0].p, col=q=>Math.abs((q[1][0]-q[0][0])*(q[2][1]-q[0][1])-(q[2][0]-q[0][0])*(q[1][1]-q[0][1]))<1, flat=q=>Math.abs(q[0][1]-q[1][1])<TOL&&Math.abs(q[0][1]-q[2][1])<TOL;
-    const ok={hp:col(p1),fp:col(p2),hl:flat(p2),fl:flat(p1)}[V.kind]; return ok?[]:['признак положения плоскости']; },
+    /* проецирующая — прямая под углом к x (∥ x — это уже плоскость уровня) */
+    const ok={hp:col(p1)&&!flat(p1),fp:col(p2)&&!flat(p2),hl:flat(p2),fl:flat(p1)}[V.kind]; return ok?[]:['признак положения плоскости']; },
   s2(V,S){ const v=[]; const K1=P(S,'K1'), K2=S.base.find(e=>e.lab==='K″').a; if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); if(!inPl(V,[K1[0],K1[1],-K2[1]])) v.push('K в плоскости ABC'); return v; },
   s3(V,S){ const v=[]; const h2=L1(S,'h2'), f1=L1(S,'f1'); if(Math.abs(h2[1]-h2[3])>TOL) v.push('h″ ∥ x'); if(Math.abs(f1[1]-f1[3])>TOL) v.push('f′ ∥ x');
     const p1=P(S,'p1h'), p2=P(S,'p1f'), q1=P(S,'p2h'), q2=P(S,'p2f'); if(!onSeg3(V.B,V.C,[p1[0],p1[1],-p2[1]])) v.push('1 на BC'); if(!onSeg3(V.B,V.C,[q1[0],q1[1],-q2[1]])) v.push('2 на BC'); return v; },
@@ -170,14 +174,16 @@ const CHECK={
   s5b(V,S){ const v=[]; const M1=S.base.find(e=>e.lab==='M′').a, b1=[V.B[0],V.B[1]], lg=L1(S,'leg'); if(Math.abs(Math.hypot(lg[2]-lg[0],lg[3]-lg[1])-Math.abs(V.B[2]-V.A[2]))>TOL) v.push('катет Δz');
     const c=arcC(E(S,'arc').find(e=>e.t==='poly').p); if(!c||Math.hypot(c[0]-M1[0],c[1]-M1[1])>.5) v.push('α при M′'); return v; },
   s6(V,S){ const D1=S.base.find(e=>e.lab==='D′').a, D2=P(S,'D2'); if(Math.abs(D1[0]-D2[0])>TOL) return ['линия связи']; return inPl(V,[D1[0],D1[1],-D2[1]])?[]:['D в плоскости ABC']; },
-  m1(V,S){ const a=L1(S,'d1'), b=L1(S,'d2'), dir=[1,(a[3]-a[1])/(a[2]-a[0]),-(b[3]-b[1])/(b[2]-b[0])], n=nrmPl(V); return Math.abs(dir[0]*n[0]+dir[1]*n[1]+dir[2]*n[2])/Math.hypot(...dir)/Math.hypot(...n)>.01?['d ∥ плоскости']:[]; },
+  m1(V,S){ const a=L1(S,'d1'), b=L1(S,'d2'); { const mid=q=>[(q[0]+q[2])/2,(q[1]+q[3])/2], m1=mid(a), m2=mid(b); if(Math.hypot(m1[0]-V.Dp[0],m1[1]-V.Dp[1])>TOL||Math.hypot(m2[0]-V.Dp[0],m2[1]+V.Dp[2])>TOL) return ['d проходит через D']; } const dir=[1,(a[3]-a[1])/(a[2]-a[0]),-(b[3]-b[1])/(b[2]-b[0])], n=nrmPl(V); return Math.abs(dir[0]*n[0]+dir[1]*n[1]+dir[2]*n[2])/Math.hypot(...dir)/Math.hypot(...n)>.01?['d ∥ плоскости']:[]; },
   m3(V,S){ const v=[]; const {A,B}=V, l=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], h1=L1(S,'h1'), h2=L1(S,'h2'), f1=L1(S,'f1'), f2=L1(S,'f2');
     if(Math.abs(h2[1]-h2[3])>TOL||Math.abs(f1[1]-f1[3])>TOL) v.push('h″ ∥ x, f′ ∥ x');
     const hd=[h1[2]-h1[0],h1[3]-h1[1],0], fd=[f2[2]-f2[0],0,-(f2[3]-f2[1])], dt=(a,b)=>Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2])/Math.hypot(...a)/Math.hypot(...b);
     if(dt(hd,l)>.01) v.push('h ⟂ l'); if(dt(fd,l)>.01) v.push('f ⟂ l'); return v; },
   m4(V,S){ const v=[]; const K1=P(S,'K1'), K2=P(S,'K2'); if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); const K=[K1[0],K1[1],-K2[1]];
     if(!inPl(V,K)) v.push('K в плоскости'); if(!onSeg3(V.Dp,V.Ep,K)) v.push('K на прямой l'); return v; },
-  t1(V,S){ const s=L1(S,'nv'); return Math.abs(Math.hypot(s[2]-s[0],s[3]-s[1])-Math.hypot(V.A[0]-V.B[0],V.A[1]-V.B[1],V.A[2]-V.B[2]))>TOL?['отмечена натуральная величина']:[]; },
+  t1(V,S){ const e=E(S,'nv').find(x=>x.t!=='txt'), d=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+    if(e.t==='poly'){ const q=e.p; return Math.abs(d(q[0],q[1])-d3(V.A,V.B))>TOL||Math.abs(d(q[1],q[2])-d3(V.B,V.C))>TOL||Math.abs(d(q[0],q[2])-d3(V.A,V.C))>TOL?['отмечен натуральный вид']:[]; }
+    const s=e.a; return Math.abs(Math.hypot(s[2]-s[0],s[3]-s[1])-d3(V.A,V.B))>TOL?['отмечена натуральная величина']:[]; },
   s4(V,S){ const v=[]; const n=[V.dh[1]*V.df[2]-V.dh[2]*V.df[1],V.dh[2]*V.df[0]-V.dh[0]*V.df[2],V.dh[0]*V.df[1]-V.dh[1]*V.df[0]], X=V.X;
     const inP=q=>Math.abs(n[0]*(q[0]-X[0])+n[1]*(q[1]-X[1])+n[2]*(q[2]-X[2]))/Math.hypot(...n)<TOL;
     const h=L1(S,'h0'), f=L1(S,'f0'); if(!inP([h[0],h[1],0])||!inP([h[2],h[3],0])) v.push('h₀α — горизонтальный след'); if(!inP([f[0],0,-f[1]])||!inP([f[2],0,-f[3]])) v.push('f₀α — фронтальный след');
@@ -203,8 +209,10 @@ const CHECK={
         if(yc<-1||yq<-1||Math.abs(yc-yq)>3) { v.push('точка на обеих поверхностях'); break; } } } return v; },
   f4a(V,S){ const v=[]; const x1=z=>V.xa+(V.xb-V.xa)*(z-V.za)/(V.zb-V.za);
     E(S,'g2').forEach(e=>{ const a=e.a; if(Math.abs(a[1]-a[3])>TOL||Math.abs(a[0]-x1(-a[1]))>TOL) v.push('образующая ∥ π₁ между точками одной высоты'); });
-    E(S,'g1').forEach(e=>{ if(Math.abs(e.a[3]-V.yq)>TOL) v.push('конец — на d₂′'); }); return v; },
-  f4b(V,S){ const v=[]; E(S,'d2').forEach((e,k)=>{ if(Math.abs(-e.a[1]-V.p*k/V.n)>TOL) v.push('равные подъёмы'); }); return v.slice(0,1); },
+    const g2=E(S,'g2'); E(S,'g1').forEach((e,i)=>{ if(Math.abs(e.a[3]-V.yq)>TOL) v.push('конец — на d₂′'); if(g2[i]&&Math.abs(e.a[0]-g2[i].a[0])>TOL) v.push('линия связи'); }); return v; },
+  f4b(V,S){ const v=[]; E(S,'d2').forEach((e,k)=>{ if(Math.abs(-e.a[1]-V.p*k/V.n)>TOL) v.push('равные подъёмы'); });
+    E(S,'d1').forEach((e,k)=>{ const a=2*Math.PI*k/V.n; if(Math.hypot(e.a[0]-V.R*Math.cos(a),e.a[1]-V.Y0-V.R*Math.sin(a))>TOL) v.push('равные части окружности'); });
+    const hx=E(S,'hx')[0].p; hx.forEach((q,k)=>{ if(Math.abs(q[0]-V.R*Math.cos(2*Math.PI*k/V.n))>TOL||Math.abs(-q[1]-V.p*k/V.n)>TOL) v.push('точка k — на k-й линии связи и k-м уровне'); }); return [...new Set(v)]; },
   f1(V,S){ const v=[]; const b=E(S,'b1')[0]; if(b.t!=='circ'||Math.abs(b.a[2]-V.R)>TOL||Math.abs(b.a[0])>TOL) v.push('основание на π₁ — окружность радиуса R');
     const oL=E(S,'oL')[0].a, oR=E(S,'oR')[0].a; if(Math.abs(oL[0])>TOL||Math.abs(oR[0])>TOL) v.push('вершина на оси');
     if(Math.abs(oL[2]+V.R)>TOL||Math.abs(oR[2]-V.R)>TOL) v.push('очерк — крайние образующие'); return v; }
@@ -225,6 +233,7 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const geo=e=>({t:e.t,a:e.a&&e.a.map(x=>Math.round(x*1e3)),p:e.p&&e.p.map(q=>q.map(x=>Math.round(x*1e3))),dash:!!e.dash});
 for(const [id,T] of Object.entries(PREP.TOPICS)){
   if(!CHECK[id]){ bad(`тема ${id}: нет независимой проверки в tests/prep.js`); continue; }
+  if(Object.keys(T.traps).length<3) bad(`тема ${id}: меньше трёх ловушек`);
   for(const k of Object.keys(T.traps)){
     let made=0, okFail=0, badPass=0, extra=0;
     for(let i=0;i<N;i++){
@@ -245,6 +254,17 @@ for(const [id,T] of Object.entries(PREP.TOPICS)){
   const S=T.scene(V,null), last=new Set(W.steps[W.steps.length-1].roles);
   const miss=[...new Set(S.E.map(e=>e.role))].filter(r=>!last.has(r)); if(miss.length) bad(`${id}: «Смотри» не показывает ${miss.join(', ')}`);
 }
+
+/* ── 2б. 3D: каждая точка пространства с pr проецируется ровно в свою точку эпюра (на 50 вариантах) ── */
+{ let n3=0; for(const [id,T] of Object.entries(PREP.TOPICS)){ if(!T.space) continue; n3++; let bad3=0, chk=0;
+    for(let i=0;i<50;i++){ const V=(T.watch.V?T.watch.V.call(T):T.make.call(T)); if(!V) continue; const S=T.scene(V,null); if(!S) continue; const pr=T.space(V);
+      if(!pr.length){ bad3++; continue; }
+      for(const q of pr.filter(q=>q.t==='pt'&&q.pr)){ for(const [k,role] of Object.entries(q.pr)){ const e=S.E.concat(S.base).find(x=>x.t==='pt'&&x.role===role); if(!e){ bad3++; if(bad3<=2) bad(`3D ${id}: на эпюре нет точки «${role}»`); continue; } chk++;
+        const want=k==='h'?[q.p[0],q.p[1]]:[q.p[0],-q.p[2]]; if(Math.hypot(e.a[0]-want[0],e.a[1]-want[1])>TOL){ bad3++; if(bad3<=2) bad(`3D ${id}: точка ${q.lab||role} на ${k==='h'?'π₁':'π₂'} не совпала с эпюром (${e.a.map(v=>v.toFixed(1))} ≠ ${want.map(v=>v.toFixed(1))})`); } } }
+      /* роли 3D — те же, что у шагов «Смотри» */
+      const steps=new Set(T.watch.steps.flatMap(s=>s.roles)); pr.filter(q=>q.role&&!steps.has(q.role)).slice(0,1).forEach(q=>bad(`3D ${id}: роль «${q.role}» не встречается в шагах «Смотри»`)); }
+    if(!chk) bad(`3D ${id}: нет ни одной точки, сверенной с эпюром`); }
+  info.push(`3D: тем со сценой ${n3}; каждая точка с привязкой сверена с эпюром на 50 вариантах`); }
 
 /* ── 3. модель освоения на смоделированных студентах ── */
 { for(const id of Object.keys(PREP.TOPICS)){ const T=PREP.TOPICS[id], M=PREP.Model(T,null); try{ for(let i=0;i<30;i++){ const k=M.next(); if(!T.traps[k]) throw new Error('выбрана несуществующая ловушка «'+k+'»'); M.last=k; M.answer(k,i%5!==0,3000); } }catch(e){ bad(`модель, тема ${id}: ${e.message}`); } } }
@@ -277,7 +297,10 @@ async function screens(){
     const r=await page.evaluate(async()=>{
       const wait=ms=>new Promise(f=>setTimeout(f,ms)); const q=s=>document.querySelector(s);
       q('[data-ph="watch"]').click(); await wait(50);
-      for(let i=0;i<10;i++){ const b=q('#ppNext'); if(!b) return 'нет кнопки «Дальше»'; const last=/провер/.test(b.textContent); b.click(); await wait(30); if(last) break; }
+      for(let i=0;i<10;i++){ const b=q('#ppNext'); if(!b) return 'нет кнопки «Дальше»'; const last=/провер/.test(b.textContent);
+        if(last){ const v3=q('.pp-vt [data-v="3"]'); if(v3){ v3.click(); await wait(80); const cv=q('canvas.pp-3d'); if(!cv||cv.hidden) return '3D не открылось';
+          const d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data; let n=0; for(let k=3;k<d.length;k+=40) if(d[k]>0) n++; if(n<200) return '3D пустое'; q('.pp-vt [data-v="e"]').click(); await wait(20); } }
+        b.click(); await wait(30); if(last) break; }
       if(!q('#ppA')||!q('#ppB')) return 'нет карточек дуэли';
       const box=e=>e.getBoundingClientRect(), A=box(q('#ppA')), B=box(q('#ppB')), nav=q('.nav-bot');
       if(A.height<160||B.height<160) return 'карточки ниже 160 px';
