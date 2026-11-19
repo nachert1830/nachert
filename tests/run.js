@@ -35,7 +35,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     r.writeHead(200,{'Content-Type':TYPES[path.extname(p)]||'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(srv)); }); }
 
 /* страница сайта готова: роутер отрисовал адрес, документ и шрифты загружены (вместо фиксированной паузы 1,2–1,5 с) */
-const ready=require('./ready.js');
+const ready=require('./ready.js'), {waitIn}=ready;
 
 /* ═══ блоки: els(QUICK) — элементы; el(c, ключ) — выполнить элемент (c.info/c.fail/c.report/c.M, возврат — данные для finish);
        finish(c, данные по ключам) — итог блока из всех элементов (пороги, отчёт). Без els — один элемент '*'. ═══ */
@@ -243,7 +243,7 @@ B.track={el:async c=>{ const ap=await c.fresh({viewport:VIEW.phone,hash:'#/ng/ta
   await ap.waitForSelector('.pl-mode[data-m="try"]',{timeout:5000}).catch(()=>{});
   await ap.click('.pl-mode[data-m="try"]').catch(()=>{}); await ap.click('.pl-mode[data-m="watch"]').catch(()=>{});
   await walkTask(ap);
-  await ap.click('.pl-done').catch(()=>{}); await ap.waitForFunction(()=>window.__EV.some(e=>/^task_done:/.test(e)),null,{timeout:3000}).catch(()=>{});
+  await ap.click('.pl-done').catch(()=>{}); await waitIn(ap,()=>window.__EV.some(e=>/^task_done:/.test(e)),null,3000).catch(()=>{});
   const ev=await ap.evaluate(()=>window.__EV);
   ['task_open:watch:12','task_mode:try:12','task_done:watch:12'].forEach(e=>{ if(!ev.includes(e)) c.fail('Статистика режимов: нет события '+e+' (пришло: '+ev.join(', ')+')'); });
   c.info('Статистика режимов: '+ev.length+' событий на один разбор ('+[...new Set(ev.map(e=>e.split(':')[0]))].join(', ')+')'); }};
@@ -271,7 +271,7 @@ B.theory={el:async c=>{ const th=require('./theory.js').run().map(o=>({name:'с�
 async function walkTask(p){
   for(let k=0;k<120;k++){ const b=await p.$('.pl-next,.pl-nextpart'); if(!b) break;   /* длинные разборы — больше 40 нажатий (раньше — второй круг) */
     await b.click().catch(()=>{});
-    await p.waitForFunction(el=>!el.isConnected,b,{timeout:2000,polling:'raf'}).catch(()=>{}); } }
+    await waitIn(p,el=>!el.isConnected,b,2000).catch(()=>{}); } }
 
 /* 5. обход сайта: каждая страница на телефоне — без ошибок JS, без горизонтальной прокрутки, не пустая; разбор каждой задачи до конца.
    Элементы: pages — обход по ссылкам; walk0…walk3 — разборы задач (каждая четвёртая) */
@@ -286,7 +286,7 @@ B.crawl={els:q=>q?[]:['pages',...Array.from({length:WALKN},(_,i)=>'walk'+i)], el
         try{
           const before=errs.length; await page.evaluate(h=>{ location.hash=h; },h);
           /* роутер отрисовал адрес (смена страниц может идти через View Transition) и прошли два кадра */
-          await page.waitForFunction(h=>CURH===h&&!(window.__vtN>0),h,{timeout:5000,polling:'raf'}).catch(()=>{}); await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,16)))));
+          await waitIn(page,h=>CURH===h&&!(window.__vtN>0),h,5000).catch(()=>{}); await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,16)))));
           const st=await page.evaluate(()=>({ w:document.documentElement.scrollWidth, iw:window.innerWidth, txt:(document.getElementById('view')||document.body).innerText.length,
             /* элемент страницы, растянутый на весь экран чужим стилем (так плитка главной однажды получила стиль окна 3D) */
             huge:[...document.querySelectorAll('#view *')].filter(e=>{ const c=getComputedStyle(e); return c.position==='fixed'&&e.getBoundingClientRect().height>window.innerHeight*0.6; }).map(e=>e.tagName+'.'+String(e.className).slice(0,40)),

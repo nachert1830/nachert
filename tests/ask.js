@@ -66,7 +66,7 @@ async function runAsk(browser) {
     const who = await me.textContent('.qa-hd .who'); if (!/Аня/.test(who) || !/вариант 8/.test(who)) B('пульт: кто и откуда спросил', who);
     await me.fill('#qaTxt', 'Замени π₂ на π₄ ∥ S′A′ — на π₄ ребро в натуральную величину.'); await me.click('#qaCp [type=submit]');
     /* ответ сохранён на сервере: он появился в переписке пульта и ждущих больше нет */
-    await me.waitForFunction(() => /π₄/.test((document.querySelector('#qaMsgs') || {}).textContent || '') && !!document.querySelector('#askBadge[hidden]'), null, { timeout: 30000 }).catch(() => {});
+    await require('./ready.js').waitIn(me, () => /π₄/.test((document.querySelector('#qaMsgs') || {}).textContent || '') && !!document.querySelector('#askBadge[hidden]'), null, 30000).catch(() => {});
     if (!(await me.$('#askBadge[hidden]'))) B('пульт: после ответа ждущих нет', await me.textContent('#askBadge'));
     /* 4) ученик видит ответ */
     await pg.goto(SITE + '/#/ng/rk2'); await require('./ready.js')(pg); await pg.evaluate(() => ASK.refresh());

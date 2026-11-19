@@ -26,7 +26,7 @@ if (mode === 'sizes') (async () => {
     r.writeHead(200, {'Content-Type': p.endsWith('.html') ? 'text/html; charset=utf-8' : p.endsWith('.js') ? 'text/javascript' : 'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0, '127.0.0.1', () => res(s)); });
   const browser = await chromium.launch({executablePath: fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined});
   const page = await browser.newPage(); await page.goto('http://127.0.0.1:' + srv.address().port + '/');
-  await page.waitForFunction(() => typeof CURH !== 'undefined' && CURH != null);
+  await require('./ready.js')(page);
   for (const f of ['geometry', 'mutate']) await page.addScriptTag({content: fs.readFileSync(path.join(__dirname, f + '.js'), 'utf8')});
   const a = await page.evaluate(() => MUTATE_SIZES()), b = await page.evaluate(() => MUTATE_SIZES({noText: true}));
   console.log('Числа на чертежах, с текстом задачи: ' + a.поймано + ' из ' + a.всего + (a.пропуски.length ? ' — пропуски: ' + a.пропуски.join('; ') : ''));
