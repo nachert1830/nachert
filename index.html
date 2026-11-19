@@ -5353,6 +5353,33 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 :root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg .mc text.lbl{fill:var(--mc)!important}
 
 .pl.peek .pl-side.more::after{display:none}
+/* ═══ главная v10: низ «чистое поле» — разделы двумя оглавлениями, «Поделиться» одной тихой строкой ═══ */
+.hcr{display:grid;gap:22px;margin-top:26px}
+.hcr-r h3{margin:0 0 12px 2px;font:800 17px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
+.hcr-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hcr-g a{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink)!important;text-decoration:none!important;font:600 13px/1.15 var(--sans);text-align:center;-webkit-tap-highlight-color:transparent}
+.hcr-c{position:relative;width:68px;height:68px;border-radius:50%;display:grid;place-items:center;background:var(--cc);color:#fff;box-shadow:0 8px 18px -10px var(--cc);transition:transform .15s var(--ease),box-shadow .2s}
+.hcr-c svg{width:32px;height:32px;fill:currentColor}
+.hcr-c .k{fill:var(--cc)}.hcr-c .ks{fill:none;stroke:var(--cc);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.hcr-g a.lt .hcr-c{color:#141821}
+.hcr-g a:hover .hcr-c{transform:translateY(-2px);box-shadow:0 12px 22px -10px var(--cc)}
+.hcr-g a:active .hcr-c{transform:scale(.93)}
+.hcr-g a:focus-visible{outline:none}.hcr-g a:focus-visible .hcr-c{outline:3px solid var(--acc);outline-offset:3px}
+.hcr-c b{position:absolute;top:-3px;right:-5px;min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:var(--surf);color:var(--ink);font:800 11.5px/22px var(--sans);box-shadow:0 0 0 2px var(--paper),0 2px 6px rgba(0,0,0,.18)}
+.hcr-c i{position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#ffd34d;box-shadow:0 0 0 2.5px var(--paper)}
+:root[data-theme=dark] .hcr-g a[style*="#141821"] .hcr-c{background:#2a3144}:root[data-theme=dark] .hcr-g a[style*="#141821"] .hcr-c .k{fill:#2a3144}
+@media(min-width:760px){.hcr{grid-template-columns:1fr 1fr;gap:28px}.hcr-c{width:76px;height:76px}.hcr-c svg{width:36px;height:36px}.hcr-g a{font-size:14px}}
+@media(max-width:350px){.hcr-c{width:58px;height:58px}.hcr-c svg{width:28px;height:28px}}
+.v8h .v8-meta{border:0!important;background:none!important;padding:0!important;margin:14px auto 0!important;justify-content:center!important}
+.v8h .v8-meta .v8-ma{width:auto!important;justify-content:center!important;gap:6px!important;flex-wrap:nowrap!important}
+.v8h .v8-meta .vc{min-height:40px!important;padding:0 6px!important}
+.v8h .v8-meta .vc-n{font-size:15px!important}.v8h .v8-meta .vc-l{font-size:13px!important}
+.v8h .v8-share{flex:none!important;min-height:40px!important;padding:0 16px!important;border-radius:99px!important;background:transparent!important;color:var(--red)!important;border:1.5px solid color-mix(in srgb,var(--red) 35%,transparent)!important;box-shadow:none!important;font:700 14px var(--sans)!important}
+.v8h .v8-share:hover{background:color-mix(in srgb,var(--red) 8%,transparent)!important}
+.v8h .v8-share:active{transform:scale(.97)!important}
+.v8h .au-pillw{margin:6px 0 18px}
+.v8h .au-pill{border-color:transparent;background:none;font-size:13px;color:var(--mut)}
+.v8h .au-pill .au-face{width:22px;height:22px;font-size:14px}
 </style>
 </head>
 <body>
@@ -29791,6 +29818,10 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "sheet":"<rect x=\"2.5\" y=\"3.5\" width=\"19\" height=\"17\" rx=\"3\"/><rect class=\"k\" x=\"12.5\" y=\"14\" width=\"7\" height=\"4.6\" rx=\"1\"/><rect x=\"15.6\" y=\"14\" width=\"1\" height=\"4.6\"/><rect x=\"12.5\" y=\"15.9\" width=\"7\" height=\".9\"/><rect class=\"k\" x=\"5.5\" y=\"6.5\" width=\"5.5\" height=\"5.5\" rx=\"1\"/><rect x=\"7\" y=\"8\" width=\"2.5\" height=\"2.5\" rx=\".4\"/>",
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
+/* разделы на главной — ряд круглых цветных кнопок на чистом фоне (как витрина магазинов в банковском приложении):
+   у каждого раздела свой яркий цвет, белый значок; число задач — меткой на круге; light — светлый круг с тёмным значком */
+function circHTML(title,items){
+  return `<nav class="hcr-r" aria-label="${title}"><h3>${title}</h3><div class="hcr-g">${items.map(([h,t,ic,col,n,hot,light])=>`<a href="${h}" style="--cc:${col}"${light?' class="lt"':''}><span class="hcr-c"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:hot?'<i aria-label="скоро"></i>':''}</span>${t}</a>`).join('')}</div></nav>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
@@ -29808,12 +29839,12 @@ function viewHome(v){
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
-       <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
-   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
-   <section class="v8-dirs happs" aria-label="Разделы">
-    ${appsHTML('ng','Начертательная геометрия',[[H('ng','tasks'),'Тетрадь','nb',nT],[HDZ('ng'),'ДЗ','hw'],[H('ng','rk2'),'РК2','rk',0,1],[H('ng','path'),'Теория','th']])}
-    ${appsHTML('ig','Инженерная графика',[[H('ig','wb'),'Тетрадь','grid',nIW],[HDZ('ig'),'ДЗ','sheet'],[H('ig','learn'),'Учиться','cube'],[H('ig','theory'),'ЕСКД','square']])}
+   <section class="v8-dirs hcr" aria-label="Разделы">
+    ${circHTML('Начерт',[[H('ng','tasks'),'Тетрадь','nb','#1a5ae0',nT],[HDZ('ng'),'ДЗ','hw','#7b4dff'],[H('ng','rk2'),'РК2','rk','#e0252c',0,1],[H('ng','path'),'Теория','th','#0fa3c4']])}
+    ${circHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','grid','#ff6a13',nIW],[HDZ('ig'),'ДЗ','sheet','#12a05c'],[H('ig','learn'),'Учиться','cube','#141821'],[H('ig','theory'),'ЕСКД','square','#ffc21a',0,0,1]])}
    </section>
+   <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
+   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
   </div>`;
   NEXT=null;
   try{ if(window.RKG) RKG.bindTeaser(v); }catch(e){}
