@@ -168,3 +168,16 @@ test('Штаб: память — «запомни» → правило в каж
   const b3=n.issues[Object.keys(n.issues)[2]].body; assert.match(b3,/на «ты»/); assert.doesNotMatch(b3,/Уроки прошлых задач/);
   /* удалить правило */
   const r=await c.call('POST','/api/hq/memory',{op:'del',i:0},{as:'owner'}); assert.ok(!r.data.memory.some(x=>x.kind==='правило')); });
+
+test('Штаб: люди — все зарегистрированные, кто был сегодня и кто сейчас онлайн; только владельцу', async()=>{ const {c}=await setup();
+  await c.member(4001,'a'); await c.member(4002,'b');
+  /* «a» сейчас в кабинете (сигнал присутствия), «b» заходил 2 дня назад */
+  const us=await c.store.scan('users'), A=us.find(u=>u.name&&u.id!==us.find(x=>x.role==='admin').id);
+  c.clock.t+=3*864e5; const t=c.clock.t;   /* регистрация и вход были 3 дня назад */
+  for(const u of us){ if(u.role==='admin') continue; if(u.id===A.id) await c.store.update('users',u.id,{live:{at:t-30e3,view:'#/ng/rk2'},lastSeen:t-30e3}); else await c.store.update('users',u.id,{lastSeen:t-2*864e5}); }
+  const r=await c.call('GET','/api/hq/people',undefined,{as:'owner'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  assert.equal(r.data.total,3); assert.equal(r.data.online,1);
+  const a=r.data.people.find(p=>p.id===A.id); assert.equal(a.online,true); assert.equal(a.today,true); assert.equal(a.view,'#/ng/rk2');
+  assert.equal(r.data.people[0].id,A.id,'онлайн — сверху');
+  const b=r.data.people.find(p=>p.id!==A.id&&p.role!=='admin'); assert.equal(b.today,false); assert.equal(b.online,false); assert.ok(b.name);
+  assert.equal((await c.call('GET','/api/hq/people',undefined,{as:'a'})).status,403); });

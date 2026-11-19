@@ -268,6 +268,20 @@ function register(D, o) {
       seen.push(i.number); }
     await store.put('config', {id: 'hqseen', ids: seen.slice(-200)});
   }
+  /* ── Люди: все зарегистрированные и кто был сегодня (день — по Москве, как в пульте /api/admin/live) ── */
+  const mskDay = t => new Date(t + 3 * 3600e3).toISOString().slice(0, 10);
+  R['GET /api/hq/people'] = async () => {
+    const t = now(), td = mskDay(t), [us, acts] = await Promise.all([store.scan('users'), store.scan('activity', x => x.ts > t - 2 * 864e5)]);
+    const last = {}; acts.forEach(a => { if (mskDay(a.ts) === td && (!last[a.userId] || a.ts > last[a.userId])) last[a.userId] = a.ts; });
+    const people = us.map(u => {
+      const seen = Math.max(u.lastSeen || 0, u.lastLogin || 0, last[u.id] || 0, (u.live && u.live.at) || 0) || null;
+      return {id: u.id, name: u.name || 'без имени', group: u.group || '', role: u.role || 'member', createdAt: u.createdAt || null, lastSeen: seen,
+        online: !!(u.live && u.live.at > t - 120e3) && !u.blocked, today: !!seen && mskDay(seen) === td, blocked: !!u.blocked, view: (u.live && u.live.at > t - 120e3 && u.live.view) || ''};
+    }).sort((a, b) => (b.online - a.online) || (b.today - a.today) || ((b.lastSeen || 0) - (a.lastSeen || 0)));
+    return {ok: true, now: t, day: td, total: people.length, today: people.filter(p => p.today).length, online: people.filter(p => p.online).length,
+      newToday: people.filter(p => p.createdAt && mskDay(p.createdAt) === td).length, people};
+  };
+
   /* ── Разговор: лента, Секретарь, действия ─────────────────────────────────────────────────────────────────────────
      Владелец говорит в одну ленту. Секретарь (дешёвая модель) понимает, что сказано: новые мысли → Аналитик; ответ на вопрос
      продакта → Продакт этой задачи; «запускай» → Диспетчер и исполнитель; «что там» → статусы Цеха; «откати» → откат выкатки.

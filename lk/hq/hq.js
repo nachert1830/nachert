@@ -35,6 +35,7 @@
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'v-' + tab || !S.data; });
     try { localStorage.setItem('lk_hq_tab', tab); } catch (e) {}
     if (tab === 'map') requestAnimationFrame(links);
+    if (tab === 'people') loadPeople();
     document.body.classList.toggle('chat', tab === 'chat' && !!S.data);
     if (tab === 'chat') pull(true); }
   const toBottom = () => { const f = $('feed'); f.scrollTop = f.scrollHeight; };
@@ -276,6 +277,28 @@
     if (kind === 'code' && !confirm('Отправить в Цех? ТЗ станет публичной задачей на GitHub (без твоих монологов). Исполнитель: ' + mName($('dModel').value))) return;
     act($('dRun'), 'run', {id: n.id, model: $('dModel').value, restart: !!n.issue}, kind === 'code' ? 'Отправляю в Цех…' : kind === 'image' ? 'Рисует…' : 'Пишет…')
       .then(j => j && say('dMsg', kind === 'code' ? 'В Цехе: задача №' + j.node.issue + '. Статус обновляется раз в минуту.' : 'Готово' + (j.rub ? ' · ' + rub(j.rub) : ''))); };
+
+  /* ── люди: все зарегистрированные, кто был сегодня, кто сейчас в кабинете ── */
+  const P = {list: [], f: 'today'};
+  const ago = t => { if (!t) return 'не заходил'; const m = Math.round((Date.now() - t) / 60000);
+    return m < 2 ? 'сейчас' : m < 60 ? m + ' мин назад' : m < 24 * 60 ? 'в ' + new Date(t).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'}) : new Date(t).toLocaleDateString('ru-RU', {day: 'numeric', month: 'short'}); };
+  function loadPeople() {
+    return req('GET', '/api/hq/people').then(j => { P.list = j.people;
+      $('pKpi').innerHTML = [['всего', j.total], ['сегодня', j.today], ['сейчас онлайн', j.online], ['новых сегодня', j.newToday]].map(([l, n]) => '<div class="kpi"><b>' + n + '</b><span>' + l + '</span></div>').join('');
+      drawPeople(); }).catch(e => { $('pList').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+  }
+  function drawPeople() {
+    const q = $('pFind').value.trim().toLowerCase().replace(/ё/g, 'е');
+    const l = P.list.filter(p => (P.f === 'all' || p.today) && (!q || (p.name + ' ' + p.group).toLowerCase().replace(/ё/g, 'е').includes(q)));
+    $('pList').innerHTML = l.map(p => '<div class="pr' + (p.online ? ' on' : p.today ? ' td' : '') + '"><span class="dot" title="' + (p.online ? 'сейчас в кабинете' : p.today ? 'был сегодня' : '') + '"></span>' +
+      '<div class="nm"><b>' + esc(p.name) + (p.role === 'admin' ? ' · владелец' : '') + (p.blocked ? ' · заблокирован' : '') + '</b><small>' + esc(p.group || 'без группы') +
+      (p.createdAt ? ' · с ' + new Date(p.createdAt).toLocaleDateString('ru-RU', {day: 'numeric', month: 'short', year: '2-digit'}) : '') + (p.view ? ' · ' + esc(p.view) : '') + '</small></div>' +
+      '<div class="tm">' + (p.online ? '🟢 онлайн' : ago(p.lastSeen)) + '</div></div>').join('') ||
+      '<div class="empty">' + (P.f === 'today' ? 'Сегодня ещё никого не было.' : 'Никого не нашлось.') + '</div>';
+  }
+  document.querySelectorAll('[data-pf]').forEach(b => { b.onclick = () => { P.f = b.dataset.pf; document.querySelectorAll('[data-pf]').forEach(x => x.classList.toggle('on', x === b)); drawPeople(); }; });
+  $('pFind').oninput = drawPeople; $('pReload').onclick = loadPeople;
+  setInterval(() => { if (!document.hidden && S.tab === 'people') loadPeople(); }, 60000);
 
   /* ── сотрудники ── */
   function renderStaff() {

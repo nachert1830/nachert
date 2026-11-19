@@ -9,7 +9,7 @@
 <title>mathanov.</title>
 <link rel="icon" href="../../icon-192.png">
 <script>try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
-<link rel="stylesheet" href="hq.css?v=4">
+<link rel="stylesheet" href="hq.css?v=5">
 </head>
 <body>
 <header class="top">
@@ -21,6 +21,7 @@
   <button data-tab="talk" role="tab">🎙 Диктовка</button>
   <button data-tab="map" role="tab">🗺 Карта</button>
   <button data-tab="tasks" role="tab">📋 Задачи</button>
+  <button data-tab="people" role="tab">🧑‍🎓 Люди</button>
   <button data-tab="staff" role="tab">👥 Сотрудники</button>
 </nav>
 <main id="main">
@@ -79,6 +80,16 @@
   <section class="view" id="v-tasks" hidden>
     <div class="row"><button class="ghost" id="sync">↻ Обновить статусы Цеха</button><span class="msg" id="sMsg"></span></div>
     <div class="board" id="board"></div>
+  </section>
+
+  <section class="view" id="v-people" hidden>
+    <div class="kpis" id="pKpi"></div>
+    <div class="row pbar">
+      <div class="seg" role="tablist"><button class="on" data-pf="today">Сегодня</button><button data-pf="all">Все</button></div>
+      <input id="pFind" placeholder="Поиск по имени или группе" autocomplete="off">
+      <button class="ghost mini" id="pReload" title="Обновить">↻</button>
+    </div>
+    <div class="people" id="pList"></div>
   </section>
 
   <section class="view" id="v-staff" hidden>
@@ -158,6 +169,6 @@
 <div class="scrim" id="scrim" hidden></div>
 
 <script src="../config.js"></script>
-<script src="hq.js?v=4"></script>
+<script src="hq.js?v=5"></script>
 </body>
 </html>
