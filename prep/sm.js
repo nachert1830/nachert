@@ -37,19 +37,28 @@ const onBC=(V,k,val)=>{ const {B,C}=V, t=(val-B[k])/(C[k]-B[k]); return t>0.05&&
 
 /* ══ s1 · положения плоскости: проецирующая — одна проекция в прямую; уровня — ещё и ∥ x ══ */
 const PT={hp:'горизонтально-проецирующая',fp:'фронтально-проецирующая',hl:'горизонтальная (∥ π₁)',fl:'фронтальная (∥ π₂)'};
-function planeOf(kind){ const xs=[rnd(-45,-25),rnd(-8,8),rnd(25,45)], a=rnd(15,40), b=rnd(-.5,.5);
+function planeOf(kind){ const xs=[rnd(-45,-25),rnd(-8,8),rnd(25,45)], a=rnd(15,40), b=rnd(.2,.5)*sgn();   /* наклон проецирующей ≥ 11°: иначе не отличить от плоскости уровня */
   const P=xs.map(x=>[x,rnd(10,48),rnd(10,48)]);
   if(kind==='hp') P.forEach(p=>p[1]=a+b*p[0]); if(kind==='fp') P.forEach(p=>p[2]=a+b*p[0]);
   if(kind==='hl'){ const z=rnd(15,40); P.forEach(p=>p[2]=z); } if(kind==='fl'){ const y=rnd(15,40); P.forEach(p=>p[1]=y); }
   return P; }
 PREP.topic('s1',{
-  make(){ const kinds=Object.keys(PT), kind=kinds[Math.random()*4|0], tw={hp:'fp',fp:'hp',hl:'fl',fl:'hl'}[kind]; return {kind,P:planeOf(kind),W:planeOf(tw)}; },
+  make(){ const kinds=Object.keys(PT), kind=kinds[Math.random()*4|0], tw={hp:'fp',fp:'hp',hl:'fl',fl:'hl'}[kind], P=planeOf(kind);
+    /* «почти»: вырожденная проекция — не прямая (одна вершина сдвинута) */
+    const N=P.map(p=>p.slice()), k=kind==='hp'||kind==='fl'?1:2; N[1][k]+=sgn()*rnd(6,8);
+    /* «не тот признак»: проецирующая — прямая ∥ x (это уже плоскость уровня); уровня — прямая наклонная (это уже проецирующая) */
+    const Lv=P.map(p=>p.slice()); if(kind==='hp'){ const y=Lv[0][1]; Lv.forEach(p=>p[1]=y); } if(kind==='fp'){ const z=Lv[0][2]; Lv.forEach(p=>p[2]=z); }
+    if(kind==='hl'){ const b=rnd(.25,.5)*sgn(); Lv.forEach(p=>p[2]=P[0][2]+b*(p[0]-P[0][0])); } if(kind==='fl'){ const b=rnd(.25,.5)*sgn(); Lv.forEach(p=>p[1]=P[0][1]+b*(p[0]-P[0][0])); }
+    if([N,Lv].some(Q=>Q.some(p=>p[1]<4||p[2]<4))) return this.make(); return {kind,P,W:planeOf(tw),N,Lv}; },
   watch:{steps:[{cap:'Положение плоскости — по её проекциям',roles:['t2','t1']}]},
-  scene(V,trap){ const P=trap==='Sw'?V.W:V.P, p2=P.map(f2), p1=P.map(h1);
+  scene(V,trap){ const P=trap==='Sw'?V.W:trap==='Nl'?V.N:trap==='Lv'?V.Lv:V.P, p2=P.map(f2), p1=P.map(h1);
     const E=[PL('t2','o',p2.concat([p2[0]])),PL('t1','o',p1.concat([p1[0]]))];
     const base=P.map((p,i)=>L('','lk',p2[i][0],p2[i][1],p1[i][0],p1[i][1])).concat([Tx('',-55,-56,PT[V.kind])]);
     return {box:bbox(p2.concat(p1,[[-58,-58],[50,0]])),axis:0,base,E}; },
-  traps:{Sw:{b0:.2,say:'Проецирующая — в прямую на той плоскости, которой ⟂; уровня — вторая проекция ∥ x',src:'Ж §15',hl:['t2','t1']}}
+  traps:{
+    Nl:{b0:-.3,say:'Вырожденная проекция — прямая: все вершины на ней',src:'Ж с. 42–43',hl:['t2','t1']},
+    Sw:{b0:.2,say:'Проецирующая — в прямую на той плоскости, которой ⟂; уровня — вторая проекция ∥ x',src:'Ж §15',hl:['t2','t1']},
+    Lv:{b0:.5,say:'Проецирующая — прямая под углом к x; ∥ x — уже плоскость уровня',src:'Ж с. 42–43',hl:['t2','t1']}}
 });
 
 /* ══ s2 · точка в плоскости: через неё — прямая плоскости (A1), K′ — по линии связи на A′1′ ══ */
@@ -79,6 +88,7 @@ PREP.topic('s3',{
   scene(V,trap){ const {A}=V; const P=onBC(V,2,A[2]), Q=onBC(V,1,A[1]); if(!P||!Q) return null;
     const a2=f2(A),a1=h1(A); let p2=f2(P), p1=h1(P), q1=h1(Q), q2=f2(Q);
     if(trap==='Sw'){ /* перепутали: провели h′ ∥ x (это фронталь) и назвали горизонталью */ p1=q1; p2=q2; }
+    if(trap==='Hp'){ const W=onBC(V,2,A[2]+sgn()*rnd(7,10)); if(!W) return null; p2=f2(W); p1=h1(W); }   /* h″ не ∥ x */
     if(trap==='Pt'){ const W=atX(V.A,V.C,p2[0]); if((p2[0]-V.A[0])*(p2[0]-V.C[0])>0) return null; p1=h1(W); }
     const E=[L('h2','a',a2[0],a2[1],p2[0],p2[1]),Pt('p1f',p2[0],p2[1],'1″',1,{c:'o'}),L('l1','lk',p2[0],p2[1],p1[0],p1[1]),Pt('p1h',p1[0],p1[1],'1′',1,{c:'o'}),L('h1','a',a1[0],a1[1],p1[0],p1[1]),
       Tx('h2',p2[0]+1,p2[1]-1.5,'h″'),Tx('h1',p1[0]+1,p1[1]+4,'h′'),
@@ -86,6 +96,7 @@ PREP.topic('s3',{
     return {box:bbox(triPts(V).concat([[-55,0],[55,0]])),axis:0,base:triBase(V),E}; },
   fair(V,k,ok,bad){ return far(ptOf(ok,'p1h'),ptOf(bad,'p1h'),4); },
   traps:{
+    Hp:{b0:-.2,say:'У горизонтали h″ ∥ x — строго',src:'Ж с. 46',hl:['h2','p1f','l1','p1h','h1']},
     Pt:{b0:.2,say:'1′ — на той же стороне B′C′, что и 1″',src:'Ж §17',hl:['l1','p1h','h1']},
     Sw:{b0:.5,say:'У горизонтали параллельна оси x фронтальная проекция h″',src:'Ж §17, рис. 76–78',hl:['h2','p1f','l1','p1h','h1']}}
 });
@@ -103,29 +114,33 @@ PREP.topic('s5a',{
   watch:{steps:[{cap:'Горизонталь h плоскости',roles:['h2','h1']},{cap:'Из B′ — перпендикуляр к h′: m′. Прямой угол виден на π₁',roles:['h2','h1','m1','M1']},{cap:'M″ — на h″ по линии связи; m″ = B″M″',roles:['h2','h1','m1','M1','lm','M2','m2']}]},
   scene(V,trap){ const r=lnn(V,trap); if(!r) return null; const a2=f2(V.A), p2=f2(r.P), b2=f2(V.B);
     let M2=r.M2; if(trap==='Lk') M2=[r.M1[0]+sgn()*rnd(8,11),-V.A[2]];
+    if(trap==='Pf'){ /* прямой угол построили на π₂: m″ ⟂ h″ — вертикально; M′ — по связи на h′ */ M2=[b2[0],-V.A[2]]; const t=(b2[0]-r.a1[0])/(r.p1[0]-r.a1[0]); r.M1=[b2[0],r.a1[1]+(r.p1[1]-r.a1[1])*t]; }
     const E=[L('h2','a',a2[0],a2[1],p2[0],p2[1]),L('h1','a',r.a1[0],r.a1[1],r.p1[0],r.p1[1]),L('m1','d',r.b1[0],r.b1[1],r.M1[0],r.M1[1]),Pt('M1',r.M1[0],r.M1[1],'M′',1,{c:'o'}),
       L('lm','lk',r.M1[0],r.M1[1],M2[0],M2[1]),Pt('M2',M2[0],M2[1],'M″',1,{c:'o'}),L('m2','d',b2[0],b2[1],M2[0],M2[1])];
     return {box:bbox(triPts(V).concat([r.M1,M2,[-55,0],[55,0]])),axis:0,base:triBase(V),E}; },
   fair(V,k,ok,bad){ return far(ptOf(ok,'M1'),ptOf(bad,'M1'),4)||far(ptOf(ok,'M2'),ptOf(bad,'M2'),4); },
   traps:{
     Lk:{b0:-1.2,say:'M″ — на линии связи с M′',src:'Ж §17',hl:['lm','M2','m2']},
-    Sd:{b0:.5,say:'m′ ⟂ горизонтали h′, а не стороне',src:'Ж §17, рис. 83–86',hl:['m1','M1','lm','M2','m2']}}
+    Sd:{b0:.5,say:'m′ ⟂ горизонтали h′, а не стороне',src:'Ж §17, рис. 83–86',hl:['m1','M1','lm','M2','m2']},
+    Pf:{b0:.6,say:'Прямой угол с h виден на π₁, а не на π₂',src:'Ж с. 47–48',hl:['m1','M1','lm','M2','m2']}}
 });
 PREP.topic('s5b',{
   make(){ for(let i=0;i<80;i++){ const V=tri(); if(V&&Math.abs(V.B[2]-V.A[2])>12&&this.scene(V,null)) return V; } return null; },
   watch:{steps:[{cap:'Линия наибольшего наклона BM: m′ ⟂ h′',roles:['m1']},{cap:'На m′ — треугольник: катет Δz в B′',roles:['m1','leg','hyp']},{cap:'Угол при M′ — угол наклона плоскости к π₁',roles:['m1','leg','hyp','arc']}]},
   scene(V,trap){ const r=lnn(V,null); if(!r) return null;
     const u=nrm(sub(r.b1,r.M1)); let n=[-u[1],u[0]]; let dz=Math.abs(V.B[2]-V.A[2]); if(trap==='Dy') dz=Math.abs(V.B[1]-r.M1[1]);
-    const B0=add(r.b1,mul(n,dz)), at=trap==='Ab'?B0:r.M1, p=trap==='Ab'?r.M1:r.b1, q=trap==='Ab'?r.b1:B0;
+    let b1=r.b1, M1=r.M1; if(trap==='Fp'){ /* треугольник на m″ с Δy — это не угол к π₁ */ b1=f2(V.B); M1=r.M2; const w=nrm(sub(b1,M1)); n=[-w[1],w[0]]; dz=Math.abs(V.B[1]-r.M1[1]); }
+    const B0=add(b1,mul(n,dz)), at=trap==='Ab'?B0:M1, p=trap==='Ab'?M1:b1, q=trap==='Ab'?b1:B0;
     const a0=Math.atan2(p[1]-at[1],p[0]-at[0]), a1=Math.atan2(q[1]-at[1],q[0]-at[0]); let d=a1-a0; while(d>Math.PI) d-=2*Math.PI; while(d<-Math.PI) d+=2*Math.PI;
     const arc=Array.from({length:13},(_,i)=>[at[0]+10*Math.cos(a0+d*i/12),at[1]+10*Math.sin(a0+d*i/12)]);
-    const E=[L('m1','d',r.b1[0],r.b1[1],r.M1[0],r.M1[1]),L('leg','a',r.b1[0],r.b1[1],B0[0],B0[1]),L('hyp','crv',r.M1[0],r.M1[1],B0[0],B0[1]),PL('arc','c',arc),Tx('arc',at[0]+14*Math.cos(a0+d/2),at[1]+14*Math.sin(a0+d/2)+2,'α')];
+    const E=[L('m1','d',r.b1[0],r.b1[1],r.M1[0],r.M1[1]),L('leg','a',b1[0],b1[1],B0[0],B0[1]),L('hyp','crv',M1[0],M1[1],B0[0],B0[1]),PL('arc','c',arc),Tx('arc',at[0]+14*Math.cos(a0+d/2),at[1]+14*Math.sin(a0+d/2)+2,'α')];
     const base=triBase(V).concat([L('','a',...f2(V.A),...f2(r.P)),L('','a',...r.a1,...r.p1),Pt('',r.M1[0],r.M1[1],'M′',1,{c:'o'})]);
-    return {box:bbox(triPts(V).concat([B0,[-55,0],[55,0]])),axis:0,base,E}; },
+    return {box:bbox(triPts(V).concat([B0,[-55,0],[55,0]])),axis:0,base:base.concat([L('','d',...f2(V.B),...r.M2)]),E}; },
   fair(V,k){ if(k!=='Dy') return true; const r=lnn(V,null); return !!r&&Math.abs(Math.abs(V.B[2]-V.A[2])-Math.abs(V.B[1]-r.M1[1]))>5; },
   traps:{
     Ab:{b0:.1,say:'α — при M′, против катета Δz',src:'Ж с. 48',hl:['arc']},
-    Dy:{b0:.6,say:'Катет — Δz (с π₂): угол к π₁',src:'Ж с. 48; М с. 8–9',hl:['leg','hyp','arc']}}
+    Dy:{b0:.6,say:'Катет — Δz (с π₂): угол к π₁',src:'Ж с. 48; М с. 8–9',hl:['leg','hyp','arc']},
+    Fp:{b0:.4,say:'Угол к π₁ — в треугольнике на m′, а не на m″',src:'Ж с. 48',hl:['leg','hyp','arc']}}
 });
 
 /* ══ s6 · достроить проекцию плоской фигуры: D″ — через точку пересечения диагоналей ══ */
@@ -137,15 +152,17 @@ PREP.topic('s6',{
     const X=lineX([...a1,...c1],[...b1,...d1]); if(!X||X[2]<0||X[2]>1||X[3]<0||X[3]>1) return null; const K1=[X[0],X[1]];
     let K2=[K1[0],-(A[2]+(C[2]-A[2])*X[2])]; let D2;
     if(trap==='Pg'){ D2=add(a2,sub(c2,b2)); }   /* «достроили параллелограммом» */
+    else if(trap==='Wv'){ const Y=lineX([...c2,...K2],[d1[0],-100,d1[0],100]); if(!Y) return null; D2=[Y[0],Y[1]]; }   /* провели через C″ вместо B″ */
     else { const Y=lineX([...b2,...K2],[d1[0],-100,d1[0],100]); D2=[Y[0],Y[1]]; }
     if(trap==='Lk'){ const Y=lineX([...b2,...K2],[d1[0]+sgn()*rnd(8,11),-100,d1[0]+0.001,100]); D2=[Y[0],Y[1]]; }
-    const E=[L('dg1','a',...a1,...c1),L('dg2','a',...b1,...d1),Pt('K1',K1[0],K1[1],'K′',1,{c:'o'}),L('lk','lk',...K1,...K2),Pt('K2',K2[0],K2[1],'K″',1,{c:'o'}),L('dg3','a',...a2,...c2),L('dg4','a',...b2,...D2),Pt('D2',D2[0],D2[1],'D″',1)];
+    const E=[L('dg1','a',...a1,...c1),L('dg2','a',...b1,...d1),Pt('K1',K1[0],K1[1],'K′',1,{c:'o'}),L('lk','lk',...K1,...K2),Pt('K2',K2[0],K2[1],'K″',1,{c:'o'}),L('dg3','a',...a2,...c2),L('dg4','a',...(trap==='Wv'?c2:b2),...D2),Pt('D2',D2[0],D2[1],'D″',1)];
     const base=triBase(V).concat([L('','o',...a1,...d1),L('','o',...c1,...d1),Pt('',d1[0],d1[1],'D′',-1,{c:'o',r:.9}),L('','lk',d1[0],d1[1],d1[0],-5)]);
     return {box:bbox(triPts(V).concat([d1,D2,[-55,0],[55,0]])),axis:0,base,E}; },
   fair(V,k,ok,bad){ return far(ptOf(ok,'D2'),ptOf(bad,'D2'),4); },
   traps:{
     Lk:{b0:-1,say:'D″ — на линии связи с D′',src:'Ж §16',hl:['dg4','D2']},
-    Pg:{b0:.5,say:'Фигура не параллелограмм — D″ через пересечение диагоналей',src:'Ж §16',hl:['dg4','D2']}}
+    Pg:{b0:.5,say:'Фигура не параллелограмм — D″ через пересечение диагоналей',src:'Ж §16',hl:['dg4','D2']},
+    Wv:{b0:.3,say:'D лежит на диагонали BK — проводим B″K″, не C″K″',src:'Ж с. 45; М с. 4–5',hl:['dg4','D2']}}
 });
 
 /* ══ m1 · прямая ∥ плоскости: параллельна прямой этой плоскости (на обеих проекциях — одной и той же) ══ */
@@ -153,13 +170,17 @@ PREP.topic('m1',{
   make(){ for(let i=0;i<80;i++){ const V=tri(); if(!V) continue; V.Dp=[rnd(-15,15),rnd(48,60),rnd(52,62)]; V.u=rnd(.3,.7); if(this.scene(V,null)) return V; } return null; },
   watch:{steps:[{cap:'Прямая плоскости: A1, где 1 на BC',roles:['a1f','a1h','p1f','p1h']},{cap:'Через D: d″ ∥ A″1″ и d′ ∥ A′1′ — одна и та же прямая плоскости',roles:['a1f','a1h','p1f','p1h','d2','d1']}]},
   scene(V,trap){ const {A,B,C,Dp}=V, P=lerp(B,C,V.u), a2=f2(A),a1=h1(A),p2=f2(P),p1=h1(P),d2=f2(Dp),d1=h1(Dp);
-    let u2=nrm(sub(p2,a2)), u1=nrm(sub(p1,a1)); if(trap==='Mx'){ u1=nrm(sub(h1(B),a1)); }
+    let u2=nrm(sub(p2,a2)), u1=nrm(sub(p1,a1)); if(trap==='Mx'){ u1=nrm(sub(h1(B),a1)); } if(trap==='Hz') u2=[1,0];
+    let c1=d1; if(trap==='Lk') c1=[d1[0]+sgn()*rnd(8,11),d1[1]];
     const E=[L('a1f','a',...a2,...p2),L('a1h','a',...a1,...p1),Pt('p1f',p2[0],p2[1],'1″',1,{c:'o'}),Pt('p1h',p1[0],p1[1],'1′',1,{c:'o'}),
-      L('d2','d',d2[0]-u2[0]*28,d2[1]-u2[1]*28,d2[0]+u2[0]*28,d2[1]+u2[1]*28),L('d1','d',d1[0]-u1[0]*28,d1[1]-u1[1]*28,d1[0]+u1[0]*28,d1[1]+u1[1]*28)];
+      L('d2','d',d2[0]-u2[0]*28,d2[1]-u2[1]*28,d2[0]+u2[0]*28,d2[1]+u2[1]*28),L('d1','d',c1[0]-u1[0]*28,c1[1]-u1[1]*28,c1[0]+u1[0]*28,c1[1]+u1[1]*28)];
     const base=triBase(V).concat([L('','lk',...d2,...d1),Pt('',d2[0],d2[1],'D″',-1,{c:'o',r:1}),Pt('',d1[0],d1[1],'D′',-1,{c:'o',r:1}),L('','lk',...p2,...p1)]);
     return {box:bbox(triPts(V).concat([d1,d2,[d1[0]+u1[0]*28,d1[1]+u1[1]*28],[d1[0]-u1[0]*28,d1[1]-u1[1]*28],[d2[0]-u2[0]*28,d2[1]-u2[1]*28],[d2[0]+u2[0]*28,d2[1]+u2[1]*28],[-55,0],[55,0]])),axis:0,base,E}; },
-  fair(V,k,ok,bad){ const a=ok.E.find(e=>e.role==='d1').a, b=bad.E.find(e=>e.role==='d1').a; const ang=Math.abs(Math.atan2(a[3]-a[1],a[2]-a[0])-Math.atan2(b[3]-b[1],b[2]-b[0]))%Math.PI; return Math.min(ang,Math.PI-ang)>10*D; },
-  traps:{Mx:{b0:.4,say:'d′ и d″ — параллельны проекциям одной и той же прямой плоскости',src:'Ж §18',hl:['d1']}}
+  fair(V,k,ok,bad){ if(k==='Lk') return true; const r=k==='Hz'?'d2':'d1', a=ok.E.find(e=>e.role===r).a, b=bad.E.find(e=>e.role===r).a; const ang=Math.abs(Math.atan2(a[3]-a[1],a[2]-a[0])-Math.atan2(b[3]-b[1],b[2]-b[0]))%Math.PI; return Math.min(ang,Math.PI-ang)>10*D; },
+  traps:{
+    Lk:{b0:-1,say:'d′ проходит через D′',src:'Ж §18',hl:['d1']},
+    Hz:{b0:.2,say:'d″ ∥ A″1″, а не оси x',src:'Ж с. 49',hl:['d2']},
+    Mx:{b0:.4,say:'d′ и d″ — параллельны проекциям одной и той же прямой плоскости',src:'Ж §18',hl:['d1']}}
 });
 
 /* ══ m3 · плоскость ⟂ прямой l через точку: h′ ⟂ l′ (h″ ∥ x), f″ ⟂ l″ (f′ ∥ x) ══ */
@@ -170,14 +191,16 @@ PREP.topic('m3',{
     let hd=[-l1[1],l1[0]], fd=[-l2[1],l2[0]];
     if(trap==='Hp') hd=rot(hd,sgn()*rnd(14,20)*D);
     if(trap==='Sw'){ fd=[1,0]; }   /* f″ провели ∥ x (как у горизонтали) */
+    let h2d=[1,0]; if(trap==='Hh') h2d=rot([1,0],sgn()*rnd(12,18)*D);
     const S=(P,d,r)=>[P[0]-d[0]*r,P[1]-d[1]*r,P[0]+d[0]*r,P[1]+d[1]*r];
-    const E=[L('h2','a',...S(k2,[1,0],24)),L('h1','a',...S(k1,hd,24)),L('f1','c',...S(k1,[1,0],24)),L('f2','c',...S(k2,fd,24)),Tx('h1',k1[0]+hd[0]*24+1,k1[1]+hd[1]*24+3,'h′'),Tx('f2',k2[0]+fd[0]*24+1,k2[1]+fd[1]*24-1,'f″')];
+    const E=[L('h2','a',...S(k2,h2d,24)),L('h1','a',...S(k1,hd,24)),L('f1','c',...S(k1,[1,0],24)),L('f2','c',...S(k2,fd,24)),Tx('h1',k1[0]+hd[0]*24+1,k1[1]+hd[1]*24+3,'h′'),Tx('f2',k2[0]+fd[0]*24+1,k2[1]+fd[1]*24-1,'f″')];
     const a2=f2(A),b2=f2(B),a1=h1(A),b1=h1(B);
     const base=[L('','d',...a2,...b2),L('','d',...a1,...b1),Tx('',b2[0]+1,b2[1]-1.5,'l″'),Tx('',b1[0]+1,b1[1]+4,'l′'),L('','lk',...k2,...k1),Pt('',k2[0],k2[1],'K″',-1,{c:'o',r:1}),Pt('',k1[0],k1[1],'K′',-1,{c:'o',r:1})];
     return {box:bbox([a2,b2,a1,b1,[k2[0]-26,k2[1]-26],[k2[0]+26,k2[1]+26],[k1[0]-26,k1[1]+26],[k1[0]+26,k1[1]-26],[-55,0],[55,0]]),axis:0,base,E}; },
   traps:{
     Hp:{b0:-.3,say:'h′ ⟂ l′ — проверь прямой угол',src:'Ж с. 50–51',hl:['h1']},
-    Sw:{b0:.5,say:'У фронтали ∥ x — f′, а f″ ⟂ l″',src:'Ж с. 50–51',hl:['f2']}}
+    Sw:{b0:.5,say:'У фронтали ∥ x — f′, а f″ ⟂ l″',src:'Ж с. 50–51',hl:['f2']},
+    Hh:{b0:-.1,say:'Горизонталь: h″ ∥ x',src:'Ж с. 46, 50',hl:['h2']}}
 });
 
 /* ══ m4 · точка встречи прямой с плоскостью: посредник γ ⊃ l, γ ⟂ π₁ (γ′ ≡ l′) ══ */
@@ -200,26 +223,42 @@ PREP.topic('m4',{
     let K2; const X=lineX(l2,[...pts[0].f,...pts[1].f]); if(!X) return null; K2=[X[0],X[1]];
     if(trap==='Si'){ const Y=lineX(l2,[...f2(B),...f2(C)]); if(!Y||Y[3]<0||Y[3]>1) return null; K2=[Y[0],Y[1]]; }
     const s=(K2[0]-Dp[0])/(Ep[0]-Dp[0]); let K1=[K2[0],Dp[1]+(Ep[1]-Dp[1])*s];
+    if(trap==='Lk'){ const x=K2[0]+sgn()*rnd(8,11), s2=(x-Dp[0])/(Ep[0]-Dp[0]); K1=[x,Dp[1]+(Ep[1]-Dp[1])*s2]; }
     const E=[Pt('p1h',...pts[0].h,'1′',-1,{c:'o'}),Pt('p2h',...pts[1].h,'2′',1,{c:'o'}),L('l1','lk',...pts[0].h,...pts[0].f),L('l2','lk',...pts[1].h,...pts[1].f),
       Pt('p1f',...pts[0].f,'1″',-1,{c:'o'}),Pt('p2f',...pts[1].f,'2″',1,{c:'o'}),L('s12','a',...pts[0].f,...pts[1].f),Pt('K2',K2[0],K2[1],'K″',1),L('lk','lk',...K2,...K1),Pt('K1',K1[0],K1[1],'K′',1)];
     const base=triBase(V).concat([L('','d',...l2),L('','d',...l1),Tx('',l2[2]+1,l2[3]-1.5,'l″'),Tx('',l1[2]+1,l1[3]+4,'l′ ≡ γ′')]);
     return {box:bbox(triPts(V).concat([f2(Dp),f2(Ep),h1(Dp),h1(Ep),[-55,0],[55,0]])),axis:0,base,E}; },
-  fair(V,k,ok,bad){ return far(ptOf(ok,'K2'),ptOf(bad,'K2'),4); },
+  fair(V,k,ok,bad){ return far(ptOf(ok,'K2'),ptOf(bad,'K2'),4)||far(ptOf(ok,'K1'),ptOf(bad,'K1'),4); },
   traps:{
+    Lk:{b0:-1,say:'K′ — на линии связи с K″',src:'Ж с. 22',hl:['lk','K1']},
     Si:{b0:.1,say:'K″ — на прямой 1″2″ посредника, а не на стороне треугольника',src:'Ж §35',hl:['K2','lk','K1']},
     Wp:{b0:.5,say:'2″ — на той стороне, где лежит 2′',src:'Ж §35',hl:['p2f','l2','s12','K2','lk','K1']}}
 });
 
 /* ══ t1 · частное положение: натуральная величина видна на той плоскости, которой отрезок параллелен ══ */
 PREP.topic('t1',{
-  make(){ const kind=Math.random()<.5?'h':'f', A=[rnd(-45,-20),rnd(10,40),rnd(10,40)], B=[rnd(20,45),rnd(10,40),rnd(10,40)];
-    if(kind==='h') B[2]=A[2]; else B[1]=A[1]; if(Math.abs(kind==='h'?A[1]-B[1]:A[2]-B[2])<12) return this.make(); return {kind,A,B}; },
-  watch:{steps:[{cap:'AB ∥ плоскости проекций — на ней натуральная величина',roles:['nv']}]},
-  scene(V,trap){ const {A,B,kind}=V, a2=f2(A),b2=f2(B),a1=h1(A),b1=h1(B);
-    let onH=kind==='h'; if(trap==='Wp') onH=!onH; const s=onH?[a1,b1]:[a2,b2];
-    const E=[L('nv','crv',...s[0],...s[1]),Tx('nv',(s[0][0]+s[1][0])/2+2,(s[0][1]+s[1][1])/2+(onH?5:-2),'|AB|')];
-    const base=[L('','o',...a2,...b2),L('','o',...a1,...b1),L('','lk',...a2,...a1),L('','lk',...b2,...b1),Pt('',a2[0],a2[1],'A″',-1,{c:'o',r:1}),Pt('',b2[0],b2[1],'B″',1,{c:'o',r:1}),Pt('',a1[0],a1[1],'A′',-1,{c:'o',r:1}),Pt('',b1[0],b1[1],'B′',1,{c:'o',r:1})];
-    return {box:bbox([a2,b2,a1,b1,[-55,0],[55,0]]),axis:0,base,E}; },
-  traps:{Wp:{b0:.1,say:'h ∥ π₁ — натуральная величина на π₁; f ∥ π₂ — на π₂',src:'Ж гл. IV, с. 52',hl:['nv']}}
+  make(){ const kinds=['h','f','hp','fp','hl','fl'], kind=kinds[Math.random()*6|0], A=[rnd(-45,-20),rnd(10,40),rnd(10,40)], B=[rnd(20,45),rnd(10,40),rnd(10,40)], C=[rnd(-5,15),rnd(10,40),rnd(10,40)];
+    if(kind==='h') B[2]=A[2]; if(kind==='f') B[1]=A[1]; if(kind==='hp'){ B[0]=A[0]; B[1]=A[1]; } if(kind==='fp'){ B[0]=A[0]; B[2]=A[2]; }
+    if(kind==='hl'){ B[2]=C[2]=A[2]; } if(kind==='fl'){ B[1]=C[1]=A[1]; }
+    const dz=Math.abs(A[2]-B[2]), dy=Math.abs(A[1]-B[1]); if((kind==='hp'&&dz<15)||(kind==='fp'&&dy<15)||(kind==='h'&&dy<12)||(kind==='f'&&dz<12)) return this.make();
+    if((kind==='hl'||kind==='fl')&&Math.abs((B[0]-A[0])*(C[kind==='hl'?1:2]-A[kind==='hl'?1:2])-(C[0]-A[0])*(B[kind==='hl'?1:2]-A[kind==='hl'?1:2]))<500) return this.make();
+    return {kind,A,B,C}; },
+  watch:{steps:[{cap:'Объект ∥ плоскости проекций — на ней натуральная величина',roles:['nv']}]},
+  scene(V,trap){ const {A,B,C,kind}=V, a2=f2(A),b2=f2(B),a1=h1(A),b1=h1(B), plane=kind==='hl'||kind==='fl', proj=kind==='hp'||kind==='fp';
+    if(trap==='Wp'&&(plane||proj)) return null; if(trap==='Pp'&&!proj) return null; if(trap==='Pl'&&!plane) return null;
+    /* где натуральная величина: h, hp, hl — π₁ (hp — наоборот: π₂); f, fp, fl — π₂ (fp — π₁) */
+    let onH={h:true,f:false,hp:false,fp:true,hl:true,fl:false}[kind]; if(trap) onH=!onH;
+    const E=[], base=[];
+    if(plane){ const c2=f2(C), c1=h1(C), q=onH?[a1,b1,c1]:[a2,b2,c2];
+      E.push(PL('nv','crv',[...q,q[0]]),Tx('nv',(q[0][0]+q[1][0]+q[2][0])/3,(q[0][1]+q[1][1]+q[2][1])/3+2,'нат. вид','middle'));
+      base.push(PL('','o',[a2,b2,c2,a2]),PL('','o',[a1,b1,c1,a1]),L('','lk',...a2,...a1),L('','lk',...b2,...b1),L('','lk',...c2,...c1)); }
+    else { const sgm=onH?[a1,b1]:[a2,b2]; E.push(L('nv','crv',...sgm[0],...sgm[1]),Tx('nv',(sgm[0][0]+sgm[1][0])/2+3,(sgm[0][1]+sgm[1][1])/2+(onH?5:-2),'|AB|'));
+      base.push(L('','o',...a2,...b2),L('','o',...a1,...b1),L('','lk',...a2,...a1),L('','lk',...b2,...b1),Pt('',a2[0],a2[1],'A″',-1,{c:'o',r:1}),Pt('',b2[0],b2[1],'B″',1,{c:'o',r:1}),Pt('',a1[0],a1[1],'A′',-1,{c:'o',r:1}),Pt('',b1[0],b1[1],'B′',1,{c:'o',r:1})); }
+    return {box:bbox([a2,b2,a1,b1,f2(C),h1(C),[-55,0],[55,0]]),axis:0,base,E}; },
+  traps:{
+    Pp:{b0:-.8,say:'Проецирующая видна точкой на одной плоскости и отрезком в натуральную величину — на другой',src:'Ж с. 29',hl:['nv']},
+    Wp:{b0:.1,say:'h ∥ π₁ — натуральная величина на π₁; f ∥ π₂ — на π₂',src:'Ж гл. IV, с. 52',hl:['nv']},
+    Pl:{b0:.3,say:'Плоскость уровня: натуральный вид — на той плоскости, которой она ∥',src:'Ж с. 43',hl:['nv']}}
 });
+
 })();

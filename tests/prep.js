@@ -164,7 +164,8 @@ const CHECK={
     return Math.abs(d[0]*w[0]+d[1]*w[1])/Math.hypot(...d)/Math.hypot(...w)>.01?['AK ⟂ h в пространстве']:[]; },
   /* ── плоскость, прямая и плоскость ── */
   s1(V,S){ const p2=E(S,'t2')[0].p, p1=E(S,'t1')[0].p, col=q=>Math.abs((q[1][0]-q[0][0])*(q[2][1]-q[0][1])-(q[2][0]-q[0][0])*(q[1][1]-q[0][1]))<1, flat=q=>Math.abs(q[0][1]-q[1][1])<TOL&&Math.abs(q[0][1]-q[2][1])<TOL;
-    const ok={hp:col(p1),fp:col(p2),hl:flat(p2),fl:flat(p1)}[V.kind]; return ok?[]:['признак положения плоскости']; },
+    /* проецирующая — прямая под углом к x (∥ x — это уже плоскость уровня) */
+    const ok={hp:col(p1)&&!flat(p1),fp:col(p2)&&!flat(p2),hl:flat(p2),fl:flat(p1)}[V.kind]; return ok?[]:['признак положения плоскости']; },
   s2(V,S){ const v=[]; const K1=P(S,'K1'), K2=S.base.find(e=>e.lab==='K″').a; if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); if(!inPl(V,[K1[0],K1[1],-K2[1]])) v.push('K в плоскости ABC'); return v; },
   s3(V,S){ const v=[]; const h2=L1(S,'h2'), f1=L1(S,'f1'); if(Math.abs(h2[1]-h2[3])>TOL) v.push('h″ ∥ x'); if(Math.abs(f1[1]-f1[3])>TOL) v.push('f′ ∥ x');
     const p1=P(S,'p1h'), p2=P(S,'p1f'), q1=P(S,'p2h'), q2=P(S,'p2f'); if(!onSeg3(V.B,V.C,[p1[0],p1[1],-p2[1]])) v.push('1 на BC'); if(!onSeg3(V.B,V.C,[q1[0],q1[1],-q2[1]])) v.push('2 на BC'); return v; },
@@ -173,14 +174,16 @@ const CHECK={
   s5b(V,S){ const v=[]; const M1=S.base.find(e=>e.lab==='M′').a, b1=[V.B[0],V.B[1]], lg=L1(S,'leg'); if(Math.abs(Math.hypot(lg[2]-lg[0],lg[3]-lg[1])-Math.abs(V.B[2]-V.A[2]))>TOL) v.push('катет Δz');
     const c=arcC(E(S,'arc').find(e=>e.t==='poly').p); if(!c||Math.hypot(c[0]-M1[0],c[1]-M1[1])>.5) v.push('α при M′'); return v; },
   s6(V,S){ const D1=S.base.find(e=>e.lab==='D′').a, D2=P(S,'D2'); if(Math.abs(D1[0]-D2[0])>TOL) return ['линия связи']; return inPl(V,[D1[0],D1[1],-D2[1]])?[]:['D в плоскости ABC']; },
-  m1(V,S){ const a=L1(S,'d1'), b=L1(S,'d2'), dir=[1,(a[3]-a[1])/(a[2]-a[0]),-(b[3]-b[1])/(b[2]-b[0])], n=nrmPl(V); return Math.abs(dir[0]*n[0]+dir[1]*n[1]+dir[2]*n[2])/Math.hypot(...dir)/Math.hypot(...n)>.01?['d ∥ плоскости']:[]; },
+  m1(V,S){ const a=L1(S,'d1'), b=L1(S,'d2'); { const mid=q=>[(q[0]+q[2])/2,(q[1]+q[3])/2], m1=mid(a), m2=mid(b); if(Math.hypot(m1[0]-V.Dp[0],m1[1]-V.Dp[1])>TOL||Math.hypot(m2[0]-V.Dp[0],m2[1]+V.Dp[2])>TOL) return ['d проходит через D']; } const dir=[1,(a[3]-a[1])/(a[2]-a[0]),-(b[3]-b[1])/(b[2]-b[0])], n=nrmPl(V); return Math.abs(dir[0]*n[0]+dir[1]*n[1]+dir[2]*n[2])/Math.hypot(...dir)/Math.hypot(...n)>.01?['d ∥ плоскости']:[]; },
   m3(V,S){ const v=[]; const {A,B}=V, l=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], h1=L1(S,'h1'), h2=L1(S,'h2'), f1=L1(S,'f1'), f2=L1(S,'f2');
     if(Math.abs(h2[1]-h2[3])>TOL||Math.abs(f1[1]-f1[3])>TOL) v.push('h″ ∥ x, f′ ∥ x');
     const hd=[h1[2]-h1[0],h1[3]-h1[1],0], fd=[f2[2]-f2[0],0,-(f2[3]-f2[1])], dt=(a,b)=>Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2])/Math.hypot(...a)/Math.hypot(...b);
     if(dt(hd,l)>.01) v.push('h ⟂ l'); if(dt(fd,l)>.01) v.push('f ⟂ l'); return v; },
   m4(V,S){ const v=[]; const K1=P(S,'K1'), K2=P(S,'K2'); if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); const K=[K1[0],K1[1],-K2[1]];
     if(!inPl(V,K)) v.push('K в плоскости'); if(!onSeg3(V.Dp,V.Ep,K)) v.push('K на прямой l'); return v; },
-  t1(V,S){ const s=L1(S,'nv'); return Math.abs(Math.hypot(s[2]-s[0],s[3]-s[1])-Math.hypot(V.A[0]-V.B[0],V.A[1]-V.B[1],V.A[2]-V.B[2]))>TOL?['отмечена натуральная величина']:[]; },
+  t1(V,S){ const e=E(S,'nv').find(x=>x.t!=='txt'), d=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+    if(e.t==='poly'){ const q=e.p; return Math.abs(d(q[0],q[1])-d3(V.A,V.B))>TOL||Math.abs(d(q[1],q[2])-d3(V.B,V.C))>TOL||Math.abs(d(q[0],q[2])-d3(V.A,V.C))>TOL?['отмечен натуральный вид']:[]; }
+    const s=e.a; return Math.abs(Math.hypot(s[2]-s[0],s[3]-s[1])-d3(V.A,V.B))>TOL?['отмечена натуральная величина']:[]; },
   s4(V,S){ const v=[]; const n=[V.dh[1]*V.df[2]-V.dh[2]*V.df[1],V.dh[2]*V.df[0]-V.dh[0]*V.df[2],V.dh[0]*V.df[1]-V.dh[1]*V.df[0]], X=V.X;
     const inP=q=>Math.abs(n[0]*(q[0]-X[0])+n[1]*(q[1]-X[1])+n[2]*(q[2]-X[2]))/Math.hypot(...n)<TOL;
     const h=L1(S,'h0'), f=L1(S,'f0'); if(!inP([h[0],h[1],0])||!inP([h[2],h[3],0])) v.push('h₀α — горизонтальный след'); if(!inP([f[0],0,-f[1]])||!inP([f[2],0,-f[3]])) v.push('f₀α — фронтальный след');
