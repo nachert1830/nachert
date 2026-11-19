@@ -7797,6 +7797,15 @@ return {has,html,bind,SPEC,ans3};
 </script>
 <!-- ДЗ: реестр, данные вариантов, методики и решатели — по папкам dz/<курс>/<номер>/ (оглавление — dz/README.md) -->
 <script src="kernel/dz.js"></script>
+<script src="kernel/prep.js"></script>
+<script src="prep/engine.js"></script>
+<script src="prep/x.js"></script>
+<script src="prep/x-b.js"></script>
+<script src="prep/t.js"></script>
+<script src="prep/base.js"></script>
+<script src="prep/sm.js"></script>
+<script src="prep/more.js"></script>
+<script src="prep/rest.js"></script>
 <script src="dz/ng/lib.js"></script>
 <script src="dz/ng/1/variants.js"></script>
 <script src="dz/ng/1/method.js"></script>
@@ -28811,7 +28820,7 @@ function parseHash(h){
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
   if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
-  const s=['ng','ig','kg','epure','part','about','author','privacy','consent','topic','me','dz','rk','live','ask'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','author','privacy','consent','topic','me','dz','rk','live','ask','prep'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -28868,6 +28877,7 @@ function render(r){
       case 'ig': title=viewIG(v,r); break;
       case 'dz': title=viewDZ(v,r); break;
       case 'rk': title=RKG.view(v,r); break;
+      case 'prep': title=window.PREP?PREP.view(v,r):viewHome(v); break;
       case 'kg': title=viewKG(v); break;
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
@@ -30066,7 +30076,7 @@ function dzPick(v,d){
   const num=n=>has(n)?`<a href="${HDZ(d.id,n)}" data-setvar="${n}">${n}</a>`:`<span class="off" title="решение этого типа готовится">${n}</span>`;
   const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
   const grid=`<div class="dzx-nums c6">${range(1,N).map(num).join('')}</div>`;
-  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(d.course==='ng'&&window.PREP?PREP.card(d.id):'')+
    `<h2 class="dzx-h">Какой у тебя вариант?</h2>${grid}
    ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}" data-setvar="${n}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}</b></a>`).join('')}</div></details>`:''}`});
   /* номер выбран — выбор номера больше не нужен: заменяем его вариантом, и «Назад» из варианта ведёт туда, откуда открыл ДЗ */
@@ -30217,13 +30227,16 @@ function dzVariant(v,d,n,extra){
       <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Приложи фото листа — отвечу лично, прямо здесь.')}`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
-  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}<div id="dzPl"></div>`});
+  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}${d.course==='ng'&&window.PREP?PREP.chip(d.id):''}<div id="dzPl"></div>`});
     document.body.classList.add('inplayer');
     /* открыт пункт б) — адрес #/ng3/7/b: им и делятся */
     const onPart=k=>{ const x=k&&parts.length>1?[DZ_PL[k]]:[], h=HDZ(d.id,n,...x), lbl=parts.length>1&&parts[k]&&parts[k].l?', задача '+parts[k].l:'';
       if(location.hash!==h){ try{ history.replaceState(history.state,'',h); CURH=location.hash; }catch(e){} }
       dzLinkSet(v.querySelector('.dzx-top .dzx-share'),h,d.label+', вариант '+n+lbl+' — разбор по шагам'); };
-    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(),backLabel:'Ко всем ДЗ',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
+    /* свой вариант по начерту — по умолчанию «Решаю сам» (методичка: сначала попытка, потом помощь); выбор «Смотрю» запоминается */
+    const tryKey='nch_dzmode', tryM=(()=>{ if(!mine||d.course!=='ng') return undefined; try{ return (JSON.parse(localStorage.getItem(tryKey)||'{}')||{})[d.id]||'try'; }catch(e){ return 'try'; } })();
+    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(),backLabel:'Ко всем ДЗ',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,mode:tryM,
+      onMode:m=>{ if(!mine||d.course!=='ng') return; try{ const o=JSON.parse(localStorage.getItem(tryKey)||'{}')||{}; o[d.id]=m; localStorage.setItem(tryKey,JSON.stringify(o)); }catch(e){} },onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
   else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
     v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap varwrap dzx dzx-varp',body:`${head}
       <p class="var-note">${mode==='draft'?'Черновик':'Чистовик'} листа: формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — видно, что откуда взялось; так проверяют ход решения.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.'}</p>
