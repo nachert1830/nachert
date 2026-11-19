@@ -29,6 +29,13 @@ const bad=(s)=>fails.push(s);
   if(A.orphan.length) bad('программа: темы ничего не закрывают: '+A.orphan.join(', '));
   if(A.dupNew.length) bad('программа: повтор идеи: '+A.dupNew.join(', '));
   for(const id of Object.keys(PREP.TOPICS)) if(!G.BY[id]) bad('тема '+id+' не из программы');
+  /* курсы: темы не повторяются, вместе — вся программа; всё, на что опирается тема курса, — в нём или в «нужно из прошлых» */
+  { const own=G.COURSES.flatMap(c=>c.own); if(new Set(own).size!==own.length) bad('курсы: тема принадлежит двум курсам');
+    if(own.length!==G.ALL.length) bad(`курсы: покрыто ${own.length} тем из ${G.ALL.length}`);
+    for(const c of G.COURSES){ const has=new Set(c.own.concat(c.prev)); for(const id of c.own) for(const q of G.BY[id].pre) if(!has.has(q)) bad(`курс ${c.label}: тема ${id} опирается на ${q}, которой нет ни в курсе, ни в «нужно из прошлых»`);
+      for(const id of c.prev) if(G.COURSES.indexOf(G.COURSE[G.OWNER[id]])>=G.COURSES.indexOf(c)) bad(`курс ${c.label}: «из прошлых» ${id} принадлежит не более раннему курсу`);
+      if(c.kind==='dz') for(const id of c.own) if(!G.need(c.key).has(id)) bad(`курс ${c.label}: лишняя тема ${id}`); } }
+  info.push(`Курсы: ${G.COURSES.map(c=>c.label+' '+c.own.length).join(', ')}`);
   info.push(`Программа: ${G.ALL.length} тем, тетрадь ${A.wb.length}/89, РК1 ${A.rk1.length}/${G.RK1.length}, РК2 ${A.rk2.length}/9, ДЗ ${A.dz.length}/5`); }
 
 /* ── 2. независимые геометрические правила по темам ── */
@@ -290,8 +297,19 @@ async function screens(){
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
   const page=await browser.newPage({viewport:{width:390,height:844}}); const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto(U+'#/prep'); await page.waitForTimeout(1200);
+  const hub=await page.evaluate(()=>({cards:[...document.querySelectorAll('a.pp-cc')].map(a=>a.getAttribute('href')),rows:document.querySelectorAll('.pp-st').length,ow:document.documentElement.scrollWidth>innerWidth}));
+  if(hub.cards.join()!==['ng1','ng2','ng3','ng4','ng5'].map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки ДЗ — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
+  /* курс показывает только свои темы (и свёрнуто — из прошлых), ссылки — внутрь курса */
+  for(const c of G.COURSES.filter(c=>c.kind==='dz')){
+    await page.goto(U+'#/prep/'+c.key); await page.waitForTimeout(200);
+    const r=await page.evaluate(()=>({main:[...document.querySelectorAll('.pp-map .pp-st')].map(a=>a.getAttribute('href')),prev:[...document.querySelectorAll('.pp-prev .pp-st')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
+    const want=c.own.map(id=>'#/prep/'+c.key+'/'+id); if(r.main.join()!==want.join()) bad(`Курс ${c.label}: показаны не ровно свои темы (${r.main.length} из ${want.length})`);
+    const wantP=c.prevBy.flatMap(g=>g.ids.map(id=>'#/prep/'+g.key+'/'+id)); if(r.prev.join()!==wantP.join()) bad(`Курс ${c.label}: «нужно из прошлых» не совпадает`); if(r.ow) bad(`Курс ${c.label}: горизонтальная прокрутка`); }
+  /* тема внутри курса: «назад» — к курсу */
+  { const c=G.COURSE.ng4; await page.goto(U+'#/prep/ng4/'+c.own[0]); await page.waitForTimeout(200); const back=await page.evaluate(()=>{ const a=document.querySelector('.pp-back'); return a&&a.getAttribute('href'); }); if(back!=='#/prep/ng4') bad('Тема в курсе: «назад» ведёт не к курсу, а на '+back); }
+  await page.goto(U+'#/prep/all'); await page.waitForTimeout(300);
   const st=await page.evaluate(()=>({n:document.querySelectorAll('.pp-st').length,ow:document.documentElement.scrollWidth>innerWidth}));
-  if(st.n!==G_N) bad(`Экран программы: ${st.n} тем вместо ${G_N}`); if(st.ow) bad('Экран программы: горизонтальная прокрутка');
+  if(st.n!==G_N) bad(`Вся программа: ${st.n} тем вместо ${G_N}`); if(st.ow) bad('Вся программа: горизонтальная прокрутка');
   for(const id of Object.keys(PREP.TOPICS)){
     await page.goto(U+'#/prep/'+id); await page.waitForTimeout(300);
     const r=await page.evaluate(async()=>{

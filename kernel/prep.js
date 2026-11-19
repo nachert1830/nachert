@@ -88,14 +88,31 @@ function audit(){
     orphan:ALL.filter(t=>![t.wb,t.rk1,t.rk2,t.dz].some(a=>a&&a.length)&&!t.rk3).map(t=>t.id),
     dupNew:ALL.filter((t,i)=>ALL.findIndex(u=>u.new===t.new)!==i).map(t=>t.id)};
 }
-/* что нужно знать к ДЗ / РК: темы и всё, на чём они стоят */
+/* что нужно знать к ДЗ / РК: темы и всё, на чём они стоят.
+   РК — по разделам рабочей тетради (РК1 — задачи 1–50, РК2 — 51–70, РК3 — 71–89) и по вопросам/типам билетов. */
 function closure(ids){ const s=new Set(); const go=id=>{ if(s.has(id)||!BY[id]) return; s.add(id); BY[id].pre.forEach(go); }; ids.forEach(go); return s; }
+const WBRK={rk1:[1,50],rk2:[51,70],rk3:[71,89]};
 function need(key){
   if(/^ng\d$/.test(key)) return closure(ALL.filter(t=>(t.dz||[]).includes(key)).map(t=>t.id));
-  if(key==='rk1') return closure(ALL.filter(t=>t.rk1&&t.rk1.length).map(t=>t.id));
-  if(key==='rk2') return closure(ALL.filter(t=>t.rk2&&t.rk2.length).map(t=>t.id));
-  if(key==='rk3') return closure(ALL.filter(t=>t.rk3).map(t=>t.id));
+  if(WBRK[key]){ const [a,b]=WBRK[key], q=key==='rk1'?'rk1':key==='rk2'?'rk2':'rk3';
+    return closure(ALL.filter(t=>(t.wb||[]).some(n=>n>=a&&n<=b)||(q==='rk3'?t.rk3:(t[q]&&t[q].length))).map(t=>t.id)); }
   return new Set(ALL.map(t=>t.id));
 }
-self.PREPROG={MODS,ALL,BY,POS,RK1,RK2,DZ,audit,closure,need};
+/* ── курсы: подготовка к каждому ДЗ отдельно ──
+   Тема принадлежит одному курсу — первому по порядку, которому она нужна (ДЗ №1…№5, затем РК1…РК3).
+   Курс = свои темы (по блокам программы) + «нужно из прошлых» — темы, которые нужны ему, но принадлежат более раннему курсу.
+   Так темы не повторяются из курса в курс, а опора не теряется. */
+const COURSES=[
+  {key:'ng1',kind:'dz',n:1,title:'Фигура на прямой'},{key:'ng2',kind:'dz',n:2,title:'Многогранник'},{key:'ng3',kind:'dz',n:3,title:'Пирамида: замена и вращение'},
+  {key:'ng4',kind:'dz',n:4,title:'Пересечение поверхностей'},{key:'ng5',kind:'dz',n:5,title:'Прямая и поверхность'},
+  {key:'rk1',kind:'rk',n:1,title:'Точка, прямая, плоскость',later:true},{key:'rk2',kind:'rk',n:2,title:'Преобразование чертежа, поверхности',later:true},{key:'rk3',kind:'rk',n:3,title:'Пересечения, касательные',later:true}];
+const OWNER={};
+{ for(const c of COURSES){ const nd=[...need(c.key)].sort((a,b)=>POS[a]-POS[b]); c.need=nd; c.own=nd.filter(id=>!OWNER[id]); c.own.forEach(id=>OWNER[id]=c.key); c.prev=nd.filter(id=>OWNER[id]!==c.key); }
+  /* остаток (если какая-то тема не нужна ни одному курсу) — в последний курс, чтобы ничего не пропало */
+  const last=COURSES[COURSES.length-1]; ALL.forEach(t=>{ if(!OWNER[t.id]){ OWNER[t.id]=last.key; last.own.push(t.id); } });
+  for(const c of COURSES){ c.label=(c.kind==='dz'?'ДЗ №':'РК')+c.n;
+    c.blocks=MODS.map(m=>({id:m.id,t:m.t,ids:c.own.filter(id=>BY[id].mod===m.id)})).filter(b=>b.ids.length);
+    c.prevBy=COURSES.filter(o=>c.prev.some(id=>OWNER[id]===o.key)).map(o=>({key:o.key,label:(o.kind==='dz'?'ДЗ №':'РК')+o.n,ids:c.prev.filter(id=>OWNER[id]===o.key)})); } }
+const COURSE=Object.fromEntries(COURSES.map(c=>[c.key,c]));
+self.PREPROG={MODS,ALL,BY,POS,RK1,RK2,DZ,audit,closure,need,COURSES,COURSE,OWNER};
 })();

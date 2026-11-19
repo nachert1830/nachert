@@ -131,41 +131,69 @@ function pair(topic,k){
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const P=()=>self.PREPROG;
 function dotCls(id){ const st=status(id); return TOPICS[id]?st:'soon'; }
-function viewProgram(v,forKey){
-  const G=P(), need=forKey?G.need(forKey):null, A=G.audit();
-  const ready=G.ALL.filter(t=>TOPICS[t.id]).length;
-  const label={ng1:'ДЗ 1',ng2:'ДЗ 2',ng3:'ДЗ 3',ng4:'ДЗ 4',ng5:'ДЗ 5',rk1:'РК1',rk2:'РК2',rk3:'РК3'};
-  const chips=[['','Всё']].concat(Object.keys(label).map(k=>[k,label[k]]));
-  v.innerHTML=`<div class="wrap page pp"><div class="pp-head"><h1>Подготовка по начерту</h1>
-    <p class="pp-sub">${G.ALL.length} тем. В каждой одна новая идея: смотришь по шагам, потом выбираешь верный чертёж из двух.</p></div>
-    <div class="pp-proof"><span><b>${A.wb.length}/89</b> задач тетради</span><span><b>${A.rk1.length}/${G.RK1.length}</b> вопросов РК1</span><span><b>${A.rk2.length}/9</b> типов РК2</span><span><b>${ready}</b> тем готово</span></div>
-    <nav class="pp-chips" aria-label="Что сдаёшь">${chips.map(([k,s])=>`<a href="#/prep${k?'/for/'+k:''}" class="${(forKey||'')===k?'on':''}">${s}</a>`).join('')}</nav>
-    ${need?`<p class="pp-need">${need.size} тем к ${label[forKey]||''} · освоено ${[...need].filter(id=>status(id)==='done').length}</p>`:''}
-    <div class="pp-map ${need?'dim':''}">${G.MODS.map(m=>`<section><h2>${esc(m.t)} <small>${m.k}</small></h2>
-      ${m.T.map(t=>{ const c=dotCls(t.id), hit=need&&need.has(t.id);
-        const tag=c==='done'?'✓':c==='due'?'повтор':c==='started'?'начата':c==='soon'?'скоро':'';
-        return `<a class="pp-st ${c} ${hit?'hit':''}" href="#/prep/${t.id}"><span class="pp-dot"></span><span class="pp-tt">${esc(t.t)}<small>${esc(t.new)}</small></span>${tag?`<span class="pp-tag ${c}">${tag}</span>`:''}</a>`; }).join('')}
-      ${m.gate?`<div class="pp-gate">${m.gate.map(([c,s])=>`<span class="${c}">${s}</span>`).join('')}</div>`:''}</section>`).join('')}</div></div>`;
-  return forKey?'Подготовка к '+(label[forKey]||''):'Подготовка';
+const stTag=c=>c==='done'?'✓':c==='due'?'повтор':c==='started'?'начата':c==='soon'?'скоро':'';
+/* строка темы: в курсе ссылка ведёт «внутрь курса» (#/prep/ng4/x3) */
+const row=(t,ck)=>{ const c=dotCls(t.id), tag=stTag(c); return `<a class="pp-st ${c}" href="#/prep/${ck?ck+'/':''}${t.id}"><span class="pp-dot"></span><span class="pp-tt">${esc(t.t)}<small>${esc(t.new)}</small></span>${tag?`<span class="pp-tag ${c}">${tag}</span>`:''}</a>`; };
+const doneOf=ids=>ids.filter(id=>status(id)==='done').length;
+const pbar=(a,b)=>`<span class="pp-prog"><i style="width:${b?Math.round(a/b*100):0}%"></i></span>`;
+
+/* #/prep — подготовка: выбор задания; каждое открывает только свой курс */
+function viewHub(v){
+  const G=P(), dz=G.COURSES.filter(c=>c.kind==='dz'), rk=G.COURSES.filter(c=>c.kind==='rk');
+  const cardC=c=>{ const all=c.own.concat(c.prev), d=doneOf(c.own);
+    return `<a class="pp-cc" href="#/prep/${c.key}"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b>
+      <span class="pp-ccm">${c.own.length} ${c.own.length===1?'тема':c.own.length<5?'темы':'тем'}${c.prev.length?` · опирается на ${c.prev.length} из прошлых`:''}</span>${pbar(d,c.own.length)}<small>освоено ${d} из ${c.own.length}</small></a>`; };
+  v.innerHTML=`<div class="wrap page pp"><div class="pp-head"><h1>Подготовка</h1>
+    <p class="pp-sub">Выбери задание — откроется только то, что нужно для него.</p></div>
+    <h2 class="pp-h2">Домашние задания по начерту</h2><div class="pp-ccs">${dz.map(cardC).join('')}</div>
+    <h2 class="pp-h2">Рубежные контроли</h2><div class="pp-ccs">${rk.map(c=>`<div class="pp-cc later" aria-disabled="true"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b><span class="pp-ccm">позже</span></div>`).join('')}</div>
+    <p class="pp-sub"><a href="#/prep/all">Вся программа — ${G.ALL.length} тем по блокам →</a></p></div>`;
+  return 'Подготовка';
 }
 
-function viewTopic(v,id){
-  const G=P(), T=G.BY[id], topic=TOPICS[id];
+/* #/prep/ng4 — курс одного задания: свои темы по блокам + свёрнуто «нужно из прошлых» */
+function viewCourse(v,ck){
+  const G=P(), c=G.COURSE[ck]; if(!c) return viewHub(v);
+  const d=doneOf(c.own), next=c.own.find(id=>TOPICS[id]&&status(id)!=='done'), pd=doneOf(c.prev), weak=c.prev.filter(id=>status(id)!=='done');
+  const dzN=c.kind==='dz'?c.n:null;
+  v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a>
+    <div class="pp-head"><h1>Подготовка к ${c.label}</h1><p class="pp-sub">${esc(c.title)} · ${c.own.length} ${c.own.length<5?'темы':'тем'}</p></div>
+    <div class="pp-cbar">${pbar(d,c.own.length)}<span>освоено ${d} из ${c.own.length}</span></div>
+    ${next?`<a class="pp-btn big" href="#/prep/${ck}/${next}">${d?'Продолжить':'Начать'}: ${esc(G.BY[next].t)} →</a>`:dzN?`<a class="pp-btn big" href="#/ng${dzN}">Все темы освоены — к своему варианту ДЗ №${dzN} →</a>`:''}
+    <div class="pp-map">${c.blocks.map(b=>`<section><h2>${esc(b.t)}</h2>${b.ids.map(id=>row(G.BY[id],ck)).join('')}</section>`).join('')}</div>
+    ${c.prev.length?`<details class="pp-prev"${weak.length&&weak.length<=4?' open':''}><summary>Нужно из прошлых заданий — ${c.prev.length}, освоено ${pd}${weak.length?` · не освоено ${weak.length}`:''}</summary>
+      ${c.prevBy.map(g=>`<h3>${g.label}</h3>${g.ids.map(id=>row(G.BY[id],g.key)).join('')}`).join('')}</details>`:''}
+    ${dzN?`<p class="pp-sub"><a href="#/ng${dzN}">Свой вариант ДЗ №${dzN} →</a> Решение открыто всегда; подготовка — чтобы решить самому.</p>`:''}</div>`;
+  return 'Подготовка к '+c.label;
+}
+
+/* #/prep/all — вся программа по блокам (обзор) */
+function viewAll(v){
+  const G=P(), A=G.audit(), ready=G.ALL.filter(t=>TOPICS[t.id]).length;
+  v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a><div class="pp-head"><h1>Вся программа</h1>
+    <p class="pp-sub">${G.ALL.length} тем по блокам. В каждой одна новая идея: смотришь по шагам, потом выбираешь верный чертёж из двух.</p></div>
+    <div class="pp-proof"><span><b>${A.wb.length}/89</b> задач тетради</span><span><b>${A.rk1.length}/${G.RK1.length}</b> вопросов РК1</span><span><b>${A.rk2.length}/9</b> типов РК2</span><span><b>${ready}</b> тем готово</span></div>
+    <div class="pp-map">${G.MODS.map(m=>`<section><h2>${esc(m.t)} <small>${m.k}</small></h2>${m.T.map(t=>row(t,'')+`<span class="pp-own">${G.COURSE[G.OWNER[t.id]].label}</span>`).join('')}</section>`).join('')}</div></div>`;
+  return 'Вся программа';
+}
+
+function viewTopic(v,id,ck){
+  const G=P(), T=G.BY[id], topic=TOPICS[id], back=ck&&G.COURSE[ck]?'#/prep/'+ck:'#/prep/all';
   if(!T){ v.innerHTML='<div class="wrap page"><div class="box warn">Такой темы нет. <a href="#/prep">Вся программа</a></div></div>'; return 'Подготовка'; }
   if(!topic){
-    v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Программа</a><h1>${esc(T.t)}</h1><p class="pp-new">${esc(T.new)}</p>
+    v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="${back}">← Назад</a><h1>${esc(T.t)}</h1><p class="pp-new">${esc(T.new)}</p>
       <div class="box">Эту тему ещё собираем. Источник: ${esc(T.src||'—')}.</div>
       ${T.pre.length?`<p class="pp-sub">Опирается на: ${T.pre.map(p=>`<a href="#/prep/${p}">${esc(G.BY[p].t)}</a>`).join(', ')}</p>`:''}</div>`;
     return T.t;
   }
   const saved=store.get(id);
   document.body.classList.add('inplayer');
-  v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="#/prep" aria-label="К программе">←</a>
+  v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="${back}" aria-label="${ck?'К курсу':'К программе'}">←</a>
     <div class="pp-ttl"><b>${esc(T.t)}</b><small>${esc(T.new)}</small></div><div class="pp-seg" role="tablist"><button data-ph="watch">Смотри</button><button data-ph="duel">Проверка</button></div></div>
     <div class="pp-stage" id="ppStage"></div></div>`;
   const stage=v.querySelector('#ppStage'), seg=v.querySelector('.pp-seg');
   const setPh=ph=>{ seg.querySelectorAll('button').forEach(b=>{ b.classList.toggle('on',b.dataset.ph===ph); b.setAttribute('aria-selected',b.dataset.ph===ph); });
-    if(ph==='watch') watch(stage,topic,T,()=>setPh('duel')); else duel(stage,topic,T,saved,()=>setPh('watch')); };
+    if(ph==='watch') watch(stage,topic,T,()=>setPh('duel')); else duel(stage,topic,T,saved,()=>setPh('watch'),ck); };
   seg.onclick=e=>{ const b=e.target.closest('button'); if(b) setPh(b.dataset.ph); };
   setPh(saved&&saved.n?'duel':'watch');
   return T.t;
@@ -241,7 +269,7 @@ function watch(stage,topic,T,toDuel){
 }
 
 /* «Проверка»: карточка сверху, панель с прогрессом посередине, карточка снизу (на широком экране — рядом) */
-function duel(stage,topic,T,saved,toWatch){
+function duel(stage,topic,T,saved,toWatch,ck){
   const M=Model(topic,saved), keys=Object.keys(topic.traps);
   stage.innerHTML=`<div class="pp-duel"><div class="pp-card" id="ppA" tabindex="0" role="button" aria-label="Первый чертёж"><svg></svg></div>
     <div class="pp-panel mid"><div class="pp-meter"><div class="pp-prog"><i id="ppBar"></i></div><span id="ppPct">0%</span></div>
@@ -279,11 +307,14 @@ function duel(stage,topic,T,saved,toWatch){
   const done=()=>{
     try{ window.TRACK&&TRACK('prep_mastered',{topic:T.id,n:M.n}); }catch(e){}
     try{ window.FX&&FX.confetti(); }catch(e){}
-    const G=P(), nextT=G.ALL[G.POS[T.id]+1];
+    /* дальше — по своему курсу: следующая неосвоенная тема; курс пройден — к своему варианту */
+    const G=P(), c=ck&&G.COURSE[ck], pool=c?c.own:G.ALL.map(t=>t.id), at=pool.indexOf(T.id);
+    const nextId=pool.slice(at+1).concat(pool.slice(0,Math.max(0,at))).find(id=>TOPICS[id]&&status(id)!=='done'), nextT=nextId&&G.BY[nextId];
+    const fin=c&&!nextT&&c.kind==='dz'?`<a class="pp-btn" href="#/ng${c.n}">Курс пройден — к своему варианту ${c.label} →</a>`:'';
     stage.innerHTML=`<div class="pp-done"><div class="pp-big">${M.n}</div><h2>Тема освоена</h2><p class="pp-sub">пар до уверенности · верно ${M.log.filter(x=>x.ok).length}</p>
       <div class="pp-deck">${keys.map(k=>`<span class="${M.beat[k]?'won':''}" title="${esc(topic.traps[k].say)}"></span>`).join('')}</div>
       <p class="pp-sub">Повторим через ${SPACING[Math.min(SPACING.length-1,((store.get(T.id)||{}).lvl||1)-1)]} дн. — так тема не забудется.</p>
-      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:''}<a class="pp-btn ghost" href="#/prep">Программа</a></div>
+      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${c?ck+'/':''}${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:fin}<a class="pp-btn ghost" href="${c?'#/prep/'+ck:'#/prep/all'}">${c?'К курсу':'Программа'}</a></div>
       <details class="pp-how"><summary>Почему система решила, что ты освоил</summary><table>${keys.map(k=>`<tr><td>${esc(topic.traps[k].say)}</td><td>${M.beat[k]} ✓</td><td>${M.miss[k]} ✗</td><td>${esc(topic.traps[k].src||'')}</td></tr>`).join('')}</table>
       <p>Пары подбирались так, чтобы шанс ответить верно был около 85 %. Угадывание в выборе из двух учтено: тема засчитана, когда вероятность «знает» стала выше 98,5 % и четыре последних ответа подряд верны.</p></details></div>`;
   };
@@ -294,25 +325,27 @@ function duel(stage,topic,T,saved,toWatch){
 
 /* ───────── карточка «Подготовка» на странице ДЗ ───────── */
 function card(dz){
-  const G=P(); if(!G) return '';
-  const S=[...G.need(dz)], done=S.filter(id=>status(id)==='done').length, ready=S.filter(id=>TOPICS[id]).length;
-  const first=S.map(id=>G.BY[id]).sort((a,b)=>G.POS[a.id]-G.POS[b.id]).find(t=>TOPICS[t.id]&&status(t.id)!=='done');
-  const n=dz.slice(2);
-  return `<a class="pp-dzcard" href="#/prep/for/${dz}"><span class="pp-dzk">Подготовка к ДЗ №${n}</span>
-    <b>${done}/${S.length} тем освоено</b><span class="pp-prog"><i style="width:${Math.round(done/S.length*100)}%"></i></span>
-    <small>${first?'Начни с темы «'+esc(first.t)+'»':ready<S.length?'Остальные темы скоро':'Всё готово — переходи к своему варианту'}</small></a>`;
+  const G=P(); if(!G||!G.COURSE[dz]) return '';
+  const c=G.COURSE[dz], d=doneOf(c.own), first=c.own.find(id=>TOPICS[id]&&status(id)!=='done');
+  return `<a class="pp-dzcard" href="#/prep/${dz}"><span class="pp-dzk">Подготовка к ${c.label}</span>
+    <b>${d}/${c.own.length} тем освоено</b>${pbar(d,c.own.length)}
+    <small>${first?'Начни с темы «'+esc(G.BY[first].t)+'»':'Всё освоено — переходи к своему варианту'}</small></a>`;
 }
 
 function chip(dz){
-  const G=P(); if(!G) return '';
-  const S=[...G.need(dz)], done=S.filter(id=>status(id)==='done').length;
-  return `<a class="pp-dzchip" href="#/prep/for/${dz}"><b>Подготовка к ДЗ №${dz.slice(2)}</b><span class="pp-prog"><i style="width:${Math.round(done/S.length*100)}%"></i></span><span>${done}/${S.length} →</span></a>`;
+  const G=P(); if(!G||!G.COURSE[dz]) return '';
+  const c=G.COURSE[dz], d=doneOf(c.own);
+  return `<a class="pp-dzchip" href="#/prep/${dz}"><b>Подготовка к ${c.label}</b>${pbar(d,c.own.length)}<span>${d}/${c.own.length} →</span></a>`;
 }
+/* адреса: #/prep — подготовка; #/prep/ng4 — курс ДЗ №4; #/prep/ng4/x3 — тема в курсе; #/prep/all — вся программа;
+   #/prep/x3 — тема из программы; #/prep/for/ng4 — прежний адрес курса */
 function view(v,r){
-  if(!P()){ v.innerHTML='<div class="wrap page"><div class="box warn">Программа не загрузилась.</div></div>'; return 'Подготовка'; }
-  if(r.tab==='for') return viewProgram(v,r.item||'');
-  if(r.tab) return viewTopic(v,r.tab);
-  return viewProgram(v,'');
+  const G=P(); if(!G){ v.innerHTML='<div class="wrap page"><div class="box warn">Программа не загрузилась.</div></div>'; return 'Подготовка'; }
+  if(r.tab==='all') return viewAll(v);
+  if(r.tab==='for') return G.COURSE[r.item]?viewCourse(v,r.item):viewHub(v);
+  if(r.tab&&G.COURSE[r.tab]) return r.item?viewTopic(v,r.item,r.tab):viewCourse(v,r.tab);
+  if(r.tab) return viewTopic(v,r.tab,null);
+  return viewHub(v);
 }
 
 /* ───────── стили (токены --pp-* — точка входа нового дизайна) ───────── */
@@ -379,6 +412,16 @@ const CSS=`
 .pp-how table{width:100%;border-collapse:collapse;margin:8px 0}.pp-how td{padding:4px;border-bottom:1px solid var(--pp-line)}
 .pp-new{font-weight:700;color:var(--pp-acc)}
 .pp-dzcard{display:grid;gap:4px;padding:12px 14px;border-radius:var(--pp-r);background:var(--surf,#fff);border:2px solid var(--acc,#1f3fbf);color:var(--ink,#121a3f);text-decoration:none;margin:10px 0}
+.pp-h2{font-size:18px;margin:18px 0 8px}
+.pp-ccs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.pp-cc{display:grid;gap:4px;padding:14px;border-radius:var(--pp-r);background:var(--pp-surf);border:1px solid var(--pp-line);color:var(--pp-ink);text-decoration:none}
+.pp-cc b{font-size:16px;line-height:1.25}.pp-cck{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pp-acc)}
+.pp-ccm{font-size:13px;color:var(--pp-mut)}.pp-cc small{color:var(--pp-mut)}.pp-cc.later{opacity:.55}.pp-cc.later .pp-cck{color:var(--pp-mut)}
+.pp-cbar{display:flex;align-items:center;gap:10px;margin:6px 0 12px;font-size:13px;color:var(--pp-mut)}.pp-cbar .pp-prog{max-width:260px}
+.pp-btn.big{display:block;text-align:center;margin:4px 0 8px}
+.pp-prev{margin:16px 0;background:var(--pp-surf);border:1px solid var(--pp-line);border-radius:var(--pp-r);padding:10px 14px}
+.pp-prev summary{cursor:pointer;font-weight:600}.pp-prev h3{font-size:13px;color:var(--pp-mut);margin:12px 0 2px;letter-spacing:.04em;text-transform:uppercase}
+.pp-own{display:block;margin:-6px 0 4px 38px;font-size:11px;color:var(--pp-mut)}
 .pp-dzchip{display:flex;align-items:center;gap:10px;padding:6px 12px;margin:4px 0;border-radius:10px;background:var(--surf2,#f3f5fa);color:var(--ink,#121a3f);text-decoration:none;font-size:13px}
 .pp-dzchip b{white-space:nowrap}.pp-dzchip .pp-prog{max-width:160px}.pp-dzchip span:last-child{color:var(--acc,#1f3fbf);font-weight:700;white-space:nowrap}
 .pp-dzk{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc,#1f3fbf)}.pp-dzcard small{color:var(--mut,#5c6688)}
