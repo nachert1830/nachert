@@ -5366,8 +5366,8 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 .hsv-s{min-height:112px}.hsv-s svg{width:66%;right:-8%;bottom:-18%}
 .hsv-m{min-height:152px}.hsv-m svg{width:80%}
 .hsv-l{min-height:212px}.hsv-l svg{width:104%;right:-16%;bottom:-8%}
-.hsv-t .f1{fill:color-mix(in srgb,var(--tc) 62%,#fff)}
-.hsv-t .f2{fill:color-mix(in srgb,var(--tc) 86%,#fff)}
+.hsv-t .f1{fill:color-mix(in srgb,var(--tc) 70%,#fff)}
+.hsv-t .f2{fill:color-mix(in srgb,var(--tc) 90%,#fff)}
 .hsv-t .f3{fill:color-mix(in srgb,var(--tc) 80%,#1a1430)}
 .hsv-t .gl{fill:url(#svcGl)}
 .hsv-t .sh{fill:color-mix(in srgb,var(--tc) 70%,#000);opacity:.28;filter:blur(6px)}
@@ -5386,17 +5386,23 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 .hown-t small{font:500 12.5px var(--sans);color:var(--mut)}
 .hown-t b{font:700 15.5px var(--sans);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .hown-v{display:flex;align-items:center;gap:8px;flex:none}
-.hown .vc{min-height:40px!important;padding:0 4px!important;background:none!important;border:0!important;box-shadow:none!important;display:inline-flex;align-items:center;gap:6px}
-.hown .vc-n{font:800 16px var(--disp)!important;color:var(--ink)!important}
-.hown .vc-l{font:500 12.5px var(--sans)!important;color:var(--mut)!important}
-.hown .vc-dot{background:var(--green)}
+.hown .vc{height:auto!important;min-height:40px!important;padding:0 2px!important;background:none!important;border:0!important;box-shadow:none!important;display:inline-flex!important;flex-direction:column;align-items:flex-end;justify-content:center;gap:2px!important}
+.hown .vc-n{font:800 17px/1 var(--disp)!important;color:var(--ink)!important;font-variant-numeric:tabular-nums}
+.hown .vc-l{font:500 12px/1 var(--sans)!important;color:var(--mut)!important}
+.hown .vc-dot{display:none!important}
 .hown-s{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:0;background:var(--surf2);color:var(--ink);cursor:pointer}
 .hown-s:hover{background:color-mix(in srgb,var(--acc) 12%,var(--surf2));color:var(--acc)}
-@media(max-width:380px){.hown .vc-l{display:none}}
 /* нижнее меню как в банковском приложении: пять равных вкладок, «Главная» первая, выбранная — цветом, без выпирающей кнопки */
 .nav-bot .nvh-b,.nav-bot a.nv-home.on .nvh-b{width:auto!important;height:auto!important;margin:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:inherit!important;transform:none!important}
 .nav-bot .nvh-b svg{width:22px!important;height:22px!important}
 .nav-bot a.nv-home{color:var(--mut)!important}
+.nav-bot .nbi{width:25px!important;height:25px!important;fill:#b4b9c4;transition:fill .15s}
+.nav-bot .nbi .k{fill:var(--surf)}.nav-bot .nbi .ks{fill:none;stroke:var(--surf);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+:root[data-theme=dark] .nav-bot .nbi{fill:#6b7389}
+.nav-bot a.nv,.nav-bot a.nv-home{color:#9aa0ad!important;font-weight:500!important}
+.nav-bot a.nv.on .nbi,.nav-bot a.nv-home.on .nbi{fill:#3c8cf6}
+.nav-bot a.nv.on,.nav-bot a.nv-home.on{color:#3c8cf6!important}
+.nav-bot a.nv::before,.nav-bot a.nv.on::before{display:none!important}
 .nav-bot a.nv-home.on{color:var(--acc)!important}
 </style>
 </head>
@@ -28789,20 +28795,28 @@ const H=(...a)=>{ const p=a.filter(x=>x!=null&&x!==''); return p.length?'#/'+p.m
 /* короткие адреса ДЗ: #/dz — все ДЗ обоих предметов, #/ng4 — ДЗ №4 по начерту, #/ng4/13 — вариант 13, #/ig3/7 — инж. графика.
    HDZ('ng4', 13) → #/ng4/13; HDZ() и HDZ('ng') → #/dz. Прежние #/ng/dz/…, #/ig/dz/…, #/dz/…, #/ig/hw2/… переадресуются */
 const HDZ=(id,...a)=>/^(ng|ig)\d$/.test(id||'')?H(id,...a):'#/dz';
+/* нижнее меню — сплошные мягкие значки (как в банковских приложениях): серые, выбранный — цветом */
+const NBIC={home:'<path d="M3.5 10.2 11 4a1.6 1.6 0 0 1 2 0l7.5 6.2c.3.3.5.7.5 1.1V19a2 2 0 0 1-2 2h-3.5v-5.5a1 1 0 0 0-1-1h-5a1 1 0 0 0-1 1V21H5a2 2 0 0 1-2-2v-7.7c0-.4.2-.8.5-1.1z"/>',
+  nb:'<rect x="4" y="2.5" width="16" height="19" rx="3.5"/><rect class="k" x="8" y="7" width="8" height="2" rx="1"/><rect class="k" x="8" y="11" width="8" height="2" rx="1"/><rect class="k" x="8" y="15" width="5" height="2" rx="1"/>',
+  hw:'<path d="M7 2.5h6.6c.5 0 1 .2 1.4.6l4.4 4.4c.4.4.6.9.6 1.4V19a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 19V5A2.5 2.5 0 0 1 7 2.5z"/><path class="ks" d="m8.6 14.2 2.4 2.4 4.6-4.8"/>',
+  rk:'<rect x="9.5" y="1.5" width="5" height="2.4" rx="1.2"/><circle cx="12" cy="13.5" r="8.5"/><path class="ks" d="M12 13.5V9.2"/>',
+  th:'<path d="M2.5 5.4c0-.6.4-1.1 1-1.2 3-.6 5.7-.2 8 1.5v14.6c-2.5-1.6-5.4-2-8.3-1.4a.6.6 0 0 1-.7-.6zM21.5 5.4c0-.6-.4-1.1-1-1.2-3-.6-5.7-.2-8 1.5v14.6c2.5-1.6 5.4-2 8.3-1.4.3.1.7-.2.7-.6z"/>',
+  lr:'<path d="M12 2.2 21 7.1 12 12 3 7.1z"/><path d="M3 8.9 11.2 13.4V22L3 17.5z" opacity=".75"/><path d="M21 8.9 12.8 13.4V22l8.2-4.5z" opacity=".55"/>'};
+const nbIcon=k=>`<svg viewBox="0 0 24 24" width="24" height="24" class="nbi" aria-hidden="true">${NBIC[k]||NBIC.nb}</svg>`;
 function buildNav(sj){
   sj=sj||subjOf(parseHash(location.hash)); NAVSUBJ=sj;
   const svg=(ic,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
-  const homeB=(href,s)=>`<a href="${href}" data-s="${s}" class="nv nv-home" aria-label="Главная"><span class="nvh-b"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6h-6v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span><span class="ns">Главная</span></a>`;
+  const homeB=(href,s)=>`<a href="${href}" data-s="${s}" class="nv nv-home" aria-label="Главная"><span class="nvh-b">${nbIcon('home')}</span><span class="ns">Главная</span></a>`;
   if(sj==='ig'){
     /* те же места, что у начерта: Тетрадь · ДЗ · (РК → Учиться) · Теория; «Главная» — одна на оба предмета */
     const IGO=[NAV_IG[2],NAV_IG[1],NAV_IG[0],NAV_IG[3]];
     $('navTop').innerHTML=IGO.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.ic)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
-    const one=n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.ic)}<span class="ns">${n.short}</span></a>`;
+    const one=n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${nbIcon(n.ic)}<span class="ns">${n.short}</span></a>`;
     $('navBot').innerHTML=homeB('#/','home')+one(IGO[0])+one(IGO[1])+one(IGO[2])+one(IGO[3]);
   } else {
     const NG=NAVS.filter(n=>n.id!=='ig'&&!n.hide);
     $('navTop').innerHTML=NG.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
-    const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="ns">${n.short}</span></a>`; };
+    const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv">${nbIcon(n.id)}<span class="ns">${n.short}</span></a>`; };
     $('navBot').innerHTML=homeB('#/','home')+one('nb')+one('hw')+one('rk')+one('th');
   }
   /* предмет: Начерт и инженерная графика — два отдельных раздела; переключатель виден, пока ИГ открыта */
@@ -29869,13 +29883,13 @@ function viewHome(v){
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
-   <section class="v8-dirs hsv" aria-label="Разделы">
-    ${svcHTML('Начерт',[[H('ng','tasks'),'Тетрадь',nT+' задач по шагам','nb','#4aaea5','l'],[HDZ('ng'),'ДЗ','твой вариант','hw','#8b7be3','s'],[H('ng','rk2'),'РК2','билеты и пробный РК','rk','#dc6a90','m'],[H('ng','path'),'Теория','уроки и шпаргалка','th','#eda94a','s']])}
-    ${svcHTML('Инж. графика',[[H('ig','wb'),'Тетрадь',nIW+' рисунков','grid','#6a95e6','s'],[HDZ('ig'),'ДЗ','листы, виды и разрезы','sheet','#e6dbcd','l',1],[H('ig','learn'),'Учиться','виды и разрезы','cube','#8595b0','s'],[H('ig','theory'),'ЕСКД','нормы оформления','square','#d3aa80','m']])}
-   </section>
    <section class="hown" aria-label="Владелец и просмотры">
     <button type="button" class="au-pill hown-a" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span><span class="hown-t"><small>Владелец</small><b>Андрей Матханов</b></span></button>
     <div class="hown-v">${FX.viewsHTML('v8-vc')}<button type="button" class="hown-s" data-sharesite aria-label="Поделиться сайтом"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
+   </section>
+   <section class="v8-dirs hsv" aria-label="Разделы">
+    ${svcHTML('Начерт',[[H('ng','tasks'),'Тетрадь',nT+' задач по шагам','nb','#1fb6a3','l'],[HDZ('ng'),'ДЗ','твой вариант','hw','#8a63f2','s'],[H('ng','rk2'),'РК2','билеты и пробный РК','rk','#f0507f','m'],[H('ng','path'),'Теория','уроки и шпаргалка','th','#ffa928','s']])}
+    ${svcHTML('Инж. графика',[[H('ig','wb'),'Тетрадь',nIW+' рисунков','grid','#4a86f6','s'],[HDZ('ig'),'ДЗ','листы, виды и разрезы','sheet','#ebdfcf','l',1],[H('ig','learn'),'Учиться','виды и разрезы','cube','#6f87b8','s'],[H('ig','theory'),'ЕСКД','нормы оформления','square','#f3893a','m']])}
    </section>
   </div>`;
   NEXT=null;
