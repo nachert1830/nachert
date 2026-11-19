@@ -14,7 +14,7 @@ const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
@@ -78,7 +78,25 @@ const CHECK={
     const dir=l=>[l[2]-l[0],l[3]-l[1]], perp=(a,b)=>Math.abs(a[0]*b[0]+a[1]*b[1])/Math.hypot(...a)/Math.hypot(...b)<.01, horiz=l=>Math.abs(l[1]-l[3])<1e-6;
     if(!onL(L('n1'),O1)||!onL(L('n1'),A1)) v.push('n′ через O′ и A′'); if(!onL(L('n2'),O2)||!onL(L('n2'),A2)) v.push('n″ через O″ и A″');
     if(!horiz(L('h2'))) v.push('h″ ∥ x'); if(!perp(dir(L('h1')),dir(L('n1')))) v.push('h′ ⟂ n′');
-    if(!horiz(L('f1'))) v.push('f′ ∥ x'); if(!perp(dir(L('f2')),dir(L('n2')))) v.push('f″ ⟂ n″'); return v; }
+    if(!horiz(L('f1'))) v.push('f′ ∥ x'); if(!perp(dir(L('f2')),dir(L('n2')))) v.push('f″ ⟂ n″'); return v; },
+  /* точки входа и выхода: на конусе и на AB; между ними прямая невидима */
+  x8(V,S){ const v=[]; const A=V.A,B=V.B, onAB=p=>{ const d=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], w=[p[0]-A[0],p[1]-A[1],p[2]-A[2]], c=[d[1]*w[2]-d[2]*w[1],d[2]*w[0]-d[0]*w[2],d[0]*w[1]-d[1]*w[0]]; return Math.hypot(...c)/Math.hypot(...d)<TOL; };
+    for(const [hh,ff] of [['k1h','k1f'],['k2h','k2f']]){ const h=P(S,hh), f=P(S,ff); if(!h||!f){ v.push('две точки'); continue; } if(Math.abs(h[0]-f[0])>TOL){ v.push('линия связи ⟂ x'); continue; }
+      const q=[h[0],h[1]-V.Y0,-f[1]]; if(Math.abs(Math.hypot(q[0],q[1])-V.R*(1-q[2]/V.H))>TOL) v.push('точка на конусе'); if(!onAB(q)) v.push('точка на AB'); }
+    const ins=E(S,'abi'); if(ins.length!==2||ins.some(e=>!e.dash)) v.push('внутренний участок — штрих'); return v; },
+  x2(V,S){ const v=[]; for(const [ff,hh] of [['p1f','p1h'],['p2f','p2h']]){ const f=P(S,ff), h=P(S,hh); if(!f||!h){ v.push('обе точки очерков'); continue; }
+      if(Math.abs(h[0]-f[0])>TOL){ v.push('линия связи ⟂ x'); continue; } const x=h[0], y=h[1]-V.Ys, z=-f[1];
+      if(Math.abs(Math.hypot(x,y,z)-V.R)>TOL) v.push('точка на сфере'); if(Math.abs(Math.hypot(x-V.xc,y)-V.Rc*(1-z/V.Hc))>TOL) v.push('точка на конусе'); if(Math.abs(y)>TOL) v.push('в плоскости симметрии'); }
+    return v; },
+  /* K″ — проекция общей точки тора (ось ⟂ π₂ через O) и конуса: y из конуса, подставленный в уравнение тора */
+  x6(V,S){ const v=[]; const K=P(S,'K'), z=-K[1], w=V.Rb*(1-z/V.Hk), dx=K[0]-V.xa; if(Math.abs(dx)>w+TOL){ v.push('точка внутри конуса'); return v; }
+    const y=Math.sqrt(Math.max(0,w*w-dx*dx)), ra=Math.hypot(K[0],K[1]+V.zO); if(Math.abs((ra-V.Rc)**2+y*y-V.rt*V.rt)>2*V.rt*.6) v.push('точка на торе и конусе'); return v; },
+  f2(V,S){ const v=[]; const Kh=P(S,'Kh'), K2=S.base.find(e=>e.lab==='K″').a; if(Math.abs(Kh[0]-K2[0])>TOL) v.push('линия связи ⟂ x');
+    const q=[Kh[0],Kh[1]-V.Y0,-K2[1]], a=V.A,b=V.B,s=V.S, u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], w=[s[0]-a[0],s[1]-a[1],s[2]-a[2]], n=[u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]];
+    if(Math.abs(n[0]*(q[0]-a[0])+n[1]*(q[1]-a[1])+n[2]*(q[2]-a[2]))/Math.hypot(...n)>TOL) v.push('точка в плоскости грани'); return v; },
+  f1(V,S){ const v=[]; const b=E(S,'b1')[0]; if(b.t!=='circ'||Math.abs(b.a[2]-V.R)>TOL||Math.abs(b.a[0])>TOL) v.push('основание на π₁ — окружность радиуса R');
+    const oL=E(S,'oL')[0].a, oR=E(S,'oR')[0].a; if(Math.abs(oL[0])>TOL||Math.abs(oR[0])>TOL) v.push('вершина на оси');
+    if(Math.abs(oL[2]+V.R)>TOL||Math.abs(oR[2]-V.R)>TOL) v.push('очерк — крайние образующие'); return v; }
 };
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const geo=e=>({t:e.t,a:e.a&&e.a.map(x=>Math.round(x*1e3)),p:e.p&&e.p.map(q=>q.map(x=>Math.round(x*1e3))),dash:!!e.dash});
