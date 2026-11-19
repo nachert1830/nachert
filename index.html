@@ -5354,35 +5354,50 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 
 .pl.peek .pl-side.more::after{display:none}
 /* ═══ главная v10: низ «чистое поле» — разделы двумя оглавлениями, «Поделиться» одной тихой строкой ═══ */
-.hsv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px;align-items:start}
+.hsv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:26px;align-items:start}
 .hsv-c{display:flex;flex-direction:column;gap:10px;min-width:0}
 .hsv-c h3{margin:0 0 2px 4px;font:800 17px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
-.hsv-t{position:relative;display:flex;flex-direction:column;overflow:hidden;isolation:isolate;padding:13px 14px;border-radius:22px;background:var(--tc);color:#fff!important;text-decoration:none!important;-webkit-tap-highlight-color:transparent;transition:transform .15s var(--ease),filter .2s}
-.hsv-t::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(255,255,255,.18),transparent 55%)}
+.hsv-t{--fg:#fff;position:relative;display:flex;flex-direction:column;overflow:hidden;isolation:isolate;padding:14px 14px;border-radius:22px;background:var(--tc);color:var(--fg)!important;text-decoration:none!important;-webkit-tap-highlight-color:transparent;transition:transform .18s var(--ease)}
+.hsv-t.lt{--fg:#2b2620}
+.hsv-t::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(90% 70% at 15% 0%,rgba(255,255,255,.22),transparent 60%)}
 .hsv-t b{font:700 16px/1.15 var(--sans);letter-spacing:-.01em}
-.hsv-t small{margin-top:3px;max-width:13ch;font:500 12.5px/1.25 var(--sans);opacity:.88}
-.hsv-t svg{position:absolute;right:-6px;bottom:-4px;width:62%;max-width:150px;height:auto;color:var(--tc);z-index:-1}
-.hsv-s{min-height:118px}.hsv-m{min-height:146px}.hsv-l{min-height:184px}
-.hsv-l svg{width:78%}
-.hsv-hot{position:absolute;top:12px;right:12px;padding:3px 8px;border-radius:99px;background:#ffdd2d;color:#222;font:700 11px/1.2 var(--sans);font-style:normal}
-.hsv-t:hover{filter:brightness(1.05)}.hsv-t:active{transform:scale(.97)}
+.hsv-t small{margin-top:3px;max-width:14ch;font:500 12.5px/1.25 var(--sans);opacity:.78}
+.hsv-t svg{position:absolute;z-index:-1;right:-14%;bottom:-12%;width:92%;height:auto;overflow:visible}
+.hsv-s{min-height:112px}.hsv-s svg{width:66%;right:-8%;bottom:-18%}
+.hsv-m{min-height:152px}.hsv-m svg{width:80%}
+.hsv-l{min-height:212px}.hsv-l svg{width:104%;right:-16%;bottom:-8%}
+.hsv-t .f1{fill:color-mix(in srgb,var(--tc) 62%,#fff)}
+.hsv-t .f2{fill:color-mix(in srgb,var(--tc) 86%,#fff)}
+.hsv-t .f3{fill:color-mix(in srgb,var(--tc) 80%,#1a1430)}
+.hsv-t .gl{fill:url(#svcGl)}
+.hsv-t .sh{fill:color-mix(in srgb,var(--tc) 70%,#000);opacity:.28;filter:blur(6px)}
+.hsv-t .ln{fill:none;stroke:color-mix(in srgb,var(--tc) 70%,#1a1430);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:.45}
+.hsv-t .ck{fill:none;stroke:color-mix(in srgb,var(--tc) 60%,#1a1430);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.hsv-t:active{transform:scale(.97)}
 .hsv-t:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
-@media(min-width:760px){.hsv{gap:24px}.hsv-c{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hsv-c h3{grid-column:1/-1}.hsv-t{padding:16px 18px;border-radius:24px}.hsv-t b{font-size:18px}.hsv-t small{font-size:13.5px;max-width:16ch}.hsv-s,.hsv-m,.hsv-l{min-height:168px}.hsv-t svg,.hsv-l svg{width:58%}}
+@media(hover:hover){.hsv-t svg{transition:transform .35s var(--ease)}.hsv-t:hover svg{transform:translate(-3px,-4px) scale(1.03)}}
+@media(min-width:760px){.hsv{gap:24px}.hsv-c{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto;grid-auto-rows:150px;grid-auto-flow:row dense;gap:12px}.hsv-c h3{grid-column:1/-1}.hsv-t{padding:18px 20px;border-radius:26px;min-height:0}.hsv-t b{font-size:19px}.hsv-t small{font-size:14px;max-width:18ch}.hsv-l{grid-row:span 2}.hsv-l svg{width:96%}.hsv-s svg,.hsv-m svg{width:60%;right:-6%;bottom:-20%}.hsv-c:first-child .hsv-m{grid-column:1/-1}.hsv-c:first-child .hsv-m svg{width:34%}.hsv-c:last-child .hsv-m{grid-column:1/-1}.hsv-c:last-child .hsv-m svg{width:34%}}
+@media(prefers-reduced-motion:reduce){.hsv-t svg{transition:none!important}}
+/* владелец и просмотры — одна спокойная карточка под разделами */
+.hown{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 18px;padding:10px 10px 10px 12px;border-radius:22px;background:var(--surf);border:1px solid var(--line)}
+.hown .au-pill.hown-a{display:flex;align-items:center;gap:10px;min-width:0;padding:0;border:0;background:none;box-shadow:none;transform:none;color:var(--ink)}
+.hown .au-face{width:40px!important;height:40px!important;font-size:24px!important}
+.hown-t{display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1.2}
+.hown-t small{font:500 12.5px var(--sans);color:var(--mut)}
+.hown-t b{font:700 15.5px var(--sans);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.hown-v{display:flex;align-items:center;gap:8px;flex:none}
+.hown .vc{min-height:40px!important;padding:0 4px!important;background:none!important;border:0!important;box-shadow:none!important;display:inline-flex;align-items:center;gap:6px}
+.hown .vc-n{font:800 16px var(--disp)!important;color:var(--ink)!important}
+.hown .vc-l{font:500 12.5px var(--sans)!important;color:var(--mut)!important}
+.hown .vc-dot{background:var(--green)}
+.hown-s{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:0;background:var(--surf2);color:var(--ink);cursor:pointer}
+.hown-s:hover{background:color-mix(in srgb,var(--acc) 12%,var(--surf2));color:var(--acc)}
+@media(max-width:380px){.hown .vc-l{display:none}}
 /* нижнее меню как в банковском приложении: пять равных вкладок, «Главная» первая, выбранная — цветом, без выпирающей кнопки */
 .nav-bot .nvh-b,.nav-bot a.nv-home.on .nvh-b{width:auto!important;height:auto!important;margin:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:inherit!important;transform:none!important}
 .nav-bot .nvh-b svg{width:22px!important;height:22px!important}
 .nav-bot a.nv-home{color:var(--mut)!important}
 .nav-bot a.nv-home.on{color:var(--acc)!important}
-.v8h .v8-meta{border:0!important;background:none!important;padding:0!important;margin:14px auto 0!important;justify-content:center!important}
-.v8h .v8-meta .v8-ma{width:auto!important;justify-content:center!important;gap:6px!important;flex-wrap:nowrap!important}
-.v8h .v8-meta .vc{min-height:40px!important;padding:0 6px!important}
-.v8h .v8-meta .vc-n{font-size:15px!important}.v8h .v8-meta .vc-l{font-size:13px!important}
-.v8h .v8-share{flex:none!important;min-height:40px!important;padding:0 16px!important;border-radius:99px!important;background:transparent!important;color:var(--red)!important;border:1.5px solid color-mix(in srgb,var(--red) 35%,transparent)!important;box-shadow:none!important;font:700 14px var(--sans)!important}
-.v8h .v8-share:hover{background:color-mix(in srgb,var(--red) 8%,transparent)!important}
-.v8h .v8-share:active{transform:scale(.97)!important}
-.v8h .au-pillw{margin:6px 0 18px}
-.v8h .au-pill{border-color:transparent;background:none;font-size:13px;color:var(--mut)}
-.v8h .au-pill .au-face{width:22px;height:22px;font-size:14px}
 </style>
 </head>
 <body>
@@ -29822,20 +29837,20 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
 /* разделы на главной — «сервисы» двумя столбцами (слева начерт, справа ИГ): цветные плитки разной высоты,
-   название, короткая подпись и минималистичная объёмная картинка в углу. Картинки — белые грани разной прозрачности,
-   поэтому подходят к любому цвету плитки и обеим темам */
+   название, подпись и крупная объёмная картинка в тон плитки (грани — цвет плитки, смешанный с белым и чёрным),
+   уходит за край, как у витрин банковских приложений. Фон страницы простой — сочность дают плитки */
 const SVCART={
-  nb:'<ellipse cx="62" cy="74" rx="30" ry="4" fill="#000" opacity=".12"/><g transform="rotate(-10 60 44)"><rect x="38" y="14" width="44" height="56" rx="6" fill="#fff" opacity=".9"/><rect x="38" y="14" width="10" height="56" rx="4" fill="#fff" opacity=".55"/><rect x="54" y="26" width="20" height="4" rx="2" fill="currentColor" opacity=".35"/><rect x="54" y="35" width="20" height="4" rx="2" fill="currentColor" opacity=".35"/><rect x="54" y="44" width="13" height="4" rx="2" fill="currentColor" opacity=".35"/></g>',
-  hw:'<ellipse cx="60" cy="74" rx="28" ry="4" fill="#000" opacity=".12"/><path d="M40 12h28l14 14v42a4 4 0 0 1-4 4H40a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z" fill="#fff" opacity=".9"/><path d="M68 12v10a4 4 0 0 0 4 4h10z" fill="#fff" opacity=".5"/><path d="m48 46 7 7 14-15" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>',
-  rk:'<ellipse cx="60" cy="74" rx="26" ry="4" fill="#000" opacity=".12"/><rect x="54" y="6" width="12" height="7" rx="3" fill="#fff" opacity=".7"/><circle cx="60" cy="42" r="26" fill="#fff" opacity=".9"/><circle cx="60" cy="42" r="19" fill="#fff" opacity=".55"/><path d="M60 42V29" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".55"/><circle cx="60" cy="42" r="4" fill="currentColor" opacity=".55"/>',
-  th:'<ellipse cx="60" cy="72" rx="32" ry="4" fill="#000" opacity=".12"/><path d="M60 26c-9-7-19-8-30-5v42c11-3 21-2 30 5z" fill="#fff" opacity=".9"/><path d="M60 26c9-7 19-8 30-5v42c-11-3-21-2-30 5z" fill="#fff" opacity=".6"/>',
-  grid:'<ellipse cx="60" cy="74" rx="30" ry="4" fill="#000" opacity=".12"/><g transform="rotate(8 60 42)"><rect x="34" y="14" width="52" height="56" rx="5" fill="#fff" opacity=".9"/><path d="M42 26h36M42 36h36M42 46h36M42 56h36M52 22v42M64 22v42M76 22v42" stroke="currentColor" stroke-width="1.6" opacity=".3"/><path d="M46 58 58 30l14 22z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" opacity=".6"/></g>',
-  sheet:'<ellipse cx="60" cy="74" rx="32" ry="4" fill="#000" opacity=".12"/><rect x="28" y="18" width="64" height="50" rx="5" fill="#fff" opacity=".9"/><rect x="64" y="52" width="24" height="12" rx="2" fill="currentColor" opacity=".3"/><path d="M38 46V30h14v8h10v8z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".6"/>',
-  cube:'<ellipse cx="60" cy="74" rx="28" ry="5" fill="#000" opacity=".14"/><path d="M60 12 86 26 60 40 34 26z" fill="#fff" opacity=".95"/><path d="M34 26 60 40v30L34 56z" fill="#fff" opacity=".7"/><path d="M86 26 60 40v30l26-14z" fill="#fff" opacity=".45"/>',
-  square:'<ellipse cx="60" cy="74" rx="30" ry="4" fill="#000" opacity=".12"/><path d="M34 14c0-3 3-4 5-2l46 46c2 2 1 6-2 6H38a4 4 0 0 1-4-4z" fill="#fff" opacity=".9"/><path d="M45 37v14c0 1 1 2 2 2h14c1 0 2-2 1-3L48 36c-1-1-3 0-3 1z" fill="currentColor" opacity=".35"/>'
+  nb:'<ellipse class="sh" cx="104" cy="150" rx="66" ry="12"/><path class="f2" d="M40 92l64 32 64-32v12l-64 32-64-32z"/><path class="f1" d="M40 92 104 60l64 32-64 32z"/><path class="f2" d="M48 74l64 32 52-26v12l-52 26-64-32z"/><path class="f1" d="M48 74l52-26 64 32-52 26z"/><path class="gl" d="M48 74l52-26 64 32-52 26z"/><path class="ln" d="M86 66l40 20M78 72l30 15M70 77l20 10"/><path class="f3" d="M48 74v12l64 32V106z" opacity=".55"/>',
+  hw:'<ellipse class="sh" cx="100" cy="150" rx="56" ry="10"/><path class="f2" d="M52 46 112 16l40 20v84l-60 30-40-20z" opacity=".55"/><path class="f1" d="M46 54l60-30 40 20-60 30z"/><path class="f2" d="M46 54l40 20v84l-40-20z"/><path class="f3" d="M86 74l60-30v84l-60 30z"/><path class="gl" d="M86 74l60-30v84l-60 30z"/><circle class="f1" cx="138" cy="124" r="22"/><circle class="gl" cx="138" cy="124" r="22"/><path class="ck" d="m128 124 7 7 13-14"/>',
+  rk:'<ellipse class="sh" cx="104" cy="156" rx="52" ry="10"/><rect class="f2" x="94" y="22" width="20" height="14" rx="5"/><rect class="f3" x="138" y="40" width="14" height="10" rx="4" transform="rotate(40 145 45)"/><circle class="f3" cx="104" cy="94" r="56"/><circle class="f1" cx="100" cy="90" r="54"/><circle class="f2" cx="100" cy="90" r="42"/><circle class="gl" cx="100" cy="90" r="54"/><path class="ck" d="M100 90V60"/><circle class="f3" cx="100" cy="90" r="6"/>',
+  th:'<ellipse class="sh" cx="100" cy="150" rx="70" ry="11"/><path class="f3" d="M100 76 30 46v66l70 30z"/><path class="f2" d="M100 76l70-30v66l-70 30z"/><path class="f1" d="M100 70C78 52 52 46 30 46v62c22 0 48 6 70 24z"/><path class="f1" d="M100 70c22-18 48-24 70-24v62c-22 0-48 6-70 24z" opacity=".85"/><path class="gl" d="M100 70C78 52 52 46 30 46v62c22 0 48 6 70 24z"/><path class="ln" d="M44 64c14 1 28 5 42 12M44 78c14 1 28 5 42 12M116 76c14-7 28-11 42-12"/>',
+  grid:'<ellipse class="sh" cx="104" cy="150" rx="64" ry="11"/><path class="f2" d="M38 96l70-36 62 32-70 36z" transform="translate(0 10)"/><path class="f1" d="M38 96l70-36 62 32-70 36z"/><path class="gl" d="M38 96l70-36 62 32-70 36z"/><path class="ln" d="M52 103l70-36M66 110l70-36M80 117l70-36M55 87l62 32M72 78l62 32M90 69l62 32"/><path class="ck" d="M80 108l26-26 24 18z"/>',
+  sheet:'<ellipse class="sh" cx="106" cy="154" rx="74" ry="12"/><path class="f2" d="M24 110l82-40 82 40-82 40z" transform="translate(0 8)"/><path class="f1" d="M24 110l82-40 82 40-82 40z"/><path class="ln" d="M126 128l30-15 18 9-30 15z"/><path class="f2" d="M60 98V62l26 13v18l18 9v18z"/><path class="f3" d="M86 75l26-13v18l-8 4"/><path class="f3" d="M104 102l26-13v18l-26 13z"/><path class="f1" d="M60 62l26-13 26 13-26 13zM86 93l26-13 18 9-26 13z"/><path class="gl" d="M60 62l26-13 26 13-26 13z"/><path class="f3" d="M86 75l26-13v18L86 93z"/>',
+  cube:'<ellipse class="sh" cx="102" cy="152" rx="60" ry="11"/><path class="f1" d="M102 30l56 28-56 28-56-28z"/><path class="gl" d="M102 30l56 28-56 28-56-28z"/><path class="f2" d="M46 58l56 28v64l-56-28z"/><path class="f3" d="M158 58l-56 28v64l56-28z"/><path class="f2" d="M130 72l-28 14v-2l28-14z" opacity=".6"/>',
+  square:'<ellipse class="sh" cx="104" cy="152" rx="66" ry="11"/><path class="f3" d="M44 30v104l10 5V35z"/><path class="f2" d="M54 35v104h104l-8-5H54z" opacity=".8"/><path class="f1" d="M44 30c0-4 4-6 7-3l100 100c3 3 1 7-3 7H48a4 4 0 0 1-4-4z"/><path class="gl" d="M44 30c0-4 4-6 7-3l100 100c3 3 1 7-3 7H48a4 4 0 0 1-4-4z"/><path class="f3" d="M64 80v32c0 2 1 3 3 3h32c2 0 3-3 1-4L68 79c-2-2-4-1-4 1z" opacity=".7"/><path class="ln" d="M44 50h8M44 66h12M44 82h8M44 98h12M44 114h8"/>'
 };
 function svcHTML(title,items){
-  return `<nav class="hsv-c" aria-label="${title}"><h3>${title}</h3>${items.map(([h,t,sub,ic,col,sz,hot])=>`<a href="${h}" class="hsv-t hsv-${sz}" style="--tc:${col}"><b>${t}</b><small>${sub}</small>${hot?'<i class="hsv-hot">скоро</i>':''}<svg viewBox="0 0 120 80" aria-hidden="true">${SVCART[ic]}</svg></a>`).join('')}</nav>`; }
+  return `<nav class="hsv-c" aria-label="${title}"><h3>${title}</h3>${items.map(([h,t,sub,ic,col,sz,lt])=>`<a href="${h}" class="hsv-t hsv-${sz}${lt?' lt':''}" style="--tc:${col}"><b>${t}</b><small>${sub}</small><svg viewBox="0 0 200 170" aria-hidden="true">${SVCART[ic]}</svg></a>`).join('')}</nav>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
@@ -29846,6 +29861,7 @@ function viewHome(v){
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
   v.innerHTML=`<div class="wrap page home v8h" id="v8h">
+   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="svcGl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></linearGradient></defs></svg>
    <div class="hcards" id="rkHome">${homeCards()}</div>
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
@@ -29854,11 +29870,13 @@ function viewHome(v){
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
    <section class="v8-dirs hsv" aria-label="Разделы">
-    ${svcHTML('Начерт',[[H('ng','tasks'),'Тетрадь',nT+' задач по шагам','nb','#3f7bea','l'],[HDZ('ng'),'ДЗ','твой вариант по шагам','hw','#8a6cf0','s'],[H('ng','rk2'),'РК2','билеты и пробный РК','rk','#e2566a','m'],[H('ng','path'),'Теория','уроки и шпаргалка','th','#3fb0c9','s']])}
-    ${svcHTML('Инж. графика',[[H('ig','wb'),'Тетрадь',nIW+' рисунков','grid','#f08a4b','s'],[HDZ('ig'),'ДЗ','листы, виды, разрезы','sheet','#4aa978','l'],[H('ig','learn'),'Учиться','виды и разрезы по шагам','cube','#6f7f9c','s'],[H('ig','theory'),'ЕСКД','нормы оформления','square','#d9a94a','m']])}
+    ${svcHTML('Начерт',[[H('ng','tasks'),'Тетрадь',nT+' задач по шагам','nb','#4aaea5','l'],[HDZ('ng'),'ДЗ','твой вариант','hw','#8b7be3','s'],[H('ng','rk2'),'РК2','билеты и пробный РК','rk','#dc6a90','m'],[H('ng','path'),'Теория','уроки и шпаргалка','th','#eda94a','s']])}
+    ${svcHTML('Инж. графика',[[H('ig','wb'),'Тетрадь',nIW+' рисунков','grid','#6a95e6','s'],[HDZ('ig'),'ДЗ','листы, виды и разрезы','sheet','#e6dbcd','l',1],[H('ig','learn'),'Учиться','виды и разрезы','cube','#8595b0','s'],[H('ig','theory'),'ЕСКД','нормы оформления','square','#d3aa80','m']])}
    </section>
-   <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
-   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
+   <section class="hown" aria-label="Владелец и просмотры">
+    <button type="button" class="au-pill hown-a" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span><span class="hown-t"><small>Владелец</small><b>Андрей Матханов</b></span></button>
+    <div class="hown-v">${FX.viewsHTML('v8-vc')}<button type="button" class="hown-s" data-sharesite aria-label="Поделиться сайтом"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
+   </section>
   </div>`;
   NEXT=null;
   try{ if(window.RKG) RKG.bindTeaser(v); }catch(e){}
