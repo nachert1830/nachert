@@ -14,7 +14,7 @@ const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
@@ -153,18 +153,43 @@ const CHECK={
   l4(V,S){ const v=[]; const a1=[V.A[0],V.A[1]], b1=[V.B[0],V.B[1]], B0=P(S,'B0'); if(Math.abs(Math.hypot(B0[0]-a1[0],B0[1]-a1[1])-Math.hypot(V.A[0]-V.B[0],V.A[1]-V.B[1],V.A[2]-V.B[2]))>TOL) v.push('гипотенуза = |AB|');
     if(Math.abs((B0[0]-b1[0])*(b1[0]-a1[0])+(B0[1]-b1[1])*(b1[1]-a1[1]))/Math.hypot(b1[0]-a1[0],b1[1]-a1[1])>TOL) v.push('катет ⟂ A′B′'); return v; },
   l4u(V,S){ const v=[]; const a1=[V.A[0],V.A[1]], b1=[V.B[0],V.B[1]], lg=L1(S,'leg'); if(Math.hypot(lg[0]-b1[0],lg[1]-b1[1])>TOL||Math.abs(Math.hypot(lg[2]-lg[0],lg[3]-lg[1])-Math.abs(V.B[2]-V.A[2]))>TOL) v.push('треугольник на A′B′ с Δz');
-    const p0=E(S,'arc').find(e=>e.t==='poly').p[0]; if(Math.abs(Math.hypot(p0[0]-a1[0],p0[1]-a1[1])-12)>.5) v.push('α — при A′'); return v; },
+    const c=arcC(E(S,'arc').find(e=>e.t==='poly').p); if(!c||Math.hypot(c[0]-a1[0],c[1]-a1[1])>.5) v.push('α — при A′'); return v; },
   l5(V,S){ const v=[]; const {A,B}=V, K1=P(S,'K1'), s=(K1[0]-A[0])/(B[0]-A[0]), K=[A[0]+(B[0]-A[0])*s,A[1]+(B[1]-A[1])*s,A[2]+(B[2]-A[2])*s];
     if(Math.abs(K1[1]-K[1])>TOL) v.push('K′ на A′B′'); if(Math.abs(Math.hypot(K[0]-A[0],K[1]-A[1],K[2]-A[2])-V.l)>TOL) v.push('|AK| = ℓ'); return v; },
   l6(V,S){ const K2=P(S,'K2'), K1=P(S,'K1'); return Math.abs(K2[0]-K1[0])>TOL?['пересечение — на одной линии связи']:[]; },
   l7(V,S){ const K1=P(S,'K1'), K=[K1[0],K1[1],V.h0[2]], d=[V.h1[0]-V.h0[0],V.h1[1]-V.h0[1],0], w=[K[0]-V.A[0],K[1]-V.A[1],K[2]-V.A[2]];
     return Math.abs(d[0]*w[0]+d[1]*w[1])/Math.hypot(...d)/Math.hypot(...w)>.01?['AK ⟂ h в пространстве']:[]; },
+  /* ── плоскость, прямая и плоскость ── */
+  s1(V,S){ const p2=E(S,'t2')[0].p, p1=E(S,'t1')[0].p, col=q=>Math.abs((q[1][0]-q[0][0])*(q[2][1]-q[0][1])-(q[2][0]-q[0][0])*(q[1][1]-q[0][1]))<1, flat=q=>Math.abs(q[0][1]-q[1][1])<TOL&&Math.abs(q[0][1]-q[2][1])<TOL;
+    const ok={hp:col(p1),fp:col(p2),hl:flat(p2),fl:flat(p1)}[V.kind]; return ok?[]:['признак положения плоскости']; },
+  s2(V,S){ const v=[]; const K1=P(S,'K1'), K2=S.base.find(e=>e.lab==='K″').a; if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); if(!inPl(V,[K1[0],K1[1],-K2[1]])) v.push('K в плоскости ABC'); return v; },
+  s3(V,S){ const v=[]; const h2=L1(S,'h2'), f1=L1(S,'f1'); if(Math.abs(h2[1]-h2[3])>TOL) v.push('h″ ∥ x'); if(Math.abs(f1[1]-f1[3])>TOL) v.push('f′ ∥ x');
+    const p1=P(S,'p1h'), p2=P(S,'p1f'), q1=P(S,'p2h'), q2=P(S,'p2f'); if(!onSeg3(V.B,V.C,[p1[0],p1[1],-p2[1]])) v.push('1 на BC'); if(!onSeg3(V.B,V.C,[q1[0],q1[1],-q2[1]])) v.push('2 на BC'); return v; },
+  s5a(V,S){ const v=[]; const m=L1(S,'m1'), n=nrmPl(V), d=[m[2]-m[0],m[3]-m[1]]; if(Math.abs(d[0]*n[1]-d[1]*n[0])/Math.hypot(...d)/Math.hypot(n[0],n[1])>.003) v.push('m′ ⟂ h′');
+    const M1=P(S,'M1'), M2=P(S,'M2'); if(Math.abs(M1[0]-M2[0])>TOL||Math.abs(-M2[1]-V.A[2])>TOL||!inPl(V,[M1[0],M1[1],-M2[1]])) v.push('M на горизонтали'); return v; },
+  s5b(V,S){ const v=[]; const M1=S.base.find(e=>e.lab==='M′').a, b1=[V.B[0],V.B[1]], lg=L1(S,'leg'); if(Math.abs(Math.hypot(lg[2]-lg[0],lg[3]-lg[1])-Math.abs(V.B[2]-V.A[2]))>TOL) v.push('катет Δz');
+    const c=arcC(E(S,'arc').find(e=>e.t==='poly').p); if(!c||Math.hypot(c[0]-M1[0],c[1]-M1[1])>.5) v.push('α при M′'); return v; },
+  s6(V,S){ const D1=S.base.find(e=>e.lab==='D′').a, D2=P(S,'D2'); if(Math.abs(D1[0]-D2[0])>TOL) return ['линия связи']; return inPl(V,[D1[0],D1[1],-D2[1]])?[]:['D в плоскости ABC']; },
+  m1(V,S){ const a=L1(S,'d1'), b=L1(S,'d2'), dir=[1,(a[3]-a[1])/(a[2]-a[0]),-(b[3]-b[1])/(b[2]-b[0])], n=nrmPl(V); return Math.abs(dir[0]*n[0]+dir[1]*n[1]+dir[2]*n[2])/Math.hypot(...dir)/Math.hypot(...n)>.01?['d ∥ плоскости']:[]; },
+  m3(V,S){ const v=[]; const {A,B}=V, l=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], h1=L1(S,'h1'), h2=L1(S,'h2'), f1=L1(S,'f1'), f2=L1(S,'f2');
+    if(Math.abs(h2[1]-h2[3])>TOL||Math.abs(f1[1]-f1[3])>TOL) v.push('h″ ∥ x, f′ ∥ x');
+    const hd=[h1[2]-h1[0],h1[3]-h1[1],0], fd=[f2[2]-f2[0],0,-(f2[3]-f2[1])], dt=(a,b)=>Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2])/Math.hypot(...a)/Math.hypot(...b);
+    if(dt(hd,l)>.01) v.push('h ⟂ l'); if(dt(fd,l)>.01) v.push('f ⟂ l'); return v; },
+  m4(V,S){ const v=[]; const K1=P(S,'K1'), K2=P(S,'K2'); if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); const K=[K1[0],K1[1],-K2[1]];
+    if(!inPl(V,K)) v.push('K в плоскости'); if(!onSeg3(V.Dp,V.Ep,K)) v.push('K на прямой l'); return v; },
+  t1(V,S){ const s=L1(S,'nv'); return Math.abs(Math.hypot(s[2]-s[0],s[3]-s[1])-Math.hypot(V.A[0]-V.B[0],V.A[1]-V.B[1],V.A[2]-V.B[2]))>TOL?['отмечена натуральная величина']:[]; },
   f1(V,S){ const v=[]; const b=E(S,'b1')[0]; if(b.t!=='circ'||Math.abs(b.a[2]-V.R)>TOL||Math.abs(b.a[0])>TOL) v.push('основание на π₁ — окружность радиуса R');
     const oL=E(S,'oL')[0].a, oR=E(S,'oR')[0].a; if(Math.abs(oL[0])>TOL||Math.abs(oR[0])>TOL) v.push('вершина на оси');
     if(Math.abs(oL[2]+V.R)>TOL||Math.abs(oR[2]-V.R)>TOL) v.push('очерк — крайние образующие'); return v; }
 };
 const PL=(S,lab)=>{ const e=S.E.find(x=>x.t==='pt'&&x.lab===lab); return e?e.a:null; }, TX=(S,r)=>(S.E.find(e=>e.role===r&&e.t==='txt')||{}).s||'';
 const L1=(S,r)=>E(S,r).find(e=>e.t==='line').a, un=l=>{ const d=[l[2]-l[0],l[3]-l[1]], k=Math.hypot(...d); return [d[0]/k,d[1]/k]; }, cr=(a,b)=>a[0]*b[1]-a[1]*b[0];
+/* центр дуги по трём её точкам */
+const arcC=p=>{ const [a,b,c]=[p[0],p[p.length>>1],p[p.length-1]], d=2*(a[0]*(b[1]-c[1])+b[0]*(c[1]-a[1])+c[0]*(a[1]-b[1])); if(Math.abs(d)<1e-9) return null;
+  const s=q=>q[0]*q[0]+q[1]*q[1]; return [(s(a)*(b[1]-c[1])+s(b)*(c[1]-a[1])+s(c)*(a[1]-b[1]))/d,(s(a)*(c[0]-b[0])+s(b)*(a[0]-c[0])+s(c)*(b[0]-a[0]))/d]; };
+const nrmPl=V=>{ const {A,B,C}=V, u=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], w=[C[0]-A[0],C[1]-A[1],C[2]-A[2]]; return [u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]]; };
+const inPl=(V,K)=>{ const n=nrmPl(V), A=V.A; return Math.abs(n[0]*(K[0]-A[0])+n[1]*(K[1]-A[1])+n[2]*(K[2]-A[2]))/Math.hypot(...n)<TOL; };
+const onSeg3=(P,Q,K)=>{ const d=[Q[0]-P[0],Q[1]-P[1],Q[2]-P[2]], w=[K[0]-P[0],K[1]-P[1],K[2]-P[2]], c=[d[1]*w[2]-d[2]*w[1],d[2]*w[0]-d[0]*w[2],d[0]*w[1]-d[1]*w[0]]; return Math.hypot(...c)/Math.hypot(...d)<TOL; };
 const d3=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 /* новая проекция N от P: линия связи ⟂ оси, расстояние до оси = dist, по другую сторону от P */
 function rep(P,N,ax,dist){ const e=un(ax), nn=[-e[1],e[0]], sp=(P[0]-ax[0])*nn[0]+(P[1]-ax[1])*nn[1], sn=(N[0]-ax[0])*nn[0]+(N[1]-ax[1])*nn[1];
