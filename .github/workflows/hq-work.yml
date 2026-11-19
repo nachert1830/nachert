@@ -41,6 +41,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false   # токен не лежит в .git/config: исполнитель (READ, RUN) его не увидит
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -69,6 +70,125 @@ jobs:
             RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)" 2>/dev/null || echo 0)
             gh issue comment "$N" --body "Не нашёл ответ за 20 шагов. <!-- hq:{\"rub\":$RUB} -->"; gh label create "провал" >/dev/null 2>&1; gh issue edit "$N" --add-label "провал"
           fi
+
+  merge:
+    # Решение владельца по задаче на проверке (Штаб → предпросмотр → «✅ Влить» / «✖ Отклонить»): метка «влить» → проверка PR зелёная →
+    # слияние в main и полная проверка; метка «отклонить» → PR закрыт, на сайт ничего не попало
+    if: github.event.label.name == 'влить' || github.event.label.name == 'отклонить'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      N: ${{ github.event.issue.number }}
+      L: ${{ github.event.label.name }}
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN || github.token }}
+    steps:
+      - name: Влить или отклонить
+        run: |
+          set +e
+          PR=$(gh issue view "$N" --json comments -q '.comments[].body' | grep -o '"pr":"[^"]*"' | tail -1 | cut -d'"' -f4)
+          if [ -z "$PR" ]; then gh issue comment "$N" --body "⚠️ Не нашёл PR этой задачи. <!-- hq:{\"rub\":0} -->"; gh issue edit "$N" --remove-label "$L"; exit 1; fi
+          if [ "$L" = "отклонить" ]; then
+            gh pr close "$PR" --delete-branch >/dev/null 2>&1
+            gh issue comment "$N" --body "✖ **Отклонено** владельцем: PR закрыт, на сайт ничего не попало. <!-- hq:{\"rub\":0} -->"
+            gh label create "отклонено" >/dev/null 2>&1; gh issue edit "$N" --add-label "отклонено" --remove-label "отклонить" --remove-label "на-проверку"; exit 0
+          fi
+          # все проверки PR — зелёные (пропущенные и нейтральные — можно); идёт или красная — не вливаем
+          BAD=$(gh pr view "$PR" --json statusCheckRollup -q '[.statusCheckRollup[] | (.conclusion // .state // "") | select(. != "SUCCESS" and . != "SKIPPED" and . != "NEUTRAL")] | length')
+          ALL=$(gh pr view "$PR" --json statusCheckRollup -q '.statusCheckRollup | length')
+          if [ "$ALL" = 0 ] || [ "$BAD" != 0 ]; then
+            gh issue comment "$N" --body "⚠️ Не вливаю: проверка PR ещё идёт или красная ($BAD из $ALL не зелёные). Нажми «Влить» позже. PR: $PR <!-- hq:{\"rub\":0} -->"
+            gh issue edit "$N" --remove-label "влить"; exit 0
+          fi
+          if gh pr merge "$PR" --squash --delete-branch; then
+            gh workflow run check.yml --ref main || true
+            gh issue comment "$N" --body "✅ **Выкачено на сайт** по твоему «влить». PR: $PR <!-- hq:{\"rub\":0,\"pr\":\"$PR\"} -->"
+            gh label create "готово" >/dev/null 2>&1; gh issue edit "$N" --add-label "готово" --remove-label "влить" --remove-label "на-проверку"; gh issue close "$N"
+          else
+            gh issue comment "$N" --body "⚠️ Влить не вышло (конфликт с main?). Перезапусти задачу — исполнитель начнёт со свежего main. PR: $PR <!-- hq:{\"rub\":0} -->"
+            gh issue edit "$N" --remove-label "влить"
+          fi
+
+  plan:
+    # План эпика из Штаба: метка «эпик» → Разведчик (Haiku) собирает пакет кода → Главный инженер (метка исп:, по умолчанию Opus) пишет
+    # план JSON → проверка validatePlan (server/lib/hq/epic.js), один повтор → комментарий <!-- hq-plan -->…<!-- /hq-plan --> (Штаб забирает)
+    if: github.event.label.name == 'эпик'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      N: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+      PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: План
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          set +e
+          test -n "$PROXYAPI_KEY" || { echo "::error::Нет секрета PROXYAPI_KEY"; exit 1; }
+          printf '%s\n\n%s\n' "$TITLE" "$BODY" > /tmp/hq-task.md; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
+          M=$(echo "$LABELS" | tr ',' '\n' | sed -n 's/^исп://p' | head -1); M=${M:-opus}
+          if node tools/hq-agent.js --plan --model "$M" --task /tmp/hq-task.md; then
+            RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
+            { echo "🧭 План эпика готов ($M, ~$RUB ₽). Утверждает владелец в Штабе."; echo; echo '<!-- hq-plan -->'; echo '```json'; cat /tmp/hq-plan.json; echo; echo '```'; echo '<!-- /hq-plan -->';
+              echo "<!-- hq:{\"rub\":$RUB,\"model\":\"$M\"} -->"; } > /tmp/c.md
+          else
+            RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)" 2>/dev/null || echo 0)
+            { echo "⚠️ План не прошёл проверку дважды:"; sed 's/^/- /' /tmp/hq-plan-errors.txt 2>/dev/null || echo "- исполнитель упал, смотри лог"; echo;
+              echo "<!-- hq-plan-fail --> <!-- hq:{\"rub\":$RUB,\"model\":\"$M\"} -->"; } > /tmp/c.md
+          fi
+          gh issue comment "$N" --body-file /tmp/c.md
+          gh issue edit "$N" --remove-label "эпик" >/dev/null 2>&1 || true   # следующий переплан снова поставит метку и запустит план
+
+  session:
+    # Сеанс владельца с исполнителем (Штаб → вкладка «Сеанс»): метка «сеанс» → tools/hq-agent.js --session ждёт реплик «💬 Владелец: …»
+    # в Issue, отвечает комментариями <!-- hq-say -->, делает правки, PR (ветка hq/session-N) и «влей» по слову владельца.
+    # 20 минут тишины — итог и выход. Очередь — своя у каждого Issue (concurrency выше).
+    if: github.event.label.name == 'сеанс'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      HQ_ISSUE: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+      # PR и слияние — токеном владельца (встроенному токену Actions создавать PR запрещено); в окружение RUN он не попадает
+      HQ_PR_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN || github.token }}
+      PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false   # токен не лежит в .git/config: исполнитель (READ, RUN) его не увидит
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Кэш браузера
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            node_modules
+          key: pw-1.47.2-acorn8-${{ runner.os }}
+      - name: Сеанс
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          test -n "$PROXYAPI_KEY" || { echo "::error::Нет секрета PROXYAPI_KEY"; exit 1; }
+          printf '# %s\n\n%s\n' "$TITLE" "$BODY" > /tmp/hq-task.md; echo '{"rub":0,"calls":0,"models":{}}' > /tmp/hq-cost.json
+          M=$(echo "$LABELS" | tr ',' '\n' | sed -n 's/^исп://p' | head -1)
+          { [ -d node_modules/playwright ] || npm install --no-save --no-package-lock playwright@1.47.2 acorn@8; npx playwright install --with-deps chromium; } >/dev/null 2>&1
+          node tools/hq-agent.js --session --model "${M:-opus}" --task /tmp/hq-task.md || {
+            gh issue comment "$HQ_ISSUE" --body "⚠️ Сеанс оборвался — смотри лог задания. Начни новый сеанс в Штабе. <!-- hq-say --> <!-- hq-session-end --> <!-- hq:{\"rub\":0} -->"; exit 1; }
+          gh issue close "$HQ_ISSUE" >/dev/null 2>&1 || true
 
   rollback:
     # Откат выкатки из Штаба: метка «откат» → revert слитого PR → быстрые тесты → main → метка «откачено»
@@ -125,6 +245,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false   # токен не лежит в .git/config: исполнитель (READ, RUN) его не увидит
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -197,11 +318,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN || github.token }}
           TITLE: ${{ github.event.issue.title }}
           M: ${{ steps.work.outputs.model }}
+          # адрес живого предпросмотра (переменная репозитория HQ_PREVIEW_URL, например https://preview.nachert1830.ru); без неё — ветка preview через raw.githack.com
+          PREVIEW_URL: ${{ vars.HQ_PREVIEW_URL }}
         run: |
           set +e
           git add -A
           git commit -q -m "Цех: $TITLE" -m "Исполнитель: $M. Задача #$N."
-          git push -q -f origin "hq/issue-$N"
+          # checkout без сохранённого токена — пуш с токеном в заголовке (в .git/config его нет, исполнитель не видит)
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push -q -f origin "hq/issue-$N"
           git diff origin/main...HEAD > /tmp/hq.diff
           PR=$(gh pr list --head "hq/issue-$N" --json url -q '.[0].url')
           [ -n "$PR" ] || PR=$(gh pr create --head "hq/issue-$N" --base main --title "Цех: $TITLE" --body "Задача #$N. Исполнитель: **$M**. $(cat /tmp/hq-done.txt 2>/dev/null)" 2>/tmp/pr.err)
@@ -218,9 +342,28 @@ jobs:
               gh workflow run check.yml --ref main || true   # полная проверка main; красная → Issue «main красный»
             else MSG="⚠️ Быстрые тесты зелёные, проверка перед выкаткой — красная, в main не влито. PR: $PR"; tail -40 /tmp/full.log; fi
           fi
+          # предпросмотр (ждёт твоего «влить»): правка — в ветку preview (живая ссылка), скриншоты «было / стало» на телефоне и компьютере
+          PREVIEW=""; SHOTS=""
+          if [ "$STATUS" = "на-проверку" ] && [ -n "$PR" ]; then
+            PAGE=$(node -e "console.log(require('./tools/hq-preview.js').pageOf(require('fs').readFileSync('/tmp/hq-task.md','utf8')))")
+            rm -rf /tmp/base; git worktree add -q -f /tmp/base origin/main && ln -s "$PWD/node_modules" /tmp/base/node_modules
+            SHA0=$(git rev-parse HEAD); mkdir -p _preview
+            node tools/hq-preview.js --root /tmp/base --page "$PAGE" --out _preview/before || true
+            node tools/hq-preview.js --root . --page "$PAGE" --out _preview/after || true
+            git worktree remove --force /tmp/base || true
+            git add -f _preview && git commit -q -m "Предпросмотр задачи #$N" -m "Страница: $PAGE" && \
+              git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push -q -f origin HEAD:refs/heads/preview && {
+                SHA=$(git rev-parse HEAD); BASE="${PREVIEW_URL:-https://raw.githack.com/$GITHUB_REPOSITORY/preview}"
+                PREVIEW=$(node -e "console.log(require('./tools/hq-preview.js').pageUrl(process.argv[1],process.argv[2]))" "$BASE" "$PAGE")
+                RAW="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$SHA/_preview"
+                SHOTS="$RAW/before-phone.png $RAW/after-phone.png $RAW/before-desktop.png $RAW/after-desktop.png"
+                MSG="$MSG"$'\n\n'"👀 **Предпросмотр:** $PREVIEW"$'\n\n'"Было → стало (телефон): ![]($RAW/before-phone.png) ![]($RAW/after-phone.png)"; }
+            git reset -q --hard "$SHA0"; rm -rf _preview
+          fi
           RUB=$(node -e "console.log(require('/tmp/hq-cost.json').rub)")
-          printf '%s\n\nИсполнитель: **%s**. Стоимость: ~%s ₽.\n\nРевизор:\n%s\n\nПопытки:\n%s\n<!-- hq:{"rub":%s,"model":"%s","pr":"%s"} -->\n' \
-            "$MSG" "$M" "$RUB" "$NOTES" "$(cat /tmp/hq-log.md)" "$RUB" "$M" "$PR" > /tmp/c.md
+          META=$(node -e "const [rub,model,pr,preview,shots]=process.argv.slice(1);console.log(JSON.stringify({rub:+rub,model,pr,preview:preview||undefined,shots:shots?shots.split(' '):undefined}))" "$RUB" "$M" "$PR" "$PREVIEW" "$SHOTS")
+          printf '%s\n\nОтчёт: %s\n\nИсполнитель: **%s**. Стоимость: ~%s ₽.\n\nРевизор:\n%s\n\nПопытки:\n%s\n<!-- hq:%s -->\n' \
+            "$MSG" "$(head -c 400 /tmp/hq-done.txt 2>/dev/null | tr '\n' ' ')" "$M" "$RUB" "$NOTES" "$(cat /tmp/hq-log.md)" "$META" > /tmp/c.md
           gh issue comment "$N" --body-file /tmp/c.md
           gh issue edit "$N" --add-label "$STATUS" >/dev/null 2>&1 || { gh label create "$STATUS" >/dev/null 2>&1; gh issue edit "$N" --add-label "$STATUS"; }
           [ "$STATUS" = "готово" ] && gh issue close "$N" || true

@@ -12,10 +12,16 @@
      которые не легли на код. Дорогая модель не тратит ни рубля на поиск.
    • CHECK — исполнитель сам гоняет задетые блоки проверки (tests/impact.js → tests/run.js --quick --only) и чинит по выжимке ошибок.
    • SHOT #/адрес — скриншот страницы на телефоне; модель видит картинку (Claude, Gemini).
+   • RUN: команда — команда в копии репозитория (bash, до 10 мин, без секретов в окружении, с запретами — tools/hq-run.js);
+     CI: номер — конец лога упавших заданий запуска GitHub Actions (только чтение, токен модель не видит).
+   • --plan — план эпика: Разведчик (Haiku) собирает пакет кода до 1200 строк, Главный инженер (эта модель, effort high) пишет план
+     JSON по схеме server/lib/hq/epic.js; план проверяется validatePlan, при ошибках — один повтор с их текстом. План — в /tmp/hq-plan.json,
+     ошибки — в /tmp/hq-plan-errors.txt.
    Выход: 0 — правка сделана, 1 — не сделано. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const RO = require('../server/lib/hq/roster.js');
+const SH = require('./hq-run.js');
 
 const ARG = k => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : ''; };
 const KEY = process.env.PROXYAPI_KEY, PX = process.env.HQ_PX || 'https://api.proxyapi.ru/v1';
@@ -61,7 +67,10 @@ function map() {
 }
 
 /* ── инструменты ── */
-const inRoot = f => { const p = path.resolve(ROOT, String(f || '').trim()); if (!p.startsWith(ROOT + path.sep)) throw new Error('путь вне проекта'); return p; };
+const runCmd = async c => (await SH.run(c, {root: ROOT})).text;
+const ciLog = n => SH.ci(n).catch(e => 'CI: ошибка ' + e.message);
+const inRoot = f => { const p = path.resolve(ROOT, String(f || '').trim()); if (!p.startsWith(ROOT + path.sep)) throw new Error('путь вне проекта');
+  if (p === path.join(ROOT, '.git') || p.startsWith(path.join(ROOT, '.git') + path.sep)) throw new Error('.git/ закрыт'); return p; };
 function grep(arg) {
   const m = /^(.*?)(?:\s+в\s+(\S+))?$/.exec(arg.trim()), pat = m[1], where = m[2] || '';
   let re; try { re = new RegExp(pat, 'i'); } catch (e) { re = new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); }
@@ -126,7 +135,7 @@ async function callAs(k, m, system, messages, o) {
         if (r.status === 400 && body.output_config && /output_config|effort/i.test(t)) { delete o.effort; continue; }
         throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 200)); }
       const j = JSON.parse(t);
-      if (j.usage) account(k, m, j.usage);
+      if (j.usage) { account(k, m, j.usage); if (o.onUsage) o.onUsage(j.usage); }
       const text = isClaude(m) ? (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('') : (j.choices[0].message.content || '');
       return String(text).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     } catch (e) { if (e.fatal || i === 2) throw e; console.error('повтор: ' + e.message); await new Promise(s => setTimeout(s, 3000 * (i + 1))); }
@@ -166,7 +175,7 @@ async function shot(hash) {
 const ISSUE = process.env.HQ_ISSUE, GHT = process.env.GH_TOKEN, REPO = process.env.GITHUB_REPOSITORY; let seenC = null;
 async function owner() {
   if (!ISSUE || !GHT || !REPO) return '';
-  try { const r = await fetch('https://api.github.com/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100', {headers: {authorization: 'Bearer ' + GHT, accept: 'application/vnd.github+json', 'user-agent': 'hq-agent'}});
+  try { const r = await fetch((process.env.HQ_GH_API || 'https://api.github.com') + '/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100', {headers: {authorization: 'Bearer ' + GHT, accept: 'application/vnd.github+json', 'user-agent': 'hq-agent'}});
     const cs = (await r.json()).filter(c => /^💬 Владелец:/.test(c.body || ''));
     if (seenC === null) { seenC = new Set(cs.map(c => c.id)); return ''; }   /* старые — уже в ТЗ при запуске */
     const fresh = cs.filter(c => !seenC.has(c.id)); fresh.forEach(c => seenC.add(c.id));
@@ -188,12 +197,15 @@ EDIT: путь                    — правка; дальше один или
 новый код
 >>>>>>> REPLACE
 CHECK                          — прогнать автотесты, задетые правкой (минуты); ответ — ошибки или «ошибок нет»
+RUN: команда                   — команда в корне проекта (bash, до 10 мин): node tests/run.js --only=…, node --test …, git diff, ls, временные скрипты в /tmp; ответ — код выхода и конец вывода. Сеть, git push, ключи — запрещены
+CI: номер_запуска              — конец лога упавших заданий запуска GitHub Actions
 ` + (VISION ? `SHOT: #/адрес              — скриншот страницы сайта на телефоне (ты увидишь картинку)
 ` : '') + `DONE: что сделано (1–3 предложения)
 
 Правила:
 - Сначала найди место по оглавлению и GREP, прочитай его, потом правь. Правь минимально, не трогай лишнее, не переформатируй.
 - После правки — CHECK; ошибки — исправь. DONE — только после зелёного CHECK.` + (VISION ? ' Правка внешнего вида — посмотри SHOT.' : '') + `
+- Упал тест или проверка — сначала разберись: RUN нужной проверки, прочитай вывод, найди причину, потом правь. Не гадай.
 - Следуй стилю соседнего кода (модули window.ИМЯ, цвета — токены CSS). Тексты для студентов — по-русски, коротко.
 - Новый файл: EDIT: путь и один блок с пустым SEARCH.
 - Задача невыполнима или ТЗ противоречиво — ответь «DONE: НЕ СДЕЛАНО — причина».`;
@@ -207,7 +219,7 @@ async function solo(spec) {
     await withOwner(messages);
     const reply = await call(SYSTEM, messages);
     messages.push({role: 'assistant', content: reply || '(пусто)'});
-    const head = (reply.split('\n').find(l => /^(GREP|READ|EDIT|CHECK|SHOT|DONE)\b:?/i.test(l.trim())) || reply.split('\n')[0] || '').trim();
+    const head = (reply.split('\n').find(l => /^(GREP|READ|EDIT|CHECK|RUN|CI|SHOT|DONE)\b:?/i.test(l.trim())) || reply.split('\n')[0] || '').trim();
     console.log('--- шаг ' + step + ': ' + head.slice(0, 140));
     let res;
     try {
@@ -217,13 +229,15 @@ async function solo(spec) {
       else if (/^CHECK/i.test(head)) { res = check(); checked = /✅|нечего/.test(res); console.log(res.split('\n')[0]);
         if (!checked && lastFail === res && !editedSince) { checked = true; res += '\n\nПроверка падает ОДИНАКОВО без твоих новых правок — значит, не из-за правки (окружение или нестабильный тест). Не ищи дальше: напиши DONE — Цех перепроверит сам.'; }
         lastFail = checked ? null : res; editedSince = false; }
+      else if (/^RUN:/i.test(head)) res = await runCmd(head.replace(/^RUN:\s*/i, ''));
+      else if (/^CI:/i.test(head)) res = await ciLog(head.replace(/^CI:\s*/i, ''));
       else if (/^SHOT/i.test(head) && VISION) { const s = await shot(head.replace(/^SHOT:?\s*/i, '')); messages.push({role: 'user', content: [{text: s.note}, {image: s.png}]}); continue; }
       else if (/^DONE:/i.test(head)) {
         fs.writeFileSync(DONE_FILE, head.replace(/^DONE:\s*/i, ''));
         if (/НЕ СДЕЛАНО/i.test(head) || !edits) { console.error(head); return 1; }
         if (!checked && step < MAX_STEPS - 1) { res = 'Сначала CHECK: DONE — только после зелёной проверки.'; }
         else { console.log(head); return 0; }
-      } else res = 'Неверный формат. Ответь одной командой: GREP, READ, EDIT, CHECK' + (VISION ? ', SHOT' : '') + ' или DONE.';
+      } else res = 'Неверный формат. Ответь одной командой: GREP, READ, EDIT, CHECK, RUN, CI' + (VISION ? ', SHOT' : '') + ' или DONE.';
     } catch (e) { res = 'ОШИБКА: ' + e.message; }
     if (step === MAX_STEPS - 3) res += '\n\n[осталось 3 шага — заканчивай и пиши DONE]';
     messages.push({role: 'user', content: String(res).slice(0, 12000)});
@@ -243,7 +257,8 @@ EDIT: путь
 =======
 новый код
 >>>>>>> REPLACE
-Не хватает кода — вместо правок ответь строками «NEED: путь начало конец — зачем» (не больше 3). В конце правок — строка «DONE: что сделано». Невыполнимо — «DONE: НЕ СДЕЛАНО — причина».`;
+Не хватает кода — вместо правок ответь строками «NEED: путь начало конец — зачем» (не больше 3). Нужно запустить проверку или посмотреть вывод — вместо правок строки «RUN: команда» (bash в корне проекта, до 3; сеть, git push, ключи запрещены) или «CI: номер_запуска» (конец лога упавших заданий).
+Упал тест или проверка — сначала разберись: RUN нужной проверки, прочитай вывод, найди причину, потом правь. Не гадай. В конце правок — строка «DONE: что сделано». Невыполнимо — «DONE: НЕ СДЕЛАНО — причина».`;
 const MASON = `Ты — монтажник. Блок правки SEARCH/REPLACE не лёг на файл: SEARCH не совпал с текстом. Тебе дают блок и настоящий кусок файла. Перепиши SEARCH так, чтобы он ТОЧНО совпадал с текстом файла (без номеров строк), а REPLACE — тот же смысл правки. Ответ — только исправленный блок EDIT в том же формате.`;
 
 const cheap = k => [k, RO.model(null, k)];
@@ -281,6 +296,9 @@ async function brigade(spec) {
     await withOwner(aMsgs);
     const reply = await call(ARCH, aMsgs, {max: 12000, effort: key === 'opus' ? 'medium' : undefined}); aMsgs.push({role: 'assistant', content: reply || '(пусто)'});
     const need = [...reply.matchAll(/^NEED:\s*(\S+)\s+(\d+)\s+(\d+)/gim)];
+    const runs = [...reply.matchAll(/^(RUN|CI):\s*(.+)$/gim)];
+    if (runs.length && !/^EDIT:/im.test(reply)) { const out = []; for (const m of runs.slice(0, 3)) out.push('### ' + m[1].toUpperCase() + ': ' + m[2] + '\n' + (/^RUN$/i.test(m[1]) ? await runCmd(m[2]) : await ciLog(m[2])));
+      aMsgs.push({role: 'user', content: out.join('\n\n').slice(0, 16000)}); console.log('  архитектор: команд ' + runs.length); continue; }
     if (need.length && !/^EDIT:/im.test(reply)) { aMsgs.push({role: 'user', content: need.slice(0, 3).map(m => '### ' + m[1] + ' ' + m[2] + '–' + m[3] + '\n' + read(m[1] + ' ' + m[2] + ' ' + m[3])).join('\n\n')}); console.log('  архитектор просит ещё ' + need.length); continue; }
     const done = (/^DONE:.*$/im.exec(reply) || [''])[0];
     if (/НЕ СДЕЛАНО/i.test(done)) { console.error(done); return 1; }
@@ -305,6 +323,43 @@ async function brigade(spec) {
   return edits ? 0 : 1;
 }
 
+/* ── план эпика: Разведчик → Главный инженер → проверка плана ── */
+const SCOUT_PLAN = `Ты — разведчик в Цехе сайта nachert1830.ru. Ты НЕ правишь код. Главный инженер будет разбивать цель владельца на задачи — собери ему пакет: где в коде то, что затронет цель; похожие существующие функции (образец, как здесь принято); как устроены проверки рядом (tests/, tests/impact.js).
+Команды (одна за шаг): GREP: выражение [в папка/] · READ: путь начало конец (≤ 200 строк) · NOTE: путь начало конец — зачем (добавить кусок в пакет) · PACK: краткая сводка (закончить).
+Собирай только нужное: обычно 5–12 кусков, всего не больше 1200 строк. Начни с оглавления.`;
+async function plan(goal) {
+  const EP = require('../server/lib/hq/epic.js'), PR = require('../server/lib/hq/prompts.js'), LL = require('../server/lib/hq/llm.js');
+  const PLAN_FILE = process.env.HQ_PLAN_FILE || '/tmp/hq-plan.json', ERR_FILE = process.env.HQ_PLAN_ERRORS || '/tmp/hq-plan-errors.txt';
+  const [sk, sm] = cheap('haiku');
+  console.log('План эпика: разведчик ' + sm.name + ' → главный инженер ' + (M.name || key));
+  const sMsgs = [{role: 'user', content: 'ЦЕЛЬ:\n' + goal + '\n\n' + map()}], notes = []; let summary = '', lines = 0;
+  for (let step = 1; step <= 30 && lines < 1200; step++) {
+    const reply = await callAs(sk, sm, SCOUT_PLAN, sMsgs, {max: 2000}); sMsgs.push({role: 'assistant', content: reply || '(пусто)'});
+    const head = (reply.split('\n').find(l => /^(GREP|READ|NOTE|PACK):/i.test(l.trim())) || '').trim(); let res;
+    try {
+      if (/^GREP:/i.test(head)) res = grep(head.slice(5)); else if (/^READ:/i.test(head)) res = read(head.slice(5));
+      else if (/^NOTE:/i.test(head)) { const m = /^NOTE:\s*(\S+)\s+(\d+)\s+(\d+)\s*(?:—|-)?\s*(.*)$/i.exec(head);
+        if (m) { const b = Math.min(+m[3], +m[2] + 250, +m[2] + 1200 - lines); notes.push({f: m[1], a: +m[2], b, why: m[4]}); lines += b - +m[2] + 1; res = 'В пакете: ' + notes.length + ', строк ' + lines + ' из 1200'; } else res = 'Формат: NOTE: путь начало конец — зачем'; }
+      else if (/^PACK:/i.test(head)) { summary = head.slice(5).trim(); break; }
+      else res = 'Одна команда: GREP, READ, NOTE или PACK.';
+    } catch (e) { res = 'ОШИБКА: ' + e.message; }
+    console.log('  разведчик ' + step + ': ' + head.slice(0, 120)); sMsgs.push({role: 'user', content: String(res).slice(0, 10000)});
+  }
+  const pack = notes.map(n => { try { return '### ' + n.f + ' ' + n.a + '–' + n.b + (n.why ? ' — ' + n.why : '') + '\n' + read(n.f + ' ' + n.a + ' ' + n.b); } catch (e) { return ''; } }).join('\n\n');
+  const doc = (f, n) => { try { return fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n').slice(0, n || 1e9).map(l => l.slice(0, 400)).join('\n'); } catch (e) { return ''; } };
+  const msgs = [{role: 'user', content: 'ЦЕЛЬ ВЛАДЕЛЬЦА:\n' + goal + '\n\nСводка разведчика: ' + (summary || '—') + '\n\nПАКЕТ КОДА:\n' + (pack || 'пусто') +
+    '\n\ndocs/ARCHITECTURE.md:\n' + doc('docs/ARCHITECTURE.md') + '\n\ntests/README.md (оглавление, первые 60 строк):\n' + doc('tests/README.md', 60)}];
+  let errors = [];
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const reply = await call(PR.CHIEF_PLAN, msgs, {max: 16000, effort: 'high'}); msgs.push({role: 'assistant', content: reply || '(пусто)'});
+    let raw = null; try { raw = LL.json(reply); } catch (e) { errors = ['ответ не JSON']; }
+    if (raw) { const v = EP.validatePlan(raw); if (v.ok) { fs.writeFileSync(PLAN_FILE, JSON.stringify(v.plan, null, 1)); console.log('План: задач ' + v.plan.tasks.length); return 0; } errors = v.errors; }
+    console.log('  план не прошёл проверку (' + attempt + '): ' + errors.join('; ').slice(0, 300));
+    msgs.push({role: 'user', content: 'План не прошёл проверку Штаба:\n- ' + errors.join('\n- ') + '\nИсправь и пришли план целиком, ТОЛЬКО JSON.'});
+  }
+  fs.writeFileSync(ERR_FILE, errors.join('\n')); return 1;
+}
+
 /* ── вопрос про код: только читает (GREP, READ, SHOT), ответ со ссылками на файл:строку ── */
 const ASK = `Ты — инженер, который знает код сайта nachert1830.ru (учебный сайт по начертательной геометрии; index.html — 35 тыс. строк без сборки, lk/ — кабинет, server/ — облачные функции, tests/ — проверки, .github/workflows/ — автоматика). Владелец задал вопрос. Найди ответ в коде; ничего не правь.
 Команды (одна за шаг): GREP: выражение [в папка/] · READ: путь начало конец (≤ 200 строк)` + (VISION ? ' · SHOT: #/адрес (скриншот страницы на телефоне)' : '') + ` · ANSWER: ответ (закончить).
@@ -326,10 +381,183 @@ async function answer(q) {
   return 1;
 }
 
+/* ── сеанс с владельцем (--session, задание session в hq-work.yml): живой диалог в Issue «сеанс» ──
+   Реплики владельца — комментарии «💬 Владелец: …» (опрос GitHub раз в HQ_POLL_MS, 8 с); 20 минут тишины (HQ_IDLE_MS) — итог и выход.
+   Ход агента — команды до SAY/ASK; ответ — комментарий <!-- hq-say --> с ценой хода <!-- hq:{"rub":…,"total":…} -->.
+   Экономия: Claude с кэшем (системный промпт + карта проекта), поиск — SCOUT (Haiku), история > HQ_COMPRESS_TOKENS (120 тыс.) — сводка Haiku.
+   PR — ветка hq/session-N токеном владельца (HQ_PR_TOKEN); MERGE — только после «влей» владельца в этом сеансе и зелёной проверки PR. */
+const GH_API = process.env.HQ_GH_API || 'https://api.github.com';
+async function ghApi(method, p, body, token) {
+  const r = await fetch(GH_API + p, {method, headers: {authorization: 'Bearer ' + (token || GHT), accept: 'application/vnd.github+json', 'user-agent': 'hq-agent', 'content-type': 'application/json'},
+    body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(30000)});
+  const t = await r.text(); let j = null; try { j = t ? JSON.parse(t) : {}; } catch (e) {}
+  if (!r.ok) throw new Error('GitHub ' + r.status + ': ' + SH.redact(t, process.env).slice(0, 200));
+  return j;
+}
+/* разведчик: команды GREP/READ/NOTE/PACK, пакет кода не больше maxLines строк */
+async function scoutRun(system, intro, maxLines) {
+  const [sk, sm] = cheap('haiku'), msgs = [{role: 'user', content: intro + '\n\n' + map()}], notes = []; let summary = '', lines = 0;
+  for (let step = 1; step <= 25 && lines < maxLines; step++) {
+    const reply = await callAs(sk, sm, system, msgs, {max: 2000}); msgs.push({role: 'assistant', content: reply || '(пусто)'});
+    const head = (reply.split('\n').find(l => /^(GREP|READ|NOTE|PACK):/i.test(l.trim())) || '').trim(); let res;
+    try {
+      if (/^GREP:/i.test(head)) res = grep(head.slice(5)); else if (/^READ:/i.test(head)) res = read(head.slice(5));
+      else if (/^NOTE:/i.test(head)) { const m = /^NOTE:\s*(\S+)\s+(\d+)\s+(\d+)\s*(?:—|-)?\s*(.*)$/i.exec(head);
+        if (m) { const b = Math.min(+m[3], +m[2] + 250, +m[2] + maxLines - lines); notes.push({f: m[1], a: +m[2], b, why: m[4]}); lines += b - +m[2] + 1; res = 'В пакете: ' + notes.length + ', строк ' + lines + ' из ' + maxLines; } else res = 'Формат: NOTE: путь начало конец — зачем'; }
+      else if (/^PACK:/i.test(head)) { summary = head.slice(5).trim(); break; }
+      else res = 'Одна команда: GREP, READ, NOTE или PACK.';
+    } catch (e) { res = 'ОШИБКА: ' + e.message; }
+    console.log('  разведчик ' + step + ': ' + head.slice(0, 120)); msgs.push({role: 'user', content: String(res).slice(0, 10000)});
+  }
+  const pack = notes.map(n => { try { return '### ' + n.f + ' ' + n.a + '–' + n.b + (n.why ? ' — ' + n.why : '') + '\n' + read(n.f + ' ' + n.a + ' ' + n.b); } catch (e) { return ''; } }).join('\n\n');
+  return {summary, pack, notes};
+}
+const SESSION = `Ты — инженер-разработчик сайта nachert1830.ru и работаешь вместе с владельцем в живом диалоге, как в Claude Code: он говорит — ты делаешь, показываешь, спрашиваешь. Сайт — учебный, по начертательной геометрии и инженерной графике: index.html (35 тыс. строк, без сборки, модули window.ИМЯ), личный кабинет lk/, облачные функции server/, проверки tests/run.js (по блокам, карта влияния tests/impact.js). Владелец — не программист: отвечай по-русски, коротко, на «ты», со ссылками файл:строка.
+На каждом шаге — ОДНА команда, без пояснений вокруг:
+GREP: выражение [в папка/]   — поиск (до 40 строк)
+READ: путь начало конец       — строки файла (≤ 200)
+SCOUT: что найти              — дешёвый разведчик сам найдёт и соберёт нужные куски кода (для большого поиска — дешевле, чем читать самому)
+EDIT: путь                    — правка блоками
+<<<<<<< SEARCH
+точный старый код (без номеров строк, ровно один раз в файле)
+=======
+новый код
+>>>>>>> REPLACE
+RUN: команда                  — команда в корне проекта (bash, до 10 мин): node tests/run.js --only=…, node --test …, git diff, временные скрипты в /tmp. Сеть, git push, ключи — запрещены
+CHECK                         — автотесты, задетые правками
+CI: номер_запуска             — конец лога упавших заданий GitHub Actions
+` + (VISION ? `SHOT: #/адрес                — скриншот страницы на телефоне
+` : '') + `PR: заголовок                 — закоммитить правки в ветку сеанса и открыть или обновить PR
+MERGE                         — влить PR в main (только если владелец в этом сеансе написал «влей» и проверка PR зелёная)
+SAY: текст                    — ответить владельцу и ждать следующей реплики (конец хода)
+ASK: вопрос                   — спросить владельца и ждать ответа (конец хода)
+Правила:
+- Ход заканчивается SAY или ASK. Не тяни: на простой вопрос — пара команд и SAY.
+- Правь минимально, в стиле соседнего кода. После правок — CHECK; PR — когда владелец просит или правка готова и проверена.
+- Упал тест или проверка — сначала разберись: RUN нужной проверки, прочитай вывод, найди причину, потом правь. Не гадай.
+- Нельзя отключать, ослаблять или пропускать проверки, править tests/baseline.json.
+- MERGE — только по слову владельца «влей». Не уверен — ASK.`;
+
+async function session() {
+  if (!ISSUE || !GHT || !REPO) { console.error('Сеанс: нет HQ_ISSUE, GH_TOKEN или GITHUB_REPOSITORY'); return 1; }
+  const POLL = +process.env.HQ_POLL_MS || 8000, IDLE = +process.env.HQ_IDLE_MS || 20 * 60000, SQUEEZE = +process.env.HQ_COMPRESS_TOKENS || 120000;
+  const PRT = process.env.HQ_PR_TOKEN || GHT, branch = 'hq/session-' + ISSUE, owner = REPO.split('/')[0];
+  const sm = /<!-- hq-session:(\{[^\n]*?\}) -->/.exec(task); let ceil = 300; try { if (sm) ceil = +JSON.parse(sm[1]).ceil || 300; } catch (e) {}
+  const system = SESSION + '\n\n' + map(), messages = [], start = cost.rub;
+  let mergeOk = false, prUrl = '', lastIn = 0, seen = new Set();
+  const total = () => Math.round((cost.rub - start) * 100) / 100;
+  const isOwner = c => /^💬 Владелец:/.test(c.body || '');
+  const textOf = c => String(c.body || '').replace(/^💬 Владелец:\s*/, '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  const isStop = c => /<!-- hq-stop -->/.test(c.body || '') || /^стоп[.!]?$/i.test(textOf(c));
+  async function comments() { let all = []; for (let p = 1; p <= 10; p++) { const a = await ghApi('GET', '/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100&page=' + p); all = all.concat(a); if (a.length < 100) break; } return all; }
+  const post = body => ghApi('POST', '/repos/' + REPO + '/issues/' + ISSUE + '/comments', {body});
+  async function fresh() { const cs = await comments(), out = cs.filter(c => !seen.has(c.id) && isOwner(c)); cs.forEach(c => seen.add(c.id)); return out; }
+  async function waitOwner() { const t0 = Date.now(); for (;;) { const f = await fresh().catch(e => { console.error('опрос: ' + e.message); return []; }); if (f.length) return f; if (Date.now() - t0 > IDLE) return null; await new Promise(r => setTimeout(r, POLL)); } }
+  async function say(text, from, extra) {
+    const rub = Math.round((cost.rub - from) * 100) / 100;
+    await post(text.trim() + '\n\n_Ход ~' + rub + ' ₽ · сеанс ~' + total() + ' ₽_\n<!-- hq-say -->' + (extra || '') + ' <!-- hq:' + JSON.stringify({rub, total: total(), pr: prUrl || undefined, model: key}) + ' -->');
+    console.log('--- SAY (' + rub + ' ₽): ' + text.split('\n')[0].slice(0, 120));
+  }
+  async function end(why) { await post('Сеанс закрыт: ' + why + '. Итого ~' + total() + ' ₽.' + (prUrl ? ' PR: ' + prUrl : '') + '\n<!-- hq-say --> <!-- hq-session-end --> <!-- hq:' + JSON.stringify({rub: 0, total: total(), pr: prUrl || undefined}) + ' -->'); return 0; }
+  /* сжатие истории: старые ходы → сводка Haiku (что сделано, решения, открытые вопросы) */
+  async function squeeze() {
+    if (lastIn <= SQUEEZE || messages.length < 6) return;
+    let cut = messages.length - 4; while (cut > 0 && messages[cut].role !== 'user') cut--;
+    if (cut < 2) return;
+    const old = messages.slice(0, cut).map(m => (m.role === 'user' ? 'ВЛАДЕЛЕЦ/ИНСТРУМЕНТ: ' : 'АГЕНТ: ') + (typeof m.content === 'string' ? m.content : m.content.map(x => x.text || '[картинка]').join(' ')).slice(0, 4000)).join('\n\n');
+    const [hk, hm] = cheap('haiku');
+    const sum = await callAs(hk, hm, 'Ты сжимаешь историю рабочего сеанса разработчика с владельцем сайта. Напиши сводку: что сделано (файлы, правки, PR), принятые решения, открытые вопросы, что владелец просил. До 40 строк, по-русски.', [{role: 'user', content: old.slice(-150000)}], {max: 3000});
+    messages.splice(0, cut, {role: 'user', content: 'СВОДКА ПРОШЛЫХ ХОДОВ СЕАНСА:\n' + sum}, {role: 'assistant', content: 'Понял, продолжаю с этого места.'});
+    console.log('  история сжата: ' + cut + ' сообщений → сводка'); lastIn = 0;
+  }
+  const g = args => require('child_process').execFileSync('git', args, {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'});
+  async function openPr() {
+    const pulls = await ghApi('GET', '/repos/' + REPO + '/pulls?state=open&head=' + encodeURIComponent(owner + ':' + branch), null, PRT);
+    return (pulls || [])[0] || null;
+  }
+  async function pr(title) {
+    title = title.trim() || 'правки сеанса';
+    g(['checkout', '-q', '-B', branch]); g(['add', '-A']);
+    if (g(['status', '--porcelain']).trim()) g(['-c', 'user.name=hq-bot', '-c', 'user.email=hq-bot@users.noreply.github.com', 'commit', '-q', '-m', 'Сеанс: ' + title, '-m', 'Сеанс #' + ISSUE + ', исполнитель ' + key + '.']);
+    let ahead = '1'; try { ahead = g(['rev-list', '--count', 'origin/main..HEAD']).trim(); } catch (e) {}
+    if (ahead === '0') return 'Нечего отправлять: правок нет.';
+    if (process.env.HQ_GIT_PUSH !== '0') {
+      try { g(['-c', 'http.extraheader=AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + PRT).toString('base64'), 'push', '-q', '-f', 'origin', 'HEAD:refs/heads/' + branch]); }
+      catch (e) { return 'ОШИБКА пуша: ' + SH.redact(String(e.stderr || e.message), process.env).slice(0, 300); }
+    }
+    let p = await openPr();
+    if (!p) p = await ghApi('POST', '/repos/' + REPO + '/pulls', {title: 'Сеанс: ' + title.slice(0, 100), head: branch, base: 'main', body: 'Сеанс с владельцем #' + ISSUE + '. Исполнитель: ' + key + '.'}, PRT);
+    prUrl = p.html_url || prUrl; return 'PR: ' + prUrl + ' (ветка ' + branch + '). Проверка сайта на PR запустится сама; MERGE — после «влей» владельца.';
+  }
+  async function merge() {
+    if (!mergeOk) return 'ОТКАЗ: владелец в этом сеансе не писал «влей». Спроси его (ASK).';
+    const p = await openPr(); if (!p) return 'ОТКАЗ: открытого PR сеанса нет — сначала PR.';
+    const runs = ((await ghApi('GET', '/repos/' + REPO + '/commits/' + p.head.sha + '/check-runs?per_page=100', null, PRT)) || {}).check_runs || [];
+    const wait = runs.filter(r => r.status !== 'completed'), red = runs.filter(r => r.status === 'completed' && !['success', 'skipped', 'neutral'].includes(r.conclusion));
+    if (!runs.length || wait.length) return 'ОТКАЗ: проверка PR ещё идёт (' + (wait.map(r => r.name).join(', ') || 'не началась') + '). Подожди и скажи владельцу.';
+    if (red.length) return 'ОТКАЗ: проверка PR красная: ' + red.map(r => r.name + ' — ' + r.conclusion).join('; ') + '. Вливать нельзя — разберись (CI: номер запуска из ' + (red[0].html_url || '') + ').';
+    await ghApi('PUT', '/repos/' + REPO + '/pulls/' + p.number + '/merge', {merge_method: 'squash'}, PRT);
+    try { await ghApi('POST', '/repos/' + REPO + '/actions/workflows/check.yml/dispatches', {ref: 'main'}, PRT); } catch (e) {}
+    return 'Влито в main: ' + p.html_url + '. Полная проверка main запущена.';
+  }
+  async function exec(head, reply) {
+    if (/^GREP:/i.test(head)) return grep(head.replace(/^GREP:\s*/i, ''));
+    if (/^READ:/i.test(head)) return read(head.replace(/^READ:\s*/i, ''));
+    if (/^EDIT:/i.test(head)) return edit(head, reply.slice(reply.indexOf(head)));
+    if (/^RUN:/i.test(head)) return runCmd(head.replace(/^RUN:\s*/i, ''));
+    if (/^CHECK/i.test(head)) return check();
+    if (/^CI:/i.test(head)) return ciLog(head.replace(/^CI:\s*/i, ''));
+    if (/^SCOUT:/i.test(head)) { const s = await scoutRun(SCOUT, 'ЧТО НАЙТИ:\n' + head.replace(/^SCOUT:\s*/i, ''), 600); return 'Пакет разведчика (' + s.notes.length + ' кусков). ' + (s.summary || '') + '\n\n' + (s.pack || 'ничего не нашёл'); }
+    if (/^PR:/i.test(head)) return pr(head.replace(/^PR:\s*/i, ''));
+    if (/^MERGE/i.test(head)) return merge();
+    return 'Неверный формат. Одна команда: GREP, READ, SCOUT, EDIT, RUN, CHECK, CI' + (VISION ? ', SHOT' : '') + ', PR, MERGE, SAY или ASK.';
+  }
+
+  console.log('Сеанс #' + ISSUE + ': ' + (M.name || key) + ', потолок ' + ceil + ' ₽');
+  /* реплики, на которые ещё нет ответа: владелец после последнего hq-say */
+  const first = await comments(); first.forEach(c => seen.add(c.id));
+  let lastSay = -1; first.forEach((c, i) => { if (/<!-- hq-say -->/.test(c.body || '')) lastSay = i; });
+  let pending = first.slice(lastSay + 1).filter(isOwner);
+  for (;;) {
+    const got = pending.length ? pending : await waitOwner(); pending = [];
+    if (!got) return end('20 минут тишины');
+    if (got.some(isStop)) return end('владелец сказал «стоп»');
+    if (got.some(c => /(^|[^а-яё])влей([^а-яё]|$)/i.test(textOf(c)))) mergeOk = true;
+    messages.push({role: 'user', content: 'ВЛАДЕЛЕЦ: ' + got.map(textOf).join('\n')});
+    const from = cost.rub; let done = false;
+    for (let step = 1; step <= 25 && !done; step++) {
+      await squeeze();
+      const reply = await callAs(key, M, system, messages, {max: 8000, onUsage: u => { lastIn = (u.input_tokens || u.prompt_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0); }});
+      messages.push({role: 'assistant', content: reply || '(пусто)'});
+      const head = (reply.split('\n').find(l => /^(GREP|READ|SCOUT|EDIT|RUN|CHECK|CI|SHOT|PR|MERGE|SAY|ASK)\b:?/i.test(l.trim())) || reply.split('\n')[0] || '').trim();
+      console.log('--- ход, шаг ' + step + ': ' + head.slice(0, 140));
+      if (/^(SAY|ASK):/i.test(head)) { const t = reply.slice(reply.indexOf(head)).replace(/^(SAY|ASK):\s*/i, ''); await say(t, from, /^ASK/i.test(head) ? ' <!-- hq-ask -->' : ''); done = true; break; }
+      if (/^SHOT/i.test(head) && VISION) { const s = await shot(head.replace(/^SHOT:?\s*/i, '')).catch(e => ({note: 'ОШИБКА: ' + e.message})); messages.push({role: 'user', content: s.png ? [{text: s.note}, {image: s.png}] : s.note}); continue; }
+      let res; try { res = await exec(head, reply); } catch (e) { res = 'ОШИБКА: ' + e.message; }
+      /* реплики владельца посреди хода — сразу в работу */
+      const mid = await fresh().catch(() => []);
+      if (mid.some(isStop)) return end('владелец сказал «стоп»');
+      if (mid.some(c => /(^|[^а-яё])влей([^а-яё]|$)/i.test(textOf(c)))) mergeOk = true;
+      if (mid.length) res += '\n\n[ВЛАДЕЛЕЦ НАПИСАЛ ПО ХОДУ:]\n' + mid.map(textOf).join('\n');
+      if (step === 22) res += '\n\n[осталось 3 шага хода — заканчивай SAY]';
+      messages.push({role: 'user', content: String(res).slice(0, 14000)});
+    }
+    if (!done) await say('Не уложился в 25 шагов хода — остановился. Скажи, продолжать ли.', from);
+    /* потолок сеанса → пауза и вопрос */
+    if (total() >= ceil) {
+      await post('⏸ Потолок сеанса ' + ceil + ' ₽ исчерпан (потрачено ~' + total() + ' ₽). Напиши «продолжай» — подниму потолок на 50 %, или «стоп».\n<!-- hq-say --> <!-- hq-ceiling --> <!-- hq:{"rub":0,"total":' + total() + '} -->');
+      const ans = await waitOwner(); if (!ans) return end('потолок цены и тишина');
+      if (ans.some(isStop)) return end('владелец сказал «стоп»');
+      ceil = Math.round(ceil * 1.5); pending = ans.filter(c => !/^продолжай[.!]?$/i.test(textOf(c)));
+      if (!pending.length) { await post('Потолок — ' + ceil + ' ₽. Продолжаю: что дальше?\n<!-- hq-say --> <!-- hq:{"rub":0,"total":' + total() + '} -->'); }
+    }
+  }
+}
+
 (async () => {
   if (!KEY) { console.error('Нет PROXYAPI_KEY'); process.exit(1); }
   const spec = task.replace(/<!--[\s\S]*?-->/g, '').trim();
-  const code = process.argv.includes('--ask') ? await answer(spec) : BRIGADE ? await brigade(spec) : await solo(spec);
+  const code = process.argv.includes('--session') ? await session() : process.argv.includes('--plan') ? await plan(spec) : process.argv.includes('--ask') ? await answer(spec) : BRIGADE ? await brigade(spec) : await solo(spec);
   console.log('Стоимость всего: ' + cost.rub + ' ₽ (' + Object.entries(cost.models).map(([k, v]) => k + ' ' + v).join(', ') + ')');
   if (srv) srv.close(); process.exit(code);
 })().catch(e => { console.error(e.message || e); process.exit(1); });

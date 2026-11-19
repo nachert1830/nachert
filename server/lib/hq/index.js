@@ -4,14 +4,16 @@
    3. POST /api/hq/assign: Диспетчер оценивает вид и сложность → исполнитель из штатного расписания (владелец может сменить).
    4. POST /api/hq/run: текст и исследование — пишет модель здесь же; картинка — генератор, файл кладётся в репозиторий (img/hq/);
       код — Issue с метками «цех» и «исп:<модель>» → Цех (.github/workflows/hq-work.yml): ветка, тесты, эскалация, PR, выкатка.
-   5. POST /api/hq/sync: статусы задач Цеха и их стоимость из комментариев (<!-- hq:{…} -->).
+   5. POST /api/hq/sync: статусы задач Цеха и их стоимость из комментариев (<!-- hq:{…} -->); планы эпиков и тик планировщика (epic.js).
+   7. Сеанс: живой диалог владельца с исполнителем (Issue «сеанс», hq-agent.js --session): POST/GET /api/hq/session.
+   6. Эпики (epic.js): цель → план Главного инженера → утверждение → задачи по одной → разбор провала → приёмка. tick() — из таймера сервера.
    Хранение (закрыто, YDB): config/hq — настройки, config/hqspend-ГГГГ-ММ — траты месяца, hqdumps — монологи, hqnodes — узлы карты.
    В публичный GitHub уходит только утверждённое ТЗ задачи кода (без монолога). Подробно — docs/HQ.md. */
 'use strict';
 const crypto = require('crypto');
-const RO = require('./roster'), P = require('./prompts'), L = require('./llm');
+const RO = require('./roster'), P = require('./prompts'), L = require('./llm'), EPIC = require('./epic');
 
-const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise', 'question'];
+const TYPES = ['strategy', 'goal', 'task', 'idea', 'noise', 'question', 'epic', 'session'];
 const STATUS = ['new', 'talk', 'ready', 'assigned', 'running', 'review', 'done', 'failed', 'rolled', 'archived'];
 const id = p => p + crypto.randomBytes(6).toString('base64url');
 const clean = (s, n) => String(s == null ? '' : s).replace(/\u0000/g, '').trim().slice(0, n || 400);
@@ -72,7 +74,9 @@ function register(D, o) {
   const save = n => store.put('hqnodes', n);
   /* узел для ответа: без длинных полей, кроме выбранного */
   const brief = n => ({id: n.id, type: n.type, title: n.title, text: n.text, parent: n.parent || null, status: n.status, kind: n.kind || null, level: n.level || null,
-    model: n.model || null, at: n.at, rub: n.rub || 0, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null});
+    model: n.model || null, at: n.at, rub: n.rub || 0, preview: n.preview || null, issue: n.issue || null, url: n.url || null, ready: !!n.ready, img: n.img || null,
+    epic: n.epic || null, ekey: n.ekey || null, eorder: n.eorder || 0, core: !!n.core, deps: n.deps || [], pr: n.pr || null,
+    budgetRub: n.type === 'epic' ? n.budgetRub || 0 : undefined, spentRub: n.type === 'epic' ? n.spentRub || 0 : undefined, ceil: n.type === 'session' ? n.ceil : undefined});
 
   R['GET /api/hq'] = async () => {
     const [st, s, ns, ds, mem] = await Promise.all([settings(), spent(), nodes(), store.scan('hqdumps'), memory()]);
@@ -236,19 +240,24 @@ function register(D, o) {
 
   /* 5. Статусы Цеха */
   R['POST /api/hq/sync'] = async () => {
-    const run = (await nodes()).filter(n => n.issue && (['running', 'failed', 'review'].includes(n.status) || n.rollback || n.status === 'done' && n.pr && now() - (n.doneAt || 0) < 3 * 864e5));   /* выкаченные за 3 дня — вдруг автооткат */
+    const all = await nodes();
+    for (const s of all.filter(n => n.type === 'session' && n.issue && ['running', 'paused'].includes(n.status)).slice(-3)) { try { await pullSession(s); } catch (e) {} }
+    const run = all.filter(n => n.issue && n.type !== 'epic' && n.type !== 'session' && (['running', 'failed', 'review'].includes(n.status) || n.rollback || n.status === 'done' && n.pr && now() - (n.doneAt || 0) < 3 * 864e5));   /* выкаченные за 3 дня — вдруг автооткат */
     const out = [];
     for (const n of run.slice(0, 15)) {
       const [i, cs] = await Promise.all([gh('/issues/' + n.issue), gh('/issues/' + n.issue + '/comments?per_page=50')]);
       const names = (i.labels || []).map(l => l.name || l), was = n.status;
       n.counted = n.counted || [];
       for (const c of cs) { const m = /<!-- hq:(\{[\s\S]*?\}) -->/.exec(c.body || ''); if (!m || n.counted.includes(c.id)) continue;
-        try { const x = JSON.parse(m[1]); const rub = +x.rub || 0; await spend(rub); n.rub = Math.round(((n.rub || 0) + rub) * 100) / 100; if (x.pr) n.pr = String(x.pr).slice(0, 200); if (x.model) n.model = x.model; } catch (e) {}
+        try { const x = JSON.parse(m[1]); const rub = +x.rub || 0; await spend(rub); n.rub = Math.round(((n.rub || 0) + rub) * 100) / 100; if (x.pr) n.pr = String(x.pr).slice(0, 200); if (x.model) n.model = x.model;
+          if (x.preview) n.preview = String(x.preview).slice(0, 300); if (Array.isArray(x.shots)) n.shots = x.shots.filter(u => /^https:\/\/raw\.githubusercontent\.com\//.test(u)).slice(0, 4).map(u => String(u).slice(0, 300)); } catch (e) {}
         n.counted.push(c.id); }
       const last = cs.filter(c => !/^Перезапуск/.test(c.body || '')).slice(-1)[0];
       n.log = last ? clean((last.body || '').replace(/<!--[\s\S]*?-->/g, ''), 1500) : n.log;
+      const rep = last && /^Отчёт: (.+)$/m.exec(last.body || ''); if (rep) n.report = clean(rep[1], 400);
       if (n.type === 'question') { if (names.includes('ответ')) { const a = cs.filter(c => /<!-- hq-answer -->/.test(c.body || '')).slice(-1)[0]; n.result = a ? clean(a.body.replace(/<!--[\s\S]*?-->/g, ''), 8000) : n.log; n.status = 'done'; } else if (names.includes('провал')) n.status = 'failed'; }
       else if (names.includes('откачено')) { n.status = 'rolled'; n.rollback = null; }
+      else if (names.includes('отклонено') && n.status === 'review') { n.status = 'ready'; n.pr = null; n.preview = null; n.shots = null; }
       else if (n.rollback) {}
       else if (names.includes('готово')) n.status = 'done'; else if (names.includes('провал')) n.status = 'failed'; else if (names.includes('на-проверку')) n.status = 'review';
       if (n.status === 'done' && was !== 'done') n.doneAt = now();
@@ -256,7 +265,8 @@ function register(D, o) {
       if (n.status !== was) await feedStatus(n);
     }
     await alarms();
-    return {ok: true, nodes: out, spent: await spent()};
+    const epics = await EP.tick();
+    return {ok: true, nodes: out, epics, spent: await spent()};
   };
   /* «Сайт просит»: красная полная проверка main (Issue «main-красный» из check.yml) → в ленту с кнопкой «Починить» — один раз на Issue */
   async function alarms() {
@@ -317,6 +327,13 @@ function register(D, o) {
     const T = {done: '✅ Готово: «' + n.title + '»' + (n.pr ? ' — на сайте.' : '.'), failed: '❌ Не получилось: «' + n.title + '». ' + (n.log ? n.log.split('\n')[0] : ''),
       review: '🔍 Проверь: «' + n.title + '».', rolled: '↩️ Откатил: «' + n.title + '». Сайт как до выкатки.', running: '⚙️ В работе: «' + n.title + '».'};
     if (!T[n.status]) return;
+    if (n.epic && (n.status === 'failed' || n.status === 'rolled'))
+      return feed('hq', T[n.status] + ' Это задача эпика — Главный инженер разберёт причину.' + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, links: [n.url && {l: 'задача', u: n.url}].filter(Boolean)});
+    if (n.status === 'review' && n.pr) {   /* код на проверке: предпросмотр и решение владельца */
+      return feed('hq', '👀 Посмотри, как будет: «' + n.title + '».' + (n.preview ? ' Предпросмотр — по ссылке, ниже — было → стало.' : '') + ' На сайте ничего не изменится, пока не нажмёшь «Влить».' + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''),
+        {node: n.id, shots: n.shots || null, acts: [A('✅ Влить', 'merge', {id: n.id}, true), A('✖ Отклонить', 'reject', {id: n.id}), A('Открыть', 'open', {id: n.id})],
+          links: [n.preview && {l: 'предпросмотр', u: n.preview}, n.pr && {l: 'PR', u: n.pr}].filter(Boolean)});
+    }
     const acts = n.status === 'failed' ? [A('↻ Перезапустить сильнее', 'run', {id: n.id, stronger: true}, true), A('Открыть', 'open', {id: n.id})]
       : n.status === 'done' && n.pr ? [A('↩️ Откатить', 'rollback', {id: n.id})] : n.status === 'review' ? [A('Принять ✓', 'accept', {id: n.id}, true), A('Открыть', 'open', {id: n.id})] : [];
     await feed('hq', T[n.status] + (n.rub ? ' Стоило ' + n.rub + ' ₽.' : ''), {node: n.id, acts, links: [n.url && {l: 'задача', u: n.url}, n.pr && {l: 'PR', u: n.pr}].filter(Boolean)});
@@ -371,6 +388,23 @@ function register(D, o) {
       await inner('POST /api/hq/node', {id: r.node.id, kind: 'code', level: 'complex'});
       const n = await getNode(r.node.id); n.spec = {title: 'Починить красную проверку main', what: 'Полная проверка сайта на main красная. Найди причину по логу и исправь код (не тесты и не baseline, если ошибка настоящая).\n\n' + clean(i.body, 3000), where: 'по логу проверки', done: ['node tests/run.js на затронутых блоках зелёный'], not: ['не отключать и не ослаблять проверки']};
       n.ready = true; n.status = 'ready'; await save(n); await feedReady(st, n); return {ok: true, node: n}; }
+    if (op === 'merge' || op === 'reject') {   /* решение владельца после предпросмотра: метка → Цех (задание merge) вливает или закрывает PR */
+      const n = await getNode(a.id); if (!n.issue || !n.pr || n.status !== 'review') fail(409, 'Решать нечего: задача не ждёт проверки.');
+      await gh('/issues/' + n.issue + '/labels', {method: 'POST', body: JSON.stringify({labels: [op === 'merge' ? 'влить' : 'отклонить']})});
+      if (op === 'reject') { n.status = 'ready'; n.pr = null; n.preview = null; n.shots = null; await save(n);
+        await feed('hq', '✖ Отклонил «' + n.title + '»: PR закроется, на сайт ничего не попадёт. Уточни ТЗ у продакта и запусти снова.', {node: n.id, acts: [A('Обсудить', 'discuss', {id: n.id}, true)]}); }
+      else await feed('hq', '⏳ Вливаю «' + n.title + '»: Цех проверит, что проверка PR зелёная, и выкатит. Напишу, когда будет на сайте.', {node: n.id});
+      return {ok: true, node: n}; }
+    if (op === 'session') return {ok: true, node: await sessionStart(a)};
+    if (op === 'epic') return {ok: true, node: await EP.create({title: a.title || clean(a.text, 100), text: a.text || a.title})};
+    if (op === 'mkepic') {   /* «Сделать эпиком»: цель или задача карты, или разбор монолога */
+      if (a.dump) { const d = await store.get('hqdumps', String(a.dump)); if (!d) fail(404, 'Нет такой записи.');
+        const g = (await nodes()).find(x => (d.made || []).includes(x.id) && x.type === 'goal');
+        return {ok: true, node: await EP.create({title: g ? g.title : clean(d.summary, 100), text: (g && g.text ? g.text + '\n' : '') + d.summary, parent: g ? g.id : null})}; }
+      const n = await getNode(a.id), all = await nodes(), byId = Object.fromEntries(all.map(x => [x.id, x]));
+      const chain = []; for (let p = byId[n.parent], i = 0; p && i < 4; p = byId[p.parent], i++) chain.push(p.title + (p.text ? ' — ' + p.text.slice(0, 300) : ''));
+      return {ok: true, node: await EP.create({title: n.spec && n.spec.title || n.title, text: [n.text, n.spec && n.spec.what].filter(Boolean).join('\n') || n.title, parent: n.id, context: chain.length ? 'Выше по карте:\n' + chain.join('\n') : ''})}; }
+    if (/^epic(ok|replan|cancel|budget|stop|resume)$/.test(op)) return {ok: true, node: await EP.act(op, a)};
     if (op === 'archive') { await inner('POST /api/hq/node', {id: a.id, op: 'archive'}); await feed('hq', 'Убрал в архив.', {node: a.id}); return {ok: true}; }
     fail(400, 'Нет такого действия.');
   }
@@ -411,18 +445,97 @@ function register(D, o) {
       else if (dec.intent === 'archive' && known(dec.node)) { await act('archive', {id: dec.node}); }
       else if (dec.intent === 'status') { await say(dec.reply); await act('sync', {}); }
       else if (dec.intent === 'reply') { await say(dec.reply || 'Понял.'); }
+      else if (dec.intent === 'session') { await say(dec.reply); await act('session', {text: clean(dec.text, 4000) || 'Привет! Давай поработаем вместе.', model: RO.model(st, dec.model) ? dec.model : undefined}); }
+      else if (dec.intent === 'epic') { await say(dec.reply); await act('epic', {text: clean(dec.text, 3000) || clean(text, 300)}); }
       else {
         const r = await inner('POST /api/hq/dump', {text}); const ts = r.nodes.filter(n => n.type === 'task');
         const c = t => r.nodes.filter(n => n.type === t).length;
         await feed('hq', (r.dump.summary ? r.dump.summary + '\n' : '') + 'Разложил: стратегия ' + c('strategy') + ', цели ' + c('goal') + ', задачи ' + ts.length + ', идеи ' + c('idea') + ', балабольство ' + c('noise') + '.' +
-          (r.dump.questions.length ? '\n❓ ' + r.dump.questions.join('\n❓ ') : ''), {dump: r.dump.id, acts: [A('🗺 Карта', 'map', {})].concat(ts.slice(0, 6).map((n, i) => A('Обсудить «' + n.title.slice(0, 34) + '»', 'discuss', {id: n.id}, i === 0)))});
+          (r.dump.questions.length ? '\n❓ ' + r.dump.questions.join('\n❓ ') : ''), {dump: r.dump.id, acts: [A('🗺 Карта', 'map', {})].concat(ts.slice(0, 6).map((n, i) => A('Обсудить «' + n.title.slice(0, 34) + '»', 'discuss', {id: n.id}, i === 0)),
+            ts.length >= 3 || c('goal') ? [A('🧭 Сделать эпиком', 'mkepic', {dump: r.dump.id})] : [])});
       }
     } catch (e) { await feed('hq', '⚠️ ' + (e.message || 'Ошибка')); if (!(e.status >= 400 && e.status < 500)) throw e; }
     return {ok: true, spent: await spent()};
   };
 
+  /* ── Сеанс: владелец говорит с исполнителем, как в Claude Code. Реплики — комментарии «💬 Владелец: …» в Issue «сеанс»,
+     ответы исполнителя — комментарии <!-- hq-say --> с ценой хода; Штаб подтягивает их (вкладка «Сеанс» раз в 5 с, таймер, sync)
+     и пишет каждый ход в ленту со стоимостью хода и сеанса. Потолок сеанса (sessionRub, «Сотрудники») → пауза и вопрос. */
+  const strip = t => String(t || '').replace(/^💬 Владелец:\s*/, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\n_Ход ~[^\n]*_\s*$/, '').trim();
+  async function sessionStart(a) {
+    const st = await settings(), k = a.model && RO.model(st, a.model) ? a.model : st.roles.chief || 'opus', m = pick(st, k), text = clean(a.text, 4000) || 'Привет! Давай поработаем вместе.';
+    await guard(st);
+    const title = clean(text.split(/(?<=[.!?…])\s|\n/)[0], 80) || 'сеанс';
+    const n = {id: id('s'), type: 'session', title, text: '', status: 'running', at: now(), model: k, rub: 0, ceil: st.sessionRub, counted: [], chat: []};
+    const i = await gh('/issues', {method: 'POST', body: JSON.stringify({title: 'Сеанс: ' + title, labels: ['исп:' + k],
+      body: 'Живой сеанс владельца с исполнителем **' + m.name + '**. Реплики владельца — комментарии «💬 Владелец: …», ответы — комментарии исполнителя.\n' +
+        '<!-- hq-node:' + n.id + ' -->\n<!-- hq-model:' + JSON.stringify({key: k, id: m.id, name: m.name, in: m.in, out: m.out, cache: m.cache, rate: st.rate}) + ' -->\n<!-- hq-session:' + JSON.stringify({ceil: st.sessionRub}) + ' -->'})});
+    n.issue = i.number; n.url = i.html_url;
+    await gh('/issues/' + i.number + '/comments', {method: 'POST', body: JSON.stringify({body: '💬 Владелец: ' + text})});
+    /* метка «сеанс» — последней: workflow запускается на labeled и видит первую реплику */
+    await gh('/issues/' + i.number + '/labels', {method: 'POST', body: JSON.stringify({labels: ['сеанс']})});
+    await save(n);
+    await feed('hq', '🧑‍💻 Открыл сеанс с ' + m.name + ': «' + title + '». Исполнитель подключится через 1–2 минуты; ответы — во вкладке «Сеанс» и здесь. Потолок сеанса — ' + st.sessionRub + ' ₽.',
+      {node: n.id, acts: [A('Открыть сеанс', 'opensession', {id: n.id}, true)], links: [{l: 'сеанс', u: n.url}]});
+    return n;
+  }
+  async function sessionComments(n) { let all = []; for (let p = 1; p <= 5; p++) { const a = await gh('/issues/' + n.issue + '/comments?per_page=100&page=' + p); all = all.concat(a || []); if (!a || a.length < 100) break; } return all; }
+  async function pullSession(n) {
+    const cs = await sessionComments(n), msgs = []; n.counted = n.counted || [];
+    for (const c of cs) {
+      const mine = /^💬 Владелец:/.test(c.body || ''), say = /<!-- hq-say -->/.test(c.body || ''); if (!mine && !say) continue;
+      let x = {}; const mm = /<!-- hq:(\{[\s\S]*?\}) -->/.exec(c.body || ''); if (mm) { try { x = JSON.parse(mm[1]); } catch (e) {} }
+      msgs.push({id: c.id, who: mine ? 'me' : 'hq', text: clean(strip(c.body), 8000), at: Date.parse(c.created_at || '') || 0, rub: +x.rub || 0, total: +x.total || 0});
+      if (!say || n.counted.includes(c.id)) continue;
+      n.counted.push(c.id); const rub = Math.round((+x.rub || 0) * 100) / 100;
+      if (rub) { await spend(rub); n.rub = Math.round(((n.rub || 0) + rub) * 100) / 100; }
+      if (x.pr) n.pr = clean(x.pr, 200);
+      if (/<!-- hq-session-end -->/.test(c.body)) { n.status = 'done'; await feed('hq', '🧑‍💻 Сеанс «' + n.title + '» закрыт. Итого ' + (n.rub || 0) + ' ₽.', {node: n.id, links: [n.pr && {l: 'PR', u: n.pr}, {l: 'сеанс', u: n.url}].filter(Boolean)}); continue; }
+      if (/<!-- hq-ceiling -->/.test(c.body)) continue;
+      await feed('hq', '🧑‍💻 Сеанс «' + n.title + '»: ' + clean(strip(c.body), 700) + '\nХод ~' + rub + ' ₽, сеанс ~' + (n.rub || 0) + ' ₽.',
+        {node: n.id, from: 'session', acts: [A('Открыть сеанс', 'opensession', {id: n.id}, true)], links: n.pr ? [{l: 'PR', u: n.pr}] : []});
+    }
+    if (n.status === 'running' && n.ceil && (n.rub || 0) >= n.ceil) {
+      n.status = 'paused';
+      await feed('hq', '⏸ Сеанс «' + n.title + '»: потолок ' + n.ceil + ' ₽ исчерпан (потрачено ' + n.rub + ' ₽). Напиши во вкладке «Сеанс» «продолжай» — потолок вырастет на 50 %, или «Стоп».', {node: n.id, acts: [A('Открыть сеанс', 'opensession', {id: n.id}, true)]});
+    }
+    await save(n);
+    return msgs;
+  }
+  R['GET /api/hq/session'] = async req => {
+    const sid = String((req.query && req.query.id) || '');
+    if (!sid) return {ok: true, sessions: (await nodes()).filter(n => n.type === 'session').reverse().slice(0, 20).map(brief)};
+    const n = await getNode(sid); if (n.type !== 'session') fail(400, 'Это не сеанс.');
+    const msgs = n.issue ? await pullSession(n) : [];
+    return {ok: true, node: Object.assign(brief(n), {pr: n.pr || null}), msgs, spent: await spent()};
+  };
+  R['POST /api/hq/session'] = async req => {
+    const b = body(req);
+    if (!b.id) return {ok: true, node: brief(await sessionStart({text: b.text, model: b.model}))};
+    const n = await getNode(b.id); if (n.type !== 'session' || !n.issue) fail(400, 'Это не сеанс.');
+    if (n.status === 'done') fail(409, 'Сеанс закрыт — начни новый.');
+    const text = b.op === 'stop' ? 'стоп <!-- hq-stop -->' : b.op === 'merge' ? 'влей' : clean(b.text, 4000);
+    if (!text) fail(400, 'Напиши, что сделать.');
+    await gh('/issues/' + n.issue + '/comments', {method: 'POST', body: JSON.stringify({body: '💬 Владелец: ' + text})});
+    if (n.status === 'paused' && b.op !== 'stop') { n.status = 'running'; if (/продолж/i.test(text)) n.ceil = Math.round((n.ceil || 300) * 1.5); }
+    await save(n);
+    return {ok: true, node: brief(n)};
+  };
+
+  /* эпики: планировщик и кнопки (epic.js) */
+  const EP = EPIC.epics({store, now, settings, askJson, gh, feed, A, inner, getNode, save, estimate, memFor, fail, id, spend});
+  /* таймер сервера (remind раз в 15 минут): статусы Цеха, планы и шаги эпиков — даже когда ЛК закрыт */
+  async function tick() {
+    if (!env.ghToken || !env.ghRepo) return {skip: 'нет токена GitHub'};
+    const busy = await store.scan('hqnodes', n => n.type === 'epic' && ['planning', 'running'].includes(n.status) || ['task', 'session'].includes(n.type) && n.status === 'running' && n.issue);
+    if (!busy.length) return {skip: 'нечего делать'};
+    const r = await R['POST /api/hq/sync']();
+    return {nodes: r.nodes.length, epics: r.epics};
+  }
+
   /* ответы — JSON в формате сервера клуба */
   Object.keys(R).forEach(k => { D[k] = async (req, S) => o.json(200, await R[k](req, S)); });
+  return {tick};
 }
 
 module.exports = {register};

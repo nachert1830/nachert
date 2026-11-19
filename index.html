@@ -4410,6 +4410,22 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .dzx-share span{display:flex;flex-direction:column;gap:4px;text-align:left}
 .dzx-share small{font:500 13px/1.25 var(--sans);opacity:.9;white-space:normal}
 .dzx-share:hover{filter:brightness(1.07)}
+/* «Не сходится с условием?» — у каждого варианта ДЗ: сообщение автору (POST /api/report, docs/ASK.md) */
+.crep{margin:0 0 10px}
+.crep-b{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px dashed var(--line2);border-radius:var(--r);background:var(--surf2);color:var(--ink2);font:600 14px/1.25 var(--sans);cursor:pointer;text-align:left}
+.crep-b:hover{border-color:var(--amber);color:var(--ink)}
+.crep-b svg{flex:none;color:var(--amber)}
+.crep-f{display:grid;gap:8px;max-width:640px;padding:12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--surf2)}
+.crep-f b{font:700 15px/1.3 var(--sans);color:var(--ink)}
+.crep-f p{margin:0;font:400 13.5px/1.4 var(--sans);color:var(--mut)}
+.crep-f textarea{width:100%;min-height:76px;box-sizing:border-box;padding:9px 11px;border:1px solid var(--line2);border-radius:10px;background:var(--surf);color:var(--ink);font:400 15px/1.4 var(--sans);resize:vertical}
+.crep-a{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.crep-a button{min-height:40px;padding:0 16px;border-radius:10px;font:700 14px/1 var(--sans);cursor:pointer}
+.crep-go{border:0;background:var(--acc);color:var(--on-acc)}
+.crep-go[disabled]{opacity:.6;cursor:wait}
+.crep-no{border:1px solid var(--line2);background:transparent;color:var(--ink2)}
+.crep-ok{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:var(--r);background:var(--green-s);color:var(--green);font:600 14px/1.3 var(--sans)}
+.crep-er{color:var(--red);font:600 13.5px/1.4 var(--sans)}
 .dzx-share:active{transform:translateY(2px);box-shadow:0 1px 0 var(--red-d,#a5141a)}
 .dzx-share.lg{display:flex;width:100%;max-width:440px;height:auto;min-height:62px;margin:var(--s2) 0 0;padding:11px 18px;gap:12px;border-radius:16px;font-size:16.5px;box-shadow:0 4px 0 var(--red-d,#a5141a)}
 .dzx-share.lg svg{width:22px;height:22px;flex:none}
@@ -7781,6 +7797,16 @@ return {has,html,bind,SPEC,ans3};
 </script>
 <!-- ДЗ: реестр, данные вариантов, методики и решатели — по папкам dz/<курс>/<номер>/ (оглавление — dz/README.md) -->
 <script src="kernel/dz.js"></script>
+<script src="kernel/prep.js"></script>
+<script src="prep/engine.js"></script>
+<script src="prep/x.js"></script>
+<script src="prep/x-b.js"></script>
+<script src="prep/t.js"></script>
+<script src="prep/base.js"></script>
+<script src="prep/sm.js"></script>
+<script src="prep/more.js"></script>
+<script src="prep/rest.js"></script>
+<script src="prep/space.js"></script>
 <script src="dz/ng/lib.js"></script>
 <script src="dz/ng/1/variants.js"></script>
 <script src="dz/ng/1/method.js"></script>
@@ -7803,6 +7829,7 @@ return {has,html,bind,SPEC,ans3};
 <script src="dz/ig/3/variants.js"></script><script src="dz/ig/3/method.js"></script><script src="dz/ig/3/models.js"></script>
 <script src="dz/ig/4/variants.js"></script><script src="dz/ig/4/method.js"></script><script src="dz/ig/4/models.js"></script><script src="dz/ig/4/steps.js"></script>
 <script src="dz/ig/5/variants.js"></script><script src="dz/ig/5/method.js"></script><script src="dz/ig/5/models.js"></script>
+<script src="dz/ig/6/variants.js"></script><script src="dz/ig/6/method.js"></script><script src="dz/ig/6/models.js"></script>
 <script src="dz/ig/8/variants.js"></script><script src="dz/ig/8/method.js"></script><script src="dz/ig/8/models.js"></script>
 <script src="kernel/sheet.js"></script>
 <script>
@@ -28794,7 +28821,7 @@ function parseHash(h){
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
   if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
-  const s=['ng','ig','kg','epure','part','about','author','privacy','consent','topic','me','dz','rk','live','ask'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','author','privacy','consent','topic','me','dz','rk','live','ask','prep'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -28851,6 +28878,7 @@ function render(r){
       case 'ig': title=viewIG(v,r); break;
       case 'dz': title=viewDZ(v,r); break;
       case 'rk': title=RKG.view(v,r); break;
+      case 'prep': title=window.PREP?PREP.view(v,r):viewHome(v); break;
       case 'kg': title=viewKG(v); break;
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
@@ -30049,7 +30077,7 @@ function dzPick(v,d){
   const num=n=>has(n)?`<a href="${HDZ(d.id,n)}" data-setvar="${n}">${n}</a>`:`<span class="off" title="решение этого типа готовится">${n}</span>`;
   const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
   const grid=`<div class="dzx-nums c6">${range(1,N).map(num).join('')}</div>`;
-  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(d.course==='ng'&&window.PREP?PREP.card(d.id):'')+
    `<h2 class="dzx-h">Какой у тебя вариант?</h2>${grid}
    ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}" data-setvar="${n}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}</b></a>`).join('')}</div></details>`:''}`});
   /* номер выбран — выбор номера больше не нужен: заменяем его вариантом, и «Назад» из варианта ведёт туда, откуда открыл ДЗ */
@@ -30130,6 +30158,28 @@ function dz3D(v,d,sub){
   return d.label+' · все тела в 3D'; }
 /* верхняя строка страницы ДЗ: ← Назад · заголовок · Поделиться */
 function dzTop(d,title,share){ return `<div class="dzx-top">${dzBackHTML(HDZ())}<h1>${title}</h1>${share||''}</div>`; }
+/* «Не сходится с условием?» — под заголовком варианта. Чертёж сайт строит точно, а условие варианта перенесено с задания
+   кафедры вручную: если оно не совпало, ученик сообщает автору одной кнопкой (можно без входа). Сообщение — POST /api/report
+   (сервер кабинета): ветка во «Вопросах» пульта + сообщение автору в Telegram. Без сервера — форма «Спросить» (#/ask). */
+function condRepHTML(d,n){ let sent=false; try{ sent=!!localStorage.getItem('crep_'+d.id+'_'+n); }catch(e){}
+  if(sent) return `<div class="crep"><span class="crep-ok">✓ Автор знает, что вариант ${n} не сходится с условием, — поправит</span></div>`;
+  return `<div class="crep" data-crep="${vesc(d.id)}" data-n="${n}" data-where="${vesc(dzCourse(d.course)+' · '+d.label+' · вариант '+n)}"><button type="button" class="crep-b" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Не сходится с условием задания?</button></div>`; }
+document.addEventListener('click',e=>{ const box=e.target.closest&&e.target.closest('.crep[data-crep]'); if(!box) return;
+  const id=box.dataset.crep, n=+box.dataset.n, where=box.dataset.where, api=String(self.CLUB_API||'').replace(/\/$/,'');
+  if(e.target.closest('.crep-b')){
+    box.innerHTML=`<div class="crep-f" role="group" aria-label="Сообщить автору"><b>Вариант ${n} не совпадает с заданием?</b><p>Напиши, что не так: какое изображение, какой размер или форма. Автор получит сообщение сразу и переделает вариант.</p>
+      <textarea maxlength="1500" placeholder="Например: на главном виде вырез — трапеция, а на сайте треугольник; размер 35 — не 40"></textarea>
+      <div class="crep-a"><button type="button" class="crep-go">Отправить автору</button><button type="button" class="crep-no">Отмена</button></div><div class="crep-er" role="alert"></div></div>`;
+    const ta=box.querySelector('textarea'); if(ta) ta.focus(); return; }
+  if(e.target.closest('.crep-no')){ box.outerHTML=condRepHTML(DZR.get(id),n); return; }
+  if(e.target.closest('.crep-go')){ const b=e.target.closest('.crep-go'), er=box.querySelector('.crep-er'), text=(box.querySelector('textarea')||{}).value||'';
+    if(!api){ location.hash='#/ask'; return; }
+    b.disabled=true; b.textContent='Отправляю…'; er.textContent='';
+    const h={'content-type':'application/json'}; try{ const t=localStorage.getItem('lk_tok'); if(t) h.authorization='Bearer '+t; }catch(x){}
+    fetch(api+'/api/report',{method:'POST',headers:h,cache:'no-store',body:JSON.stringify({dz:id,n,where,src:HDZ(id,n),text:text.trim()})})
+      .then(r=>r.json().catch(()=>({})).then(j=>{ if(!r.ok) throw new Error(j.error||('Ошибка '+r.status)); }))
+      .then(()=>{ try{ localStorage.setItem('crep_'+id+'_'+n,String(Date.now())); }catch(x){} box.outerHTML=`<div class="crep"><span class="crep-ok" role="status">✓ Отправлено. Спасибо — автор поправит вариант ${n}</span></div>`; })
+      .catch(x=>{ b.disabled=false; b.textContent='Отправить ещё раз'; er.innerHTML=vesc(x&&x.message&&!/fetch/i.test(x.message)?x.message:'Нет связи с сервером.')+' Или <a href="#/ask">напиши автору через «Спросить»</a>.'; }); } });
 function dzSec(v,d,sec,sub){
   if(sec==='3d') return dz3D(v,d,sub);
   if(sec==='ex'){ const types=dzTypesOf(d).filter(t=>d.examples&&d.examples[t.code]); const code=sub||(types.length===1?types[0].code:null);
@@ -30171,20 +30221,23 @@ function dzVariant(v,d,n,extra){
   const meta=DZR.meta(d.id,n), parts=res.task.parts||[res.task], pi=pl>0&&pl<parts.length?pl:0, mine=dzMyN(d)===n;
   const on=mode==='final'?'list':mode==='draft'?'draft':mode==='sheet'?'sheet':'';
   const pills=mine?dzPills(d,on):`<nav class="dzx-pills" aria-label="Вариант ${n}"><a href="${base}"${on===''?' class="on"':''}>Разбор по шагам</a>${d.id==='ng3'?`<a href="${base}/sheet"${on==='sheet'?' class="on"':''}>Как на листе</a>`:''}<a href="${base}/list"${on==='list'?' class="on"':''}>Чистовик</a><a href="${base}/draft"${on==='draft'?' class="on"':''}>Черновик</a></nav>`;
-  const head=dzTop(d,dzVarTitle(d,n),dzShareHTML(mode==='steps'&&pi?HDZ(d.id,n,DZ_PL[pi]):HDZ(d.id,n,...(mode==='steps'?[]:[extra])),d.label+', вариант '+n+' — разбор по шагам'))+pills;
+  const head=dzTop(d,dzVarTitle(d,n),dzShareHTML(mode==='steps'&&pi?HDZ(d.id,n,DZ_PL[pi]):HDZ(d.id,n,...(mode==='steps'?[]:[extra])),d.label+', вариант '+n+' — разбор по шагам'))+pills+condRepHTML(d,n);
   /* «Как на листе» (ДЗ №3): пять задач пирамиды своего варианта — А / Б / В и чертёж по шагам (PYR, EPX) */
   if(mode==='sheet'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzx dzx-varp',body:`${head}
       <p class="var-note">Решение как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Чёрным — данные, синим — новые проекции и повёрнутое, красным — ответ; новое на шаге — оранжевым, обратный переход (точку — назад на π₁ и π₂) — фиолетовым. Данные — твоего варианта ${n}.</p>
       <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Приложи фото листа — отвечу лично, прямо здесь.')}`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
-  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}<div id="dzPl"></div>`});
+  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}${d.course==='ng'&&window.PREP?PREP.chip(d.id):''}<div id="dzPl"></div>`});
     document.body.classList.add('inplayer');
     /* открыт пункт б) — адрес #/ng3/7/b: им и делятся */
     const onPart=k=>{ const x=k&&parts.length>1?[DZ_PL[k]]:[], h=HDZ(d.id,n,...x), lbl=parts.length>1&&parts[k]&&parts[k].l?', задача '+parts[k].l:'';
       if(location.hash!==h){ try{ history.replaceState(history.state,'',h); CURH=location.hash; }catch(e){} }
       dzLinkSet(v.querySelector('.dzx-top .dzx-share'),h,d.label+', вариант '+n+lbl+' — разбор по шагам'); };
-    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(),backLabel:'Ко всем ДЗ',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
+    /* свой вариант по начерту — по умолчанию «Решаю сам» (методичка: сначала попытка, потом помощь); выбор «Смотрю» запоминается */
+    const tryKey='nch_dzmode', tryM=(()=>{ if(!mine||d.course!=='ng') return undefined; try{ return (JSON.parse(localStorage.getItem(tryKey)||'{}')||{})[d.id]||'try'; }catch(e){ return 'try'; } })();
+    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(),backLabel:'Ко всем ДЗ',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,mode:tryM,
+      onMode:m=>{ if(!mine||d.course!=='ng') return; try{ const o=JSON.parse(localStorage.getItem(tryKey)||'{}')||{}; o[d.id]=m; localStorage.setItem(tryKey,JSON.stringify(o)); }catch(e){} },onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
   else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
     v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap varwrap dzx dzx-varp',body:`${head}
       <p class="var-note">${mode==='draft'?'Черновик':'Чистовик'} листа: формат ${sh.format}, масштаб ${sh.scale}. ${mode==='draft'?'Построения в цвете — видно, что откуда взялось; так проверяют ход решения.':'Линии по ГОСТ 2.303: данное и найденное — основной, построения — тонкой, невидимое — штриховой.'}</p>
@@ -30198,7 +30251,7 @@ function dzVariant(v,d,n,extra){
 /* ИГ: деталь варианта — тот же разбор, что у заданий тетради (partPage): данные виды, 3D, построение по шагам, лист */
 function dzPart(v,d,n){ let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
   if(!m||!window.IGUI){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'igx dzwrap dzx',body:dzTop(d,vesc(d.label)+' · вариант '+n)+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. <a href="${HDZ()}">Впиши свой вариант</a>.</div>`}); return d.label+' · вариант '+n; }
-  IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — решение по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):''),
+  IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — решение по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):'')+condRepHTML(d,n),
     crumbs:null,title:'Вариант '+n,back:[HDZ(),'Все ДЗ'],docTitle:d.label+' · вариант '+n,beta:'',
     img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:d.text,
     sheet:d.id==='ig2'?null:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
@@ -31797,9 +31850,21 @@ function stepLines(model,i){ const c=model._sl||(Object.defineProperty(model,'_s
       if(q.h!==s.h) continue; const ux=q.b[0]-q.a[0], uy=q.b[1]-q.a[1], l=Math.hypot(ux,uy)||1e-9, u=((p[0]-q.a[0])*ux+(p[1]-q.a[1])*uy)/(l*l); if(u>-0.02&&u<1.02&&Math.abs((p[0]-q.a[0])*uy-(p[1]-q.a[1])*ux)/l<0.5) return true; } return false; });
   const nw=cur.filter(s=>!was(s)), old=cur.filter(s=>was(s));
   return c[i]={old:IG3.paths(old),cur:IG3.paths(nw),segs:nw}; }
-function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':(model.givenKL?'Главный вид, вид сверху и профиль выреза K на виде слева — из задания. Вырез K идёт вдоль оси x: на главном виде и на виде сверху его линии достраиваем по профилю.':'Главный вид и вид сверху — из задания.')+(model.givenTop&&!model.givenKL?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду — дальше он уже достроен.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
+/* что элемент добавляет на виде сверху сверх данного в задании (вид сверху дан не полностью): новые отрезки по шагам элементов */
+function topLines(model,i){ const c=model._tl||(Object.defineProperty(model,'_tl',{value:{}}),model._tl); if(c[i]) return c[i];
+  const pm=j=>c['m'+j]||(c['m'+j]=j<0?[]:IG3.drawing(IG3.partial(model,j),'top',900).lines), G0=c.g||(c.g=IG3.drawing({tree:model.givenTop,box:model.box},'top',900).lines);
+  const idx=L=>{ const G=new Map(); L.forEach(s=>{ const m=[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2]; const k=Math.floor(m[0]/3)+','+Math.floor(m[1]/3); if(!G.has(k)) G.set(k,[]); G.get(k).push(s); }); return G; };
+  const inL=(G,s)=>{ const m=[(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2]; for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) for(const q of G.get((Math.floor(m[0]/3)+dx)+','+(Math.floor(m[1]/3)+dy))||[]){ const qm=[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]; if(q.h===s.h&&Math.hypot(qm[0]-m[0],qm[1]-m[1])<1.2) return true; } return false; };
+  const gi=c.gi||(c.gi=idx(G0)), pv=idx(pm(i-1)), fin=c.fin||(c.fin=idx(IG3.drawing(model,'top',900).lines));
+  const nw=pm(i).filter(s=>!inL(gi,s)&&!inL(pv,s)&&inL(fin,s));
+  return c[i]={cur:IG3.paths(nw),segs:nw}; }
+function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дано',(model.noTop?'Главный вид — из задания; вид сверху строим под ним.':(model.givenKL?'Главный вид, вид сверху и профиль выреза K на виде слева — из задания. Вырез K идёт вдоль оси x: на главном виде и на виде сверху его линии достраиваем по профилю.':'Главный вид и вид сверху — из задания.')+(model.givenTop&&!model.givenKL?' Вид сверху дан не полностью: отверстие K на нём достраиваем по главному виду.':''))+' Вид слева строим справа от главного вида, на одной высоте с ним.'],
    ...(model.noTop?[['top','Вид сверху','Вида сверху в задании нет — строим его первым, под главным видом. Ширины переносим с главного вида вертикальными линиями связи; глубины берём из формы тела (у шара и цилиндра контур сверху — окружность того же диаметра). Отверстия, идущие вдоль взгляда (K), видны сверху как линии по их ширине на главном виде; невидимые контуры — штриховыми. Дальше глубины для вида слева берём с этого вида.']]:[]),
    ['axis','Ось симметрии вида слева','Сначала проводим ось симметрии вида слева — от неё будем откладывать глубины. Высоты общие с главным видом.']];
+  /* вид сверху дан не полностью: достраиваем его по элементам — до вида слева */
+  if(model.givenTop&&!model.givenKL&&!model.noTop){ const TK=[]; const GK=(model.givenTop&&model.givenTop.k)||[]; FT.forEach((f,i)=>{ if((f.nds||[]).length&&f.nds.every(n=>GK.includes(n))) return;   /* элемент дан на виде сверху — достраивать нечего */
+    if(topLines(model,i).segs.length) TK.push(['topk','Вид сверху: '+f.name.charAt(0).toLowerCase()+f.name.slice(1),'Ширины — с главного вида вертикальными линиями связи.',i]); });
+    out.splice(out.length-1,0,...TK); }
   let first=true;
   FT.forEach((f,i)=>{ const u=stepLines(model,i); if(!u.segs.length) return;   /* элемент не добавляет линий на виде слева — шаг не нужен */
     const hid=u.segs.every(q=>q.h), vis=u.segs.every(q=>!q.h);
@@ -31807,10 +31872,13 @@ function buildSteps(model){ const FT=IG3.features(model), out=[['given','Дан�
       :'Точки — так же: высота с главного вида, глубина с вида сверху от оси.';
     out.push(['feat',f.name,how+(hid?' Элемент внутри детали — его линии невидимы, проводим штриховой.':vis?'':' Видимые части — сплошной линией, невидимые — штриховой.'),i]); first=false; });
   { const LT=letters(model), hl=holeAxes(model).length, sp=igSpec(model);
-    out.push(['cut','Разрезы','Внутреннюю форму показываем разрезами. Симметричное изображение — половина вида и половина разреза, граница по оси (если на ось попадает ребро — волнистой линией: внутреннее ребро остаётся в разрезе, наружное — на виде). Несимметричное изображение — полный разрез. В секущей плоскости — штриховка 45°. На половине вида невидимый контур (штриховые) не проводят — внутреннее устройство уже показано разрезом.'
+    out.push([model.hz&&!model.sec?'cutF':'cut',model.hz&&!model.sec?'Фронтальный разрез':'Разрезы','Внутреннюю форму показываем разрезами. Симметричное изображение — половина вида и половина разреза, граница по оси (если на ось попадает ребро — волнистой линией: внутреннее ребро остаётся в разрезе, наружное — на виде). Несимметричное изображение — полный разрез. В секущей плоскости — штриховка 45°. На половине вида невидимый контур (штриховые) не проводят — внутреннее устройство уже показано разрезом.'
       +(hl?' Отверстия на круглом фланце в секущую плоскость не попали, но по ГОСТ 2.305 их показывают в разрезе как попавшие в неё: мысленно поворачиваем отверстие вокруг оси детали до плоскости разреза — оно встаёт на свой радиус (не на проекцию).':'')
       +(LT.f?' Фронтальная плоскость здесь — не плоскость симметрии детали (спереди и сзади деталь разная), поэтому разрез обозначают: на виде сверху — разомкнутая линия со стрелками и буквами '+LT.f+', над главным видом — «'+LT.f+'–'+LT.f+'».':'')
       +(sp.F!=='view'&&!LT.f||sp.L!=='view'&&!LT.p?' Разрез, плоскость которого — плоскость симметрии детали и который стоит в проекционной связи, не обозначают.':'')]); }
+  if(model.hz&&!model.sec){ const sp=igSpec(model);
+    out.push(['cutL','Профильный разрез',sp.L==='half'?'Вид слева — так же: половина вида и половина профильного разреза.':'Вид слева — полный профильный разрез.'],
+      ['aa','Разрез '+(model.hz.L||'А')+'–'+(model.hz.L||'А'),'Горизонтальный разрез — на уровне, показанном на главном виде; строим его на месте вида сверху.']); }
   if(model.sec) out.push(['sec','Сечение '+secL(model)+'–'+secL(model),'Наклонная плоскость задана следом на главном виде. Точки контура переносим перпендикулярно следу — фигура строится в натуральную величину, со штриховкой.']);
   out.push(['sheet','Готовый лист','Все изображения на листе в проекционной связи, с осями'+(window.IG_WB&&IG_WB.includes(model)?'':', размерами')+' и основной надписью.']);
   return out; }
@@ -31831,14 +31899,20 @@ function stepsSVG(model,st,steps){
   const FR=q=>P('front0',q,X0,Y0), TP=q=>P('top',q,X0,TOPY), LF=q=>P('left0',q,X0+S,Y0);
   const L=(a,c,cl,dash,w)=>`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(c[0])}" y2="${f(c[1])}" stroke="${cl}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
   const dot=(q,cl)=>`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="3.6" fill="${cl}"/>`, LB=[], lab=(q,t,cl,dx,dy)=>{ let x=q[0]+dx, y=q[1]+dy; while(LB.some(z=>Math.abs(z[0]-x)<24&&Math.abs(z[1]-y)<14)) y+=14; LB.push([x,y]); return `<text x="${f(x)}" y="${f(y)}" class="igs-k" fill="${cl}">${t}</text>`; };
-  const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2], cut=kind==='cut'||kind==='sec';
+  const AC='#4f86c6', HL='#8e1f32', AX='12 3 2 3', b=model.box, z0=b[0][2], z1=b[1][2], cut=['cut','sec','cutF','cutL','aa'].includes(kind);
   let o='';
   const img=(v,x,y)=>`<image href="${d[v].url}" x="${x}" y="${y}" width="${S}" height="${S}"/>`;
-  if(kind==='given'&&model.givenTop) d.topG=IG3.drawing({tree:model.givenTop,box:model.box},'top',W);   /* «Дано» — вид сверху как в задании (не достроен) */
+  if((kind==='given'||kind==='topk')&&model.givenTop) d.topG=IG3.drawing({tree:model.givenTop,box:model.box},'top',W);   /* «Дано» — вид сверху как в задании (не достроен) */
   if(kind==='given'&&model.givenF) d.frG=IG3.drawing({tree:model.givenF,box:model.box},'front0',W);   /* вырез K задан на виде слева — на главном виде в задании его нет */
-  o+=img(cut?'front':kind==='given'&&d.frG?'frG':'front0',X0,Y0)+(kind==='given'&&model.noTop?'':img(kind==='given'&&d.topG?'topG':'top',X0,TOPY));
+  const hzA=kind==='aa'&&model.hz, sp0=sp;
+  o+=img(cut?'front':kind==='given'&&d.frG?'frG':'front0',X0,Y0)+(kind==='given'&&model.noTop||hzA?'':img((kind==='given'||kind==='topk')&&d.topG?'topG':'top',X0,TOPY));
+  /* разрез А–А на месте вида сверху — как на листе: половина вида и половина разреза (или полный) */
+  if(hzA){ const cutD=IG3.drawing(model,'topcut',W,model.hz.z), nh=IG3.drawing(model,'topNH',W), tc0=P('top',[0,0,z1],X0,TOPY), id='igsA'+Math.random().toString(36).slice(2,7), im=(dd,cp)=>`<image href="${dd.url}" x="${X0}" y="${TOPY}" width="${S}" height="${S}"${cp?` clip-path="url(#${cp})"`:''}/>`;
+    o+=sp0.H==='full'?im(cutD):sp0.H==='halfD'?`<defs><clipPath id="${id}a"><rect x="${X0}" y="${TOPY}" width="${S}" height="${f(tc0[1]-TOPY)}"/></clipPath><clipPath id="${id}b"><rect x="${X0}" y="${f(tc0[1])}" width="${S}" height="${S}"/></clipPath></defs>${im(nh,id+'a')}${im(cutD,id+'b')}`
+      :(()=>{ const xc=P('top',[sp0.tb||0,0,z1],X0,TOPY)[0]; return `<defs><clipPath id="${id}a"><rect x="${X0}" y="${TOPY}" width="${f(xc-X0)}" height="${S}"/></clipPath><clipPath id="${id}b"><rect x="${f(xc)}" y="${TOPY}" width="${S}" height="${S}"/></clipPath></defs>${im(nh,id+'a')}${im(cutD,id+'b')}`; })();
+    if(sp0.H==='half'&&sp0.tb) o+=wavyIn(model,'T',sp0.tb,(u,v)=>P('top',[u,v,z1],X0,TOPY)).svg; }
   if(kind==='given'&&model.givenKL){ o+=`<polygon points="${model.givenKL.map(p=>LF([0,p[0],p[1]]).map(f).join(',')).join(' ')}" fill="none" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/>`; const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,'#111',AX,.7); }
-  if(cut){ o+=img('left',X0+S,Y0);
+  if(cut){ o+=img(kind==='cutF'?'left0':'left',X0+S,Y0);
     /* ребро на оси: вид от разреза отделяет волнистая линия (как на листе) */
     if(sp.xb) o+=wavyIn(model,'F',sp.xb,(u,v)=>P('front',[u,0,v],X0,Y0)).svg; if(sp.yb) o+=wavyIn(model,'L',sp.yb,(u,v)=>P('left',[0,u,v],X0+S,Y0)).svg;
     /* оси отверстий фланца в разрезах (там, куда отверстия повёрнуты по условности) и обозначения разрезов, если плоскость — не плоскость симметрии */
@@ -31846,7 +31920,9 @@ function stepsSVG(model,st,steps){
     FL.F.forEach(h=>{ o+=L(P('front',[h.x,0,h.z0-4],X0,Y0),P('front',[h.x,0,h.z1+4],X0,Y0),'#111',AXs,.7); }); FL.L.forEach(h=>{ o+=L(P('left',[0,h.y,h.z0-4],X0+S,Y0),P('left',[0,h.y,h.z1+4],X0+S,Y0),'#111',AXs,.7); });
     const lbl=(q,t)=>`<text x="${f(q[0])}" y="${f(q[1])}" class="igs-let" text-anchor="middle">${t}–${t}</text>`;
     if(LT.f) o+=secMark(P('top',[rr,0,z1],X0,TOPY),P('top',[-rr,0,z1],X0,TOPY),Km,LT.f)+lbl([P('front',[0,0,z1],X0,Y0)[0],P('front',[0,0,z1],X0,Y0)[1]-12],LT.f);
-    if(LT.p) o+=secMark(P('top',[0,-rr,z1],X0,TOPY),P('top',[0,rr,z1],X0,TOPY),Km,LT.p)+lbl([P('left',[0,0,z1],X0+S,Y0)[0],P('left',[0,0,z1],X0+S,Y0)[1]-12],LT.p); }
+    if(LT.p&&kind!=='cutF') o+=secMark(P('top',[0,-rr,z1],X0,TOPY),P('top',[0,rr,z1],X0,TOPY),Km,LT.p)+lbl([P('left',[0,0,z1],X0+S,Y0)[0],P('left',[0,0,z1],X0+S,Y0)[1]-12],LT.p);
+    if(hzA&&LT.h){ const y=P('front',[0,0,model.hz.z],X0,Y0)[1], xl=P('front',[b[0][0]-5,0,0],X0,Y0)[0], xr=P('front',[b[1][0]+5,0,0],X0,Y0)[0], tc1=P('top',[0,0,z1],X0,TOPY), yTop=P('top',[0,b[1][1],z1],X0,TOPY)[1];
+      o+=secMark([xl,y],[xr,y],Km,LT.h,HL)+`<text x="${f(tc1[0]+(LT.p?24*Km+10:0))}" y="${f(yTop-14)}" class="igs-let" text-anchor="middle">${LT.h}–${LT.h}</text>`; } }   /* как на листе: правее штриха профильного разреза */
   /* вид слева по элементам: построенные раньше — чёрным, текущий — цветом */
   let view='';
   if(kind==='feat'){ const u=stepLines(model,st[3]), sw=d.left0.sw, g=(pp,cl)=>(pp.h?`<path d="${pp.h}" fill="none" stroke="${cl}" stroke-width="${f(sw*(cl==='#111'?0.45:0.65))}" stroke-dasharray="${f(2.5*d.left0.mm)} ${f(1.1*d.left0.mm)}"/>`:'')+(pp.v?`<path d="${pp.v}" fill="none" stroke="${cl}" stroke-width="${f(sw)}" stroke-linecap="round" stroke-linejoin="round"/>`:'');
@@ -31855,7 +31931,7 @@ function stepsSVG(model,st,steps){
   const fa=FR([0,0,z0-6]), fb=FR([0,0,z1+6]); o+=L(fa,fb,'#111',AX,.7);
   const tc=TP([0,0,z1]), r=Math.max(b[1][0],b[1][1])+6, e=TP([r,0,z1])[0]-tc[0], noT=kind==='given'&&model.noTop; if(!noT) o+=L([tc[0]-e,tc[1]],[tc[0]+e,tc[1]],'#111',AX,.7)+L([tc[0],tc[1]-e],[tc[0],tc[1]+e],'#111',AX,.7);
   if(kind==='top') [b[0][0],b[1][0]].forEach(x=>{ o+=L(FR([x,0,z0]),TP([x,b[1][1],z1]),AC,null,1); });   /* построение вида сверху: ширины — вертикальными линиями связи */
-  if(kind!=='given'&&kind!=='top'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
+  if(kind!=='given'&&kind!=='top'&&kind!=='topk'){ const la=LF([0,0,z0-6]), lb=LF([0,0,z1+6]); o+=L(la,lb,kind==='axis'?AC:'#111',AX,kind==='axis'?1.2:.7); }
   /* как в задании: оси отверстий и центровая окружность на виде сверху, след плоскости А на главном виде — с первого шага */
   { const Km=(FR([10,0,0])[0]-FR([0,0,0])[0])/10, dn={};
     if(!noT) holeAxes(model).forEach(h=>{ const R=Math.hypot(h.x,h.y), q=TP([h.x,h.y,z1]), a=h.r+3, ux=h.x/R, uy=h.y/R;
@@ -31864,7 +31940,16 @@ function stepsSVG(model,st,steps){
     if(model.sec&&kind!=='sec'){ const [[x1,za],[x2,zb]]=model.sec.p; o+=secMark(FR([x1,0,za]),FR([x2,0,zb]),Km,secL(model)); } }
   /* точки текущего элемента: P″ на главном виде, P′ на виде сверху, P‴ на виде слева.
      Высота — горизонтальной линией связи; глубина |y| — от оси вида сверху до P′, тот же отрезок — от оси вида слева до P‴ (засечки — равные отрезки) */
-  if(kind==='feat'){ const pts=featPts(stepLines(model,st[3]).segs); let n0=0; steps.slice(0,steps.indexOf(st)).forEach(q=>{ if(q[0]==='feat') n0+=featPts(stepLines(model,q[3]).segs).length; });
+  /* достраиваем вид сверху: построенное раньше — чёрным, текущий элемент — цветом; ширины — вертикальными линиями связи с главного вида */
+  const topPts=segs=>{ const P0=[]; segs.forEach(q=>P0.push(q.a3,q.b3)); if(!P0.length) return []; const xs=[...new Set(P0.map(p=>Math.round(p[0]*10)/10))].sort((a,c)=>a-c), X=[xs[0],xs[xs.length-1]].filter((v,i,a)=>a.indexOf(v)===i);
+    return X.map(x=>P0.filter(p=>Math.abs(p[0]-x)<0.06).sort((a,c)=>a[1]-c[1])[0]); };
+  const nBefore=()=>{ let n=0; steps.slice(0,steps.indexOf(st)).forEach(q=>{ if(q[0]==='feat') n+=featPts(stepLines(model,q[3]).segs).length; if(q[0]==='topk') n+=topPts(topLines(model,q[3]).segs).length; }); return n; };
+  if(kind==='topk'){ const sw=d.top.sw, g=(pp,cl)=>(pp.h?`<path d="${pp.h}" fill="none" stroke="${cl}" stroke-width="${f(sw*(cl==='#111'?0.45:0.65))}" stroke-dasharray="${f(2.5*d.top.mm)} ${f(1.1*d.top.mm)}"/>`:'')+(pp.v?`<path d="${pp.v}" fill="none" stroke="${cl}" stroke-width="${f(sw)}" stroke-linecap="round"/>`:'');
+    let old=''; steps.slice(0,steps.indexOf(st)).forEach(q=>{ if(q[0]==='topk') old+=g(topLines(model,q[3]).cur,'#111'); });
+    const u=topLines(model,st[3]), pts=topPts(u.segs), n0=nBefore(); let gl='', t='';
+    pts.forEach((p,i)=>{ const n=n0+i+1, A2=FR(p), A1=TP(p); gl+=L(A2,A1,AC,null,.8); t+=dot(A2,'#111')+dot(A1,HL)+lab(A2,n+'″','#111',5,-6)+lab(A1,n+'′',HL,6,14); });
+    o+=gl+`<g transform="translate(${X0} ${TOPY}) scale(${k0})">${old}${g(u.cur,HL)}</g>`+t; }
+  if(kind==='feat'){ const pts=featPts(stepLines(model,st[3]).segs); const n0=nBefore();
     const tick=(a,c)=>{ const dx=c[0]-a[0], dy=c[1]-a[1], l=Math.hypot(dx,dy)||1, nx=-dy/l*4, ny=dx/l*4; return [a,c].map(q=>L([q[0]-nx,q[1]-ny],[q[0]+nx,q[1]+ny],AC,null,1.2)).join(''); };
     let g='', t='';
     pts.forEach((p,i)=>{ const n=n0+i+1, A2=FR(p), A1=TP(p), A3=LF(p), T0=TP([p[0],0,p[2]]), L0=LF([0,0,p[2]]);
@@ -33012,7 +33097,7 @@ function ctx(n){ const RQ=typeof n==='object'?n:null, md=RQ?RQ.md:IG_VARS[n], sp
       if(d[1]==='v'&&LT.f&&(d[4]>x1+1||d[4]<x0-1)) q[4]=d[4]+(d[4]>x1?S:-S);
       else if(d[1]==='h'&&LT.p&&(d[4]>y1+1||d[4]<y0-1)) q[4]=d[4]+(d[4]>y1?S:-S); return q; }); }
   /* зазоры между видами — под размеры: что выходит ниже главного вида и выше вида сверху; правее главного вида и левее вида слева */
-  let fB=0, tA=0, fR=0, lL=0; const ex=(d)=>{ const V=d[0], t=d[1], P=[];
+  let fB=Math.min(0,z0), tA=0, fR=0, lL=0; const ex=(d)=>{   /* тело ниже z = 0 (шар с центром в начале координат, ДЗ 6) — вид сверху ниже на столько же */ const V=d[0], t=d[1], P=[];
     if(t==='h') P.push([d[2][0],d[4]],[d[3][0],d[4]],d[2],d[3]); else if(t==='v') P.push([d[4],d[2][1]],[d[4],d[3][1]]); else if(t==='h1') P.push([d[2][0],d[3]]); else if(t==='v1') P.push([d[3],d[2][1]],[d[3],0]);
     else if(t==='lead') P.push(d[3]); else if(t==='dia'){ const u=[Math.cos(d[4]*Math.PI/180),Math.sin(d[4]*Math.PI/180)], r=d[3]/2+d[5]; P.push([-u[0]*r,-u[1]*r]); if(V==='T') P.push([d[2][0],d[2][1]+d[3]/2]); }   /* описанная окружность на виде сверху выходит за контур — над ней надпись «А–А» */
     else if(t==='ang'){ for(let a=d[4];a<=d[5];a+=5) P.push([(d[3]+9)*Math.cos(a*Math.PI/180),(d[3]+9)*Math.sin(a*Math.PI/180)]); }
@@ -33021,7 +33106,8 @@ function ctx(n){ const RQ=typeof n==='object'?n:null, md=RQ?RQ.md:IG_VARS[n], sp
   (G.d||[]).forEach(ex);
   /* штрих, стрелка и буква обозначения плоскости А у правого конца следа — между главным видом и видом слева: место под них тоже */
   if(md.sec){ const [[xa,za],[xb,zb]]=md.sec.p, th=Math.atan2(zb-za,xb-xa); fR=Math.max(fR,xb+14*Math.cos(th)+10*Math.abs(Math.sin(th))+8-x1); }
-  if(md.step&&IGUI.letters(md).p) tA=Math.max(tA,22);   /* штрих Б–Б над видом сверху со стрелкой и буквой — до 22 мм над контуром */
+  if(md.step&&IGUI.letters(md).p) tA=Math.max(tA,22);
+  if(md.hzOff) fR=Math.max(fR,md.hzOff+28);   /* штрихи А–А за размерными линиями (ДЗ 6): место под штрих, стрелку и букву */   /* штрих Б–Б над видом сверху со стрелкой и буквой — до 22 мм над контуром */
   const gapF=G.gapF||Math.max(24,-fB+Math.max(0,tA)+12+(md.hz?10:0))   /* при горизонтальном разрезе над видом сверху — надпись «Б–Б» */, gapL=G.gapL||Math.max(46,Math.max(0,fR)+Math.max(0,lL)+20);
   const TY=y1+z0*0+gapF+(G.below||0), GX=x1+y1+gapL;
   const FR=(x,z)=>[k*x,-k*z], TP=(x,y)=>[k*x,k*(TY-y)], LF=(y,z)=>[k*(GX-y),-k*z];
@@ -33171,7 +33257,7 @@ function body(n,mode){ const draft=mode==='draft', C=ctx(n), {md,sp,FR,TP,LF,DR}
   if(LT.f&&md.step){ o+=stepMark(md.step,[C.x0,C.x1],LT.f,TP)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   else if(LT.f){ o+=IGUI.secMark(TP(C.x1+4,0),TP(C.x0-4,0),k,LT.f)+lb([FR(0,0)[0],yLb],LT.f); pts.push([FR(0,0)[0],yLb-26]); }
   if(LT.p){ o+=IGUI.secMark(TP(0,C.y0-4),TP(0,C.y1+4),k,LT.p)   /* штрихи — у контура вида сверху по его глубине (у вытянутой детали R — по длине, штрих ушёл бы на главный вид) */+lb([LF(0,0)[0],yLb],LT.p); }
-  if(hz&&LT.h){ const y=FR(0,hz.z)[1]; o+=IGUI.secMark([FR(C.x0-6,0)[0],y],[FR(C.x1+6,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,Math.max(C.y1,...(C.G.d||[]).filter(d=>d[0]==='T'&&d[1]==='dia').map(d=>d[2][1]+d[3]/2)))[1]-24],LT.h); }   /* над описанной окружностью, если она выше контура */
+  if(hz&&LT.h){ const y=FR(0,hz.z)[1]; const ho=md.hzOff||6; o+=IGUI.secMark([FR(C.x0-ho,0)[0],y],[FR(C.x1+ho,0)[0],y],k,LT.h)+lb([TP(0,0)[0]+(LT.p?24*k+10:0),TP(0,Math.max(C.y1,...(C.G.d||[]).filter(d=>d[0]==='T'&&d[1]==='dia').map(d=>d[2][1]+d[3]/2)))[1]-24],LT.h); }   /* над описанной окружностью, если она выше контура */
   pts.push(FR(C.x0-8,C.z1+8),FR(C.x1,C.z0-6),LF(C.y1+6,C.z1+8),LF(C.y0-8,C.z0-6),TP(C.x0-8,C.y0-6),TP(C.x1+8,C.y1+6));   /* поля вокруг видов (размеры и подписи добавляют свои точки сами) */
   /* размеры из задания */
   /* буквы обозначений разрезов (А, Б…) и надписи над видами — место занято: размерные числа их обходят */

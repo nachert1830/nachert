@@ -112,7 +112,7 @@ window.NORMO_MODEL=function(F,model0,C){ const {k,FV,LV,TV,segAll,hatch,add,mark
     if(H.length&&half){ const ub=bnd!=null?(vert?toU(bnd):toV(bnd)):null; let pl=0;
       if(plane&&plane.marks){ const c=plane.marks.map(m=>m.c), hz=Math.abs(c[0][1]-c[1][1])<1*k, vt=Math.abs(c[0][0]-c[1][0])<1*k;
         /* штрихи — на соседнем виде; их линия в мм модели — через тот вид */
-        const other=[FV,LV,TV].find(o=>o&&o!==w&&c.every(p=>p[0]>o.b[0]-25*k&&p[0]<o.b[2]+25*k&&p[1]>o.b[1]-25*k&&p[1]<o.b[3]+25*k));
+        const other=[FV,LV,TV].find(o=>o&&o!==w&&c.every(p=>p[0]>o.b[0]-50*k&&p[0]<o.b[2]+50*k&&p[1]>o.b[1]-50*k&&p[1]<o.b[3]+50*k));   /* штрихи могут стоять за размерными линиями (ДЗ 6) — до 50 мм от контура */
         if(other===TV&&name==='front'&&hz&&MAP.top) pl=(MAP.top.oy-c[0][1])/k;
         else if(other===TV&&name==='left'&&vt&&MAP.top) pl=(c[0][0]-MAP.top.ox)/k;
         else if(other===FV&&name==='top'&&hz&&MAP.front) pl=(MAP.front.oy-c[0][1])/k;

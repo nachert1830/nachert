@@ -9,7 +9,7 @@
 <title>mathanov.</title>
 <link rel="icon" href="../../icon-192.png">
 <script>try{var t=JSON.parse(localStorage.getItem('nch2_theme')||'null');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
-<link rel="stylesheet" href="hq.css?v=5">
+<link rel="stylesheet" href="hq.css?v=6">
 </head>
 <body>
 <header class="top">
@@ -18,6 +18,7 @@
 </header>
 <nav class="tabs" id="tabs" role="tablist">
   <button data-tab="chat" class="on" role="tab">💬 Разговор</button>
+  <button data-tab="session" role="tab">🧑‍💻 Сеанс</button>
   <button data-tab="talk" role="tab">🎙 Диктовка</button>
   <button data-tab="map" role="tab">🗺 Карта</button>
   <button data-tab="tasks" role="tab">📋 Задачи</button>
@@ -36,6 +37,26 @@
         <button class="ghost mini" id="cRec" title="Длинный монолог: запись файлом">⏺</button>
         <span class="hint" id="cHint"></span>
         <button class="primary" id="cSend">Отправить</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-session" hidden>
+    <div class="row shead">
+      <select id="sList" title="Сеансы"></select>
+      <select id="sModel" title="Исполнитель нового сеанса"></select>
+      <button class="ghost" id="sNew">+ Новый сеанс</button>
+      <span class="pill" id="sState"></span><span class="pill cost" id="sCost"></span><span id="sLinks"></span>
+    </div>
+    <div class="feed" id="sFeed"></div>
+    <div class="composer">
+      <textarea id="sSay" rows="2" placeholder="Говори с исполнителем, как с программистом: что посмотреть, что поправить. Новый сеанс начнётся с этой фразы."></textarea>
+      <div class="crow">
+        <button class="mic" id="sMic" aria-pressed="false" title="Говорить"><span class="dot"></span><span id="sMicTxt">Говорить</span></button>
+        <span class="hint" id="sHint"></span>
+        <button class="ghost" id="sMerge" title="Разрешить влить PR сеанса (только при зелёной проверке)">Влей</button>
+        <button class="ghost danger" id="sStop">Стоп</button>
+        <button class="primary" id="sSend">Отправить</button>
       </div>
     </div>
   </section>
@@ -79,6 +100,7 @@
 
   <section class="view" id="v-tasks" hidden>
     <div class="row"><button class="ghost" id="sync">↻ Обновить статусы Цеха</button><span class="msg" id="sMsg"></span></div>
+    <div class="epics" id="epics"></div>
     <div class="board" id="board"></div>
   </section>
 
@@ -107,6 +129,7 @@
       <div class="grid2">
         <label>Потолок трат в месяц, ₽<input type="number" id="budgetIn" min="0" step="100"></label>
         <label>Курс ProxyAPI, ₽ за $<input type="number" id="rateIn" min="1" step="1"></label>
+        <label>Потолок одного сеанса, ₽<input type="number" id="sessIn" min="1" step="50"></label>
       </div>
       <label class="tog"><input type="checkbox" id="autoIn"> Автовыкатка: зелёные тесты + одобрение Ревизора → сразу на сайт. Без галочки — PR ждёт твоего «ок».</label>
       <div class="row"><button class="primary" id="saveS">Сохранить</button><span class="msg" id="stMsg"></span></div>
@@ -164,11 +187,11 @@
     <div class="msg" id="dMsg"></div>
     <div id="dResult"></div>
   </div>
-  <div class="row foot"><button class="ghost danger" id="dArch">В архив</button></div>
+  <div class="row foot"><button class="ghost" id="dEpic" title="Большая цель: Главный инженер разобьёт её на задачи">🧭 Сделать эпиком</button><button class="ghost danger" id="dArch">В архив</button></div>
 </aside>
 <div class="scrim" id="scrim" hidden></div>
 
 <script src="../config.js"></script>
-<script src="hq.js?v=5"></script>
+<script src="hq.js?v=8"></script>
 </body>
 </html>

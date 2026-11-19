@@ -7,8 +7,9 @@
   const $ = id => document.getElementById(id), esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
   const tok = () => { try { return localStorage.getItem('lk_tok') || ''; } catch (e) { return ''; } };
   const TYPE = {strategy: 'Стратегия', goal: 'Цель', task: 'Задача', idea: 'Идея', noise: 'Балабольство'};
-  const STATUS = {new: 'новая', talk: 'обсуждаем', ready: 'ТЗ готово', assigned: 'назначена', running: 'в работе', review: 'проверить', done: 'готово', failed: 'не вышло'};
-  const S = {data: null, sel: null, node: null, tab: 'chat', last: '', feed: []};
+  const STATUS = {new: 'новая', talk: 'обсуждаем', ready: 'ТЗ готово', assigned: 'назначена', running: 'в работе', review: 'проверить', done: 'готово', failed: 'не вышло', rolled: 'откачено'};
+  const ESTATUS = {draft: 'черновик', planning: 'пишет план', review: 'ждёт утверждения', running: 'идёт', paused: 'пауза', done: 'готов', failed: 'остановлен'};
+  const S = {data: null, sel: null, node: null, tab: 'chat', last: '', feed: [], sess: null, sMsgs: [], sBusy: false};
 
   function req(method, path, body) {
     const h = {authorization: 'Bearer ' + tok()}; if (body) h['content-type'] = 'application/json';
@@ -36,8 +37,9 @@
     try { localStorage.setItem('lk_hq_tab', tab); } catch (e) {}
     if (tab === 'map') requestAnimationFrame(links);
     if (tab === 'people') loadPeople();
-    document.body.classList.toggle('chat', tab === 'chat' && !!S.data);
-    if (tab === 'chat') pull(true); }
+    document.body.classList.toggle('chat', (tab === 'chat' || tab === 'session') && !!S.data);
+    if (tab === 'chat') pull(true);
+    if (tab === 'session') sessList(); }
   const toBottom = () => { const f = $('feed'); f.scrollTop = f.scrollHeight; };
   function renderAll() { fillModels(); renderDumps(); renderMap(); renderBoard(); renderStaff(); renderMem(); }
 
@@ -100,9 +102,10 @@
   function item(f) {
     const acts = (f.acts || []).map(a => '<button class="' + (a.main ? 'primary' : 'ghost') + '" data-op="' + esc(a.op) + '" data-a="' + esc(JSON.stringify(a.a || {})) + '">' + esc(a.l) + '</button>').join('');
     return '<div class="fi ' + f.who + (f.from === 'product' ? ' prod' : '') + '" data-fid="' + esc(f.id) + '">' +
-      (f.who === 'hq' ? '<span class="who">' + (f.from === 'product' ? 'Продакт' : 'Штаб') + '</span>' : '') + esc(f.text) +
+      (f.who === 'hq' ? '<span class="who">' + (f.from === 'product' ? 'Продакт' : f.from === 'session' ? 'Сеанс' : 'Штаб') + '</span>' : '') + esc(f.text) +
       (f.result ? '<div class="res">' + esc(f.result) + '</div>' : '') +
       (f.img ? '<img alt="" src="https://raw.githubusercontent.com/nachert1830/nachert/main/' + esc(f.img) + '">' : '') +
+      ((f.shots || []).length ? '<div class="shots">' + f.shots.map((u, i) => '<figure><img alt="" loading="lazy" src="' + esc(u) + '"><figcaption>' + ['было · телефон', 'стало · телефон', 'было · компьютер', 'стало · компьютер'][i] + '</figcaption></figure>').join('') + '</div>' : '') +
       ((f.links || []).length ? '<div class="lnk">' + f.links.map(l => '<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.l) + ' ↗</a>').join('') + '</div>' : '') +
       (acts ? '<div class="acts">' + acts + '</div>' : '') + '<time>' + tm(f.at) + '</time></div>';
   }
@@ -129,15 +132,66 @@
     const b = e.target.closest('[data-op]'); if (!b) return; e.stopPropagation();
     const op = b.dataset.op, a = JSON.parse(b.dataset.a || '{}');
     if (op === 'map') return show('map');
+    if (op === 'opensession') { S.sess = a.id; return show('session'); }
     if (op === 'open') return openNode(a.id);
     if (op === 'rollback' && !confirm('Откатить выкатку? Сайт вернётся к состоянию до неё.')) return;
-    b.disabled = true; S.wait = {discuss: 'Продакт думает…', run: 'Запускаю…', review: 'Ревизор проверяет…', split: 'Разбиваю…'}[op] || '…'; drawFeed();
+    if (op === 'epicreplan') { const t = prompt('Что поправить в плане? Главный инженер перепишет его с этим замечанием.'); if (t == null) return; a.text = t; }
+    if (op === 'epicresume') { const t = prompt('Ответ или уточнение для Главного инженера (можно пусто):', ''); if (t == null) return; a.text = t; }
+    if (op === 'merge' && !confirm('Влить на сайт? Это увидят студенты.')) return;
+    if ((op === 'epicstop' || op === 'epiccancel') && !confirm(op === 'epicstop' ? 'Остановить эпик? Сделанное останется на сайте.' : 'Отменить эпик?')) return;
+    b.disabled = true; S.wait = {discuss: 'Продакт думает…', run: 'Запускаю…', review: 'Ревизор проверяет…', split: 'Разбиваю…', mkepic: 'Отдаю Главному инженеру…', epicok: 'Запускаю эпик…'}[op] || '…'; drawFeed();
     req('POST', '/api/hq/act', {op, a}).catch(e => S.feed.push({id: 'tmp', who: 'hq', text: '⚠️ ' + e.message, at: Date.now()}))
       .then(() => { S.feed = S.feed.filter(f => f.id !== 'tmp'); S.wait = null; return pull(true); }).then(() => reload().catch(() => {}));
   });
   /* новое в ленте — раз в 15 с; задачи в Цехе — статус раз в минуту (смена статуса сама пишет в ленту) */
   setInterval(() => { if (!document.hidden && S.tab === 'chat' && !S.wait) pull(false); }, 15000);
-  setInterval(() => { if (!document.hidden && S.data && S.data.nodes.some(n => n.status === 'running' || n.status === 'review')) req('POST', '/api/hq/sync', {}).then(() => pull(false)).catch(() => {}); }, 60000);
+  setInterval(() => { if (!document.hidden && S.data && S.data.nodes.some(n => n.status === 'running' || n.status === 'review' || n.type === 'epic' && n.status === 'planning')) req('POST', '/api/hq/sync', {}).then(() => pull(false)).catch(() => {}); }, 60000);
+
+  /* ── сеанс: живой диалог с исполнителем (Issue «сеанс»); ответы — опросом раз в 5 с, пока вкладка открыта ── */
+  const SSTATE = {running: 'идёт', paused: 'пауза: потолок цены', done: 'закрыт'};
+  dictate($('sMic'), $('sSay'), on => { $('sMic').classList.toggle('on', on); $('sMicTxt').textContent = on ? 'Стоп' : 'Говорить'; });
+  function sessList() {
+    if (!S.data) return;
+    $('sModel').innerHTML = opts(isText, S.data.settings.roles.chief || 'opus');
+    return req('GET', '/api/hq/session').then(j => {
+      const l = j.sessions || []; if (!S.sess && l.length && l[0].status !== 'done') S.sess = l[0].id;
+      $('sList').innerHTML = '<option value="">— новый сеанс —</option>' + l.map(s => '<option value="' + esc(s.id) + '"' + (s.id === S.sess ? ' selected' : '') + '>' + esc(s.title) + ' · ' + esc(SSTATE[s.status] || s.status) + '</option>').join('');
+      return sessPull(true);
+    }).catch(e => say('sHint', e.message, true));
+  }
+  function sessDraw(node) {
+    const f = $('sFeed');
+    f.innerHTML = S.sess ? S.sMsgs.map(m => '<div class="fi ' + (m.who === 'me' ? 'me' : 'hq sess') + '">' + (m.who === 'hq' ? '<span class="who">Исполнитель' + (m.rub ? ' · ход ' + rub(m.rub) : '') + '</span>' : '') + esc(m.text) +
+      (m.at ? '<time>' + tm(m.at) + '</time>' : '') + '</div>').join('') + (node && node.status === 'running' && (!S.sMsgs.length || S.sMsgs[S.sMsgs.length - 1].who === 'me') ? '<div class="fi hq wait">Исполнитель думает…</div>' : '')
+      : '<div class="feedEmpty"><b>Сеанс с исполнителем</b>Как в Claude Code: говоришь — он ищет в коде, показывает строки, правит, гоняет проверки, открывает PR и вливает по твоему «влей». Напиши первую фразу — сеанс начнётся.</div>';
+    f.scrollTop = f.scrollHeight;
+    $('sState').hidden = $('sCost').hidden = !node; $('sMerge').hidden = $('sStop').hidden = !node || node.status === 'done'; $('sModel').hidden = $('sNew').hidden = !!node && node.status !== 'done';
+    if (node) { $('sState').textContent = (SSTATE[node.status] || node.status) + ' · ' + mName(node.model); $('sState').className = 'pill s-' + (node.status === 'done' ? 'done' : node.status === 'paused' ? 'paused' : 'running');
+      $('sCost').textContent = rub(node.rub) + ' из ' + rub(node.ceil || 0);
+      $('sLinks').innerHTML = (node.pr ? '<a href="' + esc(node.pr) + '" target="_blank" rel="noopener">PR ↗</a> ' : '') + (node.url ? '<a href="' + esc(node.url) + '" target="_blank" rel="noopener">Issue ↗</a>' : ''); }
+    else $('sLinks').innerHTML = '';
+  }
+  function sessPull(force) {
+    if (!S.sess) { S.sMsgs = []; sessDraw(null); return Promise.resolve(); }
+    return req('GET', '/api/hq/session?id=' + encodeURIComponent(S.sess)).then(j => {
+      const grew = j.msgs.length !== S.sMsgs.length; S.sMsgs = j.msgs; S.sNode = j.node; spent(j.spent); if (grew || force) sessDraw(j.node); else sessDraw(j.node);
+    }).catch(e => say('sHint', e.message, true));
+  }
+  function sessSend(op) {
+    const text = $('sSay').value.trim(); if (S.sBusy) return;
+    if (!op && !text) return;
+    if (op === 'stop' && !confirm('Закончить сеанс? Исполнитель напишет итог и отключится.')) return;
+    S.sBusy = true; say('sHint', S.sess ? 'Отправляю…' : 'Открываю сеанс…');
+    const p = S.sess ? req('POST', '/api/hq/session', {id: S.sess, text, op}) : req('POST', '/api/hq/session', {text, model: $('sModel').value});
+    p.then(j => { $('sSay').value = ''; if (!S.sess) S.sess = j.node.id; say('sHint', op === 'merge' ? 'Передал «влей» — вольёт, если проверка PR зелёная.' : op === 'stop' ? 'Передал «стоп».' : '');
+      if (text && !op) S.sMsgs.push({who: 'me', text, at: Date.now()}); sessDraw(j.node); return sessList(); })
+      .catch(e => say('sHint', e.message, true)).then(() => { S.sBusy = false; });
+  }
+  $('sSend').onclick = () => sessSend(); $('sMerge').onclick = () => sessSend('merge'); $('sStop').onclick = () => sessSend('stop');
+  $('sSay').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sessSend(); } };
+  $('sList').onchange = () => { S.sess = $('sList').value || null; S.sMsgs = []; sessPull(true); };
+  $('sNew').onclick = () => { S.sess = null; S.sMsgs = []; $('sList').value = ''; sessDraw(null); $('sSay').focus(); };
+  setInterval(() => { if (!document.hidden && S.tab === 'session' && S.sess && !S.sBusy && (!S.sNode || S.sNode.status !== 'done')) sessPull(false); }, 5000);
 
   /* ── разбор монолога ── */
   $('parse').onclick = () => {
@@ -201,7 +255,16 @@
 
   /* ── задачи: доска по статусам ── */
   const LANES = [['Обсуждаем', ['new', 'talk']], ['Готово к запуску', ['ready', 'assigned']], ['В работе', ['running']], ['Проверить', ['review']], ['Готово', ['done']], ['Не вышло', ['failed']]];
+  function renderEpics() {
+    const es = S.data.nodes.filter(n => n.type === 'epic');
+    $('epics').innerHTML = es.map(e => { const ts = S.data.nodes.filter(n => n.epic === e.id).sort((a, b) => a.eorder - b.eorder), done = ts.filter(n => n.status === 'done').length;
+      return '<div class="epic"><h4>🧭 ' + esc(e.title) + ' <span class="pill s-' + e.status + '">' + esc(ESTATUS[e.status] || e.status) + '</span>' +
+        (ts.length ? '<span class="pill">' + done + ' / ' + ts.length + '</span>' : '') + '<span class="pill cost">' + rub(e.spentRub) + (e.budgetRub ? ' из ' + rub(e.budgetRub) : '') + '</span>' +
+        (e.url ? '<a href="' + esc(e.url) + '" target="_blank" rel="noopener">план ↗</a>' : '') + '</h4>' +
+        (ts.length ? '<div class="prog"><b style="width:' + Math.round(done / ts.length * 100) + '%"></b></div><div class="steps">' + ts.map(card).join('') + '</div>' : '<div class="hint">' + esc(e.text || '') + '</div>') + '</div>'; }).join('');
+  }
   function renderBoard() {
+    renderEpics();
     const ts = S.data.nodes.filter(n => n.type === 'task');
     $('board').innerHTML = LANES.map(([name, st]) => { const l = ts.filter(n => st.includes(n.status));
       return '<div class="lane"><h4>' + name + ' · ' + l.length + '</h4>' + l.map(card).join('') + '</div>'; }).join('');
@@ -243,16 +306,20 @@
     $('dChat').innerHTML = (n.chat || []).map(m => '<div class="bub ' + m.r + '">' + esc(m.t) + (m.m ? '<small>' + esc(mName(m.m)) + '</small>' : '') + '</div>').join('') ||
       (task ? '<div class="hint">Нажми «Обсудить с продактом» — он задаст вопросы и напишет ТЗ. Можно сразу написать, что важно.</div>' : '');
     document.querySelector('.chatin').hidden = document.querySelector('.exec').hidden = !task;
+    $('dEpic').hidden = !(task || n.type === 'goal') || !!n.epic;
     const kind = n.kind || 'code', cur = n.model || d.settings.staff[kind][n.level || 'medium'];
     $('dModel').innerHTML = opts(kind === 'image' ? isImg : isText, cur);
     $('dRun').textContent = n.issue || n.result || n.img ? '↻ Перезапустить' : '▶ Запустить';
     let r = '';
-    if (n.issue) r += '<div class="result">Цех: <a href="' + esc(n.url) + '" target="_blank" rel="noopener">задача №' + n.issue + '</a>' + (n.pr ? ' · <a href="' + esc(n.pr) + '" target="_blank" rel="noopener">PR</a>' : '') + (n.log ? '\n\n' + esc(n.log) : '\n\nИсполнитель работает. Статус обновится сам раз в минуту.') + '</div>';
+    if (n.issue) r += '<div class="result">Цех: <a href="' + esc(n.url) + '" target="_blank" rel="noopener">задача №' + n.issue + '</a>' + (n.pr ? ' · <a href="' + esc(n.pr) + '" target="_blank" rel="noopener">PR</a>' : '') + (n.preview ? ' · <a href="' + esc(n.preview) + '" target="_blank" rel="noopener">👀 предпросмотр</a>' : '') + (n.log ? '\n\n' + esc(n.log) : '\n\nИсполнитель работает. Статус обновится сам раз в минуту.') + '</div>';
     if (n.img) r += '<div class="result"><img alt="" src="https://raw.githubusercontent.com/' + 'nachert1830/nachert/main/' + esc(n.img) + '"><div class="hint">' + esc(n.img) + '</div></div>';
     if (n.result) r += '<div class="result">' + esc(n.result) + '</div>';
     if (n.review) r += '<div class="result">Ревизор: ' + (n.review.ok ? '✅ соответствует ТЗ' : '⚠️ есть замечания') + (n.review.notes || []).map(x => '\n• ' + esc(x)).join('') + '</div>';
+    if (n.issue && n.pr && n.status === 'review') r += '<div class="row"><button class="ghost" id="dRej">✖ Отклонить</button><button class="primary" id="dMerge">✅ Влить</button></div>';
     if ((n.result || n.img) && n.status !== 'done') r += '<div class="row">' + (n.result ? '<button class="ghost" id="dRev">Ревизор, проверь</button>' : '') + '<button class="primary" id="dOk">Принять ✓</button></div>';
     $('dResult').innerHTML = r;
+    if ($('dMerge')) $('dMerge').onclick = () => { if (confirm('Влить на сайт? Это увидят студенты.')) act($('dMerge'), 'act', {op: 'merge', a: {id: n.id}}, 'Вливаю…'); };
+    if ($('dRej')) $('dRej').onclick = () => act($('dRej'), 'act', {op: 'reject', a: {id: n.id}}, '…');
     if ($('dRev')) $('dRev').onclick = () => act($('dRev'), 'review', {id: n.id}, 'Проверяет…');
     if ($('dOk')) $('dOk').onclick = () => act($('dOk'), 'review', {id: n.id, accept: true});
   }
@@ -266,6 +333,8 @@
   $('dType').onchange = () => patch({type: $('dType').value}); $('dParent').onchange = () => patch({parent: $('dParent').value || null});
   $('dKind').onchange = () => patch({kind: $('dKind').value}); $('dLevel').onchange = () => patch({level: $('dLevel').value});
   $('dModel').onchange = () => patch({model: $('dModel').value});
+  $('dEpic').onclick = () => { if (!confirm('Сделать эпиком? Главный инженер изучит код и разобьёт цель на задачи — план придёт в «Разговор» на утверждение.')) return;
+    req('POST', '/api/hq/act', {op: 'mkepic', a: {id: S.node.id}}).then(() => { $('dClose').onclick(); show('chat'); return reload(); }).catch(e => say('dMsg', e.message, true)); };
   $('dArch').onclick = () => { if (confirm('Убрать в архив?')) req('POST', '/api/hq/node', {id: S.node.id, op: 'archive'}).then(() => { $('dClose').onclick(); reload(); }); };
   $('dSend').onclick = () => { const text = $('dSay').value.trim();
     act($('dSend'), 'chat', {id: S.node.id, text, model: $('dPm').value}, 'Продакт думает…').then(j => { if (!j) return; $('dSay').value = '';
@@ -307,7 +376,7 @@
       opts(r === 'stenographer' ? m => !!m.stt : isText, st.roles[r]) + '</select></label>').join('');
     $('staffT').innerHTML = '<tr><th></th>' + Object.keys(d.levels).map(l => '<th>' + esc(d.levels[l]) + '</th>').join('') + '</tr>' +
       Object.keys(d.kinds).map(k => '<tr><th>' + esc(d.kinds[k]) + '</th>' + Object.keys(d.levels).map(l => '<td><select data-k="' + k + '" data-l="' + l + '">' + opts(k === 'image' ? isImg : isText, st.staff[k][l]) + '</select></td>').join('') + '</tr>').join('');
-    $('budgetIn').value = st.budgetRub; $('rateIn').value = st.rate; $('autoIn').checked = !!st.autoMerge;
+    $('budgetIn').value = st.budgetRub; $('rateIn').value = st.rate; $('sessIn').value = st.sessionRub; $('autoIn').checked = !!st.autoMerge;
     $('keys').innerHTML = (d.keys.proxy ? '✅ ключ ProxyAPI на сервере' : '❌ нет ключа ProxyAPI (секрет PROXYAPI_KEY)') + ' · ' + (d.keys.github ? '✅ токен GitHub — Цех и картинки работают' : '❌ нет токена GitHub (секрет GH_HQ_TOKEN) — Цех и картинки недоступны');
     $('catT').innerHTML = '<tr><th>Сотрудник</th><th>Цена, $ за 1 млн токенов</th><th>Для чего</th></tr>' + Object.keys(d.models).map(k => { const m = d.models[k];
       const price = m.image ? '~$' + m.perImage + ' за картинку' : m.stt ? '~$' + m.perMin + ' за минуту' : m.in + ' / ' + m.out + (m.cache != null ? ' · кэш ' + m.cache : '');
@@ -320,7 +389,7 @@
   }
   $('memAdd').onclick = () => { const t = $('memIn').value.trim(); if (!t) return; req('POST', '/api/hq/memory', {op: 'add', text: t}).then(j => { $('memIn').value = ''; S.data.memory = j.memory; renderMem(); }); };
   $('memList').onclick = e => { const b = e.target.closest('[data-mdel]'); if (b) req('POST', '/api/hq/memory', {op: 'del', i: +b.dataset.mdel}).then(j => { S.data.memory = j.memory; renderMem(); }); };
-  $('saveS').onclick = () => { const st = {roles: {}, staff: {}, budgetRub: +$('budgetIn').value, rate: +$('rateIn').value, autoMerge: $('autoIn').checked};
+  $('saveS').onclick = () => { const st = {roles: {}, staff: {}, budgetRub: +$('budgetIn').value, rate: +$('rateIn').value, sessionRub: +$('sessIn').value, autoMerge: $('autoIn').checked};
     document.querySelectorAll('[data-role]').forEach(s => { st.roles[s.dataset.role] = s.value; });
     document.querySelectorAll('[data-k]').forEach(s => { (st.staff[s.dataset.k] = st.staff[s.dataset.k] || {})[s.dataset.l] = s.value; });
     busy($('saveS'), true); req('POST', '/api/hq/settings', {settings: st}).then(() => { say('stMsg', 'Сохранено'); return reload(); }).catch(e => say('stMsg', e.message, true)).then(() => busy($('saveS'), false)); };
