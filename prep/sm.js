@@ -210,7 +210,7 @@ PREP.topic('m4',{
     const d=[rnd(-1,1),rnd(-.8,.8),rnd(-1.2,1.2)], l=Math.hypot(...d), u=d.map(x=>x/l); if(Math.abs(u[0])<.35) continue;
     { const {A:a,B:b,C:c}=V, p=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], q=[c[0]-a[0],c[1]-a[1],c[2]-a[2]], n=[p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]];
       if(Math.abs(n[0]*u[0]+n[1]*u[1]+n[2]*u[2])/Math.hypot(...n)<Math.sin(25*D)) continue; }   /* прямая не почти ∥ плоскости */
-    const Dp=K.map((v,j)=>v-u[j]*rnd(30,40)), Ep=K.map((v,j)=>v+u[j]*rnd(30,40)); if(Dp[1]<4||Dp[2]<4||Ep[1]<4||Ep[2]<4) continue;
+    const ta=rnd(30,40), tb=rnd(30,40), Dp=K.map((v,j)=>v-u[j]*ta), Ep=K.map((v,j)=>v+u[j]*tb);   /* одно смещение на все координаты — прямая проходит через K */ if(Dp[1]<4||Dp[2]<4||Ep[1]<4||Ep[2]<4) continue;
     V.K=K; V.Dp=Dp; V.Ep=Ep; if(this.scene(V,null)) return V; } return null; },
   watch:{steps:[{cap:'Прямую l заключаем в γ ⟂ π₁: γ′ ≡ l′',roles:['p1h','p2h']},{cap:'γ ∩ ABC — прямая 12: 1″ и 2″ по линиям связи',roles:['p1h','p2h','l1','l2','p1f','p2f','s12']},{cap:'K″ = l″ ∩ 1″2″, K′ — по линии связи на l′',roles:['p1h','p2h','l1','l2','p1f','p2f','s12','K2','lk','K1']}]},
   scene(V,trap){ const {A,B,C,K,Dp,Ep}=V, l1=[...h1(Dp),...h1(Ep)], l2=[...f2(Dp),...f2(Ep)];

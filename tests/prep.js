@@ -14,7 +14,7 @@ const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js')); require(path.join(ROOT,'prep/rest.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js')); require(path.join(ROOT,'prep/rest.js')); require(path.join(ROOT,'prep/space.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
@@ -255,6 +255,17 @@ for(const [id,T] of Object.entries(PREP.TOPICS)){
   const miss=[...new Set(S.E.map(e=>e.role))].filter(r=>!last.has(r)); if(miss.length) bad(`${id}: «Смотри» не показывает ${miss.join(', ')}`);
 }
 
+/* ── 2б. 3D: каждая точка пространства с pr проецируется ровно в свою точку эпюра (на 50 вариантах) ── */
+{ let n3=0; for(const [id,T] of Object.entries(PREP.TOPICS)){ if(!T.space) continue; n3++; let bad3=0, chk=0;
+    for(let i=0;i<50;i++){ const V=(T.watch.V?T.watch.V.call(T):T.make.call(T)); if(!V) continue; const S=T.scene(V,null); if(!S) continue; const pr=T.space(V);
+      if(!pr.length){ bad3++; continue; }
+      for(const q of pr.filter(q=>q.t==='pt'&&q.pr)){ for(const [k,role] of Object.entries(q.pr)){ const e=S.E.concat(S.base).find(x=>x.t==='pt'&&x.role===role); if(!e){ bad3++; if(bad3<=2) bad(`3D ${id}: на эпюре нет точки «${role}»`); continue; } chk++;
+        const want=k==='h'?[q.p[0],q.p[1]]:[q.p[0],-q.p[2]]; if(Math.hypot(e.a[0]-want[0],e.a[1]-want[1])>TOL){ bad3++; if(bad3<=2) bad(`3D ${id}: точка ${q.lab||role} на ${k==='h'?'π₁':'π₂'} не совпала с эпюром (${e.a.map(v=>v.toFixed(1))} ≠ ${want.map(v=>v.toFixed(1))})`); } } }
+      /* роли 3D — те же, что у шагов «Смотри» */
+      const steps=new Set(T.watch.steps.flatMap(s=>s.roles)); pr.filter(q=>q.role&&!steps.has(q.role)).slice(0,1).forEach(q=>bad(`3D ${id}: роль «${q.role}» не встречается в шагах «Смотри»`)); }
+    if(!chk) bad(`3D ${id}: нет ни одной точки, сверенной с эпюром`); }
+  info.push(`3D: тем со сценой ${n3}; каждая точка с привязкой сверена с эпюром на 50 вариантах`); }
+
 /* ── 3. модель освоения на смоделированных студентах ── */
 { for(const id of Object.keys(PREP.TOPICS)){ const T=PREP.TOPICS[id], M=PREP.Model(T,null); try{ for(let i=0;i<30;i++){ const k=M.next(); if(!T.traps[k]) throw new Error('выбрана несуществующая ловушка «'+k+'»'); M.last=k; M.answer(k,i%5!==0,3000); } }catch(e){ bad(`модель, тема ${id}: ${e.message}`); } } }
 { const T=PREP.TOPICS.x3, runs=10000;
@@ -286,7 +297,10 @@ async function screens(){
     const r=await page.evaluate(async()=>{
       const wait=ms=>new Promise(f=>setTimeout(f,ms)); const q=s=>document.querySelector(s);
       q('[data-ph="watch"]').click(); await wait(50);
-      for(let i=0;i<10;i++){ const b=q('#ppNext'); if(!b) return 'нет кнопки «Дальше»'; const last=/провер/.test(b.textContent); b.click(); await wait(30); if(last) break; }
+      for(let i=0;i<10;i++){ const b=q('#ppNext'); if(!b) return 'нет кнопки «Дальше»'; const last=/провер/.test(b.textContent);
+        if(last){ const v3=q('.pp-vt [data-v="3"]'); if(v3){ v3.click(); await wait(80); const cv=q('canvas.pp-3d'); if(!cv||cv.hidden) return '3D не открылось';
+          const d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data; let n=0; for(let k=3;k<d.length;k+=40) if(d[k]>0) n++; if(n<200) return '3D пустое'; q('.pp-vt [data-v="e"]').click(); await wait(20); } }
+        b.click(); await wait(30); if(last) break; }
       if(!q('#ppA')||!q('#ppB')) return 'нет карточек дуэли';
       const box=e=>e.getBoundingClientRect(), A=box(q('#ppA')), B=box(q('#ppB')), nav=q('.nav-bot');
       if(A.height<160||B.height<160) return 'карточки ниже 160 px';

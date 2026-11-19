@@ -27,7 +27,7 @@ function axisAround(Q,e,P,pad){ const ts=P.map(p=>dot(sub(p,Q),e)); return axisS
 const lab3=(n,k)=>n+(k===3?'‴':'^IV');
 function segBase(A,B,nA,nB){ const a2=f2(A),b2=f2(B),a1=h1(A),b1=h1(B);
   return [L('','o',a2[0],a2[1],b2[0],b2[1]),L('','o',a1[0],a1[1],b1[0],b1[1]),L('','lk',a2[0],a2[1],a1[0],a1[1]),L('','lk',b2[0],b2[1],b1[0],b1[1]),
-    Pt('',a2[0],a2[1],nA+'″',-1,{c:'o',r:1}),Pt('',b2[0],b2[1],nB+'″',1,{c:'o',r:1}),Pt('',a1[0],a1[1],nA+'′',-1,{c:'o',r:1}),Pt('',b1[0],b1[1],nB+'′',1,{c:'o',r:1})]; }
+    Pt(nA+'2',a2[0],a2[1],nA+'″',-1,{c:'o',r:1}),Pt(nB+'2',b2[0],b2[1],nB+'″',1,{c:'o',r:1}),Pt(nA+'1',a1[0],a1[1],nA+'′',-1,{c:'o',r:1}),Pt(nB+'1',b1[0],b1[1],nB+'′',1,{c:'o',r:1})]; }
 
 /* ══ t2 · первая замена: прямая общего положения → прямая уровня (x₁ ∥ A′B′) ══ */
 function lineAB(){

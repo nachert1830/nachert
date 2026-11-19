@@ -214,7 +214,7 @@ PREP.topic('l3',{
 function segGen(){ for(;;){ const A=[rnd(-45,-20),rnd(8,30),rnd(8,25)], B=[rnd(20,45),rnd(25,45),rnd(30,50)]; if(Math.abs(B[2]-A[2])>14&&Math.abs(B[1]-A[1])>10) return {A,B}; } }
 function segBase(A,B){ const a2=f2(A),b2=f2(B),a1=h1(A),b1=h1(B);
   return [L('','o',a2[0],a2[1],b2[0],b2[1]),L('','o',a1[0],a1[1],b1[0],b1[1]),L('','lk',a2[0],a2[1],a1[0],a1[1]),L('','lk',b2[0],b2[1],b1[0],b1[1]),
-    Pt('',a2[0],a2[1],'A″',-1,{c:'o',r:1}),Pt('',b2[0],b2[1],'B″',1,{c:'o',r:1}),Pt('',a1[0],a1[1],'A′',-1,{c:'o',r:1}),Pt('',b1[0],b1[1],'B′',1,{c:'o',r:1})]; }
+    Pt('A2',a2[0],a2[1],'A″',-1,{c:'o',r:1}),Pt('B2',b2[0],b2[1],'B″',1,{c:'o',r:1}),Pt('A1',a1[0],a1[1],'A′',-1,{c:'o',r:1}),Pt('B1',b1[0],b1[1],'B′',1,{c:'o',r:1})]; }
 function triNV(V,trap,mode){
   const {A,B}=V, a1=h1(A), b1=h1(B), u=nrm(sub(b1,a1)); let n=[-u[1],u[0]]; if(n[1]>0) n=mul(n,-1);   /* катет — в сторону от π₂ не важен; берём «вверх» к оси */
   let dz=Math.abs(B[2]-A[2]); if(trap==='Zb') dz=B[2]; if(trap==='Dy') dz=Math.abs(B[1]-A[1]);
