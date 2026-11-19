@@ -70,7 +70,7 @@ PREP.topic('x3',{
     if(trap==='A') R1=V.R;
     if(trap==='B') R2=rc(V,Math.max(0,h-rnd(14,22)));
     if(trap==='O') c2=[V.xc,V.Ys];
-    if(trap==='P'){ const xm=V.xc*.5,t=Math.tan(15*D); zf=x=>h+(x-xm)*t; sig=L('sig','a',xL,-zf(xL),xR,-zf(xR));
+    if(trap==='P'){ const xm=V.xc*.5,t=Math.tan(rnd(20,28)*D)*sgn(); zf=x=>h+(x-xm)*t; sig=L('sig','a',xL,-zf(xL),xR,-zf(xR));
       const seg=ins=>{ let a=null,b=null; for(let x=xL;x<=xR;x+=.1){ if(ins(x,zf(x))){ if(a==null) a=x; b=x; } } return a==null?null:[a,b]; };
       const s=seg((x,z)=>z>=0&&x*x+z*z<=V.R*V.R), c=seg((x,z)=>z>=0&&z<=V.Hc&&Math.abs(x-V.xc)<=rc(V,z)); if(!s||!c) return null;
       chS=L('chS','b',s[0],-zf(s[0]),s[1],-zf(s[1])); chC=L('chC','c',c[0],-zf(c[0]),c[1],-zf(c[1]));
@@ -96,24 +96,25 @@ PREP.topic('x3',{
   traps:{
     F:{b0:-1.6,say:'Линия связи ⟂ оси x',src:'Ж с. 22, 131',hl:['l1','p1f']},
     D:{b0:-.6,say:'Окружности пересекаются в двух точках',src:'Ж с. 115',hl:['p2h','l2','p2f']},
-    P:{b0:-.1,say:'γ — плоскость уровня: только тогда окружности',src:'Ж с. 98, 115; М с. 18',hl:['sig','chS','chC','cS','cC']},
+    P:{b0:-.1,say:'γ — плоскость уровня: только тогда окружности',src:'Ж с. 98, 115; М с. 18',hl:['sig','chS','chC','cS','cC','p1h','p2h','l1','l2','p1f','p2f']},
     C:{b0:.5,say:'Точки лежат на следе f₀γ, а не на очерке',src:'Ж с. 115; М с. 18–19',hl:['p1f','p2f','l1','l2']},
-    O:{b0:.6,say:'Центр окружности — на оси поверхности',src:'Ж с. 88, 115; М с. 18',hl:['cC','p1h','p2h']},
-    B:{b0:.9,say:'Радиус берут на уровне γ',src:'Ж с. 109; М с. 25',hl:['cC','p1h','p2h']},
-    A:{b0:1.3,say:'Радиус сечения, а не шара',src:'Ж с. 115',hl:['cS','p1h','p2h']}}
+    O:{b0:.6,say:'Центр окружности — на оси поверхности',src:'Ж с. 88, 115; М с. 18',hl:['cC','p1h','p2h','l1','l2','p1f','p2f']},
+    B:{b0:.9,say:'Радиус берут на уровне γ',src:'Ж с. 109; М с. 25',hl:['cC','p1h','p2h','l1','l2','p1f','p2f']},
+    A:{b0:1.3,say:'Радиус сечения, а не шара',src:'Ж с. 115',hl:['cS','p1h','p2h','l1','l2','p1f','p2f']}}
 });
 
 /* ── x7 · соединение и видимость ── */
 function vis2(V,p){ return p[1]>=V.Ys-1e-6&&p[1]>=V.yc-1e-6; }   /* на π₂ видна точка на передних половинах обеих поверхностей */
 PREP.topic('x7',{
-  make(){ const V=sphCone(); if(!V) return null; return V; },
+  /* вариант, где видимость зависит от обеих поверхностей (иначе ловушку «видна на одной» не показать) */
+  make(){ let V=null; for(let t=0;t<40;t++){ V=sphCone(); if(!V) continue; const cnt=V.curve.filter(p=>(p[1]>=V.Ys)!==(p[1]>=V.Ys&&p[1]>=V.yc)).length; if(cnt>8) return V; } return V; },
   watch:{steps:[
     {cap:'Точки линии найдены — соединяем по порядку',roles:['ch']},
     {cap:'На π₂: видна, только если видна на обеих поверхностях',roles:['ch','cf']},
     {cap:'Видимость меняется на очерках',roles:['ch','cf','kp']}]},
   scene(V,trap){
     if(!V) return null;
-    const c=V.curve.slice(); c.push(c[0]);
+    const c=V.curve.slice();   /* линия открыта: обе ветви выходят на основание (z = 0) */
     const vis=p=>trap==='V'?p[1]>=V.Ys:vis2(V,p);
     let pts2=c.map(p=>[p[0],-p[2],vis(p)]);
     /* точки смены видимости — на очерке */
@@ -123,19 +124,19 @@ PREP.topic('x7',{
     const E=[];
     if(trap==='R'){ /* соединили не по порядку: соседние точки переставлены — петли */
       const sub=c.filter((_,i)=>i%8===0), z=sub.slice(); for(let i=1;i+1<z.length;i+=3){ const t=z[i]; z[i]=z[i+1]; z[i+1]=t; }
-      E.push(PL('ch','crv',z.concat([z[0]]).map(p=>[p[0],p[1]])));
+      E.push(PL('ch','crv',z.map(p=>[p[0],p[1]])));
     } else E.push(PL('ch','crv',c.map(p=>[p[0],p[1]])));
     let seg=[pts2[0]];
     for(let i=1;i<pts2.length;i++){ seg.push(pts2[i]); if(pts2[i][2]!==pts2[i-1][2]||i===pts2.length-1){ E.push(PL('cf','crv',seg.map(p=>[p[0],p[1]]),{dash:!seg[0][2]})); seg=[pts2[i]]; } }
     ks.forEach(i=>{ const p=c[i]; E.push(Pt('kp',p[0],-p[2],null,1,{c:'o',r:1.2})); });
     return {box:scBox(V),axis:0,base:sphConeBase(V),E,_ks:ks.length};
   },
-  fair(V,k,ok,bad){ if(ok._ks<2) return false; if(k==='V'){ const a=JSON.stringify(ok.E.filter(e=>e.role==='cf').map(e=>e.dash)),b=JSON.stringify(bad.E.filter(e=>e.role==='cf').map(e=>e.dash)); return a!==b; } return true; },
+  fair(V,k,ok,bad){ if(ok._ks<1) return false; if(k==='V'){ if(V.curve.filter(p=>(p[1]>=V.Ys)!==(p[1]>=V.Ys&&p[1]>=V.yc)).length<=8) return false; const a=JSON.stringify(ok.E.filter(e=>e.role==='cf').map(e=>e.dash)),b=JSON.stringify(bad.E.filter(e=>e.role==='cf').map(e=>e.dash)); return a!==b; } return true; },
   traps:{
     R:{b0:-1,say:'Точки соединяют по порядку, без петель',src:'Ж с. 104, 115; М с. 19',hl:['ch']},
     W:{b0:-.6,say:'Закрытый участок — штриховой',src:'Ж с. 101, 109; М с. 25',hl:['cf']},
     S:{b0:.4,say:'Видимость меняется только на очерке',src:'Ж с. 110, 115; М с. 25, 30',hl:['cf','kp']},
-    V:{b0:.8,say:'Видна, только если видна на обеих поверхностях',src:'Ж с. 101, 115; М с. 30',hl:['cf']}}
+    V:{b0:.8,say:'Видна, только если видна на обеих поверхностях',src:'Ж с. 101, 115; М с. 30',hl:['cf','kp']}}
 });
 
 /* ══════ тело вращения с вертикальной осью: конус или полусфера ══════ */
@@ -161,23 +162,23 @@ PREP.topic('f3',{
     {cap:'Линия связи вниз до окружности',roles:['par','cir','lk']},
     {cap:'A″ видна — значит, A на передней половине',roles:['par','cir','lk','A1']}]},
   scene(V,trap){
-    let z=V.z, r=V.rAt(z);
-    if(trap==='Pz'){ z=Math.min(V.top*.85,Math.max(V.top*.08,z+sgn()*rnd(12,18))); r=V.rAt(z); }
+    let z=V.z, r=V.rAt(z), rp=r;
+    if(trap==='Pz'){ z=Math.min(V.top*.85,Math.max(V.top*.08,z+sgn()*rnd(12,18))); r=rp=V.rAt(z); }
     if(trap==='Rb') r=V.R;
     if(trap==='Rx') r=Math.abs(V.x);
     let x2=V.x; if(trap==='Lk') x2=V.x+sgn()*rnd(9,13);
     if(Math.abs(x2)>r) return null;
     let y=Math.sqrt(Math.max(0,r*r-x2*x2)); if(trap==='Bk') y=-y;
-    const E=[L('par','a',-r,-z,r,-z),C('cir','a',0,V.Y0,r),L('lk','lk',V.x,-V.z,x2,V.Y0+y),Pt('A1',x2,V.Y0+y,'A′',x2<0?-1:1)];
+    const E=[L('par','a',-rp,-z,rp,-z),C('cir','a',0,V.Y0,r),L('lk','lk',V.x,-V.z,x2,V.Y0+y),Pt('A1',x2,V.Y0+y,'A′',x2<0?-1:1)];
     return {box:revBox(V),axis:0,base:revBase(V).concat([Pt('',V.x,-V.z,'A″',V.x<0?-1:1,{c:'o'})]),E};
   },
   fair(V,k,ok,bad){ const a=ptOf(ok,'A1'),b=ptOf(bad,'A1'); return a[1]-V.Y0>6&&far(a,b,6)&&Math.abs(V.x)>4; },
   traps:{
     Lk:{b0:-1.5,say:'Линия связи ⟂ оси x',src:'Ж с. 22',hl:['lk','A1']},
-    Rb:{b0:.2,say:'Радиус — с параллели через A″, не с основания',src:'Ж с. 88; М с. 25',hl:['cir','A1']},
-    Bk:{b0:.5,say:'A″ видна — A на передней половине',src:'Ж §11; М с. 25',hl:['A1']},
-    Pz:{b0:.6,say:'Параллель проводят через саму точку',src:'Ж с. 109; М с. 25',hl:['par','cir','A1']},
-    Rx:{b0:.8,say:'Радиус — от оси до очерка, а не до A″',src:'Ж с. 88',hl:['cir','A1']}}
+    Rb:{b0:.2,say:'Радиус — с параллели через A″, не с основания',src:'Ж с. 88; М с. 25',hl:['cir','lk','A1']},
+    Bk:{b0:.5,say:'A″ видна — A на передней половине',src:'Ж §11; М с. 25',hl:['lk','A1']},
+    Pz:{b0:.6,say:'Параллель проводят через саму точку',src:'Ж с. 109; М с. 25',hl:['par','cir','lk','A1']},
+    Rx:{b0:.8,say:'Радиус — от оси до очерка, а не до A″',src:'Ж с. 88',hl:['cir','lk','A1']}}
 });
 
 /* ── x1 · сечение проецирующей плоскостью (конус, фронтально-проецирующая α) ── */
@@ -218,9 +219,9 @@ PREP.topic('x1',{
   traps:{
     Lk:{b0:-1.5,say:'Линия связи ⟂ оси x',src:'Ж с. 22',hl:['lk','p2h','p3h']},
     One:{b0:-.4,say:'Параллель пересекается дважды: 2′ и 3′',src:'Ж с. 109',hl:['p3h']},
-    Of:{b0:.3,say:'Точка сечения — на следе f₀α',src:'Ж с. 101, 109',hl:['p2f','par','cir','p2h','p3h']},
-    Rb:{b0:.4,say:'Радиус — с параллели через точку',src:'Ж с. 109; М с. 25',hl:['cir','p2h','p3h']},
-    Nb:{b0:.9,say:'Окружность — той же параллели, что и 2″',src:'Ж с. 109; М с. 25',hl:['cir','p2h','p3h']}}
+    Of:{b0:.3,say:'Точка сечения — на следе f₀α',src:'Ж с. 101, 109',hl:['p2f','par','cir','lk','p2h','p3h']},
+    Rb:{b0:.4,say:'Радиус — с параллели через точку',src:'Ж с. 109; М с. 25',hl:['cir','lk','p2h','p3h']},
+    Nb:{b0:.9,say:'Окружность — той же параллели, что и 2″',src:'Ж с. 109; М с. 25',hl:['cir','lk','p2h','p3h']}}
 });
 
 /* ── x4 · проецирующая поверхность (цилиндр ⟂ π₁ и полусфера) ── */
@@ -257,11 +258,22 @@ PREP.topic('x4',{
   traps:{
     Lk:{b0:-1.5,say:'Линия связи ⟂ оси x',src:'Ж с. 22',hl:['lk','p1f']},
     Ou:{b0:.4,say:'Точка — на отрезке параллели, не на очерке',src:'Ж с. 109; М с. 24–25',hl:['lk','p1f']},
-    Cq:{b0:.8,say:'Параллель сферы — с центром на её оси',src:'Ж с. 88, 115; М с. 18',hl:['cir','par','p1f']},
-    Nb:{b0:.9,say:'Параллель проходит через саму точку 1′',src:'Ж с. 109; М с. 25',hl:['cir','par','p1f']}}
+    Cq:{b0:.8,say:'Параллель сферы — с центром на её оси',src:'Ж с. 88, 115; М с. 18',hl:['cir','par','lk','p1f']},
+    Nb:{b0:.9,say:'Параллель проходит через саму точку 1′',src:'Ж с. 109; М с. 25',hl:['cir','par','lk','p1f']}}
 });
 
 /* ── x5 · концентрические сферы (конус ⟂ π₁ и наклонный цилиндр, оси пересекаются в O) — на π₂ ── */
+function x5geo(V){
+  const O=[0,-V.zO], u=[V.ux,V.uy], n=[-V.uy,V.ux], cr=[[V.R,0],[0,-V.H]], cl=[[-V.R,0],[0,-V.H]];
+  /* окружность (центр на оси конуса) ∩ очерк: точки на образующей между основанием и вершиной */
+  const onOutline=(line,c,Rr)=>{ const ux=line[1][0]-line[0][0], uy=line[1][1]-line[0][1];
+    return lineCirc(line[0][0],line[0][1],ux,uy,c[0],c[1],Rr).filter(t=>t>0.02&&t<0.98).map(t=>[line[0][0]+t*ux,line[0][1]+t*uy]).sort((a,b)=>a[1]-b[1]); };
+  /* сечение конуса сферой: горизонтальные отрезки (верхний и нижний) */
+  const coneChords=Rr=>onOutline(cr,O,Rr).map(p=>[-p[0],p[1],p[0],p[1]]);
+  const cylChord=Rr=>{ if(Rr<=V.rq+2) return null; const d=Math.sqrt(Rr*Rr-V.rq*V.rq), M=[O[0]+u[0]*d,O[1]+u[1]*d]; return {M,seg:[M[0]+n[0]*V.rq,M[1]+n[1]*V.rq,M[0]-n[0]*V.rq,M[1]-n[1]*V.rq]}; };
+  return {O,u,n,cr,cl,onOutline,coneChords,cylChord};
+}
+const inSeg=X=>X&&X[2]>=0&&X[2]<=1&&X[3]>=0&&X[3]<=1;
 PREP.topic('x5',{
   make(){
     for(let t=0;t<300;t++){
@@ -278,46 +290,36 @@ PREP.topic('x5',{
     {cap:'Сечение цилиндра — отрезок ⟂ его оси',roles:['O','sph','chC','chQ']},
     {cap:'Отрезки одной сферы пересеклись — точка 1″',roles:['O','sph','chC','chQ','K']}]},
   scene(V,trap){
-    const O=[0,-V.zO], u=[V.ux,V.uy], n=[-V.uy,V.ux];
-    const coneR=[[V.R,0],[0,-V.H]], coneL=[[-V.R,0],[0,-V.H]];
-    let Oc=O.slice(), Rs=V.Rs;
-    if(trap==='Oc') Oc=[0,-V.zO+sgn()*rnd(8,12)];
-    /* сечение конуса сферой (центр на оси конуса): горизонтальный отрезок через точку сферы на правом очерке */
-    const coneChord=(c,Rr)=>{ const ux=coneR[1][0]-coneR[0][0], uy=coneR[1][1]-coneR[0][1]; const ts=lineCirc(coneR[0][0],coneR[0][1],ux,uy,c[0],c[1],Rr).filter(t=>t>0.02&&t<0.98);
-      return ts.map(t=>{ const x=coneR[0][0]+t*ux, y=coneR[0][1]+t*uy; return [-x,y,x,y]; }); };
-    const RsC=trap==='Dr'?Rs+sgn()*rnd(3.5,5):Rs;
-    const chordsC=coneChord(Oc,RsC); if(!chordsC.length) return null;
-    /* сечение цилиндра */
-    let chQ;
-    if(trap==='Oc'){ /* сфера не соосна цилиндру: студент соединяет точки, где окружность встречает очерки цилиндра */
-      const P1=[O[0]+n[0]*V.rq,O[1]+n[1]*V.rq], P2=[O[0]-n[0]*V.rq,O[1]-n[1]*V.rq];
-      const t1=lineCirc(P1[0],P1[1],u[0],u[1],Oc[0],Oc[1],Rs).filter(t=>t>0), t2=lineCirc(P2[0],P2[1],u[0],u[1],Oc[0],Oc[1],Rs).filter(t=>t>0);
-      if(!t1.length||!t2.length) return null; const a=Math.max(...t1), b=Math.max(...t2);
-      chQ=[P1[0]+u[0]*a,P1[1]+u[1]*a,P2[0]+u[0]*b,P2[1]+u[1]*b];
-    } else { if(Rs<=V.rq+2) return null; const d=Math.sqrt(Rs*Rs-V.rq*V.rq); const M=[O[0]+u[0]*d,O[1]+u[1]*d];
-      chQ=trap==='Xh'?(()=>{ /* «отрезок ⟂ x» через ту же середину до очерков */ const P1=[O[0]+n[0]*V.rq,O[1]+n[1]*V.rq],P2=[O[0]-n[0]*V.rq,O[1]-n[1]*V.rq];
-          const a=lineX([M[0],M[1]-1,M[0],M[1]+1],[P1[0],P1[1],P1[0]+u[0],P1[1]+u[1]]), b=lineX([M[0],M[1]-1,M[0],M[1]+1],[P2[0],P2[1],P2[0]+u[0],P2[1]+u[1]]); return a&&b?[a[0],a[1],b[0],b[1]]:null; })()
-        :[M[0]+n[0]*V.rq,M[1]+n[1]*V.rq,M[0]-n[0]*V.rq,M[1]-n[1]*V.rq]; }
-    if(!chQ) return null;
-    /* точка: пересечение отрезков (в пределах обоих) */
-    let K=null, chC=null;
-    for(const cc of chordsC){ const X=lineX(cc,chQ); if(X&&X[2]>=0&&X[2]<=1&&X[3]>=-.02&&X[3]<=1.02){ K=[X[0],X[1]]; chC=cc; break; } }
-    if(!K) return null;
-    if(trap==='Ko'){ const X=lineX(chQ,[coneR[0][0],coneR[0][1],coneR[1][0],coneR[1][1]]); if(!X) return null; K=[X[0],X[1]]; }
+    const g=x5geo(V), O=g.O, u=g.u, n=g.n, Rs=V.Rs;
+    const q=g.cylChord(Rs); if(!q) return null;
+    const cc=g.coneChords(Rs); if(!cc.length) return null;
+    /* верный выбор: отрезок конуса, который пересекает отрезок цилиндра */
+    const idx=cc.findIndex(c=>inSeg(lineX(c,q.seg))); if(idx<0) return null;
+    let chC=cc[idx], chQ=q.seg;
+    if(trap==='Dr'){ const c2=g.coneChords(Rs+sgn()*rnd(3.5,5)); if(!c2[idx]) return null; chC=c2[idx]; }
+    if(trap==='Xh'){ /* отрезок цилиндра ⟂ оси x (вертикальный) через ту же середину — до очерков цилиндра */
+      const M=q.M, P1=[O[0]+n[0]*V.rq,O[1]+n[1]*V.rq], P2=[O[0]-n[0]*V.rq,O[1]-n[1]*V.rq];
+      const a=lineX([M[0],M[1]-1,M[0],M[1]+1],[P1[0],P1[1],P1[0]+u[0],P1[1]+u[1]]), b=lineX([M[0],M[1]-1,M[0],M[1]+1],[P2[0],P2[1],P2[0]+u[0],P2[1]+u[1]]);
+      if(!a||!b) return null; chQ=[a[0],a[1],b[0],b[1]]; }
+    const X=lineX(chC,chQ); if(!inSeg(X)) return null;
+    let K=[X[0],X[1]];
+    if(trap==='Ko'){ const Y=lineX(chQ,[g.cr[0][0],g.cr[0][1],g.cr[1][0],g.cr[1][1]]); if(!Y||Y[2]<0||Y[2]>1) return null; K=[Y[0],Y[1]]; }
     const end=[O[0]+u[0]*V.Lq,O[1]+u[1]*V.Lq];
     const base=[PL('','o',[[-V.R,0],[0,-V.H],[V.R,0],[-V.R,0]]),L('','cl',0,-V.H-6,0,4),
       L('','cl',O[0]-u[0]*6,O[1]-u[1]*6,end[0]+u[0]*6,end[1]+u[1]*6),
       L('','o',O[0]+n[0]*V.rq,O[1]+n[1]*V.rq,end[0]+n[0]*V.rq,end[1]+n[1]*V.rq),L('','o',O[0]-n[0]*V.rq,O[1]-n[1]*V.rq,end[0]-n[0]*V.rq,end[1]-n[1]*V.rq),
-      L('','o',end[0]+n[0]*V.rq,end[1]+n[1]*V.rq,end[0]-n[0]*V.rq,end[1]-n[1]*V.rq)];
-    const E=[Pt('O',Oc[0],Oc[1],'O″',-1,{c:'o'}),C('sph','a',Oc[0],Oc[1],Rs),L('chC','c',...chC),L('chQ','b',...chQ),Pt('K',K[0],K[1],'1″',1)];
-    const xs=[-V.R,V.R,end[0]+V.rq,Oc[0]-Rs,Oc[0]+Rs], ys=[-V.H,0,end[1]-V.rq,Oc[1]-Rs,Oc[1]+Rs];
+      L('','o',end[0]+n[0]*V.rq,end[1]+n[1]*V.rq,end[0]-n[0]*V.rq,end[1]-n[1]*V.rq),Pt('',O[0],O[1],'O″',-1,{c:'o'})];
+    const E=[C('sph','a',O[0],O[1],Rs),L('chC','c',...chC),L('chQ','b',...chQ),Pt('K',K[0],K[1],'1″',1)];
+    const xs=[-V.R,V.R,end[0]+V.rq,O[0]-Rs,O[0]+Rs], ys=[-V.H,0,end[1]-V.rq,O[1]-Rs,O[1]+Rs];
     return {box:box(Math.min(...xs)-10,Math.min(...ys)-10,Math.max(...xs)+10,Math.max(...ys)+8),axis:0,base,E};
   },
-  fair(V,k,ok,bad){ const a=ptOf(ok,'K'),b=ptOf(bad,'K'); return far(a,b,4.5); },
+  fair(V,k,ok,bad){ const a=ptOf(ok,'K'),b=ptOf(bad,'K'); if(!far(a,b,4.5)) return false;
+    if(k==='Ko'){ /* точка на очерке не должна случайно оказаться верной: глубоко внутри отрезка цилиндра */
+      const n=[-V.uy,V.ux], t=b[0]*n[0]+(b[1]+V.zO)*n[1]; return Math.abs(t)<V.rq-3; }
+    return true; },
   traps:{
     Ko:{b0:.3,say:'Точка — на пересечении отрезков, не на очерке',src:'М с. 20',hl:['K']},
     Xh:{b0:.2,say:'Сечение цилиндра — отрезок ⟂ его оси, а не оси x',src:'Ж с. 121; М с. 20',hl:['chQ','K']},
-    Oc:{b0:.5,say:'Центр сфер — точка пересечения осей',src:'Ж с. 121; М с. 20',hl:['O','sph','chQ','K']},
     Dr:{b0:.8,say:'Оба отрезка — от одной и той же сферы',src:'Ж с. 121; М с. 20',hl:['chC','K']}}
 });
 

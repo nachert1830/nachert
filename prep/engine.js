@@ -13,7 +13,8 @@
    • следующая ловушка — где p ближе к 0,85 (Wilson и др., Nature Communications, 2019); промах возвращает её через две пары;
    • знание — байесовское отслеживание (Corbett, Anderson, 1994): угадывание g зависит от ловушки (очевидную угадать легче —
      победа над ней весит меньше), медленный верный ответ весит вдвое меньше;
-   • освоено: P(знает) ≥ 0,95 и побеждены все неочевидные ловушки (b₀ ≥ 0); повтор через 1 → 3 → 7 → 16 → 35 дней.
+   • освоено: P(знает) ≥ 0,97, последние 4 ответа верны, не меньше 6 пар, побеждены все неочевидные ловушки (b₀ ≥ 0);
+     повтор через 1 → 3 → 7 → 16 → 35 дней.
    Цвета экранов — токены --pp-* (ниже, привязаны к токенам сайта): новый дизайн меняет их в одном месте. */
 (function(){
 'use strict';
@@ -35,7 +36,7 @@ function status(id){ const s=store.get(id); if(!s||!s.mast) return s&&s.n?'start
 const sig=x=>1/(1+Math.exp(-x));
 function Model(topic,saved){
   const K=Object.keys(topic.traps);
-  const M={th:0,b:{},pL:.15,n:0,beat:{},miss:{},queue:[],last:null,log:[]};
+  const M={th:0,b:{},pL:.1,n:0,beat:{},miss:{},queue:[],last:null,log:[]};
   K.forEach(k=>{ M.b[k]=topic.traps[k].b0; M.beat[k]=0; M.miss[k]=0; });
   /* повтор: стартуем ближе к прошлому уровню, но тему всё равно нужно подтвердить */
   if(saved&&saved.mast){ M.th=Math.min(1,saved.th||0); M.pL=.5; }
@@ -53,14 +54,16 @@ function Model(topic,saved){
   M.answer=function(k,ok,ms){
     const p=pc(k), Kf=Math.max(.35,1.2/Math.sqrt(1+M.n)), o=ok?1:0;
     M.th+=Kf*(o-p)*2; M.b[k]-=.35*(o-p);
-    const g=guess(k), s=.08, T=.12, L=M.pL;
+    const g=guess(k), s=.1, T=.02, L=M.pL;
     let post=ok?L*(1-s)/(L*(1-s)+(1-L)*g):L*s/(L*s+(1-L)*(1-g));
     if(ok&&ms>15000) post=(post+L)/2;
     M.pL=post+(1-post)*T; M.n++;
     if(ok) M.beat[k]++; else { M.miss[k]++; M.queue.push({k,at:M.n+2}); }
     M.log.push({k,ok,p:Math.round(p*100),pL:Math.round(M.pL*100)});
   };
-  M.mastered=()=>M.pL>=.95&&K.filter(k=>topic.traps[k].b0>=0).every(k=>M.beat[k]>0);
+  /* освоено: P(знает) ≥ 0,97, последние 4 ответа верны, не меньше 6 пар и побеждены все неочевидные ловушки
+     (моделирование tests/prep.js: «знает» — в среднем ~14 пар, «угадывает» — ложное «освоено» ≈ 0,5 %) */
+  M.mastered=()=>M.pL>=.97&&M.n>=6&&M.log.slice(-4).length===4&&M.log.slice(-4).every(x=>x.ok)&&K.filter(k=>topic.traps[k].b0>=0).every(k=>M.beat[k]>0);
   return M;
 }
 
@@ -226,7 +229,7 @@ function duel(stage,topic,T,saved,toWatch){
       <p class="pp-sub">Повторим через ${SPACING[Math.min(SPACING.length-1,((store.get(T.id)||{}).lvl||1)-1)]} дн. — так тема не забудется.</p>
       <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:''}<a class="pp-btn ghost" href="#/prep">Программа</a></div>
       <details class="pp-how"><summary>Почему система решила, что ты освоил</summary><table>${keys.map(k=>`<tr><td>${esc(topic.traps[k].say)}</td><td>${M.beat[k]} ✓</td><td>${M.miss[k]} ✗</td><td>${esc(topic.traps[k].src||'')}</td></tr>`).join('')}</table>
-      <p>Пары подбирались так, чтобы шанс ответить верно был около 85 %. Угадывание в выборе из двух учтено: тема засчитана, когда вероятность «знает» стала выше 95 %.</p></details></div>`;
+      <p>Пары подбирались так, чтобы шанс ответить верно был около 85 %. Угадывание в выборе из двух учтено: тема засчитана, когда вероятность «знает» стала выше 97 % и четыре последних ответа подряд верны.</p></details></div>`;
   };
   const key=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); choose(e.currentTarget===A); } };
   A.onclick=()=>choose(true); B.onclick=()=>choose(false); A.onkeydown=key; B.onkeydown=key;
