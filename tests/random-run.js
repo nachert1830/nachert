@@ -1,6 +1,7 @@
 /* node tests/random-run.js [--seeds N] — прогон случайных вариантов отдельно (в run.js он тоже есть) */
 const http=require('http'), fs=require('fs'), path=require('path');
-let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
+/* браузер — только для отдельного запуска: run.js и tests/shards.js (задание plan в CI, без Playwright) берут отсюда функции */
+const pw=()=>{ try{ return require('playwright').chromium; }catch(e){ return require('/opt/node-tools/node_modules/playwright').chromium; } };
 const R=require('./random.js'), ROOT=path.join(__dirname,'..');
 const SEEDS=+((process.argv.find(a=>/^--seeds=/.test(a))||'').split('=')[1]||12);
 function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html';
@@ -75,7 +76,7 @@ async function runVariants(page,seeds,opts){
 module.exports={runVariants,isolate,blockKeys};
 if(require.main===module)(async()=>{
   const srv=await serve(), URL='http://127.0.0.1:'+srv.address().port+'/';
-  const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
+  const browser=await pw().launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined});
   const page=await browser.newPage(); await page.goto(URL); await require('./ready.js')(page);
   const res=await runVariants(page,SEEDS);
   let clean=0, total=0;
