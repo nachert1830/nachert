@@ -14,7 +14,7 @@ const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
@@ -178,6 +178,14 @@ const CHECK={
   m4(V,S){ const v=[]; const K1=P(S,'K1'), K2=P(S,'K2'); if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); const K=[K1[0],K1[1],-K2[1]];
     if(!inPl(V,K)) v.push('K в плоскости'); if(!onSeg3(V.Dp,V.Ep,K)) v.push('K на прямой l'); return v; },
   t1(V,S){ const s=L1(S,'nv'); return Math.abs(Math.hypot(s[2]-s[0],s[3]-s[1])-Math.hypot(V.A[0]-V.B[0],V.A[1]-V.B[1],V.A[2]-V.B[2]))>TOL?['отмечена натуральная величина']:[]; },
+  s4(V,S){ const v=[]; const n=[V.dh[1]*V.df[2]-V.dh[2]*V.df[1],V.dh[2]*V.df[0]-V.dh[0]*V.df[2],V.dh[0]*V.df[1]-V.dh[1]*V.df[0]], X=V.X;
+    const inP=q=>Math.abs(n[0]*(q[0]-X[0])+n[1]*(q[1]-X[1])+n[2]*(q[2]-X[2]))/Math.hypot(...n)<TOL;
+    const h=L1(S,'h0'), f=L1(S,'f0'); if(!inP([h[0],h[1],0])||!inP([h[2],h[3],0])) v.push('h₀α — горизонтальный след'); if(!inP([f[0],0,-f[1]])||!inP([f[2],0,-f[3]])) v.push('f₀α — фронтальный след');
+    if(Math.abs(h[0]-f[0])>TOL) v.push('следы встречаются на оси x'); return v; },
+  m8(V,S){ const v=[]; const K1=P(S,'K1'), K2=P(S,'K2'); if(Math.abs(K1[0]-K2[0])>TOL) v.push('линия связи'); const K=[K1[0],K1[1],-K2[1]];
+    if(!onSeg3(V.P,V.Q,K)) v.push('K на прямой a'); if(Math.abs(d3(K,V.A)-d3(K,V.B))>TOL) v.push('|KA| = |KB|'); return v; },
+  t5(V,S){ const v=[]; const A4=P(S,'A4'),B4=P(S,'B4'),C4=P(S,'C4'), d=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+    if(Math.abs(d(A4,B4)-d3(V.A,V.B))>.6||Math.abs(d(A4,C4)-d3(V.A,V.C))>.6||Math.abs(d(B4,C4)-d3(V.B,V.C))>.6) v.push('натуральный вид = треугольник ABC'); return v; },
   f1(V,S){ const v=[]; const b=E(S,'b1')[0]; if(b.t!=='circ'||Math.abs(b.a[2]-V.R)>TOL||Math.abs(b.a[0])>TOL) v.push('основание на π₁ — окружность радиуса R');
     const oL=E(S,'oL')[0].a, oR=E(S,'oR')[0].a; if(Math.abs(oL[0])>TOL||Math.abs(oR[0])>TOL) v.push('вершина на оси');
     if(Math.abs(oL[2]+V.R)>TOL||Math.abs(oR[2]-V.R)>TOL) v.push('очерк — крайние образующие'); return v; }
