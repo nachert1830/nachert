@@ -14,7 +14,7 @@ const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js')); require(path.join(ROOT,'prep/rest.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
@@ -186,6 +186,25 @@ const CHECK={
     if(!onSeg3(V.P,V.Q,K)) v.push('K на прямой a'); if(Math.abs(d3(K,V.A)-d3(K,V.B))>TOL) v.push('|KA| = |KB|'); return v; },
   t5(V,S){ const v=[]; const A4=P(S,'A4'),B4=P(S,'B4'),C4=P(S,'C4'), d=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
     if(Math.abs(d(A4,B4)-d3(V.A,V.B))>.6||Math.abs(d(A4,C4)-d3(V.A,V.C))>.6||Math.abs(d(B4,C4)-d3(V.B,V.C))>.6) v.push('натуральный вид = треугольник ABC'); return v; },
+  t7(V,S){ const v=[]; const {A,B}=V, Bh=P(S,'B1h'), Bf=P(S,'B1f'); if(Math.abs(Bh[1]-A[1])>TOL||Math.abs(Math.hypot(Bh[0]-A[0],Bh[1]-A[1])-Math.hypot(B[0]-A[0],B[1]-A[1]))>TOL) v.push('B₁′: радиус |A′B′|, A′B₁′ ∥ x');
+    if(Math.abs(Bf[0]-Bh[0])>TOL) v.push('линия связи'); if(Math.abs(-Bf[1]-B[2])>TOL) v.push('B₁″ на высоте B″'); return v; },
+  m5(V,S){ const v=[]; const zf=x=>V.z0+(x-V.x0)*Math.tan(V.ph); for(const [f,h] of [['p1f','p1h'],['p2f','p2h']]){ const F=P(S,f), H=P(S,h); if(Math.abs(F[0]-H[0])>TOL){ v.push('линия связи'); continue; }
+      const K=[H[0],H[1],-F[1]]; if(!inPl(V,K)) v.push('точка в плоскости ABC'); if(Math.abs(K[2]-zf(K[0]))>TOL) v.push('точка на β'); } return v; },
+  m6(V,S){ const h=L1(S,'hyp'), D3=V.Dp, A3=V.h0, u=[V.h1[0]-A3[0],V.h1[1]-A3[1],0], w=[D3[0]-A3[0],D3[1]-A3[1],D3[2]-A3[2]], c=[u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]], dist=Math.hypot(...c)/Math.hypot(...u);
+    return Math.abs(Math.hypot(h[2]-h[0],h[3]-h[1])-dist)>TOL?['гипотенуза = расстояние от D до h']:[]; },
+  t9(V,S){ const {A,B,C}=V, ab=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], ac=[C[0]-A[0],C[1]-A[1],C[2]-A[2]], n=[ab[1]*ac[2]-ab[2]*ac[1],ab[2]*ac[0]-ab[0]*ac[2],ab[0]*ac[1]-ab[1]*ac[0]];
+    const dd=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cx=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+    /* центр описанной окружности ABC в пространстве */
+    const t1=cx(n,ab), t2=cx(ac,n), k=1/(2*dd(n,n)); const O=[0,1,2].map(i=>A[i]+(dd(ac,ac)*t1[i]+dd(ab,ab)*t2[i])*k);
+    const O1=P(S,'O1'); return Math.hypot(O1[0]-O[0],O1[1]-O[1])>.5?['O′ — проекция настоящего центра описанной окружности']:[]; },
+  x5m(V,S){ const v=[]; const u=[Math.cos(V.ps),-Math.sin(V.ps)], n=[-u[1],u[0]], tA=Math.tan(V.al);
+    for(const r of ['m1','m2']){ const e=E(S,r)[0], pts=e.t==='line'?[0.25,.5,.75].map(t=>[e.a[0]+(e.a[2]-e.a[0])*t,e.a[1]+(e.a[3]-e.a[1])*t]):[e.p[4],e.p[8],e.p[12]];
+      for(const K of pts){ const z=-K[1], Rc=(V.Sz-z)*tA, yc=Rc*Rc-K[0]*K[0], d=[K[0],K[1]+V.zO], t=d[0]*n[0]+d[1]*n[1], yq=V.r*V.r-t*t;
+        if(yc<-1||yq<-1||Math.abs(yc-yq)>3) { v.push('точка на обеих поверхностях'); break; } } } return v; },
+  f4a(V,S){ const v=[]; const x1=z=>V.xa+(V.xb-V.xa)*(z-V.za)/(V.zb-V.za);
+    E(S,'g2').forEach(e=>{ const a=e.a; if(Math.abs(a[1]-a[3])>TOL||Math.abs(a[0]-x1(-a[1]))>TOL) v.push('образующая ∥ π₁ между точками одной высоты'); });
+    E(S,'g1').forEach(e=>{ if(Math.abs(e.a[3]-V.yq)>TOL) v.push('конец — на d₂′'); }); return v; },
+  f4b(V,S){ const v=[]; E(S,'d2').forEach((e,k)=>{ if(Math.abs(-e.a[1]-V.p*k/V.n)>TOL) v.push('равные подъёмы'); }); return v.slice(0,1); },
   f1(V,S){ const v=[]; const b=E(S,'b1')[0]; if(b.t!=='circ'||Math.abs(b.a[2]-V.R)>TOL||Math.abs(b.a[0])>TOL) v.push('основание на π₁ — окружность радиуса R');
     const oL=E(S,'oL')[0].a, oR=E(S,'oR')[0].a; if(Math.abs(oL[0])>TOL||Math.abs(oR[0])>TOL) v.push('вершина на оси');
     if(Math.abs(oL[2]+V.R)>TOL||Math.abs(oR[2]-V.R)>TOL) v.push('очерк — крайние образующие'); return v; }
