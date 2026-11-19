@@ -92,7 +92,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # браузер и пакеты — из кэша (скачиваются один раз на версию, а не в каждом потоке каждого запуска)
+      # браузер и пакеты — из кэша (скачиваются один раз на версию, а не в каждом потоке каждого запуска);
+      # системные пакеты (apt, до 6 мин на медленном зеркале) — только если без них браузер не запускается
       - name: Кэш браузера
         id: pw
         uses: actions/cache@v4
@@ -103,7 +104,7 @@ jobs:
           key: pw-1.47.2-acorn8-${{ runner.os }}
       - name: Браузер для проверки
         run: |
-          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then npx playwright install-deps chromium >/dev/null
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then node -e "require('playwright').chromium.launch().then(b=>b.close())" 2>/dev/null && echo "браузер запускается — системные пакеты не нужны" || npx playwright install-deps chromium >/dev/null
           else npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 && npx playwright install --with-deps chromium; fi
       - name: Проверка (поток ${{ matrix.shard }})
         run: |

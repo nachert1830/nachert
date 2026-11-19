@@ -62,7 +62,7 @@ jobs:
             node_modules
           key: pw-1.47.2-acorn8-${{ runner.os }}
       - run: |
-          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then npx playwright install-deps chromium >/dev/null
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then node -e "require('playwright').chromium.launch().then(b=>b.close())" 2>/dev/null && echo "браузер запускается — системные пакеты не нужны" || npx playwright install-deps chromium >/dev/null
           else npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 && npx playwright install --with-deps chromium; fi
       - name: Повтор ${{ matrix.rep }}, поток ${{ matrix.shard }}
         run: node tests/run.js --plan=plan.json --shard=${{ matrix.shard }} --jobs=3 --out=part-${{ matrix.shard }}.json
@@ -92,7 +92,7 @@ jobs:
             node_modules
           key: pw-1.47.2-acorn8-${{ runner.os }}
       - run: |
-          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then npx playwright install-deps chromium >/dev/null
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then node -e "require('playwright').chromium.launch().then(b=>b.close())" 2>/dev/null && echo "браузер запускается — системные пакеты не нужны" || npx playwright install-deps chromium >/dev/null
           else npm install --no-save --no-package-lock playwright@1.47.2 acorn@8 && npx playwright install --with-deps chromium; fi
       - name: ${{ matrix.what }}
         run: |
