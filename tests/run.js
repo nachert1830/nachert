@@ -8,7 +8,7 @@ const http=require('http'), fs=require('fs'), path=require('path');
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const ROOT=path.join(__dirname,'..'), QUICK=process.argv.includes('--quick');
 /* блоки проверки: --only=a,b — только они (выборочная проверка Цеха и PR; полная — на main после слияния) */
-const GROUPS=['core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','normom','normow','points','ng3','track','lk','me','print','colors','ask','theory','crawl'];
+const GROUPS=['core','dzvar','variants','prov','cert','adequacy','random','gym','rk2','rkp','live','rkg','ig4','igs','normo','normom','normow','points','ng3','track','lk','me','print','colors','ask','theory','tutor','crawl'];
 const ONLY=(a=>a?new Set(a.slice(7).split(',').map(x=>x.trim()).filter(Boolean)):null)(process.argv.find(a=>a.startsWith('--only=')));
 if(ONLY){ const bad=[...ONLY].filter(g=>!GROUPS.includes(g)); if(bad.length){ console.error('Нет таких блоков: '+bad.join(', ')+'. Есть: '+GROUPS.join(', ')); process.exit(2); } }
 /* время каждого блока — для раскладки потоков CI по времени (строка «Время блоков» в конце) */
@@ -253,7 +253,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     await apage.evaluate(()=>{ window.__EV=[]; window.TRACK=(n,p)=>__EV.push(n+':'+(p&&p.mode||'')+':'+(p&&p.task||'')); location.hash='#/ng/path/t12'; });
     await apage.waitForSelector('.pl-mode[data-m="try"]',{timeout:5000}).catch(()=>{});
     await apage.click('.pl-mode[data-m="try"]').catch(()=>{}); await apage.click('.pl-mode[data-m="watch"]').catch(()=>{});
-    for(let k=0;k<40;k++){ const b=await apage.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await apage.waitForTimeout(60); }
+    for(let k=0;k<200;k++){ const b=await apage.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await apage.waitForTimeout(60); }
     await apage.click('.pl-done').catch(()=>{}); await apage.waitForTimeout(200);
     const ev=await apage.evaluate(()=>window.__EV);
     ['task_open:watch:12','task_mode:try:12','task_done:watch:12'].forEach(e=>{ if(!ev.includes(e)) fail.push('Статистика режимов: нет события '+e+' (пришло: '+ev.join(', ')+')'); });
@@ -273,6 +273,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   if(on('print')) report('Печать листов', await require('./print.js').printCheck(browser,URL));
   /* цвета чертежа (tests/colors.js): контраст ≥ 3:1, различимость при цветовой слепоте */
   if(on('colors')) report('Цвета чертежа', require('./colors.js').check());
+  /* фундамент ИИ-тренера (tests/tutor.js, docs/TUTOR.md): автомат лестницы, линтер, паспорт каждого шага тетради и каждого варианта ДЗ */
+  if(on('tutor')) { const R=await require('./tutor.js').runTutor(browser,URL); R.info.forEach(x=>info.push(x)); report('ИИ-тренер (паспорта, автомат, линтер)',R.bad); }
 
   /* 3л. «Спроси автора» (tests/ask.js): вопрос с сайта (гость → вход → черновик уходит сам, фото) → ответ в пульте → ученик видит ответ;
      настоящий сервер кабинета с базой в памяти */
@@ -300,8 +302,8 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     /* разбор каждой задачи до конца: «Дальше» до ответа */
     const tasks=await page.evaluate(()=>WB3.tasks.map(t=>t.n));
     for(const t of tasks){ const before=errs.length; await page.evaluate(n=>{ location.hash='#/ng/path/t'+n; },t); await page.waitForSelector('.pl-next,.pl-nextpart,.pl-done',{timeout:3000}).catch(()=>{});   /* первый разбор после обхода страниц иногда рисуется дольше 80 мс */
-      for(let k=0;k<40;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(60); }
-      let done=await page.$('.pl-done'); if(!done){ for(let k=0;k<40;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(200); } done=await page.waitForSelector('.pl-done',{timeout:2000}).catch(()=>null); }   /* медленный кадр — повторяем не спеша */
+      for(let k=0;k<200;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(60); }
+      let done=await page.$('.pl-done'); if(!done){ for(let k=0;k<200;k++){ const b=await page.$('.pl-next,.pl-nextpart'); if(!b) break; await b.click().catch(()=>{}); await page.waitForTimeout(200); } done=await page.waitForSelector('.pl-done',{timeout:2000}).catch(()=>null); }   /* медленный кадр — повторяем не спеша */
       if(errs.length>before) bad.push({name:'Задача №'+t,rule:'ошибка JS в разборе',msg:errs.slice(before).join(' / ').slice(0,200)});
       if(!done) bad.push({name:'Задача №'+t,rule:'разбор не доходит до ответа',msg:'нет кнопки «Готово»'}); }
     info.push('Задач пройдено до ответа: '+tasks.length);

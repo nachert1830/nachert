@@ -19,7 +19,7 @@ const ALL = why => { out.all = true; out.why.push(why + ' → всё'); };
 const TESTS = {geometry: ['core', 'dzvar'], render: ['core'], mutate: ['core'], oracle: ['core'], euclid: ['core', 'dzvar'], arith: ['core', 'dzvar'], dz: ['core', 'dzvar'],
   'dz-run': ['dzvar'], 'variants-run': ['variants'], provenance: ['prov'], 'provenance-run': ['prov'], adequacy: ['adequacy'], random: ['random', 'gym'], 'random-run': ['random'],
   'gen-check': ['gym'], gym: ['gym'], rk2: ['rk2'], rkp: ['rkp'], live: ['live'], rkg: ['rkg'], 'ig4-steps': ['ig4'], normo: ['normo'], 'normo-model': ['normo'], 'normo-run': ['normo'],
-  'normo-mutate': ['normom', 'normow'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'], colors: ['colors'], ask: ['ask'], theory: ['theory']};
+  'normo-mutate': ['normom', 'normow'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'], colors: ['colors'], ask: ['ask'], theory: ['theory'], tutor: ['tutor']};
 /* модули index.html → блоки (неизвестный модуль — всё) */
 const MODS = [[/^RKP\b/, ['rkp']], [/^RK2\b|^RKG\b/, ['rk2', 'rkg']], [/^LIVE/, ['live']], [/^IGL\b/, ['points']], [/^IGS\b/, ['igs', 'normo']],
   [/^(IGNK|IGREAD)\b/, ['normo']], [/^HWCHECK\b/, ['ng3', 'dzvar']], [/^(GEN|GYM)\b/, ['gym']], [/^(TRACK|VIEWS_PROBE)\b/, ['track']],
@@ -66,10 +66,13 @@ for (const f of files) {
   else if (/^tools\/hq-|^tests\/hq-agent\.test\.js$/.test(f)) { out.server = true; add(f + ' (Цех — тесты исполнителя в задании server)'); }
   else if (/^server\/lib\/hq\/|^server\/test\/hq/.test(f)) { out.server = true; add(f + ' (тесты сервера)'); }
   else if (/^server\//.test(f)) { out.server = true; add(f + ' (тесты сервера)', 'ask', 'lk'); }
+  else if (/^tutor\//.test(f)) add(f + ' (тестовая страница тренера, на сайт не подключена)', 'tutor');
+  else if (f === 'kernel/stepview.js') add(f + ' (показ шага: плеер и тренер)', 'core', 'tutor', 'gym', 'track', 'crawl');
+  else if (/^tools\/shots\//.test(f)) add(f + ' (скриншоты для отчёта)');
   else if (/^dz\/ig\/4\//.test(f)) add(f, 'ig4', 'normo');
   else if (/^dz\/ig\//.test(f)) add(f, 'normo', 'igs', 'print');
-  else if (/^dz\//.test(f)) add(f, 'dzvar', 'variants', 'core');
-  else if (/^(core|kernel)\//.test(f)) add(f, 'variants', 'cert', 'dzvar', 'core', 'normo');
+  else if (/^dz\//.test(f)) add(f, 'dzvar', 'variants', 'core', 'tutor');
+  else if (/^(core|kernel)\//.test(f)) add(f, 'variants', 'cert', 'dzvar', 'core', 'normo', 'tutor');
   else if (/\.md$|^docs\/|^\.github\/(workflows|scripts)\/|^tools\/hq-|^ceo\/|^lab\/|^server\/tools\/|^(robots\.txt|CNAME|\.gitignore|views\.json|eyes-eval\.json|ceo-deploy\.yml|index\.js|\.nojekyll)$/.test(f)) add(f + ' (сайт не затронут)');
   else if (/^(sw\.js|404\.html|manifest\.webmanifest|fonts\/|img\/|og\/|app\/|(ig|ng)\d?\/|club\/|epure\/|joke\/|rk\/|[\w-]+\.(png|jpg))/.test(f)) add(f, 'crawl');
   else ALL(f + ' (нет в карте влияния)');

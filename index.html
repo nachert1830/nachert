@@ -5316,6 +5316,39 @@ body.inplayer .pl-paper svg.dwg text.lbl{stroke-width:calc(var(--lf,11.5px)*.2)}
 :root:not([data-ds]) svg.dwg .g-old [stroke="#9dbbe0"]{stroke:#d3d6dc}
 svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 
+/* ═════ ПОКАЗ ШАГА v11 (20 ноября 2026, docs/design-decisions.md): ГОСТ 2.303 на экране; ярко — только новое ═════
+   основная s = 2 px (контур, данные, искомое — искомое отличается цветом, а не толщиной);
+   построения нового подшага ≈ s/2 (1,1 px), уже показанные подшаги того же шага — 1 px, прошлые шаги — s/3 (0,7 px) серые;
+   линии связи: нового подшага — 0,8 px цветом шага, остальные — 0,55 px серые; прошлое искомое — красное, но приглушённое
+   (ярким всё искомое становится на последнем шаге — это ответ); опоры подшага коротко подсвечиваются синим карандашом. */
+:root svg.dwg .g-new :is(line,path)[stroke="#3567b5"]{stroke-width:1.1}
+:root svg.dwg .g-new .mc :is(line,path,ellipse){stroke-width:1.1}
+:root svg.dwg .g-new .mc :is(line,path)[stroke="#9dbbe0"]{stroke-width:.8}
+:root svg.dwg .g-new [stroke="#9dbbe0"]{stroke:#5f8fd0;stroke-width:.8}
+:root svg.dwg .g-old :is(line,path)[stroke="#3567b5"]{stroke-width:.7}
+:root svg.dwg .g-old .mc :is(line,path,ellipse){stroke-width:.7}
+:root svg.dwg.dw-st :is(.g-given,.g-old,.g-cur) [stroke="#9dbbe0"]{stroke:#d3d6dc;stroke-width:.55}
+:root svg.dwg.dw-st :is(.g-given,.g-old,.g-cur) .mc [stroke="#9dbbe0"]{stroke:#d3d6dc!important;stroke-opacity:1}
+svg.dwg.dw-st:not(.dw-ans) .g-old :is(line,path)[stroke="#c9302c"]{stroke-opacity:.42}
+svg.dwg.dw-st:not(.dw-ans) .g-old circle[stroke="#c9302c"]{opacity:.45}
+svg.dwg.dw-st:not(.dw-ans) .g-old text.lbl.r{opacity:.5}
+svg.dwg.dw-st:not(.dw-ans) .g-old :is(line,path)[stroke="#1f7a4f"]{stroke-opacity:.5}
+svg.dwg .g-old text.lbl.pt:not(.r){fill:#4b505a}
+svg.dwg .sup .sp{fill:none;stroke:#3567b5;stroke-width:2;stroke-opacity:0;vector-effect:non-scaling-stroke;animation:supP 2.4s ease-out both}
+svg.dwg .sup .sl{stroke:#3567b5;stroke-width:8;stroke-linecap:round;stroke-opacity:0;vector-effect:non-scaling-stroke;animation:supL 2.4s ease-out both}
+@keyframes supP{0%{stroke-opacity:0}12%{stroke-opacity:.75}40%{stroke-opacity:.3}60%{stroke-opacity:.7}100%{stroke-opacity:.12}}
+@keyframes supL{0%{stroke-opacity:0}12%{stroke-opacity:.22}40%{stroke-opacity:.08}60%{stroke-opacity:.2}100%{stroke-opacity:.05}}
+@media(prefers-reduced-motion:reduce){svg.dwg .sup .sp{animation:none;stroke-opacity:.45}svg.dwg .sup .sl{animation:none;stroke-opacity:.12}}
+/* подпись подшага над чертежом: что сейчас появилось и откуда (те же метки и цвета, что на чертеже); лист белый в обеих темах */
+body.inplayer .pl-paper.has-beat{padding-top:44px!important}
+.pl-beatcap{position:absolute;left:10px;right:10px;top:8px;z-index:3;display:flex;gap:8px;align-items:center;pointer-events:none;
+  font:600 13.5px/1.35 var(--sans);color:#0a1733}
+.pl-beatcap .bn{flex:none;font:700 11px var(--mono);letter-spacing:.5px;color:#56688a;background:#f1f5fd;border-radius:99px;padding:3px 8px}
+.pl-beatcap .bt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-beatcap .lchip{background:#fff!important;padding:0 4px;font-size:1em!important}
+.pl-paper:not(.has-beat) .pl-beatcap{display:none}
+@media(max-width:899px){ .pl-beatcap{font-size:12.5px;top:6px;left:8px;right:8px} .pl-beatcap .bt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical} }
+
 /* ═════ варианты «Б» (на выбор владельцу): цвета сайта вместо чёрного, линии важнее букв ═════
    общее: подпись без белой подложки (не стирает линию), обычной толщины, на свободном месте; точки меньше */
 :root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg text.lbl{stroke:none!important;font-weight:400!important}
@@ -5409,7 +5442,7 @@ const PAL = {
   halo:'#ffd23f'        // маркер нового шага — жёлтый текстовыделитель (по этому цвету плеер рисует новые линии «от руки»)
 };
 /* толщины — экранные пиксели (svg.dwg рисует линии с vector-effect:non-scaling-stroke): ГОСТ 2.303 — основная s, тонкая s/3…s/2 */
-const W = { main:2.3, thin:0.85, aux:1.1, res:2.5, conn:0.7, dim:0.8 };
+const W = { main:2.0, thin:0.9, aux:1.0, res:2.0, conn:0.6, dim:0.7 };   /* показ шага v11: s = 2 px, искомое — не толще основной, тонкие ≈ s/3…s/2 */
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -5497,23 +5530,28 @@ function svg(scene){
     if(it.t==='hatch') return;
     /* col — свой цвет построения (посредник и всё, что от него: сечения, линии связи, точки) — видно, откуда какая линия */
     const f=RENDER[it.t]; if(!f) return;
+    ctx.rev=!!it._rev;
     if(it.col){ out.push('<g class="mc" style="--mc:'+esc(it.col)+'">'); f(it,ctx); out.push('</g>'); } else f(it,ctx);
+    ctx.rev=false;
   });
   if(cur!==null) out.push('</g>');
+  /* опоры подшага (показ шага v11): уже построенные точки и линии, от которых строится новое, — короткая подсветка */
+  const sup=[]; (scene.sup||[]).forEach(o=>{ if(o.t==='pt'&&o.at){ const P=T(o.at); sup.push(el('circle',{cx:P[0],cy:P[1],r:7.5,class:'sp'})); }
+    else if(o.a&&o.b){ const A=T(o.a), B=T(o.b); sup.push(el('line',{x1:A[0],y1:A[1],x2:B[0],y2:B[1],class:'sl'})); } });
   const VW=W0+pad*2, VH=H0+pad*2;
   const maxw = scene.max || Math.min(Math.round(VW*1.5),760);
-  return `<svg class="dwg" style="max-width:${maxw}px" viewBox="0 0 ${N(VW)} ${N(VH)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(scene.alt||'чертёж')}">
+  return `<svg class="dwg${scene.cls?' '+esc(scene.cls):''}" style="max-width:${maxw}px" viewBox="0 0 ${N(VW)} ${N(VH)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(scene.alt||'чертёж')}">
 <defs>
  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="${PAL.dim}"/></marker>
  <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="${PAL.res}"/></marker>
  <marker id="ahk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="${PAL.ink}"/></marker>
 </defs>
-<g class="back">${back.join('')}</g><g class="halo">${halo.join('')}</g>${out.join('')}</svg>`;
+<g class="back">${back.join('')}</g><g class="halo">${halo.join('')}</g>${sup.length?'<g class="sup">'+sup.join('')+'</g>':''}${out.join('')}</svg>`;
 }
 
 /* ============ примитивы ============ */
 function line(ctx,a,b,style,dash,width,extra){
-  const A=ctx.T(a), B=ctx.T(b);
+  const A=ctx.T(ctx.rev?b:a), B=ctx.T(ctx.rev?a:b);
   if(ctx.halo){ ctx.out.push(el('line',{x1:A[0],y1:A[1],x2:B[0],y2:B[1],stroke:PAL.halo,'stroke-width':6,'stroke-linecap':'round','stroke-opacity':.45})); return; }
   const at={x1:A[0],y1:A[1],x2:B[0],y2:B[1],stroke:style,'stroke-width':width,'stroke-dasharray':dash,'stroke-linecap':'round'};
   if(extra) Object.assign(at,extra);
@@ -5548,7 +5586,7 @@ function text(ctx,p,s,cls,dx,dy,anchor){
 const K = { main:[PAL.ink,null,W.main], thin:[PAL.thin,null,W.thin],
   aux:[PAL.aux,null,W.aux], auxd:[PAL.aux,'5 3',W.aux], res:[PAL.res,null,W.res],
   resd:[PAL.res,'5 3',W.res], grn:[PAL.grn,null,W.res], grnd:[PAL.grn,'5 3',W.res],
-  ghost:[PAL.ghost,null,1.3], dash:[PAL.ink,'6 3',W.thin], hid:[PAL.ink,'6 3.5',1.35],
+  ghost:[PAL.ghost,null,1.0], dash:[PAL.ink,'6 3',W.thin], hid:[PAL.ink,'6 3.5',1.0],
   axis:[PAL.ink,'14 3 2 3',W.thin], conn:[PAL.conn,'7 2.5 1.5 2.5',W.conn],
   paper:['#ffffff',null,W.main+1.8] };   /* «ластик»: закрывает линию условия, которая на ответе оказалась невидимой */
 const LC = { res:'r', resd:'r', aux:'a', auxd:'a', grn:'g', grnd:'g' };
@@ -6065,6 +6103,10 @@ function DRAWIN(els,stagger){
     if((t==='line'||t==='path'||t==='polyline')&&!e.getAttribute('stroke-dasharray')){ let L=e.getTotalLength?e.getTotalLength():0; if(!(L>0)) return;
       const m=e.getScreenCTM&&e.getScreenCTM(); L*=Math.max(1,m?Math.hypot(m.a,m.b):1);   /* штрих при non-scaling-stroke — в экранных пикселях */
       e.animate([{strokeDasharray:L+' '+L,strokeDashoffset:L},{strokeDasharray:L+' '+L,strokeDashoffset:0}],{duration:1000,delay:d,easing:'cubic-bezier(.3,.7,.2,1)',fill:'backwards'}); }
+    else if(t==='line'&&e.getAttribute('stroke-dasharray')){ const x1=+e.getAttribute('x1'), y1=+e.getAttribute('y1'), x2=+e.getAttribute('x2'), y2=+e.getAttribute('y2'), t0=performance.now()+d, D=800;
+      e.setAttribute('x2',x1); e.setAttribute('y2',y1);
+      const f=now=>{ const u=Math.max(0,Math.min(1,(now-t0)/D)), q=1-Math.pow(1-u,3); e.setAttribute('x2',x1+(x2-x1)*q); e.setAttribute('y2',y1+(y2-y1)*q); if(u<1) requestAnimationFrame(f); };
+      requestAnimationFrame(f); }
     else if(t==='circle'){ e.style.transformBox='fill-box'; e.style.transformOrigin='center'; e.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:700,delay:d,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}); }
     else e.animate([{opacity:0},{opacity:1}],{duration:700,delay:d,fill:'backwards'});
   }catch(_){} });
@@ -6138,11 +6180,22 @@ window.DMARK=function(part){
           if(!has.some(q=>q&&q.t==='dim'&&/Δ/.test(strip(q.l))&&Math.abs(q.a[0]-q.b[0])<0.5&&Math.abs(Math.abs(q.a[1]-q.b[1])-Math.abs(Xo[1]-Yo[1]))<1.5)) add.push({t:'ext',a:Yo,b:[x,Yo[1]]},{t:'ext',a:Xo,b:[x,Xo[1]]},D3([x,Yo[1]],[x,Xo[1]],dl,Xo[0]>=Yo[0]?'e':'w')); }
         break; } }); });
 };
-function scene(part,k){
+/* подшаги шага k (показ шага v11): только у задач на плоскость (STEPVIEW.isPlane) и если новых сущностей больше двух */
+function beatsOf(part,k){ if(!part||!part._plane||!window.STEPVIEW||k<1) return null; const c=part._bt||(part._bt={}); if(k in c) return c[k];
+  let r=null; try{ const a=STEPVIEW.analyze(part,k); if(a&&a.beats.length>1){ const of=[]; a.beats.forEach((b,bi)=>b.idx.forEach(i=>{ of[i]=bi; })); r={beats:a.beats,of}; } }catch(e){ r=null; }
+  return c[k]=r; }
+function supOf(part,k,sub){ if(!part||!part._plane||!window.STEPVIEW||k<1) return null; const B=beatsOf(part,k);
+  try{ if(B) return B.beats[sub==null?0:sub]; const a=STEPVIEW.analyze(part,k); return a&&a.beats[0]; }catch(e){ return null; } }
+function scene(part,k,sub){
   try{ LINEFIX(part); DMARK(part); }catch(e){}
   const given=part.given||[], st=part.steps||[];
   let items=tag(given,'given');
-  for(let i=0;i<k;i++) items=items.concat(tag(st[i].add, i===k-1?'new':'old'));
+  const B=beatsOf(part,k), sb=(B&&sub!=null)?Math.max(0,Math.min(sub,B.beats.length-1)):null, cb=(B?B.beats[sb==null?B.beats.length-1:sb]:supOf(part,k));
+  for(let i=0;i<k;i++){ if(i<k-1||!part._plane){ items=items.concat(tag(st[i].add, i===k-1?'new':'old')); continue; }
+    /* текущий шаг: прошлые подшаги — «cur» (цветом шага, тоньше), текущий — «new» (ярко, вырастает из опор), будущие — не видны */
+    const rev=new Set((cb&&cb.rev)||[]);
+    (st[i].add||[]).forEach((it,j)=>{ if(!it) return; const bi=B?B.of[j]:0; if(sb!=null&&bi>sb) return;
+      const g=(sb==null||bi===sb)?'new':'cur'; items.push(Object.assign({},it,{_g:g},g==='new'&&rev.has(j)?{_rev:1}:{})); }); }
   /* «Прошлые шаги: скрыть» — от прошлых шагов остаётся только результат: обводка, искомые линии и точки;
      посредники, сечения, линии связи и вспомогательные точки уходят */
   if(PASTHIDE()){ const keepK=/^(main|res|resd|hid|grn|grnd|thin|ghost|axis|paper|dash)$/;
@@ -6151,22 +6204,26 @@ function scene(part,k){
   const lineOn=(u,v)=>{ const dx=u.b[0]-u.a[0], dy=u.b[1]-u.a[1], L=Math.hypot(dx,dy)||1, d=p=>Math.abs((p[0]-u.a[0])*dy-(p[1]-u.a[1])*dx)/L; return d(v.a)<1&&d(v.b)<1; };
   items.forEach((it,i)=>{ if(it.t!=='seg'||!it.l||!it.a) return; if(items.some((o,j)=>j>i&&o.t==='seg'&&o.l===it.l&&o.a&&lineOn(it,o))) it.l=undefined; });
   let all=given.slice(); st.forEach(s=>{ all=all.concat(s.add||[]); });
-  return {items, fitTo:all, alt:'Чертёж: шаг '+k};
+  const last=k>=st.length&&(!B||sb==null||sb>=B.beats.length-1);
+  return {items, fitTo:all, alt:'Чертёж: шаг '+k, sup:(part._plane&&cb&&k>0)?cb.sup:null, cls:k>0?('dw-st'+(last?' dw-ans':'')):''};
 }
 function PASTHIDE(){ try{ return localStorage.getItem('nch_past')==='hide'; }catch(e){ return false; } }
-function drawingHTML(part,k){
+function drawingHTML(part,k,sub){
   if(part._fig) return part._fig(k);
   const hasDraw=(part.given&&part.given.length)||(part.steps||[]).some(s=>s.add&&s.add.length);
-  return hasDraw? DRAW.svg(scene(part,k)) : '';
+  return hasDraw? DRAW.svg(scene(part,k,sub)) : '';
 }
+/* подпись подшага: [{s}|{l,g,c}] → HTML со значками тех же цветов, что на чертеже */
+const BCOL={aux:'#3567b5',res:'#c9302c',grn:'#1f7a4f',ink:'#15161a'};
+function beatCapHTML(cap){ return (cap||[]).map(c=>c.l!=null?'<span class="lchip" style="--c:'+(c.c||BCOL[c.g]||BCOL.ink)+'">'+escH(c.l)+'</span>':escH(c.s)).join(''); }
 
 /* Названия прямых и точек в тексте шага — цветные значки того же цвета, что и линия на чертеже */
 const KCOL={main:'#14181f',thin:'#14181f',aux:'#3f74b8',res:'#9b2335',grn:'#3a7a55',dim:'#3f74b8'};
 function chipify(html,items){
   if(!html) return html;
   const col={}; (items||[]).forEach(it=>{ if(!it||!it.l||typeof it.l!=='string') return;
-    const c=it.col||KCOL[it.k]||(it._g==='new'?'#9b2335':'#14181f');
-    it.l.split(/≡|\s+/).map(x=>x.trim()).filter(x=>x.length>=2&&/[″′‴]/.test(x)||x.length>=2&&/^[a-zA-Z][a-zA-Z0-9₀-₉ₐ-ₜ]*$/.test(x)).forEach(x=>{ if(!col[x]||it._g==='new') col[x]=c; }); });
+    const nw=it._g==='new'||it._g==='cur', c=it.col||KCOL[it.k]||(nw?'#9b2335':'#14181f');
+    it.l.split(/≡|\s+/).map(x=>x.trim()).filter(x=>x.length>=2&&/[″′‴]/.test(x)||x.length>=2&&/^[a-zA-Z][a-zA-Z0-9₀-₉ₐ-ₜ]*$/.test(x)).forEach(x=>{ if(!col[x]||nw) col[x]=c; }); });
   const keys=Object.keys(col).sort((a,b)=>b.length-a.length); if(!keys.length) return html;
   const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   let re; try{ re=new RegExp('(?<![\\p{L}\\p{N}\u2032\u2033\u2034])('+keys.map(esc).join('|')+')(?![\\p{L}\\p{N}])','gu'); }catch(e){ return html; }
@@ -6194,9 +6251,10 @@ function allStepsHTML(t){
 function mount(root,t,opt){
   opt=opt||{};
   const parts=partsOf(t);
+  try{ const pl=!!(window.STEPVIEW&&STEPVIEW.isPlane(t)&&!opt.noBeats); parts.forEach(p=>{ p._plane=pl; }); }catch(e){}
   /* обезличенная статистика режимов (docs/ANALYTICS.md): уходит, только если посетитель согласился на cookie (TRACK) */
   const track=ev=>{ try{ window.TRACK&&TRACK(ev,{mode:S.mode,task:String(t.n),src:location.hash.replace(/^#\/?/,'').split('/').slice(0,2).join('/')}); }catch(e){} };
-  const S={pi:0,k:0,mode:opt.mode||'watch',shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:window.innerWidth<900};
+  const S={pi:0,k:0,sub:null,mode:opt.mode||'watch',shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:window.innerWidth<900};
   const PK='plpos', posKey=opt.posKey||location.hash.replace(/\/(?:p\d+)?s\d+$/,'');
   const posGet=()=>{ try{ return (JSON.parse(localStorage.getItem(PK)||'{}')||{})[posKey]; }catch(e){ return null; } };
   const posSet=()=>{ try{ const o=JSON.parse(localStorage.getItem(PK)||'{}')||{}; const ks=Object.keys(o); if(ks.length>60) delete o[ks[0]]; o[posKey]={pi:S.pi,k:S.k,t:Date.now()}; localStorage.setItem(PK,JSON.stringify(o)); }catch(e){} };
@@ -6234,8 +6292,9 @@ function mount(root,t,opt){
         <div class="pl-text muted">${hon?'Это подсказка: что делаем. Дострой шаг на бумаге, потом сверься.':'Подумай и сделай шаг на бумаге сам. Не выходит — возьми подсказку.'}</div>
         <div class="pl-tryb">${hon?'':'<button class="btn ghost pl-hint" type="button">Подсказка</button>'}<button class="btn pl-reveal" type="button">Показать построение</button></div>`;
     } else {
-      card=`<div class="pl-kicker">Шаг ${k} из ${n}</div>
-        <div class="pl-title">${st.t||''}</div>
+      const BT=beatsOf(p,k), bs=BT&&S.sub!=null?BT.beats[S.sub]:null;
+      card=`<div class="pl-kicker">Шаг ${k} из ${n}${bs?' · подшаг '+(S.sub+1)+' из '+BT.beats.length:''}</div>
+        <div class="pl-title">${st.t||''}</div>${bs?`<div class="pl-beatline">Сейчас: ${beatCapHTML(bs.cap)}</div>`:''}
         <div class="pl-text">${chipify(st.d||'',scene(p,k).items)}</div>
         ${st.why?`<div class="pl-why"><span>Почему</span>${chipify(st.why,scene(p,k).items)}</div>`:''}
         ${st.tbl||''}
@@ -6261,14 +6320,17 @@ function mount(root,t,opt){
     const p=part(), n=N(), k=S.k;
     const tryHid=hidden(k);
     const drawK = tryHid? k-1 : k;
+    const BT=tryHid?null:beatsOf(p,k), NB=BT?BT.beats.length:0; if(!BT) S.sub=null; else if(S.sub!=null&&S.sub>=NB) S.sub=NB-1;
+    const subOn=BT&&S.sub!=null, subLast=!subOn||S.sub>=NB-1, drawSub=tryHid?null:S.sub;
     const dots = Array.from({length:n+1},(_,i)=>`<button class="pl-dot${i===k?' on':''}${i<k?' done':''}" data-k="${i}" aria-label="${i?'Шаг '+i:'Дано'}"${i===k?' aria-current="step"':''}></button>`).join('');
     const tabs = parts.length>1? `<div class="pl-parts" role="group" aria-label="Пункты задачи">${parts.map((q,i)=>`<button class="pl-part${i===S.pi?' on':''}" data-p="${i}">${q.l}</button>`).join('')}</div>`:'';
-    const last = k===n && !tryHid;
+    const last = k===n && !tryHid && subLast;
     const mainCls = last? (S.pi<parts.length-1? 'pl-nextpart':'pl-done') : 'pl-next';
     const coachOn=()=>{ try{ return (window.ST?ST.get('coach',0):0)<3; }catch(e){ return false; } };
-    const mainTxt = k===0? 'Начать →' : last? (S.pi<parts.length-1? 'Дальше: пункт '+parts[S.pi+1].l+' →' : 'Готово ✓') : (k===n-1? 'К ответу →' : 'Дальше →');
+    const mainTxt = k===0? 'Начать →' : last? (S.pi<parts.length-1? 'Дальше: пункт '+parts[S.pi+1].l+' →' : 'Готово ✓') : (k===n-1&&subLast? 'К ответу →' : 'Дальше →');
     const segs = Array.from({length:n+1},(_,i)=>`<i class="${i<k?'d':i===k?'c':''}${i===n?' ans':''}"></i>`).join('');
-    const stepTxt = k===0? 'Дано' : last? 'Ответ · шаг '+k+' из '+n : 'Шаг '+k+' из '+n;
+    const stepTxt = (k===0? 'Дано' : last? 'Ответ · шаг '+k+' из '+n : 'Шаг '+k+' из '+n)+(subOn?' · '+(S.sub+1)+'/'+NB:'');
+    const bcap = subOn? `<div class="pl-beatcap" aria-live="polite"><span class="bn">${S.sub+1}/${NB}</span><span class="bt">${beatCapHTML(BT.beats[S.sub].cap)}</span></div>`:'';
     const top = `<div class="pl-top"><a class="pl-back" href="${opt.backHref||'#/ng/tasks'}" aria-label="${opt.backLabel||'К списку задач'}"><span aria-hidden="true">←</span><b>${opt.backLabel||'К задачам'}</b></a><div class="pl-meter" role="group" aria-label="${stepTxt}"><span class="pl-mt${last?' fin':''}">${stepTxt}</span><div class="pl-segs">${segs}</div></div><button class="pl-sh" type="button" aria-label="Поделиться этим шагом" title="Поделиться шагом или чертежом">↗</button></div>`;
     if(S.done){ root.innerHTML=`<div class="pl done">${top}${doneView()}</div>`; bind(); posSet(); try{ FX.win(posKey); }catch(e){} return; }
     root.innerHTML = `
@@ -6286,7 +6348,7 @@ function mount(root,t,opt){
           </div>
         </div>
         <div class="pl-stage">
-          <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶<span class="lbx"> Поверхность</span></b></button>':''}${k>1&&!p._fig?`<button class="pl-zb past${PASTHIDE()?'':' on'}" data-z="past" aria-pressed="${!PASTHIDE()}" title="${PASTHIDE()?'Показать построения прошлых шагов':'Оставить от прошлых шагов только результат'}"><i aria-hidden="true"></i>Прошлые<b>&nbsp;шаги</b></button>`:''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
+          <div class="pl-paper${subOn?' has-beat':''}">${drawingHTML(p,drawK,drawSub)?drawingHTML(p,drawK,drawSub)+bcap+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶<span class="lbx"> Поверхность</span></b></button>':''}${k>1&&!p._fig?`<button class="pl-zb past${PASTHIDE()?'':' on'}" data-z="past" aria-pressed="${!PASTHIDE()}" title="${PASTHIDE()?'Показать построения прошлых шагов':'Оставить от прошлых шагов только результат'}"><i aria-hidden="true"></i>Прошлые<b>&nbsp;шаги</b></button>`:''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
           <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
@@ -6340,7 +6402,7 @@ function mount(root,t,opt){
   }
   let lastK=-1;
   function glowNew(){
-    const fwd=S.k>lastK&&lastK>=0; lastK=S.k; if(!fwd) return;
+    const pos=S.k*1000+(S.sub==null?999:S.sub), fwd=pos>lastK&&lastK>=0; lastK=pos; if(!fwd) return;
     if(matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches) return;
     const svg=root.querySelector('.pl-paper svg'); if(!svg) return;
     DRAWIN(svg.querySelectorAll('.g-new :is(line,path,polyline), .g-new circle'),110);
@@ -6352,16 +6414,20 @@ function mount(root,t,opt){
       (g.length?g.map(x=>`<div class="hl-t"><b>${x.t}.</b> ${x.d}</div>`).join(''):`<div class="hl-t">Посмотри на чертёж: цветом и толщиной выделено то, что добавилось на этом шаге. Если непонятно, откуда оно взялось, вернись на шаг назад.</div>`)+
       `<div class="hl-b">${k>0?'<button type="button" class="btn ghost hl-back">← Шаг назад'+(prev?': '+prev:'')+'</button>':''}<button type="button" class="btn ghost hl-find">Найти объяснение</button></div></div>`;
   }
-  function go(k){ S.help=false; try{ if(window.FX&&k!==S.k) FX.buzz(8); }catch(e){} S.k=Math.max(0,Math.min(N(),k)); S.done=false; posSet(); render(); if(opt.onStep) opt.onStep(S); }
+  function go(k,sub){ S.help=false; try{ if(window.FX&&k!==S.k) FX.buzz(8); }catch(e){} const nk=Math.max(0,Math.min(N(),k));
+    /* вперёд на один шаг — с первого подшага; назад и переход по точкам — шаг целиком */
+    S.sub=(sub!==undefined)?sub:(nk===S.k+1&&beatsOf(part(),nk)?0:null); S.k=nk; S.done=false; posSet(); render(); if(opt.onStep) opt.onStep(S); }
+  function beatNext(){ const B=hidden(S.k)?null:beatsOf(part(),S.k); if(B&&S.sub!=null&&S.sub<B.beats.length-1){ S.sub++; S.help=false; render(); return true; } return false; }
+  function beatPrev(){ const B=beatsOf(part(),S.k); if(B&&S.sub!=null&&S.sub>0){ S.sub--; S.help=false; render(); return true; } return false; }
   function bind(){
     const q=s=>root.querySelector(s);
-    q('.pl-prev')&&q('.pl-prev').addEventListener('click',()=>{ if(q('.pl-prevt')){ if(opt.onPrev) opt.onPrev(); return; } if(S.k===0&&S.pi>0){ S.pi--; S.k=(part().steps||[]).length; render(); return; } go(S.k-1); });
+    q('.pl-prev')&&q('.pl-prev').addEventListener('click',()=>{ if(q('.pl-prevt')){ if(opt.onPrev) opt.onPrev(); return; } if(beatPrev()) return; if(S.k===0&&S.pi>0){ S.pi--; S.k=(part().steps||[]).length; S.sub=null; render(); return; } go(S.k-1); });
     q('.pl-next')&&S.k===0&&q('.pl-next').addEventListener('click',()=>{ try{ if(window.ST) ST.set('coach',ST.get('coach',0)+1); }catch(e){} });
-    q('.pl-next')&&q('.pl-next').addEventListener('click',()=>{ if(hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; render(); } else go(S.k+1); });
+    q('.pl-next')&&q('.pl-next').addEventListener('click',()=>{ if(hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; S.sub=beatsOf(part(),S.k)?0:null; render(); } else if(!beatNext()) go(S.k+1); });
     q('.pl-stuckbtn')&&q('.pl-stuckbtn').addEventListener('click',()=>{ S.help=!S.help; if(S.help){ try{ const m=ST.get('stuck',{}); m[posKey]=(m[posKey]||0)+1; ST.set('stuck',m); }catch(e){} } render(); });
     q('.hl-back')&&q('.hl-back').addEventListener('click',()=>go(S.k-1));
     q('.hl-find')&&q('.hl-find').addEventListener('click',()=>{ const st=part().steps[S.k-1]||{}; if(window.SEARCH) SEARCH.open(st.t||''); });
-    q('.pl-reveal')&&q('.pl-reveal').addEventListener('click',()=>{S.shown[S.pi+':'+S.k]=1;render();});
+    q('.pl-reveal')&&q('.pl-reveal').addEventListener('click',()=>{S.shown[S.pi+':'+S.k]=1;S.sub=beatsOf(part(),S.k)?0:null;render();});
     q('.pl-hint')&&q('.pl-hint').addEventListener('click',()=>{S.hint[S.pi+':'+S.k]=1;render();});
     root.querySelectorAll('.pl-rate[data-v]').forEach(b=>b.addEventListener('click',()=>{ S.rated=+b.dataset.v; try{ opt.rep.rate(S.rated,{hints:Object.keys(S.hint).length}); FX.buzz(S.rated===2?'success':8); }catch(e){} const w=root.querySelector('.pl-rep'); if(w) w.outerHTML=repHTML(); }));
     q('.pl-nextpart')&&q('.pl-nextpart').addEventListener('click',()=>{S.pi++;S.k=0;S.z={s:1,x:0,y:0};render();});
@@ -6402,7 +6468,7 @@ function mount(root,t,opt){
       const dx=e.clientX-o.x, dy=e.clientY-o.y; if(Z.s===1&&P.size===1){ o.sx=(o.sx||0)+dx; o.sy=(o.sy||0)+dy; } if(Math.abs(dx)+Math.abs(dy)>2) moved=true; P.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:o.sx,sy:o.sy});
       if(Z.s>1){ Z.x+=dx; Z.y+=dy; apply(); } });
     const up=e=>{ const o0=P.get(e.pointerId); const had=P.delete(e.pointerId); if(!had) return;
-      if(o0&&Z.s===1&&e.pointerType!=='mouse'&&Math.abs(o0.sx||0)>56&&Math.abs(o0.sy||0)<46&&P.size===0){ const dir=(o0.sx<0)?1:-1; if(dir>0&&S.k>=N()){ paper.classList.add('bump'); setTimeout(()=>paper.classList.remove('bump'),260); } else if(dir<0&&S.k===0){ paper.classList.add('bump'); setTimeout(()=>paper.classList.remove('bump'),260); } else { if(dir>0&&hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; render(); } else go(S.k+dir); } return; }
+      if(o0&&Z.s===1&&e.pointerType!=='mouse'&&Math.abs(o0.sx||0)>56&&Math.abs(o0.sy||0)<46&&P.size===0){ const dir=(o0.sx<0)?1:-1; if(dir>0&&S.k>=N()){ paper.classList.add('bump'); setTimeout(()=>paper.classList.remove('bump'),260); } else if(dir<0&&S.k===0){ paper.classList.add('bump'); setTimeout(()=>paper.classList.remove('bump'),260); } else { if(dir>0&&hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; S.sub=beatsOf(part(),S.k)?0:null; render(); } else if(dir>0?!beatNext():!beatPrev()) go(S.k+dir); } return; }
       if(!moved&&P.size===0&&e.pointerType!=='mouse'||(!moved&&e.type==='pointerup'&&e.pointerType==='mouse'&&false)){ const t=Date.now(); if(t-lastTap<320){ at(Z.s>1.2?1:2.6,e.clientX,e.clientY); lastTap=0; } else lastTap=t; } };
     paper.addEventListener('pointerup',up); paper.addEventListener('pointercancel',e=>{P.delete(e.pointerId);});
     paper.addEventListener('dblclick',e=>{ if(e.target.closest('.pl-zoom')) return; at(Z.s>1.2?1:2.6,e.clientX,e.clientY); });
@@ -6425,9 +6491,9 @@ function mount(root,t,opt){
     if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     if(root.offsetParent===null) return;
     if(e.key==='ArrowRight'){ e.preventDefault();
-      if(hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; render(); }
-      else if(S.k<N()) go(S.k+1); }
-    if(e.key==='ArrowLeft'){ e.preventDefault(); if(S.k>0) go(S.k-1); else if(S.pi>0){ S.pi--; S.k=(part().steps||[]).length; render(); } }
+      if(hidden(S.k)){ S.shown[S.pi+':'+S.k]=1; S.sub=beatsOf(part(),S.k)?0:null; render(); }
+      else if(beatNext()) return; else if(S.k<N()) go(S.k+1); }
+    if(e.key==='ArrowLeft'){ e.preventDefault(); if(beatPrev()) return; if(S.k>0) go(S.k-1); else if(S.pi>0){ S.pi--; S.k=(part().steps||[]).length; S.sub=null; render(); } }
   }
   let ro=null, lastW=0;
   function destroy(){ document.removeEventListener('keydown',key); if(ro) ro.disconnect(); document.body.classList.remove('present'); document.body.classList.remove('plfull'); }
@@ -7798,6 +7864,7 @@ return {has,html,bind,SPEC,ans3};
 <!-- ДЗ: реестр, данные вариантов, методики и решатели — по папкам dz/<курс>/<номер>/ (оглавление — dz/README.md) -->
 <script src="kernel/dz.js"></script>
 <script src="kernel/prep.js"></script>
+<script src="kernel/stepview.js"></script>
 <script src="prep/engine.js"></script>
 <script src="prep/x.js"></script>
 <script src="prep/x-b.js"></script>

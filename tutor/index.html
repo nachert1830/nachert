@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<base href="../">
+<title>Тренер без ИИ</title>
+<style>
+:root{--paper:#fff;--ink:#0a1733;--ink2:#2c3f5f;--mut:#56688a;--line:#dfe5f0;--surf2:#f1f5fd;--acc:#1a5ae0;--acc-d:#0f3f9e;--red:#d9222a;--green:#13804e;--blue-s:#e9f0ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#07112a;--ink:#e8eef8;--ink2:#bccbe0;--mut:#8aa0c0;--line:#1f3157;--surf2:#14264a;--acc:#2563eb;--acc-d:#123a99;--red:#ff6b6b;--green:#5fd191;--blue-s:#132a55}}
+:root[data-theme="dark"]{--paper:#07112a;--ink:#e8eef8;--ink2:#bccbe0;--mut:#8aa0c0;--line:#1f3157;--surf2:#14264a;--acc:#2563eb;--acc-d:#123a99;--red:#ff6b6b;--green:#5fd191;--blue-s:#132a55}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 'Golos Text',system-ui,sans-serif}
+.tw{max-width:1200px;margin:0 auto;padding:12px 16px 40px}
+h1{font-size:20px;margin:6px 0 2px} .sub{color:var(--mut);font-size:13px;margin:0 0 12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+select,button,textarea{font:inherit}
+select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);max-width:100%}
+.b{padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;font-weight:600}
+.b.pri{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 3px 0 var(--acc-d)}
+.b:disabled{opacity:.45;cursor:default}
+.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.paper{background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px;min-height:240px;position:relative}
+.paper svg.dwg{width:100%;height:auto;max-height:62vh}
+.paper .cap{position:absolute;left:12px;top:8px;font:700 11px/1 monospace;color:#56688a;background:#f1f5fd;border-radius:99px;padding:4px 8px}
+.panel{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--surf2)}
+.rung{display:flex;gap:4px;margin:6px 0 10px}.rung i{flex:1;height:6px;border-radius:9px;background:var(--line)}.rung i.on{background:var(--acc)}.rung i.r4.on{background:var(--green)}
+.say{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0;min-height:48px}
+.say b{display:block;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.log{font:12px/1.45 monospace;color:var(--mut);margin-top:10px;max-height:180px;overflow:auto;white-space:pre-wrap}
+.small{font-size:12.5px;color:var(--mut)}
+textarea{width:100%;box-sizing:border-box;min-height:60px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px}
+.lchip{display:inline-block;padding:0 5px;border-radius:7px;border:1.5px solid var(--c,#15161a);color:var(--c,#15161a);background:#fff;font-weight:700}
+.load{padding:40px;text-align:center;color:var(--mut)}
+iframe.core{position:absolute;width:10px;height:10px;left:-9999px;top:0;border:0;visibility:hidden}
+</style>
+</head>
+<body>
+<div class="tw">
+  <h1>Тренер без ИИ · тестовая страница</h1>
+  <p class="sub">Лестница подсказок Р0–Р4 из паспорта шага (tutor/), без модели. Не для студентов: адрес не индексируется, с сайта сюда ссылок нет.</p>
+  <div class="bar"><select id="task" aria-label="Задача"></select><select id="step" aria-label="Шаг"></select><button class="b pri" id="go">Решаю сам</button><label class="small"><input type="checkbox" id="rk"> перед РК (Р0 → Р2 → Р4)</label></div>
+  <div id="app" class="load">Загружаю ядро сайта…</div>
+</div>
+<iframe class="core" id="core" src="index.html#/about" title="ядро" aria-hidden="true" tabindex="-1"></iframe>
+<script>
+(function(){
+const $=s=>document.querySelector(s), esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let W=null, X=null;   /* W — окно ядра (iframe), X — {WB3, PLAYER, DRAW, STEPVIEW, DZR, GEN, TUTOR_*} */
+const frame=$('#core');
+function boot(){ W=frame.contentWindow; const d=W.document;
+  /* стили чертежа сайта — те же правила (svg.dwg, .g-new, опоры), что в плеере */
+  d.querySelectorAll('style').forEach(s=>document.head.appendChild(s.cloneNode(true)));
+  const st=document.createElement('style'); st.textContent='body{background:var(--paper)!important} .tw{font-family:inherit}'; document.head.appendChild(st);
+  const add=src=>new Promise((res,rej)=>{ const s=d.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; d.head.appendChild(s); });
+  ['core/model.js','core/cp.js','core/cp46.js','core/cp47.js','tutor/lint.js','tutor/ladder.js','tutor/passport.js','tutor/collect.js'].reduce((p,f)=>p.then(()=>add(f)),Promise.resolve())
+  .then(()=>{ const s=d.createElement('script'); s.textContent='window.__TUT={WB3,PLAYER,DRAW,STEPVIEW,DZR,GEN:window.GEN,TC:TUTOR_COLLECT,TP:TUTOR_PASSPORT,TL:TUTOR_LADDER,LINT:TUTOR_LINT,ready:TUTOR_COLLECT.ready};'; d.head.appendChild(s); X=W.__TUT; return X.ready(); })
+  .then(fill).catch(e=>{ $('#app').textContent='Ядро не загрузилось: '+e; }); }
+frame.addEventListener('load',()=>setTimeout(boot,900));
+
+/* список: задачи тетради на плоскость и все ДЗ №1–3 (по первому варианту каждого типа) */
+let LIST=[];
+function fill(){ LIST=[];
+  X.WB3.tasks.forEach(t=>{ X.PLAYER.partsOf(t).forEach((p,pi,a)=>LIST.push({label:'Тетрадь № '+t.n+(a.length>1?' '+p.l:'')+(X.STEPVIEW.isPlane(t)?' · плоскость':''),kind:'wb',t,pi})); });
+  ['ng1','ng2','ng3','ng4','ng5'].forEach(id=>{ const seen={}; X.DZR.numbers(id).forEach(n=>{ const ty=(X.DZR.typeOf(id,n)||{}).code; if(seen[ty]) return; seen[ty]=1; LIST.push({label:'ДЗ '+id.replace('ng','№')+' · вариант '+n+(ty?' ('+ty+')':''),kind:'dz',id,n}); }); });
+  const plane=LIST.findIndex(o=>/№ 46$|№ 46 /.test(o.label));
+  $('#task').innerHTML=LIST.map((o,i)=>'<option value="'+i+'">'+esc(o.label)+'</option>').join(''); $('#task').value=String(plane>=0?plane:0);
+  $('#task').onchange=steps; steps(); $('#app').innerHTML='<p class="small">Выбери задачу и шаг, нажми «Решаю сам».</p>'; }
+function cur(){ const o=LIST[+$('#task').value]; if(!o) return null;
+  if(o.kind==='wb'){ const p=X.PLAYER.partsOf(o.t)[o.pi]; p._plane=X.STEPVIEW.isPlane(o.t); return {o,part:p,task:o.t}; }
+  const r=X.DZR.solve(o.id,o.n), p=X.PLAYER.partsOf(r.task)[0]; p._plane=X.STEPVIEW.isPlane(r.task); return {o,part:p,task:r.task}; }
+function steps(){ const c=cur(); if(!c) return; $('#step').innerHTML=(c.part.steps||[]).map((s,i)=>'<option value="'+(i+1)+'">Шаг '+(i+1)+'. '+esc(String(s.t||'').replace(/<[^>]+>/g,''))+'</option>').join(''); }
+/* паспорт шага: тот же генератор, что в тестах (tests/tutor.js) */
+function passport(c,k){ const o=c.o, PL='абвгдежз';
+  if(o.kind==='wb'){ const ps=X.PLAYER.partsOf(o.t), base='wb.'+o.t.n+(ps.length>1?'.'+PL[o.pi]:''); return X.TC.wb(o.t.n).find(P=>P.id===base+'.s'+k); }
+  return X.TC.dz(o.id,[o.n]).find(P=>P.id==='dz.'+o.id+'.v'+o.n+'.s'+k); }
+function neighborPart(c,ref){ if(!ref) return null;
+  if(ref.kind==='gen'){ const v=X.TC.genNeighbor(+ref.task); return v?X.PLAYER.partsOf(v.task)[ref.part||0]:null; }
+  if(ref.kind==='dz'){ const r=X.DZR.solve(ref.dz,ref.variant); return r&&r.task?X.PLAYER.partsOf(r.task)[ref.part||0]:null; }
+  return null; }
+function svgOf(part,k,opt){ opt=opt||{}; const sc=X.PLAYER.scene(part,k,opt.sub);
+  if(opt.hideNew) sc.items=sc.items.filter(it=>it._g!=='new'&&it._g!=='cur');
+  if(opt.sup===false) sc.sup=null; else if(opt.sup) sc.sup=opt.sup;
+  return X.DRAW.svg(sc); }
+const chip=(l,c)=>'<span class="lchip" style="--c:'+(c||'#15161a')+'">'+esc(l)+'</span>';
+const COL={aux:'#3567b5',res:'#c9302c',grn:'#1f7a4f',ink:'#15161a'};
+
+/* ── сессия «Решаю сам» ── */
+let S=null, timer=null;
+$('#go').onclick=()=>start(+$('#step').value||1);
+function start(k){ const c=cur(); if(!c) return; const P=passport(c,k); if(!P){ $('#app').textContent='Паспорт не построен'; return; }
+  const L=X.TL.create(P,{compressed:$('#rk').checked,now:0});
+  S={c,k,P,L,t0:Date.now(),out:L.on({type:'open',t:0}),log:[],explain:false}; clearInterval(timer);
+  timer=setInterval(()=>{ if(!S) return; const o=S.L.on({type:'tick',t:now()}); if(o.move!=='none') step(o,'прошло '+now()+' с'); },3000);
+  view(); }
+const now=()=>Math.round((Date.now()-S.t0)/1000);
+function ev(type,extra,what){ const o=S.L.on(Object.assign({type,t:now()},extra||{})); step(o,what); }
+function step(o,what){ S.out=o; S.log.push(now()+' с · '+what+' → '+(o.rung<0?'попытка':'Р'+o.rung)+' / '+o.move+(o.mistake?' ('+o.mistake+')':'')); view(); }
+function rungText(P,r){ const x=P.rungs.find(q=>q.k===r); return x?x.text:''; }
+function view(){ const {c,k,P,out}=S, st=S.L.state(), r=out.rung;
+  /* чертёж: всё до шага; на Р2 — опоры шага подсвечены; на Р3 — тоже, и подписан подшаг действия; на Р4 — соседний вариант */
+  let dw='', cap='';
+  const A=X.STEPVIEW.analyze(c.part,k)||{beats:[]}, sup=A.beats.flatMap(b=>b.sup).filter(s=>P.labels.known.includes(s.l));
+  if(out.move==='done'){ dw=svgOf(c.part,k,{sup:false}); cap='шаг '+k+' построен'; }
+  else if(r>=4&&out.ref!==undefined||(r>=4)){ const np=neighborPart(c,(P.rungs[4]||{}).neighbor); dw=np?svgOf(np,k,{}):''; cap=np?'соседний вариант · шаг '+k:'соседнего варианта нет'; }
+  else { dw=svgOf(c.part,k,{hideNew:true,sup:r>=2?sup:false}); cap=r>=2?'опоры шага подсвечены':'что уже построено'; }
+  const facts=P.facts.filter(f=>f.verified&&f.rung<=Math.max(0,r)).slice(0,4);
+  const say=out.move==='done'?'Шаг засчитан. '+(st.maxRung>=0?'Подсказок взято до Р'+st.maxRung+'.':'Без подсказок!')
+    : out.move==='self_explain'?'Почему так? Объясни одной фразой, на что опирается этот шаг.'
+    : out.move==='feedback'?'Посмотри ещё раз: '+esc(((P.mistakes.find(m=>m.id===out.mistake)||{}).what)||'')+' — найди это место на своём чертеже.'
+    : out.move==='own'?'Теперь сделай этот же шаг на своём варианте.'
+    : out.move==='repeat'?'Сначала попробуй вот это: '+esc(rungText(P,Math.max(0,r)))
+    : r>=0?esc(rungText(P,r)):'Попробуй сделать шаг сам. Подсказка появится, если ошибёшься, попросишь или задумаешься надолго.';
+  const mist=P.mistakes.slice(0,8).map(m=>'<option value="'+esc(m.id)+'">'+esc(m.what.slice(0,90))+'</option>').join('');
+  $('#app').className=''; $('#app').innerHTML=`<div class="grid">
+    <div class="paper"><span class="cap">${esc(cap)}</span>${dw||'<div class="load">нет чертежа</div>'}</div>
+    <div class="panel">
+      <div class="small">${esc(P.id)} · тип шага «${esc(P.type)}» · ${st.seq.length===3?'перед РК: Р0 → Р2 → Р4':'полная лестница'}</div>
+      <div class="rung">${[0,1,2,3,4].map(i=>'<i class="'+(i<=r?'on':'')+(i===4?' r4':'')+'" title="Р'+i+'"></i>').join('')}</div>
+      <div class="say"><b>${out.move==='done'?'готово':r<0?'твой ход':'Р'+r+' · '+esc(((P.rungs.find(q=>q.k===r)||{}).name)||'')}</b>${say}</div>
+      ${out.move==='self_explain'?'<textarea id="ex" placeholder="Потому что…"></textarea><div class="acts"><button class="b pri" id="exok">Ответил</button></div>':''}
+      ${out.move==='done'?(S.k<(c.part.steps||[]).length?'<div class="acts"><button class="b pri" id="nx">Следующий шаг →</button></div>':'<div class="small">Это последний шаг.</div>')+(P.why.text?'<p class="small"><b>Почему (автор):</b> '+esc(P.why.text)+'</p>':''):''}
+      ${out.move!=='done'&&out.move!=='self_explain'?`<div class="acts">
+        <button class="b" id="help">Помоги / дальше</button><button class="b" id="say">Написал мысль</button>
+        <button class="b pri" id="ok">Сделал верно</button><button class="b" id="bad">Ошибся</button>
+        ${r>=4?'<button class="b" id="seen">Пример посмотрел</button>':''}</div>
+        <p class="small" style="margin:8px 0 2px">Ошибка из библиотеки шага:</p><div class="acts"><select id="mist" style="flex:1"><option value="">— другая —</option>${mist}</select><button class="b" id="badm">Эта ошибка</button></div>`:''}
+      ${facts.length?'<p class="small">Факты ядра, разрешённые на этой ступени: '+facts.map(f=>esc(f.text)).join('; ')+'</p>':''}
+      <div class="log">${S.log.map(esc).join('\n')}</div>
+    </div></div>`;
+  const on=(id,f)=>{ const e=document.getElementById(id); if(e) e.onclick=f; };
+  on('help',()=>ev('help',{},'«помоги»')); on('say',()=>ev('say',{},'реплика')); on('ok',()=>ev('action',{ok:true},'верное действие'));
+  on('bad',()=>ev('action',{ok:false},'ошибка')); on('badm',()=>{ const m=$('#mist').value; ev('action',{ok:false,mistake:m||undefined},'ошибка '+(m||'другая')); });
+  on('seen',()=>ev('example_seen',{},'пример просмотрен')); on('exok',()=>ev('explain',{},'самообъяснение')); on('nx',()=>{ $('#step').value=String(S.k+1); start(S.k+1); }); }
+})();
+</script>
+</body>
+</html>

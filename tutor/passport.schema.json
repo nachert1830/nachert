@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nachert.ru/tutor/passport.schema.json",
+  "title": "Паспорт шага ИИ-тренера «Начерта»",
+  "description": "Строится ядром детерминированно (tutor/passport.js). Описание полей — docs/TUTOR.md.",
+  "type": "object",
+  "required": ["v", "id", "src", "type", "title", "goal", "why", "entities", "labels", "facts", "secrets", "rungs", "mistakes", "key_view", "topics", "todo"],
+  "additionalProperties": false,
+  "properties": {
+    "v": { "type": "integer", "enum": [1] },
+    "id": { "type": "string", "pattern": "^(wb\\.[0-9]+(\\.[а-я])?|dz\\.ng[1-5]\\.v[0-9]+(\\.[а-я])?|ig\\.ig[0-9]+\\.v[0-9]+)\\.s[0-9]+$" },
+    "src": {
+      "type": "object",
+      "required": ["kind", "step"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["wb", "dz", "ig"] },
+        "task": { "type": "string" },
+        "dz": { "type": "string" },
+        "variant": { "type": "integer" },
+        "type": { "type": "string" },
+        "part": { "type": "integer" },
+        "step": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "type": { "type": "string", "enum": ["analysis", "visibility", "replace", "rotate", "mediator", "nv", "perp", "level", "parallel", "intersect", "trace", "link", "figure", "construct", "ig-view"] },
+    "title": { "type": "string" },
+    "goal": { "type": "string" },
+    "why": {
+      "type": "object", "required": ["text", "src"],
+      "properties": { "text": { "type": "string" }, "src": { "type": ["string", "null"] } }
+    },
+    "entities": { "type": "array", "items": { "type": "string" } },
+    "labels": {
+      "type": "object", "required": ["known", "new", "future", "general"],
+      "properties": {
+        "known": { "type": "array", "items": { "type": "string" } },
+        "new": { "type": "array", "items": { "type": "string" } },
+        "future": { "type": "array", "items": { "type": "string" } },
+        "general": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "rel", "args", "text", "src", "verified", "rung"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^F[0-9]+$" },
+          "rel": { "type": "string", "enum": ["par", "perp", "on", "meet", "coinc"] },
+          "args": { "type": "array", "items": { "type": "string" }, "minItems": 2 },
+          "text": { "type": "string" },
+          "src": { "type": "string", "enum": ["kernel", "text"] },
+          "kind": { "type": "string" },
+          "verified": { "type": "boolean" },
+          "res": { "type": "number" },
+          "rung": { "type": "integer", "minimum": 0, "maximum": 4 }
+        }
+      }
+    },
+    "secrets": {
+      "type": "object", "required": ["labels", "entities", "numbers"],
+      "properties": {
+        "labels": { "type": "array", "items": { "type": "string" } },
+        "entities": { "type": "array", "items": { "type": "string" } },
+        "numbers": { "type": "boolean" },
+        "values": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "rungs": {
+      "type": "array", "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["k", "name", "text", "src", "labels"],
+        "properties": {
+          "k": { "type": "integer", "minimum": 0, "maximum": 4 },
+          "name": { "type": "string", "enum": ["вопрос", "приём", "объект", "действие", "пример"] },
+          "text": { "type": "string", "maxLength": 320 },
+          "src": { "type": "string" },
+          "labels": { "type": "array", "items": { "type": "string" } },
+          "note": { "type": "string" },
+          "neighbor": { "type": ["object", "null"] }
+        }
+      }
+    },
+    "mistakes": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "what", "detect", "src"],
+        "properties": { "id": { "type": "string" }, "what": { "type": "string" }, "why": { "type": "string" }, "detect": { "type": "string" }, "src": { "type": "string" } }
+      }
+    },
+    "key_view": {
+      "type": ["object", "null"],
+      "properties": { "look": { "type": "string" }, "why": { "type": "string" }, "target": { "type": ["string", "null"] } }
+    },
+    "topics": { "type": "array", "items": { "type": "string" } },
+    "todo": {
+      "type": "array",
+      "items": { "type": "object", "required": ["field", "why"], "properties": { "field": { "type": "string" }, "why": { "type": "string" } } }
+    }
+  }
+}
