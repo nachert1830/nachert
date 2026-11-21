@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /tests/
 Disallow: /me/
+Disallow: /tutor/
