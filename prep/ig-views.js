@@ -100,4 +100,23 @@ reg('c1',{part:partBack,
     const h=S.find(e=>e.role==='Shat'); return scene(E.concat(h?[h,{t:'path',d:h.d,c:'o',role:'S'}]:[])); },
   traps:{B:{b0:0,say:'В сечение добавили то, что за плоскостью, — это уже разрез',src:'ГОСТ 2.305; тетрадь, с. 26',hl:['S','Sh']}},
   watch:{steps:[{cap:'Деталь: главный вид и вид сверху',roles:['F','Fh','T','Th']},{cap:'Сечение фронтальной плоскостью — только фигура в плоскости; стенка за плоскостью в сечение не входит',roles:['F','Fh','T','Th','Shat','S']}]}});
+/* ── тела с вырезом: настоящие детали ДЗ 4–6 (модели вариантов) ── */
+const DZM=(d,ns)=>{ for(let t=0;t<8;t++){ const n=pick(ns); try{ const m=window.DZR&&DZR.get(d).part(n); if(m&&m.tree&&m.tree.t==='s') return {m,body:{box:m.box,tree:m.tree.a},d,n}; }catch(e){} } return null; };
+const N30=Array.from({length:30},(_,i)=>i+1);
+const differs=(ok,bad,roles)=>{ const key=S=>S.E.filter(e=>roles.includes(e.role)).map(e=>e.d).join('|'); return key(ok)!==key(bad); };
+const cutSteps=[{cap:'Дано: главный вид с вырезом K — грани выреза проецирующие, на этом виде они уже линии',roles:['F','Fh']},
+  {cap:'Вид сверху: каждую точку выреза — по линии связи и принадлежности поверхности',roles:['F','Fh','T','Th']},
+  {cap:'Вид слева: высоты — с главного, глубина — с вида сверху; невидимое — штриховыми',roles:['F','Fh','T','Th','L','Lh']}];
+reg('k1',{make(){ return Math.random()<.5?DZM('ig4',N30):DZM('ig5',N30.filter(n=>![17,21,29].includes(n))); },
+  scene(V,k){ const mT=k==='N'?V.body:V.m, mL=k==='N'||k==='L'?V.body:V.m;
+    return scene(viewEls(V.m,'front0',0,0,'F',{hat:false}).concat(viewEls(mT,'top',0,W,'T',{hat:false}),viewEls(mL,'left0',W,0,'L',{hat:false}))); },
+  fair(V,k,ok,bad){ return differs(ok,bad,['T','Th','L','Lh']); },
+  traps:{N:{b0:-0.4,say:'Вырез есть на главном виде, но не перенесён на вид сверху и вид слева',src:'методика ДЗ 4–5',hl:['T','Th','L','Lh']},
+         L:{b0:0.1,say:'На виде слева нет линий выреза: точки выреза не перенесены по высоте и глубине',src:'методика ДЗ 4–5',hl:['L','Lh']}},
+  watch:{steps:cutSteps}});
+reg('k6',{make(){ return DZM('ig6',N30); },
+  scene(V,k){ const mL=k==='L'?V.body:V.m; return scene(viewEls(V.m,'front0',0,0,'F',{hat:false}).concat(viewEls(V.m,'top',0,W,'T',{hat:false}),viewEls(mL,'left0',W,0,'L',{hat:false}))); },
+  fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
+  traps:{L:{b0:-0.2,say:'На виде слева не построены линии отверстия: каждая грань режет шар по окружности r = √(R² − d²)',src:'методика ДЗ 6',hl:['L','Lh']}},
+  watch:{steps:[{cap:'Дано: шар и отверстие K на главном виде — грани K плоскости уровня',roles:['F','Fh']},{cap:'Вид сверху: горизонтальная грань режет шар по окружности — здесь она в натуральную величину',roles:['F','Fh','T','Th']},{cap:'Вид слева: профильная грань — окружность, остальные грани — отрезки; полость — штриховыми',roles:['F','Fh','T','Th','L','Lh']}]}});
 })();
