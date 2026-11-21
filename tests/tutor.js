@@ -20,6 +20,8 @@ for(const f of files){ const D=JSON.parse(fs.readFileSync(path.join(DIR,f),'utf8
     for(const s of v.steps){ N++;
       if(ids.has(s.id)) bad('повтор id '+s.id); ids.add(s.id);
       if(!s.goal||!s.rungs['1']||!s.rungs['2']||!s.rungs['3']) bad(`${s.id}: нет цели или ступеней 1–3`);
+      if(!s.look||!s.look.cam||!s.look.t) bad(`${s.id}: нет ключевого ракурса`);
+      if(!s.topics||!s.topics.length) bad(`${s.id}: шаг без темы программы`);
       const nb=T.neighborOf(D,s); if(nb) NB++;
       for(let r=0;r<=4;r++){ const c=T.context(s,r,{neighbor:nb,cond:v.q}), t=T.fallback(s,r,{neighbor:nb,cond:v.q}), L=T.lint(t,c);
         if(!L.ok){ FB++; if(FB<6) bad(`${s.id} Р${r}: шаблон не прошёл линтер — ${L.errors.map(e=>e.msg).join('; ')}`); } }
@@ -45,7 +47,18 @@ const run=evs=>evs.reduce((s,e)=>T.ladder.step(s,e),T.ladder.init());
 const eq=(name,s,rung,extra)=>{ if(s.rung!==rung) bad(`лестница «${name}»: ступень ${s.rung}, ожидалась ${rung}`); if(extra&&!extra(s)) bad(`лестница «${name}»: состояние ${JSON.stringify(s)}`); };
 eq('ошибка открывает Р0',run([{t:'open'},{t:'act_wrong'}]),0);
 eq('ошибки поднимают по одной',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'}]),2);
-eq('ошибка из библиотеки сначала не поднимает',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong',misc:1}]),0,s=>s.move==='feedback_incorrect');
+eq('ошибка из библиотеки сначала не поднимает',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong',misc:'a'}]),0,s=>s.move==='feedback_incorrect');
+eq('та же ошибка из библиотеки второй раз — поднимает',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong',misc:'a'},{t:'act_wrong',misc:'a'}]),1);
+eq('другая ошибка из библиотеки — снова сначала показываем',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong',misc:'a'},{t:'act_wrong',misc:'b'}]),0,s=>s.move==='feedback_incorrect');
+eq('ход не залипает',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong',misc:'a'},{t:'text'}]),0,s=>s.move===null);
+eq('просьбы без новых попыток не поднимают',run([{t:'open'},{t:'act_wrong'},{t:'ask'},{t:'ask'},{t:'ask'}]),0,s=>s.move==='prompt_try');
+eq('попытка — и просьба поднимает',run([{t:'open'},{t:'act_wrong'},{t:'text',attempt:1},{t:'ask'}]),1);
+eq('реплика сбрасывает паузу',run([{t:'open'},{t:'act_wrong'},{t:'idle',sec:40},{t:'text'},{t:'idle',sec:40}]),0);
+eq('самообъяснение после Р2+',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_ok'}]),2,s=>s.move==='ask_self_explain');
+eq('без самообъяснения на Р0',run([{t:'open'},{t:'act_wrong'},{t:'act_ok'}]),0,s=>s.move==='feedback_correct');
+{ const r=[{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'}].reduce((s,e)=>T.ladder.step(s,e),T.ladder.init({rk:1})); if(r.rung!==4) bad('лестница перед РК: ожидалось Р0 → Р2 → Р4, ступень '+r.rung); }
+if(JSON.stringify(T.ladder.review([{maxRung:4,topics:['m4']},{maxRung:4,topics:['m4','p5']},{maxRung:4,topics:['x3']}]))!==JSON.stringify(['m4','p5','x3'])) bad('лестница: три шага с Р4 — нет совета вернуться к темам');
+if(T.ladder.review([{maxRung:4},{maxRung:2},{maxRung:4}])) bad('лестница: совет вернуться без трёх Р4 подряд');
 eq('пауза 45 с поднимает',run([{t:'open'},{t:'act_wrong'},{t:'idle',sec:46}]),1);
 eq('пауза не поднимает выше Р3',run([{t:'open'},{t:'act_wrong'},{t:'idle',sec:46},{t:'idle',sec:46},{t:'idle',sec:46},{t:'idle',sec:46}]),3);
 eq('Р4 — после двух ошибок на Р3',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'}]),4);
@@ -63,6 +76,18 @@ for(const d of ['ng1','ng2','ng3','ng4','ng5']){ const f=path.join(DIR,d+'.json'
 if(LKbad) bad(`линия связи нарушена в ${LKbad} из ${LK} пар`); if(HIDbad) bad(`утверждение о неоткрытой точке не скрыто: ${HIDbad} из ${HID}`);
 const pc=[['K′ лежит на D′E′','on'],['A′ и A″ на одной линии связи','link'],['A″B″ параллельна оси x','parx'],['AB ⟂ CD: A′B′ ⟂ C′D′','perp']];
 pc.forEach(([t,rel])=>{ const c=T.parseClaim(t); if(!c||c.rel!==rel) bad(`разбор «${t}»: ${JSON.stringify(c)}`); });
+/* 7. инжа: утверждения об элементе против базы «каждая линия» — на всех элементах всех вариантов */
+{ const K=JSON.parse(fs.readFileSync(path.join(ROOT,'kb/ig-dz.json'),'utf8')); let n=0, wrong=0;
+  const P=(t,exp)=>{ const c=T.parseIGClaim(t); if(!c||c.rel!==exp) bad(`разбор инжи «${t}»: ${JSON.stringify(c)}`); };
+  P('высоты на виде слева берут с главного вида','src'); P('глубину на виде слева — с вида сверху','src'); P('на виде слева линии отверстия невидимые','hidden');
+  P('на виде сверху линия выреза — кривая','curve'); P('отверстие в разрезе штрихуется','hatch'); P('во фронтальном разрезе отверстие рассечено','cut'); P('паз дан на главном виде','given');
+  for(const dz in K.dz) for(const v in K.dz[dz]) for(const ex of K.dz[dz][v].feats){ n++;
+    ex.byView.forEach(b=>{ if(b.how.z&&!T.checkIG(ex,{rel:'src',view:b.v,coord:'z',from:b.how.z}).truth) wrong++; if(b.how.y&&!T.checkIG(ex,{rel:'src',view:b.v,coord:'y',from:'T'}).truth) wrong++;
+      if(T.checkIG(ex,{rel:'hidden',view:b.v}).truth!==!!b.hidden) wrong++; });
+    if(T.checkIG(ex,{rel:'hatch'}).truth===(ex.kind==='отверстие')) wrong++;
+    ex.given.forEach(g=>{ if(!T.checkIG(ex,{rel:'given',view:g}).truth) wrong++; }); }
+  if(wrong) bad(`инжа: проверка утверждений расходится с базой в ${wrong} случаях`);
+  console.log(`Инжа: утверждения сверены с базой на ${n} элементах`); }
 console.log(`Утверждения: линия связи верна у ${LK-LKbad}/${LK} пар проекций; ложное «на одной линии связи» опровергнуто в ${FALSEok} вариантах; о неоткрытых точках скрыто ${HID-HIDbad}/${HID}`);
 console.log(`Тренер: шагов ${N} (сосед — у ${NB}); шаблон без модели прошёл линтер везде: ${!FB}; утечки пойманы: точки ${LC}/${LT}, числа ${NC}/${NT}, сырой «Шаг» ${RC}/${RT}`);
 if(LC!==LT||NC!==NT||RC!==RT) bad('не все подсаженные утечки пойманы');

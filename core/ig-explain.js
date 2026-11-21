@@ -64,7 +64,7 @@ function find(L,text){
 /* ответ без модели: 3–6 коротких фраз, только из структуры */
 function say(ex){
   if(!ex) return 'Такого элемента в варианте нет.';
-  const out=[`${ex.name} (${ex.kind}).`];
+  const out=[`${ex.name} — ${ex.kind}.`];
   if(ex.given.length) out.push(`Дано ${ex.given.map(v=>VIEW_IN[v]).join(' и ')} — с этого и начинаем.`);
   for(const b of ex.byView){ const parts=[];
     if(b.how.x) parts.push('положение по ширине — '+SRC[b.how.x]);
@@ -73,7 +73,7 @@ function say(ex){
     if(b.rad.length) parts.push(`дуги среза шара: r = √(R² − d²), радиус — со следа грани`);
     const tail=[b.curves?'есть кривые — их строят по точкам':'',b.hidden?'часть линий невидима — штриховые':''].filter(Boolean);
     out.push(`${VIEW_IN[b.v][0].toUpperCase()+VIEW_IN[b.v].slice(1)} достраиваем: ${parts.length?parts.join(', '):'по проекционной связи'}${tail.length?'; '+tail.join(', '):''}.`); }
-  if(ex.sections.length) out.push('Рассечён: '+ex.sections.map(s=>VIEW_IN[s.v]).join(', ')+' — там контур сплошной, материал вокруг штрихуется'+(ex.kind==='отверстие'?', само отверстие — нет':'')+'.');
+  if(ex.sections.length) out.push('Попадает в разрез: '+ex.sections.map(s=>VIEW_IN[s.v]).join(', ')+' — там контур сплошной, материал вокруг штрихуется'+(ex.kind==='отверстие'?', само отверстие — нет':'')+'.');
   return out.join(' ');
 }
 const api={explain,find,say,topicsFor,VIEW,VIEW_IN};

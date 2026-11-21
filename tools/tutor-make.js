@@ -23,13 +23,24 @@ const NGRULES=[[/горизонтал|фронтал|h[″′]?α|f[″′]?α/i
   [/пересечени[а-яё]* плоскост|точк[а-яё]* встречи|пересекает плоскост/i,['m4','m5']],[/двугранн/i,['t6']],[/обратн/i,['t9']],[/линии? связи/i,['p1','p2']],
   [/истинн[а-яё]* величин[а-яё]* угл|угол ψ|угла ψ/i,['t8','m7a']],[/угол [αβ] |угол [αβ]$|угол наклона высоты|высоты с π/i,['l4u']],[/доказательств/i,['m8']],
   [/основани|грань|грани/i,['m1','m3']],[/образующ/i,['f1','x9','x8']]];
+/* ключевой ракурс 3D (§3.4, key_views): куда тренер ведёт камеру на этом шаге; cam — код для 3D-сцены */
+const LOOKS=[[/γ|посредник|проецирующ[а-яё]* плоскост/i,{cam:'along-aux',t:'Вдоль вспомогательной плоскости: она схлопывается в линию — видно, где она режет фигуру'}],
+  [/замен|нов[а-яё]* ос|x₁₄|x₂₄|x₄₅|π₄|π₅/i,{cam:'along-new-axis',t:'Перпендикулярно новой плоскости проекций: видно, во что проецируется фигура после замены'}],
+  [/вращ|поворот|совмещ/i,{cam:'along-rot-axis',t:'Вдоль оси вращения: точка идёт по окружности, видно её радиус'}],
+  [/натуральн|прямоугольн[а-яё]* треугольн|гипотенуз/i,{cam:'perp-segment',t:'Перпендикулярно отрезку: видна его настоящая длина'}],
+  [/сфер|параллел/i,{cam:'along-body-axis',t:'Вдоль оси тела вращения: параллели — окружности'}],
+  [/видим|конкурир/i,{cam:'proj-dir',t:'По направлению взгляда на плоскость проекций: какая из точек ближе к глазу'}],
+  [/касательн|нормал/i,{cam:'tangent',t:'Вдоль касательной: плоскость касается поверхности по линии'}],
+  [/горизонтал|фронтал/i,{cam:'level',t:'Сбоку на плоскость: горизонталь параллельна π₁, фронталь — π₂'}],
+  [/перпендикуляр/i,{cam:'perp-plane',t:'Вдоль плоскости: перпендикуляр к ней — прямой угол виден без искажения'}]];
+const lookOf=(text,dflt)=>{ for(const [re,l] of LOOKS) if(re.test(text)) return l; return dflt||{cam:'iso',t:'Общий вид: деталь и обе проекции точки'}; };
 function ngTopics(dz,text){ const need=NG.need(dz), out=[];
   for(const [re,ids] of NGRULES) if(re.test(text)) ids.forEach(id=>{ if(need.has(id)&&!out.includes(id)) out.push(id); });
   return out.slice(0,4); }
 const ENT={'&gt;':'>','&lt;':'<','&amp;':'&','&laquo;':'«','&raquo;':'»','&mdash;':'—','&ndash;':'–','&minus;':'−','&nbsp;':' ','&quot;':'"','&#39;':"'",'&deg;':'°','&times;':'×','&le;':'≤','&ge;':'≥','&asymp;':'≈'};
-const strip=s=>String(s==null?'':s).replace(/<sub>([^<]*)<\/sub>/g,'$1').replace(/<sup>([^<]*)<\/sup>/g,'^$1').replace(/<[^>]+>/g,' ').replace(/&[a-z]+;|&#\d+;/g,m=>ENT[m]!=null?ENT[m]:' ').replace(/\s+/g,' ').trim();
+const strip=s=>String(s==null?'':s).replace(/<sub>([^<]*)<\/sub>/g,'$1').replace(/<sup>([^<]*)<\/sup>/g,'^$1').replace(/<[^>]+>/g,' ').replace(/&[a-z]+;|&#\d+;/g,m=>ENT[m]!=null?ENT[m]:' ').replace(/\s+/g,' ').replace(/\s+([,.;:!?)])/g,'$1').replace(/\(\s+/g,'(').trim();
 const THEORY=new Set(['0','1','2','3','30','45','60','90','120','180','360']);
-const NUM=/(?<![A-Za-zА-Яа-я₀-₉′″‴])-?\d+(?:[,.]\d+)?/g;
+const NUM=/(?<![A-Za-zА-Яа-я₀-₉′″‴\d.,])-?\d+(?:[,.]\d+)?(?![\d′″‴₀-₉\u2080-\u209c])/g;   /* цифра со штрихом или индексом — метка (4″), не число */
 async function ng(page,dz){
   const raw=await page.evaluate(dz=>{ const out=[]; for(const n of DZR.numbers(dz)){ let s; try{ s=DZR.solve(dz,n); }catch(e){ out.push({n,err:String(e.message)}); continue; }
       const t=s.task, parts=t.parts||[t], labs=a=>(a||[]).map(e=>e&&e.l).filter(l=>l&&typeof l==='string');
@@ -39,7 +50,7 @@ async function ng(page,dz){
       out.push({n,P,kind:(DZR.typeOf(dz,n)||{}).code||null,q:t.q,ans:parts.map(p=>p.ans||'').join(' '),cert:(s.cert||[]).length,given,
         parts:parts.map(p=>({q:p.q||'',given:labs(p.given),steps:(p.steps||[]).map(st=>{ const d=document.createElement('div'); d.innerHTML=st.tbl||'';
           const R={}; d.querySelectorAll('details.hw-l').forEach(x=>{ const m=/l(\d)/.exec(x.className); const body=x.querySelector('div'); if(m&&body) R[m[1]]=body.innerHTML; });
-          return {t:st.t,d:st.d||'',why:st.why||'',R,add:labs(st.add),pts:(st.add||[]).filter(e=>e&&e.t==='pt'&&typeof e.l==='string').map(e=>e.l)}; })}))}); }
+          return {t:st.t,d:st.d||'',why:st.why||'',R,add:labs(st.add),pts:(st.add||[]).filter(e=>e&&e.t==='pt'&&typeof e.l==='string'&&e.k!=='aux').map(e=>e.l)}; })}))}); }   /* секрет — результат шага (k res), вспомогательные точки построения (k aux) — нет */
     return out; },dz);
   const variants=raw.map(v=>{ if(v.err) return {n:v.n,err:v.err};
     let seen=new Set(v.given);
@@ -54,7 +65,7 @@ async function ng(page,dz){
       const nums=[...new Set([R['3'],R['4']].join(' ').match(NUM)||[])].filter(x=>!THEORY.has(x.replace(',','.'))&&!givenN.has(x.replace(',','.')));
       const goal=strip(st.t);
       steps.push({id:`${dz}.v${v.n}.p${pi+1}.s${si+1}`,part:pi+1,goal,rungs:R,labels:before.concat(intro),secret:{labels:fresh,numbers:nums},
-        topics:ngTopics(dz,goal+' '+(R['3']||'')+' '+(R['2']||''))});
+        topics:ngTopics(dz,goal+' '+(R['3']||'')+' '+(R['2']||'')),look:lookOf(goal+' '+(R['3']||''))});
       st.add.forEach(l=>seen.add(l)); }); });
     return {n:v.n,kind:v.kind,q:strip(v.q),ans:strip(v.ans),cert:v.cert,P:v.P,steps}; });
   return {dz,subj:'ng',variants};
@@ -68,12 +79,14 @@ function ig(dz,KB){
       const tops=ex.topics.map(t=>IG.BY[t]).filter(Boolean), main=tops.find(t=>!['v2','v3','v6','r1','r2'].includes(t.id))||tops[0];
       const views=ex.byView.map(b=>VIEW_IN[b.v]).filter(Boolean);
       const nums=[...new Set(ex.byView.flatMap(b=>(b.how.y||[]).map(v=>String(Math.round(v*10)/10).replace('.',','))))];
-      const R={1:`${ex.name}: где он дан и на каких видах его ещё нет? ${views.length?'Достраивать — '+views.join(' и ')+'.':''}`.trim(),
+      const R={1:`${ex.name}: на каком виде это дано и на каких видах этого ещё нет? ${views.length?'Достраивать — '+views.join(' и ')+'.':''}`.trim(),
         2:main?`Опирайся на правило: ${main.new}.`:'Высоты — с главного вида, глубины — с вида сверху.',
         3:ex.say,
         4:nums.length?`Глубины от оси: ${nums.join('; ')} мм.`:'',
         5:'Каждая точка — на одной линии связи на всех видах; невидимое — штриховыми; в разрезе материал штрихуется, отверстие — нет.'};
-      steps.push({id:`${dz}.v${n}.f${i}`,goal:`${ex.name}`,feature:i,rungs:R,labels:['главный вид','вид сверху','вид слева'],secret:{labels:[],numbers:nums},topics:ex.topics}); });
+      const lk=tops.find(t=>t.look), b0=ex.byView[0], VW={F:'front',T:'top',L:'left'};
+      const look=lk?{cam:'topic:'+lk.id,t:lk.look}:{cam:b0?VW[b0.v]:'iso',t:b0?'Взгляд как на '+({F:'главный вид',T:'вид сверху',L:'вид слева'}[b0.v])+': там элемент достраивают':'Общий вид детали'};
+      steps.push({id:`${dz}.v${n}.f${i}`,goal:`${ex.name}`,feature:i,rungs:R,labels:['главный вид','вид сверху','вид слева'],secret:{labels:[],numbers:nums},topics:ex.topics,look}); });
     variants.push({n,q:V[n].title,steps}); }
   return {dz,subj:'ig',variants};
 }

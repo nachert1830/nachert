@@ -48,16 +48,18 @@ function labelsIn(t){ return [...new Set((canonText(t).match(LAB)||[]).map(norm)
 function numbersIn(t){ return (canonText(t).replace(/(\d)\s+(?=\d)/g,'$1').match(NUMRE)||[]).map(x=>x.replace(',','.')); }
 /* маска секретов: метки, которые вводит шаг, → «…», числа шага убираются */
 function mask(text,secret){ let s=String(text||'');
-  (secret.labels||[]).slice().sort((a,b)=>b.length-a.length).forEach(l=>{ s=s.split(l).join('…'); s=s.split(norm(l)).join('…'); });
-  (secret.numbers||[]).slice().sort((a,b)=>b.length-a.length).forEach(n=>{ s=s.replace(new RegExp('(?<![\\d,.])'+n.replace(/[.,]/g,'[.,]')+'(?![\\d,.])','g'),'…'); });
-  return s.replace(/(…\s*){2,}/g,'… ').trim(); }
+  (secret.labels||[]).slice().sort((a,b)=>b.length-a.length).forEach(l=>{ s=s.split(l).join('⋯'); s=s.split(norm(l)).join('⋯'); });
+  (secret.numbers||[]).slice().sort((a,b)=>b.length-a.length).forEach(n=>{ s=s.replace(new RegExp('(?<![\\d,.A-Za-zА-Яа-я])'+n.replace(/[.,]/g,'[.,]')+'(?![\\d,.′″‴₀-₉\\u2080-\\u209c])','g'),'⋯'); });
+  return s.replace(/(⋯\s*){2,}/g,'⋯ ').trim(); }   /* маска — «⋯»: не конец предложения, в отличие от «…» */
 /* Р3 — «где действовать»: первое-второе предложение шага с замаскированными секретами */
+const ACT=/(?<![А-Яа-яЁё])(строим|проводим|проведи|откладываем|отложи|достраиваем|достраивай|отмечаем|отметь|переносим|перенеси|находим|найди|соединяем|соедини|берём|бери|опускаем|опусти|делим|раздели|засекаем|продолжаем|измеряем|измерь|выбираем|выбери|поворачиваем|вращаем|пересекаем|ставим|штрихуем)/i;
 function actionOf(step){
-  const clean=x=>x.replace(/\s*\((?:\s*[−-]?\s*…\s*[;,]?)+\)/g,'').replace(/\s*[→=]\s*…(\s*[;,]\s*…)*/g,'').replace(/(…\s*[;,]\s*)+…/g,'…').replace(/\s+([.,;:])/g,'$1').trim();
-  const S=sentences(mask(step.rungs['3']||'',step.secret)).map(clean).filter(x=>x.replace(/[…\s.,;:—-]/g,'').length>=12);
-  const good=S.filter(x=>(x.match(/…/g)||[]).length<=1&&!/^[^А-Яа-яЁё]*$/.test(x.slice(0,12)));
-  const pick=good.slice(0,2).join(' ').replace(/^[\s—–\-:;,.…]+/,'').replace(/^./,c=>c.toUpperCase());
-  if(pick.replace(/…/g,'').length>=25) return pick;
+  const clean=x=>x.replace(/\s*\([^()]*⋯[^()]*\)/g,'').replace(/\s*\((?:\s*[−-]?\s*⋯\s*[;,]?)+\)/g,'').replace(/\s*[→=]\s*⋯(\s*[;,]\s*⋯)*/g,'').replace(/(⋯\s*[;,]\s*)+⋯/g,'⋯').replace(/\s+([.,;:])/g,'$1').trim();
+  const S=sentences(mask(step.rungs['3']||'',step.secret)).map(clean).filter(x=>x.replace(/[⋯\s.,;:—-]/g,'').length>=12);
+  /* «где действовать»: предложения с действием и не больше одной маски — в исходном порядке; иначе — первые подходящие */
+  const ok=S.filter(x=>(x.match(/⋯/g)||[]).length<=1), act=ok.filter(x=>ACT.test(x));
+  const pick=(act.length?act:ok).slice(0,2).join(' ').replace(/^[\s—–\-:;,.⋯]+/,'').replace(/^./,c=>c.toUpperCase());
+  if(pick.replace(/⋯/g,'').length>=25) return pick;
   return 'Сделай это построение: '+step.goal.replace(/[.\s]+$/,'')+'. Начни с того, что для него уже есть на чертеже.'; }
 function context(step,rung,o){ o=o||{}; const R={};
   const given=new Set(numbersIn((o.cond||'')+' '+step.goal)); step=Object.assign({},step,{secret:{labels:step.secret.labels||[],numbers:(step.secret.numbers||[]).filter(x=>!given.has(x.replace(',','.')))}});
@@ -92,7 +94,7 @@ function lint(text,ctx){
 }
 /* шаблон ступени без модели — то, что гарантированно проходит линтер */
 function fallback(step,rung,o){ const c=context(step,rung,o), A=c.allowed; step=Object.assign({},step,{secret:c.secret});
-  const pick=rung>=4&&c.neighbor?'Посмотри этот же шаг на соседнем варианте: '+c.neighbor.text:rung>=3?A.R3:rung>=2?A.R2:rung>=1?A.R1:A.R0+' Что уже есть на чертеже для этого?';
+  const pick=rung>=4&&c.neighbor?'Посмотри этот же шаг на соседнем варианте: '+c.neighbor.text.replace(/\s*$/,'').replace(/([^.!?…])$/,'$1.')+(c.neighbor.numbers?' Числа там: '+c.neighbor.numbers:''):rung>=3?A.R3:rung>=2?A.R2:rung>=1?A.R1:A.R0+' Что уже есть на чертеже для этого?';
   let s='', q=0; const src=String(pick||A.R0);
   for(const x of sentences(src)){ const qq=(x.match(/\?/g)||[]).length; if((s+' '+x).length>MAXLEN-1||q+qq>1) break; s=(s?s+' ':'')+x; q+=qq; }
   if(!s) s=src.slice(0,MAXLEN-1).replace(/\?/g,'.')+'…';
@@ -100,23 +102,32 @@ function fallback(step,rung,o){ const c=context(step,rung,o), A=c.allowed; step=
   return s; }
 /* ── автомат лестницы (§4.1) ── */
 const ladder={
-  init(){ return {rung:-1,tries:0,errAt:0,idle:0,maxRung:-1,done:false,log:[]}; },
-  step(s,ev){ s=Object.assign({},s,{log:s.log.concat([ev.t])}); const up=r=>{ s.rung=Math.min(4,r); s.errAt=0; s.idle=0; s.maxRung=Math.max(s.maxRung,s.rung); };
+  /* rk: true — режим перед РК: лестница сжата (Р0 → Р2 → Р4) */
+  init(o){ return {rung:-1,tries:0,att:0,errAt:0,idle:0,maxRung:-1,done:false,misc:[],rk:!!(o&&o.rk),move:null,log:[]}; },
+  step(s0,ev){ const s=Object.assign({},s0,{log:s0.log.concat([ev.t]),move:null,misc:s0.misc.slice()});
+    const up=r=>{ if(s.rk&&r>=0) r=r<=0?0:r<=2?2:4; s.rung=Math.min(4,Math.max(s.rung,r)); s.errAt=0; s.idle=0; s.att=0; s.maxRung=Math.max(s.maxRung,s.rung); };
+    const next=()=>up(s.rung<0?0:s.rk?(s.rung<2?2:4):s.rung+1);
     if(s.done) return s;
     switch(ev.t){
       case 'open': return s;
-      case 'act_ok': s.done=true; return s;
-      case 'act_wrong': s.tries++;
-        if(s.rung<0){ up(0); return s; }
-        if(ev.misc&&!s.miscSeen){ s.miscSeen=1; s.move='feedback_incorrect'; return s; }   /* ошибку из библиотеки сначала показываем, ступень не растёт */
-        if(s.rung===3){ s.errAt++; if(s.errAt>=2) up(4); return s; }
-        up(s.rung+1); return s;
-      case 'text': if(ev.attempt) s.tries++; return s;
-      case 'idle': s.idle+=ev.sec||0; if(s.idle>=(s.rung<0?60:45)&&s.rung<3){ up(s.rung+1); } return s;
-      case 'ask': if(s.rung<0){ up(0); return s; } if(!s.tries){ s.move='prompt_try'; return s; }   /* просьба без попытки — «попробуй сначала вот это» */
-        if(s.rung===3){ up(4); return s; } up(s.rung+1); return s;
+      case 'act_ok': s.done=true; s.idle=0;
+        /* самообъяснение после верного шага, если брал Р2 и выше (§4.1) */
+        s.move=s.maxRung>=2?'ask_self_explain':'feedback_correct'; return s;
+      case 'act_wrong': s.tries++; s.att++; s.idle=0;
+        if(s.rung<0){ up(0); s.move='pump'; return s; }
+        if(ev.misc&&!s.misc.includes(ev.misc)){ s.misc.push(ev.misc); s.move='feedback_incorrect'; return s; }   /* каждую ошибку из библиотеки сначала показываем, ступень не растёт */
+        if(s.rung===3){ s.errAt++; if(s.errAt>=2) up(4); s.move='hint'; return s; }
+        next(); s.move='hint'; return s;
+      case 'text': s.idle=0; if(ev.attempt){ s.tries++; s.att++; } return s;
+      case 'idle': s.idle+=ev.sec||0; if(s.idle>=(s.rung<0?60:45)&&s.rung<3){ next(); s.move=s.rung===0?'pump':'hint'; } return s;
+      case 'ask': s.idle=0;
+        if(s.rung<0){ up(0); s.move='pump'; return s; }
+        if(!s.att){ s.move='prompt_try'; return s; }   /* просьба без новой попытки — «попробуй сначала вот это» */
+        next(); s.move='hint'; return s;
     }
-    return s; } };
+    return s; },
+  /* три шага подряд дошли до Р4 — вернуться к теме-опоре (граф программы): отдаём темы этих шагов */
+  review(results){ const last=results.slice(-3); return last.length===3&&last.every(r=>r.maxRung>=4)?[...new Set(last.flatMap(r=>r.topics||[]))]:null; } };
 /* соседний вариант: тот же ДЗ, тот же шаг (часть и номер) в варианте того же типа — ближайший номер */
 function neighborOf(D,step){ const m=/^(\w+)\.v(\d+)\.(.+)$/.exec(step.id); if(!m) return null; const n=+m[2], tail=m[3], me=D.variants.find(v=>v.n===n), kind=me&&me.kind;
   const vs=D.variants.filter(v=>v.n!==n&&v.steps&&v.steps.length&&(kind==null||v.kind===kind)).sort((a,b)=>Math.abs(a.n-n)-Math.abs(b.n-n)||a.n-b.n);
@@ -158,6 +169,35 @@ function parseClaim(text){ const t=canonText(text), L=labelsIn(t);
   if(/⟂|перпенд/i.test(t)&&L.length>=4) return {rel:'perp',a:L[0],b:L[1],c:L[2],d:L[3]};
   if(/(лежит|находится|принадлеж|\sна\s|∈)/i.test(t)&&L.length>=3) return {rel:'on',p:L[0],a:L[1],b:L[2]};
   return null; }
-const api={canonText,context,lint,fallback,ladder,mask,labelsIn,numbersIn,actionOf,neighborOf,checkClaim,parseClaim,MAXLEN};
+/* ── инжа: утверждения об элементе по базе «каждая линия» (core/ig-explain.js → explain) ──
+   claim: {rel:'src', view, coord:'x'|'y'|'z', from:'F'|'T'} — откуда координата (способ); {rel:'given', view} — дан ли на виде;
+   {rel:'hidden'|'curve', view} — есть ли невидимые / кривые линии (результат); {rel:'cut', view} — рассечён ли в разрезе;
+   {rel:'hatch'} — штрихуется ли сам элемент в разрезе (отверстие — никогда, тело — да).
+   result:true — утверждение о результате построения: тренер подтверждает его не раньше Р3. */
+const VW={F:'F',T:'T',L:'L'};
+function checkIG(ex,c){ if(!ex||!c) return {unknown:true};
+  const b=ex.byView.find(x=>x.v===c.view);
+  switch(c.rel){
+    case 'given': return {truth:ex.given.includes(c.view)};
+    case 'src': { if(!b) return {unknown:true,why:'на этом виде элемент не достраивают'}; const h=b.how||{}; const v=c.coord==='y'?(h.y?'T':null):h[c.coord]; return {truth:v===c.from}; }
+    case 'hidden': return {truth:!!(b&&b.hidden),result:true};
+    case 'curve': return {truth:!!(b&&b.curves),result:true};
+    case 'cut': return {truth:ex.sections.some(x=>x.v===c.view)};
+    case 'hatch': return {truth:ex.kind!=='отверстие'};
+  }
+  return {unknown:true}; }
+function parseIGClaim(text){ const t=String(text).toLowerCase();
+  const view=/главн/.test(t)?'F':/сверху/.test(t)?'T':/слева/.test(t)?'L':null;
+  const sec=/фронтальн[а-яё]* разрез/.test(t)?'Fs':/профильн[а-яё]* разрез/.test(t)?'Ls':/(горизонтальн[а-яё]* разрез|а–а|а-а)/.test(t)?'Ts':null;
+  if(/штрихуют|штрихуется|заштрих/.test(t)&&!/не штрих/.test(t)) return {rel:'hatch'};
+  if(/высот[а-яё]*.*с главного/.test(t)) return {rel:'src',view:view==='F'?'L':view||'L',coord:'z',from:'F'};
+  if(/глубин[а-яё]*.*с вида сверху/.test(t)) return {rel:'src',view:view==='T'?'L':view||'L',coord:'y',from:'T'};
+  if(/(ширин|по ширине|положение по x).*с главного/.test(t)) return {rel:'src',view:view==='F'?'T':view||'T',coord:'x',from:'F'};
+  if(sec&&/рассеч|попада|режет/.test(t)) return {rel:'cut',view:sec};
+  if(view&&/невидим|штрихов[а-яё]* лини/.test(t)) return {rel:'hidden',view};
+  if(view&&/крив|по точкам|эллипс|дуг/.test(t)) return {rel:'curve',view};
+  if(view&&/(дан|задан)/.test(t)) return {rel:'given',view};
+  return null; }
+const api={checkIG,parseIGClaim,canonText,context,lint,fallback,ladder,mask,labelsIn,numbersIn,actionOf,neighborOf,checkClaim,parseClaim,MAXLEN};
 if(typeof module!=='undefined'&&module.exports) module.exports=api; else (self.TUTOR=api);
 })();

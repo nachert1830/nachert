@@ -9,7 +9,7 @@
 const fs=require('fs'), path=require('path'), ROOT=path.join(__dirname,'..'), R=p=>require(path.join(ROOT,p));
 global.self=global;
 R('kernel/prep.js'); R('prep/engine.js'); ['x','x-b','t','base','sm','more','rest','space'].forEach(f=>R('prep/'+f+'.js'));
-const NG=self.PREPROG, PT=self.PREP.TOPICS, IG=R('kernel/prep-ig.js');
+const NG=self.PREPROG, PT=self.PREP.TOPICS, IG=R('kernel/prep-ig.js'); self.PREPIG=IG; R('prep/ig-conj.js'); R('prep/ig-plane.js');
 const clean=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
 const topics=[];
 NG.ALL.forEach(t=>{ const p=PT[t.id]||{};
@@ -17,9 +17,10 @@ NG.ALL.forEach(t=>{ const p=PT[t.id]||{};
     course:NG.OWNER[t.id],
     watch:p.watch&&p.watch.steps?p.watch.steps.map(s=>clean(s.cap)):undefined,
     traps:p.traps?Object.entries(p.traps).map(([k,v])=>({k,say:clean(v.say),src:v.src,b0:v.b0})):[]}); });
-IG.ALL.forEach(t=>topics.push({id:t.id,subj:'ig',block:IG.MODS.find(m=>m.id===t.mod).t,t:t.t,new:t.new,pre:t.pre,dz:t.dz,ng:t.ng,gost:t.gost,look:t.look,q:t.q,wb:t.wb,
+IG.ALL.forEach(t=>{ const p=PT[t.id], W=p&&p.watch; let watch; if(W){ try{ if(W.V) W.V.call(p); watch=(W.steps||[]).map(s=>clean(s.cap)); }catch(e){} }
+  topics.push({id:t.id,subj:'ig',watch,block:IG.MODS.find(m=>m.id===t.mod).t,t:t.t,new:t.new,pre:t.pre,dz:t.dz,ng:t.ng,gost:t.gost,look:t.look,q:t.q,wb:t.wb,
   cq:(t.cq||[]).map(n=>({n,q:IG.CQ[n][0],a:IG.CQ[n][1]})),gt:(t.gt||[]).map(k=>({k,t:IG.GT[k]})),
-  course:IG.OWNER[t.id],traps:t.traps.map(s=>({say:s}))}));
+  course:IG.OWNER[t.id],traps:t.traps.map(s=>({say:s}))}); });
 const dz=[];
 const load=(dir,id)=>{ const f=path.join(ROOT,dir,'method.js'); if(!fs.existsSync(f)) return; let m=null;
   global.DZR={def:(k,o)=>{ if(o.method) m=o.method; }}; delete require.cache[f]; require(f); if(!m) return;
@@ -49,7 +50,7 @@ const L=['# База знаний ИИ-тренера','',
  '## Что внутри','','| Часть | Начерт | Инжа |','|---|---|---|',
  `| Темы программы подготовки | ${ng.length} | ${ig.length} |`,
  `| Ловушки (типичные ошибки по темам) | ${cnt(ng,'traps')} | ${cnt(ig,'traps')} |`,
- `| Разбор «Смотри» по шагам | ${cnt(ng,'watch')} шагов | — |`,
+ `| Разбор «Смотри» по шагам | ${cnt(ng,'watch')} шагов | ${cnt(ig,'watch')} шагов (темы на 3D-ядре — в браузере) |`,
  `| ДЗ с методикой | ${n(dz,d=>d.subj==='ng')} | ${n(dz,d=>d.subj==='ig')} |`,
  `| Шаги плана решения ДЗ (с «почему») | ${dz.filter(d=>d.subj==='ng').reduce((s,d)=>s+d.types.reduce((a,t)=>a+t.plan.length,0),0)} | ${dz.filter(d=>d.subj==='ig').reduce((s,d)=>s+d.types.reduce((a,t)=>a+t.plan.length,0),0)} |`,
  `| Ошибки в ДЗ | ${dz.filter(d=>d.subj==='ng').reduce((s,d)=>s+d.mistakes.length,0)} | ${dz.filter(d=>d.subj==='ig').reduce((s,d)=>s+d.mistakes.length,0)} |`,
