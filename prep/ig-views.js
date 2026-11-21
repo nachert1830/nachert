@@ -103,7 +103,13 @@ reg('c1',{part:partBack,
 /* точка модели → точка вида в сцене (тот же масштаб и смещение, что у viewEls) */
 function proj(model,view,ox,oy,o){ const d=G3().drawing(model,view,W*3); return p=>{ const q=d.px(p); return [(o&&o.mirror?W-q[0]/3:q[0]/3)+ox,q[1]/3+oy]; }; }
 /* ── тела с вырезом: настоящие детали ДЗ 4–6 (модели вариантов) ── */
-const DZM=(d,ns)=>{ for(let t=0;t<8;t++){ const n=pick(ns); try{ const m=window.DZR&&DZR.get(d).part(n); if(m&&m.tree&&m.tree.t==='s') return {m,body:{box:m.box,tree:m.tree.a},d,n}; }catch(e){} } return null; };
+/* детали ДЗ: за сессию берём небольшой набор вариантов (6 на задание) — чертежи у модели кэшируются, повторная пара почти мгновенна;
+   производные модели (тело без выреза, без полости) тоже кэшируем на самой модели */
+const POOL={};
+const DZM=(d,ns)=>{ const fresh=!POOL[d], pool=POOL[d]||(POOL[d]=ns.slice().sort(()=>Math.random()-.5).slice(0,6)); if(fresh) setTimeout(()=>self.IGWARM&&self.IGWARM(d),0);
+  for(let t=0;t<8;t++){ const n=pick(pool); try{ const m=window.DZR&&DZR.get(d).part(n); if(m&&m.tree&&m.tree.t==='s'){ if(!m._pbody) Object.defineProperty(m,'_pbody',{value:{box:m.box,tree:m.tree.a}}); return {m,body:m._pbody,d,n}; } }catch(e){} } return null; };
+/* прогрев: после открытия темы строим чертежи набора заранее, в паузах */
+self.IGWARM=(d,views)=>{ const ns=POOL[d]||[]; let i=0; const step=()=>{ if(i>=ns.length) return; try{ const m=DZR.get(d).part(ns[i++]); (views||['front0','top','left0']).forEach(v=>G3().drawing(m,v,W*3)); }catch(e){} (self.requestIdleCallback||setTimeout)(step,50); }; step(); };
 const N30=Array.from({length:30},(_,i)=>i+1);
 const differs=(ok,bad,roles)=>{ const key=S=>S.E.filter(e=>roles.includes(e.role)).map(e=>e.d).join('|'); return key(ok)!==key(bad); };
 const cutSteps=[{cap:'Дано: главный вид с вырезом K — грани выреза проецирующие, на этом виде они уже линии',roles:['F','Fh']},

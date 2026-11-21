@@ -14,7 +14,7 @@ function dim(p1,p2,off,text,role,o){ o=o||{}; const u=unit(sub(p2,p1)), n=[-u[1]
   if(o.half){ E.push(Ln(add(q1,mul(u,-6)),q2,'thin',role),arrow(q2,u,role)); }
   else { E.push(Ln(add(p2,mul(n,sg*.8)),add(q2,mul(n,sg*2)),'thin',role),Ln(q1,q2,'thin',role),arrow(q1,mul(u,-1),role),arrow(q2,u,role)); }
   const m=o.half?add(q2,mul(u,-8)):mul(add(q1,q2),.5), ang=Math.atan2(u[1],u[0])*180/Math.PI, up=ang>90||ang<-90?ang+180:ang;
-  E.push(Tx(add(m,mul(n,sg*1.6)),text,role,{rot:Math.abs(up)<1e-6?0:up,size:4.2})); return E; }
+  E.push(Tx(add(m,mul(n,sg*1.6)),text,role,{rot:Math.abs(up)<1e-6?0:up,size:o.size||4.6})); return E; }
 /* линия сечения: разомкнутые штрихи на концах, стрелки направления взгляда, буквы */
 function cutMark(a,b,look,L,role){ const u=unit(sub(b,a)), E=[Ln(sub(a,mul(u,2)),add(a,mul(u,5)),'thick',role),Ln(sub(b,mul(u,5)),add(b,mul(u,2)),'thick',role)];
   [a,b].forEach((p,i)=>{ const e=add(sub(p,mul(u,i?-2:2)),[0,0]), s=add(e,mul(look,-7)); E.push(Ln(s,e,'thin',role),arrow(e,look,role),Tx(add(s,mul(look,-3)),L,role)); }); return E; }
@@ -47,17 +47,40 @@ reg('v1n',{part:partL,make(){ return {m:partL(),L:pick(['А','Б','В'])}; },
     return sceneB(E,4); },
   traps:{N:{b0:-0.2,say:'Вид не в проекционной связи — без стрелки и буквы его не прочитать',src:'ГОСТ 2.305; тетрадь, рис. 31',hl:['T','Th']}},
   watch:{steps:st(['Главный вид',['F','Fh']],['Вид сверху стоит не под главным — у главного стрелка с буквой',['F','Fh','lab']],['Над видом — та же буква, шрифт 7',['F','Fh','lab','T','Th']])}});
-/* v1d — дополнительный вид вне проекционной связи: обозначают; v1l — местный вид: тоже */
-['v1d','v1l'].forEach((id,j)=>reg(id,{make(){ return {m:partL(),L:pick(['Б','В','Г'])}; },
-  scene(V,k){ const E=viewEls(V.m,'front0',0,0,'F').concat(viewEls(V.m,'left0',W*.15,W*1.05,'D'));
-    if(k!=='N'){ const f=proj(V.m,'front0',0,0), c=f([V.m.box[1][0],0,V.m.box[1][2]*.6]); E.push(Ln([c[0]+14,c[1]],[c[0]+3,c[1]],'thin','lab'),{t:'poly',z:1,p:[[c[0]+2,c[1]],[c[0]+5,c[1]-.8],[c[0]+5,c[1]+.8]],c:'arw',role:'lab'},Tx([c[0]+10,c[1]-3],V.L,'lab',{size:6}));
-      const t=frame(E.filter(e=>e.role==='D'||e.role==='Dh')); E.push(Tx([t[0]+t[2]/2,t[1]+1],V.L,'lab',{size:6})); }
+/* v1d — дополнительный вид: наклонная грань в натуральную величину (отверстие в ней — эллипс, его считает IG3) */
+const arrowTo=(tip,dir,L,role)=>{ const s=sub(tip,mul(dir,12)); return [Ln(s,sub(tip,mul(dir,1)),'thin',role),arrow(tip,dir,role),Tx(add(s,[dir[1]*4,-dir[0]*4-1]),L,role,{size:6})]; };
+reg('v1d',{make(){ const P=P3(); const L=RI(70,86), D=RI(34,42), H=RI(40,50), h=RI(10,14), a=R(.55,.8), x0=-L/2+RI(16,24), r=RI(5,7);
+    /* грань: от точки (x0, H) вниз под углом a к горизонтали до высоты h */
+    const n=[Math.sin(a),0,Math.cos(a)], o=[x0,0,H]; const xh=x0+(H-h)/Math.tan(a)*1, xc=(x0+Math.min(xh,L/2))/2, zc=H-(xc-x0)*Math.tan(a);
+    const m={box:[[-L/2,-D/2,0],[L/2,D/2,H]],tree:P.S(P.I(P.box(L,D,0,H),P.hp(n,o)),P.cyl(r,-1,H+1,{x:xc}))}; return {m,a,x0,xc,zc,L:pick(['А','Б','В']),H}; },
+  scene(V,k){ const E=viewEls(V.m,'front0',0,0,'F').concat(viewEls(V.m,'top',0,W,'T')), f=proj(V.m,'front0',0,0), sc=Math.abs(f([1,0,0])[0]-f([0,0,0])[0]);
+    const U=[Math.cos(V.a),0,-Math.sin(V.a)], O=[V.x0+Math.sin(V.a)*.4,0,V.H-Math.cos(V.a)*.4], Ls=G3().secShape(V.m.tree,O,U,[0,1,0],[-120,120,-120,120],0.5).all;
+    const ku=k==='P'?Math.cos(V.a):1, c0=[W*1.25,W*.25], d=Ls.map(l=>'M'+l.map(q=>(c0[0]+q[0]*ku*sc).toFixed(2)+' '+(c0[1]+q[1]*sc).toFixed(2)).join('L')+'Z').join('');
+    E.push({t:'path',d,c:'o',role:'D'});
+    if(k!=='N'){ const mid=f([V.xc,0,V.zc]), nn=unit([-Math.sin(V.a),-Math.cos(V.a)]); E.push(...arrowTo(mid,[-nn[0],-nn[1]],V.L,'lab'));
+      const fr=frame([{t:'path',d}]); E.push(Tx([fr[0]+fr[2]/2,fr[1]-1],V.L,'lab',{size:6})); }
     return sceneB(E,4); },
-  traps:{N:{b0:-0.2,say:j?'Местный вид не на своём месте — нужны стрелка и буква':'Дополнительный вид без проекционной связи — обозначают стрелкой и буквой',src:'ГОСТ 2.305; тетрадь, рис. 32–34',hl:['D','Dh']}},
-  watch:{steps:st(['Главный вид',['F','Fh']],[j?'Местный вид — только нужный участок, взгляд по стрелке':'Дополнительный вид — взгляд по стрелке на нужный элемент',['F','Fh','lab']],['Вид — там, где удобно, с той же буквой',['F','Fh','lab','D','Dh']])}}));
+  traps:{N:{b0:-0.2,say:'Дополнительный вид не в проекционной связи — его обозначают стрелкой и буквой',src:'ГОСТ 2.305; тетрадь, рис. 33',hl:['D']},
+         P:{b0:.2,say:'На дополнительном виде грань должна быть в натуральную величину — а нарисована её искажённая проекция',src:'ГОСТ 2.305; тетрадь, рис. 32',hl:['D']}},
+  watch:{steps:st(['Наклонная грань: на основных видах она искажена',['F','Fh','T','Th']],['Смотрим перпендикулярно грани — стрелка с буквой',['F','Fh','T','Th','lab']],['Дополнительный вид: грань и отверстие в натуральную величину',['F','Fh','T','Th','lab','D']])}});
+/* v1l — местный вид: только нужный участок */
+reg('v1l',{make(){ const P=P3(); const L=RI(70,86), D=RI(36,44), h=RI(12,16), H=RI(36,46), rb=RI(9,12), rh=RI(4,rb-4), ex=RI(8,12), zc=RI(h+rb+2,H-rb-2);
+    const m={box:[[-L/2,-D/2,0],[L/2+ex,D/2,H]],tree:P.S(P.U(P.box(L,D,0,h),P.box(L*.4,D,h,H,{x:L*.3}),P.hcyl('x',rb,[0,zc],L/2-1,L/2+ex)),P.hcyl('x',rh,[0,zc],L/2-8,L/2+ex+1))};
+    return {m,rb,rh,zc,Lx:L/2+ex,L:pick(['А','Б','В'])}; },
+  scene(V,k){ const E=viewEls(V.m,'front0',0,0,'F').concat(viewEls(V.m,'top',0,W,'T')), f=proj(V.m,'front0',0,0), sc=Math.abs(f([1,0,0])[0]-f([0,0,0])[0]);
+    if(k==='F') E.push(...viewEls(V.m,'left0',W*1.05,W*.95,'D'));
+    else { const c=[W*1.35,W*1.3]; E.push({t:'circ',a:[c[0],c[1],V.rb*sc],c:'o',role:'D'},{t:'circ',a:[c[0],c[1],V.rh*sc],c:'o',role:'D'},
+      Ln([c[0]-V.rb*sc-3,c[1]],[c[0]+V.rb*sc+3,c[1]],'cl','D'),Ln([c[0],c[1]-V.rb*sc-3],[c[0],c[1]+V.rb*sc+3],'cl','D')); }
+    if(k!=='N'){ const tip=f([V.Lx,0,V.zc]); E.push(...arrowTo(add(tip,[1,0]),[-1,0],V.L,'lab'));
+      const fr=frame(E.filter(e=>e.role==='D'&&e.t!=='circ').concat(E.filter(e=>e.role==='D'&&e.t==='circ').map(e=>({t:'path',d:`M${e.a[0]-e.a[2]} ${e.a[1]-e.a[2]}L${e.a[0]+e.a[2]} ${e.a[1]+e.a[2]}`}))));
+      E.push(Tx([fr[0]+fr[2]/2,fr[1]+2],V.L,'lab',{size:6})); }
+    return sceneB(E,4); },
+  traps:{N:{b0:-0.2,say:'Местный вид не на своём месте — нужны стрелка и буква',src:'ГОСТ 2.305; тетрадь, рис. 34',hl:['D']},
+         F:{b0:0,say:'Ради одного элемента нарисовали весь вид — достаточно местного',src:'ГОСТ 2.305; тетрадь, рис. 34',hl:['D','Dh']}},
+  watch:{steps:st(['Бобышка сбоку: на основных видах её форма не видна',['F','Fh','T','Th']],['Смотрим на неё по стрелке с буквой',['F','Fh','T','Th','lab']],['Местный вид — только бобышка',['F','Fh','T','Th','lab','D']])}});
 /* v3 — база глубины: постоянная прямая под 45° */
 reg('v3',{part:partL,
-  scene(V,k){ const sx=k==='S'?.8:1, E=viewEls(V.m,'front0',0,0,'F').concat(viewEls(V.m,'top',0,W,'T'));
+  scene(V,k){ const sx=k==='S'?.62:1, E=viewEls(V.m,'front0',0,0,'F').concat(viewEls(V.m,'top',0,W,'T'));
     const L=viewEls(V.m,'left0',W,0,'L'); if(sx!==1) L.forEach(e=>{ e.d=e.d.replace(num,(m,x,y)=>`${W+(+x-W-W/2)*sx+W/2} ${y}`); }); E.push(...L);
     const t=proj(V.m,'top',0,W), l=proj(V.m,'left0',W,0), b=V.m.box, lx=p=>W+(l(p)[0]-W-W/2)*sx+W/2;
     const pts=[b[0][1],b[1][1]].map(y=>{ const p=[b[1][0],y,0], T=t(p), Lp=[lx(p),l(p)[1]]; return {T,Lp,K:[Lp[0],T[1]]}; });
@@ -188,7 +211,7 @@ reg('r7l',{make(){ const P=P3(); const Rf=RI(36,44), h=RI(12,16), rb=RI(10,13), 
   traps:{P:{b0:.1,say:'Наклонную часть показали в проекции — отверстие ближе к оси, чем на самом деле; её поворачивают в плоскость',src:'ГОСТ 2.305; тетрадь, рис. 40',hl:['F','Fhat']}},
   watch:{steps:st(['Вид сверху: секущие плоскости пересекаются',['T','Th']],['Наклонную плоскость поворачивают до совмещения с фронтальной',['T','Th','cut']],['Отверстие — на своём радиусе',['T','Th','cut','F','Fh','Fhat']])}});
 /* r8 — полое тело: полость не штрихуют */
-reg('r8',{make(){ const V=DZM('ig6',N30); if(!V) return null; V.s=strip(V.m,c=>c.t!=='sph'); return V; },
+reg('r8',{make(){ const V=DZM('ig6',N30); if(!V) return null; if(!V.m._pnc) Object.defineProperty(V.m,'_pnc',{value:strip(V.m,c=>c.t!=='sph')}); V.s=V.m._pnc; return V; },
   scene(V,k){ const E=viewEls(V.m,'frontF',0,0,'F',{hat:false}); const H=viewEls(k==='H'?V.s:V.m,'frontF',0,0,'X').filter(e=>e.role==='Xhat'); H.forEach(e=>e.role='Fhat'); return scene(H.concat(E,viewEls(V.m,'top',0,W,'T'))); },
   fair(V,k,ok,bad){ return differs(ok,bad,['Fhat']); },
   traps:{H:{b0:-0.3,say:'Заштриховали полость — штрихуют только материал',src:'ГОСТ 2.306',hl:['Fhat']}},
@@ -253,7 +276,7 @@ const cutScene=(V,o)=>{ o=o||{}; const L=viewEls(o.Lm||V.m,'left0',W,0,'L',{hat:
 const cutSteps=[{cap:'Дано: главный вид с вырезом K',roles:['F','Fh']},{cap:'Вид сверху: точки выреза — по принадлежности поверхности',roles:['F','Fh','T','Th']},{cap:'Вид слева: высоты с главного, глубина с вида сверху',roles:['F','Fh','T','Th','L','Lh','Lx']}];
 const DZcut=want=>()=>pickDZ(want,['ig4','ig5']);
 reg('k2',{make:DZcut(K=>K.has('cone')||K.has('cyl')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:7,coarseT:7}:{}); },
+  scene(V,k){ return cutScene(V,k==='C'?{coarse:14,coarseT:14}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh','T','Th']); },
   traps:{C:{b0:0,say:'Кривую выреза построили по двум-трём точкам — нужны все характерные и промежуточные',src:'методика ДЗ 4',hl:['L','Lh','T','Th']}},watch:{steps:cutSteps}});
 reg('k3',{make:DZcut(K=>K.has('npyr')||K.has('ngon')),
@@ -261,17 +284,17 @@ reg('k3',{make:DZcut(K=>K.has('npyr')||K.has('ngon')),
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
   traps:{N:{b0:-0.2,say:'Линии выреза на гранях не перенесены на вид слева — точки на рёбрах по линиям связи',src:'методика ДЗ 4',hl:['L','Lh']}},watch:{steps:cutSteps}});
 reg('k4',{make:DZcut(K=>K.has('cyl')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:6}:{}); },
+  scene(V,k){ return cutScene(V,k==='C'?{coarse:14}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
   traps:{C:{b0:0,say:'Наклонная грань режет цилиндр по эллипсу — его строят по точкам, а провели ломаной',src:'методика ДЗ 4',hl:['L','Lh']}},watch:{steps:cutSteps}});
 reg('k5',{make:DZcut(K=>K.has('cone')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:6,coarseT:6}:{}); },
+  scene(V,k){ return cutScene(V,k==='C'?{coarse:14,coarseT:14}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh','T','Th']); },
   traps:{C:{b0:0,say:'Промежуточные точки на конусе не построены — кривая неточна: точки через параллели',src:'методика ДЗ 4',hl:['L','Lh','T','Th']}},watch:{steps:cutSteps}});
 reg('k7',{make:DZcut(()=>true),
   scene(V,k){ const ex=k==='O'?viewEls(V.body,'left0',W,0,'X',{hat:false}).filter(e=>e.role==='X').map(e=>Object.assign(e,{role:'Lx'})):[]; return cutScene(V,{extra:ex}); },
   traps:{O:{b0:0,say:'Дорисовали очерк тела через вырез — вырезанная часть очерка исчезает',src:'методика ДЗ 4',hl:['Lx']}},watch:{steps:cutSteps}});
-reg('k8',{make(){ const V=DZM('ig6',N30); if(!V) return null; V.s=strip(V.m,c=>c.t!=='sph'); return V; },
+reg('k8',{make(){ const V=DZM('ig6',N30); if(!V) return null; if(!V.m._pnc) Object.defineProperty(V.m,'_pnc',{value:strip(V.m,c=>c.t!=='sph')}); V.s=V.m._pnc; return V; },
   scene(V,k){ return cutScene(V,k==='I'?{Lm:V.s}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
   traps:{I:{b0:0,say:'Забыли внутреннюю сферу: грань отверстия режет и полость',src:'методика ДЗ 6',hl:['L','Lh']}},watch:{steps:cutSteps}});
@@ -291,7 +314,7 @@ reg('d1',{make(){ return {m:partL()}; },
   watch:{steps:st(['Виды детали',['F','Fh','T','Th']],['Длина — на главном виде',['F','Fh','T','Th','d']],['Ширина — на виде сверху; каждый размер один раз',['F','Fh','T','Th','d','dd']])}});
 reg('d2',{make(){ const m=partSym(); let rb=0; (function w(n){ if(!n) return; if(n.t==='cyl'&&!n.x&&!n.y&&n.z0<0) rb=n.r; if(n.a) w(n.a); (n.k||[]).forEach(w); })(m.tree); return {m,rb}; },
   scene(V,k){ const E=viewEls(V.m,'front',0,0,'F').concat(viewEls(V.m,'top',0,W,'T')), f=proj(V.m,'front',0,0), z=V.m.box[1][2]*.8;
-    E.push(...dim(f([-V.rb,0,z]),f([V.rb,0,z]),0,'Ø'+(k==='H'?V.rb:2*V.rb),'d',{half:1})); return sceneB(E,6); },
+    E.push(...dim(f([-V.rb,0,z]),f([V.rb,0,z]),0,'Ø'+(k==='H'?V.rb:2*V.rb),'d',{half:1,size:6.5})); return sceneB(E,6); },
   traps:{H:{b0:-0.2,say:'На половине разреза ставят полный размер, а не половину',src:'ГОСТ 2.307',hl:['d']}},
   watch:{steps:st(['Половина вида и половина разреза',['F','Fh','Fhat','T','Th']],['Размерная линия — за ось, стрелка одна, число — полный диаметр',['F','Fh','Fhat','T','Th','d']])}});
 reg('d3',{make(){ return {m:partL()}; },
