@@ -17,7 +17,8 @@ NG.ALL.forEach(t=>{ const p=PT[t.id]||{};
     course:NG.OWNER[t.id],
     watch:p.watch&&p.watch.steps?p.watch.steps.map(s=>clean(s.cap)):undefined,
     traps:p.traps?Object.entries(p.traps).map(([k,v])=>({k,say:clean(v.say),src:v.src,b0:v.b0})):[]}); });
-IG.ALL.forEach(t=>topics.push({id:t.id,subj:'ig',block:IG.MODS.find(m=>m.id===t.mod).t,t:t.t,new:t.new,pre:t.pre,dz:t.dz,ng:t.ng,gost:t.gost,look:t.look,q:t.q,
+IG.ALL.forEach(t=>topics.push({id:t.id,subj:'ig',block:IG.MODS.find(m=>m.id===t.mod).t,t:t.t,new:t.new,pre:t.pre,dz:t.dz,ng:t.ng,gost:t.gost,look:t.look,q:t.q,wb:t.wb,
+  cq:(t.cq||[]).map(n=>({n,q:IG.CQ[n][0],a:IG.CQ[n][1]})),gt:(t.gt||[]).map(k=>({k,t:IG.GT[k]})),
   course:IG.OWNER[t.id],traps:t.traps.map(s=>({say:s}))}));
 const dz=[];
 const load=(dir,id)=>{ const f=path.join(ROOT,dir,'method.js'); if(!fs.existsSync(f)) return; let m=null;
@@ -34,7 +35,8 @@ const K1=R('core/conj.js'), V1=R('dz/ig/1/variants.js'), T1=R('dz/ig/1/topics.js
 const ig1={variants:V1.list.map(n=>{ const V=V1.V[n], r=K1.run(V); return {n,title:V.title,note:V.note,ok:r.ok,
   ops:r.ops.map(o=>({name:o.name,title:o.title,O:o.O&&o.O.map(v=>+v.toFixed(3)),R:o.R,T:o.T.map(t=>t.map(v=>+v.toFixed(3))),steps:o.steps.map(s=>s.cap)}))}; }),
   topics:Object.fromEntries(T1.ids.map(id=>[id,{traps:Object.values(T1.T[id].traps).map(t=>t.say)}]))};
-const kb={ig1,about:'База знаний ИИ-тренера «Начерта». Собрана tools/kb-build.js из данных сайта; руками не править.',topics,dz,site};
+const igwb={questions:IG.CQ,tasks:IG.GT,courses:IG.COURSES.map(c=>({key:c.key,label:c.label,title:c.title,own:c.own,prev:c.prev}))};
+const kb={igwb,ig1,about:'База знаний ИИ-тренера «Начерта». Собрана tools/kb-build.js из данных сайта; руками не править.',topics,dz,site};
 fs.writeFileSync(path.join(ROOT,'kb/kb.json'),JSON.stringify(kb));
 /* README со сводкой */
 const n=(a,f)=>a.filter(f).length, cnt=(a,k)=>a.reduce((s,x)=>s+(x[k]||[]).length,0);
