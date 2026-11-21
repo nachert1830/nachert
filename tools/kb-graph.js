@@ -18,6 +18,7 @@
 const fs=require('fs'), path=require('path'), crypto=require('crypto'), ROOT=path.join(__dirname,'..');
 global.self=global;
 const R=p=>require(path.join(ROOT,p));
+const TUT=R('core/tutor.js'), TCACHE={}, TUTF=dz=>TCACHE[dz]||(TCACHE[dz]=JSON.parse(fs.readFileSync(path.join(ROOT,'kb/tutor',dz+'.json'),'utf8')));
 const IGX=R('core/ig-explain.js'), K=R('core/conj.js'), IG1=R('dz/ig/1/variants.js'), IGP=R('kernel/prep-ig.js'); R('kernel/prep.js'); const NGP=self.PREPROG;
 R('prep/engine.js'); ['x','x-b','t','base','sm','more','rest','space'].forEach(f=>R('prep/'+f+'.js')); const PT=self.PREP.TOPICS;
 /* канонический JSON: ключи по алфавиту, числа — до 1e-6 мм (сертификат сверяет с допуском, хеш — от округлённого) */
@@ -33,6 +34,10 @@ const CERTS={
   /* элемент варианта ДЗ инжи: объяснение пересчитывается из базы «каждая линия» (её пишет dz/ig/etalon/make.js из 3D-модели) */
   'igx.explain':({dz,n,fe})=>{ const f=path.join(ROOT,'dz/ig',dz.slice(2),'lines','v'+String(n).padStart(2,'0')+'.json');
     const L=JSON.parse(fs.readFileSync(f,'utf8')), ex=IGX.explain(L,fe,{topics:IGP}); return {digest:H(canon(ex)),topics:ex.topics,lines:ex.lines}; },
+  /* шаг тренера: данные шага (kb/tutor) и то, что ядро отдаёт по каждой ступени, — хеш; шаблон каждой ступени проходит линтер */
+  'tutor.step':({dz,id})=>{ const D=TUTF(dz), v=D.variants.find(x=>(x.steps||[]).some(s=>s.id===id)), s=v.steps.find(x=>x.id===id), nb=TUT.neighborOf(D,s);
+    const pk=[0,1,2,3,4].map(r=>TUT.fallback(s,r,{neighbor:nb,cond:v.q})), ok=pk.every((t,r)=>TUT.lint(t,TUT.context(s,r,{neighbor:nb,cond:v.q})).ok);
+    return {digest:H(canon(s)+'|'+pk.join('|')),ok,secrets:s.secret.labels.length}; },
   'conj.contour':({variant})=>{ const r=K.run(IG1.V[variant]); return {closed:!r.bad.some(b=>b.what==='разрыв контура'),smooth:!r.bad.length,pieces:r.contours.map(c=>c.length)}; }
 };
 function build(){
@@ -64,6 +69,11 @@ function build(){
       L.feats.forEach(ft=>{ const cin={dz:'ig'+d,n:L.n,fe:ft.i}, val=CERTS['igx.explain'](cin);
         const fid=put(`fact:ig${d}:${L.n}:fe${ft.i}`,'fact',{claim:`${ft.name}: как строится на каждом виде`,cert:{name:'igx.explain',in:cin},val},[vid].concat(val.topics.map(t=>byKey['topic:'+t])));
         put(`feature:ig${d}:${L.n}:${ft.i}`,'feature',{name:ft.name,kind:ft.kind},[vid,fid]); }); } }
+  /* шаги тренера: каждый шаг каждого варианта — факт с сертификатом (данные + ответы ядра по ступеням, линтер пройден) */
+  for(const dz of ['ng1','ng2','ng3','ng4','ng5','ig2','ig3','ig4','ig5','ig6']){ const f=path.join(ROOT,'kb/tutor',dz+'.json'); if(!fs.existsSync(f)) continue;
+    const dzid=byKey['dz:'+dz]||put('dz:'+dz,'dz',{subj:dz.slice(0,2),id:dz},[...(dz[0]==='n'?NGP:IGP).need(dz)].map(id=>byKey['topic:'+id]).filter(Boolean));
+    for(const v of TUTF(dz).variants) for(const s of v.steps||[]){ const cin={dz,id:s.id}, val=CERTS['tutor.step'](cin); if(!val.ok) throw new Error(s.id+': шаблон не прошёл линтер');
+      put('tstep:'+s.id,'tstep',{goal:s.goal,cert:{name:'tutor.step',in:cin},val},[dzid].concat((s.topics||[]).map(t=>byKey['topic:'+t]).filter(Boolean))); } }
   /* корень Меркле: хеш отсортированных id */
   const ids=Object.keys(nodes).sort(); let level=ids; while(level.length>1){ const nx=[]; for(let i=0;i<level.length;i+=2) nx.push(H(level[i]+(level[i+1]||level[i]))); level=nx; }
   const kinds={}; ids.forEach(id=>kinds[nodes[id].kind]=(kinds[nodes[id].kind]||0)+1);
