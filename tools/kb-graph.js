@@ -18,7 +18,7 @@
 const fs=require('fs'), path=require('path'), crypto=require('crypto'), ROOT=path.join(__dirname,'..');
 global.self=global;
 const R=p=>require(path.join(ROOT,p));
-const K=R('core/conj.js'), IG1=R('dz/ig/1/variants.js'), IGP=R('kernel/prep-ig.js'); R('kernel/prep.js'); const NGP=self.PREPROG;
+const IGX=R('core/ig-explain.js'), K=R('core/conj.js'), IG1=R('dz/ig/1/variants.js'), IGP=R('kernel/prep-ig.js'); R('kernel/prep.js'); const NGP=self.PREPROG;
 R('prep/engine.js'); ['x','x-b','t','base','sm','more','rest','space'].forEach(f=>R('prep/'+f+'.js')); const PT=self.PREP.TOPICS;
 /* канонический JSON: ключи по алфавиту, числа — до 1e-6 мм (сертификат сверяет с допуском, хеш — от округлённого) */
 const canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':
@@ -30,6 +30,9 @@ const r6=v=>Array.isArray(v)?v.map(r6):typeof v==='number'?Math.round(v*1e6)/1e6
 const CERTS={
   /* точка касания и центр сопряжения варианта: исполняем программу варианта заново */
   'conj.op':({variant,op})=>{ const r=K.run(IG1.V[variant]), o=r.ops.find(x=>x.name===op); return {O:o.O?r6(o.O):undefined,R:o.R,T:r6(o.T),ok:K.verify(o).every(c=>c.ok)}; },
+  /* элемент варианта ДЗ инжи: объяснение пересчитывается из базы «каждая линия» (её пишет dz/ig/etalon/make.js из 3D-модели) */
+  'igx.explain':({dz,n,fe})=>{ const f=path.join(ROOT,'dz/ig',dz.slice(2),'lines','v'+String(n).padStart(2,'0')+'.json');
+    const L=JSON.parse(fs.readFileSync(f,'utf8')), ex=IGX.explain(L,fe,{topics:IGP}); return {digest:H(canon(ex)),topics:ex.topics,lines:ex.lines}; },
   'conj.contour':({variant})=>{ const r=K.run(IG1.V[variant]); return {closed:!r.bad.some(b=>b.what==='разрыв контура'),smooth:!r.bad.length,pieces:r.contours.map(c=>c.length)}; }
 };
 function build(){
@@ -53,6 +56,14 @@ function build(){
       o.steps.forEach((s,j)=>put(`step:ig1:${n}:${o.name}:${j}`,'step',{cap:s.cap,roles:[...new Set(s.els.map(e=>e.role))]},[oid,fid])); });
     const cin={variant:n}, cv=CERTS['conj.contour'](cin); if(!cv.smooth) throw new Error(`в.${n}: контур не гладкий`);
     put(`fact:ig1:${n}:contour`,'fact',{claim:'Контур замкнут, все стыки гладкие (кроме помеченных изломов)',cert:{name:'conj.contour',in:cin},val:cv},[vid,byKey['topic:g13']]); }
+  /* ДЗ 2–6 инжи: варианты → элементы; у каждого элемента — сертифицированный факт «как строится» */
+  for(const d of [2,3,4,5,6]){ const dir=path.join(ROOT,'dz/ig',String(d),'lines'); if(!fs.existsSync(dir)) continue;
+    const dzid=put('dz:ig'+d,'dz',{subj:'ig',id:'ig'+d},[...IGP.need('ig'+d)].map(id=>byKey['topic:'+id]));
+    for(const f of fs.readdirSync(dir).filter(f=>/^v\d+\.json$/.test(f)).sort()){ const L=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
+      const vid=put(`variant:ig${d}:${L.n}`,'variant',{n:L.n,title:L.title,feats:L.feats.map(x=>x.name)},[dzid]);
+      L.feats.forEach(ft=>{ const cin={dz:'ig'+d,n:L.n,fe:ft.i}, val=CERTS['igx.explain'](cin);
+        const fid=put(`fact:ig${d}:${L.n}:fe${ft.i}`,'fact',{claim:`${ft.name}: как строится на каждом виде`,cert:{name:'igx.explain',in:cin},val},[vid].concat(val.topics.map(t=>byKey['topic:'+t])));
+        put(`feature:ig${d}:${L.n}:${ft.i}`,'feature',{name:ft.name,kind:ft.kind},[vid,fid]); }); } }
   /* корень Меркле: хеш отсортированных id */
   const ids=Object.keys(nodes).sort(); let level=ids; while(level.length>1){ const nx=[]; for(let i=0;i<level.length;i+=2) nx.push(H(level[i]+(level[i+1]||level[i]))); level=nx; }
   const kinds={}; ids.forEach(id=>kinds[nodes[id].kind]=(kinds[nodes[id].kind]||0)+1);
