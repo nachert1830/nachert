@@ -27,9 +27,14 @@ const load=(dir,id)=>{ const f=path.join(ROOT,dir,'method.js'); if(!fs.existsSyn
     types:Object.entries(m.types||{}).map(([k,v])=>({type:k,idea:clean(v.idea),plan:(v.plan||[]).map(s=>({t:clean(s.t),d:clean(s.d),why:clean(s.why)})),answer:clean(v.answer),check:(v.check||[]).map(clean)})),
     mistakes:(m.mistakes||[]).map(clean),defense:(m.defense||[]).map(x=>({q:clean(x.q),a:clean(x.a)})),sheet:(m.sheet||[]).map(clean),
     topics:[...need]}); };
-[1,2,3,4,5].forEach(n=>load('dz/ng/'+n,'ng'+n)); [2,3,4,5,6].forEach(n=>load('dz/ig/'+n,'ig'+n));
+[1,2,3,4,5].forEach(n=>load('dz/ng/'+n,'ng'+n)); [1,2,3,4,5,6].forEach(n=>load('dz/ig/'+n,'ig'+n));
 const site=JSON.parse(fs.readFileSync(path.join(ROOT,'kb/site.json'),'utf8'));
-const kb={about:'База знаний ИИ-тренера «Начерта». Собрана tools/kb-build.js из данных сайта; руками не править.',topics,dz,site};
+/* ДЗ 1 инжи: варианты как построения — шаги с подписями и найденные центры (числа — из ядра) */
+const K1=R('core/conj.js'), V1=R('dz/ig/1/variants.js'), T1=R('dz/ig/1/topics.js');
+const ig1={variants:V1.list.map(n=>{ const V=V1.V[n], r=K1.run(V); return {n,title:V.title,note:V.note,ok:r.ok,
+  ops:r.ops.map(o=>({name:o.name,title:o.title,O:o.O&&o.O.map(v=>+v.toFixed(3)),R:o.R,T:o.T.map(t=>t.map(v=>+v.toFixed(3))),steps:o.steps.map(s=>s.cap)}))}; }),
+  topics:Object.fromEntries(T1.ids.map(id=>[id,{traps:Object.values(T1.T[id].traps).map(t=>t.say)}]))};
+const kb={ig1,about:'База знаний ИИ-тренера «Начерта». Собрана tools/kb-build.js из данных сайта; руками не править.',topics,dz,site};
 fs.writeFileSync(path.join(ROOT,'kb/kb.json'),JSON.stringify(kb));
 /* README со сводкой */
 const n=(a,f)=>a.filter(f).length, cnt=(a,k)=>a.reduce((s,x)=>s+(x[k]||[]).length,0);
@@ -53,9 +58,13 @@ const L=['# База знаний ИИ-тренера','',
  '- `topics[]` — темы: `id`, `subj`, `block`, `t`, `new` (идея), `pre` (опора), `dz`, `course` (в каком мини-курсе), `traps[]`, у начерта — `watch[]`, `src`, `wb`, `rk1–3`; у инжи — `ng` (связь с начертом), `gost`, `look`, `q`.',
  '- `dz[]` — ДЗ: `essence`, `idea`, `types[].plan[]{t,d,why}`, `answer`, `check[]`, `mistakes[]`, `defense[]{q,a}`, `sheet[]`, `topics[]` (что нужно знать).',
  '- `site[]` — документы сайта: `key`, `type`, `subj`, `title`, `where`, `href`, `text[]`, `err` (ошибки из текста), `kw`, `sym`.','',
+ '## Граф знаний с сертификатами (`kb/graph.json`)','',
+ 'Те же темы, ловушки и ДЗ 1 по инже — как граф с адресацией по содержимому: id узла — хеш его содержимого и id всего, на что он',
+ 'опирается; у фактов — сертификат ядра. `node tools/kb-graph.js` собирает, `--verify` заново исполняет ядро и сверяет каждый факт',
+ 'и корневой хеш. Тренер ссылается только на id узлов: подделанный или устаревший факт не пройдёт проверку.','',
  '## Чего в базе пока нет','',
- '- Задание №1 по инже (сопряжения) — ждём условия 30 вариантов.',
- '- Задание №2 по инже — методика живёт внутри `index.html`, в базу попали только описание и варианты из поискового индекса.',
+ `- ДЗ 1 по инже (сопряжения): ${ig1.variants.length} вариантов из 30 — построения по шагам с числами ядра (\`ig1\`); остальные ждём.`,
+ '- Задание №2 по инже — методики в формате `method.js` нет, в базу попали только описание и варианты из поискового индекса.',
  '- РК3 и экзамен — материалов нет.',
  '- Пошаговые данные для тренера (факты, секреты, лестница подсказок для каждого шага варианта) — следующий этап.'];
 fs.writeFileSync(path.join(ROOT,'kb/README.md'),L.join('\n')+'\n');

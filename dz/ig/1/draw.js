@@ -64,6 +64,15 @@ function sheet(n,{constr=true}={}){
     `<text x="40" y="${H-30}" font-size="5" font-style="italic">Фамилия И.О.   Группа ........   Вариант №${n}</text>`;
   return wrap([0,0,W,H],frame()+axes(V,R)+cons+fin+holes(V,0.7)+lab);
 }
-const api={steps,sheet,arcPath};
+/* кадры темы (dz/ig/1/topics.js) → SVG: каждый кадр — новые элементы ярко, прошлые бледно; рамка — по всем элементам */
+function frames(F,{pad=8}={}){
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9; const P=(x,y,r=0)=>{ x0=Math.min(x0,x-r); x1=Math.max(x1,x+r); y0=Math.min(y0,y-r); y1=Math.max(y1,y+r); };
+  F.forEach(f=>f.els.forEach(e=>{ if(e.t==='pt') P(e.at[0],e.at[1]); else if(e.t==='circle'||e.t==='arc') P(e.c[0],e.c[1],e.r); else if(e.t==='seg'){ P(e.a[0],e.a[1]); P(e.b[0],e.b[1]); } }));
+  const vb=[X(x0)-pad,Y(y1)-pad,x1-x0+2*pad,y1-y0+2*pad]; let ghost=''; const out=[];
+  const arcEl=(e,g)=>`<path d="${arcPath(e.c,e.r,e.from,e.to,e.ccw)}" fill="none" stroke="${g?COL.ghost:COL[e.role]}" stroke-width="${g?0.3:0.9}"/>`;
+  F.forEach(f=>{ const cur=f.els.map(e=>e.t==='arc'?arcEl(e):el(e)).join(''); out.push({cap:f.cap,svg:wrap(vb,ghost+cur)}); ghost+=f.els.map(e=>e.t==='arc'?arcEl(e,1):el(e,true)).join(''); });
+  return out;
+}
+const api={steps,sheet,arcPath,frames};
 if(NODE) module.exports=api; else self.IG1D=api;
 })();

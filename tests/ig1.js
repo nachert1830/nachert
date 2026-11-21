@@ -35,6 +35,18 @@ for(let i=0;i<N;i++){
   try{ const P=[U(-90,90),U(-90,90)]; const t=K.tangentPC(P,C1); if(Math.abs(K.dot(K.sub(t.T[0],P),K.sub(t.T[0],C1.c)))>1e-6||Math.abs(K.dist(t.T[0],C1.c)-C1.r)>1e-7) bad('PC: не касательная'); else cnt.PC++; }catch(e){}
   for(const k of ['outer','inner']){ try{ const t=K.tangentCC(C1,C2,k); const d=K.sub(t.T[1],t.T[0]);
       if(Math.abs(K.dot(d,K.sub(t.T[0],C1.c)))>1e-6||Math.abs(K.dot(d,K.sub(t.T[1],C2.c)))>1e-6||Math.abs(K.dist(t.T[0],C1.c)-C1.r)>1e-7||Math.abs(K.dist(t.T[1],C2.c)-C2.r)>1e-7) bad('TT '+k+': не касательная'); else cnt.TT++; }catch(e){} } }
+/* 4. теория-данные (dz/ig/1/topics.js): верное построение проходит проверку, каждая ловушка — нет; кадры рисуются */
+const {T:TOP}=require(path.join(ROOT,'dz/ig/1/topics.js')), G=require(path.join(ROOT,'kernel/prep-ig.js')); const tstat=[];
+for(const id in TOP){ const t=TOP[id]; if(!G.BY[id]) bad('тема '+id+' не из программы'); let g=0,gt=0,c=0,ct=0;
+  for(let i=0;i<300;i++){ const p=t.make(rnd), r=t.build(p); if(r){ gt++; if(t.judge(p,r)) g++; else if(gt<3) bad(id+': верное построение не прошло проверку');
+      if(i<5&&D.frames(r.F).some(f=>/NaN/.test(f.svg))) bad(id+': NaN в кадре'); }
+    for(const k in t.traps){ const w=t.traps[k].build(p); if(w&&r){ ct++; if(!t.judge(p,w)) c++; } } }
+  if(g!==gt) bad(`${id}: верных ${g} из ${gt}`); if(c!==ct) bad(`${id}: ловушка поймана ${c} из ${ct}`); if(ct<50) bad(`${id}: мало пар с ловушкой (${ct})`); tstat.push(id+' '+ct); }
+console.log('Теория сопряжений: темы и пары с ловушкой — '+tstat.join(', '));
+/* 5. граф знаний: сохранённый kb/graph.json сходится с данными и ядром; подделка факта ловится */
+{ const KG=require(path.join(ROOT,'tools/kb-graph.js')), fs=require('fs'), G=JSON.parse(fs.readFileSync(path.join(ROOT,'kb/graph.json'),'utf8'));
+  const e=KG.verify(G); if(e.length) bad('граф знаний: '+e[0]+(e.length>1?` (и ещё ${e.length-1}) — node tools/kb-graph.js`:''));
+  const F=JSON.parse(JSON.stringify(G)), f=F.nodes.find(n=>n.kind==='fact'); f.body.val.T[0][0]+=0.01; if(!KG.verify(F).length) bad('граф знаний: подделка факта не поймана'); }
 if(Object.values(cnt).some(v=>v<N/10)) bad('мало проверенных построений: '+JSON.stringify(cnt));
 console.log(`ДЗ 1 инжа: вариантов ${Object.keys(V).length}; ядро на случайных данных: ${JSON.stringify(cnt)}; подсаженная ошибка R ± r поймана ${wrong.LC} раз`);
 if(fails.length){ console.log('ОШИБКИ:\n'+[...new Set(fails)].slice(0,30).join('\n')); process.exit(1); } console.log('ок');
