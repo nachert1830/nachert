@@ -37,7 +37,7 @@ def fork(s):
         i = m[-1].end(); s = s[:i] + '\n' + fix + s[i:]; n['dzimg'] = 1
     # новый дизайн поверх копии (new/shell.css, new/shell.js — собирает new/make-shell.py; экран ДЗ — new/dzdeck.*)
     i = s.rindex('</body>')  # последнее: раньше в файле '</body>' встречается внутри строк скриптов
-    s = s[:i] + '<link rel="stylesheet" href="shell.css?v=1">\n<script src="shell.js?v=1" defer></script>\n<link rel="stylesheet" href="dzdeck.css?v=3">\n<script src="dzdeck.js?v=3" defer></script>\n' + s[i:]; n['shell'] = 1
+    s = s[:i] + '<link rel="stylesheet" href="shell.css?v=1">\n<script src="shell.js?v=1" defer></script>\n<link rel="stylesheet" href="dzdeck.css?v=4">\n<script src="dzdeck.js?v=4" defer></script>\n' + s[i:]; n['shell'] = 1
     return s, n
 
 if __name__ == '__main__':

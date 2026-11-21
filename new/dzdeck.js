@@ -154,7 +154,7 @@
     stage.innerHTML='';els=[];C=[];
     L.forEach(function(x,i){
       var b=document.createElement('div');b.setAttribute('role','button');b.className='k'+(x.col==='amber'?' dk':'');b.style.setProperty('--c',PAL[x.col]);
-      b.setAttribute('aria-label','Задание '+x.n+', '+CN[x.c]+': '+x.t);b.dataset.i=i;b.innerHTML=HL+cardHTML(x,i);
+      b.setAttribute('aria-label','Задание '+x.n+', '+CN[x.c]+': '+x.t);b.dataset.i=i;b.innerHTML=cardHTML(x,i);addHL(b);
       b.style.zIndex=10+i;   /* ниже лежащая карточка всегда ближе — порядок постоянный, z не трогаем в кадре */
       stage.appendChild(b);els.push(b);C.push({t:'',o:-1,v:''});});
     geo();
@@ -187,10 +187,12 @@
      Android (Chrome): navigator.vibrate — «тик» на каждую карточку и при протаскивании, и при инерции.
      iPhone (Safari): вибрации у сайтов нет. Системный щелчок даёт только переключатель <input switch>, и с iOS 26.5
      — лишь от НАСТОЯЩЕГО касания пальцем (переключение скриптом молчит). Поэтому всё, на что нажимают, накрыто
-     прозрачной подписью этого переключателя (HL): палец сам щёлкает его — iPhone отдаёт «тик». Во время свайпа
+     прозрачной подписью со своим переключателем внутри (HL, как в библиотеке ios-haptics): палец сам щёлкает его —
+     iPhone отдаёт «тик». Сам переключатель 1×1 и невидим (не под пальцем — иначе WebKit глушит жест). Во время свайпа
      касание не считается нажатием, так что на iPhone щелчок — на каждое касание, а при ведении пальцем колода
      «прилипает» к каждой карточке (magnet). На iOS 18 – 26.4 срабатывает и щелчок скриптом — его тоже зовём. */
-  var HL='<label class="hl" for="nd-hpin" aria-hidden="true"></label>';
+  var HL='<label class="hl" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>';
+  function stopSw(e){e.stopPropagation();}   /* копия клика, которую подпись шлёт переключателю, не должна сработать второй раз */
   var hp=$('hp'),lastT=0,IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   function buzz(ms){try{if(navigator.vibrate) navigator.vibrate(ms);}catch(e){} if(IOS) try{hp.click();}catch(e){}}
   function tick(){var t=performance.now();if(t-lastT<30) return;lastT=t;buzz(10);}
@@ -198,7 +200,7 @@
   function tapTick(e){if(IOS&&e&&e.target&&e.target.classList&&e.target.classList.contains('hl')){try{if(navigator.vibrate) navigator.vibrate(10);}catch(x){}lastT=performance.now();return;}tick();}
   /* подпись внутри ссылки забирает её переход — переходим сами */
   root.addEventListener('click',function(e){var l=e.target.closest&&e.target.closest('.hl');if(!l) return;var a=l.closest('a[href]');if(a) location.hash=a.getAttribute('href').replace(/^.*#/,'#');});
-  function addHL(el){if(el&&!el.querySelector(':scope > .hl')) el.insertAdjacentHTML('afterbegin',HL);}
+  function addHL(el){if(!el||el.querySelector(':scope > .hl')) return;el.insertAdjacentHTML('beforeend',HL);el.lastChild.firstChild.addEventListener('click',stopSw);}
 
   /* пересёк ли центр очередной карточки — тогда щелчок */
   function detent(){var r=Math.max(0,Math.min(L.length-1,Math.round(M.p)));if(r!==M.cur){M.cur=r;tick();}
@@ -207,38 +209,53 @@
   /* ── движок: палец ведёт колоду 1:1, отпустил — инерция и пружина к ближайшей карточке ── */
   var M={p:0,to:0,v:0,cur:0,bump:false,raf:0,drag:null,last:0};root.__m=M;   /* для проверок */
   /* защёлка под пальцем: возле каждой карточки колода «прилипает», между ними — перескакивает */
-  function magnet(r){var n=Math.floor(r),f=r-n,g=f<.5?4*f*f*f:1-4*(1-f)*(1-f)*(1-f);return n+g;}
+  function magnet(r){return r-Math.sin(2*Math.PI*r)/(2*Math.PI)*.55;}
   function clampRubber(p){var max=L.length-1;if(p<0) return -(1-1/(-p*0.9+1))/0.9*0.6;if(p>max) return max+(1-1/((p-max)*0.9+1))/0.9*0.6;return p;}
   function loop(t){M.raf=0;var dt=Math.min(32,t-(M.last||t))/1000;M.last=t;
-    /* пружина с лёгким перелётом: жёсткость 260, демпфирование 24 */
-    var k=260,c=24,steps=Math.max(1,Math.round(dt/0.004)),h=dt/steps;
+    /* мягкая пружина почти без перелёта, как прокрутка iOS: жёсткость 230, демпфирование 27 */
+    var k=230,c=27,steps=Math.max(1,Math.round(dt/0.004)),h=dt/steps;
     for(var s=0;s<steps;s++){var a=-k*(M.p-M.to)-c*M.v;M.v+=a*h;M.p+=M.v*h;}
     detent();render();
     if(Math.abs(M.p-M.to)>.0005||Math.abs(M.v)>.002) M.raf=requestAnimationFrame(loop);else{M.p=M.to;M.v=0;render();}}
   function kick(){if(!M.raf){M.last=0;M.raf=requestAnimationFrame(loop);}}
   function go(i){M.to=Math.max(0,Math.min(L.length-1,i));if(REDUCE){M.p=M.to;M.v=0;detent();render();return;}kick();}
 
-  stage.addEventListener('pointerdown',function(e){if(FX>=0||e.button) return;
-    if(M.raf){cancelAnimationFrame(M.raf);M.raf=0;}
+  /* нажатая карточка чуть проседает (свойство scale — отдельно от transform, который пишет движок) */
+  var pressed=null;function press(k){if(pressed===k) return;if(pressed) pressed.classList.remove('pr');pressed=k;if(k) k.classList.add('pr');}
+  /* раскрытую карточку можно смахнуть вниз — закроется */
+  var FD=null;
+  stage.addEventListener('pointerdown',function(e){if(e.button) return;var k=e.target.closest('.k');
+    if(FX>=0){if(k&&+k.dataset.i===FX){FD={id:e.pointerId,y0:e.clientY,dy:0,moved:false};press(k);}return;}
+    if(M.raf){cancelAnimationFrame(M.raf);M.raf=0;}press(k);
     M.drag={id:e.pointerId,y0:e.clientY,p0:M.p,raw:M.p,moved:false,hist:[[performance.now(),e.clientY]]};});
-  stage.addEventListener('pointermove',function(e){var d=M.drag;if(!d||e.pointerId!==d.id) return;var dy=e.clientY-d.y0;
-    if(!d.moved){if(Math.abs(dy)<5) return;d.moved=true;try{stage.setPointerCapture(e.pointerId);}catch(x){}}
+  stage.addEventListener('pointermove',function(e){
+    if(FD&&e.pointerId===FD.id){var fy=e.clientY-FD.y0;if(!FD.moved&&Math.abs(fy)<6) return;
+      if(!FD.moved){FD.moved=true;press(null);try{stage.setPointerCapture(e.pointerId);}catch(x){}}
+      FD.dy=fy>0?fy*.6:fy*.15;els[FX].style.transition='';els[FX].style.transform='translate3d(0,'+(TOP0+FD.dy).toFixed(1)+'px,0)';C[FX].t='';
+      det.style.opacity=Math.max(0,1-FD.dy/160);return;}
+    var d=M.drag;if(!d||e.pointerId!==d.id) return;var dy=e.clientY-d.y0;
+    if(!d.moved){if(Math.abs(dy)<5) return;d.moved=true;press(null);try{stage.setPointerCapture(e.pointerId);}catch(x){}}
     d.raw=d.p0-dy/PX;M.p=clampRubber(magnet(d.raw));M.v=0;
     var now=performance.now();d.hist.push([now,e.clientY]);while(d.hist.length>2&&now-d.hist[0][0]>90) d.hist.shift();
     detent();          /* синхронно в событии касания — так iPhone отдаёт щелчок */
     if(!M.rr) M.rr=requestAnimationFrame(function(){M.rr=0;render();});});
-  function release(e){var d=M.drag;if(!d||(e&&e.pointerId!==d.id)) return;M.drag=null;if(!d.moved) return;
+  function release(e){press(null);
+    if(FD&&(!e||e.pointerId===FD.id)){var f=FD;FD=null;if(!f.moved) return;mark();det.style.opacity='';
+      if(f.dy>70){buzz(14);unfocus();} else {els[FX].style.transition='transform .35s '+EASE;put(FX,{y:TOP0,s:1,o:1});setTimeout(function(){if(FX>=0) els[FX].style.transition='';},380);}
+      return;}
+    var d=M.drag;if(!d||(e&&e.pointerId!==d.id)) return;M.drag=null;if(!d.moved) return;
     var h=d.hist,a=h[0],b=h[h.length-1],vy=b[0]-a[0]>0?(b[1]-a[1])/(b[0]-a[0]):0;   /* пикс/мс */
     var vp=-vy*1000/PX;                                                              /* карточек/с */
     /* проекция броска, как в iOS: куда доехала бы колода с этой скоростью */
     var target=Math.round(M.p+vp*0.22);
     target=Math.max(0,Math.min(L.length-1,target));
-    M.v=Math.max(-40,Math.min(40,vp));M.to=target;stage.dataset.moved='1';setTimeout(function(){stage.dataset.moved='';},40);
+    M.v=Math.max(-40,Math.min(40,vp));M.to=target;mark();
     if(REDUCE){M.p=M.to;M.v=0;detent();render();}else kick();}
   stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
   /* потеря захвата — только самой сцены (захват с карточки на сцену при начале протаскивания — не отпускание) */
   stage.addEventListener('lostpointercapture',function(e){if(e.target===stage) release(e);});
 
+  function mark(){stage.dataset.moved='1';setTimeout(function(){stage.dataset.moved='';},60);}
   /* колесо мыши и тачпад: копим прокрутку, каждые ~60 пикселей — следующая карточка */
   var wacc=0,wt=0;
   sc.addEventListener('wheel',function(e){if(FX>=0) return;e.preventDefault();var now=performance.now();if(now-wt>220) wacc=0;wt=now;
@@ -255,7 +272,7 @@
   nowB.addEventListener('click',function(e){tapTick(e);M.cur=act;go(act);});
 
   /* плавная смена раскладки (появление, раскрытие, закрытие): пружинистый переход CSS, потом снова покадрово */
-  var EASE='cubic-bezier(.2,.9,.22,1.08)';
+  var EASE='cubic-bezier(.22,1,.36,1)';
   function animate(ms,stagger){if(REDUCE) return;els.forEach(function(k,i){var dl=(stagger?i*stagger:0)+'ms';k.style.transition='transform '+ms+'ms '+EASE+' '+dl+', opacity '+Math.round(ms*.6)+'ms ease '+dl;});
     clearTimeout(animate.t);animate.t=setTimeout(function(){els.forEach(function(k){k.style.transition='';});},ms+(stagger?els.length*stagger:0)+40);}
   /* появление: карточки въезжают снизу одна за другой */
@@ -273,7 +290,7 @@
   function focus(i,html,label,ev){if(ev) tapTick(ev); else buzz(18);if(M.raf){cancelAnimationFrame(M.raf);M.raf=0;}M.p=M.to=i;M.v=0;var H=G.H;animate(560,0);
     els.forEach(function(k,j){if(j===i){put(j,{y:TOP0,s:1,o:1});k.style.zIndex=999;}
       else put(j,{y:H+30+Math.abs(j-i)*14,s:.94,o:j>i?1:0});});FX=i;sc.classList.add('lock');
-    det.innerHTML=html;det.setAttribute('aria-label',label);det.style.top=(sc.offsetTop+TOP0+G.ch+14)+'px';det.scrollTop=0;
+    det.innerHTML=html;det.setAttribute('aria-label',label);det.style.top=(sc.offsetTop+TOP0+G.ch+14)+'px';det.scrollTop=0;det.style.opacity='';
     back=document.activeElement;root.classList.add('nd-fx');setTimeout(function(){var g=det.querySelector('.go');if(g) try{g.focus({preventScroll:true});}catch(e){}},400);}
   function unfocus(e){if(FX<0) return;els[FX].style.zIndex=10+FX;FX=-1;tapTick(e);root.classList.remove('nd-fx');sc.classList.remove('lock');animate(520,0);render();
     if(back&&back.focus) try{back.focus({preventScroll:true});}catch(e){}}
@@ -299,7 +316,7 @@
 
   function openVar(){var h='<h2>Мой вариант</h2><p>Один номер на все ДЗ — как на сайте.</p><div class="vg">';
     for(var n=1;n<=30;n++) h+='<button type="button" data-v="'+n+'" aria-pressed="'+(n===S.v)+'">'+n+'</button>';
-    openSheet(h+'</div>','Выбор варианта');sheet.querySelectorAll('[data-v],.grab').forEach(addHL);}
+    openSheet(h+'</div><p class="ver">Сборка 4</p>','Выбор варианта');sheet.querySelectorAll('[data-v],.grab').forEach(addHL);}
   $('vbtn').addEventListener('click',function(e){tapTick(e);openVar();});
 
   /* всё постоянное, на что нажимают, — с подписью переключателя (щелчок на iPhone) */
