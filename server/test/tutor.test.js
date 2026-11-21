@@ -61,7 +61,7 @@ test('лесенка: сначала short без координат, со вт�
   assert.equal(st.msgs.length,4); assert.equal(st.msgs[1].from,'t'); assert.deepEqual(st.msgs[3].actions,[{t:'show',step:5,points:[9,12]}]); assert.equal(st.consent,true);
   const mem=await c.store.get('tutor',(await c.store.scan('users',u=>u.name==='Аня'))[0].id+':ig4:7'); assert.equal(mem.asks[5],2); assert.equal(mem.open[5],3); assert.equal(mem.turns,2);
   const logs=await c.store.scan('tutorlog'); assert.equal(logs.length,2); assert.ok(logs.every(l=>l.kop>0&&l.model==='anthropic/claude-sonnet-5-5'&&l.verify.first));
-  assert.deepEqual(logs.sort((a,b)=>a.ts-b.ts||(a.id<b.id?-1:1))[0].tools,['get_step','show_on_drawing']);
+  assert.deepEqual((await c.store.get('tutorlog',r1.data.id)).tools,['get_step','show_on_drawing']);
   /* история уходит в модель */
   assert.ok(M.calls[3].b.messages.some(m=>m.role==='assistant'&&/Это шаг 5/.test(m.content||'')),'прошлый ответ — в истории');
   /* оценка ответа */
@@ -83,7 +83,7 @@ test('сверщик: выдумка модели переписывается; 
   M.script.push(say('Точка 99″ стоит на шаге 40. Глубина 77 мм. Посмотри на вид сверху.'),say('Точка 99″ на глубине 77 мм. Посмотри на вид сверху.'));
   const r2=await chat(c,{text:'а дальше?'}); assert.equal(r2.status,200);
   assert.equal(r2.data.reply,'Посмотри на вид сверху.','вырезано всё несошедшееся'); assert.equal(r2.data.verified,false);
-  l=(await c.store.scan('tutorlog')).sort((a,b)=>b.ts-a.ts||(a.id<b.id?1:-1))[0]; assert.ok(l.verify.cut>=1);
+  l=await c.store.get('tutorlog',r2.data.id); assert.ok(l.verify.cut>=1);
   /* студент сам назвал число — повторить его можно */
   M.script.push(say('Ты отложил 50 мм — сравни с шагом 5.')); assert.equal((await chat(c,{text:'я отложил 50 мм'})).data.verified,true);
 });
@@ -147,6 +147,14 @@ test('без согласия, но с российской моделью: от
   const k=M.calls[0]; assert.match(k.url,/llm\.api\.cloud\.yandex\.net/); assert.equal(k.b.model,'gpt://b1gf/yandexgpt/latest'); assert.equal(k.auth,'Bearer iam-token'); assert.equal(k.b.tools,undefined);
   assert.match(k.b.messages[0].content,/Инструментов сейчас нет/); assert.match(k.b.messages[0].content,/Что делать:/); assert.ok(!/Подробно:/.test(k.b.messages[0].content),'на первой просьбе — без координат');
   assert.equal((await chat(c,{text:'проверь',photo:PHOTO,ref:REF})).status,403);
+});
+
+test('TUTOR_TOOLS=off — Claude «без рук»: инструментов нет, открытое по шагу — в карточке, шаг всё равно показан',async()=>{
+  const {c,M}=await setup({env:{TUTOR_TOOLS:'off'},script:[say('Это шаг 5: переносим точки выреза.'),say('Точка 9′: глубина 43,3 мм.')]});
+  const r=await chat(c,{text:'не понимаю',step:5}); assert.equal(r.status,200); assert.equal(M.calls[0].b.tools,undefined); assert.equal(M.calls[0].b.model,'anthropic/claude-sonnet-5-5');
+  assert.deepEqual(r.data.actions,[{t:'show',step:5,points:[]}]);
+  const r2=await chat(c,{text:'не понял',step:5}); assert.match(M.calls[1].b.messages[0].content,/Подробно:/); assert.equal(r2.data.verified,true,'со второй просьбы координаты открыты');
+  assert.ok(r2.data.actions[0].points.includes(9));
 });
 
 test('панель владельца: реплики, цена, сверка, оценки; студенту — нельзя',async()=>{

@@ -10,7 +10,7 @@ function fromEnv(env){ env=env||process.env; const key=env.PROXYAPI_KEY||'', fol
   const ru=env.TUTOR_RU_MODEL?{yandex:true,url:env.TUTOR_RU_URL||LLM.YA_URL,model:env.TUTOR_RU_MODEL.replace('{folder}',folder),folder}:null;
   const m=(v,d)=>({model:LLM.pxModel(v||d),url:env.TUTOR_URL||LLM.PX_URL});
   return {on:env.TUTOR!=='off'&&!!(key||ru),key,main:m(env.TUTOR_MODEL,SONNET),light:m(env.TUTOR_LIGHT_MODEL,HAIKU),eyes:m(env.TUTOR_EYES_MODEL,SONNET),ru,
-    modeDefault:env.TUTOR_MODE_DEFAULT==='explain'?'explain':'coach',dayRub:+env.TUTOR_DAY_RUB||1500,userDayRub:+env.TUTOR_USER_DAY_RUB||40,rate:+env.TUTOR_RATE||110}; }
+    modeDefault:env.TUTOR_MODE_DEFAULT==='explain'?'explain':'coach',tools:env.TUTOR_TOOLS!=='off',dayRub:+env.TUTOR_DAY_RUB||1500,userDayRub:+env.TUTOR_USER_DAY_RUB||40,rate:+env.TUTOR_RATE||110}; }
 
 const TEXT_MAX=2000, HIST=24, CTX_HIST=12, IMG_MAX=1600*1024, BODY_MAX=3.6*1024*1024, DEADLINE=45000, DAY=864e5;
 const IMG_RE=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/;
@@ -88,8 +88,9 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
         turn.eyesKop+=LLM.kopecks(c.eyes.model,r.usage,c.rate); const j=parseJson(r.message.content); if(!j) throw new Error('глаза ответили не по формату'); return j; }:null,
       askAuthor:deps.askCreate?s=>deps.askCreate(S.user,{text:'Вопрос от наставника (ИГ, ДЗ №4, вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/ig4/'+n,where:'ИГ · ДЗ №4 · вариант '+n}):null};
     /* без инструментов (российская модель): открытое по текущему шагу — прямо в карточку */
-    let inline='';
-    if(ru){ const k=step||mem.last||1; POL.ask(mem,turn,k); const d=POL.allowed(mem,k), o=P.stepAt(dz,n,k,POL.depthName(d)); POL.open(mem,k,d); turn.facts.push(...T.factsOfStep(o));
+    let inline=''; const bare=!!ru||c.tools===false;   /* «без рук»: российская модель или TUTOR_TOOLS=off */
+    if(bare){ const k=step||mem.last||1; POL.ask(mem,turn,k); const d=POL.allowed(mem,k), o=P.stepAt(dz,n,k,POL.depthName(d)); POL.open(mem,k,d); turn.facts.push(...T.factsOfStep(o));
+      if(d>=2) turn.actions.push({t:'show',step:k,points:d>=3?(o.points||[]).map(p=>p.n):[]});   /* без рук наставник всё равно показывает шаг */
       inline='Шаг '+o.k+' «'+o.title+'»'+(o.idea?'\nИдея: '+o.idea:'')+(o.short?'\nЧто делать: '+o.short:'')+(o.more?'\nПодробно: '+o.more:''); }
     const system=PR.SYSTEM+'\n\n'+PR.card({overview:P.overview(dz,n),mode:mem.mode,step,memo:memo(mem,dz),photo:!!photo,inline});
     const history=(mem.msgs||[]).slice(-CTX_HIST).map(m=>({role:m.r==='u'?'user':'assistant',content:m.t||(m.ph?'(фото листа)':'…')}));
@@ -97,7 +98,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     const R=P.registry(dz,n), quoted=VF.numbersOf(text);
     const vctx=()=>({points:new Set(R.keys()),steps:v.steps.length,facts:before.concat(turn.facts),quoted});
     const cheap=all>=0.8*c.dayRub*100, models=ru?[ru]:cheap?[c.light]:[c.main,c.light];
-    let res; try{ res=await A_.run({models,llm,messages,tools:!ru,ctx,vctx,deadline:t0+DEADLINE,rate:c.rate}); }
+    let res; try{ res=await A_.run({models,llm,messages,tools:!bare,ctx,vctx,deadline:t0+DEADLINE,rate:c.rate}); }
     catch(e){ if(!(e instanceof LLM.ModelError)) throw e; deps.log&&deps.log.error&&deps.log.error('наставник',e.message,e.fallback||'');
       await store.put('tutorlog',{id:new Date(now()).toISOString()+'#'+require('crypto').randomBytes(3).toString('hex'),userId:uid,dz,n,ts:now(),ms:Date.now()-t0,error:String(e.message).slice(0,200),fallback:e.fallback||null,kop:turn.eyesKop});
       await spend(uid,turn.eyesKop); await spend('all',turn.eyesKop);
