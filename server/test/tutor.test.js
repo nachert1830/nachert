@@ -120,7 +120,7 @@ test('передать автору: ветка «Спроси автора» с
     say('Передал вопрос автору — ответ придёт на сайте во «Вопросах».')]});
   const r=await chat(c,{text:'у меня в задании другой вырез, передай автору'}); assert.equal(r.status,200);
   const a=r.data.actions.find(x=>x.t==='ask'); assert.ok(a&&a.id);
-  const th=(await c.call('GET','/api/ask',undefined,{as:'a'})).data.threads; assert.equal(th.length,1); assert.match(th[0].title,/Вопрос от наставника/); assert.equal(th[0].src,'#/ig/dz/4/7');
+  const th=(await c.call('GET','/api/ask',undefined,{as:'a'})).data.threads; assert.equal(th.length,1); assert.match(th[0].title,/Вопрос от наставника/); assert.equal(th[0].src,'#/ig4/7');
   assert.equal((await c.call('GET','/api/admin/ask',undefined,{as:'owner'})).data.waiting,1,'автор видит вопрос');
   const ex=(await c.call('GET','/api/me/export',undefined,{as:'a'})).data; assert.equal(ex.tutor.conversations[0].messages.length,2); assert.equal(ex.tutor.calls.length,1);
   assert.equal((await c.call('POST','/api/me/delete',{confirm:'УДАЛИТЬ'},{as:'a'})).status,200);

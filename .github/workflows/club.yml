@@ -63,6 +63,14 @@ jobs:
           PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
           GH_HQ_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN }}
           EYES_BEST_MODEL: ${{ vars.EYES_BEST_MODEL }}
+          TUTOR: ${{ vars.TUTOR }}
+          TUTOR_MODEL: ${{ vars.TUTOR_MODEL }}
+          TUTOR_LIGHT_MODEL: ${{ vars.TUTOR_LIGHT_MODEL }}
+          TUTOR_EYES_MODEL: ${{ vars.TUTOR_EYES_MODEL }}
+          TUTOR_RU_MODEL: ${{ vars.TUTOR_RU_MODEL }}
+          TUTOR_MODE_DEFAULT: ${{ vars.TUTOR_MODE_DEFAULT }}
+          TUTOR_DAY_RUB: ${{ vars.TUTOR_DAY_RUB }}
+          TUTOR_USER_DAY_RUB: ${{ vars.TUTOR_USER_DAY_RUB }}
         run: node server/tools/deploy.js --write-front
       - name: Адрес API — в страницу клуба на сайте
         if: steps.ready.outputs.ok == 'yes'

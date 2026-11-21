@@ -291,7 +291,9 @@ async function main(){
     /* глаза сканера: каталог для Yandex AI Studio; адрес и модель — по умолчанию из server/lib/eyes.js (vars EYES_URL, EYES_MODEL) */
     EYES_FOLDER:folder,EYES_URL:E('EYES_URL'),EYES_MODEL:eyes.model||E('EYES_MODEL'),EYES_OPTS:eyes.opts||'',EYES_AUTH:E('EYES_AUTH'),EYES:E('EYES'),EYES_BEST_MODEL:E('EYES_BEST_MODEL'),
     /* на время тестов: лучшая (зарубежная) модель — только владельцу и без отметки «лист мой»; для всех — vars EYES_BEST_FOR=all, EYES_BEST_DEFAULT=0 */
-    EYES_BEST_FOR:E('EYES_BEST_FOR')||'all',EYES_BEST_DEFAULT:E('EYES_BEST_DEFAULT')||'1'};
+    EYES_BEST_FOR:E('EYES_BEST_FOR')||'all',EYES_BEST_DEFAULT:E('EYES_BEST_DEFAULT')||'1',
+    /* наставник (docs/TUTOR.md): по умолчанию Sonnet 5.5 через ProxyAPI (тот же PROXYAPI_KEY); переменные — только если заданы в vars */
+    ...Object.fromEntries(['TUTOR','TUTOR_MODEL','TUTOR_LIGHT_MODEL','TUTOR_EYES_MODEL','TUTOR_RU_MODEL','TUTOR_MODE_DEFAULT','TUTOR_DAY_RUB','TUTOR_USER_DAY_RUB','TUTOR_RATE'].map(k=>[k,E(k)]))};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
   const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY','PROXYAPI_KEY','GH_HQ_TOKEN'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){

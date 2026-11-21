@@ -45,7 +45,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
   /* факты, открытые студенту в прошлых репликах (шаги по глубине открытия) */
   function openFacts(mem,dz,n){ const f=[]; Object.keys(mem.open||{}).forEach(k=>{ const o=P.stepAt(dz,n,+k,POL.depthName(mem.open[k])); if(o) f.push(...T.factsOfStep(o)); });
     const ov=P.overview(dz,n); VF.numbersOf(ov.task,f); if(ov.note) VF.numbersOf(ov.note,f); return f; }
-  const pubMsgs=mem=>(mem.msgs||[]).map(m=>({from:m.r==='u'?'u':'t',text:m.t,ts:m.ts,photo:!!m.ph,actions:m.act||[],id:m.id||null,rate:m.rate==null?null:m.rate}));
+  const pubMsgs=mem=>(mem.msgs||[]).map(m=>({from:m.r==='u'?'u':'t',text:m.t,ts:m.ts,photo:!!m.ph,actions:m.act||[],id:m.id||null,verified:!!m.v,rate:m.rate==null?null:m.rate}));
 
   /* ── состояние окна ── */
   A['GET /api/tutor/state']=async(req,S)=>{ const c=cfg(), {dz,n,v}=where(null,req.query), mem=await loadMem(S,dz,n);
@@ -86,7 +86,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
         const r=await LLM.chat(llm,c.eyes,{messages:[{role:'system',content:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+n+'.'+(focus?' Особенно: '+focus:'')},
           {type:'image_url',image_url:{url:photo}},{type:'image_url',image_url:{url:ref}}]}],max:1500,temperature:0,timeout:Math.min(30000,left-3000)});
         turn.eyesKop+=LLM.kopecks(c.eyes.model,r.usage,c.rate); const j=parseJson(r.message.content); if(!j) throw new Error('глаза ответили не по формату'); return j; }:null,
-      askAuthor:deps.askCreate?s=>deps.askCreate(S.user,{text:'Вопрос от наставника (ИГ, ДЗ №4, вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/ig/dz/4/'+n,where:'ИГ · ДЗ №4 · вариант '+n}):null};
+      askAuthor:deps.askCreate?s=>deps.askCreate(S.user,{text:'Вопрос от наставника (ИГ, ДЗ №4, вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/ig4/'+n,where:'ИГ · ДЗ №4 · вариант '+n}):null};
     /* без инструментов (российская модель): открытое по текущему шагу — прямо в карточку */
     let inline='';
     if(ru){ const k=step||mem.last||1; POL.ask(mem,turn,k); const d=POL.allowed(mem,k), o=P.stepAt(dz,n,k,POL.depthName(d)); POL.open(mem,k,d); turn.facts.push(...T.factsOfStep(o));
@@ -104,13 +104,14 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
       fail(e.status===402?503:e.status===504?504:502,e.status===504?'Наставник не успел ответить — спроси ещё раз, покороче.':'Наставник сейчас не может ответить. Попробуй через минуту или спроси автора.'); }
     const kop=res.kop+turn.eyesKop, t=now(), id=new Date(t).toISOString()+'#'+require('crypto').randomBytes(3).toString('hex');
     const show=turn.actions.find(a=>a.t==='show'); if(show) mem.last=show.step; else if(step) mem.last=step;
-    mem.msgs=(mem.msgs||[]).concat([{r:'u',t:text,ph:photo?1:0,ts:t},{r:'a',t:res.text,ts:t,act:turn.actions,id}]).slice(-HIST);
+    const verified=!!(res.verify.first||res.verify.repaired&&!res.verify.cut);
+    mem.msgs=(mem.msgs||[]).concat([{r:'u',t:text,ph:photo?1:0,ts:t},{r:'a',t:res.text,ts:t,act:turn.actions,id,v:verified?1:0}]).slice(-HIST);
     mem.turns=(mem.turns||0)+1; mem.kop=(mem.kop||0)+kop; mem.updatedAt=t;
     await store.put('tutor',mem); await spend(uid,kop); await spend('all',kop);
     await store.put('tutorlog',{id,userId:uid,dz,n,ts:t,ms:Date.now()-t0,model:res.model,kop,rounds:res.rounds,tools:turn.tools,mode:mem.mode,photo:!!photo,ru:!!ru,
       verify:res.verify,fallback:res.fallback||null,rate:null});
     return json(200,{id,reply:res.text,actions:turn.actions,model:shortModel(res.model),mode:mem.mode,ladder:POL.ladder(mem,v.steps),
-      verified:res.verify.first||res.verify.repaired&&!res.verify.cut,rub:Math.round(kop)/100,left:Math.max(0,Math.round((c.userDayRub*100-mine-kop)/100))}); };
+      verified,rub:Math.round(kop)/100,left:Math.max(0,Math.round((c.userDayRub*100-mine-kop)/100))}); };
 
   /* ── владельцу: как работает наставник ── */
   D['GET /api/admin/tutor']=async()=>{ const t=now(), logs=await store.scan('tutorlog',x=>x.ts>t-7*DAY), us=await store.scan('users'), U={}; us.forEach(u=>{ U[u.id]=u; });
