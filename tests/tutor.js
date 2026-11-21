@@ -48,6 +48,19 @@ eq('пауза не поднимает выше Р3',run([{t:'open'},{t:'act_wro
 eq('Р4 — после двух ошибок на Р3',run([{t:'open'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'},{t:'act_wrong'}]),4);
 eq('просьба без попытки — «попробуй сначала»',run([{t:'open'},{t:'ask'},{t:'ask'}]),0,s=>s.move==='prompt_try');
 eq('верное действие засчитывает шаг',run([{t:'open'},{t:'act_wrong'},{t:'act_ok'},{t:'act_wrong'}]),0,s=>s.done&&s.maxRung===0);
+/* 6. проверка утверждений: инвариант «X′ и X″ на одной линии связи» во всех вариантах начерта; ложное — ложно;
+   утверждение о ещё не открытой точке — скрыто (да/нет о положении искомого не даём) */
+let LK=0, LKbad=0, HID=0, HIDbad=0, FALSEok=0;
+for(const d of ['ng1','ng2','ng3','ng4','ng5']){ const f=path.join(DIR,d+'.json'); if(!fs.existsSync(f)) continue; const D=JSON.parse(fs.readFileSync(f,'utf8'));
+  for(const V of D.variants){ if(!V.P) { bad(d+' в.'+V.n+': нет координат точек'); continue; }
+    for(const l of Object.keys(V.P)) if(l.endsWith('′')&&V.P[l.slice(0,-1)+'″']){ LK++; const r=T.checkClaim(V,'x.p99.s999',{rel:'link',a:l,b:l.slice(0,-1)+'″'}); if(!r.truth){ LKbad++; if(LKbad<4) bad(`${d} в.${V.n}: ${l} и его ″ не на линии связи`); } }
+    const s0=V.steps[0]; if(!s0) continue;
+    Object.entries(V.P).filter(([l,q])=>q[2]!=='g').forEach(([l])=>{ HID++; const r=T.checkClaim(V,s0.id,{rel:'link',a:l,b:Object.keys(V.P)[0]}); if(!r.hidden) HIDbad++; });
+    const g=Object.keys(V.P).filter(l=>V.P[l][2]==='g'&&l.endsWith('′')); if(g.length>=2&&Math.abs(V.P[g[0]][0]-V.P[g[1]][0])>5&&!T.checkClaim(V,s0.id,{rel:'link',a:g[0],b:g[1].slice(0,-1)+'″'}).truth) FALSEok++; } }
+if(LKbad) bad(`линия связи нарушена в ${LKbad} из ${LK} пар`); if(HIDbad) bad(`утверждение о неоткрытой точке не скрыто: ${HIDbad} из ${HID}`);
+const pc=[['K′ лежит на D′E′','on'],['A′ и A″ на одной линии связи','link'],['A″B″ параллельна оси x','parx'],['AB ⟂ CD: A′B′ ⟂ C′D′','perp']];
+pc.forEach(([t,rel])=>{ const c=T.parseClaim(t); if(!c||c.rel!==rel) bad(`разбор «${t}»: ${JSON.stringify(c)}`); });
+console.log(`Утверждения: линия связи верна у ${LK-LKbad}/${LK} пар проекций; ложное «на одной линии связи» опровергнуто в ${FALSEok} вариантах; о неоткрытых точках скрыто ${HID-HIDbad}/${HID}`);
 console.log(`Тренер: шагов ${N} (сосед — у ${NB}); шаблон без модели прошёл линтер везде: ${!FB}; утечки пойманы: точки ${LC}/${LT}, числа ${NC}/${NT}, сырой «Шаг» ${RC}/${RT}`);
 if(LC!==LT||NC!==NT||RC!==RT) bad('не все подсаженные утечки пойманы');
 if(fails.length){ console.log('ОШИБКИ:\n'+fails.slice(0,30).join('\n')); process.exit(1); } console.log('ок');

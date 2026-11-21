@@ -97,6 +97,37 @@ function neighborOf(D,step){ const m=/^(\w+)\.v(\d+)\.(.+)$/.exec(step.id); if(!
   const vs=D.variants.filter(v=>v.n!==n&&v.steps&&v.steps.length&&(kind==null||v.kind===kind)).sort((a,b)=>Math.abs(a.n-n)-Math.abs(b.n-n)||a.n-b.n);
   for(const v of vs){ const s=v.steps.find(x=>x.id.endsWith('.'+tail)&&x.goal.split(' ')[0]===step.goal.split(' ')[0]); if(s) return s; }
   return null; }
-const api={context,lint,fallback,ladder,mask,labelsIn,numbersIn,actionOf,neighborOf,MAXLEN};
+/* ── проверка утверждений ученика по координатам варианта (начерт) ──
+   claim: {rel:'on', p, a, b} — точка p на прямой ab; {rel:'link', a, b} — a и b на одной линии связи (⟂ оси x);
+   {rel:'par'|'perp', a, b, c, d} — прямые ab и cd; {rel:'parx', a, b} — ab ∥ оси x.
+   Ответ: {truth:true|false} или {hidden:true}, если в утверждении точка, которую шаг ещё не открыл ученику
+   (да/нет о положении искомого — утечка: такой ответ тренер не даёт). Допуск — 1 единица чертежа, угол — 0,6°. */
+const ORDER=k=>k==='g'?[0,0]:(m=>[+m[1],+m[2]])(/p(\d+)\.s(\d+)/.exec(k)||[0,999,999]);
+function checkClaim(V,stepId,c){
+  const at=(/\.p(\d+)\.s(\d+)$/.exec(stepId)||[]).slice(1).map(Number), P=V.P||{};
+  const pt=l=>{ const q=P[l]||P[norm(l)]; if(!q) return null; const o=ORDER(q[2]); const open=!at.length||o[0]<at[0]||(o[0]===at[0]&&o[1]<at[1]); return {x:q[0],y:q[1],open}; };
+  const L=['p','a','b','c','d'].filter(k=>c[k]).map(k=>[k,pt(c[k])]);
+  if(L.some(([k,q])=>!q)) return {unknown:true,why:'такой точки на чертеже нет'};
+  if(L.some(([k,q])=>!q.open)) return {hidden:true};
+  const Q=Object.fromEntries(L), d=(u,v)=>[v.x-u.x,v.y-u.y], cr=(u,v)=>u[0]*v[1]-u[1]*v[0], dt=(u,v)=>u[0]*v[0]+u[1]*v[1], ln=u=>Math.hypot(u[0],u[1])||1e-9;
+  const sinA=(u,v)=>Math.abs(cr(u,v))/ln(u)/ln(v), TOL=1, ANG=Math.sin(0.6*Math.PI/180);
+  switch(c.rel){
+    case 'on': { const u=d(Q.a,Q.b), w=d(Q.a,Q.p); return {truth:Math.abs(cr(u,w))/ln(u)<TOL}; }
+    case 'link': return {truth:Math.abs(Q.a.x-Q.b.x)<TOL};
+    case 'parx': return {truth:Math.abs(Q.a.y-Q.b.y)<TOL};
+    case 'par': return {truth:sinA(d(Q.a,Q.b),d(Q.c,Q.d))<ANG};
+    case 'perp': { const u=d(Q.a,Q.b), v=d(Q.c,Q.d); return {truth:Math.abs(dt(u,v))/ln(u)/ln(v)<ANG}; }
+  }
+  return {unknown:true,why:'неизвестное отношение'};
+}
+/* простой разбор фразы ученика (без модели): «K′ лежит на D′E′», «A′ и A″ на одной линии связи», «A′B′ ∥ x», «AB ⟂ CD» */
+function parseClaim(text){ const t=String(text), L=labelsIn(t);
+  if(/лини[а-яё]* связи/i.test(t)&&L.length>=2) return {rel:'link',a:L[0],b:L[1]};
+  if(/(∥|паралл)[а-яё]*\s*(оси\s*)?x\b|∥\s*x|параллельн[а-яё]* ос/i.test(t)&&L.length>=2) return {rel:'parx',a:L[0],b:L[1]};
+  if(/∥|паралл/i.test(t)&&L.length>=4) return {rel:'par',a:L[0],b:L[1],c:L[2],d:L[3]};
+  if(/⟂|перпенд/i.test(t)&&L.length>=4) return {rel:'perp',a:L[0],b:L[1],c:L[2],d:L[3]};
+  if(/(лежит|находится|принадлеж|\sна\s|∈)/i.test(t)&&L.length>=3) return {rel:'on',p:L[0],a:L[1],b:L[2]};
+  return null; }
+const api={context,lint,fallback,ladder,mask,labelsIn,numbersIn,actionOf,neighborOf,checkClaim,parseClaim,MAXLEN};
 if(typeof module!=='undefined'&&module.exports) module.exports=api; else (self.TUTOR=api);
 })();

@@ -29,8 +29,10 @@ const NUM=/(?<![A-Za-zА-Яа-я₀-₉′″‴])-?\d+(?:[,.]\d+)?/g;
 async function ng(page,dz){
   const raw=await page.evaluate(dz=>{ const out=[]; for(const n of DZR.numbers(dz)){ let s; try{ s=DZR.solve(dz,n); }catch(e){ out.push({n,err:String(e.message)}); continue; }
       const t=s.task, parts=t.parts||[t], labs=a=>(a||[]).map(e=>e&&e.l).filter(l=>l&&typeof l==='string');
+      const P={}, pts=(a,k)=>(a||[]).forEach(e=>{ if(e&&e.t==='pt'&&typeof e.l==='string'&&e.at&&!(e.l in P)) P[e.l]=[Math.round(e.at[0]*100)/100,Math.round(e.at[1]*100)/100,k]; });
+      pts(t.given,'g'); parts.forEach((p,pi)=>{ pts(p.given,'g'); (p.steps||[]).forEach((st,si)=>pts(st.add,`p${pi+1}.s${si+1}`)); });
       const given=labs(t.given).concat(...parts.map(p=>labs(p.given)));
-      out.push({n,kind:(DZR.typeOf(dz,n)||{}).code||null,q:t.q,ans:parts.map(p=>p.ans||'').join(' '),cert:(s.cert||[]).length,given,
+      out.push({n,P,kind:(DZR.typeOf(dz,n)||{}).code||null,q:t.q,ans:parts.map(p=>p.ans||'').join(' '),cert:(s.cert||[]).length,given,
         parts:parts.map(p=>({q:p.q||'',given:labs(p.given),steps:(p.steps||[]).map(st=>{ const d=document.createElement('div'); d.innerHTML=st.tbl||'';
           const R={}; d.querySelectorAll('details.hw-l').forEach(x=>{ const m=/l(\d)/.exec(x.className); const body=x.querySelector('div'); if(m&&body) R[m[1]]=body.innerHTML; });
           return {t:st.t,d:st.d||'',why:st.why||'',R,add:labs(st.add),pts:(st.add||[]).filter(e=>e&&e.t==='pt'&&typeof e.l==='string').map(e=>e.l)}; })}))}); }
@@ -48,7 +50,7 @@ async function ng(page,dz){
       steps.push({id:`${dz}.v${v.n}.p${pi+1}.s${si+1}`,part:pi+1,goal,rungs:R,labels:before.concat(intro),secret:{labels:fresh,numbers:nums},
         topics:ngTopics(dz,goal+' '+(R['3']||'')+' '+(R['2']||''))});
       st.add.forEach(l=>seen.add(l)); }); });
-    return {n:v.n,kind:v.kind,q:strip(v.q),ans:strip(v.ans),cert:v.cert,steps}; });
+    return {n:v.n,kind:v.kind,q:strip(v.q),ans:strip(v.ans),cert:v.cert,P:v.P,steps}; });
   return {dz,subj:'ng',variants};
 }
 /* инжа: шаг — элемент детали; ступени из базы «как строится» (только данные элемента) */
