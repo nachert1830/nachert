@@ -76,6 +76,7 @@ function shape(e,g,cls){
   else if(e.t==='circ') n=el('circle',{cx:fmt(e.a[0]),cy:fmt(e.a[1]),r:fmt(e.a[2])},g);
   else if(e.t==='poly') n=el(e.z?'polygon':'polyline',{points:e.p.map(q=>fmt(q[0])+','+fmt(q[1])).join(' ')},g);
   else if(e.t==='pt') n=el('circle',{cx:fmt(e.a[0]),cy:fmt(e.a[1]),r:e.r||1.5},g);
+  else if(e.t==='path') n=el('path',{d:e.d},g);
   else if(e.t==='txt'){ n=el('text',{x:fmt(e.a[0]),y:fmt(e.a[1]),'text-anchor':e.anchor||'start'},g); n.textContent=e.s; }
   if(!n) return null;
   n.setAttribute('class',(cls||'')+' '+(e.t==='pt'?'pt '+(e.c||'ans'):(e.c||'o'))+(e.dash?' hid':''));
@@ -91,6 +92,9 @@ function label(e,g){ if(e.t!=='pt'||!e.lab) return null;
 /* scene → svg; show — какие роли видны (null — все); anim — роли, которые появляются по очереди */
 function draw(svg,S,show,anim){
   svg.innerHTML=''; svg.setAttribute('viewBox',S.box.join(' ')); svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  /* штриховка разрезов (инжа): металл 45° и −45°, неметалл — сетка; шаг 2,2 единицы чертежа */
+  if(S.hatch){ const d=el('defs',{},svg); [['ppHat',45],['ppHat2',-45]].forEach(([id,a])=>{ const pt=el('pattern',{id,patternUnits:'userSpaceOnUse',width:2.2,height:2.2,patternTransform:'rotate('+a+')'},d); el('line',{x1:0,y1:0,x2:0,y2:2.2,class:'hatl'},pt); });
+    const nt=el('pattern',{id:'ppNet',patternUnits:'userSpaceOnUse',width:2.2,height:2.2,patternTransform:'rotate(45)'},d); el('line',{x1:0,y1:0,x2:0,y2:2.2,class:'hatl'},nt); el('line',{x1:0,y1:0,x2:2.2,y2:0,class:'hatl'},nt); }
   const b=S.box, gg=el('g',{class:'pp-grid'},svg);
   for(let x=Math.ceil(b[0]/5)*5;x<b[0]+b[2];x+=5) el('line',{x1:x,y1:b[1],x2:x,y2:b[1]+b[3]},gg);
   for(let y=Math.ceil(b[1]/5)*5;y<b[1]+b[3];y+=5) el('line',{x1:b[0],y1:y,x2:b[0]+b[2],y2:y},gg);
@@ -129,7 +133,12 @@ function pair(topic,k){
 
 /* ───────── экраны ───────── */
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const P=()=>self.PREPROG;
+const PROGS=()=>[self.PREPROG,self.PREPIG].filter(Boolean);
+/* программа по ключу курса или темы; без ключа — начерт */
+const P=k=>(k&&PROGS().find(G=>(G.COURSE&&G.COURSE[k])||(G.BY&&G.BY[k])))||self.PREPROG;
+const isIG=G=>G===self.PREPIG;
+const dzHref=(G,n)=>(isIG(G)?'#/ig':'#/ng')+n;
+const hasDz=(G,c)=>c&&c.kind==='dz'&&!(isIG(G)&&c.n===1);   /* у инжи ДЗ 1 (сопряжения) пока нет страницы варианта */
 function dotCls(id){ const st=status(id); return TOPICS[id]?st:'soon'; }
 const stTag=c=>c==='done'?'✓':c==='due'?'повтор':c==='started'?'начата':c==='soon'?'скоро':'';
 /* строка темы: в курсе ссылка ведёт «внутрь курса» (#/prep/ng4/x3) */
@@ -140,36 +149,44 @@ const pbar=(a,b)=>`<span class="pp-prog"><i style="width:${b?Math.round(a/b*100)
 /* #/prep — подготовка: выбор задания; каждое открывает только свой курс */
 function viewHub(v){
   const G=P(), dz=G.COURSES.filter(c=>c.kind==='dz'), rk=G.COURSES.filter(c=>c.kind==='rk');
-  const cardC=c=>{ const all=c.own.concat(c.prev), d=doneOf(c.own);
+  const cardC=c=>{ const all=c.own.concat(c.prev), d=doneOf(c.own); if(!c.own.length) return '';
     return `<a class="pp-cc" href="#/prep/${c.key}"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b>
       <span class="pp-ccm">${c.own.length} ${c.own.length===1?'тема':c.own.length<5?'темы':'тем'}${c.prev.length?` · опирается на ${c.prev.length} из прошлых`:''}</span>${pbar(d,c.own.length)}<small>освоено ${d} из ${c.own.length}</small></a>`; };
   v.innerHTML=`<div class="wrap page pp"><div class="pp-head"><h1>Подготовка</h1>
     <p class="pp-sub">Выбери задание — откроется только то, что нужно для него.</p></div>
     <h2 class="pp-h2">Домашние задания по начерту</h2><div class="pp-ccs">${dz.map(cardC).join('')}</div>
     <h2 class="pp-h2">Рубежные контроли</h2><div class="pp-ccs">${rk.map(c=>`<div class="pp-cc later" aria-disabled="true"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b><span class="pp-ccm">позже</span></div>`).join('')}</div>
-    <p class="pp-sub"><a href="#/prep/all">Вся программа — ${G.ALL.length} тем по блокам →</a></p></div>`;
+    <p class="pp-sub"><a href="#/prep/all">Вся программа по начерту — ${G.ALL.length} тем по блокам →</a></p>
+    ${self.PREPIG?`<h2 class="pp-h2">Домашние задания по инже</h2><div class="pp-ccs">${self.PREPIG.COURSES.map(cardC).join('')}</div>
+    <p class="pp-sub"><a href="#/prep/igall">Вся программа по инже — ${self.PREPIG.ALL.length} тем по главам тетради →</a></p>`:''}</div>`;
   return 'Подготовка';
 }
 
 /* #/prep/ng4 — курс одного задания: свои темы по блокам + свёрнуто «нужно из прошлых» */
 function viewCourse(v,ck){
-  const G=P(), c=G.COURSE[ck]; if(!c) return viewHub(v);
+  const G=P(ck), c=G.COURSE[ck]; if(!c) return viewHub(v);
   const d=doneOf(c.own), next=c.own.find(id=>TOPICS[id]&&status(id)!=='done'), pd=doneOf(c.prev), weak=c.prev.filter(id=>status(id)!=='done');
-  const dzN=c.kind==='dz'?c.n:null;
+  const dzN=hasDz(G,c)?c.n:null, dzH=dzN&&dzHref(G,dzN);
   v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a>
-    <div class="pp-head"><h1>Подготовка к ${c.label}</h1><p class="pp-sub">${esc(c.title)} · ${c.own.length} ${c.own.length<5?'темы':'тем'}</p></div>
+    <div class="pp-head"><h1>Подготовка к ${c.label}${isIG(G)?' по инже':''}</h1><p class="pp-sub">${esc(c.title)} · ${c.own.length} ${c.own.length<5?'темы':'тем'}</p></div>
     <div class="pp-cbar">${pbar(d,c.own.length)}<span>освоено ${d} из ${c.own.length}</span></div>
-    ${next?`<a class="pp-btn big" href="#/prep/${ck}/${next}">${d?'Продолжить':'Начать'}: ${esc(G.BY[next].t)} →</a>`:dzN?`<a class="pp-btn big" href="#/ng${dzN}">Все темы освоены — к своему варианту ДЗ №${dzN} →</a>`:''}
+    ${next?`<a class="pp-btn big" href="#/prep/${ck}/${next}">${d?'Продолжить':'Начать'}: ${esc(G.BY[next].t)} →</a>`:dzN?`<a class="pp-btn big" href="${dzH}">Все темы освоены — к своему варианту ${c.label} →</a>`:''}
     <div class="pp-map">${c.blocks.map(b=>`<section><h2>${esc(b.t)}</h2>${b.ids.map(id=>row(G.BY[id],ck)).join('')}</section>`).join('')}</div>
     ${c.prev.length?`<details class="pp-prev"${weak.length&&weak.length<=4?' open':''}><summary>Нужно из прошлых заданий — ${c.prev.length}, освоено ${pd}${weak.length?` · не освоено ${weak.length}`:''}</summary>
       ${c.prevBy.map(g=>`<h3>${g.label}</h3>${g.ids.map(id=>row(G.BY[id],g.key)).join('')}`).join('')}</details>`:''}
-    ${dzN?`<p class="pp-sub"><a href="#/ng${dzN}">Свой вариант ДЗ №${dzN} →</a> Решение открыто всегда; подготовка — чтобы решить самому.</p>`:''}</div>`;
+    ${dzN?`<p class="pp-sub"><a href="${dzH}">Свой вариант ${c.label} →</a> Решение открыто всегда; подготовка — чтобы решить самому.</p>`:''}</div>`;
   return 'Подготовка к '+c.label;
 }
 
 /* #/prep/all — вся программа по блокам (обзор) */
-function viewAll(v){
-  const G=P(), A=G.audit(), ready=G.ALL.filter(t=>TOPICS[t.id]).length;
+function viewAll(v,ig){
+  const G=ig?self.PREPIG:P(), A=G.audit(), ready=G.ALL.filter(t=>TOPICS[t.id]).length;
+  if(ig){ const done=G.ALL.filter(t=>status(t.id)==='done').length;
+    v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a><div class="pp-head"><h1>Инжа: вся программа</h1>
+      <p class="pp-sub">${G.ALL.length} тем по главам рабочей тетради. В каждой одна новая идея: где есть интерактив — смотришь по шагам и выбираешь верный чертёж из двух; в остальных — правило, вопросы и ловушки.</p></div>
+      <div class="pp-proof"><span><b>${A.cq.length}/23</b> контрольных вопроса</span><span><b>${A.gt.length}/16</b> заданий тетради</span><span><b>${ready}</b> интерактивных тем</span><span><b>${done}</b> освоено</span></div>
+      <div class="pp-map">${G.MODS.map(m=>{ const d=doneOf(m.T.map(t=>t.id)); return `<section><h2>${esc(m.t)} <small>${m.k}</small></h2>${pbar(d,m.T.length)}${m.T.map(t=>row(t,'')+`<span class="pp-own">${G.COURSE[G.OWNER[t.id]].label}</span>`).join('')}</section>`; }).join('')}</div></div>`;
+    return 'Инжа: вся программа'; }
   v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a><div class="pp-head"><h1>Вся программа</h1>
     <p class="pp-sub">${G.ALL.length} тем по блокам. В каждой одна новая идея: смотришь по шагам, потом выбираешь верный чертёж из двух.</p></div>
     <div class="pp-proof"><span><b>${A.wb.length}/89</b> задач тетради</span><span><b>${A.rk1.length}/${G.RK1.length}</b> вопросов РК1</span><span><b>${A.rk2.length}/9</b> типов РК2</span><span><b>${ready}</b> тем готово</span></div>
@@ -178,11 +195,11 @@ function viewAll(v){
 }
 
 function viewTopic(v,id,ck){
-  const G=P(), T=G.BY[id], topic=TOPICS[id], back=ck&&G.COURSE[ck]?'#/prep/'+ck:'#/prep/all';
+  const G=P(id), T=G.BY[id], topic=TOPICS[id], back=ck&&G.COURSE[ck]?'#/prep/'+ck:isIG(G)?'#/prep/igall':'#/prep/all';
   if(!T){ v.innerHTML='<div class="wrap page"><div class="box warn">Такой темы нет. <a href="#/prep">Вся программа</a></div></div>'; return 'Подготовка'; }
   if(!topic){
     v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="${back}">← Назад</a><h1>${esc(T.t)}</h1><p class="pp-new">${esc(T.new)}</p>
-      <div class="box">Эту тему ещё собираем. Источник: ${esc(T.src||'—')}.</div>
+      ${theory(G,T)}
       ${T.pre.length?`<p class="pp-sub">Опирается на: ${T.pre.map(p=>`<a href="#/prep/${p}">${esc(G.BY[p].t)}</a>`).join(', ')}</p>`:''}</div>`;
     return T.t;
   }
@@ -199,6 +216,17 @@ function viewTopic(v,id,ck){
   return T.t;
 }
 
+/* тема без интерактива: материал карточкой — правило, тетрадь, контрольные вопросы с ответами, ловушки */
+function theory(G,T){
+  const cq=(T.cq||[]).filter(n=>G.CQ&&G.CQ[n]), gt=(T.gt||[]).filter(k=>G.GT&&G.GT[k]);
+  return `<div class="pp-th">${T.gost||T.wb||T.src?`<p class="pp-sub">${[T.gost?'ГОСТ '+esc(T.gost):'',T.wb?'Тетрадь: '+esc(T.wb):'',T.src?'Источник: '+esc(T.src):''].filter(Boolean).join(' · ')}</p>`:''}
+    ${T.look?`<div class="box"><b>Посмотри так:</b> ${esc(T.look)}</div>`:''}
+    ${cq.length?`<h2 class="pp-h2">Контрольные вопросы</h2>${cq.map(n=>`<details class="pp-q"><summary>${n}. ${esc(G.CQ[n][0])}</summary><p>${esc(G.CQ[n][1])}</p></details>`).join('')}`:''}
+    ${T.q?`<details class="pp-q"><summary>На защите: ${esc(T.q)}</summary><p>Ответ — в идее темы: ${esc(T.new)}.</p></details>`:''}
+    ${(T.traps||[]).length?`<h2 class="pp-h2">Частые ошибки</h2><ul class="pp-traps">${T.traps.map(x=>`<li>${esc(typeof x==='string'?x:x.say)}</li>`).join('')}</ul>`:''}
+    ${gt.length?`<h2 class="pp-h2">Задания тетради</h2><ul>${gt.map(k=>`<li><b>${k}</b> ${esc(G.GT[k])}</li>`).join('')}</ul>`:''}
+    <p class="pp-sub">Интерактив для этой темы — «смотри по шагам» и выбор верного чертежа — ещё собираем.</p></div>`;
+}
 /* «Смотри»: шаги на одном варианте, новое на каждом шаге рисуется по очереди */
 /* ───────── 3D: та же сцена в пространстве (topic.space) ─────────
    Примитивы (мир: x — вправо, y — к зрителю, z — вверх): {t:'seg',a,b}, {t:'circ',c0 (центр),n,r}, {t:'poly',p}, {t:'quad',p} (плоскость,
@@ -308,13 +336,13 @@ function duel(stage,topic,T,saved,toWatch,ck){
     try{ window.TRACK&&TRACK('prep_mastered',{topic:T.id,n:M.n}); }catch(e){}
     try{ window.FX&&FX.confetti(); }catch(e){}
     /* дальше — по своему курсу: следующая неосвоенная тема; курс пройден — к своему варианту */
-    const G=P(), c=ck&&G.COURSE[ck], pool=c?c.own:G.ALL.map(t=>t.id), at=pool.indexOf(T.id);
+    const G=P(T.id), c=ck&&G.COURSE[ck], pool=c?c.own:G.ALL.map(t=>t.id), at=pool.indexOf(T.id);
     const nextId=pool.slice(at+1).concat(pool.slice(0,Math.max(0,at))).find(id=>TOPICS[id]&&status(id)!=='done'), nextT=nextId&&G.BY[nextId];
-    const fin=c&&!nextT&&c.kind==='dz'?`<a class="pp-btn" href="#/ng${c.n}">Курс пройден — к своему варианту ${c.label} →</a>`:'';
+    const fin=c&&!nextT&&hasDz(G,c)?`<a class="pp-btn" href="${dzHref(G,c.n)}">Курс пройден — к своему варианту ${c.label} →</a>`:'';
     stage.innerHTML=`<div class="pp-done"><div class="pp-big">${M.n}</div><h2>Тема освоена</h2><p class="pp-sub">пар до уверенности · верно ${M.log.filter(x=>x.ok).length}</p>
       <div class="pp-deck">${keys.map(k=>`<span class="${M.beat[k]?'won':''}" title="${esc(topic.traps[k].say)}"></span>`).join('')}</div>
       <p class="pp-sub">Повторим через ${SPACING[Math.min(SPACING.length-1,((store.get(T.id)||{}).lvl||1)-1)]} дн. — так тема не забудется.</p>
-      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${c?ck+'/':''}${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:fin}<a class="pp-btn ghost" href="${c?'#/prep/'+ck:'#/prep/all'}">${c?'К курсу':'Программа'}</a></div>
+      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${c?ck+'/':''}${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:fin}<a class="pp-btn ghost" href="${c?'#/prep/'+ck:isIG(G)?'#/prep/igall':'#/prep/all'}">${c?'К курсу':'Программа'}</a></div>
       <details class="pp-how"><summary>Почему система решила, что ты освоил</summary><table>${keys.map(k=>`<tr><td>${esc(topic.traps[k].say)}</td><td>${M.beat[k]} ✓</td><td>${M.miss[k]} ✗</td><td>${esc(topic.traps[k].src||'')}</td></tr>`).join('')}</table>
       <p>Пары подбирались так, чтобы шанс ответить верно был около 85 %. Угадывание в выборе из двух учтено: тема засчитана, когда вероятность «знает» стала выше 98,5 % и четыре последних ответа подряд верны.</p></details></div>`;
   };
@@ -325,7 +353,7 @@ function duel(stage,topic,T,saved,toWatch,ck){
 
 /* ───────── карточка «Подготовка» на странице ДЗ ───────── */
 function card(dz){
-  const G=P(); if(!G||!G.COURSE[dz]) return '';
+  const G=P(dz); if(!G||!G.COURSE[dz]) return '';
   const c=G.COURSE[dz], d=doneOf(c.own), first=c.own.find(id=>TOPICS[id]&&status(id)!=='done');
   return `<a class="pp-dzcard" href="#/prep/${dz}"><span class="pp-dzk">Подготовка к ${c.label}</span>
     <b>${d}/${c.own.length} тем освоено</b>${pbar(d,c.own.length)}
@@ -333,7 +361,7 @@ function card(dz){
 }
 
 function chip(dz){
-  const G=P(); if(!G||!G.COURSE[dz]) return '';
+  const G=P(dz); if(!G||!G.COURSE[dz]) return '';
   const c=G.COURSE[dz], d=doneOf(c.own);
   return `<a class="pp-dzchip" href="#/prep/${dz}"><b>Подготовка к ${c.label}</b>${pbar(d,c.own.length)}<span>${d}/${c.own.length} →</span></a>`;
 }
@@ -342,8 +370,9 @@ function chip(dz){
 function view(v,r){
   const G=P(); if(!G){ v.innerHTML='<div class="wrap page"><div class="box warn">Программа не загрузилась.</div></div>'; return 'Подготовка'; }
   if(r.tab==='all') return viewAll(v);
+  if(r.tab==='igall') return viewAll(v,1);
   if(r.tab==='for') return G.COURSE[r.item]?viewCourse(v,r.item):viewHub(v);
-  if(r.tab&&G.COURSE[r.tab]) return r.item?viewTopic(v,r.item,r.tab):viewCourse(v,r.tab);
+  if(r.tab&&P(r.tab).COURSE[r.tab]) return r.item?viewTopic(v,r.item,r.tab):viewCourse(v,r.tab);
   if(r.tab) return viewTopic(v,r.tab,null);
   return viewHub(v);
 }
@@ -353,7 +382,7 @@ const CSS=`
 .pp{--pp-bg:var(--paper,#f7f8fb);--pp-surf:var(--surf,#fff);--pp-ink:var(--ink,#121a3f);--pp-mut:var(--mut,#5c6688);--pp-line:var(--line,#e1e5ef);
  --pp-acc:var(--acc,#1f3fbf);--pp-ok:#14a05a;--pp-bad:#e0244e;--pp-dz:#d4780a;--pp-r:14px;
  --pp-a:#2557d6;--pp-b:#0b8f84;--pp-c:#d4780a;--pp-d:#8a3ffc;--pp-ans:#e0244e;--pp-paper:#fff;--pp-grid:#eef1f6;--pp-thin:#8a95a6;--pp-draw-ink:#1b2230}
-.pp-head h1{margin:0}.pp-sub{color:var(--pp-mut);margin:6px 0}
+.pp-head h1{margin:0}.pp-q{background:var(--pp-surf);border:1px solid var(--pp-line);border-radius:10px;padding:10px 12px;margin:8px 0}.pp-q summary{cursor:pointer;font-weight:600}.pp-q p{margin:8px 0 0}.pp-traps li{margin:4px 0}.pp-sub{color:var(--pp-mut);margin:6px 0}
 .pp-proof{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--pp-mut);margin:10px 0}.pp-proof b{color:var(--pp-ink);font-variant-numeric:tabular-nums}
 .pp-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px;position:sticky;top:0;z-index:4;background:var(--pp-bg);padding:6px 0}
 .pp-chips a{border:1px solid var(--pp-line);background:var(--pp-surf);color:var(--pp-ink);font-weight:600;font-size:13px;padding:6px 11px;border-radius:999px;text-decoration:none}
@@ -434,6 +463,9 @@ const CSS=`
 .pp svg .c{stroke:var(--pp-c);stroke-width:.95;fill:none}.pp svg .d{stroke:var(--pp-d);stroke-width:.9;fill:none}
 .pp svg .lk{stroke:#6b7686;stroke-width:.4;fill:none}.pp svg .crv{stroke:var(--pp-ans);stroke-width:.95;fill:none;stroke-linejoin:round}
 .pp svg .hid{stroke-dasharray:2.4 1.4}
+.pp svg .hat{fill:url(#ppHat);stroke:none;fill-rule:evenodd}.pp svg .hat2{fill:url(#ppHat2);stroke:none;fill-rule:evenodd}.pp svg .net{fill:url(#ppNet);stroke:none}.pp svg .hatl{stroke:var(--pp-draw-ink);stroke-width:.22}
+.pp svg .hat.hl-bad,.pp svg .hat2.hl-bad,.pp svg .net.hl-bad{stroke:var(--pp-bad)!important;stroke-width:.5}.pp svg .hat.hl-ok,.pp svg .hat2.hl-ok{stroke:var(--pp-ok)!important;stroke-width:.5}
+.pp svg .ttl{font-size:5px;fill:var(--pp-mut)}
 .pp svg .pt{fill:var(--pp-ans);stroke:#fff;stroke-width:.5}.pp svg .pt.o{fill:var(--pp-draw-ink)}
 .pp svg text{font-family:"NchGost","NchSerif","Liberation Serif",serif;font-style:normal;fill:var(--pp-draw-ink);font-size:7px;paint-order:stroke;stroke:#fff;stroke-width:1.6px;stroke-linejoin:round}
 .pp svg text.small{font-size:5.5px;fill:var(--pp-thin)}

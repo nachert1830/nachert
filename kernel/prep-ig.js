@@ -221,9 +221,9 @@ function audit(){
     dupNew:ALL.filter((t,i)=>ALL.findIndex(u=>u.new===t.new)!==i).map(t=>t.id)};
 }
 function closure(ids){ const s=new Set(); const go=id=>{ if(s.has(id)||!BY[id]) return; s.add(id); BY[id].pre.forEach(go); }; ids.forEach(go); return s; }
-function need(key){ if(key==='wb') return new Set(ALL.map(t=>t.id)); return DZ[key]?closure(ALL.filter(t=>t.dz.includes(key)).map(t=>t.id)):new Set(ALL.map(t=>t.id)); }
+function need(key){ if(key==='igwb') return new Set(ALL.map(t=>t.id)); return DZ[key]?closure(ALL.filter(t=>t.dz.includes(key)).map(t=>t.id)):new Set(ALL.map(t=>t.id)); }
 /* курсы: тема принадлежит первому заданию, которому она нужна; курс = свои темы + «нужно из прошлых» (как в PREPROG) */
-const COURSES=Object.keys(DZ).map(key=>({key,kind:'dz',n:+key.slice(2),title:DZ[key].split(' · ')[1]})).concat([{key:'wb',kind:'wb',n:0,title:'Тетрадь: всё остальное'}]);
+const COURSES=Object.keys(DZ).map(key=>({key,kind:'dz',n:+key.slice(2),title:DZ[key].split(' · ')[1]})).concat([{key:'igwb',kind:'wb',n:0,title:'Тетрадь: всё остальное'}]);
 const OWNER={};
 for(const c of COURSES){ const nd=[...need(c.key)].sort((a,b)=>POS[a]-POS[b]); c.need=nd; c.own=nd.filter(id=>!OWNER[id]); c.own.forEach(id=>OWNER[id]=c.key); c.prev=nd.filter(id=>OWNER[id]!==c.key);
   c.label=c.kind==='wb'?'Тетрадь':'Задание №'+c.n;

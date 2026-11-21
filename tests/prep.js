@@ -298,7 +298,7 @@ async function screens(){
   const page=await browser.newPage({viewport:{width:390,height:844}}); const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto(U+'#/prep'); await page.waitForTimeout(1200);
   const hub=await page.evaluate(()=>({cards:[...document.querySelectorAll('a.pp-cc')].map(a=>a.getAttribute('href')),rows:document.querySelectorAll('.pp-st').length,ow:document.documentElement.scrollWidth>innerWidth}));
-  if(hub.cards.join()!==['ng1','ng2','ng3','ng4','ng5'].map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки ДЗ — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
+  if(hub.cards.join()!==['ng1','ng2','ng3','ng4','ng5','ig1','ig2','ig3','ig4','ig5','ig6','igwb'].map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки ДЗ — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
   /* курс показывает только свои темы (и свёрнуто — из прошлых), ссылки — внутрь курса */
   for(const c of G.COURSES.filter(c=>c.kind==='dz')){
     await page.goto(U+'#/prep/'+c.key); await page.waitForTimeout(200);

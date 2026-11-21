@@ -7807,6 +7807,12 @@ return {has,html,bind,SPEC,ans3};
 <script src="prep/more.js"></script>
 <script src="prep/rest.js"></script>
 <script src="prep/space.js"></script>
+<script src="kernel/prep-ig.js"></script>
+<script src="core/conj.js"></script>
+<script src="dz/ig/1/variants.js"></script>
+<script src="dz/ig/1/topics.js"></script>
+<script src="prep/ig-conj.js"></script>
+<script src="prep/ig-views.js"></script>
 <script src="dz/ng/lib.js"></script>
 <script src="dz/ng/1/variants.js"></script>
 <script src="dz/ng/1/method.js"></script>
@@ -30077,7 +30083,7 @@ function dzPick(v,d){
   const num=n=>has(n)?`<a href="${HDZ(d.id,n)}" data-setvar="${n}">${n}</a>`:`<span class="off" title="решение этого типа готовится">${n}</span>`;
   const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
   const grid=`<div class="dzx-nums c6">${range(1,N).map(num).join('')}</div>`;
-  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(d.course==='ng'&&window.PREP?PREP.card(d.id):'')+
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(window.PREP?PREP.card(d.id):'')+
    `<h2 class="dzx-h">Какой у тебя вариант?</h2>${grid}
    ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}" data-setvar="${n}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}</b></a>`).join('')}</div></details>`:''}`});
   /* номер выбран — выбор номера больше не нужен: заменяем его вариантом, и «Назад» из варианта ведёт туда, откуда открыл ДЗ */
@@ -30228,7 +30234,7 @@ function dzVariant(v,d,n,extra){
       <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Приложи фото листа — отвечу лично, прямо здесь.')}`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
-  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}${d.course==='ng'&&window.PREP?PREP.chip(d.id):''}<div id="dzPl"></div>`});
+  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}${window.PREP?PREP.chip(d.id):''}<div id="dzPl"></div>`});
     document.body.classList.add('inplayer');
     /* открыт пункт б) — адрес #/ng3/7/b: им и делятся */
     const onPart=k=>{ const x=k&&parts.length>1?[DZ_PL[k]]:[], h=HDZ(d.id,n,...x), lbl=parts.length>1&&parts[k]&&parts[k].l?', задача '+parts[k].l:'';
