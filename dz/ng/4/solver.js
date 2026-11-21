@@ -42,7 +42,7 @@ function bodiesOf(code,D,xs){
   if(code==='4a2'){ const {Dk,dk,Xk,Yk,Xc,Yc}=D, rk=z=>Dk/2+(dk-Dk)/2*z/100, rf=Math.sqrt(80*80-60*60), sa=Math.asin(60/80);
     const Sph={id:'S',nom:'полусфера',gen:'полусферы',ins:'полусферу',secz:'окружности',secy:'окружности',
       inside:p=>{ const [u,w]=uw(p); return p[2]>=0&&Math.abs(w)<60&&Math.hypot(u,w,p[2])<80; },
-      patches:[Q.sphere(M(0,0,0),80), ...[-60,60].map(w=>Q.plane(M(0,w,0),DU,DZ,[-80,80],[0,80]))],
+      sph:{c:M(0,0,0),R:80}, patches:[Q.sphere(M(0,0,0),80), ...[-60,60].map(w=>Q.plane(M(0,w,0),DU,DZ,[-80,80],[0,80]))],
       edges:[{only:'H',pts:ring(M(0,0,0),DU,DW,80,-sa,sa,40)},{only:'H',pts:ring(M(0,0,0),DU,DW,80,Math.PI-sa,Math.PI+sa,40)},
         ...[-60,60].map(w=>({pts:ring(M(0,w,0),DU,DZ,rf,0,Math.PI,72)})), ...[-60,60].map(w=>({only:'H',pts:line(M(-rf,w,0),M(rf,w,0))}))],
       axes:[{v:'F',p:[M(0,0,-6),M(0,0,88)]},{v:'H',p:[M(0,-68,0),M(0,68,0)]}]};
@@ -85,7 +85,7 @@ function bodiesOf(code,D,xs){
     const V=[[-Xp,Yp+rp],[-Xp-rp*s3,Yp-rp/2],[-Xp+rp*s3,Yp-rp/2]], fm=Math.acos(20/60);
     const Sph={id:'S',nom:'полусфера',gen:'полусферы',ins:'полусферу',secz:'окружности',secy:'окружности',
       inside:p=>{ const [u,w]=uw(p); return p[2]>=0&&Math.hypot(u,w,p[2])<75; },
-      patches:[Q.sphere(M(0,0,0),75)], edges:[{only:'H',pts:ring(M(0,0,0),DU,DW,75)}],
+      sph:{c:M(0,0,0),R:75}, patches:[Q.sphere(M(0,0,0),75)], edges:[{only:'H',pts:ring(M(0,0,0),DU,DW,75)}],
       axes:[{v:'F',p:[M(0,0,-6),M(0,0,83)]},{v:'H',p:[M(0,-83,0),M(0,83,0)]},{v:'H',p:[M(-83,0,0),M(83,0,0)]}]};
     const side=(a,b)=>{ const A=M(a[0],a[1],0), Bv=M(b[0],b[1],0); return Q.plane(A,unit(sub(Bv,A)),DZ,[0,dist(A,Bv)],[0,95]); };
     const inTri=(u,w)=>{ for(let i=0;i<3;i++){ const a=V[i], b=V[(i+1)%3], c=V[(i+2)%3], cr=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]); if(cr(a,b,[u,w])*cr(a,b,c)<=0) return false; } return true; };
@@ -238,6 +238,13 @@ function taskOf(code,D,n,label){
   const why1=w=>WHY[w]||(/^edge/.test(w)?'на ребре '+B[w.slice(4)].gen:/^silF/.test(w)?'на очерке '+B[w.slice(4)].gen+' на π₂':/^silH/.test(w)?'на очерке '+B[w.slice(4)].gen+' на π₁':'');
   const whyOf=c=>c.whys.map(why1).join('; ');
   const co=p=>'('+fmt(p[0])+'; '+fmt(p[1])+'; '+fmt(p[2])+')';
+  /* ловушка «почти на очерке»: проекция точки в долях миллиметра от очерка сферы, а сама точка — не на экваторе / главном
+     меридиане. На глаз её легко принять за точку очерка (высота 0 или глубина центра) — говорим явно, на сколько она в стороне */
+  const nearOut=(c,n)=>G.bodies.filter(b=>b.sph).map(b=>{ const C=b.sph.c, R=b.sph.R, d=[c.p[0]-C[0],c.p[1]-C[1],c.p[2]-C[2]], out=[];
+      const eH=Math.abs(Math.hypot(d[0],d[1])-R), eF=Math.abs(Math.hypot(d[0],d[2])-R);
+      if(eH<1.5&&Math.abs(d[2])>2) out.push(`на π₁ ${n}′ почти на очерке ${b.gen} (в ${eH<0.1?'долях миллиметра':fmt(eH)+' мм'} внутри), но точка не на экваторе — она выше его на ${fmt(d[2])} мм; высоту берём только посредником, не с очерка`);
+      if(eF<0.3&&Math.abs(d[1])>2&&d[2]>5) out.push(`на π₂ ${n}″ почти на очерке ${b.gen} (в ${eF<0.1?'долях миллиметра':fmt(eF)+' мм'} внутри), но точка не на главном меридиане — она ${d[1]>0?'ближе':'дальше'} его на ${fmt(Math.abs(d[1]))} мм; на π₁ её проекция не на горизонтальной оси сферы`);
+      return out.join('; '); }).filter(Boolean).join('; ');
   const steps=[];
   /* 1. анализ */
   const bl=G.bodies.map(b=>b.nom).join(', ');
@@ -263,11 +270,11 @@ function taskOf(code,D,n,label){
           charItems.push(...tint([ln(H([bx[3]+5,Y0,0]),H([bx[0]-5,Y0,0]),'aux','Φ′','ne',0,0)],col));
           [L.a,L.b].forEach(id=>sc.section(id,g).forEach(pp=>charItems.push(...tint([poly(pp.map(F),'aux')],col)))); }
         charItems.push(...tint([conn(F(c.p),H(c.p))],col));
-        charTxt.push(`${num} ${co(c.p)} — ${whyOf(c,L)}; посредник: фронтальная плоскость Φ ${vt} (их общая плоскость симметрии) — режет оба тела по очеркам на π₂, точка — пересечение очерков`); return; }
+        charTxt.push(`${num} ${co(c.p)} — ${whyOf(c,L)}; посредник: фронтальная плоскость Φ ${vt} (их общая плоскость симметрии) — режет оба тела по очеркам на π₂, точка — пересечение очерков${(n=>n?'. Внимание: '+n:'')(nearOut(c,num))}`); return; }
       const aux=fam.through(c.p), col=MCOL[(++ci)%MCOL.length];
       if(!fam.ok||fam.ok(aux)) charItems.push(...tint(fam.draw(aux,null,[c.p]),col));
       charItems.push(...tint([conn(F(c.p),H(c.p))],col));
-      charTxt.push(`${num} ${co(c.p)} — ${whyOf(c,L)}; посредник: ${fam.txt(aux)}`); });
+      const nr=nearOut(c,num); charTxt.push(`${num} ${co(c.p)} — ${whyOf(c,L)}; посредник: ${fam.txt(aux)}${nr?'. Внимание: '+nr:''}`); });
     /* подписи: совпавшие проекции — одной подписью «3″≡4″» (конкурирующие точки) */
     [['F','″'],['H','′']].forEach(([v,mk])=>{ const pr=v==='F'?F:H, grp=[];
       L.chars.forEach(c=>{ const q=pr(c.p), g=grp.find(x=>Math.hypot(x.q[0]-q[0],x.q[1]-q[1])<0.8*S); if(g) g.c.push(c); else grp.push({q,c:[c]}); });

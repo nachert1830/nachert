@@ -31626,7 +31626,25 @@ function sheetSVG(model,title,sub,task,mode){
     if(D.left) FL.L.forEach(h=>{ o+=ln(P(D.left,[0,h.y,h.z0-4],X0+S,Y0),P(D.left,[0,h.y,h.z1+4],X0+S,Y0),'#111',AX,.7); }); }
   const arr=(q,dx,dy)=>`<path d="M${f(q[0])},${f(q[1])} l${f(dx*9-dy*2.6)},${f(dy*9+dx*2.6)} l${f(dy*5.2)},${f(-dx*5.2)}Z" fill="#111"/>`;
   const hb=P(D.front,[r,0,z0],X0,Y0), ht=P(D.front,[r,0,z1],X0,Y0), hx=hb[0]+(hz?22*Km+16:26);   /* при горизонтальном разрезе размер — за его штрихом */
-  const noDim=!!(window.IG_WB&&IG_WB.includes(model))||!!model.noGivenDims;   /* рабочая тетрадь: размеры на листе не нужны (в задании их нет); noGivenDims — у шара высота и Ø совпадают, размеры — на листе (задание №8) */
+  /* «Задание» с размерами условия: у моделей ДЗ 3–6 размеры листа — числа из условия варианта (model.dims). В задании они стоят на
+     данных изображениях: размеры главного вида и вида сверху — как есть; вертикальные размеры вида слева (уровни выреза, высоты) —
+     переносим на главный вид: выносная — от контура детали на этой высоте, размерная — дальше от уже стоящих, по сторонам.
+     Без этого в «Задании» были только габариты (у правильных многогранников — ширина между гранями, которой в условии нет). */
+  const condDims=given&&!model.noGivenDims&&Array.isArray(model.dims)&&model.dims.length&&window.IGS&&IGS.dimsSVG, CEXT=[0,0,0,0];
+  if(condDims){ const Jt=IG3.jc(model.tree), edge=(z,sg)=>{ for(let x=r+1;x>=0;x-=0.5){ for(let y=-r-1;y<=r+1;y+=1.5) if(Jt(sg*x,y,z)<0) return sg*x; } return 0; };
+    const FD=model.dims.filter(d=>d[0]==='F'||d[0]==='T'), side={1:Math.max(r+12,...FD.filter(d=>d[0]==='F'&&d[1]==='v'&&d[4]>0).map(d=>d[4]+12)),'-1':Math.min(-r-12,...FD.filter(d=>d[0]==='F'&&d[1]==='v'&&d[4]<0).map(d=>d[4]-12))};
+    const LD=model.dims.filter(d=>d[0]==='L'&&d[1]==='v').map(d=>{ const sg=d[4]>=0?1:-1, z0d=d[2][1], z1d=d[3][1], off=side[sg]; side[sg]+=sg*12;
+      return ['F','v',[edge(z0d+0.01,sg),z0d],[edge(z1d-0.01,sg),z1d],off,d[5]]; });
+    const MM={F:q=>P(D.front,[q[0],0,q[1]],X0,Y0),T:q=>P(D.top,[q[0],q[1],z1],X0,TOPY)}, ALL=FD.concat(LD);
+    o+=IGS.dimsSVG(ALL,MM);
+    /* поле листа — чтобы вошли все размеры условия (над видом, слева от него, выноски с полками) */
+    const ext=(q,px,py)=>{ CEXT[0]=Math.min(CEXT[0],q[0]-px); CEXT[1]=Math.min(CEXT[1],q[1]-py); CEXT[2]=Math.max(CEXT[2],q[0]+px); CEXT[3]=Math.max(CEXT[3],q[1]+py); };
+    ALL.forEach(d=>{ const m=MM[d[0]]; if(!m) return; const t=d[1];
+      if(t==='h'){ ext(m(d[2]),4,4); ext(m(d[3]),4,4); ext(m([d[2][0],d[4]]),20,26); ext(m([d[3][0],d[4]]),20,26); }
+      else if(t==='v'){ ext(m(d[2]),4,4); ext(m(d[3]),4,4); ext(m([d[4],d[2][1]]),26,20); ext(m([d[4],d[3][1]]),26,20); }
+      else if(t==='lead'){ ext(m(d[2]),4,4); ext(m(d[3]),90,30); }
+      else if(t==='dia'||t==='rad'){ const R=(t==='dia'?d[3]/2:d[3])+(d[5]||0)+4, c=d[2]; [[R,0],[-R,0],[0,R],[0,-R]].forEach(u=>ext(m([c[0]+u[0],c[1]+u[1]]),90,30)); } }); }
+  const noDim=!!condDims||!!(window.IG_WB&&IG_WB.includes(model))||!!model.noGivenDims;   /* рабочая тетрадь: размеры на листе не нужны (в задании их нет); noGivenDims — у шара высота и Ø совпадают, размеры — на листе (задание №8) */
   if(!noDim) o+=ln([hb[0]+3,hb[1]],[hx+4,hb[1]],'#111',null,.7)+ln([ht[0]+3,ht[1]],[hx+4,ht[1]],'#111',null,.7)+ln([hx,hb[1]],[hx,ht[1]],'#111',null,.7)+arr([hx,hb[1]],0,-1)+arr([hx,ht[1]],0,1)
     +`<text x="${f(hx-5)}" y="${f((hb[1]+ht[1])/2)}" transform="rotate(-90 ${f(hx-5)} ${f((hb[1]+ht[1])/2)})" class="igs-dim" text-anchor="middle">${Math.round(z1-z0)}</text>`;
   const sx=Math.abs(b[0][0]+b[1][0])<0.5, wl=P(D.front,[sx?-r:b[0][0],0,zw],X0,Y0), wr=P(D.front,[sx?r:b[1][0],0,zw],X0,Y0), wy=P(D.front,[0,0,z0],X0,Y0)[1]+24;   /* несимметричная деталь — по её краям */
@@ -31648,6 +31666,7 @@ function sheetSVG(model,title,sub,task,mode){
     /* основная надпись по форме 1 (ГОСТ 2.104) — в правом нижнем углу, под изображениями */
     const nv=parseInt(String(title).replace(/\D/g,''),10)||'', sh=55*Km; PH+=sh+10;
     o+=window.IGL&&IGL.stampK?IGL.stampK(PW-X0,PH-10,Km,nv):''; }
+  if(condDims){ const vx=Math.min(0,CEXT[0]-8), vy=Math.min(0,CEXT[1]-8); PW=Math.max(PW,CEXT[2]+8)-vx; PH=Math.max(PH,CEXT[3]+8)-vy; o=`<g transform="translate(${f(-vx)} ${f(-vy)})">${o}</g>`; }
   return `<svg class="igs-sheet${given?' given':''}" viewBox="0 0 ${f(PW)} ${f(PH)}" role="img" aria-label="${given?'Данные изображения: главный вид и вид сверху':'Чертёж: главный вид, вид слева, вид сверху'+(model.sec?', сечение':'')}"><rect x="3" y="3" width="${f(PW-6)}" height="${f(PH-6)}" fill="#fff" stroke="#111" stroke-width="${given?1:2}"/>${o}</svg>`;
 }
 /* ── страницы ── */
