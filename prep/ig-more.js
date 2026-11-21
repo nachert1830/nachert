@@ -32,7 +32,10 @@ const pickDZ=(want,ds)=>{ const key=want.toString()+ds.join(); if(!WANT[key]){ c
     WANT[key]=all.sort(()=>Math.random()-.5).slice(0,6); }
   const L=WANT[key]; if(!L.length) return null; const [d,n]=L[Math.floor(Math.random()*L.length)]; return DZM(d,[n]); };
 /* прореживание кривых: из каждой ломаной — каждая k-я точка (строят «по двум-трём точкам») */
-const coarse=(d,k)=>d.split('M').filter(Boolean).map(sp=>{ const P=sp.split('L'); if(P.length<9) return 'M'+sp; return 'M'+P.filter((q,i)=>i%k===0||i===P.length-1).join('L'); }).join('');
+/* огрубляем только незамкнутые кривые (линии выреза); замкнутые контуры тела — окружности, многоугольники — не трогаем */
+const coarse=(d,k)=>d.split('M').filter(Boolean).map(sp=>{ const P=sp.replace(/Z\s*$/,'').split('L'); if(P.length<9) return 'M'+sp;
+  const xy=q=>q.trim().split(/[ ,]+/).map(Number), a=xy(P[0]), b=xy(P[P.length-1]); if(/Z\s*$/.test(sp)||Math.hypot(a[0]-b[0],a[1]-b[1])<0.5) return 'M'+sp;
+  return 'M'+P.filter((q,i)=>i%k===0||i===P.length-1).join('L'); }).join('');
 const P3=()=>G3().P;
 
 /* ═════ Виды ═════ */
@@ -282,7 +285,7 @@ const cutScene=(V,o)=>{ o=o||{}; const L=viewEls(o.Lm||V.m,'left0',W,0,'L',{hat:
 const cutSteps=[{cap:'Дано: главный вид с вырезом K',roles:['F','Fh']},{cap:'Вид сверху: точки выреза — по принадлежности поверхности',roles:['F','Fh','T','Th']},{cap:'Вид слева: высоты с главного, глубина с вида сверху',roles:['F','Fh','T','Th','L','Lh','Lx']}];
 const DZcut=want=>()=>pickDZ(want,['ig4','ig5']);
 reg('k2',{make:DZcut(K=>K.has('cone')||K.has('cyl')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:30,coarseT:30}:{}); },
+  scene(V,k){ return cutScene(V,k==='C'?{coarse:12,coarseT:12}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh','T','Th']); },
   traps:{C:{b0:0,say:'Кривую выреза построили по двум-трём точкам — нужны все характерные и промежуточные',src:'методика ДЗ 4',hl:['L','Lh','T','Th']}},watch:{steps:cutSteps}});
 reg('k3',{make:DZcut(K=>K.has('npyr')||K.has('ngon')),
@@ -294,7 +297,7 @@ reg('k4',{make:DZcut(K=>K.has('cyl')),
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
   traps:{N:{b0:-0.1,say:'Линии выреза на цилиндре не перенесены на вид слева: точки берут с окружности на виде сверху',src:'методика ДЗ 4',hl:['L','Lh']}},watch:{steps:cutSteps}});
 reg('k5',{make:DZcut(K=>K.has('cone')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:30,coarseT:30}:{}); },
+  scene(V,k){ return cutScene(V,k==='C'?{coarse:12,coarseT:12}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh','T','Th']); },
   traps:{C:{b0:0,say:'Промежуточные точки на конусе не построены — кривая неточна: точки через параллели',src:'методика ДЗ 4',hl:['L','Lh','T','Th']}},watch:{steps:cutSteps}});
 reg('k7',{make:DZcut(()=>true),
