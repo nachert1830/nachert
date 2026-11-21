@@ -125,8 +125,8 @@
   var $=function(id){return document.getElementById('nd-'+id);};
   var sc=$('sc'),stage=$('stage'),nowB=$('now'),sheet=$('sheet');
 
-  var L=[],els=[],snaps=[],cur=-1,act=0,G={},built=false;
-  var STEP=96;                /* сколько пикселей прокрутки на одну карточку (один «щелчок» колёсика) */
+  var L=[],els=[],act=0,G={},built=false,FX=-1;
+  var PX=104;                 /* сколько пикселей ведёт палец на одну карточку (один «щелчок») */
   var PA=44,NA=3;             /* полоска прошедшей карточки сверху и сколько их видно */
   var PB=42,NB=3,GAP=16;      /* полоска следующей карточки снизу, сколько видно, зазор под раскрытой */
   var TOP0=10,BOT=92;         /* отступ сверху и место под нижнее меню */
@@ -146,19 +146,20 @@
     '<div class="ttl">'+x.t+'</div><div class="var">'+(S.v?'Вариант '+S.v:'Вариант не выбран')+'</div>'+
     '<div class="word">Задание</div><div class="num" aria-hidden="true">'+x.n+'</div><div class="sh"></div>';}
 
+  /* последнее записанное в стиль каждой карточки — пишем только то, что изменилось */
+  var C=[];
   function build(keep){
-    var id=keep&&L[Math.round(sc.scrollTop/STEP)];
+    var id=keep&&L[Math.round(M.p)];
     L=list();act=actual();
-    stage.innerHTML='';snaps.forEach(function(s){s.remove();});els=[];snaps=[];
+    stage.innerHTML='';els=[];C=[];
     L.forEach(function(x,i){
       var b=document.createElement('button');b.type='button';b.className='k'+(x.col==='amber'?' dk':'');b.style.setProperty('--c',PAL[x.col]);
       b.setAttribute('aria-label','Задание '+x.n+', '+CN[x.c]+': '+x.t);b.dataset.i=i;b.innerHTML=cardHTML(x,i);
-      stage.appendChild(b);els.push(b);
-      var s=document.createElement('div');s.className='snap';s.style.top=(i*STEP)+'px';sc.appendChild(s);snaps.push(s);});
-    var sp=$('spacer')||document.createElement('div');sp.id='nd-spacer';sp.style.height=((L.length-1)*STEP)+'px';sc.appendChild(sp);
-    geo();cur=-1;
+      b.style.zIndex=10+i;   /* ниже лежащая карточка всегда ближе — порядок постоянный, z не трогаем в кадре */
+      stage.appendChild(b);els.push(b);C.push({t:'',o:-1,v:'',sh:-1,sht:null});});
+    geo();
     var to=act;if(id){var j=L.indexOf(id);if(j>=0)to=j;}
-    jump(to,false);built=true;}
+    M.p=M.to=to;M.v=0;M.cur=to;render();built=true;}
 
   /* на низком экране стопки короче: меньше полосок сверху и снизу — раскрытая карточка не уходит под меню */
   function geo(){var H=stage.clientHeight,ch=0;G.H=H;
@@ -167,55 +168,88 @@
     for(var i=0;i<els.length;i++){els[i].style.height=G.ch+'px';els[i].style.setProperty('--ch',G.ch+'px');}}
 
   /* раскладка колоды: d — расстояние карточки от раскрытой (0 — раскрыта, <0 — прошла и лежит полоской сверху,
-     >0 — впереди, полоской снизу). Чем ниже карточка, тем она «ближе» (z), как в Wallet */
+     >0 — впереди, полоской снизу) */
   function pos(d,p){var T=TOP0+Math.min(Math.max(p,0),NA)*PA,ch=G.ch,y,s=1,sh=0,o=1;
     if(d<=0){var e=Math.max(d,-(NA+.7));y=T+e*PA;s=1+e*.012;sh=Math.min(-d*.07,.22);o=d<-NA-.1?Math.max(0,1-(-d-NA-.1)/.6):1;}
     else if(d<=1){y=T+d*(ch+GAP);}
     else{var e2=Math.min(d-1,NB+.5);y=T+ch+GAP+e2*PB;o=d>NB+1.2?Math.max(0,1-(d-NB-1.2)/.6):1;}
-    return {y:y,s:s,sh:sh,o:o,z:2000+Math.round(d*10)};}
-  function put(k,q){k.style.transform='translate3d(0,'+q.y.toFixed(1)+'px,0) scale('+q.s.toFixed(4)+')';
-    k.style.opacity=q.o;k.style.zIndex=q.z;k.style.visibility=q.o<=0?'hidden':'visible';k.lastChild.style.opacity=q.sh.toFixed(3);}
-  function layout(){if(FX>=0) return;
-    var p=sc.scrollTop/STEP;
-    for(var i=0;i<els.length;i++){put(els[i],pos(i-p,p));els[i].tabIndex=Math.round(p)===i?0:-1;}
-    var r=Math.max(0,Math.min(L.length-1,Math.round(p)));if(r!==cur){if(cur!==-1) tick();cur=r;}
-    /* упор в край колоды (резинка iOS) — один толчок сильнее, как у колёсика часов в конце списка */
-    var max=sc.scrollHeight-sc.clientHeight,over=sc.scrollTop<-6||sc.scrollTop>max+6;if(over&&!bumped){bumped=true;buzz(14);}else if(!over) bumped=false;
-    var away=Math.abs(p-act)>.5;nowB.classList.toggle('on',away);nowB.disabled=!away;}
-  var bumped=false,FX=-1;
+    return {y:y,s:s,sh:sh,o:o};}
+  function put(i,q){var k=els[i],c=C[i],t='translate3d(0,'+q.y.toFixed(1)+'px,0) scale('+q.s.toFixed(3)+')',o=+q.o.toFixed(2),sh=+q.sh.toFixed(2),v=o<=0?'hidden':'visible';
+    if(c.t!==t){k.style.transform=t;c.t=t;}
+    if(c.o!==o){k.style.opacity=o;c.o=o;}
+    if(c.v!==v){k.style.visibility=v;c.v=v;}
+    if(c.sh!==sh){(c.sht||(c.sht=k.lastChild)).style.opacity=sh;c.sh=sh;}}
+  function render(){if(FX>=0) return;var p=M.p;
+    for(var i=0;i<els.length;i++) put(i,pos(i-p,p));
+    var away=Math.abs(p-act)>.5;if(away!==render.away){render.away=away;nowB.classList.toggle('on',away);nowB.disabled=!away;}}
 
-  /* плавная смена раскладки (появление, раскрытие, закрытие): пружинистый переход, потом снова покадрово */
+  /* ── отклик, как у колёсика Apple Watch ──
+     «тик» на каждую карточку, толчок сильнее — в упор в конец колоды и при раскрытии.
+     Android (Chrome): navigator.vibrate. iPhone (Safari, iOS 18+): у сайтов нет вибрации — даём системный щелчок,
+     переключая скрытый <input switch>; Safari отдаёт его только во время касания, поэтому тик зовётся прямо из
+     обработчика пальца, а не из кадра анимации. */
+  var hp=$('hp'),lastT=0,IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  function buzz(ms){try{if(navigator.vibrate) navigator.vibrate(ms);}catch(e){} if(IOS) try{hp.click();}catch(e){}}
+  function tick(){var t=performance.now();if(t-lastT<30) return;lastT=t;buzz(10);}
+  /* пересёк ли центр очередной карточки — тогда щелчок */
+  function detent(){var r=Math.max(0,Math.min(L.length-1,Math.round(M.p)));if(r!==M.cur){M.cur=r;tick();}
+    var over=M.p<-.18||M.p>L.length-1+.18;if(over&&!M.bump){M.bump=true;buzz(22);}else if(!over) M.bump=false;}
+
+  /* ── движок: палец ведёт колоду 1:1, отпустил — инерция и пружина к ближайшей карточке ── */
+  var M={p:0,to:0,v:0,cur:0,bump:false,raf:0,drag:null,last:0};root.__m=M;   /* для проверок */
+  function clampRubber(p){var max=L.length-1;if(p<0) return -(1-1/(-p*0.9+1))/0.9*0.6;if(p>max) return max+(1-1/((p-max)*0.9+1))/0.9*0.6;return p;}
+  function loop(t){M.raf=0;var dt=Math.min(32,t-(M.last||t))/1000;M.last=t;
+    /* пружина с лёгким перелётом: жёсткость 260, демпфирование 24 */
+    var k=260,c=24,steps=Math.max(1,Math.round(dt/0.004)),h=dt/steps;
+    for(var s=0;s<steps;s++){var a=-k*(M.p-M.to)-c*M.v;M.v+=a*h;M.p+=M.v*h;}
+    detent();render();
+    if(Math.abs(M.p-M.to)>.0005||Math.abs(M.v)>.002) M.raf=requestAnimationFrame(loop);else{M.p=M.to;M.v=0;render();}}
+  function kick(){if(!M.raf){M.last=0;M.raf=requestAnimationFrame(loop);}}
+  function go(i){M.to=Math.max(0,Math.min(L.length-1,i));if(REDUCE){M.p=M.to;M.v=0;detent();render();return;}kick();}
+
+  stage.addEventListener('pointerdown',function(e){if(FX>=0||e.button) return;
+    if(M.raf){cancelAnimationFrame(M.raf);M.raf=0;}
+    M.drag={id:e.pointerId,y0:e.clientY,p0:M.p,raw:M.p,moved:false,hist:[[performance.now(),e.clientY]]};});
+  stage.addEventListener('pointermove',function(e){var d=M.drag;if(!d||e.pointerId!==d.id) return;var dy=e.clientY-d.y0;
+    if(!d.moved){if(Math.abs(dy)<5) return;d.moved=true;try{stage.setPointerCapture(e.pointerId);}catch(x){}}
+    d.raw=d.p0-dy/PX;M.p=clampRubber(d.raw);M.v=0;
+    var now=performance.now();d.hist.push([now,e.clientY]);while(d.hist.length>2&&now-d.hist[0][0]>90) d.hist.shift();
+    detent();          /* синхронно в событии касания — так iPhone отдаёт щелчок */
+    if(!M.rr) M.rr=requestAnimationFrame(function(){M.rr=0;render();});});
+  function release(e){var d=M.drag;if(!d||(e&&e.pointerId!==d.id)) return;M.drag=null;if(!d.moved) return;
+    var h=d.hist,a=h[0],b=h[h.length-1],vy=b[0]-a[0]>0?(b[1]-a[1])/(b[0]-a[0]):0;   /* пикс/мс */
+    var vp=-vy*1000/PX;                                                              /* карточек/с */
+    /* проекция броска, как в iOS: куда доехала бы колода с этой скоростью */
+    var target=Math.round(M.p+vp*0.22);
+    target=Math.max(0,Math.min(L.length-1,target));
+    M.v=Math.max(-40,Math.min(40,vp));M.to=target;stage.dataset.moved='1';setTimeout(function(){stage.dataset.moved='';},40);
+    if(REDUCE){M.p=M.to;M.v=0;detent();render();}else kick();}
+  stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
+  /* потеря захвата — только самой сцены (захват с карточки на сцену при начале протаскивания — не отпускание) */
+  stage.addEventListener('lostpointercapture',function(e){if(e.target===stage) release(e);});
+
+  /* колесо мыши и тачпад: копим прокрутку, каждые ~60 пикселей — следующая карточка */
+  var wacc=0,wt=0;
+  sc.addEventListener('wheel',function(e){if(FX>=0) return;e.preventDefault();var now=performance.now();if(now-wt>220) wacc=0;wt=now;
+    wacc+=e.deltaMode===1?e.deltaY*30:e.deltaY;var th=60;
+    while(Math.abs(wacc)>=th){var s=wacc>0?1:-1;wacc-=s*th;var n=Math.max(0,Math.min(L.length-1,Math.round(M.to)+s));if(n===M.to){if(!M.bump){M.bump=true;buzz(22);}}else M.bump=false;go(n);}},{passive:false});
+
+  stage.addEventListener('click',function(e){if(stage.dataset.moved) return;var k=e.target.closest('.k');if(!k) return;var i=+k.dataset.i;
+    if(FX>=0){unfocus();return;}
+    if(i===Math.round(M.p)) openTask(i); else {tick();go(i);}});
+  sc.addEventListener('keydown',function(e){var r=Math.round(M.to);
+    if(e.key==='ArrowDown'){e.preventDefault();go(r+1);} else if(e.key==='ArrowUp'){e.preventDefault();go(r-1);}
+    else if(e.key==='Enter'&&e.target===sc){openTask(r);}});
+  nowB.addEventListener('click',function(){tick();go(act);});
+
+  /* плавная смена раскладки (появление, раскрытие, закрытие): пружинистый переход CSS, потом снова покадрово */
   var EASE='cubic-bezier(.2,.9,.22,1.08)';
-  function animate(ms,stagger){if(REDUCE) return;els.forEach(function(k,i){k.style.transition='transform '+ms+'ms '+EASE+' '+(stagger?i*stagger:0)+'ms, opacity '+Math.round(ms*.6)+'ms ease '+(stagger?i*stagger:0)+'ms';});
+  function animate(ms,stagger){if(REDUCE) return;els.forEach(function(k,i){var dl=(stagger?i*stagger:0)+'ms';k.style.transition='transform '+ms+'ms '+EASE+' '+dl+', opacity '+Math.round(ms*.6)+'ms ease '+dl;});
     clearTimeout(animate.t);animate.t=setTimeout(function(){els.forEach(function(k){k.style.transition='';});},ms+(stagger?els.length*stagger:0)+40);}
   /* появление: карточки въезжают снизу одна за другой */
-  function intro(){if(REDUCE){layout();return;}var H=G.H||600;
-    els.forEach(function(k,i){k.style.transition='';put(k,{y:H+40+i*30,s:.96,sh:0,o:1,z:2000+i});});
-    void stage.offsetWidth;animate(620,35);cur=-1;layout();}
-
-  /* отклик, как у колёсика Apple Watch: короткий «тик» на каждую карточку, толчок сильнее — в конце колоды и при раскрытии.
-     Android (Chrome) — navigator.vibrate; iPhone (iOS 18+, Safari) — системный щелчок скрытого переключателя <input switch> */
-  var hp=$('hp'),lastT=0;
-  function buzz(ms){try{if(navigator.vibrate) navigator.vibrate(ms);}catch(e){} try{hp.click();}catch(e){}}
-  function tick(){var t=performance.now();if(t-lastT<24) return;lastT=t;buzz(5);}
-
-  var raf=0;sc.addEventListener('scroll',function(){if(!raf) raf=requestAnimationFrame(function(){raf=0;layout();});},{passive:true});
-  function jump(i,smooth){i=Math.max(0,Math.min(L.length-1,i));sc.scrollTo({top:i*STEP,behavior:smooth?'smooth':'instant'});if(!smooth) layout();}
-
-  /* мышью — тянуть колоду, как пальцем; короткое нажатие — выбор */
-  var dr=null,moved=false;
-  stage.addEventListener('pointerdown',function(e){moved=false;if(e.pointerType!=='mouse'||e.button) return;dr={y:e.clientY,s:sc.scrollTop,v:0,t:performance.now(),ly:e.clientY};});
-  window.addEventListener('pointermove',function(e){if(!dr) return;var dy=e.clientY-dr.y;if(!moved&&Math.abs(dy)>4){moved=true;sc.classList.add('drag');}
-    if(moved){var now=performance.now();dr.v=(e.clientY-dr.ly)/Math.max(1,now-dr.t);dr.t=now;dr.ly=e.clientY;sc.scrollTop=dr.s-dy*1.15;}});
-  window.addEventListener('pointerup',function(){if(!dr) return;var was=moved,v=dr.v;dr=null;if(!was) return;
-    var p=sc.scrollTop/STEP-v*1.5;sc.classList.remove('drag');sc.scrollTop=sc.scrollTop;jump(Math.round(p),true);});
-  stage.addEventListener('click',function(e){if(moved){moved=false;return;}var k=e.target.closest('.k');if(!k) return;var i=+k.dataset.i;
-    if(FX>=0){unfocus();return;}
-    if(i===Math.round(sc.scrollTop/STEP)) openTask(i); else jump(i,true);});
-  sc.addEventListener('keydown',function(e){var r=Math.round(sc.scrollTop/STEP);
-    if(e.key==='ArrowDown'){e.preventDefault();jump(r+1,true);} else if(e.key==='ArrowUp'){e.preventDefault();jump(r-1,true);}
-    else if(e.key==='Enter'&&e.target===sc){openTask(r);}});
-  nowB.addEventListener('click',function(){jump(act,true);});
+  function intro(){if(REDUCE){render();return;}var H=G.H||600;
+    els.forEach(function(k,i){k.style.transition='';put(i,{y:H+40+i*30,s:.96,sh:0,o:1});});
+    void stage.offsetWidth;animate(620,35);render();}
 
   /* ── листы ── */
   var back=null;
@@ -224,14 +258,14 @@
   function closeSheet(){if(!root.classList.contains('nd-open')) return;root.classList.remove('nd-open');if(back&&back.focus) try{back.focus({preventScroll:true});}catch(e){}}
   $('veil').addEventListener('click',closeSheet);
   /* раскрытие, как в Wallet: карточка поднимается наверх, остальные уезжают вниз, под ней выезжает «что внутри» */
-  function focus(i,html,label){FX=i;buzz(9);sc.classList.add('lock');var H=G.H;animate(560,0);
-    els.forEach(function(k,j){if(j===i) put(k,{y:TOP0,s:1,sh:0,o:1,z:3000});
-      else put(k,{y:H+30+Math.abs(j-i)*14,s:.94,sh:0,o:j>i?1:0,z:2000+j});});
+  function focus(i,html,label){buzz(18);if(M.raf){cancelAnimationFrame(M.raf);M.raf=0;}M.p=M.to=i;M.v=0;var H=G.H;animate(560,0);
+    els.forEach(function(k,j){if(j===i){put(j,{y:TOP0,s:1,sh:0,o:1});k.style.zIndex=999;}
+      else put(j,{y:H+30+Math.abs(j-i)*14,s:.94,sh:0,o:j>i?1:0});});FX=i;sc.classList.add('lock');
     det.innerHTML=html;det.setAttribute('aria-label',label);det.style.top=(sc.offsetTop+TOP0+G.ch+14)+'px';det.scrollTop=0;
     back=document.activeElement;root.classList.add('nd-fx');setTimeout(function(){var g=det.querySelector('.go');if(g) try{g.focus({preventScroll:true});}catch(e){}},400);}
-  function unfocus(){if(FX<0) return;FX=-1;root.classList.remove('nd-fx');sc.classList.remove('lock');animate(520,0);layout();
+  function unfocus(){if(FX<0) return;els[FX].style.zIndex=10+FX;FX=-1;tick();root.classList.remove('nd-fx');sc.classList.remove('lock');animate(520,0);render();
     if(back&&back.focus) try{back.focus({preventScroll:true});}catch(e){}}
-  var det=$('det');det.addEventListener('click',function(e){if(e.target.closest('a')) {FX=-1;root.classList.remove('nd-fx');sc.classList.remove('lock');}});
+  var det=$('det');det.addEventListener('click',function(e){if(e.target.closest('a')) {tick();if(FX>=0) els[FX].style.zIndex=10+FX;FX=-1;root.classList.remove('nd-fx');sc.classList.remove('lock');}});
   sheet.addEventListener('click',function(e){if(e.target.closest('.grab')||e.target.closest('a')) closeSheet();
     var b=e.target.closest('[data-v]');if(b){S.v=+b.dataset.v;setV(S.v);tick();closeSheet();paint();build(true);}});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOn()){if(root.classList.contains('nd-open')) closeSheet(); else unfocus();}});
@@ -257,7 +291,7 @@
 
   $('flt').addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.dataset.c===S.c) return;S.c=b.dataset.c;
     try{localStorage.setItem('nch2_dzdeck_c',S.c);}catch(e2){}
-    this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});tick();build(false);});
+    this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});tick();build(false);intro();});
 
   /* тема — как у сайта (html[data-theme]) */
   function paint(){root.classList.toggle('nd-dark',document.documentElement.getAttribute('data-theme')==='dark');
@@ -268,11 +302,10 @@
   /* показ: только на самом #/dz */
   function isOn(){return /^#\/dz\/?$/.test(location.hash);}
   function sync(){var on=isOn();document.documentElement.classList.toggle('nd-on',on);
-    if(!on){closeSheet();if(FX>=0){FX=-1;root.classList.remove('nd-fx');sc.classList.remove('lock');}return;}
+    if(!on){closeSheet();if(FX>=0){els[FX].style.zIndex=10+FX;FX=-1;root.classList.remove('nd-fx');sc.classList.remove('lock');}return;}
     var v=getV(),t=today();if(v!==S.v||t!==S.today||!built){S.v=v;S.today=t;paint();build(built);} else geo();
     intro();}
   window.addEventListener('hashchange',sync);
-  window.addEventListener('resize',function(){if(isOn()){geo();if(FX>=0) det.style.top=(sc.offsetTop+TOP0+G.ch+14)+'px'; else layout();}});
-  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){if(isOn()) layout();});
+  window.addEventListener('resize',function(){if(isOn()){geo();if(FX>=0) det.style.top=(sc.offsetTop+TOP0+G.ch+14)+'px'; else render();}});
   paint();sync();
 })();
