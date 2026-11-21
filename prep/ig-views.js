@@ -41,7 +41,11 @@ function viewEls(model,view,ox,oy,role,o){
   return E;
 }
 /* рамка сцены по линиям: обрезаем пустые поля окон видов */
-function frame(E){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; E.forEach(e=>{ if(e.t!=='path') return; e.d.replace(num,(m,x,y)=>{ x=+x; y=+y; x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); return m; }); });
+function frame(E){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const P=(x,y)=>{ if(!isFinite(x)||!isFinite(y)) return; x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); };
+  E.forEach(e=>{ if(e.t==='path') e.d.replace(num,(m,x,y)=>{ P(+x,+y); return m; });
+    else if(e.t==='line'){ P(e.a[0],e.a[1]); P(e.a[2],e.a[3]); } else if(e.t==='circ'){ P(e.a[0]-e.a[2],e.a[1]-e.a[2]); P(e.a[0]+e.a[2],e.a[1]+e.a[2]); }
+    else if(e.t==='poly') e.p.forEach(q=>P(q[0],q[1])); else if(e.t==='pt') P(e.a[0],e.a[1]);
+    else if(e.t==='txt'){ const h=e.size||5, w=String(e.s||'').length*h*.6; P(e.a[0]-w/2,e.a[1]-h); P(e.a[0]+w/2,e.a[1]+h*.3); } });
   return [x0-6,y0-6,x1-x0+12,y1-y0+12]; }
 const scene=E=>({box:frame(E),E,hatch:true});
 const T3=(cap)=>[{cap:'Главный вид — изображение на фронтальной плоскости',roles:['F','Fh','Fhat']},{cap:'Вид сверху — под главным, ширины те же',roles:['F','Fh','Fhat','T','Th']},{cap:cap||'Вид слева — справа от главного, высоты те же, глубина — с вида сверху',roles:['F','Fh','Fhat','T','Th','L','Lh','Lhat']}];
@@ -91,7 +95,7 @@ reg('r2',{part:partSym,
 reg('r4',{part:partSym,
   scene(V,k){ return scene(viewEls(V.m,'front',0,0,'F',{mirror:k==='M'}).concat(viewEls(V.m,'top',0,W,'T'))); },
   traps:{M:{b0:-0.2,say:'Разрез поставили слева от оси — его ставят справа',src:'ГОСТ 2.305; тетрадь, рис. 43',hl:['F','Fhat']}},
-  watch:{steps:[{cap:'Деталь симметрична — вид и разрез можно совместить на одном изображении',roles:['T','Th']},{cap:'Граница — ось симметрии; справа — разрез',roles:['T','Th','F','Fhat']},{cap:'Слева — вид, без штриховых: внутреннее показано разрезом',roles:['T','Th','F','Fh','Fhat']}]}});
+  watch:{steps:[{cap:'Деталь симметрична — вид и разрез можно совместить на одном изображении',roles:['T','Th']},{cap:'Граница — ось симметрии; справа — разрез, материал штрихуется',roles:['T','Th','Fhat']},{cap:'Слева — вид, без штриховых: внутреннее показано разрезом',roles:['T','Th','F','Fhat']}]}});
 /* c1 — сечение: только то, что в плоскости */
 reg('c1',{part:partBack,
   scene(V,k){ const E=viewEls(V.m,'front0',0,0,'F',{hat:false}).concat(viewEls(V.m,'top',0,W,'T'));

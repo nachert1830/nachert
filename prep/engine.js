@@ -77,7 +77,7 @@ function shape(e,g,cls){
   else if(e.t==='poly') n=el(e.z?'polygon':'polyline',{points:e.p.map(q=>fmt(q[0])+','+fmt(q[1])).join(' ')},g);
   else if(e.t==='pt') n=el('circle',{cx:fmt(e.a[0]),cy:fmt(e.a[1]),r:e.r||1.5},g);
   else if(e.t==='path') n=el('path',{d:e.d},g);
-  else if(e.t==='txt'){ n=el('text',{x:fmt(e.a[0]),y:fmt(e.a[1]),'text-anchor':e.anchor||'start','font-size':e.size||null,transform:e.rot?`rotate(${e.rot} ${fmt(e.a[0])} ${fmt(e.a[1])})`:null},g); n.textContent=e.s; }
+  else if(e.t==='txt'){ n=el('text',{x:fmt(e.a[0]),y:fmt(e.a[1]),'text-anchor':e.anchor||'start',style:e.size?`font-size:${e.size}px`:null,transform:e.rot?`rotate(${e.rot} ${fmt(e.a[0])} ${fmt(e.a[1])})`:null},g); n.textContent=e.s; }
   if(!n) return null;
   n.setAttribute('class',(cls||'')+' '+(e.t==='pt'?'pt '+(e.c||'ans'):(e.c||'o'))+(e.dash?' hid':''));
   return n;
@@ -117,7 +117,7 @@ function draw(svg,S,show,anim){
 function mark(svgBad,svgOk,Sok,roles){
   roles.forEach(r=>{ svgBad.querySelectorAll(`[data-role="${r}"]`).forEach(n=>n.classList.add('hl-bad')); svgOk.querySelectorAll(`[data-role="${r}"]`).forEach(n=>n.classList.add('hl-ok')); });
   const g=el('g',{},svgBad);
-  Sok.E.filter(e=>roles.includes(e.role)&&e.t!=='txt').forEach(e=>{ const n=shape(Object.assign({},e,{c:'ghost',dash:false}),g); if(n){ n.setAttribute('class','ghost'); if(e.t==='pt') n.setAttribute('r',2.6); } });
+  Sok.E.filter(e=>roles.includes(e.role)).forEach(e=>{ const n=shape(Object.assign({},e,{c:'ghost',dash:false}),g); if(n){ n.setAttribute('class','ghost'); if(e.t==='pt') n.setAttribute('r',2.6); } });
 }
 
 /* ───────── пара для дуэли ───────── */
@@ -477,7 +477,7 @@ const CSS=`
 .pp svg .fade{animation:ppFade .35s ease-out both}
 .pp svg .hl-bad{stroke:var(--pp-bad)!important;animation:ppBlink .55s ease-in-out 5 alternate}.pp svg .pt.hl-bad{fill:var(--pp-bad)!important;stroke:#fff!important}
 .pp svg .hl-ok{stroke:var(--pp-ok)!important;animation:ppBlink .55s ease-in-out 5 alternate}.pp svg .pt.hl-ok{fill:var(--pp-ok)!important;stroke:#fff!important}
-.pp svg text.hl-bad{fill:var(--pp-bad);stroke:#fff!important}.pp svg text.hl-ok{fill:var(--pp-ok);stroke:#fff!important}
+.pp svg text.hl-bad{fill:var(--pp-bad);stroke:#fff!important}.pp svg text.ghost{fill:var(--pp-ok);stroke:#fff;opacity:.9}.pp svg .ghost.arw{fill:var(--pp-ok)}.pp svg text.hl-ok{fill:var(--pp-ok);stroke:#fff!important}
 .pp svg .ghost{stroke:var(--pp-ok);stroke-dasharray:2 1.4;stroke-width:.9;fill:none;animation:ppBlink .55s ease-in-out 5 alternate}
 @keyframes ppDraw{to{stroke-dashoffset:0}}@keyframes ppPop{from{transform:scale(0)}to{transform:scale(1)}}@keyframes ppFade{from{opacity:0}to{opacity:1}}@keyframes ppBlink{from{opacity:1}to{opacity:.15}}
 @media (prefers-reduced-motion:reduce){.pp *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}

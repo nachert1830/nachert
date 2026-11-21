@@ -84,7 +84,7 @@ T.g10={make:rnd=>({R:r1(10+rnd()*10),a:0.6+rnd()*1.6}),
   build(p,{wrong}={}){ const L1=K.lineDir([-50,0],[1,0]), L2=K.lineDir([0,0],[Math.cos(p.a),Math.sin(p.a)]);
     const f=K.filletLL(L1,L2,p.R,1,-1,[10,p.R]), F=[{cap:'Две прямые и радиус R'+p.R,els:[E.line(L1,'given'),E.line(L2,'given')]}];
     f.steps.forEach(s=>F.push({cap:s.cap,els:s.els}));
-    const T2=wrong?K.add(f.T[1],K.mul(L2.d,p.R*0.5)):f.T[1];
+    const T2=wrong?K.add(f.T[1],K.mul(L2.d,p.R*1.1)):f.T[1];
     F.push({cap:'Дуга от точки касания до точки касания',els:[E.arc(f.O,p.R,f.T[0],T2,true,'result')]}); return {F,O:f.O,L1,L2,T2}; },
   judge:(p,r)=>tangentToLine(r.L1,r.O,p.R)&&tangentToLine(r.L2,r.O,p.R)&&ok(K.dist(r.T2,r.O),p.R),
   traps:{T:{say:'Дугу довели «до глаза», без перпендикуляра — не та точка касания',build:p=>T.g10.build(p,{wrong:1}),hl:['result']}}};
@@ -115,7 +115,7 @@ T.g13={make:rnd=>({n:1}),
   build(p,{wrong}={}){ const IG1=NODE?require('./variants.js'):self.IG1, V=JSON.parse(JSON.stringify(IG1.V[p.n]));
     const R=K.run(V), F=R.ops.flatMap(o=>o.steps.map(s=>({cap:o.title+' · '+s.cap,els:s.els})));
     let C=R.contours[0];
-    if(wrong){ const i=C.findIndex(q=>q.arc&&q.arc.r<15); C=C.map((q,j)=>j===i?Object.assign({},q,{arc:{c:q.arc.c,r:q.arc.r+2}}):q); }   /* дугу обвели не тем раствором циркуля */
+    if(wrong){ const i=C.findIndex(q=>q.arc&&q.arc.r<15); C=C.map((q,j)=>j===i?Object.assign({},q,{arc:{c:q.arc.c,r:q.arc.r+6}}):q); }   /* дугу обвели не тем раствором циркуля */
     F.push({cap:'Обводка: дуги от точки касания до точки касания, потом прямые',els:C.map(q=>q.seg?E.seg(q.seg[0],q.seg[1],'result'):E.arc(q.arc.c,q.arc.r,q.from,q.to,q.ccw,'result'))});
     return {F,R,bad:K.checkContour(C)}; },
   judge:(p,r)=>r.R.ok&&!r.bad.length,

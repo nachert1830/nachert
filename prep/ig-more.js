@@ -24,7 +24,13 @@ const sceneB=(E,pad)=>{ const S=scene(E); if(pad){ S.box=[S.box[0]-pad,S.box[1]-
 /* тело без части вычитаемых элементов: filt(c) — оставить ли вычитаемый элемент */
 const strip=(m,filt)=>({box:m.box,tree:m.tree.t==='s'?{t:'s',a:m.tree.a,k:m.tree.k.filter(filt)}:m.tree});
 const kinds=m=>{ const s=new Set(); (function w(n){ if(!n) return; s.add(n.t); if(n.a) w(n.a); (n.k||[]).forEach(w); })(m.tree&&m.tree.a); return s; };
-const pickDZ=(want,ds)=>{ for(let t=0;t<12;t++){ const d=pick(ds), V=DZM(d,d==='ig5'?N30.filter(n=>![17,21,29].includes(n)):N30); if(V&&want(kinds(V.m),V)) return V; } return null; };
+/* набор деталей по признаку (есть конус, цилиндр, грани): перебираем все варианты заданий один раз — дерево модели дешёвое,
+   дорогие только чертежи; в набор — до 6 подходящих на сессию */
+const WANT={};
+const pickDZ=(want,ds)=>{ const key=want.toString()+ds.join(); if(!WANT[key]){ const all=[];
+    ds.forEach(d=>(d==='ig5'?N30.filter(n=>![17,21,29].includes(n)):N30).forEach(n=>{ try{ const m=DZR.get(d).part(n); if(m&&m.tree&&m.tree.t==='s'&&want(kinds(m))) all.push([d,n]); }catch(e){} }));
+    WANT[key]=all.sort(()=>Math.random()-.5).slice(0,6); }
+  const L=WANT[key]; if(!L.length) return null; const [d,n]=L[Math.floor(Math.random()*L.length)]; return DZM(d,[n]); };
 /* прореживание кривых: из каждой ломаной — каждая k-я точка (строят «по двум-трём точкам») */
 const coarse=(d,k)=>d.split('M').filter(Boolean).map(sp=>{ const P=sp.split('L'); if(P.length<9) return 'M'+sp; return 'M'+P.filter((q,i)=>i%k===0||i===P.length-1).join('L'); }).join('');
 const P3=()=>G3().P;
@@ -45,7 +51,7 @@ reg('v1n',{part:partL,make(){ return {m:partL(),L:pick(['А','Б','В'])}; },
     if(k!=='N'){ E.push(Ln([c[0],c[1]-14],[c[0],c[1]-3],'thin','lab'),{t:'poly',z:1,p:[[c[0],c[1]-2],[c[0]-.8,c[1]-5],[c[0]+.8,c[1]-5]],c:'arw',role:'lab'},Tx([c[0]+4,c[1]-10],V.L,'lab',{size:6}));
       const t=frame(E.filter(e=>e.role==='T'||e.role==='Th')); E.push(Tx([t[0]+t[2]/2,t[1]+1],V.L,'lab',{size:6})); }
     return sceneB(E,4); },
-  traps:{N:{b0:-0.2,say:'Вид не в проекционной связи — без стрелки и буквы его не прочитать',src:'ГОСТ 2.305; тетрадь, рис. 31',hl:['T','Th']}},
+  traps:{N:{b0:-0.2,say:'Вид не в проекционной связи — без стрелки и буквы его не прочитать',src:'ГОСТ 2.305; тетрадь, рис. 31',hl:['lab']}},
   watch:{steps:st(['Главный вид',['F','Fh']],['Вид сверху стоит не под главным — у главного стрелка с буквой',['F','Fh','lab']],['Над видом — та же буква, шрифт 7',['F','Fh','lab','T','Th']])}});
 /* v1d — дополнительный вид: наклонная грань в натуральную величину (отверстие в ней — эллипс, его считает IG3) */
 const arrowTo=(tip,dir,L,role)=>{ const s=sub(tip,mul(dir,12)); return [Ln(s,sub(tip,mul(dir,1)),'thin',role),arrow(tip,dir,role),Tx(add(s,[dir[1]*4,-dir[0]*4-1]),L,role,{size:6})]; };
@@ -60,7 +66,7 @@ reg('v1d',{make(){ const P=P3(); const L=RI(70,86), D=RI(34,42), H=RI(40,50), h=
     if(k!=='N'){ const mid=f([V.xc,0,V.zc]), nn=unit([-Math.sin(V.a),-Math.cos(V.a)]); E.push(...arrowTo(mid,[-nn[0],-nn[1]],V.L,'lab'));
       const fr=frame([{t:'path',d}]); E.push(Tx([fr[0]+fr[2]/2,fr[1]-1],V.L,'lab',{size:6})); }
     return sceneB(E,4); },
-  traps:{N:{b0:-0.2,say:'Дополнительный вид не в проекционной связи — его обозначают стрелкой и буквой',src:'ГОСТ 2.305; тетрадь, рис. 33',hl:['D']},
+  traps:{N:{b0:-0.2,say:'Дополнительный вид не в проекционной связи — его обозначают стрелкой и буквой',src:'ГОСТ 2.305; тетрадь, рис. 33',hl:['lab']},
          P:{b0:.2,say:'На дополнительном виде грань должна быть в натуральную величину — а нарисована её искажённая проекция',src:'ГОСТ 2.305; тетрадь, рис. 32',hl:['D']}},
   watch:{steps:st(['Наклонная грань: на основных видах она искажена',['F','Fh','T','Th']],['Смотрим перпендикулярно грани — стрелка с буквой',['F','Fh','T','Th','lab']],['Дополнительный вид: грань и отверстие в натуральную величину',['F','Fh','T','Th','lab','D']])}});
 /* v1l — местный вид: только нужный участок */
@@ -75,7 +81,7 @@ reg('v1l',{make(){ const P=P3(); const L=RI(70,86), D=RI(36,44), h=RI(12,16), H=
       const fr=frame(E.filter(e=>e.role==='D'&&e.t!=='circ').concat(E.filter(e=>e.role==='D'&&e.t==='circ').map(e=>({t:'path',d:`M${e.a[0]-e.a[2]} ${e.a[1]-e.a[2]}L${e.a[0]+e.a[2]} ${e.a[1]+e.a[2]}`}))));
       E.push(Tx([fr[0]+fr[2]/2,fr[1]+2],V.L,'lab',{size:6})); }
     return sceneB(E,4); },
-  traps:{N:{b0:-0.2,say:'Местный вид не на своём месте — нужны стрелка и буква',src:'ГОСТ 2.305; тетрадь, рис. 34',hl:['D']},
+  traps:{N:{b0:-0.2,say:'Местный вид не на своём месте — нужны стрелка и буква',src:'ГОСТ 2.305; тетрадь, рис. 34',hl:['lab']},
          F:{b0:0,say:'Ради одного элемента нарисовали весь вид — достаточно местного',src:'ГОСТ 2.305; тетрадь, рис. 34',hl:['D','Dh']}},
   watch:{steps:st(['Бобышка сбоку: на основных видах её форма не видна',['F','Fh','T','Th']],['Смотрим на неё по стрелке с буквой',['F','Fh','T','Th','lab']],['Местный вид — только бобышка',['F','Fh','T','Th','lab','D']])}});
 /* v3 — база глубины: постоянная прямая под 45° */
@@ -100,11 +106,11 @@ reg('v7',{part:partSym,
   scene(V,k){ const E=viewEls(V.m,'front0',0,0,'F').concat(viewEls(V.m,'top',0,W,'T')), b=V.m.box, f=proj(V.m,'front0',0,0), t=proj(V.m,'top',0,W);
     E.push(Ln(f([0,0,-3]),f([0,0,b[1][2]+3]),'cl','af'));
     const R0=b[1][0]+3; E.push(Ln(t([-R0,0,0]),t([R0,0,0]),'cl','at'),Ln(t([0,-R0,0]),t([0,R0,0]),'cl','at'));
-    if(k!=='N'){ const Rc=V.m._rc; (V.m._h||[]).forEach(c=>{ const e=4; E.push(Ln(t([c[0]-e,c[1],0]),t([c[0]+e,c[1],0]),'cl','ah'),Ln(t([c[0],c[1]-e,0]),t([c[0],c[1]+e,0]),'cl','ah')); }); }
+    if(k!=='N'){ const Rc=V.m._rc; (V.m._h||[]).forEach(c=>{ const e=7; E.push(Ln(t([c[0]-e,c[1],0]),t([c[0]+e,c[1],0]),'cl','ah'),Ln(t([c[0],c[1]-e,0]),t([c[0],c[1]+e,0]),'cl','ah')); }); }
     return scene(E); },
   make(){ const m=partSym(); const hs=[]; (function w(n){ if(!n) return; if(n.t==='cyl'&&(n.x||n.y)) hs.push([n.x,n.y]); if(n.a) w(n.a); (n.k||[]).forEach(w); })(m.tree); m._h=hs; return {m}; },
   traps:{N:{b0:-0.2,say:'Забыли центровые линии отверстий на виде сверху',src:'ГОСТ 2.303',hl:['ah','T']}},
-  watch:{steps:st(['Деталь',['F','Fh','T','Th']],['Ось тела вращения — на всех видах',['F','Fh','T','Th','af','at']],['Центровые — у каждого отверстия',['F','Fh','T','Th','af','at','ah']])}});
+  watch:{steps:st(['Тело вращения: оси и центровые ещё не проведены',['F','Fh','T','Th']],['Ось тела вращения — на всех видах',['F','Fh','T','Th','af','at']],['Центровые — у каждого отверстия',['F','Fh','T','Th','af','at','ah']])}});
 /* v8 — точка на конусе через параллель; v9 — точка на цилиндре: уже на окружности */
 function ptScene(V,k,cone){ const m=V.m, b=m.box, H=b[1][2], r=b[1][0], z=V.z*H, rz=cone?r*(1-z/H):r, a=V.a, p=[rz*Math.cos(a),rz*Math.sin(a),z];
   const f=proj(m,'front0',0,0), t=proj(m,'top',0,W), l=proj(m,'left0',W,0);
@@ -155,7 +161,7 @@ reg('r3',{make(){ const P=P3(); const L=RI(70,90), D=RI(40,50), h=RI(14,18), y0=
     E.push(...viewEls(V.m,'top',0,W,'T'));
     if(k!=='N'){ const t=proj(V.m,'top',0,W), b=V.m.box; E.push(...cutMark(t([b[0][0]-4,V.y0,0]),t([b[1][0]+4,V.y0,0]),[0,-1],V.L,'lab')); const f=frame(E.filter(e=>e.role==='F')); E.push(Tx([f[0]+f[2]/2,f[1]-1],V.L+'–'+V.L,'lab',{size:6})); }
     return sceneB(E,8); },
-  traps:{N:{b0:-0.2,say:'Плоскость не совпадает с плоскостью симметрии — разрез обозначают: линия сечения, стрелки, «А–А»',src:'ГОСТ 2.305; тетрадь, рис. 35',hl:['F','Fhat']}},
+  traps:{N:{b0:-0.2,say:'Плоскость не совпадает с плоскостью симметрии — разрез обозначают: линия сечения, стрелки, «А–А»',src:'ГОСТ 2.305; тетрадь, рис. 35',hl:['lab']}},
   watch:{steps:st(['Отверстия не на оси симметрии — плоскость проходит через них',['T','Th']],['Линия сечения: разомкнутые штрихи, стрелки взгляда, буквы',['T','Th','lab']],['Разрез с надписью «А–А»',['T','Th','lab','F','Fhat']])}});
 /* r4a, r7m — граница вида и разреза — волнистая; r5 — ребро на оси */
 function partView(V,k,o){ const d=G3().drawing(V.m,'front',W*3,0,V.bnd); const k3=1/3, L=d.lines.map(s=>({a:[s.a[0]*k3,s.a[1]*k3],b:[s.b[0]*k3,s.b[1]*k3],h:s.h})), ph=G3().paths(L);
@@ -231,7 +237,7 @@ reg('c1v',{make(){ return {m:partBack(),L:pick(['А','Б'])}; },
     const d=loopsPath(L,q=>[c0[0]+q[0]*sc,c0[1]-q[1]*sc]); E.push({t:'path',d,c:'hat',role:'S'},{t:'path',d,c:k==='T'?'thin':'o',role:'Sc'});
     return scene(E); },
   traps:{T:{b0:0,say:'Контур вынесенного сечения — сплошной основной линией, а не тонкой',src:'ГОСТ 2.305; тетрадь, рис. 47',hl:['Sc']}},
-  watch:{steps:st(['Деталь',['F','Fh','T','Th']],['Вынесенное сечение — рядом с видом, только фигура в плоскости',['F','Fh','T','Th','S']],['Контур — основной линией',['F','Fh','T','Th','S','Sc']])}});
+  watch:{steps:st(['Деталь: главный вид и вид сверху',['F','Fh','T','Th']],['Вынесенное сечение — рядом с видом, только фигура в плоскости',['F','Fh','T','Th','S']],['Контур — основной линией',['F','Fh','T','Th','S','Sc']])}});
 reg('c1n',{make(){ return {m:partBack()}; },
   scene(V,k){ const E=viewEls(V.m,'front0',0,0,'F',{hat:false}), f=proj(V.m,'front0',0,0), b=V.m.box, x=b[1][0]*.4;
     const sc=Math.abs(f([1,0,0])[0]-f([0,0,0])[0]), L=secLoops(V.m,[x,0,0],[0,1,0],[0,0,1]);
@@ -266,7 +272,7 @@ reg('c3',{make(){ return {m:partBody('cyl'),a:R(.4,.7),zc:RI(18,30)}; },
   watch:{steps:st(['Цилиндр и наклонная плоскость',['F','Fh','T','Th','tr']],['Сечение — эллипс: большая ось по следу, малая равна диаметру',['F','Fh','T','Th','tr','S']])}});
 reg('c4',{make(){ return {m:partSym(),a:R(.45,.75),zc:RI(14,24)}; },
   scene(V,k){ return inclined(V,k,{rot:1}); },
-  traps:{N:{b0:-0.2,say:'Сечение повернули, а знак «повёрнуто» не поставили',src:'ГОСТ 2.305',hl:['S']}},
+  traps:{N:{b0:-0.2,say:'Сечение повернули, а знак «повёрнуто» не поставили',src:'ГОСТ 2.305',hl:['lab']}},
   watch:{steps:st(['Наклонное сечение',['F','Fh','T','Th','tr']],['Его можно повернуть — тогда к надписи добавляют знак «повёрнуто»',['F','Fh','T','Th','tr','S','lab']])}});
 
 /* ═════ Тело с вырезом: детали ДЗ 4–6 ═════ */
@@ -276,7 +282,7 @@ const cutScene=(V,o)=>{ o=o||{}; const L=viewEls(o.Lm||V.m,'left0',W,0,'L',{hat:
 const cutSteps=[{cap:'Дано: главный вид с вырезом K',roles:['F','Fh']},{cap:'Вид сверху: точки выреза — по принадлежности поверхности',roles:['F','Fh','T','Th']},{cap:'Вид слева: высоты с главного, глубина с вида сверху',roles:['F','Fh','T','Th','L','Lh','Lx']}];
 const DZcut=want=>()=>pickDZ(want,['ig4','ig5']);
 reg('k2',{make:DZcut(K=>K.has('cone')||K.has('cyl')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:14,coarseT:14}:{}); },
+  scene(V,k){ return cutScene(V,k==='C'?{coarse:30,coarseT:30}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh','T','Th']); },
   traps:{C:{b0:0,say:'Кривую выреза построили по двум-трём точкам — нужны все характерные и промежуточные',src:'методика ДЗ 4',hl:['L','Lh','T','Th']}},watch:{steps:cutSteps}});
 reg('k3',{make:DZcut(K=>K.has('npyr')||K.has('ngon')),
@@ -284,11 +290,11 @@ reg('k3',{make:DZcut(K=>K.has('npyr')||K.has('ngon')),
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
   traps:{N:{b0:-0.2,say:'Линии выреза на гранях не перенесены на вид слева — точки на рёбрах по линиям связи',src:'методика ДЗ 4',hl:['L','Lh']}},watch:{steps:cutSteps}});
 reg('k4',{make:DZcut(K=>K.has('cyl')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:14}:{}); },
+  scene(V,k){ return cutScene(V,k==='N'?{Lm:V.body}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
-  traps:{C:{b0:0,say:'Наклонная грань режет цилиндр по эллипсу — его строят по точкам, а провели ломаной',src:'методика ДЗ 4',hl:['L','Lh']}},watch:{steps:cutSteps}});
+  traps:{N:{b0:-0.1,say:'Линии выреза на цилиндре не перенесены на вид слева: точки берут с окружности на виде сверху',src:'методика ДЗ 4',hl:['L','Lh']}},watch:{steps:cutSteps}});
 reg('k5',{make:DZcut(K=>K.has('cone')),
-  scene(V,k){ return cutScene(V,k==='C'?{coarse:14,coarseT:14}:{}); },
+  scene(V,k){ return cutScene(V,k==='C'?{coarse:30,coarseT:30}:{}); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh','T','Th']); },
   traps:{C:{b0:0,say:'Промежуточные точки на конусе не построены — кривая неточна: точки через параллели',src:'методика ДЗ 4',hl:['L','Lh','T','Th']}},watch:{steps:cutSteps}});
 reg('k7',{make:DZcut(()=>true),

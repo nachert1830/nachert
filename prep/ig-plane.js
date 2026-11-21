@@ -18,8 +18,8 @@ function dim(p1,p2,off,text,role,o){ o=o||{}; const u=unit(sub(p2,p1)), n=[-u[1]
   E.push(Tx(add(add(m,mul(n,sg*1.6)),o.tx?mul(u,o.tx):[0,0]),text,role,{rot:Math.abs(up)<1e-6?0:up,size:o.size||4.2}));
   return E; }
 /* выноска с полкой: от точки на контуре (стрелка) к полке с надписью */
-function leader(at,dir,len,text,role){ const end=add(at,mul(dir,len)), sh=dir[0]>=0?1:-1, w=text.length*2.3+2;
-  return [arrow(at,mul(dir,-1),role),Ln(at,end,'thin',role),Ln(end,add(end,[sh*w,0]),'thin',role),Tx(add(end,[sh*w/2,-1.2]),text,role)]; }
+function leader(at,dir,len,text,role,size){ const h=size||4.2, end=add(at,mul(dir,len)), sh=dir[0]>=0?1:-1, w=text.length*h*.55+2;
+  return [arrow(at,mul(dir,-1),role),Ln(at,end,'thin',role),Ln(end,add(end,[sh*w,0]),'thin',role),Tx(add(end,[sh*w/2,-1.2]),text,role,{size:h})]; }
 const rect=(x,y,w,h,c,role,dash)=>[Ln([x,y],[x+w,y],c,role,dash),Ln([x+w,y],[x+w,y+h],c,role,dash),Ln([x+w,y+h],[x,y+h],c,role,dash),Ln([x,y+h],[x,y],c,role,dash)];
 const circ=(c,r,cls,role,dash)=>({t:'circ',a:[c[0],c[1],r],c:cls,role,dash});
 const axes=(c,r,role)=>[Ln([c[0]-r-3,c[1]],[c[0]+r+3,c[1]],'cl',role),Ln([c[0],c[1]-r-3],[c[0],c[1]+r+3],'cl',role)];
@@ -42,7 +42,7 @@ reg('g1',{make:()=>({f:pick([[210,297],[420,297]]),k:.32}),
 reg('g2',{make:()=>({w:RI(70,90),h:RI(40,50),r:RI(7,10),sw:RI(14,20),sh:RI(8,12)}),
   scene(V,t){ const c=[V.w*.35,V.h/2], E=rect(0,0,V.w,V.h,'thick','o'); E.push(circ(c,V.r,'thick','o'));
     const sx=V.w*.62; E.push(...rect(sx,V.h/2-V.sh/2,V.sw,V.sh,t==='H'?'thick':'thin','hid',t!=='H'));
-    const ext=t==='A'?0:3; E.push(Ln([c[0]-V.r-ext,c[1]],[c[0]+V.r+ext,c[1]],'cl','ax'),Ln([c[0],c[1]-V.r-ext],[c[0],c[1]+V.r+ext],'cl','ax'));
+    const ext=t==='A'?0:5; E.push(Ln([c[0]-V.r-ext,c[1]],[c[0]+V.r+ext,c[1]],'cl','ax'),Ln([c[0],c[1]-V.r-ext],[c[0],c[1]+V.r+ext],'cl','ax'));
     return S(E); },
   traps:{H:{b0:-0.4,say:'Невидимый контур проведён сплошной основной — нужна штриховая',src:'ГОСТ 2.303',hl:['hid']},A:{b0:0.2,say:'Осевые не выходят за контур — выпуск 2–5 мм',src:'ГОСТ 2.303',hl:['ax']}},
   watch:{steps:st(['Видимый контур — сплошная основная',['o']],['Невидимый контур — штриховая',['o','hid']],['Оси — штрихпунктирные, выходят за контур на 2–5 мм',['o','hid','ax']])}});
@@ -58,7 +58,7 @@ reg('g4',{make:()=>({w:RI(50,80),h:RI(25,40)}),
     E.push(...(t==='X'?dim([0,V.h],[V.w,V.h],0,String(V.w),'dw',{noExt:1}):dim([0,V.h],[V.w,V.h],t==='C'?3:10,String(V.w),'dw')),...dim([V.w,0],[V.w,V.h],-10,String(V.h),'dh'));
     return S(E); },
   traps:{C:{b0:-0.2,say:'Размерная линия ближе 10 мм к контуру',src:'ГОСТ 2.307; тетрадь, рис. 10',hl:['dw']},X:{b0:0,say:'Контурную линию использовали как размерную',src:'ГОСТ 2.307; тетрадь, с. 10',hl:['dw']}},
-  watch:{steps:st(['Деталь',['o']],['Выносные линии от контура, размерная — не ближе 10 мм, стрелки упираются в выносные',['o','dw']],['Число — над размерной линией, у вертикального размера — повёрнуто',['o','dw','dh']])}});
+  watch:{steps:st(['Деталь: контур — основной линией, размеров ещё нет',['o']],['Выносные линии от контура, размерная — не ближе 10 мм, стрелки упираются в выносные',['o','dw']],['Число — над размерной линией, у вертикального размера — повёрнуто',['o','dw','dh']])}});
 /* g4m — маленький размер: стрелки снаружи */
 reg('g4m',{make:()=>({w:RI(60,80),h:RI(25,35),s:RI(5,8),x:RI(20,35)}),
   scene(V,t){ const d=RI(6,10), E=[Ln([0,0],[V.x,0],'thick','o'),Ln([V.x,0],[V.x,d],'thick','o'),Ln([V.x,d],[V.x+V.s,d],'thick','o'),Ln([V.x+V.s,d],[V.x+V.s,0],'thick','o'),Ln([V.x+V.s,0],[V.w,0],'thick','o'),
@@ -72,9 +72,9 @@ reg('g4z',{make:()=>({w:RI(60,80),h:RI(36,46),r:RI(6,10),R:RI(8,12)}),
       Ln([V.w,R],[V.w,V.h],'thick','o'),Ln([V.w,V.h],[0,V.h],'thick','o'),Ln([0,V.h],[0,0],'thick','o')];
     const c=[V.w*.38,V.h/2]; E.push(circ(c,V.r,'thick','o'),...axes(c,V.r,'o'));
     const a=-Math.PI/4, p=[c[0]+V.r*Math.cos(a),c[1]+V.r*Math.sin(a)], q=[c[0]-V.r*Math.cos(a),c[1]-V.r*Math.sin(a)];
-    E.push(Ln(q,p,'thin','dd'),arrow(p,unit(sub(p,q)),'dd'),arrow(q,unit(sub(q,p)),'dd'),Ln(p,add(p,[8,-8]),'thin','dd'),Ln(add(p,[8,-8]),add(p,[20,-8]),'thin','dd'),Tx(add(p,[14,-9.2]),(t==='D'?'R':'Ø')+(2*V.r),'dd'));
+    E.push(Ln(q,p,'thin','dd'),arrow(p,unit(sub(p,q)),'dd'),arrow(q,unit(sub(q,p)),'dd'),Ln(p,add(p,[8,-8]),'thin','dd'),Ln(add(p,[8,-8]),add(p,[20,-8]),'thin','dd'),Tx(add(p,[14,-9.6]),(t==='D'?'R':'Ø')+(2*V.r),'dd',{size:6}));
     const ac=[V.w-R,R], am=[ac[0]+R*Math.cos(-Math.PI/4),ac[1]+R*Math.sin(-Math.PI/4)];
-    E.push(...leader(am,unit([1,-1]),9,(t==='A'?'Ø':'R')+R,'dr')); return S(E); },
+    E.push(...leader(am,unit([1,-1]),9,(t==='A'?'Ø':'R')+R,'dr',6)); return S(E); },
   traps:{D:{b0:-0.5,say:'Перед размером полной окружности ставят Ø, а не R',src:'ГОСТ 2.307; тетрадь, рис. 13',hl:['dd']},A:{b0:-0.2,say:'Дугу меньше полуокружности задают радиусом R, а не диаметром',src:'ГОСТ 2.307; тетрадь, рис. 13',hl:['dr']}},
   watch:{steps:st(['Деталь: отверстие и скруглённый угол',['o']],['Окружность — знак Ø и полный диаметр',['o','dd']],['Дуга — знак R и радиус',['o','dd','dr']])}});
 /* g4r — одинаковые отверстия: размер один раз с числом */
@@ -97,7 +97,7 @@ reg('g5b',{make:()=>({m:pick(['ang','seg']),a:R(.5,1.3),L:RI(50,70),r:RI(22,30)}
       E.push(Ln(A,B,'thick','o'),{t:'pt',a:A,c:'o',role:'o'},{t:'pt',a:B,c:'o',role:'o'},circ(A,k,'b','s2',true),circ(B,k2,'b','s2',true),{t:'pt',a:C1,c:'ans',role:'s2'},{t:'pt',a:C2,c:'ans',role:'s2'},Ln(add(C1,[0,-4]),add(C2,[0,4]),'crv','res')); }
     return S(E); },
   traps:{R:{b0:-0.1,say:'Засечки сделали разным раствором циркуля — линия не делит пополам',src:'тетрадь, рис. 24',hl:['s2','res']}},
-  watch:{V(){ const V=this.make(); this.watch.steps=V.m==='ang'?st(['Угол',['o']],['Дуга из вершины — точки на сторонах',['o','s1']],['Из них — засечки одним раствором',['o','s1','s2']],['Через вершину и точку пересечения — биссектриса',['o','s1','s2','res']]):st(['Отрезок',['o']],['Из концов — дуги одним раствором, больше половины отрезка',['o','s2']],['Через точки пересечения — серединный перпендикуляр',['o','s2','res']]); return V; },steps:[]}});
+  watch:{V(){ const V=this.make(); this.watch.steps=V.m==='ang'?st(['Дан угол — делим его пополам',['o']],['Дуга из вершины — точки на сторонах',['o','s1']],['Из них — засечки одним раствором',['o','s1','s2']],['Через вершину и точку пересечения — биссектриса',['o','s1','s2','res']]):st(['Дан отрезок — делим его пополам',['o']],['Из концов — дуги одним раствором, больше половины отрезка',['o','s2']],['Через точки пересечения — серединный перпендикуляр',['o','s2','res']]); return V; },steps:[]}});
 /* g14 — размеры плоского контура: центры от баз, радиусы, без точек касания */
 reg('g14',{make:()=>({w:RI(70,90),h:RI(40,50),R:RI(10,14),d:RI(10,14),cx:RI(20,30),cy:RI(16,24)}),
   scene(V,t){ const R=V.R, E=[Ln([0,0],[V.w-R,0],'thick','o'),{t:'poly',p:Array.from({length:13},(_,i)=>{ const a=-Math.PI/2+i/12*Math.PI/2; return [V.w-R+R*Math.cos(a),R+R*Math.sin(a)]; }),c:'thick',role:'o'},

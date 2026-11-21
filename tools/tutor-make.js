@@ -16,15 +16,19 @@ const OUT=path.join(ROOT,'kb/tutor'); fs.mkdirSync(OUT,{recursive:true});
 const ONLY=process.argv[2]||null;
 global.self=global; require(path.join(ROOT,'kernel/prep.js')); const NG=self.PREPROG, IG=require(path.join(ROOT,'kernel/prep-ig.js'));
 /* приём → тема программы (начерт): первое совпадение по заголовку и тексту шага, только среди тем, нужных этому ДЗ */
-const NGRULES=[[/горизонтал|фронтал|h[″′]?α|f[″′]?α/i,['s3']],[/натуральн|прямоугольн\w* треугольн|гипотенуз/i,['l4','l5']],[/угол наклона/i,['s5b','l4u']],
-  [/перпендикуляр к плоскост|n′ ⟂ h′|⟂ h′|⟂ f″/i,['m2','m3']],[/прям\w* угол|⟂/i,['l7']],[/нов\w* ос|x₁₄|x₂₄|x₄₅|замен/i,['t2','t3','t4','t5']],
-  [/вращ|поворот|совмещ/i,['m7a','m7b','t7','t8']],[/посредник|γ|вспомогательн\w* плоскост/i,['m4','x3','x1','x8']],[/сфер/i,['x5','x6']],
+const NGRULES=[[/горизонтал|фронтал|h[″′]?α|f[″′]?α/i,['s3']],[/натуральн|прямоугольн[а-яё]* треугольн|гипотенуз/i,['l4','l5']],[/угол наклона/i,['s5b','l4u']],
+  [/перпендикуляр к плоскост|n′ ⟂ h′|⟂ h′|⟂ f″/i,['m2','m3']],[/прям[а-яё]* угол|⟂/i,['l7']],[/нов[а-яё]* ос|x₁₄|x₂₄|x₄₅|замен/i,['t2','t3','t4','t5']],
+  [/вращ|поворот|совмещ/i,['m7a','m7b','t7','t8']],[/посредник|γ|вспомогательн[а-яё]* плоскост/i,['m4','x3','x1','x8']],[/сфер/i,['x5','x6']],
   [/видим|конкурир/i,['p5','x7']],[/параллел(ь|и)\b|окружност/i,['f3']],[/касательн/i,['x9']],[/след/i,['l3','s4','x1']],[/опорн|высш|низш|очерк/i,['x2']],
-  [/пересечени\w* плоскост|точк\w* встречи|пересекает плоскост/i,['m4','m5']],[/двугранн/i,['t6']],[/обратн/i,['t9']],[/линии? связи/i,['p1','p2']]];
+  [/пересечени[а-яё]* плоскост|точк[а-яё]* встречи|пересекает плоскост/i,['m4','m5']],[/двугранн/i,['t6']],[/обратн/i,['t9']],[/линии? связи/i,['p1','p2']],
+  [/истинн[а-яё]* величин[а-яё]* угл|угол ψ|угла ψ/i,['t8','m7a']],[/угол [αβ] |угол [αβ]$|угол наклона высоты|высоты с π/i,['l4u']],[/доказательств/i,['m8']],
+  [/основани|грань|грани/i,['m1','m3']],[/образующ/i,['f1','x9','x8']]];
 function ngTopics(dz,text){ const need=NG.need(dz), out=[];
   for(const [re,ids] of NGRULES) if(re.test(text)) ids.forEach(id=>{ if(need.has(id)&&!out.includes(id)) out.push(id); });
   return out.slice(0,4); }
-const strip=s=>String(s==null?'':s).replace(/<sub>([^<]*)<\/sub>/g,'$1').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+const ENT={'&gt;':'>','&lt;':'<','&amp;':'&','&laquo;':'«','&raquo;':'»','&mdash;':'—','&ndash;':'–','&minus;':'−','&nbsp;':' ','&quot;':'"','&#39;':"'",'&deg;':'°','&times;':'×','&le;':'≤','&ge;':'≥','&asymp;':'≈'};
+const strip=s=>String(s==null?'':s).replace(/<sub>([^<]*)<\/sub>/g,'$1').replace(/<sup>([^<]*)<\/sup>/g,'^$1').replace(/<[^>]+>/g,' ').replace(/&[a-z]+;|&#\d+;/g,m=>ENT[m]!=null?ENT[m]:' ').replace(/\s+/g,' ').trim();
+const THEORY=new Set(['0','1','2','3','30','45','60','90','120','180','360']);
 const NUM=/(?<![A-Za-zА-Яа-я₀-₉′″‴])-?\d+(?:[,.]\d+)?/g;
 async function ng(page,dz){
   const raw=await page.evaluate(dz=>{ const out=[]; for(const n of DZR.numbers(dz)){ let s; try{ s=DZR.solve(dz,n); }catch(e){ out.push({n,err:String(e.message)}); continue; }
@@ -45,7 +49,9 @@ async function ng(page,dz){
       if(!R['3']&&(st.d||st.why)) R['3']=strip(st.d); if(!R['2']&&st.why) R['2']=strip(st.why);
       /* секрет — найденные точки шага (их положение и есть ответ шага); названия прямых и плоскостей и цель шага — не секрет */
       const goal0=strip(st.t), before=[...seen], fresh=[...new Set(st.pts.filter(l=>!seen.has(l)&&!goal0.includes(l)))], intro=[...new Set(st.add.filter(l=>!seen.has(l)&&!fresh.includes(l)))];
-      const nums=[...new Set([R['3'],R['4']].join(' ').match(NUM)||[])].filter(x=>!/^[01]$/.test(x));
+      /* секретные числа — вычисленные: без констант теории и без чисел условия и цели шага */
+      const givenN=new Set(((strip(v.q)+' '+strip(st.t)).match(NUM)||[]).map(x=>x.replace(',','.')));
+      const nums=[...new Set([R['3'],R['4']].join(' ').match(NUM)||[])].filter(x=>!THEORY.has(x.replace(',','.'))&&!givenN.has(x.replace(',','.')));
       const goal=strip(st.t);
       steps.push({id:`${dz}.v${v.n}.p${pi+1}.s${si+1}`,part:pi+1,goal,rungs:R,labels:before.concat(intro),secret:{labels:fresh,numbers:nums},
         topics:ngTopics(dz,goal+' '+(R['3']||'')+' '+(R['2']||''))});
@@ -58,7 +64,7 @@ function ig(dz,KB){
   const VIEW_IN={F:'на главном виде',T:'на виде сверху',L:'на виде слева'};
   const V=KB.dz[dz]||{}, variants=[];
   for(const n of Object.keys(V).map(Number).sort((a,b)=>a-b)){ const steps=[];
-    V[n].feats.forEach((ex,i)=>{ if(ex.kind==='тело'&&!ex.byView.length) return;
+    V[n].feats.forEach((ex,i)=>{ if(!ex.byView.length&&!ex.sections.length) return;   /* элемент только «дан» — строить нечего, шага нет */
       const tops=ex.topics.map(t=>IG.BY[t]).filter(Boolean), main=tops.find(t=>!['v2','v3','v6','r1','r2'].includes(t.id))||tops[0];
       const views=ex.byView.map(b=>VIEW_IN[b.v]).filter(Boolean);
       const nums=[...new Set(ex.byView.flatMap(b=>(b.how.y||[]).map(v=>String(Math.round(v*10)/10).replace('.',','))))];

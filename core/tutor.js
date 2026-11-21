@@ -26,15 +26,39 @@ const norm=s=>String(s).replace(/\^/g,'');
 const sentences=t=>String(t).split(/(?<=[.!?…])\s+/).filter(Boolean);
 const PRAISE=/(?<![А-Яа-яЁё])(умниц|молод(ец|чина)|гений|талантлив)/i, UNDERSTOOD=/понятно\s*\?|ясно\s*\?/i;
 const YESNO=/(?:^|\s)(не\s+\S+\s+ли|правда\s+ли|ведь|верно\s+ли|так\s+ли)(?![А-Яа-яЁё])/i;
-function labelsIn(t){ return [...new Set((String(t).match(LAB)||[]).map(norm))]; }
-function numbersIn(t){ return (String(t).match(NUMRE)||[]).map(x=>x.replace(',','.')); }
+/* приведение текста модели к виду чертежа — чтобы обход штрихами и двойниками не прошёл:
+   ' ’ ` ´ ʹ → ′;  '' ” " ʺ → ″;  ^{\prime} → ′;  «K-штрих» → K′, «K два штриха» → K″; кириллические двойники латинских букв
+   перед штрихом или индексом → латиница; полноширинные цифры → обычные; пробел между меткой и штрихом убираем */
+const CYR2LAT={'А':'A','В':'B','С':'C','Е':'E','Н':'H','К':'K','М':'M','О':'O','Р':'P','Т':'T','Х':'X','а':'a','е':'e','о':'o','р':'p','с':'c','х':'x'};
+function canonText(t){ let s=String(t||'');
+  s=s.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFF10+48));
+  s=s.replace(/\^\s*\{?\s*\\prime\\prime\s*\}?/g,'″').replace(/\^\s*\{?\s*\\prime\s*\}?/g,'′').replace(/\\prime/g,'′');
+  s=s.replace(/''|”|"|ʺ|〃/g,'″').replace(/['’`´ʹ‘]/g,'′');
+  s=s.replace(/(^|[^А-Яа-яЁё])(один|единиц\S*)\s*[-–—]?\s*штрих\S*/gi,'$11′').replace(/(^|[^А-Яа-яЁё])(два|двойк\S*)\s*[-–—]\s*штрих\S*/gi,'$12′');
+  s=s.replace(/([A-Za-zА-ЯЁ0-9₀-₉])\s*[-–—]?\s*(?:два|двумя|2)\s*штрих\w*/gi,'$1″').replace(/([A-Za-zА-ЯЁ0-9₀-₉])\s*[-–—]?\s*(?:три|тремя|3)\s*штрих\w*/gi,'$1‴').replace(/([A-Za-zА-ЯЁ0-9₀-₉])\s*[-–—]?\s*(?:один\s*)?штрих\w*/gi,'$1′');
+  s=s.replace(/([A-Za-zА-ЯЁ0-9₀-₉])\s+([′″‴])/g,'$1$2');
+  s=s.replace(/(^|[^А-Яа-яЁё])([АВСЕНКМОРТХ])(?=[′″‴₀-₉\u2080-\u209c])/g,(m,a,b)=>a+CYR2LAT[b]);
+  return s; }
+/* числительные словами: от «четырёх» и выше — запрещены (числа подставляет интерфейс из ядра); «один, два, три» — можно */
+const NUMWORD=new RegExp('(?<![А-Яа-яЁё])('+['четыре','четырёх','четырех','четырём','четырем','четырьмя','пять','пяти','пятью','шесть','шести','шестью','семь','семи','семью','восемь','восьми','восемью','девять','девяти','девятью','десять','десяти','десятью',
+  'одиннадцат[ьи]','двенадцат[ьи]','тринадцат[ьи]','четырнадцат[ьи]','пятнадцат[ьи]','шестнадцат[ьи]','семнадцат[ьи]','восемнадцат[ьи]','девятнадцат[ьи]','двадцат[ьи]','тридцат[ьи]','сорок','сорока',
+  'пятьдесят','пятидесяти','шестьдесят','шестидесяти','семьдесят','семидесяти','восемьдесят','восьмидесяти','девяносто','девяноста','сто','ста','двести','двухсот','триста','трёхсот','четыреста','четырёхсот',
+  'пятьсот','шестьсот','семьсот','восемьсот','девятьсот','тысяч[аиуе]?','полтора','полторы'].join('|')+')(?![А-Яа-яЁё])','i');
+function labelsIn(t){ return [...new Set((canonText(t).match(LAB)||[]).map(norm))]; }
+function numbersIn(t){ return (canonText(t).replace(/(\d)\s+(?=\d)/g,'$1').match(NUMRE)||[]).map(x=>x.replace(',','.')); }
 /* маска секретов: метки, которые вводит шаг, → «…», числа шага убираются */
 function mask(text,secret){ let s=String(text||'');
   (secret.labels||[]).slice().sort((a,b)=>b.length-a.length).forEach(l=>{ s=s.split(l).join('…'); s=s.split(norm(l)).join('…'); });
   (secret.numbers||[]).slice().sort((a,b)=>b.length-a.length).forEach(n=>{ s=s.replace(new RegExp('(?<![\\d,.])'+n.replace(/[.,]/g,'[.,]')+'(?![\\d,.])','g'),'…'); });
   return s.replace(/(…\s*){2,}/g,'… ').trim(); }
 /* Р3 — «где действовать»: первое-второе предложение шага с замаскированными секретами */
-function actionOf(step){ const t=mask(step.rungs['3']||'',step.secret); return sentences(t).slice(0,2).join(' '); }
+function actionOf(step){
+  const clean=x=>x.replace(/\s*\((?:\s*[−-]?\s*…\s*[;,]?)+\)/g,'').replace(/\s*[→=]\s*…(\s*[;,]\s*…)*/g,'').replace(/(…\s*[;,]\s*)+…/g,'…').replace(/\s+([.,;:])/g,'$1').trim();
+  const S=sentences(mask(step.rungs['3']||'',step.secret)).map(clean).filter(x=>x.replace(/[…\s.,;:—-]/g,'').length>=12);
+  const good=S.filter(x=>(x.match(/…/g)||[]).length<=1&&!/^[^А-Яа-яЁё]*$/.test(x.slice(0,12)));
+  const pick=good.slice(0,2).join(' ').replace(/^[\s—–\-:;,.…]+/,'').replace(/^./,c=>c.toUpperCase());
+  if(pick.replace(/…/g,'').length>=25) return pick;
+  return 'Сделай это построение: '+step.goal.replace(/[.\s]+$/,'')+'. Начни с того, что для него уже есть на чертеже.'; }
 function context(step,rung,o){ o=o||{}; const R={};
   const given=new Set(numbersIn((o.cond||'')+' '+step.goal)); step=Object.assign({},step,{secret:{labels:step.secret.labels||[],numbers:(step.secret.numbers||[]).filter(x=>!given.has(x.replace(',','.')))}});
   R.R0='Цель шага: '+step.goal+'.';
@@ -50,7 +74,8 @@ function context(step,rung,o){ o=o||{}; const R={};
   return {id:step.id,rung,goal:step.goal,allowed:R,neighbor,labels:labs,numbers:nums,
     secret:step.secret, topics:step.topics||[]}; }
 function lint(text,ctx){
-  const t=String(text||''), errs=[], add=(code,msg)=>errs.push({code,msg});
+  const raw=String(text||''), t=canonText(raw), errs=[], add=(code,msg)=>errs.push({code,msg});
+  { const m=NUMWORD.exec(raw); if(m) add('numword','число словами: '+m[1]); }
   if(!t.trim()) add('empty','пустой ответ');
   if(t.length>MAXLEN) add('long','длиннее '+MAXLEN+' символов');
   const q=(t.match(/\?/g)||[]).length; if(q>1) add('questions','больше одного вопроса');
@@ -96,6 +121,11 @@ const ladder={
 function neighborOf(D,step){ const m=/^(\w+)\.v(\d+)\.(.+)$/.exec(step.id); if(!m) return null; const n=+m[2], tail=m[3], me=D.variants.find(v=>v.n===n), kind=me&&me.kind;
   const vs=D.variants.filter(v=>v.n!==n&&v.steps&&v.steps.length&&(kind==null||v.kind===kind)).sort((a,b)=>Math.abs(a.n-n)-Math.abs(b.n-n)||a.n-b.n);
   for(const v of vs){ const s=v.steps.find(x=>x.id.endsWith('.'+tail)&&x.goal.split(' ')[0]===step.goal.split(' ')[0]); if(s) return s; }
+  /* инжа: элементы у разных деталей в разном порядке — ищем тот же род элемента, потом ту же главную тему построения */
+  const w=step.goal.split(' ')[0], main=(step.topics||[]).find(t=>!['v2','v3','v6','r1','r2'].includes(t));
+  for(const v of vs){ const s=v.steps.find(x=>x.goal.split(' ')[0]===w); if(s) return s; }
+  if(main) for(const v of vs){ const s=v.steps.find(x=>(x.topics||[]).includes(main)); if(s) return s; }
+  const T0=step.topics||[]; for(const v of vs){ const s=v.steps.find(x=>(x.topics||[]).filter(t=>T0.includes(t)).length>=Math.min(2,T0.length)); if(s) return s; }
   return null; }
 /* ── проверка утверждений ученика по координатам варианта (начерт) ──
    claim: {rel:'on', p, a, b} — точка p на прямой ab; {rel:'link', a, b} — a и b на одной линии связи (⟂ оси x);
@@ -121,13 +151,13 @@ function checkClaim(V,stepId,c){
   return {unknown:true,why:'неизвестное отношение'};
 }
 /* простой разбор фразы ученика (без модели): «K′ лежит на D′E′», «A′ и A″ на одной линии связи», «A′B′ ∥ x», «AB ⟂ CD» */
-function parseClaim(text){ const t=String(text), L=labelsIn(t);
+function parseClaim(text){ const t=canonText(text), L=labelsIn(t);
   if(/лини[а-яё]* связи/i.test(t)&&L.length>=2) return {rel:'link',a:L[0],b:L[1]};
   if(/(∥|паралл)[а-яё]*\s*(оси\s*)?x\b|∥\s*x|параллельн[а-яё]* ос/i.test(t)&&L.length>=2) return {rel:'parx',a:L[0],b:L[1]};
   if(/∥|паралл/i.test(t)&&L.length>=4) return {rel:'par',a:L[0],b:L[1],c:L[2],d:L[3]};
   if(/⟂|перпенд/i.test(t)&&L.length>=4) return {rel:'perp',a:L[0],b:L[1],c:L[2],d:L[3]};
   if(/(лежит|находится|принадлеж|\sна\s|∈)/i.test(t)&&L.length>=3) return {rel:'on',p:L[0],a:L[1],b:L[2]};
   return null; }
-const api={context,lint,fallback,ladder,mask,labelsIn,numbersIn,actionOf,neighborOf,checkClaim,parseClaim,MAXLEN};
+const api={canonText,context,lint,fallback,ladder,mask,labelsIn,numbersIn,actionOf,neighborOf,checkClaim,parseClaim,MAXLEN};
 if(typeof module!=='undefined'&&module.exports) module.exports=api; else (self.TUTOR=api);
 })();
