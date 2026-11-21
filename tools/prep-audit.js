@@ -17,7 +17,7 @@ const SUBJ=arg('subj')||'ig', N=+(arg('n')||3);
     const key=(S,roles)=>JSON.stringify(S.E.filter(e=>roles.includes(e.role)).map(e=>[e.t,e.a,e.p,e.d,e.c,e.dash,e.s,e.size,e.lab]));
     for(const T of G.ALL){ const t=PREP.TOPICS[T.id]; if(!t){ out.push([T.id,'','нет интерактива']); continue; }
       for(const [k,tr] of Object.entries(t.traps)){
-        if(!/^[А-ЯЁA-Zα-ωℓ0-9«]|^[a-z][′″‴₀-₉]/.test(tr.say)) out.push([T.id,k,'фраза ловушки не с заглавной: '+tr.say]);
+        if(!/^[А-ЯЁA-Zα-ωℓ0-9«μ]|^[a-z][′″‴₀-₉\s]/.test(tr.say)) out.push([T.id,k,'фраза ловушки не с заглавной: '+tr.say]);
         if(/\.\s*$/.test(tr.say)) out.push([T.id,k,'фраза ловушки с точкой в конце']);
         if(tr.say.length>160) out.push([T.id,k,'фраза ловушки длиннее 160: '+tr.say.length]);
         if(!tr.hl||!tr.hl.length) out.push([T.id,k,'у ловушки нет hl']);

@@ -67,9 +67,18 @@ PREP.topic('s4',{
 
 /* ══ m8 · фигура по условиям: «точка на прямой a, равноудалённая от A и B» = a ∩ (плоскость ⟂ AB через середину) ══ */
 PREP.topic('m8',{
+  /* задача строится от ответа: K — на плоскости μ (⟂ AB через середину M) вдали от M, прямая a — через K под углом ≥ 30° к μ;
+     так K всегда внутри отрезка a, а ловушки «не та плоскость» заметно сдвигают K */
   make(){
     for(let t=0;t<300;t++){
-      const A=[rnd(-45,-25),rnd(10,30),rnd(30,50)], B=[rnd(-10,10),rnd(30,50),rnd(8,22)], P=[rnd(5,25),rnd(5,20),rnd(5,20)], Q=[rnd(30,48),rnd(35,55),rnd(35,55)];
+      const A=[rnd(-45,-25),rnd(10,30),rnd(30,50)], B=[rnd(-10,10),rnd(30,50),rnd(8,22)];
+      const M=[(A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2], n=v3(A,B), nl=Math.hypot(...n), nu=n.map(v=>v/nl);
+      const a0=Math.abs(nu[0])<.9?[1,0,0]:[0,1,0], e1=(c=>{ const l=Math.hypot(...c); return c.map(v=>v/l); })(cr3(nu,a0)), e2=cr3(nu,e1);
+      const ang=rnd(0,360)*D, r=rnd(14,24), K=[0,1,2].map(i=>M[i]+r*(Math.cos(ang)*e1[i]+Math.sin(ang)*e2[i]));
+      const d0=[rnd(-1,1),rnd(-1,1),rnd(-1,1)], dl=Math.hypot(...d0); if(dl<.3) continue; const du=d0.map(v=>v/dl);
+      if(Math.abs(du[0]*nu[0]+du[1]*nu[1]+du[2]*nu[2])<.5) continue;   /* угол прямой с плоскостью ≥ 30° */
+      const L0=rnd(40,60), tk=rnd(.3,.7), P=[0,1,2].map(i=>Math.round(K[i]-du[i]*L0*tk)), Q=[0,1,2].map(i=>Math.round(K[i]+du[i]*L0*(1-tk)));
+      if([P,Q].some(p=>p[1]<3||p[2]<3||p[1]>65||p[2]>65||Math.abs(p[0])>55)) continue;
       const V={A,B,P,Q}; if(this.scene(V,null)) return V;
     }
     return null;
@@ -83,10 +92,13 @@ PREP.topic('m8',{
     /* плоскость μ: нормаль — AB (верная) */
     const hd2=[1,0], u1=nrm(sub(h1(B),h1(A))); const hd1=[-u1[1],u1[0]];
     const u2=nrm(sub(f2(B),f2(A))); let fd2=[-u2[1],u2[0]];
-    if(trap==='Pf') fd2=rot(fd2,sgn()*rnd(14,20)*D);   /* f″ не ⟂ A″B″ — плоскость не ⟂ AB */
     /* нормаль плоскости по h и f: h = (h1x, h1y, 0), f = (f2x, 0, −f2y) */
-    const hv=[hd1[0],hd1[1],0], fv=[fd2[0],0,-fd2[1]], n=cr3(hv,fv);
-    const ad=v3(P,Q); let s=dt3(n,v3(P,M))/dt3(n,ad); let K=[P[0]+ad[0]*s,P[1]+ad[1]*s,P[2]+ad[2]*s];
+    const ad=v3(P,Q), cut=fd=>{ const n=cr3([hd1[0],hd1[1],0],[fd[0],0,-fd[1]]), q=dt3(n,ad); return Math.abs(q)<1e-9?9:dt3(n,v3(P,M))/q; };
+    /* ловушка: f″ не ⟂ A″B″ (плоскость не ⟂ AB) — поворот на 12–20° в ту сторону, где K остаётся на отрезке a */
+    /* ловушка: f″ провели ⟂ A′B′ (перенесли направление с горизонтальной проекции), а надо ⟂ A″B″ — частая ошибка;
+       пара честная, только если направления заметно разные (≥ 15°) */
+    if(trap==='Pf'){ const w=[hd1[0],hd1[1]], c=Math.abs(w[0]*fd2[0]+w[1]*fd2[1]); if(c>Math.cos(15*D)) return null; fd2=w; }
+    let s=cut(fd2); let K=[P[0]+ad[0]*s,P[1]+ad[1]*s,P[2]+ad[2]*s];
     if(trap==='Pl'){ /* «плоское» мышление: K′ = a′ ∩ h′ (перпендикуляр к A′B′ на одной проекции) */
       const X=lineX([...h1(P),...h1(Q)],[...h1(M),h1(M)[0]+hd1[0],h1(M)[1]+hd1[1]]); if(!X) return null; s=X[2]; K=[P[0]+ad[0]*s,P[1]+ad[1]*s,P[2]+ad[2]*s]; }
     if(s<0.05||s>.95) return null;
@@ -107,7 +119,7 @@ PREP.topic('m8',{
   traps:{
     Lk:{b0:-.8,say:'K′ — на линии связи с K″',src:'Ж с. 22; М с. 43',hl:['lk','K1']},
     Pl:{b0:.3,say:'ГМТ — плоскость в пространстве, а не перпендикуляр на одной проекции',src:'М с. 6',hl:['K2','lk','K1']},
-    Pf:{b0:.6,say:'μ ⟂ AB: f″ ⟂ A″B″ (прямой угол виден, f ∥ π₂)',src:'Ж с. 50–51; М с. 6',hl:['f2','K2','lk','K1']}}
+    Pf:{b0:.6,say:'f″ провели ⟂ A′B′, а нужно ⟂ A″B″: прямой угол с фронталью виден на π₂',src:'Ж с. 50–51; М с. 6',hl:['f2','K2','lk','K1']}}
 });
 
 /* ══ t5 · вторая замена: плоскость (на π₃ — прямая) → плоскость уровня: x₂ ∥ A‴B‴C‴, натуральный вид ══ */

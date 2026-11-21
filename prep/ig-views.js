@@ -113,7 +113,7 @@ const POOL={};
 const DZM=(d,ns)=>{ const fresh=!POOL[d], pool=POOL[d]||(POOL[d]=ns.slice().sort(()=>Math.random()-.5).slice(0,6)); if(fresh) setTimeout(()=>self.IGWARM&&self.IGWARM(d),0);
   for(let t=0;t<8;t++){ const n=pick(pool); try{ const m=window.DZR&&DZR.get(d).part(n); if(m&&m.tree&&m.tree.t==='s'){ if(!m._pbody) Object.defineProperty(m,'_pbody',{value:{box:m.box,tree:m.tree.a}}); return {m,body:m._pbody,d,n}; } }catch(e){} } return null; };
 /* прогрев: после открытия темы строим чертежи набора заранее, в паузах */
-self.IGWARM=(d,views)=>{ const ns=POOL[d]||[]; let i=0; const step=()=>{ if(i>=ns.length) return; try{ const m=DZR.get(d).part(ns[i++]); (views||['front0','top','left0']).forEach(v=>G3().drawing(m,v,W*3)); }catch(e){} (self.requestIdleCallback||setTimeout)(step,50); }; step(); };
+self.IGWARM=(d,views)=>{ const ns=POOL[d]||[]; let i=0; const step=()=>{ if(i>=ns.length) return; try{ const m=DZR.get(d).part(ns[i++]); (views||['front0','top','left0']).forEach(v=>G3().drawing(m,v,W*3)); }catch(e){} if(self.requestIdleCallback) self.requestIdleCallback(step,{timeout:300}); else setTimeout(step,50); }; step(); };
 const N30=Array.from({length:30},(_,i)=>i+1);
 const differs=(ok,bad,roles)=>{ const key=S=>S.E.filter(e=>roles.includes(e.role)).map(e=>e.d).join('|'); return key(ok)!==key(bad); };
 const cutSteps=[{cap:'Дано: главный вид с вырезом K — грани выреза проецирующие, на этом виде они уже линии',roles:['F','Fh']},
