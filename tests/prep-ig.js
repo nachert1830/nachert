@@ -22,12 +22,13 @@ const MD=require(path.join(ROOT,'docs/prep/ig-program-md.js')), md=MD(G,MD.examp
 const file=path.join(ROOT,'docs/prep/IG-PROGRAM.md');
 if(!fs.existsSync(file)||fs.readFileSync(file,'utf8')!==md) bad('docs/prep/IG-PROGRAM.md устарел: node docs/prep/ig-program-md.js');
 /* интерактивные темы: сопряжения — в Node (ядро сопряжений), виды и разрезы — в браузере (3D-ядро IG3 живёт в index.html) */
-global.self=global; require(path.join(ROOT,'prep/engine.js')); self.PREPIG=G; require(path.join(ROOT,'prep/ig-conj.js'));
+global.self=global; require(path.join(ROOT,'prep/engine.js')); self.PREPIG=G; require(path.join(ROOT,'prep/ig-conj.js')); require(path.join(ROOT,'prep/ig-plane.js'));
 const PR=self.PREP; let conjN=0;
 for(const id of Object.keys(PR.TOPICS).filter(id=>G.BY[id])){ const t=PR.TOPICS[id]; conjN++;
   for(const k of Object.keys(t.traps)){ let n=0; for(let i=0;i<20;i++) if(PR.pair(t,k)) n++; if(n<18) bad(`тема ${id}, ловушка ${k}: честных пар ${n} из 20`); }
-  const V=t.watch.V.call(t); if(!V||!t.watch.steps.length) bad(`тема ${id}: нет шагов «Смотри»`); }
-if(conjN<9) bad('сопряжения: интерактивных тем меньше 9');
+  const V=t.watch.V?t.watch.V.call(t):t.make.call(t); if(!V||!t.watch.steps.length) bad(`тема ${id}: нет шагов «Смотри»`);
+  else { const S=t.scene(V,null), R=new Set(S.E.map(e=>e.role)); t.watch.steps.forEach((s,i)=>{ if(!s.roles.some(r=>R.has(r))) bad(`тема ${id}: шаг ${i+1} «Смотри» пустой`); }); } }
+if(conjN<18) bad('сопряжения и оформление: интерактивных тем в Node меньше 18');
 async function browser(){
   let chromium; try{ ({chromium}=require('playwright')); }catch(e){ return 'браузер: playwright не найден — пропущено'; }
   const http=require('http'); const srv=await new Promise(r=>{ const s=http.createServer((q,res)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const p=path.join(ROOT,f);
@@ -36,8 +37,8 @@ async function browser(){
   const b=await chromium.launch(), pg=await b.newPage(), errs=[]; pg.on('pageerror',e=>errs.push(e.message));
   const base='http://127.0.0.1:'+srv.address().port+'/';
   await pg.goto(base+'#/prep'); await pg.waitForFunction(()=>window.IG3&&window.PREP&&window.PREPIG,null,{timeout:60000});
-  const st=await pg.evaluate(()=>{ const out={}; PREPIG.ALL.forEach(t=>{ const T=PREP.TOPICS[t.id]; if(!T) return; const r={}; Object.keys(T.traps).forEach(k=>{ let n=0; for(let i=0;i<4;i++) if(PREP.pair(T,k)) n++; r[k]=n; }); out[t.id]=r; }); return out; });
-  for(const id in st) for(const k in st[id]) if(st[id][k]<3) bad(`браузер: тема ${id}, ловушка ${k}: пар ${st[id][k]} из 4`);
+  const st=await pg.evaluate(()=>{ const out={}; PREPIG.ALL.forEach(t=>{ const T=PREP.TOPICS[t.id]; if(!T) return; const r={}; Object.keys(T.traps).forEach(k=>{ let n=0; for(let i=0;i<2;i++){ const p=PREP.pair(T,k); if(p&&!JSON.stringify(p.ok.E).includes('NaN')) n++; } r[k]=n; }); out[t.id]=r; }); return out; });
+  for(const id in st) for(const k in st[id]) if(st[id][k]<2) bad(`браузер: тема ${id}, ловушка ${k}: пар ${st[id][k]} из 2`);
   for(const h of ['#/prep','#/prep/igall','#/prep/ig4','#/prep/ig2/v2','#/prep/ig2/v1d','#/prep/ig1/g11','#/prep/all']){ await pg.goto(base+h); await pg.waitForTimeout(800);
     if(!(await pg.$('.pp'))) bad('браузер: экран '+h+' не нарисован'); }
   errs.forEach(e=>bad('браузер: ошибка страницы: '+e));

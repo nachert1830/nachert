@@ -77,7 +77,7 @@ function shape(e,g,cls){
   else if(e.t==='poly') n=el(e.z?'polygon':'polyline',{points:e.p.map(q=>fmt(q[0])+','+fmt(q[1])).join(' ')},g);
   else if(e.t==='pt') n=el('circle',{cx:fmt(e.a[0]),cy:fmt(e.a[1]),r:e.r||1.5},g);
   else if(e.t==='path') n=el('path',{d:e.d},g);
-  else if(e.t==='txt'){ n=el('text',{x:fmt(e.a[0]),y:fmt(e.a[1]),'text-anchor':e.anchor||'start'},g); n.textContent=e.s; }
+  else if(e.t==='txt'){ n=el('text',{x:fmt(e.a[0]),y:fmt(e.a[1]),'text-anchor':e.anchor||'start','font-size':e.size||null,transform:e.rot?`rotate(${e.rot} ${fmt(e.a[0])} ${fmt(e.a[1])})`:null},g); n.textContent=e.s; }
   if(!n) return null;
   n.setAttribute('class',(cls||'')+' '+(e.t==='pt'?'pt '+(e.c||'ans'):(e.c||'o'))+(e.dash?' hid':''));
   return n;
@@ -466,6 +466,8 @@ const CSS=`
 .pp svg .hat{fill:url(#ppHat);stroke:none;fill-rule:evenodd}.pp svg .hat2{fill:url(#ppHat2);stroke:none;fill-rule:evenodd}.pp svg .net{fill:url(#ppNet);stroke:none}.pp svg .hatl{stroke:var(--pp-draw-ink);stroke-width:.22}
 .pp svg .hat.hl-bad,.pp svg .hat2.hl-bad,.pp svg .net.hl-bad{stroke:var(--pp-bad)!important;stroke-width:.5}.pp svg .hat.hl-ok,.pp svg .hat2.hl-ok{stroke:var(--pp-ok)!important;stroke-width:.5}
 .pp svg .ttl{font-size:5px;fill:var(--pp-mut)}
+.pp svg .arw{fill:var(--pp-draw-ink);stroke:none}.pp svg .arw.hl-bad{fill:var(--pp-bad)!important}.pp svg .arw.hl-ok{fill:var(--pp-ok)!important}
+.pp svg .thin{stroke:var(--pp-draw-ink);stroke-width:.3;fill:none}.pp svg .thick{stroke:var(--pp-draw-ink);stroke-width:.9;fill:none}.pp svg .wav{stroke:var(--pp-draw-ink);stroke-width:.3;fill:none}
 .pp svg .pt{fill:var(--pp-ans);stroke:#fff;stroke-width:.5}.pp svg .pt.o{fill:var(--pp-draw-ink)}
 .pp svg text{font-family:"NchGost","NchSerif","Liberation Serif",serif;font-style:normal;fill:var(--pp-draw-ink);font-size:7px;paint-order:stroke;stroke:#fff;stroke-width:1.6px;stroke-linejoin:round}
 .pp svg text.small{font-size:5.5px;fill:var(--pp-thin)}

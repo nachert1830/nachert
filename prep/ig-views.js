@@ -100,6 +100,8 @@ reg('c1',{part:partBack,
     const h=S.find(e=>e.role==='Shat'); return scene(E.concat(h?[h,{t:'path',d:h.d,c:'o',role:'S'}]:[])); },
   traps:{B:{b0:0,say:'В сечение добавили то, что за плоскостью, — это уже разрез',src:'ГОСТ 2.305; тетрадь, с. 26',hl:['S','Sh']}},
   watch:{steps:[{cap:'Деталь: главный вид и вид сверху',roles:['F','Fh','T','Th']},{cap:'Сечение фронтальной плоскостью — только фигура в плоскости; стенка за плоскостью в сечение не входит',roles:['F','Fh','T','Th','Shat','S']}]}});
+/* точка модели → точка вида в сцене (тот же масштаб и смещение, что у viewEls) */
+function proj(model,view,ox,oy,o){ const d=G3().drawing(model,view,W*3); return p=>{ const q=d.px(p); return [(o&&o.mirror?W-q[0]/3:q[0]/3)+ox,q[1]/3+oy]; }; }
 /* ── тела с вырезом: настоящие детали ДЗ 4–6 (модели вариантов) ── */
 const DZM=(d,ns)=>{ for(let t=0;t<8;t++){ const n=pick(ns); try{ const m=window.DZR&&DZR.get(d).part(n); if(m&&m.tree&&m.tree.t==='s') return {m,body:{box:m.box,tree:m.tree.a},d,n}; }catch(e){} } return null; };
 const N30=Array.from({length:30},(_,i)=>i+1);
@@ -119,4 +121,5 @@ reg('k6',{make(){ return DZM('ig6',N30); },
   fair(V,k,ok,bad){ return differs(ok,bad,['L','Lh']); },
   traps:{L:{b0:-0.2,say:'На виде слева не построены линии отверстия: каждая грань режет шар по окружности r = √(R² − d²)',src:'методика ДЗ 6',hl:['L','Lh']}},
   watch:{steps:[{cap:'Дано: шар и отверстие K на главном виде — грани K плоскости уровня',roles:['F','Fh']},{cap:'Вид сверху: горизонтальная грань режет шар по окружности — здесь она в натуральную величину',roles:['F','Fh','T','Th']},{cap:'Вид слева: профильная грань — окружность, остальные грани — отрезки; полость — штриховыми',roles:['F','Fh','T','Th','L','Lh']}]}});
+self.IGV={W,R,RI,pick,G3,partL,partSym,partBack,partBody,viewEls,frame,scene,three,reg,proj,shift,num,DZM,differs,N30};
 })();
