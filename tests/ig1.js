@@ -46,7 +46,8 @@ console.log('Теория сопряжений: темы и пары с лову
 /* 5. граф знаний: сохранённый kb/graph.json сходится с данными и ядром; подделка факта ловится */
 { const KG=require(path.join(ROOT,'tools/kb-graph.js')), fs=require('fs'), G=JSON.parse(fs.readFileSync(path.join(ROOT,'kb/graph.json'),'utf8'));
   const e=KG.verify(G); if(e.length) bad('граф знаний: '+e[0]+(e.length>1?` (и ещё ${e.length-1}) — node tools/kb-graph.js`:''));
-  const F=JSON.parse(JSON.stringify(G)), f=F.nodes.find(n=>n.kind==='fact'); f.body.val.T[0][0]+=0.01; if(!KG.verify(F).length) bad('граф знаний: подделка факта не поймана'); }
+  const F=JSON.parse(JSON.stringify(G)), f=F.nodes.find(n=>n.kind==='fact'&&n.body.cert.name==='conj.op'); f.body.val.T[0][0]+=0.01; if(!KG.verify(F).length) bad('граф знаний: подделка факта сопряжения не поймана');
+  const F2=JSON.parse(JSON.stringify(G)), g=F2.nodes.find(n=>n.kind==='fact'&&n.body.cert.name==='igx.explain'); g.body.val.topics=g.body.val.topics.slice(1); if(!KG.verify(F2).length) bad('граф знаний: подделка факта об элементе ДЗ не поймана'); }
 if(Object.values(cnt).some(v=>v<N/10)) bad('мало проверенных построений: '+JSON.stringify(cnt));
 console.log(`ДЗ 1 инжа: вариантов ${Object.keys(V).length}; ядро на случайных данных: ${JSON.stringify(cnt)}; подсаженная ошибка R ± r поймана ${wrong.LC} раз`);
 if(fails.length){ console.log('ОШИБКИ:\n'+[...new Set(fails)].slice(0,30).join('\n')); process.exit(1); } console.log('ок');
