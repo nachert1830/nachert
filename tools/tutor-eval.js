@@ -17,7 +17,7 @@ async function eyes(key){ const LLM=require(ROOT+'/server/lib/tutor/llm'), PR=re
   const img=f=>'data:image/jpeg;base64,'+fs.readFileSync(DIR+'/'+f).toString('base64'); let hit=0, view=0, seen=0, clean=0, kop=0, sec=0, errs=0; const rows=[];
   for(const c of CS) for(const kind of ['bad','ok']){ const t0=Date.now(); let j=null, err=null;
     try{ const r=await LLM.chat({key},m,{messages:[{role:'system',content:/^ng/.test(c.dz)?PR.EYES_NG:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+c.n+'.'},
-        {type:'image_url',image_url:{url:img(c.id+'-'+kind+'.jpg')}},{type:'image_url',image_url:{url:img(c.id+'-ref.jpg')}}]}],max:2500,temperature:0,timeout:60000});
+        {type:'image_url',image_url:{url:img(c.id+'-'+kind+'.jpg')}},{type:'image_url',image_url:{url:img(c.id+'-ref.jpg')}}]}],max:4000,temperature:0,timeout:60000});
       kop+=LLM.kopecks(m.model,r.usage,cfg.rate); j=TUTOR.parseJson(r.message.content); if(!j) err='не JSON ('+r.finish+'): '+String(r.message.content).slice(0,160); }
     catch(e){ err=e.message; }
     sec+=(Date.now()-t0)/1000; if(err){ errs++; console.log('✖ eyes '+c.id+' '+kind+': '+err); continue; }
