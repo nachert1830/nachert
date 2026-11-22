@@ -68,7 +68,8 @@ css.textContent=`
 .tu{position:fixed;z-index:340;display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#15161a);font:15.5px/1.5 var(--sans,system-ui);box-shadow:0 24px 60px -20px rgba(8,11,18,.55);border:1px solid var(--line,#e3e6ec)}
 @media (min-width:760px){.tu{right:16px;bottom:16px;width:410px;height:min(720px,calc(100vh - 32px));border-radius:24px}}
 @media (max-width:759px){.tu{left:0;right:0;bottom:0;height:min(86vh,calc(100vh - 40px));border-radius:22px 22px 0 0;padding-bottom:env(safe-area-inset-bottom)}}
-.tu[hidden]{display:none}
+.tu[hidden],.tu-fab[hidden]{display:none}
+body:has(.ckn) .tu-fab{display:none}
 .tu-h{display:flex;align-items:center;gap:10px;padding:12px 12px 10px 16px;border-bottom:1px solid var(--line,#e3e6ec)}
 .tu-h b{font:800 17px/1.2 var(--disp,inherit)}.tu-h small{display:block;color:var(--mut,#667);font:600 12.5px var(--sans,system-ui)}
 .tu-h .sp{flex:1}
@@ -173,7 +174,7 @@ box.addEventListener('click',async e=>{ const t=e.target.closest('button,a'); if
   if(t.matches('[data-send]')) return send();
   if(t.matches('[data-sug]')) return send(t.textContent);
   if(t.matches('[data-unphoto]')){ S.photo=null; return render(); }
-  if(t.matches('[data-login]')){ e.preventDefault(); LS.set('lk_ret','/'+(location.hash||'')); location.href='/lk/#/login'; return; }
+  if(t.matches('[data-login]')){ e.preventDefault(); LS.set('lk_ret',(/^\/new\//.test(location.pathname)?'/new/':'/')+(location.hash||'')); location.href='/lk/#/login'; return; }
   if(t.matches('[data-consent]')){ t.disabled=true; try{ await req('POST','/api/me/profile',{ai:true}); S.st.consent=true; S.st.ready=true; }catch(er){ S.err=er.message; } return render(); }
   if(t.matches('[data-mode]')){ if(!S.st||S.st.mode===t.dataset.mode) return; S.st.mode=t.dataset.mode; render();
     try{ await req('POST','/api/tutor/mode',{dz:S.w.dz,n:S.w.n,mode:t.dataset.mode}); }catch(er){ S.err=er.message; render(); } return; }
