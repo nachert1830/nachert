@@ -3,6 +3,10 @@ name: Наставник — замер на живой модели
 # сверка с первого раза, нужный шаг показан на чертеже, ожидания по ответу, время, цена (tools/tutor-eval.js).
 # Только по кнопке: тратит деньги ProxyAPI (≈ 20–40 ₽ за прогон). Фото и данных студентов здесь нет — только тексты сценариев.
 on:
+  # прогон с рабочей ветки без слияния в main: изменить файл .github/tutor-eval-run (первая строка — сценарии через запятую или пусто)
+  push:
+    branches: ['claude/**']
+    paths: ['.github/tutor-eval-run']
   workflow_dispatch:
     inputs:
       only:
@@ -32,7 +36,8 @@ jobs:
           PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
         run: |
           test -n "$PROXYAPI_KEY" || { echo "::error::нет секрета PROXYAPI_KEY"; exit 1; }
-          A=""; [ -n "${{ github.event.inputs.only }}" ] && A="$A --only=${{ github.event.inputs.only }}"
+          A=""; ONLY="${{ github.event.inputs.only }}"; [ -z "$ONLY" ] && [ -f .github/tutor-eval-run ] && ONLY="$(head -1 .github/tutor-eval-run | tr -d ' ')"
+          [ -n "$ONLY" ] && A="$A --only=$ONLY"
           [ -n "${{ github.event.inputs.model }}" ] && A="$A --model=${{ github.event.inputs.model }}"
           node tools/tutor-eval.js $A --json=tutor-eval.json
       - uses: actions/upload-artifact@v4
