@@ -1,0 +1,41 @@
+{
+ "about": "Проверочные фото для замера глаз наставника: tools/tutor-eyes-make.js. bad — у точки point координата coord сдвинута на mm (видно на view).",
+ "cases": [
+  {
+   "id": "ng1-4",
+   "dz": "ng1",
+   "n": 4,
+   "point": "A",
+   "view": "front",
+   "coord": "z",
+   "mm": 12
+  },
+  {
+   "id": "ng2-17",
+   "dz": "ng2",
+   "n": 17,
+   "point": "B",
+   "view": "front",
+   "coord": "z",
+   "mm": 12
+  },
+  {
+   "id": "ng3-3",
+   "dz": "ng3",
+   "n": 3,
+   "point": "S",
+   "view": "top",
+   "coord": "y",
+   "mm": 12
+  },
+  {
+   "id": "ng2-5",
+   "dz": "ng2",
+   "n": 5,
+   "point": "C",
+   "view": "top",
+   "coord": "y",
+   "mm": -12
+  }
+ ]
+}
