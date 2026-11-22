@@ -1,7 +1,13 @@
-/* Наставник: знания ДЗ из пакета (ig4.json — снимок IG4S.tutor(n) и методики, собирает tools/tutor-pack.js).
+/* Наставник: знания ДЗ из пакетов (собирает tools/tutor-pack.js из кода сайта):
+   ig4.json — снимок IG4S.tutor(n) и методики ИГ №4; ng1…ng5.json — решения DZR.solve и методика ДЗ по начерту.
    Здесь ничего не вычисляется заново: только выборка того, что посчитало ядро сайта. */
 'use strict';
-const PACKS={ig4:require('./ig4.json')};
+const fs=require('fs'), path=require('path');
+const DZS=['ig4','ng1','ng2','ng3','ng4','ng5'], PACKS={};
+DZS.forEach(dz=>{ const f=path.join(__dirname,dz+'.json'); if(fs.existsSync(f)) PACKS[dz]=require(f); });
+const isNg=dz=>!!(PACKS[dz]&&PACKS[dz].kind==='ng');
+/* название для людей: «Начерт · ДЗ №2», «ИГ · ДЗ №4» */
+const courseLabel=dz=>(isNg(dz)?'Начерт':'ИГ')+' · '+(PACKS[dz]?PACKS[dz].label:dz);
 
 /* способ построения точки (поле how в steps.js) — словами методики */
 const HOW={
@@ -25,7 +31,7 @@ function registry(dz,n){ const key=dz+':'+n; if(regCache.has(key)) return regCac
   if(v) v.steps.forEach(s=>s.points.forEach(p=>{ if(!R.has(p.n)) R.set(p.n,Object.assign({k:s.k},p)); }));
   regCache.set(key,R); return R; }
 
-function idea(dz,st){ const p=pack(dz), m=p.method, i=STEP_PLAN[st.id];
+function idea(dz,st){ if(st.idea) return st.idea; const p=pack(dz), m=p.method, i=STEP_PLAN[st.id];
   if(st.id==='given') return m.essence; if(st.id==='anal') return m.idea;
   const ix=i==null?[]:[].concat(i); return ix.map(j=>m.plan[j]).filter(Boolean).map(x=>x.t+': '+x.d+(x.why?' ('+x.why+')':'')).join('\n'); }
 
@@ -35,23 +41,37 @@ function stepAt(dz,n,k,depth){ const v=variant(dz,n), st=v&&v.steps[k-1]; if(!st
   const o={k:st.k,id:st.id,title:st.title,depth:DEPTHS[Math.max(0,d)]};
   if(d>=1) o.idea=idea(dz,st);
   if(d>=2) o.short=st.short;
-  if(d>=3){ o.more=st.more; o.points=st.points.map(p=>({n:p.n,x:p.x,y:p.y,z:p.z,how:p.how,how_name:HOW_NAME[p.how]||null})); }
+  if(st.part) o.part=st.part;
+  if(d>=3){ o.more=st.more; o.points=st.points.map(p=>p.how!==undefined?{n:p.n,x:p.x,y:p.y,z:p.z,how:p.how,how_name:HOW_NAME[p.how]||null}:p.x!=null?{n:p.n,x:p.x,y:p.y,z:p.z}:{n:p.n}); }
   else if(st.points.length) o.points_count=st.points.length;
   return o; }
 
 function overview(dz,n){ const p=pack(dz), v=variant(dz,n); if(!v) return null;
-  return {dz,label:p.label,task:p.text,variant:+n,body:v.title,note:v.note||undefined,steps:v.steps.map(s=>({k:s.k,id:s.id,title:s.title,points:s.points.length||undefined}))}; }
+  return {dz,course:isNg(dz)?'начертательная геометрия':'инженерная графика',label:p.label,title:p.title,task:v.task||p.text,variant:+n,body:v.title,note:v.note||undefined,
+    parts:v.parts?v.parts.map(x=>({part:x.l,task:x.q,from_step:x.from})):undefined,
+    steps:v.steps.map(s=>({k:s.k,id:s.id,part:s.part,title:s.title,points:s.points.length||undefined}))}; }
+/* ответ варианта — только когда все шаги открыты (лесенка) или в «Разборе»: решает вызывающий */
+function answer(dz,n){ const v=variant(dz,n); return v&&v.answer||null; }
+/* методика типа варианта (начерт): у каждого типа своя идея, план, ответ, ошибки и вопросы защиты */
+function typeOf(dz,n){ const p=pack(dz), v=variant(dz,n); return p&&v&&v.type&&p.method.types&&p.method.types[v.type]||null; }
 
 /* типичные ошибки методики — с метками m1…m7 (ими наставник помечает трудности студента) */
-function mistakes(dz){ const m=pack(dz).method; return {mistakes:m.mistakes.map((t,i)=>({tag:'m'+(i+1),text:t})),self_check:m.check}; }
-const mistakeTags=dz=>pack(dz).method.mistakes.map((t,i)=>'m'+(i+1));
+function mistakeList(dz,n){ const m=pack(dz).method, T=isNg(dz)&&n?typeOf(dz,n):null; return m.mistakes.concat(T&&T.mistakes||[]); }
+function mistakes(dz,n){ const m=pack(dz).method, T=isNg(dz)&&n?typeOf(dz,n):null;
+  return {mistakes:mistakeList(dz,n).map((t,i)=>({tag:'m'+(i+1),text:t})),self_check:T?T.check:m.check}; }
+const mistakeTags=(dz,n)=>mistakeList(dz,n).map((t,i)=>'m'+(i+1));
+function defense(dz,n){ const m=pack(dz).method, T=isNg(dz)&&n?typeOf(dz,n):null; return m.defense.concat(T&&T.defense||[]); }
 
 const TOPICS={plan:'порядок построения',section:'разрезы',dims:'размеры',sheet:'оформление листа'};
-function method(dz,topic){ const m=pack(dz).method;
+function method(dz,topic,n){ const m=pack(dz).method;
+  if(isNg(dz)){ const T=n&&typeOf(dz,n)||{}, v=n&&variant(dz,n);
+    if(topic==='sheet') return {topic,rule:m.sheet.join('\n')};
+    return {topic:'plan',type:v&&v.title,essence:m.essence,idea:[m.idea,T.idea].filter(Boolean).join('\n'),plan:(T.plan||[]).map((x,i)=>(i+1)+'. '+x.t+(x.d?': '+x.d:'')+(x.why?' ('+x.why+')':'')),
+      answer_form:T.answer||undefined}; }
   if(HOW[topic]) return {topic,name:HOW_NAME[topic],rule:HOW[topic]};
   if(topic==='section') return {topic,rule:m.plan[4].d+'\n'+m.plan[5].d};
   if(topic==='dims') return {topic,rule:m.plan[6].d};
   if(topic==='sheet') return {topic,rule:m.sheet.join('\n')};
   return {topic:'plan',essence:m.essence,idea:m.idea,plan:m.plan.map((x,i)=>(i+1)+'. '+x.t+': '+x.d),answer:m.answer}; }
 
-module.exports={pack,variant,registry,stepAt,overview,mistakes,mistakeTags,method,DEPTHS,HOW,HOW_NAME,TOPICS,dzList:Object.keys(PACKS)};
+module.exports={pack,variant,registry,stepAt,overview,answer,typeOf,mistakes,mistakeTags,defense,method,isNg,courseLabel,DEPTHS,HOW,HOW_NAME,TOPICS,dzList:Object.keys(PACKS)};

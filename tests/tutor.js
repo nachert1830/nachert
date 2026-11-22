@@ -21,6 +21,9 @@ function fakeModel(log){ return async(url,o)=>{ if(!/proxyapi\.ru/.test(url)) re
   /* глаза */
   if(Array.isArray(ms[1]&&ms[1].content)) return say('{"readable":true,"findings":[{"point":9,"view":"top","problem":"9′ ближе к оси"}],"overall":"почти верно"}');
   const tools=ms.filter(m=>m.role==='tool').map(m=>JSON.parse(m.content)), lastTool=last.role==='tool'?JSON.parse(last.content):null;
+  /* начерт (ДЗ №3, вариант 3): шаг 7 — подзадача б), точки A₄ и B₄ */
+  if(/начерт/.test(user.content||'')&&!/лист/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:7,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:7,points:['A₄','b4']});
+    return say(lastTool.highlighted&&lastTool.highlighted.length?'Подсветил A₄ и B₄ — это шаг 7, вид на π₄.':'Это шаг 7: строим вид на π₄, где AB в натуральную величину. С чего начнёшь?'); }
   if(/лист/.test(user.content||'')){ if(!tools.length) return call('look_at_photo',{}); if(tools.length===1) return call('show_on_drawing',{k:5,points:[9]}); return say('Похоже, точка 9′ стоит ближе к оси. Проверь засечку на шаге 5.'); }
   if(!tools.length) return call('get_step',{k:5,depth:'full'});
   if(tools.length===1) return call('show_on_drawing',{k:5,points:[9,12]});
@@ -35,6 +38,9 @@ async function runTutor(browser){
     const snap=await PACK.build(p,[3,7,19]), file=JSON.parse(fs.readFileSync(PACK.OUT,'utf8'));
     for(const n of [3,7,19]) if(JSON.stringify(snap.variants[n])!==JSON.stringify(file.variants[n])) B('пакет знаний устарел','вариант '+n+': решение на сайте поменялось — пересоберите: node tools/tutor-pack.js');
     if(JSON.stringify(snap.method)!==JSON.stringify(file.method)) B('пакет знаний устарел','методика ДЗ №4 поменялась — node tools/tutor-pack.js');
+    /* начерт: по варианту каждого ДЗ и методика */
+    for(const [dz,n] of [['ng1',4],['ng2',17],['ng3',3],['ng4',22],['ng5',13]]){ const sn=await PACK.buildDz(p,dz,[n]), fl=JSON.parse(fs.readFileSync(PACK.outOf(dz),'utf8'));
+      if(JSON.stringify(sn.variants[n])!==JSON.stringify(fl.variants[n])||JSON.stringify(sn.method)!==JSON.stringify(fl.method)) B('пакет знаний устарел',dz+', вариант '+n+': решение на сайте поменялось — node tools/tutor-pack.js '+dz); }
     await p.close(); srv.close(); }
 
   /* 2) сайт + настоящий сервер кабинета + поддельная модель */
@@ -63,7 +69,9 @@ async function runTutor(browser){
     /* гость */
     const g=await page({viewport:{width:1280,height:860}},'гость'); await g.goto(SITE+'/#/ig4/7'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на ИГ №4','нет'));
     await g.click('.tu-fab'); if(!/Войди/.test(await g.textContent('.tu-b').catch(()=>''))) B('гость: предложение войти',await g.textContent('.tu-b').catch(()=>''));
-    await g.goto(SITE+'/#/ng3/8'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на ИГ №4','видна на #/ng3/8');
+    await g.goto(SITE+'/#/ig3/8'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на ДЗ с наставником','видна на #/ig3/8');
+    await g.goto(SITE+'/#/ng3/8'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на начерте','нет на #/ng3/8'));
+    await g.goto(SITE+'/#/theory'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на вариантах ДЗ','видна на #/theory');
     /* студент: согласие → вопрос → шаг 5 открыт сам */
     const pg=await page({viewport:{width:1280,height:860}},'студент'); await pg.goto(SITE+'/#/ig4/7'); await pg.evaluate(t=>localStorage.setItem('lk_tok',t),st); await pg.reload();
     await pg.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await pg.click('.tu-fab');
@@ -99,6 +107,30 @@ async function runTutor(browser){
     if(!/9′/.test(await pg.textContent('.tu-m.t:last-of-type .tu-bb').catch(()=>''))) B('ответ по фото называет точку','нет');
     /* история после перезагрузки */
     await pg.reload(); await pg.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await pg.click('.tu-fab'); await pg.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===3,null,{timeout:8000}).catch(()=>B('история разговора после перезагрузки','нет'));
+    /* начерт: с листа варианта — наставник открывает разбор, подзадачу б) и шаг 7; вторая просьба — подсветка A₄, B₄ */
+    { const ng=await page({viewport:{width:1280,height:860}},'начерт'); await ng.goto(SITE+'/#/ng3/3/list'); await ng.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ng.reload();
+      await ng.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await ng.click('.tu-fab'); await ng.waitForSelector('[data-in]:visible',{timeout:8000});
+      if(!/Начерт · ДЗ №3 · вариант 3/.test(await ng.textContent('[data-sub]').catch(()=>''))) B('начерт: заголовок окна',await ng.textContent('[data-sub]').catch(()=>''));
+      await ng.fill('[data-in]','начерт: помоги с б)'); await ng.press('[data-in]','Enter');
+      await ng.waitForSelector('.tu-m.t',{timeout:15000}).catch(()=>B('начерт: ответ наставника','нет'));
+      const at=await ng.waitForFunction(()=>{ try{ return PLR&&PLR.state&&PLR.state.pi===1&&PLR.state.k===2&&/^#\/ng3\/3/.test(location.hash)&&document.querySelector('#dzPl svg.dwg'); }catch(e){ return false; } },null,{timeout:30000}).then(()=>true).catch(()=>false);
+      if(!at) B('начерт: открыта подзадача б), шаг 2 (шаг 7 по порядку)',await ng.evaluate(()=>{ try{ return location.hash+' pi='+PLR.state.pi+' k='+PLR.state.k; }catch(e){ return location.hash+' нет плеера'; } }));
+      await ng.fill('[data-in]','начерт: всё равно не понял'); await ng.press('[data-in]','Enter');
+      await ng.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===2,null,{timeout:15000}).catch(()=>B('начерт: второй ответ','нет'));
+      const hl=await ng.waitForFunction(()=>[...document.querySelectorAll('#dzPl svg.dwg text.tu-hl')].map(t=>t.textContent.replace(/[″′‴]/g,'')).filter((x,i,a)=>a.indexOf(x)===i).length>=2,null,{timeout:10000}).then(()=>true).catch(()=>false);
+      if(!hl) B('начерт: подсвечены подписи A₄ и B₄',await ng.evaluate(()=>[...document.querySelectorAll('#dzPl svg.dwg text')].map(t=>t.textContent).slice(0,30).join(' ')));
+      /* текущий шаг плеера уходит серверу: студент на шаге 7 */
+      const lastAsk=[...mlog].reverse().find(b=>b.tools&&/начерт: всё равно/.test(JSON.stringify(b.messages.slice(-1))))||mlog[mlog.length-1];
+      if(!/шаг 7/.test(String(lastAsk&&lastAsk.messages[0].content))) B('начерт: модель знает шаг студента','нет «шаг 7» в карточке');
+      if(!/Начертательная геометрия, ДЗ №3/.test(String(lastAsk&&lastAsk.messages[0].content))) B('начерт: карточка варианта','нет');
+      /* фото: эталон — черновик листа */
+      await ng.setInputFiles('[data-file]',path.join(ROOT,'og.jpg')); await ng.waitForSelector('[data-pv] img',{timeout:5000});
+      const nEyes=mlog.filter(b=>Array.isArray(b.messages[1]&&b.messages[1].content)).length;
+      await ng.fill('[data-in]','начерт лист'); await ng.press('[data-in]','Enter');
+      await ng.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===3,null,{timeout:30000}).catch(()=>B('начерт: ответ по фото','нет'));
+      const eyes=mlog.filter(b=>Array.isArray(b.messages[1]&&b.messages[1].content))[nEyes];
+      if(!eyes) B('начерт: фото ушло глазам','нет'); else { if(!/эпюре Монжа/.test(eyes.messages[0].content)) B('начерт: глаза — промпт эпюра','нет');
+        const imgs=eyes.messages[1].content.filter(c=>c.type==='image_url').map(c=>c.image_url.url); if(imgs.length!==2||imgs[1].length<20000) B('начерт: эталон — черновик листа','нет или пустой'); } }
     /* 3) телефон */
     const ph=await page({viewport:{width:390,height:844},isMobile:true,hasTouch:true},'телефон'); await ph.goto(SITE+'/#/ig4/7'); await ph.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ph.reload();
     await ph.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await ph.click('.tu-fab'); await ph.waitForSelector('.tu-m.t',{timeout:8000});

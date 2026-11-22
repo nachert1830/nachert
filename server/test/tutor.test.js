@@ -169,7 +169,7 @@ test('панель владельца: реплики, цена, сверка, �
 test('выключен (нет ключа и российской модели) — 503; не тот вариант или ДЗ — 400',async()=>{
   const c=club({cfg:{openSignup:true,tutor:TUTOR.fromEnv({})}}); await c.owner(); await c.yandex({id:'9101',first_name:'Аня'},{who:'a'});
   assert.equal((await c.call('POST','/api/tutor/chat',{dz:'ig4',n:7,text:'привет'},{as:'a'})).status,503);
-  const {c:c2}=await setup({}); assert.equal((await chat(c2,{n:31,text:'x'})).status,400); assert.equal((await chat(c2,{dz:'ng3',text:'x'})).status,400);
+  const {c:c2}=await setup({}); assert.equal((await chat(c2,{n:31,text:'x'})).status,400); assert.equal((await chat(c2,{dz:'ig3',text:'x'})).status,400);
   assert.equal((await chat(c2,{text:''})).status,400);
 });
 
@@ -202,4 +202,73 @@ test('лесенка: права по шагам, режим «Разбор» о
   assert.equal(POL.allowed(mem,5),1); POL.ask(mem,turn,5); POL.ask(mem,turn,5); assert.equal(mem.asks[5],1,'одна просьба за реплику');
   assert.equal(POL.allowed(mem,5),2); mem.photo=true; assert.equal(POL.allowed(mem,5),3); assert.equal(POL.allowed(mem,6),2);
   assert.equal(POL.allowed({mode:'explain'},1),3);
+});
+
+/* ── ДЗ по начерту (ng1…ng5.json — решения DZR.solve): пакеты, диалог, сверщик ── */
+test('начерт: пакеты ДЗ №1–5 — 30 вариантов, у шагов лесенка (идея, шаг, числа), точки и тип варианта',()=>{
+  for(const dz of ['ng1','ng2','ng3','ng4','ng5']){ assert.ok(P.isNg(dz),dz);
+    for(let n=1;n<=30;n++){ const v=P.variant(dz,n); assert.ok(v&&v.steps.length>=4,dz+' в. '+n); assert.ok(v.task.length>40&&v.answer,dz+' в. '+n+': условие и ответ');
+      v.steps.forEach((s,i)=>{ assert.equal(s.k,i+1); assert.ok(s.title&&s.short&&s.idea,dz+' в. '+n+' шаг '+s.k); });
+      assert.ok(P.registry(dz,n).size>=2,dz+' в. '+n+': точки'); assert.ok(P.typeOf(dz,n),dz+' в. '+n+': тип'); } }
+  assert.equal(P.variant('ng3',3).parts.length,4,'ДЗ №3 — четыре подзадачи');
+  const st=P.stepAt('ng2',17,5,'full'); assert.deepEqual(st.points,[{n:'A',x:147.9,y:46.8,z:59.7}]);
+  assert.ok(!P.stepAt('ng2',17,5,'short').points,'short — без координат');
+  assert.equal(P.courseLabel('ng2'),'Начерт · ДЗ №2'); assert.equal(P.courseLabel('ig4'),'ИГ · ДЗ №4');
+  assert.ok(P.method('ng2','plan',17).plan.length>=4,'план по типу варианта');
+});
+
+test('начерт: диалог — карточка с обозначениями эпюра, лесенка, показ шага по букве точки с id подзадачи, ответ закрыт до конца',async()=>{
+  const {c,M}=await setup({script:[
+    tools(['variant_overview',{}],['get_step',{k:5,depth:'full'}]),
+    b=>{ const all=toolsOf(b), ov=all[0], st=all[1];
+      assert.match(ov.answer,/закрыто лесенкой/,'ответ варианта закрыт'); assert.equal(ov.steps.length,10);
+      assert.equal(st.denied,true); assert.ok(!st.points);
+      return tools(['show_on_drawing',{k:5,points:['A']}]); },
+    say('Это шаг 5: ищем вершину A на пересечении ℓ и EF. Где ℓ″ встречает E″F″?')]});
+  const r=await chat(c,{dz:'ng2',n:17,text:'где искать A?'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  assert.deepEqual(r.data.actions,[{t:'show',step:5,points:[],id:'p1s5'}]); assert.equal(r.data.verified,true);
+  const sys=M.calls[0].b.messages[0].content; assert.match(sys,/Начертательная геометрия, ДЗ №2/); assert.match(sys,/A″ — фронтальная/);
+  /* «Разбор»: точки подсвечиваются по буквам, координаты — факты; выдуманное число вырезается */
+  const {c:c2}=await setup({script:[
+    tools(['get_step',{k:5,depth:'full'}],['show_on_drawing',{k:5,points:['A','a1','Z']}]),
+    b=>{ const sh=lastTool(b); assert.deepEqual(sh.highlighted,['A','A₁'],'«a1» — это A₁; Z нет в варианте'); return say('A(147,9; 46,8; 59,7) — на EF. Значит AB = 91,7 мм.'); },
+    say('A(147,9; 46,8; 59,7) — на EF. Значит AB = 91,7 мм.')]});
+  await c2.call('POST','/api/tutor/mode',{dz:'ng2',n:17,mode:'explain'},{as:'a'});
+  const r2=await chat(c2,{dz:'ng2',n:17,text:'покажи A'}); assert.equal(r2.status,200,JSON.stringify(r2.data));
+  assert.deepEqual(r2.data.actions,[{t:'show',step:5,points:['A','A₁'],id:'p1s5'}]); assert.equal(T.ptKey('b1′'),'B₁'); assert.equal(T.ptKey('9″'),9);
+  assert.match(r2.data.reply,/147,9/); assert.doesNotMatch(r2.data.reply,/91,7/,'выдуманное 91,7 вырезано');
+  /* ДЗ №3: шаг подзадачи б) — id p2s… */
+  const {c:c3}=await setup({script:[tools(['get_step',{k:7,depth:'short'}],['show_on_drawing',{k:7}]),say('Смотри шаг 7.')]});
+  await c3.call('POST','/api/tutor/mode',{dz:'ng3',n:3,mode:'explain'},{as:'a'});
+  const r3=await chat(c3,{dz:'ng3',n:3,text:'б)'}); assert.equal(r3.status,200,JSON.stringify(r3.data)); assert.equal(r3.data.actions[0].id,'p2s2');
+});
+
+test('начерт: сверщик на 150 вариантах — 0 ложных на верном, ловит ≥ 95 % подсаженных ошибок',()=>{
+  const fmt=v=>String(v).replace('-','−').replace('.',','); let good=0, falsePos=[], caught=0, total=0;
+  for(const dz of ['ng1','ng2','ng3','ng4','ng5']) for(let n=1;n<=30;n++){ const v=P.variant(dz,n), R=P.registry(dz,n);
+    const facts=[]; v.steps.forEach(s=>facts.push(...T.factsOfStep(P.stepAt(dz,n,s.k,'full')))); VF.numbersOf(v.task,facts);
+    const nums=[...R.keys()].filter(k=>typeof k==='number'), maxN=nums.length?Math.max(...nums):0;
+    const ctx={points:new Set(R.keys()),steps:v.steps.length,facts,quoted:[]};
+    for(const p of R.values()){ if(p.x==null) continue; const s=`Точка ${p.n} строится на шаге ${p.k}: (${fmt(p.x)}; ${fmt(p.y)}; ${fmt(p.z)}), высота ${fmt(p.z)} мм.`;
+      const r=VF.check(s,ctx); good++; if(!r.ok) falsePos.push(dz+' '+n+': '+s+' → '+JSON.stringify(r.violations));
+      const muts=[s.replace('высота '+fmt(p.z),'высота '+fmt(Math.round((p.z+7.5)*10)/10)), s.replace('на шаге '+p.k,'на шаге '+(v.steps.length+2)),
+        s.replace('('+fmt(p.x)+';','('+fmt(Math.round((p.x+13)*10)/10)+';'), typeof p.n==='number'?s.replace('Точка '+p.n+' ','Точка '+(maxN+3)+' '):s].filter(m=>m!==s);
+      muts.forEach(m=>{ total++; if(VF.check(m,ctx).ok){ const ns=VF.claims(m).filter(x=>x.kind==='number').map(x=>x.v); if(ns.every(x=>facts.some(f=>Math.abs(f-x)<=0.11))){ total--; return; } } else caught++; }); } }
+  assert.deepEqual(falsePos.slice(0,3),[],'ложные срабатывания на верных фразах'); assert.ok(good>500,'верных фраз '+good);
+  assert.ok(total>1000,'подсадок '+total); assert.ok(caught/total>=0.95,'поймано '+caught+' из '+total);
+  assert.deepEqual(VF.claims('угол 73,7°, прямой угол 90°').map(x=>x.v),[73.7]);
+});
+
+test('кэш промпта (TUTOR_CACHE=on): системные части с cache_control; 400 от ProxyAPI — повтор без кэша и дальше без него; токены в журнале',async()=>{
+  const LLM=require('../lib/tutor/llm'); LLM._noCache(false);
+  const {c,M}=await setup({env:{TUTOR_CACHE:'on'},script:[say('Начнём с шага 1.',{prompt_tokens:6000,completion_tokens:100,prompt_tokens_details:{cached_tokens:4000}})]});
+  const r=await chat(c,{text:'привет'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const sys=M.calls[0].b.messages[0]; assert.ok(Array.isArray(sys.content)&&sys.content.length===2,'две части: правила и карточка');
+  assert.deepEqual(sys.content[0].cache_control,{type:'ephemeral'}); assert.match(sys.content[0].text,/Как ты работаешь/); assert.match(sys.content[1].text,/вариант 7/);
+  const log=(await c.store.scan('tutorlog'))[0]; assert.deepEqual(log.tokens,{in:6000,out:100,cached:4000});
+  /* ProxyAPI не принял кэш */
+  const {c:c2,M:M2}=await setup({env:{TUTOR_CACHE:'on'},script:[{status:400,json:{error:{message:'unknown field cache_control'}}},say('Ок.'),say('Снова ок.')]});
+  const r2=await chat(c2,{text:'привет'}); assert.equal(r2.status,200,JSON.stringify(r2.data));
+  assert.equal(typeof M2.calls[1].b.messages[0].content,'string','повтор — без кэша'); assert.equal(LLM._noCache(),true);
+  await chat(c2,{text:'ещё'}); assert.equal(typeof M2.calls[2].b.messages[0].content,'string','дальше — без кэша'); LLM._noCache(false);
 });

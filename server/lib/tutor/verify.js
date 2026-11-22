@@ -2,7 +2,7 @@
    Из ответа модели выделяется то, что можно проверить по ядру:
      • точки — «точка 9», «9′», «точки 5–12», «точки 5, 7 и 9»: номер есть в реестре варианта;
      • шаги — «шаг 5», «на шаге 11»: номер 1…N;
-     • числа-размеры — «30 мм», «x = −30», «(−30; 100)», «глубина 25,8»: число есть среди фактов, которые студенту уже
+     • числа-размеры — «30 мм», «x = −30», «(−30; 100)», «глубина 25,8», углы «73,7°»: число есть среди фактов, которые студенту уже
        открыты (то, что вернули инструменты с учётом лесенки, и то, что открыто в прошлых репликах) или которые назвал сам
        студент. Значит, координаты закрытого лесенкой шага — тоже нарушение: их нет среди открытых фактов.
    check(text, ctx) → {ok, violations:[{kind, what, sentence}]}; cut(text, violations) — убрать фразы с нарушениями. */
@@ -36,6 +36,8 @@ function claims(text){ const out=[];
   /* числа-размеры */
   const seen=new Set(), addN=(v,i,what)=>{ const key=i+':'+v; if(seen.has(key)) return; seen.add(key); out.push({kind:'number',v:num(v),i,what}); };
   for(const m of text.matchAll(new RegExp('('+NUM+')\\s*(?:мм|mm)(?![\\p{L}])','gu'))) addN(m[1],m.index,m[0]);
+  /* углы: «73,7°» (общие 0°, 90°, 180°, 270°, 360° — не проверяем) */
+  for(const m of text.matchAll(new RegExp('('+NUM+')\\s*°','gu'))){ const v=Math.abs(num(m[1])); if(![0,90,180,270,360].includes(v)) addN(m[1],m.index,m[0]); }
   for(const m of text.matchAll(new RegExp('(?<![\\p{L}\\d])[xyzхуXYZХУ]\\s*=\\s*('+NUM+')','gu'))) addN(m[1],m.index+m[0].indexOf(m[1]),m[0]);
   for(const m of text.matchAll(new RegExp('\\(\\s*('+NUM+')\\s*;\\s*('+NUM+')(?:\\s*;\\s*('+NUM+'))?\\s*\\)','g'))) [m[1],m[2],m[3]].forEach(v=>{ if(v!=null) addN(v,m.index,m[0]); });
   for(const m of text.matchAll(new RegExp('(?:глубин|высот|ширин|габарит|расстояни|отступ|координат)\\p{L}*[^.\\d\\n]{0,24}?('+NUM+')','giu'))) addN(m[1],m.index+m[0].lastIndexOf(m[1]),m[0]);

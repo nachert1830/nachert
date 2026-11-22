@@ -10,7 +10,7 @@ const TUTOR=require(ROOT+'/server/lib/tutor'), SET=require(ROOT+'/server/lib/tut
 const arg=k=>{ const a=process.argv.find(x=>x.startsWith('--'+k+'=')); return a?a.slice(k.length+3):''; };
 
 async function main(){ const key=process.env.PROXYAPI_KEY; if(!key){ console.log('Замер наставника пропущен: нет PROXYAPI_KEY.'); return 0; }
-  const env={PROXYAPI_KEY:key,TUTOR_USER_DAY_RUB:'1000',TUTOR_DAY_RUB:'5000'}; if(arg('model')) env.TUTOR_MODEL=arg('model');
+  const env={PROXYAPI_KEY:key,TUTOR_USER_DAY_RUB:'1000',TUTOR_DAY_RUB:'5000',TUTOR_CACHE:process.argv.includes('--no-cache')?'off':'on'}; if(arg('model')) env.TUTOR_MODEL=arg('model');
   const only=arg('only')?arg('only').split(','):null, cases=SET.cases.filter(c=>!only||only.includes(c.id));
   const store=memoryStore(null), SITE='https://nachert1830.ru';
   const cfg={dev:true,origin:SITE,secure:false,botToken:'1:x',botName:'b',webhookSecret:'s',adminTg:['1'],mainUrl:SITE,week1:'',yandex:{clientId:'',secret:''},adminYa:[],fronts:[SITE],frontUrl:SITE+'/lk/',openSignup:true,tutor:TUTOR.fromEnv(env)};
@@ -20,11 +20,11 @@ async function main(){ const key=process.env.PROXYAPI_KEY; if(!key){ console.log
     const r=await app.handle({method:'POST',path:'/api/auth/bot/redeem',query:{},headers:{origin:SITE,'content-type':'application/json'},body:JSON.stringify({token:t,confirm:true,consent:{terms:true,pd:true}}),ip:'127.0.0.1',cookies:{}});
     const tok=JSON.parse(r.body).session; await call(tok,'POST','/api/me/profile',{ai:true}); return tok; }
   const rows=[]; let i=0;
-  for(const c of cases){ const tok=await student(++i); if(c.mode) await call(tok,'POST','/api/tutor/mode',{dz:'ig4',n:c.n,mode:c.mode});
+  for(const c of cases){ const tok=await student(++i); const dz=c.dz||'ig4'; if(c.mode) await call(tok,'POST','/api/tutor/mode',{dz,n:c.n,mode:c.mode});
     let last=null, err=null; const turns=[];
-    for(const text of c.turns){ const t0=Date.now(), r=await call(tok,'POST','/api/tutor/chat',{dz:'ig4',n:c.n,step:c.step,text});
+    for(const text of c.turns){ const t0=Date.now(), r=await call(tok,'POST','/api/tutor/chat',{dz,n:c.n,step:c.step,text});
       if(r.status!==200){ err=r.status+' '+(r.data.error||''); break; } last=r.data; turns.push({ms:Date.now()-t0,rub:r.data.rub,verified:r.data.verified}); }
-    const logs=(await store.scan('tutorlog')).filter(l=>l.n===c.n).sort((a,b)=>a.ts-b.ts), tools=[...new Set(logs.slice(-c.turns.length).flatMap(l=>l.tools||[]))];
+    const logs=(await store.scan('tutorlog')).filter(l=>l.n===c.n&&(l.dz||'ig4')===dz).sort((a,b)=>a.ts-b.ts), tools=[...new Set(logs.slice(-c.turns.length).flatMap(l=>l.tools||[]))];
     const lastLog=logs[logs.length-1]||{}; await store.scan('tutorlog').then(L=>Promise.all(L.map(l=>store.del('tutorlog',l.id))));
     const e=c.expect||{}, chk={}, txt=last?last.reply:'';
     if(!err){
@@ -36,20 +36,22 @@ async function main(){ const key=process.env.PROXYAPI_KEY; if(!key){ console.log
       if(e.mustNot) chk.mustNot=!e.mustNot.some(r=>new RegExp(r,'i').test(txt));
       if(e.ask) chk.ask=(last.actions||[]).some(x=>x.t==='ask'); }
     const ms=turns.reduce((s,t)=>s+t.ms,0)/Math.max(1,turns.length), rub=turns.reduce((s,t)=>s+(t.rub||0),0);
-    rows.push({id:c.id,n:c.n,err,chk,ms,rub,tools,model:last&&last.model,reply:txt,cut:lastLog.verify&&lastLog.verify.violations});
+    const tk=logs.slice(-c.turns.length).reduce((a,l)=>{ const t=l.tokens||{}; a.in+=t.in||0; a.cached+=t.cached||0; a.out+=t.out||0; a.rounds+=l.rounds||0; return a; },{in:0,cached:0,out:0,rounds:0});
+    rows.push({id:c.id,dz,n:c.n,err,chk,ms,rub,tk,tools,model:last&&last.model,reply:txt,cut:lastLog.verify&&lastLog.verify.violations});
     console.log((err?'✖':Object.values(chk).every(Boolean)?'✓':'△')+' '+c.id.padEnd(15)+' '+(err||Object.entries(chk).map(([k,v])=>(v?'+':'−')+k).join(' '))+
-      '  '+(ms/1000).toFixed(1)+' с  '+rub.toFixed(2)+' ₽  ['+tools.join(', ')+']\n    '+String(txt).replace(/\n/g,' ').slice(0,220)); }
+      '  '+(ms/1000).toFixed(1)+' с  '+rub.toFixed(2)+' ₽  круги '+tk.rounds+', токены '+tk.in+' (кэш '+tk.cached+') → '+tk.out+'  ['+tools.join(', ')+']\n    '+String(txt).replace(/\n/g,' ').slice(0,220)); }
   /* итог */
   const ok=rows.filter(r=>!r.err), rate=k=>{ const L=ok.filter(r=>k in r.chk); return L.length?L.filter(r=>r.chk[k]).length/L.length:1; };
   const mustL=ok.flatMap(r=>['must','mustNot','tools','ask','points'].filter(k=>k in r.chk).map(k=>r.chk[k]));
   const S={cases:rows.length,errors:rows.length-ok.length,verifyFirst:rate('verifyFirst'),showOk:(()=>{ const L=ok.filter(r=>'show' in r.chk); return L.length?L.filter(r=>r.chk.show).length/L.length:1; })(),
     mustOk:mustL.length?mustL.filter(Boolean).length/mustL.length:1,avgSec:ok.reduce((s,r)=>s+r.ms,0)/Math.max(1,ok.length)/1000,avgRub:ok.reduce((s,r)=>s+r.rub,0)/Math.max(1,ok.reduce((s,r)=>s+(SET.cases.find(c=>c.id===r.id).turns.length),0))};
+  const TK=ok.reduce((a,r)=>{ a.in+=r.tk.in; a.cached+=r.tk.cached; a.rounds+=r.tk.rounds; return a; },{in:0,cached:0,rounds:0}); S.cachedShare=TK.in?TK.cached/TK.in:0; S.rounds=TK.rounds/Math.max(1,ok.length);
   const N=SET.norms, fails=[];
   if(S.errors) fails.push('сбоев '+S.errors); if(S.verifyFirst<N.verifyFirst) fails.push('сверка с первого раза '+Math.round(S.verifyFirst*100)+' % < '+N.verifyFirst*100+' %');
   if(S.showOk<N.showOk) fails.push('нужный шаг показан '+Math.round(S.showOk*100)+' %'); if(S.mustOk<N.mustOk) fails.push('ожидания по ответу '+Math.round(S.mustOk*100)+' %');
   if(S.avgSec>N.avgSec) fails.push('время '+S.avgSec.toFixed(1)+' с'); if(S.avgRub>N.avgRub) fails.push('цена реплики '+S.avgRub.toFixed(2)+' ₽');
   console.log('\nИтог: сценариев '+S.cases+', сбоев '+S.errors+'; сверка с первого раза '+Math.round(S.verifyFirst*100)+' %; шаг показан '+Math.round(S.showOk*100)+' %; ожидания '+Math.round(S.mustOk*100)+
-    ' %; в среднем '+S.avgSec.toFixed(1)+' с и '+S.avgRub.toFixed(2)+' ₽ за реплику'+(fails.length?'\n✖ Ниже норм: '+fails.join('; '):'\n✓ В нормах.'));
+    ' %; в среднем '+S.avgSec.toFixed(1)+' с и '+S.avgRub.toFixed(2)+' ₽ за реплику; кругов на сценарий '+S.rounds.toFixed(1)+', из кэша '+Math.round(S.cachedShare*100)+' % входа'+(fails.length?'\n✖ Ниже норм: '+fails.join('; '):'\n✓ В нормах.'));
   if(arg('json')) fs.writeFileSync(arg('json'),JSON.stringify({summary:S,norms:N,rows},null,1));
   return fails.length?1:0; }
 

@@ -10,7 +10,7 @@ function fromEnv(env){ env=env||process.env; const key=env.PROXYAPI_KEY||'', fol
   const ru=env.TUTOR_RU_MODEL?{yandex:true,url:env.TUTOR_RU_URL||LLM.YA_URL,model:env.TUTOR_RU_MODEL.replace('{folder}',folder),folder}:null;
   const m=(v,d)=>({model:LLM.pxModel(v||d),url:env.TUTOR_URL||LLM.PX_URL});
   return {on:env.TUTOR!=='off'&&!!(key||ru),key,main:m(env.TUTOR_MODEL,SONNET),light:m(env.TUTOR_LIGHT_MODEL,HAIKU),eyes:m(env.TUTOR_EYES_MODEL,SONNET),ru,
-    modeDefault:env.TUTOR_MODE_DEFAULT==='explain'?'explain':'coach',tools:env.TUTOR_TOOLS!=='off',dayRub:+env.TUTOR_DAY_RUB||1500,userDayRub:+env.TUTOR_USER_DAY_RUB||40,rate:+env.TUTOR_RATE||110}; }
+    modeDefault:env.TUTOR_MODE_DEFAULT==='explain'?'explain':'coach',tools:env.TUTOR_TOOLS!=='off',cache:env.TUTOR_CACHE==='on',dayRub:+env.TUTOR_DAY_RUB||1500,userDayRub:+env.TUTOR_USER_DAY_RUB||40,rate:+env.TUTOR_RATE||110}; }
 
 const TEXT_MAX=2000, HIST=24, CTX_HIST=12, IMG_MAX=1600*1024, BODY_MAX=3.6*1024*1024, DEADLINE=45000, DAY=864e5;
 const IMG_RE=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/;
@@ -25,7 +25,7 @@ function parseJson(t){ t=String(t||'').replace(/^```(?:json)?\s*/i,'').replace(/
 function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()=>deps.cfg||{on:false};
   const memId=(u,dz,n)=>u+':'+dz+':'+n;
   function where(b,q){ const src=Object.assign({},q||{},b||{}), dz=String(src.dz||'ig4'), n=parseInt(src.n,10);
-    if(!P.dzList.includes(dz)) fail(400,'Наставник пока работает только в ИГ, ДЗ №4.');
+    if(!P.dzList.includes(dz)) fail(400,'Наставник пока работает в ДЗ №1–5 по начерту и ДЗ №4 по ИГ.');
     const v=P.variant(dz,n); if(!v) fail(400,'Нет такого варианта.'); return {dz,n,v}; }
   async function loadMem(S,dz,n){ const id=memId(S.user.id,dz,n), m=await store.get('tutor',id);
     return m||{id,userId:S.user.id,dz,n,msgs:[],asks:{},open:{},mistakes:{},notes:[],mode:cfg().modeDefault||'coach',photo:false,turns:0,kop:0,createdAt:now()}; }
@@ -37,7 +37,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
   /* выжимка памяти для модели: где застревал, какие ошибки повторял */
   function memo(mem,dz){ const L=[], hard=Object.keys(mem.asks||{}).filter(k=>mem.asks[k]>=2).map(Number).sort((a,b)=>a-b);
     if(hard.length) L.push('много раз просил помощи на шагах '+hard.join(', '));
-    const M=P.mistakes(dz).mistakes, top=Object.entries(mem.mistakes||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const M=P.mistakes(dz,mem.n).mistakes, top=Object.entries(mem.mistakes||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
     top.forEach(([tag,c])=>{ const x=M.find(m=>m.tag===tag); L.push((x?x.text:'трудность')+(c>1?' (×'+c+')':'')); });
     (mem.notes||[]).slice(-3).forEach(n=>L.push('заметка: '+n));
     if(mem.photo) L.push('уже присылал фото своего листа');
@@ -83,22 +83,22 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     const ctx={dz,n,mem,turn,step,photo:!!photo,
       see:photo?async focus=>{ if(!ref) throw new Error('нет эталона для сравнения — обнови страницу');
         const left=t0+DEADLINE-Date.now(); if(left<8000) throw new Error('не хватило времени');
-        const r=await LLM.chat(llm,c.eyes,{messages:[{role:'system',content:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+n+'.'+(focus?' Особенно: '+focus:'')},
+        const r=await LLM.chat(llm,c.eyes,{messages:[{role:'system',content:P.isNg(dz)?PR.EYES_NG:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+n+'.'+(focus?' Особенно: '+focus:'')},
           {type:'image_url',image_url:{url:photo}},{type:'image_url',image_url:{url:ref}}]}],max:1500,temperature:0,timeout:Math.min(30000,left-3000)});
         turn.eyesKop+=LLM.kopecks(c.eyes.model,r.usage,c.rate); const j=parseJson(r.message.content); if(!j) throw new Error('глаза ответили не по формату'); return j; }:null,
-      askAuthor:deps.askCreate?s=>deps.askCreate(S.user,{text:'Вопрос от наставника (ИГ, ДЗ №4, вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/ig4/'+n,where:'ИГ · ДЗ №4 · вариант '+n}):null};
+      askAuthor:deps.askCreate?s=>deps.askCreate(S.user,{text:'Вопрос от наставника ('+P.courseLabel(dz)+', вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/'+dz+'/'+n,where:P.courseLabel(dz)+' · вариант '+n}):null};
     /* без инструментов (российская модель): открытое по текущему шагу — прямо в карточку */
     let inline=''; const bare=!!ru||c.tools===false;   /* «без рук»: российская модель или TUTOR_TOOLS=off */
     if(bare){ const k=step||mem.last||1; POL.ask(mem,turn,k); const d=POL.allowed(mem,k), o=P.stepAt(dz,n,k,POL.depthName(d)); POL.open(mem,k,d); turn.facts.push(...T.factsOfStep(o));
-      if(d>=2) turn.actions.push({t:'show',step:k,points:d>=3?(o.points||[]).map(p=>p.n):[]});   /* без рук наставник всё равно показывает шаг */
+      if(d>=2) turn.actions.push(T.showAction(dz,n,k,d>=3?(o.points||[]).map(p=>p.n):[]));   /* без рук наставник всё равно показывает шаг */
       inline='Шаг '+o.k+' «'+o.title+'»'+(o.idea?'\nИдея: '+o.idea:'')+(o.short?'\nЧто делать: '+o.short:'')+(o.more?'\nПодробно: '+o.more:''); }
-    const system=PR.SYSTEM+'\n\n'+PR.card({overview:P.overview(dz,n),mode:mem.mode,step,memo:memo(mem,dz),photo:!!photo,inline});
+    const system=PR.SYSTEM+'\n\n'+PR.card({overview:P.overview(dz,n),ng:P.isNg(dz),mode:mem.mode,step,memo:memo(mem,dz),photo:!!photo,inline});
     const history=(mem.msgs||[]).slice(-CTX_HIST).map(m=>({role:m.r==='u'?'user':'assistant',content:m.t||(m.ph?'(фото листа)':'…')}));
     const messages=[{role:'system',content:system}].concat(history,[{role:'user',content:text||'Вот фото моего листа. Посмотри, что не так.'}]);
     const R=P.registry(dz,n), quoted=VF.numbersOf(text);
     const vctx=()=>({points:new Set(R.keys()),steps:v.steps.length,facts:before.concat(turn.facts),quoted});
     const cheap=all>=0.8*c.dayRub*100, models=ru?[ru]:cheap?[c.light]:[c.main,c.light];
-    let res; try{ res=await A_.run({models,llm,messages,tools:!bare,ctx,vctx,deadline:t0+DEADLINE,rate:c.rate}); }
+    let res; try{ res=await A_.run({models,llm,messages,tools:!bare,ctx,vctx,deadline:t0+DEADLINE,rate:c.rate,cache:!!c.cache,cacheSplit:PR.SYSTEM.length}); }
     catch(e){ if(!(e instanceof LLM.ModelError)) throw e; deps.log&&deps.log.error&&deps.log.error('наставник',e.message,e.fallback||'');
       await store.put('tutorlog',{id:new Date(now()).toISOString()+'#'+require('crypto').randomBytes(3).toString('hex'),userId:uid,dz,n,ts:now(),ms:Date.now()-t0,error:String(e.message).slice(0,200),fallback:e.fallback||null,kop:turn.eyesKop});
       await spend(uid,turn.eyesKop); await spend('all',turn.eyesKop);
@@ -109,7 +109,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     mem.msgs=(mem.msgs||[]).concat([{r:'u',t:text,ph:photo?1:0,ts:t},{r:'a',t:res.text,ts:t,act:turn.actions,id,v:verified?1:0}]).slice(-HIST);
     mem.turns=(mem.turns||0)+1; mem.kop=(mem.kop||0)+kop; mem.updatedAt=t;
     await store.put('tutor',mem); await spend(uid,kop); await spend('all',kop);
-    await store.put('tutorlog',{id,userId:uid,dz,n,ts:t,ms:Date.now()-t0,model:res.model,kop,rounds:res.rounds,tools:turn.tools,mode:mem.mode,photo:!!photo,ru:!!ru,
+    await store.put('tutorlog',{id,userId:uid,dz,n,ts:t,ms:Date.now()-t0,model:res.model,kop,rounds:res.rounds,tokens:res.tokens||null,tools:turn.tools,mode:mem.mode,photo:!!photo,ru:!!ru,
       verify:res.verify,fallback:res.fallback||null,rate:null});
     return json(200,{id,reply:res.text,actions:turn.actions,model:shortModel(res.model),mode:mem.mode,ladder:POL.ladder(mem,v.steps),
       verified,rub:Math.round(kop)/100,left:Math.max(0,Math.round((c.userDayRub*100-mine-kop)/100))}); };
@@ -123,7 +123,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
       verify:{first:ok.filter(l=>l.verify&&l.verify.first).length,repaired:ok.filter(l=>l.verify&&l.verify.repaired).length,cut:ok.filter(l=>l.verify&&l.verify.cut).length,total:ok.length},
       rate:{good:logs.filter(l=>l.rate===1).length,bad:logs.filter(l=>l.rate===0).length},
       ms:ok.length?Math.round(sum(ok,l=>l.ms)/ok.length):0,
-      recent:logs.sort((a,b)=>b.ts-a.ts).slice(0,60).map(l=>({id:l.id,ts:l.ts,name:(U[l.userId]&&U[l.userId].name)||'удалён',n:l.n,model:shortModel(l.model),ms:l.ms,rub:Math.round((l.kop||0))/100,
+      recent:logs.sort((a,b)=>b.ts-a.ts).slice(0,60).map(l=>({id:l.id,ts:l.ts,name:(U[l.userId]&&U[l.userId].name)||'удалён',dz:l.dz||'ig4',n:l.n,model:shortModel(l.model),ms:l.ms,rub:Math.round((l.kop||0))/100,
         tools:l.tools||[],verify:l.verify||null,rate:l.rate,error:l.error||null,photo:!!l.photo}))}); };
 }
 

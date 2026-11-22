@@ -290,9 +290,9 @@ function repRender() {
     REPORTS.map(r => '<a class="rep-it" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer"><b>' + esc(r.title) + '</b><time>' + esc(d(r.date)) + '</time><p>' + esc(r.about) + '</p></a>').join('');
 }
 
-/* ───────── наставник (ИИ на чертеже, ИГ ДЗ №4): сводка за сегодня и неделю, сверщик, оценки, последние ответы ─────────
+/* ───────── наставник (ИИ на чертеже: начерт ДЗ №1–5, ИГ ДЗ №4): сводка за сегодня и неделю, сверщик, оценки, последние ответы ─────────
    API клуба /api/admin/tutor (server/lib/tutor/index.js), сессия кабинета lk_tok с ролью админа. */
-async function tutRender() { const el = $('#tutList'), h = '<h2>Наставник · ИГ ДЗ №4</h2>';
+async function tutRender() { const el = $('#tutList'), h = '<h2>Наставник · начерт ДЗ №1–5, ИГ ДЗ №4</h2>';
   if (!CLUB || !ls.get('lk_tok')) { el.innerHTML = h + '<div class="qa-gate"><b>Нужен вход в кабинет</b>Сводку видит только владелец.<p><button class="btn sm" data-act="lk">Войти в кабинет</button></p></div>'; return; }
   el.innerHTML = h + '<p class="rep-note">Загрузка…</p>'; let j;
   try { j = await qreq('GET', '/api/admin/tutor'); }
@@ -307,8 +307,8 @@ async function tutRender() { const el = $('#tutList'), h = '<h2>Наставни
     st('Сегодня', j.today || {}) + st('7 дней', j.week || {}) +
     '<div class="tut-row"><h3>Качество</h3>' + card('сверено сразу', pct(v.first, v.total)) + card('переписано', pct(v.repaired, v.total)) + card('вырезано', pct(v.cut, v.total)) +
     card('👍 / 👎', (r.good || 0) + ' / ' + (r.bad || 0)) + card('время ответа', j.ms ? (j.ms / 1000).toFixed(1) + ' с' : '—') + '</div>' +
-    '<h3>Последние ответы</h3>' + ((j.recent || []).length ? '<table class="tut-t"><thead><tr><th>Когда</th><th>Кто</th><th>Вар.</th><th>Модель</th><th>Инструменты</th><th>Сверка</th><th>₽</th><th>Оценка</th></tr></thead><tbody>' +
-      j.recent.map(x => '<tr' + (x.error ? ' class="err"' : '') + '><td>' + esc(qwhen(x.ts)) + '</td><td>' + esc(x.name) + '</td><td>' + esc(x.n) + (x.photo ? ' 📷' : '') + '</td><td>' + esc(x.model || '') + (x.ms ? ' · ' + (x.ms / 1000).toFixed(1) + ' с' : '') +
+    '<h3>Последние ответы</h3>' + ((j.recent || []).length ? '<table class="tut-t"><thead><tr><th>Когда</th><th>Кто</th><th>ДЗ · вар.</th><th>Модель</th><th>Инструменты</th><th>Сверка</th><th>₽</th><th>Оценка</th></tr></thead><tbody>' +
+      j.recent.map(x => '<tr' + (x.error ? ' class="err"' : '') + '><td>' + esc(qwhen(x.ts)) + '</td><td>' + esc(x.name) + '</td><td>' + esc((x.dz || 'ig4').replace(/^ng/, 'НГ ').replace(/^ig/, 'ИГ ') + ' · ' + x.n) + (x.photo ? ' 📷' : '') + '</td><td>' + esc(x.model || '') + (x.ms ? ' · ' + (x.ms / 1000).toFixed(1) + ' с' : '') +
         '</td><td>' + esc((x.tools || []).join(', ')) + '</td><td>' + (x.error ? '⚠ ' + esc(x.error) : x.verify ? (x.verify.cut ? 'вырезано' : x.verify.repaired ? 'переписано' : 'сразу') : '—') +
         '</td><td>' + esc(x.rub) + '</td><td>' + (x.rate === 1 ? '👍' : x.rate === 0 ? '👎' : '') + '</td></tr>').join('') + '</tbody></table>' : '<p class="rep-note">Пока никто не спрашивал.</p>');
   const b = $('#tutRe'); if (b) b.onclick = tutRender; }

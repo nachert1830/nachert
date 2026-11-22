@@ -8,6 +8,11 @@ const PRICES={'anthropic/claude-sonnet-5-5':{in:2,out:10,cache:0.10},'anthropic/
 /* имя Claude для ProxyAPI — версия через дефис (anthropic/claude-sonnet-5-5), как в server/lib/eyes.js */
 const pxModel=m=>/^anthropic\/claude-/.test(m||'')?m.replace(/(\d)\.(\d)/g,'$1-$2'):m;
 
+/* кэш промпта Anthropic (cache_control у системных частей) — если ProxyAPI его не примет (400), повторяем без кэша и больше не шлём */
+let NO_CACHE=false;
+const cacheParts=(msgs,split)=>msgs.map((m,i)=>{ if(i!==0||m.role!=='system'||typeof m.content!=='string') return m; const a=m.content.slice(0,split), b=m.content.slice(split);
+  const parts=[{type:'text',text:a,cache_control:{type:'ephemeral'}}]; if(b.trim()) parts.push({type:'text',text:b,cache_control:{type:'ephemeral'}}); return {role:'system',content:parts}; });
+
 class ModelError extends Error{ constructor(msg,status,upstream){ super(msg); this.status=status||502; this.upstream=upstream||0; } }
 
 /* копейки за вызов */
@@ -20,7 +25,8 @@ function kopecks(model,usage,rate){ if(!usage) return 0; const p=PRICES[model]||
    → {message:{content, tool_calls}, usage, ms, finish} */
 async function chat(o,m,q){ const http=o.http||((...a)=>fetch(...a)), yandex=!!m.yandex;
   const key=yandex?(o.token&&o.token()):o.key; if(!key) throw new ModelError('Модель не настроена: нет ключа.',503);
-  const body={model:yandex?m.model:pxModel(m.model),messages:q.messages,temperature:q.temperature==null?0.3:q.temperature};
+  const cache=!!q.cache&&!yandex&&!NO_CACHE&&/^anthropic\//.test(m.model||'');
+  const body={model:yandex?m.model:pxModel(m.model),messages:cache?cacheParts(q.messages,q.cacheSplit||0):q.messages,temperature:q.temperature==null?0.3:q.temperature};
   if(yandex) body.max_tokens=q.max||1200; else body.max_completion_tokens=q.max||1200;
   if(q.tools&&q.tools.length){ body.tools=q.tools; body.tool_choice=q.toolChoice||'auto'; }
   const headers={'content-type':'application/json',authorization:'Bearer '+key}; if(yandex&&m.folder) headers['x-folder-id']=m.folder;
@@ -28,6 +34,7 @@ async function chat(o,m,q){ const http=o.http||((...a)=>fetch(...a)), yandex=!!m
   try{ r=await http(m.url||(yandex?YA_URL:PX_URL),{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(Math.max(3000,q.timeout||25000))}); }
   catch(e){ throw new ModelError('Модель не ответила вовремя'+(e&&e.name==='TimeoutError'?'':': '+String(e&&e.message||e).slice(0,120)),504); }
   const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
+  if(!r.ok&&cache&&r.status===400){ NO_CACHE=true; return chat(o,m,Object.assign({},q,{cache:false})); }
   if(!r.ok){ const why=j&&(j.error?j.error.message||j.error:j.detail||j.message);
     throw new ModelError('Модель '+body.model+' ответила '+r.status+(why?': '+String(typeof why==='string'?why:JSON.stringify(why)).slice(0,200):''),r.status===402?402:502,r.status); }
   const c=j&&j.choices&&j.choices[0]||{}, msg=c.message||{}, raw=msg.content;
@@ -35,4 +42,8 @@ async function chat(o,m,q){ const http=o.http||((...a)=>fetch(...a)), yandex=!!m
   const calls=(Array.isArray(msg.tool_calls)?msg.tool_calls:[]).filter(x=>x&&x.function&&x.function.name);
   return {message:{content,tool_calls:calls},usage:j&&j.usage||null,ms:Date.now()-t0,finish:c.finish_reason||null,model:body.model}; }
 
-module.exports={chat,kopecks,pxModel,ModelError,PX_URL,YA_URL,PRICES};
+/* токены вызова для журнала: вход, выход, из кэша */
+function tokens(usage){ if(!usage) return {in:0,out:0,cached:0}; return {in:+usage.prompt_tokens||0,out:+usage.completion_tokens||0,
+  cached:+((usage.prompt_tokens_details&&usage.prompt_tokens_details.cached_tokens)||usage.cache_read_input_tokens||0)}; }
+
+module.exports={chat,kopecks,tokens,pxModel,ModelError,PX_URL,YA_URL,PRICES,_noCache:v=>{ if(v!=null) NO_CACHE=!!v; return NO_CACHE; }};

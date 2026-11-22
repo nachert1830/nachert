@@ -1,7 +1,9 @@
 /* ═══ Наставник — ИИ-агент на чертеже (docs/TUTOR.md) ═══
-   Окно на странице варианта ИГ ДЗ №4 (#/ig4/<n>; прежний адрес #/ig/dz/4/<n> переадресуется): разговор с наставником; его ответы управляют чертежом —
-   открывают нужный шаг плеера решения и подсвечивают точки (IG4S.player). Фото листа (📷) уходит вместе с эталоном —
-   видом решения варианта со всеми номерами точек (IG4S.svg → JPEG), глаза наставника сравнивают их.
+   Окно на странице варианта ДЗ: ИГ №4 (#/ig4/<n>; прежний адрес #/ig/dz/4/<n> переадресуется) и начерт №1–5 (#/ng2/<n>, #/ng3/<n>/b…).
+   Разговор с наставником; его ответы управляют чертежом — открывают нужный шаг плеера решения и подсвечивают точки
+   (ИГ — IG4S.player; начерт — плеер разбора сайта PLR: подзадача и шаг по id «p2s3», подписи точек на чертеже).
+   Фото листа (📷) уходит вместе с эталоном: ИГ — вид решения со всеми номерами точек (IG4S.svg), начерт — черновик листа
+   (SHEET.ng, построения в цвете) → JPEG; глаза наставника сравнивают их.
    Сервер — API кабинета (window.CLUB_API): /api/tutor/*, сессия lk_tok. Без адреса API окно не показывается.
    Для тестов: window.TUTOR — {open(), close(), send(text), act(action), state()}. */
 (function(){
@@ -15,8 +17,13 @@ const tok=()=>LS.get('lk_tok')||'';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(f,ms){ const t=Date.now(); for(;;){ let v=null; try{ v=f(); }catch(e){} if(v) return v; if(Date.now()-t>ms) return null; await sleep(120); } }
 
-/* ── где мы: вариант ДЗ №4 ── */
-function here(){ const m=/^#\/(?:ig4|ig\/dz\/4)\/(\d{1,2})(?:[/?]|$)/.exec(location.hash||''); return m?{dz:'ig4',n:+m[1]}:null; }
+/* ── где мы: вариант ДЗ ── */
+const DZN={ig4:'ИГ · ДЗ №4',ng1:'Начерт · ДЗ №1',ng2:'Начерт · ДЗ №2',ng3:'Начерт · ДЗ №3',ng4:'Начерт · ДЗ №4',ng5:'Начерт · ДЗ №5'};
+function here(){ const h=location.hash||'';
+  let m=/^#\/(?:ig4|ig\/dz\/4)\/(\d{1,2})(?:[/?]|$)/.exec(h); if(m) return {dz:'ig4',n:+m[1]};
+  m=/^#\/(ng[1-5])\/(\d{1,2})(?:[/?]|$)/.exec(h); if(m&&+m[2]>=1&&+m[2]<=30) return {dz:m[1],n:+m[2]};
+  return null; }
+const isNg=w=>!!w&&w.dz!=='ig4';
 
 /* ── запросы ── */
 async function req(m,p,b){ const h={}; if(b) h['content-type']='application/json'; if(tok()) h.authorization='Bearer '+tok();
@@ -34,12 +41,17 @@ function shrink(file){ return new Promise((ok,no)=>{ if(!/^image\//.test(file.ty
       for(const q of [.82,.7,.58]){ const d=cv.toDataURL('image/jpeg',q); if(d.length<=1100*1024) return ok(d); } k*=.8; }
     no(new Error('Фото слишком большое')); };
   im.onerror=()=>{ URL.revokeObjectURL(url); no(new Error('Фото не открылось')); }; im.src=url; }); }
-/* ── эталон для глаз: вид решения варианта со всеми номерами точек ── */
-async function reference(n){ if(!window.IG4S||!window.DZR) return '';
-  const model=DZR.get('ig4').part(n), PL=IG4S.plan(model); let i=PL.ST.findIndex(s=>s.id==='aa2'); if(i<0) i=PL.ST.length-2;
-  let s=IG4S.svg(model,PL,i,{hidePast:false,allNums:true});
-  s=s.replace(/^<svg([^>]*)>/,(m,a)=>'<svg xmlns="http://www.w3.org/2000/svg"'+a.replace(/\sclass="[^"]*"/,'')+'><style>.igs-k{font:italic 600 24px "Times New Roman",serif;paint-order:stroke;stroke:#fff;stroke-width:4px}</style>');
-  const vb=/viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(s), W=vb?+vb[1]:900, H=vb?+vb[2]:900, k=1400/Math.max(W,H);
+/* ── эталон для глаз: ИГ — вид решения варианта со всеми номерами точек; начерт — черновик листа (построения в цвете) ── */
+async function reference(n,dz){ dz=dz||'ig4'; if(!window.DZR) return ''; let s, W=900, H=900;
+  if(dz==='ig4'){ if(!window.IG4S) return '';
+    const model=DZR.get('ig4').part(n), PL=IG4S.plan(model); let i=PL.ST.findIndex(s=>s.id==='aa2'); if(i<0) i=PL.ST.length-2;
+    s=IG4S.svg(model,PL,i,{hidePast:false,allNums:true});
+    s=s.replace(/^<svg([^>]*)>/,(m,a)=>'<svg xmlns="http://www.w3.org/2000/svg"'+a.replace(/\sclass="[^"]*"/,'')+'><style>.igs-k{font:italic 600 24px "Times New Roman",serif;paint-order:stroke;stroke:#fff;stroke-width:4px}</style>');
+    const vb=/viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(s); if(vb){ W=+vb[1]; H=+vb[2]; } }
+  else { if(!window.SHEET||!SHEET.ng) return ''; s=SHEET.ng(DZR.solve(dz,n),DZR.meta(dz,n),'draft').svg;
+    if(!/xmlns=/.test(s)) s=s.replace(/^<svg/,'<svg xmlns="http://www.w3.org/2000/svg"');
+    const vb=/viewBox="[\d.\s-]*?([\d.]+) ([\d.]+)"/.exec(s); if(vb){ W=+vb[1]; H=+vb[2]; } }
+  const k=1400/Math.max(W,H);
   const url=URL.createObjectURL(new Blob([s],{type:'image/svg+xml'}));
   try{ const im=await new Promise((ok,no)=>{ const x=new Image(); x.onload=()=>ok(x); x.onerror=()=>no(new Error('эталон')); x.src=url; });
     const cv=document.createElement('canvas'); cv.width=Math.round(W*k); cv.height=Math.round(H*k); const cx=cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(im,0,0,cv.width,cv.height);
@@ -52,7 +64,25 @@ async function player(n){ const ok=()=>{ const P=window.IG4S&&IG4S.player; retur
   const show=$('#igShow'); if(show&&show.offsetParent!==null) show.click();
   const tab=await until(()=>$('.igx-tabs button[data-t=steps]'),6000); if(tab&&tab.getAttribute('aria-selected')!=='true') tab.click();
   return until(()=>ok()&&$('#igbPic svg')&&ok(),60000); }
+/* начерт: плеер разбора варианта (PLR сайта) на странице #/ngN/n — подзадача pi и шаг k по id «p2s3» */
+const plr=()=>{ try{ return typeof PLR!=='undefined'&&PLR&&PLR.state&&$('#dzPl .pl')&&document.contains($('#dzPl .pl'))?PLR:null; }catch(e){ return null; } };
+async function ngPlayer(w){ const ok=()=>{ const h=here(); return h&&h.dz===w.dz&&h.n===w.n&&plr(); };
+  if(ok()) return ok();
+  const base='#/'+w.dz+'/'+w.n; if(!/^#\/ng\d\/\d+(?:\/[abvg])?$/.test(location.hash)) location.hash=base;   /* лист, черновик, «как решать» → разбор по шагам */
+  return until(ok,20000); }
+/* подсветить подписи точек на чертеже плеера: «A» → A″, A′, A‴; «1» → 1″, 1′ */
+const ROM={'₄':'IV','₅':'V','₆':'VI','₇':'VII','₈':'VIII'};   /* новые плоскости на чертеже — римскими сверху: A₄ → A^IV */
+function ngHighlight(points){ const want=new Set(); (points||[]).forEach(p=>{ p=String(p); want.add(p); want.add(p.replace(/[₄-₈]/g,c=>ROM[c])); }); if(!want.size) return;
+  const svg=$('#dzPl svg.dwg'); if(!svg) return; svg.querySelectorAll('.tu-hl').forEach(x=>x.classList.remove('tu-hl'));
+  svg.querySelectorAll('text').forEach(t=>{ const name=String(t.textContent||'').replace(/[″′‴'"]+/g,'').trim(); if(want.has(name)) t.classList.add('tu-hl'); }); }
+/* номер шага по порядку (как у сервера) из подзадачи и шага плеера */
+function ngStep(w){ const P=plr(), PL=typeof PLAYER!=='undefined'?PLAYER:null; if(!P||!PL||!window.DZR) return null; const S=P.state; if(!S.k) return null;
+  try{ const parts=PL.partsOf(DZR.solve(w.dz,w.n).task); let k=0; for(let i=0;i<S.pi;i++) k+=(parts[i].steps||[]).length; return k+S.k; }catch(e){ return null; } }
 async function act(a){ const w=here(); if(!a||!w) return;
+  if(a.t==='show'&&isNg(w)){ const P=await ngPlayer(w); if(!P) return; const m=/^p(\d+)s(\d+)$/.exec(a.id||'');
+    if(m){ P.state.pi=+m[1]-1; P.go(+m[2]); } else P.go(a.step);
+    if(a.points&&a.points.length){ await sleep(80); ngHighlight(a.points); }
+    if(innerWidth<760) close(true); return; }
   if(a.t==='show'){ const P=await player(w.n); if(!P) return; P.go(a.step); if(a.points&&a.points.length){ await sleep(60); P.highlight(a.points); }
     if(innerWidth<760) close(true); }
   if(a.t==='ask') location.hash='#/ask/'+encodeURIComponent(a.id); }
@@ -69,6 +99,7 @@ css.textContent=`
 @media (min-width:760px){.tu{right:16px;bottom:16px;width:410px;height:min(720px,calc(100vh - 32px));border-radius:24px}}
 @media (max-width:759px){.tu{left:0;right:0;bottom:0;height:min(86vh,calc(100vh - 40px));border-radius:22px 22px 0 0;padding-bottom:env(safe-area-inset-bottom)}}
 .tu[hidden],.tu-fab[hidden]{display:none}
+svg .tu-hl{fill:#e5484d!important;font-weight:800!important;paint-order:stroke;stroke:rgba(229,72,77,.25);stroke-width:6px}
 body:has(.ckn) .tu-fab{display:none}
 .tu-h{display:flex;align-items:center;gap:10px;padding:12px 12px 10px 16px;border-bottom:1px solid var(--line,#e3e6ec)}
 .tu-h b{font:800 17px/1.2 var(--disp,inherit)}.tu-h small{display:block;color:var(--mut,#667);font:600 12.5px var(--sans,system-ui)}
@@ -129,14 +160,15 @@ const body=$('[data-body]',box), inp=$('[data-in]',box), pv=$('[data-pv]',box);
 /* текст ответа: переносы, **жирный**, «шаг N» — ссылка, открывающая шаг на чертеже */
 function rich(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^\p{L}])(шаг[\p{L}]*\s+(\d{1,2}))/giu,(m,a,t,k)=>a+'<a class="tu-st" data-step="'+k+'">'+t+'</a>').replace(/\n/g,'<br>'); }
 const SUG=['С чего начать?','Не понимаю текущий шаг','Как найти точку на грани ⟂ π₃?','Готовлюсь к защите — спроси меня'];
-function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?'ИГ · ДЗ №4 · вариант '+w.n:'';
+const SUG_NG=['С чего начать?','Не понимаю текущий шаг','Какое правило здесь работает?','Готовлюсь к защите — спроси меня'];
+function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?(DZN[w.dz]||'')+' · вариант '+w.n:'';
   box.querySelectorAll('[data-mode]').forEach(b=>{ const on=st&&st.mode===b.dataset.mode; b.classList.toggle('on',!!on); b.setAttribute('aria-selected',String(!!on)); });
   $('[data-foot]',box).hidden=!(st&&st.ready); $('.tu-mode',box).hidden=!(st&&st.ready);
   if(!tok()){ body.innerHTML='<div class="tu-gate"><b>Войди, и начнём</b><p>Наставник помнит, где ты застрял, и ведёт по шагам твоего варианта. Вход — тот же, что в личном кабинете.</p><a class="tu-btn" href="/lk/#/login" data-login>Войти</a></div>'; return; }
   if(!st){ body.innerHTML='<div class="tu-wait"><i></i>Открываю…</div>'; return; }
   if(!st.on){ body.innerHTML='<div class="tu-gate"><b>Наставник скоро появится</b><p>Пока его не подключили. Вопрос можно задать автору.</p><a class="tu-btn" href="#/ask">Спросить автора</a></div>'; return; }
   if(!st.consent&&!st.ru){ body.innerHTML=`<div class="tu-gate"><b>Наставник работает на модели Claude</b><p>Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, номер варианта и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.</p><button class="tu-btn" data-consent>Согласен, начать</button></div>`; return; }
-  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я твой наставник по ДЗ №4.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${SUG.map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
+  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:SUG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
   st.msgs.forEach((m,i)=>{ if(m.from==='u') h+=`<div class="tu-m u"><div class="tu-bb">${m.photo?'📷 ':''}${esc(m.text||'Фото листа')}</div></div>`;
     else { const acts=(m.actions||[]).map((a,j)=>a.t==='show'?`<button class="tu-chip" data-act="${i}:${j}">Шаг ${a.step} на чертеже${a.points&&a.points.length?' · точки '+a.points.join(', '):''} ↗</button>`:a.t==='ask'?`<a class="tu-chip" href="#/ask/${esc(a.id)}">Вопрос автору ↗</a>`:'').join('');
       h+=`<div class="tu-m t"><div class="tu-bb">${rich(m.text)}</div><div class="tu-x">${acts}${m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением">✓ сверено</span>':''}${m.id?`<button class="tu-r${m.rate===1?' on':''}" data-rate="${esc(m.id)}:1" aria-label="Полезно">👍</button><button class="tu-r${m.rate===0?' on':''}" data-rate="${esc(m.id)}:0" aria-label="Не помогло">👎</button>`:''}</div></div>`; } });
@@ -151,16 +183,16 @@ async function load(){ const w=here(); if(!w) return; S.w=w; S.st=null; S.err=''
   catch(e){ S.st={on:true,consent:true,ready:true,msgs:[],mode:'coach'}; S.err=e.message; }
   render(); }
 function open(){ if(!here()) return; S.open=true; box.hidden=false; fab.hidden=true; const u=fab.querySelector('u'); if(u) u.remove();
-  if(!S.st||!S.w||S.w.n!==here().n) load(); else render(); setTimeout(()=>{ if(innerWidth>=760) inp.focus(); },50); }
+  if(!S.st||!S.w||S.w.n!==here().n||S.w.dz!==here().dz) load(); else render(); setTimeout(()=>{ if(innerWidth>=760) inp.focus(); },50); }
 function close(peek){ S.open=false; box.hidden=true; fab.hidden=!here(); if(peek&&!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); }
-function route(){ const w=here(); if(!w){ box.hidden=true; fab.hidden=true; return; } fab.hidden=S.open; if(S.w&&S.w.n!==w.n){ S.st=null; S.w=w; if(S.open) load(); } }
+function route(){ const w=here(); if(!w){ box.hidden=true; fab.hidden=true; S.open=false; return; } fab.hidden=S.open; if(S.w&&(S.w.n!==w.n||S.w.dz!==w.dz)){ S.st=null; S.w=w; if(S.open) load(); } }
 addEventListener('hashchange',route);
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mount); else mount();
 
 async function send(text){ const w=here(); if(!w||S.busy||!S.st||!S.st.ready) return; text=String(text==null?inp.value:text).trim(); if(!text&&!S.photo) return;
-  const P=window.IG4S&&IG4S.player, step=P&&P.model&&+P.model.n===w.n?P.current():null, photo=S.photo;
+  const P=window.IG4S&&IG4S.player, step=isNg(w)?ngStep(w):P&&P.model&&+P.model.n===w.n?P.current():null, photo=S.photo;
   S.busy=true; S.busyPhoto=!!photo; S.err=''; S.st.msgs.push({from:'u',text,photo:!!photo}); inp.value=''; S.photo=null; render();
-  try{ let ref=''; if(photo){ try{ ref=await reference(w.n); }catch(e){ ref=''; } }
+  try{ let ref=''; if(photo){ try{ ref=await reference(w.n,w.dz); }catch(e){ ref=''; } }
     const r=await req('POST','/api/tutor/chat',{dz:w.dz,n:w.n,text,step,mode:S.st.mode,photo:photo||undefined,ref:ref||undefined});
     S.st.msgs.push({from:'t',text:r.reply,actions:r.actions||[],id:r.id,verified:r.verified,rate:null}); S.st.mode=r.mode||S.st.mode;
     S.busy=false; render(); for(const a of r.actions||[]) await act(a); }
