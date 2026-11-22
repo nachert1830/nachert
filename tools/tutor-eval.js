@@ -14,20 +14,20 @@ const arg=k=>{ const a=process.argv.find(x=>x.startsWith('--'+k+'=')); return a?
    bad — подсажена ошибка (точка смещена): попадание, если глаза назвали эту точку (и проекцию); ok — верный лист: находок быть не должно */
 async function eyes(key){ const LLM=require(ROOT+'/server/lib/tutor/llm'), PR=require(ROOT+'/server/lib/tutor/prompts'), T=require(ROOT+'/server/lib/tutor/tools');
   const DIR=ROOT+'/server/test/tutor-eyes', CS=JSON.parse(fs.readFileSync(DIR+'/cases.json','utf8')).cases, cfg=TUTOR.fromEnv({PROXYAPI_KEY:key}), m=cfg.eyes;
-  const img=f=>'data:image/jpeg;base64,'+fs.readFileSync(DIR+'/'+f).toString('base64'); let hit=0, view=0, clean=0, kop=0, sec=0, errs=0; const rows=[];
+  const img=f=>'data:image/jpeg;base64,'+fs.readFileSync(DIR+'/'+f).toString('base64'); let hit=0, view=0, seen=0, clean=0, kop=0, sec=0, errs=0; const rows=[];
   for(const c of CS) for(const kind of ['bad','ok']){ const t0=Date.now(); let j=null, err=null;
     try{ const r=await LLM.chat({key},m,{messages:[{role:'system',content:/^ng/.test(c.dz)?PR.EYES_NG:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+c.n+'.'},
-        {type:'image_url',image_url:{url:img(c.id+'-'+kind+'.jpg')}},{type:'image_url',image_url:{url:img(c.id+'-ref.jpg')}}]}],max:1500,temperature:0,timeout:60000});
-      kop+=LLM.kopecks(m.model,r.usage,cfg.rate); j=TUTOR.parseJson(r.message.content); if(!j) err='не JSON'; }
+        {type:'image_url',image_url:{url:img(c.id+'-'+kind+'.jpg')}},{type:'image_url',image_url:{url:img(c.id+'-ref.jpg')}}]}],max:2500,temperature:0,timeout:60000});
+      kop+=LLM.kopecks(m.model,r.usage,cfg.rate); j=TUTOR.parseJson(r.message.content); if(!j) err='не JSON ('+r.finish+'): '+String(r.message.content).slice(0,160); }
     catch(e){ err=e.message; }
     sec+=(Date.now()-t0)/1000; if(err){ errs++; console.log('✖ eyes '+c.id+' '+kind+': '+err); continue; }
     const F=(j.findings||[]).map(f=>({p:f.point==null?null:T.ptKey(f.point),view:f.view,problem:f.problem}));
-    if(kind==='bad'){ const h=F.filter(f=>f.p===c.point); if(h.length) hit++; if(h.some(f=>f.view===c.view)) view++;
+    if(kind==='bad'){ const h=F.filter(f=>f.p===c.point); if(h.length) hit++; if(F.length) seen++; if(h.some(f=>f.view===c.view)) view++;
       console.log((h.length?'✓':'✖')+' eyes '+c.id+' с ошибкой ('+c.point+', '+c.coord+' '+(c.mm>0?'+':'')+c.mm+' мм): '+F.map(f=>(f.p||'—')+'/'+f.view+': '+String(f.problem).slice(0,70)).join(' | ')); }
     else { if(!F.length) clean++; console.log((F.length?'△':'✓')+' eyes '+c.id+' верный: '+(F.length?F.map(f=>(f.p||'—')+'/'+f.view+': '+String(f.problem).slice(0,70)).join(' | '):'находок нет')); }
     rows.push({id:c.id,kind,findings:F,overall:j.overall}); }
-  const n=CS.length; console.log('\nГлаза: ошибка найдена '+hit+' из '+n+' (на той же проекции — '+view+'); верный лист без находок — '+clean+' из '+n+'; сбоев '+errs+'; в среднем '+(sec/Math.max(1,2*n)).toFixed(1)+' с и '+(kop/100/Math.max(1,2*n)).toFixed(2)+' ₽ за фото');
-  return {hit,view,clean,n,errs,rows}; }
+  const n=CS.length; console.log('\nГлаза: на листе с ошибкой что-то не так — '+seen+' из '+n+'; названа причина (подсаженная точка) — '+hit+' (на той же проекции — '+view+'); верный лист без находок — '+clean+' из '+n+'; сбоев '+errs+'; в среднем '+(sec/Math.max(1,2*n)).toFixed(1)+' с и '+(kop/100/Math.max(1,2*n)).toFixed(2)+' ₽ за фото');
+  return {seen,hit,view,clean,n,errs,rows}; }
 
 async function main(){ const key=process.env.PROXYAPI_KEY; if(!key){ console.log('Замер наставника пропущен: нет PROXYAPI_KEY.'); return 0; }
   if(arg('only')==='eyes'){ const r=await eyes(key); if(arg('json')) fs.writeFileSync(arg('json'),JSON.stringify(r,null,1)); return r.errs?1:0; }

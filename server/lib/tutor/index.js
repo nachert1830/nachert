@@ -84,7 +84,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
       see:photo?async focus=>{ if(!ref) throw new Error('нет эталона для сравнения — обнови страницу');
         const left=t0+DEADLINE-Date.now(); if(left<8000) throw new Error('не хватило времени');
         const r=await LLM.chat(llm,c.eyes,{messages:[{role:'system',content:P.isNg(dz)?PR.EYES_NG:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+n+'.'+(focus?' Особенно: '+focus:'')},
-          {type:'image_url',image_url:{url:photo}},{type:'image_url',image_url:{url:ref}}]}],max:1500,temperature:0,timeout:Math.min(30000,left-3000)});
+          {type:'image_url',image_url:{url:photo}},{type:'image_url',image_url:{url:ref}}]}],max:2500,temperature:0,timeout:Math.min(30000,left-3000)});
         turn.eyesKop+=LLM.kopecks(c.eyes.model,r.usage,c.rate); const j=parseJson(r.message.content); if(!j) throw new Error('глаза ответили не по формату'); return j; }:null,
       askAuthor:deps.askCreate?s=>deps.askCreate(S.user,{text:'Вопрос от наставника ('+P.courseLabel(dz)+', вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/'+dz+'/'+n,where:P.courseLabel(dz)+' · вариант '+n}):null};
     /* без инструментов (российская модель): открытое по текущему шагу — прямо в карточку */
