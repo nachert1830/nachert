@@ -24,6 +24,9 @@ function fakeModel(log){ return async(url,o)=>{ if(!/proxyapi\.ru/.test(url)) re
   /* начерт (ДЗ №3, вариант 3): шаг 7 — подзадача б), точки A₄ и B₄ */
   if(/начерт/.test(user.content||'')&&!/лист/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:7,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:7,points:['A₄','b4']});
     return say(lastTool.highlighted&&lastTool.highlighted.length?'Подсветил A₄ и B₄ — это шаг 7, вид на π₄.':'Это шаг 7: строим вид на π₄, где AB в натуральную величину. С чего начнёшь?'); }
+  /* ИГ №5 (вариант 1): шаг 3 — первый элемент, точки 1 и 2 */
+  if(/игэ/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:3,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:3,points:[1,2]});
+    return say(lastTool.highlighted&&lastTool.highlighted.length?'Подсветил точки 1 и 2 — перенеси их на вид слева.':'Это шаг 3: первый элемент детали на виде слева. С чего начнёшь?'); }
   if(/лист/.test(user.content||'')){ if(!tools.length) return call('look_at_photo',{}); if(tools.length===1) return call('show_on_drawing',{k:5,points:[9]}); return say('Похоже, точка 9′ стоит ближе к оси. Проверь засечку на шаге 5.'); }
   if(!tools.length) return call('get_step',{k:5,depth:'full'});
   if(tools.length===1) return call('show_on_drawing',{k:5,points:[9,12]});
@@ -34,12 +37,12 @@ async function runTutor(browser){
   /* 1) пакет знаний = решение сайта */
   { const p=await browser.newPage(); const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const fp=path.join(ROOT,f);
       if(!fp.startsWith(ROOT)||!fs.existsSync(fp)||fs.statSync(fp).isDirectory()){ r.writeHead(404); return r.end(); } r.writeHead(200,{'Content-Type':TY[path.extname(fp)]||'application/octet-stream'}); fs.createReadStream(fp).pipe(r); });
-    const U=await listen(srv); await p.goto(U+'/#/ig4/7'); await p.waitForFunction(()=>window.IG4S&&window.DZR&&DZR.get('ig4'),null,{timeout:30000});
+    const U=await listen(srv); await p.goto(U+'/#/ig4/7'); await p.waitForFunction(()=>window.IG4S&&window.IGUI&&IGUI.tutor&&window.DZR&&DZR.get('ig4'),null,{timeout:30000});
     const snap=await PACK.build(p,[3,7,19]), file=JSON.parse(fs.readFileSync(PACK.OUT,'utf8'));
     for(const n of [3,7,19]) if(JSON.stringify(snap.variants[n])!==JSON.stringify(file.variants[n])) B('пакет знаний устарел','вариант '+n+': решение на сайте поменялось — пересоберите: node tools/tutor-pack.js');
     if(JSON.stringify(snap.method)!==JSON.stringify(file.method)) B('пакет знаний устарел','методика ДЗ №4 поменялась — node tools/tutor-pack.js');
     /* начерт: по варианту каждого ДЗ и методика */
-    for(const [dz,n] of [['ng1',4],['ng2',17],['ng3',3],['ng4',22],['ng5',13]]){ const sn=await PACK.buildDz(p,dz,[n]), fl=JSON.parse(fs.readFileSync(PACK.outOf(dz),'utf8'));
+    for(const [dz,n] of [['ng1',4],['ng2',17],['ng3',3],['ng4',22],['ng5',13],['ig5',1]]){ const sn=await PACK.buildDz(p,dz,[n]), fl=JSON.parse(fs.readFileSync(PACK.outOf(dz),'utf8'));
       if(JSON.stringify(sn.variants[n])!==JSON.stringify(fl.variants[n])||JSON.stringify(sn.method)!==JSON.stringify(fl.method)) B('пакет знаний устарел',dz+', вариант '+n+': решение на сайте поменялось — node tools/tutor-pack.js '+dz); }
     await p.close(); srv.close(); }
 
@@ -56,7 +59,7 @@ async function runTutor(browser){
     r.writeHead(200,{'Content-Type':TY[path.extname(p)]||'application/octet-stream'}); r.end(b); });
   API=await listen(apiSrv); SITE=await listen(siteSrv);
   const cfg={dev:true,origin:API,secure:false,botToken:'1:x',botName:'b',webhookSecret:'s',adminTg:['1000001'],mainUrl:SITE,week1:'',yandex:{clientId:'',secret:''},adminYa:[],fronts:[API,SITE],frontUrl:SITE+'/lk/',openSignup:true,
-    tutor:TUTOR.fromEnv({PROXYAPI_KEY:'px-test'})};
+    tutor:TUTOR.fromEnv({PROXYAPI_KEY:'px-test',TUTOR_CACHE:'off'})};
   const app=createApp({cfg,store,log:{log(){},error(){}},bot:botClient({dev:true,outbox:[]}),fetch:fakeModel(mlog)});
   async function session(id,name){ const act=await app.onUpdate({message:{from:{id,first_name:name},chat:{id},text:'/start login'}}); const t=act.reply_markup.inline_keyboard[0][0].url.split('#/tg/')[1];
     const res=await app.handle({method:'POST',path:'/api/auth/bot/redeem',query:{},headers:{origin:SITE,'content-type':'application/json'},body:JSON.stringify({token:t,confirm:true,consent:{terms:true,pd:true}}),ip:'127.0.0.1',cookies:{}});
@@ -69,7 +72,7 @@ async function runTutor(browser){
     /* гость */
     const g=await page({viewport:{width:1280,height:860}},'гость'); await g.goto(SITE+'/#/ig4/7'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на ИГ №4','нет'));
     await g.click('.tu-fab'); if(!/Войди/.test(await g.textContent('.tu-b').catch(()=>''))) B('гость: предложение войти',await g.textContent('.tu-b').catch(()=>''));
-    await g.goto(SITE+'/#/ig3/8'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на ДЗ с наставником','видна на #/ig3/8');
+    await g.goto(SITE+'/#/ig2/8'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на ДЗ с наставником','видна на #/ig2/8');
     await g.goto(SITE+'/#/ng3/8'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на начерте','нет на #/ng3/8'));
     await g.goto(SITE+'/#/theory'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на вариантах ДЗ','видна на #/theory');
     /* студент: согласие → вопрос → шаг 5 открыт сам */
@@ -131,6 +134,15 @@ async function runTutor(browser){
       const eyes=mlog.filter(b=>Array.isArray(b.messages[1]&&b.messages[1].content))[nEyes];
       if(!eyes) B('начерт: фото ушло глазам','нет'); else { if(!/эпюре Монжа/.test(eyes.messages[0].content)) B('начерт: глаза — промпт эпюра','нет');
         const imgs=eyes.messages[1].content.filter(c=>c.type==='image_url').map(c=>c.image_url.url); if(imgs.length!==2||imgs[1].length<20000) B('начерт: эталон — черновик листа','нет или пустой'); } }
+    /* ИГ №5: шаги по элементам детали — IGUI.player */
+    { const ig=await page({viewport:{width:1280,height:860}},'ИГ №5'); await ig.goto(SITE+'/#/ig5/1'); await ig.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ig.reload();
+      await ig.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('ИГ №5: кнопка наставника','нет')); await ig.click('.tu-fab'); await ig.waitForSelector('[data-in]:visible',{timeout:8000});
+      await ig.fill('[data-in]','игэ: не понимаю шаг'); await ig.press('[data-in]','Enter');
+      const on3=await ig.waitForFunction(()=>window.IGUI&&IGUI.player&&IGUI.player.current()===3&&document.querySelector('#igbPic svg'),null,{timeout:60000}).then(()=>true).catch(()=>false);
+      if(!on3) B('ИГ №5: наставник открыл шаг 3 плеера',await ig.evaluate(()=>window.IGUI&&IGUI.player?IGUI.player.current():'нет плеера'));
+      await ig.fill('[data-in]','игэ: всё равно не понял'); await ig.press('[data-in]','Enter');
+      const hl=await ig.waitForFunction(()=>document.querySelectorAll('#igbPic svg text.tu-hl').length>=2,null,{timeout:15000}).then(()=>true).catch(()=>false);
+      if(!hl) B('ИГ №5: подсвечены подписи точек 1 и 2',await ig.evaluate(()=>[...document.querySelectorAll('#igbPic svg text')].map(t=>t.textContent).slice(0,20).join(' '))); }
     /* 3) телефон */
     const ph=await page({viewport:{width:390,height:844},isMobile:true,hasTouch:true},'телефон'); await ph.goto(SITE+'/#/ig4/7'); await ph.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ph.reload();
     await ph.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await ph.click('.tu-fab'); await ph.waitForSelector('.tu-m.t',{timeout:8000});

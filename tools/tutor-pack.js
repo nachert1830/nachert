@@ -1,5 +1,6 @@
 /* Наставник: пакеты знаний ДЗ (server/lib/tutor/<дз>.json) — из того же кода, что рисует решение на сайте.
    ИГ №4 (ig4.json): для каждого из 30 вариантов — IG4S.tutor(n): шаги и точки с координатами из 3D-модели; плюс методика ДЗ.
+   ИГ №3, №5, №6 (ig3, ig5, ig6.json): шаги плеера IGUI.tutor — элементы детали по порядку, точки пронумерованы как на чертеже шагов.
    Начерт №1–5 (ng1…ng5.json): для каждого варианта — решение решателя DZR.solve: шаги плеера с лесенкой «намёк → почему →
    шаг → числа → проверь себя» (подзадачи а), б)… — подряд), точки с координатами из «Чисел», ответ; методика типа варианта.
    node tools/tutor-pack.js [ig4 ng2 …]          — собрать и записать (по умолчанию все; ≈ 1–2 мин, браузер Playwright)
@@ -8,7 +9,7 @@
 'use strict';
 const http=require('http'), fs=require('fs'), path=require('path');
 const ROOT=path.join(__dirname,'..'), outOf=dz=>path.join(ROOT,'server','lib','tutor',dz+'.json'), OUT=outOf('ig4');
-const ALL=['ig4','ng1','ng2','ng3','ng4','ng5'];
+const ALL=['ig4','ng1','ng2','ng3','ng4','ng5','ig3','ig5','ig6'];
 
 /* снимок в браузере: страница сайта уже открыта, DZR и IG4S загружены */
 function snapshot(list){ /* выполняется в браузере */
@@ -59,6 +60,18 @@ function snapshotNg(a){ const dz=a.dz, list=a.list;
       answer:txt(t.ans||parts.map(p=>p.ans&&(txt(p.l)+': '+txt(p.ans))).filter(Boolean).join('\n')),steps}; });
   return {dz,kind:'ng',course:'ng',title:D.title,label:D.label,text:'',method,variants}; }
 
+/* снимок ИГ №3, №5, №6 (выполняется в браузере): шаги плеера IGUI (тот же список, что видит студент), точки — как на чертеже шагов */
+function snapshotIg(a){ const dz=a.dz, list=a.list;
+  const txt=h=>String(h==null?'':h).replace(/<li>/g,'\n• ').replace(/<br\s*\/?>/g,'\n').replace(/<\/p>\s*<p>/g,'\n').replace(/<[^>]+>/g,'')
+    .replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/[ \t]+\n/g,'\n').trim();
+  const D=DZR.get(dz), M=D.method, T=M.types&&M.types.all||{};
+  const method={essence:txt(M.essence),idea:txt(M.idea),plan:(T.plan||[]).map(p=>({t:txt(p.t),d:txt(p.d),why:txt(p.why)})),answer:txt(T.answer),
+    check:(T.check||[]).map(txt),mistakes:(M.mistakes||[]).map(txt),defense:(M.defense||[]).map(q=>({q:txt(q.q),a:txt(q.a)})),sheet:(M.sheet||[]).map(txt)};
+  const variants={};
+  list.forEach(n=>{ const m=D.part(n); if(!m) return; const st=IGUI.tutor(m,0);
+    variants[n]={title:txt(m.title||''),note:txt(m.note||''),steps:st.map(s=>({k:s.k,id:s.id,title:s.title,short:s.short,more:'',points:s.points}))}; });
+  return {dz,kind:'ig',course:'ig',title:D.title,label:D.label,text:txt(D.text),method,variants}; }
+
 function serve(){ return new Promise(res=>{ const s=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html';
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
     r.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':p.endsWith('.js')?'text/javascript':'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); }); }
@@ -68,8 +81,8 @@ const stringify=o=>JSON.stringify(o,null,0).replace(/\},\{"k"/g,'},\n{"k"').repl
 
 async function build(page,list){ return page.evaluate(snapshot,list); }
 /* любой ДЗ: ig4 — снимок IG4S, начерт — снимок решателя */
-async function buildDz(page,dz,list){ return dz==='ig4'?build(page,list):page.evaluate(snapshotNg,{dz,list}); }
-module.exports={snapshot,snapshotNg,build,buildDz,OUT,outOf,ALL,stringify};
+async function buildDz(page,dz,list){ return dz==='ig4'?build(page,list):/^ig/.test(dz)?page.evaluate(snapshotIg,{dz,list}):page.evaluate(snapshotNg,{dz,list}); }
+module.exports={snapshot,snapshotNg,snapshotIg,build,buildDz,OUT,outOf,ALL,stringify};
 
 if(require.main===module)(async()=>{
   let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
@@ -78,15 +91,16 @@ if(require.main===module)(async()=>{
   const srv=await serve();
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
   const page=await browser.newPage(), errs=[]; page.on('pageerror',e=>errs.push(e.message));
-  await page.goto('http://127.0.0.1:'+srv.address().port+'/#/ig/dz/4/1'); await page.waitForFunction(()=>window.IG4S&&window.DZR&&DZR.get('ig4')&&DZR.get('ng1'),null,{timeout:30000});
+  await page.goto('http://127.0.0.1:'+srv.address().port+'/#/ig/dz/4/1'); await page.waitForFunction(()=>window.IG4S&&window.IGUI&&IGUI.tutor&&window.DZR&&DZR.get('ig4')&&DZR.get('ng1'),null,{timeout:30000});
   let fail=0;
   for(const dz of list){ const pack=await buildDz(page,dz,Array.from({length:30},(_,i)=>i+1)), n=Object.keys(pack.variants).length, OUTF=outOf(dz);
-    if(n!==30||errs.length){ console.error('✖ '+dz+': собрано вариантов '+n+' из 30'+(errs.length?'; ошибки JS: '+errs.join(' / '):'')); fail=1; continue; }
+    const want=await page.evaluate(dz=>{ const D=DZR.get(dz); return D.part?Array.from({length:30},(_,i)=>i+1).filter(n=>D.part(n)).length:30; },dz);   /* ИГ №5: моделей 27 из 30 */
+    if(n!==want||errs.length){ console.error('✖ '+dz+': собрано вариантов '+n+' из '+want+(errs.length?'; ошибки JS: '+errs.join(' / '):'')); fail=1; continue; }
     const out=stringify(pack);
     if(check){ const cur=fs.existsSync(OUTF)?fs.readFileSync(OUTF,'utf8'):'';
       if(cur===out) console.log(dz+': пакет наставника совпадает с решением на сайте.');
       else { console.error('✖ '+dz+': пакет наставника устарел — решение на сайте поменялось. Пересоберите: node tools/tutor-pack.js '+dz); fail=1; } continue; }
     fs.mkdirSync(path.dirname(OUTF),{recursive:true}); fs.writeFileSync(OUTF,out);
-    console.log('Записан '+path.relative(ROOT,OUTF)+': 30 вариантов, '+Math.round(out.length/1024)+' КБ'); }
+    console.log('Записан '+path.relative(ROOT,OUTF)+': '+n+' вариантов, '+Math.round(out.length/1024)+' КБ'); }
   await browser.close(); srv.close(); process.exit(fail);
 })().catch(e=>{ console.error(e); process.exit(1); });

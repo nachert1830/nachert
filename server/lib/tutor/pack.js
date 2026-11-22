@@ -1,9 +1,10 @@
 /* Наставник: знания ДЗ из пакетов (собирает tools/tutor-pack.js из кода сайта):
-   ig4.json — снимок IG4S.tutor(n) и методики ИГ №4; ng1…ng5.json — решения DZR.solve и методика ДЗ по начерту.
+   ig4.json — снимок IG4S.tutor(n) и методики ИГ №4; ig3, ig5, ig6.json — шаги плеера IGUI.tutor (точки как на чертеже шагов);
+   ng1…ng5.json — решения DZR.solve и методика ДЗ по начерту.
    Здесь ничего не вычисляется заново: только выборка того, что посчитало ядро сайта. */
 'use strict';
 const fs=require('fs'), path=require('path');
-const DZS=['ig4','ng1','ng2','ng3','ng4','ng5'], PACKS={};
+const DZS=['ig4','ng1','ng2','ng3','ng4','ng5','ig3','ig5','ig6'], PACKS={};
 DZS.forEach(dz=>{ const f=path.join(__dirname,dz+'.json'); if(fs.existsSync(f)) PACKS[dz]=require(f); });
 const isNg=dz=>!!(PACKS[dz]&&PACKS[dz].kind==='ng');
 /* название для людей: «Начерт · ДЗ №2», «ИГ · ДЗ №4» */
@@ -33,7 +34,8 @@ function registry(dz,n){ const key=dz+':'+n; if(regCache.has(key)) return regCac
 
 function idea(dz,st){ if(st.idea) return st.idea; const p=pack(dz), m=p.method, i=STEP_PLAN[st.id];
   if(st.id==='given') return m.essence; if(st.id==='anal') return m.idea;
-  const ix=i==null?[]:[].concat(i); return ix.map(j=>m.plan[j]).filter(Boolean).map(x=>x.t+': '+x.d+(x.why?' ('+x.why+')':'')).join('\n'); }
+  const ix=i==null?[]:[].concat(i), r=ix.map(j=>m.plan[j]).filter(Boolean).map(x=>x.t+': '+x.d+(x.why?' ('+x.why+')':'')).join('\n');
+  return r||(dz==='ig4'?'':m.idea); }   /* ИГ №3, №5, №6: шаги по элементам детали — идея ДЗ */
 
 /* содержимое шага на глубине: title < idea < short < full */
 const DEPTHS=['title','idea','short','full'];
@@ -69,6 +71,9 @@ function method(dz,topic,n){ const m=pack(dz).method;
     return {topic:'plan',type:v&&v.title,essence:m.essence,idea:[m.idea,T.idea].filter(Boolean).join('\n'),plan:(T.plan||[]).map((x,i)=>(i+1)+'. '+x.t+(x.d?': '+x.d:'')+(x.why?' ('+x.why+')':'')),
       answer_form:T.answer||undefined}; }
   if(HOW[topic]) return {topic,name:HOW_NAME[topic],rule:HOW[topic]};
+  const byT=re=>m.plan.filter(x=>re.test(x.t)).map(x=>x.t+': '+x.d).join('\n');
+  if(dz!=='ig4'&&topic==='section') return {topic,rule:byT(/разрез|обозначен|штрихов/i)||m.idea};
+  if(dz!=='ig4'&&topic==='dims') return {topic,rule:byT(/размер/i)||m.sheet.join('\n')};
   if(topic==='section') return {topic,rule:m.plan[4].d+'\n'+m.plan[5].d};
   if(topic==='dims') return {topic,rule:m.plan[6].d};
   if(topic==='sheet') return {topic,rule:m.sheet.join('\n')};

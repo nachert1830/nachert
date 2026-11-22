@@ -10,7 +10,7 @@ function fromEnv(env){ env=env||process.env; const key=env.PROXYAPI_KEY||'', fol
   const ru=env.TUTOR_RU_MODEL?{yandex:true,url:env.TUTOR_RU_URL||LLM.YA_URL,model:env.TUTOR_RU_MODEL.replace('{folder}',folder),folder}:null;
   const m=(v,d)=>({model:LLM.pxModel(v||d),url:env.TUTOR_URL||LLM.PX_URL});
   return {on:env.TUTOR!=='off'&&!!(key||ru),key,main:m(env.TUTOR_MODEL,SONNET),light:m(env.TUTOR_LIGHT_MODEL,HAIKU),eyes:m(env.TUTOR_EYES_MODEL,SONNET),ru,
-    modeDefault:env.TUTOR_MODE_DEFAULT==='explain'?'explain':'coach',tools:env.TUTOR_TOOLS!=='off',cache:env.TUTOR_CACHE==='on',dayRub:+env.TUTOR_DAY_RUB||1500,userDayRub:+env.TUTOR_USER_DAY_RUB||40,rate:+env.TUTOR_RATE||110}; }
+    modeDefault:env.TUTOR_MODE_DEFAULT==='explain'?'explain':'coach',tools:env.TUTOR_TOOLS!=='off',cache:env.TUTOR_CACHE!=='off',dayRub:+env.TUTOR_DAY_RUB||1500,userDayRub:+env.TUTOR_USER_DAY_RUB||40,rate:+env.TUTOR_RATE||110}; }
 
 const TEXT_MAX=2000, HIST=24, CTX_HIST=12, IMG_MAX=1600*1024, BODY_MAX=3.6*1024*1024, DEADLINE=45000, DAY=864e5;
 const IMG_RE=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/;
@@ -25,7 +25,7 @@ function parseJson(t){ t=String(t||'').replace(/^```(?:json)?\s*/i,'').replace(/
 function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()=>deps.cfg||{on:false};
   const memId=(u,dz,n)=>u+':'+dz+':'+n;
   function where(b,q){ const src=Object.assign({},q||{},b||{}), dz=String(src.dz||'ig4'), n=parseInt(src.n,10);
-    if(!P.dzList.includes(dz)) fail(400,'Наставник пока работает в ДЗ №1–5 по начерту и ДЗ №4 по ИГ.');
+    if(!P.dzList.includes(dz)) fail(400,'Наставник пока работает в ДЗ №1–5 по начерту и ДЗ №3–6 по ИГ.');
     const v=P.variant(dz,n); if(!v) fail(400,'Нет такого варианта.'); return {dz,n,v}; }
   async function loadMem(S,dz,n){ const id=memId(S.user.id,dz,n), m=await store.get('tutor',id);
     return m||{id,userId:S.user.id,dz,n,msgs:[],asks:{},open:{},mistakes:{},notes:[],mode:cfg().modeDefault||'coach',photo:false,turns:0,kop:0,createdAt:now()}; }

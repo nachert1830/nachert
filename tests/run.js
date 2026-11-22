@@ -277,9 +277,9 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
   /* 3л. «Спроси автора» (tests/ask.js): вопрос с сайта (гость → вход → черновик уходит сам, фото) → ответ в пульте → ученик видит ответ;
      настоящий сервер кабинета с базой в памяти */
   if(on('ask')) { const bad=await require('./ask.js').runAsk(browser); info.push('Спроси автора: '+bad.length+' замечаний'); report('Спроси автора (#/ask, пульт)',bad); }
-  /* 3м. Наставник — ИИ-агент на чертеже ИГ №4 (tests/tutor.js): пакет знаний = решение сайта; окно → сервер → (поддельная модель) →
+  /* 3м. Наставник — ИИ-агент на чертеже (начерт №1–5, ИГ №4) (tests/tutor.js): пакет знаний = решение сайта; окно → сервер → (поддельная модель) →
      шаг плеера открыт, точки подсвечены, фото уходит с эталоном; телефон */
-  if(on('tutor')) { const bad=await require('./tutor.js').runTutor(browser); info.push('Наставник: '+bad.length+' замечаний'); report('Наставник (ИГ №4)',bad); }
+  if(on('tutor')) { const bad=await require('./tutor.js').runTutor(browser); info.push('Наставник: '+bad.length+' замечаний'); report('Наставник (начерт №1–5, ИГ №4)',bad); }
   /* 3н. копия сайта /new/ (tests/new-copy.js): главная нового дизайна, колода «ДЗ», варианты; кнопка наставника — только на ИГ №4 и не поверх окна согласия */
   if(on('newcopy')) { const bad=await require('./new-copy.js').run(); info.push('Копия /new/: '+bad.length+' замечаний'); report('Копия сайта /new/',bad); }
 

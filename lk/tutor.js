@@ -1,5 +1,5 @@
 /* ═══ Наставник — ИИ-агент на чертеже (docs/TUTOR.md) ═══
-   Окно на странице варианта ДЗ: ИГ №4 (#/ig4/<n>; прежний адрес #/ig/dz/4/<n> переадресуется) и начерт №1–5 (#/ng2/<n>, #/ng3/<n>/b…).
+   Окно на странице варианта ДЗ: ИГ №3, №4, №5, №6 (#/ig4/<n>; прежний адрес #/ig/dz/4/<n> переадресуется) и начерт №1–5 (#/ng2/<n>, #/ng3/<n>/b…).
    Разговор с наставником; его ответы управляют чертежом — открывают нужный шаг плеера решения и подсвечивают точки
    (ИГ — IG4S.player; начерт — плеер разбора сайта PLR: подзадача и шаг по id «p2s3», подписи точек на чертеже).
    Фото листа (📷) уходит вместе с эталоном: ИГ — вид решения со всеми номерами точек (IG4S.svg), начерт — черновик листа
@@ -18,12 +18,15 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(f,ms){ const t=Date.now(); for(;;){ let v=null; try{ v=f(); }catch(e){} if(v) return v; if(Date.now()-t>ms) return null; await sleep(120); } }
 
 /* ── где мы: вариант ДЗ ── */
-const DZN={ig4:'ИГ · ДЗ №4',ng1:'Начерт · ДЗ №1',ng2:'Начерт · ДЗ №2',ng3:'Начерт · ДЗ №3',ng4:'Начерт · ДЗ №4',ng5:'Начерт · ДЗ №5'};
+const DZN={ig3:'ИГ · ДЗ №3',ig5:'ИГ · ДЗ №5',ig6:'ИГ · ДЗ №6',ig4:'ИГ · ДЗ №4',ng1:'Начерт · ДЗ №1',ng2:'Начерт · ДЗ №2',ng3:'Начерт · ДЗ №3',ng4:'Начерт · ДЗ №4',ng5:'Начерт · ДЗ №5'};
 function here(){ const h=location.hash||'';
   let m=/^#\/(?:ig4|ig\/dz\/4)\/(\d{1,2})(?:[/?]|$)/.exec(h); if(m) return {dz:'ig4',n:+m[1]};
-  m=/^#\/(ng[1-5])\/(\d{1,2})(?:[/?]|$)/.exec(h); if(m&&+m[2]>=1&&+m[2]<=30) return {dz:m[1],n:+m[2]};
+  m=/^#\/(ng[1-5]|ig[356])\/(\d{1,2})(?:[/?]|$)/.exec(h); if(m&&+m[2]>=1&&+m[2]<=30) return {dz:m[1],n:+m[2]};
   return null; }
-const isNg=w=>!!w&&w.dz!=='ig4';
+const isNg=w=>!!w&&/^ng/.test(w.dz);
+/* плеер шагов ИГ: ДЗ №4 — IG4S.player, ДЗ №3, №5, №6 — IGUI.player (те же go, current, highlight) */
+const igP=dz=>dz==='ig4'?(window.IG4S&&IG4S.player):(window.IGUI&&IGUI.player);
+const igModel=(dz,n)=>{ try{ return DZR.get(dz).part(n); }catch(e){ return null; } };
 
 /* ── запросы ── */
 async function req(m,p,b){ const h={}; if(b) h['content-type']='application/json'; if(tok()) h.authorization='Bearer '+tok();
@@ -48,6 +51,9 @@ async function reference(n,dz){ dz=dz||'ig4'; if(!window.DZR) return ''; let s, 
     s=IG4S.svg(model,PL,i,{hidePast:false,allNums:true});
     s=s.replace(/^<svg([^>]*)>/,(m,a)=>'<svg xmlns="http://www.w3.org/2000/svg"'+a.replace(/\sclass="[^"]*"/,'')+'><style>.igs-k{font:italic 600 24px "Times New Roman",serif;paint-order:stroke;stroke:#fff;stroke-width:4px}</style>');
     const vb=/viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(s); if(vb){ W=+vb[1]; H=+vb[2]; } }
+  else if(/^ig/.test(dz)){ if(!window.IGUI||!IGUI.sheetSVG) return ''; s=IGUI.sheetSVG(igModel(dz,n),'','','');
+    if(!/xmlns=/.test(s)) s=s.replace(/^<svg/,'<svg xmlns="http://www.w3.org/2000/svg"');
+    const vb=/viewBox="[\d.\s-]*?([\d.]+) ([\d.]+)"/.exec(s); if(vb){ W=+vb[1]; H=+vb[2]; } }
   else { if(!window.SHEET||!SHEET.ng) return ''; s=SHEET.ng(DZR.solve(dz,n),DZR.meta(dz,n),'draft').svg;
     if(!/xmlns=/.test(s)) s=s.replace(/^<svg/,'<svg xmlns="http://www.w3.org/2000/svg"');
     const vb=/viewBox="[\d.\s-]*?([\d.]+) ([\d.]+)"/.exec(s); if(vb){ W=+vb[1]; H=+vb[2]; } }
@@ -59,7 +65,7 @@ async function reference(n,dz){ dz=dz||'ig4'; if(!window.DZR) return ''; let s, 
   finally{ URL.revokeObjectURL(url); } }
 
 /* ── чертёж: открыть плеер шагов варианта n и выполнить действие наставника ── */
-async function player(n){ const ok=()=>{ const P=window.IG4S&&IG4S.player; return P&&P.model&&+P.model.n===n&&$('#igbPic')&&document.contains($('#igbPic'))?P:null; };
+async function player(n,dz){ dz=dz||'ig4'; const ok=()=>{ const P=igP(dz); return P&&P.model&&(dz==='ig4'?+P.model.n===n:P.model===igModel(dz,n))&&$('#igbPic')&&document.contains($('#igbPic'))?P:null; };
   if(ok()) return ok();
   const show=$('#igShow'); if(show&&show.offsetParent!==null) show.click();
   const tab=await until(()=>$('.igx-tabs button[data-t=steps]'),6000); if(tab&&tab.getAttribute('aria-selected')!=='true') tab.click();
@@ -83,7 +89,7 @@ async function act(a){ const w=here(); if(!a||!w) return;
     if(m){ P.state.pi=+m[1]-1; P.go(+m[2]); } else P.go(a.step);
     if(a.points&&a.points.length){ await sleep(80); ngHighlight(a.points); }
     if(innerWidth<760) close(true); return; }
-  if(a.t==='show'){ const P=await player(w.n); if(!P) return; P.go(a.step); if(a.points&&a.points.length){ await sleep(60); P.highlight(a.points); }
+  if(a.t==='show'){ const P=await player(w.n,w.dz); if(!P) return; P.go(a.step); if(a.points&&a.points.length){ await sleep(60); P.highlight(a.points); }
     if(innerWidth<760) close(true); }
   if(a.t==='ask') location.hash='#/ask/'+encodeURIComponent(a.id); }
 
@@ -160,6 +166,7 @@ const body=$('[data-body]',box), inp=$('[data-in]',box), pv=$('[data-pv]',box);
 /* текст ответа: переносы, **жирный**, «шаг N» — ссылка, открывающая шаг на чертеже */
 function rich(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^\p{L}])(шаг[\p{L}]*\s+(\d{1,2}))/giu,(m,a,t,k)=>a+'<a class="tu-st" data-step="'+k+'">'+t+'</a>').replace(/\n/g,'<br>'); }
 const SUG=['С чего начать?','Не понимаю текущий шаг','Как найти точку на грани ⟂ π₃?','Готовлюсь к защите — спроси меня'];
+const SUG_IG=['С чего начать?','Не понимаю текущий шаг','Как перенести точку на вид слева?','Готовлюсь к защите — спроси меня'];
 const SUG_NG=['С чего начать?','Не понимаю текущий шаг','Какое правило здесь работает?','Готовлюсь к защите — спроси меня'];
 function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?(DZN[w.dz]||'')+' · вариант '+w.n:'';
   box.querySelectorAll('[data-mode]').forEach(b=>{ const on=st&&st.mode===b.dataset.mode; b.classList.toggle('on',!!on); b.setAttribute('aria-selected',String(!!on)); });
@@ -168,7 +175,7 @@ function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?(DZN[
   if(!st){ body.innerHTML='<div class="tu-wait"><i></i>Открываю…</div>'; return; }
   if(!st.on){ body.innerHTML='<div class="tu-gate"><b>Наставник скоро появится</b><p>Пока его не подключили. Вопрос можно задать автору.</p><a class="tu-btn" href="#/ask">Спросить автора</a></div>'; return; }
   if(!st.consent&&!st.ru){ body.innerHTML=`<div class="tu-gate"><b>Наставник работает на модели Claude</b><p>Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, номер варианта и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.</p><button class="tu-btn" data-consent>Согласен, начать</button></div>`; return; }
-  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:SUG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
+  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
   st.msgs.forEach((m,i)=>{ if(m.from==='u') h+=`<div class="tu-m u"><div class="tu-bb">${m.photo?'📷 ':''}${esc(m.text||'Фото листа')}</div></div>`;
     else { const acts=(m.actions||[]).map((a,j)=>a.t==='show'?`<button class="tu-chip" data-act="${i}:${j}">Шаг ${a.step} на чертеже${a.points&&a.points.length?' · точки '+a.points.join(', '):''} ↗</button>`:a.t==='ask'?`<a class="tu-chip" href="#/ask/${esc(a.id)}">Вопрос автору ↗</a>`:'').join('');
       h+=`<div class="tu-m t"><div class="tu-bb">${rich(m.text)}</div><div class="tu-x">${acts}${m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением">✓ сверено</span>':''}${m.id?`<button class="tu-r${m.rate===1?' on':''}" data-rate="${esc(m.id)}:1" aria-label="Полезно">👍</button><button class="tu-r${m.rate===0?' on':''}" data-rate="${esc(m.id)}:0" aria-label="Не помогло">👎</button>`:''}</div></div>`; } });
@@ -190,7 +197,7 @@ addEventListener('hashchange',route);
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mount); else mount();
 
 async function send(text){ const w=here(); if(!w||S.busy||!S.st||!S.st.ready) return; text=String(text==null?inp.value:text).trim(); if(!text&&!S.photo) return;
-  const P=window.IG4S&&IG4S.player, step=isNg(w)?ngStep(w):P&&P.model&&+P.model.n===w.n?P.current():null, photo=S.photo;
+  const P=igP(w.dz), step=isNg(w)?ngStep(w):P&&P.model&&(w.dz==='ig4'?+P.model.n===w.n:P.model===igModel(w.dz,w.n))?P.current():null, photo=S.photo;
   S.busy=true; S.busyPhoto=!!photo; S.err=''; S.st.msgs.push({from:'u',text,photo:!!photo}); inp.value=''; S.photo=null; render();
   try{ let ref=''; if(photo){ try{ ref=await reference(w.n,w.dz); }catch(e){ ref=''; } }
     const r=await req('POST','/api/tutor/chat',{dz:w.dz,n:w.n,text,step,mode:S.st.mode,photo:photo||undefined,ref:ref||undefined});

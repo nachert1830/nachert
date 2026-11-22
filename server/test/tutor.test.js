@@ -18,7 +18,7 @@ const lastTool=b=>{ const m=b.messages.filter(x=>x.role==='tool'); return m.leng
 const toolsOf=b=>b.messages.filter(x=>x.role==='tool').map(x=>JSON.parse(x.content));
 
 async function setup(opt){ opt=opt||{}; const M=model(opt.script||[]);
-  const c=club({cfg:{openSignup:true,tutor:TUTOR.fromEnv(Object.assign({PROXYAPI_KEY:'px-key'},opt.env||{}))},net:M.net,iam:'iam-token'});
+  const c=club({cfg:{openSignup:true,tutor:TUTOR.fromEnv(Object.assign({PROXYAPI_KEY:'px-key',TUTOR_CACHE:'off'},opt.env||{}))},net:M.net,iam:'iam-token'});
   await c.owner(); await c.yandex({id:'9001',first_name:'Аня'},{who:'a'});
   if(opt.consent!==false) await c.call('POST','/api/me/profile',{ai:true},{as:'a'});
   return {c,M}; }
@@ -169,7 +169,7 @@ test('панель владельца: реплики, цена, сверка, �
 test('выключен (нет ключа и российской модели) — 503; не тот вариант или ДЗ — 400',async()=>{
   const c=club({cfg:{openSignup:true,tutor:TUTOR.fromEnv({})}}); await c.owner(); await c.yandex({id:'9101',first_name:'Аня'},{who:'a'});
   assert.equal((await c.call('POST','/api/tutor/chat',{dz:'ig4',n:7,text:'привет'},{as:'a'})).status,503);
-  const {c:c2}=await setup({}); assert.equal((await chat(c2,{n:31,text:'x'})).status,400); assert.equal((await chat(c2,{dz:'ig3',text:'x'})).status,400);
+  const {c:c2}=await setup({}); assert.equal((await chat(c2,{n:31,text:'x'})).status,400); assert.equal((await chat(c2,{dz:'ig2',text:'x'})).status,400);
   assert.equal((await chat(c2,{text:''})).status,400);
 });
 
@@ -259,7 +259,7 @@ test('начерт: сверщик на 150 вариантах — 0 ложны�
   assert.deepEqual(VF.claims('угол 73,7°, прямой угол 90°').map(x=>x.v),[73.7]);
 });
 
-test('кэш промпта (TUTOR_CACHE=on): системные части с cache_control; 400 от ProxyAPI — повтор без кэша и дальше без него; токены в журнале',async()=>{
+test('кэш промпта (по умолчанию; TUTOR_CACHE=off — без него): системные части с cache_control; 400 от ProxyAPI — повтор без кэша и дальше без него; токены в журнале',async()=>{
   const LLM=require('../lib/tutor/llm'); LLM._noCache(false);
   const {c,M}=await setup({env:{TUTOR_CACHE:'on'},script:[say('Начнём с шага 1.',{prompt_tokens:6000,completion_tokens:100,prompt_tokens_details:{cached_tokens:4000}})]});
   const r=await chat(c,{text:'привет'}); assert.equal(r.status,200,JSON.stringify(r.data));
@@ -271,4 +271,23 @@ test('кэш промпта (TUTOR_CACHE=on): системные части с c
   const r2=await chat(c2,{text:'привет'}); assert.equal(r2.status,200,JSON.stringify(r2.data));
   assert.equal(typeof M2.calls[1].b.messages[0].content,'string','повтор — без кэша'); assert.equal(LLM._noCache(),true);
   await chat(c2,{text:'ещё'}); assert.equal(typeof M2.calls[2].b.messages[0].content,'string','дальше — без кэша'); LLM._noCache(false);
+});
+
+/* ── ИГ №3, №5, №6 (ig3, ig5, ig6.json — шаги плеера IGUI): пакеты, сверщик ── */
+test('ИГ №3, №5, №6: пакеты — шаги по элементам, точки с координатами как на чертеже шагов; сверщик ловит ≥ 95 % подсадок',()=>{
+  const fmt=v=>String(v).replace('-','−').replace('.',','); let falsePos=[], caught=0, total=0;
+  for(const [dz,cnt] of [['ig3',30],['ig5',27],['ig6',30]]){ assert.ok(!P.isNg(dz)); assert.equal(Object.keys(P.pack(dz).variants).length,cnt,dz);
+    assert.equal(P.courseLabel(dz),'ИГ · '+P.pack(dz).label);
+    for(const n of Object.keys(P.pack(dz).variants).map(Number)){ const v=P.variant(dz,n), R=P.registry(dz,n);
+      assert.ok(v.steps.length>=5,dz+' в. '+n); assert.ok(R.size>=2,dz+' в. '+n+': точки');
+      v.steps.forEach((s,i)=>{ assert.equal(s.k,i+1); assert.ok(s.title&&s.short,dz+' в. '+n+' шаг '+s.k); });
+      assert.ok(P.stepAt(dz,n,3,'idea').idea,dz+' в. '+n+': идея шага');
+      const facts=[]; v.steps.forEach(s=>facts.push(...T.factsOfStep(P.stepAt(dz,n,s.k,'full')))); const maxN=Math.max(...R.keys());
+      const ctx={points:new Set(R.keys()),steps:v.steps.length,facts,quoted:[]};
+      for(const p of R.values()){ const s=`Точка ${p.n}‴ строится на шаге ${p.k}: x = ${fmt(p.x)}, высота ${fmt(p.z)} мм.`;
+        if(!VF.check(s,ctx).ok) falsePos.push(dz+' '+n+': '+s);
+        [s.replace('высота '+fmt(p.z),'высота '+fmt(Math.round((p.z+7.5)*10)/10)),s.replace('Точка '+p.n+'‴','Точка '+(maxN+3)+'‴'),s.replace('на шаге '+p.k,'на шаге '+(v.steps.length+2))]
+          .filter(m=>m!==s).forEach(m=>{ total++; if(VF.check(m,ctx).ok){ const ns=VF.claims(m).filter(x=>x.kind==='number').map(x=>x.v); if(ns.every(x=>facts.some(f=>Math.abs(f-x)<=0.11))){ total--; return; } } else caught++; }); } } }
+  assert.deepEqual(falsePos.slice(0,3),[],'ложные срабатывания'); assert.ok(total>500,'подсадок '+total); assert.ok(caught/total>=0.95,'поймано '+caught+' из '+total);
+  assert.match(P.method('ig5','section').rule,/азрез/); assert.match(P.method('ig3','dims').rule,/азмер/);
 });

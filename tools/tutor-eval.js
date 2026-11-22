@@ -10,7 +10,7 @@ const TUTOR=require(ROOT+'/server/lib/tutor'), SET=require(ROOT+'/server/lib/tut
 const arg=k=>{ const a=process.argv.find(x=>x.startsWith('--'+k+'=')); return a?a.slice(k.length+3):''; };
 
 async function main(){ const key=process.env.PROXYAPI_KEY; if(!key){ console.log('Замер наставника пропущен: нет PROXYAPI_KEY.'); return 0; }
-  const env={PROXYAPI_KEY:key,TUTOR_USER_DAY_RUB:'1000',TUTOR_DAY_RUB:'5000',TUTOR_CACHE:process.argv.includes('--no-cache')?'off':'on'}; if(arg('model')) env.TUTOR_MODEL=arg('model');
+  const env={PROXYAPI_KEY:key,TUTOR_USER_DAY_RUB:'1000',TUTOR_DAY_RUB:'5000',TUTOR_CACHE:process.argv.includes('--no-cache')?'off':''}; if(arg('model')) env.TUTOR_MODEL=arg('model');
   const only=arg('only')?arg('only').split(','):null, cases=SET.cases.filter(c=>!only||only.includes(c.id));
   const store=memoryStore(null), SITE='https://nachert1830.ru';
   const cfg={dev:true,origin:SITE,secure:false,botToken:'1:x',botName:'b',webhookSecret:'s',adminTg:['1'],mainUrl:SITE,week1:'',yandex:{clientId:'',secret:''},adminYa:[],fronts:[SITE],frontUrl:SITE+'/lk/',openSignup:true,tutor:TUTOR.fromEnv(env)};
