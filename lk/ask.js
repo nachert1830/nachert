@@ -192,7 +192,7 @@ function composer(o){ /* o: {sm, ph, ctx, onSend(text,img)} */
 
 /* ── страница #/ask ── */
 function loginUrl(){ return '/lk/#/login'; }
-function goLogin(){ LS.set('lk_ret','/'+(location.hash||'#/ask')); location.href=loginUrl(); }
+function goLogin(){ LS.set('lk_ret',(/^\/new\//.test(location.pathname)?'/new/':'/')+(location.hash||'#/ask')); location.href=loginUrl(); }
 async function send(text,pic,ctx){
   if(!API) throw new Error('Вопросы сейчас недоступны.');
   if(!tok()){ saveDraft({text,img:pic,src:ctx&&ctx.src||'',where:ctx&&ctx.where||'',pending:1}); goLogin(); return; }

@@ -1,0 +1,48 @@
+name: Наставник — замер на живой модели
+# Сценарии server/lib/tutor/eval.json → настоящий сервер кабинета (база в памяти) → ProxyAPI (Claude) → таблица:
+# сверка с первого раза, нужный шаг показан на чертеже, ожидания по ответу, время, цена (tools/tutor-eval.js).
+# Только по кнопке: тратит деньги ProxyAPI (≈ 20–40 ₽ за прогон). Фото и данных студентов здесь нет — только тексты сценариев.
+on:
+  # прогон с рабочей ветки без слияния в main: изменить файл .github/tutor-eval-run (первая строка — сценарии через запятую или пусто)
+  push:
+    branches: ['claude/**']
+    paths: ['.github/tutor-eval-run']
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'только эти сценарии через запятую (например start,jailbreak); пусто — все'
+        required: false
+        default: ''
+      model:
+        description: 'модель диалога (пусто — Claude Sonnet 5.5; например anthropic/claude-haiku-5-5)'
+        required: false
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: tutor-eval
+  cancel-in-progress: true
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Замер
+        env:
+          PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
+        run: |
+          test -n "$PROXYAPI_KEY" || { echo "::error::нет секрета PROXYAPI_KEY"; exit 1; }
+          A=""; ONLY="${{ github.event.inputs.only }}"; [ -z "$ONLY" ] && [ -f .github/tutor-eval-run ] && ONLY="$(head -1 .github/tutor-eval-run | tr -d ' ')"
+          [ -n "$ONLY" ] && A="$A --only=$ONLY"
+          [ -n "${{ github.event.inputs.model }}" ] && A="$A --model=${{ github.event.inputs.model }}"
+          node tools/tutor-eval.js $A --json=tutor-eval.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tutor-eval
+          path: tutor-eval.json
+          if-no-files-found: ignore

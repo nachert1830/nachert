@@ -128,6 +128,11 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 .rep-it:hover{border-color:var(--blue)}
 .rep-it b{display:block;font-size:16px}.rep-it time{color:var(--mut);font-size:12.5px}.rep-it p{margin:6px 0 0;color:var(--ink2);font-size:14px;line-height:1.45}
 .rep-note{color:var(--mut);font-size:13px;margin:4px 0 0}
+.rep-list.tut{max-width:1100px}.tut h3{margin:10px 0 2px;font-size:14px;color:var(--mut);width:100%}
+.tut-row{display:flex;flex-wrap:wrap;gap:8px}.tut-c{border:1px solid var(--line);background:var(--surf2);border-radius:12px;padding:8px 12px;min-width:110px}
+.tut-c span{display:block;color:var(--mut);font-size:12px}.tut-c b{font-size:18px}
+.tut-t{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}.tut-t th,.tut-t td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;white-space:nowrap}
+.tut-t th{color:var(--mut);font-weight:600}.tut-t tr.err td{color:#c0392b}
 .qa-gate{margin:auto;text-align:center;color:var(--mut);padding:24px;max-width:420px}.qa-gate b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
 @media (max-width:900px){
   .pane.qa.on{grid-template-columns:1fr}
@@ -173,6 +178,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
       <button class="tab" role="tab" data-go="site">Сайт<kbd>Alt 4</kbd></button>
       <button class="tab" role="tab" data-go="ask">Вопросы<b class="tbadge" id="askBadge" hidden></b><kbd>Alt 5</kbd></button>
       <button class="tab" role="tab" data-go="reports">Отчёты<kbd>Alt 6</kbd></button>
+      <button class="tab" role="tab" data-go="tutor">Наставник<kbd>Alt 7</kbd></button>
     </nav>
     <div class="tools">
       <a class="btn sm" id="hqTab" href="../lk/hq/" target="_blank" rel="noopener" title="Штаб: мысли → задачи → сайт">Штаб ↗</a>
@@ -204,6 +210,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
         <div class="qa-th" id="qaTh"><p class="qa-none">Выберите вопрос слева</p></div>
       </section>
       <section class="pane rep" data-pane="reports" aria-label="Отчёты владельцу"><div class="rep-list" id="repList"></div></section>
+      <section class="pane rep" data-pane="tutor" aria-label="Наставник: сводка"><div class="rep-list tut" id="tutList"></div></section>
     </div>
   </main>
 </div>

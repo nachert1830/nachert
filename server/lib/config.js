@@ -26,6 +26,8 @@ function fromEnv(env){ env=env||process.env;
     tgLoginOn:env.TG_LOGIN==='on',
     /* Штаб владельца: модели через ProxyAPI, задачи кода — Issues в GitHub (токен с правами issues и contents) */
     hq:{key:env.PROXYAPI_KEY||'',ghToken:env.GH_HQ_TOKEN||'',ghRepo:env.GH_REPO||'nachert1830/nachert'},
+    /* Наставник — ИИ-агент на чертеже (docs/TUTOR.md): модели через ProxyAPI, без согласия — российская модель TUTOR_RU_MODEL */
+    tutor:require('./tutor').fromEnv(env),
     /* официальный вход Telegram работает только на сайте, указанном у @BotFather (/setdomain) */
     tgLogin:{url:'https://oauth.telegram.org/auth',origins:list(env.TG_LOGIN_ORIGINS||'https://nachert1830.ru,http://nachert1830.ru')}
   };

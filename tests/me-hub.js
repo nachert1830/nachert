@@ -67,7 +67,15 @@ async function ui(browser, URL) {
       body: JSON.stringify({ online: [{ name: 'Аня', group: 'ИУ5-11Б' }], kpi: { total: 42, online: 1, today: 5, week: 17, newToday: 2 } }) }));
     await page.evaluate(() => { localStorage.setItem('lk_tok', 'adm'); return ME.renderUsers(); });
     { const t = await page.textContent('#users'); if (!/всего:\s*42/.test(t) || !/онлайн:\s*1/.test(t) || !/Аня/.test(t)) B('пульт показывает, сколько авторизованных', t); }
-    await page.evaluate(() => { localStorage.removeItem('lk_tok'); });
+    /* наставник: сводка /api/admin/tutor — включён, сегодняшние траты, сверщик, последний ответ */
+    await ctx.route(/apigw\.yandexcloud\.net\/api\/admin\/tutor/, r => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization' },
+      body: JSON.stringify({ config: { on: true, model: 'sonnet-5-5', light: 'haiku-5-5', ru: false, mode: 'coach', dayRub: 1500, userDayRub: 40 },
+        today: { turns: 3, errors: 0, rub: 4.2, users: 2, photos: 1 }, week: { turns: 9, errors: 1, rub: 11, users: 4, photos: 2 },
+        verify: { first: 7, repaired: 1, cut: 0, total: 8 }, rate: { good: 2, bad: 1 }, ms: 6400,
+        recent: [{ id: 'x', ts: Date.now(), name: 'Аня', n: 7, model: 'sonnet-5-5', ms: 6400, rub: 1.4, tools: ['get_step', 'show_on_drawing'], verify: { first: true }, rate: 1, error: null, photo: true }] }) }));
+    await page.evaluate(() => ME.go('tutor')); await page.waitForTimeout(400);
+    { const t = await page.textContent('#tutList'); if (!/включён/.test(t) || !/4\.2 ₽/.test(t) || !/88 %/.test(t) || !/Аня/.test(t) || !/show_on_drawing/.test(t)) B('вкладка «Наставник» — сводка /api/admin/tutor', t.slice(0, 300)); }
+    await page.evaluate(() => { localStorage.removeItem('lk_tok'); ME.go('scan'); }); await page.waitForTimeout(300);
     /* пример из кабинета → «Мои чертежи» сбоку → 3D */
     await lk.locator('#scDemo').click(); await page.waitForTimeout(500);
     await lk.locator('#dvBack').click().catch(() => {}); await page.waitForTimeout(300);

@@ -19,7 +19,7 @@ const ALL = why => { out.all = true; out.why.push(why + ' → всё'); };
 const TESTS = {geometry: ['core', 'dzvar'], render: ['core'], mutate: ['core'], oracle: ['core'], euclid: ['core', 'dzvar'], arith: ['core', 'dzvar'], dz: ['core', 'dzvar'],
   'dz-run': ['dzvar'], 'variants-run': ['variants'], provenance: ['prov'], 'provenance-run': ['prov'], adequacy: ['adequacy'], random: ['random', 'gym'], 'random-run': ['random'],
   'gen-check': ['gym'], gym: ['gym'], rk2: ['rk2'], rkp: ['rkp'], live: ['live'], rkg: ['rkg'], 'ig4-steps': ['ig4'], normo: ['normo'], 'normo-model': ['normo'], 'normo-run': ['normo'],
-  'normo-mutate': ['normom', 'normow'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'], colors: ['colors'], ask: ['ask'], theory: ['theory']};
+  'normo-mutate': ['normom', 'normow'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'], colors: ['colors'], ask: ['ask'], tutor: ['tutor'], theory: ['theory']};
 /* модули index.html → блоки (неизвестный модуль — всё) */
 const MODS = [[/^RKP\b/, ['rkp']], [/^RK2\b|^RKG\b/, ['rk2', 'rkg']], [/^LIVE/, ['live']], [/^IGL\b/, ['points']], [/^IGS\b/, ['igs', 'normo']],
   [/^(IGNK|IGREAD)\b/, ['normo']], [/^HWCHECK\b/, ['ng3', 'dzvar']], [/^(GEN|GYM)\b/, ['gym']], [/^(TRACK|VIEWS_PROBE)\b/, ['track']],
@@ -61,12 +61,15 @@ for (const f of files) {
   else if (/^(me|hands)\//.test(f)) add(f, 'me');
   else if (/^lk\/hq\//.test(f)) add(f + ' (Штаб — проверяют тесты сервера)');
   else if (/^lk\/(site|ask)\.js$/.test(f)) add(f + ' (подключён к сайту)', 'ask', 'lk', 'crawl');
+  else if (f === 'lk/tutor.js') add(f + ' (наставник на ИГ №4)', 'tutor', 'crawl');
+  else if (/^tools\/tutor-/.test(f)) add(f + ' (наставник: пакет знаний и замер)', 'tutor');
+  else if (/^server\/lib\/tutor\/|^server\/test\/tutor/.test(f)) { out.server = true; add(f + ' (наставник — тесты сервера)', 'tutor'); }
   else if (/^lk\/(scan|drawings)\//.test(f)) add(f, 'lk', 'me');
   else if (/^lk\//.test(f)) add(f, 'lk', 'me', 'ask');
   else if (/^tools\/hq-|^tests\/hq-agent\.test\.js$/.test(f)) { out.server = true; add(f + ' (Цех — тесты исполнителя в задании server)'); }
   else if (/^server\/lib\/hq\/|^server\/test\/hq/.test(f)) { out.server = true; add(f + ' (тесты сервера)'); }
   else if (/^server\//.test(f)) { out.server = true; add(f + ' (тесты сервера)', 'ask', 'lk'); }
-  else if (/^dz\/ig\/4\//.test(f)) add(f, 'ig4', 'normo');
+  else if (/^dz\/ig\/4\//.test(f)) add(f, 'ig4', 'normo', 'tutor');   /* решение ДЗ 4 — знания наставника (ig4.json) */
   else if (/^dz\/ig\//.test(f)) add(f, 'normo', 'igs', 'print');
   else if (/^dz\//.test(f)) add(f, 'dzvar', 'variants', 'core');
   else if (/^(core|kernel)\//.test(f)) add(f, 'variants', 'cert', 'dzvar', 'core', 'normo');
