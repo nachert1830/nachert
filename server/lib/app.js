@@ -19,6 +19,7 @@ const CAL=require('../../lk/lib/calendar.js');
 const REM=require('../../lk/lib/reminder.js');
 const SRS=require('../../lk/lib/srs.js');
 const EYES=require('./eyes');
+const TUTOR=require('./tutor');
 
 const DOCS_VERSION='2026-10-25';
 const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024, EYES_BODY=3*1024*1024;
@@ -100,7 +101,7 @@ function createApp(o){
       await store.put('users',user); isNew=true; }
     const ses=await newSession(req,user); await store.update('users',user.id,{lastLogin:now()}); await logLogin(req,user.id,method,true,isNew?'регистрация':''); await logAct(user.id,isNew?'signup':'login',{m:method});
     return {resp:H.json(200,{ok:true,isNew,user:publicUser(user),csrf:ses.csrf,session:ses.tok}),cookie:ses.cookie}; }
-  const publicUser=u=>({id:u.id,name:u.name,group:u.group||'',variant:u.variant||0,role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,email:!!u.em,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos)});
+  const publicUser=u=>({id:u.id,name:u.name,group:u.group||'',variant:u.variant||0,role:u.role,method:u.method,telegram:!!u.tgId,yandex:!!u.ya,email:!!u.em,createdAt:u.createdAt,photos:!!(u.consent&&u.consent.photos),ai:!!(u.consent&&u.consent.ai)});
 
   /* ── проверки запроса ── */
   /* запрос — со страницы клуба: с адреса функции (тот же сайт) или с nachert1830.ru (список FRONT_ORIGINS, ответы с CORS) */
@@ -308,6 +309,8 @@ function createApp(o){
     if(b.group!=null){ const g=cleanGroup(b.group); if(g&&!okGroup(g)) fail(400,'Группа — как в расписании, например ИУ5-12/6.'); set.group=g; }
     if(b.variant!=null) set.variant=cleanVariant(b.variant);
     if(b.photos!=null) set.consent=Object.assign({},S.user.consent,{photos:b.photos===true,photosAt:now()});
+    /* согласие на отправку текста вопроса и фото листа зарубежной модели (наставник, docs/TUTOR.md) */
+    if(b.ai!=null) set.consent=Object.assign({},set.consent||S.user.consent,{ai:b.ai===true,aiAt:now()});
     const u=await store.update('users',S.user.id,set); return H.json(200,{user:publicUser(u)}); };
 
   A['POST /api/me/reminders']=async(req,S)=>{ const fl=FEAT.effective(await flagsRaw(),S.user.role); if(!fl.reminders) fail(403,'Напоминания сейчас выключены.');
@@ -372,7 +375,8 @@ function createApp(o){
       progress:prog?{data:prog.data,updatedAt:prog.updatedAt}:null,
       sessions:ses.map(s=>({createdAt:s.createdAt,lastSeen:s.lastSeen,expiresAt:s.expiresAt,current:s.id===S.h})),
       loginLog:logs.map(x=>({ts:x.ts,method:x.method,ok:x.ok,reason:x.reason,ip:x.ip})),feedback:fb.map(f=>({ts:f.ts,feature:f.feature,mood:f.mood,text:f.text,reply:f.reply||null})),
-      questions:qs.map(q=>({createdAt:q.createdAt,src:q.src,messages:q.msgs.map(m=>({from:m.from==='a'?'автор':'вы',text:m.text,photo:!!m.img,ts:m.ts}))}))};
+      questions:qs.map(q=>({createdAt:q.createdAt,src:q.src,messages:q.msgs.map(m=>({from:m.from==='a'?'автор':'вы',text:m.text,photo:!!m.img,ts:m.ts}))})),
+      tutor:await TUTOR.exportOf(store,u.id)};
     return H.json(200,out,{'Content-Disposition':'attachment; filename="nachert-club-my-data.json"'}); };
 
   A['POST /api/me/delete']=async(req,S)=>{ const b=body(req); if(b.confirm!=='УДАЛИТЬ') fail(400,'Подтвердите удаление словом УДАЛИТЬ.');
@@ -430,10 +434,12 @@ function createApp(o){
   A['GET /api/ask/t']=async(req,S)=>{ const t=await myThread(req,S); const r=await store.update('ask',t.id,{seenU:now()})||t; return H.json(200,{thread:askFull(r,'u')}); };
   A['POST /api/ask']=async(req,S)=>{ const b=body(req); await limit('ask',S.user.id,12,3600);
     const text=askText(b.text); if(text.length<2&&!b.img) fail(400,'Напиши вопрос — хотя бы пару слов.');
-    const t0=now(), id='q'+t0.toString(36)+C.token(4), img=await askImg(b,id), u=S.user;
-    const th={id,userId:u.id,name:u.name,group:u.group||'',variant:u.variant||0,src:askSrc(b.src),where:cleanName(b.where),title:(text||'Фото').split('\n')[0].slice(0,90),
-      msgs:[askMsg('u',text,img)],createdAt:t0,updatedAt:t0,seenU:t0,seenA:0,closed:false,ver:0};
-    await store.put('ask',th); await logAct(u.id,'ask',{n:1}); return H.json(200,{thread:askFull(th,'u')}); };
+    const th=await askNew(S.user,{text,src:b.src,where:b.where},b); return H.json(200,{thread:askFull(th,'u')}); };
+  /* новая ветка вопроса (её же создаёт наставник по согласию студента — kind:'tutor') */
+  async function askNew(u,q,b){ const t0=now(), id='q'+t0.toString(36)+C.token(4), img=b?await askImg(b,id):null, text=askText(q.text);
+    const th={id,userId:u.id,name:u.name,group:u.group||'',variant:u.variant||0,src:askSrc(q.src),where:cleanName(q.where),title:(text||'Фото').split('\n')[0].slice(0,90),
+      msgs:[askMsg('u',text,img)],createdAt:t0,updatedAt:t0,seenU:t0,seenA:0,closed:false,ver:0,...(q.kind?{kind:q.kind}:{})};
+    await store.put('ask',th); await logAct(u.id,'ask',{n:1}); return th; }
   A['POST /api/ask/msg']=async(req,S)=>{ const b=body(req); await limit('askm',S.user.id,60,3600);
     const t=await myThread({query:{id:b.id}},S), text=askText(b.text); if(!text&&!b.img) fail(400,'Пустое сообщение.');
     const r=await askAppend(t,askMsg('u',text,await askImg(b,t.id)),{seenU:now(),closed:false}); return H.json(200,{thread:askFull(r,'u')}); };
@@ -547,6 +553,7 @@ function createApp(o){
     const inv=await store.scan('invites',x=>x.usedBy===id); for(const x of inv) await store.update('invites',x.id,{usedBy:'удалён'});
     const ac=await store.scan('activity',x=>x.userId===id); for(const x of ac) await store.del('activity',x.id);
     const qs=await store.scan('ask',x=>x.userId===id); for(const q of qs){ for(const m of q.msgs||[]) if(m.img) await store.del('askimg',m.img); await store.del('ask',q.id); }
+    await TUTOR.removeOf(store,id);
     await store.del('progress',id); await store.del('users',id); }
 
   /* ── бот: /start, /pause, /resume, /stop и кнопка «Пауза» ── */
@@ -599,12 +606,15 @@ function createApp(o){
 
   /* уборка: просроченные сессии, ссылки, лимиты, старый журнал входов */
   async function maintain(at){ const t=at||now();
-    for(const [tb,f] of [['sessions',x=>x.expiresAt<t||x.lastSeen+IDLE_DAYS*DAY<t],['botlogin',x=>x.exp<t-DAY],['ratelimit',x=>x.exp<t],['remsent',x=>x.exp<t],['activity',x=>x.ts<t-ACT_DAYS*DAY]]){
+    for(const [tb,f] of [['sessions',x=>x.expiresAt<t||x.lastSeen+IDLE_DAYS*DAY<t],['botlogin',x=>x.exp<t-DAY],['ratelimit',x=>x.exp<t],['remsent',x=>x.exp<t],['activity',x=>x.ts<t-ACT_DAYS*DAY],['tutorlog',x=>x.ts<t-180*DAY]]){
       const old=await store.scan(tb,f); for(const x of old) await store.del(tb,x.id); }
     const logs=await store.scan('loginlog',x=>x.ts<t-LOG_DAYS*DAY); for(const x of logs) await store.del('loginlog',{h:x.h,r:x.r}); }
 
   /* Штаб владельца (lib/hq, docs/HQ.md): диктовка → карта целей → ТЗ → исполнители. Только админ. */
   const hq=require('./hq').register(D,{store,now,http,fail,body,json:H.json,env:cfg.hq||{}});
+  /* Наставник — ИИ-агент на чертеже (lib/tutor, docs/TUTOR.md): студенту /api/tutor/*, владельцу /api/admin/tutor */
+  TUTOR.register(A,D,{store,now,http,fail,body,json:H.json,limit,cfg:cfg.tutor,iamToken:o.iamToken,log,
+    askCreate:async(u,q)=>(await askNew(u,Object.assign({kind:'tutor'},q))).id});
 
   /* ── маршрутизация ── */
   async function handle(req){ let res, cookie=null;

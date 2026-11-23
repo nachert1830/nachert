@@ -39,10 +39,10 @@ $('#lockForm').addEventListener('submit', e => { e.preventDefault(); const c = $
 $('#lockBtn').addEventListener('click', () => { ls.set('ownerCode', null); stopHands(); location.replace(location.pathname); });
 
 /* ───────── разделы ───────── */
-const PANE_OF = { scan: 'lk', lk: 'lk', holo: 'holo', site: 'site', ask: 'ask', reports: 'reports' };
+const PANE_OF = { scan: 'lk', lk: 'lk', holo: 'holo', site: 'site', ask: 'ask', reports: 'reports', tutor: 'tutor' };
 let cur = '', prevPane = '', split = false, splitUser = false, started = false;
 const frame = p => $('.pane[data-pane="' + p + '"]');
-function load(p) { const f = frame(p); if (p === 'ask') { qaStart(); return f; } if (p === 'reports') { repRender(); return f; } if (!f.getAttribute('src') || f.getAttribute('src') === 'about:blank') { f.onload = () => patch(f); f.src = SRC[p]; } return f; }
+function load(p) { const f = frame(p); if (p === 'ask') { qaStart(); return f; } if (p === 'reports') { repRender(); return f; } if (p === 'tutor') { tutRender(); return f; } if (!f.getAttribute('src') || f.getAttribute('src') === 'about:blank') { f.onload = () => patch(f); f.src = SRC[p]; } return f; }
 function lkReady(f, ms) { return new Promise(res => { const t0 = Date.now(); (function poll() { let w = null; try { w = f.contentWindow; } catch (e) {}
   if (w && w.LKSCAN && w.document.readyState !== 'loading') return res(w); if (Date.now() - t0 > (ms || 15000)) return res(null); setTimeout(poll, 120); })(); }); }
 async function lkTab(id) { const w = await lkReady(load('lk')); if (!w) return null; const t = w.document.querySelector('.tab[data-tab="' + id + '"]'); if (t) t.click(); return w; }
@@ -182,7 +182,7 @@ addEventListener('storage', e => { if (e.key === 'lk_tok') qaPoll(); });
 /* ───────── клавиши (и внутри разделов) ───────── */
 function keys(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey) return;
-  const k = e.code, map = { Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site', Digit5: 'ask', Digit6: 'reports' };
+  const k = e.code, map = { Digit1: 'scan', Digit2: 'lk', Digit3: 'holo', Digit4: 'site', Digit5: 'ask', Digit6: 'reports', Digit7: 'tutor' };
   if (map[k]) { e.preventDefault(); go(map[k]); }
   else if (k === 'KeyD') { e.preventDefault(); side($('#side').hidden); }
   else if (k === 'KeyS') { e.preventDefault(); $('#splitBtn').click(); }
@@ -290,4 +290,27 @@ function repRender() {
     REPORTS.map(r => '<a class="rep-it" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer"><b>' + esc(r.title) + '</b><time>' + esc(d(r.date)) + '</time><p>' + esc(r.about) + '</p></a>').join('');
 }
 
-self.ME = { go, side, renderUsers, qaPoll, qaOpen, startHands, stopHands, act, deepAt, get cur() { return cur; } };   /* для проверки tests/me-hub.js */
+/* ───────── наставник (ИИ на чертеже: начерт ДЗ №1–5, ИГ ДЗ №4): сводка за сегодня и неделю, сверщик, оценки, последние ответы ─────────
+   API клуба /api/admin/tutor (server/lib/tutor/index.js), сессия кабинета lk_tok с ролью админа. */
+async function tutRender() { const el = $('#tutList'), h = '<h2>Наставник · начерт ДЗ №1–5, ИГ ДЗ №4</h2>';
+  if (!CLUB || !ls.get('lk_tok')) { el.innerHTML = h + '<div class="qa-gate"><b>Нужен вход в кабинет</b>Сводку видит только владелец.<p><button class="btn sm" data-act="lk">Войти в кабинет</button></p></div>'; return; }
+  el.innerHTML = h + '<p class="rep-note">Загрузка…</p>'; let j;
+  try { j = await qreq('GET', '/api/admin/tutor'); }
+  catch (e) { el.innerHTML = h + '<div class="qa-gate"><b>' + esc(e.status === 401 ? 'Сессия кабинета истекла' : e.status === 403 ? 'Этот аккаунт кабинета — не админ' : e.status === 404 ? 'Наставник ещё не развёрнут на сервере' : (e.message || 'Сервер кабинета не отвечает')) + '</b></div>'; return; }
+  const c = j.config || {}, pct = (a, b) => b ? Math.round(a * 100 / b) + ' %' : '—', v = j.verify || {}, r = j.rate || {};
+  const card = (t, s) => '<div class="tut-c"><span>' + esc(t) + '</span><b>' + s + '</b></div>';
+  const st = (t, x) => '<div class="tut-row"><h3>' + t + '</h3>' + card('реплик', x.turns) + card('студентов', x.users) + card('потрачено', x.rub + ' ₽') + card('фото', x.photos) + card('сбоев', x.errors) + '</div>';
+  el.innerHTML = h +
+    '<p class="rep-note">' + (c.on ? '🟢 включён' : '⚪ выключен') + ' · модель ' + esc(c.model || '—') + ', запасная ' + esc(c.light || '—') + (c.ru ? ' · без согласия — российская модель' : '') +
+    ' · режим по умолчанию: ' + (c.mode === 'explain' ? 'разбор' : 'наставник') + ' · бюджет ' + (c.dayRub || 0) + ' ₽ в день, ' + (c.userDayRub || 0) + ' ₽ на студента · ' +
+    '<button class="btn sm" id="tutRe">Обновить</button></p>' +
+    st('Сегодня', j.today || {}) + st('7 дней', j.week || {}) +
+    '<div class="tut-row"><h3>Качество</h3>' + card('сверено сразу', pct(v.first, v.total)) + card('переписано', pct(v.repaired, v.total)) + card('вырезано', pct(v.cut, v.total)) +
+    card('👍 / 👎', (r.good || 0) + ' / ' + (r.bad || 0)) + card('время ответа', j.ms ? (j.ms / 1000).toFixed(1) + ' с' : '—') + '</div>' +
+    '<h3>Последние ответы</h3>' + ((j.recent || []).length ? '<table class="tut-t"><thead><tr><th>Когда</th><th>Кто</th><th>ДЗ · вар.</th><th>Модель</th><th>Инструменты</th><th>Сверка</th><th>₽</th><th>Оценка</th></tr></thead><tbody>' +
+      j.recent.map(x => '<tr' + (x.error ? ' class="err"' : '') + '><td>' + esc(qwhen(x.ts)) + '</td><td>' + esc(x.name) + '</td><td>' + esc((x.dz || 'ig4').replace(/^ng/, 'НГ ').replace(/^ig/, 'ИГ ') + ' · ' + x.n) + (x.photo ? ' 📷' : '') + '</td><td>' + esc(x.model || '') + (x.ms ? ' · ' + (x.ms / 1000).toFixed(1) + ' с' : '') +
+        '</td><td>' + esc((x.tools || []).join(', ')) + '</td><td>' + (x.error ? '⚠ ' + esc(x.error) : x.verify ? (x.verify.cut ? 'вырезано' : x.verify.repaired ? 'переписано' : 'сразу') : '—') +
+        '</td><td>' + esc(x.rub) + '</td><td>' + (x.rate === 1 ? '👍' : x.rate === 0 ? '👎' : '') + '</td></tr>').join('') + '</tbody></table>' : '<p class="rep-note">Пока никто не спрашивал.</p>');
+  const b = $('#tutRe'); if (b) b.onclick = tutRender; }
+
+self.ME = { go, tutRender, side, renderUsers, qaPoll, qaOpen, startHands, stopHands, act, deepAt, get cur() { return cur; } };   /* для проверки tests/me-hub.js */
