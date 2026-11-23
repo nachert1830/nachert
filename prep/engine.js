@@ -127,6 +127,21 @@ function pair(topic,k){
   return null;
 }
 
+/* ───────── курсы по этапам (prep/plans.js): PREP.plan(key, {subj, kind, n, label, title, go, stages:[{t, why, topics, learn, do}]}) ───────── */
+const PLANS={}, PKEY='nch_prep_plan';
+const mstore={ all(){ try{ return JSON.parse(localStorage.getItem(PKEY)||'{}')||{}; }catch(e){ return {}; } },
+  set(a){ try{ localStorage.setItem(PKEY,JSON.stringify(a)); }catch(e){} } };
+const manual=(k,i)=>!!((mstore.all()[k]||{})[i]);
+function setManual(k,i,on){ const a=mstore.all(), o=a[k]||{}; if(on) o[i]=on===true?{t:Date.now(),by:'self'}:on; else delete o[i]; a[k]=o; mstore.set(a); }
+const doneSt=id=>{ const s=status(id); return s==='done'||s==='due'; };
+/* этап пройден: отмечен вручную или все его темы освоены (повтор по расписанию не отменяет освоения) */
+function stDone(k,i){ const st=PLANS[k]&&PLANS[k].stages[i]; if(!st) return false; if(manual(k,i)) return true;
+  const tp=(st.topics||[]).filter(id=>TOPICS[id]); return tp.length>0&&tp.every(doneSt); }
+function planProg(k){ const p=PLANS[k]; if(!p) return {n:0,done:0,topics:0};
+  const ids=new Set(p.stages.flatMap(s=>s.topics||[]));
+  return {n:p.stages.length,done:p.stages.filter((s,i)=>stDone(k,i)).length,topics:ids.size}; }
+const planTopics=k=>[...new Set((PLANS[k]?PLANS[k].stages:[]).flatMap(s=>s.topics||[]))];
+
 /* ───────── экраны ───────── */
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const P=()=>self.PREPROG;
@@ -137,8 +152,9 @@ const row=(t,ck)=>{ const c=dotCls(t.id), tag=stTag(c); return `<a class="pp-st 
 const doneOf=ids=>ids.filter(id=>status(id)==='done').length;
 const pbar=(a,b)=>`<span class="pp-prog"><i style="width:${b?Math.round(a/b*100):0}%"></i></span>`;
 
-/* #/prep — подготовка: выбор задания; каждое открывает только свой курс */
-function viewHub(v){
+/* #/prep — подготовка: выбор задания; каждое открывает только свой курс (по этапам — PLANS, prep/plans.js) */
+/* основной сайт курсов по этапам не подключает (prep/plans.js — только в копии /new/): там прежний экран — курсы ДЗ по темам */
+function viewHubCourses(v){
   const G=P(), dz=G.COURSES.filter(c=>c.kind==='dz'), rk=G.COURSES.filter(c=>c.kind==='rk');
   const cardC=c=>{ const all=c.own.concat(c.prev), d=doneOf(c.own);
     return `<a class="pp-cc" href="#/prep/${c.key}"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b>
@@ -149,6 +165,56 @@ function viewHub(v){
     <h2 class="pp-h2">Рубежные контроли</h2><div class="pp-ccs">${rk.map(c=>`<div class="pp-cc later" aria-disabled="true"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b><span class="pp-ccm">позже</span></div>`).join('')}</div>
     <p class="pp-sub"><a href="#/prep/all">Вся программа — ${G.ALL.length} тем по блокам →</a></p></div>`;
   return 'Подготовка';
+}
+
+function viewHub(v){
+  if(!Object.keys(PLANS).length) return viewHubCourses(v);
+  const G=P(), keys=Object.keys(PLANS);
+  const cardP=k=>{ const p=PLANS[k], g=planProg(k);
+    return `<a class="pp-cc${g.done===g.n?' fin':''}" href="#/prep/${k}"><span class="pp-cck">${esc(p.label)}</span><b>${esc(p.title)}</b>
+      <span class="pp-ccm">${g.n} ${g.n<5?'этапа':'этапов'}${g.topics?` · ${g.topics} ${g.topics===1?'тема':g.topics<5?'темы':'тем'} с проверкой`:''}</span>${pbar(g.done,g.n)}<small>пройдено ${g.done} из ${g.n}</small></a>`; };
+  const sec=(subj,kind,h)=>{ const ks=keys.filter(k=>PLANS[k].subj===subj&&PLANS[k].kind===kind); return ks.length?`<h2 class="pp-h2">${h}</h2><div class="pp-ccs">${ks.map(cardP).join('')}</div>`:''; };
+  v.innerHTML=`<div class="wrap page pp"><div class="pp-head"><h1>Подготовка</h1>
+    <p class="pp-sub">Курс перед каждым ДЗ и РК: задание разбито на подзадачи-этапы. Пройди их — и решай свой вариант сам. Решение открыто всегда.</p></div>
+    ${sec('ng','dz','Начерт · домашние задания')}${sec('ng','rk','Начерт · рубежные контроли')}${sec('ig','dz','Инженерная графика · домашние задания')}${sec('ig','rk','Инженерная графика · рубежный контроль')}
+    <p class="pp-sub"><a href="#/prep/all">Вся программа по начерту — ${G.ALL.length} тем по блокам →</a></p></div>`;
+  return 'Подготовка';
+}
+
+/* #/prep/ng2 — курс задания по этапам: этап = подзадача, у этапа темы с проверкой, теория и задачи */
+function viewPlan(v,k){
+  const p=PLANS[k], G=P(), g=planProg(k), nx=p.stages.findIndex((st,i)=>!stDone(k,i)), pre=preOf(k), due=dueOf(k), dt=doneToday();
+  const tps=planTopics(k).filter(id=>TOPICS[id]), started=tps.filter(id=>status(id)!=='new').length;
+  const lk=a=>`<a href="${a[0]}">${esc(a[1])}</a>`;
+  const stg=(st,i)=>{ const d=stDone(k,i), tp=st.topics||[], td=tp.filter(id=>doneSt(id)).length, kind=stageCheckKind(k,i), mv=(mstore.all()[k]||{})[i];
+    const pr=pre&&pre.r&&pre.r[i]!=null?pre.r[i]:null;
+    const exp=[st.why||'',...tp.filter(id=>G.BY[id]).map(id=>G.BY[id].t+': '+G.BY[id].new)].filter(Boolean);
+    return `<section class="pp-stg${d?' done':''}${i===nx?' now':''}" id="st${i+1}"><div class="pp-stgh"><span class="pp-stgn">${d?'✓':i+1}</span>
+      <div><b>${esc(st.t)}</b>${pr===0&&!d?'<span class="pp-pre bad">на замере — ошибка</span>':pr===1&&!d?'<span class="pp-pre">на замере — верно</span>':''}${st.why?`<p>${esc(st.why)}</p>`:''}</div></div>
+      ${tp.length?`<div class="pp-stgb"><h3>1 · Темы: смотри и проверь себя${tp.length>1?` · освоено ${td} из ${tp.length}`:''}</h3>${tp.filter(id=>G.BY[id]).map(id=>row(G.BY[id],k)).join('')}</div>`:''}
+      ${st.learn&&st.learn.length?`<div class="pp-stgb"><h3>${tp.length?'2':'1'} · Теория</h3><div class="pp-lks">${st.learn.map(lk).join('')}</div></div>`:''}
+      ${st.do&&st.do.length?`<div class="pp-stgb"><h3>Потренируйся</h3><div class="pp-lks">${st.do.map(lk).join('')}</div></div>`:''}
+      <div class="pp-stgb pp-se"><h3>Объясни себе</h3><p>Не подглядывая, скажи вслух или запиши в одну-две строки: что делаем на этом этапе, как и зачем. Потом сверь.</p>
+        <button type="button" class="pp-seb" data-se="${i}">Сверить с ответом</button><ul class="pp-sea" hidden>${exp.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+      ${kind?`<div class="pp-stgb pp-chk">${d&&mv&&mv.by==='test'?'<span class="pp-ok">✓ Засчитано проверкой</span> ':d?'<span class="pp-ok">✓ Все темы освоены</span> ':''}<a class="pp-btn${d?' ghost':''}" href="#/prep/${k}/check${i+1}">${d?'Проверить ещё раз':kind==='order'?'Проверка: расставь шаги плана':'Проверка этапа'} →</a>
+        <small>${kind==='duel'?'4 пары чертежей из тем этапа вперемешку — все верно.':kind==='mcq'?st.check.length+' '+(st.check.length<5?'вопроса':'вопросов')+' по стандартам — все верно.':'Шаги плана решения в случайном порядке — расставь их.'}</small></div>`
+        :`<button type="button" class="pp-mk${manual(k,i)?' on':''}" data-st="${i}" aria-pressed="${manual(k,i)}">${manual(k,i)?'✓ Сделано':'Сделал — отметить этап'}</button>`}</section>`; };
+  v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a>
+    <div class="pp-head"><span class="pp-cck">Подготовка к ${esc(p.label)}</span><h1>${esc(p.title)}</h1>
+    <p class="pp-sub">${p.kind==='dz'?'Задание разбито на подзадачи. Этап засчитывается проверкой, а не ощущением «понял». Пройдёшь все — решай свой вариант сам.':'Билет разбит на типы задач. Этап засчитывается проверкой. Пройдёшь все — иди на пробный билет.'}</p></div>
+    <div class="pp-cbar">${pbar(g.done,g.n)}<span>пройдено ${g.done} из ${g.n} этапов</span></div>
+    ${!pre&&!g.done&&!started&&tps.length?`<a class="pp-btn big" href="#/prep/${k}/pre">Начни с замера — ${Math.max(1,Math.round(p.stages.filter(s=>(s.topics||[]).length).length*0.4))} мин →</a>
+      <p class="pp-note">Попробуй ответить до обучения: даже ошибка на замере помогает потом быстрее понять тему. Замер покажет, с каких этапов начать.</p>`:''}
+    ${due.length?`<a class="pp-due" href="#/prep/${k}/mix"><b>Пора повторить: ${due.length} ${due.length===1?'тема':due.length<5?'темы':'тем'}</b><span>Смешанная тренировка — темы вперемешку, 8–12 пар →</span></a>`:''}
+    ${dt>=3&&nx>=0?`<p class="pp-rest">Сегодня пройдено этапов: ${dt}. Лучше продолжить завтра: во сне мозг закрепляет выученное. Завтра начни со смешанной тренировки.</p>`:''}
+    ${nx>=0?`<a class="pp-btn big${!pre&&!g.done&&!started&&tps.length?' ghost':''}" href="#st${nx+1}" data-go="${nx+1}">${g.done?'Продолжить':'Начать'}: этап ${nx+1} · ${esc(p.stages[nx].t)} →</a>`:`<a class="pp-btn big" href="${p.go}">Все этапы пройдены — ${p.kind==='dz'?'к своему варианту':'к разделу '+esc(p.label)} →</a>`}
+    <div class="pp-stgs">${p.stages.map(stg).join('')}</div>
+    ${started>=2&&!due.length?`<a class="pp-due calm" href="#/prep/${k}/mix"><b>Смешанная тренировка</b><span>Темы курса вперемешку: сначала узнай, какой приём нужен, потом проверь →</span></a>`:''}
+    <p class="pp-sub"><a href="${p.go}">${p.kind==='dz'?'Свой вариант '+esc(p.label)+' →':'К разделу '+esc(p.label)+' →'}</a> ${p.kind==='dz'?'Решение открыто всегда; подготовка — чтобы решить самому.':''}</p></div>`;
+  v.querySelectorAll('.pp-mk').forEach(b=>b.onclick=()=>{ const i=+b.dataset.st; setManual(k,i,manual(k,i)?false:{t:Date.now(),by:'self'}); try{ window.TRACK&&TRACK('prep_stage',{plan:k,st:i+1,by:'self'}); }catch(e){} const y=scrollY; viewPlan(v,k); scrollTo(0,y); });
+  v.querySelectorAll('.pp-seb').forEach(b=>b.onclick=()=>{ const u=b.nextElementSibling; u.hidden=!u.hidden; b.textContent=u.hidden?'Сверить с ответом':'Скрыть ответ'; });
+  v.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{ const el=v.querySelector('#st'+a.dataset.go); if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); } });
+  return 'Подготовка к '+p.label;
 }
 
 /* #/prep/ng4 — курс одного задания: свои темы по блокам + свёрнуто «нужно из прошлых» */
@@ -178,7 +244,7 @@ function viewAll(v){
 }
 
 function viewTopic(v,id,ck){
-  const G=P(), T=G.BY[id], topic=TOPICS[id], back=ck&&G.COURSE[ck]?'#/prep/'+ck:'#/prep/all';
+  const G=P(), T=G.BY[id], topic=TOPICS[id], back=ck&&(G.COURSE[ck]||PLANS[ck])?'#/prep/'+ck:'#/prep/all';
   if(!T){ v.innerHTML='<div class="wrap page"><div class="box warn">Такой темы нет. <a href="#/prep">Вся программа</a></div></div>'; return 'Подготовка'; }
   if(!topic){
     v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="${back}">← Назад</a><h1>${esc(T.t)}</h1><p class="pp-new">${esc(T.new)}</p>
@@ -308,13 +374,13 @@ function duel(stage,topic,T,saved,toWatch,ck){
     try{ window.TRACK&&TRACK('prep_mastered',{topic:T.id,n:M.n}); }catch(e){}
     try{ window.FX&&FX.confetti(); }catch(e){}
     /* дальше — по своему курсу: следующая неосвоенная тема; курс пройден — к своему варианту */
-    const G=P(), c=ck&&G.COURSE[ck], pool=c?c.own:G.ALL.map(t=>t.id), at=pool.indexOf(T.id);
+    const G=P(), c=ck&&G.COURSE[ck], pl=ck&&PLANS[ck], pool=pl?planTopics(ck):c?c.own:G.ALL.map(t=>t.id), at=pool.indexOf(T.id);
     const nextId=pool.slice(at+1).concat(pool.slice(0,Math.max(0,at))).find(id=>TOPICS[id]&&status(id)!=='done'), nextT=nextId&&G.BY[nextId];
-    const fin=c&&!nextT&&c.kind==='dz'?`<a class="pp-btn" href="#/ng${c.n}">Курс пройден — к своему варианту ${c.label} →</a>`:'';
+    const fin=pl&&!nextT?`<a class="pp-btn" href="#/prep/${ck}">Темы курса освоены — к этапам ${esc(pl.label)} →</a>`:c&&!nextT&&c.kind==='dz'?`<a class="pp-btn" href="#/ng${c.n}">Курс пройден — к своему варианту ${c.label} →</a>`:'';
     stage.innerHTML=`<div class="pp-done"><div class="pp-big">${M.n}</div><h2>Тема освоена</h2><p class="pp-sub">пар до уверенности · верно ${M.log.filter(x=>x.ok).length}</p>
       <div class="pp-deck">${keys.map(k=>`<span class="${M.beat[k]?'won':''}" title="${esc(topic.traps[k].say)}"></span>`).join('')}</div>
       <p class="pp-sub">Повторим через ${SPACING[Math.min(SPACING.length-1,((store.get(T.id)||{}).lvl||1)-1)]} дн. — так тема не забудется.</p>
-      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${c?ck+'/':''}${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:fin}<a class="pp-btn ghost" href="${c?'#/prep/'+ck:'#/prep/all'}">${c?'К курсу':'Программа'}</a></div>
+      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${c?ck+'/':''}${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:fin}<a class="pp-btn ghost" href="${c||pl?'#/prep/'+ck:'#/prep/all'}">${c||pl?'К курсу':'Программа'}</a></div>
       <details class="pp-how"><summary>Почему система решила, что ты освоил</summary><table>${keys.map(k=>`<tr><td>${esc(topic.traps[k].say)}</td><td>${M.beat[k]} ✓</td><td>${M.miss[k]} ✗</td><td>${esc(topic.traps[k].src||'')}</td></tr>`).join('')}</table>
       <p>Пары подбирались так, чтобы шанс ответить верно был около 85 %. Угадывание в выборе из двух учтено: тема засчитана, когда вероятность «знает» стала выше 98,5 % и четыре последних ответа подряд верны.</p></details></div>`;
   };
@@ -323,8 +389,153 @@ function duel(stage,topic,T,saved,toWatch,ck){
   next(); meter();
 }
 
-/* ───────── карточка «Подготовка» на странице ДЗ ───────── */
-function card(dz){
+/* ───────── проверки курса: методика ─────────
+   • Замер до обучения (#/prep/<к>/pre) — по одной паре на этап. Попытка ответить до обучения улучшает усвоение,
+     даже если ответ неверный (pretesting effect: Richland, Kornell, Kao, 2009; Kornell и др., 2009). Этапов не засчитывает.
+   • Проверка этапа (#/prep/<к>/check<N>) — этап засчитывается только по проверке, а не по ощущению «понял»
+     (иллюзия компетентности — Bjork, Dunlosky, Kornell, 2013). Темы этапа — 4 пары вперемешку, все верно (угадать — 1 из 16);
+     у инжи — вопросы по ГОСТ; «Собери всё в план» — расставить шаги решения по порядку (воспроизведение процедуры).
+   • Смешанная тренировка (#/prep/<к>/mix) — темы курса вперемешку (interleaving: Rohrer, Taylor, 2007; Brunmair, Richter, 2019):
+     учит узнавать, какой приём нужен, а не только выполнять его. Она же — интервальный повтор: ошибка возвращает тему на повтор
+     сегодня, верный ответ по теме, которой пора повториться, отодвигает следующий повтор (Cepeda и др., 2006).
+   • «Объясни себе» на каждом этапе — сначала сказать своими словами, потом сверить (self-explanation: Chi и др., 1994;
+     генерация до показа — Slamecka, Graf, 1978).
+   • Больше трёх этапов за день — совет продолжить завтра: сон закрепляет выученное (Walker, Stickgold, 2004). */
+const shuf=a=>{ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+/* последовательность тем без двух одинаковых подряд — чередование */
+function interleave(ids,n){ const out=[]; let bag=[];
+  while(out.length<n){ if(!bag.length) bag=shuf(ids); let i=bag.findIndex(id=>id!==out[out.length-1]); if(i<0) i=0; out.push(bag.splice(i,1)[0]); }
+  return out; }
+const trapFor=topic=>{ const ks=Object.keys(topic.traps), hard=ks.filter(k=>(topic.traps[k].b0||0)>=0); const pool=hard.length?hard:ks; return pool[Math.floor(Math.random()*pool.length)]; };
+const today=()=>{ const d=new Date(); d.setHours(0,0,0,0); return +d; };
+const stageStamp=v=>typeof v==='number'?v:v&&v.t||0;
+function doneToday(){ const a=mstore.all(), t0=today(); let n=0; Object.keys(a).forEach(k=>{ if(/:/.test(k)) return; Object.values(a[k]||{}).forEach(v=>{ if(stageStamp(v)>=t0) n++; }); }); return n; }
+const preOf=k=>(mstore.all()[k+':pre'])||null;
+function setPre(k,o){ const a=mstore.all(); a[k+':pre']=o; mstore.set(a); }
+/* интервальный повтор по результату смешанной тренировки */
+function respace(id,ok){ const s=store.get(id); if(!s||!s.mast) return; const st=status(id);
+  if(!ok){ store.set(id,Object.assign({},s,{mast:1,lvl:Math.max(1,(s.lvl||1)-1)})); }
+  else if(st==='due'){ store.set(id,Object.assign({},s,{mast:Date.now(),lvl:(s.lvl||1)+1})); } }
+const dueOf=k=>planTopics(k).filter(id=>status(id)==='due');
+
+function shell(v,title,sub,back){
+  document.body.classList.add('inplayer');
+  v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="${back}" aria-label="К курсу">←</a>
+    <div class="pp-ttl"><b>${esc(title)}</b><small>${esc(sub)}</small></div><span class="pp-cnt" id="ppCnt"></span></div><div class="pp-stage" id="ppStage"></div></div>`;
+  return v.querySelector('#ppStage');
+}
+function endScreen(v,html){ document.body.classList.remove('inplayer'); v.innerHTML=`<div class="wrap page pp"><div class="pp-gt">${html}</div></div>`; }
+
+/* раунд дуэлей по списку тем: n пар, темы вперемешку; onEnd(log) */
+function rounds(stage,ids,n,onEnd,onAns,blind){
+  const seq=interleave(ids,n), log=[]; let i=0, cur=null, locked=false;
+  const G=P();
+  stage.innerHTML=`<div class="pp-duel"><div class="pp-card" id="ppA" tabindex="0" role="button" aria-label="Первый чертёж"><svg></svg></div>
+    <div class="pp-panel mid"><div class="pp-meter"><div class="pp-prog"><i id="ppBar"></i></div><span id="ppPct"></span></div><span class="pp-tp" id="ppTp"></span>
+      <div class="pp-verd" id="ppVerd"></div></div>
+    <div class="pp-card" id="ppB" tabindex="0" role="button" aria-label="Второй чертёж"><svg></svg></div></div>`;
+  const A=stage.querySelector('#ppA'), B=stage.querySelector('#ppB'), verd=stage.querySelector('#ppVerd'), cnt=document.getElementById('ppCnt');
+  const next=()=>{ if(i>=seq.length) return onEnd(log);
+    const id=seq[i], topic=TOPICS[id]; let k=trapFor(topic), pr=pair(topic,k);
+    for(let t=0;!pr&&t<6;t++){ k=trapFor(topic); pr=pair(topic,k); }
+    if(!pr){ i++; return next(); }
+    cur={id,k,pr,okTop:Math.random()<.5}; locked=false; [A,B].forEach(c=>c.className='pp-card');
+    draw(A.querySelector('svg'),cur.okTop?pr.ok:pr.bad); draw(B.querySelector('svg'),cur.okTop?pr.bad:pr.ok);
+    stage.querySelector('#ppTp').textContent=blind?'Узнай, какой это приём, и найди верный чертёж':G.BY[id]?G.BY[id].t:'';
+    stage.querySelector('#ppBar').style.width=Math.round(i/seq.length*100)+'%'; stage.querySelector('#ppPct').textContent=(i+1)+' / '+seq.length;
+    if(cnt) cnt.textContent=log.filter(x=>x.ok).length+' ✓';
+    verd.innerHTML='<span class="pp-q">Где верно?</span>'; };
+  const choose=top=>{ if(locked||!cur) return; locked=true;
+    const ok=top===cur.okTop, tr=TOPICS[cur.id].traps[cur.k]; if(blind) stage.querySelector('#ppTp').textContent='Тема: '+(G.BY[cur.id]?G.BY[cur.id].t:''); log.push({id:cur.id,k:cur.k,ok,say:tr.say}); i++; onAns&&onAns(cur.id,ok);
+    try{ window.TRACK&&TRACK('prep_check',{topic:cur.id,trap:cur.k,ok:ok?1:0}); }catch(e){}
+    const okC=cur.okTop?A:B, badC=cur.okTop?B:A; okC.classList.add('ok');
+    if(ok){ badC.classList.add('dim'); verd.innerHTML='<span class="pp-ok">Верно</span>'; try{ window.FX&&FX.buzz('tick'); }catch(e){} setTimeout(next,900); }
+    else { badC.classList.add('bad'); mark(badC.querySelector('svg'),okC.querySelector('svg'),cur.pr.ok,tr.hl);
+      verd.innerHTML=`<span class="pp-bad">${esc(tr.say)}</span><button class="pp-btn" id="ppNx">Дальше →</button>`;
+      try{ window.FX&&FX.buzz('error'); }catch(e){} const b=verd.querySelector('#ppNx'); b.onclick=next; try{ b.focus({preventScroll:true}); }catch(e){} } };
+  const key=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); choose(e.currentTarget===A); } };
+  A.onclick=()=>choose(true); B.onclick=()=>choose(false); A.onkeydown=key; B.onkeydown=key;
+  next();
+}
+
+/* вопросы с выбором (инжа — ГОСТ) и расстановка шагов по порядку */
+function mcq(stage,qs,onEnd){
+  const list=shuf(qs), log=[]; let i=0;
+  const show=()=>{ if(i>=list.length) return onEnd(log);
+    const q=list[i], order=shuf(q.o.map((t,j)=>j)); const cnt=document.getElementById('ppCnt'); if(cnt) cnt.textContent=(i+1)+' / '+list.length;
+    stage.innerHTML=`<div class="pp-mcq"><p class="pp-mq">${esc(q.q)}</p><div class="pp-mo">${order.map(j=>`<button type="button" data-j="${j}">${esc(q.o[j])}</button>`).join('')}</div><div class="pp-verd" id="ppVerd"></div></div>`;
+    stage.querySelectorAll('.pp-mo button').forEach(b=>b.onclick=()=>{ if(stage.querySelector('.pp-mo.locked')) return; stage.querySelector('.pp-mo').classList.add('locked');
+      const j=+b.dataset.j, ok=j===q.a; log.push({ok,q:q.q,why:q.why});
+      stage.querySelector(`[data-j="${q.a}"]`).classList.add('ok'); if(!ok) b.classList.add('bad');
+      stage.querySelector('#ppVerd').innerHTML=`${ok?'<span class="pp-ok">Верно</span>':'<span class="pp-bad">Неверно</span>'}${q.why?`<p class="pp-mw">${esc(q.why)}</p>`:''}<button class="pp-btn" id="ppNx">Дальше →</button>`;
+      stage.querySelector('#ppNx').onclick=()=>{ i++; show(); }; }); };
+  show();
+}
+function orderTask(stage,steps,onEnd){
+  let at=0, miss=0; const items=shuf(steps.map((t,i)=>({t,i})));
+  stage.innerHTML=`<div class="pp-mcq"><p class="pp-mq">Нажимай шаги решения по порядку — от первого к последнему.</p><ol class="pp-ord" id="ppOrd"></ol>
+    <div class="pp-mo pp-oo">${items.map(x=>`<button type="button" data-i="${x.i}">${esc(x.t)}</button>`).join('')}</div><div class="pp-verd" id="ppVerd"></div></div>`;
+  const ol=stage.querySelector('#ppOrd'), verd=stage.querySelector('#ppVerd');
+  stage.querySelectorAll('.pp-oo button').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i;
+    if(i===at){ b.remove(); ol.insertAdjacentHTML('beforeend',`<li>${esc(steps[i])}</li>`); at++; verd.innerHTML='';
+      if(at===steps.length){ verd.innerHTML=`<span class="${miss<=1?'pp-ok':'pp-bad'}">${miss?'Ошибок: '+miss:'Без ошибок'}</span>`; setTimeout(()=>onEnd([{ok:miss<=1,miss}]),900); } }
+    else { miss++; b.classList.add('bad'); setTimeout(()=>b.classList.remove('bad'),500); verd.innerHTML=`<span class="pp-bad">Не этот. Что нужно сделать сразу после «${esc(at?steps[at-1]:'начала')}»?</span>`; } });
+}
+/* шаги плана решения задания — из методики dz/<курс>/<№>/method.js (тип выбирается случайно: каждая попытка — новая) */
+function planSteps(dzKey){ try{ const d=self.DZR&&DZR.list('ng').concat(DZR.list('ig')).find(x=>x.id===dzKey), T=d&&d.method&&d.method.types; if(!T) return null;
+  const ks=Object.keys(T).filter(c=>T[c].plan&&T[c].plan.length>=4); if(!ks.length) return null;
+  const c=ks[Math.floor(Math.random()*ks.length)], ty=(d.types||[]).find(x=>x.code===c);
+  const cut=x=>{ x=String(x||'').replace(/<[^>]+>/g,'').split(/[.;—]\s/)[0].trim(); return x.length>70?x.slice(0,68).replace(/\s+\S*$/,'')+'…':x; };
+  return {steps:T[c].plan.map(a=>{ const t=String(a.t).replace(/^\d+\.\s*/,''); return t.length<14&&a.d?t+': '+cut(a.d):t; }),name:ks.length>1&&ty?ty.name:''}; }catch(e){ return null; } }
+
+function stageCheckKind(k,i){ const st=PLANS[k].stages[i]; if((st.topics||[]).some(id=>TOPICS[id])) return 'duel'; if(st.check&&st.check.length) return 'mcq'; if(st.order) return 'order'; return null; }
+function viewQuiz(v,k,item){
+  const p=PLANS[k], back='#/prep/'+k, G=P();
+  const again=()=>{ document.title=viewQuiz(v,k,item)+' · Начерт'; try{ scrollTo(0,0); }catch(e){} };
+  const fin=(html,re)=>{ endScreen(v,html+`<div class="pp-row pp-gb"><a class="pp-btn" href="${back}">К этапам →</a>${re?'<button type="button" class="pp-btn ghost" id="ppAgain">Ещё раз</button>':''}</div>`);
+    const b=v.querySelector('#ppAgain'); if(b) b.onclick=again; };
+  const missed=log=>{ const m=log.filter(x=>!x.ok); return m.length?`<h2 class="pp-h2">Разбери ошибки</h2><ul class="pp-miss">${m.map(x=>`<li>${x.id&&G.BY[x.id]?`<a href="#/prep/${k}/${x.id}">${esc(G.BY[x.id].t)}</a>: `:''}${esc(x.say||x.why||x.q||'')}</li>`).join('')}</ul>`:''; };
+  if(item==='pre'){
+    const sts=p.stages.map((s,i)=>({i,id:(s.topics||[]).find(id=>TOPICS[id])})).filter(x=>x.id);
+    if(!sts.length) return (location.hash=back,p.title);
+    const stg=shell(v,'Замер: что ты уже знаешь','по одной паре на этап · ответы не засчитываются',back); const res={};
+    rounds(stg,sts.map(x=>x.id),sts.length,log=>{ log.forEach(x=>{ const s=sts.find(y=>y.id===x.id); if(s) res[s.i]=x.ok?1:0; }); setPre(k,{t:Date.now(),r:res});
+      const ok=log.filter(x=>x.ok).length;
+      fin(`<span class="pp-cck">Замер · ${esc(p.label)}</span><h1>${ok} из ${log.length}</h1>
+        <p class="pp-sub">Ошибаться на замере — нормально и даже полезно: мозг уже ищет ответ, и теория ложится на готовый вопрос. Этапы с ошибкой отмечены в курсе — начни с них. В выборе из двух угадать легко, поэтому верный ответ на замере этап не засчитывает: для этого есть проверка этапа.</p>${missed(log)}`); });
+    return 'Замер · '+p.label;
+  }
+  if(item==='mix'){
+    let ids=planTopics(k).filter(id=>TOPICS[id]&&status(id)!=='new'); if(ids.length<2) ids=planTopics(k).filter(id=>TOPICS[id]);
+    const due=dueOf(k), n=Math.min(12,Math.max(8,ids.length));
+    const stg=shell(v,'Смешанная тренировка','темы курса вперемешку · '+n+' пар',back);
+    const seqIds=due.length?due.concat(ids).filter((x,i,a)=>a.indexOf(x)===i):ids;
+    rounds(stg,seqIds,n,log=>{ const ok=log.filter(x=>x.ok).length;
+      fin(`<span class="pp-cck">Смешанная тренировка · ${esc(p.label)}</span><h1>${ok} из ${log.length}</h1>
+        <p class="pp-sub">Когда темы идут вперемешку, сначала надо узнать, какой приём нужен, — как в настоящем ДЗ и на РК. Ошибки вернули свои темы на повтор, верные ответы отодвинули следующий повтор.</p>${missed(log)}`,true); },(id,ok)=>respace(id,ok),true);
+    return 'Смешанная тренировка · '+p.label;
+  }
+  const m=/^check(\d+)$/.exec(item||''), i=m?+m[1]-1:-1, st=p.stages[i];
+  if(!st){ location.hash=back; return p.title; }
+  const kind=stageCheckKind(k,i), head=`Проверка этапа ${i+1}`;
+  const pass=log=>{ setManual(k,i,{t:Date.now(),by:'test'}); try{ window.TRACK&&TRACK('prep_stage',{plan:k,st:i+1,by:'test'}); }catch(e){} try{ window.FX&&FX.confetti(); }catch(e){}
+    const nx=p.stages.findIndex((s,j)=>!stDone(k,j)), dt=doneToday();
+    fin(`<span class="pp-cck">${esc(p.label)} · этап ${i+1}</span><h1>Этап пройден</h1><p class="pp-sub">${esc(st.t)}</p>
+      ${dt>=3&&nx>=0?`<p class="pp-rest">Сегодня пройдено этапов: ${dt}. Лучше продолжить завтра: во сне мозг закрепляет выученное, и следующий этап ляжет на прочную основу. Завтра начни со «Смешанной тренировки».</p>`:''}
+      ${nx>=0?`<p class="pp-sub">Дальше — этап ${nx+1}: ${esc(p.stages[nx].t)}.</p>`:`<p class="pp-sub">Все этапы пройдены. ${p.kind==='dz'?'Решай свой вариант сам, а решение открывай только для сверки.':''}</p><a class="pp-btn" href="${p.go}">${p.kind==='dz'?'К своему варианту':'К разделу '+esc(p.label)} →</a>`}`); };
+  const fail=(log,extra)=>fin(`<span class="pp-cck">${esc(p.label)} · этап ${i+1}</span><h1>Пока не засчитано</h1>
+      <p class="pp-sub">${extra||'Нужно ответить верно на все вопросы проверки.'} Разбери ошибки, повтори теорию этапа и попробуй снова — вопросы будут другими.</p>${missed(log)}`,true);
+  if(kind==='duel'){ const ids=st.topics.filter(id=>TOPICS[id]);
+    rounds(shell(v,head,st.t+' · 4 пары, все верно',back),ids,4,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
+  else if(kind==='mcq'){ mcq(shell(v,head,st.t+' · все ответы верно',back),st.check,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
+  else if(kind==='order'){ const ps=planSteps(st.order); if(!ps){ setManual(k,i,{t:Date.now(),by:'self'}); location.hash=back; return p.title; }
+    orderTask(shell(v,head,(ps.name?ps.name+' · ':'')+'план решения по порядку',back),ps.steps,log=>log[0].ok?pass(log):fail([],`Ошибок в порядке: ${log[0].miss}. Можно не больше одной.`)); }
+  else { location.hash=back; return p.title; }
+  return head+' · '+p.label;
+}
+
+/* ───────── карточка «Подготовка» на странице ДЗ и РК ───────── */
+function cardCourse(dz){
   const G=P(); if(!G||!G.COURSE[dz]) return '';
   const c=G.COURSE[dz], d=doneOf(c.own), first=c.own.find(id=>TOPICS[id]&&status(id)!=='done');
   return `<a class="pp-dzcard" href="#/prep/${dz}"><span class="pp-dzk">Подготовка к ${c.label}</span>
@@ -332,18 +543,53 @@ function card(dz){
     <small>${first?'Начни с темы «'+esc(G.BY[first].t)+'»':'Всё освоено — переходи к своему варианту'}</small></a>`;
 }
 
-function chip(dz){
+function chipCourse(dz){
   const G=P(); if(!G||!G.COURSE[dz]) return '';
   const c=G.COURSE[dz], d=doneOf(c.own);
   return `<a class="pp-dzchip" href="#/prep/${dz}"><b>Подготовка к ${c.label}</b>${pbar(d,c.own.length)}<span>${d}/${c.own.length} →</span></a>`;
+}
+
+function card(k){
+  const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':cardCourse(k);
+  const g=planProg(k), nx=p.stages.findIndex((s,i)=>!stDone(k,i));
+  return `<a class="pp-dzcard" href="#/prep/${k}"><span class="pp-dzk">Сначала — подготовка к ${esc(p.label)}</span>
+    <b>${g.done}/${g.n} этапов пройдено</b>${pbar(g.done,g.n)}
+    <small>${nx>=0?'Этап '+(nx+1)+': «'+esc(p.stages[nx].t)+'»':'Всё пройдено — решай свой вариант'}</small></a>`;
+}
+function chip(k){
+  const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':chipCourse(k);
+  const g=planProg(k);
+  return `<a class="pp-dzchip" href="#/prep/${k}"><b>Подготовка к ${esc(p.label)}</b>${pbar(g.done,g.n)}<span>${g.done}/${g.n} →</span></a>`;
+}
+/* Перед решением варианта — предложение пройти подготовку (мягкий вход: решение открывается одной кнопкой).
+   Показывается, пока курс не пройден, раз за сеанс на задание; «Сразу к решению» запоминается до закрытия вкладки.
+   Автоматические проверки (navigator.webdriver) его не видят, если не включить nch_prep_gate = 1. */
+const SKEY='nch_prep_skip';
+const skipped=k=>{ try{ return (JSON.parse(sessionStorage.getItem(SKEY)||'{}')||{})[k]; }catch(e){ return false; } };
+function skip(k){ try{ const o=JSON.parse(sessionStorage.getItem(SKEY)||'{}')||{}; o[k]=1; sessionStorage.setItem(SKEY,JSON.stringify(o)); }catch(e){} }
+function gate(v,k,go,what){
+  const p=PLANS[k]; if(!p||skipped(k)) return false;
+  try{ if(navigator.webdriver&&localStorage.getItem('nch_prep_gate')!=='1') return false; }catch(e){}
+  const g=planProg(k); if(g.done===g.n) return false;
+  const nx=p.stages.findIndex((s,i)=>!stDone(k,i));
+  v.innerHTML=`<div class="wrap page pp pp-gate-pg"><div class="pp-gt"><span class="pp-cck">${esc(p.label)} · ${esc(what||'решение')}</span>
+    <h1>Сначала — подготовка</h1>
+    <p class="pp-sub">${esc(p.title)}: задание разбито на ${g.n} ${g.n<5?'этапа':'этапов'}. На каждом — теория, проверка и задачи на одну подзадачу. С этой базой свой вариант решается самому, а готовое решение нужно только для сверки.</p>
+    <div class="pp-cbar">${pbar(g.done,g.n)}<span>пройдено ${g.done} из ${g.n}</span></div>
+    <div class="pp-row pp-gb"><a class="pp-btn" href="#/prep/${k}">${g.done?'Продолжить подготовку':'Начать подготовку'} →</a><button type="button" class="pp-btn ghost" id="ppSkip">Сразу к решению</button></div>
+    <h2 class="pp-h2">Этапы</h2><ol class="pp-gl">${p.stages.map((s,i)=>`<li class="${stDone(k,i)?'done':''}${i===nx?' now':''}"><a href="#/prep/${k}">${esc(s.t)}</a></li>`).join('')}</ol></div></div>`;
+  v.querySelector('#ppSkip').onclick=()=>{ skip(k); try{ window.TRACK&&TRACK('prep_gate_skip',{plan:k}); }catch(e){} go(); };
+  try{ window.TRACK&&TRACK('prep_gate',{plan:k}); }catch(e){}
+  return true;
 }
 /* адреса: #/prep — подготовка; #/prep/ng4 — курс ДЗ №4; #/prep/ng4/x3 — тема в курсе; #/prep/all — вся программа;
    #/prep/x3 — тема из программы; #/prep/for/ng4 — прежний адрес курса */
 function view(v,r){
   const G=P(); if(!G){ v.innerHTML='<div class="wrap page"><div class="box warn">Программа не загрузилась.</div></div>'; return 'Подготовка'; }
   if(r.tab==='all') return viewAll(v);
-  if(r.tab==='for') return G.COURSE[r.item]?viewCourse(v,r.item):viewHub(v);
-  if(r.tab&&G.COURSE[r.tab]) return r.item?viewTopic(v,r.item,r.tab):viewCourse(v,r.tab);
+  const crs=k=>PLANS[k]?viewPlan(v,k):viewCourse(v,k);
+  if(r.tab==='for') return G.COURSE[r.item]||PLANS[r.item]?crs(r.item):viewHub(v);
+  if(r.tab&&(G.COURSE[r.tab]||PLANS[r.tab])) return r.item?(PLANS[r.tab]&&/^(check\d+|mix|pre)$/.test(r.item)?viewQuiz(v,r.tab,r.item):viewTopic(v,r.item,r.tab)):crs(r.tab);
   if(r.tab) return viewTopic(v,r.tab,null);
   return viewHub(v);
 }
@@ -425,6 +671,40 @@ const CSS=`
 .pp-dzchip{display:flex;align-items:center;gap:10px;padding:6px 12px;margin:4px 0;border-radius:10px;background:var(--surf2,#f3f5fa);color:var(--ink,#121a3f);text-decoration:none;font-size:13px}
 .pp-dzchip b{white-space:nowrap}.pp-dzchip .pp-prog{max-width:160px}.pp-dzchip span:last-child{color:var(--acc,#1f3fbf);font-weight:700;white-space:nowrap}
 .pp-dzk{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc,#1f3fbf)}.pp-dzcard small{color:var(--mut,#5c6688)}
+.pp-cc.fin{border-color:var(--pp-ok)}
+.pp-stgs{display:grid;gap:12px;margin:14px 0}
+.pp-stg{background:var(--pp-surf);border:1px solid var(--pp-line);border-radius:var(--pp-r);padding:14px;scroll-margin-top:72px}
+.pp-stg.now{border:2px solid var(--pp-acc)}.pp-stg.done{border-color:var(--pp-ok)}
+.pp-stgh{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start}
+.pp-stgh b{font-size:16px;line-height:1.3;display:block}.pp-stgh p{margin:4px 0 0;font-size:14px;color:var(--pp-mut);line-height:1.4}
+.pp-stgn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;background:var(--pp-bg);border:2px solid var(--pp-line);color:var(--pp-ink)}
+.pp-stg.now .pp-stgn{border-color:var(--pp-acc);color:var(--pp-acc)}.pp-stg.done .pp-stgn{background:var(--pp-ok);border-color:var(--pp-ok);color:#fff}
+.pp-stgb{margin:10px 0 0 44px}.pp-stgb h3{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pp-mut);margin:0 0 4px}
+.pp-lks{display:flex;flex-wrap:wrap;gap:6px}.pp-lks a{font-size:14px;padding:6px 10px;border-radius:10px;background:var(--pp-bg);border:1px solid var(--pp-line);color:var(--pp-ink);text-decoration:none;line-height:1.3}
+.pp-mk{margin:12px 0 0 44px;border:1px dashed var(--pp-line);background:transparent;color:var(--pp-mut);border-radius:10px;padding:8px 12px;font:inherit;font-size:14px;cursor:pointer}
+.pp-mk.on{border-style:solid;border-color:var(--pp-ok);color:var(--pp-ok);font-weight:700}
+@media(max-width:480px){.pp-stgb,.pp-mk{margin-left:0}}
+.pp-gt{max-width:620px;margin:16px auto;background:var(--pp-surf);border:2px solid var(--pp-acc);border-radius:20px;padding:20px 18px}
+.pp-gt h1{margin:6px 0 8px}.pp-gb{margin:14px 0 4px;justify-content:flex-start}.pp-gl{margin:12px 0 16px;padding-left:22px;display:grid;gap:4px}.pp-gl li{font-size:15px}.pp-gl a{color:var(--pp-ink)}
+.pp-gl li.done a{color:var(--pp-ok)}.pp-gl li.done::marker{color:var(--pp-ok)}.pp-gl li.now a{font-weight:700}
+.pp-pre{display:inline-block;margin:4px 0 0;font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(20,160,90,.12);color:var(--pp-ok)}.pp-pre.bad{background:rgba(224,36,78,.10);color:var(--pp-bad)}
+.pp-se p{margin:0 0 6px;font-size:14px;color:var(--pp-mut);line-height:1.4}
+.pp-seb{border:1px solid var(--pp-line);background:var(--pp-bg);border-radius:10px;padding:7px 12px;font:inherit;font-size:14px;color:var(--pp-ink);cursor:pointer}
+.pp-sea{margin:8px 0 0;padding-left:20px;font-size:14px;line-height:1.45}.pp-sea li{margin:2px 0}
+.pp-chk{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.pp-chk small{flex-basis:100%;color:var(--pp-mut);font-size:13px}
+.pp-note{font-size:14px;color:var(--pp-mut);margin:-2px 0 10px}
+.pp-due{display:grid;gap:2px;padding:12px 14px;border-radius:var(--pp-r);background:rgba(212,120,10,.10);border:2px solid var(--pp-dz);color:var(--pp-ink);text-decoration:none;margin:8px 0}
+.pp-due span{font-size:14px;color:var(--pp-mut)}.pp-due.calm{background:var(--pp-surf);border-color:var(--pp-line)}
+.pp-rest{font-size:14px;padding:10px 12px;border-radius:12px;background:var(--pp-bg);border:1px solid var(--pp-line);line-height:1.45}
+.pp-cnt{font-weight:700;font-size:14px;color:var(--pp-ok);white-space:nowrap}
+.pp-tp{grid-column:1/3;text-align:center;font-size:13px;color:var(--pp-mut)}
+.pp-mcq{max-width:640px;margin:0 auto;width:100%;padding:8px 2px;overflow:auto}
+.pp-mq{font-size:18px;font-weight:700;line-height:1.35;margin:6px 0 14px}
+.pp-mo{display:grid;gap:8px}.pp-mo button{text-align:left;font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:2px solid var(--pp-line);background:var(--pp-surf);color:var(--pp-ink);cursor:pointer;transition:border-color .2s}
+.pp-mo button.ok{border-color:var(--pp-ok);background:rgba(20,160,90,.08)}.pp-mo button.bad{border-color:var(--pp-bad);background:rgba(224,36,78,.06)}
+.pp-mcq .pp-verd{flex-direction:column;margin-top:12px}.pp-mw{margin:0;font-size:14px;color:var(--pp-mut);text-align:left}
+.pp-ord{margin:0 0 12px;padding-left:24px;display:grid;gap:4px}.pp-ord li{font-weight:600;color:var(--pp-ok)}
+.pp-miss{padding-left:20px;display:grid;gap:4px;font-size:14px}
 /* чертёж: бумага белая в обеих темах */
 .pp svg .pp-grid line{stroke:var(--pp-grid);stroke-width:.3}
 .pp svg .o{stroke:var(--pp-draw-ink);stroke-width:.85;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -451,5 +731,5 @@ const CSS=`
 function css(){ if(document.getElementById('ppCss')) return; const s=document.createElement('style'); s.id='ppCss'; s.textContent=CSS; document.head.appendChild(s); }
 if(typeof document!=='undefined') css();
 
-self.PREP={TOPICS,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
+self.PREP={TOPICS,PLANS,plan(k,o){ PLANS[k]=Object.assign({key:k},o); return PLANS[k]; },planProg,stDone,gate,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
 })();
