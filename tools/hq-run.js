@@ -4,6 +4,11 @@
      значения этих переменных, если вдруг попали в вывод, заменяются на ***.
    • Запреты проверяются до запуска (регулярные выражения по всей строке): сеть, git push/remote/config, sudo, rm -rf / и ~, npm publish,
      чтение ключей, запись в .github/workflows и tests/baseline.json, перенаправление в файлы вне репозитория (кроме /tmp).
+   • Песочница (HQ_SANDBOX=1, так в Цехе): команда идёт в своих пространствах имён Linux — без сети (только loopback для
+     локальных проверок) и со своим /proc, где не видно процесса исполнителя с ключами. Список запретов — второй слой:
+     регулярные выражения обходятся (node -e умеет и сеть, и чтение /proc/<pid>/environ), изоляция — нет.
+   • Реплики владельца (fromOwner): комментарий «💬 Владелец: …» принимается, только если его автор имеет права в
+     репозитории (author_association OWNER / MEMBER / COLLABORATOR). Репозиторий публичный: начать комментарий так может любой.
    • CI: исполнитель сам ходит в GitHub API с токеном из своего окружения (модель токена не видит) — только чтение. */
 'use strict';
 const {spawn} = require('child_process'), path = require('path');
@@ -53,6 +58,8 @@ const RULES = [
   [/\$\{?\w*(KEY|TOKEN|SECRET|PASSWORD|GH_)\w*/i, 'обращение к ключам запрещено'],
   [/\/proc\/[^\s]*\/environ/, '/proc/*/environ запрещён'],
   [/(^|[\s'"=\/(])\.git\/(config|credentials)|\.git-credentials|extraheader/, 'настройки и ключи git закрыты'],
+  [/(^|[\s'"=\/(])\.git\//, '.git/ закрыт (хуки git выполнились бы у Цеха с ключами)'],
+  [/core\.hooksPath|GIT_CONFIG|GIT_DIR/i, 'настройки git закрыты'],
 ];
 
 /* причина отказа или '' — команда разрешена */
@@ -68,6 +75,31 @@ function forbidden(cmd, root) {
   return '';
 }
 
+/* песочница: префикс команды или null, если изоляция недоступна (проверяется один раз) */
+let SANDBOX;
+function sandbox() {
+  if (SANDBOX !== undefined) return SANDBOX;
+  SANDBOX = null;
+  if (process.env.HQ_SANDBOX !== '1') return SANDBOX;
+  const {spawnSync} = require('child_process');
+  const root = typeof process.getuid === 'function' && process.getuid() === 0;
+  const uid = process.getuid(), gid = process.getgid();
+  /* root нужен только для unshare; сама команда — снова от пользователя Цеха (setpriv), файлы остаются его */
+  const pre = (root ? [] : ['sudo', '-n', '-E', 'env', 'PATH=' + (process.env.PATH || '/usr/bin:/bin')]).concat(['unshare', '--net', '--pid', '--fork', '--mount-proc', '--', 'sh', '-c',
+    'ip link set lo up 2>/dev/null; exec setpriv --reuid=' + uid + ' --regid=' + gid + ' --init-groups -- bash -lc "$0"']);
+  const probe = spawnSync(pre[0], pre.slice(1).concat(['node -e 0']), {stdio: 'ignore', timeout: 20000});   /* node должен находиться и внутри */
+  if (probe.status === 0) SANDBOX = pre;
+  else console.log('::warning::Песочница RUN недоступна (unshare) — команды идут только со списком запретов');
+  return SANDBOX;
+}
+
+/* реплика владельца: текст начинается с «💬 Владелец:» И автор — с правами в репозитории */
+const TRUSTED = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+const fromOwner = c => !!c && /^💬 Владелец:/.test(c.body || '') && TRUSTED.has(String(c.author_association || '').toUpperCase());
+
+/* команда для execFileSync в песочнице (если она есть): {file, args}; окружение передавать cleanEnv(process.env) */
+function wrap(script) { const box = sandbox(); return box ? {file: box[0], args: box.slice(1).concat([script])} : {file: 'bash', args: ['-lc', script]}; }
+
 /* run(cmd, {root, timeout, env, log}) → {code, out, text} — text уходит модели */
 function run(cmd, o) {
   o = o || {};
@@ -78,7 +110,9 @@ function run(cmd, o) {
   if (why) { log('    отказ: ' + why); return Promise.resolve({code: -1, out: '', text: 'ОТКАЗ: ' + why + '. Команда не выполнялась.'}); }
   return new Promise(res => {
     let buf = '', timed = false;
-    const p = spawn('bash', ['-lc', 'exec 2>&1\n' + cmd], {cwd: root, env: cleanEnv(env), detached: true, stdio: ['ignore', 'pipe', 'pipe']});
+    const box = o.sandbox === false ? null : sandbox(), script = 'exec 2>&1\n' + cmd;
+    const p = box ? spawn(box[0], box.slice(1).concat([script]), {cwd: root, env: cleanEnv(env), detached: true, stdio: ['ignore', 'pipe', 'pipe']})
+      : spawn('bash', ['-lc', script], {cwd: root, env: cleanEnv(env), detached: true, stdio: ['ignore', 'pipe', 'pipe']});
     const add = d => { buf += d; if (buf.length > OUT * 4) buf = buf.slice(-OUT * 2); };
     p.stdout.on('data', add); p.stderr.on('data', add);
     const t = setTimeout(() => { timed = true; try { process.kill(-p.pid, 'SIGKILL'); } catch (e) { p.kill('SIGKILL'); } }, timeout);
@@ -117,4 +151,4 @@ async function ci(id, o) {
   return o2;
 }
 
-module.exports = {run, ci, forbidden, cleanEnv, redact, SECRET};
+module.exports = {run, ci, forbidden, cleanEnv, redact, SECRET, fromOwner, sandbox, wrap, _resetSandbox: () => { SANDBOX = undefined; }};

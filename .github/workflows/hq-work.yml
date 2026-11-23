@@ -155,7 +155,13 @@ jobs:
     if: github.event.label.name == 'сеанс'
     runs-on: ubuntu-latest
     timeout-minutes: 330
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: read
     env:
+      HQ_SANDBOX: '1'   # RUN и проверки исполнителя — в песочнице (tools/hq-run.js)
       HQ_ISSUE: ${{ github.event.issue.number }}
       GH_TOKEN: ${{ github.token }}
       # PR и слияние — токеном владельца (встроенному токену Actions создавать PR запрещено); в окружение RUN он не попадает
@@ -236,7 +242,14 @@ jobs:
     if: github.event.label.name == 'цех' || github.event.label.name == 'в работу' || github.event.label.name == 'ai-task'
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    # встроенный токен — только Issue и чтение: PR, пуш и слияние — токеном владельца в шаге, который не даёт ключей коду исполнителя
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: read
     env:
+      HQ_SANDBOX: '1'   # RUN и проверки исполнителя — в песочнице (tools/hq-run.js)
       N: ${{ github.event.issue.number }}
       HQ_ISSUE: ${{ github.event.issue.number }}
       GH_TOKEN: ${{ github.token }}
@@ -277,6 +290,8 @@ jobs:
         id: work
         run: |
           set +e
+          # код из ветки исполнителя (его правила модель) — только в песочнице: без ключей, без сети, со своим /proc (PATH — явно: sudo его заменяет)
+          box(){ if sudo -n true 2>/dev/null; then sudo -n -E env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN PATH="$PATH" unshare --net --pid --fork --mount-proc -- sh -c 'ip link set lo up 2>/dev/null; exec setpriv --reuid='"$(id -u)"' --regid='"$(id -g)"' --init-groups -- "$@"' box "$@"; else env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN "$@"; fi; }
           git config user.name "hq-bot"; git config user.email "hq-bot@users.noreply.github.com"
           m="$MODEL"; tries=0; ok=0; : > /tmp/hq-log.md
           while [ -n "$m" ] && [ $tries -lt 3 ]; do
@@ -299,15 +314,15 @@ jobs:
             fi
             if [ "$AGENT_OK" = 1 ]; then
               cat /tmp/agent.log
-              ONLY=$(node tests/impact.js origin/main --only); echo "Задето: $ONLY"
-              if [ "$ONLY" = "none" ] || node tests/run.js --quick $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/test.log 2>&1; then ok=1; echo "::endgroup::"; break; fi
+              ONLY=$(box node tests/impact.js origin/main --only); echo "Задето: $ONLY"
+              if [ "$ONLY" = "none" ] || box node tests/run.js --quick $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/test.log 2>&1; then ok=1; echo "::endgroup::"; break; fi
               echo "- **$m**: правка есть, быстрые тесты красные" >> /tmp/hq-log.md
               tail -40 /tmp/test.log
             else
               cat /tmp/agent.log; echo "- **$m**: $(tail -1 /tmp/agent.log | cut -c1-200)" >> /tmp/hq-log.md
             fi
             echo "::endgroup::"
-            m=$(node -e "console.log(require('./server/lib/hq/roster.js').ESCALATE[process.argv[1]]||'')" "$m")
+            m=$(git show origin/main:server/lib/hq/roster.js > /tmp/roster.js && node -e "console.log(require('/tmp/roster.js').ESCALATE[process.argv[1]]||'')" "$m")
           done
           echo "ok=$ok" >> "$GITHUB_OUTPUT"; echo "model=$m" >> "$GITHUB_OUTPUT"
       - name: PR, ревизор, выкатка
@@ -322,8 +337,15 @@ jobs:
           PREVIEW_URL: ${{ vars.HQ_PREVIEW_URL }}
         run: |
           set +e
+          # код из ветки исполнителя (его правила модель) — только в песочнице: без ключей, без сети, со своим /proc (PATH — явно: sudo его заменяет)
+          box(){ if sudo -n true 2>/dev/null; then sudo -n -E env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN PATH="$PATH" unshare --net --pid --fork --mount-proc -- sh -c 'ip link set lo up 2>/dev/null; exec setpriv --reuid='"$(id -u)"' --regid='"$(id -g)"' --init-groups -- "$@"' box "$@"; else env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN "$@"; fi; }
+          # ревизор — из main: правка исполнителя не может переписать своего судью
+          rm -rf /tmp/trusted; git worktree add -q -f /tmp/trusted origin/main
           git add -A
-          git commit -q -m "Цех: $TITLE" -m "Исполнитель: $M. Задача #$N."
+          # правки самого Цеха, тестов и CI — только по «влить» владельца, без автовыкатки
+          PROT=$(git diff --cached --name-only origin/main | grep -E '^(\.github/|tools/|tests/|server/lib/hq/|node_modules/)' | head -5 | tr '\n' ' ')
+          if [ -n "$PROT" ]; then AUTO=0; echo "- правка задевает Цех, тесты или CI ($PROT) — автовыкатки нет, ждёт твоего «влить»" >> /tmp/hq-log.md; fi
+          git -c core.hooksPath=/dev/null commit -q -m "Цех: $TITLE" -m "Исполнитель: $M. Задача #$N."
           # checkout без сохранённого токена — пуш с токеном в заголовке (в .git/config его нет, исполнитель не видит)
           git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push -q -f origin "hq/issue-$N"
           git diff origin/main...HEAD > /tmp/hq.diff
@@ -331,12 +353,12 @@ jobs:
           [ -n "$PR" ] || PR=$(gh pr create --head "hq/issue-$N" --base main --title "Цех: $TITLE" --body "Задача #$N. Исполнитель: **$M**. $(cat /tmp/hq-done.txt 2>/dev/null)" 2>/tmp/pr.err)
           [ -n "$PR" ] || echo "- PR не создан: $(head -c 300 /tmp/pr.err)" >> /tmp/hq-log.md
           echo "PR=$PR" >> "$GITHUB_ENV"
-          REV=$(node tools/hq-review.js --model sonnet --task /tmp/hq-task.md --diff /tmp/hq.diff); RC=$?
+          REV=$(env -u GH_TOKEN node /tmp/trusted/tools/hq-review.js --model sonnet --task /tmp/hq-task.md --diff /tmp/hq.diff); RC=$?
           NOTES=$(echo "$REV" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const v=JSON.parse(s);console.log((v.notes||[]).map(x=>'- '+x).join('\n'))}catch(e){console.log('- ревизор не ответил')}})")
           STATUS="на-проверку"; MSG="🔍 **Готово, ждёт твоего решения.** PR: $PR"
           if [ "$RC" = 0 ] && [ "$AUTO" = 1 ]; then
-            ONLY=$(node tests/impact.js origin/main --only)
-            if [ "$ONLY" = "none" ] || node tests/run.js $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/full.log 2>&1; then
+            ONLY=$(box node tests/impact.js origin/main --only)
+            if [ "$ONLY" = "none" ] || box node tests/run.js $([ "$ONLY" != "all" ] && echo "--only=$ONLY") > /tmp/full.log 2>&1; then
               if gh pr merge "$PR" --squash --delete-branch; then STATUS="готово"; MSG="✅ **Выкачено на сайт.** PR: $PR"
               else MSG="⚠️ Тесты и ревизор — зелёные, но влить не вышло (конфликт с main — другая задача правила то же место, или защита ветки). PR: $PR. Перезапусти задачу — исполнитель начнёт со свежего main."; fi
               gh workflow run check.yml --ref main || true   # полная проверка main; красная → Issue «main красный»
@@ -345,16 +367,16 @@ jobs:
           # предпросмотр (ждёт твоего «влить»): правка — в ветку preview (живая ссылка), скриншоты «было / стало» на телефоне и компьютере
           PREVIEW=""; SHOTS=""
           if [ "$STATUS" = "на-проверку" ] && [ -n "$PR" ]; then
-            PAGE=$(node -e "console.log(require('./tools/hq-preview.js').pageOf(require('fs').readFileSync('/tmp/hq-task.md','utf8')))")
+            PAGE=$(box node -e "console.log(require('./tools/hq-preview.js').pageOf(require('fs').readFileSync('/tmp/hq-task.md','utf8')))")
             rm -rf /tmp/base; git worktree add -q -f /tmp/base origin/main && ln -s "$PWD/node_modules" /tmp/base/node_modules
             SHA0=$(git rev-parse HEAD); mkdir -p _preview
-            node tools/hq-preview.js --root /tmp/base --page "$PAGE" --out _preview/before || true
-            node tools/hq-preview.js --root . --page "$PAGE" --out _preview/after || true
+            box node tools/hq-preview.js --root /tmp/base --page "$PAGE" --out _preview/before || true
+            box node tools/hq-preview.js --root . --page "$PAGE" --out _preview/after || true
             git worktree remove --force /tmp/base || true
-            git add -f _preview && git commit -q -m "Предпросмотр задачи #$N" -m "Страница: $PAGE" && \
+            git add -f _preview && git -c core.hooksPath=/dev/null commit -q -m "Предпросмотр задачи #$N" -m "Страница: $PAGE" && \
               git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push -q -f origin HEAD:refs/heads/preview && {
                 SHA=$(git rev-parse HEAD); BASE="${PREVIEW_URL:-https://raw.githack.com/$GITHUB_REPOSITORY/preview}"
-                PREVIEW=$(node -e "console.log(require('./tools/hq-preview.js').pageUrl(process.argv[1],process.argv[2]))" "$BASE" "$PAGE")
+                PREVIEW=$(box node -e "console.log(require('./tools/hq-preview.js').pageUrl(process.argv[1],process.argv[2]))" "$BASE" "$PAGE")
                 RAW="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$SHA/_preview"
                 SHOTS="$RAW/before-phone.png $RAW/after-phone.png $RAW/before-desktop.png $RAW/after-desktop.png"
                 MSG="$MSG"$'\n\n'"👀 **Предпросмотр:** $PREVIEW"$'\n\n'"Было → стало (телефон): ![]($RAW/before-phone.png) ![]($RAW/after-phone.png)"; }

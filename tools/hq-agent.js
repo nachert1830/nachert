@@ -144,7 +144,9 @@ async function callAs(k, m, system, messages, o) {
 const call = (system, messages, o) => callAs(key, M, system, messages, o);
 
 /* ── проверка и глаза ── */
-const {execSync} = require('child_process');
+const {execFileSync} = require('child_process');
+/* код проекта (его правит модель) — без ключей и в песочнице: иначе правка tests/*.js прочитала бы process.env исполнителя */
+const execSync = (cmd, o) => { const w = SH.wrap(cmd); return execFileSync(w.file, w.args, Object.assign({env: SH.cleanEnv(process.env)}, o)); };
 function check() {
   let only = 'all'; try { only = execSync('node tests/impact.js origin/main --only', {cwd: ROOT, encoding: 'utf8'}).trim(); } catch (e) {}
   if (only === 'none') return 'Проверка: правка не задевает сайт — проверять нечего. Можно DONE.';
@@ -176,7 +178,7 @@ const ISSUE = process.env.HQ_ISSUE, GHT = process.env.GH_TOKEN, REPO = process.e
 async function owner() {
   if (!ISSUE || !GHT || !REPO) return '';
   try { const r = await fetch((process.env.HQ_GH_API || 'https://api.github.com') + '/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100', {headers: {authorization: 'Bearer ' + GHT, accept: 'application/vnd.github+json', 'user-agent': 'hq-agent'}});
-    const cs = (await r.json()).filter(c => /^💬 Владелец:/.test(c.body || ''));
+    const cs = (await r.json()).filter(SH.fromOwner);   /* только автор с правами в репозитории: репозиторий публичный */
     if (seenC === null) { seenC = new Set(cs.map(c => c.id)); return ''; }   /* старые — уже в ТЗ при запуске */
     const fresh = cs.filter(c => !seenC.has(c.id)); fresh.forEach(c => seenC.add(c.id));
     return fresh.map(c => c.body).join('\n'); } catch (e) { return ''; }
@@ -446,7 +448,7 @@ async function session() {
   const system = SESSION + '\n\n' + map(), messages = [], start = cost.rub;
   let mergeOk = false, prUrl = '', lastIn = 0, seen = new Set();
   const total = () => Math.round((cost.rub - start) * 100) / 100;
-  const isOwner = c => /^💬 Владелец:/.test(c.body || '');
+  const isOwner = SH.fromOwner;   /* «💬 Владелец:» от постороннего (репозиторий публичный) — не реплика владельца и не «влей» */
   const textOf = c => String(c.body || '').replace(/^💬 Владелец:\s*/, '').replace(/<!--[\s\S]*?-->/g, '').trim();
   const isStop = c => /<!-- hq-stop -->/.test(c.body || '') || /^стоп[.!]?$/i.test(textOf(c));
   async function comments() { let all = []; for (let p = 1; p <= 10; p++) { const a = await ghApi('GET', '/repos/' + REPO + '/issues/' + ISSUE + '/comments?per_page=100&page=' + p); all = all.concat(a); if (a.length < 100) break; } return all; }
@@ -470,7 +472,7 @@ async function session() {
     messages.splice(0, cut, {role: 'user', content: 'СВОДКА ПРОШЛЫХ ХОДОВ СЕАНСА:\n' + sum}, {role: 'assistant', content: 'Понял, продолжаю с этого места.'});
     console.log('  история сжата: ' + cut + ' сообщений → сводка'); lastIn = 0;
   }
-  const g = args => require('child_process').execFileSync('git', args, {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'});
+  const g = args => require('child_process').execFileSync('git', ['-c', 'core.hooksPath=/dev/null'].concat(args), {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'});   /* без хуков: их мог подложить исполнитель */
   async function openPr() {
     const pulls = await ghApi('GET', '/repos/' + REPO + '/pulls?state=open&head=' + encodeURIComponent(owner + ':' + branch), null, PRT);
     return (pulls || [])[0] || null;

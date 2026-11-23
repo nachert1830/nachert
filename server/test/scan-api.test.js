@@ -122,3 +122,8 @@ test('последний отказ ProxyAPI по деньгам — в стат
     const o=await get('мой-личный-код'), j=JSON.parse(o.body); assert.equal(o.statusCode,200); assert.match(j.provider.proxyapi.lastError,/402.*Insufficient balance/); assert.ok(j.provider.proxyapi.at>=t); assert.equal(j.provider.openrouter,false);
     const s=await get('виктория'); assert.equal(s.statusCode,200); assert.equal(JSON.parse(s.body).provider,undefined); assert.ok(!s.body.includes('balance'));
   } finally { delete process.env.OWNER_CODE_SHA256; } });
+
+test('перебор кода: смена X-Forwarded-For не сбрасывает счётчик — адрес берётся у шлюза',async()=>{ F._reset(); F._setFetch(fake([]));
+  const h={origin:OK,'x-scan-code':'неверный'}, rc={identity:{sourceIp:'10.20.30.40'}};
+  for(let i=0;i<10;i++) await F.handler(ev('POST',{headers:Object.assign({},h,{'x-forwarded-for':'1.2.3.'+i}),requestContext:rc,body:body()}));
+  const r=await F.handler(ev('POST',{headers:Object.assign({},h,{'x-forwarded-for':'9.9.9.9'}),requestContext:rc,body:body()})); assert.equal(r.statusCode,429); });

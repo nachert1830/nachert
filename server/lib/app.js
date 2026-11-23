@@ -23,6 +23,10 @@ const EYES=require('./eyes');
 const DOCS_VERSION='2026-10-25';
 const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024, EYES_BODY=3*1024*1024;
 const DAY=864e5;
+/* лимиты с одной сети /24 за 10 минут: студенты общежития или аудитории выходят в интернет через немногие адреса — на семинаре
+   регистрируется вся группа. От перебора защищают строгие лимиты на сам объект: 5 писем в час на адрес, 5 попыток на код,
+   токены входа по 192 бита */
+const LOGIN_IP=100, EMAIL_IP=60;
 
 class HttpError extends Error{ constructor(status,msg,extra){ super(msg); this.status=status; this.extra=extra; } }
 const fail=(s,m,x)=>{ throw new HttpError(s,m,x); };
@@ -143,7 +147,7 @@ function createApp(o){
   const say=(chat,text,extra)=>Object.assign({method:'sendMessage',chat_id:chat,text,disable_web_page_preview:true},extra||{});
 
   /* шаг 3: confirm=false — только узнать имя («Войти как …?»), confirm=true — войти */
-  R['POST /api/auth/bot/redeem']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),30,600);
+  R['POST /api/auth/bot/redeem']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),LOGIN_IP,600);
     const tok=String(b.token||''); if(!/^[A-Za-z0-9_-]{30,40}$/.test(tok)) fail(400,'Ссылка для входа неверная. Нажмите «Старт» у бота ещё раз.');
     const id=loginId(tok), r=await store.get('botlogin',id), t=now();
     if(!r||r.exp<t||r.kind){ await logLogin(req,null,'telegram',false,'ссылка устарела'); fail(410,'Ссылка для входа устарела. Нажмите «Старт» у бота ещё раз — придёт новая.',{expired:true}); }
@@ -169,7 +173,7 @@ function createApp(o){
     if(!C.safeEqual(C.hmac(tgSecret(),dcs),String(d.hash))) return null;
     if(!/^\d{1,16}$/.test(String(d.id))||!/^\d{9,11}$/.test(String(d.auth_date))) return null;
     return {id:String(d.id),name:cleanName(d.first_name)||'Участник',at:+d.auth_date*1000,hash:String(d.hash)}; }
-  R['POST /api/auth/telegram']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),30,600);
+  R['POST /api/auth/telegram']=async(req)=>{ const b=body(req); await limit('login',maskIp(req.ip),LOGIN_IP,600);
     if(!cfg.botToken) fail(404,'Вход через Telegram не настроен.');
     const v=tgVerify(b.data), t=now();
     if(!v){ await logLogin(req,null,'telegram',false,'подпись Telegram не сошлась'); fail(400,'Telegram не подтвердил вход. Попробуйте ещё раз.'); }
@@ -191,7 +195,7 @@ function createApp(o){
   R['POST /api/auth/email/start']=async(req)=>{ const b=body(req), e=normEmail(b.email);
     if(!mailer.enabled) fail(404,'Вход по почте пока не настроен.');
     if(!okEmail(e)) fail(400,'Проверьте адрес почты.');
-    await limit('emip',maskIp(req.ip),10,600); await limit('emaddr',C.sha256(e).slice(0,24),5,3600);
+    await limit('emip',maskIp(req.ip),EMAIL_IP,600); await limit('emaddr',C.sha256(e).slice(0,24),5,3600);
     const key=emKey(e), member=!!(await store.get('identities',key)), inv=member?null:inviteHash(b.invite);
     if(!member){ const st=await inviteState(inv); if(!st.ok){ await logLogin(req,null,'email',false,'без приглашения: '+st.why); fail(403,b.invite?st.why:'Регистрация сейчас закрыта.',{needInvite:true}); } }
     const code=String(require('crypto').randomInt(0,1e6)).padStart(6,'0'), t=now();
@@ -200,7 +204,7 @@ function createApp(o){
     if(!r||!r.ok){ log.error('почта',r&&r.error); fail(502,'Не получилось отправить письмо. Попробуйте ещё раз через минуту.'); }
     return H.json(200,{ok:true,to:maskEmail(e),minutes:LOGIN_MIN}); };
   R['POST /api/auth/email/verify']=async(req)=>{ const b=body(req), e=normEmail(b.email), code=String(b.code||'').replace(/\D/g,''), t=now();
-    await limit('emver',maskIp(req.ip),30,600);
+    await limit('emver',maskIp(req.ip),LOGIN_IP,600);
     const r=okEmail(e)?await store.get('botlogin',emRec(e)):null;
     if(!r||r.kind!=='emcode'||r.exp<t) fail(410,'Код устарел. Запросите новый.',{expired:true});
     if(r.tries>=5) fail(429,'Слишком много попыток. Запросите новый код.',{expired:true});
@@ -227,7 +231,7 @@ function createApp(o){
   R['GET /api/auth/yandex/start']=async(req)=>{ const q=req.query||{};
     if(!cfg.yandex.clientId) fail(404,'Вход через Яндекс ID не настроен.');
     const ret=okRet(q.ret)?q.ret:cfg.frontUrl; if(!/^[A-Za-z0-9_-]{16,64}$/.test(q.s||'')) return back(ret,'oops/state');
-    await limit('yastart',maskIp(req.ip),30,600);
+    await limit('yastart',maskIp(req.ip),LOGIN_IP,600);
     const t=now(), st=C.token(24), rec={id:stateId(st),kind:'yastate',ret,cs:q.s,exp:t+LOGIN_MIN*60e3,used:false,createdAt:t};
     if(q.link){ const l=/^[A-Za-z0-9_-]{20,40}$/.test(q.link)?await store.get('botlogin',linkId(q.link)):null;
       if(!l||l.kind!=='link'||l.used||l.exp<t||l.to!=='yandex') return back(ret,'oops/link'); rec.link=l.id; }
@@ -341,7 +345,7 @@ function createApp(o){
     const id=C.sha256('emlink:'+S.user.id+':'+e).slice(0,40), r=okEmail(e)?await store.get('botlogin',id):null;
     if(!r||r.kind!=='emlink'||r.exp<t) fail(410,'Код устарел. Запросите новый.');
     if(r.tries>=5) fail(429,'Слишком много попыток. Запросите новый код.');
-    await store.update('botlogin',id,{tries:r.tries+1});
+    if(!(await store.update('botlogin',id,{tries:r.tries+1},{ifEq:{tries:r.tries}}))) fail(409,'Попробуйте ещё раз.');
     if(code.length!==6||!C.safeEqual(C.sha256(code+':'+e),r.code)) fail(400,'Код не подошёл.');
     await store.del('botlogin',id);
     const ex=await store.get('identities',emKey(e)); if(ex&&ex.userId!==S.user.id) fail(409,'Эта почта уже привязана к другому аккаунту.');
@@ -380,14 +384,16 @@ function createApp(o){
 
   /* глаза сканера: фото чертежа → модель со зрением → подписи точек (server/lib/eyes.js). Фото не сохраняется */
   A['POST /api/eyes']=async(req,S)=>{ const ec=o.eyes; if(!ec||!ec.on) fail(503,'ИИ-зрение пока не подключено.');
-    const b=body(req,EYES_BODY), img=String(b.img||''); await limit('eyes',S.user.id,1000,3600);
+    const b=body(req,EYES_BODY), img=String(b.img||''), admin=S.user.role==='admin'; await limit('eyes',S.user.id,admin?1000:60,3600);
     if(!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/.test(img)) fail(400,'Нужно фото (JPEG, PNG или WebP).');
     const w=Math.round(+b.w)||0, h=Math.round(+b.h)||0; if(!(w>=200&&h>=200&&w<=4096&&h<=4096)) fail(400,'Размер фото — от 200 до 4096 px.');
     const dz=[1,2,3,4,5].includes(+b.dz)?+b.dz:null, n=cleanVariant(b.n)||null;
     /* consent — студент отметил, что лист его (или пример) и фото можно отправить зарубежной модели; без отметки — только Yandex */
     /* лучшая (зарубежная) модель: кому можно (EYES_BEST_FOR) и нужна ли отметка «лист мой» (EYES_BEST_DEFAULT — стенд владельца) */
-    /* кабинет — для одного владельца: зарубежная модель (Claude через ProxyAPI) — всем вошедшим, без отметки согласия */
-    const consent=true;
+    /* зарубежная модель (Claude через ProxyAPI) — только с отметкой студента (b.consent: лист его, фото можно отправить за рубеж —
+       трансграничная передача, ст. 12 152-ФЗ) или владельцу; без отметки — российская модель (Yandex), а режимы, которым нужна
+       зарубежная, отвечают 403 с объяснением. Регистрация открыта всем — «кабинет для одного владельца» больше не так */
+    const consent=admin||b.consent===true;
     /* mode: 'digit' — оцифровка чертежа целиком (Sonnet): точки, отрезки, записанные ответы; part — часть, которую выбрал студент */
     const part=[1,2,3,4].includes(+b.part)?+b.part:null;
     /* mode: 'layout' — раскладка листа (где чертежи), 'crop' — оцифровка одного чертежа (кадр уже вырезан браузером): конвейер листа, lab/beta */

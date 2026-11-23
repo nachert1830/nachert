@@ -86,7 +86,7 @@ test('CSRF и чужой сайт: без токена, с чужим Origin и�
 
 test('лимит запросов на вход',async()=>{
   const c=club(); let last;
-  for(let i=0;i<31;i++) last=await c.call('POST','/api/auth/bot/redeem',{token:'x'.repeat(32)},{ip:'10.9.9.9'});
+  for(let i=0;i<101;i++) last=await c.call('POST','/api/auth/bot/redeem',{token:'x'.repeat(32)},{ip:'10.9.9.9'});
   assert.equal(last.status,429); assert.ok(+last.headers['Retry-After']>0);
   assert.equal((await c.call('POST','/api/auth/bot/redeem',{token:'x'.repeat(32)},{ip:'10.8.0.1'})).status,410,'другой адрес — свой лимит');
 });
@@ -112,4 +112,10 @@ test('вход владельца без Telegram: ссылку выдаёт т�
   /* index.handler: событие шлюза всегда с httpMethod — даже с полем club ссылку не получить */
   const idx=require('fs').readFileSync(require('path').join(__dirname,'..','index.js'),'utf8');
   assert.match(idx,/!event\.httpMethod&&event\.club==='owner-login'/);
+});
+
+test('общая сеть общежития: 60 входов с одной /24 за 10 минут проходят без 429',async()=>{
+  const c=club(); let bad=0;
+  for(let i=0;i<60;i++){ const r=await c.call('POST','/api/auth/bot/redeem',{token:'x'.repeat(32)},{ip:'10.7.7.'+(i%250)}); if(r.status===429) bad++; }
+  assert.equal(bad,0);
 });

@@ -44,7 +44,8 @@ async function handler(event) {
   const code = (v => { try { return decodeURIComponent(v); } catch (e) { return v; } })(String(hd['x-ceo-code'] || ''));
   if (method === 'GET' && !code) return reply(200, { ok: true, ceo: true, codeNeeded: true }, origin);
 
-  const ip = String(hd['x-forwarded-for'] || hd['x-real-ip'] || '?').split(',')[0].trim(), now = Date.now();
+  const ip = /* адрес — от шлюза (requestContext); X-Forwarded-For задаёт сам клиент, по нему счётчик перебора обходится сменой заголовка */
+    String((event.requestContext && event.requestContext.identity && event.requestContext.identity.sourceIp) || String(hd['x-forwarded-for'] || hd['x-real-ip'] || '?').split(',').pop()).trim(), now = Date.now();
   const recent = (fails.get(ip) || []).filter(t => now - t < 600000);
   if (recent.length >= 10) return reply(429, { ok: false, error: 'Слишком много неверных кодов. Подождите 10 минут.' }, origin);
   const hash = process.env.CEO_CODE_SHA256 || '';

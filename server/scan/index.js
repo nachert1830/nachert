@@ -70,7 +70,7 @@ async function handler(event){ event=event||{}; const hd={}; Object.entries(even
   if(method==='OPTIONS'){ if(!origin) return reply(403,{ok:false,error:'Этот адрес страницы не разрешён'}); const r=reply(204,null,origin);
     Object.assign(r.headers,{'access-control-allow-methods':'GET,POST,OPTIONS','access-control-allow-headers':'content-type,x-scan-code','access-control-max-age':'600'}); return r; }
   if(og&&!origin) return reply(403,{ok:false,error:'Этот адрес страницы не разрешён'});
-  const ip=String(hd['x-forwarded-for']||hd['x-real-ip']||'?').split(',')[0].trim(), now=Date.now();
+  const ip=/* адрес — от шлюза (requestContext); X-Forwarded-For задаёт сам клиент */ String((event.requestContext&&event.requestContext.identity&&event.requestContext.identity.sourceIp)||String(hd['x-forwarded-for']||hd['x-real-ip']||'?').split(',').pop()).trim(), now=Date.now();
   const sigCh=event.queryStringParameters&&event.queryStringParameters.sig;
   if(sigCh!=null&&(method==='GET'||method==='POST')){ const raw=event.isBase64Encoded?Buffer.from(String(event.body||''),'base64').toString('utf8'):String(event.body||''); return signal(method,String(sigCh),raw.slice(0,4096),ip,origin); }
   const code=(v=>{ try{ return decodeURIComponent(v); }catch(e){ return v; } })(String(hd['x-scan-code']||'')), hash=process.env.SCAN_CODE_SHA256||'';
