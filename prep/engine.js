@@ -228,6 +228,8 @@ function viewTopic(v,id,ck){
   const stage=v.querySelector('#ppStage'), seg=v.querySelector('.pp-seg');
   const setPh=ph=>{ seg.querySelectorAll('button').forEach(b=>{ b.classList.toggle('on',b.dataset.ph===ph); b.setAttribute('aria-selected',b.dataset.ph===ph); });
     if(ph==='watch') watch(stage,topic,T,()=>setPh('duel')); else duel(stage,topic,T,saved,()=>setPh('watch'),ck); };
+  /* в пути подготовки тема — разбор по шагам на чертеже; после него путь идёт дальше сам (без обязательной проверки) */
+  if(ck&&PLANS[ck]){ watch(stage,topic,T,()=>{ setSeen(ck,'w:'+id); location.hash='#/prep/'+ck+'/go'; },'Дальше →'); return T.t; }
   seg.onclick=e=>{ const b=e.target.closest('button'); if(b) setPh(b.dataset.ph); };
   setPh(saved&&saved.n?'duel':'watch');
   return T.t;
@@ -271,7 +273,7 @@ function frame3(x0,x1,y1,z1){ return [{t:'quad',c:'p1',p:[[x0,0,0],[x1,0,0],[x1,
 function point3(p,role,lab,pr,c){ return [{t:'seg',c:'lk',a:p,b:[p[0],p[1],0],role,dash:true},{t:'seg',c:'lk',a:p,b:[p[0],0,p[2]],role,dash:true},{t:'pt',p,lab,pr,role,c}]; }
 
 /* «Смотри»: шаги на одном варианте; новое на каждом шаге рисуется по очереди; если у темы есть пространство — переключатель «Эпюр | 3D» */
-function watch(stage,topic,T,toDuel){
+function watch(stage,topic,T,toDuel,lastLabel){
   const W=topic.watch; let V=null; for(let t=0;t<50&&!(V&&topic.scene(V,null));t++) V=W.V?W.V.call(topic):topic.make.call(topic); let i=0;
   const S=topic.scene(V,null), sp=topic.space?topic.space(V):null;
   stage.innerHTML=`<div class="pp-watch"><div class="pp-card big"><svg aria-label="Чертёж шага"></svg>${sp?'<canvas class="pp-3d" hidden aria-label="Шаг в пространстве"></canvas><div class="pp-vt" role="tablist"><button data-v="e" class="on">Эпюр</button><button data-v="3">3D</button></div>':''}</div>
@@ -284,7 +286,7 @@ function watch(stage,topic,T,toDuel){
   const show=()=>{ const s0=W.steps[i], prev=i?W.steps[i-1].roles:[];
     draw(svg,S,s0.roles,s0.roles.filter(r=>!prev.includes(r))); cap.textContent=s0.cap; paint3();
     stage.querySelectorAll('.pp-dots i').forEach((d,j)=>d.classList.toggle('on',j<=i));
-    stage.querySelector('#ppPrev').disabled=!i; stage.querySelector('#ppNext').textContent=i===W.steps.length-1?'К проверке →':'Дальше →'; };
+    stage.querySelector('#ppPrev').disabled=!i; stage.querySelector('#ppNext').textContent=i===W.steps.length-1?(lastLabel||'К проверке →'):'Дальше →'; };
   if(cv){
     stage.querySelector('.pp-vt').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; st.mode=b.dataset.v;
       stage.querySelectorAll('.pp-vt button').forEach(x=>x.classList.toggle('on',x===b)); svg.hidden=st.mode==='3'; cv.hidden=st.mode!=='3'; paint3();
@@ -452,7 +454,8 @@ function orderTask(stage,steps,onEnd){
 /* шаги плана решения задания — из методики dz/<курс>/<№>/method.js (тип выбирается случайно: каждая попытка — новая) */
 function planSteps(dzKey){ try{ const d=self.DZR&&DZR.list('ng').concat(DZR.list('ig')).find(x=>x.id===dzKey), T=d&&d.method&&d.method.types; if(!T) return null;
   const ks=Object.keys(T).filter(c=>T[c].plan&&T[c].plan.length>=4); if(!ks.length) return null;
-  const c=ks[Math.floor(Math.random()*ks.length)], ty=(d.types||[]).find(x=>x.code===c);
+  let n=0; try{ n=typeof dzVar==='function'?+dzVar()||0:0; }catch(e){}
+  const my=n&&DZR.typeOf(dzKey,n), c=my&&T[my.code]?my.code:ks[0], ty=(d.types||[]).find(x=>x.code===c);
   const cut=x=>{ x=String(x||'').replace(/<[^>]+>/g,'').split(/[.;—]\s/)[0].trim(); return x.length>70?x.slice(0,68).replace(/\s+\S*$/,'')+'…':x; };
   return {steps:T[c].plan.map(a=>{ const t=String(a.t).replace(/^\d+\.\s*/,''); return t.length<14&&a.d?t+': '+cut(a.d):t; }),name:ks.length>1&&ty?ty.name:''}; }catch(e){ return null; } }
 
@@ -469,17 +472,17 @@ const trailHint=()=>{ try{ return sessionStorage.getItem(TRAIL+'_h')||''; }catch
 const trailKey=()=>{ try{ return sessionStorage.getItem(TRAIL); }catch(e){ return null; } };
 function lastKey(k){ const a=mstore.all(); if(k){ a._last=k; mstore.set(a); } return a._last; }
 function nextStep(k){
-  const p=PLANS[k], tps=planTopics(k).filter(id=>TOPICS[id]), sn=seenOf(k), a=mstore.all();
-  if(!preOf(k)&&tps.length&&!p.stages.some((s,i)=>stDone(k,i))) return {kind:'pre',href:'#/prep/'+k+'/pre'};
-  if(dueOf(k).length&&a[k+':mix']!==today()) return {kind:'mix',href:'#/prep/'+k+'/mix'};
+  /* этап: теория (урок) → разбор на чертеже по шагам (темы этапа) → задача тетради (сначала сам, потом сверь) → «Вспомни» (карточка, без оценки).
+     Последний этап ДЗ — план решения целиком (из методики задания). */
+  const p=PLANS[k], sn=seenOf(k);
   const i=p.stages.findIndex((s,j)=>!stDone(k,j)); if(i<0) return {kind:'final'};
   const st=p.stages[i], ck=stageCheckKind(k,i), ts=(st.topics||[]).filter(id=>TOPICS[id]);
-  const learn=(st.learn||[]).slice(0,ts.length?1:ck?2:9), dos=(st.do||[]).slice(0,ck?1:9);
-  for(const id of ts) if(!doneSt(id)) return {kind:'topic',i,id,href:'#/prep/'+k+'/'+id};
+  const learn=(st.learn||[]).slice(0,st.order?0:2), dos=(st.do||[]).slice(0,st.order?0:1);
   for(let j=0;j<learn.length;j++) if(!sn[i+':l'+j]) return {kind:'learn',i,j,item:learn[j]};
+  for(const id of ts) if(!sn['w:'+id]) return {kind:'topic',i,id,href:'#/prep/'+k+'/'+id};
   for(let j=0;j<dos.length;j++) if(!sn[i+':d'+j]) return {kind:'do',i,j,item:dos[j]};
-  if(!sn[i+':e']) return {kind:'explain',i};
-  if(ck) return {kind:'check',i,href:'#/prep/'+k+'/check'+(i+1)};
+  if(st.order) return {kind:'plan',i};
+  if(st.q) return {kind:'recall',i};
   return {kind:'mark',i};
 }
 function viewGo(v,k){
@@ -507,11 +510,27 @@ function viewGo(v,k){
     const b=v.querySelector('#ppSe'); b.onclick=()=>{ if(v.querySelector('#ppExp').hidden){ v.querySelector('#ppExp').hidden=false; b.textContent='Дальше: проверка этапа →'; } else { setSeen(k,s.i+':e'); document.title=viewGo(v,k)+' · Начерт'; scrollTo(0,0); } };
     return p.label+' · объясни себе';
   }
-  if(s.kind==='mark'){
-    screen(`<h1>Готово?</h1>`,`<button type="button" class="pp-btn" id="ppMk">Сделал — дальше →</button>`);
-    v.querySelector('#ppMk').onclick=()=>{ setManual(k,s.i,{t:Date.now(),by:'self'}); document.title=viewGo(v,k)+' · Начерт'; scrollTo(0,0); };
-    return p.label;
+  /* «Вспомни»: вопрос по сути этапа → «Показать ответ» → главная мысль и чертёж → «Дальше». Без оценки и повторов:
+     закрепление вспоминанием (retrieval practice), а не экзамен */
+  if(s.kind==='recall'){
+    const tp=(st.topics||[]).filter(id=>G.BY[id]&&TOPICS[id]), lines=[st.a||st.why].filter(Boolean);
+    screen(`<h1>Вспомни</h1><p class="pp-big2">${esc(st.q)}</p>
+      <div id="ppAns" hidden>${lines.map(x=>`<p class="pp-ra">${esc(x)}</p>`).join('')}${tp.length?'<div class="pp-card pp-rc"><svg></svg></div>':''}</div>`,
+      `<button type="button" class="pp-btn" id="ppRc">Показать ответ</button>`);
+    const b=v.querySelector('#ppRc'), ans=v.querySelector('#ppAns');
+    b.onclick=()=>{ if(ans.hidden){ ans.hidden=false; b.textContent='Дальше →';
+        if(tp.length){ try{ const T0=TOPICS[tp[tp.length-1]], V=T0.watch&&T0.watch.V?T0.watch.V():T0.make(), S=T0.scene(V,null); if(S) draw(v.querySelector('.pp-rc svg'),S); }catch(e){ const c=v.querySelector('.pp-rc'); if(c) c.remove(); } } }
+      else { setManual(k,s.i,{t:Date.now(),by:'recall'}); document.title=viewGo(v,k)+' · Начерт'; scrollTo(0,0); } };
+    return p.label+' · вспомни';
   }
+  /* последний этап ДЗ — план решения целиком, из методики задания */
+  if(s.kind==='plan'){
+    const ps=planSteps(st.order);
+    screen(`<h1>План решения</h1>${ps?`<ol class="pp-ord pp-plan">${ps.steps.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:''}`,`<button type="button" class="pp-btn" id="ppPl">Понятно →</button>`);
+    v.querySelector('#ppPl').onclick=()=>{ setManual(k,s.i,{t:Date.now(),by:'plan'}); document.title=viewGo(v,k)+' · Начерт'; scrollTo(0,0); };
+    return p.label+' · план';
+  }
+  if(s.kind==='mark'){ setManual(k,s.i,{t:Date.now(),by:'self'}); return viewGo(v,k); }
   trail(null);
   screen(`<h1>Подготовка пройдена</h1><p class="pp-sub">${p.kind==='dz'?'Теперь свой вариант — сам, на бумаге. Решение — только для сверки.':'Теперь — пробный билет на время.'}</p>`,
     `<a class="pp-btn" href="${p.go}">${p.kind==='dz'?'К своему варианту':'К пробному билету'} →</a>`,'fin');
@@ -536,7 +555,7 @@ function viewQuiz(v,k,item){
   const again=()=>{ document.title=viewQuiz(v,k,item)+' · Начерт'; try{ scrollTo(0,0); }catch(e){} };
   const fin=(html,re)=>{ endScreen(v,html+`<div class="pp-row pp-gb">${re?'<button type="button" class="pp-btn" id="ppAgain">Ещё раз →</button>':`<a class="pp-btn" href="${back}/go">Дальше →</a>`}</div>`);
     const b=v.querySelector('#ppAgain'); if(b) b.onclick=again; };
-  const missed=log=>{ const m=log.filter(x=>!x.ok); return m.length?`<h2 class="pp-h2">Разбери ошибки</h2><ul class="pp-miss">${m.map(x=>`<li>${x.id&&G.BY[x.id]?`<b>${esc(G.BY[x.id].t)}</b>: `:''}${esc(x.say||x.why||x.q||'')}</li>`).join('')}</ul>`:''; };
+  const missed=log=>{ const m=log.filter(x=>!x.ok); return m.length?`<h2 class="pp-h2">Как правильно</h2><ul class="pp-miss">${m.map(x=>`<li>${x.id&&G.BY[x.id]?`<b>${esc(G.BY[x.id].t)}</b>: `:''}${esc(x.say||x.why||x.q||'')}</li>`).join('')}</ul>`:''; };
   if(item==='pre'){
     const sts=p.stages.map((s,i)=>({i,id:(s.topics||[]).find(id=>TOPICS[id])})).filter(x=>x.id);
     if(!sts.length) return (location.hash=back,p.title);
@@ -559,19 +578,22 @@ function viewQuiz(v,k,item){
   }
   const m=/^check(\d+)$/.exec(item||''), i=m?+m[1]-1:-1, st=p.stages[i];
   if(!st){ location.hash=back; return p.title; }
-  const kind=stageCheckKind(k,i), head=`Проверка этапа ${i+1}`;
+  const kind=stageCheckKind(k,i), head='Проверь себя';
   const pass=log=>{ setManual(k,i,{t:Date.now(),by:'test'}); try{ window.TRACK&&TRACK('prep_stage',{plan:k,st:i+1,by:'test'}); }catch(e){} try{ window.FX&&FX.confetti(); }catch(e){}
     const nx=p.stages.findIndex((s,j)=>!stDone(k,j)), dt=doneToday();
     fin(`<span class="pp-cck">${esc(p.label)} · этап ${i+1}</span><h1>Этап пройден</h1><p class="pp-sub">${esc(st.t)}</p>
       ${dt>=3&&nx>=0?`<p class="pp-rest">На сегодня хватит — сон закрепит. Завтра продолжим.</p>`:''}
 `); };
+  const done=log=>{ const ok=log.filter(x=>x.ok).length; setManual(k,i,{t:Date.now(),by:'test',ok,n:log.length}); try{ window.TRACK&&TRACK('prep_stage',{plan:k,st:i+1,ok,n:log.length}); }catch(e){}
+    if(ok===log.length){ try{ window.FX&&FX.confetti(); }catch(e){} }
+    fin(`<span class="pp-cck">${esc(p.label)} · этап ${i+1}</span><h1>${ok===log.length?'Всё верно':'Верно '+ok+' из '+log.length}</h1>${missed(log)}`); };
   const fail=(log,extra)=>fin(`<span class="pp-cck">${esc(p.label)} · этап ${i+1}</span><h1>Пока не засчитано</h1>
       <p class="pp-sub">${extra||''} Нужно всё верно.</p>${missed(log)}`,true);
   if(kind==='duel'){ const ids=st.topics.filter(id=>TOPICS[id]);
-    rounds(shell(v,head,st.t,back),ids,4,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
-  else if(kind==='mcq'){ mcq(shell(v,head,st.t,back),st.check,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
+    rounds(shell(v,head,st.t,back),ids,3,done); }
+  else if(kind==='mcq'){ mcq(shell(v,head,st.t,back),shuf(st.check).slice(0,3),done); }
   else if(kind==='order'){ const ps=planSteps(st.order); if(!ps){ setManual(k,i,{t:Date.now(),by:'self'}); location.hash=back; return p.title; }
-    orderTask(shell(v,head,'расставь шаги по порядку',back),ps.steps,log=>log[0].ok?pass(log):fail([],`Ошибок в порядке: ${log[0].miss}. Можно не больше одной.`)); }
+    orderTask(shell(v,head,'расставь шаги по порядку',back),ps.steps,()=>pass([])); }
   else { location.hash=back; return p.title; }
   return head+' · '+p.label;
 }
@@ -747,6 +769,7 @@ const CSS=`
 .pp-mcq .pp-verd{flex-direction:column;margin-top:12px}.pp-mw{margin:0;font-size:14px;color:var(--pp-mut);text-align:left}
 .pp-ord{margin:0 0 12px;padding-left:24px;display:grid;gap:4px}.pp-ord li{font-weight:600;color:var(--pp-ok)}
 .pp-miss{padding-left:20px;display:grid;gap:4px;font-size:14px}
+.pp-ra{font-size:17px;line-height:1.45;margin:4px 0 8px}.pp-rc{height:260px;margin-top:10px;border:1px solid var(--pp-line);cursor:default}.pp-plan li{color:var(--pp-ink);font-weight:500;margin:3px 0}
 .pp-go h1{margin:4px 0 8px}.pp-gst{margin:2px 0 6px;font-weight:700;font-size:15px;color:var(--pp-mut)}
 .pp-big2{font-size:18px;font-weight:700;line-height:1.35;margin:0 0 8px}
 .pp-go .pp-cbar{margin-top:14px}.pp-out{text-align:center;margin-top:10px}.pp-out a{color:var(--pp-mut)}
