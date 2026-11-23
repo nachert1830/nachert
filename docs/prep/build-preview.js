@@ -1,6 +1,6 @@
 /* Предпросмотр подготовки одной страницей (для просмотра вне сайта): node docs/prep/build-preview.js [файл.html] */
 const fs=require('fs'), R='/home/user/nachert/';
-const files=['kernel/prep.js','prep/engine.js','prep/x.js','prep/x-b.js','prep/t.js','prep/base.js','prep/sm.js','prep/more.js','prep/rest.js','prep/space.js'];
+const files=['kernel/prep.js','prep/engine.js','prep/x.js','prep/x-b.js','prep/t.js','prep/base.js','prep/sm.js','prep/more.js','prep/rest.js','prep/space.js','prep/plans.js'];
 const js=files.map(f=>'/* '+f+' */\n'+fs.readFileSync(R+f,'utf8').replace(/<\/script/gi,'<\\/script')).join('\n');
 const osi=fs.readFileSync(R+'fonts/osifont-italic.woff2').toString('base64'), ser=fs.readFileSync(R+'fonts/liberation-serif-italic.woff2').toString('base64');
 const router=`(function(){
