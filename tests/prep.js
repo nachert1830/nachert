@@ -14,10 +14,20 @@ const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
 const N=+((process.argv.find(a=>a.startsWith('--n='))||'').slice(4)||300);
 global.self=global;
-require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js')); require(path.join(ROOT,'prep/rest.js')); require(path.join(ROOT,'prep/space.js'));
+require(path.join(ROOT,'kernel/prep.js')); require(path.join(ROOT,'prep/engine.js')); require(path.join(ROOT,'prep/x.js')); require(path.join(ROOT,'prep/x-b.js')); require(path.join(ROOT,'prep/t.js')); require(path.join(ROOT,'prep/base.js')); require(path.join(ROOT,'prep/sm.js')); require(path.join(ROOT,'prep/more.js')); require(path.join(ROOT,'prep/rest.js')); require(path.join(ROOT,'prep/space.js')); require(path.join(ROOT,'prep/plans.js'));
 const G=self.PREPROG, PREP=self.PREP;
 const fails=[], info=[];
 const bad=(s)=>fails.push(s);
+
+/* ── 0. курсы по этапам (prep/plans.js): к каждому ДЗ и РК начерта — свой план; все свои темы курса стоят в этапах ── */
+for(const c of G.COURSES){ const pl=PREP.PLANS[c.key]; if(!pl){ bad('нет курса по этапам: '+c.label); continue; }
+  const u=new Set(pl.stages.flatMap(s=>s.topics||[])); const miss=c.own.filter(id=>!u.has(id)); if(miss.length) bad(`${pl.label}: темы курса не стоят ни в одном этапе — ${miss.join(', ')}`); }
+for(const pl of Object.values(PREP.PLANS)){
+  if(!pl.stages.length) bad(pl.key+': пустой курс');
+  pl.stages.forEach((s,i)=>{ const where=`${pl.key}, этап ${i+1}`;
+    (s.topics||[]).forEach(id=>{ if(!G.BY[id]) bad(where+': нет темы '+id); else if(!PREP.TOPICS[id]) bad(where+': тема '+id+' без экрана'); });
+    if(!(s.topics||[]).length&&!(s.learn||[]).length&&!(s.do||[]).length) bad(where+': нечего проходить');
+    [...(s.learn||[]),...(s.do||[])].forEach(a=>{ if(!/^#\//.test(a[0])||!a[1]) bad(where+': ссылка '+a); }); }); }
 
 /* ── 1. программа ── */
 { const A=G.audit();
@@ -298,13 +308,23 @@ async function screens(){
   const page=await browser.newPage({viewport:{width:390,height:844}}); const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto(U+'#/prep'); await page.waitForTimeout(1200);
   const hub=await page.evaluate(()=>({cards:[...document.querySelectorAll('a.pp-cc')].map(a=>a.getAttribute('href')),rows:document.querySelectorAll('.pp-st').length,ow:document.documentElement.scrollWidth>innerWidth}));
-  if(hub.cards.join()!==['ng1','ng2','ng3','ng4','ng5'].map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки ДЗ — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
-  /* курс показывает только свои темы (и свёрнуто — из прошлых), ссылки — внутрь курса */
-  for(const c of G.COURSES.filter(c=>c.kind==='dz')){
-    await page.goto(U+'#/prep/'+c.key); await page.waitForTimeout(200);
-    const r=await page.evaluate(()=>({main:[...document.querySelectorAll('.pp-map .pp-st')].map(a=>a.getAttribute('href')),prev:[...document.querySelectorAll('.pp-prev .pp-st')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
-    const want=c.own.map(id=>'#/prep/'+c.key+'/'+id); if(r.main.join()!==want.join()) bad(`Курс ${c.label}: показаны не ровно свои темы (${r.main.length} из ${want.length})`);
-    const wantP=c.prevBy.flatMap(g=>g.ids.map(id=>'#/prep/'+g.key+'/'+id)); if(r.prev.join()!==wantP.join()) bad(`Курс ${c.label}: «нужно из прошлых» не совпадает`); if(r.ow) bad(`Курс ${c.label}: горизонтальная прокрутка`); }
+  const PK=Object.keys(PREP.PLANS);
+  if(hub.cards.join()!==PK.map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки курсов — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
+  /* курс по этапам: столько же этапов, сколько в плане, темы этапов — ссылки внутрь курса */
+  for(const k of PK){ const pl=PREP.PLANS[k];
+    await page.goto(U+'#/prep/'+k); await page.waitForTimeout(200);
+    const r=await page.evaluate(()=>({st:document.querySelectorAll('.pp-stg').length,rows:[...document.querySelectorAll('.pp-stg .pp-st')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
+    if(r.st!==pl.stages.length) bad(`Курс ${pl.label}: этапов на экране ${r.st} из ${pl.stages.length}`);
+    const want=pl.stages.flatMap(s=>(s.topics||[]).map(id=>'#/prep/'+k+'/'+id)); if(r.rows.join()!==want.join()) bad(`Курс ${pl.label}: темы этапов не совпадают с планом`);
+    if(r.ow) bad(`Курс ${pl.label}: горизонтальная прокрутка`); }
+  /* предложение пройти подготовку перед решением варианта и «Сразу к решению» */
+  await page.evaluate(()=>{ localStorage.setItem('nch_prep_gate','1'); sessionStorage.clear(); });
+  for(const h of ['#/ng2/17','#/ig4/7']){ await page.goto(U+h); await page.waitForTimeout(1500);
+    if(!await page.$('#ppSkip')){ bad(h+': нет предложения пройти подготовку'); continue; }
+    await page.click('#ppSkip'); await page.waitForTimeout(2500);
+    if(await page.$('#ppSkip')) bad(h+': «Сразу к решению» не открыло решение');
+    if(!await page.$('.pp-dzchip')) bad(h+': у решения нет строки подготовки'); }
+  await page.evaluate(()=>localStorage.removeItem('nch_prep_gate'));
   /* тема внутри курса: «назад» — к курсу */
   { const c=G.COURSE.ng4; await page.goto(U+'#/prep/ng4/'+c.own[0]); await page.waitForTimeout(200); const back=await page.evaluate(()=>{ const a=document.querySelector('.pp-back'); return a&&a.getAttribute('href'); }); if(back!=='#/prep/ng4') bad('Тема в курсе: «назад» ведёт не к курсу, а на '+back); }
   await page.goto(U+'#/prep/all'); await page.waitForTimeout(300);

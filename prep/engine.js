@@ -127,6 +127,21 @@ function pair(topic,k){
   return null;
 }
 
+/* ───────── курсы по этапам (prep/plans.js): PREP.plan(key, {subj, kind, n, label, title, go, stages:[{t, why, topics, learn, do}]}) ───────── */
+const PLANS={}, PKEY='nch_prep_plan';
+const mstore={ all(){ try{ return JSON.parse(localStorage.getItem(PKEY)||'{}')||{}; }catch(e){ return {}; } },
+  set(a){ try{ localStorage.setItem(PKEY,JSON.stringify(a)); }catch(e){} } };
+const manual=(k,i)=>!!((mstore.all()[k]||{})[i]);
+function setManual(k,i,on){ const a=mstore.all(), o=a[k]||{}; if(on) o[i]=Date.now(); else delete o[i]; a[k]=o; mstore.set(a); }
+const doneSt=id=>{ const s=status(id); return s==='done'||s==='due'; };
+/* этап пройден: отмечен вручную или все его темы освоены (повтор по расписанию не отменяет освоения) */
+function stDone(k,i){ const st=PLANS[k]&&PLANS[k].stages[i]; if(!st) return false; if(manual(k,i)) return true;
+  const tp=(st.topics||[]).filter(id=>TOPICS[id]); return tp.length>0&&tp.every(doneSt); }
+function planProg(k){ const p=PLANS[k]; if(!p) return {n:0,done:0,topics:0};
+  const ids=new Set(p.stages.flatMap(s=>s.topics||[]));
+  return {n:p.stages.length,done:p.stages.filter((s,i)=>stDone(k,i)).length,topics:ids.size}; }
+const planTopics=k=>[...new Set((PLANS[k]?PLANS[k].stages:[]).flatMap(s=>s.topics||[]))];
+
 /* ───────── экраны ───────── */
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const P=()=>self.PREPROG;
@@ -137,18 +152,41 @@ const row=(t,ck)=>{ const c=dotCls(t.id), tag=stTag(c); return `<a class="pp-st 
 const doneOf=ids=>ids.filter(id=>status(id)==='done').length;
 const pbar=(a,b)=>`<span class="pp-prog"><i style="width:${b?Math.round(a/b*100):0}%"></i></span>`;
 
-/* #/prep — подготовка: выбор задания; каждое открывает только свой курс */
+/* #/prep — подготовка: выбор задания; каждое открывает только свой курс (по этапам — PLANS, prep/plans.js) */
 function viewHub(v){
-  const G=P(), dz=G.COURSES.filter(c=>c.kind==='dz'), rk=G.COURSES.filter(c=>c.kind==='rk');
-  const cardC=c=>{ const all=c.own.concat(c.prev), d=doneOf(c.own);
-    return `<a class="pp-cc" href="#/prep/${c.key}"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b>
-      <span class="pp-ccm">${c.own.length} ${c.own.length===1?'тема':c.own.length<5?'темы':'тем'}${c.prev.length?` · опирается на ${c.prev.length} из прошлых`:''}</span>${pbar(d,c.own.length)}<small>освоено ${d} из ${c.own.length}</small></a>`; };
+  const G=P(), keys=Object.keys(PLANS);
+  const cardP=k=>{ const p=PLANS[k], g=planProg(k);
+    return `<a class="pp-cc${g.done===g.n?' fin':''}" href="#/prep/${k}"><span class="pp-cck">${esc(p.label)}</span><b>${esc(p.title)}</b>
+      <span class="pp-ccm">${g.n} ${g.n<5?'этапа':'этапов'}${g.topics?` · ${g.topics} ${g.topics===1?'тема':g.topics<5?'темы':'тем'} с проверкой`:''}</span>${pbar(g.done,g.n)}<small>пройдено ${g.done} из ${g.n}</small></a>`; };
+  const sec=(subj,kind,h)=>{ const ks=keys.filter(k=>PLANS[k].subj===subj&&PLANS[k].kind===kind); return ks.length?`<h2 class="pp-h2">${h}</h2><div class="pp-ccs">${ks.map(cardP).join('')}</div>`:''; };
   v.innerHTML=`<div class="wrap page pp"><div class="pp-head"><h1>Подготовка</h1>
-    <p class="pp-sub">Выбери задание — откроется только то, что нужно для него.</p></div>
-    <h2 class="pp-h2">Домашние задания по начерту</h2><div class="pp-ccs">${dz.map(cardC).join('')}</div>
-    <h2 class="pp-h2">Рубежные контроли</h2><div class="pp-ccs">${rk.map(c=>`<div class="pp-cc later" aria-disabled="true"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b><span class="pp-ccm">позже</span></div>`).join('')}</div>
-    <p class="pp-sub"><a href="#/prep/all">Вся программа — ${G.ALL.length} тем по блокам →</a></p></div>`;
+    <p class="pp-sub">Курс перед каждым ДЗ и РК: задание разбито на подзадачи-этапы. Пройди их — и решай свой вариант сам. Решение открыто всегда.</p></div>
+    ${sec('ng','dz','Начерт · домашние задания')}${sec('ng','rk','Начерт · рубежные контроли')}${sec('ig','dz','Инженерная графика · домашние задания')}${sec('ig','rk','Инженерная графика · рубежный контроль')}
+    <p class="pp-sub"><a href="#/prep/all">Вся программа по начерту — ${G.ALL.length} тем по блокам →</a></p></div>`;
   return 'Подготовка';
+}
+
+/* #/prep/ng2 — курс задания по этапам: этап = подзадача, у этапа темы с проверкой, теория и задачи */
+function viewPlan(v,k){
+  const p=PLANS[k], G=P(), g=planProg(k), nx=p.stages.findIndex((st,i)=>!stDone(k,i));
+  const lk=a=>`<a href="${a[0]}">${esc(a[1])}</a>`;
+  const stg=(st,i)=>{ const d=stDone(k,i), tp=st.topics||[], td=tp.filter(id=>doneSt(id)).length, man=manual(k,i);
+    return `<section class="pp-stg${d?' done':''}${i===nx?' now':''}" id="st${i+1}"><div class="pp-stgh"><span class="pp-stgn">${d?'✓':i+1}</span>
+      <div><b>${esc(st.t)}</b>${st.why?`<p>${esc(st.why)}</p>`:''}</div></div>
+      ${tp.length?`<div class="pp-stgb"><h3>Темы с проверкой${tp.length>1?` · освоено ${td} из ${tp.length}`:''}</h3>${tp.filter(id=>G.BY[id]).map(id=>row(G.BY[id],k)).join('')}</div>`:''}
+      ${st.learn&&st.learn.length?`<div class="pp-stgb"><h3>Теория</h3><div class="pp-lks">${st.learn.map(lk).join('')}</div></div>`:''}
+      ${st.do&&st.do.length?`<div class="pp-stgb"><h3>Потренируйся</h3><div class="pp-lks">${st.do.map(lk).join('')}</div></div>`:''}
+      <button type="button" class="pp-mk${man?' on':''}" data-st="${i}" aria-pressed="${man}">${man?'✓ Разобрался':tp.length?'Уже умею — отметить этап':'Разобрался — отметить этап'}</button></section>`; };
+  v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a>
+    <div class="pp-head"><span class="pp-cck">Подготовка к ${esc(p.label)}</span><h1>${esc(p.title)}</h1>
+    <p class="pp-sub">${p.kind==='dz'?'Задание разбито на подзадачи. Каждая — отдельный этап: теория, проверка, задачи. Пройдёшь все — решай свой вариант сам.':'Билет разбит на типы задач. Каждый — отдельный этап: теория, проверка, задачи.'}</p></div>
+    <div class="pp-cbar">${pbar(g.done,g.n)}<span>пройдено ${g.done} из ${g.n} этапов</span></div>
+    ${nx>=0?`<a class="pp-btn big" href="#st${nx+1}" data-go="${nx+1}">${g.done?'Продолжить':'Начать'}: этап ${nx+1} · ${esc(p.stages[nx].t)} →</a>`:`<a class="pp-btn big" href="${p.go}">Все этапы пройдены — ${p.kind==='dz'?'к своему варианту':'к подготовке к '+esc(p.label)} →</a>`}
+    <div class="pp-stgs">${p.stages.map(stg).join('')}</div>
+    <p class="pp-sub"><a href="${p.go}">${p.kind==='dz'?'Свой вариант '+esc(p.label)+' →':'К разделу '+esc(p.label)+' →'}</a> ${p.kind==='dz'?'Решение открыто всегда; подготовка — чтобы решить самому.':''}</p></div>`;
+  v.querySelectorAll('.pp-mk').forEach(b=>b.onclick=()=>{ const i=+b.dataset.st; setManual(k,i,!manual(k,i)); try{ window.TRACK&&TRACK('prep_stage',{plan:k,st:i+1}); }catch(e){} const y=scrollY; viewPlan(v,k); scrollTo(0,y); });
+  v.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{ const el=v.querySelector('#st'+a.dataset.go); if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); } });
+  return 'Подготовка к '+p.label;
 }
 
 /* #/prep/ng4 — курс одного задания: свои темы по блокам + свёрнуто «нужно из прошлых» */
@@ -178,7 +216,7 @@ function viewAll(v){
 }
 
 function viewTopic(v,id,ck){
-  const G=P(), T=G.BY[id], topic=TOPICS[id], back=ck&&G.COURSE[ck]?'#/prep/'+ck:'#/prep/all';
+  const G=P(), T=G.BY[id], topic=TOPICS[id], back=ck&&(G.COURSE[ck]||PLANS[ck])?'#/prep/'+ck:'#/prep/all';
   if(!T){ v.innerHTML='<div class="wrap page"><div class="box warn">Такой темы нет. <a href="#/prep">Вся программа</a></div></div>'; return 'Подготовка'; }
   if(!topic){
     v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="${back}">← Назад</a><h1>${esc(T.t)}</h1><p class="pp-new">${esc(T.new)}</p>
@@ -308,13 +346,13 @@ function duel(stage,topic,T,saved,toWatch,ck){
     try{ window.TRACK&&TRACK('prep_mastered',{topic:T.id,n:M.n}); }catch(e){}
     try{ window.FX&&FX.confetti(); }catch(e){}
     /* дальше — по своему курсу: следующая неосвоенная тема; курс пройден — к своему варианту */
-    const G=P(), c=ck&&G.COURSE[ck], pool=c?c.own:G.ALL.map(t=>t.id), at=pool.indexOf(T.id);
+    const G=P(), c=ck&&G.COURSE[ck], pl=ck&&PLANS[ck], pool=pl?planTopics(ck):c?c.own:G.ALL.map(t=>t.id), at=pool.indexOf(T.id);
     const nextId=pool.slice(at+1).concat(pool.slice(0,Math.max(0,at))).find(id=>TOPICS[id]&&status(id)!=='done'), nextT=nextId&&G.BY[nextId];
-    const fin=c&&!nextT&&c.kind==='dz'?`<a class="pp-btn" href="#/ng${c.n}">Курс пройден — к своему варианту ${c.label} →</a>`:'';
+    const fin=pl&&!nextT?`<a class="pp-btn" href="#/prep/${ck}">Темы курса освоены — к этапам ${esc(pl.label)} →</a>`:c&&!nextT&&c.kind==='dz'?`<a class="pp-btn" href="#/ng${c.n}">Курс пройден — к своему варианту ${c.label} →</a>`:'';
     stage.innerHTML=`<div class="pp-done"><div class="pp-big">${M.n}</div><h2>Тема освоена</h2><p class="pp-sub">пар до уверенности · верно ${M.log.filter(x=>x.ok).length}</p>
       <div class="pp-deck">${keys.map(k=>`<span class="${M.beat[k]?'won':''}" title="${esc(topic.traps[k].say)}"></span>`).join('')}</div>
       <p class="pp-sub">Повторим через ${SPACING[Math.min(SPACING.length-1,((store.get(T.id)||{}).lvl||1)-1)]} дн. — так тема не забудется.</p>
-      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${c?ck+'/':''}${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:fin}<a class="pp-btn ghost" href="${c?'#/prep/'+ck:'#/prep/all'}">${c?'К курсу':'Программа'}</a></div>
+      <div class="pp-row">${nextT?`<a class="pp-btn" href="#/prep/${c?ck+'/':''}${nextT.id}">Дальше: ${esc(nextT.t)} →</a>`:fin}<a class="pp-btn ghost" href="${c||pl?'#/prep/'+ck:'#/prep/all'}">${c||pl?'К курсу':'Программа'}</a></div>
       <details class="pp-how"><summary>Почему система решила, что ты освоил</summary><table>${keys.map(k=>`<tr><td>${esc(topic.traps[k].say)}</td><td>${M.beat[k]} ✓</td><td>${M.miss[k]} ✗</td><td>${esc(topic.traps[k].src||'')}</td></tr>`).join('')}</table>
       <p>Пары подбирались так, чтобы шанс ответить верно был около 85 %. Угадывание в выборе из двух учтено: тема засчитана, когда вероятность «знает» стала выше 98,5 % и четыре последних ответа подряд верны.</p></details></div>`;
   };
@@ -323,27 +361,48 @@ function duel(stage,topic,T,saved,toWatch,ck){
   next(); meter();
 }
 
-/* ───────── карточка «Подготовка» на странице ДЗ ───────── */
-function card(dz){
-  const G=P(); if(!G||!G.COURSE[dz]) return '';
-  const c=G.COURSE[dz], d=doneOf(c.own), first=c.own.find(id=>TOPICS[id]&&status(id)!=='done');
-  return `<a class="pp-dzcard" href="#/prep/${dz}"><span class="pp-dzk">Подготовка к ${c.label}</span>
-    <b>${d}/${c.own.length} тем освоено</b>${pbar(d,c.own.length)}
-    <small>${first?'Начни с темы «'+esc(G.BY[first].t)+'»':'Всё освоено — переходи к своему варианту'}</small></a>`;
+/* ───────── карточка «Подготовка» на странице ДЗ и РК ───────── */
+function card(k){
+  const p=PLANS[k]; if(!p) return '';
+  const g=planProg(k), nx=p.stages.findIndex((s,i)=>!stDone(k,i));
+  return `<a class="pp-dzcard" href="#/prep/${k}"><span class="pp-dzk">Сначала — подготовка к ${esc(p.label)}</span>
+    <b>${g.done}/${g.n} этапов пройдено</b>${pbar(g.done,g.n)}
+    <small>${nx>=0?'Этап '+(nx+1)+': «'+esc(p.stages[nx].t)+'»':'Всё пройдено — решай свой вариант'}</small></a>`;
 }
-
-function chip(dz){
-  const G=P(); if(!G||!G.COURSE[dz]) return '';
-  const c=G.COURSE[dz], d=doneOf(c.own);
-  return `<a class="pp-dzchip" href="#/prep/${dz}"><b>Подготовка к ${c.label}</b>${pbar(d,c.own.length)}<span>${d}/${c.own.length} →</span></a>`;
+function chip(k){
+  const p=PLANS[k]; if(!p) return '';
+  const g=planProg(k);
+  return `<a class="pp-dzchip" href="#/prep/${k}"><b>Подготовка к ${esc(p.label)}</b>${pbar(g.done,g.n)}<span>${g.done}/${g.n} →</span></a>`;
+}
+/* Перед решением варианта — предложение пройти подготовку (мягкий вход: решение открывается одной кнопкой).
+   Показывается, пока курс не пройден, раз за сеанс на задание; «Сразу к решению» запоминается до закрытия вкладки.
+   Автоматические проверки (navigator.webdriver) его не видят, если не включить nch_prep_gate = 1. */
+const SKEY='nch_prep_skip';
+const skipped=k=>{ try{ return (JSON.parse(sessionStorage.getItem(SKEY)||'{}')||{})[k]; }catch(e){ return false; } };
+function skip(k){ try{ const o=JSON.parse(sessionStorage.getItem(SKEY)||'{}')||{}; o[k]=1; sessionStorage.setItem(SKEY,JSON.stringify(o)); }catch(e){} }
+function gate(v,k,go,what){
+  const p=PLANS[k]; if(!p||skipped(k)) return false;
+  try{ if(navigator.webdriver&&localStorage.getItem('nch_prep_gate')!=='1') return false; }catch(e){}
+  const g=planProg(k); if(g.done===g.n) return false;
+  const nx=p.stages.findIndex((s,i)=>!stDone(k,i));
+  v.innerHTML=`<div class="wrap page pp pp-gate-pg"><div class="pp-gt"><span class="pp-cck">${esc(p.label)} · ${esc(what||'решение')}</span>
+    <h1>Сначала — подготовка</h1>
+    <p class="pp-sub">${esc(p.title)}: задание разбито на ${g.n} ${g.n<5?'этапа':'этапов'}. На каждом — теория, проверка и задачи на одну подзадачу. С этой базой свой вариант решается самому, а готовое решение нужно только для сверки.</p>
+    <div class="pp-cbar">${pbar(g.done,g.n)}<span>пройдено ${g.done} из ${g.n}</span></div>
+    <div class="pp-row pp-gb"><a class="pp-btn" href="#/prep/${k}">${g.done?'Продолжить подготовку':'Начать подготовку'} →</a><button type="button" class="pp-btn ghost" id="ppSkip">Сразу к решению</button></div>
+    <h2 class="pp-h2">Этапы</h2><ol class="pp-gl">${p.stages.map((s,i)=>`<li class="${stDone(k,i)?'done':''}${i===nx?' now':''}"><a href="#/prep/${k}">${esc(s.t)}</a></li>`).join('')}</ol></div></div>`;
+  v.querySelector('#ppSkip').onclick=()=>{ skip(k); try{ window.TRACK&&TRACK('prep_gate_skip',{plan:k}); }catch(e){} go(); };
+  try{ window.TRACK&&TRACK('prep_gate',{plan:k}); }catch(e){}
+  return true;
 }
 /* адреса: #/prep — подготовка; #/prep/ng4 — курс ДЗ №4; #/prep/ng4/x3 — тема в курсе; #/prep/all — вся программа;
    #/prep/x3 — тема из программы; #/prep/for/ng4 — прежний адрес курса */
 function view(v,r){
   const G=P(); if(!G){ v.innerHTML='<div class="wrap page"><div class="box warn">Программа не загрузилась.</div></div>'; return 'Подготовка'; }
   if(r.tab==='all') return viewAll(v);
-  if(r.tab==='for') return G.COURSE[r.item]?viewCourse(v,r.item):viewHub(v);
-  if(r.tab&&G.COURSE[r.tab]) return r.item?viewTopic(v,r.item,r.tab):viewCourse(v,r.tab);
+  const crs=k=>PLANS[k]?viewPlan(v,k):viewCourse(v,k);
+  if(r.tab==='for') return G.COURSE[r.item]||PLANS[r.item]?crs(r.item):viewHub(v);
+  if(r.tab&&(G.COURSE[r.tab]||PLANS[r.tab])) return r.item?viewTopic(v,r.item,r.tab):crs(r.tab);
   if(r.tab) return viewTopic(v,r.tab,null);
   return viewHub(v);
 }
@@ -425,6 +484,22 @@ const CSS=`
 .pp-dzchip{display:flex;align-items:center;gap:10px;padding:6px 12px;margin:4px 0;border-radius:10px;background:var(--surf2,#f3f5fa);color:var(--ink,#121a3f);text-decoration:none;font-size:13px}
 .pp-dzchip b{white-space:nowrap}.pp-dzchip .pp-prog{max-width:160px}.pp-dzchip span:last-child{color:var(--acc,#1f3fbf);font-weight:700;white-space:nowrap}
 .pp-dzk{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc,#1f3fbf)}.pp-dzcard small{color:var(--mut,#5c6688)}
+.pp-cc.fin{border-color:var(--pp-ok)}
+.pp-stgs{display:grid;gap:12px;margin:14px 0}
+.pp-stg{background:var(--pp-surf);border:1px solid var(--pp-line);border-radius:var(--pp-r);padding:14px;scroll-margin-top:72px}
+.pp-stg.now{border:2px solid var(--pp-acc)}.pp-stg.done{border-color:var(--pp-ok)}
+.pp-stgh{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start}
+.pp-stgh b{font-size:16px;line-height:1.3;display:block}.pp-stgh p{margin:4px 0 0;font-size:14px;color:var(--pp-mut);line-height:1.4}
+.pp-stgn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;background:var(--pp-bg);border:2px solid var(--pp-line);color:var(--pp-ink)}
+.pp-stg.now .pp-stgn{border-color:var(--pp-acc);color:var(--pp-acc)}.pp-stg.done .pp-stgn{background:var(--pp-ok);border-color:var(--pp-ok);color:#fff}
+.pp-stgb{margin:10px 0 0 44px}.pp-stgb h3{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pp-mut);margin:0 0 4px}
+.pp-lks{display:flex;flex-wrap:wrap;gap:6px}.pp-lks a{font-size:14px;padding:6px 10px;border-radius:10px;background:var(--pp-bg);border:1px solid var(--pp-line);color:var(--pp-ink);text-decoration:none;line-height:1.3}
+.pp-mk{margin:12px 0 0 44px;border:1px dashed var(--pp-line);background:transparent;color:var(--pp-mut);border-radius:10px;padding:8px 12px;font:inherit;font-size:14px;cursor:pointer}
+.pp-mk.on{border-style:solid;border-color:var(--pp-ok);color:var(--pp-ok);font-weight:700}
+@media(max-width:480px){.pp-stgb,.pp-mk{margin-left:0}}
+.pp-gt{max-width:620px;margin:16px auto;background:var(--pp-surf);border:2px solid var(--pp-acc);border-radius:20px;padding:20px 18px}
+.pp-gt h1{margin:6px 0 8px}.pp-gb{margin:14px 0 4px;justify-content:flex-start}.pp-gl{margin:12px 0 16px;padding-left:22px;display:grid;gap:4px}.pp-gl li{font-size:15px}.pp-gl a{color:var(--pp-ink)}
+.pp-gl li.done a{color:var(--pp-ok)}.pp-gl li.done::marker{color:var(--pp-ok)}.pp-gl li.now a{font-weight:700}
 /* чертёж: бумага белая в обеих темах */
 .pp svg .pp-grid line{stroke:var(--pp-grid);stroke-width:.3}
 .pp svg .o{stroke:var(--pp-draw-ink);stroke-width:.85;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -451,5 +526,5 @@ const CSS=`
 function css(){ if(document.getElementById('ppCss')) return; const s=document.createElement('style'); s.id='ppCss'; s.textContent=CSS; document.head.appendChild(s); }
 if(typeof document!=='undefined') css();
 
-self.PREP={TOPICS,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
+self.PREP={TOPICS,PLANS,plan(k,o){ PLANS[k]=Object.assign({key:k},o); return PLANS[k]; },planProg,stDone,gate,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
 })();
