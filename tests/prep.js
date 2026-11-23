@@ -27,7 +27,9 @@ for(const pl of Object.values(PREP.PLANS)){
   pl.stages.forEach((s,i)=>{ const where=`${pl.key}, этап ${i+1}`;
     (s.topics||[]).forEach(id=>{ if(!G.BY[id]) bad(where+': нет темы '+id); else if(!PREP.TOPICS[id]) bad(where+': тема '+id+' без экрана'); });
     if(!(s.topics||[]).length&&!(s.learn||[]).length&&!(s.do||[]).length) bad(where+': нечего проходить');
-    [...(s.learn||[]),...(s.do||[])].forEach(a=>{ if(!/^#\//.test(a[0])||!a[1]) bad(where+': ссылка '+a); }); }); }
+    [...(s.learn||[]),...(s.do||[])].forEach(a=>{ if(!/^#\//.test(a[0])||!a[1]) bad(where+': ссылка '+a); });
+    (s.check||[]).forEach(c=>{ if(!c||!c.q||!Array.isArray(c.o)||c.o.length<3||!(c.a>=0&&c.a<c.o.length)||new Set(c.o).size!==c.o.length) bad(where+': вопрос проверки «'+(c&&c.q)+'»'); });
+    if(s.order&&!/^(ng|ig)\d$/.test(s.order)) bad(where+': order — не ключ ДЗ'); }); }
 
 /* ── 1. программа ── */
 { const A=G.audit();
@@ -325,6 +327,24 @@ async function screens(){
     if(await page.$('#ppSkip')) bad(h+': «Сразу к решению» не открыло решение');
     if(!await page.$('.pp-dzchip')) bad(h+': у решения нет строки подготовки'); }
   await page.evaluate(()=>localStorage.removeItem('nch_prep_gate'));
+  /* методика курса: замер до обучения, проверка этапа (вопросы, расстановка шагов плана), смешанная тренировка */
+  const clickDuels=async()=>{ for(let i=0;i<30;i++){ if(!await page.$('#ppA')) break; await page.click('#ppA'); await page.waitForTimeout(120); const nx=await page.$('#ppNx'); if(nx) await nx.click(); else await page.waitForTimeout(1000); } };
+  const h1=()=>page.evaluate(()=>{ const e=document.querySelector('.pp-gt h1'); return e?e.innerText:''; });
+  await page.evaluate(()=>localStorage.removeItem('nch_prep_plan'));
+  await page.goto(U+'#/prep/ng2/pre'); await page.waitForTimeout(400); await clickDuels();
+  if(!/из/.test(await h1())) bad('Замер ДЗ №2: не дошёл до итога');
+  if(!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}')['ng2:pre']; return o&&Object.keys(o.r).length===6; })) bad('Замер ДЗ №2: итог по этапам не сохранён');
+  await page.goto(U+'#/prep/ng2/check2'); await page.waitForTimeout(400); await clickDuels(); if(!/Этап пройден|Пока не засчитано/.test(await h1())) bad('Проверка этапа (дуэли): нет итога');
+  await page.goto(U+'#/prep/ig4/check1'); await page.waitForTimeout(400);
+  for(let i=0;i<12;i++){ const b=await page.$('.pp-mo:not(.locked) button[data-j="0"]'); if(!b) break; await b.click(); await page.waitForTimeout(60); await page.click('#ppNx'); await page.waitForTimeout(60); }
+  if(await h1()!=='Этап пройден'||!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ig4; return o&&o[0]&&o[0].by==='test'; })) bad('ДЗ №4 ИГ, этап 1: верные ответы не засчитали этап');
+  for(const k of ['ng1','ng2','ng3','ng4','ng5','ig3','ig4','ig5','ig6']){ const pl=PREP.PLANS[k], i=pl.stages.findIndex(s=>s.order); if(i<0){ bad(k+': нет этапа «Собери всё в план»'); continue; }
+    await page.goto(U+'#/prep/'+k+'/check'+(i+1)); await page.waitForTimeout(500);
+    const n=await page.$$eval('.pp-oo button',b=>b.length); if(n<4){ bad(k+': шаги плана для расстановки не нашлись'); continue; }
+    for(let j=0;j<n;j++){ await page.click('.pp-oo button[data-i="'+j+'"]'); await page.waitForTimeout(30); } await page.waitForTimeout(1200);
+    if(await h1()!=='Этап пройден') bad(k+': верный порядок шагов не засчитал этап'); }
+  await page.goto(U+'#/prep/ng4/mix'); await page.waitForTimeout(400); await clickDuels(); if(!/из/.test(await h1())) bad('Смешанная тренировка ДЗ №4: нет итога');
+  await page.evaluate(()=>localStorage.removeItem('nch_prep_plan'));
   /* тема внутри курса: «назад» — к курсу */
   { const c=G.COURSE.ng4; await page.goto(U+'#/prep/ng4/'+c.own[0]); await page.waitForTimeout(200); const back=await page.evaluate(()=>{ const a=document.querySelector('.pp-back'); return a&&a.getAttribute('href'); }); if(back!=='#/prep/ng4') bad('Тема в курсе: «назад» ведёт не к курсу, а на '+back); }
   await page.goto(U+'#/prep/all'); await page.waitForTimeout(300);
