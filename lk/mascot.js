@@ -1,9 +1,9 @@
 /* ═══ Маскот наставника (docs/TUTOR.md, раздел 2а) ═══
    Рисунок кодом: SVG + один общий requestAnimationFrame, без библиотек и картинок. Два персонажа с общим «мозгом» (Base):
-   • penguin — пингвин (выбран 23.11, образ на утверждении): вперевалку, лицо поворачивается за взглядом, хохолок и шарф
+   • penguin — пингвин Лука (по умолчанию): вперевалку, лицо поворачивается за взглядом, хохолок и шарф
      качаются от движения, обводит точку карандашом в ласте; наряд scarf · helmet · glasses (self.MASCOT_OUTFIT);
    • compass — циркуль: голова-шарнир, ножка с иглой и ножка с грифелем, ноги считаются от шарнира.
-   Персонаж по умолчанию — self.MASCOT_CHAR (пока не задан — compass).
+   Персонаж по умолчанию — пингвин Лука в шарфе (утверждён 23.11.2026); другой — self.MASCOT_CHAR / self.MASCOT_OUTFIT.
 
    self.MASCOT:
      avatar(host,{sleepAfter,full,char,outfit}) → живая аватарка (full — во весь рост) во всю площадь host (кнопка наставника, шапка окна, плашка на чертеже):
@@ -37,11 +37,20 @@ class Cancel extends Error{}
 const css=document.createElement('style');
 css.textContent=`
 .mc-av{display:block;width:100%;height:100%;overflow:hidden}
-.mc-tour{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;border-radius:inherit;transition:opacity .35s}
+.mc-tour{position:absolute;inset:0;z-index:7;pointer-events:none;overflow:hidden;border-radius:inherit;transition:opacity .35s}
 .mc-tour.out{opacity:0}
 .mc-tour>svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden}
 .mc-tour .mc-body{pointer-events:auto;cursor:pointer}
 .mc-ring{fill:none;stroke:#e5484d;stroke-width:2.4;stroke-linecap:round}
+.mc-tour .mc-hit{fill:transparent;pointer-events:all;cursor:pointer}
+.mc-bub{position:absolute;left:0;top:0;z-index:2;max-width:min(270px,74%);display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:start;padding:8px 8px 8px 12px;border-radius:16px;background:#fff;color:#15161a;border:1.5px solid #15161a;box-shadow:0 10px 24px -12px rgba(8,11,18,.55);font:600 14px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;pointer-events:auto;opacity:0;transition:opacity .2s;will-change:transform}
+.mc-bub.on{opacity:1}
+.mc-bub::after{content:"";position:absolute;left:var(--tx,24px);bottom:-7px;width:12px;height:12px;margin-left:-6px;background:#fff;border-right:1.5px solid #15161a;border-bottom:1.5px solid #15161a;transform:rotate(45deg)}
+.mc-bub.b::after{bottom:auto;top:-7px;transform:rotate(225deg)}
+.mc-bub .mc-x{border:0;background:none;color:#15161a;opacity:.55;font:700 14px system-ui;cursor:pointer;padding:0 2px;line-height:1.3}
+.mc-bub .mc-acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.mc-bub .mc-acts button{height:32px;padding:0 12px;border-radius:99px;border:0;background:#1f47d6;color:#fff;font:700 13px system-ui;cursor:pointer}
+.mc-bub .mc-acts button+button{background:#eef1f6;color:#15161a}
 .mc-dot{fill:var(--mc-ink,${INK})}
 .mc-tour .mc-dot,.mc-tour .mc-z{paint-order:stroke;stroke:#fff;stroke-width:2.5px}
 .mc-z{fill:var(--mc-ink,${INK});font:800 13px system-ui,sans-serif}
@@ -182,7 +191,7 @@ class Base{
     if(st==='happy'||st==='giggle'){ R.armL+=Math.sin(t*11)*12*A; R.armR+=Math.sin(t*11+1)*12*A; R.tilt+=Math.sin(t*9)*3*A; }
     if(st==='oops') R.tilt+=Math.sin(t*40)*1.2*Math.max(0,1-(t-this.stateT)*1.5);
     if(this.wa>.01){ R.armL+=Math.sin(this.walkPhase)*22*this.wa; R.armR-=Math.sin(this.walkPhase)*22*this.wa; }
-    this.render(R,t); this.fx(dt,t,true);
+    this.render(R,t); this.fx(dt,t,true); if(this.onFrame) this.onFrame();
   }
   /* думающие точки и частицы (z, искры, капля) — в координатах сцены */
   fx(dt,t,vis){ const h=this.headWorld(), s=this.s, on=(this.state==='think'||this.state==='study')?1:0;
@@ -353,7 +362,7 @@ const circleD=(c,r)=>`M${f2(c.x+r)} ${f2(c.y)}A${f2(r)} ${f2(r)} 0 1 1 ${f2(c.x-
 
 /* персонажи: класс и рамка аватарки (голова крупно); по умолчанию — self.MASCOT_CHAR, наряд пингвина — self.MASCOT_OUTFIT */
 const CHARS={compass:{C:Compass,vb:'-42 -134 84 84',full:'-62 -146 124 152',k:1},penguin:{C:Penguin,vb:'-44 -122 88 88',full:'-56 -122 112 128',k:1.15}};   /* k — пингвин ниже циркуля, на чертеже чуть крупнее */
-const charOf=o=>CHARS[(o&&o.char)||self.MASCOT_CHAR||'compass']||CHARS.compass;
+const charOf=o=>CHARS[(o&&o.char)||self.MASCOT_CHAR||'penguin']||CHARS.penguin;
 const outfitOf=o=>(o&&o.outfit)||self.MASCOT_OUTFIT||'scarf';
 /* ── общий цикл, курсор, бездействие ── */
 const REG=new Set(), PTR={x:0,y:0,t:0}; let raf=0, last=0, lastAct=performance.now();
@@ -375,23 +384,29 @@ function avatar(host,opt){ opt=opt||{}; host.textContent='';
   const m=new K.C(svg,{scale:1,avatar:true,sleepAfter:opt.sleepAfter||0,outfit:outfitOf(opt)});
   REG.add(m); start(); return m; }
 
-/* ── выход на чертёж ── */
+/* ── выход на чертёж ──
+   opt: mood:'oops' · say:{text,actions:[{label,fn}]} — облачко у маскота (после показа точки; ✕ — уйти) ·
+   onClose() — нажали ✕ в облачке · onRing(i,t) — нажали на обведённую точку ·
+   before() — async, до расчёта точек (приблизить чертёж) · after() — async, когда показал (вернуть масштаб) ·
+   haptic — вибрация (Android) на каждую окружность и на «ой» */
 let TOUR=null;
+const buzz=p=>{ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} };
 function boxSize(box){ return {W:Math.max(1,box.clientWidth),H:Math.max(1,box.clientHeight)}; }
 function tour(box,getTargets,opt){ opt=opt||{};
   /* уже стоит на этом чертеже — идёт к новым точкам с того же места, а не выходит из-за края заново */
   const was=TOUR&&TOUR.box===box&&TOUR.ov.isConnected?{x:TOUR.m.pos.x,y:TOUR.m.pos.y}:null;
   untour(true); if(!box) return null;
   if(getComputedStyle(box).position==='static') box.style.position='relative';
-  const ov=document.createElement('div'); ov.className='mc-tour'; ov.setAttribute('aria-hidden','true'); box.appendChild(ov);
-  const {W,H}=boxSize(box), svg=el('svg',{viewBox:`0 0 ${W} ${H}`,focusable:'false'}); ov.appendChild(svg);
+  const ov=document.createElement('div'); ov.className='mc-tour'; box.appendChild(ov);
+  const {W,H}=boxSize(box), svg=el('svg',{viewBox:`0 0 ${W} ${H}`,focusable:'false','aria-hidden':'true'}); ov.appendChild(svg);
   const fx=el('g',null,svg), act=el('g',null,svg), over=el('g',null,svg);
   const K=charOf(opt), s=clamp(Math.min(W,H)/560,.34,.58)*K.k;
-  const m=new (K.C)(svg,{scale:s,x:was?was.x:W+70*s,y:was?was.y:H-8,layer:act,over,outfit:outfitOf(opt)});
-  const T={id:++uid,box,ov,svg,fx,m,getTargets,opt,W,H,rings:[],targets:[],done:false};
+  const m=new (K.C)(svg,{scale:s,x:was?was.x:W+70*s,y:was?was.y:H-8,layer:act,over,outfit:outfitOf(opt),sleepAfter:90000});
+  const T={id:++uid,box,ov,svg,fx,m,getTargets,opt,W,H,rings:[],hits:[],targets:[],done:false,bub:null,sayOn:false};
   TOUR=T; REG.add(m); start();
-  m.onPoke=e=>{ e.stopPropagation(); if(T.done) m.play('giggle'); };
-  m.g.addEventListener('pointerdown',e=>e.stopPropagation());   /* чертёж не перехватывает касание Циркуля (лист начерта двигается пальцем) */
+  m.onPoke=e=>{ e.stopPropagation(); if(T.done&&m.state!=='sleep') m.play('giggle'); };
+  m.g.addEventListener('pointerdown',e=>e.stopPropagation());   /* чертёж не перехватывает касание (лист начерта двигается пальцем) */
+  m.onFrame=()=>placeBubble(T);
   try{ T.ro=new ResizeObserver(()=>{ const z=boxSize(box); if(TOUR!==T) return; if(!ov.isConnected) return untour(true); if(Math.abs(z.W-T.W)>2||Math.abs(z.H-T.H)>2) settle(T); }); T.ro.observe(box); }catch(e){}
   try{ T.mo=new MutationObserver(ms=>{ if(TOUR!==T) return; if(!ov.isConnected) return untour(true);
       if(ms.some(x=>[...x.removedNodes].some(n=>n.nodeName&&n.nodeName.toLowerCase()==='svg'))) untour(true); });
@@ -406,34 +421,69 @@ function restSpot(T,t){ const m=T.m, s=m.s, W=T.W, H=T.H, top=140*s;
   return {x:clamp(x,30*s,W-30*s),y:clamp(y,top,H-6)}; }
 /* показав, отходит в угол листа — не загораживать чертёж; угол — подальше от последней точки */
 function corner(T,t){ const s=T.m.s, W=T.W, H=T.H; let x=W-40*s; if(t&&t.x>W-150*s&&t.y>H-170*s) x=40*s; return {x,y:H-6}; }
-function ringFor(T){ const r=el('path',{class:'mc-ring'},T.fx); r.style.opacity=0; T.rings.push(r); return r; }
-async function run(T){ const m=T.m, s=m.s, ts=targetsOf(T); T.targets=ts;
+function ringFor(T,i,t){ const r=el('path',{class:'mc-ring'},T.fx); r.style.opacity=0; T.rings.push(r);
+  if(T.opt.onRing){ const h=el('circle',{class:'mc-hit',cx:f2(t.x),cy:f2(t.y),r:f2(Math.max(22,(t.r||16)+10))},T.fx); T.hits.push(h);
+    h.addEventListener('pointerdown',e=>e.stopPropagation()); h.addEventListener('click',e=>{ e.stopPropagation(); buzz(8); T.opt.onRing(i,t); }); }
+  return r; }
+async function run(T){ const m=T.m, s=m.s;
+  if(T.opt.before){ try{ await T.opt.before(); }catch(e){} if(TOUR!==T) return; }
+  const ts=targetsOf(T); T.targets=ts;
   if(reduced()){ settle(T); return; }
   const first=ts[0], enter=restSpot(T,null);
   await m.walkTo(first?clamp(first.x+90*s,40*s,T.W-30*s):enter.x,first?clamp(first.y+60*s,140*s,T.H-6):enter.y,210);
-  if(T.opt.mood==='oops'){ m.play('oops'); await m.sleep(1000); m.idle(); }
-  for(const t of ts){ const ring=ringFor(T), r=Math.max(13,t.r||16);
+  if(T.opt.mood==='oops'){ m.play('oops'); if(T.opt.haptic) buzz([30,40,30]); await m.sleep(1000); m.idle(); }
+  for(const [i,t] of ts.entries()){ const ring=ringFor(T,i,t), r=Math.max(13,t.r||16);
     if(m.canDraw(t,T.W,T.H)) await m.drawCircle(t,r,ring);
     else { const sp=restSpot(T,t); await m.walkTo(sp.x,sp.y,190); m.pointAt=t; ring.setAttribute('d',circleD(t,r)); const L=2*Math.PI*r;
-      ring.setAttribute('stroke-dasharray',f2(L)); await m.anim(700,p=>{ ring.style.opacity=1; ring.setAttribute('stroke-dashoffset',f2(L*(1-ease(p)))); }); m.pointAt=null; } }
+      ring.setAttribute('stroke-dasharray',f2(L)); await m.anim(700,p=>{ ring.style.opacity=1; ring.setAttribute('stroke-dashoffset',f2(L*(1-ease(p)))); }); m.pointAt=null; }
+    if(T.opt.haptic) buzz(12); }
   const t=ts[ts.length-1], sp=restSpot(T,t);
   await m.walkTo(sp.x,sp.y,190);
   if(t){ m.pointAt=t; m.lookAt=t; m.play('point',99999); } else m.play('hello');
-  m.talk(1500); await m.sleep(2600);
+  showSay(T); m.talk(T.opt.say?Math.min(4000,String(T.opt.say.text||'').length*45):1500);
+  await m.sleep(t?2600:1600);
   m.pointAt=null; m.lookAt=null; m.idle(); T.done=true;
-  const c=corner(T,t); await m.walkTo(c.x,c.y,170); }
+  if(T.opt.after){ try{ await T.opt.after(); }catch(e){} if(TOUR!==T) return; relayout(T); }
+  const c=corner(T,t); await m.walkTo(c.x,c.y,170);
+  wander(T).catch(()=>{}); }
+/* стоит без дела — иногда прогуливается вдоль края листа и оглядывается */
+async function wander(T){ const m=T.m, s=m.s;
+  for(let i=0;i<40&&TOUR===T;i++){ await m.sleep(rand(6000,12000)); if(TOUR!==T||m.state!=='idle') continue;
+    const base=corner(T,T.targets[T.targets.length-1]), x=clamp(base.x+rand(-1,1)*70*s,30*s,T.W-30*s);
+    await m.walkTo(x,T.H-6,55+rand(0,25)); if(Math.random()<.35){ m.lookAt={x:rand(.2,.8)*T.W,y:rand(.2,.6)*T.H}; await m.sleep(1300); m.lookAt=null; } } }
+/* точки заново после смены масштаба: окружности переставляются сразу */
+function relayout(T){ const z=boxSize(T.box); T.W=z.W; T.H=z.H; T.svg.setAttribute('viewBox',`0 0 ${T.W} ${T.H}`);
+  T.rings.forEach(r=>r.remove()); T.hits.forEach(h=>h.remove()); T.rings=[]; T.hits=[]; const ts=targetsOf(T); T.targets=ts;
+  ts.forEach((t,i)=>{ const r=ringFor(T,i,t); r.setAttribute('d',circleD(t,Math.max(13,t.r||16))); r.style.opacity=1; }); }
 /* мгновенная раскладка: после изменения размера или без анимаций */
-function settle(T){ const m=T.m; m.cancel(); const z=boxSize(T.box); T.W=z.W; T.H=z.H; T.svg.setAttribute('viewBox',`0 0 ${T.W} ${T.H}`);
-  T.rings.forEach(r=>r.remove()); T.rings=[]; const ts=targetsOf(T); T.targets=ts;
-  for(const t of ts){ const r=ringFor(T), rr=Math.max(13,t.r||16); r.setAttribute('d',circleD(t,rr)); r.style.opacity=1; }
-  const sp=corner(T,ts[ts.length-1]); m.pos.x=m.prev.x=sp.x; m.pos.y=m.prev.y=sp.y; m.drawOn=false; m.S.draw=0; m.pointAt=null; m.lookAt=null; m.idle(); T.done=true; }
+function settle(T){ const m=T.m; m.cancel(); relayout(T);
+  const sp=corner(T,T.targets[T.targets.length-1]); m.pos.x=m.prev.x=sp.x; m.pos.y=m.prev.y=sp.y; m.drawOn=false; m.S.draw=0; m.pointAt=null; m.lookAt=null; m.idle(); T.done=true; showSay(T); }
+/* облачко у маскота: текст, кнопки, ✕ */
+function showSay(T,say){ if(say) T.opt.say=say; const sy=T.opt.say; if(!sy||!sy.text){ if(T.bub) T.bub.remove(); T.bub=null; return; }
+  const b=T.bub||document.createElement('div'); b.className='mc-bub'; b.innerHTML='';
+  const sp=document.createElement('span'); sp.textContent=sy.text; b.appendChild(sp);
+  const x=document.createElement('button'); x.type='button'; x.className='mc-x'; x.setAttribute('aria-label','Убрать'); x.textContent='✕'; b.appendChild(x);
+  x.addEventListener('click',e=>{ e.stopPropagation(); if(T.opt.onClose) T.opt.onClose(); untour(); });
+  if(sy.actions&&sy.actions.length){ const r=document.createElement('div'); r.className='mc-acts';
+    sy.actions.forEach(a=>{ const q=document.createElement('button'); q.type='button'; q.textContent=a.label; q.addEventListener('click',e=>{ e.stopPropagation(); buzz(8); a.fn(); }); r.appendChild(q); }); b.appendChild(r); }
+  b.addEventListener('pointerdown',e=>e.stopPropagation());
+  if(!T.bub){ T.ov.appendChild(b); T.bub=b; requestAnimationFrame(()=>b.classList.add('on')); }
+  T.m.talk(Math.min(4000,String(sy.text).length*45)); placeBubble(T); }
+function placeBubble(T){ const b=T.bub; if(!b) return; const h=T.m.headWorld(), W=T.W, bw=b.offsetWidth, bh=b.offsetHeight;
+  const right=h.x<W*.55; let x=right?h.x+h.r*.55:h.x-h.r*.55-bw; x=clamp(x,6,W-bw-6);
+  let y=h.y-h.r-bh-6; const below=y<6; if(below) y=Math.min(T.H-bh-6,h.y+h.r+8);
+  b.classList.toggle('r',right); b.classList.toggle('b',below);
+  b.style.transform=`translate(${Math.round(x)}px,${Math.round(Math.max(6,y))}px)`;
+  b.style.setProperty('--tx',Math.round(clamp(h.x-x,14,bw-14))+'px'); }
 function untour(instant){ const T=TOUR; if(!T) return; TOUR=null; try{ T.ro&&T.ro.disconnect(); T.mo&&T.mo.disconnect(); }catch(e){}
-  const m=T.m; m.cancel();
+  const m=T.m; m.cancel(); if(T.bub) T.bub.classList.remove('on');
   const gone=()=>{ T.ov.remove(); REG.delete(m); };
   if(instant||reduced()||!T.ov.isConnected) return gone();
   (async()=>{ m.drawOn=false; m.pointAt=null; m.lookAt=null; m.play('hello'); await m.sleep(650);
     const out=m.pos.x>T.W/2?T.W+80*m.s:-80*m.s; T.ov.classList.add('out'); await m.walkTo(out,m.pos.y,260); gone(); })().catch(()=>gone()); }
+/* поменять облачко текущего выхода (нажали на окружность — пояснение к точке) */
+function say(text,actions){ const T=TOUR; if(!T||!T.ov.isConnected) return false; showSay(T,{text,actions}); if(T.done&&T.m.state==='idle') T.m.play('talk',1600); return true; }
 
-self.MASCOT={avatar,tour,untour,reduced,chars:Object.keys(CHARS),
-  state:()=>({avatars:[...REG].filter(m=>m.av&&m.svg.isConnected).map(m=>m.state),tour:TOUR?{targets:TOUR.targets.length,rings:TOUR.rings.filter(r=>r.isConnected&&r.style.opacity!=='0').length,done:TOUR.done,state:TOUR.m.state,box:TOUR.box}:null})};
+self.MASCOT={avatar,tour,untour,say,reduced,chars:Object.keys(CHARS),
+  state:()=>({avatars:[...REG].filter(m=>m.av&&m.svg.isConnected).map(m=>m.state),tour:TOUR?{targets:TOUR.targets.length,rings:TOUR.rings.filter(r=>r.isConnected&&r.style.opacity!=='0').length,done:TOUR.done,state:TOUR.m.state,box:TOUR.box,say:TOUR.bub&&TOUR.bub.isConnected?TOUR.bub.querySelector('span').textContent:''}:null})};
 })();

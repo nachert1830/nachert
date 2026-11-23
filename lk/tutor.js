@@ -5,9 +5,11 @@
    Фото листа (📷) уходит вместе с эталоном: ИГ — вид решения со всеми номерами точек (IG4S.svg), начерт — черновик листа
    (SHEET.ng, построения в цвете) → JPEG; глаза наставника сравнивают их.
    Сервер — API кабинета (window.CLUB_API): /api/tutor/*, сессия lk_tok. Без адреса API окно не показывается.
-   Маскот — Циркуль (lk/mascot.js, docs/TUTOR.md «Маскот»): живая аватарка на кнопке и в шапке окна (думает, пока ждём модель,
-   говорит, радуется 👍, грустит при ошибке, засыпает без дела), а по действию «показать» сам выходит на чертёж и обводит точки
-   циркулем. Без lk/mascot.js всё работает по-старому, с буквой «Н».
+   Маскот — пингвин Лука (lk/mascot.js, docs/TUTOR.md, раздел 2а): живая аватарка на кнопке и в шапке окна (думает, пока ждём
+   модель, говорит, радуется 👍, грустит при ошибке, засыпает без дела); по действию «показать» выходит на чертёж, обводит точки
+   и говорит главную мысль облачком; тап по подписи точки — «Рассказать про точку?». Телефон: окно — шторка в три положения
+   (полоска · половина · весь экран), чертёж остаётся виден; Лука сидит у нижней панели вместо кнопки, его можно перетащить;
+   чертёж приближается к точкам, пока Лука их обводит. Без lk/mascot.js всё работает по-старому, с буквой «Н».
    Для тестов: window.TUTOR — {open(), close(), send(text), act(action), state(), mascot()}. */
 (function(){
 'use strict';
@@ -101,12 +103,14 @@ function drawingBox(w){ return isNg(w)?$('#dzPl .pl-paper'):$('#igbPic'); }
 function onDrawing(w,a){ const box=drawingBox(w), svg=box&&box.querySelector('svg'); if(!box||!svg) return;
   box.querySelectorAll('.tu-say,.tu-note').forEach(e=>e.remove()); if(getComputedStyle(box).position==='static') box.style.position='relative';
   const B=box.getBoundingClientRect();
-  if(a.say){ const d=document.createElement('div'); d.className='tu-say'; d.innerHTML='<i aria-hidden="true"></i><span>'+esc(a.say)+'</span><button type="button" aria-label="Убрать">✕</button>'; box.appendChild(d);
+  if(a.say&&!MC()){ const d=document.createElement('div'); d.className='tu-say'; d.innerHTML='<i aria-hidden="true"></i><span>'+esc(a.say)+'</span><button type="button" aria-label="Убрать">✕</button>'; box.appendChild(d);
     const m=av(d.querySelector('i')); if(m) m.play('talk',talkMs(a.say)).talk(talkMs(a.say));
     /* лист начерта на pointerdown захватывает указатель (перетаскивание чертежа), и клик уходил листу, а не «✕» */
     d.addEventListener('pointerdown',e=>e.stopPropagation());
     d.querySelector('button').addEventListener('click',e=>{ e.stopPropagation(); d.remove(); const M=MC(); if(M) M.untour(); }); }
   const used=[];
+  /* узкий чертёж (телефон): выноски не расставляем — пояснение к точке Лука скажет по нажатию на обведённую точку */
+  if(MC()&&B.width<560) return;
   (a.notes||[]).forEach(n=>{ const els=labelsOf(w,svg,n.point); if(!els.length) return; const r=els[0].getBoundingClientRect(); if(!r.width&&!r.height) return;
     /* подпись — как на чертеже: новые плоскости римскими сверху (A₄ → A^IV) */
     const nm=esc(String(n.point)).replace(/^(.*?)([₄-₈])$/,(m0,b0,c0)=>b0+'<sup>'+ROMN[c0]+'</sup>');
@@ -119,17 +123,61 @@ function onDrawing(w,a){ const box=drawingBox(w), svg=box&&box.querySelector('sv
     d.style.left=x+'px'; d.style.top=y+'px'; }); }
 document.addEventListener('click',e=>{ const b=e.target.closest('.tu-say button'); if(b){ b.parentNode.remove(); const M=MC(); if(M) M.untour(); } });
 
-/* ── Циркуль выходит на чертёж: подходит к точкам (≤ 3), обводит каждую циркулем, показывает на последнюю ── */
+/* ── Лука выходит на чертёж: подходит к точкам (≤ 3), обводит каждую, показывает на последнюю и говорит главную мысль ── */
+const isPhone=()=>innerWidth<760;
+function pointRects(w,box,pts){ const svg=box.querySelector('svg'); if(!svg) return []; const B=box.getBoundingClientRect(), out=[];
+  const vis=r=>(r.width||r.height)&&r.right>B.left&&r.left<B.right&&r.bottom>B.top&&r.top<B.bottom;
+  for(const p of pts){ const r=labelsOf(w,svg,p).map(e=>e.getBoundingClientRect()).find(vis); if(r) out.push({r,p}); }
+  /* ИГ №4 подсвечивает точки кружками, а не подписями */
+  if(!out.length&&pts.length) [...svg.querySelectorAll('.tu-hl,circle[fill="#ffd23f"]')].map(e=>e.getBoundingClientRect()).filter(vis).slice(0,3).forEach((r,i)=>out.push({r,p:pts[i]}));
+  return out; }
 function tourOn(w,a,o){ const M=MC(), box=drawingBox(w); if(!M||!box||!box.querySelector('svg')) return;
-  const pts=(a.points||[]).slice(0,3);
-  const targets=()=>{ const svg=box.querySelector('svg'); if(!svg) return []; const B=box.getBoundingClientRect(), out=[];
-    const at=r=>({x:r.left+r.width/2-B.left-box.clientLeft,y:r.top+r.height/2-B.top-box.clientTop,r:Math.max(r.width,r.height)/2+7});
-    const vis=r=>(r.width||r.height)&&r.right>B.left&&r.left<B.right&&r.bottom>B.top&&r.top<B.bottom;
-    for(const p of pts){ const r=labelsOf(w,svg,p).map(e=>e.getBoundingClientRect()).find(vis); if(r) out.push(at(r)); }
-    /* ИГ №4 подсвечивает точки кружками, а не подписями */
-    if(!out.length&&pts.length) [...svg.querySelectorAll('.tu-hl,circle[fill="#ffd23f"]')].map(e=>e.getBoundingClientRect()).filter(vis).slice(0,3).forEach(r=>out.push(at(r)));
-    return out; };
-  try{ M.tour(box,targets,{mood:o&&o.mood}); }catch(e){} }
+  const pts=(a.points||[]).slice(0,3); let names=[];
+  const targets=()=>{ const B=box.getBoundingClientRect(), rs=pointRects(w,box,pts); names=rs.map(x=>x.p);
+    return rs.map(({r})=>({x:r.left+r.width/2-B.left-box.clientLeft,y:r.top+r.height/2-B.top-box.clientTop,r:Math.max(r.width,r.height)/2+7})); };
+  const note=p=>(a.notes||[]).find(n=>String(n.point)===String(p));
+  const Z=isPhone()&&pts.length?zoomer(w,box,pts):null;
+  try{ M.tour(box,targets,{mood:o&&o.mood,haptic:isPhone(),say:a.say?{text:a.say}:null,
+    onRing:(i)=>{ const p=names[i], n=note(p); M.say(n?ptLabel(p)+' — '+n.text:'Точка '+ptLabel(p)+(a.say?'. '+a.say:'')); },
+    before:Z&&Z.zoom, after:Z&&Z.back}); }catch(e){} }
+const ptLabel=p=>String(p).replace(/^(.*?)([₄-₈])$/,(m0,b0,c0)=>b0+ROMN[c0]);
+/* телефон: приблизить чертёж к точкам, пока Лука их обводит, потом вернуть (лист начерта — тот же масштаб, что щипком: PLR.state.z) */
+function zoomer(w,box,pts){ const svg=box.querySelector(isNg(w)?'svg.dwg':'svg'); if(!svg) return null; let set=null;
+  const Zs=()=>{ try{ return isNg(w)&&PLR&&PLR.state&&PLR.state.z||null; }catch(e){ return null; } };
+  const put=(tr,ms)=>{ svg.style.transition='transform '+ms+'ms cubic-bezier(.3,.8,.3,1)'; svg.style.transformOrigin='50% 50%'; svg.style.transform=tr; return sleep(ms+40).then(()=>{ svg.style.transition=''; }); };
+  return {
+    zoom:async()=>{ const Z=Zs(); if(Z&&Z.s>1.05) return; if(svg.style.transform) return;
+      const rs=pointRects(w,box,pts).map(x=>x.r); if(!rs.length) return; const S=svg.getBoundingClientRect(), B=box.getBoundingClientRect();
+      const l=Math.min(...rs.map(r=>r.left))-28, t=Math.min(...rs.map(r=>r.top))-28, rr=Math.max(...rs.map(r=>r.right))+28, bb=Math.max(...rs.map(r=>r.bottom))+28;
+      const k=Math.min(2.4,B.width*.6/(rr-l),B.height*.6/(bb-t)); if(k<1.3) return;
+      const cx=(l+rr)/2-(S.left+S.width/2), cy=(t+bb)/2-(S.top+S.height/2), mx=(k-1)*S.width/2, my=(k-1)*S.height/2;
+      const x=Math.max(-mx,Math.min(mx,-k*cx)), y=Math.max(-my,Math.min(my,-k*cy)); set={k,x,y,tr:'translate('+x+'px,'+y+'px) scale('+k+')'};
+      if(Z){ Z.s=k; Z.x=x; Z.y=y; box.classList.add('zoomed'); } await put(set.tr,560); },
+    back:async()=>{ if(!set||!svg.isConnected) return; const Z=Zs();
+      if(Z?(Math.abs(Z.s-set.k)>.01||Math.abs(Z.x-set.x)>1):svg.style.transform!==set.tr) return;   /* студент сам двигал чертёж — не трогаем */
+      if(Z){ Z.s=1; Z.x=0; Z.y=0; box.classList.remove('zoomed'); } await put('',520); svg.style.transform=''; } }; }
+/* телефон: чертёж должен быть виден над шторкой */
+function drawingInView(w){ if(!isPhone()) return; const b=drawingBox(w); if(!b) return; const r=b.getBoundingClientRect(), top=box.hidden?innerHeight:box.getBoundingClientRect().top, hh=72;
+  if(r.top<hh||r.bottom>top) scrollBy({top:r.top-hh-Math.max(0,(top-hh-r.height)/2),behavior:'smooth'}); }
+/* тап по подписи точки на чертеже — Лука подходит: «Рассказать про точку 9′?» */
+const ROMS={IV:'₄',V:'₅',VI:'₆',VII:'₇',VIII:'₈'};
+function labelPoint(w,t){ const raw=String(t.textContent||'').trim();
+  if(isNg(w)){ const m=/^([A-Z]|\d{1,2})([″′‴'"]*)(IV|V|VI|VII|VIII)?$/.exec(raw.replace(/\s+/g,'')); return m?{p:m[1]+(m[3]?ROMS[m[3]]:''),label:raw}:null; }
+  const m=/^(\d{1,3})[″′‴]$/.exec(raw); return m?{p:+m[1],label:raw}:null; }
+let tapQ=null;
+document.addEventListener('pointerdown',e=>{ tapQ=null; const w=here(), M=MC(); if(!w||!M||!e.isPrimary) return; const b=drawingBox(w); if(!b||!b.contains(e.target)) return;
+  const t=e.target.closest&&e.target.closest('text'); const svg=b.querySelector('svg'); if(!t||!svg||!svg.contains(t)) return;
+  const q=labelPoint(w,t); if(q) tapQ={x:e.clientX,y:e.clientY,at:Date.now(),q,t}; },true);
+document.addEventListener('pointerup',e=>{ const z=tapQ; tapQ=null; if(!z||Math.hypot(e.clientX-z.x,e.clientY-z.y)>10||Date.now()-z.at>600) return; askPoint(z.q,z.t); },true);
+function askPoint(q,t){ const w=here(), M=MC(), b=w&&drawingBox(w); if(!M||!b||!t.isConnected) return;
+  const st=M.state().tour; if(st&&st.say&&st.say.indexOf(q.label)>=0) return;   /* двойной тап (масштаб) — не спрашивать дважды */
+  const B=b.getBoundingClientRect(), r=t.getBoundingClientRect(), tg={x:r.left+r.width/2-B.left-b.clientLeft,y:r.top+r.height/2-B.top-b.clientTop,r:Math.max(r.width,r.height)/2+7};
+  M.tour(b,()=>{ const rr=t.isConnected?t.getBoundingClientRect():r, BB=b.getBoundingClientRect(); return [{x:rr.left+rr.width/2-BB.left-b.clientLeft,y:rr.top+rr.height/2-BB.top-b.clientTop,r:tg.r}]; },
+    {haptic:isPhone(),say:{text:'Рассказать про точку '+q.label+'?',actions:[
+      {label:'Да, расскажи',fn:()=>{ M.untour(); ask('Расскажи про точку '+q.label+': откуда она берётся и как её построить?'); }},
+      {label:'Не надо',fn:()=>M.untour()}]}}); }
+/* открыть окно и спросить (если ещё не вошёл или нет согласия — окно покажет, что сделать) */
+async function ask(text){ open(); await until(()=>S.st&&!S.busy,8000); if(S.st&&S.st.ready) send(text); }
 
 /* ── 3D: начерт — пространственная картина шага (TASK3D), ИГ — вкладка 3D-модели детали ── */
 async function open3d(w,a){
@@ -139,15 +187,15 @@ async function open3d(w,a){
   const tab=await until(()=>$('.igx-tabs button[data-t="3d"]'),6000); if(tab){ tab.click(); setTimeout(()=>{ const t=$('.igx-tabs'); t&&t.scrollIntoView({behavior:'smooth',block:'start'}); },60); } }
 
 async function act(a,o){ const w=here(); if(!a||!w) return;
-  if(a.t==='3d'){ await open3d(w,a); if(innerWidth<760) close(true); return; }
+  if(a.t==='3d'){ await open3d(w,a); if(isPhone()) close(true); return; }
   if(a.t==='show'&&isNg(w)){ const P=await ngPlayer(w); if(!P) return; const m=/^p(\d+)s(\d+)$/.exec(a.id||'');
     if(m){ P.state.pi=+m[1]-1; P.go(+m[2]); } else P.go(a.step);
-    await sleep(80); if(a.points&&a.points.length) ngHighlight(a.points); onDrawing(w,a); tourOn(w,a,o);
-    if(innerWidth<760) close(true); return; }
+    await sleep(80); if(a.points&&a.points.length) ngHighlight(a.points); onDrawing(w,a);
+    if(isPhone()){ peek(); drawingInView(w); await sleep(380); } tourOn(w,a,o); return; }
   if(a.t==='show'){ const P=await player(w.n,w.dz); if(!P) return; P.go(a.step);
     await until(()=>{ const p=$('#igbPic'); return p&&p.querySelector('svg')&&!p.classList.contains('igx-ldh'); },8000); await sleep(60);
-    if(a.points&&a.points.length) P.highlight(a.points); onDrawing(w,a); tourOn(w,a,o);
-    if(innerWidth<760) close(true); }
+    if(a.points&&a.points.length) P.highlight(a.points); onDrawing(w,a);
+    if(isPhone()){ peek(); drawingInView(w); await sleep(380); } tourOn(w,a,o); }
   if(a.t==='ask') location.hash='#/ask/'+encodeURIComponent(a.id); }
 
 /* ── стили (токены сайта, светлая и тёмная тема) ── */
@@ -162,7 +210,33 @@ css.textContent=`
 @media (min-width:900px){.tu-fab{bottom:24px}}
 .tu{position:fixed;z-index:340;display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#15161a);font:15.5px/1.5 var(--sans,system-ui);box-shadow:0 24px 60px -20px rgba(8,11,18,.55);border:1px solid var(--line,#e3e6ec)}
 @media (min-width:760px){.tu{right:16px;bottom:16px;width:410px;height:min(720px,calc(100vh - 32px));border-radius:24px}}
-@media (max-width:759px){.tu{left:0;right:0;bottom:0;height:min(86vh,calc(100vh - 40px));border-radius:22px 22px 0 0;padding-bottom:env(safe-area-inset-bottom)}}
+@media (max-width:759px){
+.tu{left:0;right:0;bottom:0;height:var(--tu-h,min(52vh,520px));max-height:calc(100vh - 40px);border-radius:22px 22px 0 0;padding-bottom:env(safe-area-inset-bottom);transition:height .32s cubic-bezier(.2,.9,.25,1);overflow:hidden}
+.tu.drag{transition:none}
+.tu-top{touch-action:none;cursor:grab}
+.tu .tu-grab{display:block;width:40px;height:5px;margin:8px auto 0;border-radius:99px;background:var(--line2,#d9dde5)}
+.tu[data-snap=peek] .tu-mode,.tu[data-snap=peek] .tu-b,.tu[data-snap=peek] .tu-f{display:none!important}
+.tu[data-snap=peek] .tu-pk{display:grid}
+.tu[data-snap=peek] .tu-h{border-bottom:0;padding-bottom:4px}
+.tu-fab{width:70px;height:80px;padding:0;gap:0;border-radius:0;background:none!important;box-shadow:none;font-size:0;right:6px;bottom:calc(var(--tabh,64px) + 2px + env(safe-area-inset-bottom));touch-action:none}
+.tu-fab:hover{transform:none}
+.tu-fab i{width:70px;height:80px;border-radius:0;background:none;filter:drop-shadow(0 6px 7px rgba(8,11,18,.28))}
+.tu-fab u{top:8px;right:8px}
+.tu-fab.drag{transition:none;opacity:.92}
+}
+.tu-grab,.tu-pk{display:none}
+.tu-pk{gap:8px;padding:0 14px 12px}
+.tu-pkt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:500 14.5px/1.4 var(--sans,system-ui);color:var(--ink,#15161a);cursor:pointer}
+.tu-pkt.w{display:flex;align-items:center;gap:8px;color:var(--mut,#667)}
+.tu-pkt.w i{width:8px;height:8px;border-radius:50%;background:var(--acc,#1f47d6);animation:tuP 1s infinite alternate}
+.tu-qr{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}
+.tu-qr::-webkit-scrollbar{display:none}
+.tu-b .tu-qr{flex-wrap:wrap;overflow:visible}
+.tu-qr .tu-chip{flex:none;height:34px;font-size:13px}
+.tu-fb{position:absolute;bottom:calc(100% + 6px);right:6px;width:max-content;max-width:min(250px,70vw);padding:8px 11px;border-radius:14px;background:#fff;color:#15161a;border:1.5px solid #15161a;font:600 13px/1.35 var(--sans,system-ui);text-align:left;box-shadow:0 10px 24px -12px rgba(8,11,18,.55);white-space:normal}
+.tu-fab.l .tu-fb{right:auto;left:6px}
+.tu-fb::after{content:"";position:absolute;bottom:-7px;right:24px;width:12px;height:12px;background:#fff;border-right:1.5px solid #15161a;border-bottom:1.5px solid #15161a;transform:rotate(45deg)}
+.tu-fab.l .tu-fb::after{right:auto;left:24px}
 .tu[hidden],.tu-fab[hidden]{display:none}
 svg .tu-hl{fill:#e5484d!important;font-weight:800!important;paint-order:stroke;stroke:rgba(229,72,77,.25);stroke-width:6px}
 .tu-say{position:absolute;left:10px;right:10px;top:10px;z-index:6;display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:14px;background:var(--ink,#15161a);color:var(--paper,#fff);font:600 14px/1.35 var(--sans,system-ui);box-shadow:0 10px 26px -12px rgba(8,11,18,.6);pointer-events:auto}
@@ -217,17 +291,19 @@ document.head.appendChild(css);
 
 /* ── окно ── */
 const S={open:false,busy:false,w:null,st:null,photo:null,err:''};
-const fab=document.createElement('button'); fab.className='tu-fab'; fab.type='button'; fab.hidden=true; fab.innerHTML='<i aria-hidden="true"></i>Наставник'; fab.setAttribute('aria-label','Открыть наставника');
-const box=document.createElement('section'); box.className='tu'; box.hidden=true; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Наставник');
-box.innerHTML=`<div class="tu-h"><div class="tu-hav" data-hav aria-hidden="true" title="Циркуль"></div><div><b>Наставник</b><small data-sub></small></div><span class="sp"></span><button class="tu-ib" data-menu title="Начать заново" aria-label="Начать заново">↺</button><button class="tu-ib" data-close aria-label="Закрыть">✕</button></div>
+const fab=document.createElement('button'); fab.className='tu-fab'; fab.type='button'; fab.hidden=true; fab.innerHTML='<i aria-hidden="true"></i>Наставник'; fab.setAttribute('aria-label','Открыть наставника Луку');
+const box=document.createElement('section'); box.className='tu'; box.hidden=true; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Наставник Лука');
+box.innerHTML=`<div class="tu-top" data-top><div class="tu-grab" aria-hidden="true"></div><div class="tu-h"><div class="tu-hav" data-hav aria-hidden="true" title="Лука"></div><div><b>Лука</b><small data-sub></small></div><span class="sp"></span><button class="tu-ib" data-menu title="Начать заново" aria-label="Начать заново">↺</button><button class="tu-ib" data-close aria-label="Закрыть">✕</button></div><div class="tu-pk" data-pk></div></div>
 <div class="tu-mode" role="tablist" aria-label="Режим"><button data-mode="coach" role="tab" title="Подсказки по шагам: сначала наводка, потом идея, потом решение">Наставник</button><button data-mode="explain" role="tab" title="Объясняет решение полностью — если уже пробовал сам или готовишься к защите">Разбор</button></div>
 <div class="tu-b" data-body aria-live="polite"></div>
 <div class="tu-f" data-foot><div class="tu-pv" data-pv hidden></div><div class="tu-row"><label class="tu-att" title="Фото листа — наставник сравнит с решением">📷<input type="file" accept="image/*" data-file></label><textarea rows="1" data-in placeholder="Спроси про свой вариант…" aria-label="Вопрос наставнику"></textarea><button class="tu-send" data-send aria-label="Отправить">↑</button></div>
 <div class="tu-foot">Наставник проверяет каждое число по точному решению. Фото не хранится.</div></div>`;
 let mounted=false; const mount=()=>{ if(mounted) return; mounted=true; document.body.appendChild(fab); document.body.appendChild(box); route(); };
 const body=$('[data-body]',box), inp=$('[data-in]',box), pv=$('[data-pv]',box);
-/* Циркуль на кнопке и в шапке окна; засыпают без дела, просыпаются от движения */
-const fabAv=av(fab.querySelector('i'),{sleepAfter:90000}), hdrAv=av($('[data-hav]',box),{sleepAfter:120000});
+/* Лука на кнопке (на телефоне — во весь рост, вместо кнопки) и в шапке окна; засыпают без дела, просыпаются от движения */
+let fabAv=av(fab.querySelector('i'),{sleepAfter:90000,full:isPhone()}), fabFull=isPhone();
+const hdrAv=av($('[data-hav]',box),{sleepAfter:120000});
+addEventListener('resize',()=>{ if(isPhone()!==fabFull&&MC()){ fabFull=isPhone(); fabAv=av(fab.querySelector('i'),{sleepAfter:90000,full:fabFull}); } fabPlace(); if(S.open) snap(S.snap,true); });
 if(hdrAv) hdrAv.onPoke=()=>hdrAv.play('giggle');
 const say=(st,ms)=>{ if(hdrAv) hdrAv.play(st,ms); };
 
@@ -243,16 +319,27 @@ function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?(DZN[
   if(!st){ body.innerHTML='<div class="tu-wait"><i></i>Открываю…</div>'; return; }
   if(!st.on){ body.innerHTML='<div class="tu-gate"><i class="tu-gav" data-mood="sleep" aria-hidden="true"></i><b>Наставник скоро появится</b><p>Пока его не подключили. Вопрос можно задать автору.</p><a class="tu-btn" href="#/ask">Спросить автора</a></div>'; gate(); return; }
   if(!st.consent&&!st.ru){ body.innerHTML=`<div class="tu-gate"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Наставник работает на модели Claude</b><p>Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, номер варианта и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.</p><button class="tu-btn" data-consent>Согласен, начать</button></div>`; gate(); return; }
-  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я Циркуль, твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
+  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я Лука, твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и обведу точки. Ткни в подпись точки на чертеже — расскажу про неё. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
+  const qr=i=>i===st.msgs.length-1&&!S.busy?'<div class="tu-qr" role="group" aria-label="Быстрые ответы">'+QR.map(q=>'<button class="tu-chip" data-sug>'+esc(q)+'</button>').join('')+'</div>':'';
   st.msgs.forEach((m,i)=>{ if(m.from==='u') h+=`<div class="tu-m u"><div class="tu-bb">${m.photo?'📷 ':''}${esc(m.text||'Фото листа')}</div></div>`;
     else { const acts=(m.actions||[]).map((a,j)=>a.t==='show'?`<button class="tu-chip" data-act="${i}:${j}">Шаг ${a.step} на чертеже${a.points&&a.points.length?' · точки '+a.points.join(', '):''} ↗</button>`:a.t==='3d'?`<button class="tu-chip" data-act="${i}:${j}">3D-модель ↗</button>`:a.t==='ask'?`<a class="tu-chip" href="#/ask/${esc(a.id)}">Вопрос автору ↗</a>`:'').join('');
-      h+=`<div class="tu-m t"><div class="tu-bb">${rich(m.text)}</div><div class="tu-x">${acts}${m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением">✓ сверено</span>':''}${m.id?`<button class="tu-r${m.rate===1?' on':''}" data-rate="${esc(m.id)}:1" aria-label="Полезно">👍</button><button class="tu-r${m.rate===0?' on':''}" data-rate="${esc(m.id)}:0" aria-label="Не помогло">👎</button>`:''}</div></div>`; } });
+      h+=`<div class="tu-m t"><div class="tu-bb">${rich(m.text)}</div><div class="tu-x">${acts}${m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением">✓ сверено</span>':''}${m.id?`<button class="tu-r${m.rate===1?' on':''}" data-rate="${esc(m.id)}:1" aria-label="Полезно">👍</button><button class="tu-r${m.rate===0?' on':''}" data-rate="${esc(m.id)}:0" aria-label="Не помогло">👎</button>`:''}</div>${qr(i)}</div>`; } });
   if(S.busy) h+='<div class="tu-wait"><i></i>'+(S.photo||S.busyPhoto?'Смотрю на лист и сверяю с решением…':'Думаю и сверяю с решением…')+'</div>';
   if(S.err) h+='<div class="tu-err">'+esc(S.err)+'</div>';
   body.innerHTML=h; body.scrollTop=body.scrollHeight;
   pv.hidden=!S.photo; pv.innerHTML=S.photo?'<img alt="" src="'+S.photo+'"><span>Фото листа</span><button class="tu-ib" data-unphoto aria-label="Убрать фото">✕</button>':'';
   $('[data-send]',box).disabled=S.busy;
-  if(hdrAv){ const want=S.busyPhoto?'study':'think'; if(S.busy){ if(hdrAv.state!==want) hdrAv.play(want); } else if(hdrAv.state==='think'||hdrAv.state==='study') hdrAv.idle(); } }
+  if(hdrAv){ const want=S.busyPhoto?'study':'think'; if(S.busy){ if(hdrAv.state!==want) hdrAv.play(want); } else if(hdrAv.state==='think'||hdrAv.state==='study') hdrAv.idle(); }
+  renderPeek(); }
+/* быстрые ответы — без клавиатуры: лесенка подсказок идёт одними тапами */
+const QR=['Понял, что дальше?','Ещё намёк','Почему так?','Покажи на чертеже','Проверь меня'];
+/* полоска шторки (телефон): последняя реплика Луки и быстрые ответы */
+function renderPeek(){ const pk=$('[data-pk]',box), st=S.st; if(!pk) return; let h='';
+  if(S.busy) h='<div class="tu-pkt w" data-up><i></i>Лука думает и сверяет с решением…</div>';
+  else { const m=st&&st.msgs&&[...st.msgs].reverse().find(x=>x.from==='t');
+    h='<div class="tu-pkt" data-up>'+esc(m?String(m.text).replace(/\*\*/g,'').replace(/\s+/g,' '):'Спроси Луку про свой вариант')+'</div>';
+    if(m&&st.ready) h+='<div class="tu-qr">'+QR.map(q=>'<button class="tu-chip" data-sug>'+esc(q)+'</button>').join('')+'</div>'; }
+  pk.innerHTML=h; if(S.snap==='peek'&&isPhone()) snap('peek',true); }
 /* большая аватарка на экранах входа и согласия */
 function gate(){ const g=body.querySelector('.tu-gav'); const m=av(g); if(m) m.play(g.dataset.mood||'hello'); }
 
@@ -260,13 +347,59 @@ async function load(){ const w=here(); if(!w) return; S.w=w; S.st=null; S.err=''
   try{ const st=await req('GET','/api/tutor/state?dz='+w.dz+'&n='+w.n); st.ready=st.on&&(st.consent||st.ru); S.st=st; }
   catch(e){ S.st={on:true,consent:true,ready:true,msgs:[],mode:'coach'}; S.err=e.message; }
   render(); }
-function open(){ if(!here()) return; S.open=true; box.hidden=false; fab.hidden=true; const u=fab.querySelector('u'); if(u) u.remove();
+function open(sn){ if(!here()) return; const was=S.open; S.open=true; box.hidden=false; fab.hidden=true; const u=fab.querySelector('u'); if(u) u.remove(); fabNote('');
+  if(isPhone()) snap(typeof sn==='string'?sn:(was&&S.snap!=='peek'?S.snap:'half'),!was);
   say(S.greeted?'giggle':'hello'); S.greeted=true;
   if(!S.st||!S.w||S.w.n!==here().n||S.w.dz!==here().dz) load(); else render(); setTimeout(()=>{ if(innerWidth>=760) inp.focus(); },50); }
-function close(peek){ S.open=false; box.hidden=true; fab.hidden=!here(); if(peek&&!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); if(peek&&fabAv) fabAv.play('hello'); }
+function close(peek){ S.open=false; box.hidden=true; box.style.removeProperty('--tu-h'); fab.hidden=!here(); if(peek&&!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); if(peek&&fabAv) fabAv.play('hello'); }
 function route(){ const w=here(); if(!w){ box.hidden=true; fab.hidden=true; S.open=false; const M=MC(); if(M) M.untour(true); return; }
   if(fab.hidden&&!S.open&&fabAv) setTimeout(()=>{ if(!fab.hidden) fabAv.play(S.waved?'giggle':'hello'); S.waved=true; },350);
-  fab.hidden=S.open; if(S.w&&(S.w.n!==w.n||S.w.dz!==w.dz)){ S.st=null; S.w=w; if(S.open) load(); } }
+  fab.hidden=S.open; fabPlace(); if(S.w&&(S.w.n!==w.n||S.w.dz!==w.dz)){ S.st=null; S.w=w; if(S.open) load(); } }
+
+/* ── шторка (телефон): полоска · половина · весь экран; тянуть за верх, тап по полоске — половина ── */
+S.snap='half';
+function snapH(sn){ const full=Math.min(Math.round(innerHeight*.88),innerHeight-40);
+  if(sn==='full') return full; if(sn==='half') return Math.min(full,Math.max(320,Math.round(innerHeight*.52)));
+  return Math.min(full,$('[data-top]',box).offsetHeight+2); }
+function snap(sn,instant){ S.snap=sn; box.dataset.snap=sn; if(!isPhone()){ box.style.removeProperty('--tu-h'); return; }
+  if(instant) box.classList.add('drag'); box.style.setProperty('--tu-h',snapH(sn)+'px');
+  if(instant) requestAnimationFrame(()=>requestAnimationFrame(()=>box.classList.remove('drag'))); }
+function peek(){ if(!S.open) open('peek'); else snap('peek'); }
+{ const top=$('[data-top]',box); let d=null;
+  top.addEventListener('pointerdown',e=>{ if(!isPhone()||e.target.closest('button,a')) return; d={y:e.clientY,h:box.offsetHeight,t:performance.now(),moved:false}; try{ top.setPointerCapture(e.pointerId); }catch(_){} });
+  top.addEventListener('pointermove',e=>{ if(!d) return; const dy=e.clientY-d.y; if(Math.abs(dy)>6) d.moved=true; if(!d.moved) return;
+    if(S.snap==='peek'&&dy<0){ box.dataset.snap='half'; }   /* тянут вверх из полоски — показать разговор */
+    box.classList.add('drag'); box.style.setProperty('--tu-h',Math.max(60,Math.min(snapH('full'),d.h-dy))+'px'); });
+  const up=e=>{ if(!d) return; const q=d; d=null; box.classList.remove('drag');
+    if(!q.moved) return;   /* тап — раскрывает обработчик click: иначе под пальцем окажется поле ввода и шторка уйдёт на весь экран */
+    S.dragEnd=performance.now();
+    const h=box.offsetHeight, v=(q.h-h)/Math.max(1,performance.now()-q.t)*1000, proj=h+v*.18;
+    const pk=(box.dataset.snap='peek',snapH('peek')); box.dataset.snap=S.snap;
+    if(proj<pk-50) return close(true);
+    const c=[['peek',pk],['half',snapH('half')],['full',snapH('full')]].sort((a,b)=>Math.abs(a[1]-proj)-Math.abs(b[1]-proj))[0][0]; snap(c); };
+  top.addEventListener('pointerup',up); top.addEventListener('pointercancel',up); }
+box.addEventListener('click',e=>{ if(S.snap!=='peek'||!isPhone()||performance.now()-(S.dragEnd||0)<350) return;
+  if(e.target.closest('[data-top]')&&!e.target.closest('button,a')) snap('half'); });
+
+/* ── Лука вместо кнопки (телефон): перетаскивается к любому краю; ответ пришёл, а окно закрыто — машет и говорит облачком ── */
+function fabPos(){ try{ return JSON.parse(LS.get('tu_fab')||'null'); }catch(e){ return null; } }
+function fabPlace(){ if(!isPhone()){ fab.style.left=fab.style.right=fab.style.top=fab.style.bottom=''; fab.classList.remove('l'); return; }
+  const p=fabPos(); if(!p) { fab.style.left=fab.style.right=fab.style.top=fab.style.bottom=''; fab.classList.remove('l'); return; }
+  const y=Math.max(70,Math.min(innerHeight-150,p.y)); fab.style.top=y+'px'; fab.style.bottom='auto';
+  if(p.side==='l'){ fab.style.left='6px'; fab.style.right='auto'; } else { fab.style.right='6px'; fab.style.left='auto'; } fab.classList.toggle('l',p.side==='l'); }
+{ let d=null, dragged=false;
+  fab.addEventListener('pointerdown',e=>{ dragged=false; if(!isPhone()) return; const r=fab.getBoundingClientRect(); d={x:e.clientX,y:e.clientY,ox:e.clientX-r.left,oy:e.clientY-r.top}; try{ fab.setPointerCapture(e.pointerId); }catch(_){} });
+  fab.addEventListener('pointermove',e=>{ if(!d) return; if(!dragged&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<10) return;
+    if(!dragged){ dragged=true; fab.classList.add('drag'); if(fabAv) fabAv.play('hello',99999); }
+    fab.style.left=(e.clientX-d.ox)+'px'; fab.style.top=(e.clientY-d.oy)+'px'; fab.style.right='auto'; fab.style.bottom='auto'; });
+  const up=e=>{ if(!d) return; d=null; fab.classList.remove('drag'); if(!dragged) return;
+    const r=fab.getBoundingClientRect(); LS.set('tu_fab',JSON.stringify({side:r.left+r.width/2<innerWidth/2?'l':'r',y:Math.round(r.top)})); fabPlace(); if(fabAv) fabAv.play('giggle'); };
+  fab.addEventListener('pointerup',up); fab.addEventListener('pointercancel',up);
+  fab.addEventListener('click',e=>{ if(dragged){ e.stopImmediatePropagation(); e.preventDefault(); dragged=false; } },true); }
+let fabNoteT=0;
+function fabNote(t){ let b=fab.querySelector('.tu-fb'); clearTimeout(fabNoteT); if(!t){ if(b) b.remove(); return; }
+  if(!b){ b=document.createElement('b'); b.className='tu-fb'; fab.appendChild(b); } const x=String(t).replace(/\*\*/g,'').replace(/\s+/g,' ');
+  b.textContent=x.length>90?x.slice(0,88).replace(/\s\S*$/,'')+'…':x; if(fabAv) fabAv.play('hello').talk(2400); fabNoteT=setTimeout(()=>fabNote(''),9000); }
 addEventListener('hashchange',route);
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mount); else mount();
 
@@ -277,9 +410,10 @@ async function send(text){ const w=here(); if(!w||S.busy||!S.st||!S.st.ready) re
     const r=await req('POST','/api/tutor/chat',{dz:w.dz,n:w.n,text,step,mode:S.st.mode,photo:photo||undefined,ref:ref||undefined});
     S.st.msgs.push({from:'t',text:r.reply,actions:r.actions||[],id:r.id,verified:r.verified,rate:null}); S.st.mode=r.mode||S.st.mode;
     S.busy=false; render();
-    /* по фото нашлась точка с ошибкой — Циркуль пугается и идёт её обводить; иначе просто говорит */
+    /* по фото нашлась точка с ошибкой — Лука пугается и идёт её обводить; иначе просто говорит */
     const found=!!photo&&(r.actions||[]).some(a=>a.t==='show'&&a.points&&a.points.length);
     if(hdrAv){ hdrAv.play(found?'oops':'talk',found?0:talkMs(r.reply)); hdrAv.talk(talkMs(r.reply)); }
+    if(!S.open){ fabNote(r.reply); if(!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); }
     for(const a of r.actions||[]) await act(a,{mood:found?'oops':''}); }
   catch(e){ S.busy=false; S.err=e.message; say('sad'); if(e.data&&e.data.needAiConsent){ S.st.consent=false; S.st.ready=false; }
     if(photo&&!S.photo) S.photo=photo; render(); } }
@@ -301,11 +435,12 @@ box.addEventListener('click',async e=>{ const t=e.target.closest('button,a'); if
   if(t.matches('[data-step]')){ e.preventDefault(); return act({t:'show',step:+t.dataset.step,points:[]}); }
   if(t.matches('[data-rate]')){ const [id,g]=[t.dataset.rate.slice(0,-2),t.dataset.rate.slice(-1)], m=S.st.msgs.find(x=>x.id===id); if(m) m.rate=+g; render(); say(g==='1'?'happy':'sad');
     try{ await req('POST','/api/tutor/rate',{id,good:g==='1'}); }catch(er){} } });
+inp.addEventListener('focus',()=>{ if(isPhone()&&S.snap!=='full') snap('full'); });
 inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); send(); } });
 inp.addEventListener('input',()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,innerHeight*.3)+'px'; });
 $('[data-file]',box).addEventListener('change',async e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
   try{ S.photo=await shrink(f); S.err=''; }catch(er){ S.err=er.message; } render(); });
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&S.open) close(); });
 
-self.TUTOR={open,close,send,act,reference,state:()=>({open:S.open,busy:S.busy,w:S.w,st:S.st,err:S.err}),mascot:()=>{ const M=MC(); return M?Object.assign(M.state(),{fab:fabAv&&fabAv.state,head:hdrAv&&hdrAv.state}):null; }};
+self.TUTOR={open,close,send,act,reference,state:()=>({open:S.open,busy:S.busy,w:S.w,st:S.st,err:S.err,snap:S.snap}),mascot:()=>{ const M=MC(); return M?Object.assign(M.state(),{fab:fabAv&&fabAv.state,head:hdrAv&&hdrAv.state}):null; }};
 })();
