@@ -22,10 +22,11 @@ function fakeModel(log){ return async(url,o)=>{ if(!/proxyapi\.ru/.test(url)) re
   if(Array.isArray(ms[1]&&ms[1].content)) return say('{"readable":true,"findings":[{"point":9,"view":"top","problem":"9′ ближе к оси"}],"overall":"почти верно"}');
   const tools=ms.filter(m=>m.role==='tool').map(m=>JSON.parse(m.content)), lastTool=last.role==='tool'?JSON.parse(last.content):null;
   /* начерт (ДЗ №3, вариант 3): шаг 7 — подзадача б), точки A₄ и B₄ */
-  if(/начерт/.test(user.content||'')&&!/лист/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:7,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:7,points:['A₄','b4']});
+  if(/начерт 3д/.test(user.content||'')){ if(!tools.length) return call('show_3d',{k:7}); return say('Открыл 3D: посмотри, как ребро AB становится точкой.'); }
+  if(/начерт/.test(user.content||'')&&!/лист/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:7,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:7,points:['A₄','b4'],say:'На π₄ ребро AB — в натуральную величину.',notes:[{point:'A₄',text:'проекция A на π₄'},{point:'B₄',text:'проекция B на π₄'}]});
     return say(lastTool.highlighted&&lastTool.highlighted.length?'Подсветил A₄ и B₄ — это шаг 7, вид на π₄.':'Это шаг 7: строим вид на π₄, где AB в натуральную величину. С чего начнёшь?'); }
   /* ИГ №5 (вариант 1): шаг 3 — первый элемент, точки 1 и 2 */
-  if(/игэ/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:3,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:3,points:[1,2]});
+  if(/игэ/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:3,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:3,points:[1,2],say:'Высоту переносим с главного вида.',notes:[{point:1,text:'верх элемента'},{point:2,text:'низ элемента'}]});
     return say(lastTool.highlighted&&lastTool.highlighted.length?'Подсветил точки 1 и 2 — перенеси их на вид слева.':'Это шаг 3: первый элемент детали на виде слева. С чего начнёшь?'); }
   if(/лист/.test(user.content||'')){ if(!tools.length) return call('look_at_photo',{}); if(tools.length===1) return call('show_on_drawing',{k:5,points:[9]}); return say('Похоже, точка 9′ стоит ближе к оси. Проверь засечку на шаге 5.'); }
   if(!tools.length) return call('get_step',{k:5,depth:'full'});
@@ -122,6 +123,16 @@ async function runTutor(browser){
       await ng.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===2,null,{timeout:15000}).catch(()=>B('начерт: второй ответ','нет'));
       const hl=await ng.waitForFunction(()=>[...document.querySelectorAll('#dzPl svg.dwg text.tu-hl')].map(t=>t.textContent.replace(/[″′‴]/g,'')).filter((x,i,a)=>a.indexOf(x)===i).length>=2,null,{timeout:10000}).then(()=>true).catch(()=>false);
       if(!hl) B('начерт: подсвечены подписи A₄ и B₄',await ng.evaluate(()=>[...document.querySelectorAll('#dzPl svg.dwg text')].map(t=>t.textContent).slice(0,30).join(' ')));
+      /* ответ на чертеже: плашка и выноски у A₄, B₄ — внутри чертежа */
+      const od=await ng.waitForFunction(()=>{ const p=document.querySelector('#dzPl .pl-paper'); if(!p) return null; const s=p.querySelector('.tu-say'), n=p.querySelectorAll('.tu-note'); if(!s||n.length<2) return null;
+        const B=p.getBoundingClientRect(); return [...n].every(x=>{ const r=x.getBoundingClientRect(); return r.left>=B.left-1&&r.right<=B.right+1&&r.top>=B.top-1&&r.bottom<=B.bottom+1; })?s.textContent+' | '+[...n].map(x=>x.textContent).join(' | '):null; },null,{timeout:10000}).then(h=>h.jsonValue()).catch(()=>null);
+      if(!od||!/натуральную/.test(od)||!/проекция A на π₄/.test(od)) B('начерт: ответ прямо на чертеже (плашка и выноски у точек)',od||'нет');
+      /* 3D: открывается пространственная картина шага 7 (подзадача б), шаг 2) */
+      await ng.evaluate(()=>{ const o=TASK3D.open; window.__t3=''; TASK3D.open=function(t,pi,k){ window.__t3=pi+':'+k; try{ return o.apply(this,arguments); }catch(e){} }; });
+      await ng.fill('[data-in]','начерт 3д'); await ng.press('[data-in]','Enter');
+      const t3=await ng.waitForFunction(()=>window.__t3,null,{timeout:15000}).then(h=>h.jsonValue()).catch(()=>'');
+      if(t3!=='1:2') B('начерт: наставник открыл 3D шага 7 (б), шаг 2)',t3||'не открыл');
+      await ng.keyboard.press('Escape').catch(()=>{});
       /* текущий шаг плеера уходит серверу: студент на шаге 7 */
       const lastAsk=[...mlog].reverse().find(b=>b.tools&&/начерт: всё равно/.test(JSON.stringify(b.messages.slice(-1))))||mlog[mlog.length-1];
       if(!/шаг 7/.test(String(lastAsk&&lastAsk.messages[0].content))) B('начерт: модель знает шаг студента','нет «шаг 7» в карточке');
@@ -130,7 +141,7 @@ async function runTutor(browser){
       await ng.setInputFiles('[data-file]',path.join(ROOT,'og.jpg')); await ng.waitForSelector('[data-pv] img',{timeout:5000});
       const nEyes=mlog.filter(b=>Array.isArray(b.messages[1]&&b.messages[1].content)).length;
       await ng.fill('[data-in]','начерт лист'); await ng.press('[data-in]','Enter');
-      await ng.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===3,null,{timeout:30000}).catch(()=>B('начерт: ответ по фото','нет'));
+      await ng.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===4,null,{timeout:30000}).catch(()=>B('начерт: ответ по фото','нет'));
       const eyes=mlog.filter(b=>Array.isArray(b.messages[1]&&b.messages[1].content))[nEyes];
       if(!eyes) B('начерт: фото ушло глазам','нет'); else { if(!/эпюре Монжа/.test(eyes.messages[0].content)) B('начерт: глаза — промпт эпюра','нет');
         const imgs=eyes.messages[1].content.filter(c=>c.type==='image_url').map(c=>c.image_url.url); if(imgs.length!==2||imgs[1].length<20000) B('начерт: эталон — черновик листа','нет или пустой'); } }
@@ -142,6 +153,8 @@ async function runTutor(browser){
       if(!on3) B('ИГ №5: наставник открыл шаг 3 плеера',await ig.evaluate(()=>window.IGUI&&IGUI.player?IGUI.player.current():'нет плеера'));
       await ig.fill('[data-in]','игэ: всё равно не понял'); await ig.press('[data-in]','Enter');
       const hl=await ig.waitForFunction(()=>document.querySelectorAll('#igbPic svg text.tu-hl').length>=2,null,{timeout:15000}).then(()=>true).catch(()=>false);
+      const igN=await ig.waitForFunction(()=>document.querySelectorAll('#igbPic .tu-note').length>=2&&document.querySelector('#igbPic .tu-say'),null,{timeout:10000}).then(()=>true).catch(()=>false);
+      if(!igN) B('ИГ №5: ответ прямо на чертеже (плашка и выноски у точек 1, 2)','нет');
       if(!hl) B('ИГ №5: подсвечены подписи точек 1 и 2',await ig.evaluate(()=>[...document.querySelectorAll('#igbPic svg text')].map(t=>t.textContent).slice(0,20).join(' '))); }
     /* 3) телефон */
     const ph=await page({viewport:{width:390,height:844},isMobile:true,hasTouch:true},'телефон'); await ph.goto(SITE+'/new/#/ig4/7'); await ph.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ph.reload();
