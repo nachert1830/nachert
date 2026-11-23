@@ -5,7 +5,10 @@
    Фото листа (📷) уходит вместе с эталоном: ИГ — вид решения со всеми номерами точек (IG4S.svg), начерт — черновик листа
    (SHEET.ng, построения в цвете) → JPEG; глаза наставника сравнивают их.
    Сервер — API кабинета (window.CLUB_API): /api/tutor/*, сессия lk_tok. Без адреса API окно не показывается.
-   Для тестов: window.TUTOR — {open(), close(), send(text), act(action), state()}. */
+   Маскот — Циркуль (lk/mascot.js, docs/TUTOR.md «Маскот»): живая аватарка на кнопке и в шапке окна (думает, пока ждём модель,
+   говорит, радуется 👍, грустит при ошибке, засыпает без дела), а по действию «показать» сам выходит на чертёж и обводит точки
+   циркулем. Без lk/mascot.js всё работает по-старому, с буквой «Н».
+   Для тестов: window.TUTOR — {open(), close(), send(text), act(action), state(), mascot()}. */
 (function(){
 'use strict';
 const API=String(self.CLUB_API||'').replace(/\/$/,'');
@@ -15,6 +18,10 @@ const LS={ get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tok=()=>LS.get('lk_tok')||'';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const MC=()=>self.MASCOT||null;
+const talkMs=t=>Math.max(900,Math.min(4200,String(t||'').length*28));
+/* аватарка Циркуля в элементе el (без маскота — буква «Н») */
+function av(el,opt){ const M=MC(); if(!el) return null; if(!M){ el.textContent='Н'; return null; } try{ return M.avatar(el,opt); }catch(e){ el.textContent='Н'; return null; } }
 async function until(f,ms){ const t=Date.now(); for(;;){ let v=null; try{ v=f(); }catch(e){} if(v) return v; if(Date.now()-t>ms) return null; await sleep(120); } }
 
 /* ── где мы: вариант ДЗ ── */
@@ -94,7 +101,11 @@ function drawingBox(w){ return isNg(w)?$('#dzPl .pl-paper'):$('#igbPic'); }
 function onDrawing(w,a){ const box=drawingBox(w), svg=box&&box.querySelector('svg'); if(!box||!svg) return;
   box.querySelectorAll('.tu-say,.tu-note').forEach(e=>e.remove()); if(getComputedStyle(box).position==='static') box.style.position='relative';
   const B=box.getBoundingClientRect();
-  if(a.say){ const d=document.createElement('div'); d.className='tu-say'; d.innerHTML='<i>Н</i><span>'+esc(a.say)+'</span><button type="button" aria-label="Убрать">✕</button>'; box.appendChild(d); }
+  if(a.say){ const d=document.createElement('div'); d.className='tu-say'; d.innerHTML='<i aria-hidden="true"></i><span>'+esc(a.say)+'</span><button type="button" aria-label="Убрать">✕</button>'; box.appendChild(d);
+    const m=av(d.querySelector('i')); if(m) m.play('talk',talkMs(a.say)).talk(talkMs(a.say));
+    /* лист начерта на pointerdown захватывает указатель (перетаскивание чертежа), и клик уходил листу, а не «✕» */
+    d.addEventListener('pointerdown',e=>e.stopPropagation());
+    d.querySelector('button').addEventListener('click',e=>{ e.stopPropagation(); d.remove(); const M=MC(); if(M) M.untour(); }); }
   const used=[];
   (a.notes||[]).forEach(n=>{ const els=labelsOf(w,svg,n.point); if(!els.length) return; const r=els[0].getBoundingClientRect(); if(!r.width&&!r.height) return;
     /* подпись — как на чертеже: новые плоскости римскими сверху (A₄ → A^IV) */
@@ -106,7 +117,19 @@ function onDrawing(w,a){ const box=drawingBox(w), svg=box&&box.querySelector('sv
     const hit=yy=>used.some(u=>x<u.x+u.w+4&&u.x<x+W+4&&yy<u.y+u.h+4&&u.y<yy+H+4);
     for(let i=0;i<8&&hit(y);i++) y+=H+4; y=Math.max(4,Math.min(y,B.height-H-4)); used.push({x,y,w:W,h:H});
     d.style.left=x+'px'; d.style.top=y+'px'; }); }
-document.addEventListener('click',e=>{ const b=e.target.closest('.tu-say button'); if(b) b.parentNode.remove(); });
+document.addEventListener('click',e=>{ const b=e.target.closest('.tu-say button'); if(b){ b.parentNode.remove(); const M=MC(); if(M) M.untour(); } });
+
+/* ── Циркуль выходит на чертёж: подходит к точкам (≤ 3), обводит каждую циркулем, показывает на последнюю ── */
+function tourOn(w,a,o){ const M=MC(), box=drawingBox(w); if(!M||!box||!box.querySelector('svg')) return;
+  const pts=(a.points||[]).slice(0,3);
+  const targets=()=>{ const svg=box.querySelector('svg'); if(!svg) return []; const B=box.getBoundingClientRect(), out=[];
+    const at=r=>({x:r.left+r.width/2-B.left-box.clientLeft,y:r.top+r.height/2-B.top-box.clientTop,r:Math.max(r.width,r.height)/2+7});
+    const vis=r=>(r.width||r.height)&&r.right>B.left&&r.left<B.right&&r.bottom>B.top&&r.top<B.bottom;
+    for(const p of pts){ const r=labelsOf(w,svg,p).map(e=>e.getBoundingClientRect()).find(vis); if(r) out.push(at(r)); }
+    /* ИГ №4 подсвечивает точки кружками, а не подписями */
+    if(!out.length&&pts.length) [...svg.querySelectorAll('.tu-hl,circle[fill="#ffd23f"]')].map(e=>e.getBoundingClientRect()).filter(vis).slice(0,3).forEach(r=>out.push(at(r)));
+    return out; };
+  try{ M.tour(box,targets,{mood:o&&o.mood}); }catch(e){} }
 
 /* ── 3D: начерт — пространственная картина шага (TASK3D), ИГ — вкладка 3D-модели детали ── */
 async function open3d(w,a){
@@ -115,15 +138,15 @@ async function open3d(w,a){
   const show=$('#igShow'); if(show&&show.offsetParent!==null) show.click();
   const tab=await until(()=>$('.igx-tabs button[data-t="3d"]'),6000); if(tab){ tab.click(); setTimeout(()=>{ const t=$('.igx-tabs'); t&&t.scrollIntoView({behavior:'smooth',block:'start'}); },60); } }
 
-async function act(a){ const w=here(); if(!a||!w) return;
+async function act(a,o){ const w=here(); if(!a||!w) return;
   if(a.t==='3d'){ await open3d(w,a); if(innerWidth<760) close(true); return; }
   if(a.t==='show'&&isNg(w)){ const P=await ngPlayer(w); if(!P) return; const m=/^p(\d+)s(\d+)$/.exec(a.id||'');
     if(m){ P.state.pi=+m[1]-1; P.go(+m[2]); } else P.go(a.step);
-    await sleep(80); if(a.points&&a.points.length) ngHighlight(a.points); onDrawing(w,a);
+    await sleep(80); if(a.points&&a.points.length) ngHighlight(a.points); onDrawing(w,a); tourOn(w,a,o);
     if(innerWidth<760) close(true); return; }
   if(a.t==='show'){ const P=await player(w.n,w.dz); if(!P) return; P.go(a.step);
     await until(()=>{ const p=$('#igbPic'); return p&&p.querySelector('svg')&&!p.classList.contains('igx-ldh'); },8000); await sleep(60);
-    if(a.points&&a.points.length) P.highlight(a.points); onDrawing(w,a);
+    if(a.points&&a.points.length) P.highlight(a.points); onDrawing(w,a); tourOn(w,a,o);
     if(innerWidth<760) close(true); }
   if(a.t==='ask') location.hash='#/ask/'+encodeURIComponent(a.id); }
 
@@ -132,7 +155,9 @@ const css=document.createElement('style');
 css.textContent=`
 .tu-fab{position:fixed;right:18px;bottom:calc(var(--tabh,64px) + 16px + env(safe-area-inset-bottom));z-index:330;display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 18px 0 8px;border:0;border-radius:99px;background:var(--ink,#15161a);color:var(--paper,#fff);font:800 15px var(--sans,system-ui);cursor:pointer;box-shadow:0 16px 34px -14px rgba(8,11,18,.7);transition:transform .2s}
 .tu-fab:hover{transform:translateY(-2px)}
-.tu-fab i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(150deg,#1f47d6,#e8392b);color:#fff;font:800 16px var(--sans,system-ui);font-style:normal}
+.tu-fab i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(150deg,#eef3ff,#cfdcff);color:#1f47d6;font:800 16px var(--sans,system-ui);font-style:normal;--mc-ink:#1d2233}
+.tu-hav{flex:none;width:46px;height:46px;border-radius:15px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(150deg,#eef3ff,#cfdcff);color:#1f47d6;font:800 18px var(--sans,system-ui);cursor:pointer;--mc-ink:#1d2233}
+.tu-gav{display:block;width:88px;height:88px;margin:0 auto 10px;border-radius:26px;overflow:hidden;background:linear-gradient(150deg,#eef3ff,#cfdcff);--mc-ink:#1d2233}
 .tu-fab u{position:absolute;top:2px;right:4px;width:12px;height:12px;border-radius:50%;background:var(--red,#e8392b);box-shadow:0 0 0 2px var(--paper,#fff)}
 @media (min-width:900px){.tu-fab{bottom:24px}}
 .tu{position:fixed;z-index:340;display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#15161a);font:15.5px/1.5 var(--sans,system-ui);box-shadow:0 24px 60px -20px rgba(8,11,18,.55);border:1px solid var(--line,#e3e6ec)}
@@ -141,7 +166,7 @@ css.textContent=`
 .tu[hidden],.tu-fab[hidden]{display:none}
 svg .tu-hl{fill:#e5484d!important;font-weight:800!important;paint-order:stroke;stroke:rgba(229,72,77,.25);stroke-width:6px}
 .tu-say{position:absolute;left:10px;right:10px;top:10px;z-index:6;display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:14px;background:var(--ink,#15161a);color:var(--paper,#fff);font:600 14px/1.35 var(--sans,system-ui);box-shadow:0 10px 26px -12px rgba(8,11,18,.6);pointer-events:auto}
-.tu-say i{flex:none;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#2f6bff,#e5484d);font:800 12px var(--sans,system-ui);font-style:normal}
+.tu-say i{flex:none;display:grid;place-items:center;width:26px;height:26px;margin:-2px 0;border-radius:50%;overflow:hidden;background:linear-gradient(150deg,#eef3ff,#cfdcff);color:#1f47d6;font:800 12px var(--sans,system-ui);font-style:normal;--mc-ink:#1d2233}
 .tu-say span{flex:1}.tu-say button{flex:none;border:0;background:none;color:inherit;opacity:.7;font:700 14px var(--sans,system-ui);cursor:pointer;padding:0 2px}
 .tu-note{position:absolute;z-index:6;max-width:220px;padding:5px 9px;border-radius:10px;background:#fff;color:#15161a;border:1.5px solid #e5484d;font:600 12.5px/1.3 var(--sans,system-ui);box-shadow:0 6px 16px -8px rgba(8,11,18,.45);pointer-events:none}
 .tu-note b{color:#e5484d}
@@ -192,15 +217,19 @@ document.head.appendChild(css);
 
 /* ── окно ── */
 const S={open:false,busy:false,w:null,st:null,photo:null,err:''};
-const fab=document.createElement('button'); fab.className='tu-fab'; fab.type='button'; fab.hidden=true; fab.innerHTML='<i>Н</i>Наставник'; fab.setAttribute('aria-label','Открыть наставника');
+const fab=document.createElement('button'); fab.className='tu-fab'; fab.type='button'; fab.hidden=true; fab.innerHTML='<i aria-hidden="true"></i>Наставник'; fab.setAttribute('aria-label','Открыть наставника');
 const box=document.createElement('section'); box.className='tu'; box.hidden=true; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Наставник');
-box.innerHTML=`<div class="tu-h"><div><b>Наставник</b><small data-sub></small></div><span class="sp"></span><button class="tu-ib" data-menu title="Начать заново" aria-label="Начать заново">↺</button><button class="tu-ib" data-close aria-label="Закрыть">✕</button></div>
+box.innerHTML=`<div class="tu-h"><div class="tu-hav" data-hav aria-hidden="true" title="Циркуль"></div><div><b>Наставник</b><small data-sub></small></div><span class="sp"></span><button class="tu-ib" data-menu title="Начать заново" aria-label="Начать заново">↺</button><button class="tu-ib" data-close aria-label="Закрыть">✕</button></div>
 <div class="tu-mode" role="tablist" aria-label="Режим"><button data-mode="coach" role="tab" title="Подсказки по шагам: сначала наводка, потом идея, потом решение">Наставник</button><button data-mode="explain" role="tab" title="Объясняет решение полностью — если уже пробовал сам или готовишься к защите">Разбор</button></div>
 <div class="tu-b" data-body aria-live="polite"></div>
 <div class="tu-f" data-foot><div class="tu-pv" data-pv hidden></div><div class="tu-row"><label class="tu-att" title="Фото листа — наставник сравнит с решением">📷<input type="file" accept="image/*" data-file></label><textarea rows="1" data-in placeholder="Спроси про свой вариант…" aria-label="Вопрос наставнику"></textarea><button class="tu-send" data-send aria-label="Отправить">↑</button></div>
 <div class="tu-foot">Наставник проверяет каждое число по точному решению. Фото не хранится.</div></div>`;
 let mounted=false; const mount=()=>{ if(mounted) return; mounted=true; document.body.appendChild(fab); document.body.appendChild(box); route(); };
 const body=$('[data-body]',box), inp=$('[data-in]',box), pv=$('[data-pv]',box);
+/* Циркуль на кнопке и в шапке окна; засыпают без дела, просыпаются от движения */
+const fabAv=av(fab.querySelector('i'),{sleepAfter:90000}), hdrAv=av($('[data-hav]',box),{sleepAfter:120000});
+if(hdrAv) hdrAv.onPoke=()=>hdrAv.play('giggle');
+const say=(st,ms)=>{ if(hdrAv) hdrAv.play(st,ms); };
 
 /* текст ответа: переносы, **жирный**, «шаг N» — ссылка, открывающая шаг на чертеже */
 function rich(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^\p{L}])(шаг[\p{L}]*\s+(\d{1,2}))/giu,(m,a,t,k)=>a+'<a class="tu-st" data-step="'+k+'">'+t+'</a>').replace(/\n/g,'<br>'); }
@@ -210,11 +239,11 @@ const SUG_NG=['С чего начать?','Не понимаю текущий ш
 function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?(DZN[w.dz]||'')+' · вариант '+w.n:'';
   box.querySelectorAll('[data-mode]').forEach(b=>{ const on=st&&st.mode===b.dataset.mode; b.classList.toggle('on',!!on); b.setAttribute('aria-selected',String(!!on)); });
   $('[data-foot]',box).hidden=!(st&&st.ready); $('.tu-mode',box).hidden=!(st&&st.ready);
-  if(!tok()){ body.innerHTML='<div class="tu-gate"><b>Войди, и начнём</b><p>Наставник помнит, где ты застрял, и ведёт по шагам твоего варианта. Вход — тот же, что в личном кабинете.</p><a class="tu-btn" href="/lk/#/login" data-login>Войти</a></div>'; return; }
+  if(!tok()){ body.innerHTML='<div class="tu-gate"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Войди, и начнём</b><p>Наставник помнит, где ты застрял, и ведёт по шагам твоего варианта. Вход — тот же, что в личном кабинете.</p><a class="tu-btn" href="/lk/#/login" data-login>Войти</a></div>'; gate(); return; }
   if(!st){ body.innerHTML='<div class="tu-wait"><i></i>Открываю…</div>'; return; }
-  if(!st.on){ body.innerHTML='<div class="tu-gate"><b>Наставник скоро появится</b><p>Пока его не подключили. Вопрос можно задать автору.</p><a class="tu-btn" href="#/ask">Спросить автора</a></div>'; return; }
-  if(!st.consent&&!st.ru){ body.innerHTML=`<div class="tu-gate"><b>Наставник работает на модели Claude</b><p>Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, номер варианта и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.</p><button class="tu-btn" data-consent>Согласен, начать</button></div>`; return; }
-  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
+  if(!st.on){ body.innerHTML='<div class="tu-gate"><i class="tu-gav" data-mood="sleep" aria-hidden="true"></i><b>Наставник скоро появится</b><p>Пока его не подключили. Вопрос можно задать автору.</p><a class="tu-btn" href="#/ask">Спросить автора</a></div>'; gate(); return; }
+  if(!st.consent&&!st.ru){ body.innerHTML=`<div class="tu-gate"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Наставник работает на модели Claude</b><p>Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, номер варианта и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.</p><button class="tu-btn" data-consent>Согласен, начать</button></div>`; gate(); return; }
+  let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я Циркуль, твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
   st.msgs.forEach((m,i)=>{ if(m.from==='u') h+=`<div class="tu-m u"><div class="tu-bb">${m.photo?'📷 ':''}${esc(m.text||'Фото листа')}</div></div>`;
     else { const acts=(m.actions||[]).map((a,j)=>a.t==='show'?`<button class="tu-chip" data-act="${i}:${j}">Шаг ${a.step} на чертеже${a.points&&a.points.length?' · точки '+a.points.join(', '):''} ↗</button>`:a.t==='3d'?`<button class="tu-chip" data-act="${i}:${j}">3D-модель ↗</button>`:a.t==='ask'?`<a class="tu-chip" href="#/ask/${esc(a.id)}">Вопрос автору ↗</a>`:'').join('');
       h+=`<div class="tu-m t"><div class="tu-bb">${rich(m.text)}</div><div class="tu-x">${acts}${m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением">✓ сверено</span>':''}${m.id?`<button class="tu-r${m.rate===1?' on':''}" data-rate="${esc(m.id)}:1" aria-label="Полезно">👍</button><button class="tu-r${m.rate===0?' on':''}" data-rate="${esc(m.id)}:0" aria-label="Не помогло">👎</button>`:''}</div></div>`; } });
@@ -222,16 +251,22 @@ function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?(DZN[
   if(S.err) h+='<div class="tu-err">'+esc(S.err)+'</div>';
   body.innerHTML=h; body.scrollTop=body.scrollHeight;
   pv.hidden=!S.photo; pv.innerHTML=S.photo?'<img alt="" src="'+S.photo+'"><span>Фото листа</span><button class="tu-ib" data-unphoto aria-label="Убрать фото">✕</button>':'';
-  $('[data-send]',box).disabled=S.busy; }
+  $('[data-send]',box).disabled=S.busy;
+  if(hdrAv){ const want=S.busyPhoto?'study':'think'; if(S.busy){ if(hdrAv.state!==want) hdrAv.play(want); } else if(hdrAv.state==='think'||hdrAv.state==='study') hdrAv.idle(); } }
+/* большая аватарка на экранах входа и согласия */
+function gate(){ const g=body.querySelector('.tu-gav'); const m=av(g); if(m) m.play(g.dataset.mood||'hello'); }
 
 async function load(){ const w=here(); if(!w) return; S.w=w; S.st=null; S.err=''; render(); if(!tok()) return;
   try{ const st=await req('GET','/api/tutor/state?dz='+w.dz+'&n='+w.n); st.ready=st.on&&(st.consent||st.ru); S.st=st; }
   catch(e){ S.st={on:true,consent:true,ready:true,msgs:[],mode:'coach'}; S.err=e.message; }
   render(); }
 function open(){ if(!here()) return; S.open=true; box.hidden=false; fab.hidden=true; const u=fab.querySelector('u'); if(u) u.remove();
+  say(S.greeted?'giggle':'hello'); S.greeted=true;
   if(!S.st||!S.w||S.w.n!==here().n||S.w.dz!==here().dz) load(); else render(); setTimeout(()=>{ if(innerWidth>=760) inp.focus(); },50); }
-function close(peek){ S.open=false; box.hidden=true; fab.hidden=!here(); if(peek&&!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); }
-function route(){ const w=here(); if(!w){ box.hidden=true; fab.hidden=true; S.open=false; return; } fab.hidden=S.open; if(S.w&&(S.w.n!==w.n||S.w.dz!==w.dz)){ S.st=null; S.w=w; if(S.open) load(); } }
+function close(peek){ S.open=false; box.hidden=true; fab.hidden=!here(); if(peek&&!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); if(peek&&fabAv) fabAv.play('hello'); }
+function route(){ const w=here(); if(!w){ box.hidden=true; fab.hidden=true; S.open=false; const M=MC(); if(M) M.untour(true); return; }
+  if(fab.hidden&&!S.open&&fabAv) setTimeout(()=>{ if(!fab.hidden) fabAv.play(S.waved?'giggle':'hello'); S.waved=true; },350);
+  fab.hidden=S.open; if(S.w&&(S.w.n!==w.n||S.w.dz!==w.dz)){ S.st=null; S.w=w; if(S.open) load(); } }
 addEventListener('hashchange',route);
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mount); else mount();
 
@@ -241,8 +276,12 @@ async function send(text){ const w=here(); if(!w||S.busy||!S.st||!S.st.ready) re
   try{ let ref=''; if(photo){ try{ ref=await reference(w.n,w.dz); }catch(e){ ref=''; } }
     const r=await req('POST','/api/tutor/chat',{dz:w.dz,n:w.n,text,step,mode:S.st.mode,photo:photo||undefined,ref:ref||undefined});
     S.st.msgs.push({from:'t',text:r.reply,actions:r.actions||[],id:r.id,verified:r.verified,rate:null}); S.st.mode=r.mode||S.st.mode;
-    S.busy=false; render(); for(const a of r.actions||[]) await act(a); }
-  catch(e){ S.busy=false; S.err=e.message; if(e.data&&e.data.needAiConsent){ S.st.consent=false; S.st.ready=false; }
+    S.busy=false; render();
+    /* по фото нашлась точка с ошибкой — Циркуль пугается и идёт её обводить; иначе просто говорит */
+    const found=!!photo&&(r.actions||[]).some(a=>a.t==='show'&&a.points&&a.points.length);
+    if(hdrAv){ hdrAv.play(found?'oops':'talk',found?0:talkMs(r.reply)); hdrAv.talk(talkMs(r.reply)); }
+    for(const a of r.actions||[]) await act(a,{mood:found?'oops':''}); }
+  catch(e){ S.busy=false; S.err=e.message; say('sad'); if(e.data&&e.data.needAiConsent){ S.st.consent=false; S.st.ready=false; }
     if(photo&&!S.photo) S.photo=photo; render(); } }
 
 /* ── события ── */
@@ -260,7 +299,7 @@ box.addEventListener('click',async e=>{ const t=e.target.closest('button,a'); if
     try{ await req('POST','/api/tutor/reset',{dz:S.w.dz,n:S.w.n}); S.st.msgs=[]; }catch(er){ S.err=er.message; } return render(); }
   if(t.matches('[data-act]')){ const [i,j]=t.dataset.act.split(':').map(Number), m=S.st.msgs[i]; return act(m&&m.actions[j]); }
   if(t.matches('[data-step]')){ e.preventDefault(); return act({t:'show',step:+t.dataset.step,points:[]}); }
-  if(t.matches('[data-rate]')){ const [id,g]=[t.dataset.rate.slice(0,-2),t.dataset.rate.slice(-1)], m=S.st.msgs.find(x=>x.id===id); if(m) m.rate=+g; render();
+  if(t.matches('[data-rate]')){ const [id,g]=[t.dataset.rate.slice(0,-2),t.dataset.rate.slice(-1)], m=S.st.msgs.find(x=>x.id===id); if(m) m.rate=+g; render(); say(g==='1'?'happy':'sad');
     try{ await req('POST','/api/tutor/rate',{id,good:g==='1'}); }catch(er){} } });
 inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); send(); } });
 inp.addEventListener('input',()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,innerHeight*.3)+'px'; });
@@ -268,5 +307,5 @@ $('[data-file]',box).addEventListener('change',async e=>{ const f=e.target.files
   try{ S.photo=await shrink(f); S.err=''; }catch(er){ S.err=er.message; } render(); });
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&S.open) close(); });
 
-self.TUTOR={open,close,send,act,reference,state:()=>({open:S.open,busy:S.busy,w:S.w,st:S.st,err:S.err})};
+self.TUTOR={open,close,send,act,reference,state:()=>({open:S.open,busy:S.busy,w:S.w,st:S.st,err:S.err}),mascot:()=>{ const M=MC(); return M?Object.assign(M.state(),{fab:fabAv&&fabAv.state,head:hdrAv&&hdrAv.state}):null; }};
 })();

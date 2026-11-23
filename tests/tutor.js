@@ -5,6 +5,8 @@
       гость → «Войди»; вошёл → согласие на зарубежную модель → вопрос → наставник САМ открывает шаг 5 плеера решения;
       вторая просьба — подсвечены точки 9 и 12 на всех видах; «шаг N» в ответе — ссылка; фото листа уходит с эталоном;
    3) телефон: без горизонтальной прокрутки, окно помещается, после показа шага окно уступает место чертежу; без ошибок JS.
+   4) маскот Циркуль (lk/mascot.js): живой на кнопке и в шапке окна, по «показать» выходит на чертёж и обводит точки
+      окружностями внутри чертежа; «✕» на плашке уводит его; при «меньше движения» окружности появляются сразу.
    node tests/tutor.js — отдельно; в node tests/run.js — блок tutor. */
 const http=require('http'), fs=require('fs'), path=require('path'), ROOT=path.join(__dirname,'..');
 const {createApp}=require(ROOT+'/server/lib/app'), {memoryStore}=require(ROOT+'/server/lib/store/memory'), {botClient}=require(ROOT+'/server/lib/telegram'), {fromEvent}=require(ROOT+'/server/lib/http');
@@ -73,9 +75,11 @@ async function runTutor(browser){
     /* гость */
     const g=await page({viewport:{width:1280,height:860}},'гость'); await g.goto(SITE+'/new/#/ig4/7'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на ИГ №4','нет'));
     await g.click('.tu-fab'); if(!/Войди/.test(await g.textContent('.tu-b').catch(()=>''))) B('гость: предложение войти',await g.textContent('.tu-b').catch(()=>''));
-    await g.goto(SITE+'/new/#/ig2/8'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на ДЗ с наставником','видна на #/ig2/8');
+    /* кнопка прячется по hashchange; после тяжёлой страницы варианта он может прийти позже 400 мс — ждём до 3 с */
+    const fabGone=()=>g.waitForFunction(()=>{ const f=document.querySelector('.tu-fab'); return !f||f.hidden||!f.offsetParent; },null,{timeout:3000}).then(()=>true).catch(()=>false);
+    await g.goto(SITE+'/new/#/ig2/8'); if(!await fabGone()) B('кнопка — только на ДЗ с наставником','видна на #/ig2/8');
     await g.goto(SITE+'/new/#/ng3/8'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на начерте','нет на #/ng3/8'));
-    await g.goto(SITE+'/new/#/theory'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на вариантах ДЗ','видна на #/theory');
+    await g.goto(SITE+'/new/#/theory'); if(!await fabGone()) B('кнопка — только на вариантах ДЗ','видна на #/theory');
     /* студент: согласие → вопрос → шаг 5 открыт сам */
     const pg=await page({viewport:{width:1280,height:860}},'студент'); await pg.goto(SITE+'/new/#/ig4/7'); await pg.evaluate(t=>localStorage.setItem('lk_tok',t),st); await pg.reload();
     await pg.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await pg.click('.tu-fab');
@@ -87,6 +91,11 @@ async function runTutor(browser){
     await pg.waitForSelector('.tu-m.t',{timeout:15000}).catch(()=>B('ответ наставника','нет'));
     const cur=await pg.waitForFunction(()=>window.IG4S&&IG4S.player&&IG4S.player.current()===5&&document.querySelector('#igbPic svg'),null,{timeout:60000}).then(()=>5).catch(()=>pg.evaluate(()=>window.IG4S&&IG4S.player&&IG4S.player.current()));
     if(cur!==5) B('наставник открыл шаг 5 плеера','шаг '+cur);
+    { const mc=await pg.evaluate(()=>window.TUTOR&&TUTOR.mascot&&TUTOR.mascot());
+      if(!mc) B('маскот: Циркуль подключён','нет MASCOT'); else { if(!mc.head||!await pg.$('.tu-hav svg .mc-body')) B('маскот: Циркуль в шапке окна','нет');
+        if(!await pg.$('.tu-fab i svg .mc-body')) B('маскот: Циркуль на кнопке наставника','нет'); }
+      const tr=await pg.waitForFunction(()=>document.querySelector('#igbPic .mc-tour svg .mc-body'),null,{timeout:8000}).then(()=>true).catch(()=>false);
+      if(!tr) B('маскот: по «показать шаг» Циркуль выходит на чертёж','нет на #igbPic'); }
     if(!/Шаг 5 на чертеже/.test(await pg.textContent('.tu-m.t .tu-x').catch(()=>''))) B('кнопка «Шаг 5 на чертеже»','нет');
     if(!await pg.$('.tu-m.t .tu-st[data-step="5"]')) B('«шаг 5» в ответе — ссылка на чертёж','нет');
     if(!/сверено/.test(await pg.textContent('.tu-m.t .tu-x').catch(()=>''))) B('отметка «сверено»','нет');
@@ -97,6 +106,10 @@ async function runTutor(browser){
     await pg.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===2,null,{timeout:15000}).catch(()=>B('второй ответ','нет'));
     const hl=await pg.waitForFunction(()=>document.querySelectorAll('#igbPic svg circle[fill="#ffd23f"]').length>=4,null,{timeout:10000}).then(()=>true).catch(()=>false);
     if(!hl) B('подсветка точек 9 и 12 на чертеже',await pg.evaluate(()=>document.querySelectorAll('#igbPic svg circle[fill="#ffd23f"]').length));
+    { const done=await pg.waitForFunction(()=>{ const t=TUTOR.mascot().tour; return t&&t.done&&t.rings>=1&&t.box.id==='igbPic'?t.rings:0; },null,{timeout:20000}).then(h=>h.jsonValue()).catch(()=>0);
+      if(!done) B('маскот: Циркуль обвёл точки 9 и 12 окружностями',JSON.stringify(await pg.evaluate(()=>{ const t=TUTOR.mascot().tour; return t&&{targets:t.targets,rings:t.rings,done:t.done,state:t.state}; })));
+      const inside=await pg.evaluate(()=>{ const b=document.querySelector('#igbPic').getBoundingClientRect(); return [...document.querySelectorAll('#igbPic .mc-ring')].every(r=>{ const q=r.getBoundingClientRect(); return q.width>8&&q.left>=b.left-2&&q.right<=b.right+2&&q.top>=b.top-2&&q.bottom<=b.bottom+2; }); });
+      if(!inside) B('маскот: окружности — внутри чертежа','вышли за край'); }
     /* ссылка «шаг 5» снова открывает шаг */
     await pg.evaluate(()=>IG4S.player.go(1)); await pg.click('.tu-m.t .tu-st[data-step="5"]'); await pg.waitForTimeout(300);
     if(await pg.evaluate(()=>IG4S.player.current())!==5) B('ссылка «шаг 5» в ответе','не открыла шаг');
@@ -127,6 +140,12 @@ async function runTutor(browser){
       const od=await ng.waitForFunction(()=>{ const p=document.querySelector('#dzPl .pl-paper'); if(!p) return null; const s=p.querySelector('.tu-say'), n=p.querySelectorAll('.tu-note'); if(!s||n.length<2) return null;
         const B=p.getBoundingClientRect(); return [...n].every(x=>{ const r=x.getBoundingClientRect(); return r.left>=B.left-1&&r.right<=B.right+1&&r.top>=B.top-1&&r.bottom<=B.bottom+1; })?s.textContent+' | '+[...n].map(x=>x.textContent).join(' | '):null; },null,{timeout:10000}).then(h=>h.jsonValue()).catch(()=>null);
       if(!od||!/натуральную/.test(od)||!/проекция A на π₄/.test(od)) B('начерт: ответ прямо на чертеже (плашка и выноски у точек)',od||'нет');
+      { const n=await ng.waitForFunction(()=>{ const t=TUTOR.mascot().tour; return t&&t.done&&t.rings>=2?t.rings:0; },null,{timeout:25000}).then(h=>h.jsonValue()).catch(()=>0);
+        if(!n) B('начерт: Циркуль обвёл A₄ и B₄ окружностями',JSON.stringify(await ng.evaluate(()=>{ const t=TUTOR.mascot().tour; return t&&{targets:t.targets,rings:t.rings,done:t.done}; })));
+        if(!await ng.$('#dzPl .pl-paper .tu-say i svg .mc-body')) B('начерт: Циркуль на плашке ответа','нет');
+        const clk=await ng.click('#dzPl .pl-paper .tu-say button',{timeout:4000}).then(()=>'').catch(e=>String(e.message).split('\n').slice(0,3).join(' '));
+        const gone=await ng.waitForFunction(()=>!document.querySelector('#dzPl .mc-tour')&&!TUTOR.mascot().tour,null,{timeout:6000}).then(()=>true).catch(()=>false);
+        if(!gone) B('начерт: «✕» на плашке уводит Циркуля с чертежа','остался'+(clk?' (не нажать: '+clk+')':'')); }
       /* 3D: открывается пространственная картина шага 7 (подзадача б), шаг 2) */
       await ng.evaluate(()=>{ const o=TASK3D.open; window.__t3=''; TASK3D.open=function(t,pi,k){ window.__t3=pi+':'+k; try{ return o.apply(this,arguments); }catch(e){} }; });
       await ng.fill('[data-in]','начерт 3д'); await ng.press('[data-in]','Enter');
@@ -157,11 +176,15 @@ async function runTutor(browser){
       if(!igN) B('ИГ №5: ответ прямо на чертеже (плашка и выноски у точек 1, 2)','нет');
       if(!hl) B('ИГ №5: подсвечены подписи точек 1 и 2',await ig.evaluate(()=>[...document.querySelectorAll('#igbPic svg text')].map(t=>t.textContent).slice(0,20).join(' '))); }
     /* 3) телефон */
-    const ph=await page({viewport:{width:390,height:844},isMobile:true,hasTouch:true},'телефон'); await ph.goto(SITE+'/new/#/ig4/7'); await ph.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ph.reload();
+    const ph=await page({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'},'телефон'); await ph.goto(SITE+'/new/#/ig4/7'); await ph.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ph.reload();
     await ph.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await ph.click('.tu-fab'); await ph.waitForSelector('.tu-m.t',{timeout:8000});
     const geo=await ph.evaluate(()=>{ const b=document.querySelector('.tu').getBoundingClientRect(); return {sw:document.documentElement.scrollWidth,w:innerWidth,l:b.left,r:b.right,t:b.top}; });
     if(geo.sw>geo.w+1) B('телефон: без горизонтальной прокрутки',geo.sw+' > '+geo.w); if(geo.l<0||geo.r>geo.w+1||geo.t<0) B('телефон: окно помещается',JSON.stringify(geo));
     await ph.click('.tu-m.t .tu-x [data-act]'); await ph.waitForFunction(()=>document.querySelector('.tu').hidden&&IG4S.player&&IG4S.player.current()===5,null,{timeout:60000}).catch(()=>B('телефон: окно уступает место чертежу','нет'));
+    /* меньше движения: Циркуль сразу на месте, без ходьбы */
+    const rm=await ph.waitForFunction(()=>{ const t=TUTOR.mascot().tour; return t&&t.done; },null,{timeout:3000}).then(()=>true).catch(()=>false);
+    if(!rm) B('телефон, «меньше движения»: Циркуль сразу на чертеже','нет или идёт пешком');
+    const sw2=await ph.evaluate(()=>document.documentElement.scrollWidth-innerWidth); if(sw2>1) B('телефон: Циркуль не даёт горизонтальной прокрутки',sw2+' px');
     if(errs.length) B('ошибки JS',errs.slice(0,3).join(' / '));
   } finally { for(const c of ctxs) await c.close().catch(()=>{}); apiSrv.close(); siteSrv.close(); }
   return bad; }
