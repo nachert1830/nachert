@@ -356,7 +356,7 @@ async function screens(){
   await page.evaluate(()=>localStorage.removeItem('nch_prep_plan'));
   await page.goto(UN+'#/prep'); await page.waitForTimeout(1500);
   { const h=await page.evaluate(()=>({hash:location.hash,want:PREP.autoKey(),cards:document.querySelectorAll('a.pp-cc').length}));
-    if(!h.hash.startsWith('#/prep/'+h.want+'/')) bad('Копия /new/: #/prep не повёл в путь курса '+h.want+' (адрес '+h.hash+')'); if(h.cards) bad('Копия /new/: на #/prep — выбор курса'); }
+    if(!h.hash.startsWith('#/prep/'+h.want+'/')&&await page.evaluate(()=>sessionStorage.getItem('nch_prep_trail'))!==h.want) bad('Копия /new/: #/prep не повёл в путь курса '+h.want+' (адрес '+h.hash+')'); if(h.cards) bad('Копия /new/: на #/prep — выбор курса'); }
   for(const k of PK){ await page.goto(UN+'#/prep/'+k); await page.waitForTimeout(400);
     const r=await page.evaluate(()=>({hash:location.hash,tr:sessionStorage.getItem('nch_prep_trail'),ow:document.documentElement.scrollWidth>innerWidth,txt:document.body.innerText.length}));
     if(!r.hash.startsWith('#/prep/'+k+'/')&&r.tr!==k) bad(`Курс ${k}: адрес курса не ведёт в путь (${r.hash})`); if(r.ow) bad(`Курс ${k}: горизонтальная прокрутка`); }
@@ -368,6 +368,9 @@ async function screens(){
       if(await page.$('.pp-mo:not(.locked) button[data-j="0"]')){ for(let i=0;i<12;i++){ const bt=await page.$('.pp-mo:not(.locked) button[data-j="0"]'); if(!bt) break; await bt.click(); await page.waitForTimeout(40); await page.click('#ppNx'); await page.waitForTimeout(40); } await page.waitForTimeout(250); continue; }
       if(await page.$('.pp-oo')){ const m=await page.$$eval('.pp-oo button',x=>x.length); for(let j=0;j<m;j++){ await page.click('.pp-oo button[data-i="'+j+'"]'); await page.waitForTimeout(25); } await page.waitForTimeout(1200); continue; }
       if(!/^#\/prep\//.test(await page.evaluate(()=>location.hash))){ await page.waitForTimeout(600); const tr=await page.$('#ppTrail .pp-btn'); if(!tr){ bad('Путь ИГ ДЗ №4: на странице урока или задачи нет плашки «Дальше» ('+await page.evaluate(()=>location.hash)+')'); break; } ext++; await tr.click(); await page.waitForTimeout(600); continue; }
+      if(await page.$('#ppRc')){ await page.click('#ppRc'); await page.waitForTimeout(80); if(await page.$('#ppAns[hidden]')){ bad('Путь ИГ ДЗ №4: «Показать ответ» не показал ответ'); break; } await page.click('#ppRc'); await page.waitForTimeout(400); continue; }
+      if(await page.$('#ppPl')){ if(await page.$$eval('.pp-plan li',x=>x.length)<4) bad('Путь ИГ ДЗ №4: план решения пустой'); await page.click('#ppPl'); await page.waitForTimeout(400); continue; }
+      if(await page.$('.pp-mo, .pp-oo, #ppA')){ bad('Путь ИГ ДЗ №4: в пути тест ('+await page.evaluate(()=>location.hash)+')'); break; }
       if(await page.$('#ppSe')){ await page.click('#ppSe'); await page.waitForTimeout(60); await page.click('#ppSe'); await page.waitForTimeout(400); continue; }
       const btns=await page.$$eval('.pp-gt a.pp-btn, .pp-gt button.pp-btn',x=>x.map(b=>b.getAttribute('href')||'#'+b.id));
       if(btns.length!==1){ bad('Путь ИГ ДЗ №4: на экране не одна кнопка — '+btns.join(', ')); break; }
@@ -379,10 +382,16 @@ async function screens(){
   await page.goto(UN+'#/'); await page.waitForTimeout(1800);
   { const r=await page.evaluate(()=>{ const a=document.querySelector('#ns-home .lrn'), first=document.querySelector('#ns-home a, #ns-home button'); return {h:a&&a.getAttribute('href'),first:a&&a===first,want:'#/prep/'+PREP.autoKey()+'/go'}; });
     if(r.h!==r.want) bad('Главная копии: «Учиться» ведёт на '+r.h+' вместо '+r.want); else if(!r.first) bad('Главная копии: «Учиться» не первое'); }
-  /* путь начерта начинается с замера */
+  /* путь начерта начинается с теории (урок), потом разбор темы на чертеже без обязательной проверки — и дальше сам */
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
-  await page.goto(UN+'#/prep/ng2/go'); await page.waitForTimeout(600);
-  if(await page.evaluate(()=>location.hash)!=='#/prep/ng2/pre') bad('Путь ДЗ №2: начинается не с замера');
+  await page.goto(UN+'#/prep/ng2/go'); await page.waitForTimeout(900);
+  { const h=await page.evaluate(()=>location.hash), want=PREP.PLANS.ng2.stages[0].learn[0][0];
+    if(h!==want) bad('Путь ДЗ №2: начинается не с теории ('+h+' вместо '+want+')');
+    await page.click('#ppTrail .pp-btn'); await page.waitForTimeout(800);
+    const t=await page.evaluate(()=>location.hash); if(!/^#\/prep\/ng2\/[a-z]\d/.test(t)) bad('Путь ДЗ №2: после урока — не разбор темы ('+t+')');
+    if(await page.$('#ppA')) bad('Путь ДЗ №2: в теме сразу проверка вместо разбора');
+    for(let i=0;i<20;i++){ const b=await page.$('#ppNext'); if(!b) break; await b.click(); await page.waitForTimeout(150); if(!/^#\/prep\/ng2\/[a-z]\d/.test(await page.evaluate(()=>location.hash))) break; }
+    await page.waitForTimeout(600); const t2=await page.evaluate(()=>location.hash); if(t2===t) bad('Путь ДЗ №2: после разбора темы путь не пошёл дальше'); }
   /* предложение пройти подготовку перед решением варианта и «Сразу к решению» */
   await page.evaluate(()=>{ localStorage.setItem('nch_prep_gate','1'); sessionStorage.clear(); });
   for(const h of ['#/ng2/17','#/ig4/7']){ await page.goto(UN+h); await page.waitForTimeout(1500);
@@ -398,10 +407,10 @@ async function screens(){
   await page.goto(UN+'#/prep/ng2/pre'); await page.waitForTimeout(400); await clickDuels();
   if(!/из/.test(await h1())) bad('Замер ДЗ №2: не дошёл до итога');
   if(!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}')['ng2:pre']; return o&&Object.keys(o.r).length===6; })) bad('Замер ДЗ №2: итог по этапам не сохранён');
-  await page.goto(UN+'#/prep/ng2/check2'); await page.waitForTimeout(400); await clickDuels(); if(!/Этап пройден|Пока не засчитано/.test(await h1())) bad('Проверка этапа (дуэли): нет итога');
+  await page.goto(UN+'#/prep/ng2/check2'); await page.waitForTimeout(400); await clickDuels(); if(!/Всё верно|Верно \d из \d/.test(await h1())) bad('Самопроверка этапа (дуэли): нет итога');
   await page.goto(UN+'#/prep/ig4/check1'); await page.waitForTimeout(400);
   for(let i=0;i<12;i++){ const b=await page.$('.pp-mo:not(.locked) button[data-j="0"]'); if(!b) break; await b.click(); await page.waitForTimeout(60); await page.click('#ppNx'); await page.waitForTimeout(60); }
-  if(await h1()!=='Этап пройден'||!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ig4; return o&&o[0]&&o[0].by==='test'; })) bad('ДЗ №4 ИГ, этап 1: верные ответы не засчитали этап');
+  if(await h1()!=='Всё верно'||!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ig4; return o&&o[0]&&o[0].by==='test'; })) bad('ДЗ №4 ИГ, этап 1: самопроверка не отметила этап');
   for(const k of ['ng1','ng2','ng3','ng4','ng5','ig3','ig4','ig5','ig6']){ const pl=PREP.PLANS[k], i=pl.stages.findIndex(s=>s.order); if(i<0){ bad(k+': нет этапа «Собери всё в план»'); continue; }
     await page.goto(UN+'#/prep/'+k+'/check'+(i+1)); await page.waitForTimeout(500);
     const n=await page.$$eval('.pp-oo button',b=>b.length); if(n<4){ bad(k+': шаги плана для расстановки не нашлись'); continue; }
