@@ -15,6 +15,9 @@
                                   getTargets() → [{x,y,r}] в пикселях от левого верхнего угла box; вызывается снова
                                   при изменении размера. mood:'oops' — сначала пугается (на фото нашлась ошибка).
      untour(instant)            → уходит с чертежа (машет и уходит за край), окружности гаснут.
+     stage(host,{scale,x,y})    → свободный маскот на большой сцене (игровые страницы): {m,svg,fx,act,over,resize()}
+     pose(name,{выражение},{dur,jump,over}) → своё состояние для play(name) (щекотка, «буп», волчок…);
+                                  m.amp — рот по громкости, m.turn — поворот вокруг себя, выражения cross (глаза в кучку), squint (> <)
      state()                    → для тестов: {avatars, tour:{targets, rings, done, state}|null}
    Учитывает prefers-reduced-motion: без ходьбы и прыжков, окружности появляются сразу. */
 (function(){
@@ -70,13 +73,13 @@ function makeFace(parent,o){
     return {s,eg,open,pupil,closed}; });
   const brows=[-1,1].map(s=>({s,p:el('path',{d:`M${-o.er*.62} 0Q0 ${-o.er*.32} ${o.er*.62} 0`,fill:'none',stroke:INK,'stroke-width':2,'stroke-linecap':'round'},g)}));
   const mouth=o.beak?null:el('path',{fill:'#7b2333',stroke:INK,'stroke-width':1.9,'stroke-linejoin':'round','stroke-linecap':'round'},g);
-  return R=>{ const lid=clamp(R.lid,0,1), shut=R.happy>.5||lid>.82, r=o.er*.75;
+  return R=>{ const lid=clamp(R.lid,0,1), sq=R.squint>.5, shut=R.happy>.5||lid>.82||sq, r=o.er*.75;
     for(const e of eyes){
       e.eg.setAttribute('transform',`translate(${e.s*o.ex} ${o.ey}) scale(${f2(R.eye)})`);
       e.open.setAttribute('transform',`scale(1 ${f2(Math.max(.08,1-lid))})`);
       e.open.style.opacity=shut?0:1; e.closed.style.opacity=shut?1:0;
-      e.closed.setAttribute('d',R.happy>.5?`M${-r} ${r*.4}Q0 ${-r*1.1} ${r} ${r*.4}`:`M${-r} 0Q0 ${r*.7} ${r} 0`);
-      e.pupil.setAttribute('transform',`translate(${f2(R.lx*o.er*.32)} ${f2(R.ly*o.er*.36)})`); }
+      e.closed.setAttribute('d',sq?(e.s<0?`M${-r} ${-r*.6}L${r*.55} 0L${-r} ${r*.6}`:`M${r} ${-r*.6}L${-r*.55} 0L${r} ${r*.6}`):R.happy>.5?`M${-r} ${r*.4}Q0 ${-r*1.1} ${r} ${r*.4}`:`M${-r} 0Q0 ${r*.7} ${r} 0`);
+      e.pupil.setAttribute('transform',`translate(${f2(R.lx*o.er*.32-e.s*(R.cross||0)*o.er*.34)} ${f2(R.ly*o.er*.36+(R.cross||0)*o.er*.12)})`); }
     for(const b of brows) b.p.setAttribute('transform',`translate(${b.s*o.ex} ${f2(o.ey-o.er*R.eye-4-R.brow*3)}) rotate(${f2(b.s*R.worry*18)})`);
     for(const c of cheeks) c.setAttribute('opacity',f2(clamp(R.blush,0,1)*.55));
     if(!mouth) return;
@@ -106,7 +109,8 @@ const POSE={
   sad:{smile:-.55,brow:.15,worry:.85,tilt:4,armL:6,armR:6,lid:.22,blush:0},
   sleep:{lid:1,smile:.15,tilt:7,armL:4,armR:4,blush:.45,brow:-.2}
 };
-const BASE={lid:0,mouth:0,smile:.35,brow:0,worry:0,tilt:0,armL:12,armR:12,blush:.3,eye:1,happy:0};
+const BASE={lid:0,mouth:0,smile:.35,brow:0,worry:0,tilt:0,armL:12,armR:12,blush:.3,eye:1,happy:0,cross:0,squint:0};
+const OVER={};   /* накладки своих состояний (MASCOT.pose): (R,t,m)=>void */
 const DUR={hello:1.9,oops:1.8,happy:1.7,giggle:1,sad:2.4,point:2.6};
 const JUMP={hello:250,oops:330,happy:300,giggle:190};
 
@@ -191,6 +195,9 @@ class Base{
     if(st==='happy'||st==='giggle'){ R.armL+=Math.sin(t*11)*12*A; R.armR+=Math.sin(t*11+1)*12*A; R.tilt+=Math.sin(t*9)*3*A; }
     if(st==='oops') R.tilt+=Math.sin(t*40)*1.2*Math.max(0,1-(t-this.stateT)*1.5);
     if(this.wa>.01){ R.armL+=Math.sin(this.walkPhase)*22*this.wa; R.armR-=Math.sin(this.walkPhase)*22*this.wa; }
+    if(this.amp>0) R.mouth=Math.max(R.mouth,clamp(this.amp,0,1));
+    R.turn=this.turn||0;
+    if(OVER[st]) OVER[st](R,t,this,A);
     this.render(R,t); this.fx(dt,t,true); if(this.onFrame) this.onFrame();
   }
   /* думающие точки и частицы (z, искры, капля) — в координатах сцены */
@@ -208,12 +215,15 @@ class Base{
       let sc=1,o=1;
       if(q.kind==='z'){ sc=.6+u*.7; o=u<.2?u/.2:1-(u-.2)/.8; }
       if(q.kind==='spark') sc=(1-u)*q.sc;
+      if(q.kind==='heart'||q.kind==='star'){ sc=q.sc*(u<.15?u/.15:1); o=u<.6?1:1-(u-.6)/.4; }
       if(q.kind==='drop') o=u<.15?u/.15:1-Math.max(0,(u-.6)/.4);
       q.el.setAttribute('transform',`translate(${f2(q.x)} ${f2(q.y)}) rotate(${f2(q.rot+q.age*q.spin)}) scale(${f2(sc*s)})`);
       q.el.setAttribute('opacity',f2(clamp(o,0,1))); } }
   spawn(kind,x,y){ let e,q;
     if(kind==='z'){ e=el('text',{class:'mc-z','text-anchor':'middle'},this.over); e.textContent=Math.random()<.5?'z':'Z'; q={vx:9,vy:-20,g:0,drag:1,life:2.4,spin:0,rot:-10}; }
     else if(kind==='spark'){ e=el('path',{d:'M0 -7Q1.2 -1.2 7 0Q1.2 1.2 0 7Q-1.2 1.2 -7 0Q-1.2 -1.2 0 -7Z',fill:Math.random()<.5?'#ffc23a':'#ff6a2a'},this.over); const a=rand(0,Math.PI*2), v=rand(50,110); q={vx:Math.cos(a)*v,vy:Math.sin(a)*v-30,g:60,drag:.94,life:rand(.6,1),spin:rand(-200,200),rot:rand(0,90),sc:rand(.7,1.2)}; }
+    else if(kind==='heart'){ e=el('path',{d:'M0 6C-9 -1 -8 -8 -3.5 -8C-1.5 -8 0 -6.5 0 -5C0 -6.5 1.5 -8 3.5 -8C8 -8 9 -1 0 6Z',fill:'#ff5c86',stroke:INK,'stroke-width':1.2},this.over); q={vx:rand(-18,18),vy:rand(-55,-35),g:0,drag:.985,life:rand(1.2,1.8),spin:rand(-30,30),rot:rand(-15,15),sc:rand(.8,1.3)}; }
+    else if(kind==='star'){ e=el('path',{d:'M0 -7L2 -2.2L7 -2.2L3 1L4.5 6L0 3L-4.5 6L-3 1L-7 -2.2L-2 -2.2Z',fill:'#ffd23f',stroke:INK,'stroke-width':1.1},this.over); const a=rand(0,Math.PI*2); q={vx:Math.cos(a)*40,vy:Math.sin(a)*14-10,g:0,drag:.97,life:rand(1,1.4),spin:rand(-200,200),rot:0,sc:rand(.7,1.1)}; }
     else { e=el('path',{d:'M0 -7Q5 0 0 5Q-5 0 0 -7Z',fill:'#7cc6ff',stroke:INK,'stroke-width':1.3},this.over); q={vx:0,vy:8,g:14,drag:1,life:1.8,spin:0,rot:0}; }
     e.setAttribute('opacity',0); Object.assign(q,{el:e,kind,x,y,age:0}); this.parts.push(q); }
 }
@@ -341,7 +351,7 @@ class Penguin extends Base{
     this.penG.setAttribute('opacity',f2(m)); }
   render(R){ const s=this.s, ph=this.walkPhase, wa=this.wa, m=clamp(R.draw,0,1);
     const tilt=R.tilt+Math.sin(ph)*9*wa, bob=-Math.abs(Math.sin(ph))*3*wa, X=this.pos.x+this.fx_, Y=this.pos.y+this.fy_;
-    this.g.setAttribute('transform',`translate(${f2(X)} ${f2(Y)}) scale(${f2(s)}) translate(0 ${f2(this.jy+bob)}) rotate(${f2(tilt)}) scale(${R.sx.toFixed(4)} ${R.sy.toFixed(4)})`);
+    this.g.setAttribute('transform',`translate(${f2(X)} ${f2(Y)}) scale(${f2(s)}) translate(0 ${f2(this.jy+bob)}) rotate(${f2(tilt)}) scale(${(R.sx*(R.turn?Math.cos(R.turn*Math.PI*2):1)).toFixed(4)} ${R.sy.toFixed(4)})`);
     let aL=R.armL, k=1;
     if(m>.01&&this.tipW){ const sh={x:X-31*s,y:Y+(this.jy-62)*s}, vx=this.tipW.x-sh.x, vy=this.tipW.y-sh.y, len=Math.hypot(vx,vy)/s;
       aL=lerp(aL,Math.atan2(-vx,vy)/D2R-tilt,m); k=lerp(1,clamp((len-8)/31,.55,1.05),m);
@@ -383,6 +393,17 @@ function avatar(host,opt){ opt=opt||{}; host.textContent='';
   const K=charOf(opt), svg=el('svg',{viewBox:opt.full?K.full:K.vb,class:'mc-av','aria-hidden':'true',focusable:'false'}); host.appendChild(svg);
   const m=new K.C(svg,{scale:1,avatar:true,sleepAfter:opt.sleepAfter||0,outfit:outfitOf(opt)});
   REG.add(m); start(); return m; }
+
+/* ── большая сцена: свободный маскот в host (1 единица = 1 px), для игровых страниц ──
+   stage(host,{scale,x,y,char,outfit}) → {m,svg,fx,act,over,resize()}; m — тот же маскот: play, talk, walkTo, jump, burst, spawn,
+   pos, amp (рот по громкости 0…1), turn (поворот вокруг себя 0…1) */
+function stage(host,opt){ opt=opt||{}; const K=charOf(opt), W=Math.max(1,host.clientWidth), H=Math.max(1,host.clientHeight);
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,class:'mc-stage','aria-hidden':'true',focusable:'false',style:'position:absolute;inset:0;width:100%;height:100%;overflow:visible'}); host.appendChild(svg);
+  const fx=el('g',null,svg), act=el('g',null,svg), over=el('g',null,svg);
+  const m=new K.C(svg,{scale:opt.scale||1,x:opt.x==null?W/2:opt.x,y:opt.y==null?H-20:opt.y,layer:act,over,outfit:outfitOf(opt)}); REG.add(m); start();
+  return {m,svg,fx,act,over,resize(){ const w=Math.max(1,host.clientWidth), h=Math.max(1,host.clientHeight); svg.setAttribute('viewBox',`0 0 ${w} ${h}`); return {W:w,H:h}; }}; }
+/* своё состояние: pose(name,{выражение},{dur,jump,over:(R,t,m,amp)=>void}) */
+function pose(name,p,o){ o=o||{}; POSE[name]=Object.assign({},p); if(o.dur) DUR[name]=o.dur; else delete DUR[name]; if(o.jump) JUMP[name]=o.jump; if(o.over) OVER[name]=o.over; }
 
 /* ── выход на чертёж ──
    opt: mood:'oops' · say:{text,actions:[{label,fn}]} — облачко у маскота (после показа точки; ✕ — уйти) ·
@@ -484,6 +505,6 @@ function untour(instant){ const T=TOUR; if(!T) return; TOUR=null; try{ T.ro&&T.r
 /* поменять облачко текущего выхода (нажали на окружность — пояснение к точке) */
 function say(text,actions){ const T=TOUR; if(!T||!T.ov.isConnected) return false; showSay(T,{text,actions}); if(T.done&&T.m.state==='idle') T.m.play('talk',1600); return true; }
 
-self.MASCOT={avatar,tour,untour,say,reduced,chars:Object.keys(CHARS),
+self.MASCOT={avatar,tour,untour,say,stage,pose,reduced,chars:Object.keys(CHARS),
   state:()=>({avatars:[...REG].filter(m=>m.av&&m.svg.isConnected).map(m=>m.state),tour:TOUR?{targets:TOUR.targets.length,rings:TOUR.rings.filter(r=>r.isConnected&&r.style.opacity!=='0').length,done:TOUR.done,state:TOUR.m.state,box:TOUR.box,say:TOUR.bub&&TOUR.bub.isConnected?TOUR.bub.querySelector('span').textContent:''}:null})};
 })();
