@@ -153,7 +153,22 @@ const doneOf=ids=>ids.filter(id=>status(id)==='done').length;
 const pbar=(a,b)=>`<span class="pp-prog"><i style="width:${b?Math.round(a/b*100):0}%"></i></span>`;
 
 /* #/prep — подготовка: выбор задания; каждое открывает только свой курс (по этапам — PLANS, prep/plans.js) */
+/* основной сайт курсов по этапам не подключает (prep/plans.js — только в копии /new/): там прежний экран — курсы ДЗ по темам */
+function viewHubCourses(v){
+  const G=P(), dz=G.COURSES.filter(c=>c.kind==='dz'), rk=G.COURSES.filter(c=>c.kind==='rk');
+  const cardC=c=>{ const all=c.own.concat(c.prev), d=doneOf(c.own);
+    return `<a class="pp-cc" href="#/prep/${c.key}"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b>
+      <span class="pp-ccm">${c.own.length} ${c.own.length===1?'тема':c.own.length<5?'темы':'тем'}${c.prev.length?` · опирается на ${c.prev.length} из прошлых`:''}</span>${pbar(d,c.own.length)}<small>освоено ${d} из ${c.own.length}</small></a>`; };
+  v.innerHTML=`<div class="wrap page pp"><div class="pp-head"><h1>Подготовка</h1>
+    <p class="pp-sub">Выбери задание — откроется только то, что нужно для него.</p></div>
+    <h2 class="pp-h2">Домашние задания по начерту</h2><div class="pp-ccs">${dz.map(cardC).join('')}</div>
+    <h2 class="pp-h2">Рубежные контроли</h2><div class="pp-ccs">${rk.map(c=>`<div class="pp-cc later" aria-disabled="true"><span class="pp-cck">${c.label}</span><b>${esc(c.title)}</b><span class="pp-ccm">позже</span></div>`).join('')}</div>
+    <p class="pp-sub"><a href="#/prep/all">Вся программа — ${G.ALL.length} тем по блокам →</a></p></div>`;
+  return 'Подготовка';
+}
+
 function viewHub(v){
+  if(!Object.keys(PLANS).length) return viewHubCourses(v);
   const G=P(), keys=Object.keys(PLANS);
   const cardP=k=>{ const p=PLANS[k], g=planProg(k);
     return `<a class="pp-cc${g.done===g.n?' fin':''}" href="#/prep/${k}"><span class="pp-cck">${esc(p.label)}</span><b>${esc(p.title)}</b>
@@ -200,6 +215,22 @@ function viewPlan(v,k){
   v.querySelectorAll('.pp-seb').forEach(b=>b.onclick=()=>{ const u=b.nextElementSibling; u.hidden=!u.hidden; b.textContent=u.hidden?'Сверить с ответом':'Скрыть ответ'; });
   v.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{ const el=v.querySelector('#st'+a.dataset.go); if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); } });
   return 'Подготовка к '+p.label;
+}
+
+/* #/prep/ng4 — курс одного задания: свои темы по блокам + свёрнуто «нужно из прошлых» */
+function viewCourse(v,ck){
+  const G=P(), c=G.COURSE[ck]; if(!c) return viewHub(v);
+  const d=doneOf(c.own), next=c.own.find(id=>TOPICS[id]&&status(id)!=='done'), pd=doneOf(c.prev), weak=c.prev.filter(id=>status(id)!=='done');
+  const dzN=c.kind==='dz'?c.n:null;
+  v.innerHTML=`<div class="wrap page pp"><a class="pp-back" href="#/prep">← Подготовка</a>
+    <div class="pp-head"><h1>Подготовка к ${c.label}</h1><p class="pp-sub">${esc(c.title)} · ${c.own.length} ${c.own.length<5?'темы':'тем'}</p></div>
+    <div class="pp-cbar">${pbar(d,c.own.length)}<span>освоено ${d} из ${c.own.length}</span></div>
+    ${next?`<a class="pp-btn big" href="#/prep/${ck}/${next}">${d?'Продолжить':'Начать'}: ${esc(G.BY[next].t)} →</a>`:dzN?`<a class="pp-btn big" href="#/ng${dzN}">Все темы освоены — к своему варианту ДЗ №${dzN} →</a>`:''}
+    <div class="pp-map">${c.blocks.map(b=>`<section><h2>${esc(b.t)}</h2>${b.ids.map(id=>row(G.BY[id],ck)).join('')}</section>`).join('')}</div>
+    ${c.prev.length?`<details class="pp-prev"${weak.length&&weak.length<=4?' open':''}><summary>Нужно из прошлых заданий — ${c.prev.length}, освоено ${pd}${weak.length?` · не освоено ${weak.length}`:''}</summary>
+      ${c.prevBy.map(g=>`<h3>${g.label}</h3>${g.ids.map(id=>row(G.BY[id],g.key)).join('')}`).join('')}</details>`:''}
+    ${dzN?`<p class="pp-sub"><a href="#/ng${dzN}">Свой вариант ДЗ №${dzN} →</a> Решение открыто всегда; подготовка — чтобы решить самому.</p>`:''}</div>`;
+  return 'Подготовка к '+c.label;
 }
 
 /* #/prep/all — вся программа по блокам (обзор) */
@@ -504,15 +535,29 @@ function viewQuiz(v,k,item){
 }
 
 /* ───────── карточка «Подготовка» на странице ДЗ и РК ───────── */
+function cardCourse(dz){
+  const G=P(); if(!G||!G.COURSE[dz]) return '';
+  const c=G.COURSE[dz], d=doneOf(c.own), first=c.own.find(id=>TOPICS[id]&&status(id)!=='done');
+  return `<a class="pp-dzcard" href="#/prep/${dz}"><span class="pp-dzk">Подготовка к ${c.label}</span>
+    <b>${d}/${c.own.length} тем освоено</b>${pbar(d,c.own.length)}
+    <small>${first?'Начни с темы «'+esc(G.BY[first].t)+'»':'Всё освоено — переходи к своему варианту'}</small></a>`;
+}
+
+function chipCourse(dz){
+  const G=P(); if(!G||!G.COURSE[dz]) return '';
+  const c=G.COURSE[dz], d=doneOf(c.own);
+  return `<a class="pp-dzchip" href="#/prep/${dz}"><b>Подготовка к ${c.label}</b>${pbar(d,c.own.length)}<span>${d}/${c.own.length} →</span></a>`;
+}
+
 function card(k){
-  const p=PLANS[k]; if(!p) return '';
+  const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':cardCourse(k);
   const g=planProg(k), nx=p.stages.findIndex((s,i)=>!stDone(k,i));
   return `<a class="pp-dzcard" href="#/prep/${k}"><span class="pp-dzk">Сначала — подготовка к ${esc(p.label)}</span>
     <b>${g.done}/${g.n} этапов пройдено</b>${pbar(g.done,g.n)}
     <small>${nx>=0?'Этап '+(nx+1)+': «'+esc(p.stages[nx].t)+'»':'Всё пройдено — решай свой вариант'}</small></a>`;
 }
 function chip(k){
-  const p=PLANS[k]; if(!p) return '';
+  const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':chipCourse(k);
   const g=planProg(k);
   return `<a class="pp-dzchip" href="#/prep/${k}"><b>Подготовка к ${esc(p.label)}</b>${pbar(g.done,g.n)}<span>${g.done}/${g.n} →</span></a>`;
 }

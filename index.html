@@ -7807,7 +7807,6 @@ return {has,html,bind,SPEC,ans3};
 <script src="prep/more.js"></script>
 <script src="prep/rest.js"></script>
 <script src="prep/space.js"></script>
-<script src="prep/plans.js"></script>
 <script src="dz/ng/lib.js"></script>
 <script src="dz/ng/1/variants.js"></script>
 <script src="dz/ng/1/method.js"></script>
@@ -27934,7 +27933,6 @@ function hubView(v){ const P=progress(), I=RKS.info(2), c=RKS.count(I), s=getS()
     ${meterHTML(P,true)}
     <a class="btn pri lg rkp-go" href="${nextHref(P)}">${P.val===0?'Начать: '+TOPICS[0].t.toLowerCase():P.now?'Продолжить: '+P.now.T.t.toLowerCase():'Пробный РК2'} →</a>
    </section>
-   ${window.PREP?PREP.card('rk2'):''}
    <ol class="rkp-path" aria-label="Путь: 9 тем и финал">${P.per.map(node).join('')}${boss}</ol>
    
    <section class="rkp-more"><button type="button" class="rkp-prn" data-rkprint="">⎙ Распечатать условия всех 9 тем</button><a href="${HR('ng','rk2','q')}">26 вопросов теории</a><a href="${HR('ng','check','tickets')}">Билеты с разбором</a><a href="${HR('ng','rk2','all')}">Все тренировки</a></section>
@@ -30064,8 +30062,8 @@ function dzHub(v){
 function subjHome(v,c){
   const svg=ic=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
   const nT=(window.WB3&&WB3.tasks?WB3.tasks.length:89), nW=(window.IG_WB||[]).length;
-  const R=c==='ng'?[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ng','tasks'),'nb','Рабочая тетрадь','все '+nT+' задач — решение по шагам'],[H('ng','rk2'),'rk','Подготовка к РК','билеты, вопросы теории, пробный РК'],[H('ng','path'),'th','Теория','уроки с картинками и шпаргалка'],[H('epure'),'ep','3D-модель и эпюр','двигай точку — эпюр строится сам']]
-    :[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ig','learn'),'lr','Учиться с нуля','виды, разрезы, сечения — один вариант по шагам'],[H('ig','points'),'tr','Защита точек','как найти две недостающие проекции точки'],[H('ig','wb'),'nb','Рабочая тетрадь',(nW?nW+' заданий: ':'')+'тела с отверстиями'],[H('ig','theory'),'th','Теория ЕСКД','форматы, линии, размеры, виды, разрезы, штриховка']];
+  const R=c==='ng'?[[H('ng','tasks'),'nb','Рабочая тетрадь','все '+nT+' задач — решение по шагам'],[H('ng','rk2'),'rk','Подготовка к РК','билеты, вопросы теории, пробный РК'],[H('ng','path'),'th','Теория','уроки с картинками и шпаргалка'],[H('epure'),'ep','3D-модель и эпюр','двигай точку — эпюр строится сам']]
+    :[[H('ig','learn'),'lr','Учиться с нуля','виды, разрезы, сечения — один вариант по шагам'],[H('ig','points'),'tr','Защита точек','как найти две недостающие проекции точки'],[H('ig','wb'),'nb','Рабочая тетрадь',(nW?nW+' заданий: ':'')+'тела с отверстиями'],[H('ig','theory'),'th','Теория ЕСКД','форматы, линии, размеры, виды, разрезы, штриховка']];
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx sjh',body:`
    <div class="intro"><h1>${dzCourse(c)}</h1></div>
    ${dzWidget(c)}
@@ -30079,7 +30077,7 @@ function dzPick(v,d){
   const num=n=>has(n)?`<a href="${HDZ(d.id,n)}" data-setvar="${n}">${n}</a>`:`<span class="off" title="решение этого типа готовится">${n}</span>`;
   const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
   const grid=`<div class="dzx-nums c6">${range(1,N).map(num).join('')}</div>`;
-  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(window.PREP?PREP.card(d.id):'')+
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx'+(ig?' igx':''),body:dzTop(d,vesc(d.label)+' · '+vesc(d.title)+dzBeta(d))+dzPills(d,'')+(d.course==='ng'&&window.PREP?PREP.card(d.id):'')+
    `<h2 class="dzx-h">Какой у тебя вариант?</h2>${grid}
    ${ig?`<details class="dzx-pics"><summary>Не помнишь номер — найди по картинке</summary><div class="igx-grid dz-vgrid">${DZR.numbers(d.id).map(n=>`<a class="igx-v" href="${HDZ(d.id,n)}" data-setvar="${n}"><span class="igx-img"><img alt="" loading="lazy" decoding="async" src="${dzThumb(d,n)}"></span><b>Вариант ${n}</b></a>`).join('')}</div></details>`:''}`});
   /* номер выбран — выбор номера больше не нужен: заменяем его вариантом, и «Назад» из варианта ведёт туда, откуда открыл ДЗ */
@@ -30213,8 +30211,6 @@ function dzExView(v,d,code){ const task=dzExample(d,code), t=(d.types||[]).find(
 /* ── вариант: ← Назад · ДЗ №4 · вариант 13 · Поделиться; ниже — вкладки ДЗ ── */
 const dzVarTitle=(d,n)=>`<span class="dzx-tl">${vesc(d.label)}<i> · ${vesc(d.title)}</i></span><span class="dzx-tn">вариант ${n}</span>`;
 function dzVariant(v,d,n,extra){
-  /* перед решением — предложение пройти подготовку к этому ДЗ (prep/plans.js); решение открывается одной кнопкой */
-  if(window.PREP&&PREP.gate&&PREP.gate(v,d.id,()=>{ document.title=dzVariant(v,d,n,extra)+' · Начерт'; try{ scrollTo(0,0); }catch(e){} },'вариант '+n)) return d.label+' · подготовка';
   if(d.course==='ig') return dzPart(v,d,n);
   const mode=extra==='list'?'final':extra==='draft'?'draft':extra==='sheet'&&d.id==='ng3'?'sheet':'steps', t=DZR.typeOf(d.id,n)||{name:''}, base=HDZ(d.id,n), pl=extra&&extra.length===1?DZ_PL.indexOf(extra):-1;
   const miss=html=>{ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzwrap dzx',body:dzTop(d,vesc(d.label)+' · вариант '+n)+html}); return d.label+' · вариант '+n; };
@@ -30232,7 +30228,7 @@ function dzVariant(v,d,n,extra){
       <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Приложи фото листа — отвечу лично, прямо здесь.')}`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
-  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}${window.PREP?PREP.chip(d.id):''}<div id="dzPl"></div>`});
+  if(mode==='steps'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'taskwrap hwwrap dzx dzx-varp',body:`${head}${d.course==='ng'&&window.PREP?PREP.chip(d.id):''}<div id="dzPl"></div>`});
     document.body.classList.add('inplayer');
     /* открыт пункт б) — адрес #/ng3/7/b: им и делятся */
     const onPart=k=>{ const x=k&&parts.length>1?[DZ_PL[k]]:[], h=HDZ(d.id,n,...x), lbl=parts.length>1&&parts[k]&&parts[k].l?', задача '+parts[k].l:'';
@@ -30255,7 +30251,7 @@ function dzVariant(v,d,n,extra){
 /* ИГ: деталь варианта — тот же разбор, что у заданий тетради (partPage): данные виды, 3D, построение по шагам, лист */
 function dzPart(v,d,n){ let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
   if(!m||!window.IGUI){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'igx dzwrap dzx',body:dzTop(d,vesc(d.label)+' · вариант '+n)+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. <a href="${HDZ()}">Впиши свой вариант</a>.</div>`}); return d.label+' · вариант '+n; }
-  IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — решение по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):'')+(window.PREP?PREP.chip(d.id):'')+condRepHTML(d,n),
+  IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — решение по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):'')+condRepHTML(d,n),
     crumbs:null,title:'Вариант '+n,back:[HDZ(),'Все ДЗ'],docTitle:d.label+' · вариант '+n,beta:'',
     img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:d.text,
     sheet:d.id==='ig2'?null:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
@@ -30450,7 +30446,6 @@ function rkHub(v){
   v.innerHTML=pageHTML({crumbs:[['Подготовка к РК']],next:null,noBottom:true,body:`
    ${window.RK2?RK2.tabsHTML(1):''}
    <div class="intro"><h1>Подготовка к РК</h1></div>
-   ${window.PREP?PREP.card('rk1'):''}
    <a class="r2-in" href="${H('ng','rk2')}"><span class="r2-nk">РК2 · способы преобразования</span><b>Замена плоскостей и вращение: билет с разбором, 26 вопросов, тренировки</b><span>${window.RK2?RK2.line():''}</span><i aria-hidden="true">→</i></a>
    <div class="v8-when"><b>Когда РК?</b><button type="button" class="on" data-scroll="#rk9T">Через неделю и больше</button><button type="button" data-scroll="#rkzH">Через 1–3 дня</button></div>
    <section class="rk9" aria-labelledby="rk9T"><div class="rk9-top"><h2 id="rk9T">Что будет на РК: ${RK_TYPES.length} типов задач</h2><span class="rk9-pc"><b>${done}</b> из ${RK_TYPES.length} решено</span></div>

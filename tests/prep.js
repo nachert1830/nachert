@@ -307,44 +307,16 @@ async function screens(){
     if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); } r.writeHead(200,{'Content-Type':TYPES[path.extname(p)]||'application/octet-stream'}); fs.createReadStream(p).pipe(r); }).listen(0,'127.0.0.1',()=>res(s)); });
   const U='http://127.0.0.1:'+srv.address().port+'/';
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
-  const page=await browser.newPage({viewport:{width:390,height:844}}); const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
+  const page=await browser.newPage({viewport:{width:390,height:844}}); await page.addInitScript(()=>{ try{ localStorage.setItem('nch-preview-ok','1'); }catch(e){} }); const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
   await page.goto(U+'#/prep'); await page.waitForTimeout(1200);
   const hub=await page.evaluate(()=>({cards:[...document.querySelectorAll('a.pp-cc')].map(a=>a.getAttribute('href')),rows:document.querySelectorAll('.pp-st').length,ow:document.documentElement.scrollWidth>innerWidth}));
-  const PK=Object.keys(PREP.PLANS);
-  if(hub.cards.join()!==PK.map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки курсов — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
-  /* курс по этапам: столько же этапов, сколько в плане, темы этапов — ссылки внутрь курса */
-  for(const k of PK){ const pl=PREP.PLANS[k];
-    await page.goto(U+'#/prep/'+k); await page.waitForTimeout(200);
-    const r=await page.evaluate(()=>({st:document.querySelectorAll('.pp-stg').length,rows:[...document.querySelectorAll('.pp-stg .pp-st')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
-    if(r.st!==pl.stages.length) bad(`Курс ${pl.label}: этапов на экране ${r.st} из ${pl.stages.length}`);
-    const want=pl.stages.flatMap(s=>(s.topics||[]).map(id=>'#/prep/'+k+'/'+id)); if(r.rows.join()!==want.join()) bad(`Курс ${pl.label}: темы этапов не совпадают с планом`);
-    if(r.ow) bad(`Курс ${pl.label}: горизонтальная прокрутка`); }
-  /* предложение пройти подготовку перед решением варианта и «Сразу к решению» */
-  await page.evaluate(()=>{ localStorage.setItem('nch_prep_gate','1'); sessionStorage.clear(); });
-  for(const h of ['#/ng2/17','#/ig4/7']){ await page.goto(U+h); await page.waitForTimeout(1500);
-    if(!await page.$('#ppSkip')){ bad(h+': нет предложения пройти подготовку'); continue; }
-    await page.click('#ppSkip'); await page.waitForTimeout(2500);
-    if(await page.$('#ppSkip')) bad(h+': «Сразу к решению» не открыло решение');
-    if(!await page.$('.pp-dzchip')) bad(h+': у решения нет строки подготовки'); }
-  await page.evaluate(()=>localStorage.removeItem('nch_prep_gate'));
-  /* методика курса: замер до обучения, проверка этапа (вопросы, расстановка шагов плана), смешанная тренировка */
-  const clickDuels=async()=>{ for(let i=0;i<30;i++){ if(!await page.$('#ppA')) break; await page.click('#ppA'); await page.waitForTimeout(120); const nx=await page.$('#ppNx'); if(nx) await nx.click(); else await page.waitForTimeout(1000); } };
-  const h1=()=>page.evaluate(()=>{ const e=document.querySelector('.pp-gt h1'); return e?e.innerText:''; });
-  await page.evaluate(()=>localStorage.removeItem('nch_prep_plan'));
-  await page.goto(U+'#/prep/ng2/pre'); await page.waitForTimeout(400); await clickDuels();
-  if(!/из/.test(await h1())) bad('Замер ДЗ №2: не дошёл до итога');
-  if(!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}')['ng2:pre']; return o&&Object.keys(o.r).length===6; })) bad('Замер ДЗ №2: итог по этапам не сохранён');
-  await page.goto(U+'#/prep/ng2/check2'); await page.waitForTimeout(400); await clickDuels(); if(!/Этап пройден|Пока не засчитано/.test(await h1())) bad('Проверка этапа (дуэли): нет итога');
-  await page.goto(U+'#/prep/ig4/check1'); await page.waitForTimeout(400);
-  for(let i=0;i<12;i++){ const b=await page.$('.pp-mo:not(.locked) button[data-j="0"]'); if(!b) break; await b.click(); await page.waitForTimeout(60); await page.click('#ppNx'); await page.waitForTimeout(60); }
-  if(await h1()!=='Этап пройден'||!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ig4; return o&&o[0]&&o[0].by==='test'; })) bad('ДЗ №4 ИГ, этап 1: верные ответы не засчитали этап');
-  for(const k of ['ng1','ng2','ng3','ng4','ng5','ig3','ig4','ig5','ig6']){ const pl=PREP.PLANS[k], i=pl.stages.findIndex(s=>s.order); if(i<0){ bad(k+': нет этапа «Собери всё в план»'); continue; }
-    await page.goto(U+'#/prep/'+k+'/check'+(i+1)); await page.waitForTimeout(500);
-    const n=await page.$$eval('.pp-oo button',b=>b.length); if(n<4){ bad(k+': шаги плана для расстановки не нашлись'); continue; }
-    for(let j=0;j<n;j++){ await page.click('.pp-oo button[data-i="'+j+'"]'); await page.waitForTimeout(30); } await page.waitForTimeout(1200);
-    if(await h1()!=='Этап пройден') bad(k+': верный порядок шагов не засчитал этап'); }
-  await page.goto(U+'#/prep/ng4/mix'); await page.waitForTimeout(400); await clickDuels(); if(!/из/.test(await h1())) bad('Смешанная тренировка ДЗ №4: нет итога');
-  await page.evaluate(()=>localStorage.removeItem('nch_prep_plan'));
+  if(hub.cards.join()!==['ng1','ng2','ng3','ng4','ng5'].map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки ДЗ — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
+  /* курс показывает только свои темы (и свёрнуто — из прошлых), ссылки — внутрь курса */
+  for(const c of G.COURSES.filter(c=>c.kind==='dz')){
+    await page.goto(U+'#/prep/'+c.key); await page.waitForTimeout(200);
+    const r=await page.evaluate(()=>({main:[...document.querySelectorAll('.pp-map .pp-st')].map(a=>a.getAttribute('href')),prev:[...document.querySelectorAll('.pp-prev .pp-st')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
+    const want=c.own.map(id=>'#/prep/'+c.key+'/'+id); if(r.main.join()!==want.join()) bad(`Курс ${c.label}: показаны не ровно свои темы (${r.main.length} из ${want.length})`);
+    const wantP=c.prevBy.flatMap(g=>g.ids.map(id=>'#/prep/'+g.key+'/'+id)); if(r.prev.join()!==wantP.join()) bad(`Курс ${c.label}: «нужно из прошлых» не совпадает`); if(r.ow) bad(`Курс ${c.label}: горизонтальная прокрутка`); }
   /* тема внутри курса: «назад» — к курсу */
   { const c=G.COURSE.ng4; await page.goto(U+'#/prep/ng4/'+c.own[0]); await page.waitForTimeout(200); const back=await page.evaluate(()=>{ const a=document.querySelector('.pp-back'); return a&&a.getAttribute('href'); }); if(back!=='#/prep/ng4') bad('Тема в курсе: «назад» ведёт не к курсу, а на '+back); }
   await page.goto(U+'#/prep/all'); await page.waitForTimeout(300);
@@ -375,8 +347,49 @@ async function screens(){
   await page.evaluate(()=>{ const a=document.querySelector('[data-setvar="13"]'); a&&a.click(); }); await page.waitForTimeout(1800);
   const m=await page.evaluate(()=>{ const b=document.querySelector('.pl-mode.on'); return [b&&b.dataset.m,!!document.querySelector('.pp-dzchip')]; });
   if(m[0]!=='try') bad('ДЗ №4, свой вариант: открылся не в «Решаю сам»'); if(!m[1]) bad('ДЗ №4, свой вариант: нет строки подготовки');
+  /* основной сайт: курсов по этапам и экрана перед решением нет */
+  await page.goto(U+'#/prep'); await page.waitForTimeout(500);
+  if(await page.$('.pp-stg')||await page.evaluate(()=>!!window.PREP&&Object.keys(PREP.PLANS).length)) bad('Основной сайт: курсы по этапам видны (они только в копии /new/)');
+  /* курсы по этапам и методика — только в копии /new/ (основной сайт подключает прежние курсы по темам, выше) */
+  const PK=Object.keys(PREP.PLANS), UN=U+'new/';
+  await page.goto(UN+'#/prep'); await page.waitForTimeout(1500);
+  { const h=await page.evaluate(()=>({cards:[...document.querySelectorAll('a.pp-cc')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
+    if(h.cards.join()!==PK.map(k=>'#/prep/'+k).join()) bad('Копия /new/, подготовка: карточки курсов — '+h.cards.join(', ')); if(h.ow) bad('Копия /new/, подготовка: горизонтальная прокрутка'); }
+  /* курс по этапам: столько же этапов, сколько в плане, темы этапов — ссылки внутрь курса */
+  for(const k of PK){ const pl=PREP.PLANS[k];
+    await page.goto(UN+'#/prep/'+k); await page.waitForTimeout(200);
+    const r=await page.evaluate(()=>({st:document.querySelectorAll('.pp-stg').length,rows:[...document.querySelectorAll('.pp-stg .pp-st')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
+    if(r.st!==pl.stages.length) bad(`Курс ${pl.label}: этапов на экране ${r.st} из ${pl.stages.length}`);
+    const want=pl.stages.flatMap(s=>(s.topics||[]).map(id=>'#/prep/'+k+'/'+id)); if(r.rows.join()!==want.join()) bad(`Курс ${pl.label}: темы этапов не совпадают с планом`);
+    if(r.ow) bad(`Курс ${pl.label}: горизонтальная прокрутка`); }
+  /* предложение пройти подготовку перед решением варианта и «Сразу к решению» */
+  await page.evaluate(()=>{ localStorage.setItem('nch_prep_gate','1'); sessionStorage.clear(); });
+  for(const h of ['#/ng2/17','#/ig4/7']){ await page.goto(UN+h); await page.waitForTimeout(1500);
+    if(!await page.$('#ppSkip')){ bad(h+': нет предложения пройти подготовку'); continue; }
+    await page.click('#ppSkip'); await page.waitForTimeout(2500);
+    if(await page.$('#ppSkip')) bad(h+': «Сразу к решению» не открыло решение');
+    if(!await page.$('.pp-dzchip')) bad(h+': у решения нет строки подготовки'); }
+  await page.evaluate(()=>localStorage.removeItem('nch_prep_gate'));
+  /* методика курса: замер до обучения, проверка этапа (вопросы, расстановка шагов плана), смешанная тренировка */
+  const clickDuels=async()=>{ for(let i=0;i<30;i++){ if(!await page.$('#ppA')) break; await page.click('#ppA'); await page.waitForTimeout(120); const nx=await page.$('#ppNx'); if(nx) await nx.click(); else await page.waitForTimeout(1000); } };
+  const h1=()=>page.evaluate(()=>{ const e=document.querySelector('.pp-gt h1'); return e?e.innerText:''; });
+  await page.evaluate(()=>localStorage.removeItem('nch_prep_plan'));
+  await page.goto(UN+'#/prep/ng2/pre'); await page.waitForTimeout(400); await clickDuels();
+  if(!/из/.test(await h1())) bad('Замер ДЗ №2: не дошёл до итога');
+  if(!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}')['ng2:pre']; return o&&Object.keys(o.r).length===6; })) bad('Замер ДЗ №2: итог по этапам не сохранён');
+  await page.goto(UN+'#/prep/ng2/check2'); await page.waitForTimeout(400); await clickDuels(); if(!/Этап пройден|Пока не засчитано/.test(await h1())) bad('Проверка этапа (дуэли): нет итога');
+  await page.goto(UN+'#/prep/ig4/check1'); await page.waitForTimeout(400);
+  for(let i=0;i<12;i++){ const b=await page.$('.pp-mo:not(.locked) button[data-j="0"]'); if(!b) break; await b.click(); await page.waitForTimeout(60); await page.click('#ppNx'); await page.waitForTimeout(60); }
+  if(await h1()!=='Этап пройден'||!await page.evaluate(()=>{ const o=JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ig4; return o&&o[0]&&o[0].by==='test'; })) bad('ДЗ №4 ИГ, этап 1: верные ответы не засчитали этап');
+  for(const k of ['ng1','ng2','ng3','ng4','ng5','ig3','ig4','ig5','ig6']){ const pl=PREP.PLANS[k], i=pl.stages.findIndex(s=>s.order); if(i<0){ bad(k+': нет этапа «Собери всё в план»'); continue; }
+    await page.goto(UN+'#/prep/'+k+'/check'+(i+1)); await page.waitForTimeout(500);
+    const n=await page.$$eval('.pp-oo button',b=>b.length); if(n<4){ bad(k+': шаги плана для расстановки не нашлись'); continue; }
+    for(let j=0;j<n;j++){ await page.click('.pp-oo button[data-i="'+j+'"]'); await page.waitForTimeout(30); } await page.waitForTimeout(1200);
+    if(await h1()!=='Этап пройден') bad(k+': верный порядок шагов не засчитал этап'); }
+  await page.goto(UN+'#/prep/ng4/mix'); await page.waitForTimeout(400); await clickDuels(); if(!/из/.test(await h1())) bad('Смешанная тренировка ДЗ №4: нет итога');
+  await page.evaluate(()=>localStorage.removeItem('nch_prep_plan'));
   if(errs.length) bad('Ошибка JS: '+errs[0].slice(0,200));
-  info.push(`Экраны: программа, ${Object.keys(PREP.TOPICS).length} тем, ДЗ №4`);
+  info.push(`Экраны: программа, ${Object.keys(PREP.TOPICS).length} тем, ДЗ №4; копия /new/ — ${Object.keys(PREP.PLANS).length} курсов по этапам`);
   await browser.close(); srv.close();
 }
 const G_N=G.ALL.length;
