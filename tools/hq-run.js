@@ -18,7 +18,8 @@ const SECRET = /KEY|TOKEN|SECRET|PASSWORD|GH_|GITHUB_TOKEN/i;
 
 function cleanEnv(env) {
   const o = {};
-  for (const [k, v] of Object.entries(env || {})) if (!SECRET.test(k)) o[k] = v;
+  /* GIT_CONFIG_KEY_n попадает под KEY — убираем всю группу GIT_CONFIG_*, иначе git ломается на неполной (COUNT без KEY) */
+  for (const [k, v] of Object.entries(env || {})) if (!SECRET.test(k) && !/^GIT_CONFIG_/.test(k)) o[k] = v;
   return o;
 }
 /* значения секретов из окружения исполнителя — не длиннее 6 символов не трогаем (ложные совпадения) */
@@ -75,21 +76,26 @@ function forbidden(cmd, root) {
   return '';
 }
 
-/* песочница: префикс команды или null, если изоляция недоступна (проверяется один раз) */
-let SANDBOX;
+/* песочница: префикс команды или null, если изоляция недоступна (проверяется один раз).
+   sudo на раннерах GitHub не пропускает окружение (-E игнорируется) — поэтому окружение без секретов идёт файлом: маленький
+   запускатель уже внутри песочницы, от пользователя Цеха, читает файл, удаляет его и запускает команду с этим окружением. */
+const LAUNCHER = "const fs=require('fs'),{spawnSync}=require('child_process');const f=process.argv[2];const env=JSON.parse(fs.readFileSync(f,'utf8'));" +
+  "try{fs.unlinkSync(f)}catch(e){}const r=spawnSync(process.argv[3],process.argv.slice(4),{stdio:'inherit',env});process.exit(r.status==null?1:r.status);";
+let SANDBOX, ENVN = 0;
 function sandbox() {
   if (SANDBOX !== undefined) return SANDBOX;
   SANDBOX = null;
   if (process.env.HQ_SANDBOX !== '1') return SANDBOX;
-  const {spawnSync} = require('child_process');
+  const {spawnSync} = require('child_process'), fs = require('fs'), os = require('os');
   const root = typeof process.getuid === 'function' && process.getuid() === 0;
   const uid = process.getuid(), gid = process.getgid();
+  const launcher = path.join(os.tmpdir(), 'hq-box-' + process.pid + '.js'); fs.writeFileSync(launcher, LAUNCHER, {mode: 0o644});
   /* root нужен только для unshare; сама команда — снова от пользователя Цеха (setpriv), файлы остаются его */
-  const pre = (root ? [] : ['sudo', '-n', '-E', 'env', 'PATH=' + (process.env.PATH || '/usr/bin:/bin')]).concat(['unshare', '--net', '--pid', '--fork', '--mount-proc', '--', 'sh', '-c',
-    'ip link set lo up 2>/dev/null; exec setpriv --reuid=' + uid + ' --regid=' + gid + ' --init-groups -- bash -lc "$0"']);
-  const probe = spawnSync(pre[0], pre.slice(1).concat(['node -e 0']), {stdio: 'ignore', timeout: 20000});   /* node должен находиться и внутри */
-  if (probe.status === 0) SANDBOX = pre;
-  else console.log('::warning::Песочница RUN недоступна (unshare) — команды идут только со списком запретов');
+  const pre = (root ? [] : ['sudo', '-n']).concat(['unshare', '--net', '--pid', '--fork', '--mount-proc', '--', 'sh', '-c',
+    'ip link set lo up 2>/dev/null; exec setpriv --reuid=' + uid + ' --regid=' + gid + ' --init-groups -- "$@"', 'box', process.execPath, launcher]);
+  SANDBOX = pre;
+  const w = wrap('node -e 0', process.env), probe = spawnSync(w.file, w.args, {stdio: 'ignore', timeout: 20000});   /* node должен находиться и внутри */
+  if (probe.status !== 0) { SANDBOX = null; console.log('::warning::Песочница RUN недоступна (unshare/sudo) — команды идут только со списком запретов'); }
   return SANDBOX;
 }
 
@@ -97,8 +103,14 @@ function sandbox() {
 const TRUSTED = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
 const fromOwner = c => !!c && /^💬 Владелец:/.test(c.body || '') && TRUSTED.has(String(c.author_association || '').toUpperCase());
 
-/* команда для execFileSync в песочнице (если она есть): {file, args}; окружение передавать cleanEnv(process.env) */
-function wrap(script) { const box = sandbox(); return box ? {file: box[0], args: box.slice(1).concat([script])} : {file: 'bash', args: ['-lc', script]}; }
+/* команда для spawn/execFileSync: {file, args}. В песочнице окружение (без секретов) уходит файлом запускателю;
+   без неё вызывающий сам передаёт env: cleanEnv(...) */
+function wrap(script, env) {
+  const box = sandbox(); if (!box) return {file: 'bash', args: ['-lc', script]};
+  const fs = require('fs'), os = require('os'), f = path.join(os.tmpdir(), 'hq-env-' + process.pid + '-' + (++ENVN) + '.json');
+  fs.writeFileSync(f, JSON.stringify(cleanEnv(env || process.env)), {mode: 0o600});
+  return {file: box[0], args: box.slice(1).concat([f, 'bash', '-lc', script])};
+}
 
 /* run(cmd, {root, timeout, env, log}) → {code, out, text} — text уходит модели */
 function run(cmd, o) {
@@ -110,9 +122,8 @@ function run(cmd, o) {
   if (why) { log('    отказ: ' + why); return Promise.resolve({code: -1, out: '', text: 'ОТКАЗ: ' + why + '. Команда не выполнялась.'}); }
   return new Promise(res => {
     let buf = '', timed = false;
-    const box = o.sandbox === false ? null : sandbox(), script = 'exec 2>&1\n' + cmd;
-    const p = box ? spawn(box[0], box.slice(1).concat([script]), {cwd: root, env: cleanEnv(env), detached: true, stdio: ['ignore', 'pipe', 'pipe']})
-      : spawn('bash', ['-lc', script], {cwd: root, env: cleanEnv(env), detached: true, stdio: ['ignore', 'pipe', 'pipe']});
+    const script = 'exec 2>&1\n' + cmd, w = o.sandbox === false ? {file: 'bash', args: ['-lc', script]} : wrap(script, env);
+    const p = spawn(w.file, w.args, {cwd: root, env: cleanEnv(env), detached: true, stdio: ['ignore', 'pipe', 'pipe']});
     const add = d => { buf += d; if (buf.length > OUT * 4) buf = buf.slice(-OUT * 2); };
     p.stdout.on('data', add); p.stderr.on('data', add);
     const t = setTimeout(() => { timed = true; try { process.kill(-p.pid, 'SIGKILL'); } catch (e) { p.kill('SIGKILL'); } }, timeout);

@@ -146,7 +146,7 @@ const call = (system, messages, o) => callAs(key, M, system, messages, o);
 /* ── проверка и глаза ── */
 const {execFileSync} = require('child_process');
 /* код проекта (его правит модель) — без ключей и в песочнице: иначе правка tests/*.js прочитала бы process.env исполнителя */
-const execSync = (cmd, o) => { const w = SH.wrap(cmd); return execFileSync(w.file, w.args, Object.assign({env: SH.cleanEnv(process.env)}, o)); };
+const execSync = (cmd, o) => { const w = SH.wrap(cmd, process.env); return execFileSync(w.file, w.args, Object.assign({env: SH.cleanEnv(process.env)}, o)); };
 function check() {
   let only = 'all'; try { only = execSync('node tests/impact.js origin/main --only', {cwd: ROOT, encoding: 'utf8'}).trim(); } catch (e) {}
   if (only === 'none') return 'Проверка: правка не задевает сайт — проверять нечего. Можно DONE.';

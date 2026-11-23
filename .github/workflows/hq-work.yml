@@ -290,8 +290,14 @@ jobs:
         id: work
         run: |
           set +e
-          # код из ветки исполнителя (его правила модель) — только в песочнице: без ключей, без сети, со своим /proc (PATH — явно: sudo его заменяет)
-          box(){ if sudo -n true 2>/dev/null; then sudo -n -E env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN PATH="$PATH" unshare --net --pid --fork --mount-proc -- sh -c 'ip link set lo up 2>/dev/null; exec setpriv --reuid='"$(id -u)"' --regid='"$(id -g)"' --init-groups -- "$@"' box "$@"; else env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN "$@"; fi; }
+          # код из ветки исполнителя (его правила модель) — только в песочнице: без ключей, без сети, со своим /proc.
+          # sudo на раннере не пропускает окружение (-E игнорируется): окружение без секретов — файлом, запускатель читает его внутри
+          cat > /tmp/hq-box.js <<'JS'
+          const fs=require('fs'),{spawnSync}=require('child_process');const f=process.argv[2];const env=JSON.parse(fs.readFileSync(f,'utf8'));try{fs.unlinkSync(f)}catch(e){}const r=spawnSync(process.argv[3],process.argv.slice(4),{stdio:'inherit',env});process.exit(r.status==null?1:r.status);
+          JS
+          box(){ local f; f=$(mktemp); node -e "const e={...process.env};for(const k of Object.keys(e))if(/KEY|TOKEN|SECRET|PASSWORD|GH_|^GIT_CONFIG_/i.test(k))delete e[k];require('fs').writeFileSync(process.argv[1],JSON.stringify(e))" "$f"
+            if sudo -n true 2>/dev/null; then sudo -n unshare --net --pid --fork --mount-proc -- sh -c 'ip link set lo up 2>/dev/null; exec setpriv --reuid='"$(id -u)"' --regid='"$(id -g)"' --init-groups -- "$@"' box "$(command -v node)" /tmp/hq-box.js "$f" "$@"
+            else node /tmp/hq-box.js "$f" "$@"; fi; }
           git config user.name "hq-bot"; git config user.email "hq-bot@users.noreply.github.com"
           m="$MODEL"; tries=0; ok=0; : > /tmp/hq-log.md
           while [ -n "$m" ] && [ $tries -lt 3 ]; do
@@ -337,8 +343,14 @@ jobs:
           PREVIEW_URL: ${{ vars.HQ_PREVIEW_URL }}
         run: |
           set +e
-          # код из ветки исполнителя (его правила модель) — только в песочнице: без ключей, без сети, со своим /proc (PATH — явно: sudo его заменяет)
-          box(){ if sudo -n true 2>/dev/null; then sudo -n -E env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN PATH="$PATH" unshare --net --pid --fork --mount-proc -- sh -c 'ip link set lo up 2>/dev/null; exec setpriv --reuid='"$(id -u)"' --regid='"$(id -g)"' --init-groups -- "$@"' box "$@"; else env -u GH_TOKEN -u PROXYAPI_KEY -u HQ_PR_TOKEN "$@"; fi; }
+          # код из ветки исполнителя (его правила модель) — только в песочнице: без ключей, без сети, со своим /proc.
+          # sudo на раннере не пропускает окружение (-E игнорируется): окружение без секретов — файлом, запускатель читает его внутри
+          cat > /tmp/hq-box.js <<'JS'
+          const fs=require('fs'),{spawnSync}=require('child_process');const f=process.argv[2];const env=JSON.parse(fs.readFileSync(f,'utf8'));try{fs.unlinkSync(f)}catch(e){}const r=spawnSync(process.argv[3],process.argv.slice(4),{stdio:'inherit',env});process.exit(r.status==null?1:r.status);
+          JS
+          box(){ local f; f=$(mktemp); node -e "const e={...process.env};for(const k of Object.keys(e))if(/KEY|TOKEN|SECRET|PASSWORD|GH_|^GIT_CONFIG_/i.test(k))delete e[k];require('fs').writeFileSync(process.argv[1],JSON.stringify(e))" "$f"
+            if sudo -n true 2>/dev/null; then sudo -n unshare --net --pid --fork --mount-proc -- sh -c 'ip link set lo up 2>/dev/null; exec setpriv --reuid='"$(id -u)"' --regid='"$(id -g)"' --init-groups -- "$@"' box "$(command -v node)" /tmp/hq-box.js "$f" "$@"
+            else node /tmp/hq-box.js "$f" "$@"; fi; }
           # ревизор — из main: правка исполнителя не может переписать своего судью
           rm -rf /tmp/trusted; git worktree add -q -f /tmp/trusted origin/main
           git add -A

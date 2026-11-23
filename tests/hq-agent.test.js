@@ -192,12 +192,17 @@ test('RUN в песочнице: нет сети и не виден процес
   const was = process.env.HQ_SANDBOX; process.env.HQ_SANDBOX = '1'; SH._resetSandbox();
   try {
     if (!SH.sandbox()) return;   /* нет unshare/sudo — проверять нечего */
-    const env = Object.assign({}, process.env, {PROXYAPI_KEY: 'секрет-в-родителе-123'});
+    const env = Object.assign({}, process.env, {PROXYAPI_KEY: 'секрет-в-' + 'родителе-123'}), parent = process.env.PROXYAPI_KEY;
+    process.env.PROXYAPI_KEY = env.PROXYAPI_KEY;   /* ключ — и у самого процесса-родителя, как у исполнителя */
+    /* искомая строка не должна стоять в тексте команды: sudo кладёт команду в SUDO_COMMAND */
     const net = await SH.run('node -e "fetch(\'https://example.com\').then(()=>console.log(\'СЕТЬ ЕСТЬ\'),()=>console.log(\'СЕТИ НЕТ\'))"', {root: ROOT, log: quiet, env});
     assert.match(net.out, /СЕТИ НЕТ/);
-    const proc = await SH.run('node -e "const fs=require(\'fs\');let s=\'\';for(const p of fs.readdirSync(\'/proc\'))if(/^\\d+$/.test(p))try{s+=fs.readFileSync(\'/proc/\'+p+\'/env\'+\'iron\',\'utf8\')}catch(e){}console.log(s.includes(\'секрет-в-родителе\')?\'УТЕЧКА\':\'ЧИСТО\')"', {root: ROOT, log: quiet, env});
+    const proc = await SH.run('node -e "const fs=require(\'fs\');let s=\'\';for(const p of fs.readdirSync(\'/proc\'))if(/^\\d+$/.test(p))try{s+=fs.readFileSync(\'/proc/\'+p+\'/env\'+\'iron\',\'utf8\')}catch(e){}console.log(s.includes(\'секрет-в-\'+\'родителе\')?\'УТЕЧКА\':\'ЧИСТО\')"', {root: ROOT, log: quiet, env});
     assert.match(proc.out, /ЧИСТО/);
     const lo = await SH.run('node -e "const s=require(\'http\').createServer((q,r)=>r.end(\'ok\')).listen(0,\'127.0.0.1\',()=>fetch(\'http://127.0.0.1:\'+s.address().port).then(r=>r.text()).then(t=>{console.log(\'LO \'+t);process.exit()}))"', {root: ROOT, log: quiet, env});
     assert.match(lo.out, /LO ok/);
+    const home = await SH.run('node -e "console.log(\'HOME=\'+process.env.HOME)"', {root: ROOT, log: quiet, env});
+    assert.match(home.out, new RegExp('HOME=' + process.env.HOME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'окружение (HOME, PATH) доходит до команды');
+    if (parent === undefined) delete process.env.PROXYAPI_KEY; else process.env.PROXYAPI_KEY = parent;
   } finally { if (was === undefined) delete process.env.HQ_SANDBOX; else process.env.HQ_SANDBOX = was; SH._resetSandbox(); }
 });
