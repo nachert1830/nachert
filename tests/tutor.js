@@ -37,7 +37,7 @@ async function runTutor(browser){
   /* 1) пакет знаний = решение сайта */
   { const p=await browser.newPage(); const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const fp=path.join(ROOT,f);
       if(!fp.startsWith(ROOT)||!fs.existsSync(fp)||fs.statSync(fp).isDirectory()){ r.writeHead(404); return r.end(); } r.writeHead(200,{'Content-Type':TY[path.extname(fp)]||'application/octet-stream'}); fs.createReadStream(fp).pipe(r); });
-    const U=await listen(srv); await p.goto(U+'/#/ig4/7'); await p.waitForFunction(()=>window.IG4S&&window.IGUI&&IGUI.tutor&&window.DZR&&DZR.get('ig4'),null,{timeout:30000});
+    const U=await listen(srv); await p.addInitScript(()=>{ try{ localStorage.setItem('nch-preview-ok','1'); }catch(e){} }); await p.goto(U+'/new/#/ig4/7'); await p.waitForFunction(()=>window.IG4S&&window.IGUI&&IGUI.tutor&&window.DZR&&DZR.get('ig4'),null,{timeout:30000});
     const snap=await PACK.build(p,[3,7,19]), file=JSON.parse(fs.readFileSync(PACK.OUT,'utf8'));
     for(const n of [3,7,19]) if(JSON.stringify(snap.variants[n])!==JSON.stringify(file.variants[n])) B('пакет знаний устарел','вариант '+n+': решение на сайте поменялось — пересоберите: node tools/tutor-pack.js');
     if(JSON.stringify(snap.method)!==JSON.stringify(file.method)) B('пакет знаний устарел','методика ДЗ №4 поменялась — node tools/tutor-pack.js');
@@ -55,7 +55,7 @@ async function runTutor(browser){
   const siteSrv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html';
     if(f==='/lk/config.js'){ r.writeHead(200,{'Content-Type':TY['.js']}); return r.end("window.CLUB_API='"+API+"';"); }
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
-    let b=fs.readFileSync(p); if(f==='/index.html') b=Buffer.from(b.toString().replace("connect-src 'self'","connect-src 'self' "+API));
+    let b=fs.readFileSync(p); if(f==='/index.html'||f==='/new/index.html') b=Buffer.from(b.toString().replace("connect-src 'self'","connect-src 'self' "+API));
     r.writeHead(200,{'Content-Type':TY[path.extname(p)]||'application/octet-stream'}); r.end(b); });
   API=await listen(apiSrv); SITE=await listen(siteSrv);
   const cfg={dev:true,origin:API,secure:false,botToken:'1:x',botName:'b',webhookSecret:'s',adminTg:['1000001'],mainUrl:SITE,week1:'',yandex:{clientId:'',secret:''},adminYa:[],fronts:[API,SITE],frontUrl:SITE+'/lk/',openSignup:true,
@@ -66,17 +66,17 @@ async function runTutor(browser){
     return JSON.parse(res.body).session; }
   const ctxs=[], page=async(o,who)=>{ const c=await browser.newContext(o); ctxs.push(c); await c.route(/^https?:\/\/(?!127\.0\.0\.1)/,r=>r.abort());
     /* окно согласия на статистику закрыто (пока оно открыто, кнопка наставника спрятана — проверяет tests/new-copy.js) */
-    await c.addInitScript(()=>{ try{ localStorage.setItem('nch2_ck','n'); }catch(e){} }); const p=await c.newPage(); p.on('pageerror',e=>errs.push(who+': '+e.message)); return p; };
+    await c.addInitScript(()=>{ try{ localStorage.setItem('nch2_ck','n'); localStorage.setItem('nch-preview-ok','1'); }catch(e){} }); const p=await c.newPage(); p.on('pageerror',e=>errs.push(who+': '+e.message)); return p; };
   try{
     const st=await session(3003,'Аня');
     /* гость */
-    const g=await page({viewport:{width:1280,height:860}},'гость'); await g.goto(SITE+'/#/ig4/7'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на ИГ №4','нет'));
+    const g=await page({viewport:{width:1280,height:860}},'гость'); await g.goto(SITE+'/new/#/ig4/7'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на ИГ №4','нет'));
     await g.click('.tu-fab'); if(!/Войди/.test(await g.textContent('.tu-b').catch(()=>''))) B('гость: предложение войти',await g.textContent('.tu-b').catch(()=>''));
-    await g.goto(SITE+'/#/ig2/8'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на ДЗ с наставником','видна на #/ig2/8');
-    await g.goto(SITE+'/#/ng3/8'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на начерте','нет на #/ng3/8'));
-    await g.goto(SITE+'/#/theory'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на вариантах ДЗ','видна на #/theory');
+    await g.goto(SITE+'/new/#/ig2/8'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на ДЗ с наставником','видна на #/ig2/8');
+    await g.goto(SITE+'/new/#/ng3/8'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на начерте','нет на #/ng3/8'));
+    await g.goto(SITE+'/new/#/theory'); await g.waitForTimeout(400); if(await g.locator('.tu-fab >> visible=true').count()) B('кнопка — только на вариантах ДЗ','видна на #/theory');
     /* студент: согласие → вопрос → шаг 5 открыт сам */
-    const pg=await page({viewport:{width:1280,height:860}},'студент'); await pg.goto(SITE+'/#/ig4/7'); await pg.evaluate(t=>localStorage.setItem('lk_tok',t),st); await pg.reload();
+    const pg=await page({viewport:{width:1280,height:860}},'студент'); await pg.goto(SITE+'/new/#/ig4/7'); await pg.evaluate(t=>localStorage.setItem('lk_tok',t),st); await pg.reload();
     await pg.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await pg.click('.tu-fab');
     await pg.waitForSelector('[data-consent]',{timeout:8000}).catch(()=>B('согласие на зарубежную модель','нет экрана согласия'));
     if(!/Имя, почта, группа/.test(await pg.textContent('.tu-b').catch(()=>''))) B('согласие: что не уходит модели','нет объяснения');
@@ -111,7 +111,7 @@ async function runTutor(browser){
     /* история после перезагрузки */
     await pg.reload(); await pg.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await pg.click('.tu-fab'); await pg.waitForFunction(()=>document.querySelectorAll('.tu-m.t').length===3,null,{timeout:8000}).catch(()=>B('история разговора после перезагрузки','нет'));
     /* начерт: с листа варианта — наставник открывает разбор, подзадачу б) и шаг 7; вторая просьба — подсветка A₄, B₄ */
-    { const ng=await page({viewport:{width:1280,height:860}},'начерт'); await ng.goto(SITE+'/#/ng3/3/list'); await ng.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ng.reload();
+    { const ng=await page({viewport:{width:1280,height:860}},'начерт'); await ng.goto(SITE+'/new/#/ng3/3/list'); await ng.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ng.reload();
       await ng.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await ng.click('.tu-fab'); await ng.waitForSelector('[data-in]:visible',{timeout:8000});
       if(!/Начерт · ДЗ №3 · вариант 3/.test(await ng.textContent('[data-sub]').catch(()=>''))) B('начерт: заголовок окна',await ng.textContent('[data-sub]').catch(()=>''));
       await ng.fill('[data-in]','начерт: помоги с б)'); await ng.press('[data-in]','Enter');
@@ -135,7 +135,7 @@ async function runTutor(browser){
       if(!eyes) B('начерт: фото ушло глазам','нет'); else { if(!/эпюре Монжа/.test(eyes.messages[0].content)) B('начерт: глаза — промпт эпюра','нет');
         const imgs=eyes.messages[1].content.filter(c=>c.type==='image_url').map(c=>c.image_url.url); if(imgs.length!==2||imgs[1].length<20000) B('начерт: эталон — черновик листа','нет или пустой'); } }
     /* ИГ №5: шаги по элементам детали — IGUI.player */
-    { const ig=await page({viewport:{width:1280,height:860}},'ИГ №5'); await ig.goto(SITE+'/#/ig5/1'); await ig.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ig.reload();
+    { const ig=await page({viewport:{width:1280,height:860}},'ИГ №5'); await ig.goto(SITE+'/new/#/ig5/1'); await ig.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ig.reload();
       await ig.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('ИГ №5: кнопка наставника','нет')); await ig.click('.tu-fab'); await ig.waitForSelector('[data-in]:visible',{timeout:8000});
       await ig.fill('[data-in]','игэ: не понимаю шаг'); await ig.press('[data-in]','Enter');
       const on3=await ig.waitForFunction(()=>window.IGUI&&IGUI.player&&IGUI.player.current()===3&&document.querySelector('#igbPic svg'),null,{timeout:60000}).then(()=>true).catch(()=>false);
@@ -144,7 +144,7 @@ async function runTutor(browser){
       const hl=await ig.waitForFunction(()=>document.querySelectorAll('#igbPic svg text.tu-hl').length>=2,null,{timeout:15000}).then(()=>true).catch(()=>false);
       if(!hl) B('ИГ №5: подсвечены подписи точек 1 и 2',await ig.evaluate(()=>[...document.querySelectorAll('#igbPic svg text')].map(t=>t.textContent).slice(0,20).join(' '))); }
     /* 3) телефон */
-    const ph=await page({viewport:{width:390,height:844},isMobile:true,hasTouch:true},'телефон'); await ph.goto(SITE+'/#/ig4/7'); await ph.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ph.reload();
+    const ph=await page({viewport:{width:390,height:844},isMobile:true,hasTouch:true},'телефон'); await ph.goto(SITE+'/new/#/ig4/7'); await ph.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ph.reload();
     await ph.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await ph.click('.tu-fab'); await ph.waitForSelector('.tu-m.t',{timeout:8000});
     const geo=await ph.evaluate(()=>{ const b=document.querySelector('.tu').getBoundingClientRect(); return {sw:document.documentElement.scrollWidth,w:innerWidth,l:b.left,r:b.right,t:b.top}; });
     if(geo.sw>geo.w+1) B('телефон: без горизонтальной прокрутки',geo.sw+' > '+geo.w); if(geo.l<0||geo.r>geo.w+1||geo.t<0) B('телефон: окно помещается',JSON.stringify(geo));

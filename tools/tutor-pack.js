@@ -91,7 +91,7 @@ if(require.main===module)(async()=>{
   const srv=await serve();
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
   const page=await browser.newPage(), errs=[]; page.on('pageerror',e=>errs.push(e.message));
-  await page.goto('http://127.0.0.1:'+srv.address().port+'/#/ig/dz/4/1'); await page.waitForFunction(()=>window.IG4S&&window.IGUI&&IGUI.tutor&&window.DZR&&DZR.get('ig4')&&DZR.get('ng1'),null,{timeout:30000});
+  await page.addInitScript(()=>{ try{ localStorage.setItem('nch-preview-ok','1'); }catch(e){} }); await page.goto('http://127.0.0.1:'+srv.address().port+'/new/#/ig/dz/4/1'); await page.waitForFunction(()=>window.IG4S&&window.IGUI&&IGUI.tutor&&window.DZR&&DZR.get('ig4')&&DZR.get('ng1'),null,{timeout:30000});
   let fail=0;
   for(const dz of list){ const pack=await buildDz(page,dz,Array.from({length:30},(_,i)=>i+1)), n=Object.keys(pack.variants).length, OUTF=outOf(dz);
     const want=await page.evaluate(dz=>{ const D=DZR.get(dz); return D.part?Array.from({length:30},(_,i)=>i+1).filter(n=>D.part(n)).length:30; },dz);   /* ИГ №5: моделей 27 из 30 */
