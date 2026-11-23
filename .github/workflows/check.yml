@@ -6,7 +6,10 @@ name: Проверка сайта
 on:
   push:
     branches: [main]
+    # только тексты (промпты, описания, счётчик просмотров) — сайт не меняется, полная проверка не нужна
+    paths-ignore: ['docs/**', '**/*.md', 'views.json']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md', 'views.json']
   workflow_dispatch:
 permissions:
   actions: write
