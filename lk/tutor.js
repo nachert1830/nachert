@@ -247,7 +247,7 @@ css.textContent=`
 .tu-fab.l .tu-fb{right:auto;left:6px}
 .tu-fb::after{content:"";position:absolute;bottom:-7px;right:24px;width:12px;height:12px;background:#fff;border-right:1.5px solid #15161a;border-bottom:1.5px solid #15161a;transform:rotate(45deg)}
 .tu-fab.l .tu-fb::after{right:auto;left:24px}
-.tu[hidden],.tu-fab[hidden],.tu-att[hidden],.tu-mic[hidden],.tu-ib[hidden],.tu-streak[hidden]{display:none}
+.tu[hidden],.tu-fab[hidden],.tu-mode[hidden],.tu-att[hidden],.tu-mic[hidden],.tu-ib[hidden],.tu-streak[hidden]{display:none}
 svg .tu-hl{fill:#e5484d!important;font-weight:800!important;paint-order:stroke;stroke:rgba(229,72,77,.25);stroke-width:6px}
 .tu-note{position:absolute;z-index:6;max-width:220px;padding:5px 9px;border-radius:10px;background:#fff;color:#15161a;border:1.5px solid #e5484d;font:600 12.5px/1.3 var(--sans,system-ui);box-shadow:0 6px 16px -8px rgba(8,11,18,.45);pointer-events:none}
 .tu-note b{color:#e5484d}
@@ -338,8 +338,8 @@ function rich(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(
 const SUG=['С чего начать?','Не понимаю текущий шаг','Как найти точку на грани ⟂ π₃?','Готовлюсь к защите — спроси меня'];
 const SUG_IG=['С чего начать?','Не понимаю текущий шаг','Как перенести точку на вид слева?','Готовлюсь к защите — спроси меня'];
 const SUG_NG=['С чего начать?','Не понимаю текущий шаг','Какое правило здесь работает?','Готовлюсь к защите — спроси меня'];
-function render(){ const w=S.w, st=S.st, g=isGen(w); $('[data-sub]',box).textContent=g?'Спроси о чём угодно по курсу':w?(DZN[w.dz]||'')+' · вариант '+w.n:'';
-  $('.tu-att',box).hidden=g; inp.placeholder=g?'Спроси что угодно: теория, построения, ГОСТ…':'Спроси про свой вариант…'; streakShow();
+function render(){ const w=S.w, st=S.st, g=isGen(w); $('[data-sub]',box).textContent=g?'Спроси о чём угодно':w?(DZN[w.dz]||'')+' · вариант '+w.n:'';
+  $('.tu-att',box).hidden=g; inp.placeholder=g?'Спроси о чём угодно…':'Спроси про свой вариант…'; streakShow();
   box.querySelectorAll('[data-mode]').forEach(b=>{ const on=st&&st.mode===b.dataset.mode; b.classList.toggle('on',!!on); b.setAttribute('aria-selected',String(!!on)); });
   $('[data-foot]',box).hidden=!(st&&st.ready); $('.tu-mode',box).hidden=!(st&&st.ready)||g;
   if(!tok()){ body.innerHTML='<div class="tu-gate"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Войди, и начнём</b><p>Наставник помнит, где ты застрял, и ведёт по шагам твоего варианта. Вход — тот же, что в личном кабинете.</p><a class="tu-btn" href="/lk/#/login" data-login>Войти</a>'+playLink()+'</div>'; gate(); return; }

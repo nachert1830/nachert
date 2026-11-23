@@ -185,6 +185,7 @@ async function runTutor(browser){
       await tp.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await tp.click('.tu-fab'); await tp.waitForSelector('[data-in]:visible',{timeout:8000});
       if(!/о чём угодно/.test(await tp.textContent('[data-sub]').catch(()=>''))) B('Лука вне варианта: «спроси о чём угодно»',await tp.textContent('[data-sub]').catch(()=>''));
       if(await tp.locator('.tu-att >> visible=true').count()) B('Лука вне варианта: без фото листа','кнопка 📷 видна');
+      if(await tp.locator('.tu-mode >> visible=true').count()) B('Лука вне варианта: без режимов «Наставник / Разбор»','вкладки видны');
       if(await tp.evaluate(()=>!!(window.SpeechRecognition||window.webkitSpeechRecognition))&&!(await tp.locator('[data-mic] >> visible=true').count())) B('голосовой вопрос: кнопка 🎤','нет');
       const n0=mlog.length; await tp.fill('[data-in]','что такое конкурирующие точки'); await tp.press('[data-in]','Enter');
       const moved=await tp.waitForFunction(()=>location.hash==='#/topic/visibility'&&document.querySelector('.tu-m.t .tu-open'),null,{timeout:15000}).then(()=>true).catch(()=>false);

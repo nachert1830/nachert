@@ -76,6 +76,7 @@ const SYSTEM_GEN=`Ты — Лука, пингвин-наставник на са
 function cardGen(ctx){ const L=[];
   if(ctx.page&&(ctx.page.title||ctx.page.hash)) L.push('Где студент: '+(ctx.page.title?'«'+ctx.page.title+'»':'')+(ctx.page.hash?' ('+ctx.page.hash+')':'')+'.');
   else L.push('Где студент: сайт «Начерт».');
+  if(ctx.pageKey) L.push('Эта страница есть в курсе (key «'+ctx.pageKey+'»): вопрос про «эту тему», «тут» — read_page по этому key.');
   if(ctx.sel) L.push('Студент выделил на странице: «'+ctx.sel+'».');
   if(ctx.memo) L.push('Что известно о студенте: '+ctx.memo);
   if(ctx.found&&ctx.found.length) L.push('Инструментов сейчас нет. Найдено в курсе по вопросу (отвечай только по этому):\n'+ctx.found.map(f=>'— «'+f.title+'» ('+f.where+'): '+f.excerpt).join('\n'));

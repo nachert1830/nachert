@@ -112,7 +112,10 @@ const H={
 
   search_course(a,ctx){ const q=String(a.query||'').slice(0,200).trim(); if(!q) return {error:'Пустой запрос.'};
     const r=KB.search(q,{limit:a.limit||5}); r.forEach(x=>VF.numbersOf(x.excerpt,ctx.turn.facts)); (ctx.turn.kb=ctx.turn.kb||[]).push(...r.map(x=>x.key));
-    return r.length?{results:r.map(x=>({key:x.key,title:x.title,where:x.where,excerpt:x.excerpt}))}:{results:[],note:'В курсе ничего не нашлось. Скажи честно и предложи спросить автора (ask_author) или переформулировать.'}; },
+    const out=r.length?{results:r.map(x=>({key:x.key,title:x.title,where:x.where,excerpt:x.excerpt}))}:{results:[],note:'В курсе ничего не нашлось. Скажи честно и предложи спросить автора (ask_author) или переформулировать.'};
+    /* страница, где сейчас студент («объясни эту тему»): её отрывок — всегда рядом, даже если в запросе нет её слов */
+    const cp=ctx.pageDoc; if(cp&&!r.some(x=>x.key===cp.key)){ const ex=KB.excerptOf(cp,q+' '+cp.title); VF.numbersOf(ex,ctx.turn.facts); out.current_page={key:cp.key,title:cp.title,where:cp.where,excerpt:ex}; delete out.note; }
+    return out; },
   read_page(a,ctx){ const d=KB.doc(a.key); if(!d) return {error:'Нет такой страницы. Ключи — из search_course.'};
     VF.numbersOf(d.text,ctx.turn.facts); VF.numbersOf(d.title,ctx.turn.facts); (ctx.turn.kb=ctx.turn.kb||[]).push(d.key); return {key:d.key,title:d.title,where:d.where,text:d.text}; },
   open_page(a,ctx){ const d=KB.doc(a.key); if(!d) return {error:'Нет такой страницы. Ключи — из search_course.'};

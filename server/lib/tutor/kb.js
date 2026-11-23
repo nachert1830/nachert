@@ -45,5 +45,7 @@ function search(q,o){ o=o||{}; const qt=[...new Set(tokens(q))], lim=Math.max(1,
   return sc.slice(0,lim).map(([s,i])=>{ const d=DOCS[i]; return {key:d.key,title:d.title,where:d.where,href:d.href,type:d.type,score:Math.round(s*100)/100,excerpt:excerpt(d,qt)}; }); }
 
 const doc=k=>BYKEY.get(String(k||''))||null;
+/* отрывок страницы под запрос (для «страницы, где сейчас студент») */
+const excerptOf=(d,q,max)=>excerpt(d,[...new Set(tokens(q))],max);
 const byHref=h=>BYHREF.get(String(h||''))||null;
-module.exports={search,doc,byHref,tokens,stem,all:()=>DOCS,size:N};
+module.exports={search,doc,byHref,excerptOf,tokens,stem,all:()=>DOCS,size:N};

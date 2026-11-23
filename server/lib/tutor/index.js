@@ -87,7 +87,8 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     if(photo) mem.photo=true;   /* фото — попытка: лесенка открывает на ступень больше */
     const turn={asked:new Set(),facts:[],actions:[],tools:[],notes:0,eyesKop:0}, before=(gen?[]:openFacts(mem,dz,n)).concat(mem.kbf||[]);
     const llm={http:deps.http,key:c.key,token:deps.iamToken};
-    const ctx={dz,n,mem,turn,step,photo:!!photo,
+    const pageDoc=gen&&page.hash?KB.byHref(page.hash):null;
+    const ctx={dz,n,mem,turn,step,photo:!!photo,pageDoc,
       see:photo?async focus=>{ if(!ref) throw new Error('нет эталона для сравнения — обнови страницу');
         const left=t0+DEADLINE-Date.now(); if(left<8000) throw new Error('не хватило времени');
         const r=await LLM.chat(llm,c.eyes,{messages:[{role:'system',content:P.isNg(dz)?PR.EYES_NG:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+n+'.'+(focus?' Особенно: '+focus:'')},
@@ -102,7 +103,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     else if(bare){ const k=step||mem.last||1; POL.ask(mem,turn,k); const d=POL.allowed(mem,k), o=P.stepAt(dz,n,k,POL.depthName(d)); POL.open(mem,k,d); turn.facts.push(...T.factsOfStep(o));
       if(d>=2) turn.actions.push(T.showAction(dz,n,k,d>=3?(o.points||[]).map(p=>p.n):[]));   /* без рук наставник всё равно показывает шаг */
       inline='Шаг '+o.k+' «'+o.title+'»'+(o.idea?'\nИдея: '+o.idea:'')+(o.short?'\nЧто делать: '+o.short:'')+(o.more?'\nПодробно: '+o.more:''); }
-    const system=gen?PR.SYSTEM_GEN+'\n\n'+PR.cardGen({page,sel,memo:(mem.notes||[]).slice(-3).join('; '),found})
+    const system=gen?PR.SYSTEM_GEN+'\n\n'+PR.cardGen({page,sel,memo:(mem.notes||[]).slice(-3).join('; '),found,pageKey:pageDoc&&pageDoc.key})
       :PR.SYSTEM+'\n\n'+PR.card({overview:P.overview(dz,n),ng:P.isNg(dz),mode:mem.mode,step,memo:memo(mem,dz),photo:!!photo,inline,sel});
     const history=(mem.msgs||[]).slice(-CTX_HIST).map(m=>({role:m.r==='u'?'user':'assistant',content:m.t||(m.ph?'(фото листа)':'…')}));
     const messages=[{role:'system',content:system}].concat(history,[{role:'user',content:text||'Вот фото моего листа. Посмотри, что не так.'}]);

@@ -364,3 +364,11 @@ test('без согласия, с российской моделью: вне в
     b=>{ assert.ok(!b.tools,'без инструментов'); assert.match(b.messages[0].content,/Найдено в курсе по вопросу/); assert.match(b.messages[0].content,/Видимость и конкурирующие точки/); return say('Видна та точка, что ближе к наблюдателю.'); }]});
   const r=await gchat(c,{text:'конкурирующие точки — какая видна?'}); assert.equal(r.status,200,JSON.stringify(r.data)); assert.equal(M.calls.length,1);
 });
+
+test('Лука вне варианта: «объясни эту тему» — страница, где студент, всегда в найденном и в карточке',async()=>{
+  const {c}=await setup({script:[
+    b=>{ assert.match(b.messages[0].content,/Эта страница есть в курсе \(key «topic:true-length»\)/); return tools(['search_course',{query:'объясни эту тему проще'}]); },
+    b=>{ const r=lastTool(b); assert.equal(r.current_page.key,'topic:true-length'); assert.ok(r.current_page.excerpt.length>40); return say('Натуральную величину отрезка находят прямоугольным треугольником. Попробуешь?'); }]});
+  const r=await gchat(c,{text:'объясни эту тему проще',page:{hash:'#/topic/true-length',title:'Натуральная величина отрезка и углы наклона'}});
+  assert.equal(r.status,200,JSON.stringify(r.data));
+});
