@@ -35,7 +35,7 @@ function fakeModel(log){ return async(url,o)=>{ if(!/proxyapi\.ru/.test(url)) re
 async function runTutor(browser){
   const bad=[], B=(rule,msg)=>bad.push({name:'Наставник',rule,msg:String(msg)}), errs=[];
   /* 1) пакет знаний = решение сайта */
-  { const p=await browser.newPage(); const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const fp=path.join(ROOT,f);
+  { const p=await browser.newPage({bypassCSP:true}); const srv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html'; const fp=path.join(ROOT,f);
       if(!fp.startsWith(ROOT)||!fs.existsSync(fp)||fs.statSync(fp).isDirectory()){ r.writeHead(404); return r.end(); } r.writeHead(200,{'Content-Type':TY[path.extname(fp)]||'application/octet-stream'}); fs.createReadStream(fp).pipe(r); });
     const U=await listen(srv); await p.addInitScript(()=>{ try{ localStorage.setItem('nch-preview-ok','1'); }catch(e){} }); await p.goto(U+'/new/#/ig4/7'); await p.waitForFunction(()=>window.IG4S&&window.IGUI&&IGUI.tutor&&window.DZR&&DZR.get('ig4'),null,{timeout:30000});
     const snap=await PACK.build(p,[3,7,19]), file=JSON.parse(fs.readFileSync(PACK.OUT,'utf8'));
@@ -64,7 +64,7 @@ async function runTutor(browser){
   async function session(id,name){ const act=await app.onUpdate({message:{from:{id,first_name:name},chat:{id},text:'/start login'}}); const t=act.reply_markup.inline_keyboard[0][0].url.split('#/tg/')[1];
     const res=await app.handle({method:'POST',path:'/api/auth/bot/redeem',query:{},headers:{origin:SITE,'content-type':'application/json'},body:JSON.stringify({token:t,confirm:true,consent:{terms:true,pd:true}}),ip:'127.0.0.1',cookies:{}});
     return JSON.parse(res.body).session; }
-  const ctxs=[], page=async(o,who)=>{ const c=await browser.newContext(o); ctxs.push(c); await c.route(/^https?:\/\/(?!127\.0\.0\.1)/,r=>r.abort());
+  const ctxs=[], page=async(o,who)=>{ const c=await browser.newContext(Object.assign({bypassCSP:true},o));   /* waitForFunction в новых Playwright исполняет код через eval — CSP страницы его запрещает */ ctxs.push(c); await c.route(/^https?:\/\/(?!127\.0\.0\.1)/,r=>r.abort());
     /* окно согласия на статистику закрыто (пока оно открыто, кнопка наставника спрятана — проверяет tests/new-copy.js) */
     await c.addInitScript(()=>{ try{ localStorage.setItem('nch2_ck','n'); localStorage.setItem('nch-preview-ok','1'); }catch(e){} }); const p=await c.newPage(); p.on('pageerror',e=>errs.push(who+': '+e.message)); return p; };
   try{
