@@ -31,6 +31,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Живой сервер кабинета — маршруты наставника на месте (без входа — 401, не 404)
+        run: |
+          API=$(grep -o "https://[^']*" lk/config.js | head -1); echo "API: $API"
+          for p in "/api/tutor/state?dz=ng2&n=17" "/api/admin/tutor"; do c=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$API$p"); echo "$p → $c"; [ "$c" = "401" ] || [ "$c" = "403" ] || { echo "::error::$p ответил $c — маршрута наставника нет на сервере"; exit 1; }; done
+          c=$(curl -s -m 20 https://nachert1830.ru/new/ | grep -c 'lk/tutor.js'); echo "копия /new/ подключает наставника: $c"; [ "$c" -ge 1 ] || { echo "::error::в /new/ нет lk/tutor.js"; exit 1; }
+          c=$(curl -s -m 20 https://nachert1830.ru/ | grep -c 'lk/tutor.js'); echo "основной сайт подключает наставника: $c (должно быть 0)"; [ "$c" = "0" ] || { echo "::error::наставник попал на основной сайт"; exit 1; }
       - name: Замер
         env:
           PROXYAPI_KEY: ${{ secrets.PROXYAPI_KEY }}
