@@ -276,7 +276,7 @@ test('кэш промпта (по умолчанию; TUTOR_CACHE=off — без
 /* ── ИГ №3, №5, №6 (ig3, ig5, ig6.json — шаги плеера IGUI): пакеты, сверщик ── */
 test('ИГ №3, №5, №6: пакеты — шаги по элементам, точки с координатами как на чертеже шагов; сверщик ловит ≥ 95 % подсадок',()=>{
   const fmt=v=>String(v).replace('-','−').replace('.',','); let falsePos=[], caught=0, total=0;
-  for(const [dz,cnt] of [['ig3',30],['ig5',27],['ig6',30]]){ assert.ok(!P.isNg(dz)); assert.equal(Object.keys(P.pack(dz).variants).length,cnt,dz);
+  for(const [dz,cnt] of [['ig3',30],['ig5',30],['ig6',30]]){ assert.ok(!P.isNg(dz)); assert.equal(Object.keys(P.pack(dz).variants).length,cnt,dz);
     assert.equal(P.courseLabel(dz),'ИГ · '+P.pack(dz).label);
     for(const n of Object.keys(P.pack(dz).variants).map(Number)){ const v=P.variant(dz,n), R=P.registry(dz,n);
       assert.ok(v.steps.length>=5,dz+' в. '+n); assert.ok(R.size>=2,dz+' в. '+n+': точки');
