@@ -375,6 +375,10 @@ async function screens(){
       fin=await page.evaluate(()=>/Подготовка пройдена/.test(document.body.innerText)); if(!fin){ bad('Путь ИГ ДЗ №4: застрял на '+await page.evaluate(()=>location.hash)); break; } }
     if(!fin) bad('Путь ИГ ДЗ №4: не дошёл до конца за '+n+' шагов'); if(fin&&ext<5) bad('Путь ИГ ДЗ №4: теория и задачи не открывались ('+ext+')');
     if(fin&&await page.evaluate(()=>{ const p=PREP.PLANS.ig4; return p.stages.some((s,i)=>!PREP.stDone('ig4',i)); })) bad('Путь ИГ ДЗ №4: дошёл до конца, а этапы не засчитаны'); }
+  /* главная копии: первым — «Учиться», ведёт в путь задания, которое выбрал сайт */
+  await page.goto(UN+'#/'); await page.waitForTimeout(1800);
+  { const r=await page.evaluate(()=>{ const a=document.querySelector('#ns-home .lrn'), first=document.querySelector('#ns-home a, #ns-home button'); return {h:a&&a.getAttribute('href'),first:a&&a===first,want:'#/prep/'+PREP.autoKey()+'/go'}; });
+    if(r.h!==r.want) bad('Главная копии: «Учиться» ведёт на '+r.h+' вместо '+r.want); else if(!r.first) bad('Главная копии: «Учиться» не первое'); }
   /* путь начерта начинается с замера */
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
   await page.goto(UN+'#/prep/ng2/go'); await page.waitForTimeout(600);

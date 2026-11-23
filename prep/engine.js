@@ -172,8 +172,9 @@ function viewHubCourses(v){
    Сроки прошли у всех непройденных (или вне семестра) — по порядку программы. */
 const W1=Date.UTC(2026,7,31);
 function semWeek(){ const d=new Date(), t=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()); return Math.floor((t-W1)/(7*DAY))+1; }
-function autoKey(){
-  const ks=Object.keys(PLANS).filter(k=>planProg(k).done<planProg(k).n); if(!ks.length) return Object.keys(PLANS)[0];
+function autoKey(subj){
+  const all=Object.keys(PLANS).filter(k=>!subj||PLANS[k].subj===subj);
+  const ks=all.filter(k=>planProg(k).done<planProg(k).n); if(!ks.length) return all[0];
   const wk=semWeek(), lk=lastKey(), w=k=>PLANS[k].w||99;
   if(lk&&ks.includes(lk)&&w(lk)>=wk) return lk;
   const up=ks.filter(k=>w(k)>=wk).sort((a,b)=>w(a)-w(b)||(PLANS[a].kind==='rk')-(PLANS[b].kind==='rk'));
@@ -488,7 +489,7 @@ function viewGo(v,k){
   const st=s.i!=null?p.stages[s.i]:null;
   const head=st?`<span class="pp-cck">${esc(p.label)} · этап ${s.i+1} из ${p.stages.length}</span><p class="pp-gst">${esc(st.t)}</p>`:`<span class="pp-cck">${esc(p.label)}</span>`;
   const screen=(body,btn,cls)=>{ document.body.classList.remove('inplayer'); v.innerHTML=`<div class="wrap page pp"><div class="pp-gt pp-go${cls?' '+cls:''}">${head}${body}<div class="pp-row pp-gb">${btn}</div>
-    <div class="pp-cbar">${pbar(g.done,g.n)}<span>этапов пройдено ${g.done} из ${g.n}</span></div></div></div>`; };
+    <div class="pp-cbar">${pbar(g.done,g.n)}<span>${g.done} из ${g.n}</span></div></div></div>`; };
   const isTask=it=>/^#\/(ng\/tasks|ig\/wb)\//.test(it[0]);
   /* теория и задача открываются сразу; что делать — на плашке внизу, «Дальше» возвращает в путь */
   if(s.kind==='learn'||s.kind==='do'){
@@ -500,19 +501,19 @@ function viewGo(v,k){
   if(s.kind==='explain'){
     const tp=(st.topics||[]).filter(id=>G.BY[id]);
     const exp=[st.why||'',...tp.map(id=>G.BY[id].t+': '+G.BY[id].new)].filter(Boolean);
-    screen(`<h1>Объясни себе</h1><p class="pp-sub">Не подглядывая, скажи вслух или запиши в одну-две строки: что делаем на этом этапе, как и зачем. Потом сверь.</p>
+    screen(`<h1>Объясни себе</h1><p class="pp-sub">Скажи вслух: что делаем и зачем. Потом сверь.</p>
       <ul class="pp-sea" id="ppExp" hidden>${exp.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`,
       `<button type="button" class="pp-btn" id="ppSe">Сверить с ответом</button>`);
     const b=v.querySelector('#ppSe'); b.onclick=()=>{ if(v.querySelector('#ppExp').hidden){ v.querySelector('#ppExp').hidden=false; b.textContent='Дальше: проверка этапа →'; } else { setSeen(k,s.i+':e'); document.title=viewGo(v,k)+' · Начерт'; scrollTo(0,0); } };
     return p.label+' · объясни себе';
   }
   if(s.kind==='mark'){
-    screen(`<h1>Готово?</h1><p class="pp-sub">Если всё из этого этапа сделано — идём дальше.</p>`,`<button type="button" class="pp-btn" id="ppMk">Сделал — дальше →</button>`);
+    screen(`<h1>Готово?</h1>`,`<button type="button" class="pp-btn" id="ppMk">Сделал — дальше →</button>`);
     v.querySelector('#ppMk').onclick=()=>{ setManual(k,s.i,{t:Date.now(),by:'self'}); document.title=viewGo(v,k)+' · Начерт'; scrollTo(0,0); };
     return p.label;
   }
   trail(null);
-  screen(`<h1>Подготовка пройдена</h1><p class="pp-sub">${p.kind==='dz'?'База есть. Теперь реши свой вариант сам — от начала до конца, на бумаге. Готовое решение открывай только чтобы сверить ответ.':'Теперь — пробный билет на время, как на настоящем РК.'}</p>`,
+  screen(`<h1>Подготовка пройдена</h1><p class="pp-sub">${p.kind==='dz'?'Теперь свой вариант — сам, на бумаге. Решение — только для сверки.':'Теперь — пробный билет на время.'}</p>`,
     `<a class="pp-btn" href="${p.go}">${p.kind==='dz'?'К своему варианту':'К пробному билету'} →</a>`,'fin');
   try{ window.FX&&FX.confetti(); }catch(e){}
   return p.label+' · подготовка пройдена';
@@ -539,11 +540,11 @@ function viewQuiz(v,k,item){
   if(item==='pre'){
     const sts=p.stages.map((s,i)=>({i,id:(s.topics||[]).find(id=>TOPICS[id])})).filter(x=>x.id);
     if(!sts.length) return (location.hash=back,p.title);
-    const stg=shell(v,'Замер: что ты уже знаешь','по одной паре на этап · ответы не засчитываются',back); const res={};
+    const stg=shell(v,'Замер: что ты уже знаешь','по паре на этап',back); const res={};
     rounds(stg,sts.map(x=>x.id),sts.length,log=>{ log.forEach(x=>{ const s=sts.find(y=>y.id===x.id); if(s) res[s.i]=x.ok?1:0; }); setPre(k,{t:Date.now(),r:res});
       const ok=log.filter(x=>x.ok).length;
       fin(`<span class="pp-cck">Замер · ${esc(p.label)}</span><h1>${ok} из ${log.length}</h1>
-        <p class="pp-sub">Ошибаться на замере — нормально и даже полезно: мозг уже ищет ответ, и теория ложится на готовый вопрос. Дальше пройдём этапы по порядку: теория, задача, проверка. В выборе из двух угадать легко, поэтому верный ответ на замере этап не засчитывает — это сделает проверка этапа.</p>${missed(log)}`); });
+        <p class="pp-sub">Ошибки на замере — норма: так тема запомнится лучше.</p>`); });
     return 'Замер · '+p.label;
   }
   if(item==='mix'){
@@ -553,7 +554,7 @@ function viewQuiz(v,k,item){
     const seqIds=due.length?due.concat(ids).filter((x,i,a)=>a.indexOf(x)===i):ids;
     rounds(stg,seqIds,n,log=>{ const ok=log.filter(x=>x.ok).length;
       fin(`<span class="pp-cck">Смешанная тренировка · ${esc(p.label)}</span><h1>${ok} из ${log.length}</h1>
-        <p class="pp-sub">Когда темы идут вперемешку, сначала надо узнать, какой приём нужен, — как в настоящем ДЗ и на РК. Ошибки вернули свои темы на повтор, верные ответы отодвинули следующий повтор.</p>${missed(log)}`); const a=mstore.all(); a[k+':mix']=today(); mstore.set(a); },(id,ok)=>respace(id,ok),true);
+        <p class="pp-sub">Темы с ошибками вернутся на повтор.</p>`); const a=mstore.all(); a[k+':mix']=today(); mstore.set(a); },(id,ok)=>respace(id,ok),true);
     return 'Смешанная тренировка · '+p.label;
   }
   const m=/^check(\d+)$/.exec(item||''), i=m?+m[1]-1:-1, st=p.stages[i];
@@ -562,15 +563,15 @@ function viewQuiz(v,k,item){
   const pass=log=>{ setManual(k,i,{t:Date.now(),by:'test'}); try{ window.TRACK&&TRACK('prep_stage',{plan:k,st:i+1,by:'test'}); }catch(e){} try{ window.FX&&FX.confetti(); }catch(e){}
     const nx=p.stages.findIndex((s,j)=>!stDone(k,j)), dt=doneToday();
     fin(`<span class="pp-cck">${esc(p.label)} · этап ${i+1}</span><h1>Этап пройден</h1><p class="pp-sub">${esc(st.t)}</p>
-      ${dt>=3&&nx>=0?`<p class="pp-rest">Сегодня пройдено этапов: ${dt}. Лучше продолжить завтра: во сне мозг закрепляет выученное, и следующий этап ляжет на прочную основу. Завтра путь начнётся с повторения.</p>`:''}
-      ${nx>=0?`<p class="pp-sub">Дальше — этап ${nx+1}: ${esc(p.stages[nx].t)}.</p>`:'<p class="pp-sub">Это был последний этап.</p>'}`); };
+      ${dt>=3&&nx>=0?`<p class="pp-rest">На сегодня хватит — сон закрепит. Завтра продолжим.</p>`:''}
+`); };
   const fail=(log,extra)=>fin(`<span class="pp-cck">${esc(p.label)} · этап ${i+1}</span><h1>Пока не засчитано</h1>
-      <p class="pp-sub">${extra||'Нужно ответить верно на все вопросы проверки.'} Разбери ошибки ниже и попробуй снова — вопросы будут другими.</p>${missed(log)}`,true);
+      <p class="pp-sub">${extra||''} Нужно всё верно.</p>${missed(log)}`,true);
   if(kind==='duel'){ const ids=st.topics.filter(id=>TOPICS[id]);
-    rounds(shell(v,head,st.t+' · 4 пары, все верно',back),ids,4,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
-  else if(kind==='mcq'){ mcq(shell(v,head,st.t+' · все ответы верно',back),st.check,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
+    rounds(shell(v,head,st.t,back),ids,4,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
+  else if(kind==='mcq'){ mcq(shell(v,head,st.t,back),st.check,log=>log.every(x=>x.ok)?pass(log):fail(log,`Верно ${log.filter(x=>x.ok).length} из ${log.length}.`)); }
   else if(kind==='order'){ const ps=planSteps(st.order); if(!ps){ setManual(k,i,{t:Date.now(),by:'self'}); location.hash=back; return p.title; }
-    orderTask(shell(v,head,(ps.name?ps.name+' · ':'')+'план решения по порядку',back),ps.steps,log=>log[0].ok?pass(log):fail([],`Ошибок в порядке: ${log[0].miss}. Можно не больше одной.`)); }
+    orderTask(shell(v,head,'расставь шаги по порядку',back),ps.steps,log=>log[0].ok?pass(log):fail([],`Ошибок в порядке: ${log[0].miss}. Можно не больше одной.`)); }
   else { location.hash=back; return p.title; }
   return head+' · '+p.label;
 }
@@ -615,10 +616,9 @@ function gate(v,k,go,what){
   const nx=p.stages.findIndex((s,i)=>!stDone(k,i));
   v.innerHTML=`<div class="wrap page pp pp-gate-pg"><div class="pp-gt"><span class="pp-cck">${esc(p.label)} · ${esc(what||'решение')}</span>
     <h1>Сначала — подготовка</h1>
-    <p class="pp-sub">${esc(p.title)}: задание разбито на ${g.n} ${g.n<5?'этапа':'этапов'}. На каждом — теория, проверка и задачи на одну подзадачу. С этой базой свой вариант решается самому, а готовое решение нужно только для сверки.</p>
-    <div class="pp-cbar">${pbar(g.done,g.n)}<span>пройдено ${g.done} из ${g.n}</span></div>
-    <div class="pp-row pp-gb"><a class="pp-btn big" href="#/prep/${k}/go">${g.done?'Продолжить подготовку':'Начать подготовку'} →</a></div>
-    <h2 class="pp-h2">Этапы</h2><ol class="pp-gl">${p.stages.map((s,i)=>`<li class="${stDone(k,i)?'done':''}${i===nx?' now':''}">${esc(s.t)}</li>`).join('')}</ol>
+    <p class="pp-sub">${g.n} ${g.n<5?'этапа':'этапов'} — и решишь сам.</p>
+    <div class="pp-cbar">${pbar(g.done,g.n)}<span>${g.done} из ${g.n}</span></div>
+    <div class="pp-row pp-gb"><a class="pp-btn big" href="#/prep/${k}/go">${g.done?'Продолжить':'Начать'} →</a></div>
     <p class="pp-skip"><button type="button" id="ppSkip">Сразу открыть решение</button></p></div></div>`;
   v.querySelector('#ppSkip').onclick=()=>{ skip(k); try{ window.TRACK&&TRACK('prep_gate_skip',{plan:k}); }catch(e){} go(); };
   try{ window.TRACK&&TRACK('prep_gate',{plan:k}); }catch(e){}
