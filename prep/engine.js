@@ -179,7 +179,7 @@ function autoKey(subj){
 }
 function viewHub(v){
   if(!Object.keys(PLANS).length) return viewHubCourses(v);
-  location.replace('#/prep/'+autoKey()+'/go'); return 'Подготовка';
+  location.replace('#/prep/'+autoKey()); return 'Подготовка';
 }
 
 /* #/prep/ng4 — курс одного задания: свои темы по блокам + свёрнуто «нужно из прошлых» */
@@ -220,13 +220,14 @@ function viewTopic(v,id,ck){
   const saved=store.get(id);
   document.body.classList.add('inplayer');
   v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="${back}" aria-label="${ck?'К курсу':'К программе'}">←</a>
-    <div class="pp-ttl">${(()=>{ const sk=ck&&skillOf(ck,id), p=ck&&PLANS[ck]; return sk?`<b>Разбор: ${esc(sk.t)}</b><small>${esc(p.label)} · навык ${p.skills.indexOf(sk)+1} из ${p.skills.length}</small>`:`<b>${esc(T.t)}</b><small>${esc(T.new)}</small>`; })()}</div><div class="pp-seg" role="tablist"${ck&&PLANS[ck]?' hidden':''}><button data-ph="watch">Смотри</button><button data-ph="duel">Проверка</button></div></div>
+    <div class="pp-ttl">${(()=>{ const sk=ck&&skillOf(ck,id), p=ck&&PLANS[ck]; return sk?`<b>Разбор: ${esc(sk.t)}</b><small>${esc(p.label)} · уровень ${p.skills.indexOf(sk)+1} из ${p.skills.length}</small>`:`<b>${esc(T.t)}</b><small>${esc(T.new)}</small>`; })()}</div><div class="pp-seg" role="tablist"${ck&&PLANS[ck]?' hidden':''}><button data-ph="watch">Смотри</button><button data-ph="duel">Проверка</button></div></div>
     <div class="pp-stage" id="ppStage"></div></div>`;
   const stage=v.querySelector('#ppStage'), seg=v.querySelector('.pp-seg');
   const setPh=ph=>{ seg.querySelectorAll('button').forEach(b=>{ b.classList.toggle('on',b.dataset.ph===ph); b.setAttribute('aria-selected',b.dataset.ph===ph); });
     if(ph==='watch') watch(stage,topic,T,()=>setPh('duel')); else duel(stage,topic,T,saved,()=>setPh('watch'),ck); };
   /* в пути подготовки тема — разбор навыка по шагам на чертеже, после него — тест навыка */
-  if(ck&&PLANS[ck]){ watch(stage,topic,T,()=>{ setSeen(ck,'w:'+id); location.hash='#/prep/'+ck+'/go'; },'К тесту →'); return T.t; }
+  if(ck&&PLANS[ck]){ const sk=PLANS[ck].skills, ix=Math.max(0,sk.findIndex((s,j)=>s.topic===id&&!stDone(ck,j))>=0?sk.findIndex((s,j)=>s.topic===id&&!stDone(ck,j)):sk.findIndex(s=>s.topic===id));
+    watch(stage,topic,T,()=>{ setSeen(ck,'w:'+id); location.hash='#/prep/'+ck+'/test'+(ix+1); },'К тесту →'); return T.t; }
   seg.onclick=e=>{ const b=e.target.closest('button'); if(b) setPh(b.dataset.ph); };
   setPh(saved&&saved.n?'duel':'watch');
   return T.t;
@@ -367,24 +368,49 @@ const trailKey=()=>{ try{ return sessionStorage.getItem(TRAIL); }catch(e){ retur
 const trailHint=()=>{ try{ return sessionStorage.getItem(TRAIL+'_h')||''; }catch(e){ return ''; } };
 const skillOf=(k,id)=>{ const p=PLANS[k]; return p?p.skills.find(s=>s.topic===id):null; };
 
-function nextStep(k){
-  const p=PLANS[k], sn=seenOf(k), i=p.skills.findIndex((s,j)=>!stDone(k,j)); if(i<0) return {kind:'final'};
-  const sk=p.skills[i];
-  if(sk.topic&&TOPICS[sk.topic]) return sn['w:'+sk.topic]?{kind:'test',i,href:'#/prep/'+k+'/test'+(i+1)}:{kind:'topic',i,href:'#/prep/'+k+'/'+sk.topic};
-  return {kind:'see',i,sk};
-}
-function viewGo(v,k){
-  const p=PLANS[k]; lastKey(k); trail(k,'');
-  const s=nextStep(k), g=planProg(k);
-  if(s.href){ location.replace(s.href); return p.label; }
-  if(s.kind==='see'){ setDone(k,s.i,{t:Date.now()}); trail(k,'Разбор: «'+s.sk.t+'» — пройди по шагам'); location.replace(s.sk.see); return p.label; }
-  trail(null); document.body.classList.remove('inplayer');
-  v.innerHTML=`<div class="wrap page pp"><div class="pp-gt pp-go fin"><span class="pp-cck">${esc(p.label)}</span><h1>Все навыки готовы</h1>
-    <p class="pp-sub">${p.kind==='dz'?'Теперь своё ДЗ целиком.':'Теперь — пробный билет.'}</p>
-    <div class="pp-row pp-gb"><a class="pp-btn big" href="${p.go}">${p.kind==='dz'?'К своему варианту':'К билету'} →</a></div>
-    <div class="pp-cbar">${pbar(g.done,g.n)}<span>${g.done} из ${g.n}</span></div></div></div>`;
-  try{ window.FX&&FX.confetti(); }catch(e){}
-  return p.label+' · готов';
+/* ───────── карта уровней (#/prep/<к>): навыки — уровни по порядку, как в игре ─────────
+   Пройден — зелёный, ✓ и звёзды (тест с первой попытки ★★★, со второй ★★, дальше ★); текущий — пульсирует, «Играть»;
+   следующие — с замком; в конце — кубок «Своё ДЗ», открывается, когда пройдены все уровни. */
+const curOf=k=>PLANS[k].skills.findIndex((s,j)=>!stDone(k,j));
+const starsOf=(k,i)=>{ const d=(mstore.all()[k]||{})[i]; return d&&d.stars||0; };
+const JUST='nch_prep_just';
+const ICO={check:'<path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  lock:'<rect x="7" y="11" width="10" height="8" rx="2" fill="currentColor"/><path d="M9.2 11V8.8a2.8 2.8 0 0 1 5.6 0V11" fill="none" stroke="currentColor" stroke-width="2"/>',
+  cup:'<path d="M8 5h8v4a4 4 0 0 1-8 0zM8 6H5.5a2.5 2.5 0 0 0 2.6 3.4M16 6h2.5a2.5 2.5 0 0 1-2.6 3.4M12 13v3M9 19h6l-.6-3h-4.8z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>',
+  play:'<path d="M9 7l8 5-8 5z" fill="currentColor"/>'};
+const svgI=n=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICO[n]}</svg>`;
+function viewMap(v,k){
+  const p=PLANS[k]; lastKey(k); trail(null); document.body.classList.remove('inplayer');
+  const g=planProg(k), cur=curOf(k), n=p.skills.length, stars=p.skills.reduce((a,s,i)=>a+starsOf(k,i),0);
+  let just=null; try{ just=sessionStorage.getItem(JUST); sessionStorage.removeItem(JUST); }catch(e){}
+  const W=Math.min(560,Math.max(300,(v.clientWidth||document.documentElement.clientWidth||390)-32)), STEP=158, TOP=56;
+  const X=i=>W/2+Math.sin(i*1.15)*(W*0.3), Y=i=>TOP+i*STEP;
+  const pts=[...p.skills.map((s,i)=>[X(i),Y(i)]),[X(n),Y(n)]];
+  let d=`M${pts[0][0]},${pts[0][1]}`; for(let i=1;i<pts.length;i++){ const [x0,y0]=pts[i-1],[x1,y1]=pts[i], m=(y0+y1)/2; d+=` C${x0},${m} ${x1},${m} ${x1},${y1}`; }
+  const lastDone=cur<0?n:cur; let dd=`M${pts[0][0]},${pts[0][1]}`; for(let i=1;i<=lastDone&&i<pts.length;i++){ const [x0,y0]=pts[i-1],[x1,y1]=pts[i], m=(y0+y1)/2; dd+=` C${x0},${m} ${x1},${m} ${x1},${y1}`; }
+  const H=Y(n)+110;
+  const node=(s,i)=>{ const done=stDone(k,i), now=i===cur, st=done?'done':now?'cur':'lock', sr=starsOf(k,i);
+    const href=done||now?(s.topic&&TOPICS[s.topic]?`#/prep/${k}/${s.topic}`:'#'):null;
+    const tag=href?`a href="${href}"`:'div';
+    return `<${tag} class="mp-n ${st}${just===k+':'+i?' pop':''}" data-i="${i}" style="left:${X(i)}px;top:${Y(i)}px" ${href?'':'aria-disabled="true"'}>
+      <span class="mp-c">${done?svgI('check'):now?`<b>${i+1}</b>`:svgI('lock')}</span>
+      ${done&&sr?`<span class="mp-s">${'★'.repeat(sr)}<i>${'★'.repeat(3-sr)}</i></span>`:now?'<span class="mp-go">Играть</span>':''}
+      <span class="mp-l">${esc(s.t)}</span></${href?'a':'div'}>`; };
+  const fin=cur<0;
+  v.innerHTML=`<div class="wrap page pp mp"><div class="mp-hd"><a class="pp-back" href="${p.go}" aria-label="К заданию">←</a>
+      <div><span class="pp-cck">Подготовка · ${esc(p.label)}</span><h1>${esc(p.title)}</h1></div></div>
+    <div class="mp-pr">${pbar(g.done,g.n)}<b>${g.done} / ${g.n}</b>${stars?`<span class="mp-ts">★ ${stars}</span>`:''}</div>
+    <div class="mp-map" style="height:${H}px;width:${W}px">
+      <svg class="mp-path" width="${W}" height="${H}" aria-hidden="true"><path d="${d}" class="mp-road"/><path d="${dd}" class="mp-road on"/></svg>
+      ${p.skills.map(node).join('')}
+      <${fin?`a href="${p.go}"`:'div'} class="mp-n cup ${fin?'cur':'lock'}" style="left:${X(n)}px;top:${Y(n)}px"><span class="mp-c">${svgI('cup')}</span>${fin?'<span class="mp-go">Своё ДЗ</span>':''}<span class="mp-l">${p.kind==='dz'?'Своё '+esc(p.label):esc(p.label)}</span></${fin?'a':'div'}>
+    </div></div>`;
+  v.querySelectorAll('.mp-n[href="#"]').forEach(a=>a.onclick=e=>{ e.preventDefault(); const i=+a.dataset.i, sk=p.skills[i];
+    if(!stDone(k,i)) setDone(k,i,{t:Date.now()}); trail(k,'Разбор: «'+sk.t+'»'); location.hash=sk.see; });
+  css();
+  setTimeout(()=>{ const c=v.querySelector('.mp-n.cur'); if(c&&c.scrollIntoView) c.scrollIntoView({block:'center',behavior:just?'smooth':'auto'}); },60);
+  if(fin&&just){ try{ window.FX&&FX.confetti(); }catch(e){} }
+  return 'Подготовка · '+p.label;
 }
 /* плашка «Дальше» на странице разбора инжи */
 function bar(){
@@ -393,7 +419,7 @@ function bar(){
   if(!show){ if(el) el.remove(); return; }
   const p=PLANS[k], g=planProg(k), hint=trailHint();
   if(!el){ el=document.createElement('div'); el.id='ppTrail'; document.body.appendChild(el); }
-  el.innerHTML=`<span><b>${hint?esc(hint):'Подготовка к '+esc(p.label)}</b><small>${esc(p.label)} · навыков ${g.done} из ${g.n}</small></span><a class="pp-btn" href="#/prep/${k}/go">Дальше →</a>`;
+  el.innerHTML=`<span><b>${hint?esc(hint):'Подготовка к '+esc(p.label)}</b><small>${esc(p.label)} · уровней ${g.done} из ${g.n}</small></span><a class="pp-btn" href="#/prep/${k}">К карте →</a>`;
   css();
 }
 if(typeof window!=='undefined'&&window.addEventListener){ window.addEventListener('hashchange',()=>setTimeout(bar,0)); window.addEventListener('load',()=>setTimeout(bar,0)); }
@@ -401,23 +427,24 @@ if(typeof window!=='undefined'&&window.addEventListener){ window.addEventListene
 /* тест навыка: 4 пары чертежей (новые числа, типичные ошибки темы), все верно — навык готов */
 function viewTest(v,k,i){
   const p=PLANS[k], sk=p&&p.skills[i], topic=sk&&TOPICS[sk.topic];
-  if(!topic){ location.replace('#/prep/'+k+'/go'); return p?p.label:'Подготовка'; }
+  if(!topic){ location.replace('#/prep/'+k); return p?p.label:'Подготовка'; }
   document.body.classList.add('inplayer'); const N=4, log=[]; let cur=null, locked=false;
-  v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="#/prep/${k}/go" aria-label="Назад">←</a>
-    <div class="pp-ttl"><b>Тест: ${esc(sk.t)}</b><small>${esc(p.label)} · навык ${i+1} из ${p.skills.length}</small></div><span class="pp-cnt" id="ppCnt"></span></div>
+  v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="#/prep/${k}" aria-label="К карте">←</a>
+    <div class="pp-ttl"><b>Тест: ${esc(sk.t)}</b><small>${esc(p.label)} · уровень ${i+1} из ${p.skills.length}</small></div><span class="pp-cnt" id="ppCnt"></span></div>
     <div class="pp-stage"><div class="pp-duel"><div class="pp-card" id="ppA" tabindex="0" role="button" aria-label="Первый чертёж"><svg></svg></div>
     <div class="pp-panel mid"><div class="pp-meter"><div class="pp-prog"><i id="ppBar"></i></div><span id="ppPct"></span></div><div class="pp-verd" id="ppVerd"></div></div>
     <div class="pp-card" id="ppB" tabindex="0" role="button" aria-label="Второй чертёж"><svg></svg></div></div></div></div>`;
   const A=v.querySelector('#ppA'), B=v.querySelector('#ppB'), verd=v.querySelector('#ppVerd');
   const end=()=>{ const ok=log.filter(x=>x.ok).length, pass=ok===N; document.body.classList.remove('inplayer');
     try{ window.TRACK&&TRACK('prep_skill',{plan:k,sk:i+1,ok}); }catch(e){}
-    if(pass){ setDone(k,i,{t:Date.now(),ok}); try{ window.FX&&FX.confetti(); }catch(e){} }
-    else setSeen(k,'w:'+sk.topic,false);   /* не сдал — снова разбор */
+    const a=mstore.all(), tr=a[k+':tries']||{}; tr[i]=(tr[i]||0)+1; a[k+':tries']=tr; mstore.set(a);
+    const was=stDone(k,i), stars=tr[i]<=1?3:tr[i]===2?2:1;
+    if(pass){ if(!was||stars>starsOf(k,i)) setDone(k,i,{t:Date.now(),ok,stars:Math.max(stars,starsOf(k,i))}); try{ sessionStorage.setItem(JUST,k+':'+i); }catch(e){} try{ window.FX&&FX.confetti(); }catch(e){} }
     const miss=[...new Set(log.filter(x=>!x.ok).map(x=>x.say))];
-    v.innerHTML=`<div class="wrap page pp"><div class="pp-gt pp-go${pass?' fin':''}"><span class="pp-cck">${esc(p.label)} · навык ${i+1} из ${p.skills.length}</span>
-      <h1>${pass?'Готово':'Пока не готов'}</h1><p class="pp-sub">${esc(sk.t)} · верно ${ok} из ${N}</p>
+    v.innerHTML=`<div class="wrap page pp"><div class="pp-gt pp-go${pass?' fin':''}"><span class="pp-cck">${esc(p.label)} · уровень ${i+1} из ${p.skills.length}</span>
+      <h1>${pass?'Уровень пройден':'Пока не готов'}</h1>${pass?`<p class="mp-big">${'★'.repeat(stars)}<i>${'★'.repeat(3-stars)}</i></p>`:''}<p class="pp-sub">${esc(sk.t)} · верно ${ok} из ${N}</p>
       ${miss.length?`<ul class="pp-miss">${miss.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
-      <div class="pp-row pp-gb"><a class="pp-btn big" href="#/prep/${k}/go">${pass?'Дальше':'Разбор ещё раз'} →</a></div></div></div>`; };
+      <div class="pp-row pp-gb"><a class="pp-btn big" href="${pass?'#/prep/'+k:'#/prep/'+k+'/'+sk.topic}">${pass?'К карте':'Разбор ещё раз'} →</a></div></div></div>`; };
   const next=()=>{ if(log.length>=N) return end();
     let tk=trapFor(topic), pr=pair(topic,tk); for(let t=0;!pr&&t<6;t++){ tk=trapFor(topic); pr=pair(topic,tk); }
     if(!pr){ log.push({ok:true}); return next(); }
@@ -455,14 +482,14 @@ function chipCourse(dz){
 function card(k){
   const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':cardCourse(k);
   const g=planProg(k), nx=p.skills.findIndex((s,i)=>!stDone(k,i));
-  return `<a class="pp-dzcard" href="#/prep/${k}/go"><span class="pp-dzk">Сначала — подготовка к ${esc(p.label)}</span>
+  return `<a class="pp-dzcard" href="#/prep/${k}"><span class="pp-dzk">Сначала — подготовка к ${esc(p.label)}</span>
     <b>Навыков готово: ${g.done} из ${g.n}</b>${pbar(g.done,g.n)}
     <small>${nx>=0?'Навык '+(nx+1)+' из '+g.n+': «'+esc(p.skills[nx].t)+'»':'Все навыки готовы — решай свой вариант'}</small></a>`;
 }
 function chip(k){
   const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':chipCourse(k);
   const g=planProg(k);
-  return `<a class="pp-dzchip" href="#/prep/${k}/go"><b>Подготовка к ${esc(p.label)}</b>${pbar(g.done,g.n)}<span>${g.done}/${g.n} →</span></a>`;
+  return `<a class="pp-dzchip" href="#/prep/${k}"><b>Подготовка к ${esc(p.label)}</b>${pbar(g.done,g.n)}<span>${g.done}/${g.n} →</span></a>`;
 }
 /* Перед решением варианта — предложение пройти подготовку (мягкий вход: решение открывается одной кнопкой).
    Показывается, пока курс не пройден, раз за сеанс на задание; «Сразу к решению» запоминается до закрытия вкладки.
@@ -474,12 +501,13 @@ function gate(v,k,go,what){
   const p=PLANS[k]; if(!p||skipped(k)) return false;
   try{ if(navigator.webdriver&&localStorage.getItem('nch_prep_gate')!=='1') return false; }catch(e){}
   const g=planProg(k); if(g.done===g.n) return false;
-  v.innerHTML=`<div class="wrap page pp pp-gate-pg"><div class="pp-gt"><span class="pp-cck">${esc(p.label)} · ${esc(what||'решение')}</span>
-    <h1>Сначала — подготовка</h1>
-    <p class="pp-sub">${g.n} ${g.n<5?'навыка':'навыков'}: разбор и короткий тест — и решишь сам.</p>
-    <div class="pp-cbar">${pbar(g.done,g.n)}<span>${g.done} из ${g.n}</span></div>
-    <div class="pp-row pp-gb"><a class="pp-btn big" href="#/prep/${k}/go">${g.done?'Продолжить':'Начать'} →</a></div>
-    <p class="pp-skip"><button type="button" id="ppSkip">Сразу открыть решение</button></p></div></div>`;
+  const cur=curOf(k);
+  v.innerHTML=`<div class="wrap page pp pp-gate-pg"><div class="pp-gt gt2"><span class="pp-cck">${esc(p.label)} · ${esc(what||'решение')}</span>
+    <h1>${esc(p.title)}</h1>
+    <div class="gt-lv">${p.skills.map((s,i)=>`<i class="${stDone(k,i)?'done':i===cur?'cur':''}"></i>`).join('')}</div>
+    <p class="pp-sub">Подготовка: ${g.done} из ${g.n} ${g.n<5?'уровня':'уровней'}</p>
+    <a class="pp-btn big" href="#/prep/${k}">${g.done?'Продолжить подготовку':'Пройти подготовку'} →</a>
+    <button type="button" class="pp-btn big ghost" id="ppSkip">Посмотреть решение</button></div></div>`;
   v.querySelector('#ppSkip').onclick=()=>{ skip(k); try{ window.TRACK&&TRACK('prep_gate_skip',{plan:k}); }catch(e){} go(); };
   try{ window.TRACK&&TRACK('prep_gate',{plan:k}); }catch(e){}
   return true;
@@ -489,9 +517,9 @@ function gate(v,k,go,what){
 function view(v,r){
   const G=P(); if(!G){ v.innerHTML='<div class="wrap page"><div class="box warn">Программа не загрузилась.</div></div>'; return 'Подготовка'; }
   if(r.tab==='all') return viewAll(v);
-  const crs=k=>PLANS[k]?(location.replace('#/prep/'+k+'/go'),'Подготовка'):viewCourse(v,k);
+  const crs=k=>PLANS[k]?viewMap(v,k):viewCourse(v,k);
   if(r.tab==='for') return G.COURSE[r.item]||PLANS[r.item]?crs(r.item):viewHub(v);
-  if(r.tab&&(G.COURSE[r.tab]||PLANS[r.tab])) return r.item?(PLANS[r.tab]&&r.item==='go'?viewGo(v,r.tab):PLANS[r.tab]&&/^test\d+$/.test(r.item)?viewTest(v,r.tab,+r.item.slice(4)-1):viewTopic(v,r.item,r.tab)):crs(r.tab);
+  if(r.tab&&(G.COURSE[r.tab]||PLANS[r.tab])) return r.item?(PLANS[r.tab]&&r.item==='go'?viewMap(v,r.tab):PLANS[r.tab]&&/^test\d+$/.test(r.item)?viewTest(v,r.tab,+r.item.slice(4)-1):viewTopic(v,r.item,r.tab)):crs(r.tab);
   if(r.tab) return viewTopic(v,r.tab,null);
   return viewHub(v);
 }
@@ -607,6 +635,33 @@ const CSS=`
 .pp-mcq .pp-verd{flex-direction:column;margin-top:12px}.pp-mw{margin:0;font-size:14px;color:var(--pp-mut);text-align:left}
 .pp-ord{margin:0 0 12px;padding-left:24px;display:grid;gap:4px}.pp-ord li{font-weight:600;color:var(--pp-ok)}
 .pp-miss{padding-left:20px;display:grid;gap:4px;font-size:14px}
+.gt2{text-align:center}.gt2 h1{margin:6px 0 14px}.gt2 .pp-btn.big{display:block;width:100%;margin:10px 0 0}
+.gt-lv{display:flex;justify-content:center;gap:8px;margin:6px 0 4px}.gt-lv i{width:18px;height:18px;border-radius:50%;background:var(--pp-line)}
+.gt-lv i.done{background:var(--pp-ok)}.gt-lv i.cur{background:var(--pp-acc);box-shadow:0 0 0 4px rgba(31,63,191,.18)}
+/* карта уровней */
+.mp-hd{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;margin:6px 0 10px}.mp-hd h1{font-size:24px;line-height:1.15;margin:2px 0 0}
+.mp-pr{display:flex;align-items:center;gap:10px;margin:0 0 6px}.mp-pr .pp-prog{flex:1;height:10px}.mp-pr b{font-size:16px;white-space:nowrap}
+.mp-ts{font-weight:800;color:#f2a900;white-space:nowrap}
+.mp-map{position:relative;margin:0 auto}
+.mp-path{position:absolute;left:0;top:0}.mp-road{fill:none;stroke:var(--pp-line);stroke-width:14;stroke-linecap:round}.mp-road.on{stroke:var(--pp-ok)}
+.mp-n{position:absolute;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:4px;width:150px;text-decoration:none;color:var(--pp-ink);-webkit-tap-highlight-color:transparent}
+.mp-c{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;background:#e4e8f1;color:#9aa3b8;border:4px solid #fff;box-shadow:0 6px 0 #c9cfdc,0 10px 18px -8px rgba(20,30,70,.35);transition:transform .15s}
+.mp-c svg{width:34px;height:34px}.mp-c b{font-size:28px;font-weight:900}
+.mp-n.done .mp-c{background:var(--pp-ok);color:#fff;box-shadow:0 6px 0 #0d7a43,0 10px 18px -8px rgba(13,122,67,.6)}
+.mp-n.cur .mp-c{width:84px;height:84px;background:var(--pp-acc);color:#fff;box-shadow:0 7px 0 #142c8c,0 0 0 0 rgba(31,63,191,.45);animation:mpPulse 1.6s infinite}
+.mp-n.cup .mp-c{background:#ffd34d;color:#8a5a00;box-shadow:0 6px 0 #d9a400}.mp-n.cup.lock .mp-c{background:#e4e8f1;color:#9aa3b8;box-shadow:0 6px 0 #c9cfdc}
+.mp-n.cup.cur .mp-c{background:#ffc21a;color:#6b4400;box-shadow:0 7px 0 #c48d00;animation:mpPulse 1.6s infinite}
+.mp-n:active .mp-c{transform:translateY(4px)}
+.mp-l{font-size:13px;font-weight:700;line-height:1.25;text-align:center;background:var(--pp-surf);padding:3px 8px;border-radius:10px;box-shadow:0 1px 0 var(--pp-line)}
+.mp-n.lock .mp-l{color:var(--pp-mut);font-weight:600}
+.mp-s{font-size:16px;color:#f2a900;letter-spacing:1px;line-height:1}.mp-s i,.mp-big i{font-style:normal;color:#d6dbe6}
+.mp-go{font-size:13px;font-weight:900;color:#fff;background:var(--pp-acc);padding:3px 12px;border-radius:999px;margin-top:-2px}
+.mp-n.cup .mp-go{background:#e8a200}
+.mp-n.pop .mp-c{animation:mpPop .7s ease-out}
+.mp-big{font-size:40px;color:#f2a900;margin:0;letter-spacing:4px}
+@keyframes mpPulse{0%{box-shadow:0 7px 0 #142c8c,0 0 0 0 rgba(31,63,191,.45)}70%{box-shadow:0 7px 0 #142c8c,0 0 0 18px rgba(31,63,191,0)}100%{box-shadow:0 7px 0 #142c8c,0 0 0 0 rgba(31,63,191,0)}}
+@keyframes mpPop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.mp-n.cur .mp-c,.mp-n.pop .mp-c{animation:none}}
 .pp-ra{font-size:17px;line-height:1.45;margin:4px 0 8px}.pp-rc{height:260px;margin-top:10px;border:1px solid var(--pp-line);cursor:default}.pp-plan li{color:var(--pp-ink);font-weight:500;margin:3px 0}
 .pp-go h1{margin:4px 0 8px}.pp-gst{margin:2px 0 6px;font-weight:700;font-size:15px;color:var(--pp-mut)}
 .pp-big2{font-size:18px;font-weight:700;line-height:1.35;margin:0 0 8px}

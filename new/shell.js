@@ -132,7 +132,7 @@
   function learn(s){try{if(!window.PREP||!PREP.autoKey||!Object.keys(PREP.PLANS).length) return '';
     var k=PREP.autoKey(s),p=PREP.PLANS[k],g=PREP.planProg(k),i=0;while(i<p.skills.length&&PREP.stDone(k,i)) i++;
     var fin=i>=p.skills.length,pc=Math.round(g.done/g.n*100);
-    return '<a class="lrn" href="#/prep/'+k+'/go"><span class="lk">'+(fin?'Готов к заданию':'Учиться')+'</span><b>'+p.label+(p.subj==='ig'?' · инжа':'')+'</b><span class="lt">'+(fin?p.title:p.skills[i].t)+'</span>'+
+    return '<a class="lrn" href="#/prep/'+k+'"><span class="lk">'+(fin?'Готов к заданию':'Учиться')+'</span><b>'+p.label+(p.subj==='ig'?' · инжа':'')+'</b><span class="lt">'+(fin?p.title:p.skills[i].t)+'</span>'+
       '<span class="lb"><i style="width:'+pc+'%"></i></span><span class="lg">'+(fin?'К варианту':g.done?'Продолжить':'Начать')+' →</span></a>';}catch(e){return '';}}
   function fillHome(){
     var h=learn()+'<div class="top">'+TOP.map(function(T){return card(T,'hero');}).join('')+'</div>';
