@@ -43,12 +43,13 @@ function claims(text){ const out=[];
   for(const m of text.matchAll(new RegExp('(?:глубин|высот|ширин|габарит|расстояни|отступ|координат)\\p{L}*[^.\\d\\n]{0,24}?('+NUM+')','giu'))) addN(m[1],m.index+m[0].lastIndexOf(m[1]),m[0]);
   return out; }
 
-/* ctx: {points:Set номеров, steps:N, facts:[числа], quoted:[числа из реплики студента]} */
+/* ctx: {points:Set номеров, steps:N, facts:[числа], quoted:[числа из реплики студента]}; вне варианта ДЗ points и steps — null:
+   сверяются только числа (по найденному в курсе и сказанному студентом) */
 function check(text,ctx){ text=String(text||''); const S=sentences(text), V=[];
   const facts=ctx.facts||[], quoted=ctx.quoted||[], near=(v,L)=>L.some(f=>Math.abs(f-v)<=0.11);
   for(const c of claims(text)){
-    if(c.kind==='point'&&!ctx.points.has(c.n)) V.push({kind:'point',what:c.what,n:c.n,sentence:sentenceAt(S,c.i)});
-    if(c.kind==='step'&&(c.n<1||c.n>ctx.steps)) V.push({kind:'step',what:c.what,n:c.n,sentence:sentenceAt(S,c.i)});
+    if(c.kind==='point'&&ctx.points&&!ctx.points.has(c.n)) V.push({kind:'point',what:c.what,n:c.n,sentence:sentenceAt(S,c.i)});
+    if(c.kind==='step'&&ctx.steps!=null&&(c.n<1||c.n>ctx.steps)) V.push({kind:'step',what:c.what,n:c.n,sentence:sentenceAt(S,c.i)});
     if(c.kind==='number'&&!near(c.v,facts)&&!near(c.v,quoted)) V.push({kind:'number',what:c.what,v:c.v,sentence:sentenceAt(S,c.i)}); }
   /* одно нарушение на фразу и вид */
   const uniq=[], k=new Set(); V.forEach(v=>{ const key=v.kind+'|'+v.sentence+'|'+(v.n!=null?v.n:v.v); if(!k.has(key)){ k.add(key); uniq.push(v); } });

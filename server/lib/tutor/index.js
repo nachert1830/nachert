@@ -1,9 +1,10 @@
-/* Наставник — ИИ-агент на чертеже (docs/TUTOR.md). Маршруты кабинета /api/tutor/* (вошедший студент) и
+/* Наставник Лука — ИИ-агент на чертеже и по всему курсу (docs/TUTOR.md). dz:'gen' — вне варианта ДЗ: любой вопрос с любой
+   страницы сайта, ответ по базе знаний курса (kb.js), память — одна на студента (<userId>:gen:0). Маршруты кабинета /api/tutor/* (вошедший студент) и
    /api/admin/tutor (владелец). Порог → память → агент (модель ⇄ инструменты над знаниями ядра) → сверщик → журнал.
    register(A, D, deps) — A: маршруты с сессией, D: админ; deps = {store, now, http, fail, body, json, limit, cfg, iamToken,
    askCreate(user, {text, src, where}) → id, log}. Таблицы: tutor (память студента по варианту), tutorlog (журнал вызовов). */
 'use strict';
-const P=require('./pack'), POL=require('./policy'), VF=require('./verify'), T=require('./tools'), A_=require('./agent'), LLM=require('./llm'), PR=require('./prompts');
+const P=require('./pack'), POL=require('./policy'), VF=require('./verify'), T=require('./tools'), A_=require('./agent'), LLM=require('./llm'), PR=require('./prompts'), KB=require('./kb');
 
 const SONNET='anthropic/claude-sonnet-5-5', HAIKU='anthropic/claude-haiku-5-5';
 function fromEnv(env){ env=env||process.env; const key=env.PROXYAPI_KEY||'', folder=env.YC_FOLDER_ID||env.EYES_FOLDER||'';
@@ -16,6 +17,10 @@ const TEXT_MAX=2000, HIST=24, CTX_HIST=12, IMG_MAX=1600*1024, BODY_MAX=3.6*1024*
 const IMG_RE=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+=*$/;
 const mskDay=t=>new Date(t+3*3600e3).toISOString().slice(0,10);
 const cleanText=s=>String(s||'').replace(/\u0000/g,'').replace(/\r\n?/g,'\n').replace(/\n{4,}/g,'\n\n\n').trim().slice(0,TEXT_MAX);
+const cleanPage=p=>{ p=p&&typeof p==='object'?p:{}; const h=String(p.hash||'');
+  return {hash:/^#\/[\w\/\-.%]{0,120}$/.test(h)?h:'',title:String(p.title||'').replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().slice(0,120)}; };
+const cleanSel=s=>String(s||'').replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().slice(0,400);
+const KBF_MAX=600;
 const shortModel=m=>String(m||'').replace(/^anthropic\/claude-/,'').replace(/^gpt:\/\/[^/]+\//,'');
 
 /* JSON из ответа глаз (модель иногда оборачивает в ```json … ```) */
@@ -25,6 +30,7 @@ function parseJson(t){ t=String(t||'').replace(/^```(?:json)?\s*/i,'').replace(/
 function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()=>deps.cfg||{on:false};
   const memId=(u,dz,n)=>u+':'+dz+':'+n;
   function where(b,q){ const src=Object.assign({},q||{},b||{}), dz=String(src.dz||'ig4'), n=parseInt(src.n,10);
+    if(dz==='gen') return {dz,n:0,v:null};   /* вне варианта: любой вопрос по курсу */
     if(!P.dzList.includes(dz)) fail(400,'Наставник пока работает в ДЗ №1–5 по начерту и ДЗ №3–6 по ИГ.');
     const v=P.variant(dz,n); if(!v) fail(400,'Нет такого варианта.'); return {dz,n,v}; }
   async function loadMem(S,dz,n){ const id=memId(S.user.id,dz,n), m=await store.get('tutor',id);
@@ -49,11 +55,11 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
 
   /* ── состояние окна ── */
   A['GET /api/tutor/state']=async(req,S)=>{ const c=cfg(), {dz,n,v}=where(null,req.query), mem=await loadMem(S,dz,n);
-    return json(200,{on:!!c.on,consent:consentAi(S),ru:!!(c&&c.ru),mode:mem.mode,modeDefault:c.modeDefault||'coach',msgs:pubMsgs(mem),ladder:POL.ladder(mem,v.steps),
-      left:Math.max(0,Math.round(((c.userDayRub||40)*100-await spent(S.user.id))/100))}); };
+    return json(200,{on:!!c.on,consent:consentAi(S),ru:!!(c&&c.ru),mode:mem.mode,modeDefault:c.modeDefault||'coach',msgs:pubMsgs(mem),ladder:v?POL.ladder(mem,v.steps):[],
+      left:Math.max(0,Math.round(((c.userDayRub||40)*100-await spent(S.user.id))/100)),kb:KB.size}); };
   A['POST /api/tutor/reset']=async(req,S)=>{ const {dz,n}=where(body(req)); await store.del('tutor',memId(S.user.id,dz,n)); return json(200,{ok:true}); };
   A['POST /api/tutor/mode']=async(req,S)=>{ const b=body(req), {dz,n,v}=where(b); if(!POL.MODES.includes(b.mode)) fail(400,'Режим: coach или explain.');
-    const mem=await loadMem(S,dz,n); mem.mode=b.mode; mem.updatedAt=now(); await store.put('tutor',mem); return json(200,{mode:mem.mode,ladder:POL.ladder(mem,v.steps)}); };
+    const mem=await loadMem(S,dz,n); mem.mode=b.mode; mem.updatedAt=now(); await store.put('tutor',mem); return json(200,{mode:mem.mode,ladder:v?POL.ladder(mem,v.steps):[]}); };
   A['POST /api/tutor/rate']=async(req,S)=>{ const b=body(req), id=String(b.id||''), l=await store.get('tutorlog',id);
     if(!l||l.userId!==S.user.id) fail(404,'Нет такого ответа.'); const good=b.good===true?1:b.good===false?0:null;
     await store.update('tutorlog',id,{rate:good});
@@ -62,11 +68,12 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
 
   /* ── реплика ── */
   A['POST /api/tutor/chat']=async(req,S)=>{ const c=cfg(); if(!c.on) fail(503,'Наставник пока не подключён.');
-    const b=body(req,BODY_MAX), {dz,n,v}=where(b), text=cleanText(b.text), uid=S.user.id, t0=Date.now();
+    const b=body(req,BODY_MAX), {dz,n,v}=where(b), gen=dz==='gen', text=cleanText(b.text), uid=S.user.id, t0=Date.now(), page=cleanPage(b.page), sel=cleanSel(b.sel);
     const photo=b.photo?String(b.photo):'', ref=b.ref?String(b.ref):'';
     if(photo&&(photo.length>IMG_MAX||!IMG_RE.test(photo))) fail(400,'Фото не подошло: нужен снимок JPEG до 1,2 МБ (сайт сжимает сам).');
     if(ref&&(ref.length>IMG_MAX||!IMG_RE.test(ref))) fail(400,'Эталон не подошёл.');
     if(!text&&!photo) fail(400,'Напиши вопрос или пришли фото листа.');
+    if(photo&&gen) fail(400,'Фото листа Лука смотрит на странице твоего варианта ДЗ: там есть эталон, с которым сравнить.');
     /* согласие на зарубежную модель; без него — российская модель (без инструментов и без фото) */
     const foreign=consentAi(S)&&!!c.key, ru=!foreign&&c.ru?c.ru:null;
     if(!foreign&&!ru) fail(403,'Наставник работает на зарубежной модели (Claude). Чтобы начать, отметь согласие на отправку текста вопроса и фото листа — без имени и других данных о тебе.',{needAiConsent:true});
@@ -76,9 +83,9 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     if(mine>=c.userDayRub*100) fail(429,'На сегодня лимит наставника исчерпан — продолжим завтра. Если срочно — спроси автора.',{budget:true});
     if(all>=c.dayRub*100) fail(503,'Наставник отдыхает до завтра: сегодня с ним занималось много студентов. Если срочно — спроси автора.',{budget:true});
     const mem=await loadMem(S,dz,n); if(POL.MODES.includes(b.mode)) mem.mode=b.mode;
-    const step=Math.max(0,Math.min(v.steps.length,parseInt(b.step,10)||0))||null;
+    const step=gen?null:Math.max(0,Math.min(v.steps.length,parseInt(b.step,10)||0))||null;
     if(photo) mem.photo=true;   /* фото — попытка: лесенка открывает на ступень больше */
-    const turn={asked:new Set(),facts:[],actions:[],tools:[],notes:0,eyesKop:0}, before=openFacts(mem,dz,n);
+    const turn={asked:new Set(),facts:[],actions:[],tools:[],notes:0,eyesKop:0}, before=(gen?[]:openFacts(mem,dz,n)).concat(mem.kbf||[]);
     const llm={http:deps.http,key:c.key,token:deps.iamToken};
     const ctx={dz,n,mem,turn,step,photo:!!photo,
       see:photo?async focus=>{ if(!ref) throw new Error('нет эталона для сравнения — обнови страницу');
@@ -86,20 +93,24 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
         const r=await LLM.chat(llm,c.eyes,{messages:[{role:'system',content:P.isNg(dz)?PR.EYES_NG:PR.EYES},{role:'user',content:[{type:'text',text:'Вариант '+n+'.'+(focus?' Особенно: '+focus:'')},
           {type:'image_url',image_url:{url:photo}},{type:'image_url',image_url:{url:ref}}]}],max:4000,temperature:0,timeout:Math.min(30000,left-3000)});
         turn.eyesKop+=LLM.kopecks(c.eyes.model,r.usage,c.rate); const j=parseJson(r.message.content); if(!j) throw new Error('глаза ответили не по формату'); return j; }:null,
-      askAuthor:deps.askCreate?s=>deps.askCreate(S.user,{text:'Вопрос от наставника ('+P.courseLabel(dz)+', вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/'+dz+'/'+n,where:P.courseLabel(dz)+' · вариант '+n}):null};
+      askAuthor:deps.askCreate?s=>deps.askCreate(S.user,gen?{text:'Вопрос от Луки'+(page.title?' (страница «'+page.title+'»)':'')+':\n'+s,src:page.hash||'#/',where:'Лука · '+(page.title||'сайт')}
+        :{text:'Вопрос от наставника ('+P.courseLabel(dz)+', вариант '+n+(step?', шаг '+step:'')+'):\n'+s,src:'#/'+dz+'/'+n,where:P.courseLabel(dz)+' · вариант '+n}):null};
     /* без инструментов (российская модель): открытое по текущему шагу — прямо в карточку */
     let inline=''; const bare=!!ru||c.tools===false;   /* «без рук»: российская модель или TUTOR_TOOLS=off */
-    if(bare){ const k=step||mem.last||1; POL.ask(mem,turn,k); const d=POL.allowed(mem,k), o=P.stepAt(dz,n,k,POL.depthName(d)); POL.open(mem,k,d); turn.facts.push(...T.factsOfStep(o));
+    let found=null;
+    if(bare&&gen){ found=KB.search(text||'',{limit:3}); found.forEach(f=>VF.numbersOf(f.excerpt,turn.facts)); }
+    else if(bare){ const k=step||mem.last||1; POL.ask(mem,turn,k); const d=POL.allowed(mem,k), o=P.stepAt(dz,n,k,POL.depthName(d)); POL.open(mem,k,d); turn.facts.push(...T.factsOfStep(o));
       if(d>=2) turn.actions.push(T.showAction(dz,n,k,d>=3?(o.points||[]).map(p=>p.n):[]));   /* без рук наставник всё равно показывает шаг */
       inline='Шаг '+o.k+' «'+o.title+'»'+(o.idea?'\nИдея: '+o.idea:'')+(o.short?'\nЧто делать: '+o.short:'')+(o.more?'\nПодробно: '+o.more:''); }
-    const system=PR.SYSTEM+'\n\n'+PR.card({overview:P.overview(dz,n),ng:P.isNg(dz),mode:mem.mode,step,memo:memo(mem,dz),photo:!!photo,inline});
+    const system=gen?PR.SYSTEM_GEN+'\n\n'+PR.cardGen({page,sel,memo:(mem.notes||[]).slice(-3).join('; '),found})
+      :PR.SYSTEM+'\n\n'+PR.card({overview:P.overview(dz,n),ng:P.isNg(dz),mode:mem.mode,step,memo:memo(mem,dz),photo:!!photo,inline,sel});
     const history=(mem.msgs||[]).slice(-CTX_HIST).map(m=>({role:m.r==='u'?'user':'assistant',content:m.t||(m.ph?'(фото листа)':'…')}));
     const messages=[{role:'system',content:system}].concat(history,[{role:'user',content:text||'Вот фото моего листа. Посмотри, что не так.'}]);
-    const R=P.registry(dz,n), quoted=VF.numbersOf(text);
-    const vctx=()=>({points:new Set(R.keys()),steps:v.steps.length,facts:before.concat(turn.facts),quoted});
+    const R=gen?null:P.registry(dz,n), quoted=VF.numbersOf(text+' '+sel);
+    const vctx=()=>gen?{points:null,steps:null,facts:before.concat(turn.facts),quoted}:({points:new Set(R.keys()),steps:v.steps.length,facts:before.concat(turn.facts),quoted});
     ctx.vctx=vctx;   /* надписи на чертеже сверяются тем же сверщиком */
     const cheap=all>=0.8*c.dayRub*100, models=ru?[ru]:cheap?[c.light]:[c.main,c.light];
-    let res; try{ res=await A_.run({models,llm,messages,tools:!bare,ctx,vctx,deadline:t0+DEADLINE,rate:c.rate,cache:!!c.cache,cacheSplit:PR.SYSTEM.length}); }
+    let res; try{ res=await A_.run({models,llm,messages,tools:!bare,defs:gen?T.GEN_DEFS:T.DEFS,ctx,vctx,deadline:t0+DEADLINE,rate:c.rate,cache:!!c.cache,cacheSplit:(gen?PR.SYSTEM_GEN:PR.SYSTEM).length}); }
     catch(e){ if(!(e instanceof LLM.ModelError)) throw e; deps.log&&deps.log.error&&deps.log.error('наставник',e.message,e.fallback||'');
       await store.put('tutorlog',{id:new Date(now()).toISOString()+'#'+require('crypto').randomBytes(3).toString('hex'),userId:uid,dz,n,ts:now(),ms:Date.now()-t0,error:String(e.message).slice(0,200),fallback:e.fallback||null,kop:turn.eyesKop});
       await spend(uid,turn.eyesKop); await spend('all',turn.eyesKop);
@@ -109,10 +120,12 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     const verified=!!(res.verify.first||res.verify.repaired&&!res.verify.cut);
     mem.msgs=(mem.msgs||[]).concat([{r:'u',t:text,ph:photo?1:0,ts:t},{r:'a',t:res.text,ts:t,act:turn.actions,id,v:verified?1:0}]).slice(-HIST);
     mem.turns=(mem.turns||0)+1; mem.kop=(mem.kop||0)+kop; mem.updatedAt=t;
+    /* найденное в курсе — факты и для следующих реплик (уточняющий вопрос про то же число не вырезается) */
+    if(turn.facts.length){ const kf=[...new Set((mem.kbf||[]).concat(turn.facts.filter(x=>isFinite(x))))]; mem.kbf=kf.slice(-KBF_MAX); }
     await store.put('tutor',mem); await spend(uid,kop); await spend('all',kop);
     await store.put('tutorlog',{id,userId:uid,dz,n,ts:t,ms:Date.now()-t0,model:res.model,kop,rounds:res.rounds,tokens:res.tokens||null,tools:turn.tools,mode:mem.mode,photo:!!photo,ru:!!ru,
       verify:res.verify,fallback:res.fallback||null,rate:null});
-    return json(200,{id,reply:res.text,actions:turn.actions,model:shortModel(res.model),mode:mem.mode,ladder:POL.ladder(mem,v.steps),
+    return json(200,{id,reply:res.text,actions:turn.actions,model:shortModel(res.model),mode:mem.mode,ladder:v?POL.ladder(mem,v.steps):[],
       verified,rub:Math.round(kop)/100,left:Math.max(0,Math.round((c.userDayRub*100-mine-kop)/100))}); };
 
   /* ── владельцу: как работает наставник ── */

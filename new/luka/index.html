@@ -9,7 +9,7 @@
 <meta name="description" content="Пингвин Лука — наставник Начерта. Тыкай, гладь, крути, корми рыбкой и говори с ним: он повторит.">
 <link rel="icon" href="../../icon-192.png">
 <!-- Площадка с Лукой (маскот наставника, только в копии /new/): касания, жесты, игрушки, живой повтор голоса.
-     Движок — ../../lk/mascot.js; описание — docs/TUTOR.md, раздел 2б. Приглашение на главной копии — ../../lk/luka-invite.js -->
+     Движок — ../../lk/mascot.js; описание — docs/TUTOR.md, раздел 2б. Вход — из окна Луки на любой странице копии -->
 <script>try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
 <style>
 @font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(../../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
@@ -122,7 +122,7 @@ main{max-width:640px;margin:0 auto;padding-block:max(14px,env(safe-area-inset-to
     <p class="note">🎤 — говори что угодно: Лука сам услышит и повторит своим голосом. Тыкай в голову, клюв, живот, ласты и лапы. Води пальцем туда-сюда — погладишь. Быстро смахни — раскрутишь. Зажми и тяни — поднимешь.</p>
   </section>
 </main>
-<script src="../../lk/mascot.js?v=3"></script>
+<script src="../../lk/mascot.js?v=4"></script>
 <script>
 (()=>{
 const MC=self.MASCOT, stage=document.getElementById('stage'), bub=document.getElementById('bub'), toastEl=document.getElementById('toast');

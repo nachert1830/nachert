@@ -1,9 +1,8 @@
-/* ═══ Маскот наставника (docs/TUTOR.md, раздел 2а) ═══
-   Рисунок кодом: SVG + один общий requestAnimationFrame, без библиотек и картинок. Два персонажа с общим «мозгом» (Base):
-   • penguin — пингвин Лука (по умолчанию): вперевалку, лицо поворачивается за взглядом, хохолок и шарф
-     качаются от движения, обводит точку карандашом в ласте; наряд scarf · helmet · glasses (self.MASCOT_OUTFIT);
-   • compass — циркуль: голова-шарнир, ножка с иглой и ножка с грифелем, ноги считаются от шарнира.
-   Персонаж по умолчанию — пингвин Лука в шарфе (утверждён 23.11.2026); другой — self.MASCOT_CHAR / self.MASCOT_OUTFIT.
+/* ═══ Лука — маскот наставника (docs/TUTOR.md, раздел 2а) ═══
+   Рисунок кодом: SVG + один общий requestAnimationFrame, без библиотек и картинок. Пингвин Лука в шарфе (утверждён 23.11.2026):
+   ходит вперевалку, лицо поворачивается за взглядом, хохолок и шарф качаются от движения, обводит точку карандашом в ласте.
+   «Мозг» (Base) — состояния, выражения, ходьба, прыжки, моргание, взгляд, частицы; персонаж (Penguin) — рисунок и позы.
+   Наряд — scarf (по умолчанию) · helmet · glasses: self.MASCOT_OUTFIT или {outfit}.
 
    self.MASCOT:
      avatar(host,{sleepAfter,full,char,outfit}) → живая аватарка (full — во весь рост) во всю площадь host (кнопка наставника, шапка окна, плашка на чертеже):
@@ -126,7 +125,7 @@ class Base{
     this.blinkAt=rand(1,3); this.blinkT=-1; this.glanceAt=0; this.glance={x:0,y:0};
     this.talkUntil=0; this.lookAt=null; this.pointAt=null; this.drawOn=false; this.drawR=24; this.theta=0;
     this.parts=[]; this.zAt=0; this.sparkAt=0; this.autoSlept=false; this.seen=false; this.onPoke=null;
-    this.hx=0; this.hy=-62; this.vel=0;
+    this.vel=0;
     this.build();
     this.g.addEventListener('click',e=>{ if(this.onPoke) this.onPoke(e); });
   }
@@ -227,56 +226,6 @@ class Base{
     else { e=el('path',{d:'M0 -7Q5 0 0 5Q-5 0 0 -7Z',fill:'#7cc6ff',stroke:INK,'stroke-width':1.3},this.over); q={vx:0,vy:8,g:14,drag:1,life:1.8,spin:0,rot:0}; }
     e.setAttribute('opacity',0); Object.assign(q,{el:e,kind,x,y,age:0}); this.parts.push(q); }
 }
-/* ── Циркуль: голова-шарнир, ножка с иглой и ножка с грифелем; ноги считаются каждый кадр от шарнира ── */
-class Compass extends Base{
-  build(){
-    this.g=el('g',{class:'mc-body'},this.layer);
-    const L=(w,c)=>el('path',{fill:'none',stroke:c,'stroke-width':w,'stroke-linecap':'round'},this.g);
-    this.aInk=L(8.5,INK); this.aCol=L(5.2,'#b9c4d2'); this.needle=L(2.1,INK);
-    this.bInk=L(8.5,INK); this.bCol=L(5.2,'#b9c4d2'); this.holdInk=L(8.5,INK); this.hold=L(5.2,'#ffc23a'); this.lead=L(2.8,'#2b2f3a');
-    this.hinge=el('circle',{r:6,fill:'#cdd4de',stroke:INK,'stroke-width':2},this.g);
-    this.top=el('g',null,this.g);
-    this.armL=makeArm(this.top); this.armR=makeArm(this.top);
-    el('rect',{x:-4.5,y:-36,width:9,height:13,rx:2.5,fill:'#cdd4de',stroke:INK,'stroke-width':2},this.top);
-    el('path',{d:'M-4.5 -32H4.5M-4.5 -28.5H4.5',stroke:'#8b96a6','stroke-width':1.1},this.top);
-    el('circle',{r:25,fill:'#5b8cff',stroke:INK,'stroke-width':2.4},this.top);
-    el('path',{d:'M-21 9A25 25 0 0 0 21 9A30 30 0 0 1 -21 9Z',fill:'#3f6fe6',opacity:.55},this.top);
-    el('ellipse',{cx:-10,cy:-13,rx:7,ry:4.2,fill:'#fff',opacity:.42,transform:'rotate(-32 -10 -13)'},this.top);
-    this.face=makeFace(this.top,{ex:9.2,ey:-2,er:7,my:11.5,mw:5,cheekX:15,cheekY:8});
-    this.dots=[0,1,2].map(i=>el('circle',{r:(2.1+i*1.15)*this.s,class:'mc-dot',opacity:0},this.over));
-  }
-  headWorld(){ const s=this.s; return {x:this.pos.x+this.hx*s,y:this.pos.y+(this.jy+this.hy-24)*s,r:25*s}; }
-  shoulderWorld(){ const s=this.s; return {x:this.pos.x+(this.hx-22)*s,y:this.pos.y+(this.jy+this.hy-16)*s}; }
-  /* обвести точку c окружностью радиуса rPx (в пикселях сцены): игла — в точку, грифель — по кругу */
-  async drawCircle(c,rPx,ring){ const s=this.s, rl=clamp(rPx/s,14,44), rp=rl*s, L=2*Math.PI*rp;
-    ring.setAttribute('d',circleD(c,rp)); ring.setAttribute('stroke-dasharray',f2(L)); ring.setAttribute('stroke-dashoffset',f2(L)); ring.style.opacity=0;
-    this.drawR=rl; this.theta=0;
-    await this.walkTo(c.x+16*s,c.y,190);
-    this.state='draw'; this.drawOn=true; this.lookAt=null; await this.sleep(reduced()?60:420);
-    await this.anim(reduced()?250:1500,p=>{ const e=ease(p); this.theta=e*Math.PI*2; ring.style.opacity=e>.002?1:0; ring.setAttribute('stroke-dashoffset',f2(L*(1-e))); });
-    await this.sleep(150); this.drawOn=false; this.state='idle'; await this.sleep(reduced()?50:260); }
-  tipWorld(){ return {x:this.pos.x+this.tipB.x*this.s,y:this.pos.y+this.tipB.y*this.s}; }
-  canDraw(t,W,H){ const s=this.s; return t.y>=128*s&&t.x>=24*s&&t.x<=W-20*s; }
-  /* ноги: стоя / шагая / обводя окружность — в локальных единицах (ступни на y=0) */
-  pose(){ const ph=this.walkPhase, wa=this.wa, m=clamp(this.S.draw,0,1), r=this.drawR, th=this.theta, t=this.time;
-    let ax=-16+Math.sin(ph)*11*wa, ay=-Math.max(0,Math.cos(ph))*7*wa, bx=16-Math.sin(ph)*11*wa, by=-Math.max(0,-Math.cos(ph))*7*wa;
-    let hx=Math.sin(t*1.3)*1.5*amp()*(1-wa), hy=-62-Math.abs(Math.cos(ph))*3*wa;
-    if(this.state==='sleep'){ ax=-11; bx=11; hy=-60; }
-    const dbx=-16+r*Math.cos(th), dby=r*Math.sin(th), dhx=-16+.5*r*Math.cos(th), dhy=-60+.5*r*Math.sin(th);
-    this.tipA={x:lerp(ax,-16,m),y:lerp(ay,0,m)}; this.tipB={x:lerp(bx,dbx,m),y:lerp(by,dby,m)};
-    this.hx=lerp(hx,dhx,m); this.hy=lerp(hy,dhy,m); }
-  seg(ink,col,x1,y1,x2,y2){ const d=`M${f2(x1)} ${f2(y1)}L${f2(x2)} ${f2(y2)}`; ink.setAttribute('d',d); if(col) col.setAttribute('d',d); }
-  render(R){ const m=clamp(R.draw,0,1), s=this.s, hx=this.hx, hy=this.hy, a=this.tipA, b=this.tipB;
-    this.g.setAttribute('transform',`translate(${f2(this.pos.x)} ${f2(this.pos.y)}) scale(${f2(s)}) translate(0 ${f2(this.jy)}) rotate(${f2(R.tilt*(1-m))}) scale(${lerp(R.sx,1,m).toFixed(4)} ${lerp(R.sy,1,m).toFixed(4)})`);
-    const u=(x,y)=>{ const dx=x-hx, dy=y-hy, l=Math.hypot(dx,dy)||1; return [dx/l,dy/l]; };
-    const [uax,uay]=u(a.x,a.y); this.seg(this.aInk,this.aCol,hx,hy,a.x-uax*7,a.y-uay*7); this.seg(this.needle,null,a.x-uax*7.5,a.y-uay*7.5,a.x,a.y);
-    const [ubx,uby]=u(b.x,b.y); this.seg(this.bInk,this.bCol,hx,hy,b.x-ubx*13,b.y-uby*13);
-    this.seg(this.holdInk,this.hold,b.x-ubx*13,b.y-uby*13,b.x-ubx*4.5,b.y-uby*4.5); this.seg(this.lead,null,b.x-ubx*4.5,b.y-uby*4.5,b.x,b.y);
-    this.hinge.setAttribute('cx',f2(hx)); this.hinge.setAttribute('cy',f2(hy));
-    this.top.setAttribute('transform',`translate(${f2(hx)} ${f2(hy-24)})`);
-    this.armL(-22,8,R.armL,17,-1); this.armR(22,8,R.armR,17,1);
-    this.face(R); }
-}
 /* ── Пингвин: круглый, ходит вперевалку; лицо поворачивается за взглядом, хохолок и шарф качаются от движения;
    обводит точку карандашом, зажатым в ласте (тело чуть тянется за грифелем). Наряд: scarf · helmet · glasses ── */
 const NAVY='#26365a', NAVY_D='#18233d', BELLY='#fdfbf6', ORANGE='#ff9a3c';
@@ -371,7 +320,7 @@ class Penguin extends Base{
 const circleD=(c,r)=>`M${f2(c.x+r)} ${f2(c.y)}A${f2(r)} ${f2(r)} 0 1 1 ${f2(c.x-r)} ${f2(c.y)}A${f2(r)} ${f2(r)} 0 1 1 ${f2(c.x+r)} ${f2(c.y)}`;
 
 /* персонажи: класс и рамка аватарки (голова крупно); по умолчанию — self.MASCOT_CHAR, наряд пингвина — self.MASCOT_OUTFIT */
-const CHARS={compass:{C:Compass,vb:'-42 -134 84 84',full:'-62 -146 124 152',k:1},penguin:{C:Penguin,vb:'-44 -122 88 88',full:'-56 -122 112 128',k:1.15}};   /* k — пингвин ниже циркуля, на чертеже чуть крупнее */
+const CHARS={penguin:{C:Penguin,vb:'-44 -122 88 88',full:'-56 -122 112 128',k:1.15}};   /* vb — голова крупно (аватарка), full — во весь рост; k — масштаб на чертеже */
 const charOf=o=>CHARS[(o&&o.char)||self.MASCOT_CHAR||'penguin']||CHARS.penguin;
 const outfitOf=o=>(o&&o.outfit)||self.MASCOT_OUTFIT||'scarf';
 /* ── общий цикл, курсор, бездействие ── */

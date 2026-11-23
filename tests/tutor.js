@@ -12,7 +12,7 @@
    node tests/tutor.js — отдельно; в node tests/run.js — блок tutor. */
 const http=require('http'), fs=require('fs'), path=require('path'), ROOT=path.join(__dirname,'..');
 const {createApp}=require(ROOT+'/server/lib/app'), {memoryStore}=require(ROOT+'/server/lib/store/memory'), {botClient}=require(ROOT+'/server/lib/telegram'), {fromEvent}=require(ROOT+'/server/lib/http');
-const TUTOR=require(ROOT+'/server/lib/tutor'), PACK=require(ROOT+'/tools/tutor-pack.js');
+const TUTOR=require(ROOT+'/server/lib/tutor'), PACK=require(ROOT+'/tools/tutor-pack.js'), KBB=require(ROOT+'/tools/tutor-kb.js');
 const TY={'.html':'text/html; charset=utf-8','.js':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.svg':'image/svg+xml'};
 const listen=srv=>new Promise(res=>srv.listen(0,'127.0.0.1',()=>res('http://127.0.0.1:'+srv.address().port)));
 
@@ -25,6 +25,10 @@ function fakeModel(log){ return async(url,o)=>{ if(!/proxyapi\.ru/.test(url)) re
   /* глаза */
   if(Array.isArray(ms[1]&&ms[1].content)) return say('{"readable":true,"findings":[{"point":9,"view":"top","problem":"9′ ближе к оси"}],"overall":"почти верно"}');
   const tools=ms.filter(m=>m.role==='tool').map(m=>JSON.parse(m.content)), lastTool=last.role==='tool'?JSON.parse(last.content):null;
+  /* Лука вне варианта: ищет в курсе → открывает страницу → отвечает по найденному */
+  if(/Где студент/.test(ms[0].content||'')){ if(!tools.length) return call('search_course',{query:String(user.content).slice(0,120)});
+    const hit=(tools[0].results||[])[0]; if(tools.length===1&&hit) return call('open_page',{key:hit.key,why:'Там это видно на чертеже.'});
+    return say(hit?'Нашёл в курсе — «'+hit.title+'». Открыл тебе страницу: посмотри на чертёж. Понятно, какая точка видна?':'В курсе не нашлось — спросим автора?'); }
   /* начерт (ДЗ №3, вариант 3): шаг 7 — подзадача б), точки A₄ и B₄ */
   if(/начерт 3д/.test(user.content||'')){ if(!tools.length) return call('show_3d',{k:7}); return say('Открыл 3D: посмотри, как ребро AB становится точкой.'); }
   if(/начерт/.test(user.content||'')&&!/лист/.test(user.content||'')){ if(!tools.length) return call('get_step',{k:7,depth:'full'}); if(tools.length===1) return call('show_on_drawing',{k:7,points:['A₄','b4'],say:'На π₄ ребро AB — в натуральную величину.',notes:[{point:'A₄',text:'проекция A на π₄'},{point:'B₄',text:'проекция B на π₄'}]});
@@ -49,6 +53,10 @@ async function runTutor(browser){
     /* начерт: по варианту каждого ДЗ и методика */
     for(const [dz,n] of [['ng1',4],['ng2',17],['ng3',3],['ng4',22],['ng5',13],['ig5',1]]){ const sn=await PACK.buildDz(p,dz,[n]), fl=JSON.parse(fs.readFileSync(PACK.outOf(dz),'utf8'));
       if(JSON.stringify(sn.variants[n])!==JSON.stringify(fl.variants[n])||JSON.stringify(sn.method)!==JSON.stringify(fl.method)) B('пакет знаний устарел',dz+', вариант '+n+': решение на сайте поменялось — node tools/tutor-pack.js '+dz); }
+    /* база знаний курса (kb.json) — из поискового индекса сайта: страница, которой больше нет, — красная проверка; поменялся текст — напоминание */
+    { const kb=await KBB.build(p), file=JSON.parse(fs.readFileSync(KBB.OUT,'utf8')), have=new Set(kb.docs.map(d=>d.href)), gone=file.docs.filter(d=>!have.has(d.href));
+      if(gone.length) B('база знаний устарела','страниц больше нет на сайте: '+gone.slice(0,5).map(d=>d.href).join(', ')+' — пересоберите: node tools/tutor-kb.js');
+      else if(KBB.stringify(kb)!==fs.readFileSync(KBB.OUT,'utf8')) console.log('ℹ База знаний Луки отстаёт от текстов сайта — пересоберите: node tools/tutor-kb.js'); }
     await p.close(); srv.close(); }
 
   /* 2) сайт + настоящий сервер кабинета + поддельная модель */
@@ -77,11 +85,13 @@ async function runTutor(browser){
     /* гость */
     const g=await page({viewport:{width:1280,height:860}},'гость'); await g.goto(SITE+'/new/#/ig4/7'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на ИГ №4','нет'));
     await g.click('.tu-fab'); if(!/Войди/.test(await g.textContent('.tu-b').catch(()=>''))) B('гость: предложение войти',await g.textContent('.tu-b').catch(()=>''));
-    /* кнопка прячется по hashchange; после тяжёлой страницы варианта он может прийти позже 400 мс — ждём до 3 с */
-    const fabGone=()=>g.waitForFunction(()=>{ const f=document.querySelector('.tu-fab'); return !f||f.hidden||!f.offsetParent; },null,{timeout:3000}).then(()=>true).catch(()=>false);
-    await g.goto(SITE+'/new/#/ig2/8'); if(!await fabGone()) B('кнопка — только на ДЗ с наставником','видна на #/ig2/8');
+    await g.evaluate(()=>TUTOR.close());   /* окно Луки при переходе по страницам не закрывается — закрываем сами */
+    /* Лука — на каждой странице: и там, где у ДЗ нет наставника на чертеже, и в теории */
+    const fabOn=()=>g.waitForSelector('.tu-fab',{state:'visible',timeout:5000}).then(()=>true).catch(()=>false);
+    await g.goto(SITE+'/new/#/ig2/8'); if(!await fabOn()) B('Лука на любой странице','нет кнопки на #/ig2/8');
     await g.goto(SITE+'/new/#/ng3/8'); await g.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('кнопка наставника на начерте','нет на #/ng3/8'));
-    await g.goto(SITE+'/new/#/theory'); if(!await fabGone()) B('кнопка — только на вариантах ДЗ','видна на #/theory');
+    await g.goto(SITE+'/new/#/theory'); if(!await fabOn()) B('Лука на любой странице','нет кнопки на #/theory');
+    else { await g.click('.tu-fab'); if(!/Войди/.test(await g.textContent('.tu-b').catch(()=>''))) B('гость на теории: предложение войти','нет'); await g.evaluate(()=>TUTOR.close()); }
     /* студент: согласие → вопрос → шаг 5 открыт сам */
     const pg=await page({viewport:{width:1280,height:860}},'студент'); await pg.goto(SITE+'/new/#/ig4/7'); await pg.evaluate(t=>localStorage.setItem('lk_tok',t),st); await pg.reload();
     await pg.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await pg.click('.tu-fab');
@@ -170,6 +180,29 @@ async function runTutor(browser){
       const eyes=mlog.filter(b=>Array.isArray(b.messages[1]&&b.messages[1].content))[nEyes];
       if(!eyes) B('начерт: фото ушло глазам','нет'); else { if(!/эпюре Монжа/.test(eyes.messages[0].content)) B('начерт: глаза — промпт эпюра','нет');
         const imgs=eyes.messages[1].content.filter(c=>c.type==='image_url').map(c=>c.image_url.url); if(imgs.length!==2||imgs[1].length<20000) B('начерт: эталон — черновик листа','нет или пустой'); } }
+    /* Лука вне варианта: вопрос со страницы темы → ищет в курсе, открывает страницу, разговор остаётся; «Спросить Луку» у выделенного */
+    { const tp=await page({viewport:{width:1280,height:860}},'тема'); await tp.goto(SITE+'/new/#/topic/point-epure'); await tp.evaluate(t=>localStorage.setItem('lk_tok',t),st); await tp.reload();
+      await tp.waitForSelector('.tu-fab',{state:'visible',timeout:15000}); await tp.click('.tu-fab'); await tp.waitForSelector('[data-in]:visible',{timeout:8000});
+      if(!/о чём угодно/.test(await tp.textContent('[data-sub]').catch(()=>''))) B('Лука вне варианта: «спроси о чём угодно»',await tp.textContent('[data-sub]').catch(()=>''));
+      if(await tp.locator('.tu-att >> visible=true').count()) B('Лука вне варианта: без фото листа','кнопка 📷 видна');
+      if(await tp.evaluate(()=>!!(window.SpeechRecognition||window.webkitSpeechRecognition))&&!(await tp.locator('[data-mic] >> visible=true').count())) B('голосовой вопрос: кнопка 🎤','нет');
+      const n0=mlog.length; await tp.fill('[data-in]','что такое конкурирующие точки'); await tp.press('[data-in]','Enter');
+      const moved=await tp.waitForFunction(()=>location.hash==='#/topic/visibility'&&document.querySelector('.tu-m.t .tu-open'),null,{timeout:15000}).then(()=>true).catch(()=>false);
+      if(!moved) B('Лука вне варианта: нашёл в курсе и открыл страницу',await tp.evaluate(()=>location.hash+' | '+(document.querySelector('.tu-m.t')||{}).textContent));
+      const sent=mlog.slice(n0).find(b=>b.tools&&/Где студент/.test(b.messages[0].content));
+      if(!sent||!/Точка на эпюре Монжа/.test(sent.messages[0].content)) B('Лука знает страницу студента','нет «Где студент: …» с заголовком темы');
+      if(!sent||!sent.tools.some(t=>t.function.name==='search_course')) B('Лука вне варианта: поиск по курсу','нет search_course');
+      if(await tp.evaluate(()=>document.querySelector('.tu').hidden)) B('открыл страницу — окно Луки осталось','закрылось');
+      if(!(await tp.locator('.tu-m.t').count())) B('открыл страницу — разговор остался','пусто');
+      /* выделенный текст на странице */
+      await tp.evaluate(()=>TUTOR.close()); await tp.waitForTimeout(300);
+      const okSel=await tp.evaluate(()=>{ const el=[...document.querySelectorAll('p,li')].find(x=>x.offsetParent&&!x.closest('.tu,#ns')&&x.textContent.trim().length>30); if(!el) return false;
+        const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); document.dispatchEvent(new Event('selectionchange')); return true; });
+      const chip=okSel&&await tp.waitForSelector('.tu-selask:not([hidden])',{timeout:4000}).then(()=>true).catch(()=>false);
+      if(!chip) B('«Спросить Луку» у выделенного текста','нет кнопки'); else { const n1=mlog.length; await tp.click('.tu-selask');
+        const ok=await tp.waitForFunction(()=>{ const u=[...document.querySelectorAll('.tu-m.u')]; return u.length&&/^Объясни: «/.test(u[u.length-1].textContent); },null,{timeout:10000}).then(()=>true).catch(()=>false);
+        await tp.waitForTimeout(500); const req=mlog.slice(n1).find(b=>b.tools);
+        if(!ok||!req||!/выделил на странице/.test(req.messages[0].content)) B('«Спросить Луку»: вопрос с выделенным текстом',ok?'сервер не получил выделенное':'вопрос не ушёл'); } }
     /* ИГ №5: шаги по элементам детали — IGUI.player */
     { const ig=await page({viewport:{width:1280,height:860}},'ИГ №5'); await ig.goto(SITE+'/new/#/ig5/1'); await ig.evaluate(t=>localStorage.setItem('lk_tok',t),st); await ig.reload();
       await ig.waitForSelector('.tu-fab',{state:'visible',timeout:15000}).catch(()=>B('ИГ №5: кнопка наставника','нет')); await ig.click('.tu-fab'); await ig.waitForSelector('[data-in]:visible',{timeout:8000});

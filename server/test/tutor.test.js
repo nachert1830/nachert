@@ -305,3 +305,62 @@ test('ответ на чертеже: say и выноски у точек про
   const r2=await chat(c2,{dz:'ng2',n:17,text:'шаг 5'}); const s2=r2.data.actions.find(a=>a.t==='show');
   assert.equal(s2.say,'Ищем A на прямой EF.'); assert.equal(s2.notes,undefined);
 });
+
+/* ── Лука вне варианта ДЗ: любой вопрос по курсу с любой страницы (kb.js, dz:'gen') ── */
+const KB=require('../lib/tutor/kb');
+const gchat=(c,b,who)=>c.call('POST','/api/tutor/chat',Object.assign({dz:'gen'},b),{as:who||'a'});
+
+test('база знаний: 300+ страниц курса; на типовые вопросы первой находится нужная страница',()=>{
+  assert.ok(KB.size>=300,'страниц '+KB.size);
+  const top=q=>KB.search(q,{limit:1})[0].href;
+  assert.equal(top('что такое конкурирующие точки'),'#/topic/visibility');
+  assert.equal(top('как построить линию пересечения двух плоскостей'),'#/topic/planes-meet');
+  assert.equal(top('толщина основной линии'),'#/ig/theory/lines');
+  assert.equal(top('как найти натуральную величину отрезка'),'#/topic/true-length');
+  assert.equal(top('шрифт чертёжный размер'),'#/ig/theory/font');
+  assert.match(KB.search('толщина основной линии')[0].excerpt,/0,5…1,4 мм/,'отрывок — самый подходящий абзац');
+  assert.deepEqual(KB.search('и в на'),[],'одни стоп-слова — пусто');
+});
+
+test('Лука с любой страницы: ищет в курсе, отвечает по найденному, открывает страницу; где студент — в карточке; память своя',async()=>{
+  const {c,M}=await setup({script:[
+    b=>{ assert.ok(b.tools.some(t=>t.function.name==='search_course')&&!b.tools.some(t=>t.function.name==='get_step'),'вне варианта — инструменты курса, без шагов варианта');
+      assert.match(b.messages[0].content,/Ты — Лука/); assert.match(b.messages[0].content,/Где студент: «Точка на эпюре Монжа» \(#\/topic\/point-epure\)/);
+      assert.match(b.messages[0].content,/выделил на странице: «линия связи»/);
+      return tools(['search_course',{query:'конкурирующие точки видимость'}]); },
+    b=>{ const r=lastTool(b); assert.equal(r.results[0].key,'topic:visibility'); assert.ok(r.results[0].excerpt.length>40); return tools(['open_page',{key:'topic:visibility',why:'Там видно на чертеже, какая точка закрывает другую.'}]); },
+    b=>{ assert.equal(lastTool(b).ok,true); return say('Конкурирующие точки лежат на одном проецирующем луче, видна та, что ближе к наблюдателю. Открыл тебе тему «Видимость и конкурирующие точки». Какая из двух видна на π₂?'); }]});
+  const r=await gchat(c,{text:'что такое конкурирующие точки?',page:{hash:'#/topic/point-epure',title:'Точка на эпюре Монжа'},sel:'линия связи'});
+  assert.equal(r.status,200,JSON.stringify(r.data)); assert.equal(r.data.verified,true);
+  assert.deepEqual(r.data.actions,[{t:'open',href:'#/topic/visibility',title:'Видимость и конкурирующие точки',where:'Тема · Видимость и конкурирующие точки',why:'Там видно на чертеже, какая точка закрывает другую.'}]);
+  assert.deepEqual(r.data.ladder,[]);
+  const st=(await c.call('GET','/api/tutor/state?dz=gen',undefined,{as:'a'})).data; assert.equal(st.msgs.length,2); assert.ok(st.kb>=300);
+  const v=(await c.call('GET','/api/tutor/state?dz=ig4&n=7',undefined,{as:'a'})).data; assert.equal(v.msgs.length,0,'разговор вне варианта не смешивается с вариантом');
+  const log=await c.store.scan('tutorlog'); assert.equal(log[0].dz,'gen'); assert.deepEqual(log[0].tools,['search_course','open_page']);
+});
+
+test('Лука вне варианта: число из найденного проходит сверку (и в следующей реплике), выдуманное — переписывается; фото — только на варианте; чужой ключ страницы — нет',async()=>{
+  const {c}=await setup({script:[
+    tools(['search_course',{query:'толщина основной линии'}]),
+    say('Основная линия по ГОСТ 2.303 — от 0,5 до 1,4 мм, остальные — через неё. Какую толщину выберешь для формата А3?'),
+    say('Бери 6,2 мм — так чаще всего.'),   /* выдумка: 6,2 мм в курсе нет */
+    say('Бери толщину из диапазона, который мы нашли: от 0,5 до 1,4 мм, и держи её одинаковой на всём листе.'),
+    tools(['open_page',{key:'нет-такой'}]), b=>{ assert.match(lastTool(b).error,/Нет такой страницы/); return say('Такой страницы нет — давай найду иначе.'); }]});
+  const r1=await gchat(c,{text:'какая толщина основной линии?'}); assert.equal(r1.status,200); assert.equal(r1.data.verified,true); assert.match(r1.data.reply,/0,5 до 1,4 мм/);
+  const r2=await gchat(c,{text:'а точнее?'}); assert.equal(r2.status,200); assert.doesNotMatch(r2.data.reply,/6,2/,'выдуманное число не дошло до студента'); assert.match(r2.data.reply,/0,5 до 1,4 мм/,'число из прошлого найденного — факт');
+  const r3=await gchat(c,{text:'открой страницу'}); assert.deepEqual(r3.data.actions,[]);
+  const ph=await gchat(c,{text:'проверь лист',photo:PHOTO}); assert.equal(ph.status,400); assert.match(ph.data.error,/варианта ДЗ/);
+});
+
+test('на странице варианта Лука тоже отвечает по курсу: у него и шаги варианта, и поиск по курсу',async()=>{
+  const {c}=await setup({script:[
+    b=>{ const names=b.tools.map(t=>t.function.name); assert.ok(names.includes('get_step')&&names.includes('search_course')&&names.includes('open_page')); return tools(['search_course',{query:'разрез и сечение'}]); },
+    say('Разрез показывает и то, что за секущей плоскостью, а сечение — только то, что в ней. На твоём шаге 5 нужен именно разрез. Видишь разницу на чертеже?')]});
+  const r=await chat(c,{text:'чем разрез отличается от сечения?'}); assert.equal(r.status,200,JSON.stringify(r.data)); assert.equal(r.data.verified,true);
+});
+
+test('без согласия, с российской моделью: вне варианта найденное в курсе — прямо в карточке',async()=>{
+  const {c,M}=await setup({consent:false,env:{TUTOR_RU_MODEL:'gpt://{folder}/yandexgpt/latest',YC_FOLDER_ID:'f1'},script:[
+    b=>{ assert.ok(!b.tools,'без инструментов'); assert.match(b.messages[0].content,/Найдено в курсе по вопросу/); assert.match(b.messages[0].content,/Видимость и конкурирующие точки/); return say('Видна та точка, что ближе к наблюдателю.'); }]});
+  const r=await gchat(c,{text:'конкурирующие точки — какая видна?'}); assert.equal(r.status,200,JSON.stringify(r.data)); assert.equal(M.calls.length,1);
+});

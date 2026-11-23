@@ -3,7 +3,7 @@
    (числа шага, открытого лесенкой), становится «фактом» — сверщик пропускает в ответе только факты.
    exec(name, args, ctx) → результат (JSON); ctx = {dz, n, mem, turn:{asked, facts, actions, tools, notes}, see, askAuthor} */
 'use strict';
-const P=require('./pack'), POL=require('./policy'), VF=require('./verify');
+const P=require('./pack'), POL=require('./policy'), VF=require('./verify'), KB=require('./kb');
 
 const fn=(name,description,properties,required)=>({type:'function',function:{name,description,parameters:{type:'object',properties:properties||{},required:required||[],additionalProperties:false}}});
 const DEFS=[
@@ -28,6 +28,17 @@ const DEFS=[
   fn('ask_author','Передать вопрос автору курса (человеку) — только если студент согласился. summary — суть вопроса и что уже обсудили.',
     {summary:{type:'string',maxLength:600}},['summary'])
 ];
+/* база знаний курса (kb.js): любой вопрос — теория, как строить, оформление, вопросы РК; есть и на странице варианта, и везде */
+const KB_DEFS=[
+  fn('search_course','Найти в курсе сайта (темы, уроки, теория РК с ответами, теория ЕСКД и ГОСТ, шпаргалки, задачи, ДЗ, тесты) страницы по вопросу студента. Возвращает до 5 страниц: заголовок, раздел, отрывок, key. Вызывай первым делом на любой вопрос по теории, построениям, оформлению, правилам — и отвечай по найденному.',
+    {query:{type:'string',description:'вопрос или ключевые слова по-русски, например «конкурирующие точки видимость»'},limit:{type:'integer',minimum:1,maximum:8}},['query']),
+  fn('read_page','Полный текст страницы курса по key из search_course — когда отрывка мало.',{key:{type:'string'}},['key']),
+  fn('open_page','Открыть студенту страницу курса (по key из search_course): тема, урок, теория, задача с разбором. Открывай, когда там есть то, что лучше увидеть (чертёж, 3D, разбор), или студент просит; одну за ответ.',
+    {key:{type:'string'},why:{type:'string',maxLength:120,description:'зачем открываешь — одной фразой студенту'}},['key'])
+];
+DEFS.push(...KB_DEFS);
+/* вне варианта ДЗ: только база знаний, память и автор */
+const GEN_DEFS=KB_DEFS.concat(DEFS.filter(d=>['remember','ask_author'].includes(d.function.name)));
 const NAMES=DEFS.map(d=>d.function.name);
 
 /* числа содержимого шага — факты (без служебных номеров k, n) */
@@ -99,8 +110,19 @@ const H={
     ctx.mem.photo=true; ctx.turn.photoLooked=true;
     return {readable:r.readable!==false,findings:ok,overall:String(r.overall||'').slice(0,240),dropped:dropped.length?'отброшены находки с номерами точек, которых нет в варианте: '+dropped.join(', '):undefined}; },
 
+  search_course(a,ctx){ const q=String(a.query||'').slice(0,200).trim(); if(!q) return {error:'Пустой запрос.'};
+    const r=KB.search(q,{limit:a.limit||5}); r.forEach(x=>VF.numbersOf(x.excerpt,ctx.turn.facts)); (ctx.turn.kb=ctx.turn.kb||[]).push(...r.map(x=>x.key));
+    return r.length?{results:r.map(x=>({key:x.key,title:x.title,where:x.where,excerpt:x.excerpt}))}:{results:[],note:'В курсе ничего не нашлось. Скажи честно и предложи спросить автора (ask_author) или переформулировать.'}; },
+  read_page(a,ctx){ const d=KB.doc(a.key); if(!d) return {error:'Нет такой страницы. Ключи — из search_course.'};
+    VF.numbersOf(d.text,ctx.turn.facts); VF.numbersOf(d.title,ctx.turn.facts); (ctx.turn.kb=ctx.turn.kb||[]).push(d.key); return {key:d.key,title:d.title,where:d.where,text:d.text}; },
+  open_page(a,ctx){ const d=KB.doc(a.key); if(!d) return {error:'Нет такой страницы. Ключи — из search_course.'};
+    if(ctx.turn.actions.some(x=>x.t==='open')) return {ok:false,why:'одна страница за ответ'};
+    const why=String(a.why||'').replace(/[\u0000-\u001f]/g,' ').trim().slice(0,120);
+    const act={t:'open',href:d.href,title:d.title,where:d.where}; if(why&&VF.check(why,ctx.vctx?ctx.vctx():{points:null,steps:null,facts:ctx.turn.facts,quoted:[]}).ok) act.why=why;
+    ctx.turn.actions.push(act); return {ok:true,opened:d.title}; },
+
   remember(a,ctx){ if((ctx.turn.notes||0)>=3) return {ok:false,why:'не больше 3 заметок за ответ'}; ctx.turn.notes=(ctx.turn.notes||0)+1;
-    const tags=P.mistakeTags(ctx.dz,ctx.n), tag=tags.includes(a.tag)?a.tag:'other', note=String(a.note||'').replace(/[\u0000-\u001f]/g,' ').trim().slice(0,140);
+    const tags=ctx.dz==='gen'?[]:P.mistakeTags(ctx.dz,ctx.n), tag=tags.includes(a.tag)?a.tag:'other', note=String(a.note||'').replace(/[\u0000-\u001f]/g,' ').trim().slice(0,140);
     const m=ctx.mem; m.mistakes=m.mistakes||{}; m.mistakes[tag]=(m.mistakes[tag]||0)+1; if(note){ m.notes=(m.notes||[]).concat([note]).slice(-12); }
     return {ok:true}; },
 
@@ -116,4 +138,4 @@ async function exec(name,args,ctx){ ctx.turn.tools.push(name); if(!H[name]) retu
 function showAction(dz,n,k,points){ const v=P.variant(dz,n), st=v&&v.steps[k-1], a={t:'show',step:k,points:points||[]};
   if(P.isNg(dz)&&st) a.id=st.id; return a; }
 
-module.exports={DEFS,NAMES,exec,factsOfStep,ptKey,showAction};
+module.exports={DEFS,GEN_DEFS,KB_DEFS,NAMES,exec,factsOfStep,ptKey,showAction};
