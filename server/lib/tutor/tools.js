@@ -16,8 +16,11 @@ const DEFS=[
     {topic:{type:'string',enum:['edge','T','L','P','vis','section','dims','sheet','plan']}},['topic']),
   fn('common_mistakes','Типичные ошибки этого ДЗ (с метками m1…) и самопроверка.'),
   fn('defense_questions','Вопросы защиты ДЗ с ответами — для подготовки к сдаче.'),
-  fn('show_on_drawing','Показать студенту на чертеже: открыть шаг k плеера решения и подсветить точки. Шаг — если открыт хотя бы до short; точки — если до full.',
-    {k:{type:'integer'},points:{type:'array',items:{type:['integer','string']},maxItems:24}},['k']),
+  fn('show_on_drawing','Показать и ответить прямо на чертеже: открыть шаг k плеера решения, подсветить точки, написать на чертеже say — главную мысль одной фразой (плашка над чертежом) и notes — короткие выноски у точек (до 12 слов каждая). Шаг и say — если шаг открыт хотя бы до short; точки и notes — если до full. Числа в say и notes — только из инструментов.',
+    {k:{type:'integer'},points:{type:'array',items:{type:['integer','string']},maxItems:24},say:{type:'string',maxLength:160},
+     notes:{type:'array',maxItems:6,items:{type:'object',properties:{point:{type:['integer','string']},text:{type:'string',maxLength:90}},required:['point','text'],additionalProperties:false}}},['k']),
+  fn('show_3d','Открыть студенту 3D-модель: у ДЗ по начерту — пространственную картину шага k (точки и плоскости в пространстве), у ИГ — 3D-модель детали. Когда студенту трудно представить, как это выглядит в пространстве.',
+    {k:{type:'integer',description:'шаг (для начерта; у ИГ модель одна)'}},[]),
   fn('look_at_photo','Сравнить фото листа студента (приложено к этому сообщению) с эталоном решения: расхождения с номерами точек.',
     {focus:{type:'string',description:'на что смотреть особенно (необязательно)'}}),
   fn('remember','Запомнить трудность студента на будущее: tag — метка ошибки из common_mistakes (m1…) или other; note — коротко.',
@@ -70,8 +73,22 @@ const H={
     const can=POL.allowed(ctx.mem,k); if(can<2) return {denied:true,why:'Шаг ещё закрыт лесенкой: сначала возьми его через get_step (short).'};
     const R=P.registry(ctx.dz,ctx.n), pts=(Array.isArray(a.points)?a.points:[]).map(ptKey).filter(n=>R.has(n)).slice(0,24);
     const shown=can>=3?pts:[]; POL.open(ctx.mem,k,Math.max(2,(ctx.mem.open&&ctx.mem.open[k])||0));
-    ctx.turn.actions=ctx.turn.actions.filter(x=>x.t!=='show').concat([showAction(ctx.dz,ctx.n,k,shown)]);
-    return {ok:true,step:k,highlighted:shown,note:pts.length&&!shown.length?'точки не подсвечены: шаг открыт только до short':undefined}; },
+    /* надписи на чертеже: сверка чисел сейчас (по открытым фактам) — не сошлось или шаг закрыт — надпись не ставим */
+    const clean=t=>String(t||'').replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim();
+    const okText=t=>{ if(!t) return false; const v=VF.check(t,ctx.vctx?ctx.vctx():{points:new Set(R.keys()),steps:P.variant(ctx.dz,ctx.n).steps.length,facts:ctx.turn.facts,quoted:[]}); return v.ok; };
+    const dropped=[]; let say=clean(a.say).slice(0,160); if(say&&!okText(say)){ dropped.push('say'); say=''; }
+    const notes=(Array.isArray(a.notes)?a.notes:[]).slice(0,6).map(x=>({point:ptKey(x&&x.point),text:clean(x&&x.text).slice(0,90)}))
+      .filter(x=>{ if(!x.text||!R.has(x.point)||can<3){ dropped.push(String(x.point)); return false; } if(!okText(x.text)){ dropped.push(String(x.point)); return false; } return true; });
+    const act=showAction(ctx.dz,ctx.n,k,shown); if(say) act.say=say; if(notes.length) act.notes=notes;
+    ctx.turn.actions=ctx.turn.actions.filter(x=>x.t!=='show').concat([act]);
+    return {ok:true,step:k,highlighted:shown,on_drawing:{say:!!say,notes:notes.map(x=>x.point)},
+      note:[pts.length&&!shown.length?'точки не подсвечены: шаг открыт только до short':'',dropped.length?'не поставлены надписи ('+dropped.join(', ')+'): закрыты лесенкой, точки нет или число не из инструментов':''].filter(Boolean).join('; ')||undefined}; },
+
+  show_3d(a,ctx){ const v=P.variant(ctx.dz,ctx.n); let k=a.k==null?(ctx.step||1):clampK(ctx,a.k); if(!k) k=1;
+    if(P.isNg(ctx.dz)&&POL.allowed(ctx.mem,k)<2) return {denied:true,why:'Шаг ещё закрыт лесенкой: сначала возьми его через get_step (short).'};
+    const st=v&&v.steps[k-1], act={t:'3d',step:k}; if(P.isNg(ctx.dz)&&st) act.id=st.id;
+    ctx.turn.actions=ctx.turn.actions.filter(x=>x.t!=='3d').concat([act]);
+    return {ok:true,step:P.isNg(ctx.dz)?k:undefined,note:P.isNg(ctx.dz)?undefined:'у ИГ открывается 3D-модель детали целиком'}; },
 
   async look_at_photo(a,ctx){ if(!ctx.photo) return {error:'К этому сообщению фото не приложено. Попроси студента нажать 📷 и прислать фото листа.'};
     if(!ctx.see) return {error:'Глаза не подключены.'};

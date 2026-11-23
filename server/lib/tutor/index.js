@@ -97,6 +97,7 @@ function register(A,D,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()
     const messages=[{role:'system',content:system}].concat(history,[{role:'user',content:text||'Вот фото моего листа. Посмотри, что не так.'}]);
     const R=P.registry(dz,n), quoted=VF.numbersOf(text);
     const vctx=()=>({points:new Set(R.keys()),steps:v.steps.length,facts:before.concat(turn.facts),quoted});
+    ctx.vctx=vctx;   /* надписи на чертеже сверяются тем же сверщиком */
     const cheap=all>=0.8*c.dayRub*100, models=ru?[ru]:cheap?[c.light]:[c.main,c.light];
     let res; try{ res=await A_.run({models,llm,messages,tools:!bare,ctx,vctx,deadline:t0+DEADLINE,rate:c.rate,cache:!!c.cache,cacheSplit:PR.SYSTEM.length}); }
     catch(e){ if(!(e instanceof LLM.ModelError)) throw e; deps.log&&deps.log.error&&deps.log.error('наставник',e.message,e.fallback||'');

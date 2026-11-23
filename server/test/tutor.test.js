@@ -291,3 +291,17 @@ test('ИГ №3, №5, №6: пакеты — шаги по элементам, 
   assert.deepEqual(falsePos.slice(0,3),[],'ложные срабатывания'); assert.ok(total>500,'подсадок '+total); assert.ok(caught/total>=0.95,'поймано '+caught+' из '+total);
   assert.match(P.method('ig5','section').rule,/азрез/); assert.match(P.method('ig3','dims').rule,/азмер/);
 });
+
+test('ответ на чертеже: say и выноски у точек проходят сверку; выдуманное число и закрытая лесенкой выноска не ставятся; show_3d',async()=>{
+  const {c}=await setup({script:[
+    tools(['get_step',{k:5,depth:'full'}],['show_on_drawing',{k:5,points:['A'],say:'Вершина A — на пересечении ℓ и EF.',notes:[{point:'A',text:'A(147,9; 46,8; 59,7)'},{point:'A',text:'AB = 91,7 мм'},{point:'Z',text:'нет такой'}]}],['show_3d',{k:5}]),
+    b=>{ const r=toolsOf(b), sh=r[1]; assert.equal(sh.on_drawing.say,true); assert.deepEqual(sh.on_drawing.notes,['A']); assert.match(sh.note,/не поставлены/); return say('Смотри на чертёж.'); }]});
+  await c.call('POST','/api/tutor/mode',{dz:'ng2',n:17,mode:'explain'},{as:'a'});
+  const r=await chat(c,{dz:'ng2',n:17,text:'где A?'}); assert.equal(r.status,200,JSON.stringify(r.data));
+  const sh=r.data.actions.find(a=>a.t==='show'); assert.equal(sh.say,'Вершина A — на пересечении ℓ и EF.'); assert.deepEqual(sh.notes,[{point:'A',text:'A(147,9; 46,8; 59,7)'}]);
+  assert.deepEqual(r.data.actions.find(a=>a.t==='3d'),{t:'3d',step:5,id:'p1s5'});
+  /* «Наставник»: шаг открыт до short — выноски у точек не ставятся, say ставится */
+  const {c:c2}=await setup({script:[tools(['get_step',{k:5,depth:'short'}],['show_on_drawing',{k:5,say:'Ищем A на прямой EF.',notes:[{point:'A',text:'вершина A'}]}]),say('Шаг 5.')]});
+  const r2=await chat(c2,{dz:'ng2',n:17,text:'шаг 5'}); const s2=r2.data.actions.find(a=>a.t==='show');
+  assert.equal(s2.say,'Ищем A на прямой EF.'); assert.equal(s2.notes,undefined);
+});

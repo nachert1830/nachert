@@ -84,12 +84,46 @@ function ngHighlight(points){ const want=new Set(); (points||[]).forEach(p=>{ p=
 /* номер шага по порядку (как у сервера) из подзадачи и шага плеера */
 function ngStep(w){ const P=plr(), PL=typeof PLAYER!=='undefined'?PLAYER:null; if(!P||!PL||!window.DZR) return null; const S=P.state; if(!S.k) return null;
   try{ const parts=PL.partsOf(DZR.solve(w.dz,w.n).task); let k=0; for(let i=0;i<S.pi;i++) k+=(parts[i].steps||[]).length; return k+S.k; }catch(e){ return null; } }
+/* ── ответ прямо на чертеже: плашка с главной мыслью (say) и выноски у подписей точек (notes) ── */
+const ROMN={'₄':'IV','₅':'V','₆':'VI','₇':'VII','₈':'VIII'};
+function labelsOf(w,svg,pt){ const want=String(pt), alt=want.replace(/[₄-₈]/g,c=>ROMN[c]);
+  return [...svg.querySelectorAll('text')].filter(t=>{ const raw=String(t.textContent||'').trim();
+    if(isNg(w)){ const nm=raw.replace(/[″′‴'"]+/g,'').trim(); return nm===want||nm===alt; }
+    const m=/^(\d{1,3})[″′‴]$/.exec(raw); return !!m&&m[1]===want; }); }
+function drawingBox(w){ return isNg(w)?$('#dzPl .pl-paper'):$('#igbPic'); }
+function onDrawing(w,a){ const box=drawingBox(w), svg=box&&box.querySelector('svg'); if(!box||!svg) return;
+  box.querySelectorAll('.tu-say,.tu-note').forEach(e=>e.remove()); if(getComputedStyle(box).position==='static') box.style.position='relative';
+  const B=box.getBoundingClientRect();
+  if(a.say){ const d=document.createElement('div'); d.className='tu-say'; d.innerHTML='<i>Н</i><span>'+esc(a.say)+'</span><button type="button" aria-label="Убрать">✕</button>'; box.appendChild(d); }
+  const used=[];
+  (a.notes||[]).forEach(n=>{ const els=labelsOf(w,svg,n.point); if(!els.length) return; const r=els[0].getBoundingClientRect(); if(!r.width&&!r.height) return;
+    /* подпись — как на чертеже: новые плоскости римскими сверху (A₄ → A^IV) */
+    const nm=esc(String(n.point)).replace(/^(.*?)([₄-₈])$/,(m0,b0,c0)=>b0+'<sup>'+ROMN[c0]+'</sup>');
+    const d=document.createElement('div'); d.className='tu-note'; d.innerHTML='<b>'+nm+'</b> '+esc(n.text); box.appendChild(d);
+    const W=d.offsetWidth, H=d.offsetHeight; let x=r.right-B.left+8, y=r.top-B.top-H/2+r.height/2;
+    if(x+W>B.width-4){ x=r.left-B.left-W-8; d.classList.add('l'); } x=Math.max(4,Math.min(x,B.width-W-4));
+    /* не налезать на соседние выноски: сдвиг вниз, только если прямоугольники пересекаются */
+    const hit=yy=>used.some(u=>x<u.x+u.w+4&&u.x<x+W+4&&yy<u.y+u.h+4&&u.y<yy+H+4);
+    for(let i=0;i<8&&hit(y);i++) y+=H+4; y=Math.max(4,Math.min(y,B.height-H-4)); used.push({x,y,w:W,h:H});
+    d.style.left=x+'px'; d.style.top=y+'px'; }); }
+document.addEventListener('click',e=>{ const b=e.target.closest('.tu-say button'); if(b) b.parentNode.remove(); });
+
+/* ── 3D: начерт — пространственная картина шага (TASK3D), ИГ — вкладка 3D-модели детали ── */
+async function open3d(w,a){
+  if(isNg(w)){ if(!window.TASK3D||!window.DZR) return; const m=/^p(\d+)s(\d+)$/.exec(a.id||''); let pi=0, k=a.step||0;
+    if(m){ pi=+m[1]-1; k=+m[2]; } try{ TASK3D.open(DZR.solve(w.dz,w.n).task,pi,k); }catch(e){} return; }
+  const show=$('#igShow'); if(show&&show.offsetParent!==null) show.click();
+  const tab=await until(()=>$('.igx-tabs button[data-t="3d"]'),6000); if(tab){ tab.click(); setTimeout(()=>{ const t=$('.igx-tabs'); t&&t.scrollIntoView({behavior:'smooth',block:'start'}); },60); } }
+
 async function act(a){ const w=here(); if(!a||!w) return;
+  if(a.t==='3d'){ await open3d(w,a); if(innerWidth<760) close(true); return; }
   if(a.t==='show'&&isNg(w)){ const P=await ngPlayer(w); if(!P) return; const m=/^p(\d+)s(\d+)$/.exec(a.id||'');
     if(m){ P.state.pi=+m[1]-1; P.go(+m[2]); } else P.go(a.step);
-    if(a.points&&a.points.length){ await sleep(80); ngHighlight(a.points); }
+    await sleep(80); if(a.points&&a.points.length) ngHighlight(a.points); onDrawing(w,a);
     if(innerWidth<760) close(true); return; }
-  if(a.t==='show'){ const P=await player(w.n,w.dz); if(!P) return; P.go(a.step); if(a.points&&a.points.length){ await sleep(60); P.highlight(a.points); }
+  if(a.t==='show'){ const P=await player(w.n,w.dz); if(!P) return; P.go(a.step);
+    await until(()=>{ const p=$('#igbPic'); return p&&p.querySelector('svg')&&!p.classList.contains('igx-ldh'); },8000); await sleep(60);
+    if(a.points&&a.points.length) P.highlight(a.points); onDrawing(w,a);
     if(innerWidth<760) close(true); }
   if(a.t==='ask') location.hash='#/ask/'+encodeURIComponent(a.id); }
 
@@ -106,6 +140,11 @@ css.textContent=`
 @media (max-width:759px){.tu{left:0;right:0;bottom:0;height:min(86vh,calc(100vh - 40px));border-radius:22px 22px 0 0;padding-bottom:env(safe-area-inset-bottom)}}
 .tu[hidden],.tu-fab[hidden]{display:none}
 svg .tu-hl{fill:#e5484d!important;font-weight:800!important;paint-order:stroke;stroke:rgba(229,72,77,.25);stroke-width:6px}
+.tu-say{position:absolute;left:10px;right:10px;top:10px;z-index:6;display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:14px;background:var(--ink,#15161a);color:var(--paper,#fff);font:600 14px/1.35 var(--sans,system-ui);box-shadow:0 10px 26px -12px rgba(8,11,18,.6);pointer-events:auto}
+.tu-say i{flex:none;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#2f6bff,#e5484d);font:800 12px var(--sans,system-ui);font-style:normal}
+.tu-say span{flex:1}.tu-say button{flex:none;border:0;background:none;color:inherit;opacity:.7;font:700 14px var(--sans,system-ui);cursor:pointer;padding:0 2px}
+.tu-note{position:absolute;z-index:6;max-width:220px;padding:5px 9px;border-radius:10px;background:#fff;color:#15161a;border:1.5px solid #e5484d;font:600 12.5px/1.3 var(--sans,system-ui);box-shadow:0 6px 16px -8px rgba(8,11,18,.45);pointer-events:none}
+.tu-note b{color:#e5484d}
 body:has(.ckn) .tu-fab{display:none}
 .tu-h{display:flex;align-items:center;gap:10px;padding:12px 12px 10px 16px;border-bottom:1px solid var(--line,#e3e6ec)}
 .tu-h b{font:800 17px/1.2 var(--disp,inherit)}.tu-h small{display:block;color:var(--mut,#667);font:600 12.5px var(--sans,system-ui)}
@@ -177,7 +216,7 @@ function render(){ const w=S.w, st=S.st; $('[data-sub]',box).textContent=w?(DZN[
   if(!st.consent&&!st.ru){ body.innerHTML=`<div class="tu-gate"><b>Наставник работает на модели Claude</b><p>Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, номер варианта и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.</p><button class="tu-btn" data-consent>Согласен, начать</button></div>`; return; }
   let h=''; if(!st.msgs.length) h+=`<div class="tu-hi"><b>Привет! Я твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и подсвечу точки. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p></div><div class="tu-sug">${(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
   st.msgs.forEach((m,i)=>{ if(m.from==='u') h+=`<div class="tu-m u"><div class="tu-bb">${m.photo?'📷 ':''}${esc(m.text||'Фото листа')}</div></div>`;
-    else { const acts=(m.actions||[]).map((a,j)=>a.t==='show'?`<button class="tu-chip" data-act="${i}:${j}">Шаг ${a.step} на чертеже${a.points&&a.points.length?' · точки '+a.points.join(', '):''} ↗</button>`:a.t==='ask'?`<a class="tu-chip" href="#/ask/${esc(a.id)}">Вопрос автору ↗</a>`:'').join('');
+    else { const acts=(m.actions||[]).map((a,j)=>a.t==='show'?`<button class="tu-chip" data-act="${i}:${j}">Шаг ${a.step} на чертеже${a.points&&a.points.length?' · точки '+a.points.join(', '):''} ↗</button>`:a.t==='3d'?`<button class="tu-chip" data-act="${i}:${j}">3D-модель ↗</button>`:a.t==='ask'?`<a class="tu-chip" href="#/ask/${esc(a.id)}">Вопрос автору ↗</a>`:'').join('');
       h+=`<div class="tu-m t"><div class="tu-bb">${rich(m.text)}</div><div class="tu-x">${acts}${m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением">✓ сверено</span>':''}${m.id?`<button class="tu-r${m.rate===1?' on':''}" data-rate="${esc(m.id)}:1" aria-label="Полезно">👍</button><button class="tu-r${m.rate===0?' on':''}" data-rate="${esc(m.id)}:0" aria-label="Не помогло">👎</button>`:''}</div></div>`; } });
   if(S.busy) h+='<div class="tu-wait"><i></i>'+(S.photo||S.busyPhoto?'Смотрю на лист и сверяю с решением…':'Думаю и сверяю с решением…')+'</div>';
   if(S.err) h+='<div class="tu-err">'+esc(S.err)+'</div>';
