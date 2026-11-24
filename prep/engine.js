@@ -90,8 +90,10 @@ function label(e,g){ if(e.t!=='pt'||!e.lab) return null;
   else t.textContent=e.lab; return t; }
 /* scene → svg; show — какие роли видны (null — все); anim — роли, которые появляются по очереди */
 function draw(svg,S,show,anim){
-  svg.innerHTML=''; svg.setAttribute('viewBox',S.box.join(' ')); svg.setAttribute('preserveAspectRatio','xMidYMid meet');
-  const b=S.box, gg=el('g',{class:'pp-grid'},svg);
+  /* поле вокруг чертежа: подписи точек у края не обрезаются */
+  const b=[S.box[0]-7,S.box[1]-5,S.box[2]+14,S.box[3]+10];
+  svg.innerHTML=''; svg.setAttribute('viewBox',b.join(' ')); svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  const gg=el('g',{class:'pp-grid'},svg);
   for(let x=Math.ceil(b[0]/5)*5;x<b[0]+b[2];x+=5) el('line',{x1:x,y1:b[1],x2:x,y2:b[1]+b[3]},gg);
   for(let y=Math.ceil(b[1]/5)*5;y<b[1]+b[3];y+=5) el('line',{x1:b[0],y1:y,x2:b[0]+b[2],y2:y},gg);
   if(S.axis!=null){ el('line',{class:'ax',x1:b[0]+2,y1:S.axis,x2:b[0]+b[2]-2,y2:S.axis},svg); const t=el('text',{class:'small',x:b[0]+b[2]-7,y:S.axis-2.2},svg); t.textContent='x'; }
@@ -217,6 +219,8 @@ function viewTopic(v,id,ck){
       ${T.pre.length?`<p class="pp-sub">Опирается на: ${T.pre.map(p=>`<a href="#/prep/${p}">${esc(G.BY[p].t)}</a>`).join(', ')}</p>`:''}</div>`;
     return T.t;
   }
+  /* уровень карты подготовки (копия /new/): Условие → Разбор → Итог → Тест — экран prep/world.js */
+  if(ck&&PLANS[ck]&&self.PREPW&&PREPW.level&&skillOf(ck,id)) return PREPW.level(v,ck,id);
   const saved=store.get(id);
   document.body.classList.add('inplayer');
   v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="${back}" aria-label="${ck?'К курсу':'К программе'}">←</a>
@@ -363,55 +367,14 @@ function duel(stage,topic,T,saved,toWatch,ck){
 const shuf=a=>{ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 const trapFor=topic=>{ const ks=Object.keys(topic.traps), hard=ks.filter(k=>(topic.traps[k].b0||0)>=0); const pool=hard.length?hard:ks; return pool[Math.floor(Math.random()*pool.length)]; };
 const TRAIL='nch_prep_trail';
-function trail(k,hint){ try{ if(k){ sessionStorage.setItem(TRAIL,k); sessionStorage.setItem(TRAIL+'_h',hint||''); } else { sessionStorage.removeItem(TRAIL); sessionStorage.removeItem(TRAIL+'_h'); } }catch(e){} }
+function trail(k,hint,to,lbl){ try{ if(k){ sessionStorage.setItem(TRAIL,k); sessionStorage.setItem(TRAIL+'_h',hint||''); sessionStorage.setItem(TRAIL+'_to',to||''); sessionStorage.setItem(TRAIL+'_l',lbl||''); } else ['','_h','_to','_l'].forEach(x=>sessionStorage.removeItem(TRAIL+x)); }catch(e){} }
 const trailKey=()=>{ try{ return sessionStorage.getItem(TRAIL); }catch(e){ return null; } };
 const trailHint=()=>{ try{ return sessionStorage.getItem(TRAIL+'_h')||''; }catch(e){ return ''; } };
 const skillOf=(k,id)=>{ const p=PLANS[k]; return p?p.skills.find(s=>s.topic===id):null; };
 
-/* ───────── карта уровней (#/prep/<к>): навыки — уровни по порядку, как в игре ─────────
-   Пройден — зелёный, ✓ и звёзды (тест с первой попытки ★★★, со второй ★★, дальше ★); текущий — пульсирует, «Играть»;
-   следующие — с замком; в конце — кубок «Своё ДЗ», открывается, когда пройдены все уровни. */
 const curOf=k=>PLANS[k].skills.findIndex((s,j)=>!stDone(k,j));
 const starsOf=(k,i)=>{ const d=(mstore.all()[k]||{})[i]; return d&&d.stars||0; };
 const JUST='nch_prep_just';
-const ICO={check:'<path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>',
-  lock:'<rect x="7" y="11" width="10" height="8" rx="2" fill="currentColor"/><path d="M9.2 11V8.8a2.8 2.8 0 0 1 5.6 0V11" fill="none" stroke="currentColor" stroke-width="2"/>',
-  cup:'<path d="M8 5h8v4a4 4 0 0 1-8 0zM8 6H5.5a2.5 2.5 0 0 0 2.6 3.4M16 6h2.5a2.5 2.5 0 0 1-2.6 3.4M12 13v3M9 19h6l-.6-3h-4.8z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>',
-  play:'<path d="M9 7l8 5-8 5z" fill="currentColor"/>'};
-const svgI=n=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICO[n]}</svg>`;
-function viewMap(v,k){
-  const p=PLANS[k]; lastKey(k); trail(null); document.body.classList.remove('inplayer');
-  const g=planProg(k), cur=curOf(k), n=p.skills.length, stars=p.skills.reduce((a,s,i)=>a+starsOf(k,i),0);
-  let just=null; try{ just=sessionStorage.getItem(JUST); sessionStorage.removeItem(JUST); }catch(e){}
-  const W=Math.min(560,Math.max(300,(v.clientWidth||document.documentElement.clientWidth||390)-32)), STEP=158, TOP=56;
-  const X=i=>W/2+Math.sin(i*1.15)*(W*0.3), Y=i=>TOP+i*STEP;
-  const pts=[...p.skills.map((s,i)=>[X(i),Y(i)]),[X(n),Y(n)]];
-  let d=`M${pts[0][0]},${pts[0][1]}`; for(let i=1;i<pts.length;i++){ const [x0,y0]=pts[i-1],[x1,y1]=pts[i], m=(y0+y1)/2; d+=` C${x0},${m} ${x1},${m} ${x1},${y1}`; }
-  const lastDone=cur<0?n:cur; let dd=`M${pts[0][0]},${pts[0][1]}`; for(let i=1;i<=lastDone&&i<pts.length;i++){ const [x0,y0]=pts[i-1],[x1,y1]=pts[i], m=(y0+y1)/2; dd+=` C${x0},${m} ${x1},${m} ${x1},${y1}`; }
-  const H=Y(n)+110;
-  const node=(s,i)=>{ const done=stDone(k,i), now=i===cur, st=done?'done':now?'cur':'lock', sr=starsOf(k,i);
-    const href=done||now?(s.topic&&TOPICS[s.topic]?`#/prep/${k}/${s.topic}`:'#'):null;
-    const tag=href?`a href="${href}"`:'div';
-    return `<${tag} class="mp-n ${st}${just===k+':'+i?' pop':''}" data-i="${i}" style="left:${X(i)}px;top:${Y(i)}px" ${href?'':'aria-disabled="true"'}>
-      <span class="mp-c">${done?svgI('check'):now?`<b>${i+1}</b>`:svgI('lock')}</span>
-      ${done&&sr?`<span class="mp-s">${'★'.repeat(sr)}<i>${'★'.repeat(3-sr)}</i></span>`:now?'<span class="mp-go">Играть</span>':''}
-      <span class="mp-l">${esc(s.t)}</span></${href?'a':'div'}>`; };
-  const fin=cur<0;
-  v.innerHTML=`<div class="wrap page pp mp"><div class="mp-hd"><a class="pp-back" href="${p.go}" aria-label="К заданию">←</a>
-      <div><span class="pp-cck">Подготовка · ${esc(p.label)}</span><h1>${esc(p.title)}</h1></div></div>
-    <div class="mp-pr">${pbar(g.done,g.n)}<b>${g.done} / ${g.n}</b>${stars?`<span class="mp-ts">★ ${stars}</span>`:''}</div>
-    <div class="mp-map" style="height:${H}px;width:${W}px">
-      <svg class="mp-path" width="${W}" height="${H}" aria-hidden="true"><path d="${d}" class="mp-road"/><path d="${dd}" class="mp-road on"/></svg>
-      ${p.skills.map(node).join('')}
-      <${fin?`a href="${p.go}"`:'div'} class="mp-n cup ${fin?'cur':'lock'}" style="left:${X(n)}px;top:${Y(n)}px"><span class="mp-c">${svgI('cup')}</span>${fin?'<span class="mp-go">Своё ДЗ</span>':''}<span class="mp-l">${p.kind==='dz'?'Своё '+esc(p.label):esc(p.label)}</span></${fin?'a':'div'}>
-    </div></div>`;
-  v.querySelectorAll('.mp-n[href="#"]').forEach(a=>a.onclick=e=>{ e.preventDefault(); const i=+a.dataset.i, sk=p.skills[i];
-    if(!stDone(k,i)) setDone(k,i,{t:Date.now()}); trail(k,'Разбор: «'+sk.t+'»'); location.hash=sk.see; });
-  css();
-  setTimeout(()=>{ const c=v.querySelector('.mp-n.cur'); if(c&&c.scrollIntoView) c.scrollIntoView({block:'center',behavior:just?'smooth':'auto'}); },60);
-  if(fin&&just){ try{ window.FX&&FX.confetti(); }catch(e){} }
-  return 'Подготовка · '+p.label;
-}
 /* плашка «Дальше» на странице разбора инжи */
 function bar(){
   let el=document.getElementById('ppTrail'); const k=trailKey(), h=location.hash||'';
@@ -419,50 +382,10 @@ function bar(){
   if(!show){ if(el) el.remove(); return; }
   const p=PLANS[k], g=planProg(k), hint=trailHint();
   if(!el){ el=document.createElement('div'); el.id='ppTrail'; document.body.appendChild(el); }
-  el.innerHTML=`<span><b>${hint?esc(hint):'Подготовка к '+esc(p.label)}</b><small>${esc(p.label)} · уровней ${g.done} из ${g.n}</small></span><a class="pp-btn" href="#/prep/${k}">К карте →</a>`;
+  el.innerHTML=`<span><b>${hint?esc(hint):'Подготовка к '+esc(p.label)}</b><small>${esc(p.label)} · уровней ${g.done} из ${g.n}</small></span><a class="pp-btn" href="${(()=>{ try{ return sessionStorage.getItem(TRAIL+'_to')||'#/prep/'+k; }catch(e){ return '#/prep/'+k; } })()}">${(()=>{ try{ return esc(sessionStorage.getItem(TRAIL+'_l')||'К карте'); }catch(e){ return 'К карте'; } })()} →</a>`;
   css();
 }
 if(typeof window!=='undefined'&&window.addEventListener){ window.addEventListener('hashchange',()=>setTimeout(bar,0)); window.addEventListener('load',()=>setTimeout(bar,0)); }
-
-/* тест навыка: 4 пары чертежей (новые числа, типичные ошибки темы), все верно — навык готов */
-function viewTest(v,k,i){
-  const p=PLANS[k], sk=p&&p.skills[i], topic=sk&&TOPICS[sk.topic];
-  if(!topic){ location.replace('#/prep/'+k); return p?p.label:'Подготовка'; }
-  document.body.classList.add('inplayer'); const N=4, log=[]; let cur=null, locked=false;
-  v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="#/prep/${k}" aria-label="К карте">←</a>
-    <div class="pp-ttl"><b>Тест: ${esc(sk.t)}</b><small>${esc(p.label)} · уровень ${i+1} из ${p.skills.length}</small></div><span class="pp-cnt" id="ppCnt"></span></div>
-    <div class="pp-stage"><div class="pp-duel"><div class="pp-card" id="ppA" tabindex="0" role="button" aria-label="Первый чертёж"><svg></svg></div>
-    <div class="pp-panel mid"><div class="pp-meter"><div class="pp-prog"><i id="ppBar"></i></div><span id="ppPct"></span></div><div class="pp-verd" id="ppVerd"></div></div>
-    <div class="pp-card" id="ppB" tabindex="0" role="button" aria-label="Второй чертёж"><svg></svg></div></div></div></div>`;
-  const A=v.querySelector('#ppA'), B=v.querySelector('#ppB'), verd=v.querySelector('#ppVerd');
-  const end=()=>{ const ok=log.filter(x=>x.ok).length, pass=ok===N; document.body.classList.remove('inplayer');
-    try{ window.TRACK&&TRACK('prep_skill',{plan:k,sk:i+1,ok}); }catch(e){}
-    const a=mstore.all(), tr=a[k+':tries']||{}; tr[i]=(tr[i]||0)+1; a[k+':tries']=tr; mstore.set(a);
-    const was=stDone(k,i), stars=tr[i]<=1?3:tr[i]===2?2:1;
-    if(pass){ if(!was||stars>starsOf(k,i)) setDone(k,i,{t:Date.now(),ok,stars:Math.max(stars,starsOf(k,i))}); try{ sessionStorage.setItem(JUST,k+':'+i); }catch(e){} try{ window.FX&&FX.confetti(); }catch(e){} }
-    const miss=[...new Set(log.filter(x=>!x.ok).map(x=>x.say))];
-    v.innerHTML=`<div class="wrap page pp"><div class="pp-gt pp-go${pass?' fin':''}"><span class="pp-cck">${esc(p.label)} · уровень ${i+1} из ${p.skills.length}</span>
-      <h1>${pass?'Уровень пройден':'Пока не готов'}</h1>${pass?`<p class="mp-big">${'★'.repeat(stars)}<i>${'★'.repeat(3-stars)}</i></p>`:''}<p class="pp-sub">${esc(sk.t)} · верно ${ok} из ${N}</p>
-      ${miss.length?`<ul class="pp-miss">${miss.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
-      <div class="pp-row pp-gb"><a class="pp-btn big" href="${pass?'#/prep/'+k:'#/prep/'+k+'/'+sk.topic}">${pass?'К карте':'Разбор ещё раз'} →</a></div></div></div>`; };
-  const next=()=>{ if(log.length>=N) return end();
-    let tk=trapFor(topic), pr=pair(topic,tk); for(let t=0;!pr&&t<6;t++){ tk=trapFor(topic); pr=pair(topic,tk); }
-    if(!pr){ log.push({ok:true}); return next(); }
-    cur={tk,pr,okTop:Math.random()<.5}; locked=false; [A,B].forEach(c=>c.className='pp-card');
-    draw(A.querySelector('svg'),cur.okTop?pr.ok:pr.bad); draw(B.querySelector('svg'),cur.okTop?pr.bad:pr.ok);
-    v.querySelector('#ppBar').style.width=Math.round(log.length/N*100)+'%'; v.querySelector('#ppPct').textContent=(log.length+1)+' / '+N;
-    verd.innerHTML='<span class="pp-q">Где верно?</span>'; };
-  const choose=top=>{ if(locked||!cur) return; locked=true;
-    const ok=top===cur.okTop, tr=topic.traps[cur.tk]; log.push({ok,say:tr.say});
-    const okC=cur.okTop?A:B, badC=cur.okTop?B:A; okC.classList.add('ok');
-    if(ok){ badC.classList.add('dim'); verd.innerHTML='<span class="pp-ok">Верно</span>'; try{ window.FX&&FX.buzz('tick'); }catch(e){} setTimeout(next,800); }
-    else { badC.classList.add('bad'); mark(badC.querySelector('svg'),okC.querySelector('svg'),cur.pr.ok,tr.hl);
-      verd.innerHTML=`<span class="pp-bad">${esc(tr.say)}</span><button class="pp-btn" id="ppNx">Дальше →</button>`;
-      try{ window.FX&&FX.buzz('error'); }catch(e){} v.querySelector('#ppNx').onclick=next; } };
-  const key=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); choose(e.currentTarget===A); } };
-  A.onclick=()=>choose(true); B.onclick=()=>choose(false); A.onkeydown=key; B.onkeydown=key;
-  next(); return 'Тест · '+sk.t;
-}
 
 /* ───────── карточка «Подготовка» на странице ДЗ и РК ───────── */
 function cardCourse(dz){
@@ -517,9 +440,9 @@ function gate(v,k,go,what){
 function view(v,r){
   const G=P(); if(!G){ v.innerHTML='<div class="wrap page"><div class="box warn">Программа не загрузилась.</div></div>'; return 'Подготовка'; }
   if(r.tab==='all') return viewAll(v);
-  const crs=k=>PLANS[k]?viewMap(v,k):viewCourse(v,k);
+  const W=self.PREPW, crs=k=>PLANS[k]&&W?W.map(v,k):viewCourse(v,k);
   if(r.tab==='for') return G.COURSE[r.item]||PLANS[r.item]?crs(r.item):viewHub(v);
-  if(r.tab&&(G.COURSE[r.tab]||PLANS[r.tab])) return r.item?(PLANS[r.tab]&&r.item==='go'?viewMap(v,r.tab):PLANS[r.tab]&&/^test\d+$/.test(r.item)?viewTest(v,r.tab,+r.item.slice(4)-1):viewTopic(v,r.item,r.tab)):crs(r.tab);
+  if(r.tab&&(G.COURSE[r.tab]||PLANS[r.tab])) return r.item?(PLANS[r.tab]&&r.item==='go'?crs(r.tab):PLANS[r.tab]&&W&&/^test\d+$/.test(r.item)?W.test(v,r.tab,+r.item.slice(4)-1):viewTopic(v,r.item,r.tab)):crs(r.tab);
   if(r.tab) return viewTopic(v,r.tab,null);
   return viewHub(v);
 }
@@ -638,30 +561,7 @@ const CSS=`
 .gt2{text-align:center}.gt2 h1{margin:6px 0 14px}.gt2 .pp-btn.big{display:block;width:100%;margin:10px 0 0}
 .gt-lv{display:flex;justify-content:center;gap:8px;margin:6px 0 4px}.gt-lv i{width:18px;height:18px;border-radius:50%;background:var(--pp-line)}
 .gt-lv i.done{background:var(--pp-ok)}.gt-lv i.cur{background:var(--pp-acc);box-shadow:0 0 0 4px rgba(31,63,191,.18)}
-/* карта уровней */
-.mp-hd{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;margin:6px 0 10px}.mp-hd h1{font-size:24px;line-height:1.15;margin:2px 0 0}
-.mp-pr{display:flex;align-items:center;gap:10px;margin:0 0 6px}.mp-pr .pp-prog{flex:1;height:10px}.mp-pr b{font-size:16px;white-space:nowrap}
-.mp-ts{font-weight:800;color:#f2a900;white-space:nowrap}
-.mp-map{position:relative;margin:0 auto}
-.mp-path{position:absolute;left:0;top:0}.mp-road{fill:none;stroke:var(--pp-line);stroke-width:14;stroke-linecap:round}.mp-road.on{stroke:var(--pp-ok)}
-.mp-n{position:absolute;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:4px;width:150px;text-decoration:none;color:var(--pp-ink);-webkit-tap-highlight-color:transparent}
-.mp-c{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;background:#e4e8f1;color:#9aa3b8;border:4px solid #fff;box-shadow:0 6px 0 #c9cfdc,0 10px 18px -8px rgba(20,30,70,.35);transition:transform .15s}
-.mp-c svg{width:34px;height:34px}.mp-c b{font-size:28px;font-weight:900}
-.mp-n.done .mp-c{background:var(--pp-ok);color:#fff;box-shadow:0 6px 0 #0d7a43,0 10px 18px -8px rgba(13,122,67,.6)}
-.mp-n.cur .mp-c{width:84px;height:84px;background:var(--pp-acc);color:#fff;box-shadow:0 7px 0 #142c8c,0 0 0 0 rgba(31,63,191,.45);animation:mpPulse 1.6s infinite}
-.mp-n.cup .mp-c{background:#ffd34d;color:#8a5a00;box-shadow:0 6px 0 #d9a400}.mp-n.cup.lock .mp-c{background:#e4e8f1;color:#9aa3b8;box-shadow:0 6px 0 #c9cfdc}
-.mp-n.cup.cur .mp-c{background:#ffc21a;color:#6b4400;box-shadow:0 7px 0 #c48d00;animation:mpPulse 1.6s infinite}
-.mp-n:active .mp-c{transform:translateY(4px)}
-.mp-l{font-size:13px;font-weight:700;line-height:1.25;text-align:center;background:var(--pp-surf);padding:3px 8px;border-radius:10px;box-shadow:0 1px 0 var(--pp-line)}
-.mp-n.lock .mp-l{color:var(--pp-mut);font-weight:600}
-.mp-s{font-size:16px;color:#f2a900;letter-spacing:1px;line-height:1}.mp-s i,.mp-big i{font-style:normal;color:#d6dbe6}
-.mp-go{font-size:13px;font-weight:900;color:#fff;background:var(--pp-acc);padding:3px 12px;border-radius:999px;margin-top:-2px}
-.mp-n.cup .mp-go{background:#e8a200}
-.mp-n.pop .mp-c{animation:mpPop .7s ease-out}
-.mp-big{font-size:40px;color:#f2a900;margin:0;letter-spacing:4px}
-@keyframes mpPulse{0%{box-shadow:0 7px 0 #142c8c,0 0 0 0 rgba(31,63,191,.45)}70%{box-shadow:0 7px 0 #142c8c,0 0 0 18px rgba(31,63,191,0)}100%{box-shadow:0 7px 0 #142c8c,0 0 0 0 rgba(31,63,191,0)}}
-@keyframes mpPop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
-@media (prefers-reduced-motion:reduce){.mp-n.cur .mp-c,.mp-n.pop .mp-c{animation:none}}
+
 .pp-ra{font-size:17px;line-height:1.45;margin:4px 0 8px}.pp-rc{height:260px;margin-top:10px;border:1px solid var(--pp-line);cursor:default}.pp-plan li{color:var(--pp-ink);font-weight:500;margin:3px 0}
 .pp-go h1{margin:4px 0 8px}.pp-gst{margin:2px 0 6px;font-weight:700;font-size:15px;color:var(--pp-mut)}
 .pp-big2{font-size:18px;font-weight:700;line-height:1.35;margin:0 0 8px}
@@ -700,5 +600,5 @@ body.inplayer #ppTrail{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 function css(){ if(document.getElementById('ppCss')) return; const s=document.createElement('style'); s.id='ppCss'; s.textContent=CSS; document.head.appendChild(s); }
 if(typeof document!=='undefined') css();
 
-self.PREP={TOPICS,PLANS,autoKey,semWeek,plan(k,o){ PLANS[k]=Object.assign({key:k},o); return PLANS[k]; },planProg,stDone,gate,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
+self.PREP={TOPICS,PLANS,autoKey,semWeek,K:{mstore,setDone,setSeen,seenOf,stDone,planProg,trail,trailKey,lastKey,trapFor,esc,pbar,curOf,starsOf,JUST,skillOf,css,mark,bar},plan(k,o){ PLANS[k]=Object.assign({key:k},o); return PLANS[k]; },planProg,stDone,gate,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
 })();

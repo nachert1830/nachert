@@ -27,7 +27,8 @@ for(const pl of Object.values(PREP.PLANS)){
   (pl.skills||[]).forEach((sk,i)=>{ const where=`${pl.key}, навык ${i+1}`;
     if(!sk.t) bad(where+': без названия');
     if(pl.subj==='ng'){ if(!G.BY[sk.topic]) bad(where+': нет темы '+sk.topic); else if(!PREP.TOPICS[sk.topic]) bad(where+': тема '+sk.topic+' без разбора и теста');
-      else if(Object.keys(PREP.TOPICS[sk.topic].traps||{}).length<1) bad(where+': у темы нет ловушек для теста'); }
+      else if(Object.keys(PREP.TOPICS[sk.topic].traps||{}).length<1) bad(where+': у темы нет ловушек для теста');
+      const tk=(PREP.TASK||{})[sk.topic]; if(!tk||!tk.given||!tk.find) bad(where+': нет условия уровня (PREP.TASK.'+sk.topic+': что дано и что найти)'); }
     else if(!/^#\//.test(sk.see||'')) bad(where+': нет разбора'); }); }
 /* ── 1. программа ── */
 { const A=G.audit();
@@ -352,42 +353,80 @@ async function screens(){
   /* навыки — только в копии /new/ (основной сайт подключает прежние курсы по темам, выше) */
   const PK=Object.keys(PREP.PLANS), UN=U+'new/';
   const hash=()=>page.evaluate(()=>location.hash);
-  /* #/prep — карта уровней задания, которое выбрал сайт */
+  /* #/prep — карта предмета у зоны задания, которое выбрал сайт */
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
   await page.goto(UN+'#/prep'); await page.waitForTimeout(1500);
   { const want=await page.evaluate(()=>PREP.autoKey()), h=await hash();
-    if(h!=='#/prep/'+want) bad('Копия /new/: #/prep не открыл карту '+want+' ('+h+')'); if(!await page.$('.mp-map')) bad('Копия /new/: нет карты уровней'); }
-  /* карта ДЗ №2: уровни по порядку, первый — текущий, остальные закрыты, в конце кубок; уровень: разбор → тест → карта */
-  await page.goto(UN+'#/prep/ng2'); await page.waitForTimeout(800);
-  { const m=await page.evaluate(()=>({n:document.querySelectorAll('.mp-n').length,cur:[...document.querySelectorAll('.mp-n')].findIndex(x=>x.classList.contains('cur')),lock:document.querySelectorAll('.mp-n.lock').length,cup:!!document.querySelector('.mp-n.cup.lock'),ow:document.documentElement.scrollWidth>innerWidth}));
+    if(h!=='#/prep/'+want) bad('Копия /new/: #/prep не открыл карту '+want+' ('+h+')'); if(!await page.$('.wd')) bad('Копия /new/: нет карты'); }
+  /* карта начерта: все задания семестра зонами, в зоне — уровни по порядку и само задание в конце */
+  await page.goto(UN+'#/prep/ng2'); await page.waitForTimeout(900);
+  { const m=await page.evaluate(()=>{ const zs=PREPW.zonesOf('ng'); return {zs:zs.length,signs:document.querySelectorAll('.wd-sign').length,boss:document.querySelectorAll('.wd-n.boss').length,
+      lv:[...document.querySelectorAll('.wd-n[data-k="ng2"]:not(.boss)')].map(x=>x.classList.contains('cur')?'c':x.classList.contains('done')?'d':'l').join(''),cat:!!document.querySelector('#wdCat'),ow:document.documentElement.scrollWidth>innerWidth}; });
     const n=PREP.PLANS.ng2.skills.length;
-    if(m.n!==n+1||m.cur!==0||m.lock!==n||!m.cup) bad('Карта ДЗ №2: уровни '+JSON.stringify(m)); if(m.ow) bad('Карта ДЗ №2: горизонтальная прокрутка'); }
-  await page.click('.mp-n.cur'); await page.waitForTimeout(800);
-  { const want='#/prep/ng2/'+PREP.PLANS.ng2.skills[0].topic; if(await hash()!==want) bad('Уровень 1 ДЗ №2: открылся не разбор ('+await hash()+')');
-    if(await page.$('#ppA')) bad('Уровень 1 ДЗ №2: в разборе сразу тест');
-    for(let i=0;i<25;i++){ const b=await page.$('#ppNext'); if(!b) break; await b.click(); await page.waitForTimeout(120); if(!/^#\/prep\/ng2\/[a-z]\d/.test(await hash())) break; }
-    await page.waitForTimeout(700);
+    if(m.signs!==m.zs||m.boss!==m.zs) bad('Карта начерта: зон '+m.zs+', табличек '+m.signs+', заданий '+m.boss);
+    if(m.lv!=='c'+'l'.repeat(n-1)) bad('Карта, зона ДЗ №2: уровни '+m.lv); if(!m.cat) bad('Карта: нет персонажа на текущем уровне'); if(m.ow) bad('Карта: горизонтальная прокрутка'); }
+  /* уровень начерта: карточка уровня → условие → разбор по шагам → итог разбора → правила теста → 6 пар → итог со звёздами → карта */
+  await page.click('.wd-n.cur[data-k="ng2"]'); await page.waitForTimeout(500);
+  { if(await hash()!=='#/prep/ng2') bad('Уровень 1 ДЗ №2: нажатие сразу увело с карты ('+await hash()+') — нужна карточка уровня');
+    const sh=await page.evaluate(()=>{ const s=document.querySelector('.wd-sh'); return s&&{h:(s.querySelector('h2')||{}).textContent,route:s.querySelectorAll('.wd-shr li').length,start:!!s.querySelector('#wdStart')}; });
+    if(!sh) bad('Карта: нет карточки уровня'); else { if(sh.h!==PREP.PLANS.ng2.skills[0].t) bad('Карточка уровня: не тот навык — '+sh.h); if(sh.route!==3) bad('Карточка уровня: маршрут не из 3 этапов'); if(!sh.start) bad('Карточка уровня: нет кнопки «Начать»'); }
+    await page.click('#wdStart'); await page.waitForTimeout(700);
+    const want='#/prep/ng2/'+PREP.PLANS.ng2.skills[0].topic; if(await hash()!==want) bad('Уровень 1 ДЗ №2: открылся не уровень ('+await hash()+')');
+    const cond=await page.evaluate(()=>({on:(document.querySelector('#wlSteps li.on')||{}).textContent||'',find:!!document.querySelector('.wl-task .find'),svg:(()=>{ const s=document.querySelector('.wl-card svg'); return s?s.clientHeight:0; })(),go:!!document.querySelector('#wlGo')}));
+    if(!/Условие/.test(cond.on)) bad('Уровень: первым не «Условие» ('+cond.on+')'); if(!cond.find) bad('Условие: нет «Найти»'); if(cond.svg<150) bad('Условие: чертёж не виден'); if(!cond.go) bad('Условие: нет кнопки к разбору');
+    if(cond.go) await page.click('#wlGo'); await page.waitForTimeout(300);
+    if(!/Разбор/.test(await page.evaluate(()=>(document.querySelector('#wlSteps li.on')||{}).textContent||''))) bad('Разбор: этап не отмечен');
+    if(await page.$('#wlGoal')){ await page.click('#wlGoal'); await page.waitForTimeout(150); if(await page.evaluate(()=>document.querySelector('#wlGiven').hidden)) bad('Разбор: «Условие» не открывается'); await page.click('#wlGoal'); } else bad('Разбор: нельзя посмотреть условие');
+    for(let i=0;i<25;i++){ const b=await page.$('#ppNext'); if(!b) break; await b.click(); await page.waitForTimeout(120); }
+    if(!await page.$('.wl-split.recap #wlTest')) bad('Разбор: после шагов нет итога с кнопкой «К тесту»'); else { await page.click('#wlTest'); await page.waitForTimeout(700); }
     if(await hash()!=='#/prep/ng2/test1') bad('Уровень 1 ДЗ №2: после разбора — не тест ('+await hash()+')');
-    for(let i=0;i<4;i++){ await page.waitForSelector('#ppA:not(.ok):not(.bad):not(.dim)',{timeout:4000}).catch(()=>{}); await page.click('#ppA'); await page.waitForTimeout(150); const nx=await page.$('#ppNx'); if(nx) await nx.click(); else await page.waitForTimeout(900); }
-    await page.waitForTimeout(400);
-    const r=await page.evaluate(()=>({h1:(document.querySelector('.pp-gt h1')||{}).textContent||'',done:!!(JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ng2||{})[0]}));
-    if(!/^(Уровень пройден|Пока не готов)$/.test(r.h1)) bad('Тест уровня: нет итога ('+r.h1+')');
-    if((r.h1==='Уровень пройден')!==r.done) bad('Тест уровня: итог и отметка не совпадают');
-    await page.click('.pp-gt .pp-btn'); await page.waitForTimeout(800);
-    if(r.done){ if(await hash()!=='#/prep/ng2') bad('Уровень пройден: кнопка ведёт не на карту ('+await hash()+')');
-      const st=await page.evaluate(()=>[...document.querySelectorAll('.mp-n')].slice(0,2).map(x=>x.className));
-      if(!/done/.test(st[0])||!/cur/.test(st[1])) bad('Карта после уровня 1: '+st.join(' | ')); }
-    else if(await hash()!=='#/prep/ng2/'+PREP.PLANS.ng2.skills[0].topic) bad('Не готов: кнопка ведёт не на разбор того же уровня ('+await hash()+')'); }
-  /* карта инжи: уровень — разбор на странице сайта, плашка «К карте»; все уровни — кубок «Своё ДЗ» */
+    if(!await page.$('#wlStart')) bad('Тест: нет правил перед первой парой'); else await page.click('#wlStart');
+    await page.waitForTimeout(300);
+    if(await page.$$eval('#wdPips i',x=>x.length)!==6) bad('Тест уровня: не 6 пар');
+    for(let i=0;i<6;i++){ await page.waitForSelector('#ppA:not(.ok):not(.bad):not(.dim)',{timeout:5000}).catch(()=>{}); await page.click('#ppA'); await page.waitForTimeout(150); const nx=await page.$('#ppNx'); if(nx) await nx.click(); else await page.waitForTimeout(1000); }
+    await page.waitForTimeout(500);
+    const r=await page.evaluate(()=>({h1:(document.querySelector('.wd-rc h1')||{}).textContent||'',on:document.querySelectorAll('.wd-big svg.on').length,pips:document.querySelectorAll('.wd-pips.res i').length,done:(JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ng2||{})[0]||null}));
+    if(!/^(Идеально!|Уровень пройден|Почти!)$/.test(r.h1)) bad('Тест уровня: нет итога ('+r.h1+')');
+    if(r.pips!==6) bad('Итог уровня: не показаны все 6 пар');
+    if((r.h1!=='Почти!')!==!!r.done) bad('Тест уровня: итог и отметка не совпадают');
+    if(r.done&&r.on!==r.done.stars) bad('Итог уровня: звёзд на экране '+r.on+', записано '+r.done.stars);
+    await page.click('#wdGo'); await page.waitForTimeout(1000);
+    if(r.done){ if(await hash()!=='#/prep/ng2') bad('Уровень пройден: кнопка ведёт не на карту');
+      const st=await page.evaluate(()=>[...document.querySelectorAll('.wd-n[data-k="ng2"]')].slice(0,2).map(x=>x.className).join(' | '));
+      if(!/done/.test(st.split('|')[0])||!/cur/.test(st.split('|')[1])) bad('Карта после уровня 1: '+st);
+      await page.waitForTimeout(2600); const nh=await page.evaluate(()=>{ const s=document.querySelector('.wd-sh h2'); return s&&s.textContent; });
+      if(nh!==PREP.PLANS.ng2.skills[1].t) bad('После «Дальше»: не открылась карточка следующего уровня ('+nh+')'); }
+    else { if(await hash()!=='#/prep/ng2/'+PREP.PLANS.ng2.skills[0].topic) bad('Почти: кнопка ведёт не на разбор того же уровня');
+      else if(!/Разбор/.test(await page.evaluate(()=>(document.querySelector('#wlSteps li.on')||{}).textContent||''))) bad('Почти: открылось не на разборе'); } }
+  /* закрытый уровень и задание — тоже карточка: почему закрыто и что сделать */
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
-  { const n=PREP.PLANS.ig4.skills.length;
-    for(let i=0;i<n;i++){ await page.goto(UN+'#/prep/ig4'); await page.waitForTimeout(600);
-      const c=await page.$('.mp-n.cur'); if(!c){ bad('Карта ИГ ДЗ №4: нет текущего уровня на шаге '+(i+1)); break; }
-      await c.click(); await page.waitForTimeout(900);
-      if(/^#\/prep\//.test(await hash())){ bad('Карта ИГ ДЗ №4: уровень не открыл разбор'); break; }
-      const tr=await page.$('#ppTrail .pp-btn'); if(!tr){ bad('ИГ ДЗ №4: на странице разбора нет плашки «К карте» ('+await hash()+')'); break; }
-      await tr.click(); await page.waitForTimeout(700); if(await hash()!=='#/prep/ig4') bad('ИГ ДЗ №4: плашка ведёт не на карту'); }
-    if(!await page.$('a.mp-n.cup.cur')) bad('Карта ИГ ДЗ №4: после всех уровней кубок не открылся'); }
+  await page.goto(UN+'#/prep/ng2'); await page.waitForTimeout(900);
+  await page.evaluate(()=>document.querySelector('.wd-n[data-k="ng2"][data-i="2"]').click()); await page.waitForTimeout(400);
+  if(!await page.$('.wd-sh .wd-shlock')||await page.$('.wd-sh #wdStart')) bad('Закрытый уровень: карточка без объяснения или с кнопкой входа');
+  await page.evaluate(()=>document.querySelector('.wd-shx').click()); await page.waitForTimeout(300);
+  await page.evaluate(()=>document.querySelector('.wd-n.boss[data-k="ng2"]').click()); await page.waitForTimeout(400);
+  if(await page.$$eval('.wd-sh .wd-shl li',x=>x.length)!==PREP.PLANS.ng2.skills.length) bad('Карточка задания: нет списка навыков');
+  /* уровень инжи: разбор на странице сайта → плашка «К тесту» → тест: фрагменты листа, ошибка видна (пиксели различаются) */
+  await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
+  await page.goto(UN+'#/prep/ig4'); await page.waitForTimeout(900);
+  await page.click('.wd-n.cur[data-k="ig4"]'); await page.waitForTimeout(500); if(!await page.$('.wd-sh #wdStart')) bad('Уровень ИГ: нет карточки уровня'); else await page.click('#wdStart'); await page.waitForTimeout(1000);
+  { if(/^#\/prep\//.test(await hash())) bad('Уровень ИГ: не открыл разбор');
+    const tr=await page.$('#ppTrail .pp-btn'); if(!tr) bad('Уровень ИГ: нет плашки «К тесту»'); else { await tr.click(); await page.waitForTimeout(1500); }
+    if(await hash()!=='#/prep/ig4/test1') bad('Уровень ИГ: плашка ведёт не на тест ('+await hash()+')');
+    if(!await page.$('#wlStart')) bad('Тест ИГ: нет правил перед первой парой'); else { await page.click('#wlStart'); await page.waitForTimeout(800); }
+    const ok=await page.evaluate(()=>!!document.querySelector('#ppA svg image, #ppA svg path')&&!!document.querySelector('#ppB svg image, #ppB svg path')); if(!ok) bad('Тест ИГ: фрагменты листа не показаны'); }
+  { const fair=await page.evaluate(async()=>{ const img=s=>new Promise(ok=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=()=>ok(null);
+        i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s.replace(/<svg /,'<svg width="360" height="288" '+(/xmlns=/.test(s.slice(0,400))?'':'xmlns="http://www.w3.org/2000/svg" ')+(/xmlns:xlink/.test(s.slice(0,400))?'':'xmlns:xlink="http://www.w3.org/1999/xlink" '))); });
+      const px=async s=>{ const i=await img(s); if(!i) return null; const c=document.createElement('canvas'); c.width=360; c.height=288; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,360,288); x.drawImage(i,0,0,360,288); return x.getImageData(0,0,360,288).data; };
+      const types=[...new Set(Object.values(PREP.PLANS).flatMap(p=>p.skills.flatMap(s=>s.nk||[])))], bad=[]; let sd=7; const R=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647; };
+      for(const t of types) for(let k=0;k<4;k++){ const pr=PREPW.igPair([t],R); if(!pr){ bad.push(t+': пара не построилась'); continue; } const a=await px(pr.ok), b=await px(pr.bad); if(!a||!b){ bad.push(t+': не рисуется'); continue; }
+        let n=0; for(let i=0;i<a.length;i+=4) if(Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2])>90) n++; if(n<60) bad.push(t+': разница почти не видна ('+n+' px)'); }
+      return {types,bad}; });
+    if(fair.types.length<4) bad('Тест ИГ: мало типов ошибок — '+fair.types.join(', ')); fair.bad.forEach(x=>bad('Тест ИГ: '+x)); }
+  /* все уровни задания пройдены — открывается само задание */
+  await page.evaluate(()=>{ const o={}; PREP.PLANS.ig4.skills.forEach((s,i)=>o[i]={t:1,stars:3}); localStorage.setItem('nch_prep_plan',JSON.stringify({ig4:o})); });
+  await page.goto(UN+'#/prep/ig5'); await page.waitForTimeout(400); await page.goto(UN+'#/prep/ig4'); await page.waitForTimeout(900);
+  if(!await page.$('a.wd-n.boss.cur[href="#/ig4"]')) bad('Карта инжи: после всех уровней ДЗ №4 не открылось');
   /* перед решением варианта — предложение пройти подготовку, «Сразу открыть решение» */
   await page.evaluate(()=>{ localStorage.setItem('nch_prep_gate','1'); localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
   for(const h of ['#/ng2/17','#/ig4/7']){ await page.goto(UN+h); await page.waitForTimeout(1500);

@@ -50,7 +50,12 @@ PREP.topic('s1',{
     const Lv=P.map(p=>p.slice()); if(kind==='hp'){ const y=Lv[0][1]; Lv.forEach(p=>p[1]=y); } if(kind==='fp'){ const z=Lv[0][2]; Lv.forEach(p=>p[2]=z); }
     if(kind==='hl'){ const b=rnd(.25,.5)*sgn(); Lv.forEach(p=>p[2]=P[0][2]+b*(p[0]-P[0][0])); } if(kind==='fl'){ const b=rnd(.25,.5)*sgn(); Lv.forEach(p=>p[1]=P[0][1]+b*(p[0]-P[0][0])); }
     if([N,Lv].some(Q=>Q.some(p=>p[1]<4||p[2]<4))) return this.make(); return {kind,P,W:planeOf(tw),N,Lv}; },
-  watch:{steps:[{cap:'Положение плоскости — по её проекциям',roles:['t2','t1']}]},
+  /* разбор — на фронтально-проецирующей: одна проекция — прямая под углом к x */
+  watch:{V(){ const area=Q=>{ const q=Q.map(h1); return Math.abs((q[1][0]-q[0][0])*(q[2][1]-q[0][1])-(q[2][0]-q[0][0])*(q[1][1]-q[0][1]))/2; };
+      for(let i=0;i<300;i++){ const V=this.make(); if(V&&V.kind==='fp'&&area(V.P)>380) return V; } return this.make(); },
+    steps:[{cap:'π₂-проекция — не треугольник, а прямая под углом к x',roles:['t2']},
+      {cap:'Значит, плоскость ⟂ π₂ — фронтально-проецирующая; на π₁ — треугольник',roles:['t2','t1']},
+      {cap:'Будь прямая ∥ x — плоскость уровня, а вторая проекция — её натуральный вид',roles:['t2','t1']}]},
   scene(V,trap){ const P=trap==='Sw'?V.W:trap==='Nl'?V.N:trap==='Lv'?V.Lv:V.P, p2=P.map(f2), p1=P.map(h1);
     const E=[PL('t2','o',p2.concat([p2[0]])),PL('t1','o',p1.concat([p1[0]]))];
     const base=P.map((p,i)=>L('','lk',p2[i][0],p2[i][1],p1[i][0],p1[i][1])).concat([Tx('',-55,-56,PT[V.kind])]);
