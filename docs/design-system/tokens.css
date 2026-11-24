@@ -1,0 +1,101 @@
+/* ═══ Начерт · дизайн-система «Связь» v1 · CSS-переменные ═══
+   Источник — tokens.json. Тема: по системе; явный выбор — атрибут data-theme="light|dark" на <html>.
+   Шрифты: @font-face Geologica / Golos Text / NchGost (osifont) — как в корневом index.html. */
+
+:root{
+  /* — цвет: светлая «Бумага» — */
+  --bg:#F3F4F6; --surface-1:#FFFFFF; --surface-2:#EBEDF1; --surface-3:#DFE2E8; --overlay:#FFFFFF;
+  --line:#DDE1E7; --line-strong:#B9C0CB; --field:#7F8795;
+  --ink-1:#0E1116; --ink-2:#434B58; --ink-3:#5F6877; --ink-4:#9AA2AE;
+  --accent:#EB5310; --accent-ink:#1A0A02; --accent-text:#B93A06; --accent-soft:#FFE8DD;
+  --ok:#10743F; --ok-soft:#E2F4E8; --err:#C4183E; --err-soft:#FCE4EA;
+  --due:#8A5300; --due-fill:#FFC43D; --due-soft:#FFF1CC;
+  --focus:#B93A06;
+  --draw-paper:#FFFFFF; --draw-grid:#E8EBF0; --draw-ink:#14171C; --draw-thin:#7C8594; --draw-build:#EB5310;
+  --shadow-2:0 8px 24px rgba(14,17,22,.08),0 1px 2px rgba(14,17,22,.06);
+  --shadow-3:0 24px 64px rgba(14,17,22,.16);
+  --scrim:rgba(14,17,22,.32);
+  color-scheme:light;
+
+  /* — шрифт — */
+  --font-display:'Geologica','Golos Text',system-ui,sans-serif;
+  --font-text:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-drawing:'NchGost','Golos Text',sans-serif;
+
+  /* — шкала: размер / межстрочный — */
+  --t-display-l:650 40px/44px var(--font-display);
+  --t-display-m:650 30px/34px var(--font-display);
+  --t-title-l:600 24px/30px var(--font-display);
+  --t-title-m:600 20px/26px var(--font-display);
+  --t-title-s:600 17px/22px var(--font-text);
+  --t-body-l:400 17px/26px var(--font-text);
+  --t-body:400 15px/22px var(--font-text);
+  --t-label:550 15px/20px var(--font-text);
+  --t-caption:450 13px/18px var(--font-text);
+  --t-overline:600 12px/16px var(--font-text);
+
+  /* — отступы (шаг 4) — */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px; --s-10:40px; --s-12:48px; --s-16:64px;
+
+  /* — радиусы — */
+  --r-xs:6px; --r-s:10px; --r-m:14px; --r-l:20px; --r-xl:28px; --r-pill:999px;
+
+  /* — размеры — */
+  --touch:44px; --touch-primary:52px; --tabbar:64px; --nowbar:56px; --icon:24px;
+
+  /* — движение — */
+  --d-instant:100ms; --d-micro:150ms; --d-small:200ms; --d-medium:250ms; --d-sheet:320ms; --d-page:400ms; --d-draw:600ms;
+  --e-standard:cubic-bezier(.2,0,0,1); --e-enter:cubic-bezier(0,0,0,1); --e-exit:cubic-bezier(.3,0,1,1); --e-draw:cubic-bezier(.65,0,.35,1);
+  --spring-snappy:linear(0, 0.066, 0.205, 0.362, 0.508, 0.632, 0.732, 0.809, 0.867, 0.909, 0.939, 0.959, 0.974, 0.983, 0.99, 1);
+  --spring-smooth:linear(0, 0.034, 0.114, 0.215, 0.32, 0.423, 0.516, 0.599, 0.671, 0.732, 0.783, 0.825, 0.86, 0.888, 0.911, 0.93, 0.944, 0.956, 0.966, 0.973, 0.979, 0.983, 0.987, 0.99, 0.992, 1);
+  --spring-bouncy:linear(0, 0.057, 0.194, 0.37, 0.553, 0.722, 0.863, 0.971, 1.046, 1.09, 1.11, 1.112, 1.101, 1.083, 1.063, 1.042, 1.024, 1.01, 0.999, 0.992, 0.989, 0.987, 0.988, 0.989, 0.992, 1);
+}
+
+/* — цвет: тёмная «Графит» (по системе) — */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0D11; --surface-1:#14171D; --surface-2:#1C2028; --surface-3:#272C36; --overlay:#1A1E25;
+    --line:#262B34; --line-strong:#3B424F; --field:#606979;
+    --ink-1:#F1F3F6; --ink-2:#B3BAC6; --ink-3:#8E97A6; --ink-4:#555D6B;
+    --accent:#FF6A2B; --accent-ink:#1A0A02; --accent-text:#FF8F5E; --accent-soft:#35190C;
+    --ok:#4CD38A; --ok-soft:#0F2C1D; --err:#FF6F8E; --err-soft:#371320;
+    --due:#FFCB5C; --due-fill:#FFC43D; --due-soft:#33270B;
+    --focus:#FF8F5E;
+    --draw-paper:#101318; --draw-grid:#1A1E25; --draw-ink:#E9ECF1; --draw-thin:#7D8696; --draw-build:#FF6A2B;
+    --shadow-2:inset 0 1px 0 rgba(255,255,255,.04),0 0 0 1px #262B34;
+    --shadow-3:0 24px 64px rgba(0,0,0,.5);
+    --scrim:rgba(0,0,0,.56);
+    color-scheme:dark;
+  }
+}
+/* — тёмная по выбору (те же значения, чтобы переключатель побеждал систему в обе стороны) — */
+:root[data-theme="dark"]{
+  --bg:#0B0D11; --surface-1:#14171D; --surface-2:#1C2028; --surface-3:#272C36; --overlay:#1A1E25;
+  --line:#262B34; --line-strong:#3B424F; --field:#606979;
+  --ink-1:#F1F3F6; --ink-2:#B3BAC6; --ink-3:#8E97A6; --ink-4:#555D6B;
+  --accent:#FF6A2B; --accent-ink:#1A0A02; --accent-text:#FF8F5E; --accent-soft:#35190C;
+  --ok:#4CD38A; --ok-soft:#0F2C1D; --err:#FF6F8E; --err-soft:#371320;
+  --due:#FFCB5C; --due-fill:#FFC43D; --due-soft:#33270B;
+  --focus:#FF8F5E;
+  --draw-paper:#101318; --draw-grid:#1A1E25; --draw-ink:#E9ECF1; --draw-thin:#7D8696; --draw-build:#FF6A2B;
+  --shadow-2:inset 0 1px 0 rgba(255,255,255,.04),0 0 0 1px #262B34;
+  --shadow-3:0 24px 64px rgba(0,0,0,.5);
+  --scrim:rgba(0,0,0,.56);
+  color-scheme:dark;
+}
+
+/* — шкала на компьютере — */
+@media (min-width:1024px){
+  :root{ --t-display-l:650 56px/60px var(--font-display); --t-display-m:650 40px/44px var(--font-display); }
+}
+
+/* — меньше движения: пружины → короткий кроссфейд, рисование линий → сразу итог — */
+@media (prefers-reduced-motion:reduce){
+  :root{ --d-micro:1ms; --d-small:1ms; --d-medium:120ms; --d-sheet:120ms; --d-page:120ms; --d-draw:1ms;
+         --spring-snappy:linear(0,1); --spring-smooth:linear(0,1); --spring-bouncy:linear(0,1); }
+}
+:root[data-motion="reduce"]{ --d-micro:1ms; --d-small:1ms; --d-medium:120ms; --d-sheet:120ms; --d-page:120ms; --d-draw:1ms;
+  --spring-snappy:linear(0,1); --spring-smooth:linear(0,1); --spring-bouncy:linear(0,1); }
+
+/* — печать: всегда бумага — */
+@media print{ :root{ --draw-paper:#fff; --draw-ink:#000; --draw-thin:#555; --bg:#fff; --surface-1:#fff; } }
