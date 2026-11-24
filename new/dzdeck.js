@@ -307,9 +307,13 @@
     if(ng&&ok){R.push(['Чистовик',H(x.id,v,'list')]);R.push(['Черновик',H(x.id,v,'draft')]);}
     if(d.method){R.push(['Как решать',H(x.id,'how')]);R.push(['Ошибки и защита',H(x.id,'faq')]);}
     var note=!v?'Вариант не выбран — выбери его на странице задания или кнопкой «вариант» вверху.':ok?'Вариант '+v+' разобран по шагам.':'Вариант '+v+' ещё в работе — пока есть методика и разборы других вариантов.';
-    focus(i,'<h2>'+x.t+'</h2><p>Сдать до '+human(due(x),1)+' · '+x.w+'-я неделя (срок примерный). '+note+'</p>'+
-      '<a class="go" href="'+(ok?H(x.id,v):H(x.id))+'">'+(ok?'Открыть мой вариант '+v:'Открыть задание')+'</a>'+
-      '<ul class="rows">'+R.map(function(r){return '<li><a href="'+r[1]+'">'+r[0]+'</a></li>';}).join('')+'</ul>'+
+    /* тот же «Путь к сдаче», что на карточке задания (window.dzRoute в index.html): 4 шага со статусом, «Сейчас» — с чего продолжить */
+    var left=Math.round((due(x)-today())/DAY), when=left<0?'срок был '+human(due(x),1):'сдать до '+human(due(x),1)+(left===0?' · сегодня':' · через '+left+' дн.');
+    var st=window.dzPath?window.dzPath(d):null;
+    var route=st?'<p class="rth">Путь к сдаче</p><ol class="rt">'+st.S.map(function(x,j){return '<li class="'+(x.done?'ok':'')+(j===st.now?' cur':'')+'"><a href="'+x.h+'"><i>'+(x.done?'✓':j+1)+'</i><span><b>'+x.t+(j===st.now?' <em>Сейчас</em>':'')+'</b><small>'+x.s+'</small></span></a></li>';}).join('')+'</ol>'
+      :'<ul class="rows">'+R.map(function(r){return '<li><a href="'+r[1]+'">'+r[0]+'</a></li>';}).join('')+'</ul>';
+    focus(i,'<h2>'+x.t+'</h2><p class="when'+(left>=0&&left<=7?' soon':'')+'">'+when+' · срок примерный</p>'+route+
+      '<a class="go" href="'+H(x.id)+'">Открыть задание</a>'+
       '<button type="button" class="cls">Назад к колоде</button>','Задание '+x.n+', '+CN[x.c],ev);
     det.querySelectorAll('a,.cls').forEach(addHL);}
   det.addEventListener('click',function(e){if(e.target.closest('.cls')) unfocus(e);});

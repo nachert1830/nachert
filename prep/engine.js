@@ -602,5 +602,5 @@ body.inplayer #ppTrail{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 function css(){ if(document.getElementById('ppCss')) return; const s=document.createElement('style'); s.id='ppCss'; s.textContent=CSS; document.head.appendChild(s); }
 if(typeof document!=='undefined') css();
 
-self.PREP={TOPICS,PLANS,autoKey,semWeek,K:{mstore,setDone,setSeen,seenOf,stDone,planProg,trail,trailKey,lastKey,trapFor,esc,pbar,curOf,starsOf,JUST,skillOf,css,mark,bar},plan(k,o){ PLANS[k]=Object.assign({key:k},o); return PLANS[k]; },planProg,stDone,gate,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
+self.PREP={TOPICS,PLANS,autoKey,semWeek,K:{mstore,setDone,setSeen,seenOf,stDone,planProg,trail,trailKey,lastKey,trapFor,esc,pbar,curOf,starsOf,JUST,skillOf,css,mark,bar},plan(k,o){ PLANS[k]=Object.assign({key:k},o); return PLANS[k]; },planProg,stDone,gate,skipGate:skip,topic(id,o){ TOPICS[id]=Object.assign({id},o); return TOPICS[id]; },frame3,point3,draw3D,view,card,chip,status,Model,pair,draw,store};
 })();
