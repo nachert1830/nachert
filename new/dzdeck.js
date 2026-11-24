@@ -302,7 +302,7 @@
   /* что внутри задания — ссылки на вкладки настоящего ДЗ (как dzPills на сайте) */
   function H(){return '#/'+[].slice.call(arguments).map(encodeURIComponent).join('/');}
   function openTask(i,ev){var x=L[i],d=x.d,v=S.v,ok=v&&DZR.has(x.id,v),ng=x.c==='ng',R=[];
-    R.push([ng?'Разбор по шагам':'Решение',ok?H(x.id,v):H(x.id)]);
+    R.push([ng?'Разбор по шагам':'Разбор',ok?H(x.id,v):H(x.id)]);
     if(ng&&ok&&x.id==='ng3') R.push(['Как на листе',H(x.id,v,'sheet')]);
     if(ng&&ok){R.push(['Чистовик',H(x.id,v,'list')]);R.push(['Черновик',H(x.id,v,'draft')]);}
     if(d.method){R.push(['Как решать',H(x.id,'how')]);R.push(['Ошибки и защита',H(x.id,'faq')]);}

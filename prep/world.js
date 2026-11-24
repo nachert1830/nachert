@@ -144,7 +144,7 @@ function map(v,k){
         <span class="wd-sp">${open?`${g.done}/${g.n} · <i class="wd-si">${STAR(1)}</i>${st}`:`${ICON.lock} неделя ${pk.w||'—'}`}</span></div>`; return; }
     if(it.t==='lvl'){ const done=K.stDone(it.k,it.j), now=open&&it.j===cur, st=done?'done':now?'cur':'lock', sk=pk.skills[it.j], sr=K.starsOf(it.k,it.j);
       const href=(done||now)&&open?(sk.topic?`#/prep/${it.k}/${sk.topic}`:'#'):null, tag=href?`a href="${href}"`:'div role="button" tabindex="0"';
-      if(now){ cat=[it.x,it.y]; }
+      if(now&&it.k===k){ cat=[it.x,it.y]; }   /* кот — в зоне того задания, чью карту открыли */
       if(just===it.k+':'+it.j){ prevCat=[it.x,it.y]; }
       nodes+=`<${tag} class="wd-n ${st}${just===it.k+':'+it.j?' pop':''}" data-k="${it.k}" data-i="${it.j}" style="left:${f(it.x)}px;top:${f(it.y)}px" aria-label="${esc(pk.label)}, уровень ${it.j+1}: ${esc(sk.t)}${done?', пройден':now?', текущий':', закрыт'}">
         ${done?`<span class="wd-st">${[0,1,2].map(q=>STAR(q<sr)).join('')}</span>`:''}
@@ -235,7 +235,7 @@ function level(v,k,id){
     stage.innerHTML=`<div class="wl-split"><div class="pp-card big wl-card"><span class="wl-tag">Условие</span><svg aria-label="Чертёж условия"></svg></div>
       <div class="wl-panel">${idea?`<p class="wl-idea"><span>Чему учимся</span>${esc(idea)}</p>`:''}${taskBox}
       <p class="wl-hint">Подумай, с чего бы ты начал. Потом посмотрим решение — ${plural(N,'шаг','шага','шагов')}.</p>
-      <button type="button" class="pp-btn big" id="wlGo">Смотреть решение →</button></div></div>`;
+      <button type="button" class="pp-btn big" id="wlGo">Смотреть разбор →</button></div></div>`;
     drawCond(stage.querySelector('svg'));
     stage.querySelector('#wlGo').onclick=()=>watch(0); };
 
@@ -244,7 +244,8 @@ function level(v,k,id){
     stage.innerHTML=`<div class="wl-split"><button type="button" class="wl-goal" id="wlGoal" aria-expanded="false"><span>Найти</span><b>${esc(task.find)}</b><i>Условие</i></button>
       <div class="wl-given" id="wlGiven" hidden><p><span>Дано</span>${esc(task.given)}</p></div>
       <div class="pp-card big wl-card" id="wlCard"><svg aria-label="Чертёж шага"></svg>${sp?'<canvas class="pp-3d" hidden aria-label="Шаг в пространстве"></canvas><div class="pp-vt" role="tablist"><button data-v="e" class="on">Эпюр</button><button data-v="3">3D</button></div>':''}
-        <span class="wl-tag" id="wlTag" hidden>Условие</span><span class="wl-tap" id="wlTap">нажми на чертёж — следующий шаг</span></div>
+        <span class="wl-tag" id="wlTag" hidden>Условие</span><span class="wl-tap" id="wlTap">нажми на чертёж или листай — следующий шаг</span>
+        <button type="button" class="wl-rp" id="wlRp" aria-label="Повторить шаг" title="Повторить шаг">↻</button></div>
       <div class="wl-panel"><div class="wl-sn"><b id="wlSn"></b><span class="pp-dots">${W.steps.map(()=>'<i></i>').join('')}</span></div>
         <p class="pp-cap" id="ppCap" aria-live="polite"></p>
         <div class="pp-row"><button type="button" class="pp-btn ghost" id="ppPrev" aria-label="Шаг назад">←</button><button type="button" class="pp-btn" id="ppNext">Дальше →</button></div></div></div>`;
@@ -252,16 +253,29 @@ function level(v,k,id){
     const st3={yaw:-.6,pitch:.42,mode:'e',idle:0,drag:null};
     const paint3=()=>{ if(cv&&st3.mode==='3') P.draw3D(cv,sp,peek?(task.show||[]):W.steps[i0].roles,st3); };
     const show=()=>{ const s0=W.steps[i0], prev=i0?W.steps[i0-1].roles:[];
-      if(peek) drawCond(svg); else P.draw(svg,S,s0.roles,s0.roles.filter(r=>!prev.includes(r)));
+      const fresh=s0.roles.filter(r=>!prev.includes(r));
+      if(peek) drawCond(svg); else { P.draw(svg,S,s0.roles,fresh);
+        /* что нового на этом шаге — в фокусе, построенное раньше — приглушено */
+        if(i0&&fresh.length) svg.querySelectorAll('[data-role]').forEach(n=>{ if(!fresh.includes(n.dataset.role)) n.classList.add('pp-old'); }); }
       stage.querySelector('#ppCap').textContent=s0.cap; stage.querySelector('#wlSn').textContent='Шаг '+(i0+1)+' из '+N; paint3();
       stage.querySelectorAll('.pp-dots i').forEach((d,j)=>d.classList.toggle('on',j<=i0));
       stage.querySelector('#ppPrev').disabled=!i0; stage.querySelector('#ppNext').textContent=i0===N-1?'Готово ✓':'Дальше →';
-      stage.querySelector('#wlTag').hidden=!peek; stage.querySelector('#wlTap').hidden=peek||i0>0||st3.mode==='3'; };
+      stage.querySelector('#wlTag').hidden=!peek; stage.querySelector('#wlTap').hidden=peek||i0>0||st3.mode==='3'; stage.querySelector('#wlRp').hidden=peek||st3.mode==='3'; };
     const fwd=()=>{ if(peek){ setPeek(false); return; } if(i0<N-1){ i0++; show(); try{ window.FX&&FX.buzz(8); }catch(e){} } else recap(); };
     const setPeek=on=>{ peek=on; goal.setAttribute('aria-expanded',on); goal.classList.toggle('on',on); given.hidden=!on; show(); };
     goal.onclick=()=>setPeek(!peek);
-    card.onclick=e=>{ if(e.target.closest('.pp-vt')||st3.mode==='3') return; fwd(); };
-    stage.querySelector('#ppPrev').onclick=()=>{ if(peek) setPeek(false); if(i0>0){ i0--; show(); } };
+    const back=()=>{ if(peek) setPeek(false); if(i0>0){ i0--; show(); } };
+    let sw=null, swiped=false;
+    card.addEventListener('pointerdown',e=>{ if(st3.mode!=='3') sw=[e.clientX,e.clientY]; swiped=false; });
+    card.addEventListener('pointerup',e=>{ if(!sw) return; const dx=e.clientX-sw[0], dy=e.clientY-sw[1]; sw=null;
+      if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.4){ swiped=true; dx<0?fwd():back(); } });
+    card.onclick=e=>{ if(swiped||e.target.closest('.pp-vt,.wl-rp')||st3.mode==='3') return; fwd(); };
+    stage.querySelector('#wlRp').onclick=()=>show();
+    const keys=e=>{ if(!stage.isConnected||!stage.querySelector('#wlCard')){ document.removeEventListener('keydown',keys); return; }
+      if(e.target.closest&&e.target.closest('input,textarea')) return;
+      if(e.key==='ArrowRight'){ e.preventDefault(); fwd(); } else if(e.key==='ArrowLeft'){ e.preventDefault(); back(); } };
+    if(stage._keys) document.removeEventListener('keydown',stage._keys); stage._keys=keys; document.addEventListener('keydown',keys);
+    stage.querySelector('#ppPrev').onclick=back;
     stage.querySelector('#ppNext').onclick=fwd;
     if(cv){ stage.querySelector('.pp-vt').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; st3.mode=b.dataset.v;
         stage.querySelectorAll('.pp-vt button').forEach(x=>x.classList.toggle('on',x===b)); svg.hidden=st3.mode==='3'; cv.hidden=st3.mode!=='3'; show();
@@ -324,6 +338,10 @@ function sheet(v,k,j){
   try{ const n=v.querySelector(boss?`.wd-n.boss[data-k="${k}"]`:`.wd-n[data-k="${k}"][data-i="${j}"]`), sh=w.querySelector('.wd-sh');
     if(n) requestAnimationFrame(()=>{ const r=n.getBoundingClientRect(), top=innerHeight-sh.offsetHeight; if(r.bottom>top-10||r.top<130) window.scrollBy({top:r.top-Math.max(130,(top-r.height)/2),behavior:'smooth'}); }); }catch(e){}
   w.querySelector('.wd-shbg').onclick=close; w.querySelector('.wd-shx').onclick=close; document.addEventListener('keydown',esc_);
+  { const sh=w.querySelector('.wd-sh'); let y0=null, dy=0;
+    sh.addEventListener('touchstart',e=>{ if(sh.scrollTop<=0){ y0=e.touches[0].clientY; dy=0; sh.style.transition='none'; } },{passive:true});
+    sh.addEventListener('touchmove',e=>{ if(y0==null) return; dy=Math.max(0,e.touches[0].clientY-y0); sh.style.transform=dy?`translateY(${dy}px)`:''; },{passive:true});
+    sh.addEventListener('touchend',()=>{ if(y0==null) return; y0=null; sh.style.transition=''; sh.style.transform=''; if(dy>90) close(); }); }
   const cb=w.querySelector('#wdCur'); if(cb) cb.onclick=()=>{ close(); setTimeout(()=>{ const el=v.querySelector(`.wd-n[data-k="${k}"][data-i="${cur}"]`); if(el){ el.scrollIntoView({block:'center',behavior:'smooth'}); setTimeout(()=>sheet(v,k,cur),500); } },230); };
   /* инжа: разбор — страница сайта, внизу плашка «К тесту» */
   const sb=w.querySelector('#wdStart[href="#"]'); if(sb) sb.onclick=e=>{ e.preventDefault(); const sk=p.skills[j];
@@ -361,7 +379,7 @@ function test(v,k,i){
       <p>${N_PAIRS} пар ${ig?'фрагментов листа':'чертежей'}, каждый раз новые числа. В паре один ${ig?'фрагмент без ошибки':'чертёж верный'}, во втором — одна типичная ошибка. Нажми на ${ig?'фрагмент без ошибки':'верный'}.</p>
       <div class="wl-score"><div><span>${stars3(3)}</span><b>6 из 6</b></div><div><span>${stars3(2)}</span><b>5 из 6</b><small>уровень пройден</small></div><div><span class="dim">${stars3(0)}</span><b>меньше</b><small>разбор ещё раз</small></div></div>
       <details class="wl-trp"><summary>Где прячутся ошибки — ${traps.length}</summary><ul>${traps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>
-      <button type="button" class="pp-btn big" id="wlStart">Начать тест →</button></div>`;
+      <button type="button" class="pp-btn big" id="wlStart">Начать тест →</button><small class="wl-kb">С клавиатуры: 1 — первый, 2 — второй, Enter — дальше</small></div>`;
     stage.querySelector('#wlStart').onclick=run; };
   const run=()=>{
     const log=[]; let cur=null, locked=false, tok=0; const R=rng(Date.now()%1e9);
@@ -387,12 +405,20 @@ function test(v,k,i){
       else K.mark(badC.querySelector('svg'),okC.querySelector('svg'),cur.pr.ok,topic.traps[cur.tk].hl);
       try{ window.TRACK&&TRACK('prep_answer',{plan:k,lv:i+1,ok:ok?1:0}); }catch(e){}
       const last=log.length>=N_PAIRS, lbl=last?'К итогу →':'Дальше →';
-      if(ok){ badC.classList.add('bad','soft'); verd.innerHTML=`<span class="pp-ok">Верно!</span><small class="wd-why">Ошибка была ${badC===A?'сверху':'снизу'}: ${esc(say)}</small><button type="button" class="pp-btn" id="ppNx">${lbl}</button>`;
+      const side=A.getBoundingClientRect().top===B.getBoundingClientRect().top?(badC===A?'слева':'справа'):(badC===A?'сверху':'снизу');
+      okC.insertAdjacentHTML('beforeend','<span class="wl-badge ok">✓ верно</span>'); badC.insertAdjacentHTML('beforeend','<span class="wl-badge bad">✗ ошибка</span>');
+      if(ok){ badC.classList.add('bad','soft'); verd.innerHTML=`<span class="pp-ok">Верно!</span><small class="wd-why">Ошибка была ${side}: ${esc(say)}</small><button type="button" class="pp-btn" id="ppNx">${lbl}</button>`;
         try{ window.FX&&FX.buzz('tick'); }catch(e){} setTimeout(()=>{ if(my===tok) next(); },2200); }
       else { badC.classList.add('bad'); verd.innerHTML=`<span class="pp-bad">Мимо. ${esc(say)}</span><small class="wd-why">Красным — ошибка, зелёным пунктиром — как надо.</small><button type="button" class="pp-btn" id="ppNx">${lbl}</button>`; try{ window.FX&&FX.buzz('error'); }catch(e){} }
       const nx=verd.querySelector('#ppNx'); nx.onclick=()=>{ if(my===tok) next(); }; try{ nx.focus({preventScroll:true}); }catch(e){} };
     const key=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); choose(e.currentTarget===A); } };
     A.onclick=()=>choose(true); B.onclick=()=>choose(false); A.onkeydown=key; B.onkeydown=key;
+    /* с клавиатуры: 1 / ↑ / ← — первый, 2 / ↓ / → — второй; после ответа Enter — дальше */
+    const gk=e=>{ if(!A.isConnected){ document.removeEventListener('keydown',gk); return; } if(e.target===A||e.target===B) return;
+      if(!locked&&/^(1|ArrowUp|ArrowLeft)$/.test(e.key)){ e.preventDefault(); choose(true); }
+      else if(!locked&&/^(2|ArrowDown|ArrowRight)$/.test(e.key)){ e.preventDefault(); choose(false); }
+      else if(locked&&e.key==='Enter'&&e.target.id!=='ppNx'){ const nx=verd.querySelector('#ppNx'); if(nx){ e.preventDefault(); nx.click(); } } };
+    document.addEventListener('keydown',gk);
     next(); };
   if(ss.get(NOBRIEF)) run(); else brief();
   return 'Уровень '+(i+1)+' · '+sk.t;
@@ -579,6 +605,19 @@ svg .on,svg.on path{fill:#ffc928}.wd-tot svg path,.wd-st svg path,.wd-big svg pa
 .wd-shf{display:grid;gap:8px;margin-top:14px}.wd-shf .pp-btn.big{margin:0;display:block;text-align:center;font-size:16px;padding:14px 18px;border-radius:14px}
 .wd-shf .pp-btn:not(.ghost){background:#2a4fe0;color:#fff;box-shadow:0 4px 0 #18308f}.wd-shf .pp-btn.ghost{background:#fff;color:#121a3f;border:1px solid #dfe3ec}
 .wd-shlock{margin:0;display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:#f4f6fb;color:#5c6688;font-size:14px;line-height:1.4}.wd-shlock svg{width:18px;height:18px;flex:none;margin-top:1px}
+/* разбор: новое на шаге — в фокусе, прежнее — приглушено */
+.pp svg .pp-old{opacity:.32;transition:opacity .35s}
+.wl-rp{position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:50%;border:1px solid #dfe3ec;background:rgba(255,255,255,.94);color:#5c6688;font-size:17px;font-weight:700;cursor:pointer;display:grid;place-items:center}.wl-rp[hidden]{display:none}
+.wl-badge{position:absolute;right:8px;top:8px;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fff;pointer-events:none;animation:ppPop .3s cubic-bezier(.3,1.6,.5,1) both}
+.wl-badge.ok{background:var(--pp-ok)}.wl-badge.bad{background:var(--pp-bad)}.wl .pp-card{position:relative}
+/* тёмная тема: пустые звёзды тёмные (светлые читались как заработанные), подсказки — приглушённые, шапка карты — с тёмным текстом на светлом */
+[data-theme="dark"] .wl-best svg path,[data-theme="dark"] .wl-score svg path{fill:#3a4362}
+[data-theme="dark"] .wl-best svg.on path,[data-theme="dark"] .wl-score svg.on path{fill:#ffc928}
+[data-theme="dark"] .wl-best.none{opacity:1}
+[data-theme="dark"] .wl-idea{background:rgba(255,201,40,.10);border-color:rgba(255,201,40,.32);color:#ffe7a3}[data-theme="dark"] .wl-idea span{color:#e0b43a}
+[data-theme="dark"] .wl-tap,[data-theme="dark"] .wl-rp{background:rgba(255,255,255,.94);color:#5c6688}
+.wd-hud,.wd-hud .wd-ht b{color:#121a3f}
+.wl-kb{color:var(--pp-mut);font-size:12.5px}@media (pointer:coarse){.wl-kb{display:none}}
 @keyframes wlHint{0%,100%{opacity:.95}50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){.wd-sh,.wd-shbg{transition:none}.wl-tap{animation:none}}`;
 function css(){ if(document.getElementById('wdCss')) return; const s=document.createElement('style'); s.id='wdCss'; s.textContent=CSS; document.head.appendChild(s); }
