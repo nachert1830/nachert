@@ -430,7 +430,8 @@ function gate(v,k,go,what){
     <div class="gt-lv">${p.skills.map((s,i)=>`<i class="${stDone(k,i)?'done':i===cur?'cur':''}"></i>`).join('')}</div>
     <p class="pp-sub">Подготовка: ${g.done} из ${g.n} ${g.n<5?'уровня':'уровней'}${cur>=0?`<br>Следующий — уровень ${cur+1}: «${esc(p.skills[cur].t)}»`:''}</p>
     <a class="pp-btn big" href="#/prep/${k}">${g.done?'Продолжить подготовку':'Пройти подготовку'} →</a>
-    <button type="button" class="pp-btn big ghost" id="ppSkip">Посмотреть решение</button></div></div>`;
+    <button type="button" class="pp-btn big ghost" id="ppSkip">Сразу к разбору</button>
+    <a class="wd-meth" href="#/method">Почему сначала подготовка?</a></div></div>`;
   v.querySelector('#ppSkip').onclick=()=>{ skip(k); try{ window.TRACK&&TRACK('prep_gate_skip',{plan:k}); }catch(e){} go(); };
   try{ window.TRACK&&TRACK('prep_gate',{plan:k}); }catch(e){}
   return true;

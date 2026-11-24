@@ -126,7 +126,7 @@
   var CHEV='<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>';
   function foot(){return '<footer class="foot"><button type="button" class="foot-cat" aria-label="Кошка-талисман">'+CAT('sleep')+'</button>'+
     '<div class="foot-mini"><button type="button" class="foot-logo" aria-label="mathanov. — автор сайта"><img class="lg-b" src="'+LOGO_B+'" alt="mathanov."><img class="lg-w" src="'+LOGO_W+'" alt=""></button>'+
-    '<nav class="foot-links" aria-label="О сайте"><a href="#about">О проекте</a><a href="#privacy">Политика данных</a><a href="#consent">Согласие</a></nav></div></footer>';}
+    '<nav class="foot-links" aria-label="О сайте"><a href="#/method">Как мы учим</a><a href="#about">О проекте</a><a href="#privacy">Политика данных</a><a href="#consent">Согласие</a></nav></div></footer>';}
 
   /* «Учиться» — первое на главной и на экране предмета: задание и шаг выбирает сайт (PREP.autoKey, prep/plans.js) */
   function learn(s){try{if(!window.PREP||!PREP.autoKey||!Object.keys(PREP.PLANS).length) return '';
@@ -136,7 +136,7 @@
       '<span class="lb"><i style="width:'+pc+'%"></i></span><span class="lg">'+(fin?'К варианту':g.done?'Продолжить':'Начать')+' →</span></a>';}catch(e){return '';}}
   function fillHome(){
     var h=learn()+'<div class="top">'+TOP.map(function(T){return card(T,'hero');}).join('')+'</div>';
-    h+='<section class="srch"><h2>Найди решение своей задачи</h2><p>Номер задачи, вариант ДЗ или тема</p><div class="scope"><span class="on">Везде</span><span>Начерт</span><span>Инж. графика</span></div><form class="field" id="ns-sf"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="ns-sq" inputmode="search" placeholder="задача 47" aria-label="Что найти"><button type="submit" class="go">Найти →</button></form></section>';
+    h+='<section class="srch"><h2>Разберись со своей задачей</h2><p>Номер задачи, вариант ДЗ или тема — откроется разбор с методом</p><div class="scope"><span class="on">Везде</span><span>Начерт</span><span>Инж. графика</span></div><form class="field" id="ns-sf"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="ns-sq" inputmode="search" placeholder="задача 47" aria-label="Что найти"><button type="submit" class="go">Найти →</button></form></section>';
     h+='<section class="inst" id="ns-inst" aria-label="Добавь иконку на рабочий стол"><button type="button" class="x" id="ns-instX" aria-label="Скрыть"><svg viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8"/></svg></button><h3>Добавь иконку на рабочий стол</h3><p>Начерт будет открываться как приложение</p><div class="sl" id="ns-sl"><span class="fl" id="ns-slf"></span><span class="tx">сдвинь — покажу как</span><button type="button" class="kn" id="ns-kn" aria-label="Показать, как добавить иконку">'+MINI+'</button></div></section>';
     h+='<div class="own"><div class="v"><small>Просмотров</small><strong>141 295</strong><div class="nm"><small>Владелец</small><b>Андрей Матханов</b></div></div><button type="button" class="share"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div>';
     h+='<div class="cols">'+['ng','ig'].map(function(s){return '<div class="col"><button type="button" class="ch" data-go="'+s+'">'+(s==='ng'?'Начерт':'Инж. графика')+CHEV+'</button>'+COLS[s].map(function(T){return card(T);}).join('')+'</div>';}).join('')+'</div>';

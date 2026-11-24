@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Начерт — начертательная геометрия по шагам</title>
-<meta name="description" content="Начертательная геометрия по шагам: решённая тетрадь (89 задач), подготовка к РК, разборы ДЗ №1–5 и интерактивная 3D-модель с эпюром. Чертёж растёт построение за построением.">
+<meta name="description" content="Методический сервис по начертательной геометрии и инженерной графике: подготовка к каждому ДЗ и РК уровнями, метод и типичные ошибки, разбор по шагам, тетрадь (89 задач) и 3D-модель с эпюром.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://mc.yandex.ru https://mc.yandex.com https://*.google-analytics.com https://www.googletagmanager.com https://*.goatcounter.com; connect-src 'self' https://*.apigw.yandexcloud.net https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru https://api-metrika.yandex.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.goatcounter.com; frame-src https://mc.yandex.ru https://mc.yandex.com; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* тема до первой отрисовки, чтобы не было вспышки светлой */try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
@@ -19,14 +19,14 @@
 <meta name="apple-mobile-web-app-title" content="Начерт">
 <meta property="og:site_name" content="Начерт">
 <meta property="og:title" content="Начерт — начерт и инж. графика по шагам">
-<meta property="og:description" content="ДЗ на твоём варианте, тетради и РК.">
+<meta property="og:description" content="Сначала метод и попытка, потом разбор по шагам: ДЗ, тетради и РК.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="http://nachert1830.ru/og.jpg?v=5">
 <meta property="og:url" content="http://nachert1830.ru/">
 <link rel="canonical" href="http://nachert1830.ru/">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Начерт: решение по шагам — листы ДЗ по начерту и инженерной графике">
+<meta property="og:image:alt" content="Начерт: разбор по шагам — метод, ошибки и самопроверка для ДЗ по начерту и инженерной графике">
 <meta property="og:locale" content="ru_RU">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="../manifest.webmanifest">
@@ -5355,6 +5355,15 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 :root:is([data-ds=b1],[data-ds=b2],[data-ds=b3]) svg.dwg .mc text.lbl{fill:var(--mc)!important}
 
 .pl.peek .pl-side.more::after{display:none}
+.mt h1{margin:6px 0 8px}.mt h2{font-size:20px;margin:26px 0 10px}.mt-lead{font-size:17px;line-height:1.5;color:var(--ink2,var(--ink));max-width:680px}
+.mt-st{list-style:none;margin:0;padding:0;display:grid;gap:10px}.mt-st li{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
+.mt-n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--acc);color:var(--on-acc,#fff)}
+.mt-st b{font-size:16px}.mt-st p{margin:4px 0 0;color:var(--mut);line-height:1.45;font-size:15px}.mt-st a{display:inline-block;margin-top:6px;font-weight:700;color:var(--acc);text-decoration:none}
+.mt-prs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}.mt-pr{padding:14px;border-radius:16px;background:var(--surf);border:1px solid var(--line);display:grid;gap:4px;align-content:start}
+.mt-pr b{font-size:15.5px}.mt-pr p{margin:0;color:var(--mut);font-size:14.5px;line-height:1.45}.mt-pr small{font-size:12px;color:var(--mut);opacity:.85;font-style:italic}
+.mt p{line-height:1.5}.mt-note{padding:12px 14px;border-radius:14px;background:var(--surf2,var(--surf));border:1px solid var(--line);color:var(--mut)}
+.mt-link{display:grid;gap:2px;margin:6px 0 14px;padding:12px 14px;border-radius:14px;border:2px solid var(--acc);background:var(--surf);color:var(--ink);text-decoration:none}.mt-link span{color:var(--mut);font-size:14px}
+.wd-meth{display:block;text-align:center;margin-top:10px;font-size:14px;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -5383,7 +5392,7 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 
 <footer id="foot"><div class="wrap"><button type="button" class="foot-cat" id="footCat" aria-label="Кошка-талисман"></button>
  <div class="foot-mini"><button type="button" class="foot-logo" data-author aria-label="mathanov — владелец сайта"><img class="lg-b" src="../img/logo-mathanov-b.webp" width="640" height="108" alt="mathanov." loading="lazy"><img class="lg-w" src="../img/logo-mathanov-w.webp" width="640" height="108" alt="" loading="lazy"></button>
-  <nav class="foot-links" aria-label="О сайте"><a href="#/about">О проекте</a><a href="#/privacy">Политика данных</a><a href="#/consent">Согласие</a></nav></div>
+  <nav class="foot-links" aria-label="О сайте"><a href="#/method">Как мы учим</a><a href="#/about">О проекте</a><a href="#/privacy">Политика данных</a><a href="#/consent">Согласие</a></nav></div>
 </div></footer>
 
 <nav class="nav nav-bot" id="navBot" aria-label="Разделы"></nav>
@@ -6294,7 +6303,7 @@ function mount(root,t,opt){
         <div class="pl-ctrl"><div class="pl-ctrl-in">
           ${k===0&&S.pi===0&&opt.prev?`<button class="btn ghost pl-prev pl-prevt" aria-label="Предыдущая: ${escH(opt.prev.label)}">← <span>${escH(opt.prev.short||opt.prev.label)}</span></button>`:`<button class="btn ghost pl-prev" ${k===0&&S.pi===0?'disabled':''} aria-label="Назад">← <span>Назад</span></button>`}
           <div class="pl-dots">${dots}</div>
-          ${k===0&&coachOn()?'<span class="pl-coach" aria-hidden="true">Жми — решение пойдёт по шагам</span>':''}<button class="btn pri pl-main ${mainCls}${k===0||last?' hl':''}">${mainTxt}</button>
+          ${k===0&&coachOn()?'<span class="pl-coach" aria-hidden="true">Жми — разбор пойдёт по шагам</span>':''}<button class="btn pri pl-main ${mainCls}${k===0||last?' hl':''}">${mainTxt}</button>
         </div></div>
       </div>`;
     bind(); zoomBind(); posSet(); try{ glowNew(); FX.touch(); }catch(e){} document.body.classList.toggle('plfull',S.full);
@@ -8003,7 +8012,7 @@ function buildDocs(){
     add({key:'ng-lesson:'+l.id,type:'ng-lesson',grp:'u',label:'Урок '+l.id,title:l.title,kw:[l.part],segs,err:errs.join(' '),href:Hh('ng','path',l.id),where:'Теория · урок '+l.id}); });
   /* НГ: задачи (все шаги) */
   ((g(()=>WB3.tasks))||[]).forEach(t=>{ const segs=[]; taskSegs(t,segs);
-    add({key:'ng-task:'+t.n,type:'ng-task',grp:'e',label:'Задача №'+t.n,title:stripHTML(t.q),kw:[t.sec,t.conf].filter(x=>typeof x==='string').concat([String(t.n),'задача '+t.n,'задача №'+t.n,'№'+t.n]),segs,href:Hh('ng','tasks',t.n),where:'Тетрадь · №'+t.n+' — решение по шагам'}); });
+    add({key:'ng-task:'+t.n,type:'ng-task',grp:'e',label:'Задача №'+t.n,title:stripHTML(t.q),kw:[t.sec,t.conf].filter(x=>typeof x==='string').concat([String(t.n),'задача '+t.n,'задача №'+t.n,'№'+t.n]),segs,href:Hh('ng','tasks',t.n),where:'Тетрадь · №'+t.n+' — разбор по шагам'}); });
   /* НГ: билеты */
   ((g(()=>TK3))||[]).forEach(tk=>(tk.tasks||[]).forEach(t=>{ const segs=[]; taskSegs(t,segs);
     add({key:'ng-ticket:'+t.key,type:'ng-ticket',grp:'e',label:tk.title+' · '+(t.idx||''),title:stripHTML(t.q),kw:[tk.title,'билет кафедры'],segs,href:Hh('ng','check','tickets',t.key),where:'Подготовка к РК · '+tk.title+', задание '+(t.idx||'')}); }));
@@ -27881,7 +27890,7 @@ function solHTML(id){
    <p class="rkp-leg"><span><i class="k"></i>дано</span><span><i class="b"></i>построено</span><span><i class="o"></i>новое на шаге</span><span><i class="r"></i>ответ</span></p></section>`;
   if(typeof L3D==='undefined') return ''; const ms=Object.keys(TOP(id).m).filter(m=>L3D.has(id,m)); if(!ms.length) return '';
   if(!CUR.sol||!ms.includes(CUR.sol.mk)) CUR.sol={mk:ms[0],i:0,d3:false}; const S_=CUR.sol, sc=L3D.scene(id,S_.mk), n=sc.steps.length; S_.i=Math.max(0,Math.min(n-1,S_.i)); const st=sc.steps[S_.i], E=L3D.example(id)||{};
-  return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с решением по шагам</h2>
+  return `<section class="rkp-sol" id="rkpSol" aria-labelledby="rkpSolH"><h2 id="rkpSolH" class="sp-h2">Задача с разбором по шагам</h2>
    ${ms.length>1?`<div class="seg rkp-tabs" role="tablist">${ms.map((m,k)=>`<button type="button" role="tab" aria-selected="${m===S_.mk}" class="${m===S_.mk?'on':''}" data-solm="${m}">Задача ${k+1}: ${MT[m].s}</button>`).join('')}</div>`:''}
    <div class="rkp-solq"><b>Задача.</b> ${sc.F.ask||E.ask||''} Способ: ${MT[S_.mk].s}.</div>
    <div class="rkp-solbar"><span class="rkp-soln">Шаг ${S_.i+1} из ${n}</span><span class="rkp-sold">${Array.from({length:n},(_,j)=>`<i class="${j<S_.i?'d':j===S_.i?'n':''}"></i>`).join('')}</span></div>
@@ -28827,7 +28836,7 @@ function parseHash(h){
   if(/^#e3=/.test(h)) return {s:'epure'};
   const p=h.replace(/^#\/?/,'').split('/').filter(Boolean).map(x=>{try{return decodeURIComponent(x)}catch(e){return x}});
   if(/^(ng|ig)\d$/.test(p[0]||'')) return {s:'dz',tab:p[0],item:p[1]||null,sub:p[2]||null,extra:p[3]||null,short:true};   /* #/ng4/13 — ДЗ */
-  const s=['ng','ig','kg','epure','part','about','author','privacy','consent','topic','me','dz','rk','live','ask','prep'].includes(p[0])?p[0]:'home';
+  const s=['ng','ig','kg','epure','part','about','author','privacy','consent','topic','me','dz','rk','live','ask','prep','method'].includes(p[0])?p[0]:'home';
   return {s,tab:p[1]||null,item:p[2]||null,sub:p[3]||null,extra:p[4]||null};
 }
 function nav(h){ if(location.hash!==h){ try{ location.hash=h; }catch(e){} } route(); }
@@ -28889,6 +28898,7 @@ function render(r){
       case 'part': title=viewPart(v); break;
       case 'epure': title=viewEpure(v); break;
       case 'about': title=viewAbout(v); break;
+      case 'method': title=viewMethod(v); break;
       case 'author': title=viewHome(v); setTimeout(()=>AUTHOR.open(),300); break;
       case 'live': title=r.tab==='show'?LIVESHOW.view(v,r.item):viewLive(v); break;
       case 'ask': title=viewLive(v,r.tab); break;
@@ -29670,7 +29680,7 @@ function homeScope(){ const s=ST.get('home_scope','all'); return HOME_SCOPES.som
 /* быстрые ответы по номеру: «47», «№ 47», «задача 47» → тетрадь; «вариант 12», «в12» → ДЗ 2 ИГ; «ДЗ 3», «дз 2б» → ДЗ начерта */
 function quickHits(q,scope){
   const out=[], s=String(q||'').toLowerCase().replace(/ё/g,'е').trim(); if(!s) return out;
-  const task=n=>{ const t=WB3.get(n); if(t) out.push({tag:'Тетрадь · начерт',t:'Задача №'+n+' — '+short(t.q,130),w:'Решение по шагам',h:H('ng','tasks',n)}); };
+  const task=n=>{ const t=WB3.get(n); if(t) out.push({tag:'Тетрадь · начерт',t:'Задача №'+n+' — '+short(t.q,130),w:'Разбор по шагам',h:H('ng','tasks',n)}); };
   const igv=n=>{ if(n>=1&&n<=30&&window.IG_VARS) out.push({tag:'ДЗ 2 · инж. графика',t:'Вариант '+n+' — построение изображений',w:'Условие, деталь в 3D и готовый лист',h:HDZ('ig2',n)}); };
   let m=/^(?:задач[аиу]?\s*)?№?\s*(\d{1,2})$/.exec(s);
   if(m){ const n=+m[1]; if(scope!=='ig') task(n); if(scope!=='ng') igv(n); return out; }
@@ -29810,7 +29820,7 @@ function viewHome(v){
    <div class="hcards" id="rkHome">${homeCards()}</div>
    ${A2HS.cardHTML()}
    <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
-    <h1 id="v8H" class="v8-h">Найди решение своей задачи</h1>
+    <h1 id="v8H" class="v8-h">Разберись со своей задачей</h1>
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
@@ -30068,7 +30078,7 @@ function dzHub(v){
 function subjHome(v,c){
   const svg=ic=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
   const nT=(window.WB3&&WB3.tasks?WB3.tasks.length:89), nW=(window.IG_WB||[]).length;
-  const R=c==='ng'?[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ng','tasks'),'nb','Рабочая тетрадь','все '+nT+' задач — решение по шагам'],[H('ng','rk2'),'rk','Подготовка к РК','билеты, вопросы теории, пробный РК'],[H('ng','path'),'th','Теория','уроки с картинками и шпаргалка'],[H('epure'),'ep','3D-модель и эпюр','двигай точку — эпюр строится сам']]
+  const R=c==='ng'?[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ng','tasks'),'nb','Рабочая тетрадь','все '+nT+' задач — разбор каждой по шагам'],[H('ng','rk2'),'rk','Подготовка к РК','билеты, вопросы теории, пробный РК'],[H('ng','path'),'th','Теория','уроки с картинками и шпаргалка'],[H('epure'),'ep','3D-модель и эпюр','двигай точку — эпюр строится сам']]
     :[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ig','learn'),'lr','Учиться с нуля','виды, разрезы, сечения — один вариант по шагам'],[H('ig','points'),'tr','Защита точек','как найти две недостающие проекции точки'],[H('ig','wb'),'nb','Рабочая тетрадь',(nW?nW+' заданий: ':'')+'тела с отверстиями'],[H('ig','theory'),'th','Теория ЕСКД','форматы, линии, размеры, виды, разрезы, штриховка']];
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx sjh',body:`
    <div class="intro"><h1>${dzCourse(c)}</h1></div>
@@ -30134,7 +30144,7 @@ function dzMy(d){ return `<p class="lead">Выбери свой вариант �
 
 /* вкладки ДЗ — одни и те же в варианте и в «Как решать»: Разбор · Чистовик · Черновик · Как решать · Ошибки и защита · Сверить ответы */
 function dzPills(d,on){ const m=dzMyN(d), ok=m&&DZR.has(d.id,m), ng=d.course==='ng', L=[];
-  L.push(['',ng?'Разбор по шагам':'Решение',ok?HDZ(d.id,m):HDZ(d.id)]);
+  L.push(['',ng?'Разбор по шагам':'Разбор',ok?HDZ(d.id,m):HDZ(d.id)]);
   if(ng&&ok&&d.id==='ng3') L.push(['sheet','Как на листе',HDZ(d.id,m,'sheet')]);
   if(ng&&ok){ L.push(['list','Чистовик',HDZ(d.id,m,'list')]); L.push(['draft','Черновик',HDZ(d.id,m,'draft')]); }
   if(d.method){ L.push(['how','Как решать',HDZ(d.id,'how')]); L.push(['faq','Ошибки и защита',HDZ(d.id,'faq')]); }
@@ -30232,7 +30242,7 @@ function dzVariant(v,d,n,extra){
   const head=dzTop(d,dzVarTitle(d,n),dzShareHTML(mode==='steps'&&pi?HDZ(d.id,n,DZ_PL[pi]):HDZ(d.id,n,...(mode==='steps'?[]:[extra])),d.label+', вариант '+n+' — разбор по шагам'))+pills+condRepHTML(d,n);
   /* «Как на листе» (ДЗ №3): пять задач пирамиды своего варианта — А / Б / В и чертёж по шагам (PYR, EPX) */
   if(mode==='sheet'){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap dzx dzx-varp',body:`${head}
-      <p class="var-note">Решение как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Чёрным — данные, синим — новые проекции и повёрнутое, красным — ответ; новое на шаге — оранжевым, обратный переход (точку — назад на π₁ и π₂) — фиолетовым. Данные — твоего варианта ${n}.</p>
+      <p class="var-note">Разбор как на листе: <b>А</b> — алгоритм словами, <b>Б</b> — в пространстве, <b>В</b> — на чертеже, по строчке на шаг. Чёрным — данные, синим — новые проекции и повёрнутое, красным — ответ; новое на шаге — оранжевым, обратный переход (точку — назад на π₁ и π₂) — фиолетовым. Данные — твоего варианта ${n}.</p>
       <div id="dzSheetPl"></div>${PROMO.askHTML('dz3-'+n,'Не сходится с твоим листом?','Приложи фото листа — отвечу лично, прямо здесь.')}`});
     try{ const V=d.V[n]; EPX.player($('dzSheetPl'),()=>PYR({A:V.A,B:V.B,C:V.C,S:V.S})); }catch(e){ console.error(e); $('dzSheetPl').textContent='Разбор не построился'; }
     dzPillsScroll(v); return meta.title+' · вариант '+n+' · как на листе'; }
@@ -30259,7 +30269,7 @@ function dzVariant(v,d,n,extra){
 /* ИГ: деталь варианта — тот же разбор, что у заданий тетради (partPage): данные виды, 3D, построение по шагам, лист */
 function dzPart(v,d,n){ let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
   if(!m||!window.IGUI){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'igx dzwrap dzx',body:dzTop(d,vesc(d.label)+' · вариант '+n)+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. <a href="${HDZ()}">Впиши свой вариант</a>.</div>`}); return d.label+' · вариант '+n; }
-  IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — решение по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):'')+(window.PREP?PREP.chip(d.id):'')+condRepHTML(d,n),
+  IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — разбор по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):'')+(window.PREP?PREP.chip(d.id):'')+condRepHTML(d,n),
     crumbs:null,title:'Вариант '+n,back:[HDZ(),'Все ДЗ'],docTitle:d.label+' · вариант '+n,beta:'',
     img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:d.text,
     sheet:d.id==='ig2'?null:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
@@ -30391,7 +30401,7 @@ function openTaskView(v,key,ctx,start){
     onLast:(mode)=>{ const m=ST.get('wb3',{}); const val=mode==='try'?2:1; if((m[key]||0)<val){ m[key]=val; ST.set('wb3',m); renderHProg(); } if(window.LEARN) LEARN.seen(key); },
     onDone:()=>{ nav(after.href); }
   });
-  return isTk?'Билеты РК':tno+' — решение по шагам';
+  return isTk?'Билеты РК':tno+' — разбор по шагам';
 }
 /* «Похожее»: задачи той же темы (по тегам поиска), без текущей */
 function relatedFor(key){
@@ -30490,14 +30500,14 @@ function renderTK(){
   const T=(typeof TK3!=='undefined'?TK3:[]).filter(x=>!x.rk);
   if(!T.length){ $('tkList').innerHTML='<div class="empty">Билеты добавляются.</div>'; return; }
   const jump=`<nav class="tk-jump" aria-label="Билеты">${T.map((tk,i)=>`<a href="#tk${i}"><b>${tk.title}</b><span>${tk.who}</span></a>`).join('')}</nav>`;
-  $('tkList').innerHTML=`<div class="tk-note"><b>Это примеры, а не билеты этого года.</b> Задания на РК каждый раз новые, но того же типа. Реши эти — и ты умеешь решать билет.</div>`+(()=>{ const h=T.flatMap(tk=>tk.tasks).find(t=>t.hot); return h?`<a class="tk-hot" href="${H('ng','check','tickets',h.key)}"><span class="tk-hot-b">Разбери первым</span><b>Четырёхугольник ABDC с линиями уровня</b><span>Самый частый формат РК-1: D′ по линиям уровня, деление отрезка, угол прямой и угол плоскости — на одном чертеже.</span><i>Смотреть решение →</i></a>`:''; })()+jump+T.map((tk,i)=>`<section class="tk" id="tk${i}">
+  $('tkList').innerHTML=`<div class="tk-note"><b>Это примеры, а не билеты этого года.</b> Задания на РК каждый раз новые, но того же типа. Реши эти — и ты умеешь решать билет.</div>`+(()=>{ const h=T.flatMap(tk=>tk.tasks).find(t=>t.hot); return h?`<a class="tk-hot" href="${H('ng','check','tickets',h.key)}"><span class="tk-hot-b">Разбери первым</span><b>Четырёхугольник ABDC с линиями уровня</b><span>Самый частый формат РК-1: D′ по линиям уровня, деление отрезка, угол прямой и угол плоскости — на одном чертеже.</span><i>Смотреть разбор →</i></a>`:''; })()+jump+T.map((tk,i)=>`<section class="tk" id="tk${i}">
     <div class="tkhead"><div class="tk-kind">${tk.kind||''}</div>
       <div class="n">${tk.title}</div><div class="tk-who">для: <b>${tk.who||'всех'}</b></div></div>
     <div class="tkbody">${tk.tasks.map(t=>`<div class="tktask${t.hot?' hot':''}">
        <div class="q"><b>${t.idx}.</b> ${t.hot?'<span class="tk-hot-b sm">частый формат РК-1</span> ':''}${t.q}</div>
        <div class="sheet" style="border-color:#e6e3dd">${DRAW.svg({items:t.given,alt:'Условие'})}</div>
        <div class="tkacts" style="margin-top:14px">
-         <a class="btn pri" href="${H('ng','check','tickets',t.key)}">Смотреть решение по шагам →</a>
+         <a class="btn pri" href="${H('ng','check','tickets',t.key)}">Разбор по шагам →</a>
          ${taskState(t.key)?`<span class="badge ok">${taskState(t.key)===2?'Решено сам':'Разобрано'}</span>`:''}</div></div>`).join('')}</div>
     ${tk.foot?`<div class="tkfoot">${tk.foot}</div>`:''}</section>`).join('')
     +`<p class="fine">Реши на бумаге сам, потом открой разбор и сравни ход построения.</p>`;
@@ -32160,7 +32170,7 @@ function partPage(v,o){
    <section class="igx-task"><div class="igx-task-t"><span class="igx-k">Задание${o.fig?' · '+o.fig:''}</span><p>${o.q||''}</p></div>
     <div class="igx-given" id="igGiven">${o.img?`<div class="igx-dwg igx-orig"><img src="${o.img}" alt="Чертёж задания" decoding="async"></div>`:'<div class="igx-given-l">Строю данные изображения…</div>'}</div></section>
    ${o.learn?`<a class="igx-xl" href="${H('ig','learn')}"><b>Как это строится?</b> Разбор по шагам: вид слева, разрезы, сечение А–А →</a><a class="igx-xl igp-go" href="${H('ig','points')}"><b>Защита листа:</b> как найти две недостающие проекции точки →</a>`:''}
-   <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать решение</span><small>по шагам, в 3D и готовый лист</small></button></div>
+   <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать разбор</span><small>по шагам, в 3D и готовый лист</small></button></div>
    <div id="igSol" hidden>
     <div class="igx-tabs" role="tablist"><button role="tab" data-t="3d" class="on" aria-selected="true">3D</button><button role="tab" data-t="unf" aria-selected="false">Развёртка</button><button role="tab" data-t="steps" aria-selected="false">По шагам</button><button role="tab" data-t="sheet" aria-selected="false">Лист</button></div>
     <section class="igb" data-p="steps" id="igBuild" aria-label="Построение по шагам" hidden></section>
@@ -34460,7 +34470,7 @@ const EPX=(function(){
          <div class="epx-mid"><span class="epx-n">${k===0?'Условие':k>n?'Ответ':'Шаг '+k+' из '+n}</span>
           <div class="epx-dots" role="group" aria-label="Шаги решения">${Array.from({length:n+2},(_,j)=>`<button type="button" data-epx-k="${j}" class="${j<k?'on':''}${j===k?' now':''}" aria-label="${j===0?'Условие':j>n?'Ответ':'Шаг '+j}" title="${j===0?'Условие':j>n?'Ответ':'Шаг '+j}"></button>`).join('')}</div>
           <span class="epx-hint">или нажми на чертёж · клавиши ← →</span></div>
-         <button type="button" class="btn pri epx-next" data-epx-go="1"${k>n?' disabled':''}>${k===0?'Смотреть решение →':k===n?'Ответ →':k>n?'Готово ✓':'Дальше →'}</button></div>
+         <button type="button" class="btn pri epx-next" data-epx-go="1"${k>n?' disabled':''}>${k===0?'Смотреть разбор →':k===n?'Ответ →':k>n?'Готово ✓':'Дальше →'}</button></div>
         <div class="epx-g"><div class="epx-ep" data-epx-ep></div><div class="epx-side">${panel(t,k,{nohead:o.nohead})}</div></div>`;
       const box=el.querySelector('[data-epx-ep]'); render(box,t,Math.min(k,n),k>n);
       if(ro) ro.disconnect(); if(window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(box.isConnected) render(box,t,Math.min(k,n),k>n); }); ro.observe(box); }
@@ -35677,8 +35687,39 @@ function viewLive(v,id){
   v.innerHTML=`<div data-ask-root="${id}"></div>`;
   return id?'Мой вопрос':'Спроси автора';
 }
+/* «Как мы учим» (#/method, только копия): зачем сайт так устроен — путь к заданию, принципы с исследованиями, откуда содержание */
+function viewMethod(v){
+  const step=(n,t,p,h,l)=>`<li><span class="mt-n">${n}</span><div><b>${t}</b><p>${p}</p>${h?`<a href="${h}">${l} →</a>`:''}</div></li>`;
+  const pr=(t,p,src)=>`<div class="mt-pr"><b>${t}</b><p>${p}</p><small>${src}</small></div>`;
+  v.innerHTML=`<div class="wrap page mt"><div class="ptop">${crumbHTML([['Как мы учим']])}</div>
+    <h1>Как мы учим</h1>
+    <p class="mt-lead">Начерт — методический сервис по начертательной геометрии и инженерной графике. Его задача — чтобы ты построил своё задание сам и понимал каждый шаг, а не переписал готовый лист.</p>
+    <h2>Путь к заданию</h2>
+    <ol class="mt-st">
+      ${step(1,'Подготовка уровнями','К каждому ДЗ и РК — навыки, из которых складывается решение. Уровень: условие → разбор по шагам на маленькой задаче → тест «где верно»: верный чертёж рядом с типичной ошибкой.','#/prep','Карта подготовки')}
+      ${step(2,'Метод','«Как решать» у каждого задания: порядок построений и правила, на которые опирается каждый шаг.','#/dz','Задания')}
+      ${step(3,'Свой вариант — сначала сам','Свой вариант открывается в режиме «Решаю сам»: построение шага скрыто, есть подсказка. Разбор по шагам — когда он нужен.')}
+      ${step(4,'Самопроверка','«Типичные ошибки» у каждого задания; лист по инженерной графике — нормоконтроль по ГОСТ.')}
+      ${step(5,'Повтор','Пройденная тема возвращается через 1 → 3 → 7 → 16 → 35 дней — так она не забудется к РК.')}
+    </ol>
+    <h2>Почему так</h2>
+    <div class="mt-prs">
+      ${pr('Сначала попытка, потом готовое','То, что додумал сам — даже с подсказкой, — помнится лучше увиденного.','Slamecka, Graf, 1978; Bjork, 1994')}
+      ${pr('Проверка вместо перечитывания','Каждая попытка вспомнить укрепляет память сильнее, чем ещё один просмотр разбора.','Roediger, Karpicke, 2006')}
+      ${pr('Разобранный пример для начала','Новичку сначала нужен полный пример, потом — задача целиком. Поэтому в уровне разбор идёт перед тестом.','Sweller, Cooper, 1985; Renkl, Atkinson, 2003')}
+      ${pr('Верное рядом с ошибкой','Сравнение верного чертежа с типичной ошибкой учит замечать то, на что смотрят преподаватели.','Durkin, Rittle-Johnson, 2012')}
+      ${pr('Интервальное повторение','Тот же материал через растущие промежутки, а не много раз за вечер.','Cepeda и др., 2006')}
+      ${pr('Перечитывание не работает','Перечитывание и выделение маркером создают иллюзию знания — поэтому на сайте вместо них проверка себя.','Dunlosky и др., 2013')}
+    </div>
+    <h2>Откуда содержание</h2>
+    <p>Условия задач, теория и методика — по учебным изданиям МГТУ им. Н.Э. Баумана (список — на странице <a href="#/about">«О проекте»</a>). Каждый чертёж — вычисленное построение, и каждое изменение сайта проходит автоматическую проверку.</p>
+    <p class="mt-note">Разбор открыт всегда и бесплатно. Сайт лишь предлагает сначала разобраться — решать, как учиться, тебе.</p>
+  </div>`;
+  NEXT=null;
+  return 'Как мы учим';
+}
 function viewAbout(v){
-  v.innerHTML=`<div class="wrap page"><div class="ptop">${crumbHTML([['О проекте']])}</div><div id="w-about"></div></div>`;
+  v.innerHTML=`<div class="wrap page"><div class="ptop">${crumbHTML([['О проекте']])}</div><a class="mt-link" href="#/method"><b>Как мы учим</b><span>путь к заданию, принципы и исследования, на которых он стоит →</span></a><div id="w-about"></div></div>`;
   NEXT=null;
   if(PANES.about&&PANES.about.render) PANES.about.render($('w-about'));
   return 'О проекте';

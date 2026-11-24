@@ -235,7 +235,7 @@ function level(v,k,id){
     stage.innerHTML=`<div class="wl-split"><div class="pp-card big wl-card"><span class="wl-tag">Условие</span><svg aria-label="Чертёж условия"></svg></div>
       <div class="wl-panel">${idea?`<p class="wl-idea"><span>Чему учимся</span>${esc(idea)}</p>`:''}${taskBox}
       <p class="wl-hint">Подумай, с чего бы ты начал. Потом посмотрим решение — ${plural(N,'шаг','шага','шагов')}.</p>
-      <button type="button" class="pp-btn big" id="wlGo">Смотреть решение →</button></div></div>`;
+      <button type="button" class="pp-btn big" id="wlGo">Смотреть разбор →</button></div></div>`;
     drawCond(stage.querySelector('svg'));
     stage.querySelector('#wlGo').onclick=()=>watch(0); };
 
