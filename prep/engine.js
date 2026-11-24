@@ -406,8 +406,8 @@ function card(k){
   const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':cardCourse(k);
   const g=planProg(k), nx=p.skills.findIndex((s,i)=>!stDone(k,i));
   return `<a class="pp-dzcard" href="#/prep/${k}"><span class="pp-dzk">Сначала — подготовка к ${esc(p.label)}</span>
-    <b>Навыков готово: ${g.done} из ${g.n}</b>${pbar(g.done,g.n)}
-    <small>${nx>=0?'Навык '+(nx+1)+' из '+g.n+': «'+esc(p.skills[nx].t)+'»':'Все навыки готовы — решай свой вариант'}</small></a>`;
+    <b>Пройдено уровней: ${g.done} из ${g.n}</b>${pbar(g.done,g.n)}
+    <small>${nx>=0?'Следующий — уровень '+(nx+1)+': «'+esc(p.skills[nx].t)+'»':'Все уровни пройдены — решай свой вариант сам'}</small><span class="pp-dzgo">${g.done?'Продолжить':'На карту подготовки'} →</span></a>`;
 }
 function chip(k){
   const p=PLANS[k]; if(!p) return Object.keys(PLANS).length?'':chipCourse(k);
@@ -428,7 +428,7 @@ function gate(v,k,go,what){
   v.innerHTML=`<div class="wrap page pp pp-gate-pg"><div class="pp-gt gt2"><span class="pp-cck">${esc(p.label)} · ${esc(what||'решение')}</span>
     <h1>${esc(p.title)}</h1>
     <div class="gt-lv">${p.skills.map((s,i)=>`<i class="${stDone(k,i)?'done':i===cur?'cur':''}"></i>`).join('')}</div>
-    <p class="pp-sub">Подготовка: ${g.done} из ${g.n} ${g.n<5?'уровня':'уровней'}</p>
+    <p class="pp-sub">Подготовка: ${g.done} из ${g.n} ${g.n<5?'уровня':'уровней'}${cur>=0?`<br>Следующий — уровень ${cur+1}: «${esc(p.skills[cur].t)}»`:''}</p>
     <a class="pp-btn big" href="#/prep/${k}">${g.done?'Продолжить подготовку':'Пройти подготовку'} →</a>
     <button type="button" class="pp-btn big ghost" id="ppSkip">Посмотреть решение</button></div></div>`;
   v.querySelector('#ppSkip').onclick=()=>{ skip(k); try{ window.TRACK&&TRACK('prep_gate_skip',{plan:k}); }catch(e){} go(); };
@@ -493,8 +493,8 @@ const CSS=`
 .pp-panel.mid{grid-template-columns:auto 1fr;align-items:center;gap:6px 12px;background:var(--pp-surf);border:1px solid var(--pp-line);border-radius:var(--pp-r);padding:8px 12px}
 .pp-panel.mid .pp-verd{grid-column:1/3}
 .pp-meter{display:flex;align-items:center;gap:8px;min-width:0}
-.pp-prog{flex:1;display:block;height:8px;min-width:60px;border-radius:99px;background:var(--pp-line);overflow:hidden}
-.pp-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pp-acc),var(--pp-ok));border-radius:99px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.pp-prog{flex:1;display:block;height:8px;min-width:60px;border-radius:99px;background:var(--pp-line,var(--line,#e1e5ef));overflow:hidden}
+.pp-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pp-acc,var(--acc,#1f3fbf)),var(--pp-ok,#14a05a));border-radius:99px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
 #ppPct{font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;min-width:3.2ch}
 .pp-deck{display:flex;gap:5px;justify-content:flex-end}
 .pp-deck span{width:16px;height:22px;border-radius:4px;border:1.5px solid var(--pp-line);background:var(--pp-surf);transition:transform .5s,background .3s}
@@ -523,6 +523,7 @@ const CSS=`
 .pp-own{display:block;margin:-6px 0 4px 38px;font-size:11px;color:var(--pp-mut)}
 .pp-dzchip{display:flex;align-items:center;gap:10px;padding:6px 12px;margin:4px 0;border-radius:10px;background:var(--surf2,#f3f5fa);color:var(--ink,#121a3f);text-decoration:none;font-size:13px}
 .pp-dzchip b{white-space:nowrap}.pp-dzchip .pp-prog{max-width:160px}.pp-dzchip span:last-child{color:var(--acc,#1f3fbf);font-weight:700;white-space:nowrap}
+.pp-dzgo{justify-self:start;margin-top:4px;font-weight:700;font-size:14px;color:#fff;background:var(--acc,#1f3fbf);padding:7px 12px;border-radius:10px}
 .pp-dzk{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc,#1f3fbf)}.pp-dzcard small{color:var(--mut,#5c6688)}
 .pp-cc.fin{border-color:var(--pp-ok)}
 .pp-stgs{display:grid;gap:12px;margin:14px 0}

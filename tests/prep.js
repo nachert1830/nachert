@@ -364,7 +364,9 @@ async function screens(){
       lv:[...document.querySelectorAll('.wd-n[data-k="ng2"]:not(.boss)')].map(x=>x.classList.contains('cur')?'c':x.classList.contains('done')?'d':'l').join(''),cat:!!document.querySelector('#wdCat'),ow:document.documentElement.scrollWidth>innerWidth}; });
     const n=PREP.PLANS.ng2.skills.length;
     if(m.signs!==m.zs||m.boss!==m.zs) bad('Карта начерта: зон '+m.zs+', табличек '+m.signs+', заданий '+m.boss);
-    if(m.lv!=='c'+'l'.repeat(n-1)) bad('Карта, зона ДЗ №2: уровни '+m.lv); if(!m.cat) bad('Карта: нет персонажа на текущем уровне'); if(m.ow) bad('Карта: горизонтальная прокрутка'); }
+    if(m.lv!=='c'+'l'.repeat(n-1)) bad('Карта, зона ДЗ №2: уровни '+m.lv);
+    { const c=await page.evaluate(()=>{ const a=document.querySelector('#wdCat'), n=document.querySelector('.wd-n.cur[data-k="ng2"]'); return a&&n?Math.abs(parseFloat(a.style.left)-parseFloat(n.style.left))+Math.abs(parseFloat(a.style.top)-parseFloat(n.style.top)):-1; });
+      if(c!==0) bad('Карта ДЗ №2: кот не на текущем уровне этой зоны'); } if(!m.cat) bad('Карта: нет персонажа на текущем уровне'); if(m.ow) bad('Карта: горизонтальная прокрутка'); }
   /* уровень начерта: карточка уровня → условие → разбор по шагам → итог разбора → правила теста → 6 пар → итог со звёздами → карта */
   await page.click('.wd-n.cur[data-k="ng2"]'); await page.waitForTimeout(500);
   { if(await hash()!=='#/prep/ng2') bad('Уровень 1 ДЗ №2: нажатие сразу увело с карты ('+await hash()+') — нужна карточка уровня');
@@ -376,6 +378,11 @@ async function screens(){
     if(!/Условие/.test(cond.on)) bad('Уровень: первым не «Условие» ('+cond.on+')'); if(!cond.find) bad('Условие: нет «Найти»'); if(cond.svg<150) bad('Условие: чертёж не виден'); if(!cond.go) bad('Условие: нет кнопки к разбору');
     if(cond.go) await page.click('#wlGo'); await page.waitForTimeout(300);
     if(!/Разбор/.test(await page.evaluate(()=>(document.querySelector('#wlSteps li.on')||{}).textContent||''))) bad('Разбор: этап не отмечен');
+    /* разбор: стрелка — следующий шаг; построенное раньше приглушено, новое — в фокусе */
+    { await page.keyboard.press('ArrowRight'); await page.waitForTimeout(200);
+      const w=await page.evaluate(()=>({sn:(document.querySelector('#wlSn')||{}).textContent||'',old:document.querySelectorAll('.wl-card svg .pp-old').length,n:document.querySelectorAll('.wl-card svg [data-role]').length}));
+      if(!/^Шаг 2 из/.test(w.sn)) bad('Разбор: стрелка вправо не листает шаг ('+w.sn+')'); else if(!w.old||w.old>=w.n) bad('Разбор: на втором шаге прежнее не приглушено или приглушено всё');
+      await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(150); }
     if(await page.$('#wlGoal')){ await page.click('#wlGoal'); await page.waitForTimeout(150); if(await page.evaluate(()=>document.querySelector('#wlGiven').hidden)) bad('Разбор: «Условие» не открывается'); await page.click('#wlGoal'); } else bad('Разбор: нельзя посмотреть условие');
     for(let i=0;i<25;i++){ const b=await page.$('#ppNext'); if(!b) break; await b.click(); await page.waitForTimeout(120); }
     if(!await page.$('.wl-split.recap #wlTest')) bad('Разбор: после шагов нет итога с кнопкой «К тесту»'); else { await page.click('#wlTest'); await page.waitForTimeout(700); }
@@ -383,7 +390,9 @@ async function screens(){
     if(!await page.$('#wlStart')) bad('Тест: нет правил перед первой парой'); else await page.click('#wlStart');
     await page.waitForTimeout(300);
     if(await page.$$eval('#wdPips i',x=>x.length)!==6) bad('Тест уровня: не 6 пар');
-    for(let i=0;i<6;i++){ await page.waitForSelector('#ppA:not(.ok):not(.bad):not(.dim)',{timeout:5000}).catch(()=>{}); await page.click('#ppA'); await page.waitForTimeout(150); const nx=await page.$('#ppNx'); if(nx) await nx.click(); else await page.waitForTimeout(1000); }
+    for(let i=0;i<6;i++){ await page.waitForSelector('#ppA:not(.ok):not(.bad):not(.dim)',{timeout:5000}).catch(()=>{}); await page.click('#ppA'); await page.waitForTimeout(150);
+      if(!i&&await page.$$eval('.wl-badge',x=>x.length)!==2) bad('Тест: после ответа на карточках нет значков «верно / ошибка»');
+      const nx=await page.$('#ppNx'); if(nx) await nx.click(); else await page.waitForTimeout(1000); }
     await page.waitForTimeout(500);
     const r=await page.evaluate(()=>({h1:(document.querySelector('.wd-rc h1')||{}).textContent||'',on:document.querySelectorAll('.wd-big svg.on').length,pips:document.querySelectorAll('.wd-pips.res i').length,done:(JSON.parse(localStorage.getItem('nch_prep_plan')||'{}').ng2||{})[0]||null}));
     if(!/^(Идеально!|Уровень пройден|Почти!)$/.test(r.h1)) bad('Тест уровня: нет итога ('+r.h1+')');
