@@ -43,16 +43,19 @@ css.textContent=`
 .mc-tour.out{opacity:0}
 .mc-tour>svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden}
 .mc-tour .mc-body{pointer-events:auto;cursor:pointer}
-.mc-ring{fill:none;stroke:#e5484d;stroke-width:2.4;stroke-linecap:round}
+.mc-ring{fill:none;stroke:#e5484d;stroke-width:2.4;stroke-linecap:round;filter:drop-shadow(0 0 3px rgba(229,72,77,.35))}
 .mc-tour .mc-hit{fill:transparent;pointer-events:all;cursor:pointer}
-.mc-bub{position:absolute;left:0;top:0;z-index:2;max-width:min(270px,74%);display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:start;padding:8px 8px 8px 12px;border-radius:16px;background:#fff;color:#15161a;border:1.5px solid #15161a;box-shadow:0 10px 24px -12px rgba(8,11,18,.55);font:600 14px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;pointer-events:auto;opacity:0;transition:opacity .2s;will-change:transform}
-.mc-bub.on{opacity:1}
-.mc-bub::after{content:"";position:absolute;left:var(--tx,24px);bottom:-7px;width:12px;height:12px;margin-left:-6px;background:#fff;border-right:1.5px solid #15161a;border-bottom:1.5px solid #15161a;transform:rotate(45deg)}
-.mc-bub.b::after{bottom:auto;top:-7px;transform:rotate(225deg)}
-.mc-bub .mc-x{border:0;background:none;color:#15161a;opacity:.55;font:700 14px system-ui;cursor:pointer;padding:0 2px;line-height:1.3}
-.mc-bub .mc-acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
-.mc-bub .mc-acts button{height:32px;padding:0 12px;border-radius:99px;border:0;background:#1f47d6;color:#fff;font:700 13px system-ui;cursor:pointer}
-.mc-bub .mc-acts button+button{background:#eef1f6;color:#15161a}
+.mc-bub{position:absolute;left:0;top:0;z-index:2;max-width:min(280px,76%);display:grid;grid-template-columns:1fr auto;gap:6px 8px;align-items:start;padding:11px 8px 11px 14px;border-radius:18px;background:#fff;color:#15161a;box-shadow:0 18px 40px -16px rgba(8,10,20,.45),0 0 0 1px rgba(8,10,20,.06);font:500 14px/1.45 var(--sans,'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif);pointer-events:auto;opacity:0;transition:opacity .25s;will-change:transform}
+.mc-bub.on{opacity:1;animation:mcIn .45s cubic-bezier(.2,.9,.25,1.2) both}
+@keyframes mcIn{from{opacity:0;scale:.9}to{opacity:1;scale:1}}
+.mc-bub::after{content:"";position:absolute;left:var(--tx,24px);bottom:-6px;width:12px;height:12px;margin-left:-6px;background:#fff;border-radius:0 0 3px 0;box-shadow:3px 3px 6px -3px rgba(8,10,20,.18);transform:rotate(45deg)}
+.mc-bub.b::after{bottom:auto;top:-6px;transform:rotate(225deg)}
+.mc-bub .mc-x{display:grid;place-items:center;width:24px;height:24px;margin:-3px 0 0;border:0;border-radius:50%;background:none;color:#8a8d98;cursor:pointer;transition:background .2s,color .2s}
+.mc-bub .mc-x:hover{background:#f0f1f4;color:#15161a}
+.mc-bub .mc-acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.mc-bub .mc-acts button{height:34px;padding:0 14px;border-radius:12px;border:0;background:#111113;color:#fff;font:600 13px var(--sans,system-ui);cursor:pointer;transition:transform .2s}
+.mc-bub .mc-acts button:active{transform:scale(.96)}
+.mc-bub .mc-acts button+button{background:#f0f1f4;color:#15161a}
 .mc-dot{fill:var(--mc-ink,${INK})}
 .mc-tour .mc-dot,.mc-tour .mc-z{paint-order:stroke;stroke:#fff;stroke-width:2.5px}
 .mc-z{fill:var(--mc-ink,${INK});font:800 13px system-ui,sans-serif}
@@ -432,7 +435,7 @@ function settle(T){ const m=T.m; m.cancel(); relayout(T);
 function showSay(T,say){ if(say) T.opt.say=say; const sy=T.opt.say; if(!sy||!sy.text){ if(T.bub) T.bub.remove(); T.bub=null; return; }
   const b=T.bub||document.createElement('div'); b.className='mc-bub'; b.innerHTML='';
   const sp=document.createElement('span'); sp.textContent=sy.text; b.appendChild(sp);
-  const x=document.createElement('button'); x.type='button'; x.className='mc-x'; x.setAttribute('aria-label','Убрать'); x.textContent='✕'; b.appendChild(x);
+  const x=document.createElement('button'); x.type='button'; x.className='mc-x'; x.setAttribute('aria-label','Убрать'); x.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>'; b.appendChild(x);
   x.addEventListener('click',e=>{ e.stopPropagation(); if(T.opt.onClose) T.opt.onClose(); untour(); });
   if(sy.actions&&sy.actions.length){ const r=document.createElement('div'); r.className='mc-acts';
     sy.actions.forEach(a=>{ const q=document.createElement('button'); q.type='button'; q.textContent=a.label; q.addEventListener('click',e=>{ e.stopPropagation(); buzz(8); a.fn(); }); r.appendChild(q); }); b.appendChild(r); }

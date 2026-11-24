@@ -210,126 +210,214 @@ async function act(a,o){
 /* ── стили (токены сайта, светлая и тёмная тема) ── */
 const css=document.createElement('style');
 css.textContent=`
-.tu-fab{position:fixed;right:18px;bottom:calc(var(--tabh,64px) + 16px + env(safe-area-inset-bottom));z-index:330;display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 18px 0 8px;border:0;border-radius:99px;background:var(--ink,#15161a);color:var(--paper,#fff);font:800 15px var(--sans,system-ui);cursor:pointer;box-shadow:0 16px 34px -14px rgba(8,11,18,.7);transition:transform .2s}
-.tu-fab:hover{transform:translateY(-2px)}
-.tu-fab i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(150deg,#eef3ff,#cfdcff);color:#1f47d6;font:800 16px var(--sans,system-ui);font-style:normal;--mc-ink:#1d2233}
-.tu-hav{flex:none;width:46px;height:46px;border-radius:15px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(150deg,#eef3ff,#cfdcff);color:#1f47d6;font:800 18px var(--sans,system-ui);cursor:pointer;--mc-ink:#1d2233}
-.tu-gav{display:block;width:88px;height:88px;margin:0 auto 10px;border-radius:26px;overflow:hidden;background:linear-gradient(150deg,#eef3ff,#cfdcff);--mc-ink:#1d2233}
-.tu-fab u{position:absolute;top:2px;right:4px;width:12px;height:12px;border-radius:50%;background:var(--red,#e8392b);box-shadow:0 0 0 2px var(--paper,#fff)}
+/* ── Лука: токены (из токенов сайта — светлая и тёмная тема), один акцент — оранжевый шарф Луки ── */
+.tu,.tu-fab,.tu-selask,.tu-note{--lk-bg:var(--paper,#fff);--lk-ink:var(--ink,#111113);--lk-mut:color-mix(in srgb,var(--lk-ink) 55%,var(--lk-bg));--lk-line:color-mix(in srgb,var(--lk-ink) 10%,transparent);--lk-soft:color-mix(in srgb,var(--lk-ink) 3.5%,var(--lk-bg));--lk-soft2:color-mix(in srgb,var(--lk-ink) 7%,var(--lk-bg));--lk-acc:#fa4b00;--lk-ok:#1f9d63;--lk-red:#e5484d;--lk-sans:var(--sans,'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif);--lk-disp:var(--disp,'Geologica',var(--sans,system-ui));--lk-face:radial-gradient(circle at 50% 36%,#f6f8ff,#d5e1ff 74%);--mc-ink:#1d2233}
+.tu svg,.tu-fab svg,.tu-selask svg{flex:none}
+/* ── кнопка ── */
+.tu-fab{position:fixed;right:22px;bottom:calc(var(--tabh,64px) + 18px + env(safe-area-inset-bottom));z-index:330;display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 10px 0 7px;border:0;border-radius:99px;background:var(--lk-ink);color:var(--lk-bg);font:600 15px/1 var(--lk-sans);letter-spacing:-.01em;cursor:pointer;box-shadow:0 18px 40px -16px rgba(8,10,20,.55),0 2px 6px -2px rgba(8,10,20,.3),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .4s cubic-bezier(.2,.9,.25,1.25),box-shadow .4s;animation:tuFabIn .7s cubic-bezier(.2,.9,.25,1.15) both}
+.tu-fab:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 24px 50px -18px rgba(8,10,20,.6),0 2px 6px -2px rgba(8,10,20,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+.tu-fab:active{transform:scale(.97)}
+.tu-fab:focus-visible{outline:2px solid var(--lk-acc);outline-offset:3px}
+.tu-fab i{position:relative;width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--lk-face);display:grid;place-items:center;color:#1f47d6;font:800 16px var(--lk-sans);font-style:normal}
+.tu-fab .tu-fl{padding-right:4px}
+.tu-fab kbd{font:600 11px/1 var(--lk-sans);padding:5px 7px;border-radius:8px;background:color-mix(in srgb,var(--lk-bg) 14%,transparent);color:color-mix(in srgb,var(--lk-bg) 70%,transparent)}
+.tu-fab::after{content:"";position:absolute;inset:-5px;border-radius:inherit;border:1.5px solid var(--lk-acc);opacity:0;pointer-events:none;animation:tuGlow 7s 4s infinite}
+.tu-fab u{position:absolute;top:3px;left:38px;width:11px;height:11px;border-radius:50%;background:var(--lk-acc);box-shadow:0 0 0 2.5px var(--lk-ink)}
+@keyframes tuFabIn{from{opacity:0;transform:translateY(16px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes tuGlow{0%,82%,100%{opacity:0;transform:scale(.96)}88%{opacity:.55}96%{opacity:0;transform:scale(1.12)}}
 @media (min-width:900px){.tu-fab{bottom:24px}}
-.tu-gate .tu-play{display:table;margin:14px auto 0;color:var(--blue,#1f47d6);font:700 14px var(--sans,system-ui);text-decoration:none;border-bottom:1.5px dotted currentColor}
-.tu{position:fixed;z-index:340;display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#15161a);font:15.5px/1.5 var(--sans,system-ui);box-shadow:0 24px 60px -20px rgba(8,11,18,.55);border:1px solid var(--line,#e3e6ec)}
-@media (min-width:760px){.tu{right:16px;bottom:16px;width:410px;height:min(720px,calc(100vh - 32px));border-radius:24px}}
+.tu-fb{position:absolute;bottom:calc(100% + 12px);right:0;width:max-content;max-width:min(280px,76vw);padding:11px 14px;border-radius:18px 18px 5px 18px;background:color-mix(in srgb,var(--lk-ink) 94%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:var(--lk-bg);font:500 13.5px/1.42 var(--lk-sans);letter-spacing:0;text-align:left;white-space:normal;box-shadow:0 18px 40px -16px rgba(8,10,20,.55);pointer-events:none;animation:tuNote .5s cubic-bezier(.2,.9,.25,1.2) both}
+.tu-fab.l .tu-fb{right:auto;left:0;border-radius:18px 18px 18px 5px}
+@keyframes tuNote{from{opacity:0;transform:translateY(8px) scale(.92)}to{opacity:1;transform:none}}
+/* ── окно ── */
+.tu{position:fixed;z-index:340;display:flex;flex-direction:column;background:var(--lk-bg);color:var(--lk-ink);font:400 15px/1.55 var(--lk-sans);border:1px solid var(--lk-line);box-shadow:0 40px 90px -30px rgba(8,10,20,.5),0 12px 28px -14px rgba(8,10,20,.26);overflow:hidden;isolation:isolate}
+@media (min-width:760px){.tu{right:20px;bottom:20px;width:428px;height:min(760px,calc(100vh - 40px));border-radius:30px;transform-origin:calc(100% - 44px) calc(100% - 24px)}
+  .tu.tu-in{animation:tuPop .55s cubic-bezier(.2,.9,.22,1.06) both}.tu.tu-out{animation:tuPopOut .22s cubic-bezier(.4,0,1,1) both}}
+@keyframes tuPop{from{opacity:0;transform:translateY(22px) scale(.88);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+@keyframes tuPopOut{to{opacity:0;transform:translateY(14px) scale(.94);filter:blur(5px)}}
+.tu.tu-in .tu-h,.tu.tu-in .tu-mode,.tu.tu-in .tu-b>*,.tu.tu-in .tu-f{animation:tuUp .6s cubic-bezier(.2,.8,.2,1) both}
+.tu.tu-in .tu-h{animation-delay:.06s}.tu.tu-in .tu-mode{animation-delay:.1s}.tu.tu-in .tu-f{animation-delay:.2s}
+.tu.tu-in .tu-b>:nth-child(1){animation-delay:.14s}.tu.tu-in .tu-b>:nth-child(2){animation-delay:.19s}.tu.tu-in .tu-b>:nth-child(3){animation-delay:.24s}.tu.tu-in .tu-b>:nth-child(n+4){animation-delay:.28s}
+@keyframes tuUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.tu-h{display:flex;align-items:center;gap:12px;padding:16px 12px 14px 18px}
+.tu-hav{position:relative;flex:none;width:44px;height:44px;cursor:pointer}
+.tu-havi{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;overflow:hidden;background:var(--lk-face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);color:#1f47d6;font:800 18px var(--lk-sans)}
+.tu-dot{position:absolute;right:0;bottom:1px;width:11px;height:11px;border-radius:50%;background:var(--lk-ok);box-shadow:0 0 0 2.5px var(--lk-bg);transition:background .3s}
+.tu.busy .tu-dot{background:var(--lk-acc);animation:tuBeat 1s ease-in-out infinite alternate}
+@keyframes tuBeat{from{transform:scale(.8)}to{transform:scale(1.15)}}
+.tu-who{flex:1;min-width:0}
+.tu-h b{display:flex;align-items:center;gap:8px;font:700 17px/1.15 var(--lk-disp);letter-spacing:-.02em}
+.tu-h small{display:block;margin-top:3px;color:var(--lk-mut);font:500 12.5px/1.3 var(--lk-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tu-streak{display:inline-flex;align-items:center;gap:3px;padding:3px 8px 3px 6px;border-radius:99px;background:color-mix(in srgb,var(--lk-acc) 12%,transparent);color:var(--lk-acc);font:700 11.5px/1 var(--lk-sans);letter-spacing:0}
+.tu-ib{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:transparent;color:var(--lk-mut);display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s,transform .2s}
+.tu-ib:hover{background:var(--lk-soft2);color:var(--lk-ink)}
+.tu-ib:active{transform:scale(.92)}
+.tu-ib.on{background:var(--lk-ink);color:var(--lk-bg)}
+.tu-ib:focus-visible,.tu-chip:focus-visible,.tu-sg:focus-visible,.tu-card:focus-visible,.tu-open:focus-visible,.tu-send:focus-visible,.tu-tool:focus-visible,.tu-btn:focus-visible{outline:2px solid var(--lk-acc);outline-offset:2px}
+.tu-mode{display:flex;gap:2px;margin:0 18px 4px;padding:3px;border-radius:13px;background:var(--lk-soft2)}
+.tu-mode button{flex:1;height:30px;border:0;border-radius:10px;background:none;color:var(--lk-mut);font:600 13px var(--lk-sans);cursor:pointer;transition:background .25s,color .25s,box-shadow .25s}
+.tu-mode button.on{background:var(--lk-bg);color:var(--lk-ink);box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 14px -8px rgba(0,0,0,.25)}
+.tu-b{flex:1;overflow-y:auto;padding:14px 18px 20px;display:flex;flex-direction:column;gap:20px;overscroll-behavior:contain;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16px,#000 calc(100% - 12px),transparent);mask-image:linear-gradient(to bottom,transparent 0,#000 16px,#000 calc(100% - 12px),transparent)}
+/* сообщения */
+.tu-m{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tu-m.u{align-self:flex-end;align-items:flex-end;max-width:86%}
+.tu-m.u .tu-bb{padding:10px 15px;border-radius:20px 20px 6px 20px;background:var(--lk-ink);color:var(--lk-bg);font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+.tu-m.t{align-self:stretch}
+.tu-by{display:flex;align-items:center;gap:7px;color:var(--lk-mut);font:600 12px/1 var(--lk-sans);letter-spacing:.01em}
+.tu-by i{width:7px;height:7px;border-radius:50%;background:var(--lk-acc)}
+.tu-m.t .tu-bb{font-size:15.5px;line-height:1.62;letter-spacing:-.003em;overflow-wrap:anywhere}
+.tu-m.t .tu-bb b{font-weight:650}
+.tu-bb a.tu-st{color:inherit;font-weight:600;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--lk-acc) 75%,transparent);text-decoration-thickness:2px;text-underline-offset:3px;cursor:pointer}
+.tu-m.tu-new{animation:tuUp .45s cubic-bezier(.2,.8,.2,1) both}
+.tu-w{animation:tuW .55s cubic-bezier(.2,.7,.2,1) both}
+@keyframes tuW{from{opacity:0;filter:blur(5px)}to{opacity:1;filter:none}}
+.tu-x{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.tu-card,.tu-open{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px 10px 10px;border-radius:18px;border:1px solid var(--lk-line);background:var(--lk-soft);color:var(--lk-ink);font:600 14px/1.25 var(--lk-sans);text-align:left;text-decoration:none;cursor:pointer;transition:transform .25s cubic-bezier(.2,.9,.25,1.2),border-color .2s,background .2s,box-shadow .25s}
+.tu-card:hover,.tu-open:hover{background:var(--lk-bg);border-color:color-mix(in srgb,var(--lk-ink) 20%,transparent);transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(8,10,20,.45)}
+.tu-card:active,.tu-open:active{transform:scale(.985)}
+.tu-card .ic,.tu-open .ic{flex:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--lk-ink);color:var(--lk-bg)}
+.tu-card .tx,.tu-open .tx{flex:1;min-width:0}
+.tu-card small,.tu-open small{display:block;margin-top:3px;color:var(--lk-mut);font:500 12.5px/1.3 var(--lk-sans)}
+.tu-card .go,.tu-open .go{color:var(--lk-mut);transition:transform .25s}
+.tu-card:hover .go,.tu-open:hover .go{transform:translateX(2px);color:var(--lk-ink)}
+.tu-meta{display:flex;align-items:center;gap:2px;min-height:28px;color:var(--lk-mut);font:500 12px var(--lk-sans)}
+.tu-ok{display:inline-flex;align-items:center;gap:5px;margin-right:6px;color:var(--lk-ok);font-weight:600}
+.tu-r{width:30px;height:30px;border:0;border-radius:50%;background:none;color:var(--lk-mut);display:grid;place-items:center;cursor:pointer;opacity:.7;transition:background .2s,color .2s,opacity .2s}
+.tu-r:hover{opacity:1;background:var(--lk-soft2);color:var(--lk-ink)}.tu-r.on{opacity:1;color:var(--lk-ink);background:var(--lk-soft2)}
+.tu-qr{display:flex;flex-wrap:wrap;gap:6px}
+.tu-chip{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:99px;border:1px solid var(--lk-line);background:var(--lk-bg);color:var(--lk-ink);font:600 13px/1 var(--lk-sans);cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s,transform .2s}
+.tu-chip:hover{background:var(--lk-soft2);border-color:color-mix(in srgb,var(--lk-ink) 18%,transparent)}
+.tu-chip:active{transform:scale(.96)}
+/* приветствие и экраны входа */
+.tu-hi,.tu-gate{display:grid;justify-items:center;text-align:center;gap:8px;padding:12px 4px 0}
+.tu-gate{margin:auto 0}
+.tu-gav{display:block;width:108px;height:108px;margin-bottom:6px;border-radius:50%;overflow:hidden;background:var(--lk-face);box-shadow:0 22px 44px -24px rgba(31,71,214,.65),inset 0 0 0 1px rgba(255,255,255,.6)}
+.tu-hi b,.tu-gate b{font:700 23px/1.15 var(--lk-disp);letter-spacing:-.025em}
+.tu-hi p,.tu-gate p{margin:0;max-width:34ch;color:var(--lk-mut);font-size:14.5px;line-height:1.55}
+.tu-gate p{text-align:center}
+.tu-tip{display:inline-flex;align-items:center;gap:8px;margin-top:4px;padding:7px 12px;border-radius:99px;background:var(--lk-soft2);color:var(--lk-mut);font:500 12.5px var(--lk-sans)}
+.tu-play{display:inline-flex;align-items:center;gap:7px;margin-top:6px;color:var(--lk-ink);font:600 13px var(--lk-sans);text-decoration:none;opacity:.8;transition:opacity .2s}
+.tu-play:hover{opacity:1}
+.tu-sug{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tu-sg{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:12px;min-height:92px;padding:13px;border-radius:18px;border:1px solid var(--lk-line);background:var(--lk-soft);color:var(--lk-ink);font:600 13.5px/1.3 var(--lk-sans);text-align:left;cursor:pointer;transition:transform .25s cubic-bezier(.2,.9,.25,1.2),background .2s,border-color .2s,box-shadow .25s}
+.tu-sg:hover{background:var(--lk-bg);border-color:color-mix(in srgb,var(--lk-ink) 18%,transparent);transform:translateY(-2px);box-shadow:0 12px 26px -18px rgba(8,10,20,.5)}
+.tu-sg:active{transform:scale(.97)}
+.tu-sg .ic{color:var(--lk-acc)}
+.tu-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;min-width:220px;margin-top:8px;padding:0 24px;border:0;border-radius:16px;background:var(--lk-ink);color:var(--lk-bg)!important;font:650 15px var(--lk-sans);cursor:pointer;text-decoration:none!important;transition:transform .2s,box-shadow .25s;box-shadow:0 14px 30px -18px rgba(8,10,20,.6)}
+.tu-btn:hover{transform:translateY(-1px)}.tu-btn:active{transform:scale(.97)}
+/* думает */
+.tu-wait{align-self:flex-start;display:flex;align-items:center;gap:10px;color:var(--lk-mut);font:500 13.5px var(--lk-sans)}
+.tu-dots{display:inline-flex;gap:4px;padding:11px 13px;border-radius:16px;background:var(--lk-soft2)}
+.tu-dots i{width:6px;height:6px;border-radius:50%;background:var(--lk-ink);animation:tuDots 1.3s ease-in-out infinite}
+.tu-dots i:nth-child(2){animation-delay:.16s}.tu-dots i:nth-child(3){animation-delay:.32s}
+@keyframes tuDots{0%,60%,100%{opacity:.18;transform:none}30%{opacity:.7;transform:translateY(-3px)}}
+.tu-shim{background:linear-gradient(90deg,var(--lk-mut) 0%,var(--lk-ink) 45%,var(--lk-mut) 70%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:tuShim 2.2s linear infinite}
+@keyframes tuShim{from{background-position:120% 0}to{background-position:-100% 0}}
+.tu-err{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--lk-red) 8%,var(--lk-bg));color:color-mix(in srgb,var(--lk-red) 80%,var(--lk-ink));font-size:14px;line-height:1.45}
+/* поле ввода */
+.tu-f{padding:8px 14px 12px}
+.tu-pv{display:flex;align-items:center;gap:10px;margin:0 2px 8px;color:var(--lk-mut);font:600 13px var(--lk-sans)}
+.tu-pv img{width:48px;height:48px;object-fit:cover;border-radius:12px;border:1px solid var(--lk-line)}
+.tu-pv span{flex:1}
+.tu-comp{display:flex;flex-direction:column;gap:2px;padding:8px 8px 8px 16px;border-radius:24px;border:1px solid var(--lk-line);background:var(--lk-soft);transition:border-color .25s,box-shadow .25s,background .25s}
+.tu-comp:focus-within{background:var(--lk-bg);border-color:color-mix(in srgb,var(--lk-ink) 26%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--lk-ink) 6%,transparent),0 12px 28px -20px rgba(8,10,20,.45)}
+.tu-comp textarea{width:100%;min-height:26px;max-height:30vh;resize:none;border:0;outline:0;background:none;color:var(--lk-ink);font:400 15.5px/1.45 var(--lk-sans);padding:6px 0 2px}
+.tu-comp textarea::placeholder{color:var(--lk-mut)}
+.tu-tools{display:flex;align-items:center;gap:2px;margin-left:-8px}
+.tu-tool{width:38px;height:38px;border:0;border-radius:50%;background:none;color:var(--lk-mut);display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s}
+.tu-tool:hover{background:var(--lk-soft2);color:var(--lk-ink)}
+.tu-att input{display:none}
+.tu-mic.on{background:var(--lk-red);color:#fff;animation:tuRec 1.2s infinite}
+@keyframes tuRec{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--lk-red) 45%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+.tu-send{margin-left:auto;width:38px;height:38px;border:0;border-radius:50%;background:var(--lk-ink);color:var(--lk-bg);display:grid;place-items:center;cursor:pointer;transition:transform .25s cubic-bezier(.2,.9,.25,1.3),opacity .2s}
+.tu-send:not([disabled]):hover{transform:scale(1.06)}.tu-send:not([disabled]):active{transform:scale(.92)}
+.tu-send[disabled]{opacity:.22;cursor:default}
+.tu-foot{display:flex;align-items:center;justify-content:center;gap:6px;margin:9px 0 0;color:var(--lk-mut);font:500 11.5px/1.3 var(--lk-sans);text-align:center}
+/* телефон: парящая шторка в три положения */
 @media (max-width:759px){
-.tu{left:0;right:0;bottom:0;height:var(--tu-h,min(52vh,520px));max-height:calc(100vh - 40px);border-radius:22px 22px 0 0;padding-bottom:env(safe-area-inset-bottom);transition:height .32s cubic-bezier(.2,.9,.25,1);overflow:hidden}
+.tu{left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));height:var(--tu-h,min(52vh,520px));max-height:calc(100vh - 48px);border-radius:28px;transition:height .38s cubic-bezier(.2,.9,.25,1)}
+.tu.tu-in{animation:tuSheet .55s cubic-bezier(.2,.9,.22,1) both}.tu.tu-out{animation:tuSheetOut .24s cubic-bezier(.4,0,1,1) both}
 .tu.drag{transition:none}
 .tu-top{touch-action:none;cursor:grab}
-.tu .tu-grab{display:block;width:40px;height:5px;margin:8px auto 0;border-radius:99px;background:var(--line2,#d9dde5)}
+.tu .tu-grab{display:block;width:38px;height:5px;margin:8px auto -4px;border-radius:99px;background:color-mix(in srgb,var(--lk-ink) 16%,transparent)}
 .tu[data-snap=peek] .tu-mode,.tu[data-snap=peek] .tu-b,.tu[data-snap=peek] .tu-f{display:none!important}
 .tu[data-snap=peek] .tu-pk{display:grid}
-.tu[data-snap=peek] .tu-h{border-bottom:0;padding-bottom:4px}
-.tu-fab{width:70px;height:80px;padding:0;gap:0;border-radius:0;background:none!important;box-shadow:none;font-size:0;right:6px;bottom:calc(var(--tabh,64px) + 2px + env(safe-area-inset-bottom));touch-action:none}
+.tu-h{padding:14px 8px 12px 14px;gap:10px}
+.tu-h .tu-ib{width:34px;height:34px}
+.tu-hav{width:40px;height:40px}
+.tu-sg{min-height:84px}
+.tu-fab{width:62px;height:62px;padding:0;gap:0;border-radius:50%;justify-content:center;font-size:0;right:16px;bottom:calc(var(--tabh,64px) + 14px + env(safe-area-inset-bottom));touch-action:none}
 .tu-fab:hover{transform:none}
-.tu-fab i{width:70px;height:80px;border-radius:0;background:none;filter:drop-shadow(0 6px 7px rgba(8,11,18,.28))}
-.tu-fab u{top:8px;right:8px}
-.tu-fab.drag{transition:none;opacity:.92}
+.tu-fab i{width:54px;height:54px}
+.tu-fab .tu-fl,.tu-fab kbd{display:none}
+.tu-fab u{left:auto;right:2px;top:2px}
+.tu-fab.drag{transition:none;transform:scale(1.06)}
 }
+@keyframes tuSheet{from{transform:translateY(calc(100% + 24px))}to{transform:none}}
+@keyframes tuSheetOut{to{transform:translateY(calc(100% + 24px))}}
 .tu-grab,.tu-pk{display:none}
-.tu-pk{gap:8px;padding:0 14px 12px}
-.tu-pkt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:500 14.5px/1.4 var(--sans,system-ui);color:var(--ink,#15161a);cursor:pointer}
-.tu-pkt.w{display:flex;align-items:center;gap:8px;color:var(--mut,#667)}
-.tu-pkt.w i{width:8px;height:8px;border-radius:50%;background:var(--acc,#1f47d6);animation:tuP 1s infinite alternate}
-.tu-qr{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}
-.tu-qr::-webkit-scrollbar{display:none}
-.tu-b .tu-qr{flex-wrap:wrap;overflow:visible}
-.tu-qr .tu-chip{flex:none;height:34px;font-size:13px}
-.tu-fb{position:absolute;bottom:calc(100% + 6px);right:6px;width:max-content;max-width:min(250px,70vw);padding:8px 11px;border-radius:14px;background:#fff;color:#15161a;border:1.5px solid #15161a;font:600 13px/1.35 var(--sans,system-ui);text-align:left;box-shadow:0 10px 24px -12px rgba(8,11,18,.55);white-space:normal}
-.tu-fab.l .tu-fb{right:auto;left:6px}
-.tu-fb::after{content:"";position:absolute;bottom:-7px;right:24px;width:12px;height:12px;background:#fff;border-right:1.5px solid #15161a;border-bottom:1.5px solid #15161a;transform:rotate(45deg)}
-.tu-fab.l .tu-fb::after{right:auto;left:24px}
-.tu[hidden],.tu-fab[hidden],.tu-mode[hidden],.tu-att[hidden],.tu-mic[hidden],.tu-ib[hidden],.tu-streak[hidden]{display:none}
-svg .tu-hl{fill:#e5484d!important;font-weight:800!important;paint-order:stroke;stroke:rgba(229,72,77,.25);stroke-width:6px}
-.tu-note{position:absolute;z-index:6;max-width:220px;padding:5px 9px;border-radius:10px;background:#fff;color:#15161a;border:1.5px solid #e5484d;font:600 12.5px/1.3 var(--sans,system-ui);box-shadow:0 6px 16px -8px rgba(8,11,18,.45);pointer-events:none}
-.tu-note b{color:#e5484d}
+.tu-pk{gap:10px;padding:0 16px 14px}
+.tu-pkt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:500 14.5px/1.45 var(--lk-sans);color:var(--lk-ink);cursor:pointer}
+.tu-pkt.w{display:flex;align-items:center;gap:10px}
+.tu-pk .tu-qr{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
+.tu-pk .tu-qr::-webkit-scrollbar{display:none}
+.tu[hidden],.tu-fab[hidden],.tu-mode[hidden],.tu-att[hidden],.tu-mic[hidden],.tu-ib[hidden],.tu-streak[hidden],.tu-pv[hidden]{display:none}
+.tu.busy .tu-send{opacity:.22}
+/* на чертеже */
+svg .tu-hl{fill:#e5484d!important;font-weight:800!important;paint-order:stroke;stroke:rgba(229,72,77,.22);stroke-width:6px}
+.tu-note{position:absolute;z-index:6;max-width:220px;padding:6px 10px;border-radius:12px;background:#fff;color:#15161a;font:500 12.5px/1.35 var(--lk-sans);box-shadow:0 10px 26px -12px rgba(8,10,20,.45),0 0 0 1px rgba(8,10,20,.06);pointer-events:none}
+.tu-note b{color:#e5484d;font-weight:700}
+/* «Спросить Луку» у выделенного */
+.tu-selask{position:fixed;z-index:345;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 5px;border:0;border-radius:99px;background:var(--lk-ink);color:var(--lk-bg);font:600 13.5px/1 var(--lk-sans);box-shadow:0 16px 36px -14px rgba(8,10,20,.6),inset 0 1px 0 rgba(255,255,255,.08);cursor:pointer;transform:translate(-50%,0);animation:tuSel .35s cubic-bezier(.2,.9,.25,1.25) both}
+.tu-selask i{width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--lk-face)}
+.tu-selask[hidden]{display:none}
+@keyframes tuSel{from{opacity:0;transform:translate(-50%,8px) scale(.9)}to{opacity:1;transform:translate(-50%,0)}}
 body:has(.ckn) .tu-fab,body:has(#ns-gate:not([hidden])) .tu-fab,html.ns-on body:has(#ns-gate:not([hidden])) .tu,body:has(#ns.login) .tu-fab,body:has(#ns.howon) .tu-fab,body:has(#ns.login) .tu-selask{display:none}
 /* главная нового дизайна (#ns) лежит поверх всего — Лука над ней (позже в DOM, тот же уровень) */
 html.ns-on .tu-fab,html.ns-on .tu,html.ns-on .tu-selask{z-index:2147480000}
-.tu-selask{position:fixed;z-index:345;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px 0 5px;border:0;border-radius:99px;background:var(--ink,#15161a);color:var(--paper,#fff);font:700 13.5px var(--sans,system-ui);box-shadow:0 10px 24px -10px rgba(8,11,18,.6);cursor:pointer;transform:translate(-50%,0);animation:tuIn .18s ease-out}
-.tu-selask i{width:28px;height:28px;border-radius:50%;overflow:hidden;background:linear-gradient(150deg,#eef3ff,#cfdcff)}
-.tu-selask[hidden]{display:none}
-@keyframes tuIn{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
-.tu-mic{width:44px;height:44px;flex:none;border-radius:14px;border:1px solid var(--line2,#d9dde5);background:var(--surf2,#f1f3f7);display:grid;place-items:center;cursor:pointer;font-size:18px}
-.tu-mic.on{background:#e5484d;border-color:#e5484d;color:#fff;animation:tuRec 1s infinite alternate}
-@keyframes tuRec{from{box-shadow:0 0 0 0 rgba(229,72,77,.45)}to{box-shadow:0 0 0 7px rgba(229,72,77,0)}}
-.tu-ib.on{background:var(--acc,#1f47d6);color:#fff}
-.tu-streak{display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,#ff6a2a 14%,transparent);color:#d9480f;font:800 11.5px var(--sans,system-ui);vertical-align:1px}
-.tu-open{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:14px;border:1px solid var(--line2,#d9dde5);background:var(--surf,#fff);color:var(--ink,#15161a);font:700 13.5px/1.25 var(--sans,system-ui);text-align:left;cursor:pointer;max-width:100%}
-.tu-open small{display:block;color:var(--mut,#667);font:600 11.5px var(--sans,system-ui)}
-.tu-open:hover{border-color:var(--acc,#1f47d6)}
-.tu-h{display:flex;align-items:center;gap:10px;padding:12px 12px 10px 16px;border-bottom:1px solid var(--line,#e3e6ec)}
-.tu-h b{font:800 17px/1.2 var(--disp,inherit)}.tu-h small{display:block;color:var(--mut,#667);font:600 12.5px var(--sans,system-ui)}
-.tu-h .sp{flex:1}
-.tu-ib{width:36px;height:36px;border:0;border-radius:12px;background:var(--surf2,#f1f3f7);color:var(--ink2,#334);cursor:pointer;font-size:17px;display:grid;place-items:center}
-.tu-mode{display:flex;gap:4px;margin:10px 16px 0;padding:4px;border-radius:14px;background:var(--surf2,#f1f3f7)}
-.tu-mode button{flex:1;height:32px;border:0;border-radius:10px;background:none;color:var(--mut,#667);font:700 13.5px var(--sans,system-ui);cursor:pointer}
-.tu-mode button.on{background:var(--surf,#fff);color:var(--ink,#15161a);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.tu-b{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
-.tu-m{max-width:88%;display:flex;flex-direction:column;gap:5px}
-.tu-m.u{align-self:flex-end;align-items:flex-end}.tu-m.t{align-self:flex-start}
-.tu-bb{padding:10px 14px;border-radius:18px;overflow-wrap:anywhere}
-.tu-m.u .tu-bb{background:var(--acc,#1f47d6);color:#fff;border-bottom-right-radius:6px}
-.tu-m.t .tu-bb{background:var(--surf,#fff);border:1px solid var(--line2,#d9dde5);border-bottom-left-radius:6px}
-.tu-bb a.tu-st{color:var(--blue,#1f47d6);font-weight:700;text-decoration:none;border-bottom:1.5px dotted currentColor;cursor:pointer}
-.tu-x{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:600 12.5px var(--sans,system-ui);color:var(--mut,#667)}
-.tu-chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:99px;border:1px solid var(--line2,#d9dde5);background:var(--surf,#fff);color:var(--ink2,#334);font:700 12.5px var(--sans,system-ui);cursor:pointer}
-.tu-chip:hover{border-color:var(--acc,#1f47d6);color:var(--acc,#1f47d6)}
-.tu-ok{color:var(--green,#1a7f4b)}
-.tu-r{border:0;background:none;cursor:pointer;font-size:15px;opacity:.55;padding:2px 4px}.tu-r.on,.tu-r:hover{opacity:1}
-.tu-sug{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.tu-hi{padding:14px;border-radius:18px;background:var(--blue-s,#eef2ff);color:var(--ink,#15161a)}
-.tu-hi b{display:block;font:800 16.5px var(--disp,inherit);margin-bottom:4px}
-.tu-hi p{margin:0;color:var(--ink2,#334);font-size:14.5px}
-.tu-hi .tu-play{display:inline-block;margin-top:8px;color:var(--blue,#1f47d6);font:700 14px var(--sans,system-ui);text-decoration:none;border-bottom:1.5px dotted currentColor}
-.tu-gate{margin:auto 0;padding:18px;border-radius:18px;background:var(--blue-s,#eef2ff);text-align:center}
-.tu-gate b{display:block;font:800 18px var(--disp,inherit);margin-bottom:6px}.tu-gate p{margin:0 0 12px;color:var(--ink2,#334);font-size:14.5px;text-align:left}
-.tu-btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border:0;border-radius:14px;background:var(--acc,#1f47d6);color:#fff!important;font:800 15px var(--sans,system-ui);cursor:pointer;text-decoration:none!important}
-.tu-wait{align-self:flex-start;display:flex;align-items:center;gap:8px;color:var(--mut,#667);font-size:13.5px;padding:8px 12px;border-radius:99px;background:var(--surf2,#f1f3f7)}
-.tu-wait i{width:8px;height:8px;border-radius:50%;background:var(--acc,#1f47d6);animation:tuP 1s infinite alternate}
-@keyframes tuP{from{opacity:.25}to{opacity:1}}
-.tu-err{align-self:stretch;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--red,#e8392b) 10%,transparent);color:var(--red,#c9302c);font-size:14px}
-.tu-f{border-top:1px solid var(--line,#e3e6ec);padding:10px 12px 12px}
-.tu-pv{display:flex;align-items:center;gap:8px;margin:0 0 8px;font:600 13px var(--sans,system-ui);color:var(--mut,#667)}
-.tu-pv img{height:44px;border-radius:8px;border:1px solid var(--line,#e3e6ec)}
-.tu-row{display:flex;align-items:flex-end;gap:8px}
-.tu-row textarea{flex:1;min-height:44px;max-height:30vh;resize:none;border:1.5px solid var(--line2,#d9dde5);border-radius:14px;padding:10px 12px;background:var(--surf,#fff);color:var(--ink,#15161a);font:15.5px/1.45 var(--sans,system-ui);outline:0}
-.tu-row textarea:focus{border-color:var(--acc,#1f47d6)}
-.tu-att{width:44px;height:44px;border-radius:14px;border:1px solid var(--line2,#d9dde5);background:var(--surf2,#f1f3f7);display:grid;place-items:center;cursor:pointer;font-size:19px}
-.tu-att input{display:none}
-.tu-send{width:44px;height:44px;border:0;border-radius:14px;background:var(--acc,#1f47d6);color:#fff;font:800 19px var(--sans,system-ui);cursor:pointer}
-.tu-send[disabled]{opacity:.5;cursor:default}
-.tu-foot{margin:6px 2px 0;color:var(--mut2,#99a);font-size:11.5px;text-align:center}
+@media (prefers-reduced-motion:reduce){.tu,.tu *,.tu-fab,.tu-fab::after,.tu-selask,.tu-fb{animation:none!important;transition:none!important}}
 `;
 document.head.appendChild(css);
 
+/* ── иконки (линейные, currentColor): никаких эмодзи в интерфейсе ── */
+const IP={cam:'<path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.2l1.3-2h6l1.3 2h1.2A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.5"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+  vol:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+  mute:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+  reset:'<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3.7h3.7"/>', close:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>', send:'<path d="M12 19V5M6 11l6-6 6 6"/>',
+  book:'<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/>',
+  pen:'<path d="M4 20l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10z"/><path d="M13.5 7.5l3 3"/>', cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+  chat:'<path d="M5 5h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  up:'<path d="M7 11v9H4.5v-9zM7 11l3.6-6.4A1.9 1.9 0 0 1 14 5.7V10h4.8a2 2 0 0 1 2 2.3l-1.1 6A2 2 0 0 1 17.7 20H7"/>',
+  down:'<path d="M7 13V4H4.5v9zM7 13l3.6 6.4a1.9 1.9 0 0 0 3.4-1.1V14h4.8a2 2 0 0 0 2-2.3l-1.1-6A2 2 0 0 0 17.7 4H7"/>',
+  go:'<path d="M9.5 6l6 6-6 6"/>', arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>', shield:'<path d="M12 3l7 3v5.5c0 4.3-3 7.9-7 9.5-4-1.6-7-5.2-7-9.5V6z"/><path d="M9 12l2 2 4-4"/>',
+  q:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 17h.01"/>', ruler:'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',
+  doc:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>', target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12h.01"/>',
+  game:'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 12h.01M17.5 14h.01"/>', warn:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/>',
+  cursor:'<path d="M5 4l6 16 2.4-6.6L20 11z"/>'};
+const ic=(n,z)=>'<svg viewBox="0 0 24 24" width="'+(z||20)+'" height="'+(z||20)+'" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IP[n]+'</svg>';
+const flame=z=>'<svg viewBox="0 0 24 24" width="'+(z||12)+'" height="'+(z||12)+'" fill="currentColor" aria-hidden="true"><path d="M12 21.5c4 0 6.8-2.7 6.8-6.6 0-3.8-3-6.4-4.5-10-.5 2.5-1.9 3.9-3.5 4.7-.4-1.2-1.1-2.2-2.1-2.8-1 2.6-3.3 4.7-3.3 8.1 0 3.9 2.6 6.6 6.6 6.6z"/></svg>';
+const KBD=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent||'')?'⌘K':'Ctrl K';
+
 /* ── окно ── */
 const S={open:false,busy:false,w:null,st:null,photo:null,err:'',cache:{},pin:false,sel:''};
-const fab=document.createElement('button'); fab.className='tu-fab'; fab.type='button'; fab.hidden=true; fab.innerHTML='<i aria-hidden="true"></i>Спросить Луку'; fab.setAttribute('aria-label','Открыть наставника Луку');
+const fab=document.createElement('button'); fab.className='tu-fab'; fab.type='button'; fab.hidden=true; fab.innerHTML='<i aria-hidden="true"></i><span class="tu-fl">Спросить Луку</span><kbd>'+KBD+'</kbd>'; fab.title='Спросить Луку ('+KBD+')'; fab.setAttribute('aria-label','Открыть наставника Луку');
 const box=document.createElement('section'); box.className='tu'; box.hidden=true; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Наставник Лука');
-box.innerHTML=`<div class="tu-top" data-top><div class="tu-grab" aria-hidden="true"></div><div class="tu-h"><div class="tu-hav" data-hav aria-hidden="true" title="Лука"></div><div><b>Лука<span class="tu-streak" data-streak hidden></span></b><small data-sub></small></div><span class="sp"></span><button class="tu-ib" data-voice title="Читать ответы вслух" aria-label="Читать ответы вслух" aria-pressed="false">🔈</button><button class="tu-ib" data-menu title="Начать заново" aria-label="Начать заново">↺</button><button class="tu-ib" data-close aria-label="Закрыть">✕</button></div><div class="tu-pk" data-pk></div></div>
+box.innerHTML=`<div class="tu-top" data-top><div class="tu-grab" aria-hidden="true"></div><div class="tu-h"><div class="tu-hav" title="Лука"><span class="tu-havi" data-hav aria-hidden="true"></span><i class="tu-dot" aria-hidden="true"></i></div><div class="tu-who"><b>Лука<span class="tu-streak" data-streak hidden></span></b><small data-sub></small></div><button class="tu-ib" data-voice title="Читать ответы вслух" aria-label="Читать ответы вслух" aria-pressed="false">${ic('mute')}</button><button class="tu-ib" data-menu title="Начать заново" aria-label="Начать заново">${ic('reset')}</button><button class="tu-ib" data-close title="Закрыть" aria-label="Закрыть">${ic('close')}</button></div><div class="tu-pk" data-pk></div></div>
 <div class="tu-mode" role="tablist" aria-label="Режим"><button data-mode="coach" role="tab" title="Подсказки по шагам: сначала наводка, потом идея, потом решение">Наставник</button><button data-mode="explain" role="tab" title="Объясняет решение полностью — если уже пробовал сам или готовишься к защите">Разбор</button></div>
 <div class="tu-b" data-body aria-live="polite"></div>
-<div class="tu-f" data-foot><div class="tu-pv" data-pv hidden></div><div class="tu-row"><label class="tu-att" title="Фото листа — Лука сравнит с решением">📷<input type="file" accept="image/*" data-file></label><button type="button" class="tu-mic" data-mic title="Спросить голосом" aria-label="Спросить голосом" hidden>🎤</button><textarea rows="1" data-in placeholder="Спроси про свой вариант…" aria-label="Вопрос Луке"></textarea><button class="tu-send" data-send aria-label="Отправить">↑</button></div>
-<div class="tu-foot" data-foottx>Лука сверяет каждое число с точным решением и текстом курса. Фото не хранится.</div></div>`;
-const selB=document.createElement('button'); selB.type='button'; selB.className='tu-selask'; selB.hidden=true; selB.innerHTML='<i aria-hidden="true"></i>Спросить Луку';
+<div class="tu-f" data-foot><div class="tu-pv" data-pv hidden></div><div class="tu-comp"><textarea rows="1" data-in placeholder="Спроси про свой вариант…" aria-label="Вопрос Луке"></textarea><div class="tu-tools"><label class="tu-tool tu-att" title="Фото листа — Лука сравнит с решением" aria-label="Фото листа">${ic('cam')}<input type="file" accept="image/*" data-file></label><button type="button" class="tu-tool tu-mic" data-mic title="Спросить голосом" aria-label="Спросить голосом" hidden>${ic('mic')}</button><button class="tu-send" data-send aria-label="Отправить" disabled>${ic('send',18)}</button></div></div>
+<div class="tu-foot" data-foottx>${ic('shield',13)}Каждое число сверено с решением и текстом курса</div></div>`;
+const selB=document.createElement('button'); selB.type='button'; selB.className='tu-selask'; selB.hidden=true; selB.innerHTML='<i aria-hidden="true"></i>Спросить Луку'+ic('arrow',16);
 /* главная нового дизайна (#ns) добавляется позже нас и с тем же z-index ложится сверху — переносим Луку в конец body, после неё */
 const toTop=()=>{ const ns=document.getElementById('ns'); if(ns&&(fab.compareDocumentPosition(ns)&Node.DOCUMENT_POSITION_FOLLOWING)) [fab,box,selB].forEach(e=>document.body.appendChild(e)); };
 let mounted=false; const mount=()=>{ if(mounted) return; mounted=true; document.body.appendChild(fab); document.body.appendChild(box); document.body.appendChild(selB); route(); hello();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',toTop); else setTimeout(toTop,0); };
 const body=$('[data-body]',box), inp=$('[data-in]',box), pv=$('[data-pv]',box);
-/* Лука на кнопке (на телефоне — во весь рост, вместо кнопки) и в шапке окна; засыпают без дела, просыпаются от движения */
-let fabAv=av(fab.querySelector('i'),{sleepAfter:90000,full:isPhone()}), fabFull=isPhone();
+/* Лука на кнопке и в шапке окна; засыпают без дела, просыпаются от движения */
+const fabAv=av(fab.querySelector('i'),{sleepAfter:90000});
 const hdrAv=av($('[data-hav]',box),{sleepAfter:120000});
-addEventListener('resize',()=>{ if(isPhone()!==fabFull&&MC()){ fabFull=isPhone(); fabAv=av(fab.querySelector('i'),{sleepAfter:90000,full:fabFull}); } fabPlace(); if(S.open) snap(S.snap,true); });
+addEventListener('resize',()=>{ fabPlace(); if(S.open) snap(S.snap,true); });
 if(hdrAv) hdrAv.onPoke=()=>hdrAv.play('giggle');
 const say=(st,ms)=>{ if(hdrAv) hdrAv.play(st,ms); };
 
@@ -338,28 +426,55 @@ function rich(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(
 const SUG=['С чего начать?','Не понимаю текущий шаг','Как найти точку на грани ⟂ π₃?','Готовлюсь к защите — спроси меня'];
 const SUG_IG=['С чего начать?','Не понимаю текущий шаг','Как перенести точку на вид слева?','Готовлюсь к защите — спроси меня'];
 const SUG_NG=['С чего начать?','Не понимаю текущий шаг','Какое правило здесь работает?','Готовлюсь к защите — спроси меня'];
+const SUG_IC=['q','ruler','doc','target'];
+const sugCards=list=>'<div class="tu-sug">'+list.map((q,k)=>'<button class="tu-sg" data-sug><span class="ic">'+ic(SUG_IC[k%4],18)+'</span><span>'+esc(q)+'</span></button>').join('')+'</div>';
+const chips=list=>list.map(q=>'<button class="tu-chip" data-sug>'+esc(q)+'</button>').join('');
+const gateH=(mood,title,text,btn)=>'<div class="tu-gate"><i class="tu-gav" data-mood="'+mood+'" aria-hidden="true"></i><b>'+title+'</b><p>'+text+'</p>'+(btn||'')+'</div>';
+function card(i,j,a){ const at='data-act="'+i+':'+j+'"';
+  if(a.t==='show') return '<button class="tu-card" '+at+'><span class="ic">'+ic('pen',18)+'</span><span class="tx">Шаг '+a.step+' на чертеже<small>'+(a.points&&a.points.length?'точки '+esc(a.points.join(', ')):'открыть шаг решения')+'</small></span><span class="go">'+ic('go',16)+'</span></button>';
+  if(a.t==='3d') return '<button class="tu-card" '+at+'><span class="ic">'+ic('cube',18)+'</span><span class="tx">3D-модель<small>посмотреть в пространстве</small></span><span class="go">'+ic('go',16)+'</span></button>';
+  if(a.t==='ask') return '<a class="tu-card" href="#/ask/'+esc(a.id)+'"><span class="ic">'+ic('chat',18)+'</span><span class="tx">Вопрос автору<small>ответ придёт на сайте</small></span><span class="go">'+ic('go',16)+'</span></a>';
+  if(a.t==='open') return '<button class="tu-open" '+at+'><span class="ic">'+ic('book',18)+'</span><span class="tx">'+esc(a.title)+'<small>'+esc(a.why||a.where||'Открыть страницу курса')+'</small></span><span class="go">'+ic('go',16)+'</span></button>';
+  return ''; }
 function render(){ const w=S.w, st=S.st, g=isGen(w); $('[data-sub]',box).textContent=g?'Спроси о чём угодно':w?(DZN[w.dz]||'')+' · вариант '+w.n:'';
-  $('.tu-att',box).hidden=g; inp.placeholder=g?'Спроси о чём угодно…':'Спроси про свой вариант…'; streakShow();
+  $('.tu-att',box).hidden=g; inp.placeholder=g?'Спроси о чём угодно…':'Спроси про свой вариант…'; streakShow(); box.classList.toggle('busy',!!S.busy);
   box.querySelectorAll('[data-mode]').forEach(b=>{ const on=st&&st.mode===b.dataset.mode; b.classList.toggle('on',!!on); b.setAttribute('aria-selected',String(!!on)); });
   $('[data-foot]',box).hidden=!(st&&st.ready); $('.tu-mode',box).hidden=!(st&&st.ready)||g;
-  if(!tok()){ body.innerHTML='<div class="tu-gate"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Войди, и начнём</b><p>Лука ответит на любой вопрос по курсу, помнит, где ты застрял, и ведёт по шагам твоего варианта прямо на чертеже. Вход — тот же, что в личном кабинете.</p><a class="tu-btn" href="/lk/#/login" data-login>Войти</a>'+playLink()+'</div>'; gate(); return; }
-  if(!st){ body.innerHTML='<div class="tu-wait"><i></i>Открываю…</div>'; return; }
-  if(!st.on){ body.innerHTML='<div class="tu-gate"><i class="tu-gav" data-mood="sleep" aria-hidden="true"></i><b>Лука скоро появится</b><p>Пока его не подключили. Вопрос можно задать автору.</p><a class="tu-btn" href="#/ask">Спросить автора</a></div>'; gate(); return; }
-  if(!st.consent&&!st.ru){ body.innerHTML=`<div class="tu-gate"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Лука работает на модели Claude</b><p>Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, страница сайта или номер варианта, где ты спрашиваешь, выделенный тобой текст и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.</p><button class="tu-btn" data-consent>Согласен, начать</button></div>`; gate(); return; }
-  let h=''; if(!st.msgs.length) h+=g?`<div class="tu-hi"><b>Привет! Я Лука.</b><p>Спрашивай что угодно: определения, как строить, почему так, оформление по ГОСТ, вопросы к РК. Найду в курсе, объясню своими словами и открою нужную страницу. Выдели текст на странице — объясню его. А на странице своего варианта ДЗ покажу решение прямо на чертеже.</p>${playLink()}</div><div class="tu-sug">${sugGen().map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`
-    :`<div class="tu-hi"><b>Привет! Я Лука, твой наставник по ${esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))}.</b><p>Спроси, где застрял, — открою нужный шаг на чертеже и обведу точки. Ткни в подпись точки на чертеже — расскажу про неё. Спрашивай и теорию — найду в курсе. В режиме «Наставник» сначала подсказываю, решение — когда попробуешь сам. Пришли фото листа 📷 — найду, где ошибка.</p>${playLink()}</div><div class="tu-sug">${(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG).map(s=>'<button class="tu-chip" data-sug>'+esc(s)+'</button>').join('')}</div>`;
-  const qr=i=>i===st.msgs.length-1&&!S.busy?'<div class="tu-qr" role="group" aria-label="Быстрые ответы">'+(g?QR_GEN:QR).map(q=>'<button class="tu-chip" data-sug>'+esc(q)+'</button>').join('')+'</div>':'';
-  st.msgs.forEach((m,i)=>{ if(m.from==='u') h+=`<div class="tu-m u"><div class="tu-bb">${m.photo?'📷 ':''}${esc(m.text||'Фото листа')}</div></div>`;
-    else { const acts=(m.actions||[]).map((a,j)=>a.t==='show'?`<button class="tu-chip" data-act="${i}:${j}">Шаг ${a.step} на чертеже${a.points&&a.points.length?' · точки '+a.points.join(', '):''} ↗</button>`:a.t==='3d'?`<button class="tu-chip" data-act="${i}:${j}">3D-модель ↗</button>`:a.t==='ask'?`<a class="tu-chip" href="#/ask/${esc(a.id)}">Вопрос автору ↗</a>`
-        :a.t==='open'?`<button class="tu-open" data-act="${i}:${j}"><span>📖</span><span>${esc(a.title)}<small>${esc(a.why||a.where||'Открыть страницу курса')}</small></span></button>`:'').join('');
-      h+=`<div class="tu-m t"><div class="tu-bb">${rich(m.text)}</div><div class="tu-x">${acts}${m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением и текстом курса">✓ сверено</span>':''}${m.id?`<button class="tu-r${m.rate===1?' on':''}" data-rate="${esc(m.id)}:1" aria-label="Полезно">👍</button><button class="tu-r${m.rate===0?' on':''}" data-rate="${esc(m.id)}:0" aria-label="Не помогло">👎</button>`:''}</div>${qr(i)}</div>`; } });
-  if(S.busy) h+='<div class="tu-wait"><i></i>'+(S.photo||S.busyPhoto?'Смотрю на лист и сверяю с решением…':'Думаю и сверяю с решением…')+'</div>';
-  if(S.err) h+='<div class="tu-err">'+esc(S.err)+'</div>';
-  body.innerHTML=h; body.scrollTop=body.scrollHeight;
-  pv.hidden=!S.photo; pv.innerHTML=S.photo?'<img alt="" src="'+S.photo+'"><span>Фото листа</span><button class="tu-ib" data-unphoto aria-label="Убрать фото">✕</button>':'';
-  $('[data-send]',box).disabled=S.busy;
+  if(!tok()){ body.innerHTML=gateH('hello','Войди, и начнём','Лука ответит на любой вопрос по курсу, помнит, где ты застрял, и ведёт по шагам твоего варианта прямо на чертеже. Вход — тот же, что в личном кабинете.','<a class="tu-btn" href="/lk/#/login" data-login>Войти</a>'+playLink()); gate(); return; }
+  if(!st){ body.innerHTML='<div class="tu-wait"><span class="tu-dots"><i></i><i></i><i></i></span><span class="tu-shim">Открываю…</span></div>'; return; }
+  if(!st.on){ body.innerHTML=gateH('sleep','Лука скоро появится','Пока его не подключили. Вопрос можно задать автору.','<a class="tu-btn" href="#/ask">Спросить автора</a>'); gate(); return; }
+  if(!st.consent&&!st.ru){ body.innerHTML=gateH('hello','Лука работает на модели Claude','Это зарубежная модель (Anthropic, через ProxyAPI). Ей уходит только текст твоего вопроса, страница сайта или номер варианта, где ты спрашиваешь, выделенный тобой текст и, если ты сам пришлёшь, фото листа. Имя, почта, группа и другие данные о тебе — не уходят. Фото не хранится.','<button class="tu-btn" data-consent>Согласен, начать</button>'); gate(); return; }
+  let h=''; if(!st.msgs.length) h+=g
+    ?'<div class="tu-hi"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Привет, я Лука</b><p>Спроси что угодно по начерту и черчению — найду в курсе, объясню своими словами и открою нужную страницу.</p><span class="tu-tip">'+ic('cursor',14)+'Выдели текст на странице — объясню его</span>'+playLink()+'</div>'+sugCards(sugGen())
+    :'<div class="tu-hi"><i class="tu-gav" data-mood="hello" aria-hidden="true"></i><b>Привет, я Лука</b><p>Твой наставник по '+esc(String(DZN[w.dz]||'ДЗ').replace(/^.* · /,''))+'. Открою нужный шаг прямо на чертеже и обведу точки. Сначала подскажу, решение — когда попробуешь сам.</p><span class="tu-tip">'+ic('cam',14)+'Пришли фото листа — найду ошибку</span>'+playLink()+'</div>'+sugCards(isNg(w)?SUG_NG:w.dz==='ig4'?SUG:SUG_IG);
+  const qr=i=>i===st.msgs.length-1&&!S.busy?'<div class="tu-qr" role="group" aria-label="Быстрые ответы">'+chips(g?QR_GEN:QR)+'</div>':'';
+  st.msgs.forEach((m,i)=>{ const nw=S.fresh!=null&&i>=S.fresh?' tu-new':'';
+    if(m.from==='u') h+='<div class="tu-m u'+nw+'"><div class="tu-bb">'+(m.photo?'<span style="display:inline-flex;vertical-align:-3px;margin-right:6px">'+ic('cam',16)+'</span>':'')+esc(m.text||'Фото листа')+'</div></div>';
+    else { const acts=(m.actions||[]).map((a,j)=>card(i,j,a)).join('');
+      const meta=(m.verified||m.id)?'<div class="tu-meta">'+(m.verified?'<span class="tu-ok" title="Все числа и номера сверены с точным решением и текстом курса">'+ic('check',14)+'сверено</span>':'')+(m.id?'<button class="tu-r'+(m.rate===1?' on':'')+'" data-rate="'+esc(m.id)+':1" aria-label="Полезно" title="Полезно">'+ic('up',15)+'</button><button class="tu-r'+(m.rate===0?' on':'')+'" data-rate="'+esc(m.id)+':0" aria-label="Не помогло" title="Не помогло">'+ic('down',15)+'</button>':'')+'</div>':'';
+      h+='<div class="tu-m t'+nw+'"><div class="tu-by"><i></i>Лука</div><div class="tu-bb">'+rich(m.text)+'</div><div class="tu-x">'+acts+meta+'</div>'+qr(i)+'</div>'; } });
+  if(S.busy) h+='<div class="tu-wait"><span class="tu-dots"><i></i><i></i><i></i></span><span class="tu-shim" data-wtx>'+esc(waitText())+'</span></div>';
+  if(S.err) h+='<div class="tu-err">'+ic('warn',18)+'<span>'+esc(S.err)+'</span></div>';
+  body.innerHTML=h;
+  /* новый ответ Луки проявляется слово за словом (текст в DOM сразу целиком — для поиска и чтения с экрана) */
+  const fresh=S.fresh!=null; if(fresh){ body.querySelectorAll('.tu-m.t.tu-new .tu-bb').forEach(reveal); S.fresh=null; }
+  /* пустой разговор — приветствие сверху; иначе — к последнему сообщению (новое — плавно) */
+  if(st.msgs.length){ if(fresh&&body.scrollTo) body.scrollTo({top:body.scrollHeight,behavior:'smooth'}); else body.scrollTop=body.scrollHeight; } else { body.scrollTop=0; gate(); }
+  pv.hidden=!S.photo; pv.innerHTML=S.photo?'<img alt="" src="'+S.photo+'"><span>Фото листа</span><button class="tu-ib" data-unphoto aria-label="Убрать фото">'+ic('close',17)+'</button>':'';
+  sendState();
   if(hdrAv){ const want=S.busyPhoto?'study':'think'; if(S.busy){ if(hdrAv.state!==want) hdrAv.play(want); } else if(hdrAv.state==='think'||hdrAv.state==='study') hdrAv.idle(); }
   renderPeek(); }
+function sendState(){ $('[data-send]',box).disabled=S.busy||(!inp.value.trim()&&!S.photo); }
+function reveal(el){ if(MC()&&MC().reduced&&MC().reduced()) return; let n=0;
+  const tw=document.createTreeWalker(el,NodeFilter.SHOW_TEXT), nodes=[]; while(tw.nextNode()) nodes.push(tw.currentNode);
+  for(const t of nodes){ const parts=t.nodeValue.split(/(\s+)/); if(parts.length<2&&!t.nodeValue.trim()) continue; const f=document.createDocumentFragment();
+    for(const p of parts){ if(!p) continue; if(/^\s+$/.test(p)||n>260){ f.appendChild(document.createTextNode(p)); continue; }
+      const sp=document.createElement('span'); sp.className='tu-w'; sp.style.animationDelay=Math.min(n*22,1600)+'ms'; sp.textContent=p; f.appendChild(sp); n++; }
+    t.parentNode.replaceChild(f,t); } }
+/* что делает Лука, пока ждём ответ: то, что сервер действительно делает — думает, ищет, сверяет */
+let waitT0=0, waitI=0;
+function waitText(){ const s=(Date.now()-waitT0)/1000; if(S.busyPhoto) return s<6?'Смотрю на твой лист…':'Сравниваю с эталоном…';
+  return s<3?'Думаю…':s<9?(isGen(S.w)?'Ищу ответ в курсе…':'Смотрю решение варианта…'):'Сверяю каждое число…'; }
 /* быстрые ответы — без клавиатуры: лесенка подсказок идёт одними тапами */
 const QR=['Понял, что дальше?','Ещё намёк','Почему так?','Покажи на чертеже','Проверь меня'];
 const QR_GEN=['Объясни проще','Приведи пример','Проверь меня','Где это в ДЗ?','Ещё вопрос по теме'];
@@ -369,26 +484,28 @@ function sugGen(){ const h=location.hash||'';
   if(/^#\/(topic|ng\/path|ng\/cheat|ng\/learn|ig\/theory|ig\/learn|theory)/.test(h)) return ['Объясни эту тему проще','Приведи пример','Проверь меня по этой теме','Где это нужно в ДЗ?'];
   if(/task|quiz|check|ticket|rk/.test(h)) return ['С чего начать эту задачу?','Какое правило тут работает?','Типичные ошибки?','Проверь меня'];
   return ['Что такое конкурирующие точки?','Как построить линию пересечения плоскостей?','Разрез или сечение — в чём разница?','Как готовиться к РК?']; }
-const playLink=()=>/^\/new\//.test(location.pathname)?'<a class="tu-play" href="'+location.pathname.replace(/\/new\/.*$/,'/new/')+'luka/">Перемена? Поиграй со мной →</a>':'';
+const playLink=()=>/^\/new\//.test(location.pathname)?'<a class="tu-play" href="'+location.pathname.replace(/\/new\/.*$/,'/new/')+'luka/">'+ic('game',16)+'Перемена? Поиграй со мной</a>':'';
 /* полоска шторки (телефон): последняя реплика Луки и быстрые ответы */
 function renderPeek(){ const pk=$('[data-pk]',box), st=S.st; if(!pk) return; let h='';
-  if(S.busy) h='<div class="tu-pkt w" data-up><i></i>Лука думает и сверяет с решением…</div>';
+  if(S.busy) h='<div class="tu-pkt w" data-up><span class="tu-dots"><i></i><i></i><i></i></span><span class="tu-shim">'+esc(waitText())+'</span></div>';
   else { const m=st&&st.msgs&&[...st.msgs].reverse().find(x=>x.from==='t');
     h='<div class="tu-pkt" data-up>'+esc(m?String(m.text).replace(/\*\*/g,'').replace(/\s+/g,' '):isGen(S.w)?'Спроси Луку о чём угодно по курсу':'Спроси Луку про свой вариант')+'</div>';
-    if(m&&st.ready) h+='<div class="tu-qr">'+(isGen(S.w)?QR_GEN:QR).map(q=>'<button class="tu-chip" data-sug>'+esc(q)+'</button>').join('')+'</div>'; }
+    if(m&&st.ready) h+='<div class="tu-qr">'+chips(isGen(S.w)?QR_GEN:QR)+'</div>'; }
   pk.innerHTML=h; if(S.snap==='peek'&&isPhone()) snap('peek',true); }
 /* большая аватарка на экранах входа и согласия */
-function gate(){ const g=body.querySelector('.tu-gav'); const m=av(g); if(m) m.play(g.dataset.mood||'hello'); }
+function gate(){ const g=body.querySelector('.tu-gav'); if(!g) return; const m=av(g,{full:true}); if(m) m.play(g.dataset.mood||'hello'); }
 
 async function load(){ const w=cur(); S.w=w; S.pin=false; S.st=null; S.err=''; render(); if(!tok()) return;
   try{ const st=await req('GET','/api/tutor/state?dz='+w.dz+(isGen(w)?'':'&n='+w.n)); st.ready=st.on&&(st.consent||st.ru); if(same(S.w,w)){ S.st=st; S.cache[wkey(w)]=st; } }
   catch(e){ if(same(S.w,w)) S.st={on:true,consent:true,ready:true,msgs:[],mode:'coach'}; S.err=e.message; }
   render(); }
-function open(sn){ const was=S.open; S.open=true; box.hidden=false; fab.hidden=true; const u=fab.querySelector('u'); if(u) u.remove(); fabNote('');
+function open(sn){ const was=S.open; S.open=true; clearTimeout(S.hideT); if(!was||box.classList.contains('tu-out')){ box.classList.remove('tu-out'); box.hidden=false; void box.offsetWidth; box.classList.add('tu-in'); clearTimeout(S.inT); S.inT=setTimeout(()=>box.classList.remove('tu-in'),900); } box.hidden=false; fab.hidden=true; const u=fab.querySelector('u'); if(u) u.remove(); fabNote('');
   if(isPhone()) snap(typeof sn==='string'?sn:(was&&S.snap!=='peek'?S.snap:'half'),!was);
   say(S.greeted?'giggle':'hello'); S.greeted=true;
   if(!S.st||!S.w||(!S.pin&&!same(S.w,cur()))) load(); else render(); setTimeout(()=>{ if(innerWidth>=760) inp.focus(); },50); }
-function close(peek){ S.open=false; S.pin=false; box.hidden=true; box.style.removeProperty('--tu-h'); fab.hidden=false; speakStop(); if(peek&&!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); if(peek&&fabAv) fabAv.play('hello'); }
+function close(peek){ const was=S.open; S.open=false; S.pin=false; fab.hidden=false; speakStop(); box.classList.remove('tu-in');
+  if(was&&!box.hidden&&!(MC()&&MC().reduced&&MC().reduced())){ box.classList.add('tu-out'); clearTimeout(S.hideT); S.hideT=setTimeout(()=>{ if(!S.open){ box.hidden=true; box.classList.remove('tu-out'); box.style.removeProperty('--tu-h'); } },230); }
+  else { box.hidden=true; box.style.removeProperty('--tu-h'); } if(peek&&!fab.querySelector('u')) fab.insertAdjacentHTML('beforeend','<u></u>'); if(peek&&fabAv) fabAv.play('hello'); }
 function route(){ const w=cur(); if(!here()){ const M=MC(); if(M) M.untour(true); } toTop();
   selB.hidden=true; fab.hidden=S.open; fabPlace();
   /* другая страница — другой разговор (вариант ДЗ или «о чём угодно»); открытую Лукой страницу разговор не меняет */
@@ -444,11 +561,12 @@ async function send(text){ if(S.busy) return; text=String(text==null?inp.value:t
   if(S.w&&!same(S.w,cur())){ S.pin=false; if(S.st) S.cache[wkey(S.w)]=S.st; S.w=cur(); S.st=S.cache[wkey(S.w)]||null; if(!S.st) await load(); }
   const w=S.w||cur(); if(!S.st||!S.st.ready) return;
   const g=isGen(w), step=g?null:stepOf(w), photo=g?null:S.photo, sel=S.sel; S.sel='';
-  S.busy=true; S.busyPhoto=!!photo; S.err=''; S.st.msgs.push({from:'u',text,photo:!!photo}); inp.value=''; S.photo=null; render();
+  S.busy=true; S.busyPhoto=!!photo; S.err=''; S.st.msgs.push({from:'u',text,photo:!!photo}); S.fresh=S.st.msgs.length-1; inp.value=''; inp.style.height=''; S.photo=null; waitT0=Date.now();
+  clearInterval(waitI); waitI=setInterval(()=>{ if(!S.busy) return clearInterval(waitI); box.querySelectorAll('[data-wtx],.tu-pkt.w .tu-shim').forEach(e=>{ e.textContent=waitText(); }); },1000); render();
   try{ let ref=''; if(photo){ try{ ref=await reference(w.n,w.dz); }catch(e){ ref=''; } }
     const r=await req('POST','/api/tutor/chat',{dz:w.dz,n:g?undefined:w.n,text,step,mode:S.st.mode,photo:photo||undefined,ref:ref||undefined,page:pageCtx(),sel:sel||undefined});
     dayMark();
-    S.st.msgs.push({from:'t',text:r.reply,actions:r.actions||[],id:r.id,verified:r.verified,rate:null}); S.st.mode=r.mode||S.st.mode;
+    S.st.msgs.push({from:'t',text:r.reply,actions:r.actions||[],id:r.id,verified:r.verified,rate:null}); S.fresh=S.st.msgs.length-1; S.st.mode=r.mode||S.st.mode;
     S.busy=false; render();
     /* по фото нашлась точка с ошибкой — Лука пугается и идёт её обводить; иначе просто говорит */
     const found=!!photo&&(r.actions||[]).some(a=>a.t==='show'&&a.points&&a.points.length);
@@ -480,9 +598,11 @@ box.addEventListener('click',async e=>{ const t=e.target.closest('button,a'); if
     try{ await req('POST','/api/tutor/rate',{id,good:g==='1'}); }catch(er){} } });
 inp.addEventListener('focus',()=>{ if(isPhone()&&S.snap!=='full') snap('full'); });
 inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); send(); } });
-inp.addEventListener('input',()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,innerHeight*.3)+'px'; });
+inp.addEventListener('input',()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,innerHeight*.3)+'px'; sendState(); });
 $('[data-file]',box).addEventListener('change',async e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
   try{ S.photo=await shrink(f); S.err=''; }catch(er){ S.err=er.message; } render(); });
+/* ⌘K / Ctrl+K — позвать Луку с любой страницы (или спрятать) */
+addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&!e.altKey&&!e.shiftKey&&(e.key==='k'||e.key==='K'||e.key==='л'||e.key==='Л')){ e.preventDefault(); if(S.open) close(); else { open(); setTimeout(()=>inp.focus(),80); } } });
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&S.open) close(); });
 
 /* ── голос: вопрос микрофоном (распознавание речи браузера) и ответы вслух ── */
@@ -496,7 +616,7 @@ function mic(){ if(!SR) return; if(rec){ try{ rec.stop(); }catch(e){} return; }
   rec.onend=()=>{ rec=null; micB.classList.remove('on'); micB.setAttribute('aria-label','Спросить голосом'); if(hdrAv&&hdrAv.state==='listen') hdrAv.idle(); if(heard&&inp.value.trim()) send(); };
   try{ rec.start(); micB.classList.add('on'); micB.setAttribute('aria-label','Остановить запись'); if(hdrAv) hdrAv.play('listen',99999); speakStop(); }catch(e){ rec=null; } }
 S.voice=LS.get('tu_voice')==='1';
-function voiceBtn(){ const b=$('[data-voice]',box); b.textContent=S.voice?'🔊':'🔈'; b.classList.toggle('on',!!S.voice); b.setAttribute('aria-pressed',String(!!S.voice)); b.hidden=!self.speechSynthesis; }
+function voiceBtn(){ const b=$('[data-voice]',box); b.innerHTML=ic(S.voice?'vol':'mute'); b.classList.toggle('on',!!S.voice); b.setAttribute('aria-pressed',String(!!S.voice)); b.hidden=!self.speechSynthesis; }
 voiceBtn();
 let talkI=0;
 function speak(text){ const ss=self.speechSynthesis; if(!ss||typeof SpeechSynthesisUtterance==='undefined') return; speakStop();
@@ -534,7 +654,7 @@ const day=t=>new Date((t||Date.now())+3*3600e3).toISOString().slice(0,10);
 function days(){ try{ const d=JSON.parse(LS.get('tu_days')||'[]'); return Array.isArray(d)?d:[]; }catch(e){ return []; } }
 function streak(){ const d=days(); if(!d.length) return 0; let n=0, t=Date.now(); if(d[d.length-1]!==day(t)) t-=864e5; for(let i=d.length-1;i>=0;i--){ if(d[i]===day(t)){ n++; t-=864e5; } else break; } return n; }
 function dayMark(){ const d=days(), td=day(); if(d[d.length-1]===td) return; d.push(td); LS.set('tu_days',JSON.stringify(d.slice(-60))); const n=streak(); streakShow(); if(n>=2&&hdrAv) setTimeout(()=>hdrAv.play('happy'),900); }
-function streakShow(){ const el=$('[data-streak]',box), n=streak(); el.hidden=n<2; el.textContent='🔥 '+n; el.title=n+' '+(n%10===1&&n%100!==11?'день':n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?'дня':'дней')+' подряд с Лукой'; }
+function streakShow(){ const el=$('[data-streak]',box), n=streak(); el.hidden=n<2; el.innerHTML=flame(12)+n; el.title=n+' '+(n%10===1&&n%100!==11?'день':n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?'дня':'дней')+' подряд с Лукой'; }
 function hello(){ const d=days(), last=d[d.length-1], gap=last?(Date.parse(day())-Date.parse(last))/864e5:0;
   setTimeout(()=>{ if(S.open||fab.hidden) return;
     if(!LS.get('tu_hi')){ LS.set('tu_hi','1'); fabNote('Привет! Я Лука. Спроси меня о чём угодно по начерту и черчению — объясню и покажу.'); }
