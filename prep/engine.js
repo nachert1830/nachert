@@ -219,6 +219,8 @@ function viewTopic(v,id,ck){
       ${T.pre.length?`<p class="pp-sub">Опирается на: ${T.pre.map(p=>`<a href="#/prep/${p}">${esc(G.BY[p].t)}</a>`).join(', ')}</p>`:''}</div>`;
     return T.t;
   }
+  /* уровень карты подготовки (копия /new/): Условие → Разбор → Итог → Тест — экран prep/world.js */
+  if(ck&&PLANS[ck]&&self.PREPW&&PREPW.level&&skillOf(ck,id)) return PREPW.level(v,ck,id);
   const saved=store.get(id);
   document.body.classList.add('inplayer');
   v.innerHTML=`<div class="pp pp-topic"><div class="pp-bar"><a class="pp-back" href="${back}" aria-label="${ck?'К курсу':'К программе'}">←</a>
