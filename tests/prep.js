@@ -8,7 +8,7 @@
       Верная карточка проходит все правила; неверная проваливает хотя бы одно; элементы вне «отличия» ловушки (hl) совпадают.
    3. Модель освоения (Эло + правило 85 % + BKT): «знает» (92 % верно) осваивает в среднем ≤ 17 пар; «угадывает» (50 %) получает
       ложное «освоено» реже чем в 1 % из 10 000 прогонов, и на каждой теме — меньше 1,5 % из 4000 (с запасом на разброс).
-   4. Экраны в браузере: программа, каждая тема («Смотри» до конца, дуэль, ответ), ДЗ №4 — карточка подготовки и «Решаю сам». */
+   4. Экраны в браузере: основной сайт — без подготовки; копия /new/ — программа, каждая тема («Смотри» до конца, дуэль, ответ), карта и уровни. */
 'use strict';
 const fs=require('fs'), path=require('path'), http=require('http');
 const ROOT=path.join(__dirname,'..');
@@ -307,22 +307,18 @@ async function screens(){
   const U='http://127.0.0.1:'+srv.address().port+'/';
   const browser=await chromium.launch({executablePath:fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined}).catch(()=>chromium.launch());
   const page=await browser.newPage({viewport:{width:390,height:844}}); await page.addInitScript(()=>{ try{ localStorage.setItem('nch-preview-ok','1'); }catch(e){} }); const errs=[]; page.on('pageerror',e=>errs.push(String(e)));
+  /* основной сайт: подготовки нет (она только в копии /new/) — #/prep ведёт на главную, на странице ДЗ нет карточки */
   await page.goto(U+'#/prep'); await page.waitForTimeout(1200);
-  const hub=await page.evaluate(()=>({cards:[...document.querySelectorAll('a.pp-cc')].map(a=>a.getAttribute('href')),rows:document.querySelectorAll('.pp-st').length,ow:document.documentElement.scrollWidth>innerWidth}));
-  if(hub.cards.join()!==['ng1','ng2','ng3','ng4','ng5'].map(k=>'#/prep/'+k).join()) bad('Подготовка: карточки ДЗ — '+hub.cards.join(', ')); if(hub.rows) bad('Подготовка: на первом экране не должно быть списка тем'); if(hub.ow) bad('Подготовка: горизонтальная прокрутка');
-  /* курс показывает только свои темы (и свёрнуто — из прошлых), ссылки — внутрь курса */
-  for(const c of G.COURSES.filter(c=>c.kind==='dz')){
-    await page.goto(U+'#/prep/'+c.key); await page.waitForTimeout(200);
-    const r=await page.evaluate(()=>({main:[...document.querySelectorAll('.pp-map .pp-st')].map(a=>a.getAttribute('href')),prev:[...document.querySelectorAll('.pp-prev .pp-st')].map(a=>a.getAttribute('href')),ow:document.documentElement.scrollWidth>innerWidth}));
-    const want=c.own.map(id=>'#/prep/'+c.key+'/'+id); if(r.main.join()!==want.join()) bad(`Курс ${c.label}: показаны не ровно свои темы (${r.main.length} из ${want.length})`);
-    const wantP=c.prevBy.flatMap(g=>g.ids.map(id=>'#/prep/'+g.key+'/'+id)); if(r.prev.join()!==wantP.join()) bad(`Курс ${c.label}: «нужно из прошлых» не совпадает`); if(r.ow) bad(`Курс ${c.label}: горизонтальная прокрутка`); }
-  /* тема внутри курса: «назад» — к курсу */
-  { const c=G.COURSE.ng4; await page.goto(U+'#/prep/ng4/'+c.own[0]); await page.waitForTimeout(200); const back=await page.evaluate(()=>{ const a=document.querySelector('.pp-back'); return a&&a.getAttribute('href'); }); if(back!=='#/prep/ng4') bad('Тема в курсе: «назад» ведёт не к курсу, а на '+back); }
-  await page.goto(U+'#/prep/all'); await page.waitForTimeout(300);
+  if(await page.evaluate(()=>!!window.PREP)||await page.$('.pp,.wd')) bad('Основной сайт: подготовка подключена (она только в копии /new/)');
+  await page.goto(U+'#/ng4'); await page.waitForTimeout(1500);
+  if(await page.$('.pp-dzcard,.pp-dzchip')) bad('Основной сайт, ДЗ №4: карточка подготовки видна');
+  const UN=U+'new/';
+  /* копия: вся программа и каждая тема («Смотри» до конца, дуэль, ответ) */
+  await page.goto(UN+'#/prep/all'); await page.waitForTimeout(1200);
   const st=await page.evaluate(()=>({n:document.querySelectorAll('.pp-st').length,ow:document.documentElement.scrollWidth>innerWidth}));
   if(st.n!==G_N) bad(`Вся программа: ${st.n} тем вместо ${G_N}`); if(st.ow) bad('Вся программа: горизонтальная прокрутка');
   for(const id of Object.keys(PREP.TOPICS)){
-    await page.goto(U+'#/prep/'+id); await page.waitForTimeout(300);
+    await page.goto(UN+'#/prep/'+id); await page.waitForTimeout(300);
     const r=await page.evaluate(async()=>{
       const wait=ms=>new Promise(f=>setTimeout(f,ms)); const q=s=>document.querySelector(s);
       q('[data-ph="watch"]').click(); await wait(50);
@@ -342,16 +338,10 @@ async function screens(){
     });
     if(r) bad(`Экран темы ${id}: ${r}`);
   }
-  await page.goto(U+'#/ng4'); await page.waitForTimeout(1500);
-  if(!await page.$('.pp-dzcard')) bad('ДЗ №4: нет карточки «Подготовка»');
-  await page.evaluate(()=>{ const a=document.querySelector('[data-setvar="13"]'); a&&a.click(); }); await page.waitForTimeout(1800);
-  const m=await page.evaluate(()=>{ const b=document.querySelector('.pl-mode.on'); return [b&&b.dataset.m,!!document.querySelector('.pp-dzchip')]; });
-  if(m[0]!=='try') bad('ДЗ №4, свой вариант: открылся не в «Решаю сам»'); if(!m[1]) bad('ДЗ №4, свой вариант: нет строки подготовки');
-  /* основной сайт: курсов по этапам и экрана перед решением нет */
-  await page.goto(U+'#/prep'); await page.waitForTimeout(500);
-  if(await page.$('.pp-stg')||await page.evaluate(()=>!!window.PREP&&Object.keys(PREP.PLANS).length)) bad('Основной сайт: курсы по этапам видны (они только в копии /new/)');
+  await page.goto(UN+'#/ng4'); await page.waitForTimeout(1500);
+  if(!await page.$('.pp-dzcard')) bad('Копия, ДЗ №4: нет карточки «Подготовка»');
   /* навыки — только в копии /new/ (основной сайт подключает прежние курсы по темам, выше) */
-  const PK=Object.keys(PREP.PLANS), UN=U+'new/';
+  const PK=Object.keys(PREP.PLANS);
   const hash=()=>page.evaluate(()=>location.hash);
   /* #/prep — карта предмета у зоны задания, которое выбрал сайт */
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
@@ -450,7 +440,7 @@ async function screens(){
     if(r.h!==r.want) bad('Главная копии: «Учиться» ведёт на '+r.h+' вместо '+r.want); else if(!r.first) bad('Главная копии: «Учиться» не первое'); }
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
   if(errs.length) bad('Ошибка JS: '+errs[0].slice(0,200));
-  info.push(`Экраны: программа, ${Object.keys(PREP.TOPICS).length} тем, ДЗ №4; копия /new/ — ${Object.keys(PREP.PLANS).length} заданий с навыками`);
+  info.push(`Экраны: основной сайт без подготовки; копия /new/ — программа, ${Object.keys(PREP.TOPICS).length} тем, ${Object.keys(PREP.PLANS).length} заданий с уровнями`);
   await browser.close(); srv.close();
 }
 const G_N=G.ALL.length;
