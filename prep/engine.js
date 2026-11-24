@@ -381,8 +381,15 @@ function bar(){
   const show=k&&PLANS[k]&&!/^#\/prep(\/|$)/.test(h);
   if(!show){ if(el) el.remove(); return; }
   const p=PLANS[k], g=planProg(k), hint=trailHint();
+  const to=(()=>{ try{ return sessionStorage.getItem(TRAIL+'_to')||'#/prep/'+k; }catch(e){ return '#/prep/'+k; } })(), lbl=(()=>{ try{ return sessionStorage.getItem(TRAIL+'_l')||'К карте'; }catch(e){ return 'К карте'; } })();
   if(!el){ el=document.createElement('div'); el.id='ppTrail'; document.body.appendChild(el); }
-  el.innerHTML=`<span><b>${hint?esc(hint):'Подготовка к '+esc(p.label)}</b><small>${esc(p.label)} · уровней ${g.done} из ${g.n}</small></span><a class="pp-btn" href="${(()=>{ try{ return sessionStorage.getItem(TRAIL+'_to')||'#/prep/'+k; }catch(e){ return '#/prep/'+k; } })()}">${(()=>{ try{ return esc(sessionStorage.getItem(TRAIL+'_l')||'К карте'); }catch(e){ return 'К карте'; } })()} →</a>`;
+  /* панель уровня поверх страницы разбора: где ты (уровень, этап «Разбор → Тест»), что делать, выход на карту */
+  const m=/test(\d+)$/.exec(to), i=m?+m[1]-1:-1, sk=i>=0&&p.skills[i];
+  el.innerHTML=sk?`<a class="tr-x" href="#/prep/${k}" aria-label="К карте подготовки">✕</a>
+    <span class="tr-t"><small>${esc(p.label)} · уровень ${i+1} из ${p.skills.length}</small><b>${esc(sk.t)}</b>
+      <em class="tr-st"><i class="on">1 Разбор</i><i>2 Тест</i></em></span>
+    <a class="pp-btn" href="${to}">${esc(lbl)} →</a>`
+    :`<span><b>${hint?esc(hint):'Подготовка к '+esc(p.label)}</b><small>${esc(p.label)} · уровней ${g.done} из ${g.n}</small></span><a class="pp-btn" href="${to}">${esc(lbl)} →</a>`;
   css();
 }
 if(typeof window!=='undefined'&&window.addEventListener){ window.addEventListener('hashchange',()=>setTimeout(bar,0)); window.addEventListener('load',()=>setTimeout(bar,0)); }
@@ -572,8 +579,12 @@ const CSS=`
 .pp-all{margin:16px 0}.pp-all>summary{cursor:pointer;font-weight:700;padding:10px 0;color:var(--pp-mut)}
 .pp-skip{text-align:center;margin:14px 0 0}.pp-skip button{border:0;background:none;color:var(--pp-mut);font:inherit;font-size:14px;text-decoration:underline;cursor:pointer;padding:6px}
 #ppTrail{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:900;display:flex;align-items:center;justify-content:space-between;gap:10px;
- padding:10px 10px 10px 16px;border-radius:16px;background:var(--surf,#fff);color:var(--ink,#121a3f);border:2px solid var(--acc,#1f3fbf);box-shadow:0 12px 30px -12px rgba(10,20,60,.45);max-width:560px;margin:0 auto}
-#ppTrail span{display:grid;line-height:1.2;font-size:14px}#ppTrail small{color:var(--mut,#5c6688);font-size:12px}
+ padding:10px 10px 10px 10px;border-radius:16px;background:var(--surf,#fff);color:var(--ink,#121a3f);border:2px solid var(--acc,#1f3fbf);box-shadow:0 12px 30px -12px rgba(10,20,60,.45);max-width:560px;margin:0 auto}
+#ppTrail span{display:grid;line-height:1.2;font-size:14px;min-width:0}#ppTrail small{color:var(--mut,#5c6688);font-size:12px}
+#ppTrail .tr-t b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ppTrail .tr-x{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surf2,#f3f5fa);color:var(--mut,#5c6688);text-decoration:none;font-size:15px;font-weight:700}
+#ppTrail .tr-st{display:flex;gap:6px;margin-top:4px;font-style:normal}#ppTrail .tr-st i{font-style:normal;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:99px;border:1px solid var(--line,#e1e5ef);color:var(--mut,#5c6688)}
+#ppTrail .tr-st i.on{background:var(--acc,#1f3fbf);border-color:var(--acc,#1f3fbf);color:#fff}
 #ppTrail .pp-btn{padding:10px 16px;white-space:nowrap;background:var(--acc,#1f3fbf);color:#fff;border-radius:12px;font-weight:700;text-decoration:none}
 body.inplayer #ppTrail{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 /* чертёж: бумага белая в обеих темах */

@@ -225,80 +225,85 @@ function level(v,k,id){
   let V=null, S=null; for(let t=0;t<50&&!S;t++){ V=W.V?W.V.call(topic):topic.make.call(topic); S=V&&topic.scene(V,null); }
   const sp=topic.space?topic.space(V):null;
   const S0=task.noTxt?Object.assign({},S,{base:(S.base||[]).filter(e=>e.t!=='txt')}):S, drawCond=svg=>P.draw(svg,S0,task.show||[]);
-  v.innerHTML=`<div class="pp pp-topic wl">${head(k,i)}<div class="pp-stage wl-stage" id="wlStage"></div></div>`;
-  const stage=v.querySelector('#wlStage'), root=v;
-  const taskBox=`<div class="wl-task"><p><span>Дано</span>${esc(task.given)}</p><p class="find"><span>Найти</span>${esc(task.find)}</p></div>`;
+  /* один экран на весь уровень до теста: строка «Найти» и чертёж не перестраиваются — меняется только нижняя панель.
+     Условие → (первый шаг дорисовывается на том же чертеже) → разбор по шагам → итог разбора. Этапы сверху нажимаются. */
+  v.innerHTML=`<div class="pp pp-topic wl">${head(k,i)}<div class="pp-stage wl-stage" id="wlStage"><div class="wl-split" id="wlS">
+      <div class="wl-goal"><span>Найти</span><b>${esc(task.find)}</b><button type="button" class="wl-gt" id="wlGoal" aria-expanded="false" hidden>Условие</button></div>
+      <div class="wl-given" id="wlGiven" aria-hidden="false"><p><span>Дано</span>${esc(task.given)}</p></div>
+      <div class="pp-card big wl-card" id="wlCard"><svg aria-label="Чертёж"></svg>${sp?'<canvas class="pp-3d" hidden aria-label="Шаг в пространстве"></canvas><div class="pp-vt" role="tablist" hidden><button data-v="e" class="on">Эпюр</button><button data-v="3">3D</button></div>':''}
+        <span class="wl-tag" id="wlTag">Условие</span><span class="wl-tap" id="wlTap" hidden></span>
+        <button type="button" class="wl-rp" id="wlRp" aria-label="Повторить шаг" title="Повторить шаг" hidden>↻</button></div>
+      <div class="wl-panel" id="wlPanel" aria-live="polite"></div></div></div></div>`;
+  const stage=v.querySelector('#wlStage'), root=v, $=s=>stage.querySelector(s);
+  const wrap=$('#wlS'), svg=$('svg'), cv=$('canvas'), vt=$('.pp-vt'), card=$('#wlCard'), goal=$('#wlGoal'), given=$('#wlGiven'), panel=$('#wlPanel'), tag=$('#wlTag'), tap=$('#wlTap'), rp=$('#wlRp');
   const toTest=()=>{ K.setSeen(k,'w:'+id); location.hash='#/prep/'+k+'/test'+(i+1); };
-
-  /* 1. Условие: тот же вариант, что в разборе, — только исходные данные */
-  const cond=()=>{ setStep(root,0);
-    stage.innerHTML=`<div class="wl-split"><div class="pp-card big wl-card"><span class="wl-tag">Условие</span><svg aria-label="Чертёж условия"></svg></div>
-      <div class="wl-panel">${idea?`<p class="wl-idea"><span>Чему учимся</span>${esc(idea)}</p>`:''}${taskBox}
-      <p class="wl-hint">Подумай, с чего бы ты начал. Потом посмотрим решение — ${plural(N,'шаг','шага','шагов')}.</p>
-      <button type="button" class="pp-btn big" id="wlGo">Смотреть разбор →</button></div></div>`;
-    drawCond(stage.querySelector('svg'));
-    stage.querySelector('#wlGo').onclick=()=>watch(0); };
-
-  /* 2. Разбор по шагам; «Условие» сверху — открыть исходный чертёж и текст в любой момент */
-  const watch=at=>{ setStep(root,1); let i0=at||0, peek=false;
-    stage.innerHTML=`<div class="wl-split"><button type="button" class="wl-goal" id="wlGoal" aria-expanded="false"><span>Найти</span><b>${esc(task.find)}</b><i>Условие</i></button>
-      <div class="wl-given" id="wlGiven" hidden><p><span>Дано</span>${esc(task.given)}</p></div>
-      <div class="pp-card big wl-card" id="wlCard"><svg aria-label="Чертёж шага"></svg>${sp?'<canvas class="pp-3d" hidden aria-label="Шаг в пространстве"></canvas><div class="pp-vt" role="tablist"><button data-v="e" class="on">Эпюр</button><button data-v="3">3D</button></div>':''}
-        <span class="wl-tag" id="wlTag" hidden>Условие</span><span class="wl-tap" id="wlTap">нажми на чертёж или листай — следующий шаг</span>
-        <button type="button" class="wl-rp" id="wlRp" aria-label="Повторить шаг" title="Повторить шаг">↻</button></div>
-      <div class="wl-panel"><div class="wl-sn"><b id="wlSn"></b><span class="pp-dots">${W.steps.map(()=>'<i></i>').join('')}</span></div>
-        <p class="pp-cap" id="ppCap" aria-live="polite"></p>
-        <div class="pp-row"><button type="button" class="pp-btn ghost" id="ppPrev" aria-label="Шаг назад">←</button><button type="button" class="pp-btn" id="ppNext">Дальше →</button></div></div></div>`;
-    const svg=stage.querySelector('svg'), cv=stage.querySelector('canvas'), card=stage.querySelector('#wlCard'), goal=stage.querySelector('#wlGoal'), given=stage.querySelector('#wlGiven');
-    const st3={yaw:-.6,pitch:.42,mode:'e',idle:0,drag:null};
-    const paint3=()=>{ if(cv&&st3.mode==='3') P.draw3D(cv,sp,peek?(task.show||[]):W.steps[i0].roles,st3); };
-    const show=()=>{ const s0=W.steps[i0], prev=i0?W.steps[i0-1].roles:[];
-      const fresh=s0.roles.filter(r=>!prev.includes(r));
-      if(peek) drawCond(svg); else { P.draw(svg,S,s0.roles,fresh);
-        /* что нового на этом шаге — в фокусе, построенное раньше — приглушено */
-        if(i0&&fresh.length) svg.querySelectorAll('[data-role]').forEach(n=>{ if(!fresh.includes(n.dataset.role)) n.classList.add('pp-old'); }); }
-      stage.querySelector('#ppCap').textContent=s0.cap; stage.querySelector('#wlSn').textContent='Шаг '+(i0+1)+' из '+N; paint3();
-      stage.querySelectorAll('.pp-dots i').forEach((d,j)=>d.classList.toggle('on',j<=i0));
-      stage.querySelector('#ppPrev').disabled=!i0; stage.querySelector('#ppNext').textContent=i0===N-1?'Готово ✓':'Дальше →';
-      stage.querySelector('#wlTag').hidden=!peek; stage.querySelector('#wlTap').hidden=peek||i0>0||st3.mode==='3'; stage.querySelector('#wlRp').hidden=peek||st3.mode==='3'; };
-    const fwd=()=>{ if(peek){ setPeek(false); return; } if(i0<N-1){ i0++; show(); try{ window.FX&&FX.buzz(8); }catch(e){} } else recap(); };
-    const setPeek=on=>{ peek=on; goal.setAttribute('aria-expanded',on); goal.classList.toggle('on',on); given.hidden=!on; show(); };
-    goal.onclick=()=>setPeek(!peek);
-    const back=()=>{ if(peek) setPeek(false); if(i0>0){ i0--; show(); } };
-    let sw=null, swiped=false;
-    card.addEventListener('pointerdown',e=>{ if(st3.mode!=='3') sw=[e.clientX,e.clientY]; swiped=false; });
-    card.addEventListener('pointerup',e=>{ if(!sw) return; const dx=e.clientX-sw[0], dy=e.clientY-sw[1]; sw=null;
-      if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.4){ swiped=true; dx<0?fwd():back(); } });
-    card.onclick=e=>{ if(swiped||e.target.closest('.pp-vt,.wl-rp')||st3.mode==='3') return; fwd(); };
-    stage.querySelector('#wlRp').onclick=()=>show();
-    const keys=e=>{ if(!stage.isConnected||!stage.querySelector('#wlCard')){ document.removeEventListener('keydown',keys); return; }
-      if(e.target.closest&&e.target.closest('input,textarea')) return;
-      if(e.key==='ArrowRight'){ e.preventDefault(); fwd(); } else if(e.key==='ArrowLeft'){ e.preventDefault(); back(); } };
-    if(stage._keys) document.removeEventListener('keydown',stage._keys); stage._keys=keys; document.addEventListener('keydown',keys);
-    stage.querySelector('#ppPrev').onclick=back;
-    stage.querySelector('#ppNext').onclick=fwd;
-    if(cv){ stage.querySelector('.pp-vt').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; st3.mode=b.dataset.v;
-        stage.querySelectorAll('.pp-vt button').forEach(x=>x.classList.toggle('on',x===b)); svg.hidden=st3.mode==='3'; cv.hidden=st3.mode!=='3'; show();
-        try{ window.TRACK&&TRACK('prep_3d',{topic:id}); }catch(e){} };
-      cv.style.touchAction='none';
-      cv.addEventListener('pointerdown',e=>{ st3.drag=[e.clientX,e.clientY,st3.yaw,st3.pitch]; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
-      cv.addEventListener('pointermove',e=>{ if(!st3.drag) return; st3.yaw=st3.drag[2]+(e.clientX-st3.drag[0])*.01; st3.pitch=Math.max(.05,Math.min(1.25,st3.drag[3]+(e.clientY-st3.drag[1])*.006)); st3.idle=performance.now()+4000; paint3(); });
-      cv.addEventListener('pointerup',()=>{ st3.drag=null; });
-      const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-      const tick=t=>{ if(!cv.isConnected) return; if(st3.mode==='3'&&!st3.drag&&!rm&&t>st3.idle){ st3.yaw+=.004; paint3(); } requestAnimationFrame(tick); }; requestAnimationFrame(tick); }
-    show(); };
-
-  /* 3. Итог разбора: что построили и главная мысль — перед тестом */
-  const recap=()=>{ setStep(root,1,true);
-    stage.innerHTML=`<div class="wl-split recap"><div class="pp-card big wl-card"><span class="wl-tag ok">Решение</span><svg aria-label="Решение целиком"></svg></div>
-      <div class="wl-panel"><span class="wl-k">Разбор пройден</span>${idea?`<p class="wl-idea"><span>Главное</span>${esc(idea)}</p>`:''}
+  const st3={yaw:-.6,pitch:.42,mode:'e',idle:0,drag:null};
+  let mode='', i0=0, peek=false, seenWatch=false, seenRecap=false;
+  const paint3=()=>{ if(cv&&st3.mode==='3') P.draw3D(cv,sp,peek?(task.show||[]):W.steps[i0].roles,st3); };
+  const set3=m=>{ if(!cv) return; st3.mode=m; stage.querySelectorAll('.pp-vt button').forEach(x=>x.classList.toggle('on',x.dataset.v===m)); svg.hidden=m==='3'; cv.hidden=m!=='3'; };
+  /* чертёж: условие / шаг разбора (новое в фокусе, прежнее приглушено) / решение целиком */
+  const drawNow=()=>{ const condV=mode==='cond'||peek;
+    if(condV) drawCond(svg);
+    else if(mode==='recap') P.draw(svg,S,W.steps[N-1].roles);
+    else { const s0=W.steps[i0], prev=i0?W.steps[i0-1].roles:[], fresh=s0.roles.filter(r=>!prev.includes(r));
+      P.draw(svg,S,s0.roles,fresh); if(i0&&fresh.length) svg.querySelectorAll('[data-role]').forEach(n=>{ if(!fresh.includes(n.dataset.role)) n.classList.add('pp-old'); }); }
+    tag.hidden=!(peek||mode==='recap'); tag.textContent=mode==='recap'&&!peek?'Решение':'Условие'; tag.classList.toggle('ok',mode==='recap'&&!peek);
+    tap.hidden=!(mode==='watch'&&i0===0&&!peek)||st3.mode==='3'; tap.textContent=mode==='cond'?'нажми на чертёж — начать разбор':'нажми или листай — дальше';
+    rp.hidden=mode!=='watch'||peek||st3.mode==='3'; if(vt) vt.hidden=mode!=='watch'; paint3(); };
+  const stepUI=()=>{ const s0=W.steps[i0]; $('#ppCap').textContent=s0.cap; $('#wlSn').textContent='Шаг '+(i0+1)+' из '+N;
+    stage.querySelectorAll('.pp-dots i').forEach((d,j)=>d.classList.toggle('on',j<=i0));
+    $('#ppPrev').setAttribute('aria-label',i0?'Шаг назад':'К условию'); $('#ppNext').textContent=i0===N-1?'Готово ✓':'Дальше →'; };
+  const shutGiven=on=>{ given.classList.toggle('shut',on); given.setAttribute('aria-hidden',String(on)); };
+  const setPeek=on=>{ peek=on; goal.setAttribute('aria-expanded',on); goal.classList.toggle('on',on); shutGiven(!(mode==='cond'||on)); drawNow(); };
+  const PANEL={
+    cond:()=>`${idea?`<p class="wl-idea"><span>Чему учимся</span>${esc(idea)}</p>`:''}
+      <ol class="wl-plan"><li class="on"><b>Разбор</b><small>${plural(N,'шаг','шага','шагов')} на этом чертеже</small></li><li><b>Тест</b><small>${N_PAIRS} пар: где верно</small></li></ol>
+      <p class="wl-hint">Подумай, с чего бы ты начал, — потом сверься с разбором.</p>
+      <button type="button" class="pp-btn big" id="wlGo">Смотреть разбор →</button>`,
+    watch:()=>`<div class="wl-sn"><b id="wlSn"></b><span class="pp-dots">${W.steps.map(()=>'<i></i>').join('')}</span></div>
+      <p class="pp-cap" id="ppCap"></p>
+      <div class="pp-row"><button type="button" class="pp-btn ghost" id="ppPrev">←</button><button type="button" class="pp-btn" id="ppNext">Дальше →</button></div>`,
+    recap:()=>`<span class="wl-k">Разбор пройден</span>${idea?`<p class="wl-idea"><span>Главное</span>${esc(idea)}</p>`:''}
       <ol class="wl-ol">${W.steps.map(s=>`<li>${esc(s.cap)}</li>`).join('')}</ol>
       <p class="wl-hint">Дальше — тест: ${N_PAIRS} пар чертежей, в каждой выбери верный.</p>
-      <div class="pp-row"><button type="button" class="pp-btn ghost" id="wlAgain">↺ Ещё раз</button><button type="button" class="pp-btn" id="wlTest">К тесту →</button></div></div></div>`;
-    P.draw(stage.querySelector('svg'),S,W.steps[N-1].roles);
-    stage.querySelector('#wlAgain').onclick=()=>watch(0); stage.querySelector('#wlTest').onclick=toTest; };
-
-  const st=ss.get(STAGE); if(st==='watch') watch(0); else cond();
+      <div class="pp-row"><button type="button" class="pp-btn ghost" id="wlAgain">↺ Ещё раз</button><button type="button" class="pp-btn" id="wlTest">К тесту →</button></div>`};
+  const setMode=(m,at)=>{ const was=mode; mode=m; peek=false; if(m==='watch'){ seenWatch=true; i0=at||0; } if(m==='recap') seenRecap=true;
+    if(m!=='watch'&&st3.mode==='3') set3('e');
+    setStep(root,m==='cond'?0:1,m==='recap');
+    stage.querySelectorAll('#wlSteps li').forEach(li=>{ const s=+li.dataset.s; li.classList.toggle('go',(s===0&&m!=='cond')||(s===1&&m==='cond'&&seenWatch)||(s===2&&seenRecap)); });
+    wrap.classList.toggle('recap',m==='recap'); wrap.dataset.mode=m;
+    goal.hidden=m!=='watch'; goal.classList.remove('on'); goal.setAttribute('aria-expanded','false'); shutGiven(m!=='cond');
+    if(was!==m){ panel.innerHTML=PANEL[m](); panel.classList.remove('wl-in'); void panel.offsetWidth; panel.classList.add('wl-in'); bindPanel(); }
+    if(m==='watch') stepUI(); drawNow(); };
+  const fwd=()=>{ if(mode==='cond') return setMode('watch',0); if(mode!=='watch') return; if(peek){ setPeek(false); return; }
+    if(i0<N-1){ i0++; stepUI(); drawNow(); try{ window.FX&&FX.buzz(8); }catch(e){} } else setMode('recap'); };
+  const back=()=>{ if(mode!=='watch') return; if(peek){ setPeek(false); return; } if(i0>0){ i0--; stepUI(); drawNow(); } else setMode('cond'); };
+  function bindPanel(){ const q=s=>panel.querySelector(s);
+    if(q('#wlGo')) q('#wlGo').onclick=()=>setMode('watch',0);
+    if(q('#ppNext')){ q('#ppNext').onclick=fwd; q('#ppPrev').onclick=back; }
+    if(q('#wlAgain')){ q('#wlAgain').onclick=()=>setMode('watch',0); q('#wlTest').onclick=toTest; } }
+  goal.onclick=()=>setPeek(!peek);
+  rp.onclick=e=>{ e.stopPropagation(); drawNow(); };
+  /* этапы сверху: к условию — всегда; к разбору — если уже смотрел; к тесту — после итога разбора */
+  stage.parentElement.querySelectorAll('#wlSteps li').forEach(li=>li.addEventListener('click',()=>{ if(!li.classList.contains('go')) return; const s=+li.dataset.s;
+    if(s===0) setMode('cond'); else if(s===1) setMode('watch',0); else toTest(); }));
+  let sw=null, swiped=false;
+  card.addEventListener('pointerdown',e=>{ if(st3.mode!=='3') sw=[e.clientX,e.clientY]; swiped=false; });
+  card.addEventListener('pointerup',e=>{ if(!sw) return; const dx=e.clientX-sw[0], dy=e.clientY-sw[1]; sw=null;
+    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.4){ swiped=true; dx<0?fwd():back(); } });
+  card.onclick=e=>{ if(swiped||e.target.closest('.pp-vt,.wl-rp')||st3.mode==='3'||mode==='recap') return; fwd(); };
+  const keys=e=>{ if(!stage.isConnected){ document.removeEventListener('keydown',keys); return; }
+    if(e.target.closest&&e.target.closest('input,textarea,button,a')) return;
+    if(e.key==='ArrowRight'){ e.preventDefault(); fwd(); } else if(e.key==='ArrowLeft'){ e.preventDefault(); back(); } };
+  if(window._wlKeys) document.removeEventListener('keydown',window._wlKeys); window._wlKeys=keys; document.addEventListener('keydown',keys);
+  if(cv){ vt.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; set3(b.dataset.v); drawNow(); try{ window.TRACK&&TRACK('prep_3d',{topic:id}); }catch(e){} };
+    cv.style.touchAction='none';
+    cv.addEventListener('pointerdown',e=>{ st3.drag=[e.clientX,e.clientY,st3.yaw,st3.pitch]; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
+    cv.addEventListener('pointermove',e=>{ if(!st3.drag) return; st3.yaw=st3.drag[2]+(e.clientX-st3.drag[0])*.01; st3.pitch=Math.max(.05,Math.min(1.25,st3.drag[3]+(e.clientY-st3.drag[1])*.006)); st3.idle=performance.now()+4000; paint3(); });
+    cv.addEventListener('pointerup',()=>{ st3.drag=null; });
+    const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const tick=t=>{ if(!cv.isConnected) return; if(st3.mode==='3'&&!st3.drag&&!rm&&t>st3.idle){ st3.yaw+=.004; paint3(); } requestAnimationFrame(tick); }; requestAnimationFrame(tick); }
+  const st=ss.get(STAGE); setMode(st==='watch'?'watch':'cond',0);
   return 'Уровень '+(i+1)+' · '+sk.t;
 }
 
@@ -541,10 +546,20 @@ svg .on,svg.on path{fill:#ffc928}.wd-tot svg path,.wd-st svg path,.wd-big svg pa
 .wl-idea{margin:0;padding:8px 12px;border-radius:12px;background:#fff7d6;border:1px solid #f1d98a;color:#4a3b06;font-size:14.5px;line-height:1.35;font-weight:600}
 .wl-idea span{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#a07a00;margin-bottom:1px}
 .wl-hint{margin:0;font-size:14px;color:var(--pp-mut);line-height:1.4}
-.wl-goal{flex:none;display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;font:inherit;padding:8px 10px;border-radius:12px;border:1px solid var(--pp-line);background:var(--pp-surf);color:var(--pp-ink);cursor:pointer}
-.wl-goal span{background:var(--pp-acc);border-color:var(--pp-acc);color:#fff}.wl-goal b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wl-goal i{font-style:normal;font-size:12.5px;font-weight:800;color:var(--pp-acc);padding:4px 9px;border-radius:999px;border:1.5px solid var(--pp-acc)}
-.wl-goal.on{border-color:var(--pp-acc);box-shadow:0 0 0 3px rgba(31,63,191,.15)}.wl-goal.on b{white-space:normal}.wl-goal.on i{background:var(--pp-acc);color:#fff}
+.wl-goal{flex:none;display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid var(--pp-line);background:var(--pp-surf);color:var(--pp-ink)}
+.wl-goal span{background:var(--pp-acc);border-color:var(--pp-acc);color:#fff}.wl-goal b{font-size:14.5px;line-height:1.3}
+.wl-gt{font:inherit;font-size:12.5px;font-weight:800;color:var(--pp-acc);padding:5px 10px;border-radius:999px;border:1.5px solid var(--pp-acc);background:none;cursor:pointer}.wl-gt[hidden]{display:none}
+.wl-gt.on{background:var(--pp-acc);color:#fff}
+.wl-plan{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px;counter-reset:p}
+.wl-plan li{counter-increment:p;display:grid;gap:1px;padding:8px 10px;border-radius:12px;background:var(--pp-bg);border:1px solid var(--pp-line)}
+.wl-plan b{font-size:14px}.wl-plan b::before{content:counter(p) " · ";color:var(--pp-mut)}.wl-plan small{font-size:12.5px;color:var(--pp-mut)}
+.wl-plan li.on{border-color:var(--pp-acc);background:color-mix(in srgb,var(--pp-acc) 7%,var(--pp-surf))}.wl-plan li.on b::before{color:var(--pp-acc)}
+.wl-panel.wl-in{animation:wlIn .32s cubic-bezier(.2,.8,.2,1) both}
+@keyframes wlIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.wl-steps li.go{cursor:pointer}.wl-steps li.go:hover{border-color:var(--pp-acc)}
+.wl-given{border-radius:12px;max-height:120px;overflow:hidden;transition:max-height .3s cubic-bezier(.2,.8,.2,1),opacity .25s,margin .3s}
+.wl-given.shut{max-height:0;opacity:0;margin-top:-10px}
+.wl-card svg{transition:opacity .2s}
 .wl-given{flex:none;padding:0 10px}.wl-given[hidden]{display:none}
 .wl-sn{display:flex;align-items:center;justify-content:space-between;gap:10px}.wl-sn b{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--pp-acc)}
 .wl .pp-cap{text-align:left;font-size:clamp(16px,3.8vw,19px);line-height:1.3;min-height:2.6em}
@@ -619,7 +634,7 @@ svg .on,svg.on path{fill:#ffc928}.wd-tot svg path,.wd-st svg path,.wd-big svg pa
 .wd-hud,.wd-hud .wd-ht b{color:#121a3f}
 .wl-kb{color:var(--pp-mut);font-size:12.5px}@media (pointer:coarse){.wl-kb{display:none}}
 @keyframes wlHint{0%,100%{opacity:.95}50%{opacity:.55}}
-@media (prefers-reduced-motion:reduce){.wd-sh,.wd-shbg{transition:none}.wl-tap{animation:none}}`;
+@media (prefers-reduced-motion:reduce){.wd-sh,.wd-shbg{transition:none}.wl-tap,.wl-panel.wl-in{animation:none}}`;
 function css(){ if(document.getElementById('wdCss')) return; const s=document.createElement('style'); s.id='wdCss'; s.textContent=CSS; document.head.appendChild(s); }
 
 self.PREPW={map,level,sheet,test,result,zonesOf,zoneOpen,layout,igPair,BIOMES,ORDER};
