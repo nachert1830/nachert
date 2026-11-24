@@ -338,8 +338,12 @@ async function screens(){
     });
     if(r) bad(`Экран темы ${id}: ${r}`);
   }
+  /* карточка задания в копии: «Путь к сдаче» — подготовка, метод, свой вариант, самопроверка; «Сейчас» — у подготовки */
+  await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); localStorage.removeItem('nch_dzseen'); });
   await page.goto(UN+'#/ng4'); await page.waitForTimeout(1500);
-  if(!await page.$('.pp-dzcard')) bad('Копия, ДЗ №4: нет карточки «Подготовка»');
+  { const r=await page.evaluate(()=>({h:location.hash,k:[...document.querySelectorAll('.dr-s')].map(x=>x.dataset.k).join(','),now:(document.querySelector('.dr-s.now')||{dataset:{}}).dataset.k}));
+    if(r.h!=='#/ng4') bad('Копия, ДЗ №4: карточка задания не открылась ('+r.h+')');
+    if(r.k!=='prep,how,var,faq') bad('Копия, ДЗ №4: «Путь к сдаче» — '+r.k); if(r.now!=='prep') bad('Копия, ДЗ №4: «Сейчас» не у подготовки ('+r.now+')'); }
   /* навыки — только в копии /new/ (основной сайт подключает прежние курсы по темам, выше) */
   const PK=Object.keys(PREP.PLANS);
   const hash=()=>page.evaluate(()=>location.hash);
@@ -364,8 +368,8 @@ async function screens(){
     if(!sh) bad('Карта: нет карточки уровня'); else { if(sh.h!==PREP.PLANS.ng2.skills[0].t) bad('Карточка уровня: не тот навык — '+sh.h); if(sh.route!==3) bad('Карточка уровня: маршрут не из 3 этапов'); if(!sh.start) bad('Карточка уровня: нет кнопки «Начать»'); }
     await page.click('#wdStart'); await page.waitForTimeout(700);
     const want='#/prep/ng2/'+PREP.PLANS.ng2.skills[0].topic; if(await hash()!==want) bad('Уровень 1 ДЗ №2: открылся не уровень ('+await hash()+')');
-    const cond=await page.evaluate(()=>({on:(document.querySelector('#wlSteps li.on')||{}).textContent||'',find:!!document.querySelector('.wl-task .find'),svg:(()=>{ const s=document.querySelector('.wl-card svg'); return s?s.clientHeight:0; })(),go:!!document.querySelector('#wlGo')}));
-    if(!/Условие/.test(cond.on)) bad('Уровень: первым не «Условие» ('+cond.on+')'); if(!cond.find) bad('Условие: нет «Найти»'); if(cond.svg<150) bad('Условие: чертёж не виден'); if(!cond.go) bad('Условие: нет кнопки к разбору');
+    const cond=await page.evaluate(()=>({on:(document.querySelector('#wlSteps li.on')||{}).textContent||'',find:!!(document.querySelector('.wl-goal b')||{}).textContent&&!document.querySelector('#wlGiven').classList.contains('shut'),svg:(()=>{ const s=document.querySelector('.wl-card svg'); return s?s.clientHeight:0; })(),go:!!document.querySelector('#wlGo')}));
+    if(!/Условие/.test(cond.on)) bad('Уровень: первым не «Условие» ('+cond.on+')'); if(!cond.find) bad('Условие: нет «Найти» или не раскрыто «Дано»'); if(cond.svg<150) bad('Условие: чертёж не виден'); if(!cond.go) bad('Условие: нет кнопки к разбору');
     if(cond.go) await page.click('#wlGo'); await page.waitForTimeout(300);
     if(!/Разбор/.test(await page.evaluate(()=>(document.querySelector('#wlSteps li.on')||{}).textContent||''))) bad('Разбор: этап не отмечен');
     /* разбор: стрелка — следующий шаг; построенное раньше приглушено, новое — в фокусе */
@@ -373,7 +377,7 @@ async function screens(){
       const w=await page.evaluate(()=>({sn:(document.querySelector('#wlSn')||{}).textContent||'',old:document.querySelectorAll('.wl-card svg .pp-old').length,n:document.querySelectorAll('.wl-card svg [data-role]').length}));
       if(!/^Шаг 2 из/.test(w.sn)) bad('Разбор: стрелка вправо не листает шаг ('+w.sn+')'); else if(!w.old||w.old>=w.n) bad('Разбор: на втором шаге прежнее не приглушено или приглушено всё');
       await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(150); }
-    if(await page.$('#wlGoal')){ await page.click('#wlGoal'); await page.waitForTimeout(150); if(await page.evaluate(()=>document.querySelector('#wlGiven').hidden)) bad('Разбор: «Условие» не открывается'); await page.click('#wlGoal'); } else bad('Разбор: нельзя посмотреть условие');
+    if(await page.$('#wlGoal')){ await page.click('#wlGoal'); await page.waitForTimeout(150); if(await page.evaluate(()=>document.querySelector('#wlGiven').classList.contains('shut'))) bad('Разбор: «Условие» не открывается'); await page.click('#wlGoal'); } else bad('Разбор: нельзя посмотреть условие');
     for(let i=0;i<25;i++){ const b=await page.$('#ppNext'); if(!b) break; await b.click(); await page.waitForTimeout(120); }
     if(!await page.$('.wl-split.recap #wlTest')) bad('Разбор: после шагов нет итога с кнопкой «К тесту»'); else { await page.click('#wlTest'); await page.waitForTimeout(700); }
     if(await hash()!=='#/prep/ng2/test1') bad('Уровень 1 ДЗ №2: после разбора — не тест ('+await hash()+')');
