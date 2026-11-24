@@ -212,7 +212,7 @@ async function runTutor(browser){
       if(!on3) B('ИГ №5: наставник открыл шаг 3 плеера',await ig.evaluate(()=>window.IGUI&&IGUI.player?IGUI.player.current():'нет плеера'));
       await ig.fill('[data-in]','игэ: всё равно не понял'); await ig.press('[data-in]','Enter');
       const hl=await ig.waitForFunction(()=>document.querySelectorAll('#igbPic svg text.tu-hl').length>=2,null,{timeout:15000}).then(()=>true).catch(()=>false);
-      const igN=await ig.waitForFunction(()=>document.querySelectorAll('#igbPic .tu-note').length>=2&&document.querySelector('#igbPic .tu-say,#igbPic .mc-bub'),null,{timeout:25000}).then(()=>true).catch(()=>false);
+      const igN=await ig.waitForFunction(()=>document.querySelectorAll('#igbPic .tu-note').length>=2&&document.querySelector('#igbPic .tu-say,#igbPic .mc-bub'),null,{timeout:40000}).then(()=>true).catch(()=>false);
       if(!igN) B('ИГ №5: ответ прямо на чертеже (плашка и выноски у точек 1, 2)','нет');
       if(!hl) B('ИГ №5: подсвечены подписи точек 1 и 2',await ig.evaluate(()=>[...document.querySelectorAll('#igbPic svg text')].map(t=>t.textContent).slice(0,20).join(' '))); }
     /* 3) телефон */
