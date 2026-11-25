@@ -4314,33 +4314,27 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .ownc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 0 4px}
 .ownc-v{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
 .ownc-v small{font:600 12px/1 var(--sans);color:var(--mut)}
-/* «Поделиться» — сочный красный круг */
-.ownc-s{position:relative;overflow:hidden;isolation:isolate;flex:none;display:grid;place-items:center;width:60px;height:60px;border:0;border-radius:50%;cursor:pointer;color:#fff;
-  background:linear-gradient(180deg,#ff7a45 0%,#ff2d40 55%,#df0f2b 100%);box-shadow:0 4px 0 #a50c22,0 12px 20px -8px rgba(240,30,50,.8),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .1s,box-shadow .1s,filter .15s}
-.ownc-s::after{content:"";position:absolute;top:-30%;bottom:-30%;left:-80%;width:50%;z-index:-1;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-20deg);animation:ownc-shine 3.6s ease-in-out 1s infinite}
-@keyframes ownc-shine{0%,60%{left:-80%}100%{left:140%}}
-.ownc-s:hover{filter:saturate(1.15) brightness(1.06);transform:translateY(-1px) scale(1.04)}
-.ownc-s:active{transform:translateY(4px);box-shadow:0 0 0 #a50c22,0 4px 10px -6px rgba(240,30,50,.7),inset 0 1px 0 rgba(255,255,255,.55)}
-/* имя — скромная кнопка: светло-голубая, без объёма */
-.ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:7px 16px;border:0;border-radius:16px;cursor:pointer;color:var(--ink);text-align:left;font:inherit;
-  background:color-mix(in srgb,var(--acc) 9%,var(--surf));transition:background .15s,transform .1s}
-.ownc-a:hover{background:color-mix(in srgb,var(--acc) 15%,var(--surf))}.ownc-a:hover i{transform:translateX(3px)}
-.ownc-a:active{transform:scale(.98)}
-.ownc-t{display:flex;flex-direction:column;gap:2px;min-width:0}
-.ownc-t b{font:800 16px/1.1 var(--disp);letter-spacing:-.02em}
-.ownc-t small{font:600 12px/1.2 var(--sans);color:var(--mut)}
-.ownc-a i{font-style:normal;font-weight:800;font-size:18px;color:var(--acc);transition:transform .15s}
-@media(prefers-reduced-motion:reduce){.ownc-s::after{animation:none}}
+/* «Поделиться» — как на сайте (.v8-share) */
+.ownc-s{flex:none}
+/* имя — синяя объёмная кнопка, компактная */
+.ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:6px 16px;border:0;border-radius:15px;cursor:pointer;color:#fff;text-align:left;font:inherit;
+  background:linear-gradient(180deg,#4d84ff 0%,#2a62f0 55%,#1d4fd6 100%);box-shadow:0 3px 0 #163fa8,0 10px 18px -12px rgba(36,90,230,.8),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .1s,box-shadow .1s,filter .15s}
+.ownc-a:hover{filter:brightness(1.06);transform:translateY(-1px)}.ownc-a:hover i{transform:translateX(3px)}
+.ownc-a:active{transform:translateY(3px);box-shadow:0 0 0 #163fa8,0 5px 10px -8px rgba(36,90,230,.7),inset 0 1px 0 rgba(255,255,255,.4)}
+.ownc-t{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ownc-t b{font:800 15px/1.1 var(--disp);letter-spacing:-.02em}
+.ownc-t small{font:600 11.5px/1.2 var(--sans);opacity:.85}
+.ownc-a i{font-style:normal;font-weight:800;font-size:17px;transition:transform .15s}
 /* счётчик-барабан: маленький, в цветах сайта — тёмно-синее окно, тонкая оправа; цифры на барабанах, соседние видны сверху и снизу */
-.odo{display:inline-block;padding:4px;border-radius:16px;background:var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
-.odo-win{position:relative;display:flex;align-items:center;height:48px;padding:0 13px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#0b1440,#1a2a72 50%,#0b1440);
-  box-shadow:inset 0 2px 4px rgba(0,0,0,.6),inset 0 -2px 4px rgba(0,0,0,.6);font:700 30px/1 var(--disp);color:#fff;font-variant-numeric:tabular-nums}
+.odo{display:inline-block;padding:3px;border-radius:13px;background:var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.odo-win{position:relative;display:flex;align-items:center;height:38px;padding:0 10px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#0b1440,#1a2a72 50%,#0b1440);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.6),inset 0 -2px 4px rgba(0,0,0,.6);font:700 23px/1 var(--disp);color:#fff;font-variant-numeric:tabular-nums}
 .odo-win::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(8,14,48,.95) 0%,rgba(8,14,48,.3) 24%,rgba(8,14,48,0) 40%,rgba(8,14,48,0) 60%,rgba(8,14,48,.3) 76%,rgba(8,14,48,.95) 100%)}
 .odo-d{position:relative;width:.62em;height:100%;overflow:hidden}
 .odo-s{position:absolute;left:0;right:0;top:calc(50% - .575em);will-change:transform}
 .odo-s b{display:block;height:1.15em;line-height:1.15em;text-align:center;font-weight:700}
 .odo-d.mv .odo-s{filter:blur(.6px)}
-.odo-sep{flex:none;width:1px;height:60%;margin:0 6px;background:rgba(255,255,255,.18)}
+.odo-sep{flex:none;width:1px;height:60%;margin:0 5px;background:rgba(255,255,255,.18)}
 .v8h.has-q .ownc{display:none}
 /* разделы — плитки с иконками, как уроки в Duolingo */
 .v8-dirs{max-width:none!important}
@@ -29875,7 +29869,7 @@ function viewHome(v){
        <section class="ownc" aria-label="Просмотры и владелец сайта">
     <div class="ownc-top">
      <div class="ownc-v"${VIEWS==null?' hidden':''}>${ODO.html()}<small>просмотров</small></div>
-     <button type="button" class="ownc-s" data-sharesite aria-label="Поделиться сайтом"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
+     <button type="button" class="v8-share ownc-s" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button>
     </div>
     <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта</small></span><i aria-hidden="true">→</i></button>
    </section>
