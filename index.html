@@ -4405,11 +4405,11 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 /* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
 .ownc{display:flex;flex-direction:column;gap:8px;margin:14px 0 0;padding:8px;border:1px solid var(--line);border-radius:22px;background:var(--surf);box-shadow:0 14px 30px -24px rgba(16,30,80,.35)}
 @media(min-width:760px){.ownc{width:min(440px,100%);margin:16px auto 0}}
-.ownc-top{display:flex;align-items:stretch;gap:8px}
-.ownc-v{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:7px 12px 6px;border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,var(--surf))}
+.ownc-top{display:flex;align-items:center;gap:8px}
+.ownc-v{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:7px 12px 6px;border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,var(--surf))}
 .ownc-v small{font:600 11px/1 var(--sans);letter-spacing:.02em;color:var(--mut)}
 /* «Поделиться» — как на сайте (.v8-share), занимает место рядом со счётчиком */
-.ownc-s{flex:1;justify-content:center;height:auto!important;min-height:0!important;border-radius:14px!important;margin-bottom:4px}
+.ownc-s{flex:none;justify-content:center;height:46px!important;min-height:0!important;padding:0 16px!important;border-radius:14px!important;font-size:14.5px!important;margin-bottom:4px}
 /* имя — синяя объёмная кнопка, компактная */
 .ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;margin-bottom:4px;padding:6px 16px;border:0;border-radius:14px;cursor:pointer;color:#fff;text-align:left;font:inherit;
   background:linear-gradient(180deg,#4d84ff 0%,#2a62f0 55%,#1d4fd6 100%);box-shadow:0 4px 0 #163fa8,0 10px 18px -12px rgba(36,90,230,.8),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .1s,box-shadow .1s,filter .15s}
