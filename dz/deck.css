@@ -174,3 +174,4 @@ html.nd-on body > :not(#nd):not(#navBot):not(script):not(style){visibility:hidde
 #nd .art .sCone{fill:url(#ndCone)}#nd .art .sCyl{fill:url(#ndCyl)}#nd .art .sCap{fill:#ffd85c}
 #nd .art .sSph{fill:url(#ndSph)}#nd .art .sHy{fill:url(#ndHyp)}
 #nd .k svg.art{right:-2%;top:96px;width:62%;max-height:calc(var(--ch) - 176px)}
+#nd .art .sPl{fill:#e9effc}#nd .art .sKl{stroke:#e0202e;stroke-width:3;stroke-linecap:round}#nd .art .sKd{stroke:#e0202e;stroke-width:2.4;stroke-dasharray:5 4;stroke-linecap:round}

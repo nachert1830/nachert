@@ -17,17 +17,19 @@
   function face(P,cls){return poly(P,cls+' sO');}
   function shadow(cx,cy,rx,ry){return '<ellipse class="sS" cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'"/>';}
   var ART={};
-  /* гиперболоид: сплошной силуэт, задний обод изнутри, передние образующие, одна выделена */
-  ART.hyp=(function(){var cx=120,rx=54,ry=14,y1=20,y2=150,ym=85,n=28,tw=2.3,c=45,s='',sil='',fr='';
-    var w=function(y){return rx*Math.sqrt((1+Math.pow((y-ym)/c,2))/(1+Math.pow((y1-ym)/c,2)));};
-    var L=[],R=[];for(var y=y1;y<=y2+.1;y+=5){L.push([f(cx-w(y)),f(y)]);R.unshift([f(cx+w(y)),f(y)]);}
-    sil='<path class="sHy sO" d="M'+L.concat(R).map(function(p){return p.join(' ');}).join('L')+'z"/>';
-    for(var i=0;i<n;i++){var a=i/n*2*Math.PI,b=a+tw,p=[f(cx+rx*Math.cos(a)),f(y1+ry*Math.sin(a))],q=[f(cx+rx*Math.cos(b)),f(y2+ry*Math.sin(b))];
-      if(Math.sin(a)+Math.sin(b)>0) fr+=line(p,q,'sN');}
-    var a0=.9;
-    return shadow(cx,y2+14,70,12)+sil+'<ellipse class="sD sO" cx="'+cx+'" cy="'+y1+'" rx="'+rx+'" ry="'+ry+'"/>'+fr+
-      '<path class="sO" fill="none" d="M'+(cx-rx)+' '+y2+'A'+rx+' '+ry+' 0 0 0 '+(cx+rx)+' '+y2+'"/>'+
-      line([f(cx+rx*Math.cos(a0)),f(y1+ry*Math.sin(a0))],[f(cx+rx*Math.cos(a0+tw)),f(y2+ry*Math.sin(a0+tw))],'sKy');})();
+  /* начерт 5 «Прямая и поверхность, касательная плоскость»: шар, касательная плоскость в точке T, прямая пронзает шар в M и N */
+  ART.hyp=(function(){var cx=106,cy=104,R=44,T=[cx,cy-R],s=shadow(cx,cy+R+8,56,10);
+    s+='<circle class="sSph sO" cx="'+cx+'" cy="'+cy+'" r="'+R+'"/>';
+    s+='<path class="sO" fill="none" opacity=".35" d="M'+(cx-R)+' '+cy+'A'+R+' 13 0 0 0 '+(cx+R)+' '+cy+'"/>';
+    /* касательная плоскость лежит на шаре сверху, касается в T */
+    s+='<path class="sPl sO" d="M'+(T[0]-74)+' '+(T[1]+6)+'L'+(T[0]+6)+' '+(T[1]-22)+'L'+(T[0]+78)+' '+(T[1]-8)+'L'+(T[0]-2)+' '+(T[1]+20)+'Z"/>';
+    s+='<circle class="sY sO" cx="'+T[0]+'" cy="'+(T[1]-1)+'" r="5"/>';
+    /* прямая пронзает шар: точки входа M и выхода N — пересечение с очерком; внутри — штриховая */
+    var A=[14,168],B=[204,96],dx=B[0]-A[0],dy=B[1]-A[1],fx=A[0]-cx,fy=A[1]-cy,qa=dx*dx+dy*dy,qb=2*(fx*dx+fy*dy),qc=fx*fx+fy*fy-R*R,dd=Math.sqrt(qb*qb-4*qa*qc),
+      t1=(-qb-dd)/(2*qa),t2=(-qb+dd)/(2*qa),M=[f(A[0]+dx*t1),f(A[1]+dy*t1)],N=[f(A[0]+dx*t2),f(A[1]+dy*t2)];
+    s+=line(A,M,'sKl')+line(M,N,'sKd')+line(N,B,'sKl');
+    s+='<circle class="sKp" cx="'+M[0]+'" cy="'+M[1]+'" r="5"/><circle class="sKp" cx="'+N[0]+'" cy="'+N[1]+'" r="5"/>';
+    return s+'<text class="sTx" x="'+(T[0]+8)+'" y="'+(T[1]-6)+'">T</text><text class="sTx" x="'+(M[0]-14)+'" y="'+(M[1]-6)+'">M</text><text class="sTx" x="'+(N[0]+4)+'" y="'+(N[1]+16)+'">N</text>';})();
   /* брусок с прямоугольным пазом сверху (ИГ 4) */
   ART.body=(function(){var P=iso([96,56],1.2),W=80,D=50,H=40,a=28,b=52,zc=18,s='';
     s+=shadow(100,128,78,16);
