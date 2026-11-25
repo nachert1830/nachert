@@ -2708,21 +2708,13 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hbn{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
 .hbn-col{display:flex;flex-direction:column;gap:10px;min-width:0}
 .hbn-h{margin:0 0 2px 4px;font:800 16px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
-.hbn-c{--c:#2f5bff;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;min-height:92px;padding:12px 13px;border-radius:20px;background:var(--c);color:#fff!important;text-decoration:none!important;transition:transform .15s;-webkit-tap-highlight-color:transparent}
+.hbn-c{--c:#2f5bff;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;min-height:78px;padding:13px;border-radius:20px;background:var(--c);color:#fff!important;text-decoration:none!important;transition:transform .15s;-webkit-tap-highlight-color:transparent}
 .hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}}
-.hbn-c.m{min-height:124px}.hbn-c.l{min-height:168px}
+.hbn-c.m{min-height:104px}.hbn-c.l{min-height:134px}
 .hbn-c b{position:relative;z-index:2;font:700 15px/1.15 var(--sans)}
 .hbn-c small{position:relative;z-index:2;margin-top:2px;max-width:13ch;font:500 11.5px/1.25 var(--sans);opacity:.8}
 .hbn-c.dk{color:#1a1400!important}
 .hbn-c i{position:absolute;top:10px;right:10px;z-index:3;width:9px;height:9px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px var(--c)}
-.hbn-c svg{position:absolute;z-index:1;right:-6%;bottom:-8%;width:74%;height:auto;overflow:visible;color:inherit}
-.hbn-c.s svg{width:54%;right:-4%;bottom:-12%}.hbn-c.l svg{width:92%;right:-10%;bottom:-3%}
-.hbn-c .w{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.hbn-c .t{fill:none;stroke:currentColor;stroke-width:1;opacity:.55}.hbn-c .b{fill:none;stroke:currentColor;stroke-width:1;opacity:.22}
-.hbn-c .d{fill:none;stroke:currentColor;stroke-width:1.2;stroke-dasharray:5 4;opacity:.75}.hbn-c .x{fill:none;stroke:currentColor;stroke-width:1;stroke-dasharray:9 3 2 3;opacity:.5}
-.hbn-c .h{fill:none;stroke:#ffd84a;stroke-width:2.6;stroke-linecap:round}.hbn-c.dk .h{stroke:#1a1400}
-.hbn-c .y{fill:#ffd84a;fill-opacity:.85;stroke:#ffd84a;stroke-width:1.2}.hbn-c.dk .y{fill:#fff;stroke:#1a1400}
-.hbn-c .f{fill:currentColor;fill-opacity:.12}.hbn-c .p{fill:currentColor}.hbn-c .tx{fill:currentColor;font:italic 600 12px Georgia,'Times New Roman',serif}
 @media(min-width:760px){.hbn{gap:16px}.hbn-col{display:block;columns:2;column-gap:10px}.hbn-h{column-span:all;margin-bottom:10px}.hbn-c{break-inside:avoid;margin-bottom:10px}}
 .foot-logo img{height:15px!important}
 /* подвал — одна тихая строка; источники, правовая информация и «что нового» — на странице «О проекте» */
@@ -29800,73 +29792,10 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "sheet":"<rect x=\"2.5\" y=\"3.5\" width=\"19\" height=\"17\" rx=\"3\"/><rect class=\"k\" x=\"12.5\" y=\"14\" width=\"7\" height=\"4.6\" rx=\"1\"/><rect x=\"15.6\" y=\"14\" width=\"1\" height=\"4.6\"/><rect x=\"12.5\" y=\"15.9\" width=\"7\" height=\".9\"/><rect class=\"k\" x=\"5.5\" y=\"6.5\" width=\"5.5\" height=\"5.5\" rx=\"1\"/><rect x=\"7\" y=\"8\" width=\"2.5\" height=\"2.5\" rx=\".4\"/>",
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
-/* рисунки плиток — те же, что в новой версии (new/shell.js) */
-const HBN_ART=(function(){
-  var f=function(n){return Math.round(n*10)/10;};
-  var C30=Math.cos(Math.PI/6),S30=.5;
-  /* изометрия: x вправо-вниз, y влево-вниз, z вверх; видны грани верх, +x, +y */
-  function iso(o,k){return function(x,y,z){return [f(o[0]+(x-y)*C30*k),f(o[1]+(x+y)*S30*k-z*k)];};}
-  function poly(P,cls){return '<path class="'+cls+'" d="M'+P.map(function(p){return p.join(' ');}).join('L')+'z"/>';}
-  function line(a,b,cls){return '<line class="'+cls+'" x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'"/>';}
-  var ART={};
-  /* гиперболоид: образующие между двумя окружностями со сдвигом; задние бледнее, одна выделена */
-  ART.hyp=(function(){var cx=120,rx=54,ry=14,y1=20,y2=150,n=32,tw=2.3,fr='',bk='';
-    for(var i=0;i<n;i++){var a=i/n*2*Math.PI,b=a+tw,p=[f(cx+rx*Math.cos(a)),f(y1+ry*Math.sin(a))],q=[f(cx+rx*Math.cos(b)),f(y2+ry*Math.sin(b))];
-      if(Math.sin(a)+Math.sin(b)>0) fr+=line(p,q,'t'); else bk+=line(p,q,'b');}
-    var a0=.9;return line([cx,4],[cx,166],'x')+bk+'<ellipse class="w" cx="'+cx+'" cy="'+y1+'" rx="'+rx+'" ry="'+ry+'"/>'+fr+'<ellipse class="w" cx="'+cx+'" cy="'+y2+'" rx="'+rx+'" ry="'+ry+'"/>'+
-      line([f(cx+rx*Math.cos(a0)),f(y1+ry*Math.sin(a0))],[f(cx+rx*Math.cos(a0+tw)),f(y2+ry*Math.sin(a0+tw))],'h');})();
-  /* брусок с прямоугольным вырезом сверху; грани выреза жёлтые */
-  ART.body=(function(){var P=iso([96,60],1.15),W=80,D=50,H=40,a=28,b=52,zc=20,s='';
-    s+=poly([P(0,0,H),P(a,0,H),P(a,D,H),P(0,D,H)],'f w');
-    s+=poly([P(b,0,H),P(W,0,H),P(W,D,H),P(b,D,H)],'f w');
-    s+=poly([P(a,0,zc),P(b,0,zc),P(b,D,zc),P(a,D,zc)],'y');
-    s+=poly([P(a,0,zc),P(a,D,zc),P(a,D,H),P(a,0,H)],'y');
-    s+=poly([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'f w');
-    s+=poly([P(0,D,0),P(W,D,0),P(W,D,H),P(b,D,H),P(b,D,zc),P(a,D,zc),P(a,D,H),P(0,D,H)],'f w');
-    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+26),'x');})();
-  /* эпюр: ось x, отрезок AB в двух проекциях, линии связи */
-  ART.epure='<line class="w" x1="20" y1="86" x2="196" y2="86"/><text class="tx" x="182" y="80">x</text>'+
-    line([80,30],[80,138],'d')+line([150,48],[150,124],'d')+'<path class="h" d="M80 30L150 48M80 138L150 124"/>'+
-    '<circle class="p" cx="80" cy="30" r="3.2"/><circle class="p" cx="150" cy="48" r="3.2"/><circle class="p" cx="80" cy="138" r="3.2"/><circle class="p" cx="150" cy="124" r="3.2"/>'+
-    '<text class="tx" x="60" y="28">A″</text><text class="tx" x="156" y="46">B″</text><text class="tx" x="60" y="152">A′</text><text class="tx" x="156" y="140">B′</text>';
-  /* пересечение конуса и цилиндра: очерки и линия пересечения */
-  ART.inter='<path class="f w" d="M60 140 110 24 160 140z"/><ellipse class="t" cx="110" cy="140" rx="50" ry="10"/><rect class="f w" x="40" y="88" width="140" height="34" rx="2"/><ellipse class="t" cx="40" cy="105" rx="6" ry="17"/>'+
-    '<path class="h" d="M82 88C92 100 92 112 80 122M138 88C128 100 128 112 140 122"/>'+line([110,14],[110,152],'x')+line([30,105],[190,105],'x');
-  /* циферблат РК: деления и оси */
-  ART.clock=(function(){var cx=118,cy=96,r=56,s='<circle class="f w" cx="'+cx+'" cy="'+cy+'" r="'+r+'"/><rect class="w" x="'+(cx-10)+'" y="'+(cy-r-14)+'" width="20" height="9" rx="3"/>';
-    for(var i=0;i<60;i++){var a=i/60*2*Math.PI,l=i%5?4:9;s+=line([f(cx+(r-3)*Math.sin(a)),f(cy-(r-3)*Math.cos(a))],[f(cx+(r-3-l)*Math.sin(a)),f(cy-(r-3-l)*Math.cos(a))],i%5?'t':'w');}
-    return s+line([cx-r-10,cy],[cx+r+10,cy],'x')+line([cx,cy-r-6],[cx,cy+r+10],'x')+'<path class="h" d="M'+cx+' '+cy+'L'+(cx+30)+' '+(cy-30)+'"/><circle class="p" cx="'+cx+'" cy="'+cy+'" r="4"/>';})();
-  /* теория: плоскости проекций π1, π2 и проецирование точки */
-  ART.planes=(function(){var P=iso([118,72],1),s='';
-    s+=poly([P(0,0,0),P(90,0,0),P(90,0,70),P(0,0,70)],'f w');
-    s+=poly([P(0,0,0),P(90,0,0),P(90,70,0),P(0,70,0)],'f w');
-    var A=P(50,35,40),A2=P(50,0,40),A1=P(50,35,0),Ax=P(50,0,0);
-    s+=line(A,A2,'d')+line(A,A1,'d')+line(A2,Ax,'t')+line(A1,Ax,'t');
-    s+='<circle class="p" cx="'+A[0]+'" cy="'+A[1]+'" r="3.4"/><circle class="p" cx="'+A2[0]+'" cy="'+A2[1]+'" r="2.8"/><circle class="p" cx="'+A1[0]+'" cy="'+A1[1]+'" r="2.8"/>';
-    var t=P(80,0,60),t2=P(80,60,0);return s+'<text class="tx" x="'+t[0]+'" y="'+t[1]+'">π₂</text><text class="tx" x="'+t2[0]+'" y="'+t2[1]+'">π₁</text>';})();
-  /* три вида детали: главный, сверху, слева, линии связи */
-  ART.views='<path class="f w" d="M30 30h60v20H70v20H30z"/><path class="f w" d="M30 96h60v40H30z"/><path class="d" d="M70 96v40"/><path class="f w" d="M120 30h40v40h-40z"/><path class="w" d="M120 50h20v20"/>'+
-    line([96,40],[114,40],'t')+line([96,60],[114,60],'t')+line([30,74],[30,92],'t')+line([90,74],[90,92],'t');
-  /* ДЗ ИГ: деталь в изометрии с четвертным вырезом и штриховкой */
-  ART.part=(function(){var P=iso([100,66],1.05),W=86,D=60,H=46,s='';
-    s+=poly([P(0,0,H),P(W,0,H),P(W,D/2,H),P(W/2,D/2,H),P(W/2,D,H),P(0,D,H)],'f w');
-    s+=poly([P(W,0,0),P(W,D/2,0),P(W,D/2,H),P(W,0,H)],'f w');
-    s+=poly([P(0,D,0),P(W/2,D,0),P(W/2,D,H),P(0,D,H)],'f w');
-    s+=poly([P(W/2,D/2,0),P(W,D/2,0),P(W,D/2,H),P(W/2,D/2,H)],'y');
-    s+=poly([P(W/2,D/2,0),P(W/2,D,0),P(W/2,D,H),P(W/2,D/2,H)],'y');
-    for(var i=1;i<6;i++){s+=line(P(W/2+i*7,D/2,0),P(W/2+i*7-12,D/2,H),'t');}
-    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+24),'x');})();
-  /* учиться: куб и секущая плоскость */
-  ART.cube=(function(){var P=iso([108,64],1.05),a=64;
-    return poly([P(0,0,a),P(a,0,a),P(a,a,a),P(0,a,a)],'f w')+poly([P(a,0,0),P(a,a,0),P(a,a,a),P(a,0,a)],'f w')+poly([P(0,a,0),P(a,a,0),P(a,a,a),P(0,a,a)],'f w')+poly([P(a,0,a*.25),P(a,a,a*.75),P(0,a,a*.75)],'y');})();
-  /* ЕСКД: основная надпись */
-  ART.stamp='<rect class="f w" x="20" y="40" width="170" height="90" rx="2"/><path class="t" d="M20 62h170M20 84h90M20 106h90M60 40v90M110 40v90M150 84v46M110 84h80"/><text class="tx" x="118" y="58">ГОСТ 2.104</text>';
-
-  return ART;})();
 const HBN_PAL={blue:'#2f5bff',violet:'#6b3cf5',rose:'#f0305a',amber:'#ffb000',green:'#0aa36a',cyan:'#00a6d6',graphite:'#2c2c30'};
 /* колонка предмета: [ссылка, название, подпись, цвет, размер s/m/l, рисунок, метка «новое»] */
 function bentoHTML(title,items){
-  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,sub,c,k,a,hot])=>`<a class="hbn-c ${k}${c==='amber'?' dk':''}" href="${h}" style="--c:${HBN_PAL[c]}">${hot?'<i aria-label="новое"></i>':''}<svg viewBox="0 0 210 160" aria-hidden="true">${HBN_ART[a]}</svg><b>${t}</b><small>${sub}</small></a>`).join('')}</div>`; }
+  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,sub,c,k,,hot])=>`<a class="hbn-c ${k}${c==='amber'?' dk':''}" href="${h}" style="--c:${HBN_PAL[c]}">${hot?'<i aria-label="новое"></i>':''}<b>${t}</b><small>${sub}</small></a>`).join('')}</div>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
