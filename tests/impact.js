@@ -61,7 +61,8 @@ for (const f of files) {
   else if (/^(me|hands)\//.test(f)) add(f, 'me');
   else if (/^lk\/hq\//.test(f)) add(f + ' (Штаб — проверяют тесты сервера)');
   else if (/^lk\/(site|ask)\.js$/.test(f)) add(f + ' (подключён к сайту)', 'ask', 'lk', 'crawl');
-  else if (f === 'lk/tutor.js') add(f + ' (наставник на ИГ №4)', 'tutor', 'crawl');
+  else if (f === 'lk/tutor.js' || f === 'lk/mascot.js') add(f + ' (наставник и его маскот)', 'tutor', 'newcopy', 'crawl');
+  else if (/^new\/luka\//.test(f)) add(f + ' (площадка с Лукой в копии /new/)', 'newcopy');
   else if (/^tools\/tutor-/.test(f)) add(f + ' (наставник: пакет знаний и замер)', 'tutor');
   else if (/^server\/lib\/tutor\/|^server\/test\/tutor/.test(f)) { out.server = true; add(f + ' (наставник — тесты сервера)', 'tutor'); }
   else if (/^lk\/(scan|drawings)\//.test(f)) add(f, 'lk', 'me');

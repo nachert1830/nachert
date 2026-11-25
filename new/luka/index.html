@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; media-src 'self' blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>Поиграй с Лукой — Начерт</title>
+<meta name="description" content="Пингвин Лука — наставник Начерта. Тыкай, гладь, крути, корми рыбкой и говори с ним: он повторит.">
+<link rel="icon" href="../../icon-192.png">
+<!-- Площадка с Лукой (маскот наставника, только в копии /new/): касания, жесты, игрушки, живой повтор голоса.
+     Движок — ../../lk/mascot.js; описание — docs/TUTOR.md, раздел 2б. Вход — из окна Луки на любой странице копии -->
+<script>try{var t=JSON.parse(localStorage.getItem('nch2_theme'));if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){}</script>
+<style>
+@font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(../../fonts/geologica-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Geologica';font-style:normal;font-weight:400 700;font-display:swap;src:url(../../fonts/geologica-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url(../../fonts/golos-text-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url(../../fonts/golos-text-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;src:url(../../fonts/ibm-plex-mono-cyrillic-500.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;src:url(../../fonts/ibm-plex-mono-latin-500.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
+/* Layout: одна колонка как экран телефона — шапка (сердечки, секреты, звук) → сцена с Лукой → панель игрушек → «скажи, повторю» → секреты */
+:root{
+  --bg:#f3f5f9; --fg:#121318; --muted:#6a6d78; --line:#e2e5ec; --card:#ffffff; --chip:#eef1f6;
+  --accent:#ff6a2a; --accent-fg:#ffffff; --blue:#1f47d6; --heart:#ff4d7d;
+  --sky1:#d9ecff; --sky2:#f4f9ff; --floor:#eaf3ff; --gridc:#cfe0f5;
+  --f-display:"Geologica","Golos Text",system-ui,sans-serif;
+  --f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0b0c10; --fg:#f3f4f7; --muted:#8f93a0; --line:#23262e; --card:#15171c; --chip:#1d2027;
+  --accent:#ff6a2a; --accent-fg:#ffffff; --blue:#6f8dff; --heart:#ff5c86;
+  --sky1:#1d2b45; --sky2:#2a3b5c; --floor:#24334f; --gridc:#2f4366; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0b0c10; --fg:#f3f4f7; --muted:#8f93a0; --line:#23262e; --card:#15171c; --chip:#1d2027;
+  --accent:#ff6a2a; --accent-fg:#ffffff; --blue:#6f8dff; --heart:#ff5c86;
+  --sky1:#1d2b45; --sky2:#2a3b5c; --floor:#24334f; --gridc:#2f4366; color-scheme:dark }
+body{background:var(--bg);color:var(--fg);font:500 15px/1.45 var(--f-body);-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+html,body{margin:0}
+main{max-width:640px;margin:0 auto;padding-block:max(14px,env(safe-area-inset-top,0px)) 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px}
+.top{display:flex;align-items:center;gap:10px}
+.back{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);text-decoration:none;font:700 20px var(--f-body)}
+.top h1{font:700 22px/1 var(--f-display);margin:0;letter-spacing:-.01em}
+.top .sp{flex:1}
+.hearts{display:flex;gap:2px;font-size:18px;line-height:1}
+.hearts i{font-style:normal;filter:grayscale(1) opacity(.35);transition:filter .3s,transform .3s}
+.hearts i.on{filter:none;transform:scale(1.08)}
+.ib{height:38px;min-width:38px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:600 14px var(--f-body);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.ib:focus-visible,.toy:focus-visible,.say button:focus-visible,.say input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.stage{position:relative;height:clamp(420px,64vh,640px);border-radius:26px;overflow:hidden;background:linear-gradient(180deg,var(--sky1),var(--sky2) 68%);border:1px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.stage .floor{position:absolute;left:0;right:0;bottom:0;height:24%;background-color:var(--floor);background-image:linear-gradient(var(--gridc) 1px,transparent 1px),linear-gradient(90deg,var(--gridc) 1px,transparent 1px);background-size:22px 22px;border-top:2px solid var(--gridc)}
+.stage.aim{cursor:crosshair}
+.stage .night{position:absolute;inset:0;background:radial-gradient(circle at 70% 18%,rgba(255,255,255,.12) 0 2px,transparent 3px),radial-gradient(circle at 22% 30%,rgba(255,255,255,.18) 0 1.5px,transparent 2.5px),radial-gradient(circle at 48% 12%,rgba(255,255,255,.15) 0 1.5px,transparent 2.5px),rgba(8,12,30,.62);opacity:0;transition:opacity .8s;pointer-events:none}
+.stage.sleep .night{opacity:1}
+.stage .disco{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;background:conic-gradient(from var(--a,0deg) at 50% -10%,rgba(255,106,42,.18),rgba(31,71,214,.16),rgba(255,210,63,.18),rgba(255,77,125,.16),rgba(255,106,42,.18))}
+.stage.dance .disco{opacity:1}
+.bub{position:absolute;left:0;top:0;max-width:min(260px,70%);padding:9px 13px;border-radius:18px;background:#fff;color:#15161a;border:2px solid #15161a;font:700 15px/1.3 var(--f-body);box-shadow:0 10px 24px -14px rgba(0,0,0,.5);opacity:0;transform-origin:50% 100%;transition:opacity .18s;pointer-events:none;z-index:3;white-space:pre-line}
+.bub.on{opacity:1}
+.bub::after{content:"";position:absolute;left:var(--tx,50%);bottom:-8px;width:13px;height:13px;margin-left:-6.5px;background:#fff;border-right:2px solid #15161a;border-bottom:2px solid #15161a;transform:rotate(45deg)}
+.ripple{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 0 2px rgba(21,22,26,.25);pointer-events:none;animation:rip .55s ease-out forwards;z-index:4}
+@keyframes rip{from{transform:scale(.3);opacity:1}to{transform:scale(2.6);opacity:0}}
+.stage.knock{animation:shake .22s 2}
+@keyframes shake{0%,100%{transform:none}30%{transform:translate(2px,-1px)}60%{transform:translate(-2px,1px)}}
+.toast{position:absolute;left:50%;top:12px;transform:translate(-50%,-6px);padding:7px 12px;border-radius:99px;background:rgba(21,22,26,.86);color:#fff;font:600 13px var(--f-body);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:5;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+.dock{display:grid;grid-template-columns:repeat(auto-fit,minmax(54px,1fr));gap:6px}
+.toy{display:grid;justify-items:center;gap:4px;padding:10px 4px 9px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:600 12.5px/1.1 var(--f-body);cursor:pointer;transition:transform .12s,border-color .15s}
+.toy b{font-size:24px;line-height:1}
+.toy:active{transform:scale(.94)}
+.toy[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.toy.rec b{animation:recp 1s infinite alternate}
+@keyframes recp{from{transform:scale(1)}to{transform:scale(1.18)}}
+.toy.rec{border-color:var(--heart);background:color-mix(in srgb,var(--heart) 12%,var(--card))}
+.toy[hidden]{display:none}
+.say{display:flex;gap:8px}
+.say input{flex:1;min-width:0;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:0 14px;font:500 15px var(--f-body)}
+.say button{height:44px;padding:0 16px;border-radius:14px;border:0;background:var(--accent);color:var(--accent-fg);font:700 15px var(--f-body);cursor:pointer}
+.secrets{display:grid;gap:10px;padding:14px;border-radius:20px;background:var(--card);border:1px solid var(--line)}
+.secrets h2{font:700 16px var(--f-display);margin:0;display:flex;justify-content:space-between;align-items:baseline}
+.secrets h2 small{font:500 12px var(--f-mono);color:var(--muted)}
+.sgrid{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.sgrid li{padding:6px 9px;border-radius:10px;background:var(--chip);font:600 12.5px var(--f-body);color:var(--muted)}
+.sgrid li.on{background:color-mix(in srgb,var(--accent) 16%,var(--card));color:var(--fg)}
+.sgrid li.on::before{content:"✓ ";color:var(--accent)}
+.note{margin:0;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="back" href="../" aria-label="Назад на Начерт" title="Назад на Начерт">‹</a>
+    <h1>Лука</h1>
+    <div class="hearts" id="hearts" aria-label="Настроение Луки"><i>❤️</i><i>❤️</i><i>❤️</i><i>❤️</i><i>❤️</i></div>
+    <span class="sp"></span>
+    <button class="ib" id="snd" aria-pressed="true" title="Звук">🔊</button>
+  </div>
+
+  <div class="stage" id="stage" aria-label="Лука. Тыкай, гладь, крути">
+    <div class="floor"></div>
+    <div class="disco" id="disco"></div>
+    <div class="night"></div>
+    <div class="bub" id="bub"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div class="dock" id="dock">
+    <button class="toy" id="t-mic" data-t="mic" aria-pressed="false" hidden><b>🎤</b>Повтори</button>
+    <button class="toy" id="t-fish" data-t="fish"><b>🐟</b>Рыбка</button>
+    <button class="toy" id="t-snow" data-t="snow" aria-pressed="false"><b>❄️</b>Снежок</button>
+    <button class="toy" id="t-dance" data-t="dance"><b>💃</b>Танец</button>
+    <button class="toy" id="t-draw" data-t="draw"><b>✏️</b>Чертить</button>
+    <button class="toy" id="t-sleep" data-t="sleep"><b>🌙</b>Спать</button>
+  </div>
+  <form class="say" id="say"><input id="say-in" maxlength="120" placeholder="Напиши — Лука повторит своим голосом" aria-label="Что сказать Луке" autocomplete="off"><button type="submit">Скажи</button></form>
+
+  <section class="secrets" aria-labelledby="sec-h">
+    <h2 id="sec-h">Секреты Луки <small id="sec-n">0 из 0</small></h2>
+    <ul class="sgrid" id="sgrid"></ul>
+    <p class="note">🎤 — говори что угодно: Лука сам услышит и повторит своим голосом. Тыкай в голову, клюв, живот, ласты и лапы. Води пальцем туда-сюда — погладишь. Быстро смахни — раскрутишь. Зажми и тяни — поднимешь.</p>
+  </section>
+</main>
+<script src="../../lk/mascot.js?v=5"></script>
+<script>
+(()=>{
+const MC=self.MASCOT, stage=document.getElementById('stage'), bub=document.getElementById('bub'), toastEl=document.getElementById('toast');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), rand=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)];
+const LS={get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }};
+
+/* ── сцена ── */
+if(!MC){ stage.insertAdjacentHTML('beforeend','<p style="position:absolute;left:0;right:0;top:45%;text-align:center">Лука не загрузился. Обнови страницу.</p>'); return; }
+const st=MC.stage(stage,{char:'penguin',outfit:'scarf'}), m=st.m;
+let W=0,H=0,FY=0,S0=1;
+const NS='http://www.w3.org/2000/svg';
+const shadow=document.createElementNS(NS,'ellipse'); shadow.setAttribute('fill','rgba(20,30,60,.18)'); st.fx.appendChild(shadow);
+function layout(){ const z=st.resize(); W=z.W; H=z.H; FY=H*.9; S0=clamp(Math.min(H*.5/112,W/150),1.4,3.4); m.s=S0;
+  if(!held){ m.pos.x=m.prev.x=W/2; m.pos.y=m.prev.y=FY; } }
+let held=false; layout(); addEventListener('resize',layout);
+/* тень и облачко — каждый кадр */
+(function frame(){ const lift=Math.max(0,FY-m.pos.y)-m.jy*m.s, k=clamp(1-lift/(H*.5),.35,1);
+  shadow.setAttribute('cx',m.pos.x); shadow.setAttribute('cy',FY+2); shadow.setAttribute('rx',34*m.s*k); shadow.setAttribute('ry',7*m.s*k); shadow.setAttribute('opacity',k);
+  placeBub(); requestAnimationFrame(frame); })();
+
+/* ── звуки (синтез, без файлов) ── */
+const AU={ctx:null,on:LS.get('luka-snd')!=='0'};
+function ac(){ if(!AU.ctx){ try{ AU.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(AU.ctx.state==='suspended') AU.ctx.resume(); return AU.on?AU.ctx:null; }
+function tone(f0,f1,d,type,v,delay){ const c=ac(); if(!c) return; const t=c.currentTime+(delay||0), o=c.createOscillator(), g=c.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+d);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v||.2,t+.012); g.gain.exponentialRampToValueAtTime(.0001,t+d); o.connect(g).connect(c.destination); o.start(t); o.stop(t+d+.03); }
+function noise(d,f,v,delay,q,f1){ const c=ac(); if(!c) return; const t=c.currentTime+(delay||0), n=Math.max(1,Math.floor(c.sampleRate*d)), b=c.createBuffer(1,n,c.sampleRate), a=b.getChannelData(0);
+  for(let i=0;i<n;i++) a[i]=Math.random()*2-1; const s=c.createBufferSource(); s.buffer=b; const fl=c.createBiquadFilter(); fl.type='bandpass'; fl.frequency.setValueAtTime(f,t); if(f1) fl.frequency.exponentialRampToValueAtTime(f1,t+d); fl.Q.value=q||1;
+  const g=c.createGain(); g.gain.setValueAtTime(v||.2,t); g.gain.exponentialRampToValueAtTime(.0001,t+d); s.connect(fl).connect(g).connect(c.destination); s.start(t); }
+const SFX={
+  boop:()=>tone(700,1500,.12,'sine',.25), squeak:()=>tone(900,1900,.09,'square',.06), pop:()=>tone(620,1100,.06,'sine',.14),
+  bonk:()=>{ tone(190,55,.2,'triangle',.45); tone(1000,520,.14,'square',.05,.06); },
+  giggle:(n)=>{ for(let i=0;i<(n||6);i++){ const f=rand(820,1250); tone(f,f*1.25,.07,'triangle',.14,i*.085); } },
+  chomp:()=>{ for(let i=0;i<3;i++) noise(.07,700,.4,i*.2,2.5); },
+  presneeze:()=>noise(.5,700,.08,0,1,2600), sneeze:()=>{ noise(.28,2600,.55,0,.7,500); tone(500,180,.25,'sawtooth',.06); },
+  boing:()=>tone(520,130,.45,'sine',.3), whoosh:()=>noise(.35,400,.28,0,1.3,3200), splat:()=>noise(.28,520,.55,0,.8,180),
+  knock:()=>{ for(const d of [0,.17]){ tone(170,85,.08,'sine',.6,d); noise(.04,1900,.25,d); } },
+  clap:()=>{ noise(.1,2400,.55,0,.6); tone(1400,2000,.12,'triangle',.08,.02); }, thud:()=>{ tone(130,45,.22,'sine',.55); noise(.08,300,.3); },
+  purr:()=>{ const c=ac(); if(!c) return; for(let i=0;i<5;i++) tone(68+i%2*6,60,.11,'sawtooth',.035,i*.12); },
+  snore:()=>{ tone(90,70,.9,'sawtooth',.035); noise(.9,500,.05,0,.6,300); },
+  tada:()=>[523,659,784,1047].forEach((f,i)=>tone(f,f,.22,'triangle',.18,i*.11)),
+  yawn:()=>tone(420,180,1.1,'triangle',.08), drop:()=>tone(1200,300,.25,'sine',.12)
+};
+const snd=document.getElementById('snd');
+const setSnd=()=>{ snd.textContent=AU.on?'🔊':'🔈'; snd.setAttribute('aria-pressed',String(AU.on)); snd.title=AU.on?'Выключить звук':'Включить звук'; };
+setSnd(); snd.addEventListener('click',()=>{ AU.on=!AU.on; LS.set('luka-snd',AU.on?'1':'0'); setSnd(); if(AU.on) SFX.pop(); });
+
+/* ── облачко у головы ── */
+let bubT=0;
+function say(text,ms){ bub.textContent=text; bub.classList.add('on'); clearTimeout(bubT); placeBub(); m.talk(Math.min(2600,text.length*55)); bubT=setTimeout(()=>bub.classList.remove('on'),ms||1800); }
+function placeBub(){ if(!bub.classList.contains('on')) return; const h=m.headWorld(), bw=bub.offsetWidth, bh=bub.offsetHeight;
+  const x=clamp(h.x-bw/2,8,W-bw-8), y=Math.max(8,h.y-h.r-bh-12); bub.style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px)`; bub.style.setProperty('--tx',clamp(h.x-x,16,bw-16)+'px'); }
+let toastT=0;
+function toast(t){ toastEl.textContent=t; toastEl.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('on'),2200); }
+
+/* ── секреты и настроение ── */
+const SECRETS=[['bonk','Бум по макушке'],['dizzy','Закружилась голова'],['boop','Буп в клюв'],['sneeze','Апчхи'],['eye','Ай, глаз!'],['tickle','Щекотка'],['rofl','Хохот до упаду'],['five','Дай пять'],['feet','Пятки'],['scarf','Любимый шарф'],['poke','Тык в бок'],['pet','Погладить'],['spin','Волчок'],['carry','На ручки'],['fish','Рыбка'],['snow','Снежок в лоб'],['catch','Поймал!'],['repeat','Повтори за мной'],['dance','Танец'],['draw','Идеальный круг'],['sleep','Спокойной ночи'],['knock','Тук-тук'],['love','Ты лучший']];
+let found={}; try{ found=JSON.parse(LS.get('luka-secrets')||'{}')||{}; }catch(e){ found={}; }
+const sgrid=document.getElementById('sgrid'), secN=document.getElementById('sec-n');
+function drawSecrets(){ sgrid.innerHTML=''; let n=0; for(const [id,name] of SECRETS){ const li=document.createElement('li'); const on=!!found[id]; if(on) n++; li.className=on?'on':''; li.textContent=on?name:'???'; sgrid.appendChild(li); } secN.textContent=n+' из '+SECRETS.length; }
+function secret(id){ if(found[id]) return; found[id]=1; LS.set('luka-secrets',JSON.stringify(found)); drawSecrets(); const s=SECRETS.find(x=>x[0]===id); toast('Новый секрет: '+(s?s[1]:id)); SFX.pop(); }
+drawSecrets();
+let joy=1.5, partyAt=0; const heartsEl=[...document.querySelectorAll('#hearts i')];
+function joyAdd(v){ joy=clamp(joy+v,0,5); if(joy>=5&&performance.now()-partyAt>30000){ partyAt=performance.now(); setTimeout(party,500); } }
+setInterval(()=>{ joy=clamp(joy-.02,0,5); heartsEl.forEach((h,i)=>h.classList.toggle('on',joy>i+.5)); },500);
+
+/* ── состояния Луки ── */
+MC.pose('bonk',{squint:1,smile:-.3,mouth:.45,brow:.6,worry:.7,armL:40,armR:40,blush:.2},{dur:.9});
+MC.pose('dizzy',{smile:-.1,mouth:.3,worry:.5,armL:30,armR:30},{dur:2.3,over:(R,t)=>{ R.cross=Math.sin(t*9); R.tilt+=Math.sin(t*5)*9; R.lx=Math.cos(t*8); R.ly=Math.sin(t*8); }});
+MC.pose('boop',{cross:1,eye:1.15,mouth:.12,smile:.2,brow:.6},{dur:.85});
+MC.pose('presneeze',{lid:.55,mouth:.35,smile:0,brow:.8,tilt:-8},{dur:.75});
+MC.pose('sneeze',{squint:1,mouth:.9,tilt:10,armL:50,armR:50},{dur:.6,jump:260});
+MC.pose('eye',{squint:1,smile:-.2,worry:.8,armR:150},{dur:1.1,over:(R,t)=>{ R.armR+=Math.sin(t*20)*8; }});
+MC.pose('tickle',{happy:1,mouth:.75,blush:1,smile:1,armL:45,armR:45},{dur:1.1,over:(R,t)=>{ R.tilt+=Math.sin(t*22)*6; R.armL+=Math.sin(t*25)*15; R.armR-=Math.sin(t*25)*15; }});
+MC.pose('rofl',{happy:1,mouth:.9,blush:1,smile:1,armL:80,armR:80},{dur:2.6,over:(R,t,k)=>{ const u=Math.min(1,(t-k.stateT)/2.6), e=Math.sin(u*Math.PI); R.tilt+=e*72+Math.sin(t*20)*5*e; R.armL+=Math.sin(t*24)*20; R.armR-=Math.sin(t*24)*20; }});
+MC.pose('five',{smile:1,mouth:.35,brow:.6,armR:165,blush:.6},{dur:1.2});
+MC.pose('fiveL',{smile:1,mouth:.35,brow:.6,armL:165,blush:.6},{dur:1.2});
+MC.pose('feet',{happy:1,mouth:.5,smile:1,blush:.8},{dur:1.1,jump:300});
+MC.pose('scarf',{smile:.8,brow:.4,armR:110,blush:.5},{dur:1.4,over:(R,t)=>{ R.armR+=Math.sin(t*10)*10; }});
+MC.pose('poke',{smile:.5,mouth:.25,eye:1.1,brow:.5},{dur:.7,over:(R,t,k)=>{ R.tilt+=Math.sin((t-k.stateT)*25)*9*Math.max(0,1-(t-k.stateT)*1.4); }});
+MC.pose('bliss',{happy:1,smile:1,blush:1,mouth:.1,armL:30,armR:30},{});
+MC.pose('spin',{smile:.6,mouth:.4,eye:1.1},{dur:1.25,over:(R,t,k)=>{ const u=Math.min(1,(t-k.stateT)/1.1); R.turn=(1-Math.pow(1-u,3))*2*(k.spinDir||1); }});
+MC.pose('dangle',{smile:.1,mouth:.35,worry:.6,brow:.7,armL:120,armR:120,eye:1.12},{over:(R,t,k)=>{ R.armL+=Math.sin(t*14)*25; R.armR+=Math.sin(t*14+1.4)*25; R.tilt+=clamp(-k.vel/(k.s*10),-30,30); }});
+MC.pose('fall',{smile:-.2,mouth:.6,worry:.7,eye:1.2,armL:150,armR:150},{over:(R,t)=>{ R.armL+=Math.sin(t*30)*15; R.armR+=Math.sin(t*30)*15; }});
+MC.pose('catch',{mouth:.95,eye:1.2,smile:.4,brow:.8,armL:60,armR:60},{});
+MC.pose('chomp',{smile:.8,happy:1,blush:.8},{dur:1.3,over:(R,t)=>{ R.mouth=Math.abs(Math.sin(t*13))*.8; }});
+MC.pose('splat',{squint:1,mouth:.5,worry:1,smile:-.5,armL:70,armR:70,blush:0},{dur:1.6,jump:150});
+MC.pose('juggle',{smile:1,mouth:.3,brow:.6,armL:70,armR:70,blush:.6},{dur:1.6,over:(R,t)=>{ R.armL+=Math.sin(t*12)*25; R.armR-=Math.sin(t*12)*25; }});
+MC.pose('dance',{smile:1,mouth:.3,blush:.7},{over:(R,t)=>{ const b=Math.sin(t*Math.PI*4); R.tilt+=b*10; R.armL=90+b*55; R.armR=90-b*55; }});
+MC.pose('listen',{smile:.4,brow:.8,tilt:10,armR:150,armL:15},{over:(R,t)=>{ R.armR+=Math.sin(t*3)*4; }});
+MC.pose('knock',{smile:.8,mouth:.3,brow:.6,armR:95,blush:.5},{over:(R,t)=>{ R.armR=95+Math.abs(Math.sin(t*14))*28; }});
+MC.pose('yawn',{lid:.6,smile:0,armL:150,armR:150,tilt:-4},{dur:1.8,over:(R,t,k)=>{ R.mouth=Math.sin(Math.min(1,(t-k.stateT)/1.8)*Math.PI); }});
+MC.pose('peek',{smile:.7,eye:1.15,brow:.7},{dur:2,over:(R,t,k)=>{ R.tilt+=Math.sin(Math.min(1,(t-k.stateT)/2)*Math.PI)*-24; }});
+MC.pose('proud',{smile:1,brow:.7,armL:20,armR:150,blush:.6},{dur:2});
+
+/* занят сценкой (рыбка, танец, рисует, говорит) — касания не перебивают */
+let busy=0; const isBusy=()=>busy>performance.now();
+const hold=ms=>{ busy=performance.now()+ms; };
+const sleeping=()=>stage.classList.contains('sleep');
+function wake(){ stage.classList.remove('sleep'); m.play('oops'); SFX.boing(); say('Я не сплю! Я просто моргнул.',2000); }
+
+/* ── где коснулись ── */
+function local(e){ const r=stage.getBoundingClientRect(); return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}; }
+function zoneAt(p){ const s=m.s, x=(p.x-m.pos.x)/s, y=(p.y-m.pos.y)/s-m.jy;
+  if(Math.abs(x)<10&&y>-69&&y<-53) return 'beak';
+  if(y<-84&&y>-114&&Math.abs(x)<28) return 'head';
+  if(y>=-84&&y<-56&&Math.abs(x)<27) return 'eye';
+  if(Math.abs(x)>=29&&Math.abs(x)<56&&y>-68&&y<-22) return x<0?'flipL':'flipR';
+  if((y>-58&&y<-41&&Math.abs(x)<36)||(x>11&&x<30&&y>-52&&y<-24)) return 'scarf';
+  if(y>=-12&&y<6&&Math.abs(x)<25) return 'feet';
+  if(Math.abs(x)<26&&y>-41&&y<-12) return 'belly';
+  if((x/39)**2+((y+50)/50)**2<1) return 'body';
+  return null; }
+
+/* ── реакции на касания ── */
+const hits={head:[],belly:[]};
+const recent=(k,ms)=>{ const n=performance.now(); hits[k]=hits[k].filter(x=>n-x<ms); hits[k].push(n); return hits[k].length; };
+function tap(z,p){
+  if(z==='head'){ if(recent('head',2200)>=3){ hits.head=[]; m.play('dizzy'); for(let i=0;i<6;i++) m.spawn('star',m.headWorld().x,m.headWorld().y-m.headWorld().r*1.1); SFX.boing(); say('Голова кружится…'); secret('dizzy'); }
+    else { m.play('bonk'); m.sqv-=3.2; m.uv=(m.uv||0)+600; SFX.bonk(); say(pick(['Ой!','Ай-ай!','Эй, макушка!'])); secret('bonk'); } joyAdd(.2); return; }
+  if(z==='beak'){ m.play('boop'); SFX.boop(); say('Буп!',900); secret('boop'); joyAdd(.3);
+    if(Math.random()<.4) setTimeout(()=>{ if(m.state!=='boop') return; m.play('presneeze'); SFX.presneeze(); say('А… а…',900); setTimeout(()=>{ m.play('sneeze'); SFX.sneeze(); m.burst(6); say('АПЧХИ!',1300); secret('sneeze'); },760); },650); return; }
+  if(z==='eye'){ m.play('eye'); SFX.squeak(); say('Ай, в глаз не надо!'); secret('eye'); return; }
+  if(z==='belly'){ if(recent('belly',2600)>=5){ hits.belly=[]; m.play('rofl'); SFX.giggle(14); say('Ха-ха-ха! Не могу!',2400); secret('rofl'); joyAdd(.8); }
+    else { m.play('tickle'); SFX.giggle(); say(pick(['Хи-хи!','Щекотно!','Ха-ха!']),1000); secret('tickle'); joyAdd(.35); } return; }
+  if(z==='flipR'||z==='flipL'){ m.play(z==='flipR'?'five':'fiveL'); say('Дай пять!',1100); setTimeout(()=>{ SFX.clap(); m.burst(5); },180); secret('five'); joyAdd(.4); return; }
+  if(z==='feet'){ m.play('feet'); SFX.giggle(4); setTimeout(()=>{ m.jump(260); },420); say('Пятки — щекотно!',1200); secret('feet'); joyAdd(.3); return; }
+  if(z==='scarf'){ m.play('scarf'); m.tv=(m.tv||0)+520; SFX.whoosh(); say('Это мой любимый шарф!'); secret('scarf'); joyAdd(.2); return; }
+  if(z==='body'){ m.play('poke'); m.sqv+=2; SFX.squeak(); say(pick(['Хи!','Эй!','Ой, щекотно!']),900); secret('poke'); joyAdd(.15); return; }
+  /* мимо Луки — смотрит туда и удивляется */
+  m.lookAt=p; setTimeout(()=>{ m.lookAt=null; },900); if(Math.random()<.3) say(pick(['Что там?','М?']),900); }
+
+/* ── жесты: тап · погладить (туда-сюда) · смахнуть (волчок) · зажать и тянуть (на ручки) ── */
+let g=null, petT=0;
+stage.addEventListener('pointerdown',e=>{ ac(); activity(); if(e.button>0) return; const p=local(e);
+  if(sleeping()){ wake(); return; }
+  if(aim){ throwAt(p); return; }
+  const z=zoneAt(p); g={id:e.pointerId,x0:p.x,y0:p.y,x:p.x,y:p.y,t0:performance.now(),path:0,rev:0,dx:0,z,pet:false,vx:0,vy:0,lt:performance.now()};
+  try{ stage.setPointerCapture(e.pointerId); }catch(_){}
+  if(z&&!isBusy()) g.lp=setTimeout(()=>{ if(g&&g.path<16&&!g.pet) pickUp(g); },430); });
+stage.addEventListener('pointermove',e=>{ if(!g||e.pointerId!==g.id) return; const p=local(e), now=performance.now(), dx=p.x-g.x, dy=p.y-g.y, dt=Math.max(1,now-g.lt);
+  g.vx=g.vx*.6+dx/dt*.4; g.vy=g.vy*.6+dy/dt*.4; g.path+=Math.hypot(dx,dy); g.x=p.x; g.y=p.y; g.lt=now;
+  if(held){ m.pos.x=clamp(p.x,30,W-30); m.pos.y=clamp(p.y+g.oy,H*.3,FY); return; }
+  if(Math.abs(dx)>3){ const sg=Math.sign(dx); if(g.dx&&sg!==g.dx) g.rev++; g.dx=sg; }
+  if(!g.pet&&g.z&&g.rev>=3&&zoneAt(p)&&!isBusy()){ g.pet=true; clearTimeout(g.lp); m.play('bliss'); say('Мррр…',1500); secret('pet'); }
+  if(g.pet){ joyAdd(.012); if(now-petT>260){ petT=now; const h=m.headWorld(); m.spawn('heart',h.x+rand(-1,1)*h.r,h.y-h.r*.6); SFX.purr(); } } });
+const up=e=>{ if(!g||e.pointerId!==g.id) return; const q=g; g=null; clearTimeout(q.lp); const dur=performance.now()-q.t0, sp=Math.hypot(q.vx,q.vy);
+  if(held) return drop(q);
+  if(q.pet){ m.play('giggle'); say('Ещё!',900); return; }
+  if(isBusy()) return;
+  if(sp>1.1&&q.path>110&&(q.z||Math.abs(q.y0-m.pos.y+55*m.s)<70*m.s)){ m.spinDir=q.vx>=0?1:-1; m.play('spin'); SFX.whoosh(); setTimeout(()=>{ m.play('dizzy'); say('Уи-и-и!',1200); },1150); secret('spin'); joyAdd(.3); return; }
+  if(q.path<16&&dur<450) tap(q.z,{x:q.x,y:q.y}); };
+stage.addEventListener('pointerup',up); stage.addEventListener('pointercancel',up);
+function pickUp(q){ held=true; q.oy=m.pos.y-q.y; m.cancel(); m.play('dangle'); SFX.squeak(); say('Ой-ой, высоко!',1200); stage.style.cursor='grabbing'; }
+function drop(q){ held=false; stage.style.cursor=''; let vy=q.vy*1000*.4, vx=q.vx*1000*.3; m.play('fall');
+  const t0=performance.now(); (function fallStep(){ const dt=1/60; vy+=2600*dt; m.pos.y+=vy*dt; m.pos.x=clamp(m.pos.x+vx*dt,40,W-40); vx*=.96;
+    if(m.pos.y>=FY){ m.pos.y=FY; m.sqv-=3.6; SFX.thud(); m.play(Math.abs(vy)>900?'dizzy':'giggle'); say(Math.abs(vy)>900?'Уф! Мягкая посадка.':'Ещё раз!',1500); secret('carry'); joyAdd(.4);
+      setTimeout(()=>{ if(!held&&!g) m.walkTo(W/2,FY,140); },1600); return; }
+    if(performance.now()-t0<4000) requestAnimationFrame(fallStep); })(); }
+
+/* ── игрушки ── */
+const dock=document.getElementById('dock');
+let aim=false;
+dock.addEventListener('click',e=>{ const b=e.target.closest('.toy'); if(!b) return; ac(); activity(); if(sleeping()&&b.dataset.t!=='sleep') wake();
+  const t=b.dataset.t; if(t!=='snow'&&aim) setAim(false);
+  if(t==='fish') return fish(b); if(t==='snow') return setAim(!aim); if(t==='dance') return dance(); if(t==='draw') return draw(); if(t==='sleep') return goSleep(); if(t==='mic') return mic(); });
+function flyer(kind){ const e=document.createElementNS(NS,'g'); if(kind==='fish'){ e.innerHTML='<path d="M-14 0C-8 -8 6 -8 11 0C6 8 -8 8 -14 0Z" fill="#7cc6ff" stroke="#1d2233" stroke-width="2"/><path d="M11 0L19 -6L18 6Z" fill="#5aa8e6" stroke="#1d2233" stroke-width="2" stroke-linejoin="round"/><circle cx="-7" cy="-1.5" r="1.6" fill="#1d2233"/>'; }
+  else e.innerHTML='<circle r="9" fill="#ffffff" stroke="#9fb6d6" stroke-width="2"/><circle cx="-3" cy="-3" r="2.5" fill="#e6eefb"/>';
+  st.over.appendChild(e); return e; }
+function arc(e,from,to,ms,hgt,done){ const t0=performance.now(); (function stp(){ const u=Math.min(1,(performance.now()-t0)/ms), x=from.x+(to.x-from.x)*u, y=from.y+(to.y-from.y)*u-Math.sin(u*Math.PI)*hgt;
+  e.setAttribute('transform',`translate(${x} ${y}) rotate(${u*540}) scale(${m.s/2})`); if(u<1) requestAnimationFrame(stp); else done(); })(); }
+function fish(btn){ if(isBusy()) return; hold(2600); const r=btn.getBoundingClientRect(), sr=stage.getBoundingClientRect(), from={x:(r.left+r.width/2-sr.left)*W/sr.width,y:H+20};
+  const f=flyer('fish'); m.play('catch'); m.lookAt={x:from.x,y:from.y-80}; SFX.whoosh();
+  const beak=()=>{ const s=m.s; return {x:m.pos.x+(m.fx_||0),y:m.pos.y-60*s+m.jy*s}; };
+  arc(f,from,beak(),700,H*.35,()=>{ f.remove(); m.lookAt=null; m.play('chomp'); SFX.chomp(); say('Ммм, рыбка!',1400); secret('fish'); joyAdd(.8);
+    setTimeout(()=>{ m.play('happy'); for(let i=0;i<4;i++) setTimeout(()=>{ const h=m.headWorld(); m.spawn('heart',h.x,h.y-h.r); },i*140); },1300); });
+  (function look(){ const b=f.transform.baseVal; if(f.isConnected&&b.numberOfItems){ const mt=b.getItem(0).matrix; m.lookAt={x:mt.e,y:mt.f}; requestAnimationFrame(look); } })(); }
+function setAim(v){ aim=v; stage.classList.toggle('aim',v); document.getElementById('t-snow').setAttribute('aria-pressed',String(v)); if(v){ toast('Тапни по сцене, куда кинуть снежок'); m.play('peek'); say('Ну-ка, попади!',1400); } }
+function throwAt(p){ const from={x:clamp(p.x+rand(-40,40),20,W-20),y:H+20}, b=flyer('snow'); SFX.whoosh(); m.lookAt=p;
+  arc(b,from,p,420,H*.18,()=>{ b.remove(); m.lookAt=null; const z=zoneAt(p);
+    if(z&&(z==='flipL'||z==='flipR'||Math.random()<.3)&&!held){ m.play('juggle'); SFX.boop(); say('Поймал!',1200); secret('catch'); joyAdd(.4); return; }
+    if(z){ m.play('splat'); SFX.splat(); const sp=document.createElementNS(NS,'g'); sp.innerHTML='<circle r="14" fill="#fff" opacity=".95"/><circle cx="12" cy="-6" r="7" fill="#fff"/><circle cx="-11" cy="8" r="6" fill="#fff"/>';
+      sp.setAttribute('transform',`translate(${p.x} ${p.y}) scale(${m.s/2.2})`); st.over.appendChild(sp); setTimeout(()=>{ sp.style.transition='opacity .6s'; sp.style.opacity=0; setTimeout(()=>sp.remove(),700); },1200);
+      say(pick(['Эй!','Холодно!','Ну всё, держись!']),1300); secret('snow'); joyAdd(.25); return; }
+    SFX.giggle(4); m.play('giggle'); say('Мимо!',900); }); }
+let danceT=0;
+function dance(){ if(isBusy()) return; const bars=16; hold(bars*500+400); stage.classList.add('dance'); m.play('dance'); say('Музыка!',1200); secret('dance'); joyAdd(.6);
+  let i=0; const disco=document.getElementById('disco'); const N=[392,440,523,587,659,587,523,440];
+  danceT=setInterval(()=>{ disco.style.setProperty('--a',(i*45)+'deg'); tone(120,45,.16,'sine',.5); if(i%2) noise(.05,7000,.12,.25,.7); tone(N[i%8],N[i%8],.22,'triangle',.09,.25); if(i%4===0) m.jump(170);
+    if(++i>=bars){ clearInterval(danceT); stage.classList.remove('dance'); m.play('proud'); say('Та-да!',1200); SFX.tada(); } },500); }
+async function draw(){ if(isBusy()) return; hold(8200); const s=m.s, ring=document.createElementNS(NS,'path'); ring.setAttribute('fill','none'); ring.setAttribute('stroke','#e5484d'); ring.setAttribute('stroke-width',Math.max(2.4,s*1.4)); ring.setAttribute('stroke-linecap','round'); st.fx.appendChild(ring);
+  const r=20*s, c={x:Math.max(r+12,W/2-72*s),y:FY-34*s}; say('Смотри, начерчу идеальный круг!',1800);
+  try{ await m.drawCircle(c,r,ring); } catch(e){ ring.remove(); return; }
+  m.play('proud'); SFX.tada(); say('Идеально!\nПогрешность 0,0 мм',2200); secret('draw'); joyAdd(.5);
+  setTimeout(()=>{ ring.style.transition='opacity 1s'; ring.style.opacity=0; setTimeout(()=>ring.remove(),1100); m.walkTo(W/2,FY,120); },2600); }
+let snoreT=0;
+function goSleep(){ if(sleeping()) return wake(); stage.classList.add('sleep'); m.play('yawn'); SFX.yawn(); say('Ааа-уу… спокойной ночи',1700);
+  setTimeout(()=>{ if(!sleeping()) return; m.play('sleep'); secret('sleep'); },1800);
+  clearInterval(snoreT); snoreT=setInterval(()=>{ if(sleeping()&&m.state==='sleep') SFX.snore(); else if(!sleeping()) clearInterval(snoreT); },2600); }
+function party(){ m.play('happy'); SFX.tada(); for(let i=0;i<10;i++) setTimeout(()=>m.burst(3),i*90); say('Ты лучший! ❤️',2200); secret('love'); }
+
+/* ── «повтори за мной»: диктовка (если есть) или текст → писклявый голос Луки ── */
+try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices(); }catch(e){}
+const sayForm=document.getElementById('say'), sayIn=document.getElementById('say-in'), micB=document.getElementById('t-mic');
+function squeak(text){ text=String(text||'').trim().slice(0,160); if(!text) return; hold(Math.min(9000,1200+text.length*90)); secret('repeat'); joyAdd(.4);
+  say(text,Math.min(8000,1400+text.length*70)); m.play('talk',Math.min(8000,1000+text.length*70));
+  let mouth=0; const loud=setInterval(()=>{ m.amp=mouth>0?.25+.65*Math.abs(Math.sin(performance.now()/55)):0; mouth=Math.max(0,mouth-1); },50);
+  const end=()=>{ clearInterval(loud); m.amp=0; m.play('giggle'); };
+  const ss=window.speechSynthesis;
+  if(ss&&typeof SpeechSynthesisUtterance!=='undefined'&&AU.on){ try{ ss.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='ru-RU'; const v=(ss.getVoices()||[]).find(x=>/^ru/i.test(x.lang)); if(v) u.voice=v; u.pitch=2; u.rate=1.15;
+      u.onstart=()=>{ mouth=9999; }; u.onend=()=>{ mouth=0; end(); }; u.onerror=()=>{ mouth=0; end(); }; mouth=40; ss.speak(u); setTimeout(()=>{ if(mouth>0&&!ss.speaking){ mouth=0; end(); } },12000); return; }catch(e){} }
+  /* без звука — только щебет и рот */
+  for(let i=0;i<Math.min(12,Math.ceil(text.length/4));i++){ const f=rand(700,1300); tone(f,f*1.15,.08,'triangle',.1,i*.11); } mouth=Math.ceil(text.length/4)*2+4; setTimeout(end,Math.ceil(text.length/4)*110+300); }
+sayIn.addEventListener('input',()=>activity()); sayIn.addEventListener('focus',()=>activity());
+sayForm.addEventListener('submit',e=>{ e.preventDefault(); ac(); activity(); if(sleeping()) wake(); squeak(sayIn.value); sayIn.value=''; });
+/* живой повтор: микрофон слушает, Лука сам замечает, что ты заговорил, ждёт паузу и повторяет запись — выше и быстрее */
+const VO={on:false,stream:null,src:null,proc:null,sink:null,state:'idle',pre:[],buf:[],noise:.006,quiet:0,start:0,mute:0,lastVoice:0};
+function ctx(){ if(!AU.ctx){ try{ AU.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(AU.ctx.state==='suspended') AU.ctx.resume(); return AU.ctx; }
+const canMic=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&(window.AudioContext||window.webkitAudioContext));
+if(canMic) micB.hidden=false;
+async function mic(){ if(VO.on) return micOff('Микрофон выключен');
+  const c=ctx(); if(!c) return toast('Звук в этом браузере недоступен — напиши текстом');
+  try{ VO.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}); }
+  catch(e){ toast('Микрофон не разрешён — напиши текстом'); m.play('sad'); return; }
+  VO.src=c.createMediaStreamSource(VO.stream); VO.proc=c.createScriptProcessor(2048,1,1); VO.sink=c.createGain(); VO.sink.gain.value=0;
+  VO.src.connect(VO.proc); VO.proc.connect(VO.sink); VO.sink.connect(c.destination); VO.proc.onaudioprocess=e=>pcm(e.inputBuffer.getChannelData(0),c.sampleRate);
+  VO.on=true; VO.state='idle'; VO.pre=[]; VO.lastVoice=performance.now(); micB.classList.add('rec'); micB.setAttribute('aria-pressed','true');
+  m.play('listen'); say(AU.on?'Говори — я повторю!':'Говори — повторю!\nТолько включи звук 🔊',2400); }
+function micOff(msg){ VO.on=false; VO.state='idle'; try{ VO.proc.onaudioprocess=null; VO.src.disconnect(); VO.proc.disconnect(); VO.sink.disconnect(); }catch(e){}
+  try{ VO.stream.getTracks().forEach(t=>t.stop()); }catch(e){} micB.classList.remove('rec'); micB.setAttribute('aria-pressed','false'); if(m.state==='listen') m.idle(); if(msg) toast(msg); }
+function pcm(d,sr){ if(!VO.on) return; const a=new Float32Array(d); let s=0; for(let i=0;i<a.length;i++) s+=a[i]*a[i]; const rms=Math.sqrt(s/a.length), now=performance.now();
+  if(VO.state==='play'||now<VO.mute) return;
+  const thr=Math.max(.018,VO.noise*3.2);
+  if(VO.state==='idle'){ VO.pre.push(a); if(VO.pre.length>7) VO.pre.shift(); if(rms<thr) VO.noise=VO.noise*.97+rms*.03;
+    if(rms>thr){ VO.state='rec'; VO.buf=VO.pre.slice(); VO.pre=[]; VO.quiet=now; VO.start=now; activity(); m.play('listen'); m.lookAt=null; say('Слушаю…',7000); }
+    else if(now-VO.lastVoice>45000) micOff('Микрофон выключился: давно тихо'); return; }
+  VO.buf.push(a); if(rms>thr*.55) VO.quiet=now;
+  if(now-VO.quiet>750||now-VO.start>6500) replay(sr); }
+function replay(sr){ const chunks=VO.buf; VO.buf=[]; VO.lastVoice=performance.now();
+  let n=chunks.reduce((k,c)=>k+c.length,0); n-=Math.min(n-1,Math.floor(sr*.55));   /* хвост тишины не повторяем */
+  if(n<sr*.3){ VO.state='idle'; bub.classList.remove('on'); return; }
+  const c=ctx(); if(!c){ VO.state='idle'; return; }
+  const buf=c.createBuffer(1,n,sr), out=buf.getChannelData(0); let o=0; for(const ch of chunks){ if(o>=n) break; out.set(ch.subarray(0,Math.min(ch.length,n-o)),o); o+=ch.length; }
+  VO.state='play'; bub.classList.remove('on'); secret('repeat'); joyAdd(.4);
+  if(!AU.on){ toast('Включи звук 🔊 — и услышишь Луку'); VO.state='idle'; VO.mute=performance.now()+300; return; }
+  const src=c.createBufferSource(); src.buffer=buf; src.playbackRate.value=1.55;   /* выше и быстрее — голос Луки */
+  const comp=c.createDynamicsCompressor(), g=c.createGain(), an=c.createAnalyser(); g.gain.value=2.2; an.fftSize=512;
+  src.connect(g); g.connect(comp); comp.connect(an); an.connect(c.destination);
+  m.play('talk',99999); const td=new Float32Array(an.fftSize); let live=true;
+  (function mouth(){ if(!live) return; an.getFloatTimeDomainData(td); let s=0; for(let i=0;i<td.length;i++) s+=td[i]*td[i]; m.amp=Math.min(1,Math.sqrt(s/td.length)*7); requestAnimationFrame(mouth); })();
+  src.onended=()=>{ live=false; m.amp=0; VO.state='idle'; VO.mute=performance.now()+350; m.play(Math.random()<.5?'giggle':'happy'); if(VO.on) setTimeout(()=>{ if(VO.on&&VO.state==='idle') m.play('listen'); },1300); };
+  src.start(); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&VO.on) micOff(''); });
+/* ── зазывалки: без дела Лука сам зовёт поиграть ── */
+let lastAct=performance.now(), nextLure=performance.now()+5000, lureI=0;
+function activity(){ lastAct=performance.now(); nextLure=lastAct+rand(7000,10000); }
+const HINTS=['Ткни меня в живот 🙂','Погладь меня по голове','Брось мне рыбку!','Пощекочи мне пятки','Зажми меня и подними','Смахни быстро — закручусь!','Дай пять!','Напиши что-нибудь — повторю!'];
+function knock(){ hold(3200); const s0=m.s; let k=0; const t0=performance.now();
+  (function grow(){ const u=Math.min(1,(performance.now()-t0)/500); m.s=s0*(1+.16*u); if(u<1) requestAnimationFrame(grow); })();
+  setTimeout(()=>{ m.play('knock'); stage.classList.add('knock'); SFX.knock(); const h=m.headWorld();
+    const add=()=>{ const r=document.createElement('div'); r.className='ripple'; r.style.left=(h.x+h.r*1.1)/W*100+'%'; r.style.top=(h.y+h.r*.4)/H*100+'%'; stage.appendChild(r); setTimeout(()=>r.remove(),600); };
+    add(); setTimeout(add,170); say('Тук-тук! Поиграем?',2200); secret('knock'); setTimeout(()=>stage.classList.remove('knock'),500); },520);
+  setTimeout(()=>{ const t1=performance.now(); (function back(){ const u=Math.min(1,(performance.now()-t1)/500); m.s=s0*(1.16-.16*u); if(u<1) requestAnimationFrame(back); else m.s=s0; })(); m.idle(); },2700); }
+setInterval(()=>{ const now=performance.now(); if(held||g||sleeping()||isBusy()||now<nextLure) return;
+  if(now-lastAct>60000){ goSleep(); nextLure=now+1e9; return; }
+  const k=lureI++%5; nextLure=now+rand(8000,11000);
+  if(k===0){ m.play('hello'); say(HINTS[Math.floor(lureI/5)%HINTS.length],2600); }
+  else if(k===1) knock();
+  else if(k===2){ m.play('peek'); say(pick(['Эй… ты тут?','Скучно…','Поиграй со мной!']),2000); }
+  else if(k===3){ m.play('yawn'); SFX.yawn(); }
+  else { m.walkTo(clamp(W/2+rand(-1,1)*W*.22,60,W-60),FY,90).then(()=>{ m.lookAt={x:rand(0,W),y:rand(H*.2,H*.6)}; setTimeout(()=>{ m.lookAt=null; m.walkTo(W/2,FY,90); },1500); }).catch(()=>{}); } },700);
+setTimeout(()=>{ m.play('hello'); SFX.pop(); say('Привет! Я Лука.\nПоиграй со мной!',2600); },600);
+})();
+</script>
+</body>
+</html>
