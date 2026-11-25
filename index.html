@@ -2711,7 +2711,7 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hbn-col{display:flex;flex-direction:column;gap:10px;min-width:0}
 .hbn-h{margin:0 0 2px 4px;font:800 16px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
 .hbn-c{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:84px;padding:14px 15px;border-radius:22px;color:#fff!important;text-decoration:none!important;transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
-.hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}.hbn-c:hover i{transform:rotate(45deg)}}
+.hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}}
 .hbn-c.m{min-height:112px}.hbn-c.l{min-height:150px}
 .hbn-c b{position:relative;z-index:1;font:800 25px/1.02 var(--disp);letter-spacing:-.035em}
 .hbn-art{position:absolute;z-index:0;right:-10%;bottom:-16%;width:64%;max-width:170px;height:auto;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.2;pointer-events:none}
@@ -2719,15 +2719,11 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hbn-c.s .hbn-art{width:52%;bottom:-26%}
 .hbn-light .hbn-art{opacity:.16}
 .hbn-c.l b{font-size:32px}
-/* стрелка-кнопка в углу каждой плитки */
-.hbn-c i{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#143a9c;transition:transform .2s}
-.hbn-c i svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 /* виды: тёмно-синяя, ярко-синяя, голубая, светлая */
 .hbn-navy{background:radial-gradient(120% 90% at 100% 0%,#2a5be0 0%,transparent 55%),linear-gradient(160deg,#16307f,#0b1d57);box-shadow:0 16px 28px -20px #0b1d57}
 .hbn-royal{background:radial-gradient(120% 90% at 100% 0%,#6b9bff 0%,transparent 55%),linear-gradient(160deg,#2f6bff,#1d4fd6);box-shadow:0 16px 28px -20px #1d4fd6}
 .hbn-sky{background:radial-gradient(120% 90% at 100% 0%,#5fd0ff 0%,transparent 55%),linear-gradient(160deg,#1aa0ee,#0f7fd0);box-shadow:0 16px 28px -20px #0f7fd0}
 .hbn-light{background:#e8efff;color:#143a9c!important;box-shadow:inset 0 0 0 1.5px #c9d8ff}
-.hbn-light i{background:#2f6bff;color:#fff}
 :root[data-theme=dark] .hbn-light{background:#1b2547;color:#dfe8ff!important;box-shadow:inset 0 0 0 1.5px #2e3f75}
 @media(min-width:760px){.hbn{gap:16px}.hbn-col{display:block;columns:2;column-gap:10px}.hbn-h{column-span:all;margin-bottom:10px}.hbn-c{break-inside:avoid;margin-bottom:10px}}
 .foot-logo img{height:15px!important}
@@ -4407,26 +4403,26 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 @media(min-width:760px){.hcards .hc-sx .hc-sxt{font-size:64px;max-width:8ch}
   .hcards .hc-sx canvas.hc-sxcv{right:2%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:340px!important;max-width:48%!important}}
 /* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
-.ownc{display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:12px;border:1px solid var(--line);border-radius:24px;background:var(--surf)}
+.ownc{display:flex;flex-direction:column;gap:8px;margin:14px 0 0;padding:8px;border:1px solid var(--line);border-radius:22px;background:var(--surf);box-shadow:0 14px 30px -24px rgba(16,30,80,.35)}
 @media(min-width:760px){.ownc{width:min(440px,100%);margin:16px auto 0}}
-.ownc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 0 4px}
-.ownc-v{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
-.ownc-v small{font:600 12px/1 var(--sans);color:var(--mut)}
+.ownc-top{display:flex;align-items:stretch;gap:8px}
+.ownc-v{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:7px 12px 6px;border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,var(--surf))}
+.ownc-v small{font:600 11px/1 var(--sans);letter-spacing:.02em;color:var(--mut)}
 /* «Поделиться» — как на сайте (.v8-share), занимает место рядом со счётчиком */
-.ownc-s{flex:1;justify-content:center;min-height:52px!important}
+.ownc-s{flex:1;justify-content:center;height:auto!important;min-height:0!important;border-radius:14px!important;margin-bottom:4px}
 /* имя — синяя объёмная кнопка, компактная */
-.ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:6px 16px;border:0;border-radius:15px;cursor:pointer;color:#fff;text-align:left;font:inherit;
-  background:linear-gradient(180deg,#4d84ff 0%,#2a62f0 55%,#1d4fd6 100%);box-shadow:0 3px 0 #163fa8,0 10px 18px -12px rgba(36,90,230,.8),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .1s,box-shadow .1s,filter .15s}
+.ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;margin-bottom:4px;padding:6px 16px;border:0;border-radius:14px;cursor:pointer;color:#fff;text-align:left;font:inherit;
+  background:linear-gradient(180deg,#4d84ff 0%,#2a62f0 55%,#1d4fd6 100%);box-shadow:0 4px 0 #163fa8,0 10px 18px -12px rgba(36,90,230,.8),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .1s,box-shadow .1s,filter .15s}
 .ownc-a:hover{filter:brightness(1.06);transform:translateY(-1px)}.ownc-a:hover i{transform:translateX(3px)}
-.ownc-a:active{transform:translateY(3px);box-shadow:0 0 0 #163fa8,0 5px 10px -8px rgba(36,90,230,.7),inset 0 1px 0 rgba(255,255,255,.4)}
+.ownc-a:active{transform:translateY(4px);box-shadow:0 0 0 #163fa8,0 5px 10px -8px rgba(36,90,230,.7),inset 0 1px 0 rgba(255,255,255,.4)}
 .ownc-t{display:flex;flex-direction:column;gap:1px;min-width:0}
 .ownc-t b{font:800 15px/1.1 var(--disp);letter-spacing:-.02em}
 .ownc-t small{font:600 11.5px/1.2 var(--sans);opacity:.85}
 .ownc-a i{font-style:normal;font-weight:800;font-size:17px;transition:transform .15s}
 /* счётчик-барабан: маленький, в цветах сайта — тёмно-синее окно, тонкая оправа; цифры на барабанах, соседние видны сверху и снизу */
-.odo{display:inline-block;padding:3px;border-radius:13px;background:var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
-.odo-win{position:relative;display:flex;align-items:center;height:38px;padding:0 10px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#0b1440,#1a2a72 50%,#0b1440);
-  box-shadow:inset 0 2px 4px rgba(0,0,0,.6),inset 0 -2px 4px rgba(0,0,0,.6);font:700 23px/1 var(--disp);color:#fff;font-variant-numeric:tabular-nums}
+.odo{display:inline-block;padding:3px;border-radius:12px;background:color-mix(in srgb,var(--acc) 18%,var(--surf));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.odo-win{position:relative;display:flex;align-items:center;height:36px;padding:0 10px;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#0b1440,#1a2a72 50%,#0b1440);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.6),inset 0 -2px 4px rgba(0,0,0,.6);font:700 22px/1 var(--disp);color:#fff;font-variant-numeric:tabular-nums}
 .odo-win::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(8,14,48,.95) 0%,rgba(8,14,48,.3) 24%,rgba(8,14,48,0) 40%,rgba(8,14,48,0) 60%,rgba(8,14,48,.3) 76%,rgba(8,14,48,.95) 100%)}
 .odo-d{position:relative;width:.62em;height:100%;overflow:hidden}
 .odo-s{position:absolute;left:0;right:0;top:calc(50% - .575em);will-change:transform}
@@ -30416,7 +30412,7 @@ const HBN_ART={
   'РК':'<circle cx="60" cy="68" r="42"/><path d="M52 14h16M60 14v12M92 30l8-8"/><path d="M60 68V40M60 68l18 12"/><path d="M60 30v6M98 68h-6M60 106v-6M22 68h6"/>',
   'Обучение':'<path d="M60 32c-14-9-32-10-48-5v70c16-5 34-4 48 5z"/><path d="M60 32c14-9 32-10 48-5v70c-16-5-34-4-48 5z"/><path d="M24 44c9-2 18-2 26 1M24 58c9-2 18-2 26 1M24 72c9-2 18-2 26 1M70 45c8-3 17-3 26-1M70 59c8-3 17-3 26-1"/>'};
 function bentoHTML(title,items){
-  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k])=>`<a class="hbn-c ${k} hbn-${c}" href="${h}"><svg class="hbn-art" viewBox="0 0 120 120" aria-hidden="true">${HBN_ART[t]||''}</svg><b>${t}</b><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></i></a>`).join('')}</div>`; }
+  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k])=>`<a class="hbn-c ${k} hbn-${c}" href="${h}"><svg class="hbn-art" viewBox="0 0 120 120" aria-hidden="true">${HBN_ART[t]||''}</svg><b>${t}</b></a>`).join('')}</div>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
