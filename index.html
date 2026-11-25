@@ -321,6 +321,8 @@ body.liveshow{overflow:hidden}
 .hcards .hc.hc-rot{border:0;background:linear-gradient(150deg,#1f47d6 0%,#2e63f0 55%,#4f8cff 100%);box-shadow:0 22px 40px -24px rgba(36,82,230,.75)}
 .hcards .hc-rot .hc-t{font-size:19px;line-height:1.1;letter-spacing:-.02em}
 .hcards .hc-rart{max-width:150px}
+.hcards canvas.hc-cv{width:100%;max-width:150px;aspect-ratio:1/1;height:auto;margin:2px auto 0}
+@media(min-width:760px){.hcards canvas.hc-cv{width:40%;max-width:230px;margin:0}}
 /* «РК2 за 9 шагов» на главной — подсвечена: золотая рамка и мягкое свечение */
 .hcards .hc.hc-rk9{background:linear-gradient(150deg,#b91c1c 0%,#e0352b 50%,#f97316 100%);box-shadow:0 0 0 3px #ffd34d,0 22px 44px -18px rgba(224,53,43,.75);animation:rk9Glow 2.6s ease-in-out infinite}
 .hcards .hc-rk9 .hc-pill{background:#ffd34d;color:#7f1d1d}.hcards .hc-rk9 .hc-pill i{background:#b91c1c}
@@ -4324,6 +4326,65 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .v8-meta{max-width:none!important;border-width:1.5px!important;border-radius:22px!important}
 .v8-share{border-radius:16px!important;font-weight:800!important;min-height:48px!important;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s}
 .v8-share:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
+/* верхние карточки: крупный плотный заголовок, фигура поверх букв */
+.hcards .hc.hc-rot{min-height:300px}
+.hcards .hc.hc-rot .hc-t{position:relative;z-index:1;margin-top:2px;font:700 20px/.98 var(--disp);letter-spacing:-.045em;text-shadow:none;max-width:none}
+.hcards .hc.hc-rot .hc-art{position:absolute;z-index:2;margin:0;transform:none;top:auto;left:auto;pointer-events:none}
+.hcards .hc.hc-rot .hc-go{position:relative;z-index:3;margin-top:auto}
+/* «Поверхности»: гиперболоид заходит на нижние строки заголовка */
+.hcards .hc.hc-rot:not(.hc-ig) .hc-art{right:-12%;bottom:54px;width:92%;max-width:none;max-height:none;filter:drop-shadow(0 10px 16px rgba(0,20,90,.4))}
+/* ДЗ 5: «ДЗ» и огромная «5», шестигранник крутится поверх цифры */
+.hcards .hc-ig .hc-big{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.hcards .hc-ig .hc-big span{font:700 34px/.9 var(--disp);letter-spacing:-.05em}
+.hcards .hc-ig .hc-big b{font:700 190px/.74 var(--disp);letter-spacing:-.08em;margin-top:6px;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hcards .hc-ig canvas.hc-cv{right:-16%!important;top:auto!important;bottom:62px!important;width:74%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+@media(min-width:760px){
+  .hcards .hc.hc-rot{min-height:320px;padding:24px 26px 22px}
+  .hcards .hc.hc-rot .hc-t{font-size:46px}
+  .hcards .hc.hc-rot:not(.hc-ig) .hc-t{max-width:12ch}
+  .hcards .hc.hc-rot:not(.hc-ig) .hc-art{right:4%;bottom:auto;top:50%;translate:0 -50%;width:42%;max-width:300px}
+  .hcards .hc-ig .hc-big{flex-direction:row;align-items:flex-end;gap:14px}
+  .hcards .hc-ig .hc-big span{font-size:110px;line-height:.78}
+  .hcards .hc-ig .hc-big b{font-size:250px;margin-top:0}
+  .hcards .hc-ig canvas.hc-cv{right:4%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:300px!important;max-width:44%!important}
+}
+/* «Пересечение поверхностей» — в паре с «ДЗ 5»: тот же тёмно-синий фон со свечением и отблеском, тот же шрифт и градиент букв, фигура поверх */
+.hcards .hc.hc-sx{border:0;background:radial-gradient(55% 75% at 78% 58%,rgba(86,148,255,.6),transparent 72%),linear-gradient(150deg,#071331 0%,#0d2766 50%,#1a44c4 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 46px -22px rgba(8,26,84,.85)}
+.hcards .hc-sx::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);transform:translateX(-130%);animation:igSweep 6s ease-in-out 3s infinite}
+@media(prefers-reduced-motion:reduce){.hcards .hc-sx::after{animation:none}}
+.hcards .hc-sx .hc-sxt{font-size:24px;line-height:.94;letter-spacing:-.05em;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hcards .hc-sx canvas.hc-sxcv{right:-8%!important;bottom:52px!important;top:auto!important;width:94%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+@media(max-width:400px){.hcards .hc-sx .hc-sxt{font-size:22px}}
+@media(min-width:760px){.hcards .hc-sx .hc-sxt{font-size:64px;max-width:8ch}
+  .hcards .hc-sx canvas.hc-sxcv{right:2%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:340px!important;max-width:48%!important}}
+/* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
+.ownc{display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:12px;border:1px solid var(--line);border-radius:24px;background:var(--surf)}
+@media(min-width:760px){.ownc{width:min(440px,100%);margin:16px auto 0}}
+.ownc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 0 4px}
+.ownc-v{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
+.ownc-v small{font:600 12px/1 var(--sans);color:var(--mut)}
+/* «Поделиться» — как на сайте (.v8-share), занимает место рядом со счётчиком */
+.ownc-s{flex:1;justify-content:center;min-height:52px!important}
+/* имя — синяя объёмная кнопка, компактная */
+.ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:6px 16px;border:0;border-radius:15px;cursor:pointer;color:#fff;text-align:left;font:inherit;
+  background:linear-gradient(180deg,#4d84ff 0%,#2a62f0 55%,#1d4fd6 100%);box-shadow:0 3px 0 #163fa8,0 10px 18px -12px rgba(36,90,230,.8),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .1s,box-shadow .1s,filter .15s}
+.ownc-a:hover{filter:brightness(1.06);transform:translateY(-1px)}.ownc-a:hover i{transform:translateX(3px)}
+.ownc-a:active{transform:translateY(3px);box-shadow:0 0 0 #163fa8,0 5px 10px -8px rgba(36,90,230,.7),inset 0 1px 0 rgba(255,255,255,.4)}
+.ownc-t{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ownc-t b{font:800 15px/1.1 var(--disp);letter-spacing:-.02em}
+.ownc-t small{font:600 11.5px/1.2 var(--sans);opacity:.85}
+.ownc-a i{font-style:normal;font-weight:800;font-size:17px;transition:transform .15s}
+/* счётчик-барабан: маленький, в цветах сайта — тёмно-синее окно, тонкая оправа; цифры на барабанах, соседние видны сверху и снизу */
+.odo{display:inline-block;padding:3px;border-radius:13px;background:var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.odo-win{position:relative;display:flex;align-items:center;height:38px;padding:0 10px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#0b1440,#1a2a72 50%,#0b1440);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.6),inset 0 -2px 4px rgba(0,0,0,.6);font:700 23px/1 var(--disp);color:#fff;font-variant-numeric:tabular-nums}
+.odo-win::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(8,14,48,.95) 0%,rgba(8,14,48,.3) 24%,rgba(8,14,48,0) 40%,rgba(8,14,48,0) 60%,rgba(8,14,48,.3) 76%,rgba(8,14,48,.95) 100%)}
+.odo-d{position:relative;width:.62em;height:100%;overflow:hidden}
+.odo-s{position:absolute;left:0;right:0;top:calc(50% - .575em);will-change:transform}
+.odo-s b{display:block;height:1.15em;line-height:1.15em;text-align:center;font-weight:700}
+.odo-d.mv .odo-s{filter:blur(.6px)}
+.odo-sep{flex:none;width:1px;height:60%;margin:0 5px;background:rgba(255,255,255,.18)}
+.v8h.has-q .ownc{display:none}
 /* разделы — плитки с иконками, как уроки в Duolingo */
 .v8-dirs{max-width:none!important}
 .v8-col{border:0!important;background:none!important;overflow:visible!important;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
@@ -29846,6 +29907,30 @@ document.addEventListener('click',e=>{ const b=e.target.closest('#shareBtn'); if
 FX.note=function(m){ try{ let n=document.getElementById('fxNote'); if(!n){ n=document.createElement('div'); n.id='fxNote'; n.className='fxnote'; n.setAttribute('role','status'); n.setAttribute('aria-live','polite'); document.body.appendChild(n); }
   n.textContent=m; n.classList.remove('on'); void n.offsetWidth; n.classList.add('on'); clearTimeout(n._t); n._t=setTimeout(()=>n.classList.remove('on'),2200); }catch(e){} };
 
+/* ═══ ODO — счётчик-барабан: каждая цифра — барабан 0–9, при росте числа крутится вперёд; при первом показе раскручивается.
+   Число — настоящее (VIEWS: views.json + Метрика + GoatCounter вживую), барабан только показывает его. */
+const ODO=(function(){
+  const H=1.15, BASE=10, N=60, RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STRIP='<span class="odo-s" aria-hidden="true">'+Array.from({length:N},(_,i)=>'<b>'+(i%10)+'</b>').join('')+'</span>';
+  const pos=(d,p,ms)=>{ const s=d.firstChild; s.style.transition=ms&&!RM?'transform '+ms+'ms cubic-bezier(.16,.84,.18,1)':'none'; s.style.transform='translateY('+(-p*H)+'em)'; };
+  function build(el,txt){ const w=el.querySelector('.odo-win'); w.innerHTML=[...txt].map(c=>/\d/.test(c)?'<span class="odo-d">'+STRIP+'</span>':'<i class="odo-sep"></i>').join('');
+    w.dataset.fmt=txt.replace(/\d/g,'0'); el._p=[...w.querySelectorAll('.odo-d')].map(d=>{ pos(d,BASE,0); return BASE; }); }
+  function roll(el,txt,intro){ const ds=[...el.querySelectorAll('.odo-d')], dg=[...txt].filter(c=>/\d/.test(c)).map(Number), k=ds.length;
+    ds.forEach((d,i)=>{ let p=el._p[i]; if(p>=BASE+10){ p=BASE+p%10; pos(d,p,0); }
+      let t=p-p%10+dg[i]; if(t<p) t+=10; if(intro) t+=10*Math.round(3*(i+1)/k);   /* при раскрутке младшие цифры делают больше оборотов */
+      if(t===p) return; const ms=intro?1100+i*150:700+Math.min(3,(t-p))*120;
+      void d.offsetWidth; d.classList.add('mv'); pos(d,t,ms); el._p[i]=t;
+      clearTimeout(d._t); d._t=setTimeout(()=>{ d.classList.remove('mv'); const q=BASE+t%10; pos(d,q,0); el._p[i]=q; },ms+40); }); }
+  /* раскрутка — когда счётчик впервые попал на экран, а не где-то внизу без зрителя */
+  const io='IntersectionObserver' in window?new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; const el=e.target; io.unobserve(el); el._seen=true; if(el._want) requestAnimationFrame(()=>roll(el,el._want,true)); }),{threshold:.6}):null;
+  function set(el,n,label){ const txt=Math.round(n).toLocaleString('ru-RU').replace(/\s/g,' '), w=el.querySelector('.odo-win'), fresh=w.dataset.fmt!==txt.replace(/\d/g,'0');
+    el.setAttribute('aria-label',txt+' '+(label||'')); if(fresh) build(el,txt);
+    if(el._want===txt&&!fresh) return; el._want=txt;
+    if(!el._seen){ if(io&&!RM){ io.observe(el); return; } el._seen=true; }
+    roll(el,txt,fresh&&!RM&&!io); }
+  return {html:()=>'<div class="odo" data-odo role="img" aria-label="просмотры"><div class="odo-win"></div></div>', set};
+})();
+/* ═══ /ODO */
 /* ── счётчик просмотров: своё оформление, цифра — из Яндекс.Метрики ──
    Источник 1: views.json рядом с сайтом ({"pageviews":N}) — если настроена выгрузка.
    Источник 2: API отчётов Метрики (работает, когда у счётчика открыт публичный доступ к статистике).
@@ -29862,6 +29947,7 @@ FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wai
 function paintViews(){
   const els=document.querySelectorAll('[data-views]');
   if(VIEWS==null){ els.forEach(el=>{ el.hidden=true; }); return; }   /* данных нет — заготовку убираем */
+  document.querySelectorAll('[data-odo]').forEach(el=>{ const b=el.closest('.ownc-v'); if(b) b.hidden=false; ODO.set(el,VIEWS,plural(VIEWS,'просмотр','просмотра','просмотров')); });
   /* число ставим сразу, без «бегущих» цифр: панель рядом не дёргается */
   const txt=VIEWS.toLocaleString('ru-RU'), lab=plural(VIEWS,'просмотр','просмотра','просмотров');
   els.forEach(el=>{ const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; el.classList.remove('wait'); el.dataset.done=1;
@@ -29909,7 +29995,8 @@ FX.loadViews=function(force){
 };
 /* пока страница на экране — число обновляется само, раз в минуту; и сразу, когда к ней вернулись: приложение с рабочего стола
    и вкладка в фоне не перезагружаются, а таймеры в фоне браузер замораживает — без этого там стояло старое число */
-const viewsTick=()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views]')) FX.loadViews(true); }catch(e){} };
+const viewsTick=()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views],[data-odo]')) FX.loadViews(true); }catch(e){} };
+setInterval(()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-odo]')) FX.loadViews(true); }catch(e){} },20e3);
 setInterval(viewsTick,60e3);
 document.addEventListener('visibilitychange',viewsTick); window.addEventListener('pageshow',viewsTick); window.addEventListener('focus',viewsTick); window.addEventListener('online',viewsTick);
 
@@ -30082,6 +30169,109 @@ function rk2CardArt(){ if(RK2ART) return RK2ART;
   RK2ART=`<svg class="hc-art hc-rart" viewBox="0 0 200 200" aria-hidden="true">${g}</svg>`; return RK2ART; }
 /* ДЗ 4 ИГ: тело с П-образным вырезом медленно поворачивается вокруг вертикали; грани выреза подсвечены */
 let IG4ART='';
+/* ═══ SXART — карточка «Как пересекаются поверхности»: белый конус, сквозь него жёлтый цилиндр, красная линия пересечения; медленно вращается.
+   Canvas: грани по глубине, задние отброшены, части цилиндра внутри конуса и конуса внутри цилиндра не рисуются (как тело).
+   Линия пересечения — точно: точка цилиндра (x, r·cos φ, zc + r·sin φ) лежит на конусе, когда x² + y² = w(z)²; видна, если обе поверхности там смотрят на зрителя. */
+const SXART=(function(){
+  const H=100, Rb=48, zc=36, r=19, Lc=84, NA=48, NZ=16, NL=28, EL=.34, ce=Math.cos(EL), se=Math.sin(EL), T=20;
+  const w=z=>Rb*(H-z)/H, kq=Math.hypot(1,Rb/H);
+  const coneF=p=>(Math.hypot(p[0],p[1])-w(p[2]))/kq, cylF=p=>Math.hypot(p[1],p[2]-zc)-r;
+  const L=(()=>{ const v=[-.5,.45,.75],n=Math.hypot(...v); return v.map(x=>x/n); })();
+  const Q=[];   /* четырёхугольники: v — вершины, n — нормаль, m — материал */
+  for(let i=0;i<NA;i++) for(let j=0;j<NZ;j++){ const a0=2*Math.PI*i/NA,a1=2*Math.PI*(i+1)/NA,z0=H*j/NZ,z1=H*(j+1)/NZ, am=(a0+a1)/2, P=(a,z)=>[w(z)*Math.cos(a),w(z)*Math.sin(a),z];
+    Q.push({v:[P(a0,z0),P(a1,z0),P(a1,z1),P(a0,z1)],n:[Math.cos(am)*H/Math.hypot(H,Rb),Math.sin(am)*H/Math.hypot(H,Rb),Rb/Math.hypot(H,Rb)],m:'cone',cut:p=>cylF(p)<0&&Math.abs(p[0])<=Lc}); }
+  for(let i=0;i<NA;i++){ const a0=2*Math.PI*i/NA,a1=2*Math.PI*(i+1)/NA; Q.push({v:[[Rb*Math.cos(a1),Rb*Math.sin(a1),0],[Rb*Math.cos(a0),Rb*Math.sin(a0),0],[0,0,0]],n:[0,0,-1],m:'cone'}); }
+  for(let i=0;i<NA;i++) for(let j=0;j<NL;j++){ const a0=2*Math.PI*i/NA,a1=2*Math.PI*(i+1)/NA,x0=-Lc+2*Lc*j/NL,x1=-Lc+2*Lc*(j+1)/NL, am=(a0+a1)/2, P=(x,a)=>[x,r*Math.cos(a),zc+r*Math.sin(a)];
+    Q.push({v:[P(x0,a0),P(x1,a0),P(x1,a1),P(x0,a1)],n:[0,Math.cos(am),Math.sin(am)],m:'cyl',cut:p=>coneF(p)<0&&p[2]>=0&&p[2]<=H}); }
+  [-1,1].forEach(sg=>{ const v=[]; for(let i=0;i<NA;i++){ const a=2*Math.PI*i/NA*(sg>0?1:-1); v.push([sg*Lc,r*Math.cos(a),zc+r*Math.sin(a)]); } Q.push({v,n:[sg,0,0],m:'cap'}); });
+  /* отбрасываем только грани, целиком ушедшие внутрь другой фигуры: на стыке грани чуть перекрываются, но дыр нет */
+  Q.forEach(q=>{ if(q.cut&&q.v.every(p=>q.cut(p))) q.hide=true; });
+  /* линия пересечения: две замкнутые кривые (вход и выход) */
+  const CUR=[-1,1].map(sx=>{ const o=[]; for(let i=0;i<=120;i++){ const f=2*Math.PI*i/120, y=r*Math.cos(f), z=zc+r*Math.sin(f), d=w(z)*w(z)-y*y; if(d<0) continue; const x=sx*Math.sqrt(d);
+    const nc=[x,y,Math.hypot(x,y)*Rb/H], nl=Math.hypot(...nc); o.push({p:[x,y,z],nc:nc.map(v=>v/nl),ny:[0,Math.cos(f),Math.sin(f)]}); } return o; });
+  const COL={cone:[244,246,252],cyl:[255,200,48],cap:[255,214,92]};
+  function frame(cv,th){ const ctx=cv.getContext('2d'), W=cv.width, Hc=cv.height, sc=Math.min(W,Hc)/172, c=Math.cos(th), sn=Math.sin(th), lw=Math.max(1,W/260);
+    const rot=([x,y,z])=>[x*c-y*sn,x*sn+y*c,z], vis=n=>{ const m=rot(n); return m[1]*ce+m[2]*se; };
+    const pr=([X,Y,z])=>[W/2+X*sc,Hc*.56+(-(z-H*.42)*ce+Y*se)*sc], dep=([X,Y,z])=>Y*ce+z*se;
+    ctx.clearRect(0,0,W,Hc);
+    const g=ctx.createRadialGradient(W/2,Hc*.56+H*.42*ce*sc+6*sc,0,W/2,Hc*.56+H*.42*ce*sc+6*sc,95*sc); g.addColorStop(0,'rgba(0,10,50,.5)'); g.addColorStop(1,'rgba(0,10,50,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(W/2,Hc*.56+H*.42*ce*sc+6*sc,95*sc,95*se*sc,0,0,2*Math.PI); ctx.fill();
+    const list=[];
+    Q.forEach(q=>{ if(q.hide) return; const n=rot(q.n), v=n[1]*ce+n[2]*se; if(v<=1e-4) return; const vs=q.v.map(rot), lit=.46+.54*Math.max(0,n[0]*L[0]+n[1]*L[1]+n[2]*L[2]), k=COL[q.m];
+      list.push({d:vs.reduce((s,p)=>s+dep(p),0)/vs.length,p:vs.map(pr),col:`rgb(${k.map(x=>Math.round(x*lit)).join(',')})`}); });
+    list.sort((a,b)=>a.d-b.d); ctx.lineJoin='round';
+    list.forEach(q=>{ ctx.beginPath(); q.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.closePath(); ctx.fillStyle=q.col; ctx.fill(); ctx.strokeStyle=q.col; ctx.lineWidth=.9; ctx.stroke(); });
+    /* очерки — тёмной линией: край основания конуса, торцы цилиндра */
+    ctx.strokeStyle='rgba(8,24,72,.7)'; ctx.lineWidth=1.3*lw;
+    [-1,1].forEach(sg=>{ if(vis([sg,0,0])<=0) return; ctx.beginPath(); for(let i=0;i<=NA;i++){ const a=2*Math.PI*i/NA, p=pr(rot([sg*Lc,r*Math.cos(a),zc+r*Math.sin(a)])); i?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke(); });
+    /* линия пересечения: красная с белой подложкой, только видимые куски */
+    CUR.forEach(cu=>{ let seg=[]; const flush=()=>{ if(seg.length>1){ ctx.lineCap='round'; ctx.beginPath(); seg.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p)); ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=6*lw; ctx.stroke(); ctx.strokeStyle='#e0202e'; ctx.lineWidth=3.4*lw; ctx.stroke(); } seg=[]; };
+      cu.forEach(o=>{ if(vis(o.nc)>-.2&&vis(o.ny)>-.05) seg.push(pr(rot(o.p))); else flush(); }); flush(); }); }
+  const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches, TH0=.18;
+  function mount(cv){ if(cv.dataset.on) return; cv.dataset.on='1'; let raf=0,seen=false; const t0=performance.now();
+    const size=()=>{ const b=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.max(10,Math.round(b.width*d)); cv.height=Math.max(10,Math.round(b.height*d)); };
+    const th=t=>TH0+.42*Math.sin(2*Math.PI*((t-t0)/1000)/T);   /* покачивается ±24°: обе кривые всё время на виду */
+    const draw=t=>{ raf=0; if(!cv.isConnected) return; frame(cv,th(t)); if(seen&&!RM&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); };
+    size(); frame(cv,TH0);
+    if('ResizeObserver' in window) new ResizeObserver(()=>{ size(); if(!raf) frame(cv,th(performance.now())); }).observe(cv);
+    if('IntersectionObserver' in window) new IntersectionObserver(es=>{ seen=es[0].isIntersecting; if(seen&&!raf) raf=requestAnimationFrame(draw); }).observe(cv); else { seen=true; raf=requestAnimationFrame(draw); }
+    document.addEventListener('visibilitychange',()=>{ if(seen&&!raf&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); }); }
+  const scan=()=>document.querySelectorAll('canvas[data-sxart]:not([data-on])').forEach(mount);
+  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); scan();
+  return {mount,scan};
+})();
+/* ═══ /SXART */
+/* ═══ IG5ART — карточка ДЗ 5 ИГ: сплошное тело (шестигранная призма со сквозным отверстием) медленно вращается.
+   Canvas, а не SVG: на каждом кадре грани сортируются по глубине и задние отбрасываются — тело непрозрачное, с освещением.
+   Не на экране или вкладка скрыта — не рисуем; reduced-motion — один неподвижный кадр. */
+const IG5ART=(function(){
+  const R=50,HH=34,r=19,NS=48,EL=.52,ce=Math.cos(EL),se=Math.sin(EL),T=16;   /* радиус шестигранника, полувысота, радиус отверстия */
+  const L=(()=>{ const v=[-.45,.55,.75],n=Math.hypot(...v); return v.map(x=>x/n); })();
+  const hex=k=>{ const a=Math.PI/3*k+Math.PI/6; return [R*Math.cos(a),R*Math.sin(a)]; };
+  /* точка на границе шестиугольника под углом a — чтобы кольцо верхней грани разбить на четырёхугольники */
+  const hexAt=a=>{ const k=Math.floor(((a-Math.PI/6)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)/(Math.PI/3)), p=hex(k), q=hex(k+1), d=[Math.cos(a),Math.sin(a)];
+    const ex=q[0]-p[0], ey=q[1]-p[1], den=d[0]*ey-d[1]*ex, t=(p[0]*ey-p[1]*ex)/den; return [d[0]*t,d[1]*t]; };
+  const F=[];   /* грани: {v:[[x,y,z]...], n:[нормаль], m:'body'|'hole'|'top'} */
+  for(let k=0;k<6;k++){ const p=hex(k),q=hex(k+1),a=Math.PI/3*k+Math.PI/3; F.push({v:[[p[0],p[1],-HH],[q[0],q[1],-HH],[q[0],q[1],HH],[p[0],p[1],HH]],n:[Math.cos(a),Math.sin(a),0],m:'body',e:1}); }
+  for(let i=0;i<NS;i++){ const a0=2*Math.PI*i/NS,a1=2*Math.PI*(i+1)/NS, c0=[r*Math.cos(a0),r*Math.sin(a0)], c1=[r*Math.cos(a1),r*Math.sin(a1)], h0=hexAt(a0+1e-9), h1=hexAt(a1-1e-9), am=(a0+a1)/2;
+    F.push({v:[[c0[0],c0[1],HH],[h0[0],h0[1],HH],[h1[0],h1[1],HH],[c1[0],c1[1],HH]],n:[0,0,1],m:'top'});
+    F.push({v:[[c1[0],c1[1],-HH],[h1[0],h1[1],-HH],[h0[0],h0[1],-HH],[c0[0],c0[1],-HH]],n:[0,0,-1],m:'top'});
+    F.push({v:[[c0[0],c0[1],HH],[c1[0],c1[1],HH],[c1[0],c1[1],-HH],[c0[0],c0[1],-HH]],n:[-Math.cos(am),-Math.sin(am),0],m:'hole'}); }
+  const COL={body:[236,240,250],top:[248,250,255],hole:[255,200,48]};
+  function frame(cv,th){ const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, sc=Math.min(W,H)/(2*R+30), c=Math.cos(th), sn=Math.sin(th);
+    const rot=([x,y,z])=>[x*c-y*sn, x*sn+y*c, z];
+    const pr=([X,Y,z])=>[W/2+X*sc, H/2+(-z*ce+Y*se)*sc+HH*.12*sc];
+    ctx.clearRect(0,0,W,H);
+    /* тень на «столе» */
+    const g=ctx.createRadialGradient(W/2,H/2+(HH*ce+R*se*.2)*sc,0,W/2,H/2+(HH*ce+R*se*.2)*sc,R*1.2*sc); g.addColorStop(0,'rgba(0,8,40,.55)'); g.addColorStop(1,'rgba(0,8,40,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(W/2,H/2+(HH*ce+HH*.12)*sc+6*sc,R*1.25*sc,R*1.25*se*sc,0,0,2*Math.PI); ctx.fill();
+    const list=[];
+    F.forEach(f=>{ const n=rot(f.n), vis=n[1]*ce+n[2]*se; if(vis<=1e-4) return;   /* к зрителю: e=(0,cos,sin) */
+      const vs=f.v.map(rot), d=vs.reduce((s,[,Y,z])=>s+Y*ce+z*se,0)/vs.length;
+      const lit=.42+.58*Math.max(0,n[0]*L[0]+n[1]*L[1]+n[2]*L[2]), k=COL[f.m];
+      list.push({d,p:vs.map(pr),col:`rgb(${k.map(x=>Math.round(x*lit)).join(',')})`,e:f.e}); });
+    list.sort((a,b)=>a.d-b.d);
+    ctx.lineJoin='round';
+    list.forEach(q=>{ ctx.beginPath(); q.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.closePath(); ctx.fillStyle=q.col; ctx.fill();
+      ctx.strokeStyle=q.col; ctx.lineWidth=.8; ctx.stroke();
+      if(q.e){ ctx.strokeStyle='rgba(10,28,80,.55)'; ctx.lineWidth=1.2*devicePixelRatio; ctx.stroke(); } });
+    /* контур верхней грани и кромка отверстия */
+    ctx.strokeStyle='rgba(10,28,80,.6)'; ctx.lineWidth=1.2*devicePixelRatio; ctx.beginPath();
+    for(let k=0;k<=6;k++){ const h=hex(k), p=pr(rot([h[0],h[1],HH])); k?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke();
+    ctx.beginPath(); for(let i=0;i<=NS;i++){ const a=2*Math.PI*i/NS, p=pr(rot([r*Math.cos(a),r*Math.sin(a),HH])); i?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke(); }
+  const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function mount(cv){ if(cv.dataset.on) return; cv.dataset.on='1'; let raf=0,seen=false,t0=performance.now();
+    const size=()=>{ const b=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.max(10,Math.round(b.width*d)); cv.height=Math.max(10,Math.round(b.height*d)); };
+    const draw=t=>{ raf=0; if(!cv.isConnected) return; frame(cv,-.5+2*Math.PI*((t-t0)/1000)/T); if(seen&&!RM&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); };
+    size(); frame(cv,-.5);
+    if('ResizeObserver' in window) new ResizeObserver(()=>{ size(); if(!raf) frame(cv,-.5+2*Math.PI*((performance.now()-t0)/1000)/T); }).observe(cv);
+    if('IntersectionObserver' in window) new IntersectionObserver(es=>{ seen=es[0].isIntersecting; if(seen&&!raf) raf=requestAnimationFrame(draw); }).observe(cv); else { seen=true; raf=requestAnimationFrame(draw); }
+    document.addEventListener('visibilitychange',()=>{ if(seen&&!raf&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); }); }
+  const scan=()=>document.querySelectorAll('canvas[data-ig5art]:not([data-on])').forEach(mount);
+  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); scan();
+  return {mount,scan};
+})();
+/* ═══ /IG5ART */
 function ig4CardArt(){ if(IG4ART) return IG4ART;
   const f=v=>Math.round(v*10)/10, W=80, D=44, prof=[[0,0],[80,0],[80,50],[52,50],[52,26],[28,26],[28,50],[0,50]];   /* профиль в XZ, выдавлен по Y */
   const el=.5, ce=Math.cos(el), se=Math.sin(el), NF=72, T=14;
@@ -30105,14 +30295,14 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
     <ellipse cx="${f((x0+x1)/2)}" cy="${f((y0+y1)/2)}" rx="${f((x1-x0)/1.7)}" ry="${f((y1-y0)/1.7)}" fill="url(#i4Gl)"/>${g}</svg>`;
   return IG4ART; }
 function homeCards(){ const pm=PROMO.cardHTML();
-  /* слева — эфир (если он есть) или «Как образуются и пересекаются поверхности»; справа — ДЗ 4 по инженерной графике */
-  const left=pm||`<a class="hc hc-rot" href="#/ng/surf" aria-label="Как образуются и пересекаются поверхности: интерактивная 3D-модель">
-    <span class="hc-t">Как образуются и пересекаются поверхности</span>
-    ${surfArt().replace('class="hc-art"','class="hc-art hc-rart"')}
+  /* слева — эфир (если он есть) или «Пересечение поверхностей»; справа — ДЗ 5 по инженерной графике */
+  const left=pm||`<a class="hc hc-rot hc-sx" href="#/ng/surf/x" aria-label="Пересечение поверхностей: выбери две фигуры и двигай их">
+    <span class="hc-t hc-sxt">Пересечение поверхностей</span>
+    <canvas class="hc-art hc-rart hc-cv hc-sxcv" data-sxart aria-hidden="true"></canvas>
     <span class="hc-go">Смотреть →</span></a>`;
-  return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig4')}" aria-label="ДЗ 4 по инженерной графике: тело с вырезом, три вида и разрезы">
-    <span class="hc-t">ДЗ&nbsp;4</span><span class="hc-s">тело с вырезом: три вида и разрезы — любой вариант</span>
-    ${ig4CardArt()}
+  return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig5')}" aria-label="ДЗ 5 по инженерной графике: тело с отверстием и вырезом">
+    <span class="hc-t hc-big"><span>ДЗ</span><b>5</b></span>
+    <canvas class="hc-art hc-rart hc-cv" data-ig5art aria-hidden="true"></canvas>
     <span class="hc-go">Открыть →</span></a>`; }
 /* разделы на главной — карточка предмета, внутри 4 минималистичные плитки со сплошными значками цвета предмета (вырезы .k — цветом плитки) */
 const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"/><rect class=\"k\" x=\"9.5\" y=\"7\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"11\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"15\" width=\"4.5\" height=\"2.2\" rx=\"1.1\"/><rect x=\"3\" y=\"6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"10.8\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"15.6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect class=\"k\" x=\"5\" y=\"6\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"10.8\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"15.6\" width=\"1.2\" height=\"2.4\"/>",
@@ -30140,8 +30330,13 @@ function viewHome(v){
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
-       <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
-   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
+       <section class="ownc" aria-label="Просмотры и владелец сайта">
+    <div class="ownc-top">
+     <div class="ownc-v"${VIEWS==null?' hidden':''}>${ODO.html()}<small>просмотров</small></div>
+     <button type="button" class="v8-share ownc-s" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button>
+    </div>
+    <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта</small></span><i aria-hidden="true">→</i></button>
+   </section>
    <section class="v8-dirs happs" aria-label="Разделы">
     ${appsHTML('ng','Начертательная геометрия',[[H('ng','tasks'),'Тетрадь','nb',nT],[HDZ('ng'),'ДЗ','hw'],[H('ng','rk2'),'РК2','rk',0,1],[H('ng','path'),'Теория','th']])}
     ${appsHTML('ig','Инженерная графика',[[H('ig','wb'),'Тетрадь','grid',nIW],[HDZ('ig'),'ДЗ','sheet'],[H('ig','learn'),'Учиться','cube'],[H('ig','theory'),'ЕСКД','square']])}
