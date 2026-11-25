@@ -4372,7 +4372,7 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .v8-share{border-radius:16px!important;font-weight:800!important;min-height:48px!important;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s}
 .v8-share:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
 /* верхние карточки: крупный плотный заголовок, фигура поверх букв */
-.hcards .hc.hc-rot{min-height:300px}
+.hcards .hc.hc-rot{min-height:232px}
 .hcards .hc.hc-rot .hc-t{position:relative;z-index:1;margin-top:2px;font:700 20px/.98 var(--disp);letter-spacing:-.045em;text-shadow:none;max-width:none}
 .hcards .hc.hc-rot .hc-art{position:absolute;z-index:2;margin:0;transform:none;top:auto;left:auto;pointer-events:none}
 .hcards .hc.hc-rot .hc-go{position:relative;z-index:3;margin-top:auto}
@@ -4382,26 +4382,26 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .hcards .hc-ig .hc-big{display:flex;flex-direction:column;align-items:flex-start;gap:0}
 .hcards .hc-ig .hc-big span{font:700 34px/.9 var(--disp);letter-spacing:-.05em}
 .hcards .hc-ig .hc-big b{font:700 190px/.74 var(--disp);letter-spacing:-.08em;margin-top:6px;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hcards .hc-ig canvas.hc-cv{right:-16%!important;top:auto!important;bottom:62px!important;width:74%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+.hcards .hc-ig canvas.hc-cv{right:-14%!important;top:auto!important;bottom:-6px!important;width:70%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
 @media(min-width:760px){
-  .hcards .hc.hc-rot{min-height:320px;padding:24px 26px 22px}
+  .hcards .hc.hc-rot{min-height:250px;padding:24px 26px 22px}
   .hcards .hc.hc-rot .hc-t{font-size:46px}
   .hcards .hc.hc-rot:not(.hc-ig) .hc-t{max-width:12ch}
   .hcards .hc.hc-rot:not(.hc-ig) .hc-art{right:4%;bottom:auto;top:50%;translate:0 -50%;width:42%;max-width:300px}
   .hcards .hc-ig .hc-big{flex-direction:row;align-items:flex-end;gap:14px}
   .hcards .hc-ig .hc-big span{font-size:110px;line-height:.78}
   .hcards .hc-ig .hc-big b{font-size:250px;margin-top:0}
-  .hcards .hc-ig canvas.hc-cv{right:4%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:300px!important;max-width:44%!important}
+  .hcards .hc-ig canvas.hc-cv{right:4%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:250px!important;max-width:40%!important}
 }
 /* «Пересечение поверхностей» — в паре с «ДЗ 5»: тот же тёмно-синий фон со свечением и отблеском, тот же шрифт и градиент букв, фигура поверх */
 .hcards .hc.hc-sx{border:0;background:radial-gradient(55% 75% at 78% 58%,rgba(86,148,255,.6),transparent 72%),linear-gradient(150deg,#071331 0%,#0d2766 50%,#1a44c4 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 46px -22px rgba(8,26,84,.85)}
 .hcards .hc-sx::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);transform:translateX(-130%);animation:igSweep 6s ease-in-out 3s infinite}
 @media(prefers-reduced-motion:reduce){.hcards .hc-sx::after{animation:none}}
 .hcards .hc-sx .hc-sxt{font-size:24px;line-height:.94;letter-spacing:-.05em;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hcards .hc-sx canvas.hc-sxcv{right:-8%!important;bottom:52px!important;top:auto!important;width:94%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+.hcards .hc-sx canvas.hc-sxcv{right:-6%!important;bottom:-10px!important;top:auto!important;width:88%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
 @media(max-width:400px){.hcards .hc-sx .hc-sxt{font-size:22px}}
 @media(min-width:760px){.hcards .hc-sx .hc-sxt{font-size:64px;max-width:8ch}
-  .hcards .hc-sx canvas.hc-sxcv{right:2%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:340px!important;max-width:48%!important}}
+  .hcards .hc-sx canvas.hc-sxcv{right:2%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:290px!important;max-width:44%!important}}
 /* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
 .ownc{display:flex;flex-direction:column;gap:8px;margin:14px 0 0;padding:8px;border:1px solid var(--line);border-radius:22px;background:var(--surf);box-shadow:0 14px 30px -24px rgba(16,30,80,.35)}
 @media(min-width:760px){.ownc{width:min(440px,100%);margin:16px auto 0}}
@@ -30389,12 +30389,10 @@ function homeCards(){ const pm=PROMO.cardHTML();
   /* слева — эфир (если он есть) или «Пересечение поверхностей»; справа — ДЗ 5 по инженерной графике */
   const left=pm||`<a class="hc hc-rot hc-sx" href="#/ng/surf/x" aria-label="Пересечение поверхностей: выбери две фигуры и двигай их">
     <span class="hc-t hc-sxt">Пересечение поверхностей</span>
-    <canvas class="hc-art hc-rart hc-cv hc-sxcv" data-sxart aria-hidden="true"></canvas>
-    <span class="hc-go">Смотреть →</span></a>`;
+    <canvas class="hc-art hc-rart hc-cv hc-sxcv" data-sxart aria-hidden="true"></canvas></a>`;
   return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig5')}" aria-label="ДЗ 5 по инженерной графике: тело с отверстием и вырезом">
     <span class="hc-t hc-big"><span>ДЗ</span><b>5</b></span>
-    <canvas class="hc-art hc-rart hc-cv" data-ig5art aria-hidden="true"></canvas>
-    <span class="hc-go">Открыть →</span></a>`; }
+    <canvas class="hc-art hc-rart hc-cv" data-ig5art aria-hidden="true"></canvas></a>`; }
 /* разделы на главной — карточка предмета, внутри 4 минималистичные плитки со сплошными значками цвета предмета (вырезы .k — цветом плитки) */
 const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"/><rect class=\"k\" x=\"9.5\" y=\"7\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"11\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"15\" width=\"4.5\" height=\"2.2\" rx=\"1.1\"/><rect x=\"3\" y=\"6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"10.8\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"15.6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect class=\"k\" x=\"5\" y=\"6\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"10.8\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"15.6\" width=\"1.2\" height=\"2.4\"/>",
   "hw":"<path d=\"M7 2.5h7.2c.7 0 1.3.3 1.8.7l3.8 3.8c.5.5.7 1.1.7 1.8V19a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 19V5A2.5 2.5 0 0 1 7 2.5z\"/><path class=\"k\" d=\"M14.5 2.5V7a1.5 1.5 0 0 0 1.5 1.5h4.5\" /><path class=\"ks\" d=\"m8.3 14.3 2.6 2.6 5-5.2\"/>",
