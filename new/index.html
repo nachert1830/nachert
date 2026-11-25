@@ -3045,12 +3045,27 @@ html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
 .sx-tabs a:hover{color:var(--ink)}
 .sx-tabs a.on{background:var(--surf);color:var(--ink);box-shadow:0 1px 2px rgba(15,20,32,.12),0 2px 8px -2px rgba(15,20,32,.15)}
 :root[data-theme="dark"] .sx-tabs a.on{background:var(--surf2);box-shadow:0 1px 2px rgba(0,0,0,.5)}
-.sx-state{padding:10px 14px;border-radius:12px;background:var(--surf3);border-left:4px solid #d4322c;color:var(--ink2);line-height:1.5;font-size:14.5px;min-height:3.2em}
+.sx-leg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--mut);padding:0 2px}
+.sx-leg span{display:inline-flex;align-items:center;gap:6px}
+.sx-leg span[hidden]{display:none}
+.sx-sw{display:inline-block;width:14px;height:10px;border-radius:3px;flex:none}
+.sx-sw.b{background:#80a8d6}.sx-sw.g{background:#ccb078}.sx-sw.r{height:3px;width:18px;background:#d4322c}
+.sx-sw.p{width:10px;height:10px;border-radius:50%;background:#d4322c;box-shadow:0 0 0 2px var(--surf),0 0 0 3px #d4322c}
+.sx-state{padding:10px 14px;border-radius:12px;background:var(--surf3);border-left:4px solid #d4322c;color:var(--ink2);line-height:1.5;font-size:14.5px;min-height:4.6em}
 .sx-state b{display:block;color:var(--ink);font-size:15.5px;margin-bottom:2px}
+.sx-trk{position:relative;display:block}
+.sx-trk input{position:relative;z-index:1;display:block;margin:4px 0}
+.sx-ticks{position:absolute;left:0;right:0;top:50%;height:0;pointer-events:none}
+.sx-ticks i{position:absolute;top:-9px;width:3px;height:18px;margin-left:-1.5px;border-radius:2px;background:#d4322c;opacity:.75}
+.sx-marks{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.sx-marks span{font:600 11.5px var(--sans);color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-right:2px}
+.sx-marks .chip{border-color:rgba(212,50,44,.45)}
+.sx-marks .chip.on{background:#d4322c;border-color:#d4322c;color:#fff}
 .sx-hc[hidden]{display:none}
 .sx-sig{flex:none;width:44px;text-align:center;font:italic 600 22px "Times New Roman",serif;color:var(--blue)}
-.sx-auxt{padding:8px 12px;border-radius:10px;background:var(--blue-s)}
-@media(min-width:980px){.sx-page .sl-info{grid-row:1 / span 6}}
+.sx-auxt{margin:0;padding:9px 12px;border-radius:10px;background:var(--blue-s);color:var(--ink2);line-height:1.5;font-size:14px}
+.sx-auxt b{color:var(--ink)}
+@media(min-width:980px){.sx-page .sl-info{grid-row:1 / span 9}}
 :root[data-theme=dark] .t3d{--t3bg:var(--surf);--t3bg2:var(--paper);--t3ink:#efeee9;--t3ink2:#9e9c96}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .t3d{--t3bg:var(--surf);--t3bg2:var(--paper);--t3ink:#efeee9;--t3ink2:#9e9c96}}
 .t3d-box{width:min(880px,100%);height:min(calc(100dvh - 20px),900px);display:flex;flex-direction:column;background:var(--surf);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden}
@@ -24426,7 +24441,7 @@ return {source,walk,blocks,blockOf,warp,perturb,pinOf,run,checkers,verify,varian
    незаконченное: код сайта открыт, как у любого сайта. */
 /* ── версии сайта: что нового. hidden — скрытые функции на проверке (видны только в режиме владельца) ── */
 window.CHANGES=[
-  {v:'4.33',d:'25 ноября 2026',items:['Поверхности: новая вкладка «Как пересекаются» (#/ng/surf/x) — линии пересечения поверхностей в 3D. Шесть пар: два цилиндра (оси пересекаются и скрещиваются), сфера и цилиндр, соосные сфера и конус, конус и цилиндр вокруг одной сферы, тор и цилиндр. Линия вычисляется вживую: ползунок меняет синюю поверхность — проницание, касание, врезка; при равных диаметрах линия распадается на два эллипса (теорема Монжа), у сферы — кривая Вивиани. «Посредники» — плоскости и концентрические сферы, которыми линию строят на эпюре; «Проекции» — линия и очерки на π₁ и π₂; «Как тело» — без внутренних частей. Карточка — в «Задачах», в разделе «Поверхности и их пересечения».']},
+  {v:'4.33',d:'25 ноября 2026',items:['Поверхности: новая вкладка «Как пересекаются» (#/ng/surf/x) — линии пересечения поверхностей в 3D. Шесть пар: два цилиндра (оси пересекаются и скрещиваются), сфера и цилиндр, соосные сфера и конус, конус и цилиндр вокруг одной сферы, тор и цилиндр. Линия вычисляется вживую: ползунок меняет синюю поверхность — проницание, касание, врезка; при равных диаметрах линия распадается на два эллипса (теорема Монжа), у сферы — кривая Вивиани. Кнопки «Особые положения» сразу ставят такие моменты, метки — на ползунке. «Посредники» — плоскости и концентрические сферы, которыми линию строят на эпюре; «Проекции» — линия и очерки на π₁ и π₂; «Как тело» — без внутренних частей. Карточка — в «Задачах», в разделе «Поверхности и их пересечения».']},
   {v:'4.32',d:'14 ноября 2026',items:['Чертёж — главный на экране. На телефоне он занимает около 60 % высоты (было около 20 %): шапка сайта в разборе спрятана, шаги, «Условие» и «Смотрю / Решаю сам» — одной строкой, пояснение — шторкой снизу.',
     'Подписи на чертежах — чертёжным шрифтом тип Б (наклонный, как на плакатах кафедры), один размер на всех чертежах.',
     'Новые плоскости при замене — римскими индексами сверху: A<sup>IV</sup>, B<sup>V</sup> — на чертеже и в тексте шага. Оси — x₁₄, x₄₅.',
@@ -25892,7 +25907,7 @@ const SO=[0,YC,30], RS=15, SV=[0,YC,74], TN=RS/sqrt(44*44-RS*RS);           /* �
 const CA=[0,YC,70], CB=30, CO=[0,YC,34], RT=(CA[2]-CO[2])*CB/hyp(CB,CA[2]-4); /* соосные: сфера касается конуса при R = RT */
 const LIST=[
  { id:'cyl2', grp:'Два цилиндра', chip:'Оси пересекаются', name:'Два цилиндра, оси пересекаются',
-   k:{lab:'радиус синего цилиндра r',min:8,max:32,def:15,snap:[22]},
+   k:{lab:'радиус синего цилиндра r',min:8,max:32,def:15,marks:[[22,'Равные диаметры (Монж)']]},
    mk:r=>({A:cylX(YC,36,r,-46,46),B:cylZ(0,YC,22,2,70)}),
    st:r=>r<22-1e-6?['Проницание: две кривые','Синий цилиндр тоньше бежевого (r < 22) и проходит его насквозь: линия пересечения распалась на две замкнутые пространственные кривые — «вход» и «выход».']
      :near(r,22)?['Теорема Монжа: два эллипса','Диаметры равны — оба цилиндра описаны около одной сферы. Линия пересечения распалась на две плоские кривые — эллипсы. Нажми «Спереди»: на π₂ они видны как две пересекающиеся прямые.']
@@ -25902,7 +25917,7 @@ const LIST=[
    aux:{kind:'z',r:r=>[36-r-1,36+r+1],t:'Горизонтальная плоскость Σ режет бежевый цилиндр по окружности, синий — по двум образующим. Общие точки этих линий — точки искомой кривой. Двигай Σ: точки «бегут» по линии пересечения.'},
    links:[['ДЗ №4 — линии пересечения поверхностей','#/ng4'],['№ 74 в — конус и цилиндр',WB(74)]] },
  { id:'cyl2off', grp:'Два цилиндра', chip:'Врезка и проницание', name:'Два цилиндра: врезка и проницание',
-   k:{lab:'сдвиг оси синего цилиндра к зрителю d',min:0,max:40,def:14,snap:[8,36]},
+   k:{lab:'сдвиг оси синего цилиндра к зрителю d',min:0,max:40,def:14,marks:[[0,'Оси пересекаются'],[8,'Касание изнутри'],[36,'Касание снаружи']]},
    mk:d=>({A:cylX(YC+d,36,14,-46,46),B:cylZ(0,YC,22,2,70)}),
    st:d=>d<8-1e-6?['Проницание: две кривые','d + r < R: синий цилиндр целиком проходит сквозь бежевый — две замкнутые кривые, вход и выход.']
      :near(d,8)?['Касание изнутри','d + r = R: образующие цилиндров касаются. Две кривые сошлись в одной точке — у линии пересечения появилась двойная точка (узел).']
@@ -25914,7 +25929,7 @@ const LIST=[
    aux:{kind:'z',r:()=>[21,51],t:'Горизонтальная плоскость Σ режет бежевый цилиндр по окружности, синий — по двум образующим; их пересечения — точки линии. Где образующие уже не пересекают окружность — линия кончилась.'},
    links:[['ДЗ №4 — линии пересечения поверхностей','#/ng4'],['№ 73 — пересечение поверхностей',WB(73)]] },
  { id:'viv', grp:'Сфера', chip:'Сфера и цилиндр', name:'Сфера и цилиндр',
-   k:{lab:'сдвиг оси цилиндра от центра сферы d',min:0,max:42,def:6,snap:[0,13,39]},
+   k:{lab:'сдвиг оси цилиндра от центра сферы d',min:0,max:42,def:6,marks:[[0,'Соосные'],[13,'Кривая Вивиани'],[39,'Касание снаружи']]},
    mk:d=>({A:cylZ(d,YC,13,4,68),B:sphere([0,YC,36],26)}),
    st:d=>near(d,0)?['Соосные: две окружности','Ось цилиндра проходит через центр сферы — поверхности соосны и пересекаются по двум окружностям (параллелям). На π₂ это два отрезка.']
      :d<13?['Проницание: две кривые','Цилиндр проходит сферу насквозь: сверху и снизу — по замкнутой кривой.']
@@ -25926,7 +25941,7 @@ const LIST=[
    aux:{kind:'z',r:()=>[11,61],t:'Плоскость Σ ∥ π₁ режет сферу по окружности, цилиндр — по окружности того же радиуса, что основание. Две окружности — две точки линии.'},
    links:[['№ 73 б — конус и сфера',WB(73)],['ДЗ №4 — линии пересечения поверхностей','#/ng4']] },
  { id:'coax', grp:'Сфера', chip:'Сфера и конус (соосные)', name:'Соосные: сфера и конус',
-   k:{lab:'радиус сферы R',min:6,max:35,def:24,snap:[RT]},
+   k:{lab:'радиус сферы R',min:6,max:35,def:24,marks:[[RT,'Сфера вписана в конус']]},
    mk:R=>({A:sphere(CO,R),B:coneZ(CA,4,CB)}),
    st:(R,n)=>R<RT-1e-6?['Общих точек нет','Сфера целиком внутри конуса и его не касается.']
      :near(R,RT)?['Касание по окружности','Сфера вписана в конус: они касаются по одной окружности. Так же сфера касается конуса в паре «Конус и цилиндр (Монж)».']
@@ -25937,7 +25952,7 @@ const LIST=[
    aux:{kind:'z',r:()=>[5,69],t:'Плоскость Σ ∥ π₁ режет обе поверхности по окружностям с общим центром на оси. Они совпадают только на высоте линии пересечения — поэтому у соосных поверхностей линия видна без посредников.'},
    links:[['№ 73 б — конус и сфера',WB(73)],['ДЗ №4 — соосные поверхности','#/ng4']] },
  { id:'monge', grp:'Конус и тор', chip:'Конус и цилиндр (Монж)', name:'Конус и цилиндр вокруг одной сферы',
-   k:{lab:'радиус цилиндра r',min:8,max:24,def:11,snap:[RS]},
+   k:{lab:'радиус цилиндра r',min:8,max:24,def:11,marks:[[RS,'Общая сфера (Монж)']]},
    mk:r=>({A:cylX(YC,SO[2],r,-48,48),B:coneZ(SV,2,(SV[2]-2)*TN)}),
    st:r=>r<RS-1e-6?['Цилиндр пронзает конус','Две кривые — слева и справа: цилиндр тоньше вписанной сферы и проходит конус насквозь.']
      :near(r,RS)?['Теорема Монжа: два эллипса','Конус и цилиндр описаны около одной сферы (центр O, радиус 15). Линия пересечения распалась на два эллипса; спереди, на π₂, — две прямые через точки пересечения очерков.']
@@ -25947,7 +25962,7 @@ const LIST=[
    aux:{kind:'s',c:SO,r:r=>[Math.max(r,RS),46],t:'Оси пересекаются в O и параллельны π₂ — работает способ концентрических сфер. Сфера Σ с центром O соосна и конусу, и цилиндру, поэтому режет каждого по окружностям; на π₂ они — отрезки. Их пересечения — точки линии. Самая маленькая полезная сфера — бо́льшая из двух вписанных.'},
    links:[['ДЗ №4 — концентрические сферы','#/ng4'],['№ 73 а, в — конус и цилиндр',WB(73)],['№ 74 в',WB(74)]] },
  { id:'torus', grp:'Конус и тор', chip:'Тор и цилиндр', name:'Тор и цилиндр',
-   k:{lab:'сдвиг оси цилиндра от оси тора d',min:0,max:42,def:22,snap:[22]},
+   k:{lab:'сдвиг оси цилиндра от оси тора d',min:0,max:42,def:22,marks:[[22,'Через середину трубки']]},
    mk:d=>({A:cylZ(d,YC,7,12,48),B:torus([0,YC,30],22,10)}),
    st:(d,n)=>n>=2?['Проницание: две кривые','Цилиндр сверлит трубку тора насквозь — сверху и снизу.']:n===1?['Врезка: одна кривая','Цилиндр задевает трубку тора только частью.']
      :[ 'Не пересекаются',d<12?'Цилиндр целиком в «дырке» тора.':'Цилиндр снаружи тора.'],
@@ -25956,7 +25971,7 @@ const LIST=[
    aux:{kind:'z',r:()=>[20.3,39.7],t:'Плоскость Σ ∥ π₁ режет тор по двум окружностям-параллелям, цилиндр — по окружности; их пересечения — точки линии.'},
    links:[['№ 74 а — конус и тор',WB(74)],['ДЗ №4 — линии пересечения поверхностей','#/ng4']] }
 ];
-const BY={}; LIST.forEach(o=>BY[o.id]=o);
+const BY={}; LIST.forEach(o=>{ BY[o.id]=o; o.k.snap=o.k.marks.map(m=>m[0]); });
 const BLUE=[0.50,0.66,0.84], BEIGE=[0.80,0.69,0.47], AUXC=[0.40,0.58,0.92];
 function css(el,n,d){ try{ const v=getComputedStyle(el).getPropertyValue(n).trim(); return v||d; }catch(e){ return d; } }
 const fmt=x=>(Math.round(x*10)/10).toString().replace('.',',');
@@ -25974,24 +25989,36 @@ function mount(host,id,opt){ opt=opt||{};
     <div class="sl-main"><div class="sl-stage"><canvas class="sl-cv" aria-label="Две поверхности и линия их пересечения в пространстве: тяни, чтобы повернуть"></canvas>
       <div class="sl-views" role="group" aria-label="Вид"><button data-v="home" class="on">Объём</button><button data-v="front">Спереди</button><button data-v="top">Сверху</button></div>
       <div class="sl-hint">тяни — крутить · колесо или щипок — зум</div></div>
+      <div class="sx-leg" aria-hidden="true"><span><i class="sx-sw b"></i>синяя — двигает ползунок</span><span><i class="sx-sw g"></i>бежевая — стоит на месте</span><span><i class="sx-sw r"></i>линия пересечения</span><span class="sx-lp" hidden><i class="sx-sw p"></i>точки от посредника Σ</span></div>
       <div class="sx-state" aria-live="polite"></div>
-      <div class="sl-ctl"><button class="sl-play" aria-label="Играть">▶</button><label class="sl-rg"><span class="sx-kl"></span><input class="sx-k" type="range" min="0" max="1000" aria-label="Параметр синей поверхности"></label></div>
+      <div class="sl-ctl"><button class="sl-play" aria-label="Играть: синяя поверхность плавно меняется">▶</button><label class="sl-rg"><span class="sx-kl"></span><span class="sx-trk"><input class="sx-k" type="range" min="0" max="1000" aria-label="Параметр синей поверхности"><span class="sx-ticks" aria-hidden="true"></span></span></label></div>
+      <div class="sx-marks" role="group" aria-label="Особые положения"></div>
       <div class="sl-ctl sx-hc" hidden><span class="sx-sig" aria-hidden="true">Σ</span><label class="sl-rg"><span class="sx-hl"></span><input class="sx-h" type="range" min="0" max="1000" aria-label="Положение посредника"></label></div>
+      <p class="sx-auxt" hidden></p>
       <div class="sl-opts"><button data-o="aux" aria-pressed="false">Посредники</button><button data-o="proj" aria-pressed="false">Проекции на π₁ и π₂</button><button data-o="body" aria-pressed="false">Как тело</button></div>
       <div class="sl-info"></div></div></div>`;
   const cv=host.querySelector('.sl-cv'), ctx=cv.getContext('2d'), stage=host.querySelector('.sl-stage');
   let GLR=null, glc=null, ov=null, octx=null; if(window.T3GL){ glc=document.createElement('canvas'); glc.className='sl-gl'; GLR=T3GL(glc);
     if(GLR){ ov=document.createElement('canvas'); ov.className='sl-ov'; octx=ov.getContext('2d'); cv.after(glc,ov); } }
   const rk=host.querySelector('.sx-k'), rh=host.querySelector('.sx-h'), pb=host.querySelector('.sl-play'), info=host.querySelector('.sl-info'), stEl=host.querySelector('.sx-state');
-  const kl=host.querySelector('.sx-kl'), hl=host.querySelector('.sx-hl'), hc=host.querySelector('.sx-hc');
+  const kl=host.querySelector('.sx-kl'), hl=host.querySelector('.sx-hl'), hc=host.querySelector('.sx-hc'), mk=host.querySelector('.sx-marks'), tk=host.querySelector('.sx-ticks'), at=host.querySelector('.sx-auxt'), lp=host.querySelector('.sx-lp');
+  /* особые положения: кнопки и метки на ползунке */
+  const fillMarks=()=>{ const pc=v=>(v-o.k.min)/(o.k.max-o.k.min);
+    mk.innerHTML=`<span>Особые положения:</span>`+o.k.marks.map((m,i)=>`<button type="button" class="chip" data-m="${i}" aria-pressed="false">${m[1]}</button>`).join('');
+    tk.innerHTML=o.k.marks.map(m=>`<i style="left:calc(9px + (100% - 18px) * ${pc(m[0]).toFixed(4)})"></i>`).join('');
+    mk.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('click',()=>{ setPlay(false); setK(o.k.marks[+b.dataset.m][0]); fine(); })); };
+  const markOn=()=>mk.querySelectorAll('[data-m]').forEach(b=>{ const on=near(S.k,o.k.marks[+b.dataset.m][0]); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
   const auxR=()=>o.aux.r(S.k);
   /* ── вычисления: линия пересечения и сетки — при смене k; сечения посредником — при смене h ── */
-  let C=null, X=null;
-  const calc=()=>{ const g=o.mk(S.k), A=g.A, B=g.B, f=GLR?1:0.5;
-    const curves=contour(A,B.F,A.nu*2,A.nv*2,B.inR).filter(c=>plen(c.p)>0.8);
+  /* пока ползунок движется — грубая сетка (телефон успевает за пальцем), через 0,16 с после остановки — точная */
+  let C=null, X=null, FT=0;
+  const calc=q=>{ q=q!==false; const g=o.mk(S.k), A=g.A, B=g.B, f=(GLR?1:0.5)*(q?1:0.6), cm=q?2:1;
+    const curves=contour(A,B.F,A.nu*cm,A.nv*cm,B.inR).filter(c=>plen(c.p)>0.8);
     const cutA=S.body?p=>B.F(p)<0&&B.inR(p):null, cutB=S.body?p=>A.F(p)<0&&A.inR(p):null;
     C={A,B,curves,n:curves.length,mA:mesh(A,BLUE,Math.round(A.nu*f),Math.round(A.nv*f),cutA),mB:mesh(B,BEIGE,Math.round(B.nu*f),Math.round(B.nv*f),cutB),
-      iA:isoLines(A,cutA),iB:isoLines(B,cutB)}; X=null; };
+      iA:isoLines(A,cutA),iB:isoLines(B,cutB),q}; X=null; };
+  const fine=()=>{ clearTimeout(FT); if(C&&!C.q&&S.alive){ calc(true); fillState(); S.dirty=true; } };
+  const later=()=>{ clearTimeout(FT); FT=setTimeout(fine,160); };
   const gAux=()=>{ const a=o.aux, h=S.h; return a.kind==='z'?p=>p[2]-h:p=>hyp(p[0]-a.c[0],p[1]-a.c[1],p[2]-a.c[2])-h; };
   const auxCalc=()=>{ if(!C) calc(); const g=gAux(), a=o.aux, h=S.h, pts=[], done=[], rest=[];
     C.curves.forEach(c=>{ let cur=[], on=null; const flush=()=>{ if(cur.length>1) (on?done:rest).push(cur); };
@@ -26002,12 +26029,12 @@ function mount(host,id,opt){ opt=opt||{};
         edge:[[x0+4,2,h],[x1-4,2,h],[x1-4,y1-2,h],[x0+4,y1-2,h],[x0+4,2,h]]}; }
     else { const Sx=sphere(a.c,h); mx=mesh(Sx,AUXC,72,36,null,0.16); mx.edge=null; mx.rings=[ring(t=>[a.c[0]+h*cos(t),a.c[1]+h*sin(t),a.c[2]],96),ring(t=>[a.c[0]+h*cos(t),a.c[1],a.c[2]+h*sin(t)],96)]; }
     X={secA:contour(C.A,g,C.A.nu,C.A.nv),secB:contour(C.B,g,C.B.nu,C.B.nv),pts,done,rest,mx}; };
-  const fillInfo=()=>{ info.innerHTML=`<h3>${o.name}</h3><p class="sl-how"><b>Что видно.</b> ${o.what}</p><p><b>Как строят на эпюре.</b> ${o.how}</p>`
-      +(S.aux?`<p class="sx-auxt"><b>Посредники.</b> ${o.aux.t}</p>`:'')
+  const fillInfo=()=>{ at.hidden=!S.aux; lp.hidden=!S.aux; at.innerHTML=`<b>Посредник Σ.</b> ${o.aux.t}`;
+    info.innerHTML=`<h3>${o.name}</h3><p class="sl-how"><b>Что видно.</b> ${o.what}</p><p><b>Как строят на эпюре.</b> ${o.how}</p>`
       +(o.links&&o.links.length?`<div class="sl-links"><span>Где встречается:</span> ${o.links.map(l=>`<a href="${l[1]}">${l[0]}</a>`).join(' · ')}</div>`:''); };
   const fillState=()=>{ const s=o.st(S.k,C?C.n:0); stEl.innerHTML=`<b>${s[0]}</b>${s[1]?' '+s[1]:''}`; kl.textContent=o.k.lab+' = '+fmt(S.k)+' мм';
-    if(S.aux) hl.textContent=(o.aux.kind==='z'?'высота плоскости Σ':'радиус сферы Σ')+' = '+fmt(S.h)+' мм'; };
-  const setK=k=>{ S.k=Math.max(o.k.min,Math.min(o.k.max,k)); rk.value=Math.round((S.k-o.k.min)/(o.k.max-o.k.min)*1000); calc();
+    if(S.aux) hl.textContent=(o.aux.kind==='z'?'высота плоскости Σ':'радиус сферы Σ')+' = '+fmt(S.h)+' мм'; markOn(); };
+  const setK=k=>{ S.k=Math.max(o.k.min,Math.min(o.k.max,k)); rk.value=Math.round((S.k-o.k.min)/(o.k.max-o.k.min)*1000); calc(false); later();
     const r=auxR(); if(S.h<r[0]||S.h>r[1]) S.h=Math.max(r[0],Math.min(r[1],S.h)); syncH(); fillState(); S.dirty=true; };
   const syncH=()=>{ const r=auxR(); rh.value=Math.round((S.h-r[0])/Math.max(1e-6,r[1]-r[0])*1000); X=null; };
   const setH=h=>{ const r=auxR(); S.h=Math.max(r[0],Math.min(r[1],h)); syncH(); fillState(); S.dirty=true; };
@@ -26035,13 +26062,14 @@ function mount(host,id,opt){ opt=opt||{};
     const p1=()=>poly([[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]],dark?'rgba(196,176,128,.13)':'rgba(196,176,128,.2)','rgba(138,116,66,.5)',1);
     if(B.D[1]<0){ p2(); p1(); } else { p1(); p2(); }
     line([[x1,0,0],[x0,0,0]],ink,1.3); { const q=P([x0,0,0]), r=P([x1,0,0]), l=Math.hypot(q[0]-r[0],q[1]-r[1])||1; ctx.fillStyle=ink; ctx.font='italic 600 15px "Times New Roman",serif'; ctx.fillText('x',q[0]+(q[0]-r[0])/l*10-4,q[1]+(q[1]-r[1])/l*10+5);
-      const a=P([x0,0,z1]), b=P([x0,y1,0]); ctx.fillStyle=mut; ctx.fillText('π₂',a[0]+6,a[1]+18); ctx.fillText('π₁',b[0]+6,b[1]-6); }
+      /* «Спереди» π₁ видна ребром (подпись легла бы на x), «Сверху» — π₂ */
+      const a=P([x0,0,z1]), b=P([x0,y1,0]); ctx.fillStyle=mut; if(S.pit<1.35) ctx.fillText('π₂',a[0]+6,a[1]+18); if(S.pit>0.12) ctx.fillText('π₁',b[0]+6,b[1]-6); }
     /* проекции: очерки обеих поверхностей и линия пересечения на π₁ (z = 0) и π₂ (y = 0) — так это выглядит на эпюре */
     if(S.proj){ const on1=p=>[p[0],p[1],0], on2=p=>[p[0],0,p[2]], c1=dark?'#c9b27c':'#8a7442', c2=dark?'#8fb0e8':'#2f5f9e';
       [C.A,C.B].forEach(Sf=>{ Sf.o1.forEach(l=>line(l.map(on1),c1,1,.75)); Sf.o2.forEach(l=>line(l.map(on2),c2,1,.75)); });
       C.curves.forEach(c=>{ line(c.p.map(on1),RED,1.9,.9); line(c.p.map(on2),RED,1.9,.9); });
       if(S.aux&&X) X.pts.forEach(p=>[on1(p),on2(p)].forEach(q=>{ const s=P(q); ctx.beginPath(); ctx.arc(s[0],s[1],3,0,2*PI); ctx.fillStyle=RED; ctx.fill(); })); }
-    const isoC=dark?['rgba(220,235,255,.38)','rgba(255,240,210,.38)']:['rgba(20,50,95,.38)','rgba(80,58,16,.38)'], rimC=dark?['rgba(220,235,255,.7)','rgba(255,240,210,.7)']:['rgba(20,50,95,.75)','rgba(80,58,16,.75)'];
+    const isoC=dark?['rgba(10,25,50,.45)','rgba(60,40,8,.45)']:['rgba(20,50,95,.38)','rgba(80,58,16,.38)'], rimC=dark?['rgba(220,235,255,.6)','rgba(255,240,210,.6)']:['rgba(20,50,95,.75)','rgba(80,58,16,.75)'];
     /* линии сцены: сетки, сечения посредником, линия пересечения */
     const Ls=[], ln=(p,c,w,dash)=>{ if(p&&p.length>1) Ls.push({p,c:typeof c==='string'?col4(c):c,w,dash}); };
     C.iA.forEach(l=>ln(l.p,l.edge?rimC[0]:isoC[0],l.edge?1.3:0.8)); C.iB.forEach(l=>ln(l.p,l.edge?rimC[1]:isoC[1],l.edge?1.3:0.8));
@@ -26084,9 +26112,9 @@ function mount(host,id,opt){ opt=opt||{};
   let va=0; const animTo=(yaw,pit)=>{ cancelAnimationFrame(va); const a={y:S.yaw,p:S.pit}, t0=performance.now(); let dy=yaw-a.y; dy=Math.atan2(sin(dy),cos(dy));
     const st=now=>{ const u=Math.min(1,(now-t0)/450), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2; S.yaw=a.y+dy*e; S.pit=a.p+(pit-a.p)*e; S.dirty=true; if(u<1) va=requestAnimationFrame(st); }; va=requestAnimationFrame(st); };
   vb.forEach(b=>b.addEventListener('click',()=>{ vb.forEach(x=>x.classList.toggle('on',x===b)); const v=views[b.dataset.v]; S.zoom=1; animTo(v[0],v[1]); }));
-  const choose=nid=>{ o=BY[nid]||LIST[0]; sc=scene(o); setPlay(false); S.dir=1; S.hold=0;
+  const choose=nid=>{ o=BY[nid]||LIST[0]; sc=scene(o); setPlay(false); S.dir=1; S.hold=0; fillMarks();
     host.querySelectorAll('.sl-pick [data-id]').forEach(x=>{ const on=x.dataset.id===o.id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on); });
-    setK(o.k.def); if(S.aux){ const r=auxR(); setH(r[0]+(r[1]-r[0])*0.3); } fillInfo(); fillState(); if(opt.onPick) opt.onPick(o.id); };
+    setK(o.k.def); fine(); if(S.aux){ const r=auxR(); setH(r[0]+(r[1]-r[0])*0.3); } fillInfo(); fillState(); if(opt.onPick) opt.onPick(o.id); };
   host.querySelectorAll('.sl-pick [data-id]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.id)));
   /* жесты: тянуть — вращать, два пальца — зум */
   const ptrs=new Map(); let g=null;
@@ -26100,8 +26128,8 @@ function mount(host,id,opt){ opt=opt||{};
   cv.addEventListener('wheel',e=>{ e.preventDefault(); S.zoom=Math.max(0.5,Math.min(4,S.zoom*Math.exp(-e.deltaY*0.0015))); S.dirty=true; },{passive:false});
   cv.addEventListener('dblclick',()=>{ S.zoom=1; animTo(views.home[0],views.home[1]); vb.forEach(x=>x.classList.toggle('on',x.dataset.v==='home')); });
   let ro=null; try{ ro=new ResizeObserver(()=>size()); ro.observe(stage); }catch(e){ window.addEventListener('resize',size); }
-  function destroy(){ S.alive=false; cancelAnimationFrame(S.raf); cancelAnimationFrame(va); try{ ro&&ro.disconnect(); }catch(e){} try{ GLR&&GLR.dispose(); }catch(e){} }
-  setK(o.k.def); fillInfo(); fillState(); size(); S.raf=requestAnimationFrame(loop);
+  function destroy(){ S.alive=false; clearTimeout(FT); cancelAnimationFrame(S.raf); cancelAnimationFrame(va); try{ ro&&ro.disconnect(); }catch(e){} try{ GLR&&GLR.dispose(); }catch(e){} }
+  fillMarks(); setK(o.k.def); fine(); fillInfo(); fillState(); size(); S.raf=requestAnimationFrame(loop);
   return { destroy, get id(){ return o.id; }, get n(){ return C?C.n:0; }, set(k){ setK(k); fillState(); }, curves:()=>C?C.curves.map(c=>c.p):[] };
 }
 /* ── страница #/ng/surf/x[/id] ── */
