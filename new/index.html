@@ -345,7 +345,7 @@ body.liveshow{overflow:hidden}
 .hcards .hc-ig:hover{transform:translateY(-2px)}
 @media(min-width:760px){.hcards .hc-ig .hc-s{max-width:48%}}
 @media(prefers-reduced-motion:reduce){.hcards .hc-ig::after,.hcards .hc-ig .hc-pill i{animation:none}}
-@media(min-width:760px){.hcards .hc-rot .hc-t{font-size:30px;max-width:11ch}.hcards .hc-rart{width:46%;max-width:280px;max-height:84%}}
+@media(min-width:760px){.hcards .hc-rot .hc-t{font-size:28px;max-width:13ch}.hcards .hc-rart{width:46%;max-width:280px;max-height:84%}}
 /* #/live — страница онлайн-разборов (viewLive) */
 .lv .lv-hero p a,.lv .lv-hero p a b{color:#ffd34d!important;text-decoration:underline;text-decoration-color:rgba(255,211,77,.6);text-underline-offset:3px}
 .lv-hero{position:relative;overflow:hidden;isolation:isolate;margin:8px 0 22px;padding:22px 18px 18px;border-radius:24px;color:#fff;--pa:#fff;--pa-ink:#0a2463;
@@ -30173,10 +30173,10 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
     <ellipse cx="${f((x0+x1)/2)}" cy="${f((y0+y1)/2)}" rx="${f((x1-x0)/1.7)}" ry="${f((y1-y0)/1.7)}" fill="url(#i4Gl)"/>${g}</svg>`;
   return IG4ART; }
 function homeCards(){ const pm=PROMO.cardHTML();
-  /* слева — эфир (если он есть) или «Как образуются поверхности»; справа — ДЗ 4 по инженерной графике */
-  const left=pm||`<a class="hc hc-rot" href="#/ng/surf" aria-label="Как образуются поверхности: интерактивная 3D-модель">
+  /* слева — эфир (если он есть) или «Как образуются и пересекаются поверхности»; справа — ДЗ 4 по инженерной графике */
+  const left=pm||`<a class="hc hc-rot" href="#/ng/surf" aria-label="Как образуются и пересекаются поверхности: интерактивная 3D-модель">
     <span class="hc-pill"><i></i>Тема · начерт</span>
-    <span class="hc-t">Как образуются поверхности</span><span class="hc-s">гиперболоид, коноид, геликоид — в 3D</span>
+    <span class="hc-t">Как образуются и пересекаются поверхности</span>
     ${surfArt().replace('class="hc-art"','class="hc-art hc-rart"')}
     <span class="hc-go">Смотреть →</span></a>`;
   return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig4')}" aria-label="ДЗ 4 по инженерной графике: тело с вырезом, три вида и разрезы">
