@@ -30175,12 +30175,10 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
 function homeCards(){ const pm=PROMO.cardHTML();
   /* слева — эфир (если он есть) или «Как образуются и пересекаются поверхности»; справа — ДЗ 4 по инженерной графике */
   const left=pm||`<a class="hc hc-rot" href="#/ng/surf" aria-label="Как образуются и пересекаются поверхности: интерактивная 3D-модель">
-    <span class="hc-pill"><i></i>Тема · начерт</span>
     <span class="hc-t">Как образуются и пересекаются поверхности</span>
     ${surfArt().replace('class="hc-art"','class="hc-art hc-rart"')}
     <span class="hc-go">Смотреть →</span></a>`;
   return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig4')}" aria-label="ДЗ 4 по инженерной графике: тело с вырезом, три вида и разрезы">
-    <span class="hc-pill live"><i></i>Инж. графика</span>
     <span class="hc-t">ДЗ&nbsp;4</span><span class="hc-s">тело с вырезом: три вида и разрезы — любой вариант</span>
     ${ig4CardArt()}
     <span class="hc-go">Открыть →</span></a>`; }
