@@ -4346,6 +4346,28 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .v8-meta{max-width:none!important;border-width:1.5px!important;border-radius:22px!important}
 .v8-share{border-radius:16px!important;font-weight:800!important;min-height:48px!important;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s}
 .v8-share:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
+/* верхние карточки: крупный плотный заголовок, фигура поверх букв */
+.hcards .hc.hc-rot{min-height:300px}
+.hcards .hc.hc-rot .hc-t{position:relative;z-index:1;margin-top:2px;font:700 20px/.98 var(--disp);letter-spacing:-.045em;text-shadow:none;max-width:none}
+.hcards .hc.hc-rot .hc-art{position:absolute;z-index:2;margin:0;transform:none;top:auto;left:auto;pointer-events:none}
+.hcards .hc.hc-rot .hc-go{position:relative;z-index:3;margin-top:auto}
+/* «Поверхности»: гиперболоид заходит на нижние строки заголовка */
+.hcards .hc.hc-rot:not(.hc-ig) .hc-art{right:-6%;bottom:58px;width:78%;max-width:none;max-height:none;filter:drop-shadow(0 6px 14px rgba(0,20,90,.35))}
+/* ДЗ 5: «ДЗ» и огромная «5», шестигранник крутится поверх цифры */
+.hcards .hc-ig .hc-big{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.hcards .hc-ig .hc-big span{font:700 34px/.9 var(--disp);letter-spacing:-.05em}
+.hcards .hc-ig .hc-big b{font:700 190px/.74 var(--disp);letter-spacing:-.08em;margin-top:6px;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hcards .hc-ig canvas.hc-cv{right:-16%!important;top:auto!important;bottom:62px!important;width:74%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+@media(min-width:760px){
+  .hcards .hc.hc-rot{min-height:320px;padding:24px 26px 22px}
+  .hcards .hc.hc-rot .hc-t{font-size:46px}
+  .hcards .hc.hc-rot:not(.hc-ig) .hc-t{max-width:12ch}
+  .hcards .hc.hc-rot:not(.hc-ig) .hc-art{right:4%;bottom:auto;top:50%;translate:0 -50%;width:42%;max-width:300px}
+  .hcards .hc-ig .hc-big{flex-direction:row;align-items:flex-end;gap:14px}
+  .hcards .hc-ig .hc-big span{font-size:110px;line-height:.78}
+  .hcards .hc-ig .hc-big b{font-size:250px;margin-top:0}
+  .hcards .hc-ig canvas.hc-cv{right:4%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:300px!important;max-width:44%!important}
+}
 /* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
 .ownc{display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:12px;border:1px solid var(--line);border-radius:24px;background:var(--surf)}
 @media(min-width:760px){.ownc{width:min(440px,100%);margin:16px auto 0}}
@@ -30238,7 +30260,7 @@ function homeCards(){ const pm=PROMO.cardHTML();
     ${surfArt().replace('class="hc-art"','class="hc-art hc-rart"')}
     <span class="hc-go">Смотреть →</span></a>`;
   return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig5')}" aria-label="ДЗ 5 по инженерной графике: тело с отверстием и вырезом">
-    <span class="hc-t">ДЗ&nbsp;5</span>
+    <span class="hc-t hc-big"><span>ДЗ</span><b>5</b></span>
     <canvas class="hc-art hc-rart hc-cv" data-ig5art aria-hidden="true"></canvas>
     <span class="hc-go">Открыть →</span></a>`; }
 /* разделы на главной — карточка предмета, внутри 4 минималистичные плитки со сплошными значками цвета предмета (вырезы .k — цветом плитки) */
