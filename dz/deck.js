@@ -361,9 +361,12 @@
   new MutationObserver(paint).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 
   /* показ: только на самом #/dz */
-  function isOn(){return /^#\/dz\/?$/.test(location.hash);}
+  /* #/dz — все ДЗ, #/dz/ng и #/dz/ig — один предмет (плитки «ДЗ» на главной) */
+  function isOn(){return /^#\/dz(\/(ng|ig))?\/?$/.test(location.hash);}
+  function hashC(){var m=location.hash.match(/^#\/dz\/(ng|ig)/);return m?m[1]:null;}
   function sync(){var on=isOn();document.documentElement.classList.toggle('nd-on',on);
     if(!on){closeSheet();if(FX>=0){els[FX].style.zIndex=10+FX;FX=-1;root.classList.remove('nd-fx');sc.classList.remove('lock');}return;}
+    var hc=hashC();if(hc&&hc!==S.c){S.c=hc;built=false;$('flt').querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.c===S.c));});}
     var v=getV(),t=today();if(v!==S.v||t!==S.today||!built){S.v=v;S.today=t;paint();build(built);} else geo();
     intro();}
   window.addEventListener('hashchange',sync);
