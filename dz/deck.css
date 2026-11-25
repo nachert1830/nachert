@@ -1,0 +1,155 @@
+/* Экран «ДЗ» копии сайта (/new/, адрес #/dz): колода карточек по сроку сдачи. Перенесён из макета
+   docs/redesign/dz-picker/mockup.html (ветка claude/sharp-newton-49vuqd). Всё — внутри #nd, чтобы не задеть стили сайта. */
+#nd :where(*:not(svg,svg *)),#nd :where(*:not(svg,svg *))::before,#nd :where(*:not(svg,svg *))::after{all:revert}
+/* «Путь к сдаче» в раскрытой карточке — те же 4 шага, что на карточке задания (window.dzSteps), в стиле колоды */
+#nd .det .when{margin-bottom:12px}#nd .det .when.soon{color:var(--o);font-weight:700}
+#nd .rth{margin:0 2px 6px!important;font:800 12px var(--sans)!important;letter-spacing:.06em;text-transform:uppercase;color:var(--fm)}
+#nd .rt{list-style:none;margin:0 0 14px;padding:0;border-radius:18px;background:var(--card);overflow:hidden}
+#nd .rt li{margin:0;border-top:1px solid var(--ln)}#nd .rt li:first-child{border-top:0}
+#nd .rt a{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;color:inherit;text-decoration:none}
+#nd .rt a::after{content:"";flex:none;width:8px;height:8px;margin-left:auto;border-right:2px solid var(--fm);border-top:2px solid var(--fm);transform:rotate(45deg)}
+#nd .rt i{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:800 13px var(--sans);font-style:normal;border:1.5px solid var(--ln);background:var(--bg);color:var(--fm)}
+#nd .rt li.ok i{background:#1f9d55;border-color:#1f9d55;color:#fff}#nd .rt li.cur i{background:var(--o);border-color:var(--o);color:#fff}
+#nd .rt span{display:grid;gap:2px;min-width:0}#nd .rt b{font:700 15px var(--sans)}#nd .rt small{font-size:13px;color:var(--fm);line-height:1.35}
+#nd .rt em{font-style:normal;font:800 10.5px var(--sans);letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--o);color:#fff;margin-left:6px;vertical-align:2px}
+#nd *{box-sizing:border-box}
+#nd{--bg:#f6f8fd;--fg:#0e1c45;--fm:#66749a;--card:#e8eefb;--ln:#dfe6f5;--o:#2f6bff;--sans:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;--dsp:'Geologica','Golos Text',system-ui,sans-serif;
+  position:fixed;inset:0;z-index:2147479999;display:none;background:var(--bg);color:var(--fg);font:15px/1.4 var(--sans);isolation:isolate}
+#nd.nd-dark{--bg:#000;--fg:#f5f5f7;--fm:#8e8e93;--card:#1c1c1e;--ln:#232326}
+html.nd-on #nd{display:block}
+/* у смены страниц сайта (View Transitions) шапка и меню — свои слои поверх; у колоды тоже свой, иначе они проступают поверх неё */
+#nd{view-transition-name:nd-deck}
+::view-transition-group(nd-deck){z-index:100}
+::view-transition-new(nd-deck){animation:none}
+::view-transition-old(nd-deck){animation:nd-out .16s ease-in both}
+@keyframes nd-out{to{opacity:0}}
+html.nd-on,html.nd-on body{overflow:hidden}
+/* сайт под колодой не рисуем — он всё равно закрыт, а браузер тратил бы на него каждый кадр */
+html.nd-on body > :not(#nd):not(#navBot):not(script):not(style){visibility:hidden!important}
+#nd button,#nd a{font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#nd button{cursor:pointer;color:inherit}
+#nd :focus-visible{outline:2px solid var(--o);outline-offset:3px}
+#nd .in{position:relative;height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column}
+
+#nd .hd{flex:none;padding:calc(18px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) 10px max(20px,env(safe-area-inset-left,0px));display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+#nd .hd h1{margin:0;font:800 32px/1 var(--sans);letter-spacing:-.03em}
+@media (max-height:700px){#nd .hd{padding-top:calc(12px + env(safe-area-inset-top,0px))}#nd .hd h1,#nd .vbtn{font-size:26px}#nd .vbtn.no{font-size:19px}}
+#nd .vbtn{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:2px 0 0;margin:0;font:800 32px/1.02 var(--sans);letter-spacing:-.03em;color:var(--fm)}
+#nd .vbtn.no{color:var(--o);font-size:22px;padding-top:6px}
+#nd .vbtn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;margin-top:4px}
+#nd .now{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px dashed var(--ln);background:var(--bg);display:grid;place-items:center;padding:0;color:var(--fg);transition:border-color .25s,background .25s,color .25s,transform .25s}
+#nd .now svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#nd .now.on{border:0;background:var(--o);color:#fff;transform:scale(1.04)}
+#nd .now:disabled{opacity:.35;cursor:default}
+#nd .flt{flex:none;display:flex;gap:4px;margin:4px 16px 0;padding:4px;border-radius:13px;background:var(--card)}
+#nd .flt button{flex:1 1 auto;border:0;background:none;border-radius:10px;padding:8px 6px;margin:0;font:600 13.5px var(--sans);color:var(--fm);white-space:nowrap;transition:background .2s,color .2s}
+#nd .flt button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+
+/* лента: своя прокрутка (палец, пружина, инерция — new/dzdeck.js), без прокрутки страницы */
+#nd .sc{flex:1;min-height:0;position:relative;overflow:hidden;outline:none}
+#nd .stage{position:absolute;inset:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+#nd .stage:active{cursor:grabbing}
+
+/* карточка */
+#nd .k{--i:#fff;--ch:360px;position:absolute;left:16px;right:16px;top:0;border:0;padding:0;margin:0;border-radius:26px;overflow:hidden;color:#fff;text-align:left;font:inherit;
+  background:linear-gradient(165deg,color-mix(in srgb,var(--c) 78%,#fff) 0%,var(--c) 38%,color-mix(in srgb,var(--c) 82%,#000) 100%);
+  transform-origin:50% 0;will-change:transform,opacity;contain:layout paint style;backface-visibility:hidden;
+  box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 -8px 18px -12px rgba(0,0,0,.4);scale:1;transition:scale .22s cubic-bezier(.22,1,.36,1)}
+#nd .k.pr{scale:.97;transition-duration:.12s}
+/* блик по стеклу: мягкое пятно света в углу */
+#nd .k::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(120% 60% at 10% -10%,rgba(255,255,255,.32),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.10),transparent 30%)}
+#nd .k.dk{color:#1a1400;--i:#1a1400}
+#nd .k .top{position:absolute;left:14px;right:14px;top:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:3}
+#nd .chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:99px;border:1.3px solid color-mix(in srgb,currentColor 55%,transparent);font:600 12.5px var(--sans);white-space:nowrap;background:color-mix(in srgb,currentColor 8%,transparent)}
+#nd .chip.st.cur{background:#fff;border-color:#fff;color:#111113}
+#nd .k.dk .chip.st.cur{background:#1a1400;border-color:#1a1400;color:#ffd84a}
+#nd .chip.st.cur i{width:7px;height:7px;border-radius:50%;background:var(--o);animation:nd-pulse 1.6s ease-in-out infinite}
+#nd .chip.st.past{opacity:.7}
+@keyframes nd-pulse{50%{opacity:.35}}
+#nd .k .ttl{position:absolute;left:18px;top:50px;max-width:62%;font:700 17px/1.18 var(--sans);letter-spacing:-.01em;z-index:3;text-wrap:balance}
+#nd .k .var{position:absolute;left:18px;bottom:70px;font:600 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;opacity:.75;z-index:3}
+#nd .k svg.art{position:absolute;right:-8%;top:56px;width:70%;max-height:calc(var(--ch) - 150px);height:auto;z-index:1;opacity:.95;overflow:visible}
+/* главный визуальный элемент: «Задание» и огромная цифра, обрезанные нижним краем карточки */
+#nd .k .word{position:absolute;left:18px;bottom:24px;font:800 36px/1 var(--sans);letter-spacing:-.04em;z-index:3}
+#nd .k .num{position:absolute;right:12px;bottom:-.25em;font:900 min(216px,calc(var(--ch)*.6))/1 var(--sans);letter-spacing:-.07em;z-index:2;font-variant-numeric:tabular-nums;color:var(--i)}
+
+/* нижнее меню */
+#nd.nd-fx .tabs{transform:translateY(140%);opacity:0}
+#nd .tabs{transition:transform .45s cubic-bezier(.2,.9,.22,1.08),opacity .3s;position:absolute;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:6px;border-radius:999px;
+  background:color-mix(in srgb,var(--card) 96%,transparent);border:1px solid var(--ln);box-shadow:0 12px 30px -14px rgba(0,0,0,.45)}
+#nd .tb{display:flex;align-items:center;justify-content:center;gap:7px;height:46px;min-width:46px;flex:none;padding:0;border:0;border-radius:999px;background:color-mix(in srgb,var(--fg) 6%,transparent);color:var(--fm);font:600 14px var(--sans);text-decoration:none}
+#nd .tb svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#nd .tb span{display:none}
+#nd .tb.on{padding:0 18px 0 15px;background:var(--o);color:#fff}#nd .tb.on span{display:inline}
+
+/* листы снизу: «что внутри задания» и выбор варианта */
+#nd .veil{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s}
+#nd .sheet{position:absolute;left:0;right:0;bottom:0;z-index:31;max-height:92%;overflow-y:auto;border-radius:30px 30px 0 0;background:var(--bg);color:var(--fg);padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .38s cubic-bezier(.2,.9,.2,1)}
+#nd.nd-open .veil{opacity:1;pointer-events:auto}#nd.nd-open .sheet{transform:none}
+#nd .sheet .grab{display:block;width:40px;height:5px;padding:0;border:0;border-radius:9px;background:var(--ln);margin:0 auto 14px}
+#nd .sheet .sw{display:flex;align-items:flex-end;gap:14px;border-radius:22px;background:var(--c);color:#fff;padding:14px 16px;overflow:hidden;position:relative;height:96px}
+#nd .sheet .sw.dk{color:#1a1400}
+#nd .sheet .sw b{font:800 26px/1 var(--sans);letter-spacing:-.04em;margin-bottom:4px}
+#nd .sheet .sw strong{position:absolute;right:8px;bottom:-.25em;font:900 120px/1 var(--sans);letter-spacing:-.07em}
+#nd .sheet .sw small{position:absolute;left:16px;top:12px;font:600 12px var(--sans);opacity:.8}
+#nd .sheet h2{margin:14px 2px 2px;font:700 17px/1.2 var(--sans)}
+#nd .sheet p{margin:0 2px 10px;color:var(--fm);font-size:13.5px}
+#nd .rows{list-style:none;margin:0;padding:0;border-radius:18px;background:var(--card);overflow:hidden}
+#nd .rows li{margin:0;border-top:1px solid var(--ln)}
+#nd .rows li:first-child{border-top:0}
+#nd .rows a{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-weight:600;font-size:14.5px;color:inherit;text-decoration:none}
+#nd .rows a::after{content:"";width:8px;height:8px;border-right:2px solid var(--fm);border-top:2px solid var(--fm);transform:rotate(45deg)}
+#nd .go{display:flex;align-items:center;justify-content:center;margin:0 0 14px;width:100%;height:52px;border:0;border-radius:16px;background:var(--o);color:#fff;font:700 16px var(--sans);text-decoration:none}
+/* «что внутри» раскрытой карточки — выезжает под ней */
+#nd .det{position:absolute;left:0;right:0;bottom:0;z-index:25;overflow-y:auto;overscroll-behavior:contain;padding:4px 18px calc(24px + env(safe-area-inset-bottom,0px));
+  opacity:0;transform:translateY(48px);pointer-events:none;transition:opacity .25s,transform .5s cubic-bezier(.2,.9,.22,1.08)}
+#nd.nd-fx .det{opacity:1;transform:none;pointer-events:auto;transition-delay:.12s}
+#nd .det h2{margin:6px 2px 4px;font:700 20px/1.2 var(--sans);letter-spacing:-.01em}
+#nd .det p{margin:0 2px 14px;color:var(--fm);font-size:14px}
+#nd .det .cls{display:block;width:100%;margin:8px 0 0;height:46px;border:0;border-radius:14px;background:none;color:var(--fm);font:600 15px var(--sans)}
+#nd .det > *{opacity:0;transform:translateY(14px);transition:opacity .3s,transform .45s cubic-bezier(.2,.9,.22,1.08)}
+#nd.nd-fx .det > *{opacity:1;transform:none}
+#nd.nd-fx .det > :nth-child(2){transition-delay:.18s}#nd.nd-fx .det > :nth-child(3){transition-delay:.24s}#nd.nd-fx .det > :nth-child(4){transition-delay:.3s}#nd.nd-fx .det > :nth-child(5){transition-delay:.34s}
+#nd .vg{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0 4px}
+#nd .vg button{height:48px;border:0;margin:0;padding:0;border-radius:14px;background:var(--card);font:700 17px var(--sans);font-variant-numeric:tabular-nums}
+#nd .vg button[aria-pressed=true]{background:var(--o);color:#fff}
+
+#nd .art .w{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#nd .art .t{fill:none;stroke:currentColor;stroke-width:1;opacity:.55}
+#nd .art .b{fill:none;stroke:currentColor;stroke-width:1;opacity:.22}
+#nd .art .d{fill:none;stroke:currentColor;stroke-width:1.2;stroke-dasharray:5 4;opacity:.75}
+#nd .art .x{fill:none;stroke:currentColor;stroke-width:1;stroke-dasharray:9 3 2 3;opacity:.5}
+#nd .art .h{fill:none;stroke:#ffd84a;stroke-width:2.6;stroke-linecap:round}
+#nd .k.dk .art .h{stroke:#1a1400}
+#nd .art .y{fill:#ffd84a;fill-opacity:.85;stroke:#ffd84a;stroke-width:1.2}
+#nd .k.dk .art .y{fill:#fff;stroke:#1a1400}
+#nd .art .f{fill:currentColor;fill-opacity:.12}
+#nd .art .p{fill:currentColor}
+#nd .art .tx{fill:currentColor;font:italic 600 12px Georgia,'Times New Roman',serif}
+/* прозрачная подпись скрытого переключателя поверх всего, на что нажимают: касание пальцем щёлкает его —
+   единственный способ получить тактильный «тик» в Safari на iPhone (iOS 26.5+) */
+#nd .hl{position:absolute!important;inset:0;z-index:6;display:block!important;margin:0;padding:0;background:none;border-radius:inherit;cursor:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#nd .stage .hl{touch-action:none}
+#nd .hl > input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;padding:0;visibility:hidden}
+#nd .flt button,#nd .now,#nd .vbtn,#nd .tb,#nd .rows a,#nd .go,#nd .cls,#nd .vg button,#nd .sheet .grab{position:relative}
+#nd .hp{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){#nd *{transition:none!important;animation:none!important}}
+#nd .sheet .ver{margin:12px 0 0;text-align:center;font-size:11px;opacity:.5}
+
+/* на телефоне на колоде «ДЗ» вместо своей плавающей панели — нижняя панель сайта */
+@media(max-width:1079.98px){
+  #nd .tabs{display:none!important}
+  html.nd-on body > #navBot#navBot.nav-bot{visibility:visible!important;z-index:2147480050}
+  #nd .det,#nd .sheet{padding-bottom:calc(var(--tabh,64px) + 24px + env(safe-area-inset-bottom,0px))}
+}
+/* глубина колоды: прошедшие карточки в стопке сверху и дальние снизу чуть темнее (--dim пишет движок) */
+#nd .k::after{content:"";position:absolute;inset:0;z-index:5;pointer-events:none;border-radius:inherit;background:#000;opacity:var(--dim,0)}
+#nd .k{box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 -8px 18px -12px rgba(0,0,0,.4),0 -1px 0 rgba(0,0,0,.06)}
+
+/* в стиле основного сайта: заголовки, «Задание» и номер — шрифтом Geologica; фильтр — тёмно-синим; блик карточек — мягче */
+#nd .hd h1,#nd .vbtn,#nd .k .word,#nd .k .num,#nd .k .ttl,#nd .det h2,#nd .sheet h2{font-family:var(--dsp)}
+#nd .k .num{font-weight:700;letter-spacing:-.08em;color:rgba(255,255,255,.95)}
+#nd .flt button[aria-pressed=true]{background:#16307f;color:#fff}
+#nd.nd-dark{--bg:#070d22;--fg:#eef2ff;--fm:#8d9bc4;--card:#121c3f;--ln:#1b2650}
+#nd.nd-dark .flt button[aria-pressed=true]{background:#2f6bff}
