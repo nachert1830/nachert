@@ -4308,20 +4308,42 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .v8-meta{max-width:none!important;border-width:1.5px!important;border-radius:22px!important}
 .v8-share{border-radius:16px!important;font-weight:800!important;min-height:48px!important;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s}
 .v8-share:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
-/* владелец сайта и «поделиться» — одна строка: аватар, имя, «владелец сайта · просмотры», справа тихая кнопка */
-.ownc{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:10px 10px 10px 12px;border:1px solid var(--line);border-radius:20px;background:var(--surf)}
-.ownc-a{flex:1;display:flex;align-items:center;gap:12px;min-width:0;padding:0;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
-.ownc-a .au-face{width:42px;height:42px;font-size:27px}
-.ownc-t{display:flex;flex-direction:column;gap:3px;min-width:0}
-.ownc-t b{font:800 16px/1.15 var(--disp);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ownc-t small{display:flex;align-items:center;gap:5px;white-space:nowrap;font:500 13px/1.2 var(--sans);color:var(--mut)}
-.ownc .vc,:root[data-theme=dark] .ownc .vc{display:inline-flex!important;align-items:center;gap:4px;gap:4px!important;height:auto!important;padding:0!important;min-height:0!important;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important}
-.ownc .vc-dot{display:none!important}
-.ownc .vc-n,.ownc .vc-l,:root[data-theme=dark] .ownc .vc-n{font:500 13px/1.2 var(--sans)!important;color:var(--mut)!important}
-.ownc-s{flex:none;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 16px;border:0;border-radius:14px;background:var(--blue-s,#eaf0ff);color:var(--acc);font:700 14px var(--sans);cursor:pointer;transition:background .15s}
-.ownc-s:hover{background:color-mix(in srgb,var(--acc) 14%,var(--surf))}
-.ownc-a:hover b{color:var(--acc)}
-@media(max-width:460px){.ownc-s{width:42px;padding:0;justify-content:center}.ownc-s span{display:none}}
+/* владелец сайта, просмотры и «поделиться» — три отдельных блока рядом */
+.ownc{display:grid;grid-template-columns:1fr auto;grid-template-areas:"who share" "odo odo";gap:10px;margin:14px 0 0}
+@media(min-width:760px){.ownc{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"who odo share";gap:12px}.ownc-a{padding:14px 26px}}
+.ownc-a{grid-area:who;display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;padding:14px 18px;border:1px solid var(--line);border-radius:20px;background:var(--surf);color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:border-color .15s}
+.ownc-a b{font:800 18px/1.1 var(--disp);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ownc-a small{font:500 13px/1.2 var(--sans);color:var(--mut)}
+.ownc-a:hover{border-color:var(--acc)}.ownc-a:hover b{color:var(--acc)}
+.ownc-v{grid-area:odo;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px 14px 12px;border:1px solid var(--line);border-radius:20px;background:var(--surf)}
+.ownc-vl{display:flex;align-items:center;gap:7px;font:600 12.5px/1 var(--sans);color:var(--mut)}
+.ownc-vl i{width:7px;height:7px;border-radius:50%;background:#1fbf5b;box-shadow:0 0 0 0 rgba(31,191,91,.6);animation:ownc-live 2s infinite}
+@keyframes ownc-live{70%{box-shadow:0 0 0 7px rgba(31,191,91,0)}100%{box-shadow:0 0 0 0 rgba(31,191,91,0)}}
+/* «Поделиться» — сочная: градиент, блик, объём, пробегающий отблеск */
+.ownc-s{grid-area:share;position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:58px;padding:0 22px;border:0;border-radius:20px;
+  background:linear-gradient(180deg,#ff6a3d 0%,#ff2d3f 55%,#e3102c 100%);color:#fff;font:800 16.5px var(--sans);letter-spacing:-.01em;cursor:pointer;
+  box-shadow:0 5px 0 #a80d22,0 16px 28px -12px rgba(240,30,50,.75),inset 0 1px 0 rgba(255,255,255,.5);text-shadow:0 1px 1px rgba(120,0,15,.35);transition:transform .1s,box-shadow .1s,filter .15s}
+.ownc-s::before{content:"";position:absolute;inset:0 0 50% 0;z-index:-1;border-radius:20px 20px 40% 40%/20px 20px 14px 14px;background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0))}
+.ownc-s::after{content:"";position:absolute;top:-20%;bottom:-20%;left:-60%;width:40%;z-index:1;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:ownc-shine 3.8s ease-in-out 1.2s infinite}
+@keyframes ownc-shine{0%,62%{left:-60%}100%{left:130%}}
+.ownc-s svg,.ownc-s span{position:relative;z-index:2}
+.ownc-s:hover{filter:saturate(1.15) brightness(1.05);transform:translateY(-1px);box-shadow:0 6px 0 #a80d22,0 20px 32px -12px rgba(240,30,50,.85),inset 0 1px 0 rgba(255,255,255,.5)}
+.ownc-s:active{transform:translateY(4px);box-shadow:0 1px 0 #a80d22,0 6px 14px -8px rgba(240,30,50,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+@media(min-width:760px){.ownc-s{min-height:0;padding:0 28px}}
+@media(max-width:759px){.ownc-a{padding:12px 14px}.ownc-a b{font-size:16px}.ownc-s{padding:0 16px;font-size:15.5px;gap:8px}}
+@media(prefers-reduced-motion:reduce){.ownc-s::after,.ownc-vl i{animation:none}}
+/* счётчик-барабан: светлая оправа, тёмное окно, цифры на барабанах — видно соседние сверху и снизу */
+.odo{display:inline-block;padding:5px;border-radius:999px;background:linear-gradient(180deg,#ffffff,#d6d9e2);box-shadow:0 12px 26px -16px rgba(16,22,48,.55),inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.08)}
+.odo-win{position:relative;display:flex;align-items:center;height:62px;padding:0 20px;border-radius:999px;overflow:hidden;background:linear-gradient(180deg,#07080b,#1d2029 50%,#07080b);
+  box-shadow:inset 0 4px 10px rgba(0,0,0,.95),inset 0 -4px 10px rgba(0,0,0,.95);font:700 40px/1 var(--disp);color:#f4f5f8;font-variant-numeric:tabular-nums}
+.odo-win::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.35) 26%,rgba(0,0,0,0) 42%,rgba(0,0,0,0) 58%,rgba(0,0,0,.35) 74%,rgba(0,0,0,.92) 100%)}
+.odo-win::after{content:"";position:absolute;left:14%;right:14%;top:5px;height:1px;z-index:3;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)}
+.odo-d{position:relative;width:.64em;height:100%;overflow:hidden}
+.odo-s{position:absolute;left:0;right:0;top:calc(50% - .575em);will-change:transform}
+.odo-s b{display:block;height:1.15em;line-height:1.15em;text-align:center;font-weight:700}
+.odo-d.mv .odo-s{filter:blur(.8px)}
+.odo-sep{flex:none;width:1px;height:76%;margin:0 9px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.16),transparent)}
+@media(max-width:400px){.odo-win{height:56px;padding:0 16px;font-size:35px}}
 .v8h.has-q .ownc{display:none}
 /* разделы — плитки с иконками, как уроки в Duolingo */
 .v8-dirs{max-width:none!important}
@@ -29527,6 +29549,30 @@ document.addEventListener('click',e=>{ const b=e.target.closest('#shareBtn'); if
 FX.note=function(m){ try{ let n=document.getElementById('fxNote'); if(!n){ n=document.createElement('div'); n.id='fxNote'; n.className='fxnote'; n.setAttribute('role','status'); n.setAttribute('aria-live','polite'); document.body.appendChild(n); }
   n.textContent=m; n.classList.remove('on'); void n.offsetWidth; n.classList.add('on'); clearTimeout(n._t); n._t=setTimeout(()=>n.classList.remove('on'),2200); }catch(e){} };
 
+/* ═══ ODO — счётчик-барабан: каждая цифра — барабан 0–9, при росте числа крутится вперёд; при первом показе раскручивается.
+   Число — настоящее (VIEWS: views.json + Метрика + GoatCounter вживую), барабан только показывает его. */
+const ODO=(function(){
+  const H=1.15, BASE=10, N=60, RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STRIP='<span class="odo-s" aria-hidden="true">'+Array.from({length:N},(_,i)=>'<b>'+(i%10)+'</b>').join('')+'</span>';
+  const pos=(d,p,ms)=>{ const s=d.firstChild; s.style.transition=ms&&!RM?'transform '+ms+'ms cubic-bezier(.16,.84,.18,1)':'none'; s.style.transform='translateY('+(-p*H)+'em)'; };
+  function build(el,txt){ const w=el.querySelector('.odo-win'); w.innerHTML=[...txt].map(c=>/\d/.test(c)?'<span class="odo-d">'+STRIP+'</span>':'<i class="odo-sep"></i>').join('');
+    w.dataset.fmt=txt.replace(/\d/g,'0'); el._p=[...w.querySelectorAll('.odo-d')].map(d=>{ pos(d,BASE,0); return BASE; }); }
+  function roll(el,txt,intro){ const ds=[...el.querySelectorAll('.odo-d')], dg=[...txt].filter(c=>/\d/.test(c)).map(Number), k=ds.length;
+    ds.forEach((d,i)=>{ let p=el._p[i]; if(p>=BASE+10){ p=BASE+p%10; pos(d,p,0); }
+      let t=p-p%10+dg[i]; if(t<p) t+=10; if(intro) t+=10*Math.round(3*(i+1)/k);   /* при раскрутке младшие цифры делают больше оборотов */
+      if(t===p) return; const ms=intro?1100+i*150:700+Math.min(3,(t-p))*120;
+      void d.offsetWidth; d.classList.add('mv'); pos(d,t,ms); el._p[i]=t;
+      clearTimeout(d._t); d._t=setTimeout(()=>{ d.classList.remove('mv'); const q=BASE+t%10; pos(d,q,0); el._p[i]=q; },ms+40); }); }
+  /* раскрутка — когда счётчик впервые попал на экран, а не где-то внизу без зрителя */
+  const io='IntersectionObserver' in window?new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; const el=e.target; io.unobserve(el); el._seen=true; if(el._want) requestAnimationFrame(()=>roll(el,el._want,true)); }),{threshold:.6}):null;
+  function set(el,n,label){ const txt=Math.round(n).toLocaleString('ru-RU').replace(/\s/g,' '), w=el.querySelector('.odo-win'), fresh=w.dataset.fmt!==txt.replace(/\d/g,'0');
+    el.setAttribute('aria-label',txt+' '+(label||'')); if(fresh) build(el,txt);
+    if(el._want===txt&&!fresh) return; el._want=txt;
+    if(!el._seen){ if(io&&!RM){ io.observe(el); return; } el._seen=true; }
+    roll(el,txt,fresh&&!RM&&!io); }
+  return {html:()=>'<div class="odo" data-odo role="img" aria-label="просмотры"><div class="odo-win"></div></div>', set};
+})();
+/* ═══ /ODO */
 /* ── счётчик просмотров: своё оформление, цифра — из Яндекс.Метрики ──
    Источник 1: views.json рядом с сайтом ({"pageviews":N}) — если настроена выгрузка.
    Источник 2: API отчётов Метрики (работает, когда у счётчика открыт публичный доступ к статистике).
@@ -29543,6 +29589,7 @@ FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wai
 function paintViews(){
   const els=document.querySelectorAll('[data-views]');
   if(VIEWS==null){ els.forEach(el=>{ el.hidden=true; }); return; }   /* данных нет — заготовку убираем */
+  document.querySelectorAll('[data-odo]').forEach(el=>{ const b=el.closest('.ownc-v'); if(b) b.hidden=false; ODO.set(el,VIEWS,plural(VIEWS,'просмотр','просмотра','просмотров')); });
   /* число ставим сразу, без «бегущих» цифр: панель рядом не дёргается */
   const txt=VIEWS.toLocaleString('ru-RU'), lab=plural(VIEWS,'просмотр','просмотра','просмотров');
   els.forEach(el=>{ const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; el.classList.remove('wait'); el.dataset.done=1;
@@ -29590,7 +29637,8 @@ FX.loadViews=function(force){
 };
 /* пока страница на экране — число обновляется само, раз в минуту; и сразу, когда к ней вернулись: приложение с рабочего стола
    и вкладка в фоне не перезагружаются, а таймеры в фоне браузер замораживает — без этого там стояло старое число */
-const viewsTick=()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views]')) FX.loadViews(true); }catch(e){} };
+const viewsTick=()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views],[data-odo]')) FX.loadViews(true); }catch(e){} };
+setInterval(()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-odo]')) FX.loadViews(true); }catch(e){} },20e3);
 setInterval(viewsTick,60e3);
 document.addEventListener('visibilitychange',viewsTick); window.addEventListener('pageshow',viewsTick); window.addEventListener('focus',viewsTick); window.addEventListener('online',viewsTick);
 
@@ -29827,9 +29875,10 @@ function viewHome(v){
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
-       <section class="ownc" aria-label="Владелец сайта">
-    <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта · ${FX.viewsHTML('ownc-vc').replace(/^<div/,'<span').replace(/<\/div>$/,'</span>')}</small></span></button>
-    <button type="button" class="ownc-s" data-sharesite aria-label="Поделиться сайтом"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Поделиться</span></button>
+       <section class="ownc" aria-label="Владелец сайта и просмотры">
+    <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><b>Андрей Матханов</b><small>владелец сайта</small></button>
+    <div class="ownc-v"${VIEWS==null?' hidden':''}>${ODO.html()}<span class="ownc-vl"><i aria-hidden="true"></i>просмотров · считаем вживую</span></div>
+    <button type="button" class="ownc-s" data-sharesite><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Поделиться</span></button>
    </section>
    <section class="v8-dirs hbn" aria-label="Разделы">
     ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],[HDZ('ng'),'ДЗ','blue','s'],[H('ng','rk2'),'РК','deep','m',1],[H('ng','path'),'Обучение','sky','s']])}
