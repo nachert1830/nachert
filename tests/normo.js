@@ -19,7 +19,8 @@
             без невидимого контура; обозначения разрезов: буква у каждого штриха, надпись «Б–Б», без Й О Х Ъ Ы Ь
      2.306  штриховка: один шаг 1…10 мм и один наклон на всём листе, 45° (30°/60°, если 45° совпадает с контуром)
      2.307  размерные числа не пересекаются линиями и штриховкой, стрелки одного размера, размерная линия ≥ 10 мм от контура
-            и ≥ 7 мм от параллельной, выносные выходят за размерную на 1…5 мм
+            и ≥ 7 мм от параллельной, выносные выходят за размерную на 1…5 мм и начинаются на элементе (вершина или
+            линия вдоль выносной: ребро, ось, касательная), а не в воздухе и не на поперечной чужой линии
      модель: линии вида совпадают с рёбрами и очерками детали, невидимое — штриховой там, где её проводят,
             штриховка — ровно там, где секущая плоскость прошла по материалу */
 (function(){
@@ -134,7 +135,8 @@ function run(F,opt){
   rects.forEach(r=>{ r.w=r.x1-r.x0; r.h=r.y1-r.y0; });
   const tbR=rects.filter(r=>Math.abs(r.w/r.h-185/55)<0.01).sort((a,b)=>b.w-a.w)[0];
   /* по размерным числам — независимо от рамки (масштаб 1:1): сюда же сходится проверка масштаба ниже */
-  let k=tbR?tbR.w/185:null;
+  const given=F.svg.hasAttribute('data-k');   /* чертёж «дано» (данные изображения задания): без рамки и основной надписи, масштаб — в data-k */
+  let k=tbR?tbR.w/185:opt.k||(given?+F.svg.getAttribute('data-k'):null);
   const segAll=[]; items.forEach(it=>segsOf(it).forEach(s=>segAll.push(s)));
   /* типы линий по виду */
   const sMain=(()=>{ const ws=items.filter(it=>!it.dash&&it.view>=0).map(it=>it.sw); if(!ws.length) return null; ws.sort((a,b)=>b-a); return ws[0]; })();
@@ -144,7 +146,7 @@ function run(F,opt){
     .map(f=>{ const P=f.polys[0].slice(0,3), e=[dist(P[0],P[1]),dist(P[1],P[2]),dist(P[2],P[0])], i=e.indexOf(Math.min(...e)), base=[P[(i)%3],P[(i+1)%3]], tip=P[(i+2)%3], mid=[(base[0][0]+base[1][0])/2,(base[0][1]+base[1][1])/2];
       return {f,tip,len:dist(tip,mid),wid:e[i],dir:[(tip[0]-mid[0])/(dist(tip,mid)||1),(tip[1]-mid[1])/(dist(tip,mid)||1)],view:f.view}; });
 
-  if(!opt.draft){
+  if(!opt.draft&&!given){
     /* ГОСТ 2.104, 2.301 */
     if(!tbR){ add('2.104','основная надпись','нет основной надписи 185 × 55 мм',null); }
     else {
@@ -350,6 +352,34 @@ function run(F,opt){
     const m=[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2], out_=a=>(a.tip[0]-m[0])*a.dir[0]+(a.tip[1]-m[1])*a.dir[1]>0, atEnd=a=>Math.min(dist(a.tip,q.a),dist(a.tip,q.b))<0.2*k;
     let tips=on.filter(a=>atEnd(a)&&out_(a)); if(!tips.length) tips=on.filter(a=>!atEnd(a)&&!out_(a)); if(!tips.length) tips=on.filter(a=>!atEnd(a));
     if(tips.length) dims.push({q,u,tips,L}); });
+  /* линии изображения, от которых можно вести выносную: всё, кроме размерных и выносных (тонких прямых вне видов) */
+  /* размерные и выносные линии (через стрелки размеров) — не линии изображения; короткая центровая отверстия меньше Ø12 — сплошная тонкая,
+     но она линия изображения: от неё ведут выносные */
+  const DIMIT=new Set(); dims.forEach(d=>{ DIMIT.add(d.q.it); d.tips.forEach(a=>thinS.forEach(q=>{ if(q!==d.q&&segDist(a.tip,q.a,q.b)<0.15*k){ const L=dist(q.a,q.b)||1, v=[(q.b[0]-q.a[0])/L,(q.b[1]-q.a[1])/L]; if(Math.abs(v[0]*d.u[0]+v[1]*d.u[1])<0.05) DIMIT.add(q.it); } })); });
+  const EGok=q=>!(opt.draft&&q.it.kind!=='thick'&&!/^(#111|#15161a|rgb\(17, 17, 17\)|rgb\(21, 22, 26\))$/i.test(q.it.col))&&!DIMIT.has(q.it)&&!openL.includes(q.it)&&!(F.frame&&q.it===F.frame.it)&&!(q.it.kind==='axis'&&(q.it.tag==='circle'||q.it.curve));   /* центровая окружность — не элемент для выносной */
+  const EG=grid(segAll.filter(EGok),5*k);
+  /* выносная начинается НА элементе, к которому стоит размер, а не на чужой линии, которую она пересекает:
+     продолжает линию изображения (ребро, ось, касательная к окружности — линия в точке параллельна выносной) или начинается в
+     вершине (конце ребра). Выносная, упёршаяся в поперечный контур посреди ребра, — «не доведена до элемента» */
+  /* вершины линий изображения: концы незамкнутых линий и изломы круче 20° (по линии, упрощённой до 0,03 мм — хорды кривой не вершины) */
+  const CORN=[]; { const dp=(P,a,b,keep)=>{ let m=-1, d=0; const A=P[a], B=P[b], l=dist(A,B)||1e-9; for(let i=a+1;i<b;i++){ const q=dist(A,B)<1e-6?dist(P[i],A):Math.abs((P[i][0]-A[0])*(B[1]-A[1])-(P[i][1]-A[1])*(B[0]-A[0]))/l; if(q>d){ d=q; m=i; } } if(d>0.03*k){ keep[m]=1; dp(P,a,m,keep); dp(P,m,b,keep); } };
+    const src=new Set(); segAll.forEach(q=>{ if(EGok(q)) src.add(q.it); });
+    /* узел — вершина, если у какого-то направления из него нет встречного: линия там кончается или поворачивает (стык двух кусков
+       одной прямой и плавная кривая — не вершины) */
+    const NODE=new Map(), kk=p=>Math.round(p[0]/(0.05*k))+','+Math.round(p[1]/(0.05*k)), put=(p,q)=>{ const l=dist(p,q); if(l<1e-9) return; const key=kk(p); if(!NODE.has(key)) NODE.set(key,{p,D:[]}); NODE.get(key).D.push([(q[0]-p[0])/l,(q[1]-p[1])/l]); };
+    src.forEach(it=>it.polys.forEach(P=>{ if(P.length<2) return; const Q=P;   /* направления — по исходной линии (точки кривой через доли мм) */
+      /* направление из вершины — на точку линии не ближе 0,3 мм: обрезки в сотые доли мм у вершины не «продолжают» линию */
+      let tl=0; for(let i=1;i<Q.length;i++) tl+=dist(Q[i-1],Q[i]); if(tl<0.3*k) return;   /* обрезок линии короче 0,3 мм — не линия */
+      const far=(i,st)=>{ for(let j=i+st;j>=0&&j<Q.length;j+=st) if(dist(Q[j],Q[i])>=0.3*k) return Q[j]; return null; };   /* хвост короче 0,3 мм за вершиной — не направление */
+      for(let i=0;i<Q.length;i++){ const b=far(i,-1), f=far(i,1); if(b) put(Q[i],b); if(f) put(Q[i],f); if(!b&&!f) continue; if(!b||!f){ const key=kk(Q[i]); if(!NODE.has(key)) NODE.set(key,{p:Q[i],D:[]}); } } }));
+    const NG=grid([...NODE.values()].map(n=>({a:n.p,b:n.p,n})),1*k);   /* концы, разошедшиеся меньше чем на 0,1 мм, — один узел */
+    NODE.forEach(n=>{ const D=[].concat(...NG.near(n.p,0.1*k).filter(q=>dist(q.a,n.p)<0.1*k).map(q=>q.n.D)); if(n.D.some(d=>!D.some(q=>q!==d&&d[0]*q[0]+d[1]*q[1]<-0.985))) CORN.push(n.p); }); }   /* встречное — в пределах 10° */
+  const CRG=grid(CORN.map(p=>({a:p,b:p})),5*k);
+  const extFrom=(p,ext)=>{ const L=dist(ext.a,ext.b)||1, e=[(ext.b[0]-ext.a[0])/L,(ext.b[1]-ext.a[1])/L];
+    if(CRG.near(p,1*k).some(c=>dist(c.a,p)<0.4*k)) return true;   /* вершина: конец ребра, излом контура */
+    return EG.near(p,1*k).some(q=>{ if(q.it===ext.it||segDist(p,q.a,q.b)>=0.4*k) return false; const l=dist(q.a,q.b); if(l<1e-6) return false;
+      const v=[(q.b[0]-q.a[0])/l,(q.b[1]-q.a[1])/l]; if(Math.abs(v[0]*e[1]-v[1]*e[0])<0.1) return true;   /* по линии изображения или по касательной */
+      return false; }); };
   /* выносные линии выходят за размерную на 1…5 мм */
   dims.forEach(d=>{ if(Math.abs(d.u[0])>1e-3&&Math.abs(d.u[1])>1e-3) return;   /* выноска (наклонная, со стрелкой на окружности) — не размерная линия с выносными */
     /* выносная через конец стрелки — своя: если их несколько (размеры от общей базы: выносная внешнего размера проходит
@@ -357,7 +387,12 @@ function run(F,opt){
     d.tips.forEach(a=>{ const sd=q=>Math.min(...[q.a,q.b].map(p=>Math.abs((p[0]-a.tip[0])*d.u[1]-(p[1]-a.tip[1])*d.u[0])));
       const ext=thinS.filter(q=>q!==d.q&&segDist(a.tip,q.a,q.b)<0.15*k&&(()=>{ const L=dist(q.a,q.b), v=[(q.b[0]-q.a[0])/L,(q.b[1]-q.a[1])/L]; return Math.abs(v[0]*d.u[0]+v[1]*d.u[1])<0.05; })()).sort((x,y)=>sd(x)-sd(y))[0];
       if(!ext) return; const over=Math.max(...[ext.a,ext.b].map(p=>{ const v=[p[0]-a.tip[0],p[1]-a.tip[1]]; return Math.abs(v[0]*d.u[1]-v[1]*d.u[0]); })), side=[ext.a,ext.b].map(p=>{ const v=[p[0]-a.tip[0],p[1]-a.tip[1]]; return v[0]*d.u[1]-v[1]*d.u[0]; });
-      const beyond=Math.min(Math.abs(side[0]),Math.abs(side[1])); if(Math.sign(side[0])!==Math.sign(side[1])&&beyond>0.05*k&&(beyond<1*k-0.05*k||beyond>5*k+0.05*k)) add('2.307','выносная за размерную на 1…5 мм','выходит на '+mm(beyond)+' мм',a.tip); }); });
+      const beyond=Math.min(Math.abs(side[0]),Math.abs(side[1])); if(Math.sign(side[0])!==Math.sign(side[1])&&beyond>0.05*k&&(beyond<1*k-0.05*k||beyond>5*k+0.05*k)) add('2.307','выносная за размерную на 1…5 мм','выходит на '+mm(beyond)+' мм',a.tip);
+      /* выносная начинается от линии изображения (ГОСТ 2.307): её начало — дальний от размерной линии конец — лежит на контуре,
+         штриховой, оси или тонкой линии изображения (окружность, в которую вписан многоугольник). Висит в воздухе — ошибка */
+      const base=Math.sign(side[0])!==Math.sign(side[1])?(Math.abs(side[0])>Math.abs(side[1])?ext.a:ext.b):(Math.abs(side[0])>Math.abs(side[1])?ext.a:ext.b);
+      if(dist(base,a.tip)<0.5*k) return;   /* размерная линия — прямо по линии изображения, выносной нет */
+      if(!extFrom(base,ext)) add('2.307','выносная от элемента','выносная линия не доведена до элемента, к которому стоит размер'+(EG.dist(base,30*k)>0.3*k?' (висит в воздухе, до ближайшей линии '+mm(EG.dist(base,30*k))+' мм)':' (упирается в чужую линию)'),base); }); });
   /* размерная линия — не ближе 10 мм к параллельной линии контура (снаружи изображения) и 7 мм к параллельной размерной */
   const contour=segAll.filter(q=>q.it.view>=0&&q.it.kind==='thick');
   const CG=grid(contour,10*k);

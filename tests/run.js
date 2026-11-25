@@ -150,6 +150,11 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
 
   /* 3в. ДЗ 2 по ИГ: размеры на листах — числа равны расстояниям по модели, выносные линии упираются в контур */
   if(on('igs')) report('ИГ: размеры на листах', await page.evaluate(()=>window.IGS?IGS.checkAll():[]));
+  /* 3г. движок размеров (tests/dims-engine.js): на всех листах и чертежах «дано» всех вариантов каждая выносная — от элемента,
+     стрелки диаметров — на нарисованных окружностях; «дано» — нормоконтроль размеров по готовому SVG */
+  if(on('igs')) { const dpage=await browser.newPage(); await dpage.goto(URL); await dpage.waitForTimeout(1200);
+    const dr=await require('./dims-engine.js').runDims(dpage); info.push('Движок размеров ИГ: листов '+dr.stat.sheets+', чертежей «дано» '+dr.stat.given);
+    report('ИГ: движок размеров (выносные от элемента)',dr.issues); await dpage.close(); }
 
   /* 3д. нормоконтроль листов ИГ (tests/normo.js, normo-model.js): ГОСТ 2.301–2.307 и 2.104 по готовому SVG листа и сверка
      каждого вида с 3D-моделью лучами. Проверка проверки (normo-mutate.js): нарушения тренажёра «Нормоконтроль» подсаживаются

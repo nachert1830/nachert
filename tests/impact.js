@@ -18,7 +18,7 @@ const ALL = why => { out.all = true; out.why.push(why + ' → всё'); };
 /* файлы проверок → свой блок */
 const TESTS = {geometry: ['core', 'dzvar'], render: ['core'], mutate: ['core'], oracle: ['core'], euclid: ['core', 'dzvar'], arith: ['core', 'dzvar'], dz: ['core', 'dzvar'],
   'dz-run': ['dzvar'], 'variants-run': ['variants'], provenance: ['prov'], 'provenance-run': ['prov'], adequacy: ['adequacy'], random: ['random', 'gym'], 'random-run': ['random'],
-  'gen-check': ['gym'], gym: ['gym'], rk2: ['rk2'], rkp: ['rkp'], live: ['live'], rkg: ['rkg'], 'ig4-steps': ['ig4'], normo: ['normo'], 'normo-model': ['normo'], 'normo-run': ['normo'],
+  'gen-check': ['gym'], gym: ['gym'], rk2: ['rk2'], rkp: ['rkp'], live: ['live'], rkg: ['rkg'], 'ig4-steps': ['ig4'], normo: ['normo', 'igs'], 'normo-model': ['normo'], 'normo-run': ['normo', 'igs'], 'dims-engine': ['igs'],
   'normo-mutate': ['normom', 'normow'], 'lk-drawings': ['lk'], 'me-hub': ['me'], print: ['print'], colors: ['colors'], ask: ['ask'], tutor: ['tutor'], theory: ['theory']};
 /* модули index.html → блоки (неизвестный модуль — всё) */
 const MODS = [[/^RKP\b/, ['rkp']], [/^RK2\b|^RKG\b/, ['rk2', 'rkg']], [/^LIVE/, ['live']], [/^IGL\b/, ['points']], [/^IGS\b/, ['igs', 'normo']],
