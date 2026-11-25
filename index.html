@@ -5492,6 +5492,9 @@ svg.dwg .mc [stroke="#9dbbe0"]{stroke-opacity:.6}
 
 .pl.peek .pl-side.more::after{display:none}
 </style>
+<!-- колода «ДЗ»: стили сразу, и если открыт адрес ДЗ — страница сразу в режиме колоды, без мелькания прежней страницы -->
+<link rel="stylesheet" href="dz/deck.css?v=3">
+<script>if(/^#\/dz(\/(ng|ig))?\/?$/.test(location.hash))document.documentElement.classList.add('nd-on');</script>
 </head>
 <body>
 <a class="skip" href="#view">К содержимому</a>
@@ -29333,7 +29336,8 @@ function route(){
      Только при переходе в другой раздел/материал — шаги внутри задачи не анимируем. */
   const key=x=>{ const q=parseHash(x||'#/'); return [q.s,q.tab,q.item].join('/'); };
   const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); vt.ready.catch(()=>{}); if(vt.updateCallbackDone) vt.updateCallbackDone.catch(()=>{}); }catch(e){ go(); } }   /* анимацию прервал следующий переход — это не ошибка */
+  const deckH=x=>/^#\/dz(\/(ng|ig))?\/?$/.test(x||'');   /* колода «ДЗ» — свой экран со своим появлением */
+  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)&&!deckH(prev)&&!deckH(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); vt.ready.catch(()=>{}); if(vt.updateCallbackDone) vt.updateCallbackDone.catch(()=>{}); }catch(e){ go(); } }   /* анимацию прервал следующий переход — это не ошибка */
   else go();
   ST.set('route',h);
 }
@@ -36384,8 +36388,7 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 <!-- «Спроси автора»: вопросы и ответы на сайте (lk/ask.js), адрес сервера — lk/config.js -->
 <script src="lk/config.js?v=2" defer></script>
 <script src="lk/ask.js?v=3" defer></script>
-<!-- Экран «ДЗ» (#/dz): колода карточек по сроку сдачи (dz/deck.*, перенесено из копии /new/) -->
-<link rel="stylesheet" href="dz/deck.css?v=2">
-<script src="dz/deck.js?v=2" defer></script>
+<!-- Экран «ДЗ» (#/dz): колода карточек по сроку сдачи (dz/deck.*; стили — в <head>) -->
+<script src="dz/deck.js?v=3" defer></script>
 </body>
 </html>

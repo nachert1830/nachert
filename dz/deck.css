@@ -1,6 +1,8 @@
 /* Экран «ДЗ» копии сайта (/new/, адрес #/dz): колода карточек по сроку сдачи. Перенесён из макета
    docs/redesign/dz-picker/mockup.html (ветка claude/sharp-newton-49vuqd). Всё — внутри #nd, чтобы не задеть стили сайта. */
-#nd :where(*:not(svg,svg *)),#nd :where(*:not(svg,svg *))::before,#nd :where(*:not(svg,svg *))::after{all:revert}
+/* сброс стилей сайта внутри колоды — кроме содержимого карточек: там свои классы, а сброс удваивал цену каждого кадра листания */
+#nd :where(*:not(svg,svg *,.k,.k *)),#nd :where(*:not(svg,svg *,.k,.k *))::before,#nd :where(*:not(svg,svg *,.k,.k *))::after{all:revert}
+#nd .k :where(.chip,.hl,.hl input){all:revert}
 /* «Путь к сдаче» в раскрытой карточке — те же 4 шага, что на карточке задания (window.dzSteps), в стиле колоды */
 #nd .det .when{margin-bottom:12px}#nd .det .when.soon{color:var(--o);font-weight:700}
 #nd .rth{margin:0 2px 6px!important;font:800 12px var(--sans)!important;letter-spacing:.06em;text-transform:uppercase;color:var(--fm)}
@@ -144,7 +146,7 @@ html.nd-on body > :not(#nd):not(#navBot):not(script):not(style){visibility:hidde
   #nd .det,#nd .sheet{padding-bottom:calc(var(--tabh,64px) + 24px + env(safe-area-inset-bottom,0px))}
 }
 /* глубина колоды: прошедшие карточки в стопке сверху и дальние снизу чуть темнее (--dim пишет движок) */
-#nd .k::after{content:"";position:absolute;inset:0;z-index:5;pointer-events:none;border-radius:inherit;background:#000;opacity:var(--dim,0)}
+#nd .k .dm{position:absolute;inset:0;z-index:5;pointer-events:none;border-radius:inherit;background:#000;opacity:0;will-change:opacity}
 #nd .k{box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 -8px 18px -12px rgba(0,0,0,.4),0 -1px 0 rgba(0,0,0,.06)}
 
 /* в стиле основного сайта: заголовки, «Задание» и номер — шрифтом Geologica; фильтр — тёмно-синим; блик карточек — мягче */
@@ -155,7 +157,7 @@ html.nd-on body > :not(#nd):not(#navBot):not(script):not(style){visibility:hidde
 #nd.nd-dark .flt button[aria-pressed=true]{background:#2f6bff}
 
 /* рисунки карточек — сплошные тела поверх большой цифры номера */
-#nd .k svg.art{z-index:2;opacity:1;filter:drop-shadow(0 10px 14px rgba(0,10,50,.35))}
+#nd .k svg.art{z-index:2;opacity:1}
 #nd .k .num{z-index:1}
 #nd .art .sO{stroke:#0b1d57;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
 #nd .art .sT{fill:#f7f9ff}#nd .art .sR{fill:#cfdaf5}#nd .art .sL{fill:#aebfe9}
@@ -175,3 +177,6 @@ html.nd-on body > :not(#nd):not(#navBot):not(script):not(style){visibility:hidde
 #nd .art .sSph{fill:url(#ndSph)}#nd .art .sHy{fill:url(#ndHyp)}
 #nd .k svg.art{right:-2%;top:96px;width:62%;max-height:calc(var(--ch) - 176px)}
 #nd .art .sPl{fill:#e9effc}#nd .art .sKl{stroke:#e0202e;stroke-width:3;stroke-linecap:round}#nd .art .sKd{stroke:#e0202e;stroke-width:2.4;stroke-dasharray:5 4;stroke-linecap:round}
+/* пока колода строится — фон колоды, а не прежняя страница */
+html.nd-on,html.nd-on body{background:#f6f8fd}
+:root[data-theme=dark].nd-on,:root[data-theme=dark].nd-on body{background:#070d22}
