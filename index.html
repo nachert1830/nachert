@@ -30441,8 +30441,8 @@ function viewHome(v){
     <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта</small></span><i aria-hidden="true">→</i></button>
    </section>
    <section class="v8-dirs hbn" aria-label="Разделы">
-    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],[HDZ('ng'),'ДЗ','light','s'],[H('ng','rk2'),'РК','royal','m'],[H('ng','path'),'Обучение','sky','s']])}
-    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','sky','s'],[HDZ('ig'),'ДЗ','navy','l'],[H('ig','points'),'РК','light','m'],[H('ig','learn'),'Обучение','royal','s']])}
+    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],['#/dz/ng','ДЗ','light','s'],[H('ng','rk2'),'РК','royal','m'],[H('ng','path'),'Обучение','sky','s']])}
+    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','sky','s'],['#/dz/ig','ДЗ','navy','l'],[H('ig','points'),'РК','light','m'],[H('ig','learn'),'Обучение','royal','s']])}
    </section>
   </div>`;
   NEXT=null;
@@ -30674,10 +30674,11 @@ function dzWidgetBind(v){ v.querySelectorAll('.dzw').forEach(w=>{ const c=w.data
   w.__foot=foot;
   const go=()=>{ const d=cur(), n=parseInt(inp.value,10), N=dzCount(d); if(!(n>=1&&n<=N)){ inp.focus(); try{ FX.note('Номер варианта — от 1 до '+N); }catch(e){} return; } dzSetVar(n); nav(HDZ(d.id,n)); };
   w.querySelector('.dzw-open').addEventListener('click',go); inp.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); }); }); }
-function dzHub(v){
-  const first=NAVSUBJ==='ig'?['ig','ng']:['ng','ig'];
+/* only — 'ng' или 'ig': ДЗ одного предмета (#/dz/ng, #/dz/ig — плитки «ДЗ» на главной) */
+function dzHub(v,only){
+  const first=only?[only]:NAVSUBJ==='ig'?['ig','ng']:['ng','ig'];
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx',body:`
-   <div class="intro"><h1>Домашние задания</h1></div>
+   <div class="intro"><h1>${only?'ДЗ · '+dzCourse(only):'Домашние задания'}</h1></div>
    <div class="dzw-two">${first.map(dzWidget).join('')}</div>
    ${dzShareHTML('#/dz','Все ДЗ по начерту и инженерной графике — разбор своего варианта по шагам','Скинуть группе','каждый впишет свой вариант')}
    <details class="dzx-rules"><summary>Как оформить и защитить ДЗ</summary><div class="hw-rg">
@@ -30898,6 +30899,7 @@ function dzView(v,r){
   return dzPick(v,d); }
 /* #/dz… — раздел; прежние #/dz/<id>/… и #/dz/ng|ig — переадресация на короткие адреса */
 function viewDZ(v,r){ if(r.short||!r.tab) return dzView(v,r);
+  if((r.tab==='ng'||r.tab==='ig')&&!r.item&&window.DZR){ NAVSUBJ=r.tab; return dzHub(v,r.tab); }
   setTimeout(()=>redir(/^(ng|ig)\d$/.test(r.tab)?HDZ(r.tab,r.item,r.sub,r.extra):HDZ()),0); return 'ДЗ'; }
 /* прежние #/ng/dz/4/13…, #/ig/dz/3/7…, #/ig/hw2/5 */
 function dzOld(c,r){ const id=r.item?c+r.item:''; setTimeout(()=>redir(id?HDZ(id,r.sub,r.extra):HDZ()),0); return 'ДЗ'; }
