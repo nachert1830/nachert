@@ -2713,7 +2713,11 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hbn-c{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:84px;padding:14px 15px;border-radius:22px;color:#fff!important;text-decoration:none!important;transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
 .hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}.hbn-c:hover i{transform:rotate(45deg)}}
 .hbn-c.m{min-height:112px}.hbn-c.l{min-height:150px}
-.hbn-c b{font:800 25px/1.02 var(--disp);letter-spacing:-.035em}
+.hbn-c b{position:relative;z-index:1;font:800 25px/1.02 var(--disp);letter-spacing:-.035em}
+.hbn-art{position:absolute;z-index:0;right:-10%;bottom:-16%;width:64%;max-width:170px;height:auto;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.2;pointer-events:none}
+.hbn-c.l .hbn-art{width:78%;max-width:210px;bottom:-10%}
+.hbn-c.s .hbn-art{width:52%;bottom:-26%}
+.hbn-light .hbn-art{opacity:.16}
 .hbn-c.l b{font-size:32px}
 /* стрелка-кнопка в углу каждой плитки */
 .hbn-c i{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#143a9c;transition:transform .2s}
@@ -30405,8 +30409,14 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
 /* колонка предмета: [ссылка, название, вид, размер s/m/l] — только название; вид: navy, royal, sky — заливка, light — светлая с синим текстом */
+/* бледные контурные рисунки плиток — просто заполняют место: тетрадь, лист ДЗ, секундомер, книга */
+const HBN_ART={
+  'Тетрадь':'<rect x="26" y="12" width="78" height="98" rx="8"/><path d="M40 38h50M40 54h50M40 70h50M40 86h32"/><path d="M18 26h16M18 46h16M18 66h16M18 86h16"/>',
+  'ДЗ':'<rect x="8" y="22" width="106" height="80" rx="4"/><rect x="16" y="30" width="90" height="64"/><path d="M66 94V78h40M66 86h40M82 78v16"/><path d="M26 74V44h22v12h14v18z"/>',
+  'РК':'<circle cx="60" cy="68" r="42"/><path d="M52 14h16M60 14v12M92 30l8-8"/><path d="M60 68V40M60 68l18 12"/><path d="M60 30v6M98 68h-6M60 106v-6M22 68h6"/>',
+  'Обучение':'<path d="M60 32c-14-9-32-10-48-5v70c16-5 34-4 48 5z"/><path d="M60 32c14-9 32-10 48-5v70c-16-5-34-4-48 5z"/><path d="M24 44c9-2 18-2 26 1M24 58c9-2 18-2 26 1M24 72c9-2 18-2 26 1M70 45c8-3 17-3 26-1M70 59c8-3 17-3 26-1"/>'};
 function bentoHTML(title,items){
-  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k])=>`<a class="hbn-c ${k} hbn-${c}" href="${h}"><b>${t}</b><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></i></a>`).join('')}</div>`; }
+  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k])=>`<a class="hbn-c ${k} hbn-${c}" href="${h}"><svg class="hbn-art" viewBox="0 0 120 120" aria-hidden="true">${HBN_ART[t]||''}</svg><b>${t}</b><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></i></a>`).join('')}</div>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
