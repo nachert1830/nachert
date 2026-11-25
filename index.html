@@ -4393,12 +4393,14 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
   .hcards .hc-ig .hc-big b{font-size:250px;margin-top:0}
   .hcards .hc-ig canvas.hc-cv{right:4%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:300px!important;max-width:44%!important}
 }
-/* «Как пересекаются поверхности»: «Как» — мелкой строкой, главное — крупно, градиентом как «5» */
-.hcards .hc-sx .hc-sxt{display:flex;flex-direction:column;align-items:flex-start;font-size:23px;line-height:.95;background:linear-gradient(180deg,#ffffff 30%,#b9d1ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hcards .hc-sx .hc-sxt i{font:600 14px/1.2 var(--sans);font-style:normal;letter-spacing:0;color:rgba(255,255,255,.85);-webkit-text-fill-color:rgba(255,255,255,.85);margin-bottom:3px}
-.hcards .hc-sx canvas.hc-sxcv{right:-8%!important;bottom:52px!important;top:auto!important;width:94%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,10,60,.45))}
-@media(max-width:400px){.hcards .hc-sx .hc-sxt{font-size:21px}}
-@media(min-width:760px){.hcards .hc-sx .hc-sxt{font-size:50px;max-width:9ch}.hcards .hc-sx .hc-sxt i{font-size:20px;margin-bottom:6px}
+/* «Пересечение поверхностей» — в паре с «ДЗ 5»: тот же тёмно-синий фон со свечением и отблеском, тот же шрифт и градиент букв, фигура поверх */
+.hcards .hc.hc-sx{border:0;background:radial-gradient(55% 75% at 78% 58%,rgba(86,148,255,.6),transparent 72%),linear-gradient(150deg,#071331 0%,#0d2766 50%,#1a44c4 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 46px -22px rgba(8,26,84,.85)}
+.hcards .hc-sx::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);transform:translateX(-130%);animation:igSweep 6s ease-in-out 3s infinite}
+@media(prefers-reduced-motion:reduce){.hcards .hc-sx::after{animation:none}}
+.hcards .hc-sx .hc-sxt{font-size:24px;line-height:.94;letter-spacing:-.05em;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hcards .hc-sx canvas.hc-sxcv{right:-8%!important;bottom:52px!important;top:auto!important;width:94%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+@media(max-width:400px){.hcards .hc-sx .hc-sxt{font-size:22px}}
+@media(min-width:760px){.hcards .hc-sx .hc-sxt{font-size:64px;max-width:8ch}
   .hcards .hc-sx canvas.hc-sxcv{right:2%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:340px!important;max-width:48%!important}}
 /* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
 .ownc{display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:12px;border:1px solid var(--line);border-radius:24px;background:var(--surf)}
@@ -30326,7 +30328,7 @@ const IG5ART=(function(){
     F.push({v:[[c0[0],c0[1],HH],[h0[0],h0[1],HH],[h1[0],h1[1],HH],[c1[0],c1[1],HH]],n:[0,0,1],m:'top'});
     F.push({v:[[c1[0],c1[1],-HH],[h1[0],h1[1],-HH],[h0[0],h0[1],-HH],[c0[0],c0[1],-HH]],n:[0,0,-1],m:'top'});
     F.push({v:[[c0[0],c0[1],HH],[c1[0],c1[1],HH],[c1[0],c1[1],-HH],[c0[0],c0[1],-HH]],n:[-Math.cos(am),-Math.sin(am),0],m:'hole'}); }
-  const COL={body:[226,235,255],top:[244,248,255],hole:[255,206,64]};
+  const COL={body:[236,240,250],top:[248,250,255],hole:[255,200,48]};
   function frame(cv,th){ const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, sc=Math.min(W,H)/(2*R+30), c=Math.cos(th), sn=Math.sin(th);
     const rot=([x,y,z])=>[x*c-y*sn, x*sn+y*c, z];
     const pr=([X,Y,z])=>[W/2+X*sc, H/2+(-z*ce+Y*se)*sc+HH*.12*sc];
@@ -30384,9 +30386,9 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
     <ellipse cx="${f((x0+x1)/2)}" cy="${f((y0+y1)/2)}" rx="${f((x1-x0)/1.7)}" ry="${f((y1-y0)/1.7)}" fill="url(#i4Gl)"/>${g}</svg>`;
   return IG4ART; }
 function homeCards(){ const pm=PROMO.cardHTML();
-  /* слева — эфир (если он есть) или «Как пересекаются поверхности»; справа — ДЗ 5 по инженерной графике */
-  const left=pm||`<a class="hc hc-rot hc-sx" href="#/ng/surf/x" aria-label="Как пересекаются поверхности: выбери две фигуры и двигай их">
-    <span class="hc-t hc-sxt"><i>Как</i>пересекаются поверхности</span>
+  /* слева — эфир (если он есть) или «Пересечение поверхностей»; справа — ДЗ 5 по инженерной графике */
+  const left=pm||`<a class="hc hc-rot hc-sx" href="#/ng/surf/x" aria-label="Пересечение поверхностей: выбери две фигуры и двигай их">
+    <span class="hc-t hc-sxt">Пересечение поверхностей</span>
     <canvas class="hc-art hc-rart hc-cv hc-sxcv" data-sxart aria-hidden="true"></canvas>
     <span class="hc-go">Смотреть →</span></a>`;
   return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig5')}" aria-label="ДЗ 5 по инженерной графике: тело с отверстием и вырезом">
