@@ -4308,19 +4308,20 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .v8-meta{max-width:none!important;border-width:1.5px!important;border-radius:22px!important}
 .v8-share{border-radius:16px!important;font-weight:800!important;min-height:48px!important;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s}
 .v8-share:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
-/* владелец сайта и «поделиться» — одна карточка */
-.ownc{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 0;padding:12px 12px 12px 14px;border:1px solid var(--line);border-radius:22px;background:var(--surf)}
-.ownc-l{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
-.ownc-a{display:flex;align-items:center;gap:11px;min-width:0;padding:0;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
-.ownc-a .au-face{width:44px;height:44px;font-size:28px}
-.ownc-t{display:flex;flex-direction:column;gap:2px;min-width:0}
-.ownc-t b{font:800 16px/1.15 var(--disp);letter-spacing:-.02em;white-space:nowrap}
-.ownc-t small{font:500 13px/1.2 var(--sans);color:var(--mut)}
-.ownc .vc,:root[data-theme=dark] .ownc .vc{background:none!important;border:0!important;box-shadow:none!important;padding:0 0 0 55px!important;line-height:1;min-height:0;display:inline-flex;align-items:center;gap:6px;color:var(--mut)!important}
-.ownc .vc-n{font:700 13px var(--sans)!important;color:var(--ink2)!important}.ownc .vc-l{font:500 13px var(--sans)!important;color:var(--mut)!important}
-.ownc .vc-dot{width:7px;height:7px;background:var(--green)}
-.ownc-s{flex:none}
-@media(max-width:400px){.ownc{padding:12px;gap:8px}.ownc-s{padding:0 13px;font-size:14px}.ownc-a{gap:9px}.ownc-a .au-face{width:40px;height:40px;font-size:25px}.ownc .vc{padding-left:49px!important}}
+/* владелец сайта и «поделиться» — одна строка: аватар, имя, «владелец сайта · просмотры», справа тихая кнопка */
+.ownc{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:10px 10px 10px 12px;border:1px solid var(--line);border-radius:20px;background:var(--surf)}
+.ownc-a{flex:1;display:flex;align-items:center;gap:12px;min-width:0;padding:0;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.ownc-a .au-face{width:42px;height:42px;font-size:27px}
+.ownc-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ownc-t b{font:800 16px/1.15 var(--disp);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ownc-t small{display:flex;align-items:center;gap:5px;white-space:nowrap;font:500 13px/1.2 var(--sans);color:var(--mut)}
+.ownc .vc,:root[data-theme=dark] .ownc .vc{display:inline-flex!important;align-items:center;gap:4px;gap:4px!important;height:auto!important;padding:0!important;min-height:0!important;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+.ownc .vc-dot{display:none!important}
+.ownc .vc-n,.ownc .vc-l,:root[data-theme=dark] .ownc .vc-n{font:500 13px/1.2 var(--sans)!important;color:var(--mut)!important}
+.ownc-s{flex:none;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 16px;border:0;border-radius:14px;background:var(--blue-s,#eaf0ff);color:var(--acc);font:700 14px var(--sans);cursor:pointer;transition:background .15s}
+.ownc-s:hover{background:color-mix(in srgb,var(--acc) 14%,var(--surf))}
+.ownc-a:hover b{color:var(--acc)}
+@media(max-width:460px){.ownc-s{width:42px;padding:0;justify-content:center}.ownc-s span{display:none}}
 .v8h.has-q .ownc{display:none}
 /* разделы — плитки с иконками, как уроки в Duolingo */
 .v8-dirs{max-width:none!important}
@@ -29827,8 +29828,8 @@ function viewHome(v){
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
        <section class="ownc" aria-label="Владелец сайта">
-    <div class="ownc-l"><button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта</small></span></button>${FX.viewsHTML('ownc-vc')}</div>
-    <button type="button" class="v8-share ownc-s" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button>
+    <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта · ${FX.viewsHTML('ownc-vc').replace(/^<div/,'<span').replace(/<\/div>$/,'</span>')}</small></span></button>
+    <button type="button" class="ownc-s" data-sharesite aria-label="Поделиться сайтом"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Поделиться</span></button>
    </section>
    <section class="v8-dirs hbn" aria-label="Разделы">
     ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],[HDZ('ng'),'ДЗ','blue','s'],[H('ng','rk2'),'РК','deep','m',1],[H('ng','path'),'Обучение','sky','s']])}
