@@ -2708,13 +2708,12 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hbn{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
 .hbn-col{display:flex;flex-direction:column;gap:10px;min-width:0}
 .hbn-h{margin:0 0 2px 4px;font:800 16px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
-.hbn-c{--c:#2f5bff;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;min-height:78px;padding:13px;border-radius:20px;background:var(--c);color:#fff!important;text-decoration:none!important;transition:transform .15s;-webkit-tap-highlight-color:transparent}
+.hbn-c{--c:#2f6bff;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:84px;padding:14px 15px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 86%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 88%,#000));color:#fff!important;text-decoration:none!important;transition:transform .15s;-webkit-tap-highlight-color:transparent;box-shadow:0 14px 26px -20px var(--c)}
 .hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}}
-.hbn-c.m{min-height:104px}.hbn-c.l{min-height:134px}
-.hbn-c b{position:relative;z-index:2;font:700 15px/1.15 var(--sans)}
-.hbn-c small{position:relative;z-index:2;margin-top:2px;max-width:13ch;font:500 11.5px/1.25 var(--sans);opacity:.8}
-.hbn-c.dk{color:#1a1400!important}
-.hbn-c i{position:absolute;top:10px;right:10px;z-index:3;width:9px;height:9px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px var(--c)}
+.hbn-c.m{min-height:112px}.hbn-c.l{min-height:150px}
+.hbn-c b{font:800 25px/1.02 var(--disp);letter-spacing:-.035em}
+.hbn-c.l b{font-size:30px}
+.hbn-c i{position:absolute;top:12px;right:12px;width:9px;height:9px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px rgba(255,255,255,.9)}
 @media(min-width:760px){.hbn{gap:16px}.hbn-col{display:block;columns:2;column-gap:10px}.hbn-h{column-span:all;margin-bottom:10px}.hbn-c{break-inside:avoid;margin-bottom:10px}}
 .foot-logo img{height:15px!important}
 /* подвал — одна тихая строка; источники, правовая информация и «что нового» — на странице «О проекте» */
@@ -29792,10 +29791,10 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "sheet":"<rect x=\"2.5\" y=\"3.5\" width=\"19\" height=\"17\" rx=\"3\"/><rect class=\"k\" x=\"12.5\" y=\"14\" width=\"7\" height=\"4.6\" rx=\"1\"/><rect x=\"15.6\" y=\"14\" width=\"1\" height=\"4.6\"/><rect x=\"12.5\" y=\"15.9\" width=\"7\" height=\".9\"/><rect class=\"k\" x=\"5.5\" y=\"6.5\" width=\"5.5\" height=\"5.5\" rx=\"1\"/><rect x=\"7\" y=\"8\" width=\"2.5\" height=\"2.5\" rx=\".4\"/>",
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
-const HBN_PAL={blue:'#2f5bff',violet:'#6b3cf5',rose:'#f0305a',amber:'#ffb000',green:'#0aa36a',cyan:'#00a6d6',graphite:'#2c2c30'};
-/* колонка предмета: [ссылка, название, подпись, цвет, размер s/m/l, рисунок, метка «новое»] */
+const HBN_PAL={navy:'#143a9c',deep:'#0e2a73',blue:'#2f6bff',sky:'#1596e6'};
+/* колонка предмета: [ссылка, название, цвет, размер s/m/l, метка «новое»] — только название, без подписей */
 function bentoHTML(title,items){
-  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,sub,c,k,,hot])=>`<a class="hbn-c ${k}${c==='amber'?' dk':''}" href="${h}" style="--c:${HBN_PAL[c]}">${hot?'<i aria-label="новое"></i>':''}<b>${t}</b><small>${sub}</small></a>`).join('')}</div>`; }
+  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k,hot])=>`<a class="hbn-c ${k}" href="${h}" style="--c:${HBN_PAL[c]}">${hot?'<i aria-label="новое"></i>':''}<b>${t}</b></a>`).join('')}</div>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
@@ -29816,8 +29815,8 @@ function viewHome(v){
        <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
    <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
    <section class="v8-dirs hbn" aria-label="Разделы">
-    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь',nT+' задач по шагам','violet','l','epure'],[HDZ('ng'),'ДЗ','твой вариант','rose','s','inter'],[H('ng','rk2'),'РК2','билеты и пробный РК','graphite','m','clock',1],[H('ng','path'),'Теория','уроки и шпаргалка','amber','s','planes']])}
-    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь',nIW+' рисунков','cyan','s','views'],[HDZ('ig'),'ДЗ','листы, виды, разрезы','green','l','part'],[H('ig','learn'),'Учиться','виды и разрезы','blue','s','cube'],[H('ig','theory'),'ЕСКД','нормы оформления','graphite','m','stamp']])}
+    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],[HDZ('ng'),'ДЗ','blue','s'],[H('ng','rk2'),'РК','deep','m',1],[H('ng','path'),'Обучение','sky','s']])}
+    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','sky','s'],[HDZ('ig'),'ДЗ','deep','l'],[H('ig','points'),'РК','blue','m'],[H('ig','learn'),'Обучение','navy','s']])}
    </section>
   </div>`;
   NEXT=null;
