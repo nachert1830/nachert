@@ -143,3 +143,6 @@ html.nd-on body > :not(#nd):not(#ns-gate):not(script):not(style){visibility:hidd
   html.nd-on body > #navBot#navBot.nav-bot{visibility:visible!important;z-index:2147480050}
   #nd .det,#nd .sheet{padding-bottom:calc(var(--tabh,64px) + 24px + env(safe-area-inset-bottom,0px))}
 }
+/* глубина колоды: прошедшие карточки в стопке сверху и дальние снизу чуть темнее (--dim пишет движок) */
+#nd .k::after{content:"";position:absolute;inset:0;z-index:5;pointer-events:none;border-radius:inherit;background:#000;opacity:var(--dim,0)}
+#nd .k{box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 -8px 18px -12px rgba(0,0,0,.4),0 -1px 0 rgba(0,0,0,.06)}

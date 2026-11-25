@@ -126,7 +126,7 @@
   var sc=$('sc'),stage=$('stage'),nowB=$('now'),sheet=$('sheet');
 
   var L=[],els=[],act=0,G={},built=false,FX=-1;
-  var PX=104;                 /* сколько пикселей ведёт палец на одну карточку (один «щелчок») */
+  var PX=170;                 /* сколько пикселей ведёт палец на одну карточку (один «щелчок»); считает geo() от высоты карточки */
   var PA=44,NA=3;             /* полоска прошедшей карточки сверху и сколько их видно */
   var PB=42,NB=3,GAP=16;      /* полоска следующей карточки снизу, сколько видно, зазор под раскрытой */
   var TOP0=10,BOT=92;         /* отступ сверху и место под нижнее меню */
@@ -156,7 +156,7 @@
       var b=document.createElement('div');b.setAttribute('role','button');b.className='k'+(x.col==='amber'?' dk':'');b.style.setProperty('--c',PAL[x.col]);
       b.setAttribute('aria-label','Задание '+x.n+', '+CN[x.c]+': '+x.t);b.dataset.i=i;b.innerHTML=cardHTML(x,i);addHL(b);
       b.style.zIndex=10+i;   /* ниже лежащая карточка всегда ближе — порядок постоянный, z не трогаем в кадре */
-      stage.appendChild(b);els.push(b);C.push({t:'',o:-1,v:''});});
+      stage.appendChild(b);els.push(b);C.push({t:'',o:-1,v:'',k:-1});});
     geo();
     var to=act;if(id){var j=L.indexOf(id);if(j>=0)to=j;}
     M.p=M.to=to;M.v=0;M.cur=to;render();built=true;}
@@ -165,17 +165,20 @@
   function geo(){var H=stage.clientHeight,ch=0;G.H=H;
     for(NA=3;NA>=1;NA--){ch=H-TOP0-NA*PA-GAP-PB*(NA>1?2:1)-BOT;if(ch>=280) break;}
     if(NA<1) NA=1;G.ch=Math.round(Math.max(200,Math.min(420,ch)));
+    /* раскрытая карточка уезжает на (ch+GAP): палец проходит половину этого пути — колода идёт за пальцем, а не убегает от него */
+    PX=Math.round(Math.max(150,Math.min(230,(G.ch+GAP)*.5)));
     for(var i=0;i<els.length;i++){els[i].style.height=G.ch+'px';els[i].style.setProperty('--ch',G.ch+'px');}}
 
   /* раскладка колоды: d — расстояние карточки от раскрытой (0 — раскрыта, <0 — прошла и лежит полоской сверху,
      >0 — впереди, полоской снизу) */
-  function pos(d,p){var T=TOP0+Math.min(Math.max(p,0),NA)*PA,ch=G.ch,y,s=1,o=1;
-    if(d<=0){var e=Math.max(d,-(NA+.7));y=T+e*PA;s=1+e*.012;o=d<-NA-.1?Math.max(0,1-(-d-NA-.1)/.6):1;}
-    else if(d<=1){y=T+d*(ch+GAP);}
-    else{var e2=Math.min(d-1,NB+.5);y=T+ch+GAP+e2*PB;o=d>NB+1.2?Math.max(0,1-(d-NB-1.2)/.6):1;}
-    return {y:y,s:s,o:o};}
-  function put(i,q){var k=els[i],c=C[i],t='translate3d(0,'+q.y.toFixed(1)+'px,0) scale('+q.s.toFixed(3)+')',o=+q.o.toFixed(2),v=o<=0?'hidden':'visible';
+  function pos(d,p){var T=TOP0+Math.min(Math.max(p,0),NA)*PA,ch=G.ch,y,s=1,o=1,k=0;
+    if(d<=0){var e=Math.max(d,-(NA+.7));y=T+e*PA;s=1+e*.014;o=d<-NA-.1?Math.max(0,1-(-d-NA-.1)/.6):1;k=Math.min(.3,-e*.1);}
+    else if(d<=1){var u=d*d*(3-2*d);y=T+d*(ch+GAP);s=1-u*.02;}      /* следующая: из стопки подрастает до полного размера */
+    else{var e2=Math.min(d-1,NB+.5);y=T+ch+GAP+e2*PB;s=.98-e2*.01;o=d>NB+1.2?Math.max(0,1-(d-NB-1.2)/.6):1;k=Math.min(.16,e2*.05);}
+    return {y:y,s:s,o:o,k:k};}
+  function put(i,q){var k=els[i],c=C[i],t='translate3d(0,'+q.y.toFixed(1)+'px,0) scale('+q.s.toFixed(3)+')',o=+q.o.toFixed(2),v=o<=0?'hidden':'visible',dk=+(q.k||0).toFixed(2);
     if(c.t!==t){k.style.transform=t;c.t=t;}
+    if(c.k!==dk){k.style.setProperty('--dim',dk);c.k=dk;}
     if(c.o!==o){k.style.opacity=o;c.o=o;}
     if(c.v!==v){k.style.visibility=v;c.v=v;}
   }
@@ -209,16 +212,17 @@
   /* ── движок: палец ведёт колоду 1:1, отпустил — инерция и пружина к ближайшей карточке ── */
   var M={p:0,to:0,v:0,cur:0,bump:false,raf:0,drag:null,last:0};root.__m=M;   /* для проверок */
   /* защёлка под пальцем: возле каждой карточки колода «прилипает», между ними — перескакивает */
-  function magnet(r){return r-Math.sin(2*Math.PI*r)/(2*Math.PI)*.55;}
+  function magnet(r){return r-Math.sin(2*Math.PI*r)/(2*Math.PI)*.32;}
   function clampRubber(p){var max=L.length-1;if(p<0) return -(1-1/(-p*0.9+1))/0.9*0.6;if(p>max) return max+(1-1/((p-max)*0.9+1))/0.9*0.6;return p;}
+  /* пружина как в iOS (response / dampingFraction): шаг на одну карточку ~0,36 с, бросок через пять — ~0,6 с; демпфирование почти критическое */
+  function tune(dist){var r=.34+.055*Math.min(Math.abs(dist),5),k=Math.pow(2*Math.PI/r,2);M.k=k;M.c=2*Math.sqrt(k)*.94;}
   function loop(t){M.raf=0;var dt=Math.min(32,t-(M.last||t))/1000;M.last=t;
-    /* мягкая пружина почти без перелёта, как прокрутка iOS: жёсткость 230, демпфирование 27 */
-    var k=230,c=27,steps=Math.max(1,Math.round(dt/0.004)),h=dt/steps;
+    var k=M.k||230,c=M.c||27,steps=Math.max(1,Math.round(dt/0.004)),h=dt/steps;
     for(var s=0;s<steps;s++){var a=-k*(M.p-M.to)-c*M.v;M.v+=a*h;M.p+=M.v*h;}
     detent();render();
     if(Math.abs(M.p-M.to)>.0005||Math.abs(M.v)>.002) M.raf=requestAnimationFrame(loop);else{M.p=M.to;M.v=0;render();}}
   function kick(){if(!M.raf){M.last=0;M.raf=requestAnimationFrame(loop);}}
-  function go(i){M.to=Math.max(0,Math.min(L.length-1,i));if(REDUCE){M.p=M.to;M.v=0;detent();render();return;}kick();}
+  function go(i){M.to=Math.max(0,Math.min(L.length-1,i));tune(M.to-M.p);if(REDUCE){M.p=M.to;M.v=0;detent();render();return;}kick();}
 
   /* нажатая карточка чуть проседает (свойство scale — отдельно от transform, который пишет движок) */
   var pressed=null;function press(k){if(pressed===k) return;if(pressed) pressed.classList.remove('pr');pressed=k;if(k) k.classList.add('pr');}
@@ -236,7 +240,7 @@
     var d=M.drag;if(!d||e.pointerId!==d.id) return;var dy=e.clientY-d.y0;
     if(!d.moved){if(Math.abs(dy)<5) return;d.moved=true;press(null);try{stage.setPointerCapture(e.pointerId);}catch(x){}}
     d.raw=d.p0-dy/PX;M.p=clampRubber(magnet(d.raw));M.v=0;
-    var now=performance.now();d.hist.push([now,e.clientY]);while(d.hist.length>2&&now-d.hist[0][0]>90) d.hist.shift();
+    var now=performance.now();d.hist.push([now,e.clientY]);while(d.hist.length>2&&now-d.hist[0][0]>110) d.hist.shift();
     detent();          /* синхронно в событии касания — так iPhone отдаёт щелчок */
     if(!M.rr) M.rr=requestAnimationFrame(function(){M.rr=0;render();});});
   function release(e){press(null);
@@ -244,23 +248,43 @@
       if(f.dy>70){buzz(14);unfocus();} else {els[FX].style.transition='transform .35s '+EASE;put(FX,{y:TOP0,s:1,o:1});setTimeout(function(){if(FX>=0) els[FX].style.transition='';},380);}
       return;}
     var d=M.drag;if(!d||(e&&e.pointerId!==d.id)) return;M.drag=null;if(!d.moved) return;
-    var h=d.hist,a=h[0],b=h[h.length-1],vy=b[0]-a[0]>0?(b[1]-a[1])/(b[0]-a[0]):0;   /* пикс/мс */
+    var vy=vel(d.hist,e&&e.timeStamp?performance.now():0);                         /* пикс/мс */
     var vp=-vy*1000/PX;                                                              /* карточек/с */
-    /* проекция броска, как в iOS: куда доехала бы колода с этой скоростью */
-    var target=Math.round(M.p+vp*0.22);
+    /* проекция броска, как в iOS: куда доехала бы колода с этой скоростью при плавном торможении */
+    var from=M.p,target=Math.round(from+vp*.2),sg=vp>0?1:-1;
+    /* лёгкий щелчок пальцем уже листает: хватает 1,1 карточки/с, даже если не дотянул до середины */
+    if(Math.abs(vp)>1.1){if(sg>0&&target<=Math.floor(from+.05)) target=Math.floor(from+.05)+1; if(sg<0&&target>=Math.ceil(from-.05)) target=Math.ceil(from-.05)-1;}
+    target=Math.max(Math.round(from)-6,Math.min(Math.round(from)+6,target));          /* за один бросок — не больше шести */
     target=Math.max(0,Math.min(L.length-1,target));
-    M.v=Math.max(-40,Math.min(40,vp));M.to=target;mark();
+    M.v=Math.max(-30,Math.min(30,vp));M.to=target;tune(target-from);mark();
     if(REDUCE){M.p=M.to;M.v=0;detent();render();}else kick();}
+  /* скорость пальца: наклон прямой через точки последних ~100 мс (МНК), а не две крайние — меньше дрожи;
+     палец остановился перед отпусканием (дольше 60 мс без движения) — броска нет */
+  function vel(h,now){var n=h.length;if(n<2) return 0;var t1=h[n-1][0];if(now&&now-t1>60) return 0;
+    var mt=0,my=0;for(var i=0;i<n;i++){mt+=h[i][0];my+=h[i][1];}mt/=n;my/=n;
+    var sxy=0,sxx=0;for(var j=0;j<n;j++){var dt=h[j][0]-mt;sxy+=dt*(h[j][1]-my);sxx+=dt*dt;}
+    return sxx>0?sxy/sxx:0;}
   stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
   /* потеря захвата — только самой сцены (захват с карточки на сцену при начале протаскивания — не отпускание) */
   stage.addEventListener('lostpointercapture',function(e){if(e.target===stage) release(e);});
 
   function mark(){stage.dataset.moved='1';setTimeout(function(){stage.dataset.moved='';},60);}
   /* колесо мыши и тачпад: копим прокрутку, каждые ~60 пикселей — следующая карточка */
-  var wacc=0,wt=0;
-  sc.addEventListener('wheel',function(e){if(FX>=0) return;e.preventDefault();var now=performance.now();if(now-wt>220) wacc=0;wt=now;
-    wacc+=e.deltaMode===1?e.deltaY*30:e.deltaY;var th=60;
-    while(Math.abs(wacc)>=th){var s=wacc>0?1:-1;wacc-=s*th;var n=Math.max(0,Math.min(L.length-1,Math.round(M.to)+s));if(n===M.to){if(!M.bump){M.bump=true;buzz(22);}}else M.bump=false;go(n);}},{passive:false});
+  var wacc=0,wt=0,W={raw:0,on:false,t:0,hist:[]};
+  function mouseWheel(e){return e.deltaMode!==0||(Math.abs(e.deltaY)>=80&&Math.abs(e.deltaY)%1===0&&!e.deltaX);}
+  function wheelEnd(){W.on=false;var h=W.hist,vp=0;
+    if(h.length>1){var a=h[0],b=h[h.length-1];if(b[0]>a[0]) vp=(b[1]-a[1])/(b[0]-a[0])*1000;}
+    var t=Math.round(M.p+Math.max(-1.5,Math.min(1.5,vp*.06)));M.v=0;go(t);}
+  sc.addEventListener('wheel',function(e){if(FX>=0) return;e.preventDefault();var now=performance.now();
+    if(mouseWheel(e)){if(now-wt>220) wacc=0;wt=now;wacc+=e.deltaMode===1?e.deltaY*30:e.deltaY;var th=60;
+      while(Math.abs(wacc)>=th){var s=wacc>0?1:-1;wacc-=s*th;var n=Math.max(0,Math.min(L.length-1,Math.round(M.to)+s));if(n===M.to){if(!M.bump){M.bump=true;buzz(22);}}else M.bump=false;go(n);}
+      return;}
+    /* трекпад: прокрутка ведёт колоду 1:1 с магнитом, как палец; затихла — доводка к ближайшей карточке */
+    if(!W.on){W.on=true;W.raw=M.p;W.hist=[];if(M.raf){cancelAnimationFrame(M.raf);M.raf=0;}}
+    W.raw+=e.deltaY/(PX*1.15);var max=L.length-1;W.raw=Math.max(-.6,Math.min(max+.6,W.raw));
+    M.p=clampRubber(magnet(W.raw));M.to=M.p;M.v=0;W.hist.push([now,W.raw]);while(W.hist.length>2&&now-W.hist[0][0]>100) W.hist.shift();
+    detent();if(!M.rr) M.rr=requestAnimationFrame(function(){M.rr=0;render();});
+    clearTimeout(W.t);W.t=setTimeout(wheelEnd,110);},{passive:false});
 
   stage.addEventListener('click',function(e){if(stage.dataset.moved) return;var k=e.target.closest('.k');if(!k) return;var i=+k.dataset.i;
     if(FX>=0){unfocus(e);return;}

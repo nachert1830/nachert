@@ -236,4 +236,6 @@ html.ns-on #ns .sheet,html.ns-on #ns .how{bottom:calc(var(--tabh,64px) + 8px + e
 @media(min-width:1080px){html.ns-on #ns .view{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}html.ns-on #ns .sheet,html.ns-on #ns .how{bottom:calc(8px + env(safe-area-inset-bottom,0px))}}
 #ns .foot{border-top:0}
 #ns .foot::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,#1b2f6b 0 40%,#fff 40% 60%,#e1252f 60% 100%);box-shadow:inset 0 0 0 1px rgba(13,21,48,.06)}
-#ns .foot-cat{top:-40px}
+/* без кошки: ни в подвале, ни на заголовках разделов, ни в репликах */
+.foot-cat,.perch,.catsay-c,.hs-cat,.lk-cat{display:none!important}
+.has-perch{padding-right:0!important}
