@@ -135,6 +135,7 @@
   function setV(n){try{if(typeof dzSetVar==='function') dzSetVar(n);}catch(e){}}
   var S={c:'all',v:getV(),today:today()};
   try{var sc0=localStorage.getItem('nch2_dzdeck_c');if(sc0==='ng'||sc0==='ig') S.c=sc0;}catch(e){}
+  S.saved=S.c;
 
   /* ── разметка ── */
   var root=document.createElement('div');root.id='nd';
@@ -195,7 +196,7 @@
     stage.innerHTML='';els=[];C=[];
     L.forEach(function(x,i){
       var b=document.createElement('div');b.setAttribute('role','button');b.className='k';b.style.setProperty('--c',PAL[x.col]);
-      b.setAttribute('aria-label','Задание '+x.n+', '+CN[x.c]+': '+x.t);b.dataset.i=i;b.innerHTML=cardHTML(x,i);addHL(b);
+      b.setAttribute('aria-label','Задание '+x.n+', '+CN[x.c]+': '+x.t);b.dataset.i=i;b.innerHTML=cardHTML(x,i)+'<i class="dm" aria-hidden="true"></i>';b._dm=b.lastChild;addHL(b);
       b.style.zIndex=10+i;   /* ниже лежащая карточка всегда ближе — порядок постоянный, z не трогаем в кадре */
       stage.appendChild(b);els.push(b);C.push({t:'',o:-1,v:'',k:-1});});
     geo();
@@ -219,7 +220,7 @@
     return {y:y,s:s,o:o,k:k};}
   function put(i,q){var k=els[i],c=C[i],t='translate3d(0,'+q.y.toFixed(1)+'px,0) scale('+q.s.toFixed(3)+')',o=+q.o.toFixed(2),v=o<=0?'hidden':'visible',dk=+(q.k||0).toFixed(2);
     if(c.t!==t){k.style.transform=t;c.t=t;}
-    if(c.k!==dk){k.style.setProperty('--dim',dk);c.k=dk;}
+    if(c.k!==dk){k._dm.style.opacity=dk;c.k=dk;}
     if(c.o!==o){k.style.opacity=o;c.o=o;}
     if(c.v!==v){k.style.visibility=v;c.v=v;}
   }
@@ -343,7 +344,7 @@
   /* появление: карточки въезжают снизу одна за другой */
   function intro(){if(REDUCE){render();return;}var H=G.H||600;
     els.forEach(function(k,i){k.style.transition='';put(i,{y:H+40+i*30,s:.96,o:1});});
-    void stage.offsetWidth;animate(620,35);render();}
+    void stage.offsetWidth;animate(440,18);render();}
 
   /* ── листы ── */
   var back=null;
@@ -391,7 +392,7 @@
   /* всё постоянное, на что нажимают, — с подписью переключателя (щелчок на iPhone) */
   [].forEach.call(root.querySelectorAll('#nd-flt button,#nd-now,#nd-vbtn,#nd .tabs a'),addHL);
   $('flt').addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.dataset.c===S.c) return;S.c=b.dataset.c;
-    try{localStorage.setItem('nch2_dzdeck_c',S.c);}catch(e2){}
+    S.saved=S.c;try{localStorage.setItem('nch2_dzdeck_c',S.c);}catch(e2){}
     this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});tapTick(e);build(false);intro();});
 
   /* тема — как у сайта (html[data-theme]) */
@@ -406,7 +407,8 @@
   function hashC(){var m=location.hash.match(/^#\/dz\/(ng|ig)/);return m?m[1]:null;}
   function sync(){var on=isOn();document.documentElement.classList.toggle('nd-on',on);
     if(!on){closeSheet();if(FX>=0){els[FX].style.zIndex=10+FX;FX=-1;root.classList.remove('nd-fx');sc.classList.remove('lock');}return;}
-    var hc=hashC();if(hc&&hc!==S.c){S.c=hc;built=false;$('flt').querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.c===S.c));});}
+    /* #/dz/ng, #/dz/ig — фильтр предмета на этот заход; #/dz — снова выбор пользователя (сохранённый) */
+    var hc=hashC(),want=hc||S.saved;if(want!==S.c){S.c=want;built=false;$('flt').querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.c===S.c));});}
     var v=getV(),t=today();if(v!==S.v||t!==S.today||!built){S.v=v;S.today=t;paint();build(built);} else geo();
     intro();}
   window.addEventListener('hashchange',sync);
