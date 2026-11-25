@@ -321,6 +321,8 @@ body.liveshow{overflow:hidden}
 .hcards .hc.hc-rot{border:0;background:linear-gradient(150deg,#1f47d6 0%,#2e63f0 55%,#4f8cff 100%);box-shadow:0 22px 40px -24px rgba(36,82,230,.75)}
 .hcards .hc-rot .hc-t{font-size:19px;line-height:1.1;letter-spacing:-.02em}
 .hcards .hc-rart{max-width:150px}
+.hcards canvas.hc-cv{width:100%;max-width:150px;aspect-ratio:1/1;height:auto;margin:2px auto 0}
+@media(min-width:760px){.hcards canvas.hc-cv{width:40%;max-width:230px;margin:0}}
 /* «РК2 за 9 шагов» на главной — подсвечена: золотая рамка и мягкое свечение */
 .hcards .hc.hc-rk9{background:linear-gradient(150deg,#b91c1c 0%,#e0352b 50%,#f97316 100%);box-shadow:0 0 0 3px #ffd34d,0 22px 44px -18px rgba(224,53,43,.75);animation:rk9Glow 2.6s ease-in-out infinite}
 .hcards .hc-rk9 .hc-pill{background:#ffd34d;color:#7f1d1d}.hcards .hc-rk9 .hc-pill i{background:#b91c1c}
@@ -2708,12 +2710,21 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hbn{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
 .hbn-col{display:flex;flex-direction:column;gap:10px;min-width:0}
 .hbn-h{margin:0 0 2px 4px;font:800 16px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
-.hbn-c{--c:#2f6bff;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:84px;padding:14px 15px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 86%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 88%,#000));color:#fff!important;text-decoration:none!important;transition:transform .15s;-webkit-tap-highlight-color:transparent;box-shadow:0 14px 26px -20px var(--c)}
-.hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}}
+.hbn-c{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:84px;padding:14px 15px;border-radius:22px;color:#fff!important;text-decoration:none!important;transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}.hbn-c:hover i{transform:rotate(45deg)}}
 .hbn-c.m{min-height:112px}.hbn-c.l{min-height:150px}
 .hbn-c b{font:800 25px/1.02 var(--disp);letter-spacing:-.035em}
-.hbn-c.l b{font-size:30px}
-.hbn-c i{position:absolute;top:12px;right:12px;width:9px;height:9px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px rgba(255,255,255,.9)}
+.hbn-c.l b{font-size:32px}
+/* стрелка-кнопка в углу каждой плитки */
+.hbn-c i{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#143a9c;transition:transform .2s}
+.hbn-c i svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+/* виды: тёмно-синяя, ярко-синяя, голубая, светлая */
+.hbn-navy{background:radial-gradient(120% 90% at 100% 0%,#2a5be0 0%,transparent 55%),linear-gradient(160deg,#16307f,#0b1d57);box-shadow:0 16px 28px -20px #0b1d57}
+.hbn-royal{background:radial-gradient(120% 90% at 100% 0%,#6b9bff 0%,transparent 55%),linear-gradient(160deg,#2f6bff,#1d4fd6);box-shadow:0 16px 28px -20px #1d4fd6}
+.hbn-sky{background:radial-gradient(120% 90% at 100% 0%,#5fd0ff 0%,transparent 55%),linear-gradient(160deg,#1aa0ee,#0f7fd0);box-shadow:0 16px 28px -20px #0f7fd0}
+.hbn-light{background:#e8efff;color:#143a9c!important;box-shadow:inset 0 0 0 1.5px #c9d8ff}
+.hbn-light i{background:#2f6bff;color:#fff}
+:root[data-theme=dark] .hbn-light{background:#1b2547;color:#dfe8ff!important;box-shadow:inset 0 0 0 1.5px #2e3f75}
 @media(min-width:760px){.hbn{gap:16px}.hbn-col{display:block;columns:2;column-gap:10px}.hbn-h{column-span:all;margin-bottom:10px}.hbn-c{break-inside:avoid;margin-bottom:10px}}
 .foot-logo img{height:15px!important}
 /* подвал — одна тихая строка; источники, правовая информация и «что нового» — на странице «О проекте» */
@@ -4341,8 +4352,8 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .ownc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 0 4px}
 .ownc-v{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
 .ownc-v small{font:600 12px/1 var(--sans);color:var(--mut)}
-/* «Поделиться» — как на сайте (.v8-share) */
-.ownc-s{flex:none}
+/* «Поделиться» — как на сайте (.v8-share), занимает место рядом со счётчиком */
+.ownc-s{flex:1;justify-content:center;min-height:52px!important}
 /* имя — синяя объёмная кнопка, компактная */
 .ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:6px 16px;border:0;border-radius:15px;cursor:pointer;color:#fff;text-align:left;font:inherit;
   background:linear-gradient(180deg,#4d84ff 0%,#2a62f0 55%,#1d4fd6 100%);box-shadow:0 3px 0 #163fa8,0 10px 18px -12px rgba(36,90,230,.8),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .1s,box-shadow .1s,filter .15s}
@@ -30147,6 +30158,57 @@ function rk2CardArt(){ if(RK2ART) return RK2ART;
   RK2ART=`<svg class="hc-art hc-rart" viewBox="0 0 200 200" aria-hidden="true">${g}</svg>`; return RK2ART; }
 /* ДЗ 4 ИГ: тело с П-образным вырезом медленно поворачивается вокруг вертикали; грани выреза подсвечены */
 let IG4ART='';
+/* ═══ IG5ART — карточка ДЗ 5 ИГ: сплошное тело (шестигранная призма со сквозным отверстием) медленно вращается.
+   Canvas, а не SVG: на каждом кадре грани сортируются по глубине и задние отбрасываются — тело непрозрачное, с освещением.
+   Не на экране или вкладка скрыта — не рисуем; reduced-motion — один неподвижный кадр. */
+const IG5ART=(function(){
+  const R=50,HH=34,r=19,NS=48,EL=.52,ce=Math.cos(EL),se=Math.sin(EL),T=16;   /* радиус шестигранника, полувысота, радиус отверстия */
+  const L=(()=>{ const v=[-.45,.55,.75],n=Math.hypot(...v); return v.map(x=>x/n); })();
+  const hex=k=>{ const a=Math.PI/3*k+Math.PI/6; return [R*Math.cos(a),R*Math.sin(a)]; };
+  /* точка на границе шестиугольника под углом a — чтобы кольцо верхней грани разбить на четырёхугольники */
+  const hexAt=a=>{ const k=Math.floor(((a-Math.PI/6)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)/(Math.PI/3)), p=hex(k), q=hex(k+1), d=[Math.cos(a),Math.sin(a)];
+    const ex=q[0]-p[0], ey=q[1]-p[1], den=d[0]*ey-d[1]*ex, t=(p[0]*ey-p[1]*ex)/den; return [d[0]*t,d[1]*t]; };
+  const F=[];   /* грани: {v:[[x,y,z]...], n:[нормаль], m:'body'|'hole'|'top'} */
+  for(let k=0;k<6;k++){ const p=hex(k),q=hex(k+1),a=Math.PI/3*k+Math.PI/3; F.push({v:[[p[0],p[1],-HH],[q[0],q[1],-HH],[q[0],q[1],HH],[p[0],p[1],HH]],n:[Math.cos(a),Math.sin(a),0],m:'body',e:1}); }
+  for(let i=0;i<NS;i++){ const a0=2*Math.PI*i/NS,a1=2*Math.PI*(i+1)/NS, c0=[r*Math.cos(a0),r*Math.sin(a0)], c1=[r*Math.cos(a1),r*Math.sin(a1)], h0=hexAt(a0+1e-9), h1=hexAt(a1-1e-9), am=(a0+a1)/2;
+    F.push({v:[[c0[0],c0[1],HH],[h0[0],h0[1],HH],[h1[0],h1[1],HH],[c1[0],c1[1],HH]],n:[0,0,1],m:'top'});
+    F.push({v:[[c1[0],c1[1],-HH],[h1[0],h1[1],-HH],[h0[0],h0[1],-HH],[c0[0],c0[1],-HH]],n:[0,0,-1],m:'top'});
+    F.push({v:[[c0[0],c0[1],HH],[c1[0],c1[1],HH],[c1[0],c1[1],-HH],[c0[0],c0[1],-HH]],n:[-Math.cos(am),-Math.sin(am),0],m:'hole'}); }
+  const COL={body:[226,235,255],top:[244,248,255],hole:[255,206,64]};
+  function frame(cv,th){ const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, sc=Math.min(W,H)/(2*R+30), c=Math.cos(th), sn=Math.sin(th);
+    const rot=([x,y,z])=>[x*c-y*sn, x*sn+y*c, z];
+    const pr=([X,Y,z])=>[W/2+X*sc, H/2+(-z*ce+Y*se)*sc+HH*.12*sc];
+    ctx.clearRect(0,0,W,H);
+    /* тень на «столе» */
+    const g=ctx.createRadialGradient(W/2,H/2+(HH*ce+R*se*.2)*sc,0,W/2,H/2+(HH*ce+R*se*.2)*sc,R*1.2*sc); g.addColorStop(0,'rgba(0,8,40,.55)'); g.addColorStop(1,'rgba(0,8,40,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(W/2,H/2+(HH*ce+HH*.12)*sc+6*sc,R*1.25*sc,R*1.25*se*sc,0,0,2*Math.PI); ctx.fill();
+    const list=[];
+    F.forEach(f=>{ const n=rot(f.n), vis=n[1]*ce+n[2]*se; if(vis<=1e-4) return;   /* к зрителю: e=(0,cos,sin) */
+      const vs=f.v.map(rot), d=vs.reduce((s,[,Y,z])=>s+Y*ce+z*se,0)/vs.length;
+      const lit=.42+.58*Math.max(0,n[0]*L[0]+n[1]*L[1]+n[2]*L[2]), k=COL[f.m];
+      list.push({d,p:vs.map(pr),col:`rgb(${k.map(x=>Math.round(x*lit)).join(',')})`,e:f.e}); });
+    list.sort((a,b)=>a.d-b.d);
+    ctx.lineJoin='round';
+    list.forEach(q=>{ ctx.beginPath(); q.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.closePath(); ctx.fillStyle=q.col; ctx.fill();
+      ctx.strokeStyle=q.col; ctx.lineWidth=.8; ctx.stroke();
+      if(q.e){ ctx.strokeStyle='rgba(10,28,80,.55)'; ctx.lineWidth=1.2*devicePixelRatio; ctx.stroke(); } });
+    /* контур верхней грани и кромка отверстия */
+    ctx.strokeStyle='rgba(10,28,80,.6)'; ctx.lineWidth=1.2*devicePixelRatio; ctx.beginPath();
+    for(let k=0;k<=6;k++){ const h=hex(k), p=pr(rot([h[0],h[1],HH])); k?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke();
+    ctx.beginPath(); for(let i=0;i<=NS;i++){ const a=2*Math.PI*i/NS, p=pr(rot([r*Math.cos(a),r*Math.sin(a),HH])); i?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke(); }
+  const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function mount(cv){ if(cv.dataset.on) return; cv.dataset.on='1'; let raf=0,seen=false,t0=performance.now();
+    const size=()=>{ const b=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.max(10,Math.round(b.width*d)); cv.height=Math.max(10,Math.round(b.height*d)); };
+    const draw=t=>{ raf=0; if(!cv.isConnected) return; frame(cv,-.5+2*Math.PI*((t-t0)/1000)/T); if(seen&&!RM&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); };
+    size(); frame(cv,-.5);
+    if('ResizeObserver' in window) new ResizeObserver(()=>{ size(); if(!raf) frame(cv,-.5+2*Math.PI*((performance.now()-t0)/1000)/T); }).observe(cv);
+    if('IntersectionObserver' in window) new IntersectionObserver(es=>{ seen=es[0].isIntersecting; if(seen&&!raf) raf=requestAnimationFrame(draw); }).observe(cv); else { seen=true; raf=requestAnimationFrame(draw); }
+    document.addEventListener('visibilitychange',()=>{ if(seen&&!raf&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); }); }
+  const scan=()=>document.querySelectorAll('canvas[data-ig5art]:not([data-on])').forEach(mount);
+  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); scan();
+  return {mount,scan};
+})();
+/* ═══ /IG5ART */
 function ig4CardArt(){ if(IG4ART) return IG4ART;
   const f=v=>Math.round(v*10)/10, W=80, D=44, prof=[[0,0],[80,0],[80,50],[52,50],[52,26],[28,26],[28,50],[0,50]];   /* профиль в XZ, выдавлен по Y */
   const el=.5, ce=Math.cos(el), se=Math.sin(el), NF=72, T=14;
@@ -30170,14 +30232,14 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
     <ellipse cx="${f((x0+x1)/2)}" cy="${f((y0+y1)/2)}" rx="${f((x1-x0)/1.7)}" ry="${f((y1-y0)/1.7)}" fill="url(#i4Gl)"/>${g}</svg>`;
   return IG4ART; }
 function homeCards(){ const pm=PROMO.cardHTML();
-  /* слева — эфир (если он есть) или «Как образуются и пересекаются поверхности»; справа — ДЗ 4 по инженерной графике */
+  /* слева — эфир (если он есть) или «Как образуются и пересекаются поверхности»; справа — ДЗ 5 по инженерной графике */
   const left=pm||`<a class="hc hc-rot" href="#/ng/surf" aria-label="Как образуются и пересекаются поверхности: интерактивная 3D-модель">
     <span class="hc-t">Как образуются и пересекаются поверхности</span>
     ${surfArt().replace('class="hc-art"','class="hc-art hc-rart"')}
     <span class="hc-go">Смотреть →</span></a>`;
-  return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig4')}" aria-label="ДЗ 4 по инженерной графике: тело с вырезом, три вида и разрезы">
-    <span class="hc-t">ДЗ&nbsp;4</span><span class="hc-s">тело с вырезом: три вида и разрезы — любой вариант</span>
-    ${ig4CardArt()}
+  return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig5')}" aria-label="ДЗ 5 по инженерной графике: тело с отверстием и вырезом">
+    <span class="hc-t">ДЗ&nbsp;5</span>
+    <canvas class="hc-art hc-rart hc-cv" data-ig5art aria-hidden="true"></canvas>
     <span class="hc-go">Открыть →</span></a>`; }
 /* разделы на главной — карточка предмета, внутри 4 минималистичные плитки со сплошными значками цвета предмета (вырезы .k — цветом плитки) */
 const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"/><rect class=\"k\" x=\"9.5\" y=\"7\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"11\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"15\" width=\"4.5\" height=\"2.2\" rx=\"1.1\"/><rect x=\"3\" y=\"6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"10.8\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"15.6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect class=\"k\" x=\"5\" y=\"6\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"10.8\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"15.6\" width=\"1.2\" height=\"2.4\"/>",
@@ -30188,10 +30250,9 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "sheet":"<rect x=\"2.5\" y=\"3.5\" width=\"19\" height=\"17\" rx=\"3\"/><rect class=\"k\" x=\"12.5\" y=\"14\" width=\"7\" height=\"4.6\" rx=\"1\"/><rect x=\"15.6\" y=\"14\" width=\"1\" height=\"4.6\"/><rect x=\"12.5\" y=\"15.9\" width=\"7\" height=\".9\"/><rect class=\"k\" x=\"5.5\" y=\"6.5\" width=\"5.5\" height=\"5.5\" rx=\"1\"/><rect x=\"7\" y=\"8\" width=\"2.5\" height=\"2.5\" rx=\".4\"/>",
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
-const HBN_PAL={navy:'#143a9c',deep:'#0e2a73',blue:'#2f6bff',sky:'#1596e6'};
-/* колонка предмета: [ссылка, название, цвет, размер s/m/l, метка «новое»] — только название, без подписей */
+/* колонка предмета: [ссылка, название, вид, размер s/m/l] — только название; вид: navy, royal, sky — заливка, light — светлая с синим текстом */
 function bentoHTML(title,items){
-  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k,hot])=>`<a class="hbn-c ${k}" href="${h}" style="--c:${HBN_PAL[c]}">${hot?'<i aria-label="новое"></i>':''}<b>${t}</b></a>`).join('')}</div>`; }
+  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k])=>`<a class="hbn-c ${k} hbn-${c}" href="${h}"><b>${t}</b><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></i></a>`).join('')}</div>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
@@ -30217,8 +30278,8 @@ function viewHome(v){
     <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта</small></span><i aria-hidden="true">→</i></button>
    </section>
    <section class="v8-dirs hbn" aria-label="Разделы">
-    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],[HDZ('ng'),'ДЗ','blue','s'],[H('ng','rk2'),'РК','deep','m',1],[H('ng','path'),'Обучение','sky','s']])}
-    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','sky','s'],[HDZ('ig'),'ДЗ','deep','l'],[H('ig','points'),'РК','blue','m'],[H('ig','learn'),'Обучение','navy','s']])}
+    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],[HDZ('ng'),'ДЗ','light','s'],[H('ng','rk2'),'РК','royal','m'],[H('ng','path'),'Обучение','sky','s']])}
+    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','sky','s'],[HDZ('ig'),'ДЗ','navy','l'],[H('ig','points'),'РК','light','m'],[H('ig','learn'),'Обучение','royal','s']])}
    </section>
   </div>`;
   NEXT=null;
