@@ -10,74 +10,105 @@
   function iso(o,k){return function(x,y,z){return [f(o[0]+(x-y)*C30*k),f(o[1]+(x+y)*S30*k-z*k)];};}
   function poly(P,cls){return '<path class="'+cls+'" d="M'+P.map(function(p){return p.join(' ');}).join('L')+'z"/>';}
   function line(a,b,cls){return '<line class="'+cls+'" x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'"/>';}
+  /* рисунки карточек — сплошные тела в стиле главной: грани белые/голубые с тёмно-синим контуром,
+     жёлтое — главное в задании (вырез, сечение, отверстие), красное — искомые линии; тень на «столе».
+     Классы: sT верх, sR грань справа, sL грань слева, sY/sYd жёлтые грани, sD тёмная полость, sO контур,
+     sN тонкая линия, sNd штриховая, sX осевая, sK искомая (красная), sP лист бумаги, sS тень, sTx подпись. */
+  function face(P,cls){return poly(P,cls+' sO');}
+  function shadow(cx,cy,rx,ry){return '<ellipse class="sS" cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'"/>';}
   var ART={};
-  /* гиперболоид: образующие между двумя окружностями со сдвигом; задние бледнее, одна выделена */
-  ART.hyp=(function(){var cx=120,rx=54,ry=14,y1=20,y2=150,n=32,tw=2.3,fr='',bk='';
+  /* гиперболоид: сплошной силуэт, задний обод изнутри, передние образующие, одна выделена */
+  ART.hyp=(function(){var cx=120,rx=54,ry=14,y1=20,y2=150,ym=85,n=28,tw=2.3,c=45,s='',sil='',fr='';
+    var w=function(y){return rx*Math.sqrt((1+Math.pow((y-ym)/c,2))/(1+Math.pow((y1-ym)/c,2)));};
+    var L=[],R=[];for(var y=y1;y<=y2+.1;y+=5){L.push([f(cx-w(y)),f(y)]);R.unshift([f(cx+w(y)),f(y)]);}
+    sil='<path class="sHy sO" d="M'+L.concat(R).map(function(p){return p.join(' ');}).join('L')+'z"/>';
     for(var i=0;i<n;i++){var a=i/n*2*Math.PI,b=a+tw,p=[f(cx+rx*Math.cos(a)),f(y1+ry*Math.sin(a))],q=[f(cx+rx*Math.cos(b)),f(y2+ry*Math.sin(b))];
-      if(Math.sin(a)+Math.sin(b)>0) fr+=line(p,q,'t'); else bk+=line(p,q,'b');}
-    var a0=.9;return line([cx,4],[cx,166],'x')+bk+'<ellipse class="w" cx="'+cx+'" cy="'+y1+'" rx="'+rx+'" ry="'+ry+'"/>'+fr+'<ellipse class="w" cx="'+cx+'" cy="'+y2+'" rx="'+rx+'" ry="'+ry+'"/>'+
-      line([f(cx+rx*Math.cos(a0)),f(y1+ry*Math.sin(a0))],[f(cx+rx*Math.cos(a0+tw)),f(y2+ry*Math.sin(a0+tw))],'h');})();
-  /* брусок с прямоугольным вырезом сверху; грани выреза жёлтые */
-  ART.body=(function(){var P=iso([96,60],1.15),W=80,D=50,H=40,a=28,b=52,zc=20,s='';
-    s+=poly([P(0,0,H),P(a,0,H),P(a,D,H),P(0,D,H)],'f w');
-    s+=poly([P(b,0,H),P(W,0,H),P(W,D,H),P(b,D,H)],'f w');
-    s+=poly([P(a,0,zc),P(b,0,zc),P(b,D,zc),P(a,D,zc)],'y');
-    s+=poly([P(a,0,zc),P(a,D,zc),P(a,D,H),P(a,0,H)],'y');
-    s+=poly([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'f w');
-    s+=poly([P(0,D,0),P(W,D,0),P(W,D,H),P(b,D,H),P(b,D,zc),P(a,D,zc),P(a,D,H),P(0,D,H)],'f w');
-    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+26),'x');})();
-  /* эпюр: ось x, отрезок AB в двух проекциях, линии связи */
-  ART.epure='<line class="w" x1="20" y1="86" x2="196" y2="86"/><text class="tx" x="182" y="80">x</text>'+
-    line([80,30],[80,138],'d')+line([150,48],[150,124],'d')+'<path class="h" d="M80 30L150 48M80 138L150 124"/>'+
-    '<circle class="p" cx="80" cy="30" r="3.2"/><circle class="p" cx="150" cy="48" r="3.2"/><circle class="p" cx="80" cy="138" r="3.2"/><circle class="p" cx="150" cy="124" r="3.2"/>'+
-    '<text class="tx" x="60" y="28">A″</text><text class="tx" x="156" y="46">B″</text><text class="tx" x="60" y="152">A′</text><text class="tx" x="156" y="140">B′</text>';
-  /* пересечение конуса и цилиндра: очерки и линия пересечения */
-  ART.inter='<path class="f w" d="M60 140 110 24 160 140z"/><ellipse class="t" cx="110" cy="140" rx="50" ry="10"/><rect class="f w" x="40" y="88" width="140" height="34" rx="2"/><ellipse class="t" cx="40" cy="105" rx="6" ry="17"/>'+
-    '<path class="h" d="M82 88C92 100 92 112 80 122M138 88C128 100 128 112 140 122"/>'+line([110,14],[110,152],'x')+line([30,105],[190,105],'x');
-  /* плоскости проекций π1, π2 и проецирование точки */
-  ART.planes=(function(){var P=iso([118,72],1),s='';
-    s+=poly([P(0,0,0),P(90,0,0),P(90,0,70),P(0,0,70)],'f w');
-    s+=poly([P(0,0,0),P(90,0,0),P(90,70,0),P(0,70,0)],'f w');
-    var A=P(50,35,40),A2=P(50,0,40),A1=P(50,35,0),Ax=P(50,0,0);
-    s+=line(A,A2,'d')+line(A,A1,'d')+line(A2,Ax,'t')+line(A1,Ax,'t');
-    s+='<circle class="p" cx="'+A[0]+'" cy="'+A[1]+'" r="3.4"/><circle class="p" cx="'+A2[0]+'" cy="'+A2[1]+'" r="2.8"/><circle class="p" cx="'+A1[0]+'" cy="'+A1[1]+'" r="2.8"/>';
-    var t=P(80,0,60),t2=P(80,60,0);return s+'<text class="tx" x="'+t[0]+'" y="'+t[1]+'">π₂</text><text class="tx" x="'+t2[0]+'" y="'+t2[1]+'">π₁</text>';})();
-  /* три вида детали: главный, сверху, слева, линии связи */
-  ART.views='<path class="f w" d="M30 30h60v20H70v20H30z"/><path class="f w" d="M30 96h60v40H30z"/><path class="d" d="M70 96v40"/><path class="f w" d="M120 30h40v40h-40z"/><path class="w" d="M120 50h20v20"/>'+
-    line([96,40],[114,40],'t')+line([96,60],[114,60],'t')+line([30,74],[30,92],'t')+line([90,74],[90,92],'t');
-  /* деталь в изометрии с четвертным вырезом и штриховкой */
-  ART.part=(function(){var P=iso([100,66],1.05),W=86,D=60,H=46,s='';
-    s+=poly([P(0,0,H),P(W,0,H),P(W,D/2,H),P(W/2,D/2,H),P(W/2,D,H),P(0,D,H)],'f w');
-    s+=poly([P(W,0,0),P(W,D/2,0),P(W,D/2,H),P(W,0,H)],'f w');
-    s+=poly([P(0,D,0),P(W/2,D,0),P(W/2,D,H),P(0,D,H)],'f w');
-    s+=poly([P(W/2,D/2,0),P(W,D/2,0),P(W,D/2,H),P(W/2,D/2,H)],'y');
-    s+=poly([P(W/2,D/2,0),P(W/2,D,0),P(W/2,D,H),P(W/2,D/2,H)],'y');
-    for(var i=1;i<6;i++){s+=line(P(W/2+i*7,D/2,0),P(W/2+i*7-12,D/2,H),'t');}
-    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+24),'x');})();
-  /* куб и секущая плоскость */
-  ART.cube=(function(){var P=iso([108,64],1.05),a=64;
-    return poly([P(0,0,a),P(a,0,a),P(a,a,a),P(0,a,a)],'f w')+poly([P(a,0,0),P(a,a,0),P(a,a,a),P(a,0,a)],'f w')+poly([P(0,a,0),P(a,a,0),P(a,a,a),P(0,a,a)],'f w')+poly([P(a,0,a*.25),P(a,a,a*.75),P(0,a,a*.75)],'y');})();
-  /* полый шар со сквозным отверстием */
-  ART.sphere='<circle class="f w" cx="110" cy="84" r="62"/><ellipse class="t" cx="110" cy="84" rx="62" ry="16"/><circle class="d" cx="110" cy="84" r="40"/>'+
-    '<path class="y" d="M98 22h24v124H98z" fill-opacity=".35"/><path class="h" d="M98 24v120M122 24v120"/>'+line([110,8],[110,160],'x')+line([36,84],[184,84],'x');
-  /* тело с цилиндрическим отверстием */
-  ART.hole=(function(){var P=iso([100,60],1.1),W=84,D=56,H=40,s='';
-    s+=poly([P(0,0,H),P(W,0,H),P(W,D,H),P(0,D,H)],'f w');
-    s+=poly([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'f w');
-    s+=poly([P(0,D,0),P(W,D,0),P(W,D,H),P(0,D,H)],'f w');
-    var c=P(W/2,D/2,H),c0=P(W/2,D/2,0);
-    s+='<ellipse class="y" cx="'+c[0]+'" cy="'+c[1]+'" rx="22" ry="12.5"/>'+line([c[0]-22,c[1]],[c0[0]-22,c0[1]],'d')+line([c[0]+22,c[1]],[c0[0]+22,c0[1]],'d');
-    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+26),'x');})();
-  /* сквозное отверстие K: брусок, призматический проём насквозь */
-  ART.through=(function(){var P=iso([100,60],1.1),W=84,D=56,H=40,a=30,b=54,s='';
-    s+=poly([P(0,0,H),P(W,0,H),P(W,D,H),P(0,D,H)],'f w');
-    s+=poly([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'f w');
-    s+=poly([P(0,D,0),P(W,D,0),P(W,D,H),P(0,D,H)],'f w');
-    s+=poly([P(a,D,10),P(b,D,10),P(b,D,30),P(a,D,30)],'y');
-    s+=line(P(a,D,30),P(a,0,30),'d')+line(P(b,D,10),P(b,0,10),'d');
-    return s+line(P(W/2,D/2,-14),P(W/2,D/2,H+26),'x');})();
+      if(Math.sin(a)+Math.sin(b)>0) fr+=line(p,q,'sN');}
+    var a0=.9;
+    return shadow(cx,y2+14,70,12)+sil+'<ellipse class="sD sO" cx="'+cx+'" cy="'+y1+'" rx="'+rx+'" ry="'+ry+'"/>'+fr+
+      '<path class="sO" fill="none" d="M'+(cx-rx)+' '+y2+'A'+rx+' '+ry+' 0 0 0 '+(cx+rx)+' '+y2+'"/>'+
+      line([f(cx+rx*Math.cos(a0)),f(y1+ry*Math.sin(a0))],[f(cx+rx*Math.cos(a0+tw)),f(y2+ry*Math.sin(a0+tw))],'sKy');})();
+  /* брусок с прямоугольным пазом сверху (ИГ 4) */
+  ART.body=(function(){var P=iso([96,56],1.2),W=80,D=50,H=40,a=28,b=52,zc=18,s='';
+    s+=shadow(100,128,78,16);
+    s+=face([P(0,0,H),P(a,0,H),P(a,D,H),P(0,D,H)],'sT');
+    s+=face([P(b,0,H),P(W,0,H),P(W,D,H),P(b,D,H)],'sT');
+    s+=face([P(a,0,zc),P(b,0,zc),P(b,D,zc),P(a,D,zc)],'sY');
+    s+=face([P(a,0,zc),P(a,D,zc),P(a,D,H),P(a,0,H)],'sYd');
+    s+=face([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'sR');
+    s+=face([P(0,D,0),P(W,D,0),P(W,D,H),P(b,D,H),P(b,D,zc),P(a,D,zc),P(a,D,H),P(0,D,H)],'sL');
+    return s;})();
+  /* лист с эпюром: ось x, проекции отрезка AB, линии связи (начерт 1) */
+  ART.epure='<rect class="sS" x="26" y="20" width="176" height="136" rx="6"/><rect class="sP sO" x="20" y="12" width="176" height="136" rx="6"/>'+
+    '<line class="sN" x1="32" y1="80" x2="184" y2="80"/><text class="sTx" x="174" y="74">x</text>'+
+    line([74,30],[74,132],'sNd')+line([146,46],[146,118],'sNd')+'<path class="sK" d="M74 30L146 46M74 132L146 118"/>'+
+    '<circle class="sPt" cx="74" cy="30" r="3.4"/><circle class="sPt" cx="146" cy="46" r="3.4"/><circle class="sPt" cx="74" cy="132" r="3.4"/><circle class="sPt" cx="146" cy="118" r="3.4"/>'+
+    '<text class="sTx" x="54" y="28">A″</text><text class="sTx" x="152" y="44">B″</text><text class="sTx" x="54" y="144">A′</text><text class="sTx" x="152" y="130">B′</text>';
+  /* сплошной конус и цилиндр насквозь, красные линии пересечения (начерт 4) */
+  ART.inter=(function(){var ax=112,ay=14,by=146,R=50,cy=104,r=17,k=R/(by-ay),w=function(y){return k*(y-ay);};
+    var crv=function(sg){var d='';for(var i=0;i<=20;i++){var y=cy-r+2*r*i/20,t=(y-cy)/r,dp=Math.sqrt(Math.max(0,1-t*t))*r*.8,x=ax+sg*Math.sqrt(Math.max(0,w(y)*w(y)-dp*dp));d+=(i?'L':'M')+f(x)+' '+f(y);}return d;};
+    var Lc=crv(-1),Rc=crv(1);
+    return shadow(112,156,92,12)+
+      '<path class="sCone sO" d="M'+ax+' '+ay+'L'+(ax-R)+' '+by+'A'+R+' 11 0 0 0 '+(ax+R)+' '+by+'Z"/>'+
+      '<path class="sCyl sO" d="M24 '+(cy-r)+Lc.replace(/^M/,'L')+'L24 '+(cy+r)+'Z"/>'+
+      '<path class="sCyl sO" d="M194 '+(cy-r)+Rc.replace(/^M/,'L')+'L194 '+(cy+r)+'Z"/>'+
+      '<ellipse class="sCap sO" cx="194" cy="'+cy+'" rx="7" ry="'+r+'"/>'+
+      '<path class="sKw" d="'+Lc+'"/><path class="sK" d="'+Lc+'"/><path class="sKw" d="'+Rc+'"/><path class="sK" d="'+Rc+'"/>';})();
+  /* плоскости проекций π1, π2 и точка в пространстве (начерт 3) */
+  ART.planes=(function(){var P=iso([100,66],1),s='';
+    s+=face([P(0,0,0),P(90,0,0),P(90,0,72),P(0,0,72)],'sR');
+    s+=face([P(0,0,0),P(90,0,0),P(90,72,0),P(0,72,0)],'sT');
+    var A=P(50,36,42),A2=P(50,0,42),A1=P(50,36,0),Ax=P(50,0,0);
+    s+=line(A,A2,'sNd')+line(A,A1,'sNd')+line(A2,Ax,'sN')+line(A1,Ax,'sN');
+    s+='<circle class="sKp" cx="'+A[0]+'" cy="'+A[1]+'" r="5"/><circle class="sPt" cx="'+A2[0]+'" cy="'+A2[1]+'" r="3.4"/><circle class="sPt" cx="'+A1[0]+'" cy="'+A1[1]+'" r="3.4"/>';
+    var t=P(78,0,62),t2=P(80,62,0);return s+'<text class="sTx" x="'+t[0]+'" y="'+t[1]+'">π₂</text><text class="sTx" x="'+t2[0]+'" y="'+t2[1]+'">π₁</text>';})();
+  /* лист с тремя видами детали, разрез заштрихован (ИГ 2) */
+  ART.views=(function(){var s='<rect class="sS" x="26" y="20" width="176" height="136" rx="6"/><rect class="sP sO" x="20" y="12" width="176" height="136" rx="6"/>';
+    s+='<path class="sV sO" d="M36 30h56v20H74v20H36z"/><path class="sV sO" d="M36 92h56v40H36z"/><path class="sNd" d="M74 92v40"/>';
+    s+='<path class="sV sO" d="M116 30h44v40h-44z"/>';
+    for(var i=0;i<7;i++){var x=118+i*7;s+='<path class="sHt" d="M'+x+' 70L'+(x+20)+' 50"/>';}
+    s+='<path class="sO" fill="none" d="M116 50h22v20"/>';
+    return s+line([96,40],[112,40],'sN')+line([96,60],[112,60],'sN')+line([36,74],[36,88],'sN')+line([92,74],[92,88],'sN');})();
+  /* деталь с четвертным вырезом, сечение заштриховано (ИГ 3) */
+  ART.part=(function(){var P=iso([100,60],1.1),W=86,D=60,H=46,s=shadow(104,138,84,16);
+    s+=face([P(0,0,H),P(W,0,H),P(W,D/2,H),P(W/2,D/2,H),P(W/2,D,H),P(0,D,H)],'sT');
+    s+=face([P(W,0,0),P(W,D/2,0),P(W,D/2,H),P(W,0,H)],'sR');
+    s+=face([P(0,D,0),P(W/2,D,0),P(W/2,D,H),P(0,D,H)],'sL');
+    s+=face([P(W/2,D/2,0),P(W,D/2,0),P(W,D/2,H),P(W/2,D/2,H)],'sY');
+    s+=face([P(W/2,D/2,0),P(W/2,D,0),P(W/2,D,H),P(W/2,D/2,H)],'sYd');
+    /* штриховка сечения под 45° в плоскости y = D/2: u — вдоль x от W/2, z — высота */
+    var Wh=W/2;for(var c=-H+7;c<Wh;c+=7){var u0=Math.max(0,c),z0=u0-c,u1=Math.min(Wh,c+H),z1=u1-c;s+=line(P(W/2+u0,D/2,z0),P(W/2+u1,D/2,z1),'sHt');}
+    return s;})();
+  /* куб и сечение плоскостью (начерт 2) */
+  ART.cube=(function(){var P=iso([108,56],1.1),a=64;
+    return shadow(110,142,80,15)+face([P(0,0,a),P(a,0,a),P(a,a,a),P(0,a,a)],'sT')+face([P(a,0,0),P(a,a,0),P(a,a,a),P(a,0,a)],'sR')+face([P(0,a,0),P(a,a,0),P(a,a,a),P(0,a,a)],'sL')+
+      face([P(a,0,a*.25),P(a,a,a*.75),P(0,a,a*.75)],'sY')+'<path class="sK" d="M'+P(a,0,a*.25).join(' ')+'L'+P(a,a,a*.75).join(' ')+'L'+P(0,a,a*.75).join(' ')+'"/>';})();
+  /* полый шар: верх срезан, сечение — жёлтое кольцо, внутри полость (ИГ 6) */
+  ART.sphere=(function(){var cx=110,cy=88,R=62,zc=-22,rc=Math.sqrt(R*R-zc*zc),ri=26;
+    return shadow(cx,cy+R+6,66,11)+
+      '<path class="sSph sO" d="M'+(cx-rc)+' '+(cy+zc)+'A'+R+' '+R+' 0 1 0 '+(cx+rc)+' '+(cy+zc)+'Z"/>'+
+      '<ellipse class="sY sO" cx="'+cx+'" cy="'+(cy+zc)+'" rx="'+f(rc)+'" ry="'+f(rc*.3)+'"/>'+
+      '<ellipse class="sD sO" cx="'+cx+'" cy="'+(cy+zc)+'" rx="'+ri+'" ry="'+f(ri*.3)+'"/>'+
+      line([cx,cy+zc-40],[cx,cy+R+14],'sX');})();
+  /* брусок с цилиндрическим отверстием (ИГ 5) */
+  ART.hole=(function(){var P=iso([100,54],1.15),W=84,D=56,H=40,s=shadow(102,130,80,15);
+    s+=face([P(0,0,H),P(W,0,H),P(W,D,H),P(0,D,H)],'sT');
+    s+=face([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'sR');
+    s+=face([P(0,D,0),P(W,D,0),P(W,D,H),P(0,D,H)],'sL');
+    var c=P(W/2,D/2,H);
+    s+='<ellipse class="sD sO" cx="'+c[0]+'" cy="'+c[1]+'" rx="22" ry="12.5"/>';
+    s+='<path class="sY" d="M'+(c[0]-22)+' '+c[1]+'A22 12.5 0 0 1 '+(c[0]+22)+' '+c[1]+'L'+(c[0]+22)+' '+(c[1]+9)+'A22 12.5 0 0 0 '+(c[0]-22)+' '+(c[1]+9)+'Z" opacity=".95"/>';
+    return s+'<ellipse class="sO" fill="none" cx="'+c[0]+'" cy="'+c[1]+'" rx="22" ry="12.5"/>';})();
+  /* брусок со сквозным прямоугольным проёмом (ИГ 8) */
+  ART.through=(function(){var P=iso([100,54],1.15),W=84,D=56,H=40,a=30,b=54,z0=10,z1=30,s=shadow(102,130,80,15);
+    s+=face([P(0,0,H),P(W,0,H),P(W,D,H),P(0,D,H)],'sT');
+    s+=face([P(W,0,0),P(W,D,0),P(W,D,H),P(W,0,H)],'sR');
+    s+=face([P(0,D,0),P(W,D,0),P(W,D,H),P(0,D,H)],'sL');
+    s+=face([P(a,D,z0),P(b,D,z0),P(b,D,z1),P(a,D,z1)],'sD');
+    s+=face([P(a,D,z0),P(b,D,z0),P(b,D-20,z0),P(a,D-20,z0)],'sY');
+    s+=face([P(a,D,z0),P(a,D,z1),P(a,D-20,z1),P(a,D-20,z0)],'sYd');
+    return s;})();
 
-  /* оттенки синего, как плитки разделов на главной: начерт — от тёмно-синего к ярко-синему, инжа — от голубого к лазурному */
   var PAL={blue:'#2a5ce8',violet:'#1d3f9e',rose:'#1386d6',amber:'#3b74ff',green:'#0f9fd8',orange:'#2f6bff',cyan:'#14a6e0',graphite:'#132a6b'};
   /* вид карточки и срок сдачи (неделя семестра). Сроки ЧЕРНОВЫЕ — в коде сайта их нет; вписать по плану кафедры.
      ДЗ, которого нет в таблице, получает рисунок и цвет по умолчанию и последнюю неделю. */
@@ -121,6 +152,13 @@
     '<section class="det" id="nd-det" role="region"></section>'+
     '<section class="sheet" id="nd-sheet" role="dialog" aria-modal="true" aria-label="Задание"></section>'+
     '<label class="hp" id="nd-hp" aria-hidden="true"><input type="checkbox" switch tabindex="-1" id="nd-hpin"></label>'+
+    /* общие градиенты рисунков карточек */
+    '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'+
+      '<linearGradient id="ndCone" x1="0" x2="1"><stop offset="0" stop-color="#a9bde9"/><stop offset=".4" stop-color="#ffffff"/><stop offset=".65" stop-color="#e4ebfb"/><stop offset="1" stop-color="#93aae0"/></linearGradient>'+
+      '<linearGradient id="ndCyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe7a0"/><stop offset=".4" stop-color="#ffcf3a"/><stop offset="1" stop-color="#d99a06"/></linearGradient>'+
+      '<radialGradient id="ndSph" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#d6e0f7"/><stop offset="1" stop-color="#93aae0"/></radialGradient>'+
+      '<linearGradient id="ndHyp" x1="0" x2="1"><stop offset="0" stop-color="#9fb4e6"/><stop offset=".45" stop-color="#f4f7ff"/><stop offset="1" stop-color="#8ea6df"/></linearGradient>'+
+    '</defs></svg>'+
   '</div>';
   document.body.appendChild(root);
   var $=function(id){return document.getElementById('nd-'+id);};
@@ -143,7 +181,7 @@
     return '<span class="chip st">до '+human(d)+'</span>';}
 
   function cardHTML(x,i){return '<svg class="art" viewBox="'+(x.vb||'0 0 210 160')+'" aria-hidden="true">'+ART[x.a]+'</svg>'+
-    '<div class="top"><span class="chip">'+CN[x.c]+' · №'+x.n+'</span>'+status(x,i)+'</div>'+
+    '<div class="top"><span class="chip">'+CN[x.c]+'</span></div>'+
     '<div class="ttl">'+x.t+'</div><div class="var">'+(S.v?'Вариант '+S.v:'Вариант не выбран')+'</div>'+
     '<div class="word">Задание</div><div class="num" aria-hidden="true">'+x.n+'</div>';}
 
@@ -337,7 +375,7 @@
     var st=window.dzPath?window.dzPath(d):null;
     var route=st?'<p class="rth">Путь к сдаче</p><ol class="rt">'+st.S.map(function(x,j){return '<li class="'+(x.done?'ok':'')+(j===st.now?' cur':'')+'"><a href="'+x.h+'"><i>'+(x.done?'✓':j+1)+'</i><span><b>'+x.t+(j===st.now?' <em>Сейчас</em>':'')+'</b><small>'+x.s+'</small></span></a></li>';}).join('')+'</ol>'
       :'<ul class="rows">'+R.map(function(r){return '<li><a href="'+r[1]+'">'+r[0]+'</a></li>';}).join('')+'</ul>';
-    focus(i,'<h2>'+x.t+'</h2><p class="when'+(left>=0&&left<=7?' soon':'')+'">'+when+' · срок примерный</p>'+route+
+    focus(i,'<h2>'+x.t+'</h2>'+route+
       '<a class="go" href="'+H(x.id)+'">Открыть задание</a>'+
       '<button type="button" class="cls">Назад к колоде</button>','Задание '+x.n+', '+CN[x.c],ev);
     det.querySelectorAll('a,.cls').forEach(addHL);}

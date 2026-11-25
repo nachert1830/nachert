@@ -153,3 +153,24 @@ html.nd-on body > :not(#nd):not(#navBot):not(script):not(style){visibility:hidde
 #nd .flt button[aria-pressed=true]{background:#16307f;color:#fff}
 #nd.nd-dark{--bg:#070d22;--fg:#eef2ff;--fm:#8d9bc4;--card:#121c3f;--ln:#1b2650}
 #nd.nd-dark .flt button[aria-pressed=true]{background:#2f6bff}
+
+/* рисунки карточек — сплошные тела поверх большой цифры номера */
+#nd .k svg.art{z-index:2;opacity:1;filter:drop-shadow(0 10px 14px rgba(0,10,50,.35))}
+#nd .k .num{z-index:1}
+#nd .art .sO{stroke:#0b1d57;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+#nd .art .sT{fill:#f7f9ff}#nd .art .sR{fill:#cfdaf5}#nd .art .sL{fill:#aebfe9}
+#nd .art .sY{fill:#ffcf3a}#nd .art .sYd{fill:#e3a50c}#nd .art .sD{fill:#13245e}
+#nd .art .sP{fill:#fbfcff}#nd .art .sV{fill:#e6ecfb}#nd .art .sS{fill:rgba(0,10,50,.28)}
+#nd .art .sN{fill:none;stroke:#0b1d57;stroke-width:1;opacity:.7}
+#nd .art .sNd{fill:none;stroke:#0b1d57;stroke-width:1;stroke-dasharray:4 3;opacity:.6}
+#nd .art .sX{fill:none;stroke:#0b1d57;stroke-width:1;stroke-dasharray:10 3 2 3;opacity:.55}
+#nd .art .sHt{fill:none;stroke:#0b1d57;stroke-width:1;opacity:.75}
+#nd .art .sK{fill:none;stroke:#e0202e;stroke-width:3.2;stroke-linecap:round}
+#nd .art .sKw{fill:none;stroke:#fff;stroke-width:6;stroke-linecap:round}
+#nd .art .sKy{stroke:#ffcf3a;stroke-width:3.4;stroke-linecap:round}
+#nd .art .sKp{fill:#e0202e;stroke:#fff;stroke-width:2}
+#nd .art .sPt{fill:#0b1d57}
+#nd .art .sTx{fill:#0b1d57;font:italic 600 13px Georgia,'Times New Roman',serif}
+#nd .art .sCone{fill:url(#ndCone)}#nd .art .sCyl{fill:url(#ndCyl)}#nd .art .sCap{fill:#ffd85c}
+#nd .art .sSph{fill:url(#ndSph)}#nd .art .sHy{fill:url(#ndHyp)}
+#nd .k svg.art{right:-2%;top:96px;width:62%;max-height:calc(var(--ch) - 176px)}
