@@ -95,6 +95,8 @@
   function due(x){return W1+((x.w-1)*7+4)*DAY;}
   function human(t,wd){var d=new Date(t);return (wd?WD[d.getUTCDay()]+', ':'')+d.getUTCDate()+' '+MON[d.getUTCMonth()];}
   function today(){var r=new Date();return Date.UTC(r.getFullYear(),r.getMonth(),r.getDate());}
+  /* ближайшее ДЗ по сроку — для Луки (svyaz.js): к нему ведёт вопрос с главной */
+  window.DZNEXT=function(){var t=today(),up=DZ.filter(function(x){return due(x)>=t;}).sort(function(a,b){return due(a)-due(b);});return up[0]?up[0].id:null;};
 
   /* вариант — общий для всего сайта */
   function getV(){try{return typeof dzVar==='function'?dzVar():0;}catch(e){return 0;}}

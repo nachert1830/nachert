@@ -5412,7 +5412,7 @@ button.dr-go{background:var(--surf2,var(--surf));border:1px solid var(--line);co
 <header id="hdr">
  <div class="hin">
   <a class="brand" href="#/" aria-label="Начерт — на главную">
-   <svg class="logo" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#1e6fd9"/><circle cx="12.5" cy="16" r="6.5" fill="#fff"/><circle cx="19.5" cy="16" r="6.5" fill="none" stroke="#e8392b" stroke-width="3"/></svg>
+   <svg class="logo" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M2.5 12h19" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M12 5.5v13" stroke="#EB5310" stroke-width="1.75" stroke-dasharray="2.2 1.8" fill="none"/><circle cx="12" cy="5.5" r="2.6" fill="currentColor"/><circle cx="12" cy="18.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.75"/></svg>
    <span class="bw"><b>Начерт</b><i>по шагам</i></span>
   </a>
   <div class="subj" id="subjBar" role="tablist" aria-label="Предмет"></div>
@@ -29827,7 +29827,12 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
   IG4ART=`<svg class="hc-art hc-rart" viewBox="${f(x0)} ${f(y0)} ${f(x1-x0)} ${f(y1-y0)}" aria-hidden="true"><defs><radialGradient id="i4Gl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><filter id="i4Gw" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     <ellipse cx="${f((x0+x1)/2)}" cy="${f((y0+y1)/2)}" rx="${f((x1-x0)/1.7)}" ry="${f((y1-y0)/1.7)}" fill="url(#i4Gl)"/>${g}</svg>`;
   return IG4ART; }
-function homeCards(){ const pm=PROMO.cardHTML();
+/* «Учиться» — левая плитка главной: путь подготовки к заданию, которое сайт выбрал по сроку (PREP.autoKey, prep/plans.js) */
+function learnCard(){ try{ if(!window.PREP||!PREP.autoKey||!Object.keys(PREP.PLANS||{}).length) return '';
+  const k=PREP.autoKey(), p=PREP.PLANS[k], g=PREP.planProg(k); let i=0; while(i<p.skills.length&&PREP.stDone(k,i)) i++;
+  const fin=i>=p.skills.length, pc=Math.round(g.done/g.n*100);
+  return `<a class="hc hc-lrn lrn" href="#/prep/${k}"><span class="hc-pill"><i></i>Учиться · ${p.subj==='ig'?'инжа':'начерт'}</span><span class="hc-t">${p.label}</span><span class="hc-s">${fin?'Готов к заданию: '+p.title:'Дальше: '+p.skills[i].t}</span><span class="hc-bar" aria-label="Пройдено ${pc}%"><i style="width:${pc}%"></i></span><span class="hc-go">${fin?'К варианту':g.done?'Продолжить':'Начать'} →</span></a>`; }catch(e){ return ''; } }
+function homeCards(){ const pm=PROMO.cardHTML()||learnCard();
   /* слева — эфир (если он есть) или «Как образуются поверхности»; справа — ДЗ 4 по инженерной графике */
   const left=pm||`<a class="hc hc-rot" href="#/ng/surf" aria-label="Как образуются поверхности: интерактивная 3D-модель">
     <span class="hc-pill"><i></i>Тема · начерт</span>
@@ -29857,16 +29862,17 @@ function viewHome(v){
   const hw=(window.DZR?DZR.list('ng'):[]), nIG=(window.DZR?DZR.list('ig'):[]), sc=homeScope();
   const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
   const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
-  v.innerHTML=`<div class="wrap page home v8h" id="v8h">
+  v.innerHTML=`<div class="wrap page home v8h sv-home" id="v8h">
    <div class="hcards" id="rkHome">${homeCards()}</div>
-   ${A2HS.cardHTML()}
-   <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
-    <h1 id="v8H" class="v8-h">Разберись со своей задачей</h1>
+   <section class="luka" id="hsearch" aria-labelledby="v8H">
+    <canvas class="luka-orb" id="lukaOrb" role="img" aria-label="Лука — помощник. Коснись, чтобы поздороваться"></canvas>
+    <h1 id="v8H" class="luka-h">Привет, я Лука</h1>
+    <p class="luka-s">Найду задачу по номеру или разберу твой шаг прямо на чертеже</p>
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
+    <div class="luka-ex">${[['47','47'],['ДЗ 4','ДЗ 4'],['замена плоскостей','замена плоскостей']].map(x=>`<button type="button" data-hq="${x[1]}">${x[0]}</button>`).join('')}<button type="button" class="ask" data-luka-ask="">Проверь мой лист по фото</button></div>
    </section>
-       <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
-   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
+   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span><span class="au-t"><span>Автор — <b>Андрей Матханов</b></span><small>Как устроен Начерт и почему он бесплатный</small></span><span class="au-go" aria-hidden="true">→</span></button></div>
    <section class="v8-dirs happs" aria-label="Разделы">
     ${appsHTML('ng','Начертательная геометрия',[[H('ng','tasks'),'Тетрадь','nb',nT],[HDZ('ng'),'ДЗ','hw'],[H('ng','rk2'),'РК2','rk',0,1],[H('ng','path'),'Теория','th']])}
     ${appsHTML('ig','Инженерная графика',[[H('ig','wb'),'Тетрадь','grid',nIW],[HDZ('ig'),'ДЗ','sheet'],[H('ig','learn'),'Учиться','cube'],[H('ig','theory'),'ЕСКД','square']])}
@@ -29875,7 +29881,7 @@ function viewHome(v){
   NEXT=null;
   try{ if(window.RKG) RKG.bindTeaser(v); }catch(e){}
   try{ RKS.load(()=>{ const m=$('rkHome'); if(m) m.innerHTML=homeCards(); }); }catch(e){}
-  if(window.SEARCH){ const page=$('v8h'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:page,keep:true,noAuto:true,quiet:true,scope:homeScope,ph:'Номер задачи, вариант, тема или вопрос'});
+  if(window.SEARCH){ const page=$('v8h'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:page,keep:true,noAuto:true,quiet:true,scope:homeScope,ph:'Задача, вариант или вопрос'});
     /* красная «Найти» — куда нажать: открывает первый ответ, а пустая строка просто получает фокус */
     const go=document.createElement('button'); go.type='button'; go.className='v9-go'; go.innerHTML='<span>Найти</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
     api.input.closest('form').appendChild(go);
@@ -35921,9 +35927,10 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 <script src="../lk/ask.js?v=4" defer></script>
 <!-- Наставник — ИИ-агент на чертеже: начерт ДЗ №1–5, ИГ ДЗ №3–6 (../lk/tutor.js, docs/TUTOR.md) -->
 <script src="../lk/tutor.js?v=4" defer></script>
-<link rel="stylesheet" href="shell.css?v=2">
-<script src="shell.js?v=2" defer></script>
 <link rel="stylesheet" href="dzdeck.css?v=5">
-<script src="dzdeck.js?v=5" defer></script>
+<script src="dzdeck.js?v=6" defer></script>
+<!-- «Связь»: токены, меню, Лука (docs/design-system/) — последним, поверх стилей сайта -->
+<link rel="stylesheet" href="svyaz.css?v=1">
+<script src="svyaz.js?v=1" defer></script>
 </body>
 </html>

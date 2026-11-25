@@ -24,8 +24,8 @@ async function run() {
         if (sel && !(await page.locator(sel + ' >> visible=true').count())) B(dev.name + ': ' + what, 'не видно ' + sel);
         const w = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); if (w > 1) B(dev.name + ': ' + what + ' — без горизонтальной прокрутки', w + ' px');
       };
-      await check('', '#ns-gate[hidden], body', 'главная');
-      if (await page.locator('#ns-gate').isVisible().catch(() => false)) B(dev.name + ': занавеска', 'видна после кода');
+      await check('', '#sv-gate[hidden], body', 'главная');
+      if (await page.locator('#sv-gate').isVisible().catch(() => false)) B(dev.name + ': занавеска', 'видна после кода');
       await check('#/dz', '#nd-stage', 'экран «ДЗ» колодой');
       await check('#/ig4/7', 'svg', 'ИГ ДЗ №4, вариант 7');
       if (await page.locator('.tu-fab >> visible=true').count()) B(dev.name + ': наставник при окне согласия на статистику', 'кнопка видна и закрывает «Согласен»');

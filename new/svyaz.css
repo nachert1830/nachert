@@ -1,0 +1,231 @@
+/* ═══ «Связь» в копии /new/ — дизайн-система (docs/design-system/) поверх стилей сайта ═══
+   Подключается последним. Порядок: 1) токены «Связи» 2) мост — старые переменные сайта → новые токены, поэтому все разделы
+   перекрашиваются сразу, без правки разметки 3) общие компоненты (кнопки, карточки) 4) оболочка: шапка, нижнее меню с Лукой,
+   мини-панель «Сейчас делаешь» 5) главная. Тема на сайте всегда задана атрибутом data-theme на <html>. */
+
+/* 1 ── токены ── */
+:root{
+  --bg:#F3F4F6;--surface-1:#FFFFFF;--surface-2:#EBEDF1;--surface-3:#DFE2E8;--overlay:#FFFFFF;
+  --line:#DDE1E7;--line-strong:#B9C0CB;--field:#7F8795;
+  --ink-1:#0E1116;--ink-2:#434B58;--ink-3:#5F6877;--ink-4:#9AA2AE;
+  --accent:#EB5310;--accent-ink:#1A0A02;--accent-text:#B93A06;--accent-soft:#FFE8DD;
+  --ok:#10743F;--ok-soft:#E2F4E8;--err:#C4183E;--err-soft:#FCE4EA;
+  --due:#8A5300;--due-fill:#FFC43D;--due-soft:#FFF1CC;--focus:#B93A06;
+  --glass:rgba(243,244,246,.86);--scrim:rgba(14,17,22,.32);
+  --sh-2:0 8px 24px rgba(14,17,22,.08),0 1px 2px rgba(14,17,22,.06);--sh-3:0 24px 64px rgba(14,17,22,.16);
+  /* Лука: своя палитра — только для него */
+  --luka-1:#FF6A2B;--luka-2:#FFB020;--luka-3:#FF3D7F;--luka-4:#7A5CFF;--luka-glow:.22;
+  --font-display:'Geologica','Golos Text',system-ui,sans-serif;
+  --font-text:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --e-standard:cubic-bezier(.2,0,0,1);--e-enter:cubic-bezier(0,0,0,1);--e-exit:cubic-bezier(.3,0,1,1);
+  --spring-snappy:linear(0,.066,.205,.362,.508,.632,.732,.809,.867,.909,.939,.959,.974,.983,.99,1);
+  --spring-smooth:linear(0,.034,.114,.215,.32,.423,.516,.599,.671,.732,.783,.825,.86,.888,.911,.93,.944,.956,.966,.973,.979,.983,.987,.99,.992,1);
+  --spring-bouncy:linear(0,.057,.194,.37,.553,.722,.863,.971,1.046,1.09,1.11,1.112,1.101,1.083,1.063,1.042,1.024,1.01,.999,.992,.989,.987,.988,.989,.992,1);
+  --sv-tab:64px;--sab:env(safe-area-inset-bottom,0px);
+  --graphite:#15181E;--graphite-2:#262B34;   /* тёмные плашки с белым текстом (бывшие «тёмно-синие») — одинаковы в обеих темах */
+}
+:root[data-theme="dark"]{
+  --bg:#0B0D11;--surface-1:#14171D;--surface-2:#1C2028;--surface-3:#272C36;--overlay:#1A1E25;
+  --line:#262B34;--line-strong:#3B424F;--field:#606979;
+  --ink-1:#F1F3F6;--ink-2:#B3BAC6;--ink-3:#8E97A6;--ink-4:#555D6B;
+  --accent:#FF6A2B;--accent-ink:#1A0A02;--accent-text:#FF8F5E;--accent-soft:#35190C;
+  --ok:#4CD38A;--ok-soft:#0F2C1D;--err:#FF6F8E;--err-soft:#371320;
+  --due:#FFCB5C;--due-fill:#FFC43D;--due-soft:#33270B;--focus:#FF8F5E;
+  --glass:rgba(11,13,17,.82);--scrim:rgba(0,0,0,.56);
+  --sh-2:inset 0 1px 0 rgba(255,255,255,.04),0 0 0 1px #262B34;--sh-3:0 24px 64px rgba(0,0,0,.5);
+  --luka-glow:.32;--graphite:#1F242D;--graphite-2:#2C323D;color-scheme:dark;
+}
+
+/* 2 ── мост: переменные сайта → «Связь» ── */
+:root,:root[data-theme="dark"]{
+  --paper:var(--bg);--surf:var(--surface-1);--surf2:var(--surface-2);--surf3:var(--surface-3);--bg2:var(--surface-2);
+  --ink:var(--ink-1);--ink2:var(--ink-2);--mut:var(--ink-3);--mut2:var(--ink-4);--line2:var(--line-strong);--bd:var(--line);
+  --acc:var(--accent);--acc-h:var(--accent);--acc-d:transparent;--on-acc:var(--accent-ink);
+  --blue:var(--accent-text);--blue-s:var(--accent-soft);--blue-ink:var(--accent-text);
+  --navy:var(--graphite);--navy2:var(--graphite-2);--strap:var(--graphite);--strap2:var(--graphite-2);
+  --red:var(--accent-text);--red-s:var(--accent-soft);--hot:var(--accent);--red-b:var(--accent);--red-d:transparent;
+  --green:var(--ok);--green-s:var(--ok-soft);--amber:var(--due);
+  --shadow:none;--shadow2:var(--sh-2);
+  --tri:none;--strap-band:none;--weave:none;--dialbg:var(--ink-1);--dialln:none;
+  --sans:var(--font-text);--disp:var(--font-display);--mono:var(--font-text);
+  --r:14px;--r2:20px;
+}
+html body{background:var(--bg)!important;color:var(--ink-1);font-family:var(--font-text)}
+:focus-visible{outline:2px solid var(--focus)!important;outline-offset:2px}
+
+/* 3 ── общие компоненты: без «бортиков», градиентов и тяжёлых теней ── */
+:root[data-theme] body .btn{border-radius:14px!important;box-shadow:none!important;font-family:var(--font-text)!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important;transition:transform .15s var(--spring-snappy),background-color .15s!important}
+:root[data-theme] body .btn:active{transform:scale(.97)!important}
+:root[data-theme] body .btn.pri,:root[data-theme] body .btn.red{background:var(--accent)!important;border-color:var(--accent)!important;color:var(--accent-ink)!important}
+:root[data-theme] body .btn:not(.pri):not(.red){background:var(--surface-2)!important;border-color:transparent!important;color:var(--ink-1)!important}
+:root[data-theme] body .card,:root[data-theme] body .box{box-shadow:none!important}
+:root[data-theme] body h1,:root[data-theme] body h2{font-family:var(--font-display)!important;letter-spacing:-.01em}
+/* то, что больше не нужно: кошки, полоски-триколоры, плавающая «поделиться», «Не нашёл свой вопрос» (его заменил Лука) */
+:root[data-theme] body .perch,:root[data-theme] body .foot-cat,:root[data-theme] body .sharefab,:root[data-theme] body #stuck,:root[data-theme] body .v6-stripe,:root[data-theme] body #hprog{display:none!important}
+:root[data-theme] body #foot::before,:root[data-theme] body header::after{display:none!important}
+:root[data-theme] body #foot{background:transparent!important;border:0!important;padding-bottom:calc(var(--sv-tab) + 72px + var(--sab))!important}
+
+/* 4 ── оболочка ── */
+/* шапка: стекло, тонкая линия, новый знак */
+:root[data-theme] body header#hdr{background:var(--glass)!important;-webkit-backdrop-filter:saturate(1.4) blur(14px)!important;backdrop-filter:saturate(1.4) blur(14px)!important;box-shadow:0 1px 0 var(--line)!important;border:0!important}
+:root[data-theme] body header#hdr .brand b{color:var(--ink-1)!important;font-family:var(--font-display)!important;letter-spacing:-.02em}
+:root[data-theme] body header#hdr .brand i{display:none!important}
+:root[data-theme] body header#hdr .icb{background:transparent!important;border:0!important;box-shadow:none!important;color:var(--ink-1)!important;border-radius:12px!important}
+:root[data-theme] body header#hdr .icb:hover{background:var(--surface-2)!important}
+:root[data-theme] body .subj{background:var(--surface-2)!important;border:0!important;box-shadow:none!important}
+:root[data-theme] body .subj a{color:var(--ink-2)!important;background:transparent!important}
+:root[data-theme] body .subj a.on{background:var(--surface-1)!important;color:var(--ink-1)!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important}
+:root[data-theme] body .nav-top a.nv{color:var(--ink-2)!important;background:transparent!important;font-weight:550!important}
+:root[data-theme] body .nav-top a.nv.on{background:var(--surface-2)!important;color:var(--ink-1)!important;box-shadow:inset 0 -2px 0 var(--accent)!important}
+:root[data-theme] body .nav-top a.nv:not(.on):hover{background:var(--surface-2)!important;color:var(--ink-1)!important}
+/* старое нижнее меню заменено своим */
+:root[data-theme] body #navBot{display:none!important}
+
+/* нижнее меню: Тетрадь · ДЗ · Лука · РК · Теория (у инжи — Учиться). Лука в центре — он же главная */
+#sv-nav{position:fixed;z-index:900;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);align-items:end;height:calc(var(--sv-tab) + var(--sab));padding:0 max(4px,env(safe-area-inset-right,0px)) var(--sab) max(4px,env(safe-area-inset-left,0px));background:var(--glass);-webkit-backdrop-filter:saturate(1.4) blur(16px);backdrop-filter:saturate(1.4) blur(16px);box-shadow:0 -1px 0 var(--line);font-family:var(--font-text);transition:transform .32s var(--spring-smooth)}
+#sv-nav a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:var(--sv-tab);color:var(--ink-3);font:550 11px/14px var(--font-text);text-decoration:none;-webkit-tap-highlight-color:transparent}
+#sv-nav a svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s var(--spring-bouncy)}
+#sv-nav a:active svg{transform:scale(.88)}
+#sv-nav a[aria-current="page"]{color:var(--ink-1)}
+#sv-nav a[aria-current="page"]:not(.luka-tab)::before{content:"";position:absolute;top:0;width:20px;height:2px;border-radius:0 0 2px 2px;background:var(--accent)}
+#sv-nav .luka-tab canvas{width:46px;height:46px;margin-top:-14px;border-radius:50%;background:var(--surface-1);box-shadow:0 0 0 1px var(--line),0 6px 16px rgba(0,0,0,.12)}
+#sv-nav .luka-tab[aria-current="page"] canvas{box-shadow:0 0 0 2px var(--accent),0 6px 16px rgba(0,0,0,.12)}
+#sv-nav .luka-tab span{margin-top:-1px}
+html.sv-hidenav #sv-nav,body.inplayer #sv-nav{transform:translateY(110%)}
+@media (min-width:1080px){#sv-nav,#sv-now{display:none!important}:root[data-theme] body #foot{padding-bottom:24px!important}}
+@media (max-width:1079px){:root[data-theme] body{padding-bottom:0!important}}
+
+/* мини-панель «Сейчас делаешь» — над меню, как плеер */
+#sv-now{position:fixed;z-index:899;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:calc(var(--sv-tab) + var(--sab) + 8px);display:flex;align-items:center;gap:10px;height:56px;padding:0 4px 0 12px;border-radius:16px;background:var(--overlay);box-shadow:var(--sh-2);text-decoration:none;color:var(--ink-1);transition:transform .32s var(--spring-smooth),opacity .2s;max-width:560px;margin:0 auto}
+#sv-now[hidden]{display:flex!important;transform:translateY(calc(100% + 90px));opacity:0;pointer-events:none}
+#sv-now .nb{flex:1;min-width:0;display:flex;flex-direction:column}
+#sv-now .nb small{font:600 10px/12px var(--font-text);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+#sv-now .nb b{font:600 14px/18px var(--font-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sv-now .go{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:var(--ink-1)}
+#sv-now .go svg{width:22px;height:22px;fill:currentColor}
+#sv-now .x{width:36px;height:44px;display:grid;place-items:center;border:0;background:none;color:var(--ink-3);cursor:pointer}
+#sv-now .x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+html.sv-hidenav #sv-now,body.inplayer #sv-now{transform:translateY(calc(100% + 90px));opacity:0;pointer-events:none}
+
+/* «Мои ДЗ» (колода): своё меню колоды прячем, общее меню — над ней */
+:root[data-theme] body #nd .tabs{display:none!important}
+
+/* окно наставника — это Лука */
+:root[data-theme] body .tu-fab{background:var(--overlay)!important;color:var(--ink-1)!important;border:0!important;box-shadow:var(--sh-3)!important;border-radius:999px!important;font:600 15px/1 var(--font-text)!important;padding:6px 18px 6px 6px!important;gap:10px!important;display:inline-flex!important;align-items:center!important;bottom:calc(var(--sv-tab) + var(--sab) + 12px)!important}
+:root[data-theme] body .tu-fab[hidden]{display:none!important}
+:root[data-theme] body .tu-fab canvas{width:40px;height:40px}
+:root[data-theme] body .tu-fab i{display:none!important}
+:root[data-theme] body .tu{border-radius:24px!important;box-shadow:var(--sh-3)!important;background:var(--overlay)!important;color:var(--ink-1)!important}
+
+/* 5 ── главная: старое расположение блоков, новое оформление ── */
+.sv-home{display:flex;flex-direction:column;gap:12px}
+/* две плитки сверху — «обложки» графитом */
+:root[data-theme] body .sv-home .hcards{gap:10px!important}
+:root[data-theme] body .sv-home .hc{background:#15181E!important;color:#F1F3F6!important;border-radius:20px!important;box-shadow:none!important;min-height:176px!important;padding:16px!important;border:0!important}
+:root[data-theme] body .sv-home .hc::before,:root[data-theme] body .sv-home .hc::after{display:none!important}
+:root[data-theme] body .sv-home .hc-pill{background:rgba(255,255,255,.1)!important;color:#F1F3F6!important;border:0!important;font:600 11px/1 var(--font-text)!important;letter-spacing:.06em}
+:root[data-theme] body .sv-home .hc-pill i{background:var(--luka-1)!important;box-shadow:none!important}
+:root[data-theme] body .sv-home .hc-t{font-family:var(--font-display)!important;letter-spacing:-.015em}
+:root[data-theme] body .sv-home .hc-s{color:#B3BAC6!important}
+:root[data-theme] body .sv-home .hc-go{background:var(--accent)!important;color:var(--accent-ink)!important;border-radius:12px!important;box-shadow:none!important;font-weight:600!important}
+:root[data-theme] body .sv-home .hc-art .hc-g{stroke:var(--luka-1)!important;filter:none!important}
+:root[data-theme="dark"] .sv-home .hc{background:var(--surface-2)!important}
+
+/* Лука — центр главной */
+.luka{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:12px 16px 18px;border-radius:28px;background:var(--surface-1);box-shadow:0 0 0 1px var(--line);overflow:hidden;isolation:isolate}
+.luka::before{content:"";position:absolute;inset:-40% -20% auto;height:260px;z-index:-1;background:radial-gradient(closest-side,color-mix(in srgb,var(--luka-3) 18%,transparent),transparent 70%),radial-gradient(closest-side at 30% 60%,color-mix(in srgb,var(--luka-2) 16%,transparent),transparent 70%),radial-gradient(closest-side at 70% 60%,color-mix(in srgb,var(--luka-4) 14%,transparent),transparent 70%);pointer-events:none}
+.luka-orb{width:132px;height:132px;cursor:pointer;touch-action:manipulation;border-radius:50%;margin-bottom:2px}
+.luka-h{margin:0;font:650 26px/30px var(--font-display)!important;letter-spacing:-.015em;color:var(--ink-1)}
+.luka-s{margin:6px 0 14px;font:400 15px/21px var(--font-text);color:var(--ink-2);max-width:32ch}
+#hsearch.luka .v8-scope{display:inline-flex;gap:0;padding:3px;border-radius:14px;background:var(--surface-2)!important;border:0!important;box-shadow:none!important;margin:0 0 10px!important}
+#hsearch.luka .v8-scope button{min-height:34px;padding:0 12px;border:0!important;border-radius:11px!important;background:transparent!important;color:var(--ink-2)!important;font:550 13px/1 var(--font-text)!important;box-shadow:none!important}
+#hsearch.luka .v8-scope button.on{background:var(--surface-1)!important;color:var(--ink-1)!important;box-shadow:0 1px 3px rgba(0,0,0,.14)!important}
+#hsearch.luka .v8-box{width:100%;background:none!important;border:0!important;box-shadow:none!important;padding:0!important}
+#hsearch.luka .sr-form{display:flex!important;align-items:center;gap:4px;min-height:56px;padding:6px 6px 6px 14px!important;border-radius:20px!important;background:var(--surface-1)!important;border:0!important;box-shadow:0 0 0 1px var(--field)!important;transition:box-shadow .2s var(--e-standard)}
+#hsearch.luka .sr-form:focus-within{box-shadow:0 0 0 2px var(--luka-1)!important}
+#hsearch.luka .sr-ic{color:var(--ink-3)!important}
+#hsearch.luka .sr-in{flex:1;min-width:0;height:44px!important;border:0!important;background:transparent!important;box-shadow:none!important;font:400 17px/24px var(--font-text)!important;color:var(--ink-1)!important;padding:0 6px!important}
+#hsearch.luka .sr-in::placeholder{color:var(--ink-3)!important}
+#hsearch.luka .v9-go{display:inline-flex!important;align-items:center;gap:6px;height:44px!important;padding:0 16px!important;border:0!important;border-radius:14px!important;background:var(--accent)!important;color:var(--accent-ink)!important;box-shadow:none!important;font:600 15px/1 var(--font-text)!important}
+#hsearch.luka .sr-res{text-align:left;margin-top:8px}
+#hsearch.luka .sr-res:empty{display:none}
+.luka-ex{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px}
+.luka-ex button{min-height:36px;padding:0 12px;border:0;border-radius:999px;background:var(--surface-2);color:var(--ink-1);font:550 13px/1 var(--font-text);cursor:pointer;transition:background-color .15s,transform .15s var(--spring-snappy)}
+.luka-ex button:hover{background:var(--surface-3)}
+.luka-ex button:active{transform:scale(.96)}
+.luka-ex button.ask{background:var(--accent-soft);color:var(--accent-text)}
+.v8h.has-q .luka-ex{display:none}
+/* «Спросить Луку» — первая строка результатов */
+a.sr-it.sr-luka{display:flex!important;align-items:center;gap:12px;background:var(--accent-soft)!important;border-radius:14px!important;color:var(--ink-1)!important}
+a.sr-it.sr-luka canvas{width:36px;height:36px;flex:none}
+a.sr-it.sr-luka b{font-weight:600}
+a.sr-it.sr-luka small{display:block;color:var(--ink-3);font-size:13px}
+
+/* автор */
+:root[data-theme] body .sv-home .au-pillw{display:block!important;margin:0!important}
+:root[data-theme] body .sv-home .au-pill{display:flex!important;width:100%;max-width:none!important;align-items:center;gap:12px;padding:12px 14px!important;border:0!important;border-radius:20px!important;background:var(--surface-1)!important;box-shadow:0 0 0 1px var(--line)!important;color:var(--ink-2)!important;font:450 14px/20px var(--font-text)!important;white-space:normal!important;text-align:left}
+:root[data-theme] body .sv-home .au-pill b{color:var(--ink-1)!important;font-weight:600}
+:root[data-theme] body .sv-home .au-face{width:40px!important;height:40px!important;flex:none}
+:root[data-theme] body .sv-home .au-go{margin-left:auto;color:var(--ink-3)!important}
+
+/* предметы: карточка и 4 плитки */
+:root[data-theme] body .sv-home .happs{display:grid!important;gap:12px!important;margin:0!important}
+:root[data-theme] body .sv-home .hap{background:var(--surface-1)!important;border:0!important;border-radius:20px!important;box-shadow:0 0 0 1px var(--line)!important;padding:14px 12px 12px!important}
+:root[data-theme] body .sv-home .hap h3{font:600 17px/22px var(--font-display)!important;color:var(--ink-1)!important;margin:0 4px 12px!important;letter-spacing:-.005em}
+:root[data-theme] body .sv-home .hap-g a{color:var(--ink-1)!important;font:550 12px/15px var(--font-text)!important;text-decoration:none!important}
+:root[data-theme] body .sv-home .hap-ic{--sc:var(--ink-1);width:56px!important;height:56px!important;border-radius:16px!important;background:var(--surface-2)!important;color:var(--ink-1)!important;box-shadow:none!important}
+:root[data-theme] body .sv-home .hap-ic .k,:root[data-theme] body .sv-home .hap-ic .ks{fill:var(--surface-2)!important;stroke:var(--surface-2)!important}
+:root[data-theme] body .sv-home .hap-ic b{background:var(--accent)!important;color:var(--accent-ink)!important;box-shadow:0 0 0 2px var(--surface-1)!important;font-family:var(--font-text)!important}
+:root[data-theme] body .sv-home .hap-g a:first-child .hap-ic{background:var(--accent-soft)!important;color:var(--accent-text)!important}
+:root[data-theme] body .sv-home .hap-g a:first-child .hap-ic .k,:root[data-theme] body .sv-home .hap-g a:first-child .hap-ic .ks{fill:var(--accent-soft)!important;stroke:var(--accent-soft)!important}
+@media (min-width:760px){
+  .luka{padding:20px 32px 26px}
+  .luka-orb{width:160px;height:160px}
+  .luka-h{font-size:34px!important;line-height:38px!important}
+  :root[data-theme] body .sv-home .happs{grid-template-columns:1fr 1fr!important}
+}
+@media (prefers-reduced-motion:reduce){#sv-nav,#sv-now{transition:none}}
+
+/* вход по коду — копия закрыта занавеской (не защита) */
+#sv-gate{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0D11;color:#F1F3F6;font-family:var(--font-text);padding:24px}
+#sv-gate[hidden]{display:none}
+#sv-gate canvas{width:120px;height:120px}
+#sv-gate h2{margin:0;font:650 24px/30px var(--font-display);color:#F1F3F6}
+#sv-gate p{margin:0;color:#8E97A6}
+#sv-gate .pin{display:flex;gap:12px;margin:8px 0 12px}
+#sv-gate .pin i{width:12px;height:12px;border-radius:50%;border:1.5px solid #8E97A6}
+#sv-gate .pin i.on{background:#FF6A2B;border-color:#FF6A2B}
+#sv-gate .pin.bad{animation:svshake .3s}
+@keyframes svshake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#sv-gate .pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px}
+#sv-gate .pad button{height:72px;border-radius:50%;border:0;background:#1C2028;color:#F1F3F6;font:600 26px/1 var(--font-display);cursor:pointer}
+#sv-gate .pad button:active{background:#272C36}
+#sv-gate .pad button.t{background:none;font:500 15px/1 var(--font-text);color:#8E97A6}
+
+/* вход в кабинет и плашка согласия — в общем языке */
+:root[data-theme] body .lkin{background:var(--surface-2)!important;color:var(--ink-1)!important;box-shadow:none!important;font:600 14px var(--font-text)!important;border-radius:12px!important}
+:root[data-theme] body .lkme{box-shadow:none!important}
+:root[data-theme] body .ckn{bottom:calc(var(--sv-tab) + var(--sab) + 12px)!important;background:var(--overlay)!important;color:var(--ink-1)!important;border:0!important;border-radius:20px!important;box-shadow:var(--sh-3)!important;font-family:var(--font-text)!important}
+@media (min-width:1080px){:root[data-theme] body .ckn{bottom:20px!important}}
+
+/* поле на главной: кнопка «Найти» в строке, а не поверх */
+#hsearch.luka .v9-go{position:static!important;width:auto!important;transform:none!important}
+#hsearch.luka .v9-go span{display:inline!important}
+#hsearch.luka .sr-clr{position:static!important}
+/* шапка: «Спросить автора» — обычная иконка */
+:root[data-theme] body #hdr .akb,:root[data-theme] body #akBtn{background:transparent!important;color:var(--ink-1)!important;border:0!important;box-shadow:none!important}
+/* автор: одна карточка */
+:root[data-theme] body .sv-home .au-t{display:flex;flex-direction:column;min-width:0;flex:1}
+:root[data-theme] body .sv-home .au-t small{color:var(--ink-3);font-size:13px;line-height:18px}
+:root[data-theme] body .sv-home .au-face{background:var(--ink-1)!important;color:var(--bg)!important}
+#hsearch.luka .sr-ic{position:static!important;transform:none!important;flex:none;display:grid;place-items:center}
+#hsearch.luka .sr-in,#hsearch.luka .sr-in:focus,#hsearch.luka .sr-in:focus-visible{outline:0!important;box-shadow:none!important;border:0!important}
+a.sr-it.sr-luka{flex-direction:row!important;padding:10px 12px!important}
+a.sr-it.sr-luka span{display:flex;flex-direction:column;min-width:0}
+body.inplayer .tu-fab{bottom:calc(84px + var(--sab))!important}
+/* пока висит плашка согласия на статистику, кнопка Луки её не закрывает (как в lk/tutor.js) */
+:root[data-theme] body:has(.ckn) .tu-fab{display:none!important}
+/* «Учиться» в левой плитке: полоса пути */
+.sv-home .hc-bar{display:block;width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.14);margin:auto 0 12px;overflow:hidden}
+.sv-home .hc-bar i{display:block;height:100%;background:var(--luka-1);border-radius:inherit;min-width:4px}
+:root[data-theme] body .sv-home .hc-lrn .hc-t{font-size:30px!important;line-height:34px!important}

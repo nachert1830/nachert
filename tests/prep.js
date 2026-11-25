@@ -440,7 +440,7 @@ async function screens(){
   await page.evaluate(()=>localStorage.removeItem('nch_prep_gate'));
   /* главная копии: первым — «Учиться», ведёт в путь задания, которое выбрал сайт */
   await page.goto(UN+'#/'); await page.waitForTimeout(1800);
-  { const r=await page.evaluate(()=>{ const a=document.querySelector('#ns-home .lrn'), first=document.querySelector('#ns-home a, #ns-home button'); return {h:a&&a.getAttribute('href'),first:a&&a===first,want:'#/prep/'+PREP.autoKey()}; });
+  { const r=await page.evaluate(()=>{ const a=document.querySelector('#v8h .lrn'), first=document.querySelector('#v8h a, #v8h button'); return {h:a&&a.getAttribute('href'),first:a&&a===first,want:'#/prep/'+PREP.autoKey()}; });
     if(r.h!==r.want) bad('Главная копии: «Учиться» ведёт на '+r.h+' вместо '+r.want); else if(!r.first) bad('Главная копии: «Учиться» не первое'); }
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
   if(errs.length) bad('Ошибка JS: '+errs[0].slice(0,200));
