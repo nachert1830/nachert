@@ -4404,21 +4404,26 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
   .hcards .hc-sx canvas.hc-sxcv{right:2%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:290px!important;max-width:44%!important}}
 /* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
 .ownc{display:flex;flex-direction:column;gap:8px;margin:14px 0 0;padding:8px;border:1px solid var(--line);border-radius:22px;background:var(--surf);box-shadow:0 14px 30px -24px rgba(16,30,80,.35)}
-@media(min-width:760px){.ownc{width:min(440px,100%);margin:16px auto 0}}
+.ownc{width:min(340px,100%);margin-left:auto!important;margin-right:auto!important}
+@media(min-width:760px){.ownc{width:min(360px,100%);margin-top:16px}}
 .ownc-top{display:flex;align-items:center;gap:8px}
 .ownc-v{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:7px 12px 6px;border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,var(--surf))}
 .ownc-v small{font:600 11px/1 var(--sans);letter-spacing:.02em;color:var(--mut)}
 /* «Поделиться» — как на сайте (.v8-share), занимает место рядом со счётчиком */
 .ownc-s{flex:none;justify-content:center;height:46px!important;min-height:0!important;padding:0 16px!important;border-radius:14px!important;font-size:14.5px!important;margin-bottom:4px}
-/* имя — синяя объёмная кнопка, компактная */
-.ownc-a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;margin-bottom:4px;padding:6px 16px;border:0;border-radius:14px;cursor:pointer;color:#fff;text-align:left;font:inherit;
-  background:linear-gradient(180deg,#4d84ff 0%,#2a62f0 55%,#1d4fd6 100%);box-shadow:0 4px 0 #163fa8,0 10px 18px -12px rgba(36,90,230,.8),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .1s,box-shadow .1s,filter .15s}
-.ownc-a:hover{filter:brightness(1.06);transform:translateY(-1px)}.ownc-a:hover i{transform:translateX(3px)}
-.ownc-a:active{transform:translateY(4px);box-shadow:0 0 0 #163fa8,0 5px 10px -8px rgba(36,90,230,.7),inset 0 1px 0 rgba(255,255,255,.4)}
-.ownc-t{display:flex;flex-direction:column;gap:1px;min-width:0}
-.ownc-t b{font:800 15px/1.1 var(--disp);letter-spacing:-.02em}
-.ownc-t small{font:600 11.5px/1.2 var(--sans);opacity:.85}
-.ownc-a i{font-style:normal;font-weight:800;font-size:17px;transition:transform .15s}
+/* имя — синяя объёмная кнопка: глянцевый блик, подпись прописными, стрелка в кружке, отблеск при наведении */
+.ownc-a{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;margin-bottom:4px;padding:7px 8px 7px 16px;border:0;border-radius:14px;cursor:pointer;color:#fff;text-align:left;font:inherit;
+  background:radial-gradient(120% 140% at 0% 0%,#5e93ff 0%,transparent 55%),linear-gradient(180deg,#3d78ff 0%,#2558e8 60%,#1c47c9 100%);
+  box-shadow:0 4px 0 #1536a0,0 12px 20px -12px rgba(36,90,230,.85),inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,20,80,.25);transition:transform .1s,box-shadow .1s,filter .15s}
+.ownc-a::before{content:"";position:absolute;left:8px;right:8px;top:2px;height:45%;z-index:-1;border-radius:12px 12px 40% 40%/12px 12px 10px 10px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0))}
+.ownc-a::after{content:"";position:absolute;top:-20%;bottom:-20%;left:-50%;width:30%;z-index:-1;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);transition:left .6s ease}
+.ownc-a:hover{filter:brightness(1.05)}.ownc-a:hover::after{left:130%}
+.ownc-a:active{transform:translateY(4px);box-shadow:0 0 0 #1536a0,0 5px 10px -8px rgba(36,90,230,.7),inset 0 1px 0 rgba(255,255,255,.45)}
+.ownc-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ownc-t b{font:800 16px/1.05 var(--disp);letter-spacing:-.02em;text-shadow:0 1px 1px rgba(0,20,80,.25)}
+.ownc-t small{font:700 10px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:#cfe0ff}
+.ownc-a i{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);font-style:normal;font-weight:800;font-size:16px;transition:transform .15s,background .15s}
+.ownc-a:hover i{transform:translateX(2px);background:rgba(255,255,255,.28)}
 /* счётчик-барабан: маленький, в цветах сайта — тёмно-синее окно, тонкая оправа; цифры на барабанах, соседние видны сверху и снизу */
 .odo{display:inline-block;padding:3px;border-radius:12px;background:color-mix(in srgb,var(--acc) 18%,var(--surf));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
 .odo-win{position:relative;display:flex;align-items:center;height:36px;padding:0 10px;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#0b1440,#1a2a72 50%,#0b1440);
