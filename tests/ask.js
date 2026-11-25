@@ -73,7 +73,7 @@ async function runAsk(browser) {
     await pg.goto(SITE + '/#/'); await pg.waitForTimeout(300); if (/\d/.test(await pg.textContent('#akBtn'))) B('прочитал ответ — число пропало', await pg.textContent('#akBtn'));
     /* 5) телефон */
     const ph = await page({ viewport: { width: 390, height: 800 }, isMobile: true, hasTouch: true }, 'телефон');
-    for (const h of ['#/ask', '#/']) { await ph.goto(SITE + '/' + h); await ph.waitForSelector(h === '#/' ? '.au-pill' : '.ak-box', { timeout: 10000 }).catch(() => B('телефон ' + h, 'не отрисовалось')); await ph.waitForTimeout(300);
+    for (const h of ['#/ask', '#/']) { await ph.goto(SITE + '/' + h); await ph.waitForSelector(h === '#/' ? '.ownc-a' : '.ak-box', { timeout: 10000 }).catch(() => B('телефон ' + h, 'не отрисовалось')); await ph.waitForTimeout(300);
       const o = await ph.evaluate(() => [document.documentElement.scrollWidth - innerWidth, (h => h.scrollWidth - h.clientWidth)(document.querySelector('#hdr .hin'))]);
       if (o[0] > 0 || o[1] > 0) B('телефон ' + h + ': без прокрутки вбок, шапка помещается', JSON.stringify(o)); }
   } catch (e) { B('прогон', e.message); }
