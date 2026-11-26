@@ -33,7 +33,9 @@ async function run() {
       await check('#/ng2/17', 'svg', 'начерт ДЗ №2, вариант 17');
       if (await page.locator('.tu-fab >> visible=true').count()) B(dev.name + ': наставник — только на ИГ ДЗ №4', 'кнопка видна на #/ng2/17');
       await page.evaluate(() => { const b = document.querySelector('.ckn [data-ck="n"]'); if (b) b.click(); });
-      await check('#/ig4/7', '.tu-fab', 'ИГ ДЗ №4 — кнопка наставника (окно согласия закрыто)');
+      /* наставник в копии пока выключен (решение автора) — кнопки нет нигде */
+      await check('#/ig4/7', 'svg', 'ИГ ДЗ №4 (окно согласия закрыто)');
+      if (await page.locator('.tu-fab').count()) B(dev.name + ': наставник выключен', 'кнопка есть');
       /* методичка задания (new/method.js): страница ДЗ — методичка, решение своего варианта — в одно касание */
       await page.evaluate(() => { localStorage.removeItem('nch_mk'); dzSetVar(13); });
       await check('#/ng4', '.mk-doors', 'методичка ДЗ №4');

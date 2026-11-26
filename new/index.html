@@ -2587,6 +2587,17 @@ body.inplayer .pl-side{grid-area:side;position:relative!important;top:auto!impor
 body.inplayer .pl-scroll{height:auto!important;max-height:none!important;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 16px!important;border-radius:16px}
 body.inplayer .pl-peek{top:-12px!important}
 body.inplayer .pl.peek .pl-side{max-height:76px}
+/* шторка пояснения (разбор варианта ДЗ): тянешь за ручку — меняется высота, чертёж забирает остальное */
+.pl-grip{display:none}
+@media(max-width:899px){
+  body.inplayer .pl.drag .pl-side{max-height:none;border-radius:18px;background:var(--surf);box-shadow:0 -6px 20px -14px rgba(15,20,32,.35)}
+  body.inplayer .pl.drag .pl-peek{display:none!important}
+  body.inplayer .pl.drag .pl-grip{display:flex;flex:none;justify-content:center;align-items:center;height:22px;margin-bottom:-6px;cursor:ns-resize;touch-action:none;position:relative;z-index:2}
+  body.inplayer .pl.drag .pl-grip::before{content:'';position:absolute;left:0;right:0;top:-10px;bottom:-6px}
+  body.inplayer .pl.drag .pl-grip i{width:40px;height:5px;border-radius:9px;background:var(--line2)}
+  body.inplayer .pl.drag .pl-side.dragging .pl-grip i{background:var(--acc)}
+  body.inplayer .pl.drag .pl-scroll{padding-top:6px!important}
+}
 body.inplayer .pl.peek .pl-scroll{overflow:hidden}
 /* кнопки шагов — в потоке, а не поверх чертежа */
 body.inplayer .pl-ctrl{grid-area:ctrl;position:relative!important;left:auto;right:auto;bottom:auto;height:auto!important;margin:0 -10px!important;padding:8px 10px calc(8px + env(safe-area-inset-bottom))!important;z-index:5}
@@ -5547,7 +5558,7 @@ button.dr-go{background:var(--surf2,var(--surf));border:1px solid var(--line);co
 .wd-meth{display:block;text-align:center;margin-top:10px;font-size:14px;color:var(--mut)}
 </style>
 <!-- колода «ДЗ»: стили сразу, и если открыт адрес ДЗ — страница сразу в режиме колоды, без мелькания прежней страницы -->
-<link rel="stylesheet" href="../dz/deck.css?v=3">
+<link rel="stylesheet" href="dzdeck.css?v=5">
 <link rel="stylesheet" href="method.css?v=1">
 <script>if(/^#\/dz(\/(ng|ig))?\/?$/.test(location.hash))document.documentElement.classList.add('nd-on');</script>
 </head>
@@ -6392,7 +6403,7 @@ function mount(root,t,opt){
   const parts=partsOf(t);
   /* обезличенная статистика режимов (docs/ANALYTICS.md): уходит, только если посетитель согласился на cookie (TRACK) */
   const track=ev=>{ try{ window.TRACK&&TRACK(ev,{mode:S.mode,task:String(t.n),src:location.hash.replace(/^#\/?/,'').split('/').slice(0,2).join('/')}); }catch(e){} };
-  const S={pi:0,k:0,mode:opt.noModes?'watch':(opt.mode||'watch'),shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:window.innerWidth<900};
+  const S={pi:0,k:0,mode:opt.noModes?'watch':(opt.mode||'watch'),shown:{},hint:{},rated:null,h:0,cond:false,full:false,ftext:false,z:{s:1,x:0,y:0},done:false,peek:window.innerWidth<900&&!opt.drag,sh:(()=>{ try{ return +localStorage.getItem('nch_plsh')||0; }catch(e){ return 0; } })()};
   const PK='plpos', posKey=opt.posKey||location.hash.replace(/\/(?:p\d+)?s\d+$/,'');
   const posGet=()=>{ try{ return (JSON.parse(localStorage.getItem(PK)||'{}')||{})[posKey]; }catch(e){ return null; } };
   const posSet=()=>{ try{ const o=JSON.parse(localStorage.getItem(PK)||'{}')||{}; const ks=Object.keys(o); if(ks.length>60) delete o[ks[0]]; o[posKey]={pi:S.pi,k:S.k,t:Date.now()}; localStorage.setItem(PK,JSON.stringify(o)); }catch(e){} };
@@ -6468,7 +6479,7 @@ function mount(root,t,opt){
     const top = `<div class="pl-top"><a class="pl-back" href="${opt.backHref||'#/ng/tasks'}" aria-label="${opt.backLabel||'К списку задач'}"><span aria-hidden="true">←</span><b>${opt.backLabel||'К задачам'}</b></a><div class="pl-meter" role="group" aria-label="${stepTxt}"><span class="pl-mt${last?' fin':''}">${stepTxt}</span><div class="pl-segs">${segs}</div></div><button class="pl-sh" type="button" aria-label="Поделиться этим шагом" title="Поделиться шагом или чертежом">↗</button></div>`;
     if(S.done){ root.innerHTML=`<div class="pl done">${top}${doneView()}</div>`; bind(); posSet(); try{ FX.win(posKey); }catch(e){} return; }
     root.innerHTML = `
-      <div class="pl${last?' is-last':''}${k===0?' k0':''}${S.cond?' cond-open':''}${S.peek?' peek':''}${S.full?' isfull':''}${S.full&&S.ftext?' ftext':''}">
+      <div class="pl${opt.drag?' drag':''}${last?' is-last':''}${k===0?' k0':''}${S.cond?' cond-open':''}${S.peek?' peek':''}${S.full?' isfull':''}${S.full&&S.ftext?' ftext':''}">
         ${top}
         <div class="pl-cond" role="button" tabindex="0" aria-expanded="${S.cond?'true':'false'}">
           <div class="pl-meta"><span class="pl-num">${/^\d/.test(String(t.n))?"№ ":""}${t.n}</span>${t.conf==='approx'?'<span class="pl-tag soft" title="Размеров в тетради нет: исходные точки сняты с рисунка тетради, все построения от них выполнены точно и проверены вычислением">данные по рисунку</span>':t.conf==='wb'?'<span class="pl-tag soft" title="Исходные точки сверены с рисунком рабочей тетради; все построения от них выполнены точно и проверены вычислением">сверено с тетрадью</span>':''}</div>
@@ -6483,7 +6494,7 @@ function mount(root,t,opt){
         </div>
         <div class="pl-stage">
           <div class="pl-paper">${drawingHTML(p,drawK)?drawingHTML(p,drawK)+`<div class="pl-cap">${k===0?'Дано':'Шаг '+k+' из '+n+' · '+((p.steps[k-1]||{}).t||'')}</div><div class="pl-zoom" role="group" aria-label="Масштаб чертежа">${window.TASK3D&&TASK3D.has(p)?'<button class="pl-zb wide t3btn" data-z="3d" aria-label="Открыть этот шаг в 3D" title="Этот шаг в 3D"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3z"/><path d="M4 7.3l8 4.5 8-4.5M12 11.8v9.4"/></svg><b>3D</b></button>':''}${window.METHANIM&&METHANIM.has(t)?'<button class="pl-zb wide t3btn" data-z="meth" aria-label="Показать способ в пространстве (анимация)" title="Способ в пространстве"><b>▶ Способ</b></button>':''}${!opt.noForm&&window.SURFLAB&&SURFLAB.has(p)?'<button class="pl-zb wide t3btn" data-z="form" aria-label="Как образуется эта поверхность (анимация)" title="Как образуется поверхность"><b>▶<span class="lbx"> Поверхность</span></b></button>':''}${k>1&&!p._fig?`<button class="pl-zb past${PASTHIDE()?'':' on'}" data-z="past" aria-pressed="${!PASTHIDE()}" title="${PASTHIDE()?'Показать построения прошлых шагов':'Оставить от прошлых шагов только результат'}"><i aria-hidden="true"></i>Прошлые<b>&nbsp;шаги</b></button>`:''}<button class="pl-zb" data-z="full" aria-label="${S.full?'Выйти из полноэкранного режима':'Чертёж на весь экран'}" title="${S.full?'Свернуть (Esc)':'На весь экран'}">${S.full?'✕':'⛶'}</button>${S.full?`<button class="pl-zb wide${S.ftext?' on':''}" data-z="text" aria-pressed="${S.ftext}">${S.ftext?'Скрыть текст':'Пояснение'}</button>`:''}<button class="pl-zb zin" data-z="in" aria-label="Приблизить">＋</button><button class="pl-zb zin" data-z="out" aria-label="Отдалить">－</button><button class="pl-zb zreset" data-z="reset" aria-label="Вернуть масштаб: весь чертёж" title="Весь чертёж"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button></div>`:'<div class="pl-nodraw">В этой задаче работаем с таблицей и рассуждением.</div>'}</div>
-          <div class="pl-side"><button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
+          <div class="pl-side">${opt.drag?'<div class="pl-grip" role="slider" tabindex="0" aria-label="Высота пояснения: тяни вверх или вниз" aria-valuemin="0" aria-valuemax="100"><i></i></div>':''}<button class="pl-peek" aria-label="${S.peek?'Показать пояснение':'Скрыть пояснение'}" aria-expanded="${S.peek?'false':'true'}">${S.peek?'▴ пояснение':'▾ скрыть'}</button><div class="pl-scroll" tabindex="-1">${cardInner(p,k,tryHid,S.pi)}</div></div>
         </div>
         <div class="pl-ctrl"><div class="pl-ctrl-in">
           ${k===0&&S.pi===0&&opt.prev?`<button class="btn ghost pl-prev pl-prevt" aria-label="Предыдущая: ${escH(opt.prev.label)}">← <span>${escH(opt.prev.short||opt.prev.label)}</span></button>`:`<button class="btn ghost pl-prev" ${k===0&&S.pi===0?'disabled':''} aria-label="Назад">← <span>Назад</span></button>`}
@@ -6505,7 +6516,9 @@ function mount(root,t,opt){
   function measure(){ try{
     const paper=root.querySelector('.pl-paper'), sc=root.querySelector('.pl-scroll'), side=root.querySelector('.pl-side'); if(!paper||!sc||!side) return;
     const mob=window.innerWidth<900&&document.body.classList.contains('inplayer')&&!S.full&&!S.peek;
-    if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(Math.min(96,need),Math.min(H*(S.sheet?0.62:0.24),need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
+    if(mob&&opt.drag){ const H=paper.clientHeight+side.clientHeight, lo=58, hi=Math.max(lo,H-140), def=Math.round(H*0.3), h=Math.round(Math.max(lo,Math.min(hi,S.sh||def)));
+      side.style.maxHeight=h+'px'; side.style.height=h+'px'; }
+    else if(mob){ side.style.maxHeight=''; const H=paper.clientHeight+side.clientHeight; if(H>200){ const need=sc.scrollHeight+2, tx=Math.round(Math.max(Math.min(96,need),Math.min(H*(S.sheet?0.62:0.24),need))); side.style.maxHeight=tx+'px'; side.style.height=tx+'px'; } }
     else { side.style.maxHeight=''; side.style.height=''; }
     const more=()=>{ if(side) side.classList.toggle('more',sc.scrollHeight-sc.clientHeight-sc.scrollTop>6); };
     more(); if(!sc._more){ sc._more=1; sc.addEventListener('scroll',more,{passive:true}); }
@@ -6550,6 +6563,18 @@ function mount(root,t,opt){
   }
   function go(k){ S.help=false; try{ if(window.FX&&k!==S.k) FX.buzz(8); }catch(e){} S.k=Math.max(0,Math.min(N(),k)); S.done=false; posSet(); render(); if(opt.onStep) opt.onStep(S); }
   function bind(){
+    const grip=root.querySelector('.pl-grip');
+    if(grip){ const side=root.querySelector('.pl-side'), paper=root.querySelector('.pl-paper'); let d=null;
+      const lim=()=>{ const H=paper.clientHeight+side.clientHeight; return [58,Math.max(58,H-140),H]; };
+      const setH=h=>{ const [lo,hi]=lim(); h=Math.round(Math.max(lo,Math.min(hi,h))); side.style.height=side.style.maxHeight=h+'px'; S.sh=h; return h; };
+      const save=()=>{ try{ localStorage.setItem('nch_plsh',String(S.sh)); }catch(e){} };
+      grip.addEventListener('pointerdown',e=>{ d={y:e.clientY,h:side.clientHeight,m:false}; try{ grip.setPointerCapture(e.pointerId); }catch(x){} side.classList.add('dragging'); e.preventDefault(); });
+      grip.addEventListener('pointermove',e=>{ if(!d) return; const dy=e.clientY-d.y; if(Math.abs(dy)>3) d.m=true; if(d.m) setH(d.h-dy); });
+      const up=()=>{ if(!d) return; const [lo,hi,H]=lim();
+        if(!d.m) setH(side.clientHeight<H*0.4?H*0.55:lo);   /* касание без протаскивания: свёрнуто ↔ полуэкран */
+        d=null; side.classList.remove('dragging'); save(); };
+      grip.addEventListener('pointerup',up); grip.addEventListener('pointercancel',up);
+      grip.addEventListener('keydown',e=>{ if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); setH(side.clientHeight+(e.key==='ArrowUp'?40:-40)); save(); } }); }
     const q=s=>root.querySelector(s);
     q('.pl-prev')&&q('.pl-prev').addEventListener('click',()=>{ if(q('.pl-prevt')){ if(opt.onPrev) opt.onPrev(); return; } if(S.k===0&&S.pi>0){ S.pi--; S.k=(part().steps||[]).length; render(); return; } go(S.k-1); });
     q('.pl-next')&&S.k===0&&q('.pl-next').addEventListener('click',()=>{ try{ if(window.ST) ST.set('coach',ST.get('coach',0)+1); }catch(e){} });
@@ -31008,7 +31033,7 @@ function dzVariant(v,d,n,extra){
       dzLinkSet(v.querySelector('.dzx-top .dzx-share'),h,d.label+', вариант '+n+lbl+' — разбор по шагам'); };
     /* свой вариант по начерту — по умолчанию «Решаю сам» (методичка: сначала попытка, потом помощь); выбор «Смотрю» запоминается */
     const tryKey='nch_dzmode', tryM=(()=>{ if(!mine||d.course!=='ng') return undefined; try{ return (JSON.parse(localStorage.getItem(tryKey)||'{}')||{})[d.id]||'try'; }catch(e){ return 'try'; } })();
-    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К заданию',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,mode:tryM,noModes:true,noForm:true,foot:`<div class="pl-foot">${condRepHTML(d,n)}</div>`,
+    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К заданию',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,mode:tryM,noModes:true,noForm:true,drag:true,foot:`<div class="pl-foot">${condRepHTML(d,n)}</div>`,
       onMode:m=>{ if(!mine||d.course!=='ng') return; try{ const o=JSON.parse(localStorage.getItem(tryKey)||'{}')||{}; o[d.id]=m; localStorage.setItem(tryKey,JSON.stringify(o)); }catch(e){} },onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
   else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
     v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap varwrap dzx dzx-varp',body:`${head}
@@ -36928,11 +36953,10 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 <!-- «Спроси автора»: вопросы и ответы на сайте (../lk/ask.js), адрес сервера — lk/config.js -->
 <script src="../lk/config.js?v=2" defer></script>
 <script src="../lk/ask.js?v=4" defer></script>
-<!-- Наставник — ИИ-агент на чертеже: начерт ДЗ №1–5, ИГ ДЗ №3–6 (../lk/tutor.js, docs/TUTOR.md) -->
-<script src="../lk/tutor.js?v=4" defer></script>
+<!-- Наставник (../lk/tutor.js, docs/TUTOR.md) в копии пока выключен по решению автора — вернуть: <script src="../lk/tutor.js?v=4" defer></script> -->
 <link rel="stylesheet" href="shell.css?v=3">
 <script src="shell.js?v=3" defer></script>
-<!-- Экран «ДЗ» (#/dz): колода карточек — как на основном сайте (../dz/deck.*) -->
-<script src="../dz/deck.js?v=4" defer></script>
+<!-- Экран «ДЗ» (#/dz): колода карточек — своя копия (new/dzdeck.*), основной сайт — ../dz/deck.* -->
+<script src="dzdeck.js?v=5" defer></script>
 </body>
 </html>
