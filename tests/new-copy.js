@@ -1,5 +1,6 @@
 /* ═══════════ Копия сайта /new/ (новый дизайн): открывается без ошибок JS ═══════════
-   Главная (новый дизайн), экран «ДЗ» колодой, вариант ИГ ДЗ №4 (чертёж и окно наставника), вариант начерта; телефон и компьютер;
+   Главная (новый дизайн), экран «ДЗ» колодой, вариант ИГ ДЗ №4 (чертёж и окно наставника), вариант начерта, методичка задания
+   (главы, свой тип, «Сразу решение», галочки и защита запоминаются, выбор варианта); телефон и компьютер;
    без горизонтальной прокрутки. Сеть наружу закрыта: API кабинета отвечает 401 (гость).
    node tests/new-copy.js — отдельно. */
 const http = require('http'), fs = require('fs'), path = require('path'), ROOT = path.join(__dirname, '..');
@@ -33,6 +34,38 @@ async function run() {
       if (await page.locator('.tu-fab >> visible=true').count()) B(dev.name + ': наставник — только на ИГ ДЗ №4', 'кнопка видна на #/ng2/17');
       await page.evaluate(() => { const b = document.querySelector('.ckn [data-ck="n"]'); if (b) b.click(); });
       await check('#/ig4/7', '.tu-fab', 'ИГ ДЗ №4 — кнопка наставника (окно согласия закрыто)');
+      /* методичка задания (new/method.js): страница ДЗ — методичка, решение своего варианта — в одно касание */
+      await page.evaluate(() => { localStorage.removeItem('nch_mk'); dzSetVar(13); });
+      await check('#/ng4', '.mk-doors', 'методичка ДЗ №4');
+      { const r = await page.evaluate(() => { const d = DZR.get('ng4'), t = DZR.typeOf('ng4', 13);
+          return { ch: [...document.querySelectorAll('.mk-ch')].map(x => x.dataset.k).join(','), sol: [...document.querySelectorAll('a.mk-door.b, .mk-dock a.mk-sol')].map(a => a.getAttribute('href')),
+            steps: document.querySelectorAll('#mk-algo .mk-algo > li').length, want: d.method.types[t.code].plan.length,
+            q: document.querySelectorAll('#mk-def .mk-dall details').length, wq: (d.method.defense || []).concat(d.method.types[t.code].defense || []).length }; });
+        if (r.ch !== 'task,prep,idea,algo,ex,var,sheet,check,err,def' && r.ch !== 'task,prep,idea,algo,ex,var,sheet,err,def') B(dev.name + ': главы методички', r.ch);
+        if (!r.sol.length || r.sol.some(h => h !== '#/ng4/13')) B(dev.name + ': «Сразу решение» ведёт не на свой вариант', r.sol.join(' '));
+        if (r.steps !== r.want) B(dev.name + ': алгоритм — не только своего типа', r.steps + ' шагов, у типа ' + r.want);
+        if (r.q !== r.wq) B(dev.name + ': защита — не все вопросы', r.q + ' из ' + r.wq); }
+      /* шаг алгоритма отмечается и помнится; карточка защиты: «показать ответ» → «знал» */
+      await page.evaluate(() => { document.querySelector('#mk-algo .mk-chk input').click(); document.querySelector('#mk-def [data-mkd=show]').click(); document.querySelector('#mk-def [data-mkd=yes]').click(); });
+      await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(1200);
+      { const r = await page.evaluate(() => ({ on: !!document.querySelector('#mk-algo .mk-algo > li.done'), y: document.querySelectorAll('#mk-def .mk-dots i.y').length }));
+        if (!r.on) B(dev.name + ': отметка шага алгоритма не запомнилась', ''); if (r.y !== 1) B(dev.name + ': ответ «знал» в защите не запомнился', r.y); }
+      /* #/ng4/how — сразу глава «Алгоритм» */
+      await page.goto(base + '/new/#/ng4/how', { waitUntil: 'load' }); await page.waitForTimeout(1500);
+      { const t = await page.evaluate(() => Math.round(document.querySelector('#mk-algo').getBoundingClientRect().top)); if (t < -20 || t > 140) B(dev.name + ': #/ng4/how не открыл главу «Алгоритм»', 'верх главы ' + t + ' px'); }
+      /* без варианта: «Сразу решение» просит выбрать номер; номер запоминается, методичка — под тип */
+      await page.evaluate(() => dzSetVar(0)); await check('#/ng5', '.mk-doors', 'методичка ДЗ №5 без варианта');
+      await page.evaluate(() => { document.querySelector('.mk-door.b[data-mkpick]').click(); document.querySelector('.mk-pickbox [data-mkv="12"]').click(); });
+      await page.waitForTimeout(400);
+      { const r = await page.evaluate(() => ({ v: dzVar(), h: (document.querySelector('a.mk-door.b') || { getAttribute: () => '' }).getAttribute('href') }));
+        if (r.v !== 12 || r.h !== '#/ng5/12') B(dev.name + ': выбор варианта в методичке', JSON.stringify(r)); }
+      /* разбор варианта: плашка «Методичка», вкладка «Методичка» ведёт на методичку; колода «ДЗ» — методичка первой */
+      await check('#/ng5/12', '.mks', 'разбор варианта — плашка методички');
+      { const r = await page.evaluate(() => ({ tab: !![...document.querySelectorAll('.dzx-pills a')].find(a => a.textContent === 'Методичка' && a.getAttribute('href') === '#/ng5'), deck: window.dzDeckGo ? window.dzDeckGo(DZR.get('ng5')) : '' }));
+        if (!r.tab) B(dev.name + ': во вкладках разбора нет «Методичка»', ''); if (!/class="go" href="#\/ng5"/.test(r.deck) || !/href="#\/ng5\/12"/.test(r.deck)) B(dev.name + ': колода «ДЗ» — кнопки методички и решения', r.deck.slice(0, 200)); }
+      await check('#/ig4', '.mk-doors', 'методичка ИГ ДЗ №4');
+      await check('#/ig2', '.mk-doors', 'методичка ИГ ДЗ №2 (без методики)');
+      await check('', '.mkh', 'главная — «Сдаётся скоро»');
       if (errs.length) B(dev.name + ': ошибки JS', errs.slice(0, 3).join(' | '));
       await ctx.close();
     }

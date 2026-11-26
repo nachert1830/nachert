@@ -378,8 +378,9 @@
     var st=window.dzPath?window.dzPath(d):null;
     var route=st?'<p class="rth">Путь к сдаче</p><ol class="rt">'+st.S.map(function(x,j){return '<li class="'+(x.done?'ok':'')+(j===st.now?' cur':'')+'"><a href="'+x.h+'"><i>'+(x.done?'✓':j+1)+'</i><span><b>'+x.t+(j===st.now?' <em>Сейчас</em>':'')+'</b><small>'+x.s+'</small></span></a></li>';}).join('')+'</ol>'
       :'<ul class="rows">'+R.map(function(r){return '<li><a href="'+r[1]+'">'+r[0]+'</a></li>';}).join('')+'</ul>';
-    focus(i,'<h2>'+x.t+'</h2>'+route+
-      '<a class="go" href="'+H(x.id)+'">Открыть задание</a>'+
+    /* копия /new/ (new/method.js) задаёт свои кнопки: «Открыть методичку» и «Сразу решение»; основной сайт — как был */
+    var gos=window.dzDeckGo?window.dzDeckGo(d):'<a class="go" href="'+H(x.id)+'">Открыть задание</a>';
+    focus(i,'<h2>'+x.t+'</h2>'+route+gos+
       '<button type="button" class="cls">Назад к колоде</button>','Задание '+x.n+', '+CN[x.c],ev);
     det.querySelectorAll('a,.cls').forEach(addHL);}
   det.addEventListener('click',function(e){if(e.target.closest('.cls')) unfocus(e);});

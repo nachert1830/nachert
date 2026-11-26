@@ -338,12 +338,16 @@ async function screens(){
     });
     if(r) bad(`Экран темы ${id}: ${r}`);
   }
-  /* карточка задания в копии: «Путь к сдаче» — подготовка, метод, свой вариант, самопроверка; «Сейчас» — у подготовки */
+  /* страница задания в копии — методичка (new/method.js): главы «понять → решить → сдать»; в главе «Что нужно уметь» — навыки
+     подготовки, следующий — первый; кнопка «Пройти подготовку» ведёт на карту задания */
   await page.evaluate(()=>{ localStorage.removeItem('nch_prep_plan'); localStorage.removeItem('nch_dzseen'); });
   await page.goto(UN+'#/ng4'); await page.waitForTimeout(1500);
-  { const r=await page.evaluate(()=>({h:location.hash,k:[...document.querySelectorAll('.dr-s')].map(x=>x.dataset.k).join(','),now:(document.querySelector('.dr-s.now')||{dataset:{}}).dataset.k}));
-    if(r.h!=='#/ng4') bad('Копия, ДЗ №4: карточка задания не открылась ('+r.h+')');
-    if(r.k!=='prep,how,var,faq') bad('Копия, ДЗ №4: «Путь к сдаче» — '+r.k); if(r.now!=='prep') bad('Копия, ДЗ №4: «Сейчас» не у подготовки ('+r.now+')'); }
+  { const r=await page.evaluate(()=>({h:location.hash,k:[...document.querySelectorAll('.mk-ch')].map(x=>x.dataset.k).join(','),
+      cur:[...document.querySelectorAll('#mk-prep .mk-skills li')].findIndex(x=>x.classList.contains('cur')),go:(document.querySelector('#mk-prep a.mk-btn')||{}).getAttribute&&document.querySelector('#mk-prep a.mk-btn').getAttribute('href')}));
+    if(r.h!=='#/ng4') bad('Копия, ДЗ №4: методичка не открылась ('+r.h+')');
+    if(!/^task,prep,idea,/.test(r.k)) bad('Копия, ДЗ №4: главы методички — '+r.k);
+    if(r.cur!==0) bad('Копия, ДЗ №4: в «Что нужно уметь» следующий навык не первый ('+r.cur+')');
+    if(r.go!=='#/prep/ng4') bad('Копия, ДЗ №4: «Пройти подготовку» ведёт не на карту задания ('+r.go+')'); }
   /* навыки — только в копии /new/ (основной сайт подключает прежние курсы по темам, выше) */
   const PK=Object.keys(PREP.PLANS);
   const hash=()=>page.evaluate(()=>location.hash);
@@ -434,9 +438,11 @@ async function screens(){
   await page.evaluate(()=>{ localStorage.setItem('nch_prep_gate','1'); localStorage.removeItem('nch_prep_plan'); sessionStorage.clear(); });
   for(const h of ['#/ng2/17','#/ig4/7']){ await page.goto(UN+h); await page.waitForTimeout(1500);
     if(!await page.$('#ppSkip')){ bad(h+': нет предложения пройти подготовку'); continue; }
+    if(!await page.$('.pp-gate-pg a[href="#/'+h.split('/')[1]+'"]')) bad(h+': на экране выбора нет «Открыть методичку задания»');
     await page.click('#ppSkip'); await page.waitForTimeout(2500);
     if(await page.$('#ppSkip')) bad(h+': «Посмотреть решение» не открыло решение');
-    if(!await page.$('.pp-dzchip')) bad(h+': у решения нет строки подготовки'); }
+    /* в копии строка подготовки вошла в плашку «Методичка» над разбором: алгоритм, защита, подготовка N/M */
+    if(!/подготовка \d+\/\d+/.test(await page.evaluate(()=>(document.querySelector('.mks')||{}).textContent||''))) bad(h+': у решения нет плашки методички с подготовкой'); }
   await page.evaluate(()=>localStorage.removeItem('nch_prep_gate'));
   /* главная копии: первым — «Учиться», ведёт в путь задания, которое выбрал сайт */
   await page.goto(UN+'#/'); await page.waitForTimeout(1800);
