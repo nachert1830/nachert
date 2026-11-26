@@ -322,6 +322,8 @@ body.liveshow{overflow:hidden}
 .hcards .hc.hc-rot{border:0;background:linear-gradient(150deg,#1f47d6 0%,#2e63f0 55%,#4f8cff 100%);box-shadow:0 22px 40px -24px rgba(36,82,230,.75)}
 .hcards .hc-rot .hc-t{font-size:19px;line-height:1.1;letter-spacing:-.02em}
 .hcards .hc-rart{max-width:150px}
+.hcards canvas.hc-cv{width:100%;max-width:150px;aspect-ratio:1/1;height:auto;margin:2px auto 0}
+@media(min-width:760px){.hcards canvas.hc-cv{width:40%;max-width:230px;margin:0}}
 /* «РК2 за 9 шагов» на главной — подсвечена: золотая рамка и мягкое свечение */
 .hcards .hc.hc-rk9{background:linear-gradient(150deg,#b91c1c 0%,#e0352b 50%,#f97316 100%);box-shadow:0 0 0 3px #ffd34d,0 22px 44px -18px rgba(224,53,43,.75);animation:rk9Glow 2.6s ease-in-out infinite}
 .hcards .hc-rk9 .hc-pill{background:#ffd34d;color:#7f1d1d}.hcards .hc-rk9 .hc-pill i{background:#b91c1c}
@@ -2705,6 +2707,26 @@ body.plfull.inplayer .pl-cap{display:block!important;z-index:165;top:calc(12px +
 .hap-g a:hover .hap-ic .k{fill:color-mix(in srgb,var(--sc) 12%,var(--surf2))}.hap-g a:hover .hap-ic .ks{stroke:color-mix(in srgb,var(--sc) 12%,var(--surf2))}
 .hap-ic b{position:absolute;top:-5px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--sc);color:#fff;font:800 11px/20px var(--sans);box-shadow:0 0 0 2px var(--surf)}
 @media(max-width:360px){.hap-ic{width:54px;height:54px;border-radius:17px}.hap-ic svg{width:30px;height:30px}}
+/* разделы на главной — плитки разного размера, как в новой версии (/new/), только ниже: две колонки «Начерт» и «Инж. графика» */
+.hbn{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.hbn-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.hbn-h{margin:0 0 2px 4px;font:800 16px/1.2 var(--disp);color:var(--ink);letter-spacing:-.01em}
+.hbn-c{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:84px;padding:14px 15px;border-radius:22px;color:#fff!important;text-decoration:none!important;transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.hbn-c:active{transform:scale(.97)}@media(hover:hover){.hbn-c:hover{transform:translateY(-2px)}}
+.hbn-c.m{min-height:112px}.hbn-c.l{min-height:150px}
+.hbn-c b{position:relative;z-index:1;font:800 25px/1.02 var(--disp);letter-spacing:-.035em}
+.hbn-art{position:absolute;z-index:0;right:-10%;bottom:-16%;width:64%;max-width:170px;height:auto;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.2;pointer-events:none}
+.hbn-c.l .hbn-art{width:78%;max-width:210px;bottom:-10%}
+.hbn-c.s .hbn-art{width:52%;bottom:-26%}
+.hbn-light .hbn-art{opacity:.16}
+.hbn-c.l b{font-size:32px}
+/* виды: тёмно-синяя, ярко-синяя, голубая, светлая */
+.hbn-navy{background:radial-gradient(120% 90% at 100% 0%,#2a5be0 0%,transparent 55%),linear-gradient(160deg,#16307f,#0b1d57);box-shadow:0 16px 28px -20px #0b1d57}
+.hbn-royal{background:radial-gradient(120% 90% at 100% 0%,#6b9bff 0%,transparent 55%),linear-gradient(160deg,#2f6bff,#1d4fd6);box-shadow:0 16px 28px -20px #1d4fd6}
+.hbn-sky{background:radial-gradient(120% 90% at 100% 0%,#5fd0ff 0%,transparent 55%),linear-gradient(160deg,#1aa0ee,#0f7fd0);box-shadow:0 16px 28px -20px #0f7fd0}
+.hbn-light{background:#e8efff;color:#143a9c!important;box-shadow:inset 0 0 0 1.5px #c9d8ff}
+:root[data-theme=dark] .hbn-light{background:#1b2547;color:#dfe8ff!important;box-shadow:inset 0 0 0 1.5px #2e3f75}
+@media(min-width:760px){.hbn{gap:16px}.hbn-col{display:block;columns:2;column-gap:10px}.hbn-h{column-span:all;margin-bottom:10px}.hbn-c{break-inside:avoid;margin-bottom:10px}}
 .foot-logo img{height:15px!important}
 /* подвал — одна тихая строка; источники, правовая информация и «что нового» — на странице «О проекте» */
 .foot-mini{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 0 8px;font-size:13px;color:var(--mut)}
@@ -3046,6 +3068,31 @@ html.t3d-lock,html.t3d-lock body{overscroll-behavior:none}
 .sx-tabs a.on{background:var(--surf);color:var(--ink);box-shadow:0 1px 2px rgba(15,20,32,.12),0 2px 8px -2px rgba(15,20,32,.15)}
 :root[data-theme="dark"] .sx-tabs a.on{background:var(--surf2);box-shadow:0 1px 2px rgba(0,0,0,.5)}
 .sx-leg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--mut);padding:0 2px}
+/* «Свои фигуры»: выбор двух фигур и площадка, которой двигают фигуру 2 */
+.sx-own{display:grid;gap:14px;margin:4px 0 14px;padding:14px;border:1px solid var(--line);border-radius:20px;background:var(--surf)}
+.sx-own[hidden]{display:none}
+@media(min-width:760px){.sx-own{grid-template-columns:1fr 1fr;align-items:start}.sx-padw{grid-column:1/-1}}
+.sx-fig{display:flex;flex-direction:column;gap:7px;min-width:0}
+.sx-ft{display:flex;align-items:center;gap:8px;font:700 14.5px var(--sans);color:var(--ink)}
+.sx-seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,var(--surf))}
+.sx-seg button{flex:1;min-width:0;min-height:42px;padding:0 6px;border:0;border-radius:11px;background:none;color:var(--ink2);font:700 14px var(--sans);cursor:pointer;transition:background .15s,color .15s,box-shadow .15s}
+.sx-seg button:hover{color:var(--ink)}
+.sx-fig:first-child .sx-seg button.on{background:#c9a86a;color:#fff;box-shadow:0 3px 0 #9c7d40}
+.sx-fig:nth-child(2) .sx-seg button.on{background:#2f6bff;color:#fff;box-shadow:0 3px 0 #1d4fd6}
+.sx-padw{display:flex;align-items:center;gap:16px}
+.sx-pad{position:relative;flex:none;width:168px;height:132px;border-radius:18px;border:1px solid var(--line);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;
+  background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/16.66% 25%,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/16.66% 25%,color-mix(in srgb,var(--acc) 5%,var(--surf))}
+.sx-pad:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 45%,transparent);outline-offset:2px}
+.sx-pad.on{cursor:grabbing}
+.sx-px,.sx-py{position:absolute;background:color-mix(in srgb,var(--acc) 35%,transparent)}
+.sx-px{left:0;right:0;top:50%;height:1.5px}.sx-py{top:0;bottom:0;left:50%;width:1.5px}
+.sx-knob{position:absolute;z-index:2;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#b9d0ff,#2f6bff 70%);box-shadow:0 5px 12px rgba(30,70,200,.45),0 0 0 3px #fff;transition:transform .12s}
+.sx-pad.on .sx-knob{transform:scale(1.12)}
+.sx-pl{position:absolute;font:600 10.5px var(--sans);letter-spacing:.02em;color:var(--mut);pointer-events:none}
+.sx-pl.t{top:5px;left:50%;translate:-50% 0}.sx-pl.b{bottom:5px;left:50%;translate:-50% 0}.sx-pl.l{left:7px;top:50%;translate:0 -50%}.sx-pl.r{right:7px;top:50%;translate:0 -50%}
+.sx-padi{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;font-size:13px;line-height:1.35;color:var(--mut)}
+.sx-padi b{font:700 15px var(--sans);color:var(--ink)}
+.sx-marks[hidden]{display:none}
 .sx-leg span{display:inline-flex;align-items:center;gap:6px}
 .sx-leg span[hidden]{display:none}
 .sx-sw{display:inline-block;width:14px;height:10px;border-radius:3px;flex:none}
@@ -4326,6 +4373,70 @@ a.card:hover,a.tg-c:hover,.tnum:hover{border-color:var(--acc)!important}
 .v8-meta{max-width:none!important;border-width:1.5px!important;border-radius:22px!important}
 .v8-share{border-radius:16px!important;font-weight:800!important;min-height:48px!important;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,box-shadow .08s}
 .v8-share:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
+/* верхние карточки: крупный плотный заголовок, фигура поверх букв */
+.hcards .hc.hc-rot{min-height:232px}
+.hcards .hc.hc-rot .hc-t{position:relative;z-index:1;margin-top:2px;font:700 20px/.98 var(--disp);letter-spacing:-.045em;text-shadow:none;max-width:none}
+.hcards .hc.hc-rot .hc-art{position:absolute;z-index:2;margin:0;transform:none;top:auto;left:auto;pointer-events:none}
+.hcards .hc.hc-rot .hc-go{position:relative;z-index:3;margin-top:auto}
+/* «Поверхности»: гиперболоид заходит на нижние строки заголовка */
+.hcards .hc.hc-rot:not(.hc-ig) .hc-art{right:-12%;bottom:54px;width:92%;max-width:none;max-height:none;filter:drop-shadow(0 10px 16px rgba(0,20,90,.4))}
+/* ДЗ 5: «ДЗ» и огромная «5», шестигранник крутится поверх цифры */
+.hcards .hc-ig .hc-big{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.hcards .hc-ig .hc-big span{font:700 34px/.9 var(--disp);letter-spacing:-.05em}
+.hcards .hc-ig .hc-big b{font:700 190px/.74 var(--disp);letter-spacing:-.08em;margin-top:6px;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hcards .hc-ig canvas.hc-cv{right:-14%!important;top:auto!important;bottom:-6px!important;width:70%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+@media(min-width:760px){
+  .hcards .hc.hc-rot{min-height:250px;padding:24px 26px 22px}
+  .hcards .hc.hc-rot .hc-t{font-size:46px}
+  .hcards .hc.hc-rot:not(.hc-ig) .hc-t{max-width:12ch}
+  .hcards .hc.hc-rot:not(.hc-ig) .hc-art{right:4%;bottom:auto;top:50%;translate:0 -50%;width:42%;max-width:300px}
+  .hcards .hc-ig .hc-big{flex-direction:row;align-items:flex-end;gap:14px}
+  .hcards .hc-ig .hc-big span{font-size:110px;line-height:.78}
+  .hcards .hc-ig .hc-big b{font-size:250px;margin-top:0}
+  .hcards .hc-ig canvas.hc-cv{right:4%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:250px!important;max-width:40%!important}
+}
+/* «Пересечение поверхностей» — в паре с «ДЗ 5»: тот же тёмно-синий фон со свечением и отблеском, тот же шрифт и градиент букв, фигура поверх */
+.hcards .hc.hc-sx{border:0;background:radial-gradient(55% 75% at 78% 58%,rgba(86,148,255,.6),transparent 72%),linear-gradient(150deg,#071331 0%,#0d2766 50%,#1a44c4 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 46px -22px rgba(8,26,84,.85)}
+.hcards .hc-sx::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);transform:translateX(-130%);animation:igSweep 6s ease-in-out 3s infinite}
+@media(prefers-reduced-motion:reduce){.hcards .hc-sx::after{animation:none}}
+.hcards .hc-sx .hc-sxt{font-size:24px;line-height:.94;letter-spacing:-.05em;background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hcards .hc-sx canvas.hc-sxcv{right:-6%!important;bottom:-10px!important;top:auto!important;width:88%!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;filter:drop-shadow(0 14px 18px rgba(0,8,40,.55))}
+@media(max-width:400px){.hcards .hc-sx .hc-sxt{font-size:22px}}
+@media(min-width:760px){.hcards .hc-sx .hc-sxt{font-size:64px;max-width:8ch}
+  .hcards .hc-sx canvas.hc-sxcv{right:2%!important;top:50%!important;bottom:auto!important;translate:0 -50%;width:290px!important;max-width:44%!important}}
+/* одна рамка: сверху счётчик и большая «Поделиться», под ними — кнопка с именем и подписью «владелец сайта» */
+.ownc{display:flex;flex-direction:column;gap:8px;margin:14px 0 0;padding:8px;border:1px solid var(--line);border-radius:22px;background:var(--surf);box-shadow:0 14px 30px -24px rgba(16,30,80,.35)}
+.ownc{width:min(340px,100%);margin-left:auto!important;margin-right:auto!important}
+@media(min-width:760px){.ownc{width:min(360px,100%);margin-top:16px}}
+.ownc-top{display:flex;align-items:center;gap:8px}
+.ownc-v{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:7px 12px 6px;border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,var(--surf))}
+.ownc-v small{font:600 11px/1 var(--sans);letter-spacing:.02em;color:var(--mut)}
+/* «Поделиться» — как на сайте (.v8-share), занимает место рядом со счётчиком */
+.ownc-s{flex:none;justify-content:center;height:46px!important;min-height:0!important;padding:0 16px!important;border-radius:14px!important;font-size:14.5px!important;margin-bottom:4px}
+/* имя — синяя объёмная кнопка: глянцевый блик, подпись прописными, стрелка в кружке, отблеск при наведении */
+.ownc-a{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;margin-bottom:4px;padding:7px 8px 7px 16px;border:0;border-radius:14px;cursor:pointer;color:#fff;text-align:left;font:inherit;
+  background:radial-gradient(120% 140% at 0% 0%,#5e93ff 0%,transparent 55%),linear-gradient(180deg,#3d78ff 0%,#2558e8 60%,#1c47c9 100%);
+  box-shadow:0 4px 0 #1536a0,0 12px 20px -12px rgba(36,90,230,.85),inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,20,80,.25);transition:transform .1s,box-shadow .1s,filter .15s}
+.ownc-a::before{content:"";position:absolute;left:8px;right:8px;top:2px;height:45%;z-index:-1;border-radius:12px 12px 40% 40%/12px 12px 10px 10px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0))}
+.ownc-a::after{content:"";position:absolute;top:-20%;bottom:-20%;left:-50%;width:30%;z-index:-1;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);transition:left .6s ease}
+.ownc-a:hover{filter:brightness(1.05)}.ownc-a:hover::after{left:130%}
+.ownc-a:active{transform:translateY(4px);box-shadow:0 0 0 #1536a0,0 5px 10px -8px rgba(36,90,230,.7),inset 0 1px 0 rgba(255,255,255,.45)}
+.ownc-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ownc-t b{font:800 16px/1.05 var(--disp);letter-spacing:-.02em;text-shadow:0 1px 1px rgba(0,20,80,.25)}
+.ownc-t small{font:700 10px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:#cfe0ff}
+.ownc-a i{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);font-style:normal;font-weight:800;font-size:16px;transition:transform .15s,background .15s}
+.ownc-a:hover i{transform:translateX(2px);background:rgba(255,255,255,.28)}
+/* счётчик-барабан: маленький, в цветах сайта — тёмно-синее окно, тонкая оправа; цифры на барабанах, соседние видны сверху и снизу */
+.odo{display:inline-block;padding:3px;border-radius:12px;background:color-mix(in srgb,var(--acc) 18%,var(--surf));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.odo-win{position:relative;display:flex;align-items:center;height:36px;padding:0 10px;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#0b1440,#1a2a72 50%,#0b1440);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.6),inset 0 -2px 4px rgba(0,0,0,.6);font:700 22px/1 var(--disp);color:#fff;font-variant-numeric:tabular-nums}
+.odo-win::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(8,14,48,.95) 0%,rgba(8,14,48,.3) 24%,rgba(8,14,48,0) 40%,rgba(8,14,48,0) 60%,rgba(8,14,48,.3) 76%,rgba(8,14,48,.95) 100%)}
+.odo-d{position:relative;width:.62em;height:100%;overflow:hidden}
+.odo-s{position:absolute;left:0;right:0;top:calc(50% - .575em);will-change:transform}
+.odo-s b{display:block;height:1.15em;line-height:1.15em;text-align:center;font-weight:700}
+.odo-d.mv .odo-s{filter:blur(.6px)}
+.odo-sep{flex:none;width:1px;height:60%;margin:0 5px;background:rgba(255,255,255,.18)}
+.v8h.has-q .ownc{display:none}
 /* разделы — плитки с иконками, как уроки в Duolingo */
 .v8-dirs{max-width:none!important}
 .v8-col{border:0!important;background:none!important;overflow:visible!important;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
@@ -5433,6 +5544,9 @@ button.dr-go{background:var(--surf2,var(--surf));border:1px solid var(--line);co
 .mt-link{display:grid;gap:2px;margin:6px 0 14px;padding:12px 14px;border-radius:14px;border:2px solid var(--acc);background:var(--surf);color:var(--ink);text-decoration:none}.mt-link span{color:var(--mut);font-size:14px}
 .wd-meth{display:block;text-align:center;margin-top:10px;font-size:14px;color:var(--mut)}
 </style>
+<!-- колода «ДЗ»: стили сразу, и если открыт адрес ДЗ — страница сразу в режиме колоды, без мелькания прежней страницы -->
+<link rel="stylesheet" href="../dz/deck.css?v=3">
+<script>if(/^#\/dz(\/(ng|ig))?\/?$/.test(location.hash))document.documentElement.classList.add('nd-on');</script>
 </head>
 <body>
 <a class="skip" href="#view">К содержимому</a>
@@ -25861,6 +25975,10 @@ function sphere(c,R){ return {P:(u,v)=>{ const f=PI*(v-0.5), a=2*PI*u; return [c
 function coneZ(S,zb,Rb){ const tn=Rb/(S[2]-zb), kq=hyp(1,tn), B=t=>[S[0]+Rb*cos(t),S[1]+Rb*sin(t),zb];
   return {P:(u,v)=>lerp(S,B(2*PI*u),v), F:p=>(hyp(p[0]-S[0],p[1]-S[1])-Math.abs(S[2]-p[2])*tn)/kq, inR:p=>p[2]>=zb-1e-6&&p[2]<=S[2]+1e-6, pu:1, nu:144, nv:72, iso:{u:16,v:[1]},
   o1:[ring(B,72)], o2:[[S,[S[0]-Rb,S[1],zb]],[S,[S[0]+Rb,S[1],zb]],[[S[0]-Rb,S[1],zb],[S[0]+Rb,S[1],zb]]]}; }
+/* конус с осью ∥ x: вершина при x = ax, основание (окружность радиуса Rb) при x = bx */
+function coneX(cy,cz,ax,bx,Rb){ const S=[ax,cy,cz], tn=Rb/Math.abs(ax-bx), kq=hyp(1,tn), B=t=>[bx,cy+Rb*cos(t),cz+Rb*sin(t)], lo=Math.min(ax,bx), hi=Math.max(ax,bx);
+  return {P:(u,v)=>lerp(S,B(2*PI*u),v), F:p=>(hyp(p[1]-cy,p[2]-cz)-Math.abs(ax-p[0])*tn)/kq, inR:p=>p[0]>=lo-1e-6&&p[0]<=hi+1e-6, pu:1, nu:144, nv:72, iso:{u:16,v:[1]},
+  o1:[[S,[bx,cy-Rb,cz]],[S,[bx,cy+Rb,cz]],[[bx,cy-Rb,cz],[bx,cy+Rb,cz]]], o2:[[S,[bx,cy,cz-Rb]],[S,[bx,cy,cz+Rb]],[[bx,cy,cz-Rb],[bx,cy,cz+Rb]]]}; }
 function torus(c,R,r){ return {P:(u,v)=>{ const a=2*PI*u, f=2*PI*v, q=R+r*cos(f); return [c[0]+q*cos(a),c[1]+q*sin(a),c[2]+r*sin(f)]; },
   F:p=>hyp(hyp(p[0]-c[0],p[1]-c[1])-R,p[2]-c[2])-r, inR:()=>true, pu:1, pv:1, nu:144, nv:56, iso:{u:20,v:[0,0.25,0.5,0.75]},
   o1:[ring(t=>[c[0]+(R+r)*cos(t),c[1]+(R+r)*sin(t),c[2]],72),ring(t=>[c[0]+(R-r)*cos(t),c[1]+(R-r)*sin(t),c[2]],72)],
@@ -25905,7 +26023,27 @@ function isoLines(S,cut){ const L=[], piece=(f,n,edge)=>{ let cur=[]; for(let i=
 const near=(a,b)=>Math.abs(a-b)<1e-6;
 const SO=[0,YC,30], RS=15, SV=[0,YC,74], TN=RS/sqrt(44*44-RS*RS);           /* «Монж»: сфера O, радиус 15; конус касается её */
 const CA=[0,YC,70], CB=30, CO=[0,YC,34], RT=(CA[2]-CO[2])*CB/hyp(CB,CA[2]-4); /* соосные: сфера касается конуса при R = RT */
-const LIST=[
+/* «Свои фигуры»: фигура 1 стоит в центре (вертикально), фигура 2 двигается — вперёд-назад (dy) и вверх-вниз (dz), ползунок — её размер */
+const OWN={a:'cone',b:'cyl',dy:0,dz:0}, ZC=36;
+const OWN_A={cyl:['Цилиндр',()=>cylZ(0,YC,20,2,70)],cone:['Конус',()=>coneZ([0,YC,72],2,30)],sph:['Сфера',()=>sphere([0,YC,ZC],26)],tor:['Тор',()=>torus([0,YC,30],22,10)]};
+const OWN_B={cyl:['Цилиндр',{lab:'радиус цилиндра',min:5,max:28,def:13},(k,dy,dz)=>cylX(YC+dy,ZC+dz,k,-50,50)],
+  cone:['Конус',{lab:'радиус основания конуса',min:8,max:34,def:20},(k,dy,dz)=>coneX(YC+dy,ZC+dz,52,-50,k)],
+  sph:['Сфера',{lab:'радиус сферы',min:6,max:34,def:17},(k,dy,dz)=>sphere([0,YC+dy,ZC+dz],k)]};
+const OWN_DY=30, OWN_DZ=26;
+const own={ id:'own', grp:'Свои фигуры', chip:'Выбрать две фигуры', name:'Свои две фигуры', own:true,
+  k:Object.assign({marks:[]},OWN_B.cyl[1]),
+  mk:k=>({A:OWN_B[OWN.b][2](k,OWN.dy,OWN.dz),B:OWN_A[OWN.a][1]()}),
+  frame:()=>{ const g=[], b=OWN_B[OWN.b]; [-1,1].forEach(sy=>[-1,1].forEach(sz=>[b[1].min,b[1].max].forEach(k=>g.push(b[2](k,sy*OWN_DY,sz*OWN_DZ))))); g.push(OWN_A[OWN.a][1]()); return g; },
+  st:(k,n)=>{ const a=OWN_A[OWN.a][0].toLowerCase(), b=OWN_B[OWN.b][0].toLowerCase();
+    return n===0?['Не пересекаются','Синяя фигура прошла мимо — общих точек нет. Подвинь её ближе к центру.']
+      :n===1?['Врезка: одна кривая',`Синий ${b==='сфера'?'шар':b} задевает ${a==='сфера'?'сферу':a} только частью — линия пересечения одна замкнутая кривая.`]
+      :n===2?['Проницание: две кривые',`Одна фигура проходит другую насквозь: вход и выход — две отдельные кривые.`]
+      :[n+' кривые',`Линия пересечения распалась на ${n} части.`]; },
+  what:'Выбери, какая фигура стоит и какая двигается. Тяни кружок на площадке — синяя фигура едет вперёд-назад и вверх-вниз; ползунок меняет её размер. Линия пересечения считается заново на каждом шаге.',
+  how:'Линию строят посредниками: плоскостью или сферой режут обе фигуры, общие точки двух сечений — точки линии. Включи «Посредники» и двигай плоскость Σ.',
+  aux:{kind:'z',r:()=>[2,70],t:'Плоскость Σ ∥ π₁ режет обе фигуры по простым линиям — окружностям или образующим. Где сечения пересекаются, там точки линии пересечения.'},
+  links:[['ДЗ №4 — линии пересечения поверхностей','#/ng4'],['№ 73 — пересечение поверхностей',WB(73)]] };
+const LIST=[own,
  { id:'cyl2', grp:'Два цилиндра', chip:'Оси пересекаются', name:'Два цилиндра, оси пересекаются',
    k:{lab:'радиус синего цилиндра r',min:8,max:32,def:15,marks:[[22,'Равные диаметры (Монж)']]},
    mk:r=>({A:cylX(YC,36,r,-46,46),B:cylZ(0,YC,22,2,70)}),
@@ -25976,7 +26114,7 @@ const BLUE=[0.50,0.66,0.84], BEIGE=[0.80,0.69,0.47], AUXC=[0.40,0.58,0.92];
 function css(el,n,d){ try{ const v=getComputedStyle(el).getPropertyValue(n).trim(); return v||d; }catch(e){ return d; } }
 const fmt=x=>(Math.round(x*10)/10).toString().replace('.',',');
 /* рамка сцены — по крайним положениям ползунка, чтобы вид не прыгал */
-function scene(o){ const all=[]; [o.k.min,o.k.def,o.k.max].forEach(k=>{ const g=o.mk(k); [g.A,g.B].forEach(S=>{ for(let i=0;i<=24;i++) for(let j=0;j<=12;j++) all.push(S.P(i/24,j/12)); }); });
+function scene(o){ const all=[], gs=o.frame?o.frame():[].concat(...[o.k.min,o.k.def,o.k.max].map(k=>{ const g=o.mk(k); return [g.A,g.B]; })); gs.forEach(S=>{ for(let i=0;i<=24;i++) for(let j=0;j<=12;j++) all.push(S.P(i/24,j/12)); });
   const mn=[0,1,2].map(i=>Math.min(0,...all.map(p=>p[i]))), mx=[0,1,2].map(i=>Math.max(...all.map(p=>p[i])));
   mn[0]-=8; mx[0]+=8; mx[1]+=8; mx[2]+=6;
   return {mn,mx,C:[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2],R:Math.hypot(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2])/2}; }
@@ -25985,11 +26123,17 @@ function mount(host,id,opt){ opt=opt||{};
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
   const S={k:o.k.def,h:0,play:false,dir:1,hold:0,yaw:0.62,pit:0.36,zoom:1,proj:false,aux:false,body:false,last:0,alive:true,dirty:true};
   const pick=`<div class="sl-pick" role="tablist" aria-label="Пара поверхностей">${[...new Set(LIST.map(x=>x.grp))].map(g=>`<div class="sl-grp"><span>${g}</span><div>${LIST.filter(x=>x.grp===g).map(x=>`<button class="chip${x.id===o.id?' on':''}" role="tab" aria-selected="${x.id===o.id}" data-id="${x.id}">${x.chip}</button>`).join('')}</div></div>`).join('')}</div>`;
-  host.innerHTML=`<div class="sl sx">${pick}
+  const segs=(k,M,v)=>Object.keys(M).map(x=>`<button type="button" data-${k}="${x}" aria-pressed="${x===v}" class="${x===v?'on':''}">${M[x][0]}</button>`).join('');
+  const ownUI=`<div class="sx-own"${o.own?'':' hidden'}>
+      <div class="sx-fig"><span class="sx-ft"><i class="sx-sw g"></i>Фигура 1 — стоит</span><div class="sx-seg" role="group" aria-label="Фигура 1">${segs('fa',OWN_A,OWN.a)}</div></div>
+      <div class="sx-fig"><span class="sx-ft"><i class="sx-sw b"></i>Фигура 2 — двигается</span><div class="sx-seg" role="group" aria-label="Фигура 2">${segs('fb',OWN_B,OWN.b)}</div></div>
+      <div class="sx-padw"><div class="sx-pad" role="slider" tabindex="0" aria-label="Положение фигуры 2: вперёд-назад и вверх-вниз (стрелки)"><i class="sx-px"></i><i class="sx-py"></i><b class="sx-knob"></b><span class="sx-pl t">вверх</span><span class="sx-pl b">вниз</span><span class="sx-pl l">назад</span><span class="sx-pl r">вперёд</span></div>
+        <div class="sx-padi"><b>Двигай фигуру 2</b><span>тяни кружок — как на виде слева: вбок — ближе или дальше от тебя, вверх-вниз — выше или ниже</span><button type="button" class="chip sx-p0">В центр</button></div></div></div>`;
+  host.innerHTML=`<div class="sl sx">${pick}${ownUI}
     <div class="sl-main"><div class="sl-stage"><canvas class="sl-cv" aria-label="Две поверхности и линия их пересечения в пространстве: тяни, чтобы повернуть"></canvas>
       <div class="sl-views" role="group" aria-label="Вид"><button data-v="home" class="on">Объём</button><button data-v="front">Спереди</button><button data-v="top">Сверху</button></div>
       <div class="sl-hint">тяни — крутить · колесо или щипок — зум</div></div>
-      <div class="sx-leg" aria-hidden="true"><span><i class="sx-sw b"></i>синяя — двигает ползунок</span><span><i class="sx-sw g"></i>бежевая — стоит на месте</span><span><i class="sx-sw r"></i>линия пересечения</span><span class="sx-lp" hidden><i class="sx-sw p"></i>точки от посредника Σ</span></div>
+      <div class="sx-leg" aria-hidden="true"><span><i class="sx-sw b"></i>синяя — двигается</span><span><i class="sx-sw g"></i>бежевая — стоит на месте</span><span><i class="sx-sw r"></i>линия пересечения</span><span class="sx-lp" hidden><i class="sx-sw p"></i>точки от посредника Σ</span></div>
       <div class="sx-state" aria-live="polite"></div>
       <div class="sl-ctl"><button class="sl-play" aria-label="Играть: синяя поверхность плавно меняется">▶</button><label class="sl-rg"><span class="sx-kl"></span><span class="sx-trk"><input class="sx-k" type="range" min="0" max="1000" aria-label="Параметр синей поверхности"><span class="sx-ticks" aria-hidden="true"></span></span></label></div>
       <div class="sx-marks" role="group" aria-label="Особые положения"></div>
@@ -26112,10 +26256,26 @@ function mount(host,id,opt){ opt=opt||{};
   let va=0; const animTo=(yaw,pit)=>{ cancelAnimationFrame(va); const a={y:S.yaw,p:S.pit}, t0=performance.now(); let dy=yaw-a.y; dy=Math.atan2(sin(dy),cos(dy));
     const st=now=>{ const u=Math.min(1,(now-t0)/450), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2; S.yaw=a.y+dy*e; S.pit=a.p+(pit-a.p)*e; S.dirty=true; if(u<1) va=requestAnimationFrame(st); }; va=requestAnimationFrame(st); };
   vb.forEach(b=>b.addEventListener('click',()=>{ vb.forEach(x=>x.classList.toggle('on',x===b)); const v=views[b.dataset.v]; S.zoom=1; animTo(v[0],v[1]); }));
-  const choose=nid=>{ o=BY[nid]||LIST[0]; sc=scene(o); setPlay(false); S.dir=1; S.hold=0; fillMarks();
+  const choose=nid=>{ o=BY[nid]||LIST[0]; sc=scene(o); setPlay(false); S.dir=1; S.hold=0; fillMarks(); host.querySelector('.sx-own').hidden=!o.own; mk.hidden=!o.k.marks.length;
     host.querySelectorAll('.sl-pick [data-id]').forEach(x=>{ const on=x.dataset.id===o.id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on); });
     setK(o.k.def); fine(); if(S.aux){ const r=auxR(); setH(r[0]+(r[1]-r[0])*0.3); } fillInfo(); fillState(); if(opt.onPick) opt.onPick(o.id); };
   host.querySelectorAll('.sl-pick [data-id]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.id)));
+  /* «Свои фигуры»: какая стоит, какая двигается; площадка двигает фигуру 2 */
+  const ownBox=host.querySelector('.sx-own'), pad=host.querySelector('.sx-pad'), knob=host.querySelector('.sx-knob');
+  const paintPad=()=>{ knob.style.left=(50+50*OWN.dy/OWN_DY)+'%'; knob.style.top=(50-50*OWN.dz/OWN_DZ)+'%'; pad.setAttribute('aria-valuetext',`вперёд ${fmt(OWN.dy)} мм, вверх ${fmt(OWN.dz)} мм`); };
+  const ownRefit=keepK=>{ const b=OWN_B[OWN.b][1]; o.k.lab=b.lab; o.k.min=b.min; o.k.max=b.max; o.k.def=b.def; sc=scene(o); setK(keepK?S.k:b.def); fine(); };
+  const segOn=(k,v)=>ownBox.querySelectorAll('[data-'+k+']').forEach(x=>{ const on=x.dataset[k]===v; x.classList.toggle('on',on); x.setAttribute('aria-pressed',on); });
+  ownBox.querySelectorAll('[data-fa]').forEach(b=>b.addEventListener('click',()=>{ OWN.a=b.dataset.fa; segOn('fa',OWN.a); setPlay(false); ownRefit(true); }));
+  ownBox.querySelectorAll('[data-fb]').forEach(b=>b.addEventListener('click',()=>{ OWN.b=b.dataset.fb; segOn('fb',OWN.b); setPlay(false); ownRefit(false); }));
+  const moveTo=(dy,dz,q)=>{ OWN.dy=Math.max(-OWN_DY,Math.min(OWN_DY,dy)); OWN.dz=Math.max(-OWN_DZ,Math.min(OWN_DZ,dz)); if(Math.abs(OWN.dy)<1.2) OWN.dy=0; if(Math.abs(OWN.dz)<1.2) OWN.dz=0;
+    paintPad(); setK(S.k); if(q) fine(); };
+  let pd=null; const padAt=e=>{ const r=pad.getBoundingClientRect(); return [((e.clientX-r.left)/r.width*2-1)*OWN_DY,-((e.clientY-r.top)/r.height*2-1)*OWN_DZ]; };
+  pad.addEventListener('pointerdown',e=>{ e.preventDefault(); try{ pad.setPointerCapture(e.pointerId); }catch(_){} pd=e.pointerId; setPlay(false); pad.classList.add('on'); moveTo(...padAt(e)); });
+  pad.addEventListener('pointermove',e=>{ if(pd!==e.pointerId) return; moveTo(...padAt(e)); });
+  const padUp=e=>{ if(pd!==e.pointerId) return; pd=null; pad.classList.remove('on'); fine(); }; pad.addEventListener('pointerup',padUp); pad.addEventListener('pointercancel',padUp);
+  pad.addEventListener('keydown',e=>{ const st={ArrowLeft:[-2,0],ArrowRight:[2,0],ArrowUp:[0,2],ArrowDown:[0,-2]}[e.key]; if(!st) return; e.preventDefault(); moveTo(OWN.dy+st[0],OWN.dz+st[1],true); });
+  host.querySelector('.sx-p0').addEventListener('click',()=>moveTo(0,0,true));
+  paintPad();
   /* жесты: тянуть — вращать, два пальца — зум */
   const ptrs=new Map(); let g=null;
   cv.addEventListener('pointerdown',e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(_){} ptrs.set(e.pointerId,[e.clientX,e.clientY]); const h=host.querySelector('.sl-hint'); if(h) h.style.opacity=0;
@@ -26129,7 +26289,7 @@ function mount(host,id,opt){ opt=opt||{};
   cv.addEventListener('dblclick',()=>{ S.zoom=1; animTo(views.home[0],views.home[1]); vb.forEach(x=>x.classList.toggle('on',x.dataset.v==='home')); });
   let ro=null; try{ ro=new ResizeObserver(()=>size()); ro.observe(stage); }catch(e){ window.addEventListener('resize',size); }
   function destroy(){ S.alive=false; clearTimeout(FT); cancelAnimationFrame(S.raf); cancelAnimationFrame(va); try{ ro&&ro.disconnect(); }catch(e){} try{ GLR&&GLR.dispose(); }catch(e){} }
-  fillMarks(); setK(o.k.def); fine(); fillInfo(); fillState(); size(); S.raf=requestAnimationFrame(loop);
+  fillMarks(); mk.hidden=!o.k.marks.length; setK(o.k.def); fine(); fillInfo(); fillState(); size(); S.raf=requestAnimationFrame(loop);
   return { destroy, get id(){ return o.id; }, get n(){ return C?C.n:0; }, set(k){ setK(k); fillState(); }, curves:()=>C?C.curves.map(c=>c.p):[] };
 }
 /* ── страница #/ng/surf/x[/id] ── */
@@ -29242,7 +29402,8 @@ function route(){
      Только при переходе в другой раздел/материал — шаги внутри задачи не анимируем. */
   const key=x=>{ const q=parseHash(x||'#/'); return [q.s,q.tab,q.item].join('/'); };
   const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); vt.ready.catch(()=>{}); if(vt.updateCallbackDone) vt.updateCallbackDone.catch(()=>{}); }catch(e){ go(); } }   /* анимацию прервал следующий переход — это не ошибка */
+  const deckH=x=>/^#\/dz(\/(ng|ig))?\/?$/.test(x||'');   /* колода «ДЗ» — свой экран со своим появлением */
+  if(prev!=null&&document.startViewTransition&&!rm&&!document.hidden&&key(prev)!==key(h)&&!deckH(prev)&&!deckH(h)){ try{ const vt=document.startViewTransition(go); vt.finished.then(top,()=>{}); vt.ready.catch(()=>{}); if(vt.updateCallbackDone) vt.updateCallbackDone.catch(()=>{}); }catch(e){ go(); } }   /* анимацию прервал следующий переход — это не ошибка */
   else go();
   ST.set('route',h);
 }
@@ -29914,6 +30075,30 @@ document.addEventListener('click',e=>{ const b=e.target.closest('#shareBtn'); if
 FX.note=function(m){ try{ let n=document.getElementById('fxNote'); if(!n){ n=document.createElement('div'); n.id='fxNote'; n.className='fxnote'; n.setAttribute('role','status'); n.setAttribute('aria-live','polite'); document.body.appendChild(n); }
   n.textContent=m; n.classList.remove('on'); void n.offsetWidth; n.classList.add('on'); clearTimeout(n._t); n._t=setTimeout(()=>n.classList.remove('on'),2200); }catch(e){} };
 
+/* ═══ ODO — счётчик-барабан: каждая цифра — барабан 0–9, при росте числа крутится вперёд; при первом показе раскручивается.
+   Число — настоящее (VIEWS: views.json + Метрика + GoatCounter вживую), барабан только показывает его. */
+const ODO=(function(){
+  const H=1.15, BASE=10, N=60, RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STRIP='<span class="odo-s" aria-hidden="true">'+Array.from({length:N},(_,i)=>'<b>'+(i%10)+'</b>').join('')+'</span>';
+  const pos=(d,p,ms)=>{ const s=d.firstChild; s.style.transition=ms&&!RM?'transform '+ms+'ms cubic-bezier(.16,.84,.18,1)':'none'; s.style.transform='translateY('+(-p*H)+'em)'; };
+  function build(el,txt){ const w=el.querySelector('.odo-win'); w.innerHTML=[...txt].map(c=>/\d/.test(c)?'<span class="odo-d">'+STRIP+'</span>':'<i class="odo-sep"></i>').join('');
+    w.dataset.fmt=txt.replace(/\d/g,'0'); el._p=[...w.querySelectorAll('.odo-d')].map(d=>{ pos(d,BASE,0); return BASE; }); }
+  function roll(el,txt,intro){ const ds=[...el.querySelectorAll('.odo-d')], dg=[...txt].filter(c=>/\d/.test(c)).map(Number), k=ds.length;
+    ds.forEach((d,i)=>{ let p=el._p[i]; if(p>=BASE+10){ p=BASE+p%10; pos(d,p,0); }
+      let t=p-p%10+dg[i]; if(t<p) t+=10; if(intro) t+=10*Math.round(3*(i+1)/k);   /* при раскрутке младшие цифры делают больше оборотов */
+      if(t===p) return; const ms=intro?1100+i*150:700+Math.min(3,(t-p))*120;
+      void d.offsetWidth; d.classList.add('mv'); pos(d,t,ms); el._p[i]=t;
+      clearTimeout(d._t); d._t=setTimeout(()=>{ d.classList.remove('mv'); const q=BASE+t%10; pos(d,q,0); el._p[i]=q; },ms+40); }); }
+  /* раскрутка — когда счётчик впервые попал на экран, а не где-то внизу без зрителя */
+  const io='IntersectionObserver' in window?new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; const el=e.target; io.unobserve(el); el._seen=true; if(el._want) requestAnimationFrame(()=>roll(el,el._want,true)); }),{threshold:.6}):null;
+  function set(el,n,label){ const txt=Math.round(n).toLocaleString('ru-RU').replace(/\s/g,' '), w=el.querySelector('.odo-win'), fresh=w.dataset.fmt!==txt.replace(/\d/g,'0');
+    el.setAttribute('aria-label',txt+' '+(label||'')); if(fresh) build(el,txt);
+    if(el._want===txt&&!fresh) return; el._want=txt;
+    if(!el._seen){ if(io&&!RM){ io.observe(el); return; } el._seen=true; }
+    roll(el,txt,fresh&&!RM&&!io); }
+  return {html:()=>'<div class="odo" data-odo role="img" aria-label="просмотры"><div class="odo-win"></div></div>', set};
+})();
+/* ═══ /ODO */
 /* ── счётчик просмотров: своё оформление, цифра — из Яндекс.Метрики ──
    Источник 1: views.json рядом с сайтом ({"pageviews":N}) — если настроена выгрузка.
    Источник 2: API отчётов Метрики (работает, когда у счётчика открыт публичный доступ к статистике).
@@ -29930,6 +30115,7 @@ FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wai
 function paintViews(){
   const els=document.querySelectorAll('[data-views]');
   if(VIEWS==null){ els.forEach(el=>{ el.hidden=true; }); return; }   /* данных нет — заготовку убираем */
+  document.querySelectorAll('[data-odo]').forEach(el=>{ const b=el.closest('.ownc-v'); if(b) b.hidden=false; ODO.set(el,VIEWS,plural(VIEWS,'просмотр','просмотра','просмотров')); });
   /* число ставим сразу, без «бегущих» цифр: панель рядом не дёргается */
   const txt=VIEWS.toLocaleString('ru-RU'), lab=plural(VIEWS,'просмотр','просмотра','просмотров');
   els.forEach(el=>{ const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; el.classList.remove('wait'); el.dataset.done=1;
@@ -29977,7 +30163,8 @@ FX.loadViews=function(force){
 };
 /* пока страница на экране — число обновляется само, раз в минуту; и сразу, когда к ней вернулись: приложение с рабочего стола
    и вкладка в фоне не перезагружаются, а таймеры в фоне браузер замораживает — без этого там стояло старое число */
-const viewsTick=()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views]')) FX.loadViews(true); }catch(e){} };
+const viewsTick=()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-views],[data-odo]')) FX.loadViews(true); }catch(e){} };
+setInterval(()=>{ try{ if(document.visibilityState==='visible'&&document.querySelector('[data-odo]')) FX.loadViews(true); }catch(e){} },20e3);
 setInterval(viewsTick,60e3);
 document.addEventListener('visibilitychange',viewsTick); window.addEventListener('pageshow',viewsTick); window.addEventListener('focus',viewsTick); window.addEventListener('online',viewsTick);
 
@@ -30150,6 +30337,109 @@ function rk2CardArt(){ if(RK2ART) return RK2ART;
   RK2ART=`<svg class="hc-art hc-rart" viewBox="0 0 200 200" aria-hidden="true">${g}</svg>`; return RK2ART; }
 /* ДЗ 4 ИГ: тело с П-образным вырезом медленно поворачивается вокруг вертикали; грани выреза подсвечены */
 let IG4ART='';
+/* ═══ SXART — карточка «Как пересекаются поверхности»: белый конус, сквозь него жёлтый цилиндр, красная линия пересечения; медленно вращается.
+   Canvas: грани по глубине, задние отброшены, части цилиндра внутри конуса и конуса внутри цилиндра не рисуются (как тело).
+   Линия пересечения — точно: точка цилиндра (x, r·cos φ, zc + r·sin φ) лежит на конусе, когда x² + y² = w(z)²; видна, если обе поверхности там смотрят на зрителя. */
+const SXART=(function(){
+  const H=100, Rb=48, zc=36, r=19, Lc=84, NA=48, NZ=16, NL=28, EL=.34, ce=Math.cos(EL), se=Math.sin(EL), T=20;
+  const w=z=>Rb*(H-z)/H, kq=Math.hypot(1,Rb/H);
+  const coneF=p=>(Math.hypot(p[0],p[1])-w(p[2]))/kq, cylF=p=>Math.hypot(p[1],p[2]-zc)-r;
+  const L=(()=>{ const v=[-.5,.45,.75],n=Math.hypot(...v); return v.map(x=>x/n); })();
+  const Q=[];   /* четырёхугольники: v — вершины, n — нормаль, m — материал */
+  for(let i=0;i<NA;i++) for(let j=0;j<NZ;j++){ const a0=2*Math.PI*i/NA,a1=2*Math.PI*(i+1)/NA,z0=H*j/NZ,z1=H*(j+1)/NZ, am=(a0+a1)/2, P=(a,z)=>[w(z)*Math.cos(a),w(z)*Math.sin(a),z];
+    Q.push({v:[P(a0,z0),P(a1,z0),P(a1,z1),P(a0,z1)],n:[Math.cos(am)*H/Math.hypot(H,Rb),Math.sin(am)*H/Math.hypot(H,Rb),Rb/Math.hypot(H,Rb)],m:'cone',cut:p=>cylF(p)<0&&Math.abs(p[0])<=Lc}); }
+  for(let i=0;i<NA;i++){ const a0=2*Math.PI*i/NA,a1=2*Math.PI*(i+1)/NA; Q.push({v:[[Rb*Math.cos(a1),Rb*Math.sin(a1),0],[Rb*Math.cos(a0),Rb*Math.sin(a0),0],[0,0,0]],n:[0,0,-1],m:'cone'}); }
+  for(let i=0;i<NA;i++) for(let j=0;j<NL;j++){ const a0=2*Math.PI*i/NA,a1=2*Math.PI*(i+1)/NA,x0=-Lc+2*Lc*j/NL,x1=-Lc+2*Lc*(j+1)/NL, am=(a0+a1)/2, P=(x,a)=>[x,r*Math.cos(a),zc+r*Math.sin(a)];
+    Q.push({v:[P(x0,a0),P(x1,a0),P(x1,a1),P(x0,a1)],n:[0,Math.cos(am),Math.sin(am)],m:'cyl',cut:p=>coneF(p)<0&&p[2]>=0&&p[2]<=H}); }
+  [-1,1].forEach(sg=>{ const v=[]; for(let i=0;i<NA;i++){ const a=2*Math.PI*i/NA*(sg>0?1:-1); v.push([sg*Lc,r*Math.cos(a),zc+r*Math.sin(a)]); } Q.push({v,n:[sg,0,0],m:'cap'}); });
+  /* отбрасываем только грани, целиком ушедшие внутрь другой фигуры: на стыке грани чуть перекрываются, но дыр нет */
+  Q.forEach(q=>{ if(q.cut&&q.v.every(p=>q.cut(p))) q.hide=true; });
+  /* линия пересечения: две замкнутые кривые (вход и выход) */
+  const CUR=[-1,1].map(sx=>{ const o=[]; for(let i=0;i<=120;i++){ const f=2*Math.PI*i/120, y=r*Math.cos(f), z=zc+r*Math.sin(f), d=w(z)*w(z)-y*y; if(d<0) continue; const x=sx*Math.sqrt(d);
+    const nc=[x,y,Math.hypot(x,y)*Rb/H], nl=Math.hypot(...nc); o.push({p:[x,y,z],nc:nc.map(v=>v/nl),ny:[0,Math.cos(f),Math.sin(f)]}); } return o; });
+  const COL={cone:[244,246,252],cyl:[255,200,48],cap:[255,214,92]};
+  function frame(cv,th){ const ctx=cv.getContext('2d'), W=cv.width, Hc=cv.height, sc=Math.min(W,Hc)/172, c=Math.cos(th), sn=Math.sin(th), lw=Math.max(1,W/260);
+    const rot=([x,y,z])=>[x*c-y*sn,x*sn+y*c,z], vis=n=>{ const m=rot(n); return m[1]*ce+m[2]*se; };
+    const pr=([X,Y,z])=>[W/2+X*sc,Hc*.56+(-(z-H*.42)*ce+Y*se)*sc], dep=([X,Y,z])=>Y*ce+z*se;
+    ctx.clearRect(0,0,W,Hc);
+    const g=ctx.createRadialGradient(W/2,Hc*.56+H*.42*ce*sc+6*sc,0,W/2,Hc*.56+H*.42*ce*sc+6*sc,95*sc); g.addColorStop(0,'rgba(0,10,50,.5)'); g.addColorStop(1,'rgba(0,10,50,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(W/2,Hc*.56+H*.42*ce*sc+6*sc,95*sc,95*se*sc,0,0,2*Math.PI); ctx.fill();
+    const list=[];
+    Q.forEach(q=>{ if(q.hide) return; const n=rot(q.n), v=n[1]*ce+n[2]*se; if(v<=1e-4) return; const vs=q.v.map(rot), lit=.46+.54*Math.max(0,n[0]*L[0]+n[1]*L[1]+n[2]*L[2]), k=COL[q.m];
+      list.push({d:vs.reduce((s,p)=>s+dep(p),0)/vs.length,p:vs.map(pr),col:`rgb(${k.map(x=>Math.round(x*lit)).join(',')})`}); });
+    list.sort((a,b)=>a.d-b.d); ctx.lineJoin='round';
+    list.forEach(q=>{ ctx.beginPath(); q.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.closePath(); ctx.fillStyle=q.col; ctx.fill(); ctx.strokeStyle=q.col; ctx.lineWidth=.9; ctx.stroke(); });
+    /* очерки — тёмной линией: край основания конуса, торцы цилиндра */
+    ctx.strokeStyle='rgba(8,24,72,.7)'; ctx.lineWidth=1.3*lw;
+    [-1,1].forEach(sg=>{ if(vis([sg,0,0])<=0) return; ctx.beginPath(); for(let i=0;i<=NA;i++){ const a=2*Math.PI*i/NA, p=pr(rot([sg*Lc,r*Math.cos(a),zc+r*Math.sin(a)])); i?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke(); });
+    /* линия пересечения: красная с белой подложкой, только видимые куски */
+    CUR.forEach(cu=>{ let seg=[]; const flush=()=>{ if(seg.length>1){ ctx.lineCap='round'; ctx.beginPath(); seg.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p)); ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=6*lw; ctx.stroke(); ctx.strokeStyle='#e0202e'; ctx.lineWidth=3.4*lw; ctx.stroke(); } seg=[]; };
+      cu.forEach(o=>{ if(vis(o.nc)>-.2&&vis(o.ny)>-.05) seg.push(pr(rot(o.p))); else flush(); }); flush(); }); }
+  const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches, TH0=.18;
+  function mount(cv){ if(cv.dataset.on) return; cv.dataset.on='1'; let raf=0,seen=false; const t0=performance.now();
+    const size=()=>{ const b=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.max(10,Math.round(b.width*d)); cv.height=Math.max(10,Math.round(b.height*d)); };
+    const th=t=>TH0+.42*Math.sin(2*Math.PI*((t-t0)/1000)/T);   /* покачивается ±24°: обе кривые всё время на виду */
+    const draw=t=>{ raf=0; if(!cv.isConnected) return; frame(cv,th(t)); if(seen&&!RM&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); };
+    size(); frame(cv,TH0);
+    if('ResizeObserver' in window) new ResizeObserver(()=>{ size(); if(!raf) frame(cv,th(performance.now())); }).observe(cv);
+    if('IntersectionObserver' in window) new IntersectionObserver(es=>{ seen=es[0].isIntersecting; if(seen&&!raf) raf=requestAnimationFrame(draw); }).observe(cv); else { seen=true; raf=requestAnimationFrame(draw); }
+    document.addEventListener('visibilitychange',()=>{ if(seen&&!raf&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); }); }
+  const scan=()=>document.querySelectorAll('canvas[data-sxart]:not([data-on])').forEach(mount);
+  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); scan();
+  return {mount,scan};
+})();
+/* ═══ /SXART */
+/* ═══ IG5ART — карточка ДЗ 5 ИГ: сплошное тело (шестигранная призма со сквозным отверстием) медленно вращается.
+   Canvas, а не SVG: на каждом кадре грани сортируются по глубине и задние отбрасываются — тело непрозрачное, с освещением.
+   Не на экране или вкладка скрыта — не рисуем; reduced-motion — один неподвижный кадр. */
+const IG5ART=(function(){
+  const R=50,HH=34,r=19,NS=48,EL=.52,ce=Math.cos(EL),se=Math.sin(EL),T=16;   /* радиус шестигранника, полувысота, радиус отверстия */
+  const L=(()=>{ const v=[-.45,.55,.75],n=Math.hypot(...v); return v.map(x=>x/n); })();
+  const hex=k=>{ const a=Math.PI/3*k+Math.PI/6; return [R*Math.cos(a),R*Math.sin(a)]; };
+  /* точка на границе шестиугольника под углом a — чтобы кольцо верхней грани разбить на четырёхугольники */
+  const hexAt=a=>{ const k=Math.floor(((a-Math.PI/6)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)/(Math.PI/3)), p=hex(k), q=hex(k+1), d=[Math.cos(a),Math.sin(a)];
+    const ex=q[0]-p[0], ey=q[1]-p[1], den=d[0]*ey-d[1]*ex, t=(p[0]*ey-p[1]*ex)/den; return [d[0]*t,d[1]*t]; };
+  const F=[];   /* грани: {v:[[x,y,z]...], n:[нормаль], m:'body'|'hole'|'top'} */
+  for(let k=0;k<6;k++){ const p=hex(k),q=hex(k+1),a=Math.PI/3*k+Math.PI/3; F.push({v:[[p[0],p[1],-HH],[q[0],q[1],-HH],[q[0],q[1],HH],[p[0],p[1],HH]],n:[Math.cos(a),Math.sin(a),0],m:'body',e:1}); }
+  for(let i=0;i<NS;i++){ const a0=2*Math.PI*i/NS,a1=2*Math.PI*(i+1)/NS, c0=[r*Math.cos(a0),r*Math.sin(a0)], c1=[r*Math.cos(a1),r*Math.sin(a1)], h0=hexAt(a0+1e-9), h1=hexAt(a1-1e-9), am=(a0+a1)/2;
+    F.push({v:[[c0[0],c0[1],HH],[h0[0],h0[1],HH],[h1[0],h1[1],HH],[c1[0],c1[1],HH]],n:[0,0,1],m:'top'});
+    F.push({v:[[c1[0],c1[1],-HH],[h1[0],h1[1],-HH],[h0[0],h0[1],-HH],[c0[0],c0[1],-HH]],n:[0,0,-1],m:'top'});
+    F.push({v:[[c0[0],c0[1],HH],[c1[0],c1[1],HH],[c1[0],c1[1],-HH],[c0[0],c0[1],-HH]],n:[-Math.cos(am),-Math.sin(am),0],m:'hole'}); }
+  const COL={body:[236,240,250],top:[248,250,255],hole:[255,200,48]};
+  function frame(cv,th){ const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, sc=Math.min(W,H)/(2*R+30), c=Math.cos(th), sn=Math.sin(th);
+    const rot=([x,y,z])=>[x*c-y*sn, x*sn+y*c, z];
+    const pr=([X,Y,z])=>[W/2+X*sc, H/2+(-z*ce+Y*se)*sc+HH*.12*sc];
+    ctx.clearRect(0,0,W,H);
+    /* тень на «столе» */
+    const g=ctx.createRadialGradient(W/2,H/2+(HH*ce+R*se*.2)*sc,0,W/2,H/2+(HH*ce+R*se*.2)*sc,R*1.2*sc); g.addColorStop(0,'rgba(0,8,40,.55)'); g.addColorStop(1,'rgba(0,8,40,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(W/2,H/2+(HH*ce+HH*.12)*sc+6*sc,R*1.25*sc,R*1.25*se*sc,0,0,2*Math.PI); ctx.fill();
+    const list=[];
+    F.forEach(f=>{ const n=rot(f.n), vis=n[1]*ce+n[2]*se; if(vis<=1e-4) return;   /* к зрителю: e=(0,cos,sin) */
+      const vs=f.v.map(rot), d=vs.reduce((s,[,Y,z])=>s+Y*ce+z*se,0)/vs.length;
+      const lit=.42+.58*Math.max(0,n[0]*L[0]+n[1]*L[1]+n[2]*L[2]), k=COL[f.m];
+      list.push({d,p:vs.map(pr),col:`rgb(${k.map(x=>Math.round(x*lit)).join(',')})`,e:f.e}); });
+    list.sort((a,b)=>a.d-b.d);
+    ctx.lineJoin='round';
+    list.forEach(q=>{ ctx.beginPath(); q.p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.closePath(); ctx.fillStyle=q.col; ctx.fill();
+      ctx.strokeStyle=q.col; ctx.lineWidth=.8; ctx.stroke();
+      if(q.e){ ctx.strokeStyle='rgba(10,28,80,.55)'; ctx.lineWidth=1.2*devicePixelRatio; ctx.stroke(); } });
+    /* контур верхней грани и кромка отверстия */
+    ctx.strokeStyle='rgba(10,28,80,.6)'; ctx.lineWidth=1.2*devicePixelRatio; ctx.beginPath();
+    for(let k=0;k<=6;k++){ const h=hex(k), p=pr(rot([h[0],h[1],HH])); k?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke();
+    ctx.beginPath(); for(let i=0;i<=NS;i++){ const a=2*Math.PI*i/NS, p=pr(rot([r*Math.cos(a),r*Math.sin(a),HH])); i?ctx.lineTo(...p):ctx.moveTo(...p); } ctx.stroke(); }
+  const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function mount(cv){ if(cv.dataset.on) return; cv.dataset.on='1'; let raf=0,seen=false,t0=performance.now();
+    const size=()=>{ const b=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.max(10,Math.round(b.width*d)); cv.height=Math.max(10,Math.round(b.height*d)); };
+    const draw=t=>{ raf=0; if(!cv.isConnected) return; frame(cv,-.5+2*Math.PI*((t-t0)/1000)/T); if(seen&&!RM&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); };
+    size(); frame(cv,-.5);
+    if('ResizeObserver' in window) new ResizeObserver(()=>{ size(); if(!raf) frame(cv,-.5+2*Math.PI*((performance.now()-t0)/1000)/T); }).observe(cv);
+    if('IntersectionObserver' in window) new IntersectionObserver(es=>{ seen=es[0].isIntersecting; if(seen&&!raf) raf=requestAnimationFrame(draw); }).observe(cv); else { seen=true; raf=requestAnimationFrame(draw); }
+    document.addEventListener('visibilitychange',()=>{ if(seen&&!raf&&document.visibilityState==='visible') raf=requestAnimationFrame(draw); }); }
+  const scan=()=>document.querySelectorAll('canvas[data-ig5art]:not([data-on])').forEach(mount);
+  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); scan();
+  return {mount,scan};
+})();
+/* ═══ /IG5ART */
 function ig4CardArt(){ if(IG4ART) return IG4ART;
   const f=v=>Math.round(v*10)/10, W=80, D=44, prof=[[0,0],[80,0],[80,50],[52,50],[52,26],[28,26],[28,50],[0,50]];   /* профиль в XZ, выдавлен по Y */
   const el=.5, ce=Math.cos(el), se=Math.sin(el), NF=72, T=14;
@@ -30173,15 +30463,13 @@ function ig4CardArt(){ if(IG4ART) return IG4ART;
     <ellipse cx="${f((x0+x1)/2)}" cy="${f((y0+y1)/2)}" rx="${f((x1-x0)/1.7)}" ry="${f((y1-y0)/1.7)}" fill="url(#i4Gl)"/>${g}</svg>`;
   return IG4ART; }
 function homeCards(){ const pm=PROMO.cardHTML();
-  /* слева — эфир (если он есть) или «Как образуются и пересекаются поверхности»; справа — ДЗ 4 по инженерной графике */
-  const left=pm||`<a class="hc hc-rot" href="#/ng/surf" aria-label="Как образуются и пересекаются поверхности: интерактивная 3D-модель">
-    <span class="hc-t">Как образуются и пересекаются поверхности</span>
-    ${surfArt().replace('class="hc-art"','class="hc-art hc-rart"')}
-    <span class="hc-go">Смотреть →</span></a>`;
-  return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig4')}" aria-label="ДЗ 4 по инженерной графике: тело с вырезом, три вида и разрезы">
-    <span class="hc-t">ДЗ&nbsp;4</span><span class="hc-s">тело с вырезом: три вида и разрезы — любой вариант</span>
-    ${ig4CardArt()}
-    <span class="hc-go">Открыть →</span></a>`; }
+  /* слева — эфир (если он есть) или «Пересечение поверхностей»; справа — ДЗ 5 по инженерной графике */
+  const left=pm||`<a class="hc hc-rot hc-sx" href="#/ng/surf/x" aria-label="Пересечение поверхностей: выбери две фигуры и двигай их">
+    <span class="hc-t hc-sxt">Пересечение поверхностей</span>
+    <canvas class="hc-art hc-rart hc-cv hc-sxcv" data-sxart aria-hidden="true"></canvas></a>`;
+  return left+`<a class="hc hc-rot hc-ig" href="${HDZ('ig5')}" aria-label="ДЗ 5 по инженерной графике: тело с отверстием и вырезом">
+    <span class="hc-t hc-big"><span>ДЗ</span><b>5</b></span>
+    <canvas class="hc-art hc-rart hc-cv" data-ig5art aria-hidden="true"></canvas></a>`; }
 /* разделы на главной — карточка предмета, внутри 4 минималистичные плитки со сплошными значками цвета предмета (вырезы .k — цветом плитки) */
 const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"/><rect class=\"k\" x=\"9.5\" y=\"7\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"11\" width=\"7\" height=\"2.2\" rx=\"1.1\"/><rect class=\"k\" x=\"9.5\" y=\"15\" width=\"4.5\" height=\"2.2\" rx=\"1.1\"/><rect x=\"3\" y=\"6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"10.8\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect x=\"3\" y=\"15.6\" width=\"4\" height=\"2.4\" rx=\"1.2\"/><rect class=\"k\" x=\"5\" y=\"6\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"10.8\" width=\"1.2\" height=\"2.4\"/><rect class=\"k\" x=\"5\" y=\"15.6\" width=\"1.2\" height=\"2.4\"/>",
   "hw":"<path d=\"M7 2.5h7.2c.7 0 1.3.3 1.8.7l3.8 3.8c.5.5.7 1.1.7 1.8V19a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 19V5A2.5 2.5 0 0 1 7 2.5z\"/><path class=\"k\" d=\"M14.5 2.5V7a1.5 1.5 0 0 0 1.5 1.5h4.5\" /><path class=\"ks\" d=\"m8.3 14.3 2.6 2.6 5-5.2\"/>",
@@ -30191,6 +30479,15 @@ const APPIC={"nb":"<rect x=\"5\" y=\"2.5\" width=\"15\" height=\"19\" rx=\"3.2\"
   "sheet":"<rect x=\"2.5\" y=\"3.5\" width=\"19\" height=\"17\" rx=\"3\"/><rect class=\"k\" x=\"12.5\" y=\"14\" width=\"7\" height=\"4.6\" rx=\"1\"/><rect x=\"15.6\" y=\"14\" width=\"1\" height=\"4.6\"/><rect x=\"12.5\" y=\"15.9\" width=\"7\" height=\".9\"/><rect class=\"k\" x=\"5.5\" y=\"6.5\" width=\"5.5\" height=\"5.5\" rx=\"1\"/><rect x=\"7\" y=\"8\" width=\"2.5\" height=\"2.5\" rx=\".4\"/>",
   "cube":"<path d=\"M12 2.2 20.6 7 12 11.8 3.4 7z\"/><path d=\"M3.4 7 12 11.8v10L3.4 17z\" opacity=\".72\"/><path d=\"M20.6 7 12 11.8v10l8.6-4.8z\" opacity=\".48\"/>",
   "square":"<path d=\"M3.5 5.2c0-1.2 1.4-1.8 2.3-.9l14 14c.9.9.3 2.3-.9 2.3h-14c-.8 0-1.4-.6-1.4-1.4z\"/><path class=\"k\" d=\"M7.5 12.4v4.3c0 .4.3.6.6.6h4.3c.5 0 .8-.6.4-1L8.5 12c-.4-.4-1-.1-1 .4z\"/><rect class=\"k\" x=\"3.5\" y=\"9\" width=\"2.4\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"12.4\" width=\"1.6\" height=\"1.2\" rx=\".6\"/><rect class=\"k\" x=\"3.5\" y=\"15.8\" width=\"2.4\" height=\"1.2\" rx=\".6\"/>"};
+/* колонка предмета: [ссылка, название, вид, размер s/m/l] — только название; вид: navy, royal, sky — заливка, light — светлая с синим текстом */
+/* бледные контурные рисунки плиток — просто заполняют место: тетрадь, лист ДЗ, секундомер, книга */
+const HBN_ART={
+  'Тетрадь':'<rect x="26" y="12" width="78" height="98" rx="8"/><path d="M40 38h50M40 54h50M40 70h50M40 86h32"/><path d="M18 26h16M18 46h16M18 66h16M18 86h16"/>',
+  'ДЗ':'<rect x="8" y="22" width="106" height="80" rx="4"/><rect x="16" y="30" width="90" height="64"/><path d="M66 94V78h40M66 86h40M82 78v16"/><path d="M26 74V44h22v12h14v18z"/>',
+  'РК':'<circle cx="60" cy="68" r="42"/><path d="M52 14h16M60 14v12M92 30l8-8"/><path d="M60 68V40M60 68l18 12"/><path d="M60 30v6M98 68h-6M60 106v-6M22 68h6"/>',
+  'Обучение':'<path d="M60 32c-14-9-32-10-48-5v70c16-5 34-4 48 5z"/><path d="M60 32c14-9 32-10 48-5v70c-16-5-34-4-48 5z"/><path d="M24 44c9-2 18-2 26 1M24 58c9-2 18-2 26 1M24 72c9-2 18-2 26 1M70 45c8-3 17-3 26-1M70 59c8-3 17-3 26-1"/>'};
+function bentoHTML(title,items){
+  return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k])=>`<a class="hbn-c ${k} hbn-${c}" href="${h}"><svg class="hbn-art" viewBox="0 0 120 120" aria-hidden="true">${HBN_ART[t]||''}</svg><b>${t}</b></a>`).join('')}</div>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
 function viewHome(v){
@@ -30208,11 +30505,16 @@ function viewHome(v){
     <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="v8-box"><div id="hsMount"></div></div>
    </section>
-       <section class="v8-meta" aria-label="Поделиться сайтом"><div class="v8-mt"><b>Пригодилось?</b><span>Скинь ссылку в чат группы</span></div><div class="v8-ma">${FX.viewsHTML('v8-vc')}<button type="button" class="v8-share" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button></div></section>
-   <div class="au-pillw"><button type="button" class="au-pill" data-author aria-haspopup="dialog"><span class="au-face" aria-hidden="true"></span>Владелец сайта — <b>Андрей Матханов</b><span class="au-go" aria-hidden="true">→</span></button></div>
-   <section class="v8-dirs happs" aria-label="Разделы">
-    ${appsHTML('ng','Начертательная геометрия',[[H('ng','tasks'),'Тетрадь','nb',nT],[HDZ('ng'),'ДЗ','hw'],[H('ng','rk2'),'РК2','rk',0,1],[H('ng','path'),'Теория','th']])}
-    ${appsHTML('ig','Инженерная графика',[[H('ig','wb'),'Тетрадь','grid',nIW],[HDZ('ig'),'ДЗ','sheet'],[H('ig','learn'),'Учиться','cube'],[H('ig','theory'),'ЕСКД','square']])}
+       <section class="ownc" aria-label="Просмотры и владелец сайта">
+    <div class="ownc-top">
+     <div class="ownc-v"${VIEWS==null?' hidden':''}>${ODO.html()}<small>просмотров</small></div>
+     <button type="button" class="v8-share ownc-s" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button>
+    </div>
+    <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта</small></span><i aria-hidden="true">→</i></button>
+   </section>
+   <section class="v8-dirs hbn" aria-label="Разделы">
+    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],['#/dz/ng','ДЗ','light','s'],[H('ng','rk2'),'РК','royal','m'],[H('ng','path'),'Обучение','sky','s']])}
+    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','sky','s'],['#/dz/ig','ДЗ','navy','l'],[H('ig','points'),'РК','light','m'],[H('ig','learn'),'Обучение','royal','s']])}
    </section>
   </div>`;
   NEXT=null;
@@ -30444,10 +30746,11 @@ function dzWidgetBind(v){ v.querySelectorAll('.dzw').forEach(w=>{ const c=w.data
   w.__foot=foot;
   const go=()=>{ const d=cur(), n=parseInt(inp.value,10), N=dzCount(d); if(!(n>=1&&n<=N)){ inp.focus(); try{ FX.note('Номер варианта — от 1 до '+N); }catch(e){} return; } dzSetVar(n); nav(HDZ(d.id,n)); };
   w.querySelector('.dzw-open').addEventListener('click',go); inp.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); }); }); }
-function dzHub(v){
-  const first=NAVSUBJ==='ig'?['ig','ng']:['ng','ig'];
+/* only — 'ng' или 'ig': ДЗ одного предмета (#/dz/ng, #/dz/ig — плитки «ДЗ» на главной) */
+function dzHub(v,only){
+  const first=only?[only]:NAVSUBJ==='ig'?['ig','ng']:['ng','ig'];
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx',body:`
-   <div class="intro"><h1>Домашние задания</h1></div>
+   <div class="intro"><h1>${only?'ДЗ · '+dzCourse(only):'Домашние задания'}</h1></div>
    <div class="dzw-two">${first.map(dzWidget).join('')}</div>
    ${dzShareHTML('#/dz','Все ДЗ по начерту и инженерной графике — разбор своего варианта по шагам','Скинуть группе','каждый впишет свой вариант')}
    <details class="dzx-rules"><summary>Как оформить и защитить ДЗ</summary><div class="hw-rg">
@@ -30732,6 +31035,7 @@ function dzView(v,r){
   return dzCard(v,d); }
 /* #/dz… — раздел; прежние #/dz/<id>/… и #/dz/ng|ig — переадресация на короткие адреса */
 function viewDZ(v,r){ if(r.short||!r.tab) return dzView(v,r);
+  if((r.tab==='ng'||r.tab==='ig')&&!r.item&&window.DZR){ NAVSUBJ=r.tab; return dzHub(v,r.tab); }
   setTimeout(()=>redir(/^(ng|ig)\d$/.test(r.tab)?HDZ(r.tab,r.item,r.sub,r.extra):HDZ()),0); return 'ДЗ'; }
 /* прежние #/ng/dz/4/13…, #/ig/dz/3/7…, #/ig/hw2/5 */
 function dzOld(c,r){ const id=r.item?c+r.item:''; setTimeout(()=>redir(id?HDZ(id,r.sub,r.extra):HDZ()),0); return 'ДЗ'; }
@@ -36617,9 +36921,9 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 <script src="../lk/ask.js?v=4" defer></script>
 <!-- Наставник — ИИ-агент на чертеже: начерт ДЗ №1–5, ИГ ДЗ №3–6 (../lk/tutor.js, docs/TUTOR.md) -->
 <script src="../lk/tutor.js?v=4" defer></script>
-<link rel="stylesheet" href="shell.css?v=2">
-<script src="shell.js?v=2" defer></script>
-<link rel="stylesheet" href="dzdeck.css?v=5">
-<script src="dzdeck.js?v=5" defer></script>
+<link rel="stylesheet" href="shell.css?v=3">
+<script src="shell.js?v=3" defer></script>
+<!-- Экран «ДЗ» (#/dz): колода карточек — как на основном сайте (../dz/deck.*) -->
+<script src="../dz/deck.js?v=3" defer></script>
 </body>
 </html>
