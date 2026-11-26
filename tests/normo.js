@@ -260,7 +260,10 @@ function run(F,opt){
       /* вспомогательная окружность на главном виде (фигура выреза, вписанная в Ø…): центровая через её центр выходит за саму окружность */
       const auxC=it=>{ if(w!==FV||it.tag!=='circle'||it.kind!=='thin') return false; const P=it.polys[0], c=[(Math.min(...P.map(p=>p[0]))+Math.max(...P.map(p=>p[0])))/2,(Math.min(...P.map(p=>p[1]))+Math.max(...P.map(p=>p[1])))/2];
         return Math.abs((c[0]-A[0])*u[1]-(c[1]-A[1])*u[0])<0.5*k&&Math.abs(pr(c)-(s0+s1)/2)<0.5*k; };
-      segAll.forEach(q=>{ if(!auxC(q.it)&&(!w.ids.includes(q.it.view)||(q.it.kind!=='thick'&&q.it.kind!=='dash'))) return; [q.a,q.b,[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]].forEach(p=>{ const s=pr(p), n=Math.abs((p[0]-A[0])*u[1]-(p[1]-A[1])*u[0]); if(n>band||s<s0-0.01*k||s>s1+0.01*k) return; if(s<lo) lo=s; if(s>hi) hi=s; }); });
+      segAll.forEach(q=>{ if(!auxC(q.it)&&(!w.ids.includes(q.it.view)||(q.it.kind!=='thick'&&q.it.kind!=='dash'))) return;
+        /* и точка, где линия пересекает саму ось: выход меряют от пересечения с контуром */
+        const X=segX(q.a,q.b,[A[0]+u[0]*s0,A[1]+u[1]*s0],[A[0]+u[0]*s1,A[1]+u[1]*s1]);
+        [q.a,q.b,[(q.a[0]+q.b[0])/2,(q.a[1]+q.b[1])/2]].concat(X?[X.p]:[]).forEach(p=>{ const s=pr(p), n=Math.abs((p[0]-A[0])*u[1]-(p[1]-A[1])*u[0]); if(n>band||s<s0-0.01*k||s>s1+0.01*k) return; if(s<lo) lo=s; if(s>hi) hi=s; }); });
       if(!(hi>lo)) return; [[lo-s0,[A[0]+u[0]*s0,A[1]+u[1]*s0]],[s1-hi,[A[0]+u[0]*s1,A[1]+u[1]*s1]]].forEach(([o,at])=>{ if(o<2*k-0.3*k||o>5*k+0.3*k) add('2.303','осевая выходит за контур на 2…5 мм','выходит на '+mm(o)+' мм',at); }); }); }
 
   /* ── половина вида и половина разреза; невидимый контур на половине вида ── */
@@ -339,7 +342,12 @@ function run(F,opt){
   for(let i=0;i<texts.length;i++) for(let j=i+1;j<texts.length;j++){ const A=texts[i], B=texts[j]; if(dist(A.c,B.c)>60*k) continue; if(polyX(shrink(A.box,0.1*k),shrink(B.box,0.1*k))) add('2.307','надписи не налезают','«'+A.s+'» и «'+B.s+'»',A.c); }
   /* стрелки одного размера */
   const AR=arrows.filter(a=>a.view<0&&a.len/k<8);
-  const opArr=new Set(), arDim=AR.filter(a=>{ const near=items.some(it=>it.kind==='thick'&&it.tag==='line'&&openL.includes(it)&&it.polys[0].some(p=>dist(p,a.tip)<16*k)); if(near) opArr.add(a); return !near; });
+  /* стрелка обозначения разреза — у штриха разомкнутой линии, и её линия касается штриха; стрелка размерной линии рядом со штрихом
+     (размер над обозначением разреза) — не она: её линия до штриха не доходит */
+  const opArr=new Set(), arDim=AR.filter(a=>{ const st=items.filter(it=>it.kind==='thick'&&it.tag==='line'&&openL.includes(it)&&it.polys[0].some(p=>dist(p,a.tip)<16*k)); if(!st.length) return true;
+    const sh=segAll.filter(q=>q.it.kind==='thin'&&q.it.tag==='line'&&segDist(a.tip,q.a,q.b)<0.15*k);
+    const touch=!sh.length||sh.some(q=>st.some(it=>{ const P=it.polys[0]; for(let i=0;i+1<P.length;i++) if(Math.min(segDist(q.a,P[i],P[i+1]),segDist(q.b,P[i],P[i+1]))<1.5*k) return true; return false; }));
+    if(touch) opArr.add(a); return !touch; });
   if(arDim.length){ const L=arDim.map(a=>a.len/k), W=arDim.map(a=>a.wid/k), md=v=>v.slice().sort((x,y)=>x-y)[v.length>>1], mL=md(L), mW=md(W);
     arDim.forEach(a=>{ if(Math.abs(a.len/k-mL)>0.3||Math.abs(a.wid/k-mW)>0.3) add('2.307','стрелки одного размера','стрелка '+mm(a.len)+' × '+mm(a.wid)+' мм, остальные '+R(mL,1)+' × '+R(mW,1),a.tip); });
     if(mL<2.5-0.1||mL>6) add('2.307','размер стрелок','длина стрелки '+R(mL,1)+' мм',arDim[0].tip); }
@@ -376,7 +384,7 @@ function run(F,opt){
     NODE.forEach(n=>{ const D=[].concat(...NG.near(n.p,0.1*k).filter(q=>dist(q.a,n.p)<0.1*k).map(q=>q.n.D)); if(n.D.some(d=>!D.some(q=>q!==d&&d[0]*q[0]+d[1]*q[1]<-0.985))) CORN.push(n.p); }); }   /* встречное — в пределах 10° */
   const CRG=grid(CORN.map(p=>({a:p,b:p})),5*k);
   const extFrom=(p,ext)=>{ const L=dist(ext.a,ext.b)||1, e=[(ext.b[0]-ext.a[0])/L,(ext.b[1]-ext.a[1])/L];
-    if(CRG.near(p,1*k).some(c=>dist(c.a,p)<0.4*k)) return true;   /* вершина: конец ребра, излом контура */
+    if(CRG.near(p,1*k).some(c=>dist(c.a,p)<0.5*k)) return true;   /* вершина: конец ребра, излом контура */
     return EG.near(p,1*k).some(q=>{ if(q.it===ext.it||segDist(p,q.a,q.b)>=0.4*k) return false; const l=dist(q.a,q.b); if(l<1e-6) return false;
       const v=[(q.b[0]-q.a[0])/l,(q.b[1]-q.a[1])/l]; if(Math.abs(v[0]*e[1]-v[1]*e[0])<0.1) return true;   /* по линии изображения или по касательной */
       return false; }); };
@@ -415,8 +423,16 @@ function run(F,opt){
   const numOf=d=>{ const a=d.q.a, u=d.u, lo=Math.min(0,(d.q.b[0]-a[0])*u[0]+(d.q.b[1]-a[1])*u[1]), hi=Math.max(0,(d.q.b[0]-a[0])*u[0]+(d.q.b[1]-a[1])*u[1]);
     const ang=((Math.atan2(u[1],u[0])*180/Math.PI)%180+180)%180;
     return nums.filter(t=>!/[°]/.test(t.s)).map(t=>{ const v=[t.c[0]-a[0],t.c[1]-a[1]], s=v[0]*u[0]+v[1]*u[1], n=Math.abs(v[0]*u[1]-v[1]*u[0]), ta=((t.rot%180)+180)%180;
-      return {t,n,s,sc:n+Math.max(0,lo-s,s-hi),ok:n<6*k&&s>=lo-40*k&&s<=hi+40*k&&Math.min(Math.abs(ta-ang),180-Math.abs(ta-ang))<5}; }).filter(x=>x.ok).sort((x,y)=>x.sc-y.sc)[0]; };
-  dims.forEach(d=>{ d.num=numOf(d); });
+      return {t,n,s,sc:n+Math.max(0,lo-s,s-hi),ok:n<6*k&&s>=lo-40*k&&s<=hi+40*k&&Math.min(Math.abs(ta-ang),180-Math.abs(ta-ang))<5}; }).filter(x=>x.ok).sort((x,y)=>x.sc-y.sc); };
+  /* у каждого размера своё число, у каждого числа — один размер: пары «размер — число» по близости, жадно (иначе число короткого
+     размера, вынесенное за стрелку, приписывалось соседней размерной линии) */
+  /* подпись на полке линии-выноски («4 отв. Ø10», «R30») — не число размерной линии: под текстом горизонтальная тонкая полка
+     на его ширину, от конца полки — наклонная линия */
+  const onShelf=t=>{ if(Math.abs(((t.rot%180)+180)%180)>1) return false; const B=t.box, x0=Math.min(...B.map(p=>p[0])), x1=Math.max(...B.map(p=>p[0])), yb=Math.max(...B.map(p=>p[1])), w=x1-x0;
+    return thinS.some(q=>{ if(Math.abs(q.a[1]-q.b[1])>0.05*k) return false; const qy=q.a[1]; if(qy<yb-0.5*k||qy>yb+3*k) return false; const a=Math.min(q.a[0],q.b[0]), b=Math.max(q.a[0],q.b[0]); if(Math.min(b,x1)-Math.max(a,x0)<0.8*w) return false;
+      return [[a,qy],[b,qy]].some(e=>thinS.some(r=>r!==q&&Math.abs(r.a[1]-r.b[1])>0.5*k&&Math.abs(r.a[0]-r.b[0])>0.5*k&&Math.min(dist(r.a,e),dist(r.b,e))<0.3*k)); }); };
+  { const P=[]; dims.forEach(d=>(numOf(d)||[]).forEach(c=>{ if(!onShelf(c.t)) P.push({d,c}); })); P.sort((x,y)=>x.c.sc-y.c.sc); const used=new Set();
+    P.forEach(({d,c})=>{ if(d.num||used.has(c.t)) return; d.num=c; used.add(c.t); }); }
   dims.forEach(d=>{ if(d.tips.length<2) return; const a=d.tips[0].tip, b=d.tips[d.tips.length-1].tip, L=dist(a,b)/k;
     const hit=d.num; if(!hit) return; const t=hit.t;
     const v=parseFloat(t.s.replace(/^\d+\s*отв\.\s*/,'').replace(/[ØR⌀\s]/g,'').replace(',','.')); if(isNaN(v)||L<1) return;
