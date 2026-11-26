@@ -59,10 +59,14 @@ async function run() {
       await page.waitForTimeout(400);
       { const r = await page.evaluate(() => ({ v: dzVar(), h: (document.querySelector('a.mk-door.b') || { getAttribute: () => '' }).getAttribute('href') }));
         if (r.v !== 12 || r.h !== '#/ng5/12') B(dev.name + ': выбор варианта в методичке', JSON.stringify(r)); }
-      /* разбор варианта: плашка «Методичка», вкладка «Методичка» ведёт на методичку; колода «ДЗ» — методичка первой */
-      await check('#/ng5/12', '.mks', 'разбор варианта — плашка методички');
-      { const r = await page.evaluate(() => ({ tab: !![...document.querySelectorAll('.dzx-pills a')].find(a => a.textContent === 'Методичка' && a.getAttribute('href') === '#/ng5'), deck: window.dzDeckGo ? window.dzDeckGo(DZR.get('ng5')) : '' }));
-        if (!r.tab) B(dev.name + ': во вкладках разбора нет «Методичка»', ''); if (!/class="go" href="#\/ng5"/.test(r.deck) || !/href="#\/ng5\/12"/.test(r.deck)) B(dev.name + ': колода «ДЗ» — кнопки методички и решения', r.deck.slice(0, 200)); }
+      /* разбор варианта начерта — только чертёж по шагам (решение автора): нет вкладок, плашки методички, «Смотрю / Решаю сам»,
+         кнопки «▶ Поверхность»; «Не сходится с условием?» — внизу пояснения; колода «ДЗ» — методичка первой */
+      await check('#/ng5/12', '.pl-paper svg', 'разбор варианта начерта');
+      { const r = await page.evaluate(() => ({ pills: !!document.querySelector('.dzx-pills'), strip: !!document.querySelector('.mks'), modes: !!document.querySelector('.pl-modes'),
+          form: !!document.querySelector('[data-z="form"]'), crep: !!document.querySelector('.pl-scroll .pl-foot .crep'), deck: window.dzDeckGo ? window.dzDeckGo(DZR.get('ng5')) : '' }));
+        if (r.pills || r.strip || r.modes || r.form) B(dev.name + ': разбор варианта — лишнее над чертежом', JSON.stringify(r).slice(0, 200));
+        if (!r.crep) B(dev.name + ': «Не сходится с условием?» внизу пояснения', 'нет');
+        if (!/class="go" href="#\/ng5"/.test(r.deck) || !/href="#\/ng5\/12"/.test(r.deck)) B(dev.name + ': колода «ДЗ» — кнопки методички и решения', r.deck.slice(0, 200)); }
       await check('#/ig4', '.mk-doors', 'методичка ИГ ДЗ №4');
       await check('#/ig2', '.mk-doors', 'методичка ИГ ДЗ №2 (без методики)');
       await check('', '.mkh', 'главная — «Сдаётся скоро»');
