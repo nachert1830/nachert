@@ -167,18 +167,21 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 #fail p{margin:0;color:var(--mut);font-weight:600;max-width:30ch}
 
 /* ── спросить ── */
-.askh{display:flex;gap:10px;align-items:center}
-.askh .am{width:62px;height:62px;flex:none}
-.askh b{font:800 17px var(--sans)}
-.askh span{display:block;font-weight:500;color:var(--mut);font-size:14px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1.5px solid var(--line);background:var(--surf);border-radius:99px;padding:9px 13px;font:700 14px var(--sans)}
-.bub{padding:12px 14px;border-radius:18px 18px 18px 6px;background:var(--surf2);font-weight:500}
-.bub.me{border-radius:18px 18px 6px 18px;background:var(--acc);color:#fff;justify-self:end;max-width:85%}
-.chat{display:grid;gap:8px}
-.inp{display:flex;gap:8px}
-.inp input{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:14px;padding:12px;background:var(--surf);color:var(--ink);font:600 15px var(--sans)}
-
+/* облачко пингвина: говорит прямо над собой, вопросы — кнопками внутри облачка */
+.pbw{position:absolute;z-index:8;width:min(300px,calc(100% - 20px));padding:13px 13px 11px;border-radius:20px;background:#1d2638;color:#fff;box-shadow:0 18px 40px -18px rgba(5,10,20,.7);display:grid;gap:9px;transform-origin:var(--tx,85%) 100%;animation:pbIn .28s cubic-bezier(.3,1.5,.5,1)}
+.pbw::after{content:'';position:absolute;bottom:-9px;left:calc(var(--tx,85%) - 10px);border:10px solid transparent;border-bottom:0;border-top-color:#1d2638}
+.pbw p{margin:0;font:600 15px/1.45 var(--sans)}
+.pbw .pbq{display:grid;gap:6px}
+.pbw .pbq button{text-align:left;border:0;border-radius:13px;padding:10px 12px;background:rgba(255,255,255,.12);color:#fff;font:700 14px/1.3 var(--sans)}
+.pbw .pbq button:active{background:rgba(255,255,255,.22)}
+.pbw .pbq button.ok{background:none;padding:6px 4px 2px;color:#9fb3ff;text-align:right}
+.pbw form{display:flex;gap:6px}
+.pbw input{flex:1;min-width:0;border:0;border-radius:13px;padding:10px 12px;background:#fff;color:#0f1a2b;font:600 15px var(--sans)}
+.pbw form button{flex:none;width:42px;border:0;border-radius:13px;background:#4f72ff;color:#fff;font:800 18px var(--sans)}
+.pbw .dots{display:flex;gap:5px;padding:4px 0}
+.pbw .dots i{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.4;animation:dt 1s infinite}.pbw .dots i:nth-child(2){animation-delay:.15s}.pbw .dots i:nth-child(3){animation-delay:.3s}
+@keyframes pbIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes dt{50%{opacity:1;transform:translateY(-3px)}}
 /* ── прототип: выбор персонажа и результаты ── */
 .mpick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .mpick button{border:2px solid var(--line);border-radius:18px;background:var(--surf);padding:6px 4px 8px;display:grid;justify-items:center;gap:2px;font:700 13px var(--sans)}
@@ -361,7 +364,7 @@ function scrollToCur(smooth){const cur=firstOpen(), n=cur&&NODES.find(q=>q.k===c
 
 /* ═══ экраны и шторка ═══ */
 const SCR=['map','theory','lvl','quiz','done','fail'];
-function show(id){SCR.forEach(s=>$(s).hidden=s!==id);}
+function show(id){closeBubble();SCR.forEach(s=>$(s).hidden=s!==id);}
 function sheet(html,label){const sh=$('sheet');sh.innerHTML='<button type="button" class="grip" aria-label="Закрыть"></button>'+html;sh.setAttribute('aria-label',label||'');
   $('veil').classList.add('on');sh.classList.add('on');sh.scrollTop=0;}
 function unsheet(){$('veil').classList.remove('on');$('sheet').classList.remove('on');}
@@ -416,7 +419,7 @@ const STEPS=[
 /* ═══ уровень ═══ */
 let LV={k:0};
 function openLevel(k0){LV.k=k0||0;show('lvl');renderLevel();}
-function renderLevel(){const k=LV.k,n=STEPS.length;
+function renderLevel(){closeBubble();const k=LV.k,n=STEPS.length;
   $('lprog').innerHTML=STEPS.map((_,i)=>`<i class="${i<=k?'d':''}"></i>`).join('');
   $('paper').innerHTML=draw(k)+`<button type="button" class="pm" id="pm" aria-label="Спросить персонажа">${mz()}</button>`;
   $('expl').innerHTML=`<b>${STEPS[k].t}</b><span>${STEPS[k].d}</span>`;
@@ -433,14 +436,32 @@ const ASK={0:[['Что такое посредник?','Вспомогатель
  4:[['Почему точек две?','Окружности пересекаются в двух точках: одна спереди, другая сзади. На фронтальном виде они совпадают.']],
  5:[['Сколько плоскостей нужно?','Обычно 4–6 плюс опорные точки: самая верхняя, нижняя и точки на очерке.']],
  6:[['Как определить видимость?','Точка видна, если она видна на обеих фигурах. Сверху шар закрывает всё, что ниже его экватора.']]};
-function openAsk(ctx){const qs=(ASK[ctx]||ASK[0]);
-  sheet(`<div class="askh"><div class="am" id="am">${mz()}</div><div><b>Спроси меня</b><span>По этому шагу — что угодно</span></div></div>
-   <div class="chat" id="chat"></div><div class="chips">${qs.map((q,i)=>`<button type="button" class="chip" data-a="${i}">${esc(q[0])}</button>`).join('')}</div>
-   <div class="inp"><input id="askIn" placeholder="Свой вопрос — скоро ответит ИИ" aria-label="Свой вопрос"><button type="button" class="btn" style="min-height:46px;padding:0 14px" id="askGo">→</button></div>`,'Спросить');
-  $('sheet').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const q=qs[+b.dataset.a];say(q[0],q[1]);b.remove();});
-  $('askGo').onclick=()=>{const v=$('askIn').value.trim();if(!v)return;$('askIn').value='';say(v,'В прототипе я пока отвечаю только на готовые вопросы. Тут будет ответ ИИ-агента по этому шагу.');};}
-function say(q,a){const c=$('chat');c.insertAdjacentHTML('beforeend',`<div class="bub me">${esc(q)}</div>`);react($('am'),'talk',1200);
-  setTimeout(()=>{c.insertAdjacentHTML('beforeend',`<div class="bub">${esc(a)}</div>`);c.lastElementChild.scrollIntoView({block:'nearest',behavior:'smooth'});},500);}
+/* host — где висит облачко (чертёж или карта), x,y — куда показывает хвостик (макушка пингвина) */
+let PB=null;
+function bubble(host,x,y,greet,qs,peng){closeBubble();const W=host.clientWidth, w=Math.min(300,W-20), left=Math.max(10,Math.min(W-w-10,x-w*.8));
+  const el=document.createElement('div');el.className='pbw';el.setAttribute('role','dialog');el.setAttribute('aria-label','Пингвин');
+  el.style.left=left+'px';el.style.top=(y-12)+'px';el.style.transform='translateY(-100%)';el.style.setProperty('--tx',Math.max(18,Math.min(w-18,x-left))+'px');
+  host.appendChild(el);PB={el,host,qs:qs.slice(),peng};
+  /* translateY(-100%) мешает анимации scale — оборачиваем позицию в margin */
+  el.style.transform='';el.style.top='';el.style.bottom=(host.clientHeight-y+12)+'px';if(host.id==='mapin')el.style.bottom=(host.offsetHeight-y+12)+'px';
+  showSay(greet);react(peng,'happy',900);}
+function showSay(text,typing){if(!PB)return;const left=PB.qs;if(PB.greet0==null)PB.greet0=text;
+  PB.el.innerHTML=(typing?'<div class="dots"><i></i><i></i><i></i></div>':`<p>${esc(text)}</p>`)+
+   (typing?'':`<div class="pbq">${left.map((q,i)=>`<button type="button" data-q="${i}">${esc(q[0])}</button>`).join('')}<button type="button" data-own>✎ Свой вопрос</button>${text!==PB.greet0?'<button type="button" class="ok" data-x>Понятно</button>':''}</div>`);
+  PB.el.querySelectorAll('[data-q]').forEach(b=>b.onclick=e=>{e.stopPropagation();const q=PB.qs.splice(+b.dataset.q,1)[0];answer2(q[1]);});
+  const own=PB.el.querySelector('[data-own]');if(own)own.onclick=e=>{e.stopPropagation();own.outerHTML='<form><input placeholder="Спроси что угодно" aria-label="Свой вопрос"><button aria-label="Отправить">→</button></form>';
+    const f=PB.el.querySelector('form');f.querySelector('input').focus();f.onsubmit=ev=>{ev.preventDefault();const v=f.querySelector('input').value.trim();if(!v)return;answer2('Скоро здесь будет ответ ИИ — по этому шагу и простыми словами.');};};
+  const x=PB.el.querySelector('[data-x]');if(x)x.onclick=e=>{e.stopPropagation();closeBubble();};}
+function answer2(a){showSay('',true);react(PB.peng,'talk',1400);setTimeout(()=>showSay(a),650);}
+function closeBubble(){if(PB){PB.el.remove();PB=null;}}
+/* касание мимо облачка и пингвина — закрыть */
+document.addEventListener('pointerdown',e=>{if(PB&&!PB.el.contains(e.target)&&!e.target.closest('#pm,#mapM'))closeBubble();});
+function askStep(){const pm=$('pm'),host=$('paper');if(PB&&PB.peng===pm){closeBubble();return;}
+  bubble(host,host.clientWidth-45,host.clientHeight-80,'Что непонятно в этом шаге?',ASK[LV.k]||ASK[0],pm);}
+function askMap(){const m=$('mapM'),host=$('mapin');if(PB&&PB.peng===m){closeBubble();return;}
+  const cur=firstOpen(), p=cur&&PLANS[S.subj].find(x=>x.k===cur.k), nm=p?(cur.j<p.s.length?'«'+p.s[cur.j]+'»':'своё '+p.l):'';
+  const qs=[['Что делать сейчас?',nm?'Следующий шаг — '+nm+'. Нажми на светящийся кружок рядом со мной.':'Ты прошёл всё. Можно повторить любой уровень.'],['Зачем эти уровни?','Каждый уровень — один навык для ДЗ. Прошёл все на острове — своё ДЗ решается легко.']];
+  bubble(host,parseFloat(m.style.left),parseFloat(m.style.top)-84,'Привет! Чем помочь?',qs,m);}
 
 /* ═══ проверка: 3 вопроса, у каждого — шаг примера, который он проверяет ═══ */
 const QUIZ=[
@@ -500,8 +521,8 @@ function openNode(k,j){const p=PLANS[S.subj].find(x=>x.k===k), fin=j===p.s.lengt
    <div class="essence">${draw(4,{h:360})}<p><b>Суть за минуту.</b> ${demo?'Режешь обе поверхности одной горизонтальной плоскостью. Каждая даёт окружность. Где окружности пересеклись — точки искомой линии.':'В прототипе суть и пример есть только у уровня «Посредник — плоскость уровня» (ДЗ №4). Здесь показан он.'}</p></div>
    <div class="stack"><button type="button" class="btn" id="lvGo">Приступить</button><button type="button" class="btn gh" id="lvTh">Теория</button></div>`,p.s[j]);
   $('lvGo').onclick=()=>{unsheet();openLevel(0);};$('lvTh').onclick=()=>{unsheet();openTheory();};}
-$('mapin').addEventListener('click',e=>{const b=e.target.closest('.nd');if(b){openNode(b.dataset.k,+b.dataset.j);return;}if(e.target.closest('#mapM')){react($('mapM'),'happy',1000);openAsk(0);}});
-$('paper').addEventListener('click',e=>{if(e.target.closest('#pm'))openAsk(LV.k);});
+$('mapin').addEventListener('click',e=>{const b=e.target.closest('.nd');if(b){openNode(b.dataset.k,+b.dataset.j);return;}if(e.target.closest('#mapM'))askMap();});
+$('paper').addEventListener('click',e=>{if(e.target.closest('#pm'))askStep();});
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=backToMap);
 document.querySelectorAll('.subj button').forEach(b=>b.onclick=()=>{if(S.subj===b.dataset.s)return;S.subj=b.dataset.s;LS.set('subj',S.subj);document.querySelectorAll('.subj button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));buildMap();scrollToCur(false);});
 
