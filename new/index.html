@@ -6459,7 +6459,18 @@ function mount(root,t,opt){
     return `<div class="pl-card" aria-live="polite">${card}</div>${ans}${opt.foot||''}`;   /* плашку «Финальный чертёж» убрали по просьбе автора */
   }
 
+  /* Лука (new/luka.js): что на экране — шаг, точки шага, ошибки методики; показать новое на чертеже; перейти на шаг ИИ-ответа */
+  const lukaApi={
+    ctx(){ const p=part(), k=S.k, n=N(), st=k>0?p.steps[k-1]:null, add=st&&st.add||[]; let g=0; for(let i=0;i<S.pi;i++) g+=(parts[i].steps||[]).length;
+      let mistakes=[]; try{ const L=opt.luka||{}; if(L.dz&&window.DZR){ const d=DZR.get(L.dz), m=d&&d.method||{}, ty=DZR.typeOf(L.dz,L.n)||{}, T=(m.types||{})[ty.code]||{};
+        mistakes=[].concat(T.mistakes||[],m.mistakes||[]).map(x=>typeof x==='string'?x:(x.t||x.d||'')).filter(Boolean); } }catch(e){}
+      return {k,steps:n,st,labels:[...new Set(add.map(i=>i.l).filter(Boolean).map(String))],newCount:add.length,nextT:k<n?((p.steps[k]||{}).t||''):'',first:((p.steps[0]||{}).t||''),
+        intro:p.intro||t.intro||'',mistakes,dz:(opt.luka||{}).dz,v:(opt.luka||{}).n,gstep:k?g+k:null,src:(opt.luka||{}).dz?(opt.luka.dz+':'+opt.luka.n+':'+(g+k)):('task:'+((opt.luka||{}).task||t.n)+':'+k)}; },
+    show(){ const svg=root.querySelector('.pl-paper svg'); if(!svg) return; svg.classList.remove('lk-pulse'); void svg.getBoundingClientRect(); svg.classList.add('lk-pulse'); setTimeout(()=>svg.classList.remove('lk-pulse'),2600); },
+    goGlobal(id,step){ const m=/^p(\d+)s(\d+)$/.exec(id||''); if(m){ S.pi=Math.min(parts.length-1,+m[1]-1); go(+m[2]); return; }
+      let k=+step||0; for(let i=0;i<parts.length;i++){ const L=(parts[i].steps||[]).length; if(k<=L){ S.pi=i; go(k); return; } k-=L; } } };
   function render(){
+    try{ window.LUKA&&LUKA.close(); }catch(e){}
     const y=window.scrollY, ae=document.activeElement; let fk=null;
     if(ae&&root.contains(ae)){
       const c=ae.classList;
@@ -6503,6 +6514,7 @@ function mount(root,t,opt){
         </div></div>
       </div>`;
     bind(); zoomBind(); posSet(); try{ glowNew(); FX.touch(); }catch(e){} document.body.classList.toggle('plfull',S.full);
+    if(opt.luka){ const pp=root.querySelector('.pl-paper'); if(pp){ pp.__lk=lukaApi; if(window.LUKA) try{ LUKA.attach(pp,lukaApi); }catch(e){ console.error(e); } } }
     if(opt.onPart&&S.pi!==S.lastPi){ S.lastPi=S.pi; try{ opt.onPart(S.pi); }catch(e){ console.error(e); } }
     if(S.h) applyH(); else measure();
     if(fk){ const el=root.querySelector(fk)||root.querySelector('.pl-main'); if(el&&!el.disabled) try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); } }
@@ -6614,9 +6626,9 @@ function mount(root,t,opt){
     const at=(ns,cx,cy)=>{ const r=paper.getBoundingClientRect(), px=cx-r.left-r.width/2, py=cy-r.top-r.height/2; ns=Math.max(1,Math.min(MAXS,ns)); const f=ns/Z.s; Z.x=px-f*(px-Z.x); Z.y=py-f*(py-Z.y); Z.s=ns; apply(); };
     apply();
     paper.style.touchAction='none';
-    paper.addEventListener('wheel',e=>{ e.preventDefault(); at(Z.s*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0018)),e.clientX,e.clientY); },{passive:false});
+    paper.addEventListener('wheel',e=>{ if(e.target.closest('.lk-w')) return; e.preventDefault(); at(Z.s*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0018)),e.clientX,e.clientY); },{passive:false});
     const P=new Map(); let d0=0,s0=1,lastTap=0,moved=false;
-    paper.addEventListener('pointerdown',e=>{ if(e.target.closest('.pl-zoom')) return; P.set(e.pointerId,{x:e.clientX,y:e.clientY}); moved=false; try{paper.setPointerCapture(e.pointerId);}catch(_){}
+    paper.addEventListener('pointerdown',e=>{ if(e.target.closest('.pl-zoom,.lk-b,.lk-w')) return; P.set(e.pointerId,{x:e.clientX,y:e.clientY}); moved=false; try{paper.setPointerCapture(e.pointerId);}catch(_){}
       if(P.size===2){ const a=[...P.values()]; d0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); s0=Z.s; } });
     paper.addEventListener('pointermove',e=>{ const o=P.get(e.pointerId); if(!o) return;
       if(P.size===2){ P.set(e.pointerId,{x:e.clientX,y:e.clientY}); const a=[...P.values()], d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); if(d0>0) at(s0*d/d0,(a[0].x+a[1].x)/2,(a[0].y+a[1].y)/2); moved=true; return; }
@@ -31033,7 +31045,7 @@ function dzVariant(v,d,n,extra){
       dzLinkSet(v.querySelector('.dzx-top .dzx-share'),h,d.label+', вариант '+n+lbl+' — разбор по шагам'); };
     /* свой вариант по начерту — по умолчанию «Решаю сам» (методичка: сначала попытка, потом помощь); выбор «Смотрю» запоминается */
     const tryKey='nch_dzmode', tryM=(()=>{ if(!mine||d.course!=='ng') return undefined; try{ return (JSON.parse(localStorage.getItem(tryKey)||'{}')||{})[d.id]||'try'; }catch(e){ return 'try'; } })();
-    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К заданию',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,mode:tryM,noModes:true,noForm:true,drag:true,foot:`<div class="pl-foot">${condRepHTML(d,n)}</div>`,
+    PLR=PLAYER.mount($('dzPl'),res.task,{backHref:HDZ(d.id),backLabel:'К заданию',afterText:'Чистовик листа',posKey:base,start:pi?'p'+(pi+1)+'s0':undefined,onPart,mode:tryM,noModes:true,noForm:true,drag:true,luka:(d.id==='ng4'||d.id==='ng5')?{dz:d.id,n}:null,foot:`<div class="pl-foot">${condRepHTML(d,n)}</div>`,
       onMode:m=>{ if(!mine||d.course!=='ng') return; try{ const o=JSON.parse(localStorage.getItem(tryKey)||'{}')||{}; o[d.id]=m; localStorage.setItem(tryKey,JSON.stringify(o)); }catch(e){} },onDone:()=>{ try{ location.hash=base+'/list'; }catch(e){} }}); }
   else { const sh=SHEET.ng(res,meta,mode), fname=d.id+'-v'+n+(mode==='draft'?'-chernovik':'-chistovik');
     v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'hwwrap varwrap dzx dzx-varp',body:`${head}
@@ -31176,6 +31188,7 @@ function openTaskView(v,key,ctx,start){
   document.body.classList.add('inplayer');
   const back = ctx==='path'?{href:H('ng','path'),label:'К теории'}: ctx==='tk'?(/^R2-/.test(String(key))?{href:H('ng','rk2'),label:'К РК2'}:{href:H('ng','check','tickets'),label:'К билетам'}): ctx==='tasks'?{href:H('ng','tasks'),label:'К тетради'}: {href:H('ng','check','train'),label:'К пробному РК'};
   PLR=PLAYER.mount($('plMount'),t,{
+    luka:(/^\d+$/.test(String(key))&&+key>=68)?{task:+key}:null,
     backHref:back.href, backLabel:back.label, related:relatedFor(key), start:(endKey===String(key)?'end':start), prev,
     mode:tryNow?'try':undefined, noResume:tryNow, rep:window.LEARN?LEARN.repFor(key):null,
     onPrev:()=>{ if(!prev) return; PL_END=prev.task; nav(prev.href); },
@@ -36955,6 +36968,8 @@ function applyTheme(t,save){document.documentElement.dataset.theme=t;if(save)ST.
 <script src="../lk/config.js?v=2" defer></script>
 <script src="../lk/ask.js?v=4" defer></script>
 <!-- Наставник (../lk/tutor.js, docs/TUTOR.md) в копии пока выключен по решению автора — вернуть: <script src="../lk/tutor.js?v=4" defer></script> -->
+<link rel="stylesheet" href="luka.css?v=1">
+<script src="luka.js?v=1" defer></script>
 <link rel="stylesheet" href="shell.css?v=3">
 <script src="shell.js?v=3" defer></script>
 <!-- Экран «ДЗ» (#/dz): колода карточек — своя копия (new/dzdeck.*), основной сайт — ../dz/deck.* -->

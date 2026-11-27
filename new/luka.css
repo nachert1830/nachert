@@ -1,0 +1,61 @@
+/* ═══ Лука — ИИ-агент на чертеже (luka.js) ═══ */
+.lk-b{position:absolute;left:4px;bottom:2px;z-index:4;width:74px;height:74px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lk-b:focus-visible{outline:3px solid var(--acc,#1f45c8);outline-offset:2px;border-radius:16px}
+body.plfull .lk-b{bottom:calc(var(--ctrlh,64px) + env(safe-area-inset-bottom,0px) + 8px)}
+.lk-mz{width:100%;height:100%;display:block;overflow:visible}
+.lk-mz .m-all{transform-origin:60px 112px;animation:lkWad 3s ease-in-out infinite}
+.lk-mz .m-body{transform-origin:60px 112px;animation:lkBr 3.4s ease-in-out infinite}
+.lk-mz .m-head{transform-box:fill-box;transform-origin:50% 90%;animation:lkTilt 7s ease-in-out infinite}
+.lk-mz .m-eye{transform-box:fill-box;transform-origin:center;animation:lkBl 4.6s infinite}
+.lk-mz .m-arm{transform-box:fill-box;transform-origin:30% 5%}.lk-mz .m-arm.l{transform-origin:70% 5%}
+.lk-b.happy .m-all{animation:lkHop .5s cubic-bezier(.3,1.5,.5,1) 2}
+.lk-b.happy .m-arm:not(.l){animation:lkWave .35s ease-in-out 4}
+.lk-b.sad .m-head{animation:none;transform:rotate(-6deg) translateY(3px)}
+.lk-b.talk .m-head{animation:lkNod .5s ease-in-out infinite}
+@keyframes lkWad{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+@keyframes lkBr{50%{transform:scale(1.03,.97)}}
+@keyframes lkTilt{0%,100%{transform:rotate(0)}40%{transform:rotate(-3deg)}60%{transform:rotate(2deg)}}
+@keyframes lkBl{0%,93%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+@keyframes lkHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-12px) scale(.98,1.04)}}
+@keyframes lkWave{50%{transform:rotate(40deg)}}
+@keyframes lkNod{50%{transform:translateY(2px) rotate(-2deg)}}
+
+/* облачко: над пингвином, хвостик к нему */
+.lk-w{position:absolute;left:8px;bottom:82px;z-index:6;width:min(330px,calc(100% - 16px));max-height:calc(100% - 92px);overflow-y:auto;overscroll-behavior:contain;
+  padding:12px 12px 10px;border-radius:20px;background:#1d2638;color:#fff;box-shadow:0 18px 40px -18px rgba(5,10,20,.7);display:flex;flex-direction:column;gap:9px;
+  transform-origin:30px 100%;animation:lkIn .26s cubic-bezier(.3,1.5,.5,1);font:600 15px/1.45 var(--sans,system-ui)}
+.lk-h{display:flex;align-items:baseline;gap:8px}
+.lk-h b{font:800 15px var(--sans,system-ui)}
+.lk-h span{font:700 10.5px var(--sans,system-ui);letter-spacing:1px;text-transform:uppercase;color:#9fb3ff}
+.lk-x{margin-left:auto;border:0;background:none;color:#fff;opacity:.6;font:400 22px/1 system-ui;padding:0 2px;cursor:pointer}
+.lk-say{font-weight:500}
+.lk-say b{font-weight:800}
+.lk-say a{color:#9fb3ff}
+.lk-say table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;color:#fff}
+.lk-say td,.lk-say th{border-bottom:1px solid rgba(255,255,255,.15);padding:3px 4px;text-align:left}
+.lk-say .lchip{color:#ffd166!important;background:none!important}
+.lk-say.typing{display:flex;gap:5px;padding:6px 0}
+.lk-say.typing i{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.4;animation:lkDot 1s infinite}
+.lk-say.typing i:nth-child(2){animation-delay:.15s}.lk-say.typing i:nth-child(3){animation-delay:.3s}
+.lk-q,.lk-sug{display:flex;flex-wrap:wrap;gap:6px}
+.lk-sug span{width:100%;font:700 12px var(--sans,system-ui);color:#9fb3ff}
+.lk-q button,.lk-sug button,.lk-go{border:0;border-radius:13px;padding:9px 12px;background:rgba(255,255,255,.12);color:#fff;font:700 13.5px/1.25 var(--sans,system-ui);cursor:pointer;text-align:left}
+.lk-q button:active,.lk-sug button:active{background:rgba(255,255,255,.22)}
+.lk-q button.more{background:none;color:#9fb3ff;padding:9px 6px}
+.lk-go{background:#4f72ff;align-self:flex-start}
+.lk-rate{display:flex;gap:4px;align-items:center;font-size:13px}
+.lk-rate button{border:0;background:rgba(255,255,255,.08);border-radius:10px;padding:4px 8px;font-size:15px;cursor:pointer}
+.lk-rate a{color:#9fb3ff;font-weight:700}
+.lk-ok{color:#c9d4ff;font-weight:600}
+.lk-cons{display:grid;gap:8px;font-size:13.5px;font-weight:500}
+.lk-cons p{margin:0}
+.lk-cons button{border:0;border-radius:12px;padding:10px;background:#4f72ff;color:#fff;font:800 14px var(--sans,system-ui);cursor:pointer}
+.lk-in{display:flex;gap:6px;position:sticky;bottom:-10px;margin:0 -12px -10px;padding:8px 12px 10px;background:#1d2638;border-radius:0 0 20px 20px}
+.lk-in input{flex:1;min-width:0;border:0;border-radius:13px;padding:10px 12px;background:#fff;color:#0f1a2b;font:600 15px var(--sans,system-ui)}
+.lk-in button{flex:none;width:42px;border:0;border-radius:13px;background:#4f72ff;color:#fff;font:800 18px var(--sans,system-ui);cursor:pointer}
+@keyframes lkIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes lkDot{50%{opacity:1;transform:translateY(-3px)}}
+/* «Покажи на чертеже»: новое на шаге мигает свечением */
+.lk-pulse .g-new{animation:lkGlow .65s ease-in-out 4 alternate}
+@keyframes lkGlow{from{filter:none}to{filter:drop-shadow(0 0 5px #ff7a1a) drop-shadow(0 0 2px #ff7a1a)}}
+@media (prefers-reduced-motion:reduce){.lk-b *,.lk-w,.lk-pulse .g-new{animation:none!important}}
