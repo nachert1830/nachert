@@ -52,7 +52,7 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 
 /* ── персонаж ── */
 .mz{width:100%;height:100%;display:block;overflow:visible}
-.mz .m-all{transform-origin:60px 112px}
+.mz .m-all{transform-origin:60px 112px;animation:waddle 3s ease-in-out infinite}
 .mz .m-body{transform-origin:60px 112px;animation:br 3.4s ease-in-out infinite}
 .mz .m-head{transform-box:fill-box;transform-origin:50% 90%;animation:tilt 7s ease-in-out infinite}
 .mz .m-eye{transform-box:fill-box;transform-origin:center;animation:bl 4.6s infinite}
@@ -61,11 +61,12 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .mz .m-gill{transform-box:fill-box;animation:gill 1.6s ease-in-out infinite alternate}
 .mz .m-gill.l{transform-origin:100% 60%}.mz .m-gill.r{transform-origin:0 60%;animation-delay:.3s}
 .mz .m-tail{transform-box:fill-box;transform-origin:0 80%;animation:tail 2.4s ease-in-out infinite}
-.mz .m-arm{transform-box:fill-box;transform-origin:50% 10%}
+.mz .m-arm{transform-box:fill-box;transform-origin:30% 5%}.mz .m-arm.l{transform-origin:70% 5%}
 .happy .mz .m-all{animation:hop .5s cubic-bezier(.3,1.5,.5,1) 2}
-.happy .mz .m-arm{animation:wave .35s ease-in-out 4}
+.happy .mz .m-arm:not(.l){animation:wave .35s ease-in-out 4}
 .sad .mz .m-head{animation:none;transform:rotate(-6deg) translateY(3px)}
 .talk .mz .m-head{animation:nod .5s ease-in-out infinite}
+@keyframes waddle{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
 @keyframes br{50%{transform:scale(1.03,.97)}}
 @keyframes tilt{0%,100%{transform:rotate(0)}40%{transform:rotate(-3deg)}60%{transform:rotate(2deg)}}
 @keyframes bl{0%,93%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
@@ -273,59 +274,28 @@ const PLANS={
 const DEMO={k:'ng4',j:3};   /* уровень с готовым примером */
 
 /* ═══ состояние ═══ */
-const S={subj:LS.get('subj','ng'),done:LS.get('done',{ng1:[0,1,2,3,4,5,6,7],ng2:[0,1,2]}),mz:LS.get('mz','capy'),stats:LS.get('stats',{}),cur:null};
+const S={subj:LS.get('subj','ng'),done:LS.get('done',{ng1:[0,1,2,3,4,5,6,7],ng2:[0,1,2]}),stats:LS.get('stats',{}),cur:null};
 const isDone=(k,j)=>(S.done[k]||[]).includes(j);
 const mark=(k,j)=>{const a=S.done[k]||(S.done[k]=[]);if(!a.includes(j))a.push(j);LS.set('done',S.done);};
 
 /* ═══ персонажи: SVG + анимация в CSS ═══ */
 const MZ={
- capy:{n:'Капибара',svg:`<ellipse cx="60" cy="113" rx="32" ry="5" fill="rgba(0,0,0,.14)"/><g class="m-all"><g class="m-body">
-  <ellipse cx="42" cy="107" rx="10" ry="5.5" fill="#6b4226"/><ellipse cx="78" cy="107" rx="10" ry="5.5" fill="#6b4226"/>
-  <path d="M22 86C22 64 40 56 60 56S98 64 98 86c0 15-14 22-38 22S22 101 22 86z" fill="#a8734a"/>
-  <ellipse cx="60" cy="91" rx="21" ry="13" fill="#c99a6c"/>
-  <path class="m-arm" d="M86 78c7 4 9 11 6 17" stroke="#8a5a36" stroke-width="8" stroke-linecap="round" fill="none"/>
-  <g class="m-head"><ellipse class="m-ear l" cx="35" cy="25" rx="7" ry="6.5" fill="#734a2b"/><ellipse class="m-ear r" cx="85" cy="25" rx="7" ry="6.5" fill="#734a2b"/>
-   <path d="M24 47c0-20 16-29 36-29s36 9 36 29-14 28-36 28-36-8-36-28z" fill="#b9845a"/>
-   <path d="M37 54c0-9 10-12 23-12s23 3 23 12-10 15-23 15-23-6-23-15z" fill="#93633e"/>
-   <ellipse cx="52" cy="52" rx="3.2" ry="2.3" fill="#33200f"/><ellipse cx="68" cy="52" rx="3.2" ry="2.3" fill="#33200f"/>
-   <path d="M54 61q6 4 12 0" stroke="#33200f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-   <g class="m-eye"><ellipse cx="42" cy="37" rx="4.2" ry="4.8" fill="#1d120a"/><circle cx="43.6" cy="35.2" r="1.5" fill="#fff"/></g>
-   <g class="m-eye"><ellipse cx="78" cy="37" rx="4.2" ry="4.8" fill="#1d120a"/><circle cx="79.6" cy="35.2" r="1.5" fill="#fff"/></g>
-   <circle cx="35" cy="49" r="5" fill="#f08f80" opacity=".45"/><circle cx="85" cy="49" r="5" fill="#f08f80" opacity=".45"/>
-   <path d="M60 4L50 22M60 4l10 18" stroke="#46546b" stroke-width="3.4" stroke-linecap="round"/><circle cx="60" cy="5" r="3.8" fill="#e0262d"/><path d="M70 22l1.5 3" stroke="#f2c230" stroke-width="3" stroke-linecap="round"/>
-  </g></g></g>`},
- axo:{n:'Аксолотль',svg:`<ellipse cx="60" cy="113" rx="30" ry="5" fill="rgba(0,0,0,.14)"/><g class="m-all"><g class="m-body">
-  <path class="m-tail" d="M80 98c18 4 30-4 32-16-10 4-20 6-32 6z" fill="#f29cbc"/>
-  <ellipse cx="60" cy="96" rx="27" ry="15" fill="#f7b2ca"/><ellipse cx="60" cy="100" rx="16" ry="8" fill="#fde1ea"/>
-  <ellipse cx="42" cy="108" rx="7" ry="4" fill="#ef93b4"/><ellipse cx="78" cy="108" rx="7" ry="4" fill="#ef93b4"/>
-  <g class="m-arm"><path d="M84 92c6-2 10-6 10-12" stroke="#ef93b4" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M92 82l8-14" stroke="#f2c230" stroke-width="5" stroke-linecap="round"/><path d="M100 68l2-4" stroke="#3a3a3a" stroke-width="3" stroke-linecap="round"/></g>
+ peng:{n:'Пингвин',svg:`<ellipse cx="60" cy="113" rx="30" ry="5" fill="rgba(0,0,0,.14)"/><g class="m-all"><g class="m-body">
+  <ellipse cx="46" cy="108" rx="11" ry="5.5" fill="#f39a1e"/><ellipse cx="74" cy="108" rx="11" ry="5.5" fill="#f39a1e"/>
+  <path class="m-arm l" d="M27 62c-11 9-14 24-7 33 4-9 8-18 12-27z" fill="#1d2638"/>
+  <path class="m-arm" d="M93 62c11 9 14 24 7 33-4-9-8-18-12-27z" fill="#1d2638"/>
+  <path d="M60 18c27 0 39 29 39 57 0 23-16 35-39 35S21 98 21 75c0-28 12-57 39-57z" fill="#1d2638"/>
+  <path d="M60 50c18 0 27 16 27 31 0 17-11 25-27 25S33 98 33 81c0-15 9-31 27-31z" fill="#fff"/>
+  <path d="M36 61q24 13 48 0v6q-24 13-48 0z" fill="#e0262d"/><path d="M76 66l9 15-8 2-6-14z" fill="#c41e24"/>
   <g class="m-head">
-   <g class="m-gill l"><path d="M24 50C12 46 6 38 8 30" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M22 58C10 58 3 54 1 47" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M24 66C14 70 7 69 3 64" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/></g>
-   <g class="m-gill r"><path d="M96 50c12-4 18-12 16-20" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M98 58c12 0 19-4 21-11" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M96 66c10 4 17 3 21-2" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/></g>
-   <ellipse cx="60" cy="58" rx="40" ry="30" fill="#f7b2ca"/>
-   <g class="m-eye"><circle cx="38" cy="54" r="5" fill="#1d1218"/><circle cx="39.8" cy="52.2" r="1.6" fill="#fff"/></g>
-   <g class="m-eye"><circle cx="82" cy="54" r="5" fill="#1d1218"/><circle cx="83.8" cy="52.2" r="1.6" fill="#fff"/></g>
-   <path d="M46 68q14 10 28 0" stroke="#a8325f" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-   <circle cx="30" cy="66" r="5.5" fill="#ff6f9f" opacity=".4"/><circle cx="90" cy="66" r="5.5" fill="#ff6f9f" opacity=".4"/>
-  </g></g></g>`},
- fox:{n:'Лиса',svg:`<ellipse cx="60" cy="113" rx="30" ry="5" fill="rgba(0,0,0,.14)"/><g class="m-all"><g class="m-body">
-  <path class="m-tail" d="M78 100c24-2 34-22 26-36-4 18-12 26-28 28z" fill="#ee8434"/><path d="M104 64c-2 8-6 13-12 16 6 1 12-4 13-10z" fill="#fff4e8"/>
-  <ellipse cx="60" cy="100" rx="25" ry="15" fill="#ee8434"/><ellipse cx="60" cy="103" rx="13" ry="10" fill="#fff4e8"/>
-  <ellipse cx="46" cy="110" rx="7" ry="4" fill="#3a2418"/><ellipse cx="74" cy="110" rx="7" ry="4" fill="#3a2418"/>
-  <path class="m-arm" d="M38 94c-6-3-9-9-8-15" stroke="#e07a2c" stroke-width="7" stroke-linecap="round" fill="none"/>
-  <g class="m-head">
-   <g class="m-ear l"><path d="M31 48L25 13 53 33z" fill="#ee8434"/><path d="M33 41l-3-19 15 11z" fill="#3a2418"/></g>
-   <g class="m-ear r"><path d="M89 48l6-35-28 20z" fill="#ee8434"/><path d="M87 41l3-19-15 11z" fill="#3a2418"/></g>
-   <path d="M60 30c20 0 36 14 38 30 1 13-13 26-38 26S21 73 22 60c2-16 18-30 38-30z" fill="#f08c3c"/>
-   <path d="M60 56c14 0 24 10 24 18s-12 12-24 12-24-4-24-12 10-18 24-18z" fill="#fff4e8"/>
-   <ellipse cx="60" cy="64" rx="5.5" ry="3.8" fill="#2a1a12"/>
-   <path d="M55 72q5 4 10 0" stroke="#2a1a12" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-   <g class="m-eye"><ellipse cx="45" cy="53" rx="4.2" ry="5" fill="#1d120a"/><circle cx="46.5" cy="51.2" r="1.5" fill="#fff"/></g>
-   <g class="m-eye"><ellipse cx="75" cy="53" rx="4.2" ry="5" fill="#1d120a"/><circle cx="76.5" cy="51.2" r="1.5" fill="#fff"/></g>
-   <rect x="86" y="26" width="7" height="30" rx="2" transform="rotate(32 89 41)" fill="#f2c230"/><path d="M99 52l4 6-6-1z" fill="#3a3a3a" transform="rotate(32 89 41)"/>
+   <ellipse cx="48" cy="42" rx="12" ry="12.5" fill="#fff"/><ellipse cx="72" cy="42" rx="12" ry="12.5" fill="#fff"/>
+   <g class="m-eye"><ellipse cx="49.5" cy="42" rx="4.6" ry="5.2" fill="#141a26"/><circle cx="51.2" cy="40" r="1.6" fill="#fff"/></g>
+   <g class="m-eye"><ellipse cx="70.5" cy="42" rx="4.6" ry="5.2" fill="#141a26"/><circle cx="72.2" cy="40" r="1.6" fill="#fff"/></g>
+   <path d="M53 52q7-3 14 0l-7 9z" fill="#f6a21e" stroke="#f6a21e" stroke-width="2" stroke-linejoin="round"/>
+   <circle cx="38" cy="52" r="4.5" fill="#ff8a9a" opacity=".45"/><circle cx="82" cy="52" r="4.5" fill="#ff8a9a" opacity=".45"/>
   </g></g></g>`}
 };
-const mz=(t)=>`<svg class="mz" viewBox="0 0 120 120" aria-hidden="true">${(MZ[t||S.mz]||MZ.capy).svg}</svg>`;
+const mz=()=>`<svg class="mz" viewBox="0 0 120 120" aria-hidden="true">${MZ.peng.svg}</svg>`;
 function react(el,cls,ms){if(!el)return;el.classList.remove('happy','sad','talk');void el.offsetWidth;el.classList.add(cls);clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove(cls),ms||1400);}
 
 /* ═══ карта: острова рисуются в коде (иллюстрация, без мелких деталей) ═══ */
@@ -339,14 +309,16 @@ function curve(P){if(P.length<3)return line(P);let d=`M${P[0][0]} ${P[0][1]}`;fo
   d+=`C${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;}return d;}
 
 let NODES=[];
+/* карта снизу вверх: раскладку считаем сверху вниз, потом отражаем y → H - y */
+function mapH(){let y=110;PLANS[S.subj].forEach(p=>{y=y+50+p.s.length*70+150;});return y+40;}
 function buildMap(){
-  const W=$('mapin').clientWidth||390, L=PLANS[S.subj];
+  const W=$('mapin').clientWidth||390, L=PLANS[S.subj], HH=mapH();
   let y=110, svg='', html='', path=[];NODES=[];
   const cur=firstOpen();
   L.forEach((p,i)=>{const rk=p.kind==='rk', n=p.s.length+1, step=70, top=y+50, pts=[];
-    for(let j=0;j<n;j++){const x=W/2+Math.sin(j*1.15+i*1.7)*W*.24;pts.push([x,top+j*step]);}
-    const bot=pts[n-1][1];
-    html+=`<div class="isl${rk?' rk':''}" style="left:${W*.07}px;top:${top-34}px">${esc(p.l)}</div>`;
+    for(let j=0;j<n;j++){const x=W/2+Math.sin(j*1.15+i*1.7)*W*.24;pts.push([x,HH-(top+j*step)]);}
+    const bot=top+(n-1)*step;
+    html+=`<div class="isl${rk?' rk':''}" style="left:${W*.07}px;top:${HH-bot-34}px">${esc(p.l)}</div>`;
     pts.forEach((q,j)=>{const fin=j===n-1, ok=isDone(p.k,j), now=cur&&cur.k===p.k&&cur.j===j;
       NODES.push({k:p.k,j,x:q[0],y:q[1]});
       const inner=fin?`<svg width="26" height="26" viewBox="0 0 26 26"><path d="M8 23V3" stroke="${ok?'#fff':'#1b2333'}" stroke-width="2.6" stroke-linecap="round"/><path d="M8 3l13 5-13 5z" fill="${ok?'#fff':'#e0262d'}"/></svg>`:ok?`<svg width="22" height="22" viewBox="0 0 24 24"><path d="M7 21V3" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 3l12 5-12 5z" fill="#fff"/></svg>`:(j+1);
@@ -363,14 +335,14 @@ function buildMap(){
   placeMascot(cur);
 }
 /* острова отдельно от тропы, чтобы тропа лежала поверх всех островов */
-function drawIslands(W){const L=PLANS[S.subj], R=rng(7);let y=110, out='';
+function drawIslands(W){const L=PLANS[S.subj], R=rng(7), HH=mapH();let y=110, out='';
   L.forEach((p,i)=>{const rk=p.kind==='rk', n=p.s.length+1, step=70, top=y+50, pts=[];
-    for(let j=0;j<n;j++)pts.push([W/2+Math.sin(j*1.15+i*1.7)*W*.24,top+j*step]);
-    const bot=pts[n-1][1], cy=(top+bot)/2, ry=(bot-top)/2+62, rx=W*.44, B=[];
+    for(let j=0;j<n;j++)pts.push([W/2+Math.sin(j*1.15+i*1.7)*W*.24,HH-(top+j*step)]);
+    const bot0=top+(n-1)*step, cy=HH-(top+bot0)/2, ry=(bot0-top)/2+62, rx=W*.44, B=[];
     for(let a=0;a<16;a++){const t=a/16*Math.PI*2, k=1+(R()-.5)*.14;B.push([W/2+Math.cos(t)*rx*k,cy+Math.sin(t)*ry*(1+(R()-.5)*.06)]);}
     const C=rk?{side:'#3a2622',top:'#57403a',top2:'#6b4f47',way:'#7d625a'}:{side:'#3f7f37',top:'#76bf55',top2:'#8fd06a',way:'#a9de86'};
     out+=`<path d="${smooth(B.map(q=>[q[0],q[1]+14]))}" fill="${C.side}"/><path d="${smooth(B)}" fill="${C.top}"/><path d="${smooth(B.map(q=>[W/2+(q[0]-W/2)*.86,cy+(q[1]-cy)*.9]))}" fill="${C.top2}" opacity=".55"/>`;
-    if(rk){for(let c=0;c<5;c++){const sx=W*(.18+R()*.64), sy=top-20+R()*(bot-top+40), L2=[];for(let q=0;q<5;q++)L2.push([sx+(R()-.5)*W*.3*q/4+q*8,sy+q*22]);
+    if(rk){for(let c=0;c<5;c++){const sx=W*(.18+R()*.64), sy=HH-bot0-20+R()*(bot0-top+40), L2=[];for(let q=0;q<5;q++)L2.push([sx+(R()-.5)*W*.3*q/4+q*8,sy+q*22]);
         out+=`<path d="${curve(L2)}" stroke="#ff7a1a" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"/><path d="${curve(L2)}" stroke="#ffd166" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;}
       out+=`<path d="${curve(pts)}" stroke="${C.way}" stroke-width="30" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;}
     else{out+=`<path d="${curve(pts)}" stroke="${C.way}" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -380,7 +352,7 @@ function drawIslands(W){const L=PLANS[S.subj], R=rng(7);let y=110, out='';
       if(pts.some(q=>Math.hypot(q[0]-tx,q[1]-ty)<46))continue;
       if(rk) out+=`<path d="M${tx-10} ${ty+6}l6-14 9-2 7 12-4 6z" fill="#2c1d1a"/><path d="M${tx-4} ${ty-8}l9-2 3 6-8 1z" fill="#4a3530"/>`;
       else{const r=9+R()*7;out+=`<circle cx="${tx}" cy="${ty+4}" r="${r}" fill="#2f6d2a"/><circle cx="${tx}" cy="${ty}" r="${r}" fill="#3f8e36"/><circle cx="${tx-r*.3}" cy="${ty-r*.35}" r="${r*.45}" fill="#5aa94a"/>`;}}
-    y=bot+150;});
+    y=bot0+150;});
   return out;}
 function firstOpen(){for(const p of PLANS[S.subj])for(let j=0;j<=p.s.length;j++)if(!isDone(p.k,j))return{k:p.k,j};return null;}
 function placeMascot(cur){const m=$('mapM');if(!m)return;const n=cur&&NODES.find(q=>q.k===cur.k&&q.j===cur.j);if(!n){m.hidden=true;return;}
@@ -535,11 +507,9 @@ document.querySelectorAll('.subj button').forEach(b=>b.onclick=()=>{if(S.subj===
 
 /* ═══ прототип: персонаж и результаты проверки ═══ */
 $('protoB').onclick=()=>{const rows=QUIZ.map(Q=>{const s=S.stats[Q.id]||{n:0,ok:0,sureNo:0,guessOk:0};return `<tr><td>${esc(Q.q)}<br><span class="note">шаг «${esc(STEPS[Q.step].t)}»</span></td><td>${s.n?Math.round(s.ok/s.n*100)+'%':'—'}</td><td>${s.sureNo}</td><td>${s.guessOk}</td></tr>`;}).join('');
-  sheet(`<h2>Персонаж</h2><div class="mpick">${Object.keys(MZ).map(t=>`<button type="button" data-m="${t}" aria-pressed="${S.mz===t}"><span class="mi">${mz(t)}</span>${MZ[t].n}</button>`).join('')}</div>
-   <h2 style="margin-top:6px">Как поняли материал</h2><p class="note">Видно только автору. «Уверенно ошиблись» — шаг объяснён плохо или вводит в заблуждение. «Угадали» — понимания нет, хотя ответ верный.</p>
+  sheet(`<h2>Как поняли материал</h2><p class="note">Видно только автору. «Уверенно ошиблись» — шаг объяснён плохо или вводит в заблуждение. «Угадали» — понимания нет, хотя ответ верный.</p>
    <table class="st"><thead><tr><th>Вопрос</th><th>Верно</th><th>Уверенно ошиблись</th><th>Угадали</th></tr></thead><tbody>${rows}</tbody></table>
    <button type="button" class="btn gh" id="reset">Сбросить прогресс</button>`,'Прототип');
-  $('sheet').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{S.mz=b.dataset.m;LS.set('mz',S.mz);$('sheet').querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const m=$('mapM');if(m){m.innerHTML=mz();react(m,'happy',1200);}react(b.querySelector('.mi'),'happy',1200);});
   $('reset').onclick=()=>{S.done={ng1:[0,1,2,3,4,5,6,7],ng2:[0,1,2]};S.stats={};LS.set('done',S.done);LS.set('stats',S.stats);unsheet();buildMap();scrollToCur(true);};};
 
 const st=document.createElement('style');st.textContent='@keyframes fadeIn{to{opacity:1}}';document.head.appendChild(st);
