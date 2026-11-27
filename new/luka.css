@@ -58,3 +58,9 @@ body.plfull .lk-b{bottom:calc(var(--ctrlh,64px) + env(safe-area-inset-bottom,0px
 .lk-pulse .g-new{animation:lkGlow .65s ease-in-out 4 alternate}
 @keyframes lkGlow{from{filter:none}to{filter:drop-shadow(0 0 5px #ff7a1a) drop-shadow(0 0 2px #ff7a1a)}}
 @media (prefers-reduced-motion:reduce){.lk-b *,.lk-w,.lk-pulse .g-new{animation:none!important}}
+
+/* ИГ: плеер шагов — Лука в углу чертежа, подсветка подписей точек шага; на странице с Лукой — только «3D» и «По шагам» */
+.igb-pic{position:relative}
+.igb-pic svg text.tu-hl{fill:#ff6a00!important;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:4px}
+.igb-pic .lk-w{bottom:78px}
+.igx-tabs.lk-tabs [data-t="unf"],.igx-tabs.lk-tabs [data-t="sheet"]{display:none}

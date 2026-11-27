@@ -31064,7 +31064,7 @@ function dzPart(v,d,n){ let m=null; try{ m=d.part(n); }catch(e){ console.error(e
   /* копия: сверху только «Назад · вариант · Поделиться» — без вкладок и плашки методички; «Не сходится» — в самом низу */
   IGUI.partPage(v,{model:m,head:'<div class="dzx-clean">'+dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — разбор по шагам, 3D и лист'))+'</div>',
     crumbs:null,title:'Вариант '+n,back:[HDZ(d.id),'К заданию'],docTitle:d.label+' · вариант '+n,beta:'',
-    img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:'Достроить виды и выполнить необходимые разрезы.',
+    img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:'Достроить виды и выполнить необходимые разрезы.',luka:(d.id==='ig5'||d.id==='ig6')?{dz:d.id,n}:null,
     sheet:d.id==='ig2'?null:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
     bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')+condRepHTML(d,n)});
   setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:HDZ(d.id,n),label:d.label+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
@@ -32887,7 +32887,18 @@ function buildBlock(host,model,o){
     frame().then(()=>{ busy=false; pic.classList.remove('igx-ldh'); if(!pic.isConnected) return; paint(k); }); };
   const paint=kk=>{ const st=ST[kk-1];
     let svg=''; try{ svg=st[0]==='secp'?IGS.secFrame(nv,st[3]):st[0]==='sheet'&&hw?IGS.sheet(nv,'clean'):st[0]==='sheet'?sheetSVG(model,(o.tb||{}).name||o.title,(o.tb||{}).sub||'Построение изображений',(o.tb||{}).task||'Задание №2'):stepsSVG(model,st,ST); }catch(e){ console.error(e); }
-    pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>'; };
+    pic.innerHTML=svg||'<div class="igx-given-l">Не удалось построить на этом устройстве.</div>';
+    if(lukaApi){ pic.__lk=lukaApi; if(window.LUKA) try{ LUKA.attach(pic,lukaApi); }catch(e){ console.error(e); } } };
+  /* Лука (new/luka.js): шаг ИГ — заголовок и пояснение, точки шага — номера 1″, 1′, 1‴ (как у наставника: tutorSteps) */
+  let TS=null; const tsAt=kk=>{ try{ if(!TS) TS=tutorSteps(model,nv); }catch(e){ TS=[]; } return (TS[kk-1]||{}).points||[]; };
+  const lukaApi=o.luka?{
+    ctx(){ const st=ST[k-1]||[], pts=tsAt(k); let mistakes=[];
+      try{ const L=o.luka; if(L.dz&&window.DZR){ const d=DZR.get(L.dz), m=d&&d.method||{}; mistakes=[].concat(m.mistakes||[]).map(x=>typeof x==='string'?x:(x.t||x.d||'')).filter(Boolean); } }catch(e){}
+      return {k,steps:N,st:{t:st[1]||'',d:st[2]||''},labels:pts.map(p=>p.n+'″'),nums:pts.map(p=>p.n),newCount:pts.length,nextT:k<N?((ST[k]||[])[1]||''):'',first:(ST[0]||[])[1]||'',intro:'',mistakes,
+        dz:o.luka.dz,v:o.luka.n,gstep:k,has3d:!!document.querySelector('.igx-tabs [data-t="3d"]'),src:o.luka.dz?(o.luka.dz+':'+o.luka.n+':'+k):('task:'+o.luka.task+':'+k)}; },
+    show(){ const nums=tsAt(k).map(p=>p.n); try{ PLAYER_IG&&PLAYER_IG.highlight(nums); }catch(e){} const s=pic.querySelector('svg'); if(s){ s.classList.remove('lk-pulse'); void s.getBoundingClientRect(); s.classList.add('lk-pulse'); setTimeout(()=>s.classList.remove('lk-pulse'),2600); } },
+    open3d(){ const b=document.querySelector('.igx-tabs [data-t="3d"]'); if(b) b.click(); },
+    goGlobal(id,step){ k=Math.max(1,Math.min(N,+step||1)); show(); } }:null;
   host.querySelectorAll('.igb-nums button').forEach(b=>b.addEventListener('click',()=>{ k=+b.dataset.k; show(); }));
   host.querySelector('#igbPrev').addEventListener('click',()=>{ k=Math.max(1,k-1); show(); });
   host.querySelector('#igbNext').addEventListener('click',()=>{ k=Math.min(N,k+1); show(); });
@@ -33025,7 +33036,7 @@ function partPage(v,o){
    ${o.learn?`<a class="igx-xl" href="${H('ig','learn')}"><b>Как это строится?</b> Разбор по шагам: вид слева, разрезы, сечение А–А →</a><a class="igx-xl igp-go" href="${H('ig','points')}"><b>Защита листа:</b> как найти две недостающие проекции точки →</a>`:''}
    <div class="igx-reveal"><button class="igx-sol-btn" id="igShow"><span>Показать разбор</span><small>по шагам, в 3D и готовый лист</small></button></div>
    <div id="igSol" hidden>
-    <div class="igx-tabs" role="tablist"><button role="tab" data-t="3d" class="on" aria-selected="true">3D</button><button role="tab" data-t="unf" aria-selected="false">Развёртка</button><button role="tab" data-t="steps" aria-selected="false">По шагам</button><button role="tab" data-t="sheet" aria-selected="false">Лист</button></div>
+    <div class="igx-tabs${o.luka?' lk-tabs':''}" role="tablist"><button role="tab" data-t="3d" class="on" aria-selected="true">3D</button><button role="tab" data-t="unf" aria-selected="false">Развёртка</button><button role="tab" data-t="steps" aria-selected="false">По шагам</button><button role="tab" data-t="sheet" aria-selected="false">Лист</button></div>
     <section class="igb" data-p="steps" id="igBuild" aria-label="Построение по шагам" hidden></section>
     <section data-p="unf" id="igUnf" hidden></section>
     <section data-p="3d">
@@ -33114,7 +33125,7 @@ function partPage(v,o){
       if(m==='sec') M.to({yaw:Math.PI/2-0.55,pit:Math.PI/2-SP.t-0.12,zoom:1});
       else M.to({yaw:-0.62,pit:0.42,zoom:1});
       try{ FX.buzz&&FX.buzz(6); }catch(e){} })); }
-  function startSol(){ if(started) return; started=true; let t0='3d'; try{ t0=sessionStorage.getItem(KEY+':t')||'3d'; }catch(e){} tab(t0); }
+  function startSol(){ if(started) return; started=true; let t0=o.luka?'steps':'3d'; try{ t0=sessionStorage.getItem(KEY+':t')||t0; }catch(e){} if(o.luka&&!/^(steps|3d)$/.test(t0)) t0='steps'; tab(t0); }
   try{ if(sessionStorage.getItem(KEY)) show(); }catch(e){}
   NEXT=null; return o.docTitle;
 }
@@ -33135,7 +33146,7 @@ function wbItem(v,n){
   return partPage(v,{model:t,crumbs:[[SUBJ.ig.name,H('ig')],['Тетрадь',H('ig','wb')],['Задание '+t.n]],title:'Задание '+t.n+'. '+t.title,
     back:[H('ig','wb'),'Все задания'],docTitle:'Задание '+t.n+' · Тетрадь · '+SUBJ.ig.name,
     tb:{name:'Задание '+t.n,sub:t.title,task:'Тетрадь, р. 5'},
-    q:t.q, fig:'рис. '+t.fig+', стр. '+t.page,
+    q:t.q, fig:'рис. '+t.fig+', стр. '+t.page, luka:t.n>=7?{task:'ig'+t.n}:null,
     bottom:`<div class="igx-why"><b>Как получается ответ.</b> ${t.why}</div>`,
     note:''});
 }

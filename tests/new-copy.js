@@ -77,6 +77,10 @@ async function run() {
           return { w: !!w, q, term: /Линия связи/.test((document.querySelector('.lk-say') || {}).textContent || '') }; });
         if (!r.w || r.q < 2) B(dev.name + ': Лука — облачко с вопросами по шагу', JSON.stringify(r)); if (!r.term) B(dev.name + ': Лука — «что такое линия связи» из словаря', JSON.stringify(r)); }
       await check('#/ng/tasks/70', '.lk-b', 'Лука на задаче 70 тетради');
+      /* Лука на ИГ: страница решения с Лукой — только «3D» и «По шагам», открывается на шагах, пингвин в углу чертежа шага */
+      await page.goto(base + '/new/#/ig/wb/7', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.click('#igShow').catch(() => {});
+      if (!(await page.waitForSelector('#igBuild .lk-b', { timeout: 90000 }).then(() => true).catch(() => false))) B(dev.name + ': Лука на задании 7 тетради ИГ', 'нет пингвина');
+      if (await page.locator('.igx-tabs [data-t="sheet"] >> visible=true').count()) B(dev.name + ': ИГ с Лукой — без вкладки «Лист»', 'видна');
       await check('#/ng/tasks/12', '.pl-paper', 'задача 12 тетради');
       if (await page.locator('.lk-b').count()) B(dev.name + ': Лука — только с 68-й задачи', 'есть на 12-й');
       await check('#/ig4', '.mk-doors', 'методичка ИГ ДЗ №4');
