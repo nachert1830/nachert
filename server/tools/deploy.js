@@ -19,7 +19,7 @@ const ROOT=path.join(__dirname,'..','..');
 const arg=k=>{ const a=process.argv.find(x=>x==='--'+k||x.startsWith('--'+k+'=')); return a?(a.includes('=')?a.slice(a.indexOf('=')+1):true):null; };
 const YC=process.env.YC_BIN||'yc';
 const NAMES={fn:'club-fn',gw:'club-gw',db:'club',secret:'club-secrets',api:'nachert-club-api',remind:'nachert-club-remind',gateway:'nachert-club',trigger:'club-remind'};
-const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent','activity','ask','askimg','hqnodes','hqdumps','hqfeed','tutor','tutorlog'];
+const TABLES=['users','identities','invites','sessions','botlogin','progress','feedback','config','ratelimit','remsent','activity','ask','askimg','hqnodes','hqdumps','hqfeed','tutor','tutorlog','lukamiss'];
 
 const say=s=>console.log(s), step=s=>console.log('\n▶ '+s);
 /* сеть до облака бывает нестабильной (VPN, Wi-Fi общежития): при сетевой ошибке — до 3 попыток с паузой */
@@ -293,7 +293,7 @@ async function main(){
     /* на время тестов: лучшая (зарубежная) модель — только владельцу и без отметки «лист мой»; для всех — vars EYES_BEST_FOR=all, EYES_BEST_DEFAULT=0 */
     EYES_BEST_FOR:E('EYES_BEST_FOR')||'all',EYES_BEST_DEFAULT:E('EYES_BEST_DEFAULT')||'1',
     /* наставник (docs/TUTOR.md): по умолчанию Sonnet 5.5 через ProxyAPI (тот же PROXYAPI_KEY); переменные — только если заданы в vars */
-    ...Object.fromEntries(['TUTOR','TUTOR_MODEL','TUTOR_LIGHT_MODEL','TUTOR_EYES_MODEL','TUTOR_RU_MODEL','TUTOR_MODE_DEFAULT','TUTOR_TOOLS','TUTOR_DAY_RUB','TUTOR_USER_DAY_RUB','TUTOR_RATE'].map(k=>[k,E(k)]))};
+    ...Object.fromEntries(['TUTOR','TUTOR_MODEL','TUTOR_LIGHT_MODEL','TUTOR_EYES_MODEL','TUTOR_RU_MODEL','TUTOR_MODE_DEFAULT','TUTOR_TOOLS','TUTOR_DAY_RUB','TUTOR_USER_DAY_RUB','TUTOR_RATE','LUKA_KEY','LUKA_KEY_SHA256'].map(k=>[k,E(k)]))};
   const env=Object.keys(envs).filter(k=>envs[k]).map(k=>k+'='+envs[k]).join(',');
   const secrets=[]; ['TG_BOT_TOKEN','TG_WEBHOOK_SECRET','YDB_KEY_ID','YDB_SECRET','YANDEX_CLIENT_SECRET','EYES_KEY','PROXYAPI_KEY','GH_HQ_TOKEN'].filter(k=>payload[k]).forEach(k=>secrets.push('--secret','environment-variable='+k+',id='+secretId+',key='+k));
   for(const [k,entry,timeout] of [['api','server/index.handler','60s'],['remind','server/index.remind','120s']]){

@@ -6465,7 +6465,8 @@ function mount(root,t,opt){
       let mistakes=[]; try{ const L=opt.luka||{}; if(L.dz&&window.DZR){ const d=DZR.get(L.dz), m=d&&d.method||{}, ty=DZR.typeOf(L.dz,L.n)||{}, T=(m.types||{})[ty.code]||{};
         mistakes=[].concat(T.mistakes||[],m.mistakes||[]).map(x=>typeof x==='string'?x:(x.t||x.d||'')).filter(Boolean); } }catch(e){}
       return {k,steps:n,st,labels:[...new Set(add.map(i=>i.l).filter(Boolean).map(String))],newCount:add.length,nextT:k<n?((p.steps[k]||{}).t||''):'',first:((p.steps[0]||{}).t||''),
-        intro:p.intro||t.intro||'',mistakes,dz:(opt.luka||{}).dz,v:(opt.luka||{}).n,gstep:k?g+k:null,src:(opt.luka||{}).dz?(opt.luka.dz+':'+opt.luka.n+':'+(g+k)):('task:'+((opt.luka||{}).task||t.n)+':'+k)}; },
+        intro:p.intro||t.intro||'',mistakes,has3d:!!root.querySelector('.pl-paper [data-z="3d"]'),dz:(opt.luka||{}).dz,v:(opt.luka||{}).n,gstep:k?g+k:null,src:(opt.luka||{}).dz?(opt.luka.dz+':'+opt.luka.n+':'+(g+k)):('task:'+((opt.luka||{}).task||t.n)+':'+k)}; },
+    open3d(){ const b=root.querySelector('.pl-paper [data-z="3d"]'); if(b) b.click(); },
     show(){ const svg=root.querySelector('.pl-paper svg'); if(!svg) return; svg.classList.remove('lk-pulse'); void svg.getBoundingClientRect(); svg.classList.add('lk-pulse'); setTimeout(()=>svg.classList.remove('lk-pulse'),2600); },
     goGlobal(id,step){ const m=/^p(\d+)s(\d+)$/.exec(id||''); if(m){ S.pi=Math.min(parts.length-1,+m[1]-1); go(+m[2]); return; }
       let k=+step||0; for(let i=0;i<parts.length;i++){ const L=(parts[i].steps||[]).length; if(k<=L){ S.pi=i; go(k); return; } k-=L; } } };
@@ -31188,7 +31189,7 @@ function openTaskView(v,key,ctx,start){
   document.body.classList.add('inplayer');
   const back = ctx==='path'?{href:H('ng','path'),label:'К теории'}: ctx==='tk'?(/^R2-/.test(String(key))?{href:H('ng','rk2'),label:'К РК2'}:{href:H('ng','check','tickets'),label:'К билетам'}): ctx==='tasks'?{href:H('ng','tasks'),label:'К тетради'}: {href:H('ng','check','train'),label:'К пробному РК'};
   PLR=PLAYER.mount($('plMount'),t,{
-    luka:(/^\d+$/.test(String(key))&&+key>=68)?{task:+key}:null,
+    luka:(/^\d+$/.test(String(key))&&+key>=68)?{task:+key}:null, noModes:true, noForm:true, drag:true,
     backHref:back.href, backLabel:back.label, related:relatedFor(key), start:(endKey===String(key)?'end':start), prev,
     mode:tryNow?'try':undefined, noResume:tryNow, rep:window.LEARN?LEARN.repFor(key):null,
     onPrev:()=>{ if(!prev) return; PL_END=prev.task; nav(prev.href); },

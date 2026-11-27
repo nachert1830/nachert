@@ -15,6 +15,9 @@
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const strip=h=>{const d=document.createElement('div');d.innerHTML=String(h||'');return (d.textContent||'').replace(/\s+/g,' ').trim();};
+/* журнал для обучения Луки (server/lib/luka.js): без имени и аккаунта */
+const toServer=o=>{try{const A=String(self.CLUB_API||'').replace(/\/$/,'');if(!A||!/^https:$/.test(location.protocol))return;
+  fetch(A+'/api/luka/miss',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(o),keepalive:true,credentials:'omit'}).catch(()=>{});}catch(e){}};
 const track=(ev,o)=>{try{window.TRACK&&TRACK('luka',Object.assign({ev},o||{}));}catch(e){}};
 
 /* ── пингвин (эскиз; финального рисует аниматор) ── */
@@ -36,7 +39,7 @@ const END=/(иями|ями|ами|ого|ему|ому|ыми|ими|ией|и�
 const stem=w=>{let s=w;for(let i=0;i<2&&s.length>4;i++){const t=s.replace(END,'');if(t===s||t.length<3)break;s=t;}return s;};
 const STOP=new Set('и в во на а но не ни что это как так то же ли бы ты я мне у к с со по за из от до о об при для или да ну вот там тут где вообще просто'.split(' '));
 function norm(text){const raw=String(text||'').toLowerCase().replace(/ё/g,'е');
-  const toks=raw.replace(/[^a-zа-я0-9′″'"₀-₉ⅰ-ⅻ]+/gi,' ').split(' ').filter(Boolean);
+  const toks0=raw.replace(/[^a-zа-я0-9′″'"₀-₉ⅰ-ⅻ]+/gi,' ').split(' ').filter(Boolean), toks=toks0.map(t=>(LIB.syn&&LIB.syn[t])||t);
   return {raw,toks,stems:toks.filter(t=>!STOP.has(t)).map(stem)};}
 /* тип вопроса: корни слов → какой ответ нужен */
 const INT={
@@ -45,7 +48,7 @@ const INT={
   show:['где','покаж','показ','найди','найти','на чертеж','какая точк','какую точк','какой точк','не вижу','подсвет'],
   nums:['скольк','числ','координат','размер','мм','радиус','расстоян','длин','высот','глубин','значени'],
   mistake:['ошиб','не сход','не получ','неправильн','не туда','криво','не так','косяк','не совпада','промах','переделы'],
-  term:['что такое','что значит','это что','определени','термин','как называ','что за'],
+  term:['что такое','что знач','это что','определени','термин','как называ','что за'],
   check:['провер','правильно ли','верно ли','так ли','как понять что'],
   next:['дальше','следующ','потом','что после'],
   hint:['с чего нач','подскаж','намек','намёк','застрял','не знаю как','с чего']};
@@ -75,13 +78,18 @@ function replies(c){const st=c.st, b=blocks(st), R=[];const kw=s=>norm(strip(s))
     if(c.nextT)add('next','Что дальше?','Дальше — <b>'+esc(c.nextT)+'</b>.');}
   /* термины этого шага — из словаря сайта */
   try{const txt=strip((st&&st.t||'')+' '+b.what+' '+b.why);(window.GLOSS?GLOSS.find(txt,2):[]).forEach(t=>add('term:'+t.t,'Что такое «'+t.t.replace(/\s*\(.*\)$/,'')+'»?','<b>'+esc(t.t)+'.</b> '+t.d));}catch(e){}
+  if(c.has3d)add('3d','Покажи в 3D','Открыл этот шаг в 3D — покрути пальцем, посмотри с разных сторон.',{act:'3d'});
+  libFor(c.src||'').forEach(r=>R.push({id:'lib:'+r.id,q:r.q,a:r.a,intent:r.intent||'what',btn:r.btn===true,kw:kw(r.q+' '+r.a+' '+(r.kw||[]).join(' '))}));
   return R;}
 /* уверенность: тип вопроса + совпадение слов + точки/шаг из вопроса */
 function match(text,R,c){const n=norm(text), I=intents(n), labs=labelsIn(n.raw);
   /* термин спросили напрямую — словарь знает термины всего курса, не только этого шага */
   let gl=null;try{const f=window.GLOSS?GLOSS.find(text,1):[];if(f.length&&(I.term||n.stems.length<=4))gl=f[0];}catch(e){}
+  /* сильная заготовка (библиотека или шаг) важнее словаря: «как получаются проекции точки» — развёрнутый ответ, а не определение */
+  const pre=R.map(r=>({r,ov:r.kw.length?n.stems.filter(w=>w.length>2&&r.kw.includes(w)).length:0})).filter(x=>x.r.id.indexOf('lib:')===0&&x.ov>=2).sort((a,b)=>b.ov-a.ov)[0];
+  if(pre)return {best:pre.r,alts:[],conf:.8,why:'lib'};
   if(gl){const id='term:'+gl.t;let r=R.find(x=>x.id===id);if(!r){r={id,q:'Что такое «'+gl.t+'»?',a:'<b>'+esc(gl.t)+'.</b> '+gl.d,kw:[]};}return {best:r,alts:[],conf:.9,why:'term'};}
-  const sc=R.map(r=>{const base=r.id.split(':')[0];let s=(I[base]||0)*.6;
+  const sc=R.map(r=>{const base=r.intent||r.id.split(':')[0];let s=(I[base]||0)*.6;
     const ov=r.kw.length?n.stems.filter(w=>w.length>2&&r.kw.includes(w)).length:0;s+=Math.min(.35,ov*.09);
     if(labs.length&&(base==='show'||base==='what')&&labs.some(l=>c.labels.map(x=>x.toLowerCase()).includes(l)))s+=.25;
     return {r,s};}).sort((a,b)=>b.s-a.s);
@@ -97,6 +105,12 @@ function match(text,R,c){const n=norm(text), I=intents(n), labs=labelsIn(n.raw);
   if(meaningful.length>4&&cover<.5) conf*=cover+.2;
   return {best:top.r,alts:sc.slice(0,3).filter(x=>x.s>.05).map(x=>x.r),conf,intents:Object.keys(I)};}
 const HI=.55, MID=.3;
+/* ── библиотека заготовок (luka-lib.json): ответы на частые вопросы по местам (ДЗ:вариант:шаг, задача:шаг, * — везде) и синонимы.
+   Её дописывает ежедневная сессия обучения по журналу /api/luka/inbox (docs/LUKA.md) ── */
+let LIB={syn:{},replies:[]};
+try{fetch(new URL('luka-lib.json',document.currentScript&&document.currentScript.src||location.href),{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{if(j)LIB=Object.assign({syn:{},replies:[]},j);}).catch(()=>{});}catch(e){}
+const globRe=g=>new RegExp('^'+String(g).split('*').map(x=>x.replace(/[.+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$');
+function libFor(src){return (LIB.replies||[]).filter(r=>[].concat(r.where||'*').some(w=>globRe(w).test(src)));}
 
 /* ═══ ИИ (ступень 4): наставник на сервере ═══ */
 const API=()=>String(self.CLUB_API||'').replace(/\/$/,'');
@@ -124,13 +138,13 @@ function open(paper,api){close();const c=ctxOf(api), R=replies(c);
   paper.appendChild(el);OPEN={el,paper,api,c,R,used:new Set(),more:false};
   say(c.k>0?'Шаг '+c.k+' из '+c.steps+'. Что непонятно?':'Привет, я Лука. Что непонятно?');react(paper.querySelector('.lk-b'),'happy',900);track('open',{src:c.src});}
 function say(html,o){if(!OPEN)return;o=o||{};OPEN.go=o.go||null;const {el,R,used}=OPEN;
-  const left=R.filter(r=>!used.has(r.id)), show=OPEN.more?left:left.slice(0,3);
+  const left=R.filter(r=>!used.has(r.id)&&(r.id.indexOf('lib:')!==0||r.btn)), show=OPEN.more?left:left.slice(0,3);
   el.innerHTML=`<div class="lk-h"><b>Лука</b><span>ИИ-агент</span><button type="button" class="lk-x" aria-label="Закрыть">×</button></div>
    <div class="lk-say${o.typing?' typing':''}">${o.typing?'<i></i><i></i><i></i>':html}</div>
    ${o.go?`<button type="button" class="lk-go" data-go="1">Покажи на чертеже</button>`:''}
    ${o.rate?`<div class="lk-rate" data-rid="${esc(o.rate)}"><button type="button" data-g="1" aria-label="Помогло">👍</button><button type="button" data-g="0" aria-label="Не помогло">👎</button></div>`:''}
    ${o.sugg&&o.sugg.length?`<div class="lk-sug"><span>Ты про это?</span>${o.sugg.map(r=>`<button type="button" data-q="${esc(r.id)}">${esc(r.q)}</button>`).join('')}<button type="button" data-ai="1">Нет, другое</button></div>`:''}
-   ${o.consent?`<div class="lk-cons"><p>Для свободного ответа я спрошу модель Claude (зарубежную). Уйдёт только текст вопроса и номер варианта — без имени и почты.</p><button type="button" data-cons="1">Хорошо, спроси</button></div>`:''}
+   ${o.consent?`<label class="lk-cons"><input type="checkbox" data-cons> Можно спросить ИИ (без имени)</label>`:''}
    ${o.typing||o.sugg||o.consent?'':`<div class="lk-q">${show.map(r=>`<button type="button" data-q="${esc(r.id)}">${esc(r.q)}</button>`).join('')}${!OPEN.more&&left.length>3?'<button type="button" class="more" data-more="1">ещё</button>':''}</div>`}
    <form class="lk-in"><input placeholder="Спроси Луку своими словами" aria-label="Вопрос Луке" maxlength="300"><button aria-label="Спросить">→</button></form>`;
   bindBubble();}
@@ -140,24 +154,26 @@ function bindBubble(){const {el}=OPEN;
   const m=el.querySelector('[data-more]');if(m)m.onclick=()=>{OPEN.more=true;say(el.querySelector('.lk-say').innerHTML);};
   const gb=el.querySelector('[data-go]');if(gb)gb.onclick=()=>{const g=OPEN.go, api=OPEN.api;close();try{api.goGlobal(g.id,g.step);}catch(e){}};
   const a=el.querySelector('[data-ai]');if(a)a.onclick=()=>askAi(OPEN.lastText||'');
-  const cs=el.querySelector('[data-cons]');if(cs)cs.onclick=async()=>{cs.disabled=true;await consent();askAi(OPEN.lastText||'');};
+  const cs=el.querySelector('[data-cons]');if(cs)cs.onchange=async()=>{if(!cs.checked)return;cs.disabled=true;await consent();askAi(OPEN.lastText||'');};
   el.querySelectorAll('.lk-rate [data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g==='1', rid=b.parentNode.dataset.rid;
-    track('rate',{rid,good:g?1:0,src:OPEN.c.src});const log=LS.get('luka_rate',[]);log.push({rid,g,src:OPEN.c.src,t:Date.now()});LS.set('luka_rate',log.slice(-200));
+    track('rate',{rid,good:g?1:0,src:OPEN.c.src});toServer({src:OPEN.c.src,kind:g?'up':'down',rid,q:g?'':(OPEN.lastText||'').slice(0,300)});const log=LS.get('luka_rate',[]);log.push({rid,g,src:OPEN.c.src,t:Date.now()});LS.set('luka_rate',log.slice(-200));
     b.parentNode.innerHTML=g?'<span class="lk-ok">Спасибо!</span>':'<span class="lk-ok">Понял, переделаю.</span> <a href="#/ask">Написать в поддержку</a>';react(OPEN.paper.querySelector('.lk-b'),g?'happy':'sad',1200);});
   const f=el.querySelector('.lk-in');f.onsubmit=e=>{e.preventDefault();const v=f.querySelector('input').value.trim();if(v)ask(v);};}
 function answer(r,how){if(!OPEN||!r)return;OPEN.used.add(r.id);const pen=OPEN.paper.querySelector('.lk-b');
   if(r.act==='show')try{OPEN.api.show();}catch(e){}
+  if(r.act==='3d'){const api=OPEN.api;setTimeout(()=>{try{api.open3d();}catch(e){}},600);}
   say('',{typing:true});react(pen,'talk',900);track('answer',{rid:r.id,how,src:OPEN.c.src});
   setTimeout(()=>say(r.a,{rate:r.id}),how==='button'?280:450);}
-function ask(text){if(!OPEN)return;OPEN.lastText=text;const m=match(text,OPEN.R,OPEN.c);
+function ask(text){if(!OPEN)return;OPEN.lastText=text;const m=match(text,OPEN.R,OPEN.c);OPEN.lastConf=m.conf;
   track('ask',{conf:Math.round(m.conf*100),rid:m.best&&m.best.id||'',src:OPEN.c.src});
   if(m.best&&m.conf>=HI)return answer(m.best,'text');
   if(m.alts.length&&m.conf>=MID)return say('Я понял не до конца.',{sugg:m.alts});
   askAi(text);}
 async function askAi(text){if(!OPEN)return;const c=OPEN.c, pen=OPEN.paper.querySelector('.lk-b');
+  toServer({src:c.src,kind:'miss',q:text.slice(0,300),conf:Math.round((OPEN.lastConf||0)*100)});
   const inbox=LS.get('luka_inbox',[]);inbox.push({q:text.slice(0,300),src:c.src,k:c.k,t:Date.now()});LS.set('luka_inbox',inbox.slice(-100));
   say('',{typing:true});react(pen,'talk',3000);const r=await ai(c,text);if(!OPEN)return;
-  if(r.consent)return say('Этот вопрос лучше разберу через модель.',{consent:true});
+  if(r.consent)return say('Этот вопрос разберу через ИИ.',{consent:true});
   track('ai',{ok:r.ai?1:0,src:c.src});
   const go=r.ai&&(r.actions||[]).find(a=>a.t==='show'&&(a.step!=null||a.id));
   if(OPEN)say(r.text,{rate:r.ai?'ai:'+(r.id||''):'miss',go});}

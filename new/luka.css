@@ -47,9 +47,8 @@ body.plfull .lk-b{bottom:calc(var(--ctrlh,64px) + env(safe-area-inset-bottom,0px
 .lk-rate button{border:0;background:rgba(255,255,255,.08);border-radius:10px;padding:4px 8px;font-size:15px;cursor:pointer}
 .lk-rate a{color:#9fb3ff;font-weight:700}
 .lk-ok{color:#c9d4ff;font-weight:600}
-.lk-cons{display:grid;gap:8px;font-size:13.5px;font-weight:500}
-.lk-cons p{margin:0}
-.lk-cons button{border:0;border-radius:12px;padding:10px;background:#4f72ff;color:#fff;font:800 14px var(--sans,system-ui);cursor:pointer}
+.lk-cons{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:600;cursor:pointer}
+.lk-cons input{width:20px;height:20px;accent-color:#4f72ff}
 .lk-in{display:flex;gap:6px;position:sticky;bottom:-10px;margin:0 -12px -10px;padding:8px 12px 10px;background:#1d2638;border-radius:0 0 20px 20px}
 .lk-in input{flex:1;min-width:0;border:0;border-radius:13px;padding:10px 12px;background:#fff;color:#0f1a2b;font:600 15px var(--sans,system-ui)}
 .lk-in button{flex:none;width:42px;border:0;border-radius:13px;background:#4f72ff;color:#fff;font:800 18px var(--sans,system-ui);cursor:pointer}

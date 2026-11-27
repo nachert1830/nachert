@@ -20,6 +20,7 @@ const REM=require('../../lk/lib/reminder.js');
 const SRS=require('../../lk/lib/srs.js');
 const EYES=require('./eyes');
 const TUTOR=require('./tutor');
+const LUKA=require('./luka');
 
 const DOCS_VERSION='2026-10-25';
 const SESSION_DAYS=30, IDLE_DAYS=14, LOGIN_MIN=10, LOG_DAYS=90, ACT_DAYS=30, MAX_BODY=300*1024, EYES_BODY=3*1024*1024;
@@ -612,12 +613,14 @@ function createApp(o){
 
   /* уборка: просроченные сессии, ссылки, лимиты, старый журнал входов */
   async function maintain(at){ const t=at||now();
-    for(const [tb,f] of [['sessions',x=>x.expiresAt<t||x.lastSeen+IDLE_DAYS*DAY<t],['botlogin',x=>x.exp<t-DAY],['ratelimit',x=>x.exp<t],['remsent',x=>x.exp<t],['activity',x=>x.ts<t-ACT_DAYS*DAY],['tutorlog',x=>x.ts<t-180*DAY]]){
+    for(const [tb,f] of [['sessions',x=>x.expiresAt<t||x.lastSeen+IDLE_DAYS*DAY<t],['botlogin',x=>x.exp<t-DAY],['ratelimit',x=>x.exp<t],['remsent',x=>x.exp<t],['activity',x=>x.ts<t-ACT_DAYS*DAY],['tutorlog',x=>x.ts<t-180*DAY],['lukamiss',x=>x.ts<t-LUKA.DAYS*DAY]]){
       const old=await store.scan(tb,f); for(const x of old) await store.del(tb,x.id); }
     const logs=await store.scan('loginlog',x=>x.ts<t-LOG_DAYS*DAY); for(const x of logs) await store.del('loginlog',{h:x.h,r:x.r}); }
 
   /* Штаб владельца (lib/hq, docs/HQ.md): диктовка → карта целей → ТЗ → исполнители. Только админ. */
   const hq=require('./hq').register(D,{store,now,http,fail,body,json:H.json,env:cfg.hq||{}});
+  /* Лука (lib/luka, docs/LUKA.md): вопросы без заготовки и 👎 — для ежедневного дообучения заготовок */
+  LUKA.register(R,{store,now,fail,body,json:H.json,limit,cfg:cfg.luka});
   /* Наставник — ИИ-агент на чертеже (lib/tutor, docs/TUTOR.md): студенту /api/tutor/*, владельцу /api/admin/tutor */
   TUTOR.register(A,D,{store,now,http,fail,body,json:H.json,limit,cfg:cfg.tutor,iamToken:o.iamToken,log,
     askCreate:async(u,q)=>(await askNew(u,Object.assign({kind:'tutor'},q))).id});
