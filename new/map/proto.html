@@ -1,0 +1,550 @@
+<title>Карта семестра</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Unbounded:wght@600;700&display=swap">
+<style>
+/* Layout: экран-приложение шириной телефона; карта листается вертикально, поверх — шторки и экраны уровня */
+:root{
+  --bg:#e9eef3; --surf:#ffffff; --surf2:#f2f5f9; --ink:#0f1a2b; --mut:#5d6b7e; --line:#dde4ec;
+  --acc:#1f45c8; --red:#e0262d; --ok:#2f8f3a; --okbg:#e7f5e4; --nobg:#fdeceb;
+  --sea1:#a9dcec; --sea2:#7fc4dc; --wave:rgba(255,255,255,.35);
+  --dwg:#1b2333; --dwg2:#b9c3d1; --new:#ff7a1a; --pt:#e0262d; --lnk:#7aa2e3;
+  --disp:'Unbounded',system-ui,sans-serif; --sans:'Manrope',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0b1119;--surf:#151d29;--surf2:#1c2635;--ink:#e9eef6;--mut:#97a5b8;--line:#28354a;--acc:#7290ff;--okbg:#18321c;--nobg:#3a1c1c;--sea1:#1d4d63;--sea2:#173d52;--wave:rgba(255,255,255,.08);--dwg:#e3e9f2;--dwg2:#4b5a70;--lnk:#5a7fc0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1119;--surf:#151d29;--surf2:#1c2635;--ink:#e9eef6;--mut:#97a5b8;--line:#28354a;--acc:#7290ff;--okbg:#18321c;--nobg:#3a1c1c;--sea1:#1d4d63;--sea2:#173d52;--wave:rgba(255,255,255,.08);--dwg:#e3e9f2;--dwg2:#4b5a70;--lnk:#5a7fc0;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:600 15px/1.45 var(--sans)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+#app{position:relative;height:100%;max-width:440px;margin:0 auto;overflow:hidden;background:var(--sea2)}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+.scr[hidden]{display:none!important}
+
+/* ── карта ── */
+#map{background:linear-gradient(180deg,var(--sea1),var(--sea2))}
+#mapsc{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;overscroll-behavior:contain;scrollbar-width:none}
+#mapsc::-webkit-scrollbar{display:none}
+#mapin{position:relative;width:100%}
+#mapin>svg{position:absolute;left:0;top:0;width:100%;display:block}
+.subj{position:absolute;z-index:6;top:max(10px,env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;gap:4px;padding:4px;border-radius:15px;background:color-mix(in srgb,var(--surf) 86%,transparent);backdrop-filter:blur(10px);box-shadow:0 8px 24px -16px rgba(0,0,0,.5)}
+.subj button{flex:1 1 0;border:0;background:none;border-radius:11px;padding:9px 0;font:700 14px var(--sans);color:var(--mut)}
+.subj button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.isl{position:absolute;transform:translateY(-100%);font:700 12px var(--sans);color:#fff;padding:5px 10px;border-radius:99px;background:rgba(15,26,43,.55);backdrop-filter:blur(4px);white-space:nowrap}
+.isl.rk{background:rgba(120,30,10,.7)}
+.nd{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:0;background:#fff;color:#1b2333;font:800 15px var(--sans);display:grid;place-items:center;box-shadow:0 5px 0 rgba(0,0,0,.18);transition:transform .15s}
+.nd:active{transform:scale(.92)}
+.nd.pale{opacity:.5}
+.nd.ok{background:var(--ok);color:#fff;opacity:1}
+.nd.now{opacity:1;box-shadow:0 0 0 5px rgba(255,255,255,.6),0 5px 0 rgba(0,0,0,.18)}
+.nd.now::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:3px solid #fff;animation:pulse 1.8s ease-out infinite}
+.nd.fin{width:54px;height:54px;margin:-27px 0 0 -27px}
+.nd.rkn{color:#6e2410}
+.nd.pop{animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
+.nd svg{display:block}
+@keyframes pulse{from{transform:scale(1);opacity:.9}to{transform:scale(1.5);opacity:0}}
+@keyframes pop{0%{transform:scale(.4)}100%{transform:scale(1)}}
+.mapm{position:absolute;width:96px;height:96px;margin:-84px 0 0 -48px;border:0;background:none;padding:0;z-index:4;transition:left .6s cubic-bezier(.3,1.3,.5,1),top .6s cubic-bezier(.3,1.3,.5,1)}
+.proto{position:absolute;z-index:6;bottom:max(12px,env(safe-area-inset-bottom,0px));left:max(12px,env(safe-area-inset-left,0px));border:0;border-radius:99px;padding:7px 12px;font:700 12px var(--sans);background:color-mix(in srgb,var(--surf) 80%,transparent);backdrop-filter:blur(8px);color:var(--mut)}
+
+/* ── персонаж ── */
+.mz{width:100%;height:100%;display:block;overflow:visible}
+.mz .m-all{transform-origin:60px 112px}
+.mz .m-body{transform-origin:60px 112px;animation:br 3.4s ease-in-out infinite}
+.mz .m-head{transform-box:fill-box;transform-origin:50% 90%;animation:tilt 7s ease-in-out infinite}
+.mz .m-eye{transform-box:fill-box;transform-origin:center;animation:bl 4.6s infinite}
+.mz .m-ear{transform-box:fill-box;transform-origin:50% 100%;animation:ear 5.5s infinite}
+.mz .m-ear.r{animation-delay:.25s}
+.mz .m-gill{transform-box:fill-box;animation:gill 1.6s ease-in-out infinite alternate}
+.mz .m-gill.l{transform-origin:100% 60%}.mz .m-gill.r{transform-origin:0 60%;animation-delay:.3s}
+.mz .m-tail{transform-box:fill-box;transform-origin:0 80%;animation:tail 2.4s ease-in-out infinite}
+.mz .m-arm{transform-box:fill-box;transform-origin:50% 10%}
+.happy .mz .m-all{animation:hop .5s cubic-bezier(.3,1.5,.5,1) 2}
+.happy .mz .m-arm{animation:wave .35s ease-in-out 4}
+.sad .mz .m-head{animation:none;transform:rotate(-6deg) translateY(3px)}
+.talk .mz .m-head{animation:nod .5s ease-in-out infinite}
+@keyframes br{50%{transform:scale(1.03,.97)}}
+@keyframes tilt{0%,100%{transform:rotate(0)}40%{transform:rotate(-3deg)}60%{transform:rotate(2deg)}}
+@keyframes bl{0%,93%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+@keyframes ear{0%,86%,100%{transform:rotate(0)}89%{transform:rotate(-14deg)}93%{transform:rotate(8deg)}}
+@keyframes gill{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+@keyframes tail{0%,100%{transform:rotate(0)}50%{transform:rotate(-10deg)}}
+@keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) scale(.98,1.04)}}
+@keyframes wave{50%{transform:rotate(-40deg)}}
+@keyframes nod{50%{transform:translateY(2px) rotate(-2deg)}}
+
+/* ── шторка ── */
+.veil{position:absolute;inset:0;background:rgba(6,12,22,.38);z-index:20;opacity:0;pointer-events:none;transition:opacity .25s}
+.veil.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:21;background:var(--surf);border-radius:26px 26px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .35s cubic-bezier(.22,1,.36,1);max-height:88%;overflow-y:auto;display:flex;flex-direction:column;gap:12px;box-shadow:0 -18px 40px -20px rgba(0,0,0,.5)}
+.sheet.on{transform:none}
+.grip{align-self:center;width:42px;height:5px;border-radius:9px;background:var(--line);border:0;padding:0;flex:none}
+.kick{font:800 11px var(--sans);letter-spacing:1.2px;text-transform:uppercase;color:var(--ok)}
+.kick.rk{color:#d2501a}
+.sheet h2,.scr h2{margin:0;font:700 20px/1.25 var(--disp);text-wrap:balance}
+.essence{display:grid;gap:8px;padding:12px;border-radius:18px;background:var(--surf2)}
+.essence svg{width:100%;height:auto;display:block;border-radius:12px;background:var(--surf)}
+.essence p{margin:0;font-weight:500;color:var(--ink)}
+.essence b{font-weight:800}
+.btn{display:flex;align-items:center;justify-content:center;min-height:52px;padding:0 18px;border:0;border-radius:16px;background:var(--acc);color:#fff;font:800 16px var(--sans);box-shadow:0 4px 0 color-mix(in srgb,var(--acc) 60%,#000);text-decoration:none}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--acc) 60%,#000)}
+.btn.gh{background:var(--surf2);color:var(--ink);box-shadow:none}
+.btn.gh:active{transform:scale(.98)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.stack{display:grid;gap:10px}
+
+/* ── теория ── */
+#theory .tbar,#lvl .tbar,#quiz .tbar{flex:none;display:flex;align-items:center;gap:12px;padding:max(10px,env(safe-area-inset-top,0px)) 14px 8px}
+.x{width:42px;height:42px;border-radius:13px;border:0;background:var(--surf);display:grid;place-items:center;flex:none}
+.prog{flex:1;display:flex;gap:4px}
+.prog i{flex:1;height:7px;border-radius:9px;background:var(--line);transition:background .3s}
+.prog i.d{background:var(--acc)}
+.tbody{flex:1;overflow-y:auto;padding:4px 16px 16px;display:grid;gap:14px;align-content:start}
+.tcard{background:var(--surf);border-radius:20px;padding:16px;display:grid;gap:8px}
+.tcard h3{margin:0;font:800 16px var(--sans)}
+.tcard p{margin:0;font-weight:500}
+.tcard svg{width:100%;height:auto;display:block}
+.tfoot{flex:none;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+
+/* ── уровень: пример по шагам ── */
+.paper{position:relative;flex:1;min-height:0;margin:0 10px;border-radius:22px;background:var(--surf);overflow:hidden}
+.paper>svg.dw{position:absolute;inset:0;width:100%;height:100%}
+.pm{position:absolute;right:6px;bottom:4px;width:78px;height:78px;border:0;background:none;padding:0;z-index:2}
+.pm::before{content:'';position:absolute;left:14px;right:14px;bottom:2px;height:10px;border-radius:50%;background:rgba(0,0,0,.08)}
+.expl{flex:none;margin:10px 10px 0;padding:12px 14px;border-radius:18px;background:var(--surf);display:grid;gap:3px}
+.expl b{font:800 16px/1.3 var(--sans)}
+.expl span{font-weight:500;color:var(--mut)}
+.ctl{flex:none;display:flex;gap:10px;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px))}
+.ctl .btn{flex:1}.ctl .btn.gh{flex:0 0 104px}
+/* чертёж */
+.dw .ax{stroke:var(--dwg);stroke-width:1.2}
+.dw .ob{stroke:var(--dwg);stroke-width:2.2;fill:none}
+.dw .old{stroke:var(--dwg2);stroke-width:1.6;fill:none}
+.dw .nw{stroke:var(--new);stroke-width:3.2;fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw .8s ease-out forwards;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--new) 60%,transparent))}
+.dw .res{stroke:var(--pt);stroke-width:3;fill:none;stroke-linecap:round}
+.dw .hid{stroke-dasharray:7 5}
+.dw .lk{stroke:var(--lnk);stroke-width:1.2;stroke-dasharray:4 4}
+.dw .p{fill:var(--pt)}
+.dw .p.new{transform-box:fill-box;transform-origin:center;animation:pp .45s cubic-bezier(.3,1.7,.5,1) both .5s}
+.dw text{fill:var(--dwg);font:italic 600 13px Georgia,serif}
+.dw text.pl{fill:var(--pt)}
+.dw .hit{fill:transparent;stroke:none}
+.dw .tap{fill:none;stroke:var(--acc);stroke-width:3}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pp{from{transform:scale(0)}to{transform:scale(1)}}
+
+/* ── проверка ── */
+.qwrap{flex:1;overflow-y:auto;padding:4px 16px 0;display:flex;flex-direction:column;gap:12px}
+.qk{font:800 11px var(--sans);letter-spacing:1.2px;text-transform:uppercase;color:var(--mut)}
+.qq{font:800 19px/1.3 var(--sans);margin:0;text-wrap:balance}
+.qimg{position:relative;border-radius:20px;background:var(--surf);overflow:hidden;aspect-ratio:340/300;max-height:34vh;width:100%}
+.qimg svg{position:absolute;inset:0;width:100%;height:100%}
+.qimg.tall{aspect-ratio:340/360;max-height:46vh}
+.opts{display:grid;gap:9px}
+.opt{text-align:left;border:2px solid var(--line);border-radius:16px;background:var(--surf);padding:14px 14px;font:700 15px/1.35 var(--sans)}
+.opt[aria-pressed=true]{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--surf))}
+.opt.ok{border-color:var(--ok);background:var(--okbg)}
+.opt.no{border-color:var(--red);background:var(--nobg)}
+.conf{display:flex;gap:10px}
+.conf .btn{flex:1;min-height:48px;font-size:15px}
+.fb{display:flex;gap:10px;align-items:center;padding:12px;border-radius:18px;font-weight:600}
+.fb.ok{background:var(--okbg)}.fb.no{background:var(--nobg)}
+.fb .fm{flex:none;width:58px;height:58px}
+.fb p{margin:0}
+.fb b{display:block;font-weight:800}
+
+/* ── итог ── */
+#done{align-items:center;justify-content:center;text-align:center;gap:14px;padding:24px;background:radial-gradient(90% 55% at 50% 38%,var(--okbg),var(--bg))}
+#done .flag{width:120px;height:120px}
+#done p{margin:0;color:var(--mut);font-weight:600}
+#done .stack{width:100%;max-width:360px;margin-top:8px}
+#fail{align-items:center;justify-content:center;text-align:center;gap:14px;padding:24px}
+#fail .stack{width:100%;max-width:360px}
+#fail p{margin:0;color:var(--mut);font-weight:600;max-width:30ch}
+
+/* ── спросить ── */
+.askh{display:flex;gap:10px;align-items:center}
+.askh .am{width:62px;height:62px;flex:none}
+.askh b{font:800 17px var(--sans)}
+.askh span{display:block;font-weight:500;color:var(--mut);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surf);border-radius:99px;padding:9px 13px;font:700 14px var(--sans)}
+.bub{padding:12px 14px;border-radius:18px 18px 18px 6px;background:var(--surf2);font-weight:500}
+.bub.me{border-radius:18px 18px 6px 18px;background:var(--acc);color:#fff;justify-self:end;max-width:85%}
+.chat{display:grid;gap:8px}
+.inp{display:flex;gap:8px}
+.inp input{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:14px;padding:12px;background:var(--surf);color:var(--ink);font:600 15px var(--sans)}
+
+/* ── прототип: выбор персонажа и результаты ── */
+.mpick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mpick button{border:2px solid var(--line);border-radius:18px;background:var(--surf);padding:6px 4px 8px;display:grid;justify-items:center;gap:2px;font:700 13px var(--sans)}
+.mpick button[aria-pressed=true]{border-color:var(--acc)}
+.mpick .mi{width:76px;height:76px}
+table.st{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+table.st th,table.st td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.st th{font-weight:800;color:var(--mut);font-size:12px}
+.note{font-weight:500;color:var(--mut);font-size:13.5px;margin:0}
+.toast{position:absolute;left:50%;top:max(64px,env(safe-area-inset-top,0px));transform:translate(-50%,-20px);z-index:40;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:14px;font:700 13.5px var(--sans);opacity:0;transition:.3s;pointer-events:none;width:max-content;max-width:88%;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}.dw .nw{stroke-dashoffset:0}}
+</style>
+
+<div id="app">
+  <!-- карта -->
+  <section class="scr" id="map">
+    <div class="subj" role="group" aria-label="Предмет"><button type="button" data-s="ng" aria-pressed="true">Начерт</button><button type="button" data-s="ig" aria-pressed="false">Инж. графика</button></div>
+    <div id="mapsc"><div id="mapin"></div></div>
+    <button type="button" class="proto" id="protoB">Прототип</button>
+  </section>
+
+  <!-- теория -->
+  <section class="scr" id="theory" hidden>
+    <div class="tbar"><button type="button" class="x" data-close aria-label="Назад"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2 style="font-size:17px">Теория</h2></div>
+    <div class="tbody" id="tbody"></div>
+    <div class="tfoot"><button type="button" class="btn" id="thGo">Приступить</button></div>
+  </section>
+
+  <!-- уровень -->
+  <section class="scr" id="lvl" hidden>
+    <div class="tbar"><button type="button" class="x" data-close aria-label="На карту"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="prog" id="lprog"></div></div>
+    <div class="paper" id="paper"></div>
+    <div class="expl" id="expl"></div>
+    <div class="ctl"><button type="button" class="btn gh" id="lPrev">Назад</button><button type="button" class="btn" id="lNext">Дальше</button></div>
+  </section>
+
+  <!-- проверка -->
+  <section class="scr" id="quiz" hidden>
+    <div class="tbar"><button type="button" class="x" data-close aria-label="На карту"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="prog" id="qprog"></div></div>
+    <div class="qwrap" id="qwrap"></div>
+    <div class="ctl" id="qctl"></div>
+  </section>
+
+  <!-- пройден -->
+  <section class="scr" id="done" hidden>
+    <svg class="flag" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="var(--surf)"/><path d="M44 96V26" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/><path d="M44 26l40 14-40 14z" fill="var(--ok)"><animateTransform attributeName="transform" type="scale" from="0 1" to="1 1" dur=".5s" begin=".2s" fill="freeze" additive="sum"/></path></svg>
+    <h2 id="doneT"></h2>
+    <p>Флажок поставлен.</p>
+    <div class="stack"><button type="button" class="btn" id="dNext">Следующий уровень</button><button type="button" class="btn gh" id="dMap">На карту</button></div>
+  </section>
+
+  <!-- не прошёл -->
+  <section class="scr" id="fail" hidden>
+    <div style="width:120px;height:120px" id="failM" class="sad"></div>
+    <h2>Почти</h2>
+    <p id="failT"></p>
+    <div class="stack"><button type="button" class="btn" id="fStep">Посмотреть этот шаг</button><button type="button" class="btn gh" id="fRetry">Пройти проверку снова</button></div>
+  </section>
+
+  <div class="veil" id="veil"></div>
+  <section class="sheet" id="sheet" role="dialog" aria-modal="true"></section>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<script>
+(function(){
+/* ═══ хранение (только в этом браузере) ═══ */
+const LS={get(k,d){try{const v=localStorage.getItem('np2_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('np2_'+k,JSON.stringify(v));}catch(e){}}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ═══ задания семестра (из prep/plans.js) — по сроку сдачи ═══ */
+const PLANS={
+ ng:[
+  {k:'ng1',kind:'dz',l:'ДЗ №1',t:'Плоская фигура на прямой',s:['Опустить высоту на прямую','Натуральная величина отрезка','Повернуть точку вокруг горизонтали','Совместить фигуру поворотом','Достроить вторую проекцию фигуры','Углы отрезка с π₁ и π₂','Угол плоскости с π₁']},
+  {k:'ng2',kind:'dz',l:'ДЗ №2',t:'Многогранник по условиям',s:['Горизонталь и фронталь плоскости','Перпендикуляр к плоскости','Отрезок заданной длины','Прямая, параллельная плоскости','Плоскость, перпендикулярная прямой','Точка встречи прямой с плоскостью','Видимость: конкурирующие точки']},
+  {k:'rk1',kind:'rk',l:'РК1',t:'Точка, прямая, плоскость',s:['Достроить проекцию плоской фигуры','Горизонталь и фронталь плоскости','Положение плоскости','Отрезок заданной длины','Угол наклона плоскости','Точка по двум условиям']},
+  {k:'ng3',kind:'dz',l:'ДЗ №3',t:'Пирамида: замена плоскостей и вращение',s:['Плоскость — в проецирующую одной заменой','Прямая — в точку двумя заменами','Угол между гранями','Истинный вид основания вращением','Угол между прямыми вращением']},
+  {k:'rk2',kind:'rk',l:'РК2',t:'Преобразование чертежа',s:['Прямая — в точку двумя заменами','Плоскость — в проецирующую','Натуральная величина двумя заменами','Угол между плоскостями','Вращение вокруг проецирующей прямой','Вращение вокруг горизонтали','Угол между прямыми вращением','Обратный ход на эпюр']},
+  {k:'ng4',kind:'dz',l:'ДЗ №4',t:'Линии пересечения поверхностей',s:['Точка на поверхности вращения','Сечение проецирующей плоскостью','Опорные точки линии пересечения','Посредник — плоскость уровня','Пересечение с проецирующей поверхностью','Посредник — концентрические сферы','Посредник — эксцентрические сферы','Соединить точки и видимость']},
+  {k:'rk3',kind:'rk',l:'РК3',t:'Пересечения, касательные',s:['Сечение проецирующей плоскостью','Опорные точки','Посредник — плоскость уровня','Концентрические сферы','Видимость линии пересечения','Прямая и поверхность','Касательная плоскость и нормаль']},
+  {k:'ng5',kind:'dz',l:'ДЗ №5',t:'Прямая и поверхность, касательная плоскость',s:['Следы прямой','Точки пересечения прямой с поверхностью','Видимость: конкурирующие точки','Касательная плоскость и нормаль']}
+ ],
+ ig:[
+  {k:'ig2',kind:'dz',l:'ДЗ №2',t:'Построение изображений',s:['Вид слева по двум видам','Недостающие проекции точки','Выполнить разрез','Весь лист: виды, разрезы, сечение']},
+  {k:'ig3',kind:'dz',l:'ДЗ №3',t:'Корпусная деталь: виды и разрезы',s:['Вид слева по двум видам','Недостающие проекции точки','Выполнить разрез','Половина вида и половина разреза','Проверить лист по ГОСТ']},
+  {k:'igrk',kind:'rk',l:'РК2',t:'Виды, разрезы, ГОСТ',s:['Вид слева по двум видам','Выполнить разрез','Недостающие проекции точки','Проверить лист по ГОСТ']},
+  {k:'ig4',kind:'dz',l:'ДЗ №4',t:'Тело с вырезом: три вида и разрезы',s:['Три вида тела','Точка выреза на других видах','Вырез в теле','Половина вида и половина разреза']},
+  {k:'ig5',kind:'dz',l:'ДЗ №5',t:'Тело с отверстием и вырезом',s:['Три вида тела с отверстием','Точка выреза на других видах','Вырез в теле','Выполнить разрез']},
+  {k:'ig6',kind:'dz',l:'ДЗ №6',t:'Полый шар со сквозным отверстием',s:['Сечения шара на трёх видах','Полый шар: виды и разрез','Шар с отверстием-призмой','Недостающие проекции точки']}
+ ]};
+const DEMO={k:'ng4',j:3};   /* уровень с готовым примером */
+
+/* ═══ состояние ═══ */
+const S={subj:LS.get('subj','ng'),done:LS.get('done',{ng1:[0,1,2,3,4,5,6,7],ng2:[0,1,2]}),mz:LS.get('mz','capy'),stats:LS.get('stats',{}),cur:null};
+const isDone=(k,j)=>(S.done[k]||[]).includes(j);
+const mark=(k,j)=>{const a=S.done[k]||(S.done[k]=[]);if(!a.includes(j))a.push(j);LS.set('done',S.done);};
+
+/* ═══ персонажи: SVG + анимация в CSS ═══ */
+const MZ={
+ capy:{n:'Капибара',svg:`<ellipse cx="60" cy="113" rx="32" ry="5" fill="rgba(0,0,0,.14)"/><g class="m-all"><g class="m-body">
+  <ellipse cx="42" cy="107" rx="10" ry="5.5" fill="#6b4226"/><ellipse cx="78" cy="107" rx="10" ry="5.5" fill="#6b4226"/>
+  <path d="M22 86C22 64 40 56 60 56S98 64 98 86c0 15-14 22-38 22S22 101 22 86z" fill="#a8734a"/>
+  <ellipse cx="60" cy="91" rx="21" ry="13" fill="#c99a6c"/>
+  <path class="m-arm" d="M86 78c7 4 9 11 6 17" stroke="#8a5a36" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <g class="m-head"><ellipse class="m-ear l" cx="35" cy="25" rx="7" ry="6.5" fill="#734a2b"/><ellipse class="m-ear r" cx="85" cy="25" rx="7" ry="6.5" fill="#734a2b"/>
+   <path d="M24 47c0-20 16-29 36-29s36 9 36 29-14 28-36 28-36-8-36-28z" fill="#b9845a"/>
+   <path d="M37 54c0-9 10-12 23-12s23 3 23 12-10 15-23 15-23-6-23-15z" fill="#93633e"/>
+   <ellipse cx="52" cy="52" rx="3.2" ry="2.3" fill="#33200f"/><ellipse cx="68" cy="52" rx="3.2" ry="2.3" fill="#33200f"/>
+   <path d="M54 61q6 4 12 0" stroke="#33200f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+   <g class="m-eye"><ellipse cx="42" cy="37" rx="4.2" ry="4.8" fill="#1d120a"/><circle cx="43.6" cy="35.2" r="1.5" fill="#fff"/></g>
+   <g class="m-eye"><ellipse cx="78" cy="37" rx="4.2" ry="4.8" fill="#1d120a"/><circle cx="79.6" cy="35.2" r="1.5" fill="#fff"/></g>
+   <circle cx="35" cy="49" r="5" fill="#f08f80" opacity=".45"/><circle cx="85" cy="49" r="5" fill="#f08f80" opacity=".45"/>
+   <path d="M60 4L50 22M60 4l10 18" stroke="#46546b" stroke-width="3.4" stroke-linecap="round"/><circle cx="60" cy="5" r="3.8" fill="#e0262d"/><path d="M70 22l1.5 3" stroke="#f2c230" stroke-width="3" stroke-linecap="round"/>
+  </g></g></g>`},
+ axo:{n:'Аксолотль',svg:`<ellipse cx="60" cy="113" rx="30" ry="5" fill="rgba(0,0,0,.14)"/><g class="m-all"><g class="m-body">
+  <path class="m-tail" d="M80 98c18 4 30-4 32-16-10 4-20 6-32 6z" fill="#f29cbc"/>
+  <ellipse cx="60" cy="96" rx="27" ry="15" fill="#f7b2ca"/><ellipse cx="60" cy="100" rx="16" ry="8" fill="#fde1ea"/>
+  <ellipse cx="42" cy="108" rx="7" ry="4" fill="#ef93b4"/><ellipse cx="78" cy="108" rx="7" ry="4" fill="#ef93b4"/>
+  <g class="m-arm"><path d="M84 92c6-2 10-6 10-12" stroke="#ef93b4" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M92 82l8-14" stroke="#f2c230" stroke-width="5" stroke-linecap="round"/><path d="M100 68l2-4" stroke="#3a3a3a" stroke-width="3" stroke-linecap="round"/></g>
+  <g class="m-head">
+   <g class="m-gill l"><path d="M24 50C12 46 6 38 8 30" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M22 58C10 58 3 54 1 47" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M24 66C14 70 7 69 3 64" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/></g>
+   <g class="m-gill r"><path d="M96 50c12-4 18-12 16-20" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M98 58c12 0 19-4 21-11" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M96 66c10 4 17 3 21-2" stroke="#e5528c" stroke-width="6" stroke-linecap="round" fill="none"/></g>
+   <ellipse cx="60" cy="58" rx="40" ry="30" fill="#f7b2ca"/>
+   <g class="m-eye"><circle cx="38" cy="54" r="5" fill="#1d1218"/><circle cx="39.8" cy="52.2" r="1.6" fill="#fff"/></g>
+   <g class="m-eye"><circle cx="82" cy="54" r="5" fill="#1d1218"/><circle cx="83.8" cy="52.2" r="1.6" fill="#fff"/></g>
+   <path d="M46 68q14 10 28 0" stroke="#a8325f" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+   <circle cx="30" cy="66" r="5.5" fill="#ff6f9f" opacity=".4"/><circle cx="90" cy="66" r="5.5" fill="#ff6f9f" opacity=".4"/>
+  </g></g></g>`},
+ fox:{n:'Лиса',svg:`<ellipse cx="60" cy="113" rx="30" ry="5" fill="rgba(0,0,0,.14)"/><g class="m-all"><g class="m-body">
+  <path class="m-tail" d="M78 100c24-2 34-22 26-36-4 18-12 26-28 28z" fill="#ee8434"/><path d="M104 64c-2 8-6 13-12 16 6 1 12-4 13-10z" fill="#fff4e8"/>
+  <ellipse cx="60" cy="100" rx="25" ry="15" fill="#ee8434"/><ellipse cx="60" cy="103" rx="13" ry="10" fill="#fff4e8"/>
+  <ellipse cx="46" cy="110" rx="7" ry="4" fill="#3a2418"/><ellipse cx="74" cy="110" rx="7" ry="4" fill="#3a2418"/>
+  <path class="m-arm" d="M38 94c-6-3-9-9-8-15" stroke="#e07a2c" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <g class="m-head">
+   <g class="m-ear l"><path d="M31 48L25 13 53 33z" fill="#ee8434"/><path d="M33 41l-3-19 15 11z" fill="#3a2418"/></g>
+   <g class="m-ear r"><path d="M89 48l6-35-28 20z" fill="#ee8434"/><path d="M87 41l3-19-15 11z" fill="#3a2418"/></g>
+   <path d="M60 30c20 0 36 14 38 30 1 13-13 26-38 26S21 73 22 60c2-16 18-30 38-30z" fill="#f08c3c"/>
+   <path d="M60 56c14 0 24 10 24 18s-12 12-24 12-24-4-24-12 10-18 24-18z" fill="#fff4e8"/>
+   <ellipse cx="60" cy="64" rx="5.5" ry="3.8" fill="#2a1a12"/>
+   <path d="M55 72q5 4 10 0" stroke="#2a1a12" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+   <g class="m-eye"><ellipse cx="45" cy="53" rx="4.2" ry="5" fill="#1d120a"/><circle cx="46.5" cy="51.2" r="1.5" fill="#fff"/></g>
+   <g class="m-eye"><ellipse cx="75" cy="53" rx="4.2" ry="5" fill="#1d120a"/><circle cx="76.5" cy="51.2" r="1.5" fill="#fff"/></g>
+   <rect x="86" y="26" width="7" height="30" rx="2" transform="rotate(32 89 41)" fill="#f2c230"/><path d="M99 52l4 6-6-1z" fill="#3a3a3a" transform="rotate(32 89 41)"/>
+  </g></g></g>`}
+};
+const mz=(t)=>`<svg class="mz" viewBox="0 0 120 120" aria-hidden="true">${(MZ[t||S.mz]||MZ.capy).svg}</svg>`;
+function react(el,cls,ms){if(!el)return;el.classList.remove('happy','sad','talk');void el.offsetWidth;el.classList.add(cls);clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove(cls),ms||1400);}
+
+/* ═══ карта: острова рисуются в коде (иллюстрация, без мелких деталей) ═══ */
+function rng(seed){let s=seed>>>0||1;return()=>((s=Math.imul(s^s>>>15,1|s)+0x6D2B79F5|0,((s^s>>>7)>>>0)%10000)/10000);}
+function smooth(P){let d=`M${P[0][0].toFixed(1)} ${P[0][1].toFixed(1)}`;const n=P.length;
+  for(let i=0;i<n;i++){const p0=P[(i-1+n)%n],p1=P[i],p2=P[(i+1)%n],p3=P[(i+2)%n];
+    d+=`C${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;}
+  return d+'Z';}
+function line(P){return P.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');}
+function curve(P){if(P.length<3)return line(P);let d=`M${P[0][0]} ${P[0][1]}`;for(let i=0;i<P.length-1;i++){const p0=P[Math.max(0,i-1)],p1=P[i],p2=P[i+1],p3=P[Math.min(P.length-1,i+2)];
+  d+=`C${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;}return d;}
+
+let NODES=[];
+function buildMap(){
+  const W=$('mapin').clientWidth||390, L=PLANS[S.subj];
+  let y=110, svg='', html='', path=[];NODES=[];
+  const cur=firstOpen();
+  L.forEach((p,i)=>{const rk=p.kind==='rk', n=p.s.length+1, step=70, top=y+50, pts=[];
+    for(let j=0;j<n;j++){const x=W/2+Math.sin(j*1.15+i*1.7)*W*.24;pts.push([x,top+j*step]);}
+    const bot=pts[n-1][1];
+    html+=`<div class="isl${rk?' rk':''}" style="left:${W*.07}px;top:${top-34}px">${esc(p.l)}</div>`;
+    pts.forEach((q,j)=>{const fin=j===n-1, ok=isDone(p.k,j), now=cur&&cur.k===p.k&&cur.j===j;
+      NODES.push({k:p.k,j,x:q[0],y:q[1]});
+      const inner=fin?`<svg width="26" height="26" viewBox="0 0 26 26"><path d="M8 23V3" stroke="${ok?'#fff':'#1b2333'}" stroke-width="2.6" stroke-linecap="round"/><path d="M8 3l13 5-13 5z" fill="${ok?'#fff':'#e0262d'}"/></svg>`:ok?`<svg width="22" height="22" viewBox="0 0 24 24"><path d="M7 21V3" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 3l12 5-12 5z" fill="#fff"/></svg>`:(j+1);
+      html+=`<button type="button" class="nd${fin?' fin':''}${rk?' rkn':''}${ok?' ok':now?' now':' pale'}" data-k="${p.k}" data-j="${j}" style="left:${q[0]}px;top:${q[1]}px" aria-label="${esc(p.l)}: ${esc(fin?(rk?'пробный билет':'своё ДЗ'):p.s[j])}${ok?', пройден':''}">${inner}</button>`;});
+    path=path.concat(pts);
+    y=bot+150;});
+  /* тропа между уровнями и островами */
+  svg=`<path d="${curve(path)}" stroke="#fff" stroke-width="3.5" stroke-dasharray="1 10" stroke-linecap="round" fill="none" opacity=".9"/>`;
+  const H=y+40;
+  /* волны по морю */
+  let waves='';const RW=rng(3);for(let w=0;w<Math.ceil(H/90);w++){const wx=RW()*W*.8, wy=w*90+RW()*40;waves+=`<path d="M${wx} ${wy}q8-6 16 0t16 0" stroke="var(--wave)" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;}
+  $('mapin').style.height=H+'px';
+  $('mapin').innerHTML=`<svg viewBox="0 0 ${W} ${H}" height="${H}" aria-hidden="true">${waves}${drawIslands(W)}${svg}</svg>${html}<button type="button" class="mapm" id="mapM" aria-label="Персонаж: спросить">${mz()}</button>`;
+  placeMascot(cur);
+}
+/* острова отдельно от тропы, чтобы тропа лежала поверх всех островов */
+function drawIslands(W){const L=PLANS[S.subj], R=rng(7);let y=110, out='';
+  L.forEach((p,i)=>{const rk=p.kind==='rk', n=p.s.length+1, step=70, top=y+50, pts=[];
+    for(let j=0;j<n;j++)pts.push([W/2+Math.sin(j*1.15+i*1.7)*W*.24,top+j*step]);
+    const bot=pts[n-1][1], cy=(top+bot)/2, ry=(bot-top)/2+62, rx=W*.44, B=[];
+    for(let a=0;a<16;a++){const t=a/16*Math.PI*2, k=1+(R()-.5)*.14;B.push([W/2+Math.cos(t)*rx*k,cy+Math.sin(t)*ry*(1+(R()-.5)*.06)]);}
+    const C=rk?{side:'#3a2622',top:'#57403a',top2:'#6b4f47',way:'#7d625a'}:{side:'#3f7f37',top:'#76bf55',top2:'#8fd06a',way:'#a9de86'};
+    out+=`<path d="${smooth(B.map(q=>[q[0],q[1]+14]))}" fill="${C.side}"/><path d="${smooth(B)}" fill="${C.top}"/><path d="${smooth(B.map(q=>[W/2+(q[0]-W/2)*.86,cy+(q[1]-cy)*.9]))}" fill="${C.top2}" opacity=".55"/>`;
+    if(rk){for(let c=0;c<5;c++){const sx=W*(.18+R()*.64), sy=top-20+R()*(bot-top+40), L2=[];for(let q=0;q<5;q++)L2.push([sx+(R()-.5)*W*.3*q/4+q*8,sy+q*22]);
+        out+=`<path d="${curve(L2)}" stroke="#ff7a1a" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"/><path d="${curve(L2)}" stroke="#ffd166" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;}
+      out+=`<path d="${curve(pts)}" stroke="${C.way}" stroke-width="30" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;}
+    else{out+=`<path d="${curve(pts)}" stroke="${C.way}" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const po=[W*(.2+R()*.6),cy+(R()-.5)*ry*.8];if(!pts.some(q=>Math.hypot(q[0]-po[0],q[1]-po[1])<60)) out+=`<ellipse cx="${po[0]}" cy="${po[1]}" rx="26" ry="15" fill="#6ec3e0"/><ellipse cx="${po[0]-5}" cy="${po[1]-3}" rx="12" ry="5" fill="#a6ddef"/>`;
+      const sd=[W*(.2+R()*.6),cy+(R()-.5)*ry*.9];if(!pts.some(q=>Math.hypot(q[0]-sd[0],q[1]-sd[1])<48)) out+=`<ellipse cx="${sd[0]}" cy="${sd[1]}" rx="18" ry="10" fill="#f1dfa4"/>`;}
+    for(let tI=0;tI<14;tI++){const t=R()*Math.PI*2, kk=.72+R()*.2, tx=W/2+Math.cos(t)*rx*kk, ty=cy+Math.sin(t)*ry*kk;
+      if(pts.some(q=>Math.hypot(q[0]-tx,q[1]-ty)<46))continue;
+      if(rk) out+=`<path d="M${tx-10} ${ty+6}l6-14 9-2 7 12-4 6z" fill="#2c1d1a"/><path d="M${tx-4} ${ty-8}l9-2 3 6-8 1z" fill="#4a3530"/>`;
+      else{const r=9+R()*7;out+=`<circle cx="${tx}" cy="${ty+4}" r="${r}" fill="#2f6d2a"/><circle cx="${tx}" cy="${ty}" r="${r}" fill="#3f8e36"/><circle cx="${tx-r*.3}" cy="${ty-r*.35}" r="${r*.45}" fill="#5aa94a"/>`;}}
+    y=bot+150;});
+  return out;}
+function firstOpen(){for(const p of PLANS[S.subj])for(let j=0;j<=p.s.length;j++)if(!isDone(p.k,j))return{k:p.k,j};return null;}
+function placeMascot(cur){const m=$('mapM');if(!m)return;const n=cur&&NODES.find(q=>q.k===cur.k&&q.j===cur.j);if(!n){m.hidden=true;return;}
+  const W=$('mapin').clientWidth, left=n.x>W/2?n.x-70:n.x+70;m.style.left=left+'px';m.style.top=(n.y+18)+'px';}
+function scrollToCur(smooth){const cur=firstOpen(), n=cur&&NODES.find(q=>q.k===cur.k&&q.j===cur.j), sc=$('mapsc');if(n)sc.scrollTo({top:Math.max(0,n.y-sc.clientHeight*.45),behavior:smooth?'smooth':'auto'});}
+
+/* ═══ экраны и шторка ═══ */
+const SCR=['map','theory','lvl','quiz','done','fail'];
+function show(id){SCR.forEach(s=>$(s).hidden=s!==id);}
+function sheet(html,label){const sh=$('sheet');sh.innerHTML='<button type="button" class="grip" aria-label="Закрыть"></button>'+html;sh.setAttribute('aria-label',label||'');
+  $('veil').classList.add('on');sh.classList.add('on');sh.scrollTop=0;}
+function unsheet(){$('veil').classList.remove('on');$('sheet').classList.remove('on');}
+$('veil').onclick=unsheet;
+let toastT;function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),2600);}
+/* смахнуть шторку вниз */
+(function(){const sh=$('sheet');let y0=null,dy=0;
+  sh.addEventListener('pointerdown',e=>{if(sh.scrollTop>0||e.target.closest('button:not(.grip),input'))return;y0=e.clientY;dy=0;});
+  sh.addEventListener('pointermove',e=>{if(y0==null)return;dy=Math.max(0,e.clientY-y0);if(dy>4){sh.style.transition='none';sh.style.transform=`translateY(${dy}px)`;}});
+  const up=()=>{if(y0==null)return;sh.style.transition='';sh.style.transform='';if(dy>90)unsheet();y0=null;};
+  sh.addEventListener('pointerup',up);sh.addEventListener('pointercancel',up);
+  sh.addEventListener('click',e=>{if(e.target.closest('.grip'))unsheet();});})();
+
+/* ═══ чертёж примера: конус и шар, посредник — горизонтальная плоскость ═══
+   конус: ось x=150, вершина на высоте 150, радиус основания 75; шар: центр x=215, высота 55, R=55.
+   Фронтальный вид: основание на y=170; вид сверху: центры на y=275. */
+const G={cx:150,ah:150,r:75,sx:215,sz:55,sr:55,b:170,t:275};G.d=G.sx-G.cx;
+const fy=z=>G.b-z, rc=h=>G.r*(G.ah-h)/G.ah, rs=h=>Math.sqrt(Math.max(0,G.sr*G.sr-(h-G.sz)**2));
+function cut(h){const a=rc(h),b=rs(h);if(a<=0||b<=0||G.d>a+b||G.d<Math.abs(a-b))return null;const dx=(G.d*G.d+a*a-b*b)/(2*G.d),yy=Math.sqrt(Math.max(0,a*a-dx*dx));return{x:G.cx+dx,y:yy};}
+const HS=[];for(let h=0;h<=120;h+=.25){const c=cut(h);if(c)HS.push([h,c]);}
+const MAIN=20, EXTRA=[8,36,52,68,84,92];
+function base(){return `<line class="ax" x1="14" y1="${G.b+16}" x2="326" y2="${G.b+16}"/><text x="16" y="${G.b+12}" style="font-size:11px">x</text>
+  <path class="ob" d="M${G.cx-G.r} ${G.b}L${G.cx} ${fy(G.ah)}L${G.cx+G.r} ${G.b}Z"/><circle class="ob" cx="${G.sx}" cy="${fy(G.sz)}" r="${G.sr}"/>
+  <circle class="ob" cx="${G.cx}" cy="${G.t}" r="${G.r}"/><circle class="ob" cx="${G.sx}" cy="${G.t}" r="${G.sr}"/><circle cx="${G.cx}" cy="${G.t}" r="2.4" fill="var(--dwg)"/>`;}
+function plane(h,cls){return `<line class="${cls}" pathLength="1" x1="40" y1="${fy(h)}" x2="300" y2="${fy(h)}"/>`;}
+function draw(k,opt){opt=opt||{};let s=base();
+  const c=cut(MAIN), age=i=>k>i?'old':'nw';
+  if(k>=1){s+=plane(MAIN,age(1));if(k===1)s+=`<text x="304" y="${fy(MAIN)+4}" style="fill:var(--new)">α″</text>`;}
+  if(k>=2)s+=`<circle class="${age(2)}" pathLength="1" cx="${G.cx}" cy="${G.t}" r="${rc(MAIN)}"/>`+(k===2?`<line class="lk" x1="${G.cx+rc(MAIN)}" y1="${fy(MAIN)}" x2="${G.cx+rc(MAIN)}" y2="${G.t}"/>`:'');
+  if(k>=3)s+=`<circle class="${age(3)}" pathLength="1" cx="${G.sx}" cy="${G.t}" r="${rs(MAIN)}"/>`+(k===3?`<line class="lk" x1="${G.sx-rs(MAIN)}" y1="${fy(MAIN)}" x2="${G.sx-rs(MAIN)}" y2="${G.t}"/>`:'');
+  if(k>=4){const nw=k===4?' new':'';s+=`<line class="lk" x1="${c.x}" y1="${fy(MAIN)}" x2="${c.x}" y2="${G.t+c.y}"/><circle class="p${nw}" cx="${c.x}" cy="${G.t+c.y}" r="4.6"/><circle class="p${nw}" cx="${c.x}" cy="${G.t-c.y}" r="4.6"/><circle class="p${nw}" cx="${c.x}" cy="${fy(MAIN)}" r="4.6"/>`;
+    if(k===4)s+=`<text class="pl" x="${c.x+7}" y="${G.t+c.y+14}">1′</text><text class="pl" x="${c.x+7}" y="${G.t-c.y-6}">2′</text><text class="pl" x="${c.x+7}" y="${fy(MAIN)-7}">1″≡2″</text>`;}
+  if(k>=5){EXTRA.forEach(h=>{const q=cut(h);if(!q)return;const cl=k===5?'nw':'old';s+=plane(h,cl+'" style="stroke-width:'+(k===5?1.8:1)+'px');
+      const nw=k===5?' new':'';s+=`<circle class="p${nw}" cx="${q.x}" cy="${G.t+q.y}" r="3.4"/><circle class="p${nw}" cx="${q.x}" cy="${G.t-q.y}" r="3.4"/><circle class="p${nw}" cx="${q.x}" cy="${fy(h)}" r="3.4"/>`;});}
+  if(k>=6){const fr=HS.map(([h,q])=>[q.x,fy(h)]);
+    const vis=HS.filter(([h])=>h>=G.sz), hid=HS.filter(([h])=>h<=G.sz);
+    const top=(arr,sgn)=>arr.map(([h,q])=>[q.x,G.t+sgn*q.y]);
+    const V=top(vis,1).concat(top(vis.slice().reverse(),-1));
+    const Hloop=top(hid,-1).reverse().concat(top(hid,1));
+    s+=`<path class="${k===6?'nw':'res'}" pathLength="1" d="${line(fr)}"/><path class="${k===6?'nw':'res'}" pathLength="1" d="${line(V)}"/><path class="res hid" d="${line(Hloop)}" style="opacity:${k===6?0:1};${k===6?'animation:fadeIn .4s .7s forwards':''}"/>`;}
+  if(opt.tap)s+=`<g id="taps"></g>`;
+  return `<svg class="dw" viewBox="0 0 340 ${opt.h||360}" preserveAspectRatio="xMidYMid meet">${s}</svg>`;}
+const STEPS=[
+ {t:'Дано: конус и шар',d:'Нужно построить линию, по которой они пересекаются.'},
+ {t:'Режем горизонтальной плоскостью α',d:'Одна плоскость режет сразу обе фигуры.'},
+ {t:'Сечение конуса — окружность',d:'Радиус снимаем с фронтального вида: где α пересекла конус.'},
+ {t:'Сечение шара — окружность',d:'Радиус — половина хорды шара на α.'},
+ {t:'Окружности пересеклись — это точки линии',d:'Точки 1 и 2 лежат на обеих фигурах. Поднимаем их на α.'},
+ {t:'Ещё несколько плоскостей',d:'Повторяем то же. Чем больше плоскостей, тем точнее линия.'},
+ {t:'Соединяем плавной кривой',d:'Сверху нижняя часть линии закрыта шаром — её рисуем штрихом.'}];
+
+/* ═══ уровень ═══ */
+let LV={k:0};
+function openLevel(k0){LV.k=k0||0;show('lvl');renderLevel();}
+function renderLevel(){const k=LV.k,n=STEPS.length;
+  $('lprog').innerHTML=STEPS.map((_,i)=>`<i class="${i<=k?'d':''}"></i>`).join('');
+  $('paper').innerHTML=draw(k)+`<button type="button" class="pm" id="pm" aria-label="Спросить персонажа">${mz()}</button>`;
+  $('expl').innerHTML=`<b>${STEPS[k].t}</b><span>${STEPS[k].d}</span>`;
+  $('lPrev').disabled=k===0;$('lNext').textContent=k===n-1?'Проверить себя':'Дальше';
+  if(k===n-1)react($('pm'),'happy',1200);}
+$('lNext').onclick=()=>{if(LV.k<STEPS.length-1){LV.k++;renderLevel();}else startQuiz();};
+$('lPrev').onclick=()=>{if(LV.k>0){LV.k--;renderLevel();}};
+
+/* ═══ спросить персонажа (здесь будет ИИ-агент) ═══ */
+const ASK={0:[['Что такое посредник?','Вспомогательная поверхность, которая режет обе фигуры по простым линиям. Где эти линии пересеклись — точки искомой линии.'],['Почему не решить «на глаз»?','Линия пересечения — кривая. Её точки надо найти построением, иначе на защите не объяснишь, откуда они.']],
+ 1:[['Почему плоскость горизонтальная?','У конуса и шара оси вертикальные. Горизонтальная плоскость режет обоих по окружностям, а окружность чертится циркулем.'],['Где взять высоту плоскости?','Любую между самой нижней и самой верхней точкой линии. Сначала берут опорные — там, где линия меняет направление.']],
+ 2:[['Откуда радиус окружности?','На фронтальном виде α пересекает образующие конуса. Расстояние от оси до этой точки — радиус.']],
+ 3:[['А если плоскость не задела шар?','Значит, на этой высоте линии пересечения нет. Возьми плоскость ниже.']],
+ 4:[['Почему точек две?','Окружности пересекаются в двух точках: одна спереди, другая сзади. На фронтальном виде они совпадают.']],
+ 5:[['Сколько плоскостей нужно?','Обычно 4–6 плюс опорные точки: самая верхняя, нижняя и точки на очерке.']],
+ 6:[['Как определить видимость?','Точка видна, если она видна на обеих фигурах. Сверху шар закрывает всё, что ниже его экватора.']]};
+function openAsk(ctx){const qs=(ASK[ctx]||ASK[0]);
+  sheet(`<div class="askh"><div class="am" id="am">${mz()}</div><div><b>Спроси меня</b><span>По этому шагу — что угодно</span></div></div>
+   <div class="chat" id="chat"></div><div class="chips">${qs.map((q,i)=>`<button type="button" class="chip" data-a="${i}">${esc(q[0])}</button>`).join('')}</div>
+   <div class="inp"><input id="askIn" placeholder="Свой вопрос — скоро ответит ИИ" aria-label="Свой вопрос"><button type="button" class="btn" style="min-height:46px;padding:0 14px" id="askGo">→</button></div>`,'Спросить');
+  $('sheet').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const q=qs[+b.dataset.a];say(q[0],q[1]);b.remove();});
+  $('askGo').onclick=()=>{const v=$('askIn').value.trim();if(!v)return;$('askIn').value='';say(v,'В прототипе я пока отвечаю только на готовые вопросы. Тут будет ответ ИИ-агента по этому шагу.');};}
+function say(q,a){const c=$('chat');c.insertAdjacentHTML('beforeend',`<div class="bub me">${esc(q)}</div>`);react($('am'),'talk',1200);
+  setTimeout(()=>{c.insertAdjacentHTML('beforeend',`<div class="bub">${esc(a)}</div>`);c.lastElementChild.scrollIntoView({block:'nearest',behavior:'smooth'});},500);}
+
+/* ═══ проверка: 3 вопроса, у каждого — шаг примера, который он проверяет ═══ */
+const QUIZ=[
+ {id:'next',step:4,kind:'pick',q:'Что делать дальше?',img:()=>draw(3),o:['Отметить точки, где окружности пересеклись','Провести ещё одну плоскость','Сразу соединить точки кривой'],a:0,why:'Сначала находим точки на этой плоскости, потом берём следующую.'},
+ {id:'tap',step:4,kind:'tap',q:'Ткни в точку, которая лежит и на конусе, и на шаре',img:()=>draw(3,{tap:1}),why:'Это пересечение двух окружностей на виде сверху.'},
+ {id:'why',step:1,kind:'pick',q:'Почему посредник — именно горизонтальная плоскость?',o:['Она проходит через вершину конуса','Она режет и конус, и шар по окружностям','С ней линия пересечения выходит прямой'],a:1,why:'Оси фигур вертикальные — горизонтальная плоскость даёт окружности, а их легко начертить.'}];
+let QZ=null;
+function startQuiz(){QZ={i:0,ok:0,miss:[]};show('quiz');renderQ();}
+function renderQ(){const Q=QUIZ[QZ.i];QZ.sel=null;QZ.stage='ans';
+  $('qprog').innerHTML=QUIZ.map((_,i)=>`<i class="${i<QZ.i?'d':''}"></i>`).join('');
+  let h=`<div class="qk">Вопрос ${QZ.i+1} из ${QUIZ.length}</div><p class="qq">${esc(Q.q)}</p>`;
+  if(Q.img)h+=`<div class="qimg${Q.kind==='tap'?' tall':''}" id="qimg">${Q.img()}</div>`;
+  if(Q.kind==='pick')h+=`<div class="opts">${Q.o.map((o,i)=>`<button type="button" class="opt" data-o="${i}" aria-pressed="false">${esc(o)}</button>`).join('')}</div>`;
+  h+=`<div id="qfb"></div>`;
+  $('qwrap').innerHTML=h;$('qwrap').scrollTop=0;
+  $('qctl').innerHTML=`<div class="conf" style="flex:1" id="qconf" hidden><button type="button" class="btn gh" data-c="0">Сомневаюсь</button><button type="button" class="btn" data-c="1">Уверен</button></div><button type="button" class="btn" style="flex:1" id="qnext" hidden>Дальше</button>`;
+  if(Q.kind==='pick')$('qwrap').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(QZ.stage!=='ans')return;QZ.sel=+b.dataset.o;$('qwrap').querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('qconf').hidden=false;});
+  if(Q.kind==='tap'){const svg=$('qimg').querySelector('svg');svg.style.cursor='crosshair';svg.addEventListener('click',e=>{if(QZ.stage!=='ans')return;const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+    const c=cut(MAIN);QZ.sel=(Math.hypot(p.x-c.x,p.y-(G.t+c.y))<16||Math.hypot(p.x-c.x,p.y-(G.t-c.y))<16)?1:0;QZ.tp=p;
+    svg.querySelector('#taps').innerHTML=`<circle class="tap" cx="${p.x}" cy="${p.y}" r="10"/>`;$('qconf').hidden=false;});}
+  $('qconf').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>answer(+b.dataset.c));
+  $('qnext').onclick=()=>{QZ.i++;if(QZ.i<QUIZ.length)renderQ();else finishQuiz();};}
+function answer(conf){const Q=QUIZ[QZ.i];QZ.stage='fb';const right=Q.kind==='pick'?QZ.sel===Q.a:QZ.sel===1;
+  if(right)QZ.ok++;else QZ.miss.push(Q);
+  /* для автора: насколько понятно объяснён шаг — верно/неверно × уверен/сомневаюсь */
+  const st=S.stats[Q.id]||(S.stats[Q.id]={n:0,ok:0,sureNo:0,guessOk:0});st.n++;if(right)st.ok++;if(!right&&conf)st.sureNo++;if(right&&!conf)st.guessOk++;LS.set('stats',S.stats);
+  if(Q.kind==='pick')$('qwrap').querySelectorAll('.opt').forEach(b=>{const i=+b.dataset.o;if(i===Q.a)b.classList.add('ok');else if(i===QZ.sel)b.classList.add('no');});
+  if(Q.kind==='tap'){const c=cut(MAIN),svg=$('qimg').querySelector('svg');svg.querySelector('#taps').insertAdjacentHTML('beforeend',`<circle cx="${c.x}" cy="${G.t+c.y}" r="6" fill="var(--ok)"/><circle cx="${c.x}" cy="${G.t-c.y}" r="6" fill="var(--ok)"/>`);}
+  $('qfb').innerHTML=`<div class="fb ${right?'ok':'no'}"><div class="fm ${right?'happy':'sad'}" id="fm">${mz()}</div><p><b>${right?'Верно':'Не совсем'}</b>${esc(Q.why)}</p></div>`;
+  react($('fm'),right?'happy':'sad',1600);$('qconf').hidden=true;$('qnext').hidden=false;$('qnext').textContent=QZ.i===QUIZ.length-1?'Готово':'Дальше';
+  setTimeout(()=>$('qfb').scrollIntoView({block:'nearest',behavior:'smooth'}),60);}
+function finishQuiz(){if(QZ.ok>=2){const c=S.cur;mark(c.k,c.j);const p=PLANS[S.subj].find(x=>x.k===c.k);$('doneT').textContent=c.j<p.s.length?p.s[c.j]:p.l;show('done');S.just=c;}
+  else{const m=QZ.miss[0];$('failM').innerHTML=mz();$('failT').textContent=`Перепроверь шаг «${STEPS[m.step].t}» и попробуй ещё раз.`;QZ.back=m.step;show('fail');}}
+$('fStep').onclick=()=>openLevel(QZ.back);
+$('fRetry').onclick=startQuiz;
+$('dMap').onclick=backToMap;
+$('dNext').onclick=()=>{const j=S.just;backToMap();const p=j&&PLANS[S.subj].find(x=>x.k===j.k);if(p&&j.j<p.s.length)setTimeout(()=>openNode(p.k,j.j+1),800);};
+function backToMap(){show('map');buildMap();scrollToCur(false);const j=S.just;S.just=null;
+  if(j){const n=NODES.find(q=>q.k===j.k&&q.j===j.j),sc=$('mapsc');if(n)sc.scrollTop=Math.max(0,n.y-sc.clientHeight*.45);const b=$('mapin').querySelector(`.nd[data-k="${j.k}"][data-j="${j.j}"]`);if(b)b.classList.add('pop');react($('mapM'),'happy',1500);}}
+
+/* ═══ теория ═══ */
+function openTheory(){$('tbody').innerHTML=`<h2>Посредник — плоскость уровня</h2>
+ <div class="tcard"><h3>Идея</h3>${draw(4,{h:360})}<p>Режем обе поверхности одной плоскостью. Каждая даёт простую линию — окружность или прямые. Их пересечение — точки искомой линии.</p></div>
+ <div class="tcard"><h3>Когда подходит</h3><p>Оси поверхностей перпендикулярны одной плоскости проекций. Тогда плоскость уровня режет обе по окружностям.</p></div>
+ <div class="tcard"><h3>Порядок</h3><p>1. Опорные точки: верхняя, нижняя, на очерках.<br>2. Плоскость α между ними.<br>3. Сечения обеих фигур на виде, где они — окружности.<br>4. Их пересечение — точки; поднять на α.<br>5. Ещё 3–4 плоскости, соединить, видимость.</p></div>
+ <div class="tcard"><h3>Частая ошибка</h3><p>Забыть, что точек на каждой плоскости две — спереди и сзади. На фронтальном виде они сливаются, а сверху видны обе.</p></div>`;
+ show('theory');$('tbody').scrollTop=0;}
+$('thGo').onclick=()=>openLevel(0);
+
+/* ═══ уровень на карте: плашка ═══ */
+function openNode(k,j){const p=PLANS[S.subj].find(x=>x.k===k), fin=j===p.s.length, rk=p.kind==='rk', demo=k===DEMO.k&&j===DEMO.j;S.cur={k,j};
+  if(fin){sheet(`<div class="kick${rk?' rk':''}">${esc(p.l)}</div><h2>${esc(p.t)}</h2>
+    <p class="note">${rk?'Пробный билет: задачи всех уровней острова, как на контрольной.':'Своё ДЗ: разбор твоего варианта по шагам.'}</p>
+    <div class="stack"><button type="button" class="btn" id="finGo">${rk?'Начать билет':'Решать свой вариант'}</button></div>`,p.l);
+    $('finGo').onclick=()=>{unsheet();toast(rk?'Пробный билет — следующий шаг прототипа':'Откроется разбор варианта (экран, который уже переделали)');};return;}
+  sheet(`<div class="kick${rk?' rk':''}">${esc(p.l)} · уровень ${j+1}</div><h2>${esc(p.s[j])}</h2>
+   <div class="essence">${draw(4,{h:360})}<p><b>Суть за минуту.</b> ${demo?'Режешь обе поверхности одной горизонтальной плоскостью. Каждая даёт окружность. Где окружности пересеклись — точки искомой линии.':'В прототипе суть и пример есть только у уровня «Посредник — плоскость уровня» (ДЗ №4). Здесь показан он.'}</p></div>
+   <div class="stack"><button type="button" class="btn" id="lvGo">Приступить</button><button type="button" class="btn gh" id="lvTh">Теория</button></div>`,p.s[j]);
+  $('lvGo').onclick=()=>{unsheet();openLevel(0);};$('lvTh').onclick=()=>{unsheet();openTheory();};}
+$('mapin').addEventListener('click',e=>{const b=e.target.closest('.nd');if(b){openNode(b.dataset.k,+b.dataset.j);return;}if(e.target.closest('#mapM')){react($('mapM'),'happy',1000);openAsk(0);}});
+$('paper').addEventListener('click',e=>{if(e.target.closest('#pm'))openAsk(LV.k);});
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=backToMap);
+document.querySelectorAll('.subj button').forEach(b=>b.onclick=()=>{if(S.subj===b.dataset.s)return;S.subj=b.dataset.s;LS.set('subj',S.subj);document.querySelectorAll('.subj button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));buildMap();scrollToCur(false);});
+
+/* ═══ прототип: персонаж и результаты проверки ═══ */
+$('protoB').onclick=()=>{const rows=QUIZ.map(Q=>{const s=S.stats[Q.id]||{n:0,ok:0,sureNo:0,guessOk:0};return `<tr><td>${esc(Q.q)}<br><span class="note">шаг «${esc(STEPS[Q.step].t)}»</span></td><td>${s.n?Math.round(s.ok/s.n*100)+'%':'—'}</td><td>${s.sureNo}</td><td>${s.guessOk}</td></tr>`;}).join('');
+  sheet(`<h2>Персонаж</h2><div class="mpick">${Object.keys(MZ).map(t=>`<button type="button" data-m="${t}" aria-pressed="${S.mz===t}"><span class="mi">${mz(t)}</span>${MZ[t].n}</button>`).join('')}</div>
+   <h2 style="margin-top:6px">Как поняли материал</h2><p class="note">Видно только автору. «Уверенно ошиблись» — шаг объяснён плохо или вводит в заблуждение. «Угадали» — понимания нет, хотя ответ верный.</p>
+   <table class="st"><thead><tr><th>Вопрос</th><th>Верно</th><th>Уверенно ошиблись</th><th>Угадали</th></tr></thead><tbody>${rows}</tbody></table>
+   <button type="button" class="btn gh" id="reset">Сбросить прогресс</button>`,'Прототип');
+  $('sheet').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{S.mz=b.dataset.m;LS.set('mz',S.mz);$('sheet').querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const m=$('mapM');if(m){m.innerHTML=mz();react(m,'happy',1200);}react(b.querySelector('.mi'),'happy',1200);});
+  $('reset').onclick=()=>{S.done={ng1:[0,1,2,3,4,5,6,7],ng2:[0,1,2]};S.stats={};LS.set('done',S.done);LS.set('stats',S.stats);unsheet();buildMap();scrollToCur(true);};};
+
+const st=document.createElement('style');st.textContent='@keyframes fadeIn{to{opacity:1}}';document.head.appendChild(st);
+document.querySelectorAll('.subj button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.s===S.subj)));
+buildMap();scrollToCur(false);
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(!$('map').hidden){const y=$('mapsc').scrollTop;buildMap();$('mapsc').scrollTop=y;}},150);});
+})();
+</script>
