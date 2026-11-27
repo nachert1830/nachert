@@ -31048,11 +31048,12 @@ function dzVariant(v,d,n,extra){
 /* ИГ: деталь варианта — тот же разбор, что у заданий тетради (partPage): данные виды, 3D, построение по шагам, лист */
 function dzPart(v,d,n){ let m=null; try{ m=d.part(n); }catch(e){ console.error(e); }
   if(!m||!window.IGUI){ v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'igx dzwrap dzx',body:dzTop(d,vesc(d.label)+' · вариант '+n)+`<div class="box warn"><h4>${vesc(d.label)}, вариант ${n}</h4>Этого варианта пока нет. <a href="${HDZ()}">Впиши свой вариант</a>.</div>`}); return d.label+' · вариант '+n; }
-  IGUI.partPage(v,{model:m,head:dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — разбор по шагам, 3D и лист'))+(d.method||dzChecks(d).length?dzPills(d,''):'')+(window.METHOD?METHOD.strip(d,n):window.PREP?PREP.chip(d.id):'')+condRepHTML(d,n),
+  /* копия: сверху только «Назад · вариант · Поделиться» — без вкладок и плашки методички; «Не сходится» — в самом низу */
+  IGUI.partPage(v,{model:m,head:'<div class="dzx-clean">'+dzTop(d,dzVarTitle(d,n),dzShareHTML(HDZ(d.id,n),d.label+', вариант '+n+' — разбор по шагам, 3D и лист'))+'</div>',
     crumbs:null,title:'Вариант '+n,back:[HDZ(d.id),'К заданию'],docTitle:d.label+' · вариант '+n,beta:'',
-    img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:d.text,
+    img:d.img?d.img(n):'',learn:!!d.learn,tb:{name:'Вариант '+n,sub:m.title||d.title,task:d.label},fig:d.label+(m.title?' · '+m.title:', вариант '+n),q:'Достроить виды и выполнить необходимые разрезы.',
     sheet:d.id==='ig2'?null:mode=>IGS.sheet({md:m,nv:n,key:d.id+'-'+n,dims:m.dims||[]},mode),
-    bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')});
+    bottom:(m.why?`<div class="igx-why"><b>Как получается ответ.</b> ${m.why}</div>`:'')+(m.note?`<div class="igx-why"><b>Принято при чтении чертежа.</b> ${m.note}</div>`:'')+condRepHTML(d,n)});
   setLast({s:d.course,kind:'dz',id:d.id+'/'+n,href:HDZ(d.id,n),label:d.label+' · вариант '+n,sub:dzCourse(d.course)+' · ДЗ'});
   return d.label+' · вариант '+n; }
 
