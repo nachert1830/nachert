@@ -32285,14 +32285,14 @@ function sheetSVG(model,title,sub,task,mode){
      Без этого в «Задании» были только габариты (у правильных многогранников — ширина между гранями, которой в условии нет). */
   const condDims=given&&!model.noGivenDims&&Array.isArray(model.dims)&&model.dims.length&&window.IGS&&IGS.dimsSVG, CEXT=[0,0,0,0];
   if(condDims){ const Jt=IG3.jc(model.tree), edge=(z,sg)=>{ for(let x=r+1;x>=0;x-=0.5){ for(let y=-r-1;y<=r+1;y+=1.5) if(Jt(sg*x,y,z)<0) return sg*x; } return 0; };
-    const FD=model.dims.filter(d=>d[0]==='F'||d[0]==='T'), side={1:Math.max(r+12,...FD.filter(d=>d[0]==='F'&&d[1]==='v'&&d[4]>0).map(d=>d[4]+12)),'-1':Math.min(-r-12,...FD.filter(d=>d[0]==='F'&&d[1]==='v'&&d[4]<0).map(d=>d[4]-12))};
-    const LD=model.dims.filter(d=>d[0]==='L'&&d[1]==='v').map(d=>{ const sg=d[4]>=0?1:-1, z0d=d[2][1], z1d=d[3][1], off=side[sg]; side[sg]+=sg*12;
+    const KD=!!(model.kd&&model.givenKL), FD=model.dims.filter(d=>d[0]==='F'||d[0]==='T'), side={1:Math.max(r+12,...FD.filter(d=>d[0]==='F'&&d[1]==='v'&&d[4]>0).map(d=>d[4]+12)),'-1':Math.min(-r-12,...FD.filter(d=>d[0]==='F'&&d[1]==='v'&&d[4]<0).map(d=>d[4]-12))};
+    const LD=model.dims.filter(d=>d[0]==='L'&&(KD||d[1]==='v')).map(d=>{ if(KD) return d; const sg=d[4]>=0?1:-1, z0d=d[2][1], z1d=d[3][1], off=side[sg]; side[sg]+=sg*12;
       return ['F','v',[edge(z0d+0.01,sg),z0d],[edge(z1d-0.01,sg),z1d],off,d[5]]; });
-    const MM={F:q=>P(D.front,[q[0],0,q[1]],X0,Y0),T:q=>P(D.top,[q[0],q[1],z1],X0,TOPY)};
+    const MM={F:q=>P(D.front,[q[0],0,q[1]],X0,Y0),T:q=>P(D.top,[q[0],q[1],z1],X0,TOPY),L:q=>P(D.leftG||D.front,[0,q[0],q[1]],X0+S,Y0)};   /* L — только профиль K на виде слева (model.kd) */
     /* движок размеров (IGS.dimFix): выносные — от элементов данных изображений; на «дано» главный вид без разреза, поэтому
        размеры задания к невидимому контуру допустимы (так в задании), видимые линии — в первую очередь */
     const SGg=(d,iu,iv)=>(d&&d.lines||[]).filter(L=>L.a3&&L.b3).map(L=>{ const g=[L.a3[iu],L.a3[iv],L.b3[iu],L.b3[iv]]; if(L.h) g.h=1; return g; });
-    const GSG={F:SGg(D.front,0,2),T:model.noTop?[]:SGg(D.top,0,1)}, GAXS={F:[[0,z0-7,0,z1+7]].concat(GAX.F),T:model.noTop?[]:[[-r-7,0,r+7,0],[0,-r-7,0,r+7]].concat(GAX.T)}, GCIR={F:[],T:[]};
+    const GSG={F:SGg(D.front,0,2),T:model.noTop?[]:SGg(D.top,0,1),L:KD?model.givenKL.map((p,i,a)=>{ const n=a[(i+1)%a.length]; return [p[0],p[1],n[0],n[1]]; }).concat([[model.box[0][1],z0,model.box[1][1],z0]]):[]}   /* + уровень основания z0: от него размер 25 */, GAXS={F:[[0,z0-7,0,z1+7]].concat(GAX.F),T:model.noTop?[]:[[-r-7,0,r+7,0],[0,-r-7,0,r+7]].concat(GAX.T),L:KD?[[0,z0-7,0,z1+7]]:[]}, GCIR={F:[],T:[]};
     /* окружность, в которую вписан многоугольник («вписан в Ø…», как в задании), — тонкой сплошной: иначе стрелка диаметра в пустоте.
        На главном виде у неё горизонтальная центровая, выходит за окружность на 3 мм (ГОСТ 2.303); вертикальная — ось вида */
     FD.forEach(d=>{ if(d[1]!=='dia') return; const R=d[3]/2, V=d[0];
@@ -32306,7 +32306,7 @@ function sheetSVG(model,title,sub,task,mode){
     const GBAD=IGS.dimIssues(ALL,GSG,GAXS,GCIR);
     try{ Object.defineProperty(model,'_givenDimBad',{value:GBAD,configurable:true}); }catch(e){}
     /* место числа и полки выноски — без пересечений с линиями (ГОСТ 2.307): помехи — линии изображений, оси, окружности */
-    const OBS=[]; ['F','T'].forEach(V=>{ (GSG[V]||[]).concat(GAXS[V]||[]).forEach(g=>{ const a=MM[V]([g[0],g[1]]), b=MM[V]([g[2],g[3]]); OBS.push([a[0],a[1],b[0],b[1]]); });
+    const OBS=[]; ['F','T'].concat(KD?['L']:[]).forEach(V=>{ (GSG[V]||[]).concat(GAXS[V]||[]).forEach(g=>{ const a=MM[V]([g[0],g[1]]), b=MM[V]([g[2],g[3]]); OBS.push([a[0],a[1],b[0],b[1]]); });
       (GCIR[V]||[]).forEach(q=>{ for(let i=0;i<24;i++){ const a=MM[V]([q[0]+q[2]*Math.cos(i*Math.PI/12),q[1]+q[2]*Math.sin(i*Math.PI/12)]), b=MM[V]([q[0]+q[2]*Math.cos((i+1)*Math.PI/12),q[1]+q[2]*Math.sin((i+1)*Math.PI/12)]); OBS.push([a[0],a[1],b[0],b[1]]); } }); });
     (ALL.axes||[]).forEach(q=>{ const g=q.seg, a=MM[q.V]([g[0],g[1]]), b=MM[q.V]([g[2],g[3]]); o+=ln(a,b,'#111',q.cont?null:AX,.7); OBS.push([a[0],a[1],b[0],b[1]]); });   /* оси элементов и продолжения контура, проведённые движком */
     const DSV=IGS.dimsSVG(ALL,MM,{auto:true,obs:OBS}); o+=DSV;
