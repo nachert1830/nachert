@@ -16,7 +16,7 @@ function register(R,deps){ const {store,now,fail,body,json,limit}=deps, cfg=()=>
   R['POST /api/luka/miss']=async req=>{ const b=body(req)||{}, kind=['miss','down','up'].includes(b.kind)?b.kind:'miss', src=String(b.src||'');
     if(!SRC_RE.test(src)) fail(400,'Неверное место вопроса.');
     const q=scrub(b.q); if(kind==='miss'&&q.length<2) fail(400,'Пустой вопрос.');
-    await limit('luka',String(req.ip||'?'),60,3600);
+    await limit('luka',String(req.ip||'?'),600,3600);   /* общежитие, вуз — сотни студентов за одним адресом */
     const t=now(); await store.put('lukamiss',{id:new Date(t).toISOString()+'#'+crypto.randomBytes(3).toString('hex'),ts:t,src,kind,q,
       rid:String(b.rid||'').replace(/[^\wа-яё:«»() .-]/gi,'').slice(0,80),conf:Math.max(0,Math.min(100,parseInt(b.conf,10)||0))});
     return json(200,{ok:true}); };

@@ -158,6 +158,8 @@ function bindBubble(){const {el}=OPEN;
   el.querySelectorAll('.lk-rate [data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g==='1', rid=b.parentNode.dataset.rid;
     track('rate',{rid,good:g?1:0,src:OPEN.c.src});toServer({src:OPEN.c.src,kind:g?'up':'down',rid,q:g?'':(OPEN.lastText||'').slice(0,300)});const log=LS.get('luka_rate',[]);log.push({rid,g,src:OPEN.c.src,t:Date.now()});LS.set('luka_rate',log.slice(-200));
     b.parentNode.innerHTML=g?'<span class="lk-ok">Спасибо!</span>':'<span class="lk-ok">Понял, переделаю.</span> <a href="#/ask">Написать в поддержку</a>';react(OPEN.paper.querySelector('.lk-b'),g?'happy':'sad',1200);});
+  /* «войти» — в настоящий кабинет; после входа кабинет вернёт на этот же чертёж (lk_ret, lk/app.js goRet) */
+  el.querySelectorAll('a[href*="lk/#/login"]').forEach(x=>x.onclick=()=>{try{localStorage.setItem('lk_ret','/new/'+location.hash);}catch(e){}});
   const f=el.querySelector('.lk-in');f.onsubmit=e=>{e.preventDefault();const v=f.querySelector('input').value.trim();if(v)ask(v);};}
 function answer(r,how){if(!OPEN||!r)return;OPEN.used.add(r.id);const pen=OPEN.paper.querySelector('.lk-b');
   if(r.act==='show')try{OPEN.api.show();}catch(e){}

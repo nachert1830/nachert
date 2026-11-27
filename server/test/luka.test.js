@@ -26,6 +26,6 @@ test('Лука: ключ можно задать и самим паролем (L
 test('Лука: без ключа на сервере журнал не читается никем; лимит записи по адресу',async()=>{
   const c=club({cfg:{luka:LUKA.fromEnv({})}});
   assert.equal((await c.call('GET','/api/luka/inbox',undefined,{headers:{'x-luka-key':''}})).status,403);
-  let last=200; for(let i=0;i<62;i++) last=(await c.call('POST','/api/luka/miss',{src:'task:70:1',q:'вопрос '+i},{ip:'10.9.9.9'})).status;
+  let last=200; for(let i=0;i<602;i++) last=(await c.call('POST','/api/luka/miss',{src:'task:70:1',q:'вопрос '+i},{ip:'10.9.9.9'})).status;
   assert.equal(last,429);
 });
