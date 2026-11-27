@@ -75,7 +75,8 @@ function replies(c){const st=c.st, b=blocks(st), R=[];const kw=s=>norm(strip(s))
     if(c.mistakes&&c.mistakes.length){const sk=new Set(kw((st&&st.t||'')+' '+b.what+' '+b.why));let best=null,bs=0;
       c.mistakes.forEach(m=>{const o=kw(m).filter(w=>w.length>3&&sk.has(w)).length;if(o>bs){bs=o;best=m;}});
       if(best)add('mistake','Где тут ошибаются?','Частая ошибка: '+best);}
-    if(c.nextT)add('next','Что дальше?','Дальше — <b>'+esc(c.nextT)+'</b>.');}
+    if(c.nextT)add('next','Что дальше?','Дальше — <b>'+esc(c.nextT)+'</b>.');
+    else add('next','Что дальше?','Это последний шаг — готовый результат. Сверь с ним свой лист: все виды и разрезы на месте, линии связи не потерялись, видимость и штриховка верные, размеры и подписи как в задании.');}
   /* термины этого шага — из словаря сайта */
   try{const txt=strip((st&&st.t||'')+' '+b.what+' '+b.why);(window.GLOSS?GLOSS.find(txt,2):[]).forEach(t=>add('term:'+t.t,'Что такое «'+t.t.replace(/\s*\(.*\)$/,'')+'»?','<b>'+esc(t.t)+'.</b> '+t.d));}catch(e){}
   if(c.has3d)add('3d','Покажи в 3D','Открыл этот шаг в 3D — покрути пальцем, посмотри с разных сторон.',{act:'3d'});
