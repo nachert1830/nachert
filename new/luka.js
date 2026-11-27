@@ -86,7 +86,7 @@ function match(text,R,c){const n=norm(text), I=intents(n), labs=labelsIn(n.raw);
   /* термин спросили напрямую — словарь знает термины всего курса, не только этого шага */
   let gl=null;try{const f=window.GLOSS?GLOSS.find(text,1):[];if(f.length&&(I.term||n.stems.length<=4))gl=f[0];}catch(e){}
   /* сильная заготовка (библиотека или шаг) важнее словаря: «как получаются проекции точки» — развёрнутый ответ, а не определение */
-  const pre=R.map(r=>({r,ov:r.kw.length?n.stems.filter(w=>w.length>2&&r.kw.includes(w)).length:0})).filter(x=>x.r.id.indexOf('lib:')===0&&x.ov>=2).sort((a,b)=>b.ov-a.ov)[0];
+  const pre=R.map(r=>({r,ov:r.kw.length?n.stems.filter(w=>w.length>2&&r.kw.includes(w)).length:0})).filter(x=>x.r.id.indexOf('lib:')===0&&x.ov>=2&&(!I.term||x.r.intent==='term')).sort((a,b)=>b.ov-a.ov)[0];
   if(pre)return {best:pre.r,alts:[],conf:.8,why:'lib'};
   if(gl){const id='term:'+gl.t;let r=R.find(x=>x.id===id);if(!r){r={id,q:'Что такое «'+gl.t+'»?',a:'<b>'+esc(gl.t)+'.</b> '+gl.d,kw:[]};}return {best:r,alts:[],conf:.9,why:'term'};}
   const sc=R.map(r=>{const base=r.intent||r.id.split(':')[0];let s=(I[base]||0)*.6;
