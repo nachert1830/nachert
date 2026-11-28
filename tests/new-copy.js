@@ -85,7 +85,27 @@ async function run() {
       if (await page.locator('.lk-b').count()) B(dev.name + ': Лука — только с 68-й задачи', 'есть на 12-й');
       await check('#/ig4', '.mk-doors', 'методичка ИГ ДЗ №4');
       await check('#/ig2', '.mk-doors', 'методичка ИГ ДЗ №2 (без методики)');
-      await check('', '.mkh', 'главная — «Сдаётся скоро»');
+      /* дизайн 2: главная — новости (две плашки), агент-желе со строкой вопроса, «о сайте», разделы без теории; подвал — логотип */
+      await check('', '.hn-c', 'главная — новости');
+      { const r = await page.evaluate(() => ({ news: document.querySelectorAll('#hnews .hn-c').length, jelly: !!document.querySelector('#hsearch canvas.ag-jelly'),
+          inp: !!document.querySelector('#hsearch .sr-in'), about: !!document.querySelector('.hab [data-author]'),
+          th: [...document.querySelectorAll('#navBot a, #navTop a, .hd2 a')].filter(a => /path|theory/.test(a.getAttribute('href'))).length,
+          foot: [...document.querySelectorAll('#foot a')].map(a => a.getAttribute('href')).join(' ') }));
+        if (r.news !== 2) B(dev.name + ': главная — две плашки новостей', r.news);
+        if (!r.jelly || !r.inp) B(dev.name + ': главная — агент-желе и строка вопроса', JSON.stringify(r));
+        if (!r.about) B(dev.name + ': главная — блок «о сайте» с автором', 'нет');
+        if (r.th) B(dev.name + ': теории нет в меню и разделах', r.th + ' ссылок');
+        if (/method/.test(r.foot)) B(dev.name + ': «Как мы учим» убран из подвала', r.foot); }
+      /* агент отвечает сам: термин — из словаря */
+      { const r = await page.evaluate(async () => { const i = document.querySelector('#hsearch .sr-in'); i.value = 'что такое горизонталь'; i.dispatchEvent(new Event('input', { bubbles: true }));
+          await new Promise(f => setTimeout(f, 800)); const s = document.getElementById('agSay'); return s && !s.hidden ? s.textContent : ''; });
+        if (!/Горизонталь/.test(r)) B(dev.name + ': агент — «что такое горизонталь» из словаря', r.slice(0, 80)); }
+      /* тетради — кольцо с крупными номерами; ДЗ — без прицела */
+      await check('#/ng/tasks', '.rg-c.front', 'тетрадь начерта — кольцо');
+      if ((await page.locator('#nbOpen').getAttribute('href').catch(() => '')) !== await page.locator('.rg-c.front').getAttribute('href').catch(() => '-')) B(dev.name + ': кольцо — «Открыть» ведёт на переднюю карточку', '');
+      await check('#/ig/wb', '.rg-c.front', 'тетрадь ИГ — кольцо');
+      await check('#/dz', '#nd-stage', 'колода «ДЗ»');
+      if (await page.locator('#nd-now').count()) B(dev.name + ': колода «ДЗ» без прицела', 'есть');
       if (errs.length) B(dev.name + ': ошибки JS', errs.slice(0, 3).join(' | '));
       await ctx.close();
     }

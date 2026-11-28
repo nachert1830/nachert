@@ -124,6 +124,8 @@
   var CN={ng:'Начерт',ig:'Инж. графика'};
   var DZ=DZR.list().map(function(d){var l=LOOK[d.id]||{a:'cube',col:'graphite',w:17};
     return {id:d.id,c:d.course,n:d.num,t:d.title,a:l.a,col:l.col,w:l.w,vb:l.vb,d:d};});
+  /* рисунок задания для карточек новостей на главной (классы рисунка — в new/v2.css, .hn-art) */
+  window.DZART=function(id){var x=DZ.find(function(y){return y.id===id;});return x&&ART[x.a]?'<svg class="hn-art" viewBox="'+(x.vb||'0 0 210 160')+'" aria-hidden="true">'+ART[x.a].replace(/url\(#nd/g,'url(#hn')+'</svg>':'';};
 
   /* календарь семестра: 1-я неделя с пн 31 авг 2026 (как RKS на сайте); срок — пятница недели */
   var DAY=864e5,W1=Date.UTC(2026,7,31),MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','нояб','дек'],WD=['вс','пн','вт','ср','чт','пт','сб'];
@@ -142,7 +144,7 @@
   var root=document.createElement('div');root.id='nd';
   root.innerHTML='<div class="in">'+
     '<div class="hd"><div><h1>Мои ДЗ</h1><button type="button" class="vbtn" id="nd-vbtn" aria-label="Сменить вариант"><span id="nd-vtx"></span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button></div>'+
-      '<button type="button" class="now" id="nd-now" aria-label="К актуальному заданию" title="К актуальному"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button></div>'+
+      '</div>'+
     '<div class="flt" id="nd-flt">'+[['ng','Начерт'],['ig','Инж. графика']].map(function(x){return '<button type="button" data-c="'+x[0]+'" aria-pressed="'+(S.c===x[0])+'">'+x[1]+'</button>';}).join('')+'</div>'+
     '<div class="sc" id="nd-sc" tabindex="0" aria-label="Домашние задания, листайте вверх и вниз"><div class="stage" id="nd-stage"></div></div>'+
     '<nav class="tabs" aria-label="Разделы">'+
@@ -166,7 +168,7 @@
   '</div>';
   document.body.appendChild(root);
   var $=function(id){return document.getElementById('nd-'+id);};
-  var sc=$('sc'),stage=$('stage'),nowB=$('now'),sheet=$('sheet');
+  var sc=$('sc'),stage=$('stage'),sheet=$('sheet');
 
   var L=[],els=[],act=0,G={},built=false,FX=-1;
   var PX=170;                 /* сколько пикселей ведёт палец на одну карточку (один «щелчок»); считает geo() от высоты карточки */
@@ -227,7 +229,7 @@
   }
   function render(){if(FX>=0) return;var p=M.p;
     for(var i=0;i<els.length;i++) put(i,pos(i-p,p));
-    var away=Math.abs(p-act)>.5;if(away!==render.away){render.away=away;nowB.classList.toggle('on',away);nowB.disabled=!away;}}
+    }
 
   /* ── отклик, как у колёсика Apple Watch ──
      Android (Chrome): navigator.vibrate — «тик» на каждую карточку и при протаскивании, и при инерции.
@@ -336,7 +338,6 @@
   sc.addEventListener('keydown',function(e){var r=Math.round(M.to);
     if(e.key==='ArrowDown'){e.preventDefault();go(r+1);} else if(e.key==='ArrowUp'){e.preventDefault();go(r-1);}
     else if(e.key==='Enter'&&e.target===sc){openTask(r);}});
-  nowB.addEventListener('click',function(e){tapTick(e);M.cur=act;go(act);});
 
   /* плавная смена раскладки (появление, раскрытие, закрытие): пружинистый переход CSS, потом снова покадрово */
   var EASE='cubic-bezier(.22,1,.36,1)';

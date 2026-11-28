@@ -5560,6 +5560,7 @@ button.dr-go{background:var(--surf2,var(--surf));border:1px solid var(--line);co
 <!-- колода «ДЗ»: стили сразу, и если открыт адрес ДЗ — страница сразу в режиме колоды, без мелькания прежней страницы -->
 <link rel="stylesheet" href="dzdeck.css?v=5">
 <link rel="stylesheet" href="method.css?v=1">
+<link rel="stylesheet" href="v2.css?v=1">
 <script>if(/^#\/dz(\/(ng|ig))?\/?$/.test(location.hash))document.documentElement.classList.add('nd-on');</script>
 </head>
 <body>
@@ -5586,9 +5587,9 @@ button.dr-go{background:var(--surf2,var(--surf));border:1px solid var(--line);co
 
 <div class="stuck" id="stuck"><div class="wrap"><b>Не нашёл свой вопрос?</b><span>Напиши, что не получается, своими словами</span><button type="button" id="stuckBtn">Найти на сайте →</button></div></div>
 
-<footer id="foot"><div class="wrap"><button type="button" class="foot-cat" id="footCat" aria-label="Лука — талисман"></button>
+<footer id="foot"><div class="wrap">
  <div class="foot-mini"><button type="button" class="foot-logo" data-author aria-label="mathanov — владелец сайта"><img class="lg-b" src="../img/logo-mathanov-b.webp" width="640" height="108" alt="mathanov." loading="lazy"><img class="lg-w" src="../img/logo-mathanov-w.webp" width="640" height="108" alt="" loading="lazy"></button>
-  <nav class="foot-links" aria-label="О сайте"><a href="#/method">Как мы учим</a><a href="#/about">О проекте</a><a href="#/privacy">Политика данных</a><a href="#/consent">Согласие</a></nav></div>
+  <nav class="foot-links" aria-label="О сайте"><a href="#/about/legal">Правовая информация</a></nav></div>
 </div></footer>
 
 <nav class="nav nav-bot" id="navBot" aria-label="Разделы"></nav>
@@ -29292,6 +29293,7 @@ return {open,corner};
 
 </script>
 
+<script src="jelly.js?v=1"></script><script src="agent.js?v=1"></script><script src="ring.js?v=1"></script>
 <script src="method.js?v=1"></script>
 <script>
 /* ═════════ РК1 · оболочка приложения ═════════
@@ -29320,6 +29322,7 @@ const IC={
   ep:'<path d="M3 13h18"/><path d="M9 6.5v13" stroke-dasharray="1.6 2.6"/><circle cx="9" cy="4.8" r="1.7"/><circle cx="9" cy="20.2" r="1.7"/>',
   ig:'<path d="M3.5 20.5 4.5 16 16.5 4a2.1 2.1 0 0 1 3 3L7.5 19z"/><path d="m14 6.5 3 3"/>',
   tr:'<path d="M20 11.5A8 8 0 0 0 6.3 6.3L4 8.5"/><path d="M4 3.8v4.7h4.7"/><path d="M4 12.5a8 8 0 0 0 13.7 5.2l2.3-2.2"/><path d="M20 20.2v-4.7h-4.7"/><path d="m9.3 12.2 1.9 1.9 3.6-3.8"/>',
+  ask:'<path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.4A7.5 7.5 0 1 1 20 11.5z"/><path d="M12.5 8.2l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/>',
   lr:'<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/><path d="M5 14.5 19 9.5" stroke-dasharray="2 2"/>'
 };
 const SUBJ={
@@ -29333,10 +29336,10 @@ const NAVS=[
   {id:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ng/tasks'},
   {id:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},
   {id:'rk',name:'РК',short:'РК',h:'#/ng/rk2'},
-  {id:'th',name:'Теория',short:'Теория',h:'#/ng/path'},
+  {id:'ask',name:'Помощник',short:'Помощник',h:'#/'},
   {id:'ep',name:'3D-модель',short:'3D',h:'#/epure',hide:true},
   {id:'ig',name:'Инж. графика',short:'ИГ',h:'#/ig',soon:true}];
-const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'ith',ic:'th',name:'Теория ЕСКД',short:'Теория',h:'#/ig/theory'}];
+const NAV_IG=[{id:'ilr',ic:'lr',name:'Учиться',short:'Учиться',h:'#/ig/learn'},{id:'ihw',ic:'hw',name:'ДЗ',short:'ДЗ',h:'#/dz'},{id:'iwb',ic:'nb',name:'Тетрадь',short:'Тетрадь',h:'#/ig/wb'},{id:'iask',ic:'ask',name:'Помощник',short:'Помощник',h:'#/'}];
 const subjOf=r=>r&&r.s==='dz'?(r.tab?(/^ig/.test(r.tab)&&IGON()?'ig':'ng'):(NAVSUBJ||'ng')):(r&&(r.s==='ig'||r.s==='part'))&&IGON()?'ig':'ng'; let NAVSUBJ=null;
 function navKey(r){ if(r.s==='ig'||r.s==='part'){ if(!IGON()) return 'ig'; return {learn:'ilr',points:'ilr',nk:'ilr',hw2:'ihw',dz:'ihw',wb:'iwb',theory:'ith'}[r.tab]||(r.s==='part'?'ihw':'ihome'); }
   if(r.s==='ng') return r.tab?{tasks:'nb',check:'rk',rk2:'rk',hw:'hw',var:'hw',dz:'hw',path:'th',cheat:'th',learn:'th',day:'th'}[r.tab]||'nb':'nghome';
@@ -29354,14 +29357,14 @@ function buildNav(sj){
   if(sj==='ig'){
     /* те же места, что у начерта: Тетрадь · ДЗ · (РК → Учиться) · Теория; «Главная» — одна на оба предмета */
     const IGO=[NAV_IG[2],NAV_IG[1],NAV_IG[0],NAV_IG[3]];
-    $('navTop').innerHTML=IGO.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.ic)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
-    const one=n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.ic)}<span class="ns">${n.short}</span></a>`;
+    $('navTop').innerHTML=IGO.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv"${/ask/.test(n.id)?' data-ask':''}>${svg(n.ic)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
+    const one=n=>`<a href="${n.h}" data-s="${n.id}" class="nv"${/ask/.test(n.id)?' data-ask':''}>${svg(n.ic)}<span class="ns">${n.short}</span></a>`;
     $('navBot').innerHTML=one(IGO[0])+one(IGO[1])+homeB('#/','home')+one(IGO[2])+one(IGO[3]);
   } else {
     const NG=NAVS.filter(n=>n.id!=='ig'&&!n.hide);
-    $('navTop').innerHTML=NG.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
-    const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv">${svg(n.id)}<span class="ns">${n.short}</span></a>`; };
-    $('navBot').innerHTML=one('nb')+one('hw')+homeB('#/','home')+one('rk')+one('th');
+    $('navTop').innerHTML=NG.map(n=>`<a href="${n.h}" data-s="${n.id}" class="nv"${n.id==='ask'?' data-ask':''}>${svg(n.id)}<span class="nl">${n.name}</span><span class="ns">${n.short}</span></a>`).join('');
+    const one=id=>{ const n=NAVS.find(x=>x.id===id); return `<a href="${n.h}" data-s="${n.id}" class="nv"${n.id==='ask'?' data-ask':''}>${svg(n.id)}<span class="ns">${n.short}</span></a>`; };
+    $('navBot').innerHTML=one('nb')+one('hw')+homeB('#/','home')+one('rk')+one('ask');
   }
   /* предмет: Начерт и инженерная графика — два отдельных раздела; переключатель виден, пока ИГ открыта */
   const bar=$('subjBar'); if(bar){ if(IGON()){ bar.hidden=false;
@@ -29455,6 +29458,10 @@ document.addEventListener('keydown',e=>{ if(e.key!=='/'||e.ctrlKey||e.metaKey||e
 try{ history.scrollRestoration='manual'; }catch(e){}   /* прокруткой управляем сами: новая страница — всегда сверху */
 window.addEventListener('popstate',()=>{ POP=((location.hash||'#/')!==CURH); });
 window.addEventListener('hashchange',route);
+document.addEventListener('click',e=>{ const a=e.target.closest&&e.target.closest('[data-ask]'); if(!a) return; e.preventDefault();
+  const inp=document.querySelector('#hsearch .sr-in');
+  if(inp&&document.body.dataset.subj==='home'){ document.getElementById('hsearch').scrollIntoView({block:'start',behavior:'smooth'}); setTimeout(()=>inp.focus({preventScroll:true}),250); }
+  else if(window.SEARCH) SEARCH.open(); });
 { const sb=document.getElementById('stuckBtn'); if(sb) sb.addEventListener('click',()=>{ if(window.SEARCH) SEARCH.open(''); });
   /* «Задать вопрос автору» — страница #/ask (../lk/ask.js): откуда спросили, она запоминает сама */
 }
@@ -29792,7 +29799,7 @@ function CATSAY(kind,html,cls){ return `<div class="catsay ${cls||''}"><span cla
 /* ── кошка на страницах: сидит на заголовке раздела (поза своя у каждого раздела), спит в подвале.
    Следит глазами за пальцем/курсором; если ткнуть — мурлычет. Только на главных страницах разделов, не в задачах. */
 const CAT_SPOT={'ng/path':'peek','ng/tasks':'sleep','ng/hw':'think','ng/check':'peek','ng/cheat':'think','ig':'peek','ig/path':'peek','kg':'sleep','kg/path':'sleep','about':'wave','topic':'think'};
-function catPerch(v,r){
+function catPerch(v,r){ return;   /* талисман-пингвин убран: агент сайта — желе на главной */
   const key=r.s+(r.tab?'/'+r.tab:''), kind=r.item==null?(CAT_SPOT[key]||CAT_SPOT[r.s]):null; if(!kind) return;
   const intro=v.querySelector('.intro')||v.querySelector('h1:not(.sr-only)'); if(!intro||intro.querySelector('.perch')) return;
   intro.classList.add('has-perch'); intro.insertAdjacentHTML('afterbegin',`<button type="button" class="perch" data-cat="${kind}" aria-label="Лука — талисман">${CAT(kind)}</button>`);
@@ -30156,7 +30163,7 @@ FX.viewsHTML=function(cls){ return `<div class="vc ${cls||''}${VIEWS==null?' wai
 function paintViews(){
   const els=document.querySelectorAll('[data-views]');
   if(VIEWS==null){ els.forEach(el=>{ el.hidden=true; }); return; }   /* данных нет — заготовку убираем */
-  document.querySelectorAll('[data-odo]').forEach(el=>{ const b=el.closest('.ownc-v'); if(b) b.hidden=false; ODO.set(el,VIEWS,plural(VIEWS,'просмотр','просмотра','просмотров')); });
+  document.querySelectorAll('[data-odo]').forEach(el=>{ const b=el.closest('.ownc-v,.hab-v'); if(b) b.hidden=false; ODO.set(el,VIEWS,plural(VIEWS,'просмотр','просмотра','просмотров')); });
   /* число ставим сразу, без «бегущих» цифр: панель рядом не дёргается */
   const txt=VIEWS.toLocaleString('ru-RU'), lab=plural(VIEWS,'просмотр','просмотра','просмотров');
   els.forEach(el=>{ const b=el.querySelector('.vc-n'), l=el.querySelector('.vc-l'); el.hidden=false; el.classList.remove('wait'); el.dataset.done=1;
@@ -30532,54 +30539,90 @@ function bentoHTML(title,items){
   return `<div class="hbn-col"><h3 class="hbn-h">${title}</h3>${items.map(([h,t,c,k])=>`<a class="hbn-c ${k} hbn-${c}" href="${h}"><svg class="hbn-art" viewBox="0 0 120 120" aria-hidden="true">${HBN_ART[t]||''}</svg><b>${t}</b></a>`).join('')}</div>`; }
 function appsHTML(c,title,items){
   return `<div class="hap hap-${c}"><h3>${title}</h3><div class="hap-g">${items.map(([h,t,ic,n,hot])=>`<a href="${h}"><span class="hap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${APPIC[ic]}</svg>${n?`<b>${n}</b>`:''}</span>${t}</a>`).join('')}</div></div>`; }
+/* ═════════ Главная (дизайн 2): новости → агент-желе → о сайте → разделы ═════════ */
+/* новости — две самые срочные вещи для студента: ближайшее ДЗ каждого предмета и РК; эфир, если он идёт, — первым */
+const HN_DEFS='<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>'+
+  '<linearGradient id="hnCone" x1="0" x2="1"><stop offset="0" stop-color="#a9bde9"/><stop offset=".4" stop-color="#ffffff"/><stop offset=".65" stop-color="#e4ebfb"/><stop offset="1" stop-color="#93aae0"/></linearGradient>'+
+  '<linearGradient id="hnCyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe7a0"/><stop offset=".4" stop-color="#ffcf3a"/><stop offset="1" stop-color="#d99a06"/></linearGradient>'+
+  '<radialGradient id="hnSph" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#d6e0f7"/><stop offset="1" stop-color="#93aae0"/></radialGradient>'+
+  '<linearGradient id="hnHyp" x1="0" x2="1"><stop offset="0" stop-color="#9fb4e6"/><stop offset=".45" stop-color="#f4f7ff"/><stop offset="1" stop-color="#8ea6df"/></linearGradient></defs></svg>';
+function homeNews(){
+  const C=[], days=n=>n===0?'сегодня':n===1?'завтра':'через '+n+' '+plural(n,'день','дня','дней');
+  if(window.DZR) ['ng','ig'].forEach(cr=>{ const x=DZR.list(cr).map(d=>({d,u:dzDue(d)})).filter(x=>x.u&&x.u.left>=0).sort((a,b)=>a.u.left-b.u.left)[0]; if(x) C.push({k:'dz',d:x.d,u:x.u,left:x.u.left}); });
+  try{ const i=RKS.current(); if(i&&!i.past) C.push({k:'rk',i,left:Math.max(0,i.left)}); }catch(e){}
+  C.sort((a,b)=>a.left-b.left);
+  const card=c=>{
+    if(c.k==='dz'){ const d=c.d, hot=c.left<=3, art=window.DZART?DZART(d.id):'';
+      return `<a class="hn-c" data-k="${hot?'hot':d.course==='ng'?'navy':'royal'}" href="${HDZ(d.id)}" aria-label="${attr(dzCourse(d.course)+', ДЗ '+d.num+': '+d.title+', сдать '+days(c.left))}">
+        <span class="hn-pill"><i></i>сдать ${days(c.left)}</span><span class="hn-k">${dzCourse(d.course)}</span>${art}
+        <span class="hn-big"><span>ДЗ</span><b>${d.num}</b></span><span class="hn-t">${attr(d.title)}</span></a>`; }
+    const i=c.i, n=RKS.count(i);
+    return `<a class="hn-c" data-k="${RKS.heat(i)==='hot'?'hot':'sky'}" href="${H('ng','rk2')}" aria-label="${attr('Рубежный контроль '+i.n+': '+RKS.when(i))}">
+      <span class="hn-pill"><i></i>${n.word?attr(n.b):'через '+n.b+' '+RKS.dw(+n.b)}</span><span class="hn-k">Начерт · рубежный контроль</span>
+      <svg class="hn-rk" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="68" r="42"/><path d="M52 14h16M60 14v12M92 30l8-8"/><path d="M60 68V40M60 68l18 12"/></svg>
+      <span class="hn-big"><span>РК</span><b>${i.n}</b></span><span class="hn-t">${attr(RKS.when(i))}</span></a>`; };
+  let h=C.slice(0,2).map(card);
+  try{ const pm=PROMO.cardHTML(); if(pm) h=[pm].concat(h).slice(0,2); }catch(e){}
+  /* срочного нет — продолжить тетрадь */
+  if(h.length<2){ const all=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number').sort((a,b)=>a-b), nx=all.find(n=>!taskState(n))||all[0];
+    h.push(`<a class="hn-c" data-k="royal" href="${H('ng','tasks',nx)}"><span class="hn-pill"><i></i>продолжить</span><span class="hn-k">Начерт · тетрадь</span>
+      <span class="hn-big"><span>№</span><b>${nx}</b></span><span class="hn-t">${attr(short(WB3.get(nx).q,70))}</span></a>`); }
+  return HN_DEFS+h.join(''); }
+/* цифры «о сайте» — считаются один раз за вкладку */
+let HSTAT=null;
+function homeStats(){ if(HSTAT) return HSTAT;
+  const steps=t=>(t.parts&&t.parts.length?t.parts.reduce((a,p)=>a+(p.steps||[]).length,0):(t.steps||[]).length);
+  let vars=0; try{ DZR.list().forEach(d=>{ vars+=d.course==='ng'?DZR.numbers(d.id).length:(d.V?Object.keys(d.V).length:(d.count||0)); }); }catch(e){}
+  return HSTAT={tasks:WB3.tasks.length+(window.IG_WB||[]).length,steps:WB3.tasks.reduce((a,t)=>a+steps(t),0),vars}; }
 function viewHome(v){
-  const tg=resumeTarget();
-  let stepNote=''; try{ const pp=(JSON.parse(localStorage.getItem('plpos')||'{}')||{})[tg&&tg.href]; if(pp&&pp.k) stepNote='шаг '+pp.k+' · '; }catch(e){}
-  const nT=WB3.tasks.length, nL=COURSE.length, nIW=(window.IG_WB||[]).length;
-  const hw=(window.DZR?DZR.list('ng'):[]), nIG=(window.DZR?DZR.list('ig'):[]), sc=homeScope();
-  const ex=[['47','47'],['вариант 12','вариант 12'],['ДЗ 3','ДЗ 3'],['замена плоскостей','замена плоскостей'],['как построить разрез','как построить разрез']];
-  const lnk=(h,b,s,ic)=>`<a class="v8-l" href="${h}">${ic?`<span class="v9-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[ic]}</svg></span>`:''}<b>${b}</b>${s?`<small>${s}</small>`:''}<i aria-hidden="true">→</i></a>`;
-  v.innerHTML=`<div class="wrap page home v8h" id="v8h">
-   <div class="hcards" id="rkHome">${homeCards()}</div>
-   ${window.METHOD?METHOD.homeNow():''}
-   ${A2HS.cardHTML()}
-   <section class="v8-hero v9-hero" id="hsearch" aria-labelledby="v8H">
-    <h1 id="v8H" class="v8-h">Разберись со своей задачей</h1>
-    <div class="v8-scope" role="radiogroup" aria-label="Где искать">${HOME_SCOPES.map(x=>`<button type="button" role="radio" data-scope="${x[0]}" aria-checked="${x[0]===sc}" class="${x[0]===sc?'on':''}">${x[1]}</button>`).join('')}</div>
+  const st=homeStats(), num=n=>n.toLocaleString('ru-RU');
+  const chips=['задача 47','ДЗ 5 вариант 12','что такое горизонталь','как построить разрез'];
+  v.innerHTML=`<div class="wrap page home v8h h2" id="v8h">
+   <section class="hn" id="hnews" aria-label="Сейчас важно">${homeNews()}</section>
+   <section class="ag" id="hsearch" aria-labelledby="agH">
+    <div class="ag-stage"><canvas class="ag-jelly" id="agJelly" aria-hidden="true"></canvas></div>
+    <div class="ag-say" id="agSay" hidden aria-live="polite"></div>
+    <h1 id="agH" class="ag-h">Чем помочь?</h1>
+    <p class="ag-sub">Номер задачи, свой вариант ДЗ, тема или вопрос — своими словами</p>
     <div class="v8-box"><div id="hsMount"></div></div>
+    <div class="ag-chips">${chips.map(q=>`<button type="button" data-hq="${attr(q)}">${q}</button>`).join('')}</div>
    </section>
-       <section class="ownc" aria-label="Просмотры и владелец сайта">
-    <div class="ownc-top">
-     <div class="ownc-v"${VIEWS==null?' hidden':''}>${ODO.html()}<small>просмотров</small></div>
-     <button type="button" class="v8-share ownc-s" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button>
+   <section class="hab" aria-label="О сайте">
+    <button type="button" class="hab-me" data-author aria-haspopup="dialog"><span class="hab-ph" aria-hidden="true"></span><span><b>Андрей Матханов</b><small>автор сайта · посмотреть фото</small></span><i aria-hidden="true">→</i></button>
+    <p class="hab-t">Начерт помогает первокурсникам сдать начертательную геометрию и инженерную графику. Каждый чертёж построен программой по условию и разобран по шагам. Всё бесплатно.</p>
+    <div class="hab-st">
+     <div class="hab-v" hidden>${ODO.html()}<span>просмотров сайта</span></div>
+     <div><b>${num(st.tasks)}</b><span>задач тетради с разбором</span></div>
+     <div><b>${num(st.vars)}</b><span>вариантов ДЗ решено</span></div>
+     <div><b>${num(st.steps)}</b><span>шагов построений</span></div>
+     <div><b>0 ₽</b><span>платить не нужно</span></div>
     </div>
-    <button type="button" class="ownc-a" data-author aria-haspopup="dialog"><span class="ownc-t"><b>Андрей Матханов</b><small>владелец сайта</small></span><i aria-hidden="true">→</i></button>
+    <div class="hab-a"><button type="button" class="v8-share ownc-s" data-sharesite><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Поделиться</button><a href="#/about">О проекте →</a></div>
    </section>
-   <section class="v8-dirs hbn" aria-label="Разделы">
-    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],['#/dz/ng','ДЗ','light','s'],[H('ng','rk2'),'РК','royal','m'],[H('ng','path'),'Обучение','sky','s']])}
-    ${bentoHTML('Инж. графика',[[H('ig','wb'),'Тетрадь','sky','s'],['#/dz/ig','ДЗ','navy','l'],[H('ig','points'),'РК','light','m'],[H('ig','learn'),'Обучение','royal','s']])}
+   <section class="hd2" aria-label="Разделы">
+    ${bentoHTML('Начерт',[[H('ng','tasks'),'Тетрадь','navy','l'],['#/dz/ng','ДЗ','royal','m'],[H('ng','rk2'),'РК','light','m']]).replace('hbn-col','hd2-col').replace('hbn-h','hd2-h')}
+    ${bentoHTML('Инж. графика',[['#/dz/ig','ДЗ','navy','l'],[H('ig','wb'),'Тетрадь','sky','m'],[H('ig','learn'),'Учиться','light','m']]).replace('hbn-col','hd2-col').replace('hbn-h','hd2-h')}
    </section>
   </div>`;
   NEXT=null;
-  try{ if(window.RKG) RKG.bindTeaser(v); }catch(e){}
-  try{ RKS.load(()=>{ const m=$('rkHome'); if(m) m.innerHTML=homeCards(); }); }catch(e){}
-  if(window.SEARCH){ const page=$('v8h'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:page,keep:true,noAuto:true,quiet:true,scope:homeScope,ph:'Номер задачи, вариант, тема или вопрос'});
-    /* красная «Найти» — куда нажать: открывает первый ответ, а пустая строка просто получает фокус */
-    const go=document.createElement('button'); go.type='button'; go.className='v9-go'; go.innerHTML='<span>Найти</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+  /* рисунки ДЗ (колода грузится позже) и группа студента для РК — карточки новостей перерисуются */
+  const reNews=()=>{ const m=$('hnews'); if(m&&m.isConnected) m.innerHTML=homeNews(); };
+  if(!window.DZART) window.addEventListener('DOMContentLoaded',reNews,{once:true});
+  try{ RKS.load(reNews); }catch(e){}
+  let J=null; try{ if(window.JELLY) J=JELLY.mount($('agJelly')); }catch(e){}
+  if(window.SEARCH){ const page=$('v8h'), api=SEARCH.mount($('hsMount'),{id:'srH',flag:page,keep:true,noAuto:true,quiet:true,scope:()=>'all',ph:'Спроси: «задача 47», «вариант 12», «что такое след»'});
+    const go=document.createElement('button'); go.type='button'; go.className='v9-go'; go.setAttribute('aria-label','Найти'); go.innerHTML='<span>Найти</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
     api.input.closest('form').appendChild(go);
     go.addEventListener('click',()=>{ if(!api.val().trim()){ api.focus(); return; } const a=$('srHres')&&$('srHres').querySelector('a.sr-it'); if(a) a.click(); else api.focus(); });
     /* номер задачи / вариант / ДЗ — первыми ответами */
-    const quick=()=>{ const res=$('srHres'); if(!res) return; const hs=quickHits(api.val(),homeScope()); if(!hs.length) return;
+    const quick=()=>{ const res=$('srHres'); if(!res) return; const hs=quickHits(api.val(),'all'); if(!hs.length) return;
       res.insertAdjacentHTML('afterbegin',`<section class="sr-g sr-q" data-g="quick">${hs.map((x,i)=>`<a class="sr-it v7-n" id="srHq${i}" href="${x.h}" role="option"><span class="sr-tag">${x.tag}</span><b class="sr-t">${attr(x.t)}</b><span class="sr-w">${x.w} →</span></a>`).join('')}</section>`);
-      /* то же самое ниже не повторяем */
       const hrefs=new Set(hs.map(x=>x.h)); res.querySelectorAll('.sr-g:not(.sr-q) a.sr-it').forEach(a=>{ if(hrefs.has(a.getAttribute('href'))) a.remove(); });
       res.querySelectorAll('.sr-g:not(.sr-q)').forEach(g=>{ if(!g.querySelector('a.sr-it')) g.remove(); }); };
     api.input.addEventListener('input',quick);
-    v.querySelectorAll('[data-scope]').forEach(b=>b.addEventListener('click',()=>{ ST.set('home_scope',b.dataset.scope);
-      v.querySelectorAll('[data-scope]').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-checked',on); });
-      api.rerun(); quick(); api.focus(); }));
-    v.querySelectorAll('[data-hq]').forEach(b=>b.addEventListener('click',()=>{ api.run(b.dataset.hq); quick(); api.focus(); }));
-    const kq=POP?SEARCH.keep():''; if(kq){ api.run(kq); quick(); } }
+    const ag=window.AGENT?AGENT.bind({jelly:J,say:$('agSay'),input:api,res:()=>$('srHres')}):null;
+    v.querySelectorAll('[data-hq]').forEach(b=>b.addEventListener('click',()=>{ api.run(b.dataset.hq); quick(); if(ag) ag.react(); api.focus(); }));
+    const kq=POP?SEARCH.keep():''; if(kq){ api.run(kq); quick(); if(ag) ag.react(); } }
   if(/^#\/install\b/.test(location.hash)) setTimeout(()=>{ if(/^#\/install\b/.test(location.hash)&&!document.getElementById('fxSheet')) A2HS.open(); },450);
   return '';
 }
@@ -30808,8 +30851,8 @@ function dzHub(v,only){
 function subjHome(v,c){
   const svg=ic=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[ic]}</svg>`;
   const nT=(window.WB3&&WB3.tasks?WB3.tasks.length:89), nW=(window.IG_WB||[]).length;
-  const R=c==='ng'?[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ng','tasks'),'nb','Рабочая тетрадь','все '+nT+' задач — разбор каждой по шагам'],[H('ng','rk2'),'rk','Подготовка к РК','билеты, вопросы теории, пробный РК'],[H('ng','path'),'th','Теория','уроки с картинками и шпаргалка'],[H('epure'),'ep','3D-модель и эпюр','двигай точку — эпюр строится сам']]
-    :[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ig','learn'),'lr','Учиться с нуля','виды, разрезы, сечения — один вариант по шагам'],[H('ig','points'),'tr','Защита точек','как найти две недостающие проекции точки'],[H('ig','wb'),'nb','Рабочая тетрадь',(nW?nW+' заданий: ':'')+'тела с отверстиями'],[H('ig','theory'),'th','Теория ЕСКД','форматы, линии, размеры, виды, разрезы, штриховка']];
+  const R=c==='ng'?[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ng','tasks'),'nb','Рабочая тетрадь','все '+nT+' задач — разбор каждой по шагам'],[H('ng','rk2'),'rk','Подготовка к РК','план по шагам, билеты, пробный РК'],[H('epure'),'ep','3D-модель и эпюр','двигай точку — эпюр строится сам']]
+    :[['#/prep','lr','Подготовка к ДЗ и РК','курс по этапам: подзадачи перед решением'],[H('ig','learn'),'lr','Учиться с нуля','виды, разрезы, сечения — один вариант по шагам'],[H('ig','points'),'tr','Защита точек','как найти две недостающие проекции точки'],[H('ig','wb'),'nb','Рабочая тетрадь',(nW?nW+' заданий: ':'')+'тела с отверстиями']];
   v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'dzx sjh',body:`
    <div class="intro"><h1>${dzCourse(c)}</h1></div>
    ${dzWidget(c)}
@@ -31099,26 +31142,29 @@ function secOf(n){ const s=SECS.find(s=>n>=s[1]&&n<=s[2]); return s?{t:s[0]}:nul
 /* раздел поверхностей: перед задачами — интерактив «как образуются поверхности» (SURFLAB) */
 const SURFCARD=`<a class="surfcard" href="#/ng/surf"><svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><path d="M8 38 C14 20 20 14 24 10 C28 14 34 20 40 38" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M8 38 L24 10 M16 38 L24 10 M32 38 L24 10 M40 38 L24 10" stroke="currentColor" stroke-width="1.2" opacity=".55"/><path d="M8 38 Q24 46 40 38" fill="none" stroke="#d4322c" stroke-width="2.4"/></svg><span><b>Как образуются поверхности — в 3D</b><small>Коноид, геликоиды, гиперболоид, тор: образующая движется, поверхность «заметается». В задачах раздела — кнопки «3D» и «▶ Как образуется».</small></span><i aria-hidden="true">→</i></a><a class="surfcard" href="#/ng/surf/x"><svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><path d="M6 20 H42 M6 32 H42" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M17 6 V42 M31 6 V42" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".55"/><path d="M17 20 Q24 28 31 20 M17 32 Q24 24 31 32" fill="none" stroke="#d4322c" stroke-width="2.6"/></svg><span><b>Как пересекаются поверхности — в 3D</b><small>Два цилиндра, сфера и конус, тор: линия пересечения вычисляется вживую — проницание, врезка, теорема Монжа, кривая Вивиани, посредники.</small></span><i aria-hidden="true">→</i></a>`;
 let nbFilter='all', nbQuery='';
+/* тетрадь — кольцо карточек с крупными номерами (new/ring.js); цвет карточки — раздел тетради */
+function nbRing(v,o){
+  const key='nb_cur_'+o.id, items=o.items; let start=items.findIndex(it=>it.n===ST.get(key,null)); if(start<0) start=Math.max(0,items.findIndex(it=>!it.done));
+  v.innerHTML=pageHTML({crumbs:null,next:null,noBottom:true,cls:'nb2',body:`
+   <div class="nb2-hd"><h1><small>${o.subj}</small>Тетрадь</h1><span class="nb2-cnt"><b id="nbCur">${items[start].n}</b> / ${items[items.length-1].n}</span></div>
+   <div id="nbRing"></div>
+   <div class="nb2-go"><form id="nbJump" role="search" aria-label="Перейти к номеру"><span>№</span><input id="nbNum" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="${items[start].n}" aria-label="Номер задачи"></form>
+    <a class="nb2-open" id="nbOpen" href="${items[start].href}">Открыть<span aria-hidden="true">→</span></a></div>
+   ${o.more||''}`});
+  NEXT=null;
+  if(!window.RING) return;
+  const R=RING.mount($('nbRing'),{items,start,label:o.subj+' · тетрадь',onFront:(it)=>{ ST.set(key,it.n); const c=$('nbCur'), b=$('nbOpen'); if(c) c.textContent=it.n; if(b){ b.href=it.href; b.firstChild.textContent=o.open+' '+it.n+' '; } }});
+  const f=$('nbJump'), inp=$('nbNum');
+  const jump=()=>{ const n=parseInt(inp.value,10); const i=items.findIndex(it=>it.n===n); if(i>=0&&R) R.go(i); else if(inp.value) { f.classList.remove('bad'); void f.offsetWidth; f.classList.add('bad'); } };
+  inp.addEventListener('input',()=>{ clearTimeout(inp._t); inp._t=setTimeout(jump,350); });
+  f.addEventListener('submit',e=>{ e.preventDefault(); const n=parseInt(inp.value,10), it=items.find(x=>x.n===n); if(it) nav(it.href); });
+}
+const NB_COL='abcfdeghi';
 function ngTasks(v){
-  const all=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number').sort((a,b)=>a-b);
-  const nx=all.find(n=>!taskState(n)); const done=all.filter(n=>taskState(n)>0).length;
-  const next = nx!=null? {label:'Задача №'+nx,sub:short(WB3.get(nx).q,90),href:H('ng','tasks',nx)} : {label:'Подготовка к РК',sub:'билеты, вопросы теории, пробный РК',href:H('ng','check')};
-  v.innerHTML=pageHTML({crumbs:[['Тетрадь']],next:null,noBottom:true,body:`
-   <div class="intro"><h1>Решённая тетрадь</h1>
-    </div>
-   ${tnumHTML('big hl')}
-   <div class="resume2"><div class="rs-t"><div class="rs-k">${done?'Продолжить':'Начать'}</div><b>${next.label}</b>${next.sub?`<small>${next.sub}</small>`:''}</div>
-    <div class="rs-p"><div class="pbar"><i style="width:${all.length?Math.round(done/all.length*100):0}%"></i></div><span>${done} из ${all.length} разобрано</span></div>
-    <button class="btn pri lg" data-next>${done?'Продолжить':'Начать'} →</button></div>
-   <div class="tools">
-    <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-     <input id="nbq" type="search" aria-label="Поиск по условиям" placeholder="Поиск: «ромб», «перпендикуляр», «след»…" value="${attr(nbQuery)}"></div>
-    <div class="chips" id="nbChips" role="group" aria-label="Фильтр"></div>
-   </div>
-   <div id="nbList"></div>`});
-  NEXT=next;
-  $('nbq').addEventListener('input',e=>{nbQuery=e.target.value;renderNB();});
-  renderNB();
+  const items=WB3.tasks.map(t=>t.n).filter(n=>typeof n==='number').sort((a,b)=>a-b).map(n=>{ const si=Math.max(0,SECS.findIndex(s=>n>=s[1]&&n<=s[2]));
+    return {n,href:H('ng','tasks',n),col:NB_COL[si%NB_COL.length],sec:SECS[si][0],done:taskState(n)>0,aria:'Задача '+n}; });
+  nbRing(v,{id:'ng',subj:'Начерт',open:'Задача',items,
+    more:`<div class="nb2-more"><a href="#/ng/surf">Поверхности в 3D</a><a href="#/ng/surf/x">Пересечения в 3D</a></div>`});
   return 'Решённая тетрадь';
 }
 function renderNB(){
@@ -33130,14 +33176,9 @@ function partPage(v,o){
 }
 /* ── тетрадь и теория ИГ ── */
 function wbList(v){
-  v.innerHTML=pageHTML({crumbs:[[SUBJ.ig.name,H('ig')],['Тетрадь']],next:null,noBottom:true,cls:'igx',body:`
-   <div class="intro"><h1>Рабочая тетрадь · раздел 5</h1><p class="lead">Изображение фигур с линиями пересечения проецирующими плоскостями.</p></div>${IGBETA()}
-   <div class="igx-wbl">${IG_WB.map(t=>`<a class="igx-wbc" href="${H('ig','wb',t.n)}"><span class="igx-wbn"><b>Рис. ${t.fig}</b><i>стр. ${t.page}</i></span><span class="igx-wbi"><img alt="" data-w="${t.n}"></span><span class="igx-wbt"><b>${t.n}. ${t.title}</b><small>${t.q}</small></span></a>`).join('')}</div>
-`});
-  if(hasGL){ let i=0; const step=()=>{ if(i>=IG_WB.length||!v.isConnected) return; const t=IG_WB[i++];
-      try{ const d=IG3.drawing(t,'front0',360); const im=v.querySelector('img[data-w="'+t.n+'"]'); if(im&&d) im.src=d.url; }catch(e){}
-      setTimeout(step,20); }; setTimeout(step,30); }
-  NEXT=null; return 'Тетрадь · '+SUBJ.ig.name;
+  const COL='bacdfegih';
+  nbRing(v,{id:'ig',subj:'Инж. графика',open:'Задание',items:IG_WB.map((t,i)=>({n:t.n,href:H('ig','wb',t.n),col:COL[i%COL.length],sub:'рис. '+t.fig,sec:t.title,aria:'Задание '+t.n+'. '+t.title}))});
+  return 'Тетрадь · '+SUBJ.ig.name;
 }
 function wbItem(v,n){
   const i=IG_WB.findIndex(t=>t.n===n); if(i<0){ setTimeout(()=>redir(H('ig','wb')),0); return 'Тетрадь'; }
@@ -36878,7 +36919,7 @@ function viewMethod(v){
   return 'Как мы учим';
 }
 function viewAbout(v){
-  v.innerHTML=`<div class="wrap page"><div class="ptop">${crumbHTML([['О проекте']])}</div><a class="mt-link" href="#/method"><b>Как мы учим</b><span>путь к заданию, принципы и исследования, на которых он стоит →</span></a><div id="w-about"></div></div>`;
+  v.innerHTML=`<div class="wrap page"><div class="ptop">${crumbHTML([['О проекте']])}</div><div id="w-about"></div></div>`;
   NEXT=null;
   if(PANES.about&&PANES.about.render) PANES.about.render($('w-about'));
   return 'О проекте';
