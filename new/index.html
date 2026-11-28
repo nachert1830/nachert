@@ -5586,7 +5586,7 @@ button.dr-go{background:var(--surf2,var(--surf));border:1px solid var(--line);co
 
 <div class="stuck" id="stuck"><div class="wrap"><b>Не нашёл свой вопрос?</b><span>Напиши, что не получается, своими словами</span><button type="button" id="stuckBtn">Найти на сайте →</button></div></div>
 
-<footer id="foot"><div class="wrap"><button type="button" class="foot-cat" id="footCat" aria-label="Кошка-талисман"></button>
+<footer id="foot"><div class="wrap"><button type="button" class="foot-cat" id="footCat" aria-label="Лука — талисман"></button>
  <div class="foot-mini"><button type="button" class="foot-logo" data-author aria-label="mathanov — владелец сайта"><img class="lg-b" src="../img/logo-mathanov-b.webp" width="640" height="108" alt="mathanov." loading="lazy"><img class="lg-w" src="../img/logo-mathanov-w.webp" width="640" height="108" alt="" loading="lazy"></button>
   <nav class="foot-links" aria-label="О сайте"><a href="#/method">Как мы учим</a><a href="#/about">О проекте</a><a href="#/privacy">Политика данных</a><a href="#/consent">Согласие</a></nav></div>
 </div></footer>
@@ -29762,31 +29762,30 @@ const LOGO={
 /* символ сайта — чёрная кошка. 'peek' — выглядывает из-за края, 'happy' — довольно жмурится */
 /* Кошка-персонаж. peek — выглядывает; happy — довольна; think — задумалась («?»); oops — ой, ошибка;
    sleep — спит (пусто/ничего нет); wave — машет лапой (привет, страница не найдена) */
+/* Талисман копии — пингвин Лука (вместо кошки; решение автора). Те же позы: peek, happy, wave, purr, sleep, think, oops.
+   Зрачки — класс cat-pu: глаза следят за пальцем, как у кошки. */
 function CAT(kind){
   kind=kind||'peek';
   const closed=kind==='happy'||kind==='wave'||kind==='purr', sleep=kind==='sleep', oops=kind==='oops', think=kind==='think';
-  const Y='#ffd23f';
   let eyes;
-  if(closed) eyes=`<path d="M39 42q7-7 14 0M67 42q7-7 14 0" fill="none" stroke="${Y}" stroke-width="3.2" stroke-linecap="round"/>`;
-  else if(sleep) eyes=`<path d="M39 41q7 5 14 0M67 41q7 5 14 0" fill="none" stroke="${Y}" stroke-width="3" stroke-linecap="round"/>`;
-  else if(oops) eyes=`<g class="cat-eyes"><circle cx="46" cy="41" r="9" fill="${Y}"/><circle cx="74" cy="41" r="9" fill="${Y}"/><circle cx="46" cy="41.5" r="2.6" fill="#111118"/><circle cx="74" cy="41.5" r="2.6" fill="#111118"/></g>`;
-  else { const dx=think?2.2:0.6, dy=think?-3.2:0.6;
-    eyes=`<g class="cat-eyes"><ellipse cx="46" cy="42" rx="7.2" ry="8.4" fill="${Y}"/><ellipse cx="74" cy="42" rx="7.2" ry="8.4" fill="${Y}"/><ellipse class="${think?'':'cat-pu'}" cx="${46+dx}" cy="${42+dy}" rx="2.1" ry="${think?4.6:6.4}" fill="#111118"/><ellipse class="${think?'':'cat-pu'}" cx="${74+dx}" cy="${42+dy}" rx="2.1" ry="${think?4.6:6.4}" fill="#111118"/></g>`; }
-  const mouth=oops?'<ellipse cx="60" cy="59" rx="2.6" ry="3" fill="#5b5566"/>':sleep?'<path d="M56.5 57.5q3.5 2 7 0" fill="none" stroke="#5b5566" stroke-width="1.3" stroke-linecap="round"/>'
-    :'<path d="M60 56.4q-2.6 3.2-6 2.2M60 56.4q2.6 3.2 6 2.2" fill="none" stroke="#5b5566" stroke-width="1.3" stroke-linecap="round"/>';
-  const paws=kind==='happy'?'':kind==='wave'?'<ellipse cx="35" cy="72" rx="12" ry="7.5"/><g class="cat-paw"><ellipse cx="104" cy="31" rx="7" ry="10.5" transform="rotate(28 104 31)"/></g>':'<ellipse cx="35" cy="72" rx="12" ry="7.5"/><ellipse cx="85" cy="72" rx="12" ry="7.5"/>';
-  const toes=kind==='happy'?'':kind==='wave'?'<path d="M29 70h12" stroke="#2b2b36" stroke-width="1" stroke-linecap="round"/>':'<path d="M29 70h12M79 70h12" stroke="#2b2b36" stroke-width="1" stroke-linecap="round"/>';
-  const extra=think?'<g class="cat-q"><circle cx="108" cy="14" r="10" fill="var(--surf,#fff)" stroke="var(--line2,#d6d9e0)" stroke-width="1.4"/><text x="108" y="19" text-anchor="middle" font-size="14" font-weight="800" fill="#3f74b8" font-family="system-ui,sans-serif">?</text></g>'
-    :oops?'<path class="cat-drop" d="M100 22q4 6 0 9q-4-3 0-9z" fill="#5aa9ff"/>'
-    :sleep?'<g class="cat-z" font-family="system-ui,sans-serif" font-weight="800" fill="#7c8597"><text x="98" y="22" font-size="10">z</text><text x="106" y="13" font-size="13">Z</text></g>':'';
-  return `<svg class="cat cat-${kind}" viewBox="0 0 120 76" aria-hidden="true"><g fill="#16161f">
-    <path d="M25 34 31 5.5q1.6-5 5.6-1.6L55 20z"/><path d="M95 34 89 5.5q-1.6-5-5.6-1.6L65 20z"/>
-    <ellipse cx="60" cy="44" rx="37" ry="30"/>${paws}</g>
-    <path d="M32 9.5 36 25 46 20zM88 9.5 84 25 74 20z" fill="#3b2a3d"/>${eyes}
-    ${kind==='happy'||kind==='wave'||kind==='purr'?'<ellipse cx="38" cy="51" rx="5" ry="3" fill="#f2a3b6" opacity=".35"/><ellipse cx="82" cy="51" rx="5" ry="3" fill="#f2a3b6" opacity=".35"/>':''}
-    <path d="M57 53h6l-3 3.4z" fill="#f2a3b6"/>${mouth}
-    <g stroke="rgba(255,255,255,.38)" stroke-width="1.1" stroke-linecap="round"><path d="M44 54 26 51M44 57 27 59M76 54 94 51M76 57 93 59"/></g>
-    ${toes}${extra}</svg>`;
+  if(closed) eyes='<path d="M42 43q7-7 14 0M64 43q7-7 14 0" fill="none" stroke="#141a26" stroke-width="3.4" stroke-linecap="round"/>';
+  else if(sleep) eyes='<path d="M42 42q7 5 14 0M64 42q7 5 14 0" fill="none" stroke="#141a26" stroke-width="3" stroke-linecap="round"/>';
+  else if(oops) eyes='<g class="cat-eyes"><circle cx="49.5" cy="42" r="6.4" fill="#141a26"/><circle cx="70.5" cy="42" r="6.4" fill="#141a26"/><circle cx="51.5" cy="40" r="2" fill="#fff"/><circle cx="72.5" cy="40" r="2" fill="#fff"/></g>';
+  else { const dy=think?-3:0;
+    eyes=`<g class="cat-eyes"><g class="${think?'':'cat-pu'}"><ellipse cx="49.5" cy="${42+dy}" rx="4.6" ry="5.2" fill="#141a26"/><circle cx="51.2" cy="${40+dy}" r="1.6" fill="#fff"/></g><g class="${think?'':'cat-pu'}"><ellipse cx="70.5" cy="${42+dy}" rx="4.6" ry="5.2" fill="#141a26"/><circle cx="72.2" cy="${40+dy}" r="1.6" fill="#fff"/></g></g>`; }
+  const armR=kind==='wave'?'<g class="cat-paw"><path d="M92 58c10-10 16-24 12-34-6 8-10 18-14 28z" fill="#1d2638"/></g>':'<path d="M93 62c11 9 14 24 7 33-4-9-8-18-12-27z" fill="#1d2638"/>';
+  const extra=think?'<g class="cat-q"><circle cx="106" cy="16" r="10" fill="var(--surf,#fff)" stroke="var(--line2,#d6d9e0)" stroke-width="1.4"/><text x="106" y="21" text-anchor="middle" font-size="14" font-weight="800" fill="#1f45c8" font-family="system-ui,sans-serif">?</text></g>'
+    :oops?'<path class="cat-drop" d="M100 26q4 6 0 9q-4-3 0-9z" fill="#5aa9ff"/>'
+    :sleep?'<g class="cat-z" font-family="system-ui,sans-serif" font-weight="800" fill="#7c8597"><text x="98" y="26" font-size="10">z</text><text x="106" y="16" font-size="13">Z</text></g>':'';
+  const cheeks=closed?'<circle cx="38" cy="52" r="4.5" fill="#ff8a9a" opacity=".5"/><circle cx="82" cy="52" r="4.5" fill="#ff8a9a" opacity=".5"/>':'<circle cx="38" cy="52" r="4.5" fill="#ff8a9a" opacity=".3"/><circle cx="82" cy="52" r="4.5" fill="#ff8a9a" opacity=".3"/>';
+  return `<svg class="cat peng cat-${kind}" viewBox="0 8 120 108" aria-hidden="true">
+    <ellipse cx="46" cy="108" rx="11" ry="5.5" fill="#f39a1e"/><ellipse cx="74" cy="108" rx="11" ry="5.5" fill="#f39a1e"/>
+    <path d="M27 62c-11 9-14 24-7 33 4-9 8-18 12-27z" fill="#1d2638"/>${armR}
+    <path d="M60 18c27 0 39 29 39 57 0 23-16 35-39 35S21 98 21 75c0-28 12-57 39-57z" fill="#1d2638"/>
+    <path d="M60 50c18 0 27 16 27 31 0 17-11 25-27 25S33 98 33 81c0-15 9-31 27-31z" fill="#fff"/>
+    <path d="M36 61q24 13 48 0v6q-24 13-48 0z" fill="#e0262d"/><path d="M76 66l9 15-8 2-6-14z" fill="#c41e24"/>
+    <ellipse cx="48" cy="42" rx="12" ry="12.5" fill="#fff"/><ellipse cx="72" cy="42" rx="12" ry="12.5" fill="#fff"/>${eyes}
+    <path d="M53 52q7-3 14 0l-7 9z" fill="#f6a21e" stroke="#f6a21e" stroke-width="2" stroke-linejoin="round"/>${cheeks}${extra}</svg>`;
 }
 /* кошка в блоке: <div class="catbox"> кошка + реплика </div> */
 function CATSAY(kind,html,cls){ return `<div class="catsay ${cls||''}"><span class="catsay-c">${CAT(kind)}</span>${html?`<div class="catsay-b">${html}</div>`:''}</div>`; }
@@ -29796,9 +29795,9 @@ const CAT_SPOT={'ng/path':'peek','ng/tasks':'sleep','ng/hw':'think','ng/check':'
 function catPerch(v,r){
   const key=r.s+(r.tab?'/'+r.tab:''), kind=r.item==null?(CAT_SPOT[key]||CAT_SPOT[r.s]):null; if(!kind) return;
   const intro=v.querySelector('.intro')||v.querySelector('h1:not(.sr-only)'); if(!intro||intro.querySelector('.perch')) return;
-  intro.classList.add('has-perch'); intro.insertAdjacentHTML('afterbegin',`<button type="button" class="perch" data-cat="${kind}" aria-label="Кошка-талисман">${CAT(kind)}</button>`);
+  intro.classList.add('has-perch'); intro.insertAdjacentHTML('afterbegin',`<button type="button" class="perch" data-cat="${kind}" aria-label="Лука — талисман">${CAT(kind)}</button>`);
 }
-const MEOW=['Мур!','Мяу!','Мрр…','Учись, я посторожу','Ещё задачку?','Линии связи ⟂ оси x'];
+const MEOW=['Привет, я Лука!','Ещё задачку?','Спроси меня у чертежа','Линии связи ⟂ оси x','Учись, я посторожу','Покручу в 3D?'];
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.perch,.foot-cat'); if(!b||b.dataset.busy) return; b.dataset.busy=1;
   const k=b.dataset.cat||'peek'; b.innerHTML=CAT('purr')+`<span class="perch-say">${MEOW[Math.floor(Math.random()*MEOW.length)]}</span>`; b.classList.add('purr'); try{ FX.buzz&&FX.buzz(6); }catch(_){}
   setTimeout(()=>{ b.innerHTML=CAT(k); b.classList.remove('purr'); delete b.dataset.busy; },1800); });
