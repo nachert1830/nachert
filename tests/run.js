@@ -297,7 +297,7 @@ function serve(){ return new Promise(res=>{ const srv=http.createServer((q,r)=>{
     const seen=new Set(), queue=['#/'], bad=[]; let n=0;
     while(queue.length&&n<700){ const h=queue.shift(); if(seen.has(h)) continue; seen.add(h); n++;
       const before=errs.length; await page.evaluate(h=>{ location.hash=h; },h); await page.waitForTimeout(60);
-      const st=await page.evaluate(()=>({ w:document.documentElement.scrollWidth, iw:window.innerWidth, txt:(document.getElementById('view')||document.body).innerText.length,
+      const st=await page.evaluate(()=>({ w:document.documentElement.scrollWidth, iw:window.innerWidth, txt:(document.documentElement.classList.contains('nd-on')&&document.getElementById('nd')||document.getElementById('view')||document.body).innerText.length,   /* экран «ДЗ» — колода #nd поверх #view: считаем текст колоды */
         /* элемент страницы, растянутый на весь экран чужим стилем (так плитка главной однажды получила стиль окна 3D) */
         huge:[...document.querySelectorAll('#view *')].filter(e=>{ const c=getComputedStyle(e); return c.position==='fixed'&&e.getBoundingClientRect().height>window.innerHeight*0.6; }).map(e=>e.tagName+'.'+String(e.className).slice(0,40)),
         links:[...document.querySelectorAll('a[href^="#/"]')].map(a=>a.getAttribute('href')) }));

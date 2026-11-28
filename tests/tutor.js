@@ -56,7 +56,9 @@ async function runTutor(browser){
   const siteSrv=http.createServer((q,r)=>{ let f=decodeURIComponent(q.url.split('?')[0]); if(f.endsWith('/')) f+='index.html';
     if(f==='/lk/config.js'){ r.writeHead(200,{'Content-Type':TY['.js']}); return r.end("window.CLUB_API='"+API+"';"); }
     const p=path.join(ROOT,f); if(!p.startsWith(ROOT)||!fs.existsSync(p)||fs.statSync(p).isDirectory()){ r.writeHead(404); return r.end(); }
-    let b=fs.readFileSync(p); if(f==='/index.html'||f==='/new/index.html') b=Buffer.from(b.toString().replace("connect-src 'self'","connect-src 'self' "+API));
+    let b=fs.readFileSync(p); if(f==='/index.html'||f==='/new/index.html') b=Buffer.from(b.toString().replace("connect-src 'self'","connect-src 'self' "+API)
+      /* в копии /new/ наставник пока выключен (решение автора, комментарий в new/index.html) — для проверки окна подключаем его здесь */
+      .replace(/<!-- Наставник \(\.\.\/lk\/tutor\.js[^>]*?вернуть: (<script[^>]*><\/script>) -->/,'$1'));
     r.writeHead(200,{'Content-Type':TY[path.extname(p)]||'application/octet-stream'}); r.end(b); });
   API=await listen(apiSrv); SITE=await listen(siteSrv);
   const cfg={dev:true,origin:API,secure:false,botToken:'1:x',botName:'b',webhookSecret:'s',adminTg:['1000001'],mainUrl:SITE,week1:'',yandex:{clientId:'',secret:''},adminYa:[],fronts:[API,SITE],frontUrl:SITE+'/lk/',openSignup:true,

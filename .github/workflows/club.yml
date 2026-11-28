@@ -64,6 +64,8 @@ jobs:
           GH_HQ_TOKEN: ${{ secrets.GH_HQ_TOKEN || secrets.GH_CEO_TOKEN }}
           EYES_BEST_MODEL: ${{ vars.EYES_BEST_MODEL }}
           TUTOR: ${{ vars.TUTOR }}
+          LUKA_KEY: ${{ secrets.LUKA_KEY }}
+          LUKA_KEY_SHA256: ${{ vars.LUKA_KEY_SHA256 }}
           TUTOR_MODEL: ${{ vars.TUTOR_MODEL }}
           TUTOR_LIGHT_MODEL: ${{ vars.TUTOR_LIGHT_MODEL }}
           TUTOR_EYES_MODEL: ${{ vars.TUTOR_EYES_MODEL }}

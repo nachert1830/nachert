@@ -33,7 +33,9 @@ async function run() {
       await check('#/ng2/17', 'svg', 'начерт ДЗ №2, вариант 17');
       if (await page.locator('.tu-fab >> visible=true').count()) B(dev.name + ': наставник — только на ИГ ДЗ №4', 'кнопка видна на #/ng2/17');
       await page.evaluate(() => { const b = document.querySelector('.ckn [data-ck="n"]'); if (b) b.click(); });
-      await check('#/ig4/7', '.tu-fab', 'ИГ ДЗ №4 — кнопка наставника (окно согласия закрыто)');
+      /* наставник в копии пока выключен (решение автора) — кнопки нет нигде */
+      await check('#/ig4/7', 'svg', 'ИГ ДЗ №4 (окно согласия закрыто)');
+      if (await page.locator('.tu-fab').count()) B(dev.name + ': наставник выключен', 'кнопка есть');
       /* методичка задания (new/method.js): страница ДЗ — методичка, решение своего варианта — в одно касание */
       await page.evaluate(() => { localStorage.removeItem('nch_mk'); dzSetVar(13); });
       await check('#/ng4', '.mk-doors', 'методичка ДЗ №4');
@@ -59,10 +61,28 @@ async function run() {
       await page.waitForTimeout(400);
       { const r = await page.evaluate(() => ({ v: dzVar(), h: (document.querySelector('a.mk-door.b') || { getAttribute: () => '' }).getAttribute('href') }));
         if (r.v !== 12 || r.h !== '#/ng5/12') B(dev.name + ': выбор варианта в методичке', JSON.stringify(r)); }
-      /* разбор варианта: плашка «Методичка», вкладка «Методичка» ведёт на методичку; колода «ДЗ» — методичка первой */
-      await check('#/ng5/12', '.mks', 'разбор варианта — плашка методички');
-      { const r = await page.evaluate(() => ({ tab: !![...document.querySelectorAll('.dzx-pills a')].find(a => a.textContent === 'Методичка' && a.getAttribute('href') === '#/ng5'), deck: window.dzDeckGo ? window.dzDeckGo(DZR.get('ng5')) : '' }));
-        if (!r.tab) B(dev.name + ': во вкладках разбора нет «Методичка»', ''); if (!/class="go" href="#\/ng5"/.test(r.deck) || !/href="#\/ng5\/12"/.test(r.deck)) B(dev.name + ': колода «ДЗ» — кнопки методички и решения', r.deck.slice(0, 200)); }
+      /* разбор варианта начерта — только чертёж по шагам (решение автора): нет вкладок, плашки методички, «Смотрю / Решаю сам»,
+         кнопки «▶ Поверхность»; «Не сходится с условием?» — внизу пояснения; колода «ДЗ» — методичка первой */
+      await check('#/ng5/12', '.pl-paper svg', 'разбор варианта начерта');
+      { const r = await page.evaluate(() => ({ pills: !!document.querySelector('.dzx-pills'), strip: !!document.querySelector('.mks'), modes: !!document.querySelector('.pl-modes'),
+          form: !!document.querySelector('[data-z="form"]'), crep: !!document.querySelector('.pl-scroll .pl-foot .crep'), deck: window.dzDeckGo ? window.dzDeckGo(DZR.get('ng5')) : '' }));
+        if (r.pills || r.strip || r.modes || r.form) B(dev.name + ': разбор варианта — лишнее над чертежом', JSON.stringify(r).slice(0, 200));
+        if (!r.crep) B(dev.name + ': «Не сходится с условием?» внизу пояснения', 'нет');
+        if (!/class="go" href="#\/ng5"/.test(r.deck) || !/href="#\/ng5\/12"/.test(r.deck)) B(dev.name + ': колода «ДЗ» — кнопки методички и решения', r.deck.slice(0, 200)); }
+      /* Лука — ИИ-агент на чертеже (new/luka.js): на ДЗ №4–5 и задачах тетради с 68-й; облачко с вопросами по шагу; разборщик своего вопроса */
+      await check('#/ng4/13', '.lk-b', 'Лука на ДЗ №4');
+      { const r = await page.evaluate(async () => { document.querySelector('.pl-main').click(); await new Promise(f => setTimeout(f, 300)); document.querySelector('.pl-main').click(); await new Promise(f => setTimeout(f, 300));
+          document.querySelector('.lk-b').click(); await new Promise(f => setTimeout(f, 200)); const w = document.querySelector('.lk-w'), q = w ? w.querySelectorAll('.lk-q button').length : 0;
+          const inp = w && w.querySelector('.lk-in input'); if (inp) { inp.value = 'что такое линия связи'; w.querySelector('.lk-in').requestSubmit(); } await new Promise(f => setTimeout(f, 700));
+          return { w: !!w, q, term: /Линия связи/.test((document.querySelector('.lk-say') || {}).textContent || '') }; });
+        if (!r.w || r.q < 2) B(dev.name + ': Лука — облачко с вопросами по шагу', JSON.stringify(r)); if (!r.term) B(dev.name + ': Лука — «что такое линия связи» из словаря', JSON.stringify(r)); }
+      await check('#/ng/tasks/70', '.lk-b', 'Лука на задаче 70 тетради');
+      /* Лука на ИГ: страница решения с Лукой — только «3D» и «По шагам», открывается на шагах, пингвин в углу чертежа шага */
+      await page.goto(base + '/new/#/ig/wb/7', { waitUntil: 'load' }); await page.waitForTimeout(800); await page.click('#igShow').catch(() => {});
+      if (!(await page.waitForSelector('#igBuild .lk-b', { timeout: 90000 }).then(() => true).catch(() => false))) B(dev.name + ': Лука на задании 7 тетради ИГ', 'нет пингвина');
+      if (await page.locator('.igx-tabs [data-t="sheet"] >> visible=true').count()) B(dev.name + ': ИГ с Лукой — без вкладки «Лист»', 'видна');
+      await check('#/ng/tasks/12', '.pl-paper', 'задача 12 тетради');
+      if (await page.locator('.lk-b').count()) B(dev.name + ': Лука — только с 68-й задачи', 'есть на 12-й');
       await check('#/ig4', '.mk-doors', 'методичка ИГ ДЗ №4');
       await check('#/ig2', '.mk-doors', 'методичка ИГ ДЗ №2 (без методики)');
       await check('', '.mkh', 'главная — «Сдаётся скоро»');
